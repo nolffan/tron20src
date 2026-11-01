@@ -12,7 +12,7 @@ checks, independent of it.)
 
 This file is the inventory: what the modern build changes, what it could
 change next, and what was looked at and left alone, and why. It follows
-nolf2src's and cjacksrc's `MODERN.md` in its rules; the items are Tron
+nolf2src's and cjacksrc's `docs/MODERN.md` in its rules; the items are Tron
 2.0's own.
 
 ## Rules for this work

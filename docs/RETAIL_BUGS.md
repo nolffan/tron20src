@@ -23,7 +23,7 @@ retail image too): it describes what the retail code does, not a guess.
 Addresses are as in the retail images (`build/reference.sh` extracts them
 into `out/reference/`).
 
-Many of NOLF2's bugs (nolf2src's `RETAIL_BUGS.md`) and Contract J.A.C.K.'s
+Many of NOLF2's bugs (nolf2src's `docs/RETAIL_BUGS.md`) and Contract J.A.C.K.'s
 (cjacksrc's) are likely to be here too, since Tron 2.0 was built from the
 same code: check each against the retail binary before listing it. Those
 Tron 2.0 does not have go at the end, so nobody looks again.
