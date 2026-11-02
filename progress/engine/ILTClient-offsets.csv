@@ -1,0 +1,191 @@
+# Tron's ILTClient: each member's offset in the object, and the evidence.
+#   engine: retail Lithtech.exe's function-pointer setup (0x40ba40: 127 stores;
+#     0x4952b6: 46), aligned with nolf2src's (CLTClient::InitFunctionPointers,
+#     winclientde_impl.cpp), whose order it keeps
+#   game N/M: retail CShell.dll's near functions call it at this offset where
+#     ours call it by name (N of M aligned calls agree)
+#   build 51's order: no retail evidence; where build 51 has it, in a slot
+#     nothing else claims
+# offset,member,evidence
+0x004,GetTcpIpAddress,ILTCSBase, as NOLF2; engine
+0x008,ShutdownWithMessage,engine; game 6/7
+0x00c,StartGame,engine
+0x010,GetLocalClientID,engine; game 2/2
+0x014,IsConnected,engine; game 5/5
+0x018,GetGameMode,engine; game 1/1
+0x01c,Disconnect,engine; game 1/1
+0x020,Shutdown,engine
+0x024,FlipScreen,engine; game 3/3
+0x028,ClearScreen,engine; game 3/3
+0x02c,Start3D,engine; game 1/1
+0x030,RenderCamera,engine
+0x034,RenderObjects,engine
+0x038,MakeCubicEnvMap,engine
+0x03c,StartOptimized2D,engine; game 3/3
+0x040,EndOptimized2D,engine; game 2/2
+0x044,SetOptimized2DBlend,engine
+0x048,GetOptimized2DBlend,build 51's order
+0x04c,SetOptimized2DColor,engine
+0x050,GetOptimized2DColor,build 51's order
+0x054,End3D,engine; game 2/2
+0x058,GetRenderMode,engine; game 1/2
+0x05c,RelinquishRenderModes,engine; game 2/2
+0x060,GetRenderModes,engine; game 1/1
+0x064,SetRenderMode,engine; game 2/2
+0x068,ShutdownRender,engine; game 1/1
+0x06c,GetFileList,engine
+0x070,FreeFileList,engine; game 1/1
+0x074,ReadConfigFile,engine
+0x078,WriteConfigFile,engine
+0x07c,WriteConfigFileFields,engine; game 1/1
+0x080,GetAxisOffsets,engine; game 1/1
+0x084,PlayJoystickEffect,engine
+0x088,InitMusic,engine
+0x08c,LoadSong,engine
+0x090,DestroyAllSongs,engine
+0x094,PlayList,engine
+0x098,StopMusic,engine
+0x09c,PauseMusic,engine
+0x0a0,ResumeMusic,engine
+0x0a4,AddSongToPlayList,engine
+0x0a8,DeletePlayList,engine
+0x0ac,GetMusicVolume,engine
+0x0b0,SetMusicVolume,engine
+0x0b4,GetSoundTimer,engine
+0x0b8,GetSoundData,engine
+0x0bc,GetSoundOffset,engine
+0x0c0,IsDone,engine; game 1/1
+0x0c4,GetListener,engine; game 1/1
+0x0c8,IntersectSegment,engine; game 11/11
+0x0cc,IntersectSweptSphere,engine
+0x0d0,CastRay,engine
+0x0d4,SetObjectPosAndRotation,engine; game 2/2
+0x0d8,FindObjectsInSphere,engine
+0x0dc,FindObjectsInBox,engine; game 1/1
+0x0e0,CreateFont,build 51's order
+0x0e4,DeleteFont,build 51's order
+0x0e8,SetFontExtraSpace,build 51's order
+0x0ec,GetFontExtraSpace,build 51's order
+0x0f0,CreateColor,engine
+0x0f4,DeleteColor,engine
+0x0f8,SetupColor1,engine; game 1/1
+0x0fc,SetupColor2,engine
+0x100,GetBorderSize,engine
+0x104,OptimizeSurface,engine
+0x108,UnoptimizeSurface,engine
+0x10c,GetScreenSurface,engine; game 2/2
+0x110,CreateSurfaceFromBitmap,engine; game 1/1
+0x114,CreateHeightmapFromBitmap,engine
+0x118,FreeHeightmap,engine
+0x11c,CreateSurfaceFromString,build 51's order
+0x120,CreateSurface,engine; game 1/1
+0x124,DeleteSurface,engine; game 1/1
+0x128,GetSurfaceUserData,engine
+0x12c,SetSurfaceUserData,engine
+0x130,GetPixel,engine
+0x134,SetPixel,engine
+0x138,GetStringDimensions,build 51's order
+0x13c,DrawStringToSurface,build 51's order
+0x140,GetSurfaceDims,engine; game 3/3
+0x144,DrawBitmapToSurface,engine
+0x148,DrawSurfaceMasked,engine
+0x14c,DrawSurfaceSolidColor,engine
+0x150,DrawSurfaceToSurface,engine
+0x154,DrawSurfaceToSurfaceTransparent,engine
+0x158,ScaleSurfaceToSurface,engine; game 1/1
+0x15c,ScaleSurfaceToSurfaceTransparent,engine
+0x160,ScaleSurfaceToSurfaceSolidColor,engine
+0x164,WarpSurfaceToSurface,engine
+0x168,WarpSurfaceToSurfaceTransparent,engine
+0x16c,WarpSurfaceToSurfaceSolidColor,engine
+0x170,TransformSurfaceToSurface,engine
+0x174,TransformSurfaceToSurfaceTransparent,engine
+0x178,FillRect,engine; game 1/1
+0x17c,GetSurfaceAlpha,engine; game 1/1
+0x180,SetSurfaceAlpha,engine; game 2/2
+0x184,RegisterConsoleProgram,engine
+0x188,UnregisterConsoleProgram,engine
+0x18c,GetConsoleVar,engine; game 293/293
+0x190,StartCounter,engine
+0x194,EndCounter,engine
+0x198,SetInputState,engine
+0x19c,ClearInput,engine; game 5/5
+0x1a0,GetDeviceBindings,engine; game 1/1
+0x1a4,FreeDeviceBindings,engine; game 3/3
+0x1a8,ClearBinding,engine; game 2/2
+0x1ac,AddBinding,engine; game 5/5
+0x1b0,StartDeviceTrack,engine; game 1/1
+0x1b4,TrackDevice,engine; game 1/1
+0x1b8,EndDeviceTrack,engine
+0x1bc,GetDeviceObjects,engine
+0x1c0,FreeDeviceObjects,engine
+0x1c4,GetDeviceName,engine; game 4/4
+0x1c8,IsDeviceEnabled,engine; game 2/2
+0x1cc,EnableDevice,engine
+0x1d0,GetNumRawDevices,engine
+0x1d4,GetRawDeviceData,engine
+0x1d8,GetRawDeviceDataSize,engine
+0x1dc,GetRawDeviceActuatorDataSize,engine
+0x1e0,SetRawDeviceActuatorData,engine
+0x1e4,GetGameTime,engine
+0x1e8,GetGameFrameTime,engine
+0x1ec,IsCommandOn,engine; game 11/11
+0x1f0,RunConsoleString,engine; game 160/160
+0x1f4,GetClientObject,engine; game 11/14
+0x1f8,GetGlobalLightScale,engine; game 1/1
+0x1fc,SetGlobalLightScale,engine; game 3/3
+0x200,OffsetGlobalLightScale,engine
+0x204,CreateObject,engine; game 11/12
+0x208,GetObjectScale,engine
+0x20c,SetObjectScale,engine; game 3/3
+0x210,SetObjectRotation,engine; game 15/16
+0x214,GetObjectColor,engine; game 4/4
+0x218,SetObjectColor,engine; game 4/4
+0x21c,GetObjectUserData,engine
+0x220,SetObjectUserData,engine
+0x224,Get3DCameraPt,engine
+0x228,GetCameraFOV,engine; game 3/3
+0x22c,SetCameraFOV,engine; game 1/1
+0x230,GetCameraRect,engine
+0x234,SetCameraRect,engine; game 3/3
+0x238,GetCameraLightAdd,engine
+0x23c,SetCameraLightAdd,engine
+0x240,SetupParticleSystem,engine; game 1/1
+0x244,AddParticles,engine
+0x248,GetParticles,engine
+0x24c,RemoveParticle,engine
+0x250,OptimizeParticles,engine
+0x254,SortParticles,engine
+0x258,GetNextLine,engine
+0x25c,GetLineInfo,engine
+0x260,SetLineInfo,engine
+0x264,AddLine,engine
+0x268,RemoveLine,engine
+0x26c,SetupVolumeEffect,engine
+0x270,GetParticleBlockersInAABB,engine
+0x274,GetParticleBlockerEdgesXZ,engine
+0x278,SetupPolyGrid,engine
+0x27c,SetPolyGridTexture,engine
+0x280,SetPolyGridEnvMap,engine
+0x284,GetPolyGridTextureInfo,engine
+0x288,SetPolyGridTextureInfo,engine
+0x28c,GetPolyGridInfo,engine; game 1/1
+0x290,GetLightColor,engine
+0x294,SetLightColor,engine; game 2/2
+0x298,GetLightRadius,engine
+0x29c,SetLightRadius,engine; game 2/2
+0x2a0,ClipSprite,engine
+0x2a4,GetPolyTextureFlags,engine
+0x2a8,SetModelHook,engine; game 1/1
+0x2ac,GetEngineHook,engine; game 5/5
+0x2b0,IsLobbyLaunched,engine
+0x2b4,GetLobbyLaunchInfo,engine
+0x2c0,GetVersionInfoExt,engine
+0x2c4,InitNetworking,engine
+0x2c8,GetServiceList,engine
+0x2cc,FreeServiceList,engine
+0x2d0,SelectService,engine
+0x2d4,GetSessionList,engine
+0x2d8,FreeSessionList,engine
+0x2dc,AddInternetDriver,engine
+0x2e0,RemoveInternetDriver,engine

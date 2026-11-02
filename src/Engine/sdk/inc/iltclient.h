@@ -180,10 +180,368 @@ define_holder(ILTClient, your_var);
 \endcode
 */
 
+// TRON: Tron's engine kept build 51's ILTClient, with changes of its own,
+// where NOLF2's was reordered: so the data and function-pointer members below
+// are NOLF2's declarations in Tron's order -- the offsets retail CShell.dll
+// calls them at and retail Lithtech.exe sets them at -- and everything else
+// is as NOLF2 has it. Each offset and its evidence:
+// progress/engine/ILTClient-offsets.csv.
 class ILTClient : public ILTCSBase
 {
 public:
     interface_version_derived(ILTClient, ILTCSBase, 4);
+
+/*!  
+\ingroup ConnectionStuff
+
+\param pMsg The printf-styled format string to display.  This
+parameter can be followed by the usual data parameters.
+ 
+Shut down the app (not right away, but after the current update) and display a message.
+
+Used for: Client Management.  
+*/
+    void (*ShutdownWithMessage)(const char *pMsg, ...);
+
+/*!
+\ingroup ConnectionStuff
+\param  pRequest    \b StartGameRequest structure.
+
+\return \b LT_NOTINITIALIZED when there is no driver to match the request, 
+LT_ERROR when unable to sucessfully host or join a lobby session, 
+LT_INVALIDPARAMS when the \b m_pNetSession pointer in the StartGameRequest is NULL, 
+LT_SERVERERROR when there is an error loading the world (Server/host only); otherwise, returns LT_OK.
+
+Try to start a game in the mode you specify.
+The existing game will keep running until the new game successfully starts.
+For instance, if there is an error starting the new world, it
+will still leave the current one running and put up an error message.
+
+Used for: Client Management.
+*/
+    LTRESULT (*StartGame)(StartGameRequest *pRequest);
+
+/*!
+\ingroup ConnectionStuff
+
+\param pID (return) The local client ID.
+\return \b LT_NOTCONNECTED when we're not on a server or haven't gotten a
+client ID yet; otherwise, returns \b LT_OK.
+
+Get the local client ID.
+
+Used for: Client Management.  
+*/
+    LTRESULT (*GetLocalClientID)(uint32 *pID);
+
+/*!
+\return \b true when connected to server; otherwise, returns false.
+
+Determine whether this client is currently connected to a server.
+(The function checks whether the ClientMgr's m_pCurShell is valid.)
+
+Used for: Client Management.
+*/
+    bool (*IsConnected)();
+/*!
+\defgroup ConnectionStuff
+Connection stuff
+*/
+
+/*!
+\ingroup ConnectionStuff
+\param  mode    (return) The current game mode, specified as one of the \b STARTGAME_ defines.
+
+\return LT_OK.
+
+Find out what the current game mode is (set when we started the last
+game with StartGame() or through the console).
+
+\see StartGame()
+
+Used for: Client Management.
+*/
+    LTRESULT (*GetGameMode)(int *mode);
+
+/*!
+\ingroup ConnectionStuff
+
+Disconnect from the server we're on (if any).
+
+\note This will destroy any client-side objects you've created.
+
+Used for: Client Management.
+*/
+    void (*Disconnect)();
+
+/*!
+\ingroup ConnectionStuff
+
+Shut down the app (not right away, but after the current update).
+
+Used for: Client Management.
+*/
+    void (*Shutdown)();
+    
+
+//! \name Renderer management
+//@{
+
+/*!
+\param  flags   Flags to use when performing the flip (a combination of \b FLIPSCREEN_ 
+                flags in ltcodes.h).
+\return \b LT_OK or \b LT_NOTINITIALIZED.
+
+Flip the screen.
+
+Used for: Rendering.
+*/
+    LTRESULT (*FlipScreen)(uint32 flags);
+
+/*!
+\param  pClearRect  The rectangle area to clear. \b NULL means the entire screen.
+\param  flags       Flags to use when performing the clear screen (a combination of 
+                    \b CLEARSCREEN_ flags in ltcodes.h).
+\param  pClearColor Color to clear the screen to. Passing NULL results in black (The default is NULL).
+\return \b LT_OK or \b LT_NOTINITIALIZED.
+
+Clear the Z-Buffer and Backbuffer. In most cases you will want to clear the screen before you enter your Start3D()/End3D() block.
+
+Used for: Rendering.
+*/
+    LTRESULT (*ClearScreen)(LTRect *pClearRect, uint32 flags, LTRGB* pClearColor = 0);
+
+/*!
+\return \b LT_OK or \b LT_NOTINITIALIZED or \b LT_ALREADYIN3D.
+
+Start a Start3D()/End3D() block.
+
+\note You must be in a Start3D()/End3D() block in order to render
+through any cameras.
+
+\see End3D()
+
+Used for: Rendering.
+*/
+    LTRESULT (*Start3D)();
+
+/*!
+\param  hCamera     The camera to render.
+\param	fFrameTime	The frame time. This is used to update things like sprites and texture scripts. Normally this can just be GetFrameTime, or can be 0 if paused
+\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
+
+Render from the position of the camera into its rectangle.
+
+Used for: Rendering.
+*/
+    LTRESULT (*RenderCamera)(HLOCALOBJ hCamera, float fFrameTime);
+
+/*!
+\param  hCamera     The camera to render.
+\param  pObjects    An array of objects to render.
+\param  nObjects    The size of the \b pObjects array.
+\param	fFrameTime	The frame time. This is used to update things like sprites and texture scripts. Normally this can just be GetFrameTime, or can be 0 if paused
+\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
+
+Renders the list of objects through the given camera.
+
+Used for: Rendering.
+*/
+    LTRESULT (*RenderObjects)(HLOCALOBJ hCamera, 
+        HLOCALOBJ *pObjects, int nObjects, float fFrameTime);
+
+/*!
+\param  hCamera			The camera to use as a position for the generation of the cubic environment map
+\param  nSize			The number of pixels on a side of the final output environment map
+\param  pszFilePrefix	The filename that will be placed at the beginning of each filename, it will append the postfix and the .bmp extension
+\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
+
+Given the specified position of the camera it will generate 6 images in each direction to be used for a cubic
+environment map
+
+Used for: Rendering.
+*/
+    LTRESULT (*MakeCubicEnvMap)(HLOCALOBJ hCamera, uint32 nSize, const char* pszFilePrefix);
+
+/*!  
+\return \b LT_NOTINITIALIZED when the render struct is not initialized,
+or \b LT_NOTIN3D when this function is called outside a Start3D()/End3D()
+code block; otherwise, returns \b LT_OK.
+
+Starts a StartOptimized2D()/EndOptimized2D() block.
+
+\note You must be in a StartOptimized2D()/EndOptimized2D() code block
+to draw any optimized 2D surfaces.
+
+\see EndOptimized2D()
+
+Used for: 2D Rendering.  
+*/
+    LTRESULT (*StartOptimized2D)();
+
+/*!
+\return \b LT_NOTINITIALIZED when the render struct is not initialized,
+or \b LT_NOTIN3D when this function is called outside a Start3D()/End3D()
+code block; otherwise, returns \b LT_OK.
+
+Ends a StartOptimized2D()/EndOptimized2D() block.
+
+\note You must be in a StartOptimized2D()/EndOptimized2D() code block
+to draw any optimized 2D surfaces.
+
+\see StartOptimized2D()
+
+Used for: 2D Rendering.  
+*/
+    LTRESULT (*EndOptimized2D)();
+
+/*!
+\param  blend       The blend mode.
+
+\return \b LT_NOTINITIALIZED when the render struct is not initialized,
+\b LT_NOTIN3D when this function is called outside a Start3D()/End3D() code
+block, or \b LT_ERROR for general failure; otherwise, returns LT_OK.
+
+ 
+Change the source/destination blend mode for rendering Optimized2D surfaces.
+(Defaults to LTSURFACEBLEND_ALPHA.)
+
+\note
+Drawing a surface with a blend mode other than \b _ALPHA will 
+automatically optimize the surface.
+
+\see GetOptimized2DBlend()
+
+Used for: 2D Rendering.
+*/
+    LTRESULT (*SetOptimized2DBlend)(LTSurfaceBlend blend);
+
+/*!
+\param  blend       (return) The blend mode.
+
+\return \b LT_NOTINITIALIZED when the render struct is not initialized,
+or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
+
+Gets the current blend mode.
+
+\see SetOptimized2DBlend()
+
+Used for: 2D Rendering.  
+*/
+    LTRESULT (*GetOptimized2DBlend)(LTSurfaceBlend &blend);
+
+/*!
+\param  hColor      The color to apply.
+
+\return \b LT_NOTINITIALIZED when the render struct is not initialized,
+\b LT_NOTIN3D if this function is called outside a Start3D()/End3D() code
+block, or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
+
+Change the color used on Optimized2D surfaces (i.e. apply a color 
+filter to Optimized2D).
+
+\see GetOptimized2DColor()
+
+Used for: 2D Rendering.
+*/
+    LTRESULT (*SetOptimized2DColor)(HLTCOLOR hColor);
+
+/*!
+\param  hColor      (return) The current color.
+\return \b LT_NOTINITIALIZED when the render struct is not initialized, or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
+
+Get the color currently used on Optimized2D surfaces.
+
+\see SetOptimized2DColor()
+
+Used for: 2D Rendering.
+*/
+    LTRESULT (*GetOptimized2DColor)(HLTCOLOR &hColor);
+
+/*!
+\param  flags   Flags to use when performing the flip (a combination of \b END3D_ 
+                flags in ltcodes.h).
+\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
+
+End a Start3D/End3D block.
+
+\note You must be in a Start3D()/End3D() block in order to render
+through any cameras.
+
+\see Start3D()
+
+Used for: Rendering.
+*/
+    LTRESULT (*End3D)(uint32 flags = END3D_CANDRAWCONSOLE);
+
+/*!
+\param  pMode   (return) The current render mode.
+\return LT_OK if Successful, LT_ERROR on Failure.
+
+Get the current render mode.
+
+\see SetRenderMode()
+
+Used for: Rendering.
+*/
+    LTRESULT (*GetRenderMode)(RMode *pMode);
+
+/*!
+\param pModes An array of \b pMode variables to relinquish.
+
+Relinquish list of supported render modes.
+
+Used for: Rendering.  
+*/
+    void (*RelinquishRenderModes)(RMode *pModes);
+
+/*!
+ 
+\return Pointer to RMode Linked list structure containing the valid render modes.
+
+Get a \b NULL - terminated list of supported render modes.
+
+\see GetRenderMode()
+\see SetRenderMode()
+
+Used for: Rendering.
+*/
+    RMode *(*GetRenderModes)();
+
+/*!
+\param pMode The requested render mode.
+
+\return \b LT_KEPTSAMEMODE when the function cannot set the mode
+requested but was able to restore the previous mode, or
+\b LT_UNABLETORESTOREVIDEO if it cannot set the mode and cannot restore
+the video mode (in which case it will give a message and shutdown
+afterwards); otherwise, returns \b LT_OK.
+
+Tells the renderer to switch to the requested render mode.
+
+\note It may not have set the \em exact mode you requested.  You can
+check with GetRenderMode() to see what the new mode is.
+
+\see GetRenderMode()
+
+Used for: Rendering.  
+*/
+    LTRESULT (*SetRenderMode)(RMode *pMode);
+
+/*!
+\param flags The flags to while performing the shutdown (a combination
+of the \b RSHUTDOWN_ flags in ltcodes.h).  
+
+\return LT_OK if Successful, LT_ERROR on Failure.
+
+Shut down the renderer.  The renderer won't come back until you call 
+SetRenderMode().
+
+\see SetRenderMode()
+
+Used for: Rendering.  
+*/
+    LTRESULT (*ShutdownRender)(uint32 flags);
         
 //@}
 
@@ -215,17 +573,16 @@ Used for: Misc.
 */
     void (*FreeFileList)(FileEntry *pHead);
 
+
 /*!
 \param  pFilename       The configuration file.
-\param  nNumValues		The number of values to write out, 0 will write all of them
-\param  pValues			The names of each value to be saved out. There should be nNumValues of them.
-\return \b LT_ERROR if it can't open the file for writing.
+\return \b LT_ERROR if the file doesn't exist or if it can't open the file for writing.
 
-Write configuration files. 
+Read and parse a configuration file.
 
 Used for: Misc.
 */
-    LTRESULT (*WriteConfigFileFields)(const char *pFilename, uint32 nNumValues, const char** pValues);
+    LTRESULT (*ReadConfigFile)(const char *pFilename);
 
 /*!
 \param  pFilename       The configuration file.
@@ -237,16 +594,17 @@ Used for: Misc.
 */
     LTRESULT (*WriteConfigFile)(const char *pFilename);
 
-
 /*!
 \param  pFilename       The configuration file.
-\return \b LT_ERROR if the file doesn't exist or if it can't open the file for writing.
+\param  nNumValues		The number of values to write out, 0 will write all of them
+\param  pValues			The names of each value to be saved out. There should be nNumValues of them.
+\return \b LT_ERROR if it can't open the file for writing.
 
-Read and parse a configuration file.
+Write configuration files. 
 
 Used for: Misc.
 */
-    LTRESULT (*ReadConfigFile)(const char *pFilename);
+    LTRESULT (*WriteConfigFileFields)(const char *pFilename, uint32 nNumValues, const char** pValues);
 
 
 /*!  
@@ -553,569 +911,12 @@ Intersections.
     void (*SetObjectPosAndRotation)(HLOCALOBJ hObj, 
                 const LTVector *pPos, const LTRotation *pRotation);
 
-	virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
-    virtual LTRESULT SetObjectPos(HLOCALOBJ hObj, const LTVector *pPos, bool bForce=true) = 0;
-
-    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0;
-
     LTRESULT (*FindObjectsInSphere)(const LTVector *pCenter, float radius, 
                 HLOCALOBJ *inObjects, uint32 nInObjects, uint32 *nOutObjects, 
                 uint32 *nFound);
     LTRESULT (*FindObjectsInBox)(const LTVector *pCenter, float radius, 
         HLOCALOBJ *inObjects, uint32 nInObjects, uint32 *nOutObjects, 
-        uint32 *nFound); 
-
-/*!
-\return Pointer to the \b ILTVideoMgr interface.
-
-Accesses the ILTVideoMgr interface.
-
-Used for: Interface.
-*/
-    virtual ILTVideoMgr *VideoMgr() = 0;
-
-/*!
-Access to the ILTDrawPrim interface.
-
-\return The ILTDrawPrim interface.
-
-Used for: Client Management.
-*/
-    virtual ILTDrawPrim *GetDrawPrim() = 0;
-
-/*!
-Access to the ILTTexInterface interface.
-
-\return The ILTTexInterface interface.
-
-Used for: Client Management.
-*/
-    virtual ILTTexInterface *GetTexInterface() = 0;
-        
-/*!
-Access to the ILTWidgetManager interface.
-
-\return The ILTWidgetManager interface.
-
-
-Used for: Text and UI.
-*/
-    virtual ILTWidgetManager *GetWidgetManager() = 0;
-
-/*!
-Access to the ILTFontManager interface.
-
-\return The ILTFontManager interface.
-
-Used for: Text and UI.
-*/
-    virtual ILTFontManager *GetFontManager() = 0;
-
-/*!
-\return Pointer to the \b ILTCursor interface.
- 
-Accesses the ILTCursor interface.
-
-Used for: Interface.
-*/
-    virtual ILTCursor *Cursor() = 0;
-
-/*!
-\return Pointer to the \b ILTDirectMusicMgr interface.
-
-Accesses the ILTDirectMusicMgr interface.
-
-Used for: Interface.
-*/
-    virtual ILTDirectMusicMgr *GetDirectMusicMgr() = 0;
-
-/*!
-\return Pointer to the \b ILTBenchmarkMgr interface.
-
-Accesses the ILTBenchmarkMgr interface.
-
-Used for: Interface.
-*/
-    virtual ILTBenchmarkMgr *GetBenchmarkMgr() = 0;
-
-    #ifdef LITHTECH_ESD
-/*!
-Accesses the ILTRealAudioMgr interface.
-
-\return Pointer to the \b ILTRealAudioMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealAudioMgr *GetRealAudioMgr() {return m_pRealAudioMgr;}
-
-/*!
-Accesses the ILTRealConsoleMgr interface.
-
-\return Pointer to the \b ILTRealConsoleMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealConsoleMgr *GetRealConsoleMgr() {return m_pRealConsoleMgr;}
-
-/*!
-Accesses the ILTRealVideoMgr interface.
-
-\return Pointer to the \b ILTRealVideoMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealVideoMgr *GetRealVideoMgr() {return m_pRealVideoMgr;}
-
-/*!
-Accesses the ILTRealVideoPlayer interface.
-
-\return Pointer to the \b ILTRealVideoPlayer interface.
-
-Used for: Interface.
-*/
-    ILTRealVideoPlayer *GetRealVideoPlayer() {return m_pRealVideoPlayer;}
-    #endif // LITHTECH_ESD
-
-/*!
-\defgroup ConnectionStuff
-Connection stuff
-*/
-
-/*!
-\ingroup ConnectionStuff
-\param  mode    (return) The current game mode, specified as one of the \b STARTGAME_ defines.
-
-\return LT_OK.
-
-Find out what the current game mode is (set when we started the last
-game with StartGame() or through the console).
-
-\see StartGame()
-
-Used for: Client Management.
-*/
-    LTRESULT (*GetGameMode)(int *mode);
-
-/*!
-\ingroup ConnectionStuff
-\param  pRequest    \b StartGameRequest structure.
-
-\return \b LT_NOTINITIALIZED when there is no driver to match the request, 
-LT_ERROR when unable to sucessfully host or join a lobby session, 
-LT_INVALIDPARAMS when the \b m_pNetSession pointer in the StartGameRequest is NULL, 
-LT_SERVERERROR when there is an error loading the world (Server/host only); otherwise, returns LT_OK.
-
-Try to start a game in the mode you specify.
-The existing game will keep running until the new game successfully starts.
-For instance, if there is an error starting the new world, it
-will still leave the current one running and put up an error message.
-
-Used for: Client Management.
-*/
-    LTRESULT (*StartGame)(StartGameRequest *pRequest);
-
-/*!
-\ingroup ConnectionStuff
-
-\param pID (return) The local client ID.
-\return \b LT_NOTCONNECTED when we're not on a server or haven't gotten a
-client ID yet; otherwise, returns \b LT_OK.
-
-Get the local client ID.
-
-Used for: Client Management.  
-*/
-    LTRESULT (*GetLocalClientID)(uint32 *pID);
-
-/*!
-\ingroup ConnectionStuff
-
-Disconnect from the server we're on (if any).
-
-\note This will destroy any client-side objects you've created.
-
-Used for: Client Management.
-*/
-    void (*Disconnect)();
-
-/*!
-\return \b true when connected to server; otherwise, returns false.
-
-Determine whether this client is currently connected to a server.
-(The function checks whether the ClientMgr's m_pCurShell is valid.)
-
-Used for: Client Management.
-*/
-    bool (*IsConnected)();
-
-/*!
-\ingroup ConnectionStuff
-
-Shut down the app (not right away, but after the current update).
-
-Used for: Client Management.
-*/
-    void (*Shutdown)();
-
-/*!  
-\ingroup ConnectionStuff
-
-\param pMsg The printf-styled format string to display.  This
-parameter can be followed by the usual data parameters.
- 
-Shut down the app (not right away, but after the current update) and display a message.
-
-Used for: Client Management.  
-*/
-    void (*ShutdownWithMessage)(const char *pMsg, ...);
-
-/*!
-\param  pPoint      The point in world coordinates.
-\param  pColor      (return) The color value at pPoint.
-\return \b LT_NOTINWORLD if the point is outside the world.
-
-Calculate the lighting shade (RGB, 0-255) at the point you specify.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetPointShade(const LTVector *pPoint, LTVector *pColor)=0;
-    
-
-//! \name Renderer management
-//@{
-
-/*!
-\param  flags   Flags to use when performing the flip (a combination of \b FLIPSCREEN_ 
-                flags in ltcodes.h).
-\return \b LT_OK or \b LT_NOTINITIALIZED.
-
-Flip the screen.
-
-Used for: Rendering.
-*/
-    LTRESULT (*FlipScreen)(uint32 flags);
-
-/*!
-\return \b LT_OK or \b LT_NOTINITIALIZED or \b LT_ALREADYIN3D.
-
-Start a Start3D()/End3D() block.
-
-\note You must be in a Start3D()/End3D() block in order to render
-through any cameras.
-
-\see End3D()
-
-Used for: Rendering.
-*/
-    LTRESULT (*Start3D)();
-
-/*!
-\param  hCamera     The camera to render.
-\param	fFrameTime	The frame time. This is used to update things like sprites and texture scripts. Normally this can just be GetFrameTime, or can be 0 if paused
-\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
-
-Render from the position of the camera into its rectangle.
-
-Used for: Rendering.
-*/
-    LTRESULT (*RenderCamera)(HLOCALOBJ hCamera, float fFrameTime);
-
-/*!
-\param  pClearRect  The rectangle area to clear. \b NULL means the entire screen.
-\param  flags       Flags to use when performing the clear screen (a combination of 
-                    \b CLEARSCREEN_ flags in ltcodes.h).
-\param  pClearColor Color to clear the screen to. Passing NULL results in black (The default is NULL).
-\return \b LT_OK or \b LT_NOTINITIALIZED.
-
-Clear the Z-Buffer and Backbuffer. In most cases you will want to clear the screen before you enter your Start3D()/End3D() block.
-
-Used for: Rendering.
-*/
-    LTRESULT (*ClearScreen)(LTRect *pClearRect, uint32 flags, LTRGB* pClearColor = 0);
-
-/*!
-\param  hCamera     The camera to render.
-\param  pObjects    An array of objects to render.
-\param  nObjects    The size of the \b pObjects array.
-\param	fFrameTime	The frame time. This is used to update things like sprites and texture scripts. Normally this can just be GetFrameTime, or can be 0 if paused
-\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
-
-Renders the list of objects through the given camera.
-
-Used for: Rendering.
-*/
-    LTRESULT (*RenderObjects)(HLOCALOBJ hCamera, 
-        HLOCALOBJ *pObjects, int nObjects, float fFrameTime);
-
-/*!
-\param  hCamera			The camera to use as a position for the generation of the cubic environment map
-\param  nSize			The number of pixels on a side of the final output environment map
-\param  pszFilePrefix	The filename that will be placed at the beginning of each filename, it will append the postfix and the .bmp extension
-\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
-
-Given the specified position of the camera it will generate 6 images in each direction to be used for a cubic
-environment map
-
-Used for: Rendering.
-*/
-    LTRESULT (*MakeCubicEnvMap)(HLOCALOBJ hCamera, uint32 nSize, const char* pszFilePrefix);
-
-/*!  
-\return \b LT_NOTINITIALIZED when the render struct is not initialized,
-or \b LT_NOTIN3D when this function is called outside a Start3D()/End3D()
-code block; otherwise, returns \b LT_OK.
-
-Starts a StartOptimized2D()/EndOptimized2D() block.
-
-\note You must be in a StartOptimized2D()/EndOptimized2D() code block
-to draw any optimized 2D surfaces.
-
-\see EndOptimized2D()
-
-Used for: 2D Rendering.  
-*/
-    LTRESULT (*StartOptimized2D)();
-
-/*!
-\return \b LT_NOTINITIALIZED when the render struct is not initialized,
-or \b LT_NOTIN3D when this function is called outside a Start3D()/End3D()
-code block; otherwise, returns \b LT_OK.
-
-Ends a StartOptimized2D()/EndOptimized2D() block.
-
-\note You must be in a StartOptimized2D()/EndOptimized2D() code block
-to draw any optimized 2D surfaces.
-
-\see StartOptimized2D()
-
-Used for: 2D Rendering.  
-*/
-    LTRESULT (*EndOptimized2D)();
-
-/*!
-\param  blend       The blend mode.
-
-\return \b LT_NOTINITIALIZED when the render struct is not initialized,
-\b LT_NOTIN3D when this function is called outside a Start3D()/End3D() code
-block, or \b LT_ERROR for general failure; otherwise, returns LT_OK.
-
- 
-Change the source/destination blend mode for rendering Optimized2D surfaces.
-(Defaults to LTSURFACEBLEND_ALPHA.)
-
-\note
-Drawing a surface with a blend mode other than \b _ALPHA will 
-automatically optimize the surface.
-
-\see GetOptimized2DBlend()
-
-Used for: 2D Rendering.
-*/
-    LTRESULT (*SetOptimized2DBlend)(LTSurfaceBlend blend);
-
-/*!
-\param  blend       (return) The blend mode.
-
-\return \b LT_NOTINITIALIZED when the render struct is not initialized,
-or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
-
-Gets the current blend mode.
-
-\see SetOptimized2DBlend()
-
-Used for: 2D Rendering.  
-*/
-    LTRESULT (*GetOptimized2DBlend)(LTSurfaceBlend &blend);
-
-/*!
-\param  flags   Flags to use when performing the flip (a combination of \b END3D_ 
-                flags in ltcodes.h).
-\return \b LT_OK, \b LT_NOTINITIALIZED, or \b LT_NOTIN3D.
-
-End a Start3D/End3D block.
-
-\note You must be in a Start3D()/End3D() block in order to render
-through any cameras.
-
-\see Start3D()
-
-Used for: Rendering.
-*/
-    LTRESULT (*End3D)(uint32 flags = END3D_CANDRAWCONSOLE);
-
-/*!
-\param  hColor      (return) The current color.
-\return \b LT_NOTINITIALIZED when the render struct is not initialized, or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
-
-Get the color currently used on Optimized2D surfaces.
-
-\see SetOptimized2DColor()
-
-Used for: 2D Rendering.
-*/
-    LTRESULT (*GetOptimized2DColor)(HLTCOLOR &hColor);
-
-/*!
-\param  hColor      The color to apply.
-
-\return \b LT_NOTINITIALIZED when the render struct is not initialized,
-\b LT_NOTIN3D if this function is called outside a Start3D()/End3D() code
-block, or \b LT_ERROR for general failure; otherwise, returns \b LT_OK.
-
-Change the color used on Optimized2D surfaces (i.e. apply a color 
-filter to Optimized2D).
-
-\see GetOptimized2DColor()
-
-Used for: 2D Rendering.
-*/
-    LTRESULT (*SetOptimized2DColor)(HLTCOLOR hColor);
-
-/*!
- 
-\return Pointer to RMode Linked list structure containing the valid render modes.
-
-Get a \b NULL - terminated list of supported render modes.
-
-\see GetRenderMode()
-\see SetRenderMode()
-
-Used for: Rendering.
-*/
-    RMode *(*GetRenderModes)();
-
-/*!
-\param pModes An array of \b pMode variables to relinquish.
-
-Relinquish list of supported render modes.
-
-Used for: Rendering.  
-*/
-    void (*RelinquishRenderModes)(RMode *pModes);
-
-/*!
-\param  pMode   (return) The current render mode.
-\return LT_OK if Successful, LT_ERROR on Failure.
-
-Get the current render mode.
-
-\see SetRenderMode()
-
-Used for: Rendering.
-*/
-    LTRESULT (*GetRenderMode)(RMode *pMode);
-
-/*!
-\param pMode The requested render mode.
-
-\return \b LT_KEPTSAMEMODE when the function cannot set the mode
-requested but was able to restore the previous mode, or
-\b LT_UNABLETORESTOREVIDEO if it cannot set the mode and cannot restore
-the video mode (in which case it will give a message and shutdown
-afterwards); otherwise, returns \b LT_OK.
-
-Tells the renderer to switch to the requested render mode.
-
-\note It may not have set the \em exact mode you requested.  You can
-check with GetRenderMode() to see what the new mode is.
-
-\see GetRenderMode()
-
-Used for: Rendering.  
-*/
-    LTRESULT (*SetRenderMode)(RMode *pMode);
-
-/*!
-\param flags The flags to while performing the shutdown (a combination
-of the \b RSHUTDOWN_ flags in ltcodes.h).  
-
-\return LT_OK if Successful, LT_ERROR on Failure.
-
-Shut down the renderer.  The renderer won't come back until you call 
-SetRenderMode().
-
-\see SetRenderMode()
-
-Used for: Rendering.  
-*/
-    LTRESULT (*ShutdownRender)(uint32 flags);
-
-/*!
-Render Groups
-*/
-
-/*!
-\param  hObject         Object that you want to change the group of
-\param  nGroup          The group you want the object to belong to
-\return LT_INVALIDPARAMS if the object is invalid or the group out of range
-
-Set the render group that the object belongs to. These groups can then be turned on or off, making
-all objects that belong to them turn on and off.
-
-Used for: Object Rendering Groups
-*/
-
-	virtual LTRESULT SetObjectRenderGroup(HOBJECT hObj, uint32 nGroup)=0;
-
-/*!
-\param  nGroup           The group that you want to turn on or off
-\param  bVisible		 Whether or not it is visible
-\return LT_INVALIDPARAMS if the group is out of range
-
-Causes all objects of the specified group to either become visible or invisible (on top of their existing
-visible status)
-
-Used for: Object Rendering Groups
-*/
-
-	virtual LTRESULT SetObjectRenderGroupEnabled(uint32 nGroup, bool bEnabled)=0;
-
-/*!
-\param  bVisible		 Whether or not it is visible
-\return LT_OK
-
-Sets all object rendering groups to the specified visible status (with the exception of the default group
-which is always visible)
-
-Used for: Object Rendering Groups
-*/
-
-	virtual LTRESULT SetAllObjectRenderGroupEnabled()=0;
-
-/*!
-\param  pszSource	 The render style to map
-\param	pszMapTo	 The render style to map the above render style to
-\return LT_OK if both render styles are found, or LT_FAIL otherwise
-
-When doing the glow rendering this will cause the specified render style to map to the other when doing
-the glow effect
-
-Used for: Glow rendering
-*/
-
-	virtual LTRESULT AddGlowRenderStyleMapping(const char* pszSource, const char* pszMapTo)=0;
-
-/*!
-\param  pszFilename	 The render style to default to if no mapping is found
-\return LT_OK if the render style is found, or LT_FAIL otherwise
-
-When doing the glow rendering this will set all unmapped render styles to this render style
-
-Used for: Glow rendering
-*/
-
-	virtual LTRESULT SetGlowDefaultRenderStyle(const char* pszFilename)=0;
-
-/*!
-\param  pszFilename	 The render style to use if no glow is intended on the object is found
-\return LT_OK if the render style is found, or LT_FAIL otherwise
-
-When doing the glow rendering this will set all non glowing objects to this render style
-
-Used for: Glow rendering
-*/
-
-	virtual LTRESULT SetNoGlowRenderStyle(const char* pszFilename)=0;
+        uint32 *nFound);
 
 
 /*!
@@ -1181,74 +982,6 @@ line of text.
 Used for: 2D Rendering.
 */
     LTRESULT (*GetFontExtraSpace)(HLTFONT hFont, int &pixels);
-
-
-/*!
-Access to client console variables.
-*/
-
-/*!
-\param  pName       Name of console program.
-\param  fn          Associated function.
-
-\return \b LT_OK or \b LT_ALREADYEXISTS.
-
-Register a console program.  pName is just stored so it should either
-be static or allocated.  When the clientshell DLL is unloaded, it gets
-rid of any registered programs.
-
-Used for: Misc.
-*/
-    LTRESULT (*RegisterConsoleProgram)(const char *pName, ConsoleProgramFn fn);
-
-/*!
-\param  pName   Name of console program.
-
-\return \b LT_OK or \b LT_NOTFOUND.
-
-Unregister a console program.
-
-Used for: Misc.
-*/
-    LTRESULT (*UnregisterConsoleProgram)(const char *pName);
-
-/*!
-\param  pName   Name of console variable.
-\return \b NULL if the parameter doesn't exist.
-
-Get console variable.
-
-Used for: Misc.
-*/
-    HCONSOLEVAR (*GetConsoleVar)(const char *pName);
-
-/*!  
-Access to server console mirror variables.  
-*/
-
-/*!
-\param  pName       Name of console variable.
-\param  val         (return) Console variable value.
-\return \b LT_NOTFOUND if the variable isn't found.
-
-Get server console variable float value.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetSConValueFloat(const char *pName, float &val)=0;
-
-/*!
-\param  pName       Name of console variable.
-\param  valBuf      (return) Buffer to hold console variable string.
-\param  bufLen      Length of buffer.
-\return \b LT_NOTFOUND if the variable isn't found.
-
-Get server console variable string value.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetSConValueString(const char *pName, 
-        char *valBuf, uint32 bufLen)=0;
 
 
 /*!  
@@ -1403,17 +1136,6 @@ Used for: 2D Rendering.
 
 /*!
 \param  pBitmapName     Filename of bitmap.
-\return \b LT_INVALIDPARAMS when the parameters are \b NULL, or \b
-LT_ERROR when the file cannot be found otherwise, returns \b LT_OK.
-
-Loads an 8-bit PCX surface and returns an 8 bit heightmap
-
-Used for: 2D Rendering.
-*/
-    LTRESULT (*CreateHeightmapFromBitmap)(const char *pBitmapName, uint32* pWidth, uint32* pHeight, uint8** ppData);
-
-/*!
-\param  pBitmapName     Filename of bitmap.
 \return Handle to the newly-created surface.
 
 Create a surface, sized to the dimensions of the bitmap.  The bitmap
@@ -1422,6 +1144,17 @@ is an 8-bit PCX file. (You can use any palette you want.)
 Used for: 2D Rendering.
 */
     HSURFACE (*CreateSurfaceFromBitmap)(char *pBitmapName);
+
+/*!
+\param  pBitmapName     Filename of bitmap.
+\return \b LT_INVALIDPARAMS when the parameters are \b NULL, or \b
+LT_ERROR when the file cannot be found otherwise, returns \b LT_OK.
+
+Loads an 8-bit PCX surface and returns an 8 bit heightmap
+
+Used for: 2D Rendering.
+*/
+    LTRESULT (*CreateHeightmapFromBitmap)(const char *pBitmapName, uint32* pWidth, uint32* pHeight, uint8** ppData);
 
 /*!
 \param  pData     The data returned from CreateHeightmapFromBitmap.
@@ -1951,6 +1684,46 @@ Used for: 2D Rendering.
 */
     LTRESULT (*SetSurfaceAlpha)(HSURFACE hSurface, float alpha);
 
+
+/*!
+Access to client console variables.
+*/
+
+/*!
+\param  pName       Name of console program.
+\param  fn          Associated function.
+
+\return \b LT_OK or \b LT_ALREADYEXISTS.
+
+Register a console program.  pName is just stored so it should either
+be static or allocated.  When the clientshell DLL is unloaded, it gets
+rid of any registered programs.
+
+Used for: Misc.
+*/
+    LTRESULT (*RegisterConsoleProgram)(const char *pName, ConsoleProgramFn fn);
+
+/*!
+\param  pName   Name of console program.
+
+\return \b LT_OK or \b LT_NOTFOUND.
+
+Unregister a console program.
+
+Used for: Misc.
+*/
+    LTRESULT (*UnregisterConsoleProgram)(const char *pName);
+
+/*!
+\param  pName   Name of console variable.
+\return \b NULL if the parameter doesn't exist.
+
+Get console variable.
+
+Used for: Misc.
+*/
+    HCONSOLEVAR (*GetConsoleVar)(const char *pName);
+
 /*!
 Helpers.
 */
@@ -2147,21 +1920,6 @@ Used for: Input.
         char* pStrBuffer, uint32 nBufferSize);
 
 /*!
-\param  pszDeviceName	Device name to access.
-\param  nDeviceObjectId Object Id returned in DeviceBinding or DeviceObject.
-\param  pszDeviceObjectName Name to be filled in by function.
-\param  nDeviceObjectNameLen Max length in chars of pszDeviceObjectName.
-
-\return \b LT_OK if successful.
-
-Get the name of the device object by id.
-
-Used for: Input.
-*/
-    virtual LTRESULT GetDeviceObjectName( char const* pszDeviceName, uint32 nDeviceObjectId,
-        char* pszDeviceObjectName, uint32 nDeviceObjectNameLen ) = 0;
-
-/*!
 \param  strDeviceName   Device name.
 \param  pIsEnabled  (return) \b true if enabled, or \b false if disabled.
 
@@ -2281,27 +2039,6 @@ Used for: Misc.
     float (*GetGameFrameTime)();
 
 /*!
-\param  pMsg    The printf-styled format string to display.  This parameter can be followed 
-                by the usual format parameters.
-
-Used to output a TRACE message to the Debug Output window.  Newlines
-must be explicitly used.
-
-Used for: Misc.
-*/
-    void (*DebugOut)(const char *pMsg, ...);
-
-/*!
-\param  pDef    (return) Sky definition structure (filled in by function).
-\return Always returns \b LT_OK.
-
-Get the sky definition.
-
-Used for: Special FX.
-*/
-    LTRESULT (*GetSkyDef)(SkyDef *pDef);
-
-/*!
 \param  commandNum      Command ID to query.
 \return A boolean indicating whether the given command is toggled on or off.
 
@@ -2366,116 +2103,6 @@ Used for: Misc.
     void (*OffsetGlobalLightScale)(const LTVector *pOffset);
 
 /*!
-\param  dir     Direction vector.
-\return Always returns \b LT_OK
-
-Get global light direction.
-
-\see SetGlobalLightDir()
-
-\see SetGlobalLightDir()
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetGlobalLightDir(LTVector &dir)=0;
-
-/*!
-\param  dir     Direction vector.
-\return Always returns \b LT_OK
-
-Set global light direction.
-
-\see GetGlobalLightDir()
-
-\see GetGlobalLightDir()
-
-Used for: Misc.
-*/
-    virtual LTRESULT SetGlobalLightDir(const LTVector &dir)=0;
-
-/*!
-\param  color   Light color.
-\return Always returns \b LT_OK
-
-Get global light color.
-
-\see SetGlobalLightColor()
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetGlobalLightColor(LTVector &color)=0;
-
-/*!
-\param  color   Light color.
- 
-\return Always returns \b LT_OK
-
-Set global light color.
-
-\see GetGlobalLightColor()
-
-Used for: Misc.
-*/
-    virtual LTRESULT SetGlobalLightColor(const LTVector& color)=0;
-
-/*!
-\param  color   Amount of ambient light to contribute to objects in the global light
-\return Always returns \b LT_OK
-
-Get the amount of global light that will be converted to ambient lighting
-
-\see SetGlobalLightAmbientColor()
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetGlobalLightConvertToAmbient(float& fConvertToAmbient)=0;
-
-/*!
-\param  color   Amount of ambient light to contribute to objects in the global light
- 
-\return Always returns \b LT_OK
-
-Sets the amoun of light that will be converted to ambient lighting, so for example 0.2
-will convert 20% of the directional lighting on the model to ambient. This prevent
-such harsh shadows on areas that go out of the light
-
-\see GetGlobalLightAmbientColor()
-
-Used for: Misc.
-*/
-    virtual LTRESULT SetGlobalLightConvertToAmbient(float fConvertToAmbient)=0;
-
-/*!
-Messaging.
-*/
-
-/*!
-New message functions.  These functions don't free the message, so
-call LMessage::Release() after sending.
-
-\param  pMsg         \b Message to send to the server
-\param  flags       \b MESSAGE_ Flags defined in \b ltcodes.h
-\return \b LT_INVALIDPARAMS if the message is invalid, or the server shell is invalid; otherwise, returns \b LT_OK.
-
-Send a message to the server shell.  The server shell receives the message through the OnMessage() function.
-
-\see ILTCommon::CreateMessage()
-\see OnMessage()
-
-Used for: Messaging.
-*/
-    virtual LTRESULT SendToServer(ILTMessage_Read *pMsg, uint32 flags)=0;
-
-/*!
-\param	pAddr	Buffer to receive the address of the server
-\param	pPort	uint16 to receive the port of the server
-\return \bLT_INVALIDPARAMS if one of the parameters is invalid, \b LT_NOTCONNECTED if not connected to a server; otherwise, returns \b LT_OK
-
-Used for: Networking.
-*/
-	virtual LTRESULT GetServerIPAddress(uint8 pAddr[4], uint16 *pPort) = 0;
-
-/*!
 \param  pStruct     Description of object.
 \return a valid local client object handle on successful creation and addition of the
 LTObject to the local client world, \b LTNULL on failure
@@ -2485,20 +2112,6 @@ Create a client-side object.
 Used for: Object.
 */
     HLOCALOBJ (*CreateObject)(ObjectCreateStruct *pStruct);
-
-/*!
-\param  hObj    Object to process (parent object of attachments).
-\return 
-\b LT_INVALIDPARAMS     if the object handle is invalid or NULL
-\b LT_OK                otherwise
-
-Update the position and rotation of the attachments on the object.
-Attachments are always automatically updated when the object is
-rendered.
-
-Used for: Object.  
-*/
-    virtual LTRESULT ProcessAttachments(HOBJECT hObj)=0;
 
     LTRESULT (*GetObjectScale)(HLOCALOBJ hObj, LTVector *pScale);
     LTRESULT (*SetObjectScale)(HLOCALOBJ hObj, const LTVector *pScale);
@@ -2716,23 +2329,6 @@ Used for: Special FX.
     LTRESULT (*SetupParticleSystem)(HLOCALOBJ hObj, 
         const char *pTextureName, float gravityAccel, uint32 flags, 
         float particleRadius);
-
-/*!
-\param  hObj        Particle system to which this particle will be added.
-\param  pPos        Position of particle (in local obj coordinates).
-\param  pVelocity   Velocity vector.
-\param  pColor      Color (0-255).
-\param  lifeTime    Lifetime.
-
-\return If successful, returns a pointer to the particle added.
-\return \b LTNULL - \em hObj is invalid (NULL, or not an \b OT_PARTICLESYSTEM).
-
-Adds a particle to a particle system.
-
-Used for: Special FX.
-*/
-    virtual LTParticle* AddParticle(HLOCALOBJ hObj, const LTVector *pPos, 
-        const LTVector *pVelocity, const LTVector *pColor, float lifeTime)=0;
 
 /*!
 \param  hObj            Particle system to which these particles will be added.
@@ -3069,6 +2665,182 @@ Used for: Special FX.
 */
     LTRESULT (*GetPolyGridInfo)(HLOCALOBJ hObj, char **pBytes, uint32 *pWidth, uint32 *pHeight, PGColor **pColorTable);
 
+/*!
+Light manipulation.
+*/
+
+/*!
+\param  hObj    Light to query.
+\param  r       (return) Red value (0-1).
+\param  g       (return) Green value (0-1).
+\param  b       (return) Blue value (0-1).
+
+Get the color of a light. When you create a light, its color defaults to (0,0,0).
+
+\see SetLightColor()
+
+Used for: Special FX.
+*/
+    void (*GetLightColor)(HLOCALOBJ hObj, float *r, float *g, float *b);
+
+/*!
+\param  hObj    Light to modify.
+\param  r       Red value (0-1).
+\param  g       Green value (0-1).
+\param  b       Blue value (0-1).
+
+Set the color of a light.
+
+\see GetLightColor()
+
+Used for: Special FX.
+*/
+    void (*SetLightColor)(HLOCALOBJ hObj, float r, float g, float b);
+
+/*!
+\param  hObj    Light to query.
+
+\return If \em hObj is an \b OT_LIGHT, returns the radius of the light.  
+        Otherwise returns 1.0.
+
+Get the radius of a light. When you create a light, its radius defaults to 100.
+
+\see SetLightRadius()
+
+Used for: Special FX.
+*/
+    float (*GetLightRadius)(HLOCALOBJ hObj);
+
+/*!
+\param  hObj    Light to modify.
+\param  radius  Radius to set.
+
+Set the radius of a light.
+
+\see GetLightRadius()
+
+Used for: Special FX.
+*/
+    void (*SetLightRadius)(HLOCALOBJ hObj, float radius);
+
+
+/*!  
+Sprite manipulation.  
+*/
+
+/*!
+\param  hObj        Sprite to modify.
+\param  hPoly       Polygon to clip to.  Use INVALID_POLY to un-clip the sprite.
+
+\return \b LT_ERROR - \em hObj is invalid (NULL, or not an \b OT_SPRITE).
+\return \b LT_OK - Successful.
+ 
+Clips the sprite onto a polygon.
+
+Used for: Special FX.
+*/
+    LTRESULT (*ClipSprite)(HLOCALOBJ hObj, HPOLY hPoly);
+
+/*!
+\param  hPoly       Polygon to query.
+\param  pFlags      (return) Texture flags.
+
+\return \b LT_ERROR when no world is loaded or \b hPoly is invalid; otherwise, returns \b LT_OK.
+
+Get the texture flags from a poly.
+
+Used for: Misc.
+*/
+    LTRESULT (*GetPolyTextureFlags)(HPOLY hPoly, uint32 *pFlags);
+
+/*!  
+Render hooks.  
+*/
+
+/*!
+\param  fn      Hook function.
+\param  pUser   User data.
+\return \b LT_OK
+
+When this is set, the renderer will call your hook function before
+drawing each model.  So as not to slow the renderer, either keep the
+function very fast or set it to \b NULL.
+
+Used for: Rendering.  
+*/
+    LTRESULT (*SetModelHook)(ModelHookFn fn, void *pUser);
+
+/*!  
+Engine hooks.  
+*/
+
+/*!
+\param pName Name of engine hook.
+
+\param pData User data.
+
+\return \b LT_OK when it understands the string; otherwise, returns an error.
+
+This is here so we can avoid adding API functions if necessary and for
+some system-dependent or misc. stuff.  Pass in a string describing
+what you want and it fills in pData.
+
+\par Hooks:
+\li \b HWND Returns main window handle.
+
+Used for: Misc.  
+*/
+    LTRESULT (*GetEngineHook)(char *pName, void **pData);
+
+/*!
+\param  sDriver     String containing name of driver.
+\return \b LT_ERROR if it tried to add a driver and that failed, or to indicate that the session was not lobby launched; otherwise, return \b LT_OK (indicated a lobby launched session).
+
+Determine if we were lobby-launched.
+
+Passing \b NULL for \b sDriver will cause the "dplay2" driver to be used.
+
+If a driver of the given name cannot be found, IsLobbyLaunched() will try to add it.
+
+Used for: Networking.
+*/
+    LTRESULT (*IsLobbyLaunched)(const char* sDriver);
+
+/*!
+\param sDriver String containing name of driver.
+\param ppLobbyLaunchData (return) Pointer to a pointer to whatever is going to contain the lobby data.
+
+\return \b LT_INVALIDPARAMS if ppLobbyLaunchData is invalid, \b LT_ERROR if it tries to add a driver and fails or the call to the driver to fill in the info fails; otherwise returns \b LT_OK.
+
+Get the lobby launch info if available.
+
+Passing \b NULL for \b sDriver will cause the "dplay2" driver to be used.
+
+\b ppLobbyLaunchData should point to the type of struct which the specified driver knows how to fill in with lobby data.
+In the case of DPlay2, \b ppLobbyLaunchData should point to a \b DPLCONNECTION** (DPlay-defined) struct.
+
+Used for: Networking.
+*/
+    LTRESULT (*GetLobbyLaunchInfo)(const char* sDriver, void** ppLobbyLaunchData);
+
+    // TRON: a slot of Tron's ILTClient at 0x2b8 that neither its engine's
+    // function-pointer setup nor the game's code was seen to use
+    void *m_pTronUnknown_2b8;
+
+    // TRON: a slot of Tron's ILTClient at 0x2bc that neither its engine's
+    // function-pointer setup nor the game's code was seen to use
+    void *m_pTronUnknown_2bc;
+
+/*!
+\param pVersionInfo (return) \b LTVERSIONINFOEXT struct to be filled in by the function
+\return \b LT_INVALIDPARAMS if \b pVersionInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
+
+Get the extended version info.
+
+Used for: Misc.
+*/
+    LTRESULT (*GetVersionInfoExt)(LTVERSIONINFOEXT* pVersionInfo);
+
 /*!  
 Network startup/join/host functions.  
 */
@@ -3172,6 +2944,442 @@ Used for: Networking.
     LTRESULT (*AddInternetDriver)();
     LTRESULT (*RemoveInternetDriver)();
 
+    // TRON: NOLF2's members that have no slot below 0x2e4 in Tron's ILTClient
+    // (its engine sets none of them there): kept for the shared code, past
+    // every slot retail is known to use
+
+/*!
+\param  pMsg    The printf-styled format string to display.  This parameter can be followed 
+                by the usual format parameters.
+
+Used to output a TRACE message to the Debug Output window.  Newlines
+must be explicitly used.
+
+Used for: Misc.
+*/
+    void (*DebugOut)(const char *pMsg, ...);
+
+/*!
+\param  pDef    (return) Sky definition structure (filled in by function).
+\return Always returns \b LT_OK.
+
+Get the sky definition.
+
+Used for: Special FX.
+*/
+    LTRESULT (*GetSkyDef)(SkyDef *pDef);
+
+/*!
+\param pPerformanceInfo (return) \b LTPERFORMANCEINFO struct to be filled in by the function
+\return LT_INVALIDPARAMS if \b pPerformanceInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
+
+Get run-time performance info for last frame.
+
+The renderer is queried for some of the performance info.
+
+Used for: Misc.
+*/
+    LTRESULT (*GetPerformanceInfo)(LTPERFORMANCEINFO* pPerformanceInfo);
+
+/*!
+\param bEnable Enable/Disable access to the console.
+\return LT_OK on success.
+
+Enable/Disable access to the console.
+
+Used for: Misc.
+*/
+    LTRESULT (*SetConsoleEnable)(bool bEnable);
+
+	virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
+    virtual LTRESULT SetObjectPos(HLOCALOBJ hObj, const LTVector *pPos, bool bForce=true) = 0;
+
+    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0; 
+
+/*!
+\return Pointer to the \b ILTVideoMgr interface.
+
+Accesses the ILTVideoMgr interface.
+
+Used for: Interface.
+*/
+    virtual ILTVideoMgr *VideoMgr() = 0;
+
+/*!
+Access to the ILTDrawPrim interface.
+
+\return The ILTDrawPrim interface.
+
+Used for: Client Management.
+*/
+    virtual ILTDrawPrim *GetDrawPrim() = 0;
+
+/*!
+Access to the ILTTexInterface interface.
+
+\return The ILTTexInterface interface.
+
+Used for: Client Management.
+*/
+    virtual ILTTexInterface *GetTexInterface() = 0;
+        
+/*!
+Access to the ILTWidgetManager interface.
+
+\return The ILTWidgetManager interface.
+
+
+Used for: Text and UI.
+*/
+    virtual ILTWidgetManager *GetWidgetManager() = 0;
+
+/*!
+Access to the ILTFontManager interface.
+
+\return The ILTFontManager interface.
+
+Used for: Text and UI.
+*/
+    virtual ILTFontManager *GetFontManager() = 0;
+
+/*!
+\return Pointer to the \b ILTCursor interface.
+ 
+Accesses the ILTCursor interface.
+
+Used for: Interface.
+*/
+    virtual ILTCursor *Cursor() = 0;
+
+/*!
+\return Pointer to the \b ILTDirectMusicMgr interface.
+
+Accesses the ILTDirectMusicMgr interface.
+
+Used for: Interface.
+*/
+    virtual ILTDirectMusicMgr *GetDirectMusicMgr() = 0;
+
+/*!
+\return Pointer to the \b ILTBenchmarkMgr interface.
+
+Accesses the ILTBenchmarkMgr interface.
+
+Used for: Interface.
+*/
+    virtual ILTBenchmarkMgr *GetBenchmarkMgr() = 0;
+
+    #ifdef LITHTECH_ESD
+/*!
+Accesses the ILTRealAudioMgr interface.
+
+\return Pointer to the \b ILTRealAudioMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealAudioMgr *GetRealAudioMgr() {return m_pRealAudioMgr;}
+
+/*!
+Accesses the ILTRealConsoleMgr interface.
+
+\return Pointer to the \b ILTRealConsoleMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealConsoleMgr *GetRealConsoleMgr() {return m_pRealConsoleMgr;}
+
+/*!
+Accesses the ILTRealVideoMgr interface.
+
+\return Pointer to the \b ILTRealVideoMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealVideoMgr *GetRealVideoMgr() {return m_pRealVideoMgr;}
+
+/*!
+Accesses the ILTRealVideoPlayer interface.
+
+\return Pointer to the \b ILTRealVideoPlayer interface.
+
+Used for: Interface.
+*/
+    ILTRealVideoPlayer *GetRealVideoPlayer() {return m_pRealVideoPlayer;}
+    #endif // LITHTECH_ESD
+
+
+/*!
+\param  pPoint      The point in world coordinates.
+\param  pColor      (return) The color value at pPoint.
+\return \b LT_NOTINWORLD if the point is outside the world.
+
+Calculate the lighting shade (RGB, 0-255) at the point you specify.
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetPointShade(const LTVector *pPoint, LTVector *pColor)=0;
+
+/*!
+Render Groups
+*/
+
+/*!
+\param  hObject         Object that you want to change the group of
+\param  nGroup          The group you want the object to belong to
+\return LT_INVALIDPARAMS if the object is invalid or the group out of range
+
+Set the render group that the object belongs to. These groups can then be turned on or off, making
+all objects that belong to them turn on and off.
+
+Used for: Object Rendering Groups
+*/
+
+	virtual LTRESULT SetObjectRenderGroup(HOBJECT hObj, uint32 nGroup)=0;
+
+/*!
+\param  nGroup           The group that you want to turn on or off
+\param  bVisible		 Whether or not it is visible
+\return LT_INVALIDPARAMS if the group is out of range
+
+Causes all objects of the specified group to either become visible or invisible (on top of their existing
+visible status)
+
+Used for: Object Rendering Groups
+*/
+
+	virtual LTRESULT SetObjectRenderGroupEnabled(uint32 nGroup, bool bEnabled)=0;
+
+/*!
+\param  bVisible		 Whether or not it is visible
+\return LT_OK
+
+Sets all object rendering groups to the specified visible status (with the exception of the default group
+which is always visible)
+
+Used for: Object Rendering Groups
+*/
+
+	virtual LTRESULT SetAllObjectRenderGroupEnabled()=0;
+
+/*!
+\param  pszSource	 The render style to map
+\param	pszMapTo	 The render style to map the above render style to
+\return LT_OK if both render styles are found, or LT_FAIL otherwise
+
+When doing the glow rendering this will cause the specified render style to map to the other when doing
+the glow effect
+
+Used for: Glow rendering
+*/
+
+	virtual LTRESULT AddGlowRenderStyleMapping(const char* pszSource, const char* pszMapTo)=0;
+
+/*!
+\param  pszFilename	 The render style to default to if no mapping is found
+\return LT_OK if the render style is found, or LT_FAIL otherwise
+
+When doing the glow rendering this will set all unmapped render styles to this render style
+
+Used for: Glow rendering
+*/
+
+	virtual LTRESULT SetGlowDefaultRenderStyle(const char* pszFilename)=0;
+
+/*!
+\param  pszFilename	 The render style to use if no glow is intended on the object is found
+\return LT_OK if the render style is found, or LT_FAIL otherwise
+
+When doing the glow rendering this will set all non glowing objects to this render style
+
+Used for: Glow rendering
+*/
+
+	virtual LTRESULT SetNoGlowRenderStyle(const char* pszFilename)=0;
+
+/*!  
+Access to server console mirror variables.  
+*/
+
+/*!
+\param  pName       Name of console variable.
+\param  val         (return) Console variable value.
+\return \b LT_NOTFOUND if the variable isn't found.
+
+Get server console variable float value.
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetSConValueFloat(const char *pName, float &val)=0;
+
+/*!
+\param  pName       Name of console variable.
+\param  valBuf      (return) Buffer to hold console variable string.
+\param  bufLen      Length of buffer.
+\return \b LT_NOTFOUND if the variable isn't found.
+
+Get server console variable string value.
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetSConValueString(const char *pName, 
+        char *valBuf, uint32 bufLen)=0;
+
+/*!
+\param  pszDeviceName	Device name to access.
+\param  nDeviceObjectId Object Id returned in DeviceBinding or DeviceObject.
+\param  pszDeviceObjectName Name to be filled in by function.
+\param  nDeviceObjectNameLen Max length in chars of pszDeviceObjectName.
+
+\return \b LT_OK if successful.
+
+Get the name of the device object by id.
+
+Used for: Input.
+*/
+    virtual LTRESULT GetDeviceObjectName( char const* pszDeviceName, uint32 nDeviceObjectId,
+        char* pszDeviceObjectName, uint32 nDeviceObjectNameLen ) = 0;
+
+/*!
+\param  dir     Direction vector.
+\return Always returns \b LT_OK
+
+Get global light direction.
+
+\see SetGlobalLightDir()
+
+\see SetGlobalLightDir()
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetGlobalLightDir(LTVector &dir)=0;
+
+/*!
+\param  dir     Direction vector.
+\return Always returns \b LT_OK
+
+Set global light direction.
+
+\see GetGlobalLightDir()
+
+\see GetGlobalLightDir()
+
+Used for: Misc.
+*/
+    virtual LTRESULT SetGlobalLightDir(const LTVector &dir)=0;
+
+/*!
+\param  color   Light color.
+\return Always returns \b LT_OK
+
+Get global light color.
+
+\see SetGlobalLightColor()
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetGlobalLightColor(LTVector &color)=0;
+
+/*!
+\param  color   Light color.
+ 
+\return Always returns \b LT_OK
+
+Set global light color.
+
+\see GetGlobalLightColor()
+
+Used for: Misc.
+*/
+    virtual LTRESULT SetGlobalLightColor(const LTVector& color)=0;
+
+/*!
+\param  color   Amount of ambient light to contribute to objects in the global light
+\return Always returns \b LT_OK
+
+Get the amount of global light that will be converted to ambient lighting
+
+\see SetGlobalLightAmbientColor()
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetGlobalLightConvertToAmbient(float& fConvertToAmbient)=0;
+
+/*!
+\param  color   Amount of ambient light to contribute to objects in the global light
+ 
+\return Always returns \b LT_OK
+
+Sets the amoun of light that will be converted to ambient lighting, so for example 0.2
+will convert 20% of the directional lighting on the model to ambient. This prevent
+such harsh shadows on areas that go out of the light
+
+\see GetGlobalLightAmbientColor()
+
+Used for: Misc.
+*/
+    virtual LTRESULT SetGlobalLightConvertToAmbient(float fConvertToAmbient)=0;
+
+/*!
+Messaging.
+*/
+
+/*!
+New message functions.  These functions don't free the message, so
+call LMessage::Release() after sending.
+
+\param  pMsg         \b Message to send to the server
+\param  flags       \b MESSAGE_ Flags defined in \b ltcodes.h
+\return \b LT_INVALIDPARAMS if the message is invalid, or the server shell is invalid; otherwise, returns \b LT_OK.
+
+Send a message to the server shell.  The server shell receives the message through the OnMessage() function.
+
+\see ILTCommon::CreateMessage()
+\see OnMessage()
+
+Used for: Messaging.
+*/
+    virtual LTRESULT SendToServer(ILTMessage_Read *pMsg, uint32 flags)=0;
+
+/*!
+\param	pAddr	Buffer to receive the address of the server
+\param	pPort	uint16 to receive the port of the server
+\return \bLT_INVALIDPARAMS if one of the parameters is invalid, \b LT_NOTCONNECTED if not connected to a server; otherwise, returns \b LT_OK
+
+Used for: Networking.
+*/
+	virtual LTRESULT GetServerIPAddress(uint8 pAddr[4], uint16 *pPort) = 0;
+
+/*!
+\param  hObj    Object to process (parent object of attachments).
+\return 
+\b LT_INVALIDPARAMS     if the object handle is invalid or NULL
+\b LT_OK                otherwise
+
+Update the position and rotation of the attachments on the object.
+Attachments are always automatically updated when the object is
+rendered.
+
+Used for: Object.  
+*/
+    virtual LTRESULT ProcessAttachments(HOBJECT hObj)=0;
+
+/*!
+\param  hObj        Particle system to which this particle will be added.
+\param  pPos        Position of particle (in local obj coordinates).
+\param  pVelocity   Velocity vector.
+\param  pColor      Color (0-255).
+\param  lifeTime    Lifetime.
+
+\return If successful, returns a pointer to the particle added.
+\return \b LTNULL - \em hObj is invalid (NULL, or not an \b OT_PARTICLESYSTEM).
+
+Adds a particle to a particle system.
+
+Used for: Special FX.
+*/
+    virtual LTParticle* AddParticle(HLOCALOBJ hObj, const LTVector *pPos, 
+        const LTVector *pVelocity, const LTVector *pColor, float lifeTime)=0;
+
 /*!
 \defgroup queryfns Query functions.
 Alternate method of getting session lists.  These only work for services with
@@ -3244,69 +3452,6 @@ Used for: Networking.
     virtual LTRESULT EndQuery()=0;
 
 /*!
-\param  sDriver     String containing name of driver.
-\return \b LT_ERROR if it tried to add a driver and that failed, or to indicate that the session was not lobby launched; otherwise, return \b LT_OK (indicated a lobby launched session).
-
-Determine if we were lobby-launched.
-
-Passing \b NULL for \b sDriver will cause the "dplay2" driver to be used.
-
-If a driver of the given name cannot be found, IsLobbyLaunched() will try to add it.
-
-Used for: Networking.
-*/
-    LTRESULT (*IsLobbyLaunched)(const char* sDriver);
-
-/*!
-\param sDriver String containing name of driver.
-\param ppLobbyLaunchData (return) Pointer to a pointer to whatever is going to contain the lobby data.
-
-\return \b LT_INVALIDPARAMS if ppLobbyLaunchData is invalid, \b LT_ERROR if it tries to add a driver and fails or the call to the driver to fill in the info fails; otherwise returns \b LT_OK.
-
-Get the lobby launch info if available.
-
-Passing \b NULL for \b sDriver will cause the "dplay2" driver to be used.
-
-\b ppLobbyLaunchData should point to the type of struct which the specified driver knows how to fill in with lobby data.
-In the case of DPlay2, \b ppLobbyLaunchData should point to a \b DPLCONNECTION** (DPlay-defined) struct.
-
-Used for: Networking.
-*/
-    LTRESULT (*GetLobbyLaunchInfo)(const char* sDriver, void** ppLobbyLaunchData);
-
-/*!
-\param pVersionInfo (return) \b LTVERSIONINFOEXT struct to be filled in by the function
-\return \b LT_INVALIDPARAMS if \b pVersionInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
-
-Get the extended version info.
-
-Used for: Misc.
-*/
-    LTRESULT (*GetVersionInfoExt)(LTVERSIONINFOEXT* pVersionInfo);
-
-/*!
-\param pPerformanceInfo (return) \b LTPERFORMANCEINFO struct to be filled in by the function
-\return LT_INVALIDPARAMS if \b pPerformanceInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
-
-Get run-time performance info for last frame.
-
-The renderer is queried for some of the performance info.
-
-Used for: Misc.
-*/
-    LTRESULT (*GetPerformanceInfo)(LTPERFORMANCEINFO* pPerformanceInfo);
-
-/*!
-\param bEnable Enable/Disable access to the console.
-\return LT_OK on success.
-
-Enable/Disable access to the console.
-
-Used for: Misc.
-*/
-    LTRESULT (*SetConsoleEnable)(bool bEnable);
-
-/*!
 \param bLocal Results of the query
 \return LT_OK on success
 
@@ -3315,64 +3460,6 @@ Returns whether or not the client is local to the server
 Used for: Misc.
 */
 	virtual LTRESULT IsLocalToServer(bool *bLocal) = 0;
-
-/*!
-Light manipulation.
-*/
-
-/*!
-\param  hObj    Light to query.
-\param  r       (return) Red value (0-1).
-\param  g       (return) Green value (0-1).
-\param  b       (return) Blue value (0-1).
-
-Get the color of a light. When you create a light, its color defaults to (0,0,0).
-
-\see SetLightColor()
-
-Used for: Special FX.
-*/
-    void (*GetLightColor)(HLOCALOBJ hObj, float *r, float *g, float *b);
-
-/*!
-\param  hObj    Light to modify.
-\param  r       Red value (0-1).
-\param  g       Green value (0-1).
-\param  b       Blue value (0-1).
-
-Set the color of a light.
-
-\see GetLightColor()
-
-Used for: Special FX.
-*/
-    void (*SetLightColor)(HLOCALOBJ hObj, float r, float g, float b);
-
-/*!
-\param  hObj    Light to query.
-
-\return If \em hObj is an \b OT_LIGHT, returns the radius of the light.  
-        Otherwise returns 1.0.
-
-Get the radius of a light. When you create a light, its radius defaults to 100.
-
-\see SetLightRadius()
-
-Used for: Special FX.
-*/
-    float (*GetLightRadius)(HLOCALOBJ hObj);
-
-/*!
-\param  hObj    Light to modify.
-\param  radius  Radius to set.
-
-Set the radius of a light.
-
-\see GetLightRadius()
-
-Used for: Special FX.
-*/
-    void (*SetLightRadius)(HLOCALOBJ hObj, float radius);
 
 /*!
 \param	nID		ID of the lightgroup.
@@ -3455,24 +3542,6 @@ Used for: Texture Effect Variable manipulation
 */
 	virtual LTRESULT SetTextureEffectVar(uint32 nID, uint32 nVar, float fVal) = 0;
 
-
-/*!  
-Sprite manipulation.  
-*/
-
-/*!
-\param  hObj        Sprite to modify.
-\param  hPoly       Polygon to clip to.  Use INVALID_POLY to un-clip the sprite.
-
-\return \b LT_ERROR - \em hObj is invalid (NULL, or not an \b OT_SPRITE).
-\return \b LT_OK - Successful.
- 
-Clips the sprite onto a polygon.
-
-Used for: Special FX.
-*/
-    LTRESULT (*ClipSprite)(HLOCALOBJ hObj, HPOLY hPoly);
-
 /*!
 \param  hObj        Sprite to query.
 \param  pControl    (return) Control interface.
@@ -3553,18 +3622,6 @@ Used for: Special FX.
     virtual LTRESULT SetCanvasRadius(HOBJECT hCanvas, float radius)=0;
 
 /*!
-\param  hPoly       Polygon to query.
-\param  pFlags      (return) Texture flags.
-
-\return \b LT_ERROR when no world is loaded or \b hPoly is invalid; otherwise, returns \b LT_OK.
-
-Get the texture flags from a poly.
-
-Used for: Misc.
-*/
-    LTRESULT (*GetPolyTextureFlags)(HPOLY hPoly, uint32 *pFlags);
-
-/*!
 \param  hPoly       Polygon to find maximum extents of.
 \param	vPoint		Center point of sphere to be found constrained to polygon
 \param  fRadius (return) Maximum radius that can be used from the specified point
@@ -3576,45 +3633,6 @@ Used for: Misc.
 */
     virtual LTRESULT GetMaxRadiusInPoly(
         const HPOLY hPoly, const LTVector& vPos, float& fMaxRadius)=0;
-
-/*!  
-Render hooks.  
-*/
-
-/*!
-\param  fn      Hook function.
-\param  pUser   User data.
-\return \b LT_OK
-
-When this is set, the renderer will call your hook function before
-drawing each model.  So as not to slow the renderer, either keep the
-function very fast or set it to \b NULL.
-
-Used for: Rendering.  
-*/
-    LTRESULT (*SetModelHook)(ModelHookFn fn, void *pUser);
-
-/*!  
-Engine hooks.  
-*/
-
-/*!
-\param pName Name of engine hook.
-
-\param pData User data.
-
-\return \b LT_OK when it understands the string; otherwise, returns an error.
-
-This is here so we can avoid adding API functions if necessary and for
-some system-dependent or misc. stuff.  Pass in a string describing
-what you want and it fills in pData.
-
-\par Hooks:
-\li \b HWND Returns main window handle.
-
-Used for: Misc.  
-*/
-    LTRESULT (*GetEngineHook)(char *pName, void **pData);
 
 protected:
     #ifdef LITHTECH_ESD
