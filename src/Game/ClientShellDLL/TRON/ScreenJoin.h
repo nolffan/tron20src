@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenJoin.h, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenJoin.h

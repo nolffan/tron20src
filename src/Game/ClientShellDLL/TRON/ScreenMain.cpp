@@ -28,6 +28,8 @@
 #include "MissionMgr.h"
 #include "ClientMultiplayerMgr.h"
 #include "TronScreenMgr.h"
+#include "ResShared.h"	// MERGE: NOLF2's, which its code here uses
+#include "ScreenMulti.h"	// MERGE: NOLF2's, which its code here uses
 
 namespace
 {
@@ -135,17 +137,19 @@ LTBOOL CScreenMain::Build()
 		m_pGameType->Show(LTFALSE);
 
 
-		CLTGUITextCtrl *pCtrl = CreateTextItem(IDS_COOPERATIVE,	CMD_COOP, 0);
-		m_pGameType->AddControl(pCtrl);
-
-		pCtrl = CreateTextItem(IDS_DEATHMATCH, CMD_DM, 0);
-		m_pGameType->AddControl(pCtrl);
-
-		pCtrl = CreateTextItem(IDS_TEAMDEATHMATCH, CMD_TEAM_DM, 0);
-		m_pGameType->AddControl(pCtrl);
-
-		pCtrl = CreateTextItem(IDS_DOOMSDAY, CMD_DOOM, 0);
-		m_pGameType->AddControl(pCtrl);
+// MERGE: NOLF2's game types, which Tron's resources do not name; Tron's own
+// are to be written with its host screens, from the retail code
+//		CLTGUITextCtrl *pCtrl = CreateTextItem(IDS_COOPERATIVE,	CMD_COOP, 0);
+//		m_pGameType->AddControl(pCtrl);
+//
+//		pCtrl = CreateTextItem(IDS_DEATHMATCH, CMD_DM, 0);
+//		m_pGameType->AddControl(pCtrl);
+//
+//		pCtrl = CreateTextItem(IDS_TEAMDEATHMATCH, CMD_TEAM_DM, 0);
+//		m_pGameType->AddControl(pCtrl);
+//
+//		pCtrl = CreateTextItem(IDS_DOOMSDAY, CMD_DOOM, 0);
+//		m_pGameType->AddControl(pCtrl);
 	}
 
 

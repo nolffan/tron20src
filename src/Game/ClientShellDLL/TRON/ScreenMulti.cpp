@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenMulti.cpp, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenMulti.cpp
@@ -13,65 +17,77 @@
 #include "ScreenMgr.h"
 #include "ScreenCommands.h"
 #include "GameClientShell.h"
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| #include "ClientSaveLoadMgr.h"
-//| #include "ClientMultiplayerMgr.h"
-//| #include "iserverdir.h"
-//| #include "msgids.h"
-//| #include "WinUtil.h"
-//| #include "direct.h"
-//| #include "ClientButeMgr.h"
-//| namespace
-//| {
-//| int kMaxCDKeyLength = 24;
-//| uint16 kWaitWidth = 160;
-//| uint16 kWaitHeight = 60;
-//| void EditCDKeyCallBack(LTBOOL bReturn, void *pData)
-//| {
-//| CScreenMulti *pThisScreen = (CScreenMulti *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_MULTI);
-//| if (pThisScreen)
-//| pThisScreen->SendCommand(bReturn ? CMD_OK : CMD_CANCEL,(uint32)pData,CMD_EDIT_CDKEY);
-//| }
-//| void NewVersionCallBack(LTBOOL bReturn, void *pData)
-//| {
-//| CScreenMulti *pThisScreen = (CScreenMulti *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_MULTI);
-//| if (pThisScreen)
-//| pThisScreen->SendCommand(CMD_OK,NULL,CMD_UPDATE);
-//| }
-//| }
-//| extern bool g_bLAN;
-//| //local butemgr for use reading DM mission configurations
-//| class CDMButeMgr : public CGameButeMgr
-//| {
-//| public :
-//| virtual LTBOOL	Init(const char* szAttributeFile);
-//| CButeMgr*	GetButeMgr() {return &m_buteMgr;}
-//| };
-//| // ----------------------------------------------------------------------- //
-//| //
-//| //	ROUTINE:	CTO2MissionButeMgr::Init
-//| //
-//| //	PURPOSE:	Initialization
-//| //
-//| // ----------------------------------------------------------------------- //
-//| LTBOOL CDMButeMgr::Init(const char* szAttributeFile)
-//| {
-//| if(!szAttributeFile) return LTFALSE;
-//| // See if we already have this attribute file loaded.
-//| if( m_strAttributeFile.GetLength( ) && m_strAttributeFile.CompareNoCase( szAttributeFile ) == 0 )
-//| return LTTRUE;
-//| // Start fresh.
-//| Term( );
-//| ILTStream* pDStream = LTNULL;
-//| LTRESULT dr = g_pLTBase->OpenFile(szAttributeFile, &pDStream);
-//| bool bFound = (dr == LT_OK && pDStream);
-//| if (pDStream)
-//| pDStream->Release();
-//| if (!bFound || !Parse(szAttributeFile))
-//| return LTFALSE;
-//| return LTTRUE;
-//| };
 #include "ClientSaveLoadMgr.h"
+#include "ClientMultiplayerMgr.h"
+#include "iserverdir.h"
+#include "msgids.h"
+#include "WinUtil.h"
+#include "direct.h"
+#include "ClientButeMgr.h"
+
+namespace
+{
+	int kMaxCDKeyLength = 24;
+	uint16 kWaitWidth = 160;
+	uint16 kWaitHeight = 60;
+
+
+	void EditCDKeyCallBack(LTBOOL bReturn, void *pData)
+	{
+		CScreenMulti *pThisScreen = (CScreenMulti *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_MULTI);
+		if (pThisScreen)
+			pThisScreen->SendCommand(bReturn ? CMD_OK : CMD_CANCEL,(uint32)pData,CMD_EDIT_CDKEY);
+	}
+	void NewVersionCallBack(LTBOOL bReturn, void *pData)
+	{
+		CScreenMulti *pThisScreen = (CScreenMulti *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_MULTI);
+		if (pThisScreen)
+			pThisScreen->SendCommand(CMD_OK,NULL,CMD_UPDATE);
+	}
+}
+
+
+extern bool g_bLAN;
+
+//local butemgr for use reading DM mission configurations
+class CDMButeMgr : public CGameButeMgr
+{
+	public :
+        virtual LTBOOL	Init(const char* szAttributeFile);
+		CButeMgr*	GetButeMgr() {return &m_buteMgr;}
+};
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTO2MissionButeMgr::Init
+//
+//	PURPOSE:	Initialization
+//
+// ----------------------------------------------------------------------- //
+LTBOOL CDMButeMgr::Init(const char* szAttributeFile)
+{
+    if(!szAttributeFile) return LTFALSE;
+
+	// See if we already have this attribute file loaded.
+	if( m_strAttributeFile.GetLength( ) && m_strAttributeFile.CompareNoCase( szAttributeFile ) == 0 )
+		return LTTRUE;
+    
+	// Start fresh.
+	Term( );
+
+    ILTStream* pDStream = LTNULL;
+    LTRESULT dr = g_pLTBase->OpenFile(szAttributeFile, &pDStream);
+    bool bFound = (dr == LT_OK && pDStream);
+	if (pDStream)
+		pDStream->Release();
+
+
+	if (!bFound || !Parse(szAttributeFile)) 
+		return LTFALSE;
+
+	return LTTRUE;
+};
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -94,94 +110,122 @@ LTBOOL CScreenMulti::Build()
 
 	CreateTitle(IDS_TITLE_MULTI);
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| //basic controls
-	//| AddTextItem(IDS_PLAYER_SETUP, CMD_PLAYER, IDS_HELP_PLAYER);
-	//| m_pCDKeyCtrl = AddColumnCtrl(CMD_EDIT_CDKEY, IDS_HELP_CDKEY);
-	//| m_pCDKeyCtrl->AddColumn(LoadTempString(IDS_CDKEY), 200);
-	//| m_pCDKeyCtrl->AddColumn("  ", 320, LTTRUE);
-	//| m_pJoin = AddTextItem(IDS_JOIN, CMD_JOIN, IDS_HELP_JOIN);
-	//| m_pHost = AddTextItem(IDS_HOST, CMD_HOST, IDS_HELP_HOST);
-	//| m_pUpdate = AddTextItem(IDS_LAUNCH_UPDATE, CMD_UPDATE, IDS_HELP_LAUNCH_UPDATE);
-	//| HTEXTURE hUp = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowup.dtx");
-	//| HTEXTURE hUpH = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowup_h.dtx");
-	//| HTEXTURE hDown = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowdn.dtx");
-	//| HTEXTURE hDownH = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowdn_h.dtx");
-	//| char szFrame[128];
-	//| g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_MULTI,"FrameTexture",szFrame,sizeof(szFrame));
-	//| HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
-	//| LTRect rect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MULTI,"SystemMOTDRect");
-	//| LTIntPt pos(rect.left,rect.top);
-	//| LTIntPt size( (rect.right - rect.left),(rect.bottom - rect.top));
-	//| uint8 nMOTDSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MULTI,"MessageFontSize");
-	//| uint8 nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
-	//| CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-	//| m_pSysFrame = debug_new(CLTGUIFrame);
-	//| m_pSysFrame->Create(hFrame,size.x+16,size.y,LTTRUE);
-	//| m_pSysFrame->SetBasePos(pos);
-	//| AddControl(m_pSysFrame);
-	//| m_pSysMOTD = debug_new(CLTGUILargeText);
-	//| m_pSysMOTD->Create("",pFont,nMOTDSize,size);
-	//| m_pSysMOTD->SetBasePos(pos);
-	//| m_pSysMOTD->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
-	//| m_pSysMOTD->Enable(LTTRUE);
-	//| m_pSysMOTD->SetFrameWidth(1);
-	//| m_pSysMOTD->SetIndent(2);
-	//| m_pSysMOTD->UseArrows(1.0f,hUp,hUpH,hDown,hDownH);
-	//| AddControl(m_pSysMOTD);
-	//| rect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MULTI,"GameMOTDRect");
-	//| pos.x = rect.left;
-	//| pos.y = rect.top;
-	//| size.x = (rect.right - rect.left);
-	//| size.y = (rect.bottom - rect.top);
-	//| m_pGameFrame = debug_new(CLTGUIFrame);
-	//| m_pGameFrame->Create(hFrame,size.x+16,size.y,LTTRUE);
-	//| m_pGameFrame->SetBasePos(pos);
-	//| AddControl(m_pGameFrame);
-	//| m_pGameMOTD = debug_new(CLTGUILargeText);
-	//| m_pGameMOTD->Create("",pFont,nMOTDSize,size);
-	//| m_pGameMOTD->SetBasePos(pos);
-	//| m_pGameMOTD->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
-	//| m_pGameMOTD->Enable(LTTRUE);
-	//| m_pGameMOTD->SetFrameWidth(1);
-	//| m_pGameMOTD->SetIndent(2);
-	//| m_pGameMOTD->UseArrows(1.0f,hUp,hUpH,hDown,hDownH);
-	//| AddControl(m_pGameMOTD);
-	//| nFont = g_pLayoutMgr->GetDialogFontFace();
-	//| pFont = g_pInterfaceResMgr->GetFont(nFont);
-	//| uint8 nFontSize = g_pLayoutMgr->GetDialogFontSize();
-	//| m_pWaitText = debug_new(CLTGUITextCtrl);
-	//| if (!m_pWaitText->Create(LoadTempString(IDS_INTERNET), NULL, LTNULL, pFont, nFontSize, this))
-	//| {
-	//| debug_delete(m_pWaitText);
-	//| return LTFALSE;
-	//| }
-	//| m_pWaitText->SetColors(argbBlack, argbBlack, argbBlack);
-	//| m_pWaitText->Enable(LTFALSE);
-	//| uint16 w = 16+m_pWaitText->GetBaseWidth();
-	//| uint16 h = 16+m_pWaitText->GetBaseHeight();
-	//| m_pWait = debug_new(CLTGUIWindow);
-	//| char szBack[128] = "";
-	//| g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
-	//| m_pWait->Create(g_pInterfaceResMgr->GetTexture(szBack),w,h);
-	//| uint16 x = (640-w)/2;
-	//| uint16 y = (480-h)/2;
-	//| m_pWait->SetBasePos(LTIntPt(x,y));
-	//| AddControl(m_pWait);
-	//| m_pWait->AddControl(m_pWaitText,LTIntPt(8,8));
-	//| // status text -----------------------------------------------
-	//| pos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_MULTI,"StatusPos");
-	//| char szTmp[256] = "";
-	//| LoadString(IDS_WAITING,szTmp,sizeof(szTmp));
-	//| m_pStatusCtrl = AddTextItem(FormatTempString(IDS_STATUS_STRING,szTmp), 0, 0, pos, LTTRUE);
-	//| m_pStatusCtrl->SetFont(NULL, nMOTDSize);
-	//| CreateDMMissionFile();
-	//| //	CreateTDMMissionFile();
-	//| CreateDDMissionFile();
+	//basic controls
 	AddTextItem(IDS_PLAYER_SETUP, CMD_PLAYER, IDS_HELP_PLAYER);
-	AddTextItem(IDS_JOIN, CMD_JOIN, IDS_HELP_JOIN);
-	AddTextItem(IDS_JOIN_LAN, CMD_JOIN_LAN, IDS_HELP_JOIN_LAN);
-	AddTextItem(IDS_HOST, CMD_HOST, IDS_HELP_HOST);
+
+	m_pCDKeyCtrl = AddColumnCtrl(CMD_EDIT_CDKEY, IDS_HELP_CDKEY);
+	m_pCDKeyCtrl->AddColumn(LoadTempString(IDS_CDKEY), 200);
+	m_pCDKeyCtrl->AddColumn("  ", 320, LTTRUE);
+	
+	m_pJoin = AddTextItem(IDS_JOIN, CMD_JOIN, IDS_HELP_JOIN);
+	m_pHost = AddTextItem(IDS_HOST, CMD_HOST, IDS_HELP_HOST);
+
+
+	m_pUpdate = AddTextItem(IDS_LAUNCH_UPDATE, CMD_UPDATE, IDS_HELP_LAUNCH_UPDATE);
+
+
+	HTEXTURE hUp = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowup.dtx");
+	HTEXTURE hUpH = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowup_h.dtx");
+	HTEXTURE hDown = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowdn.dtx");
+	HTEXTURE hDownH = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowdn_h.dtx");
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_MULTI,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+
+	LTRect rect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MULTI,"SystemMOTDRect");
+	LTIntPt pos(rect.left,rect.top);
+	LTIntPt size( (rect.right - rect.left),(rect.bottom - rect.top));
+	uint8 nMOTDSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MULTI,"MessageFontSize");
+	uint8 nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+
+	m_pSysFrame = debug_new(CLTGUIFrame);
+	m_pSysFrame->Create(hFrame,size.x+16,size.y,LTTRUE);
+	m_pSysFrame->SetBasePos(pos);
+	AddControl(m_pSysFrame);
+
+	m_pSysMOTD = debug_new(CLTGUILargeText);
+	m_pSysMOTD->Create("",pFont,nMOTDSize,size);
+	m_pSysMOTD->SetBasePos(pos);
+	m_pSysMOTD->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
+	m_pSysMOTD->Enable(LTTRUE);
+	m_pSysMOTD->SetFrameWidth(1);
+	m_pSysMOTD->SetIndent(2);
+	m_pSysMOTD->UseArrows(1.0f,hUp,hUpH,hDown,hDownH);
+	AddControl(m_pSysMOTD);
+
+
+
+	rect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MULTI,"GameMOTDRect");
+	pos.x = rect.left;
+	pos.y = rect.top;
+	size.x = (rect.right - rect.left);
+	size.y = (rect.bottom - rect.top);
+
+	m_pGameFrame = debug_new(CLTGUIFrame);
+	m_pGameFrame->Create(hFrame,size.x+16,size.y,LTTRUE);
+	m_pGameFrame->SetBasePos(pos);
+	AddControl(m_pGameFrame);
+
+	
+	m_pGameMOTD = debug_new(CLTGUILargeText);
+	m_pGameMOTD->Create("",pFont,nMOTDSize,size);
+	m_pGameMOTD->SetBasePos(pos);
+	m_pGameMOTD->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
+	m_pGameMOTD->Enable(LTTRUE);
+	m_pGameMOTD->SetFrameWidth(1);
+	m_pGameMOTD->SetIndent(2);
+	m_pGameMOTD->UseArrows(1.0f,hUp,hUpH,hDown,hDownH);
+	AddControl(m_pGameMOTD);
+
+
+
+
+	nFont = g_pLayoutMgr->GetDialogFontFace();
+	pFont = g_pInterfaceResMgr->GetFont(nFont);
+	uint8 nFontSize = g_pLayoutMgr->GetDialogFontSize();
+
+	m_pWaitText = debug_new(CLTGUITextCtrl);
+    if (!m_pWaitText->Create(LoadTempString(IDS_INTERNET), NULL, LTNULL, pFont, nFontSize, this))
+	{
+		debug_delete(m_pWaitText);
+        return LTFALSE;
+	}
+	m_pWaitText->SetColors(argbBlack, argbBlack, argbBlack);
+	m_pWaitText->Enable(LTFALSE);
+
+	uint16 w = 16+m_pWaitText->GetBaseWidth();
+	uint16 h = 16+m_pWaitText->GetBaseHeight();
+
+
+	m_pWait = debug_new(CLTGUIWindow);
+
+	char szBack[128] = "";
+	g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
+
+	m_pWait->Create(g_pInterfaceResMgr->GetTexture(szBack),w,h);
+
+	uint16 x = (640-w)/2;
+	uint16 y = (480-h)/2;
+	m_pWait->SetBasePos(LTIntPt(x,y));
+	AddControl(m_pWait);
+
+	
+	m_pWait->AddControl(m_pWaitText,LTIntPt(8,8));
+
+
+	// status text -----------------------------------------------
+	pos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_MULTI,"StatusPos");
+	char szTmp[256] = "";
+	LoadString(IDS_WAITING,szTmp,sizeof(szTmp));
+	m_pStatusCtrl = AddTextItem(FormatTempString(IDS_STATUS_STRING,szTmp), 0, 0, pos, LTTRUE);
+	m_pStatusCtrl->SetFont(NULL, nMOTDSize);
+
+	CreateDMMissionFile();
+//	CreateTDMMissionFile();
+	CreateDDMissionFile();
+
 
  	// Make sure to call the base class
 	return CBaseScreen::Build();
@@ -249,76 +293,86 @@ void    CScreenMulti::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| // Make sure we're disconnected from server.
-		//| if(g_pLTClient->IsConnected())
-		//| {
-		//| g_pInterfaceMgr->SetIntentionalDisconnect( true );
-		//| g_pClientMultiplayerMgr->ForceDisconnect();
-		//| }
-		//| std::string sMissionFile;
-		//| switch (g_pGameClientShell->GetGameType())
-		//| {
-		//| case eGameTypeCooperative:
-		//| // Initialize to the coop mission bute.
-		//| sMissionFile = MISSION_COOP_FILE;
-		//| break;
-		//| case eGameTypeDeathmatch:
-		//| case eGameTypeTeamDeathmatch:
-		//| // Initialize to the DM mission bute.
-		//| sMissionFile = MISSION_DM_FILE;
-		//| break;
-		//| case eGameTypeDoomsDay:
-		//| // Initialize to the doomsday mission bute.
-		//| sMissionFile = MISSION_DD_FILE;
-		//| break;
-		//| }
-		//| if( !g_pMissionButeMgr->Init( sMissionFile.c_str() ))
-		//| {
-		//| g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", sMissionFile.c_str() );
-		//| return;
-		//| }
-		//| if (g_bLAN)
-		//| {
-		//| m_eCurState = eState_Ready;
-		//| m_pCDKeyCtrl->Show(LTFALSE);
-		//| m_pJoin->Enable(LTTRUE);
-		//| m_pHost->Enable(LTTRUE);
-		//| m_pWait->Show(LTFALSE);
-		//| m_pSysMOTD->Show(LTFALSE);
-		//| m_pGameMOTD->Show(LTFALSE);
-		//| m_pSysFrame->Show(LTFALSE);
-		//| m_pGameFrame->Show(LTFALSE);
-		//| m_pUpdate->Show(LTFALSE);
-		//| m_pStatusCtrl->Show(LTFALSE);
-		//| }
-		//| else
-		//| {
-		//| m_pJoin->Enable(LTFALSE);
-		//| m_pHost->Enable(LTFALSE);
-		//| m_pSysMOTD->Show(LTTRUE);
-		//| m_pGameMOTD->Show(LTTRUE);
-		//| m_pSysFrame->Show(LTTRUE);
-		//| m_pGameFrame->Show(LTTRUE);
-		//| m_pUpdate->Show(LTFALSE);
-		//| m_pStatusCtrl->Show(LTTRUE);
-		//| m_pCDKeyCtrl->Show(LTTRUE);
-		//| IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
-		//| // Make a serverdir if we don't have one
-		//| // Note : Find a way to put this back in the game client shell!!!  It has to be
-		//| // here right now so that we can delete it when we start up a server..
-		//| if (!pServerDir)
-		//| {
-		//| pServerDir = g_pClientMultiplayerMgr->CreateServerDir( );
-		//| }
-		//| m_pWaitText->SetString(LoadTempString(IDS_INTERNET));
-		//| m_pWait->Show(LTTRUE);
-		//| SetCapture(m_pWait);
-		//| m_eCurState = eState_Startup;
-		//| }
-		// Switch save/load to use mp folders.  If we go back to the
-		// mainscreen, it will switch back to sp folders.
-		g_pClientSaveLoadMgr->SetUseMultiplayerFolders( true );
+		// Make sure we're disconnected from server.
+		if(g_pLTClient->IsConnected())
+		{
+			g_pInterfaceMgr->SetIntentionalDisconnect( true );
+			g_pClientMultiplayerMgr->ForceDisconnect();
+		}
+
+		std::string sMissionFile;
+		switch (g_pGameClientShell->GetGameType())
+		{
+		case eGameTypeCooperative:
+			// Initialize to the coop mission bute.
+			sMissionFile = MISSION_COOP_FILE;
+			break;
+		
+		case eGameTypeDeathmatch:
+		case eGameTypeTeamDeathmatch:
+			// Initialize to the DM mission bute.
+			sMissionFile = MISSION_DM_FILE;
+			break;
+
+		case eGameTypeDoomsDay:
+			// Initialize to the doomsday mission bute.
+			sMissionFile = MISSION_DD_FILE;
+			break;
+		}
+
+		if( !g_pMissionButeMgr->Init( sMissionFile.c_str() ))
+		{
+			g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", sMissionFile.c_str() );
+			return;
+		}
+
+
+		if (g_bLAN)
+		{
+			m_eCurState = eState_Ready;
+			m_pCDKeyCtrl->Show(LTFALSE);
+			m_pJoin->Enable(LTTRUE);
+			m_pHost->Enable(LTTRUE);
+			m_pWait->Show(LTFALSE);
+			m_pSysMOTD->Show(LTFALSE);
+			m_pGameMOTD->Show(LTFALSE);
+			m_pSysFrame->Show(LTFALSE);
+			m_pGameFrame->Show(LTFALSE);
+			m_pUpdate->Show(LTFALSE);
+			m_pStatusCtrl->Show(LTFALSE);
+
+		}
+		else
+		{
+			m_pJoin->Enable(LTFALSE);
+			m_pHost->Enable(LTFALSE);
+
+			m_pSysMOTD->Show(LTTRUE);
+			m_pGameMOTD->Show(LTTRUE);
+			m_pSysFrame->Show(LTTRUE);
+			m_pGameFrame->Show(LTTRUE);
+			m_pUpdate->Show(LTFALSE);
+			m_pStatusCtrl->Show(LTTRUE);
+			
+
+			m_pCDKeyCtrl->Show(LTTRUE);
+			IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
+			// Make a serverdir if we don't have one
+			// Note : Find a way to put this back in the game client shell!!!  It has to be
+			// here right now so that we can delete it when we start up a server..
+			if (!pServerDir)
+			{
+				pServerDir = g_pClientMultiplayerMgr->CreateServerDir( );
+			}
+			m_pWaitText->SetString(LoadTempString(IDS_INTERNET));
+			m_pWait->Show(LTTRUE);
+			SetCapture(m_pWait);
+
+			m_eCurState = eState_Startup;
+
+		}
+
+
 
         UpdateData(LTFALSE);
 	}

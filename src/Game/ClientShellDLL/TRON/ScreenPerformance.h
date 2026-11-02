@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenPerformance.h, standing in for Build 69's Tron one, which
+// is build 51's performance screen (options neither NOLF2's performance
+// settings nor Tron's resources have); Tron's is to be written from the
+// retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenPerformance.h
@@ -49,8 +53,8 @@ protected:
     LTBOOL   Render(HSURFACE hDestSurf);
 	
 	CLTGUICycleCtrl*	m_pPerformance;
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| CLTGUITextCtrl*		m_pResolution;
+	CLTGUITextCtrl*		m_pResolution;
+
 	CLTGUIListCtrl*		m_pDisplay;
 	CLTGUITextCtrl*		m_pDisplayLabel;
 	CLTGUIFrame*		m_pDisplayFrame;
@@ -58,12 +62,7 @@ protected:
 	
 	CLTGUIListCtrl*		m_pSFX;
 	CLTGUITextCtrl*		m_pSFXLabel;
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| CLTGUIFrame*		m_pSFXFrame;
-	CLTGUITextCtrl*		m_pTextureLabel;
-	CLTGUIFrame*		m_pDisplayFrame;
 	CLTGUIFrame*		m_pSFXFrame;
-	CLTGUIFrame*		m_pTextureFrame;
 
 	CLTGUITextCtrl*		m_pPerformanceTest;
 	

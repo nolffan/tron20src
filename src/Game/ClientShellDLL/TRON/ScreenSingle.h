@@ -40,11 +40,7 @@ protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
 	void	AddFilesToFilenames(FileEntry* pFiles, char* pPath);
 	void	BuildCustomLevelsList(int nWidth);
-	void	BuildChapterList();
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| // Sets up the server for local singleplayer game.
-	//| bool	SetupServer( );
 	void	ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha);
 	
 	// Sets up the server for local singleplayer game.
@@ -53,19 +49,17 @@ protected:
 protected:
 
 	CLTGUITextCtrl* m_pLoadCtrl;
-	CLTGUITextCtrl* m_pChapterCtrl;
 
 	CLTGUIListCtrl* m_pDiff;
 	CLTGUIListCtrl* m_pCustom;
-	CLTGUIListCtrl* m_pChapter;
 
-	CLTGUIFrame*	m_pDiffFrame;
-	CLTGUIFrame*	m_pCustomFrame;
-	CLTGUIFrame*	m_pChapterFrame;
+	CBaseScaleFX *m_pCustomSFX;
+	CBaseScaleFX *m_pDiffSFX;
 
+	float		m_fDiffAlpha;
+	float		m_fCustomAlpha;
 
 	StringSet		m_Filenames;
-
 
 };
 

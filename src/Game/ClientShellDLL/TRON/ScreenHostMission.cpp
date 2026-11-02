@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenHostMission.cpp, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ScreenHostMission.cpp: implementation of the CScreenHostMission class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -10,6 +14,7 @@
 #include "profileMgr.h"
 #include "clientmultiplayermgr.h"
 #include "WinUtil.h"
+#include <IO.h>
 
 #include "GameClientShell.h"
 
@@ -45,12 +50,16 @@ namespace
 	{
 		CScreenHostMission *pThisScreen = (CScreenHostMission *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_HOST_MISSION);
 		if (bReturn && pThisScreen)
+		{
 			pThisScreen->SendCommand(CMD_EDIT,(uint32)pData,0);
+		}
 	};
 
 	int kDlgHt = 240;
 	int kDlgWd = 240;
 	uint32 nCommand = 0;
+	uint8 nListFont = 1;
+	uint8 nListFontSz = 14;
 
 }
 
@@ -90,15 +99,27 @@ LTBOOL CScreenHostMission::Build()
 
 
 
+	LTIntPt dlgPos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogPos");
+	LTIntPt dlgSz = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogSize");
+	kDlgHt = dlgSz.y;
+	kDlgWd = dlgSz.x;
+	uint8 nDlgFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontFace");
+	uint8 nDlgFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontSize");
+
+	nListFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontFace");
+	nListFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontSize");
+
 	char szBack[128] = "";
-	g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
+	g_pLayoutMgr->GetScreenCustomString((eScreenID)m_nScreenID,"DialogFrame",szBack,sizeof(szBack));
 
 	m_pDlg = debug_new(CLTGUIWindow);
 	m_pDlg->Create(g_pInterfaceResMgr->GetTexture(szBack),kDlgHt,kDlgWd);
 
 	LTIntPt tmp(8,8);
+	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nDlgFont);
 
 	CLTGUITextCtrl *pCtrl = CreateTextItem(IDS_CAMPAIGN_LIST, LTNULL, LTNULL, kDefaultPos, LTTRUE);
+	pCtrl->SetFont(pFont,nDlgFontSz);
 	m_pDlg->AddControl(pCtrl, tmp);
 
 	tmp.y += 24;
@@ -115,22 +136,20 @@ LTBOOL CScreenHostMission::Build()
 		m_pListCtrl->UseArrows(kDlgWd-48,1.0f,hUp,hUpH,hDown,hDownH);
 		m_pListCtrl->SetIndent(LTIntPt(4,4));
 		m_pListCtrl->SetFrameWidth(2);
+		m_pListCtrl->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 
 		m_pDlg->AddControl(m_pListCtrl, tmp);
 
 	}
 
 	pCtrl = CreateTextItem(IDS_CANCEL, CMD_CANCEL, LTNULL);
-	pCtrl->SetScale(1.0f);
-	tmp.x = (kDlgWd - pCtrl->GetWidth()) / 2;
-	tmp.y = (kDlgHt - pCtrl->GetHeight()) - 8;
+	pCtrl->SetFont(pFont,nDlgFontSz);
+	tmp.x = (kDlgWd - pCtrl->GetBaseWidth()) / 2;
+	tmp.y = (kDlgHt - pCtrl->GetBaseHeight()) - 8;
 	m_pDlg->AddControl(pCtrl, tmp);
 
-	pos.x = 320 - m_pDlg->GetWidth() / 2;
-	pos.x = 240 - m_pDlg->GetHeight() / 2;
 
-
-	m_pDlg->SetBasePos(pos);
+	m_pDlg->SetBasePos(dlgPos);
 	m_pDlg->SetScale(g_pInterfaceResMgr->GetXRatio());
 	m_pDlg->Show(LTFALSE);
 
@@ -166,10 +185,13 @@ uint32 CScreenHostMission::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 
 	case CMD_SET_LEVELS:
 		{
-			if (m_pProfile->m_sCampaignName.compare(DEFAULT_CAMPAIGN) == 0)
+
+			if (m_pProfile->m_ServerGameOptions.IsDefaultCampaign() )
 				return 0;
 			else
+			{
 				g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_HOST_LEVELS);
+			}
 		}
 		break;
 
@@ -209,14 +231,14 @@ uint32 CScreenHostMission::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 
 					if (iter != m_CampaignList.end())
 					{
-						SetCampaignName(*iter);
+						SetCampaignName( (*iter).c_str());
 					}
 
 				}
 			}
 			else if (dwParam2 == CMD_CREATE)
 			{
-				m_sOldCampaign = m_pProfile->m_sCampaignName;
+				m_sOldCampaign = m_pProfile->m_ServerGameOptions.GetCampaignName();
 				std::string sNew = m_sOldCampaign;
 				if (sNew.compare(DEFAULT_CAMPAIGN) == 0)
 					sNew = m_pProfile->m_sName;
@@ -267,6 +289,7 @@ uint32 CScreenHostMission::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 	case CMD_EDIT:
 		{
 			std::string campaignName = (char *)dwParam1;
+
 			StringSet::iterator iter = m_CampaignList.find(campaignName);
 			if (iter != m_CampaignList.end())
 				campaignName = (*iter);
@@ -317,6 +340,7 @@ void CScreenHostMission::CreateCampaignList()
 	m_pListCtrl->RemoveAll();
 	m_CampaignList.clear();
 
+	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nListFont);
 
 	m_CampaignList.insert(DEFAULT_CAMPAIGN);
 
@@ -324,16 +348,22 @@ void CScreenHostMission::CreateCampaignList()
 	struct _finddata_t file;
 	long hFile;
 
-	std::string directory = g_pProfileMgr->GetCurrentProfileDir();
-	directory += "\\Campaigns\\*.txt"; 
+	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
+	std::string directory = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
+		pUserProfile->m_ServerGameOptions.m_eGameType );
+	directory += "*.txt"; 
 
 	// find first file
 	if((hFile = _findfirst(directory.c_str(), &file)) != -1L)
 	{
 		do
 		{
-			char *pName = strtok(file.name,".");
-			m_CampaignList.insert(pName);
+			if (_stricmp(file.name,DEFAULT_CAMPAIGN_FILE) != 0)
+			{
+				char *pName = strtok(file.name,".");
+				m_CampaignList.insert(pName);
+			}
+
 		}
 		while(_findnext(hFile, &file) == 0);
 	}
@@ -351,10 +381,12 @@ void CScreenHostMission::CreateCampaignList()
 			m_nDefaultCampaign = ndx;
 			m_pDefaultTextCtrl->Show(LTFALSE);
 			m_pDefaultTextCtrl->SetParam1(ndx);
+			m_pDefaultTextCtrl->SetFont(pFont,nListFontSz);
 		}
 		else
 		{
 			pTextCtrl = CreateTextItem((char *)iter->c_str(), CMD_OK, LTNULL);
+			pTextCtrl->SetFont(pFont,nListFontSz);
 			ndx = m_pListCtrl->AddControl(pTextCtrl);
 			pTextCtrl->SetParam1(ndx);
 		}
@@ -362,7 +394,7 @@ void CScreenHostMission::CreateCampaignList()
 		
 		
 
-		if (iter->compare(m_pProfile->m_sCampaignName) == 0)
+		if (iter->compare(m_pProfile->m_ServerGameOptions.GetCampaignName()) == 0)
 			m_pListCtrl->SetSelection(ndx);
 	}
 
@@ -370,14 +402,14 @@ void CScreenHostMission::CreateCampaignList()
 
 void CScreenHostMission::UpdateCampaignName()
 {
-	bool isDefault = (m_pProfile->m_sCampaignName.compare(DEFAULT_CAMPAIGN) == 0);
+	bool isDefault = (m_pProfile->m_ServerGameOptions.IsDefaultCampaign());
 	if (!isDefault)
 	{
-		std::string sCampaignFile = g_pProfileMgr->GetCurrentCampaignFile();
+		char const* pszCampaignFile = GetCampaignFile( m_pProfile->m_ServerGameOptions );
 
-		if (!CWinUtil::FileExist(sCampaignFile.c_str()))
+		if (!CWinUtil::FileExist( pszCampaignFile ))
 		{
-			m_pProfile->m_sCampaignName = DEFAULT_CAMPAIGN;
+			m_pProfile->m_ServerGameOptions.SetCampaignName(DEFAULT_CAMPAIGN);
 			isDefault = true;
 		}
 	}
@@ -393,7 +425,7 @@ void CScreenHostMission::UpdateCampaignName()
 	}
 	else
 	{
-		m_pCurrent->SetString(FormatTempString(IDS_CURRENT_CAMPAIGN,m_pProfile->m_sCampaignName.c_str()));
+		m_pCurrent->SetString(FormatTempString(IDS_CURRENT_CAMPAIGN,m_pProfile->m_ServerGameOptions.GetCampaignName()));
 		m_pLevels->Enable(true);
 	}
 }
@@ -403,6 +435,7 @@ void CScreenHostMission::OnFocus(LTBOOL bFocus)
 	if (bFocus)
 	{
 		m_pProfile = g_pProfileMgr->GetCurrentProfile();
+		m_eGameType = g_pGameClientShell->GetGameType();
 		UpdateCampaignName();
 		CreateCampaignList();
 	}
@@ -417,7 +450,7 @@ void CScreenHostMission::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 	{
 	case CMD_LOAD:
 		{
-			m_sOldCampaign = m_pProfile->m_sCampaignName;
+			m_sOldCampaign = m_pProfile->m_ServerGameOptions.GetCampaignName();
 			if (nIndex < m_pListCtrl->GetNumControls()) 
 			{
 				StringSet::iterator iter = m_CampaignList.begin();
@@ -426,7 +459,7 @@ void CScreenHostMission::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 				if (iter != m_CampaignList.end())
 				{
 					std::string sCampaign = *iter;
-					if (g_pLTClient->IsConnected() && stricmp(sCampaign.c_str(),m_pProfile->m_sCampaignName.c_str()) != 0)
+					if (g_pLTClient->IsConnected() && stricmp(sCampaign.c_str(),m_pProfile->m_ServerGameOptions.GetCampaignName()) != 0)
 					{
 
 						MBCreate mb;
@@ -455,7 +488,7 @@ void CScreenHostMission::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 		}
 		break;
 	case CMD_RENAME:
-		m_sOldCampaign = m_pProfile->m_sCampaignName;
+		m_sOldCampaign = m_pProfile->m_ServerGameOptions.GetCampaignName();
 		if (nIndex != m_nDefaultCampaign && nIndex < m_pListCtrl->GetNumControls()) 
 		{
 			StringSet::iterator iter = m_CampaignList.begin();
@@ -483,8 +516,9 @@ void CScreenHostMission::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 
 void CScreenHostMission::DeleteCampaign(const std::string& campaignName)
 {
-	std::string fn = g_pProfileMgr->GetCurrentProfileDir();
-	fn += "\\Campaigns\\"; 
+	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
+	std::string fn = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
+		pUserProfile->m_ServerGameOptions.m_eGameType );
 	fn += campaignName; 
 	fn += ".txt"; 
 
@@ -492,7 +526,7 @@ void CScreenHostMission::DeleteCampaign(const std::string& campaignName)
 	remove(fn.c_str());
 
 
-	if (stricmp(campaignName.c_str(),m_pProfile->m_sCampaignName.c_str()) == 0)
+	if (stricmp(campaignName.c_str(),m_pProfile->m_ServerGameOptions.GetCampaignName()) == 0)
 	{
 		SetCampaignName(DEFAULT_CAMPAIGN);
 	}
@@ -503,12 +537,13 @@ void CScreenHostMission::DeleteCampaign(const std::string& campaignName)
 
 void CScreenHostMission::NewCampaign(const std::string& campaignName)
 {
-	std::string fn = g_pProfileMgr->GetCurrentProfileDir();
-	fn += "\\Campaigns\\"; 
+	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
+	std::string fn = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
+		pUserProfile->m_ServerGameOptions.m_eGameType );
 
-	if( !CWinUtil::DirExist( fn.c_str() ))
+	if( !CWinUtil::DirExist( fn.c_str( )))
 	{
-		if( !CWinUtil::CreateDir( fn.c_str() ))
+		if( !CWinUtil::CreateDir( fn.c_str( )))
 		{
 			//TODO: error message
 			return;
@@ -535,16 +570,51 @@ void CScreenHostMission::NewCampaign(const std::string& campaignName)
 
 	CWinUtil::WinWritePrivateProfileString( "MissionList", "MissionSourceFile", g_pMissionButeMgr->GetAttributeFile(), fn.c_str());
 
+	uint16 nCount = 0;
+	bool bAdd =false;
 	for (int n = 0; n < g_pMissionButeMgr->GetNumMissions(); n++)
 	{
-		sprintf(szString,"Mission%d",n);
-		sprintf(szNum,"%d",n);
-		CWinUtil::WinWritePrivateProfileString( "MissionList", szString, szNum, fn.c_str());
+		MISSION *pMission = g_pMissionButeMgr->GetMission(n);
+		if (pMission)
+		{
+			char szWorldTitle[MAX_PATH] = "";
+			_splitpath( pMission->aLevels[0].szLevel, NULL, NULL, szWorldTitle, NULL );
+
+			bAdd = false;
+			switch (g_pGameClientShell->GetGameType())
+			{
+			case eGameTypeDeathmatch:
+			case eGameTypeTeamDeathmatch:
+				if (strnicmp(szWorldTitle,"DM_",3) == 0)
+				{
+					bAdd = true;
+				}
+				break;
+			case eGameTypeDoomsDay:
+				if (strnicmp(szWorldTitle,"DD_",3) == 0)
+				{
+					bAdd = true;
+				}
+				break;
+			default:
+				bAdd = true;
+				break;
+			}
+
+			if (bAdd)
+			{
+				sprintf(szString,"Mission%d",nCount);
+				sprintf(szNum,"%d",n);
+				CWinUtil::WinWritePrivateProfileString( "MissionList", szString, szNum, fn.c_str());
+				nCount++;
+			}
+		}
 	}
 
+	// Flush the file.
+	CWinUtil::WinWritePrivateProfileString( NULL, NULL, NULL, fn.c_str());
 
-
-	SetCampaignName(campaignName);
+	SetCampaignName(campaignName.c_str());
 
 	CreateCampaignList();
 
@@ -557,21 +627,33 @@ void CScreenHostMission::RenameCampaign(const std::string& oldName,const std::st
 {
 	if (!newName.length()) return;
 
-	std::string ofn = g_pProfileMgr->GetCurrentProfileDir();
-	ofn += "\\Campaigns\\"; 
+
+	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
+	char const* pszCampaignDir = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
+		pUserProfile->m_ServerGameOptions.m_eGameType );
+	std::string ofn = pszCampaignDir;
 	ofn += oldName; 
 	ofn += ".txt"; 
 
-	std::string nfn = g_pProfileMgr->GetCurrentProfileDir();
-	nfn += "\\Campaigns\\"; 
+	std::string nfn = pszCampaignDir;
 	nfn += newName; 
 	nfn += ".txt"; 
 
+
+	if (CWinUtil::FileExist(nfn.c_str()))
+	{
+		MBCreate mb;
+		mb.eType = LTMB_OK;
+		g_pInterfaceMgr->ShowMessageBox(IDS_CAMPAIGN_EXISTS,&mb);
+		return;
+	}
+
+
 	rename(ofn.c_str(),nfn.c_str());
 
-	if (oldName.compare(m_pProfile->m_sCampaignName) == 0)
+	if (oldName.compare(m_pProfile->m_ServerGameOptions.GetCampaignName()) == 0)
 	{
-		SetCampaignName(newName);
+		SetCampaignName(newName.c_str());
 	}
 
 	CreateCampaignList();
@@ -580,12 +662,12 @@ void CScreenHostMission::RenameCampaign(const std::string& oldName,const std::st
 }
 
 
-void CScreenHostMission::SetCampaignName(const std::string& newName)
+void CScreenHostMission::SetCampaignName(const char* newName)
 {
-	if (m_pProfile->m_sCampaignName.compare(newName) == 0)
+	if (stricmp(m_pProfile->m_ServerGameOptions.GetCampaignName(),newName) == 0)
 		return;
 
-	m_pProfile->m_sCampaignName = newName;
+	m_pProfile->m_ServerGameOptions.SetCampaignName(newName);
 
 	UpdateCampaignName();
 

@@ -1732,7 +1732,7 @@ void CTronPlayerStats::ResetObjectives()
 
 	if (g_pHUDMgr)
 	{
-		g_pObjectives->Show(false);
+//		g_pObjectives->Show(false);	// PORT: NOLF2's HUD item, which Tron's HUD has not
 		g_pHUDMgr->QueueUpdate(kHUDObjectives);
 	}
 
@@ -1789,4 +1789,21 @@ void CTronPlayerStats::OnObjectivesDataMessage(ILTMessage_Read *pMsg)
 	}
 
 	m_bObjAdded = (nNumObj + nNumOptObj + nNumCompObj + nNumParam) > 0;
+}
+
+// PORT: NOLF2's CPlayerStats has these, pure virtual: NOLF2's
+// TO2PlayerStats.cpp's, until the retail code says otherwise.
+
+float CTronPlayerStats::GetSkillModifier(eSkill skl, uint8 nMod)
+{
+	return g_pSkillsButeMgr->GetModifier(skl, (eSkillLevel)m_nSkills[skl], nMod);
+}
+
+void CTronPlayerStats::ClearMissionInfo()
+{
+	ResetMissionStats();
+	ResetObjectives();
+	m_nDamage = 0;
+	m_Keys.Clear();
+	m_IntelList.Clear();
 }

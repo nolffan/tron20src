@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenHostMission.h, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ScreenHostMission.h: interface for the ScreenHostMission class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -39,7 +43,7 @@ private:
 	void	DeleteCampaign(const std::string& campaignName);
 	void	NewCampaign(const std::string& campaignName);
 	void	RenameCampaign(const std::string& oldName,const std::string& newName);
-	void	SetCampaignName(const std::string& newName);
+	void	SetCampaignName(const char* newName);
 	
 	std::string	m_sOldCampaign;
 
@@ -58,6 +62,7 @@ private:
 	CUserProfile*		m_pProfile;
 
 	uint16		m_nDefaultCampaign;
+	GameType	m_eGameType;
 
 };
 

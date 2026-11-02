@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenJoinLAN.cpp, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenJoinLAN.cpp
@@ -377,46 +381,43 @@ void CScreenJoinLAN::CheckPassword()
 		return;
 	}
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| m_sPassword = "";
-	//| if (pCtrl->GetColumn(1) && pCtrl->GetColumn(1)->GetString())
-	//| s_Name = pCtrl->GetColumn(1)->GetString()->GetText();
-	//| else
-	//| s_Name = "";
-	//| if (pCtrl->GetParam2())
-	//| {
-	//| //show edit box here
-	//| MBCreate mb;
-	//| mb.eType = LTMB_EDIT;
-	//| mb.pFn = EditPassCallBack;
-	//| mb.pString = "";
-	//| mb.nMaxChars = MAX_PASSWORD-1;
-	//| g_pInterfaceMgr->ShowMessageBox(IDS_PASSWORD,&mb);
-	//| }
-	//| else
-	//| {
-	//| DoJoin();
-	//| }
-	//| }
-	//| void CScreenJoinLAN::DoJoin()
-	//| {
-	//| // Get the currently selected game server...
-	//| CLTGUIColumnCtrl *pCtrl = (CLTGUIColumnCtrl *)m_pServers->GetSelectedControl();
-	//| if (!pCtrl) return;
-	//| uint32 nIndex = pCtrl->GetParam1();
-	//| if (nIndex > m_lstSessions.GetSize()) return;
-	bool bOk = g_pClientMultiplayerMgr->SetupClient(m_lstSessions[nIndex]);
+	m_sPassword = "";
+	if (pCtrl->GetColumn(1) && pCtrl->GetColumn(1)->GetString())
+		s_Name = pCtrl->GetColumn(1)->GetString()->GetText();
+	else
+		s_Name = "";
+
+	if (pCtrl->GetParam2())
+	{	
+		//show edit box here	
+		MBCreate mb;
+		mb.eType = LTMB_EDIT;
+		mb.pFn = EditPassCallBack;
+		mb.pString = "";
+		mb.nMaxChars = MAX_PASSWORD-1;
+		g_pInterfaceMgr->ShowMessageBox(IDS_PASSWORD,&mb);
+	}
+	else
+	{
+		DoJoin();
+	}
+}
+
+void CScreenJoinLAN::DoJoin()
+{
+	// Get the currently selected game server...
+	CLTGUIColumnCtrl *pCtrl = (CLTGUIColumnCtrl *)m_pServers->GetSelectedControl();
+	if (!pCtrl) return;
+
+	uint32 nIndex = pCtrl->GetParam1();
+	if (nIndex > m_lstSessions.GetSize()) return;
+
+	bool bOk = g_pClientMultiplayerMgr->SetupClient(m_lstSessions[nIndex], s_Name.c_str(), m_sPassword);
 	bOk = bOk && g_pMissionMgr->StartGameAsClient( );
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| bool bOk = g_pClientMultiplayerMgr->SetupClient(m_lstSessions[nIndex], s_Name.c_str(), m_sPassword);
-	//| bOk = bOk && g_pMissionMgr->StartGameAsClient( );
-	//| if( !bOk )
 	if( !bOk )
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| g_pInterfaceMgr->LoadFailed(SCREEN_ID_JOIN_LAN);
-		g_pInterfaceMgr->LoadFailed();
+		g_pInterfaceMgr->LoadFailed(SCREEN_ID_JOIN_LAN);
 	}
 }
 

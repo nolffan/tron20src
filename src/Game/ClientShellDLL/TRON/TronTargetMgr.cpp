@@ -19,6 +19,10 @@
 #include "PickupItemFX.h"
 #include "PlayerMgr.h"
 
+// PORT: build 51's TargetMgr.h had this, which Tron's code uses; NOLF2's
+// TargetMgr reads it from the client butes instead (ActivationDistance)
+const float kActivationDist = 100.0f;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronTargetMgr::CTronTargetMgr
@@ -139,7 +143,7 @@ void CTronTargetMgr::Update()
 		LTFLOAT	fCamAngle = vDir.Dot( vCamR );
 
 		bool bCanSearch = !!(dwUserFlags & USRFLG_CAN_SEARCH);
-		bool bCanMove = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropBody());
+		bool bCanMove = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());	// PORT: build 51's CanDropBody
 		bool bCanRevive = pBody->CanBeRevived();
 
 		if (bCanSearch && bCanMove)

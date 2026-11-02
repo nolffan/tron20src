@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenPerformance.cpp, standing in for Build 69's Tron one, which
+// is build 51's performance screen (options neither NOLF2's performance
+// settings nor Tron's resources have); Tron's is to be written from the
+// retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenPerformance.cpp
@@ -26,13 +30,7 @@ namespace
 	int kWidth = 0;
 	int kNumCfg;
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| int nInitTex;
-	//| int nInitEBM;
-	//| int nInitEM;
-	//| int nInitDT;
-	int nInitVal[6];
-	int nInitTB;
+	int nInitTex;
 	int nInitEBM;
 	int nInitEM;
 	int nInitDT;
@@ -53,20 +51,15 @@ namespace
 
 CScreenPerformance::CScreenPerformance()
 {
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| m_pResolution= NULL;
+	m_pResolution= NULL;
 	m_pDisplay = LTNULL;
 	m_pSFX = LTNULL;
 	m_pDisplayLabel = LTNULL;
 	m_pSFXLabel = LTNULL;
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| m_pDisplayFrame = LTNULL;
-	//| m_pSFXFrame = LTNULL;
-	//| m_pPerformanceTest = LTNULL;
-	m_pTextureLabel = LTNULL;
 	m_pDisplayFrame = LTNULL;
 	m_pSFXFrame = LTNULL;
-	m_pTextureFrame = LTNULL;
+
+	m_pPerformanceTest = LTNULL;
 
 	memset(&m_sCfg,0,sizeof(m_sCfg));
 
@@ -143,35 +136,17 @@ LTBOOL CScreenPerformance::Build()
 	char szOff[32] = "";
 	LoadString(IDS_ON,szOn,sizeof(szOn));
 	LoadString(IDS_OFF,szOff,sizeof(szOff));
-	char szFrame[128];
-	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_PERFORMANCE,"FrameTexture",szFrame,sizeof(szFrame));
-	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DisplayRect");
-	//| nHeight = (rect.bottom - rect.top) + 16;
-	//| nWidth = (rect.right - rect.left);
-	//| pos = LTIntPt(rect.left-8,rect.top-8);
-
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| m_pDisplayFrame = debug_new(CLTGUIFrame);
-	//| m_pDisplayFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
-	//| m_pDisplayFrame->SetBasePos(pos);
-	//| m_pDisplayFrame->Show(LTFALSE);
-	//| m_pDisplayFrame->SetBorder(2,m_SelectedColor);
-	//| AddControl(m_pDisplayFrame);
-	//| pos.x += 8;
-	//| pos.y += 8;
-	//| m_pDisplayLabel = AddTextItem(IDS_DISPLAY, LTNULL, LTNULL, pos, LTTRUE);
-	LTRect rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DisplayRect");
-	int nHeight = (rect.bottom - rect.top) + 16;
-	int nWidth = (rect.right - rect.left);
-	LTIntPt pos = LTIntPt(rect.left-8,rect.top-8);
+	rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DisplayRect");
+	nHeight = (rect.bottom - rect.top) + 16;
+	nWidth = (rect.right - rect.left);
+	pos = LTIntPt(rect.left-8,rect.top-8);
 
 	m_pDisplayFrame = debug_new(CLTGUIFrame);
 	m_pDisplayFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
 	m_pDisplayFrame->SetBasePos(pos);
 	m_pDisplayFrame->Show(LTFALSE);
+	m_pDisplayFrame->SetBorder(2,m_SelectedColor);
 	AddControl(m_pDisplayFrame);
 
 	pos.x += 8;
@@ -229,19 +204,10 @@ LTBOOL CScreenPerformance::Build()
 		pCtrl->AddString(szOn);
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);	
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl = CreateCycle(IDS_TRILINEAR, IDS_HELP_TRILINEAR ,listGap,&m_sCfg.nSettings[kPerform_TrilinearFiltering]);
-		//| pCtrl->AddString(szOff);
-		//| pCtrl->AddString(szOn);
-		//| pCtrl->SetFont(NULL,nListFontSize);
-		//| m_pDisplay->AddControl(pCtrl);
-		//| pCtrl = CreateCycle(IDS_ENVIRONMENT_MAP, IDS_HELP_ENVIRONMENT_MAP,listGap,&m_sCfg.nSettings[kPerform_EnvironmentMapping]);
 		
 		pCtrl = CreateCycle(IDS_TRILINEAR, IDS_HELP_TRILINEAR ,listGap,&m_sCfg.nSettings[kPerform_TrilinearFiltering]);
 		pCtrl->AddString(szOff);
 		pCtrl->AddString(szOn);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl->SetFont(NULL,nListFontSize);
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);	
 		
@@ -257,9 +223,7 @@ LTBOOL CScreenPerformance::Build()
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);	
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl = CreateCycle(IDS_TRIPLE_BUFF, IDS_HELP_TRIPLE_BUFF,listGap, &m_nTripleBuffer);
-		pCtrl = CreateCycle(IDS_TRIPLE_BUFF, IDS_HELP_TRIPLE_BUFF,listGap, &m_sCfg.nSettings[kPerform_TripleBuffering]);
+		pCtrl = CreateCycle(IDS_TRIPLE_BUFF, IDS_HELP_TRIPLE_BUFF,listGap, &m_nTripleBuffer);
 		pCtrl->AddString(szOff);
 		pCtrl->AddString(szOn);
 		pCtrl->SetFont(NULL,nListFontSize);
@@ -268,26 +232,10 @@ LTBOOL CScreenPerformance::Build()
 		uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
 		pCtrl->Enable( (dwAdvancedOptions & AO_TRIPLEBUFFER) );
 
-// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-
-
-
 	}
 
 	
 	rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"SFXRect");
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| nHeight = (rect.bottom - rect.top) + 16;
-//| nWidth = (rect.right - rect.left);
-//| pos = LTIntPt(rect.left-8,rect.top-8);
-//| m_pSFXFrame = debug_new(CLTGUIFrame);
-//| m_pSFXFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
-//| m_pSFXFrame->SetBasePos(pos);
-//| m_pSFXFrame->Show(LTFALSE);
-//| m_pSFXFrame->SetBorder(2,m_SelectedColor);
-//| AddControl(m_pSFXFrame);
-//| pos.x += 8;
-//| pos.y += 8;
 
 	nHeight = (rect.bottom - rect.top) + 16;
 	nWidth = (rect.right - rect.left);
@@ -297,6 +245,7 @@ LTBOOL CScreenPerformance::Build()
 	m_pSFXFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
 	m_pSFXFrame->SetBasePos(pos);
 	m_pSFXFrame->Show(LTFALSE);
+	m_pSFXFrame->SetBorder(2,m_SelectedColor);
 	AddControl(m_pSFXFrame);
 
 	pos.x += 8;
@@ -315,8 +264,6 @@ LTBOOL CScreenPerformance::Build()
 		m_pSFX->Show(LTFALSE);
 		m_pSFX->SetItemSpacing(nListSpacing);
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| CLTGUICycleCtrl *pCtrl = CreateCycle(IDS_TRACERS, IDS_HELP_TRACERS, listGap, &m_sCfg.nSettings[kPerform_Tracers]);
 		CLTGUICycleCtrl *pCtrl = CreateCycle(IDS_TRACERS, IDS_HELP_TRACERS, listGap, &m_sCfg.nSettings[kPerform_Tracers]);
 		pCtrl->AddString(szOff);
 		pCtrl->AddString(szOn);
@@ -329,33 +276,15 @@ LTBOOL CScreenPerformance::Build()
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pSFX->AddControl(pCtrl);
 
-		pCtrl = CreateCycle(IDS_MUZZLELIGHT, IDS_HELP_MUZZLELIGHT, listGap, &m_sCfg.nSettings[kPerform_MuzzleLight]);
-		pCtrl->AddString(szOff);
-		pCtrl->AddString(szOn);
-		pCtrl->SetFont(NULL,nListFontSize);
-		m_pSFX->AddControl(pCtrl);
-
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl = CreateCycle(IDS_SHELLCASINGS, IDS_HELP_SHELLCASINGS, listGap, &m_sCfg.nSettings[kPerform_ShellCasings]);
-		pCtrl = CreateCycle(IDS_WEATHER, IDS_HELP_WEATHER, listGap, &m_sCfg.nSettings[kPerform_WeatherFX]);
-		pCtrl->AddString(szOff);
-		pCtrl->AddString(szOn);
-		pCtrl->SetFont(NULL,nListFontSize);
-		m_pSFX->AddControl(pCtrl);
-
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl = CreateCycle(IDS_ENV_DETAIL, IDS_HELP_ENV_DETAIL, listGap, &m_sCfg.nSettings[kPerform_EnvironmentalDetail]);
-		//| pCtrl->AddString(LoadTempString(IDS_OFF));
-		pCtrl = CreateCycle(IDS_IMPACT,IDS_HELP_IMPACTS, listGap, &m_sCfg.nSettings[kPerform_ImpactFX]);
+		pCtrl = CreateCycle(IDS_ENV_DETAIL, IDS_HELP_ENV_DETAIL, listGap, &m_sCfg.nSettings[kPerform_EnvironmentalDetail]);
+		pCtrl->AddString(LoadTempString(IDS_OFF));
 		pCtrl->AddString(LoadTempString(IDS_LOW));
 		pCtrl->AddString(LoadTempString(IDS_MEDIUM));
 		pCtrl->AddString(LoadTempString(IDS_HIGH));
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pSFX->AddControl(pCtrl);
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pCtrl = CreateCycle(IDS_FX_DETAIL, IDS_HELP_FX_DETAIL, listGap, &m_sCfg.nSettings[kPerform_FXDetail]);
-		pCtrl = CreateCycle(IDS_DEBRIS,IDS_HELP_DEBRIS, listGap, &m_sCfg.nSettings[kPerform_DebrisFX]);
+		pCtrl = CreateCycle(IDS_FX_DETAIL, IDS_HELP_FX_DETAIL, listGap, &m_sCfg.nSettings[kPerform_FXDetail]);
 		pCtrl->AddString(LoadTempString(IDS_LOW));
 		pCtrl->AddString(LoadTempString(IDS_MEDIUM));
 		pCtrl->AddString(LoadTempString(IDS_HIGH));
@@ -364,59 +293,6 @@ LTBOOL CScreenPerformance::Build()
 
 	}
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-	rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"TextureRect");
-
-	nHeight = (rect.bottom - rect.top) + 16;
-	nWidth = (rect.right - rect.left);
-	pos = LTIntPt(rect.left-8,rect.top-8);
-
-	m_pTextureFrame = debug_new(CLTGUIFrame);
-	m_pTextureFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
-	m_pTextureFrame->SetBasePos(pos);
-	m_pTextureFrame->Show(LTFALSE);
-	AddControl(m_pTextureFrame);
-
-	pos.x += 8;
-	pos.y += 8;
-
-	m_pTextureLabel = AddTextItem(IDS_TEXTURE_RES, LTNULL, LTNULL, LTIntPt(rect.left,rect.top), LTTRUE);
-	m_pTextureLabel->Show(LTFALSE);
-	rect.top += (nFontSize+8);	
-
-	listGap = g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"TextureColumn");
-	nWidth = (rect.right - rect.left) - 32;
-	int sliderWidth = g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"TextureSlider");
-	m_pTexture = AddList(LTIntPt(rect.left,rect.top),rect.bottom - rect.top, LTTRUE, nWidth);
-	if (m_pTexture)
-	{
-		m_pTexture->SetIndent(LTIntPt(8,8));
-		m_pTexture->SetFrameWidth(2);
-		m_pTexture->Show(LTFALSE);
-		m_pTexture->SetItemSpacing(nListSpacing);
-
-		m_pDetailLevel = CreateCycle(IDS_DETAILLEVEL,IDS_HELP_DETAILLEVEL,listGap,&m_sCfg.nSettings[kPerform_DetailLevel]);
-		m_pDetailLevel->AddString(LoadTempString(IDS_LOW));
-		m_pDetailLevel->AddString(LoadTempString(IDS_MEDIUM));
-		m_pDetailLevel->AddString(LoadTempString(IDS_HIGH));
-		m_pDetailLevel->AddString(LoadTempString(IDS_CUSTOMIZED));
-		m_pDetailLevel->SetFont(NULL,nListFontSize);
-		m_pTexture->AddControl(m_pDetailLevel);
-
-		m_pTexGroup[0]=CreateSlider(IDS_TEXTURE_WORLD, IDS_HELP_TEXTURE_WORLD, listGap, sliderWidth, -1, &m_nSliderVal[0]);
-		m_pTexGroup[1]=CreateSlider(IDS_TEXTURE_WEAPONS, IDS_HELP_TEXTURE_WEAPONS, listGap, sliderWidth, -1, &m_nSliderVal[1]);
-		m_pTexGroup[2]=CreateSlider(IDS_TEXTURE_CHARS, IDS_HELP_TEXTURE_CHARS, listGap, sliderWidth, -1, &m_nSliderVal[2]);
-		m_pTexGroup[3]=CreateSlider(IDS_TEXTURE_PROPS, IDS_HELP_TEXTURE_PROPS, listGap, sliderWidth, -1, &m_nSliderVal[3]);
-		m_pTexGroup[4]=CreateSlider(IDS_TEXTURE_SFX, IDS_HELP_TEXTURE_SFX, listGap, sliderWidth, -1, &m_nSliderVal[4]);
-		m_pTexGroup[5]=CreateSlider(IDS_TEXTURE_SKY, IDS_HELP_TEXTURE_SKY, listGap, sliderWidth, -1, &m_nSliderVal[5]);
-
-		for (int i = 0; i < 6; i++)
-		{
-			m_pTexGroup[i]->SetSliderRange(0,5);
-			m_pTexGroup[i]->SetSliderIncrement(1);
-			m_pTexGroup[i]->SetFont(NULL,nListFontSize);
-			m_pTexture->AddControl(m_pTexGroup[i]);
-		}
 
 	pos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"ResolutionPos");
 	m_pResolution = CreateTextItem(IDS_RES_DIFFERS,0,0,pos,LTTRUE);
@@ -514,14 +390,7 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 
 		m_pSFX->Show(LTFALSE);
 		m_pSFXLabel->Show(LTFALSE);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| m_pSFXFrame->Show(LTFALSE);
 		m_pSFXFrame->Show(LTFALSE);
-
-		m_pTexture->Show(LTFALSE);
-		m_pTextureLabel->Show(LTFALSE);
-		m_pTextureFrame->Show(LTFALSE);
-
 
 		m_pDisplay->SetSelection(kNoSelection);
 		m_pSFX->SetSelection(kNoSelection);
@@ -553,15 +422,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 		m_pDisplay->Show(LTTRUE);
 		m_pSFXLabel->Show(LTFALSE);
 		m_pDisplayLabel->Show(LTTRUE);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| m_pSFXFrame->Show(LTFALSE);
-		//| m_pDisplayFrame->Show(LTTRUE);
-		//| m_pDisplay->SetSelection(0);
-		m_pTextureLabel->Show(LTFALSE);
 		m_pSFXFrame->Show(LTFALSE);
 		m_pDisplayFrame->Show(LTTRUE);
-		m_pTextureFrame->Show(LTFALSE);
 
+		m_pDisplay->SetSelection(0);
 		SetSelection(GetIndex(m_pDisplay));
 		
 	}	break;
@@ -571,33 +435,12 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 		m_pSFX->Show(LTTRUE);
 		m_pDisplayLabel->Show(LTFALSE);
 		m_pSFXLabel->Show(LTTRUE);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| m_pDisplayFrame->Show(LTFALSE);
-		//| m_pSFXFrame->Show(LTTRUE);
-		//| m_pSFX->SetSelection(0);
-		m_pTextureLabel->Show(LTFALSE);
 		m_pDisplayFrame->Show(LTFALSE);
 		m_pSFXFrame->Show(LTTRUE);
-		m_pTextureFrame->Show(LTFALSE);
 
+		m_pSFX->SetSelection(0);
 		SetSelection(GetIndex(m_pSFX));
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-		m_pSFX->SetSelection(1);
-	}	break;
-	case CMD_TEXTURE:
-	{
-		m_pDisplay->Show(LTFALSE);
-		m_pSFX->Show(LTFALSE);
-		m_pTexture->Show(LTTRUE);
-		m_pDisplayLabel->Show(LTFALSE);
-		m_pSFXLabel->Show(LTFALSE);
-		m_pTextureLabel->Show(LTTRUE);
-		m_pDisplayFrame->Show(LTFALSE);
-		m_pSFXFrame->Show(LTFALSE);
-		m_pTextureFrame->Show(LTTRUE);
-
-		SetSelection(GetIndex(m_pTexture));
-		m_pTexture->SetSelection(1);
+		
 	}	break;
 
 	default:
@@ -687,17 +530,7 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		g_bSettingOverall = LTTRUE;
 		m_sCfg = pProfile->m_sPerformance;
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| nInitTex = pProfile->m_sPerformance.nSettings[kPerform_DetailLevel];
-		//| nInitEBM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping];
-		//| nInitEM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping];
-		//| nInitDT = pProfile->m_sPerformance.nSettings[kPerform_DetailTextures];
-		//| nInitTB = pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering];
-		
-		for (int i = 0; i < kNumDetailLevels; i++)
-		{
-			nInitVal[i] = pProfile->m_sPerformance.nDetails[i];
-		}
+		nInitTex = pProfile->m_sPerformance.nSettings[kPerform_DetailLevel];
 		nInitEBM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping];
 		nInitEM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping];
 		nInitDT = pProfile->m_sPerformance.nSettings[kPerform_DetailTextures];
@@ -763,13 +596,9 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 			break;
 
 		}
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| if ( bRestart )
-		if ( (nInitTB != pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering]) ||
-			 (nInitEBM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping]) ||
-			 (nInitEM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping]) ||
-			 (nInitDT != pProfile->m_sPerformance.nSettings[kPerform_DetailTextures])
-			 )
+
+
+		if ( bRestart )
 
 		{
 			// Set the renderer mode
@@ -804,26 +633,21 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		m_pDisplayFrame->Show(LTFALSE);
 		m_pSFXFrame->Show(LTFALSE);
 
-		m_pDisplayFrame->Show(LTFALSE);
-		m_pSFXFrame->Show(LTFALSE);
-		m_pTextureFrame->Show(LTFALSE);
-
 		m_pDisplay->SetSelection(kNoSelection);
 		m_pSFX->SetSelection(kNoSelection);
 
 	}
 	CBaseScreen::OnFocus(bFocus);
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| if (bFocus)
-	//| {
-	//| if (m_pDlg->IsVisible())
-	//| {
-	//| SetCapture(m_pDlg);
-	//| SetSelection( GetIndex(m_pDlg) );
-	//| }
-	//| }
-	//| }
+	if (bFocus)
+	{
+		if (m_pDlg->IsVisible())
+		{
+			SetCapture(m_pDlg);
+			SetSelection( GetIndex(m_pDlg) );
+		}
+	}
+}
 
 
 LTBOOL CScreenPerformance::OnLeft()
@@ -845,43 +669,16 @@ LTBOOL CScreenPerformance::OnLeft()
 		}
         return LTTRUE;
 	}
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-	if (GetSelectedControl() == m_pTexture)
-	{
-		if (m_pTexture->GetSelectedControl() == m_pDetailLevel)
-		{
-			int nDetail = m_pDetailLevel->GetSelIndex();
-			--nDetail;
-			if (nDetail < 0)
-				nDetail = 2;
-			m_pPerformance->SetSelIndex(nDetail);
-			m_sCfg.nSettings[kPerform_DetailLevel] = nDetail;
-
-			int nDetails[6];
-			g_pPerformanceMgr->SetDetailLevels(nDetail,nDetails);
-			for (int i = 0; i < 6; i++)
-			{
-				m_sCfg.nDetails[i] = nDetails[i];
-			}
-
-		}
-		g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
-		UpdateData(LTFALSE);
-        return LTTRUE;
-	}
 
 	LTBOOL bHandled = CBaseScreen::OnLeft();
 	if (bHandled)
 	{
 		UpdateData(LTTRUE);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		//| m_nOverall = g_pPerformanceMgr->GetPerformanceCfg(true);
-		//| m_pResolution->Show(m_nOverall < 3 && m_nOverall != g_pPerformanceMgr->GetPerformanceCfg(false));
-		//| UpdateData(LTFALSE);
+
 		g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
+		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg(true);
+		m_pResolution->Show(m_nOverall < 3 && m_nOverall != g_pPerformanceMgr->GetPerformanceCfg(false));
+
 		UpdateData(LTFALSE);
 
 	}
@@ -908,42 +705,14 @@ LTBOOL CScreenPerformance::OnRight()
 
 		return LTTRUE;
 	}
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-	if (GetSelectedControl() == m_pTexture)
-	{
-		if (m_pTexture->GetSelectedControl() == m_pDetailLevel)
-		{
-			int nDetail = m_pDetailLevel->GetSelIndex();
-			++nDetail;
-			if (nDetail > 2)
-				nDetail = 0;
-			m_pPerformance->SetSelIndex(nDetail);
-			m_sCfg.nSettings[kPerform_DetailLevel] = nDetail;
-
-			int nDetails[6];
-			g_pPerformanceMgr->SetDetailLevels(nDetail,nDetails);
-			for (int i = 0; i < 6; i++)
-			{
-				m_sCfg.nDetails[i] = nDetails[i];
-			}
-
-		}
-		g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
-		UpdateData(LTFALSE);
-        return LTTRUE;
-	}
 	LTBOOL bHandled = CBaseScreen::OnRight();
 	if (bHandled)
 	{
 		UpdateData(LTTRUE);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		//| m_nOverall = g_pPerformanceMgr->GetPerformanceCfg(true);
-		//| m_pResolution->Show(m_nOverall < 3 && m_nOverall != g_pPerformanceMgr->GetPerformanceCfg(false));
-		//| UpdateData(LTFALSE);
+
 		g_pPerformanceMgr->SetPerformanceOptions(&m_sCfg);
-		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg();
+		m_nOverall = g_pPerformanceMgr->GetPerformanceCfg(true);
+		m_pResolution->Show(m_nOverall < 3 && m_nOverall != g_pPerformanceMgr->GetPerformanceCfg(false));
 		UpdateData(LTFALSE);
 	}
 	return bHandled;
@@ -957,9 +726,7 @@ LTBOOL CScreenPerformance::OnLButtonUp(int x, int y)
 	if (GetControlUnderPoint(x, y, &nControlIndex))
 	{
 		CLTGUICtrl* pCtrl = GetControl(nControlIndex);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| if (pCtrl == m_pPerformance || pCtrl == m_pDetailLevel || pCtrl == m_pPrecache)
-		if (pCtrl == m_pPerformance )
+		if (pCtrl == m_pPerformance || pCtrl == m_pDetailLevel || pCtrl == m_pPrecache)
 		{
 
 			m_pDisplay->Show(LTFALSE);
@@ -967,24 +734,14 @@ LTBOOL CScreenPerformance::OnLButtonUp(int x, int y)
 
 			m_pSFX->Show(LTFALSE);
 			m_pSFX->SetSelection(kNoSelection);
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-			m_pTexture->Show(LTFALSE);
-			m_pTexture->SetSelection(kNoSelection);
 
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| m_pDisplayFrame->Show(LTFALSE);
-			//| m_pSFXFrame->Show(LTFALSE);
-			//| m_pDisplayLabel->Show(LTFALSE);
-			//| m_pSFXLabel->Show(LTFALSE);
 			m_pDisplayFrame->Show(LTFALSE);
 			m_pSFXFrame->Show(LTFALSE);
-			m_pTextureFrame->Show(LTFALSE);
+
+			m_pDisplayLabel->Show(LTFALSE);
+			m_pSFXLabel->Show(LTFALSE);
 
 
-			return OnRight();
-		}
-		if (pCtrl == m_pTexture && m_pTexture->GetSelectedControl() == m_pDetailLevel)
-		{
 			return OnRight();
 		}
 	}
@@ -1013,38 +770,23 @@ LTBOOL CScreenPerformance::OnRButtonUp(int x, int y)
 	if (GetControlUnderPoint(x, y, &nControlIndex))
 	{
 		CLTGUICtrl* pCtrl = GetControl(nControlIndex);
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| if (pCtrl == m_pPerformance || pCtrl == m_pDetailLevel || pCtrl == m_pPrecache)
-		if (pCtrl == m_pPerformance )
+		if (pCtrl == m_pPerformance || pCtrl == m_pDetailLevel || pCtrl == m_pPrecache)
 		{
 
 			m_pDisplay->Show(LTFALSE);
 			m_pDisplay->SetSelection(kNoSelection);
 			m_pSFX->Show(LTFALSE);
 			m_pSFX->SetSelection(kNoSelection);
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-			m_pTexture->Show(LTFALSE);
-			m_pTexture->SetSelection(kNoSelection);
 
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| m_pDisplayLabel->Show(LTFALSE);
-			//| m_pSFXLabel->Show(LTFALSE);
-			//| m_pDisplayFrame->Show(LTFALSE);
-			//| m_pSFXFrame->Show(LTFALSE);
-			//| m_pDisplayLabel->Show(LTFALSE);
-			//| m_pSFXLabel->Show(LTFALSE);
 			m_pDisplayLabel->Show(LTFALSE);
 			m_pSFXLabel->Show(LTFALSE);
-			m_pTextureLabel->Show(LTFALSE);
 
 			m_pDisplayFrame->Show(LTFALSE);
 			m_pSFXFrame->Show(LTFALSE);
-			m_pTextureFrame->Show(LTFALSE);
 
-			return OnLeft();
-		}
-		if (pCtrl == m_pTexture && m_pTexture->GetSelectedControl() == m_pDetailLevel)
-		{
+			m_pDisplayLabel->Show(LTFALSE);
+			m_pSFXLabel->Show(LTFALSE);
+
 			return OnLeft();
 		}
 	}
@@ -1090,14 +832,6 @@ void CScreenPerformance::Escape()
 		m_pSFXFrame->Show(LTFALSE);
 		SetSelection(2);
 	}
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-	else if (m_pTexture->IsVisible())
-	{
-		m_pTexture->Show(LTFALSE);
-		m_pTextureLabel->Show(LTFALSE);
-		m_pTextureFrame->Show(LTFALSE);
-		SetSelection(3);
-	}
 	else
 	{
 		CBaseScreen::Escape();
@@ -1109,17 +843,8 @@ void CScreenPerformance::UpdateData(LTBOOL bSaveAndValidate)
 {
 	if (!bSaveAndValidate)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| //the TripleBuffering setting will be 1 or 2, whereas the control needs it to be 0 or 1
-		//| m_nTripleBuffer = m_sCfg.nSettings[kPerform_TripleBuffering]-1;
-		CBaseScreen::UpdateData(bSaveAndValidate);
-		int nDetails[6];
-		for (int i = 0; i < 6; i++)
-		{
-			nDetails[i] = 3 - m_nSliderVal[i];
-			m_sCfg.nDetails[i] = nDetails[i];
-		}
-		m_sCfg.nSettings[kPerform_DetailLevel] = g_pPerformanceMgr->GetDetailLevel(nDetails);
+		//the TripleBuffering setting will be 1 or 2, whereas the control needs it to be 0 or 1
+		m_nTripleBuffer = m_sCfg.nSettings[kPerform_TripleBuffering]-1;
 	}
 
 	CBaseScreen::UpdateData(bSaveAndValidate);

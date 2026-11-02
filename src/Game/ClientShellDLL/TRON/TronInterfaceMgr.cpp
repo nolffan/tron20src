@@ -112,7 +112,7 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 					m_WeaponChooser.Close();
 				}
 
-                g_pChatInput->Show(LTTRUE);
+                g_pChatInput->Show(true, false);	// PORT: NOLF2's, with the team flag
                 
 			}
 
@@ -299,4 +299,21 @@ void CTronInterfaceMgr::UpdatePlayingState()
 {
 	g_pSubroutineMgr->Update();
 	CInterfaceMgr::UpdatePlayingState();
+}
+
+// ----------------------------------------------------------------------- //
+//
+// PORT: NOLF2's shared ClientMultiplayerMgr makes WON's server directory
+// (ServerDir.dll, which Tron does not have: it browses and hosts through
+// GameSpy). Until Tron's GameSpy code is written from the retail code, there
+// is no directory: declared here without SERVERDIR_API, so that the link
+// resolves the shared code's import to it.
+//
+// ----------------------------------------------------------------------- //
+
+class IServerDirectory;
+class ILTCSBase;
+IServerDirectory *Factory_Create_IServerDirectory_Titan( bool bClientSide, ILTCSBase& ltCSBase, HMODULE hResourceModule )
+{
+	return NULL;
 }

@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenJoin.cpp, standing in for Build 69's Tron one, which is
+// TO2's spring 2002 multiplayer screen (WON's server directory, host
+// settings in the profile); retail Tron's browses and hosts through GameSpy,
+// and is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenJoin.cpp
@@ -15,11 +19,8 @@
 #include "ClientRes.h"
 #include "ClientMultiplayerMgr.h"
 #include "msgids.h"
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| #include "MissionMgr.h"
-//| #include "ResShared.h"
 #include "MissionMgr.h"
-
+#include "ResShared.h"
 #include "iserverdir.h"
 
 #include "GameClientShell.h"
@@ -55,15 +56,11 @@ namespace
 
 	void JoinConfirmationCallback(LTBOOL bReturn, void *pData)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| CScreenJoin *pThisScreen = (CScreenJoin*)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_JOIN);
-		//| if (bReturn && pThisScreen)
-		//| {
-		//| pThisScreen->CheckPassword();
-		//| }
-		CScreenJoin *pThisScreen = (CScreenJoin *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_JOIN);
-		if (pThisScreen)
-			pThisScreen->SendCommand(bReturn ? CMD_OK : CMD_CANCEL,(uint32)pData,CMD_EDIT_CDKEY);
+		CScreenJoin *pThisScreen = (CScreenJoin*)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_JOIN);
+		if (bReturn && pThisScreen)
+		{
+			pThisScreen->CheckPassword();
+		}
 	}
 	void EditPassCallBack(LTBOOL bReturn, void *pData)
 	{
@@ -387,142 +384,114 @@ uint32 CScreenJoin::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 {
 	switch(dwCommand)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| case CMD_SORT_NAME:
-		//| case CMD_SORT_PING:
-		//| case CMD_SORT_PLAYER:
-		//| case CMD_SORT_LOCK:
-		//| case CMD_SORT_MISSION:
-		//| case CMD_SORT_MOD:
-		//| {
-		//| SortServers(dwCommand);
-		//| break;
-		//| }
-		//| case CMD_FILTER_VERSION:
-		//| case CMD_FILTER_PING:
-		//| case CMD_FILTER_PLAYERS:
-		//| case CMD_FILTER_MOD:
-		//| {
-		//| UpdateData();
-		//| FilterServers();
-		//| break;
-		//| }
-		//| case CMD_CANCEL :
-		//| {
-		//| m_pDetails->Show(LTFALSE);
-		//| SetCapture(NULL);
-		//| ChangeState(eState_Waiting);
-		//| break;
-		//| }
-		//| case CMD_DETAILS :
-		//| {
-		//| if (dwParam1 >= m_cServerList.size())
-		//| return 0;
-		//| m_nSelectedServer = dwParam1;
-		//| ChangeState(eState_QueryDetails);
-		//| break;
-		//| }
-		//| case CMD_SEARCH :
-		//| {
-		//| FindServers();
-		//| break;
-		//| }
-		//| case CMD_OK:
-		//| {
-		//| HandleCallback(dwParam1,dwParam2);
-		//| break;
-		//| }
-		//| case CMD_JOIN:
-		//| {
-		//| m_pDetails->Show(LTFALSE);
-		//| SetCapture(LTNULL);
-		//| if (m_nSelectedServer >= m_cServerList.size())
-		//| return 0;
-		//| if (stricmp(m_cServerList[m_nSelectedServer].m_sVersion.c_str(), g_pVersionMgr->GetBuild()) != 0)
-		case CMD_CANCEL :
-		{
-			ChangeState(eState_Waiting);
-			break;
-		}
+	case CMD_SORT_NAME:
+	case CMD_SORT_PING:
+	case CMD_SORT_PLAYER:
+	case CMD_SORT_LOCK:
+	case CMD_SORT_MISSION:
+	case CMD_SORT_MOD:
+	{
+		SortServers(dwCommand);
+		break;
+	}
+
+	case CMD_FILTER_VERSION:
+	case CMD_FILTER_PING:
+	case CMD_FILTER_PLAYERS:
+	case CMD_FILTER_MOD:
+	{
+		UpdateData();
+		FilterServers();
+		break;
+	} 
+
+	case CMD_CANCEL :
+	{
+		m_pDetails->Show(LTFALSE);
+		SetCapture(NULL);
+		ChangeState(eState_Waiting);
+		break;
+	}
+
+	case CMD_DETAILS :
+	{
+		if (dwParam1 >= m_cServerList.size())
+			return 0;
+
+		m_nSelectedServer = dwParam1;
+
+		ChangeState(eState_QueryDetails);
+		break;
+	}
+
+	case CMD_SEARCH :
+	{
+		FindServers();
+		break;
+	}
+
 	case CMD_OK:
+	{
+		HandleCallback(dwParam1,dwParam2);
+		break;
+	}
+	case CMD_JOIN:
+	{
+
+		m_pDetails->Show(LTFALSE);
+		SetCapture(LTNULL);
+
+		if (m_nSelectedServer >= m_cServerList.size())
+			return 0;
+
+
+
+		if (stricmp(m_cServerList[m_nSelectedServer].m_sVersion.c_str(), g_pVersionMgr->GetBuild()) != 0)
 		{
 			MBCreate mb;
 			g_pInterfaceMgr->ShowMessageBox(IDS_SERVER_WRONGVERSION,&mb);
 			return 1;
 		}
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| if (m_cServerList[m_nSelectedServer].m_nNumPlayers >= m_cServerList[m_nSelectedServer].m_nMaxPlayers)
-		//| {
-		//| MBCreate mb;
-		//| g_pInterfaceMgr->ShowMessageBox(IDS_SERVERFULL,&mb);
-		//| return 1;
-		//| }
-		//| if( stricmp( m_cServerList[m_nSelectedServer].m_sModName.c_str(), g_pClientMultiplayerMgr->GetModName() ) != 0 )
-		case CMD_SEARCH :
-			{
-			FindServers();
-			break;
-			}
-		case CMD_EDIT_CDKEY :
+
+		if (m_cServerList[m_nSelectedServer].m_nNumPlayers >= m_cServerList[m_nSelectedServer].m_nMaxPlayers)
+		{
+			MBCreate mb;
+			g_pInterfaceMgr->ShowMessageBox(IDS_SERVERFULL,&mb);
+			return 1;
+		}
+
+		if( stricmp( m_cServerList[m_nSelectedServer].m_sModName.c_str(), g_pClientMultiplayerMgr->GetModName() ) != 0 )
 		{
 			MBCreate mb;
 			g_pInterfaceMgr->ShowMessageBox( IDS_SERVER_WRONGMOD, &mb );
 			return 1;
 		}
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-	case CMD_JOIN:
-		{
-			if (dwParam1 >= m_cServerList.size())
-				return 0;
 
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| if (g_pGameClientShell->IsWorldLoaded())
-			//| {
-			//| if (IsCurrentGame(m_cServerList[m_nSelectedServer].m_sAddress.c_str()))
-			//| {
-			//| HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
-			//| if (g_pGameClientShell->IsWorldLoaded() && hPlayerObj)
-			m_nSelectedServer = dwParam1;
-		    if (g_pGameClientShell->IsWorldLoaded())
-		    {
-				if (IsCurrentGame(m_cServerList[m_nSelectedServer].m_sAddress.c_str()))
-				{
-					HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
-					if (g_pGameClientShell->IsWorldLoaded() && hPlayerObj)
-					{
-						g_pInterfaceMgr->ChangeState(GS_PLAYING);
-					}
-				}
-				else
+		if (g_pGameClientShell->IsWorldLoaded())
+		{
+			if (IsCurrentGame(m_cServerList[m_nSelectedServer].m_sAddress.c_str()))
+			{
+				HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
+				if (g_pGameClientShell->IsWorldLoaded() && hPlayerObj)
 				{
 					g_pInterfaceMgr->ChangeState(GS_PLAYING);
 				}
-		    // MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		    //| }
-		    //| else
-		    //| {
-		    //| MBCreate mb;
-		    //| mb.eType = LTMB_YESNO;
-		    //| mb.pFn = JoinConfirmationCallback;
-		    //| g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
-		    //| }
-		    }
-		    else
-		    {
-				JoinCurGame();
-		    }
-
-			break;
+			}
+			else
+			{
+				MBCreate mb;
+				mb.eType = LTMB_YESNO;
+				mb.pFn = JoinConfirmationCallback;
+				g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
+			}
 		}
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| else
-	//| {
-	//| CheckPassword();
-	//| }
-	//| break;
-	//| }
-	//| default:
-	//| return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
+		else
+		{
+			CheckPassword();
+		}
+
+		break;
+	}
 	default:
 		return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
 	}
@@ -537,24 +506,6 @@ uint32 CScreenJoin::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 		{
 			m_sPassword = (char *)dwParam1;
 			JoinCurGame();
-			break;
-		}
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-		case CMD_EDIT_CDKEY :
-		{
-			IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
-			if (!pServerDir->SetCDKey((const char *)dwParam1))
-			{
-				// Tell them that's a bad CD key and exit this screen
-				// NYI
-				ChangeState(eState_Error);
-			}
-			else
-			{
-				m_sCurCDKey = ((const char *)dwParam1);
-				m_pCDKeyCtrl->SetString(1,m_sCurCDKey.c_str());
-				pServerDir->QueueRequest(IServerDirectory::eRequest_Validate_CDKey);
-			}
 			break;
 		}
 	}
@@ -643,11 +594,7 @@ void CScreenJoin::ReadCurServerList()
 		CAutoMessage cMsg;
 		if (!pServerDir->GetActivePeerInfo(IServerDirectory::ePeerInfo_Name, cMsg))
 			continue;
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| {
-		//| CLTMsgRef_Read cRead(cMsg.Read());
-		//| cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-		//| }
+
 		{
 			CLTMsgRef_Read cRead(cMsg.Read());
 			cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
@@ -657,48 +604,46 @@ void CScreenJoin::ReadCurServerList()
 		// Read the summary
 		if (!pServerDir->GetActivePeerInfo(IServerDirectory::ePeerInfo_Summary, cMsg))
 			continue;
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| {
-		//| CLTMsgRef_Read cRead(cMsg.Read());
-		//| cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-		//| iCurServer->m_sVersion = aStringBuffer;
-		//| cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-		//| int nMission, nLevel;
-		//| iCurServer->m_sMission = "";
-		//| if	(g_pMissionButeMgr->IsMissionLevel(aStringBuffer,nMission,nLevel))
-		//| {
-		//| MISSION* pMission = g_pMissionButeMgr->GetMission(nMission);
-		//| if (pMission)
-		//| {
-		//| if (pMission->nNameId > 0)
-		//| iCurServer->m_sMission = LoadTempString(pMission->nNameId);
-		//| else if (!pMission->sName.empty())
-		//| iCurServer->m_sMission = pMission->sName;
-		//| }
-		//| }
-		//| if (iCurServer->m_sMission.empty())
-		//| iCurServer->m_sMission = aStringBuffer;
-		//| iCurServer->m_nNumPlayers = cRead->Readuint8();
-		//| iCurServer->m_nMaxPlayers = cRead->Readuint8();
-		//| iCurServer->m_bUsePassword = cRead->Readbool();
-		//| iCurServer->m_nGameType = cRead->Readuint8();
-		//| cRead->ReadString( aStringBuffer, sizeof(aStringBuffer) );
-		//| iCurServer->m_sModName = (aStringBuffer[0] ? aStringBuffer : "Retail");
-		//| }
-		//| if (pServerDir->GetActivePeerInfo(IServerDirectory::ePeerInfo_Ping, cMsg))
-		//| {
-		//| CLTMsgRef_Read cRead(cMsg.Read());
-		//| iCurServer->m_nPing = cRead->Readuint16();
-		//| }
-		//| else
-		//| iCurServer->m_nPing = -1;
 		{
 			CLTMsgRef_Read cRead(cMsg.Read());
 			cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-			iCurServer->m_sMap = aStringBuffer;
+			iCurServer->m_sVersion = aStringBuffer;
+
+			cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
+
+			int nMission, nLevel;
+			iCurServer->m_sMission = "";
+			if	(g_pMissionButeMgr->IsMissionLevel(aStringBuffer,nMission,nLevel))
+			{
+				MISSION* pMission = g_pMissionButeMgr->GetMission(nMission); 
+				if (pMission)
+				{
+					if (pMission->nNameId > 0)
+						iCurServer->m_sMission = LoadTempString(pMission->nNameId);
+					else if (!pMission->sName.empty())
+						iCurServer->m_sMission = pMission->sName;
+				}
+			}
+			
+			if (iCurServer->m_sMission.empty())
+				iCurServer->m_sMission = aStringBuffer;
+
 			iCurServer->m_nNumPlayers = cRead->Readuint8();
 			iCurServer->m_nMaxPlayers = cRead->Readuint8();
+			iCurServer->m_bUsePassword = cRead->Readbool();
+			iCurServer->m_nGameType = cRead->Readuint8();
+			
+			cRead->ReadString( aStringBuffer, sizeof(aStringBuffer) );
+			iCurServer->m_sModName = (aStringBuffer[0] ? aStringBuffer : "Retail");
 		}
+
+		if (pServerDir->GetActivePeerInfo(IServerDirectory::ePeerInfo_Ping, cMsg))
+		{
+			CLTMsgRef_Read cRead(cMsg.Read());
+			iCurServer->m_nPing = cRead->Readuint16();
+		}
+		else			
+			iCurServer->m_nPing = -1;
 
 		// Ok, this one's valid
 		iCurServer->m_sAddress = *iCurPeer;
@@ -720,26 +665,22 @@ void CScreenJoin::DisplayCurServerList()
 	{
 		if (iCurServer->m_sAddress.empty())
 			continue;
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| char aTempBuffer[256];
+		char aTempBuffer[256];
 
 		// Create a control
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(CMD_DETAILS, IDS_HELP_JOIN);
-			//| // Do the name
-			//| pCtrl->AddColumn(iCurServer->m_sName.c_str(), kColumnWidth_ServerName,LTTRUE);
-			//| // Do the mod...
-			//| sprintf( aTempBuffer, "%s", iCurServer->m_sModName );
-			//| pCtrl->AddColumn( aTempBuffer, kColumnWidth_Mod );
-			//| // Do the ping
-			//| sprintf(aTempBuffer, "%d", iCurServer->m_nPing);
-			//| pCtrl->AddColumn(aTempBuffer, kColumnWidth_Ping);
-			CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(CMD_JOIN, IDS_HELP_JOIN_LAN);
-			pCtrl->SetFont(LTNULL,kListFontSize);
-			// Do the name
-		pCtrl->AddColumn(iCurServer->m_sName.c_str(), kColumnWidth_ServerName);
-		// Do the map
-		pCtrl->AddColumn(iCurServer->m_sMap.c_str(), kColumnWidth_MapName);
+		CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(CMD_DETAILS, IDS_HELP_JOIN);
+		// Do the name
+		pCtrl->AddColumn(iCurServer->m_sName.c_str(), kColumnWidth_ServerName,LTTRUE);
+
+		// Do the mod...
+
+		sprintf( aTempBuffer, "%s", iCurServer->m_sModName );
+		pCtrl->AddColumn( aTempBuffer, kColumnWidth_Mod );
+
+		// Do the ping
+		sprintf(aTempBuffer, "%d", iCurServer->m_nPing);
+		pCtrl->AddColumn(aTempBuffer, kColumnWidth_Ping);
+
 		// Do the number of players
 		sprintf(aTempBuffer, "%d/%d", iCurServer->m_nNumPlayers, iCurServer->m_nMaxPlayers);
 		pCtrl->AddColumn(aTempBuffer, kColumnWidth_Players);
@@ -911,10 +852,7 @@ void CScreenJoin::JoinCurGame()
 
 bool CScreenJoin::DoJoinGame(const CServerEntry &cServer)
 {
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| if( !g_pClientMultiplayerMgr->SetupClient( cServer.m_sAddress.c_str( ), cServer.m_sName.c_str(), m_sPassword.c_str() ))
-	//| return false;
-	if( !g_pClientMultiplayerMgr->SetupClient( cServer.m_sAddress.c_str( )))
+	if( !g_pClientMultiplayerMgr->SetupClient( cServer.m_sAddress.c_str( ), cServer.m_sName.c_str(), m_sPassword.c_str() ))
 		return false;
 
 	if( !g_pMissionMgr->StartGameAsClient( ))
@@ -985,9 +923,8 @@ bool CScreenJoin::ChangeState(EState eNewState)
 void CScreenJoin::Update()
 {
 	char aTempBuffer[256];
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| FormatString(IDS_STATUS_STRING,aTempBuffer,sizeof(aTempBuffer),g_pClientMultiplayerMgr->GetServerDir()->GetCurStatusString());
-	sprintf(aTempBuffer, "Status: %s", g_pClientMultiplayerMgr->GetServerDir()->GetCurStatusString().c_str());
+
+	FormatString(IDS_STATUS_STRING,aTempBuffer,sizeof(aTempBuffer),g_pClientMultiplayerMgr->GetServerDir()->GetCurStatusString());
 	m_pStatusCtrl->SetString(aTempBuffer);
 
 	switch (m_eCurState)
@@ -1031,42 +968,7 @@ bool CScreenJoin::PreState_Startup()
 	// NYI NYI NYI
 	if (!pServerDir)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| pServerDir = g_pClientMultiplayerMgr->CreateServerDir( );
-		pServerDir = Factory_Create_IServerDirectory_Titan();
-		g_pClientMultiplayerMgr->SetServerDir(pServerDir);
-		// Set the game's name
-		pServerDir->SetGameName("TheOperative2");
-		// Set the version
-		pServerDir->SetVersion(g_pVersionMgr->GetBuild());
-		// Set up the packet header
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(11); // CMSG_MESSAGE
-		cMsg.Writeuint8(MID_MULTIPLAYER_SERVERDIR);
-		pServerDir->SetNetHeader(*cMsg.Read());
-	}
-
-	// Load the default CD key
-	if (pServerDir->GetCDKey(&m_sCurCDKey))
-		m_pCDKeyCtrl->SetString(1,m_sCurCDKey.c_str());
-
-	bool bResult = true;
-	bResult &= pServerDir->QueueRequest(IServerDirectory::eRequest_MOTD);
-	bResult &= pServerDir->QueueRequest(IServerDirectory::eRequest_Version);
-	if (!bResult)
-	{
-		ChangeState(eState_Error);
-		return false;
-	}
-
-	// Set the CD key
-	pServerDir->SetCDKey(m_sCurCDKey.c_str());
-
-	bResult &= pServerDir->QueueRequest(IServerDirectory::eRequest_Validate_CDKey);
-	if (!bResult)
-	{
-		ChangeState(eState_ChangeCDKey);
-		return false;
+		pServerDir = g_pClientMultiplayerMgr->CreateServerDir( );
 	}
 
 	return true;
@@ -1089,10 +991,8 @@ bool CScreenJoin::PreState_UpdateDir()
 
 bool CScreenJoin::PreState_QueryDetails()
 {
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
 	IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
-
+	
 	// Get the active server
 	if (m_nSelectedServer >= m_cServerList.size())
 	{
@@ -1116,18 +1016,6 @@ bool CScreenJoin::PreState_QueryDetails()
 	return true;
 }
 
-// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
-bool CScreenJoin::PreState_ChangeCDKey()
-		{
-	// Show the CD key change dialog
-	MBCreate mb;
-	mb.eType = LTMB_EDIT;
-	mb.pFn = EditCDKeyCallBack;
-	mb.pString = m_sCurCDKey.c_str();
-	mb.nMaxChars = kMaxCDKeyLength;
-	g_pInterfaceMgr->ShowMessageBox("Change CD Key",&mb);
-	return true;
-}
 
 bool CScreenJoin::PreState_Waiting()
 {
@@ -1140,7 +1028,7 @@ bool CScreenJoin::PreState_Waiting()
 
 
 	return true;
-		}
+}
 
 bool CScreenJoin::PostState_UpdateDir(EState eNewState)
 {
@@ -1149,7 +1037,7 @@ bool CScreenJoin::PostState_UpdateDir(EState eNewState)
 	// Show it
 	DisplayCurServerList();
 	return true;
-	}
+}
 
 bool CScreenJoin::PostState_QueryDetails(EState eNewState)
 {
@@ -1192,7 +1080,7 @@ void CScreenJoin::Update_State_Startup()
 			break;
 		}
 		default :
-{
+		{
 			ASSERT(!"Unknown directory status encountered");
 			ChangeState(eState_Waiting);
 			break;
@@ -1223,41 +1111,6 @@ void CScreenJoin::Update_State_UpdateDir()
 			break;
 		}
 		default :
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| {
-	//| ASSERT(!"Unknown directory status encountered");
-	//| ChangeState(eState_Waiting);
-	//| break;
-	//| }
-	//| }
-	//| }
-	//| void CScreenJoin::Update_State_QueryDetails()
-	//| {
-	//| IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
-	//| // Are we still waiting?
-	//| switch (pServerDir->GetCurStatus())
-	//| {
-	//| case IServerDirectory::eStatus_Processing :
-	//| return;
-	//| case IServerDirectory::eStatus_Waiting :
-	//| {
-	//| // Read the details
-	//| ReadDetails();
-	//| // Go back to waiting
-	//| ChangeState(eState_Waiting);
-	//| break;
-	//| }
-	//| case IServerDirectory::eStatus_Error :
-	//| {
-	//| // Whoops, something went wrong. Tell us about it...
-	//| SetDetailErrorMessage(g_pClientMultiplayerMgr->GetServerDir()->GetCurStatusString());
-	//| //get back to work
-	//| pServerDir->ProcessRequestList();
-	//| ChangeState(eState_Waiting);
-	//| break;
-	//| }
-	//| default :
-	//| {
 	{
 			ASSERT(!"Unknown directory status encountered");
 			ChangeState(eState_Waiting);
@@ -1265,260 +1118,352 @@ void CScreenJoin::Update_State_UpdateDir()
 		}
 	}
 }
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| void CScreenJoin::SortServers(uint32 nSortField)
-//| {
-//| switch(nSortField)
-//| {
-//| case CMD_SORT_NAME:
-//| std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortName());
-//| break;
-//| case CMD_SORT_PING:
-//| std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortPing());
-//| break;
-//| case CMD_SORT_PLAYER:
-//| std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortPlayers());
-//| break;
-//| case CMD_SORT_LOCK:
-//| std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortLock());
-//| break;
-//| case CMD_SORT_MISSION:
-//| std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortMission());
-//| break;
-//| case CMD_SORT_MOD:
-//| std::sort( m_cServerList.begin(), m_cServerList.end(), CServerSortMod() );
-//| break;
-//| default:
-//| ASSERT(!"Unknown sort command.");
-//| return;
-//| };
-//| DisplayCurServerList();
-//| m_nLastSort = nSortField;
-//| }
-//| void CScreenJoin::FilterServers()
-//| {
-//| uint16 iFirst = CLTGUIListCtrl::kNoSelection;
-//| for (uint16 i = 0 ;i < m_pServerListCtrl->GetNumControls(); ++i)
-//| {
-//| uint32 nIndex = m_pServerListCtrl->GetControl(i)->GetParam1();
-//| if (nIndex >= m_cServerList.size())
-//| return;
-//| bool bShow = true;
-//| //Version Filter
-//| if (m_nVersionFilter)
-//| {
-//| bShow &= (stricmp(m_cServerList[nIndex].m_sVersion.c_str(), g_pVersionMgr->GetBuild()) == 0);
-//| }
-//| //Game type filter
-//| uint8 nGameType = m_cServerList[nIndex].m_nGameType;
-//| //since versions 1.1 and 1.1 didn't have this they'll report 0 for co-op games
-//| if (nGameType == 0)
-//| nGameType = eGameTypeCooperative;
-//| if (g_pGameClientShell->GetGameType() != nGameType)
-//| {
-//| bShow = false;
-//| }
-//| switch (m_nPlayersFilter)
-//| {
-//| case 0:
-//| break;
-//| case 1:
-//| bShow &= (m_cServerList[nIndex].m_nNumPlayers > 0);
-//| break;
-//| case 2:
-//| bShow &= (m_cServerList[nIndex].m_nNumPlayers < m_cServerList[nIndex].m_nMaxPlayers);
-//| break;
-//| case 3:
-//| bShow &= (m_cServerList[nIndex].m_nNumPlayers > 0);
-//| bShow &= (m_cServerList[nIndex].m_nNumPlayers < m_cServerList[nIndex].m_nMaxPlayers);
-//| break;
-//| }
-//| switch (m_nPingFilter)
-//| {
-//| case 0:
-//| break;
-//| case 1:
-//| bShow &= (m_cServerList[nIndex].m_nPing < 100);
-//| break;
-//| case 2:
-//| bShow &= (m_cServerList[nIndex].m_nPing < 300);
-//| break;
-//| case 3:
-//| bShow &= (m_cServerList[nIndex].m_nPing < 500);
-//| break;
-//| }
-//| switch( m_nModFilter )
-//| {
-//| case 0:		// All Mods (no filtering)
-//| break;
-//| case 1:		// Retail games only
-//| {
-//| bShow &= (stricmp( m_cServerList[nIndex].m_sModName.c_str(), LoadTempString( IDS_RETAIL )) == 0 );
-//| }
-//| break;
-//| case 2:		// Currently selected mod only
-//| {
-//| bShow &= (stricmp( m_cServerList[nIndex].m_sModName.c_str(), g_pClientMultiplayerMgr->GetModName() ) == 0 );
-//| }
-//| break;
-//| default:
-//| break;
-//| }
-//| if (bShow && iFirst == CLTGUIListCtrl::kNoSelection)
-//| iFirst = i;
-//| m_pServerListCtrl->GetControl(i)->Show(bShow);
-//| m_pServerListCtrl->GetControl(i)->Enable(bShow);
-//| }
-//| if (iFirst == CLTGUIListCtrl::kNoSelection)
-//| {
-//| m_pServerListCtrl->Enable(false);
-//| }
-//| else
-//| {
-//| m_pServerListCtrl->Enable(true);
-//| m_pServerListCtrl->SetStartIndex(iFirst);
-//| }
-//| m_pServerListCtrl->SetSelection(iFirst);
-//| m_nSelectedServer = iFirst;
-//| }
-//| void CScreenJoin::CheckPassword()
-//| {
-//| if (m_nSelectedServer >= m_cServerList.size())
-//| return;
-//| const CServerEntry &cServerAddr = m_cServerList[m_nSelectedServer];
-//| m_sPassword = "";
-//| if (cServerAddr.m_bUsePassword)
-//| {
-//| //show edit box here
-//| MBCreate mb;
-//| mb.eType = LTMB_EDIT;
-//| mb.pFn = EditPassCallBack;
-//| mb.pString = "";
-//| mb.nMaxChars = MAX_PASSWORD-1;
-//| g_pInterfaceMgr->ShowMessageBox(IDS_PASSWORD,&mb);
-//| }
-//| else
-//| {
-//| JoinCurGame();
-//| }
-//| }
-//| void CScreenJoin::Escape()
-//| {
-//| if (m_pDetails->IsVisible())
-//| {
-//| m_pDetails->Show(LTFALSE);
-//| SetCapture(NULL);
-//| ChangeState(eState_Waiting);
-//| return;
-//| }
-//| CBaseScreen::Escape();
-//| }
-//| void CScreenJoin::ReadDMDetails(std::string& sOptions,CLTMsgRef_Read& cRead)
-//| {
-//| char aStringBuffer[256];
-//| bool bSkills = cRead->Readbool();
-//| /*
-//| sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_USE_SKILLS));
-//| sOptions += aStringBuffer;
-//| if (bSkills)
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
-//| else
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
-//| sOptions += aStringBuffer;
-//| */
-//| bool bFriendlyFire = cRead->Readbool();
-//| sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_FRIENDLY_FIRE));
-//| sOptions += aStringBuffer;
-//| if (bFriendlyFire)
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
-//| else
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
-//| sOptions += aStringBuffer;
-//| //ignore diff for DM
-//| uint8 nDiff = cRead->Readuint8();
-//| float fPlayerDiff = cRead->Readfloat();
-//| //read player list
-//| bool bPlayerToRead = cRead->Readbool();
-//| while (bPlayerToRead)
-//| {
-//| cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-//| uint16 nPing = cRead->Readuint16();
-//| bPlayerToRead = cRead->Readbool();
-//| // Create a control
-//| CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(0,0,kDefaultPos,LTTRUE);
-//| // Do the name
-//| pCtrl->AddColumn(aStringBuffer, kColumnWidth_PlayerName,LTTRUE);
-//| // Do the ping
-//| sprintf(aStringBuffer, "%d", nPing);
-//| pCtrl->AddColumn(aStringBuffer, kColumnWidth_Ping);
-//| m_pPlayerListCtrl->AddControl(pCtrl);
-//| }
-//| uint8 nRunSpeed = cRead->Readuint8();
-//| sprintf(aStringBuffer,"%s: %0.2f",LoadTempString(IDS_RUN_SPEED), (float)nRunSpeed/100.0f);
-//| sOptions += aStringBuffer;
-//| uint8 nScoreLimit = cRead->Readuint8();
-//| sprintf(aStringBuffer,"; %s: %d",LoadTempString(IDS_SCORE_LIMIT), nScoreLimit);
-//| sOptions += aStringBuffer;
-//| uint8 nTimeLimit = cRead->Readuint8();
-//| sprintf(aStringBuffer,"; %s: %d",LoadTempString(IDS_TIME_LIMIT), nTimeLimit);
-//| sOptions += aStringBuffer;
-//| }
-//| void CScreenJoin::ReadCoopDetails(std::string& sOptions,CLTMsgRef_Read& cRead)
-//| {
-//| char aStringBuffer[256];
-//| bool bSkills = cRead->Readbool();
-//| sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_USE_SKILLS));
-//| sOptions += aStringBuffer;
-//| if (bSkills)
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
-//| else
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
-//| sOptions += aStringBuffer;
-//| bool bFriendlyFire = cRead->Readbool();
-//| sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_FRIENDLY_FIRE));
-//| sOptions += aStringBuffer;
-//| if (bFriendlyFire)
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
-//| else
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
-//| sOptions += aStringBuffer;
-//| uint8 nDiff = cRead->Readuint8();
-//| sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_DIFFICULTY));
-//| sOptions += aStringBuffer;
-//| switch  (nDiff)
-//| {
-//| case 3:
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_INSANE));
-//| break;
-//| case 2:
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_HARD));
-//| break;
-//| case 1:
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_MEDIUM));
-//| break;
-//| case 0:
-//| default:
-//| sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_EASY));
-//| break;
-//| }
-//| sOptions += aStringBuffer;
-//| float fPlayerDiff = cRead->Readfloat();
-//| sprintf(aStringBuffer,"%s: %0.2f; ",LoadTempString(IDS_HOST_PLAYERDIFF),fPlayerDiff);
-//| sOptions += aStringBuffer;
-//| //read player list
-//| bool bPlayerToRead = cRead->Readbool();
-//| while (bPlayerToRead)
-//| {
-//| cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
-//| uint16 nPing = cRead->Readuint16();
-//| bPlayerToRead = cRead->Readbool();
-//| // Create a control
-//| CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(0,0,kDefaultPos,LTTRUE);
-//| // Do the name
-//| pCtrl->AddColumn(aStringBuffer, kColumnWidth_PlayerName,LTTRUE);
-//| // Do the ping
-//| sprintf(aStringBuffer, "%d", nPing);
-//| pCtrl->AddColumn(aStringBuffer, kColumnWidth_Ping);
-//| m_pPlayerListCtrl->AddControl(pCtrl);
-//| }
-//| }
+
+void CScreenJoin::Update_State_QueryDetails()
+{
+	IServerDirectory *pServerDir = g_pClientMultiplayerMgr->GetServerDir();
+
+	// Are we still waiting?
+	switch (pServerDir->GetCurStatus())
+	{
+		case IServerDirectory::eStatus_Processing : 
+			return;
+		case IServerDirectory::eStatus_Waiting : 
+		{
+			// Read the details
+			ReadDetails();
+
+			// Go back to waiting
+			ChangeState(eState_Waiting);
+			break;
+		}
+		case IServerDirectory::eStatus_Error : 
+		{
+			// Whoops, something went wrong. Tell us about it...
+			SetDetailErrorMessage(g_pClientMultiplayerMgr->GetServerDir()->GetCurStatusString());
+
+			//get back to work
+			pServerDir->ProcessRequestList();
+			ChangeState(eState_Waiting);
+			
+
+			break;
+		}
+		default :
+	{
+			ASSERT(!"Unknown directory status encountered");
+			ChangeState(eState_Waiting);
+			break;
+		}
+	}
+}
+
+void CScreenJoin::SortServers(uint32 nSortField)
+{
+	switch(nSortField)
+	{
+	case CMD_SORT_NAME:
+		std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortName());
+		break;
+	case CMD_SORT_PING:
+		std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortPing());
+		break;
+	case CMD_SORT_PLAYER:
+		std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortPlayers());
+		break;
+	case CMD_SORT_LOCK:
+		std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortLock());
+		break;
+	case CMD_SORT_MISSION:
+		std::sort(m_cServerList.begin(),m_cServerList.end(),CServerSortMission());
+		break;
+	case CMD_SORT_MOD:
+		std::sort( m_cServerList.begin(), m_cServerList.end(), CServerSortMod() );
+		break;
+
+	default:
+		ASSERT(!"Unknown sort command.");
+		return;
+
+	};
+
+	DisplayCurServerList();
+	m_nLastSort = nSortField;
+}
+
+void CScreenJoin::FilterServers()
+{
+
+	uint16 iFirst = CLTGUIListCtrl::kNoSelection; 
+	for (uint16 i = 0 ;i < m_pServerListCtrl->GetNumControls(); ++i)
+	{
+		uint32 nIndex = m_pServerListCtrl->GetControl(i)->GetParam1();
+		if (nIndex >= m_cServerList.size())
+			return;
+
+		bool bShow = true;
+
+		//Version Filter
+		if (m_nVersionFilter)
+		{
+			bShow &= (stricmp(m_cServerList[nIndex].m_sVersion.c_str(), g_pVersionMgr->GetBuild()) == 0);
+		}
+
+		//Game type filter
+		uint8 nGameType = m_cServerList[nIndex].m_nGameType;
+		//since versions 1.1 and 1.1 didn't have this they'll report 0 for co-op games
+		if (nGameType == 0)
+			nGameType = eGameTypeCooperative;
+
+		if (g_pGameClientShell->GetGameType() != nGameType)
+		{
+			bShow = false;
+		}
+		
+
+		switch (m_nPlayersFilter)
+		{
+		case 0:
+			break;
+		case 1:
+			bShow &= (m_cServerList[nIndex].m_nNumPlayers > 0);
+			break;
+		case 2:
+			bShow &= (m_cServerList[nIndex].m_nNumPlayers < m_cServerList[nIndex].m_nMaxPlayers);
+			break;
+		case 3:
+			bShow &= (m_cServerList[nIndex].m_nNumPlayers > 0);
+			bShow &= (m_cServerList[nIndex].m_nNumPlayers < m_cServerList[nIndex].m_nMaxPlayers);
+			break;
+		}
+
+		switch (m_nPingFilter)
+		{
+		case 0:
+			break;
+		case 1:
+			bShow &= (m_cServerList[nIndex].m_nPing < 100);
+			break;
+		case 2:
+			bShow &= (m_cServerList[nIndex].m_nPing < 300);
+			break;
+		case 3:
+			bShow &= (m_cServerList[nIndex].m_nPing < 500);
+			break;
+		}
+
+		switch( m_nModFilter )
+		{
+			case 0:		// All Mods (no filtering)
+			break; 
+		
+			case 1:		// Retail games only
+			{
+				bShow &= (stricmp( m_cServerList[nIndex].m_sModName.c_str(), LoadTempString( IDS_RETAIL )) == 0 );
+			}
+			break;
+		
+			case 2:		// Currently selected mod only
+			{
+				bShow &= (stricmp( m_cServerList[nIndex].m_sModName.c_str(), g_pClientMultiplayerMgr->GetModName() ) == 0 );
+			}
+			break;
+
+			default:
+			break;
+		}
+
+		if (bShow && iFirst == CLTGUIListCtrl::kNoSelection)
+			iFirst = i;
+
+		m_pServerListCtrl->GetControl(i)->Show(bShow);
+		m_pServerListCtrl->GetControl(i)->Enable(bShow);
+
+	}
+
+	if (iFirst == CLTGUIListCtrl::kNoSelection)
+	{
+		m_pServerListCtrl->Enable(false);
+	}
+	else
+	{
+		m_pServerListCtrl->Enable(true);
+		m_pServerListCtrl->SetStartIndex(iFirst);
+	}
+
+	m_pServerListCtrl->SetSelection(iFirst);
+	m_nSelectedServer = iFirst;
+}
+
+
+
+void CScreenJoin::CheckPassword()
+{
+	if (m_nSelectedServer >= m_cServerList.size())
+		return;
+
+	const CServerEntry &cServerAddr = m_cServerList[m_nSelectedServer];
+
+
+
+	m_sPassword = "";
+	if (cServerAddr.m_bUsePassword)
+	{	
+		//show edit box here	
+		MBCreate mb;
+		mb.eType = LTMB_EDIT;
+		mb.pFn = EditPassCallBack;
+		mb.pString = "";
+		mb.nMaxChars = MAX_PASSWORD-1;
+		g_pInterfaceMgr->ShowMessageBox(IDS_PASSWORD,&mb);
+	}
+	else
+	{
+		JoinCurGame();
+	}
+}
+
+void CScreenJoin::Escape()
+{
+	if (m_pDetails->IsVisible())
+	{
+		m_pDetails->Show(LTFALSE);
+		SetCapture(NULL);
+		ChangeState(eState_Waiting);
+		return;
+	}
+
+
+	CBaseScreen::Escape();
+}
+
+
+void CScreenJoin::ReadDMDetails(std::string& sOptions,CLTMsgRef_Read& cRead)
+{
+	char aStringBuffer[256];
+	bool bSkills = cRead->Readbool();
+/*
+	sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_USE_SKILLS));
+	sOptions += aStringBuffer;
+	if (bSkills)
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
+	else
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
+	sOptions += aStringBuffer;
+*/
+	bool bFriendlyFire = cRead->Readbool();
+	sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_FRIENDLY_FIRE));
+	sOptions += aStringBuffer;
+	if (bFriendlyFire)
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
+	else
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
+	sOptions += aStringBuffer;
+
+	//ignore diff for DM
+	uint8 nDiff = cRead->Readuint8();
+	float fPlayerDiff = cRead->Readfloat();
+
+	//read player list
+	bool bPlayerToRead = cRead->Readbool();
+	while (bPlayerToRead)
+	{
+		cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
+		uint16 nPing = cRead->Readuint16();
+		bPlayerToRead = cRead->Readbool();
+
+		// Create a control
+		CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(0,0,kDefaultPos,LTTRUE);
+		// Do the name
+		pCtrl->AddColumn(aStringBuffer, kColumnWidth_PlayerName,LTTRUE);
+
+		// Do the ping
+		sprintf(aStringBuffer, "%d", nPing);
+		pCtrl->AddColumn(aStringBuffer, kColumnWidth_Ping);
+
+		m_pPlayerListCtrl->AddControl(pCtrl);
+	}
+
+
+	uint8 nRunSpeed = cRead->Readuint8();
+	sprintf(aStringBuffer,"%s: %0.2f",LoadTempString(IDS_RUN_SPEED), (float)nRunSpeed/100.0f);
+	sOptions += aStringBuffer;
+
+	uint8 nScoreLimit = cRead->Readuint8();
+	sprintf(aStringBuffer,"; %s: %d",LoadTempString(IDS_SCORE_LIMIT), nScoreLimit);
+	sOptions += aStringBuffer;
+
+	uint8 nTimeLimit = cRead->Readuint8();
+	sprintf(aStringBuffer,"; %s: %d",LoadTempString(IDS_TIME_LIMIT), nTimeLimit);
+	sOptions += aStringBuffer;
+}
+
+
+void CScreenJoin::ReadCoopDetails(std::string& sOptions,CLTMsgRef_Read& cRead)
+{
+	char aStringBuffer[256];
+	bool bSkills = cRead->Readbool();
+	sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_USE_SKILLS));
+	sOptions += aStringBuffer;
+	if (bSkills)
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
+	else
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
+	sOptions += aStringBuffer;
+
+	bool bFriendlyFire = cRead->Readbool();
+	sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_FRIENDLY_FIRE));
+	sOptions += aStringBuffer;
+	if (bFriendlyFire)
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_YES));
+	else
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NO));
+	sOptions += aStringBuffer;
+
+	uint8 nDiff = cRead->Readuint8();
+	sprintf(aStringBuffer,"%s: ",LoadTempString(IDS_DIFFICULTY));
+	sOptions += aStringBuffer;
+	switch  (nDiff)
+	{
+	case 3:
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_INSANE));
+		break;
+	case 2:
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_HARD));
+		break;
+	case 1:
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_MEDIUM));
+		break;
+	case 0:
+	default:
+		sprintf(aStringBuffer,"%s; ",LoadTempString(IDS_NEW_EASY));
+		break;
+
+	}
+	sOptions += aStringBuffer;
+
+	float fPlayerDiff = cRead->Readfloat();
+	sprintf(aStringBuffer,"%s: %0.2f; ",LoadTempString(IDS_HOST_PLAYERDIFF),fPlayerDiff);
+	sOptions += aStringBuffer;
+
+	//read player list
+	bool bPlayerToRead = cRead->Readbool();
+	while (bPlayerToRead)
+	{
+		cRead->ReadString(aStringBuffer, sizeof(aStringBuffer));
+		uint16 nPing = cRead->Readuint16();
+		bPlayerToRead = cRead->Readbool();
+
+		// Create a control
+		CLTGUIColumnCtrl* pCtrl = CreateColumnCtrl(0,0,kDefaultPos,LTTRUE);
+		// Do the name
+		pCtrl->AddColumn(aStringBuffer, kColumnWidth_PlayerName,LTTRUE);
+
+		// Do the ping
+		sprintf(aStringBuffer, "%d", nPing);
+		pCtrl->AddColumn(aStringBuffer, kColumnWidth_Ping);
+
+		m_pPlayerListCtrl->AddControl(pCtrl);
+
+	}
+}

@@ -26,6 +26,10 @@ static const char* s_szNetVersion	= "1.0.0.0";
 // build guid is to be read from the retail code.
 static const char* s_szNetGameName	= "tron20";
 static const LTGUID s_BuildGuid		= { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
+// PORT: the game's guid, which NOLF2's TO2VersionMgr.cpp defines for the
+// shared code (the engine is given it); Tron's is to be read from the retail
+// code
+LTGUID GAMEGUID					= { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 
 // PORT: what NOLF2's TO2VersionMgr.cpp defines for the shared code. The
 // name is for folder paths and registry entries: retail CShell.dll and

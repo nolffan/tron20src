@@ -135,6 +135,12 @@ public:
 	uint32		GetTotalSkillPoints() {return m_nTotalSkillPoints;}
 	uint32		GetAvailSkillPoints() {return m_nAvailSkillPoints;}
 	uint8		GetSkillLevel(eSkill skill) {return m_nSkills[skill]; }
+	// PORT: NOLF2's CPlayerStats has these four, pure virtual. Tron has no
+	// hiding (its file keeps no hide state): it can never hide.
+	LTBOOL		CanHide()			{ return LTFALSE; }
+	float		GetHideDuration()	{ return 0.0f; }
+	float		GetSkillModifier(eSkill skl, uint8 nMod);
+	void		ClearMissionInfo();
 
 	const RANK*	GetRank();
 	uint32		GetCostToUpgrade(eSkill skill);
