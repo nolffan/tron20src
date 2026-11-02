@@ -402,10 +402,6 @@ SOURCE=.\HUDDistance.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\TO2\HUDHealth.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\HUDMessage.cpp
 # End Source File
 # Begin Source File
@@ -1249,10 +1245,6 @@ SOURCE=.\HUDDisplayMeter.h
 # Begin Source File
 
 SOURCE=.\HUDDistance.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\TO2\HUDHealth.h
 # End Source File
 # Begin Source File
 

@@ -18,8 +18,8 @@ says so; until then the attribution is the header's own testimony.
 | `Tron.exe` | 2003-09-29 | 11 / 26 | MFC 4.2 as a DLL (`MFC42.DLL`) | -- |
 | `TRONSrv.exe` | 2003-10-03 | 14 / 28 | MFC 4.2 as a DLL; 3 objects without a `@comp.id` | -- |
 | `CShell.dll` | 2003-10-03 | 24 / 346 | the C objects include the GameSpy SDK's | -- |
-| `Object.lto` | 2003-10-03 | 9 / 379 | the C objects include the GameSpy SDK's query reporting | -- |
-| `ClientFx.fxd` | 2003-08-29 | 101 / 35 | `libcmt.lib` statically: most C objects are the CRT's | -- |
+| `Object.lto` | 2003-10-03 | 9 / 379 | the C objects include the GameSpy SDK's query reporting | `msvc-6.00-8168`, NOLF2's Final settings (`/MD /W3 /GX /O2`, `ObjectShared` with `/GR`): 6,963 of 15,577 functions identical as first built; GameSpy not yet linked |
+| `ClientFx.fxd` | 2003-08-29 | 101 / 35 | `libcmt.lib` statically: most C objects are the CRT's | `msvc-6.00-8168`, NOLF2's project (`/MT /W3 /GX /O2`): 291 of 558 functions identical as first built |
 | `CRes.dll`, `SRes.dll` | 2003-08-29 | 22 / 2 | resources and `libcmt.lib` | -- |
 
 Every image's linker row is `link`/`lib` 6.00.8168 (tool 0x04), its

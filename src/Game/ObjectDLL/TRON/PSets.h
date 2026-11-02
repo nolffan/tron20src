@@ -21,7 +21,7 @@
 	ADD_BOOLPROP_FLAG(Key7,0,group)\
 	ADD_BOOLPROP_FLAG(Key8,0,group)
 
-uint8 MakePSetsByte(LTBOOL bPSets[8])
+uint8 MakePSetsByte(bool bPSets[8]) // PORT: bool, as NOLF2's GetPropBool fills
 {
 	// Change em into a byte
 	uint8 byPSets = 0;
@@ -37,8 +37,8 @@ uint8 MakePSetsByte(LTBOOL bPSets[8])
 }
 
 #define HANDLE_READ_PSETS_PROPS(var) \
-	LTBOOL bPSets[8]; \
-	memset(bPSets,0,8*sizeof(LTBOOL)); \
+	bool bPSets[8]; /* PORT: NOLF2's GetPropBool takes bool* */ \
+	memset(bPSets,0,8*sizeof(bool)); \
 	g_pLTServer->GetPropBool("Key1", &bPSets[0]); \
 	g_pLTServer->GetPropBool("Key2", &bPSets[1]); \
 	g_pLTServer->GetPropBool("Key3", &bPSets[2]); \

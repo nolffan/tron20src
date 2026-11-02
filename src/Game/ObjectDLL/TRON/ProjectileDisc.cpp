@@ -405,7 +405,7 @@ LTBOOL CDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 
 	ASSERT( m_eDiscBlockableStimID == kStimID_Unset );
 	m_eDiscBlockableStimID = g_pAIStimulusMgr->RegisterStimulus(kStim_ProjectileVisible,
-		m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector(0,0,0) );
+		m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector(0,0,0) , 1.0f ) /* PORT: NOLF2\'s overload takes a radius factor; Tron\'s had none */;
 
 	return bResult;
 }
@@ -954,7 +954,7 @@ void CDisc::EnterReturnMode( bool bImpact )
 	if ( m_eDiscCatchableStimID == kStimID_Unset )
 	{
 		m_eDiscCatchableStimID = g_pAIStimulusMgr->RegisterStimulus(kStim_CatchableProjectileVisible,
-			m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector(0,0,0) );
+			m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector(0,0,0) , 1.0f ) /* PORT: NOLF2\'s overload takes a radius factor; Tron\'s had none */;
 	}
 
 	// Remove the discs blockability (it flies through walls and all.. 

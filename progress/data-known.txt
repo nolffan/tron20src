@@ -25,3 +25,1858 @@ ClientFx.fxd	retail	RandomSpeedBiasMax
 ClientFx.fxd	retail	RandomSpeedBiasMin
 ClientFx.fxd	retail	__search_marker_holder__
 ClientFx.fxd	retail	__search_marker_holder__
+
+# UNREVIEWED, recorded at Object.lto's first build (2026-11-02): NOLF2 1.3's shared server code with Build 69's May 2002 Tron files, ported. What differs from retail is mostly where Tron's shared code is not NOLF2's (docs/PLAN.md, package 4), still to be sorted out.
+Object.lto	ours	    MSG - INTEL - Invalid [intel] or [show] parameters.
+Object.lto	ours	    MSG - INTEL - Invalid number of parameters.
+Object.lto	ours	    MSG - KEY - No action parameter listed.
+Object.lto	ours	    MSG - MUSIC - Invalid number of parameters.
+Object.lto	ours	    MSG - MUSIC - Invalid parameters for action '%s'. (see PlayerMessages.doc)
+Object.lto	ours	    MSG - OBJECTIVE - No action parameter listed.
+Object.lto	ours	    MSG - SPAWN - Object '%s' already exists and is of type '%s'!
+Object.lto	ours	    MSG - SPAWN - Target object '%s' does not exist!
+Object.lto	ours	    MSG - TRANSMISSION - Invalid [ActivePlayerComm] parameter.
+Object.lto	ours	    MSG - TRANSMISSION - Invalid [TeamNumber] parameter.
+Object.lto	ours	    MSG - TRANSMISSION - Invalid number of parameters.
+Object.lto	ours	    MSG - Template objects should not be sent messages since they don't exist in the game!
+Object.lto	ours	%s LIGHT Lantern
+Object.lto	ours	%s LeftFoot
+Object.lto	ours	%s Light (%s)
+Object.lto	ours	%s: Failed to set anim with props:\n
+Object.lto	ours	%s_replace
+Object.lto	ours	(scripted)
+Object.lto	ours	.?AUCLUSTERAUTOBURSTDISCCLASSDATA@@
+Object.lto	ours	.?AURADAROBJCREATESTRUCT@@
+Object.lto	ours	.?AVAIInformationVolumePlugin@@
+Object.lto	ours	.?AVAINodeAssassinate@@
+Object.lto	ours	.?AVAINodeAssassinatePlugin@@
+Object.lto	ours	.?AVAINodeObstruct@@
+Object.lto	ours	.?AVAINodeObstructPlugin@@
+Object.lto	ours	.?AVAINodeTraining@@
+Object.lto	ours	.?AVAINodeTrainingFailure@@
+Object.lto	ours	.?AVAINodeTrainingSuccess@@
+Object.lto	ours	.?AVAIVolumeTeleport@@
+Object.lto	ours	.?AVCAIGoalAssassinate@@
+Object.lto	ours	.?AVCAIGoalLoveKitty@@
+Object.lto	ours	.?AVCAIGoalMountedFlashlight@@
+Object.lto	ours	.?AVCAIGoalObstruct@@
+Object.lto	ours	.?AVCAIGoalResurrecting@@
+Object.lto	ours	.?AVCAIGoalSentryChallenge@@
+Object.lto	ours	.?AVCAIGoalSentryMark@@
+Object.lto	ours	.?AVCAIHumanStateAssassinate@@
+Object.lto	ours	.?AVCAIHumanStateObstruct@@
+Object.lto	ours	.?AVCAIHumanStateResurrecting@@
+Object.lto	ours	.?AVCAIHumanStateSentryChallenge@@
+Object.lto	ours	.?AVCAIHumanStrategyShootStream@@
+Object.lto	ours	.?AVCBanana@@
+Object.lto	ours	.?AVCBearTrap@@
+Object.lto	ours	.?AVCBodyStateCarried@@
+Object.lto	ours	.?AVCBodyStateDropped@@
+Object.lto	ours	.?AVCBodyStateLedge@@
+Object.lto	ours	.?AVCBodyStateStairs@@
+Object.lto	ours	.?AVCCameraDisabler@@
+Object.lto	ours	.?AVCCoin@@
+Object.lto	ours	.?AVCDoomsDayDevicePlugin@@
+Object.lto	ours	.?AVCDoomsDayMissionMgr@@
+Object.lto	ours	.?AVCDoomsDayPiecePlugin@@
+Object.lto	ours	.?AVCGrenadeImpact@@
+Object.lto	ours	.?AVCKitty@@
+Object.lto	ours	.?AVCLipstickProx@@
+Object.lto	ours	.?AVCProjectileSpawner@@
+Object.lto	ours	.?AVCRadarObjectPlugin@@
+Object.lto	ours	.?AVCRadarTypeMgr@@
+Object.lto	ours	.?AVCRadarTypeMgrPlugin@@
+Object.lto	ours	.?AVCSpear@@
+Object.lto	ours	.?AVCTeamDeathMatchMissionMgr@@
+Object.lto	ours	.?AVDoomsDayDevice@@
+Object.lto	ours	.?AVDoomsDayPiece@@
+Object.lto	ours	.?AVRadarObject@@
+Object.lto	ours	.\\Attachments.cpp
+Object.lto	ours	.default
+Object.lto	ours	<Error - Radar Type Mgr not Inited!>
+Object.lto	ours	ACQUIREADD
+Object.lto	ours	ACQUIREADD <Additive Name>
+Object.lto	ours	AI '%s' fell thru the level at pos(%.2f %.2f %.2f )!! Popping back up.
+Object.lto	ours	AI: ORM attempted to add a relation when none existed.
+Object.lto	ours	AIIgnoreBody
+Object.lto	ours	AINodeAssassinate
+Object.lto	ours	AINodeObstruct
+Object.lto	ours	AINodeTraining
+Object.lto	ours	AINodeTrainingFailure
+Object.lto	ours	AINodeTrainingSuccess
+Object.lto	ours	AIRifleLight
+Object.lto	ours	AIVolumeTeleport
+Object.lto	ours	ASSASSINATE DEST=%s FollowPath failed
+Object.lto	ours	Aborting Goal %s\n
+Object.lto	ours	Activating AIGOalResurrecting!
+Object.lto	ours	AddToList
+Object.lto	ours	Added ClientID (%i) to team '%s'
+Object.lto	ours	Added team '%s' with model (%i)
+Object.lto	ours	AirLossDamage
+Object.lto	ours	Algnmnt : 
+Object.lto	ours	AllTeams
+Object.lto	ours	AmmoBox MPRespawn 0;AmmoType1 %s;AmmoCount1 1;Filename %s;Skin %s
+Object.lto	ours	ArmDefendPVFXName
+Object.lto	ours	ArmedFX
+Object.lto	ours	ArmedFXBlueTeam
+Object.lto	ours	ArmedFXRedTeam
+Object.lto	ours	Assassinate
+Object.lto	ours	AttackCoverCheckChance
+Object.lto	ours	AttackCoverCheckTime
+Object.lto	ours	Attempting to remove AIInformationVolume "%s"! Turning Off instead.
+Object.lto	ours	Attributes\\CoopMissions.txt
+Object.lto	ours	Attributes\\RadarTypes.txt
+Object.lto	ours	AutoBootTime
+Object.lto	ours	AutoBurstMaxDist
+Object.lto	ours	AutoBurstMinDist
+Object.lto	ours	BanList.txt
+Object.lto	ours	BananaBounce
+Object.lto	ours	BananaBounceLiquid
+Object.lto	ours	Body missing animation "FallDownStairs"
+Object.lto	ours	Body missing animation "FallDownStairsBack"
+Object.lto	ours	Body missing animation "FallDownStairsStart"
+Object.lto	ours	Body missing animation "FallDownStairsStop"
+Object.lto	ours	Body missing animation "FallOffLedge"
+Object.lto	ours	Body missing animation "FallOffLedgeStart"
+Object.lto	ours	Body missing animation "carrybody"
+Object.lto	ours	Body missing animation "dropbody"
+Object.lto	ours	BodyCarried
+Object.lto	ours	BodyDropped
+Object.lto	ours	BodyLedge
+Object.lto	ours	BodyStairs
+Object.lto	ours	Bonus
+Object.lto	ours	Booting innactive client.
+Object.lto	ours	CAIGoalChase: KEEPDISTANCE=%d
+Object.lto	ours	CAIGoalChase: NEVERGIVEUP=1
+Object.lto	ours	CAIGoalChase: SEEKPLAYER=1
+Object.lto	ours	CAIGoalChase: Sensed something, setting importance to 0.0
+Object.lto	ours	CAIGoalChase: Setting importance to 0.0
+Object.lto	ours	CAIGoalSentryMark: Does AI require line of sight to enter this goal?
+Object.lto	ours	CAnimationParser::AddPropertyToCurrentAnimation: Animation '%s' already has prop '%s' set for group '%s'. Cannot set to '%s'\n
+Object.lto	ours	CBanana
+Object.lto	ours	CBearTrap
+Object.lto	ours	CCameraDisabler
+Object.lto	ours	CCharacterHitBox::HandleImpact()
+Object.lto	ours	CClusterAutoBurstDisc
+Object.lto	ours	CCoin
+Object.lto	ours	CGameServerShell::FindStartPoint(): option %d occupied
+Object.lto	ours	CGrenadeImpact
+Object.lto	ours	CKitty
+Object.lto	ours	CLipstickProx
+Object.lto	ours	CProjectileSpawner
+Object.lto	ours	CServerMissionMgr::StartGame() setting difficulty to %d
+Object.lto	ours	CSpear
+Object.lto	ours	CTeam::AddPlayer() - FAILED: Invalid ClientID (%i) Team '%s'
+Object.lto	ours	Can't ride vehicles while carrying a something heavy
+Object.lto	ours	CanServerRestrict
+Object.lto	ours	CanTransition
+Object.lto	ours	CarryBodyMovement
+Object.lto	ours	Character at x:%f y:%f z:%f without an information Volume/Region
+Object.lto	ours	Chars\\Snd\\MaleBodyMoveCloth_1.WAV
+Object.lto	ours	Chars\\Snd\\MaleBodyMoveLeather_1.WAV
+Object.lto	ours	Client Camera Offset time is low, possible lag\n
+Object.lto	ours	ClusterAutoBurstDiscClassData
+Object.lto	ours	CoinBounce
+Object.lto	ours	CoinBounceLiquid
+Object.lto	ours	CoreDumpRemove_%d
+Object.lto	ours	CoreDump_%d
+Object.lto	ours	DDMissions.txt
+Object.lto	ours	DMMissions.txt
+Object.lto	ours	DMTouchPickup
+Object.lto	ours	DROPATPOS
+Object.lto	ours	DROPATPOS %.4f %.4f %.4f
+Object.lto	ours	DROPBODY
+Object.lto	ours	DRunBack2
+Object.lto	ours	DXBStart
+Object.lto	ours	DXBStop
+Object.lto	ours	DXFStart
+Object.lto	ours	DXFStop
+Object.lto	ours	DamageAmount
+Object.lto	ours	DamageCmd
+Object.lto	ours	DamageDelay
+Object.lto	ours	DamageInterval
+Object.lto	ours	DeathmatchModels
+Object.lto	ours	DefuseOnce
+Object.lto	ours	DestinationVolume
+Object.lto	ours	Device completed.
+Object.lto	ours	Direction: %i LastDirection: %i
+Object.lto	ours	DisposeLantern
+Object.lto	ours	DoNotDamageSelf
+Object.lto	ours	DodgeProjectileFleeChance
+Object.lto	ours	DoomReviveArmorPercent
+Object.lto	ours	DoomReviveHealthPercent
+Object.lto	ours	DoomsDay
+Object.lto	ours	DoomsDayBurn
+Object.lto	ours	DoomsDayDevice
+Object.lto	ours	DoomsDayPiece
+Object.lto	ours	Doomsday
+Object.lto	ours	Doomsday_Core
+Object.lto	ours	Doomsday_base
+Object.lto	ours	Doomsday_batteries
+Object.lto	ours	Doomsday_transmitter
+Object.lto	ours	DrawOrder
+Object.lto	ours	DropBody
+Object.lto	ours	DropZoneRadius
+Object.lto	ours	ERROR - CoreDump received a complete message from an object other than a player!\n
+Object.lto	ours	ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n
+Object.lto	ours	ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n
+Object.lto	ours	ERROR - Inventory Item %d had a bad ID\n
+Object.lto	ours	ERROR NULL WeightSet not found!
+Object.lto	ours	ERROR getting LOWER Tracker Cur Anim!
+Object.lto	ours	ERROR getting LOWER Tracker WeightSet!
+Object.lto	ours	ERROR getting MAIN Tracker Cur Anim!
+Object.lto	ours	ERROR getting MAIN Tracker WeightSet!
+Object.lto	ours	ERROR getting UPPER Tracker Cur Anim!
+Object.lto	ours	ERROR getting UPPER Tracker WeightSet!
+Object.lto	ours	ERROR! - ValidateMsgSpawn()
+Object.lto	ours	ERROR! - VelidateDelcmd()
+Object.lto	ours	EndTime
+Object.lto	ours	Exhuasted junction %s\n
+Object.lto	ours	FORCE DUCK TRUE
+Object.lto	ours	FXLoop
+Object.lto	ours	FXSmoothShutdown
+Object.lto	ours	Failed to attach Snowmobile.  Check the socket on the player model!
+Object.lto	ours	Failed to set anim with props:\n
+Object.lto	ours	FallDownStairs
+Object.lto	ours	FallDownStairsBack
+Object.lto	ours	FallDownStairsStart
+Object.lto	ours	FallDownStairsStop
+Object.lto	ours	FallOffLedge
+Object.lto	ours	FallOffLedgeBack
+Object.lto	ours	FallOffLedgeStart
+Object.lto	ours	FallOffLedgeStop
+Object.lto	ours	FindJunk
+Object.lto	ours	FireAnimRateScale
+Object.lto	ours	FireSecondaryStream
+Object.lto	ours	FireSecondaryStreamEnd
+Object.lto	ours	FireSecondaryStreamStart
+Object.lto	ours	FireStream
+Object.lto	ours	FireStreamEnd
+Object.lto	ours	FireStreamStart
+Object.lto	ours	Flashlight OFF
+Object.lto	ours	Flashlight ON
+Object.lto	ours	FullAirLostTime
+Object.lto	ours	FullAirRegenTime
+Object.lto	ours	FxName %s;Loop 1;SmoothShutdown 1
+Object.lto	ours	GADGET_TRACKER
+Object.lto	ours	GeneralInventory
+Object.lto	ours	Goal %s triggered by sense %s (%.2f)\n
+Object.lto	ours	Grief
+Object.lto	ours	GriefTime
+Object.lto	ours	Guns\\snd\\ak47\\Flashlight_click.wav
+Object.lto	ours	HIDDEN 0
+Object.lto	ours	HIDDEN <1 or 0>
+Object.lto	ours	HitPoints : %.0f\nArmor : %.0f\n
+Object.lto	ours	HoldDefendEndDefendPercentage
+Object.lto	ours	HoldDefendEndMaxDefendPercentage
+Object.lto	ours	HoldDefendMaxDefendPercentage
+Object.lto	ours	HoldDefendOrientationDeadZone
+Object.lto	ours	HoldDefendOrientationMaxDefendPercentage
+Object.lto	ours	HoldDefendOrientationMaxZone
+Object.lto	ours	HoldDefendOrientationMinDefendPercentage
+Object.lto	ours	HoldDefendPVFXName
+Object.lto	ours	HoldDefendStartDefendPercentage
+Object.lto	ours	HoldDefendStartMaxDefendPercentage
+Object.lto	ours	HumanAssassinate
+Object.lto	ours	HumanObstruct
+Object.lto	ours	HumanResurrecting
+Object.lto	ours	HumanSentryChallenge
+Object.lto	ours	HumanStateGoto: Set StrategyToggleLights.
+Object.lto	ours	HurtAnim
+Object.lto	ours	Idle1
+Object.lto	ours	Idle2
+Object.lto	ours	IgnoreVisibility
+Object.lto	ours	IncidentAngleToControlLineDecayMax
+Object.lto	ours	IncidentAngleToControlLineDecayMin
+Object.lto	ours	IncidentAngleToControlLineDecaySurge
+Object.lto	ours	IncidentAngleToControlLineMax
+Object.lto	ours	IncidentAngleToControlLineMin
+Object.lto	ours	IncidentAngleToControlLineSurge
+Object.lto	ours	InfoVolume OFF
+Object.lto	ours	InfoVolume ON
+Object.lto	ours	InitialAngleMax
+Object.lto	ours	InitialAngleMin
+Object.lto	ours	InitialAngleSurge
+Object.lto	ours	Item%dCount
+Object.lto	ours	Item%dID
+Object.lto	ours	Item1Count
+Object.lto	ours	Item1ID
+Object.lto	ours	Item2Count
+Object.lto	ours	Item2ID
+Object.lto	ours	Item3Count
+Object.lto	ours	Item3ID
+Object.lto	ours	Item4Count
+Object.lto	ours	Item4ID
+Object.lto	ours	Item5Count
+Object.lto	ours	Item5ID
+Object.lto	ours	JumpUpVolume %s must have one dimension (x or z) = %f
+Object.lto	ours	KittyOwnerArmDelay
+Object.lto	ours	KnockOutInfinite
+Object.lto	ours	LOWER Tracker Cur Anim: %i Looping: %i Playing: %i Enabled: %i
+Object.lto	ours	Lean: %i LastLean: %i
+Object.lto	ours	LeaningRail
+Object.lto	ours	LevelEndCmd
+Object.lto	ours	LoopArmSound
+Object.lto	ours	LoopArmedFX
+Object.lto	ours	LoveKitty
+Object.lto	ours	MAIN Tracker Cur Anim: %i Looping: %i Playing: %i Enabled: %i
+Object.lto	ours	Machinerysmall
+Object.lto	ours	Main: %i LastMain: %i
+Object.lto	ours	MarkWMFadeTime
+Object.lto	ours	MarkWMShow
+Object.lto	ours	MarkWMSolidTime
+Object.lto	ours	MaxDamageModifier
+Object.lto	ours	Message%d
+Object.lto	ours	MountedFlashlight
+Object.lto	ours	Movement: %i LastMovement: %i
+Object.lto	ours	NEXTROUND
+Object.lto	ours	NONCOMPATIBLE
+Object.lto	ours	NameStr
+Object.lto	ours	NetRegionCode
+Object.lto	ours	NextRound
+Object.lto	ours	No Team start point for team (%i)!
+Object.lto	ours	NoTeam
+Object.lto	ours	Node%dAttachSpears
+Object.lto	ours	OBSTRUCTNODE DEST=%s - Obstruct node is already locked!
+Object.lto	ours	Obstruct
+Object.lto	ours	OnMarkingCommand
+Object.lto	ours	Photo
+Object.lto	ours	PlayerAnimationDebug
+Object.lto	ours	PlayerDamageSound%d
+Object.lto	ours	Point %d: <%f, %f, %f>\n
+Object.lto	ours	Posture: %i LastPosture: %i
+Object.lto	ours	PowerupFX
+Object.lto	ours	PrimaryWeaponOnLeft
+Object.lto	ours	Profiles\\
+Object.lto	ours	PropType Type %s_target
+Object.lto	ours	Props\\Models\\PuAmmoBox.ltb
+Object.lto	ours	Props\\Skins\\PuAmmoBox.dtx
+Object.lto	ours	Props\\Snd\\SecurityCamera\\Disabled.wav
+Object.lto	ours	ProxArmDelay
+Object.lto	ours	ProxDetonateDelay
+Object.lto	ours	RESETGOAL
+Object.lto	ours	ROUNDWON
+Object.lto	ours	ROUNDWON <0 or 1>
+Object.lto	ours	RS\\Default.ltb
+Object.lto	ours	RS\\Default.ltb
+Object.lto	ours	RS\\Default.ltb
+Object.lto	ours	RS\\Default.ltb
+Object.lto	ours	RadarObject
+Object.lto	ours	RadarType
+Object.lto	ours	RadarTypeMgr
+Object.lto	ours	RampColor%d
+Object.lto	ours	RampTime%d
+Object.lto	ours	Received Remove command.
+Object.lto	ours	Registering persistent stimulus UndeterminedVisible
+Object.lto	ours	ReloadAnimRateScale
+Object.lto	ours	Removing persistent stimulus UndeterminedVisible
+Object.lto	ours	RespawnDoomsdayWaitTime
+Object.lto	ours	RespawnMultiWaitTime
+Object.lto	ours	RespawnWaitFX
+Object.lto	ours	RespawnWaitRenderStyle
+Object.lto	ours	RespawnWaitSkin
+Object.lto	ours	RespawnWaitTime
+Object.lto	ours	RespawnWaitTranslucent
+Object.lto	ours	RespawnWaitVisible
+Object.lto	ours	Resurrecting
+Object.lto	ours	Return to node outside dims: Model: %s Anim: %d
+Object.lto	ours	RoundCondition
+Object.lto	ours	RoundWon
+Object.lto	ours	Running Sense Command: %s
+Object.lto	ours	SCORE
+Object.lto	ours	SCORE <+/-amount>
+Object.lto	ours	SLEEPFOREVER
+Object.lto	ours	STOPACTIVATE
+Object.lto	ours	SafeExecute
+Object.lto	ours	Score
+Object.lto	ours	ScoreLimit reached.
+Object.lto	ours	ScoreTag
+Object.lto	ours	SearchBodyTime
+Object.lto	ours	SearchPropTime
+Object.lto	ours	SeeUndetermined
+Object.lto	ours	Senses : 0\n
+Object.lto	ours	Senses : 1\n
+Object.lto	ours	SentryChallenge
+Object.lto	ours	SentryChallengeDistMax
+Object.lto	ours	SentryChallengeScanDistMax
+Object.lto	ours	SentryMark
+Object.lto	ours	SentryMarkDistMax
+Object.lto	ours	ShardHorizontalPerturbMax
+Object.lto	ours	ShardHorizontalPerturbMin
+Object.lto	ours	ShardHorizontalPerturbSurge
+Object.lto	ours	ShardHorizontalSpreadMax
+Object.lto	ours	ShardHorizontalSpreadMin
+Object.lto	ours	ShardHorizontalSpreadSurge
+Object.lto	ours	ShardProjectileName
+Object.lto	ours	ShardVerticalSpreadMax
+Object.lto	ours	ShardVerticalSpreadMin
+Object.lto	ours	ShardVerticalSpreadSurge
+Object.lto	ours	ShardsTotalMax
+Object.lto	ours	ShardsTotalMin
+Object.lto	ours	ShardsTotalPerturbMax
+Object.lto	ours	ShardsTotalPerturbMin
+Object.lto	ours	ShardsTotalPerturbSurge
+Object.lto	ours	ShardsTotalSurge
+Object.lto	ours	Snd\\Powerups\\spawn_player.wav
+Object.lto	ours	Snore
+Object.lto	ours	SnowmobileImpactFXName
+Object.lto	ours	SnowmobileTranslucent
+Object.lto	ours	SpawnPoint
+Object.lto	ours	StairsFallSpeed
+Object.lto	ours	StairsFallStopSpeed
+Object.lto	ours	StartPoint
+Object.lto	ours	SwatCriticalDefendPVFXName
+Object.lto	ours	SwatCriticalDefendThreshold
+Object.lto	ours	SwatDefendEndDefendPercentage
+Object.lto	ours	SwatDefendEndMaxDefendPercentage
+Object.lto	ours	SwatDefendMaxDefendPercentage
+Object.lto	ours	SwatDefendMidpoint
+Object.lto	ours	SwatDefendOrientationDeadZone
+Object.lto	ours	SwatDefendOrientationMaxDefendPercentage
+Object.lto	ours	SwatDefendOrientationMaxZone
+Object.lto	ours	SwatDefendOrientationMinDefendPercentage
+Object.lto	ours	SwatDefendPVFXName
+Object.lto	ours	SwatDefendStartDefendPercentage
+Object.lto	ours	SwatDefendStartMaxDefendPercentage
+Object.lto	ours	TRANSMISSION <transmission id> [ActivePlayerComm] [TeamNumber]
+Object.lto	ours	Team %i
+Object.lto	ours	Team%i
+Object.lto	ours	Team%i: '%s' Score: %i
+Object.lto	ours	Team0
+Object.lto	ours	Team1
+Object.lto	ours	TeamDeathmatch
+Object.lto	ours	TeamDefaults
+Object.lto	ours	TeamModels
+Object.lto	ours	TeleportVolume "%s" - Has destination: "%s" which is not a TeleportVolume
+Object.lto	ours	TeleportVolume "%s" - Has differing Dims: "%s"
+Object.lto	ours	Teleporting to %.2f %.2f %.2f
+Object.lto	ours	ThreatRadiusReaction
+Object.lto	ours	TimeLimit reached.
+Object.lto	ours	Tracker
+Object.lto	ours	TurnRateMax
+Object.lto	ours	TurnRateMin
+Object.lto	ours	TurnRateSurge
+Object.lto	ours	UPPER Tracker Cur Anim: %i Looping: %i Playing: %i Enabled: %i
+Object.lto	ours	USER32.dll
+Object.lto	ours	UndeterminedVisible
+Object.lto	ours	Unrecognized property group: "%s"
+Object.lto	ours	VISIBLE <1 or 0>
+Object.lto	ours	VehicleMaxNumber
+Object.lto	ours	VehicleMaxNumber
+Object.lto	ours	VehicleMinTimeout
+Object.lto	ours	Volume "%s" - Unable to find Destination "%s"
+Object.lto	ours	Weapon: %i LastWeapon: %i
+Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0
+Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 1;MPRespawn 0;WeaponType %s;AmmoType %s; MoveToFloor 0, DMTouchPickup 0; Team %s
+Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 1;MPRespawn 0;WeaponType Coin;AmmoType Coin
+Object.lto	ours	WeaponItem MPRespawn 0;WeaponType TimeBomb;AmmoCount 1;MoveToFloor 0
+Object.lto	ours	WeaponSndRadius
+Object.lto	ours	WelderBurn
+Object.lto	ours	\\Campaigns\\
+Object.lto	ours	\\DD_Campaigns\\
+Object.lto	ours	\\DM_Campaigns\\
+Object.lto	ours	\\TDM_Campaigns\\
+Object.lto	ours	default_campaign.txt
+Object.lto	ours	error in %s: can't find search item "%s"
+Object.lto	ours	import KERNEL32.dll OpenFile
+Object.lto	retail	\tLeaving attack state, too far
+Object.lto	retail	\nArmor : 
+Object.lto	retail	         Ignoring trigger "SetHitPoints"
+Object.lto	retail	    MSG - INTEL - Invalid [intel] or [show] paramaters.
+Object.lto	retail	    MSG - INTEL - Invalid number of paramaters.
+Object.lto	retail	    MSG - Icon true/false is not valid!
+Object.lto	retail	    MSG - KEY - No action paramater listed.
+Object.lto	retail	    MSG - MUSIC - Invalid number of paramaters.
+Object.lto	retail	    MSG - MUSIC - Invalid paramaters for action '%s'. (see PlayerMessages.doc)
+Object.lto	retail	    MSG - OBJECTIVE - No action paramater listed.
+Object.lto	retail	    MSG - TRANSMISSION - Invalid [ActivePlayerComm] paramater.
+Object.lto	retail	    MSG - TRANSMISSION - Invalid number of paramaters.
+Object.lto	retail	 Cannot find : %s in: %s\n
+Object.lto	retail	 cannot add relation: %s %s %s due to existing conflicting permanet relation
+Object.lto	retail	 queuesound : %s %f
+Object.lto	retail	!!! AI deactivating with reset true. !!!
+Object.lto	retail	!!! AI resetting animation after goal is completed. !!!
+Object.lto	retail	!!! Received ANIM with 0 importance. !!!
+Object.lto	retail	%s %s %s %s
+Object.lto	retail	%s (active)
+Object.lto	retail	%s (inactive)
+Object.lto	retail	%s : Archive bin is empty on initial update.
+Object.lto	retail	%s not found in pingbutes.txt
+Object.lto	retail	%s.master.gamespy.com
+Object.lto	retail	%s:HandleGoalSenseTrigger: No Current Goal
+Object.lto	retail	%s:HandleGoalSenseTrigger: No Node
+Object.lto	retail	%s:HandleGoalSenseTrigger: No State
+Object.lto	retail	%s:HandleGoalSenseTrigger: Not Chase.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Occluded failure.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Parent failure.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Range failure.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Status not delayed.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Success
+Object.lto	retail	%s:HandleGoalSenseTrigger: Target failure.
+Object.lto	retail	%s:HandleGoalSenseTrigger: WeaponType failure.
+Object.lto	retail	%s:HandleGoalSenseTrigger: Wrong Goal Type
+Object.lto	retail	%s\\Attributes\\subroutines.txt
+Object.lto	retail	(Locked)
+Object.lto	retail	.?AUBALLCLASSDATA@@
+Object.lto	retail	.?AUCLIENTFXUSERCREATESTRUCT@@
+Object.lto	retail	.?AUCORRUPTICDIMSCLASSDATA@@
+Object.lto	retail	.?AUIGuestDataMgr@@
+Object.lto	retail	.?AUITargetCommand@@
+Object.lto	retail	.?AULIGHTCYCLECREATESTRUCT@@
+Object.lto	retail	.?AUPRANKSTERCLASSDATA@@
+Object.lto	retail	.?AURefreshCacheIfSame@@
+Object.lto	retail	.?AUSetAllowUpdate@@
+Object.lto	retail	.?AUTRONMISSION@@
+Object.lto	retail	.?AV?$AutoCommand@VMultiDispatch@@@@
+Object.lto	retail	.?AV?$AutoCommand@VSingleDispatch@@@@
+Object.lto	retail	.?AV?$CGenericTarget@VCAIGoalAbstract@@@@
+Object.lto	retail	.?AVAIInfoVolume@@
+Object.lto	retail	.?AVAIInfoVolumePlugin@@
+Object.lto	retail	.?AVAILightCycle@@
+Object.lto	retail	.?AVAINodeChangeWeaponsPlugin@@
+Object.lto	retail	.?AVAINodeExitLevelByRezOut@@
+Object.lto	retail	.?AVAINodeExitLevelByRezOutPlugin@@
+Object.lto	retail	.?AVAIVolumePlugin@@
+Object.lto	retail	.?AVAbstractTarget@@
+Object.lto	retail	.?AVArchiveBin@@
+Object.lto	retail	.?AVArena@@
+Object.lto	retail	.?AVArenaStartPoint@@
+Object.lto	retail	.?AVAttachedExplosion@@
+Object.lto	retail	.?AVBerry@@
+Object.lto	retail	.?AVBinaryBit@@
+Object.lto	retail	.?AVBuildNote@@
+Object.lto	retail	.?AVCAIGoalChaseAbstract@@
+Object.lto	retail	.?AVCAIGoalDash@@
+Object.lto	retail	.?AVCAIGoalExitLevelAbstract@@
+Object.lto	retail	.?AVCAIGoalExitLevelByRezOut@@
+Object.lto	retail	.?AVCAIGoalFconMonster@@
+Object.lto	retail	.?AVCAIGoalGlitch@@
+Object.lto	retail	.?AVCAIGoalLead@@
+Object.lto	retail	.?AVCAIGoalRezIn@@
+Object.lto	retail	.?AVCAIGoalSeekerHitch@@
+Object.lto	retail	.?AVCAIGoalSeekerHitchDown@@
+Object.lto	retail	.?AVCAIHumanStateDash@@
+Object.lto	retail	.?AVCAIHumanStateSeekerHitchDown@@
+Object.lto	retail	.?AVCAILCPlugin@@
+Object.lto	retail	.?AVCAIVolumePlayerInfoMgr@@
+Object.lto	retail	.?AVCArchiveBinPlugin@@
+Object.lto	retail	.?AVCArenaPlugin@@
+Object.lto	retail	.?AVCArenaStartPointPlugin@@
+Object.lto	retail	.?AVCBinaryBitPlugin@@
+Object.lto	retail	.?AVCBodyStateGib@@
+Object.lto	retail	.?AVCBodyStatePranksterImplode@@
+Object.lto	retail	.?AVCBossButeMgr@@
+Object.lto	retail	.?AVCBuildNotePlugin@@
+Object.lto	retail	.?AVCClusterDisc@@
+Object.lto	retail	.?AVCContinuousFireHelper@@
+Object.lto	retail	.?AVCCorrupticDims@@
+Object.lto	retail	.?AVCDisc@@
+Object.lto	retail	.?AVCDiscArenaMissionMgr@@
+Object.lto	retail	.?AVCEnergyClawFireHelper@@
+Object.lto	retail	.?AVCInstanceHandleServer@@
+Object.lto	retail	.?AVCLCPlugin@@
+Object.lto	retail	.?AVCLightCycleButeMgr@@
+Object.lto	retail	.?AVCLightCycleMgr@@
+Object.lto	retail	.?AVCLightCycleMultiplayerMissionMgr@@
+Object.lto	retail	.?AVCLightCyclePowerupPlugin@@
+Object.lto	retail	.?AVCLightCycleSinglePlayerMissionMgr@@
+Object.lto	retail	.?AVCMultiplayerLevelInfoMgr@@
+Object.lto	retail	.?AVCPRodFireHelper@@
+Object.lto	retail	.?AVCPingButeMgr@@
+Object.lto	retail	.?AVCProjectileBall@@
+Object.lto	retail	.?AVCProjectileBallLauncher@@
+Object.lto	retail	.?AVCProjectileDrunkenDims@@
+Object.lto	retail	.?AVCProjectileEnergyClaw@@
+Object.lto	retail	.?AVCProjectilePrankster@@
+Object.lto	retail	.?AVCServerLightCycleMgr@@
+Object.lto	retail	.?AVCServerSubroutineMgr@@
+Object.lto	retail	.?AVCSubroutineDataMgr@@
+Object.lto	retail	.?AVCThorne@@
+Object.lto	retail	.?AVCTronGameServerShell@@
+Object.lto	retail	.?AVCTronMissionButeMgr@@
+Object.lto	retail	.?AVCTronProjectile@@
+Object.lto	retail	.?AVCTronVersionMgr@@
+Object.lto	retail	.?AVCoreDump@@
+Object.lto	retail	.?AVEnergyZone@@
+Object.lto	retail	.?AVFinder@@
+Object.lto	retail	.?AVFinderPlugin@@
+Object.lto	retail	.?AVHealthZone@@
+Object.lto	retail	.?AVHostButeMgr@@
+Object.lto	retail	.?AVIActivationObserver@@
+Object.lto	retail	.?AVIInstanceHandleServer@@
+Object.lto	retail	.?AVIONode@@
+Object.lto	retail	.?AVIObjectRelationMgrUser@@
+Object.lto	retail	.?AVInfoString@@
+Object.lto	retail	.?AVLightCycle@@
+Object.lto	retail	.?AVLightCycleMissile@@
+Object.lto	retail	.?AVLightCyclePowerup@@
+Object.lto	retail	.?AVLightCycleSlowZone@@
+Object.lto	retail	.?AVLightCycleSpeedZone@@
+Object.lto	retail	.?AVLightCycleVolume@@
+Object.lto	retail	.?AVLightCycleVolumeCascader@@
+Object.lto	retail	.?AVLightCycleVolumeObjectPlugin@@
+Object.lto	retail	.?AVMultiDispatch@@
+Object.lto	retail	.?AVOccludingArmor@@
+Object.lto	retail	.?AVOptimizer@@
+Object.lto	retail	.?AVOptimizerExplosion@@
+Object.lto	retail	.?AVPatchRoutine@@
+Object.lto	retail	.?AVSecRezzer@@
+Object.lto	retail	.?AVSecRezzerPoint@@
+Object.lto	retail	.?AVSecrezzerPlugin@@
+Object.lto	retail	.?AVSingleDispatch@@
+Object.lto	retail	.?AVSpectatorObject@@
+Object.lto	retail	.?AVThorneBall@@
+Object.lto	retail	.?AVThorneObjectPlugin@@
+Object.lto	retail	.?AVTronTurret@@
+Object.lto	retail	.?AVTronTurretPlugin@@
+Object.lto	retail	.Default
+Object.lto	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+Object.lto	retail	1PCAM
+Object.lto	retail	3PCAM
+Object.lto	retail	ACQUIRENOTE
+Object.lto	retail	ACQUIRENOTE <Note Name>
+Object.lto	retail	ACQUIREPOWERUP
+Object.lto	retail	ACQUIREPRIM %s
+Object.lto	retail	ACQUIREPSET
+Object.lto	retail	ACQUIREPSET <permission set number | all>
+Object.lto	retail	ACQUIRESUB %s
+Object.lto	retail	ADDBUILDPOINTS %d
+Object.lto	retail	ADDBUILDPOINTS <number to add>
+Object.lto	retail	ADDPING
+Object.lto	retail	ADDPING <Ping Name> <1/0 (Play sound or not, defaults to 1>
+Object.lto	retail	ADDPSET
+Object.lto	retail	AI '%s' fell thru the level!! Popping back up.
+Object.lto	retail	AI: ObjectRelationMgr attempted to add a relation when none existed.
+Object.lto	retail	AIAlternateVolume
+Object.lto	retail	AICRASH
+Object.lto	retail	AIGoalExitLevel
+Object.lto	retail	AIInfoVolume
+Object.lto	retail	AIInfoVolume OFF
+Object.lto	retail	AIInfoVolume ON
+Object.lto	retail	AILightCycle
+Object.lto	retail	AINodeExitLevelByRezOut
+Object.lto	retail	AISTART
+Object.lto	retail	AIShowEnergyCLawDamage
+Object.lto	retail	AIShowEnergyClawDamage
+Object.lto	retail	AIShowGoalAttack
+Object.lto	retail	AIShowPRodDamage
+Object.lto	retail	AIShowRange
+Object.lto	retail	AIShowStateAttack
+Object.lto	retail	AIShowVectors
+Object.lto	retail	AISoundVolumeScalar
+Object.lto	retail	AISpeedBoost
+Object.lto	retail	AIUpdate
+Object.lto	retail	ALLOWROTATION
+Object.lto	retail	ALLOWSUMMON
+Object.lto	retail	ANNOUNCEMENT
+Object.lto	retail	ANNOUNCEMENTFINALVERSIONNUMBER
+Object.lto	retail	ARMOR_CANT_DAMAGE
+Object.lto	retail	ARMOR_CAN_DAMAGE
+Object.lto	retail	ARMOR_LOCK_OFF
+Object.lto	retail	ARMOR_LOCK_OFF
+Object.lto	retail	ARMOR_LOCK_ON
+Object.lto	retail	ARMOR_LOCK_ON
+Object.lto	retail	ARMOR_REMOVE
+Object.lto	retail	ARMOR_REMOVE
+Object.lto	retail	ARMOR_UNLOCK
+Object.lto	retail	ASKICON
+Object.lto	retail	ATTACHSTANDINGON
+Object.lto	retail	AcquireForceUse
+Object.lto	retail	AcquireMissileBlaster
+Object.lto	retail	AcquirePowerupGrab
+Object.lto	retail	AcquireShieldBreak
+Object.lto	retail	AcquireTurboBoost
+Object.lto	retail	AcquireTurboCurse
+Object.lto	retail	AcquireWallExtender
+Object.lto	retail	AcquireWallReset
+Object.lto	retail	AcquireWallSpike
+Object.lto	retail	ActivateForceUse
+Object.lto	retail	ActivateGrabFromCyclist
+Object.lto	retail	ActivateGrabFromFloor
+Object.lto	retail	ActivateGrabFromSelf
+Object.lto	retail	ActivateHigh
+Object.lto	retail	ActivateId
+Object.lto	retail	ActivateLow
+Object.lto	retail	ActivateMedium
+Object.lto	retail	ActivateMissileBlaster
+Object.lto	retail	ActivateShieldBreak
+Object.lto	retail	ActivateTrailReset
+Object.lto	retail	ActivateTurboBoost
+Object.lto	retail	ActivateTurboCurse
+Object.lto	retail	ActivateWallExtender
+Object.lto	retail	ActivateWallSpike
+Object.lto	retail	ActiveWorldModelInvalidPSet
+Object.lto	retail	AddPing
+Object.lto	retail	AimSecondary
+Object.lto	retail	All clients connected, performing level switch...
+Object.lto	retail	AllowDiskSpike
+Object.lto	retail	AllowInCustom
+Object.lto	retail	AllowParentActivateOwnership
+Object.lto	retail	AltCruiseSound
+Object.lto	retail	AngerChance
+Object.lto	retail	Anim Name: 
+Object.lto	retail	Anim Props: 
+Object.lto	retail	AnnouncePowerupGrab
+Object.lto	retail	AnnounceTurboCurse
+Object.lto	retail	AnnounceWallReset
+Object.lto	retail	ArchiveBin
+Object.lto	retail	ArchiveBin
+Object.lto	retail	ArchiveBinInvalidPSet
+Object.lto	retail	ArchiveBin_Frame
+Object.lto	retail	AreaDamageAlways
+Object.lto	retail	AreaDamageIgnoreOwner
+Object.lto	retail	Arena
+Object.lto	retail	ArenaStartPoint
+Object.lto	retail	AskIcon <true/false> [string-id]
+Object.lto	retail	AttachedExplosion
+Object.lto	retail	AttachmentSubstitution
+Object.lto	retail	AttackCenterMaxDist
+Object.lto	retail	AttackFromCoverBaseSearchScalar
+Object.lto	retail	AttackFromCoverBonusSearchScalar
+Object.lto	retail	AttackLeftMaxDist
+Object.lto	retail	AttackRightMaxDist
+Object.lto	retail	Attempting to remove AIInfoVolume "%s"! Turning Off instead.
+Object.lto	retail	Attributes/pings.txt
+Object.lto	retail	Attributes\\LightCycles.txt
+Object.lto	retail	Attributes\\Subroutines.txt
+Object.lto	retail	Attributes\\bosses.txt
+Object.lto	retail	Attributes\\subroutines.txt
+Object.lto	retail	AvailableSub%d
+Object.lto	retail	BALLLAUNCHER
+Object.lto	retail	BALLLAUNCHERRADIUS
+Object.lto	retail	BALLRADIUS
+Object.lto	retail	BLASTER
+Object.lto	retail	BLEEDING
+Object.lto	retail	BULLET
+Object.lto	retail	BUTE_SOUND_KEY_LOOPING
+Object.lto	retail	BackupLoaded
+Object.lto	retail	BallClassData
+Object.lto	retail	BallLauncher
+Object.lto	retail	BallLauncherRadius
+Object.lto	retail	BallRadius
+Object.lto	retail	Ball_launcher
+Object.lto	retail	BanName%d
+Object.lto	retail	BangHigh
+Object.lto	retail	BangMedium
+Object.lto	retail	BaseBallHealth
+Object.lto	retail	BaseSpeed
+Object.lto	retail	BaseVelocity
+Object.lto	retail	Behavior
+Object.lto	retail	Berry
+Object.lto	retail	Berry
+Object.lto	retail	BinaryBit::HandleActivateMessage - ERROR - Binary Bit was in a powered down state but had no energy requirements.\n  Since 0 was specified, the bit should have started at it's socket.\n
+Object.lto	retail	BinaryBitInvalidPSet
+Object.lto	retail	Blaster
+Object.lto	retail	BlockedPVFXName
+Object.lto	retail	BlowupDist
+Object.lto	retail	BlowupTime
+Object.lto	retail	BodyExplodeFlyTimeMax
+Object.lto	retail	BodyExplodeFlyTimeMin
+Object.lto	retail	BodyGib
+Object.lto	retail	BodyPranksterImplode
+Object.lto	retail	BrakeDecelRate
+Object.lto	retail	BriefingId
+Object.lto	retail	BuildNote
+Object.lto	retail	BuildNotes
+Object.lto	retail	BurstEffectName
+Object.lto	retail	BurstExplosionAmmoName
+Object.lto	retail	Bute Error
+Object.lto	retail	Bute Truncation: %s::%s - %s
+Object.lto	retail	C:\\proj\\Tron\\Source\\Game\\ObjectDLL\\ObjectShared\\Attachments.cpp
+Object.lto	retail	CAIGoalChaseAbstract: KEEPDISTANCE=%d
+Object.lto	retail	CAIGoalChaseAbstract: NEVERGIVEUP=1
+Object.lto	retail	CAIGoalChaseAbstract: SEEKPLAYER=1
+Object.lto	retail	CAIGoalChaseAbstract: Sensed something, setting importance to 0.0
+Object.lto	retail	CAIGoalChaseAbstract: Setting importance to 0.0
+Object.lto	retail	CAMFX
+Object.lto	retail	CBodyStateExplode Vel = %f, %f, %f
+Object.lto	retail	CCoopMissionMgr::StartGame() setting difficulty to %d
+Object.lto	retail	CCorrupticDims
+Object.lto	retail	CDeath
+Object.lto	retail	CDeath2
+Object.lto	retail	CDeath3
+Object.lto	retail	CINEACTIVATE
+Object.lto	retail	CINEDEACTIVATE
+Object.lto	retail	CLEARPATHKNOWLEDGE
+Object.lto	retail	CLIENTFX
+Object.lto	retail	CLUSTER
+Object.lto	retail	CLUSTERAUTOBURST
+Object.lto	retail	CLUSTERSHARDAMMO
+Object.lto	retail	CLightCycleButeMgr::Init: Failed to parse %s
+Object.lto	retail	CONTINUE_DIST
+Object.lto	retail	CONTINUOUSFIRERELEASE
+Object.lto	retail	CORRODE
+Object.lto	retail	CORRUPTICDIMS
+Object.lto	retail	CProjectileBall
+Object.lto	retail	CProjectileBallLauncher
+Object.lto	retail	CProjectileDrunkenDims
+Object.lto	retail	CProjectileEnergyClaw
+Object.lto	retail	CProjectilePrankster
+Object.lto	retail	CREATEBALL
+Object.lto	retail	CRUSH
+Object.lto	retail	CServerSubroutineMgr::Init: Failed to parse %s
+Object.lto	retail	CThorne
+Object.lto	retail	CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.
+Object.lto	retail	CTronProjectile
+Object.lto	retail	CanGhost
+Object.lto	retail	CascadeRate
+Object.lto	retail	CascadeRate
+Object.lto	retail	Center
+Object.lto	retail	ChanceToCorrupt
+Object.lto	retail	ChanceToTransform
+Object.lto	retail	Character
+Object.lto	retail	Character has no death anim for node: %s.
+Object.lto	retail	Character missing death animation: %s.
+Object.lto	retail	ChargeBall
+Object.lto	retail	ChargeTimeRange
+Object.lto	retail	Choice%dString
+Object.lto	retail	Choice1String
+Object.lto	retail	Choice2String
+Object.lto	retail	Choice3String
+Object.lto	retail	Choice4String
+Object.lto	retail	Choice5String
+Object.lto	retail	Choice6String
+Object.lto	retail	CircuitCompleteId
+Object.lto	retail	CircuitCompleteSound
+Object.lto	retail	CircuitNameId
+Object.lto	retail	ClassDataName
+Object.lto	retail	ClearAlarmCommand
+Object.lto	retail	Client Camera Offset time is old, possible lag\n
+Object.lto	retail	Close
+Object.lto	retail	Cluster
+Object.lto	retail	ClusterAutoBurst
+Object.lto	retail	ClusterShardAmmo
+Object.lto	retail	ColorNameId%d
+Object.lto	retail	CommandMessage: Failed to find %s in %s
+Object.lto	retail	Controlable
+Object.lto	retail	CoreDumpItem1
+Object.lto	retail	CoreDumpItem2
+Object.lto	retail	CoreDumpItem3
+Object.lto	retail	CoreDump_RibbonsFade
+Object.lto	retail	CoreDump_Ribbons_Destroy
+Object.lto	retail	CoreDump_Tetras_Destroy
+Object.lto	retail	Corrode
+Object.lto	retail	CorrodeAmount
+Object.lto	retail	CorrodeDuration
+Object.lto	retail	Corrupt
+Object.lto	retail	CorrupticDims
+Object.lto	retail	CorrupticDimsClassData
+Object.lto	retail	Cost1
+Object.lto	retail	Cost2
+Object.lto	retail	Cost3
+Object.lto	retail	Cost4
+Object.lto	retail	Cost5
+Object.lto	retail	Cost6
+Object.lto	retail	Could not find scripted animation: %s
+Object.lto	retail	Counter Value: %d  Locked: %d
+Object.lto	retail	CrashCmd
+Object.lto	retail	CreateBall
+Object.lto	retail	CreateCoreDump
+Object.lto	retail	CrouchCDeath
+Object.lto	retail	CrouchPDeath
+Object.lto	retail	CruiseSound
+Object.lto	retail	Crypt
+Object.lto	retail	Custom
+Object.lto	retail	CustomCmd
+Object.lto	retail	CustomCmd1
+Object.lto	retail	CustomCmd2
+Object.lto	retail	CustomCmd3
+Object.lto	retail	CustomCmd4
+Object.lto	retail	CustomCmd5
+Object.lto	retail	CustomCmd6
+Object.lto	retail	CustomCmdName
+Object.lto	retail	CustomCmdName1
+Object.lto	retail	CustomCmdName2
+Object.lto	retail	CustomCmdName3
+Object.lto	retail	CustomCmdName4
+Object.lto	retail	CustomCmdName5
+Object.lto	retail	CustomCmdName6
+Object.lto	retail	CycleColor
+Object.lto	retail	CycleColor %s
+Object.lto	retail	CycleDialog
+Object.lto	retail	CycleDialogParams
+Object.lto	retail	CycleMod
+Object.lto	retail	CycleRace
+Object.lto	retail	CycleType
+Object.lto	retail	CyclesAllowed
+Object.lto	retail	DAMAGESCALAR
+Object.lto	retail	DEATHFX
+Object.lto	retail	DEATHFX_%s_%s_Exp
+Object.lto	retail	DEATHFX_thornboss_dissipate
+Object.lto	retail	DEATHFX_thornboss_fire
+Object.lto	retail	DECISIONABORTED
+Object.lto	retail	DECISIONABORTED
+Object.lto	retail	DISPLAYPSETS
+Object.lto	retail	DPBLoop
+Object.lto	retail	DPBStop
+Object.lto	retail	DPFLoop
+Object.lto	retail	DPFStop
+Object.lto	retail	DRUNKENDIMS
+Object.lto	retail	DRUNKENDIMSRADIUS
+Object.lto	retail	DRun3
+Object.lto	retail	DamageEnergyClawed
+Object.lto	retail	DamageForever
+Object.lto	retail	DamageMax
+Object.lto	retail	DamageMin
+Object.lto	retail	DamageMultiplier
+Object.lto	retail	DamagePRoded
+Object.lto	retail	DamagePrankstered
+Object.lto	retail	DamageScalar: DamageScalar <float>
+Object.lto	retail	Dance
+Object.lto	retail	DanceLoop
+Object.lto	retail	DashMaxDist
+Object.lto	retail	DashMinDist
+Object.lto	retail	DeadlyBlockedFXName
+Object.lto	retail	DeadlyBlockedPVFXName
+Object.lto	retail	DeadlyDeflectAttachedFXName
+Object.lto	retail	DeadlyDeflectSmiteFXName
+Object.lto	retail	DeathClientFX
+Object.lto	retail	DeathRadius
+Object.lto	retail	DefaultPrim%d
+Object.lto	retail	DefaultSub%d
+Object.lto	retail	DefaultWeap%d
+Object.lto	retail	DefendPVFXName
+Object.lto	retail	DefenseClassData
+Object.lto	retail	DeflectAttachedFXName
+Object.lto	retail	DeflectDistance
+Object.lto	retail	DeflectFinalRadius
+Object.lto	retail	DeflectInitialRadius
+Object.lto	retail	DeflectTotalTime
+Object.lto	retail	DeflectVelocity
+Object.lto	retail	DerezzGenericCyclist
+Object.lto	retail	DerezzLocalCyclist
+Object.lto	retail	DestroyProjectile
+Object.lto	retail	DestroyedInFlightFXName
+Object.lto	retail	Disable
+Object.lto	retail	Disable Secrezzer
+Object.lto	retail	DisableSWM
+Object.lto	retail	Disabled
+Object.lto	retail	DisappearedMovingAnimRate
+Object.lto	retail	DiscArena
+Object.lto	retail	DiscAutoAimAngleDecayMult
+Object.lto	retail	DiscAutoAimAngleMult
+Object.lto	retail	DiscAutoAimRadius
+Object.lto	retail	DiscAutoAimTargetFeetOffset
+Object.lto	retail	DiscAutoAimTargetHeadOffset
+Object.lto	retail	DiscAutoAimTurnMult
+Object.lto	retail	DiscDeflectTime
+Object.lto	retail	DiscDeflectVelocity
+Object.lto	retail	DiscEnergy
+Object.lto	retail	DiscEnergy_Cyan
+Object.lto	retail	DiscEnergy_Green
+Object.lto	retail	DiscEnergy_Orange
+Object.lto	retail	DiscEnergy_Purple
+Object.lto	retail	DiscEnergy_Red
+Object.lto	retail	DiscEnergy_White
+Object.lto	retail	DiscEnergy_Yellow
+Object.lto	retail	DiscHomingControlYOffsetPercent
+Object.lto	retail	DiscHomingTargetYOffsetPercent
+Object.lto	retail	DiscMagneticHoming
+Object.lto	retail	DiscMagneticShowTarget
+Object.lto	retail	DiscResponsivenessMultiplier
+Object.lto	retail	DiscTournament
+Object.lto	retail	DiscVelocity
+Object.lto	retail	DiscVelocityReturn
+Object.lto	retail	Dismiss
+Object.lto	retail	Disrupt
+Object.lto	retail	DistAboveFloor
+Object.lto	retail	DistHitBoxMethod
+Object.lto	retail	DistressTimeMax
+Object.lto	retail	DisturbanceAlarmLevel
+Object.lto	retail	DisturbanceRadius
+Object.lto	retail	DoFiringTrails
+Object.lto	retail	DocumentBerry
+Object.lto	retail	DrawScanVolume
+Object.lto	retail	DrunkenDims
+Object.lto	retail	DrunkenDimsRadius
+Object.lto	retail	Drunken_dims
+Object.lto	retail	ENABLELCDIALOG
+Object.lto	retail	ENEMYDISC
+Object.lto	retail	ENERGY CLAW
+Object.lto	retail	ERROR - Could not create the light cycle object!\n
+Object.lto	retail	ERROR - Could not give subroutine to the player with bad 2nd param = (%s).\n
+Object.lto	retail	ERROR - Could not give subroutine to the player with bad 3rd param = (%s).\n
+Object.lto	retail	ERROR - Could not initialize multiplayer level info file: %s!\n
+Object.lto	retail	ERROR - Could not spawn AI!
+Object.lto	retail	ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!\n
+Object.lto	retail	ERROR - Couldn't find Light Cycle Color %s\n
+Object.lto	retail	ERROR - Looked for LCSpawner%2d and found %d objects!\n
+Object.lto	retail	ERROR - PatchRoutine received an activate message and it had nothing to give!
+Object.lto	retail	ERROR in PlayClientFX()!  Invalid position specified for FX
+Object.lto	retail	ERROR in TronTurret, could not find a parent %s
+Object.lto	retail	ERROR! - ValidateDelcmd()
+Object.lto	retail	ERROR! - ValidateTalkIcon()
+Object.lto	retail	ERROR!!!  %s given command to take control of node %s while owned by %s!  This may lead to gameplay deadlocks and other horrible events.  Please see your local AI programmer right now!
+Object.lto	retail	ERROR: CAttachments::GetAttachment called with invalid index or index to no attachment
+Object.lto	retail	ERROR: Could not find note with name (%s) in the bute file.
+Object.lto	retail	ERROR: Priority value %f < 0 or %f > 1 for %s
+Object.lto	retail	Early out - Bad Damager Position!
+Object.lto	retail	Early out - No hDamager!
+Object.lto	retail	Early out - Not a character!
+Object.lto	retail	Early out - Unable to get rotation!
+Object.lto	retail	Elasticity
+Object.lto	retail	Electrocute.wav
+Object.lto	retail	EliminateTargetsFX
+Object.lto	retail	Email
+Object.lto	retail	EmailName
+Object.lto	retail	EmailName1
+Object.lto	retail	EmailName2
+Object.lto	retail	EmailName3
+Object.lto	retail	EmailName4
+Object.lto	retail	EmailName5
+Object.lto	retail	EmailName6
+Object.lto	retail	Empty_archloop_01
+Object.lto	retail	EnableRecoilWeaponNodeTracking
+Object.lto	retail	EnableSoundDebugInfo
+Object.lto	retail	EndDefendPercentage
+Object.lto	retail	EnemyDisc
+Object.lto	retail	EnergyClaw
+Object.lto	retail	EnergyClawCrouch
+Object.lto	retail	EnergyDrain
+Object.lto	retail	EnergyDrainMax
+Object.lto	retail	EnergyDrainMin
+Object.lto	retail	EnergyDrainSurge
+Object.lto	retail	EnergyRequiredMax
+Object.lto	retail	EnergyRequiredMin
+Object.lto	retail	EnergyRequiredSurge
+Object.lto	retail	EnergySuck
+Object.lto	retail	EnergyUseMultiplier
+Object.lto	retail	EnergyZone
+Object.lto	retail	Energy_claw
+Object.lto	retail	Engage IONode
+Object.lto	retail	Error in CCharacter::HandleModelString msg SetDims could not get current animation. 
+Object.lto	retail	Escapable
+Object.lto	retail	ExaminingHigh
+Object.lto	retail	ExaminingLow
+Object.lto	retail	Exhausted junction %s\n
+Object.lto	retail	ExitLevelByRezOut
+Object.lto	retail	Explosion::ReadProp - No such ammo type %s
+Object.lto	retail	ExplosionDamageMultiplier
+Object.lto	retail	FINDERWEAPON
+Object.lto	retail	FOREIGN
+Object.lto	retail	FULLENERGY
+Object.lto	retail	Failed to find a valid start postion for gametype %s, using startpoint 0
+Object.lto	retail	Failed to parse file: 
+Object.lto	retail	FailureChance
+Object.lto	retail	FakeDeath
+Object.lto	retail	FconBazaDeath
+Object.lto	retail	FconBazaPain
+Object.lto	retail	FconCrownPain
+Object.lto	retail	FconMonster
+Object.lto	retail	FconPopoffDeath
+Object.lto	retail	FconPopoffPain
+Object.lto	retail	Finder
+Object.lto	retail	Finder0x%08x
+Object.lto	retail	FinderDrawScanVolume
+Object.lto	retail	FinderExplosionAmmo
+Object.lto	retail	FinderWeapon
+Object.lto	retail	FinderWeaponBlue
+Object.lto	retail	FinderWeaponGreen
+Object.lto	retail	FinderWeaponPurple
+Object.lto	retail	FireAnimationRateMultiplier
+Object.lto	retail	FireFOV
+Object.lto	retail	FireSocket
+Object.lto	retail	FireSocket1
+Object.lto	retail	FireSocketName
+Object.lto	retail	Fire_2
+Object.lto	retail	ForceUse
+Object.lto	retail	ForceWalk
+Object.lto	retail	Foreign
+Object.lto	retail	Frame
+Object.lto	retail	From: 
+Object.lto	retail	FrontSensorDist
+Object.lto	retail	Function
+Object.lto	retail	Fuzzy_signature
+Object.lto	retail	FxName %s%s%s
+Object.lto	retail	FxName %s%s%s;Loop 1;SmoothShutdown 0
+Object.lto	retail	FxName %s;Loop 0;SmoothShutdown 0 
+Object.lto	retail	FxName %s;Loop 1;SmoothShutdown %d
+Object.lto	retail	FxName %s;Loop 1;SmoothShutdown 0
+Object.lto	retail	GOAL_SpecialDamage CONTINUOUSFIRERELEASE=0
+Object.lto	retail	GOINGBETWEENWALLS
+Object.lto	retail	GameSpeedScalars
+Object.lto	retail	GameSpy error: %s
+Object.lto	retail	German
+Object.lto	retail	GibFX
+Object.lto	retail	Glitch
+Object.lto	retail	Global
+Object.lto	retail	GlowFogEnable
+Object.lto	retail	GlowFogFarZ
+Object.lto	retail	GlowFogNearZ
+Object.lto	retail	GoForward
+Object.lto	retail	Goal %s triggered by %s; sense %s (%.2f) ()\n
+Object.lto	retail	GoalId
+Object.lto	retail	Green
+Object.lto	retail	Greet
+Object.lto	retail	Greeting
+Object.lto	retail	GridCyclist
+Object.lto	retail	GridSize
+Object.lto	retail	HIDE_ATTACHFX
+Object.lto	retail	HIDE_ATTACHFX 0
+Object.lto	retail	HOOKSENDER
+Object.lto	retail	HUDLivesIconTex
+Object.lto	retail	HUDRosterIconTex
+Object.lto	retail	HUNTINGPLAYER
+Object.lto	retail	HalfHeight
+Object.lto	retail	HalfLength
+Object.lto	retail	HalfWidth
+Object.lto	retail	HeadShot
+Object.lto	retail	HeadShot2
+Object.lto	retail	HeadShot3
+Object.lto	retail	HeadShotBack
+Object.lto	retail	HeadShotBack2
+Object.lto	retail	HeadShotBack3
+Object.lto	retail	HealthZone
+Object.lto	retail	HeavyWeaponMovement
+Object.lto	retail	HelpFile
+Object.lto	retail	HelpFile1
+Object.lto	retail	HelpFile2
+Object.lto	retail	HelpFile3
+Object.lto	retail	HelpFile4
+Object.lto	retail	HelpFile5
+Object.lto	retail	HelpFile6
+Object.lto	retail	HiddenInDEditToAIWeaponList
+Object.lto	retail	HiddenPieces
+Object.lto	retail	HideWeaponWhileClipEmpty
+Object.lto	retail	HitPoints : 
+Object.lto	retail	HitpointsDropped
+Object.lto	retail	HittableNode
+Object.lto	retail	Homing
+Object.lto	retail	HorizontalFactor
+Object.lto	retail	HumanDash
+Object.lto	retail	HumanSeekerHitchDown
+Object.lto	retail	IC_Finder
+Object.lto	retail	IC_Finder_AlansPC
+Object.lto	retail	IC_Finder_Fcon
+Object.lto	retail	IC_Finder_Internet
+Object.lto	retail	IGNOREDIALOGUE
+Object.lto	retail	IGNOREFOV
+Object.lto	retail	INFOSTRING
+Object.lto	retail	INSUREANIMOBJECTCLOSED
+Object.lto	retail	IOCAM
+Object.lto	retail	IOCAM <on/off> [Location] [Target]
+Object.lto	retail	IONode
+Object.lto	retail	IONode
+Object.lto	retail	IONode::Trigger - ERROR - Invalid command: %s\n
+Object.lto	retail	IONodeInvalidPSet
+Object.lto	retail	IONode_close
+Object.lto	retail	IONode_open
+Object.lto	retail	IdealBuildPoints
+Object.lto	retail	IdealProcedurals
+Object.lto	retail	IdealSubroutines
+Object.lto	retail	IdealWeapons
+Object.lto	retail	IgnoreDist
+Object.lto	retail	Image
+Object.lto	retail	InRangePVAttachFX
+Object.lto	retail	IncidentAngleToControlLine
+Object.lto	retail	IncidentAngleToControlLineDecay
+Object.lto	retail	Infected
+Object.lto	retail	InfoString
+Object.lto	retail	InitialAngle
+Object.lto	retail	InitialExplosionSuppressTime
+Object.lto	retail	InitialLives
+Object.lto	retail	InitiallyLock
+Object.lto	retail	Interface\\snd\\archive_dn.wav
+Object.lto	retail	Interface\\snd\\archive_up.wav
+Object.lto	retail	IntroFX
+Object.lto	retail	IntroSound
+Object.lto	retail	Invalid Command Message: %s
+Object.lto	retail	Invalid summon command %s
+Object.lto	retail	InvalidPSetCommand
+Object.lto	retail	InventoryChanceToBeCorruptedByInfectedAmmoEasy
+Object.lto	retail	InventoryChanceToBeCorruptedByInfectedAmmoHard
+Object.lto	retail	InventoryChanceToBeCorruptedByInfectedAmmoNormal
+Object.lto	retail	InventoryChanceToBeCorruptedByInfectedAmmoVeryHard
+Object.lto	retail	Is %f far away from last node
+Object.lto	retail	IsPlayerPrimitive
+Object.lto	retail	Item %d has a type but no valid name.  Items must be named to exist.
+Object.lto	retail	Item1
+Object.lto	retail	Item2
+Object.lto	retail	Item3
+Object.lto	retail	Item4
+Object.lto	retail	Item5
+Object.lto	retail	Item6
+Object.lto	retail	JUSTPASSEDPLAYER
+Object.lto	retail	Joint6
+Object.lto	retail	KILLALLAILC
+Object.lto	retail	KILL_LOOPING_SOUND
+Object.lto	retail	KNUCKLESANDWICH
+Object.lto	retail	KeyframerName
+Object.lto	retail	Kicking Client %d: CheatBootPlayer
+Object.lto	retail	Kicking Client %d: Handshake 0
+Object.lto	retail	Kicking Client %d: Handshake 1
+Object.lto	retail	Kicking Client %d: Handshake 10
+Object.lto	retail	Kicking Client %d: Handshake 11
+Object.lto	retail	Kicking Client %d: Handshake 12
+Object.lto	retail	Kicking Client %d: Handshake 13
+Object.lto	retail	Kicking Client %d: Handshake 2
+Object.lto	retail	Kicking Client %d: Handshake 3
+Object.lto	retail	Kicking Client %d: Handshake 4
+Object.lto	retail	Kicking Client %d: Handshake 5
+Object.lto	retail	Kicking Client %d: Handshake 6
+Object.lto	retail	Kicking Client %d: Handshake 7
+Object.lto	retail	Kicking Client %d: Handshake 8
+Object.lto	retail	Kicking Client %d: Handshake 9
+Object.lto	retail	Kicking Client %d: Lagged lightcycle player
+Object.lto	retail	Kicking Client %d: Player Tracker
+Object.lto	retail	KnuckleSandwich
+Object.lto	retail	LAUGHING
+Object.lto	retail	LCDifficultyModifierEasy
+Object.lto	retail	LCDifficultyModifierHard
+Object.lto	retail	LCDifficultyModifierNormal
+Object.lto	retail	LCDifficultyModifierVeryHard
+Object.lto	retail	LCSpawner%02d
+Object.lto	retail	LISTEN
+Object.lto	retail	LISTENICON
+Object.lto	retail	LOCKDISC
+Object.lto	retail	LOCKIGNOREVOLUMESTATE
+Object.lto	retail	LOCKIGNOREVOLUMESTATE <1-or-0>
+Object.lto	retail	LOCKWEAPON
+Object.lto	retail	LOSTPLAYER
+Object.lto	retail	LOSTPLAYERSTILLCHASING
+Object.lto	retail	L_Arm_Shell
+Object.lto	retail	LeanBackRail
+Object.lto	retail	LeanLeftRail
+Object.lto	retail	LeanRightRail
+Object.lto	retail	LeftArmDestroy
+Object.lto	retail	LeftCanHurt
+Object.lto	retail	LeftRod
+Object.lto	retail	LeftSensorDist
+Object.lto	retail	LightCycleBlue
+Object.lto	retail	LightCycleBlueSuper
+Object.lto	retail	LightCycleMissile
+Object.lto	retail	LightCyclePowerup
+Object.lto	retail	LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n
+Object.lto	retail	LightCycleRacer
+Object.lto	retail	LightCycleRed
+Object.lto	retail	LightCycleSlowZone
+Object.lto	retail	LightCycleSpeedZone
+Object.lto	retail	LightCycleVolume
+Object.lto	retail	LightCycleVolumeCascader
+Object.lto	retail	LingerMaxDegreesToTurn
+Object.lto	retail	ListenIcon <true/false> [string-id]
+Object.lto	retail	LithTech
+Object.lto	retail	Locked the RezOut goal, should not be interuptable.
+Object.lto	retail	LockedNameId
+Object.lto	retail	LostTargetFlightTime
+Object.lto	retail	LoudChance
+Object.lto	retail	MANAGESUBS
+Object.lto	retail	MAXZOOM
+Object.lto	retail	MELEE
+Object.lto	retail	MINHITPOINTS
+Object.lto	retail	MPDeflectTotalTime
+Object.lto	retail	MagneticAngleMax
+Object.lto	retail	MagneticEdgeInfluence
+Object.lto	retail	MagneticMiddleInfluence
+Object.lto	retail	MagneticRadius
+Object.lto	retail	Map%d
+Object.lto	retail	MapName
+Object.lto	retail	MaxActive
+Object.lto	retail	MaxAmmoOverride
+Object.lto	retail	MaxDefendPercentage
+Object.lto	retail	MaxDist
+Object.lto	retail	MaxDistance
+Object.lto	retail	MaxExternalSpeedAdd
+Object.lto	retail	MaxManualSpeedAdd
+Object.lto	retail	MaxRadius
+Object.lto	retail	MaxSearchTime
+Object.lto	retail	MaxSpeedZoneSpeed
+Object.lto	retail	MaxTargets
+Object.lto	retail	MaxTeamSize
+Object.lto	retail	MaxThrowTime
+Object.lto	retail	MaxThrowVelocity
+Object.lto	retail	MaxTrailLength
+Object.lto	retail	MaxTurboCurseSpeed
+Object.lto	retail	MaxTurboSpeed
+Object.lto	retail	MaxWallAccelRate
+Object.lto	retail	MaxWallDist
+Object.lto	retail	MegaHurtz
+Object.lto	retail	Melee Weapon
+Object.lto	retail	MeshGlow
+Object.lto	retail	Mesh_Ring
+Object.lto	retail	MinSearchTime
+Object.lto	retail	MinSlowZoneSpeed
+Object.lto	retail	MinSpeed
+Object.lto	retail	MinThrowTime
+Object.lto	retail	MinThrowVelocity
+Object.lto	retail	Missile
+Object.lto	retail	MissileSpeed
+Object.lto	retail	Model%dColor%dHHDisc
+Object.lto	retail	Model%dColor%dRezIn
+Object.lto	retail	Model%dColor%dSkin%d
+Object.lto	retail	Model%dName
+Object.lto	retail	Model%dNameId
+Object.lto	retail	ModelTemplate
+Object.lto	retail	ModelTemplate
+Object.lto	retail	ModelTemplate
+Object.lto	retail	ModifyPriorityWithDist
+Object.lto	retail	MovementLock%d
+Object.lto	retail	MultiOnly
+Object.lto	retail	MultiplayerLeashLength
+Object.lto	retail	MultiplayerLightcycles
+Object.lto	retail	Name LC%02d;CycleColor %s
+Object.lto	retail	NameKey
+Object.lto	retail	NameSeed
+Object.lto	retail	No challenge value was received from the master server.
+Object.lto	retail	No valid start position types for gametype %s, using startpoint 0
+Object.lto	retail	NoWeapon
+Object.lto	retail	Node%dIgnoreParent
+Object.lto	retail	NormalAccelRate
+Object.lto	retail	NormalDecelRate
+Object.lto	retail	NormalLock%d
+Object.lto	retail	NoteName
+Object.lto	retail	NumRandomSubs
+Object.lto	retail	NumberToSpawn
+Object.lto	retail	ON <Radius Center>
+Object.lto	retail	OPTIMIZEREXPLOSION
+Object.lto	retail	OccludingArmor
+Object.lto	retail	OldStyleBeamName
+Object.lto	retail	OnAICrash
+Object.lto	retail	OnActivate
+Object.lto	retail	OnDestroyFX
+Object.lto	retail	OnMatchEnd
+Object.lto	retail	OnMatchStart
+Object.lto	retail	OnOptimize
+Object.lto	retail	OnPlayerCrash
+Object.lto	retail	OnPlayerDeath
+Object.lto	retail	OnPlayerSpawn
+Object.lto	retail	OnPointEnd
+Object.lto	retail	OnPointStart
+Object.lto	retail	OnUseCmd
+Object.lto	retail	OnWithdraw
+Object.lto	retail	OnWithdraw1
+Object.lto	retail	OnWithdraw2
+Object.lto	retail	OnWithdraw3
+Object.lto	retail	OnWithdraw4
+Object.lto	retail	OnWithdraw5
+Object.lto	retail	OnWithdraw6
+Object.lto	retail	OnlyDamagedByPlayer
+Object.lto	retail	Open Archivebin
+Object.lto	retail	Open Coredump
+Object.lto	retail	Optimizer
+Object.lto	retail	Optimizer
+Object.lto	retail	Optimizer missing animation %s
+Object.lto	retail	Optimizer::GetAnim void pointer for anim name
+Object.lto	retail	OptimizerExplosion
+Object.lto	retail	OptimzerInvalidPSet
+Object.lto	retail	OrientationDeadZone
+Object.lto	retail	OrientationMaxDefense
+Object.lto	retail	OrientationMaxZone
+Object.lto	retail	OrientationMinDefense
+Object.lto	retail	PDeath
+Object.lto	retail	PDeath2
+Object.lto	retail	PDeath3
+Object.lto	retail	PERMISSION_DEPENDANT
+Object.lto	retail	PLAYERCLOSEBEHIND
+Object.lto	retail	PLAYERCLOSEINFRONT
+Object.lto	retail	PLAYERCRASH
+Object.lto	retail	PLAYERONLY
+Object.lto	retail	PLAYERPERMISSIONS
+Object.lto	retail	PLAYERPERMISSIONS <bool> If true, AI has same permissions as player
+Object.lto	retail	PLAYERTURNSAWAY
+Object.lto	retail	POWERBLOCK
+Object.lto	retail	PRANKSTERBIT
+Object.lto	retail	PRANKSTERBITIMPLODE
+Object.lto	retail	PRodCrouch
+Object.lto	retail	PSetBerry
+Object.lto	retail	PSetNumber
+Object.lto	retail	PSetNumber1
+Object.lto	retail	PSetNumber2
+Object.lto	retail	PSetNumber3
+Object.lto	retail	PSetNumber4
+Object.lto	retail	PSetNumber5
+Object.lto	retail	PSetNumber6
+Object.lto	retail	ParentSocket
+Object.lto	retail	Permission Set
+Object.lto	retail	PerturbMultiplier
+Object.lto	retail	Pickup Build Note
+Object.lto	retail	PingName
+Object.lto	retail	Player with client ID (%d) had too slow of a ping for this server (%d)
+Object.lto	retail	Player with client ID (%d) just joined the game\n
+Object.lto	retail	Player with client ID (%d) just joined the spectators\n
+Object.lto	retail	Player with client ID (%d) just joined the waiting players\n
+Object.lto	retail	Player with client ID (%d) just left the game\n
+Object.lto	retail	Player with client ID (%d) just left the spectators\n
+Object.lto	retail	PlayerDeathResponse
+Object.lto	retail	PlayerFiredAbortCmd
+Object.lto	retail	PlayerNoticeDist
+Object.lto	retail	PlayerOnly
+Object.lto	retail	PlayerSpeedBoost
+Object.lto	retail	Points
+Object.lto	retail	Popoff
+Object.lto	retail	PowerBlock
+Object.lto	retail	Powerup
+Object.lto	retail	Powerup%d
+Object.lto	retail	Prankster
+Object.lto	retail	PranksterBit
+Object.lto	retail	PranksterBitImplode
+Object.lto	retail	PranksterClassData
+Object.lto	retail	Prankster_bit
+Object.lto	retail	Prankstered
+Object.lto	retail	Preach
+Object.lto	retail	Primary
+Object.lto	retail	Primitive
+Object.lto	retail	PrimitiveName
+Object.lto	retail	PrimitiveName1
+Object.lto	retail	PrimitiveName2
+Object.lto	retail	PrimitiveName3
+Object.lto	retail	PrimitiveName4
+Object.lto	retail	PrimitiveName5
+Object.lto	retail	PrimitiveName6
+Object.lto	retail	Primitive_charge
+Object.lto	retail	Procedural
+Object.lto	retail	ProceduralName
+Object.lto	retail	ProceduralName1
+Object.lto	retail	ProceduralName2
+Object.lto	retail	ProceduralName3
+Object.lto	retail	ProceduralName4
+Object.lto	retail	ProceduralName5
+Object.lto	retail	ProceduralName6
+Object.lto	retail	Profiler
+Object.lto	retail	ProjectileCollisionDebug
+Object.lto	retail	ProjectileNewCollision
+Object.lto	retail	Prop%d
+Object.lto	retail	ProximityBombEffectName
+Object.lto	retail	ProximityDistance
+Object.lto	retail	ProximitySecondsToArm
+Object.lto	retail	ProximityThreshold
+Object.lto	retail	RACETRIGGER
+Object.lto	retail	RACETRIGGERNO
+Object.lto	retail	RAMPCONSOLEVAR
+Object.lto	retail	RAMPCONSOLEVAR <cvar> [start] <end> <period>
+Object.lto	retail	RATING
+Object.lto	retail	REMOVEPING
+Object.lto	retail	REMOVEPING <Ping Name>
+Object.lto	retail	REMOVEPSET
+Object.lto	retail	REPORT
+Object.lto	retail	RESETPATH
+Object.lto	retail	RESET_ATTACHFX
+Object.lto	retail	RESET_ATTACHFX 0
+Object.lto	retail	REZINFX
+Object.lto	retail	RIOTSHIELDAMMO
+Object.lto	retail	R_Arm_Shell
+Object.lto	retail	RaiseEW
+Object.lto	retail	RaiseNS
+Object.lto	retail	RamWeapon
+Object.lto	retail	RampDownTimePercent
+Object.lto	retail	RampUpTimePercent
+Object.lto	retail	Random
+Object.lto	retail	RandomAngleAdjust
+Object.lto	retail	RandomSub%d
+Object.lto	retail	Randomness
+Object.lto	retail	RandomnessMultiplier
+Object.lto	retail	RandomnessRampUpTime
+Object.lto	retail	RangeAttackIsRecessive
+Object.lto	retail	Ranged Weapon
+Object.lto	retail	RateOfFire
+Object.lto	retail	Received level switch request, waiting for all players to be connected to initiate switch...
+Object.lto	retail	Recharge
+Object.lto	retail	RechargeRate
+Object.lto	retail	Regular
+Object.lto	retail	Reinforcement
+Object.lto	retail	RemoveCmd
+Object.lto	retail	RepairStation
+Object.lto	retail	RequiredPermissionSets
+Object.lto	retail	ResetPath
+Object.lto	retail	ReturnToOwner
+Object.lto	retail	RezIn
+Object.lto	retail	RezInFX
+Object.lto	retail	RezInFXDoneCommand
+Object.lto	retail	RiderFX
+Object.lto	retail	Right
+Object.lto	retail	RightArmDestroy
+Object.lto	retail	RightCanHurt
+Object.lto	retail	RightRod
+Object.lto	retail	RightSensorDist
+Object.lto	retail	RiotShieldAmmo
+Object.lto	retail	SAYICON
+Object.lto	retail	SCREENGLOWFOGENABLE
+Object.lto	retail	SCREENGLOWFOGENABLE <1-or-0>
+Object.lto	retail	SCREENGLOWFOGFARZ
+Object.lto	retail	SCREENGLOWFOGFARZ <far z>
+Object.lto	retail	SCREENGLOWFOGNEARZ
+Object.lto	retail	SCREENGLOWFOGNEARZ <near z>
+Object.lto	retail	SEEKCHARACTER
+Object.lto	retail	SELECT
+Object.lto	retail	SELECT
+Object.lto	retail	SEQUENCER
+Object.lto	retail	SETBUILDPOINTS
+Object.lto	retail	SETONLYDAMAGEBYPLAYER
+Object.lto	retail	SETSUBHELP
+Object.lto	retail	SETSYSTEMCONFIG
+Object.lto	retail	SHOW_ATTACHFX
+Object.lto	retail	SHOW_ATTACHFX 0
+Object.lto	retail	SHOW_ATTACHFX 1
+Object.lto	retail	SHOW_ATTACHFX 2
+Object.lto	retail	SINCONSOLEVAR
+Object.lto	retail	SINCONSOLEVAR <cvar> {off | <min> <max> <period>}
+Object.lto	retail	SLEEPING
+Object.lto	retail	SLIPPERY
+Object.lto	retail	SPAWNAICYCLES
+Object.lto	retail	STARTSUPERCYCLE
+Object.lto	retail	STUCK
+Object.lto	retail	SUFFUSION
+Object.lto	retail	SUFFUSIONGIB
+Object.lto	retail	SUMMON
+Object.lto	retail	SWATBLOCKMELEEATTACK
+Object.lto	retail	SWORD
+Object.lto	retail	SayIcon <true/false> [string-id]
+Object.lto	retail	ScanInfinite
+Object.lto	retail	ScreenGlow
+Object.lto	retail	ScreenGlowFogEnable
+Object.lto	retail	ScreenGlowFogEnable
+Object.lto	retail	ScreenGlowFogFarZ
+Object.lto	retail	ScreenGlowFogFarZ
+Object.lto	retail	ScreenGlowFogNearZ
+Object.lto	retail	ScreenGlowFogNearZ
+Object.lto	retail	Scripted
+Object.lto	retail	SecRezzer
+Object.lto	retail	SecRezzerPoint
+Object.lto	retail	SecondsToLinger
+Object.lto	retail	SecondsToLock
+Object.lto	retail	Secrezzer
+Object.lto	retail	SecrezzerInvalidPSet
+Object.lto	retail	SeeCoreDump
+Object.lto	retail	Seeker
+Object.lto	retail	SeekerHitch
+Object.lto	retail	SeekerHitchDown
+Object.lto	retail	SelectWeaponBasedOnVisibility
+Object.lto	retail	SenseRecorder attempting to copy a sense record it does not support.
+Object.lto	retail	Senses: 0\n
+Object.lto	retail	Senses: 1\n
+Object.lto	retail	SensingSocket
+Object.lto	retail	Sequencer
+Object.lto	retail	SetEnergy
+Object.lto	retail	SetHitPoints
+Object.lto	retail	Shade
+Object.lto	retail	Shield
+Object.lto	retail	Shield_prism
+Object.lto	retail	ShowNodeCover
+Object.lto	retail	SingleLightCycleCircuit
+Object.lto	retail	SingleLightCycleCustom
+Object.lto	retail	SlowZoneDecelRate
+Object.lto	retail	SmashFront
+Object.lto	retail	Socket
+Object.lto	retail	Software\\GameSpy\\GameSpy 3D\\Registration
+Object.lto	retail	SoundLocalToPlayer
+Object.lto	retail	Spectator
+Object.lto	retail	SpectatorObject
+Object.lto	retail	SpeedZoneAccelRate
+Object.lto	retail	SpotRange
+Object.lto	retail	StandardCycleRestrictionId
+Object.lto	retail	StartCompressed
+Object.lto	retail	StartDefendPercentage
+Object.lto	retail	StartWallFollow
+Object.lto	retail	StringOverrideID
+Object.lto	retail	Subroutine
+Object.lto	retail	SubroutineBerry
+Object.lto	retail	SubroutineBuild
+Object.lto	retail	SubroutineBuild1
+Object.lto	retail	SubroutineBuild2
+Object.lto	retail	SubroutineBuild3
+Object.lto	retail	SubroutineBuild4
+Object.lto	retail	SubroutineBuild5
+Object.lto	retail	SubroutineBuild6
+Object.lto	retail	SubroutineCondition
+Object.lto	retail	SubroutineCondition1
+Object.lto	retail	SubroutineCondition2
+Object.lto	retail	SubroutineCondition3
+Object.lto	retail	SubroutineCondition4
+Object.lto	retail	SubroutineCondition5
+Object.lto	retail	SubroutineCondition6
+Object.lto	retail	SubroutineConfig
+Object.lto	retail	SubroutineName
+Object.lto	retail	SubroutineName1
+Object.lto	retail	SubroutineName2
+Object.lto	retail	SubroutineName3
+Object.lto	retail	SubroutineName4
+Object.lto	retail	SubroutineName5
+Object.lto	retail	SubroutineName6
+Object.lto	retail	Suffusion
+Object.lto	retail	SuffusionGib
+Object.lto	retail	Summon
+Object.lto	retail	SummonCmd
+Object.lto	retail	SummonCmd
+Object.lto	retail	Super
+Object.lto	retail	SuperCycleRestrictionId
+Object.lto	retail	SupportsDamageFX
+Object.lto	retail	SuppressResetWhenNotCurrent
+Object.lto	retail	SwatBlockMeleeAttack
+Object.lto	retail	SwatWeapon
+Object.lto	retail	SwayAmountMultiplier
+Object.lto	retail	SwaySpeedMultiplier
+Object.lto	retail	SystemNameId
+Object.lto	retail	TALKLOCK
+Object.lto	retail	TRANSMISSION <transmission id> [ActivePlayerComm]
+Object.lto	retail	TRON 12
+Object.lto	retail	TRON TURRET ERROR : MSG TARGET, NOT ENOUGH ARGS
+Object.lto	retail	TURN <left/right>
+Object.lto	retail	T_PRodLightning
+Object.lto	retail	TalkToPlayerCleanupDist
+Object.lto	retail	TankGun
+Object.lto	retail	Tank_Blast
+Object.lto	retail	TargetAngleTrackThreshold
+Object.lto	retail	TargetObject
+Object.lto	retail	Team 1
+Object.lto	retail	Team 2
+Object.lto	retail	Tentacles_Left
+Object.lto	retail	Tentacles_Right
+Object.lto	retail	TestHitByCorruption
+Object.lto	retail	TextID
+Object.lto	retail	TextIds
+Object.lto	retail	Thorne
+Object.lto	retail	ThorneBall
+Object.lto	retail	ThrowBall
+Object.lto	retail	Thrown Weapon
+Object.lto	retail	TimeRangeBetweenCycleDialog
+Object.lto	retail	TimeToAcquireTargets
+Object.lto	retail	TimeVictimStasis
+Object.lto	retail	TimeVictimStasisRange
+Object.lto	retail	TrackNone
+Object.lto	retail	TrailDerezDelay
+Object.lto	retail	TrailDerezTime
+Object.lto	retail	TrailLengthValues
+Object.lto	retail	TrailReset
+Object.lto	retail	TrailSpike
+Object.lto	retail	TrailSpikeDelay
+Object.lto	retail	TrailSpikeDist
+Object.lto	retail	TrailSpikeSpeed
+Object.lto	retail	Transitioning: 
+Object.lto	retail	Triangulate
+Object.lto	retail	TriggerCommand
+Object.lto	retail	TriviaId
+Object.lto	retail	TronProjectile
+Object.lto	retail	TronTurret
+Object.lto	retail	Turbo
+Object.lto	retail	TurboAccelRate
+Object.lto	retail	TurboCurse
+Object.lto	retail	TurboCurseAccelRate
+Object.lto	retail	TurboCurseTime
+Object.lto	retail	TurboTime
+Object.lto	retail	TurnRate
+Object.lto	retail	TurnSound
+Object.lto	retail	TurnSpeedLossPercent
+Object.lto	retail	Turret
+Object.lto	retail	Type1
+Object.lto	retail	Type2
+Object.lto	retail	Type3
+Object.lto	retail	Type4
+Object.lto	retail	Type5
+Object.lto	retail	Type6
+Object.lto	retail	UNLOCKWEAPON
+Object.lto	retail	UR2Bl
+Object.lto	retail	UR2CBl
+Object.lto	retail	UR3Bl
+Object.lto	retail	UR3CBl
+Object.lto	retail	URBlL
+Object.lto	retail	URBlR
+Object.lto	retail	URCBl
+Object.lto	retail	URCBlL
+Object.lto	retail	URCBlR
+Object.lto	retail	URCFi2
+Object.lto	retail	URCFi3
+Object.lto	retail	URCFi4
+Object.lto	retail	URCFi5
+Object.lto	retail	URFi2
+Object.lto	retail	URFi3
+Object.lto	retail	URFi4
+Object.lto	retail	URFi5
+Object.lto	retail	Unknown Weapon: %d
+Object.lto	retail	UnlockAnimPostFireNormalLock%d
+Object.lto	retail	UnlockAnimPostFireWithMovementLock%d
+Object.lto	retail	Unlocks
+Object.lto	retail	UnpanicActivate
+Object.lto	retail	Use Optimizer
+Object.lto	retail	UseAIState
+Object.lto	retail	UseCachedAttackAnims
+Object.lto	retail	ValidAIToSpawn
+Object.lto	retail	Value%d
+Object.lto	retail	VelocityRange
+Object.lto	retail	VerticalFactor
+Object.lto	retail	VeryHard
+Object.lto	retail	ViewFOV
+Object.lto	retail	Virus_scan
+Object.lto	retail	WAIT_DIST
+Object.lto	retail	WALLFOLLOWINGPLAYERINSIGHT
+Object.lto	retail	WALLFOLLOWPLAYERCLOSE
+Object.lto	retail	WARNING: Invalid skel specification for AddAnimsLTB%d for smart goal %s
+Object.lto	retail	WAVECOMPLETE
+Object.lto	retail	WORLDS_PatchRoutine_Energy_Idle
+Object.lto	retail	WORLDS_PatchRoutine_Energy_Idle_Infinite
+Object.lto	retail	WORLDS_PatchRoutine_Energy_Remove
+Object.lto	retail	WORLDS_PatchRoutine_Energy_Transfer
+Object.lto	retail	WORLDS_PatchRoutine_Energy_Transfer_Infinite
+Object.lto	retail	WORLDS_PatchRoutine_Health_Idle
+Object.lto	retail	WORLDS_PatchRoutine_Health_Idle_Infinite
+Object.lto	retail	WORLDS_PatchRoutine_Health_Remove
+Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer
+Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer_Infinite
+Object.lto	retail	WORLDS_buildnote_base
+Object.lto	retail	WORLDS_buildnote_remove
+Object.lto	retail	WORLDS_lcpowerup_
+Object.lto	retail	WallExtender
+Object.lto	retail	WallExtenderAdd
+Object.lto	retail	Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0
+Object.lto	retail	Watch
+Object.lto	retail	WaveCount
+Object.lto	retail	Weapon
+Object.lto	retail	WeaponItem WeaponType TimeBomb;AmmoCount 1;MoveToFloor 0
+Object.lto	retail	WeaponSet
+Object.lto	retail	WeaponUsableByAIs
+Object.lto	retail	WindowStyle
+Object.lto	retail	World Dims: %.0f, %.0f, %.0f
+Object.lto	retail	Worlds\\RetailLightCycle
+Object.lto	retail	Worlds\\RetailMultiPlayer\\DiscArena
+Object.lto	retail	XFireOffset
+Object.lto	retail	YFireOffset
+Object.lto	retail	ZFireOffset
+Object.lto	retail	_active
+Object.lto	retail	_pickup
+Object.lto	retail	_remove
+Object.lto	retail	_touch
+Object.lto	retail	acquireproc %s
+Object.lto	retail	acquiresub %s %s %s
+Object.lto	retail	aggressive
+Object.lto	retail	aircontrol
+Object.lto	retail	alpha
+Object.lto	retail	alpha
+Object.lto	retail	alpha
+Object.lto	retail	attributes\\fx.txt
+Object.lto	retail	attributes\\subroutines.txt
+Object.lto	retail	autoaim
+Object.lto	retail	avoid
+Object.lto	retail	bl.dat
+Object.lto	retail	chars\\snd\\tanks\\fire.wav
+Object.lto	retail	chars\\snd\\tanks\\loop_turret.wav
+Object.lto	retail	chars\\snd\\tanks\\start_turret.wav
+Object.lto	retail	chars\\snd\\tanks\\stop_turret.wav
+Object.lto	retail	choke01.wav
+Object.lto	retail	choke02.wav
+Object.lto	retail	coredump
+Object.lto	retail	corrupted
+Object.lto	retail	cycletype
+Object.lto	retail	deathloop
+Object.lto	retail	deathpoints
+Object.lto	retail	deaths_
+Object.lto	retail	dedicated
+Object.lto	retail	delay 0.5 (msg <CPlayerObj> (PLAYSOUND PlayerCriticalHitKill))
+Object.lto	retail	efficiency
+Object.lto	retail	energy
+Object.lto	retail	energy_up
+Object.lto	retail	fconleft
+Object.lto	retail	fconright
+Object.lto	retail	final\\\\queryid\\1.1
+Object.lto	retail	fraglimit
+Object.lto	retail	friendlyfire
+Object.lto	retail	gamemode
+Object.lto	retail	gamename
+Object.lto	retail	gamespermap
+Object.lto	retail	gametype
+Object.lto	retail	gamevariant
+Object.lto	retail	gamever
+Object.lto	retail	groupid
+Object.lto	retail	health
+Object.lto	retail	hostname
+Object.lto	retail	hostport
+Object.lto	retail	import ADVAPI32.dll RegOpenKeyExA
+Object.lto	retail	import ADVAPI32.dll RegSetValueExA
+Object.lto	retail	import KERNEL32.dll GetFileAttributesA
+Object.lto	retail	import KERNEL32.dll QueryPerformanceCounter
+Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@I@Z
+Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@PBX@Z
+Object.lto	retail	import MSVCIRT.dll ?clear@ios@@QAEXH@Z
+Object.lto	retail	import MSVCIRT.dll ?ends@@YAAAVostream@@AAV1@@Z
+Object.lto	retail	import MSVCIRT.dll ?freeze@strstreambuf@@QAEXH@Z
+Object.lto	retail	import MSVCIRT.dll ?lock@ios@@QAAXXZ
+Object.lto	retail	import MSVCIRT.dll ?unlock@ios@@QAAXXZ
+Object.lto	retail	import MSVCRT.dll _CIfmod
+Object.lto	retail	import MSVCRT.dll _HUGE
+Object.lto	retail	import MSVCRT.dll _finite
+Object.lto	retail	import MSVCRT.dll _itoa
+Object.lto	retail	import MSVCRT.dll _memicmp
+Object.lto	retail	import MSVCRT.dll _snprintf
+Object.lto	retail	import MSVCRT.dll isalnum
+Object.lto	retail	import USER32.dll FindWindowA
+Object.lto	retail	import USER32.dll MessageBoxA
+Object.lto	retail	import USER32.dll ShowWindow
+Object.lto	retail	import WSOCK32.dll #10
+Object.lto	retail	import WSOCK32.dll #11
+Object.lto	retail	import WSOCK32.dll #116
+Object.lto	retail	import WSOCK32.dll #14
+Object.lto	retail	import WSOCK32.dll #17
+Object.lto	retail	import WSOCK32.dll #18
+Object.lto	retail	import WSOCK32.dll #20
+Object.lto	retail	import WSOCK32.dll #3
+Object.lto	retail	import WSOCK32.dll #52
+Object.lto	retail	import WSOCK32.dll #57
+Object.lto	retail	import WSOCK32.dll #8
+Object.lto	retail	import WSOCK32.dll #9
+Object.lto	retail	in-time-interval-queue : %s %d
+Object.lto	retail	infected
+Object.lto	retail	info.txt
+Object.lto	retail	killpoints
+Object.lto	retail	leftcommandobject
+Object.lto	retail	lefthitpoints
+Object.lto	retail	liveloop
+Object.lto	retail	localip%d
+Object.lto	retail	localport
+Object.lto	retail	mapname
+Object.lto	retail	matchpoints
+Object.lto	retail	matchtime
+Object.lto	retail	maxping
+Object.lto	retail	maxplayers
+Object.lto	retail	modname
+Object.lto	retail	natneg
+Object.lto	retail	nfected
+Object.lto	retail	nfected
+Object.lto	retail	normal
+Object.lto	retail	normal
+Object.lto	retail	normal
+Object.lto	retail	null.wav
+Object.lto	retail	numplayers
+Object.lto	retail	numteams
+Object.lto	retail	openplaying
+Object.lto	retail	optimize
+Object.lto	retail	option remove 5115
+Object.lto	retail	option remove 5251
+Object.lto	retail	password
+Object.lto	retail	ping_
+Object.lto	retail	play-sound -%x %d %s %f
+Object.lto	retail	player_
+Object.lto	retail	powerups
+Object.lto	retail	processor
+Object.lto	retail	reindeerflotilla
+Object.lto	retail	restore
+Object.lto	retail	revert
+Object.lto	retail	rightcommandobject
+Object.lto	retail	righthitpoints
+Object.lto	retail	roundelapsed
+Object.lto	retail	roundtime
+Object.lto	retail	score_
+Object.lto	retail	score_t
+Object.lto	retail	setbuildpoints %d
+Object.lto	retail	skill_
+Object.lto	retail	snd\\event\\spawn_player.wav
+Object.lto	retail	startdeath
+Object.lto	retail	statechanged
+Object.lto	retail	target
+Object.lto	retail	team_
+Object.lto	retail	team_t
+Object.lto	retail	teamfraglimit
+Object.lto	retail	teamplay
+Object.lto	retail	tetra%d
+Object.lto	retail	timeelapsed
+Object.lto	retail	timelimit
+Object.lto	retail	traillength
+Object.lto	retail	transfer
+Object.lto	retail	trigger
+Object.lto	retail	turns off armor and turns off on lock if character has power armor
+Object.lto	retail	turns off armor if character has power armor
+Object.lto	retail	turns on armor and locks it on if character has power armor
+Object.lto	retail	turns on armor if character has power armor
+Object.lto	retail	unknown
+Object.lto	retail	virus_scan
+Object.lto	retail	voice\\%d.wav
+Object.lto	retail	waitweaps
+Object.lto	retail	wander
+Object.lto	retail	winpoints

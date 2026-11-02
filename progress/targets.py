@@ -158,7 +158,7 @@ TARGETS = [
          app=[(0x10001000, 0x101d0890)]),
     dict(label="Object.lto", what="the game: server objects", kind="image",
          shipped=REFERENCE + "/Object.lto", stem="Object",
-         built="src/Game/built/Final/ObjectDLL/TRON/Object.lto", optional=True,
+         built="src/Game/built/Final/ObjectDll/TRON/Object.lto", optional=True,
          # provisional: msvcprt.lib's delete thunk at 0x10277c80, then the
          # thunks, and msvcrt.lib from chkstk.obj (0x10277d00) to
          # dllmain.obj

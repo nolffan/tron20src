@@ -113,10 +113,11 @@ bool CLightCycleMgr::AddCyclist(HOBJECT hObj, bool bUpdate)
 
 	// Tell the client
 	CAutoMessage cMsg;
-	cMsg.WriteByte(LCI_ADD_CYCLIST);
+	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
+	cMsg.Writeuint8(LCI_ADD_CYCLIST);
 	cMsg.WriteObject(hObj);
-	cMsg.WriteByte((uint8)bUpdate);
-	g_pLTServer->SendToClient(cMsg, MID_LIGHT_CYCLE_INFO, NULL, MESSAGE_GUARANTEED);
+	cMsg.Writeuint8((uint8)bUpdate);
+	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 	return true;
 }
 
@@ -145,9 +146,10 @@ bool CLightCycleMgr::DerezCyclist(HOBJECT hObj)
 	pCyclist->fStartDerezTime = g_pLTServer->GetTime();
 
 	CAutoMessage cMsg;
-	cMsg.WriteByte(LCI_DEREZ_CYCLIST);
+	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
+	cMsg.Writeuint8(LCI_DEREZ_CYCLIST);
 	cMsg.WriteObject(hObj);
-	g_pLTServer->SendToClient(cMsg, MID_LIGHT_CYCLE_INFO, NULL, MESSAGE_GUARANTEED);
+	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 	return true;
 }
 
@@ -175,9 +177,10 @@ bool CLightCycleMgr::RemoveCyclist(HOBJECT hObj)
 
 			// Notify the client
 			CAutoMessage cMsg;
-			cMsg.WriteByte(LCI_REMOVE_CYCLIST);
+			cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
+			cMsg.Writeuint8(LCI_REMOVE_CYCLIST);
 			cMsg.WriteObject(hObj);
-			g_pLTServer->SendToClient(cMsg, MID_LIGHT_CYCLE_INFO, NULL, MESSAGE_GUARANTEED);
+			g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 
 			return true;
 		}

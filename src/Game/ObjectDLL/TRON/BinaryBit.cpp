@@ -56,13 +56,15 @@ LTRESULT CBinaryBitPlugin::PreHook_PropChanged( const	char		*szObjName,
 											    const	char		*szPropName,
 											    const	int			nPropType,
 											    const	GenericProp	&gpPropValue,
-											    ILTPreInterface	*pInterface )
+											    ILTPreInterface	*pInterface,
+											    const	char		*szModifiers ) // PORT: NOLF2's interface
 {
 	if( LT_OK == m_CommandMgrPlugin.PreHook_PropChanged( szObjName,
 														 szPropName,
 														 nPropType, 
 														 gpPropValue,
-														 pInterface ))
+														 pInterface,
+														 szModifiers )) // PORT: NOLF2's interface
 	{
 		return LT_OK;
 	}
@@ -351,7 +353,7 @@ void BinaryBit::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	// Load the important stuff
 	LOAD_BOOL(m_bLocked);
 	LOAD_BOOL(m_bStartOnInSocket);
-	LOAD_BYTE_CAST(m_eState);
+	LOAD_BYTE_CAST(m_eState, BinaryBitState); // PORT: NOLF2's macro names the type
 	LOAD_DWORD(m_nOriginalEnergyRequired);
 	LOAD_DWORD(m_nCurrentEnergyRequired);
 	LOAD_BOOL(m_bPlayingTransitionAnim);
@@ -432,7 +434,7 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 		}
 		case MID_QUERY_TARGET_PROPERTIES:
 		{
-			uint8 nNumProps = pMsg->ReadByte();
+			uint8 nNumProps = pMsg->Readuint8();
 			uint8 nNumPropsProcessed = 0;
 
 			// See what we need to send down
@@ -446,14 +448,14 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 				for(int i=0;i<nNumProps;i++)
 				{
 					// Get the prop
-					iProp = pMsg->ReadByte();
+					iProp = pMsg->Readuint8();
 					switch(iProp)
 					{
 						case TARGET_PROP_ENERGY_REQUIRED:
 						{
 							// Write the ID, the value, and inc the number of props processed
-							cTempMsg.WriteByte(iProp);
-							cTempMsg.WriteDWord(m_nCurrentEnergyRequired);
+							cTempMsg.Writeuint8(iProp);
+							cTempMsg.Writeuint32(m_nCurrentEnergyRequired);
 							nNumPropsProcessed++;
 
 							break;
@@ -469,10 +471,11 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 					if(pPlayer)
 					{
 						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8(MID_QUERY_TARGET_PROPERTIES); // PORT: the id was SendToClient's argument
 						cPropMsg.WriteObject(m_hObject);
-						cPropMsg.WriteByte(nNumPropsProcessed);
-						cPropMsg.WriteMessage(cTempMsg);
-						g_pLTServer->SendToClient(cPropMsg, MID_QUERY_TARGET_PROPERTIES, pPlayer->GetClient(), MESSAGE_GUARANTEED);
+						cPropMsg.Writeuint8(nNumPropsProcessed);
+						cPropMsg.WriteMessage(cTempMsg.Read());
+						g_pLTServer->SendToClient(cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
 					}
 				}
 			}

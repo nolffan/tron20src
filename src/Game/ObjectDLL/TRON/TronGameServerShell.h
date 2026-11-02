@@ -40,7 +40,7 @@ class CTronGameServerShell : public CGameServerShell
 
 	private:
 
-		virtual CPlayerObj* CreatePlayer(HCLIENT hClient);
+		virtual CPlayerObj* CreatePlayer(HCLIENT hClient, ModelId ePlayerModelId); // PORT: NOLF2's interface
 		CTronVersionMgr		m_VersionMgr; // Same as g_pVersionMgr
 		CTronMissionButeMgr	m_MissionButeMgr;	// Same as g_pMissionButeMgr
 		CLightCycleMgr m_LightCycleMgr; // Same as g_pLightCycleMgr

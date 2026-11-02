@@ -79,7 +79,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the v1.030 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
 | 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the rest to come |
 | 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | `ltmsg.dll` identical; `SndDrv.dll` built, 131 of 284 functions identical |
-| 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | |
+| 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | `ClientFx.fxd` and `Object.lto` build; `CShell.dll` being ported (below) |
 | 5 | `engine`: `Lithtech.exe` and `server.dll` from nolf2src's engine and the Jupiter tree, with the D3D9 renderer; D3DX9 placed as `middleware`; an unprotected engine (the demo, the dev build) for the SecuROM pages and the imports | 2 | |
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 3-6 | |
@@ -129,6 +129,44 @@ Done.
   more `ILTSoundSys` slots (`progress/data-known.txt`,
   `progress/vtab-known.txt`) -- and is to be brought there from the 2006
   file (`rez/installed/devtools/jupiter-b69/Engine/runtime/sound/src/sys/s_dx8/`).
+
+### 4. game: where Tron's code comes from
+
+What the first builds showed (2026-11-02):
+
+- **Build 69's Tron code is a May 2002 snapshot**, not 2006's: its
+  version strings are "TRON Build 20 (05/09/02) DO NOT DISTRIBUTE", and it
+  still uses the engine API of Jupiter build 51 (March 2002) in places --
+  `ReadByteFL`, `WriteByte`, `SendToClient(msg, MID, client, flags)`, a
+  five-parameter `PreHook_PropChanged` -- beside NOLF2's API in others.
+  Retail is "v1.030", "Build 74": 17 months on.
+- **Tron's shared code is NOLF2's, of late 2002, with Tron's additions.**
+  Of the string literals only NOLF2 1.3's `ObjectShared` has (and Build
+  51's `ObjectDLL` lacks), 417 are in retail `Object.lto`; what it lacks is
+  mostly NOLF2's last multiplayer additions (teams, Doomsday) and debug
+  messages. So nolf2src's tree is the base, Build 69's Tron files are
+  ported forward to its API (each change marked `PORT:`), and Tron's own
+  additions to the shared code -- which neither Build 69 nor NOLF2 has --
+  are written from the retail code.
+- **Object.lto** compiles and links: Build 69's server files ported to
+  NOLF2's message and object APIs (by hand, and by a
+  mechanical renaming of the message accessors), `CTronVersionMgr` given
+  NOLF2's `GetNetGameName`/`GetBuildGuid` and the shared code's version
+  globals (`GAME_NAME` "TRON 2.0" and the GameSpy name "tron20" from
+  retail; the build guid, handshake version and net version still to be
+  read from the retail code), `CreatePlayer` NOLF2's signature. GameSpy is
+  not linked yet (Build 69's project links a `GameSpyMgr.lib` that is not
+  in it), and WON's ServerDir headers stand in for the shared shell's
+  `iserverdir.h`.
+- **CShell.dll** does not compile yet. NOLF2's shared client library
+  compiled `TO2\HUDHealth.cpp` (out: Tron has its own `HUDHealthEnergy`).
+  The Tron files need, besides the same renaming, what Tron added to the
+  shared code: `COMMAND_ID_DEFEND`, `COMMAND_ID_DEFEND_MODIFIER`
+  (`CommandIDs.h`), `FXFLAG_SMOOTHSHUTDOWN` (`FxFlags.h`), `CLIENTFX_LINK`'s
+  instance reachable, `CPlayerMgr::IsCarryingBody`/`CanDropBody`,
+  `CUserProfile::m_nWpnActions`, `WEAPON`/`AMMO` names readable, the
+  `LTPoly_GT4` draw-primitive type, `CTronPlayerStats`' energy modifiers:
+  each to be written from retail `CShell.dll`.
 
 ### 9. modern
 

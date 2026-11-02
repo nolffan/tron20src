@@ -51,6 +51,9 @@
 #include "ButeListReader.h"
 #include "ClientLightFX.h"
 #include "ClientServerShared.h"
+// PORT: NOLF2's shared headers do not bring in CAutoMessage, which Tron's
+// server code uses throughout.
+#include "AutoMessage.h"
 #include "CommandMgr.h"
 #include "CommandObject.h"
 #include "AIClassFactory.h"

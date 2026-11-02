@@ -425,7 +425,7 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 
 			// is there extra cluster information?
 			uint8 nIsCluster;
-			ltResult = pMsg->ReadByteFL( nIsCluster );
+			nIsCluster = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 			ASSERT( LT_OK == ltResult );
 
 			if ( nIsCluster )
@@ -436,24 +436,24 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 
 				// get the horizontal spread
 				uint16 nTmp;
-				ltResult = pMsg->ReadWordFL( nTmp );
+				nTmp = pMsg->Readuint16(); ltResult = LT_OK; // PORT: ReadWordFL
 				ASSERT( LT_OK == ltResult );
 				UncompressAngleFromShort( nTmp, &pInfo->fHorizontalSpread );
 
 				// get the horizontal perturb
 				uint8 nHorizontalPerturb;
-				ltResult = pMsg->ReadByteFL( nHorizontalPerturb );
+				nHorizontalPerturb = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 				ASSERT( LT_OK == ltResult );
 				UncompressAngleFromByte( nHorizontalPerturb, &pInfo->fHorizontalPerturb );
 
 				// get the vertical spread
 				uint8 nVerticalSpread;
-				ltResult = pMsg->ReadByteFL( nVerticalSpread );
+				nVerticalSpread = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 				ASSERT( LT_OK == ltResult );
 				UncompressAngleFromByte( nVerticalSpread, &pInfo->fVerticalSpread );
 
 				// get the number of shards
-				ltResult = pMsg->ReadByteFL( pInfo->nNumberOfShards );
+				pInfo->nNumberOfShards = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 				ASSERT( LT_OK == ltResult );
 			}
 
@@ -1315,8 +1315,9 @@ bool CTronPlayerObj::AcquirePrimitive(char const* pName)
 {
 	// Send a message to the client
 	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PRIMITIVE_OBTAINED); // PORT: the id was SendToClient's argument
 	cMsg.WriteString(pName);
-	g_pLTServer->SendToClient(cMsg, MID_PRIMITIVE_OBTAINED, GetClient(), MESSAGE_GUARANTEED);
+	g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
 	return true;
 }
 

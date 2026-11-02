@@ -80,7 +80,8 @@ class CBinaryBitPlugin : public IObjectPlugin
 				const char *szPropName,
 				const int nPropType,
 				const GenericProp &gpPropValue,
-				ILTPreInterface *pInterface );
+				ILTPreInterface *pInterface,
+				const char *szModifiers ); // PORT: NOLF2's interface
 
 	protected :
 

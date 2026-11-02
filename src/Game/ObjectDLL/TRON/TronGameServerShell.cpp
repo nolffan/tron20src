@@ -63,7 +63,7 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 //	PURPOSE:	Create the player object, and associated it with the client.
 //
 // ----------------------------------------------------------------------- //
-CPlayerObj* CTronGameServerShell::CreatePlayer(HCLIENT hClient)
+CPlayerObj* CTronGameServerShell::CreatePlayer(HCLIENT hClient, ModelId ePlayerModelId) // PORT: NOLF2's interface
 {
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);

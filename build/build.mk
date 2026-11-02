@@ -67,16 +67,16 @@ TRON20SRC_RCFLAGS ?=
 #                                      EAX's GUIDs (eaxguid), which the
 #                                      retail Rich header says VC6's cl
 #                                      12.00.8168 compiled: CL_eaxguid
-#   src/Game/TRON.dsw                  the game DLLs: ClientFxDLL so far;
-#                                      ClientShellDLL and Object as their
-#                                      ports from Build 69 compile, then the
+#   src/Game/TRON.dsw                  the game DLLs: Object and ClientFxDLL
+#                                      so far; ClientShellDLL once its port
+#                                      from Build 69 compiles, then the
 #                                      resource DLLs, the launcher and the
 #                                      dedicated server (docs/PLAN.md)
 #   src/Engine/runtime/winbuild/Engine.dsw   the engine
 WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
-    src/Game/TRON.dsw:ClientFxDLL \
+    src/Game/TRON.dsw:Object,ClientFxDLL \
     src/Engine/runtime/winbuild/Engine.dsw:Lithtech,server
 
 # ---------------------------------------------------------------------------
