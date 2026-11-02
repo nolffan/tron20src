@@ -2,9 +2,9 @@
  "build": {
   "CShell.dll": {
    "cmd": "019ba8cfb2d315284321f75745380db59e753ecd8aa32056114308de1c8dd215",
-   "image": "346478f9fce38259c78e0cc3036d0c1b13ff8edcb9215bf9ddf15ab13749bce9",
+   "image": "e0e320ada3d532d5202c77b77684fbf6ed03e3b649bbe3e2bf6ceea2c3c4868f",
    "link_command": "cd src/Game/ClientShellDLL/TRON && { printf '%s\\n' 'winmm.lib' 'ole32.lib' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/nodefaultlib:LIBCMTD' '/out:..\\..\\Built\\Final\\ClientShellDll\\TRON\\CShell.dll' '/map:s:\\Game\\built\\Final\\ClientShellDLL\\TRON\\CShell.map' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\AdditiveCtrl.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ArcCtrl.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ClientWeaponClusterDisc.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ClientWeaponDisc.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\GlobalsInit.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDArmor.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDChooser.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDCrosshair.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDEnergyTransfer.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDHealthEnergy.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDPermissions.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDProgress.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDVersion.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDWeapon.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\HUDWeapons.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\iltbaseclass.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ltmodule.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ltobjref.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ltquatbase.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ProceduralCtrl.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\RatingMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenAudio.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenConfigure.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenControls.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenCrosshair.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenDisplay.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenEndMission.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenFailure.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenGame.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenHost.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenHostLevels.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenHostMission.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenJoin.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenJoinLAN.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenKeyboard.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenLoad.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenMain.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenMouse.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenMulti.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenOptions.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenPerformance.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenPlayer.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenProfile.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenSave.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenSingle.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\ScreenSubroutines.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\Stdafx.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\SubroutineMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TRONClientWeaponAllocator.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronGameClientShell.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronHUDMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronInterfaceMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronLayoutMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronMissionButeMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronPlayerMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TRONPlayerStats.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TRONScreenMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronTargetMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\TRON\\TronVersionMgr.obj' '..\\..\\built\\Final\\ClientShellDLL\\ClientShellShared\\ClientShellShared.lib' '..\\..\\..\\libs\\built\\Final\\MFCStub\\MFCStub.lib' '..\\..\\..\\libs\\built\\Final\\CryptMgr\\CryptMgr.lib' '..\\..\\..\\libs\\built\\Final\\Lib_StdLith\\Lib_StdLith.lib' '..\\..\\..\\libs\\built\\Final\\Lib_Lith\\Lib_Lith.lib' '..\\..\\built\\Final\\libs\\LTGuiMgr\\ltguimgr.lib' '..\\..\\..\\libs\\built\\Final\\RegMgr\\regmgr.lib' '..\\..\\..\\libs\\built\\Final\\ButeMgr\\ButeMgr.lib' > /repo/out/release-tree/src/Game/built/Final/ClientShellDLL/TRON/CShell.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Game\\built\\Final\\ClientShellDLL\\TRON\\CShell.dll.rsp'",
-   "map": "728cbb417f4e5510ccc2bb4b9bcb0d923dd3a5a4975165a408b6874f9b4e885e",
+   "map": "b59e770463e58ce416bbcc3052fa407adf25b03e2eed02dc6a1808b815969d8a",
    "rsp": "3c608f0d76005eed0a8fdc4981f809b9431fdca98f3841cb32393e19431d4b49"
   },
   "ClientFx.fxd": {
@@ -16,9 +16,9 @@
   },
   "Object.lto": {
    "cmd": "b19431103d464b37cc8005a0fe2d8326103445bcd1a5edb29fda588b8f5c55e5",
-   "image": "80392a8631317c7b1d1cc7c59a4d50f6605d5dee9449bc1a01db3f316889a8e6",
+   "image": "d88dacbbeb00a6b2d127e6980060d1c1baed996da7f5954a6daf6d833bf1caeb",
    "link_command": "cd src/Game/ObjectDLL/TRON && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\..\\Built\\Final\\ObjectDLL\\TRON\\Object.lto' '/map:s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.map' '..\\..\\built\\Final\\ObjectDll\\TRON\\BinaryBit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\CoreDump.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\GlobalsInit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\PatchRoutine.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterAutoBurstDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\Stdafx.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronGameServerShell.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronMissionButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronPlayerObj.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronVersionMgr.obj' '..\\..\\built\\Final\\ObjectDll\\ObjectShared\\ObjectShared.lib' '..\\..\\..\\libs\\built\\Final\\ButeMgr\\ButeMgr.lib' '..\\..\\..\\libs\\built\\Final\\MFCStub\\MFCStub.lib' '..\\..\\..\\libs\\built\\Final\\CryptMgr\\CryptMgr.lib' '..\\..\\..\\libs\\built\\Final\\Lib_StdLith\\Lib_StdLith.lib' '..\\..\\..\\libs\\built\\Final\\Lib_Lith\\Lib_Lith.lib' '..\\..\\..\\libs\\built\\Final\\RegMgr\\regmgr.lib' > /repo/out/release-tree/src/Game/built/Final/ObjectDll/TRON/Object.lto.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.lto.rsp'",
-   "map": "90296105cb0ad3083a22b9bb2f4ccc9e590d272a3ebc2d0d295619817218086f",
+   "map": "6133c70bfcd9816c1326817b5994efc38abf2d1a0e388be904885607ed0fb502",
    "rsp": "b982ede01b20c0a1c23e45c87e67c105f1414f2ce6f590458cb28d19ffa94262"
   },
   "SndDrv.dll": {
@@ -38,7 +38,7 @@
  },
  "config": {
   "progress/COMPILERS.md": "fc5faad8a47ba1d7c876f0aa6664d59890d82905bc963190c2846249094af41f",
-  "progress/data-known.txt": "92111896757fc4437fa21891f94068b95193505222d5e5fa5a751a4bd4d7e88d",
+  "progress/data-known.txt": "38c0a463a2ba773e32c213eca8b4382e639ca3f4d2c7055738a4b79ed383c3cc",
   "progress/reference.sha256": "1db69ca4720cf656f94c03007ef3d6a4eaba0722f9c516d0a1dbedb6e3552c7d",
   "progress/targets.py": "1f8db0b2314b88f64d771a9c795d1c91a40c495f542551b31510cafed0751034",
   "progress/vtab-known.txt": "21703e33e8073ecd927c82f81b2e47eed1c96c881d49138d7a46c64c152d505d"
@@ -57,12 +57,12 @@
   "out/reference/server.dll": "4a6f2f305996edd30f56e71b70d0ef1dfb2dc1a08f19eec8010891f98ebd002b"
  },
  "result": {
-  "out/progress/functions.csv": "a658e50d77d7fd5f2a00f6635bffc30eb684c8281090dd2658e64947c7767f49",
-  "out/progress/summary.json": "354b042e02c4f58f474e92027f101e4dd55681c973262b527b9145a6d592f744"
+  "out/progress/functions.csv": "35a4c18eb3041c181b77205e139691de94ff996afb1989f63a80dea64069a880",
+  "out/progress/summary.json": "34191521c9e6a991dce4cafb7ecf9e3929bf7a3ba3c5fdb57be5a7cf27eabc4c"
  },
  "source": {
-  "modified_files": 5,
-  "revision": "8342ae1c6c80f831906e7ac02bd5bb91459cf6b1",
+  "modified_files": 4,
+  "revision": "5aa07a944f20446530cf24a7bced5a9c4b48b482",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "eae15c9903137feaac0146d5b2388d7aa9e53ed7"
