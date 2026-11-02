@@ -1,5 +1,12 @@
 {
  "build": {
+  "ClientFx.fxd": {
+   "cmd": "90cdc90f3682db376057a7b28f00745615330336b9a954d30d5877fed708f83f",
+   "image": "193ba71262fe667e3bda7f7795bc75b4d9e7159a86ef6c5fa2c80a775f439b2a",
+   "link_command": "cd src/Game/ClientFxDLL && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\built\\Final\\ClientFxDll\\ClientFx.fxd' '/map:s:\\Game\\built\\Final\\ClientFxDll\\ClientFx.map' '..\\built\\Final\\ClientFxDll\\BaseFx.obj' '..\\built\\Final\\ClientFxDll\\bouncychunkfx.obj' '..\\built\\Final\\ClientFxDll\\camjitterfx.obj' '..\\built\\Final\\ClientFxDll\\camwobblefx.obj' '..\\built\\Final\\ClientFxDll\\clientfx.obj' '..\\built\\Final\\ClientFxDll\\CreateFX.obj' '..\\built\\Final\\ClientFxDll\\cycletimer.obj' '..\\built\\Final\\ClientFxDll\\DebugNew.obj' '..\\built\\Final\\ClientFxDll\\dynalightfx.obj' '..\\built\\Final\\ClientFxDll\\fallingstufffx.obj' '..\\built\\Final\\ClientFxDll\\FlareSpriteFX.obj' '..\\built\\Final\\ClientFxDll\\lightningfx.obj' '..\\built\\Final\\ClientFxDll\\LTBbouncychunkfx.obj' '..\\built\\Final\\ClientFxDll\\ltbmodelfx.obj' '..\\built\\Final\\ClientFxDll\\ltmodule.obj' '..\\built\\Final\\ClientFxDll\\ltquatbase.obj' '..\\built\\Final\\ClientFxDll\\nullfx.obj' '..\\built\\Final\\ClientFxDll\\ParticleSystemFX.obj' '..\\built\\Final\\ClientFxDll\\playrandomsoundfx.obj' '..\\built\\Final\\ClientFxDll\\playsoundfx.obj' '..\\built\\Final\\ClientFxDll\\polyfanfx.obj' '..\\built\\Final\\ClientFxDll\\polytubefx.obj' '..\\built\\Final\\ClientFxDll\\spritefx.obj' '..\\built\\Final\\ClientFxDll\\spritesystemfx.obj' '..\\built\\Final\\ClientFxDll\\stdafx.obj' '..\\..\\libs\\built\\Final\\ButeMgr\\ButeMgr.lib' '..\\..\\libs\\built\\Final\\MFCStub\\MFCStub.lib' '..\\..\\libs\\built\\Final\\CryptMgr\\CryptMgr.lib' '..\\..\\libs\\built\\Final\\Lib_StdLith\\Lib_StdLith.lib' '..\\..\\libs\\built\\Final\\Lib_Lith\\Lib_Lith.lib' '..\\built\\Final\\libs\\LTGuiMgr\\ltguimgr.lib' > /repo/out/release-tree/src/Game/built/Final/ClientFxDll/ClientFx.fxd.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Game\\built\\Final\\ClientFxDll\\ClientFx.fxd.rsp'",
+   "map": "2d15161ca4cc760e73aa74052dfc91f5d397e5dfdad847fc43a23b0b238d13dd",
+   "rsp": "a000f345f52b4f37b99ac4c7ee6be6826823c90d226994a705eb4f4285fca139"
+  },
   "SndDrv.dll": {
    "cmd": "4468bc5852ddbf7edcaf00ed29093acfb6a6a66d403a820624bde06fb4ba01e3",
    "image": "8861df1cadb7a11dc475058acaaca590960571682de42eedca3ecabb979142b3",
@@ -16,10 +23,10 @@
   }
  },
  "config": {
-  "progress/COMPILERS.md": "601725ef5bf37d5154a292c0b877b7adab28a7686a40d640ccad424fa34d245b",
-  "progress/data-known.txt": "e2c31de251436af9c3d5e95882947ad4fdf27d9751734e9d3155b0d5981cc437",
+  "progress/COMPILERS.md": "df60f71d11648fabf3938e433394dcae4627964a59b9520d4019e9af898512d5",
+  "progress/data-known.txt": "af5fa897aae7c3013e8755b48e5af7f2f8986f0ba2630f2181cb4d58e46f7feb",
   "progress/reference.sha256": "1db69ca4720cf656f94c03007ef3d6a4eaba0722f9c516d0a1dbedb6e3552c7d",
-  "progress/targets.py": "b79168db0a937a3699f13c0d62612d37ab911942d5ca49c35ca3a11d1d0f0d0d",
+  "progress/targets.py": "419a3593e9dccfee4b358adc28bdaa3075ea30fcdac133571e117425f27b4f79",
   "progress/vtab-known.txt": "59df22cf8263df55842ba760aad5a58c98e59cc124963cd49ca26f9ea62daa73"
  },
  "reference": {
@@ -36,12 +43,12 @@
   "out/reference/server.dll": "4a6f2f305996edd30f56e71b70d0ef1dfb2dc1a08f19eec8010891f98ebd002b"
  },
  "result": {
-  "out/progress/functions.csv": "f77bb508cdcf08b3df15a8172b6116241cd1b108e748b05ad7c4c9ae5bedad70",
-  "out/progress/summary.json": "24b275c231677980da03f6a9520269fb40fdb35d0b5c4410f1a0d1aba9c4419f"
+  "out/progress/functions.csv": "a4903f498d937e61e465917825807c3517b3a2c293fda1271e250979e913f8cd",
+  "out/progress/summary.json": "2fc9b06a13b123962a328fe995f3d5d9630f17e366f3ef2dc866b5810a6c4bb7"
  },
  "source": {
   "modified_files": 5,
-  "revision": "5e196acd70fe4aa11c94d7969809884b630e173b",
+  "revision": "5eea8c57ce6b628c57482bdc63aabfa809bba5b7",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "eae15c9903137feaac0146d5b2388d7aa9e53ed7"

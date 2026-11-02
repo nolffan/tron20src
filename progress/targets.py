@@ -165,7 +165,7 @@ TARGETS = [
          app=[(0x10001000, 0x10277c80)]),
     dict(label="ClientFx.fxd", what="the game: client effects", kind="image",
          shipped=REFERENCE + "/ClientFx.fxd", stem="ClientFx",
-         built="src/Game/built/Final/ClientFxDLL/ClientFx.fxd", optional=True,
+         built="src/Game/built/Final/ClientFxDll/ClientFx.fxd", optional=True,
          # links libcmt.lib statically; provisional: libcpmt.lib's delete
          # thunk at 0x10023080, then libcmt.lib from atox.obj's _atol
          # (0x100230e9; 229 of its members placed)

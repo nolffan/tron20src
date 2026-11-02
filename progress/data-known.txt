@@ -12,3 +12,16 @@ SndDrv.dll	retail	import KERNEL32.dll SuspendThread
 SndDrv.dll	retail	import USER32.dll MessageBoxA
 SndDrv.dll	retail	import USER32.dll PeekMessageA
 SndDrv.dll	retail	import USER32.dll PostThreadMessageA
+
+# UNREVIEWED, recorded at ClientFx.fxd's first build from NOLF2's source (2026-11-02). RandDirMin/Max and RandomSpeedBiasMin/Max are particle-system properties Tron's ClientFx has and neither NOLF2's nor Build 69's source does: to write from the retail code. ILTClient, ILTServer, ILTServer.Default, Default and __search_marker_holder__ are the engine's interface-holder registrations (ltmodule.h), which Tron's ClientFx makes and our NOLF2-era one does not: to be sorted out.
+ClientFx.fxd	retail	Default
+ClientFx.fxd	retail	Default
+ClientFx.fxd	retail	ILTClient
+ClientFx.fxd	retail	ILTServer
+ClientFx.fxd	retail	ILTServer.Default
+ClientFx.fxd	retail	RandDirMax
+ClientFx.fxd	retail	RandDirMin
+ClientFx.fxd	retail	RandomSpeedBiasMax
+ClientFx.fxd	retail	RandomSpeedBiasMin
+ClientFx.fxd	retail	__search_marker_holder__
+ClientFx.fxd	retail	__search_marker_holder__

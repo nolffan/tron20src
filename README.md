@@ -50,11 +50,11 @@ those functions make up.
 | `TRONSrv.exe` | the dedicated server | 0 / 612 | 0 / 82,500 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 612 | 0 |
 | `CShell.dll` | the game: client | 0 / 9,679 | 0 / 1,826,087 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 9,679 | 0 |
 | `Object.lto` | the game: server objects | 0 / 15,814 | 0 / 2,458,302 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 15,814 | 0 |
-| `ClientFx.fxd` | the game: client effects | 0 / 564 | 0 / 135,273 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 564 | 0 |
+| `ClientFx.fxd` | the game: client effects | 291 / 558 | 59,447 / 135,077 bytes | `████████░░░░░░░░░░░░` 44.0% | 31 | 14 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 0 / 463 resources | 0 / 561,414 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 463 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **131 / 39,786** | **15,478 / 6,403,749 bytes** | `░░░░░░░░░░░░░░░░░░░░` **0.2%** | **39,546** | **0** |
+| **All** | | **422 / 39,780** | **74,925 / 6,403,553 bytes** | `░░░░░░░░░░░░░░░░░░░░` **1.1%** | **39,013** | **14** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and

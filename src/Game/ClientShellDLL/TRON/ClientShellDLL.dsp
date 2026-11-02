@@ -4,7 +4,7 @@
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
-CFG=ClientShellDLL - Win32 Release
+CFG=ClientShellDLL - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
@@ -13,17 +13,18 @@ CFG=ClientShellDLL - Win32 Release
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "ClientShellDLL.mak" CFG="ClientShellDLL - Win32 Release"
+!MESSAGE NMAKE /f "ClientShellDLL.mak" CFG="ClientShellDLL - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
 !MESSAGE "ClientShellDLL - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "ClientShellDLL - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "ClientShellDLL - Win32 Final" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
-# PROP Scc_ProjName "ClientShellDLL"
+# PROP Scc_ProjName ""$/Source (TO2)/ClientShellDLL", RQRFAAAA"
 # PROP Scc_LocalPath "."
 CPP=cl.exe
 MTL=midl.exe
@@ -38,12 +39,12 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "..\..\Built\Release\ClientShellDll\Tron"
-# PROP Intermediate_Dir "..\..\Built\Release\ClientShellDll\Tron"
+# PROP Output_Dir "..\..\Built\Release\ClientShellDll\TRON"
+# PROP Intermediate_Dir "..\..\Built\Release\ClientShellDll\TRON"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "..\..\Shared\TRON" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\TRON" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "NDEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "_NOLFBUILD" /D "NO_PRAGMA_LIBS" /D "NOPS2" /Yu"stdafx.h" /FD /Zm1000 /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\..\Shared\TRON" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\TRON" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "NDEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "_NOLFBUILD" /D "NO_PRAGMA_LIBS" /D "NOPS2" /D "MEMTRACK_CLIENT" /Yu"stdafx.h" /FD /Zm1000 /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,16 +54,17 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Release\ClientShellDll\Tron\CShell.dll"
+# ADD LINK32 winmm.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Release\ClientShellDll\TRON\CShell.dll"
 # SUBTRACT LINK32 /pdb:none /map
 # Begin Custom Build
-TargetPath=\proj\TRON\Source\Game\Built\Release\ClientShellDll\Tron\CShell.dll
-InputPath=\proj\TRON\Source\Game\Built\Release\ClientShellDll\Tron\CShell.dll
+TargetPath=\proj\TRON\source\Game\Built\Release\ClientShellDll\TRON\CShell.dll
+InputPath=\proj\TRON\source\Game\Built\Release\ClientShellDll\TRON\CShell.dll
 SOURCE="$(InputPath)"
 
-"..\..\..\development\to2\game\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	echo copy $(TargetPath) ..\..\..\development\to2\game 
-	copy $(TargetPath) ..\..\..\development\to2\game 
+"$(GAME_REZ_DIR)\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	Rem IncrediBuild_OutputFile $(TargetPath) 
+	echo copy $(TargetPath) $(GAME_REZ_DIR) 
+	copy $(TargetPath) $(GAME_REZ_DIR) 
 	
 # End Custom Build
 
@@ -75,12 +77,12 @@ SOURCE="$(InputPath)"
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "..\..\Built\Debug\ClientShellDll\Tron"
-# PROP Intermediate_Dir "..\..\Built\Debug\ClientShellDll\Tron"
+# PROP Output_Dir "..\..\Built\Debug\ClientShellDll\TRON"
+# PROP Intermediate_Dir "..\..\Built\Debug\ClientShellDll\TRON"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MDd /W3 /GR /GX /ZI /Od /I "..\..\Shared\tron" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\tron" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "_DEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "NOPS2" /FR /Yu"stdafx.h" /FD /Zm1000 /c
+# ADD CPP /nologo /MDd /W3 /GX /ZI /Od /I "..\..\Shared\TRON" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\TRON" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "_DEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "NOPS2" /D "MEMTRACK_CLIENT" /FR /Yu"stdafx.h" /FD /Zm1000 /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /o "NUL" /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /o "NUL" /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -90,16 +92,57 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 wsock32.lib kernel32.lib user32.lib gdi32.lib advapi32.lib /nologo /subsystem:windows /dll /debug /machine:I386 /out:"..\..\Built\Debug\ClientShellDll\TRON\CShell.dll" /pdbtype:sept
+# ADD LINK32 winmm.lib ole32.lib wsock32.lib kernel32.lib user32.lib gdi32.lib advapi32.lib /nologo /subsystem:windows /dll /debug /machine:I386 /out:"..\..\Built\Debug\ClientShellDll\TRON\CShell.dll" /pdbtype:sept
 # SUBTRACT LINK32 /verbose /pdb:none
 # Begin Custom Build
-TargetPath=\proj\TRON\Source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
-InputPath=\proj\TRON\Source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
+TargetPath=\proj\TRON\source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
+InputPath=\proj\TRON\source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
 SOURCE="$(InputPath)"
 
-"..\..\..\development\to2\game\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	echo copy $(TargetPath) ..\..\..\development\to2\game 
-	copy $(TargetPath) ..\..\..\development\to2\game 
+"$(GAME_REZ_DIR)\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	Rem IncrediBuild_OutputFile $(TargetPath) 
+	echo copy $(TargetPath) $(GAME_REZ_DIR) 
+	copy $(TargetPath) $(GAME_REZ_DIR) 
+	
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "Final"
+# PROP BASE Intermediate_Dir "Final"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "..\..\Built\Final\ClientShellDll\TRON"
+# PROP Intermediate_Dir "..\..\Built\Final\ClientShellDll\TRON"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MD /W3 /GX /O2 /I "..\..\Shared\TRON" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\TRON" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "NDEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "_NOLFBUILD" /D "NO_PRAGMA_LIBS" /D "NOPS2" /D "_FINAL" /Yu"stdafx.h" /FD /Zm1000 /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\..\Shared\TRON" /I ".\\" /I "..\..\..\libs\STLPORT-4.0\STLPORT" /I "..\ClientShellShared" /I "..\..\clientres\shared" /I "..\..\clientres\TRON" /I "..\..\shared" /I "..\..\..\Engine\sdk\inc" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\butemgr" /I "..\..\..\libs\cryptmgr" /I "..\..\..\libs\lith" /I "..\..\..\libs\mfcstub" /I "..\..\libs\ltguimgr" /I "..\..\..\libs\regmgr" /I "..\..\libs\wonapi" /I "..\..\libs\serverdir" /D "NDEBUG" /D "_CLIENTBUILD" /D "WIN32" /D "_WINDOWS" /D "_NOLFBUILD" /D "NO_PRAGMA_LIBS" /D "NOPS2" /D "_FINAL" /D "MEMTRACK_CLIENT" /Yu"stdafx.h" /FD /Zm1000 /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /o "NUL" /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Final\ClientShellDll\TRON\CShell.dll"
+# SUBTRACT BASE LINK32 /pdb:none /map
+# ADD LINK32 winmm.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Final\ClientShellDll\TRON\CShell.dll"
+# SUBTRACT LINK32 /pdb:none /map
+# Begin Custom Build
+TargetPath=\proj\TRON\source\Game\Built\Final\ClientShellDll\TRON\CShell.dll
+InputPath=\proj\TRON\source\Game\Built\Final\ClientShellDll\TRON\CShell.dll
+SOURCE="$(InputPath)"
+
+"$(GAME_REZ_DIR)\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	Rem IncrediBuild_OutputFile $(TargetPath) 
+	echo copy $(TargetPath) $(GAME_REZ_DIR) 
+	copy $(TargetPath) $(GAME_REZ_DIR) 
 	
 # End Custom Build
 
@@ -109,6 +152,7 @@ SOURCE="$(InputPath)"
 
 # Name "ClientShellDLL - Win32 Release"
 # Name "ClientShellDLL - Win32 Debug"
+# Name "ClientShellDLL - Win32 Final"
 # Begin Group "Source"
 
 # PROP Default_Filter "*.cpp"
@@ -574,15 +618,22 @@ SOURCE=.\TRONScreenMgr.h
 SOURCE=..\..\Shared\Tron\TronVersionMgr.h
 # End Source File
 # End Group
+# Begin Group "libs_debug"
+
+# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\built\Debug\ClientShellDll\ClientShellShared\ClientShellShared.lib
+SOURCE=..\..\built\Debug\ClientShellDLL\ClientShellShared\ClientShellShared.lib
 
 !IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
 
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
 
 !ENDIF 
 
@@ -597,6 +648,10 @@ SOURCE=..\..\..\libs\built\Debug\ButeMgr\ButeMgr.lib
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -609,6 +664,10 @@ SOURCE=..\..\..\libs\built\Debug\MFCStub\MFCStub.lib
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
 
 !ENDIF 
 
@@ -623,6 +682,10 @@ SOURCE=..\..\..\libs\built\Debug\CryptMgr\cryptmgr.lib
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -635,6 +698,10 @@ SOURCE=..\..\..\libs\built\Debug\Lib_StdLith\Lib_StdLith.lib
 # PROP Exclude_From_Build 1
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
 
 !ENDIF 
 
@@ -649,6 +716,10 @@ SOURCE=..\..\..\libs\built\Debug\Lib_Lith\Lib_Lith.lib
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -662,31 +733,9 @@ SOURCE=..\..\Built\Debug\libs\LTGuiMgr\ltguimgr.lib
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Built\Debug\libs\WonAPI\WONAPI.lib
-
-!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
 
 # PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Built\Debug\libs\ServerDir\ServerDir.lib
-
-!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
-
-# PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
 !ENDIF 
 
@@ -701,9 +750,17 @@ SOURCE=..\..\..\libs\built\Debug\RegMgr\regmgr.lib
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
+# End Group
+# Begin Group "libs_release"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=..\..\built\Release\ClientShellDll\ClientShellShared\ClientShellShared.lib
@@ -711,6 +768,10 @@ SOURCE=..\..\built\Release\ClientShellDll\ClientShellShared\ClientShellShared.li
 !IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
 
 # PROP Exclude_From_Build 1
 
@@ -727,6 +788,10 @@ SOURCE=..\..\..\libs\built\Release\ButeMgr\ButeMgr.lib
 
 # PROP Exclude_From_Build 1
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -737,6 +802,10 @@ SOURCE=..\..\..\libs\built\Release\MFCStub\MFCStub.lib
 !IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
 
 # PROP Exclude_From_Build 1
 
@@ -753,6 +822,10 @@ SOURCE=..\..\..\libs\built\Release\CryptMgr\cryptmgr.lib
 
 # PROP Exclude_From_Build 1
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -763,6 +836,10 @@ SOURCE=..\..\..\libs\built\Release\Lib_StdLith\Lib_StdLith.lib
 !IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
 
 !ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
 
 # PROP Exclude_From_Build 1
 
@@ -779,6 +856,10 @@ SOURCE=..\..\..\libs\built\Release\Lib_Lith\Lib_Lith.lib
 
 # PROP Exclude_From_Build 1
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
@@ -792,29 +873,7 @@ SOURCE=..\..\Built\Release\libs\LTGuiMgr\ltguimgr.lib
 
 # PROP Exclude_From_Build 1
 
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Built\Release\libs\WONAPI\WONAPI.lib
-
-!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
-
-# PROP Exclude_From_Build 1
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Built\Release\libs\ServerDir\ServerDir.lib
-
-!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
 
 # PROP Exclude_From_Build 1
 
@@ -831,12 +890,171 @@ SOURCE=..\..\..\libs\built\Release\RegMgr\regmgr.lib
 
 # PROP Exclude_From_Build 1
 
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+# PROP Exclude_From_Build 1
+
 !ENDIF 
 
 # End Source File
-# End Target
-# Begin Group "libs_release"
+# End Group
+# Begin Group "libs_final"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\built\Final\ClientShellDll\ClientShellShared\ClientShellShared.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\MFCStub\MFCStub.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\CryptMgr\cryptmgr.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\Lib_StdLith\Lib_StdLith.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\Lib_Lith\Lib_Lith.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Built\Final\libs\LTGuiMgr\ltguimgr.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\RegMgr\regmgr.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\..\libs\built\Final\ButeMgr\ButeMgr.lib
+
+!IF  "$(CFG)" == "ClientShellDLL - Win32 Release"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "ClientShellDLL - Win32 Final"
+
+!ENDIF 
+
+# End Source File
 # End Group
+# Begin Group "libs_finaldemo"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\built\FinalDemo\ClientShellDLL\ClientShellShared\ClientShellShared.lib
+# PROP Exclude_From_Build 1
+# End Source File
+# End Group
+# Begin Group "libs_debugfinaldemo"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\built\DebugFinalDemo\ClientShellDLL\ClientShellShared\ClientShellShared.lib
+# PROP Exclude_From_Build 1
+# End Source File
+# End Group
+# End Target
 # End Project

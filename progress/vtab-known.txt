@@ -3,3 +3,7 @@
 
 # Not written yet: Tron's ILTSoundSys has 110 slots, NOLF2's (our s_dx8.h) 103 -- the interface as it grew toward the 2006 Jupiter driver's, with the MP3 and streaming additions the data check lists. To go as the driver is brought to Tron's (docs/PLAN.md, package 3).
 SndDrv.dll	??_7ILTSoundSys@@6B@	Not written yet: Tron's ILTSoundSys has 110 slots, NOLF2's (our s_dx8.h) 103 -- the interface as it grew toward the 2006 Jupiter driver's, with the MP3 and streaming additions the data check lists. To go as the driver is brought to Tron's (docs/PLAN.md, package 3).
+
+# Not written yet: Tron's effect table differs from NOLF2's -- fxCreatePropList and fxDelete reach, at the LTB bouncy-chunk entry, another effect's function in retail: its list of effects, and their order, are to be brought to Tron's (clientfx.cpp).
+ClientFx.fxd	_fxCreatePropList	Not written yet: Tron's effect table differs from NOLF2's -- fxCreatePropList and fxDelete reach, at the LTB bouncy-chunk entry, another effect's function in retail: its list of effects, and their order, are to be brought to Tron's (clientfx.cpp).
+ClientFx.fxd	_fxDelete	Not written yet: Tron's effect table differs from NOLF2's -- fxCreatePropList and fxDelete reach, at the LTB bouncy-chunk entry, another effect's function in retail: its list of effects, and their order, are to be brought to Tron's (clientfx.cpp).
