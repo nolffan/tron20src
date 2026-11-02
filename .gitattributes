@@ -1,0 +1,4 @@
+# Every text file in this tree uses LF line endings, except these: they are
+# embedded byte for byte in CRes.dll (TEXT resources, read by the game at
+# run time) and keep the CRLF endings Build 69's copies have.
+src/Game/ClientRes/TRON/*.txt -text
