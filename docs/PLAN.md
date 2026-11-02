@@ -79,7 +79,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the v1.030 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
 | 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the rest to come |
 | 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | `ltmsg.dll` identical; `SndDrv.dll` built, 131 of 284 functions identical |
-| 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | `ClientFx.fxd` and `Object.lto` build; `CShell.dll` being ported (below) |
+| 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | `CShell.dll`, `Object.lto` and `ClientFx.fxd` build (below) |
 | 5 | `engine`: `Lithtech.exe` and `server.dll` from nolf2src's engine and the Jupiter tree, with the D3D9 renderer; D3DX9 placed as `middleware`; an unprotected engine (the demo, the dev build) for the SecuROM pages and the imports | 2 | |
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, tools/playtest.sh) | 3-6 | |
@@ -158,15 +158,22 @@ What the first builds showed (2026-11-02):
   not linked yet (Build 69's project links a `GameSpyMgr.lib` that is not
   in it), and WON's ServerDir headers stand in for the shared shell's
   `iserverdir.h`.
-- **CShell.dll** does not compile yet. NOLF2's shared client library
-  compiled `TO2\HUDHealth.cpp` (out: Tron has its own `HUDHealthEnergy`).
-  The Tron files need, besides the same renaming, what Tron added to the
-  shared code: `COMMAND_ID_DEFEND`, `COMMAND_ID_DEFEND_MODIFIER`
-  (`CommandIDs.h`), `FXFLAG_SMOOTHSHUTDOWN` (`FxFlags.h`), `CLIENTFX_LINK`'s
-  instance reachable, `CPlayerMgr::IsCarryingBody`/`CanDropBody`,
-  `CUserProfile::m_nWpnActions`, `WEAPON`/`AMMO` names readable, the
-  `LTPoly_GT4` draw-primitive type, `CTronPlayerStats`' energy modifiers:
-  each to be written from retail `CShell.dll`.
+- **CShell.dll** compiles and links. Most of Tron's screens in Build 69
+  are build 51's TO2 screens with Tron's changes, so each is a three-way
+  merge (NOLF2 1.3's TO2 file, with Tron's changes to build 51's replayed
+  on it); where both sides changed the same lines, Tron's side is taken and
+  NOLF2's kept beside it as a `// MERGE:` comment, for the matching to
+  decide. Files that merged badly are Tron's own, ported by hand
+  (HUDCrosshair, ScreenSingle). NOLF2's TO2 files stand in, said so at
+  their top, where Tron's retail cannot have had either version: the
+  multiplayer screens (TO2's spring 2002, on WON; retail Tron uses GameSpy)
+  and ScreenPerformance (build 51's options). What Tron added to the shared
+  client code is written in where Tron's files need it, from retail
+  evidence where there is any: the defend commands (190, 191, from retail
+  autoexec.cfg), build 51's weapon bindings in the profile, the activation
+  distance. Still to read from the retail code: GAMEGUID and the build
+  guid (zero), the handshake and net versions; GameSpy, for which a stub
+  of WON's server-directory factory stands in.
 
 ### 9. modern
 
