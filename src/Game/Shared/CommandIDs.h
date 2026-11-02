@@ -100,6 +100,10 @@
 #define COMMAND_ID_CYCLE_UTILITY	157
 #define COMMAND_ID_TOGGLE_PROGRESS	158
 #define COMMAND_ID_SUBROUTINE_MENU	159
+// RETAIL: Tron's disc defence and its modifier, as retail autoexec.cfg binds
+// them (AddAction Defend 190, AddAction DiscAttackModifier 191)
+#define COMMAND_ID_DEFEND			190
+#define COMMAND_ID_DEFEND_MODIFIER	191
 
 // Special command ids...
 

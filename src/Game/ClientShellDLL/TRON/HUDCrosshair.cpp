@@ -248,10 +248,12 @@ void CHUDCrosshair::Update()
 		m_pInfoStr->SetCharScreenHeight(nTextSize);
 	}
 
-	if (g_pPlayerMgr->IsCarryingBody())
+	// PORT: build 51's IsCarryingBody/CanDropBody under NOLF2's names (NOLF2's
+	// heavy objects also count its Doomsday core, which Tron does not have)
+	if (g_pPlayerMgr->IsCarryingHeavyObject())
 	{
 		m_nString = 0;
-		if (g_pPlayerMgr->CanDropBody())
+		if (g_pPlayerMgr->CanDropCarriedObject())
 			m_pStr->SetText(LoadTempString(IDS_TARGET_DROP));
 		else
 			m_pStr->SetText("");

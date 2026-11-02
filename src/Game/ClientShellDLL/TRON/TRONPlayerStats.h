@@ -59,9 +59,11 @@ public:
     void        UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId);
     void        UpdateKeys(uint8 nType, uint16 dwId);
 	void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel);
-    void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden);
+    void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration); // PORT: NOLF2's interface
 	void		UpdateSkills(ILTMessage_Read *pMsg);
-	void		GainSkills(uint8 nRewardId);
+	void		GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount); // PORT: NOLF2's interface
+	void		ResetObjectives();							// PORT: NOLF2's interface
+	void		OnObjectivesDataMessage(ILTMessage_Read *pMsg);	// PORT: NOLF2's interface
 	void		UpdateMissionStats(ILTMessage_Read *pMsg);
 	void		UpdateProgress(uint32 nProgress) {}
 	void		UpdateMaxProgress(uint32 nMaxProgress) {}
@@ -157,8 +159,10 @@ public:
 	const GadgetModifiers* GetGadgetModifiers() 
 		{return g_pSkillsButeMgr->GetGadget((eSkillLevel)m_nSkills[SKL_GADGET]);}
 
-	const EnergyModifiers* GetEnergyModifiers()
-		{return g_pSkillsButeMgr->GetEnergy((eSkillLevel)m_nSkills[SKL_ENERGY]);}
+	// PORT: build 51's energy skill, which NOLF2's SkillsButeMgr does not have
+	// and nothing calls
+//	const EnergyModifiers* GetEnergyModifiers()
+//		{return g_pSkillsButeMgr->GetEnergy((eSkillLevel)m_nSkills[SKL_ENERGY]);}
 
 	const SearchModifiers* GetSearchModifiers() 
 		{return g_pSkillsButeMgr->GetSearch((eSkillLevel)m_nSkills[SKL_STEALTH]);}

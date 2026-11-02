@@ -14,6 +14,7 @@
 #define __SCREEN_SPRITE_MGR_H__
 
 #include "iltdrawprim.h"
+#include "LTPoly.h"	// PORT: LTPoly_GT4, which Tron's headers do not include first
 
 class CScreenSpriteMgr;
 extern CScreenSpriteMgr *g_pScreenSpriteMgr;

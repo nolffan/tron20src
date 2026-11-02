@@ -382,8 +382,9 @@ struct AMMO
 	bool	bServerRestricted;
 	bool	bCanServerRestrict;
 
-private:
+public:	// PORT: Tron's code reads the name's string id (same place)
 	int             nNameId;
+private:
 	int             nMaxAmount;
 	char           *szIcon;
 
@@ -519,9 +520,10 @@ struct WEAPON
 	bool	bServerRestricted;
 	bool	bCanServerRestrict;
 
-private:
+public:	// PORT: Tron's code reads the name's string id (same place)
 
 	int		nNameId;
+private:
 	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
 	char	*szIcon; 
 

@@ -878,7 +878,7 @@ void CTronPlayerStats::UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsInt
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden)
+void CTronPlayerStats::UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration) // PORT: NOLF2's interface
 {
 /*
 	if (bIsHiding && !m_bHiding)
@@ -912,7 +912,8 @@ void CTronPlayerStats::UpdateMissionStats(ILTMessage_Read *pMsg)
 	m_MissionStats.ReadData(pMsg);
 }
 
-void CTronPlayerStats::GainSkills(uint8 nRewardId)
+// PORT: NOLF2's interface; the body is Tron's, whose messages retail has
+void CTronPlayerStats::GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount)
 {
 	int nCurrentMission = g_pMissionMgr->GetCurrentMission();
 
@@ -1715,4 +1716,77 @@ void CTronPlayerStats::Compile()
 
 	// End of line.
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);  
+}
+
+// PORT: NOLF2's CPlayerStats has these two, pure virtual (NOLF2's PlayerMgr
+// calls OnObjectivesDataMessage); Build 69's Tron file has neither. They are
+// NOLF2's TO2PlayerStats.cpp's, until the retail code says otherwise.
+
+void CTronPlayerStats::ResetObjectives()
+{
+	// Clear our data...
+	m_Objectives.Clear();
+	m_OptionalObjectives.Clear();
+	m_CompletedObjectives.Clear();
+	m_Parameters.Clear();
+
+	if (g_pHUDMgr)
+	{
+		g_pObjectives->Show(false);
+		g_pHUDMgr->QueueUpdate(kHUDObjectives);
+	}
+
+
+}
+
+void CTronPlayerStats::OnObjectivesDataMessage(ILTMessage_Read *pMsg)
+{
+	if (!pMsg) return;
+
+	if (m_Objectives.m_IDArray.size() || m_CompletedObjectives.m_IDArray.size())
+        m_bObjRemoved = LTTRUE;
+	m_Objectives.Clear();
+	m_CompletedObjectives.Clear();
+
+	//read number of objectives
+    uint8 nNumObj = pMsg->Readuint8();
+
+	//read list of objectives
+    for (uint8 i = 0; i < nNumObj; i++)
+	{
+        uint32 dwId = pMsg->Readuint32();
+		m_Objectives.Add(dwId);
+	}
+
+	//read number of optional objectives
+    uint8 nNumOptObj = pMsg->Readuint8();
+
+	//read list of optional objectives
+	for (i = 0; i < nNumOptObj; i++)
+	{
+        uint32 dwId = pMsg->Readuint32();
+		m_OptionalObjectives.Add(dwId);
+	}
+
+	//read number of completed objectives
+    uint8 nNumCompObj = pMsg->Readuint8();
+
+	//read list of completed objectives
+	for (i = 0; i < nNumCompObj; i++)
+	{
+        uint32 dwId = pMsg->Readuint32();
+		m_CompletedObjectives.Add(dwId);
+	}
+
+	//read number of parameters
+    uint8 nNumParam = pMsg->Readuint8();
+
+	//read list of parameters
+    for (i = 0; i < nNumParam; i++)
+	{
+        uint32 dwId = pMsg->Readuint32();
+		m_Parameters.Add(dwId);
+	}
+
+	m_bObjAdded = (nNumObj + nNumOptObj + nNumCompObj + nNumParam) > 0;
 }

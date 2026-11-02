@@ -43,5 +43,8 @@
 
 #include "ClientUtilities.h"
 #include "CommonUtilities.h"
+// PORT: NOLF2's shared headers do not bring in CAutoMessage, which Tron's
+// client code uses.
+#include "AutoMessage.h"
 
 #endif // __STDAFX_H__

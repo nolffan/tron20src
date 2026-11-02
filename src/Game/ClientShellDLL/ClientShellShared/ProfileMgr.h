@@ -276,6 +276,12 @@ public:
 	//****************** display
 	sPerformCfg m_sPerformance;
 
+	// PORT: build 51's weapon bindings, which Tron's HUDWeapons reads (where
+	// build 51 has it, after the display settings); how retail loads and
+	// saves it is to be written from the retail code
+	//****************** weapon bindings
+	int		m_nWpnActions[10];
+
 private:
 	//load parts of profile to file (file must already have been parsed by m_buteMgr)
 	void		LoadControls();

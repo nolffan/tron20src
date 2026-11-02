@@ -682,7 +682,9 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 			ASSERT( MPROJ_START_ARM_BLOCK != nDefendType );
 
 			CLIENTFX_LINK clientFXLink;
-			uint32 dwFXFlags = FXFLAG_SMOOTHSHUTDOWN | FXFLAG_REALLYCLOSE;
+			// PORT: May 2002's FXFLAG_SMOOTHSHUTDOWN (build 51's) is NOLF2's default:
+			// NOLF2 has FXFLAG_NOSMOOTHSHUTDOWN instead
+			uint32 dwFXFlags = FXFLAG_REALLYCLOSE;
 			if ( MPROJ_START_SWAT_BLOCK == nDefendType )
 			{
 				if ( pDiscData->fSwatCriticalDefendThreshold <= fDefendPercentage )
@@ -692,10 +694,10 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 					// create the client fx
 					g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-					if ( clientFXLink.m_pInstance ) 
+					if ( clientFXLink.GetInstance() ) 
 					{
 						// setup the flags
-						clientFXLink.m_pInstance->m_bPlayerView = LTFALSE;
+						clientFXLink.GetInstance()->m_bPlayerView = LTFALSE;
 					}
 				}
 				else
@@ -705,10 +707,10 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 					// create the client fx
 					g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-					if ( clientFXLink.m_pInstance ) 
+					if ( clientFXLink.GetInstance() ) 
 					{
 						// setup the flags
-						clientFXLink.m_pInstance->m_bPlayerView = LTTRUE;
+						clientFXLink.GetInstance()->m_bPlayerView = LTTRUE;
 					}
 				}
 			}
@@ -723,10 +725,10 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 				// create the client fx
 				g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-				if ( clientFXLink.m_pInstance ) 
+				if ( clientFXLink.GetInstance() ) 
 				{
 					// setup the flags
-					clientFXLink.m_pInstance->m_bPlayerView = LTTRUE;
+					clientFXLink.GetInstance()->m_bPlayerView = LTTRUE;
 				}
 			}
 		}
@@ -814,14 +816,14 @@ WeaponState CClientWeaponDisc::Update( bool bFire,
 		LTVector vTargetPoint;
 		CalculatePointGuidedTarget( &vTargetPoint );
 		static CLIENTFX_LINK s_pTargetPoint;
-		if ( s_pTargetPoint.m_pInstance ) 
+		if ( s_pTargetPoint.GetInstance() ) 
 		{
 			// back it off just a little
 			LTVector vBackOff;
 			CalculateControlDirection( &vBackOff );
 			vBackOff *= -5.0f;
 			vTargetPoint += vBackOff;
-			s_pTargetPoint.m_pInstance->SetPos( vTargetPoint, vTargetPoint );
+			s_pTargetPoint.GetInstance()->SetPos( vTargetPoint, vTargetPoint );
 		}
 		else
 		{
@@ -829,9 +831,9 @@ WeaponState CClientWeaponDisc::Update( bool bFire,
 			CLIENTFX_CREATESTRUCT fxInit( "DISC_target", FXFLAG_LOOP , vTargetPoint ); 
 
 			g_pClientFXMgr->CreateClientFX( &s_pTargetPoint, fxInit, LTTRUE );
-			if ( s_pTargetPoint.m_pInstance ) 
+			if ( s_pTargetPoint.GetInstance() ) 
 			{
-				s_pTargetPoint.m_pInstance->m_bPlayerView = LTFALSE;
+				s_pTargetPoint.GetInstance()->m_bPlayerView = LTFALSE;
 			}
 		}
 	}
