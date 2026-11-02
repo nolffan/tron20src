@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenHost.h, standing in for Build 69's Tron one, which is
+// written against TO2's spring 2002 host settings in the player's profile
+// (neither build 51 nor NOLF2 has them). Tron's host screen, with its own
+// game types, is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenHost.h
@@ -33,22 +37,23 @@ public:
     LTBOOL   OnRButtonUp(int x, int y);
 
     void    OnFocus(LTBOOL bFocus);
+    void	Escape();
 
 	virtual bool UpdateInterfaceSFX();
 	void	ReadyLaunch(LTBOOL bReady);
 
 protected:
 	void	HandleCallback(uint32 dwParam1, uint32 dwParam2);
+	void	CreateDefaultCampaign();
 
     LTBOOL	LaunchGame();
     LTBOOL	SetService( );
 	void	RunServerOptions();
 	void	HandleLaunch();
 
-	LTBOOL	IsValidPort(uint16 nPort);
-	LTBOOL	IsValidBandwidth(uint32 nBandwidth);
-
 	void	UpdateBandwidth();
+	void	UpdateGameType();
+	void	SaveOptions();
 
 
 protected:
@@ -58,20 +63,30 @@ protected:
 	CString	m_sPassword;
 	CString	m_sPort;
 	LTBOOL	m_bUsePassword;
+	LTBOOL	m_bDedicated;
+	CString	m_sScmdPassword;
+	LTBOOL	m_bAllowScmdCommands;
 
 	CLTGUIColumnCtrl*	m_pName;
 
-//	CLTGUITextCtrl*		m_pLoadCtrl;
+	CLTGUITextCtrl*		m_pLoadCtrl;
 
 	CLTGUIColumnCtrl*	m_pCampaign;
 
 	CLTGUIColumnCtrl*	m_pPassword;
 	CLTGUIToggle*		m_pPassToggle;
 
+	CLTGUIColumnCtrl*	m_pScmdPassword;
+	CLTGUIToggle*		m_pScmdPassToggle;
+
 	CLTGUIColumnCtrl*	m_pPort;
 
 	CLTGUICycleCtrl*	m_pBandwidthCycle;
 	CLTGUIColumnCtrl*	m_pBandwidth;
+
+	CLTGUITextCtrl*		m_pWeapons;
+
+	GameType			m_eGameType;
 
 	uint8				m_nBandwidth;
 	CString				m_sBandwidth;
@@ -80,15 +95,5 @@ protected:
 };
 
 
-inline LTBOOL CScreenHost::IsValidPort(uint16 nPort)
-{
-	//TODO: what is the valid range of ports?
-	return (nPort > 0);
-}
-
-inline LTBOOL CScreenHost::IsValidBandwidth(uint32 nBandwidth) 
-{
-	return (nBandwidth >= 33600 && nBandwidth <= 10000000);
-}
 
 #endif // _SCREEN_HOST_H_

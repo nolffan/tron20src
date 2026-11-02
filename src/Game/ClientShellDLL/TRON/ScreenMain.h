@@ -30,6 +30,8 @@ public:
 	// This is called when the screen gets or loses focus
     virtual void    OnFocus(LTBOOL bFocus);
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| virtual void    Escape();
     LTBOOL   DoMultiplayer(LTBOOL bMinimize);
 
 
@@ -44,6 +46,9 @@ protected:
 	void	AddFilesToFilenames(FileEntry* pFiles, char* pPath);
 	void	BuildCustomLevelsList();
 #endif
+
+	CLTGUIListCtrl* m_pGameType;
+	CLTGUIFrame*	m_pGameTypeFrame;
 
 };
 

@@ -1,3 +1,7 @@
+// MERGE: NOLF2 1.3's TO2 ScreenHostLevels.cpp, standing in for Build 69's Tron one, which is
+// written against TO2's spring 2002 host settings in the player's profile
+// (neither build 51 nor NOLF2 has them). Tron's host screen, with its own
+// game types, is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenHostLevels.cpp
@@ -27,6 +31,8 @@ extern CGameClientShell* g_pGameClientShell;
 namespace
 {
 	uint8 nListFontSize = 12;
+	int nAvailWidth = 0;
+	int nSelWidth = 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -72,24 +78,24 @@ LTBOOL CScreenHostLevels::Build()
 	
 	LTRect rcAvailRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"AvailRect");
 	int nListHeight = (rcAvailRect.bottom - rcAvailRect.top);
-	int nListWidth = (rcAvailRect.right - rcAvailRect.left) - 32;
+	nAvailWidth = (rcAvailRect.right - rcAvailRect.left);
 
-	m_pAvailMissions = AddList(LTIntPt(rcAvailRect.left,rcAvailRect.top),nListHeight,LTTRUE,nListWidth);
+	m_pAvailMissions = AddList(LTIntPt(rcAvailRect.left,rcAvailRect.top),nListHeight,LTTRUE,nAvailWidth);
 	m_pAvailMissions->SetIndent(LTIntPt(5,5));
 	m_pAvailMissions->SetFrameWidth(2);
 	m_pAvailMissions->Enable(LTFALSE);
 
 	LTRect rcSelRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"SelectRect");
 	nListHeight = (rcSelRect.bottom - rcSelRect.top);
-	nListWidth = (rcSelRect.right - rcSelRect.left) - 32;
+	nSelWidth = (rcSelRect.right - rcSelRect.left);
 
-	m_pSelMissions = AddList(LTIntPt(rcSelRect.left,rcSelRect.top),nListHeight,LTTRUE,nListWidth);
+	m_pSelMissions = AddList(LTIntPt(rcSelRect.left,rcSelRect.top),nListHeight,LTTRUE,nSelWidth);
 	m_pSelMissions->SetIndent(LTIntPt(5,5));
 	m_pSelMissions->SetFrameWidth(2);
 	m_pSelMissions->Enable(LTFALSE);
 
 	m_nextPos.y += nListHeight;
-	nListWidth -= 16;
+	uint16 nListWidth = nSelWidth-16;
 	m_pLoopToggle = AddToggle(IDS_LOOP_MISSIONS,IDS_HELP_LOOP_MISSIONS,nListWidth,&m_bLoopMissions);
 	m_pLoopToggle->SetOnString(LoadTempString(IDS_YES));
 	m_pLoopToggle->SetOffString(LoadTempString(IDS_NO));
@@ -228,8 +234,13 @@ void    CScreenHostLevels::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
-	
-		m_sCampaignFile = g_pProfileMgr->GetCurrentCampaignFile();
+		m_pAvailMissions->Enable(LTFALSE);
+		m_pAdd->Enable(LTTRUE);
+		m_pSelMissions->Enable(LTFALSE);
+		m_pRemove->Enable(LTTRUE);
+
+		CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
+		m_sCampaignFile = GetCampaignFile( pUserProfile->m_ServerGameOptions );
 		
 		if(!CWinUtil::FileExist( m_sCampaignFile.c_str() ) )
 		{
@@ -237,6 +248,7 @@ void    CScreenHostLevels::OnFocus(LTBOOL bFocus)
 			g_pLTClient->CPrint("Could not load campaign file %s.",  m_sCampaignFile.c_str() );
 			m_sCampaignFile = "";
 		}
+
 
 
 		FillAvailList();
@@ -248,6 +260,15 @@ void    CScreenHostLevels::OnFocus(LTBOOL bFocus)
 			MakeDefaultMissionList();
 		}
 
+		if (g_pGameClientShell->GetGameType() != eGameTypeCooperative)
+		{
+			m_pLoopToggle->Enable(LTFALSE);
+			m_bLoopMissions = LTTRUE;
+		}
+		else
+		{
+			m_pLoopToggle->Enable(LTTRUE);
+		}
 
 		UpdateButtons();
         UpdateData(LTFALSE);
@@ -280,9 +301,20 @@ LTBOOL CScreenHostLevels::FillAvailList()
 		MISSION* pMission = g_pMissionButeMgr->GetMission(nMission);
 		if (pMission)
 		{
-			CLTGUITextCtrl *pCtrl = CreateTextItem(LoadTempString(pMission->nNameId),CMD_ADD_LEVEL,LTNULL);
+			CLTGUITextCtrl *pCtrl = NULL;
+			if (pMission->nNameId > 0)
+				pCtrl = CreateTextItem(LoadTempString(pMission->nNameId),CMD_ADD_LEVEL,pMission->nDescId);
+			else if (!pMission->sName.empty())
+				pCtrl = CreateTextItem((char *)pMission->sName.c_str(),CMD_ADD_LEVEL,pMission->nDescId);
+			else
+			{
+				char szWorldTitle[MAX_PATH] = "";
+				_splitpath( pMission->aLevels[0].szLevel, NULL, NULL, szWorldTitle, NULL );
+				pCtrl = CreateTextItem(szWorldTitle,CMD_ADD_LEVEL,0);
+			}
 			pCtrl->SetFont(LTNULL,nListFontSize);
 			pCtrl->SetParam1(nMission);
+			pCtrl->SetFixedWidth(nAvailWidth,LTTRUE);
 			m_pAvailMissions->AddControl(pCtrl);
 		}
 	}
@@ -328,7 +360,33 @@ void CScreenHostLevels::MakeDefaultMissionList()
 
 	for (int nMission = 0; nMission < g_pMissionButeMgr->GetNumMissions(); nMission++)
 	{
-		AddMissionToList(nMission);
+		MISSION *pMission = g_pMissionButeMgr->GetMission(nMission);
+		if (pMission)
+		{
+			char szWorldTitle[MAX_PATH] = "";
+			_splitpath( pMission->aLevels[0].szLevel, NULL, NULL, szWorldTitle, NULL );
+
+			switch (g_pGameClientShell->GetGameType())
+			{
+			case eGameTypeDeathmatch:
+			case eGameTypeTeamDeathmatch:
+				if (strnicmp(szWorldTitle,"DM_",3) == 0)
+				{
+					AddMissionToList(nMission);
+				}
+				break;
+			case eGameTypeDoomsDay:
+				if (strnicmp(szWorldTitle,"DD_",3) == 0)
+				{
+					AddMissionToList(nMission);
+				}
+				break;
+			default:
+				AddMissionToList(nMission);
+				break;
+			}
+		}
+		
 	}
 
 }
@@ -360,8 +418,8 @@ void CScreenHostLevels::SaveMissionList()
 		}
 	}
 
-
-
+	// Flush the file.
+	CWinUtil::WinWritePrivateProfileString( NULL, NULL, NULL, m_sCampaignFile.c_str());
 }			
 		
 
@@ -394,10 +452,23 @@ void CScreenHostLevels::AddMissionToList(int nMissionId)
 
 	if (pMission)
 	{
-		CLTGUITextCtrl *pCtrl = CreateTextItem(LoadTempString(pMission->nNameId),CMD_REMOVE_LEVEL,LTNULL);
+		
+		CLTGUITextCtrl *pCtrl = NULL;
+		if (pMission->nNameId > 0)
+			pCtrl = CreateTextItem(LoadTempString(pMission->nNameId),CMD_REMOVE_LEVEL,pMission->nDescId);
+		else if (!pMission->sName.empty())
+			pCtrl = CreateTextItem((char *)pMission->sName.c_str(),CMD_REMOVE_LEVEL,pMission->nDescId);
+		else
+		{
+			char szWorldTitle[MAX_PATH] = "";
+			_splitpath( pMission->aLevels[0].szLevel, NULL, NULL, szWorldTitle, NULL );
+			pCtrl = CreateTextItem(szWorldTitle,CMD_REMOVE_LEVEL,0);
+		}
 		pCtrl->SetFont(LTNULL,nListFontSize);
 		pCtrl->SetParam1(nMissionId);
+		pCtrl->SetFixedWidth(nSelWidth,LTTRUE);
 		m_pSelMissions->AddControl(pCtrl);
+		
 	}
 	else
 	{

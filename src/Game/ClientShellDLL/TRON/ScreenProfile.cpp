@@ -49,6 +49,8 @@ namespace
 	int kDlgHt = 240;
 	int kDlgWd = 240;
 	uint32 nCommand = 0;
+	uint8 nListFont = 1;
+	uint8 nListFontSz = 14;
 
 }
 
@@ -80,21 +82,33 @@ LTBOOL CScreenProfile::Build()
 
 	AddTextItem(IDS_LOAD, CMD_LOAD, IDS_HELP_PROFILE_LOAD);
 
-	m_pRename = AddTextItem(IDS_RENAME, CMD_RENAME, IDS_HELP_PROFILE_RENAME);
+//jrg - 8/18/02 removed as a quick and dirty to multiple issues caused by renaming profiles.
+//	m_pRename = AddTextItem(IDS_RENAME, CMD_RENAME, IDS_HELP_PROFILE_RENAME);
 
 	m_pDelete = AddTextItem(IDS_DELETE, CMD_DELETE, IDS_HELP_PROFILE_DELETE);
 
 
+	LTIntPt dlgPos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogPos");
+	LTIntPt dlgSz = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogSize");
+	kDlgHt = dlgSz.y;
+	kDlgWd = dlgSz.x;
+	uint8 nDlgFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontFace");
+	uint8 nDlgFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontSize");
+
+	nListFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontFace");
+	nListFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontSize");
 
 	char szBack[128] = "";
-	g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
+	g_pLayoutMgr->GetScreenCustomString((eScreenID)m_nScreenID,"DialogFrame",szBack,sizeof(szBack));
 
 	m_pDlg = debug_new(CLTGUIWindow);
 	m_pDlg->Create(g_pInterfaceResMgr->GetTexture(szBack),kDlgHt,kDlgWd);
 
 	LTIntPt tmp(8,8);
+	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nDlgFont);
 
 	CLTGUITextCtrl *pCtrl = CreateTextItem(IDS_PROFILE_LIST, LTNULL, LTNULL, kDefaultPos, LTTRUE);
+	pCtrl->SetFont(pFont,nDlgFontSz);
 	m_pDlg->AddControl(pCtrl, tmp);
 
 	tmp.y += 24;
@@ -111,27 +125,25 @@ LTBOOL CScreenProfile::Build()
 		m_pListCtrl->UseArrows(kDlgWd-48,1.0f,hUp,hUpH,hDown,hDownH);
 		m_pListCtrl->SetIndent(LTIntPt(4,4));
 		m_pListCtrl->SetFrameWidth(2);
+		m_pListCtrl->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 
 		m_pDlg->AddControl(m_pListCtrl, tmp);
 
 	}
 
 	pCtrl = CreateTextItem(IDS_CANCEL, CMD_CANCEL, LTNULL);
-	pCtrl->SetScale(1.0f);
-	tmp.x = (kDlgWd - pCtrl->GetWidth()) / 2;
-	tmp.y = (kDlgHt - pCtrl->GetHeight()) - 8;
+	pCtrl->SetFont(pFont,nDlgFontSz);
+	tmp.x = (kDlgWd - pCtrl->GetBaseWidth()) / 2;
+	tmp.y = (kDlgHt - pCtrl->GetBaseHeight()) - 8;
 	m_pDlg->AddControl(pCtrl, tmp);
 
-	pos.x = 320 - m_pDlg->GetWidth() / 2;
-	pos.x = 240 - m_pDlg->GetHeight() / 2;
+	AddControl(m_pDlg);
 
-
-	m_pDlg->SetBasePos(pos);
+	m_pDlg->SetBasePos(dlgPos);
 	m_pDlg->SetScale(g_pInterfaceResMgr->GetXRatio());
 	m_pDlg->Show(LTFALSE);
 
 	m_pDlg->SetSelection(1);
-	AddControl(m_pDlg);
 
 	UseBack(LTTRUE);
 
@@ -255,20 +267,30 @@ uint32 CScreenProfile::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 			SAFE_STRCPY(m_szProfile,(char *)dwParam1);
 			std::string profileName = m_szProfile;
 			StringSet::iterator iter = m_ProfileList.find(profileName);
-			if (iter != m_ProfileList.end())
-				profileName = (*iter);
 
-			if (bCreate)
+			if (iter != m_ProfileList.end())
 			{
-				g_pProfileMgr->NewProfile(profileName);
+				//don't proceed renaming or creating a new one if we already have a profile of that
+				//name
+				MBCreate mb;
+				mb.eType = LTMB_OK;
+				mb.pFn = NULL,
+				g_pInterfaceMgr->ShowMessageBox(IDS_PROFILE_ALREADY_EXISTS,&mb);
 			}
 			else
 			{
-				g_pProfileMgr->RenameProfile(szOldFN,profileName);
+				if (bCreate)
+				{
+					g_pProfileMgr->NewProfile(profileName);
+				}
+				else
+				{
+					g_pProfileMgr->RenameProfile(szOldFN,profileName);
+				}
+				m_pProfile = g_pProfileMgr->GetCurrentProfile();
+				SAFE_STRCPY(m_szProfile,m_pProfile->m_sName.c_str());
+				UpdateProfileName();
 			}
-			m_pProfile = g_pProfileMgr->GetCurrentProfile();
-			SAFE_STRCPY(m_szProfile,m_pProfile->m_sName.c_str());
-			UpdateProfileName();
 		}
 		break;
 	default:
@@ -309,11 +331,14 @@ void CScreenProfile::CreateProfileList()
 	m_ProfileList.clear();
 	g_pProfileMgr->GetProfileList(m_ProfileList);
 
+	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nListFont);
+
 	// Profiles to the list
 	for (StringSet::iterator iter = m_ProfileList.begin(); iter != m_ProfileList.end(); ++iter)
 	{
 		char *pStr = (char *)iter->c_str();
 		CLTGUITextCtrl* pTextCtrl = CreateTextItem(pStr, CMD_OK, LTNULL);
+		pTextCtrl->SetFont(pFont,nListFontSz);
 		uint16 ndx = m_pListCtrl->AddControl(pTextCtrl);
 		pTextCtrl->SetParam1(ndx);
 
@@ -382,7 +407,7 @@ void CScreenProfile::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 			mb.eType = LTMB_YESNO;
 			mb.pFn = DeleteCallBack,
 			mb.pData = (void *)nIndex;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_DELETE,&mb);
+			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_DELETE_PROFILE,&mb);
 		}
 		break;
 	case CMD_RENAME:

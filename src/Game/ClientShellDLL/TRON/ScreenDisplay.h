@@ -27,7 +27,7 @@ typedef struct ScreenDisplayResolution_t
 
 typedef struct ScreenDisplayRenderer_t
 {
-    LTBOOL   m_bHardware;
+    bool	m_bHWTnL;
 
 	char	m_renderDll[200];		// The DLL name for the renderer
 	char	m_internalName[200];	// This is what the DLLs use to identify a card
@@ -84,10 +84,9 @@ protected:
 
 
 private:
-    LTBOOL                          m_bBitDepth32;
-    LTBOOL                          m_bTexture32;
 	LTBOOL							m_bEscape;
 	LTBOOL							m_bHardwareCursor;
+	LTBOOL							m_bVSync;
 	int								m_nGamma;
 
 	CLTGUICycleCtrl					*m_pResolutionCtrl;		// The resolution control

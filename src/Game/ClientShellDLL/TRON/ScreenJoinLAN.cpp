@@ -22,7 +22,9 @@ void JoinLANCallBack(LTBOOL bReturn, void *pData);
 
 namespace
 {
-	int kColumnWidth = 300;
+	int kLockWidth = 50;
+	int kColumnWidth = 200;
+	int kAddressWidth = 150;
 	char	szOldPort[8];
 	int kListFontSize = 12;
 	LTBOOL bIsInitting = LTFALSE;
@@ -33,6 +35,16 @@ namespace
 			pThisScreen->SendCommand(CMD_OK,(uint32)pData,CMD_EDIT_PORT);
 	};
 
+	void EditPassCallBack(LTBOOL bReturn, void *pData)
+	{
+		CScreenJoinLAN *pThisScreen = (CScreenJoinLAN *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_JOIN_LAN);
+		if (bReturn && pThisScreen)
+		{
+			pThisScreen->SendCommand(CMD_OK,(uint32)pData,CMD_EDIT_PASS);
+		}
+	};
+
+	std::string s_Name = "";
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -54,7 +66,9 @@ LTBOOL CScreenJoinLAN::Build()
 	if (!CBaseScreen::Build()) return LTFALSE;
 
 	CreateTitle(IDS_TITLE_JOIN);
+	kLockWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOIN_LAN,"LockWidth");
 	kColumnWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOIN_LAN,"ColumnWidth");
+	kAddressWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOIN_LAN,"AddressWidth");
 	kListFontSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOIN_LAN,"ListFontSize");
 
 	m_pFind = AddTextItem(IDS_FIND_SERVERS,CMD_SEARCH,IDS_HELP_FIND_SERVERS);
@@ -66,17 +80,19 @@ LTBOOL CScreenJoinLAN::Build()
 	m_pPort->AddColumn("27888", kColumnWidth, LTTRUE);
 	SAFE_STRCPY(m_szPort,"27888");
 
+
 	LTIntPt pos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_JOIN_LAN,"ListPos");
 	CLTGUIColumnCtrl* pCtrl = AddColumnCtrl(LTNULL, LTNULL, pos, LTTRUE);
-	FormatString(IDS_SERVER_NAME,szTmp,sizeof(szTmp));
-	pCtrl->AddColumn(szTmp, kColumnWidth);
-	FormatString(IDS_SERVER_ADDRESS,szTmp,sizeof(szTmp));
-	pCtrl->AddColumn(szTmp, kColumnWidth);
+	pCtrl->AddColumn("Lock", kLockWidth);
+	pCtrl->AddColumn(LoadTempString(IDS_SERVER_NAME), kColumnWidth);
+	pCtrl->AddColumn(LoadTempString(IDS_SERVER_ADDRESS), kAddressWidth);
 	pCtrl->Enable(LTFALSE);
 
 	uint16 height = GetPageBottom() - m_nextPos.y;
-	m_pServers = AddList(m_nextPos,height,LTTRUE,kColumnWidth);
+	m_pServers = AddList(m_nextPos,height,LTTRUE,kColumnWidth+kAddressWidth+kLockWidth);
 	m_pServers->SetScrollWrap(LTFALSE);
+	m_pServers->SetFrameWidth(1);
+	m_pServers->SetColors(m_NonSelectedColor,m_NonSelectedColor,m_NonSelectedColor);
 
 
  	// Make sure to call the base class
@@ -103,15 +119,22 @@ uint32 CScreenJoinLAN::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 			mb.eInput = CLTGUIEditCtrl::kInputNumberOnly;
 			g_pInterfaceMgr->ShowMessageBox(IDS_PORT,&mb);
 		} break;
-
 	case CMD_OK:
 		{
-			char *pszPort = (char *)dwParam1;
-			uint16 nPort = (uint16)atoi(pszPort);
-			if (IsValidPort(nPort))
+			if (dwParam2 == CMD_EDIT_PORT)
 			{
-				SAFE_STRCPY(m_szPort,pszPort);
-				m_pPort->SetString(1,m_szPort);
+				char *pszPort = (char *)dwParam1;
+				uint16 nPort = (uint16)atoi(pszPort);
+				if (IsValidPort(nPort))
+				{
+					SAFE_STRCPY(m_szPort,pszPort);
+					m_pPort->SetString(1,m_szPort);
+				}
+			}
+			else if (dwParam2 == CMD_EDIT_PASS)
+			{
+				m_sPassword = (char *)dwParam1;
+				DoJoin();
 			}
 		}
 		break;
@@ -140,7 +163,7 @@ uint32 CScreenJoinLAN::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 		    }
 		    else
 		    {
-				JoinCurGame();
+				CheckPassword();
 		    }
 
 
@@ -156,8 +179,21 @@ uint32 CScreenJoinLAN::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 // Change in focus
 void    CScreenJoinLAN::OnFocus(LTBOOL bFocus)
 {
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+
 	if (bFocus)
 	{
+
+		// we may have gotten here after failing a join, so rebuild our history
+		if (m_pScreenMgr->GetLastScreenID() == SCREEN_ID_NONE)
+		{
+			m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
+			m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MULTI);
+		}
+
+		sprintf(m_szPort,"%d",pProfile->m_nClientPort);
+		m_pPort->GetColumn(1)->SetString(m_szPort);
+
 		SetSelection(GetIndex(m_pFind));
 		m_pServers->RemoveAll();
 
@@ -165,6 +201,9 @@ void    CScreenJoinLAN::OnFocus(LTBOOL bFocus)
 	}
 	else
 	{
+		pProfile->m_nClientPort = (uint16)atoi(m_szPort);
+		pProfile->Save();
+
 		UpdateData();
 	}
 	CBaseScreen::OnFocus(bFocus);
@@ -210,6 +249,18 @@ LTBOOL CScreenJoinLAN::InitSessions()
 		pSession = pList;
 		while(pSession)
 		{
+			uint8 nGameType = pSession->m_nGameType;
+
+			//since versions 1.1 and 1.1 didn't have this they'll report 0 for co-op games
+			if (nGameType == 0)
+				nGameType = eGameTypeCooperative;
+
+			if (g_pGameClientShell->GetGameType() != nGameType)
+			{
+				pSession = pSession->m_pNext;
+				continue;
+			}
+
 			csString.Format( "%s:%d", pSession->m_HostIP, pSession->m_HostPort );
 
 			if (!m_lstSessions.Add(csString))
@@ -234,10 +285,15 @@ LTBOOL CScreenJoinLAN::InitSessions()
 			}
 			pCtrl->SetFont(LTNULL,kListFontSize);
 
+			if (pSession->m_bHasPassword)
+				pCtrl->AddColumn("x", kLockWidth);
+			else
+				pCtrl->AddColumn(" ", kLockWidth);
 
 			// Do the name
 			pCtrl->AddColumn(pSession->m_sName, kColumnWidth);
 			pCtrl->SetParam1((uint32)pos);
+			pCtrl->SetParam2((uint32)pSession->m_bHasPassword);
 
 /*
 			char szPlayers[16] ="";
@@ -248,8 +304,10 @@ LTBOOL CScreenJoinLAN::InitSessions()
 */			
 			
 			// Do the address
-			pCtrl->AddColumn((LPCTSTR)csString, kColumnWidth);
+			pCtrl->AddColumn((LPCTSTR)csString, kAddressWidth);
 			m_pServers->AddControl(pCtrl);
+
+
 
 			pSession = pSession->m_pNext;
 		}
@@ -285,7 +343,7 @@ void JoinLANCallBack(LTBOOL bReturn, void *pData)
 	CScreenJoinLAN *pThisScreen = (CScreenJoinLAN *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_JOIN_LAN);
 	if (bReturn && pThisScreen)
 	{
-		pThisScreen->JoinCurGame();
+		pThisScreen->CheckPassword();
     }
 }
 
@@ -299,10 +357,10 @@ void JoinLANCallBack(LTBOOL bReturn, void *pData)
 //
 // ----------------------------------------------------------------------- //
 
-void CScreenJoinLAN::JoinCurGame()
+void CScreenJoinLAN::CheckPassword()
 {
 	// Get the currently selected game server...
-	CLTGUICtrl *pCtrl = m_pServers->GetSelectedControl();
+	CLTGUIColumnCtrl *pCtrl = (CLTGUIColumnCtrl *)m_pServers->GetSelectedControl();
 	if (!pCtrl) return;
 
 	uint32 nIndex = pCtrl->GetParam1();
@@ -319,11 +377,45 @@ void CScreenJoinLAN::JoinCurGame()
 		return;
 	}
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| m_sPassword = "";
+	//| if (pCtrl->GetColumn(1) && pCtrl->GetColumn(1)->GetString())
+	//| s_Name = pCtrl->GetColumn(1)->GetString()->GetText();
+	//| else
+	//| s_Name = "";
+	//| if (pCtrl->GetParam2())
+	//| {
+	//| //show edit box here
+	//| MBCreate mb;
+	//| mb.eType = LTMB_EDIT;
+	//| mb.pFn = EditPassCallBack;
+	//| mb.pString = "";
+	//| mb.nMaxChars = MAX_PASSWORD-1;
+	//| g_pInterfaceMgr->ShowMessageBox(IDS_PASSWORD,&mb);
+	//| }
+	//| else
+	//| {
+	//| DoJoin();
+	//| }
+	//| }
+	//| void CScreenJoinLAN::DoJoin()
+	//| {
+	//| // Get the currently selected game server...
+	//| CLTGUIColumnCtrl *pCtrl = (CLTGUIColumnCtrl *)m_pServers->GetSelectedControl();
+	//| if (!pCtrl) return;
+	//| uint32 nIndex = pCtrl->GetParam1();
+	//| if (nIndex > m_lstSessions.GetSize()) return;
 	bool bOk = g_pClientMultiplayerMgr->SetupClient(m_lstSessions[nIndex]);
 	bOk = bOk && g_pMissionMgr->StartGameAsClient( );
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| bool bOk = g_pClientMultiplayerMgr->SetupClient(m_lstSessions[nIndex], s_Name.c_str(), m_sPassword);
+	//| bOk = bOk && g_pMissionMgr->StartGameAsClient( );
+	//| if( !bOk )
 	if( !bOk )
 	{
+		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+		//| g_pInterfaceMgr->LoadFailed(SCREEN_ID_JOIN_LAN);
 		g_pInterfaceMgr->LoadFailed();
 	}
 }

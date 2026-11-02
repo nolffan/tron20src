@@ -15,6 +15,7 @@
 #include "GameSettings.h"
 #include "InterfaceMgr.h"
 #include "GameSettings.h"
+#include "GameClientShell.h"
 
 namespace
 {
@@ -31,7 +32,7 @@ namespace
 	}
 
 
-
+	bool bHasJoystick = true;
 }
 
 
@@ -46,7 +47,12 @@ CScreenControls::CScreenControls()
     m_bUseJoystick=LTFALSE;
 	m_nConfirm = 0;
 
-
+	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
+	bHasJoystick = (dwAdvancedOptions & AO_JOYSTICK) != 0;
+	if (bHasJoystick)
+	{
+		bHasJoystick = g_pGameClientShell->HasJoystick() || g_pGameClientShell->HasGamepad();
+	}
 }
 
 CScreenControls::~CScreenControls()
@@ -72,8 +78,6 @@ LTBOOL CScreenControls::Build()
 	AddTextItem(IDS_KEYBOARD, CMD_KEYBOARD, IDS_HELP_KEYBOARD);
 
 	// use joystick
-	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
-
 	CLTGUIToggle* pToggle = AddToggle(IDS_JOYSTICK_USE, IDS_HELP_USEJOYSTICK, kGap, &m_bUseJoystick);
 	pToggle->NotifyOnChange(CMD_UPDATE,this);
 	char szYes[16];
@@ -82,14 +86,14 @@ LTBOOL CScreenControls::Build()
 	FormatString(IDS_NO,szNo,sizeof(szNo));
 	pToggle->SetOnString(szYes);
 	pToggle->SetOffString(szNo);
-//	pToggle->Enable( (dwAdvancedOptions & AO_JOYSTICK) );
-	pToggle->Enable(LTFALSE);
+	pToggle->Enable( bHasJoystick ? LTTRUE : LTFALSE );
+//	pToggle->Enable(LTFALSE);
 
 
 	// joystick
 	m_pJoystickCtrl = AddTextItem(IDS_JOYSTICK, CMD_JOYSTICK, IDS_HELP_JOYSTICK);
-//	m_pJoystickCtrl->Enable( (dwAdvancedOptions & AO_JOYSTICK) );
-	m_pJoystickCtrl->Enable(LTFALSE);
+	m_pJoystickCtrl->Enable( bHasJoystick );
+//	m_pJoystickCtrl->Enable(LTFALSE);
 
 	//restore
 	AddTextItem(IDS_RESTOREDEFAULTS, CMD_RESET_DEFAULTS, IDS_HELP_RESTORE);
@@ -117,22 +121,11 @@ uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 		}
 	case CMD_UPDATE:
 		{
-/*
+
 			UpdateData();
-			m_pJoystickCtrl->Enable(m_bUseJoystick);
-			if (m_bUseJoystick)
-			{
-				CScreenJoystick *pJoy = (CScreenJoystick *)m_pScreenMgr->GetScreenFromID(SCREEN_ID_JOYSTICK);
-				if (!pJoy->IsJoystickConfigured())
-				{
-					HSTRING hString = g_pLTClient->FormatString(IDS_JOYSTICK_UNBOUND);
-					g_pInterfaceMgr->ShowMessageBox(hString,LTMB_YESNO,ConfirmCallBack,this,LTFALSE);
-					g_pLTClient->FreeString(hString);
-					m_nConfirm = IDS_JOYSTICK_UNBOUND;
-				}					
-			}
+			m_pJoystickCtrl->Enable(bHasJoystick && m_bUseJoystick);
 			break;
-*/
+
 		}
 	case CMD_MOUSE:
 		{
@@ -146,7 +139,7 @@ uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 		}
 	case CMD_JOYSTICK:
 		{
-//			m_pScreenMgr->SetCurrentScreen(SCREEN_ID_JOYSTICK);
+			m_pScreenMgr->SetCurrentScreen(SCREEN_ID_JOYSTICK);
 			break;
 		}
 	case CMD_RESET_DEFAULTS:
@@ -170,46 +163,29 @@ uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 // Change in focus
 void CScreenControls::OnFocus(LTBOOL bFocus)
 {
-	CGameSettings *pSettings = g_pInterfaceMgr->GetSettings();
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	if (bFocus)
 	{
-	// Load the screen options from the console
-		m_bUseJoystick=pSettings->UseJoystick();
 
-//		CScreenJoystick *pJoy = (CScreenJoystick *)m_pScreenMgr->GetScreenFromID(SCREEN_ID_JOYSTICK);
-//		if (!pJoy->IsJoystickConfigured()) m_bUseJoystick = LTFALSE;
+		pProfile->SetControls();
 
-//		m_pJoystickCtrl->Enable(m_bUseJoystick);
-		m_pJoystickCtrl->Enable(LTFALSE);
+		m_bUseJoystick = pProfile->m_bUseJoystick;
+
+		m_pJoystickCtrl->Enable(bHasJoystick && m_bUseJoystick);
 
         UpdateData(LTFALSE);
 	}
 	else
 	{
+		bool bJoystickChanged = !(pProfile->m_bUseJoystick == m_bUseJoystick);
+		pProfile->m_bUseJoystick = m_bUseJoystick;
+
+		pProfile->ApplyControls();
+		if (bJoystickChanged)
+			pProfile->ApplyJoystick();
+		pProfile->Save();
+
 		UpdateData();
-
-		CGameSettings *pSettings = g_pInterfaceMgr->GetSettings();
-		pSettings->SetBoolVar("UseJoystick",m_bUseJoystick);
-		if (m_bUseJoystick)
-		{
-			char strJoystick[128];
-			memset (strJoystick, 0, 128);
-            LTRESULT result = g_pLTClient->GetDeviceName (DEVICETYPE_JOYSTICK, strJoystick, 127);
-			if (result == LT_OK)
-			{
-				char strConsole[256];
-				sprintf (strConsole, "EnableDevice \"%s\"", strJoystick);
-                g_pLTClient->RunConsoleString (strConsole);
-			}
-			else
-			{
-                pSettings->SetBoolVar("UseJoystick",LTFALSE);
-			}
-		}
-
-		// Just to be safe save the config incase anything changed...
-
-        g_pLTClient->WriteConfigFile("autoexec.cfg");
 	}
 	CBaseScreen::OnFocus(bFocus);
 }

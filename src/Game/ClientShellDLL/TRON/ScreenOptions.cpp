@@ -4,7 +4,7 @@
 //
 // PURPOSE : Interface screen for navigation to various option setting screens
 //
-// (c) 1999-2001 Monolith Productions, Inc.  All Rights Reserved
+// (c) 1999-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
 
@@ -41,11 +41,11 @@ LTBOOL CScreenOptions::Build()
 
 	CreateTitle(IDS_TITLE_OPTIONS);
 
-	AddTextItem(IDS_DISPLAY, CMD_DISPLAY, IDS_HELP_DISPLAY);
-	AddTextItem(IDS_SOUND, CMD_AUDIO, IDS_HELP_SOUND);
-	AddTextItem(IDS_CONTROLS, CMD_CONTROLS, IDS_HELP_CONTROLS);
-	AddTextItem(IDS_GAME_OPTIONS, CMD_GAME, IDS_HELP_GAME_OPTIONS);
-	AddTextItem(IDS_PERFORMANCE, CMD_PERFORMANCE, IDS_HELP_PERFORMANCE);
+	CLTGUITextCtrl* pDisplay = AddTextItem(IDS_DISPLAY, CMD_DISPLAY, IDS_HELP_DISPLAY);
+	CLTGUITextCtrl* pSound = AddTextItem(IDS_SOUND, CMD_AUDIO, IDS_HELP_SOUND);
+	CLTGUITextCtrl* pControls = AddTextItem(IDS_CONTROLS, CMD_CONTROLS, IDS_HELP_CONTROLS);
+	CLTGUITextCtrl* pGame = AddTextItem(IDS_GAME_OPTIONS, CMD_GAME, IDS_HELP_GAME_OPTIONS);
+	CLTGUITextCtrl* pPerf = AddTextItem(IDS_PERFORMANCE, CMD_PERFORMANCE, IDS_HELP_PERFORMANCE);
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;

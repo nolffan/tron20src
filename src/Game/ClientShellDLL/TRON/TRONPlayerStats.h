@@ -138,34 +138,34 @@ public:
 
 	const RANK*	GetRank();
 	uint32		GetCostToUpgrade(eSkill skill);
-	const StealthModifiers* GetStealthModifiers() 
-		{return g_pSkillsButeMgr->GetStealth((eSkillLevel)m_nSkills[SKL_STEALTH]);}
+//	const StealthModifiers* GetStealthModifiers() 
+//		{return g_pSkillsButeMgr->GetStealth((eSkillLevel)m_nSkills[SKL_STEALTH]);}
 
-	const StaminaModifiers* GetStaminaModifiers() 
-		{return g_pSkillsButeMgr->GetStamina((eSkillLevel)m_nSkills[SKL_STAMINA]);}
+//	const StaminaModifiers* GetStaminaModifiers() 
+//		{return g_pSkillsButeMgr->GetStamina((eSkillLevel)m_nSkills[SKL_STAMINA]);}
 
-	const AimModifiers* GetAimModifiers() 
-		{return g_pSkillsButeMgr->GetAim((eSkillLevel)m_nSkills[SKL_AIM]);}
+//	const AimModifiers* GetAimModifiers() 
+//		{return g_pSkillsButeMgr->GetAim((eSkillLevel)m_nSkills[SKL_AIM]);}
 
-	const CarryModifiers* GetCarryModifiers() 
-		{return g_pSkillsButeMgr->GetCarry((eSkillLevel)m_nSkills[SKL_CARRY]);}
+//	const CarryModifiers* GetCarryModifiers() 
+//		{return g_pSkillsButeMgr->GetCarry((eSkillLevel)m_nSkills[SKL_CARRY]);}
 
-	const ArmorModifiers* GetArmorModifiers() 
-		{return g_pSkillsButeMgr->GetArmor((eSkillLevel)m_nSkills[SKL_ARMOR]);}
+//	const ArmorModifiers* GetArmorModifiers() 
+//		{return g_pSkillsButeMgr->GetArmor((eSkillLevel)m_nSkills[SKL_ARMOR]);}
 
-	const WeaponModifiers* GetWeaponModifiers() 
-		{return g_pSkillsButeMgr->GetWeapon((eSkillLevel)m_nSkills[SKL_WEAPON]);}
+//	const WeaponModifiers* GetWeaponModifiers() 
+//		{return g_pSkillsButeMgr->GetWeapon((eSkillLevel)m_nSkills[SKL_WEAPON]);}
 
-	const GadgetModifiers* GetGadgetModifiers() 
-		{return g_pSkillsButeMgr->GetGadget((eSkillLevel)m_nSkills[SKL_GADGET]);}
+//	const GadgetModifiers* GetGadgetModifiers() 
+//		{return g_pSkillsButeMgr->GetGadget((eSkillLevel)m_nSkills[SKL_GADGET]);}
 
-	// PORT: build 51's energy skill, which NOLF2's SkillsButeMgr does not have
-	// and nothing calls
+	// PORT: build 51's per-skill accessors, which NOLF2's SkillsButeMgr does not
+	// have (it has GetModifier) and nothing calls
 //	const EnergyModifiers* GetEnergyModifiers()
 //		{return g_pSkillsButeMgr->GetEnergy((eSkillLevel)m_nSkills[SKL_ENERGY]);}
 
-	const SearchModifiers* GetSearchModifiers() 
-		{return g_pSkillsButeMgr->GetSearch((eSkillLevel)m_nSkills[SKL_STEALTH]);}
+//	const SearchModifiers* GetSearchModifiers() 
+//		{return g_pSkillsButeMgr->GetSearch((eSkillLevel)m_nSkills[SKL_STEALTH]);}
 
 	// ABM Tron stuff
 	uint32 GetEnergy();//			{ return m_nEnergy;}	// Energy levels

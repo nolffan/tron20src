@@ -57,23 +57,24 @@ protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
     void	InitControlList();
     void	UpdateControlList();
+    void	AdjustControlFrame();
 
 	void	SetControlText(int nType, int nIndex);
 	void	SetControlText(CLTGUICtrl *pCtrl);
     LTBOOL  HandleKeyDown(int key, int rep);
     LTBOOL  KeyRemappable (DeviceInput* pInput);
-    uint32  GetControlType(uint32 deviceType, char *controlName);
     LTBOOL  SetCurrentSelection (DeviceInput* pInput);
     LTBOOL  CheckMouseWheel (DeviceInput* pInput);
 	int		GetCommand(int nType, int nIndex);
-    void    Bind(int nCommand, uint16 diCode, char *lpszControlName, uint32 deviceType);
-    void    UnBind(uint16 diCode, char *lpszControlName, uint32 deviceType);
+    void    Bind(int nCommand, uint32 nDeviceObjectId, uint16 nControlCode, char *lpszControlName, uint32 deviceType);
+    void    UnBind( uint32 nDeviceObjectId, char const* pszControlName, uint32 deviceType);
 
 	void	SetCurrentType(int nType);
 
     LTBOOL          m_bControlChanged;
     LTBOOL          m_bWaitingForKey;
 	CLTGUIListCtrl* m_pList[kNumCommandTypes];
+	CLTGUIFrame*	m_pFrame;
 
 
     LTFLOAT         m_fInputPauseTimeLeft;

@@ -46,6 +46,7 @@ namespace
 
 	char szWheelUp[32] = "";
 	char szWheelDown[32] = "";
+// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
 }
 
 
@@ -85,13 +86,6 @@ void CScreenConfigure::Escape()
 		}
 	}
 
-	// Make sure we save any config changes...
-
-	if (m_bControlChanged)
-	{
-        g_pLTClient->WriteConfigFile("autoexec.cfg");
-	}
-
     m_bControlChanged = LTFALSE;
 
 	CBaseScreen::Escape();
@@ -99,10 +93,24 @@ void CScreenConfigure::Escape()
 
 LTBOOL   CScreenConfigure::Init(int nScreenID)
 {
-	LoadString(IDS_WHEEL_UP,szWheelUp,sizeof(szWheelUp));
-	LoadString(IDS_WHEEL_DOWN,szWheelDown,sizeof(szWheelDown));
 	LoadString(IDS_DEVICE_MOUSE,strDeviceNiceName[1],sizeof(strDeviceNiceName[1]));
 	LoadString(IDS_DEVICE_JOYSTICK,strDeviceNiceName[2],sizeof(strDeviceNiceName[2]));
+
+	sprintf (szWheelUp,"%s %s",strDeviceNiceName[1], LoadTempString(IDS_WHEEL_UP) );
+	sprintf (szWheelDown,"%s %s",strDeviceNiceName[1], LoadTempString(IDS_WHEEL_DOWN) );
+
+	if (g_pGameClientShell->HasGamepad())
+	{
+		devices[2] = DEVICETYPE_GAMEPAD;
+		g_pGameClientShell->EnableGamepad();
+	}
+	else if (g_pGameClientShell->HasJoystick())
+	{
+		devices[2] = DEVICETYPE_JOYSTICK;
+		g_pGameClientShell->EnableJoystick();
+	}
+	else
+		devices[2] = DEVICETYPE_UNKNOWN;
 
 
 
@@ -145,10 +153,22 @@ LTBOOL CScreenConfigure::Build()
 	
 	LTIntPt pos(m_ListRect.left,m_ListRect.top);
 	int nHt = m_ListRect.bottom - m_ListRect.top;
+	int nWd = m_nActionWidth + m_nEqualsWidth + m_nCommandWidth;
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_CONFIGURE,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	m_pFrame = debug_new(CLTGUIFrame);
+	m_pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	m_pFrame->SetBasePos(pos);
+	AddControl(m_pFrame);
+
 
 	for (int nType = 0; nType < kNumCommandTypes; nType++)
 	{
 		m_pList[nType] = AddList(pos,nHt);
+		m_pList[nType]->SetFrameWidth(2);
+		m_pList[nType]->SetIndent(LTIntPt(4,4));
 		m_pList[nType]->Show(LTFALSE);
 
 		pCtrl = LTNULL;
@@ -172,6 +192,7 @@ LTBOOL CScreenConfigure::Build()
 			m_pList[nType]->AddControl(pCtrl);
 
 	}
+
 	InitControlList();
 
 	// Make sure to call the base class
@@ -199,6 +220,9 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 			m_pList[nType]->Show(LTFALSE);
 	}
 	CBaseScreen::OnFocus(bFocus);
+// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+//| if (bFocus)
+//| SetCurrentType(COM_MOVE);
 }
 
 
@@ -213,25 +237,32 @@ void CScreenConfigure::InitControlList()
 	{
 		const CommandData *pData = GetCommandData(i);
 
-		// The initial column (contains the action)
-		CLTGUIColumnCtrl *pCtrl=CreateColumnCtrl(CMD_CHANGE_CONTROL, IDS_HELP_SETCONTROL);
-		pCtrl->SetFont(LTNULL,m_nListFontSize);
+		//check to see that this is a TO2 command
+		if (pData->nCommandID < FIRST_TRON_COMMAND)
+		{
+			// The initial column (contains the action)
+			CLTGUIColumnCtrl *pCtrl=CreateColumnCtrl(CMD_CHANGE_CONTROL, IDS_HELP_SETCONTROL);
+			pCtrl->SetFont(LTNULL,m_nListFontSize);
 
-		// The "action" column
-		char szTmp[64];
-		FormatString(pData->nStringID,szTmp,sizeof(szTmp));
-		pCtrl->AddColumn(szTmp, m_nActionWidth);
+			// The "action" column
+			char szTmp[64];
+			FormatString(pData->nStringID,szTmp,sizeof(szTmp));
+			pCtrl->AddColumn(szTmp, m_nActionWidth);
 
+		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+		//| // The equals column.  Changes from "" to "=" when the user is binding the key
+		//| pCtrl->AddColumn(" ", m_nEqualsWidth);
 		// The equals column.  Changes from "" to "=" when the user is binding the key
 		pCtrl->AddColumn("", m_nEqualsWidth);
 
-		// The column that contains the key which is assigned to the control!
-		FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
-		pCtrl->AddColumn(szTmp, m_nCommandWidth);
+			// The column that contains the key which is assigned to the control!
+			FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
+			pCtrl->AddColumn(szTmp, m_nCommandWidth);
 
-		pCtrl->SetParam1(i);
+			pCtrl->SetParam1(i);
 
-		m_pList[pData->nCommandType]->AddControl(pCtrl);
+			m_pList[pData->nCommandType]->AddControl(pCtrl);
+		}
 
 	}
 }
@@ -242,11 +273,17 @@ void CScreenConfigure::UpdateControlList()
 {
 	for (int nType = 0; nType < kNumCommandTypes; nType++)
 	{
+		int nHt = m_ListRect.bottom - m_ListRect.top;
+
+		m_pList[nType]->SetHeight(nHt);
+
 		for (int i = 0; i < m_pList[nType]->GetNumControls(); i ++)
 		{
 			SetControlText(nType,i);
 		}
 	}
+
+	AdjustControlFrame();
 
 }
 
@@ -269,13 +306,32 @@ void CScreenConfigure::SetControlText(CLTGUICtrl *pCtrl)
 	CBindingData* pData = m_pProfile->FindBinding(nCommand);
 
 	char strControls[256] = "";
+	char szDeviceObjectName[256] = "";
 	int numControls = 0;
 
 	if (pData) 
 	{
 		if (strlen(pData->strTriggerName[0]) != 0 )
 		{
-			SAFE_STRCPY(strControls,pData->strTriggerName[0]);
+			char szTemp[256] = "";
+
+			// Get the name twice and take the shorter version.  WinXP has a problem
+			// with occasionally reporting garbage.  Taking the shorter one assumes that
+			// the garbage version is full of bad characters.
+			g_pLTClient->GetDeviceObjectName( m_pProfile->GetDeviceName( 0 ), pData->nDeviceObjectId[0], 
+				szTemp, ARRAY_LEN( szTemp ));
+			g_pLTClient->GetDeviceObjectName( m_pProfile->GetDeviceName( 0 ), pData->nDeviceObjectId[0], 
+				szDeviceObjectName, ARRAY_LEN( szDeviceObjectName ));
+
+			if( strlen( szTemp ) < strlen( szDeviceObjectName ))
+			{
+				SAFE_STRCPY(strControls, szTemp );
+			}
+			else
+			{
+				SAFE_STRCPY(strControls, szDeviceObjectName );
+			}
+
 			++numControls;
 		}
 
@@ -283,15 +339,27 @@ void CScreenConfigure::SetControlText(CLTGUICtrl *pCtrl)
 		{
 			if (numControls)
 				strcat(strControls,", ");
-			strcat(strControls,strDeviceNiceName[1]);
-			strcat(strControls," ");
 
-			if (stricmp("#U",pData->strTriggerName[1]) == 0)
+			if (stricmp("#U",pData->strRealName[1]) == 0)
 				strcat(strControls,szWheelUp);
-			else if (stricmp("#D",pData->strTriggerName[1]) == 0)
+			else if (stricmp("#D",pData->strRealName[1]) == 0)
 				strcat(strControls,szWheelDown);
+			else if (stricmp("##3",pData->strRealName[1]) == 0)
+				strcat(strControls,LoadTempString(IDS_MOUSE_LEFTBUTTON));
+			else if (stricmp("##4",pData->strRealName[1]) == 0)
+				strcat(strControls,LoadTempString(IDS_MOUSE_RIGHTBUTTON));
+			else if (stricmp("##5",pData->strRealName[1]) == 0)
+				strcat(strControls,LoadTempString(IDS_MOUSE_MIDDLEBUTTON));
 			else
-				strcat(strControls,pData->strTriggerName[1]);
+			{
+				strcat(strControls,strDeviceNiceName[1]);
+				strcat(strControls," ");
+
+				g_pLTClient->GetDeviceObjectName( m_pProfile->GetDeviceName( 1 ), pData->nDeviceObjectId[1], 
+					szDeviceObjectName, ARRAY_LEN( szDeviceObjectName ));
+
+				strcat(strControls, szDeviceObjectName );
+			}
 		}
 
 		if (strlen(pData->strTriggerName[2]) != 0 )
@@ -300,7 +368,11 @@ void CScreenConfigure::SetControlText(CLTGUICtrl *pCtrl)
 				strcat(strControls,", ");
 			strcat(strControls,strDeviceNiceName[2]);
 			strcat(strControls," ");
-			strcat(strControls,pData->strTriggerName[2]);
+
+			g_pLTClient->GetDeviceObjectName( m_pProfile->GetDeviceName( 2 ), pData->nDeviceObjectId[2], 
+				szDeviceObjectName, ARRAY_LEN( szDeviceObjectName ));
+
+			strcat( strControls, szDeviceObjectName );
 		}
 	}
 
@@ -333,47 +405,59 @@ int CScreenConfigure::GetCommand(int nType, int nIndex)
 }
 
 // Unbinds an action
-void CScreenConfigure::UnBind(uint16 diCode, char *lpszControlName, uint32 deviceType)
+void CScreenConfigure::UnBind( uint32 nObjectId, char const* pszControlName, uint32 deviceType)
 {
+	if( !nObjectId && !pszControlName )
+	{
+		ASSERT( !"CScreenConfigure::UnBind: Invalid inputs." );
+		return;
+	}
 
 	int dev = 0;
 	while (dev < 3 && devices[dev] != deviceType)
 		++dev;
 
 	char szTmp[16] ="";
-	if (diCode)
-		sprintf(szTmp,"##%d",diCode);
-	else
-		SAFE_STRCPY(szTmp,lpszControlName);
-
 	for (int i = 0; i < g_kNumCommands; i++)
 	{
 		CBindingData *pData = m_pProfile->FindBinding(i);
-		if (stricmp(szTmp,pData->strRealName[dev]) == 0 || stricmp(lpszControlName,pData->strTriggerName[dev]) == 0)
+		if( nObjectId )
 		{
-			strcpy(pData->strRealName[dev],"");
-			strcpy(pData->strTriggerName[dev],"");
+			if( pData->nDeviceObjectId[dev] != nObjectId )
+			{
+				continue;
+			}
 		}
-	}
+		else
+		{
+			if( stricmp( pData->strRealName[dev], pszControlName ))
+				continue;
+		}
 
+		strcpy(pData->strRealName[dev],"");
+		strcpy(pData->strTriggerName[dev],"");
+		pData->nDeviceObjectId[dev] = 0;
+
+	}
 }
 
 // Binds a key to a action
-void CScreenConfigure::Bind(int nCommand, uint16 diCode, char *lpszControlName, uint32 deviceType)
+void CScreenConfigure::Bind(int nCommand, uint32 nDeviceObjectId, uint16 nControlCode, char *lpszControlName, uint32 deviceType)
 {
-	_ASSERT(lpszControlName || diCode);
+	_ASSERT(lpszControlName || nControlCode);
 
 	int dev = 0;
 	while (dev < 3 && devices[dev] != deviceType)
 		++dev;
 
-
 	CBindingData *pData = m_pProfile->FindBinding(nCommand);
 	if (pData)
 	{
-		if (diCode && deviceType != DEVICETYPE_JOYSTICK)
+		pData->nDeviceObjectId[dev] = nDeviceObjectId;
+
+		if (nControlCode && (deviceType != DEVICETYPE_JOYSTICK || deviceType == DEVICETYPE_GAMEPAD))
 		{
-			sprintf(pData->strRealName[dev],"##%d",diCode);
+			sprintf(pData->strRealName[dev],"##%d",nControlCode);
 			SAFE_STRCPY(pData->strTriggerName[dev],lpszControlName)
 		}
 		else
@@ -402,9 +486,16 @@ LTBOOL CScreenConfigure::HandleKeyDown(int key, int rep)
 				int nCommand = pCtrl->GetParam1();
 				CBindingData* pData = m_pProfile->FindBinding(nCommand);
 
-				UnBind(0,pData->strTriggerName[0], DEVICETYPE_KEYBOARD);
-				UnBind(0,pData->strTriggerName[1], DEVICETYPE_MOUSE);
-				UnBind(0,pData->strTriggerName[2], DEVICETYPE_JOYSTICK);
+				UnBind( pData->nDeviceObjectId[0], NULL, DEVICETYPE_KEYBOARD);
+				UnBind( 0, pData->strTriggerName[1], DEVICETYPE_MOUSE);
+
+				if (g_pGameClientShell->HasGamepad())
+					UnBind( 0, pData->strTriggerName[2], DEVICETYPE_GAMEPAD);
+				else if (g_pGameClientShell->HasJoystick())
+					UnBind(0, pData->strTriggerName[2], DEVICETYPE_JOYSTICK);
+				else
+					UnBind(0, pData->strTriggerName[2], DEVICETYPE_UNKNOWN);
+
 				SetControlText(pCtrl);
 
 				handled = LTTRUE;
@@ -460,8 +551,10 @@ uint32 CScreenConfigure::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwP
 
 			pCtrl->SetString(SCREEN_COLUMN_KEY, " ");
 
+
+
 			// see if we can track the input devices
-            LTRESULT hResult = g_pLTClient->StartDeviceTrack (DEVICETYPE_KEYBOARD | DEVICETYPE_MOUSE | DEVICETYPE_JOYSTICK, TRACK_BUFFER_SIZE);
+            LTRESULT hResult = g_pLTClient->StartDeviceTrack (DEVICETYPE_KEYBOARD | DEVICETYPE_MOUSE | devices[2], TRACK_BUFFER_SIZE);
 			if (hResult != LT_OK)
 			{
                 g_pLTClient->EndDeviceTrack();
@@ -533,6 +626,8 @@ void CScreenConfigure::SetCurrentType(int nType)
 	}
 	m_nType = nType;
 
+	AdjustControlFrame();
+
 }
 
 LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
@@ -540,6 +635,12 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 	CLTGUIColumnCtrl *pCtrl=(CLTGUIColumnCtrl *)m_pList[m_nType]->GetSelectedControl();
 	int nCommand=pCtrl->GetParam1();
 	int nIndex=m_pList[m_nType]->GetSelectedIndex()-1;
+
+	if (pInput->m_DeviceType == DEVICETYPE_JOYSTICK)
+	{
+		uint16 diCode = pInput->m_ControlCode;
+		g_pLTClient->CPrint("joystick diCode:%d",diCode);
+	}
 
 	if (pInput->m_DeviceType == DEVICETYPE_MOUSE && pInput->m_ControlType == CONTROLTYPE_ZAXIS)
 	{
@@ -550,33 +651,16 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 		pInput->m_ControlType != CONTROLTYPE_KEY)
         return LTFALSE;
 
-	char sNewKey[256];
-	SAFE_STRCPY(sNewKey,pInput->m_ControlName);
+
+
+//	char sNewKey[256];
+//	SAFE_STRCPY(sNewKey,pInput->m_ControlName);
 
 	// see if this key is bound to something not in the keyboard configuration folder...
 	if (KeyRemappable(pInput))
 	{
-		uint16 diCode = pInput->m_ControlCode;
-//		g_pLTClient->CPrint("diCode:%d",diCode);
-		
-		UnBind(diCode, pInput->m_ControlName, pInput->m_DeviceType);
-
-		if (pInput->m_DeviceType == DEVICETYPE_KEYBOARD)
-		{
-
-			if (_mbstrlen(pInput->m_ControlName) != 1)
-			{
-				Bind(nCommand, diCode, pInput->m_ControlName, pInput->m_DeviceType);
-			}
-			else
-			{
-				Bind(nCommand, diCode, sNewKey, pInput->m_DeviceType);
-			}
-		}
-		else
-		{
-			Bind(nCommand, diCode, pInput->m_ControlName, pInput->m_DeviceType);
-		}
+		UnBind( pInput->m_nObjectId, NULL, pInput->m_DeviceType);
+		Bind(nCommand, pInput->m_nObjectId, pInput->m_ControlCode, pInput->m_ControlName, pInput->m_DeviceType);
 
 	};
 
@@ -591,7 +675,7 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 LTBOOL CScreenConfigure::KeyRemappable (DeviceInput* pInput)
 {
 
-    if (!g_pLTClient) return LTFALSE;
+	if (pInput->m_DeviceType != DEVICETYPE_KEYBOARD) return LTTRUE;
 
 	uint16 nDIK = pInput->m_ControlCode;
 	if (nDIK == DIK_ESCAPE)
@@ -612,7 +696,7 @@ LTBOOL CScreenConfigure::KeyRemappable (DeviceInput* pInput)
 	DeviceBinding* ptr = pBindings;
 	while (ptr)
 	{
-		if (strcmp (ptr->strTriggerName, pInput->m_ControlName) == 0)
+		if( ptr->m_nObjectId == pInput->m_nObjectId )
 		{
 			// see if this binding is in the list of mappable ones
 			GameAction* pAction = ptr->pActionHead;
@@ -756,27 +840,6 @@ LTBOOL CScreenConfigure::OnMouseMove(int x, int y)
 
 
 
-uint32 CScreenConfigure::GetControlType(uint32 deviceType, char *controlName)
-{
-
-    DeviceObject* pObj = g_pLTClient->GetDeviceObjects(deviceType);
-    uint32 type = CONTROLTYPE_UNKNOWN;
-	bool bFound = false;
-	while (pObj != NULL && !bFound)
-	{
-		if (pObj->m_ObjectName != NULL)
-		{
-			bFound = (strcmp (controlName, pObj->m_ObjectName) == 0);
-			if (bFound)
-				type = pObj->m_ObjectType;
-		}
-		pObj = pObj->m_pNext;
-	}
-	return type;
-}
-
-
-
 LTBOOL CScreenConfigure::CheckMouseWheel (DeviceInput* pInput)
 {
 	
@@ -797,9 +860,9 @@ LTBOOL CScreenConfigure::CheckMouseWheel (DeviceInput* pInput)
 	else
 		strcpy(szCommand, "#D");
 	
-	UnBind(0, szCommand, pInput->m_DeviceType);
+	UnBind( 0, szCommand, pInput->m_DeviceType );
 
-	Bind(nCommand, 0, szCommand, pInput->m_DeviceType);
+	Bind(nCommand, pInput->m_nObjectId, 0, szCommand, pInput->m_DeviceType);
 
 	pCtrl->SetString(SCREEN_COLUMN_EQUALS, "");
 
@@ -808,3 +871,32 @@ LTBOOL CScreenConfigure::CheckMouseWheel (DeviceInput* pInput)
     return LTTRUE;
 }
 
+
+
+void CScreenConfigure::AdjustControlFrame()
+{
+	if (m_nType >= kNumCommandTypes)
+	{
+		m_pFrame->Show(LTFALSE);
+		return;
+	}
+
+
+	uint16 nWd = m_nActionWidth + m_nEqualsWidth + m_nCommandWidth;
+	m_pFrame->Show(LTTRUE);
+
+	m_pList[m_nType]->CalculatePositions();
+
+	LTIntPt listpos = m_pList[m_nType]->GetBasePos();
+	uint16 i = m_pList[m_nType]->GetNumControls() - 1;
+	CLTGUICtrl *pCtrl = m_pList[m_nType]->GetControl(i);
+	if (pCtrl)
+	{
+		LTIntPt pos = pCtrl->GetBasePos();
+		
+		uint16 nHt = (pos.y - listpos.y) + pCtrl->GetBaseHeight() + 4;
+
+		m_pFrame->SetSize(nWd+8,nHt);
+		m_pList[m_nType]->SetHeight(nHt);
+	}
+}

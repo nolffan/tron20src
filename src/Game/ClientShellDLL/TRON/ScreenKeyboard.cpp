@@ -52,6 +52,21 @@ LTBOOL CScreenKeyboard::Build()
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_KEYBOARD,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_KEYBOARD,"SliderWidth");
 
+	//background frame
+	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_KEYBOARD,"FrameRect");
+	LTIntPt pos(frameRect.left,frameRect.top);
+	int nHt = frameRect.bottom - frameRect.top;
+	int nWd = frameRect.right - frameRect.left;
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_KEYBOARD,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
+	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	pFrame->SetBasePos(pos);
+	pFrame->SetBorder(2,m_NonSelectedColor);
+	AddControl(pFrame);
+
 	//turn speed
 	CLTGUISlider *pSlider = AddSlider(IDS_NORMALTURN, IDS_HELP_NORMALTURN, kGap, kWidth, -1, &m_nNormalTurn);
 	pSlider->SetSliderRange(5, 55);
@@ -78,7 +93,7 @@ LTBOOL CScreenKeyboard::Build()
 
 	pSlider = AddSlider(IDS_VEHICLETURN, IDS_HELP_VEHICLETURN, kGap, kWidth, -1, &m_nVehicleTurn);
 	pSlider->SetSliderRange(50, 150);
-	pSlider->SetSliderIncrement(5);
+	pSlider->SetSliderIncrement(10);
 
 
 	// Make sure to call the base class

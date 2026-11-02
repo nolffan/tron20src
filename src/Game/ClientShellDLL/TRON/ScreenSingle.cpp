@@ -5,7 +5,7 @@
 // PURPOSE : Interface screen for starting, loading, and saving single player
 //				games.
 //
-// (c) 1999-2001 Monolith Productions, Inc.  All Rights Reserved
+// (c) 1999-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
 
@@ -15,11 +15,20 @@
 #include "ScreenCommands.h"
 #include "WinUtil.h"
 #include "GameClientShell.h"
+// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+//| #include "MissionMgr.h"
+//| #include "ClientSaveLoadMgr.h"
+//| #include "ClientButeMgr.h"
+//| #include "ClientMultiplayerMgr.h"
+//| #include "clientres.h"
 #include "MissionMgr.h"
 #include "ClientSaveLoadMgr.h"
 #include "ClientButeMgr.h"
 #include "ClientMultiplayerMgr.h"
 
+#ifdef _FINAL
+#define _REMOVE_CUSTOM_LEVELS
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -28,14 +37,16 @@
 CScreenSingle::CScreenSingle()
 {
     m_pLoadCtrl = LTNULL;
+
     m_pDiff = LTNULL;
+	m_pDiffFrame = LTNULL;
+
     m_pCustom = LTNULL;
+	m_pCustomFrame = LTNULL;
 
-	m_pCustomSFX = LTNULL;
-	m_pDiffSFX = LTNULL;
+    m_pChapter = LTNULL;
+	m_pChapterFrame = LTNULL;
 
-	m_fDiffAlpha = 0.0f;
-	m_fCustomAlpha = 0.0f;
 }
 
 CScreenSingle::~CScreenSingle()
@@ -52,12 +63,34 @@ LTBOOL CScreenSingle::Build()
 	AddTextItem(IDS_NEWGAME, CMD_NEW_GAME, IDS_HELP_NEW);
 
 	m_pLoadCtrl = AddTextItem(IDS_LOADGAME,	CMD_LOAD_GAME, IDS_HELP_LOAD);
+	m_pLoadCtrl->Enable( LTFALSE );
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| m_pChapterCtrl = AddTextItem(IDS_CHAPTERS, CMD_CHAPTER, IDS_HELP_CHAPTERS);
+	//| #ifndef _REMOVE_CUSTOM_LEVELS
 	CLTGUITextCtrl *pCustom = AddTextItem(IDS_CUSTOM_LEVEL, CMD_CUSTOM_LEVEL, IDS_HELP_CUSTOM);
+#endif // _REMOVE_CUSTOM_LEVELS
 
-	LTRect diffRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DiffRect");
-	int nWidth = (diffRect.right - diffRect.left) - 32;
-	m_pDiff = AddList(LTIntPt(diffRect.left,diffRect.top),diffRect.bottom - diffRect.top, LTTRUE, nWidth);
+
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_SINGLE,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+
+	LTRect rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DiffRect");
+	int nHeight = (rect.bottom - rect.top);
+	int nWidth = (rect.right - rect.left);
+	LTIntPt pos = LTIntPt(rect.left,rect.top);
+
+	m_pDiffFrame = debug_new(CLTGUIFrame);
+	m_pDiffFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
+	m_pDiffFrame->SetBasePos(pos);
+	m_pDiffFrame->Show(LTFALSE);
+	AddControl(m_pDiffFrame);
+
+
+	nWidth -= 16;
+	m_pDiff = AddList(pos,nHeight, LTTRUE, nWidth);
 	if (m_pDiff)
 	{
 		m_pDiff->SetIndent(LTIntPt(8,8));
@@ -77,10 +110,47 @@ LTBOOL CScreenSingle::Build()
 		pCtrl = CreateTextItem(IDS_NEW_INSANE, CMD_INSANE, IDS_HELP_INSANE);
 		m_pDiff->AddControl(pCtrl);
 	}
-	
-	LTRect customRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"CustomRect");
-	nWidth = (customRect.right - customRect.left) - 32;
-	m_pCustom = AddList(LTIntPt(customRect.left,customRect.top),customRect.bottom - customRect.top, LTTRUE, nWidth);
+
+
+	rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"ChapterRect");
+	nHeight = (rect.bottom - rect.top);
+	nWidth = (rect.right - rect.left);
+	pos = LTIntPt(rect.left,rect.top);
+
+	m_pChapterFrame = debug_new(CLTGUIFrame);
+	m_pChapterFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
+	m_pChapterFrame->SetBasePos(pos);
+	m_pChapterFrame->Show(LTFALSE);
+	AddControl(m_pChapterFrame);
+
+
+	nWidth -= 16;
+	m_pChapter = AddList(pos,nHeight, LTTRUE, nWidth);
+	if (m_pChapter)
+	{
+		m_pChapter->SetIndent(LTIntPt(8,8));
+		m_pChapter->SetFrameWidth(2);
+		m_pChapter->Show(LTFALSE);
+
+	}
+
+
+
+#ifndef _REMOVE_CUSTOM_LEVELS
+
+	rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"CustomRect");
+	nHeight = (rect.bottom - rect.top);
+	nWidth = (rect.right - rect.left);
+	pos = LTIntPt(rect.left,rect.top);
+
+	m_pCustomFrame = debug_new(CLTGUIFrame);
+	m_pCustomFrame->Create(hFrame,nWidth,nHeight,LTTRUE);
+	m_pCustomFrame->SetBasePos(pos);
+	m_pCustomFrame->Show(LTFALSE);
+	AddControl(m_pCustomFrame);
+
+	nWidth -= 16;
+	m_pCustom = AddList(pos,nHeight, LTTRUE, nWidth);
 	if (m_pCustom)
 	{
 		m_pCustom->SetIndent(LTIntPt(8,8));
@@ -97,6 +167,8 @@ LTBOOL CScreenSingle::Build()
 	{
 		RemoveControl(pCustom);
 	}
+#endif // _REMOVE_CUSTOM_LEVELS
+
 
 
  	// Make sure to call the base class
@@ -111,13 +183,37 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 {
 	if (dwCommand >= CMD_CUSTOM)
 	{
+
 		int index = dwCommand - CMD_CUSTOM;
-		StringSet::iterator iter = m_Filenames.begin();
-		while (iter != m_Filenames.end() && index > 0)
+
+		//is custom level
+		if (index < 1000)
 		{
-			iter++;
-			--index;
+			StringSet::iterator iter = m_Filenames.begin();
+			while (iter != m_Filenames.end() && index > 0)
+			{
+				iter++;
+				--index;
+			}
+			if (iter != m_Filenames.end())
+			{
+				g_pMissionMgr->StartGameFromLevel(iter->c_str());
+			}
+			
 		}
+		else
+		{
+			index -= 1000;
+			if (index < g_pMissionButeMgr->GetNumMissions())
+			{
+				const MISSION* pMission = g_pMissionButeMgr->GetMission(index);
+				const LEVEL* pLevel = &pMission->aLevels[0];
+				g_pMissionMgr->StartGameFromLevel(pLevel->szLevel);
+
+			}
+			return 1;
+		}
+		// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
 		if (iter != m_Filenames.end())
 		{
 			if( g_pClientMultiplayerMgr->SetupServerSinglePlayer( ))
@@ -125,53 +221,106 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 		}
 		return 1;
 	}
+
 	switch(dwCommand)
 	{
+
 	case CMD_BACK:
 		{
-			m_pDiff->Show(LTFALSE);
-			m_pCustom->Show(LTFALSE);
-			ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
 
-			m_pDiff->SetSelection(kNoSelection);
+
+#ifndef _REMOVE_CUSTOM_LEVELS
+			m_pCustom->Show(LTFALSE);
 			m_pCustom->SetSelection(kNoSelection);
+			m_pCustomFrame->Show(LTFALSE);
+#endif // _REMOVE_CUSTOM_LEVELS
+
+
+			m_pDiff->Show(LTFALSE);
+			m_pDiff->SetSelection(kNoSelection);
+			m_pDiffFrame->Show(LTFALSE);
+
+			m_pChapter->Show(LTFALSE);
+			m_pChapter->SetSelection(kNoSelection);
+			m_pChapterFrame->Show(LTFALSE);
+
+
 			m_pScreenMgr->EscapeCurrentScreen();
 			break;
 		}
 	case CMD_NEW_GAME:
 		{
+
+#ifndef _REMOVE_CUSTOM_LEVELS
 			m_pCustom->Show(LTFALSE);
+			m_pCustomFrame->Show(LTFALSE);
+#endif // _REMOVE_CUSTOM_LEVELS
+
 			m_pDiff->Show(LTTRUE);
-			ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTTRUE,m_pDiffSFX,m_fDiffAlpha);
+			m_pDiffFrame->Show(LTTRUE);
+
+			m_pChapter->Show(LTFALSE);
+			m_pChapterFrame->Show(LTFALSE);
+
 
 			SetSelection(GetIndex(m_pDiff));
 			m_pDiff->SetSelection(g_pGameClientShell->GetDifficulty());
+// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+//| UpdateHelpText();
 
 			if( g_pClientMultiplayerMgr->SetupServerSinglePlayer( ))
 				g_pMissionMgr->StartGameNew( );
 
 			break;
 		}
+
+	case CMD_CHAPTER:
+		{
+
+#ifndef _REMOVE_CUSTOM_LEVELS
+			m_pCustom->Show(LTFALSE);
+			m_pCustomFrame->Show(LTFALSE);
+#endif // _REMOVE_CUSTOM_LEVELS
+
+			m_pDiff->Show(LTFALSE);
+			m_pDiffFrame->Show(LTFALSE);
+
+			m_pChapter->Show(LTTRUE);
+			m_pChapterFrame->Show(LTTRUE);
+
+
+			SetSelection(GetIndex(m_pChapter));
+//			m_pDiff->SetSelection(g_pGameClientShell->GetDifficulty());
+
+			break;
+		}
+
 	case CMD_EASY:
 		{
 			g_pGameClientShell->SetDifficulty(GD_EASY);
+			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+			//| g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_MEDIUM:
 		{
 			g_pGameClientShell->SetDifficulty(GD_NORMAL);
+			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+			//| g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_HARD:
 		{
 			g_pGameClientShell->SetDifficulty(GD_HARD);
+			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+			//| g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_INSANE:
 		{
 			g_pGameClientShell->SetDifficulty(GD_VERYHARD);
+			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+			//| g_pMissionMgr->StartGameNew( );
 			break;
 		}
 
@@ -183,10 +332,16 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 	case CMD_CUSTOM_LEVEL:
 		{
 			m_pDiff->Show(LTFALSE);
+			m_pDiffFrame->Show(LTFALSE);
+			m_pChapter->Show(LTFALSE);
+			m_pChapterFrame->Show(LTFALSE);
+
+#ifndef _REMOVE_CUSTOM_LEVELS
 			m_pCustom->Show(LTTRUE);
-			ShowSFX(LTTRUE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
+			m_pCustomFrame->Show(LTTRUE);
 			SetSelection(GetIndex(m_pCustom));
+#endif // _REMOVE_CUSTOM_LEVELS
+
 			break;
 		}
 	default:
@@ -200,11 +355,53 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
+		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+		//| // We should not be connected to a server at this point.
+		//| if(g_pLTClient->IsConnected())
+		//| {
+		//| _ASSERT(!"ERROR: ClientMultiplayerMgr::StartClient( ) : Already connected!");
+		//| g_pLTClient->Disconnect();
+		//| }
+		//| // Initialize to the sp mission bute.
+		//| if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
+		//| {
+		//| g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", MISSION_DEFAULT_FILE );
+		//| return;
+		//| }
 		m_pLoadCtrl->Enable( g_pClientSaveLoadMgr->ReloadSaveExists() );
 
+		m_pLoadCtrl->Enable( g_pClientSaveLoadMgr->ReloadSaveExists() );
 		m_pDiff->Show(LTFALSE);
-		m_pCustom->Show(LTFALSE);
+		m_pDiffFrame->Show(LTFALSE);
 
+
+		m_pChapter->Show(LTFALSE);
+		m_pChapterFrame->Show(LTFALSE);
+
+
+#ifndef _REMOVE_CUSTOM_LEVELS
+		m_pCustom->Show(LTFALSE);
+		m_pCustomFrame->Show(LTFALSE);
+#endif _REMOVE_CUSTOM_LEVELS
+
+		//have they completed game?
+		LTBOOL bCompleted = LTFALSE;
+		CRegMgr* pRegMgr = g_pVersionMgr->GetRegMgr();
+		if (pRegMgr->IsValid())
+		{
+			bCompleted = (pRegMgr->Get("EndGame") > 0);
+		}
+
+		m_pChapterCtrl->Show(bCompleted);
+
+		if (bCompleted && m_pChapter->GetNumControls() == 0)
+			BuildChapterList();
+
+
+
+
+
+		// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
 		// Initialize to the sp mission bute.
 		if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
 		{
@@ -223,30 +420,9 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
 
 	CBaseScreen::OnFocus(bFocus);
 
-	if (bFocus)
-	{
-		char szFX[256] = "";
-		g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_SINGLE,"CustomFrame",szFX,sizeof(szFX));
-		m_pCustomSFX = CreateScaleFX(szFX);
-
-		szFX[0] = 0;
-		g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_SINGLE,"DiffFrame",szFX,sizeof(szFX));
-		m_pDiffSFX = CreateScaleFX(szFX);
-
-		LTVector vColor;
-		if (m_pCustomSFX)
-			g_pLTClient->GetObjectColor(m_pCustomSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &m_fCustomAlpha);
-		if (m_pDiffSFX)
-			g_pLTClient->GetObjectColor(m_pDiffSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &m_fDiffAlpha);
-
-		ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-		ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
 	}
-	else
-	{
-		m_pCustomSFX = NULL;
-		m_pDiffSFX = NULL;
-	}
+
+	CBaseScreen::OnFocus(bFocus);
 }
 
 
@@ -254,25 +430,39 @@ void CScreenSingle::Escape()
 {
 	if (m_pDiff->IsVisible())
 	{
+		m_pDiff->SetSelection(kNoSelection);
 		m_pDiff->Show(LTFALSE);
-		ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
+		m_pDiffFrame->Show(LTFALSE);
 
 		SetSelection(0);
 		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
 	}
+	else if (m_pChapter->IsVisible())
+	{
+		m_pChapter->SetSelection(kNoSelection);
+		m_pChapter->Show(LTFALSE);
+		m_pChapterFrame->Show(LTFALSE);
+		SetSelection(2);
+		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+	}
+
+#ifndef _REMOVE_CUSTOM_LEVELS
 	else if (m_pCustom->IsVisible())
 	{
+		m_pCustom->SetSelection(kNoSelection);
 		m_pCustom->Show(LTFALSE);
-		ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
+		m_pCustomFrame->Show(LTFALSE);
 		SetSelection(3);
 		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
 	}
-	else
-	{
-		CBaseScreen::Escape();
-	}
-}
+#endif // _REMOVE_CUSTOM_LEVELS
 
+// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+//| else
+//| {
+//| CBaseScreen::Escape();
+//| }
+//| }
 
 // Build the list of Custom Levels
 void CScreenSingle::BuildCustomLevelsList(int nWidth)
@@ -372,20 +562,49 @@ void CScreenSingle::AddFilesToFilenames(FileEntry* pFiles, char* pPath)
 	}
 }
 
+// Build the list of Chapters
+void CScreenSingle::BuildChapterList()
+{
+	LTRect rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"ChapterRect");
+	int nWidth = (rect.right - rect.left) - 16;
 
+
+	CLTGUITextCtrl* pItem;
+
+	uint8 nListFontSize = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontSize");
+	for (int i = 0; i < g_pMissionButeMgr->GetNumMissions(); i++)
+	{
+		const MISSION* pMission = g_pMissionButeMgr->GetMission(i);
+
+		pItem = CreateTextItem(pMission->nNameId, CMD_CUSTOM+1000+i, pMission->nDescId);
+		pItem->SetFont(LTNULL, nListFontSize);
+		pItem->SetFixedWidth(nWidth,LTTRUE);
+
+		m_pChapter->AddControl(pItem);
+		
+	}
+}
 
 /******************************************************************/
 LTBOOL CScreenSingle::OnMouseMove(int x, int y)
 {
+
+/*
 	uint16 oldSelect = kNoSelection;
 
+
+#ifndef _REMOVE_CUSTOM_LEVELS
 	if (GetSelectedControl() == m_pCustom)
 	{
 		oldSelect = m_pCustom->GetSelectedIndex();
 	}
+#endif // _REMOVE_CUSTOM_LEVELS
 
+*/
 	LTBOOL bHandled = CBaseScreen::OnMouseMove(x,y);
 
+/*
+#ifndef _REMOVE_CUSTOM_LEVELS
 	if (bHandled && GetSelectedControl() == m_pCustom && oldSelect != kNoSelection && oldSelect != m_pCustom->GetSelectedIndex())
 	{
 		CLTGUICtrl *pSelCtrl = m_pCustom->GetSelectedControl();
@@ -398,6 +617,8 @@ LTBOOL CScreenSingle::OnMouseMove(int x, int y)
 
 		g_pInterfaceMgr->ShowSelectFX(pos);
 	}
+#endif // _REMOVE_CUSTOM_LEVELS
+*/
 
 	return bHandled;
 
@@ -406,15 +627,23 @@ LTBOOL CScreenSingle::OnMouseMove(int x, int y)
 /******************************************************************/
 LTBOOL CScreenSingle::HandleKeyDown(int key, int rep)
 {
+
+/*
 	uint16 oldSelect = kNoSelection;
 
+
+#ifndef _REMOVE_CUSTOM_LEVELS
 	if (GetSelectedControl() == m_pCustom)
 	{
 		oldSelect = m_pCustom->GetSelectedIndex();
 	}
+#endif // _REMOVE_CUSTOM_LEVELS
 
+*/
 	LTBOOL bHandled = CBaseScreen::HandleKeyDown(key,rep);
 
+/*
+#ifndef _REMOVE_CUSTOM_LEVELS
 	if (bHandled && GetSelectedControl() == m_pCustom && oldSelect != kNoSelection && oldSelect != m_pCustom->GetSelectedIndex())
 	{
 		m_pCustom->GetWidth();
@@ -426,10 +655,13 @@ LTBOOL CScreenSingle::HandleKeyDown(int key, int rep)
 
 		g_pInterfaceMgr->ShowSelectFX(pos);
 	}
+#endif // _REMOVE_CUSTOM_LEVELS
 
+*/
 	return bHandled;
 
 }
+// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
 void CScreenSingle::ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha)
 {
 	if (!pSFX || !pSFX->GetObject())
@@ -440,6 +672,7 @@ void CScreenSingle::ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha)
 	g_pLTClient->GetObjectColor(pSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &a);
 
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had nothing here
 	if (bShow)
 		a = fBaseAlpha;
 	else

@@ -18,6 +18,20 @@
 
 #include "BaseScreen.h"
 
+struct CServerEntry
+{
+	std::string m_sName;
+	std::string m_sAddress;
+	std::string m_sMission;
+	std::string m_sVersion;
+	std::string m_sModName;
+	uint32 m_nNumPlayers;
+	uint32 m_nMaxPlayers;
+	uint16 m_nPing;
+	bool m_bUsePassword;
+	uint8 m_nGameType;
+};
+
 class CScreenJoin : public CBaseScreen
 {
 public:
@@ -32,6 +46,11 @@ public:
     void    OnFocus(LTBOOL bFocus);
 	LTBOOL	HandleKeyDown(int key, int rep);
 
+	void	CheckPassword();
+
+	virtual void Escape();
+
+
 protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
 	uint32	HandleCallback(uint32 dwParam1, uint32 dwParam2);
@@ -41,26 +60,26 @@ protected:
 	CLTGUITextCtrl*	m_pFindCtrl;
 	CLTGUITextCtrl*	m_pStatusCtrl;
 	CLTGUIListCtrl*	m_pServerListCtrl;
-	CLTGUIColumnCtrl* m_pCDKeyCtrl;
+	CLTGUIListCtrl*	m_pPlayerListCtrl;
+	CLTGUIWindow*	m_pWait;
+	CLTGUIWindow*	m_pDetails;
+	CLTGUITextCtrl*	m_pJoin;
+	CLTGUITextCtrl*	m_pOptions;
 
-	struct CServerEntry
-	{
-		std::string m_sName;
-		std::string m_sAddress;
-		std::string m_sMap;
-		uint32 m_nNumPlayers;
-		uint32 m_nMaxPlayers;
-	};
 	typedef std::vector<CServerEntry> TServerList;
 	TServerList m_cServerList;
 	uint32 m_nSelectedServer;
-
-	std::string m_sCurCDKey;
 
 	// Read the server list from the server directory
 	void ReadCurServerList();
 	// Dump the server list into the display
 	void DisplayCurServerList();
+
+	// Read the peer details
+	void ReadDetails();
+	void SetDetailErrorMessage(const char *szError);
+	void ReadDMDetails(std::string& sOptions,CLTMsgRef_Read& cRead);
+	void ReadCoopDetails(std::string& sOptions,CLTMsgRef_Read& cRead);
 
 	bool IsCurrentGame(const char *pAddr);
 	void JoinCurGame();
@@ -71,7 +90,6 @@ protected:
 		eState_Startup,
 		eState_UpdateDir,
 		eState_QueryDetails,
-		eState_ChangeCDKey,
 		eState_DisplaySysMOTD,
 		eState_DisplayGameMOTD,
 		eState_Waiting,
@@ -94,7 +112,6 @@ protected:
 	bool PreState_Startup();
 	bool PreState_UpdateDir();
 	bool PreState_QueryDetails();
-	bool PreState_ChangeCDKey();
 	bool PreState_Waiting();
 
 	// Post-state handling for each state
@@ -105,6 +122,19 @@ protected:
 	// Update handling for each state
 	void Update_State_Startup();
 	void Update_State_UpdateDir();
+	void Update_State_QueryDetails();
+
+	void SortServers(uint32 nSortField);
+	void FilterServers();
+
+	uint8	m_nVersionFilter;
+	uint8	m_nPlayersFilter;
+	uint8	m_nPingFilter;
+	uint8	m_nModFilter;
+
+	uint32	m_nLastSort;
+
+	std::string	m_sPassword;
 };
 
 #endif // _SCREEN_MULTI_H_

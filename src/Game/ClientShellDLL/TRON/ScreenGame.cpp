@@ -14,8 +14,8 @@
 #include "ScreenCommands.h"
 
 #include "GameClientShell.h"
-#include "GameSettings.h"
-
+#include "VersionMgr.h"
+#include "ResShared.h"
 
 namespace
 {
@@ -40,9 +40,10 @@ CScreenGame::CScreenGame()
 	m_nLayout = 0;
 	m_nHeadBob = 0;
 	m_nWeaponSway = 0;
-	m_nPickupMsgDur = 0;
-	m_bObjMessages = LTTRUE;
-
+	m_nMsgDur = 0;
+	m_bAutoWeaponSwitch = LTTRUE;
+	m_bLoadScreenTips = LTTRUE;
+	m_bVehicleContour = LTTRUE;
 }
 
 CScreenGame::~CScreenGame()
@@ -59,6 +60,21 @@ LTBOOL CScreenGame::Build()
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_GAME,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_GAME,"SliderWidth");
 
+	//background frame
+	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_GAME,"FrameRect");
+	LTIntPt pos(frameRect.left,frameRect.top);
+	int nHt = frameRect.bottom - frameRect.top;
+	int nWd = frameRect.right - frameRect.left;
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_GAME,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
+	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	pFrame->SetBasePos(pos);
+	pFrame->SetBorder(2,m_SelectedColor);
+	AddControl(pFrame);
+
 	//crosshair menu
 	AddTextItem(IDS_CONTROLS_CROSSHAIR, CMD_CROSSHAIR, IDS_HELP_CROSSHAIRMENU);
 
@@ -71,7 +87,7 @@ LTBOOL CScreenGame::Build()
 	pCycle->AddString(szTmp);
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	if (pProfile && pProfile->m_bAllowGore)
+	if (pProfile && !g_pVersionMgr->IsLowViolence())
 	{
 		CLTGUIToggle *pGore = AddToggle(IDS_DISPLAY_GORE,IDS_HELP_GORE,kGap,&m_bGore);
 	}
@@ -100,7 +116,7 @@ LTBOOL CScreenGame::Build()
 
 	FormatString(IDS_NEW_INSANE,szTmp,sizeof(szTmp));
 	m_pDifficultyCtrl->AddString(szTmp);
-
+/*
 	pCycle = AddCycle(IDS_HUDLAYOUT,IDS_HELP_HUDLAYOUT,kGap,&m_nLayout);
 	for (int hl = 0; hl < g_pLayoutMgr->GetNumHUDLayouts(); hl++)
 	{
@@ -108,7 +124,7 @@ LTBOOL CScreenGame::Build()
 		FormatString(g_pLayoutMgr->GetLayoutName(hl),szTmpBuffer,sizeof(szTmpBuffer));
 		pCycle->AddString(szTmpBuffer);
 	}
-
+*/
 
 	CLTGUISlider *pSlider=AddSlider(IDS_HEADBOB, IDS_HELP_HEADBOB, kGap, kWidth, -1, &m_nHeadBob);
 	pSlider->SetSliderRange(0, 10);
@@ -118,13 +134,21 @@ LTBOOL CScreenGame::Build()
 	pSlider->SetSliderRange(0, 10);
 	pSlider->SetSliderIncrement(1);
 
-	pSlider=AddSlider(IDS_PICKUP_MSG_DUR, IDS_HELP_PICKUP_MSG_DUR, kGap, kWidth, -1, &m_nPickupMsgDur);
-	pSlider->SetSliderRange(0, 10);
+	pSlider=AddSlider(IDS_PICKUP_MSG_DUR, IDS_HELP_PICKUP_MSG_DUR, kGap, kWidth, -1, &m_nMsgDur);
+	pSlider->SetSliderRange(1, 10);
 	pSlider->SetSliderIncrement(1);
 
-	pToggle = AddToggle(IDS_OBJECTIVE_MSGS, IDS_HELP_OBJECTIVE_MSGS, kGap, &m_bObjMessages );
+	pToggle = AddToggle(IDS_AUTOSWITCH_WEAPONS, IDS_HELP_AUTOSWITCH_WEAPONS, kGap, &m_bAutoWeaponSwitch );
 	pToggle->SetOnString(szYes);
 	pToggle->SetOffString(szNo);
+
+	pToggle = AddToggle(IDS_LOAD_TIPS, IDS_HELP_LOAD_TIPS, kGap, &m_bLoadScreenTips );
+	pToggle->SetOnString(LoadTempString(IDS_ON));
+	pToggle->SetOffString(LoadTempString(IDS_OFF));
+
+	pToggle = AddToggle(IDS_CONTOUR, IDS_HELP_CONTOUR, kGap, &m_bVehicleContour );
+	pToggle->SetOnString(LoadTempString(IDS_ON));
+	pToggle->SetOffString(LoadTempString(IDS_OFF));
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
@@ -163,8 +187,12 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 		m_nLayout = pProfile->m_nLayout;
 		m_nHeadBob = pProfile->m_nHeadBob;
 		m_nWeaponSway = pProfile->m_nWeaponSway;
-		m_nPickupMsgDur = pProfile->m_nPickupMsgDur;
-		m_bObjMessages = pProfile->m_bObjMessages;
+		m_nMsgDur = pProfile->m_nMsgDur;
+		m_bAutoWeaponSwitch = pProfile->m_bAutoWeaponSwitch;
+		m_bLoadScreenTips = pProfile->m_bLoadScreenTips;
+		m_bVehicleContour = pProfile->m_bVehicleContour;
+
+		m_pDifficultyCtrl->Enable( !(g_pLTClient->IsConnected() && IsMultiplayerGame())	);
 
         UpdateData(LTFALSE);
 	}
@@ -174,13 +202,15 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 
 		pProfile->m_nDifficulty = m_nDifficulty;
 		pProfile->m_nSubtitles  = m_nSubtitles;
-		pProfile->m_bGore = m_bGore;
+		pProfile->m_bGore = !!m_bGore;
 		pProfile->m_bAlwaysRun = m_bAlwaysRun;
 		pProfile->m_nLayout = m_nLayout;
 		pProfile->m_nHeadBob = m_nHeadBob;
 		pProfile->m_nWeaponSway = m_nWeaponSway;
-		pProfile->m_nPickupMsgDur = m_nPickupMsgDur;
-		pProfile->m_bObjMessages = m_bObjMessages;
+		pProfile->m_nMsgDur = m_nMsgDur;
+		pProfile->m_bAutoWeaponSwitch = m_bAutoWeaponSwitch;
+		pProfile->m_bLoadScreenTips = m_bLoadScreenTips;
+		pProfile->m_bVehicleContour = m_bVehicleContour;
 
 		pProfile->ApplyGameOptions();
 		pProfile->Save();

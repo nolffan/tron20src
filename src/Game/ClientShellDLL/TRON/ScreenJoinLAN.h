@@ -32,7 +32,8 @@ public:
     void    OnFocus(LTBOOL bFocus);
 	LTBOOL	HandleKeyDown(int key, int rep);
 
-	void	JoinCurGame();
+	void	CheckPassword();
+	void	DoJoin();
 
 protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
@@ -41,7 +42,6 @@ protected:
 	void	FindServers();
 	LTBOOL	SetService();
 	LTBOOL	IsCurrentGame(CString sAddress);
-	LTBOOL	DoJoinGame(CString sAddress);
 
 	LTBOOL	IsValidPort(uint16 nPort);
 
@@ -54,6 +54,8 @@ protected:
 	CLTGUIListCtrl*		m_pServers;
 
 	CMoArray<CString>	m_lstSessions;
+
+	CString				m_sPassword;
 
 };
 

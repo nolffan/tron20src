@@ -32,8 +32,10 @@ public:
     LTBOOL   OnRight();
     LTBOOL   OnEnter();
     LTBOOL   OnLButtonUp(int x, int y);
+    LTBOOL   OnRButtonUp(int x, int y);
 
 protected:
+	void	ConfirmQualityChange(bool bMusic);
 	void	SaveSoundSettings();
 
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
@@ -43,11 +45,17 @@ protected:
 	int		m_nMusicVolume;
 	int		m_nSpeechVolume;
     LTBOOL  m_bSoundQuality;
+    LTBOOL  m_bMusicQuality;
+    LTBOOL  m_bMusicEnabled;
+
+	uint8	m_nPerformance;
+
 
 	CLTGUISlider	*m_pSoundVolumeCtrl;
 	CLTGUISlider	*m_pMusicVolumeCtrl;
 	CLTGUISlider	*m_pSpeechVolumeCtrl;
 	CLTGUIToggle	*m_pSoundQualityCtrl;
+	CLTGUIToggle	*m_pMusicQualityCtrl;
 
 };
 

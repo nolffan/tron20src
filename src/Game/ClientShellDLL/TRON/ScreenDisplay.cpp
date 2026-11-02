@@ -54,8 +54,8 @@ namespace
 			gamma = 1.0f + fRatio * fUpperRange;
 		}
 
-		g_pLTClient->CPrint("Gamma: %0.2f",gamma);
-		g_pLTClient->CPrint("Slider: %d",slider);
+//		g_pLTClient->CPrint("Gamma: %0.2f",gamma);
+//		g_pLTClient->CPrint("Slider: %d",slider);
 		return gamma;
 
 	}
@@ -78,8 +78,8 @@ namespace
 			fRatio = (float)sqrt(fRatio);
 			slider = (int)(0.5f + kBreakpoint + kUpperSteps * fRatio);
 		}
-		g_pLTClient->CPrint("Gamma: %0.2f",gamma);
-		g_pLTClient->CPrint("Slider: %d",slider);
+//		g_pLTClient->CPrint("Gamma: %0.2f",gamma);
+//		g_pLTClient->CPrint("Slider: %d",slider);
 		return slider;
 	}
 }
@@ -134,7 +134,6 @@ int ScreenDisplayCompare( const void *arg1, const void *arg2 )
 CScreenDisplay::CScreenDisplay()
 {
 
-    m_bTexture32    =   LTFALSE;
 	m_bEscape		=	LTFALSE;
 
     m_pResolutionCtrl   = LTNULL;
@@ -155,6 +154,20 @@ LTBOOL CScreenDisplay::Build()
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_DISPLAY,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_DISPLAY,"SliderWidth");
 
+	//background frame
+	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_DISPLAY,"FrameRect");
+	LTIntPt pos(frameRect.left,frameRect.top);
+	int nHt = frameRect.bottom - frameRect.top;
+	int nWd = frameRect.right - frameRect.left;
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_DISPLAY,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
+	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	pFrame->SetBasePos(pos);
+	pFrame->SetBorder(2,m_SelectedColor);
+	AddControl(pFrame);
 
 	// Build the array of renderers
 	GetRendererData();
@@ -167,11 +180,26 @@ LTBOOL CScreenDisplay::Build()
 
 	m_pHardwareCursor = AddToggle(IDS_HARDWARE_CURSOR,IDS_HELP_HARDWARE_CURSOR,kGap,&m_bHardwareCursor);
 
+	AddToggle(IDS_VSYNC,IDS_HELP_VSYNC,kGap,&m_bVSync);
+
 
 	m_pGamma = AddSlider(IDS_GAMMA,IDS_HELP_GAMMA,kGap,kWidth,-1,&m_nGamma);
 	m_pGamma->SetSliderRange(0,kNumSteps);
 	m_pGamma->SetSliderIncrement(1);
 
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| int nBaseGamma = ConvertToSlider(1.0f);
+	//| float xoffset =  (m_pGamma->CalculateSliderOffset(nBaseGamma) / m_pGamma->GetScale());
+	//| uint16 nHeight = m_pGamma->GetBarHeight();
+	//| float yoffset = ((( (float)m_pGamma->GetBaseHeight()) - (float)nHeight)) / 2.0f;
+	//| pos = m_pGamma->GetBasePos();
+	//| pos.x += (int)(xoffset - 1.0f);
+	//| pos.y += (int)(yoffset + 0.5f);
+	//| CLTGUIFrame *pBar = debug_new(CLTGUIFrame);
+	//| pBar->Create(0xBF000000,3,nHeight+1);
+	//| pBar->SetBasePos(pos);
+	//| pBar->SetScale(g_pInterfaceResMgr->GetXRatio());
+	//| AddControl(pBar);
 
  	// Make sure to call the base class
 	if (!CBaseScreen::Build()) return LTFALSE;
@@ -259,11 +287,20 @@ void CScreenDisplay::GetRendererData()
 	// Build the list of render modes
     RMode *pRenderModes=g_pLTClient->GetRenderModes();
 
+	bool bHWTnL = true;
+
+	RMode currentMode;
+	if (g_pGameClientShell->IsRendererInitted() && g_pLTClient->GetRenderMode(&currentMode) == LT_OK)
+	{
+		bHWTnL = currentMode.m_bHWTnL;
+	}
+
+
 	// Iterate through the list of render modes adding each one to the array
 	RMode *pCurrentMode=pRenderModes;
     while (pCurrentMode != LTNULL)
 	{
-		if (pCurrentMode->m_Width >= 640 && pCurrentMode->m_Height >= 480)
+		if (pCurrentMode->m_Width >= 640 && pCurrentMode->m_Height >= 480 && pCurrentMode->m_BitDepth == 32)
 		{
 			// disallow non-standard aspect ratios
 			uint32 testWidth = (pCurrentMode->m_Height * 4 / 3);
@@ -275,11 +312,17 @@ void CScreenDisplay::GetRendererData()
 				continue;
 			}
 
+			//disallow any that aren't hardware TnL
+			if(bHWTnL && !pCurrentMode->m_bHWTnL)
+			{
+				pCurrentMode=pCurrentMode->m_pNext;
+				continue;
+			}
 
 			// Check to see if we need to add this renderer
 			if (!m_rendererData.m_description[0])
 			{
-				m_rendererData.m_bHardware=pCurrentMode->m_bHardware;
+				m_rendererData.m_bHWTnL = pCurrentMode->m_bHWTnL;
 				SAFE_STRCPY(m_rendererData.m_description, pCurrentMode->m_Description);
 				SAFE_STRCPY(m_rendererData.m_internalName, pCurrentMode->m_InternalName);
 
@@ -352,7 +395,7 @@ RMode CScreenDisplay::GetRendererModeStruct(int nResolutionIndex)
 {
 	// Copy the renderer information from the renderer structure to the temporary RMode structure
 	RMode mode;
-	mode.m_bHardware=m_rendererData.m_bHardware;
+	mode.m_bHWTnL = m_rendererData.m_bHWTnL;
 
 	SAFE_STRCPY(mode.m_InternalName, m_rendererData.m_internalName);
 	SAFE_STRCPY(mode.m_Description, m_rendererData.m_description);
@@ -381,7 +424,7 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 		pProfile->SetDisplay();
 
 		m_bHardwareCursor = pProfile->m_bHardwareCursor;
-		m_bTexture32 = pProfile->m_bTexture32;
+		m_bVSync = pProfile->m_bVSync;
 
 
 		float gamma = pProfile->m_fGamma;
@@ -424,8 +467,8 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 		if (m_bEscape)
 		{
 
-			pProfile->m_bTexture32 = m_bTexture32;
 			pProfile->m_bHardwareCursor = m_bHardwareCursor;
+			pProfile->m_bVSync = m_bVSync;
 			pProfile->m_fGamma = ConvertToGamma(m_nGamma);
 			// Set the render mode if we are losing focus
 			if (m_pResolutionCtrl)
@@ -439,6 +482,10 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 			}
 	
 			pProfile->ApplyDisplay();
+					
+			//display settings can affect performance sttings so update them here...
+			g_pPerformanceMgr->GetPerformanceOptions(&pProfile->m_sPerformance);
+
 			pProfile->Save();
 				
 		}

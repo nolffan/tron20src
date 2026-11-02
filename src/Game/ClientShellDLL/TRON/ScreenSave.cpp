@@ -35,22 +35,39 @@ namespace
 		if (bReturn && pThisScreen)
 			pThisScreen->SendCommand(CMD_OVERWRITE,0,0);
 	}
-	void EditCallBack(LTBOOL bReturn, void *pData)
-	{
-		CScreenSave *pThisScreen = (CScreenSave *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_SAVE);
-		if (bReturn && pThisScreen)
-			pThisScreen->SendCommand(CMD_EDIT_NAME,(uint32)pData,0);
-	};
-
-
 	CLTGUIColumnCtrl* g_pColCtrl = LTNULL;
-	char g_szOldName[40];
-	char g_szOldTime[40];
+
+	char g_szOldName[40]	= { '\0' };
+	char g_szOldTime[40]	= { '\0' };
 
 	int kNameWidth = 0;
 	int kTimeWidth = 0;
 	int kIndent = 0;
 	int kSmallFontSize = 4;
+
+	void EditCallBack(LTBOOL bReturn, void *pData)
+	{
+		CScreenSave *pThisScreen = (CScreenSave *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_SAVE);
+
+		if(pThisScreen)
+		{
+			if (bReturn)
+			{
+				pThisScreen->SendCommand(CMD_EDIT_NAME,(uint32)pData,0);
+			}
+			else
+			{
+				//the user cancelled we need to restore the original text, which has been saved in the
+				//globals above.
+				if(g_pColCtrl)
+				{
+					g_pColCtrl->SetString(1, g_szOldName);
+					g_pColCtrl->SetString(2, g_szOldTime);
+				}
+			}
+		}
+	};
+
 
 }
 
@@ -134,14 +151,17 @@ uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 	}
 	else if (dwCommand == CMD_EDIT_NAME)
 	{
-		SAFE_STRCPY(m_szSaveName,(char *)dwParam1);
+		char *pStr = (char *)dwParam1;
+		if (strlen(pStr))
+		{
+			SAFE_STRCPY(m_szSaveName,pStr);
+		}
 		ForceMouseUpdate();
 		if (!SaveGame(g_nSaveSlot))
 		{
 			MBCreate mb;
 			g_pInterfaceMgr->ShowMessageBox(IDS_SAVEGAMEFAILED,&mb);
 			return 0;
-
 		}
 	}
 
@@ -218,7 +238,7 @@ void CScreenSave::BuildSavedLevelList()
 				pCtrl->SetParam1( m_controlArray.size() - 1);
 
 				// This is a spacer
-				pCtrl->AddColumn("", kIndent);
+				pCtrl->AddColumn("", kIndent, LTTRUE);
 
 				// The world name column
 				pCtrl->AddColumn(pWorld, kNameWidth);
@@ -245,7 +265,7 @@ void CScreenSave::BuildSavedLevelList()
 		pCtrl->SetFont(LTNULL,kSmallFontSize);
 		pCtrl->SetParam1( m_controlArray.size() - 1);
 		// This is a spacer
-		pCtrl->AddColumn("", kIndent);
+		pCtrl->AddColumn("", kIndent, LTTRUE);
 
 		// The world name column
 		char szTmp[64];
@@ -309,20 +329,22 @@ void CScreenSave::NameSaveGame(uint32 slot, int index)
 		if (pMission)
 		{
 			int missionId = pMission->nNameId;
-			char szMission[64];
+			char szMission[40] = "";
+			char szLevel[40] = "";
 			LoadString(missionId,szMission,sizeof(szMission));
-			if (sceneNum <= 0)
+			LEVEL* pLevel = g_pMissionButeMgr->GetLevel(missionNum,sceneNum);
+			if (pLevel)
 			{
-				sprintf(m_szSaveName,"%s",szMission);
+				LoadString(pLevel->nNameId,szLevel,sizeof(szLevel));
 			}
+
+			if(strlen(szLevel))
+				sprintf(m_szSaveName,"%s",szLevel);
 			else
-			{
-				char szScene[64];
-				FormatString(IDS_SCENENUMBER, szScene, sizeof(szScene), sceneNum + 1);
-				sprintf(m_szSaveName,"%s, %s",szMission,szScene);
-			}
+				sprintf(m_szSaveName,"%s",szMission);
 		}
 	}
+	
 
 	g_pColCtrl = (CLTGUIColumnCtrl*)GetControl(index);
 	if (!g_pColCtrl)

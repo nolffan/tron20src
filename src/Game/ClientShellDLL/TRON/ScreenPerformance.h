@@ -4,7 +4,7 @@
 //
 // PURPOSE : Interface screen for setting performance options
 //
-// (c) 2001 Monolith Productions, Inc.  All Rights Reserved
+// (c) 2001-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
 
@@ -19,6 +19,8 @@
 #include "BaseScreen.h"
 #include "PerformanceMgr.h"
 
+
+// #define _SHOW_PERFORMACE_FRAMERATE_
 
 class CScreenPerformance : public CBaseScreen
 {
@@ -44,25 +46,46 @@ public:
 
 protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
-
+    LTBOOL   Render(HSURFACE hDestSurf);
 	
 	CLTGUICycleCtrl*	m_pPerformance;
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| CLTGUITextCtrl*		m_pResolution;
 	CLTGUIListCtrl*		m_pDisplay;
-	CLTGUIListCtrl*		m_pSFX;
-	CLTGUIListCtrl*		m_pTexture;
 	CLTGUITextCtrl*		m_pDisplayLabel;
+	CLTGUIFrame*		m_pDisplayFrame;
+
+	
+	CLTGUIListCtrl*		m_pSFX;
 	CLTGUITextCtrl*		m_pSFXLabel;
+	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
+	//| CLTGUIFrame*		m_pSFXFrame;
 	CLTGUITextCtrl*		m_pTextureLabel;
 	CLTGUIFrame*		m_pDisplayFrame;
 	CLTGUIFrame*		m_pSFXFrame;
 	CLTGUIFrame*		m_pTextureFrame;
 
+	CLTGUITextCtrl*		m_pPerformanceTest;
+	
 	CLTGUICycleCtrl*	m_pDetailLevel; 
-	CLTGUISlider*		m_pTexGroup[kNumDetailGroups];
-	int					m_nSliderVal[kNumDetailGroups];
+	CLTGUICycleCtrl*	m_pPrecache; 
+
+	CLTGUIWindow*		m_pDlg;
+
+#ifdef _SHOW_PERFORMACE_FRAMERATE_
+	CLTGUITextCtrl*		m_pMinFPS;
+	CLTGUITextCtrl*		m_pMaxFPS;
+	CLTGUITextCtrl*		m_pAveFPS;
+	CLTGUITextCtrl*		m_pBelowMinFPS;
+	CLTGUITextCtrl*		m_pMintoMaxFPS;
+	CLTGUITextCtrl*		m_pAboveMaxFPS;
+#else
+	CLTGUITextCtrl*		m_pRecommendation;
+#endif // _SHOW_PERFORMACE_FRAMERATE_
 
 	sPerformCfg	m_sCfg;
 	uint8	m_nOverall;
+	uint8	m_nTripleBuffer;
 
 
 };

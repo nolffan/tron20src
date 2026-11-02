@@ -41,8 +41,10 @@ protected:
 	uint8				m_nLayout;
 	int					m_nHeadBob;
 	int					m_nWeaponSway;
-	int					m_nPickupMsgDur;
-	LTBOOL				m_bObjMessages;
+	int					m_nMsgDur;
+	LTBOOL				m_bAutoWeaponSwitch;
+	LTBOOL				m_bLoadScreenTips;
+	LTBOOL				m_bVehicleContour;
 
 	CLTGUICycleCtrl		*m_pDifficultyCtrl;			// The difficulty control
 

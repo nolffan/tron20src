@@ -34,11 +34,19 @@ public:
 
     LTBOOL Build();
     void OnFocus(LTBOOL bFocus);
+	virtual void	Escape();
 
 	LTBOOL HandleKeyDown(int key, int rep);
 
 protected:
 
+    // MERGE: Tron's side (build 69); NOLF2 1.3 had:
+    //| uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
+    //| void	BuildSavedLevelLists();
+    //| void	ClearSavedLevelLists();
+    //| void	ParseSaveString(char const* pszWorldName, char const* pszTitle, time_t const& saveTime, SaveGameData *pSG, bool bUserName);
+    //| CLTGUIColumnCtrl* BuildSaveControls( char const* pszIniKey, uint32 nCommandId, uint32 nControlHelpStringId,
+    //| bool bUserName );
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
 	void	BuildSavedLevelLists();
 	void	ClearSavedLevelLists();

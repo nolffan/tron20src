@@ -28,9 +28,9 @@ public:
     virtual void	OnFocus(LTBOOL bFocus);
 	virtual void	Escape();
 
-    virtual LTBOOL	HandleKeyDown(int key, int rep);
-    virtual LTBOOL	OnLButtonDown(int x, int y);
-    virtual LTBOOL	OnRButtonDown(int x, int y);
+    virtual LTBOOL	HandleKeyUp(int key, int rep);
+    virtual LTBOOL	OnLButtonUp(int x, int y);
+    virtual LTBOOL	OnRButtonUp(int x, int y);
 
     virtual LTBOOL	Render(HSURFACE hDestSurf);
 
@@ -38,6 +38,9 @@ public:
 protected:
 
 	CLTGUITextCtrl		*m_pString;
+	CLTGUITextCtrl		*m_pHelp;
+	
+	bool				m_bSentAutoLoadMessage;
 
 
 };

@@ -20,8 +20,8 @@ namespace
 {
 	int kGap = 250;
 	int kWidth = 200;
-	int nCrosshairSize = 0;
 }
+	uint32 nCrosshairSize = 0;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -29,8 +29,6 @@ namespace
 
 CScreenCrosshair::CScreenCrosshair()
 {
-    m_bCrosshair = LTFALSE;
-	m_nAlpha = 0;
 	m_nColorR = 0;
 	m_nColorG = 0;
 	m_nColorB = 0;
@@ -58,16 +56,22 @@ LTBOOL CScreenCrosshair::Build()
 	FormatString(IDS_YES,szYes,sizeof(szYes));
 	FormatString(IDS_NO,szNo,sizeof(szNo));
 
-	//use crosshair
-	CLTGUIToggle* pToggle = AddToggle(IDS_USE_CROSSHAIR, IDS_HELP_CROSSHAIR, kGap, &m_bCrosshair );
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	//background frame
+	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_CROSSHAIR,"FrameRect");
+	LTIntPt pos(frameRect.left,frameRect.top);
+	int nHt = frameRect.bottom - frameRect.top;
+	int nWd = frameRect.right - frameRect.left;
 
-	CLTGUISlider *pSlider = AddSlider(IDS_CH_ALPHA, IDS_HELP_CH_ALPHA, kGap, kWidth, -1, &m_nAlpha);
-	pSlider->SetSliderRange(15,255);
-	pSlider->SetSliderIncrement(16);
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_CROSSHAIR,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
+	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	pFrame->SetBasePos(pos);
+	pFrame->SetBorder(2,m_SelectedColor);
+	AddControl(pFrame);
 
-	pSlider = AddSlider(IDS_CH_R, IDS_HELP_CH_R, kGap, kWidth, -1, &m_nColorR);
+	CLTGUISlider *pSlider = AddSlider(IDS_CH_R, IDS_HELP_CH_R, kGap, kWidth, -1, &m_nColorR);
 	pSlider->SetSliderRange(15,255);
 	pSlider->SetSliderIncrement(16);
 
@@ -79,29 +83,32 @@ LTBOOL CScreenCrosshair::Build()
 	pSlider->SetSliderRange(15,255);
 	pSlider->SetSliderIncrement(16);
 
-	pToggle = AddToggle(IDS_CH_DYNAMIC, IDS_HELP_CH_DYNAMIC, kGap, &m_bDynamic );
+	CLTGUIToggle* pToggle = AddToggle(IDS_CH_DYNAMIC, IDS_HELP_CH_DYNAMIC, kGap, &m_bDynamic );
 
 	m_pStyle = AddCycle(IDS_CH_STYLE,IDS_HELP_CH_STYLE,kGap,&m_nStyle);
-	char szTmpBuffer[kMaxStringBuffer];
+	char szTmp[kMaxStringBuffer];
 
-    FormatString(IDS_CH_BASIC,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
+	uint8 style = 0;
+	char *szTag = "HUDCrosshair";
+	char szAtt[32];
+	sprintf(szAtt,"Crosshair%d",style);
 
-    FormatString(IDS_CH_CROSSBAR,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
-    
-	FormatString(IDS_CH_DOTCROSS,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
+	while (g_pLayoutMgr->HasValue(szTag,szAtt))
+	{
+		g_pLayoutMgr->GetString(szTag,szAtt,szTmp,sizeof(szTmp));
+		strcat(szTmp,"_A.dtx");
+		m_styles.push_back(szTmp);
 
-    FormatString(IDS_CH_POST,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
+		sprintf(szTmp,"%d",style);
+//		m_pStyle->AddString(szTmp);
+		m_pStyle->AddString(" ");
 
-    FormatString(IDS_CH_DOT,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
+		style++;
+		sprintf(szAtt,"Crosshair%d",style);
 
-    FormatString(IDS_CH_CORNER,szTmpBuffer,sizeof(szTmpBuffer));
-	m_pStyle->AddString(szTmpBuffer);
+	}
 
+	g_pDrawPrim->SetRGBA(&m_Poly,argbWhite);
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
@@ -162,7 +169,19 @@ void CScreenCrosshair::OnFocus(LTBOOL bFocus)
 	
 		GetConsoleVariables();
         UpdateData(LTFALSE);
-		nCrosshairSize = (int)( (g_pLayoutMgr->GetCrosshairGapMax() + g_pLayoutMgr->GetCrosshairBarMax() ) * g_pInterfaceResMgr->GetXRatio());
+
+		uint32 th;
+		m_hCrosshair = g_pInterfaceResMgr->GetTexture(m_styles[m_nStyle].c_str());
+		SetupQuadUVs(m_Poly, m_hCrosshair, 0.0f, 0.0f, 1.0f, 1.0f);
+		g_pTexInterface->GetTextureDims(m_hCrosshair,nCrosshairSize,th);
+
+		uint8 cr = (uint8)m_nColorR;
+		uint8 cg = (uint8)m_nColorG;
+		uint8 cb = (uint8)m_nColorB;
+		uint8 ca = 0xFF;
+		uint32 crosscolor = SET_ARGB(ca,cr,cg,cb);
+		g_pDrawPrim->SetRGBA(&m_Poly,crosscolor);
+
 	}
 	else
 	{
@@ -181,9 +200,7 @@ void CScreenCrosshair::GetConsoleVariables()
 	pProfile->SetCrosshair();
 
 
-	m_bCrosshair = pProfile->m_bCrosshair;
 
-	m_nAlpha = (int)pProfile->m_CrosshairA;
 	m_nColorR = (int)pProfile->m_CrosshairR;
 	m_nColorG = (int)pProfile->m_CrosshairG;
 	m_nColorB = (int)pProfile->m_CrosshairB;
@@ -195,9 +212,6 @@ void CScreenCrosshair::SetConsoleVariables()
 {
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 
-	pProfile->m_bCrosshair = m_bCrosshair;
-
-	pProfile->m_CrosshairA = (uint8)m_nAlpha;
 	pProfile->m_CrosshairR = (uint8)m_nColorR;
 	pProfile->m_CrosshairG = (uint8)m_nColorG;
 	pProfile->m_CrosshairB = (uint8)m_nColorB;
@@ -206,24 +220,46 @@ void CScreenCrosshair::SetConsoleVariables()
 	pProfile->m_bDynamic = m_bDynamic;
 
 	pProfile->ApplyCrosshair();
+
+	uint32 th;
+	m_hCrosshair = g_pInterfaceResMgr->GetTexture(m_styles[m_nStyle].c_str());
+	g_pTexInterface->GetTextureDims(m_hCrosshair,nCrosshairSize,th);
+	
+	uint8 cr = (uint8)m_nColorR;
+	uint8 cg = (uint8)m_nColorG;
+	uint8 cb = (uint8)m_nColorB;
+	uint8 ca = 0xFF;
+	uint32 crosscolor = SET_ARGB(ca,cr,cg,cb);
+	g_pDrawPrim->SetRGBA(&m_Poly,crosscolor);
+
+
 }
 
 LTBOOL CScreenCrosshair::Render ( HSURFACE hDestSurf )
 {
     LTBOOL bRendered = CBaseScreen::Render(hDestSurf);
+
 	if (bRendered)
 	{
         LTIntPt pos = m_pStyle->GetBasePos();
-		pos.x += m_nItemSpacing;
-		pos.y += m_nItemSpacing;
+		pos.x += kGap;
 		g_pInterfaceResMgr->ConvertScreenPos(pos.x,pos.y);
-		pos.y += m_pStyle->GetHeight();
-        LTRect rect(pos.x,pos.y,pos.x+nCrosshairSize,pos.y+nCrosshairSize);
+
+
+		uint32 nSize = (uint32)((float)nCrosshairSize * g_pInterfaceResMgr->GetXRatio());
+		uint8  nIndent = (uint8)(8.0f * g_pInterfaceResMgr->GetXRatio());
+        LTRect rect(pos.x,pos.y,pos.x+nSize+(nIndent*2),pos.y+nSize+(nIndent*2));
 
         g_pLTClient->FillRect(hDestSurf,&rect,LTNULL);
 
-		g_pCrosshair->RenderArmed(LTTRUE, LTIntPt(pos.x+nCrosshairSize/2,pos.y+nCrosshairSize/2) );
+		float x = (float)(pos.x + nIndent);
+		float y = (float)(pos.y + nIndent);
+		float sz = (float)nSize;
+		g_pDrawPrim->SetXYWH(&m_Poly,x,y,sz,sz);
 
+		g_pDrawPrim->SetTexture(m_hCrosshair);
+		g_pDrawPrim->DrawPrim(&m_Poly,1);
 	}
+
 	return bRendered;
 }

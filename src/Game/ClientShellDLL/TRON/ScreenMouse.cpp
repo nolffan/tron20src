@@ -4,7 +4,7 @@
 //
 // PURPOSE : Interface screen for setting mouse options
 //
-// (c) 1999-2001 Monolith Productions, Inc.  All Rights Reserved
+// (c) 1999-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
 
@@ -14,6 +14,12 @@
 #include "ScreenCommands.h"
 #include "GameSettings.h"
 #include "InterfaceMgr.h"
+#include "VarTrack.h"
+
+extern VarTrack	g_vtMouseMinSensitivity;
+extern VarTrack	g_vtMouseMaxSensitivity;
+extern VarTrack	g_vtMouseMinInputRate;
+extern VarTrack	g_vtMouseMaxInputRate;
 
 namespace
 {
@@ -55,6 +61,22 @@ LTBOOL CScreenMouse::Build()
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MOUSE,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MOUSE,"SliderWidth");
 
+	//background frame
+	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MOUSE,"FrameRect");
+	LTIntPt pos(frameRect.left,frameRect.top);
+	int nHt = frameRect.bottom - frameRect.top;
+	int nWd = frameRect.right - frameRect.left;
+
+	char szFrame[128];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_MOUSE,"FrameTexture",szFrame,sizeof(szFrame));
+	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
+	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
+	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
+	pFrame->SetBasePos(pos);
+	pFrame->SetBorder(2,m_NonSelectedColor);
+	AddControl(pFrame);
+
+
 	//Always mouse look
 	char szYes[16];
 	char szNo[16];
@@ -65,13 +87,17 @@ LTBOOL CScreenMouse::Build()
 	pToggle->SetOffString(szNo);
 
 	//mouse sensitivity
+	int nMin = int(g_vtMouseMinSensitivity.GetFloat());
+	int nMax = int(g_vtMouseMaxSensitivity.GetFloat());
 	m_pSensitivityCtrl= AddSlider(IDS_MOUSE_SENSITIVITY, IDS_HELP_MOUSE_SENSE, kGap, kWidth, -1, &m_nSensitivity);
-	m_pSensitivityCtrl->SetSliderRange(0, 10);
+	m_pSensitivityCtrl->SetSliderRange(nMin, nMax);
 	m_pSensitivityCtrl->SetSliderIncrement(1);
 
 	//mouse responsiveness
+	nMin = int(g_vtMouseMinInputRate.GetFloat());
+	nMax = int(g_vtMouseMaxInputRate.GetFloat());
 	m_pInputCtrl=AddSlider(IDS_MOUSE_INPUTRATE, IDS_HELP_MOUSE_INPUT, kGap, kWidth, -1,  &m_nInputRate);
-	m_pInputCtrl->SetSliderRange(0, 40);
+	m_pInputCtrl->SetSliderRange(nMin, nMax);
 	m_pInputCtrl->SetSliderIncrement(2);
 
 	//invert mouse
@@ -81,7 +107,7 @@ LTBOOL CScreenMouse::Build()
 
 	CLTGUISlider *pSlider = AddSlider(IDS_VEHICLETURN, IDS_HELP_VEHICLETURN, kGap, kWidth, -1, &m_nVehicleTurn);
 	pSlider->SetSliderRange(50, 150);
-	pSlider->SetSliderIncrement(5);
+	pSlider->SetSliderIncrement(10);
 
 
 	// Make sure to call the base class

@@ -41,13 +41,16 @@ protected:
 
 	CLTGUICycleCtrl		*m_pStyle;
 
-    LTBOOL          m_bCrosshair;
-	int				m_nAlpha;
 	int				m_nColorR;
 	int				m_nColorG;
 	int				m_nColorB;
 	uint8			m_nStyle;
     LTBOOL          m_bDynamic;
+
+	StringArray		m_styles;
+
+	HTEXTURE		m_hCrosshair;
+	LTPoly_GT4		m_Poly;
 
 };
 
