@@ -1,0 +1,14 @@
+## The text differences from the retail images that are known: tools/datacheck.py.
+## <image><TAB><retail|ours><TAB><string>; `# ...` is the reason for the entries after it.
+
+# Not written yet: Tron's driver has what the 2006 Jupiter s_dx8.cpp has and NOLF2's lacks -- the startup check for an MP3 codec (its MessageBoxA), the SoundParamMutex (OpenMutexA, ReleaseMutex) and a streaming thread run by messages (PeekMessageA, PostThreadMessageA, SuspendThread, ResumeThread, QueryPerformanceCounter). To go as the driver is brought to Tron's (docs/PLAN.md, package 3).
+SndDrv.dll	retail	Sound System Startup - Missing .mp3 codec
+SndDrv.dll	retail	SoundParamMutex
+SndDrv.dll	retail	import KERNEL32.dll OpenMutexA
+SndDrv.dll	retail	import KERNEL32.dll QueryPerformanceCounter
+SndDrv.dll	retail	import KERNEL32.dll ReleaseMutex
+SndDrv.dll	retail	import KERNEL32.dll ResumeThread
+SndDrv.dll	retail	import KERNEL32.dll SuspendThread
+SndDrv.dll	retail	import USER32.dll MessageBoxA
+SndDrv.dll	retail	import USER32.dll PeekMessageA
+SndDrv.dll	retail	import USER32.dll PostThreadMessageA

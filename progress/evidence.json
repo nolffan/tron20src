@@ -1,9 +1,26 @@
 {
- "build": {},
+ "build": {
+  "SndDrv.dll": {
+   "cmd": "4468bc5852ddbf7edcaf00ed29093acfb6a6a66d403a820624bde06fb4ba01e3",
+   "image": "8861df1cadb7a11dc475058acaaca590960571682de42eedca3ecabb979142b3",
+   "link_command": "cd src/Engine/snddrv && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'ole32.lib' 'winmm.lib' 'msacm32.lib' 'dxguid.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\built\\Final\\snddrv\\SndDrv.dll' '/map:s:\\Engine\\built\\Final\\snddrv\\SndDrv.map' '..\\built\\Final\\snddrv\\counter.obj' '..\\built\\Final\\snddrv\\parsewavefile.obj' '..\\built\\Final\\snddrv\\s_dx8.obj' '..\\built\\Final\\snddrv\\stdafx.obj' '..\\built\\Final\\ltmem\\ltmem.lib' '..\\built\\Final\\eaxguid\\eaxguid.lib' > /repo/out/release-tree/src/Engine/built/Final/snddrv/SndDrv.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Engine\\built\\Final\\snddrv\\SndDrv.dll.rsp'",
+   "map": "4b90622b52f567af9613627461afbea8e6bf6037f7bf4b7d17d39eb4716f113a",
+   "rsp": "033d4bd09a1c57bcce93cd834ea3e0dc22ae5faadfa5bf86960091721a75c74b"
+  },
+  "ltmsg.dll": {
+   "cmd": "105f6a3512685acd4aedf23e362135dd5d8246f805ad9c725726daf9b0e94675",
+   "image": "e9345dff46b85efd64be714211307b721b0a4b71d60bda55fecf2f62d56a1846",
+   "link_command": "cd src/Engine/ltmsg && { printf '%s\\n' 'kernel32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\built\\Final\\ltmsg\\ltmsg.dll' '/map:s:\\Engine\\built\\Final\\ltmsg\\ltmsg.map' '..\\built\\Final\\ltmsg\\ltmsg.obj' '..\\built\\Final\\ltmsg\\ltmsg.res' > /repo/out/release-tree/src/Engine/built/Final/ltmsg/ltmsg.dll.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Engine\\built\\Final\\ltmsg\\ltmsg.dll.rsp'",
+   "map": "c6f2a7010a582822dc4744c0f5a3be409c46bb4d72388b9fc20f86562977c1b2",
+   "rsp": "a71978f157ca288c9423a345d95430b7d1953380e04e349d5df5b35695e3ebfb"
+  }
+ },
  "config": {
   "progress/COMPILERS.md": "601725ef5bf37d5154a292c0b877b7adab28a7686a40d640ccad424fa34d245b",
+  "progress/data-known.txt": "e2c31de251436af9c3d5e95882947ad4fdf27d9751734e9d3155b0d5981cc437",
   "progress/reference.sha256": "1db69ca4720cf656f94c03007ef3d6a4eaba0722f9c516d0a1dbedb6e3552c7d",
-  "progress/targets.py": "b79168db0a937a3699f13c0d62612d37ab911942d5ca49c35ca3a11d1d0f0d0d"
+  "progress/targets.py": "b79168db0a937a3699f13c0d62612d37ab911942d5ca49c35ca3a11d1d0f0d0d",
+  "progress/vtab-known.txt": "59df22cf8263df55842ba760aad5a58c98e59cc124963cd49ca26f9ea62daa73"
  },
  "reference": {
   "out/reference/CRes.dll": "7a6d27c6765af21ca89d6d98c9a3212261a7eacf4d21834dc728ae09ed5d29de",
@@ -19,15 +36,26 @@
   "out/reference/server.dll": "4a6f2f305996edd30f56e71b70d0ef1dfb2dc1a08f19eec8010891f98ebd002b"
  },
  "result": {
-  "out/progress/functions.csv": "a2d2e77790799ec32f8eba4ed9699f3dd128faaea3ef21baebbb9cd5112f6298",
-  "out/progress/summary.json": "f60613f3899d7df3a8405b335e727a4dda6e7f82a40a5a4354fdc26d57af7222"
+  "out/progress/functions.csv": "f77bb508cdcf08b3df15a8172b6116241cd1b108e748b05ad7c4c9ae5bedad70",
+  "out/progress/summary.json": "24b275c231677980da03f6a9520269fb40fdb35d0b5c4410f1a0d1aba9c4419f"
  },
  "source": {
-  "modified_files": 0,
-  "revision": "47fc194327629828e1bde8ca680af2ea1fa9b152",
+  "modified_files": 5,
+  "revision": "5e196acd70fe4aa11c94d7969809884b630e173b",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "eae15c9903137feaac0146d5b2388d7aa9e53ed7"
  },
- "toolchains": {}
+ "toolchains": {
+  "msvc-6.00-8168": {
+   "computed": "17b81cd04ffa07047450a2f6c706f51f76b1610f30835e12e25d0b742b2c986a",
+   "matches": true,
+   "pinned": "17b81cd04ffa07047450a2f6c706f51f76b1610f30835e12e25d0b742b2c986a"
+  },
+  "msvc-6.00-9782": {
+   "computed": "78ff2ccc2c2c5f9e38cb0155811672b0a4de56f1e673ef779442ce4e89d93edb",
+   "matches": true,
+   "pinned": "78ff2ccc2c2c5f9e38cb0155811672b0a4de56f1e673ef779442ce4e89d93edb"
+  }
+ }
 }

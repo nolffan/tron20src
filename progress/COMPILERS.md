@@ -13,8 +13,8 @@ says so; until then the attribution is the header's own testimony.
 |---|---|---|---|---|
 | `Lithtech.exe` | 2003-10-03 | 11 / 292 | 110 C++ and 3 C objects of cl 13.00.9178, 6 of masm 6.14.8444, 9 C objects of tool 0x5f build 2067, 4 import descriptors of lib 7.00.9210: a DirectX 9 SDK's `d3dx9.lib` and import libraries (below); 4 objects without a `@comp.id` | -- (no build yet) |
 | `server.dll` | 2003-08-29 | 5 / 118 | | -- |
-| `SndDrv.dll` | 2003-08-29 | 4 / 8 | one C++ object of cl 13.00.9178 and one without a `@comp.id`: the DirectX SDK's `dxguid.lib` and EAX's GUIDs, as in NOLF2's driver (to be checked) | -- |
-| `ltmsg.dll` | 2003-08-29 | 5 / 1 | resources (`cvtres` 5.00.1720) and msvcrt's DLL entry | -- |
+| `SndDrv.dll` | 2003-08-29 | 4 / 8 | one C++ object of cl 13.00.9178 and one without a `@comp.id`: the DirectX SDK's `dxguid.lib` and EAX's GUIDs, as in NOLF2's driver (to be checked) | `msvc-6.00-8168`, nolf2src's project and flags (`/MD /W3 /GX /O2 /Ob2`, STLport, `ltmem`): 131 of 284 functions identical as first built; the flags not yet proven |
+| `ltmsg.dll` | 2003-08-29 | 5 / 1 | resources (`cvtres` 5.00.1720) and msvcrt's DLL entry | `msvc-6.00-8168`, nolf2src's project: all five resources identical (NOLF2's script, unchanged) |
 | `Tron.exe` | 2003-09-29 | 11 / 26 | MFC 4.2 as a DLL (`MFC42.DLL`) | -- |
 | `TRONSrv.exe` | 2003-10-03 | 14 / 28 | MFC 4.2 as a DLL; 3 objects without a `@comp.id` | -- |
 | `CShell.dll` | 2003-10-03 | 24 / 346 | the C objects include the GameSpy SDK's | -- |

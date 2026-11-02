@@ -77,8 +77,8 @@ NOLF2 and Contract J.A.C.K. have.
 | # | Package | Depends on | Status |
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the v1.030 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
-| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | |
-| 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | |
+| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the rest to come |
+| 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | `ltmsg.dll` identical; `SndDrv.dll` built, 131 of 284 functions identical |
 | 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | |
 | 5 | `engine`: `Lithtech.exe` and `server.dll` from nolf2src's engine and the Jupiter tree, with the D3D9 renderer; D3DX9 placed as `middleware`; an unprotected engine (the demo, the dev build) for the SecuROM pages and the imports | 2 | |
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
@@ -109,6 +109,26 @@ Done.
 - Unknowns: which DirectX 9 SDK; the 0x5f/2067 C objects in
   `Lithtech.exe`; the objects without a `@comp.id` in `Lithtech.exe`,
   `SndDrv.dll` and `TRONSrv.exe`.
+
+### 2. build, and 3. the first binaries
+
+- `build/build.mk`, `env.sh` and `compile.sh` are cjacksrc's (every
+  workspace in `WORKSPACES` that is in the tree is built, so the game grows
+  one binary at a time) with nolf2src's VC6 toolchain: `msvc-6.00-8168`'s
+  compiler, linker, librarian, headers and libraries, SP6's `RC.EXE`, the
+  DirectX 8.1 SDK first on the paths. `make compile` runs it; `build/all.sh`
+  (a game directory) and `build/variant.sh` are still to come.
+- Imported from nolf2src (`48c2506`), its `NOLF2SRC_MODERN` blocks resolved
+  out (`tools/releasesrc.py`; only `ltcodes.h` had any): `src/Engine/ltmsg`,
+  `src/Engine/snddrv` (with `eaxguid`), `src/libs/ltmem`, the engine SDK's
+  headers (`src/Engine/sdk`) and STLport's (`src/libs/STLPort-4.0/stlport`).
+- `ltmsg.dll`: NOLF2's resource script gives all five of Tron's resources.
+- `SndDrv.dll`: NOLF2's driver gives 131 of Tron's 284 functions. Tron's
+  has what the 2006 Jupiter `s_dx8.cpp` added after NOLF2 -- the MP3 codec
+  check, the `SoundParamMutex`, a streaming thread run by messages, and 7
+  more `ILTSoundSys` slots (`progress/data-known.txt`,
+  `progress/vtab-known.txt`) -- and is to be brought there from the 2006
+  file (`rez/installed/devtools/jupiter-b69/Engine/runtime/sound/src/sys/s_dx8/`).
 
 ### 9. modern
 

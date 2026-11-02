@@ -29,7 +29,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 # toolchains/ yet (docs/PLAN.md, package 2).
 TOOLCHAIN_FILES = toolchains/msvc-6.00-8168/BIN/cl.exe toolchains/msvc-6.00-8168/BIN/link.exe
 
-.PHONY: all game debug modern modern-debug image retail check-rez check-tools check-toolchain \
+.PHONY: all game compile debug modern modern-debug image retail check-rez check-tools check-toolchain \
 	check-build reference progress progress-update shell clean distclean help
 
 all: game
@@ -40,6 +40,8 @@ help:
 	@echo "make modern     the game with TRON20_MODERN, in out/tron20-modern-release/"
 	@echo "make modern-debug  both, in out/tron20-modern-debug/"
 	@echo "                (none of these is ever scored)"
+	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
+	@echo "                TARGETS=\"<project or output>...\" for only those): what make progress scores"
 	@echo "make progress   score the build against the retail binaries; fails if a"
 	@echo "                function recorded in progress/identical.txt stops matching"
 	@echo "make progress-update  record the score in progress/ and README.md"
@@ -64,8 +66,14 @@ debug modern modern-debug: check-toolchain check-build retail
 
 # The build itself is docs/PLAN.md's package 2: until it lands, say so
 # rather than fail inside the container.
+# Compile and link only (build/compile.sh): every binary that has source,
+# in src/**/built/, which is what make progress scores. Until build/all.sh
+# assembles a game directory, this is the build.
+compile: check-toolchain retail
+	$(DOCKER_RUN) bash build/compile.sh $(TARGETS)
+
 check-build:
-	@[ -f build/all.sh ] || { echo "error: there is no build yet (build/all.sh): docs/PLAN.md, package 2. make reference and make progress work already" >&2; exit 1; }
+	@[ -f build/all.sh ] || { echo "error: no game directory is assembled yet (build/all.sh): docs/PLAN.md, package 2. make compile builds the binaries that have source; make progress scores them" >&2; exit 1; }
 
 # IMAGE_BUILD=0: use $(IMAGE) as it is (CI builds it with a layer cache first).
 IMAGE_BUILD ?= 1

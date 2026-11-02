@@ -1,0 +1,5 @@
+## Known vtable and wiring problems: tools/vtabcheck.py --targets.
+## <target><TAB><table, calling function, or callee:<symbol>><TAB><reason>
+
+# Not written yet: Tron's ILTSoundSys has 110 slots, NOLF2's (our s_dx8.h) 103 -- the interface as it grew toward the 2006 Jupiter driver's, with the MP3 and streaming additions the data check lists. To go as the driver is brought to Tron's (docs/PLAN.md, package 3).
+SndDrv.dll	??_7ILTSoundSys@@6B@	Not written yet: Tron's ILTSoundSys has 110 slots, NOLF2's (our s_dx8.h) 103 -- the interface as it grew toward the 2006 Jupiter driver's, with the MP3 and streaming additions the data check lists. To go as the driver is brought to Tron's (docs/PLAN.md, package 3).
