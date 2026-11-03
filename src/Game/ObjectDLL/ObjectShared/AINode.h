@@ -177,8 +177,10 @@ class AINode : public GameBase
 
 		// Debug
 
-		int DrawSelf();
-		int HideSelf();
+		// RETAIL: virtual in Tron (retail's AINode vtables have two slots here,
+		// before GetDebugColor, and AINodeCover's draw with "ShowNodeCover")
+		virtual int DrawSelf();
+		virtual int HideSelf();
 		virtual	DebugLine::Color GetDebugColor() { if (m_bNodeEnabled) return Color::Red; else return Color::DkRed; }
 
 	protected :

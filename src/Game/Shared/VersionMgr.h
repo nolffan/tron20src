@@ -32,16 +32,16 @@ class CVersionMgr
 		CVersionMgr();
 		virtual ~CVersionMgr() {}
 
-		virtual void UpdateCT() {}
+		// RETAIL: Tron's CVersionMgr has five virtuals (its destructor, GetVersion,
+		// GetBuild, GetSaveVersion, GetNetVersion: retail's vtables): NOLF2's
+		// UpdateCT, GetNetGameName, GetNetRegion and GetBuildGuid came after it
 
 		virtual const char* GetVersion() = 0;
 		virtual const char* GetBuild() = 0;
 		virtual const uint32 GetSaveVersion() = 0;
-		virtual const char* GetNetGameName() = 0;
 		virtual const char* GetNetVersion() = 0;
-		virtual const char* GetNetRegion() { return m_szNetRegion; }
+		const char* GetNetRegion() { return m_szNetRegion; }	// RETAIL: not virtual (above)
 
-		virtual LTGUID const* GetBuildGuid() = 0;
 
 		const char* GetLanguage()	const { return m_szLanguage; }
 

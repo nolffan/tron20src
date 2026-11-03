@@ -26,8 +26,7 @@ class CTronVersionMgr : public CVersionMgr
 		virtual const char* GetBuild();
 		virtual const uint32 GetSaveVersion();
 		virtual const char* GetNetVersion();
-		virtual const char* GetNetGameName();	// PORT: NOLF2's interface
-		virtual LTGUID const* GetBuildGuid();	// PORT: NOLF2's interface
+
 };
 
 #endif _TRONVERSIONMGR_H_

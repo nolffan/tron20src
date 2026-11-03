@@ -21,11 +21,6 @@ static const char* s_szBuild		= "Build 74";
 static const uint32 s_nSaveVersion  = 0;
 // PORT: May 2002's; retail has no "1.0.0.0": to be read from its code
 static const char* s_szNetVersion	= "1.0.0.0";
-// PORT: NOLF2's CVersionMgr has these two, pure virtual. The name is Tron's
-// GameSpy game name, which retail CShell.dll and Object.lto both carry; the
-// build guid is to be read from the retail code.
-static const char* s_szNetGameName	= "tron20";
-static const LTGUID s_BuildGuid		= { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 // RETAIL: the game's guid, which NOLF2's TO2VersionMgr.cpp defines for the
 // shared code (CGameClientShell::OnEngineInitialized gives it to the
 // engine): retail CShell.dll copies it from 0x1021ea20, and the same 16
@@ -112,30 +107,4 @@ const char* CTronVersionMgr::GetBuild()
 const char* CTronVersionMgr::GetNetVersion()
 {
 	return s_szNetVersion;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CTronVersionMgr::GetNetGameName()
-//
-//	PURPOSE:	Get the net game name.  (PORT: NOLF2's interface)
-//
-// ----------------------------------------------------------------------- //
-
-const char* CTronVersionMgr::GetNetGameName()
-{
-	return s_szNetGameName;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CTronVersionMgr::GetBuildGuid()
-//
-//	PURPOSE:	Gets a guid based on a build.  (PORT: NOLF2's interface)
-//
-// ----------------------------------------------------------------------- //
-
-const LTGUID* CTronVersionMgr::GetBuildGuid()
-{
-	return &s_BuildGuid;
 }

@@ -1151,7 +1151,9 @@ void CCheatMgr::Version()
 void CCheatMgr::BuildGuid()
 {
 	LTGUID buildGuid;
-	LTGUID const* pGuidEncoded = g_pVersionMgr->GetBuildGuid( );
+	// RETAIL: Tron's version manager has no build guid, and retail has no such
+	// cheat (NOLF2's, to go with Tron's cheat table)
+	LTGUID const* pGuidEncoded = &GAMEGUID;
 
 	buildGuid.guid.a = pGuidEncoded->guid.a - GAMEGUID.guid.a;
 	buildGuid.guid.b = pGuidEncoded->guid.b - GAMEGUID.guid.b;

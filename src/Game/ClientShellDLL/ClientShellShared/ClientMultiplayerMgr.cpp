@@ -464,7 +464,9 @@ IServerDirectory* ClientMultiplayerMgr::CreateServerDir( )
 		return NULL;
 
 	// Set the game's name
-	m_pServerDir->SetGameName(g_pVersionMgr->GetNetGameName());
+	// RETAIL: Tron's version manager has no GetNetGameName; its GameSpy game name
+	// is "tron20" (in retail CShell.dll). (This is NOLF2's WON code, standing in.)
+	m_pServerDir->SetGameName("tron20");
 	// Set the version
 	m_pServerDir->SetVersion(g_pVersionMgr->GetNetVersion());
 	m_pServerDir->SetRegion(g_pVersionMgr->GetNetRegion());

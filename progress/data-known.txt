@@ -3992,3 +3992,5 @@ CShell.dll	ours	.?AVCScreenHostLevels@@
 CShell.dll	ours	.?AVCScreenJoin@@
 CShell.dll	ours	.?AVCScreenJoinLAN@@
 Object.lto	ours	.?AVCClusterAutoBurstDisc@@
+# Object.lto: Tron's GameSpy game name, for the query reporting (GameSpy not yet linked); our CVersionMgr has no GetNetGameName to carry it, as Tron's has not.
+Object.lto	retail	tron20
