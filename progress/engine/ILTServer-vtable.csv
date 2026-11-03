@@ -1,0 +1,84 @@
+# Tron's CLTServer vtable (0x100521a0 in server.dll): each slot, the NOLF2 method in it, and how
+# it was named. Each slot's function was compared with nolf2src's engine's
+# (its built image and map): "identical body", "similar body" (the ratio of
+# matching instructions), "game calls" (retail's near functions call it
+# there where ours call it by name). The first 49 slots are ILTCSBase's, the
+# same in both engines; where identical bodies could not tell two methods
+# apart, NOLF2's order (and build 51's) decides, or the other engine's calls.
+# offset,class,method,evidence
+0x000,ILTCSBase,_InterfaceImplementation,the interface macro's slot
+0x004,ILTCSBase,Common,game calls
+0x008,ILTCSBase,Physics,identical body
+0x00c,ILTCSBase,GetTransformLT,game calls
+0x010,ILTCSBase,SoundMgr,game calls
+0x014,ILTCSBase,GetModelLT,identical body
+0x018,ILTCSBase,SendTo,similar body 0.99
+0x01c,ILTCSBase,StartPing,NOLF2 order (identical stub bodies)
+0x020,ILTCSBase,GetPingStatus,NOLF2 order (identical stub bodies)
+0x024,ILTCSBase,RemovePing,identical body
+0x028,ILTCSBase,GetObjectPos,game calls
+0x02c,ILTCSBase,ResetModelAnimation,game calls
+0x030,ILTCSBase,GetModelPlaybackState,game calls
+0x034,ILTCSBase,CPrint,game calls
+0x038,ILTCSBase,GetObjectRotation,game calls
+0x03c,ILTCSBase,SetModelAnimation,game calls
+0x040,ILTCSBase,GetAnimIndex,game calls
+0x044,ILTCSBase,GetModelAnimation,game calls
+0x048,ILTCSBase,SetModelLooping,game calls
+0x04c,ILTCSBase,GetModelLooping,game calls
+0x050,ILTCSBase,GetPointContainers,identical body
+0x054,ILTCSBase,GetContainerCode,similar body 0.92
+0x058,ILTCSBase,GetObjectContainers,game calls
+0x05c,ILTCSBase,GetContainedObjects,similar body 0.97
+0x060,ILTCSBase,OpenFile,game calls
+0x064,ILTCSBase,CopyFileA,identical body
+0x068,ILTCSBase,OpenMemoryStream,identical body
+0x06c,ILTCSBase,GetSourceWorldOffset,identical body
+0x070,ILTCSBase,RemoveObject,game calls
+0x074,ILTCSBase,GetLightGroupID,the server's game calls
+0x078,ILTCSBase,GetOccluderID,the server's game calls
+0x07c,ILTCSBase,GetTextureEffectVarID,game calls
+0x080,ILTCSBase,LinkObjRef,similar body 0.90
+0x084,ILTCSBase,GetBlindObjectData,game calls
+0x088,ILTCSBase,FreeBlindObjectData,game calls
+0x08c,ILTCSBase,FormatString,
+0x090,ILTCSBase,CopyString,game calls
+0x094,ILTCSBase,CreateString,game calls
+0x098,ILTCSBase,FreeString,game calls
+0x09c,ILTCSBase,CompareStrings,NOLF2 and build 51 order (identical bodies)
+0x0a0,ILTCSBase,CompareStringsUpper,NOLF2 and build 51 order (identical bodies)
+0x0a4,ILTCSBase,GetStringData,game calls
+0x0a8,ILTCSBase,GetVarValueFloat,game calls
+0x0ac,ILTCSBase,GetVarValueString,game calls
+0x0b0,ILTCSBase,TronUnknownVirtual44,Tron's own: no NOLF2 function has its body
+0x0b4,ILTCSBase,TronUnknownVirtual45,Tron's own: no NOLF2 function has its body
+0x0b8,ILTCSBase,GetTime,game calls
+0x0bc,ILTCSBase,GetFrameTime,game calls
+0x0c0,ILTCSBase,TronUnknownVirtual48,Tron's own: no NOLF2 function has its body
+0x0c4,ILTServer,GetNumClassProps,identical body
+0x0c8,ILTServer,GetClassProp,similar body 0.76
+0x0cc,ILTServer,GetClassNameA,game calls
+0x0d0,ILTServer,RemoveObject,identical body
+0x0d4,ILTServer,ThreadLoadFile,identical body
+0x0d8,ILTServer,UnloadFile,identical body
+0x0dc,ILTServer,GetHPolyObject,game calls
+0x0e0,ILTServer,GetWorldBox,game calls
+0x0e4,ILTServer,FindWorldModelObjectIntersections,game calls
+0x0e8,ILTServer,MoveObject,game calls
+0x0ec,ILTServer,GetStandingOn,game calls
+0x0f0,ILTServer,FindNamedObjects,game calls
+0x0f4,ILTServer,SetObjectSFXMessage,game calls
+0x0f8,ILTServer,SendToObject,game calls
+0x0fc,ILTServer,SendToServer,similar body 0.96
+0x100,ILTServer,SendToClient,game calls
+0x104,ILTServer,SendSFXMessage,game calls
+0x108,ILTServer,GetClientPing,game calls
+0x10c,ILTServer,GetClientData,game calls
+0x110,ILTServer,SetClientData,identical body
+0x114,ILTServer,GetClientAddr,game calls
+0x118,ILTServer,BreakInterObjectLink,identical body
+0x11c,ILTServer,BreakInterObjectLink,game calls
+0x120,ILTServer,GetObjectName,game calls
+0x124,ILTServer,GetNetFlags,similar body 0.91
+0x128,ILTServer,SetNetFlags,game calls
+0x12c,ILTServer,TronUnknownVirtual75,Tron's own: no NOLF2 function has its body

@@ -150,6 +150,10 @@ ILTServer interface. This is the interface to most server-side LithTech
 functionality.  
 */
 
+// TRON: ILTServer's own virtuals are NOLF2's in the order of retail
+// server.dll's CLTServer vtable (progress/engine/ILTServer-vtable.csv);
+// GetSaveFileVersion, which NOLF2's 1.x updates added and Tron's engine
+// does not have, is kept past its end.
 class ILTServer : public ILTCSBase {
 public:
     interface_version_derived(ILTServer, ILTCSBase, 4);
@@ -164,13 +168,383 @@ World control.
  
 		bool (*IntersectSegment)(IntersectQuery *pQuery, IntersectInfo *pInfo);
 		bool (*CastRay)(IntersectQuery *pQuery, IntersectInfo *pInfo);
+
+/*!
+\param hClass Class to query.
+\param count (return) Number of properties.
+\return LT_OK
+
+Get the number of properties defined by the given class.
+
+Used for: Server Management.
+*/
+    virtual LTRESULT GetNumClassProps(const HCLASS hClass,
+        uint32 &count)=0;
+
+/*!
+\param  hClass      Class to query.
+\param  iProp       Property to query.
+\param  info (return) Property info.
+\return LT_OK
+
+Get the \b ClassDef info from a class. This is useful if you want to
+access the property names of the class.
+
+Used for: Server Management.  
+*/
+    virtual LTRESULT GetClassProp(const HCLASS hClass,
+        const uint32 iProp, ClassPropInfo &info)=0;
+
+/*!
+\param  hClass Class to query.
+\param  pName (return) Buffer for name.
+\param  maxNameBytes (return) Size of buffer.
+\return LT_OK
+
+Get the name of a class.
+
+Used for: Server Management.
+*/
+    virtual LTRESULT GetClassName(const HCLASS hClass,
+        char *pName, uint32 maxNameBytes)=0;
+/*!
+\param	hClass		Class of the object
+\param	pObject		Class-only object to remove
+\return LT_OK for valid objects, LT_ERROR otherwise
+
+Delete a class-only object
+
+Used for: Class-only Objects
+*/
+    virtual LTRESULT RemoveObject(const HCLASS hClass, LPBASECLASS pObject) = 0;
+
+/*!
+\param  pFilename   File to load.
+
+\param type File type (one of the \b FT_ defines in ltcodes.h).  Types
+currently supported are \b FT_MODEL and \b FT_TEXTURE. (Textures are not
+loaded on the server.  A message is sent to the clients to load the
+texture in their thread.)
+
+\return \b LT_UNSUPPORTED if you pass an invalid type, \b
+LT_MISSINGFILE if the file is missing, \b LT_ALREADYEXISTS if the file
+is already in memory, or \b LT_INPROGRESS if it is already loading in
+the thread. (\b Note: Many of these returns don't signify errors.)
+
+Load the specified file in the loader thread.  Also send a message to
+clients saying to do the same.  When the operation is completed, this
+function calls IServerShell::FileLoadNotify with a result (which can
+be an error if the file is missing).  Objects can be created using the
+file but they will not be visible until all files they need are
+loaded.
+
+Used for: Misc.  
+*/
+    virtual LTRESULT ThreadLoadFile(const char *pFilename, uint32 type)=0;
+
+/*!
+\param  pFilename   File to unload.
+\param  type    File type (one of the FT_ defines in ltcodes.h).
+
+\return \b LT_ERROR if the file is being used and can't be unloaded, or
+\b LT_NOTFOUND if the file isn't currently loaded.
+
+Unload the data.
+
+Used for: Misc.  
+*/
+    virtual LTRESULT UnloadFile(const char *pFilename, uint32 type)=0;
+
+/*!
+Helpers.
+*/
+
+/*!
+\param  hPoly       Polygon to query.
+\param  hObject (return) Object containing hPoly.
+
+Get the world object that a particular \b HPOLY comes from.
+
+Used for: Misc.  
+*/
+    virtual LTRESULT GetHPolyObject(
+        const HPOLY hPoly, HOBJECT &hObject)=0;
 		virtual LTRESULT	GetWorldBox(LTVector &min, LTVector &max)=0;
-		ObjectList*	(*GetPointAreas)(const LTVector *pPoint);
-		ObjectList*	(*GetBoxIntersecters)(const LTVector *pMin, const LTVector *pMax);
 		virtual LTRESULT FindWorldModelObjectIntersections(
 			HOBJECT hWorldModel,
 			const LTVector &vNewPos, const LTRotation &rNewRot,
 			BaseObjArray<HOBJECT> &objArray)=0;
+		virtual LTRESULT MoveObject(HOBJECT hObj, const LTVector *pNewPos)=0;
+		virtual LTRESULT	GetStandingOn(HOBJECT hObj, CollisionInfo *pInfo)=0;
+
+/*!
+\param pName Name to search for.
+
+\param objArray (return) An array of objects.
+
+\param nTotalFound (return) Number of objects in array.
+
+Get all objects with the given name.
+
+Used for: Object.  
+*/
+    virtual LTRESULT FindNamedObjects(const char *pName,
+                     BaseObjArray<HOBJECT> &objArray,
+                     uint32 *nTotalFound=NULL)=0;
+
+/*!
+\param  hObject     Object to modify.
+\param  pMsg     \b Message to associate with this object.
+\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
+
+Sets up a special effect message.  If your object has a
+special effect message, the SpecialEffectNotify() of the client shell
+will be called.
+
+\note An object can have only \b one associated special effect
+message.  If the object already has a special effect message, then
+calling this function will replace it.
+
+\see SpecialEffectNotify()
+\see ILTCommon::CreateMessage()
+\see ILTMessage_Write::Read()
+
+Used for: Messaging.  
+*/
+    virtual LTRESULT SetObjectSFXMessage(HOBJECT hObject,
+        ILTMessage_Read *pMsg)=0;
+
+/*!  
+New message functions. The main difference between these and the
+functions above is that these don't free the message, so you
+can send it multiple times.  
+*/
+
+/*!
+\param  pMsg     \b Message to send to the object.
+\param  hSender     Source object (can be \b NULL).
+\param  hSendTo     Destination object.
+\param  flags       Message flags.
+\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
+
+\see ObjectMessageFn()
+\see ILTCommon::CreateMessage()
+\see ILTMessage_Write::Read()
+
+Send a message to an object. The object will receive the message through its
+ObjectMessageFn function.
+
+Used for: Messaging.  
+*/
+    virtual LTRESULT SendToObject(ILTMessage_Read *pMsg,
+        HOBJECT hSender, HOBJECT hSendTo, uint32 flags)=0;
+
+/*!
+\param  pMsg     \b Message to send to the server.
+\param  hSender     Source object (cannot be \b NULL).
+\param  flags       Message flags.
+\return \b LT_INVALIDPARAMS if the message is invalid, or the server shell is invalid; otherwise, returns \b LT_OK.
+
+\see OnObjectMessage()
+\see ILTCommon::CreateMessage()
+\see ILTMessage_Write::Read()
+
+Send the message to the server shell. The server shell will receive the message
+through its OnObjectMessage() function.
+
+Used for: Messaging.  
+*/
+    virtual LTRESULT SendToServer(ILTMessage_Read *pMsg,
+        HOBJECT hSender, uint32 flags)=0;
+
+/*!
+\param  pMsg     \b Message to send to the client.
+\param  hSendTo     Destination client.  Use \b NULL to send to all clients.
+\param  flags       Message flags.
+\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
+
+\see OnMessage()
+\see ILTCommon::CreateMessage()
+\see ILTMessage_Write::Read()
+
+Send the message to the client.  The client shell will receive the message
+through its OnMessage() function.
+
+Used for: Messaging.  
+*/
+    virtual LTRESULT SendToClient(ILTMessage_Read *pMsg,
+        HCLIENT hSendTo, uint32 flags)=0;
+
+/*!
+\param  pMsg     \b SFX Message to send
+\param  pos     Position of message reference (in world coordinates).
+\param  flags       Message flags.
+\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
+
+\see SpecialEffectNotify()
+\see ILTCommon::CreateMessage()
+\see ILTMessage_Write::Read()
+
+Send an "instant" special effect message to all the clients who can see
+\b pos. The clients will receive the message through the IClientShell::SpecialEffectNotify()
+function.
+
+Used for: Messaging.  
+*/
+    virtual LTRESULT SendSFXMessage(ILTMessage_Read *pMsg, const LTVector &pos,
+        uint32 flags)=0;
+
+/*!
+\param hClient Client to query.
+
+\param ping (return) Ping time.
+
+\return LT_NOTINITIALIZED if client is not connected. Otherwise, LT_OK.
+
+Get the ping time of a client.
+
+Used for: Server Management.  
+*/
+    virtual LTRESULT GetClientPing(HCLIENT hClient, float &ping)=0;
+
+/*!
+\param hClient Client to query.
+
+\param pData (out) Buffer to hold client data.  Pass NULL for length returned in maxLen.
+
+\param maxLen (in,out) Buffer length.  Sets bytes copied.
+
+\return \b true if successful; otherwise, returns \b false.
+
+Get the name of a client.
+
+Used for: Server Management.  
+*/
+    virtual bool GetClientData(HCLIENT hClient, uint8* pData, int& maxLen) = 0;
+
+/*!
+\param hClient Client to query.
+
+\param pData Buffer holding desired data
+
+\param len Buffer length.
+
+\return \b true if successful; otherwise, returns \b false.
+
+Set the data of a client.
+
+Used for: Server Management.  
+*/
+	virtual bool SetClientData(HCLIENT hClient, uint8 const* pData, int len ) = 0;
+
+/*!
+\param hClient Client to query
+
+\param pAddr Array for holding the client's address
+
+\param pPort uint16 for holding the client's port
+
+\return \b LT_ERROR if an invalid parameter is provided; otherwise, returns \b LT_OK
+
+Retrieve the TCP/IP communications address and port for the given client
+
+Note: The local client will return 0.0.0.0:0
+
+Used for: Client Management
+*/
+		virtual LTRESULT GetClientAddr(HCLIENT hClient, uint8 pAddr[4], uint16 *pPort) = 0;
+
+/*!
+\param hOwner Owner object.
+
+\param hLinked Linked object.
+
+Break an inter-object link between the owner and the linked object, if
+one exists.  You can only break a link from the owner, since the
+linked object doesn't know it is linked to the owner.
+
+\note \b MID_LINKBROKEN will \em not be called.
+
+Used for: Object.
+*/
+    virtual void BreakInterObjectLink(HOBJECT hOwner, HOBJECT hLinked)=0;
+
+/*!
+\param hObj Object that links will be broken from.
+
+\param hLinked Linked object.
+
+\param bNotify Should the linked object be notified?
+
+Break all inter-object links between the object and the linked object, if
+one exists.  If hLinked is \b LTNULL all links to hObj are broken.
+
+\note \b MID_LINKBROKEN will \em not be called if bNotify is \b false.
+
+Used for: Object.
+*/
+	virtual void BreakInterObjectLink( HOBJECT hObj, HOBJECT hLinked, bool bNotify )=0;
+
+/*!
+\param hObject Object to query.
+
+\param pName (return) Buffer to hold name.
+
+\param nameBufSize Buffer size.
+
+\return LT_INVALIDPARAMS if the buffer is not large enough, else LT_OK
+
+Get the name of an object.
+
+Used for: Object.
+*/
+    virtual LTRESULT GetObjectName(HOBJECT hObject, char *pName,
+        uint32 nameBufSize)=0;
+
+/*!
+\param hObj The object to query.
+
+\param flags (return) Flags (a combination of \b NETFLAG_ defines).
+
+\return \b LT_INVALIDPARAMS if hObj is not found, else \b LT_OK
+
+Get the net flags of an object.
+
+Used for: Object.
+*/
+    virtual LTRESULT GetNetFlags(HOBJECT hObj, uint32 &flags)=0;
+
+/*!
+\param hObj The object to modify.
+
+\param flags Flags (a combination of \b NETFLAG_ defines).
+
+\return \b LT_INVALIDPARAMS if hObj is not found, else \b LT_OK
+
+Set the net flags of an object.
+
+Used for: Object.
+*/
+    virtual LTRESULT SetNetFlags(HOBJECT hObj, uint32 flags)=0;
+
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual26() = 0;
+
+    // TRON: NOLF2's virtuals that Tron's engine does not have (past the end of
+    // its vtable): kept for the shared code, which must not call them
+
+/*!
+\param nSaveFileVersion - The save file version number.
+
+\return \b LT_OK on success.
+
+Access the engine's save file version.
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetSaveFileVersion( uint32& nSaveFileVersion ) = 0;
+		ObjectList*	(*GetPointAreas)(const LTVector *pPoint);
+		ObjectList*	(*GetBoxIntersecters)(const LTVector *pMin, const LTVector *pMax);
 		ObjectList* (*FindObjectsTouchingSphere)(const LTVector *pPosition,float radius);
 		LTRESULT	(*SetObjectRotation)(HOBJECT hObj, const LTRotation *pRotation);
 		virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
@@ -179,9 +553,7 @@ World control.
 		void	(*SetObjectPos)(HOBJECT hObj, const LTVector *pos);  //!
 		LTRESULT	(*RotateObject)(HOBJECT hObj, const LTRotation *pRotation);
 		void	(*TiltToPlane)(HOBJECT hObj, const LTVector *pNormal);
-		virtual LTRESULT MoveObject(HOBJECT hObj, const LTVector *pNewPos)=0;
 		LTRESULT	(*TeleportObject)(HOBJECT hObj, const LTVector *pNewPos);
-		virtual LTRESULT	GetStandingOn(HOBJECT hObj, CollisionInfo *pInfo)=0;
 		LTRESULT	(*GetLastCollision)(CollisionInfo *pInfo);
 
 #endif//doxygen
@@ -198,21 +570,6 @@ Calculate the lighting shade (RGB, range 0-255) at the point you specify.
 Used for: Misc.  
 */
     bool (*GetPointShade)(const LTVector *pPoint, LTVector *pColor);
-
-/*!
-\param pName Name to search for.
-
-\param objArray (return) An array of objects.
-
-\param nTotalFound (return) Number of objects in array.
-
-Get all objects with the given name.
-
-Used for: Object.  
-*/
-    virtual LTRESULT FindNamedObjects(const char *pName,
-                     BaseObjArray<HOBJECT> &objArray,
-                     uint32 *nTotalFound=NULL)=0;
 
 /*!
 \param  pList       Object list to relinquish.
@@ -266,108 +623,6 @@ Remove an object from the list given the handle.
 Used for: Object.  
 */
     void (*RemoveObjectFromList)(ObjectList *pList, HOBJECT hObj);
-
-/*!  
-New message functions. The main difference between these and the
-functions above is that these don't free the message, so you
-can send it multiple times.  
-*/
-
-/*!
-\param  pMsg     \b Message to send to the object.
-\param  hSender     Source object (can be \b NULL).
-\param  hSendTo     Destination object.
-\param  flags       Message flags.
-\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
-
-\see ObjectMessageFn()
-\see ILTCommon::CreateMessage()
-\see ILTMessage_Write::Read()
-
-Send a message to an object. The object will receive the message through its
-ObjectMessageFn function.
-
-Used for: Messaging.  
-*/
-    virtual LTRESULT SendToObject(ILTMessage_Read *pMsg,
-        HOBJECT hSender, HOBJECT hSendTo, uint32 flags)=0;
-
-/*!
-\param  pMsg     \b Message to send to the server.
-\param  hSender     Source object (cannot be \b NULL).
-\param  flags       Message flags.
-\return \b LT_INVALIDPARAMS if the message is invalid, or the server shell is invalid; otherwise, returns \b LT_OK.
-
-\see OnObjectMessage()
-\see ILTCommon::CreateMessage()
-\see ILTMessage_Write::Read()
-
-Send the message to the server shell. The server shell will receive the message
-through its OnObjectMessage() function.
-
-Used for: Messaging.  
-*/
-    virtual LTRESULT SendToServer(ILTMessage_Read *pMsg,
-        HOBJECT hSender, uint32 flags)=0;
-
-/*!
-\param  hObject     Object to modify.
-\param  pMsg     \b Message to associate with this object.
-\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
-
-Sets up a special effect message.  If your object has a
-special effect message, the SpecialEffectNotify() of the client shell
-will be called.
-
-\note An object can have only \b one associated special effect
-message.  If the object already has a special effect message, then
-calling this function will replace it.
-
-\see SpecialEffectNotify()
-\see ILTCommon::CreateMessage()
-\see ILTMessage_Write::Read()
-
-Used for: Messaging.  
-*/
-    virtual LTRESULT SetObjectSFXMessage(HOBJECT hObject,
-        ILTMessage_Read *pMsg)=0;
-
-/*!
-\param  pMsg     \b Message to send to the client.
-\param  hSendTo     Destination client.  Use \b NULL to send to all clients.
-\param  flags       Message flags.
-\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
-
-\see OnMessage()
-\see ILTCommon::CreateMessage()
-\see ILTMessage_Write::Read()
-
-Send the message to the client.  The client shell will receive the message
-through its OnMessage() function.
-
-Used for: Messaging.  
-*/
-    virtual LTRESULT SendToClient(ILTMessage_Read *pMsg,
-        HCLIENT hSendTo, uint32 flags)=0;
-
-/*!
-\param  pMsg     \b SFX Message to send
-\param  pos     Position of message reference (in world coordinates).
-\param  flags       Message flags.
-\return \b LT_INVALIDPARAMS if the message is invalid; otherwise, returns \b LT_OK.
-
-\see SpecialEffectNotify()
-\see ILTCommon::CreateMessage()
-\see ILTMessage_Write::Read()
-
-Send an "instant" special effect message to all the clients who can see
-\b pos. The clients will receive the message through the IClientShell::SpecialEffectNotify()
-function.
-
-Used for: Messaging.  
-*/
-    virtual LTRESULT SendSFXMessage(ILTMessage_Read *pMsg, const LTVector &pos,
-        uint32 flags)=0;
 
 /*!  
 Client Functions.  
@@ -487,19 +742,6 @@ Used for: Server Management.
 /*!
 \param hClient Client to query.
 
-\param ping (return) Ping time.
-
-\return LT_NOTINITIALIZED if client is not connected. Otherwise, LT_OK.
-
-Get the ping time of a client.
-
-Used for: Server Management.  
-*/
-    virtual LTRESULT GetClientPing(HCLIENT hClient, float &ping)=0;
-
-/*!
-\param hClient Client to query.
-
 \param pName (return) Buffer to hold client name.
 
 \param maxLen Buffer length.
@@ -526,53 +768,6 @@ Set the name of a client.
 Used for: Server Management.  
 */
 		bool	(*SetClientName)(HCLIENT hClient, const char *pName, int MaxLen);
-
-/*!
-\param hClient Client to query.
-
-\param pData (out) Buffer to hold client data.  Pass NULL for length returned in maxLen.
-
-\param maxLen (in,out) Buffer length.  Sets bytes copied.
-
-\return \b true if successful; otherwise, returns \b false.
-
-Get the name of a client.
-
-Used for: Server Management.  
-*/
-    virtual bool GetClientData(HCLIENT hClient, uint8* pData, int& maxLen) = 0;
-
-/*!
-\param hClient Client to query.
-
-\param pData Buffer holding desired data
-
-\param len Buffer length.
-
-\return \b true if successful; otherwise, returns \b false.
-
-Set the data of a client.
-
-Used for: Server Management.  
-*/
-	virtual bool SetClientData(HCLIENT hClient, uint8 const* pData, int len ) = 0;
-
-/*!
-\param hClient Client to query
-
-\param pAddr Array for holding the client's address
-
-\param pPort uint16 for holding the client's port
-
-\return \b LT_ERROR if an invalid parameter is provided; otherwise, returns \b LT_OK
-
-Retrieve the TCP/IP communications address and port for the given client
-
-Note: The local client will return 0.0.0.0:0
-
-Used for: Client Management
-*/
-		virtual LTRESULT GetClientAddr(HCLIENT hClient, uint8 pAddr[4], uint16 *pPort) = 0;
 
 /*!
 \param hClient Client to modify.
@@ -924,38 +1119,7 @@ already exists, the function will not create another link and return
 
 Used for: Object.
 */
-    LTRESULT (*CreateInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);
-
-/*!
-\param hOwner Owner object.
-
-\param hLinked Linked object.
-
-Break an inter-object link between the owner and the linked object, if
-one exists.  You can only break a link from the owner, since the
-linked object doesn't know it is linked to the owner.
-
-\note \b MID_LINKBROKEN will \em not be called.
-
-Used for: Object.
-*/
-    virtual void BreakInterObjectLink(HOBJECT hOwner, HOBJECT hLinked)=0;
-
-/*!
-\param hObj Object that links will be broken from.
-
-\param hLinked Linked object.
-
-\param bNotify Should the linked object be notified?
-
-Break all inter-object links between the object and the linked object, if
-one exists.  If hLinked is \b LTNULL all links to hObj are broken.
-
-\note \b MID_LINKBROKEN will \em not be called if bNotify is \b false.
-
-Used for: Object.
-*/
-	virtual void BreakInterObjectLink( HOBJECT hObj, HOBJECT hLinked, bool bNotify )=0;	
+    LTRESULT (*CreateInterObjectLink)(HOBJECT hOwner, HOBJECT hLinked);	
 
 /*!
 Object manipulation.
@@ -1099,22 +1263,6 @@ Used for: Object.
     HOBJECT (*GetNextInactiveObject)(HOBJECT hObj);
 
 /*!
-\param hObject Object to query.
-
-\param pName (return) Buffer to hold name.
-
-\param nameBufSize Buffer size.
-
-\return LT_INVALIDPARAMS if the buffer is not large enough, else LT_OK
-
-Get the name of an object.
-
-Used for: Object.
-*/
-    virtual LTRESULT GetObjectName(HOBJECT hObject, char *pName,
-        uint32 nameBufSize)=0;
-
-/*!
 \param hObj Object to modify.
 
 \param nextUpdate Next update time.
@@ -1150,32 +1298,6 @@ Scale the object (only works on models and sprites).
 Used for: Object.
 */
     void (*ScaleObject)(HOBJECT hObj, const LTVector *pNewScale);
-
-/*!
-\param hObj The object to query.
-
-\param flags (return) Flags (a combination of \b NETFLAG_ defines).
-
-\return \b LT_INVALIDPARAMS if hObj is not found, else \b LT_OK
-
-Get the net flags of an object.
-
-Used for: Object.
-*/
-    virtual LTRESULT GetNetFlags(HOBJECT hObj, uint32 &flags)=0;
-
-/*!
-\param hObj The object to modify.
-
-\param flags Flags (a combination of \b NETFLAG_ defines).
-
-\return \b LT_INVALIDPARAMS if hObj is not found, else \b LT_OK
-
-Set the net flags of an object.
-
-Used for: Object.
-*/
-    virtual LTRESULT SetNetFlags(HOBJECT hObj, uint32 flags)=0;
 
 /*!
 \param hObj The object to modify.
@@ -1469,17 +1591,6 @@ Used for: Misc.
         uint32 flags);
 
 /*!
-\param nSaveFileVersion - The save file version number.
-
-\return \b LT_OK on success.
-
-Access the engine's save file version.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetSaveFileVersion( uint32& nSaveFileVersion ) = 0;
-
-/*!
 Load world
 */
 
@@ -1569,18 +1680,6 @@ Used for: Server Management.
     LTRESULT (*GetGameInfo)(void **ppData, uint32 *pLen);
 
 /*!
-\param hClass Class to query.
-\param count (return) Number of properties.
-\return LT_OK
-
-Get the number of properties defined by the given class.
-
-Used for: Server Management.
-*/
-    virtual LTRESULT GetNumClassProps(const HCLASS hClass,
-        uint32 &count)=0;
-
-/*!
 \param pName Name of class to retrieve.
 
 \return \b LTNULL if the class doesn't exist; otherwise, returns the
@@ -1589,33 +1688,6 @@ handle of the requested class.
 Used for: Server Management.  
 */
     HCLASS (*GetClass)(const char *pName);
-
-/*!
-\param  hClass      Class to query.
-\param  iProp       Property to query.
-\param  info (return) Property info.
-\return LT_OK
-
-Get the \b ClassDef info from a class. This is useful if you want to
-access the property names of the class.
-
-Used for: Server Management.  
-*/
-    virtual LTRESULT GetClassProp(const HCLASS hClass,
-        const uint32 iProp, ClassPropInfo &info)=0;
-
-/*!
-\param  hClass Class to query.
-\param  pName (return) Buffer for name.
-\param  maxNameBytes (return) Size of buffer.
-\return LT_OK
-
-Get the name of a class.
-
-Used for: Server Management.
-*/
-    virtual LTRESULT GetClassName(const HCLASS hClass,
-        char *pName, uint32 maxNameBytes)=0;
 
 /*!
 \param  hObject     Object to query.
@@ -1684,16 +1756,6 @@ Used for: Object.
 Re-declaration of ILTCSBase::RemoveObject(HOBJECT)
 */
     virtual LTRESULT RemoveObject(HOBJECT hObj) = 0;
-/*!
-\param	hClass		Class of the object
-\param	pObject		Class-only object to remove
-\return LT_OK for valid objects, LT_ERROR otherwise
-
-Delete a class-only object
-
-Used for: Class-only Objects
-*/
-    virtual LTRESULT RemoveObject(const HCLASS hClass, LPBASECLASS pObject) = 0;
 
 /*!
 \return Current state flags (a combination of the \b SS_ flags above).
@@ -1724,58 +1786,6 @@ Cache the given file.  Only call this from ServerShell::CacheFiles.
 Used for: Misc.
 */
     LTRESULT (*CacheFile)(uint32 fileType, const char *pFilename);
-
-/*!
-\param  pFilename   File to load.
-
-\param type File type (one of the \b FT_ defines in ltcodes.h).  Types
-currently supported are \b FT_MODEL and \b FT_TEXTURE. (Textures are not
-loaded on the server.  A message is sent to the clients to load the
-texture in their thread.)
-
-\return \b LT_UNSUPPORTED if you pass an invalid type, \b
-LT_MISSINGFILE if the file is missing, \b LT_ALREADYEXISTS if the file
-is already in memory, or \b LT_INPROGRESS if it is already loading in
-the thread. (\b Note: Many of these returns don't signify errors.)
-
-Load the specified file in the loader thread.  Also send a message to
-clients saying to do the same.  When the operation is completed, this
-function calls IServerShell::FileLoadNotify with a result (which can
-be an error if the file is missing).  Objects can be created using the
-file but they will not be visible until all files they need are
-loaded.
-
-Used for: Misc.  
-*/
-    virtual LTRESULT ThreadLoadFile(const char *pFilename, uint32 type)=0;
-
-/*!
-\param  pFilename   File to unload.
-\param  type    File type (one of the FT_ defines in ltcodes.h).
-
-\return \b LT_ERROR if the file is being used and can't be unloaded, or
-\b LT_NOTFOUND if the file isn't currently loaded.
-
-Unload the data.
-
-Used for: Misc.  
-*/
-    virtual LTRESULT UnloadFile(const char *pFilename, uint32 type)=0;
-
-/*!
-Helpers.
-*/
-
-/*!
-\param  hPoly       Polygon to query.
-\param  hObject (return) Object containing hPoly.
-
-Get the world object that a particular \b HPOLY comes from.
-
-Used for: Misc.  
-*/
-    virtual LTRESULT GetHPolyObject(
-        const HPOLY hPoly, HOBJECT &hObject)=0;
 
 /*!
 \param  pCounter    The counter that the engine will update.

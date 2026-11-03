@@ -1,0 +1,120 @@
+# Tron's ILTServer: each data and function-pointer member's offset, and the
+# evidence. "engine": retail server.dll's function-pointer setup (0x1003155d,
+# 107 stores) aligned with nolf2src's serverde_impl.cpp assignments, whose
+# order it keeps; "game calls": retail Object.lto's near functions call it
+# there where ours call it by name (55 members; all agree); "NOLF2's and
+# build 51's order": no store or call seen, put where both orders have it,
+# in a slot nothing else claims. 0x1a8, which retail sets to a function
+# NOLF2 has no member for, is m_pTronUnknown_1a8.
+# offset,member,evidence
+0x004,GetTcpIpAddress,ILTCSBase, as NOLF2
+0x008,GetGameInfo,engine; game calls
+0x00c,GetClass,engine; game calls
+0x010,CreateObjectProps,engine; game calls
+0x014,GetStaticObject,engine
+0x018,GetObjectClass,engine; game calls
+0x01c,IsKindOf,engine; game calls
+0x020,CreateObject,engine; game calls
+0x024,GetServerFlags,engine
+0x028,SetServerFlags,engine; game calls
+0x02c,CacheFile,engine; game calls
+0x030,StartCounter,engine; game calls
+0x034,EndCounter,engine; game calls
+0x038,Random,engine; game calls
+0x03c,IntRandom,engine
+0x040,RandomScale,engine
+0x044,BPrint,engine
+0x048,DebugOut,engine
+0x04c,GetSkyDef,engine
+0x050,SetSkyDef,engine
+0x054,AddObjectToSky,engine
+0x058,RemoveObjectFromSky,engine
+0x05c,GetGlobalLightObject,engine
+0x060,SetGlobalLightObject,engine
+0x064,IntersectSegment,engine; game calls
+0x068,CastRay,engine
+0x06c,GetPointAreas,NOLF2's and build 51's order
+0x070,GetBoxIntersecters,engine
+0x074,FindObjectsTouchingSphere,engine; game calls
+0x078,SetObjectRotation,engine; game calls
+0x07c,SetObjectPos,engine; game calls
+0x080,RotateObject,engine; game calls
+0x084,TiltToPlane,engine
+0x088,TeleportObject,engine; game calls
+0x08c,GetLastCollision,engine; game calls
+0x090,GetPointShade,engine
+0x094,RelinquishList,engine; game calls
+0x098,CreateObjectList,engine; game calls
+0x09c,AddObjectToList,engine; game calls
+0x0a0,RemoveObjectFromList,engine
+0x0a4,AttachClient,engine
+0x0a8,DetachClient,engine
+0x0ac,GetNextClient,engine; game calls
+0x0b0,GetNextClientRef,engine; game calls
+0x0b4,GetClientRefInfoFlags,engine
+0x0b8,GetClientRefName,engine
+0x0bc,GetClientRefObject,engine
+0x0c0,GetClientID,engine; game calls
+0x0c4,GetClientHandle,engine
+0x0c8,GetClientName,engine; game calls
+0x0cc,SetClientName,engine; game calls
+0x0d0,SetClientInfoFlags,engine
+0x0d4,GetClientInfoFlags,engine; game calls
+0x0d8,SetClientUserData,engine
+0x0dc,GetClientUserData,engine; game calls
+0x0e0,KickClient,engine; game calls
+0x0e4,SetClientViewPos,engine; game calls
+0x0e8,RunGameConString,engine
+0x0ec,SetGameConVar,engine; game calls
+0x0f0,GetGameConVar,engine; game calls
+0x0f4,GetPropString,engine; game calls
+0x0f8,GetPropVector,engine; game calls
+0x0fc,GetPropColor,NOLF2's and build 51's order
+0x100,GetPropReal,engine; game calls
+0x104,GetPropFlags,engine
+0x108,GetPropBool,engine; game calls
+0x10c,GetPropLongInt,engine; game calls
+0x110,GetPropRotation,engine
+0x114,GetPropRotationEuler,engine; game calls
+0x118,GetPropGeneric,engine; game calls
+0x11c,DoesPropExist,engine
+0x120,ObjectToHandle,engine
+0x124,HandleToObject,engine; game calls
+0x128,UpperStrcmp,engine
+0x12c,Parse,engine
+0x130,CreateInterObjectLink,engine; game calls
+0x134,CreateAttachment,engine; game calls
+0x138,RemoveAttachment,engine; game calls
+0x13c,FindAttachment,engine; game calls
+0x140,GetObjectColor,engine; game calls
+0x144,SetObjectColor,engine; game calls
+0x148,GetNextObject,engine; game calls
+0x14c,GetNextInactiveObject,engine; game calls
+0x150,SetNextUpdate,engine; game calls
+0x154,GetObjectScale,engine
+0x158,ScaleObject,engine; game calls
+0x15c,SetObjectState,engine; game calls
+0x160,GetObjectState,engine
+0x164,SetBlockingPriority,engine; game calls
+0x168,GetBlockingPriority,engine
+0x16c,ClipSprite,engine
+0x170,GetLightColor,engine
+0x174,SetLightColor,engine
+0x178,GetLightRadius,engine
+0x17c,SetLightRadius,engine; game calls
+0x180,SaveObjects,engine; game calls
+0x184,RestoreObjects,engine
+0x188,LoadWorld,engine
+0x18c,RunWorld,engine
+0x190,UpdateSessionName,engine
+0x194,GetSessionName,engine
+0x198,SendToServerApp,engine; game calls
+0x19c,GetMaxConnections,engine
+0x1a0,GetFileList,engine (0x1a0, before FreeFileList, as in every order)
+0x1a4,FreeFileList,engine
+0x1ac,SetModelNodeHideStatus,NOLF2's and build 51's order
+0x1b0,GetModelNodeHideStatus,NOLF2's and build 51's order
+0x1b4,GetAnimName,engine
+0x1b8,SetModelPlaying,engine
+0x1bc,GetModelPlaying,engine
+0x1c0,GetModelFilenames,engine; game calls

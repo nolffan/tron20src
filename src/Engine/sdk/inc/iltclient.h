@@ -181,11 +181,13 @@ define_holder(ILTClient, your_var);
 */
 
 // TRON: Tron's engine kept build 51's ILTClient, with changes of its own,
-// where NOLF2's was reordered: so the data and function-pointer members below
-// are NOLF2's declarations in Tron's order -- the offsets retail CShell.dll
-// calls them at and retail Lithtech.exe sets them at -- and everything else
-// is as NOLF2 has it. Each offset and its evidence:
-// progress/engine/ILTClient-offsets.csv.
+// where NOLF2's (and the 2006 tree's) was reordered. So the declarations
+// below are NOLF2's -- the signatures the shared code compiles against --
+// in Tron's order: the data and function-pointer members at the offsets
+// retail CShell.dll calls them at and retail Lithtech.exe sets them at
+// (progress/engine/ILTClient-offsets.csv), the virtuals in the order of
+// retail's CLTClient vtable (progress/engine/ILTClient-vtable.csv). The
+// rest is as NOLF2 has it.
 class ILTClient : public ILTCSBase
 {
 public:
@@ -475,27 +477,6 @@ Used for: Rendering.
     LTRESULT (*End3D)(uint32 flags = END3D_CANDRAWCONSOLE);
 
 /*!
-\param  pMode   (return) The current render mode.
-\return LT_OK if Successful, LT_ERROR on Failure.
-
-Get the current render mode.
-
-\see SetRenderMode()
-
-Used for: Rendering.
-*/
-    LTRESULT (*GetRenderMode)(RMode *pMode);
-
-/*!
-\param pModes An array of \b pMode variables to relinquish.
-
-Relinquish list of supported render modes.
-
-Used for: Rendering.  
-*/
-    void (*RelinquishRenderModes)(RMode *pModes);
-
-/*!
  
 \return Pointer to RMode Linked list structure containing the valid render modes.
 
@@ -507,6 +488,27 @@ Get a \b NULL - terminated list of supported render modes.
 Used for: Rendering.
 */
     RMode *(*GetRenderModes)();
+
+/*!
+\param pModes An array of \b pMode variables to relinquish.
+
+Relinquish list of supported render modes.
+
+Used for: Rendering.  
+*/
+    void (*RelinquishRenderModes)(RMode *pModes);
+
+/*!
+\param  pMode   (return) The current render mode.
+\return LT_OK if Successful, LT_ERROR on Failure.
+
+Get the current render mode.
+
+\see SetRenderMode()
+
+Used for: Rendering.
+*/
+    LTRESULT (*GetRenderMode)(RMode *pMode);
 
 /*!
 \param pMode The requested render mode.
@@ -2992,9 +2994,42 @@ Used for: Misc.
     LTRESULT (*SetConsoleEnable)(bool bEnable);
 
 	virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
-    virtual LTRESULT SetObjectPos(HLOCALOBJ hObj, const LTVector *pPos, bool bForce=true) = 0;
 
-    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0; 
+/*!
+Access to the ILTTexInterface interface.
+
+\return The ILTTexInterface interface.
+
+Used for: Client Management.
+*/
+    virtual ILTTexInterface *GetTexInterface() = 0;
+
+/*!
+\return Pointer to the \b ILTDirectMusicMgr interface.
+
+Accesses the ILTDirectMusicMgr interface.
+
+Used for: Interface.
+*/
+    virtual ILTDirectMusicMgr *GetDirectMusicMgr() = 0;
+
+/*!
+\return Pointer to the \b ILTCursor interface.
+ 
+Accesses the ILTCursor interface.
+
+Used for: Interface.
+*/
+    virtual ILTCursor *Cursor() = 0;
+
+/*!
+\return Pointer to the \b ILTBenchmarkMgr interface.
+
+Accesses the ILTBenchmarkMgr interface.
+
+Used for: Interface.
+*/
+    virtual ILTBenchmarkMgr *GetBenchmarkMgr() = 0; 
 
 /*!
 \return Pointer to the \b ILTVideoMgr interface.
@@ -3015,13 +3050,13 @@ Used for: Client Management.
     virtual ILTDrawPrim *GetDrawPrim() = 0;
 
 /*!
-Access to the ILTTexInterface interface.
+Access to the ILTFontManager interface.
 
-\return The ILTTexInterface interface.
+\return The ILTFontManager interface.
 
-Used for: Client Management.
+Used for: Text and UI.
 */
-    virtual ILTTexInterface *GetTexInterface() = 0;
+    virtual ILTFontManager *GetFontManager() = 0;
         
 /*!
 Access to the ILTWidgetManager interface.
@@ -3034,81 +3069,6 @@ Used for: Text and UI.
     virtual ILTWidgetManager *GetWidgetManager() = 0;
 
 /*!
-Access to the ILTFontManager interface.
-
-\return The ILTFontManager interface.
-
-Used for: Text and UI.
-*/
-    virtual ILTFontManager *GetFontManager() = 0;
-
-/*!
-\return Pointer to the \b ILTCursor interface.
- 
-Accesses the ILTCursor interface.
-
-Used for: Interface.
-*/
-    virtual ILTCursor *Cursor() = 0;
-
-/*!
-\return Pointer to the \b ILTDirectMusicMgr interface.
-
-Accesses the ILTDirectMusicMgr interface.
-
-Used for: Interface.
-*/
-    virtual ILTDirectMusicMgr *GetDirectMusicMgr() = 0;
-
-/*!
-\return Pointer to the \b ILTBenchmarkMgr interface.
-
-Accesses the ILTBenchmarkMgr interface.
-
-Used for: Interface.
-*/
-    virtual ILTBenchmarkMgr *GetBenchmarkMgr() = 0;
-
-    #ifdef LITHTECH_ESD
-/*!
-Accesses the ILTRealAudioMgr interface.
-
-\return Pointer to the \b ILTRealAudioMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealAudioMgr *GetRealAudioMgr() {return m_pRealAudioMgr;}
-
-/*!
-Accesses the ILTRealConsoleMgr interface.
-
-\return Pointer to the \b ILTRealConsoleMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealConsoleMgr *GetRealConsoleMgr() {return m_pRealConsoleMgr;}
-
-/*!
-Accesses the ILTRealVideoMgr interface.
-
-\return Pointer to the \b ILTRealVideoMgr interface.
-
-Used for: Interface.
-*/
-    ILTRealVideoMgr *GetRealVideoMgr() {return m_pRealVideoMgr;}
-
-/*!
-Accesses the ILTRealVideoPlayer interface.
-
-\return Pointer to the \b ILTRealVideoPlayer interface.
-
-Used for: Interface.
-*/
-    ILTRealVideoPlayer *GetRealVideoPlayer() {return m_pRealVideoPlayer;}
-    #endif // LITHTECH_ESD
-
-
-/*!
 \param  pPoint      The point in world coordinates.
 \param  pColor      (return) The color value at pPoint.
 \return \b LT_NOTINWORLD if the point is outside the world.
@@ -3118,6 +3078,7 @@ Calculate the lighting shade (RGB, 0-255) at the point you specify.
 Used for: Misc.
 */
     virtual LTRESULT GetPointShade(const LTVector *pPoint, LTVector *pColor)=0;
+    virtual LTRESULT SetObjectPos(HLOCALOBJ hObj, const LTVector *pPos, bool bForce=true) = 0;
 
 /*!
 Render Groups
@@ -3381,87 +3342,6 @@ Used for: Special FX.
         const LTVector *pVelocity, const LTVector *pColor, float lifeTime)=0;
 
 /*!
-\defgroup queryfns Query functions.
-Alternate method of getting session lists.  These only work for services with
-the \b NETSERVICE_TCPIP flag.  These functions return immediately so you can 
-update a UI in the background without having to "freeze" the UI while it 
-queries hosts.
-
-(GetSessionList() uses these functions to do its work; it just doesn't return
-control between updates.)
-*/
-
-/*!
-\ingroup queryfns
-\param pInfo A string containing IP addresses to check for sessions.
-\return \b LT_NOTINITIALIZED if there is no main driver, or \b LT_ERROR if it can't bind to port; otherwise, returns \b LT_OK.
-
-\b pInfo is formatted just as described for GetSessionList().
-
-\see GetSessionList()
-
-Used for: Networking.
-*/
-    virtual LTRESULT StartQuery(const char *pInfo)=0;
-
-
-/*!
-\ingroup queryfns
-\return \b LT_NOTINITIALIZED if there is no main driver or there is no query socket; otherwise, returns \b LT_OK.
-
-Search for sessions that match the query set up through a prior call to StartQuery().  
-
-Call this as often as possible.
-
-Results of the query are stored in the main driver connection.  Use GetQueryResults() to retrieve those results.
-
-\see StartQuery()
-\see GetQueryResults()
-
-Used for: Networking.
-*/
-    virtual LTRESULT UpdateQuery()=0;
-
-/*!
-\ingroup queryfns
-
-\param pListHead (return) List of \b NetSessions found through the query.
-\return \b LT_NOTINITIALIZED if there is no main driver; otherwise, returns \b LT_OK.
-
-Get the list of current results from the query.  
-
-Each time you call this function, a new session list is allocated which must be
-freed through a call to FreeSessionList() when you are done with it.
-
-\see FreeSessionList()
-
-Used for: Networking.  
-*/
-    virtual LTRESULT GetQueryResults(NetSession* &pListHead)=0;
-
-/*!
-\ingroup queryfns
-\return \b LT_NOTINITIALIZED if there is no main driver; otherwise, returns \b LT_OK.
-
-End the current query set up through a prior call to StartQuery().
-
-\see StartQuery()
-
-Used for: Networking.
-*/
-    virtual LTRESULT EndQuery()=0;
-
-/*!
-\param bLocal Results of the query
-\return LT_OK on success
-
-Returns whether or not the client is local to the server
-
-Used for: Misc.
-*/
-	virtual LTRESULT IsLocalToServer(bool *bLocal) = 0;
-
-/*!
 \param	nID		ID of the lightgroup.
 \param	pColor	Return value destination for the lightgoup's color.
 
@@ -3633,6 +3513,128 @@ Used for: Misc.
 */
     virtual LTRESULT GetMaxRadiusInPoly(
         const HPOLY hPoly, const LTVector& vPos, float& fMaxRadius)=0;
+
+/*!
+\defgroup queryfns Query functions.
+Alternate method of getting session lists.  These only work for services with
+the \b NETSERVICE_TCPIP flag.  These functions return immediately so you can 
+update a UI in the background without having to "freeze" the UI while it 
+queries hosts.
+
+(GetSessionList() uses these functions to do its work; it just doesn't return
+control between updates.)
+*/
+
+/*!
+\ingroup queryfns
+\param pInfo A string containing IP addresses to check for sessions.
+\return \b LT_NOTINITIALIZED if there is no main driver, or \b LT_ERROR if it can't bind to port; otherwise, returns \b LT_OK.
+
+\b pInfo is formatted just as described for GetSessionList().
+
+\see GetSessionList()
+
+Used for: Networking.
+*/
+    virtual LTRESULT StartQuery(const char *pInfo)=0;
+
+/*!
+\ingroup queryfns
+\return \b LT_NOTINITIALIZED if there is no main driver; otherwise, returns \b LT_OK.
+
+End the current query set up through a prior call to StartQuery().
+
+\see StartQuery()
+
+Used for: Networking.
+*/
+    virtual LTRESULT EndQuery()=0;
+
+/*!
+\ingroup queryfns
+
+\param pListHead (return) List of \b NetSessions found through the query.
+\return \b LT_NOTINITIALIZED if there is no main driver; otherwise, returns \b LT_OK.
+
+Get the list of current results from the query.  
+
+Each time you call this function, a new session list is allocated which must be
+freed through a call to FreeSessionList() when you are done with it.
+
+\see FreeSessionList()
+
+Used for: Networking.  
+*/
+    virtual LTRESULT GetQueryResults(NetSession* &pListHead)=0;
+
+
+/*!
+\ingroup queryfns
+\return \b LT_NOTINITIALIZED if there is no main driver or there is no query socket; otherwise, returns \b LT_OK.
+
+Search for sessions that match the query set up through a prior call to StartQuery().  
+
+Call this as often as possible.
+
+Results of the query are stored in the main driver connection.  Use GetQueryResults() to retrieve those results.
+
+\see StartQuery()
+\see GetQueryResults()
+
+Used for: Networking.
+*/
+    virtual LTRESULT UpdateQuery()=0;
+
+/*!
+\param bLocal Results of the query
+\return LT_OK on success
+
+Returns whether or not the client is local to the server
+
+Used for: Misc.
+*/
+	virtual LTRESULT IsLocalToServer(bool *bLocal) = 0;
+
+    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0;
+
+    #ifdef LITHTECH_ESD
+/*!
+Accesses the ILTRealAudioMgr interface.
+
+\return Pointer to the \b ILTRealAudioMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealAudioMgr *GetRealAudioMgr() {return m_pRealAudioMgr;}
+
+/*!
+Accesses the ILTRealConsoleMgr interface.
+
+\return Pointer to the \b ILTRealConsoleMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealConsoleMgr *GetRealConsoleMgr() {return m_pRealConsoleMgr;}
+
+/*!
+Accesses the ILTRealVideoMgr interface.
+
+\return Pointer to the \b ILTRealVideoMgr interface.
+
+Used for: Interface.
+*/
+    ILTRealVideoMgr *GetRealVideoMgr() {return m_pRealVideoMgr;}
+
+/*!
+Accesses the ILTRealVideoPlayer interface.
+
+\return Pointer to the \b ILTRealVideoPlayer interface.
+
+Used for: Interface.
+*/
+    ILTRealVideoPlayer *GetRealVideoPlayer() {return m_pRealVideoPlayer;}
+    #endif // LITHTECH_ESD
+
 
 protected:
     #ifdef LITHTECH_ESD

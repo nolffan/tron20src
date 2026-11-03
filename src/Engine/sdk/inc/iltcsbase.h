@@ -26,6 +26,11 @@ class ILTCommon;
 class LTObjRef;
 class ILTMessage_Read;
 
+// TRON: the virtuals below are NOLF2's, in the order Tron's engine has
+// them -- the first 49 slots of both retail CLTClient's and CLTServer's
+// vtables, build 51's order with NOLF2's additions put in, and three of
+// Tron's own (TronUnknownVirtual*): progress/engine/ILTClient-vtable.csv,
+// ILTServer-vtable.csv.
 class ILTCSBase : public IBase {
 public:
     interface_version(ILTCSBase, 4);
@@ -58,15 +63,6 @@ Used for:   Interface.
     virtual ILTTransform *GetTransformLT() = 0;
 
 /*!
-\return Pointer to the \b ILTModel interface.
-
-Accesses the ILTModel interface.
-
-Used for:   Interface.
-*/
-    virtual ILTModel *GetModelLT() = 0;
-
-/*!
 \return Pointer to the \b ILTSoundMgr interface.
 
 Accesses the ILTSoundMgr interface.
@@ -76,10 +72,89 @@ Used for:   Interface.
     virtual ILTSoundMgr *SoundMgr() = 0;
 
 /*!
-Messaging functions.  All of these functions are obsolete.  Use
-the LMessage functions. */
+\return Pointer to the \b ILTModel interface.
 
-public:
+Accesses the ILTModel interface.
+
+Used for:   Interface.
+*/
+    virtual ILTModel *GetModelLT() = 0;
+
+/*!
+\param  pMsg	user data to send
+\param  pAddr   IP address to target; can be numeric or host name.
+\param  nPort   Port to use
+\return \b LT_NOTINITIALIZED if there is no TCP/IP driver or the driver's socket is uninitialized, or \b LT_ERROR if the address cannot be built; otherwise, returns \b LT_OK.
+
+Send a message using the TCP/IP protocol.
+
+\b sAddr is a string containing an IP addresses to check.
+If the first character of the address is a numeral (between '0' and '9') it is treated
+as a numeric IP address; otherwise it's treated as a host name.
+
+Used for: Networking. 
+*/
+    virtual LTRESULT SendTo(ILTMessage_Read *pMsg, const char *pAddr, uint16 nPort) = 0;
+
+/*!
+\param  pAddr   IP address to target; can be numeric or host name.
+\param  nPort   Port to use
+\param	pPingID Resulting Ping ID
+\return \b LT_NOTINITIALIZED if there is no TCP/IP driver or the driver's socket is uninitialized, or \b LT_ERROR if the address cannot be built; otherwise, returns \b LT_OK.
+
+Start a ping request to a TCP/IP address
+
+Used for: Networking
+*/
+    virtual LTRESULT StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID) = 0;
+
+/*!
+\param	nPingID		Ping ID to query
+\param	pStatus		Ping status result
+\param  pLatency	Latency result if *pStatus == PING_STATUS_SUCCESS
+
+\return \b LT_NOTFOUND if that ping ID is unknown, LT_OK otherwise.
+*/
+    virtual LTRESULT GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLatency) = 0;
+
+/*!
+\param	nPingID	Ping ID to remove
+
+\return \b LT_NOTFOUND if that ping ID is unknown, LT_OK otherwise.
+*/
+    virtual LTRESULT RemovePing(uint32 nPingID) = 0;
+
+/*!
+Gets the position of the specified object
+
+Used for: Object.
+*/
+    virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
+
+
+
+/*!
+\param hObj ???
+\return ???
+
+Start the current animation over.
+
+Used for: Models and Animation.
+*/
+    virtual LTRESULT    ResetModelAnimation(HOBJECT hObj) = 0;
+
+
+
+/*!
+\param hObj ???
+\return ???
+
+Tell what the playback state of the model is (a combination of the
+\b MS_ bits defined in basedefs_de.h).
+
+Used for: Models and Animation.
+*/
+    virtual uint32  GetModelPlaybackState(HOBJECT hObj) = 0;
                 
 /*!
 \param pMsg \b printf style format string and variable parameter list.
@@ -90,6 +165,82 @@ stuff) and doesn't care if you're connected yet.
 Used for: Misc.
 */
     virtual void    CPrint(const char *pMsg, ...) = 0;
+
+/*!
+Gets the rotation of the specified object
+
+Used for: Object.
+*/
+    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0;
+
+
+
+/*!
+\param hObj The model whose animation you want to set
+\param hAnim The animation you want to play
+
+Set the current animation of the object, if it is a model.
+
+Used for: Models and Animation.
+*/
+    virtual void    SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim) = 0;
+
+/*!
+\param hObj Model instance
+\param pAnimName name of animation
+\return -1 if the animation doesn't exist or if the object isn't a
+model.
+
+Get an animation index from a model.
+The animation index is a handle to an animation associated with a model.
+
+Used for: Models and Animation.  */
+    virtual HMODELANIM  GetAnimIndex(HOBJECT hObj, const char *pAnimName) = 0;
+
+
+/*!
+\param hObj ???
+\return The animation the model is currently on, or (\b HMODELANIM)-1 if
+none.
+
+Used for: Models and Animation.  */
+    virtual HMODELANIM  GetModelAnimation(HOBJECT hObj) = 0;
+
+
+
+/*!
+\param hObj ???
+\param bLoop ???
+
+Set the looping state of the model.  The default state is \b TRUE.
+
+Used for: Models and Animation.
+*/
+    virtual void    SetModelLooping(HOBJECT hObj, bool bLoop) = 0;
+
+
+/*!
+\param hObj ???
+\return ???
+
+Get the looping state of the model.  The default state is \b TRUE.
+
+Used for: Models and Animation.
+*/
+    virtual bool  GetModelLooping(HOBJECT hObj) = 0;
+
+/*!
+\param pPoint Location to test.
+\param pList Array of \b HOBJECT
+\param maxListSize Length of the pList array.
+\return The number of containers filled in.
+
+Find out what containers contain the given point.
+
+Used for: Misc.
+*/
+    virtual uint32  GetPointContainers(const LTVector *pPoint, HOBJECT *pList, 
+        uint32 maxListSize) = 0;
 
 /*!
 \param hObj Handle to container object.
@@ -176,6 +327,74 @@ Free the file by calling DStream::Release().
 Used for: Misc.
 */
         virtual LTRESULT OpenMemoryStream(ILTStream **pStream, uint32 nCacheSize = 256) = 0;
+
+
+/*!
+
+  The worlds are offset at processing time to be centered around the origin. This offset
+  can be found by calling this function. This is useful for mapping position values back
+  to the original level values for debugging and error reporting
+
+\param vVector The vector offset from the original level. To get the orginal value use the equation orignal = position + offset
+\return Always returns LT_OK-
+
+  Used for: Misc.
+*/
+
+	virtual LTRESULT GetSourceWorldOffset(LTVector& vVector) = 0;
+
+/*!
+\param hObj ???
+
+Remove the object from the world.  
+
+\note The object will not be removed or deleted until the end of the frame.
+
+Used for: Object.
+*/
+    virtual LTRESULT RemoveObject(HOBJECT hObj) = 0;
+
+/*!
+\param pName Name of the lightgroup
+
+Function to generate the appropriate lightgroup ID given the name of the lightgroup.
+\note	Lightgroup names are case-sensitive.
+
+Used for: LightGroup control
+*/
+	virtual LTRESULT GetLightGroupID(const char *pName, uint32 *pResult) const = 0;
+
+/*!
+\param pName Name of the occluder
+
+Function to generate the appropriate occluder ID given the name of the occluder.
+\note	Occluder names are case-insensitive.
+
+Used for: Occluder control
+*/
+	virtual LTRESULT GetOccluderID(const char *pName, uint32 *pResult) const = 0;
+
+/*!
+\param pName Name of the texture effect
+\param nStage The stage that is desired
+
+Function to generate the appropriate ID for a texture effect given the name of the
+effect and the stage that the parameter belongs to.
+\note	Lightgroup names are case-sensitive.
+
+Used for: Texture Effect Variable manipulation
+*/
+	virtual LTRESULT GetTextureEffectVarID(const char *pName, uint32 nStage, uint32 *pResult) const = 0;
+
+/*!
+\param hObj Object to link to
+\param pRef LTObjRef object to add to the object's reference list
+
+This function adds a reference link to the object's list, to be called when the
+object gets deleted.
+\note	This function is called internally by the LTObjRef class.  Do not call this function externally!
+*/
+	virtual LTRESULT LinkObjRef(HOBJECT hObj, LTObjRef *pRef) = 0;
 
 
 
@@ -329,6 +548,12 @@ Used for: Misc.
 */
     virtual const char* GetVarValueString(HCONSOLEVAR hVar) = 0;
 
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual44() = 0;
+
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual45() = 0;
+
 
 
 /*!
@@ -347,73 +572,14 @@ Used for: Misc.
 */
     virtual LTFLOAT GetFrameTime() = 0;
 
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual48() = 0;
 
 /*!
+Messaging functions.  All of these functions are obsolete.  Use
+the LMessage functions. */
 
-  The worlds are offset at processing time to be centered around the origin. This offset
-  can be found by calling this function. This is useful for mapping position values back
-  to the original level values for debugging and error reporting
-
-\param vVector The vector offset from the original level. To get the orginal value use the equation orignal = position + offset
-\return Always returns LT_OK-
-
-  Used for: Misc.
-*/
-
-	virtual LTRESULT GetSourceWorldOffset(LTVector& vVector) = 0;
-
-/*!
-\param hObj ???
-
-Remove the object from the world.  
-
-\note The object will not be removed or deleted until the end of the frame.
-
-Used for: Object.
-*/
-    virtual LTRESULT RemoveObject(HOBJECT hObj) = 0;
-
-/*!
-\param pName Name of the lightgroup
-
-Function to generate the appropriate lightgroup ID given the name of the lightgroup.
-\note	Lightgroup names are case-sensitive.
-
-Used for: LightGroup control
-*/
-	virtual LTRESULT GetLightGroupID(const char *pName, uint32 *pResult) const = 0;
-
-/*!
-\param pName Name of the occluder
-
-Function to generate the appropriate occluder ID given the name of the occluder.
-\note	Occluder names are case-insensitive.
-
-Used for: Occluder control
-*/
-	virtual LTRESULT GetOccluderID(const char *pName, uint32 *pResult) const = 0;
-
-/*!
-\param pName Name of the texture effect
-\param nStage The stage that is desired
-
-Function to generate the appropriate ID for a texture effect given the name of the
-effect and the stage that the parameter belongs to.
-\note	Lightgroup names are case-sensitive.
-
-Used for: Texture Effect Variable manipulation
-*/
-	virtual LTRESULT GetTextureEffectVarID(const char *pName, uint32 nStage, uint32 *pResult) const = 0;
-
-/*!
-\param hObj Object to link to
-\param pRef LTObjRef object to add to the object's reference list
-
-This function adds a reference link to the object's list, to be called when the
-object gets deleted.
-\note	This function is called internally by the LTObjRef class.  Do not call this function externally!
-*/
-	virtual LTRESULT LinkObjRef(HOBJECT hObj, LTObjRef *pRef) = 0;
+public:
 
 
 /*!
@@ -432,158 +598,6 @@ Used for: Networking.
 */
     LTRESULT (*GetTcpIpAddress)(char* sAddress, uint32 dwBufferSize,
         uint16 &hostPort);
-
-/*!
-\param  pMsg	user data to send
-\param  pAddr   IP address to target; can be numeric or host name.
-\param  nPort   Port to use
-\return \b LT_NOTINITIALIZED if there is no TCP/IP driver or the driver's socket is uninitialized, or \b LT_ERROR if the address cannot be built; otherwise, returns \b LT_OK.
-
-Send a message using the TCP/IP protocol.
-
-\b sAddr is a string containing an IP addresses to check.
-If the first character of the address is a numeral (between '0' and '9') it is treated
-as a numeric IP address; otherwise it's treated as a host name.
-
-Used for: Networking. 
-*/
-    virtual LTRESULT SendTo(ILTMessage_Read *pMsg, const char *pAddr, uint16 nPort) = 0;
-
-/*!
-\param  pAddr   IP address to target; can be numeric or host name.
-\param  nPort   Port to use
-\param	pPingID Resulting Ping ID
-\return \b LT_NOTINITIALIZED if there is no TCP/IP driver or the driver's socket is uninitialized, or \b LT_ERROR if the address cannot be built; otherwise, returns \b LT_OK.
-
-Start a ping request to a TCP/IP address
-
-Used for: Networking
-*/
-    virtual LTRESULT StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID) = 0;
-
-/*!
-\param	nPingID		Ping ID to query
-\param	pStatus		Ping status result
-\param  pLatency	Latency result if *pStatus == PING_STATUS_SUCCESS
-
-\return \b LT_NOTFOUND if that ping ID is unknown, LT_OK otherwise.
-*/
-    virtual LTRESULT GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLatency) = 0;
-
-/*!
-\param	nPingID	Ping ID to remove
-
-\return \b LT_NOTFOUND if that ping ID is unknown, LT_OK otherwise.
-*/
-    virtual LTRESULT RemovePing(uint32 nPingID) = 0;
-
-/*!
-Gets the rotation of the specified object
-
-Used for: Object.
-*/
-    virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0;
-
-/*!
-Gets the position of the specified object
-
-Used for: Object.
-*/
-    virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
-
-/*!
-\param hObj Model instance
-\param pAnimName name of animation
-\return -1 if the animation doesn't exist or if the object isn't a
-model.
-
-Get an animation index from a model.
-The animation index is a handle to an animation associated with a model.
-
-Used for: Models and Animation.  */
-    virtual HMODELANIM  GetAnimIndex(HOBJECT hObj, const char *pAnimName) = 0;
-
-
-
-/*!
-\param hObj The model whose animation you want to set
-\param hAnim The animation you want to play
-
-Set the current animation of the object, if it is a model.
-
-Used for: Models and Animation.
-*/
-    virtual void    SetModelAnimation(HOBJECT hObj, HMODELANIM hAnim) = 0;
-
-
-/*!
-\param hObj ???
-\return The animation the model is currently on, or (\b HMODELANIM)-1 if
-none.
-
-Used for: Models and Animation.  */
-    virtual HMODELANIM  GetModelAnimation(HOBJECT hObj) = 0;
-
-
-
-/*!
-\param hObj ???
-\param bLoop ???
-
-Set the looping state of the model.  The default state is \b TRUE.
-
-Used for: Models and Animation.
-*/
-    virtual void    SetModelLooping(HOBJECT hObj, bool bLoop) = 0;
-
-
-/*!
-\param hObj ???
-\return ???
-
-Get the looping state of the model.  The default state is \b TRUE.
-
-Used for: Models and Animation.
-*/
-    virtual bool  GetModelLooping(HOBJECT hObj) = 0;
-
-
-
-/*!
-\param hObj ???
-\return ???
-
-Start the current animation over.
-
-Used for: Models and Animation.
-*/
-    virtual LTRESULT    ResetModelAnimation(HOBJECT hObj) = 0;
-
-
-
-/*!
-\param hObj ???
-\return ???
-
-Tell what the playback state of the model is (a combination of the
-\b MS_ bits defined in basedefs_de.h).
-
-Used for: Models and Animation.
-*/
-    virtual uint32  GetModelPlaybackState(HOBJECT hObj) = 0;
-
-/*!
-\param pPoint Location to test.
-\param pList Array of \b HOBJECT
-\param maxListSize Length of the pList array.
-\return The number of containers filled in.
-
-Find out what containers contain the given point.
-
-Used for: Misc.
-*/
-    virtual uint32  GetPointContainers(const LTVector *pPoint, HOBJECT *pList, 
-        uint32 maxListSize) = 0;
 
 };
 

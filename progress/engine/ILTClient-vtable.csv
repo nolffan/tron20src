@@ -1,0 +1,102 @@
+# Tron's CLTClient vtable (0x58b5bc in Lithtech.exe): each slot, the NOLF2 method in it, and how
+# it was named. Each slot's function was compared with nolf2src's engine's
+# (its built image and map): "identical body", "similar body" (the ratio of
+# matching instructions), "game calls" (retail's near functions call it
+# there where ours call it by name). The first 49 slots are ILTCSBase's, the
+# same in both engines; where identical bodies could not tell two methods
+# apart, NOLF2's order (and build 51's) decides, or the other engine's calls.
+# offset,class,method,evidence
+0x000,ILTCSBase,_InterfaceImplementation,the interface macro's slot
+0x004,ILTCSBase,Common,game calls
+0x008,ILTCSBase,Physics,game calls
+0x00c,ILTCSBase,GetTransformLT,game calls
+0x010,ILTCSBase,SoundMgr,game calls
+0x014,ILTCSBase,GetModelLT,game calls
+0x018,ILTCSBase,SendTo,similar body 0.99
+0x01c,ILTCSBase,StartPing,NOLF2 order (identical stub bodies)
+0x020,ILTCSBase,GetPingStatus,NOLF2 order (identical stub bodies)
+0x024,ILTCSBase,RemovePing,identical body
+0x028,ILTCSBase,GetObjectPos,game calls
+0x02c,ILTCSBase,ResetModelAnimation,game calls
+0x030,ILTCSBase,GetModelPlaybackState,game calls
+0x034,ILTCSBase,CPrint,game calls
+0x038,ILTCSBase,GetObjectRotation,game calls
+0x03c,ILTCSBase,SetModelAnimation,game calls
+0x040,ILTCSBase,GetAnimIndex,game calls
+0x044,ILTCSBase,GetModelAnimation,game calls
+0x048,ILTCSBase,SetModelLooping,game calls
+0x04c,ILTCSBase,GetModelLooping,game calls
+0x050,ILTCSBase,GetPointContainers,identical body
+0x054,ILTCSBase,GetContainerCode,game calls
+0x058,ILTCSBase,GetObjectContainers,game calls
+0x05c,ILTCSBase,GetContainedObjects,identical body
+0x060,ILTCSBase,OpenFile,game calls
+0x064,ILTCSBase,CopyFileA,game calls
+0x068,ILTCSBase,OpenMemoryStream,identical body
+0x06c,ILTCSBase,GetSourceWorldOffset,game calls
+0x070,ILTCSBase,RemoveObject,game calls
+0x074,ILTCSBase,GetLightGroupID,the server's game calls
+0x078,ILTCSBase,GetOccluderID,the server's game calls
+0x07c,ILTCSBase,GetTextureEffectVarID,identical body
+0x080,ILTCSBase,LinkObjRef,identical body
+0x084,ILTCSBase,GetBlindObjectData,identical body
+0x088,ILTCSBase,FreeBlindObjectData,identical body
+0x08c,ILTCSBase,FormatString,identical body
+0x090,ILTCSBase,CopyString,identical body
+0x094,ILTCSBase,CreateString,game calls
+0x098,ILTCSBase,FreeString,game calls
+0x09c,ILTCSBase,CompareStrings,NOLF2 and build 51 order (identical bodies)
+0x0a0,ILTCSBase,CompareStringsUpper,NOLF2 and build 51 order (identical bodies)
+0x0a4,ILTCSBase,GetStringData,game calls
+0x0a8,ILTCSBase,GetVarValueFloat,game calls
+0x0ac,ILTCSBase,GetVarValueString,game calls
+0x0b0,ILTCSBase,TronUnknownVirtual44,Tron's own: no NOLF2 function has its body
+0x0b4,ILTCSBase,TronUnknownVirtual45,Tron's own: no NOLF2 function has its body
+0x0b8,ILTCSBase,GetTime,game calls
+0x0bc,ILTCSBase,GetFrameTime,game calls
+0x0c0,ILTCSBase,TronUnknownVirtual48,Tron's own: no NOLF2 function has its body
+0x0c4,ILTClient,GetTexInterface,identical body
+0x0c8,ILTClient,GetDirectMusicMgr,game calls
+0x0cc,ILTClient,Cursor,game calls
+0x0d0,ILTClient,GetBenchmarkMgr,identical body
+0x0d4,ILTClient,VideoMgr,game calls
+0x0d8,ILTClient,GetDrawPrim,game calls
+0x0dc,ILTClient,GetFontManager,game calls
+0x0e0,ILTClient,GetWidgetManager,identical body
+0x0e4,ILTClient,GetPointShade,similar body 0.88
+0x0e8,ILTClient,SetObjectPos,game calls
+0x0ec,ILTClient,SetObjectRenderGroup,identical body
+0x0f0,ILTClient,SetObjectRenderGroupEnabled,game calls
+0x0f4,ILTClient,SetAllObjectRenderGroupEnabled,game calls
+0x0f8,ILTClient,AddGlowRenderStyleMapping,game calls
+0x0fc,ILTClient,SetGlowDefaultRenderStyle,game calls
+0x100,ILTClient,SetNoGlowRenderStyle,game calls
+0x104,ILTClient,GetSConValueFloat,game calls
+0x108,ILTClient,GetSConValueString,game calls
+0x10c,ILTClient,GetDeviceObjectName,game calls
+0x110,ILTClient,GetGlobalLightDir,identical body
+0x114,ILTClient,SetGlobalLightDir,identical body
+0x118,ILTClient,GetGlobalLightColor,identical body
+0x11c,ILTClient,SetGlobalLightColor,identical body
+0x120,ILTClient,GetGlobalLightConvertToAmbient,identical body
+0x124,ILTClient,SetGlobalLightConvertToAmbient,identical body
+0x128,ILTClient,SendToServer,game calls
+0x12c,ILTClient,GetServerIPAddress,similar body 0.96
+0x130,ILTClient,ProcessAttachments,identical body
+0x134,ILTClient,AddParticle,game calls
+0x138,ILTClient,GetLightGroupColor,game calls
+0x13c,ILTClient,SetLightGroupColor,game calls
+0x140,ILTClient,GetOccluderEnabled,identical body
+0x144,ILTClient,SetOccluderEnabled,game calls
+0x148,ILTClient,SetTextureEffectVar,game calls
+0x14c,ILTClient,GetSpriteControl,similar body 0.90
+0x150,ILTClient,GetCanvasFn,similar body 0.85
+0x154,ILTClient,SetCanvasFn,similar body 0.82
+0x158,ILTClient,GetCanvasRadius,similar body 0.90
+0x15c,ILTClient,SetCanvasRadius,similar body 0.92
+0x160,ILTClient,GetMaxRadiusInPoly,game calls
+0x164,ILTClient,StartQuery,identical body
+0x168,ILTClient,EndQuery,identical body
+0x16c,ILTClient,GetQueryResults,identical body
+0x170,ILTClient,UpdateQuery,identical body
+0x174,ILTClient,IsLocalToServer,game calls

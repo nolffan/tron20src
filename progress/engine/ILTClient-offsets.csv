@@ -28,9 +28,9 @@
 0x04c,SetOptimized2DColor,engine
 0x050,GetOptimized2DColor,build 51's order
 0x054,End3D,engine; game 2/2
-0x058,GetRenderMode,engine; game 1/2
+0x058,GetRenderModes,engine (its body: dsi_GetRenderModes)
 0x05c,RelinquishRenderModes,engine; game 2/2
-0x060,GetRenderModes,engine; game 1/1
+0x060,GetRenderMode,engine (its body: dsi_GetRenderMode)
 0x064,SetRenderMode,engine; game 2/2
 0x068,ShutdownRender,engine; game 1/1
 0x06c,GetFileList,engine
