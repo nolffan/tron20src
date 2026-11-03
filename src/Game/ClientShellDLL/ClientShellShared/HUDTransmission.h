@@ -20,6 +20,9 @@
 class CHUDTransmission : public CHUDItem
 {
 public:
+	// RETAIL: every game type
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+
 	CHUDTransmission();
 	
 
@@ -34,7 +37,7 @@ public:
 	virtual	void		Show(int nMessageId);
 	virtual	void		Show(const char *pszString);
 	
-	virtual void		Hide() { m_Msg.Show( LTFALSE ); }
+	void				Hide() { m_Msg.Show( LTFALSE ); }	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 
 protected:
 	CHUDMessage		m_Msg;

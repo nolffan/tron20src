@@ -31,6 +31,9 @@ class CHitBox
 		virtual void SetDims( const LTVector &vDims );
 		virtual void SetOffset( const LTVector &vOffset );
 		virtual void SetCanBeSearched( bool bCanBeSearched );
+		// RETAIL: Tron's last slot (retail 0x101aba50): USRFLG_CAN_ACTIVATE as
+		// SetCanBeSearched sets its flag. The name is ours
+		virtual void SetCanActivate( bool bCanActivate );
 		
 		const LTVector& GetDims() const { return m_vDims; }
 		const LTVector& GetOffset() const { return m_vOffset; }

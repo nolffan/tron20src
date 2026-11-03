@@ -358,8 +358,11 @@ void CHUDMessageQueue::DecHistoryOffset()
 
 void CHUDChatMsgQueue::UpdateLayout()
 {
+	UpdateLayout("ChatMessageQueue");
+}
 
-	char *pTag = "ChatMessageQueue";
+void CHUDChatMsgQueue::UpdateLayout(char *pTag)
+{
 	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
 
 	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");

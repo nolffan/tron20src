@@ -69,6 +69,12 @@ public:
     virtual	LTBOOL		Init();
     virtual	void		Term();
 
+	// RETAIL: Tron's (retail CHUDMgr's vtable, slots 2 and 3): the items are
+	// added for the game type being played (CHUDItem::IsUsedInGameType) and
+	// initialized; and terminated and taken away again. The names are ours
+	virtual bool		AddItems();
+	virtual bool		RemoveItems();
+
     virtual	void        Render();
     virtual	void        Update();
 
@@ -86,6 +92,10 @@ public:
 
 	virtual void			SetRenderLevel(eHUDRenderLevel eLevel) {m_eLevel = eLevel;}
 	virtual eHUDRenderLevel	GetRenderLevel() {return m_eLevel;}
+
+	// RETAIL: Tron's last slot (16), empty here; CTronHUDMgr's adds more of its
+	// items for the game type. Not yet identified
+	virtual void			TronUnknownVirtual40() {}
 
 
 protected:
@@ -114,6 +124,13 @@ protected:
 	//items
 	typedef std::vector<CHUDItem *> ItemArray;
 	ItemArray m_itemArray;			// Pointer to each screen
+
+	// RETAIL: inlined in Tron's AddItems, once an item
+	void		AddItem(CHUDItem* pItem, GameType eGameType)
+	{
+		if (pItem->IsUsedInGameType(eGameType))
+			m_itemArray.push_back(pItem);
+	}
 
 };
 

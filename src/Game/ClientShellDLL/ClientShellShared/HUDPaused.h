@@ -20,6 +20,9 @@
 class CHUDPaused : public CHUDItem
 {
 public:
+	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 	CHUDPaused();
 	
 

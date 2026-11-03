@@ -19,6 +19,9 @@
 class CHUDSubtitles : public CHUDItem
 {
 public:
+	// RETAIL: every game type
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+
 	CHUDSubtitles();
 	
 
@@ -35,7 +38,13 @@ public:
 
 	void	SetScale(float fScale);
 
-	LTBOOL	IsVisible() {return m_bVisible;}
+	// RETAIL: Tron's: its Render is empty (retail 0x100abb80), and NOLF2's
+	// Render is this, slot 12 (retail 0x100fd0e0). The name is ours, and what
+	// calls it is still to be found
+	virtual void	Draw();
+
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
+	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
 protected:
 

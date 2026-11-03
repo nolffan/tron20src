@@ -17,6 +17,9 @@
 class CHUDWeapons : public CHUDItem
 {
 public:
+	// TRON: not in retail; as most of its HUD items
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 	CHUDWeapons();
 	~CHUDWeapons();
 

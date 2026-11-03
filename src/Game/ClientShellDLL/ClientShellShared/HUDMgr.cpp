@@ -67,20 +67,6 @@ CHUDMgr::~CHUDMgr()
 
 LTBOOL CHUDMgr::Init()
 {
-	m_itemArray.push_back(&m_RewardMsgs);
-	m_itemArray.push_back(&m_Popup);
-	m_itemArray.push_back(&m_Decision);
-	m_itemArray.push_back(&m_Subtitles);
-	m_itemArray.push_back(&m_ChatMsgs);
-	m_itemArray.push_back(&m_ChatInput);
-	m_itemArray.push_back(&m_MissionText);
-	m_itemArray.push_back(&m_Transmission);
-	m_itemArray.push_back(&m_PickupMsgs);
-	m_itemArray.push_back(&m_Damage);
-	m_itemArray.push_back(&m_Radar);
-	m_itemArray.push_back(&m_DisplayMeter);
-	m_itemArray.push_back(&m_Scores);
-	
 	g_pPopup = &m_Popup;
 	g_pDecision = &m_Decision;
 	g_pSubtitles = &m_Subtitles;
@@ -96,14 +82,6 @@ LTBOOL CHUDMgr::Init()
 	g_pScores = &m_Scores;
 
 	m_nCurrentLayout = GetConsoleInt("HUDLayout",0);
-	
-	ItemArray::iterator iter = m_itemArray.begin();
-	while (iter != m_itemArray.end())
-	{
-		if (!(*iter)->Init())
-			return LTFALSE;
-		iter++;
-	}
 
 	m_UpdateFlags = kHUDAll;
 
@@ -111,7 +89,79 @@ LTBOOL CHUDMgr::Init()
 
 	m_bVisible = LTTRUE;
 
+	// PORT: retail's Init adds no items (AddItems does, for the game type);
+	// until AddItems' callers are in, Init calls it as NOLF2's added them
+	AddItems();
+
     return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CHUDMgr::AddItems()
+//
+//	PURPOSE:	Add the items of the game type being played, and init them
+//				(RETAIL: Tron's; retail 0x100f3c20)
+//
+// ----------------------------------------------------------------------- //
+
+bool CHUDMgr::AddItems()
+{
+	GameType eGameType = g_pGameClientShell->GetGameType();
+
+	AddItem(&m_RewardMsgs, eGameType);
+	AddItem(&m_Popup, eGameType);
+	AddItem(&m_Decision, eGameType);
+	AddItem(&m_Subtitles, eGameType);
+	AddItem(&m_ChatMsgs, eGameType);
+	AddItem(&m_ChatInput, eGameType);
+	AddItem(&m_MissionText, eGameType);
+	AddItem(&m_Transmission, eGameType);
+	AddItem(&m_PickupMsgs, eGameType);
+	AddItem(&m_Damage, eGameType);
+	AddItem(&m_Radar, eGameType);
+	AddItem(&m_DisplayMeter, eGameType);
+	AddItem(&m_Scores, eGameType);
+
+	m_RewardMsgs.Init();
+	m_Popup.Init();
+	m_Decision.Init();
+	m_Subtitles.Init();
+	m_ChatMsgs.Init();
+	m_ChatInput.Init();
+	m_MissionText.Init();
+	m_Transmission.Init();
+	m_PickupMsgs.Init();
+	m_Damage.Init();
+	m_Radar.Init();
+	m_DisplayMeter.Init();
+	m_Scores.Init();
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CHUDMgr::RemoveItems()
+//
+//	PURPOSE:	Term the items and take them away (RETAIL: Tron's; retail
+//				0x100f4000)
+//
+// ----------------------------------------------------------------------- //
+
+bool CHUDMgr::RemoveItems()
+{
+	ItemArray::iterator iter = m_itemArray.begin();
+
+	while (iter != m_itemArray.end())
+	{
+		(*iter)->Term();
+		iter++;
+	}
+
+	m_itemArray.clear();
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //

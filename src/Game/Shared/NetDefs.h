@@ -14,14 +14,24 @@
 #ifndef _NETDEFS_H_
 #define _NETDEFS_H_
 
+// RETAIL: Tron's eight game types, in its order: retail CShell.dll's and
+// Object.lto's GameTypeToString table (CShell 0x1022aee8) names them
 enum GameType
 {
 	eGameTypeSingle,
+	eGameTypeSingleLightCycleCircuit,
+	eGameTypeSingleLightCycleCustom,
 	eGameTypeCooperative,
 	eGameTypeDeathmatch,
-	eGameTypeTeamDeathmatch,
+	eGameTypeDiscArena,
+	eGameTypeDiscTournament,
+	eGameTypeMultiplayerLightcycles,
+	g_knNumGameTypes,
+
+	// PORT: NOLF2's, which Tron has not: kept out of range for the NOLF2 code
+	// still standing in for Tron's
+	eGameTypeTeamDeathmatch = g_knNumGameTypes + 1,
 	eGameTypeDoomsDay,
-	g_knNumGameTypes
 };
 
 enum BandwidthSettings

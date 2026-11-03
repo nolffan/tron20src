@@ -473,9 +473,7 @@ Object.lto	ours	WeaponItem MPRespawn 0;WeaponType TimeBomb;AmmoCount 1;MoveToFlo
 Object.lto	ours	WeaponSndRadius
 Object.lto	ours	WelderBurn
 Object.lto	ours	\\Campaigns\\
-Object.lto	ours	\\DD_Campaigns\\
 Object.lto	ours	\\DM_Campaigns\\
-Object.lto	ours	\\TDM_Campaigns\\
 Object.lto	ours	default_campaign.txt
 Object.lto	ours	error in %s: can't find search item "%s"
 Object.lto	ours	import KERNEL32.dll OpenFile
@@ -2338,9 +2336,7 @@ CShell.dll	ours	WorkSkin
 CShell.dll	ours	You can never have too many bullets...
 CShell.dll	ours	You got mad skillz, d00d...
 CShell.dll	ours	\\Campaigns\\
-CShell.dll	ours	\\DD_Campaigns\\
 CShell.dll	ours	\\DM_Campaigns\\
-CShell.dll	ours	\\TDM_Campaigns\\
 CShell.dll	ours	_A.dtx
 CShell.dll	ours	attributes\\additives.txt
 CShell.dll	ours	attributes\\damagefx.txt

@@ -66,6 +66,9 @@ struct RADAROBJECT
 class CHUDRadar : public CHUDItem
 {
 	public: // Methods...
+	// TRON: not in retail; as most of its HUD items
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 
 		CHUDRadar();
 		~CHUDRadar();

@@ -45,7 +45,7 @@ public:
 
 
 	virtual bool IsGadgetActivatable(HOBJECT hObj);
-	virtual bool IsTargetGadgetActivatable();
+	bool IsTargetGadgetActivatable();	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 
 	//returns the damage type of the gadget required to disable the current target
 	DamageType	 RequiredGadgetDamageType();

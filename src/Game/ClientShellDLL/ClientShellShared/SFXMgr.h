@@ -58,7 +58,6 @@ class CSFXMgr
 			return &m_dynSFXLists[nType]; 
 		}
 
-		void OnObjectRotate( HOBJECT hObj, bool bTeleport, LTRotation *pNewRot );
 		void OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, float forceMag);
 		void OnModelKey(HLOCALOBJ hObj, ArgList *pArgs);
 		void OnSFXMessage(ILTMessage_Read *pMsg);

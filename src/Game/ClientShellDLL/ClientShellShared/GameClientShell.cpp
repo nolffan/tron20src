@@ -1443,7 +1443,7 @@ LTRESULT CGameClientShell::OnObjectMove(HOBJECT hObj, bool bTeleport, LTVector *
 
 LTRESULT CGameClientShell::OnObjectRotate(HOBJECT hObj, bool bTeleport, LTRotation *pNewRot)
 {
-	m_sfxMgr.OnObjectRotate( hObj, bTeleport, pNewRot );
+	// RETAIL: as build 51's (Tron's special FX have no OnObjectRotate)
 	return g_pPlayerMgr->GetMoveMgr()->OnObjectRotate(hObj, bTeleport, pNewRot);
 }
 

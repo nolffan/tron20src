@@ -18,10 +18,13 @@
 static const char* g_kaGameTypeString[] =
 {
 	"Single",
+	"SingleLightCycleCircuit",
+	"SingleLightCycleCustom",
 	"Cooperative",
 	"Deathmatch",
-	"TeamDeathmatch",
-	"DoomsDay"
+	"DiscArena",
+	"DiscTournament",
+	"MultiplayerLightcycles"
 };
 
 const uint16 g_BandwidthClient[eBandwidth_Custom] =

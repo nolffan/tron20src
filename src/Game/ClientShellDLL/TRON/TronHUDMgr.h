@@ -43,6 +43,7 @@ public:
 	~CTronHUDMgr();
 
 	LTBOOL		Init();
+	bool		AddItems();
 
 protected:
 

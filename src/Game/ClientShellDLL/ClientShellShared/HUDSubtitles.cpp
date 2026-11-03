@@ -71,6 +71,11 @@ void CHUDSubtitles::Term()
 
 void CHUDSubtitles::Render()
 {
+	// RETAIL: empty in Tron (above)
+}
+
+void CHUDSubtitles::Draw()
+{
 	// Sanity checks...
 	if (!m_bVisible) return;
 	if (GetConsoleInt("Subtitles",0) == 0) return;

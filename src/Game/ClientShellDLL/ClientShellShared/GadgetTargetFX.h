@@ -41,9 +41,10 @@ class CGadgetTargetFX : public CSpecialFX
 		virtual uint32 GetSFXID() { return SFX_GADGETTARGET_ID; }
 
 		virtual GadgetTargetType	GetType() const {return m_eType;}
-		virtual bool				SwitchWeapons() const {return  m_bSwitchWeapons;}
-		virtual bool				IsPowerOn() const {return  m_bPowerOn;}
-		virtual uint8				GetTeamID() const { return m_nTeamID; }
+		// RETAIL: not virtual in Tron (its vtable; build 51 has none of them)
+		bool				SwitchWeapons() const {return  m_bSwitchWeapons;}
+		bool				IsPowerOn() const {return  m_bPowerOn;}
+		uint8				GetTeamID() const { return m_nTeamID; }
 		
 		virtual LTBOOL OnServerMessage(ILTMessage_Read *pMsg);
 

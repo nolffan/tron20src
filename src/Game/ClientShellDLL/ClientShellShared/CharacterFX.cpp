@@ -3318,30 +3318,6 @@ void CCharacterFX::ShutdownDamageFX()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CCharacterFX::OnObjectRotate
-//
-//	PURPOSE:	Gaive the characterFX a chance to modify the rotation...
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::OnObjectRotate( LTRotation *pRot )
-{
-	if( !pRot )
-		return;
-
-	bool bLocalClient = (m_hServerObject == g_pLTClient->GetClientObject());
-
-	// Update the contour rotation of the vehicle...
-	// Not the local client though since we never see his vehicle.
-
-	if( !bLocalClient )
-		UpdateVehicleContour( *pRot );
-}
-
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CCharacterFX::UpdateCarrying
 //
 //	PURPOSE:	Update the player's carrying state...

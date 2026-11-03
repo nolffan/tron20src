@@ -23,6 +23,9 @@ const int kMaxChatHistory = 25;
 class CHUDChatInput : public CHUDItem
 {
 public:
+	// RETAIL: every game type
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+
 	CHUDChatInput();
 
     LTBOOL      Init();
@@ -41,7 +44,8 @@ public:
 
 
 	void		Show(bool bShow, bool bTeam);
-	LTBOOL		IsVisible() {return m_bVisible;}
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
+	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
 private:
 	void		Send();

@@ -103,7 +103,6 @@ class CCharacterFX : public CSpecialFX
         virtual LTBOOL	Update();
 		virtual void	OnModelKey(HLOCALOBJ hObj, ArgList *pArgs);
         virtual LTBOOL	OnServerMessage(ILTMessage_Read *pMsg);
-		virtual void	OnObjectRotate( LTRotation *pNewRot );
 
 		virtual void	ChangeModel(ModelId eModelId);
 
@@ -140,7 +139,7 @@ class CCharacterFX : public CSpecialFX
 
 		uint8	GetCarrying() { return m_cs.nCarrying; }
 		
-		virtual void EnablePitch( bool bEnable );
+		void EnablePitch( bool bEnable );	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 			
 		enum Constants
 		{

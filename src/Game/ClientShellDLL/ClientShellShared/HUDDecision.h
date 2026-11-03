@@ -20,6 +20,9 @@
 class CHUDDecision : public CHUDItem
 {
 public:
+	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 	CHUDDecision();
 	
 
@@ -41,9 +44,12 @@ public:
 
 	void	SetScale(float fScale);
 
-	LTBOOL	IsVisible() {return m_bVisible;}
+	// RETAIL: both virtual in Tron (its vtable's last two slots: Choose's body
+	// is retail 0x10140120)
+	virtual void	Choose(uint8 nChoice);
 
-	void	Choose(uint8 nChoice);
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
+	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
 	HOBJECT GetObject() { return m_hObject; }
 	float	GetRadius() { return m_fRadius; }

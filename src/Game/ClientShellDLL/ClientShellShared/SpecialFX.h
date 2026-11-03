@@ -119,7 +119,8 @@ class CSpecialFX
 
         LTFLOAT  GetUpdateDelta()    const { return m_fUpdateDelta; }
 
-		virtual void OnObjectRotate( LTRotation *pRot ) {}
+		// RETAIL: Tron's CSpecialFX has no OnObjectRotate (its vtable: build 51's
+		// slots; NOLF2 added it later, with CSFXMgr's and CCharacterFX's)
 		virtual void HandleTouch(CollisionInfo *pInfo) {}
 		virtual void OnModelKey(HLOCALOBJ hObj, ArgList *pArgs) {}
         virtual LTBOOL OnServerMessage(ILTMessage_Read *pMsg) { return (!!pMsg); }

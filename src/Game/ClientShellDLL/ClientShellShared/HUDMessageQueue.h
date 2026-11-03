@@ -20,6 +20,9 @@
 class CHUDMessageQueue : public CHUDItem
 {
 public:
+	// RETAIL: every game type
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+
 	CHUDMessageQueue();
 	
 
@@ -93,6 +96,17 @@ public:
 
 	virtual	void		AddMessage(const char *pszString, eChatMsgType type = kMsgDefault);
 	virtual	void		AddMessage(int nMessageID, eChatMsgType type = kMsgDefault);
+
+	// RETAIL: Tron's last slot (retail 0x1015f8b0): the layout of the
+	// multiplayer queue or the single player one. The name is ours
+	virtual void		SetMultiplayerLayout(bool bMultiplayer)
+	{
+		UpdateLayout(bMultiplayer ? "MultiChatMessageQueue" : "ChatMessageQueue");
+	}
+
+	// RETAIL: Tron's, NOLF2's UpdateLayout for a given layout tag (retail
+	// 0x1015f8d0)
+	void				UpdateLayout(char *pTag);
 
 
 protected:

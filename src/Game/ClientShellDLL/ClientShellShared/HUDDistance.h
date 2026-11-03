@@ -24,6 +24,9 @@
 class CHUDDistance : public CHUDItem
 {
 	public: // Methods...
+	// RETAIL: single player only
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType; }
+
 
 		CHUDDistance();
 		~CHUDDistance();

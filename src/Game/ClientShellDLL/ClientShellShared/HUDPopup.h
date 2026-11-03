@@ -22,6 +22,9 @@
 class CHUDPopup : public CHUDItem
 {
 public:
+	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 	CHUDPopup();
 	
 
@@ -44,7 +47,8 @@ public:
 		m_Text.SetColors( SET_ARGB(nA,nR,nG,nB), SET_ARGB(nA,nR,nG,nB), SET_ARGB(nA,nR,nG,nB) );
 	}
 
-	LTBOOL	IsVisible() {return m_bVisible;}
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
+	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
 protected:
 

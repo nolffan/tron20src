@@ -111,7 +111,8 @@ public:
 	uint16			AddControl(CLTGUICtrl* pCtrl);
 	void			RemoveControl(CLTGUICtrl* pControl,LTBOOL bDelete = LTTRUE);
 
-	uint16			SetSelection(uint16 select, LTBOOL bFindSelectable = LTFALSE);
+	// RETAIL: virtual in Tron (retail's CBaseScreen vtable, slot 0x5c)
+	virtual uint16	SetSelection(uint16 select, LTBOOL bFindSelectable = LTFALSE);
 	uint16			NextSelection();
 	uint16			PreviousSelection();
 	inline uint16	GetSelection() const		{return m_nSelection;}
@@ -175,6 +176,12 @@ public:
 	// Calls UpdateData on each control in the screen
     virtual void            UpdateData(LTBOOL bSaveAndValidate=LTTRUE);
 
+	// RETAIL: Tron's, slots 0x6c and 0x70 (each only calls OnUp, OnDown;
+	// CScreenMgr's two new slots call them on the current screen). The names
+	// are ours: a guess at the mouse wheel
+	virtual LTBOOL	OnWheelUp()		{ return OnUp(); }
+	virtual LTBOOL	OnWheelDown()	{ return OnDown(); }
+
 protected:
 
 	// Handle input
@@ -202,7 +209,7 @@ protected:
 	void			CreateLightFX(char *szFXName);
 	void			CreateCharFX(INT_CHAR *pChar);
 	void			CreateAttachFX(INT_ATTACH *pAttach);
-	virtual void	ClearAttachFX();
+	void			ClearAttachFX();	// RETAIL: not virtual in Tron (its vtable)
 
 	void			SetPolyRenderState();
 	void			InitPoly(LTPoly_GT4* pPoly, LTIntPt pos, HTEXTURE hTex);

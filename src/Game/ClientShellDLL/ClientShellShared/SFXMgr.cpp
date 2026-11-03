@@ -1824,29 +1824,6 @@ unsigned int CSFXMgr::GetDynArrayMaxNum(uint8 nIndex)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CSFXMgr::OnObjectRotate()
-//
-//	PURPOSE:	Handle an object rotation.
-//				Some FX may want to modify the rotation.
-//
-// ----------------------------------------------------------------------- //
-
-void CSFXMgr::OnObjectRotate( HOBJECT hObj, bool bTeleport, LTRotation *pNewRot )
-{
-	if( !hObj || ! pNewRot )
-		return;
-
-	// If it's a CharacterFX we might want to modify the rotation...
-
-	CSpecialFX *pFX = FindSpecialFX( SFX_CHARACTER_ID, hObj );
-	if( pFX )
-	{
-		pFX->OnObjectRotate( pNewRot );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CSFXMgr::OnTouchNotify()
 //
 //	PURPOSE:	Handle client-side touch notify

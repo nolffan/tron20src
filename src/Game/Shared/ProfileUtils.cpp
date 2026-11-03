@@ -977,11 +977,17 @@ const char*	GetProfileFile( char const* pszProfileName )
 
 static const char szCampaignDirs[g_knNumGameTypes][32] = 
 {
+	// PORT: NOLF2's campaign directories (Tron has none: retail has none of
+	// these strings), one per Tron game type to keep the table's shape (NOLF2's
+	// for the three it has, the root for the rest)
+	"\\",
+	"\\",
 	"\\",
 	"\\Campaigns\\",
 	"\\DM_Campaigns\\",
-	"\\TDM_Campaigns\\",
-	"\\DD_Campaigns\\",
+	"\\",
+	"\\",
+	"\\",
 };
 
 

@@ -298,3 +298,20 @@ void CHitBox::SetCanBeSearched( bool bCanBeSearched )
 
 	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (bCanBeSearched ? USRFLG_CAN_SEARCH : 0), USRFLG_CAN_SEARCH );
 }
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CHitBox::SetCanActivate
+//
+//  PURPOSE:	Set the hit box's activate flag (RETAIL: Tron's; retail
+//				0x101aba50)
+//
+// ----------------------------------------------------------------------- //
+
+void CHitBox::SetCanActivate( bool bCanActivate )
+{
+	if( m_hObject == INVALID_HOBJECT )
+		return;
+
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (bCanActivate ? USRFLG_CAN_ACTIVATE : 0), USRFLG_CAN_ACTIVATE );
+}

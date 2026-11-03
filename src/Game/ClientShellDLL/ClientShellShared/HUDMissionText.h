@@ -20,6 +20,9 @@
 class CHUDMissionText : public CHUDItem
 {
 public:
+	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+
 	CHUDMissionText();
 	
 
@@ -40,7 +43,8 @@ public:
 
 	void	SetScale(float fScale);
 
-	LTBOOL	IsVisible() {return m_bVisible;}
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
+	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
 protected:
 	CTimedText				m_Text;

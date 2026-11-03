@@ -98,6 +98,20 @@ bool CScreenMgr::UpdateInterfaceSFX()
 	return true;
 }
 
+// RETAIL: Tron's (retail 0x10145100, 0x10145110): pass on to the current
+// screen (the names are ours)
+void CScreenMgr::OnWheelDown()
+{
+	if (m_pCurrentScreen)
+		m_pCurrentScreen->OnWheelDown();
+}
+
+void CScreenMgr::OnWheelUp()
+{
+	if (m_pCurrentScreen)
+		m_pCurrentScreen->OnWheelUp();
+}
+
 void CScreenMgr::HandleKeyDown (int vkey, int rep)
 {
 	if (m_pCurrentScreen)

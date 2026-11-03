@@ -19,6 +19,9 @@
 class CHUDScores : public CHUDItem
 {
 public:
+	// RETAIL: the multiplayer light cycles
+	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeMultiplayerLightcycles == eGameType; }
+
 	CHUDScores();
 	
 

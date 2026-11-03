@@ -36,6 +36,11 @@ public:
     virtual LTBOOL              Init();
 	virtual void				Term();
 
+	// RETAIL: Tron's, slots 3 and 4: the current screen's OnWheelDown,
+	// OnWheelUp (names ours, as there)
+	virtual void		OnWheelDown();
+	virtual void		OnWheelUp();
+
 	virtual void		HandleKeyDown (int vkey, int rep);
 	virtual void		HandleKeyUp (int vkey);
 	virtual void		HandleChar (unsigned char c);

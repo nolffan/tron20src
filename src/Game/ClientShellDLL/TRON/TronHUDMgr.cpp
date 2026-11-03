@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "TronHUDMgr.h"
+#include "GameClientShell.h"
 
 #include "TRONPlayerStats.h"
 #include "SurfaceFunctions.h"
@@ -66,26 +67,54 @@ CTronHUDMgr::~CTronHUDMgr()
 
 LTBOOL CTronHUDMgr::Init()
 {
-	//crosshair should be first so that it is rendered first (potential overlap)
-	m_itemArray.push_back(&m_Crosshair);
-
-	m_itemArray.push_back(&m_Weapons);
-	m_itemArray.push_back(&m_Version);
-
-	// Tron-specific items
-	m_itemArray.push_back(&m_Permissions);
-	m_itemArray.push_back(&m_HealthEnergy);
-
-	m_itemArray.push_back(&m_Armor);
-	m_itemArray.push_back(&m_EnergyTrans);
-	m_itemArray.push_back(&m_Progress);
-
-	m_itemArray.push_back(&m_Weapon);
-	m_itemArray.push_back(&m_WpnChooser);
-	m_itemArray.push_back(&m_AmmoChooser);
-
 	g_pCrosshair = &m_Crosshair;
 
     return CHUDMgr::Init();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronHUDMgr::AddItems()
+//
+//	PURPOSE:	Tron's items first, then the base's (RETAIL: retail 0x1009ba50
+//				adds and inits its own, then calls CHUDMgr's)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronHUDMgr::AddItems()
+{
+	GameType eGameType = g_pGameClientShell->GetGameType();
+
+	//crosshair should be first so that it is rendered first (potential overlap)
+	AddItem(&m_Crosshair, eGameType);
+
+	AddItem(&m_Weapons, eGameType);
+	AddItem(&m_Version, eGameType);
+
+	// Tron-specific items
+	AddItem(&m_Permissions, eGameType);
+	AddItem(&m_HealthEnergy, eGameType);
+
+	AddItem(&m_Armor, eGameType);
+	AddItem(&m_EnergyTrans, eGameType);
+	AddItem(&m_Progress, eGameType);
+
+	AddItem(&m_Weapon, eGameType);
+	AddItem(&m_WpnChooser, eGameType);
+	AddItem(&m_AmmoChooser, eGameType);
+
+	m_Crosshair.Init();
+	m_Weapons.Init();
+	m_Version.Init();
+	m_Permissions.Init();
+	m_HealthEnergy.Init();
+	m_Armor.Init();
+	m_EnergyTrans.Init();
+	m_Progress.Init();
+	m_Weapon.Init();
+	m_WpnChooser.Init();
+	m_AmmoChooser.Init();
+
+    return CHUDMgr::AddItems();
 }
 
