@@ -28,6 +28,8 @@ define_holder_to_instance(ILTCommon, your_var, Client);
 \endcode
 */
 
+// TRON: the virtuals below are NOLF2's in the order of Tron's
+// CLTCommonClient vtable (progress/engine/ILTCommon-vtable.csv).
 class ILTCommon : public IBase {
 public:
     interface_version(ILTCommon, 4);
@@ -37,11 +39,48 @@ public:
 public:
 
 /*!
-Tell what type of object this is.
+\param hPoly The handle of the polygon.
+\param pFlags Pointer to dest where flags are written.
 
-Used for: Object.
+\return \b LT_ERROR when no world is loaded or \b hPoly is
+invalid; otherwise, returns \b LT_OK.
+
+Get the texture flags from a poly.
+ 
+Used for: Misc.  */
+    virtual LTRESULT GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags)=0;
+
+/*!
+\param hPoly The handle of the polygon.
+\param pPlane Pointer to dest where the polygon's plane is written.
+
+\return \b LT_ERROR when no world is loaded or \b hPoly is
+invalid; otherwise, returns \b LT_OK.
+
+Get the plane for a poly.
+ 
+Used for: Misc.  */
+    virtual LTRESULT GetPolyPlane(HPOLY hPoly, LTPlane *pPlane)=0;
+
+/*!
+\param pPoint The location to test.
+\return \b LT_NOTINWORLD when no world is loaded, \b LT_INSIDE when the point is
+in the world, or \b LT_OUTSIDE when the point is not in the world.
+
+Used for: Misc.  
 */
-    virtual LTRESULT GetObjectType(HOBJECT hObj, uint32 *type) = 0;
+    virtual LTRESULT GetPointStatus(const LTVector *pPoint) = 0;
+
+/*!
+\param pPoint The location to test.
+\param pColor The lighting at the given point.
+\return \b LT_NOTINWORLD when the point is outside the world.
+
+Get the shade (RGB, 0-255) at the point you specify.
+
+Used for: Misc.
+*/
+    virtual LTRESULT GetPointShade(const LTVector *pPoint, LTVector *pColor) = 0;
 
 /*!
 \param vec The vector to compress.
@@ -82,6 +121,123 @@ Used for: Misc.
 */
     virtual LTRESULT	CompressRotation(const LTRotation& rot, CompRot& CompR)=0;
 
+    virtual LTRESULT	UncompressRotation(const CompRot& CompR, LTRotation& rot)=0;
+/*!
+Change the filenames of a model or a sprite.  
+\param hObj The object to change the resource of
+\param eType The type of resource that is being changed
+\param nIndex The index of the resource being changed
+\param pszResource The name of the resource that it should be changed to
+
+Used for: Object.  
+*/
+    virtual LTRESULT SetObjectResource(	HOBJECT hObj, EObjectResource eType, 
+										uint32 nIndex, const char* pszResource) = 0;
+
+
+/*!
+Get the object's flag parameters.  Specify what flag type you're
+accessing and the value.
+ 
+Used for: Object.  
+*/
+    virtual LTRESULT GetObjectFlags(
+        const HOBJECT hObj,
+        const ObjFlagType flagType,
+        uint32 &dwFlags) = 0;
+/*!
+Changes all the appropriate files to match found in the create struct
+\param hObj The object to change the filenames of
+\param pStruct The create struct which holds the appropriate names
+
+Used for: Object.  
+*/
+    virtual LTRESULT SetObjectFilenames(	HOBJECT hObj, ObjectCreateStruct* pStruct) = 0;
+
+/*!
+Set the object's flag parameters.  Specify what flag type you're
+accessing, the value, and the mask of flags to modify.  Use FLAGMASK_ALL
+to modify all flags.
+ 
+Used for: Object.  
+*/
+    virtual LTRESULT SetObjectFlags(
+        HOBJECT hObj,
+        const ObjFlagType flagType,
+        uint32 dwFlags,
+		uint32 dwMask) = 0;
+
+/*!
+\return \b LT_NOTINITIALIZED if either of the objects doesn't exist.
+
+Get the parent and child of an attachment.
+
+Used for: Object.  
+*/
+    virtual LTRESULT GetAttachmentObjects(HATTACHMENT hAttachment, 
+        HOBJECT &hParent, HOBJECT &hChild) = 0;
+
+/*!
+\param  inList The list to be filled in.
+\param  inListSize How large \b inList is.
+\param  outListSize How many elements in \b inList were filled in.
+\param outNumAttachments How many attachments \b hObj has.
+This number can be larger that \b outListSize if \b inList can't hold all
+the attachments.
+
+Gets the objects attached to this object.  
+
+Used for: Object.  
+*/
+    virtual LTRESULT GetAttachments(HLOCALOBJ hObj, HLOCALOBJ *inList, 
+        uint32 inListSize, uint32 &outListSize, 
+        uint32 &outNumAttachments) = 0;
+
+/*!
+Get the attachment transform (based off the parent object position,
+model socket, and attachment offset).  If \b bWorldSpace is \b DTRUE,
+then the transform is in world space.
+
+Used for: Object.  
+*/
+    virtual LTRESULT GetAttachmentTransform(HATTACHMENT hAttachment, 
+        LTransform &transform, bool bWorldSpace) = 0;
+
+/*!
+Basically ILTCommon::GetAttachmentTransform(WORLD) *
+ModelLT::GetSocketTransform(LOCAL).
+
+Used for: Object.  
+*/
+    virtual LTRESULT GetAttachedModelSocketTransform(
+        HATTACHMENT hAttachment, HMODELSOCKET hSocket, 
+        LTransform &transform) = 0;
+
+/*!
+Basically ILTCommon::GetAttachmentTransform(WORLD) *
+ModelLT::GetNodeTransform(LOCAL).
+
+Used for: Object.  
+*/
+    virtual LTRESULT GetAttachedModelNodeTransform(
+        HATTACHMENT hAttachment, HMODELNODE hNode, 
+        LTransform &transform) = 0;
+
+/*!
+\param hObject Object for which attachments should be enumerated.
+\param typeFilter \b AttachmentType enum describing whether to count all, server-only, or client-only attachments.
+\param dwAttachCount [return] Number of attachments to \b hObject.
+\return \b LT_INVALIDPARAMS if \b hObject is NULL.
+
+Fetch the number of attachments that a given object has associated with it.
+
+\note The \b typeFilter parameter is ignored when the server version of this function is called.
+The server only knows about server-made attachments so it always counts those.
+
+Used for: Object.  
+*/
+    virtual LTRESULT NumAttachments(HLOCALOBJ hObject, uint32 &dwAttachCount) = 0;
+
 /*!
 \param CompV The CompRot struct to be unpacked.
 \param rot (return) The LTRotation to hold the uncompressed data.
@@ -114,6 +270,13 @@ Used for: Misc.
     virtual LTRESULT Parse(ConParse *pParse) = 0;
 
 /*!
+Tell what type of object this is.
+
+Used for: Object.
+*/
+    virtual LTRESULT GetObjectType(HOBJECT hObj, uint32 *type) = 0;
+
+/*!
 Get the user dimensions of a model animation (the
 dimensions set in ModelEdit).
 
@@ -139,170 +302,9 @@ Used for: Messaging.
 
 public:
 
-/*!
-\param pPoint The location to test.
-\return \b LT_NOTINWORLD when no world is loaded, \b LT_INSIDE when the point is
-in the world, or \b LT_OUTSIDE when the point is not in the world.
-
-Used for: Misc.  
-*/
-    virtual LTRESULT GetPointStatus(const LTVector *pPoint) = 0;
-
-/*!
-\param pPoint The location to test.
-\param pColor The lighting at the given point.
-\return \b LT_NOTINWORLD when the point is outside the world.
-
-Get the shade (RGB, 0-255) at the point you specify.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetPointShade(const LTVector *pPoint, LTVector *pColor) = 0;
-
-/*!
-\param hPoly The handle of the polygon.
-\param pFlags Pointer to dest where flags are written.
-
-\return \b LT_ERROR when no world is loaded or \b hPoly is
-invalid; otherwise, returns \b LT_OK.
-
-Get the texture flags from a poly.
- 
-Used for: Misc.  */
-    virtual LTRESULT GetPolyTextureFlags(HPOLY hPoly, uint32 *pFlags)=0;
-
-/*!
-\param hPoly The handle of the polygon.
-\param pPlane Pointer to dest where the polygon's plane is written.
-
-\return \b LT_ERROR when no world is loaded or \b hPoly is
-invalid; otherwise, returns \b LT_OK.
-
-Get the plane for a poly.
- 
-Used for: Misc.  */
-    virtual LTRESULT GetPolyPlane(HPOLY hPoly, LTPlane *pPlane)=0;
-
-    virtual LTRESULT	UncompressRotation(const CompRot& CompR, LTRotation& rot)=0;
-/*!
-Change the filenames of a model or a sprite.  
-\param hObj The object to change the resource of
-\param eType The type of resource that is being changed
-\param nIndex The index of the resource being changed
-\param pszResource The name of the resource that it should be changed to
-
-Used for: Object.  
-*/
-    virtual LTRESULT SetObjectResource(	HOBJECT hObj, EObjectResource eType, 
-										uint32 nIndex, const char* pszResource) = 0;
-/*!
-Changes all the appropriate files to match found in the create struct
-\param hObj The object to change the filenames of
-\param pStruct The create struct which holds the appropriate names
-
-Used for: Object.  
-*/
-    virtual LTRESULT SetObjectFilenames(	HOBJECT hObj, ObjectCreateStruct* pStruct) = 0;
-
-
-/*!
-Get the object's flag parameters.  Specify what flag type you're
-accessing and the value.
- 
-Used for: Object.  
-*/
-    virtual LTRESULT GetObjectFlags(
-        const HOBJECT hObj,
-        const ObjFlagType flagType,
-        uint32 &dwFlags) = 0;
-
-/*!
-Set the object's flag parameters.  Specify what flag type you're
-accessing, the value, and the mask of flags to modify.  Use FLAGMASK_ALL
-to modify all flags.
- 
-Used for: Object.  
-*/
-    virtual LTRESULT SetObjectFlags(
-        HOBJECT hObj,
-        const ObjFlagType flagType,
-        uint32 dwFlags,
-		uint32 dwMask) = 0;
-
 /*!  Attachments.  */
 
 public:
-
-/*!
-\return \b LT_NOTINITIALIZED if either of the objects doesn't exist.
-
-Get the parent and child of an attachment.
-
-Used for: Object.  
-*/
-    virtual LTRESULT GetAttachmentObjects(HATTACHMENT hAttachment, 
-        HOBJECT &hParent, HOBJECT &hChild) = 0;
-
-/*!
-\param  inList The list to be filled in.
-\param  inListSize How large \b inList is.
-\param  outListSize How many elements in \b inList were filled in.
-\param outNumAttachments How many attachments \b hObj has.
-This number can be larger that \b outListSize if \b inList can't hold all
-the attachments.
-
-Gets the objects attached to this object.  
-
-Used for: Object.  
-*/
-    virtual LTRESULT GetAttachments(HLOCALOBJ hObj, HLOCALOBJ *inList, 
-        uint32 inListSize, uint32 &outListSize, 
-        uint32 &outNumAttachments) = 0;
-
-/*!
-Basically ILTCommon::GetAttachmentTransform(WORLD) *
-ModelLT::GetNodeTransform(LOCAL).
-
-Used for: Object.  
-*/
-    virtual LTRESULT GetAttachedModelNodeTransform(
-        HATTACHMENT hAttachment, HMODELNODE hNode, 
-        LTransform &transform) = 0;
-
-/*!
-Get the attachment transform (based off the parent object position,
-model socket, and attachment offset).  If \b bWorldSpace is \b DTRUE,
-then the transform is in world space.
-
-Used for: Object.  
-*/
-    virtual LTRESULT GetAttachmentTransform(HATTACHMENT hAttachment, 
-        LTransform &transform, bool bWorldSpace) = 0;
-
-/*!
-Basically ILTCommon::GetAttachmentTransform(WORLD) *
-ModelLT::GetSocketTransform(LOCAL).
-
-Used for: Object.  
-*/
-    virtual LTRESULT GetAttachedModelSocketTransform(
-        HATTACHMENT hAttachment, HMODELSOCKET hSocket, 
-        LTransform &transform) = 0;
-
-/*!
-\param hObject Object for which attachments should be enumerated.
-\param typeFilter \b AttachmentType enum describing whether to count all, server-only, or client-only attachments.
-\param dwAttachCount [return] Number of attachments to \b hObject.
-\return \b LT_INVALIDPARAMS if \b hObject is NULL.
-
-Fetch the number of attachments that a given object has associated with it.
-
-\note The \b typeFilter parameter is ignored when the server version of this function is called.
-The server only knows about server-made attachments so it always counts those.
-
-Used for: Object.  
-*/
-    virtual LTRESULT NumAttachments(HLOCALOBJ hObject, uint32 &dwAttachCount) = 0;
 
 };
 

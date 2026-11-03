@@ -16,3 +16,5 @@ __pycache__/
 src/Game/ObjectDLL/ObjectShared/AnimationLex.o
 src/Game/ObjectDLL/ObjectShared/AnimationParse.o
 src/Game/ObjectDLL/ObjectShared/AnimationLexSymbols.h
+# scratch: the vtable-layout probe (out/work/probe.sh compiles in it, as s:)
+/src/tron20src_probe/

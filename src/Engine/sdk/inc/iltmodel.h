@@ -30,6 +30,11 @@ define_holder_to_instance(ILTModel, your_var, Server);
 \endcode
 */
 
+// TRON: the virtuals below are NOLF2's in the order of Tron's CLTModelClient
+// vtable (progress/engine/ILTModel-vtable.csv), with placeholders where
+// Tron's engine has virtuals the interface does not name; GetModelOBBCopy
+// and UpdateModelOBB, which Tron's engine does not have, are kept past
+// the end.
 class ILTModel : public IBase {
 public:
     interface_version(ILTModel, 0);
@@ -100,6 +105,9 @@ Used for: Models and Animation.
 */
     virtual LTRESULT GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket);
 
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual6() = 0;
+
 /*! 
 \param hObj     Model instance handle.
 \param hSocket  Socket instance handle.
@@ -128,6 +136,9 @@ Used for: Models and Animation.
                                         HMODELSOCKET hSocket,
                                         LTransform &transform,
                                         bool bWorldSpace);
+
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual8() = 0;
 
 /*!
 \param hObj		  Model instance reference.
@@ -851,7 +862,10 @@ Used for: Models and Animation.
 
 	Used for: Models and Animation.
 */
-	virtual LTRESULT GetNumModelOBBs( HOBJECT hObj, uint32 & num_obbs ) ;	
+	virtual LTRESULT GetNumModelOBBs( HOBJECT hObj, uint32 & num_obbs ) ;
+
+    // TRON: NOLF2's virtuals that Tron's engine does not have (past the end of
+    // its vtable): kept for the shared code, which must not call them	
 /*
 	\param hOjb model to get obbs from
 	\param modelobb obb buffer into which the internal obbs will be copied to.

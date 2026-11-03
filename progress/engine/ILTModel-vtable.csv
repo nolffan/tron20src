@@ -1,0 +1,63 @@
+# Tron's CLTModelClient vtable (0x58d58c in Lithtech.exe), the slots of ILTModel the game calls: each
+# slot, the NOLF2 method in it, and how it was named (its function's body
+# against nolf2src's engine's CLTModelClient, 0x57e5bc; retail's game calls). Slot 0 is
+# the interface macro's. VC6 lays a name's overloads out together, in their
+# declaration order; the order is checked against what VC6 compiles from the
+# header (out/work/probe.sh: a member pointer to each virtual).
+# offset,method,evidence
+0x004,CacheModelDB,identical body
+0x008,UncacheModelDB,identical body
+0x00c,IsModelDBLoaded,identical body
+0x010,AddChildModelDB,identical body
+0x014,GetSocket,game calls
+0x018,TronUnknownVirtual,no NOLF2 function has its body
+0x01c,GetSocketTransform,game calls
+0x020,TronUnknownVirtual,no NOLF2 function has its body
+0x024,GetNumPieces,similar body 0.91
+0x028,GetPiece,similar body 0.97
+0x02c,GetPieceHideStatus,similar body 0.95
+0x030,SetPieceHideStatus,similar body 0.93
+0x034,GetNode,game calls
+0x038,GetNodeName,similar body 0.97
+0x03c,GetNodeTransform,game calls
+0x040,GetNextNode,similar body 0.94
+0x044,GetRootNode,similar body 0.88
+0x048,GetNumChildren,identical body
+0x04c,GetChild,identical body
+0x050,GetParent,identical body
+0x054,GetNumNodes,similar body 0.92
+0x058,GetBindPoseNodeTransform,similar body 0.95
+0x05c,AddNodeControlFn,identical body
+0x060,AddNodeControlFn,identical body
+0x064,RemoveNodeControlFn,identical body
+0x068,RemoveNodeControlFn,identical body
+0x06c,UpdateMainTracker,game calls
+0x070,GetAnimLength,game calls
+0x074,FindWeightSet,similar body 0.97
+0x078,GetMainTracker,identical body
+0x07c,GetPlaybackState,identical body
+0x080,AddTracker,identical body
+0x084,RemoveTracker,identical body
+0x088,GetAnimIndex,identical body
+0x08c,GetCurAnim,game calls
+0x090,SetCurAnim,game calls
+0x094,ResetAnim,identical body
+0x098,GetLooping,identical body
+0x09c,SetLooping,game calls
+0x0a0,GetPlaying,identical body
+0x0a4,SetPlaying,game calls
+0x0a8,GetCurAnimLength,identical body
+0x0ac,GetCurAnimTime,identical body
+0x0b0,SetCurAnimTime,identical body
+0x0b4,SetHintNode,identical body
+0x0b8,SetAnimRate,game calls
+0x0bc,GetAnimRate,identical body
+0x0c0,GetWeightSet,identical body
+0x0c4,SetWeightSet,identical body
+0x0c8,GetNumLODs,identical body
+0x0cc,GetLODValFromDist,identical body
+0x0d0,ApplyAnimations,identical body
+0x0d4,GetFilenames,similar body 0.94
+0x0d8,GetModelDBFilename,similar body 0.93
+0x0dc,GetSkinFilename,similar body 0.97
+0x0e0,GetNumModelOBBs,identical body

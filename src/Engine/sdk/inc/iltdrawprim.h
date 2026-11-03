@@ -451,6 +451,11 @@ Define a holder to get this interface like this:
 define_holder(ILTDrawPrim, your_var);
 \endcode
 */
+// TRON: the virtuals below are NOLF2's in the order of Tron's CD3DDrawPrim
+// vtable (progress/engine/ILTDrawPrim-vtable.csv): VC6 lays a name's
+// overloads out together, so the two Tron slots inside the DrawPrim and
+// SetUVWH blocks are overloads of Tron's (TronDrawPrim18 at +0x60,
+// TronSetUVWH33 at +0xcc: named by slot index).
 class ILTDrawPrim : public IBase
 {
     public :
@@ -562,6 +567,9 @@ class ILTDrawPrim : public IBase
         */
         virtual LTRESULT SetCullMode(ELTDPCullMode ecullmode) = 0;
 
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual13() = 0;
+
 		/*!
         \param bReallyClose - Specifies whether or not the draw primitive will be rendered in the really close range.
         
@@ -570,6 +578,12 @@ class ILTDrawPrim : public IBase
         Used for: Rendering.
         */
         virtual LTRESULT SetReallyClose(bool bReallyClose) = 0;
+
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual15() = 0;
+
+    // TRON: a virtual of Tron's that NOLF2's interface does not have
+    virtual void TronUnknownVirtual16() = 0;
     
         /*!
         \param pPrim        A pointer to an array of polygon structures to draw.
@@ -595,6 +609,10 @@ class ILTDrawPrim : public IBase
                                    const uint32 nCount = 1) = 0;
         virtual LTRESULT DrawPrim (LT_POLYG4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
+
+    // TRON: an overload of Tron's that NOLF2's interface does not have: its
+    // slot is among the DrawPrim overloads, which VC6 lays out together
+    virtual LTRESULT DrawPrim(struct TronDrawPrim18 *pPrim, const uint32 nCount) = 0;
         virtual LTRESULT DrawPrim (LT_POLYF4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
 
@@ -763,6 +781,10 @@ class ILTDrawPrim : public IBase
         virtual void SetUVWH (LT_POLYGT4 *pPrim,
                              float u, float v,
                              float w, float h) = 0;
+
+    // TRON: an overload of Tron's that NOLF2's interface does not have: its
+    // slot is among the SetUVWH overloads, which VC6 lays out together
+    virtual void SetUVWH(struct TronSetUVWH33 *pPrim, float fU, float fV, float fW, float fH) = 0;
 
         virtual void SetUVWH (LT_POLYFT4 *pPrim,
                              float u, float v,

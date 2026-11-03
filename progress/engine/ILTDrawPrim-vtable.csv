@@ -1,0 +1,77 @@
+# Tron's CD3DDrawPrim vtable (0x58ba0c in Lithtech.exe), the slots of ILTDrawPrim the game calls: each
+# slot, the NOLF2 method in it, and how it was named (its function's body
+# against nolf2src's engine's CD3DDrawPrim, 0x57ca64; retail's game calls). Slot 0 is
+# the interface macro's. VC6 lays a name's overloads out together, in their
+# declaration order; the order is checked against what VC6 compiles from the
+# header (out/work/probe.sh: a member pointer to each virtual).
+# offset,method,evidence
+0x004,BeginDrawPrim,similar body 0.86
+0x008,EndDrawPrim,similar body 0.88
+0x00c,SetCamera,similar body 0.94
+0x010,SetTexture,game calls
+0x014,SetTransformType,game calls
+0x018,SetColorOp,game calls
+0x01c,SetAlphaBlendMode,game calls
+0x020,SetZBufferMode,game calls
+0x024,SetAlphaTestMode,game calls
+0x028,SetClipMode,game calls
+0x02c,SetFillMode,game calls
+0x030,SetCullMode,similar body 0.92
+0x034,TronUnknownVirtual,no NOLF2 function has its body
+0x038,SetReallyClose,similar body 0.95
+0x03c,TronUnknownVirtual,no NOLF2 function has its body
+0x040,TronUnknownVirtual,no NOLF2 function has its body
+0x044,DrawPrim,game calls
+0x048,DrawPrim,identical body
+0x04c,DrawPrim,identical body
+0x050,DrawPrim,identical body
+0x054,DrawPrim,game calls
+0x058,DrawPrim,similar body 0.87
+0x05c,DrawPrim,similar body 0.94
+0x060,DrawPrim,among the DrawPrim overloads: a Tron overload (VC6 lays overloads out together)
+0x064,DrawPrim,game calls
+0x068,DrawPrim,identical body
+0x06c,DrawPrim,identical body
+0x070,DrawPrim,identical body
+0x074,DrawPrim,identical body
+0x078,DrawPrimPoint,identical body
+0x07c,DrawPrimPoint,identical body
+0x080,DrawPrimFan,identical body
+0x084,DrawPrimFan,identical body
+0x088,DrawPrimFan,DrawPrimFan block (0x80-0x8c), in NOLF2's declaration order
+0x08c,DrawPrimFan,identical body
+0x090,DrawPrimStrip,DrawPrimStrip block (0x90-0x9c)
+0x094,DrawPrimStrip,identical body
+0x098,DrawPrimStrip,DrawPrimStrip block (0x90-0x9c)
+0x09c,DrawPrimStrip,identical body
+0x0a0,SetXY4,identical body
+0x0a4,SetXY4,identical body
+0x0a8,SetXY4,identical body
+0x0ac,SetXY4,game calls
+0x0b0,SetXYWH,game calls
+0x0b4,SetXYWH,identical body
+0x0b8,SetXYWH,identical body
+0x0bc,SetXYWH,game calls
+0x0c0,SetUV4,identical body
+0x0c4,SetUV4,identical body
+0x0c8,SetUVWH,game calls
+0x0cc,SetUVWH,between the two SetUVWH: a Tron overload
+0x0d0,SetUVWH,game calls
+0x0d4,SetRGB,identical body
+0x0d8,SetRGB,identical body
+0x0dc,SetRGB,identical body
+0x0e0,SetRGB,identical body
+0x0e4,SetRGBA,identical body
+0x0e8,SetRGBA,identical body
+0x0ec,SetRGBA,identical body
+0x0f0,SetRGBA,game calls
+0x0f4,SetRGB4,identical body
+0x0f8,SetRGB4,identical body
+0x0fc,SetRGBA4,identical body
+0x100,SetRGBA4,identical body
+0x104,SetALPHA,identical body
+0x108,SetALPHA,identical body
+0x10c,SetALPHA,identical body
+0x110,SetALPHA,identical body
+0x114,SetALPHA4,identical body
+0x118,SetALPHA4,identical body

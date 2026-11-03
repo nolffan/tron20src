@@ -175,6 +175,41 @@ What the first builds showed (2026-11-02):
   guid (zero), the handshake and net versions; GameSpy, for which a stub
   of WON's server-directory factory stands in.
 
+### 4a. Tron's engine SDK
+
+Tron's engine is not NOLF2's at its interfaces. It kept build 51's
+(March 2002) ILTClient and ILTServer, with changes of its own, where the
+Jupiter mainline -- NOLF2, and the 2006 tree -- reordered them: so every
+call the game makes into the engine was at the wrong offset, and would call
+the wrong function on Tron's engine. The game code's other interfaces
+(messages: ILTMessage_Read/Write) are NOLF2's. So `src/Engine/sdk/inc` keeps
+NOLF2's declarations, which the shared code compiles against, in Tron's
+order, recovered from the retail binaries and recorded per interface in
+`progress/engine/`:
+
+- **Function-pointer members** (ILTClient, ILTServer): retail Lithtech.exe
+  and server.dll fill them in runs of stores which line up one for one with
+  nolf2src's named assignments (`CLTClient::InitFunctionPointers`,
+  `winclientde_impl.cpp`, `serverde_impl.cpp`), whose order Tron's engines
+  keep; the offsets the game's near functions call at agree everywhere.
+  `*-offsets.csv`.
+- **Virtuals** (ILTCSBase, ILTClient, ILTServer, ILTModel, ILTCommon,
+  ILTDrawPrim): each slot of Tron's engine vtable is named by the NOLF2
+  engine function whose body it has (nolf2src's built engine and map), with
+  the game's calls as fixed points. VC6 lays a name's overloads out
+  together, in declaration order, so a Tron slot inside an overload block is
+  a Tron overload (ILTDrawPrim's DrawPrim at +0x60, SetUVWH at +0xcc).
+  Each header is checked against what VC6 compiles from it
+  (`out/work/probe.sh`: a member pointer to each virtual, whose vcall thunk
+  names its slot). `*-vtable.csv`.
+- **Not yet:** ILTFontManager -- Tron's three CreateFont overloads each take
+  one pointer (two are stubs returning NULL) where NOLF2's five take two to
+  five arguments, so its font creation is to be written from the retail
+  game's calls; and NOLF2's 1.x engine additions the shared code still calls
+  -- ILTServer::GetSaveFileVersion (GameServerShell, GameBase,
+  GameBaseLite, WorldProperties: NOLF2 1.x save formats), ILTModel's OBB
+  calls -- which Tron's engine does not have.
+
 ### 9. modern
 
 What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`

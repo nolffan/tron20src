@@ -1,0 +1,31 @@
+# Tron's CLTCommonClient vtable (0x58d770 in Lithtech.exe), the slots of ILTCommon the game calls: each
+# slot, the NOLF2 method in it, and how it was named (its function's body
+# against nolf2src's engine's CLTCommonClient, 0x57e790; retail's game calls). Slot 0 is
+# the interface macro's. VC6 lays a name's overloads out together, in their
+# declaration order; the order is checked against what VC6 compiles from the
+# header (out/work/probe.sh: a member pointer to each virtual).
+# offset,method,evidence
+0x004,GetPolyTextureFlags,game calls
+0x008,GetPolyPlane,identical body
+0x00c,GetPointStatus,game calls
+0x010,GetPointShade,identical body
+0x014,CompressVector,identical body
+0x018,UncompressVector,identical body
+0x01c,CompressRotation,identical body
+0x020,UncompressRotation,identical body
+0x024,SetObjectResource,similar body 0.99
+0x028,GetObjectFlags,game calls
+0x02c,SetObjectFilenames,game calls
+0x030,SetObjectFlags,game calls
+0x034,GetAttachmentObjects,identical body
+0x038,GetAttachments,game calls
+0x03c,GetAttachmentTransform,identical body
+0x040,GetAttachedModelSocketTransform,identical body
+0x044,GetAttachedModelNodeTransform,identical body
+0x048,NumAttachments,identical body
+0x04c,Parse,game calls
+0x050,GetObjectType,game calls
+0x054,GetModelAnimUserDims,game calls
+0x058,GetRotationVectors,identical body
+0x05c,SetupEuler,identical body
+0x060,CreateMessage,game calls
