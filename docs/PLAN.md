@@ -210,6 +210,37 @@ order, recovered from the retail binaries and recorded per interface in
   GameBaseLite, WorldProperties: NOLF2 1.x save formats), ILTModel's OBB
   calls -- which Tron's engine does not have.
 
+### 4b. The game's classes: Tron's vtables
+
+The game is built `/GR`, so every polymorphic class carries RTTI in both
+images, and `out/work/rtti_vt.py` pairs our vtables with retail's by type
+descriptor (`out/work/class_vt_align.py` then aligns one class's slots by
+body). A vtable of the wrong size moves every virtual call past the
+difference, so these are fixed first, from the retail evidence:
+
+- **Game types.** Tron has eight (retail's GameTypeToString table):
+  Single, SingleLightCycleCircuit, SingleLightCycleCustom, Cooperative,
+  Deathmatch, DiscArena, DiscTournament, MultiplayerLightcycles.
+- **The HUD.** Every CHUDItem says which game types it belongs to (a pure
+  slot 3, one body per set of types), has an enabled flag with a setter
+  and getter, and CHUDMgr builds its item list per game type.
+- **Build 51's shape where NOLF2 later changed it**: no
+  CSpecialFX::OnObjectRotate, no virtual EnablePitch,
+  IsTargetGadgetActivatable, CHUDTransmission::Hide, CGadgetTargetFX
+  getters, CVersionMgr's five virtuals only, CPlayerStats without energy.
+- **Tron's additions**, named where the retail code shows what they are
+  (CClientWeapon's fifteen model-key handlers, from its OnModelKey;
+  CLTGUICtrl::SetAlpha; CHitBox::SetCanActivate) and otherwise stand-ins
+  named `TronUnknownVirtual<slot>`, to be written from the retail code.
+
+Left (CShell, from 133 classes of differing size to 9): CPlayerMgr (14
+slots against 47: Tron's CTronPlayerMgr overrides nearly all of them, so it
+is to be decompiled, not reshaped), CInterfaceMgr (19 against 42), the disc
+weapons' own slots (94 against 105), CWeaponChooser, and the client shell:
+Tron's IClientShell order differs from both NOLF2's and build 51's, and is
+to be read from the engine's calls into it, as ILTClient's was.
+Object.lto: 152 classes still differ.
+
 ### 9. modern
 
 What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`
