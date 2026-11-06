@@ -662,3 +662,19 @@ LTRESULT CExplosionPlugin::PreHook_EditStringList(const char* szRezPath,
 	return LT_UNSUPPORTED;
 }
 #endif
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::TronUnknownVirtual68
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100ef230); a stand-in with its shape
+//
+// ----------------------------------------------------------------------- //
+
+uint32 Explosion::TronUnknownVirtual68(void* pArg)
+{
+	if (!pArg) return 1;
+
+	g_pLTServer->GetObjectPos(m_hObject, &m_vPos);
+	return 1;
+}

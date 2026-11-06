@@ -38,6 +38,10 @@ class Explosion : public GameBase
 
         virtual void Start(HOBJECT hFiredFrom=LTNULL);
 
+		// RETAIL: Tron's slot 0x68 (retail 0x100ef230: 1 when given nothing,
+		// else the explosion's position is read into m_vPos). Not yet named
+		virtual uint32 TronUnknownVirtual68(void* pArg);
+
         LTFLOAT			m_fDamageRadius;
         LTFLOAT         m_fMaxDamage;
 		DamageType		m_eDamageType;
@@ -56,15 +60,17 @@ class Explosion : public GameBase
 
 	private :
 
-		void Update();
 		void ReadProp();
 		void AreaDamageObjectsInSphere();
 		void AreaDamageObject(HOBJECT hObj);
 		void ProgDamageObjectsInSphere();
 		void ProgDamageObject(HOBJECT hObj);
 
-        void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
-        void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
+		// RETAIL: virtual in Tron, in this order, after slot 0x68 (its vtable;
+		// Mine's are overrides)
+        virtual void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
+        virtual void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
+		virtual void Update();
 };
 
 #ifndef __PSX2
