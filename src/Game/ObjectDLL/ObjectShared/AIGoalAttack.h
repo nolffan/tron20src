@@ -63,6 +63,9 @@ class CAIGoalAttack : public CAIGoalAbstractStimulated
 		// State Setting.
 
 		virtual void SetStateAttack();
+		// RETAIL: Tron's (slot 0x5c, retail 0x10210f10: whether a member pointer
+		// is null). Not yet named
+		virtual LTBOOL TronUnknownVirtual5C() { return LTTRUE; }
 				void SetStatePanic();
 
 		void ActivateChangeWeapons();

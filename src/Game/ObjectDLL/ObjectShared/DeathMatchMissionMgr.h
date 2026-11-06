@@ -49,7 +49,8 @@ class CDeathMatchMissionMgr : public CServerMissionMgr
 		virtual bool	EndGame( );
 
 		//handle updating multiplayer options while in game
-		virtual bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg );
+		// RETAIL: not virtual in Tron (CServerMissionMgr's vtable)
+		bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg );
 
 };
 

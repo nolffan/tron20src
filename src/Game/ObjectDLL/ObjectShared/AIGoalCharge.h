@@ -50,7 +50,9 @@ class CAIGoalCharge : public CAIGoalAbstractStimulated
 
 		// State Handling.
 
-		void HandleStateCharge();
+		// RETAIL: virtual in Tron (its vtable's own slot, which checks the AI's
+		// state first)
+		virtual void HandleStateCharge();
 
 	protected:
 

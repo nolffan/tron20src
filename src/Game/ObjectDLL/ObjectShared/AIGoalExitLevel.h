@@ -39,6 +39,9 @@ class CAIGoalExitLevel : public CAIGoalGuard
 		// State Handling.
 
 		virtual void	HandleStateGoto();
+		// RETAIL: Tron's (slot 0x64, retail 0x10208af0: returns 0x11). Not yet
+		// named
+		virtual int		TronUnknownVirtual64() { return 0x11; }
 
 	protected:
 

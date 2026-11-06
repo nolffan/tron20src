@@ -25,7 +25,8 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		virtual ~CServerMissionMgr();
 
 		// Called when level switch is needed.
-		bool			ExitLevelSwitch( );
+		// RETAIL: virtual in Tron (slot 2, retail 0x10161f70)
+		virtual bool	ExitLevelSwitch( );
 
 		// Called to force switch to next mission
 		bool			NextMission( );
@@ -88,10 +89,12 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		virtual void	Update( );
 
 		// Called to check if gametype allows respawning.
-		virtual bool	CanRespawn( CPlayerObj const& player ) const { return true; }
+		// RETAIL: CanRespawn and LevelStarted are not virtual in Tron (its
+		// vtable; build 51 has neither)
+		bool	CanRespawn( CPlayerObj const& player ) const { return true; }
 
 		// Called when the clients enter the world
-		virtual void	LevelStarted();
+		void	LevelStarted();
 
 	// Game type overrides.
 	protected:
@@ -117,10 +120,12 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		bool			HandleExitLevel( HCLIENT hSender, ILTMessage_Read& msg );
 
 		//handle updating multiplayer options while in game
-		virtual bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg ) {return false;}
+		// RETAIL: not virtual in Tron (its vtable)
+		bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg ) {return false;}
 
 		// Call to send client exit level message with current level and mission.
-		bool			SendExitLevelMessage( );
+		// RETAIL: virtual in Tron (its last slot, retail 0x10162350)
+		virtual bool	SendExitLevelMessage( );
 
 		// Sets up the campaign to run.  The campaign is the list of missions in
 		// the order they should be played.

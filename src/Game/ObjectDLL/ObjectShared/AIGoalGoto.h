@@ -47,7 +47,9 @@ class CAIGoalGoto : public CAIGoalAbstract
 
 		// State Handling.
 
-		void HandleStateGoto();
+		// RETAIL: virtual in Tron (its vtable's own slot, which checks the AI's
+		// state first)
+		virtual void HandleStateGoto();
 
 	protected:
 
