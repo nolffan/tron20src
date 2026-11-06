@@ -328,6 +328,8 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		virtual float	GetDefensePercentage( LTVector const *pIncomingProjectilePosition = 0 ) const { return 0.0f; }
 		
 		virtual CAnimator* GetAnimator() { return m_pAnimator; }
+		// RETAIL: IHitBoxUser's (retail 0x10062940)
+		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 
 	protected :
 

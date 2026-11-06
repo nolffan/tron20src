@@ -70,6 +70,12 @@ class CDestructibleModel : public CDestructible
 		CDestructibleModel();
 		virtual ~CDestructibleModel();
 
+		// RETAIL: Tron's (slot 0x14, retail 0x10110310): given a damage
+		// struct, for two damage types (0x21, 0x23) with a duration it scales
+		// the damage by the frame time, clears the duration and returns true.
+		// Not yet named or written
+		virtual bool	TronUnknownVirtual14( DamageStruct* pDamage ) { return false; }
+
         void        DoExplosion(char* pTargetName=LTNULL);
         void        SetDestroyedStimulus(LTFLOAT fStimRadius, uint32 nDestroyAlarmLevel);
 

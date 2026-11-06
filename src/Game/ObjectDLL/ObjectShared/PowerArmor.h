@@ -126,6 +126,9 @@ class ShellArmor : public Prop, public IHitBoxUser
 		virtual LTFLOAT ComputeDamageModifier(ModelNode eModelNode);
 		virtual float GetNodeRadius( ModelSkeleton eModelSkeleton, ModelNode eModelNode );
 		virtual void UpdateClientHitBox() {};
+		// RETAIL: IHitBoxUser's last two: Tron's ShellArmor has its own slot 0x24
+		// (retail 0x1013c3e0, not yet written) and returns its object (0x1013c450)
+		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 
 	protected:
 		enum eShieldState

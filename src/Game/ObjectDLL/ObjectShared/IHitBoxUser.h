@@ -43,6 +43,12 @@ struct IHitBoxUser
 		virtual float GetNodeRadius( ModelSkeleton, ModelNode ) = 0;
 		virtual void UpdateClientHitBox() = 0;
 		virtual CAnimator*	GetAnimator() { return LTNULL; }
+
+		// RETAIL: Tron's last two slots: one argument, empty in CCharacter and
+		// Body; and the user's own object (both return their m_hObject, retail
+		// 0x10062940, 0x1001b900). Not yet named
+		virtual void	TronUnknownVirtual24( int nArg ) {}
+		virtual HOBJECT	TronUnknownVirtual28() = 0;
 };
 
 #endif // __IHITBOXUSER_H__

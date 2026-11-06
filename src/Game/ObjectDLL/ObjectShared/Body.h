@@ -160,6 +160,8 @@ class Body : public Prop, public IHitBoxUser
 		void		HideBody( bool bHide );
 
 		virtual CAnimator* GetAnimator() { return &m_Animator; }
+		// RETAIL: IHitBoxUser's (retail 0x1001b900)
+		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 
 		// Get the complete list of all bodies.
 		typedef std::vector< Body* > BodyList;
