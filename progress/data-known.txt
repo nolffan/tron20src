@@ -938,7 +938,6 @@ Object.lto	retail	Disable Secrezzer
 Object.lto	retail	DisableSWM
 Object.lto	retail	Disabled
 Object.lto	retail	DisappearedMovingAnimRate
-Object.lto	retail	DiscArena
 Object.lto	retail	DiscAutoAimAngleDecayMult
 Object.lto	retail	DiscAutoAimAngleMult
 Object.lto	retail	DiscAutoAimRadius
@@ -960,7 +959,6 @@ Object.lto	retail	DiscHomingTargetYOffsetPercent
 Object.lto	retail	DiscMagneticHoming
 Object.lto	retail	DiscMagneticShowTarget
 Object.lto	retail	DiscResponsivenessMultiplier
-Object.lto	retail	DiscTournament
 Object.lto	retail	DiscVelocity
 Object.lto	retail	DiscVelocityReturn
 Object.lto	retail	Dismiss
@@ -1299,7 +1297,6 @@ Object.lto	retail	ModifyPriorityWithDist
 Object.lto	retail	MovementLock%d
 Object.lto	retail	MultiOnly
 Object.lto	retail	MultiplayerLeashLength
-Object.lto	retail	MultiplayerLightcycles
 Object.lto	retail	Name LC%02d;CycleColor %s
 Object.lto	retail	NameKey
 Object.lto	retail	NameSeed
@@ -1538,8 +1535,6 @@ Object.lto	retail	Shade
 Object.lto	retail	Shield
 Object.lto	retail	Shield_prism
 Object.lto	retail	ShowNodeCover
-Object.lto	retail	SingleLightCycleCircuit
-Object.lto	retail	SingleLightCycleCustom
 Object.lto	retail	SlowZoneDecelRate
 Object.lto	retail	SmashFront
 Object.lto	retail	Socket
@@ -1988,7 +1983,6 @@ CShell.dll	ours	DetailsFrame
 CShell.dll	ours	DetailsRect
 CShell.dll	ours	DeviceCompletedScore
 CShell.dll	ours	Doctor Dentz!
-CShell.dll	ours	DoomsDay
 CShell.dll	ours	DoomsDayBurn
 CShell.dll	ours	Doomsday
 CShell.dll	ours	DrawOrder
@@ -2306,7 +2300,6 @@ CShell.dll	ours	Team2TimerPos
 CShell.dll	ours	Team2TimerSize
 CShell.dll	ours	TeamColor
 CShell.dll	ours	TeamDM
-CShell.dll	ours	TeamDeathmatch
 CShell.dll	ours	TeamDefaults
 CShell.dll	ours	TeamModels
 CShell.dll	ours	TimerColor
@@ -2813,7 +2806,6 @@ CShell.dll	retail	DescriptionGold
 CShell.dll	retail	DestroyedInFlightFXName
 CShell.dll	retail	DialogBox
 CShell.dll	retail	DialogFontNum
-CShell.dll	retail	DiscArena
 CShell.dll	retail	DiscArenaDefault
 CShell.dll	retail	DiscAutoAim
 CShell.dll	retail	DiscControlRate
@@ -2828,7 +2820,6 @@ CShell.dll	retail	DiscMPWidth
 CShell.dll	retail	DiscMatches
 CShell.dll	retail	DiscResponsivenessMultiplier
 CShell.dll	retail	DiscScores
-CShell.dll	retail	DiscTournament
 CShell.dll	retail	DiscTournamentDefault
 CShell.dll	retail	DiscsInSpectator
 CShell.dll	retail	Distance
@@ -3243,13 +3234,11 @@ CShell.dll	retail	Movies\\DisnLogo.bik
 CShell.dll	retail	Movies\\nvidia.bik
 CShell.dll	retail	MultiAnnounceColor
 CShell.dll	retail	MultiAnnouncementMessageQueue
-CShell.dll	retail	MultiChatMessageQueue
 CShell.dll	retail	MultiDeathFX
 CShell.dll	retail	MultiOnly
 CShell.dll	retail	MultiplayerLeashLength
 CShell.dll	retail	MultiplayerLightCycleScores
 CShell.dll	retail	MultiplayerLightcycleDefault
-CShell.dll	retail	MultiplayerLightcycles
 CShell.dll	retail	MusicActive
 CShell.dll	retail	MusicActive
 CShell.dll	retail	MusicQuality
@@ -3459,8 +3448,6 @@ CShell.dll	retail	ShellCasings
 CShell.dll	retail	ShellCasings
 CShell.dll	retail	Shield
 CShell.dll	retail	Shield_prism
-CShell.dll	retail	SingleLightCycleCircuit
-CShell.dll	retail	SingleLightCycleCustom
 CShell.dll	retail	SingleString
 CShell.dll	retail	SkipSubIntro
 CShell.dll	retail	SlowZoneDecelRate

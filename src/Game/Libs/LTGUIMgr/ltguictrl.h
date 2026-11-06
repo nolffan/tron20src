@@ -46,8 +46,7 @@ public:
 	virtual uint16	GetWidth ( ) { return 0; }
 	virtual uint16	GetHeight ( ) { return 0; }
 
-	virtual uint16	GetBaseWidth ( ) { return ( uint16 )( (float)GetWidth() / GetScale()); }
-	virtual uint16	GetBaseHeight ( ) { return ( uint16 )( (float)GetHeight() / GetScale()); }
+	// RETAIL: GetBaseWidth and GetBaseHeight follow GetScale in Tron (its vtables)
 	
 	virtual void	SetBasePos( LTIntPt pos )       { m_basePos=pos; SetScale(m_fScale);}
     virtual LTIntPt GetBasePos ( )                  { return m_basePos; }
@@ -55,6 +54,8 @@ public:
 
 	virtual void	SetScale(float fScale);
 	virtual float	GetScale()					{return m_fScale;}
+	virtual uint16	GetBaseWidth ( ) { return ( uint16 )( (float)GetWidth() / GetScale()); }
+	virtual uint16	GetBaseHeight ( ) { return ( uint16 )( (float)GetHeight() / GetScale()); }
 
 	
 	// Commonly used input messages
@@ -107,6 +108,16 @@ public:
 	// Sets the colors to fade to and from
     virtual void    SetColors(uint32 argbSelected, uint32 argbNormal, uint32 argbDisabled) 
 				{ m_argbSelected = argbSelected; m_argbNormal = argbNormal; m_argbDisabled = argbDisabled;}
+
+	// RETAIL: Tron's, the slot after SetColors (retail 0x100bfcc0): the alpha of
+	// all three colors. The name is ours
+	virtual void	SetAlpha(uint8 nAlpha)
+	{
+		uint32 nA = (uint32)nAlpha << 24;
+		m_argbSelected = (m_argbSelected & 0x00FFFFFF) | nA;
+		m_argbNormal = (m_argbNormal & 0x00FFFFFF) | nA;
+		m_argbDisabled = (m_argbDisabled & 0x00FFFFFF) | nA;
+	}
 	
 
 	// Access to member variables

@@ -210,7 +210,7 @@ void CScreenFailure::Escape()
 	}
 }
 
-LTBOOL CScreenFailure::HandleKeyUp(int key, int rep)
+LTBOOL CScreenFailure::HandleKeyDown(int key, int rep)
 {
 	if (g_fDuration > g_fMinDelay)
 	{
@@ -220,7 +220,7 @@ LTBOOL CScreenFailure::HandleKeyUp(int key, int rep)
 	return LTFALSE;
 
 }
-LTBOOL CScreenFailure::OnLButtonUp(int x, int y)
+LTBOOL CScreenFailure::OnLButtonDown(int x, int y)
 {
 	if (g_fDuration > g_fMinDelay)
 	{
@@ -229,7 +229,7 @@ LTBOOL CScreenFailure::OnLButtonUp(int x, int y)
 	}
 	return LTFALSE;
 }
-LTBOOL CScreenFailure::OnRButtonUp(int x, int y)
+LTBOOL CScreenFailure::OnRButtonDown(int x, int y)
 {
 	if (g_fDuration > g_fMinDelay)
 	{

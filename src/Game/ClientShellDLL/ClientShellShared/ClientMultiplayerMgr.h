@@ -112,7 +112,9 @@ public:
 	
 protected :
 
-	bool		HandleMsgHandshake( ILTMessage_Read& msg );
+	// RETAIL: virtual in Tron (retail ClientMultiplayerMgr's vtable, slot 1:
+	// 0x100e8dd0 reads the handshake's sub-message and switches on it)
+	virtual bool	HandleMsgHandshake( ILTMessage_Read& msg );
 	bool		HandleMsgMultiplayerData( ILTMessage_Read& pMsg );
 	bool		HandleMsgPlayerMultiplayerInit( ILTMessage_Read& msg );
 	bool		HandleMsgPlayerSingleplayerInit (ILTMessage_Read& msg);

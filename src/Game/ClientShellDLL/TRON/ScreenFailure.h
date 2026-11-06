@@ -28,9 +28,12 @@ public:
     virtual void	OnFocus(LTBOOL bFocus);
 	virtual void	Escape();
 
-    virtual LTBOOL	HandleKeyUp(int key, int rep);
-    virtual LTBOOL	OnLButtonUp(int x, int y);
-    virtual LTBOOL	OnRButtonUp(int x, int y);
+	// RETAIL: Tron's screen ends on a key or button going down (retail's
+	// vtable overrides HandleKeyDown, OnLButtonDown and OnRButtonDown, with
+	// one body: 0x1005b140); Build 69's took them going up
+    virtual LTBOOL	HandleKeyDown(int key, int rep);
+    virtual LTBOOL	OnLButtonDown(int x, int y);
+    virtual LTBOOL	OnRButtonDown(int x, int y);
 
     virtual LTBOOL	Render(HSURFACE hDestSurf);
 
