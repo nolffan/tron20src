@@ -2183,3 +2183,24 @@ LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, 
 
 #pragma optimize ("",on)
 #endif // __PSX2
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAttachments::TronUnknownVirtual10
+//
+//	PURPOSE:	RETAIL: Tron's: CAttachment's slot 0x14 on every attachment
+//				(retail 0x10189df0 loops over the positions)
+//
+// ----------------------------------------------------------------------- //
+
+void CAttachments::TronUnknownVirtual10()
+{
+	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < m_cAttachmentPositions ; iAttachmentPosition++ )
+	{
+		CAttachment* pAttachment = m_apAttachmentPositions[iAttachmentPosition]->GetAttachment();
+		if ( pAttachment )
+		{
+			pAttachment->TronUnknownVirtual14();
+		}
+	}
+}

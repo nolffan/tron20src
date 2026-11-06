@@ -49,7 +49,7 @@ class BanIPMgr_Impl : public BanIPMgr
 		virtual bool AddBan( ClientIP const& bannedIP );
 
 		// Call to remove a ban.
-		virtual bool RemoveBan( char const* pszBanIP );
+		bool RemoveBan( char const* pszBanIP );	// RETAIL: not virtual in Tron
 		virtual bool RemoveBan( ClientIP const& bannedIP );
 
 		// Get the list of bans.

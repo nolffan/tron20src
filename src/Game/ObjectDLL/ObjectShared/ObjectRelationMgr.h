@@ -71,7 +71,9 @@ public:
 	// Relation Handling:
 
 	void CommunicateMessage(CCharacter* pSender, const RelationDescription&, uint32 dRestrictionFlags);
-	virtual void ResetRelationTime(CObjectRelationMgr* pORM);
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no ResetRelationTime: NOLF2's
+	// later code, standing in)
+	void ResetRelationTime(CObjectRelationMgr* pORM);
 	void AddRelation(const RelationDescription& RD);
 	
 	// Mix of Aggregate accessors (poorly blobbed together -- ought to be used more cleanly)

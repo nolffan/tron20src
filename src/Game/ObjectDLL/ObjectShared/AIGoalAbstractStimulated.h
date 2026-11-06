@@ -58,6 +58,9 @@ class CAIGoalAbstractStimulated : public CAIGoalAbstract, public ILTObjRefReceiv
 
 		virtual LTBOOL HandleGoalSenseTrigger(AISenseRecord* pSenseRecord);
 
+		// RETAIL: Tron's (CAIGoalAbstract's last slot)
+		virtual HOBJECT GetStimulusSource() { return m_hStimulusSource; }
+
 	protected:
 		enum RelationReactions
 		{

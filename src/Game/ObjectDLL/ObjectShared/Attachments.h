@@ -117,6 +117,9 @@ class CAttachment : public ILTObjRefReceiver
 
 		virtual void CreateSpawnString(char* szSpawn) = 0;
 		virtual	void CreateAttachString(CAttachmentPosition* pAttachmentPosition, char* szAttach) {szAttach[0] = '\0';}
+		// RETAIL: Tron's (slot 0x14, empty here); CAttachments' slot 0x10 calls it
+		// on every attachment. Not yet named
+		virtual void TronUnknownVirtual14() {}
 
 
 		// Handlers
@@ -288,6 +291,9 @@ class CAttachments : public IAggregate
 		void GetInfiniteAmmo();
 
 		virtual void HandleDeath();
+		// RETAIL: Tron's (slot 0x10, retail 0x10189df0): CAttachment's slot 0x14
+		// on every attachment. Not yet named
+		virtual void TronUnknownVirtual10();
         virtual LTBOOL HandleProjectileImpact(CProjectile* pProjectile, IntersectInfo& iInfo, const LTVector& vDir, const LTVector& vFrom, ModelSkeleton eModelSkeleton, ModelNode eModelNode);
 
 		virtual void Init(HOBJECT hObject);
@@ -297,6 +303,9 @@ class CAttachments : public IAggregate
 		void AddRequirements(ModelId eModelId);
 
 		virtual void Attach(const char* szAttachmentPosition, const char* szAttachment);
+		// RETAIL: Tron's (slot 0x24, one argument; retail 0x10187d50). Not yet
+		// named
+		virtual void TronUnknownVirtual24(const char* szArg) {}
 		virtual void Detach(const char* szAttachmentPosition);
 		CAttachment* GetAttachment(const char* szAttachmentPosition);
 
@@ -308,7 +317,9 @@ class CAttachments : public IAggregate
 		virtual void RemoveAndRecreateAttachments();
 		
 		// Detach all the attachments of specified type...
-		virtual void DetachAttachmentsOfType( AttachmentType eType );
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no DetachAttachmentsOfType: NOLF2's
+	// later code, standing in)
+		void DetachAttachmentsOfType( AttachmentType eType );
 
 		// Simple accessors
 

@@ -43,6 +43,9 @@ public :
 	virtual bool IsActive() const { return m_bActive; }
 	virtual void Activate();
 	virtual void Deactivate();
+	// RETAIL: Tron's (slot 0x5c, retail 0x10095c40: the registered flag, which
+	// InitialUpdate sets). The name is ours
+	virtual bool IsRegistered() const { return m_bRegistered; }
 
 	// Class access
 	virtual void SetClass(HCLASS hClass) { m_hClass = hClass; }

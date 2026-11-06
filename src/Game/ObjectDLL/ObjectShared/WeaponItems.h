@@ -42,7 +42,9 @@ class WeaponItem : public PickupItem
 		virtual void	ObjectTouch (HOBJECT hObject, bool bForcePickup=false);
 		
 		virtual void	PickedUp( ILTMessage_Read *pMsg );
-		virtual void	Respawn( );
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no Respawn: NOLF2's
+	// later code, standing in)
+		void	Respawn( );
 
 	private :
 

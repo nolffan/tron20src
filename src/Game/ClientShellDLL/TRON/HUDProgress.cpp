@@ -756,5 +756,7 @@ void CHUDProgress::SetUVWH(LT_POLYFT4 * pPrim, LTRect rect)
 	rect.right -= rect.left;
 	rect.bottom -= rect.top;
 
-	g_pDrawPrim->SetUVWH(pPrim, rect.left / 512.0f, rect.top / 512.0f, rect.right / 512.0f, rect.bottom / 512.0f);
+	// RETAIL: Tron's HUD textures are 256 wide (retail multiplies by 1/256;
+	// Build 69's divided by 512)
+	g_pDrawPrim->SetUVWH(pPrim, rect.left / 256.0f, rect.top / 256.0f, rect.right / 256.0f, rect.bottom / 256.0f);
 }

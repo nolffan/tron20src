@@ -113,6 +113,10 @@ class CAIGoalAbstract : public CAIClassAbstract
 		bool HandleCommand(const CParsedMsg &cMsg);
 		virtual LTBOOL HandleNameValuePair(const char *szName, const char *szValue) { return LTFALSE; }
 
+		// RETAIL: Tron's last slot (0x50): none here; CAIGoalAbstractStimulated's
+		// is its stimulus source (retail 0x1018fe20). The name is ours
+		virtual HOBJECT GetStimulusSource() { return LTNULL; }
+
 		// Scripting.
 
 		void		SetScripted(LTBOOL bScripted) { m_bScripted = bScripted; }

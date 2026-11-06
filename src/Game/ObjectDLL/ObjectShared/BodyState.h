@@ -33,7 +33,9 @@ class CBodyState : public CAIClassAbstract
 		// we can't deactivate as long as we're moving our body around,
 		// and we also don't want to update the dims as long as we're moving
 		// our body around.
-		virtual LTBOOL CanUpdateDims() { return CanDeactivate( ); }
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no CanUpdateDims: NOLF2's
+	// later code, standing in)
+		LTBOOL CanUpdateDims() { return CanDeactivate( ); }
 
 	protected :
 
@@ -54,7 +56,9 @@ class CBodyStateNormal : public CBodyState
 
 		// It's always ok to update dims for normal, because normal isn't
 		// doing anything.
-		virtual LTBOOL CanUpdateDims() { return true; }
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no CanUpdateDims: NOLF2's
+	// later code, standing in)
+		LTBOOL CanUpdateDims() { return true; }
 
 };
 

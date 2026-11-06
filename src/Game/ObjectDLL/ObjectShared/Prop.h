@@ -69,7 +69,9 @@ class Prop : public GameBase
         uint32  ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg);
 
 		// Sets up object based on member varaibles.
-		virtual bool Setup( );
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no Setup: NOLF2's
+	// later code, standing in)
+		bool Setup( );
 
 		bool	OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);
 

@@ -77,7 +77,8 @@ class BanIPMgr
 		virtual bool AddBan( ClientIP const& bannedIP ) = 0;
 
 		// Call to remove a ban.
-		virtual bool RemoveBan( char const* pszBanIP ) = 0;
+		// RETAIL: Tron's interface has no RemoveBan by string (its vtable: one
+		// RemoveBan, the ClientIP one); BanIPMgr_Impl keeps NOLF2's, not virtual
 		virtual bool RemoveBan( ClientIP const& bannedIP ) = 0;
 
 		// Get the list of bans.

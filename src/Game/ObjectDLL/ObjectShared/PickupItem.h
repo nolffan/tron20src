@@ -45,13 +45,17 @@ class PickupItem : public GameBase
 		bool			OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);
 
 		virtual void	PickedUp(ILTMessage_Read *pMsg);
-		virtual void	Respawn( );
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no Respawn: NOLF2's
+	// later code, standing in)
+		void	Respawn( );
 
 		virtual void	PlayPickedupSound();
 
 		virtual void	CheckForOverrideModel(ObjectCreateStruct *pStruct);
 		
-		virtual void	CreateSpecialFX( bool bUpdateClients = false );
+	// RETAIL: not virtual in Tron (its vtables; build 51 has no CreateSpecialFX: NOLF2's
+	// later code, standing in)
+		void	CreateSpecialFX( bool bUpdateClients = false );
 
 	protected:
 
