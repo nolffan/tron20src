@@ -76,6 +76,9 @@ public:
 	// main update function
 	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE ) { return W_IDLE; }
 
+	// RETAIL: Tron's (slot 8, empty here and in CClientWeapon). Not yet named
+	virtual void          TronUnknownVirtual20() {}
+
 	// external interfaces to change the ammo
 	virtual void          ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce= false ) {}
 	virtual void          ChangeAmmoImmediate( uint8 nNewAmmoId, int nAmmoAmount = -1, bool bForce= false ) {}
@@ -95,7 +98,7 @@ public:
 	virtual void          UpdateBob( LTFLOAT fWidth, LTFLOAT fHeight ) {}
 
 	// dynanic perturb
-	virtual LTFLOAT       GetDynamicPerturb()  const { return 0.0f; }
+	// RETAIL: Tron's interface has no GetDynamicPerturb (its vtable)
 
 	// Do NOT call these functions directly.  If you want to
 	// enable/disable or show/hide the weapons, call the functions
@@ -167,6 +170,10 @@ public:
 	virtual void		SetPaused( bool bPaused ) {}
 	
 	virtual void		ClearFiring() {}
+
+	// RETAIL: Tron's last slot (0xc8): true here and in CClientWeapon; the
+	// discs' asks one of their own slots. Not yet named
+	virtual bool		TronUnknownVirtualC8() { return true; }
 };
 
 

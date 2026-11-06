@@ -254,7 +254,6 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	static CParsedMsg::CToken s_cTok_WeaponKeySound(WEAPON_KEY_SOUND);
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FIRE( WEAPON_KEY_FIRE );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_SOUND( WEAPON_KEY_SOUND );
-	static CParsedMsg::CToken s_cTok_WEAPON_KEY_BUTE_SOUND( WEAPON_KEY_BUTE_SOUND );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_LOOPSOUND( WEAPON_KEY_LOOPSOUND );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FX( WEAPON_KEY_FX );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FIREFX( WEAPON_KEY_FIREFX );
@@ -290,15 +289,84 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	// Make a token to compare against.
 	CParsedMsg::CToken tok( pKey );
 
+	// RETAIL: Tron hands each key to a virtual handler (retail 0x1012efd0:
+	// CClientWeapon's vtable 0x124..0x15c, in this order); it has no bute
+	// sound key
 	if( tok == s_cTok_WEAPON_KEY_FIRE )
 	{
-		//
-		// Fire weapon
-		//
 		return HandleFireKey( hObj, pArgList );
 	}
 	else if( tok == s_cTok_WEAPON_KEY_SOUND )
 	{
+		return HandleSoundKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_LOOPSOUND )
+	{
+		return HandleLoopSoundKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_FX )
+	{
+		return HandleFXKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_FIREFX )
+	{
+		return HandleFireFXKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_HIDE_MODEL_PIECE )
+	{
+		return HandleHidePieceKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_SHOW_MODEL_PIECE )
+	{
+		return HandleShowPieceKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_FLASHLIGHT )
+	{
+		return HandleFlashlightKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_DEFLECT )
+	{
+		return HandleDeflectKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_RENDERSTYLE_MODEL_KEY )
+	{
+		return HandleRenderStyleKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_SHELLCASING )
+	{
+		return HandleShellCasingKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_HIDE_PVATTACHFX )
+	{
+		return HandleHidePVAttachFXKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_SHOW_PVATTACHFX )
+	{
+		return HandleShowPVAttachFXKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_HIDE_PVATTACHMENT )
+	{
+		return HandleHidePVAttachmentKey( hObj, pArgList );
+	}
+	else if( tok == s_cTok_WEAPON_KEY_SHOW_PVATTACHMENT )
+	{
+		return HandleShowPVAttachmentKey( hObj, pArgList );
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleSoundKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		//
 		// Play a sound globally (everybody should hear it)
 		//
@@ -380,22 +448,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 				ASSERT( LT_OK == ltResult );
 			}
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_BUTE_SOUND )
-	{
-		//
-		// Play a sound locally
-		//
 
-		// Play a sound bute...
-		if( ( pArgList->argc > 1 ) && pArgList->argv[ 1 ] )
-		{
-			g_pClientSoundMgr->PlaySoundLocal( pArgList->argv[1], SOUNDPRIORITY_PLAYER_HIGH,
-					PLAYSOUND_REVERB, SMGR_DEFAULT_VOLUME, 1.0f, WEAPONS_SOUND_CLASS );
-		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_LOOPSOUND )
-	{
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleLoopSoundKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		// Handle a looping sound key
 
 		if( ( pArgList->argc > 1 ) && pArgList->argv[ 1 ] )
@@ -483,17 +550,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 			}
 
 		}
-		
-	}
-	else if( tok == s_cTok_WEAPON_KEY_FX )
-	{
-		//
-		// Special FX key
-		//
-		return HandleFXKey( hObj, pArgList );
-	}
-	else if( tok == s_cTok_WEAPON_KEY_FIREFX )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleFireFXKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleFireFXKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		//
 		// Fire weapon & spawn special effects
 		//
@@ -509,9 +580,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 		// handle the fx key
 		return HandleFXKey( hObj, pArgList );
-	}
-	else if( tok == s_cTok_WEAPON_KEY_HIDE_MODEL_PIECE )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleHidePieceKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleHidePieceKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		//
 		// Hide some model pieces
 		//
@@ -548,9 +631,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 			// increment the index
 			++i;
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_SHOW_MODEL_PIECE )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleShowPieceKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleShowPieceKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		//
 		// Show one of the model pieces
 		//
@@ -587,9 +682,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 			// increment the index
 			++i;
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_FLASHLIGHT )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleFlashlightKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleFlashlightKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if (!m_bVisible) return false;
 
 		if( ( pArgList->argc > 1 ) && pArgList->argv[ 1 ] )
@@ -605,9 +712,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 				g_pPlayerMgr->GetFlashLight()->TurnOff();
 			}
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_DEFLECT )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleDeflectKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleDeflectKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if( ( pArgList->argc > 1 ) && pArgList->argv[ 1 ] )
 		{
 			// Tell the server we're deflecting.
@@ -617,9 +736,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 			cMsg.Writefloat(( float )atof( pArgList->argv[1] ));
 			g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 		}
-	}
-	else if( tok == s_cTok_RENDERSTYLE_MODEL_KEY )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleRenderStyleKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		// start the index at the first argument
 		int i = 0;
 		int nRS;
@@ -651,9 +782,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 				i++;
 			}
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_SHELLCASING )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleShellCasingKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleShellCasingKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if (!m_bVisible) return false;
 
 		// Create a shell casing based on the model key...
@@ -678,9 +821,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 			g_pGameClientShell->GetSFXMgr()->CreateSFX(SFX_SHELLCASING_ID, &sc);
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_HIDE_PVATTACHFX )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleHidePVAttachFXKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleHidePVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if (!m_bVisible) return false;
 
 		// start the index at the first argument
@@ -702,9 +857,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 			++i;
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_SHOW_PVATTACHFX )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleShowPVAttachFXKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleShowPVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if (!m_bVisible) return false;
 
 		// start the index at the first argument
@@ -726,9 +893,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 			++i;
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_HIDE_PVATTACHMENT	)
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleHidePVAttachmentKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleHidePVAttachmentKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if( !m_bVisible ) return false;
 
 		// start the index at the first argument
@@ -744,9 +923,21 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 			++i;
 		}
-	}
-	else if( tok == s_cTok_WEAPON_KEY_SHOW_PVATTACHMENT )
-	{
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::HandleShowPVAttachmentKey
+//
+//	PURPOSE:	A model key of OnModelKey's (RETAIL: Tron's, virtual; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::HandleShowPVAttachmentKey( HLOCALOBJ hObj, ArgList* pArgList )
+{
 		if( !m_bVisible ) return false;
 
 		// start the index at the first argument
@@ -762,7 +953,6 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 			++i;
 		}
-	}
 
 	return true;
 }
@@ -5832,4 +6022,25 @@ void CClientWeapon::ClearFiring()
 
 	PlayAnimation( nAni, true );
 	SetState( W_IDLE );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	RETAIL: Tron's slots, still to be written from the retail code; empty
+//	stand-ins so the vtable has Tron's shape
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeapon::TronUnknownVirtualE0( int nArg1, int nArg2 )
+{
+	return false;
+}
+
+void CClientWeapon::TronUnknownVirtual120()
+{
+}
+
+bool CClientWeapon::TronUnknownVirtual164()
+{
+	return false;
 }

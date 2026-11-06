@@ -83,7 +83,12 @@ public:
 	virtual void SetBasePos ( LTIntPt pos );
 	virtual void SetScale(float fScale);
 
-	virtual const char *GetTitle() {return m_Title.GetString()->GetText();}
+	// RETAIL: Tron's slot 0xc0 takes a hidden return pointer and unwinds a
+	// local (retail 0x10172920): taken to be GetTitle, returning a string by
+	// value (to be confirmed from its body). Then a new slot returning a bool,
+	// true here and false in CMenuSystem (retail's vtables), not yet named
+	virtual std::string GetTitle() {return m_Title.GetString()->GetText();}
+	virtual bool TronUnknownVirtualC4() { return true; }
 
 protected:
 

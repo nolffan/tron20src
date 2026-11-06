@@ -28,6 +28,9 @@ public:
 	// Handle a command
     virtual uint32 OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2);
 
+	// RETAIL: CBaseMenu's last slot, false here (retail 0x101c8210)
+	virtual bool TronUnknownVirtualC4() { return false; }
+
 private:
 
 	CLTGUITextCtrl*	m_pSaveCtrl;

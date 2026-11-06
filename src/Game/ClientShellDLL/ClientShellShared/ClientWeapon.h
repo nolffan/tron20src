@@ -81,7 +81,8 @@ public:
 	virtual void          UpdateBob( LTFLOAT fWidth, LTFLOAT fHeight );
 
 	// dynanic perturb
-	virtual LTFLOAT       GetDynamicPerturb()  const { return (m_fFiringPerturb > m_fMovementPerturb ? m_fFiringPerturb : m_fMovementPerturb); }
+	// RETAIL: not virtual in Tron (IClientWeaponBase's vtable)
+	LTFLOAT       GetDynamicPerturb()  const { return (m_fFiringPerturb > m_fMovementPerturb ? m_fFiringPerturb : m_fMovementPerturb); }
 
 	// Do NOT call these functions directly.  If you want to
 	// enable/disable or show/hide the weapons, call the functions
@@ -224,6 +225,9 @@ protected:
 	bool          PlayReloadAnimation();
 	bool          PlayIdleAnimation();
 	virtual bool  PlayFireAnimation( bool bResetAni );
+	// RETAIL: Tron's slot 0xe0, two arguments (the first compared with -1;
+	// retail 0x10133890). Not yet named
+	virtual bool  TronUnknownVirtualE0( int nArg1, int nArg2 );
 
 	// selet animation
 	bool          IsSelectAni( uint32 dwAni ) const;
@@ -298,6 +302,13 @@ protected:
 	virtual void  HandleFireKeyDown() {}          // fire held continuously down
 	virtual void  HandleFireKeyUp() {}            // fire key not pressed
 
+	// RETAIL: Tron's slots 0xf8..0x104, empty here (the discs override the
+	// first). Not yet named
+	virtual void  TronUnknownVirtualF8() {}
+	virtual void  TronUnknownVirtualFC() {}
+	virtual void  TronUnknownVirtual100() {}
+	virtual void  TronUnknownVirtual104() {}
+
 	// send all relevant fire information to the server
 	virtual void  SendFireMessage( bool bFire,
 	                               LTFLOAT fPerturb,
@@ -308,6 +319,11 @@ protected:
 
 	// add any extra firing information (primarily for derived classes)
 	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );
+
+	// RETAIL: Tron's slots 0x110, 0x114: one argument, empty here (the discs
+	// override the first). Not yet named
+	virtual void  TronUnknownVirtual110( int nArg ) {}
+	virtual void  TronUnknownVirtual114( int nArg ) {}
 
 	// return the "type" identifier (1st part of a fire message)
 	// NOTE: currently the server handles VECTOR and PROJECTILE the same
@@ -336,6 +352,8 @@ protected:
 	// special cases
 	void          DoSpecialFire();
 	virtual void  DoSpecialEndFire();
+	// RETAIL: Tron's slot 0x120 (retail 0x10135450). Not yet named
+	virtual void  TronUnknownVirtual120();
 	void          DoSpecialCreateModel();
 	void          SpecialShowPieces( bool bShow = true, bool bForce = false );
 	bool          SpecialOverrideFire();
@@ -355,8 +373,29 @@ protected:
 	void          ResetData();
 
 	// keyframe handlers
+	// RETAIL: Tron's OnModelKey hands every key to one of these (slots
+	// 0x124..0x15c, in this order); the names other than HandleFireKey's
+	// and HandleFXKey's are ours
 	virtual bool  HandleFireKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleSoundKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgs );
 	virtual bool  HandleFXKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleFireFXKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleHidePieceKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleShowPieceKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleFlashlightKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleDeflectKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleShellCasingKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleHidePVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleShowPVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleHidePVAttachmentKey( HLOCALOBJ hObj, ArgList* pArgs );
+	virtual bool  HandleShowPVAttachmentKey( HLOCALOBJ hObj, ArgList* pArgs );
+
+	// RETAIL: Tron's last two slots: 0x160 takes one argument and returns
+	// false here; 0x164 none (retail 0x1001a1f0). Not yet named
+	virtual bool  TronUnknownVirtual160( int nArg ) { return false; }
+	virtual bool  TronUnknownVirtual164();
 
 	// remove all keyframed FXEd effects that have expired
 	bool          RemoveFinishedKeyframedFX();
