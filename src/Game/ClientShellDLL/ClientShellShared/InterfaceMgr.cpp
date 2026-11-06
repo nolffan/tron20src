@@ -2407,13 +2407,16 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 
 		case IC_MAX_ENERGY_ID :
 		{
-           GetPlayerStats( )->UpdateMaxEnergy((uint32)fAmount);
+           // PORT: UpdateMaxEnergy is not in Tron's CPlayerStats interface (Tron's
+			// energy is CTronPlayerStats'); NOLF2's pickup code stands in
+			// GetPlayerStats( )->UpdateMaxEnergy((uint32)fAmount);
 		}
 		break;
 
 		case IC_ENERGY_ID :
 		{
-           GetPlayerStats( )->UpdateEnergy((uint32)fAmount);
+           // PORT: as UpdateMaxEnergy (above)
+			// GetPlayerStats( )->UpdateEnergy((uint32)fAmount);
 		}
 		break;
 

@@ -50,8 +50,8 @@ public:
     virtual void        UpdateArmor(uint32 nArmor) = 0;
     virtual void        UpdateMaxHealth(uint32 nHealth) = 0;
     virtual void        UpdateMaxArmor(uint32 nArmor) = 0;
-	virtual void        UpdateEnergy(uint32 nEnergy) = 0;
-	virtual void        UpdateMaxEnergy(uint32 nEnergy) = 0;
+	// RETAIL: Tron's interface has no UpdateEnergy/UpdateMaxEnergy (CTronPlayerStats has, not virtual)
+	// RETAIL: (nor UpdateMaxEnergy)
 	virtual void		UpdateProgress(uint32 nProgress) = 0;
 	virtual	void		UpdateMaxProgress(uint32 nMaxProgress) = 0;
 	
@@ -68,7 +68,7 @@ public:
 	virtual void		UpdateMissionStats(ILTMessage_Read *pMsg) = 0;
 
 	virtual void		ResetSkills() = 0;						 //clears all skill data
-	virtual void		ResetObjectives() = 0;					 //clears all objective data
+	// RETAIL: no ResetObjectives in Tron's interface
 	virtual void		ResetMissionStats() = 0;				 //clears all mission data
 
 	virtual void		ResetInventory() = 0;						 //clears all inventory data
@@ -76,8 +76,10 @@ public:
 														 // also drops gear and mods if bResetGear is set
 	virtual void		OnObjectivesDataMessage(ILTMessage_Read *pMsg) = 0;
 
-	virtual void		ClearMissionInfo() = 0;
+	// RETAIL: no ClearMissionInfo in Tron's interface
 	virtual int			GetMissionDamage() = 0;
+	// RETAIL: Tron's (retail CTronPlayerStats 0x100a9330: a member's value). Not yet named
+	virtual int		TronUnknownVirtual94() = 0;
 
 	virtual void		SetObjectivesSeen() {};
 	
@@ -119,8 +121,8 @@ public:
     virtual uint32      GetMaxHealth() = 0;
     virtual uint32      GetArmor() = 0;
     virtual uint32      GetMaxArmor() = 0;
-	virtual uint32		GetEnergy() = 0;
-	virtual uint32		GetMaxEnergy() = 0;
+	// RETAIL: Tron's interface has no GetEnergy/GetMaxEnergy (CTronPlayerStats has, not virtual)
+	// RETAIL: (nor GetMaxEnergy)
     virtual LTFLOAT		GetAirPercent() = 0;
 	virtual uint32		GetProgress() = 0;
 	virtual uint32		GetMaxProgress() = 0;
@@ -129,9 +131,11 @@ public:
     virtual uint8       GetCurrentAmmo() = 0;
 
 	virtual uint32		GetCurrentAmmoCount() = 0;
+	// RETAIL: Tron's (retail CTronPlayerStats 0x100ad0b0: a member's value). Not yet named
+	virtual uint32	TronUnknownVirtual110() = 0;
  
 	virtual LTBOOL		IsHiding() = 0;
-	virtual LTBOOL		IsHidden() = 0;
+	// RETAIL: no IsHidden in Tron's interface
 	virtual LTBOOL		CanHide() = 0;
 	virtual float		GetHideDuration() = 0;
 
@@ -141,6 +145,24 @@ public:
  
 	virtual const RANK*	GetRank() = 0;
 	virtual uint32		GetCostToUpgrade(eSkill skill) = 0;
+
+	// RETAIL: Tron's twelve slots before GetSkillModifier. 0x134..0x150 are
+	// its skill modifiers (Build 69's GetStealthModifiers ... : each indexes
+	// the skills bute manager by a skill level, retail 0x100a9410 on); then
+	// a flag (+0x2404) set, cleared, asked and set again. Not yet named, nor
+	// typed
+	virtual const void*	TronUnknownVirtual134() = 0;
+	virtual const void*	TronUnknownVirtual138() = 0;
+	virtual const void*	TronUnknownVirtual13C() = 0;
+	virtual const void*	TronUnknownVirtual140() = 0;
+	virtual const void*	TronUnknownVirtual144() = 0;
+	virtual const void*	TronUnknownVirtual148() = 0;
+	virtual const void*	TronUnknownVirtual14C() = 0;
+	virtual const void*	TronUnknownVirtual150() = 0;
+	virtual void	TronUnknownVirtual154() = 0;
+	virtual void	TronUnknownVirtual158() = 0;
+	virtual bool	TronUnknownVirtual15C() = 0;
+	virtual void	TronUnknownVirtual160(bool bValue) = 0;
 
 	virtual float		GetSkillModifier(eSkill skl, uint8 nMod) = 0; 
 };

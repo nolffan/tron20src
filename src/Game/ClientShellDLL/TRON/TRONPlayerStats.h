@@ -144,6 +144,23 @@ public:
 
 	const RANK*	GetRank();
 	uint32		GetCostToUpgrade(eSkill skill);
+
+	// RETAIL: Tron's slots of CPlayerStats' (stand-ins, to be written from
+	// the retail code)
+	int			TronUnknownVirtual94() { return 0; }
+	uint32		TronUnknownVirtual110() { return 0; }
+	const void*	TronUnknownVirtual134() { return LTNULL; }
+	const void*	TronUnknownVirtual138() { return LTNULL; }
+	const void*	TronUnknownVirtual13C() { return LTNULL; }
+	const void*	TronUnknownVirtual140() { return LTNULL; }
+	const void*	TronUnknownVirtual144() { return LTNULL; }
+	const void*	TronUnknownVirtual148() { return LTNULL; }
+	const void*	TronUnknownVirtual14C() { return LTNULL; }
+	const void*	TronUnknownVirtual150() { return LTNULL; }
+	void		TronUnknownVirtual154() {}
+	void		TronUnknownVirtual158() {}
+	bool		TronUnknownVirtual15C() { return false; }
+	void		TronUnknownVirtual160(bool bValue) {}
 //	const StealthModifiers* GetStealthModifiers() 
 //		{return g_pSkillsButeMgr->GetStealth((eSkillLevel)m_nSkills[SKL_STEALTH]);}
 

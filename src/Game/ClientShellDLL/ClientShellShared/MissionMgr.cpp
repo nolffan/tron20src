@@ -970,7 +970,9 @@ bool CMissionMgr::PreLoadWorld( char const* pszNewWorldName )
 
 bool CMissionMgr::ClearMissionInfo( )
 {
-	g_pPlayerStats->ClearMissionInfo();
+	// PORT: ClearMissionInfo is not in Tron's CPlayerStats interface; what
+	// Tron does here is to be read from the retail code
+	// g_pPlayerStats->ClearMissionInfo();
 
 	m_bCustomLevel = false;
     m_nCurrentMission = -1;
