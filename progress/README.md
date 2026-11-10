@@ -46,12 +46,13 @@ Each retail function gets one status (`out/progress/functions.csv`):
 | `middleware` | third-party code linked among the binary's own: listed, not counted (below) |
 | `encrypted` | code `Lithtech.exe` keeps encrypted on disc: listed, not counted (below) |
 
-Three more statuses are for functions of OURS, not shipped ones, so none of
+Four more statuses are for functions of OURS, not shipped ones, so none of
 them is counted in the denominator:
 
 | Status | Meaning |
 |---|---|
 | `unplaced` | written, and our own link puts it in our image, but no shipped function is placed for it |
+| `unreferenced` | as `unplaced`, but nothing the retail link's `/OPT:REF` keeps references it, so it would have discarded it: a template member, inline or compiler-generated helper only dead code of ours emits. An out-of-line definition is never this (its caller may be retail code not yet written). Our links are the project files' own, with VC6's default `/OPT:REF`, so they already discard these and none is expected here |
 | `unlinked` | compiled, but our own link leaves it out too: a library member this binary does not pull |
 | `driver` | emitted only by a scoring driver that ships nowhere (none here) |
 
