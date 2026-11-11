@@ -570,7 +570,7 @@ void CTargetMgr::CheckForIntersect(float &fDistAway)
 	g_pLTClient->GetObjectRotation(hCamera, &rRot);
 
  	m_ActivationData.m_vPos = vPos;
-	m_ActivationData.m_rRot = rRot;
+	m_ActivationData.m_vDir = rRot.Forward();	// PORT: Tron's CActivationData has a direction
 
 	IntersectQuery IQuery;
 	IntersectInfo IInfo;

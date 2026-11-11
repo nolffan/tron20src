@@ -91,6 +91,13 @@ class CPlayerCamera
 
         void SetOptZ(float f)   { m_OptZ = f; }
 
+		// RETAIL: Tron's (the names are ours)
+		float GetTronUnknown100() const { return m_fTronUnknown100; }
+		void SetTronUnknown100(float f) { m_fTronUnknown100 = f; }
+
+		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
+		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);
+
 		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot );
 		void CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot );
 
@@ -155,6 +162,15 @@ class CPlayerCamera
         LTVector		m_TargetFirstPersonOffset;
 
 		HOBJECT			m_hCollisionObject;
+
+		// RETAIL: Tron's (+0xd4..+0x104, to retail's size 0x108: the
+		// constructor, retail 0x1015b130, sets the last four and leaves the
+		// rest). Not yet named
+		uint8			m_aTronUnknownD4[0x24];
+		float			m_fTronUnknownF8;
+		float			m_fTronUnknownFC;
+		float			m_fTronUnknown100;	// RETAIL: CPlayerMgr keeps it within its +0x1dc (retail 0x1012cb10)
+		uint32			m_nTronUnknown104;
 
 	// Internal functions..
 	private:

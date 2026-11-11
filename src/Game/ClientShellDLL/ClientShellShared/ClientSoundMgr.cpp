@@ -237,3 +237,48 @@ HLTSOUND CClientSoundMgr::PlaySound(PlaySoundInfo & psi)
 
 	return psi.m_hSound;
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientSoundMgr::SetSoundFilter
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100fab80; the name is ours): set
+//				the sound filter, as NOLF2's CPlayerMgr::FirstUpdate and
+//				UpdateSoundFilters did
+//
+// ----------------------------------------------------------------------- //
+
+extern VarTrack g_vtUseSoundFilters;
+
+void CClientSoundMgr::SetSoundFilter(uint8 nFilterId)
+{
+	if (!g_vtUseSoundFilters.GetFloat()) return;
+
+	SOUNDFILTER* pFilter = g_pSoundFilterMgr->GetFilter(nFilterId);
+
+	bool bFilterOK = true;
+	ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
+
+	if ( !g_pSoundFilterMgr->IsUnFiltered( pFilter ) )
+	{
+		if ( pSoundMgr->SetSoundFilter( pFilter->szFilterName ) == LT_OK )
+		{
+			for (int i=0; i < pFilter->nNumVars; i++)
+			{
+				if ( pSoundMgr->SetSoundFilterParam(pFilter->szVars[i], pFilter->fValues[i]) != LT_OK )
+					bFilterOK = false;
+			}
+		}
+		else
+		{
+			bFilterOK = false;
+		}
+	}
+	else
+	{
+		// Not filtered.
+		bFilterOK = false;
+	}
+
+	pSoundMgr->EnableSoundFilter( bFilterOK );
+}

@@ -96,6 +96,12 @@ CPlayerCamera::CPlayerCamera()
 	m_TargetPointAtOffset.Init();
 
 	m_hCollisionObject	= LTNULL;
+
+	// RETAIL: Tron's (PlayerCamera.h)
+	m_fTronUnknownF8	= 55.0f;
+	m_fTronUnknownFC	= 94.0f;
+	m_fTronUnknown100	= 1000.0f;
+	m_nTronUnknown104	= 0;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1058,4 +1064,18 @@ void CPlayerCamera::CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & r
 			vPos += vTemp;
 		}
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownStartPan
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e240; the name is ours): the
+//				light cycle camera's pan (CPlayerMgr::SetTronUnknown1D5).
+//				PORT: not yet written from retail
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownStartPan(float fPhi, float fRadius, float fTime)
+{
 }

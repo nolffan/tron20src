@@ -56,6 +56,7 @@ CPlayerMgr* g_pPlayerMgr = NULL;
 #define DEFAULT_LOD_OFFSET				0.0f
 
 #define DEFAULT_CSENDRATE				15.0f
+#define DEFAULT_CSENDRATE_MIN			2.0f	// RETAIL: Tron's, as Contract J.A.C.K.'s
 
 namespace
 {
@@ -67,6 +68,10 @@ namespace
 	float       s_fDeathDelay   = 0.0f;
 	LTVector	g_vSVModelColor; // model color modifier for spy vision
 	int			g_nSaveSpyVisionShadows = 0;
+	// RETAIL: Tron's: the player's death FX, waited for before the mission
+	// is failed or the player respawns (retail 0x10271ee4; the name is
+	// ours)
+	CLIENTFX_LINK	s_DeathFX;
 }
 
 LTVector g_vPlayerCameraOffset = g_kvPlayerCameraOffset;
@@ -91,12 +96,13 @@ VarTrack			g_vtFireJitterDecayTime;
 VarTrack			g_vtFireJitterMaxPitchDelta;
 VarTrack			g_vtFOVXNormal;
 VarTrack			g_vtFOVYNormal;
+VarTrack			g_vtFOVXCycle;	// RETAIL: Tron's (the names are ours)
+VarTrack			g_vtFOVYCycle;
 VarTrack			g_vtFOVYMaxUW;
 VarTrack			g_vtFOVYMinUW;
 VarTrack			g_vtUWFOVRate;
 VarTrack			g_vtRespawnWaitTime;
 VarTrack			g_vtMultiplayerRespawnWaitTime;
-VarTrack			g_vtDoomsdayRespawnWaitTime;
 VarTrack			g_vtCamRotInterpTime;
 VarTrack			g_vtScreenFadeInTime;
 VarTrack			g_vtScreenFadeOutTime;
@@ -135,9 +141,7 @@ VarTrack			g_vtDamageFadeRate;
 VarTrack			g_vtAdaptiveMouse;
 VarTrack			g_vtAdaptiveMouseMaxOffset;
 VarTrack			g_vtShowSoundFilterInfo;
-VarTrack			g_vtMultiplayerDeathCamMoveTime;
-VarTrack			g_vtMultiAttachDeathCamMaxTime;
-VarTrack			g_vtAttachedCamInterpolationRate;
+VarTrack			g_vtCSendRateMin;	// RETAIL: Tron's, as Contract J.A.C.K.'s
 
 extern VarTrack		g_vtUseSoundFilters;
 
@@ -148,25 +152,25 @@ CPlayerMgr::CPlayerMgr()
 	:  m_bServerAccurateRotation( false )
 	, m_bSendCameraOffsetToServer( false )
 {
-	m_pHeadBobMgr = debug_new( CHeadBobMgr );            ASSERT( 0 != m_pHeadBobMgr );
-	m_pCameraOffsetMgr = debug_new( CCameraOffsetMgr );  ASSERT( 0 != m_pCameraOffsetMgr );
-	m_pFlashLight = debug_new( CFlashLightPlayer );      ASSERT( 0 != m_pFlashLight );
-	m_pGadgetDisabler = debug_new( CGadgetDisabler );    ASSERT( 0 != m_pGadgetDisabler );
+	// RETAIL: Tron's allocates with plain new, inline (retail 0x10123400)
+	m_pHeadBobMgr = new CHeadBobMgr;            ASSERT( 0 != m_pHeadBobMgr );
+	m_pCameraOffsetMgr = new CCameraOffsetMgr;  ASSERT( 0 != m_pCameraOffsetMgr );
+	m_pFlashLight = new CFlashLightPlayer;      ASSERT( 0 != m_pFlashLight );
+	m_pGadgetDisabler = new CGadgetDisabler;    ASSERT( 0 != m_pGadgetDisabler );
 	// RETAIL: Tron has no searcher (retail 0x10123400 allocates none; no
 	// search sounds or strings)
-	m_pMoveMgr = debug_new( CMoveMgr );                  ASSERT( 0 != m_pMoveMgr );
-	m_pVisionModeMgr = debug_new( CVisionModeMgr );      ASSERT( 0 != m_pVisionModeMgr );
-	m_pAttachButeMgr = debug_new( CAttachButeMgr );      ASSERT( 0 != m_pAttachButeMgr );
-	m_pLeanMgr = debug_new( CLeanMgr );                  ASSERT( 0 != m_pLeanMgr );
-	m_pClientWeaponMgr = debug_new( CClientWeaponMgr );  ASSERT( 0 != m_pClientWeaponMgr );
-	m_pPlayerCamera = debug_new( CPlayerCamera );        ASSERT( 0 != m_pPlayerCamera );
-	m_pPVAttachmentMgr = debug_new( CPlayerViewAttachmentMgr ); ASSERT( 0 != m_pPVAttachmentMgr );
+	m_pMoveMgr = new CMoveMgr;                  ASSERT( 0 != m_pMoveMgr );
+	m_pVisionModeMgr = new CVisionModeMgr;      ASSERT( 0 != m_pVisionModeMgr );
+	m_pAttachButeMgr = new CAttachButeMgr;      ASSERT( 0 != m_pAttachButeMgr );
+	m_pLeanMgr = new CLeanMgr;                  ASSERT( 0 != m_pLeanMgr );
+	m_pClientWeaponMgr = new CClientWeaponMgr;  ASSERT( 0 != m_pClientWeaponMgr );
+	m_pPlayerCamera = new CPlayerCamera;        ASSERT( 0 != m_pPlayerCamera );
+	m_pPVAttachmentMgr = new CPlayerViewAttachmentMgr; ASSERT( 0 != m_pPVAttachmentMgr );
 
 //	InitTargetMgr();
 
 	m_hCamera                   = NULL;
 	m_bStrafing                 = LTFALSE;
-	m_bHoldingMouseLook         = LTFALSE;
 	m_fYawBackup                = 0.0f;
 	m_fPitchBackup              = 0.0f;
 	m_bRestoreOrientation       = LTFALSE;
@@ -177,7 +181,12 @@ CPlayerMgr::CPlayerMgr()
 	m_bCamIsListener            = LTFALSE;
 	m_bCamera  = LTFALSE;
 	m_bStartedPlaying			= LTFALSE;
-	m_bTronUnknownA0			= LTFALSE;	// RETAIL: Tron's (PlayerMgr.h)
+	// RETAIL: Tron's (PlayerMgr.h)
+	m_bTronUnknownA0			= LTFALSE;
+	m_bTronUnknown1D7			= true;
+	m_bTronUnknown1D9			= false;
+	m_bTronUnknown1D8			= false;
+	m_fTronUnknown1DC			= 5000.0f;
 	m_vSVLightScale.Init(1, 1, 1);
 
 	m_vShakeAmount.Init();
@@ -185,7 +194,6 @@ CPlayerMgr::CPlayerMgr()
 	m_bInvisibleMode		= LTFALSE;
 
 	m_fEarliestRespawnTime	= 0.0f;
-	m_bCancelRevive			= false;
 
 	m_rRotation.Init();
 
@@ -215,7 +223,7 @@ CPlayerMgr::CPlayerMgr()
 	m_eCurContainerCode		= CC_NO_CONTAINER;
 	m_nSoundFilterId		= 0;
 	m_nGlobalSoundFilterId	= 0;
-	m_bInSafetyNet			= false;
+	// RETAIL: no safety net in Tron (m_bInSafetyNet is never set)
 
 	m_fContainerStartTime	= -1.0f;
 	m_fFovXFXDir			= 1.0f;
@@ -231,10 +239,12 @@ CPlayerMgr::CPlayerMgr()
 	m_bPlayerUpdated		= LTFALSE;
 
 	m_bCameraAttachedToHead	= LTFALSE;
-	m_bLerpAttachedCamera	= false;
 
 	m_nPlayerInfoChangeFlags	= 0;
 	m_fPlayerInfoLastSendTime	= 0.0f;
+	m_fPlayerInfoLastFullSendTime = 0.0f;
+	m_nPlayerInfoLastSent[1]	= 0;
+	m_nPlayerInfoLastSent[0]	= 0;
 
 	m_bUseWorldFog          = LTTRUE;
 	m_hContainerSound       = NULL;
@@ -251,98 +261,91 @@ CPlayerMgr::CPlayerMgr()
 	m_bCanDropCarriedObject	= false;
 
  	m_fDistanceIndicatorPercent = -1.0f;
+	// RETAIL: Tron's (PlayerMgr.h)
+	m_szTronUnknown1B5[0]	= '\0';
 	m_hDistanceIndicatorIcon	= LTNULL;
 
-	m_nPreGadgetWeapon		= WMGR_INVALID_ID;
-	m_bChangingToGadget = false;
-	m_bSwitchingWeapons = false;
-
-	m_fMultiplayerDeathCamMoveTimer = 0.0f;
-	m_fMultiAttachDeathCamTimer = 0.0f;
-
 	// RETAIL: Tron's (PlayerMgr.h)
-	m_nTronUnknown15C		= 0;
-	m_bTronUnknown160		= false;
-	m_bTronUnknown161		= false;
-	m_szTronUnknown1B5[0]	= '\0';
 	m_bTronUnknown1D5		= false;
 	m_bTronUnknown1D6		= false;
-	m_bTronUnknown1D7		= true;
-	m_bTronUnknown1D8		= false;
-	m_bTronUnknown1D9		= false;
-	m_fTronUnknown1DC		= 5000.0f;
 	m_nTronUnknown1E0		= 0;
 	m_bTronUnknown1E4		= false;
 	m_bTronUnknownB8		= false;
-	m_fTronUnknownBC		= 0.0f;
 }
 
 CPlayerMgr::~CPlayerMgr()
 {
+	// RETAIL: Tron's deletes with plain delete, inline (retail 0x101238a0)
 	if ( m_pHeadBobMgr )
 	{
-		debug_delete( m_pHeadBobMgr );
+		delete m_pHeadBobMgr;
 		m_pHeadBobMgr = 0;
 	}
 
 	if ( m_pCameraOffsetMgr )
 	{
-		debug_delete( m_pCameraOffsetMgr );
+		delete m_pCameraOffsetMgr;
 		m_pCameraOffsetMgr = 0;
 	}
 
 	if ( m_pFlashLight )
 	{
-		debug_delete( m_pFlashLight );
+		delete m_pFlashLight;
 		m_pFlashLight = 0;
 	}
 
 	if ( m_pGadgetDisabler )
 	{
-		debug_delete( m_pGadgetDisabler );
+		delete m_pGadgetDisabler;
 		m_pGadgetDisabler = 0;
 	}
 
 	if ( m_pMoveMgr )
 	{
-		debug_delete( m_pMoveMgr );
+		delete m_pMoveMgr;
 		m_pMoveMgr = 0;
 	}
 
 	if ( m_pVisionModeMgr )
 	{
-		debug_delete( m_pVisionModeMgr );
+		delete m_pVisionModeMgr;
 		m_pVisionModeMgr = 0;
 	}
 
 	if ( m_pAttachButeMgr )
 	{
-		debug_delete( m_pAttachButeMgr );
+		delete m_pAttachButeMgr;
 		m_pAttachButeMgr = 0;
 	}
 
 	if ( m_pLeanMgr )
 	{
-		debug_delete( m_pLeanMgr );
+		delete m_pLeanMgr;
 		m_pLeanMgr = 0;
 	}
 
 	if ( m_pClientWeaponMgr )
 	{
-		debug_delete( m_pClientWeaponMgr );
+		delete m_pClientWeaponMgr;
 		m_pClientWeaponMgr = 0;
 	}
 
 	if ( m_pPlayerCamera )
 	{
-		debug_delete( m_pPlayerCamera );
+		delete m_pPlayerCamera;
 		m_pPlayerCamera = 0;
 	}
 
-	if( m_pPVAttachmentMgr )
+	if ( m_pPVAttachmentMgr )
 	{
-		debug_delete( m_pPVAttachmentMgr );
-		m_pPVAttachmentMgr = LTNULL;
+		delete m_pPVAttachmentMgr;
+		m_pPVAttachmentMgr = 0;
+	}
+
+	// RETAIL: Tron's (retail 0x101238a0)
+	if (s_DeathFX.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
 	}
 
 	g_pPlayerMgr = NULL;
@@ -364,10 +367,13 @@ LTBOOL CPlayerMgr::Init()
 
 	g_CV_CSendRate.Init(g_pLTClient, "CSendRate", NULL, DEFAULT_CSENDRATE);
 	g_vtPlayerRotate.Init(g_pLTClient, "PlayerRotate", NULL, 1.0f);
-	g_vtCamZoom1MaxDist.Init(g_pLTClient, "CamZoom1MaxDist", NULL, 600.0f);
-	g_vtCamZoom2MaxDist.Init(g_pLTClient, "CamZoom2MaxDist", NULL, 1000.0f);
+	g_vtCamZoom1MaxDist.Init(g_pLTClient, "CamZoom1MaxDist", NULL, 100.0f);	// RETAIL: Tron's defaults
+	g_vtCamZoom2MaxDist.Init(g_pLTClient, "CamZoom2MaxDist", NULL, 700.0f);
 	g_vtFOVXNormal.Init(g_pLTClient, "FovX", NULL, 90.0f);
 	g_vtFOVYNormal.Init(g_pLTClient, "FovY", NULL, 78.0f);
+	// RETAIL: Tron's (retail 0x10123a30; the names are ours)
+	g_vtFOVXCycle.Init(g_pLTClient, "FovCycleX", NULL, 90.0f);
+	g_vtFOVYCycle.Init(g_pLTClient, "FovCycleY", NULL, 78.0f);
 	g_vtFOVYMaxUW.Init(g_pLTClient, "FOVYUWMax", NULL, 78.0f);
 	g_vtFOVYMinUW.Init(g_pLTClient, "FOVYUWMin", NULL, 77.0f);
 	g_vtUWFOVRate.Init(g_pLTClient, "FOVUWRate", NULL, 0.3f);
@@ -379,8 +385,7 @@ LTBOOL CPlayerMgr::Init()
 	g_vtMaxCamRecoilYaw.Init(g_pLTClient, "CamRecoilMaxYaw", NULL, 35.0f);
 	g_vtCamRotInterpTime.Init(g_pLTClient, "CamRotInterpTime", NULL, 0.15f);
 	g_vtRespawnWaitTime.Init(g_pLTClient, "RespawnWaitTime", NULL, 1.0f);
-	g_vtMultiplayerRespawnWaitTime.Init(g_pLTClient, "RespawnMultiWaitTime", NULL, 30.0f);
-	g_vtDoomsdayRespawnWaitTime.Init(g_pLTClient, "RespawnDoomsdayWaitTime", NULL, 15.0f);
+	g_vtMultiplayerRespawnWaitTime.Init(g_pLTClient, "RespawnMultiWaitTime", NULL, 1.0f);	// RETAIL: Tron's default; no doomsday
 	g_vtScreenFadeInTime.Init(g_pLTClient, "ScreenFadeInTime", NULL, 3.0f);
 	g_vtScreenFadeOutTime.Init(g_pLTClient, "ScreenFadeOutTime", NULL, 5.0f);
 	g_vtChaseCamOffset.Init(g_pLTClient, "ChaseCamOffset", NULL, 50.0f);
@@ -414,13 +419,12 @@ LTBOOL CPlayerMgr::Init()
     g_vtCamDamageFXOffsetY.Init(g_pLTClient, "CamDamageFXOffsetX", NULL, 5.0f);
     g_vtCamDamageFXOffsetZ.Init(g_pLTClient, "CamDamageFXOffsetX", NULL, 5.0f);
 	g_vtAlwaysHUD.Init(g_pLTClient, "AlwaysHUD", NULL, 0.0f);
-	g_vtDamageFadeRate.Init(g_pLTClient, "DamageFadeRate", NULL, 0.5f);
+	g_vtDamageFadeRate.Init(g_pLTClient, "DamageFadeRate", NULL, 0.25f);	// RETAIL: Tron's default
 	g_vtAdaptiveMouse.Init(g_pLTClient, "AdaptiveMouse", NULL, 0.0f);
 	g_vtAdaptiveMouseMaxOffset.Init(g_pLTClient, "AdaptiveMouseMaxOffset", NULL, 0.1f);
 	g_vtShowSoundFilterInfo.Init(g_pLTClient, "SoundFilterInfo", NULL, 0.0f);
-	g_vtMultiplayerDeathCamMoveTime.Init( g_pLTClient, "MultiplayerDeathCamMoveTime", NULL, 0.5f );
-	g_vtMultiAttachDeathCamMaxTime.Init( g_pLTClient, "MultiplayerDeathAttachCamMaxTime", NULL, 5.0f );
-	g_vtAttachedCamInterpolationRate.Init( g_pLTClient, "AttachedCamIntrepolationRate", NULL, 0.1f );
+	// RETAIL: Tron's, as Contract J.A.C.K.'s (UpdatePlayerInfo)
+	g_vtCSendRateMin.Init(g_pLTClient, "CSendRate_Min", NULL, DEFAULT_CSENDRATE_MIN);
 
 	// Default these to use values specified in the weapon...(just here for
 	// tweaking values...)
@@ -462,7 +466,7 @@ LTBOOL CPlayerMgr::Init()
 	if (m_pPlayerCamera->Init(g_pLTClient))
 	{
 		InitPlayerCamera();
-		m_pPlayerCamera->GoFirstPerson();
+		m_pPlayerCamera->GoFirstPerson(true);	// RETAIL: Tron's (retail 0x10123a30)
 	}
 	else
 	{
@@ -490,14 +494,15 @@ void CPlayerMgr::Term()
 
 	m_pPVAttachmentMgr->Term();
 
-	g_pPlayerMgr = NULL;
-
 	if (m_hCamera)
 	{
         g_pLTClient->RemoveObject(m_hCamera);
         m_hCamera = NULL;
 	}
 
+	// RETAIL: Tron's (retail 0x10124af0)
+	m_cLastPlayerInfoMsg = LTNULL;
+	m_cLastPlayerExtraMsg = LTNULL;
 }
 
 
@@ -522,9 +527,16 @@ void CPlayerMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 	pMsg->Writebool(m_bLastAllowPlayerMovement != LTFALSE);
 	pMsg->Writebool(m_bWasUsingExternalCamera != LTFALSE);
 	pMsg->Writebool(m_bUsingExternalCamera != LTFALSE);
+	pMsg->Writebool(m_bTronUnknownA0 != LTFALSE);	// RETAIL: Tron's
 	pMsg->Writeuint8(m_ePlayerState);
 	pMsg->Writeuint8(m_nSoundFilterId);
 	pMsg->Writeuint8(m_nGlobalSoundFilterId);
+
+	// RETAIL: Tron's (retail 0x10124b60)
+	pMsg->Writebool(m_bTronUnknown1D7);
+	pMsg->Writebool(m_bTronUnknown1D8);
+	pMsg->Writebool(m_bTronUnknown1D9);
+	pMsg->Writefloat(m_fTronUnknown1DC);
 
 	pMsg->Writebool(m_pFlashLight->IsOn() != LTFALSE);
 
@@ -553,19 +565,23 @@ void CPlayerMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
     pMsg->Writefloat(m_fSaveLODScale);
 
 	
-	pMsg->Writeuint8( m_nCarryingObject );
+	// RETAIL: Tron's writes the carry state as a bool (retail 0x10124b60)
+	pMsg->Writebool( m_nCarryingObject != CFX_CARRY_NONE );
 	pMsg->Writebool( m_bCanDropCarriedObject );
 
-	pMsg->Writebool( m_bCameraAttachedToHead );
+	// RETAIL: Tron's (retail 0x10124b60)
+	pMsg->WriteString( m_szTronUnknown1B5 );
+
+	pMsg->Writebool( m_bCameraAttachedToHead != LTFALSE );
 
 	pMsg->Writebool( m_pMoveMgr->DuckLock() ? true : false );
 
 	pMsg->Writebool( m_pMoveMgr->IsDucking() ? true : false );
 
-	pMsg->Writefloat( m_fMultiplayerDeathCamMoveTimer );
-	pMsg->Writefloat( m_fMultiAttachDeathCamTimer );
-
-	pMsg->Writebool( m_bLerpAttachedCamera );
+	// RETAIL: Tron's (retail 0x10124b60)
+	pMsg->Writebool( m_bTronUnknown1D5 );
+	pMsg->Writebool( m_bTronUnknown1D6 );
+	pMsg->Writeuint8( m_nTronUnknown1E0 );
 }
 
 // --------------------------------------------------------------------------- //
@@ -589,9 +605,16 @@ void CPlayerMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
 	m_bLastAllowPlayerMovement  = pMsg->Readbool() ? LTTRUE : LTFALSE;
 	m_bWasUsingExternalCamera   = pMsg->Readbool() ? LTTRUE : LTFALSE;
 	m_bUsingExternalCamera      = pMsg->Readbool() ? LTTRUE : LTFALSE;
+	m_bTronUnknownA0            = pMsg->Readbool() ? LTTRUE : LTFALSE;	// RETAIL: Tron's
 	m_ePlayerState              = (PlayerState) pMsg->Readuint8();
 	m_nSoundFilterId            = pMsg->Readuint8();
 	m_nGlobalSoundFilterId      = pMsg->Readuint8();
+
+	// RETAIL: Tron's (retail 0x10124ee0)
+	m_bTronUnknown1D7			= pMsg->Readbool();
+	m_bTronUnknown1D8			= pMsg->Readbool();
+	m_bTronUnknown1D9			= pMsg->Readbool();
+	m_fTronUnknown1DC			= pMsg->Readfloat();
 
 	if (pMsg->Readbool())
 	{
@@ -619,36 +642,23 @@ void CPlayerMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
     m_fFovXFXDir                = pMsg->Readfloat();
     m_fSaveLODScale             = pMsg->Readfloat();
 
-	uint8 nCarryingObject = 0;
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-	{
-		bool bCarryingObject	= pMsg->Readbool();
-		if (bCarryingObject)
-			nCarryingObject = CFX_CARRY_BODY;
-		else
-			nCarryingObject = CFX_CARRY_NONE;
-	}
-	else
-	{
-		nCarryingObject		= pMsg->Readuint8();
-	}
-	SetCarryingObject( nCarryingObject, false );
-
+	// RETAIL: Tron's reads the carry state as a bool (retail 0x10124ee0)
+	m_nCarryingObject			= pMsg->Readbool() ? CFX_CARRY_BODY : CFX_CARRY_NONE;
 	m_bCanDropCarriedObject		= pMsg->Readbool();
 
-	m_bCameraAttachedToHead		= pMsg->Readbool();
+	// RETAIL: Tron's (retail 0x10124ee0)
+	pMsg->ReadString( m_szTronUnknown1B5, sizeof(m_szTronUnknown1B5) );
+
+	m_bCameraAttachedToHead		= pMsg->Readbool() ? LTTRUE : LTFALSE;
 
 	m_pMoveMgr->SetDuckLock( pMsg->Readbool() ? LTTRUE : LTFALSE );
 
 	m_pMoveMgr->SetDucking( pMsg->Readbool() ? LTTRUE : LTFALSE );
 
-	m_fMultiplayerDeathCamMoveTimer = pMsg->Readfloat();
-	m_fMultiAttachDeathCamTimer = pMsg->Readfloat();
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) > CVersionMgr::kSaveVersion__1_2 )
-	{
-		m_bLerpAttachedCamera = pMsg->Readbool();
-	}
+	// RETAIL: Tron's (retail 0x10124ee0)
+	m_bTronUnknown1D5			= pMsg->Readbool();
+	m_bTronUnknown1D6			= pMsg->Readbool();
+	m_nTronUnknown1E0			= pMsg->Readuint8();
 }
 
 
@@ -669,14 +679,11 @@ void CPlayerMgr::OnEnterWorld()
 	m_nZoomView               = 0;
 	m_bZooming                = LTFALSE;
 	m_bZoomingIn              = LTFALSE;
+	m_bTronUnknown1E4		  = false;	// RETAIL: Tron's
 
 	m_eCurContainerCode       = CC_NO_CONTAINER;
-	m_bInSafetyNet			  = false;
 
 	m_bCameraAttachedToHead	= LTFALSE;
-	m_bLerpAttachedCamera	= false;
-
-	m_pHeadBobMgr->OnEnterWorld();
 
 	SetExternalCamera(LTFALSE);
 
@@ -689,10 +696,13 @@ void CPlayerMgr::OnEnterWorld()
 	m_nCarryingObject		= CFX_CARRY_NONE;
 	m_bCanDropCarriedObject	= false;
 
-	m_fDistanceIndicatorPercent = -1.0f;
-	g_pHUDMgr->QueueUpdate( kHUDDistance );
+	// RETAIL: Tron's (retail 0x10125240)
+	m_bTronUnknown1D5		= false;
+	m_bTronUnknown1D6		= false;
 
 	m_pClientWeaponMgr->OnEnterWorld();
+
+	m_fTronUnknown1DC		= 5000.0f;	// RETAIL: Tron's
 }
 
 // ----------------------------------------------------------------------- //
@@ -721,6 +731,12 @@ void CPlayerMgr::OnExitWorld()
 	}
 
 	m_pClientWeaponMgr->OnExitWorld();
+
+	// RETAIL: Tron's (retail 0x101252d0)
+	if (s_DeathFX.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -743,7 +759,7 @@ LTBOOL CPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_WEAPON_CHANGE:				HandleMsgWeaponChange			(pMsg);	break;
 		case MID_CHANGE_WORLDPROPERTIES:	HandleMsgChangeWorldProperties	(pMsg);	break;
 		case MID_GADGETTARGET:				HandleMsgGadgetTarget			(pMsg); break;
-		case MID_SEARCH:					HandleMsgSearch					(pMsg); break;
+		// RETAIL: no MID_SEARCH in Tron (retail 0x10125360)
 		case MID_ADD_PUSHER:				HandleMsgAddPusher				(pMsg); break;
 		case MID_OBJECTIVES_DATA:			HandleMsgObjectivesData			(pMsg); break;
 		default:							return LTFALSE;	break;
@@ -852,6 +868,59 @@ void CPlayerMgr::PreUpdate()
 
 void CPlayerMgr::Update()
 {
+	// RETAIL: Tron's (retail 0x101255f0): once the player's FX is done, the
+	// mission is failed (or, in the single player light cycle games, back
+	// to their screens)
+	if (m_bTronUnknown1D6)
+	{
+		if (s_DeathFX.GetInstance())
+		{
+			if (!s_DeathFX.GetInstance()->IsDone())
+				return;
+
+			if (s_DeathFX.IsValid())
+			{
+				g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
+			}
+		}
+
+		switch (GetGameType())
+		{
+			case eGameTypeSingle:
+			{
+				g_pMissionMgr->HandleMissionFailed();
+			}
+			break;
+
+			// RETAIL: Tron's screen ids (0x23, 0x25) and two-argument
+			// SwitchToScreen (retail 0x100cc6a0) are not yet in our tree
+			case eGameTypeSingleLightCycleCircuit:
+			{
+				g_pInterfaceMgr->ChangeState(GS_SCREEN);
+				CScreenMgr* pScreenMgr = g_pInterfaceMgr->GetScreenMgr();
+				pScreenMgr->ClearHistory();
+				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+				pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
+				pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
+				g_pInterfaceMgr->SwitchToScreen((eScreenID)0x23);
+			}
+			break;
+
+			case eGameTypeSingleLightCycleCustom:
+			{
+				g_pInterfaceMgr->ChangeState(GS_SCREEN);
+				CScreenMgr* pScreenMgr = g_pInterfaceMgr->GetScreenMgr();
+				pScreenMgr->ClearHistory();
+				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+				pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
+				pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
+				g_pInterfaceMgr->SwitchToScreen((eScreenID)0x25);
+			}
+			break;
+		}
+
+		return;
+	}
 
 	// Update models (powerups) glowing...
 
@@ -859,59 +928,53 @@ void CPlayerMgr::Update()
 
 	UpdateDamage();
 
+	UpdatePlayerDeath();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::UpdatePlayerDeath()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x10125710; the name is ours): NOLF2's
+//				dead player handling of Update, waiting for the player's FX
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::UpdatePlayerDeath()
+{
 	if (IsPlayerDead())
 	{
-		if (!IsMultiplayerGame() && !g_pGameClientShell->IsGamePaused())
+		if (!g_pGameClientShell->IsGamePaused())
 		{
-			if (s_fDeadTimer < s_fDeathDelay)
+			if (s_DeathFX.GetInstance())
 			{
-				s_fDeadTimer += g_pGameClientShell->GetFrameTime();
-			}
-			else
-			{
-				LTBOOL bHandleMissionFailed = LTTRUE;
+				if (!s_DeathFX.GetInstance()->IsDone())
+					return;
 
-				if (g_pInterfaceMgr->FadingScreen() && g_pInterfaceMgr->FadingScreenIn())
+				if (s_DeathFX.IsValid())
 				{
-					bHandleMissionFailed = g_pInterfaceMgr->ScreenFadeDone();
+					g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
 				}
+			}
 
-				if (bHandleMissionFailed)
+			if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
+			{
+				if (IsMultiplayerGame())
+				{
+					HandleRespawn();
+				}
+				else
 				{
 					g_pMissionMgr->HandleMissionFailed();
 				}
 			}
 		}
 	}
-
-
-	if (g_pLTClient->IsCommandOn(COMMAND_ID_ACTIVATE))
-	{
-		//if the activate key is down,
-		//  and we're in range
-		//	and we have not started to auto-switch to a gadget i.e (m_nPreGadgetWeapon == WMGR_INVALID_ID)
-		//  and we are not in the process of switching weapons 
-		//then try to switch to a gadget
-		if (GetTargetMgr()->IsTargetInRange() && (m_nPreGadgetWeapon == WMGR_INVALID_ID) && !m_bSwitchingWeapons)
-		{
-			DamageType eDT = GetTargetMgr()->RequiredGadgetDamageType();
-			UseGadget(eDT);
-			
-		}
-
-	}
 	else
 	{
-		//if the activate key is not down, 
-		//	and we have started to auto-switch to a gadget i.e (m_nPreGadgetWeapon != WMGR_INVALID_ID)
-		//  and we are not in the process of switching weapons 
-		//then switch back to the old weapon
-		if ((m_nPreGadgetWeapon != WMGR_INVALID_ID) && !m_bSwitchingWeapons)
+		if (s_DeathFX.IsValid())
 		{
-			m_bChangingToGadget = false;
-			ChangeWeapon(m_nPreGadgetWeapon);
-			
-
+			g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
 		}
 	}
 }
@@ -930,7 +993,8 @@ void CPlayerMgr::FirstUpdate()
 
 	UpdatePlayerCamera();
 
-#ifdef USE_EAX20_HARDWARE_FILTERS
+	// RETAIL: Tron's sets the global sound filter through the sound
+	// manager (retail 0x101257d0)
 
  	m_nGlobalSoundFilterId = 0;
 
@@ -947,60 +1011,9 @@ void CPlayerMgr::FirstUpdate()
 		if (pFilter)
 		{
 			m_nGlobalSoundFilterId = pFilter->nId;
-
-			// set the global filter, if appropriate
-			if (g_vtUseSoundFilters.GetFloat())
-			{
-				bool bFilterOK = true;
-				ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
-
-				if ( !g_pSoundFilterMgr->IsUnFiltered( pFilter ) )
-				{
-			   		if ( pSoundMgr->SetSoundFilter( pFilter->szFilterName ) == LT_OK )
-					{
-						for (int i=0; i < pFilter->nNumVars; i++)
-						{
-							if ( pSoundMgr->SetSoundFilterParam(pFilter->szVars[i], pFilter->fValues[i]) != LT_OK )
-								bFilterOK = false;
-						}
-					}
-					else
-					{
-						bFilterOK = false;
-					}
-				}
-				else
-				{
-					// Not filtered.
-					bFilterOK = false;
-				}
-
-				pSoundMgr->EnableSoundFilter( bFilterOK );
-
-#ifndef _FINAL
-				if (g_vtShowSoundFilterInfo.GetFloat())
-				{
-					g_pLTClient->CPrint("Entering (Global) sound filter '%s' (%s)", 
-						pFilter->szName, (bFilterOK ? "Enabled" : "Disabled"));
-
-					// Display detailed filter info if necessary...
-					if (g_vtShowSoundFilterInfo.GetFloat() > 1)
-					{
-						g_pLTClient->CPrint("  FilterName: '%s'", pFilter->szFilterName);
-						for (int i=0; i < pFilter->nNumVars; i++)
-						{
-							g_pLTClient->CPrint("  '%s' = '%f'", pFilter->szVars[i], pFilter->fValues[i]);
-						}
-					}
-				}
-#endif // _FINAL
-
-			}
-
+			g_pClientSoundMgr->SetSoundFilter(m_nGlobalSoundFilterId);
 		}
 	}
-
-#endif  // USE_EAX20_HARDWARE_FILTERS
 
 	// Force us to re-evaluate what container we're in.  We call
 	// UpdateContainers() first to make sure any container changes
@@ -1011,7 +1024,6 @@ void CPlayerMgr::FirstUpdate()
 	UpdateContainers();
 	ClearCurContainerCode();
 	UpdateContainers();
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -1052,6 +1064,13 @@ void CPlayerMgr::FirstPlayingUpdate()
 
 void CPlayerMgr::UpdatePlaying()
 {
+	// RETAIL: Tron's (retail 0x10125920)
+	if (g_pGameClientShell->IsServerPaused())
+	{
+		UpdatePlayer();
+		return;
+	}
+
 	// First time UpdatePlaying is called...
 
 	if (!m_bStartedPlaying)
@@ -1121,6 +1140,21 @@ void CPlayerMgr::UpdatePlaying()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CPlayerMgr::UpdateFrame()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x101259c0, called by the game client
+//				shell's Update; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::UpdateFrame()
+{
+	Update();
+	UpdatePlaying();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CPlayerMgr::PostUpdate()
 //
 //	PURPOSE:	Handle post updates - after the scene is rendered
@@ -1130,10 +1164,8 @@ void CPlayerMgr::UpdatePlaying()
 void CPlayerMgr::PostUpdate()
 {
 	// Update container effects...
-	if(m_bStartedPlaying)
-	{
-		UpdateContainers();
-	}
+	// RETAIL: Tron's does not check m_bStartedPlaying (retail 0x101259e0)
+	UpdateContainers();
 }
 
 
@@ -1621,41 +1653,36 @@ void CPlayerMgr::UpdateCamera()
 			UpdateCameraSway();
 		}
 
-		// Update the camera's position and rotation..
-
-		UpdateAlternativeCamera();
-
-
-		// Update the player camera...
-
-		UpdatePlayerCamera();
-
-
-		if (!m_bUsingExternalCamera)
+		// RETAIL: Tron's (retail 0x10126500): +0xa0 holds the camera
+		if (!m_bTronUnknownA0)
 		{
-			if( IsMultiplayerGame() )
+			// Update the camera's position and rotation..
+
+			UpdateAlternativeCamera();
+
+
+			// Update the player camera...
+
+			UpdatePlayerCamera();
+
+
+			if (!m_bUsingExternalCamera)
 			{
-				UpdateMultiplayerCameraPosition();
+				if( IsMultiplayerGame() || g_pInterfaceMgr->AllowCameraMovement() )
+				{
+					UpdateCameraPosition();
+				}
 			}
-			else if( g_pInterfaceMgr->AllowCameraMovement() )
-			{
-				UpdateCameraPosition();
-			}
 
-		}
-
-		if (g_pInterfaceMgr->AllowCameraRotation() )
-		{
-			// [RP] 11/14/02 - Don't calculate the rotation if we're not supposed to be allowing
-			//		mouse inputs.  But we do want to update the rotation incase the camera is
-			//		attached to the head of the player.
-
-			if( g_pDamageFXMgr->AllowInput() )
+			if (g_pInterfaceMgr->AllowCameraRotation() )
 			{
 				CalculateCameraRotation();
+				UpdateCameraRotation();
 			}
-
-			UpdateCameraRotation();
+		}
+		else if (!m_bCameraPosInited)
+		{
+			UpdateCameraPosition();
 		}
 
 		if (m_bUsingExternalCamera)
@@ -1671,7 +1698,10 @@ void CPlayerMgr::UpdateCamera()
 		}
 
 		// Update any camera displacement.
-		UpdateCameraDisplacement();
+		if (!m_bTronUnknownA0)
+		{
+			UpdateCameraDisplacement();
+		}
 
 		// Make sure the player gets updated
 
@@ -1808,11 +1838,12 @@ void CPlayerMgr::UpdateCameraSway()
 	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
 
 	//Adjust for skills
+	// PORT: Tron's player stats give the zoom sway through their virtual at
+	// +0x13c (a pointer to a float at +4, as build 51's GetAimModifiers()->
+	// fZoomSway; retail 0x10126980), which ours have not yet
 	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
 
-	//Adjust for damage
-	if (g_pDamageFXMgr->IsFOVAffected())
-		fMult *= 5.0f;
+	// RETAIL: no damage FX adjustment in Tron
 
     float faddP = fMult * g_vtCameraSwayYSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayYFreq.GetFloat()) * swayAmount;
     float faddY = fMult * g_vtCameraSwayXSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayXFreq.GetFloat()) * swayAmount;
@@ -2406,7 +2437,7 @@ void CPlayerMgr::ChangeWeapon(uint8 nWeaponId,
 	//		bImmediateSwitch will be true on the second call (or the first if the switch is immediate)
 	//		(I'm using the repeated call to track whether we are in mid switch)
 
-void CPlayerMgr::HandleWeaponChanged(uint8 nWeaponId, uint8 nAmmoId, bool bImmediateSwitch)
+void CPlayerMgr::HandleWeaponChanged(uint8 nWeaponId, uint8 nAmmoId)
 {
 	// Turn off zooming...
 	HandleZoomChange( LTTRUE );
@@ -2429,28 +2460,8 @@ void CPlayerMgr::HandleWeaponChanged(uint8 nWeaponId, uint8 nAmmoId, bool bImmed
 		m_pClientWeaponMgr->HideWeapons();
 	}
 
-	//shutdown the weapon or ammo choosers...
-	g_pInterfaceMgr->CloseChoosers();
-
-	//when the swicth is complete...
-	if (bImmediateSwitch)
-	{
-		//if we are changing to a gadget, we're done switching
-		if (m_bChangingToGadget)
-		{
-			m_bChangingToGadget = false;
-		}
-		else
-		{
-			//we are not changing to a gadget, so forget about any gadget related stuff...
-			if (m_nPreGadgetWeapon != WMGR_INVALID_ID )
-			{
-				m_nPreGadgetWeapon = WMGR_INVALID_ID;
-			}
-		}
-	}
-
-	m_bSwitchingWeapons = !bImmediateSwitch;
+	// RETAIL: Tron's closes no choosers and has no gadget switching
+	// (retail 0x101278a0)
 }
 
 
@@ -2867,73 +2878,16 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 
 	switch (command)
 	{
+		// RETAIL: Tron's (retail 0x10128180): no gadgets, no reloading
 		case COMMAND_ID_ACTIVATE :
 		{
-			if (IsPlayerDead())
+			// If we're pointed at something, or riding a vehicle we can get
+			// off, activate it...
+			if (GetTargetMgr()->IsTargetInRange() ||
+				m_pMoveMgr->GetVehicleMgr()->CanDismount())
 			{
-				if (IsMultiplayerGame())
-				{
-                    if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
-					{
-						// Allow respawn after a certain amount of time. This way the Player 
-						// can remain in 'limbo' for as long as they want and wait to be revived.
-
-						HandleRespawn();
-					}
-					else
-					{
-						// If waiting to respawn and they hit activate, then they will cancel
-						// their revive.
-						if( IsRevivePlayerGameType( ))
-						{
-							SetCancelRevive( true );
-						}
-					}
-				}
-				else if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
-				{
-					g_pMissionMgr->HandleMissionFailed();
-				}
-			}
-			else
-			{
-				// If we're pointed at something activate it if we're not
-				// riding a vehicle...
-				if (m_pMoveMgr->GetVehicleMgr()->CanDismount())
-				{
-					// Vehicle Mgr now handles calling DoActivate(), just tell
-					// the vehicle mgr to get off the vehicle...
-					m_pMoveMgr->GetVehicleMgr()->SetPhysicsModel(PPM_NORMAL);
-					return LTTRUE;
-				}
-				else if (GetTargetMgr()->IsTargetInRange())
-				{
-					DamageType eDT = GetTargetMgr()->RequiredGadgetDamageType();
-					if (eDT != DT_INVALID && !GetGadgetDisabler()->DisableOnActivate())
-					{
-						//jrg 9/2/02- moved this check to Update() because we might be in the middle
-						//	of switching weapons and miss the OnCommandOn() and therefore not switch
-						//	to the gadget even though we're holding down Activate
-//						if (!UseGadget(eDT))
-//							DoActivate();
-					}
-					else
-					{
-						//jrg 1/23/03 - if you're not allowed weapons, you can't activate stuff either
-						if (g_pDamageFXMgr->AllowWeapons( ))
-							DoActivate();
-					}
-				}
-				else 
-				{
-					//we're not pointed at anything, so reload
-					IClientWeaponBase *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-					if ( pClientWeapon )
-					{
-						// Reload the clip and let the server know...
-						pClientWeapon->ReloadClip( true, -1, false, true );
-					}
-				}
+				DoActivate();
+				return LTTRUE;
 			}
 		}
 		break;
@@ -2941,11 +2895,9 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 		case COMMAND_ID_MOVE_BODY:
 		{
 			CActivationData data = GetTargetMgr()->GetActivationData();
-
 			if( GetCarryingObject() )
 			{
 				data.m_nType = MID_ACTIVATE_MOVE;
-
 				if( CanDropCarriedObject( ))
 				{
 					CAutoMessage cMsg;
@@ -2953,19 +2905,19 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 					data.Write(cMsg);
 					g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 				}
-				else
-				{
-					g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nodrop.wav");
-				}
-
 			}
-			else if( CanCarryObject( ))
-			{				
-				data.m_nType = MID_ACTIVATE_MOVE;
-				CAutoMessage cMsg;
-				cMsg.Writeuint8(MID_PLAYER_ACTIVATE);
-				data.Write(cMsg);
-				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+			else if( GetTargetMgr()->IsTargetInRange() && GetTargetMgr()->IsMoveTarget() )
+			{
+				// If the body can be revived then we can't carry it...
+				CBodyFX* pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFX(GetTargetMgr()->GetTargetObject());
+				if( !pBody || !pBody->CanBeRevived() )
+				{
+					data.m_nType = MID_ACTIVATE_MOVE;
+					CAutoMessage cMsg;
+					cMsg.Writeuint8(MID_PLAYER_ACTIVATE);
+					data.Write(cMsg);
+					g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+				}
 			}
 		}
 		break;
@@ -2974,19 +2926,16 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 		{
 			if (IsPlayerDead())
 			{
-				if (IsMultiplayerGame())
+                if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
 				{
-                    if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
+					if (IsMultiplayerGame())
 					{
-						// Allow respawn after a certain amount of time. This way the Player 
-						// can remain in 'limbo' for as long as they want and wait to be revived.
-
 						HandleRespawn();
 					}
-				}
-				else if (g_pLTClient->GetTime() > m_fEarliestRespawnTime)
-				{
-					g_pMissionMgr->HandleMissionFailed();
+					else
+					{
+						g_pMissionMgr->HandleMissionFailed();
+					}
 				}
 			}
 		}
@@ -3003,28 +2952,21 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 		}
 		break;
 
-#ifndef _TO2DEMO
 		case COMMAND_ID_NEXT_VISMODE :
 		{
 			m_pVisionModeMgr->NextMode();
 		}
 		break;
-#endif
 
 		case COMMAND_ID_ZOOM_IN :
 		{
-			if ( !m_pClientWeaponMgr->WeaponsEnabled() ) break;
+			// RETAIL: Tron's: no zooming on a light cycle, and one zoom
+			// level, whatever the weapon
+			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE) break;
 
-			uint8 nScopeId = g_pPlayerStats->GetScope();
-			if (nScopeId == WMGR_INVALID_ID) break;
+			const int nZoomLevel = 1;
 
-			MOD const * pMod = g_pWeaponMgr->GetMod(nScopeId);
-			if (!pMod) break;
-
-			int nZoomLevel = pMod->nZoomLevel;
-
-			// Figure out if our current weapon has a scope...
-			if (!m_bZooming && nZoomLevel > 0)
+			if (!m_bZooming)
 			{
 				int nOldZoom = m_nZoomView;
 
@@ -3037,9 +2979,6 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 				{
 					m_nZoomView = nZoomLevel;
 				}
-				// Remove above code and uncomment line below to do old 
-				// step zoom behavoir
-				// m_nZoomView = (m_nZoomView + 1) % (nZoomLevel+1);
 
 				if (m_nZoomView > nOldZoom)
 				{
@@ -3094,7 +3033,7 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 
 		case COMMAND_ID_DUCKLOCK :
 		{
-			if( !IsCarryingHeavyObject() && !m_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics())
+			if( !GetCarryingObject() && !m_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics())	// RETAIL: any carried object, in Tron
 			{
 				m_pMoveMgr->SetDuckLock(!m_pMoveMgr->DuckLock());
 			}
@@ -3163,6 +3102,7 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 {
 	m_ePlayerState = (PlayerState) pMsg->Readuint8();
 
+	// RETAIL: Tron's (retail 0x101288d0)
 	switch (m_ePlayerState)
 	{
 		case PS_DYING:
@@ -3172,50 +3112,21 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 			// damage fx.
 
 			g_pDamageFXMgr->Clear();
-					
-			AttachCameraToHead(LTTRUE);
 
 			if( IsMultiplayerGame() )
 			{
-				m_fMultiplayerDeathCamMoveTimer = 0.0f;
-				m_fMultiAttachDeathCamTimer = 0.0f;
+				AttachCameraToHead(LTTRUE);
 
-				switch (g_pGameClientShell->GetGameType())
-				{
-				case eGameTypeCooperative:
-					{
-						m_fEarliestRespawnTime = g_pLTClient->GetTime() + ((CCharacterFX::GetNumPlayersInGame() > 1) ?
-																			g_vtMultiplayerRespawnWaitTime.GetFloat() :
-																			g_vtRespawnWaitTime.GetFloat());
-						
-					} break;
-				case eGameTypeDoomsDay:
-					{
-						m_fEarliestRespawnTime = g_pLTClient->GetTime() + ((g_pInterfaceMgr->GetClientInfoMgr()->GetNumPlayersOnTeam() > 1) ?
-																			g_vtDoomsdayRespawnWaitTime.GetFloat() :
-																			g_vtRespawnWaitTime.GetFloat());
-						
-					} break;
-
-				case eGameTypeDeathmatch:
-				case eGameTypeTeamDeathmatch:
-				default:
-					{
-						m_fEarliestRespawnTime = g_pLTClient->GetTime() + g_vtRespawnWaitTime.GetFloat();
-					} break;
-				}
-
-				// Clear the cancel revive setting.
-				if( IsRevivePlayerGameType( ))
-				{
-					SetCancelRevive( false );
-				}
+				m_fEarliestRespawnTime = g_pLTClient->GetTime() + ((CCharacterFX::GetNumPlayersInGame() > 1) ?
+																	g_vtMultiplayerRespawnWaitTime.GetFloat() :
+																	g_vtRespawnWaitTime.GetFloat());
 
 				g_pInterfaceMgr->SetHUDRenderLevel(kHUDRenderDead);
-				g_pHUDMgr->QueueUpdate(kHUDRespawn);
 			}
 			else
 			{
+				AttachCameraToHead(LTTRUE);
+
 				m_fEarliestRespawnTime = g_pLTClient->GetTime() + g_vtRespawnWaitTime.GetFloat();
 
 				g_pInterfaceMgr->SetHUDRenderLevel(kHUDRenderNone);
@@ -3245,19 +3156,29 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			g_pInterfaceMgr->AddToClearScreenCount();
 
-			if (!IsMultiplayerGame( ))
+			// RETAIL: Tron's: the player's death FX
+			char szDeathFX[128];
+			szDeathFX[0] = '\0';
+			if (IsMultiplayerGame( ))
 			{
-				g_pGameClientShell->CSPrint(LoadTempString(IDS_YOUWEREKILLED));
-				g_pInterfaceMgr->StartScreenFadeOut(g_vtScreenFadeOutTime.GetFloat());
+				g_pClientButeMgr->GetMultiDeathFX(szDeathFX, sizeof(szDeathFX));
 			}
-			
+			else
+			{
+				g_pClientButeMgr->GetDeathFX(szDeathFX, sizeof(szDeathFX));
+			}
+
+			if (szDeathFX[0])
+			{
+				LTVector vPos(0.0f, 0.0f, 0.0f);
+				CLIENTFX_CREATESTRUCT fxInit( szDeathFX, FXFLAG_REALLYCLOSE, vPos );
+				g_pClientFXMgr->CreateClientFX( &s_DeathFX, fxInit, LTTRUE );
+			}
 		}
 		break;
 
 		case PS_ALIVE:
 		{
-//			g_pScores->Show(false);
-			g_pHUDMgr->QueueUpdate(kHUDRespawn);
 			g_pDamageFXMgr->Clear();					// Remove all the damage sfx
 			ClearDamageSectors();
 
@@ -3275,37 +3196,12 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 			{
 				AllowPlayerMovement( LTTRUE );
 			}
-			
-			// Since we are alive, disassociate any body from us...
-
-			CSpecialFXList* pList = g_pGameClientShell->GetSFXMgr()->GetFXList(SFX_BODY_ID);
-			if( !pList ) return;
-			
-			int nNumBodies = pList->GetSize();
-
-			uint32 dwId;
-			g_pLTClient->GetLocalClientID( &dwId );
-
-			for( int i = 0; i < nNumBodies; ++i )
-			{
-				if ((*pList)[i])
-				{
-					CBodyFX* pBody = (CBodyFX*)(*pList)[i];
-
-					if( pBody->GetClientId() == dwId )
-					{
-						pBody->RemoveClientAssociation( );
-					}
-				}
-			}
 		}
 		break;
 
 		case PS_DEAD:
 		{
-			g_pDamageFXMgr->Clear();					// Remove all the damage sfx
-			ClearDamageSectors();
-			s_fDeadTimer = 0.0f;
+			TronUnknownVirtual58();
 		}
 		break;
 
@@ -3318,16 +3214,12 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			g_pInterfaceMgr->ForceScreenFadeIn(g_vtScreenFadeInTime.GetFloat());
 
-//			SetExternalCamera(LTTRUE);
-
 			m_pClientWeaponMgr->DisableWeapons();
 		}
 		break;
 
 		default : break;
 	}
-
-
 }
 
 // --------------------------------------------------------------------------- //
@@ -3342,6 +3234,11 @@ void CPlayerMgr::HandleRespawn()
 {
 	if (!IsPlayerDead()) return;
 
+	// RETAIL: Tron's (retail 0x10128d70)
+	if (s_DeathFX.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&s_DeathFX);
+	}
 
 	// if we're in multiplayer send the respawn command...
 
@@ -3353,6 +3250,7 @@ void CPlayerMgr::HandleRespawn()
 	}
 	else  // Bring up load game menu...
 	{
+		// RETAIL: Tron's SwitchToScreen has a second argument, true here
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LOAD);
 	}
 }
@@ -3423,6 +3321,63 @@ LTBOOL CPlayerMgr::UpdatePlayerCamera()
 		Update3rdPersonInfo();
 	}
 
+	// RETAIL: Tron's (retail 0x10128e20): the light cycle camera zooms
+	// (the LCC* console variables override its speed and limits)
+	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE || TronUnknownVirtual3C(true))
+	{
+		if (g_pLTClient->IsCommandOn(COMMAND_ID_ZOOM_IN))
+		{
+			float fZoomSpeed = 1000.0f;
+			float fMinZoom = 160.0f;
+
+			HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCZoomSpeed");
+			if (hVar)
+			{
+				fZoomSpeed = g_pLTClient->GetVarValueFloat(hVar);
+			}
+
+			hVar = g_pLTClient->GetConsoleVar("LCCMinZoom");
+			if (hVar)
+			{
+				fMinZoom = g_pLTClient->GetVarValueFloat(hVar);
+			}
+
+			float fCurZoom = m_pPlayerCamera->GetTronUnknown100();
+			float fZoom = fCurZoom - g_pLTClient->GetFrameTime() * fZoomSpeed;
+			if (fZoom < fMinZoom)
+			{
+				fZoom = fMinZoom;
+			}
+
+			m_pPlayerCamera->SetTronUnknown100(fZoom);
+		}
+		else if (g_pLTClient->IsCommandOn(COMMAND_ID_ZOOM_OUT))
+		{
+			float fZoomSpeed = 1000.0f;
+			float fMaxZoom = m_fTronUnknown1DC;
+
+			HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCZoomSpeed");
+			if (hVar)
+			{
+				fZoomSpeed = g_pLTClient->GetVarValueFloat(hVar);
+			}
+
+			hVar = g_pLTClient->GetConsoleVar("LCCMaxZoom");
+			if (hVar)
+			{
+				fMaxZoom = g_pLTClient->GetVarValueFloat(hVar);
+			}
+
+			float fCurZoom = m_pPlayerCamera->GetTronUnknown100();
+			float fZoom = fCurZoom + g_pLTClient->GetFrameTime() * fZoomSpeed;
+			if (fZoom > fMaxZoom)
+			{
+				fZoom = fMaxZoom;
+			}
+
+			m_pPlayerCamera->SetTronUnknown100(fZoom);
+		}
+	}
 
 	// Update our camera position based on the player camera...
 
@@ -3477,44 +3432,16 @@ void CPlayerMgr::UpdateCameraPosition()
 {
     LTVector vPos = m_pPlayerCamera->GetPos();
 
+	// RETAIL: Tron's (retail 0x10129160): build 51's, with NOLF2's attached
+	// camera angles
 	if (m_pPlayerCamera->IsFirstPerson())
 	{
 		// Special case of camera being attached to the player's head
 		// (i.e., death)...
 		if (m_bCameraAttachedToHead)
 		{
+			GetPlayerHeadPosRot(vPos, m_rRotation);
 
-			LTVector	vHeadPos;	
-			LTRotation	rHeadRot;
-
-			HLOCALOBJ hPlayer = g_pLTClient->GetClientObject();
-
-			// Make sure we never go backwards in our animation...
-
-			uint32 dwCurTime = 0;
-			static uint32 dwPrevTime = 0;
-			
-			g_pModelLT->GetCurAnimTime( hPlayer, MAIN_TRACKER, dwCurTime );
-
-			if( (dwCurTime > 0) && (dwCurTime < dwPrevTime) )
-			{
-				uint32 dwFrameTime = (uint32)(10000.0f * g_pGameClientShell->GetFrameTime());
-				g_pModelLT->SetCurAnimTime( hPlayer, MAIN_TRACKER, dwPrevTime + dwFrameTime );
-			}
-			dwPrevTime = dwCurTime;
-			
-			GetPlayerHeadPosRot(vHeadPos, rHeadRot);
-			vPos = vHeadPos;
-
-			if( m_bLerpAttachedCamera )
-			{
-				m_rRotation.Slerp( m_rRotation, rHeadRot, g_vtAttachedCamInterpolationRate.GetFloat( 0.1f ) );
-			}
-			else
-			{
-				m_rRotation = rHeadRot;
-			}
-			
 			//save this rotation into the yaw pitch and roll as well so that when we
 			//come out of the attached mode, our view won't pop
 			EulerAngles EA = Eul_FromQuat( m_rRotation, EulOrdYXZr );
@@ -3532,7 +3459,7 @@ void CPlayerMgr::UpdateCameraPosition()
 			vPos	+= m_pCameraOffsetMgr->GetPosDelta();
 		}
 	}
-	else
+	else if (m_pPlayerCamera->IsChaseView())
 	{
         m_rRotation = m_pPlayerCamera->GetRotation();
 	}
@@ -3543,119 +3470,6 @@ void CPlayerMgr::UpdateCameraPosition()
     m_bCameraPosInited = LTTRUE;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::UpdateMultiplayerCameraPosition()
-//
-//	PURPOSE:	Update the camera position while in a multiplayer game...
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerMgr::UpdateMultiplayerCameraPosition()
-{
-	// If the player is alive don't do anything special.  Just treat like single player....
-	
-	if( IsPlayerDead() )
-	{
-		HOBJECT hBody = NULL;
-
-		// We actually want to use the body prop, so...
-
-		CSpecialFXList* pList = g_pGameClientShell->GetSFXMgr()->GetFXList(SFX_BODY_ID);
-		if (!pList) return;
-
-		int nNumBodies = pList->GetSize();
-
-		uint32 dwId;
-		g_pLTClient->GetLocalClientID(&dwId);
-
-		float fNewestBodyTime = -1.0f;
-
-		for (int i=0; i < nNumBodies; i++)
-		{
-			if ((*pList)[i])
-			{
-				CBodyFX* pBody = (CBodyFX*)(*pList)[i];
-
-				if( (pBody->GetClientId() == dwId) && (pBody->GetTimeCreated() > fNewestBodyTime) )
-				{
-					// Keep the newest body belonging to this client...
-
-					fNewestBodyTime = pBody->GetTimeCreated();
-					hBody = pBody->GetServerObj();
-				}
-			}
-		}
-
-
-		if( hBody )
-		{
-			bool bTimesUp = (m_fMultiAttachDeathCamTimer > g_vtMultiAttachDeathCamMaxTime.GetFloat());
-
-			// Increment our attach camera timer...Always increment this even if we're
-			// not attached since we may become unattached at some point...
-
-			m_fMultiAttachDeathCamTimer += g_pLTClient->GetFrameTime();
-
-			// Check the body to see if the death animation has finished playing....
-
-			uint32 dwFlags;
-			g_pModelLT->GetPlaybackState( hBody, MAIN_TRACKER, dwFlags );
-			if( (dwFlags & MS_PLAYDONE) || bTimesUp )
-			{
-				// Detach from the head and float above the body...
-				
-				LTVector vFinalCamPos;
-				LTRotation rAniCamRot;
-				LTVector vAniCamPos;
-
-				// Get the position of where the camera left off in the animation...
-				
-				GetPlayerHeadPosRot( vAniCamPos, rAniCamRot );
-
-				// Offset the camera position from the position of the body...
-
-				g_pLTClient->GetObjectPos( hBody, &vFinalCamPos);
-				vFinalCamPos += GetPlayerHeadOffset( );
-
-				// Detach the camera and then get the rotation from the animation rotation...
-
-				AttachCameraToHead( LTFALSE );
-				LTRotation rRot( m_fPitch, m_fYaw, m_fRoll );
-
-				m_fMultiplayerDeathCamMoveTimer += g_pLTClient->GetFrameTime();
-
-				float fMoveDelta = g_vtMultiplayerDeathCamMoveTime.GetFloat( 3.0f );
-				float fPercent = (fMoveDelta > 0.0f ? m_fMultiplayerDeathCamMoveTimer / fMoveDelta : 0.0f);
-				float fT = Clamp( fPercent, 0.0f, 1.0f );
-				
-				LTVector vLerped;
-				VEC_LERP( vLerped, vAniCamPos, vFinalCamPos, fT );
-
-				// Don't clip the camera into the world...
-				
-				m_pPlayerCamera->CalcNonClipPos( vLerped, rRot );
-
-				g_pLTClient->SetObjectPos( m_hCamera, &vLerped );
-			    m_bCameraPosInited = LTTRUE;
-
-				return;
-			}
-			else
-			{
-				// Sometimes the death animation is multiple animations, so we'll make
-				// sure to keep the camera attached if an animation is playing...
-
-				AttachCameraToHead(LTTRUE);
-			}
-		}
-	}
-
-	// The player is alive, has no body, or the body is still animating.  Just use the normal position...
-
-	UpdateCameraPosition();
-	return;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -3728,9 +3542,9 @@ void CPlayerMgr::CalculateCameraRotation()
 	}
 
 	if (pSettings->MouseLook() || (m_dwPlayerFlags & BC_CFLG_LOOKUP) || (m_dwPlayerFlags & BC_CFLG_LOOKDOWN)
-		|| m_bHoldingMouseLook)
+)
     {
-        if (pSettings->MouseLook() || m_bHoldingMouseLook)
+        if (pSettings->MouseLook())
 		{
 			if (pSettings->MouseInvertY())
 			{
@@ -5452,106 +5266,7 @@ void CPlayerMgr::UpdateDistanceIndicator()
 		g_pHUDMgr->QueueUpdate( kHUDDistance );
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::CanCarryObject()
-//
-//	PURPOSE:	Check to see if we are able to carry an object or not....
-//
-// ----------------------------------------------------------------------- //
 
-uint8 CPlayerMgr::CanCarryObject()
-{
-	if( !GetCarryingObject() && GetTargetMgr()->IsTargetInRange() && GetTargetMgr()->IsMoveTarget() && !m_pMoveMgr->IsDucking() )
-	{				
-		// Check if the target object is a body...
-
-		CBodyFX* pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFX(GetTargetMgr()->GetTargetObject());
-		if( pBody )
-		{
-			// If the body can be revived then we can't carry it...
-			
-			if (pBody->CanBeRevived())
-				return CFX_CARRY_NONE;
-			else
-				return CFX_CARRY_BODY;
-		}
-		CCharacterFX* pChar = g_pGameClientShell->GetSFXMgr()->GetCharacterFX(GetTargetMgr()->GetTargetObject());
-		if( pChar )
-		{
-			return CFX_CARRY_BODY;
-		}
-
-
-		CDoomsdayPieceFX* const pFX = (CDoomsdayPieceFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_DOOMSDAYPIECE_ID, GetTargetMgr()->GetTargetObject());
-		if( pFX )
-		{
-			switch (pFX->GetType())
-			{
-			case kDoomsDay_transmitter:
-				return (CFX_CARRY_DD_TRAN);
-				break;
-			case kDoomsDay_battery:
-				return (CFX_CARRY_DD_BATT);
-				break;
-			case kDoomsDay_Core:
-				return (CFX_CARRY_DD_CORE);
-				break;
-			}
-		}
-
-	}
-
-	return CFX_CARRY_NONE;
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::UseGadget()
-//
-//	PURPOSE:	Try to switch to a gadget that will use the specified damage type...
-//
-// ----------------------------------------------------------------------- //
-
-bool CPlayerMgr::UseGadget(DamageType eDamageType)
-{
-	if( IsCarryingHeavyObject() )
-		return false;
-
-	// if it's an invalid type we are either not pointing at a gadget target, or it doesn't require a gadget
-	if (eDamageType == DT_INVALID)
-	{
-		//if we had been using a weapon, switch back to it
-		if (m_nPreGadgetWeapon != WMGR_INVALID_ID && m_pClientWeaponMgr->CanChangeToWeapon(m_nPreGadgetWeapon))
-		{
-			m_bChangingToGadget = false;
-			ChangeWeapon(m_nPreGadgetWeapon);
-			return true;
-		}
-		return false;
-	}
-
-	uint8 nId = GetGadgetFromDamageType(eDamageType);
-	IClientWeaponBase *pClientWeapon = m_pClientWeaponMgr->GetCurrentClientWeapon();
-	uint8 nCurWeapon = WMGR_INVALID_ID;
-	if ( pClientWeapon )
-		nCurWeapon = pClientWeapon->GetWeaponId();
-
-	//if we found a weapon to use, and we aren't already using it
-	if (nId != WMGR_INVALID_ID && nCurWeapon != nId)
-	{
-		//found a match
-		m_bChangingToGadget = true;
-		ChangeWeapon(nId);
-
-		//switching to a gadget, so remember what we had
-		m_nPreGadgetWeapon = nCurWeapon;
-
-		return true;
-	}
-	return false;
-
-}
 
 
 
@@ -5624,35 +5339,15 @@ bool CPlayerMgr::FireOnActivate()
 	return false;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::SetCancelRevive
-//
-//	PURPOSE:	Sets the cancel revive setting.  While the player
-//				is waiting to respawn, they can be revived in certain
-//				game types.  If they hit fire or activate during that time
-//				they will cancel their ability to revive.
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerMgr::SetCancelRevive( bool bCancelRevive )
-{
-	// Tell the server if we just cancelled revive.
-	if( bCancelRevive && m_bCancelRevive != bCancelRevive )
-	{
-		SendEmptyServerMsg( MID_PLAYER_CANCELREVIVE );
-	}
-
-	m_bCancelRevive = bCancelRevive;
-}
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerMgr::TronUnknownVirtual58
 //
 //	PURPOSE:	RETAIL: Tron's (retail 0x1012c990): the damage FX and the
-//				damage sectors cleared (and, there, a global and the weapon
-//				manager's state; still to be written)
+//				damage sectors cleared, the dead timer reset, and the current
+//				weapon's TronUnknownVirtual20 (HandleMsgPlayerStateChange's
+//				PS_DEAD). Not yet named
 //
 // ----------------------------------------------------------------------- //
 
@@ -5660,4 +5355,154 @@ void CPlayerMgr::TronUnknownVirtual58()
 {
 	g_pDamageFXMgr->Clear();
 	ClearDamageSectors();
+	s_fDeadTimer = 0.0f;
+	m_pClientWeaponMgr->CurrentWeaponTronUnknownVirtual20();
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::SetTronUnknown1B5
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012c9c0; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::SetTronUnknown1B5(const char* pszString)
+{
+	strcpy(m_szTronUnknown1B5, pszString);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::SetTronUnknown1D5
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012c9f0; the name is ours): on,
+//				the light cycle camera pans (the LCCPan* console variables
+//				override its angle, radius and time); off, clears +0x1d6 too
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::SetTronUnknown1D5(bool bOn)
+{
+	m_bTronUnknown1D5 = bOn;
+
+	if (bOn)
+	{
+		float fPhi = 20.0f;
+		float fRadius, fTime;
+
+		if (m_pPlayerCamera->IsFirstPerson())
+		{
+			fRadius = 300.0f;
+			fTime = 1.0f;
+		}
+		else
+		{
+			fRadius = 2000.0f;
+			fTime = 1.5f;
+		}
+
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCPanPhi");
+		if (hVar)
+		{
+			fPhi = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		hVar = g_pLTClient->GetConsoleVar("LCCPanRadius");
+		if (hVar)
+		{
+			fRadius = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		hVar = g_pLTClient->GetConsoleVar("LCCPanTime");
+		if (hVar)
+		{
+			fTime = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		m_pPlayerCamera->TronUnknownStartPan(fPhi * MATH_PI / 180.0f, fRadius, fTime);
+	}
+	else
+	{
+		m_bTronUnknown1D6 = false;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::SetTronUnknown1DC
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012cb10; the name is ours): 0 sets
+//				the default (5000); the camera's +0x100 is kept within it
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::SetTronUnknown1DC(float fValue)
+{
+	if (fValue == 0.0f)
+	{
+		m_fTronUnknown1DC = 5000.0f;
+	}
+	else
+	{
+		m_fTronUnknown1DC = fValue;
+	}
+
+	if (m_pPlayerCamera->GetTronUnknown100() > m_fTronUnknown1DC)
+	{
+		m_pPlayerCamera->SetTronUnknown100(m_fTronUnknown1DC);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::StartDeathFX
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012cb60; the name is ours): unless
+//				it already plays, the single player death FX, without the
+//				HUD; once it is done, Update fails the mission
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::StartDeathFX()
+{
+	if (s_DeathFX.IsValid()) return;
+
+	m_bTronUnknown1D6 = true;
+
+	char szDeathFX[128];
+	szDeathFX[0] = '\0';
+	g_pClientButeMgr->GetDeathFX(szDeathFX, sizeof(szDeathFX));
+
+	g_pInterfaceMgr->SetHUDRenderLevel(kHUDRenderNone);
+
+	if (szDeathFX[0])
+	{
+		LTVector vPos(0.0f, 0.0f, 0.0f);
+		CLIENTFX_CREATESTRUCT fxInit( szDeathFX, FXFLAG_REALLYCLOSE, vPos );
+		g_pClientFXMgr->CreateClientFX( &s_DeathFX, fxInit, LTTRUE );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::IsDeathFXDone
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012cc90; the name is ours): is the
+//				death FX done, with +0x1d6 set or the player dead?
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerMgr::IsDeathFXDone()
+{
+	bool bDone = (!s_DeathFX.GetInstance() || s_DeathFX.GetInstance()->IsDone());
+
+	if (m_bTronUnknown1D6 && bDone)
+		return true;
+
+	if (IsPlayerDead() && bDone)
+		return true;
+
+	return false;
+}
+

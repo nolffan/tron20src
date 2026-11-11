@@ -21,6 +21,7 @@
 #define CBMGR_SPECIALFX_TAG				"SpecialFX"
 #define CBMGR_BREATHFX_TAG				"BreathFX"
 #define CBMGR_INTERFACE_TAG				"Interface"
+#define CBMGR_PLAYER_TAG				"Player"	// RETAIL: Tron's
 
 #define CBMGR_WORLD_TAG					"World"
 #define CBMGR_WORLD_SINGLE_PATH			"SinglePath"
@@ -211,6 +212,27 @@ void CClientButeMgr::GetCheat(uint8 nCheatNum, char *pBuf, uint16 nBufLen)
 		m_buteMgr.GetString(CBMGR_CHEATS_TAG, s_aAttName, "", pBuf, nBufLen);
 	}
 
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientButeMgr::GetDeathFX() / GetMultiDeathFX()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1014de10, 0x1014de40; the names are
+//				ours): the player's death FX, single and multiplayer
+//
+// ----------------------------------------------------------------------- //
+
+void CClientButeMgr::GetDeathFX(char *pBuf, uint16 nBufLen)
+{
+	pBuf[0] = LTNULL;
+	m_buteMgr.GetString(CBMGR_PLAYER_TAG, "DeathFX", "", pBuf, nBufLen);
+}
+
+void CClientButeMgr::GetMultiDeathFX(char *pBuf, uint16 nBufLen)
+{
+	pBuf[0] = LTNULL;
+	m_buteMgr.GetString(CBMGR_PLAYER_TAG, "MultiDeathFX", "", pBuf, nBufLen);
 }
 
 

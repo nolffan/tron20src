@@ -53,6 +53,7 @@ public:
 	virtual void Update();
 	virtual void	UpdatePlaying();	// RETAIL: virtual in Tron (slot 0x20)
 	void	PostUpdate();
+	void	UpdateFrame();	// RETAIL: Tron's (retail 0x101259c0; the name is ours)
 
 	void	FirstPlayingUpdate();
 
@@ -70,7 +71,7 @@ public:
 
 	// RETAIL: Tron's slots 0x3c, 0x40, pure here (CTronPlayerMgr's). Not yet
 	// named
-	virtual void	TronUnknownVirtual3C() = 0;
+	virtual bool	TronUnknownVirtual3C(bool b) = 0;
 	virtual void	TronUnknownVirtual40() = 0;
 
 	LTBOOL	OnKeyDown(int key, int rep);
@@ -128,8 +129,6 @@ public:
     LTBOOL      IsPlayerDead()      const { return (m_ePlayerState == PS_DEAD || m_ePlayerState == PS_DYING); }
 	float       GetRespawnTime()	const { return  m_fEarliestRespawnTime;}
 	void		SetRespawnTime( float fEarliestRespawnTime ) { m_fEarliestRespawnTime = fEarliestRespawnTime; }
-	bool		GetCancelRevive( ) const { return m_bCancelRevive; }
-	void		SetCancelRevive( bool bCancelRevive );
 
     uint32      GetPlayerFlags()    const { return m_dwPlayerFlags; }
 
@@ -216,7 +215,7 @@ public:
 	virtual bool	TronUnknownVirtual7C(int nArg1, int nArg2, int nArg3, int nArg4) { return false; }
 	virtual bool	TronUnknownVirtual80() { return m_bTronUnknown1E4; }
 	virtual void	TronUnknownVirtual84(bool b) { m_bTronUnknown1E4 = b; }
-	virtual void	TronUnknownVirtual88() = 0;
+	virtual bool	TronUnknownVirtual88() = 0;
 	virtual void	TronUnknownVirtual8C() = 0;
 	virtual void	TronUnknownVirtual90() = 0;
 	virtual void	TronUnknownVirtual94() = 0;
@@ -242,7 +241,7 @@ public:
 	uint8		GetCarryingObject() const { return m_nCarryingObject; }
 	bool		IsCarryingHeavyObject() const { return m_nCarryingObject == CFX_CARRY_BODY || m_nCarryingObject == CFX_CARRY_DD_CORE;}
 	void		SetCarryingObject( uint8 nCarry, bool bUpdateCameraDip );
-	uint8		CanCarryObject();
+	// RETAIL: no CanCarryObject in Tron (OnCommandOn has its tests)
 	bool		CanDropCarriedObject() { return m_bCanDropCarriedObject; }
 	void		SetCanDropCarriedObject( bool bCanDrop ) { m_bCanDropCarriedObject = bCanDrop; }
 	
@@ -267,16 +266,21 @@ public:
 
 	 
 	// This should only be called from CClientWeaponMgr::ChangeWeapon()...
-	// jrg 9/2/02 - this will get called twice most of the time when switching weapons:
-	//			once when the weapon switch is started
-	//			and again when it completes (if a switching animation was needed)
-	//		bImmediateSwitch will be true on the second call (or the first if the switch is immediate)
-	//		(I'm using the repeated call to track whether we are in mid switch)
-	void	HandleWeaponChanged(uint8 nWeaponId,uint8 nAmmoId, bool bImmediateSwitch);
+	// RETAIL: Tron's has no bImmediateSwitch (retail 0x101278a0)
+	void	HandleWeaponChanged(uint8 nWeaponId,uint8 nAmmoId);
 
 	// RETAIL: Tron's takes one LTBOOL and does not interpolate (retail 0x1012b2a0)
 	void	AttachCameraToHead( LTBOOL bAttach = LTTRUE );
 
+	// RETAIL: Tron's (retail 0x1012c9c0..0x1012cc90; the names are ours)
+	void	SetTronUnknown1B5(const char* pszString);
+	void	SetTronUnknown1D5(bool bOn);
+	void	SetTronUnknown1DC(float fValue);
+	void	StartDeathFX();
+	bool	IsDeathFXDone();
+
+	// PORT: NOLF2's gadget queries (TargetMgr, CMoveMgr use them); Tron's
+	// PlayerMgr has none
 	//returns the id of a gadget that has the specified damagetype
 	uint8	GetGadgetFromDamageType(DamageType eDamageType);
 
@@ -321,7 +325,6 @@ protected:
 	void	InitPlayerCamera();
     LTBOOL	UpdatePlayerCamera();
 	void	UpdateCameraPosition();
-	void	UpdateMultiplayerCameraPosition();
 	void	CalculateCameraRotation();
     LTBOOL	UpdateCameraRotation();
 	void	UpdatePlayerInfo(bool bPlaying);
@@ -352,6 +355,7 @@ protected:
 	
 
 	void	HandleRespawn();
+	void	UpdatePlayerDeath();	// RETAIL: Tron's (the name is ours)
 
 	virtual void InitTargetMgr();
 
@@ -359,8 +363,7 @@ protected:
 	void	ClearDamageSectors();
 
 
-	//switches weapons to a gadget that has the specified damagetype
-	bool	UseGadget(DamageType eDamageType);
+	// RETAIL: no gadget switching in Tron
 
 
 protected:
@@ -485,24 +488,23 @@ protected:
     LTBOOL      m_bStrafing;            // Are we strafing?  This used to implement mouse strafing.
 
 	// RETAIL: from here, Tron's order (retail CPlayerMgr ctor 0x10123400 and
-	// Save 0x10124b60); NOLF2's members Tron has not are kept at the end
-	// (PORT), so they move nothing
+	// Save 0x10124b60), to retail's size, 0x1e8 (CTronPlayerMgr's members
+	// start there); NOLF2's members Tron has not (the mouse look key, revive
+	// cancelling, gadget switching, the multiplayer death camera) are gone
 
     float       m_fEarliestRespawnTime;
 
     uint16      m_nPlayerInfoChangeFlags;
     float		m_fPlayerInfoLastSendTime;
 
-	// RETAIL: Tron's (+0x15c, +0x160, +0x161, and +0x164, an eight-byte
-	// member the initializer list clears). Not yet named
-	uint32		m_nTronUnknown15C;
-	bool		m_bTronUnknown160;
-	bool		m_bTronUnknown161;
-	struct TronUnknown164
-	{
-		TronUnknown164() : a(0), b(0) {}
-		uint32 a, b;
-	}			m_TronUnknown164;
+	// RETAIL: Tron's, as Contract J.A.C.K.'s (cjacksrc): the player's info is
+	// sent less often (UpdatePlayerInfo, retail 0x1012a3a0): when it last
+	// sent all of it, two values it last sent, and the last two messages,
+	// so as not to send the same again (names are cjacksrc's)
+	float			m_fPlayerInfoLastFullSendTime;
+	uint8			m_nPlayerInfoLastSent[2];
+	CLTMsgRef_Read	m_cLastPlayerInfoMsg;
+	CLTMsgRef_Read	m_cLastPlayerExtraMsg;
 
 	// Container FX helpers...
 
@@ -539,23 +541,6 @@ protected:
 	uint32		m_nTronUnknown1E0;
 	bool		m_bTronUnknown1E4;	// RETAIL: slots 0x80, 0x84's
 
-	// PORT: NOLF2's, not in Tron's CPlayerMgr (above)
-    LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
-	bool		m_bCancelRevive;
-
-	//used to track what wepon player was using before auto-switching to gadget
-	uint8		m_nPreGadgetWeapon;
-
-	// are we currently trying to auto=switch to a gadget
-	bool		m_bChangingToGadget;
-
-	// are we in the middle of a weapon switch animation
-	bool		m_bSwitchingWeapons;
-
-	float		m_fMultiplayerDeathCamMoveTimer;
-	float		m_fMultiAttachDeathCamTimer;
-
-	bool		m_bLerpAttachedCamera;
 };
 
 extern CPlayerMgr* g_pPlayerMgr;
