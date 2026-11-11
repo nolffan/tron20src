@@ -84,6 +84,9 @@ Contains coordinate and texture information for a textured, flat-shaded vertex.
 */
 struct LT_VERTFT
 {       
+    // RETAIL: Tron's SDK gives it a constructor too (z = 0: CHUDLightCycleLives'
+    // constructor, retail CShell.dll 0x1002d310)
+    LT_VERTFT() { z = 0.0f; }
 
     float                           x,y,z;
     float                           u, v;
