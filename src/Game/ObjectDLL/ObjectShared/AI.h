@@ -136,37 +136,38 @@ enum EnumAIWeaponType
 };
 
 // Classes
-// RETAIL: Tron's: the 12 byte elements of CAI's vector at +0xddc, pushed
-// for each weapon type the brain's AIData names (CAI::InitialUpdate and
-// CAI::Load, retail 0x1012b987, 0x1013467f). Names ours.
+// RETAIL: Tron's: the 12 byte elements of CAI's vector at +0xddc, one for
+// each of the brain's AttackLeft/Right/CenterMaxDist AIData (CAI::
+// InitialUpdate and CAI::Load, retail 0x1012b987, 0x1013467f). Load maps
+// the chosen side to m_iCurrentWeapon (left 1, right 0, center 2). Names
+// ours.
+enum EnumAIAttackSide
+{
+	kAIAttack_None = 0,
+	kAIAttack_Left,
+	kAIAttack_Right,
+	kAIAttack_Center,
+};
+
 struct AIWeaponChoice
 {
 	AIWeaponChoice()
 	{
-		m_eWeaponType = kAIWeap_Invalid;
-		m_fValue = 0.0f;
+		m_eSide = kAIAttack_None;
+		m_fMaxDist = 0.0f;
 		m_bEnabled = true;
 	}
-	AIWeaponChoice(EnumAIWeaponType eType, float fValue, bool bEnabled)
+	AIWeaponChoice(EnumAIAttackSide eSide, float fMaxDist, bool bEnabled)
 	{
-		m_eWeaponType = eType;
-		m_fValue = fValue;
+		m_eSide = eSide;
+		m_fMaxDist = fMaxDist;
 		m_bEnabled = bEnabled;
 	}
-	EnumAIWeaponType	m_eWeaponType;
-	float				m_fValue;
+	EnumAIAttackSide	m_eSide;
+	float				m_fMaxDist;
 	bool				m_bEnabled;
 };
 typedef std::vector<AIWeaponChoice> AIWeaponChoiceList;
-
-// RETAIL: Tron's 0x18 bytes at CAI+0xddc: the choices and the one made
-// (copied whole in CAI::InitialUpdate, retail 0x1012bc2e). Built before
-// CAI's constructor body (retail 0x10128830). Names ours.
-struct AIWeaponSelection
-{
-	AIWeaponChoiceList	lstChoices;
-	AIWeaponChoice		Current;
-};
 
 // IAISensing is an interface for sensing objects.
 
@@ -447,6 +448,10 @@ class CAI : public CCharacter, public IAISensing
 		LTBOOL	IsNodeTrackingAtLimit() const;
 		EnumTrackedNodeGroup GetTriggerNodeTrackingGroup() const { return m_eTriggerNodeTrackingGroup; }
 
+		// RETAIL: Tron's look-at tracking, told to ourselves as the
+		// "TrackLookAt"/"TrackNone" commands (retail 0x101304f0; name ours)
+		void	SetLookAtTracking(bool bTrack);
+
 		// Attributes
 
 		// PORT: Tron has no sentry distance members; NOLF2's sentry states
@@ -682,10 +687,12 @@ class CAI : public CCharacter, public IAISensing
 
 		// RETAIL: Tron's (constructor 0x10128830, Save 0x10132d80). The
 		// choices are filled from the brain's AIData (InitWeaponChoices);
-		// the flag at 0xdf4 comes from AIData 0x3c and makes Load pick
-		// m_iCurrentWeapon from the current choice. Names ours.
-		AIWeaponSelection		m_WeaponSelection;
-		bool					m_bTronUnknownDF4;
+		// with SelectWeaponBasedOnVisibility InitialUpdate takes the second
+		// and Load picks m_iCurrentWeapon from the current choice. Names
+		// ours.
+		AIWeaponChoiceList		m_lstWeaponChoices;
+		AIWeaponChoice			m_CurWeaponChoice;	// copied whole from a choice
+		bool					m_bSelectWeaponBasedOnVisibility;
 
 		// Objects
 

@@ -37,5 +37,16 @@ enum EnumAnimProp {
 	kAP_MoodLast	= kAP_Disagree,
 }; 
 
+// PORT: not in Tron's list; NOLF2's resurrecting state and stream
+// strategy set no such props
+const EnumAnimProp kAP_Resurrecting = kAP_Invalid;
+const EnumAnimProp kAP_FireStreamStart = kAP_Invalid;
+const EnumAnimProp kAP_FireSecondaryStreamStart = kAP_Invalid;
+const EnumAnimProp kAP_FireStream = kAP_Invalid;
+const EnumAnimProp kAP_FireSecondaryStream = kAP_Invalid;
+const EnumAnimProp kAP_FireStreamEnd = kAP_Invalid;
+const EnumAnimProp kAP_FireSecondaryStreamEnd = kAP_Invalid;
+const EnumAnimProp kAP_LeaningRail = kAP_Invalid;
+
 
 #endif

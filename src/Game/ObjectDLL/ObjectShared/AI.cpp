@@ -811,7 +811,7 @@ CAI::CAI() : CCharacter()
 
 	// RETAIL: Tron's
 	m_nKeys = 0;
-	m_bTronUnknownDF4 = false;
+	m_bSelectWeaponBasedOnVisibility = false;
 	m_bTronUnknown11B4 = false;
 	m_bTronUnknown11B5 = false;
 }
@@ -1222,6 +1222,29 @@ void CAI::PreReadProp(ObjectCreateStruct* pData)
 
 LTBOOL CAI::ReadProp(ObjectCreateStruct *pData)
 {
+	// RETAIL: Tron's name and trivia ids (retail 0x1012a640)
+
+	TronAIInfo* pInfo = m_pTronAIInfo;
+
+	const char* pszNameId = pData->m_cProperties.GetPropString( "NameId", "" );
+	if( pszNameId && strcmp( pszNameId, "" ) )
+	{
+		pInfo->nNameId = (uint16)atoi( pszNameId );
+	}
+	else
+	{
+		ModelId eModelId = (ModelId)0;
+		const char* pszModel = pData->m_cProperties.GetPropString( "ModelTemplate", "" );
+		if( pszModel )
+		{
+			eModelId = g_pModelButeMgr->GetModelId( pszModel );
+		}
+		pInfo->nNameId = g_pModelButeMgr->GetModelNameId( eModelId );
+	}
+
+	const char* pszTriviaId = pData->m_cProperties.GetPropString( "TriviaId", "" );
+	pInfo->nTriviaId = strcmp( pszTriviaId, "" ) ? (uint16)atoi( pszTriviaId ) : 0;
+
 	// If we have an attribute template, fill in the info
 
 	const AIBM_Template* const pTemplate = GetAITemplate();
@@ -1386,6 +1409,39 @@ LTBOOL CAI::ReadProp(ObjectCreateStruct *pData)
 		}
 	}
 
+	// RETAIL: Tron's keys and alignment (retail 0x1012ae0b)
+
+	bool abKeys[8];
+	memset( abKeys, 0, sizeof( abKeys ));
+	g_pLTServer->GetPropBool( "Key1", &abKeys[0] );
+	g_pLTServer->GetPropBool( "Key2", &abKeys[1] );
+	g_pLTServer->GetPropBool( "Key3", &abKeys[2] );
+	g_pLTServer->GetPropBool( "Key4", &abKeys[3] );
+	g_pLTServer->GetPropBool( "Key5", &abKeys[4] );
+	g_pLTServer->GetPropBool( "Key6", &abKeys[5] );
+	g_pLTServer->GetPropBool( "Key7", &abKeys[6] );
+	g_pLTServer->GetPropBool( "Key8", &abKeys[7] );
+
+	for( int iKey = 0; iKey < 8; ++iKey )
+	{
+		if( abKeys[iKey] )
+		{
+			m_nKeys |= ( 1 << iKey );
+		}
+	}
+
+	strncpy( m_szAlignment, GetAITemplate()->szAlignment, ARRAY_LEN( m_szAlignment ) - 1 );
+	m_szAlignment[ARRAY_LEN( m_szAlignment ) - 1] = 0;
+
+	if( g_pLTServer->GetPropGeneric( "Alignment", &g_gp ) == LT_OK )
+	{
+		if( g_gp.m_String[0] && strcmp( g_gp.m_String, "None" ))
+		{
+			strncpy( m_szAlignment, g_gp.m_String, ARRAY_LEN( m_szAlignment ) - 1 );
+			m_szAlignment[ARRAY_LEN( m_szAlignment ) - 1] = 0;
+		}
+	}
+
     return LTTRUE;
 }
 
@@ -1427,9 +1483,8 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 //	ROUTINE:	CAI::InitWeaponChoices()
 //
 //	PURPOSE:	RETAIL: Tron's (inlined in InitialUpdate and Load, retail
-//				0x1012b987, 0x1013467f; name ours): the weapon types the
-//				brain's AIData offers. The AIData types are Tron's (0x37,
-//				0x38, 0x39, 0x3c), not yet named.
+//				0x1012b987, 0x1013467f; name ours): the attack sides the
+//				brain's AIData offers.
 //
 // ----------------------------------------------------------------------- //
 
@@ -1452,24 +1507,24 @@ inline void CAI::InitWeaponChoices()
 		return;
 	}
 
-	if( pBrain->GetAIDataExist( (EnumAIDataType)0x38 ) )
+	if( pBrain->GetAIDataExist( kAIData_AttackLeftMaxDist ) )
 	{
-		m_WeaponSelection.lstChoices.push_back( AIWeaponChoice( kAIWeap_Ranged, -pBrain->GetAIData( (EnumAIDataType)0x38 ), true ) );
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Left, -pBrain->GetAIData( kAIData_AttackLeftMaxDist ), true ) );
 	}
 
-	if( pBrain->GetAIDataExist( (EnumAIDataType)0x37 ) )
+	if( pBrain->GetAIDataExist( kAIData_AttackRightMaxDist ) )
 	{
-		m_WeaponSelection.lstChoices.push_back( AIWeaponChoice( kAIWeap_Melee, pBrain->GetAIData( (EnumAIDataType)0x37 ), true ) );
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Right, pBrain->GetAIData( kAIData_AttackRightMaxDist ), true ) );
 	}
 
-	if( pBrain->GetAIDataExist( (EnumAIDataType)0x39 ) )
+	if( pBrain->GetAIDataExist( kAIData_AttackCenterMaxDist ) )
 	{
-		m_WeaponSelection.lstChoices.push_back( AIWeaponChoice( kAIWeap_Thrown, pBrain->GetAIData( (EnumAIDataType)0x39 ), true ) );
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Center, pBrain->GetAIData( kAIData_AttackCenterMaxDist ), true ) );
 	}
 
-	if( pBrain->GetAIDataExist( (EnumAIDataType)0x3c ) )
+	if( pBrain->GetAIDataExist( kAIData_SelectWeaponBasedOnVisibility ) )
 	{
-		m_bTronUnknownDF4 = ( pBrain->GetAIData( (EnumAIDataType)0x3c ) == 1.0f );
+		m_bSelectWeaponBasedOnVisibility = ( pBrain->GetAIData( kAIData_SelectWeaponBasedOnVisibility ) == 1.0f );
 	}
 }
 
@@ -1648,15 +1703,15 @@ void CAI::InitialUpdate()
 
 	m_bSeeker = !_stricmp( m_pBrain->GetName(), "Seeker" );
 
-	if( m_WeaponSelection.lstChoices.size() )
+	if( m_lstWeaponChoices.size() )
 	{
-		if( m_bTronUnknownDF4 )
+		if( m_bSelectWeaponBasedOnVisibility )
 		{
-			m_WeaponSelection.Current = m_WeaponSelection.lstChoices[1];
+			m_CurWeaponChoice = m_lstWeaponChoices[1];
 		}
 		else
 		{
-			m_WeaponSelection.Current = m_WeaponSelection.lstChoices.at( GetRandom( 0, m_WeaponSelection.lstChoices.size() - 1 ) );
+			m_CurWeaponChoice = m_lstWeaponChoices.at( GetRandom( 0, m_lstWeaponChoices.size() - 1 ) );
 		}
 	}
 }
@@ -2452,28 +2507,8 @@ void CAI::HandleDamage(const DamageStruct& damage)
 			m_pState->HandleDamage(damage);
 		}
 	}
-	else
-	{
-		AITRACE( AIShowStates, ( m_hObject, "AI is Dead" ) );
 
-		g_pMusicMgr->DoEvent(CMusicMgr::eEventAIDie);
-
-		// Clean up the armor FX/attachments if they are still running.  
-		DestroyArmor();
-
-		m_cWeapons = 0;
-		memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
-		memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
-
-		m_cObjects = 0;
-		memset(m_apObjects, LTNULL, sizeof(BaseClass*)*AI_MAX_OBJECTS);
-		memset(m_apObjectPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_OBJECTS);
-
-		if ( IsControlledByDialogue() )
-		{
-			StopDialogue();
-		}
-	}
+	// RETAIL: nothing for a dead AI in Tron (retail 0x1012dac0)
 }
 
 // --------------------------------------------------------------------------- //
@@ -3403,10 +3438,8 @@ void CAI::Update()
 	{
 		// Update any target we're locked in on
 
-		if ( m_pTarget->IsValid() )
-		{
-			TIME(UpdateTarget());
-		}
+		// RETAIL: unconditional in Tron (retail 0x1012ffd2)
+		TIME(UpdateTarget());
 
 		// Update the state if we have one
 
@@ -3586,10 +3619,45 @@ void CAI::UpdateOnGround()
 
 void CAI::UpdateState()
 {
+	// PORT: Tron's UpdateState (retail 0x10130330) first, while look-at
+	// tracking is on, finds the nearest player and tracks it ("TrackLookAt")
+	// within a distance kept by CAIButeMgr (its +0x1184, not yet in ours),
+	// else stops unless talking (SetLookAtTracking(false) or "TrackNone").
+
     if ( m_hstrNextStateMessage && g_pLTServer->GetTime() >= m_fNextStateTime )
 	{
 		SendMixedTriggerMsgToObject(this, m_hObject, m_hstrNextStateMessage);
 		FREE_HSTRING(m_hstrNextStateMessage);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::SetLookAtTracking
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x101304f0; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::SetLookAtTracking(bool bTrack)
+{
+	if( bTrack == true )
+	{
+		if( !m_bTronUnknown11B4 )
+		{
+			m_bTronUnknown11B4 = true;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
+			m_bTronUnknown11B5 = true;
+		}
+	}
+	else if( bTrack == false )
+	{
+		if( m_bTronUnknown11B4 == true )
+		{
+			m_bTronUnknown11B4 = false;
+			m_bTronUnknown11B5 = false;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+		}
 	}
 }
 
@@ -3812,20 +3880,23 @@ float CAI::GetDefensePercentage( LTVector const *pIncomingProjectilePosition ) c
 
 bool CAI::FilterDamage( DamageStruct *pDamageStruct )
 {
-	// Filter out damage caused by myself if brain says so.
-
-	if(	m_pBrain &&
-		m_pBrain->GetAIDataExist( kAIData_DoNotDamageSelf ) &&
-		( m_pBrain->GetAIData( kAIData_DoNotDamageSelf ) > 0.f ) &&
-		( pDamageStruct->hDamager == m_hObject ) )
-	{
-		return false;
-	}
+	// RETAIL: no DoNotDamageSelf in Tron (retail 0x10131120)
 
 	if ( IsDefending() )
 	{
 		// the AI is defending, remove some of the damage
 		pDamageStruct->fDamage *= ( 1.0f - GetDefensePercentage( &pDamageStruct->vDir ) );
+	}
+
+	// RETAIL: Tron's: a Seeker takes no damage while stunned or moving
+	if( m_bSeeker )
+	{
+		if( m_pAnimationContext->IsPropSet( kAPG_Action, kAP_Stunned ) ||
+			m_pAnimationContext->IsPropSet( kAPG_Movement, kAP_Run ) ||
+			m_pAnimationContext->IsPropSet( kAPG_Movement, kAP_Walk ) )
+		{
+			pDamageStruct->fDamage = 0.0f;
+		}
 	}
 
 	return CCharacter::FilterDamage( pDamageStruct );
@@ -4888,9 +4959,9 @@ void CAI::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_bool( m_bTronUnknown11B4 );
 	SAVE_bool( m_bTronUnknown11B5 );
 	SAVE_bool( m_bSeeker );
-	SAVE_FLOAT( m_WeaponSelection.Current.m_fValue );
-	SAVE_BYTE( m_WeaponSelection.Current.m_eWeaponType );
-	SAVE_bool( m_WeaponSelection.Current.m_bEnabled );
+	SAVE_FLOAT( m_CurWeaponChoice.m_fMaxDist );
+	SAVE_BYTE( m_CurWeaponChoice.m_eSide );
+	SAVE_bool( m_CurWeaponChoice.m_bEnabled );
 }
 
 // ----------------------------------------------------------------------- //
@@ -5145,17 +5216,17 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	CreateSpecialFX();
 
-	LOAD_FLOAT( m_WeaponSelection.Current.m_fValue );
-	LOAD_BYTE_CAST( m_WeaponSelection.Current.m_eWeaponType, EnumAIWeaponType );
-	LOAD_bool( m_WeaponSelection.Current.m_bEnabled );
+	LOAD_FLOAT( m_CurWeaponChoice.m_fMaxDist );
+	LOAD_BYTE_CAST( m_CurWeaponChoice.m_eSide, EnumAIAttackSide );
+	LOAD_bool( m_CurWeaponChoice.m_bEnabled );
 
-	if( m_bTronUnknownDF4 )
+	if( m_bSelectWeaponBasedOnVisibility )
 	{
-		switch( m_WeaponSelection.Current.m_eWeaponType )
+		switch( m_CurWeaponChoice.m_eSide )
 		{
-			case kAIWeap_Ranged:	m_iCurrentWeapon = 1; break;
-			case kAIWeap_Melee:		m_iCurrentWeapon = 0; break;
-			case kAIWeap_Thrown:	m_iCurrentWeapon = 2; break;
+			case kAIAttack_Left:	m_iCurrentWeapon = 1; break;
+			case kAIAttack_Right:	m_iCurrentWeapon = 0; break;
+			case kAIAttack_Center:	m_iCurrentWeapon = 2; break;
 		}
 	}
 

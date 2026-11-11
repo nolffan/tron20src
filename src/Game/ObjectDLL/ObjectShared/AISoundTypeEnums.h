@@ -26,6 +26,9 @@
 	#error ! To use this include file, first define either AISOUND_TYPE_AS_ENUM or AISOUND_TYPE_AS_STRING, to include the AISound types as enums, or string constants.
 #endif
 
+// RETAIL: Tron's list, as its string table shows (retail 0x102db3f0): no
+// Snore; Tron's own entries added (DamagePRoded, DamageEnergyClawed,
+// DamagePrankstered, PranksterBit, Greeting, and the eleven at the end).
 // --------------------------------------------------------------------------
 // USAGE: To add a new enum, just add a ADD_AISOUND_TYPE(x, val) 
 // where x is the name of the enum without the "kAIS" prefix.
@@ -52,9 +55,12 @@ ADD_AISOUND_TYPE(Crush)						// kAIS_Crush
 ADD_AISOUND_TYPE(DamageBearTrap)			// kAIS_DamageBearTrap
 ADD_AISOUND_TYPE(DamageGlue)				// kAIS_DamageGlue
 ADD_AISOUND_TYPE(DamageLaughing)			// kAIS_DamageLaughing
+ADD_AISOUND_TYPE(DamagePRoded)				// kAIS_DamagePRoded
+ADD_AISOUND_TYPE(DamageEnergyClawed)		// kAIS_DamageEnergyClawed
 ADD_AISOUND_TYPE(DamageSleeping)			// kAIS_DamageSleeping
 ADD_AISOUND_TYPE(DamageSlippery)			// kAIS_DamageSlippery
 ADD_AISOUND_TYPE(DamageStun)				// kAIS_DamageStun
+ADD_AISOUND_TYPE(DamagePrankstered)			// kAIS_DamagePrankstered
 ADD_AISOUND_TYPE(Death)						// kAIS_Death
 ADD_AISOUND_TYPE(DeathQuiet)				// kAIS_DeathQuiet
 ADD_AISOUND_TYPE(Disappear)					// kAIS_Disappear
@@ -73,10 +79,12 @@ ADD_AISOUND_TYPE(DisturbanceHeardAlarming)	// kAIS_DisturbanceHeardAlarming
 ADD_AISOUND_TYPE(Drowsy)					// kAIS_Drowsy
 ADD_AISOUND_TYPE(Electrocute)				// kAIS_Electrocute
 ADD_AISOUND_TYPE(Explode)					// kAIS_Explode
+ADD_AISOUND_TYPE(PranksterBit)				// kAIS_PranksterBit
 ADD_AISOUND_TYPE(Fall)						// kAIS_Fall
 ADD_AISOUND_TYPE(FallStairs)				// kAIS_FallStairs
 ADD_AISOUND_TYPE(FindBackup)				// kAIS_FindBackup
 ADD_AISOUND_TYPE(FollowFootprint)			// kAIS_FollowFootprint
+ADD_AISOUND_TYPE(Greeting)					// kAIS_Greeting
 ADD_AISOUND_TYPE(Grenade)					// kAIS_Grenade
 ADD_AISOUND_TYPE(Idle)						// kAIS_Idle
 ADD_AISOUND_TYPE(InvestigateFail)			// kAIS_InvestigateFail
@@ -98,7 +106,17 @@ ADD_AISOUND_TYPE(Retreat)					// kAIS_Retreat
 ADD_AISOUND_TYPE(Search)					// kAIS_Search
 ADD_AISOUND_TYPE(SearchFail)				// kAIS_SearchFail
 ADD_AISOUND_TYPE(SeeBody)					// kAIS_SeeBody
-ADD_AISOUND_TYPE(Snore)						// kAIS_Snore
 ADD_AISOUND_TYPE(SplitUp)					// kAIS_SplitUp
 ADD_AISOUND_TYPE(Tail)						// kAIS_Tail
 ADD_AISOUND_TYPE(Urinal)					// kAIS_Urinal
+ADD_AISOUND_TYPE(BackupLoaded)				// kAIS_BackupLoaded
+ADD_AISOUND_TYPE(LightCycleRacer)			// kAIS_LightCycleRacer
+ADD_AISOUND_TYPE(Melee)						// kAIS_Melee
+ADD_AISOUND_TYPE(PlayerDeathResponse)		// kAIS_PlayerDeathResponse
+ADD_AISOUND_TYPE(SeeCoreDump)				// kAIS_SeeCoreDump
+ADD_AISOUND_TYPE(FconCrownPain)				// kAIS_FconCrownPain
+ADD_AISOUND_TYPE(FconBazaPain)				// kAIS_FconBazaPain
+ADD_AISOUND_TYPE(FconPopoffPain)			// kAIS_FconPopoffPain
+ADD_AISOUND_TYPE(FconBazaDeath)				// kAIS_FconBazaDeath
+ADD_AISOUND_TYPE(FconPopoffDeath)			// kAIS_FconPopoffDeath
+ADD_AISOUND_TYPE(UnpanicActivate)			// kAIS_UnpanicActivate

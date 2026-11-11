@@ -23,6 +23,9 @@ enum EnumAISoundType
 	kAIS_Count,
 };
 
+// PORT: no snoring in Tron; NOLF2's AIGoalSleep plays nothing
+const EnumAISoundType kAIS_Snore = kAIS_None;
+
 //
 // STRINGS: const strings for AI sound types.
 //

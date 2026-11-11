@@ -252,10 +252,10 @@ class CAIHuman : public CAI
 
 		// RETAIL: Tron's tail (constructor 0x1016c420, Save 0x1016fa50).
 		// Names ours.
-		bool		m_bTronUnknown1230;			// UpdateNodes
+		bool		m_bShowingVectors;			// "AIShowVectors" drawn (UpdateNodes, StartDeath)
 		bool		m_bTronUnknown1231;
-		bool		m_bTronUnknown1232;			// set in SetBrain
-		LTFLOAT		m_fTronUnknown1234;			// set in SetBrain
+		bool		m_bCanGhost;				// AIData CanGhost (SetBrain)
+		LTFLOAT		m_fGhostFadeTime;			// AIData DisappearFadeTime (SetBrain)
 		LTFLOAT		m_fTronUnknown1238;			// 1 at first
 		LTVector	m_vTronUnknown123C;
 };

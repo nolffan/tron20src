@@ -31,21 +31,22 @@
 // where x is the name of the enum without the "kAIData" prefix.
 // --------------------------------------------------------------------------
 
+// RETAIL: Tron's list, as its string table shows (retail 0x102d8400): no
+// DoNotDamageSelf or PrimaryWeaponOnLeft; Tron's own entries added.
+
 ADD_AIDATA_TYPE(AccidentChance)			// kAIData_AccidentChance
 ADD_AIDATA_TYPE(BreaksDoors)			// kAIData_BreaksDoors
 ADD_AIDATA_TYPE(CannotPathThruDoors)	// kAIData_CannotPathThruDoors
 ADD_AIDATA_TYPE(ChaseEndurance)			// kAIData_ChaseEndurance
 ADD_AIDATA_TYPE(DeflectChance)			// kAIData_DeflectChance
 ADD_AIDATA_TYPE(DisappearDistMin)		// kAIData_DisappearDistMin
-ADD_AIDATA_TYPE(DisappearDistMax)		// kAIData_DisappearDistMin
+ADD_AIDATA_TYPE(DisappearDistMax)		// kAIData_DisappearDistMax
 ADD_AIDATA_TYPE(DisappearFadeTime)		// kAIData_DisappearFadeTime
-ADD_AIDATA_TYPE(DisposeLantern)			// kAIData_DisposeLantern
 ADD_AIDATA_TYPE(DivergePaths)			// kAIData_DivergePaths
 ADD_AIDATA_TYPE(DoNotCloseDoors)		// kAIData_DoNotCloseDoors
-ADD_AIDATA_TYPE(DoNotDamageSelf)		// kAIData_DoNotDamageSelf
 ADD_AIDATA_TYPE(DoNotExposeHiding)		// kAIData_DoNotExposeHiding
 ADD_AIDATA_TYPE(DoNotToggleLights)		// kAIData_DoNotToggleLights
-ADD_AIDATA_TYPE(DynMoveTimeMin)			// kAIData_DynMoveTimeMin	
+ADD_AIDATA_TYPE(DynMoveTimeMin)			// kAIData_DynMoveTimeMin
 ADD_AIDATA_TYPE(DynMoveTimeMax)			// kAIData_DynMoveTimeMax
 ADD_AIDATA_TYPE(DynMoveBackupDist)		// kAIData_DynMoveBackupDist
 ADD_AIDATA_TYPE(DynMoveFlankPassDist)	// kAIData_DynMoveFlankPassDist
@@ -60,15 +61,14 @@ ADD_AIDATA_TYPE(LungeSpeed)				// kAIData_LungeSpeed
 ADD_AIDATA_TYPE(LungeStopDistance)		// kAIData_LungeStopDistance
 ADD_AIDATA_TYPE(GoalProximityDist)		// kAIData_GoalProximityDist
 ADD_AIDATA_TYPE(MeleeKnockBackDist)		// kAIData_MeleeKnockBackDist
+ADD_AIDATA_TYPE(UseCachedAttackAnims)	// kAIData_UseCachedAttackAnims
 ADD_AIDATA_TYPE(MusicMoodMin)			// kAIData_MusicMoodMin
 ADD_AIDATA_TYPE(MusicMoodMax)			// kAIData_MusicMoodMax
 ADD_AIDATA_TYPE(NoDynamicPathfinding)	// kAIData_NoDynamicPathfinding
-ADD_AIDATA_TYPE(PrimaryWeaponOnLeft)	// kAIData_PrimaryWeaponOnLeft
 ADD_AIDATA_TYPE(ProneDistMin)			// kAIData_ProneDistMin
 ADD_AIDATA_TYPE(ProneSlideDist)			// kAIData_ProneSlideDist
 ADD_AIDATA_TYPE(ProneTime)				// kAIData_ProneTime
 ADD_AIDATA_TYPE(ReappearDist)			// kAIData_ReappearDist
-ADD_AIDATA_TYPE(Resurrecting)			// kAIData_Resurrecting
 ADD_AIDATA_TYPE(RetreatTriggerDist)		// kAIData_RetreatTriggerDist
 ADD_AIDATA_TYPE(RetreatJumpDist)		// kAIData_RetreatJumpDist
 ADD_AIDATA_TYPE(RetreatSpeed)			// kAIData_RetreatSpeed
@@ -83,3 +83,17 @@ ADD_AIDATA_TYPE(HoverMaxSpeed)			// kAIData_HoverMaxSpeed
 ADD_AIDATA_TYPE(HoverMinSpeed)			// kAIData_HoverMinSpeed
 ADD_AIDATA_TYPE(HoverAccelerationRate)	// kAIData_HoverAccelerationRate
 ADD_AIDATA_TYPE(HoverResetSpeedTime)	// kAIData_HoverResetSpeedTime
+ADD_AIDATA_TYPE(DisappearedMovingAnimRate)	// kAIData_DisappearedMovingAnimRate
+ADD_AIDATA_TYPE(DashMaxDist)			// kAIData_DashMaxDist
+ADD_AIDATA_TYPE(DashMinDist)			// kAIData_DashMinDist
+ADD_AIDATA_TYPE(BlowupDist)				// kAIData_BlowupDist
+ADD_AIDATA_TYPE(BlowupTime)				// kAIData_BlowupTime
+ADD_AIDATA_TYPE(ChanceToTransform)		// kAIData_ChanceToTransform
+ADD_AIDATA_TYPE(AttackRightMaxDist)		// kAIData_AttackRightMaxDist
+ADD_AIDATA_TYPE(AttackLeftMaxDist)		// kAIData_AttackLeftMaxDist
+ADD_AIDATA_TYPE(AttackCenterMaxDist)	// kAIData_AttackCenterMaxDist
+ADD_AIDATA_TYPE(AttackFromCoverBaseSearchScalar)	// kAIData_AttackFromCoverBaseSearchScalar
+ADD_AIDATA_TYPE(AttackFromCoverBonusSearchScalar)	// kAIData_AttackFromCoverBonusSearchScalar
+ADD_AIDATA_TYPE(SelectWeaponBasedOnVisibility)	// kAIData_SelectWeaponBasedOnVisibility
+ADD_AIDATA_TYPE(CanGhost)				// kAIData_CanGhost
+ADD_AIDATA_TYPE(RangeAttackIsRecessive)	// kAIData_RangeAttackIsRecessive
