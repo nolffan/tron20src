@@ -4297,9 +4297,7 @@ void CPlayerMgr::UpdateModelGlow()
 
 void CPlayerMgr::ClearCurContainerCode()
 {
-	//make sure we clear out any tinting that the container may have been doing
-	g_pGameClientShell->GetLightScaleMgr()->ClearLightScale(CLightScaleMgr::eLightScaleEnvironment);
-
+	// RETAIL: Tron's clears no light scale (retail 0x1012b1f0)
 	m_eCurContainerCode = CC_NO_CONTAINER;
 	m_nSoundFilterId = 0;
 }
@@ -4337,7 +4335,11 @@ void CPlayerMgr::HandleWeaponDisable(LTBOOL bDisabled)
 			UpdateContainers();
 		}
 
-		m_pClientWeaponMgr->ShowWeapons();
+		// RETAIL: not while zoomed, in Tron (retail 0x1012b200)
+		if (!IsZoomed())
+		{
+			m_pClientWeaponMgr->ShowWeapons();
+		}
 	}
 }
 
@@ -5202,18 +5204,28 @@ void CPlayerMgr::UpdatePlayer()
 
     uint32 dwPlayerFlags;
 	g_pCommonLT->GetObjectFlags(hPlayerObj, OFT_Flags, dwPlayerFlags);
-	if (m_pPlayerCamera->IsFirstPerson())
+
+	// RETAIL: Tron's tests the camera mode (retail 0x1012c5e0)
+	CPlayerCamera::CameraMode eMode = m_pPlayerCamera->GetCameraMode();
+	if (eMode == CPlayerCamera::FIRSTPERSON)
 	{
 		if (dwPlayerFlags & FLAG_VISIBLE)
 		{
             ShowPlayer(LTFALSE);
 		}
 	}
-	else  // Third person
+	else if (eMode == CPlayerCamera::CHASE)
 	{
 		if (!(dwPlayerFlags & FLAG_VISIBLE))
 		{
             ShowPlayer(LTTRUE);
+		}
+	}
+	else if (eMode == CPlayerCamera::TRONMODE5)
+	{
+		if (dwPlayerFlags & FLAG_VISIBLE)
+		{
+            ShowPlayer(LTFALSE);
 		}
 	}
 

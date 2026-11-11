@@ -21,8 +21,10 @@ class CPlayerCamera
 		enum CameraState	{ SOUTH, SOUTHEAST, EAST, NORTHEAST, NORTH,
 							  NORTHWEST, WEST, SOUTHWEST, MLOOK, HOLD };
 
+		// RETAIL: Tron has a sixth mode, in which the player is hidden as in
+		// first person (retail CPlayerMgr::UpdatePlayer, 0x1012c5e0); our name
 		enum CameraMode		{ FIRSTPERSON, CHASE, GOINGFIRSTPERSON,
-							  CIRCLING, SCRIPT };
+							  CIRCLING, SCRIPT, TRONMODE5 };
 
 		enum CameraPoint	{ AT_POSITION, IN_DIRECTION, AUTOMATIC };
 
@@ -73,6 +75,7 @@ class CPlayerCamera
 
         LTBOOL IsChaseView()     const { return (m_eCameraMode == CHASE); }
         LTBOOL IsFirstPerson()   const { return (m_eCameraMode == FIRSTPERSON); }
+		CameraMode GetCameraMode() const { return m_eCameraMode; }	// RETAIL: Tron's (our name)
         const LTRotation &GetRotation() const { return m_rRotation; }
         const LTVector &GetPos()        const { return m_vPos; }
 
