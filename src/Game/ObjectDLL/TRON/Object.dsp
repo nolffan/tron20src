@@ -186,6 +186,10 @@ SOURCE=.\InfoString.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONode.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -235,6 +239,10 @@ SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # PROP Default_Filter "h;hpp"
 # Begin Source File
 
+SOURCE=.\AutoCommand.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\BinaryBit.h
 # End Source File
 # Begin Source File
@@ -256,6 +264,10 @@ SOURCE=.\HealthZone.h
 # Begin Source File
 
 SOURCE=.\InfoString.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IONode.h
 # End Source File
 # Begin Source File
 

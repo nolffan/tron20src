@@ -54,6 +54,25 @@ NOLF2's count is a uint16.
 
 Not fixed yet: the modern build should make it a uint16, as NOLF2's.
 
+### An I/O node's MoveToFloor property does nothing
+
+Object.lto, IONode (TRON/IONode.cpp; ReadProp at 0x10022f60, its update at
+0x10022c1a). The class lists a MoveToFloor property (default false), and
+its first update moves it to the floor when its m_bMoveToFloor is set, but
+ReadProp never reads the property: only the constructor (false) and Load
+set the member, so no I/O node is ever moved to the floor.
+
+Not fixed yet: the modern build should read MoveToFloor in ReadProp.
+
+### An I/O node leaks its looping sound's name
+
+Object.lto, IONode (TRON/IONode.cpp; destructor at 0x10022a60). The name of
+the looping sound a model key starts (m_hstrLoopSound, created in
+HandleModelString) is freed when the sound is killed by a key, but not in
+the destructor: a node removed while its loop plays leaks the string.
+
+Not fixed yet: the modern build should free it in the destructor.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
