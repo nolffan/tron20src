@@ -1,0 +1,46 @@
+# Tron's server shell vtable, CGameServerShell's (0x102977cc in Object.lto)
+# and CTronGameServerShell's (0x10294edc): each slot, the method in it, and
+# how it was named -- its retail body against our (NOLF2's) CGameServerShell
+# functions (mnemonic similarity, out/work/bodymatch.py; best score given),
+# its argument count (ret N) and what it calls. Slot 0 is IBase's; IServerShell's
+# 17 follow in Tron's declaration order; 18 is the destructor; 19.. are
+# CGameServerShell's own (GameServerShell.h).
+# offset,method,evidence
+0x000,_InterfaceImplementation,pure here; CTron's returns its class name
+0x004,CacheFiles,0.97 (CacheLevelSpecificFiles inlined; the precache flag)
+0x008,FileLoadNotify,2 arguments; returns LT_OK
+0x00c,ProcessPacket,3 arguments
+0x010,OnPlaybackFinish,empty
+0x014,SRand,1 argument; calls srand
+0x018,OnRemoveClient,1 argument; the remaining one-argument client slot
+0x01c,PreStartWorld,0.98
+0x020,PostStartWorld,0 arguments; CTron's calls CGameServerShell::PostStartWorld
+0x024,OnServerTerm,0 arguments (the remaining)
+0x028,ServerAppMessageFn,1 argument; ScmdServer first
+0x02c,OnAddClient,0.66; 1 argument
+0x030,OnServerInitialized,0.91
+0x034,OnClientExitWorld,1 argument; CTron's calls the base
+0x038,OnClientEnterWorld,0.99
+0x03c,OnMessage,0.88; 2 arguments
+0x040,OnObjectMessage,2 arguments; empty
+0x044,Update,0.89
+0x048,~CGameServerShell,scalar deleting destructor
+0x04c,TronUnknownVirtual4C,pure; CTron's uses the "tron20" GameSpy name
+0x050,TronUnknownVirtual50,pure; CTron's
+0x054,TronUnknownVirtual54,pure; CTron's returns a bool
+0x058,TronUnknownVirtual58,pure; 4 arguments (an address and port)
+0x05c,SetCurLevel,1 argument; copies the level name and hashes it
+0x060,DropInventoryObject,pure; CTron's makes a CoreDump
+0x064,IsCapNumberOfBodies,returns false
+0x068,ShouldUseRadar,returns false
+0x06c,TronUnknownVirtual6C,empty (2 arguments); CTron's to its revive manager
+0x070,TronUnknownVirtual70,empty (1 argument); likewise
+0x074,TronUnknownVirtual74,empty (1 argument); likewise
+0x078,TronUnknownVirtual78,empty (1 argument); likewise
+0x07c,TronUnknownVirtual7C,empty (1 argument); likewise
+0x080,TronUnknownVirtual80,empty (1 argument); likewise
+0x084,TronUnknownVirtual84,empty (1 argument); CTron's, the level switch request
+0x088,SendPlayerInfoMsgToClients,0.80; 3 arguments
+0x08c,ProcessHandshake,0.77; CTron's "Kicking Client %d: Handshake" messages
+0x090,ProcessCheat,3 arguments; HandlePlayerCheat's switch (CheatSkillz ...)
+0x094,CreatePlayer,pure; CTron's makes a CTronPlayerObj

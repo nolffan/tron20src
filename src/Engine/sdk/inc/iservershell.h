@@ -29,17 +29,103 @@ public:
     inline ILTServer *GetServerDE() const {return g_pLTServer;}
     inline ILTServer *GetLTServer() const {return g_pLTServer;}
 
+// TRON: Tron's engine calls its server shell's virtuals in this order (after
+// IBase's _InterfaceImplementation): retail Object.lto's CGameServerShell and
+// CTronGameServerShell vtables, each slot named by the NOLF2 function whose
+// body it has (progress/engine/IServerShell-vtable.csv). The declarations
+// are NOLF2's, reordered.
+
 /*!
-\return \b LT_OK - Everything is fine.
-\return \b LT_ERROR - Fatal error occurred.
+Called after world is loaded and it's objects, their skins, and all sprites 
+have been cached. Call ILTServer::CacheFile() for each additional sprite, 
+model, texture, and sound that you want to make sure are in memory for the 
+level.
 
-This function is called after the IServerShell implementation class has
-been allocated in game code, and before any other IServerShell function.
+\see ILTServer::CacheFile()
 
-Things that used to done in the old CreateServerShell function can now be done
-here.
+Used for: ServerShell Callbacks.
 */
-    virtual LTRESULT OnServerInitialized() = 0;
+    virtual void CacheFiles() = 0;
+
+/*!
+\param  pFilename   Filename.
+\param  status      \b LT_OK if file loaded ok. \b LT_ERROR otherwise.
+
+\return The engine ignores the callback return value.
+
+Called when a (model) file is done loading (from a call to ThreadLoadFile).
+For example, when loading a model to represent your player, FileLoadNotify() 
+is called afterwards.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual LTRESULT FileLoadNotify(const char *pFilename, LTRESULT status) = 0;
+
+/*!
+\param  pData       The packet data.
+\param  dataLen     Length of the packet data.
+\param  senderAddr  IP address of sender.
+\param  senderPort  Port of sender.
+
+\return The engine ignores the callback return value.
+
+Called when the server gets a network packet that it cannot understand.
+Typically, this is used in conjunction with apps like GameSpy, etc.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual LTRESULT ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort) = 0;
+
+/*!
+Called when a demo playback is done.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual void OnPlaybackFinish() = 0;
+
+/*!
+\param  uiRand  The seed that the engine passes to you (usually the system 
+                time).
+
+First thing to be called when a world is requested, but not started loading yet.
+uiRand defaults to current time.  A good use of this function would be to save 
+the random seed for savegames, recordings, etc.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual void SRand(unsigned int uiRand) = 0;
+
+/*!
+\param  hClient     Client handle.
+
+\return The engine ignores the callback return value.
+
+  Called almost immediately after OnClientExitWorld() (just after client has 
+unloaded the world).
+
+Used for: ServerShell Callbacks.
+*/
+    virtual void OnRemoveClient(HCLIENT hClient) = 0;
+
+/*!
+\param  bSwitchingWorlds    World switching indicator. True if currently 
+                            running a world. False *only* if no world is 
+                            currently running (e.g. first world, or coming 
+                            from a pre-game menu).
+
+Called just after SRand(), before any previously loaded level objects, etc, 
+have been unloaded.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual void PreStartWorld(bool bSwitchingWorlds) = 0;
+
+/*!
+Called after CacheFiles(), and all unused models and sounds are freed.
+
+Used for: ServerShell Callbacks.
+*/
+    virtual void PostStartWorld() = 0;
 
 /*!
 Called just before the engine unloads the servershell and shuts down.
@@ -75,36 +161,26 @@ Used for: ServerShell Callbacks.
     virtual void OnAddClient(HCLIENT hClient) = 0;
 
 /*!
-\param  hClient     Client handle.
+\return \b LT_OK - Everything is fine.
+\return \b LT_ERROR - Fatal error occurred.
 
-\return The engine ignores the callback return value.
+This function is called after the IServerShell implementation class has
+been allocated in game code, and before any other IServerShell function.
 
-  Called almost immediately after OnClientExitWorld() (just after client has 
-unloaded the world).
-
-Used for: ServerShell Callbacks.
+Things that used to done in the old CreateServerShell function can now be done
+here.
 */
-    virtual void OnRemoveClient(HCLIENT hClient) = 0;
+    virtual LTRESULT OnServerInitialized() = 0;
 
 /*!
-\param  bSwitchingWorlds    World switching indicator. True if currently 
-                            running a world. False *only* if no world is 
-                            currently running (e.g. first world, or coming 
-                            from a pre-game menu).
+\param  hClient     Exiting client's handle.
 
-Called just after SRand(), before any previously loaded level objects, etc, 
-have been unloaded.
+Called when client leaves the world (just before the engine tells it to 
+unload the world).
 
 Used for: ServerShell Callbacks.
 */
-    virtual void PreStartWorld(bool bSwitchingWorlds) = 0;
-
-/*!
-Called after CacheFiles(), and all unused models and sounds are freed.
-
-Used for: ServerShell Callbacks.
-*/
-    virtual void PostStartWorld() = 0;
+    virtual void OnClientExitWorld(HCLIENT hClient) = 0;
 
 /*!
 \param  hClient         Connecting client's handle.
@@ -121,26 +197,6 @@ return it (for PVS, etc).
 Used for: ServerShell Callbacks.
 */
     virtual LPBASECLASS OnClientEnterWorld(HCLIENT hClient) = 0;
-
-/*!
-\param  hClient     Exiting client's handle.
-
-Called when client leaves the world (just before the engine tells it to 
-unload the world).
-
-Used for: ServerShell Callbacks.
-*/
-    virtual void OnClientExitWorld(HCLIENT hClient) = 0;
-
-/*!
-\param  timeElapsed     Time since last call to Update().
-
-Called every frame tick. Typically, this function is used for 
-synchronization, if the game requires it.
-
-Used for: ServerShell Callbacks.
-*/
-    virtual void Update(LTFLOAT timeElapsed) = 0;
 
 /*!
 \param  hSender     Handle to client that sent the message.
@@ -169,64 +225,14 @@ Used for: ServerShell Callbacks.
     virtual void OnObjectMessage(LPBASECLASS pSender, ILTMessage_Read *pMessage) = 0;
 
 /*!
-Called when a demo playback is done.
+\param  timeElapsed     Time since last call to Update().
+
+Called every frame tick. Typically, this function is used for 
+synchronization, if the game requires it.
 
 Used for: ServerShell Callbacks.
 */
-    virtual void OnPlaybackFinish() = 0;
-
-/*!
-Called after world is loaded and it's objects, their skins, and all sprites 
-have been cached. Call ILTServer::CacheFile() for each additional sprite, 
-model, texture, and sound that you want to make sure are in memory for the 
-level.
-
-\see ILTServer::CacheFile()
-
-Used for: ServerShell Callbacks.
-*/
-    virtual void CacheFiles() = 0;
-
-/*!
-\param  uiRand  The seed that the engine passes to you (usually the system 
-                time).
-
-First thing to be called when a world is requested, but not started loading yet.
-uiRand defaults to current time.  A good use of this function would be to save 
-the random seed for savegames, recordings, etc.
-
-Used for: ServerShell Callbacks.
-*/
-    virtual void SRand(unsigned int uiRand) = 0;
-
-/*!
-\param  pFilename   Filename.
-\param  status      \b LT_OK if file loaded ok. \b LT_ERROR otherwise.
-
-\return The engine ignores the callback return value.
-
-Called when a (model) file is done loading (from a call to ThreadLoadFile).
-For example, when loading a model to represent your player, FileLoadNotify() 
-is called afterwards.
-
-Used for: ServerShell Callbacks.
-*/
-    virtual LTRESULT FileLoadNotify(const char *pFilename, LTRESULT status) = 0;
-
-/*!
-\param  pData       The packet data.
-\param  dataLen     Length of the packet data.
-\param  senderAddr  IP address of sender.
-\param  senderPort  Port of sender.
-
-\return The engine ignores the callback return value.
-
-Called when the server gets a network packet that it cannot understand.
-Typically, this is used in conjunction with apps like GameSpy, etc.
-
-Used for: ServerShell Callbacks.
-*/
-    virtual LTRESULT ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort) = 0;
+    virtual void Update(LTFLOAT timeElapsed) = 0;
 };
 
 

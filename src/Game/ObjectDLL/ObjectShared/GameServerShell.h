@@ -106,6 +106,16 @@ class CGameServerShell : public IServerShellStub
         CGameServerShell();
 		virtual ~CGameServerShell();
 
+		// RETAIL: Tron's CGameServerShell has 38 slots (retail Object.lto's
+		// vtable 0x102977cc): IBase's, IServerShell's 17 (iservershell.h), the
+		// destructor, then these, in this order. Four pure ones first, which
+		// CTronGameServerShell implements: GameSpy's, by what they touch (the
+		// "tron20" game name, a packet's address and port); not yet named
+		virtual void	TronUnknownVirtual4C() = 0;
+		virtual void	TronUnknownVirtual50() = 0;
+		virtual bool	TronUnknownVirtual54() = 0;
+		virtual void	TronUnknownVirtual58( uint8 senderAddr[4], uint16 senderPort, void* pData, uint32 nDataLen ) = 0;
+
         void    Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void    Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
@@ -149,7 +159,7 @@ class CGameServerShell : public IServerShellStub
 		IDList*		GetParameters()				{ return &m_Parameters; }
 
 		char const*	GetCurLevel();
-		void		SetCurLevel( char const* pszWorldName );
+		virtual void	SetCurLevel( char const* pszWorldName );	// RETAIL: virtual in Tron (slot 23, retail 0x100e3710)
 		char const*	GetHostName();
 		int			GetNumPlayers();
 
@@ -189,6 +199,17 @@ class CGameServerShell : public IServerShellStub
 		// Are we able to use the radar functionality
 		virtual bool	ShouldUseRadar( ) { return false; }
 
+		// RETAIL: Tron's slots 27..33, empty here; CTronGameServerShell's pass
+		// player events to its revive manager, or in the multiplayer light
+		// cycles to its light cycle manager. Not yet named
+		virtual void	TronUnknownVirtual6C( uint32 nArg1, uint32 nArg2 ) {}
+		virtual void	TronUnknownVirtual70( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual74( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual78( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual7C( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual80( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual84( uint32 nArg ) {}
+
 		// Get the min music mood for the current level.
 		CMusicMgr::Mood	GetMinMusicMood() const { return m_eMinMusicMood; }
 
@@ -199,7 +220,8 @@ class CGameServerShell : public IServerShellStub
 		void	SaveObjectives( ILTMessage_Write *pMsg, uint32 dwSaveFlags );
 		void	LoadObjectives( ILTMessage_Read *pMsg, uint32 dwLoadFlags );
 
-        void        SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer, uint8 nInfoType);
+		// RETAIL: virtual in Tron (slot 34, retail 0x100de4e0)
+        virtual void SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer, uint8 nInfoType);
 
 	protected :
 
@@ -223,7 +245,12 @@ class CGameServerShell : public IServerShellStub
 		void		ShowMultiplayerSummary();
 
 		// Process the network handshaking from a client
-		void		ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg);
+		// RETAIL: virtual in Tron (slot 35, retail 0x100de650)
+		virtual void	ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg);
+
+		// RETAIL: Tron's slot 36 (retail 0x100e08b0): HandlePlayerCheat's switch
+		// on the cheat code, split off. The name is ours
+		virtual void	ProcessCheat( CPlayerObj* pPlayer, CheatCode nCheatCode, uint32 nData );
 
 		// Called by message from serverapp.
 		bool		OnServerShellInit( );

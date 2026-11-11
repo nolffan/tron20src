@@ -345,6 +345,10 @@ LTRESULT CGameServerShell::OnServerInitialized()
 void CGameServerShell::OnServerTerm()
 {
 	CAssertMgr::Disable();
+
+	// RETAIL: Tron's then calls slot 20 (retail 0x100dd2c0), CTronGameServerShell's
+	// GameSpy shutdown (GameServerShell.h)
+	TronUnknownVirtual50();
 }
 
 
@@ -1933,7 +1937,19 @@ void CGameServerShell::HandlePlayerCheat (HCLIENT hSender, ILTMessage_Read *pMsg
 #endif
 
 
+	ProcessCheat( pPlayer, nCheatCode, nData );
+}
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::ProcessCheat ()
+//
+//	PURPOSE:	Do a player's cheat (RETAIL: Tron's virtual, retail 0x100e08b0)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::ProcessCheat( CPlayerObj* pPlayer, CheatCode nCheatCode, uint32 nData )
+{
 	switch (nCheatCode)				// why always send the data? it was easier to cut & paste
 	{	
 		case CHEAT_GOD:				CheatGod		(pPlayer, nData);	break;

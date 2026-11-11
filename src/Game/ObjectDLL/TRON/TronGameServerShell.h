@@ -29,6 +29,15 @@ class CTronGameServerShell : public CGameServerShell
 
 		virtual bool DropInventoryObject(Body* pBody);
 
+		// RETAIL: CGameServerShell's four pure slots (GameServerShell.h): Tron's
+		// GameSpy reporting, retail 0x1005d3f0, 0x1005d600, 0x1005d680 and
+		// 0x1005d6b0. Stand-ins until written from the retail code (GameSpy is
+		// not yet linked)
+		virtual void	TronUnknownVirtual4C() {}
+		virtual void	TronUnknownVirtual50() {}
+		virtual bool	TronUnknownVirtual54() { return false; }
+		virtual void	TronUnknownVirtual58( uint8 senderAddr[4], uint16 senderPort, void* pData, uint32 nDataLen ) {}
+
 	protected:
 		virtual LTRESULT OnServerInitialized();
 		virtual void OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
