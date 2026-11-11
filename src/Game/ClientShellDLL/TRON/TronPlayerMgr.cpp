@@ -15,6 +15,9 @@
 #include "SubroutineMgr.h"
 #include "ClientSoundMgr.h"
 #include "LayoutMgr.h"
+#include "CMoveMgr.h"
+#include "ClientWeaponMgr.h"
+#include "InterfaceMgr.h"
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
@@ -269,6 +272,59 @@ void CTronPlayerMgr::Pause(LTBOOL bPause)
 	{
 		m_fLastUpdateTime = g_pLTClient->GetTime();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::OnEnterWorld()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100a4cc0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerMgr::OnEnterWorld()
+{
+	g_pCommonLT->SetObjectFlags(g_pMoveMgr->GetObject(), OFT_Flags2, FLAG2_PLAYERCOLLIDE, FLAG2_PLAYERCOLLIDE);
+	g_pCommonLT->SetObjectFlags(g_pMoveMgr->GetObject(), OFT_Flags, FLAG_GRAVITY, FLAG_GRAVITY);
+
+	m_bTronUnknown234 = false;
+	m_bTronUnknown235 = false;
+
+	// PORT: retail takes, in a light cycle circuit, a flag (+0x84) of the
+	// current entry of a Tron manager not yet in our tree (0x1026dd34,
+	// retail 0x10047270)
+	m_bTronUnknown236 = true;
+
+	m_fTronUnknownBC = 0.0f;
+	m_bTronUnknownB8 = false;
+	m_nTronUnknown230 = 0;
+
+	CPlayerMgr::OnEnterWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::EndZoom()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100a54d0): the LOL and triangulate
+//				zoom overlays (Tron's overlay ids 8, 11, 14, not yet in our
+//				Overlays.h) go too
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerMgr::EndZoom()
+{
+	g_pInterfaceMgr->EndScope();
+	g_pInterfaceMgr->RemoveOverlay((eOverlayMask)8);
+	g_pInterfaceMgr->RemoveOverlay((eOverlayMask)11);
+	g_pInterfaceMgr->RemoveOverlay((eOverlayMask)14);
+
+	m_bTronUnknown210 = false;
+	m_bTronUnknown211 = false;
+	m_bTronUnknown212 = false;
+	m_bCamera = LTFALSE;
+
+	m_pClientWeaponMgr->ShowWeapons();
 }
 
 // ----------------------------------------------------------------------- //

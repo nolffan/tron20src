@@ -41,6 +41,8 @@ public:
 	LTBOOL	OnCommandOn(int command);
 	LTBOOL	OnCommandOff(int command);
 
+	void	OnEnterWorld();
+
 	void	Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState);
 	void	Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState);
 
@@ -67,6 +69,9 @@ public:
 
 	// RETAIL: any of the four transfers
 	bool	IsTransferringEnergy() {return (m_bTransferringEnergy || m_bTronUnknown1E9 || m_bTronUnknown1EA || m_bTronUnknown1EB);}
+
+	// RETAIL: Tron's EndZoom (retail 0x100a54d0, slot 0xb4)
+	void	EndZoom();
 
 	// RETAIL: Tron's accessors (retail 0x100a5530, 0x100a5540; the names
 	// are ours)
