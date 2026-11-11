@@ -25,6 +25,31 @@
 typedef std::vector<CUIPolyString*> PStringArray;
 typedef std::vector<CUIFormattedPolyString*> FPStringArray;
 
+// TRON: Tron's UI text is wide (std::wstring: ILTFontManager, CUIPolyString).
+// PORT: this widening is ours, for the code that still makes its text narrow
+// where retail's has it wide already; it widens each char as the engine's
+// CUIPolyString::SetText(const char*) does (0x563120 in Lithtech.exe).
+inline std::wstring LTGUIWideString(const char* pText)
+{
+	std::wstring sText;
+	if (pText)
+	{
+		while (*pText)
+			sText += (wchar_t)(uint8)*pText++;
+	}
+	return sText;
+}
+
+// PORT: ours too: the other way, for narrow code reading wide text (each
+// character's low byte).
+inline std::string LTGUINarrowString(const std::wstring& sText)
+{
+	std::string sNarrow;
+	for (std::wstring::const_iterator it = sText.begin(); it != sText.end(); ++it)
+		sNarrow += (char)*it;
+	return sNarrow;
+}
+
 //base classes
 #include "..\ltguimgr\ltguicommandhandler.h"
 #include "..\ltguimgr\ltguictrl.h"

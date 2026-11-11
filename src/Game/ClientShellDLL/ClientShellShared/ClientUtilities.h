@@ -112,6 +112,8 @@ void LoadString(int messageCode, char *outBuf, int outBufLen);
 //load and format a string from CRes and return a pointer to a static buffer containing that string
 char* FormatTempString(int messageCode, ...);
 char* LoadTempString(int messageCode);
+// TRON: a string resource as Tron's wide UI text (RETAIL: 0x100d8c70; name ours)
+std::wstring LoadTempWString(int messageCode);
 
 
 bool IsMultiplayerGame();

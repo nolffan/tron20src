@@ -202,10 +202,17 @@ order, recovered from the retail binaries and recorded per interface in
   Each header is checked against what VC6 compiles from it
   (`out/work/probe.sh`: a member pointer to each virtual, whose vcall thunk
   names its slot). `*-vtable.csv`.
-- **Not yet:** ILTFontManager -- Tron's three CreateFont overloads each take
-  one pointer (two are stubs returning NULL) where NOLF2's five take two to
-  five arguments, so its font creation is to be written from the retail
-  game's calls; and NOLF2's 1.x engine additions the shared code still calls
+- **The text API** (ILTFontManager, CUIFont, CUIPolyString,
+  CUIFormattedPolyString): not NOLF2's at all. Tron's text is wide
+  (`std::wstring`, passed by reference to the engine and by value through
+  the game's own controls), its fonts are CUIWideBitmapFonts read from a
+  font file (CreateFont(ILTStream*); the two other CreateFont overloads are
+  stubs), and its polystrings are engine classes whose 43 (45) virtuals the
+  game calls directly, with integer positions and sizes. Named from the
+  engine's bodies and the game's calls, `*-vtable.csv`. VC6 lays a name's
+  overloads out in the reverse of their declaration order (the game's calls
+  to CreateFont and SetText show it).
+- **Not yet:** NOLF2's 1.x engine additions the shared code still calls
   -- ILTServer::GetSaveFileVersion (GameServerShell, GameBase,
   GameBaseLite, WorldProperties: NOLF2 1.x save formats), ILTModel's OBB
   calls -- which Tron's engine does not have.

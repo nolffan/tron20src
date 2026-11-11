@@ -99,7 +99,8 @@ LTBOOL CLTGUIButton::SetFont(CUIFont *pFont, uint8 nFontSize)
     return LTTRUE;
 }
 
-LTBOOL CLTGUIButton::SetText(const char* pText, LTBOOL bHighlightText)
+// TRON: the text is a wide string, by value (RETAIL: 0x100b9e20)
+LTBOOL CLTGUIButton::SetText(std::wstring sText, LTBOOL bHighlightText)
 {
 	if (!m_pFont) return LTFALSE;
 
@@ -107,16 +108,17 @@ LTBOOL CLTGUIButton::SetText(const char* pText, LTBOOL bHighlightText)
 
 	if (!m_pText)
 	{
-		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pText,(float)m_pos.x,(float)m_pos.y);
+		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)m_pos.x,(float)m_pos.y);
 	}
 	else
-		m_pText->SetText((char *)pText);
+		m_pText->SetText(sText);
 
 	if (m_pText)
 	{
 		m_pText->SetCharScreenHeight(m_nFontSize);
-		float x = (float)m_pos.x + ((float)GetWidth() - m_pText->GetWidth()) / 2.0f;
-		float y = (float)m_pos.y + ((float)GetHeight() - m_pText->GetHeight()) / 2.0f;
+		// TRON: integers (RETAIL: 0x100b9e20)
+		int x = m_pos.x + (GetWidth() - m_pText->GetWidth()) / 2;
+		int y = m_pos.y + (GetHeight() - m_pText->GetHeight()) / 2;
 		m_pText->SetPosition(x,y);
 	}
 
@@ -196,8 +198,9 @@ void CLTGUIButton::SetBasePos ( LTIntPt pos )
 	ScalePoly();
 	if (m_pText)
 	{
-		float x = (float)m_pos.x + ((float)GetWidth() - m_pText->GetWidth()) / 2.0f;
-		float y = (float)m_pos.y + ((float)GetHeight() - m_pText->GetHeight()) / 2.0f;
+		// TRON: integers (RETAIL: 0x100b9e20)
+		int x = m_pos.x + (GetWidth() - m_pText->GetWidth()) / 2;
+		int y = m_pos.y + (GetHeight() - m_pText->GetHeight()) / 2;
 		m_pText->SetPosition(x,y);
 	}
 }
@@ -210,8 +213,9 @@ void CLTGUIButton::SetScale(float fScale)
 	if (m_pText)
 	{
 		m_pText->SetCharScreenHeight(m_nFontSize);
-		float x = (float)m_pos.x + ((float)GetWidth() - m_pText->GetWidth()) / 2.0f;
-		float y = (float)m_pos.y + ((float)GetHeight() - m_pText->GetHeight()) / 2.0f;
+		// TRON: integers (RETAIL: 0x100b9e20)
+		int x = m_pos.x + (GetWidth() - m_pText->GetWidth()) / 2;
+		int y = m_pos.y + (GetHeight() - m_pText->GetHeight()) / 2;
 		m_pText->SetPosition(x,y);
 	}
 
@@ -223,8 +227,9 @@ void CLTGUIButton::SetTextureScale(float fScale)
 	ScalePoly();
 	if (m_pText)
 	{
-		float x = (float)m_pos.x + ((float)GetWidth() - m_pText->GetWidth()) / 2.0f;
-		float y = (float)m_pos.y + ((float)GetHeight() - m_pText->GetHeight()) / 2.0f;
+		// TRON: integers (RETAIL: 0x100b9e20)
+		int x = m_pos.x + (GetWidth() - m_pText->GetWidth()) / 2;
+		int y = m_pos.y + (GetHeight() - m_pText->GetHeight()) / 2;
 		m_pText->SetPosition(x,y);
 	}
 

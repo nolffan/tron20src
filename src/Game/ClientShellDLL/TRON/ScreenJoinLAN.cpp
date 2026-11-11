@@ -383,7 +383,7 @@ void CScreenJoinLAN::CheckPassword()
 
 	m_sPassword = "";
 	if (pCtrl->GetColumn(1) && pCtrl->GetColumn(1)->GetString())
-		s_Name = pCtrl->GetColumn(1)->GetString()->GetText();
+		s_Name = LTGUINarrowString(pCtrl->GetColumn(1)->GetString()->GetText());	// PORT: Tron's text is wide
 	else
 		s_Name = "";
 

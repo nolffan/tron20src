@@ -113,7 +113,7 @@ LTBOOL CHUDCrosshair::Init()
 	m_StrColor = argbWhite;
 	m_StrDisColor = 0x80808080;
 
-	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f,0.0f);
+	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f,0.0f);
 	m_pStr->SetColor(m_StrColor);
 
 	m_DbgPos = LTIntPt(360,200);
@@ -122,7 +122,7 @@ LTBOOL CHUDCrosshair::Init()
 	m_nDbgJust = 0;
 	m_DbgColor = argbWhite;
 
-	m_pDbgStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f,0.0f);
+	m_pDbgStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f,0.0f);
 	m_pDbgStr->SetColor(m_DbgColor);
 	m_pDbgStr->SetWrapWidth(m_nDbgWidth);
 
@@ -133,7 +133,7 @@ LTBOOL CHUDCrosshair::Init()
 	m_InfoColor = 0x8000FF00;
 	m_InfoBadColor = 0x80FF0000;
 
-	m_pInfoStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f,0.0f);
+	m_pInfoStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f,0.0f);
 	m_pInfoStr->SetColor(m_InfoColor);
 	m_pInfoStr->SetWrapWidth(m_nInfoWidth);
 
@@ -276,7 +276,8 @@ void CHUDCrosshair::Update()
 	HOBJECT hObj = g_pPlayerMgr->GetTargetMgr()->GetTargetObject();
 	uint16  nID = g_pPlayerMgr->GetTargetMgr()->GetTargetStringID();
 
-	if (strcmp(g_pPlayerMgr->GetTargetMgr()->GetDebugString(),m_pDbgStr->GetText()))
+	// PORT: Tron's text is wide
+	if (LTGUIWideString(g_pPlayerMgr->GetTargetMgr()->GetDebugString()) != m_pDbgStr->GetText())
 		m_pDbgStr->SetText(g_pPlayerMgr->GetTargetMgr()->GetDebugString());
 
 	if (hObj == m_hObj && nID == m_nString)

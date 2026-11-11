@@ -54,7 +54,13 @@ public:
     LTBOOL  SetFont ( CUIFont *pFont, uint8 nFontSize);
 
 	//this fails, if no font has been defined
-	LTBOOL	SetText(const char* pText, LTBOOL bHighlightText = LTFALSE);
+	// TRON: the text is a wide string, by value (RETAIL: 0x100b9e20)
+	LTBOOL	SetText(std::wstring sText, LTBOOL bHighlightText = LTFALSE);
+	// PORT: ours, for the code that still makes its text narrow
+	LTBOOL	SetText(const char* pText, LTBOOL bHighlightText = LTFALSE)
+	{
+		return SetText(LTGUIWideString(pText), bHighlightText);
+	}
 
 
 	void	SetTexture(HTEXTURE hNormal, HTEXTURE hSelected = LTNULL, HTEXTURE hDisabled = LTNULL, LTBOOL bFreeOld = LTFALSE);

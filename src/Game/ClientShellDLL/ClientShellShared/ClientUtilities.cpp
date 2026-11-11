@@ -455,6 +455,36 @@ char* LoadTempString(int messageCode)
 	return s_szStringBuffer;
 }
 
+// TRON: Tron's UI text is wide: a string resource, loaded narrow and widened
+// a character at a time, returned by value (RETAIL: 0x100d8c70; its buffer,
+// 0x1026fae0, is made by 0x100d8c30). The names are ours.
+static std::wstring s_wsStringBuffer;
+std::wstring LoadTempWString(int messageCode)
+{
+	void* pModule;
+	g_pLTClient->GetEngineHook("cres_hinstance",&pModule);
+	HMODULE hModule = (HINSTANCE)pModule;
+
+	s_wsStringBuffer = std::wstring();
+	s_wsStringBuffer.reserve(kMaxStringBuffer);
+
+	s_szStringBuffer[0] = '\0';
+
+    if (hModule)
+    {
+		uint32 nBytes = LoadString(hModule, messageCode, s_szStringBuffer, sizeof(s_szStringBuffer));
+    }
+
+	s_wsStringBuffer.erase(s_wsStringBuffer.begin(), s_wsStringBuffer.end());
+	uint32 nLen = strlen(s_szStringBuffer);
+	for (uint32 i = 0; i < nLen; i++)
+	{
+		s_wsStringBuffer += (wchar_t)(uint8)s_szStringBuffer[i];
+	}
+
+	return s_wsStringBuffer;
+}
+
 // --------------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGameClientShell::IsMultiplayerGame()

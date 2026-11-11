@@ -27,6 +27,8 @@ CLTGUITextCtrl::CLTGUITextCtrl()
     m_nIndent			= 0;
 	m_bClip				= LTFALSE;
 	m_pString			= LTNULL;
+	m_pPulseString		= LTNULL;
+	m_fPulse			= 0.0f;
 
 }
 
@@ -36,7 +38,7 @@ CLTGUITextCtrl::~CLTGUITextCtrl()
 }
 
 // Create the control
-LTBOOL CLTGUITextCtrl::Create (  	const char*	pText,
+LTBOOL CLTGUITextCtrl::Create (  	std::wstring sText,
                                     uint32      nCommandID,
                                     uint32      nHelpID,
 									CUIFont*	pFont,
@@ -54,9 +56,9 @@ LTBOOL CLTGUITextCtrl::Create (  	const char*	pText,
 	}
 
 	// Add the string
-	if (pText)
+	if (sText.length())
 	{
-		SetString(pText);
+		SetString(sText);
 	}
 
 	CLTGUICtrl::Create(nCommandID, nHelpID, nParam1,nParam2);
@@ -73,26 +75,31 @@ void CLTGUITextCtrl::Destroy ( )
 		g_pFontManager->DestroyPolyString(m_pString);
 		m_pString = LTNULL;
 	}
+	if (m_pPulseString)
+	{
+		g_pFontManager->DestroyPolyString(m_pPulseString);
+		m_pPulseString = LTNULL;
+	}
 
 }
 
 
 // Add more strings to the control.  These are cycled when OnLeft() and OnRight() are called
-void CLTGUITextCtrl::SetString(const char *pString)
+void CLTGUITextCtrl::SetString(std::wstring sText)
 {
-	if ( !pString || !m_pFont || !m_nFontSize)
+	int nLen = sText.length();
+	if ( !m_pFont || !m_nFontSize)
 		return;
 
-	int nLen = strlen(pString);
 	ASSERT(nLen < 1024);
 	if (nLen >= 1024)
 		return;
 
 
 	if (!m_pString)
-		m_pString = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pString,(float)m_pos.x,(float)m_pos.y);
+		m_pString = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)m_pos.x,(float)m_pos.y);
 	else
-		m_pString->SetText((char *)pString);
+		m_pString->SetText(sText);
 
 
 	if (m_pString)
@@ -161,6 +168,34 @@ void CLTGUITextCtrl::CalculateSize()
 	m_nHeight = (uint16)m_pString->GetHeight();
 }
 
+// TRON: makes (or removes) the pulse's copy of the text (RETAIL: 0x100bf430)
+void CLTGUITextCtrl::SetPulse(bool bPulse)
+{
+	if (!m_pString)
+		return;
+
+	if (m_pPulseString)
+	{
+		g_pFontManager->DestroyPolyString(m_pPulseString);
+		m_pPulseString = LTNULL;
+	}
+
+	if (!bPulse)
+		return;
+
+	std::wstring sText = m_pString->GetText();
+	m_pPulseString = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)m_pos.x,(float)m_pos.y);
+	m_pPulseString->SetCharScreenHeight(m_nFontSize);
+	m_pPulseString->SetColor(0xFFFFFFFF);
+}
+
+// TRON: starts the pulse when selected (RETAIL: 0x100bf580)
+void CLTGUITextCtrl::Pulse()
+{
+	if (m_bSelected)
+		m_fPulse = 1.0f;
+}
+
 // Render the control
 void CLTGUITextCtrl::Render()
 {
@@ -169,6 +204,31 @@ void CLTGUITextCtrl::Render()
 
     uint32 argbColor=GetCurrentColor();
 	m_pString->SetColor(argbColor);
+
+	// TRON: the pulse: the text's copy grows from it and fades out over a
+	// second (RETAIL: 0x100bf590)
+	if (m_pPulseString && m_fPulse > 0.0f)
+	{
+		float fGrowth = 1.0f - m_fPulse;
+		m_fPulse -= (1.0f / 60.0f);
+		uint8 nAlpha = (uint8)(m_fPulse * 192.0f);
+		m_pPulseString->SetColor((nAlpha << 24) | (m_argbNormal & 0x00FFFFFF));
+
+		int nLen = m_pString->GetLength();
+		LT_POLYGT4* pSrc = m_pString->GetPolys();
+		LT_POLYGT4* pDst = m_pPulseString->GetPolys();
+		for (int i = 0; i < nLen; i++)
+		{
+			float fHeight = pSrc[i].verts[3].y - pSrc[i].verts[0].y;
+			float fGrow = fHeight * fGrowth;
+			g_pDrawPrim->SetXYWH(&pDst[i], pSrc[i].verts[0].x, pSrc[i].verts[0].y - fGrow,
+				pSrc[i].verts[1].x - pSrc[i].verts[0].x, fGrow + fGrow + fHeight);
+		}
+
+		if (m_fPulse > 0.0f)
+			m_pPulseString->Render();
+	}
+
 	if (m_nFixedWidth && m_bClip)
 	{
 		CUIRECT rc;
@@ -198,7 +258,7 @@ void CLTGUITextCtrl::SetBasePos ( LTIntPt pos )
 	if (m_pString)
 	{
 		float fi = (float)m_nIndent * m_fScale;
-		m_pString->SetPosition((float)m_pos.x+fi,(float)m_pos.y);
+		m_pString->SetPosition(m_pos.x+(int)fi,m_pos.y);	// TRON: integers
 	}
 }
 
@@ -214,7 +274,7 @@ void CLTGUITextCtrl::SetScale(float fScale)
 	if (m_pString)
 	{
 		float fi = (float)m_nIndent * m_fScale;
-		m_pString->SetPosition((float)m_pos.x+fi,(float)m_pos.y);
+		m_pString->SetPosition(m_pos.x+(int)fi,m_pos.y);	// TRON: integers
 		m_pString->SetCharScreenHeight(m_nFontSize);
 		m_pString->SetWrapWidth(nWidth);
 	}
@@ -241,6 +301,9 @@ void CLTGUITextCtrl::SetFixedWidth(uint16 nWidth, LTBOOL bClip)
 	if (m_pString)
 	{
 		m_pString->SetWrapWidth(nTrueWidth);
+		// TRON: a clipped string clips itself (RETAIL: 0x100bf870)
+		if (m_bClip)
+			m_pString->EnableClipping(true);
 	}
 	CalculateSize();
 
@@ -270,7 +333,7 @@ void CLTGUITextCtrl::SetIndent(uint16 nIndent)
 	if (m_pString)
 	{
 		float fi = (float)m_nIndent * m_fScale;
-		m_pString->SetPosition((float)m_pos.x+fi,(float)m_pos.y);
+		m_pString->SetPosition(m_pos.x+(int)fi,m_pos.y);	// TRON: integers
 	}
 
 	CalculateSize();

@@ -139,7 +139,7 @@ void CHUDWeapons::UpdateLayout()
 	m_nFontSize = m_nBaseFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
 	m_nLargeFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"LargeFontSize");
 
-	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont," ",0.0f,0.0f);
+	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(" "),0.0f,0.0f);
 	if (!m_pText)
 		return;
 

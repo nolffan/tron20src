@@ -60,7 +60,7 @@ LTBOOL CHUDMessage::Create(MsgCreate &mc)
 
 	if (!m_pText)
 	{
-		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,"",0.0f,0.0f);
+		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,std::wstring(),0.0f,0.0f);
 		if (!m_pText)
 			return LTFALSE;
 	}
@@ -218,7 +218,7 @@ void CHUDMessage::Render()
 	{
 		if (m_bDropShadow)
 		{
-			float px,py;
+			int32 px,py;
 			m_pText->GetPosition(&px,&py);
 			px += 2.0f;
 			py += 2.0f;

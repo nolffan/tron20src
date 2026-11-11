@@ -44,65 +44,17 @@ the CUIFormattedPolyString adds support for newlines, word-wrap, and justificati
 
 Used for: Text and UI.   
 */
+// TRON: Tron's formatted polystring (0x9c bytes, vtable 0x591a78 in retail
+// Lithtech.exe) adds two virtuals to its CUIPolyString's: the wrap width
+// (0x568750, member +0x88) and then the alignment (0x568780, +0x84; the one
+// CreateFormattedPolyString sets) -- NOLF2 declares them the other way round.
+// The game never creates one itself (ILTFontManager does).
 class CUIFormattedPolyString : public CUIPolyString
 {
 	public:
-			
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-		// CUIPolyString should not be created with new and delete, but should instead
-		// be created via the ILTFontManager's CreatePolyString() and DestroyPolyString()
-		// management functions.
-
-		CUIFormattedPolyString(CUIFont* pFont, 
-				  const char* pBuf = NULL,
-				  float x   = 0.0,
-				  float y   = 0.0,
-  				  CUI_ALIGNMENTTYPE alignment = CUI_HALIGN_LEFT);
-		
-		// all CUI classes support this
-		virtual const char* GetClassName();
-		
-		// virtual destructor
-		virtual ~CUIFormattedPolyString();
-		
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
-	
-	public:
-
-/*!
-\param align new text alignment.
-\return	CUIR_OK if successful.
-
-Sets the horizontal alignment of a CUIFormattedPolyString.  For a CUIFormattedPolyString,
-the horizontal alignment is based on the string's (x,y) coordinate.  If the \em align is
-\b CUI_HALIGN_LEFT, the (x,y) will refer to the upper left corner of the string.  If 
-\em align is \b CUI_HALIGN_CENTER, the string's x coordinate will refer to the horizontal
-midpoint of the string.  If \em align is \b CUI_HALIGN_RIGHT, (x,y) will be the upper right
-corner of the string.  if \em align is \b CUI_HALIGN_JUSTIFIED, (x,y) will be the upper left
-corner and the string's text will spread out to fill the space between x and (x + wrapwidth)
-
-\see SetWrapWidth()
-
-Used for: Text and UI.  */
-		virtual	CUI_RESULTTYPE	SetAlignmentH(CUI_ALIGNMENTTYPE halign);
-
-/*!
-\param wrap wrap-width for each line.
-\return	CUIR_OK if successful.
-
-Sets the word-wrap width (in pixels) for a CUIFormattedPolyString.  The string
-will honor newlines ('\n') and will attempt to perform word wrapping. If
-\e wrap is zero, word wrap will be turned off for this poly string (and as a 
-side-effect, the string will no longer honor newline characters).  The wrap width
-also detemines the right margin when a CUIFormattedPolystring's alignment is set to
-\b CUI_HALIGN_JUSTIFIED.
-
-\see SetAlignmentH()
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetWrapWidth(uint16 wrap);
-		
+		virtual CUI_RESULTTYPE	SetWrapWidth(uint32 wrap) = 0;
+		virtual	CUI_RESULTTYPE	SetAlignmentH(CUI_ALIGNMENTTYPE halign) = 0;
 };
 
 

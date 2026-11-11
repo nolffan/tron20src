@@ -351,8 +351,8 @@ void CScreenSave::NameSaveGame(uint32 slot, int index)
 		return;
 	LTIntPt pos = g_pColCtrl->GetPos();
 
-	SAFE_STRCPY(g_szOldName,g_pColCtrl->GetString(1));
-	SAFE_STRCPY(g_szOldTime,g_pColCtrl->GetString(2));
+	SAFE_STRCPY(g_szOldName,LTGUINarrowString(g_pColCtrl->GetString(1)).c_str());	// PORT: Tron's text is wide
+	SAFE_STRCPY(g_szOldTime,LTGUINarrowString(g_pColCtrl->GetString(2)).c_str());
 
 	g_pColCtrl->SetString(1, "  ");
 	g_pColCtrl->SetString(2, "  ");

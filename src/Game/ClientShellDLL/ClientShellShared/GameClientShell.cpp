@@ -3601,7 +3601,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pLeftDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, "", 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
 				m_pLeftDebugString[nLine] = pPolyString;
 			}
 			else
@@ -3616,7 +3616,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pRightDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, "", 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
 				m_pRightDebugString[nLine] = pPolyString;
 			}
 			else

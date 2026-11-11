@@ -1,0 +1,23 @@
+# Tron's font vtable (0x591a30 in Lithtech.exe: CUIWideBitmapFont, 0x1124
+# bytes, constructor 0x567d70). Not NOLF2's CUIFont: most slots are not yet
+# identified. Fixed point: the game calls +0x10 to pick the font nearest a
+# height (CShell 0x100c57a0).
+# offset,method,body,evidence
+0x000,~CUIFont,0x567d90,scalar deleting destructor
+0x004,GetClassName,0x568440,returns "CUIWideBitmapFont"
+0x008,TronUnknownVirtual2,0x568450,sets the byte at +0x1b (one body with 0x00c)
+0x00c,TronUnknownVirtual3,0x568450,sets the byte at +0x1b
+0x010,GetDefCharScreenHeight,0x568460,the uint16 at +0x16 (zero-extended: returns 32 bits) (from the file); game calls
+0x014,TronUnknownVirtual5,0x568470,the int8 at +0x1b
+0x018,TronUnknownVirtual6,0x568480,the int8 at +0x1a
+0x01c,TronUnknownVirtual7,0x568490,the uint8 at +0xf
+0x020,GetTexture(uint8),0x5684e0,a page's texture (+0xc20)
+0x024,TronUnknownVirtual9,0x5684a0,the uint16 at +0x18
+0x028,TronUnknownVirtual10,0x5684b0,the byte at +0xe == 1
+0x02c,TronUnknownVirtual11,0x5684c0,the 256 character maps at +0x420 (one per high byte)
+0x030,TronUnknownVirtual12,0x566120,the byte at +0x9 (the loaded flag CreateFont reads is +0x8)
+0x034,TronUnknownVirtual13,0x5684d0,the table at +0x20
+0x038,TronUnknownVirtual14,0x567e00,takes a std::wstring
+0x03c,TronUnknownVirtual15,0x567f80,a character's entry
+0x040,Load,0x567fe0,reads the font from an ILTStream (ILTFontManager::CreateFont)
+0x044,Term,0x5681d0,frees the character maps

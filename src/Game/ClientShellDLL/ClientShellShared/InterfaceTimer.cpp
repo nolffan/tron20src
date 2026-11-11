@@ -104,7 +104,7 @@ void CInterfaceTimer::Draw()
 			m_BasePos = LTIntPt(320,40);
 
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-		m_pTimeStr = g_pFontManager->CreateFormattedPolyString(pFont, aBuffer);
+		m_pTimeStr = g_pFontManager->CreateFormattedPolyString(pFont, LTGUIWideString(aBuffer));
 		m_pTimeStr->SetAlignmentH(CUI_HALIGN_CENTER);
 
 		m_nColor = SET_ARGB( 0xFF, ( uint8 )vColor.x, ( uint8 )vColor.y, ( uint8 )vColor.z );

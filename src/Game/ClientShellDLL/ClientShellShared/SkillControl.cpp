@@ -71,7 +71,7 @@ LTBOOL CSkillCtrl::Create (eSkill skl, uint32 nCommandID, CUIFont *pFont, uint8 
 		return LTFALSE;
 
 	if (!m_pLabel)
-		m_pLabel = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)GetSkillName(skl),0.0f,0.0f);
+		m_pLabel = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(GetSkillName(skl)),0.0f,0.0f);
 	else
 		m_pLabel->SetText(GetSkillName(skl));
 

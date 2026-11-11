@@ -98,7 +98,7 @@ LTBOOL CLTGUISlider::Create ( const char *pText, uint32 nHelpID, CUIFont *pFont,
 			m_pText->SetText((char *)pText);
 		else
 		{
-			m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pText,(float)m_pos.x,(float)m_pos.y);
+			m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pText),(float)m_pos.x,(float)m_pos.y);
 			m_pText->SetCharScreenHeight(m_nFontSize);
 
 		}
@@ -120,7 +120,7 @@ void CLTGUISlider::SetNumericDisplay(LTBOOL bDisplay)
 			m_pNumbers->SetText(szNum);
 		else
 		{
-			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,szNum,(float)m_pos.x,(float)m_pos.y);
+			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(szNum),(float)m_pos.x,(float)m_pos.y);
 			m_pNumbers->SetCharScreenHeight(m_nFontSize);
 
 		}
@@ -181,7 +181,7 @@ void CLTGUISlider::SetSliderPos(int nPos)
 			m_pNumbers->SetText(szNum);
 		else
 		{
-			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,szNum,(float)m_pos.x,(float)m_pos.y);
+			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(szNum),(float)m_pos.x,(float)m_pos.y);
 			m_pNumbers->SetCharScreenHeight(m_nFontSize);
 
 		}

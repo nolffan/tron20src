@@ -129,7 +129,7 @@ void CHUDMissionText::UpdateLayout()
 
 	float x = m_fScale * (float)m_BasePos.x;
 	float y = m_fScale * (float)m_BasePos.y;
-	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont," ",x,y);
+	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(" "),x,y);
 	if (!m_pText)
 		return;
 

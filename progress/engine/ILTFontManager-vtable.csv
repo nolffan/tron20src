@@ -1,0 +1,24 @@
+# Tron's CUIFontManager vtable (0x591924 in Lithtech.exe; the instance at
+# 0x5ecb50, registered as ILTFontManager.Default by 0x566180): each slot, its
+# function, and how it was named. NOLF2's has 17 slots: five CreateFont
+# overloads (bitmap and TrueType), where Tron's has three of one pointer each,
+# two of them stubs. Fixed points: the game's calls through g_pFontManager
+# (0x1026d870 in CShell.dll) at +0x18, +0x1c, +0x30, +0x34, +0x38. VC6 lays
+# a name's overloads out together in the reverse of their declaration order
+# (checked by the game's calls compiling to these slots).
+# offset,method,body,evidence
+0x000,interface_version,0x566660,returns "CUIFontManager"
+0x004,Init,0x566200,sets the initialized flag and zeroes the font count
+0x008,Term,0x566220,NOLF2's order
+0x00c,IsInitted,0x566670,NOLF2's order
+0x010,CreateFont(TronUnknownFontSource0*),0x4b4470,stub returning NULL (one argument); the type is ours
+0x014,CreateFont(TronUnknownFontSource1*),0x4b4470,stub returning NULL (one argument); the type is ours
+0x018,CreateFont(ILTStream*),0x566230,news a CUIWideBitmapFont and has it read the stream; game calls (CShell 0x100c5861 after ILTCSBase::OpenFile)
+0x01c,DestroyFont,0x5662e0,deletes a valid font and decrements the count; game calls
+0x020,GetNumFontsInUse,0x566310,returns the count
+0x024,CharToTexture,0x5614a0,stub (four arguments)
+0x028,StringToTexture(uint32*),0x5614a0,stub (four arguments); the overloads in NOLF2's declaration order (VC6 lays them out reversed)
+0x02c,StringToTexture(char*),0x5614a0,stub (four arguments)
+0x030,CreatePolyString,0x566320,news a CUIPolyString: SetFont; SetPosition; SetText(const std::wstring&); game calls
+0x034,CreateFormattedPolyString,0x5663d0,news a CUIFormattedPolyString: SetFont; SetAlignmentH; SetPosition; SetText; game calls
+0x038,DestroyPolyString,0x566490,deletes the string; game calls

@@ -265,13 +265,13 @@ void CHUDHealthEnergy::UpdateLayout()
 	float y = m_HealthBG.verts[0].y;
 	if (m_pHealthStr)
 		g_pLTClient->GetFontManager()->DestroyPolyString(m_pHealthStr);
-	m_pHealthStr = g_pLTClient->GetFontManager()->CreatePolyString(pFont, "100", x, y);
+	m_pHealthStr = g_pLTClient->GetFontManager()->CreatePolyString(pFont, LTGUIWideString("100"), x, y);
 	m_pHealthStr->SetColor(0xC0FFFFFF);
 	x = m_EnergyBG.verts[0].x + 200;
 	y = m_EnergyBG.verts[0].y;
 	if (m_pEnergyStr)
 		g_pLTClient->GetFontManager()->DestroyPolyString(m_pEnergyStr);
-	m_pEnergyStr = g_pLTClient->GetFontManager()->CreatePolyString(pFont, "100", x, y);
+	m_pEnergyStr = g_pLTClient->GetFontManager()->CreatePolyString(pFont, LTGUIWideString("100"), x, y);
 	m_pEnergyStr->SetColor(0xC0FFFFFF);
 }
 

@@ -1,0 +1,51 @@
+# Tron's polystring vtable (0x59182c in Lithtech.exe; the 0x84-byte object
+# ILTFontManager::CreatePolyString news, constructor 0x562ba0): each slot, its
+# function, and what it does. Members: +0x4 the polygons, +0x8 the shadow's,
+# +0x14 the text (std::wstring), +0x20 the font, +0x28..+0x34 x, y, width,
+# height (floats), +0x38..+0x44 the clip rectangle, +0x48 clipping on,
+# +0x4c..+0x58 the colors, +0x5e the drop shadow, +0x80 the character height.
+# Names of what NOLF2's CUIPolyString does not have are ours.
+# offset,method,body,evidence
+0x000,~CUIPolyString,0x562d00,scalar deleting destructor
+0x004,SetFont,0x562f40,stores the font (+0x20) and its height; CreatePolyString calls it with the font
+0x008,SetText(const std::wstring&),0x563060,assigns the string (+0x14); CreatePolyString calls it with the text
+0x00c,SetText(const char*),0x563120,widens each char into a std::wstring and calls slot 0x008
+0x010,SetPosition(int32;int32),0x5632a0,fild of both into +0x28/+0x2c; CreatePolyString passes its floats through _ftol
+0x014,TronUnknownVirtual5(bool),0x565af0,sets the byte at +0x26 (1 from the constructor)
+0x018,SetColors,0x5632d0,four colors at +0x4c..+0x58
+0x01c,SetColor,0x565b00,SetColors(argb; argb; argb; argb)
+0x020,SetClipRect,0x563300,copies a rectangle into +0x38..+0x44
+0x024,SetCharScreenSize(uint32),0x562fd0,the character height (+0x80) and the width scaled to it
+0x028,GetColor,0x565b10,returns +0x4c
+0x02c,GetFont,0x565b20,returns +0x20
+0x030,GetText,0x565b30,returns the string (+0x14)
+0x034,GetRect,0x565b40,copies x; y; width; height
+0x038,GetPosition(int32*;int32*),0x565b60,_ftol of +0x28/+0x2c
+0x03c,GetDims(int32*;int32*),0x565b90,_ftol of +0x30/+0x34
+0x040,GetWidth,0x565bc0,_ftol of +0x30
+0x044,GetHeight,0x565bd0,_ftol of +0x34
+0x048,GetX,0x565be0,_ftol of +0x28
+0x04c,GetY,0x565bf0,_ftol of +0x2c
+0x050,TronUnknownVirtual20,0x565c00,returns the byte at +0x26
+0x054,GetLength,0x565c10,the string's length
+0x058,GetClipRect,0x563350,copies +0x38..+0x44 out
+0x05c,GetCharScreenHeight,0x565c20,returns +0x80
+0x060,GetPolys,0x498650,returns +0x4
+0x064,GetShadowPolys,0x47cde0,returns +0x8
+0x068,SetDropShadow,0x563380,sets +0x5e and allocates (or frees) a second polygon per character
+0x06c,EnableClipping,0x5634a0,sets +0x48
+0x070,Render,0x5634b0,(start; end): draws the polygons (and the shadow's)
+0x074,RenderClipped,0x5636b0,(rect; start; end): with clipping on copies the rectangle and renders
+0x078,TronUnknownVirtual30,0x482590,returns true (one argument)
+0x07c,SetCharScreenHeight(uint32),0x565c30,calls slot 0x024; the game's text controls call it where NOLF2's call SetCharScreenHeight
+0x080,TronUnknownVirtual32,0x563710,the engine's own
+0x084,TronUnknownVirtual33,0x563f40,the engine's own
+0x088,TronUnknownVirtual34,0x563ab0,the engine's own (lays the characters out)
+0x08c,TronUnknownVirtual35,0x564250,the engine's own (clips)
+0x090,TronUnknownVirtual36,0x563e20,the engine's own (applies the colors; start; end)
+0x094,TronUnknownVirtual37,0x404970,empty here; CUIFormattedPolyString's formats
+0x098,TronUnknownVirtual38,0x5643f0,the engine's own
+0x09c,TronUnknownVirtual39,0x565c40,clears +0x49
+0x0a0,TronUnknownVirtual40,0x563840,the engine's own
+0x0a4,TronUnknownVirtual41,0x5639b0,the engine's own
+0x0a8,TronUnknownVirtual42,0x5645b0,the font's height (font slot 0x10)

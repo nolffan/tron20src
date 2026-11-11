@@ -58,7 +58,7 @@ LTBOOL CLTGUICycleCtrl::Create ( const char *pText, uint32 nHelpID,
 			m_pHeaderText->SetText((char *)pText);
 		else
 		{
-			m_pHeaderText = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pText,(float)m_pos.x,(float)m_pos.y);
+			m_pHeaderText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pText),(float)m_pos.x,(float)m_pos.y);
 			m_pHeaderText->SetCharScreenHeight(m_nFontSize);
 
 		}
@@ -124,7 +124,7 @@ void CLTGUICycleCtrl::AddString(const char *pString)
 
 
 	int x = m_pos.x + (int)((float)m_nHeaderWidth * m_fScale);
-	CUIFormattedPolyString *pPolyStr = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pString,(float)x,(float)m_pos.y);
+	CUIFormattedPolyString *pPolyStr = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pString),(float)x,(float)m_pos.y);
 
 
 	if (pPolyStr)

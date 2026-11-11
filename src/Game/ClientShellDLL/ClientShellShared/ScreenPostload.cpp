@@ -327,7 +327,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		if (!m_pMissionNameStr)
 		{
-			m_pMissionNameStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+			m_pMissionNameStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 		m_pMissionNameStr->SetColor(TitleColor);
 		m_pMissionNameStr->SetText(m_missionname.c_str());
@@ -341,7 +341,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		if (!m_pLevelNameStr)
 		{
-			m_pLevelNameStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+			m_pLevelNameStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 		m_pLevelNameStr->SetColor(LevelColor);
 		m_pLevelNameStr->SetText(m_levelname.c_str());
@@ -391,7 +391,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		if (!m_pBriefingStr)
 		{
-			m_pBriefingStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+			m_pBriefingStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 		
 		m_pBriefingStr->SetText(m_briefing.c_str());
@@ -444,7 +444,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		if (!m_pHelpStr)
 		{
-			m_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+			m_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 	
 		CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
@@ -510,7 +510,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		if (!m_pContinueStr)
 		{
-			m_pContinueStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+			m_pContinueStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 
 		// If we have a briefing, then post the press any key.

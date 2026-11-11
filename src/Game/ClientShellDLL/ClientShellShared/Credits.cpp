@@ -192,7 +192,7 @@ LTBOOL CCredit::AddString(char* sString)
 
 	uint8 nFont = 0;
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-	CUIFormattedPolyString* pStr = g_pFontManager->CreateFormattedPolyString(pFont,sString,(float)m_Pos.x,(float)m_Pos.y);
+	CUIFormattedPolyString* pStr = g_pFontManager->CreateFormattedPolyString(pFont,LTGUIWideString(sString),(float)m_Pos.x,(float)m_Pos.y);
 	if (pStr)
 		m_Strings.push_back(pStr);
 
@@ -242,7 +242,7 @@ void CCredit::FormatStrings()
 		{
 			CUIFormattedPolyString* pStr = *iter;
 
-			float x,y;
+			int32 x,y;
 			pStr->GetPosition(&x,&y);
 
 			y -= offset;
@@ -278,8 +278,8 @@ void CCredit::Draw()
 	while (iter != m_Strings.end())
 	{
 		CUIFormattedPolyString* pStr = (*iter);
-		float x;
-		float y;
+		int32 x;
+		int32 y;
 		pStr->GetPosition(&x,&y);
 
 		//drop shadow
