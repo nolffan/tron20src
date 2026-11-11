@@ -190,6 +190,10 @@ SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleZones.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\PatchRoutine.cpp
 # End Source File
 # Begin Source File
@@ -256,6 +260,10 @@ SOURCE=.\InfoString.h
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleZones.h
 # End Source File
 # Begin Source File
 

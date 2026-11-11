@@ -47,7 +47,11 @@ enum ContainerCode
 	CC_JUMP_VOLUME=17,
 	CC_DYNAMIC_OCCLUDER_VOLUME=18,
 	CC_GRAVITY=19,
-	CC_MAX_CONTAINER_CODES=20
+	// RETAIL: Tron's two (its light cycle zones; its GetLiquidFlags loop runs
+	// to 22). The names are ours
+	CC_LIGHTCYCLE_SPEED_ZONE=20,
+	CC_LIGHTCYCLE_SLOW_ZONE=21,
+	CC_MAX_CONTAINER_CODES=22
 };
 
 #define CC_NO_CONTAINER_FLAG			(1<<0)
