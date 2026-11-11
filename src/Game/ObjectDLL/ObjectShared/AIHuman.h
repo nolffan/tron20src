@@ -50,7 +50,8 @@ class CAIHuman : public CAI
         LTBOOL IsParatrooping() { return ( m_eHumanType == eHT_Paratrooping ); }
 		LTBOOL IsHovering() { return ( m_eHumanType == eHT_Hovering ); }
 		
-		eHumanType m_eHumanType;
+		// RETAIL: m_eHumanType follows m_pHumanState in Tron (constructor
+		// 0x1016c420), declared there
 
 		// Attachments
 
@@ -116,10 +117,12 @@ class CAIHuman : public CAI
 
 		// Marking
 		
-		LTBOOL		HasOnMarkingString() const { return !!m_hstrCmdOnMarking; }
-		void		SetOnMarkingString(char* szCmd) { FREE_HSTRING(m_hstrCmdOnMarking); m_hstrCmdOnMarking = g_pLTServer->CreateString(szCmd); }
-		const char* GetOnMarkingString() const { return g_pLTServer->GetStringData(m_hstrCmdOnMarking); }
-		void		ClearOnMarkingString() { FREE_HSTRING(m_hstrCmdOnMarking); m_hstrCmdOnMarking = LTNULL; }
+		// PORT: no OnMarking command in Tron (see CAI); NOLF2's sentry
+		// states see none
+		LTBOOL		HasOnMarkingString() const { return LTFALSE; }
+		void		SetOnMarkingString(char*) {}
+		const char* GetOnMarkingString() const { return LTNULL; }
+		void		ClearOnMarkingString() {}
 
 		// Hitpoints
 
@@ -205,6 +208,12 @@ class CAIHuman : public CAI
 
 		CAIHumanState*	m_pHumanState;			// Current state
 
+	public :
+
+		eHumanType m_eHumanType;
+
+	protected :
+
 		// Movement
 
 		LTBOOL		m_bForceGround;				// Force AI to ground?
@@ -221,7 +230,14 @@ class CAIHuman : public CAI
 
 		// Recoil stuff
 
+		// RETAIL: not set by Tron's constructor nor saved; taken to be NOLF2's
 		LTBOOL		m_bCanShortRecoil;			// Can we do short recoils?
+
+		// RETAIL: Tron's (HandleDamage 0x1016eb??, Save 0x1016fa50). Names ours.
+		LTFLOAT		m_fTronUnknown11E0;			// a time
+		LTFLOAT		m_fTronUnknown11E4;			// random at first
+		LTFLOAT		m_fTronUnknown11E8;			// a time
+		bool		m_bTronUnknown11EC;
 
 		// Door
 
@@ -233,6 +249,15 @@ class CAIHuman : public CAI
 		LTBOOL		m_bUseDefaultAttachments;
 
 		IMovementModifier* m_pMovementModifier;
+
+		// RETAIL: Tron's tail (constructor 0x1016c420, Save 0x1016fa50).
+		// Names ours.
+		bool		m_bTronUnknown1230;			// UpdateNodes
+		bool		m_bTronUnknown1231;
+		bool		m_bTronUnknown1232;			// set in SetBrain
+		LTFLOAT		m_fTronUnknown1234;			// set in SetBrain
+		LTFLOAT		m_fTronUnknown1238;			// 1 at first
+		LTVector	m_vTronUnknown123C;
 };
 
 // Plugin

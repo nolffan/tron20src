@@ -7,6 +7,7 @@
 #include "AITypes.h"
 #include "AISensing.h"
 #include <vector>
+#include <list>
 
 // Forward declarations.
 class CAIGoalMgr;
@@ -24,6 +25,7 @@ class CServerTrackedNodeContext;
 struct INVALID_NODE;
 
 class CAttachmentPosition;
+class CWeapons;
 class CAttachmentsPlugin;
 
 struct CHARCREATESTRUCT;
@@ -39,6 +41,76 @@ struct DroppedWeapon
 	LTObjRefNotifier	hPickupItem;
 	CString     sAttachString;
 };
+
+
+// RETAIL: Tron's 0x1e byte block CAI allocates in its constructor (+0x11b0)
+// and fills from "NameId"/"ModelTemplate" and "TriviaId" in ReadProp; Save
+// writes every word but the last. Names ours.
+struct TronAIInfoWords
+{
+	TronAIInfoWords() { memset(this, 0, sizeof(*this)); }
+	uint16	anValues[6];
+};
+
+struct TronAIInfo
+{
+	TronAIInfo() : nNameId(0), nTriviaId(0), nTronUnknown4(0), nTronUnknown6(0),
+		nTronUnknown8(0), nTronUnknownA(0), nTronUnknownC(0), nTronUnknownE(0),
+		nTronUnknown1C(0)
+	{
+	}
+
+	// RETAIL: inlined in CAI::Save and CAI::Load (retail 0x101336ea,
+	// 0x101344e4); every word but the last, in this order
+	void Save(ILTMessage_Write *pMsg)
+	{
+		pMsg->Writeuint16( nNameId );
+		pMsg->Writeuint16( nTronUnknown8 );
+		pMsg->Writeuint16( nTronUnknownA );
+		pMsg->Writeuint16( nTronUnknownC );
+		pMsg->Writeuint16( nTronUnknownE );
+		pMsg->Writeuint16( nTronUnknown4 );
+		pMsg->Writeuint16( nTriviaId );
+		pMsg->Writeuint16( nTronUnknown6 );
+		pMsg->Writeuint16( Words.anValues[1] );
+		pMsg->Writeuint16( Words.anValues[0] );
+		pMsg->Writeuint16( Words.anValues[3] );
+		pMsg->Writeuint16( Words.anValues[2] );
+		pMsg->Writeuint16( Words.anValues[5] );
+		pMsg->Writeuint16( Words.anValues[4] );
+	}
+
+	void Load(ILTMessage_Read *pMsg)
+	{
+		nNameId = pMsg->Readuint16();
+		nTronUnknown8 = pMsg->Readuint16();
+		nTronUnknownA = pMsg->Readuint16();
+		nTronUnknownC = pMsg->Readuint16();
+		nTronUnknownE = pMsg->Readuint16();
+		nTronUnknown4 = pMsg->Readuint16();
+		nTriviaId = pMsg->Readuint16();
+		nTronUnknown6 = pMsg->Readuint16();
+		Words.anValues[1] = pMsg->Readuint16();
+		Words.anValues[0] = pMsg->Readuint16();
+		Words.anValues[3] = pMsg->Readuint16();
+		Words.anValues[2] = pMsg->Readuint16();
+		Words.anValues[5] = pMsg->Readuint16();
+		Words.anValues[4] = pMsg->Readuint16();
+	}
+	uint16			nNameId;
+	uint16			nTriviaId;
+	uint16			nTronUnknown4;
+	uint16			nTronUnknown6;
+	uint16			nTronUnknown8;
+	uint16			nTronUnknownA;
+	uint16			nTronUnknownC;
+	uint16			nTronUnknownE;
+	TronAIInfoWords	Words;
+	uint16			nTronUnknown1C;
+};
+
+// RETAIL: Tron's 8 byte class at CAI+0x1010 (not written yet)
+class CAITronUnknown1010;
 
 // Defines
 
@@ -64,6 +136,38 @@ enum EnumAIWeaponType
 };
 
 // Classes
+// RETAIL: Tron's: the 12 byte elements of CAI's vector at +0xddc, pushed
+// for each weapon type the brain's AIData names (CAI::InitialUpdate and
+// CAI::Load, retail 0x1012b987, 0x1013467f). Names ours.
+struct AIWeaponChoice
+{
+	AIWeaponChoice()
+	{
+		m_eWeaponType = kAIWeap_Invalid;
+		m_fValue = 0.0f;
+		m_bEnabled = true;
+	}
+	AIWeaponChoice(EnumAIWeaponType eType, float fValue, bool bEnabled)
+	{
+		m_eWeaponType = eType;
+		m_fValue = fValue;
+		m_bEnabled = bEnabled;
+	}
+	EnumAIWeaponType	m_eWeaponType;
+	float				m_fValue;
+	bool				m_bEnabled;
+};
+typedef std::vector<AIWeaponChoice> AIWeaponChoiceList;
+
+// RETAIL: Tron's 0x18 bytes at CAI+0xddc: the choices and the one made
+// (copied whole in CAI::InitialUpdate, retail 0x1012bc2e). Built before
+// CAI's constructor body (retail 0x10128830). Names ours.
+struct AIWeaponSelection
+{
+	AIWeaponChoiceList	lstChoices;
+	AIWeaponChoice		Current;
+};
+
 // IAISensing is an interface for sensing objects.
 
 class CAI : public CCharacter, public IAISensing
@@ -345,9 +449,11 @@ class CAI : public CCharacter, public IAISensing
 
 		// Attributes
 
-		float GetSentryChallengeScanDistMax() { return m_flSentryChallengeScanDistMax; }
-		float GetSentryChallengeDistMax() { return m_flSentryChallengeDistMax; }
-		float GetSentryMarkDistMax() { return m_flSentryMarkDistMax; }
+		// PORT: Tron has no sentry distance members; NOLF2's sentry states
+		// read the template's values through these (AI.cpp)
+		float GetSentryChallengeScanDistMax();
+		float GetSentryChallengeDistMax();
+		float GetSentryMarkDistMax();
 
 
 		LTFLOAT GetWalkSpeed() { return m_fWalkVel; }
@@ -458,7 +564,9 @@ class CAI : public CCharacter, public IAISensing
 		virtual void SetCanCarry( bool bCarry );
 		virtual void SetBeingCarried( bool bBeingCarried ) { m_bBeingCarried = bBeingCarried; }
 		virtual bool BeingCarried() { return m_bBeingCarried; }
-		virtual void SetCanWake( bool bWake );
+		// PORT: Tron's CAI has no waking (not in its vtable); a no-op for
+		// NOLF2's AIGoalSpecialDamage
+		void SetCanWake( bool ) {}
 
 		// Get the complete list of all PlayerObj's.
 		typedef std::vector< CAI* > AIList;
@@ -529,6 +637,10 @@ class CAI : public CCharacter, public IAISensing
 
 		const AIBM_Template* const GetAITemplate() const;
 		void SetAITemplate(const char* pszName);
+		// RETAIL: Tron's, inlined in InitialUpdate and Load (name ours)
+		inline void InitWeaponChoices();
+		// RETAIL: Tron's (retail 0x1012f9e0, name ours)
+		void InitTronWeapons();
 
 	protected : // Member Variables
 
@@ -557,12 +669,23 @@ class CAI : public CCharacter, public IAISensing
 
 		CWeapon*				m_apWeapons[AI_MAX_WEAPONS];			// An array of pointers to our weapons
 		CAttachmentPosition*	m_apWeaponPositions[AI_MAX_WEAPONS];	// An array of pointers to the attachemnts for the weapons
+		// RETAIL: Tron's (zeroed by the constructor, not saved; set in
+		// InitTronWeapons, retail 0x1012f9e0). Names ours.
+		CWeapon*				m_pTronWeapon;
+		CWeapons*				m_pTronWeapons;
 		int						m_cWeapons;								// How many weapons we have
 		int32					m_iCurrentWeapon;						// Index of current weapon.
 		int32					m_iPrimaryWeapon;						// Index of Primary weapon.
 		EnumAnimProp			m_ePrimaryWeaponProp;					// Anim prop for primary weapon.
 		int						m_cDroppedWeapons;
 		DroppedWeapon			m_aDroppedWeapons[AI_MAX_WEAPONS];		// Array of weapons we've dropped.
+
+		// RETAIL: Tron's (constructor 0x10128830, Save 0x10132d80). The
+		// choices are filled from the brain's AIData (InitWeaponChoices);
+		// the flag at 0xdf4 comes from AIData 0x3c and makes Load pick
+		// m_iCurrentWeapon from the current choice. Names ours.
+		AIWeaponSelection		m_WeaponSelection;
+		bool					m_bTronUnknownDF4;
 
 		// Objects
 
@@ -624,6 +747,11 @@ class CAI : public CCharacter, public IAISensing
 		CRange<int>					m_rngSightGridX;
 		CRange<int>					m_rngSightGridY;
 
+		// RETAIL: Tron's: an 8 byte object (a list of LTObjRefNotifier and
+		// another member), created in the constructor and saved after the
+		// keys (retail 0x101dee80). Not written yet. Name ours.
+		CAITronUnknown1010*			m_pTronUnknown1010;
+
 		// Target
 
         CAITarget*  m_pTarget;                  // Enemy Target
@@ -661,7 +789,7 @@ class CAI : public CCharacter, public IAISensing
 		HSTRING		m_hstrCmdInitial;			// Initial command (one-shot)
 		HSTRING		m_hstrCmdActivateOn;		// ActivateOn command
 		HSTRING		m_hstrCmdActivateOff;		// ActivateOff command
-		HSTRING		m_hstrCmdOnMarking;			// 
+		// RETAIL: no OnMarking command in Tron (ReadProp 0x1012a640)
 		HSTRING		m_hstrCmdProximityGoal;		// Command run from proximity goal.
 
 		// Activation
@@ -677,6 +805,10 @@ class CAI : public CCharacter, public IAISensing
 		CAnimationMgr*		m_pAnimationMgr;
 		CAnimationContext*	m_pAnimationContext;	// Our animation context
 		LTObjRef			m_hAnimObject;			// Object to interact with while animating.
+
+		// RETAIL: Tron's list of pointers (CAI::Activate adds unless
+		// present; retail 0x1012ce40). Element type and name ours.
+		std::list<void*>	m_lstTronUnknown10A0;
 
 		// Node tracking.
 
@@ -734,17 +866,21 @@ class CAI : public CCharacter, public IAISensing
 		float		m_flLastHoverTime;
 		float		m_flCurrentHoverSpeed;
 
-		float		m_flSentryChallengeScanDistMax;
-		float		m_flSentryChallengeDistMax;
-		float		m_flSentryMarkDistMax;
+		// RETAIL: no sentry distances in Tron (Save 0x10132d80)
 
 		// defense variables
 		LTBOOL		m_bDefenseOn;
 
 		bool		m_bCanCarry;
 		bool		m_bBeingCarried;
-		bool		m_bStuckWithTrackDart;
-		bool		m_bCanWake;
+		// RETAIL: no tracking dart or waking in Tron; Tron's tail follows
+		// (ReadProp 0x1012a640, Save 0x10132d80). Names ours.
+		uint8		m_nKeys;					// bit n set by property Key<n+1>
+		char		m_szAlignment[80];			// the template's alignment or "Alignment"
+		TronAIInfo*	m_pTronAIInfo;				// "NameId", "ModelTemplate", "TriviaId"...
+		bool		m_bTronUnknown11B4;			// set in UpdateState
+		bool		m_bTronUnknown11B5;			// tested by node tracking
+		bool		m_bSeeker;					// brain is "Seeker" (InitialUpdate)
 
 		// List of all AI objects.
 		static AIList	m_lstAIs;
