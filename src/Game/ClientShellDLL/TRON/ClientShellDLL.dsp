@@ -302,6 +302,10 @@ SOURCE=.\ScreenJoinLAN.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenJoystick.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenKeyboard.cpp
 # End Source File
 # Begin Source File
@@ -532,6 +536,10 @@ SOURCE=.\ScreenJoin.h
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoystick.h
 # End Source File
 # Begin Source File
 
