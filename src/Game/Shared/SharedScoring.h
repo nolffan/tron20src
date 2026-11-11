@@ -45,6 +45,12 @@ private:
 	int32	m_nTags;
 
 	bool	m_bInitted;
+
+	// RETAIL: Tron's CPlayerScore is another class, of 0x1c bytes (its
+	// constructor, Init, WriteData and ReadData, retail Object.lto 0x1013eed0
+	// to 0x1013ef80: seven 16-bit values and a byte, the client id at +0x10,
+	// two 16-bit values and a state); NOLF2's stands in, made its size
+	uint8	m_aTronUnknown[8];
 };
 
 #endif // __SHARED_SCORE_H__
