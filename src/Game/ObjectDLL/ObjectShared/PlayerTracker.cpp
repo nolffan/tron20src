@@ -26,7 +26,6 @@
 PlayerTracker::PlayerTracker( )
 {
 	m_pPlayerTrackerReceiver = NULL;
-	m_bAborted = false; 
 }
 
 // ----------------------------------------------------------------------- //
@@ -104,7 +103,6 @@ bool PlayerTracker::Init( IPlayerTrackerReceiver& playerTrackerReceiver )
 void PlayerTracker::Term( )
 {
 	m_pPlayerTrackerReceiver = NULL;
-	m_bAborted = false;
 	m_PlayerList.clear( );
 }
 
@@ -208,7 +206,6 @@ void PlayerTracker::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 	// Check if we just went to zero, which is an abort condition.
 	if( m_PlayerList.size( ) == 0 )
 	{
-		m_bAborted = true;
 
 		// Call the abort.
 		if( m_pPlayerTrackerReceiver )
@@ -267,7 +264,6 @@ void PlayerTracker::Update( )
 	// Check if we just went to zero, which is an abort condition.
 	if( m_PlayerList.size( ) == 0 )
 	{
-		m_bAborted = true;
 
 		// Call the abort.
 		if( m_pPlayerTrackerReceiver )

@@ -86,6 +86,8 @@ extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
 LTBOOL s_bCharacterPluginInitted = LTFALSE;
 CInventoryButeMgr s_InventoryButeMgr;
 
+uint8 CCharacter::m_nUniqueDialogueId = 0;	// PORT: (Character.h)
+
 const float kDialogueTimeFudgeFactor = 5.0f;
 
 // ----------------------------------------------------------------------- //
@@ -434,6 +436,7 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 		m_aSpears[nSpear].hObject.SetReceiver( *this );
 	}
 
+	m_bTronUnknown4C = true;	// RETAIL: Tron's (Character.h)
 	m_bMakeBody = true;
 	m_bPermanentBody = false;
 
@@ -442,12 +445,13 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_eDeathDamageType			= DT_INVALID;
 	m_fBodyLifetime				= -1.0f;
 
-	m_nUniqueDialogueId			= 0;
-
-	m_bTracking = false;
-	m_bRadarVisible = false;
-
-	m_nCarrying = CFX_CARRY_NONE;
+	// RETAIL: Tron's tail (Character.h)
+	m_hTronUnknownCF0			= LTNULL;
+	m_pPRodFireHelper			= LTNULL;	// PORT: not yet written (Character.h)
+	m_pEnergyClawFireHelper		= LTNULL;
+	m_nCarrying					= CFX_CARRY_NONE;
+	m_bRadarVisible				= false;
+	m_bTracking					= false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2801,12 +2805,8 @@ void CCharacter::UpdateSounds()
         PlaySound("Chars\\Snd\\splash2.wav", m_fSoundRadius, LTFALSE);
 	}
 
-	if ( m_tmrDialogue.On() && m_tmrDialogue.Stopped() )
-	{
-		m_tmrDialogue.Stop();
-		m_PlayerTrackerDialogue.Term();
-		KillDlgSnd();
-	}
+	// PORT: NOLF2's dialogue time-out timer has no room in Tron's layout
+	// (Character.h); the players' replies alone end a dialogue
 }
 
 
@@ -2900,7 +2900,7 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 		g_pLTServer->SoundMgr()->KillSound(hTmpSnd);
 
 		fDuration += kDialogueTimeFudgeFactor;
-		m_tmrDialogue.Start(fDuration);
+		// PORT: no dialogue timer to start (above)
 
 	}
 
@@ -3848,6 +3848,7 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 
 	SAVE_bool(m_bMakeBody);
 	SAVE_bool(m_bPermanentBody);
+	SAVE_bool(m_bTronUnknown4C);		// RETAIL: Tron's (Character.h)
 	SAVE_BYTE(m_iPermissionSet);
 
 	SAVE_DWORD( m_eTeleportTriggerState );
@@ -3856,14 +3857,31 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	
 	SAVE_BYTE( m_eDeathDamageType );
 
+	// RETAIL: Tron saves the enemy visible stimulus only (retail 0x10092120's
+	// order from here)
 	SAVE_DWORD( m_eEnemyVisibleStimID );
-	SAVE_DWORD( m_eUndeterminedVisibleStimID );
+
+	// PORT: Tron saves its fire helpers here (m_pPRodFireHelper->Save(pMsg),
+	// m_pEnergyClawFireHelper->Save(pMsg)); not yet written (Character.h)
+
+	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
+	{
+		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
+		pMsg->Writeint8( u.m_c00 );
+		SAVE_CHARSTRING( u.m_s04.c_str() );
+		pMsg->Writeint8( u.m_c10 );
+		pMsg->Writeint8( u.m_c14 );
+		SAVE_CHARSTRING( u.m_s18.c_str() );
+		SAVE_BYTE( u.m_n24 );
+		SAVE_FLOAT( u.m_f28 );
+	}
 
 	SAVE_bool( m_bTracking );
-
-	SAVE_bool( m_bRadarVisible );
-
-	SAVE_BYTE( m_nCarrying);
+	SAVE_DWORD( m_nTronUnknownCF8 );
+	SAVE_BYTE( m_nCarrying );
+	SAVE_HOBJECT( m_hTronUnknownCF0 );
+	SAVE_FLOAT( m_fBodyLifetime );
+	m_tmrDeflecting.Save( pMsg );
 }
 
 
@@ -3971,6 +3989,7 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 
 	LOAD_bool(m_bMakeBody);
 	LOAD_bool(m_bPermanentBody);
+	LOAD_bool(m_bTronUnknown4C);		// RETAIL: as Save
 	LOAD_BYTE(m_iPermissionSet);
 
 	LOAD_DWORD_CAST(m_eTeleportTriggerState, TeleportTriggerStates);
@@ -3980,42 +3999,30 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_BYTE_CAST( m_eDeathDamageType, DamageType );
 
 	LOAD_DWORD_CAST( m_eEnemyVisibleStimID, EnumAIStimulusID );
-	LOAD_DWORD_CAST( m_eUndeterminedVisibleStimID, EnumAIStimulusID );
 
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_2 )
-	{
-		// The player used to call SetTracking in SetClientLoaded, now it
-		// calls SetRadarVisible.  For the player, consider it not tracked,
-		// but load the radarvisible flag.
-		if( dynamic_cast< CPlayerObj* >( this ))
-		{
-			m_bTracking = false;
-			LOAD_bool( m_bRadarVisible );
+	// PORT: the fire helpers' Load (as Save)
 
-			m_pcs->bTracking = false;
-			m_pcs->bRadarVisible = m_bRadarVisible;
-		}
-		else
-		{
-			LOAD_bool( m_bTracking );
-		}
-	}
-	else
+	char szUnknown[256];
+	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
-		LOAD_bool( m_bTracking );
-		LOAD_bool( m_bRadarVisible );
+		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
+		u.m_c00 = pMsg->Readint8();
+		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
+		u.m_s04 = szUnknown;
+		u.m_c10 = pMsg->Readint8();
+		u.m_c14 = pMsg->Readint8();
+		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
+		u.m_s18 = szUnknown;
+		LOAD_BYTE( u.m_n24 );
+		LOAD_FLOAT( u.m_f28 );
 	}
 
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-	{
-		if( !IsPlayer(m_hObject) )
-			m_nCarrying = CFX_CARRY_NONE;
-	}
-	else
-	{
-		LOAD_BYTE( m_nCarrying );
-	}
+	LOAD_bool( m_bTracking );
+	LOAD_DWORD( m_nTronUnknownCF8 );
+	LOAD_BYTE( m_nCarrying );
+	LOAD_HOBJECT( m_hTronUnknownCF0 );
+	LOAD_FLOAT( m_fBodyLifetime );
+	m_tmrDeflecting.Load( pMsg );
 }
 
 // ----------------------------------------------------------------------- //

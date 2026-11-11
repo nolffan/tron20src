@@ -433,8 +433,8 @@ class CPlayerObj : public CCharacter
 		CTimer		m_tmrRespawnInvulnerabilityTime;
 
 		// Handle protection from special damage types while recovering from similar damage.
-		bool		m_bGriefProtected;
-		CTimer		m_tmrGriefTime;
+		// RETAIL: no grief protection in Tron (retail has no GriefTime, and its
+		// members are 0x14 bytes fewer here: retail CPlayerObj's constructor)
 
 		// Flag indicating we're waiting for the client to
 		// finish loading.  Not saved.

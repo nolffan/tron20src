@@ -54,13 +54,14 @@ class PlayerTracker : public ILTObjRefReceiver
 		virtual void	OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj );
 
 		// Expose the aborted flag so classes that have more than one tracker know which one was updating and was aborted.
-		bool			Aborted( ) const { return m_bAborted; }
+		// RETAIL: Tron's PlayerTracker has no aborted flag (its constructor and
+		// Term, retail 0x10193130 and 0x10193400: a list and the receiver); NOLF2's
+		// save/load code asking it stands in, told no
+		bool			Aborted( ) const { return false; }
 
 	// Data.
 	private :
 		
-		// Was the player tracker aborted?  All players dropped.
-		bool			m_bAborted;
 
 		// List of players we are tracking.
 		typedef ObjRefNotifierList PlayerList;
