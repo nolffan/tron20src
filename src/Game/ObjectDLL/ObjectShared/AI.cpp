@@ -635,8 +635,8 @@ CAI::CAI() : CCharacter()
 {
 	m_pTarget = AI_FACTORY_NEW(CAITarget);
 
-	// RETAIL: Tron's, not written yet (an 8 byte object, retail 0x10128830)
-	m_pTronUnknown1010 = LTNULL;
+	// RETAIL: Tron's (retail 0x10128a43)
+	m_pTronUnknown1010 = debug_new(CAITronUnknown1010);
 	m_pTronAIInfo = debug_new(TronAIInfo);
 
     m_bFirstUpdate = LTTRUE;
@@ -812,8 +812,8 @@ CAI::CAI() : CCharacter()
 	// RETAIL: Tron's
 	m_nKeys = 0;
 	m_bSelectWeaponBasedOnVisibility = false;
-	m_bTronUnknown11B4 = false;
-	m_bTronUnknown11B5 = false;
+	m_bTalkLock = false;
+	m_bTalkLookAt = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -863,7 +863,10 @@ CAI::~CAI()
 	m_hDialogueObject = NULL;
 
 	AI_FACTORY_DELETE(m_pTarget);
+	// RETAIL: Tron's (retail 0x1012949e)
+	debug_delete(m_pTronUnknown1010);
 	debug_delete(m_pAISenseRecorder);
+	debug_delete(m_pTronAIInfo);
 
 	FREE_HSTRING(m_hstrBodySkinExtension);
 	FREE_HSTRING(m_hstrCmdInitial);
@@ -2597,6 +2600,9 @@ bool CAI::HandleCommand(const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_ActivateOff("ACTIVATEOFF");
 	static CParsedMsg::CToken s_cTok_HealthMod("HEALTHMOD");
 	static CParsedMsg::CToken s_cTok_ArmorMod("ARMORMOD");
+	// RETAIL: Tron's (retail 0x1012e22d)
+	static CParsedMsg::CToken s_cTok_DisplayPSets("DISPLAYPSETS");
+	static CParsedMsg::CToken s_cTok_TalkLock("TALKLOCK");
 
 	// Let the goals have a whack at it.
 
@@ -2843,6 +2849,30 @@ bool CAI::HandleCommand(const CParsedMsg &cMsg)
 	{
 		float fMod = (float)atof( cMsg.GetArg(1).c_str() );
 		SetArmorPointsMod( fMod );
+	}
+	// RETAIL: Tron's: show our keys (user flag bits 13 up) and a flag of
+	// Tron's (bit 1) to the client (retail 0x1012eec0)
+	else if( cMsg.GetArg(0) == s_cTok_DisplayPSets )
+	{
+		if( cMsg.GetArgCount() > 1 )
+		{
+			if( IsTrueChar( *cMsg.GetArg(1) ) )
+			{
+				uint32 dwKeys = m_nKeys << 13;
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, dwKeys, dwKeys );
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (1<<1), (1<<1) );
+			}
+			else
+			{
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, 0 );
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, (1<<1) );
+			}
+		}
+	}
+	// RETAIL: Tron's (retail 0x1012ef97)
+	else if( cMsg.GetArg(0) == s_cTok_TalkLock )
+	{
+		SetTalkLock( IsTrueChar( *cMsg.GetArg(1) ) != LTFALSE );
 	}
 	else
 	{
@@ -3622,7 +3652,7 @@ void CAI::UpdateState()
 	// PORT: Tron's UpdateState (retail 0x10130330) first, while look-at
 	// tracking is on, finds the nearest player and tracks it ("TrackLookAt")
 	// within a distance kept by CAIButeMgr (its +0x1184, not yet in ours),
-	// else stops unless talking (SetLookAtTracking(false) or "TrackNone").
+	// else stops unless talking (SetTalkLock(false) or "TrackNone").
 
     if ( m_hstrNextStateMessage && g_pLTServer->GetTime() >= m_fNextStateTime )
 	{
@@ -3633,29 +3663,55 @@ void CAI::UpdateState()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAI::SetLookAtTracking
+//	ROUTINE:	CAI::AddTronUnknown10A0/RemoveTronUnknown10A0
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012ce40, 0x1012cee0; names ours).
+//				Retail calls the list's begin/end/insert out of line here;
+//				ours inlines some, so these stay near.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::AddTronUnknown10A0(void* pEntry)
+{
+	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) == m_lstTronUnknown10A0.end() )
+	{
+		m_lstTronUnknown10A0.push_back( pEntry );
+	}
+}
+
+void CAI::RemoveTronUnknown10A0(void* pEntry)
+{
+	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) != m_lstTronUnknown10A0.end() )
+	{
+		m_lstTronUnknown10A0.remove( pEntry );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::SetTalkLock
 //
 //	PURPOSE:	RETAIL: Tron's (retail 0x101304f0; name ours)
 //
 // ----------------------------------------------------------------------- //
 
-void CAI::SetLookAtTracking(bool bTrack)
+void CAI::SetTalkLock(bool bTrack)
 {
 	if( bTrack == true )
 	{
-		if( !m_bTronUnknown11B4 )
+		if( !m_bTalkLock )
 		{
-			m_bTronUnknown11B4 = true;
+			m_bTalkLock = true;
 			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
-			m_bTronUnknown11B5 = true;
+			m_bTalkLookAt = true;
 		}
 	}
 	else if( bTrack == false )
 	{
-		if( m_bTronUnknown11B4 == true )
+		if( m_bTalkLock == true )
 		{
-			m_bTronUnknown11B4 = false;
-			m_bTronUnknown11B5 = false;
+			m_bTalkLock = false;
+			m_bTalkLookAt = false;
 			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
 		}
 	}
@@ -4952,16 +5008,13 @@ void CAI::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 
 	// RETAIL: Tron's tail (retail 0x10132d80)
 	SAVE_BYTE( m_nKeys );
-	// PORT: retail saves its 8 byte object here (retail 0x101dee80), not
-	// written yet
+	m_pTronUnknown1010->Flush();
 	SAVE_CHARSTRING( m_szAlignment );
 	m_pTronAIInfo->Save( pMsg );
-	SAVE_bool( m_bTronUnknown11B4 );
-	SAVE_bool( m_bTronUnknown11B5 );
+	SAVE_bool( m_bTalkLock );
+	SAVE_bool( m_bTalkLookAt );
 	SAVE_bool( m_bSeeker );
-	SAVE_FLOAT( m_CurWeaponChoice.m_fMaxDist );
-	SAVE_BYTE( m_CurWeaponChoice.m_eSide );
-	SAVE_bool( m_CurWeaponChoice.m_bEnabled );
+	m_CurWeaponChoice.Save( pMsg );
 }
 
 // ----------------------------------------------------------------------- //
@@ -5123,6 +5176,10 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_RANGE_CAST(m_rngSightGridX, int);
 	LOAD_RANGE_CAST(m_rngSightGridY, int);
 
+	// RETAIL: Tron resets the sight grid after loading it (retail 0x10133fb6)
+	m_rngSightGridX.Set(-2, 2);
+	m_rngSightGridY.Set(-2, 2);
+
 	LOAD_BOOL(m_bPreserveActiveCmds);
 
 	LTBOOL bAnimationContext = LTFALSE;
@@ -5161,8 +5218,7 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	m_pTrackedNodeContext->Load(pMsg);
 	LOAD_DWORD_CAST(m_eTriggerNodeTrackingGroup, EnumTrackedNodeGroup);
 
-	// Go back to tracking none, since we reset this all the time anyway.
-	m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
+	// RETAIL: Tron keeps the loaded tracking group (retail 0x10134116)
 
 	LOAD_VECTOR(m_vMovePos);
 	LOAD_BOOL(m_bMove);
@@ -5203,8 +5259,8 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_BYTE( m_nKeys );
 	LOAD_CHARSTRING( m_szAlignment, ARRAY_LEN( m_szAlignment ));
 	m_pTronAIInfo->Load( pMsg );
-	LOAD_bool( m_bTronUnknown11B4 );
-	LOAD_bool( m_bTronUnknown11B5 );
+	LOAD_bool( m_bTalkLock );
+	LOAD_bool( m_bTalkLookAt );
 	LOAD_bool( m_bSeeker );
 
 	SetAITemplate( g_pModelButeMgr->GetModelAIName( m_eModelId ) );
@@ -5216,9 +5272,7 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	CreateSpecialFX();
 
-	LOAD_FLOAT( m_CurWeaponChoice.m_fMaxDist );
-	LOAD_BYTE_CAST( m_CurWeaponChoice.m_eSide, EnumAIAttackSide );
-	LOAD_bool( m_CurWeaponChoice.m_bEnabled );
+	m_CurWeaponChoice.Load( pMsg );
 
 	if( m_bSelectWeaponBasedOnVisibility )
 	{
@@ -5571,6 +5625,9 @@ void CAI::Target(HOBJECT hObject)
 
 void CAI::UpdateTarget()
 {
+	// RETAIL: Tron's (retail 0x10134e8d)
+	m_pTronUnknown1010->Flush();
+
     if ( !m_pTarget->IsValid() ) { _ASSERT(LTFALSE); return; }
 
 	HOBJECT hObject = m_pTarget->GetObject();
@@ -6431,4 +6488,19 @@ float CAI::GetSentryChallengeDistMax()
 float CAI::GetSentryMarkDistMax()
 {
 	return GetAITemplate()->flSentryMarkDistMax;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITronUnknown1010::Flush
+//
+//	PURPOSE:	PORT: stands in for retail 0x101dee80 (another unit's
+//				function, not written yet): empties the first list. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITronUnknown1010::Flush()
+{
+	m_lstTronUnknown0.clear();
 }

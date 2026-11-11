@@ -109,8 +109,21 @@ struct TronAIInfo
 	uint16			nTronUnknown1C;
 };
 
-// RETAIL: Tron's 8 byte class at CAI+0x1010 (not written yet)
-class CAITronUnknown1010;
+// RETAIL: Tron's 8 byte class at CAI+0x1010: two lists, built and deleted
+// inline by CAI (retail 0x10128a43, 0x1012949e). CAI::Save and
+// CAI::UpdateTarget first call its 0x101dee80, which takes the first list's
+// entries away and, for each, removes it from the second and gives it back
+// to the AI class factory. Names ours; the element types are not known.
+class CAITronUnknown1010
+{
+	public :
+
+		// PORT: retail 0x101dee80 is not written yet (AI.cpp)
+		void	Flush();
+
+		std::list<void*>	m_lstTronUnknown0;
+		std::list<void*>	m_lstTronUnknown4;
+};
 
 // Defines
 
@@ -163,6 +176,22 @@ struct AIWeaponChoice
 		m_fMaxDist = fMaxDist;
 		m_bEnabled = bEnabled;
 	}
+
+	// RETAIL: inlined in CAI::Save and CAI::Load (retail 0x10133814,
+	// 0x10134607)
+	void Save(ILTMessage_Write *pMsg)
+	{
+		pMsg->Writefloat( m_fMaxDist );
+		pMsg->Writeuint8( m_eSide );
+		pMsg->Writebool( m_bEnabled );
+	}
+	void Load(ILTMessage_Read *pMsg)
+	{
+		m_fMaxDist = pMsg->Readfloat();
+		m_eSide = (EnumAIAttackSide)pMsg->Readuint8();
+		m_bEnabled = pMsg->Readbool();
+	}
+
 	EnumAIAttackSide	m_eSide;
 	float				m_fMaxDist;
 	bool				m_bEnabled;
@@ -448,9 +477,15 @@ class CAI : public CCharacter, public IAISensing
 		LTBOOL	IsNodeTrackingAtLimit() const;
 		EnumTrackedNodeGroup GetTriggerNodeTrackingGroup() const { return m_eTriggerNodeTrackingGroup; }
 
-		// RETAIL: Tron's look-at tracking, told to ourselves as the
-		// "TrackLookAt"/"TrackNone" commands (retail 0x101304f0; name ours)
-		void	SetLookAtTracking(bool bTrack);
+		// RETAIL: Tron's "TALKLOCK": look at the nearest player, told to
+		// ourselves as the "TrackLookAt"/"TrackNone" commands (retail
+		// 0x101304f0; name ours)
+		void	SetTalkLock(bool bTalkLock);
+
+		// RETAIL: Tron's: add (unless there) and remove an entry of the list
+		// at +0x10a0 (retail 0x1012ce40, 0x1012cee0; names ours)
+		void	AddTronUnknown10A0(void* pEntry);
+		void	RemoveTronUnknown10A0(void* pEntry);
 
 		// Attributes
 
@@ -885,8 +920,8 @@ class CAI : public CCharacter, public IAISensing
 		uint8		m_nKeys;					// bit n set by property Key<n+1>
 		char		m_szAlignment[80];			// the template's alignment or "Alignment"
 		TronAIInfo*	m_pTronAIInfo;				// "NameId", "ModelTemplate", "TriviaId"...
-		bool		m_bTronUnknown11B4;			// set in UpdateState
-		bool		m_bTronUnknown11B5;			// tested by node tracking
+		bool		m_bTalkLock;				// "TALKLOCK" (SetTalkLock)
+		bool		m_bTalkLookAt;				// told "TrackLookAt"; node tracking waits
 		bool		m_bSeeker;					// brain is "Seeker" (InitialUpdate)
 
 		// List of all AI objects.
