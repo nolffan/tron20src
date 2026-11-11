@@ -170,6 +170,10 @@ SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\InfoString.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -220,6 +224,10 @@ SOURCE=.\BinaryBit.h
 # Begin Source File
 
 SOURCE=.\CoreDump.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\InfoString.h
 # End Source File
 # Begin Source File
 

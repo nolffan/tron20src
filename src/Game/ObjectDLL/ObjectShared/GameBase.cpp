@@ -97,6 +97,8 @@ GameBase::GameBase(uint8 nType) : BaseClass(nType)
     m_hDimsBox.SetReceiver( *this );
 	m_dwOriginalFlags	= 0;
 
+	m_nSaveVersion		= g_pVersionMgr->GetSaveVersion();
+	m_hstrSave			= LTNULL;
 	m_pTransAgg			= LTNULL;
 }
 
@@ -113,6 +115,8 @@ GameBase::~GameBase()
 	DestroyTransitionAggregate();
 
 	RemoveBoundingBox();
+
+	FREE_HSTRING(m_hstrSave);	// RETAIL: build 51's
 }
 
 
@@ -686,8 +690,11 @@ void GameBase::SetNextUpdate(LTFLOAT fDelta, eUpdateControl eControl)
 
 void GameBase::Save(ILTMessage_Write *pMsg)
 {
-	SAVE_DWORD(g_pVersionMgr->GetSaveVersion());
+	// RETAIL: build 51's format, Tron's (NOLF2 1.x's saves the version
+	// manager's save version first, and no string)
 	SAVE_DWORD(m_dwOriginalFlags);
+	SAVE_DWORD(m_nSaveVersion);
+	SAVE_HSTRING(m_hstrSave);
 }
 
 // ----------------------------------------------------------------------- //
@@ -700,28 +707,11 @@ void GameBase::Save(ILTMessage_Write *pMsg)
 
 void GameBase::Load(ILTMessage_Read *pMsg)
 {
-	// This old version didn't save the version number at the top.  We need
-	// to use an engine value to determine the version.
-	uint32 nSaveFileVersion = 0;
-	g_pLTServer->GetSaveFileVersion( nSaveFileVersion );
-	if( nSaveFileVersion == 2001 )
-	{
-		LOAD_DWORD(m_dwOriginalFlags);
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		HSTRING hDummy = NULL;
-		LOAD_HSTRING(hDummy);
-		g_pLTServer->FreeString( hDummy );
-		hDummy = NULL;
-	}
-	else
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		LOAD_DWORD(m_dwOriginalFlags);
-	}
+	// RETAIL: as Save (NOLF2's reads both formats, by the engine's save file
+	// version, which Tron's engine has not)
+	LOAD_DWORD(m_dwOriginalFlags);
+	LOAD_DWORD(m_nSaveVersion);
+	LOAD_HSTRING(m_hstrSave);
 }
 
 

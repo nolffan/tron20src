@@ -52,6 +52,12 @@ class GameBase : public BaseClass, public ILTObjRefReceiver
 		LTObjRefNotifier	m_hDimsBox;
         uint32      m_dwOriginalFlags;
 
+		// RETAIL: build 51's two, which Tron's GameBase still has (its
+		// constructor, destructor, Save and Load at retail 0x100b1060,
+		// 0x100b1120, 0x100b24d0 and 0x100b2510): NOLF2 dropped them
+		uint32		m_nSaveVersion;
+		HSTRING		m_hstrSave;
+
 		enum eUpdateControl
 		{
 			eControlDeactivation=0,

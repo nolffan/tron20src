@@ -215,6 +215,11 @@ enum DDPieceType
 // interact with gadgets...
 
 #define USRFLG_GADGET_BOMBABLE			(1<<9)
+
+// RETAIL: Tron's, set by an InfoString while it has an ID (retail Object.lto
+// 0x10022260), so the player's target code asks it for its string. The name
+// is ours
+#define USRFLG_INFO_STRING				(1<<9)
 #define USRFLG_GADGET_INVISIBLE_INK		(1<<10)
 #define USRFLG_GADGET_CAMERA_DISABLER	(1<<13)
 #define USRFLG_GADGET_CODE_DECIPHERER	(1<<14)

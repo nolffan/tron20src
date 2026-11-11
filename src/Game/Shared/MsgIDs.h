@@ -151,6 +151,7 @@ enum SwitchingWorldsState
 // Target Property ID's:
 	#define TARGET_PROP_ENERGY_REQUIRED			1
 	#define TARGET_PROP_HEALTH					2
+	#define TARGET_PROP_INFO_STRING				8	// RETAIL: InfoString's (retail Object.lto); the name is ours
 
 #define MID_OBJECT_MESSAGE						159 // Client -> Server
 	
