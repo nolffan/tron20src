@@ -1833,6 +1833,8 @@ void CPlayerMgr::UpdateCameraSway()
 
 void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 {
+	// RETAIL: Tron's leaves the crosshair alone, and goes first person at
+	// once (retail 0x10126ae0)
 	if (bExternal && m_pPlayerCamera->IsFirstPerson())
 	{
 		g_pDamageFXMgr->Clear();
@@ -1842,8 +1844,6 @@ void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 		ShowPlayer(LTTRUE);
 		m_pPlayerCamera->GoChaseMode();
 		m_pPlayerCamera->CameraUpdate(0.0f);
-
-		g_pInterfaceMgr->EnableCrosshair(LTFALSE); // Disable cross hair in 3rd person...
 	}
 	else if (!bExternal && !m_pPlayerCamera->IsFirstPerson()) // Go Internal
 	{
@@ -1858,10 +1858,8 @@ void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 		}
 
 		ShowPlayer(LTFALSE);
-		m_pPlayerCamera->GoFirstPerson();
+		m_pPlayerCamera->GoFirstPerson(true);
 		m_pPlayerCamera->CameraUpdate(0.0f);
-
-		g_pInterfaceMgr->EnableCrosshair(LTTRUE);
 	}
 }
 

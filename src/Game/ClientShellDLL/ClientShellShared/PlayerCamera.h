@@ -71,7 +71,10 @@ class CPlayerCamera
 			m_eCameraMode = CHASE;
 		}
 
-		void GoFirstPerson();
+		// RETAIL: Tron's takes a flag (retail 0x1015cfe0: true sets a time it
+		// keeps to 0; and it leaves TRONMODE5 its own way). PORT: the flag is
+		// not yet used
+		void GoFirstPerson(bool bInstant = false);
 
         LTBOOL IsChaseView()     const { return (m_eCameraMode == CHASE); }
         LTBOOL IsFirstPerson()   const { return (m_eCameraMode == FIRSTPERSON); }
@@ -99,6 +102,9 @@ class CPlayerCamera
 
         LTRotation	m_rRotation;
         LTVector		m_vPos;
+		// RETAIL: Tron's (+0x24, which the constructor leaves alone: retail
+		// 0x1015b130). Not yet named
+		LTVector		m_vTronUnknown24;
 
         LTVector		m_vLastTargetPos;   // The last position of our target
         LTVector		m_vLastOptPos;      // Last optimal camera pos
