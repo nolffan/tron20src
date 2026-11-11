@@ -876,7 +876,7 @@ bool CPlayerCamera::CreateCameraCollisionObject()
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerCamera::CalcNonClipPos( LTVector & vPos, LTRotation & rRot )
+void CPlayerCamera::CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTronUnknown )
 {
 	LTVector vTemp, vU, vR, vF;
 	vU = rRot.Up();

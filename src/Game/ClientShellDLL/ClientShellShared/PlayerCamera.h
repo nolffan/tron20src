@@ -98,7 +98,9 @@ class CPlayerCamera
 		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
 		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);
 
-		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot );
+		// RETAIL: Tron's takes a third argument (retail 0x1015d240: callers
+		// pass 0, 2 or a variable). PORT: not yet used
+		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTronUnknown = 0 );
 		void CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot );
 
 	private : // Data members

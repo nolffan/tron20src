@@ -240,10 +240,10 @@ public:
 
 	uint8		GetCarryingObject() const { return m_nCarryingObject; }
 	bool		IsCarryingHeavyObject() const { return m_nCarryingObject == CFX_CARRY_BODY || m_nCarryingObject == CFX_CARRY_DD_CORE;}
-	void		SetCarryingObject( uint8 nCarry, bool bUpdateCameraDip );
+	void		SetCarryingObject( uint8 nCarry );	// RETAIL: one argument in Tron
 	// RETAIL: no CanCarryObject in Tron (OnCommandOn has its tests)
 	bool		CanDropCarriedObject() { return m_bCanDropCarriedObject; }
-	void		SetCanDropCarriedObject( bool bCanDrop ) { m_bCanDropCarriedObject = bCanDrop; }
+	void		SetCanDropCarriedObject( bool bCanDrop );	// RETAIL: not inline in Tron
 	
 	CFlashLightPlayer * GetFlashLight() const { return m_pFlashLight; }
 

@@ -1180,6 +1180,9 @@ void CPlayerMgr::PostUpdate()
 
 void CPlayerMgr::UpdateDuck()
 {
+	// RETAIL: Tron's, build 51's with NOLF2's dead player reset and start
+	// times (retail 0x101259f0)
+
 	// Can't duck when free movement...
 
     if (g_pPlayerMgr->GetMoveMgr()->IsBodyInLiquid() || 
@@ -1201,15 +1204,6 @@ void CPlayerMgr::UpdateDuck()
 	{
         m_bStartedDuckingUp = LTFALSE;
 
-		// Get the difference in  crouch height...
-		
-		float fCrouchDelta = g_pMoveMgr->GetCrouchHeightDifference();
-		
-		// If dipping don't use the crouch distance...
-
-		if( m_bCameraDip )
-			fCrouchDelta = 0.0f;
-
 		// See if the duck just started...
 
 		if (!m_bStartedDuckingDown)
@@ -1218,12 +1212,12 @@ void CPlayerMgr::UpdateDuck()
 			m_fStartDuckTime = fTime - g_pLTClient->GetFrameTime();
 		}
 
-		m_fCamDuck += m_fDuckDownV * (fTime - m_fStartDuckTime);
+		m_fCamDuck = m_fDuckDownV * (fTime - m_fStartDuckTime);
 
-		if (m_fCamDuck < (m_fMaxDuckDistance - fCrouchDelta) )
+		if (m_fCamDuck < m_fMaxDuckDistance)
 		{
 			m_bCameraDip = false;
-			m_fCamDuck = m_fMaxDuckDistance - fCrouchDelta;
+			m_fCamDuck = m_fMaxDuckDistance;
 		}
 
 	}
@@ -1237,7 +1231,7 @@ void CPlayerMgr::UpdateDuck()
             m_bStartedDuckingUp = LTTRUE;
 		}
 
-		if( IsCarryingHeavyObject() )
+		if( GetCarryingObject() )
 			fBodyMult = 0.01f;
 
 		m_fCamDuck += m_fDuckUpV * (fTime - m_fStartDuckTime) * fBodyMult;
@@ -1309,21 +1303,10 @@ void CPlayerMgr::HandleMsgClientPlayerUpdate (ILTMessage_Read *pMsg)
 
 		g_pPlayerStats->UpdateHiding( bHiding, bHidden, bCantHide, fHideTime );
 
-		SetCanDropCarriedObject( !!(nFlags & PSTATE_INT_CAN_DROP) );
+		// RETAIL: Tron's, as build 51's (retail 0x10125c70)
+		SetCarryingObject( !!(nFlags & PSTATE_INT_CARRYING) );
 
-// Don't allow respawn meter to go 100% immediately, since
-// there is no punishment for dying.
-/*
-		if( IsPlayerDead( ) && IsRevivePlayerGameType( ))
-		{
-			// If we can't be revived, then allow respawn immediately.
-			bool bCanBeRevived = !!( nFlags & PSTATE_INT_CANREVIVE );
-			if( !bCanBeRevived )
-			{
-				SetRespawnTime( g_pLTClient->GetTime( ));
-			}
-		}
-*/
+		SetCanDropCarriedObject( !!(nFlags & PSTATE_INT_CAN_DROP) );
 	}
 
 
@@ -2649,7 +2632,8 @@ void CPlayerMgr::HandleZoomChange(LTBOOL bReset)
 
 	if (bReset)
 	{
-		if (m_nZoomView == 0) return;
+		// RETAIL: Tron's resets while zooming too (retail 0x10127b80)
+		if (!m_nZoomView && !m_bZooming && !m_bZoomingIn) return;
 
 		m_nZoomView  = 0;
 		m_bZooming   = LTFALSE;
@@ -2962,7 +2946,7 @@ LTBOOL CPlayerMgr::OnCommandOn(int command)
 		{
 			// RETAIL: Tron's: no zooming on a light cycle, and one zoom
 			// level, whatever the weapon
-			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE) break;
+			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE) return LTTRUE;
 
 			const int nZoomLevel = 1;
 
@@ -4239,8 +4223,11 @@ void CPlayerMgr::AttachCameraToHead( LTBOOL bAttach )
 
 void CPlayerMgr::GetPlayerHeadPosRot(LTVector & vPos, LTRotation & rRot)
 {
+	// RETAIL: Tron's (retail 0x1012b2f0): the player's first body, else
+	// the client object if a character FX has it; no animations applied
+
 	HMODELSOCKET hSocket = INVALID_MODEL_SOCKET;
-	HOBJECT hBody = NULL; // g_pLTClient->GetClientObject();
+	HOBJECT hBody = NULL;
 
 	// We actually want to use the body prop, so...
 
@@ -4252,21 +4239,13 @@ void CPlayerMgr::GetPlayerHeadPosRot(LTVector & vPos, LTRotation & rRot)
     uint32 dwId;
     g_pLTClient->GetLocalClientID(&dwId);
 
-	float fNewestBodyTime = -1.0f;
-
-	for (int i=0; i < nNumBodies; i++)
+	int i;
+	for (i=0; i < nNumBodies; i++)
 	{
-		if ((*pList)[i])
+		if ((*pList)[i] && ((CBodyFX*)(*pList)[i])->GetClientId() == dwId)
 		{
-			CBodyFX* pBody = (CBodyFX*)(*pList)[i];
-
-			if( (pBody->GetClientId() == dwId) && (pBody->GetTimeCreated() > fNewestBodyTime) )
-			{
-				// Keep the newest body belonging to this client...
-
-				fNewestBodyTime = pBody->GetTimeCreated();
-				hBody = pBody->GetServerObj();
-			}
+			hBody = (*pList)[i]->GetServerObj();
+			break;
 		}
 	}
 
@@ -4274,23 +4253,32 @@ void CPlayerMgr::GetPlayerHeadPosRot(LTVector & vPos, LTRotation & rRot)
 	{
 		// If we are alive then we don't have a body and we should use the client object...
 
-		hBody = g_pLTClient->GetClientObject();
+		pList = g_pGameClientShell->GetSFXMgr()->GetFXList(SFX_CHARACTER_ID);
+		if (!pList) return;
+
+		int nNumChars = pList->GetSize();
+		HOBJECT hClient = g_pLTClient->GetClientObject();
+
+		for (i=0; i < nNumChars; i++)
+		{
+			if ((*pList)[i] && (*pList)[i]->GetServerObj() == hClient)
+			{
+				hBody = hClient;
+				break;
+			}
+		}
+
+		if (!hBody) return;
 	}
 
-
-	if (hBody)
+	if (g_pModelLT->GetSocket(hBody, "Eyes", hSocket) == LT_OK)
 	{
-		g_pModelLT->ApplyAnimations( hBody );
-
-		if (g_pModelLT->GetSocket(hBody, "Eyes", hSocket) == LT_OK)
+		LTransform transform;
+        if (g_pModelLT->GetSocketTransform(hBody, hSocket, transform, LTTRUE) == LT_OK)
 		{
-			LTransform transform;
-            if (g_pModelLT->GetSocketTransform(hBody, hSocket, transform, LTTRUE) == LT_OK)
-			{
-				vPos = transform.m_Pos;
-				rRot = transform.m_Rot;
-				m_pPlayerCamera->CalcNonClipPos(vPos, rRot);
-			}
+			vPos = transform.m_Pos;
+			rRot = transform.m_Rot;
+			m_pPlayerCamera->CalcNonClipPos(vPos, rRot, 0);
 		}
 	}
 }
@@ -5078,13 +5066,14 @@ void CPlayerMgr::HideShowAttachments(HOBJECT hObj)
 
         if (dwUsrFlags & USRFLG_ATTACH_HIDE1SHOW3)
 		{
-			if (m_pPlayerCamera->IsFirstPerson())
+			// RETAIL: hidden on a light cycle too, in Tron (retail 0x1012c670)
+			if (!m_pPlayerCamera->IsFirstPerson() && g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE)
 			{
-				g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
+				g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
 			}
 			else
 			{
-				g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
+				g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
 			}
 		}
 		else if (dwUsrFlags & USRFLG_ATTACH_HIDE1)
@@ -5177,27 +5166,39 @@ bool CPlayerMgr::IsDisabling()
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerMgr::SetCarryingObject( uint8 nCarry, bool bUpdateCameraDip )
+void CPlayerMgr::SetCarryingObject( uint8 nCarry )
 {	
+	// RETAIL: Tron's, as build 51's SetCarryingBody (retail 0x1012c7d0): one
+	// argument, the duck lock cleared, no HUD update
 	if( m_nCarryingObject != nCarry )
 	{
 		m_nCarryingObject = nCarry;
 
-		if(nCarry == CFX_CARRY_BODY || nCarry == CFX_CARRY_DD_CORE)
+		if( nCarry )
 		{
-			if( bUpdateCameraDip )
-				m_bCameraDip = true;
-
+			m_bCameraDip = true;
 			m_pMoveMgr->SetDuckLock(LTFALSE);
 			m_pClientWeaponMgr->DisableWeapons();
 		}
 		else
 		{
+			m_bCameraDip = false;
 			m_pClientWeaponMgr->EnableWeapons();
 		}
 	}
+}
 
-	g_pHUDMgr->QueueUpdate(kHUDCarry);
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::SetCanDropCarriedObject()
+//
+//	PURPOSE:	RETAIL: not inline in Tron (retail 0x1012c820)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::SetCanDropCarriedObject( bool bCanDrop )
+{
+	m_bCanDropCarriedObject = bCanDrop;
 }
 
 //pulled target mgr initialization into a function so that it maybe overridden by 
@@ -5420,7 +5421,7 @@ void CPlayerMgr::SetTronUnknown1D5(bool bOn)
 			fTime = g_pLTClient->GetVarValueFloat(hVar);
 		}
 
-		m_pPlayerCamera->TronUnknownStartPan(fPhi * MATH_PI / 180.0f, fRadius, fTime);
+		m_pPlayerCamera->TronUnknownStartPan(DEG2RAD(fPhi), fRadius, fTime);
 	}
 	else
 	{

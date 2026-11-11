@@ -3330,5 +3330,5 @@ void CCharacterFX::UpdateCarrying()
 	if( !m_cs.bIsPlayer) return;
 	if (m_hServerObject != g_pLTClient->GetClientObject()) return;
 	
-	g_pPlayerMgr->SetCarryingObject(m_cs.nCarrying, true);
+	g_pPlayerMgr->SetCarryingObject(m_cs.nCarrying);	// PORT: Tron's takes one argument
 }
