@@ -38,8 +38,14 @@ class CTronGameServerShell : public CGameServerShell
 		virtual bool	TronUnknownVirtual54() { return false; }
 		virtual void	TronUnknownVirtual58( char* pData, uint32 nDataLen, uint8 senderAddr[4], uint16 senderPort ) {}
 
+		// RETAIL: overrides that only call the base (retail 0x1005d3d0)
+		virtual void	SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer, uint8 nInfoType);
+
 	protected:
 		virtual LTRESULT OnServerInitialized();
+
+		// RETAIL: retail 0x1005d3c0, only the base's
+		void			OnRemoveClient(HCLIENT hClient);
 		virtual void OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
 
 		virtual void Update(LTFLOAT timeElapsed);

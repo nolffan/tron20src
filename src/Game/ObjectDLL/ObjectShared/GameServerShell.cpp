@@ -4026,6 +4026,8 @@ void CGameServerShell::ClearClientList()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100e2920) hands the level switches to its slot 33,
+// and has no mission failed message
 LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 {
 	// Let the scmd check if it needs this message.
@@ -4046,19 +4048,13 @@ LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 
 		case SERVERSHELL_NEXTWORLD:
 		{	
-			if( !StartNextMultiplayerLevel( ))
-				return LT_ERROR;
+			TronUnknownVirtual84( m_nCurLevel + 1 );
 		}
 		break;
 
 		case SERVERSHELL_SETWORLD:
 		{	
-			// Read in the world index.  Go back one, since StartNextMultiplayerLevel
-			// will preincrement the curlevel.
-			int nNewMission;
-			nNewMission = msg.Readuint32( );
-			if( !g_pServerMissionMgr->SwitchToCampaignIndex( nNewMission ))
-				return LT_ERROR;
+			TronUnknownVirtual84( msg.Readuint32( ));
 		}
 		break;
 
@@ -4069,15 +4065,6 @@ LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 
 			g_pLTServer->RunGameConString( szMsg );
 
-		}
-		break;
-		
-		case SERVERSHELL_MISSIONFAILED:
-		{
-			// We have a failed mission from the server app...
-			// Wait for client responses to begin the auto load.
-			
-			g_pServerSaveLoadMgr->WaitForAutoLoadResponses();
 		}
 		break;
 
