@@ -36,7 +36,7 @@ class CTronGameServerShell : public CGameServerShell
 		virtual void	TronUnknownVirtual4C() {}
 		virtual void	TronUnknownVirtual50() {}
 		virtual bool	TronUnknownVirtual54() { return false; }
-		virtual void	TronUnknownVirtual58( uint8 senderAddr[4], uint16 senderPort, void* pData, uint32 nDataLen ) {}
+		virtual void	TronUnknownVirtual58( char* pData, uint32 nDataLen, uint8 senderAddr[4], uint16 senderPort ) {}
 
 	protected:
 		virtual LTRESULT OnServerInitialized();

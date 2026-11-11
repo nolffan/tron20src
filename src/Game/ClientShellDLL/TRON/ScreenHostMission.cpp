@@ -350,7 +350,7 @@ void CScreenHostMission::CreateCampaignList()
 
 	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
 	std::string directory = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
-		pUserProfile->m_ServerGameOptions.m_eGameType );
+		( GameType )pUserProfile->m_ServerGameOptions.m_eGameType );
 	directory += "*.txt"; 
 
 	// find first file
@@ -518,7 +518,7 @@ void CScreenHostMission::DeleteCampaign(const std::string& campaignName)
 {
 	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
 	std::string fn = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
-		pUserProfile->m_ServerGameOptions.m_eGameType );
+		( GameType )pUserProfile->m_ServerGameOptions.m_eGameType );
 	fn += campaignName; 
 	fn += ".txt"; 
 
@@ -539,7 +539,7 @@ void CScreenHostMission::NewCampaign(const std::string& campaignName)
 {
 	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
 	std::string fn = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
-		pUserProfile->m_ServerGameOptions.m_eGameType );
+		( GameType )pUserProfile->m_ServerGameOptions.m_eGameType );
 
 	if( !CWinUtil::DirExist( fn.c_str( )))
 	{
@@ -630,7 +630,7 @@ void CScreenHostMission::RenameCampaign(const std::string& oldName,const std::st
 
 	CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
 	char const* pszCampaignDir = GetCampaignDir( g_pProfileMgr->GetCurrentProfileName( ), 
-		pUserProfile->m_ServerGameOptions.m_eGameType );
+		( GameType )pUserProfile->m_ServerGameOptions.m_eGameType );
 	std::string ofn = pszCampaignDir;
 	ofn += oldName; 
 	ofn += ".txt"; 
