@@ -226,6 +226,10 @@ SOURCE=.\SecRezzerPoint.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ServerSubroutineMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -324,6 +328,10 @@ SOURCE=.\SecRezzer.h
 # Begin Source File
 
 SOURCE=.\SecRezzerPoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerSubroutineMgr.h
 # End Source File
 # Begin Source File
 
