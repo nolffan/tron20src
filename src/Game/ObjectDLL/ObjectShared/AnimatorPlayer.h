@@ -102,7 +102,7 @@ struct AniPlayerMain
     LTBOOL bLoops;
 };
 
-#define TRON_ANIMATORPLAYER_PAD 0xdc
+#define TRON_ANIMATORPLAYER_PAD 0xd8
 
 class CAnimatorPlayer : public CAnimator
 {
@@ -504,8 +504,9 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerMain				m_AniDT_Hurt;
 		AniPlayerMain				m_AniDT_HurtWalk;
 
-		// RETAIL: Tron's player animator is 0x1d24 bytes (retail CPlayerObj puts
-		// what follows it there); its upper-body set (Block, Fire2..5 and their
+		// RETAIL: Tron's player animator is taken as 0x1d20 bytes (retail
+		// CPlayerObj has a flag at 0x2a80, after it; nothing reads the
+		// animator's last bytes); its upper-body set (Block, Fire2..5 and their
 		// crouches, for some weapons) is not yet laid out: this fills the
 		// difference
 		uint8						m_aTronUnknownTail[TRON_ANIMATORPLAYER_PAD];

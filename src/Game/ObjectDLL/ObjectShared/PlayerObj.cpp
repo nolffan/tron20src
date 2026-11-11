@@ -71,6 +71,7 @@ static CVarTrack s_vtVehicleImpactDistMax;
 
 static CVarTrack s_vtBaseHealRate;
 static CVarTrack s_vtWalkHealRate;
+static CVarTrack s_vtWatch;		// RETAIL: Tron's "Watch" (retail 0x1035b7a0)
 
 BEGIN_CLASS(CPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CPlayerObj, CCharacter, NULL, NULL, CF_HIDDEN)
@@ -790,7 +791,7 @@ int32 g_bPlayerUpdated = 10;
 CPlayerObj::CPlayerObj() 
 	: CCharacter()
 	, m_vClientCameraOffset( 0.0f, 0.0f, 0.0f )
-	, m_nClientCameraOffsetTimeReceivedMS( 0 )
+	, m_fClientCameraOffsetTimeReceived( 0.0f )
 {
 	m_bBlink				= LTFALSE;
 	m_bShortRecoil			= LTTRUE;
@@ -806,6 +807,11 @@ CPlayerObj::CPlayerObj()
 
 	m_eModelId				= g_pModelButeMgr->GetModelId(DEFAULT_PLAYERNAME);
 	m_eModelSkeleton		= g_pModelButeMgr->GetModelSkeleton(m_eModelId);
+
+	// RETAIL: Tron's (retail 0x1007728f)
+	m_bTronUnknown31c8		= false;
+	m_bTronUnknown31c9		= false;
+	m_bTronUnknown31ca		= false;
 
 //	ResetObjectRelationMgr();
 
@@ -894,6 +900,7 @@ CPlayerObj::CPlayerObj()
 
 	m_bCanDropBody = false;
 	m_bCarryingAI = false;
+	m_bTronUnknown2cd6 = false;
 
 	m_eLeanVisibleStimID = kStimID_Unset;
 
@@ -909,6 +916,11 @@ CPlayerObj::CPlayerObj()
 	{
 		s_vtWalkHealRate.Init(g_pLTServer, "WalkHealRate", NULL, 0.1f);
 	}
+	// RETAIL: Tron's (retail 0x10077651). The variable's name is ours
+	if(!s_vtWatch.IsInitted())
+	{
+		s_vtWatch.Init(g_pLTServer, "Watch", "none", 0.0f);
+	}
 
 	m_bVisibleToEnemyAI = false;
 
@@ -921,22 +933,14 @@ CPlayerObj::CPlayerObj()
 
 	m_nControlFlags = 0;
 
-	m_vLastGoodDropPos.Init( 0.0f, 0.0f, 0.0f );
+	// RETAIL: Tron's (retail 0x1007772a)
+	m_bTronUnknown2a80 = true;
 
-	m_ActivationData.Init();
+	m_fLastClientUpdateTime = 0.0f;
+	m_pLastStartPoint = LTNULL;
+	m_nTronUnknown31d4 = 0;
+
 	m_rFullPlayerRot.Init();
-
-	m_vSavedVelocity.Init();
-	m_dwSavedObjectFlags = 0;
-
-	m_nSaveVersion = 0;
-
-	m_bUsedStartPoint = false;
-
-	m_bCanBeRevived = false;
-
-	m_nRequestedTeam = INVALID_TEAM;
-
 }
 
 
@@ -2882,13 +2886,7 @@ void CPlayerObj::UpdateClientPhysics()
 		m_PStateChangeFlags |= PSTATE_INTERFACE;
 	}
 
-	if( m_hCarriedObject && CanDropObject( ))
-	{
-		// Get a valid position to use as a last resort drop pos...
-
-		g_pLTServer->GetObjectPos( m_hObject, &m_vLastGoodDropPos );
-	}
-
+	// PORT: Tron keeps no last good drop position
 	// Did our container states change?
 
 	HOBJECT objContainers[MAX_TRACKED_CONTAINERS];
@@ -3163,11 +3161,7 @@ void CPlayerObj::WriteInterfaceMessage(ILTMessage_Write *pMsg)
 		nFlags |= PSTATE_INT_CAN_DROP;
 	}
 
-	if( m_bCanBeRevived )
-	{
-		nFlags |= PSTATE_INT_CANREVIVE;
-	}
-
+	// PORT: no revive in Tron's CPlayerObj (no member for it)
 	pMsg->Writeuint8(nFlags);
 
 	pMsg->Writefloat(m_fHideDuration);
@@ -3334,20 +3328,7 @@ void CPlayerObj::SetClientLoaded( bool bLoaded )
 
 	if( bLoaded )
 	{
-		// [RP] 9/14/02 - Reset the players velocity to the saved velocity...
-
-		if( m_dwLastLoadFlags == LOAD_RESTORE_GAME ||
-			m_dwLastLoadFlags == LOAD_TRANSITION )
-		{
-			g_pPhysicsLT->SetVelocity( m_hObject, &m_vSavedVelocity );
-
-			if( m_dwSavedObjectFlags & FLAG_GRAVITY )
-			{
-				// Add gravity back in if it was set when the player was saved...
-
-				g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_GRAVITY, FLAG_GRAVITY );
-			}
-		}
+		// PORT: Tron saves no velocity to restore here (NOLF2 1.x's)
 
 
 		if( m_eState == PS_ALIVE )
@@ -3670,7 +3651,8 @@ void CPlayerObj::AcquireGear(char* pGearName)
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bGetStartPt /*=true*/)
+void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bGetStartPt /*=true*/,
+						 GameStartPoint* pStartPoint /*=LTNULL*/, GameBase* pSpawnAt /*=LTNULL*/)
 {
 	m_bRespawnCalled = LTTRUE;
 
@@ -3685,7 +3667,7 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	{
 		CAutoMessage cLoadMsg;
 		cLoadMsg.Writeuint8( MID_PLAYER_LOADCLIENT );
-		cLoadMsg.Writeuint32( m_nSaveVersion );
+		cLoadMsg.Writeuint32( g_pVersionMgr->GetCurrentSaveVersion( ) );	// PORT: no save version member in Tron
 		cLoadMsg.WriteMessage( m_pClientSaveData );
 		SetClientSaveData( NULL );
 		g_pLTServer->SendToClient(cLoadMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
@@ -3720,9 +3702,7 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		return;
 	}
 
-	//if the player requested a team switch, do it now
-	if (RequestedTeamChange())
-		SwitchToTeam(m_nRequestedTeam);
+	// PORT: no team change requests in Tron (no member for one)
 
 	// When respawning within the same level we must clear out our weapons.  This
 	// flag will be zero after the first update.
@@ -4253,7 +4233,7 @@ void CPlayerObj::AcquireDefaultWeapon()
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerObj::AcquireWeapon(char* pWeaponName)
+void CPlayerObj::AcquireWeapon(char* pWeaponName, bool bTronUnknown /*= false*/)
 {
 	if (!pWeaponName || !*pWeaponName) return;
 
@@ -4361,12 +4341,7 @@ void CPlayerObj::HandleDead(LTBOOL)
 	if (m_eState == PS_DEAD)
 		return;
 
-	// The player just died.  The body we make is revivable.
-	if( IsRevivePlayerGameType( ))
-	{
-		m_bCanBeRevived = true;
-		m_PStateChangeFlags |= PSTATE_INTERFACE;
-	}
+	// PORT: no revivable bodies in Tron's CPlayerObj (no member for it)
 
 	if( m_pAttachments )
 	{
@@ -5548,7 +5523,7 @@ LTBOOL CPlayerObj::MultiplayerUpdate(ILTMessage_Read *pMsg)
 		if (nTeam != GetTeamID() && g_pServerMissionMgr->CanRespawn( *this ))
 		{
 
-			m_nRequestedTeam = nTeam;
+			// PORT: no team change requests in Tron (no member for one)
 
 			//we have to be dead to respawn on new team properly
 			if (GetState() == PS_ALIVE)
@@ -5618,10 +5593,7 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
 	
-	// Players will save the objectives stored in the server shell so they will 
-	// properly carry across levels.  
-
-	g_pGameServerShell->SaveObjectives( pMsg, dwSaveFlags );
+	// RETAIL: Tron's player saves no objectives (retail 0x100811d0)
 
 	// Save the command mgrs' global vars here so we bring them across levels
 
@@ -5635,6 +5607,7 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 
     m_Skills.Save(pMsg);
     m_Stats.WriteData(pMsg);
+	m_Score.WriteData(pMsg);	// RETAIL: Tron saves its score
 
 	// Save PlayerObj data...
 
@@ -5653,7 +5626,6 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_DWORD(m_nSavedFlags);
 	SAVE_BOOL(m_bGodMode);
 	SAVE_BOOL(m_bAllowInput);
-	SAVE_bool( m_bCinematicInvulnerability );
 	SAVE_BYTE(m_ePPhysicsModel);
 	SAVE_bool(m_bNewMission);
 
@@ -5671,23 +5643,13 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 
 	SAVE_HOBJECT(m_hCarriedObject);
 	SAVE_bool(m_bCarryingAI);
+	SAVE_bool(m_bTronUnknown2cd6);
 
 	SAVE_HOBJECT( m_hPlayerLure ); 
 	SAVE_BOOL( m_bForceDuck );
 
 	SAVE_HOBJECT( m_hDeadBody );
 	SAVE_TIME( m_fLastVehicleFootstepTime );
-
-	SAVE_VECTOR( m_vLastGoodDropPos );
-	SAVE_bool( m_bCanDropBody );
-
-	SAVE_ROTATION( m_rFullPlayerRot );
-
-	// [RP] 9/14/02 - Save off the velocity so we can zero out the players vel when they load
-	//		and then reset the saved vel when they actually respawn in the world.
-
-	g_pPhysicsLT->GetVelocity( m_hObject, &m_vSavedVelocity );
-	SAVE_VECTOR( m_vSavedVelocity );
 
 	// Save client data associated with this player...
 
@@ -5705,8 +5667,18 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 		_ASSERT(LTFALSE);
 	}
 
-	SAVE_bool( m_bCanBeRevived );
+	SAVE_VECTOR( m_vClientCameraOffset );
+	SAVE_TIME( m_fClientCameraOffsetTimeReceived );
 
+	SAVE_ROTATION( m_rFullPlayerRot );
+
+	for( int i = 0; i < PLAYER_MAX_SUBROUTINES; i++ )
+	{
+		SAVE_CHARSTRING( m_aSubroutines[i].szName );
+		SAVE_BYTE( m_aSubroutines[i].nTronUnknown40 );
+		SAVE_BYTE( m_aSubroutines[i].nTronUnknown41 );
+		SAVE_BYTE( m_aSubroutines[i].nTronUnknown42 );
+	}
 }
 
 
@@ -5722,14 +5694,9 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
-	m_nSaveVersion = g_pVersionMgr->GetCurrentSaveVersion( );
-
 	m_dwLastLoadFlags = dwLoadFlags;
 
-	// Players will load the objectives to the server shell so they will 
-	// properly carry across levels.  
-
-	g_pGameServerShell->LoadObjectives( pMsg, dwLoadFlags );
+	// RETAIL: Tron's player loads no objectives (retail 0x10081570)
 
 	// Load the command mgrs' global vars here so we bring them across levels
 
@@ -5743,6 +5710,7 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
     m_Skills.Load(pMsg);
     m_Stats.ReadData(pMsg);
+	m_Score.ReadData(pMsg);		// RETAIL: Tron loads its score
 
 	// Load PlayerObj data...
 
@@ -5762,7 +5730,6 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_DWORD(m_nSavedFlags);
 	LOAD_BOOL(m_bGodMode);
 	LOAD_BOOL(m_bAllowInput);
-	LOAD_bool( m_bCinematicInvulnerability );
 	LOAD_BYTE_CAST(m_ePPhysicsModel, PlayerPhysicsModel);
 	LOAD_bool( m_bNewMission );
 
@@ -5775,20 +5742,12 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	LOAD_FLOAT(m_fHiddenTimer);
 	LOAD_FLOAT(m_fHideDuration);
-
-	//don't load hidden and hiding directly, 
-	//  because we want to force an update to be sent down to the client
-	LTBOOL bHiding;
-	LTBOOL bHidden;
-	LOAD_BOOL(bHiding);
-	LOAD_BOOL(bHidden);
-	if (bHiding)
-		StartHiding();
-	if (bHidden)
-		StartHidden();
+	LOAD_BOOL(m_bHiding);
+	LOAD_BOOL(m_bHidden);
 
 	LOAD_HOBJECT(m_hCarriedObject);
 	LOAD_bool(m_bCarryingAI);
+	LOAD_bool(m_bTronUnknown2cd6);
 
 	LOAD_HOBJECT( m_hPlayerLure );
 	LOAD_BOOL( m_bForceDuck );
@@ -5796,24 +5755,6 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_HOBJECT( m_hDeadBody );
 	LOAD_TIME( m_fLastVehicleFootstepTime );
 
-	LOAD_VECTOR( m_vLastGoodDropPos );
-	LOAD_bool( m_bCanDropBody );
-
-	LOAD_ROTATION( m_rFullPlayerRot );
-
-	// [RP] 9/14/02 - Load the saved velocity and zero out the objects velocity.  We'll reset it
-	//		to the saved velocity later.
-
-	LOAD_VECTOR( m_vSavedVelocity );
-	LTVector vZero(0.0f, 0.0f, 0.0f);
-	g_pPhysicsLT->SetVelocity( m_hObject, &vZero );
-	g_pPhysicsLT->SetAcceleration( m_hObject, &vZero );
-
-	// Get rid of the gravity flag so the physics won't pull us down if the playr was jumping when saved...
-
-	g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, m_dwSavedObjectFlags );
-	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_GRAVITY );
-	
 	// Load client data associated with this player...
 
 	LTBOOL bClientSaveData;
@@ -5823,26 +5764,26 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 		SetClientSaveData( pMsg->ReadMessage() );
 	}
 
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-	{
-		m_bCanBeRevived = false;
+	LOAD_VECTOR( m_vClientCameraOffset );
+	LOAD_TIME( m_fClientCameraOffsetTimeReceived );
 
-		if (m_hCarriedObject)
-		{
-			SetCarrying(CFX_CARRY_BODY);
-		}
-		else
-		{
-			SetCarrying(CFX_CARRY_NONE);
-		}
-	}
-	else
+	LOAD_ROTATION( m_rFullPlayerRot );
+
+	int i;
+	for( i = 0; i < PLAYER_MAX_SUBROUTINES; i++ )
 	{
-		LOAD_bool( m_bCanBeRevived );
+		LOAD_CHARSTRING( m_aSubroutines[i].szName, ARRAY_LEN( m_aSubroutines[i].szName ));
+		LOAD_BYTE( m_aSubroutines[i].nTronUnknown40 );
+		LOAD_BYTE( m_aSubroutines[i].nTronUnknown41 );
+		LOAD_BYTE( m_aSubroutines[i].nTronUnknown42 );
 	}
 
-	//need to initialize this with the client id
-	m_Score.Init( g_pLTServer->GetClientID( GetClient() ) );
+	// PORT: retail then copies the names of the subroutines the server's
+	// subroutine list flags (a retail-only manager, 0x10376d9c, with a vector
+	// of 0x48-byte entries at +0x111c) over the slots, in order (retail
+	// 0x1008198d); not written yet
+
+	m_fLastClientUpdateTime = 0.0f;
 }
 
 
@@ -6088,7 +6029,7 @@ LTBOOL CPlayerObj::ClientUpdate(ILTMessage_Read *pMsg)
 		UncompressOffset( &m_vClientCameraOffset, vCompressedCameraOffset, 100 );
 
 		// record the time this was sent
-		m_nClientCameraOffsetTimeReceivedMS = static_cast< int >( g_pLTServer->GetTime() * 1000.0f );
+		m_fClientCameraOffsetTimeReceived = g_pLTServer->GetTime();	// RETAIL: a float time (0x10081d90)
 	}
 
 	if (m_nClientChangeFlags & CLIENTUPDATE_3RDPERSON)
@@ -6733,11 +6674,11 @@ void CPlayerObj::HandleActivateMessage(ILTMessage_Read *pMsg)
 {
 	if (!pMsg) return;
 
-	// Cache our activation data for called methods to use and clear when we're done...
-	
-	m_ActivationData.Read(pMsg);
-	DoActivate(&m_ActivationData);
-	m_ActivationData.Init();
+	// RETAIL: Tron keeps no activation data member: the data is local (its
+	// destructor follows, retail 0x100831e0)
+	CActivationData activationData;
+	activationData.Read(pMsg);
+	DoActivate(&activationData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -7135,7 +7076,7 @@ CAttachments* CPlayerObj::TransferAttachments( bool bRemove )
 void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 {
 	// Check if we are transferring weapons to a revivable body.
-	if( IsRevivePlayerGameType( ) && m_bCanBeRevived )
+	if( IsRevivePlayerGameType( ) && false )	// PORT: no revive member in Tron
 	{
 		CCharacter::TransferWeapons(pBody, bRemove );
 		return;
@@ -7715,14 +7656,8 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 				// Use our position if we are allowed to drop an object...
 				// Use the last good drop pos if we are not allowed (not in an AI volume :)
 
-				if( CanDropObject( ))
-				{
-					g_pLTServer->GetObjectPos(m_hObject, &vPos);
-				}
-				else
-				{
-					vPos = m_vLastGoodDropPos;
-				}
+				// PORT: Tron keeps no last good drop position
+				g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
 				g_pLTServer->GetObjectRotation(m_hObject, &rRot);
 
@@ -7859,9 +7794,7 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 		
 		
 		
-		// Set a valid drop position.  We know this is good otherwise we wouldn't be able to pick it up...
-		
-		g_pLTServer->GetObjectPos( m_hObject, &m_vLastGoodDropPos );
+		// PORT: Tron keeps no last good drop position
 	}
 
 }
@@ -8034,15 +7967,7 @@ bool CPlayerObj::DropCarriedObject( bool bTransition /* = false  */ )
 			pBody->SetBeingCarried( false, NULL );
 		}
 
-		if( !CanDropObject( ))
-		{
-			// Send message to body to drop at the last good drop position...
-
-			char szMsg[128] = {0};
-			LTSNPrintF( szMsg, ARRAY_LEN( szMsg ), "DROPATPOS %.4f %.4f %.4f", m_vLastGoodDropPos.x, m_vLastGoodDropPos.y, m_vLastGoodDropPos.z );
-			
-			SendTriggerMsgToObject( this, m_hCarriedObject, 0, szMsg );
-		}
+		// PORT: Tron keeps no last good drop position to drop at
 		else
 		{
 			// Send trigger to body to toggle move.
@@ -8679,7 +8604,7 @@ void CPlayerObj::SetupBody( Body* pBody )
 		return;
 
 	// See if this body is revivable or if it's the respawn body.
-	bool bRevivableBody = IsRevivePlayerGameType( ) && m_bCanBeRevived;
+	bool bRevivableBody = false;	// PORT: no revive member in Tron
 	float fLifetime = m_fBodyLifetime;
 
 	// If it's revivable, we'll need to reference it for later removal.
@@ -8755,8 +8680,7 @@ void CPlayerObj::RemoveBody()
 
 void CPlayerObj::CreateRespawnBody( )
 {
-	// Can no longer be revived.
-	m_bCanBeRevived = false;
+	// PORT: no revive member in Tron
 	m_PStateChangeFlags |= PSTATE_INTERFACE;
 
 	Body* pBody = dynamic_cast< Body* >( g_pLTServer->HandleToObject( m_hDeadBody ));
@@ -9081,8 +9005,6 @@ void CPlayerObj::SwitchToTeam(uint8 nTeam )
 	SetupTeamModel(false);
 
 	g_pGameServerShell->SendPlayerInfoMsgToClients(NULL, this, MID_PI_UPDATE);
-
-	m_nRequestedTeam = INVALID_TEAM;
 
 }
 
