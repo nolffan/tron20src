@@ -137,7 +137,7 @@ class CPlayerObj : public CCharacter
 		virtual void GimmeGunCheat( uint8 nId );	// RETAIL: virtual in Tron
 		// RETAIL: an empty virtual of Tron's (CTronPlayerObj's sets or clears
 		// all permission sets, retail 0x10067120: a cheat)
-		virtual void TronUnknownVirtual105( bool /*bOn*/ ) {}
+		virtual void TronUnknownVirtual105( LTBOOL /*bOn*/ ) {}
 		void GimmeModCheat( uint8 nId );
 		void GimmeGearCheat( uint8 nId );
 		void GimmeAmmoCheat( uint8 nId );
@@ -437,13 +437,14 @@ class CPlayerObj : public CCharacter
 		virtual float GetVerticalThreshold() const;
 		virtual float GetInfoVerticalThreshold() const;
 
-		// RETAIL: three virtuals of Tron's returning true here (retail
-		// 0x100dd4f0); CTronPlayerObj's acquire what is named (0x10066f20),
-		// what is given (its 0x10066930 hands it the data) and the gear of an
-		// id (0x10066e30, through TronUnknownVirtual128)
-		virtual bool	TronUnknownVirtual127( char const* /*pName*/ ) { return true; }
-		virtual bool	TronUnknownVirtual128( void const* /*pData*/ ) { return true; }
-		virtual bool	TronUnknownVirtual129( uint8 /*nId*/ ) { return true; }
+		// RETAIL: three virtuals of Tron's about weapons, returning true here
+		// (retail 0x100dd4f0); CTronPlayerObj's take a weapon by name
+		// (0x10066f20), its data (AcquireWeapon and the weapon cheat hand it,
+		// 0x100686e0, 0x10066fa0) and its id (0x10066e30, through
+		// TronUnknownVirtual128)
+		virtual bool	TronUnknownVirtual127( char const* /*pWeaponName*/ ) { return true; }
+		virtual bool	TronUnknownVirtual128( WEAPON const* /*pWeapon*/ ) { return true; }
+		virtual bool	TronUnknownVirtual129( uint8 /*nWeaponId*/ ) { return true; }
 		// RETAIL: an empty virtual of Tron's with two arguments (Respawn calls
 		// it, retail 0x1007def8; CTronPlayerObj's is 0x100672a0)
 		virtual void	TronUnknownVirtual130( uint32 /*nUnknown1*/, uint32 /*nUnknown2*/ ) {}

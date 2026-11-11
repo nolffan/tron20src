@@ -3294,6 +3294,7 @@ void CPlayerObj::ToggleGodMode()
 
 void CPlayerObj::SetRespawnInvulnerability()
 {
+	m_bGodMode = LTTRUE;	// RETAIL: Tron's (retail 0x1007d21d; Update clears it)
 	m_damage.SetCanDamage( false );
 	float fRespawnInvulnerabilityTime = GetConsoleFloat( "RespawnInvulnerabilityTime", 3.0f );
 	m_tmrRespawnInvulnerabilityTime.Start( fRespawnInvulnerabilityTime );
@@ -4233,10 +4234,11 @@ void CPlayerObj::AcquireWeapon(char* pWeaponName, bool bTronUnknown /*= false*/)
 
 	WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon(nWeaponID);
 
-	if (pWeaponData && !pWeaponData->bServerRestricted )
+	// RETAIL: no server restrictions in Tron (retail 0x1007e9d0)
+	if (pWeaponData)
 	{
 		AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo(nAmmoID);
-		if (pAmmoData && !pAmmoData->bServerRestricted && m_pPlayerAttachments)
+		if (pAmmoData && m_pPlayerAttachments)
 		{
             m_pPlayerAttachments->ObtainWeapon(pWeaponData->nId, pAmmoData->nId, pAmmoData->nSpawnedAmount, LTTRUE);
 			ChangeWeapon(g_pWeaponMgr->GetCommandId(pWeaponData->nId));
@@ -4851,6 +4853,8 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 
 char* CPlayerObj::GetDeathSound()
 {
+	// RETAIL: Tron checks this first (retail 0x100803e0), but our
+	// VersionMgr.h has IsLowViolence on the client only
 /*
 	if (g_pVersionMgr->IsLowViolence())
 	{
@@ -5931,12 +5935,14 @@ LTBOOL CPlayerObj::ClientUpdate(ILTMessage_Read *pMsg)
 {
     if (!g_pGameServerShell || !GetClient( )) return LTFALSE;
 
-    LTBOOL bRet = LTTRUE;
+	// RETAIL: Tron times the client's updates (retail 0x10081bd2)
+	m_fLastClientUpdateTime = g_pLTServer->GetTime();
 
     LTBOOL bOld3rdPersonView = m_b3rdPersonView;
-	m_nClientChangeFlags = 0;
+    LTBOOL bRet = LTTRUE;
 
-    m_nClientChangeFlags = pMsg->Readuint16();
+	// RETAIL: eight bits of flags in Tron
+    m_nClientChangeFlags = pMsg->Readuint8();
 
 	if (m_nClientChangeFlags & CLIENTUPDATE_PLAYERROT)
 	{

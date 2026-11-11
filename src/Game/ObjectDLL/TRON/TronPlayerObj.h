@@ -76,6 +76,9 @@ class CTronPlayerObj : public CPlayerObj
 		virtual void	Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true,
 			GameStartPoint* pStartPoint=LTNULL, GameBase* pSpawnAt=LTNULL);
 		virtual void	RemoveVehicleModel();
+		virtual void	GimmeGunCheat( uint8 nId );
+		virtual void	TronUnknownVirtual105( LTBOOL bOn );
+		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
 
 	protected:
 

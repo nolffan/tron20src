@@ -1566,3 +1566,65 @@ void CTronPlayerObj::RemoveVehicleModel()
 		m_hLightCycle = LTNULL;
 	}
 }
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::GimmeGunCheat
+//
+//	PURPOSE:	Give a weapon (RETAIL: retail 0x100670e0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::GimmeGunCheat( uint8 nId )
+{
+	if( m_damage.IsDead() || !m_pPlayerAttachments )
+		return;
+
+	TronUnknownVirtual129( nId );
+	CPlayerObj::GimmeGunCheat( nId );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual105
+//
+//	PURPOSE:	Give or take all permission sets (RETAIL: retail 0x10067120)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::TronUnknownVirtual105( LTBOOL bOn )
+{
+	if( bOn )
+	{
+		m_iPermissionSet = 0xff;
+	}
+	else
+	{
+		m_iPermissionSet = 0;
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AcquireWeapon
+//
+//	PURPOSE:	Acquire a weapon (RETAIL: retail 0x100686e0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::AcquireWeapon( char* pWeaponName, bool bTronUnknown )
+{
+	if( !pWeaponName )
+		return;
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( pWeaponName );
+	if( bTronUnknown )
+	{
+		TronUnknownVirtual128( pWeapon );
+	}
+
+	CPlayerObj::AcquireWeapon( pWeaponName, bTronUnknown );
+}
