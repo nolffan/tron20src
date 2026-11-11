@@ -780,7 +780,7 @@ void DAMAGEFX::Start( )
 
 		if( m_bAttachCameraToAni )
 		{
-			g_pPlayerMgr->AttachCameraToHead( true, IsMultiplayerGame() );
+			g_pPlayerMgr->AttachCameraToHead( LTTRUE );	// PORT: Tron's does not interpolate
 			m_bAllowWeapons = false;
 			g_pPlayerMgr->GetClientWeaponMgr()->DisableWeapons();
 			
@@ -838,7 +838,7 @@ void DAMAGEFX::Stop( LTBOOL bFade /* = LTTRUE  */ )
 		if (!m_bAllowInput)
 			g_pPlayerMgr->AllowPlayerMovement(LTTRUE);
 
-		g_pPlayerMgr->AttachCameraToHead( false );
+		g_pPlayerMgr->AttachCameraToHead( LTFALSE );
 
 		if( !m_bAllowWeapons )
 			g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();

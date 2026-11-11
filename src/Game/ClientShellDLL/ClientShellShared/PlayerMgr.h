@@ -104,7 +104,7 @@ public:
 	LTBOOL		IsCameraListener()		const	{ return m_bCamIsListener; }
 	LTBOOL		InCameraGadgetRange(HOBJECT hObj);
 	void		AllowPlayerMovement(LTBOOL bAllowPlayerMovement);
-    void		SetMouseInput(LTBOOL bAllowInput, LTBOOL bRestoreBackupAngels);
+    void		SetMouseInput(LTBOOL bAllowInput);	// RETAIL: build 51's, Tron's (one argument)
 
     void		SetCameraFOV(float fFovX, float fFovY);
 	void		ResetCamera();
@@ -274,7 +274,8 @@ public:
 	//		(I'm using the repeated call to track whether we are in mid switch)
 	void	HandleWeaponChanged(uint8 nWeaponId,uint8 nAmmoId, bool bImmediateSwitch);
 
-	void	AttachCameraToHead( bool bAttach = true, bool bInterpolate = false );
+	// RETAIL: Tron's takes one LTBOOL and does not interpolate (retail 0x1012b2a0)
+	void	AttachCameraToHead( LTBOOL bAttach = LTTRUE );
 
 	//returns the id of a gadget that has the specified damagetype
 	uint8	GetGadgetFromDamageType(DamageType eDamageType);
@@ -475,7 +476,7 @@ protected:
 	HLOCALOBJ       m_hCamera;			// The camera
 	CPlayerCamera  *m_pPlayerCamera;	// Handle 3rd person view
 
-	bool			m_bCameraAttachedToHead;
+	LTBOOL			m_bCameraAttachedToHead;	// RETAIL: an LTBOOL in Tron
 	
     LTBOOL          m_bFirstUpdate;     // Is this the first update
 

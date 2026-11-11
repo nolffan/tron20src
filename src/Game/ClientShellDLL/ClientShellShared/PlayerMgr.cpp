@@ -230,7 +230,7 @@ CPlayerMgr::CPlayerMgr()
 
 	m_bPlayerUpdated		= LTFALSE;
 
-	m_bCameraAttachedToHead	= false;
+	m_bCameraAttachedToHead	= LTFALSE;
 	m_bLerpAttachedCamera	= false;
 
 	m_nPlayerInfoChangeFlags	= 0;
@@ -673,7 +673,7 @@ void CPlayerMgr::OnEnterWorld()
 	m_eCurContainerCode       = CC_NO_CONTAINER;
 	m_bInSafetyNet			  = false;
 
-	m_bCameraAttachedToHead	= false;
+	m_bCameraAttachedToHead	= LTFALSE;
 	m_bLerpAttachedCamera	= false;
 
 	m_pHeadBobMgr->OnEnterWorld();
@@ -4385,7 +4385,7 @@ void CPlayerMgr::RestorePlayerModes()
 //
 // --------------------------------------------------------------------------- //
 
-void CPlayerMgr::AttachCameraToHead( bool bAttach, bool bInterpolate )
+void CPlayerMgr::AttachCameraToHead( LTBOOL bAttach )
 {
 	// We don't want to reset our orientations if we are currently doing what was requested...
 
@@ -4394,7 +4394,6 @@ void CPlayerMgr::AttachCameraToHead( bool bAttach, bool bInterpolate )
 
 	//set the new value
 	m_bCameraAttachedToHead	= bAttach;
-	m_bLerpAttachedCamera	= bInterpolate;
 
 	//if we are enabling, then cache our values
 	if(bAttach)
@@ -5127,17 +5126,15 @@ void CPlayerMgr::UpdateDynamicOccluders(HLOCALOBJ* pContainerArray, uint32 nNumC
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerMgr::SetMouseInput( LTBOOL bAllowInput, LTBOOL bRestoreBackupAngles )
+void CPlayerMgr::SetMouseInput(LTBOOL bAllowInput)
 {
+	// RETAIL: build 51's, Tron's (retail 0x1012c470): the backup angles are
+	// always restored
 	if (bAllowInput)
 	{
         m_bRestoreOrientation = LTTRUE;
-		
-		if( bRestoreBackupAngles )
-		{
-			m_fYaw   = m_fYawBackup;
-			m_fPitch = m_fPitchBackup;
-		}
+		m_fYaw   = m_fYawBackup;
+		m_fPitch = m_fPitchBackup;
 	}
 	else
 	{
@@ -5150,7 +5147,7 @@ void CPlayerMgr::AllowPlayerMovement(LTBOOL bAllowPlayerMovement)
 {
 	m_bAllowPlayerMovement = bAllowPlayerMovement;
 
-	SetMouseInput( bAllowPlayerMovement, LTFALSE );
+	SetMouseInput(bAllowPlayerMovement);
 }
 
 
