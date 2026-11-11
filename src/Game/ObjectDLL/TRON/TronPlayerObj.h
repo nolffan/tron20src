@@ -79,6 +79,7 @@ class CTronPlayerObj : public CPlayerObj
 		virtual void	TronUnknownVirtual105( LTBOOL bOn );
 		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
 		virtual bool	TronUnknownVirtual128( WEAPON const* pWeapon );
+		virtual bool	TronUnknownVirtual129( uint8 nWeaponId );
 
 	protected:
 

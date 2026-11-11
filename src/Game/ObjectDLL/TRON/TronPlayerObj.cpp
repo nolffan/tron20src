@@ -1696,3 +1696,25 @@ bool CTronPlayerObj::TronUnknownVirtual128( WEAPON const* pWeapon )
 
 	return true;
 }
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual129
+//
+//	PURPOSE:	Acquire what a player weapon needs (RETAIL: retail
+//				0x10066e30)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::TronUnknownVirtual129( uint8 nWeaponId )
+{
+	if( !g_pWeaponMgr->IsPlayerWeapon( nWeaponId ))
+		return false;
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( nWeaponId );
+	if( !pWeapon )
+		return false;
+
+	return TronUnknownVirtual128( pWeapon );
+}
