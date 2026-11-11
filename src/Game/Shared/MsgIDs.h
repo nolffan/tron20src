@@ -111,8 +111,8 @@
 	#define MPROJ_DISC_TRACKING_POINT_GUIDED    102
 	#define MPROJ_DISC_TRACKING_CONTROL_LINE    103
 
-#define MID_CLIENT_LOADED						139
-#define MID_SWITCHINGWORLDSSTATE				140
+#define MID_CLIENT_LOADED						144	// RETAIL: 144 in Tron (retail CGameServerShell::OnMessage 0x100deab0 sends it to HandleClientLoaded)
+#define MID_SWITCHINGWORLDSSTATE				145	// RETAIL: 145 in Tron (retail Object.lto 0x100dda93, 0x100e1a34)
 enum SwitchingWorldsState
 {
 	eSwitchingWorldsStateNone,

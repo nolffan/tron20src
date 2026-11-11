@@ -22,39 +22,89 @@ namespace
 #endif
 }
 
+// PORT: NOLF2's per game type options and restriction sets (see ProfileUtils.h)
+StringSet				ServerGameOptions::m_setRestrictedWeapons;
+StringSet				ServerGameOptions::m_setRestrictedAmmo;
+StringSet				ServerGameOptions::m_setRestrictedGear;
+CoopGameOptions			ServerGameOptions::m_Coop;
+DMGameOptions			ServerGameOptions::m_DM;
+TeamDMGameOptions		ServerGameOptions::m_TeamDM;
+DoomsdayGameOptions		ServerGameOptions::m_DD;
+
+// RETAIL: Object.lto 0x10114530
 ServerGameOptions::ServerGameOptions( )
 {
 	Clear( );
 }
 
+// RETAIL: Object.lto 0x10114690, CShell.dll 0x100e9740
 void ServerGameOptions::Clear( )
 {
-	m_sProfileName = "";
-
-	m_eGameType = eGameTypeCooperative;
-
+	m_sOptionsName = ".Default";
+	m_sSessionName = "";
 	m_sPassword = "";
-	m_bUsePassword = false;
-	m_sScmdPassword = "";
-	m_bAllowScmdCommands = false;
+	m_sScmdPassword = "reindeerflotilla";
 
-	m_bDedicated = false;
-	m_bLANOnly = false;
-	m_bPreCacheAssets = true;
-	m_bPerformanceTest = false;
+	m_eGameType = eGameTypeDiscArena;
 	m_nPort = DEFAULT_PORT;
 	m_nBandwidthServer = 3;
 	m_nBandwidthServerCustom = g_BandwidthServer[m_nBandwidthServer];
-	m_setRestrictedWeapons.clear( );
-	m_setRestrictedAmmo.clear( );
-	m_setRestrictedGear.clear( );
+	m_bUsePassword = false;
+	m_bDedicated = false;
+	m_bLANOnly = false;
+	m_bAllowScmdCommands = false;
 	m_sModName = "";
 
-	m_Coop.Clear();
-	m_DM.Clear();
-	m_TeamDM.Clear();
-	m_DD.Clear();
-	
+	m_nTournMaxPlayers = 8;
+	m_nTournMaxTeamSize = 2;
+	m_bTournFriendlyFire = false;
+	m_bTournDiscsInSpectator = true;
+	m_bTournAllowAutoAim = true;
+	m_nTournPointsPerMatch = 3;
+	m_nTournMatchTimeLimit = 5;
+	m_nTournTeamsToStart = 2;
+	m_nTournMode = 0;
+	m_nTournGamesPerMap = 1;
+	m_nTournPreGameDelay = 30;
+	m_nTournMaxPing = 0;
+	m_nTournAirControl = 50;
+	m_saTournMaps.clear( );
+
+	m_nArenaMaxPlayers = 8;
+	m_nArenaMaxTeamSize = 2;
+	m_bArenaFriendlyFire = false;
+	m_bArenaDiscsInSpectator = true;
+	m_bArenaAllowAutoAim = true;
+	m_nArenaPointsPerMatch = 3;
+	m_nArenaMatchTimeLimit = 5;
+	m_nArenaWinLimit = 5;
+	m_nArenaTimeLimit = 20;
+	m_nArenaGamesPerMap = 1;
+	m_nArenaPreGameDelay = 0;
+	m_nArenaMaxPing = 0;
+	m_nArenaAirControl = 50;
+	m_saArenaMaps.clear( );
+
+	m_nLCMaxPlayers = 8;
+	m_saLCMaps.clear( );
+	m_nLCTrailLength = 1;
+	m_nLCGameSpeed = 1;
+	m_nLCKillPointValue = 1;
+	m_nLCMaxTeamSize = 2;
+	m_nLCAllowedCycleType = 0;
+	m_nLCWaitForPlayersTime = 0;
+	m_nLCTotalRaces = 5;
+	m_nLCTotalPoints = 0;
+	m_nLCTotalTime = 0;
+	m_nLCMaxPing = 80;
+	m_nLCPowerups = 0xFFFFFFFF;
+	m_nLCSelfKillPointValue = -1;
+	m_nLCWinRacePointValue = 6;
+
+	m_sProfileName = "";
+	m_bPreCacheAssets = true;
+	m_bPerformanceTest = false;
+	m_nTronUnknownCC = 0;
 }
 
 static void StringSetToDelimitedString( StringSet const& sSet, std::string& sDelimitedString, char const* pszDelimiter )
@@ -100,118 +150,295 @@ static void DelimitedStringToStringSet( std::string const& sDelimitedString, Str
 	}
 }
 
+#define MAX_MAPS_IN_LIST	32
+
+// Reads a map list ("Map00", "Map01"... while they exist).
+static void LoadMapList( CButeMgr& bute, char const* pszTag, StringArray& saMaps )
+{
+	char szKey[32];
+	int nMap = 0;
+	sprintf( szKey, "Map%02d", nMap );
+	saMaps.clear( );
+	while( bute.Exist( pszTag, szKey ))
+	{
+		std::string sMap = bute.GetString( pszTag, szKey, "" );
+		if( !sMap.empty( ))
+			saMaps.push_back( sMap );
+		nMap++;
+		sprintf( szKey, "Map%02d", nMap );
+	}
+}
+
+// Writes a map list, blanking the rest of the MAX_MAPS_IN_LIST keys.
+static void SaveMapList( CButeMgr& bute, char const* pszTag, StringArray const& saMaps )
+{
+	char szKey[32];
+	int nMap = 0;
+	StringArray::const_iterator iter = saMaps.begin( );
+	for( ; iter != saMaps.end( ) && nMap < MAX_MAPS_IN_LIST; iter++, nMap++ )
+	{
+		sprintf( szKey, "Map%02d", nMap );
+		bute.SetString( pszTag, szKey, iter->c_str( ));
+	}
+	for( ; nMap < MAX_MAPS_IN_LIST; nMap++ )
+	{
+		sprintf( szKey, "Map%02d", nMap );
+		bute.SetString( pszTag, szKey, "" );
+	}
+}
+
+// RETAIL: CShell.dll 0x100ea210 (the client's only)
 bool ServerGameOptions::LoadFromBute( CButeMgr& bute )
 {
-	char const szTagName[] = "Multiplayer";
-	std::string sAttName = "";
+	char const szSettings[] = "Settings";
+	char const szTourn[] = "DiscTournament";
+	char const szArena[] = "DiscArena";
+	char const szLC[] = "LightCycles";
 
-	char szString[256];
-	
-	m_eGameType = ( GameType )bute.GetInt( szTagName,"GameType", eGameTypeCooperative );
-	m_bUsePassword = bute.GetBool( szTagName, "UsePassword", false );
-	bute.GetString( szTagName, "Password", m_sPassword.c_str( ), szString, ARRAY_LEN( szString ));
-	m_sPassword = szString;
-	bute.GetString( szTagName, "ScmdPassword", m_sScmdPassword.c_str( ), szString, ARRAY_LEN( szString ));
-	m_sScmdPassword = szString;
-	m_bAllowScmdCommands = bute.GetBool( szTagName, "AllowScmdCommands", false );
+	m_sSessionName = bute.GetString( szSettings, "ServerName", m_sSessionName.c_str( ));
+	m_sPassword = bute.GetString( szSettings, "Password", m_sPassword.c_str( ));
+	m_sScmdPassword = bute.GetString( szSettings, "SCMDPassword", m_sScmdPassword.c_str( ));
+	m_eGameType = ( uint8 )bute.GetInt( szSettings, "GameType", m_eGameType );
+	m_nPort = bute.GetInt( szSettings, "Port", m_nPort );
+	m_nBandwidthServer = ( uint8 )bute.GetInt( szSettings, "Bandwidth", m_nBandwidthServer );
+	m_nBandwidthServerCustom = bute.GetInt( szSettings, "BandwidthCustom", m_nBandwidthServerCustom );
+	m_bUsePassword = bute.GetInt( szSettings, "Locked", m_bUsePassword ) > 0;
+	m_bDedicated = bute.GetInt( szSettings, "Dedicated", m_bDedicated ) > 0;
+	m_bLANOnly = bute.GetInt( szSettings, "LANOnly", m_bLANOnly ) > 0;
+	m_bAllowScmdCommands = bute.GetInt( szSettings, "AllowSCMD", m_bAllowScmdCommands ) > 0;
 
-	m_nPort = ( uint16 )bute.GetInt( szTagName,"Port", DEFAULT_PORT );
+	m_nTournMaxPlayers = ( uint8 )bute.GetInt( szTourn, "MaxPlayers", m_nTournMaxPlayers );
+	m_nTournMaxTeamSize = ( uint8 )bute.GetInt( szTourn, "MaxTeamSize", m_nTournMaxTeamSize );
+	m_bTournFriendlyFire = bute.GetInt( szTourn, "FriendlyFire", m_bTournFriendlyFire ) > 0;
+	m_bTournDiscsInSpectator = bute.GetInt( szTourn, "DiscsInSpectator", m_bTournDiscsInSpectator ) > 0;
+	m_bTournAllowAutoAim = bute.GetInt( szTourn, "AllowAutoAim", m_bTournAllowAutoAim ) > 0;
+	m_nTournPointsPerMatch = ( uint8 )bute.GetInt( szTourn, "PointsPerMatch", m_nTournPointsPerMatch );
+	m_nTournMatchTimeLimit = ( uint8 )bute.GetInt( szTourn, "MatchTimeLimit", m_nTournMatchTimeLimit );
+	m_nTournTeamsToStart = ( uint8 )bute.GetInt( szTourn, "TeamsToStart", m_nTournTeamsToStart );
+	m_nTournMode = bute.GetInt( szTourn, "TournamentMode", m_nTournMode );
+	m_nTournGamesPerMap = ( uint8 )bute.GetInt( szTourn, "GamesPerMap", m_nTournGamesPerMap );
+	m_nTournPreGameDelay = ( uint8 )bute.GetInt( szTourn, "PreGameDelay", m_nTournPreGameDelay );
+	m_nTournMaxPing = ( uint16 )bute.GetInt( szTourn, "MaxPing", m_nTournMaxPing );
+	m_nTournAirControl = ( uint8 )bute.GetInt( szTourn, "AirControl", m_nTournAirControl );
+	LoadMapList( bute, szTourn, m_saTournMaps );
 
-	m_nBandwidthServer = (uint8)bute.GetInt(szTagName,"BandwidthServer",3);
-	m_nBandwidthServerCustom = (uint16)bute.GetInt(szTagName,"BandwidthServerCustom",g_BandwidthServer[3]);
-	
-	m_bLANOnly = bute.GetBool( szTagName, "LANOnly", false );
-	m_bDedicated = bute.GetBool( szTagName, "Dedicated", false );
+	m_nArenaMaxPlayers = ( uint8 )bute.GetInt( szArena, "MaxPlayers", m_nArenaMaxPlayers );
+	m_nArenaMaxTeamSize = ( uint8 )bute.GetInt( szArena, "MaxTeamSize", m_nArenaMaxTeamSize );
+	m_bArenaFriendlyFire = bute.GetInt( szArena, "FriendlyFire", m_bArenaFriendlyFire ) > 0;
+	m_bArenaDiscsInSpectator = bute.GetInt( szArena, "DiscsInSpectator", m_bArenaDiscsInSpectator ) > 0;
+	m_bArenaAllowAutoAim = bute.GetInt( szArena, "AllowAutoAim", m_bArenaAllowAutoAim ) > 0;
+	m_nArenaPointsPerMatch = ( uint8 )bute.GetInt( szArena, "PointsPerMatch", m_nArenaPointsPerMatch );
+	m_nArenaMatchTimeLimit = ( uint8 )bute.GetInt( szArena, "MatchTimeLimit", m_nArenaMatchTimeLimit );
+	m_nArenaWinLimit = ( uint8 )bute.GetInt( szArena, "WinLimit", m_nArenaWinLimit );
+	m_nArenaTimeLimit = ( uint8 )bute.GetInt( szArena, "TimeLimit", m_nArenaTimeLimit );
+	m_nArenaGamesPerMap = ( uint8 )bute.GetInt( szArena, "GamesPerMap", m_nArenaGamesPerMap );
+	m_nArenaPreGameDelay = ( uint8 )bute.GetInt( szArena, "PreGameDelay", m_nArenaPreGameDelay );
+	m_nArenaMaxPing = ( uint16 )bute.GetInt( szArena, "MaxPing", m_nArenaMaxPing );
+	m_nArenaAirControl = ( uint8 )bute.GetInt( szArena, "AirControl", m_nArenaAirControl );
+	LoadMapList( bute, szArena, m_saArenaMaps );
 
-	std::string sDelimitedString = "";
+	// RETAIL: "Lightcycles" for the max players and maps, "LightCycles" for
+	// the rest (the bute manager's tags are not case sensitive)
+	m_nLCMaxPlayers = ( uint8 )bute.GetInt( "Lightcycles", "MaxPlayers", m_nLCMaxPlayers );
+	m_nLCMaxTeamSize = ( uint8 )bute.GetInt( szLC, "MaxTeamSize", m_nLCMaxTeamSize );
+	m_nLCTrailLength = bute.GetInt( szLC, "TrailLength", m_nLCTrailLength );
+	m_nLCGameSpeed = bute.GetInt( szLC, "GameSpeed", m_nLCGameSpeed );
+	m_nLCAllowedCycleType = bute.GetInt( szLC, "AllowedCycleType", m_nLCAllowedCycleType );
+	m_nLCWaitForPlayersTime = ( uint8 )bute.GetInt( szLC, "WaitForPlayersTime", m_nLCWaitForPlayersTime );
+	m_nLCTotalRaces = ( uint8 )bute.GetInt( szLC, "TotalRaces", m_nLCTotalRaces );
+	m_nLCTotalPoints = ( uint16 )bute.GetInt( szLC, "TotalPoints", m_nLCTotalPoints );
+	m_nLCTotalTime = ( uint16 )bute.GetInt( szLC, "TotalTime", m_nLCTotalTime );
+	m_nLCMaxPing = ( uint16 )bute.GetInt( szLC, "MaxPing", m_nLCMaxPing );
+	// PORT: the powerup flags (retail's reads are not yet written out)
+	m_nLCKillPointValue = ( int8 )bute.GetInt( szLC, "KillPointValue", m_nLCKillPointValue );
+	m_nLCSelfKillPointValue = ( int8 )bute.GetInt( szLC, "SelfKillPointValue", m_nLCSelfKillPointValue );
+	m_nLCWinRacePointValue = ( int8 )bute.GetInt( szLC, "WinRacePointValue", m_nLCWinRacePointValue );
+	LoadMapList( bute, "Lightcycles", m_saLCMaps );
 
-	sDelimitedString = bute.GetString( szTagName, "WeaponRestrictions", "" );
-	DelimitedStringToStringSet( sDelimitedString, m_setRestrictedWeapons, "," );
-	sDelimitedString = bute.GetString( szTagName, "AmmoRestrictions", "" );
-	DelimitedStringToStringSet( sDelimitedString, m_setRestrictedAmmo, "," );
-	sDelimitedString = bute.GetString( szTagName, "GearRestrictions", "" );
-	DelimitedStringToStringSet( sDelimitedString, m_setRestrictedGear, "," );
-
-	m_Coop.LoadFromBute( bute );
-	m_DM.LoadFromBute( bute );
-	m_TeamDM.LoadFromBute( bute );
-	m_DD.LoadFromBute( bute );
-
-	
 	return true;
 }
 
+// RETAIL: CShell.dll 0x100e9ab0 (the client's only)
 bool ServerGameOptions::SaveToBute( CButeMgr& bute )
 {
-	char const szTagName[] = "Multiplayer";
+	// The default options are not saved.
+	if( stricmp( m_sOptionsName.c_str( ), ".Default" ) == 0 )
+		return false;
 
-	bute.SetInt(szTagName,"GameType", m_eGameType);
+	char const szSettings[] = "Settings";
+	char const szTourn[] = "DiscTournament";
+	char const szArena[] = "DiscArena";
+	char const szLC[] = "LightCycles";
 
-	bute.SetBool(szTagName,"UsePassword",m_bUsePassword);
-	bute.SetString(szTagName, "Password",m_sPassword.c_str());
+	bute.SetString( szSettings, "ServerName", m_sSessionName.c_str( ));
+	bute.SetString( szSettings, "Password", m_sPassword.c_str( ));
+	bute.SetString( szSettings, "SCMDPassword", m_sScmdPassword.c_str( ));
+	bute.SetInt( szSettings, "GameType", m_eGameType );
+	bute.SetInt( szSettings, "Port", m_nPort );
+	bute.SetInt( szSettings, "Bandwidth", m_nBandwidthServer );
+	bute.SetInt( szSettings, "BandwidthCustom", m_nBandwidthServerCustom );
+	bute.SetInt( szSettings, "Locked", m_bUsePassword );
+	bute.SetInt( szSettings, "Dedicated", m_bDedicated );
+	bute.SetInt( szSettings, "LANOnly", m_bLANOnly );
+	bute.SetInt( szSettings, "AllowSCMD", m_bAllowScmdCommands );
 
-	bute.SetString(szTagName, "ScmdPassword",m_sScmdPassword.c_str());
-	bute.SetBool(szTagName,"AllowScmdCommands",m_bAllowScmdCommands);
+	bute.SetInt( szTourn, "MaxPlayers", m_nTournMaxPlayers );
+	bute.SetInt( szTourn, "MaxTeamSize", m_nTournMaxTeamSize );
+	bute.SetInt( szTourn, "FriendlyFire", m_bTournFriendlyFire );
+	bute.SetInt( szTourn, "DiscsInSpectator", m_bTournDiscsInSpectator );
+	bute.SetInt( szTourn, "AllowAutoAim", m_bTournAllowAutoAim );
+	bute.SetInt( szTourn, "PointsPerMatch", m_nTournPointsPerMatch );
+	bute.SetInt( szTourn, "MatchTimeLimit", m_nTournMatchTimeLimit );
+	bute.SetInt( szTourn, "TeamsToStart", m_nTournTeamsToStart );
+	bute.SetInt( szTourn, "TournamentMode", m_nTournMode );
+	bute.SetInt( szTourn, "GamesPerMap", m_nTournGamesPerMap );
+	bute.SetInt( szTourn, "PreGameDelay", m_nTournPreGameDelay );
+	bute.SetInt( szTourn, "MaxPing", m_nTournMaxPing );
+	bute.SetInt( szTourn, "AirControl", m_nTournAirControl );
+	SaveMapList( bute, szTourn, m_saTournMaps );
 
-	bute.SetInt(szTagName,"Port",(int)m_nPort);
+	bute.SetInt( szArena, "MaxPlayers", m_nArenaMaxPlayers );
+	bute.SetInt( szArena, "MaxTeamSize", m_nArenaMaxTeamSize );
+	bute.SetInt( szArena, "FriendlyFire", m_bArenaFriendlyFire );
+	bute.SetInt( szArena, "DiscsInSpectator", m_bArenaDiscsInSpectator );
+	bute.SetInt( szArena, "AllowAutoAim", m_bArenaAllowAutoAim );
+	bute.SetInt( szArena, "PointsPerMatch", m_nArenaPointsPerMatch );
+	bute.SetInt( szArena, "MatchTimeLimit", m_nArenaMatchTimeLimit );
+	bute.SetInt( szArena, "WinLimit", m_nArenaWinLimit );
+	bute.SetInt( szArena, "TimeLimit", m_nArenaTimeLimit );
+	bute.SetInt( szArena, "GamesPerMap", m_nArenaGamesPerMap );
+	bute.SetInt( szArena, "PreGameDelay", m_nArenaPreGameDelay );
+	bute.SetInt( szArena, "MaxPing", m_nArenaMaxPing );
+	bute.SetInt( szArena, "AirControl", m_nArenaAirControl );
+	SaveMapList( bute, szArena, m_saArenaMaps );
 
-	bute.SetInt( szTagName, "BandwidthServer", ( int )m_nBandwidthServer );
-	bute.SetInt( szTagName, "BandwidthServerCustom", ( int )m_nBandwidthServerCustom );
-	
-	bute.SetBool( szTagName, "LANOnly", m_bLANOnly );
-	bute.SetBool( szTagName, "Dedicated", m_bDedicated );
-
-	std::string sDelimitedString = "";
-
-	StringSetToDelimitedString( m_setRestrictedWeapons, sDelimitedString, "," );
-	bute.SetString( szTagName, "WeaponRestrictions", sDelimitedString.c_str( ));
-	StringSetToDelimitedString( m_setRestrictedAmmo, sDelimitedString, "," );
-	bute.SetString( szTagName, "AmmoRestrictions", sDelimitedString.c_str( ));
-	StringSetToDelimitedString( m_setRestrictedGear, sDelimitedString, "," );
-	bute.SetString( szTagName, "GearRestrictions", sDelimitedString.c_str( ));
-
-	m_Coop.SaveToBute( bute );
-	m_DM.SaveToBute( bute );
-	m_TeamDM.SaveToBute( bute );
-	m_DD.SaveToBute( bute );
+	bute.SetInt( "Lightcycles", "MaxPlayers", m_nLCMaxPlayers );
+	bute.SetInt( szLC, "MaxTeamSize", m_nLCMaxTeamSize );
+	bute.SetInt( szLC, "TrailLength", m_nLCTrailLength );
+	bute.SetInt( szLC, "GameSpeed", m_nLCGameSpeed );
+	bute.SetInt( szLC, "AllowedCycleType", m_nLCAllowedCycleType );
+	bute.SetInt( szLC, "WaitForPlayersTime", m_nLCWaitForPlayersTime );
+	bute.SetInt( szLC, "TotalRaces", m_nLCTotalRaces );
+	bute.SetInt( szLC, "TotalPoints", m_nLCTotalPoints );
+	bute.SetInt( szLC, "TotalTime", m_nLCTotalTime );
+	bute.SetInt( szLC, "MaxPing", m_nLCMaxPing );
+	bute.SetBool( szLC, "PowerupAllowShield", ( m_nLCPowerups >> 0 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowTurbo", ( m_nLCPowerups >> 1 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowTrailSpike", ( m_nLCPowerups >> 2 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowMissile", ( m_nLCPowerups >> 3 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowTurboCurse", ( m_nLCPowerups >> 5 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowGrab", ( m_nLCPowerups >> 6 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowTrailReset", ( m_nLCPowerups >> 7 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowForceUse", ( m_nLCPowerups >> 8 ) & 1 );
+	bute.SetBool( szLC, "PowerupAllowWallExtender", ( m_nLCPowerups >> 4 ) & 1 );
+	bute.SetInt( szLC, "KillPointValue", m_nLCKillPointValue );
+	bute.SetInt( szLC, "SelfKillPointValue", m_nLCSelfKillPointValue );
+	bute.SetInt( szLC, "WinRacePointValue", m_nLCWinRacePointValue );
+	SaveMapList( bute, "Lightcycles", m_saLCMaps );
 
 	return true;
 }
 
+// RETAIL: Object.lto 0x101149d0
 ServerGameOptions& ServerGameOptions::Copy( ServerGameOptions const& other )
 {
 	if( &other == this )
 		return *this;
 
-	m_sProfileName = other.m_sProfileName;
-
-	m_eGameType = other.m_eGameType;
-	m_bUsePassword = other.m_bUsePassword;
+	m_sOptionsName = other.m_sOptionsName;
+	m_sSessionName = other.m_sSessionName;
 	m_sPassword = other.m_sPassword;
 	m_sScmdPassword = other.m_sScmdPassword;
-	m_bAllowScmdCommands = other.m_bAllowScmdCommands;
-
-	m_bDedicated = other.m_bDedicated;
-	m_bLANOnly = other.m_bLANOnly;
-	m_bPreCacheAssets = other.m_bPreCacheAssets;
-	m_bPerformanceTest = other.m_bPerformanceTest;
-
+	m_eGameType = other.m_eGameType;
 	m_nPort = other.m_nPort;
 	m_nBandwidthServer = other.m_nBandwidthServer;
 	m_nBandwidthServerCustom = other.m_nBandwidthServerCustom;
-
-	m_setRestrictedWeapons = other.m_setRestrictedWeapons;
-	m_setRestrictedAmmo = other.m_setRestrictedAmmo;
-	m_setRestrictedGear = other.m_setRestrictedGear;
-
+	m_bUsePassword = other.m_bUsePassword;
+	m_bDedicated = other.m_bDedicated;
+	m_bLANOnly = other.m_bLANOnly;
+	m_bAllowScmdCommands = other.m_bAllowScmdCommands;
 	m_sModName = other.m_sModName;
 
-	m_Coop.Copy(other.m_Coop);
-	m_DM.Copy(other.m_DM);
-	m_TeamDM.Copy(other.m_TeamDM);
-	m_DD.Copy(other.m_DD);
+	m_nTournMaxPlayers = other.m_nTournMaxPlayers;
+	m_nTournMaxTeamSize = other.m_nTournMaxTeamSize;
+	m_bTournFriendlyFire = other.m_bTournFriendlyFire;
+	m_bTournDiscsInSpectator = other.m_bTournDiscsInSpectator;
+	m_bTournAllowAutoAim = other.m_bTournAllowAutoAim;
+	m_nTournPointsPerMatch = other.m_nTournPointsPerMatch;
+	m_nTournMatchTimeLimit = other.m_nTournMatchTimeLimit;
+	m_nTournTeamsToStart = other.m_nTournTeamsToStart;
+	m_nTournMode = other.m_nTournMode;
+	m_nTournGamesPerMap = other.m_nTournGamesPerMap;
+	m_nTournPreGameDelay = other.m_nTournPreGameDelay;
+	m_nTournMaxPing = other.m_nTournMaxPing;
+	m_nTournAirControl = other.m_nTournAirControl;
+	m_saTournMaps.clear( );
+	for( StringArray::const_iterator iterTournMaps = other.m_saTournMaps.begin( ); iterTournMaps != other.m_saTournMaps.end( ); iterTournMaps++ )
+		m_saTournMaps.push_back( *iterTournMaps );
+
+	m_nArenaMaxPlayers = other.m_nArenaMaxPlayers;
+	m_nArenaMaxTeamSize = other.m_nArenaMaxTeamSize;
+	m_bArenaFriendlyFire = other.m_bArenaFriendlyFire;
+	m_bArenaDiscsInSpectator = other.m_bArenaDiscsInSpectator;
+	m_bArenaAllowAutoAim = other.m_bArenaAllowAutoAim;
+	m_nArenaPointsPerMatch = other.m_nArenaPointsPerMatch;
+	m_nArenaMatchTimeLimit = other.m_nArenaMatchTimeLimit;
+	m_nArenaWinLimit = other.m_nArenaWinLimit;
+	m_nArenaTimeLimit = other.m_nArenaTimeLimit;
+	m_nArenaGamesPerMap = other.m_nArenaGamesPerMap;
+	m_nArenaPreGameDelay = other.m_nArenaPreGameDelay;
+	m_nArenaMaxPing = other.m_nArenaMaxPing;
+	m_nArenaAirControl = other.m_nArenaAirControl;
+	m_saArenaMaps.clear( );
+	for( StringArray::const_iterator iterArenaMaps = other.m_saArenaMaps.begin( ); iterArenaMaps != other.m_saArenaMaps.end( ); iterArenaMaps++ )
+		m_saArenaMaps.push_back( *iterArenaMaps );
+
+	m_nLCMaxPlayers = other.m_nLCMaxPlayers;
+	m_nLCAllowedCycleType = other.m_nLCAllowedCycleType;
+	m_nLCGameSpeed = other.m_nLCGameSpeed;
+	m_nLCTrailLength = other.m_nLCTrailLength;
+	m_nLCMaxTeamSize = other.m_nLCMaxTeamSize;
+	m_nLCWaitForPlayersTime = other.m_nLCWaitForPlayersTime;
+	m_nLCTotalRaces = other.m_nLCTotalRaces;
+	m_nLCTotalPoints = other.m_nLCTotalPoints;
+	m_nLCTotalTime = other.m_nLCTotalTime;
+	m_nLCMaxPing = other.m_nLCMaxPing;
+	m_nLCPowerups = other.m_nLCPowerups;
+	m_nLCKillPointValue = other.m_nLCKillPointValue;
+	m_nLCSelfKillPointValue = other.m_nLCSelfKillPointValue;
+	m_nLCWinRacePointValue = other.m_nLCWinRacePointValue;
+	m_saLCMaps.clear( );
+	for( StringArray::const_iterator iterLCMaps = other.m_saLCMaps.begin( ); iterLCMaps != other.m_saLCMaps.end( ); iterLCMaps++ )
+		m_saLCMaps.push_back( *iterLCMaps );
+
+	m_sProfileName = other.m_sProfileName;
+	m_bPreCacheAssets = other.m_bPreCacheAssets;
+	m_bPerformanceTest = other.m_bPerformanceTest;
+	m_nTronUnknownCC = other.m_nTronUnknownCC;
 
 	return *this;
+}
+
+// RETAIL: Object.lto 0x10114e20: the map list of the game type
+StringArray* ServerGameOptions::GetMapList( )
+{
+	switch( m_eGameType )
+	{
+		case eGameTypeDiscArena:
+			return &m_saArenaMaps;
+		case eGameTypeDiscTournament:
+			return &m_saTournMaps;
+		case eGameTypeMultiplayerLightcycles:
+			return &m_saLCMaps;
+	}
+
+	return NULL;
+}
+
+// RETAIL: Object.lto 0x10114e50 (the name is ours)
+uint32 ServerGameOptions::GetTronUnknownCC( ) const
+{
+	return m_nTronUnknownCC;
 }
 
 bool ServerGameOptions::IsDefaultCampaign() const
@@ -264,79 +491,27 @@ void ServerGameOptions::SetCampaignName(const char*	pszName)
 
 const char*	ServerGameOptions::GetSessionName() const
 {
-	switch (m_eGameType)
-	{
-	case eGameTypeCooperative:
-		return m_Coop.m_sSessionName.c_str();
-		break;
-	case eGameTypeDeathmatch:
-		return m_DM.m_sSessionName.c_str();
-		break;
-	case eGameTypeTeamDeathmatch:
-		return m_TeamDM.m_sSessionName.c_str();
-		break;
-	case eGameTypeDoomsDay:
-		return m_DD.m_sSessionName.c_str();
-		break;
-		
-	};
-
-
-	return DEFAULT_SESSION;
+	return m_sSessionName.c_str( );
 }
 void ServerGameOptions::SetSessionName(const char*	pszName)
 {
-	switch (m_eGameType)
-	{
-	case eGameTypeCooperative:
-		m_Coop.m_sSessionName = pszName;
-		break;
-	case eGameTypeDeathmatch:
-		m_DM.m_sSessionName = pszName;
-		break;
-	case eGameTypeTeamDeathmatch:
-		m_TeamDM.m_sSessionName = pszName;
-		break;
-	case eGameTypeDoomsDay:
-		m_DD.m_sSessionName = pszName;
-		break;
-	};
+	m_sSessionName = pszName;
 }
 
 
+// PORT: Tron's game types' max players (retail's own not yet located)
 uint8 ServerGameOptions::GetMaxPlayers() const
 {
 	switch (m_eGameType)
 	{
-		case eGameTypeCooperative:
-		{
-			return m_Coop.m_nMaxPlayers;
-		}
-		break;
-
-		case eGameTypeDeathmatch:
-		{	
-			return m_DM.m_nMaxPlayers;
-		}
-		break;
-		
-		case eGameTypeTeamDeathmatch:
-		{
-			return m_TeamDM.m_nMaxPlayers;
-		}
-		break;
-
-		case eGameTypeDoomsDay:
-		{
-			return m_DD.m_nMaxPlayers;
-		}
-		break;
-		
+		case eGameTypeDiscTournament:
+			return m_nTournMaxPlayers;
+		case eGameTypeDiscArena:
+			return m_nArenaMaxPlayers;
+		case eGameTypeMultiplayerLightcycles:
+			return m_nLCMaxPlayers;
 		default:
-		{
 			return 0;
-		}
-		break;
 	};
 }
 
@@ -1011,12 +1186,12 @@ const char*	GetCampaignFile( ServerGameOptions const& serverGameOptions )
 
 	if( serverGameOptions.IsDefaultCampaign() )
 	{
-		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), serverGameOptions.m_eGameType );
+		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), ( GameType )serverGameOptions.m_eGameType );
 		sCampaignFile += DEFAULT_CAMPAIGN_FILE;
 	}
 	else
 	{
-		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), serverGameOptions.m_eGameType );
+		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), ( GameType )serverGameOptions.m_eGameType );
 		sCampaignFile += serverGameOptions.GetCampaignName(); 
 		sCampaignFile += ".txt";
 	}

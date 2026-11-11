@@ -12,14 +12,14 @@
 0x00c,ProcessPacket,3 arguments
 0x010,OnPlaybackFinish,empty
 0x014,SRand,1 argument; calls srand
-0x018,OnRemoveClient,1 argument; the remaining one-argument client slot
+0x018,OnClientExitWorld,1 argument; the player removed message then RemoveClientFromList and SetUpdateGameServ (m_bUpdateGameServ = 1) and the player object removed
 0x01c,PreStartWorld,0.98
 0x020,PostStartWorld,0 arguments; CTron's calls CGameServerShell::PostStartWorld
 0x024,OnServerTerm,0 arguments (the remaining)
 0x028,ServerAppMessageFn,1 argument; ScmdServer first
-0x02c,OnAddClient,0.66; 1 argument
+0x02c,OnAddClient,0.66; 1 argument; returns bool (the ban manager's verdict)
 0x030,OnServerInitialized,0.91
-0x034,OnClientExitWorld,1 argument; CTron's calls the base
+0x034,OnRemoveClient,1 argument; the player's client cleared then ScmdServer::OnRemoveClient and ServerAppRemoveClient; CTron's calls the base
 0x038,OnClientEnterWorld,0.99
 0x03c,OnMessage,0.88; 2 arguments
 0x040,OnObjectMessage,2 arguments; empty

@@ -115,12 +115,14 @@ CVarTrack			g_NetAudioTaunts;
 CVarTrack			g_vtAIHitPtsPlayerIncreasePercent;
 CVarTrack			g_vtAIArmorPtsPlayerIncreasePercent;
 
-CVarTrack			g_vtRespawnWaitTime;
-CVarTrack			g_vtMultiplayerRespawnWaitTime;
-CVarTrack			g_vtDoomsdayRespawnWaitTime;
+// RETAIL: Tron has no respawn wait time trackers (nor their strings), but this
+CVarTrack			g_vtDisableSWM;
 
 
 CGameServerShell*   g_pGameServerShell = LTNULL;
+
+// PORT: NOLF2's (GameServerShell.h)
+int CGameServerShell::m_nGetPlayerIndex = 0;
 
 // ----------------------------------------------------------------------- //
 // Helpers for world time conversion.
@@ -137,11 +139,8 @@ inline float TODHoursToSeconds(float time)
 }
 
 
-ClientData::ClientData( )
-{
-	m_hClient = NULL;
-	m_nLastClientUpdateTime = GetTickCount( );
-}
+// RETAIL: Tron has none of NOLF2 1.x's ClientData (the inactive client
+// timeout): no list of them in its shell, nor their strings
 
 
 
@@ -180,9 +179,7 @@ LTRESULT CGameServerShell::OnServerInitialized()
 	g_vtAIHitPtsPlayerIncreasePercent.Init( g_pLTServer, "AIHitPointsPlayerIncreasePercent", LTNULL, 0.25f );
 	g_vtAIArmorPtsPlayerIncreasePercent.Init( g_pLTServer, "AIArmorPointsPlayerIncreasePercent", LTNULL, 0.25f );
 	g_StairStepHeight.Init(g_pLTServer, STAIR_STEP_HEIGHT_CVAR, LTNULL, DEFAULT_STAIRSTEP_HEIGHT);
-	g_vtRespawnWaitTime.Init( g_pLTServer, "RespawnWaitTime", NULL, 1.0f);
-	g_vtMultiplayerRespawnWaitTime.Init( g_pLTServer, "RespawnMultiWaitTime", NULL, 30.0f);
-	g_vtDoomsdayRespawnWaitTime.Init( g_pLTServer, "RespawnDoomsdayWaitTime", NULL, 15.0f);
+	g_vtDisableSWM.Init( g_pLTServer, "DisableSWM", LTNULL, 0.0f );
 
 
 	// Make sure we are using autodeactivation...
@@ -195,8 +192,10 @@ LTRESULT CGameServerShell::OnServerInitialized()
 	//////////////////////////////////////////////////////////////////////////////
 	// Do all the stuff that used to be in the ctor for the server
 	
+	m_nCurLevel = 0;
 	ClearClientList();
 	SetUpdateGameServ();
+    m_bGameServHosted = LTFALSE;
 
 	if( !InitGameType())
 		return LT_ERROR;
@@ -213,6 +212,7 @@ LTRESULT CGameServerShell::OnServerInitialized()
     m_bFirstUpdate = LTTRUE;
 
 	m_ClientPingSendCounter = 0.0f;	// RETAIL: no time of day or time ramps in Tron
+	m_bUseGameSpy = LTFALSE;
 
 	m_sWorld.Empty( );
 
@@ -248,6 +248,11 @@ LTRESULT CGameServerShell::OnServerInitialized()
 		ASSERT( 0 != m_pServerTrackedNodeMgr );
 	}
 
+	if( IsMultiplayerGame( ))
+	{
+		m_bUseGameSpy = LTTRUE;
+	}
+
 	m_bShowMultiplayerSummary = LTFALSE;
 	m_bStartNextMultiplayerLevel = LTFALSE;
 	m_fSummaryEndTime = 0.0f;
@@ -260,12 +265,12 @@ LTRESULT CGameServerShell::OnServerInitialized()
 			return LT_ERROR;
 		}
 	}
-	if( !m_pServerSaveLoadMgr->Init( (*m_pServerGameOptions).m_sProfileName.c_str( ), IsMultiplayerGame( )))
+	if( !m_pServerSaveLoadMgr->Init( m_ServerGameOptions.m_sProfileName.c_str( ), IsMultiplayerGame( )))
 	{
 		return LT_ERROR;
 	}
 
-	m_bPreCacheAssets = (*m_pServerGameOptions).m_bPreCacheAssets;
+	m_bPreCacheAssets = m_ServerGameOptions.m_bPreCacheAssets;
 
 	m_nPauseCount = 0;
 	m_bClientPaused = false;
@@ -276,18 +281,21 @@ LTRESULT CGameServerShell::OnServerInitialized()
 
 	m_eMinMusicMood = CMusicMgr::eMoodRoutine;
 
-	// Use max on LAN games
-	float fMinBandwidth = ( (*m_pServerGameOptions).m_bLANOnly ) ? k_fMaxBandwidth : 0.0f;
+	m_nSaveVersion = g_pVersionMgr->GetSaveVersion( );
+	m_hstrTronUnknown17490 = LTNULL;
 
-	if( (*m_pServerGameOptions).m_nBandwidthServer < eBandwidth_Custom)
+	// Use max on LAN games
+	float fMinBandwidth = ( m_ServerGameOptions.m_bLANOnly ) ? k_fMaxBandwidth : 0.0f;
+
+	if( m_ServerGameOptions.m_nBandwidthServer < eBandwidth_Custom)
 	{
 		WriteConsoleFloat("BandwidthTargetServer",
-			LTCLAMP(((float)g_BandwidthServer[(*m_pServerGameOptions).m_nBandwidthServer] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+			LTCLAMP(((float)g_BandwidthServer[m_ServerGameOptions.m_nBandwidthServer] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
 	}
 	else
 	{
 		WriteConsoleFloat("BandwidthTargetServer",
-			LTCLAMP(((float)(*m_pServerGameOptions).m_nBandwidthServerCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+			LTCLAMP(((float)m_ServerGameOptions.m_nBandwidthServerCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
 	}
 
 	// Initialize the scmd handler.
@@ -299,26 +307,12 @@ LTRESULT CGameServerShell::OnServerInitialized()
 		return LT_ERROR;
 
 	// Do any game specific initialization.
-	switch( (*m_pServerGameOptions).m_eGameType )
-	{
-		// Single player and coop use the same weapon files...
-
-		case eGameTypeSingle:
-		case eGameTypeCooperative:
-		{
-			g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_FILE );
-		}
-		break;
-
-		case eGameTypeDeathmatch:
-		case eGameTypeTeamDeathmatch:
-		case eGameTypeDoomsDay:
-		{
-			g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_MULTI_FILE );
-			ApplyWeaponRestrictions( );
-		}
-		break;
-	}
+	// RETAIL: the disc games load the multiplayer weapons (retail 0x100dd280);
+	// Tron has no weapon restrictions
+	if( IsRevivePlayerGameType( ))
+		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_MULTI_FILE );
+	else
+		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_FILE );
 
 	// Seed the random number generator so GetRandom() isn't the same each game.
 	// IMPORTANT: reseeding the random number generator should not happen all the time
@@ -364,13 +358,9 @@ CGameServerShell::CGameServerShell() :
 	, m_pAIClassFactory( 0 )
 	, m_pServerTrackedNodeMgr( 0 )
 	, m_pGlobalMgr( 0 )
-	, m_pServerDir( 0 )
 	, m_pCharacterMgr( 0 )
 	, m_bCachedLevelFiles( false )
 {
-	// PORT: NOLF2's options, standing in for Tron's own (GameServerShell.h)
-	m_pServerGameOptions = debug_new( ServerGameOptions );
-
 	m_aCurMessageSourceAddr[0] = 0;
 	m_aCurMessageSourceAddr[1] = 0;
 	m_aCurMessageSourceAddr[2] = 0;
@@ -401,13 +391,6 @@ CGameServerShell::CGameServerShell() :
 
 CGameServerShell::~CGameServerShell()
 {
-	// PORT: (the constructor)
-	if ( m_pServerGameOptions )
-	{
-		debug_delete( m_pServerGameOptions );
-		m_pServerGameOptions = NULL;
-	}
-
 	if ( m_pServerTrackedNodeMgr != 0 )
 	{
 		debug_delete( m_pServerTrackedNodeMgr );
@@ -448,13 +431,6 @@ CGameServerShell::~CGameServerShell()
 		m_pGlobalMgr = 0;
 	}
 
-	// Get rid of the serverdir, if we have one
-	if( m_pServerDir )
-	{
-		delete m_pServerDir;
-	  	m_pServerDir = 0;
-	}
-
 	// Get rid of the object template mgr
 	debug_delete( m_pObjectTemplates );
 	m_pObjectTemplates = 0;
@@ -470,21 +446,19 @@ CGameServerShell::~CGameServerShell()
 		m_pServerMissionMgr = NULL;
 	}
 
+	// RETAIL: not cleared after in Tron (retail 0x100dd6d0)
 	if( m_pServerSaveLoadMgr )
 	{
 		debug_delete( m_pServerSaveLoadMgr );
-		m_pServerSaveLoadMgr = NULL;
 	}
 
-
-	// Remove all remaining clients from our list of clients.
-	ClientDataList::iterator iter = m_ClientDataList.begin( );
-	for( ; iter != m_ClientDataList.end( ); iter++ )
+	// RETAIL: Tron's (GameServerShell.h)
+	if( m_hstrTronUnknown17490 )
 	{
-		ClientData* pClientData = *iter;
-		debug_delete( pClientData );
+		g_pLTServer->FreeString( m_hstrTronUnknown17490 );
+		m_hstrTronUnknown17490 = LTNULL;
 	}
-	m_ClientDataList.clear( );
+
 }
 
 // ----------------------------------------------------------------------- //
@@ -495,20 +469,15 @@ CGameServerShell::~CGameServerShell()
 //
 // ----------------------------------------------------------------------- //
 
-void CGameServerShell::OnAddClient(HCLIENT hClient)
+// RETAIL: Tron's (retail 0x100dd990) returns the ban manager's verdict (the
+// engine refuses the client), and tells its slot 29 rather than sending the
+// teams and players
+bool CGameServerShell::OnAddClient(HCLIENT hClient)
 {
-	DEBUG_CONSOLE_OUTPUT("Add Client", eRarely);
-
-	// Add this client to our list of clients.
-	ClientData* pClientData = debug_new( ClientData );
-	pClientData->m_hClient = hClient;
-	pClientData->m_nLastClientUpdateTime = GetTickCount( );
-	m_ClientDataList.push_back( pClientData );
-
 	// Check if the client is banned.
 	if( !BanIPMgr::Instance( ).OnAddClient( hClient ))
 	{
-		g_pLTServer->KickClient( hClient );
+		return false;
 	}
 
 	// Tell serverapp about it.
@@ -527,32 +496,9 @@ void CGameServerShell::OnAddClient(HCLIENT hClient)
 	cMsg.Writeuint8( m_eSwitchingWorldsState );
 	g_pLTServer->SendToClient( cMsg.Read(), hClient, MESSAGE_GUARANTEED);
 
-	uint32 dwClientId = g_pLTServer->GetClientID( hClient );
+	TronUnknownVirtual74( hClient );
 
-		
-	if( IsTeamGameType() )
-	{
-		// tell the player about the current teams
-		CTeamMgr::Instance().UpdateClient( hClient );
-	}
-
-	// Tell the new Client about all the players already
-	// on the server...
-
-	// Don't just broadcast the list.  That would send messages to clients that aren't fully connected yet.
-	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
-	while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
-	{
-		CPlayerObj* pOldPlayer = *iter;
-		// Make sure the player has a client and has spawned at least once
-		if( pOldPlayer && pOldPlayer->GetClient( ) && pOldPlayer->RespawnCalled())
-		{
-			SendPlayerInfoMsgToClients(hClient, pOldPlayer, MID_PI_EXIST);
-		}
-
-		iter++;
-	}
-
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -563,24 +509,11 @@ void CGameServerShell::OnAddClient(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100ddb30): its slot 30 first; the player removed
+// message is OnClientExitWorld's
 void CGameServerShell::OnRemoveClient(HCLIENT hClient)
 {
-	if (IsMultiplayerGame( ))
-	{
-		// Send a message to all clients, letting them know this user is leaving the world
-
-        uint32 nClientID = g_pLTServer->GetClientID(hClient);
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_PLAYER_REMOVED);
-		cMsg.Writeuint32(nClientID);
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		if (IsTeamGameType())
-		{
-			CTeamMgr::Instance().RemovePlayer( nClientID );
-		}
-	}
-
+	TronUnknownVirtual78( hClient );
 
 	// Clear our client data...
 
@@ -590,24 +523,11 @@ void CGameServerShell::OnRemoveClient(HCLIENT hClient)
         pPlayer->SetClient(LTNULL);
 	}
 
-	// Tell server app about it.
-	ServerAppRemoveClient( hClient );
-
 	// Tell the scmd about it.
 	ScmdServer::Instance( ).OnRemoveClient( hClient );
 
-	// Remove this client from our list of clients.
-	ClientDataList::iterator iter = m_ClientDataList.begin( );
-	for( ; iter != m_ClientDataList.end( ); iter++ )
-	{
-		ClientData* pClientData = *iter;
-		if( pClientData->m_hClient == hClient )
-		{
-			m_ClientDataList.erase( iter );
-			debug_delete( pClientData );
-			break;
-		}
-	}
+	// Tell server app about it.
+	ServerAppRemoveClient( hClient );
 }
 
 // --------------------------------------------------------------------------- //
@@ -859,8 +779,20 @@ void CGameServerShell::SendObjectivesDataToClient( HCLIENT hClient )
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100de1a0) tells the clients first (NOLF2's
+// OnRemoveClient does)
 void CGameServerShell::OnClientExitWorld(HCLIENT hClient)
 {
+	if (IsMultiplayerGame( ))
+	{
+		// Send a message to all clients, letting them know this user is leaving the world
+
+        uint32 nClientID = g_pLTServer->GetClientID(hClient);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_REMOVED);
+		cMsg.Writeuint32(nClientID);
+		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+	}
 
 	// Remove this client from our local list...
 
@@ -1054,7 +986,7 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 			cResponse.Writeuint8(MID_HANDSHAKE);
 			cResponse.Writeuint8(MID_HANDSHAKE_PASSWORD);
 			cResponse.Writeuint32( GAME_HANDSHAKE_PASSWORD );
-			cResponse.Writebool((!bIsHost && (*m_pServerGameOptions).m_bUsePassword));
+			cResponse.Writebool((!bIsHost && m_ServerGameOptions.m_bUsePassword));
 			g_pLTServer->SendToClient(cResponse.Read(), hClient, MESSAGE_GUARANTEED);
 		}
 		break;
@@ -1144,9 +1076,9 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 #endif
 
 			uint32 nHashedPassword = pMsg->Readuint32();
-			uint32 nServerHashedPassword = str_Hash((*m_pServerGameOptions).m_sPassword.c_str( ));
+			uint32 nServerHashedPassword = str_Hash(m_ServerGameOptions.m_sPassword.c_str( ));
 			// Validate
-			if (!bIsHost && (*m_pServerGameOptions).m_bUsePassword && nHashedPassword != nServerHashedPassword)
+			if (!bIsHost && m_ServerGameOptions.m_bUsePassword && nHashedPassword != nServerHashedPassword)
 			{
 				// They don't know the password
 				// Tell the client...
@@ -1222,16 +1154,6 @@ void CGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	if( ScmdServer::Instance( ).OnMessage( hSender, *pMsg ))
 	{
 		return;
-	}
-
-	// Update our clientupdate time if mp.
-	if( IsMultiplayerGame( ) && !( g_pLTServer->GetClientInfoFlags( hSender ) & CIF_LOCAL ))
-	{
-		ClientData* pClientData = GetClientData( hSender );
-		if( pClientData )
-		{
-			pClientData->m_nLastClientUpdateTime = GetTickCount( );
-		}
 	}
 
 	pMsg->SeekTo(0);
@@ -1632,43 +1554,7 @@ void CGameServerShell::HandleMultiplayerUpdate (HCLIENT hSender, ILTMessage_Read
 	}
 } 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::HandleMultiplayerServerDir ()
-//
-//	PURPOSE:	Handle messages sent through the server directory interface
-//
-// ----------------------------------------------------------------------- //
 
-void CGameServerShell::HandleMultiplayerServerDir (HCLIENT hSender, ILTMessage_Read *pMsg)
-{
-	// Only handle this message if we actually have a server directory
-	if (!m_pServerDir)
-		return;
-
-	uint8 aNumericAddr[4];
-	char aSourceAddr[16];
-	uint16 nSourcePort;
-
-	// Get the address and port of where this came from
-	if (!hSender)
-	{
-		GetCurMessageSource(aNumericAddr, &nSourcePort);
-	}
-	else
-	{
-		g_pLTServer->GetClientAddr(hSender, aNumericAddr, &nSourcePort);
-	}
-	// Convert the address portion
-	sprintf(aSourceAddr, "%d.%d.%d.%d", 
-		(uint32)aNumericAddr[0],
-		(uint32)aNumericAddr[1],
-		(uint32)aNumericAddr[2],
-		(uint32)aNumericAddr[3]);
-
-	// Let the server directory handle it
-	m_pServerDir->HandleNetMessage(*CLTMsgRef_Read(pMsg->SubMsg(pMsg->Tell())), aSourceAddr, nSourcePort);
-} 
 
 // ----------------------------------------------------------------------- //
 //
@@ -3491,6 +3377,44 @@ void CGameServerShell::UpdateSwitchingWorlds( )
 	return;
 }
 
+// RETAIL: Tron's (retail 0x100e4720; the names are ours): sends "PAUSE" or
+// "RESUME" to every SpinningWorldModel, the active ones when pausing, the
+// inactive ones when resuming
+static float s_fDisableSWM = 0.0f;
+
+static void DisableSpinningWorldModels( bool bDisable )
+{
+	char szMsg[128];
+	sprintf( szMsg, "%s", bDisable ? "PAUSE" : "RESUME" );
+
+	if( bDisable )
+	{
+		HOBJECT hObj = g_pLTServer->GetNextObject( LTNULL );
+		while( hObj )
+		{
+			HOBJECT hNext = g_pLTServer->GetNextObject( hObj );
+			if( IsKindOf( hObj, "SpinningWorldModel" ))
+			{
+				SendTriggerMsgToObject( g_pLTServer->HandleToObject( hObj ), hObj, LTTRUE, szMsg );
+			}
+			hObj = hNext;
+		}
+	}
+	else
+	{
+		HOBJECT hObj = g_pLTServer->GetNextInactiveObject( LTNULL );
+		while( hObj )
+		{
+			HOBJECT hNext = g_pLTServer->GetNextInactiveObject( hObj );
+			if( IsKindOf( hObj, "SpinningWorldModel" ))
+			{
+				SendTriggerMsgToObject( g_pLTServer->HandleToObject( hObj ), hObj, LTTRUE, szMsg );
+			}
+			hObj = hNext;
+		}
+	}
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGameServerShell::Update
@@ -3542,6 +3466,14 @@ void CGameServerShell::Update(LTFLOAT timeElapsed)
 		}
 	}
 
+	// RETAIL: Tron pauses the spinning world models while DisableSWM is set
+	// (retail Update 0x100e1c60)
+	if( g_vtDisableSWM.GetFloat() != s_fDisableSWM )
+	{
+		s_fDisableSWM = g_vtDisableSWM.GetFloat();
+		DisableSpinningWorldModels( s_fDisableSWM ? true : false );
+	}
+
 	// Should the stair height change...
 
 	if( g_StairStepHeight.GetFloat() != DEFAULT_STAIRSTEP_HEIGHT )
@@ -3585,7 +3517,7 @@ void CGameServerShell::Update(LTFLOAT timeElapsed)
 		cMsg.Writeuint8(MID_PLAYER_MESSAGE);
 		cMsg.WriteString(fullMsg);
 		cMsg.Writeuint32(-1);
-		cMsg.Writeuint8(INVALID_TEAM);
+		cMsg.Writeuint8(1);	// RETAIL: 1 here in Tron (retail Update 0x100e1f10), not INVALID_TEAM; not yet known
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		m_SayTrack.SetStr("");
@@ -3683,7 +3615,7 @@ LTBOOL CGameServerShell::UpdateGameServer()
 
 	// Make sure we are actually being hosted via GameServ...
 
-	if( !(*m_pServerGameOptions).m_bDedicated )
+	if( !m_bGameServHosted )
 	{
         return(LTFALSE);
 	}
@@ -3875,7 +3807,7 @@ bool CGameServerShell::InitGameType()
 
 	if( ppServerGameOptions && *ppServerGameOptions )
 	{
-		(*m_pServerGameOptions) = **ppServerGameOptions;
+		m_ServerGameOptions = **ppServerGameOptions;
 	}
 
 	// Toss any old missionmgr.
@@ -3886,12 +3818,12 @@ bool CGameServerShell::InitGameType()
 	}
 
 	// Reseed random number generator if necessary...
-	if ((*m_pServerGameOptions).m_bPerformanceTest)
+	if (m_ServerGameOptions.m_bPerformanceTest)
 	{
 		srand(123); // Same as client, doesn't really matter...
 	}
 
-	switch( (*m_pServerGameOptions).m_eGameType )
+	switch( m_ServerGameOptions.m_eGameType )
 	{
 		case eGameTypeSingle:
 			m_pServerMissionMgr = debug_new( CSinglePlayerMissionMgr );
@@ -4059,34 +3991,6 @@ void CGameServerShell::UpdateMultiplayer()
 		}
 		return;
 	}
-
-	// Check if any client has not talked to us in a very long time.  If so, it may
-	// mean there is a bug in the networking code that refuses to kick clients not responding.
-	// Because this bug is rare, it's difficult to track in the networking.  This is just a bit
-	// of fullproofing.  The autoboottime is in seconds, so we need to convert it to ms.
-	uint32 nCurrentTime = GetTickCount( );
-	uint32 nAutoBootTime = ( uint32 )( GetConsoleFloat( "AutoBootTime", 5.0f * 60.0f ) * 1000.0f + 0.5f );
-	ClientDataList::const_iterator iter = m_ClientDataList.begin( );
-	for( ; iter != m_ClientDataList.end( ); iter++ )
-	{
-		ClientData* pClientData = *iter;
-
-		// Skip the host.
-		if( g_pLTServer->GetClientInfoFlags( pClientData->m_hClient ) & CIF_LOCAL )
-			continue;
-
-		// Get the time since the ping.  Account for wrapping.
-		uint32 nDeltaTime = ( nCurrentTime > pClientData->m_nLastClientUpdateTime ) ? 
-			( nCurrentTime - pClientData->m_nLastClientUpdateTime ) : 
-			( nCurrentTime + ~( pClientData->m_nLastClientUpdateTime - 1 ));
-
-		// Check if they haven't talked in a while.
-		if( nDeltaTime >= nAutoBootTime )
-		{
-			g_pLTServer->CPrint( "Booting innactive client." );
-			g_pLTServer->KickClient( pClientData->m_hClient );
-		}
-	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -4105,6 +4009,15 @@ bool CGameServerShell::StartNextMultiplayerLevel()
 }
 
 
+// RETAIL: retail 0x100e2910
+void CGameServerShell::ClearClientList()
+{
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		m_aClients[i] = LTNULL;
+	}
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGameServerShell::ServerAppMessageFn
@@ -4113,6 +4026,8 @@ bool CGameServerShell::StartNextMultiplayerLevel()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100e2920) hands the level switches to its slot 33,
+// and has no mission failed message
 LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 {
 	// Let the scmd check if it needs this message.
@@ -4133,19 +4048,13 @@ LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 
 		case SERVERSHELL_NEXTWORLD:
 		{	
-			if( !StartNextMultiplayerLevel( ))
-				return LT_ERROR;
+			TronUnknownVirtual84( m_nCurLevel + 1 );
 		}
 		break;
 
 		case SERVERSHELL_SETWORLD:
 		{	
-			// Read in the world index.  Go back one, since StartNextMultiplayerLevel
-			// will preincrement the curlevel.
-			int nNewMission;
-			nNewMission = msg.Readuint32( );
-			if( !g_pServerMissionMgr->SwitchToCampaignIndex( nNewMission ))
-				return LT_ERROR;
+			TronUnknownVirtual84( msg.Readuint32( ));
 		}
 		break;
 
@@ -4156,15 +4065,6 @@ LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 
 			g_pLTServer->RunGameConString( szMsg );
 
-		}
-		break;
-		
-		case SERVERSHELL_MISSIONFAILED:
-		{
-			// We have a failed mission from the server app...
-			// Wait for client responses to begin the auto load.
-			
-			g_pServerSaveLoadMgr->WaitForAutoLoadResponses();
 		}
 		break;
 
@@ -4497,12 +4397,11 @@ void CGameServerShell::HandlePerformanceMessage (HCLIENT hSender, ILTMessage_Rea
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100e3050) saves no version first, saves the
+// objectives here, has no key manager to save, and ends with its own two
 void CGameServerShell::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
-	_ASSERT(pMsg);
 	if (!pMsg) return;
-
-	SAVE_DWORD(g_pVersionMgr->GetSaveVersion());
 
 	// Important: This has to be first, since it's taking the place of engine object behavior
 	m_pLiteObjectMgr->Save(pMsg);
@@ -4513,6 +4412,11 @@ void CGameServerShell::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	m_pAICentralKnowledgeMgr->Save(pMsg);
 	m_pObjectTemplates->Save( pMsg );
 
+	m_Objectives.Save( pMsg );
+	m_OptionalObjectives.Save( pMsg );
+	m_CompletedObjectives.Save( pMsg );
+	m_Parameters.Save( pMsg );
+
 	//save difficulty
 	pMsg->Writeuint8(m_eDifficulty);
 
@@ -4520,35 +4424,15 @@ void CGameServerShell::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_DWORD(m_eMinMusicMood);
 
 	g_pServerMissionMgr->Save( *pMsg, dwSaveFlags );
-	g_pKeyMgr->Save( pMsg, dwSaveFlags );
 
-	// RETAIL: no time ramps to save in Tron (retail 0x100e3050)
+	SAVE_DWORD(m_nSaveVersion);
+	SAVE_HSTRING(m_hstrTronUnknown17490);
 }
 
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::Load
-//
-//	PURPOSE:	Load the global world info
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: retail 0x100e3230 (as Save)
 void CGameServerShell::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
-	_ASSERT(pMsg);
 	if (!pMsg) return;
-
-	// This old version didn't save the version number at the top.  We need
-	// to use an engine value to determine the version.
-	uint32 nSaveFileVersion = 0;
-	g_pLTServer->GetSaveFileVersion( nSaveFileVersion );
-	if( nSaveFileVersion > 2001 )
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-	}
 
 	// Important: This has to be first, since it's taking the place of engine object behavior
 	m_pLiteObjectMgr->Load(pMsg);
@@ -4559,6 +4443,11 @@ void CGameServerShell::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	m_pAICentralKnowledgeMgr->Load(pMsg);
 	m_pObjectTemplates->Load( pMsg );
 
+	m_Objectives.Load( pMsg );
+	m_OptionalObjectives.Load( pMsg );
+	m_CompletedObjectives.Load( pMsg );
+	m_Parameters.Load( pMsg );
+
 	//load difficulty
 	m_eDifficulty = (GameDifficulty)pMsg->Readuint8();
 	g_pLTServer->CPrint("Difficulty:%d",(int)m_eDifficulty);
@@ -4567,20 +4456,9 @@ void CGameServerShell::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_DWORD_CAST(m_eMinMusicMood, CMusicMgr::Mood);
 
 	g_pServerMissionMgr->Load( *pMsg, dwLoadFlags );
-	g_pKeyMgr->Load( pMsg, dwLoadFlags );	
 
-	// RETAIL: no time ramps in Tron (as Save)
-
-	if( nSaveFileVersion == 2001 )
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		HSTRING hDummy = NULL;
-		LOAD_HSTRING(hDummy);
-		g_pLTServer->FreeString( hDummy );
-		hDummy = NULL;
-	}
+	LOAD_DWORD(m_nSaveVersion);
+	LOAD_HSTRING(m_hstrTronUnknown17490);
 }
 
 
@@ -4621,28 +4499,25 @@ void CGameServerShell::ShowMultiplayerSummary()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100e34b0) passes the GameSpy queries (';', '\\'
+// or 0xFE 0xFD first) to its GameSpy slot; NOLF2's server directory messages
+// are not Tron's
 LTRESULT CGameServerShell::ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort)
 {
-	if (pMsg->Size() >= 16)
+	if( m_bFirstUpdate || !m_bUseGameSpy )
+		return LT_OK;
+
+	if(( pMsg->Size( ) >= 8 && pMsg->Peekuint8( ) == ';' ) ||
+		( pMsg->Size( ) >= 16 && pMsg->Peekuint16( ) == 0xFDFE ) ||
+		( pMsg->Size( ) >= 8 && pMsg->Peekuint8( ) == '\\' ))
 	{
-		// Skip the engine-side portion of the message header
-		CLTMsgRef_Read cSubMsg(pMsg->SubMsg(8));
-
-		// Remember what address this came from
-		SetCurMessageSource(senderAddr, senderPort);
-
-		cSubMsg->SeekTo(0);
-		uint8 messageID = cSubMsg->Readuint8();
-		
-		switch (messageID)
-		{
-			case MID_MULTIPLAYER_SERVERDIR:		HandleMultiplayerServerDir		(NULL, cSubMsg);	break;
-			default:
-				break;
-		}
+		uint32 nDataLen = pMsg->Size( ) / 8;
+		char* pData = ( char* )alloca( nDataLen );
+		pMsg->ReadData( pData, nDataLen * 8 );
+		TronUnknownVirtual58( pData, nDataLen, senderAddr, senderPort );
 	}
 
-	return(LT_OK);
+	return LT_OK;
 }
 
 // ----------------------------------------------------------------------- //
@@ -4754,7 +4629,7 @@ bool CGameServerShell::ClientConnectionInTrouble( HCLIENT hClient )
 
 char const* CGameServerShell::GetHostName()
 {
-	return((*m_pServerGameOptions).GetSessionName());
+	return(m_ServerGameOptions.GetSessionName());
 }
 
 // ----------------------------------------------------------------------- //
@@ -4989,24 +4864,6 @@ void CGameServerShell::ServerAppPostStartWorld( )
 }
 
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::SetServerDir
-//
-//	PURPOSE:	Change the server directory object
-//
-// --------------------------------------------------------------------------- //
-
-void CGameServerShell::SetServerDir(IServerDirectory *pDir)
-{ 
-	if( m_pServerDir )
-	{
-		// No leaking, please...
-		delete m_pServerDir; 
-	}
-
-	m_pServerDir = pDir; 
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -5386,8 +5243,8 @@ void CGameServerShell::LoadObjectives( ILTMessage_Read *pMsg, uint32 dwLoadFlags
 
 void CGameServerShell::ApplyWeaponRestrictions( )
 {
-	StringSet::iterator iter = (*m_pServerGameOptions).m_setRestrictedWeapons.begin( );
-	while( iter != (*m_pServerGameOptions).m_setRestrictedWeapons.end( ))
+	StringSet::iterator iter = m_ServerGameOptions.m_setRestrictedWeapons.begin( );
+	while( iter != m_ServerGameOptions.m_setRestrictedWeapons.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;
@@ -5400,8 +5257,8 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 			pWeapon->bServerRestricted = true;
 	}
 
-	iter = (*m_pServerGameOptions).m_setRestrictedAmmo.begin( );
-	while( iter != (*m_pServerGameOptions).m_setRestrictedAmmo.end( ))
+	iter = m_ServerGameOptions.m_setRestrictedAmmo.begin( );
+	while( iter != m_ServerGameOptions.m_setRestrictedAmmo.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;
@@ -5414,8 +5271,8 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 			pAmmo->bServerRestricted = true;
 	}
 
-	iter = (*m_pServerGameOptions).m_setRestrictedGear.begin( );
-	while( iter != (*m_pServerGameOptions).m_setRestrictedGear.end( ))
+	iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
+	while( iter != m_ServerGameOptions.m_setRestrictedGear.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;
@@ -5437,34 +5294,4 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 //
 // ----------------------------------------------------------------------- //
 
-void CGameServerShell::SetLGFlags( uint8 nLGFlags )
-{
-	m_nLastLGFlags = nLGFlags;
-	
-	if( g_pVersionMgr )
-		g_pVersionMgr->SetLGFlags( m_nLastLGFlags );
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::GetClientData
-//
-//	PURPOSE:	Gets the clientdata given a HCLIENT.
-//
-// ----------------------------------------------------------------------- //
-
-ClientData* CGameServerShell::GetClientData( HCLIENT hClient )
-{
-	// Remove this client from our list of clients.
-	ClientDataList::iterator iter = m_ClientDataList.begin( );
-	for( ; iter != m_ClientDataList.end( ); iter++ )
-	{
-		ClientData* pClientData = *iter;
-		if( pClientData->m_hClient == hClient )
-		{
-			return pClientData;
-		}
-	}
-
-	return NULL;
-}
+// RETAIL: SetLGFlags is inline in Tron (GameServerShell.h)

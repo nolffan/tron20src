@@ -58,6 +58,30 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronGameServerShell::OnRemoveClient
+//
+//	PURPOSE:	A client is gone: RETAIL: retail 0x1005d3c0, only the base's
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::OnRemoveClient(HCLIENT hClient)
+{
+	CGameServerShell::OnRemoveClient( hClient );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::SendPlayerInfoMsgToClients
+//
+//	PURPOSE:	RETAIL: retail 0x1005d3d0, only the base's
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer, uint8 nInfoType)
+{
+	CGameServerShell::SendPlayerInfoMsgToClients( hClients, pPlayer, nInfoType );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronGameServerShell::CreatePlayer()
 //
 //	PURPOSE:	Create the player object, and associated it with the client.

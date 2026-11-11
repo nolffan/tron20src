@@ -9100,19 +9100,4 @@ void CPlayerObj::CancelRevive( )
 		CreateRespawnBody( );
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerObj::SetClient
-//
-//	PURPOSE:	Set the client and make sure the specialFX message is updated...
-//
-//	NOTE:		ONLY call this from within CGameServerShell::RespawnPlayer()!
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerObj::SetClient( HCLIENT hClient )
-{
-	m_hClient = hClient;
-
-	CreateSpecialFX();
-}
+// RETAIL: CPlayerObj::SetClient is inline in Tron (PlayerObj.h)

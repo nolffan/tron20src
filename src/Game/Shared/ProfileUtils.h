@@ -162,6 +162,14 @@ class DoomsdayGameOptions
 };
 
 
+// RETAIL: Tron's ServerGameOptions is its own (0xd0 bytes; retail Object.lto's
+// constructor 0x10114530, Clear 0x10114690, Copy 0x101149d0; CShell.dll's
+// SaveToBute 0x100e9ab0 names the keys): the common settings, then one block
+// per multiplayer game type (disc tournament, disc arena, light cycles), each
+// with its map list. Member names are ours, after the bute keys.
+// PORT: NOLF2's per game type options (and its restriction sets) are kept as
+// static members, so the NOLF2 code still standing in for Tron's compiles
+// without their taking room in the layout.
 class ServerGameOptions
 {
 	public:
@@ -185,21 +193,75 @@ class ServerGameOptions
 		bool	LoadFromBute( CButeMgr& bute );
 		bool	SaveToBute( CButeMgr& bute );
 
-		// Saved data: all game types
-		GameType		m_eGameType;
-		bool			m_bUsePassword;
-		std::string		m_sPassword;
-		std::string		m_sScmdPassword;
-		bool			m_bAllowScmdCommands;
-		uint16			m_nPort;
-		uint8			m_nBandwidthServer;
-		uint16			m_nBandwidthServerCustom;
-		bool			m_bLANOnly;
-		bool			m_bDedicated;
-		StringSet		m_setRestrictedWeapons;
-		StringSet		m_setRestrictedAmmo;
-		StringSet		m_setRestrictedGear;
-		std::string		m_sModName;
+		// "Settings"
+		std::string		m_sOptionsName;				// +0x00 ".Default" (ours)
+		std::string		m_sSessionName;				// +0x0c "ServerName"
+		std::string		m_sPassword;				// +0x18 "Password"
+		std::string		m_sScmdPassword;			// +0x24 "SCMDPassword"
+		uint8			m_eGameType;				// +0x30 "GameType" (a GameType)
+		uint32			m_nPort;					// +0x34 "Port"
+		uint8			m_nBandwidthServer;			// +0x38 "Bandwidth"
+		uint32			m_nBandwidthServerCustom;	// +0x3c "BandwidthCustom"
+		bool			m_bUsePassword;				// +0x40 "Locked"
+		bool			m_bDedicated;				// +0x41 "Dedicated"
+		bool			m_bLANOnly;					// +0x42 "LANOnly"
+		bool			m_bAllowScmdCommands;		// +0x43 "AllowSCMD"
+		std::string		m_sModName;					// +0x44 not saved; not yet known
+
+		// "DiscTournament"
+		uint8			m_nTournMaxPlayers;			// +0x50
+		uint8			m_nTournMaxTeamSize;
+		bool			m_bTournFriendlyFire;
+		bool			m_bTournDiscsInSpectator;
+		bool			m_bTournAllowAutoAim;
+		uint8			m_nTournPointsPerMatch;
+		uint8			m_nTournMatchTimeLimit;
+		uint8			m_nTournTeamsToStart;
+		uint32			m_nTournMode;				// +0x58 "TournamentMode"
+		uint8			m_nTournGamesPerMap;		// +0x5c
+		uint8			m_nTournPreGameDelay;
+		uint16			m_nTournMaxPing;			// +0x5e
+		uint8			m_nTournAirControl;			// +0x60
+		StringArray		m_saTournMaps;				// +0x64 "Map%02d"
+
+		// "DiscArena"
+		uint8			m_nArenaMaxPlayers;			// +0x70
+		uint8			m_nArenaMaxTeamSize;
+		bool			m_bArenaFriendlyFire;
+		bool			m_bArenaDiscsInSpectator;
+		bool			m_bArenaAllowAutoAim;
+		uint8			m_nArenaPointsPerMatch;
+		uint8			m_nArenaMatchTimeLimit;
+		uint8			m_nArenaWinLimit;			// +0x77
+		uint8			m_nArenaTimeLimit;
+		uint8			m_nArenaGamesPerMap;
+		uint8			m_nArenaPreGameDelay;		// +0x7a
+		uint16			m_nArenaMaxPing;			// +0x7c
+		uint8			m_nArenaAirControl;			// +0x7e
+		StringArray		m_saArenaMaps;				// +0x80
+
+		// "LightCycles" ("Lightcycles" for its MaxPlayers and maps)
+		uint8			m_nLCMaxPlayers;			// +0x8c
+		StringArray		m_saLCMaps;					// +0x90
+		uint32			m_nLCAllowedCycleType;		// +0x9c
+		uint32			m_nLCGameSpeed;				// +0xa0
+		uint32			m_nLCTrailLength;			// +0xa4
+		uint8			m_nLCMaxTeamSize;			// +0xa8
+		uint8			m_nLCWaitForPlayersTime;
+		uint8			m_nLCTotalRaces;
+		uint16			m_nLCTotalPoints;			// +0xac
+		uint16			m_nLCTotalTime;
+		uint16			m_nLCMaxPing;				// +0xb0
+		uint32			m_nLCPowerups;				// +0xb4 "PowerupAllow*", a bit each
+		int8			m_nLCKillPointValue;		// +0xb8
+		int8			m_nLCSelfKillPointValue;
+		int8			m_nLCWinRacePointValue;
+
+		// Unsaved data.
+		std::string		m_sProfileName;				// +0xbc
+		bool			m_bPreCacheAssets;			// +0xc8
+		bool			m_bPerformanceTest;			// +0xc9
+		uint32			m_nTronUnknownCC;			// +0xcc RETAIL: retail 0x10114e50 returns it
 
 		//for the current game type
 		bool		IsDefaultCampaign() const;
@@ -211,29 +273,25 @@ class ServerGameOptions
 		uint8		GetMaxPlayers() const;
 		int			GetGameTypeStringID() const;
 
-		// Unsaved data.
-		std::string		m_sProfileName;
-		bool			m_bPreCacheAssets;
-		bool			m_bPerformanceTest;
+		StringArray*	GetMapList( );
+		uint32		GetTronUnknownCC( ) const;
 
 		CoopGameOptions&		GetCoop() { return m_Coop;	}
 		DMGameOptions&			GetDeathmatch() { return m_DM; }
 		TeamDMGameOptions&		GetTeamDeathmatch() { return m_TeamDM; }
 		DoomsdayGameOptions&	GetDoomsday() { return m_DD; }
 
+		// PORT: NOLF2's, not Tron's (see above)
+		static StringSet		m_setRestrictedWeapons;
+		static StringSet		m_setRestrictedAmmo;
+		static StringSet		m_setRestrictedGear;
+
 	private:
 
-		//Saved data: cooperative
-		CoopGameOptions		m_Coop;
-
-		//Saved data: deathmatch
-		DMGameOptions		m_DM;
-
-		//Saved data:  team deathmatch
-		TeamDMGameOptions	m_TeamDM;
-		
-		//Saved data:  doomsday
-		DoomsdayGameOptions	m_DD;
+		static CoopGameOptions		m_Coop;
+		static DMGameOptions		m_DM;
+		static TeamDMGameOptions	m_TeamDM;
+		static DoomsdayGameOptions	m_DD;
 };
 
 

@@ -90,14 +90,6 @@ class TimeRamp
 };
 
 
-struct ClientData
-{
-	ClientData( );
-
-	HCLIENT m_hClient;
-	uint32 m_nLastClientUpdateTime;
-};
-
 
 class CGameServerShell : public IServerShellStub
 {
@@ -114,20 +106,20 @@ class CGameServerShell : public IServerShellStub
 		virtual void	TronUnknownVirtual4C() = 0;
 		virtual void	TronUnknownVirtual50() = 0;
 		virtual bool	TronUnknownVirtual54() = 0;
-		virtual void	TronUnknownVirtual58( uint8 senderAddr[4], uint16 senderPort, void* pData, uint32 nDataLen ) = 0;
+		virtual void	TronUnknownVirtual58( char* pData, uint32 nDataLen, uint8 senderAddr[4], uint16 senderPort ) = 0;	// RETAIL: ProcessPacket (retail 0x100e34b0) hands it the GameSpy queries
 
         void    Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void    Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
 
-		ServerGameOptions const& GetServerGameOptions( ) const { return (*m_pServerGameOptions); }
-		ServerGameOptions& GetServerGameOptions( ) { return (*m_pServerGameOptions); }
+		ServerGameOptions const& GetServerGameOptions( ) const { return m_ServerGameOptions; }
+		ServerGameOptions& GetServerGameOptions( ) { return m_ServerGameOptions; }
 
-		GameType		GetGameType()	const { return (*m_pServerGameOptions).m_eGameType; }
+		GameType		GetGameType()	const { return ( GameType )m_ServerGameOptions.m_eGameType; }
 		GameDifficulty	GetDifficulty() const { return m_eDifficulty; }
 		void			SetDifficulty(GameDifficulty eDiff)  { m_eDifficulty = eDiff; }
 
-		void		SetLGFlags( uint8 nLGFlags );
+		void		SetLGFlags( uint8 nLGFlags ) { m_nLastLGFlags = nLGFlags; }	// RETAIL: inline in Tron (as Build 51); no version manager to tell
 		uint8		GetLGFlags( ) { return m_nLastLGFlags; }
 
         void        SetUpdateGameServ() { m_bUpdateGameServ = LTTRUE; }
@@ -146,7 +138,7 @@ class CGameServerShell : public IServerShellStub
 		bool		IsPaused( );
 
 		// Are we running a performance test?
-		bool		IsPerformanceTest() const { return (*m_pServerGameOptions).m_bPerformanceTest; }
+		bool		IsPerformanceTest() const { return m_ServerGameOptions.m_bPerformanceTest; }
 
 		// Check if the client wants us to pre-cache assets
 		bool		PreCacheAssets() {return m_bPreCacheAssets; }
@@ -177,8 +169,6 @@ class CGameServerShell : public IServerShellStub
 
 		// Server directory access
 		// Note : The server directory is owned by this object once you pass it in.
-		IServerDirectory *GetServerDir() { return m_pServerDir; }
-		void		SetServerDir(IServerDirectory *pDir);
 
 		// Get/Set the source address of the message which is currently being processed
 		void		SetCurMessageSource(const uint8 aAddr[4], uint16 nPort);
@@ -203,8 +193,8 @@ class CGameServerShell : public IServerShellStub
 		// cycles to its light cycle manager. Not yet named
 		virtual void	TronUnknownVirtual6C( uint32 nArg1, uint32 nArg2 ) {}
 		virtual void	TronUnknownVirtual70( uint32 nArg ) {}
-		virtual void	TronUnknownVirtual74( uint32 nArg ) {}
-		virtual void	TronUnknownVirtual78( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual74( HCLIENT hClient ) {}	// RETAIL: OnAddClient's last
+		virtual void	TronUnknownVirtual78( HCLIENT hClient ) {}	// RETAIL: OnRemoveClient's first
 		virtual void	TronUnknownVirtual7C( uint32 nArg ) {}
 		virtual void	TronUnknownVirtual80( uint32 nArg ) {}
 		virtual void	TronUnknownVirtual84( uint32 nArg ) {}
@@ -227,7 +217,7 @@ class CGameServerShell : public IServerShellStub
 	    virtual LTRESULT	OnServerInitialized();
 		virtual void		OnServerTerm();
 
-		void		OnAddClient(HCLIENT hClient);
+		bool		OnAddClient(HCLIENT hClient);
 		void		OnRemoveClient(HCLIENT hClient);
         LPBASECLASS OnClientEnterWorld(HCLIENT hClient);
 		void		OnClientExitWorld(HCLIENT hClient);
@@ -274,7 +264,6 @@ class CGameServerShell : public IServerShellStub
 		void		HandlePlayerTaunt				(HCLIENT, ILTMessage_Read*);
 		void		HandlePlayerTeleport			(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerUpdate			(HCLIENT, ILTMessage_Read*);
-		void		HandleMultiplayerServerDir		(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerInit			(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerPlayerUpdate	(HCLIENT, ILTMessage_Read*);
 		void        HandleHandshake					(HCLIENT, ILTMessage_Read*);
@@ -371,8 +360,6 @@ class CGameServerShell : public IServerShellStub
 		// Sets up weaponmgr with weapon restrictions.
 		void ApplyWeaponRestrictions( );
 
-		// Gets the clientdata given a HCLIENT.
-		ClientData* GetClientData( HCLIENT hClient );
 
 	protected:
 
@@ -399,14 +386,16 @@ class CGameServerShell : public IServerShellStub
 		CAICentralKnowledgeMgr*	m_pAICentralKnowledgeMgr;
 		CAIClassFactory*		m_pAIClassFactory;
 
-		// PORT: Tron's game options here are its own, 0xdc bytes (retail's
-		// constructor builds them at +0x90; NOLF2's ServerGameOptions has keys
-		// retail has none of). Until they are written, NOLF2's live on the heap
-		// and their pointer takes the first of Tron's bytes, so that every
-		// other member is at retail's offset
-		ServerGameOptions*	m_pServerGameOptions;
-		uint8				m_aTronGameOptions[0xdc - sizeof(ServerGameOptions*)];
+		// RETAIL: Tron's own game options (Shared/ProfileUtils.h), 0xd0 bytes
+		// at +0x90 (retail's constructor 0x100dd2e0)
+		ServerGameOptions	m_ServerGameOptions;
+		// RETAIL: Build 51's members (retail OnServerInitialized 0x100dc960
+		// and UpdateGameServer 0x100e2390): the current level is the index in
+		// the game type's map list (retail 0x100e2880 sets it)
+		int					m_nCurLevel;
+        LTBOOL				m_bHitFragLimit;
         LTBOOL				m_bUpdateGameServ;
+        LTBOOL				m_bGameServHosted;
 
         uint8				m_nLastLGFlags;
 		GameDifficulty		m_eDifficulty;
@@ -429,15 +418,20 @@ class CGameServerShell : public IServerShellStub
 		LTBOOL				m_bStartNextMultiplayerLevel;
 		LTFLOAT				m_fSummaryEndTime;
 
-		int					m_nGetPlayerIndex;
+		// RETAIL: OnServerInitialized sets it in multiplayer games;
+		// ProcessPacket and CTronGameServerShell's GameSpy slots test it (the
+		// name is ours: Build 51's m_bDontUseGameSpy, the other way round).
+		// NOLF2's player iteration index has no room in Tron's shell: kept
+		// static (PORT)
+		LTBOOL				m_bUseGameSpy;
+		static int			m_nGetPlayerIndex;
 		char				m_sSpyGameHost[MAX_GEN_STRING];
 		uint32				m_nTronUnknown173C0;	// RETAIL: Tron's; not yet known
 		CString				m_sWorld;
 		// RETAIL: 0x80 bytes of Tron's here, before the message source (+0x17448);
-		// not yet known. Tron has no WON server directory: NOLF2's pointer stands
-		// in at their end (PORT)
-		uint8				m_aTronUnknown173C8[0x80 - sizeof(IServerDirectory*)];
-		IServerDirectory*	m_pServerDir;
+		// not yet known (no shell function touches them). Tron has no WON
+		// server directory (nor NOLF2's ProcessPacket handling of it)
+		uint8				m_aTronUnknown173C8[0x80];
 
 		void CacheLevelSpecificFiles();
 
@@ -451,7 +445,7 @@ class CGameServerShell : public IServerShellStub
         LTBOOL UpdateSessionName();
         LTBOOL UpdateGameServer();
 
-        void		ClearClientList() { for (int i = 0; i < MAX_CLIENTS; i++) { m_aClients[i] = LTNULL; } }
+        void		ClearClientList();	// RETAIL: not inline in Tron (retail 0x100e2910)
         LTBOOL		AddClientToList(HCLIENT hClient);
         LTBOOL		RemoveClientFromList(HCLIENT hClient);
         LTBOOL		IsClientInList(HCLIENT hClient);
@@ -491,8 +485,12 @@ class CGameServerShell : public IServerShellStub
 
 		CMusicMgr::Mood	m_eMinMusicMood;
 
-		typedef std::vector< ClientData* > ClientDataList;
-		ClientDataList	m_ClientDataList;
+		// RETAIL: Tron's last members (retail's sizeof is 0x17494, where
+		// CTronGameServerShell's start). OnServerInitialized (retail 0x100dc960)
+		// sets the first; the destructor removes the object;
+		// Save and Load (retail 0x100e3050, 0x100e3230) keep both. Not yet known
+		uint32		m_nSaveVersion;	// RETAIL: g_pVersionMgr->GetSaveVersion( ) (the name is ours)
+		HSTRING		m_hstrTronUnknown17490;
 };
 
 extern class CGameServerShell* g_pGameServerShell;
