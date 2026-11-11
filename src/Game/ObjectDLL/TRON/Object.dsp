@@ -162,6 +162,10 @@ SOURCE=.\BinaryBit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BossButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\BuildNote.cpp
 # End Source File
 # Begin Source File
@@ -186,6 +190,10 @@ SOURCE=.\InfoString.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONode.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -194,7 +202,15 @@ SOURCE=.\LightCycleZones.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\MultiplayerLevelInfoMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\PatchRoutine.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\PingButeMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -207,6 +223,14 @@ SOURCE=.\ProjectileClusterDisc.cpp
 # Begin Source File
 
 SOURCE=.\ProjectileDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SecRezzerPoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerSubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -235,11 +259,23 @@ SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # PROP Default_Filter "h;hpp"
 # Begin Source File
 
+SOURCE=.\AutoCommand.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\BinaryBit.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\BossButeMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\BuildNote.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\CaselessString.h
 # End Source File
 # Begin Source File
 
@@ -259,6 +295,10 @@ SOURCE=.\InfoString.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONode.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.h
 # End Source File
 # Begin Source File
@@ -267,7 +307,15 @@ SOURCE=.\LightCycleZones.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\MultiplayerLevelInfoMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\PatchRoutine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\PingButeMgr.h
 # End Source File
 # Begin Source File
 
@@ -280,6 +328,18 @@ SOURCE=.\ProjectileClusterDisc.h
 # Begin Source File
 
 SOURCE=.\ProjectileDisc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SecRezzer.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SecRezzerPoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerSubroutineMgr.h
 # End Source File
 # Begin Source File
 

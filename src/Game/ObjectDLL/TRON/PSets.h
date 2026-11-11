@@ -21,7 +21,9 @@
 	ADD_BOOLPROP_FLAG(Key7,0,group)\
 	ADD_BOOLPROP_FLAG(Key8,0,group)
 
-uint8 MakePSetsByte(bool bPSets[8]) // PORT: bool, as NOLF2's GetPropBool fills
+// RETAIL: static: each user has its copy, which the linker folds into one
+// (retail 0x10175490)
+static uint8 MakePSetsByte(bool bPSets[8]) // PORT: bool, as NOLF2's GetPropBool fills
 {
 	// Change em into a byte
 	uint8 byPSets = 0;
