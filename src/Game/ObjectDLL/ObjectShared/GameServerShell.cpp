@@ -358,7 +358,6 @@ CGameServerShell::CGameServerShell() :
 	, m_pAIClassFactory( 0 )
 	, m_pServerTrackedNodeMgr( 0 )
 	, m_pGlobalMgr( 0 )
-	, m_pServerDir( 0 )
 	, m_pCharacterMgr( 0 )
 	, m_bCachedLevelFiles( false )
 {
@@ -432,13 +431,6 @@ CGameServerShell::~CGameServerShell()
 		m_pGlobalMgr = 0;
 	}
 
-	// Get rid of the serverdir, if we have one
-	if( m_pServerDir )
-	{
-		delete m_pServerDir;
-	  	m_pServerDir = 0;
-	}
-
 	// Get rid of the object template mgr
 	debug_delete( m_pObjectTemplates );
 	m_pObjectTemplates = 0;
@@ -454,10 +446,17 @@ CGameServerShell::~CGameServerShell()
 		m_pServerMissionMgr = NULL;
 	}
 
+	// RETAIL: not cleared after in Tron (retail 0x100dd6d0)
 	if( m_pServerSaveLoadMgr )
 	{
 		debug_delete( m_pServerSaveLoadMgr );
-		m_pServerSaveLoadMgr = NULL;
+	}
+
+	// RETAIL: Tron's (GameServerShell.h)
+	if( m_hstrTronUnknown17490 )
+	{
+		g_pLTServer->FreeString( m_hstrTronUnknown17490 );
+		m_hstrTronUnknown17490 = LTNULL;
 	}
 
 }
@@ -470,14 +469,15 @@ CGameServerShell::~CGameServerShell()
 //
 // ----------------------------------------------------------------------- //
 
-void CGameServerShell::OnAddClient(HCLIENT hClient)
+// RETAIL: Tron's (retail 0x100dd990) returns the ban manager's verdict (the
+// engine refuses the client), and tells its slot 29 rather than sending the
+// teams and players
+bool CGameServerShell::OnAddClient(HCLIENT hClient)
 {
-	DEBUG_CONSOLE_OUTPUT("Add Client", eRarely);
-
 	// Check if the client is banned.
 	if( !BanIPMgr::Instance( ).OnAddClient( hClient ))
 	{
-		g_pLTServer->KickClient( hClient );
+		return false;
 	}
 
 	// Tell serverapp about it.
@@ -496,32 +496,9 @@ void CGameServerShell::OnAddClient(HCLIENT hClient)
 	cMsg.Writeuint8( m_eSwitchingWorldsState );
 	g_pLTServer->SendToClient( cMsg.Read(), hClient, MESSAGE_GUARANTEED);
 
-	uint32 dwClientId = g_pLTServer->GetClientID( hClient );
+	TronUnknownVirtual74( hClient );
 
-		
-	if( IsTeamGameType() )
-	{
-		// tell the player about the current teams
-		CTeamMgr::Instance().UpdateClient( hClient );
-	}
-
-	// Tell the new Client about all the players already
-	// on the server...
-
-	// Don't just broadcast the list.  That would send messages to clients that aren't fully connected yet.
-	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
-	while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
-	{
-		CPlayerObj* pOldPlayer = *iter;
-		// Make sure the player has a client and has spawned at least once
-		if( pOldPlayer && pOldPlayer->GetClient( ) && pOldPlayer->RespawnCalled())
-		{
-			SendPlayerInfoMsgToClients(hClient, pOldPlayer, MID_PI_EXIST);
-		}
-
-		iter++;
-	}
-
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -532,24 +509,11 @@ void CGameServerShell::OnAddClient(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100ddb30): its slot 30 first; the player removed
+// message is OnClientExitWorld's
 void CGameServerShell::OnRemoveClient(HCLIENT hClient)
 {
-	if (IsMultiplayerGame( ))
-	{
-		// Send a message to all clients, letting them know this user is leaving the world
-
-        uint32 nClientID = g_pLTServer->GetClientID(hClient);
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_PLAYER_REMOVED);
-		cMsg.Writeuint32(nClientID);
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		if (IsTeamGameType())
-		{
-			CTeamMgr::Instance().RemovePlayer( nClientID );
-		}
-	}
-
+	TronUnknownVirtual78( hClient );
 
 	// Clear our client data...
 
@@ -559,11 +523,11 @@ void CGameServerShell::OnRemoveClient(HCLIENT hClient)
         pPlayer->SetClient(LTNULL);
 	}
 
-	// Tell server app about it.
-	ServerAppRemoveClient( hClient );
-
 	// Tell the scmd about it.
 	ScmdServer::Instance( ).OnRemoveClient( hClient );
+
+	// Tell server app about it.
+	ServerAppRemoveClient( hClient );
 }
 
 // --------------------------------------------------------------------------- //
@@ -815,8 +779,20 @@ void CGameServerShell::SendObjectivesDataToClient( HCLIENT hClient )
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (retail 0x100de1a0) tells the clients first (NOLF2's
+// OnRemoveClient does)
 void CGameServerShell::OnClientExitWorld(HCLIENT hClient)
 {
+	if (IsMultiplayerGame( ))
+	{
+		// Send a message to all clients, letting them know this user is leaving the world
+
+        uint32 nClientID = g_pLTServer->GetClientID(hClient);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_REMOVED);
+		cMsg.Writeuint32(nClientID);
+		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+	}
 
 	// Remove this client from our local list...
 
@@ -1578,43 +1554,7 @@ void CGameServerShell::HandleMultiplayerUpdate (HCLIENT hSender, ILTMessage_Read
 	}
 } 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::HandleMultiplayerServerDir ()
-//
-//	PURPOSE:	Handle messages sent through the server directory interface
-//
-// ----------------------------------------------------------------------- //
 
-void CGameServerShell::HandleMultiplayerServerDir (HCLIENT hSender, ILTMessage_Read *pMsg)
-{
-	// Only handle this message if we actually have a server directory
-	if (!m_pServerDir)
-		return;
-
-	uint8 aNumericAddr[4];
-	char aSourceAddr[16];
-	uint16 nSourcePort;
-
-	// Get the address and port of where this came from
-	if (!hSender)
-	{
-		GetCurMessageSource(aNumericAddr, &nSourcePort);
-	}
-	else
-	{
-		g_pLTServer->GetClientAddr(hSender, aNumericAddr, &nSourcePort);
-	}
-	// Convert the address portion
-	sprintf(aSourceAddr, "%d.%d.%d.%d", 
-		(uint32)aNumericAddr[0],
-		(uint32)aNumericAddr[1],
-		(uint32)aNumericAddr[2],
-		(uint32)aNumericAddr[3]);
-
-	// Let the server directory handle it
-	m_pServerDir->HandleNetMessage(*CLTMsgRef_Read(pMsg->SubMsg(pMsg->Tell())), aSourceAddr, nSourcePort);
-} 
 
 // ----------------------------------------------------------------------- //
 //
@@ -3437,6 +3377,44 @@ void CGameServerShell::UpdateSwitchingWorlds( )
 	return;
 }
 
+// RETAIL: Tron's (retail 0x100e4720; the names are ours): sends "PAUSE" or
+// "RESUME" to every SpinningWorldModel, the active ones when pausing, the
+// inactive ones when resuming
+static float s_fDisableSWM = 0.0f;
+
+static void DisableSpinningWorldModels( bool bDisable )
+{
+	char szMsg[128];
+	sprintf( szMsg, "%s", bDisable ? "PAUSE" : "RESUME" );
+
+	if( bDisable )
+	{
+		HOBJECT hObj = g_pLTServer->GetNextObject( LTNULL );
+		while( hObj )
+		{
+			HOBJECT hNext = g_pLTServer->GetNextObject( hObj );
+			if( IsKindOf( hObj, "SpinningWorldModel" ))
+			{
+				SendTriggerMsgToObject( g_pLTServer->HandleToObject( hObj ), hObj, LTTRUE, szMsg );
+			}
+			hObj = hNext;
+		}
+	}
+	else
+	{
+		HOBJECT hObj = g_pLTServer->GetNextInactiveObject( LTNULL );
+		while( hObj )
+		{
+			HOBJECT hNext = g_pLTServer->GetNextInactiveObject( hObj );
+			if( IsKindOf( hObj, "SpinningWorldModel" ))
+			{
+				SendTriggerMsgToObject( g_pLTServer->HandleToObject( hObj ), hObj, LTTRUE, szMsg );
+			}
+			hObj = hNext;
+		}
+	}
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGameServerShell::Update
@@ -3488,6 +3466,14 @@ void CGameServerShell::Update(LTFLOAT timeElapsed)
 		}
 	}
 
+	// RETAIL: Tron pauses the spinning world models while DisableSWM is set
+	// (retail Update 0x100e1c60)
+	if( g_vtDisableSWM.GetFloat() != s_fDisableSWM )
+	{
+		s_fDisableSWM = g_vtDisableSWM.GetFloat();
+		DisableSpinningWorldModels( s_fDisableSWM ? true : false );
+	}
+
 	// Should the stair height change...
 
 	if( g_StairStepHeight.GetFloat() != DEFAULT_STAIRSTEP_HEIGHT )
@@ -3531,7 +3517,7 @@ void CGameServerShell::Update(LTFLOAT timeElapsed)
 		cMsg.Writeuint8(MID_PLAYER_MESSAGE);
 		cMsg.WriteString(fullMsg);
 		cMsg.Writeuint32(-1);
-		cMsg.Writeuint8(INVALID_TEAM);
+		cMsg.Writeuint8(1);	// RETAIL: 1 here in Tron (retail Update 0x100e1f10), not INVALID_TEAM; not yet known
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		m_SayTrack.SetStr("");
@@ -4534,9 +4520,9 @@ LTRESULT CGameServerShell::ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr
 	if( m_bFirstUpdate || !m_bUseGameSpy )
 		return LT_OK;
 
-	if(( pMsg->Size( ) >= 8 && pMsg->PeekBits( 8 ) == ';' ) ||
-		( pMsg->Size( ) >= 16 && pMsg->PeekBits( 16 ) == 0xFDFE ) ||
-		( pMsg->Size( ) >= 8 && pMsg->PeekBits( 8 ) == '\\' ))
+	if(( pMsg->Size( ) >= 8 && pMsg->Peekuint8( ) == ';' ) ||
+		( pMsg->Size( ) >= 16 && pMsg->Peekuint16( ) == 0xFDFE ) ||
+		( pMsg->Size( ) >= 8 && pMsg->Peekuint8( ) == '\\' ))
 	{
 		uint32 nDataLen = pMsg->Size( ) / 8;
 		char* pData = ( char* )alloca( nDataLen );
@@ -4891,24 +4877,6 @@ void CGameServerShell::ServerAppPostStartWorld( )
 }
 
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::SetServerDir
-//
-//	PURPOSE:	Change the server directory object
-//
-// --------------------------------------------------------------------------- //
-
-void CGameServerShell::SetServerDir(IServerDirectory *pDir)
-{ 
-	if( m_pServerDir )
-	{
-		// No leaking, please...
-		delete m_pServerDir; 
-	}
-
-	m_pServerDir = pDir; 
-}
 
 // --------------------------------------------------------------------------- //
 //

@@ -169,8 +169,6 @@ class CGameServerShell : public IServerShellStub
 
 		// Server directory access
 		// Note : The server directory is owned by this object once you pass it in.
-		IServerDirectory *GetServerDir() { return m_pServerDir; }
-		void		SetServerDir(IServerDirectory *pDir);
 
 		// Get/Set the source address of the message which is currently being processed
 		void		SetCurMessageSource(const uint8 aAddr[4], uint16 nPort);
@@ -195,8 +193,8 @@ class CGameServerShell : public IServerShellStub
 		// cycles to its light cycle manager. Not yet named
 		virtual void	TronUnknownVirtual6C( uint32 nArg1, uint32 nArg2 ) {}
 		virtual void	TronUnknownVirtual70( uint32 nArg ) {}
-		virtual void	TronUnknownVirtual74( uint32 nArg ) {}
-		virtual void	TronUnknownVirtual78( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual74( HCLIENT hClient ) {}	// RETAIL: OnAddClient's last
+		virtual void	TronUnknownVirtual78( HCLIENT hClient ) {}	// RETAIL: OnRemoveClient's first
 		virtual void	TronUnknownVirtual7C( uint32 nArg ) {}
 		virtual void	TronUnknownVirtual80( uint32 nArg ) {}
 		virtual void	TronUnknownVirtual84( uint32 nArg ) {}
@@ -219,7 +217,7 @@ class CGameServerShell : public IServerShellStub
 	    virtual LTRESULT	OnServerInitialized();
 		virtual void		OnServerTerm();
 
-		void		OnAddClient(HCLIENT hClient);
+		bool		OnAddClient(HCLIENT hClient);
 		void		OnRemoveClient(HCLIENT hClient);
         LPBASECLASS OnClientEnterWorld(HCLIENT hClient);
 		void		OnClientExitWorld(HCLIENT hClient);
@@ -266,7 +264,6 @@ class CGameServerShell : public IServerShellStub
 		void		HandlePlayerTaunt				(HCLIENT, ILTMessage_Read*);
 		void		HandlePlayerTeleport			(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerUpdate			(HCLIENT, ILTMessage_Read*);
-		void		HandleMultiplayerServerDir		(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerInit			(HCLIENT, ILTMessage_Read*);
 		void		HandleMultiplayerPlayerUpdate	(HCLIENT, ILTMessage_Read*);
 		void        HandleHandshake					(HCLIENT, ILTMessage_Read*);
@@ -432,10 +429,9 @@ class CGameServerShell : public IServerShellStub
 		uint32				m_nTronUnknown173C0;	// RETAIL: Tron's; not yet known
 		CString				m_sWorld;
 		// RETAIL: 0x80 bytes of Tron's here, before the message source (+0x17448);
-		// not yet known. Tron has no WON server directory: NOLF2's pointer stands
-		// in at their end (PORT)
-		uint8				m_aTronUnknown173C8[0x80 - sizeof(IServerDirectory*)];
-		IServerDirectory*	m_pServerDir;
+		// not yet known (no shell function touches them). Tron has no WON
+		// server directory (nor NOLF2's ProcessPacket handling of it)
+		uint8				m_aTronUnknown173C8[0x80];
 
 		void CacheLevelSpecificFiles();
 

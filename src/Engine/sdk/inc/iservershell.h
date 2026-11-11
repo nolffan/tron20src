@@ -100,12 +100,15 @@ Used for: ServerShell Callbacks.
 
 \return The engine ignores the callback return value.
 
-  Called almost immediately after OnClientExitWorld() (just after client has 
-unloaded the world).
+  Called when client leaves the world (just before the engine tells it to 
+unload the world).
+
+TRON: slot 6 (retail 0x100de1a0: the player removed message, the client list,
+the player object), where the earlier naming had OnRemoveClient.
 
 Used for: ServerShell Callbacks.
 */
-    virtual void OnRemoveClient(HCLIENT hClient) = 0;
+    virtual void OnClientExitWorld(HCLIENT hClient) = 0;
 
 /*!
 \param  bSwitchingWorlds    World switching indicator. True if currently 
@@ -153,12 +156,15 @@ Used for: ServerShell Callbacks.
 /*!
 \param  hClient     Client handle.
 
+\return false to refuse the client (TRON: Tron's returns the ban manager's
+        verdict, retail 0x100dd990).
+
 Called when client first connects after client has been given an ID, but 
 before any data is sent to it.
 
 Used for: ServerShell Callbacks.
 */
-    virtual void OnAddClient(HCLIENT hClient) = 0;
+    virtual bool OnAddClient(HCLIENT hClient) = 0;
 
 /*!
 \return \b LT_OK - Everything is fine.
@@ -175,12 +181,17 @@ here.
 /*!
 \param  hClient     Exiting client's handle.
 
-Called when client leaves the world (just before the engine tells it to 
-unload the world).
+\return The engine ignores the callback return value.
+
+  Called almost immediately after OnClientExitWorld() (just after client has 
+unloaded the world).
+
+TRON: slot 13 (retail 0x100ddb30: the player's client cleared, the scmd and
+the server app told), where the earlier naming had OnClientExitWorld.
 
 Used for: ServerShell Callbacks.
 */
-    virtual void OnClientExitWorld(HCLIENT hClient) = 0;
+    virtual void OnRemoveClient(HCLIENT hClient) = 0;
 
 /*!
 \param  hClient         Connecting client's handle.
@@ -246,7 +257,7 @@ class IServerShellStub : public IServerShell {
     virtual LTRESULT OnServerInitialized() {return LT_OK;}
     virtual void OnServerTerm() {};
     virtual LTRESULT ServerAppMessageFn( ILTMessage_Read& msg ) {return LT_OK;}
-    virtual void OnAddClient(HCLIENT hClient) { }
+    virtual bool OnAddClient(HCLIENT hClient) { return true; }
     virtual void OnRemoveClient(HCLIENT hClient) {}
     virtual LPBASECLASS OnClientEnterWorld(HCLIENT hClient)=0;
     virtual void OnClientExitWorld(HCLIENT hClient) {}

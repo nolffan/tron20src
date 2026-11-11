@@ -70,7 +70,9 @@ class CPlayerObj : public CCharacter
 		virtual void AddToObjectList( ObjectList *pObjList, eObjListControl eControl = eObjListNODuplicates );
 
 		void SendStartLevelCommand();
-		void SetClient(HCLIENT hClient);
+		// RETAIL: inline in Tron, no special fx update (the server shell's
+		// OnRemoveClient 0x100ddb30, OnClientExitWorld 0x100de1a0, 0x100e1130 store it)
+		void SetClient(HCLIENT hClient) { m_hClient = hClient; }
 		HCLIENT GetClient() const		{ return m_hClient; }
 
 		void SetClientSaveData(ILTMessage_Read *pMsg);
