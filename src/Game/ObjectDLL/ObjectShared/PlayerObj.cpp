@@ -755,7 +755,7 @@ CMDMGR_END_REGISTER_CLASS( CPlayerObj, CCharacter )
 // How far off the player can be between the server and client
 #define DEFAULT_LEASHLEN					16.0f
 // How far out to let it interpolate the position
-#define DEFAULT_LEASHSPRING					50.0f
+#define DEFAULT_LEASHSPRING					150.0f	// RETAIL: Tron's (retail 0x1007b57e)
 // How fast to interpolate between the postions (higher = faster)
 #define	DEFAULT_LEASHSPRINGRATE				0.3f
 
@@ -832,10 +832,10 @@ CPlayerObj::CPlayerObj()
 	m_bRespawnInvulnerability = false;
     m_bGodMode              = LTFALSE;
     m_bAllowInput           = LTTRUE;
-	m_bCinematicInvulnerability = false;
     m_b3rdPersonView        = LTFALSE;
 
     m_bSpectatorMode        = LTFALSE;
+	m_bTronUnknown2a98		= false;
 	m_bInvisible			= false;
 
 	m_PStateChangeFlags		= PSTATE_INITIAL;
@@ -984,6 +984,8 @@ CPlayerObj::~CPlayerObj()
 
 		it++;
 	}
+
+	m_pLastStartPoint = LTNULL;	// RETAIL: retail 0x1007790f
 }
 
 
@@ -2119,8 +2121,8 @@ LTBOOL CPlayerObj::InitialUpdate(int nInfo)
 	m_damage.SetMass(g_pModelButeMgr->GetModelMass(m_eModelId));
 
 	// Player bodies should not get removed during density capacity limiting.
-	// (it's OK to remove them in Deathmatch)
-	m_bPermanentBody = IsRevivePlayerGameType( );
+	// RETAIL: never in Tron (retail 0x1007b7c5)
+	m_bPermanentBody = true;
 
 	ResetHealth();
 
@@ -2160,10 +2162,7 @@ LTBOOL CPlayerObj::Update()
 		// trigger or transition occurred, the player will have a client
 		// before it gets here.
 		
-		// [RP] 9/14/02 - Force to be able to drop the body at the player pos since the
-		//		last good pos may be from a previous level...
-
-		m_bCanDropBody = true;
+		// RETAIL: Tron does not force the drop (retail 0x1007b85e)
 		DropCarriedObject( );
 
 		return LTFALSE;
@@ -2171,7 +2170,8 @@ LTBOOL CPlayerObj::Update()
 	
 	// [RP] 9/14/02 Don't officially update if the player hasn't respawned or his client hasn't loaded yet...
 
-	if( !m_bRespawnCalled || !m_bClientLoaded ) 
+	// RETAIL: Tron does not wait for the client here (retail 0x1007b879)
+	if( !m_bRespawnCalled ) 
 		return LTFALSE;
 
 	if( m_bFirstUpdate )
@@ -2235,12 +2235,7 @@ LTBOOL CPlayerObj::Update()
 
 	UpdateAirLevel();
 
-	// Update our Health...(Only in easy mode)
-
-	if (g_pGameServerShell->GetDifficulty() == GD_EASY)
-	{
-		UpdateHealth();
-	}
+	// RETAIL: Tron's player does not regenerate health here (retail 0x1007b800)
 
 	// Update Interface...
 
@@ -2265,7 +2260,7 @@ LTBOOL CPlayerObj::Update()
 	// If we're outside the world (and not in spectator mode)...wake-up,
 	// time to die...
 
-	if (!m_bSpectatorMode && m_eState == PS_ALIVE)
+	if (!m_bSpectatorMode && !m_bTronUnknown2a98 && m_eState == PS_ALIVE)	// RETAIL: nor with Tron's flag at 0x2a98
 	{
         LTVector vPos, vMin, vMax;
         g_pLTServer->GetWorldBox(vMin, vMax);
@@ -3156,7 +3151,7 @@ void CPlayerObj::WriteInterfaceMessage(ILTMessage_Write *pMsg)
 		nFlags |= PSTATE_INT_CARRYING;
 	}
 
-	if( CanDropObject() )
+	if( m_bCanDropBody )	// RETAIL: Tron asks the flag (retail 0x1007d06c)
 	{
 		nFlags |= PSTATE_INT_CAN_DROP;
 	}
@@ -3250,14 +3245,8 @@ void CPlayerObj::BecomeInvisible(void)
 	g_pAIStimulusMgr->RemoveStimulus(m_eEnemyVisibleStimID);
 	m_eEnemyVisibleStimID = kStimID_Unset;
 
-	// This stimulus only exists in TRON.
-
-	if( m_eUndeterminedVisibleStimID != kStimID_Invalid )
-	{
-		ASSERT(m_eUndeterminedVisibleStimID != kStimID_Unset);
-		g_pAIStimulusMgr->RemoveStimulus(m_eUndeterminedVisibleStimID);
-	}
-	m_eUndeterminedVisibleStimID = kStimID_Unset;
+	// RETAIL: retail Tron's player has no undetermined visible stimulus to
+	// remove (retail 0x1007d160)
 }
 
 //----------------------------------------------------------------------------
@@ -3277,8 +3266,7 @@ void CPlayerObj::BecomeVisible(void)
 	ASSERT(m_eEnemyVisibleStimID == kStimID_Unset);
 	m_eEnemyVisibleStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyVisible, m_hObject, LTNULL, CAIStimulusRecord::kDynamicPos_TrackSource, 1.f );
 
-	ASSERT(m_eUndeterminedVisibleStimID == kStimID_Unset);
-	m_eUndeterminedVisibleStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_UndeterminedVisible, m_hObject, LTNULL, CAIStimulusRecord::kDynamicPos_TrackSource, 1.f );
+	// RETAIL: nor one to register (retail 0x1007d1a0)
 }
 
 // ----------------------------------------------------------------------- //
@@ -3632,7 +3620,7 @@ void CPlayerObj::AcquireGear(char* pGearName)
 	if (!pGearName || !*pGearName || !GetClient( )) return;
 
 	GEAR const *pGear = g_pWeaponMgr->GetGear(pGearName);
-	if (!pGear || pGear->bServerRestricted ) return;
+	if (!pGear) return;	// RETAIL: no server restriction in Tron (retail 0x1007d8e0)
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint32(MID_ADDGEAR);
@@ -4271,7 +4259,7 @@ void CPlayerObj::AcquireAmmo(char* pAmmoName)
 
 	AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo(pAmmoName);
 
-	if( pAmmoData && !pAmmoData->bServerRestricted )
+	if( pAmmoData )	// RETAIL: no server restriction in Tron (retail 0x1007eb00)
 	{
 		if (pAmmoData && m_pPlayerAttachments)
 		{
@@ -4371,7 +4359,7 @@ void CPlayerObj::HandleDead(LTBOOL)
 	cMsg.Writeuint8( CFX_PLAYER_DEAD );
 	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, 0 );
 
-	SetTracking( false );
+	// RETAIL: Tron's dead player does not stop tracking (retail 0x1007ec60)
 
 	// Remove stimuli so that AI do not treat a dead player as an enemy.
 
@@ -4409,7 +4397,7 @@ void CPlayerObj::StartDeath()
 		}
 		PlaySound(pSound, m_fSoundRadius, LTTRUE);
 
-		SetPhysicsModel(PPM_NORMAL);
+		// RETAIL: Tron does not reset the physics model here (retail 0x1007eee0)
 	}
 
 	// Drop any body we might be carrying.
@@ -5046,7 +5034,7 @@ LTBOOL CPlayerObj::CanHide()
 		AIInformationVolume* pVol = GetCurrentInformationVolume();
 		if (!pVol) return LTFALSE;
 
-		if (pVol->GetVolumeType() != AIInformationVolume::eTypePlayerInfo) return LTFALSE;
+		// RETAIL: Tron does not check the volume's type (retail 0x10080780)
 		AIVolumePlayerInfo* pPlayerInfoVol = (AIVolumePlayerInfo*)pVol;
 
 		if ( pPlayerInfoVol->IsOn() 
@@ -6202,7 +6190,6 @@ void CPlayerObj::UpdateClientViewPos()
 	{
 		// If we're in a cinematic don't allow the player to be damaged...
         m_damage.SetCanDamage(LTFALSE);
-		m_bCinematicInvulnerability = true;
 
 		// Make sure we aren't moving...
 
@@ -6218,11 +6205,11 @@ void CPlayerObj::UpdateClientViewPos()
 	}
 	else
 	{
-		// Check if we were set to invulnerable by a cinematic camera.
-		if( m_bCinematicInvulnerability )
+		// RETAIL: Tron has no cinematic invulnerability flag: it can be
+		// damaged again unless in god mode (retail 0x100821e2)
+		if( !m_bGodMode )
 		{
 	        m_damage.SetCanDamage(LTTRUE);
-			m_bCinematicInvulnerability = false;
 		}
 
         LTVector vPos;
@@ -7307,6 +7294,13 @@ void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 
 void CPlayerObj::SetNormalPhysicsModel()
 {
+	// RETAIL: Tron's turns the player's rotation back on and stops the
+	// client sending it (retail 0x100840e0)
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_YROTATION, FLAG_YROTATION );
+
+	HCLIENT hClient = GetClient( );
+	g_pLTServer->SetClientInfoFlags( hClient, g_pLTServer->GetClientInfoFlags( hClient ) & ~CIF_SENDCOBJROTATION );
+
 	// Remove any vehicle models...
 
 	RemoveVehicleModel();
@@ -7425,6 +7419,10 @@ LTBOOL CPlayerObj::HasMeleeWeapon()
 
 LTFLOAT	CPlayerObj::GetFootstepVolume()
 {
+	// RETAIL: an invisible player makes no sound (retail 0x100843e0)
+	if( m_bInvisible )
+		return 0.0f;
+
 	switch (m_Animator.GetLastMovement())
 	{
 		case CAnimatorPlayer::eWalking:
@@ -7624,9 +7622,11 @@ float CPlayerObj::GetInfoVerticalThreshold() const
 }
 
 
-void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false  */ )
+void CPlayerObj::SetCarriedObject( HOBJECT hObject )
 {
-	
+	// RETAIL: Tron's (retail 0x100848a0): no transition argument, carried
+	// AI are put down in front of the player, no carrying state for the
+	// client
 	if (m_hCarriedObject && !hObject)
 	{
 		// remove body attachment
@@ -7650,18 +7650,16 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 			CCharacter *pChar = (CCharacter *)g_pLTServer->HandleToObject(m_hCarriedObject);
 			if (pChar)
 			{
-				LTVector vPos, vForward, vUp(0.0f,1.0f,0.0f);
+				LTVector vPos, vForward;
 				LTRotation rRot;
 
-				// Use our position if we are allowed to drop an object...
-				// Use the last good drop pos if we are not allowed (not in an AI volume :)
-
-				// PORT: Tron keeps no last good drop position
 				g_pLTServer->GetObjectPos(m_hObject, &vPos);
-
 				g_pLTServer->GetObjectRotation(m_hObject, &rRot);
 
 				vForward = rRot.Forward();
+				vPos.x += vForward.x * 4.0f;
+				vPos.z += vForward.z * 4.0f;
+
 				g_pLTServer->SetObjectPos(pChar->m_hObject, &vPos);
 				g_pLTServer->SetObjectPos(pChar->GetHitBox(), &vPos);
 				g_pLTServer->SetObjectRotation(pChar->m_hObject, &rRot);
@@ -7671,39 +7669,13 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 				g_pPhysicsLT->GetObjectDims(pChar->m_hObject, &vDims);
 				g_pPhysicsLT->SetObjectDims(pChar->GetHitBox(), &vDims,0);
 
-				// [RP] 9/15/02 - If the player is transitioning with Cate do a "special" teleport
-				//		to make sure she is in the correct position when the new level loads...
-
-				bool bNormalTeleport = true;
-				if( bTransition && IsMultiplayerGame() )
-				{
-					if( IsKindOf( m_hCarriedObject, "CAIHuman" ))
-					{
-						CAIHuman *pCate = dynamic_cast<CAIHuman*>(g_pLTServer->HandleToObject( m_hCarriedObject ));
-						if( pCate )
-						{
-							if( !_stricmp( pCate->GetName(), "Cate" ))
-							{
-								bNormalTeleport = false;
-
-								pCate->TransitioningInMultiplayerWhileCarryingCateTeleportHack( vPos );
-							}
-						}
-					}
-				}
-
-				if( bNormalTeleport )
-				{
-					//send the telport message so that the AI's position is updated immediately
-					char szMsg[128];
-					sprintf(szMsg,"TELEPORT %f,%f,%f",vPos.x,vPos.y,vPos.z);
-					SendTriggerMsgToObject(this, m_hCarriedObject, 0, szMsg);
-				}
+				//send the telport message so that the AI's position is updated immediately
+				char szMsg[128];
+				sprintf(szMsg,"TELEPORT %f,%f,%f",vPos.x,vPos.y,vPos.z);
+				SendTriggerMsgToObject(this, m_hCarriedObject, 0, szMsg);
 
 				pChar->HideAttachments(LTFALSE);
-
 			}
-
 		}
 		else
 		{
@@ -7713,48 +7685,17 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 				g_pLTServer->SetModelAnimation(m_hCarriedObject, hAni);
 				g_pLTServer->SetModelLooping(m_hCarriedObject, LTFALSE);
 			}
-
 		}
 
 		m_hCarriedObject = LTNULL;
 		m_bCanDropBody = false;
 		m_bCarryingAI = false;
-		SetCarrying(CFX_CARRY_NONE);
-
 	}
-
-	if (hObject && !m_hCarriedObject)
+	else if (hObject && !m_hCarriedObject)
 	{
-		m_bCarryingAI = !!(IsKindOf(hObject,"CAIHuman"));
-
-		if (IsKindOf(hObject,"Body") || m_bCarryingAI)
-		{
-			SetCarrying(CFX_CARRY_BODY);
-		}
-		else
-		{
-			DoomsDayPiece* pDoomsDayPiece = dynamic_cast< DoomsDayPiece* >( g_pLTServer->HandleToObject( hObject ));
-			//we only know about carrying doomsday pieces right now
-			ASSERT(pDoomsDayPiece);
-			if( pDoomsDayPiece )
-			{
-				switch (pDoomsDayPiece->GetDoomsDayPieceType())
-				{
-				case kDoomsDay_transmitter:
-					SetCarrying(CFX_CARRY_DD_TRAN);
-					break;
-				case kDoomsDay_battery:
-					SetCarrying(CFX_CARRY_DD_BATT);
-					break;
-				case kDoomsDay_Core:
-					SetCarrying(CFX_CARRY_DD_CORE);
-					break;
-				}
-			}
-		}
+		m_bCarryingAI = !IsKindOf(hObject,"Body");
 
 		m_hCarriedObject = hObject;
-
 
 		g_pCommonLT->SetObjectFlags(m_hCarriedObject, OFT_Flags, FLAG_FORCECLIENTUPDATE, FLAG_FORCECLIENTUPDATE);
 
@@ -7765,8 +7706,6 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 			g_pLTServer->SetModelLooping(m_hCarriedObject, LTFALSE);
 		}
 
-		
-
 		// Attach body to shoulder
 		LTRotation rRot;
 		g_pLTServer->GetObjectRotation(m_hObject, &rRot);
@@ -7776,27 +7715,12 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject, bool bTransition /* = false 
 		HATTACHMENT hAttachment;
 		if (LT_OK != g_pLTServer->CreateAttachment(m_hObject, m_hCarriedObject, pSocket, &LTVector(0,0,0), &LTRotation(), &hAttachment))
 		{
-			ASSERT(!"CreateAttachment() failed.");
 			g_pLTServer->CPrint("Failed to attach body.");
 		}
-		
-		
-		if (IsMultiplayerGame())
-		{
-			
-			PlaySound(s_pMPBodySounds[GetRandom(0,1)], m_fSoundRadius, LTTRUE);
-		}
-		else
-		{
-			PlaySound(s_pBodySounds[GetRandom(0,1)], m_fSoundRadius, LTTRUE);
-		}
-		
-		
-		
-		
-		// PORT: Tron keeps no last good drop position
-	}
 
+		char* pBodySounds[] = { "Chars\\Snd\\BodyMoveCloth_1.WAV", "Chars\\Snd\\BodyMoveLeather_1.WAV" };
+		PlaySound(pBodySounds[GetRandom(0,1)], m_fSoundRadius, LTTRUE);
+	}
 }
 
 
@@ -7848,6 +7772,12 @@ void CPlayerObj::DoWeaponReload( uint8 nAmmoId )
 
 void CPlayerObj::HandleExit( bool bNewMission )
 {
+	// RETAIL: Tron's player can't be hurt while it exits (retail 0x10084dc0)
+	if( !m_bGodMode )
+	{
+		ToggleGodMode( );
+	}
+
 	// Save whether we should reset for the new mission.
 	m_bNewMission = bNewMission;
 
@@ -7946,33 +7876,31 @@ void CPlayerObj::RemoveAttachments( bool bDestroyAttachments )
 //
 // ----------------------------------------------------------------------- //
 
-bool CPlayerObj::DropCarriedObject( bool bTransition /* = false  */ )
+bool CPlayerObj::DropCarriedObject( )
 {
+	// RETAIL: Tron's (retail 0x10084fe0): only where it may be dropped, no
+	// transition argument, no DoomsDay pieces
+
 	// Make sure we have a body and we can drop it.
-	if( !m_hCarriedObject )
+	if( !m_hCarriedObject || !m_bCanDropBody )
 		return false;
 
 	// Make sure the object is visible.  It may have been hidden
 	// due to a reload of a save game in mp.
 	g_pCommonLT->SetObjectFlags( m_hCarriedObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
 
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( m_hCarriedObject, OFT_User, dwFlags );
-
 	if (IsKindOf(m_hCarriedObject,"Body"))
 	{
 		Body *pBody = dynamic_cast<Body*>(g_pLTServer->HandleToObject( m_hCarriedObject ));
 		if( pBody )
 		{
+			// PORT: retail calls a one-argument virtual here (Body's slot
+			// 27, with false); NOLF2's two-argument one stands in
 			pBody->SetBeingCarried( false, NULL );
 		}
 
-		// PORT: Tron keeps no last good drop position to drop at
-		else
-		{
-			// Send trigger to body to toggle move.
-			SendTriggerMsgToObject(this, m_hCarriedObject, 0, "CARRY");
-		}	
+		// Send trigger to body to toggle move.
+		SendTriggerMsgToObject(this, m_hCarriedObject, 0, "CARRY");
 	}
 	else if (IsKindOf(m_hCarriedObject,"CAIHuman"))
 	{
@@ -7980,7 +7908,7 @@ bool CPlayerObj::DropCarriedObject( bool bTransition /* = false  */ )
 	    g_pCommonLT->SetObjectFlags(hAI, OFT_User, 0, USRFLG_ATTACH_HIDE1SHOW3);
 		ShowObjectAttachments(hAI,true);
 
-		SetCarriedObject( NULL, bTransition );
+		SetCarriedObject( NULL );
 
 		g_pCommonLT->SetObjectFlags(hAI, OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
 		CAIHuman *pAI = dynamic_cast<CAIHuman*>(g_pLTServer->HandleToObject( hAI ));
@@ -7998,23 +7926,7 @@ bool CPlayerObj::DropCarriedObject( bool bTransition /* = false  */ )
 			{
 				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
 			}
-
-			// NOTE: Right now we don't care if we are not allowed to drop the body.  SetCarriedBody()
-			// will move the AI to the correct position if we are not allowed to drop the body.
 		}
-	}
-	else if( IsKindOf( m_hCarriedObject, "DoomsDayPiece" ))
-	{
-		HOBJECT hObj = m_hCarriedObject;
-		g_pCommonLT->SetObjectFlags( hObj, OFT_User, 0, USRFLG_ATTACH_HIDE1SHOW3 );
-		
-		ShowObjectAttachments( hObj, true );
-		SetCarriedObject( NULL, bTransition );
-
-		// Send message to the object letting it know it's been dropped so it can handle things
-		// like going solid again or other special handling...
-		
-		SendTriggerMsgToObject( this, hObj, 0, "DROP" );
 	}
 	else
 		return false;
@@ -8664,9 +8576,7 @@ void CPlayerObj::RemoveBody()
 	if( !pBody )
 		return;
 
-	// Make sure our body is not permanent when we try to fade it away...
-
-	pBody->SetPermanentBody( false );
+	// RETAIL: Tron's bodies have no permanence to undo (retail 0x100861d0)
 	pBody->SetState( kState_BodyFade );
 }
 

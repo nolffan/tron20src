@@ -240,12 +240,14 @@ class CPlayerObj : public CCharacter
 
 		// Carrying...
 
-		void	SetCarriedObject(HOBJECT hBody, bool bTransition = false );
+		void	SetCarriedObject(HOBJECT hBody);	// RETAIL: no transition argument in Tron
 		HOBJECT	GetCarriedObject() {return m_hCarriedObject;}
 		bool	IsCarrying() {return (GetCarriedObject() != LTNULL);}
 		bool	IsCarryingHeavyObject();
 		void	RemoveCarriedObject();
-		bool	DropCarriedObject( bool bTransition = false );
+		bool	DropCarriedObject( );	// RETAIL: no transition argument in Tron
+		// PORT: for NOLF2's callers that pass one
+		bool	DropCarriedObject( bool /*bTransition*/ ) { return DropCarriedObject( ); }
 
 
 		virtual void	HideCharacter(LTBOOL bHide);
@@ -516,11 +518,16 @@ class CPlayerObj : public CCharacter
         LTBOOL      m_bChatting;
 	    uint16		m_nClientChangeFlags;
 
-		bool		m_bCinematicInvulnerability;
+		// RETAIL: no cinematic invulnerability flag in Tron (nothing uses
+		// 0x2a92; UpdateClientViewPos goes by god mode)
 
 		// Note: These aren't saved/loaded because changing levels
 		// will mess up the state of these (and they are cheats anyway)
         LTBOOL		m_bSpectatorMode;	
+		// RETAIL: a Tron flag before it (the server shell sets and clears
+		// it, retail 0x100555f1; Update does not kill a player outside the
+		// world with it). The name is ours
+		bool		m_bTronUnknown2a98;
 		bool		m_bInvisible;
 
 		CLTMsgRef_Read m_pClientSaveData;  // Client data to save
