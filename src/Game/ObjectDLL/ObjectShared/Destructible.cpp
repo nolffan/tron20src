@@ -61,8 +61,6 @@ const LTFLOAT DamageStruct::kInfiniteDamage = 100000.0f; // Infinite damage
 LTBOOL DamageStruct::InitFromMessage(ILTMessage_Read *pMsg)
 {
     if (!pMsg) return LTFALSE;
-	
-	uint32 dwPos = pMsg->Tell();
 
 	vDir = pMsg->ReadLTVector();
     fDuration  = pMsg->Readfloat();
@@ -71,8 +69,10 @@ LTBOOL DamageStruct::InitFromMessage(ILTMessage_Read *pMsg)
     hDamager   = pMsg->ReadObject();
     hContainer = pMsg->ReadObject();
     nAmmoId    = pMsg->Readuint8();
+	bTronUnknown44 = pMsg->Readbool() ? LTTRUE : LTFALSE;	// RETAIL: Tron's (Destructible.h)
 
-	pMsg->SeekTo( dwPos );
+	// RETAIL: back to the start, not to where the damage began (NOLF2's)
+	pMsg->SeekTo( 0 );
 
     return LTTRUE;
 }
@@ -98,6 +98,7 @@ LTBOOL DamageStruct::DoDamage(LPBASECLASS pDamager, HOBJECT hVictim, HOBJECT hCo
 	cMsg.WriteObject(hDamager);
 	cMsg.WriteObject(hContainer);
 	cMsg.Writeuint8(nAmmoId);
+	cMsg.Writebool(bTronUnknown44 == LTTRUE);	// RETAIL: Tron's (Destructible.h)
 	g_pLTServer->SendToObject(cMsg.Read(), pDamager->m_hObject, hVictim, MESSAGE_GUARANTEED);
 
     return LTTRUE;
@@ -129,9 +130,16 @@ CDestructible::CDestructible() : IAggregate()
 	m_fDeathDamage				= 0.0f;
 	m_fLastDamage				= 0.0f;
 	m_fLastArmorAbsorb			= 0.0f;
+	m_fTronUnknown78			= 1.0f;		// RETAIL: Tron's (Destructible.h)
 	m_nCantDamageFlags			= DamageTypeToFlag(DT_GADGET_DECAYPOWDER);
 	m_eLastDamageType			= DT_UNSPECIFIED;
+	m_bTronUnknown30			= LTFALSE;
 	m_eDeathType				= DT_UNSPECIFIED;
+	m_bTronUnknown6D0			= false;
+	m_fTronUnknown7C			= 0.0f;
+	m_fTronUnknown6D4			= 0.0f;
+	m_fTronUnknown6D8			= 0.0f;
+	m_vTronUnknown6DC.Init();
 
 	VEC_INIT(m_vDeathDir);
 	VEC_INIT(m_vLastDamageDir);
@@ -2053,9 +2061,14 @@ void CDestructible::Save(ILTMessage_Write *pMsg, uint8 nType)
     SAVE_BOOL(m_bNeverDestroy);
     SAVE_BYTE(m_eDeathType);
     SAVE_BYTE(m_eLastDamageType);
+    SAVE_BOOL(m_bTronUnknown30);	// RETAIL: Tron's, here (retail 0x100e9fa0)
     SAVE_DWORD(m_nDamageTriggerCounter);
     SAVE_DWORD(m_nDamageTriggerNumSends);
     SAVE_QWORD(m_nCantDamageFlags);
+    SAVE_BOOL(m_bTronUnknown6D0);
+    SAVE_FLOAT(m_fTronUnknown6D4);
+    SAVE_FLOAT(m_fTronUnknown6D8);
+    SAVE_VECTOR(m_vTronUnknown6DC);
 	
 	SAVE_CHARSTRING( m_sDamageCommand.c_str() );
     SAVE_CHARSTRING( m_sDamagerMessage.c_str() );
@@ -2069,6 +2082,8 @@ void CDestructible::Save(ILTMessage_Write *pMsg, uint8 nType)
 	SAVE_VECTOR(m_vDeathDir);
     SAVE_VECTOR(m_vLastDamageDir);
 	SAVE_FLOAT( m_fDamagePercentCommand );
+	SAVE_FLOAT( m_fTronUnknown78 );
+	SAVE_FLOAT( m_fTronUnknown7C );
 
     int i;
     for (i=0; i < MAX_GEAR_ITEMS; i++)
@@ -2117,9 +2132,14 @@ void CDestructible::Load(ILTMessage_Read *pMsg, uint8 nType)
     LOAD_BOOL(m_bNeverDestroy);
     LOAD_BYTE_CAST(m_eDeathType, DamageType);
     LOAD_BYTE_CAST(m_eLastDamageType, DamageType);
+    LOAD_BOOL(m_bTronUnknown30);	// RETAIL: as Save
     LOAD_DWORD(m_nDamageTriggerCounter);
     LOAD_DWORD(m_nDamageTriggerNumSends);
     LOAD_QWORD(m_nCantDamageFlags);
+    LOAD_BOOL(m_bTronUnknown6D0);
+    LOAD_FLOAT(m_fTronUnknown6D4);
+    LOAD_FLOAT(m_fTronUnknown6D8);
+    LOAD_VECTOR(m_vTronUnknown6DC);
 
 	char szString[1024] = {0};
 	LOAD_CHARSTRING( szString, ARRAY_LEN( szString ));
@@ -2140,6 +2160,8 @@ void CDestructible::Load(ILTMessage_Read *pMsg, uint8 nType)
 	LOAD_VECTOR(m_vDeathDir);
     LOAD_VECTOR(m_vLastDamageDir);
  	LOAD_FLOAT( m_fDamagePercentCommand );
+	LOAD_FLOAT( m_fTronUnknown78 );
+	LOAD_FLOAT( m_fTronUnknown7C );
 	
     int i;
     for (i=0; i < MAX_GEAR_ITEMS; i++)

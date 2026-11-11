@@ -97,6 +97,8 @@ class CPlayerObj : public CCharacter
         void SetSpectatorMode(LTBOOL bOn);
         void SetInvisibleMode(LTBOOL bOn);
 		void ToggleGodMode();
+		// RETAIL: Tron's zones ask it (EnergyZone, HealthZone). The name is ours
+		LTBOOL InGodMode() const { return m_bGodMode; }
 
 		// Makes player invulnerable for a period of time.
 		void SetRespawnInvulnerability( );

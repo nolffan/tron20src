@@ -83,6 +83,9 @@ struct DamageStruct : public ILTObjRefReceiver
 	DamageStruct()
 	{
 		Clear();
+		// RETAIL: Tron's constructor sets these two (retail 0x100e6c60)
+		nAmmoId			= 0xFF;	// WMGR_INVALID_ID
+		bTronUnknown44	= LTFALSE;
 		hDamager.SetReceiver( *this );
 	}
 
@@ -134,6 +137,7 @@ struct DamageStruct : public ILTObjRefReceiver
 		SAVE_HOBJECT(hDamager);
 		SAVE_HOBJECT(hContainer);
 		SAVE_BYTE(nAmmoId);
+		SAVE_BOOL(bTronUnknown44);
 	}
 
     void Load(ILTMessage_Read *pMsg)
@@ -147,6 +151,7 @@ struct DamageStruct : public ILTObjRefReceiver
 		LOAD_HOBJECT(hDamager);
 		LOAD_HOBJECT(hContainer);
 		LOAD_BYTE(nAmmoId);
+		LOAD_BOOL(bTronUnknown44);
 	}
  
 	const static LTFLOAT kInfiniteDamage;
@@ -170,6 +175,11 @@ struct DamageStruct : public ILTObjRefReceiver
     LTFLOAT			fDamage;
     LTFLOAT			fDuration;  // Progressive damage only...
 	uint8			nAmmoId;
+
+	// RETAIL: Tron's, sent with the damage (InitFromMessage, DoDamage: retail
+	// 0x100e6710, 0x100e6820) and saved; HealthZone's kill sets it. Not yet
+	// named
+	LTBOOL			bTronUnknown44;
 };
 
 
@@ -263,6 +273,10 @@ class CDestructible : public IAggregate
 
 		DamageType	m_eDeathType;		// How did we die
 		DamageType	m_eLastDamageType;	// What damaged us last
+		// RETAIL: Tron's CDestructible has seven members NOLF2's has not (its
+		// constructor, Save and Load: retail 0x100e69a0, 0x100e9fa0); not yet
+		// named
+		LTBOOL		m_bTronUnknown30;
         LTFLOAT     m_fLastDamage;      // Amount of last damage done
         LTFLOAT     m_fLastArmorAbsorb; // Amount of last damage absorbed by armor
         LTFLOAT     m_fDeathDamage;     // Amount of damage done on death blow
@@ -277,6 +291,8 @@ class CDestructible : public IAggregate
         LTFLOAT     m_fArmorPoints;
         LTBOOL      m_bDead;
 		LTFLOAT		m_fDamagePercentCommand;
+		LTFLOAT		m_fTronUnknown78;	// RETAIL: (above) 1 at first
+		LTFLOAT		m_fTronUnknown7C;	// RETAIL: (above)
 
 		// [kml] 2/8/02
 		LTFLOAT		m_fMaxEnergy;
@@ -310,6 +326,12 @@ class CDestructible : public IAggregate
 
 		DamageFilterFunction m_pDamageFilterFunction;
 		GameBase *m_pDamageFilterObject;
+
+		// RETAIL: (above)
+		bool		m_bTronUnknown6D0;
+		LTFLOAT		m_fTronUnknown6D4;
+		LTFLOAT		m_fTronUnknown6D8;
+		LTVector	m_vTronUnknown6DC;
 
 	private :
 

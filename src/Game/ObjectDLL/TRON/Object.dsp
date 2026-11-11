@@ -166,7 +166,15 @@ SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\EnergyZone.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HealthZone.cpp
 # End Source File
 # Begin Source File
 
@@ -224,6 +232,14 @@ SOURCE=.\BinaryBit.h
 # Begin Source File
 
 SOURCE=.\CoreDump.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\EnergyZone.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HealthZone.h
 # End Source File
 # Begin Source File
 
