@@ -21,8 +21,10 @@ class CPlayerCamera
 		enum CameraState	{ SOUTH, SOUTHEAST, EAST, NORTHEAST, NORTH,
 							  NORTHWEST, WEST, SOUTHWEST, MLOOK, HOLD };
 
+		// RETAIL: Tron has a sixth mode, in which the player is hidden as in
+		// first person (retail CPlayerMgr::UpdatePlayer, 0x1012c5e0); our name
 		enum CameraMode		{ FIRSTPERSON, CHASE, GOINGFIRSTPERSON,
-							  CIRCLING, SCRIPT };
+							  CIRCLING, SCRIPT, TRONMODE5 };
 
 		enum CameraPoint	{ AT_POSITION, IN_DIRECTION, AUTOMATIC };
 
@@ -69,10 +71,14 @@ class CPlayerCamera
 			m_eCameraMode = CHASE;
 		}
 
-		void GoFirstPerson();
+		// RETAIL: Tron's takes a flag (retail 0x1015cfe0: true sets a time it
+		// keeps to 0; and it leaves TRONMODE5 its own way). PORT: the flag is
+		// not yet used
+		void GoFirstPerson(bool bInstant = false);
 
         LTBOOL IsChaseView()     const { return (m_eCameraMode == CHASE); }
         LTBOOL IsFirstPerson()   const { return (m_eCameraMode == FIRSTPERSON); }
+		CameraMode GetCameraMode() const { return m_eCameraMode; }	// RETAIL: Tron's (our name)
         const LTRotation &GetRotation() const { return m_rRotation; }
         const LTVector &GetPos()        const { return m_vPos; }
 
@@ -96,6 +102,9 @@ class CPlayerCamera
 
         LTRotation	m_rRotation;
         LTVector		m_vPos;
+		// RETAIL: Tron's (+0x24, which the constructor leaves alone: retail
+		// 0x1015b130). Not yet named
+		LTVector		m_vTronUnknown24;
 
         LTVector		m_vLastTargetPos;   // The last position of our target
         LTVector		m_vLastOptPos;      // Last optimal camera pos

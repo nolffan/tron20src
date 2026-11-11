@@ -152,7 +152,8 @@ CPlayerMgr::CPlayerMgr()
 	m_pCameraOffsetMgr = debug_new( CCameraOffsetMgr );  ASSERT( 0 != m_pCameraOffsetMgr );
 	m_pFlashLight = debug_new( CFlashLightPlayer );      ASSERT( 0 != m_pFlashLight );
 	m_pGadgetDisabler = debug_new( CGadgetDisabler );    ASSERT( 0 != m_pGadgetDisabler );
-	m_pSearcher = debug_new( CSearcher );                ASSERT( 0 != m_pSearcher );
+	// RETAIL: Tron has no searcher (retail 0x10123400 allocates none; no
+	// search sounds or strings)
 	m_pMoveMgr = debug_new( CMoveMgr );                  ASSERT( 0 != m_pMoveMgr );
 	m_pVisionModeMgr = debug_new( CVisionModeMgr );      ASSERT( 0 != m_pVisionModeMgr );
 	m_pAttachButeMgr = debug_new( CAttachButeMgr );      ASSERT( 0 != m_pAttachButeMgr );
@@ -176,6 +177,7 @@ CPlayerMgr::CPlayerMgr()
 	m_bCamIsListener            = LTFALSE;
 	m_bCamera  = LTFALSE;
 	m_bStartedPlaying			= LTFALSE;
+	m_bTronUnknownA0			= LTFALSE;	// RETAIL: Tron's (PlayerMgr.h)
 	m_vSVLightScale.Init(1, 1, 1);
 
 	m_vShakeAmount.Init();
@@ -228,7 +230,7 @@ CPlayerMgr::CPlayerMgr()
 
 	m_bPlayerUpdated		= LTFALSE;
 
-	m_bCameraAttachedToHead	= false;
+	m_bCameraAttachedToHead	= LTFALSE;
 	m_bLerpAttachedCamera	= false;
 
 	m_nPlayerInfoChangeFlags	= 0;
@@ -257,6 +259,22 @@ CPlayerMgr::CPlayerMgr()
 
 	m_fMultiplayerDeathCamMoveTimer = 0.0f;
 	m_fMultiAttachDeathCamTimer = 0.0f;
+
+	// RETAIL: Tron's (PlayerMgr.h)
+	m_nTronUnknown15C		= 0;
+	m_bTronUnknown160		= false;
+	m_bTronUnknown161		= false;
+	m_szTronUnknown1B5[0]	= '\0';
+	m_bTronUnknown1D5		= false;
+	m_bTronUnknown1D6		= false;
+	m_bTronUnknown1D7		= true;
+	m_bTronUnknown1D8		= false;
+	m_bTronUnknown1D9		= false;
+	m_fTronUnknown1DC		= 5000.0f;
+	m_nTronUnknown1E0		= 0;
+	m_bTronUnknown1E4		= false;
+	m_bTronUnknownB8		= false;
+	m_fTronUnknownBC		= 0.0f;
 }
 
 CPlayerMgr::~CPlayerMgr()
@@ -283,12 +301,6 @@ CPlayerMgr::~CPlayerMgr()
 	{
 		debug_delete( m_pGadgetDisabler );
 		m_pGadgetDisabler = 0;
-	}
-
-	if ( m_pSearcher )
-	{
-		debug_delete( m_pSearcher );
-		m_pSearcher = 0;
 	}
 
 	if ( m_pMoveMgr )
@@ -661,7 +673,7 @@ void CPlayerMgr::OnEnterWorld()
 	m_eCurContainerCode       = CC_NO_CONTAINER;
 	m_bInSafetyNet			  = false;
 
-	m_bCameraAttachedToHead	= false;
+	m_bCameraAttachedToHead	= LTFALSE;
 	m_bLerpAttachedCamera	= false;
 
 	m_pHeadBobMgr->OnEnterWorld();
@@ -1100,10 +1112,6 @@ void CPlayerMgr::UpdatePlaying()
 	// Update the Gadget Disabler...
 
 	m_pGadgetDisabler->Update();
-
-	// Update the Searcher...
-
-	m_pSearcher->Update();
 
 	// Update the vision modes...
 
@@ -1557,7 +1565,7 @@ void CPlayerMgr::HandleMsgGadgetTarget( ILTMessage_Read *pMsg )
 
 void CPlayerMgr::HandleMsgSearch( ILTMessage_Read *pMsg )
 {
-	m_pSearcher->OnSearchMessage( pMsg );
+	// RETAIL: no searcher in Tron (PORT: NOLF2's message handler kept, inert)
 }
 
 
@@ -1825,6 +1833,8 @@ void CPlayerMgr::UpdateCameraSway()
 
 void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 {
+	// RETAIL: Tron's leaves the crosshair alone, and goes first person at
+	// once (retail 0x10126ae0)
 	if (bExternal && m_pPlayerCamera->IsFirstPerson())
 	{
 		g_pDamageFXMgr->Clear();
@@ -1834,8 +1844,6 @@ void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 		ShowPlayer(LTTRUE);
 		m_pPlayerCamera->GoChaseMode();
 		m_pPlayerCamera->CameraUpdate(0.0f);
-
-		g_pInterfaceMgr->EnableCrosshair(LTFALSE); // Disable cross hair in 3rd person...
 	}
 	else if (!bExternal && !m_pPlayerCamera->IsFirstPerson()) // Go Internal
 	{
@@ -1850,10 +1858,8 @@ void CPlayerMgr::SetExternalCamera(LTBOOL bExternal)
 		}
 
 		ShowPlayer(LTFALSE);
-		m_pPlayerCamera->GoFirstPerson();
+		m_pPlayerCamera->GoFirstPerson(true);
 		m_pPlayerCamera->CameraUpdate(0.0f);
-
-		g_pInterfaceMgr->EnableCrosshair(LTTRUE);
 	}
 }
 
@@ -2034,6 +2040,10 @@ void CPlayerMgr::TurnOffAlternativeCamera(uint8 nCamType)
 		WriteConsoleInt("ModelShadow_Proj_MaxShadowsPerFrame", g_nCinSaveNumModelShadows);
 		g_bCinChangedNumModelShadows = false;
 	}
+
+	// RETAIL: Tron's turns the projected model shadows off again (retail
+	// 0x10126e80)
+	g_pLTClient->RunConsoleString("ModelShadow_Proj_Enable 0");
 }
 
 
@@ -4289,9 +4299,7 @@ void CPlayerMgr::UpdateModelGlow()
 
 void CPlayerMgr::ClearCurContainerCode()
 {
-	//make sure we clear out any tinting that the container may have been doing
-	g_pGameClientShell->GetLightScaleMgr()->ClearLightScale(CLightScaleMgr::eLightScaleEnvironment);
-
+	// RETAIL: Tron's clears no light scale (retail 0x1012b1f0)
 	m_eCurContainerCode = CC_NO_CONTAINER;
 	m_nSoundFilterId = 0;
 }
@@ -4329,7 +4337,11 @@ void CPlayerMgr::HandleWeaponDisable(LTBOOL bDisabled)
 			UpdateContainers();
 		}
 
-		m_pClientWeaponMgr->ShowWeapons();
+		// RETAIL: not while zoomed, in Tron (retail 0x1012b200)
+		if (!IsZoomed())
+		{
+			m_pClientWeaponMgr->ShowWeapons();
+		}
 	}
 }
 
@@ -4377,7 +4389,7 @@ void CPlayerMgr::RestorePlayerModes()
 //
 // --------------------------------------------------------------------------- //
 
-void CPlayerMgr::AttachCameraToHead( bool bAttach, bool bInterpolate )
+void CPlayerMgr::AttachCameraToHead( LTBOOL bAttach )
 {
 	// We don't want to reset our orientations if we are currently doing what was requested...
 
@@ -4386,7 +4398,6 @@ void CPlayerMgr::AttachCameraToHead( bool bAttach, bool bInterpolate )
 
 	//set the new value
 	m_bCameraAttachedToHead	= bAttach;
-	m_bLerpAttachedCamera	= bInterpolate;
 
 	//if we are enabling, then cache our values
 	if(bAttach)
@@ -5119,17 +5130,15 @@ void CPlayerMgr::UpdateDynamicOccluders(HLOCALOBJ* pContainerArray, uint32 nNumC
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerMgr::SetMouseInput( LTBOOL bAllowInput, LTBOOL bRestoreBackupAngles )
+void CPlayerMgr::SetMouseInput(LTBOOL bAllowInput)
 {
+	// RETAIL: build 51's, Tron's (retail 0x1012c470): the backup angles are
+	// always restored
 	if (bAllowInput)
 	{
         m_bRestoreOrientation = LTTRUE;
-		
-		if( bRestoreBackupAngles )
-		{
-			m_fYaw   = m_fYawBackup;
-			m_fPitch = m_fPitchBackup;
-		}
+		m_fYaw   = m_fYawBackup;
+		m_fPitch = m_fPitchBackup;
 	}
 	else
 	{
@@ -5142,7 +5151,7 @@ void CPlayerMgr::AllowPlayerMovement(LTBOOL bAllowPlayerMovement)
 {
 	m_bAllowPlayerMovement = bAllowPlayerMovement;
 
-	SetMouseInput( bAllowPlayerMovement, LTFALSE );
+	SetMouseInput(bAllowPlayerMovement);
 }
 
 
@@ -5197,18 +5206,28 @@ void CPlayerMgr::UpdatePlayer()
 
     uint32 dwPlayerFlags;
 	g_pCommonLT->GetObjectFlags(hPlayerObj, OFT_Flags, dwPlayerFlags);
-	if (m_pPlayerCamera->IsFirstPerson())
+
+	// RETAIL: Tron's tests the camera mode (retail 0x1012c5e0)
+	CPlayerCamera::CameraMode eMode = m_pPlayerCamera->GetCameraMode();
+	if (eMode == CPlayerCamera::FIRSTPERSON)
 	{
 		if (dwPlayerFlags & FLAG_VISIBLE)
 		{
             ShowPlayer(LTFALSE);
 		}
 	}
-	else  // Third person
+	else if (eMode == CPlayerCamera::CHASE)
 	{
 		if (!(dwPlayerFlags & FLAG_VISIBLE))
 		{
             ShowPlayer(LTTRUE);
+		}
+	}
+	else if (eMode == CPlayerCamera::TRONMODE5)
+	{
+		if (dwPlayerFlags & FLAG_VISIBLE)
+		{
+            ShowPlayer(LTFALSE);
 		}
 	}
 
@@ -5320,7 +5339,7 @@ void SVModelHook(ModelHookData *pData, void *pUser)
 
 bool CPlayerMgr::IsSearching()
 { 
-	return m_pSearcher->IsSearching();
+	return false;	// RETAIL: no searcher in Tron
 }
 
 // --------------------------------------------------------------------------- //
@@ -5625,4 +5644,20 @@ void CPlayerMgr::SetCancelRevive( bool bCancelRevive )
 	}
 
 	m_bCancelRevive = bCancelRevive;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::TronUnknownVirtual58
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012c990): the damage FX and the
+//				damage sectors cleared (and, there, a global and the weapon
+//				manager's state; still to be written)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::TronUnknownVirtual58()
+{
+	g_pDamageFXMgr->Clear();
+	ClearDamageSectors();
 }

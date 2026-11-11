@@ -51,10 +51,15 @@ public:
 	void	PreUpdate();
 	void	FirstUpdate();
 	virtual void Update();
-	void	UpdatePlaying();
+	virtual void	UpdatePlaying();	// RETAIL: virtual in Tron (slot 0x20)
 	void	PostUpdate();
 
 	void	FirstPlayingUpdate();
+
+	// RETAIL: Tron's slots 0x24 and 0x28: setters of +0x1d7/+0x1d9 and of
+	// +0x1d8 (retail 0x1012cea0, 0x100a43e0). Not yet named
+	virtual void	TronUnknownVirtual24(bool b1D7, bool b1D9) { m_bTronUnknown1D7 = b1D7; m_bTronUnknown1D9 = b1D9; }
+	virtual void	TronUnknownVirtual28(bool b1D8) { m_bTronUnknown1D8 = b1D8; }
 
 	virtual float	GetJumpVelocity(float fJumpVel, float fSuperJumpVel) { return fJumpVel; }
 
@@ -62,6 +67,11 @@ public:
 
 	virtual LTBOOL	OnCommandOn(int command);
 	virtual LTBOOL	OnCommandOff(int command);
+
+	// RETAIL: Tron's slots 0x3c, 0x40, pure here (CTronPlayerMgr's). Not yet
+	// named
+	virtual void	TronUnknownVirtual3C() = 0;
+	virtual void	TronUnknownVirtual40() = 0;
 
 	LTBOOL	OnKeyDown(int key, int rep);
 	LTBOOL	OnKeyUp(int key);
@@ -82,7 +92,6 @@ public:
 	CPlayerCamera*		GetPlayerCamera()			{ return m_pPlayerCamera; }
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }
 	CTargetMgr*			GetTargetMgr()				{ return m_pTargetMgr; }
-	CSearcher*			GetSearcher()				{ return m_pSearcher; }
 	CGadgetDisabler*	GetGadgetDisabler()			{ return m_pGadgetDisabler;	}
 	
 	bool		InSafetyNet()	const				{ return m_bInSafetyNet; }
@@ -95,7 +104,7 @@ public:
 	LTBOOL		IsCameraListener()		const	{ return m_bCamIsListener; }
 	LTBOOL		InCameraGadgetRange(HOBJECT hObj);
 	void		AllowPlayerMovement(LTBOOL bAllowPlayerMovement);
-    void		SetMouseInput(LTBOOL bAllowInput, LTBOOL bRestoreBackupAngels);
+    void		SetMouseInput(LTBOOL bAllowInput);	// RETAIL: build 51's, Tron's (one argument)
 
     void		SetCameraFOV(float fFovX, float fFovY);
 	void		ResetCamera();
@@ -183,11 +192,39 @@ public:
 	void		UpdatePlayerFlags();
     void        HandleWeaponDisable(LTBOOL bDisabled);
 
-	void        ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
-	void        ToggleHolster(bool bPlayDeselect);
+	// RETAIL: both virtual in Tron (slots 0x44, 0x48)
+	virtual void ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
+	virtual void ToggleHolster(bool bPlayDeselect);
 	void		LastWeapon();
 
     virtual void DoActivate();
+
+	// RETAIL: Tron's slots 0x50..0xa8 (retail CPlayerMgr's vtable 0x101eb278:
+	// most are empty or constant here, and CTronPlayerMgr's own). Not yet
+	// named; the arguments are retail's counts
+	virtual void	TronUnknownVirtual50() {}
+	virtual void	TronUnknownVirtual54() {}
+	virtual void	TronUnknownVirtual58();
+	virtual void	TronUnknownVirtual5C() {}
+	virtual void	TronUnknownVirtual60() {}
+	virtual bool	TronUnknownVirtual64() { return true; }
+	virtual void	TronUnknownVirtual68(int nArg) {}
+	virtual void	TronUnknownVirtual6C(int nArg) {}
+	virtual bool	TronUnknownVirtual70(int nArg1, int nArg2, int nArg3) { return false; }
+	virtual bool	TronUnknownVirtual74(int nArg1, int nArg2, int nArg3) { return false; }
+	virtual bool	TronUnknownVirtual78(int nArg1, int nArg2) { return false; }
+	virtual bool	TronUnknownVirtual7C(int nArg1, int nArg2, int nArg3, int nArg4) { return false; }
+	virtual bool	TronUnknownVirtual80() { return m_bTronUnknown1E4; }
+	virtual void	TronUnknownVirtual84(bool b) { m_bTronUnknown1E4 = b; }
+	virtual void	TronUnknownVirtual88() = 0;
+	virtual void	TronUnknownVirtual8C() = 0;
+	virtual void	TronUnknownVirtual90() = 0;
+	virtual void	TronUnknownVirtual94() = 0;
+	virtual void	TronUnknownVirtual98() = 0;
+	virtual bool	TronUnknownVirtual9C(int nArg1, int nArg2) { return true; }
+	virtual int		TronUnknownVirtualA0() { return 0; }
+	virtual int		TronUnknownVirtualA4(int nArg) { return nArg; }
+	virtual void	TronUnknownVirtualA8(int nArg) {}
 
 	void		Teleport(const LTVector & vPos);
 
@@ -237,7 +274,8 @@ public:
 	//		(I'm using the repeated call to track whether we are in mid switch)
 	void	HandleWeaponChanged(uint8 nWeaponId,uint8 nAmmoId, bool bImmediateSwitch);
 
-	void	AttachCameraToHead( bool bAttach = true, bool bInterpolate = false );
+	// RETAIL: Tron's takes one LTBOOL and does not interpolate (retail 0x1012b2a0)
+	void	AttachCameraToHead( LTBOOL bAttach = LTTRUE );
 
 	//returns the id of a gadget that has the specified damagetype
 	uint8	GetGadgetFromDamageType(DamageType eDamageType);
@@ -275,11 +313,11 @@ protected:
 
 	// Camera helper functions...
 
-	void	UpdateCameraZoom();
+	virtual void	UpdateCameraZoom();	// RETAIL: virtual in Tron (slot 0xac)
 	void	UpdateCameraDisplacement();
 	void	UpdateCameraShake( LTVector& vDisplacement );
 	void	UpdateVehicleCamera( LTVector& vDisplacement );
-	void	UpdateCameraSway();
+	virtual void	UpdateCameraSway();	// RETAIL: virtual in Tron (slot 0xb0)
 	void	InitPlayerCamera();
     LTBOOL	UpdatePlayerCamera();
 	void	UpdateCameraPosition();
@@ -291,7 +329,7 @@ protected:
 	
 	void	BeginZoom();
     void    HandleZoomChange(LTBOOL bReset=LTFALSE);
-	void	EndZoom();
+	virtual void	EndZoom();	// RETAIL: virtual in Tron (slot 0xb4)
 
 	void	Update3rdPersonInfo();
 	void	HideShowAttachments(HOBJECT hObj);
@@ -336,7 +374,7 @@ protected:
 	CCameraOffsetMgr       *m_pCameraOffsetMgr;      // Adjust camera orientation
 	CFlashLightPlayer      *m_pFlashLight;           // flash light for the player
 	CGadgetDisabler        *m_pGadgetDisabler;       // Handles the disabling of a gadget
-	CSearcher              *m_pSearcher;             // Handles searching bodies and props
+	// RETAIL: no searcher in Tron (PlayerMgr.cpp)
 	CMoveMgr               *m_pMoveMgr;              // Always around...
 	CVisionModeMgr         *m_pVisionModeMgr;        // Controls the vision mode switching and updating
 	CAttachButeMgr         *m_pAttachButeMgr;
@@ -383,10 +421,17 @@ protected:
     LTBOOL          m_bRestoreOrientation;
     LTBOOL			m_bCameraPosInited;     // Make sure the position is valid
 	LTBOOL			m_bStartedPlaying;
+	// RETAIL: Tron's (retail CPlayerMgr ctor 0x10123400 and Save 0x10124b60:
+	// +0xa0, saved after m_bUsingExternalCamera). Not yet named
+	LTBOOL				m_bTronUnknownA0;
 
     LTVector        m_vShakeAmount;         // Amount to shake screen
     LTBOOL          m_bSpectatorMode;		// Are we in spectator mode
 	LTBOOL			m_bInvisibleMode;		// Are we in invisible mode
+	// RETAIL: Tron's two before the model glow (+0xb8, a bool the ctor
+	// clears; +0xbc). Not yet named
+	bool				m_bTronUnknownB8;
+	LTFLOAT				m_fTronUnknownBC;
 
 	// Glowing models...
 
@@ -431,20 +476,33 @@ protected:
 	HLOCALOBJ       m_hCamera;			// The camera
 	CPlayerCamera  *m_pPlayerCamera;	// Handle 3rd person view
 
-	bool			m_bCameraAttachedToHead;
+	LTBOOL			m_bCameraAttachedToHead;	// RETAIL: an LTBOOL in Tron
 	
     LTBOOL          m_bFirstUpdate;     // Is this the first update
 
     LTBOOL          m_bPlayerUpdated;   // Has the server sent us a player update?
 
     LTBOOL      m_bStrafing;            // Are we strafing?  This used to implement mouse strafing.
-    LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
+
+	// RETAIL: from here, Tron's order (retail CPlayerMgr ctor 0x10123400 and
+	// Save 0x10124b60); NOLF2's members Tron has not are kept at the end
+	// (PORT), so they move nothing
 
     float       m_fEarliestRespawnTime;
-	bool		m_bCancelRevive;
 
     uint16      m_nPlayerInfoChangeFlags;
     float		m_fPlayerInfoLastSendTime;
+
+	// RETAIL: Tron's (+0x15c, +0x160, +0x161, and +0x164, an eight-byte
+	// member the initializer list clears). Not yet named
+	uint32		m_nTronUnknown15C;
+	bool		m_bTronUnknown160;
+	bool		m_bTronUnknown161;
+	struct TronUnknown164
+	{
+		TronUnknown164() : a(0), b(0) {}
+		uint32 a, b;
+	}			m_TronUnknown164;
 
 	// Container FX helpers...
 
@@ -466,6 +524,24 @@ protected:
 	HTEXTURE	m_hDistanceIndicatorIcon;
 
 	bool 		m_bSpyVision;
+
+	// RETAIL: Tron's: a string saved after the carry state (+0x1b5), then
+	// five bytes and a float the constructor sets (+0x1d5..+0x1d9: the
+	// third one true; +0x1dc 5000) and a member saved as a byte (+0x1e0).
+	// Not yet named
+	char		m_szTronUnknown1B5[32];
+	bool		m_bTronUnknown1D5;
+	bool		m_bTronUnknown1D6;
+	bool		m_bTronUnknown1D7;
+	bool		m_bTronUnknown1D8;
+	bool		m_bTronUnknown1D9;
+	float		m_fTronUnknown1DC;
+	uint32		m_nTronUnknown1E0;
+	bool		m_bTronUnknown1E4;	// RETAIL: slots 0x80, 0x84's
+
+	// PORT: NOLF2's, not in Tron's CPlayerMgr (above)
+    LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
+	bool		m_bCancelRevive;
 
 	//used to track what wepon player was using before auto-switching to gadget
 	uint8		m_nPreGadgetWeapon;

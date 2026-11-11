@@ -818,7 +818,7 @@ void CPlayerCamera::AttachToObject(HLOCALOBJ hObj)
 	}
 }
 
-void CPlayerCamera::GoFirstPerson()
+void CPlayerCamera::GoFirstPerson(bool bInstant)
 {
 	if((m_eCameraMode != GOINGFIRSTPERSON) && (m_eCameraMode != FIRSTPERSON))
 	{

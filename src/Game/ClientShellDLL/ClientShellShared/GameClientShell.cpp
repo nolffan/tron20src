@@ -2587,7 +2587,7 @@ void CGameClientShell::PauseGame(bool bPause, bool bPauseSound)
 	}
 
 	SetInputState(!bPause && GetPlayerMgr()->IsPlayerMovementAllowed());
-	GetPlayerMgr()->SetMouseInput(!bPause, LTTRUE);
+	GetPlayerMgr()->SetMouseInput(!bPause);	// RETAIL: Tron's has one argument (PlayerMgr.h)
 }
 
 // ----------------------------------------------------------------------- //
