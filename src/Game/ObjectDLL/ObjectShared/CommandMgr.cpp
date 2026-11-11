@@ -2035,14 +2035,11 @@ void CCommandMgr::Save(ILTMessage_Write *pMsg)
 	for( i = 0; i < m_nNumVars; ++i )
 	{
 		if( !m_aVars[i].m_bGlobal )
-			m_aVars[i].Save( pMsg, LTFALSE );
+			m_aVars[i].Save( pMsg );
 	}
 
-	//jrg - 9/8/02 - we need to save the names of global variables here
-	// so that when loading, the Event commands can reference them
-	// the values of the global variables need to be saved with the player, so that 
-	// the will be saved/loaded on transitions
-	SaveGlobalVars(pMsg,LTTRUE);
+	// RETAIL: no global var names here in Tron (jrg's of 9/8/02 in NOLF2:
+	// retail 0x100b63a0 saves the events straight after)
 
 	for( i = 0; i < CMDMGR_MAX_EVENT_COMMANDS; i++ )
 	{
@@ -2072,15 +2069,11 @@ void CCommandMgr::Load(ILTMessage_Read *pMsg)
 	{
 		ASSERT( m_nNumVars < CMDMGR_MAX_VARS );
 
-		m_aVars[m_nNumVars].Load( pMsg, LTFALSE );
+		m_aVars[m_nNumVars].Load( pMsg );
 		++m_nNumVars;
 	}
 
-	//jrg - 9/8/02 - we need to load the names of global variables here
-	// so that the Event commands can reference them
-	// the values of the global variables need to be saved with the player, so that 
-	// the will be saved/loaded on transitions
-	LoadGlobalVars(pMsg,LTTRUE);
+	// RETAIL: no global var names here in Tron (as Save)
 
 	for( i = 0; i < CMDMGR_MAX_EVENT_COMMANDS; i++ )
 	{
@@ -2096,7 +2089,7 @@ void CCommandMgr::Load(ILTMessage_Read *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-void CCommandMgr::SaveGlobalVars( ILTMessage_Write *pMsg, LTBOOL bNameOnly )
+void CCommandMgr::SaveGlobalVars( ILTMessage_Write *pMsg )
 {
 	// Count the number of globals...
 
@@ -2114,7 +2107,7 @@ void CCommandMgr::SaveGlobalVars( ILTMessage_Write *pMsg, LTBOOL bNameOnly )
 	for( i = 0; i < m_nNumVars; ++i )
 	{
 		if( m_aVars[i].m_bGlobal )
-			m_aVars[i].Save( pMsg, bNameOnly );
+			m_aVars[i].Save( pMsg );
 	}
 }
 
@@ -2127,7 +2120,7 @@ void CCommandMgr::SaveGlobalVars( ILTMessage_Write *pMsg, LTBOOL bNameOnly )
 //
 // ----------------------------------------------------------------------- //
 
-void CCommandMgr::LoadGlobalVars( ILTMessage_Read *pMsg, LTBOOL bNameOnly )
+void CCommandMgr::LoadGlobalVars( ILTMessage_Read *pMsg )
 {
 	int nGlobals = 0;
 	LOAD_INT( nGlobals );
@@ -2142,11 +2135,11 @@ void CCommandMgr::LoadGlobalVars( ILTMessage_Read *pMsg, LTBOOL bNameOnly )
 		ASSERT( m_nNumVars < CMDMGR_MAX_VARS );
 
 		TempVar.Clear();
-		TempVar.Load( pMsg, bNameOnly );
+		TempVar.Load( pMsg );
 
 		uint16 nId;
 		pVar = GetVar( TempVar.m_szName, true, &nId );
-		if( !pVar || (!bNameOnly && !pVar->m_bValid) )
+		if( !pVar )	// RETAIL: no m_bValid in Tron (CommandMgr.h)
 		{
 			// If we already have the var reassign the same one to avoid duplicates...
 			
@@ -2306,7 +2299,7 @@ void CMD_STRUCT::Save(ILTMessage_Write *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-void VAR_STRUCT::Save( ILTMessage_Write *pMsg, LTBOOL bNameOnly  )
+void VAR_STRUCT::Save( ILTMessage_Write *pMsg )
 {
 	HSTRING hstr = LTNULL;
 	if( m_szName[0] != CMDMGR_NULL_CHAR )
@@ -2315,15 +2308,10 @@ void VAR_STRUCT::Save( ILTMessage_Write *pMsg, LTBOOL bNameOnly  )
 	}
 
 	SAVE_HSTRING( hstr );
-
-	if (!bNameOnly )
-	{
-		SAVE_DWORD( (uint32)m_eType );
-		SAVE_INT( m_iVal );
-		SAVE_COBJECT( m_pObjVal );
-		SAVE_BOOL( m_bGlobal );
-		SAVE_INT( m_nRefCount );
-	}
+	SAVE_DWORD( (uint32)m_eType );
+	SAVE_INT( m_iVal );
+	SAVE_COBJECT( m_pObjVal );
+	SAVE_BOOL( m_bGlobal );	// RETAIL: Tron's saves no ref count (retail 0x100b6b60)
 
 	FREE_HSTRING( hstr );
 }
@@ -2337,7 +2325,7 @@ void VAR_STRUCT::Save( ILTMessage_Write *pMsg, LTBOOL bNameOnly  )
 //
 // ----------------------------------------------------------------------- //
 
-void VAR_STRUCT::Load( ILTMessage_Read *pMsg, LTBOOL bNameOnly  )
+void VAR_STRUCT::Load( ILTMessage_Read *pMsg )
 {
 	HSTRING hstr = LTNULL;
 
@@ -2353,16 +2341,11 @@ void VAR_STRUCT::Load( ILTMessage_Read *pMsg, LTBOOL bNameOnly  )
 		m_szName[0] = CMDMGR_NULL_CHAR;
 	}
 
-
-	if (!bNameOnly )
-	{
-		LOAD_DWORD_CAST( m_eType, ECmdMgrVarType );
-		LOAD_INT( m_iVal );
-		LOAD_COBJECT( m_pObjVal, ILTBaseClass );
-		m_hObjVal = (m_pObjVal) ? m_pObjVal->m_hObject : LTNULL;
-		LOAD_BOOL( m_bGlobal );
-		LOAD_INT( m_nRefCount );
-	}
+	LOAD_DWORD_CAST( m_eType, ECmdMgrVarType );
+	LOAD_INT( m_iVal );
+	LOAD_COBJECT( m_pObjVal, ILTBaseClass );
+	m_hObjVal = (m_pObjVal) ? m_pObjVal->m_hObject : LTNULL;
+	LOAD_BOOL( m_bGlobal );	// RETAIL: as Save
 }
 
 

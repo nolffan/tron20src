@@ -352,7 +352,6 @@ uint32 WorldProperties::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT f
 void WorldProperties::ReadProps()
 {
 	char buf[512];
-	TimeRamp *pRamp;
 	GenericProp genProp;
     bool bVal;
     LTFLOAT fVal;
@@ -572,38 +571,7 @@ void WorldProperties::ReadProps()
 		g_pLTServer->SetGameConVar(szShadowAlpha, buf);
 	}
 
-	// Read in the time ramps.
-	if (g_pGameServerShell)
-	{
-        for(uint32 i=0; i < MAX_TIME_RAMPS; i++)
-		{
-			pRamp = g_pGameServerShell->GetTimeRamp(i);
-
-			sprintf(buf, "RampTime%d", i);
-            if (g_pLTServer->GetPropGeneric(buf, &genProp) == LT_OK)
-			{
-				pRamp->m_Time = genProp.m_Float;
-			}
-
-			sprintf(buf, "RampColor%d", i);
-            if (g_pLTServer->GetPropGeneric(buf, &genProp) == LT_OK)
-			{
-				pRamp->m_Color = genProp.m_Color / 255.0f;
-			}
-
-			sprintf(buf, "Target%d", i);
-            if (g_pLTServer->GetPropGeneric(buf, &genProp) == LT_OK)
-			{
-                pRamp->m_hTarget = g_pLTServer->CreateString(genProp.m_String);
-			}
-
-			sprintf(buf, "Message%d", i);
-            if (g_pLTServer->GetPropGeneric(buf, &genProp) == LT_OK)
-			{
-                pRamp->m_hMessage = g_pLTServer->CreateString(genProp.m_String);
-			}
-		}
-	}
+	// RETAIL: no time ramps in Tron (retail has none of their properties)
 
 	//read in shadow properties. Note that this is not handled quite like the other
 	//properties since the name of the property is different than the name of the

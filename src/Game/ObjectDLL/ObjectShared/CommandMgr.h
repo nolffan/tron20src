@@ -66,7 +66,6 @@ struct VAR_STRUCT : public ILTObjRefReceiver
 		m_bGlobal	= LTFALSE;
 		m_nRefCount	= 0;
 		m_bShow		= LTFALSE;
-		m_bValid	= LTFALSE;
 	}
 
 	virtual void OnLinkBroken(LTObjRefNotifier *pRef, HOBJECT hObj)
@@ -74,9 +73,10 @@ struct VAR_STRUCT : public ILTObjRefReceiver
 		m_pObjVal = 0;
 	}
 
-	// jrg - 9/7/02 Added bNameOnly flag so global vars can be "declared" before the Events are loaded
-	void	Save( ILTMessage_Write *pMsg, LTBOOL bNameOnly );
-	void	Load( ILTMessage_Read *pMsg, LTBOOL bNameOnly );
+	// RETAIL: Tron's has no bNameOnly flag (jrg's of 9/7/02 in NOLF2): its
+	// Save takes the message only (retail 0x100b6b60)
+	void	Save( ILTMessage_Write *pMsg );
+	void	Load( ILTMessage_Read *pMsg );
 
 	void	SetObjVal(ILTBaseClass *pObj)
 	{
@@ -92,7 +92,8 @@ struct VAR_STRUCT : public ILTObjRefReceiver
 	LTBOOL				m_bGlobal;
 	int					m_nRefCount;
 	LTBOOL				m_bShow;
-	LTBOOL				m_bValid;
+	// RETAIL: Tron's has no m_bValid (its VAR_STRUCTs are 0x70 bytes: retail
+	// CCommandMgr's constructor, 0x100b45e0, and VAR_STRUCT's, 0x100bad20)
 };
 
 // The operator struct is just for ease of adding new operators and operators that do the same thing (ie. '==', 'equals', 'is')
@@ -306,8 +307,8 @@ class CCommandMgr
 		void Load(ILTMessage_Read *pMsg);
 		void Save(ILTMessage_Write *pMsg);
 
-		void	SaveGlobalVars( ILTMessage_Write *pMsg, LTBOOL bNameOnly );
-		void	LoadGlobalVars( ILTMessage_Read *pMsg, LTBOOL bNameOnly );
+		void	SaveGlobalVars( ILTMessage_Write *pMsg );	// RETAIL: no bNameOnly in Tron
+		void	LoadGlobalVars( ILTMessage_Read *pMsg );	// RETAIL: no bNameOnly in Tron
 
 		void	ListCommands();
         LTBOOL  IsValidCmd(const char* pCmd);
@@ -360,7 +361,9 @@ class CCommandMgr
 		CMD_STRUCT	m_PendingCmds[CMDMGR_MAX_PENDING_COMMANDS];
 		
 		VAR_STRUCT	m_aVars[CMDMGR_MAX_VARS];
-		uint16		m_nNumVars;
+		// RETAIL: a byte in Tron (retail reads and writes +0x167f0 as one), for up
+		// to 512 vars: RETAIL_BUGS.md
+		uint8		m_nNumVars;
 
 		CMD_EVENT_STRUCT	m_aEventCmds[CMDMGR_MAX_EVENT_COMMANDS];
 
