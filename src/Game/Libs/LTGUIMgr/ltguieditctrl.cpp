@@ -279,7 +279,7 @@ void CLTGUIEditCtrl::SetBasePos ( LTIntPt pos )
 	CLTGUICtrl::SetBasePos(pos);
 	if (m_pText)
 	{
-		m_pText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 	}
 }
 
@@ -289,7 +289,7 @@ void CLTGUIEditCtrl::SetScale(float fScale)
 	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
 	if (m_pText)
 	{
-		m_pText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 		m_pText->SetCharScreenHeight(m_nFontSize);
 	}
 	CalculateSize();

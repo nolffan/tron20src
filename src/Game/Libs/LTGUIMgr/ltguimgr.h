@@ -40,6 +40,17 @@ inline std::wstring LTGUIWideString(const char* pText)
 	return sText;
 }
 
+// TRON: retail widens inline, into a string of the caller's (CLTGUISlider::
+// SetSliderPos, 0x100c0ac0: cleared, then each char appended); the name is
+// ours.
+inline void LTGUIWiden(std::wstring& sOut, const char* pText)
+{
+	sOut.erase(sOut.begin(), sOut.end());
+	uint32 nLen = strlen(pText);
+	for (uint32 i = 0; i < nLen; i++)
+		sOut += (wchar_t)(uint8)pText[i];
+}
+
 // PORT: ours too: the other way, for narrow code reading wide text (each
 // character's low byte).
 inline std::string LTGUINarrowString(const std::wstring& sText)

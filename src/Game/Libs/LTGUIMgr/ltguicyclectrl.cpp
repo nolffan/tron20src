@@ -43,7 +43,7 @@ CLTGUICycleCtrl::~CLTGUICycleCtrl()
 // nFontSize		- The font size to use for this string.
 // nHeaderWidth	- The width to use for the header string
 // pnValue		- Pointer to the value which receives the selection index when UpdateData is called.
-LTBOOL CLTGUICycleCtrl::Create ( const char *pText, uint32 nHelpID, 
+LTBOOL CLTGUICycleCtrl::Create ( std::wstring sText, uint32 nHelpID, 
 								CUIFont *pFont, uint8 nFontSize, uint16 nHeaderWidth, uint8 *pnValue)
 {
 
@@ -52,16 +52,14 @@ LTBOOL CLTGUICycleCtrl::Create ( const char *pText, uint32 nHelpID,
         return LTFALSE;
 	}
 
-	if ( pText)
+	// TRON: no check for text (RETAIL: 0x100c1c90)
+	if (m_pHeaderText)
+		m_pHeaderText->SetText(sText);
+	else
 	{
-		if (m_pHeaderText)
-			m_pHeaderText->SetText((char *)pText);
-		else
-		{
-			m_pHeaderText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pText),(float)m_pos.x,(float)m_pos.y);
-			m_pHeaderText->SetCharScreenHeight(m_nFontSize);
+		m_pHeaderText = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)m_pos.x,(float)m_pos.y);
+		m_pHeaderText->SetCharScreenHeight(m_nFontSize);
 
-		}
 	}
 
 	if (nHeaderWidth)
@@ -112,10 +110,10 @@ void CLTGUICycleCtrl::UpdateData (LTBOOL bSaveAndValidate)
 
 
 // Add more strings to the control.  These are cycled when OnLeft() and OnRight() are called
-void CLTGUICycleCtrl::AddString(const char *pString)
+void CLTGUICycleCtrl::AddString(std::wstring sText)
 {
 	
-	if ( !pString || !m_pFont || !m_nFontSize || m_stringArray.size() >= kMaxNumStrings)
+	if ( !m_pFont || !m_nFontSize || m_stringArray.size() >= kMaxNumStrings)
 	{
 		ASSERT(0);
 		return;
@@ -124,7 +122,7 @@ void CLTGUICycleCtrl::AddString(const char *pString)
 
 
 	int x = m_pos.x + (int)((float)m_nHeaderWidth * m_fScale);
-	CUIFormattedPolyString *pPolyStr = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pString),(float)x,(float)m_pos.y);
+	CUIFormattedPolyString *pPolyStr = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)x,(float)m_pos.y);
 
 
 	if (pPolyStr)
@@ -231,7 +229,14 @@ void CLTGUICycleCtrl::CalculateSize()
 	}
 	else
 	{
-		m_nWidth = (uint16)m_stringArray[m_nSelIndex]->GetWidth();
+		// TRON: as wide as the widest string (RETAIL: 0x100c20f0)
+		m_nWidth = 0;
+		for (int i = 0; i < (int)m_stringArray.size(); i++)
+		{
+			uint16 nWidth = (uint16)m_stringArray[i]->GetWidth();
+			if (nWidth > m_nWidth)
+				m_nWidth = nWidth;
+		}
 		m_nHeight = (uint16)m_stringArray[m_nSelIndex]->GetHeight();
 	}
 	m_nWidth += (uint16)((float)m_nHeaderWidth * m_fScale);
@@ -359,12 +364,12 @@ void CLTGUICycleCtrl::SetBasePos ( LTIntPt pos )
 
 	if (m_pHeaderText)
 	{
-		m_pHeaderText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pHeaderText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 	}
-	float x = (float)m_pos.x + ((float)m_nHeaderWidth * m_fScale);
+	int x = m_pos.x + (int)((float)m_nHeaderWidth * m_fScale);
 	for (uint8 i = 0; i < m_stringArray.size(); i++)
 	{
-		m_stringArray[i]->SetPosition(x,(float)m_pos.y);
+		m_stringArray[i]->SetPosition(x,m_pos.y);
 	}
 }
 
@@ -375,13 +380,13 @@ void CLTGUICycleCtrl::SetScale(float fScale)
 
 	if (m_pHeaderText)
 	{
-		m_pHeaderText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pHeaderText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 		m_pHeaderText->SetCharScreenHeight(m_nFontSize);
 	}
-	float x = (float)m_pos.x + ((float)m_nHeaderWidth * m_fScale);
+	int x = m_pos.x + (int)((float)m_nHeaderWidth * m_fScale);
 	for (uint8 i = 0; i < m_stringArray.size(); i++)
 	{
-		m_stringArray[i]->SetPosition(x,(float)m_pos.y);
+		m_stringArray[i]->SetPosition(x,m_pos.y);
 		m_stringArray[i]->SetCharScreenHeight(m_nFontSize);
 	}
 	CalculateSize();

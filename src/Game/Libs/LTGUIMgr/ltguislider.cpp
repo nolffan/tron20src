@@ -36,6 +36,7 @@ CLTGUISlider::CLTGUISlider()
 	m_nFontSize = 0;
 	m_nBaseFontSize = 0;
 
+	m_xTronUnknown54 = LTTRUE;
     m_bNumDisplay = 0;
 	m_pnValue = LTNULL;
 	m_nMinSlider = 0;
@@ -65,7 +66,7 @@ CLTGUISlider::~CLTGUISlider()
 }
 
 
-LTBOOL CLTGUISlider::Create ( const char *pText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize, HTEXTURE hBarTexture, 
+LTBOOL CLTGUISlider::Create ( std::wstring sText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize, HTEXTURE hBarTexture, 
 						uint16 nBarOffset, uint16 nBarWidth, uint16 nBarHeight, int *pnValue)
 {
 
@@ -92,16 +93,14 @@ LTBOOL CLTGUISlider::Create ( const char *pText, uint32 nHelpID, CUIFont *pFont,
 
 	SetHelpID(nHelpID);
 
-	if ( pText)
+	// TRON: no check for text (RETAIL: 0x100c06b0)
+	if (m_pText)
+		m_pText->SetText(sText);
+	else
 	{
-		if (m_pText)
-			m_pText->SetText((char *)pText);
-		else
-		{
-			m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pText),(float)m_pos.x,(float)m_pos.y);
-			m_pText->SetCharScreenHeight(m_nFontSize);
+		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,sText,(float)m_pos.x,(float)m_pos.y);
+		m_pText->SetCharScreenHeight(m_nFontSize);
 
-		}
 	}
 
 	InitBar();
@@ -116,11 +115,13 @@ void CLTGUISlider::SetNumericDisplay(LTBOOL bDisplay)
 	{
 		char szNum[16];
 		sprintf(szNum,"%d",m_nSliderPos);
+		std::wstring sNum;
+		LTGUIWiden(sNum, szNum);	// TRON: wide, as SetSliderPos (RETAIL: 0x100c0ac0)
 		if (m_pNumbers)
-			m_pNumbers->SetText(szNum);
+			m_pNumbers->SetText(sNum);
 		else
 		{
-			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(szNum),(float)m_pos.x,(float)m_pos.y);
+			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,sNum,(float)m_pos.x,(float)m_pos.y);
 			m_pNumbers->SetCharScreenHeight(m_nFontSize);
 
 		}
@@ -177,11 +178,13 @@ void CLTGUISlider::SetSliderPos(int nPos)
 	{
 		char szNum[16];
 		sprintf(szNum,"%d",m_nSliderPos);
+		std::wstring sNum;
+		LTGUIWiden(sNum, szNum);	// TRON: wide (RETAIL: 0x100c0ac0)
 		if (m_pNumbers)
-			m_pNumbers->SetText(szNum);
+			m_pNumbers->SetText(sNum);
 		else
 		{
-			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(szNum),(float)m_pos.x,(float)m_pos.y);
+			m_pNumbers = g_pFontManager->CreateFormattedPolyString(m_pFont,sNum,(float)m_pos.x,(float)m_pos.y);
 			m_pNumbers->SetCharScreenHeight(m_nFontSize);
 
 		}
@@ -359,15 +362,13 @@ void CLTGUISlider::SetBasePos ( LTIntPt pos )
 	ScaleBar();
 	if (m_pText)
 	{
-		float x = (float)m_pos.x;
-		float y = (float)m_pos.y;
-		m_pText->SetPosition(x,y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 	}
 	if (m_pNumbers)
 	{
-		float x = (float)(m_rcBar.right + m_nHeight + 4);
-		float y = (float)m_pos.y;
-		m_pNumbers->SetPosition(x,y);
+		// TRON: centred over the bar, integers (RETAIL: 0x100c10b0)
+		int x = (m_rcBar.left + m_rcBar.right - m_pNumbers->GetWidth()) / 2;
+		m_pNumbers->SetPosition(x,m_pos.y);
 	}
 
 }
@@ -379,16 +380,14 @@ void CLTGUISlider::SetScale(float fScale)
 	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
 	if (m_pText)
 	{
-		float x = (float)m_pos.x;
-		float y = (float)m_pos.y;
-		m_pText->SetPosition(x,y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 		m_pText->SetCharScreenHeight(m_nFontSize);
 	}
 	if (m_pNumbers)
 	{
-		float x = (float)(m_rcBar.right + m_nHeight + 4);
-		float y = (float)m_pos.y;
-		m_pNumbers->SetPosition(x,y);
+		// TRON: centred over the bar, integers (RETAIL: 0x100c10b0)
+		int x = (m_rcBar.left + m_rcBar.right - m_pNumbers->GetWidth()) / 2;
+		m_pNumbers->SetPosition(x,m_pos.y);
 		m_pNumbers->SetCharScreenHeight(m_nFontSize);
 	}
 }
@@ -479,9 +478,9 @@ void CLTGUISlider::ScaleBar()
 
 	if (m_pNumbers)
 	{
-		float x = (float)(m_rcBar.right + m_nHeight + 4);
-		float y = (float)m_pos.y;
-		m_pNumbers->SetPosition(x,y);
+		// TRON: centred over the bar, integers (RETAIL: 0x100c10b0)
+		int x = (m_rcBar.left + m_rcBar.right - m_pNumbers->GetWidth()) / 2;
+		m_pNumbers->SetPosition(x,m_pos.y);
 	}
 
 
