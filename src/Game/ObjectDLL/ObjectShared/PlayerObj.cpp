@@ -6265,6 +6265,10 @@ void CPlayerObj::HandlePlayerPositionMessage(ILTMessage_Read *pMsg)
     uint8 moveCode;
     LTBOOL bOnGround;
 
+	// RETAIL: Tron's message starts with a flag (retail 0x100822c0)
+	if( !pMsg->Readbool( ))
+		return;
+
     moveCode = pMsg->Readuint8();
 
     newPos = pMsg->ReadLTVector();
@@ -6287,7 +6291,11 @@ void CPlayerObj::HandlePlayerPositionMessage(ILTMessage_Read *pMsg)
 		if (IsMultiplayerGame( ))
 		{
 			// For client-side prediction...
-			g_pPhysicsLT->SetVelocity(m_hObject, &newVel);
+			// RETAIL: not on light cycles
+			if( GetGameType( ) != eGameTypeMultiplayerLightcycles )
+			{
+				g_pPhysicsLT->SetVelocity(m_hObject, &newVel);
+			}
 
 			fMinMove = m_fLeashLen;
 		}
@@ -6308,9 +6316,18 @@ void CPlayerObj::HandlePlayerPositionMessage(ILTMessage_Read *pMsg)
 		// Just teleport the player for singleplayer game.  Use leash for mp game.
 		if (!g_pGameServerShell->IsPaused( )) 
 		{
-			if( !IsMultiplayerGame() )
+			// RETAIL: Tron's light cycles move like singleplayer
+			if( IsMultiplayerGame() && GetGameType( ) != eGameTypeMultiplayerLightcycles )
 			{
-				if (!curPos.NearlyEquals(newPos, 0.1f))
+				// Change the gravity on this object..
+				g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, (newVel.y*newVel.y > 0.01f) ? FLAG_GRAVITY : 0, FLAG_GRAVITY);
+				// Turn on the leash
+				m_bUseLeash = LTTRUE;
+			}
+			else
+			{
+				// RETAIL: only with Tron's flag at 0x2a80
+				if (!curPos.NearlyEquals(newPos, 0.1f) && m_bTronUnknown2a80)
 				{
 					// Move it first so we get collisions and stuff
 					g_pLTServer->MoveObject(m_hObject, &newPos);
@@ -6324,13 +6341,6 @@ void CPlayerObj::HandlePlayerPositionMessage(ILTMessage_Read *pMsg)
 						g_pLTServer->SetObjectPos(m_hObject, &newPos);
 					}
 				}
-			}
-			else
-			{
-				// Change the gravity on this object..
-				g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, (newVel.y*newVel.y > 0.01f) ? FLAG_GRAVITY : 0, FLAG_GRAVITY);
-				// Turn on the leash
-				m_bUseLeash = LTTRUE;
 			}
 		}
 	}
