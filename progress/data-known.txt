@@ -220,7 +220,6 @@ Object.lto	ours	DropZoneRadius
 Object.lto	ours	ERROR - CoreDump received a complete message from an object other than a player!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n
-Object.lto	ours	ERROR - Inventory Item %d had a bad ID\n
 Object.lto	ours	ERROR NULL WeightSet not found!
 Object.lto	ours	ERROR getting LOWER Tracker Cur Anim!
 Object.lto	ours	ERROR getting LOWER Tracker WeightSet!
@@ -259,7 +258,6 @@ Object.lto	ours	FullAirLostTime
 Object.lto	ours	FullAirRegenTime
 Object.lto	ours	FxName %s;Loop 1;SmoothShutdown 1
 Object.lto	ours	GADGET_TRACKER
-Object.lto	ours	GeneralInventory
 Object.lto	ours	Goal %s triggered by sense %s (%.2f)\n
 Object.lto	ours	Grief
 Object.lto	ours	GriefTime
@@ -297,18 +295,7 @@ Object.lto	ours	InfoVolume ON
 Object.lto	ours	InitialAngleMax
 Object.lto	ours	InitialAngleMin
 Object.lto	ours	InitialAngleSurge
-Object.lto	ours	Item%dCount
 Object.lto	ours	Item%dID
-Object.lto	ours	Item1Count
-Object.lto	ours	Item1ID
-Object.lto	ours	Item2Count
-Object.lto	ours	Item2ID
-Object.lto	ours	Item3Count
-Object.lto	ours	Item3ID
-Object.lto	ours	Item4Count
-Object.lto	ours	Item4ID
-Object.lto	ours	Item5Count
-Object.lto	ours	Item5ID
 Object.lto	ours	JumpUpVolume %s must have one dimension (x or z) = %f
 Object.lto	ours	KittyOwnerArmDelay
 Object.lto	ours	KnockOutInfinite
@@ -590,7 +577,6 @@ Object.lto	retail	.?AVFinderPlugin@@
 Object.lto	retail	.?AVHostButeMgr@@
 Object.lto	retail	.?AVIActivationObserver@@
 Object.lto	retail	.?AVIONode@@
-Object.lto	retail	.?AVIObjectRelationMgrUser@@
 Object.lto	retail	.?AVLightCycle@@
 Object.lto	retail	.?AVLightCycleMissile@@
 Object.lto	retail	.?AVLightCyclePowerup@@

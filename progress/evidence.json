@@ -16,9 +16,9 @@
   },
   "Object.lto": {
    "cmd": "e592bbc0efcb737ce266a78a915433e960fea11e9b89aebfa167d9e829e704c2",
-   "image": "69851c32b46c1bccfe26ab4b48c073e0ada25b74fa9e256a08763dd5e1f40936",
+   "image": "b0953dcf18fa9ee95a00392783639696e0fa27fd328f5d96a4a703cee0340e1d",
    "link_command": "cd src/Game/ObjectDLL/TRON && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\..\\Built\\Final\\ObjectDLL\\TRON\\Object.lto' '/map:s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.map' '..\\..\\built\\Final\\ObjectDll\\TRON\\BinaryBit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\CoreDump.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\EnergyZone.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\GlobalsInit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\HealthZone.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\InfoString.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\PatchRoutine.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterAutoBurstDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\Stdafx.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronGameServerShell.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronMissionButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronPlayerObj.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronVersionMgr.obj' '..\\..\\built\\Final\\ObjectDll\\ObjectShared\\ObjectShared.lib' '..\\..\\..\\libs\\built\\Final\\ButeMgr\\ButeMgr.lib' '..\\..\\..\\libs\\built\\Final\\MFCStub\\MFCStub.lib' '..\\..\\..\\libs\\built\\Final\\CryptMgr\\CryptMgr.lib' '..\\..\\..\\libs\\built\\Final\\Lib_StdLith\\Lib_StdLith.lib' '..\\..\\..\\libs\\built\\Final\\Lib_Lith\\Lib_Lith.lib' '..\\..\\..\\libs\\built\\Final\\RegMgr\\regmgr.lib' > /repo/out/release-tree/src/Game/built/Final/ObjectDll/TRON/Object.lto.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.lto.rsp'",
-   "map": "ae10c0e58c1dff82f0e93feb33efac8da311b979465a2c09aa3110196f2d9dc7",
+   "map": "9eb55323c9b50448cd70193184021ca819f355294ac8d109765dc71ff807de64",
    "rsp": "757525cb7f82bfce2c2ac077db2313fe2975422e9940742c241fca72e7e57496"
   },
   "SndDrv.dll": {
@@ -38,7 +38,7 @@
  },
  "config": {
   "progress/COMPILERS.md": "fc5faad8a47ba1d7c876f0aa6664d59890d82905bc963190c2846249094af41f",
-  "progress/data-known.txt": "a202867c60a50dd5a66a108cefe99cd869b4fdf6f4b9f03cfd4040ce7602ae99",
+  "progress/data-known.txt": "2d6a7f33aad773b5ef55662610b327e76518d2cb167d75ae32ff206a9235ff1d",
   "progress/reference.sha256": "1db69ca4720cf656f94c03007ef3d6a4eaba0722f9c516d0a1dbedb6e3552c7d",
   "progress/targets.py": "1f8db0b2314b88f64d771a9c795d1c91a40c495f542551b31510cafed0751034",
   "progress/vtab-known.txt": "21703e33e8073ecd927c82f81b2e47eed1c96c881d49138d7a46c64c152d505d"
@@ -57,12 +57,12 @@
   "out/reference/server.dll": "4a6f2f305996edd30f56e71b70d0ef1dfb2dc1a08f19eec8010891f98ebd002b"
  },
  "result": {
-  "out/progress/functions.csv": "39cfd089ac64dc877d5ef3215fc5d5a1897e565e2115babf46a264877bcbf99c",
-  "out/progress/summary.json": "9fc8edee92f665728d0be4d9bac4b067a7891bf62ca14d86c51a702be5344636"
+  "out/progress/functions.csv": "eb06ec38c4d57b867796cd97166c10e5d08caec327d10603334ea2772b6b0498",
+  "out/progress/summary.json": "aa15a3016ee68f853ffb4647585703f794b8a78feafc056ee9bc1eff4bc85130"
  },
  "source": {
   "modified_files": 0,
-  "revision": "38ad116b264363526fa73e7bd1f6558933df38ee",
+  "revision": "8e24553d35dd2bdb4c357c67eec652e66e1e65d8",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "5d44dcdefc8c29da464c3f202c685de38d7dbd2b"
