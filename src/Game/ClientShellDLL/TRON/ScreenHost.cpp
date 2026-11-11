@@ -719,7 +719,7 @@ void CScreenHost::SaveOptions()
 	};
 
 	pProfile->ApplyMultiplayer(g_bLAN);
-	pProfile->Save(true);
+	pProfile->Save();	// PORT: Tron's Save takes no argument
 }
 
 

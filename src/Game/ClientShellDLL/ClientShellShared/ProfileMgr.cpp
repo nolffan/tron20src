@@ -627,8 +627,10 @@ void CUserProfile::LoadPerformance(bool bApply)
 }
 
 
-void CUserProfile::Save(bool bForceClose /*= false*/)
+void CUserProfile::Save()
 {
+	// PORT: NOLF2's body; Tron's (retail 0x100ee500) saves two sections more
+	// and always closes and reopens its bute file
 	m_nSaveVersion = g_pVersionMgr->GetSaveVersion( );
 	m_buteMgr.SetInt( "Version","VersionNumber", m_nSaveVersion );
 
@@ -641,13 +643,6 @@ void CUserProfile::Save(bool bForceClose /*= false*/)
 	std::string fn = GetProfileFile( m_sName.c_str( ));
 	m_buteMgr.Save(fn.c_str());
 
-
-	if (bForceClose)
-	{
-		std::string name = m_sName.c_str( );
-		Term();
-		Init(name,false);
-	}
 }
 
 void CUserProfile::SaveControls()
