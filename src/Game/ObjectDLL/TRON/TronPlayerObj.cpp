@@ -75,20 +75,55 @@ namespace
 
 CTronPlayerObj::CTronPlayerObj()
 	: CPlayerObj()
+	, m_byOldPSets( 0 )
+	, m_nBuildPoints( 0 )
+	, m_nOldBuildPoints( 100 )
+	, m_fTronUnknown31f0( 0.0f )
+	, m_fTronUnknown31f4( 0.0f )
+	, m_fTronUnknown31f8( 0.0f )
+	, m_fTronUnknown31fc( 0.0f )
 	, m_nDefendClientTimeStarted( 0 )
 	, m_nDefendServerTimeStarted( 0 )
 	, m_nDefendDuration( 0 )
 	, m_cDefendType( TRONPLAYEROBJ_NO_DEFEND )
 	, m_cDefendAmmoId( WMGR_INVALID_ID )
+	, m_bTronUnknown325c( false )
+	, m_pSwatWeapon( LTNULL )
+	, m_pSwatWeapons( LTNULL )
+	, m_nLastWeaponId( 1 )
+	, m_nLastAmmoId( 1 )
 {
-	// Default sheeyot
-	memset(m_iPerformanceRatings,0,NUM_RATINGS*sizeof(uint8));
-	m_byPSets = 0;
-	m_byOldPSets = 0;
-	m_nArmorPercentage = 0;
-	m_nBuildPoints = 100; // Start the player off with 100 of these, so sayeth Andy.
-	m_nOldBuildPoints = 100;
+	// RETAIL: retail 0x100626d0
+	m_iPermissionSet = 0;
+
+	m_hLightCycle = LTNULL;
+	strcpy( m_szLightCycleModel, "LightCycleBlue" );
+
+	m_fOldMaxHitPoints = -1.0f;
+	m_fOldMaxEnergy = -1.0f;
+
+	memset( m_iPerformanceRatings, 0, sizeof( m_iPerformanceRatings ));
+	memset( m_iSurgePerformanceRatings, 0, sizeof( m_iSurgePerformanceRatings ));
+	memset( m_szTronUnknown3267, 0, sizeof( m_szTronUnknown3267 ));
+	memset( m_szTronUnknown32a7, 0, sizeof( m_szTronUnknown32a7 ));
+
+	if( g_pGameServerShell && !IsMultiplayerGame( ))
+	{
+		m_bMakeBody = false;
+	}
+
+	m_afChanceToBeCorruptedByInfectedAmmo[0] = g_pServerButeMgr->GetPlayerAttributeFloat( "InventoryChanceToBeCorruptedByInfectedAmmoEasy" );
+	m_afChanceToBeCorruptedByInfectedAmmo[1] = g_pServerButeMgr->GetPlayerAttributeFloat( "InventoryChanceToBeCorruptedByInfectedAmmoNormal" );
+	m_afChanceToBeCorruptedByInfectedAmmo[2] = g_pServerButeMgr->GetPlayerAttributeFloat( "InventoryChanceToBeCorruptedByInfectedAmmoHard" );
+	m_afChanceToBeCorruptedByInfectedAmmo[3] = g_pServerButeMgr->GetPlayerAttributeFloat( "InventoryChanceToBeCorruptedByInfectedAmmoVeryHard" );
+
+	m_bTronUnknown32f8 = false;
+	m_bTronUnknown32f9 = false;
+	m_bTronUnknown32fa = false;
 }
+
+
+
 
 
 // ----------------------------------------------------------------------- //
@@ -101,6 +136,20 @@ CTronPlayerObj::CTronPlayerObj()
 
 CTronPlayerObj::~CTronPlayerObj()
 {
+	// RETAIL: retail 0x10062a30
+	if( m_pSwatWeapons )
+	{
+		debug_delete( m_pSwatWeapons );
+	}
+
+	// RETAIL: retail's light cycle manager is called through its vtable
+	// (slot 4, with the player's object); ours is Build 69's
+	if( g_pLightCycleMgr )
+	{
+		g_pLightCycleMgr->RemoveCyclist( m_hObject );
+	}
+
+	RemoveVehicleModel( );
 }
 
 // ----------------------------------------------------------------------- //
@@ -312,15 +361,31 @@ void CTronPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	if(!pMsg)
 		return;
 
+	// RETAIL: retail 0x10063030
+	SAVE_BYTE(m_byOldPSets);
+	SAVE_FLOAT(m_fTronUnknown31f8);
+	SAVE_FLOAT(m_fTronUnknown31fc);
+	SAVE_WORD(m_nBuildPoints);
+	SAVE_WORD(m_nOldBuildPoints);
+	SAVE_FLOAT(m_fOldMaxHitPoints);
+	SAVE_FLOAT(m_fOldMaxEnergy);
+	SAVE_FLOAT(m_fTronUnknown31f0);
+	SAVE_FLOAT(m_fTronUnknown31f4);
+	SAVE_HOBJECT(m_hLightCycle);
+	SAVE_CHARSTRING(m_szLightCycleModel);
+	SAVE_bool(m_bTronUnknown325c);
+
 	for(int i=0;i<NUM_RATINGS;i++)
 	{
 		SAVE_BYTE(m_iPerformanceRatings[i]);
+		SAVE_BYTE(m_iSurgePerformanceRatings[i]);
 	}
-	SAVE_BYTE(m_byPSets);
-	SAVE_BYTE(m_byOldPSets);
-	SAVE_BYTE(m_nArmorPercentage);
-	SAVE_WORD(m_nBuildPoints);
-	SAVE_WORD(m_nOldBuildPoints);
+
+	SAVE_BYTE(m_lstPings.size());
+	for( PingList::iterator iter = m_lstPings.begin(); iter != m_lstPings.end(); iter++ )
+	{
+		SAVE_CHARSTRING( (*iter).c_str() );
+	}
 
 	CPlayerObj::Save(pMsg, dwSaveFlags);
 }
@@ -334,17 +399,56 @@ void CTronPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 // ----------------------------------------------------------------------- //
 void CTronPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
+	// RETAIL: retail 0x100631c0
+	LOAD_BYTE(m_byOldPSets);
+	LOAD_FLOAT(m_fTronUnknown31f8);
+	LOAD_FLOAT(m_fTronUnknown31fc);
+	LOAD_WORD(m_nBuildPoints);
+	LOAD_WORD(m_nOldBuildPoints);
+	LOAD_FLOAT(m_fOldMaxHitPoints);
+	LOAD_FLOAT(m_fOldMaxEnergy);
+	LOAD_FLOAT(m_fTronUnknown31f0);
+	LOAD_FLOAT(m_fTronUnknown31f4);
+	LOAD_HOBJECT(m_hLightCycle);
+	LOAD_CHARSTRING(m_szLightCycleModel, ARRAY_LEN(m_szLightCycleModel));
+	LOAD_bool(m_bTronUnknown325c);
+
 	for(int i=0;i<NUM_RATINGS;i++)
 	{
 		LOAD_BYTE(m_iPerformanceRatings[i]);
+		LOAD_BYTE(m_iSurgePerformanceRatings[i]);
 	}
-	LOAD_BYTE(m_byPSets);
-	LOAD_BYTE(m_byOldPSets);
-	LOAD_BYTE(m_nArmorPercentage);
-	LOAD_WORD(m_nBuildPoints);
-	LOAD_WORD(m_nOldBuildPoints);
+
+	m_lstPings.clear();
+	uint8 nPings;
+	LOAD_BYTE(nPings);
+	for( int nPing = 0; nPing < nPings; nPing++ )
+	{
+		char szPing[128];
+		LOAD_CHARSTRING( szPing, ARRAY_LEN( szPing ));
+		AddPing( szPing, false );
+	}
+
+	m_bTronUnknown32f8 = false;
+	m_bTronUnknown32f9 = false;
+	m_bTronUnknown32fa = false;
 
 	CPlayerObj::Load(pMsg, dwLoadFlags);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AddPing
+//
+//	PURPOSE:	Add a ping (RETAIL: retail 0x100675a0; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::AddPing(char const* pszPing, bool /*bTronUnknown*/)
+{
+	// PORT: retail looks it up in pingbutes.txt and tells the client
+	// ("AddPing", 0x100675c5); this only keeps it
+	if( !pszPing ) return;
+	m_lstPings.push_front( std::string( pszPing ));
 }
 
 // ----------------------------------------------------------------------- //
@@ -486,16 +590,16 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 	if (!m_hClient || !g_pWeaponMgr) return;
 
 	// See if the psets have changed...
-	if(m_byPSets != m_byOldPSets)
+	if(m_iPermissionSet != m_byOldPSets)
 	{
-		m_byOldPSets = m_byPSets;
+		m_byOldPSets = m_iPermissionSet;
 
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 		cMsg.Writeuint8(IC_PSETS_ID);
 		cMsg.Writeuint8(0);
 		cMsg.Writeuint8(0);
-		cMsg.Writefloat(m_byPSets);
+		cMsg.Writefloat(m_iPermissionSet);
 		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
 	}
 
@@ -526,6 +630,39 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 // ----------------------------------------------------------------------- //
 LTBOOL CTronPlayerObj::Update()
 {
+	// RETAIL: retail 0x10063a80
+	// Drain (or charge) our energy...
+	if( fabs( m_fTronUnknown31f0 ) > FLT_EPSILON )
+	{
+		float fEnergy = m_damage.GetEnergy( );
+		fEnergy -= g_pLTServer->GetFrameTime( ) * m_fTronUnknown31f0;
+
+		if( fEnergy < m_fTronUnknown31f4 )
+		{
+			fEnergy = m_fTronUnknown31f4;
+		}
+		else if( m_damage.GetMaxEnergy( ) < fEnergy )
+		{
+			fEnergy = m_damage.GetMaxEnergy( );
+		}
+
+		m_damage.SetEnergy( fEnergy );
+	}
+
+	if( m_bTronUnknown32fa )
+	{
+		EndLightCycle( );
+	}
+
+	if( m_bTronUnknown32f8 )
+	{
+		StartLightCycle( false, true );
+	}
+	else if( m_bTronUnknown32f9 )
+	{
+		StartLightCycle( true, true );
+	}
+
 	// Call down to the base class
 	return(CPlayerObj::Update());
 }
@@ -539,13 +676,11 @@ LTBOOL CTronPlayerObj::Update()
 // ----------------------------------------------------------------------- //
 void CTronPlayerObj::HandleCompile(ILTMessage_Read *pMsg)
 {
-	// First read in the armor percentage
-	m_nArmorPercentage = pMsg->Readuint8();
-
-	// Read in the performance ratings
-	for (int i = 0; i < NUM_RATINGS; i++)
+	// RETAIL: Tron's only flags it, for the commands update (retail
+	// 0x10068660)
+	if( pMsg )
 	{
-		m_iPerformanceRatings[i] = pMsg->Readuint8();
+		m_bTronUnknown2cd6 = true;
 	}
 }
 
@@ -558,26 +693,9 @@ void CTronPlayerObj::HandleCompile(ILTMessage_Read *pMsg)
 // ----------------------------------------------------------------------- //
 bool CTronPlayerObj::IsDefending() const
 {
+	// RETAIL: only the hold block in Tron (retail 0x10063eb0)
 	switch ( m_cDefendType )
 	{
-		case MPROJ_START_SWAT_BLOCK:
-		{
-			int32 nCurrentTime =
-				static_cast< int >(
-					g_pLTServer->GetTime() * 1000.0f
-				);
-
-			if ( ( m_nDefendServerTimeStarted + m_nDefendDuration ) > nCurrentTime )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-
 		case MPROJ_START_HOLD_BLOCK:
 		{
 			return true;
@@ -585,24 +703,6 @@ bool CTronPlayerObj::IsDefending() const
 		break;
 
 		case MPROJ_END_HOLD_BLOCK:
-		{
-			int32 nCurrentTime =
-				static_cast< int >(
-					g_pLTServer->GetTime() * 1000.0f
-				);
-
-			if ( ( m_nDefendServerTimeStarted + m_nDefendDuration ) > nCurrentTime )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-
-		case MPROJ_START_ARM_BLOCK:
 		{
 			int32 nCurrentTime =
 				static_cast< int >(
@@ -981,11 +1081,11 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 
 	// REMOVE THIS CODE FOR FINAL RELEASE, BUT LEAVE FOR TESTING MULTIPLAYER
 	// print a warning if the time is new enough
-	if ( TRONPLAYEROBJ_CLIENT_CAMERA_TIME_OLD_THRESHOLD < ( g_pLTServer->GetTime() - m_nClientCameraOffsetTimeReceivedMS ) )
+	if ( TRONPLAYEROBJ_CLIENT_CAMERA_TIME_OLD_THRESHOLD < ( g_pLTServer->GetTime() - m_fClientCameraOffsetTimeReceived ) )
 	{
 		g_pLTServer->CPrint( "Client Camera Offset time is low, possible lag\n" );
 		g_pLTServer->CPrint( "   condition that will affect defensive accuracy.\n" );
-		g_pLTServer->CPrint( "   Currnt value is %5.3f units old.\n", ( g_pLTServer->GetTime() - m_nClientCameraOffsetTimeReceivedMS ) );
+		g_pLTServer->CPrint( "   Currnt value is %5.3f units old.\n", ( g_pLTServer->GetTime() - m_fClientCameraOffsetTimeReceived ) );
 
 	}
 	
@@ -1069,43 +1169,9 @@ bool CTronPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CTronPlayerObj::HandleDamage
-//
-//	PURPOSE:	Handles getting damaged
-//
-// ----------------------------------------------------------------------- //
-
-void CTronPlayerObj::HandleDamage(const DamageStruct& damage)
-{
-	if ( WMGR_INVALID_ID != damage.nAmmoId )
-	{
-		// hit by a weapon of some sort
-		if ( IsDefending() )
-		{
-			// send a message to the player detailing a successful block
-			CAutoMessage cMsg;
-			LTRESULT ltResult;
-
-			cMsg.Writeuint8( MID_PROJECTILE );
-
-			// write the projectile message subtype
-			cMsg.Writeuint8( MPROJ_BLOCKED );
-
-			// write the defense type
-			cMsg.Writeuint8( m_cDefendType );
-
-			// write the defense percentage
-			cMsg.Writefloat( GetDefensePercentage( &damage.vDir ) );
-
-			ltResult = g_pLTServer->SendToClient( cMsg.Read(), m_hClient, MESSAGE_GUARANTEED );
-			ASSERT( LT_OK == ltResult );
-		}
-	}
-
-	CPlayerObj::HandleDamage( damage );
-}
+// RETAIL: retail CTronPlayerObj does not override HandleDamage (its slot
+// 106 is CPlayerObj's); Build 69's, which told the client of a block, is
+// gone
 
 
 // ----------------------------------------------------------------------- //
@@ -1199,11 +1265,13 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
 	{
-		StartLightCycle();
+		// RETAIL: Tron starts and ends the cycle in Update (it sets flags
+		// at 0x32f8 and 0x32fa, retail 0x10064520)
+		m_bTronUnknown32f8 = true;
 	}
 	else if(cMsg.GetArg(0) == s_cTok_End_LightCycle)
 	{
-		EndLightCycle();
+		m_bTronUnknown32fa = true;
 	}
 	
 	// Base-class it
@@ -1388,10 +1456,22 @@ void CTronPlayerObj::ResetDefend()
 //	PURPOSE:	Player gets on a light cycle
 //
 // ----------------------------------------------------------------------- //
-bool CTronPlayerObj::StartLightCycle()
+bool CTronPlayerObj::StartLightCycle( bool bSuper, bool bTronUnknown )
 {
-	// Temporarily disabled
-	//SetPhysicsModel(PPM_LIGHTCYCLE);
+	// RETAIL: Tron's takes which cycle and a flag (retail 0x10067420): it
+	// clears the start flags, picks the cycle's model ("LightCycleBlue" or
+	// "LightCycleBlueSuper", or the singleplayer level's), goes to the light
+	// cycle physics model and adds the cyclist to retail's light cycle
+	// manager. PORT: the parts that need Tron's managers are not written
+	m_bTronUnknown32f8 = false;
+	m_bTronUnknown32f9 = false;
+
+	if( bTronUnknown )
+	{
+		strcpy( m_szLightCycleModel, bSuper ? "LightCycleBlueSuper" : "LightCycleBlue" );
+	}
+
+	SetPhysicsModel( PPM_LIGHTCYCLE );
 	return true;
 }
 
@@ -1404,8 +1484,15 @@ bool CTronPlayerObj::StartLightCycle()
 // ----------------------------------------------------------------------- //
 bool CTronPlayerObj::EndLightCycle()
 {
+	// RETAIL: retail 0x10067570
+	m_bTronUnknown32fa = false;
+
 	// Go to normal physics model.
 	SetPhysicsModel(PPM_NORMAL);
+
+	// RETAIL: retail's light cycle manager is called through its vtable
+	// (slot 4); ours is Build 69's
+	g_pLightCycleMgr->RemoveCyclist( m_hObject );
 	return true;
 }
 
@@ -1420,13 +1507,214 @@ void CTronPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 	CPlayerObj::SetVehiclePhysicsModel(eModel);
 }
 
-void CTronPlayerObj::SetNormalPhysicsModel()
+// RETAIL: retail CTronPlayerObj does not override SetNormalPhysicsModel
+// (its slot 124 is CPlayerObj's); Build 69's is gone
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::Respawn
+//
+//	PURPOSE:	Respawn the player (RETAIL: retail 0x10067210)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::Respawn(uint8 nServerLoadGameFlags, bool bGetStartPt,
+							 GameStartPoint* pStartPoint, GameBase* pSpawnAt)
 {
-	if(m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	if( IsRevivePlayerGameType( ))
 	{
-		// Remove ourselves from the light cycle manager
-		g_pLightCycleMgr->RemoveCyclist(m_hObject);
+		// Remember the weapon we had...
+
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
+		if( pWeapon && pWeapon->GetId() != WMGR_INVALID_ID &&
+			pWeapon->GetAmmoId() != WMGR_INVALID_ID && pWeapon->GetId() > 0 )
+		{
+			m_nLastWeaponId = pWeapon->GetId();
+			m_nLastAmmoId = pWeapon->GetAmmoId();
+		}
+
+		ResetDefend();
 	}
 
-	CPlayerObj::SetNormalPhysicsModel();
+	CPlayerObj::Respawn( nServerLoadGameFlags, bGetStartPt, pStartPoint, pSpawnAt );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::RemoveVehicleModel
+//
+//	PURPOSE:	Remove our light cycle (RETAIL: retail 0x10067900)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::RemoveVehicleModel()
+{
+	if( m_hLightCycle )
+	{
+		g_pLTServer->RemoveObject( m_hLightCycle );
+		m_hLightCycle = LTNULL;
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::GimmeGunCheat
+//
+//	PURPOSE:	Give a weapon (RETAIL: retail 0x100670e0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::GimmeGunCheat( uint8 nId )
+{
+	if( m_damage.IsDead() || !m_pPlayerAttachments )
+		return;
+
+	TronUnknownVirtual129( nId );
+	CPlayerObj::GimmeGunCheat( nId );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual105
+//
+//	PURPOSE:	Give or take all permission sets (RETAIL: retail 0x10067120)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::TronUnknownVirtual105( LTBOOL bOn )
+{
+	if( bOn )
+	{
+		m_iPermissionSet = 0xff;
+	}
+	else
+	{
+		m_iPermissionSet = 0;
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AcquireWeapon
+//
+//	PURPOSE:	Acquire a weapon (RETAIL: retail 0x100686e0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::AcquireWeapon( char* pWeaponName, bool bTronUnknown )
+{
+	if( !pWeaponName )
+		return;
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( pWeaponName );
+	if( bTronUnknown )
+	{
+		TronUnknownVirtual128( pWeapon );
+	}
+
+	CPlayerObj::AcquireWeapon( pWeaponName, bTronUnknown );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::CreateSwatWeapon
+//
+//	PURPOSE:	Make the weapon the player blocks with (RETAIL: retail
+//				0x10068180; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::CreateSwatWeapon()
+{
+	char szWeapon[30] = {0};
+	g_pServerButeMgr->GetPlayerAttributeString( "SwatWeapon", szWeapon, ARRAY_LEN( szWeapon ));
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( szWeapon );
+	if( !pWeapon )
+		return;
+
+	m_pSwatWeapons = debug_new( CWeapons );
+	m_pSwatWeapons->Init( m_hObject );
+	m_pSwatWeapons->ObtainWeapon( pWeapon->nId );
+	m_pSwatWeapons->ChangeWeapon( pWeapon->nId );
+
+	m_pSwatWeapon = m_pSwatWeapons->GetCurWeapon();
+	m_pSwatWeapons->SetAmmo( m_pSwatWeapon->GetAmmoId() );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::InitialUpdate
+//
+//	PURPOSE:	First update (RETAIL: retail 0x10063a50)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CTronPlayerObj::InitialUpdate( int nInfo )
+{
+	CreateSwatWeapon();
+
+	if( IsMultiplayerGame( ))
+	{
+		m_bTronUnknown4C = false;
+		m_bMakeBody = true;
+	}
+
+	return CPlayerObj::InitialUpdate( nInfo );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual128
+//
+//	PURPOSE:	Acquire what a weapon needs (RETAIL: retail 0x10066ec0)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::TronUnknownVirtual128( WEAPON const* pWeapon )
+{
+	if( !pWeapon )
+		return false;
+
+	AcquirePrimitive( pWeapon->szPrimitiveType );
+
+	if( pWeapon->szSubroutineNeeded[0] )
+	{
+		if( !FindSubroutine( pWeapon->szSubroutineNeeded ))
+		{
+			AcquireSubroutine( pWeapon->szSubroutineNeeded, "alpha", "normal" );
+		}
+	}
+
+	return true;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual129
+//
+//	PURPOSE:	Acquire what a player weapon needs (RETAIL: retail
+//				0x10066e30)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::TronUnknownVirtual129( uint8 nWeaponId )
+{
+	if( !g_pWeaponMgr->IsPlayerWeapon( nWeaponId ))
+		return false;
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( nWeaponId );
+	if( !pWeapon )
+		return false;
+
+	return TronUnknownVirtual128( pWeapon );
 }

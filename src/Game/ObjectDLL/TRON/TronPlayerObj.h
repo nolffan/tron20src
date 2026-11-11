@@ -16,6 +16,9 @@
 
 #include "PlayerObj.h"
 #include "Ratings.h"
+#include "Weapons.h"
+#include <slist>
+#include <string>
 
 class CTronPlayerObj : public CPlayerObj
 {
@@ -26,9 +29,14 @@ class CTronPlayerObj : public CPlayerObj
 		virtual ~CTronPlayerObj();
 
 		// Performance Ratings
-		int		GetPerformanceRating(PerformanceRating p) const { ASSERT((p >= 0) && (p < NUM_RATINGS)); return m_iPerformanceRatings[p]; }
-		void	SetPerformanceRating(PerformanceRating p, int i) { ASSERT((p >= 0) && (p < NUM_RATINGS)); m_iPerformanceRatings[p] = i; }
-		LTBOOL	IsSurgePerformanceRating(PerformanceRating p) const { ASSERT((p >= 0) && (p < NUM_RATINGS)); return (m_iPerformanceRatings[p] >= 100); }
+		// RETAIL: virtual in Tron (retail CTronPlayerObj's slots 132 to 134,
+		// 0x100629b0 to 0x100629e0); a rating surges at its own threshold
+		virtual int		GetPerformanceRating(PerformanceRating p) const { ASSERT((p >= 0) && (p < NUM_RATINGS)); return m_iPerformanceRatings[p]; }
+		virtual void	SetPerformanceRating(PerformanceRating p, uint8 i) { ASSERT((p >= 0) && (p < NUM_RATINGS)); m_iPerformanceRatings[p] = i; }
+		virtual LTBOOL	IsSurgePerformanceRating(PerformanceRating p) const { ASSERT((p >= 0) && (p < NUM_RATINGS)); return (m_iPerformanceRatings[p] >= m_iSurgePerformanceRatings[p]); }
+
+		// RETAIL: another virtual of Tron's (slot 135, retail 0x10062a00)
+		virtual float	TronUnknownVirtual135() { return m_fTronUnknown31f4; }
 
 		// MSVC6 does NOT support templated member functions.  This function
 		// belongs here but cannot due to this limitation.  This comment is
@@ -43,13 +51,12 @@ class CTronPlayerObj : public CPlayerObj
 		//                                 T tSurgeValue )
 
 		// Permission sets
-		uint8	GetPSets() { return m_byPSets; }
-		void	SetPSets(uint8 byPSets) { m_byPSets = byPSets; }
-		void	AddPSets(uint8 byPSets) { m_byPSets |= byPSets; }
-		void	RemovePSets(uint8 byPSets) { m_byPSets &= ~byPSets; }
-
-		// Armor
-		void	SetArmorPercentage(int nArmor) { m_nArmorPercentage = nArmor; }
+		// RETAIL: Tron keeps them in CCharacter (0xc20, retail
+		// CTronPlayerObj's constructor clears it)
+		uint8	GetPSets() { return m_iPermissionSet; }
+		void	SetPSets(uint8 byPSets) { m_iPermissionSet = byPSets; }
+		void	AddPSets(uint8 byPSets) { m_iPermissionSet |= byPSets; }
+		void	RemovePSets(uint8 byPSets) { m_iPermissionSet &= ~byPSets; }
 
 		// Specific messages from the client
 		void HandleCompile(ILTMessage_Read *pMsg);
@@ -61,8 +68,18 @@ class CTronPlayerObj : public CPlayerObj
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
 
-		// damage handling (after damage has been dealt)
-		virtual void	HandleDamage(const DamageStruct& damage);
+		// RETAIL: no HandleDamage override in Tron (its slot 106 is
+		// CPlayerObj's)
+
+		// RETAIL: Tron's overrides of CPlayerObj's new virtuals
+		virtual void	Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true,
+			GameStartPoint* pStartPoint=LTNULL, GameBase* pSpawnAt=LTNULL);
+		virtual void	RemoveVehicleModel();
+		virtual void	GimmeGunCheat( uint8 nId );
+		virtual void	TronUnknownVirtual105( LTBOOL bOn );
+		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
+		virtual bool	TronUnknownVirtual128( WEAPON const* pWeapon );
+		virtual bool	TronUnknownVirtual129( uint8 nWeaponId );
 
 	protected:
 
@@ -101,32 +118,61 @@ class CTronPlayerObj : public CPlayerObj
 		bool AcquirePrimitive(char const* pName);
 
 		// Light cycle functions
-		bool StartLightCycle();
+		bool StartLightCycle( bool bSuper, bool bTronUnknown );	// RETAIL: two arguments (0x10067420)
 		bool EndLightCycle();
 		void SetVehiclePhysicsModel(PlayerPhysicsModel eModel);
-		void SetNormalPhysicsModel();
+		// RETAIL: no SetNormalPhysicsModel override in Tron (its slot 124 is
+		// CPlayerObj's)
 
 		// invalidates the vars that keep of the block
 		void ResetDefend();
 
+		// RETAIL: retail 0x10068180 (InitialUpdate calls it). The name is ours
+		void CreateSwatWeapon();
+		virtual LTBOOL InitialUpdate(int nInfo);
+
+		// RETAIL: retail 0x100675a0 (Load calls it with false). The names are ours
+		void AddPing(char const* pszPing, bool bTronUnknown);
+
 		// Member vars
-		uint8	m_byPSets;
-		uint8	m_byOldPSets;
-		uint8	m_nArmorPercentage;
-		uint8	m_iPerformanceRatings[NUM_RATINGS];
-		uint16	m_nBuildPoints;
-		uint16  m_nOldBuildPoints;
+		// RETAIL: laid out from retail CTronPlayerObj's constructor (0x100626d0),
+		// Save and Load (0x10063030, 0x100631c0); 0x3300 bytes. Names not in
+		// Build 69 are ours
+		uint8	m_byOldPSets;					// 0x31e8
+		uint16	m_nBuildPoints;					// 0x31ea
+		uint16	m_nOldBuildPoints;				// 0x31ec
+		float	m_fTronUnknown31f0;				// RETAIL: scales energy (Update)
+		float	m_fTronUnknown31f4;				// RETAIL: caps energy (Update)
+		float	m_fTronUnknown31f8;
+		float	m_fTronUnknown31fc;
+		float	m_fOldMaxHitPoints;				// RETAIL: -1 until sent (UpdateInterface)
+		float	m_fOldMaxEnergy;
+		float	m_afChanceToBeCorruptedByInfectedAmmo[4];	// RETAIL: one per difficulty (InventoryChanceToBeCorruptedByInfectedAmmo*)
 
 		// for defending
-		int			m_nDefendClientTimeStarted;
+		int			m_nDefendClientTimeStarted;	// 0x3218
 		int			m_nDefendServerTimeStarted;
 		int			m_nDefendDuration;
 		int8		m_cDefendType;
 		uint8		m_cDefendAmmoId;
+
+		typedef std::slist<std::string> PingList;
+		PingList	m_lstPings;		// RETAIL: 0x3228 ("AddPing", 0x100675c5)
+		LTObjRef	m_hLightCycle;					// RETAIL: 0x322c (RemoveVehicleModel removes it)
+		char		m_szLightCycleModel[32];		// RETAIL: 0x323c ("LightCycleBlue")
+		bool		m_bTronUnknown325c;
+		uint8		m_iPerformanceRatings[NUM_RATINGS];		// 0x325d
+		uint8		m_iSurgePerformanceRatings[NUM_RATINGS];	// 0x3262
+		char		m_szTronUnknown3267[64];
+		char		m_szTronUnknown32a7[64];
+		CWeapon*	m_pSwatWeapon;				// RETAIL: the "SwatWeapon" the player blocks with
+		CWeapons*	m_pSwatWeapons;				// (0x10068180). The names are ours
+		int			m_nLastWeaponId;			// RETAIL: Respawn keeps the current weapon's ids
+		int			m_nLastAmmoId;				// (0x10067264). The names are ours
+		bool		m_bTronUnknown32f8;
+		bool		m_bTronUnknown32f9;
+		bool		m_bTronUnknown32fa;
 };
-
-
-
 
 // ----------------------------------------------------------------------- //
 //

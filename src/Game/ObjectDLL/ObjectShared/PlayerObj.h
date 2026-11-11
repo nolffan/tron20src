@@ -36,10 +36,26 @@ class CWeapon;
 class PlayerVehicle;
 class TeleportPoint;
 class PlayerLure;
+class GameStartPoint;
 class CAI;
 struct WeaponFireInfo;
 enum  EnumAIStimulusID;
 
+
+// RETAIL: one of Tron's player subroutines (0x43 bytes: retail CPlayerObj's
+// constructor clears the first byte of each). The names are ours
+#define PLAYER_MAX_SUBROUTINES		12
+#define PLAYER_SUBROUTINE_NAME_LEN	64
+
+struct PlayerSubroutineSlot
+{
+	PlayerSubroutineSlot() { szName[0] = '\0'; }
+
+	char	szName[PLAYER_SUBROUTINE_NAME_LEN];
+	uint8	nTronUnknown40;		// RETAIL: tested before 0x41 is used (0x1000f616)
+	uint8	nTronUnknown41;
+	uint8	nTronUnknown42;
+};
 
 struct ObjectiveMsgInfo
 {
@@ -91,7 +107,12 @@ class CPlayerObj : public CCharacter
 		// Check if player is allowed to be revived.
 		bool CanRevive( );
 
-        void Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true);
+		// RETAIL: virtual in Tron (CTronPlayerObj overrides it, retail
+		// 0x10067210), with two more arguments: an object to spawn at and
+		// another whose position it takes (retail 0x1007da50 reads each one's
+		// m_hObject). Their names and types are ours
+        virtual void Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true,
+			GameStartPoint* pStartPoint=LTNULL, GameBase* pSpawnAt=LTNULL);
 		void Revive();
         void CancelRevive( );
 		void ResetAfterDeath();
@@ -110,12 +131,15 @@ class CPlayerObj : public CCharacter
 		bool IsClientLoaded( ) { return m_bClientLoaded; }
 
 		void FullAmmoCheat();
-		void FullWeaponCheat();
+		virtual void FullWeaponCheat();	// RETAIL: virtual in Tron
 		void FullModsCheat();
 		void FullGearCheat();
 		void RepairArmorCheat();
 		void HealCheat();
-		void GimmeGunCheat( uint8 nId );
+		virtual void GimmeGunCheat( uint8 nId );	// RETAIL: virtual in Tron
+		// RETAIL: an empty virtual of Tron's (CTronPlayerObj's sets or clears
+		// all permission sets, retail 0x10067120: a cheat)
+		virtual void TronUnknownVirtual105( LTBOOL /*bOn*/ ) {}
 		void GimmeModCheat( uint8 nId );
 		void GimmeGearCheat( uint8 nId );
 		void GimmeAmmoCheat( uint8 nId );
@@ -151,6 +175,11 @@ class CPlayerObj : public CCharacter
 		void HandlePreExit();
 		void HandleExit( bool bNewMission );
 		virtual void  HandleDamage(const DamageStruct& damage);
+		// RETAIL: two empty virtuals of Tron's taking a client message (the
+		// server shell hands them its player's messages, retail 0x100def81 and
+		// 0x100defb1; CTronPlayerObj's set and clear its flag at 0x325c)
+		virtual void TronUnknownVirtual107( ILTMessage_Read* /*pMsg*/ ) {}
+		virtual void TronUnknownVirtual108( ILTMessage_Read* /*pMsg*/ ) {}
 		void HandleActivateMessage(ILTMessage_Read *pMsg);
 		void HandlePlayerPositionMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);
@@ -213,12 +242,14 @@ class CPlayerObj : public CCharacter
 
 		// Carrying...
 
-		void	SetCarriedObject(HOBJECT hBody, bool bTransition = false );
+		void	SetCarriedObject(HOBJECT hBody);	// RETAIL: no transition argument in Tron
 		HOBJECT	GetCarriedObject() {return m_hCarriedObject;}
 		bool	IsCarrying() {return (GetCarriedObject() != LTNULL);}
 		bool	IsCarryingHeavyObject();
 		void	RemoveCarriedObject();
-		bool	DropCarriedObject( bool bTransition = false );
+		bool	DropCarriedObject( );	// RETAIL: no transition argument in Tron
+		// PORT: for NOLF2's callers that pass one
+		bool	DropCarriedObject( bool /*bTransition*/ ) { return DropCarriedObject( ); }
 
 
 		virtual void	HideCharacter(LTBOOL bHide);
@@ -244,10 +275,10 @@ class CPlayerObj : public CCharacter
 		
 		PlayerPhysicsModel	GetPlayerPhysicsModel() const { return m_ePPhysicsModel; }
 
-		void RemoveVehicleModel();
-
-		void	SetUsedStartPoint( bool bUsed ) { m_bUsedStartPoint = bUsed; }
-		bool	UsedStartPoint( ) const { return m_bUsedStartPoint; }
+		// PORT: Tron's CPlayerObj has no used start point member (its layout
+		// ends at 0x31e8); these stand in for NOLF2's callers
+		void	SetUsedStartPoint( bool /*bUsed*/ ) { }
+		bool	UsedStartPoint( ) const { return false; }
 
 		// Creates body after respawn.
 		void	CreateRespawnBody( );
@@ -257,7 +288,8 @@ class CPlayerObj : public CCharacter
 
 		// The teamid the player is on.
 		uint8	GetTeamID( ) const;
-		bool	RequestedTeamChange() {return (m_nRequestedTeam != INVALID_TEAM); }
+		// PORT: no team change requests in Tron (no member for one)
+		bool	RequestedTeamChange() {return false; }
 
 	protected :
 
@@ -291,11 +323,18 @@ class CPlayerObj : public CCharacter
 		virtual void UpdateInterface( bool bForceUpdate ); // Send client interface info.
 
 		virtual void GetExtraFireMessageInfo( uint8, ILTMessage_Read*, WeaponFireInfo* ) {}
+		// RETAIL: Tron's: reads more of the fire message into what follows
+		// GetExtraFireMessageInfo's (retail 0x10080140, called right after it:
+		// eleven pairs of flags at +0x68, then the data each flags at +0x80
+		// on; it does not use this). PORT: not yet written, empty here
+		virtual void TronUnknownVirtual114( ILTMessage_Read* /*pMsg*/, WeaponFireInfo* /*pInfo*/ ) {}
+		// RETAIL: an empty virtual of Tron's with one argument (retail 0x1026abb0)
+		virtual void TronUnknownVirtual115( uint32 /*nUnknown*/ ) {}
 
 
 
 		void	PostPropRead(ObjectCreateStruct *pStruct);
-        LTBOOL   InitialUpdate(int nInfo);
+        virtual LTBOOL   InitialUpdate(int nInfo);	// RETAIL: virtual in Tron
 
 		void	CreatePVWeapon();
 
@@ -314,7 +353,7 @@ class CPlayerObj : public CCharacter
 		void UpdateAirLevel();			// Update player's air
 		void UpdateClientEffects();		// Update client side effects
 
-		virtual void UpdateHealth();	// Update player's health (regeneration)
+		void UpdateHealth();	// Update player's health (regeneration). RETAIL: not virtual in Tron
 
 		void UpdateHiding();			// Update player's hiding state
 		void StartHiding();				// player is starting to hide
@@ -376,13 +415,21 @@ class CPlayerObj : public CCharacter
 		virtual void	SetPhysicsModel(PlayerPhysicsModel eModel=PPM_NORMAL, LTBOOL bUpdateClient=LTTRUE);
 		virtual void	SetVehiclePhysicsModel(PlayerPhysicsModel eModel);
 		virtual void	SetNormalPhysicsModel();
+	public:
+		// RETAIL: virtual in Tron (CTronPlayerObj's removes its light cycle,
+		// retail 0x10067900)
+		virtual void	RemoveVehicleModel();
+	protected:
 
 		void	AcquireDefaultWeapon();
 		bool	AcquireLevelDefaultWeapons( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultMods( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultAmmo( int nMissionId, int nLevelId );
 		bool	AcquireCurrentLevelDefaults();
-		void	AcquireWeapon(char* pWeaponName);
+		// RETAIL: virtual in Tron, with a flag (retail 0x1007e9d0, ret 8;
+		// CTronPlayerObj's, 0x100686e0, hands the weapon's data to
+		// TronUnknownVirtual128 when it is set). The flag's name is ours
+		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
 		void	AcquireMod(char* pModName);
 		void	AcquireAmmo(char* pAmmoName);
 		void	AcquireGear(char* pGearName);
@@ -392,9 +439,27 @@ class CPlayerObj : public CCharacter
 		virtual float GetVerticalThreshold() const;
 		virtual float GetInfoVerticalThreshold() const;
 
+		// RETAIL: three virtuals of Tron's about weapons, returning true here
+		// (retail 0x100dd4f0); CTronPlayerObj's take a weapon by name
+		// (0x10066f20), its data (AcquireWeapon and the weapon cheat hand it,
+		// 0x100686e0, 0x10066fa0) and its id (0x10066e30, through
+		// TronUnknownVirtual128)
+		virtual bool	TronUnknownVirtual127( char const* /*pWeaponName*/ ) { return true; }
+		virtual bool	TronUnknownVirtual128( WEAPON const* /*pWeapon*/ ) { return true; }
+		virtual bool	TronUnknownVirtual129( uint8 /*nWeaponId*/ ) { return true; }
+		// RETAIL: an empty virtual of Tron's with two arguments (Respawn calls
+		// it, retail 0x1007def8; CTronPlayerObj's is 0x100672a0)
+		virtual void	TronUnknownVirtual130( uint32 /*nUnknown1*/, uint32 /*nUnknown2*/ ) {}
+
         virtual LTBOOL DoActivate(CActivationData* pData);
 
 	
+	public:
+		// RETAIL: finds one of the player's subroutines by name (retail
+		// 0x10086240). The name is ours
+		PlayerSubroutineSlot* FindSubroutine( char const* pszName );
+	protected:
+
 		// Pickup an object.
 		bool PickupObject( HOBJECT hObject );
 		bool CanDropObject( );
@@ -450,6 +515,11 @@ class CPlayerObj : public CCharacter
 
 		CAnimatorPlayer	m_Animator;
 
+		// RETAIL: a Tron flag at 0x2a80 (retail CPlayerObj's constructor sets
+		// it, the server shell sets and clears it, and the player position
+		// message asks it before it moves the player). The name is ours
+		bool			m_bTronUnknown2a80;
+
 		// Info about cheats...
 
         LTBOOL		m_bGodMode;
@@ -457,11 +527,16 @@ class CPlayerObj : public CCharacter
         LTBOOL      m_bChatting;
 	    uint16		m_nClientChangeFlags;
 
-		bool		m_bCinematicInvulnerability;
+		// RETAIL: no cinematic invulnerability flag in Tron (nothing uses
+		// 0x2a92; UpdateClientViewPos goes by god mode)
 
 		// Note: These aren't saved/loaded because changing levels
 		// will mess up the state of these (and they are cheats anyway)
         LTBOOL		m_bSpectatorMode;	
+		// RETAIL: a Tron flag before it (the server shell sets and clears
+		// it, retail 0x100555f1; Update does not kill a player outside the
+		// world with it). The name is ours
+		bool		m_bTronUnknown2a98;
 		bool		m_bInvisible;
 
 		CLTMsgRef_Read m_pClientSaveData;  // Client data to save
@@ -538,6 +613,9 @@ class CPlayerObj : public CCharacter
 		LTObjRefNotifier	m_hCarriedObject;
 		bool				m_bCanDropBody;
 		bool				m_bCarryingAI;
+		// RETAIL: a Tron flag after it (saved right after it, retail
+		// 0x10081423; the commands update asks it). The name is ours
+		bool				m_bTronUnknown2cd6;
 
 		// Client/server movement interaction variables
 		LTVector	m_vLastClientPos;	// Last position provided by the client
@@ -574,11 +652,22 @@ class CPlayerObj : public CCharacter
 		static PlayerObjList	m_lstPlayerObjs;
 
 		LTVector	m_vClientCameraOffset;
-		int			m_nClientCameraOffsetTimeReceivedMS;
 		
 		LTObjRef	m_hDeadBody;
 
 		float		m_fLastVehicleFootstepTime;	
+
+		// RETAIL: Tron keeps the time the camera offset came as a float, put
+		// here (retail CPlayerObj's constructor sets 0x2e98 after m_hDeadBody;
+		// ClientUpdate stores GetTime() there, Save writes it as a time after
+		// the offset). The name is ours (NOLF2's is an int of milliseconds)
+		float		m_fClientCameraOffsetTimeReceived;
+
+		// RETAIL: twelve of Tron's subroutines, 0x43 bytes each, at 0x2e9c
+		// (retail PostPropRead and Load fill the names from the server's
+		// subroutine list, Save and Load write each as a string and three
+		// bytes; 0x10086240 finds one by name). The names are ours
+		PlayerSubroutineSlot	m_aSubroutines[PLAYER_MAX_SUBROUTINES];
 
 		// Is an enemy AI looking at us?
 		bool		m_bVisibleToEnemyAI;
@@ -587,29 +676,27 @@ class CPlayerObj : public CCharacter
 
 		// Client-side control flags
 		uint32		m_nControlFlags;
-		
-		LTVector	m_vLastGoodDropPos;
-			
-		CActivationData m_ActivationData;
+
+		// RETAIL: three Tron flags (retail CPlayerObj's constructor clears
+		// them after the model; retail 0x10080f8c and 0x1008110b read them
+		// from a client message). The names are ours
+		bool		m_bTronUnknown31c8;
+		bool		m_bTronUnknown31c9;
+		bool		m_bTronUnknown31ca;
+
+		// RETAIL: Tron has no last good drop position nor activation data
+		// member here: retail ClientUpdate stores the time of the client's
+		// update at 0x31cc, Respawn keeps the start point it used at 0x31d0
+		// and the server shell counts in 0x31d4. The names are ours
+		float		m_fLastClientUpdateTime;
+		GameStartPoint*	m_pLastStartPoint;	// RETAIL: Respawn sets it (0x1007dc96)
+		uint32		m_nTronUnknown31d4;
 
 		LTRotation	m_rFullPlayerRot;
-		
-		// [RP] 9/14/02 - Save off the velocity so we can zero out the players vel when they load
-		//		and then reset the saved vel when they actually respawn in the world.
 
-		LTVector	m_vSavedVelocity;
-		uint32		m_dwSavedObjectFlags;
-
-		// Version of save game when loaded.  Passed down to client for client save data.
-		uint32		m_nSaveVersion;
-		
-		bool		m_bUsedStartPoint;	// Whe they player first spawns at a start point this gets set
-
-		bool		m_bCanBeRevived;
-
-		// this will be a valid team id if the player has requested to change teams
-		uint8		m_nRequestedTeam;
-
+		// RETAIL: NOLF2's saved velocity and object flags, save version, used
+		// start point, revive and team change members are not in Tron's
+		// CPlayerObj (it ends with the rotation, 0x31e8 bytes)
 };
 
 
