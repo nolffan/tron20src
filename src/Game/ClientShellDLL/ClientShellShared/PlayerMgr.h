@@ -82,7 +82,6 @@ public:
 	CPlayerCamera*		GetPlayerCamera()			{ return m_pPlayerCamera; }
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }
 	CTargetMgr*			GetTargetMgr()				{ return m_pTargetMgr; }
-	CSearcher*			GetSearcher()				{ return m_pSearcher; }
 	CGadgetDisabler*	GetGadgetDisabler()			{ return m_pGadgetDisabler;	}
 	
 	bool		InSafetyNet()	const				{ return m_bInSafetyNet; }
@@ -336,7 +335,7 @@ protected:
 	CCameraOffsetMgr       *m_pCameraOffsetMgr;      // Adjust camera orientation
 	CFlashLightPlayer      *m_pFlashLight;           // flash light for the player
 	CGadgetDisabler        *m_pGadgetDisabler;       // Handles the disabling of a gadget
-	CSearcher              *m_pSearcher;             // Handles searching bodies and props
+	// RETAIL: no searcher in Tron (PlayerMgr.cpp)
 	CMoveMgr               *m_pMoveMgr;              // Always around...
 	CVisionModeMgr         *m_pVisionModeMgr;        // Controls the vision mode switching and updating
 	CAttachButeMgr         *m_pAttachButeMgr;
@@ -383,10 +382,17 @@ protected:
     LTBOOL          m_bRestoreOrientation;
     LTBOOL			m_bCameraPosInited;     // Make sure the position is valid
 	LTBOOL			m_bStartedPlaying;
+	// RETAIL: Tron's (retail CPlayerMgr ctor 0x10123400 and Save 0x10124b60:
+	// +0xa0, saved after m_bUsingExternalCamera). Not yet named
+	LTBOOL				m_bTronUnknownA0;
 
     LTVector        m_vShakeAmount;         // Amount to shake screen
     LTBOOL          m_bSpectatorMode;		// Are we in spectator mode
 	LTBOOL			m_bInvisibleMode;		// Are we in invisible mode
+	// RETAIL: Tron's two before the model glow (+0xb8, a bool the ctor
+	// clears; +0xbc). Not yet named
+	bool				m_bTronUnknownB8;
+	LTFLOAT				m_fTronUnknownBC;
 
 	// Glowing models...
 

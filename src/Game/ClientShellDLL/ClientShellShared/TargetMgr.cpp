@@ -317,7 +317,7 @@ void CTargetMgr::Update()
 				m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
 				SetTargetStringID(IDS_TARGET_SEARCH);
 
-				uint8 nProgress = g_pPlayerMgr->GetSearcher()->GetMaxProgress();
+				uint8 nProgress = 0;	// PORT: no searcher in Tron
 				g_pPlayerStats->UpdateMaxProgress( nProgress );
 				g_pPlayerStats->UpdateProgress( nProgress );
 				g_pHUDMgr->QueueUpdate( kHUDProgressBar );
@@ -444,7 +444,7 @@ void CTargetMgr::Update()
 		m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
 		SetTargetStringID(IDS_TARGET_SEARCH);
 		
-		uint8 nProgress = g_pPlayerMgr->GetSearcher()->GetMaxProgress();
+		uint8 nProgress = 0;	// PORT: no searcher in Tron
 		g_pPlayerStats->UpdateMaxProgress( nProgress );
 		g_pPlayerStats->UpdateProgress( nProgress );
 		g_pHUDMgr->QueueUpdate( kHUDProgressBar );

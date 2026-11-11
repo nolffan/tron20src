@@ -152,7 +152,8 @@ CPlayerMgr::CPlayerMgr()
 	m_pCameraOffsetMgr = debug_new( CCameraOffsetMgr );  ASSERT( 0 != m_pCameraOffsetMgr );
 	m_pFlashLight = debug_new( CFlashLightPlayer );      ASSERT( 0 != m_pFlashLight );
 	m_pGadgetDisabler = debug_new( CGadgetDisabler );    ASSERT( 0 != m_pGadgetDisabler );
-	m_pSearcher = debug_new( CSearcher );                ASSERT( 0 != m_pSearcher );
+	// RETAIL: Tron has no searcher (retail 0x10123400 allocates none; no
+	// search sounds or strings)
 	m_pMoveMgr = debug_new( CMoveMgr );                  ASSERT( 0 != m_pMoveMgr );
 	m_pVisionModeMgr = debug_new( CVisionModeMgr );      ASSERT( 0 != m_pVisionModeMgr );
 	m_pAttachButeMgr = debug_new( CAttachButeMgr );      ASSERT( 0 != m_pAttachButeMgr );
@@ -176,6 +177,7 @@ CPlayerMgr::CPlayerMgr()
 	m_bCamIsListener            = LTFALSE;
 	m_bCamera  = LTFALSE;
 	m_bStartedPlaying			= LTFALSE;
+	m_bTronUnknownA0			= LTFALSE;	// RETAIL: Tron's (PlayerMgr.h)
 	m_vSVLightScale.Init(1, 1, 1);
 
 	m_vShakeAmount.Init();
@@ -257,6 +259,9 @@ CPlayerMgr::CPlayerMgr()
 
 	m_fMultiplayerDeathCamMoveTimer = 0.0f;
 	m_fMultiAttachDeathCamTimer = 0.0f;
+
+	m_bTronUnknownB8		= false;	// RETAIL: Tron's, cleared last (PlayerMgr.h)
+	m_fTronUnknownBC		= 0.0f;
 }
 
 CPlayerMgr::~CPlayerMgr()
@@ -283,12 +288,6 @@ CPlayerMgr::~CPlayerMgr()
 	{
 		debug_delete( m_pGadgetDisabler );
 		m_pGadgetDisabler = 0;
-	}
-
-	if ( m_pSearcher )
-	{
-		debug_delete( m_pSearcher );
-		m_pSearcher = 0;
 	}
 
 	if ( m_pMoveMgr )
@@ -1101,10 +1100,6 @@ void CPlayerMgr::UpdatePlaying()
 
 	m_pGadgetDisabler->Update();
 
-	// Update the Searcher...
-
-	m_pSearcher->Update();
-
 	// Update the vision modes...
 
 	m_pVisionModeMgr->Update();
@@ -1557,7 +1552,7 @@ void CPlayerMgr::HandleMsgGadgetTarget( ILTMessage_Read *pMsg )
 
 void CPlayerMgr::HandleMsgSearch( ILTMessage_Read *pMsg )
 {
-	m_pSearcher->OnSearchMessage( pMsg );
+	// RETAIL: no searcher in Tron (PORT: NOLF2's message handler kept, inert)
 }
 
 
@@ -5320,7 +5315,7 @@ void SVModelHook(ModelHookData *pData, void *pUser)
 
 bool CPlayerMgr::IsSearching()
 { 
-	return m_pSearcher->IsSearching();
+	return false;	// RETAIL: no searcher in Tron
 }
 
 // --------------------------------------------------------------------------- //
