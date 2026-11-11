@@ -302,7 +302,6 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		uint8			GetPermissionSet() const {return m_iPermissionSet;}
 
 		// General inventory accessor
-		GEN_INVENTORY_LIST&	GetInventory() { return m_lstInventory; }
 
 		// Key item handling
 		IDList*			GetKeyList() { return &m_Keys; }
@@ -610,7 +609,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		float				m_fPitch;						// Pitch we should apply to the nodes
 		float				m_fLastPitch;					// How much the last pitch sent to the clients was.
 
-		GEN_INVENTORY_LIST	m_lstInventory;					// General inventory items (see GeneralInventory.h)
+		// RETAIL: no general inventory in Tron (Character.cpp)
 
 		CTimer				m_tmrDeflecting;				// On while deflecting ammo.
 

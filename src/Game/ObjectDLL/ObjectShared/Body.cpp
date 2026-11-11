@@ -1054,7 +1054,7 @@ void Body::Init(const BODYINITSTRUCT& bi)
 	bi.pCharacter->TransferSpears(this);
 
 	// General inventory
-	m_lstInventory = bi.pCharacter->GetInventory();
+	// RETAIL: Tron's characters have no general inventory to hand on
 
 	// Set our state
 	SetState(bi.eBodyState);

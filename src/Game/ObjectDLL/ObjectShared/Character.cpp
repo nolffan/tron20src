@@ -76,7 +76,8 @@ BEGIN_CLASS(CCharacter)
 		ADD_STRINGPROP_FLAG(ChildModel_1, "", (PF_GROUP(7)) | (PF_FILENAME)) 
 		ADD_STRINGPROP_FLAG(ChildModel_2, "", (PF_GROUP(7)) | (PF_FILENAME)) 
 		ADD_STRINGPROP_FLAG(ChildModel_3, "", (PF_GROUP(7)) | (PF_FILENAME)) 
-	ADD_GENERAL_INVENTORY_PROP(PF_GROUP(2))
+	// RETAIL: Tron's characters have no general inventory (retail has none of
+	// its property names, and CCharacter's Save none of it)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(CCharacter, GameBase, NULL, NULL, CF_HIDDEN, CCharacterPlugin)
 
 extern CAIStimulusMgr* g_pAIStimulusMgr;
@@ -853,37 +854,7 @@ LTBOOL CCharacter::ReadProp(ObjectCreateStruct *pStruct)
 		}
 	}
 
-	// Read the general inventory
-	char buf[64];
-	GEN_INVENTORY_ITEM item;
-	for(int nInv=1;nInv<=CHARACTER_MAX_INVENTORY;nInv++)
-	{
-		sprintf(buf,"Item%dCount",nInv);
-		if(g_pLTServer->GetPropGeneric(buf,&genProp)==LT_OK)
-		{
-			item.nCount = (uint8)genProp.m_Long;
-			if(item.nCount > 0)
-			{
-				// Read in the item
-				sprintf(buf,"Item%dID",nInv);
-				if(g_pLTServer->GetPropGeneric(buf,&genProp)==LT_OK)
-				{
-					// Translate the item string to an ID
-					item.nItemID = s_InventoryButeMgr.GetItemIndex(genProp.m_String);
-					if(item.nItemID <= 0)
-					{
-						g_pLTServer->CPrint("ERROR - Inventory Item %d had a bad ID\n",nInv);
-						TRACE("ERROR - Inventory Item %d had an ID of 0\n",nInv);
-						ASSERT(FALSE);
-					}
-					else
-					{
-						m_lstInventory.push_back(item);
-					}
-				}
-			}
-		}
-	}
+	// RETAIL: no general inventory in Tron (above)
 
     return LTTRUE;
 }
@@ -3872,15 +3843,6 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_FLOAT(m_fPitch);
 	SAVE_FLOAT(m_fLastPitch);
 
-	// Inventory
-	SAVE_INT(m_lstInventory.size());
-
-	GEN_INVENTORY_LIST::iterator iter;
-	for(iter=m_lstInventory.begin();iter!=m_lstInventory.end();iter++)
-	{
-		SAVE_INT(iter->nItemID);
-		SAVE_INT(iter->nCount);
-	}
 	
 	m_Keys.Save(pMsg);
 
@@ -4004,20 +3966,6 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_FLOAT(m_fPitch);
 	LOAD_FLOAT(m_fLastPitch);
 
-	// Inventory
-	m_lstInventory.clear();
-	int nNumInventoryItems;
-	LOAD_INT(nNumInventoryItems);
-
-	GEN_INVENTORY_ITEM item;
-	int nTemp;
-	for(int i=0;i<nNumInventoryItems;i++)
-	{
-		LOAD_INT(nTemp);
-		item.nItemID = (uint8)nTemp;
-		LOAD_INT(nTemp);
-		item.nCount = (uint8)nTemp;
-	}
 
 	m_Keys.Load( pMsg );
 
