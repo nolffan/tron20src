@@ -5675,7 +5675,7 @@ void CPlayerObj::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 
 	// Save the command mgrs' global vars here so we bring them across levels
 
-	g_pCmdMgr->SaveGlobalVars( pMsg, LTFALSE );
+	g_pCmdMgr->SaveGlobalVars( pMsg );	// RETAIL: no bNameOnly in Tron (CommandMgr.h)
 
 	// Save animator
 
@@ -5783,7 +5783,7 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	// Load the command mgrs' global vars here so we bring them across levels
 
-	g_pCmdMgr->LoadGlobalVars( pMsg, LTFALSE );
+	g_pCmdMgr->LoadGlobalVars( pMsg );	// RETAIL: no bNameOnly in Tron (CommandMgr.h)
 
 	// Load animator
 

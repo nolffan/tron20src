@@ -43,7 +43,16 @@ Fixed in the modern build: <file>, MODERN.md <id>. (Or: not fixed, because ...)
 
 ## The bugs
 
-(none listed yet)
+### The command manager counts its variables in a byte
+
+Object.lto, CCommandMgr (ObjectShared/CommandMgr.h, .cpp; its constructor at
+0x100b45e0). The manager keeps room for 512 variables (CMDMGR_MAX_VARS), but
+its count, m_nNumVars, is a uint8: every read and write of it is a byte
+(+0x167f0). The `>= CMDMGR_MAX_VARS` checks never fire; a level declaring
+more than 255 variables wraps the count to 0 and overwrites the first ones.
+NOLF2's count is a uint16.
+
+Not fixed yet: the modern build should make it a uint16, as NOLF2's.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
