@@ -2040,6 +2040,10 @@ void CPlayerMgr::TurnOffAlternativeCamera(uint8 nCamType)
 		WriteConsoleInt("ModelShadow_Proj_MaxShadowsPerFrame", g_nCinSaveNumModelShadows);
 		g_bCinChangedNumModelShadows = false;
 	}
+
+	// RETAIL: Tron's turns the projected model shadows off again (retail
+	// 0x10126e80)
+	g_pLTClient->RunConsoleString("ModelShadow_Proj_Enable 0");
 }
 
 
