@@ -78,7 +78,9 @@ public:
 
 
 	// This client is connected to remote server.
-	bool		IsConnectedToRemoteServer( ) { return ( m_StartGameRequest.m_Type == STARTGAME_CLIENTTCP ); }
+	// RETAIL: Tron's tests the connection first (inlined in CPlayerMgr::
+	// UpdatePlayerInfo, CShell 0x1012a3a0)
+	bool		IsConnectedToRemoteServer( ) { return ( g_pLTClient->IsConnected() && m_StartGameRequest.m_Type == STARTGAME_CLIENTTCP ); }
 
 	//returns true if the passed in address matches the current server address
 	bool		CheckServerAddress(char const*pszTestAddress, int nPort);
