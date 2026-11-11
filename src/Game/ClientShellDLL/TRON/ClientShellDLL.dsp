@@ -190,6 +190,10 @@ SOURCE=.\HUDCrosshair.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDamageDir.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDEnergyTransfer.cpp
 # End Source File
 # Begin Source File
@@ -428,6 +432,10 @@ SOURCE=.\HUDArmor.h
 # Begin Source File
 
 SOURCE=.\HUDChooser.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDDamageDir.h
 # End Source File
 # Begin Source File
 

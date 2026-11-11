@@ -19,8 +19,12 @@ enum eHUDRenderLevel
 {
 	kHUDRenderNone = 0,		// always render
 	kHUDRenderText,			// render when text is allowed (i.e. cinematics, etc.)
-	kHUDRenderDead,			// render when text is allowed (i.e. cinematics, etc.)
-	kHUDRenderFull			// render only when full HUD is rendered
+	kHUDRenderFull,			// render only when full HUD is rendered
+
+	// RETAIL: Tron's levels are build 51's (kHUDRenderFull is 2: CHUDItem's
+	// constructor, retail CShell.dll 0x10021e10); NOLF2's dead level, which
+	// its code still names, stands in as the text level (PORT)
+	kHUDRenderDead = kHUDRenderText
 };
 
 
@@ -30,7 +34,9 @@ enum eHUDRenderLevel
 class CHUDItem
 {
 public:
-	CHUDItem() {m_UpdateFlags = 0; m_eLevel = kHUDRenderFull; m_bEnabled = true;}
+	// RETAIL: an initializer list in Tron (the members are set before the
+	// vtable: retail CShell.dll 0x10021e10)
+	CHUDItem() : m_UpdateFlags(0), m_eLevel(kHUDRenderFull), m_bEnabled(true) {}
 	virtual ~CHUDItem() {Term();}
 	
 
