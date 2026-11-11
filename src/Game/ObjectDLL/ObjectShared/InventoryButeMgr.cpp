@@ -105,7 +105,10 @@ void CInventoryButeMgr::ReadItem()
 	GEN_INVENTORY_ITEM_DEF def;
 
 	sprintf(def.szName,m_buteMgr.GetString(s_aTagName,"Name",""));
-	sprintf(def.szCmd,m_buteMgr.GetString(s_aTagName,"Cmd",""));
+	sprintf(def.szImage,m_buteMgr.GetString(s_aTagName,"Image",""));
+	def.nType = m_buteMgr.GetInt(s_aTagName,"Type");
+	def.nTextID = m_buteMgr.GetInt(s_aTagName,"TextID");
+	def.nPoints = m_buteMgr.GetInt(s_aTagName,"Points");
 	
 	m_lstItems.push_back(def);
 }
@@ -162,14 +165,41 @@ char* CInventoryButeMgr::GetItemName(const uint32 iItem)
 //	PURPOSE:	Gets an item command by index
 //
 // ----------------------------------------------------------------------- //
-char* CInventoryButeMgr::GetItemCommand(const uint32 iItem)
+char* CInventoryButeMgr::GetItemImage(const uint32 iItem)
 {
 	if(iItem < m_lstItems.size())
 	{
-		return(m_lstItems[iItem].szCmd);
+		return(m_lstItems[iItem].szImage);
 	}
 
 	return NULL;
+}
+int CInventoryButeMgr::GetItemTextID(const uint32 iItem)
+{
+	if(iItem < m_lstItems.size())
+	{
+		return(m_lstItems[iItem].nTextID);
+	}
+
+	return 0;
+}
+int CInventoryButeMgr::GetItemType(const uint32 iItem)
+{
+	if(iItem < m_lstItems.size())
+	{
+		return(m_lstItems[iItem].nType);
+	}
+
+	return 0;
+}
+int CInventoryButeMgr::GetItemPoints(const uint32 iItem)
+{
+	if(iItem < m_lstItems.size())
+	{
+		return(m_lstItems[iItem].nPoints);
+	}
+
+	return 0;
 }
 
 // ----------------------------------------------------------------------- //

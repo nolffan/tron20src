@@ -162,6 +162,10 @@ SOURCE=.\BinaryBit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BuildNote.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
@@ -183,6 +187,10 @@ SOURCE=.\InfoString.cpp
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleZones.cpp
 # End Source File
 # Begin Source File
 
@@ -231,6 +239,10 @@ SOURCE=.\BinaryBit.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\BuildNote.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\CoreDump.h
 # End Source File
 # Begin Source File
@@ -248,6 +260,10 @@ SOURCE=.\InfoString.h
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleZones.h
 # End Source File
 # Begin Source File
 

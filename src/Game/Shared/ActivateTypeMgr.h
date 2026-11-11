@@ -19,6 +19,7 @@
 
 	#include "GameButeMgr.h"
 	#include "TemplateList.h"
+	#include "SFXMsgIds.h"
 
 //
 // Forwards...
@@ -131,7 +132,9 @@ class CActivateTypeHandler : public ILTObjRefReceiver
 		CActivateTypeHandler();
 		~CActivateTypeHandler();
 
-		void	Init( LPBASECLASS pObj );
+		// RETAIL: Tron's takes the special fx message id its messages carry
+		// (retail 0x100ca980; most callers pass SFX_ACTIVATEOBJECT_ID, some 0x3d)
+		void	Init( LPBASECLASS pObj, uint8 nSFXId = SFX_ACTIVATEOBJECT_ID );
 
 		void	SetActivateType( uint8 nId );
 		void	SetActivateType( const char *pName );
@@ -161,6 +164,8 @@ class CActivateTypeHandler : public ILTObjRefReceiver
 		ACTIVATETYPE::State		m_eState;				// Which state are we in
 
 		ObjRefNotifierList		m_lstInheritedObjs;		// List of objects that inherit the ActivateType from m_pBase
+
+		uint8					m_nSFXId;				// RETAIL: Tron's (Init): the special fx id of our messages
 };
 
 #endif // _CLIENTBUILD

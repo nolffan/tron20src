@@ -426,7 +426,9 @@ void CoreDump::HandleComplete(HOBJECT hSender)
 	for(iter=m_lstInventory.begin();iter!=m_lstInventory.end();iter++)
 	{
 		// First get the command
-		szCmd = g_pInventoryButeMgr->GetItemCommand(iter->nItemID);
+		// PORT: Tron's inventory items have no command (GeneralInventory.h);
+		// Build 69's core dump code stands in
+		szCmd = LTNULL;
 		for(i=0;i<iter->nCount;i++)
 		{
 			// Now process it N times (once for each instance of the item we have)

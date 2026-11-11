@@ -1467,6 +1467,45 @@ void PlayClientFX(char* szFXName, HOBJECT hParent, HOBJECT hTarget, LTVector* pv
 	g_pLTServer->SendSFXMessage(cMsg.Read(), vPos, 0);
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CreateClientFXObject
+//
+//	PURPOSE:	Create a SpecialFX object with the given properties, at
+//				the parent or at the position given (RETAIL: Tron's; retail
+//				0x100cdc30; our name). Returns its object, or NULL
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT CreateClientFXObject(char* szProps, HOBJECT hParent, LTVector* pvPos, LTRotation *prRot)
+{
+	ObjectCreateStruct ocs;
+
+	if(hParent)
+	{
+		g_pLTServer->GetObjectPos(hParent, &ocs.m_Pos);
+		g_pLTServer->GetObjectRotation(hParent, &ocs.m_Rotation);
+	}
+	else if( pvPos && prRot )
+	{
+		ocs.m_Pos = *pvPos;
+		ocs.m_Rotation = *prRot;
+	}
+	else
+	{
+		g_pLTServer->CPrint("ERROR in PlayClientFX()!  Invalid position specified for FX");
+		return LTNULL;
+	}
+
+	HCLASS hClass = g_pLTServer->GetClass("SpecialFX");
+	if(!hClass) return LTNULL;
+
+	BaseClass* pObj = (BaseClass*)g_pLTServer->CreateObjectProps(hClass, &ocs, szProps);
+	if(!pObj) return LTNULL;
+
+	return pObj->m_hObject;
+}
+
 
 // ----------------------------------------------------------------------- //
 //

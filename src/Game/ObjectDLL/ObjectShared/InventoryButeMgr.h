@@ -39,8 +39,12 @@ class CInventoryButeMgr : public CGameButeMgr
 		uint32 GetNumItems() const { return m_lstItems.size(); }
 		int GetItemIndex(const char* szItem);
 
+		// RETAIL: Tron's (retail 0x100c1e70..0x100c1fb0, in this order)
 		char* GetItemName(const uint32 iItem);
-		char* GetItemCommand(const uint32 iItem);
+		char* GetItemImage(const uint32 iItem);
+		int GetItemTextID(const uint32 iItem);
+		int GetItemType(const uint32 iItem);
+		int GetItemPoints(const uint32 iItem);
 
 	protected:
 

@@ -410,6 +410,10 @@ void PlayClientFX(char* szFXName, HOBJECT hParent, LTVector* pvPos = NULL, LTRot
 // Plays a fire-and-forget clientFX at a specific location in the world using target information.
 void PlayClientFX(char* szFXName, HOBJECT hParent, HOBJECT hTarget, LTVector *pvPos = NULL, LTRotation *prRot = NULL, LTVector *pvTargetPos = NULL, uint32 dwFlags = 0);
 
+// RETAIL: Tron's: a SpecialFX object with the given properties, at the
+// parent or the position given; its object, or NULL (our name)
+HOBJECT CreateClientFXObject(char* szProps, HOBJECT hParent, LTVector* pvPos = NULL, LTRotation *prRot = NULL);
+
 // Gets the playerobj from a client id.
 CPlayerObj* GetPlayerFromClientId( uint32 nClientId );
 
