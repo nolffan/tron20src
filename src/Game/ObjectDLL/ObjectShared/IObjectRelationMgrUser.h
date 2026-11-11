@@ -14,16 +14,16 @@
 #ifndef __IOBJECTRELATIONMGRUSER_H__
 #define __IOBJECTRELATIONMGRUSER_H__
 
-class CRelationUser;
-class CDataUser;
+class RelationSet;
+class RelationData;
 
 class IObjectRelationMgrUser
 {
 	public :
 
 		virtual LTBOOL			IsDead() const = 0;
-		virtual CRelationUser*	GetRelationUser() = 0;
-		virtual CDataUser*		GetDataUser() = 0;
+		virtual const RelationSet&	GetRelationSet() const = 0;
+		virtual const RelationData&	GetRelationData() const = 0;
 		virtual HOBJECT			GetRegionObject() = 0;
 		virtual HOBJECT			GetUserObject() const = 0;
 };

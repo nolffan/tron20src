@@ -22,6 +22,7 @@
 #include "stdafx.h"
 
 #include "ObjectRelationMgr.h"		
+#include "IObjectRelationMgrUser.h"
 #include "AIRegion.h"
 #include "AIVolume.h"
 #include "RelationMgr.h"
@@ -174,22 +175,23 @@ int CObjectRelationMgr::Load(ILTMessage_Read *pMsg)
 //				except in exceptional cases (like the player).
 //              
 //----------------------------------------------------------------------------
-void CObjectRelationMgr::Init(HOBJECT hObject, const char* const szKey)
+void CObjectRelationMgr::Init(IObjectRelationMgrUser* pUser, const char* const szKey)
 {
-	AIASSERT(hObject != NULL, NULL, "CDataUser::InitData: NULL HOBJECT" );
-	AIASSERT(CRelationMgr::GetGlobalRelationMgr(), NULL, "CObjectRelationMgr::Init: No GlobalRelationMgr" );
-	AIASSERT(m_pRelationUser, NULL, "CObjectRelationMgr::Init: No RelationUser");
-	AIASSERT(m_pDataUser, NULL, "CObjectRelationMgr::Init: No DataUser");
+	// RETAIL: what is left of an assert in Tron's (retail 0x1010b3b0 makes
+	// the cast and drops it)
+	dynamic_cast<IObjectRelationMgrUser*>(g_pLTServer->HandleToObject(pUser->GetUserObject()));
+
+	strncpy( m_szKey, szKey, RELATION_VALUE_LENGTH-1 );
+	m_szKey[RELATION_VALUE_LENGTH-1] = '\0';
 
 	CRelationMgr::GetGlobalRelationMgr()->RemoveObjectRelationMgr(this);
-	CRelationMgr::GetGlobalRelationMgr()->AddObjectRelationMgr(this, hObject);
+	CRelationMgr::GetGlobalRelationMgr()->AddObjectRelationMgr(this, pUser->GetUserObject());
 
-	CRelationMgr::GetGlobalRelationMgr()->GetButeMgr()->CopyTemplate(szKey, this);
+	CRelationMgr::GetGlobalRelationMgr()->GetButeMgr()->CopyTemplate(m_szKey, this);
 	m_pRelationUser->InitRelations( m_szRelationSet );
-	m_pDataUser->InitData( m_szDataSet, hObject );
+	m_pDataUser->InitData( m_szDataSet, pUser->GetUserObject() );
 
-	m_hOwner.SetReceiver( *this );
-	m_hOwner = hObject;
+	m_hOwner = pUser->GetUserObject();
 
 	if ( HasCollectiveName() )
 	{

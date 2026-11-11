@@ -14,6 +14,7 @@
 
 #include "AINode.h"
 #include "AISensing.h"
+#include "IObjectRelationMgrUser.h"
 #include "WeaponMgr.h"
 
 LINKTO_MODULE( AINodeSensing );
@@ -24,7 +25,8 @@ class CAISenseRecorderAbstract;
 class CObjectRelationMgr;
 class CAI;
 
-class AINodeSensing : public AINode, public IAISensing
+// RETAIL: Tron's AINodeSensing is an IObjectRelationMgrUser too (its RTTI)
+class AINodeSensing : public AINode, public IAISensing, public IObjectRelationMgrUser
 {
 	typedef AINode super;
 
@@ -37,6 +39,14 @@ class AINodeSensing : public AINode, public IAISensing
 	};
 
 	public :
+
+		// RETAIL: IObjectRelationMgrUser's, Tron's (IObjectRelationMgrUser.h;
+		// retail 0x1013c350, 0x1021f460, 0x1021f4c0, 0x1021f520, 0x1021e6b0)
+		virtual LTBOOL			IsDead() const { return LTFALSE; }
+		virtual const RelationSet&	GetRelationSet() const;
+		virtual const RelationData&	GetRelationData() const;
+		virtual HOBJECT			GetRegionObject();
+		virtual HOBJECT			GetUserObject() const { return m_hObject; }
 
 		// Ctors/Dtors/etc
 

@@ -16,6 +16,7 @@
 
 #include "ltengineobjects.h"
 #include "Prop.h"
+#include "IObjectRelationMgrUser.h"
 #include "Timer.h"
 #include "CommandMgr.h"
 #include "AISensing.h"
@@ -29,18 +30,26 @@ enum  EnumAISenseType;
 
 LINKTO_MODULE( Scanner );
 
-class CScanner : public Prop, public IAISensing
+// RETAIL: Tron's CScanner is an IObjectRelationMgrUser too (its RTTI)
+class CScanner : public Prop, public IAISensing, public IObjectRelationMgrUser
 {
 	public :
 
 		CScanner();
 		~CScanner();
 
+		// RETAIL: IObjectRelationMgrUser's, Tron's (IObjectRelationMgrUser.h;
+		// retail 0x1013c350, 0x100ed760, 0x100ed770, 0x1013c350, 0x1001b980)
+		virtual LTBOOL			IsDead() const { return LTFALSE; }
+		virtual HOBJECT			GetRegionObject() { return LTNULL; }
+		virtual HOBJECT			GetUserObject() const { return m_hObject; }
+
         LTBOOL CanSeeObject(ObjectFilterFn fn, HOBJECT hObject);
         LTBOOL CanSeePos(ObjectFilterFn fn, const LTVector& vPos);
 
-		const RelationData& GetRelationData();
-		const RelationSet& GetRelationSet();
+		// RETAIL: IObjectRelationMgrUser's in Tron (above)
+		virtual const RelationData& GetRelationData() const;
+		virtual const RelationSet& GetRelationSet() const;
 
 		void EnableSensing(LTBOOL bEnable);
 

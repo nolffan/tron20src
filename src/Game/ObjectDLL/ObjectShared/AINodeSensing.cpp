@@ -18,6 +18,9 @@
 #include "ObjectRelationMgr.h"
 #include "ParsedMsg.h"
 #include "CharacterMgr.h"
+#include "AIVolumeMgr.h"
+#include "AIVolume.h"
+#include "AIRegion.h"
 
 LINKFROM_MODULE( AINodeSensing );
 
@@ -550,7 +553,7 @@ void AINodeSensing::InitialUpdate()
 		const char* const pszAlignment = pTemplate->szAlignment;
 		AIASSERT( pszAlignment != NULL, m_hObject, "No Alignment" );
 
-		m_pRelationMgr->Init( m_hObject, pszAlignment );
+		m_pRelationMgr->Init( this, pszAlignment );
 	}
 
 	if( m_bNodeEnabled )
@@ -606,7 +609,7 @@ const RelationSet& AINodeSensing::GetSenseRelationSet() const
 {
 	if( m_pRelationMgr )
 	{
-		return m_pRelationMgr->GetRelationUser()->GetRelations();
+		return m_pRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
 	}
 
 	static RelationSet rs;
@@ -651,4 +654,49 @@ LTRESULT AINodeSensingPlugin::PreHook_EditStringList(const char* szRezPath, cons
 	// No one wants it
 
 	return LT_UNSUPPORTED;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AINodeSensing::GetRelationSet, GetRelationData, GetRegionObject
+//
+//	PURPOSE:	IObjectRelationMgrUser's (RETAIL: Tron's; retail 0x1021f460,
+//				0x1021f4c0, 0x1021f520)
+//
+// ----------------------------------------------------------------------- //
+
+const RelationSet& AINodeSensing::GetRelationSet() const
+{
+	if( m_pRelationMgr )
+	{
+		return m_pRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
+	}
+
+	static RelationSet rs;
+	return rs;
+}
+
+const RelationData& AINodeSensing::GetRelationData() const
+{
+	if( m_pRelationMgr )
+	{
+		return m_pRelationMgr->GetData();
+	}
+
+	static RelationData rd;
+	return rd;
+}
+
+HOBJECT AINodeSensing::GetRegionObject()
+{
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+	AIVolume* pVolume = g_pAIVolumeMgr->FindContainingVolume( m_hObject, vPos, eAxisAll, 0.0f, LTNULL, LTTRUE );
+	if ( pVolume )
+	{
+		return pVolume->GetRegion()->m_hObject;
+	}
+
+	return LTNULL;
 }

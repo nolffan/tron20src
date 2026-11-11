@@ -1571,7 +1571,7 @@ void CAI::InitialUpdate()
 	// more consistant 'access key' for the AI.
 	
 	AIASSERT( GetRelationMgr() != NULL, m_hObject,  "No RelationMgr" );
-	GetRelationMgr()->Init( m_hObject, GetAITemplate()->szAlignment );
+	GetRelationMgr()->Init( this, GetAITemplate()->szAlignment );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1897,7 +1897,7 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			RemovePersistentStimuli();
 
 			GetRelationMgr()->ClearRelationSystem();
-			GetRelationMgr()->Init( m_hObject, cMsg.GetArg(1) );
+			GetRelationMgr()->Init( this, cMsg.GetArg(1) );
 
 			// Invalidate our crosshair.  We'll rediscover our crosshair
 			// status in ResetCrosshair.

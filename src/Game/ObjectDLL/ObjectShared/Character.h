@@ -137,8 +137,6 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
         virtual LTBOOL  IsDead()            const { return m_damage.IsDead(); }	// RETAIL: IObjectRelationMgrUser's
 
 		// RETAIL: IObjectRelationMgrUser's, Tron's (IObjectRelationMgrUser.h)
-		virtual CRelationUser*	GetRelationUser();
-		virtual CDataUser*		GetDataUser();
 		virtual HOBJECT			GetRegionObject();
 		virtual HOBJECT			GetUserObject() const { return m_hObject; }
         LTBOOL          IsFlashLightOn()    const;
@@ -200,8 +198,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		CSearchable*	GetSearchable() { return m_pSearch; }
 
 
-		const RelationData&	GetRelationData() const;
-		const RelationSet&	GetRelationSet() const;
+		// RETAIL: IObjectRelationMgrUser's in Tron (retail 0x100920f0, 0x10092110)
+		virtual const RelationData&	GetRelationData() const;
+		virtual const RelationSet&	GetRelationSet() const;
 		CObjectRelationMgr* GetRelationMgr();
 		virtual void   UpdateRelationMgr();
 

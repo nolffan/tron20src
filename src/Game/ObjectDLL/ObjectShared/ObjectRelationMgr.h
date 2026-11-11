@@ -30,6 +30,7 @@ class CRelationUser;
 class CDataUser;
 class CCharacter;
 class IRelationChangeReceiver;
+class IObjectRelationMgrUser;
 
 // Globals
 
@@ -55,7 +56,9 @@ public:
 	virtual int Load(ILTMessage_Read* pMsg);
 
 	// Initialization
-	void Init( HOBJECT, const char* const );
+	// RETAIL: Tron's takes the object's IObjectRelationMgrUser (its callers
+	// pass `this`), and keeps the key (retail 0x1010b3b0)
+	void Init( IObjectRelationMgrUser* pUser, const char* const szKey );
 
 	// Updating functions:
 
@@ -84,7 +87,6 @@ public:
 
 	// IMomento Interface functions:
 	virtual CRelationUser* GetRelationUser() { return m_pRelationUser; }
-	CDataUser* GetDataUser() { return m_pDataUser; }	// RETAIL: IObjectRelationMgrUser's (our name)
 
 	// ILTObjRefReceiver Interface functions:
 	void OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
@@ -123,6 +125,7 @@ private:
 	char			m_szCollectiveName[RELATION_VALUE_LENGTH];
 	char			m_szDataSet[RELATION_VALUE_LENGTH];
 	char			m_szRelationSet[RELATION_VALUE_LENGTH];
+	char			m_szKey[RELATION_VALUE_LENGTH];	// RETAIL: Tron's (Init); our name
 	CRelationUser*	m_pRelationUser;
 	CDataUser*		m_pDataUser;
 	LTObjRefNotifier m_hOwner;

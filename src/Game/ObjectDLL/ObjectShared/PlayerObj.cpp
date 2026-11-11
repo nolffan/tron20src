@@ -1492,7 +1492,7 @@ void CPlayerObj::ResetObjectRelationMgr(const char* const pszNewRelation /*=NULL
 {
 	UBER_ASSERT( GetRelationMgr(), "ResetObjectRelationMgr: RelationMgr is NULL" );
 	const char* pszAlignment = pszNewRelation!=NULL ? pszNewRelation : DEFAULT_PLAYERNAME;
-	GetRelationMgr()->Init( m_hObject, pszAlignment ); 
+	GetRelationMgr()->Init( this, pszAlignment ); 
 }
 
 

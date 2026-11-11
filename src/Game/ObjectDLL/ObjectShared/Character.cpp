@@ -3777,26 +3777,7 @@ CObjectRelationMgr* CCharacter::GetRelationMgr()
 }
 const RelationSet& CCharacter::GetRelationSet() const
 {
-	return m_pRelationMgr->GetRelationUser()->GetRelations();
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacter::GetDataUser, GetRelationUser
-//
-//	PURPOSE:	IObjectRelationMgrUser's: our relation manager's (RETAIL:
-//				Tron's; retail 0x100920f0, 0x10092110)
-//
-// ----------------------------------------------------------------------- //
-
-CDataUser* CCharacter::GetDataUser()
-{
-	return m_pRelationMgr->CObjectRelationMgr::GetDataUser();
-}
-
-CRelationUser* CCharacter::GetRelationUser()
-{
-	return m_pRelationMgr->CObjectRelationMgr::GetRelationUser();
+	return m_pRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
 }
 
 // ----------------------------------------------------------------------- //

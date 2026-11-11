@@ -277,13 +277,13 @@ CScanner::~CScanner()
 //	PURPOSE:	Relation Accessor methods
 //              
 //----------------------------------------------------------------------------
-const RelationData& CScanner::GetRelationData()
+const RelationData& CScanner::GetRelationData() const
 {
 	return m_pObjectRelationMgr->GetData();
 }
-const RelationSet& CScanner::GetRelationSet()
+const RelationSet& CScanner::GetRelationSet() const
 {
-	return m_pObjectRelationMgr->GetRelationUser()->GetRelations();
+	return m_pObjectRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
 }
 
 
@@ -439,7 +439,7 @@ void CScanner::InitRelationInformation(void)
 
 	char szClassName[128];
 	g_pLTServer->GetClassName( g_pLTServer->GetObjectClass(m_hObject), szClassName, sizeof(szClassName));
-	m_pObjectRelationMgr->Init( m_hObject, szClassName );
+	m_pObjectRelationMgr->Init( this, szClassName );
 }
 
 //----------------------------------------------------------------------------
@@ -604,7 +604,7 @@ const RelationSet& CScanner::GetSenseRelationSet() const
 {
 	if( m_pObjectRelationMgr )
 	{
-		return m_pObjectRelationMgr->GetRelationUser()->GetRelations();
+		return m_pObjectRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
 	}
 
 	static RelationSet rs;
@@ -1034,5 +1034,3 @@ void CScanner::Load(ILTMessage_Read *pMsg)
 
 	LOAD_DWORD( m_cIntersectSegmentCount );
 }
-
-
