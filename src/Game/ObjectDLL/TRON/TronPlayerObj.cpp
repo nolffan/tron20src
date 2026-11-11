@@ -1657,3 +1657,30 @@ LTBOOL CTronPlayerObj::InitialUpdate( int nInfo )
 
 	return CPlayerObj::InitialUpdate( nInfo );
 }
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual128
+//
+//	PURPOSE:	Acquire what a weapon needs (RETAIL: retail 0x10066ec0)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::TronUnknownVirtual128( WEAPON const* pWeapon )
+{
+	if( !pWeapon )
+		return false;
+
+	AcquirePrimitive( pWeapon->szPrimitiveType );
+
+	if( pWeapon->szSubroutineNeeded[0] )
+	{
+		if( !FindSubroutine( pWeapon->szSubroutineNeeded ))
+		{
+			AcquireSubroutine( pWeapon->szSubroutineNeeded, "alpha", "normal" );
+		}
+	}
+
+	return true;
+}

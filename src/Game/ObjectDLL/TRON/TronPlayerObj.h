@@ -80,6 +80,7 @@ class CTronPlayerObj : public CPlayerObj
 		virtual void	GimmeGunCheat( uint8 nId );
 		virtual void	TronUnknownVirtual105( LTBOOL bOn );
 		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
+		virtual bool	TronUnknownVirtual128( WEAPON const* pWeapon );
 
 	protected:
 

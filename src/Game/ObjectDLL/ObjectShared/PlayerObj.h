@@ -452,6 +452,12 @@ class CPlayerObj : public CCharacter
         virtual LTBOOL DoActivate(CActivationData* pData);
 
 	
+	public:
+		// RETAIL: finds one of the player's subroutines by name (retail
+		// 0x10086240). The name is ours
+		PlayerSubroutineSlot* FindSubroutine( char const* pszName );
+	protected:
+
 		// Pickup an object.
 		bool PickupObject( HOBJECT hObject );
 		bool CanDropObject( );

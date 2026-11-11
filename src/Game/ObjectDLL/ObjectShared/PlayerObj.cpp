@@ -8789,6 +8789,26 @@ void CPlayerObj::SetLean( CPPlayerLeanTypes eLean, LTVector const& vPos )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CPlayerObj::FindSubroutine
+//
+//	PURPOSE:	Find one of our subroutines by name (RETAIL: retail
+//				0x10086240; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+PlayerSubroutineSlot* CPlayerObj::FindSubroutine( char const* pszName )
+{
+	for( int i = 0; i < PLAYER_MAX_SUBROUTINES; i++ )
+	{
+		if( !_stricmp( pszName, m_aSubroutines[i].szName ))
+			return &m_aSubroutines[i];
+	}
+
+	return LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CPlayerObj::SetupTeamModel
 //
 //	PURPOSE:	Setup our team model.
