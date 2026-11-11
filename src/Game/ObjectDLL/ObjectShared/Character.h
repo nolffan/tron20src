@@ -126,6 +126,24 @@ class  VolumeBrush;
 
 enum CharacterDeath { CD_NORMAL=0, CD_GIB, CD_FREEZE, CD_VAPORIZE, CD_BURST };
 
+class CPRodFireHelper;
+class CEnergyClawFireHelper;
+
+// RETAIL: Tron's: three of these in CCharacter at +0xc6c, 0x2c bytes each
+// (its element constructor retail 0x1000d6c0; saved in CCharacter::Save as a
+// char, a string, two chars, a string, a byte and a float). Not yet named.
+struct TronCharacterUnknownC6C
+{
+	char		m_c00;
+	std::string	m_s04;
+	char		m_c10;
+	uint8		m_aPad11[3];	// (retail's next char is at +0x14)
+	char		m_c14;
+	std::string	m_s18;
+	uint8		m_n24;
+	LTFLOAT		m_f28;
+};
+
 // RETAIL: IObjectRelationMgrUser is Tron's third interface (IObjectRelationMgrUser.h)
 class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerReceiver, public IObjectRelationMgrUser
 {
@@ -465,6 +483,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		CHARCREATESTRUCT*	m_pcs;							// Our character specialfx struct
 
 		SurfaceType			m_eStandingOnSurface;			// What surface we're currently standing on.
+		bool				m_bTronUnknown4C;				// RETAIL: Tron's (true at first; saved after the next two)
         bool				m_bMakeBody;					// Make body when dead.
 		bool				m_bPermanentBody;				// Dead body is permanent.
         LTBOOL				m_bMoveToFloor;					// Move character to floor
@@ -629,6 +648,26 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		float				m_fBodyLifetime;
 
+		// RETAIL: Tron's tail (its constructor and Save, retail 0x10089ab0 and
+		// 0x10092120). The two fire helpers are Tron's classes (vtables
+		// 0x1029a980, 0x1029a970, under CContinuousFireHelper), not yet written:
+		// left null here. Names ours where not said otherwise.
+		CPRodFireHelper*		m_pPRodFireHelper;
+		CEnergyClawFireHelper*	m_pEnergyClawFireHelper;
+		TronCharacterUnknownC6C	m_aTronUnknownC6C[3];
+		HOBJECT				m_hTronUnknownCF0;		// saved with WriteObject
+		uint32				m_nCarrying;			// saved as a byte (NOLF2's)
+		uint32				m_nTronUnknownCF8;		// saved, not initialized
+		bool				m_bRadarVisible;		// taken to be NOLF2's (not saved)
+
+		// Tracks the players that were told about dialogue.  We have
+		// to wait until everyone says they're done.
+		PlayerTracker	m_PlayerTrackerDialogue;
+
+		// Indicates character is tracked by a tracking dart (taken to be
+		// retail's last, saved bool)
+		bool	m_bTracking;
+
 	private :
 
 		void	InitialUpdate(int nInfo);
@@ -651,22 +690,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// clients don't kill valid dialogues.  It's ok that it wraps,
 		// since we won't have that many going within a short period of time.
 		// Not saved.
-		uint8	m_nUniqueDialogueId;
-
-		// Tracks the players that were told about dialogue.  We have
-		// to wait until everyone says they're done.
-		PlayerTracker	m_PlayerTrackerDialogue;
-		CTimer			m_tmrDialogue;
-
-		// Indicates character is tracked by a tracking dart
-		bool	m_bTracking;
-
-		// Indicates character is visible on radar.
-		bool	m_bRadarVisible;
-
-		// Indicates what character is carrying
-		uint8	m_nCarrying;
-
+		// PORT: not a member in Tron (no room in retail's layout); NOLF2's
+		// dialogue code stands in with one id for all characters
+		static uint8	m_nUniqueDialogueId;
 };
 
 class CCharacterPlugin : public IObjectPlugin
