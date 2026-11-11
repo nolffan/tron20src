@@ -272,6 +272,7 @@ CPlayerMgr::CPlayerMgr()
 	m_bTronUnknown1D9		= false;
 	m_fTronUnknown1DC		= 5000.0f;
 	m_nTronUnknown1E0		= 0;
+	m_bTronUnknown1E4		= false;
 	m_bTronUnknownB8		= false;
 	m_fTronUnknownBC		= 0.0f;
 }
@@ -5632,4 +5633,20 @@ void CPlayerMgr::SetCancelRevive( bool bCancelRevive )
 	}
 
 	m_bCancelRevive = bCancelRevive;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerMgr::TronUnknownVirtual58
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012c990): the damage FX and the
+//				damage sectors cleared (and, there, a global and the weapon
+//				manager's state; still to be written)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerMgr::TronUnknownVirtual58()
+{
+	g_pDamageFXMgr->Clear();
+	ClearDamageSectors();
 }

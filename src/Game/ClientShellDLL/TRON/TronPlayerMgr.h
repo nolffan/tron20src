@@ -42,6 +42,16 @@ public:
 
 	CTronTargetMgr * GetTronTargetMgr() {return (CTronTargetMgr*)m_pTargetMgr;}
 	virtual void InitTargetMgr();
+
+	// RETAIL: CPlayerMgr's pure slots (0x3c, 0x40, 0x88..0x98), Tron's: stand-ins
+	// until written from retail CTronPlayerMgr's (vtable 0x101e9104)
+	virtual void TronUnknownVirtual3C() {}
+	virtual void TronUnknownVirtual40() {}
+	virtual void TronUnknownVirtual88() {}
+	virtual void TronUnknownVirtual8C() {}
+	virtual void TronUnknownVirtual90() {}
+	virtual void TronUnknownVirtual94() {}
+	virtual void TronUnknownVirtual98() {}
 	
 	int		GetEnergyRequired() {return (int)m_fEnergyRequired;}
 	float	GetPercentEnergyTransferred();

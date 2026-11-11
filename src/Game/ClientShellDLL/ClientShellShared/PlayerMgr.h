@@ -51,10 +51,15 @@ public:
 	void	PreUpdate();
 	void	FirstUpdate();
 	virtual void Update();
-	void	UpdatePlaying();
+	virtual void	UpdatePlaying();	// RETAIL: virtual in Tron (slot 0x20)
 	void	PostUpdate();
 
 	void	FirstPlayingUpdate();
+
+	// RETAIL: Tron's slots 0x24 and 0x28: setters of +0x1d7/+0x1d9 and of
+	// +0x1d8 (retail 0x1012cea0, 0x100a43e0). Not yet named
+	virtual void	TronUnknownVirtual24(bool b1D7, bool b1D9) { m_bTronUnknown1D7 = b1D7; m_bTronUnknown1D9 = b1D9; }
+	virtual void	TronUnknownVirtual28(bool b1D8) { m_bTronUnknown1D8 = b1D8; }
 
 	virtual float	GetJumpVelocity(float fJumpVel, float fSuperJumpVel) { return fJumpVel; }
 
@@ -62,6 +67,11 @@ public:
 
 	virtual LTBOOL	OnCommandOn(int command);
 	virtual LTBOOL	OnCommandOff(int command);
+
+	// RETAIL: Tron's slots 0x3c, 0x40, pure here (CTronPlayerMgr's). Not yet
+	// named
+	virtual void	TronUnknownVirtual3C() = 0;
+	virtual void	TronUnknownVirtual40() = 0;
 
 	LTBOOL	OnKeyDown(int key, int rep);
 	LTBOOL	OnKeyUp(int key);
@@ -182,11 +192,39 @@ public:
 	void		UpdatePlayerFlags();
     void        HandleWeaponDisable(LTBOOL bDisabled);
 
-	void        ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
-	void        ToggleHolster(bool bPlayDeselect);
+	// RETAIL: both virtual in Tron (slots 0x44, 0x48)
+	virtual void ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
+	virtual void ToggleHolster(bool bPlayDeselect);
 	void		LastWeapon();
 
     virtual void DoActivate();
+
+	// RETAIL: Tron's slots 0x50..0xa8 (retail CPlayerMgr's vtable 0x101eb278:
+	// most are empty or constant here, and CTronPlayerMgr's own). Not yet
+	// named; the arguments are retail's counts
+	virtual void	TronUnknownVirtual50() {}
+	virtual void	TronUnknownVirtual54() {}
+	virtual void	TronUnknownVirtual58();
+	virtual void	TronUnknownVirtual5C() {}
+	virtual void	TronUnknownVirtual60() {}
+	virtual bool	TronUnknownVirtual64() { return true; }
+	virtual void	TronUnknownVirtual68(int nArg) {}
+	virtual void	TronUnknownVirtual6C(int nArg) {}
+	virtual bool	TronUnknownVirtual70(int nArg1, int nArg2, int nArg3) { return false; }
+	virtual bool	TronUnknownVirtual74(int nArg1, int nArg2, int nArg3) { return false; }
+	virtual bool	TronUnknownVirtual78(int nArg1, int nArg2) { return false; }
+	virtual bool	TronUnknownVirtual7C(int nArg1, int nArg2, int nArg3, int nArg4) { return false; }
+	virtual bool	TronUnknownVirtual80() { return m_bTronUnknown1E4; }
+	virtual void	TronUnknownVirtual84(bool b) { m_bTronUnknown1E4 = b; }
+	virtual void	TronUnknownVirtual88() = 0;
+	virtual void	TronUnknownVirtual8C() = 0;
+	virtual void	TronUnknownVirtual90() = 0;
+	virtual void	TronUnknownVirtual94() = 0;
+	virtual void	TronUnknownVirtual98() = 0;
+	virtual bool	TronUnknownVirtual9C(int nArg1, int nArg2) { return true; }
+	virtual int		TronUnknownVirtualA0() { return 0; }
+	virtual int		TronUnknownVirtualA4(int nArg) { return nArg; }
+	virtual void	TronUnknownVirtualA8(int nArg) {}
 
 	void		Teleport(const LTVector & vPos);
 
@@ -274,11 +312,11 @@ protected:
 
 	// Camera helper functions...
 
-	void	UpdateCameraZoom();
+	virtual void	UpdateCameraZoom();	// RETAIL: virtual in Tron (slot 0xac)
 	void	UpdateCameraDisplacement();
 	void	UpdateCameraShake( LTVector& vDisplacement );
 	void	UpdateVehicleCamera( LTVector& vDisplacement );
-	void	UpdateCameraSway();
+	virtual void	UpdateCameraSway();	// RETAIL: virtual in Tron (slot 0xb0)
 	void	InitPlayerCamera();
     LTBOOL	UpdatePlayerCamera();
 	void	UpdateCameraPosition();
@@ -290,7 +328,7 @@ protected:
 	
 	void	BeginZoom();
     void    HandleZoomChange(LTBOOL bReset=LTFALSE);
-	void	EndZoom();
+	virtual void	EndZoom();	// RETAIL: virtual in Tron (slot 0xb4)
 
 	void	Update3rdPersonInfo();
 	void	HideShowAttachments(HOBJECT hObj);
@@ -498,6 +536,7 @@ protected:
 	bool		m_bTronUnknown1D9;
 	float		m_fTronUnknown1DC;
 	uint32		m_nTronUnknown1E0;
+	bool		m_bTronUnknown1E4;	// RETAIL: slots 0x80, 0x84's
 
 	// PORT: NOLF2's, not in Tron's CPlayerMgr (above)
     LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
