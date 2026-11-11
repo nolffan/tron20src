@@ -6617,6 +6617,9 @@ void CPlayerObj::HandleWeaponSoundMessage(ILTMessage_Read *pMsg)
     uint8 nWeaponId = pMsg->Readuint8();
     uint8 nId       = pMsg->Readuint8();
 	LTVector vPos	= pMsg->ReadLTVector();
+	// RETAIL: two more values in Tron (retail 0x10082d9c). The names are ours
+	float fTronUnknown	= pMsg->Readfloat();
+	bool bTronUnknown	= pMsg->Readbool();
 
     uint8 nClientID = (uint8) g_pLTServer->GetClientID(GetClient( ));
 
@@ -6626,6 +6629,8 @@ void CPlayerObj::HandleWeaponSoundMessage(ILTMessage_Read *pMsg)
     cSoundMsg.Writeuint8(nWeaponId);
     cSoundMsg.Writeuint8(nClientID);
 	cSoundMsg.WriteCompPos(vPos);
+	cSoundMsg.Writefloat(fTronUnknown);
+	cSoundMsg.Writebool(bTronUnknown);
 	g_pLTServer->SendSFXMessage(cSoundMsg.Read(), vPos, 0);
 }
 
@@ -6644,6 +6649,7 @@ void CPlayerObj::HandleWeaponSoundLoopMessage(ILTMessage_Read *pMsg)
 
 	uint8	nType		= pMsg->Readuint8();
 	uint8	nWeaponId	= pMsg->Readuint8();
+	float	fTronUnknown	= pMsg->Readfloat();	// RETAIL: Tron's (retail 0x10082f32). The name is ours
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_SFX_MESSAGE );
@@ -6652,6 +6658,7 @@ void CPlayerObj::HandleWeaponSoundLoopMessage(ILTMessage_Read *pMsg)
 	cMsg.Writeuint8( CFX_WEAPON_SOUND_LOOP_MSG );
 	cMsg.Writeuint8( nType );
 	cMsg.Writeuint8( nWeaponId );
+	cMsg.Writefloat( fTronUnknown );
 	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, 0 );
 }
 
@@ -8490,14 +8497,7 @@ void CPlayerObj::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 	if( pRef == &m_hVehicleModel ||
 		pRef == &m_hCarriedObject )
 	{
-		if( pRef == &m_hCarriedObject )
-		{
-			m_PStateChangeFlags |= PSTATE_INTERFACE;
-
-			m_hCarriedObject = NULL;
-			m_bCanDropBody = false;
-		}
-
+		// RETAIL: Tron only removes the attachment (retail 0x10086130)
 		HATTACHMENT hAttachment;
 		if ( LT_OK == g_pLTServer->FindAttachment( m_hObject, hObj, &hAttachment) )
 		{
@@ -8518,51 +8518,14 @@ void CPlayerObj::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 
 void CPlayerObj::SetupBody( Body* pBody )
 {
+	// RETAIL: Tron's keeps the body and leaves the rest to CCharacter
+	// (retail 0x10086190)
 	if( !pBody )
 		return;
 
-	// See if this body is revivable or if it's the respawn body.
-	bool bRevivableBody = false;	// PORT: no revive member in Tron
-	float fLifetime = m_fBodyLifetime;
+	m_hDeadBody = pBody->m_hObject;
 
-	// If it's revivable, we'll need to reference it for later removal.
-	if( bRevivableBody )
-	{
-		if( m_hDeadBody )
-			g_pLTServer->RemoveObject( m_hDeadBody );
-
-		m_hDeadBody = pBody->m_hObject;
-		fLifetime = -1;
-
-	}
-
-	BODYINITSTRUCT bi;
-	bi.eBodyState = GetBodyState();
-	bi.pCharacter = this;
-	bi.bPermanentBody = bRevivableBody;
-	bi.fBodyLifetime = fLifetime;
-	bi.bCanRevive = bRevivableBody;
-
-	pBody->Init(bi);
-
-// Don't allow killing of revivable body.
-/*
-	// If the body is revivable, we need to give it a few hitpoints,
-	// so that it can be later killed.
-	if( bRevivableBody )
-	{
-		// Give the body some hitpoints, but take away the amount of hitpoints our player is below
-		// zero.  This allows bodies to be instantly killed if they are hit with a big weapon.
-		CDestructible* pDestructible = pBody->GetDestructible( );
-		pDestructible->SetCanDamage( LTTRUE );
-		float fReviveBodyHitPoints = g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_REVIVEBODYHEALTH );
-		pDestructible->SetHitPoints( fReviveBodyHitPoints );
-
-		DamageStruct damage;
-		damage.fDamage = -m_damage.GetHitPoints( );
-		damage.DoDamage( pBody, pBody->m_hObject );
-	}
-*/
+	CCharacter::SetupBody( pBody );
 }
 
 // ----------------------------------------------------------------------- //
