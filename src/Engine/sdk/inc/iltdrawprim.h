@@ -68,6 +68,9 @@ struct LT_VERTRGBA
 */
 struct LT_VERTGT
 {
+    // RETAIL: Tron's SDK gives it a constructor (retail CShell.dll 0x10010a60:
+    // z = 0)
+    LT_VERTGT() { z = 0.0f; }
 
     float                           x,y,z;
 
@@ -81,6 +84,9 @@ Contains coordinate and texture information for a textured, flat-shaded vertex.
 */
 struct LT_VERTFT
 {       
+    // RETAIL: Tron's SDK gives it a constructor too (z = 0: CHUDLightCycleLives'
+    // constructor, retail CShell.dll 0x1002d310)
+    LT_VERTFT() { z = 0.0f; }
 
     float                           x,y,z;
     float                           u, v;
@@ -153,6 +159,10 @@ Contains vertex structure information for a textured, Gouraud shaded quadrilater
 */
 struct LT_POLYGT4
 {
+    // RETAIL: Tron's SDK clears it (CHUDDamageDir's constructor, retail
+    // CShell.dll 0x100250d0)
+    LT_POLYGT4() { memset(this, 0, sizeof(LT_POLYGT4)); }
+
     LT_VERTGT                       verts[4];
 };
 

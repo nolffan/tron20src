@@ -190,11 +190,19 @@ SOURCE=.\HUDCrosshair.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDamageDir.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDEnergyTransfer.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDHealthEnergy.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
 
@@ -295,6 +303,10 @@ SOURCE=.\ScreenJoin.cpp
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoystick.cpp
 # End Source File
 # Begin Source File
 
@@ -431,11 +443,19 @@ SOURCE=.\HUDChooser.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDamageDir.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDEnergyTransfer.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDHealthEnergy.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleLives.h
 # End Source File
 # Begin Source File
 
@@ -524,6 +544,10 @@ SOURCE=.\ScreenJoin.h
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoystick.h
 # End Source File
 # Begin Source File
 
