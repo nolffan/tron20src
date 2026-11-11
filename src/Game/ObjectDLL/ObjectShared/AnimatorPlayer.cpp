@@ -211,11 +211,19 @@ void CAnimatorPlayer::Init(HOBJECT hObject)
     m_AniWalkBackward           = AniPlayerLower            (LTTRUE,     _A("LWB"));
     m_AniWalkStrafeLeft         = AniPlayerLowerStrafe      (LTTRUE,     _A("LWL"));
     m_AniWalkStrafeRight        = AniPlayerLowerStrafe      (LTTRUE,     _A("LWR"));
+	m_AniWalkStrafeRightForward	= AniPlayerLowerStrafe(LTTRUE, _A("LWRF"));	// RETAIL: Tron's
+	m_AniWalkStrafeLeftForward	= AniPlayerLowerStrafe(LTTRUE, _A("LWLF"));	// RETAIL: Tron's
+	m_AniWalkStrafeRightBackward	= AniPlayerLowerStrafe(LTTRUE, _A("LWRB"));	// RETAIL: Tron's
+	m_AniWalkStrafeLeftBackward	= AniPlayerLowerStrafe(LTTRUE, _A("LWLB"));	// RETAIL: Tron's
 
     m_AniRunForward             = AniPlayerLower            (LTTRUE,     _A("LRF"));
     m_AniRunBackward            = AniPlayerLower            (LTTRUE,     _A("LRB"));
     m_AniRunStrafeLeft          = AniPlayerLowerStrafe      (LTTRUE,     _A("LRL"));
     m_AniRunStrafeRight         = AniPlayerLowerStrafe      (LTTRUE,     _A("LRR"));
+	m_AniRunStrafeRightForward	= AniPlayerLowerStrafe(LTTRUE, _A("LRRF"));	// RETAIL: Tron's
+	m_AniRunStrafeLeftForward	= AniPlayerLowerStrafe(LTTRUE, _A("LRLF"));	// RETAIL: Tron's
+	m_AniRunStrafeRightBackward	= AniPlayerLowerStrafe(LTTRUE, _A("LRRB"));	// RETAIL: Tron's
+	m_AniRunStrafeLeftBackward	= AniPlayerLowerStrafe(LTTRUE, _A("LRLB"));	// RETAIL: Tron's
 
     m_AniCrouch                 = AniPlayerLowerCrouch      (LTTRUE,     _A("LC"));
 	m_AniCrouchLeanL			= AniPlayerLowerCrouch		(LTTRUE,	 _A("LCLL"));
@@ -224,6 +232,10 @@ void CAnimatorPlayer::Init(HOBJECT hObject)
     m_AniCrouchBackward         = AniPlayerLowerCrouch      (LTTRUE,     _A("LCB"));
     m_AniCrouchStrafeLeft       = AniPlayerLowerCrouchStrafe(LTTRUE,     _A("LCL"));
     m_AniCrouchStrafeRight      = AniPlayerLowerCrouchStrafe(LTTRUE,     _A("LCR"));
+	m_AniCrouchStrafeRightForward	= AniPlayerLowerCrouchStrafe(LTTRUE, _A("LCRF"));	// RETAIL: Tron's
+	m_AniCrouchStrafeLeftForward	= AniPlayerLowerCrouchStrafe(LTTRUE, _A("LCLF"));	// RETAIL: Tron's
+	m_AniCrouchStrafeRightBackward	= AniPlayerLowerCrouchStrafe(LTTRUE, _A("LCRB"));	// RETAIL: Tron's
+	m_AniCrouchStrafeLeftBackward	= AniPlayerLowerCrouchStrafe(LTTRUE, _A("LCLB"));	// RETAIL: Tron's
 
     m_AniSwim                   = AniPlayerLowerSwim        (LTTRUE,     _A("LSw"));
     m_AniSwimForward            = AniPlayerLowerSwim        (LTTRUE,     _A("LSwF"));
@@ -827,6 +839,18 @@ void CAnimatorPlayer::Init(HOBJECT hObject)
 	m_aapAniPlayerLowers[eWalking][eStrafeRight][eCenter]	= &m_AniWalkStrafeRight;
 	m_aapAniPlayerLowers[eWalking][eStrafeRight][eLeft]		= &m_AniWalkStrafeRight;
 	m_aapAniPlayerLowers[eWalking][eStrafeRight][eRight]	= &m_AniWalkStrafeRight;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightForward][eCenter]	= &m_AniWalkStrafeRightForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightForward][eLeft]	= &m_AniWalkStrafeRightForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightForward][eRight]	= &m_AniWalkStrafeRightForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightBackward][eCenter]	= &m_AniWalkStrafeRightBackward;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightBackward][eLeft]	= &m_AniWalkStrafeRightBackward;
+	m_aapAniPlayerLowers[eWalking][eStrafeRightBackward][eRight]	= &m_AniWalkStrafeRightBackward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftForward][eCenter]	= &m_AniWalkStrafeLeftForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftForward][eLeft]	= &m_AniWalkStrafeLeftForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftForward][eRight]	= &m_AniWalkStrafeLeftForward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftBackward][eCenter]	= &m_AniWalkStrafeLeftBackward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftBackward][eLeft]	= &m_AniWalkStrafeLeftBackward;
+	m_aapAniPlayerLowers[eWalking][eStrafeLeftBackward][eRight]	= &m_AniWalkStrafeLeftBackward;
 
 	
 	// [eRunning] [Direction] [Lean]
@@ -850,6 +874,18 @@ void CAnimatorPlayer::Init(HOBJECT hObject)
 	m_aapAniPlayerLowers[eRunning][eStrafeRight][eCenter]	= &m_AniRunStrafeRight;
 	m_aapAniPlayerLowers[eRunning][eStrafeRight][eLeft]		= &m_AniRunStrafeRight;
 	m_aapAniPlayerLowers[eRunning][eStrafeRight][eRight]	= &m_AniRunStrafeRight;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightForward][eCenter]	= &m_AniRunStrafeRightForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightForward][eLeft]	= &m_AniRunStrafeRightForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightForward][eRight]	= &m_AniRunStrafeRightForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightBackward][eCenter]	= &m_AniRunStrafeRightBackward;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightBackward][eLeft]	= &m_AniRunStrafeRightBackward;
+	m_aapAniPlayerLowers[eRunning][eStrafeRightBackward][eRight]	= &m_AniRunStrafeRightBackward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftForward][eCenter]	= &m_AniRunStrafeLeftForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftForward][eLeft]	= &m_AniRunStrafeLeftForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftForward][eRight]	= &m_AniRunStrafeLeftForward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftBackward][eCenter]	= &m_AniRunStrafeLeftBackward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftBackward][eLeft]	= &m_AniRunStrafeLeftBackward;
+	m_aapAniPlayerLowers[eRunning][eStrafeLeftBackward][eRight]	= &m_AniRunStrafeLeftBackward;
 
 	
 	// [eCrouching] [Direction] [Lean]
@@ -873,6 +909,18 @@ void CAnimatorPlayer::Init(HOBJECT hObject)
 	m_aapAniPlayerLowers[eCrouching][eStrafeRight][eCenter]	= &m_AniCrouchStrafeRight;
 	m_aapAniPlayerLowers[eCrouching][eStrafeRight][eLeft]	= &m_AniCrouchStrafeRight;
 	m_aapAniPlayerLowers[eCrouching][eStrafeRight][eRight]	= &m_AniCrouchStrafeRight;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightForward][eCenter]	= &m_AniCrouchStrafeRightForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightForward][eLeft]	= &m_AniCrouchStrafeRightForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightForward][eRight]	= &m_AniCrouchStrafeRightForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightBackward][eCenter]	= &m_AniCrouchStrafeRightBackward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightBackward][eLeft]	= &m_AniCrouchStrafeRightBackward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeRightBackward][eRight]	= &m_AniCrouchStrafeRightBackward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftForward][eCenter]	= &m_AniCrouchStrafeLeftForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftForward][eLeft]	= &m_AniCrouchStrafeLeftForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftForward][eRight]	= &m_AniCrouchStrafeLeftForward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftBackward][eCenter]	= &m_AniCrouchStrafeLeftBackward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftBackward][eLeft]	= &m_AniCrouchStrafeLeftBackward;
+	m_aapAniPlayerLowers[eCrouching][eStrafeLeftBackward][eRight]	= &m_AniCrouchStrafeLeftBackward;
 
 	
 	// [eSwimming] [Direction] [Lean]

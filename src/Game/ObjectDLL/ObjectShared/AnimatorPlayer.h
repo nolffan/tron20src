@@ -102,6 +102,8 @@ struct AniPlayerMain
     LTBOOL bLoops;
 };
 
+#define TRON_ANIMATORPLAYER_PAD 0xdc
+
 class CAnimatorPlayer : public CAnimator
 {
 	public :
@@ -155,10 +157,13 @@ class CAnimatorPlayer : public CAnimator
 			eFire		,
 			eFire2		,
 			eFire3		,
+			eFire4		,	// RETAIL: Tron's (its players' postures: retail
+			eFire5		,	// sets 8..12 for reload, select, deselect, carry and block)
 			eReload		,
 			eSelect		,
 			eDeselect	,
 			eCarry		,
+			eBlock		,	// RETAIL: Tron's (above)
 			
 			kNumPostures
 		};
@@ -184,6 +189,12 @@ class CAnimatorPlayer : public CAnimator
 			eBackward		,
 			eStrafeLeft		,
 			eStrafeRight	,
+			// RETAIL: Tron's diagonals (retail CPlayerObj sets 5..8 from the strafe
+			// and forward/back controls)
+			eStrafeRightForward	,
+			eStrafeRightBackward,
+			eStrafeLeftForward	,
+			eStrafeLeftBackward	,
 			eJump			,
 			eTuck			,
 			eLand			,
@@ -308,11 +319,19 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerLower				m_AniWalkBackward;
 		AniPlayerLowerStrafe		m_AniWalkStrafeLeft;
 		AniPlayerLowerStrafe		m_AniWalkStrafeRight;
+		AniPlayerLowerStrafe		m_AniWalkStrafeRightForward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniWalkStrafeLeftForward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniWalkStrafeRightBackward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniWalkStrafeLeftBackward;	// RETAIL: Tron's
 
 		AniPlayerLower				m_AniRunForward;
 		AniPlayerLower				m_AniRunBackward;
 		AniPlayerLowerStrafe		m_AniRunStrafeLeft;
 		AniPlayerLowerStrafe		m_AniRunStrafeRight;
+		AniPlayerLowerStrafe		m_AniRunStrafeRightForward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniRunStrafeLeftForward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniRunStrafeRightBackward;	// RETAIL: Tron's
+		AniPlayerLowerStrafe		m_AniRunStrafeLeftBackward;	// RETAIL: Tron's
 
 		AniPlayerLowerCrouch		m_AniCrouch;
 		AniPlayerLowerCrouch		m_AniCrouchLeanL;
@@ -321,6 +340,10 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerLowerCrouch		m_AniCrouchBackward;
 		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeLeft;
 		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeRight;
+		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeRightForward;	// RETAIL: Tron's
+		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeLeftForward;	// RETAIL: Tron's
+		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeRightBackward;	// RETAIL: Tron's
+		AniPlayerLowerCrouchStrafe	m_AniCrouchStrafeLeftBackward;	// RETAIL: Tron's
 
 		AniPlayerLowerSwim			m_AniSwim;
 		AniPlayerLowerSwim			m_AniSwimForward;
@@ -480,6 +503,12 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerMain				m_AniDT_Glue;
 		AniPlayerMain				m_AniDT_Hurt;
 		AniPlayerMain				m_AniDT_HurtWalk;
+
+		// RETAIL: Tron's player animator is 0x1d24 bytes (retail CPlayerObj puts
+		// what follows it there); its upper-body set (Block, Fire2..5 and their
+		// crouches, for some weapons) is not yet laid out: this fills the
+		// difference
+		uint8						m_aTronUnknownTail[TRON_ANIMATORPLAYER_PAD];
 };
 
 #endif // __ANIMATORPlayer_H__

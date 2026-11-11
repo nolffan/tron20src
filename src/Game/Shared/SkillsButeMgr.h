@@ -26,6 +26,7 @@ enum eSkill
 	SKL_ARMOR,
 	SKL_WEAPON,
 	SKL_GADGET,
+	SKL_ENERGY,	// RETAIL: Tron's (retail Object.lto's skill name table, 0x10302a94)
 	SKL_SEARCH,
 	kNumSkills
 };

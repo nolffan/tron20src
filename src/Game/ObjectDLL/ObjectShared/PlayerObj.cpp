@@ -824,7 +824,6 @@ CPlayerObj::CPlayerObj()
 	m_fLeashLen				= DEFAULT_LEASHLEN;
 	m_eState				= PS_DEAD;
 	m_bRespawnInvulnerability = false;
-	m_bGriefProtected		 = false;
     m_bGodMode              = LTFALSE;
     m_bAllowInput           = LTTRUE;
 	m_bCinematicInvulnerability = false;
@@ -1574,10 +1573,7 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 		}
 	}
 
-	if (IsGriefType(pDamageStruct->eType) && m_bGriefProtected)
-	{
-		return false;
-	}
+	// PORT: no grief protection in Tron (retail has no GriefTime; PlayerObj.h)
 
 	return CCharacter::FilterDamage( pDamageStruct );
 }
@@ -2556,35 +2552,7 @@ void CPlayerObj::UpdateCommands()
 			return;
 	}
 
-	if (m_bGriefProtected)
-	{
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_Slippery) && IsGriefType(DT_SLIPPERY) )
-			return;
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_Sleeping) && IsGriefType(DT_SLEEPING) )
-			return;
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_BearTrap) && IsGriefType(DT_BEAR_TRAP) )
-			return;
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_Glue) && IsGriefType(DT_GLUE) )
-			return;
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_Stun) && IsGriefType(DT_STUN) )
-			return;
-		if ( m_Animator.IsAnimatingMain(CAnimatorPlayer::eDT_Laughing) && IsGriefType(DT_LAUGHING) )
-			return;
-
-		if (m_tmrGriefTime.On())
-		{
-			if (m_tmrGriefTime.Stopped())
-			{
-				m_bGriefProtected = false;
-				m_tmrGriefTime.Stop();
-			}
-		}
-		else
-		{
-			m_tmrGriefTime.Start( GetConsoleFloat("GriefTime",2.0f) );
-		}
-
-	}
+	// PORT: no grief protection in Tron (above)
 
 }
 
@@ -2641,10 +2609,7 @@ bool CPlayerObj::UpdateDamageAnimations()
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Slippery );
-		if (pDTSlippery->bGrief)
-		{
-			m_bGriefProtected = true;
-		}
+		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
@@ -2660,30 +2625,21 @@ bool CPlayerObj::UpdateDamageAnimations()
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Sleeping );
-		if (pDTSleeping->bGrief)
-		{
-			m_bGriefProtected = true;
-		}
+		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 
 	if( m_nDamageFlags & pDTBearTrap->nDamageFlag )
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_BearTrap );
-		if (pDTBearTrap->bGrief)
-		{
-			m_bGriefProtected = true;
-		}
+		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
 	if( m_nDamageFlags & pDTGlue->nDamageFlag )
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Glue );
-		if (pDTSlippery->bGrief)
-		{
-			m_bGriefProtected = true;
-		}
+		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
@@ -2704,20 +2660,14 @@ bool CPlayerObj::UpdateDamageAnimations()
 		if( m_nDamageFlags & pDTStun->nDamageFlag )
 		{
 			m_Animator.SetMain( CAnimatorPlayer::eDT_Stun );
-			if (pDTStun->bGrief)
-			{
-				m_bGriefProtected = true;
-			}
+			// PORT: no grief protection in Tron (above)
 			return true;
 		}
 	
 		if( m_nDamageFlags & pDTLaughing->nDamageFlag )
 		{
 			m_Animator.SetMain( CAnimatorPlayer::eDT_Laughing );
-			if (pDTLaughing->bGrief)
-			{
-				m_bGriefProtected = true;
-			}
+			// PORT: no grief protection in Tron (above)
 			return true;
 		}
 	

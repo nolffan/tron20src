@@ -118,6 +118,7 @@ namespace
 		"Armor",
 		"Weapon",
 		"Gadget",
+		"Energy",	// RETAIL: Tron's
 		"Search",
 	};
 
