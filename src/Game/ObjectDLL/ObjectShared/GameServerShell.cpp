@@ -198,8 +198,6 @@ LTRESULT CGameServerShell::OnServerInitialized()
 	ClearClientList();
 	SetUpdateGameServ();
 
-	m_SunVec[0] = m_SunVec[1] = m_SunVec[2] = 0;
-
 	if( !InitGameType())
 		return LT_ERROR;
 
@@ -214,10 +212,7 @@ LTRESULT CGameServerShell::OnServerInitialized()
     m_hSwitchWorldVar = LTNULL;
     m_bFirstUpdate = LTTRUE;
 
-	m_TODSeconds = TODHoursToSeconds(12.0f);
-    m_TODCounter = 0.0f;
-	m_ClientPingSendCounter = 0.0f;
-	m_iPrevRamp = 0;
+	m_ClientPingSendCounter = 0.0f;	// RETAIL: no time of day or time ramps in Tron
 
 	m_sWorld.Empty( );
 
@@ -265,12 +260,12 @@ LTRESULT CGameServerShell::OnServerInitialized()
 			return LT_ERROR;
 		}
 	}
-	if( !m_pServerSaveLoadMgr->Init( m_ServerGameOptions.m_sProfileName.c_str( ), IsMultiplayerGame( )))
+	if( !m_pServerSaveLoadMgr->Init( (*m_pServerGameOptions).m_sProfileName.c_str( ), IsMultiplayerGame( )))
 	{
 		return LT_ERROR;
 	}
 
-	m_bPreCacheAssets = m_ServerGameOptions.m_bPreCacheAssets;
+	m_bPreCacheAssets = (*m_pServerGameOptions).m_bPreCacheAssets;
 
 	m_nPauseCount = 0;
 	m_bClientPaused = false;
@@ -282,17 +277,17 @@ LTRESULT CGameServerShell::OnServerInitialized()
 	m_eMinMusicMood = CMusicMgr::eMoodRoutine;
 
 	// Use max on LAN games
-	float fMinBandwidth = ( m_ServerGameOptions.m_bLANOnly ) ? k_fMaxBandwidth : 0.0f;
+	float fMinBandwidth = ( (*m_pServerGameOptions).m_bLANOnly ) ? k_fMaxBandwidth : 0.0f;
 
-	if( m_ServerGameOptions.m_nBandwidthServer < eBandwidth_Custom)
+	if( (*m_pServerGameOptions).m_nBandwidthServer < eBandwidth_Custom)
 	{
 		WriteConsoleFloat("BandwidthTargetServer",
-			LTCLAMP(((float)g_BandwidthServer[m_ServerGameOptions.m_nBandwidthServer] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+			LTCLAMP(((float)g_BandwidthServer[(*m_pServerGameOptions).m_nBandwidthServer] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
 	}
 	else
 	{
 		WriteConsoleFloat("BandwidthTargetServer",
-			LTCLAMP(((float)m_ServerGameOptions.m_nBandwidthServerCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+			LTCLAMP(((float)(*m_pServerGameOptions).m_nBandwidthServerCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
 	}
 
 	// Initialize the scmd handler.
@@ -304,7 +299,7 @@ LTRESULT CGameServerShell::OnServerInitialized()
 		return LT_ERROR;
 
 	// Do any game specific initialization.
-	switch( m_ServerGameOptions.m_eGameType )
+	switch( (*m_pServerGameOptions).m_eGameType )
 	{
 		// Single player and coop use the same weapon files...
 
@@ -373,6 +368,9 @@ CGameServerShell::CGameServerShell() :
 	, m_pCharacterMgr( 0 )
 	, m_bCachedLevelFiles( false )
 {
+	// PORT: NOLF2's options, standing in for Tron's own (GameServerShell.h)
+	m_pServerGameOptions = debug_new( ServerGameOptions );
+
 	m_aCurMessageSourceAddr[0] = 0;
 	m_aCurMessageSourceAddr[1] = 0;
 	m_aCurMessageSourceAddr[2] = 0;
@@ -403,6 +401,13 @@ CGameServerShell::CGameServerShell() :
 
 CGameServerShell::~CGameServerShell()
 {
+	// PORT: (the constructor)
+	if ( m_pServerGameOptions )
+	{
+		debug_delete( m_pServerGameOptions );
+		m_pServerGameOptions = NULL;
+	}
+
 	if ( m_pServerTrackedNodeMgr != 0 )
 	{
 		debug_delete( m_pServerTrackedNodeMgr );
@@ -1049,7 +1054,7 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 			cResponse.Writeuint8(MID_HANDSHAKE);
 			cResponse.Writeuint8(MID_HANDSHAKE_PASSWORD);
 			cResponse.Writeuint32( GAME_HANDSHAKE_PASSWORD );
-			cResponse.Writebool((!bIsHost && m_ServerGameOptions.m_bUsePassword));
+			cResponse.Writebool((!bIsHost && (*m_pServerGameOptions).m_bUsePassword));
 			g_pLTServer->SendToClient(cResponse.Read(), hClient, MESSAGE_GUARANTEED);
 		}
 		break;
@@ -1139,9 +1144,9 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 #endif
 
 			uint32 nHashedPassword = pMsg->Readuint32();
-			uint32 nServerHashedPassword = str_Hash(m_ServerGameOptions.m_sPassword.c_str( ));
+			uint32 nServerHashedPassword = str_Hash((*m_pServerGameOptions).m_sPassword.c_str( ));
 			// Validate
-			if (!bIsHost && m_ServerGameOptions.m_bUsePassword && nHashedPassword != nServerHashedPassword)
+			if (!bIsHost && (*m_pServerGameOptions).m_bUsePassword && nHashedPassword != nServerHashedPassword)
 			{
 				// They don't know the password
 				// Tell the client...
@@ -3678,7 +3683,7 @@ LTBOOL CGameServerShell::UpdateGameServer()
 
 	// Make sure we are actually being hosted via GameServ...
 
-	if( !m_ServerGameOptions.m_bDedicated )
+	if( !(*m_pServerGameOptions).m_bDedicated )
 	{
         return(LTFALSE);
 	}
@@ -3870,7 +3875,7 @@ bool CGameServerShell::InitGameType()
 
 	if( ppServerGameOptions && *ppServerGameOptions )
 	{
-		m_ServerGameOptions = **ppServerGameOptions;
+		(*m_pServerGameOptions) = **ppServerGameOptions;
 	}
 
 	// Toss any old missionmgr.
@@ -3881,12 +3886,12 @@ bool CGameServerShell::InitGameType()
 	}
 
 	// Reseed random number generator if necessary...
-	if (m_ServerGameOptions.m_bPerformanceTest)
+	if ((*m_pServerGameOptions).m_bPerformanceTest)
 	{
 		srand(123); // Same as client, doesn't really matter...
 	}
 
-	switch( m_ServerGameOptions.m_eGameType )
+	switch( (*m_pServerGameOptions).m_eGameType )
 	{
 		case eGameTypeSingle:
 			m_pServerMissionMgr = debug_new( CSinglePlayerMissionMgr );
@@ -4517,19 +4522,7 @@ void CGameServerShell::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	g_pServerMissionMgr->Save( *pMsg, dwSaveFlags );
 	g_pKeyMgr->Save( pMsg, dwSaveFlags );
 
-	{ // BL 09/28/00 need to save/load these because they don't
-	  // get set by worldproperties in a load situation
-
-		SAVE_DWORD(m_nTimeRamps);
-		SAVE_DWORD(m_iPrevRamp);
-		for ( uint32 iTimeRamp = 0 ; iTimeRamp < MAX_TIME_RAMPS ; iTimeRamp++ )
-		{
-			SAVE_FLOAT(m_TimeRamps[iTimeRamp].m_Time);
-			SAVE_VECTOR(m_TimeRamps[iTimeRamp].m_Color);
-			SAVE_HSTRING(m_TimeRamps[iTimeRamp].m_hTarget);
-			SAVE_HSTRING(m_TimeRamps[iTimeRamp].m_hMessage);
-		}
-	}
+	// RETAIL: no time ramps to save in Tron (retail 0x100e3050)
 }
 
 
@@ -4576,19 +4569,7 @@ void CGameServerShell::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	g_pServerMissionMgr->Load( *pMsg, dwLoadFlags );
 	g_pKeyMgr->Load( pMsg, dwLoadFlags );	
 
-	{ // BL 09/28/00 need to save/load these because they don't
-	  // get set by worldproperties in a load situation
-
-		LOAD_DWORD(m_nTimeRamps);
-		LOAD_DWORD(m_iPrevRamp);
-		for ( uint32 iTimeRamp = 0 ; iTimeRamp < MAX_TIME_RAMPS ; iTimeRamp++ )
-		{
-			LOAD_FLOAT(m_TimeRamps[iTimeRamp].m_Time);
-			LOAD_VECTOR(m_TimeRamps[iTimeRamp].m_Color);
-			LOAD_HSTRING(m_TimeRamps[iTimeRamp].m_hTarget);
-			LOAD_HSTRING(m_TimeRamps[iTimeRamp].m_hMessage);
-		}
-	}
+	// RETAIL: no time ramps in Tron (as Save)
 
 	if( nSaveFileVersion == 2001 )
 	{
@@ -4603,24 +4584,6 @@ void CGameServerShell::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::GetTimeRamp
-//
-//	PURPOSE:	
-//
-// ----------------------------------------------------------------------- //
-
-TimeRamp* CGameServerShell::GetTimeRamp(uint32 i)
-{
-	if(i >= MAX_TIME_RAMPS)
-	{
-		ASSERT(FALSE);
-		return NULL;
-	}
-
-	return &m_TimeRamps[i];
-}
 
 
 
@@ -4791,7 +4754,7 @@ bool CGameServerShell::ClientConnectionInTrouble( HCLIENT hClient )
 
 char const* CGameServerShell::GetHostName()
 {
-	return(m_ServerGameOptions.GetSessionName());
+	return((*m_pServerGameOptions).GetSessionName());
 }
 
 // ----------------------------------------------------------------------- //
@@ -5423,8 +5386,8 @@ void CGameServerShell::LoadObjectives( ILTMessage_Read *pMsg, uint32 dwLoadFlags
 
 void CGameServerShell::ApplyWeaponRestrictions( )
 {
-	StringSet::iterator iter = m_ServerGameOptions.m_setRestrictedWeapons.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedWeapons.end( ))
+	StringSet::iterator iter = (*m_pServerGameOptions).m_setRestrictedWeapons.begin( );
+	while( iter != (*m_pServerGameOptions).m_setRestrictedWeapons.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;
@@ -5437,8 +5400,8 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 			pWeapon->bServerRestricted = true;
 	}
 
-	iter = m_ServerGameOptions.m_setRestrictedAmmo.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedAmmo.end( ))
+	iter = (*m_pServerGameOptions).m_setRestrictedAmmo.begin( );
+	while( iter != (*m_pServerGameOptions).m_setRestrictedAmmo.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;
@@ -5451,8 +5414,8 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 			pAmmo->bServerRestricted = true;
 	}
 
-	iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedGear.end( ))
+	iter = (*m_pServerGameOptions).m_setRestrictedGear.begin( );
+	while( iter != (*m_pServerGameOptions).m_setRestrictedGear.end( ))
 	{
 		std::string const& sValue = *iter;
 		iter++;

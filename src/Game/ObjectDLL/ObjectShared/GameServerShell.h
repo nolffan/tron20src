@@ -120,10 +120,10 @@ class CGameServerShell : public IServerShellStub
         void    Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
 
-		ServerGameOptions const& GetServerGameOptions( ) const { return m_ServerGameOptions; }
-		ServerGameOptions& GetServerGameOptions( ) { return m_ServerGameOptions; }
+		ServerGameOptions const& GetServerGameOptions( ) const { return (*m_pServerGameOptions); }
+		ServerGameOptions& GetServerGameOptions( ) { return (*m_pServerGameOptions); }
 
-		GameType		GetGameType()	const { return m_ServerGameOptions.m_eGameType; }
+		GameType		GetGameType()	const { return (*m_pServerGameOptions).m_eGameType; }
 		GameDifficulty	GetDifficulty() const { return m_eDifficulty; }
 		void			SetDifficulty(GameDifficulty eDiff)  { m_eDifficulty = eDiff; }
 
@@ -146,12 +146,11 @@ class CGameServerShell : public IServerShellStub
 		bool		IsPaused( );
 
 		// Are we running a performance test?
-		bool		IsPerformanceTest() const { return m_ServerGameOptions.m_bPerformanceTest; }
+		bool		IsPerformanceTest() const { return (*m_pServerGameOptions).m_bPerformanceTest; }
 
 		// Check if the client wants us to pre-cache assets
 		bool		PreCacheAssets() {return m_bPreCacheAssets; }
 
-		TimeRamp*	GetTimeRamp(uint32 i);
 
 		IDList*		GetObjectives()				{ return &m_Objectives; }
 		IDList*		GetOptionalObjectives()		{ return &m_OptionalObjectives; }
@@ -377,12 +376,9 @@ class CGameServerShell : public IServerShellStub
 
 	protected:
 
-		TimeRamp			m_TimeRamps[MAX_TIME_RAMPS];
-        uint32				m_nTimeRamps;   // Only calculated right before using the time ramps.
-											// Based on the first one with m_Time == -1.
-        uint32				m_iPrevRamp;    // The previous time ramp we were sitting on (used to
-											// trigger time events).
-
+		// RETAIL: Tron's CGameServerShell has no time ramps (retail has none of
+		// their strings; its members start with the ping counter at +0x4:
+		// retail's constructor 0x100dd2e0 and Save 0x100e3050)
 		float				m_ClientPingSendCounter;
 
 		// Time of day variables.
@@ -390,9 +386,7 @@ class CGameServerShell : public IServerShellStub
 		CVarTrack			m_ShowTimeTrack;
 		CVarTrack			m_WorldTimeTrack;
 		CVarTrack			m_WorldTimeSpeedTrack;
-		float				m_TODSeconds;	// Current time of day
-        float				m_TODCounter;
-        uint8				m_SunVec[3];
+		// RETAIL: nor the time of day (the start point name follows at +0x38)
 
 		HSTRING				m_hstrStartPointName;
 
@@ -405,7 +399,13 @@ class CGameServerShell : public IServerShellStub
 		CAICentralKnowledgeMgr*	m_pAICentralKnowledgeMgr;
 		CAIClassFactory*		m_pAIClassFactory;
 
-		ServerGameOptions	m_ServerGameOptions;
+		// PORT: Tron's game options here are its own, 0xdc bytes (retail's
+		// constructor builds them at +0x90; NOLF2's ServerGameOptions has keys
+		// retail has none of). Until they are written, NOLF2's live on the heap
+		// and their pointer takes the first of Tron's bytes, so that every
+		// other member is at retail's offset
+		ServerGameOptions*	m_pServerGameOptions;
+		uint8				m_aTronGameOptions[0xdc - sizeof(ServerGameOptions*)];
         LTBOOL				m_bUpdateGameServ;
 
         uint8				m_nLastLGFlags;
@@ -431,7 +431,13 @@ class CGameServerShell : public IServerShellStub
 
 		int					m_nGetPlayerIndex;
 		char				m_sSpyGameHost[MAX_GEN_STRING];
+		uint32				m_nTronUnknown173C0;	// RETAIL: Tron's; not yet known
 		CString				m_sWorld;
+		// RETAIL: 0x80 bytes of Tron's here, before the message source (+0x17448);
+		// not yet known. Tron has no WON server directory: NOLF2's pointer stands
+		// in at their end (PORT)
+		uint8				m_aTronUnknown173C8[0x80 - sizeof(IServerDirectory*)];
+		IServerDirectory*	m_pServerDir;
 
 		void CacheLevelSpecificFiles();
 
@@ -453,9 +459,6 @@ class CGameServerShell : public IServerShellStub
 		HCLIENT		GetClientFromID(uint32 nID);
 
 		LTBOOL IsPositionOccupied(LTVector & vPos, CPlayerObj* pPlayer);
-
-		// Server directory interface
-		IServerDirectory*	m_pServerDir;
 
 		// Current message source
 		uint8		m_aCurMessageSourceAddr[4];
