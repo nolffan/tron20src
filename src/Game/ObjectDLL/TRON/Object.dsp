@@ -162,6 +162,10 @@ SOURCE=.\BinaryBit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BuildNote.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
@@ -228,6 +232,10 @@ SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # Begin Source File
 
 SOURCE=.\BinaryBit.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BuildNote.h
 # End Source File
 # Begin Source File
 

@@ -42,11 +42,17 @@ typedef struct
 	uint8	nCount;
 } GEN_INVENTORY_ITEM;
 
+// RETAIL: Tron's (its CInventoryButeMgr::ReadItem, retail 0x100c1d70: Name,
+// Image, Type, TextID, Points; 0xcc bytes); NOLF2's had a name and a command
+#define MAX_INVENTORY_ITEM_IMAGE_LEN	128
+
 typedef struct
 {
 	char	szName[MAX_INVENTORY_ITEM_NAME_LEN];
-	char	szCmd[MAX_COMMAND_LEN];
-
+	char	szImage[MAX_INVENTORY_ITEM_IMAGE_LEN];
+	int		nType;
+	int		nTextID;
+	int		nPoints;
 } GEN_INVENTORY_ITEM_DEF;
 
 typedef std::vector<GEN_INVENTORY_ITEM> GEN_INVENTORY_LIST;

@@ -406,11 +406,12 @@ CActivateTypeHandler::~CActivateTypeHandler()
 //
 // ----------------------------------------------------------------------- //
 
-void CActivateTypeHandler::Init( LPBASECLASS pObj )
+void CActivateTypeHandler::Init( LPBASECLASS pObj, uint8 nSFXId )
 {
 	if( !pObj ) return;
 
 	m_pBase		= pObj;
+	m_nSFXId	= nSFXId;
 }
 
 // ----------------------------------------------------------------------- //
@@ -477,7 +478,7 @@ void CActivateTypeHandler::CreateActivateTypeMsg()
 	// Send the parent object first...
 	
 	CAutoMessage cMsg;
-	cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+	cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 	WriteActivateTypeMsg( cMsg );
 	g_pLTServer->SetObjectSFXMessage( m_pBase->m_hObject, cMsg.Read() );
 
@@ -489,7 +490,7 @@ void CActivateTypeHandler::CreateActivateTypeMsg()
 		if( (*iter) )
 		{
 			CAutoMessage cMsg;
-			cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 			WriteActivateTypeMsg( cMsg );
 			g_pLTServer->SetObjectSFXMessage( (*iter), cMsg.Read() );
 		}
@@ -529,7 +530,7 @@ void CActivateTypeHandler::SetDisabled( bool bDis, bool bSendToClient /* = true 
 
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_SFX_MESSAGE );
-		cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+		cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 		cMsg.WriteObject( m_pBase->m_hObject );
 		cMsg.Writeuint8( ACTIVATEFX_DISABLED );
 		cMsg.Writebool( m_bDisabled );
@@ -542,7 +543,7 @@ void CActivateTypeHandler::SetDisabled( bool bDis, bool bSendToClient /* = true 
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint8( MID_SFX_MESSAGE );
-			cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 			cMsg.WriteObject( (*iter) );
 			cMsg.Writeuint8( ACTIVATEFX_DISABLED );
 			cMsg.Writebool( m_bDisabled );
@@ -578,7 +579,7 @@ void CActivateTypeHandler::SetState( ACTIVATETYPE::State eState, bool bSendToCli
 		
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_SFX_MESSAGE );
-		cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+		cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 		cMsg.WriteObject( m_pBase->m_hObject );
 		cMsg.Writeuint8( ACTIVATEFX_STATE);
 		cMsg.Writeuint8( m_eState );
@@ -591,7 +592,7 @@ void CActivateTypeHandler::SetState( ACTIVATETYPE::State eState, bool bSendToCli
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint8( MID_SFX_MESSAGE );
-			cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 			cMsg.WriteObject( (*iter) );
 			cMsg.Writeuint8( ACTIVATEFX_STATE );
 			cMsg.Writeuint8( m_eState );
@@ -630,7 +631,7 @@ void CActivateTypeHandler::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 				return;
 
 			CAutoMessage cMsg;
-			cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 			cMsg.Writeuint8( ATMGR_INVALID_ID );
 			cMsg.Writebool( true );
 			cMsg.Writeuint8( ACTIVATETYPE::eOff );
@@ -678,7 +679,7 @@ void CActivateTypeHandler::InheritObject( HOBJECT hObj )
 		return;
 
 	CAutoMessage cMsg;
-	cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+	cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 	WriteActivateTypeMsg( cMsg );
 	g_pLTServer->SetObjectSFXMessage( hObj, cMsg.Read() );
 }
@@ -711,7 +712,7 @@ void CActivateTypeHandler::DisownObject( HOBJECT hObj )
 				return;
 
 			CAutoMessage cMsg;
-			cMsg.Writeuint8( SFX_ACTIVATEOBJECT_ID );
+			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
 			cMsg.Writeuint8( ATMGR_INVALID_ID );
 			cMsg.Writebool( true );
 			cMsg.Writeuint8( ACTIVATETYPE::eOff );
