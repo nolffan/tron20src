@@ -24,7 +24,7 @@ class CPlayerCamera
 		// RETAIL: Tron has a sixth mode, in which the player is hidden as in
 		// first person (retail CPlayerMgr::UpdatePlayer, 0x1012c5e0); our name
 		enum CameraMode		{ FIRSTPERSON, CHASE, GOINGFIRSTPERSON,
-							  CIRCLING, SCRIPT, TRONMODE5 };
+							  CIRCLING, SCRIPT, TRONMODE5, TRONMODE6 };	// RETAIL: 6 too (CPlayerMgr::UpdateCameraRotation, retail 0x10129a20)
 
 		enum CameraPoint	{ AT_POSITION, IN_DIRECTION, AUTOMATIC };
 
@@ -91,7 +91,16 @@ class CPlayerCamera
 
         void SetOptZ(float f)   { m_OptZ = f; }
 
-		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot );
+		// RETAIL: Tron's (the names are ours)
+		float GetTronUnknown100() const { return m_fTronUnknown100; }
+		void SetTronUnknown100(float f) { m_fTronUnknown100 = f; }
+
+		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
+		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);
+
+		// RETAIL: Tron's takes a third argument (retail 0x1015d240: callers
+		// pass 0, 2 or a variable). PORT: not yet used
+		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTronUnknown = 0 );
 		void CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot );
 
 	private : // Data members
@@ -155,6 +164,15 @@ class CPlayerCamera
         LTVector		m_TargetFirstPersonOffset;
 
 		HOBJECT			m_hCollisionObject;
+
+		// RETAIL: Tron's (+0xd4..+0x104, to retail's size 0x108: the
+		// constructor, retail 0x1015b130, sets the last four and leaves the
+		// rest). Not yet named
+		uint8			m_aTronUnknownD4[0x24];
+		float			m_fTronUnknownF8;
+		float			m_fTronUnknownFC;
+		float			m_fTronUnknown100;	// RETAIL: CPlayerMgr keeps it within its +0x1dc (retail 0x1012cb10)
+		uint32			m_nTronUnknown104;
 
 	// Internal functions..
 	private:

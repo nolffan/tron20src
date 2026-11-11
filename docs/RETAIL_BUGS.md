@@ -73,6 +73,17 @@ the destructor: a node removed while its loop plays leaks the string.
 
 Not fixed yet: the modern build should free it in the destructor.
 
+### A lure's death FX is only played when it has no name (and crashes then)
+
+CShell.dll 0x101288d0 (CPlayerMgr::HandleMsgPlayerStateChange,
+ClientShellShared/PlayerMgr.cpp), as NOLF2's. When the player dies on a
+lure (PPM_LURE), the test is `if( !pszDeathFX && pszDeathFX[0] != '\0' )`:
+the FX is never created for a named death FX, and a missing one is read
+through a NULL pointer. It should be `pszDeathFX && pszDeathFX[0]`. Tron's
+levels may not use lures, so it may never show.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

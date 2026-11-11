@@ -23,7 +23,7 @@ public:
 	void Init()
 	{
 		m_vPos.Init();
-		m_rRot.Init();
+		m_vDir.Init();
 		m_nType = MID_ACTIVATE_NORMAL;
 		m_hTarget = NULL;
 		m_vIntersect.Init();
@@ -33,7 +33,7 @@ public:
 	void Write(ILTMessage_Write *pMsg)
 	{
 		pMsg->WriteLTVector(m_vPos);
-		pMsg->WriteCompLTRotation(m_rRot);
+		pMsg->WriteLTVector(m_vDir);
 		pMsg->Writeuint8(m_nType);
 		pMsg->WriteObject(m_hTarget);
 		pMsg->WriteLTVector(m_vIntersect);
@@ -43,7 +43,7 @@ public:
 	void Read(ILTMessage_Read *pMsg)
 	{
 		m_vPos			= pMsg->ReadLTVector();
-		m_rRot			= pMsg->ReadCompLTRotation();
+		m_vDir			= pMsg->ReadLTVector();
 		m_nType			= pMsg->Readuint8();
 		m_hTarget		= pMsg->ReadObject();
 		m_vIntersect	= pMsg->ReadLTVector();
@@ -51,7 +51,7 @@ public:
 	}
 
 	LTVector	m_vPos;
-	LTRotation	m_rRot;
+	LTVector	m_vDir;	// RETAIL: Tron's, as build 51's (CShell 0x10128180 writes a vector)
 	uint8		m_nType;
 	LTObjRef	m_hTarget;
 	LTVector	m_vIntersect;

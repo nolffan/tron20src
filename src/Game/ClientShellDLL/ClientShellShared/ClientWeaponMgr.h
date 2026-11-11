@@ -58,6 +58,7 @@ public:
 
 	// accessor functions
 	IClientWeaponBase  *GetCurrentClientWeapon() const;
+	void				CurrentWeaponTronUnknownVirtual20();	// RETAIL: Tron's (retail 0x10168540; the name is ours)
 	uint8           GetCurrentWeaponId() const;
 	uint8           GetNextWeaponId( uint8 nWeapon, uint8 nClass ) const { return GetSequentialWeaponId(nWeapon, nClass, true); }
 	uint8           GetPrevWeaponId( uint8 nWeapon, uint8 nClass ) const { return GetSequentialWeaponId(nWeapon, nClass, false); }

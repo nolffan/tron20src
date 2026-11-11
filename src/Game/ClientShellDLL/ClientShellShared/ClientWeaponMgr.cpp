@@ -479,6 +479,26 @@ WeaponState CClientWeaponMgr::Update( LTRotation const &rRot, LTVector const &vP
 
 // ----------------------------------------------------------------------- //
 //
+//	FUNCTION:	CClientWeaponMgr::CurrentWeaponTronUnknownVirtual20()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x10168540; the name is ours): the
+//				current weapon's TronUnknownVirtual20 (CPlayerMgr's slot
+//				0x58 calls it)
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponMgr::CurrentWeaponTronUnknownVirtual20()
+{
+	IClientWeaponBase *pWeapon = GetCurrentClientWeapon();
+	if (pWeapon)
+	{
+		pWeapon->TronUnknownVirtual20();
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	FUNCTION:	CClientWeaponMgr::GetCurrentWeapon()
 //
 //	PURPOSE:	Return a pointer to the current weapon
@@ -796,9 +816,8 @@ bool CClientWeaponMgr::ChangeWeapon( uint8 nWeaponId,
 	// We succesfully started the weapon change process, so let the player mgr handle
 	// it...
 
-	//jrg- 9/2/02 - this is getting called both when we start switching and when we finish switching
-	//		PlayerMgr is using this to track if we're in mid switch
-	g_pPlayerMgr->HandleWeaponChanged(nWeaponId, nNewAmmoId, (!bChangeWeapon || bSwitchInstantly));
+	// RETAIL: Tron's takes no bImmediateSwitch (retail 0x10168984)
+	g_pPlayerMgr->HandleWeaponChanged(nWeaponId, nNewAmmoId);
 
 
 	return true;

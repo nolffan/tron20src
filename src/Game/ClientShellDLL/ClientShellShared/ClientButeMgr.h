@@ -36,6 +36,10 @@ class CClientButeMgr : public CGameButeMgr
 		int			GetNumCheatAttributes() const { return m_nNumCheatAttributes; }
         void		GetCheat(uint8 nCheatNum, char *pBuf, uint16 nBufLen);
 
+		// RETAIL: Tron's (retail 0x1014de10, 0x1014de40; the names are ours)
+		void		GetDeathFX(char *pBuf, uint16 nBufLen);
+		void		GetMultiDeathFX(char *pBuf, uint16 nBufLen);
+
 		float		GetReverbAttributeFloat(char* pAttribute);
 
 		int			GetCameraAttributeInt(char* pAttribute);

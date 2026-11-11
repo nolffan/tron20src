@@ -49,6 +49,9 @@ class CClientSoundMgr : public CGameSoundMgr
 
 		virtual	HLTSOUND PlaySound(PlaySoundInfo & playSoundInfo);
 
+		// RETAIL: Tron's (retail 0x100fab80; the name is ours)
+		void	SetSoundFilter(uint8 nFilterId);
+
 };
 
 #endif // __CLIENT_SOUND_MGR_H__
