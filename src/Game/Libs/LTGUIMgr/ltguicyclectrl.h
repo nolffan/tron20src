@@ -31,8 +31,15 @@ public:
 	// nFontSize		- The font size to use for this string.
 	// nHeaderWidth	- The width to use for the header string
 	// pnValue		- Pointer to the value which receives the selection index when UpdateData is called.
-    LTBOOL           Create ( const char *pText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize,
+	// TRON: the header is a wide string, by value (RETAIL: 0x100c1c90)
+    LTBOOL           Create ( std::wstring sText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize,
                             uint16 nHeaderWidth, uint8 *pnValue=LTNULL);
+	// PORT: ours, for the code that still makes its text narrow
+    LTBOOL           Create ( const char *pText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize,
+                            uint16 nHeaderWidth, uint8 *pnValue=LTNULL)
+	{
+		return Create(LTGUIWideString(pText), nHelpID, pFont, nFontSize, nHeaderWidth, pnValue);
+	}
 
 	// Destroys the control
 	virtual void	Destroy ( ); 
@@ -43,7 +50,10 @@ public:
 	// Add more strings to the control.  These are cycled when OnLeft() and OnRight() are called
 	static const uint8	kMaxNumStrings;
 	static const uint8	kNoSelection;
-	virtual void	AddString(const char *pText);
+	// TRON: a wide string, by value (RETAIL: 0x100c1e50)
+	virtual void	AddString(std::wstring sText);
+	// PORT: ours, for the code that still makes its text narrow
+	void			AddString(const char *pText) { AddString(LTGUIWideString(pText)); }
 
 	CUIFormattedPolyString*	GetString(uint8 nIndex);			// Return a string at a specific index
 	void			RemoveString(uint8 nIndex);		// Remove a string at a specific index

@@ -96,7 +96,7 @@ void CHUDSubtitles::Draw()
 		return;
 
 	//render dropshadow
-	float x,y;
+	int32 x,y;
 	m_pText->GetPosition(&x,&y);
 	m_pText->SetPosition(x+2.0f,y+2.0f);
 	m_pText->SetColor(argbBlack);
@@ -256,7 +256,7 @@ LTBOOL CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, LTFLOAT fRadius,
 	float textX = m_DisplayRect.x;
 	float textY = m_DisplayRect.y;
 
-	float fw,fh;
+	int32 fw,fh;
 	m_pText->GetDims(&fw,&fh);
 
 	uint8 numLines = (uint8)(fh / (float)m_nFontSize);
@@ -344,7 +344,7 @@ void CHUDSubtitles::SetScale(float fScale)
 			float textX = m_DisplayRect.x;
 			float textY = m_DisplayRect.y;
 
-			float fw,fh;
+			int32 fw,fh;
 			m_pText->GetDims(&fw,&fh);
 
 			textX += (m_DisplayRect.width - fw) / 2.0f;
@@ -373,7 +373,7 @@ void CHUDSubtitles::UpdateLayout()
 	m_pFont = g_pInterfaceResMgr->GetFont(nFont);
 	m_nFontSize = m_nBaseFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
 
-	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont," ",(float)m_BasePos.x,(float)m_BasePos.y);
+	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(" "),(float)m_BasePos.x,(float)m_BasePos.y);
 	if (!m_pText)
 		return;
 

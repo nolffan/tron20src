@@ -53,7 +53,7 @@ LTBOOL CHUDChatInput::Init()
 	float y = (float)(m_BasePos.y) * g_pInterfaceResMgr->GetYRatio();
 
 
-	m_pStr = g_pFontManager->CreatePolyString(pFont," ",x, y);
+	m_pStr = g_pFontManager->CreatePolyString(pFont,LTGUIWideString(" "),x, y);
 	m_pStr->SetCharScreenHeight(h);
 	m_pStr->SetColor(color);
 

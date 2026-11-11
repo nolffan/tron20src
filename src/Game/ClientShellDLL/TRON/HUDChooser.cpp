@@ -99,7 +99,7 @@ LTBOOL CHUDWpnChooser::Init()
 	uint8 nFont = g_pLayoutMgr->GetHUDFont();
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 
-	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f, 0.0f);
+	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pStr->SetColor(m_TextColor);
 
 
@@ -361,10 +361,10 @@ LTBOOL CHUDAmmoChooser::Init()
 	uint8 nFont = g_pLayoutMgr->GetHUDFont();
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 
-	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f, 0.0f);
+	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pStr->SetColor(m_TextColor);
 
-	m_pWpnStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f, 0.0f);
+	m_pWpnStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pWpnStr->SetColor(m_TextColor);
 
 

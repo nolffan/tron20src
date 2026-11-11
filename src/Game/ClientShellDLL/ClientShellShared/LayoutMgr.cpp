@@ -1007,13 +1007,10 @@ INT_CHAINFX* CLayoutMgr::GetChainFX(unsigned int iChainNum)
 //
 // ------------------------------------------------------------------------//
 
-void CLayoutMgr::GetFontName(int nFont, char* pszFontFile, int nFontFileBufLen, 
-						char* pszFontFace, int nFontFaceBufLen )
+void CLayoutMgr::GetFontName(int nFont, char* pszFontFile, int nFontFileBufLen)
 {
-	sprintf(s_aAttName, "FontFile%d", nFont);
+	sprintf(s_aAttName, "Font%d", nFont);
 	GetString("Fonts", s_aAttName, pszFontFile, nFontFileBufLen);
-	sprintf(s_aAttName, "FontFace%d", nFont);
-	GetString("Fonts", s_aAttName, pszFontFace, nFontFaceBufLen);
 }
 
 uint8 CLayoutMgr::GetFontSize(int nFont)

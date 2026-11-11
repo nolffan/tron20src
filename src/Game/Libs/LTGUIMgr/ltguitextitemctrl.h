@@ -32,9 +32,18 @@ public:
 	// pFont			- The font to use for this string.
 	// nFontSize		- The font size to use for this string.
 	// pCommandHandler	- handler which receives messages when the "enter" key is pressed.
-    LTBOOL           Create (	const char *pText, uint32 nCommandID, uint32 nHelpID, 
+	// TRON: the text is a wide string, by value (RETAIL: 0x100beff0)
+    LTBOOL           Create (	std::wstring sText, uint32 nCommandID, uint32 nHelpID, 
 								CUIFont *pFont, uint8 nFontSize, CLTGUICommandHandler *pCommandHandler, 
 								uint32 nParam1 = 0, uint32 nParam2 = 0);
+
+	// PORT: ours, for the code that still makes its text narrow
+    LTBOOL           Create (	const char *pText, uint32 nCommandID, uint32 nHelpID, 
+								CUIFont *pFont, uint8 nFontSize, CLTGUICommandHandler *pCommandHandler, 
+								uint32 nParam1 = 0, uint32 nParam2 = 0)
+	{
+		return Create(LTGUIWideString(pText), nCommandID, nHelpID, pFont, nFontSize, pCommandHandler, nParam1, nParam2);
+	}
 
 	// Destroys the control
 	virtual void	Destroy ( ); 
@@ -51,8 +60,17 @@ public:
 										{ m_pCommandHandler = pCommandHandler; }
 
 	// Add more strings to the control.  These are cycled when OnLeft() and OnRight() are called
-	virtual void	SetString(const char *pText);
+	// TRON: the text is a wide string, by value (RETAIL: 0x100bf170)
+	virtual void	SetString(std::wstring sText);
+	// PORT: ours, for the code that still makes its text narrow
+	void			SetString(const char *pText) { SetString(LTGUIWideString(pText)); }
 	CUIFormattedPolyString*	GetString()  {return m_pString;}
+
+	// TRON: a copy of the text, drawn growing and fading over it (RETAIL:
+	// 0x100bf430 makes or removes it, 0x100bf580 starts it when selected,
+	// Render draws it); the names are ours
+	void			SetPulse(bool bPulse);
+	void			Pulse();
 
 	// Render the control
 	virtual void	Render ();
@@ -88,6 +106,11 @@ protected:
 
 
 	CUIFormattedPolyString*		m_pString;
+
+	// TRON: the pulse (RETAIL: the constructor, 0x100bef40, clears them;
+	// names ours)
+	CUIFormattedPolyString*		m_pPulseString;
+	float						m_fPulse;
 
 	// Receives a message when the "enter" key is pressed.
 	CLTGUICommandHandler	*m_pCommandHandler;

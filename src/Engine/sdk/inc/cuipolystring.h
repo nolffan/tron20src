@@ -18,6 +18,9 @@
 #include "cuifont.h"
 #endif
 
+// TRON: Tron's text is wide.
+#include <string>
+
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 // forward declaration for the CUIBase Implementation class 
@@ -34,364 +37,100 @@ the CUIFont class.
 
 Used for: Text and UI.   */
 
+// TRON: Tron's polystring is not NOLF2's. NOLF2's is a wrapper whose
+// methods (in the engine) call a CUIPolyString_Impl; Tron's engine creates
+// its own class (0x84 bytes, vtable 0x59182c in retail Lithtech.exe), and
+// the game calls its 43 virtuals directly. Its text is a std::wstring (there
+// is a char* SetText that widens), its positions and sizes are integers, and
+// it has no GetClassName. The slots, and how each was named, are in
+// progress/engine/CUIPolyString-vtable.csv; the names of what NOLF2 does not
+// have are ours. The game never creates one itself (ILTFontManager does).
+
 class CUIPolyString
 {
 	public:
-			
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-		
-		// CUIPolyString should not be created with new and delete, but should instead
-		// be created via the ILTFontManager's CreatePolyString() and DestroyPolyString()
-		// management functions.
 
-		CUIPolyString();
+		virtual ~CUIPolyString() {}
 
-		CUIPolyString(CUIFont* pFont, 
-					  const char* pBuffer = NULL,
-					  float x = 0.0,
-					  float y = 0.0);
+		virtual CUI_RESULTTYPE	SetFont(CUIFont* pFont) = 0;
 
-		// virtual destructor
-		virtual ~CUIPolyString();
+		// RETAIL: 0x563060 (+0x8) assigns the string; 0x563120 (+0xc)
+		// widens each char. VC6 lays overloads out in the reverse of their
+		// declaration order: these are declared last slot first.
+		virtual CUI_RESULTTYPE	SetText(const char* pBuffer) = 0;
+		virtual CUI_RESULTTYPE	SetText(const std::wstring& sText) = 0;
 
+		virtual CUI_RESULTTYPE	SetPosition(int32 x, int32 y) = 0;
 
-		// all CUI classes support this
-		virtual const char* GetClassName();
-		
-		
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
-	
-	public:
-			
-/*!
-\param pBuffer  A NULL-terminated string of text (no formatting characters).
-\return	CUI_RESULTTYPE.
+		// TRON: sets a flag (true from the constructor) that rendering reads.
+		virtual CUI_RESULTTYPE	TronUnknownVirtual5(bool bValue) = 0;
 
-Sets the text of a CUIPolyString.  When function is used, the entire text of the
-CUIPolyString will be formatted with the last CUIFont which was applied to the
-CUIPolyString.
-
-Returns CUIR_OK if successful, CUIR_NO_FONT if there is no associated CUIFont, 
-CUIR_OUT_OF_MEMORY if there are memory allocation problems, otherwise returns
-CUIR_ERROR.
-
-\see ApplyFont()
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetText(const char* pBuffer);
-
-/*!
-\param argb uint32 color of the form 0xAARRGGBB.
-
-Sets a single color for each character of the entire CUIPolyString.
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetColor(uint32 argb);
-
-		
-/*!
-\param argb0 uint32 color of the form 0xAARRGGBB.
-\param argb1 uint32 color of the form 0xAARRGGBB.
-\param argb2 uint32 color of the form 0xAARRGGBB.
-\param argb3 uint32 color of the form 0xAARRGGBB.
-\param span true or false
-
-Sets the vertex colors for each character of the entire CUIPolyString (each character is
-represented internally as an LT_POLYGT4).  
-
-\see struct LT_POLYGT4
-\see interface ILTDrawPrim
-
-Vertices are numbered clockwise beginning with vertex 0 at the top left corner.
-
-Used for: Text and UI.  */
 		virtual CUI_RESULTTYPE	SetColors(uint32 argb0,
 										  uint32 argb1,
 										  uint32 argb2,
-										  uint32 argb3);
+										  uint32 argb3) = 0;
+		virtual CUI_RESULTTYPE	SetColor(uint32 argb) = 0;
+
+		// TRON: the rectangle RenderClipped and the clipping flag use.
+		virtual CUI_RESULTTYPE	SetClipRect(CUIRECT* pRect) = 0;
+
+		// TRON: the character height in pixels; scales the width to it.
+		virtual CUI_RESULTTYPE	SetCharScreenSize(uint32 height) = 0;
+
+		virtual uint32			GetColor() = 0;
+		virtual CUIFont*		GetFont() = 0;
+		virtual const std::wstring&	GetText() = 0;
+		virtual CUI_RESULTTYPE	GetRect(CUIRECT* pRect) = 0;
+		virtual CUI_RESULTTYPE	GetPosition(int32* pX, int32* pY) = 0;
+		virtual CUI_RESULTTYPE	GetDims(int32* pWidth, int32* pHeight) = 0;
+		virtual int32			GetWidth() = 0;
+		virtual int32			GetHeight() = 0;
+		virtual int32			GetX() = 0;
+		virtual int32			GetY() = 0;
+
+		// TRON: the flag TronUnknownVirtual5 sets.
+		virtual bool			TronUnknownVirtual20() = 0;
+
+		virtual uint32			GetLength() = 0;
+		virtual CUI_RESULTTYPE	GetClipRect(CUIRECT* pRect) = 0;
+		virtual uint32			GetCharScreenHeight() = 0;
+		virtual LT_POLYGT4*		GetPolys() = 0;
+
+		// TRON: the drop shadow's polygons, and turning it on (the name is
+		// ours: a second set of polygons, one per character).
+		virtual LT_POLYGT4*		GetShadowPolys() = 0;
+		virtual CUI_RESULTTYPE	SetDropShadow(bool bDropShadow) = 0;
+
+		// TRON: whether Render clips to the clip rectangle.
+		virtual CUI_RESULTTYPE	EnableClipping(bool bClip) = 0;
+
+		virtual CUI_RESULTTYPE	Render(int32 start = 0, int32 end = -1) = 0;
+		virtual CUI_RESULTTYPE	RenderClipped(CUIRECT* pClipRect,
+											  int32 start = 0,
+											  int32 end = -1) = 0;
+
+		// TRON: returns true (0x482590), whatever it is given.
+		virtual bool			TronUnknownVirtual30(void* pValue) = 0;
+
+		// TRON: calls SetCharScreenSize (0x565c30); the game's text controls
+		// call this one where NOLF2's call SetCharScreenHeight.
+		virtual CUI_RESULTTYPE	SetCharScreenHeight(uint32 height) = 0;
 
-
-
-/*!
-\param height desired screen height (in pixels) of each character.
-\param width (optional) desired screen width (in pixels) of each character.
-
-\return	CUIR_OK if successful.
-
-Sets the screen size of the CUIPolyString's characters.
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetCharScreenSize(uint8 height, uint8 width = 0);
-
-/*!
-\param width desired screen width (in pixels) of each character.
-
-\return	CUIR_OK if successful.
-
-Sets the screen width of the CUIPolyString's characters.
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetCharScreenWidth(uint8 width);
-
-/*!
-\param height desired screen height (in pixels) of each character.
-
-\return	CUIR_OK if successful.
-
-Sets the screen height of the CUIPolyString's characters.
-
-Used for: Text and UI.  */		
-		virtual CUI_RESULTTYPE	SetCharScreenHeight(uint8 height);
-
-/*!
-\return	character screen width.
-
-retrieves the screen width of the CUIPolyString's characters.
-
-Used for: Text and UI.  */
-		virtual uint8			GetCharScreenWidth();
-
-/*!
-\return	character screen height.
-
-Sets the screen height of the CUIPolyString's characters.
-
-Used for: Text and UI.  */
-		virtual uint8			GetCharScreenHeight();
-
-
-
-/*!
-\param x the new x coordinate of the CUIPolyString (onscreen, in pixels) 
-\param y the new y coordinate of the CUIPolyString (onscreen, in pixels)
-\return	CUI_RESULTTYPE.
-
-Sets new screen coordinates for the CUIPolyString.
-
-Returns CUIR_OK if successful.
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetPosition(float x, float y);
-
-/*!
-\param pFont the new font for the CUIPolyString 
-\return	CUI_RESULTTYPE.
-
-Sets a new font for the entire CUIPolyString.
-
-Returns CUIR_OK if successful.
-
-Used for: Text and UI.  */
-		virtual CUI_RESULTTYPE	SetFont(CUIFont* pFont);
-
-				
-/*!
-\return	const char*.
-
-Returns the ascii text of a CUIPolyString.  This string cannot be modified.
-To change a CUIPolyString's text, use CuiPolyString::SetText().
-
-\see SetText()
-
-Used for: Text and UI.  */
-		virtual const char*	GetText();
-		
-/*!
-\return	LT_POLYGT4*.
-
-Returns a pointer to the polygons which make up a CUIPolyString.  These
-polygons can be directly manipulated at runtime for various visual effects. 
-
-\see class  ILTDrawPrim
-\see struct LT_POLYGT4
-
-Used for: Text and UI.  */
-		virtual LT_POLYGT4*	GetPolys();
-		
-/*!
-\return	CUIFont*.
-
-Returns a pointer to the current font associated with the CUIPolyString.  
-If you wish to change the font, use CUIFont::Apply()
-
-\see CUIFont::Apply()
-
-Used for: Text and UI.  */
-		virtual CUIFont*	GetFont();
-
-/*!
-\param  pWidth address of variable to receive the width (in pixels)
-\param  pHeight address of variable to receive the height (in pixels)
-\return	CUI_RESULTTYPE.
-
-Gets the current screen dimensions of the CUIPolyStirng
-
-\see GetPosition()
-\see GetRect()
-
-Returns CUIR_OK.
-
-Used for: Text and UI.  */		
-		virtual CUI_RESULTTYPE	GetDims(float* pWidth, float* pHeight);
-
-/*!
-\param  pX address of variable to receive the x coord. (in pixels)
-\param  pY address of variable to receive the y coord. (in pixels)
-\return	CUI_RESULTTYPE.
-
-For a CUIPolyStirng, returns the (x,y) screen coordinates of the upper left corner
-of the string.  For a CUIFormattedPolyString, (x,y) can be the top-left, top-center,
-or top-right, depending on the alignment.
-  
-\see CUIFormattedPolyString::SetAlignmentH()
-\see GetDims()
-\see GetRect()
-
-Returns CUIR_OK.
-
-Used for: Text and UI.  */	
-		virtual CUI_RESULTTYPE	GetPosition(float* pX, float* pY);
-		
-/*!
-\param pRect address of variable to receive the bounding rectangle (in pixels)
-\return	CUI_RESULTTYPE.
-
-Gets the current bounding box of the CUIPolyString.  If you are querying a
-CUIFormattedPolyString, be aware that based on the alignment of the string,
-the resulting \em pRect->x and \em pRect->y values might be different from
-the (x,y) coords. returned by GetPosition(), GetX(), and GetY().  
-
-\see CUIFormattedPolyString::SetAlignmentH()
-\see GetDims()
-\see GetPosition()
-
-Returns CUIR_OK.
-
-Used for: Text and UI.  */	
-		virtual CUI_RESULTTYPE	GetRect(CUIRECT* pRect);
-		
-/*!
-\return	float.
-
-Gets the current screen height of the CUIPolyString (in pixels).
-
-Used for: Text and UI.  */	
-		virtual float		GetHeight();
-
-/*!
-\return	float.
-
-Gets the current screen width of the CUIPolyString (in pixels).
-
-Used for: Text and UI.  */	
-		virtual float		GetWidth();
-		
-/*!
-\return	float.
-
-Gets the current screen x coordinate of the CUIPolyString (in pixels).
-
-Used for: Text and UI.  */	
-		virtual float		GetX();
-		
-/*!
-\return	float.
-
-Gets the current screen y coordinate of the CUIPolyString (in pixels).
-
-Used for: Text and UI.  */	
-		virtual float		GetY();
-		
-/*!
-\return	int16.
-
-Gets the length of the ascii representation of the CUIPolyString (in characters).
-
-Used for: Text and UI.  */	
-		virtual uint16		GetLength();
-
-		
-/*!
-\param pFont CUIFont to use.
-\param index (optional) index of the first character to modify.
-\param num (optional) number of characters to modify.
-\param bProcessRemainder (optional) adjust positions of chars following the modification.
-
-Applies a CUIFont to a CUIPolyString.  If \em index is not specified, it will be
-the first character of the string.  If \em num is not specified, all characters
-from \em index to the end of the string will be modified.  If \b ProcessRemainder is
-not specified, all characters following the modification will be adjusted horizontally.
-
-This version of ApplyFont allows you to modify all or part of a string.  If you modify only part of a
-CUIPolyString, however, you may \em only change the color, size, or attributes of the font. 
-If you change the font's texture or font table and then apply the font to only a
-portion of the string, the results could be garbled on screen.
-
-Used for: Text and UI.  */
-
-		virtual CUI_RESULTTYPE	ApplyFont(CUIFont* pFont, 
-									  int16 index = 0, 
-									  int16 num = 0,
-									  bool	bProcessRemainder = true);
-
-/*!
-\param start (optional) drawing starts from this character index.
-\param end (optional) drawing ends at this character index.
-\return	none.
-
-Draws the CUIPolyString to the screen.  If \e start and \e end are not
-specified, the entire string is drawn.
-
-Used for: Text and UI.  */	
-		virtual CUI_RESULTTYPE		Render(int32 start = 0, int32 end = -1);
-		
-/*!
-\param clip Rectangle to clip to.
-\param start (optional) drawing starts from this character index.
-\param end (optional) drawing ends at this character index.
-\return	none.
-
-Clips the CUIPolyString to the rectangle defined by \em clip.
-If \e start and \e end are not
-specified, the entire string is drawn.
-
-\b NOTE: precise clipping is performed (i.e., you will see partial letters if the clip
-rectangle intersects character polygons).
-
-Used for: Text and UI.  */	
-		virtual CUI_RESULTTYPE		RenderClipped(CUIRECT* pClipRect, 
-												  int32 start = 0, 
-												  int32 end = -1);
-
-	
-/*!
-\return true or false.
-
-Use this function to test whether a polystring is valid.  The most likely reason for
-a polystring to be invalid is to call ILTFontManager::CreatePolyString() with a NULL
-font.
-  
-Used for: Text and UI.  */	
-		virtual	bool				IsValid();
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-	
-		// this code makes the bridge between the base interface and
-		// its implementation.  This allows us to neatly cross the
-		// EXE/DLL boundary and also keep utility code in the ui/src
-		// directory where it belongs (i.e., not exposed in the
-		// SDK header files).
-
-		CUIPolyString_Impl*		GetImpl() { return m_pImpl; }
-	
 	protected:
 
-		CUIPolyString_Impl*		m_pImpl;
-
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
-		
-						
+		// TRON: the engine's own: building the polygons, applying the font
+		// and the colors (0x563710 .. 0x5645b0).
+		virtual void			TronUnknownVirtual32() = 0;
+		virtual void			TronUnknownVirtual33() = 0;
+		virtual void			TronUnknownVirtual34() = 0;
+		virtual void			TronUnknownVirtual35() = 0;
+		virtual void			TronUnknownVirtual36() = 0;
+		virtual void			TronUnknownVirtual37() = 0;
+		virtual void			TronUnknownVirtual38() = 0;
+		virtual void			TronUnknownVirtual39() = 0;
+		virtual void			TronUnknownVirtual40() = 0;
+		virtual void			TronUnknownVirtual41() = 0;
+		virtual void			TronUnknownVirtual42() = 0;
 };
-
 
 #endif //__CUIPOLYSTRING_H__

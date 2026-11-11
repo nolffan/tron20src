@@ -49,15 +49,26 @@ public:
 	// hString	  - The initial text for the column
 	//returns column index
 	static const uint8	kMaxNumColumns;
-    uint8          AddColumn(const char *pString, uint16 nWidth, LTBOOL bClip = LTFALSE);
+	// TRON: the text is a wide string, by value
+    uint8          AddColumn(std::wstring sText, uint16 nWidth, LTBOOL bClip = LTFALSE);
+	// PORT: ours, for the code that still makes its text narrow
+    uint8          AddColumn(const char *pString, uint16 nWidth, LTBOOL bClip = LTFALSE)
+	{
+		return AddColumn(LTGUIWideString(pString), nWidth, bClip);
+	}
 
 	// Gets a string at a specific column index.  This returns a copy (new handle).
 	CLTGUITextCtrl*			GetColumn(uint8 nColumnIndex) const;
 	CUIFormattedPolyString*	GetPolyString(uint8 nColumnIndex) const;
-	const char*				GetString(uint8 nColumnIndex) const;
+	std::wstring			GetString(uint8 nColumnIndex) const;
 
 	// Sets a string for a column.  This copies the string from hString to an internal string.
-	void			SetString(uint8 nColumnIndex, const char *pString);
+	void			SetString(uint8 nColumnIndex, std::wstring sText);
+	// PORT: ours, for the code that still makes its text narrow
+	void			SetString(uint8 nColumnIndex, const char *pString)
+	{
+		SetString(nColumnIndex, LTGUIWideString(pString));
+	}
 
 	void			RemoveColumn(uint8 nIndex);			// Removes a column
 	void			RemoveAllColumns();					// Removes all of the columns

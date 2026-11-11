@@ -66,16 +66,11 @@ void CLTGUIColumnCtrl::Destroy ( )
 // Adds a column to the control
 // nWidth	  - Width of the column
 // hString	  - The initial text for the column
-uint8 CLTGUIColumnCtrl::AddColumn(const char *pString, uint16 nWidth, LTBOOL bClip)
+// TRON: the text is a wide string, by value (RETAIL: 0x100bc1f0)
+uint8 CLTGUIColumnCtrl::AddColumn(std::wstring sText, uint16 nWidth, LTBOOL bClip)
 {
-	if ( !pString )
-	{
-        assert(LTFALSE);
-        return -1;
-	}
-
 	CLTGUITextCtrl *pCtrl = debug_new(CLTGUITextCtrl);
-	if (!pCtrl->Create(pString,LTNULL,LTNULL,m_pFont,m_nBaseFontSize,LTNULL))
+	if (!pCtrl->Create(sText,LTNULL,LTNULL,m_pFont,m_nBaseFontSize,LTNULL))
 	{
 		debug_delete(pCtrl);
 		return -1;
@@ -121,23 +116,25 @@ CUIFormattedPolyString*	CLTGUIColumnCtrl::GetPolyString(uint8 nColumnIndex) cons
 
 }
 
-const char*	CLTGUIColumnCtrl::GetString(uint8 nColumnIndex) const
+// TRON: a copy of the wide text, or a space (RETAIL: 0x100bc630)
+std::wstring CLTGUIColumnCtrl::GetString(uint8 nColumnIndex) const
 {
 	CUIFormattedPolyString*	pString = GetPolyString(nColumnIndex);
 	if (pString)
 		return pString->GetText();
 	else
-		return LTNULL;
+		return std::wstring(1, L' ');
 }
 
 // Sets a string for a column
-void CLTGUIColumnCtrl::SetString(uint8 nColumnIndex, const char *pString)
+// TRON: the text is a wide string, by value (RETAIL: 0x100bc700)
+void CLTGUIColumnCtrl::SetString(uint8 nColumnIndex, std::wstring sText)
 {
-	if (nColumnIndex >= m_columnArray.size() || !pString)
+	if (nColumnIndex >= m_columnArray.size() || !sText.length())
 		return;
 
 	// Allocate the new string
-	m_columnArray[nColumnIndex]->SetString(pString);
+	m_columnArray[nColumnIndex]->SetString(sText);
 }
 
 

@@ -156,7 +156,13 @@ public:
 
 	// These CreateXXX() create controls but do not add them to the control list
     CLTGUITextCtrl*     CreateTextItem(int stringID, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
-    CLTGUITextCtrl*     CreateTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: the text is a wide string, by value (RETAIL: 0x100d39d0)
+    CLTGUITextCtrl*     CreateTextItem(std::wstring sString, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// PORT: ours, for the code that still makes its text narrow
+    CLTGUITextCtrl*     CreateTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1)
+	{
+		return CreateTextItem(LTGUIWideString(pString), commandID, helpID, pos, bFixed, nFont);
+	}
 
 	CLTGUIListCtrl*		CreateList(LTIntPt pos, uint16 nHeight, LTBOOL bUseArrows = LTFALSE, uint16 nArrowOffset = 0);
 

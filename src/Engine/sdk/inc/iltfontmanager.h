@@ -61,6 +61,15 @@ ILTFontmanager is available from the Interface Manager.
 Used for: Text and UI.
 */
 
+// TRON: Tron's font manager (CUIFontManager, vtable 0x591924 in retail
+// Lithtech.exe; its instance 0x5ecb50) is not NOLF2's: its fonts are
+// CUIWideBitmapFonts loaded from a stream, its strings are wide
+// (std::wstring), and it has three CreateFont overloads, each of one
+// pointer, of which only the third (an ILTStream*) is implemented. The slots,
+// and how each was named, are in progress/engine/ILTFontManager-vtable.csv.
+
+class ILTStream;
+
 class ILTFontManager : public IBase
 {
 
@@ -70,275 +79,54 @@ class ILTFontManager : public IBase
 		// add ILTFontManager to the interface database	
 		interface_version(ILTFontManager, 0);
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
-		
-/*!
-\b Required \b function \b call.  Called to initialize the ILTFontManager's 
-services.  You cannot call any of the ILTFontManager's functions until
-you have initialized it.  Currently this function is called within the engine.
-You can check the initialization status of the ILTFontManager with a call
-to IsInitted().  Calling this function again after the ILTFontManager has been
-initialized has no effect.
 
-Used for: Text and UI.
-*/
+	// RETAIL: 0x566200 (sets the initialized flag), 0x566220, 0x566670.
 	virtual void Init() = 0;
-
-/*!
-\b Required \b function \b call. Called to close down the ILTFontManager's 
-services.  If you do not call Term() when the client shell is 
-terminating, you risk memory leaks or worse.  Currently this function is 
-called within the engine.  You can check the initialization status of the
-ILTFontManager with a call to IsInitted().  Calling this function again after
-the ILTFontManager has been terminated has no effect.
-
-Used for: Text and UI.	
-*/
 	virtual void Term() = 0;
-
-
-/*!
-\return whether ILTFontManager was initialized.
-
-Returns \b true if the ILTFontManager is initialized, or \b false if it has
-not yet been initialized.
-
-\see Init()
-\see Term()
-
-Used for: Text and UI.
-*/
 	virtual bool IsInitted() = 0;
 
+	// TRON: VC6 lays a name's overloads out together in the reverse of their
+	// declaration order (the game's calls: CreateFont(ILTStream*) at +0x18,
+	// CUIPolyString::SetText(const std::wstring&) at +0x8), so each overload
+	// set here is declared last slot first.
 
-/*!
-\param hTex HTEXTURE containing a monospace bitmap font.
-\param charw width (in pixels) of each character in the font.
-\param charh height (in pixels) of each character in the font.
-\param pMap (optional) specifies a character map.
-\return pointer to a CUIFont object
+	// TRON: creates a CUIWideBitmapFont from a font file opened by the game
+	// (RETAIL: 0x566230, which news the font and has it read the stream;
+	// NULL if it did not load). The game releases the stream. Slot +0x18.
+	virtual CUIFont* CreateFont(ILTStream* pStream) = 0;
 
-Creates a monospace bitmap font.  No font table is necessary when creating a
-monospace font.
+	// TRON: two overloads that return NULL in Tron's engine (one body,
+	// 0x4b4470, for both; slots +0x14, +0x10); what they took is not known
+	// (the types are ours).
+	virtual CUIFont* CreateFont(struct TronUnknownFontSource1* pSource) = 0;
+	virtual CUIFont* CreateFont(struct TronUnknownFontSource0* pSource) = 0;
 
-Used for: Text and UI.
-*/
-		virtual CUIFont* CreateFont(HTEXTURE hTex, 
-									uint8    charw, 
-									uint8    charh,
-									uint8*   pMap = NULL) = 0;
+	virtual void DestroyFont(CUIFont* pFont) = 0;
+	virtual uint32 GetNumFontsInUse() = 0;
 
-/*!
-\param hTex HTEXTURE containing a proportional bitmap font.
-\param pTable pointer to a font table (an array of uint16).  
-\param charh height (in pixels) of each character in the font.
-\param pMap (optional) specifies a character map.
-\return pointer to a CUIFont object
+	// TRON: stubs returning NULL in Tron's engine (one body, 0x5614a0); the
+	// declarations (and so the overloads' order) are NOLF2's, which agree in
+	// their argument counts.
+	virtual HTEXTURE CharToTexture(uint8* pTTFData, uint32 dataSize, uint32 character, uint32 pointSize) = 0;
+	virtual HTEXTURE StringToTexture(uint8* pTTFData, uint32 dataSize, char* pCharacters, uint32 pointSize) = 0;
+	virtual HTEXTURE StringToTexture(uint8* pTTFData, uint32 dataSize, uint32* pCharacters, uint32 pointSize) = 0;
 
-Each character in the
-font is represented by 3 uint16 valuess in the font table.  The first uint16 
-is the width of the character in pixels, the second and third uint16 are (u,v) 
-texture coordinates of the character within the texture specified by hTex.
+	// TRON: the text is a wide string (RETAIL: 0x566320 and 0x5663d0 set it
+	// through CUIPolyString::SetText(const std::wstring&)); the position is
+	// floats, converted to the string's integer SetPosition.
+	virtual CUIPolyString* CreatePolyString(CUIFont* pFont,
+											const std::wstring& sText,
+											float x = 0.0,
+											float y = 0.0) = 0;
 
-Used for: Text and UI.
-*/
-		virtual CUIFont* CreateFont(HTEXTURE hTex, 
-									uint16*	 pTable, 
-									uint8	 charh,
-									uint8*   pMap = NULL) = 0;
-									
-/*!
-\param hTex HTEXTURE containing a proportional bitmap font.
-\param pMap (optional) specifies a character map.
-\return pointer to a CUIFont object
+	virtual CUIFormattedPolyString* CreateFormattedPolyString(CUIFont* pFont,
+											const std::wstring& sText,
+											float x = 0.0,
+											float y = 0.0,
+											CUI_ALIGNMENTTYPE alignment = CUI_HALIGN_LEFT) = 0;
 
-Creates a proportional bitmap font.  Instead of relying on a user-supplied
-font table, the system will attempt to scan the provided texture and 
-programmatically determine the extents of each letter.  The HTEXTURE parameter
-must therefore be a specially prepared font graphic. Each letter is demarcated
-by a single transparent green pixel (ARGB = 0x0000FF00) at its lower right 
-corner.  See the images included with the CUIFont sample project.
+	virtual void DestroyPolyString(CUIPolyString* pPolystr) = 0;
 
-\b Note: the HTEXTURE parameter must be a 32-bit texture for this version of 
-CreateFont().
-
-Used for: Text and UI.
-*/
-		virtual CUIFont* CreateFont(HTEXTURE hTex,
-									uint8*   pMap = NULL) = 0;
-
-/*!
-\param pszFontFile Filename of TTF.
-\param pszFontFace Font face of TTF.
-\param pointSize desired point size for the new font.
-\param asciiStart (optional) specifies the beginning of the range of 
-characters present in the font.
-\param asciiEnd (optional) specifies the end of the range of characters 
-present in the font.
-\return pointer to a CUIFont object
-
-This function uses a TrueType font to create an anti-aliased bitmap font.
-When the documentation refers to Vector Fonts, this is what is meant.  All
-fonts are stored internally as bitmaps, but fonts can be created from TrueType
-resources.
-
-Additionally, when the font is created with this version of CreateFont(),  you
-can optionally specify an ascii range of characters to include in your font
-image.  The default creates a font containing characters from '!' to '~' which
-gives everything generally needed for North American English.  To create a
-font containing extended ascii characters, choose different values for
-\e asciiStart and \e asciiEnd, or use CreateFont(uint8*, uint32, uint32, char*).
-
-Used for: Text and UI. */
-		virtual CUIFont* 	CreateFont( char const* pszFontFile, 
-										char const* pszFontFace,
-								  	   uint32 pointSize,
-								  	   uint8  asciiStart = 33,	      /* '!' */
-								  	   uint8  asciiEnd   = 126) = 0;  /* '~' */
-									  
-
-
-/*!
-\param pszFontFile Filename of TTF.
-\param pszFontFace Font face of TTF.
-\param pointSize desired point size for the new font.
-\param characters a string containig the characters which should be present
-in the font.
-\return pointer to a CUIFont object
-
-This function uses a TrueType font to create an anti-aliased bitmap font.
-When the documentation refers to Vector Fonts, this is what is meant.  All
-fonts are stored internally as bitmaps, but fonts can be created from TrueType
-resources.
-
-This method of creating a vector font allows for easy generation of
-nonstandard fonts (fonts whose characters are not in ascii order)
-
-All vector font creation functions create a font table, and this one creates
-a font map as well.
-
-\see CreateFont( char const*, char const*, uint32, uint32, uint8, uint8)
-\see CUIFont::SetMap()
-
-Used for: Text and UI. */
-		virtual CUIFont*	CreateFont( char const* pszFontFile, 
-										char const* pszFontFace,
-					  				   uint32 pointSize,
-					  				   char*  pCharacters) = 0;
-
-		
-		
-/*!
-\param pFont pointer to the font to be destroyed.
-\return none.
-
-Destroys a font, and frees associated memory.
-
-Used for: Text and UI.
-*/
-		virtual void		DestroyFont(CUIFont* pFont) = 0;
-		
-/*!
-\return number of fonts currently in use.
-
-Use this function to query the ILTFontManager about how many fonts are currently 
-in use (i.e., how many valid fonts have been created but not yet destroyed).
-Remember that the engine uses a CUIFont for the console, so the number returned
-by GetNumFontsInUse() may be one higher than you first expect.
-
-Used for: Text and UI.
-*/		
-		virtual uint32		GetNumFontsInUse() = 0;
-
-		
-		/*!
-\param pTTFData a pointer to a TrueType resource.
-\param dataSize the size (in bytes) of the resource pointed to by \e pTTFData.
-\param character the character to render (multi-byte characters are supported)
-\param pointSize the point size at which to render \e character
-\return HTEXTURE containing \e character.
-
-Use this function to render a single character into an HTEXTURE.
-
-Used for: Text and UI.
-*/
-		virtual HTEXTURE	CharToTexture(uint8* pTTFData, uint32 dataSize, uint32 character, uint32 pointSize) = 0;
-
-/*!
-\param pTTFData a pointer to a TrueType resource.
-\param dataSize the size (in bytes) of the resource pointed to by \e pTTFData.
-\param pCharacters an array of 8-bit characters to render
-\param pointSize the point size at which to render \e pCharacters
-\return HTEXTURE containing \e character.
-
-Use this function to render a string of characters into an HTEXTURE.
-
-Used for: Text and UI.
-*/
-		virtual HTEXTURE	StringToTexture(uint8* pTTFData, uint32 dataSize, char* pCharacters, uint32 pointSize) = 0;
-
-/*!
-\param pTTFData a pointer to a TrueType resource.
-\param dataSize the size (in bytes) of the resource pointed to by \e pTTFData.
-\param pCharacters an array of multi-byte characters to render
-\param pointSize the point size at which to render \e pCharacters
-\return HTEXTURE containing \e character.
-
-Use this function to render a string of characters into an HTEXTURE.
-
-Used for: Text and UI.
-*/
-		virtual HTEXTURE	StringToTexture(uint8* pTTFData, uint32 dataSize, uint32* pCharacters, uint32 pointSize) = 0;
-
-/*!
-\param pFont pointer to a CUIFont.
-\param pBuffer (optional) a null-terminated string of characters.
-\param x (optional) the x-coordinate on screen.
-\param y (optional) the y-coordinate on screen.
-\return pointer to a CUIPolyString object
-
-This function creates a CUIPolyString
-
-\see CUIFontManager::CreateFormattedPolyString()
-\see CUIFontManager::DestroyPolyString()
-
-Used for: Text and UI. */
-		virtual CUIPolyString*	CreatePolyString(CUIFont* pFont, 
-											     char* pBuffer = NULL,
-											     float x = 0.0,
-											     float y = 0.0) = 0;
-
-/*!
-\param pFont pointer to a CUIFont.
-\param pBuffer (optional) a null-terminated string of characters.
-\param x (optional) the x-coordinate on screen.
-\param y (optional) the y-coordinate on screen.
-\param alignment the alignment of the new text.
-\return pointer to a CUIFormattedPolyString object
-
-This function creates a formatted (or, format-capable) CUIPolyString.  Unlike a regular
-CUIPolyString, a formatted string understands newlines, word-wrap, justified text, and left-center-right alignment. 
-
-\see CUIFontManager::CreatePolyString()
-\see CUIFontManager::DestroyPolyString()
-
-Used for: Text and UI. */
-		virtual CUIFormattedPolyString*	CreateFormattedPolyString(CUIFont* pFont, 
-											     char* pBuffer = NULL,
-											     float x = 0.0,
-											     float y = 0.0,
-												 CUI_ALIGNMENTTYPE alignment = CUI_HALIGN_LEFT) = 0;
-					  
-/*!
-\param pPolystr pointer to the CUIPolyString to be destroyed.
-\return none
-
-This function destroys a CUIPolyString and frees associated memory.
-
-\see CUIFontManager::CreatePolyString()
-
-Used for: Text and UI. */
-		virtual void	 DestroyPolyString(CUIPolyString* pPolystr) = 0;
-				
 };
 
 #endif //__ILTFONTMANAGER_H__

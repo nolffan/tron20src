@@ -418,7 +418,7 @@ LTBOOL CCharacterFX::CreateObject(ILTClient* pClientDE)
 	uint8 nFont = g_pLayoutMgr->GetHUDFont();
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 
-	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f, 0.0f);
+	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pStr->SetColor(argbWhite);
 	m_pStr->SetAlignmentH(CUI_HALIGN_CENTER);
 

@@ -539,7 +539,7 @@ void CHUDRadar::AddPlayer(HOBJECT hObj, uint32 nId)
 	{
 		uint8 nFont = 0;
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-		pPlayer->pName = g_pFontManager->CreateFormattedPolyString(pFont,"",0.0f,0.0f);
+		pPlayer->pName = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f,0.0f);
 		pPlayer->pName->SetAlignmentH(CUI_HALIGN_RIGHT);
 	}
 

@@ -39,8 +39,15 @@ public:
 	// nBarWidth	- The total width of the Bar bar and it's arrows
 	// nBarHeight	- The height of the bar
 	// pnValue		- Pointer to the value to store the position in when UpdateData is called
-    LTBOOL	Create (  const char *pText, uint32 dwHelpID, CUIFont *pFont, uint8 nFontSize, HTEXTURE hBarTexture, 
+	// TRON: the text is a wide string, by value (RETAIL: 0x100c06b0)
+    LTBOOL	Create (  std::wstring sText, uint32 dwHelpID, CUIFont *pFont, uint8 nFontSize, HTEXTURE hBarTexture, 
 						uint16 nBarOffset, uint16 nBarWidth, uint16 nBarHeight, int *pnValue=LTNULL);
+	// PORT: ours, for the code that still makes its text narrow
+    LTBOOL	Create (  const char *pText, uint32 dwHelpID, CUIFont *pFont, uint8 nFontSize, HTEXTURE hBarTexture, 
+						uint16 nBarOffset, uint16 nBarWidth, uint16 nBarHeight, int *pnValue=LTNULL)
+	{
+		return Create(LTGUIWideString(pText), dwHelpID, pFont, nFontSize, hBarTexture, nBarOffset, nBarWidth, nBarHeight, pnValue);
+	}
 
 	void			Destroy();
 
@@ -112,6 +119,9 @@ protected:
 
 	bool		m_bDisplayOnly;
 
+	// TRON: a flag of Tron's, TRUE from the constructor (RETAIL: 0x100c0540;
+	// what reads it is not yet identified)
+	LTBOOL		m_xTronUnknown54;
     LTBOOL			m_bNumDisplay;
 	int*			m_pnValue;
 	int				m_nMinSlider;

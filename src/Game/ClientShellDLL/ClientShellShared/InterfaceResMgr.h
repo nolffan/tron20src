@@ -44,6 +44,10 @@ public:
 
 	CUIFont*			GetFont(uint32 nIndex);
 
+	// TRON: the font (after the first) whose height is nearest nHeight
+	// (RETAIL: 0x100c57a0; the name is ours)
+	CUIFont*			GetFontForHeight(int nHeight);
+
 	HSURFACE			GetSurfaceCursor();
 
 	const char			*GetSoundSelect();
@@ -88,7 +92,8 @@ protected:
 	// More initialization
 
     LTBOOL              InitFonts();
-	CUIFont*			CreateFont(char const* pszFontFile, char const* pszFontFace, uint8 ptSize);
+	// TRON: Tron's fonts are font files the engine reads (RETAIL: 0x100c5830)
+	CUIFont*			CreateFont(char const* pszFontFile, uint8 ptSize);
 
 protected:
     LTBOOL				m_bEnglish;             // True if the resource file has English as the specified language

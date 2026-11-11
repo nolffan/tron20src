@@ -109,7 +109,7 @@ void CHUDVersion::Update()
 		float x = (float)m_BasePos.x * g_pInterfaceResMgr->GetXRatio();
 		float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
 
-		m_pString = g_pLTClient->GetFontManager()->CreatePolyString(pFont, szVersionStr, x, y);
+		m_pString = g_pLTClient->GetFontManager()->CreatePolyString(pFont, LTGUIWideString(szVersionStr), x, y);
 		m_pString->SetColor(0xFF2020FF);
 // FIXME make this additive blend work!
 //		m_pString->SetBlendMode(DRAWPRIM_BLEND_ADD);

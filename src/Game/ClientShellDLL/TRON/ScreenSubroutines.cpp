@@ -1618,13 +1618,13 @@ void CScreenSubroutines::BuildHotSubInfo()
 	g_pLTClient->FreeString(hNameStr);
 	g_pLTClient->FreeString(hDescriptionStr);
 
-	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, buf);
+	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(buf));
 	m_pHotStr->SetColor(0xFFFFFFFF);
 	m_pHotStr->SetAlignmentH(CUI_HALIGN_CENTER);
 	m_pHotStr->SetWrapWidth(250);
 
 	// Center the string vertically
-	float fWidth, fHeight;
+	int32 fWidth, fHeight;
 	m_pHotStr->GetDims(&fWidth, &fHeight);
 
 	float x = (float)g_pInterfaceResMgr->GetScreenWidth() * 0.5f;
@@ -1667,13 +1667,13 @@ void CScreenSubroutines::BuildHotProcInfo()
 	g_pLTClient->FreeString(hNameStr);
 	g_pLTClient->FreeString(hDescriptionStr);
 
-	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, buf);
+	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(buf));
 	m_pHotStr->SetColor(0xFFFFFFFF);
 	m_pHotStr->SetAlignmentH(CUI_HALIGN_CENTER);
 	m_pHotStr->SetWrapWidth(250);
 
 	// Center the string vertically
-	float fWidth, fHeight;
+	int32 fWidth, fHeight;
 	m_pHotStr->GetDims(&fWidth, &fHeight);
 
 	float x = (float)g_pInterfaceResMgr->GetScreenWidth() * 0.5f;

@@ -194,7 +194,7 @@ void CMessageBox::Show(const char *pString, MBCreate* pCreate, uint8 nFontSize, 
 	// need to do this to get accurate sizes, since the width and height of the string 
 	// do not scale precicely
 	m_pText->SetScale(fScale);
-	float fw,fh;
+	int32 fw,fh;
 	m_pText->GetString()->GetDims(&fw,&fh);
 	int nWidth = (int)(fw/fScale);
 	int nHeight = (int)(fh/fScale);

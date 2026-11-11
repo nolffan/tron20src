@@ -455,7 +455,7 @@ LTBOOL CLoadingScreen::Init()
 
 	if (!m_pMissionNameStr)
 	{
-		m_pMissionNameStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+		m_pMissionNameStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 	}
 	m_pMissionNameStr->SetColor(TitleColor);
 	m_pMissionNameStr->SetText(m_missionname.c_str());
@@ -469,7 +469,7 @@ LTBOOL CLoadingScreen::Init()
 
 	if (!m_pLevelNameStr)
 	{
-		m_pLevelNameStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+		m_pLevelNameStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 	}
 	m_pLevelNameStr->SetColor(LevelColor);
 	m_pLevelNameStr->SetText(m_levelname.c_str());
@@ -516,7 +516,7 @@ LTBOOL CLoadingScreen::Init()
 	
 	if (!m_pBriefingStr)
 	{
-		m_pBriefingStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+		m_pBriefingStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 	}
 
 	
@@ -572,7 +572,7 @@ LTBOOL CLoadingScreen::Init()
 	
 	if (!m_pHelpStr)
 	{
-		m_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,"");
+		m_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 	}
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();

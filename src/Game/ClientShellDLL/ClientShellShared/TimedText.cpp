@@ -51,7 +51,11 @@ void CTimedText::Init( TIMED_TEXT_INIT_STRUCT const &initData )
 	
 	// get the text's position, cause we may change this
 	// as it scrolls
-	m_text->GetPosition( &m_posX, &m_posY );
+	// PORT: Tron's polystrings' positions are integers
+	int32 nPosX, nPosY;
+	m_text->GetPosition( &nPosX, &nPosY );
+	m_posX = (float)nPosX;
+	m_posY = (float)nPosY;
 	
 	// use dropped shadow?
 	if ( initData.useDroppedShadow )
@@ -78,7 +82,7 @@ void CTimedText::Init( TIMED_TEXT_INIT_STRUCT const &initData )
 		CLEARFLAG( m_flags, CTIMEDTEXTFLAG_USE_CLIP_RECT );
 	}
 	
-	m_textLen = strlen( m_text->GetText() );
+	m_textLen = m_text->GetLength();	// PORT: Tron's text is wide
 	m_numberOfLinesBeforeScroll = initData.numberOfLinesBeforeScroll;
 		
 	// Timing Information

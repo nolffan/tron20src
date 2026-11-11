@@ -1,0 +1,7 @@
+# Tron's formatted polystring vtable (0x591a78 in Lithtech.exe; 0x9c bytes,
+# constructor 0x568550): CUIPolyString's 43 slots (overriding 0x000, 0x008,
+# 0x00c, 0x088, 0x090, 0x094, 0x098) and two more. NOLF2 declares
+# SetAlignmentH before SetWrapWidth; Tron's order is the other way round.
+# offset,method,body,evidence
+0x0ac,SetWrapWidth,0x568750,stores +0x88 and reformats; the game's text controls call it with the fixed width
+0x0b0,SetAlignmentH,0x568780,stores +0x84 and reformats; CreateFormattedPolyString calls it with its alignment

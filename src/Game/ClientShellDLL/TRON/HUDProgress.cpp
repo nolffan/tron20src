@@ -119,7 +119,7 @@ LTBOOL CHUDProgress::Init()
 		szStr = "Progress";
 	}
 	CUIFont * pFont = g_pInterfaceResMgr->GetFont(m_iTitleFont);
-	m_pTitleStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont,szStr,0.0f, 0.0f);
+	m_pTitleStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont,LTGUIWideString(szStr),0.0f, 0.0f);
 	m_pTitleStr->SetCharScreenHeight(m_iTitleFontSize);
 	m_pTitleStr->SetColor(m_iTitleFontColor);
 
@@ -129,7 +129,7 @@ LTBOOL CHUDProgress::Init()
 		szStr = "Optional";
 	}
 	szStr = LoadTempString(IDS_OPTIONAL_OBJECTIVES);
-	m_pOptionalStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont,szStr,0.0f, 0.0f);
+	m_pOptionalStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont,LTGUIWideString(szStr),0.0f, 0.0f);
 	m_pOptionalStr->SetCharScreenHeight(m_iObjectiveFontSize);
 	m_pOptionalStr->SetColor(m_iTitleFontColor);
 
@@ -182,7 +182,7 @@ void CHUDProgress::Render()
 		float w = (float)(m_InsetPrimDims.right - m_InsetPrimDims.left + 1);
 		float h = (float)(m_InsetPrimDims.bottom - m_InsetPrimDims.top + 1);
 		float x = (float)m_PrimArray[BOX_LEFT].verts[0].x;
-		float strX, strY, y;
+		int32 strX, strY; float y;
 
 		// Render m_BoxLeftInset at each desired location.
 		if (m_nNumObjectives)
@@ -334,14 +334,14 @@ void CHUDProgress::Update()
 					{
 						// Create and position proc name
 						char * szStr = LoadTempString(pProc->nNameId);
-						m_pProcStr[i] = g_pLTClient->GetFontManager()->CreatePolyString(pFont,szStr,0.0f,0.0f);
+						m_pProcStr[i] = g_pLTClient->GetFontManager()->CreatePolyString(pFont,LTGUIWideString(szStr),0.0f,0.0f);
 						m_pProcStr[i]->SetCharScreenHeight(m_iProceduralFontSize);
 						m_pProcStr[i]->SetColor(m_iProceduralFontColor);
 						m_hProcTex[i] = g_pInterfaceResMgr->GetTexture(pProc->szIdleSkin);
 
 						// create and position sub name
 						szStr = LoadTempString(pProc->pSub->pTronSubroutine->nNameId);
-						m_pSubroutineStr[i] = g_pLTClient->GetFontManager()->CreatePolyString(pFont,szStr,0.0f,0.0f);
+						m_pSubroutineStr[i] = g_pLTClient->GetFontManager()->CreatePolyString(pFont,LTGUIWideString(szStr),0.0f,0.0f);
 						m_pSubroutineStr[i]->SetCharScreenHeight(m_iProceduralFontSize);
 						m_pSubroutineStr[i]->SetColor(m_iProceduralFontColor);
 						m_hSubTex[i] = g_pInterfaceResMgr->GetTexture(pProc->pSub->pTronSubroutine->szSprite);
@@ -395,7 +395,7 @@ void CHUDProgress::Update()
 			{
 				uint32 objID = pObj->m_IDArray[i];
 				char * szStr = LoadTempString(objID);
-				m_pObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, szStr, 0.0f, 0.0f);
+				m_pObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(szStr), 0.0f, 0.0f);
 				m_pObjectiveStr[i]->SetCharScreenHeight(m_iObjectiveFontSize);
 				m_pObjectiveStr[i]->SetColor(m_iObjectiveFontColor);
 				m_nNumObjectives++;
@@ -409,7 +409,7 @@ void CHUDProgress::Update()
 			{
 				uint32 objID = pObj->m_IDArray[i];
 				char * szStr = LoadTempString(objID);
-				m_pCompletedObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, szStr, 0.0f, 0.0f);
+				m_pCompletedObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(szStr), 0.0f, 0.0f);
 				m_pCompletedObjectiveStr[i]->SetCharScreenHeight(m_iObjectiveFontSize);
 				m_pCompletedObjectiveStr[i]->SetColor(m_iCompletedObjectiveFontColor);
 				m_nNumCompletedObjectives++;
@@ -425,7 +425,7 @@ void CHUDProgress::Update()
 				char * szStr = LoadTempString(objID);
 //				char buf[1024];
 //				sprintf(buf, "(optional) %s", LoadTempString(objID));
-				m_pSecondaryObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, szStr, 0.0f, 0.0f);
+				m_pSecondaryObjectiveStr[i] = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(szStr), 0.0f, 0.0f);
 				m_pSecondaryObjectiveStr[i]->SetCharScreenHeight(m_iObjectiveFontSize);
 				m_pSecondaryObjectiveStr[i]->SetColor(m_iSecondaryObjectiveFontColor);
 				m_nNumSecondaryObjectives++;
@@ -492,7 +492,7 @@ void CHUDProgress::UpdateGraphics()
 
 	if (m_nNumSecondaryObjectives)
 	{
-		float fWidth, fHeight;
+		int32 fWidth, fHeight;
 		for (i = m_nNumSecondaryObjectives - 1; i >= 0; i--)
 		{
 			m_pSecondaryObjectiveStr[i]->SetWrapWidth(iTextWidth);
@@ -514,7 +514,7 @@ void CHUDProgress::UpdateGraphics()
 		for (i = m_nNumObjectives - 1; i >= 0; i--)
 		{
 			m_pObjectiveStr[i]->SetWrapWidth(iTextWidth);
-			float fWidth, fHeight;
+			int32 fWidth, fHeight;
 			m_pObjectiveStr[i]->GetDims(&fWidth, &fHeight);
 			iBoxTop -= (int)fHeight + 8;
 			m_pObjectiveStr[i]->SetPosition((float)iTextX,(float)iBoxTop);
@@ -526,7 +526,7 @@ void CHUDProgress::UpdateGraphics()
 		for (i = m_nNumCompletedObjectives - 1; i >= 0; i--)
 		{
 			m_pCompletedObjectiveStr[i]->SetWrapWidth(iTextWidth);
-			float fWidth, fHeight;
+			int32 fWidth, fHeight;
 			m_pCompletedObjectiveStr[i]->GetDims(&fWidth, &fHeight);
 			iBoxTop -= (int)fHeight + 8;
 			m_pCompletedObjectiveStr[i]->SetPosition((float)iTextX,(float)iBoxTop);
@@ -560,7 +560,7 @@ void CHUDProgress::UpdateGraphics()
 	if (m_pTitleStr)
 	{
 		// center it over this graphic
-		float fHeight, fWidth;
+		int32 fHeight, fWidth;
 		m_pTitleStr->GetDims(&fWidth, &fHeight);
 		float ty = y + (h * 0.5f) - (fHeight * 0.5f);
 		ty -= 3;

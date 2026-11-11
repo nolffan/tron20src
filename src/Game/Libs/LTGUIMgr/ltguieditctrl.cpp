@@ -125,7 +125,7 @@ void CLTGUIEditCtrl::UpdateData(LTBOOL bSaveAndValidate)
 	if (bSaveAndValidate)
 	{
 		if (m_pText)
-			SAFE_STRCPY(m_pStringValue, m_pText->GetText());
+			SAFE_STRCPY(m_pStringValue, LTGUINarrowString(m_pText->GetText()).c_str());	// PORT: Tron's text is wide
 	}
 	else
 		SetText(m_pStringValue);
@@ -249,7 +249,7 @@ void CLTGUIEditCtrl::SetText(const char *pString)
 		return;
 
 	if (!m_pText)
-		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,(char *)pString,(float)m_pos.x,(float)m_pos.y);
+		m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(pString),(float)m_pos.x,(float)m_pos.y);
 	else
 		m_pText->SetText((char *)pString);
 
@@ -263,8 +263,13 @@ void CLTGUIEditCtrl::SetText(const char *pString)
 }
 const char* CLTGUIEditCtrl::GetText()
 {
+	// PORT: Tron's text is wide; a narrow copy, until this control is Tron's
+	static std::string s_sText;
 	if (m_pText)
-		return m_pText->GetText();
+	{
+		s_sText = LTGUINarrowString(m_pText->GetText());
+		return s_sText.c_str();
+	}
 	else 
 		return LTNULL;
 }
@@ -274,7 +279,7 @@ void CLTGUIEditCtrl::SetBasePos ( LTIntPt pos )
 	CLTGUICtrl::SetBasePos(pos);
 	if (m_pText)
 	{
-		m_pText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 	}
 }
 
@@ -284,7 +289,7 @@ void CLTGUIEditCtrl::SetScale(float fScale)
 	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
 	if (m_pText)
 	{
-		m_pText->SetPosition((float)m_pos.x,(float)m_pos.y);
+		m_pText->SetPosition(m_pos.x,m_pos.y);	// TRON: integers
 		m_pText->SetCharScreenHeight(m_nFontSize);
 	}
 	CalculateSize();
@@ -303,7 +308,7 @@ void CLTGUIEditCtrl::AddCharacter(char c)
 		return;
 
 	
-	SAFE_STRCPY(szString,m_pText->GetText());
+	SAFE_STRCPY(szString,LTGUINarrowString(m_pText->GetText()).c_str());	// PORT: Tron's text is wide
 	int nIndex = strlen(szString);
 
 	while (nIndex > m_nCaretPos)
@@ -340,7 +345,7 @@ void CLTGUIEditCtrl::RemoveCharacter()
 	if (m_pText->GetLength() < 1)
 		return;
 
-	SAFE_STRCPY(szString,m_pText->GetText());
+	SAFE_STRCPY(szString,LTGUINarrowString(m_pText->GetText()).c_str());	// PORT: Tron's text is wide
 
 	int nEnd=strlen(szString);
 	if (nEnd > m_nCaretPos)
@@ -529,7 +534,7 @@ void CLTGUIEditCtrl::SetMaxLength(uint16 nMaxLength)
 
 	if (m_pText && m_nMaxLength < m_pText->GetLength())
 	{
-		SAFE_STRCPY(szString,m_pText->GetText());
+		SAFE_STRCPY(szString,LTGUINarrowString(m_pText->GetText()).c_str());	// PORT: Tron's text is wide
 		szString[m_nMaxLength] = '\0';
 		m_pText->SetText(szString);
 	}

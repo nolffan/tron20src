@@ -243,7 +243,7 @@ void CInterfaceResMgr::DrawMessage(const char *pString, uint8 nFontSize)
 	m_pMsgText->SetFont(LTNULL,nSize);
 
 
-	float fw,fh;
+	int32 fw,fh;
 	m_pMsgText->GetString()->GetDims(&fw,&fh);
 	int nWidth = (int)fw;
 	int nHeight = (int)fh;
@@ -298,15 +298,14 @@ LTBOOL CInterfaceResMgr::InitFonts()
 		return (LTFALSE);
 
 	int nNumFonts = g_pLayoutMgr->GetNumFonts();
-	char szFontName[_MAX_PATH];
-	char szFontFace[_MAX_PATH];
+	char szFontName[128];	// RETAIL: 0x100c5420
 	for (int i = 0; i < nNumFonts; i++)
 	{
-		g_pLayoutMgr->GetFontName( i, szFontName, sizeof( szFontName ), szFontFace, sizeof( szFontFace ));
+		g_pLayoutMgr->GetFontName( i, szFontName, sizeof( szFontName ));
 		uint8 nPtSize = g_pLayoutMgr->GetFontSize(i);
 		if (!nPtSize)
 			nPtSize = 24;
-		CUIFont *pFont = CreateFont( szFontName, szFontFace, nPtSize );
+		CUIFont *pFont = CreateFont( szFontName, nPtSize );
 		if (pFont)
 			m_FontArray.push_back(pFont);
 		else
@@ -494,84 +493,46 @@ CUIFont* CInterfaceResMgr::GetFont(uint32 nIndex)
 	return m_FontArray.at(nIndex);
 }
 
+// TRON: the font (after the first) whose height is nearest nHeight
+// (RETAIL: 0x100c57a0; the name is ours). The game's text sized by height
+// takes its font from here.
+CUIFont* CInterfaceResMgr::GetFontForHeight(int nHeight)
+{
+	CUIFont* pBest = LTNULL;
+	int nBestDiff = 1000;
+	for (uint16 i = 1; i < m_FontArray.size(); i++)
+	{
+		CUIFont* pFont = m_FontArray.at(i);
+		int nDiff = nHeight - pFont->GetDefCharScreenHeight();
+		if (nDiff < 0)
+			nDiff = -nDiff;
+		if (nDiff < nBestDiff)
+		{
+			pBest = pFont;
+			nBestDiff = nDiff;
+		}
+	}
+	return pBest;
+}
+
 //////////////////////////////////////////////////////////////////////
 // Load font information from file and build the font
-CUIFont* CInterfaceResMgr::CreateFont(char const* pszFontFile, char const* pszFontFace, uint8 ptSize)
+// TRON: a font file the engine reads (RETAIL: 0x100c5830); ptSize is unused.
+CUIFont* CInterfaceResMgr::CreateFont(char const* pszFontFile, uint8 ptSize)
 {
-	// Must specify a font face.
-	if ( !pszFontFace ) 
+	if (!pszFontFile)
 		return LTNULL;
 
-	CUIFont * pFont = g_pFontManager->CreateFont( pszFontFile, pszFontFace, ptSize, 33, 255);
-	
-	//this will set the width of the space character for proportional fonts
-	if (pFont)
+	CUIFont* pFont = LTNULL;
+	ILTStream* pStream;
+	g_pLTClient->OpenFile(pszFontFile, &pStream);
+	if (pStream)
 	{
-		pFont->SetDefCharWidth((ptSize/4));
-		pFont->SetDefColor(argbBlack);
-	}
-
-	if (pFont)
-	{
-		uint32 w,h;
-		g_pTexInterface->GetTextureDims(pFont->GetTexture(),w,h);
-		g_pLTClient->CPrint("Created font <%s> using a %dX%d texture.",pszFontFace,w,h);
-
-	}
-
-	
-	return (pFont);
-
-/*
-//create a font from a texture
-
-	HTEXTURE hTex = LTNULL;
-	LTIntPt ptSize(23,23);
-
-	char szFontName[128] = "Interface/Fonts/font_large.dtx";
-	char szFontTable[128] = "Interface/Fonts/font_large.ftb";
-
-	g_pTexInterface->CreateTextureFromName(hTex, szFontName);
-
-	// Note valid textures which we will need to release during termination
-	if (hTex)
-		m_TextureSet.Add(hTex);
-
-	// Got a table name, use it.
-	uint8 *pBuf = LTNULL;
-	ILTStream *pStream;
-	int32 iSize;
-
-	// Slurp the font table into memory
-	if(g_pLTClient->OpenFile(szFontTable, &pStream) == LT_OK)
-	{
-		iSize = pStream->GetLen();
-		pBuf = debug_newa(uint8, iSize);
-
-		if (!pBuf)
-		{
-			g_pLTClient->CPrint("Couldn't alloc for font table");
-			pStream->Release();
-			return LTNULL;
-		}
-
-		// Slurp the whole file into memory.
-		pStream->Read(pBuf, iSize);
+		pFont = g_pFontManager->CreateFont(pStream);
 		pStream->Release();
 	}
-	pFont = g_pFontManager->CreateFont(hTex, pBuf, ptSize.y);
 
-	if (!pFont)
-		return (pDefault);
-
-	// Perform any necessary rescaling
-	if (ht != 0) pFont->SetDefCharHeight(ht);
-
-	pFont->SetDefColor(0xFF000000);
-	return (pFont);
-
-*/			
-
+	return pFont;
 }
 
 

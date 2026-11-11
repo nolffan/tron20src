@@ -157,8 +157,9 @@ public:
 	int			GetLayoutName(int nLayout);
 
 	int			GetNumFonts()			{return m_nNumFonts;}
-	void		GetFontName(int nFont, char* pszFontFile, int nFontFileBufLen, 
-						char* pszFontFace, int nFontFaceBufLen );
+	// TRON: a font is a file only (RETAIL: 0x100dad80, "Font%d"): Tron's
+	// fonts are not TrueType faces
+	void		GetFontName(int nFont, char* pszFontFile, int nFontFileBufLen);
 	uint8		GetFontSize(int nFont);
 
 

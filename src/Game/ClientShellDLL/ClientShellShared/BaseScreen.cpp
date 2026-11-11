@@ -191,7 +191,7 @@ LTBOOL CBaseScreen::Init(int nScreenID)
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-		pDemoBuildVersion = g_pFontManager->CreatePolyString(pFont,"",0.0f, 0.0f);
+		pDemoBuildVersion = g_pFontManager->CreatePolyString(pFont,std::wstring(),0.0f, 0.0f);
 		pDemoBuildVersion->SetCharScreenHeight(nSize);
 		pDemoBuildVersion->SetColor(argbBlack);
 		pDemoBuildVersion->SetText(LoadTempString(IDS_DEMOVERSION));
@@ -236,7 +236,7 @@ LTBOOL CBaseScreen::Init(int nScreenID)
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-		s_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,"",helpX,helpY);
+		s_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),helpX,helpY);
 		s_pHelpStr->SetCharScreenHeight(nSize);
 		s_pHelpStr->SetColor(argbWhite);
 		s_pHelpStr->SetWrapWidth(nWidth);
@@ -384,7 +384,7 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 	// Render the title
 	if (m_pTitleString)
 	{
-		float px,py;
+		int32 px,py;
 		m_pTitleString->GetPosition(&px,&py);
 		px += 2.0f;
 		py += 2.0f;
@@ -407,8 +407,8 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 
 	if (s_pHelpStr)
 	{
-		float x;
-		float y;
+		int32 x;
+		int32 y;
 		s_pHelpStr->GetPosition(&x,&y);
 
 		//drop shadow
@@ -451,7 +451,7 @@ LTBOOL CBaseScreen::CreateTitle(char *lpszTitle)
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFont);
 		LTIntPt pos = m_TitlePos;
 		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString = g_pFontManager->CreatePolyString(pFont,lpszTitle,(float)pos.x,(float)pos.y);
+		m_pTitleString = g_pFontManager->CreatePolyString(pFont,LTGUIWideString(lpszTitle),(float)pos.x,(float)pos.y);
 
 		if (!m_pTitleString)
 			return LTFALSE;
@@ -1102,12 +1102,17 @@ void CBaseScreen::UpdateData(LTBOOL bSaveAndValidate)
 
 CLTGUITextCtrl* CBaseScreen::CreateTextItem(int stringID, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
-	CLTGUITextCtrl* pCtrl=CreateTextItem(LoadTempString(stringID), commandID, helpID, pos, bFixed, nFont);
+	// TRON: the string as wide text (RETAIL: 0x100d3980)
+	CLTGUITextCtrl* pCtrl=CreateTextItem(LoadTempWString(stringID), commandID, helpID, pos, bFixed, nFont);
 	return pCtrl;
 
 }
 
-CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
+// TRON: wide text; the font is the one nearest the screen's scaled font size
+// (RETAIL: 0x100d39d0), the face looked up but not used. Same instructions
+// as retail; it differs only by CBaseScreen's colors, which retail has 0xc
+// further on (m_SelectedColor at +0x78)
+CLTGUITextCtrl* CBaseScreen::CreateTextItem(std::wstring sString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUITextCtrl* pCtrl=debug_new(CLTGUITextCtrl);
 
@@ -1116,11 +1121,11 @@ CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
-    if (!pCtrl->Create(pString, commandID, helpID, pFont, nFontSize, this))
+    if (!pCtrl->Create(sString, commandID, helpID, pFont, nFontSize, this))
 	{
 		debug_delete(pCtrl);
         return LTNULL;
@@ -1136,7 +1141,7 @@ CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int
 	}
 	pCtrl->SetBasePos(pos);
 
-	m_nextPos.y += (pCtrl->GetBaseHeight() + m_nItemSpacing);
+	m_nextPos.y += (pCtrl->GetHeight() + m_nItemSpacing);	// TRON: GetHeight
 
 	pCtrl->SetScale(g_pInterfaceResMgr->GetXRatio());
 	
@@ -2138,7 +2143,7 @@ void CBaseScreen::SetTitleFont(uint8 nFont)
 	if (m_pTitleString)
 	{
 		CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFont);
-		m_pTitleString->ApplyFont(pFont);
+		m_pTitleString->SetFont(pFont);	// PORT: Tron's polystrings have no ApplyFont
 	}
 }
 
