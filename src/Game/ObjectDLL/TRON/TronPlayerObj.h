@@ -16,6 +16,7 @@
 
 #include "PlayerObj.h"
 #include "Ratings.h"
+#include "Weapons.h"
 #include <slist>
 #include <string>
 
@@ -126,6 +127,10 @@ class CTronPlayerObj : public CPlayerObj
 		// invalidates the vars that keep of the block
 		void ResetDefend();
 
+		// RETAIL: retail 0x10068180 (InitialUpdate calls it). The name is ours
+		void CreateSwatWeapon();
+		virtual LTBOOL InitialUpdate(int nInfo);
+
 		// RETAIL: retail 0x100675a0 (Load calls it with false). The names are ours
 		void AddPing(char const* pszPing, bool bTronUnknown);
 
@@ -160,8 +165,8 @@ class CTronPlayerObj : public CPlayerObj
 		uint8		m_iSurgePerformanceRatings[NUM_RATINGS];	// 0x3262
 		char		m_szTronUnknown3267[64];
 		char		m_szTronUnknown32a7[64];
-		uint32		m_nTronUnknown32e8;
-		uint32		m_nTronUnknown32ec;
+		CWeapon*	m_pSwatWeapon;				// RETAIL: the "SwatWeapon" the player blocks with
+		CWeapons*	m_pSwatWeapons;				// (0x10068180). The names are ours
 		int			m_nLastWeaponId;			// RETAIL: Respawn keeps the current weapon's ids
 		int			m_nLastAmmoId;				// (0x10067264). The names are ours
 		bool		m_bTronUnknown32f8;

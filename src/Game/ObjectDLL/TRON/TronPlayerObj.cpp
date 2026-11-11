@@ -88,8 +88,8 @@ CTronPlayerObj::CTronPlayerObj()
 	, m_cDefendType( TRONPLAYEROBJ_NO_DEFEND )
 	, m_cDefendAmmoId( WMGR_INVALID_ID )
 	, m_bTronUnknown325c( false )
-	, m_nTronUnknown32e8( 0 )
-	, m_nTronUnknown32ec( 0 )
+	, m_pSwatWeapon( LTNULL )
+	, m_pSwatWeapons( LTNULL )
 	, m_nLastWeaponId( 1 )
 	, m_nLastAmmoId( 1 )
 {
@@ -136,6 +136,20 @@ CTronPlayerObj::CTronPlayerObj()
 
 CTronPlayerObj::~CTronPlayerObj()
 {
+	// RETAIL: retail 0x10062a30
+	if( m_pSwatWeapons )
+	{
+		debug_delete( m_pSwatWeapons );
+	}
+
+	// RETAIL: retail's light cycle manager is called through its vtable
+	// (slot 4, with the player's object); ours is Build 69's
+	if( g_pLightCycleMgr )
+	{
+		g_pLightCycleMgr->RemoveCyclist( m_hObject );
+	}
+
+	RemoveVehicleModel( );
 }
 
 // ----------------------------------------------------------------------- //
@@ -646,26 +660,9 @@ void CTronPlayerObj::HandleCompile(ILTMessage_Read *pMsg)
 // ----------------------------------------------------------------------- //
 bool CTronPlayerObj::IsDefending() const
 {
+	// RETAIL: only the hold block in Tron (retail 0x10063eb0)
 	switch ( m_cDefendType )
 	{
-		case MPROJ_START_SWAT_BLOCK:
-		{
-			int32 nCurrentTime =
-				static_cast< int >(
-					g_pLTServer->GetTime() * 1000.0f
-				);
-
-			if ( ( m_nDefendServerTimeStarted + m_nDefendDuration ) > nCurrentTime )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-
 		case MPROJ_START_HOLD_BLOCK:
 		{
 			return true;
@@ -673,24 +670,6 @@ bool CTronPlayerObj::IsDefending() const
 		break;
 
 		case MPROJ_END_HOLD_BLOCK:
-		{
-			int32 nCurrentTime =
-				static_cast< int >(
-					g_pLTServer->GetTime() * 1000.0f
-				);
-
-			if ( ( m_nDefendServerTimeStarted + m_nDefendDuration ) > nCurrentTime )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		break;
-
-		case MPROJ_START_ARM_BLOCK:
 		{
 			int32 nCurrentTime =
 				static_cast< int >(
@@ -1627,4 +1606,54 @@ void CTronPlayerObj::AcquireWeapon( char* pWeaponName, bool bTronUnknown )
 	}
 
 	CPlayerObj::AcquireWeapon( pWeaponName, bTronUnknown );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::CreateSwatWeapon
+//
+//	PURPOSE:	Make the weapon the player blocks with (RETAIL: retail
+//				0x10068180; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::CreateSwatWeapon()
+{
+	char szWeapon[30] = {0};
+	g_pServerButeMgr->GetPlayerAttributeString( "SwatWeapon", szWeapon, ARRAY_LEN( szWeapon ));
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( szWeapon );
+	if( !pWeapon )
+		return;
+
+	m_pSwatWeapons = debug_new( CWeapons );
+	m_pSwatWeapons->Init( m_hObject );
+	m_pSwatWeapons->ObtainWeapon( pWeapon->nId );
+	m_pSwatWeapons->ChangeWeapon( pWeapon->nId );
+
+	m_pSwatWeapon = m_pSwatWeapons->GetCurWeapon();
+	m_pSwatWeapons->SetAmmo( m_pSwatWeapon->GetAmmoId() );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::InitialUpdate
+//
+//	PURPOSE:	First update (RETAIL: retail 0x10063a50)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CTronPlayerObj::InitialUpdate( int nInfo )
+{
+	CreateSwatWeapon();
+
+	if( IsMultiplayerGame( ))
+	{
+		m_bTronUnknown4C = false;
+		m_bMakeBody = true;
+	}
+
+	return CPlayerObj::InitialUpdate( nInfo );
 }
