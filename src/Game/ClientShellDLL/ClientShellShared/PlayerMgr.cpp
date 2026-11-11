@@ -260,7 +260,19 @@ CPlayerMgr::CPlayerMgr()
 	m_fMultiplayerDeathCamMoveTimer = 0.0f;
 	m_fMultiAttachDeathCamTimer = 0.0f;
 
-	m_bTronUnknownB8		= false;	// RETAIL: Tron's, cleared last (PlayerMgr.h)
+	// RETAIL: Tron's (PlayerMgr.h)
+	m_nTronUnknown15C		= 0;
+	m_bTronUnknown160		= false;
+	m_bTronUnknown161		= false;
+	m_szTronUnknown1B5[0]	= '\0';
+	m_bTronUnknown1D5		= false;
+	m_bTronUnknown1D6		= false;
+	m_bTronUnknown1D7		= true;
+	m_bTronUnknown1D8		= false;
+	m_bTronUnknown1D9		= false;
+	m_fTronUnknown1DC		= 5000.0f;
+	m_nTronUnknown1E0		= 0;
+	m_bTronUnknownB8		= false;
 	m_fTronUnknownBC		= 0.0f;
 }
 

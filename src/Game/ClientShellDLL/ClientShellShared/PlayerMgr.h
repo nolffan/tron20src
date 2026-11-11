@@ -444,13 +444,26 @@ protected:
     LTBOOL          m_bPlayerUpdated;   // Has the server sent us a player update?
 
     LTBOOL      m_bStrafing;            // Are we strafing?  This used to implement mouse strafing.
-    LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
+
+	// RETAIL: from here, Tron's order (retail CPlayerMgr ctor 0x10123400 and
+	// Save 0x10124b60); NOLF2's members Tron has not are kept at the end
+	// (PORT), so they move nothing
 
     float       m_fEarliestRespawnTime;
-	bool		m_bCancelRevive;
 
     uint16      m_nPlayerInfoChangeFlags;
     float		m_fPlayerInfoLastSendTime;
+
+	// RETAIL: Tron's (+0x15c, +0x160, +0x161, and +0x164, an eight-byte
+	// member the initializer list clears). Not yet named
+	uint32		m_nTronUnknown15C;
+	bool		m_bTronUnknown160;
+	bool		m_bTronUnknown161;
+	struct TronUnknown164
+	{
+		TronUnknown164() : a(0), b(0) {}
+		uint32 a, b;
+	}			m_TronUnknown164;
 
 	// Container FX helpers...
 
@@ -472,6 +485,23 @@ protected:
 	HTEXTURE	m_hDistanceIndicatorIcon;
 
 	bool 		m_bSpyVision;
+
+	// RETAIL: Tron's: a string saved after the carry state (+0x1b5), then
+	// five bytes and a float the constructor sets (+0x1d5..+0x1d9: the
+	// third one true; +0x1dc 5000) and a member saved as a byte (+0x1e0).
+	// Not yet named
+	char		m_szTronUnknown1B5[32];
+	bool		m_bTronUnknown1D5;
+	bool		m_bTronUnknown1D6;
+	bool		m_bTronUnknown1D7;
+	bool		m_bTronUnknown1D8;
+	bool		m_bTronUnknown1D9;
+	float		m_fTronUnknown1DC;
+	uint32		m_nTronUnknown1E0;
+
+	// PORT: NOLF2's, not in Tron's CPlayerMgr (above)
+    LTBOOL      m_bHoldingMouseLook;    // Is the user holding down the mouselook key?
+	bool		m_bCancelRevive;
 
 	//used to track what wepon player was using before auto-switching to gadget
 	uint8		m_nPreGadgetWeapon;
