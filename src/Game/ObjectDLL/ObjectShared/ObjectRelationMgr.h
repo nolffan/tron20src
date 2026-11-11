@@ -84,6 +84,7 @@ public:
 
 	// IMomento Interface functions:
 	virtual CRelationUser* GetRelationUser() { return m_pRelationUser; }
+	CDataUser* GetDataUser() { return m_pDataUser; }	// RETAIL: IObjectRelationMgrUser's (our name)
 
 	// ILTObjRefReceiver Interface functions:
 	void OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )

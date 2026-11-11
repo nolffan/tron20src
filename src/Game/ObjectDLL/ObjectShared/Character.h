@@ -32,6 +32,7 @@
 #include "Timer.h"
 #include "MusicMgr.h"
 #include "PlayerTracker.h"
+#include "IObjectRelationMgrUser.h"
 
 LINKTO_MODULE( Character );
 
@@ -47,6 +48,7 @@ class TeleportPoint;
 class RelationData;
 class RelationSet;
 class CObjectRelationMgr;
+class AIVolumePlayerInfo;
 class CSearchable;
 
 enum  EnumAIStateType;
@@ -124,14 +126,21 @@ class  VolumeBrush;
 
 enum CharacterDeath { CD_NORMAL=0, CD_GIB, CD_FREEZE, CD_VAPORIZE, CD_BURST };
 
-class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerReceiver
+// RETAIL: IObjectRelationMgrUser is Tron's third interface (IObjectRelationMgrUser.h)
+class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerReceiver, public IObjectRelationMgrUser
 {
 	public :
 
 		CCharacter();
 		~CCharacter();
 
-        LTBOOL          IsDead()            const { return m_damage.IsDead(); }
+        virtual LTBOOL  IsDead()            const { return m_damage.IsDead(); }	// RETAIL: IObjectRelationMgrUser's
+
+		// RETAIL: IObjectRelationMgrUser's, Tron's (IObjectRelationMgrUser.h)
+		virtual CRelationUser*	GetRelationUser();
+		virtual CDataUser*		GetDataUser();
+		virtual HOBJECT			GetRegionObject();
+		virtual HOBJECT			GetUserObject() const { return m_hObject; }
         LTBOOL          IsFlashLightOn()    const;
 		virtual LTBOOL	IsHidden()			const { return LTFALSE; }
 		ContainerCode	GetContainerCode()	const { return m_eContainerCode; }
@@ -517,6 +526,14 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		AIInformationVolume* m_pCurrentInformationVolume;	// volume I'm in right now
         LTVector			m_vLastInformationVolumePos;
 
+		// RETAIL: Tron's third pair of volumes, saved after the information
+		// volumes (retail CCharacter::Save, 0x10092120: +0x150, +0x154). Taken to
+		// be its player info volumes (AIVolumePlayerInfo, which Tron has); our
+		// names
+		AIVolumePlayerInfo*	m_pLastPlayerInfoVolume;
+		AIVolumePlayerInfo*	m_pCurrentPlayerInfoVolume;
+        LTVector			m_vLastPlayerInfoVolumePos;
+
 		AIVolume*			m_pLastVolume;					// last volume I was in (often same as current)
 		AIVolume*			m_pCurrentVolume;				// volume I'm in right now
         LTVector			m_vLastVolumePos;
@@ -536,6 +553,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		DamageFlags			m_nDamageFlags;					// What types of damage (progressive) are cureently affecting us
 		DamageFlags			m_nInstantDamageFlags;			// What types of damage (instant) are curently affecting us...
+		// RETAIL: Tron's third set of damage flags (its constructor zeroes all
+		// three, retail 0x10089e8d); not yet named
+		DamageFlags		m_nTronUnknownDamageFlags;
 
 		// List of key items the player currently has
 		IDList				m_Keys;

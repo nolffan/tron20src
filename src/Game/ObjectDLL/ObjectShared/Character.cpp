@@ -396,6 +396,10 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_pCurrentInformationVolume = LTNULL;
 	m_vLastInformationVolumePos = LTVector(0,0,0);;
 
+	m_pLastPlayerInfoVolume		= LTNULL;	// RETAIL: Tron's (Character.h)
+	m_pCurrentPlayerInfoVolume	= LTNULL;
+	m_vLastPlayerInfoVolumePos	= LTVector(0,0,0);
+
     m_hHitBox                   = LTNULL;
 
 	m_cSpears					= 0;
@@ -412,6 +416,7 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 
 	m_nDamageFlags				= 0;
 	m_nInstantDamageFlags		= 0;
+	m_nTronUnknownDamageFlags	= 0;	// RETAIL: Tron's (Character.h)
 
 	m_iPermissionSet			= 255; // Full permission set (uint8)
 
@@ -3777,6 +3782,25 @@ const RelationSet& CCharacter::GetRelationSet() const
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacter::GetDataUser, GetRelationUser
+//
+//	PURPOSE:	IObjectRelationMgrUser's: our relation manager's (RETAIL:
+//				Tron's; retail 0x100920f0, 0x10092110)
+//
+// ----------------------------------------------------------------------- //
+
+CDataUser* CCharacter::GetDataUser()
+{
+	return m_pRelationMgr->CObjectRelationMgr::GetDataUser();
+}
+
+CRelationUser* CCharacter::GetRelationUser()
+{
+	return m_pRelationMgr->CObjectRelationMgr::GetRelationUser();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacter::Save
 //
 //	PURPOSE:	Save the object
@@ -3841,6 +3865,8 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_COBJECT(m_pCurrentVolume);
 	SAVE_COBJECT(m_pLastInformationVolume);
 	SAVE_COBJECT(m_pCurrentInformationVolume);
+	SAVE_COBJECT(m_pLastPlayerInfoVolume);		// RETAIL: Tron's (Character.h)
+	SAVE_COBJECT(m_pCurrentPlayerInfoVolume);
 
 	SAVE_VECTOR(m_vLastVolumePos);
 	SAVE_VECTOR(m_vLastInformationVolumePos);
@@ -3963,6 +3989,8 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_COBJECT(m_pCurrentVolume, AIVolume);
 	LOAD_COBJECT(m_pLastInformationVolume, AIInformationVolume);
 	LOAD_COBJECT(m_pCurrentInformationVolume, AIInformationVolume);
+	LOAD_COBJECT(m_pLastPlayerInfoVolume, AIVolumePlayerInfo);		// RETAIL: as Save
+	LOAD_COBJECT(m_pCurrentPlayerInfoVolume, AIVolumePlayerInfo);
 
 	// If we're loading from a transition, then our positional information is invalid.
 	if( g_pGameServerShell->GetLGFlags( ) == LOAD_TRANSITION )
@@ -4264,6 +4292,25 @@ AIVolume* CCharacter::GetCurrentVolume()
 	{
         return LTNULL;
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::GetRegionObject
+//
+//	PURPOSE:	IObjectRelationMgrUser's: the object of the region our
+//				volume is in (RETAIL: Tron's; retail 0x10093920)
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT CCharacter::GetRegionObject()
+{
+	if ( GetCurrentVolume() && ( GetCurrentVolume() ? GetCurrentVolume()->GetRegion() : LTNULL ) )
+	{
+		return GetCurrentVolume()->GetRegion()->m_hObject;
+	}
+
+	return LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
