@@ -24,7 +24,7 @@ class CPlayerCamera
 		// RETAIL: Tron has a sixth mode, in which the player is hidden as in
 		// first person (retail CPlayerMgr::UpdatePlayer, 0x1012c5e0); our name
 		enum CameraMode		{ FIRSTPERSON, CHASE, GOINGFIRSTPERSON,
-							  CIRCLING, SCRIPT, TRONMODE5 };
+							  CIRCLING, SCRIPT, TRONMODE5, TRONMODE6 };	// RETAIL: 6 too (CPlayerMgr::UpdateCameraRotation, retail 0x10129a20)
 
 		enum CameraPoint	{ AT_POSITION, IN_DIRECTION, AUTOMATIC };
 

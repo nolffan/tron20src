@@ -3659,6 +3659,7 @@ LTBOOL CPlayerMgr::UpdateCameraRotation()
 
 		m_rRotation = LTRotation(m_fPitch, m_fYaw, m_fRoll);
 	}
+	// RETAIL: Tron's (retail 0x10129a20): by camera mode
 	else if (m_pPlayerCamera->IsFirstPerson())
 	{
 		if (!m_bCameraAttachedToHead)
@@ -3672,7 +3673,7 @@ LTBOOL CPlayerMgr::UpdateCameraRotation()
 
 		g_pLTClient->SetObjectRotation(m_hCamera, &m_rRotation);
 	}
-	else
+	else if (m_pPlayerCamera->IsChaseView())
 	{
 		// Set the camera to use the rotation calculated by the player camera,
 		// however we still need to calculate the correct rotation to be sent
@@ -3684,6 +3685,16 @@ LTBOOL CPlayerMgr::UpdateCameraRotation()
 
 		// Okay, now calculate the correct player rotation...
 		m_rRotation = LTRotation(m_fPitch, m_fYaw, m_fRoll);
+	}
+	else if (m_pPlayerCamera->GetCameraMode() == CPlayerCamera::TRONMODE5 ||
+			 m_pPlayerCamera->GetCameraMode() == CPlayerCamera::TRONMODE6 ||
+			 m_pPlayerCamera->GetCameraMode() == CPlayerCamera::GOINGFIRSTPERSON)
+	{
+		// The player camera's rotation, and the player's...
+		m_rRotation = m_pPlayerCamera->GetRotation();
+		g_pLTClient->SetObjectRotation(m_hCamera, &m_rRotation);
+
+		m_rRotation = LTRotation(m_fPlayerPitch, m_fPlayerYaw, m_fPlayerRoll);
 	}
 
     return LTTRUE;
@@ -4842,7 +4853,8 @@ void CPlayerMgr::UpdateUnderWaterFX(LTBOOL bUpdate)
 	//see if we are supposed to modify the FOV. Note that we can't modify it while any damage
 	//effects are active since they can modify the FOV as well which will cause cumulative issues
 	//and ultimately lead to a fairly messed up camera state until it is restored
-	if (bUpdate && (g_pDamageFXMgr->GetFirstActiveFX() == NULL))
+	// RETAIL: Tron's does not check the damage FX (retail 0x1012c0e0)
+	if (bUpdate)
 	{
         g_pLTClient->GetCameraFOV(m_hCamera, &fFovX, &fFovY);
 
