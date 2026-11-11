@@ -162,6 +162,10 @@ SOURCE=.\BinaryBit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BossButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\BuildNote.cpp
 # End Source File
 # Begin Source File
@@ -251,7 +255,15 @@ SOURCE=.\BinaryBit.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\BossButeMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\BuildNote.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\CaselessString.h
 # End Source File
 # Begin Source File
 
