@@ -585,15 +585,12 @@ Object.lto	retail	.?AVCServerSubroutineMgr@@
 Object.lto	retail	.?AVCSubroutineDataMgr@@
 Object.lto	retail	.?AVCThorne@@
 Object.lto	retail	.?AVCTronProjectile@@
-Object.lto	retail	.?AVEnergyZone@@
 Object.lto	retail	.?AVFinder@@
 Object.lto	retail	.?AVFinderPlugin@@
-Object.lto	retail	.?AVHealthZone@@
 Object.lto	retail	.?AVHostButeMgr@@
 Object.lto	retail	.?AVIActivationObserver@@
 Object.lto	retail	.?AVIONode@@
 Object.lto	retail	.?AVIObjectRelationMgrUser@@
-Object.lto	retail	.?AVInfoString@@
 Object.lto	retail	.?AVLightCycle@@
 Object.lto	retail	.?AVLightCycleMissile@@
 Object.lto	retail	.?AVLightCyclePowerup@@
@@ -1016,7 +1013,6 @@ Object.lto	retail	EndDefendPercentage
 Object.lto	retail	EnemyDisc
 Object.lto	retail	EnergyClaw
 Object.lto	retail	EnergyClawCrouch
-Object.lto	retail	EnergyDrain
 Object.lto	retail	EnergyDrainMax
 Object.lto	retail	EnergyDrainMin
 Object.lto	retail	EnergyDrainSurge
@@ -1025,7 +1021,6 @@ Object.lto	retail	EnergyRequiredMin
 Object.lto	retail	EnergyRequiredSurge
 Object.lto	retail	EnergySuck
 Object.lto	retail	EnergyUseMultiplier
-Object.lto	retail	EnergyZone
 Object.lto	retail	Energy_claw
 Object.lto	retail	Engage IONode
 Object.lto	retail	Error in CCharacter::HandleModelString msg SetDims could not get current animation. 
@@ -1110,7 +1105,6 @@ Object.lto	retail	HeadShot3
 Object.lto	retail	HeadShotBack
 Object.lto	retail	HeadShotBack2
 Object.lto	retail	HeadShotBack3
-Object.lto	retail	HealthZone
 Object.lto	retail	HeavyWeaponMovement
 Object.lto	retail	HelpFile
 Object.lto	retail	HelpFile1
@@ -1155,7 +1149,6 @@ Object.lto	retail	InRangePVAttachFX
 Object.lto	retail	IncidentAngleToControlLine
 Object.lto	retail	IncidentAngleToControlLineDecay
 Object.lto	retail	Infected
-Object.lto	retail	InfoString
 Object.lto	retail	InitialAngle
 Object.lto	retail	InitialExplosionSuppressTime
 Object.lto	retail	InitialLives
@@ -1743,7 +1736,6 @@ Object.lto	retail	dedicated
 Object.lto	retail	delay 0.5 (msg <CPlayerObj> (PLAYSOUND PlayerCriticalHitKill))
 Object.lto	retail	efficiency
 Object.lto	retail	energy
-Object.lto	retail	energy_up
 Object.lto	retail	fconleft
 Object.lto	retail	fconright
 Object.lto	retail	final\\\\queryid\\1.1
