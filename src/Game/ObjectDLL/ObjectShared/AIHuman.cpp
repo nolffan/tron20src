@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include <stdio.h>
 #include "AIHuman.h"
+#include "DebugLineSystem.h"
 #include "iltserver.h"
 #include "ServerUtilities.h"
 #include "Destructible.h"
@@ -52,9 +53,16 @@ extern CAIGoalButeMgr* g_pAIGoalButeMgr;
 extern CAIStimulusMgr* g_pAIStimulusMgr;
 // Cvars
 
+// RETAIL: Tron's (retail 0x10388c98, "AIShowVectors"; name ours)
+static CVarTrack g_AIShowVectorsTrack;
 static CVarTrack g_CheapMovementTrack;
 
 LTFLOAT s_fSenseUpdateBasis = 0.0f;
+
+// RETAIL: Tron's bounds for CAIHuman's random m_fTronUnknown11E4 (retail
+// 0x103004e4, 0x103004e8; names ours)
+static LTFLOAT s_fTronUnknownMin = 2.5f;
+static LTFLOAT s_fTronUnknownMax = 3.5f;
 
 #define FIND_FLOOR_THRESH_SQR 4.f
 
@@ -121,7 +129,12 @@ CMDMGR_END_REGISTER_CLASS( CAIHuman, CAI )
 #pragma warning (push)
 #pragma warning (disable: 4355)
 #endif  // !__PSX2
-CAIHuman::CAIHuman() : CAI()
+CAIHuman::CAIHuman() : CAI(),
+	// RETAIL: Tron's four are set before the body (retail 0x1016c420)
+	m_fTronUnknown11E0(0.0f),
+	m_fTronUnknown11E4(0.0f),
+	m_fTronUnknown11E8(0.0f),
+	m_bTronUnknown11EC(false)
 #ifndef __PSX2
 #pragma warning (pop)
 #endif  // !__PSX2
@@ -131,6 +144,11 @@ CAIHuman::CAIHuman() : CAI()
 	if (!g_CheapMovementTrack.IsInitted())
 	{
         g_CheapMovementTrack.Init(g_pLTServer, "AICheapMovement", LTNULL, 0.0f);
+	}
+
+	if (!g_AIShowVectorsTrack.IsInitted())
+	{
+        g_AIShowVectorsTrack.Init(g_pLTServer, "AIShowVectors", LTNULL, 0.0f);
 	}
 
 	m_fJumpVel		= 0.0f;
@@ -143,7 +161,7 @@ CAIHuman::CAIHuman() : CAI()
 	m_bBlink			= LTTRUE;
 	m_bShortRecoil		= LTTRUE;
 
-	m_bCanShortRecoil	= LTTRUE;
+	// RETAIL: m_bCanShortRecoil is not set in Tron (retail 0x1016c420)
 
 	m_pHumanState = LTNULL;
 
@@ -163,6 +181,18 @@ CAIHuman::CAIHuman() : CAI()
 	m_eHumanType = eHT_Invalid;
 
 	m_pMovementModifier = NULL;
+
+	// RETAIL: Tron's (retail 0x1016c420)
+	m_bShowingVectors = false;
+	m_bSeeker = false;
+	m_bTronUnknown1231 = false;
+	m_bCanGhost = false;
+	m_fGhostFadeTime = 0.0f;
+	m_fTronUnknown1238 = 1.0f;
+	m_vTronUnknown123C.Init( 1.0f, 1.0f, 1.0f );
+	m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
+	m_fTronUnknown11E0 = g_pLTServer->GetTime();
+	m_bTronUnknown11EC = true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -201,10 +231,7 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		return LTFALSE;
 	}
 
-	// Set the default values:
-	m_flSentryChallengeScanDistMax = GetAITemplate()->flSentryChallengeScanDistMax;
-	m_flSentryMarkDistMax = GetAITemplate()->flSentryMarkDistMax;
-	m_flSentryChallengeDistMax = GetAITemplate()->flSentryChallengeDistMax;
+	// RETAIL: no sentry distances in Tron's CAI
 
 	GenericProp genProp;
 	const char* pszValue = NULL;
@@ -232,24 +259,6 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
     if ( g_pLTServer->GetPropGeneric("RunSpeed", &genProp ) == LT_OK )
 		if ( genProp.m_String[0] )
 			m_fRunVel = genProp.m_Float;
-
-	pszValue = pData->m_cProperties.GetPropString( "SentryChallengeScanDistMax", NULL );
-	if ( pszValue && pszValue[0] )
-	{
-		m_flSentryChallengeScanDistMax = static_cast<float>(atof( pszValue ));
-	}
-
-	pszValue = pData->m_cProperties.GetPropString( "SentryChallengeDistMax", NULL );
-	if ( pszValue && pszValue[0] )
-	{
-		m_flSentryChallengeDistMax = static_cast<float>(atof( pszValue ));
-	}
-
-	pszValue = pData->m_cProperties.GetPropString( "SentryMarkDistMax", NULL );
-	if ( pszValue && pszValue[0] )
-	{
-		m_flSentryMarkDistMax = static_cast<float>(atof( pszValue ));
-	}
 
     if ( g_pLTServer->GetPropGeneric( "Brain", &g_gp ) == LT_OK )
 	{
@@ -594,7 +603,8 @@ void CAIHuman::PlayDeathSound()
 		szDeathSound = GetDeathSound();
 	}
 
-	CCharacter::PlayDialogSound(szDeathSound, CST_DEATH);
+	// RETAIL: a sound, not dialogue, in Tron (retail 0x1016d320)
+	CCharacter::PlaySound(szDeathSound, m_fSoundRadius, LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -607,7 +617,8 @@ void CAIHuman::PlayDeathSound()
 
 LTBOOL CAIHuman::CanSearch()
 {
-	if( ( GetPrimaryWeapon() || HasHolsterString() ) &&
+	// RETAIL: the current weapon in Tron (retail 0x1016d400)
+	if( ( GetCurrentWeapon() || HasHolsterString() ) &&
 		super::CanSearch() )
 	{
 		return LTTRUE;
@@ -1234,7 +1245,7 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	{
 		// Send message to begin tracking...
 
-		m_bStuckWithTrackDart = true;
+		// PORT: Tron's CAI has no tracking dart member
 		SetTracking( true );
 		m_fLastPainVolume = 0.0f;
 		return;
@@ -1730,7 +1741,7 @@ void CAIHuman::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_BOOL(m_bPosDirty);
 	SAVE_VECTOR(m_vLastFindFloorPos);
 	SAVE_FLOAT(m_fSpeed);
-	SAVE_BOOL(m_bCanShortRecoil);
+	// RETAIL: m_bCanShortRecoil is not saved in Tron (retail 0x1016fa50)
 	SAVE_BOOL(m_bForceGround);
 
 	SAVE_HOBJECT(m_hLastDoor[0]);
@@ -1739,6 +1750,19 @@ void CAIHuman::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_VECTOR(m_vLastDoorPos[1]);
 
 	SAVE_BOOL(m_bUseDefaultAttachments);
+
+	// RETAIL: Tron's
+	SAVE_bool(m_bShowingVectors);
+	SAVE_bool(m_bSeeker);
+	SAVE_bool(m_bTronUnknown1231);
+	SAVE_bool(m_bCanGhost);
+	SAVE_FLOAT(m_fGhostFadeTime);
+	SAVE_FLOAT(m_fTronUnknown1238);
+	SAVE_VECTOR(m_vTronUnknown123C);
+	SAVE_TIME(m_fTronUnknown11E0);
+	SAVE_TIME(m_fTronUnknown11E8);
+	SAVE_FLOAT(m_fTronUnknown11E4);
+	SAVE_bool(m_bTronUnknown11EC);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1789,7 +1813,6 @@ void CAIHuman::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	}
 
 	LOAD_FLOAT(m_fSpeed);
-	LOAD_BOOL(m_bCanShortRecoil);
 	LOAD_BOOL(m_bForceGround);
 
 	LOAD_HOBJECT(m_hLastDoor[0]);
@@ -1798,6 +1821,22 @@ void CAIHuman::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_VECTOR(m_vLastDoorPos[1]);
 
 	LOAD_BOOL(m_bUseDefaultAttachments);
+
+	// RETAIL: Tron's (retail 0x1016fc90)
+	LOAD_bool(m_bShowingVectors);
+	LOAD_bool(m_bSeeker);
+	LOAD_bool(m_bTronUnknown1231);
+	LOAD_bool(m_bCanGhost);
+	LOAD_FLOAT(m_fGhostFadeTime);
+	LOAD_FLOAT(m_fTronUnknown1238);
+	LOAD_VECTOR(m_vTronUnknown123C);
+	LOAD_TIME(m_fTronUnknown11E0);
+	LOAD_TIME(m_fTronUnknown11E8);
+	LOAD_FLOAT(m_fTronUnknown11E4);
+	LOAD_bool(m_bTronUnknown11EC);
+
+	// RETAIL: Tron's (retail 0x1016ff4e)
+	SetAIType( GetAITemplate()->szHumanType );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1852,6 +1891,17 @@ bool CAIHuman::SetBrain( char const* pszBrain )
 	if( m_pBrain->GetAIDataExist( kAIData_MusicMoodMax ) )
 	{
 		m_eMusicMoodMax = (CMusicMgr::Mood)((int)m_pBrain->GetAIData( kAIData_MusicMoodMax ));
+	}
+
+	// RETAIL: Tron's ghosting (retail 0x101700dc)
+
+	if( m_pBrain->GetAIDataExist( kAIData_CanGhost ) )
+	{
+		m_bCanGhost = ( m_pBrain->GetAIData( kAIData_CanGhost ) != 0.0f );
+		if( m_bCanGhost )
+		{
+			m_fGhostFadeTime = m_pBrain->GetAIData( kAIData_DisappearFadeTime );
+		}
 	}
 
 	SetState(kState_HumanIdle);
@@ -2129,6 +2179,12 @@ void CAIHuman::StartDeath()
 	super::StartDeath();
 
 	SpawnHolsteredItems();
+
+	// RETAIL: Tron's: clear the vectors shown (retail 0x10170787)
+	if( m_bShowingVectors )
+	{
+		LineSystem::GetSystem( this, "AIShowVectors" ).Clear();
+	}
 }
 
 

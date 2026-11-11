@@ -31,12 +31,16 @@
 // where x is the name of the enum without the "kAPG_" prefix.
 // --------------------------------------------------------------------------
 
+// RETAIL: Tron's list, as its string table shows (retail 0x102ed570):
+// Direction added.
+
 ADD_ANIM_PROP_GROUP(Posture)		// kAPG_Posture
 ADD_ANIM_PROP_GROUP(WeaponAction)	// kAPG_WeaponAction
-ADD_ANIM_PROP_GROUP(WeaponPosition)	// kAPG_WeaponPosition	
+ADD_ANIM_PROP_GROUP(WeaponPosition)	// kAPG_WeaponPosition
 ADD_ANIM_PROP_GROUP(Movement)		// kAPG_Movement
 ADD_ANIM_PROP_GROUP(Weapon)			// kAPG_Weapon
 ADD_ANIM_PROP_GROUP(Mood)			// kAPG_Mood
 ADD_ANIM_PROP_GROUP(Evasive)		// kAPG_Evasive
 ADD_ANIM_PROP_GROUP(Awareness)		// kAPG_Awareness
 ADD_ANIM_PROP_GROUP(Action)			// kAPG_Action
+ADD_ANIM_PROP_GROUP(Direction)		// kAPG_Direction

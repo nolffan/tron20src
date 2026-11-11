@@ -96,6 +96,12 @@ enum EnumAIDataType
 	kAIData_Count,
 };
 
+// PORT: not in Tron's list; NOLF2's users find no such data
+const EnumAIDataType kAIData_DoNotDamageSelf = kAIData_InvalidType;
+const EnumAIDataType kAIData_PrimaryWeaponOnLeft = kAIData_InvalidType;
+const EnumAIDataType kAIData_Resurrecting = kAIData_InvalidType;
+const EnumAIDataType kAIData_DisposeLantern = kAIData_InvalidType;
+
 //
 // STRINGS: const strings for AI data types.
 //

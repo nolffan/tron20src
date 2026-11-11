@@ -67,6 +67,10 @@ static CVarTrack g_AIInfoTrack;
 // is over this level, no new one's will be spawned in.
 static CVarTrack g_AIMaxNumber;
 
+// RETAIL: Tron's (retail 0x1037e228, "AIUpdate", 1.0; CAI::CAI and
+// CAI::Update). Name ours.
+static CVarTrack g_AIUpdateTrack;
+
 LINKFROM_MODULE( AI );
 
 
@@ -631,6 +635,10 @@ CAI::CAI() : CCharacter()
 {
 	m_pTarget = AI_FACTORY_NEW(CAITarget);
 
+	// RETAIL: Tron's (retail 0x10128a43)
+	m_pTronUnknown1010 = debug_new(CAITronUnknown1010);
+	m_pTronAIInfo = debug_new(TronAIInfo);
+
     m_bFirstUpdate = LTTRUE;
 
 	VEC_INIT(m_vPos);
@@ -698,6 +706,8 @@ CAI::CAI() : CCharacter()
 	m_cWeapons = -1;
 	memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
 	memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
+	m_pTronWeapon = LTNULL;
+	m_pTronWeapons = LTNULL;
 	m_cDroppedWeapons = 0;
 	// Initialize our spears to notify us if their objects get removed.
 	for( int nWpn = 0; nWpn < ARRAY_LEN( m_aDroppedWeapons ); nWpn++ )
@@ -738,7 +748,6 @@ CAI::CAI() : CCharacter()
 	m_hstrCmdInitial = LTNULL;
 	m_hstrCmdActivateOn = LTNULL;
 	m_hstrCmdActivateOff = LTNULL;
-	m_hstrCmdOnMarking = LTNULL;
 	m_hstrCmdProximityGoal = LTNULL;
 
     m_bActivated = LTFALSE;
@@ -785,17 +794,26 @@ CAI::CAI() : CCharacter()
 	m_bCanCarry = false;
 	m_bBeingCarried = false;
 	m_bIsCinematicAI = false;
-	m_bCanWake = true;
-
-	m_bStuckWithTrackDart	= false;
 
 	if( !g_AIMaxNumber.IsInitted( ))
 	{
 		g_AIMaxNumber.Init( g_pLTServer, "AIMaxNumber", LTNULL, 30.0f );
 	}
 
+	// RETAIL: Tron's
+	if( !g_AIUpdateTrack.IsInitted( ))
+	{
+		g_AIUpdateTrack.Init( g_pLTServer, "AIUpdate", LTNULL, 1.0f );
+	}
+
 	// Add this instance to a list of all AI's.
 	m_lstAIs.push_back( this );
+
+	// RETAIL: Tron's
+	m_nKeys = 0;
+	m_bSelectWeaponBasedOnVisibility = false;
+	m_bTalkLock = false;
+	m_bTalkLookAt = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -845,11 +863,13 @@ CAI::~CAI()
 	m_hDialogueObject = NULL;
 
 	AI_FACTORY_DELETE(m_pTarget);
+	// RETAIL: Tron's (retail 0x1012949e)
+	debug_delete(m_pTronUnknown1010);
 	debug_delete(m_pAISenseRecorder);
+	debug_delete(m_pTronAIInfo);
 
 	FREE_HSTRING(m_hstrBodySkinExtension);
 	FREE_HSTRING(m_hstrCmdInitial);
-	FREE_HSTRING(m_hstrCmdOnMarking);
 	FREE_HSTRING(m_hstrCmdActivateOn);
 	FREE_HSTRING(m_hstrCmdActivateOff);
 	FREE_HSTRING(m_hstrCmdProximityGoal);
@@ -1205,6 +1225,29 @@ void CAI::PreReadProp(ObjectCreateStruct* pData)
 
 LTBOOL CAI::ReadProp(ObjectCreateStruct *pData)
 {
+	// RETAIL: Tron's name and trivia ids (retail 0x1012a640)
+
+	TronAIInfo* pInfo = m_pTronAIInfo;
+
+	const char* pszNameId = pData->m_cProperties.GetPropString( "NameId", "" );
+	if( pszNameId && strcmp( pszNameId, "" ) )
+	{
+		pInfo->nNameId = (uint16)atoi( pszNameId );
+	}
+	else
+	{
+		ModelId eModelId = (ModelId)0;
+		const char* pszModel = pData->m_cProperties.GetPropString( "ModelTemplate", "" );
+		if( pszModel )
+		{
+			eModelId = g_pModelButeMgr->GetModelId( pszModel );
+		}
+		pInfo->nNameId = g_pModelButeMgr->GetModelNameId( eModelId );
+	}
+
+	const char* pszTriviaId = pData->m_cProperties.GetPropString( "TriviaId", "" );
+	pInfo->nTriviaId = strcmp( pszTriviaId, "" ) ? (uint16)atoi( pszTriviaId ) : 0;
+
 	// If we have an attribute template, fill in the info
 
 	const AIBM_Template* const pTemplate = GetAITemplate();
@@ -1275,10 +1318,6 @@ LTBOOL CAI::ReadProp(ObjectCreateStruct *pData)
     if ( g_pLTServer->GetPropGeneric( "ActivateOff", &g_gp ) == LT_OK )
 		if ( g_gp.m_String[0] )
             m_hstrCmdActivateOff = g_pLTServer->CreateString( g_gp.m_String );
-
-    if ( g_pLTServer->GetPropGeneric( "OnMarkingCommand", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-            m_hstrCmdOnMarking = g_pLTServer->CreateString( g_gp.m_String );
 
     if ( g_pLTServer->GetPropGeneric( "ProximityGoalCommand", &g_gp ) == LT_OK )
 		if ( g_gp.m_String[0] )
@@ -1373,6 +1412,39 @@ LTBOOL CAI::ReadProp(ObjectCreateStruct *pData)
 		}
 	}
 
+	// RETAIL: Tron's keys and alignment (retail 0x1012ae0b)
+
+	bool abKeys[8];
+	memset( abKeys, 0, sizeof( abKeys ));
+	g_pLTServer->GetPropBool( "Key1", &abKeys[0] );
+	g_pLTServer->GetPropBool( "Key2", &abKeys[1] );
+	g_pLTServer->GetPropBool( "Key3", &abKeys[2] );
+	g_pLTServer->GetPropBool( "Key4", &abKeys[3] );
+	g_pLTServer->GetPropBool( "Key5", &abKeys[4] );
+	g_pLTServer->GetPropBool( "Key6", &abKeys[5] );
+	g_pLTServer->GetPropBool( "Key7", &abKeys[6] );
+	g_pLTServer->GetPropBool( "Key8", &abKeys[7] );
+
+	for( int iKey = 0; iKey < 8; ++iKey )
+	{
+		if( abKeys[iKey] )
+		{
+			m_nKeys |= ( 1 << iKey );
+		}
+	}
+
+	strncpy( m_szAlignment, GetAITemplate()->szAlignment, ARRAY_LEN( m_szAlignment ) - 1 );
+	m_szAlignment[ARRAY_LEN( m_szAlignment ) - 1] = 0;
+
+	if( g_pLTServer->GetPropGeneric( "Alignment", &g_gp ) == LT_OK )
+	{
+		if( g_gp.m_String[0] && strcmp( g_gp.m_String, "None" ))
+		{
+			strncpy( m_szAlignment, g_gp.m_String, ARRAY_LEN( m_szAlignment ) - 1 );
+			m_szAlignment[ARRAY_LEN( m_szAlignment ) - 1] = 0;
+		}
+	}
+
     return LTTRUE;
 }
 
@@ -1407,6 +1479,56 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 	// Set the time we were born as the last time we relaxed.
 
 	m_fLastRelaxedTime = g_pLTServer->GetTime();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::InitWeaponChoices()
+//
+//	PURPOSE:	RETAIL: Tron's (inlined in InitialUpdate and Load, retail
+//				0x1012b987, 0x1013467f; name ours): the attack sides the
+//				brain's AIData offers.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::InitTronWeapons()
+{
+	// PORT: retail 0x1012f9e0 gives the AI a CWeapons (m_pTronWeapons) with
+	// the weapon its template names (AIBM_Template+0x11c, a WEAPON
+	// record; not in our AIButeMgr yet), obtains and changes to it, keeps
+	// the current CWeapon (m_pTronWeapon) and sets its ammo. Not written
+	// until the template has the field.
+}
+
+// ----------------------------------------------------------------------- //
+
+inline void CAI::InitWeaponChoices()
+{
+	CAIBrain* pBrain = GetBrain();
+	if( !pBrain )
+	{
+		return;
+	}
+
+	if( pBrain->GetAIDataExist( kAIData_AttackLeftMaxDist ) )
+	{
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Left, -pBrain->GetAIData( kAIData_AttackLeftMaxDist ), true ) );
+	}
+
+	if( pBrain->GetAIDataExist( kAIData_AttackRightMaxDist ) )
+	{
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Right, pBrain->GetAIData( kAIData_AttackRightMaxDist ), true ) );
+	}
+
+	if( pBrain->GetAIDataExist( kAIData_AttackCenterMaxDist ) )
+	{
+		m_lstWeaponChoices.push_back( AIWeaponChoice( kAIAttack_Center, pBrain->GetAIData( kAIData_AttackCenterMaxDist ), true ) );
+	}
+
+	if( pBrain->GetAIDataExist( kAIData_SelectWeaponBasedOnVisibility ) )
+	{
+		m_bSelectWeaponBasedOnVisibility = ( pBrain->GetAIData( kAIData_SelectWeaponBasedOnVisibility ) == 1.0f );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1557,6 +1679,9 @@ void CAI::InitialUpdate()
 		m_dwFlags &= ~FLAG_SOLID;
 	}
 
+	// RETAIL: Tron's (retail 0x1012b950)
+	m_dwFlags |= FLAG_FULLPOSITIONRES;
+
 	// Set up the Character Relation Information --
 	//	(use the model name as the key)
 
@@ -1571,7 +1696,27 @@ void CAI::InitialUpdate()
 	// more consistant 'access key' for the AI.
 	
 	AIASSERT( GetRelationMgr() != NULL, m_hObject,  "No RelationMgr" );
-	GetRelationMgr()->Init( this, GetAITemplate()->szAlignment );
+	// RETAIL: Tron's alignment may come from the "Alignment" property
+	// (ReadProp, retail 0x1012af12)
+	GetRelationMgr()->Init( this, m_szAlignment );
+
+	// RETAIL: Tron's (retail 0x1012b980)
+	InitTronWeapons();
+	InitWeaponChoices();
+
+	m_bSeeker = !_stricmp( m_pBrain->GetName(), "Seeker" );
+
+	if( m_lstWeaponChoices.size() )
+	{
+		if( m_bSelectWeaponBasedOnVisibility )
+		{
+			m_CurWeaponChoice = m_lstWeaponChoices[1];
+		}
+		else
+		{
+			m_CurWeaponChoice = m_lstWeaponChoices.at( GetRandom( 0, m_lstWeaponChoices.size() - 1 ) );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2076,8 +2221,7 @@ void CAI::HideCharacter(LTBOOL bHide)
 {
 	super::HideCharacter( bHide );
 
-	// If we're being tracked, make sure our blip hides with us.
-	SetTracking( !bHide && m_bStuckWithTrackDart );
+	// RETAIL: no tracking dart in Tron (retail 0x1012d1e0)
 
 	if( bHide )
 	{
@@ -2366,28 +2510,8 @@ void CAI::HandleDamage(const DamageStruct& damage)
 			m_pState->HandleDamage(damage);
 		}
 	}
-	else
-	{
-		AITRACE( AIShowStates, ( m_hObject, "AI is Dead" ) );
 
-		g_pMusicMgr->DoEvent(CMusicMgr::eEventAIDie);
-
-		// Clean up the armor FX/attachments if they are still running.  
-		DestroyArmor();
-
-		m_cWeapons = 0;
-		memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
-		memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
-
-		m_cObjects = 0;
-		memset(m_apObjects, LTNULL, sizeof(BaseClass*)*AI_MAX_OBJECTS);
-		memset(m_apObjectPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_OBJECTS);
-
-		if ( IsControlledByDialogue() )
-		{
-			StopDialogue();
-		}
-	}
+	// RETAIL: nothing for a dead AI in Tron (retail 0x1012dac0)
 }
 
 // --------------------------------------------------------------------------- //
@@ -2476,6 +2600,9 @@ bool CAI::HandleCommand(const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_ActivateOff("ACTIVATEOFF");
 	static CParsedMsg::CToken s_cTok_HealthMod("HEALTHMOD");
 	static CParsedMsg::CToken s_cTok_ArmorMod("ARMORMOD");
+	// RETAIL: Tron's (retail 0x1012e22d)
+	static CParsedMsg::CToken s_cTok_DisplayPSets("DISPLAYPSETS");
+	static CParsedMsg::CToken s_cTok_TalkLock("TALKLOCK");
 
 	// Let the goals have a whack at it.
 
@@ -2722,6 +2849,30 @@ bool CAI::HandleCommand(const CParsedMsg &cMsg)
 	{
 		float fMod = (float)atof( cMsg.GetArg(1).c_str() );
 		SetArmorPointsMod( fMod );
+	}
+	// RETAIL: Tron's: show our keys (user flag bits 13 up) and a flag of
+	// Tron's (bit 1) to the client (retail 0x1012eec0)
+	else if( cMsg.GetArg(0) == s_cTok_DisplayPSets )
+	{
+		if( cMsg.GetArgCount() > 1 )
+		{
+			if( IsTrueChar( *cMsg.GetArg(1) ) )
+			{
+				uint32 dwKeys = m_nKeys << 13;
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, dwKeys, dwKeys );
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (1<<1), (1<<1) );
+			}
+			else
+			{
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, 0 );
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, (1<<1) );
+			}
+		}
+	}
+	// RETAIL: Tron's (retail 0x1012ef97)
+	else if( cMsg.GetArg(0) == s_cTok_TalkLock )
+	{
+		SetTalkLock( IsTrueChar( *cMsg.GetArg(1) ) != LTFALSE );
 	}
 	else
 	{
@@ -3244,6 +3395,15 @@ void CAI::Update()
 	// USE THE FOLLOWING BLOCK FOR DEBUGGING 1 AI:
 //	ONLYONE(enemy01);
 
+	// RETAIL: Tron's "AIUpdate" console variable stops the AI (retail
+	// 0x1012fed0)
+	if( g_AIUpdateTrack.GetFloat() == 0.0f )
+	{
+		TIME(UpdateInfo());
+		TIME(PostUpdate());
+		return;
+	}
+
 	// Perform any movement found in the animation.
 
 	if( m_pState->GetStateStatus() != kSStat_Paused )
@@ -3308,10 +3468,8 @@ void CAI::Update()
 	{
 		// Update any target we're locked in on
 
-		if ( m_pTarget->IsValid() )
-		{
-			TIME(UpdateTarget());
-		}
+		// RETAIL: unconditional in Tron (retail 0x1012ffd2)
+		TIME(UpdateTarget());
 
 		// Update the state if we have one
 
@@ -3491,10 +3649,71 @@ void CAI::UpdateOnGround()
 
 void CAI::UpdateState()
 {
+	// PORT: Tron's UpdateState (retail 0x10130330) first, while look-at
+	// tracking is on, finds the nearest player and tracks it ("TrackLookAt")
+	// within a distance kept by CAIButeMgr (its +0x1184, not yet in ours),
+	// else stops unless talking (SetTalkLock(false) or "TrackNone").
+
     if ( m_hstrNextStateMessage && g_pLTServer->GetTime() >= m_fNextStateTime )
 	{
 		SendMixedTriggerMsgToObject(this, m_hObject, m_hstrNextStateMessage);
 		FREE_HSTRING(m_hstrNextStateMessage);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::AddTronUnknown10A0/RemoveTronUnknown10A0
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012ce40, 0x1012cee0; names ours).
+//				Retail calls the list's begin/end/insert out of line here;
+//				ours inlines some, so these stay near.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::AddTronUnknown10A0(void* pEntry)
+{
+	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) == m_lstTronUnknown10A0.end() )
+	{
+		m_lstTronUnknown10A0.push_back( pEntry );
+	}
+}
+
+void CAI::RemoveTronUnknown10A0(void* pEntry)
+{
+	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) != m_lstTronUnknown10A0.end() )
+	{
+		m_lstTronUnknown10A0.remove( pEntry );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::SetTalkLock
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x101304f0; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::SetTalkLock(bool bTrack)
+{
+	if( bTrack == true )
+	{
+		if( !m_bTalkLock )
+		{
+			m_bTalkLock = true;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
+			m_bTalkLookAt = true;
+		}
+	}
+	else if( bTrack == false )
+	{
+		if( m_bTalkLock == true )
+		{
+			m_bTalkLock = false;
+			m_bTalkLookAt = false;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+		}
 	}
 }
 
@@ -3717,20 +3936,23 @@ float CAI::GetDefensePercentage( LTVector const *pIncomingProjectilePosition ) c
 
 bool CAI::FilterDamage( DamageStruct *pDamageStruct )
 {
-	// Filter out damage caused by myself if brain says so.
-
-	if(	m_pBrain &&
-		m_pBrain->GetAIDataExist( kAIData_DoNotDamageSelf ) &&
-		( m_pBrain->GetAIData( kAIData_DoNotDamageSelf ) > 0.f ) &&
-		( pDamageStruct->hDamager == m_hObject ) )
-	{
-		return false;
-	}
+	// RETAIL: no DoNotDamageSelf in Tron (retail 0x10131120)
 
 	if ( IsDefending() )
 	{
 		// the AI is defending, remove some of the damage
 		pDamageStruct->fDamage *= ( 1.0f - GetDefensePercentage( &pDamageStruct->vDir ) );
+	}
+
+	// RETAIL: Tron's: a Seeker takes no damage while stunned or moving
+	if( m_bSeeker )
+	{
+		if( m_pAnimationContext->IsPropSet( kAPG_Action, kAP_Stunned ) ||
+			m_pAnimationContext->IsPropSet( kAPG_Movement, kAP_Run ) ||
+			m_pAnimationContext->IsPropSet( kAPG_Movement, kAP_Walk ) )
+		{
+			pDamageStruct->fDamage = 0.0f;
+		}
 	}
 
 	return CCharacter::FilterDamage( pDamageStruct );
@@ -4655,7 +4877,6 @@ void CAI::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_HSTRING(m_hstrCmdInitial);
 	SAVE_HSTRING(m_hstrCmdActivateOn);
 	SAVE_HSTRING(m_hstrCmdActivateOff);
-	SAVE_HSTRING(m_hstrCmdOnMarking);
 	SAVE_HSTRING(m_hstrCmdProximityGoal);
 
 	SAVE_BOOL(m_bActivated);
@@ -4751,7 +4972,8 @@ void CAI::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	m_pTrackedNodeContext->Save(pMsg);
 	SAVE_DWORD(m_eTriggerNodeTrackingGroup);
 
-	SAVE_VECTOR(m_vMovePos);
+	// RETAIL: WriteType inlined here (retail 0x101334c7)
+	pMsg->WriteType(m_vMovePos);
 	SAVE_BOOL(m_bMove);
 	SAVE_FLOAT(m_fSpeed);
 	SAVE_FLOAT(m_fJumpOverVel);
@@ -4780,15 +5002,19 @@ void CAI::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_TIME( m_flLastHoverTime );
 	SAVE_FLOAT( m_flCurrentHoverSpeed );
 
-	SAVE_FLOAT( m_flSentryChallengeScanDistMax );
-	SAVE_FLOAT( m_flSentryChallengeDistMax );
-	SAVE_FLOAT( m_flSentryMarkDistMax );
-
 	SAVE_bool( m_bCanCarry );
 	SAVE_bool( m_bBeingCarried );
-	SAVE_bool( m_bStuckWithTrackDart );
 	SAVE_bool( m_bIsCinematicAI );
-	SAVE_bool( m_bCanWake );
+
+	// RETAIL: Tron's tail (retail 0x10132d80)
+	SAVE_BYTE( m_nKeys );
+	m_pTronUnknown1010->Flush();
+	SAVE_CHARSTRING( m_szAlignment );
+	m_pTronAIInfo->Save( pMsg );
+	SAVE_bool( m_bTalkLock );
+	SAVE_bool( m_bTalkLookAt );
+	SAVE_bool( m_bSeeker );
+	m_CurWeaponChoice.Save( pMsg );
 }
 
 // ----------------------------------------------------------------------- //
@@ -4857,7 +5083,6 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_HSTRING(m_hstrCmdInitial);
 	LOAD_HSTRING(m_hstrCmdActivateOn);
 	LOAD_HSTRING(m_hstrCmdActivateOff);
-	LOAD_HSTRING(m_hstrCmdOnMarking);
 	LOAD_HSTRING(m_hstrCmdProximityGoal);
 
 	LOAD_BOOL(m_bActivated);
@@ -4951,6 +5176,10 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_RANGE_CAST(m_rngSightGridX, int);
 	LOAD_RANGE_CAST(m_rngSightGridY, int);
 
+	// RETAIL: Tron resets the sight grid after loading it (retail 0x10133fb6)
+	m_rngSightGridX.Set(-2, 2);
+	m_rngSightGridY.Set(-2, 2);
+
 	LOAD_BOOL(m_bPreserveActiveCmds);
 
 	LTBOOL bAnimationContext = LTFALSE;
@@ -4989,8 +5218,7 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	m_pTrackedNodeContext->Load(pMsg);
 	LOAD_DWORD_CAST(m_eTriggerNodeTrackingGroup, EnumTrackedNodeGroup);
 
-	// Go back to tracking none, since we reset this all the time anyway.
-	m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
+	// RETAIL: Tron keeps the loaded tracking group (retail 0x10134116)
 
 	LOAD_VECTOR(m_vMovePos);
 	LOAD_BOOL(m_bMove);
@@ -5023,21 +5251,40 @@ void CAI::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_TIME( m_flLastHoverTime );
 	LOAD_FLOAT( m_flCurrentHoverSpeed );
 
-	LOAD_FLOAT( m_flSentryChallengeScanDistMax );
-	LOAD_FLOAT( m_flSentryChallengeDistMax );
-	LOAD_FLOAT( m_flSentryMarkDistMax );
-
 	LOAD_bool( m_bCanCarry );
 	LOAD_bool( m_bBeingCarried );
-	LOAD_bool( m_bStuckWithTrackDart );
 	LOAD_bool( m_bIsCinematicAI );
-	LOAD_bool( m_bCanWake );
+
+	// RETAIL: Tron's tail (retail 0x10133860)
+	LOAD_BYTE( m_nKeys );
+	LOAD_CHARSTRING( m_szAlignment, ARRAY_LEN( m_szAlignment ));
+	m_pTronAIInfo->Load( pMsg );
+	LOAD_bool( m_bTalkLock );
+	LOAD_bool( m_bTalkLookAt );
+	LOAD_bool( m_bSeeker );
+
+	SetAITemplate( g_pModelButeMgr->GetModelAIName( m_eModelId ) );
+	InitTronWeapons();
 
 	// Recreate the specialfx message since we know all of our data is loaded and 
 	// it may have gotten created inadvertently with default data by loading other
 	// data such as the GoalMgr...
 
 	CreateSpecialFX();
+
+	m_CurWeaponChoice.Load( pMsg );
+
+	if( m_bSelectWeaponBasedOnVisibility )
+	{
+		switch( m_CurWeaponChoice.m_eSide )
+		{
+			case kAIAttack_Left:	m_iCurrentWeapon = 1; break;
+			case kAIAttack_Right:	m_iCurrentWeapon = 0; break;
+			case kAIAttack_Center:	m_iCurrentWeapon = 2; break;
+		}
+	}
+
+	InitWeaponChoices();
 }
 
 // ----------------------------------------------------------------------- //
@@ -5378,6 +5625,9 @@ void CAI::Target(HOBJECT hObject)
 
 void CAI::UpdateTarget()
 {
+	// RETAIL: Tron's (retail 0x10134e8d)
+	m_pTronUnknown1010->Flush();
+
     if ( !m_pTarget->IsValid() ) { _ASSERT(LTFALSE); return; }
 
 	HOBJECT hObject = m_pTarget->GetObject();
@@ -6049,32 +6299,6 @@ void CAI::SetCanCarry( bool bCarry )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAI::SetCanWake
-//
-//	PURPOSE:	Sets the ai to be wake-able or not
-//
-// ----------------------------------------------------------------------- //
-
-void CAI::SetCanWake( bool bWake )
-{
-	if( m_bCanWake != bWake )
-	{
-		m_bCanWake = bWake;
-
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_SFX_MESSAGE);
-		cMsg.Writeuint8(SFX_CHARACTER_ID);
-		cMsg.WriteObject(m_hObject);
-		cMsg.Writeuint8(CFX_CAN_WAKE);
-		cMsg.Writeuint8(m_bCanWake);
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		CreateSpecialFX();
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CAI::PreCreateSpecialFX
 //
 //	PURPOSE:	Last chance to change our characterfx struct
@@ -6085,9 +6309,8 @@ void CAI::PreCreateSpecialFX( CHARCREATESTRUCT& cs )
 {
 	CCharacter::PreCreateSpecialFX( cs );
 
-	cs.bCanCarry		= m_bCanCarry;
+	// RETAIL: only the cinematic flag in Tron (retail 0x10135da0)
 	cs.bIsCinematicAI	= m_bIsCinematicAI;
-	cs.bCanWake			= m_bCanWake;
 }
 
 // ----------------------------------------------------------------------- //
@@ -6242,3 +6465,42 @@ LTRESULT CAIPlugin::PreHook_PropChanged( const char *szObjName,
 }
 
 #endif
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::GetSentry*
+//
+//	PURPOSE:	PORT: Tron's CAI has no sentry distances; NOLF2's sentry
+//				states get the template's
+//
+// ----------------------------------------------------------------------- //
+
+float CAI::GetSentryChallengeScanDistMax()
+{
+	return GetAITemplate()->flSentryChallengeScanDistMax;
+}
+
+float CAI::GetSentryChallengeDistMax()
+{
+	return GetAITemplate()->flSentryChallengeDistMax;
+}
+
+float CAI::GetSentryMarkDistMax()
+{
+	return GetAITemplate()->flSentryMarkDistMax;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITronUnknown1010::Flush
+//
+//	PURPOSE:	PORT: stands in for retail 0x101dee80 (another unit's
+//				function, not written yet): empties the first list. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITronUnknown1010::Flush()
+{
+	m_lstTronUnknown0.clear();
+}
