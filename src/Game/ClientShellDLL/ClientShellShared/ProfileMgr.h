@@ -186,7 +186,9 @@ public:
 
 	// load/save profile to file
 	void		Load( );
-	void		Save(bool bForceClose = false);
+	// RETAIL: no argument in Tron (its callers push none: CScreenJoystick's
+	// OnFocus, retail 0x10065787); NOLF2 1.x added bForceClose
+	void		Save();
 
 	LTBOOL		IsInitted() {return m_bInitted;}
 
