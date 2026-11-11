@@ -202,6 +202,10 @@ SOURCE=.\PatchRoutine.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\PingButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileClusterAutoBurstDisc.cpp
 # End Source File
 # Begin Source File
@@ -280,6 +284,10 @@ SOURCE=.\LightCycleZones.h
 # Begin Source File
 
 SOURCE=.\PatchRoutine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\PingButeMgr.h
 # End Source File
 # Begin Source File
 
