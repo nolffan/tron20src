@@ -68,10 +68,8 @@ class CTronPlayerObj : public CPlayerObj
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
 
-		// damage handling (after damage has been dealt)
-		// PORT: Build 69's; retail CTronPlayerObj does not override
-		// HandleDamage (its slot 106 is CPlayerObj's)
-		virtual void	HandleDamage(const DamageStruct& damage);
+		// RETAIL: no HandleDamage override in Tron (its slot 106 is
+		// CPlayerObj's)
 
 		// RETAIL: Tron's overrides of CPlayerObj's new virtuals
 		virtual void	Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true,
@@ -119,11 +117,11 @@ class CTronPlayerObj : public CPlayerObj
 		bool AcquirePrimitive(char const* pName);
 
 		// Light cycle functions
-		bool StartLightCycle();
+		bool StartLightCycle( bool bSuper, bool bTronUnknown );	// RETAIL: two arguments (0x10067420)
 		bool EndLightCycle();
 		void SetVehiclePhysicsModel(PlayerPhysicsModel eModel);
-		// PORT: Build 69's; retail CTronPlayerObj does not override it
-		void SetNormalPhysicsModel();
+		// RETAIL: no SetNormalPhysicsModel override in Tron (its slot 124 is
+		// CPlayerObj's)
 
 		// invalidates the vars that keep of the block
 		void ResetDefend();

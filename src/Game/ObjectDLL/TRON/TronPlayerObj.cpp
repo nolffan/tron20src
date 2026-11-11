@@ -630,6 +630,39 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 // ----------------------------------------------------------------------- //
 LTBOOL CTronPlayerObj::Update()
 {
+	// RETAIL: retail 0x10063a80
+	// Drain (or charge) our energy...
+	if( fabs( m_fTronUnknown31f0 ) > FLT_EPSILON )
+	{
+		float fEnergy = m_damage.GetEnergy( );
+		fEnergy -= g_pLTServer->GetFrameTime( ) * m_fTronUnknown31f0;
+
+		if( fEnergy < m_fTronUnknown31f4 )
+		{
+			fEnergy = m_fTronUnknown31f4;
+		}
+		else if( m_damage.GetMaxEnergy( ) < fEnergy )
+		{
+			fEnergy = m_damage.GetMaxEnergy( );
+		}
+
+		m_damage.SetEnergy( fEnergy );
+	}
+
+	if( m_bTronUnknown32fa )
+	{
+		EndLightCycle( );
+	}
+
+	if( m_bTronUnknown32f8 )
+	{
+		StartLightCycle( false, true );
+	}
+	else if( m_bTronUnknown32f9 )
+	{
+		StartLightCycle( true, true );
+	}
+
 	// Call down to the base class
 	return(CPlayerObj::Update());
 }
@@ -1136,43 +1169,9 @@ bool CTronPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CTronPlayerObj::HandleDamage
-//
-//	PURPOSE:	Handles getting damaged
-//
-// ----------------------------------------------------------------------- //
-
-void CTronPlayerObj::HandleDamage(const DamageStruct& damage)
-{
-	if ( WMGR_INVALID_ID != damage.nAmmoId )
-	{
-		// hit by a weapon of some sort
-		if ( IsDefending() )
-		{
-			// send a message to the player detailing a successful block
-			CAutoMessage cMsg;
-			LTRESULT ltResult;
-
-			cMsg.Writeuint8( MID_PROJECTILE );
-
-			// write the projectile message subtype
-			cMsg.Writeuint8( MPROJ_BLOCKED );
-
-			// write the defense type
-			cMsg.Writeuint8( m_cDefendType );
-
-			// write the defense percentage
-			cMsg.Writefloat( GetDefensePercentage( &damage.vDir ) );
-
-			ltResult = g_pLTServer->SendToClient( cMsg.Read(), m_hClient, MESSAGE_GUARANTEED );
-			ASSERT( LT_OK == ltResult );
-		}
-	}
-
-	CPlayerObj::HandleDamage( damage );
-}
+// RETAIL: retail CTronPlayerObj does not override HandleDamage (its slot
+// 106 is CPlayerObj's); Build 69's, which told the client of a block, is
+// gone
 
 
 // ----------------------------------------------------------------------- //
@@ -1266,11 +1265,13 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
 	{
-		StartLightCycle();
+		// RETAIL: Tron starts and ends the cycle in Update (it sets flags
+		// at 0x32f8 and 0x32fa, retail 0x10064520)
+		m_bTronUnknown32f8 = true;
 	}
 	else if(cMsg.GetArg(0) == s_cTok_End_LightCycle)
 	{
-		EndLightCycle();
+		m_bTronUnknown32fa = true;
 	}
 	
 	// Base-class it
@@ -1455,10 +1456,22 @@ void CTronPlayerObj::ResetDefend()
 //	PURPOSE:	Player gets on a light cycle
 //
 // ----------------------------------------------------------------------- //
-bool CTronPlayerObj::StartLightCycle()
+bool CTronPlayerObj::StartLightCycle( bool bSuper, bool bTronUnknown )
 {
-	// Temporarily disabled
-	//SetPhysicsModel(PPM_LIGHTCYCLE);
+	// RETAIL: Tron's takes which cycle and a flag (retail 0x10067420): it
+	// clears the start flags, picks the cycle's model ("LightCycleBlue" or
+	// "LightCycleBlueSuper", or the singleplayer level's), goes to the light
+	// cycle physics model and adds the cyclist to retail's light cycle
+	// manager. PORT: the parts that need Tron's managers are not written
+	m_bTronUnknown32f8 = false;
+	m_bTronUnknown32f9 = false;
+
+	if( bTronUnknown )
+	{
+		strcpy( m_szLightCycleModel, bSuper ? "LightCycleBlueSuper" : "LightCycleBlue" );
+	}
+
+	SetPhysicsModel( PPM_LIGHTCYCLE );
 	return true;
 }
 
@@ -1471,8 +1484,15 @@ bool CTronPlayerObj::StartLightCycle()
 // ----------------------------------------------------------------------- //
 bool CTronPlayerObj::EndLightCycle()
 {
+	// RETAIL: retail 0x10067570
+	m_bTronUnknown32fa = false;
+
 	// Go to normal physics model.
 	SetPhysicsModel(PPM_NORMAL);
+
+	// RETAIL: retail's light cycle manager is called through its vtable
+	// (slot 4); ours is Build 69's
+	g_pLightCycleMgr->RemoveCyclist( m_hObject );
 	return true;
 }
 
@@ -1487,16 +1507,8 @@ void CTronPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 	CPlayerObj::SetVehiclePhysicsModel(eModel);
 }
 
-void CTronPlayerObj::SetNormalPhysicsModel()
-{
-	if(m_ePPhysicsModel == PPM_LIGHTCYCLE)
-	{
-		// Remove ourselves from the light cycle manager
-		g_pLightCycleMgr->RemoveCyclist(m_hObject);
-	}
-
-	CPlayerObj::SetNormalPhysicsModel();
-}
+// RETAIL: retail CTronPlayerObj does not override SetNormalPhysicsModel
+// (its slot 124 is CPlayerObj's); Build 69's is gone
 
 
 // ----------------------------------------------------------------------- //
