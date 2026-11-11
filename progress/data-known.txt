@@ -260,7 +260,6 @@ Object.lto	ours	FxName %s;Loop 1;SmoothShutdown 1
 Object.lto	ours	GADGET_TRACKER
 Object.lto	ours	Goal %s triggered by sense %s (%.2f)\n
 Object.lto	ours	Grief
-Object.lto	ours	GriefTime
 Object.lto	ours	Guns\\snd\\ak47\\Flashlight_click.wav
 Object.lto	ours	HIDDEN 0
 Object.lto	ours	HIDDEN <1 or 0>
@@ -313,7 +312,6 @@ Object.lto	ours	MarkWMFadeTime
 Object.lto	ours	MarkWMShow
 Object.lto	ours	MarkWMSolidTime
 Object.lto	ours	MaxDamageModifier
-Object.lto	ours	Message%d
 Object.lto	ours	MountedFlashlight
 Object.lto	ours	Movement: %i LastMovement: %i
 Object.lto	ours	NEXTROUND
@@ -351,8 +349,6 @@ Object.lto	ours	RS\\Default.ltb
 Object.lto	ours	RadarObject
 Object.lto	ours	RadarType
 Object.lto	ours	RadarTypeMgr
-Object.lto	ours	RampColor%d
-Object.lto	ours	RampTime%d
 Object.lto	ours	Received Remove command.
 Object.lto	ours	Registering persistent stimulus UndeterminedVisible
 Object.lto	ours	ReloadAnimRateScale
@@ -527,7 +523,6 @@ Object.lto	retail	.?AVArena@@
 Object.lto	retail	.?AVArenaStartPoint@@
 Object.lto	retail	.?AVAttachedExplosion@@
 Object.lto	retail	.?AVBerry@@
-Object.lto	retail	.?AVBuildNote@@
 Object.lto	retail	.?AVCAIGoalChaseAbstract@@
 Object.lto	retail	.?AVCAIGoalDash@@
 Object.lto	retail	.?AVCAIGoalExitLevelAbstract@@
@@ -548,7 +543,6 @@ Object.lto	retail	.?AVCArenaStartPointPlugin@@
 Object.lto	retail	.?AVCBodyStateGib@@
 Object.lto	retail	.?AVCBodyStatePranksterImplode@@
 Object.lto	retail	.?AVCBossButeMgr@@
-Object.lto	retail	.?AVCBuildNotePlugin@@
 Object.lto	retail	.?AVCContinuousFireHelper@@
 Object.lto	retail	.?AVCCorrupticDims@@
 Object.lto	retail	.?AVCDiscArenaMissionMgr@@
@@ -580,8 +574,6 @@ Object.lto	retail	.?AVIONode@@
 Object.lto	retail	.?AVLightCycle@@
 Object.lto	retail	.?AVLightCycleMissile@@
 Object.lto	retail	.?AVLightCyclePowerup@@
-Object.lto	retail	.?AVLightCycleSlowZone@@
-Object.lto	retail	.?AVLightCycleSpeedZone@@
 Object.lto	retail	.?AVLightCycleVolume@@
 Object.lto	retail	.?AVLightCycleVolumeCascader@@
 Object.lto	retail	.?AVLightCycleVolumeObjectPlugin@@
@@ -609,7 +601,6 @@ Object.lto	retail	ACQUIREPRIM %s
 Object.lto	retail	ACQUIREPSET
 Object.lto	retail	ACQUIREPSET <permission set number | all>
 Object.lto	retail	ACQUIRESUB %s
-Object.lto	retail	ADDBUILDPOINTS %d
 Object.lto	retail	ADDBUILDPOINTS <number to add>
 Object.lto	retail	ADDPING
 Object.lto	retail	ADDPING <Ping Name> <1/0 (Play sound or not, defaults to 1>
@@ -622,7 +613,6 @@ Object.lto	retail	AIGoalExitLevel
 Object.lto	retail	AIInfoVolume
 Object.lto	retail	AIInfoVolume OFF
 Object.lto	retail	AIInfoVolume ON
-Object.lto	retail	AILightCycle
 Object.lto	retail	AINodeExitLevelByRezOut
 Object.lto	retail	AISTART
 Object.lto	retail	AIShowEnergyCLawDamage
@@ -745,7 +735,6 @@ Object.lto	retail	BodyGib
 Object.lto	retail	BodyPranksterImplode
 Object.lto	retail	BrakeDecelRate
 Object.lto	retail	BriefingId
-Object.lto	retail	BuildNote
 Object.lto	retail	BuildNotes
 Object.lto	retail	BurstEffectName
 Object.lto	retail	BurstExplosionAmmoName
@@ -969,13 +958,11 @@ Object.lto	retail	ERROR - Could not update utility subroutine (%s) because it wa
 Object.lto	retail	ERROR - Couldn't find Light Cycle Color %s\n
 Object.lto	retail	ERROR - Looked for LCSpawner%2d and found %d objects!\n
 Object.lto	retail	ERROR - PatchRoutine received an activate message and it had nothing to give!
-Object.lto	retail	ERROR in PlayClientFX()!  Invalid position specified for FX
 Object.lto	retail	ERROR in TronTurret, could not find a parent %s
 Object.lto	retail	ERROR! - ValidateDelcmd()
 Object.lto	retail	ERROR! - ValidateTalkIcon()
 Object.lto	retail	ERROR!!!  %s given command to take control of node %s while owned by %s!  This may lead to gameplay deadlocks and other horrible events.  Please see your local AI programmer right now!
 Object.lto	retail	ERROR: CAttachments::GetAttachment called with invalid index or index to no attachment
-Object.lto	retail	ERROR: Could not find note with name (%s) in the bute file.
 Object.lto	retail	ERROR: Priority value %f < 0 or %f > 1 for %s
 Object.lto	retail	Early out - Bad Damager Position!
 Object.lto	retail	Early out - No hDamager!
@@ -1056,7 +1043,6 @@ Object.lto	retail	FxName %s%s%s
 Object.lto	retail	FxName %s%s%s;Loop 1;SmoothShutdown 0
 Object.lto	retail	FxName %s;Loop 0;SmoothShutdown 0 
 Object.lto	retail	FxName %s;Loop 1;SmoothShutdown %d
-Object.lto	retail	FxName %s;Loop 1;SmoothShutdown 0
 Object.lto	retail	GOAL_SpecialDamage CONTINUOUSFIRERELEASE=0
 Object.lto	retail	GOINGBETWEENWALLS
 Object.lto	retail	GameSpeedScalars
@@ -1212,8 +1198,6 @@ Object.lto	retail	LightCyclePowerup
 Object.lto	retail	LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n
 Object.lto	retail	LightCycleRacer
 Object.lto	retail	LightCycleRed
-Object.lto	retail	LightCycleSlowZone
-Object.lto	retail	LightCycleSpeedZone
 Object.lto	retail	LightCycleVolume
 Object.lto	retail	LightCycleVolumeCascader
 Object.lto	retail	LingerMaxDegreesToTurn
@@ -1286,7 +1270,6 @@ Object.lto	retail	Node%dIgnoreParent
 Object.lto	retail	NormalAccelRate
 Object.lto	retail	NormalDecelRate
 Object.lto	retail	NormalLock%d
-Object.lto	retail	NoteName
 Object.lto	retail	NumRandomSubs
 Object.lto	retail	NumberToSpawn
 Object.lto	retail	ON <Radius Center>
@@ -1351,7 +1334,6 @@ Object.lto	retail	PSetNumber6
 Object.lto	retail	ParentSocket
 Object.lto	retail	Permission Set
 Object.lto	retail	PerturbMultiplier
-Object.lto	retail	Pickup Build Note
 Object.lto	retail	PingName
 Object.lto	retail	Player with client ID (%d) had too slow of a ping for this server (%d)
 Object.lto	retail	Player with client ID (%d) just joined the game\n
@@ -1364,7 +1346,6 @@ Object.lto	retail	PlayerFiredAbortCmd
 Object.lto	retail	PlayerNoticeDist
 Object.lto	retail	PlayerOnly
 Object.lto	retail	PlayerSpeedBoost
-Object.lto	retail	Points
 Object.lto	retail	Popoff
 Object.lto	retail	PowerBlock
 Object.lto	retail	Powerup
@@ -1582,7 +1563,6 @@ Object.lto	retail	Team 2
 Object.lto	retail	Tentacles_Left
 Object.lto	retail	Tentacles_Right
 Object.lto	retail	TestHitByCorruption
-Object.lto	retail	TextID
 Object.lto	retail	TextIds
 Object.lto	retail	Thorne
 Object.lto	retail	ThorneBall
@@ -1671,8 +1651,6 @@ Object.lto	retail	WORLDS_PatchRoutine_Health_Idle_Infinite
 Object.lto	retail	WORLDS_PatchRoutine_Health_Remove
 Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer
 Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer_Infinite
-Object.lto	retail	WORLDS_buildnote_base
-Object.lto	retail	WORLDS_buildnote_remove
 Object.lto	retail	WORLDS_lcpowerup_
 Object.lto	retail	WallExtender
 Object.lto	retail	WallExtenderAdd
@@ -3201,7 +3179,6 @@ CShell.dll	retail	Model%dName
 CShell.dll	retail	Model%dNameId
 CShell.dll	retail	ModelLeftArrowPos
 CShell.dll	retail	ModelRightArrowPos
-CShell.dll	retail	ModelShadow_Proj_Enable 0
 CShell.dll	retail	ModelTextPos
 CShell.dll	retail	ModifyPriorityWithDist
 CShell.dll	retail	MouseClosesPopup
