@@ -123,7 +123,7 @@ std::wstring CLTGUIColumnCtrl::GetString(uint8 nColumnIndex) const
 	if (pString)
 		return pString->GetText();
 	else
-		return L" ";
+		return std::wstring(1, L' ');
 }
 
 // Sets a string for a column

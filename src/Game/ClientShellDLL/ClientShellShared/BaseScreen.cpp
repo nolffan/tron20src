@@ -1102,12 +1102,17 @@ void CBaseScreen::UpdateData(LTBOOL bSaveAndValidate)
 
 CLTGUITextCtrl* CBaseScreen::CreateTextItem(int stringID, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
-	CLTGUITextCtrl* pCtrl=CreateTextItem(LoadTempString(stringID), commandID, helpID, pos, bFixed, nFont);
+	// TRON: the string as wide text (RETAIL: 0x100d3980)
+	CLTGUITextCtrl* pCtrl=CreateTextItem(LoadTempWString(stringID), commandID, helpID, pos, bFixed, nFont);
 	return pCtrl;
 
 }
 
-CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
+// TRON: wide text; the font is the one nearest the screen's scaled font size
+// (RETAIL: 0x100d39d0), the face looked up but not used. Same instructions
+// as retail; it differs only by CBaseScreen's colors, which retail has 0xc
+// further on (m_SelectedColor at +0x78)
+CLTGUITextCtrl* CBaseScreen::CreateTextItem(std::wstring sString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUITextCtrl* pCtrl=debug_new(CLTGUITextCtrl);
 
@@ -1116,11 +1121,11 @@ CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
-    if (!pCtrl->Create(pString, commandID, helpID, pFont, nFontSize, this))
+    if (!pCtrl->Create(sString, commandID, helpID, pFont, nFontSize, this))
 	{
 		debug_delete(pCtrl);
         return LTNULL;
@@ -1136,7 +1141,7 @@ CLTGUITextCtrl* CBaseScreen::CreateTextItem(char *pString, uint32 commandID, int
 	}
 	pCtrl->SetBasePos(pos);
 
-	m_nextPos.y += (pCtrl->GetBaseHeight() + m_nItemSpacing);
+	m_nextPos.y += (pCtrl->GetHeight() + m_nItemSpacing);	// TRON: GetHeight
 
 	pCtrl->SetScale(g_pInterfaceResMgr->GetXRatio());
 	
