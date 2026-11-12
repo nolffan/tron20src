@@ -25,6 +25,9 @@ class Explosion : public GameBase
 	public :
 
  		Explosion();
+		// RETAIL: Tron's is declared: a derived class's (OptimizerExplosion,
+		// retail 0x10030300) sets its vtable
+		virtual ~Explosion() {}
         void Setup(HOBJECT hFiredFrom, uint8 nAmmoType);
 
 		HOBJECT GetFiredFrom() const { return m_hFiredFrom; }

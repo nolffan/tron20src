@@ -406,6 +406,26 @@ struct PVCREATESTRUCT : public SFXCREATESTRUCT
 	PlayerPhysicsModel	ePhysicsModel;
 };
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// CLIENTFXUSERCREATESTRUCT class Definition
+//
+// RETAIL: Tron's (RTTI; vtable 0x102980a4): the model whose client fx an
+// object plays (Optimizer's special fx message). Its constructor is out of
+// line (retail 0x10114140); the member's name is ours
+//
+/////////////////////////////////////////////////////////////////////////////
+
+struct CLIENTFXUSERCREATESTRUCT : public SFXCREATESTRUCT
+{
+	CLIENTFXUSERCREATESTRUCT();
+
+    virtual void Write(ILTMessage_Write *pMsg);
+    virtual void Read(ILTMessage_Read *pMsg);
+
+	ModelId		eModelId;
+};
+
 inline PVCREATESTRUCT::PVCREATESTRUCT()
 {
 	ePhysicsModel = PPM_NORMAL;

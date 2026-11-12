@@ -8,6 +8,9 @@
 ;
 ;	COMMENT:		Copyright (c) 2002, Monolith Productions, Inc.
 ;
+;	RETAIL:			Tron 2.0's, rewritten from retail Object.lto
+;					(PatchRoutine.h).
+;
 ****************************************************************************/
 
 #include "stdafx.h"
@@ -15,16 +18,32 @@
 #include "TronPlayerObj.h"
 #include "ObjectMsgs.h"
 #include "ParsedMsg.h"
+#include "MsgIDs.h"
+#include "ServerUtilities.h"
+
+// RETAIL: Tron's message ids (retail 0x1003328d, 0x10032af5); the names
+// are ours. We tell the player's client to start draining us
+// (MID_PATCHROUTINE_BEGIN: the kind, us twice, the amount); it sends the
+// amounts it drains (MID_PATCHROUTINE_DRAIN) and when it stops
+// (MID_PATCHROUTINE_STOP), which we also send it to stop
+#define MID_PATCHROUTINE_BEGIN		154
+#define MID_PATCHROUTINE_STOP		155
+#define MID_PATCHROUTINE_DRAIN		156
+
+// RETAIL: the kinds (retail 0x10033217, 0x10032b8e): Tron's target
+// properties; the names are ours
+#define PATCHROUTINE_ENERGY			2
+#define PATCHROUTINE_HEALTH			3
+
+// RETAIL: a user flag we set on ourselves (retail 0x10032a20); not yet
+// identified on the client. The name is ours
+#define USRFLG_PATCHROUTINE			(1<<11)
 
 BEGIN_CLASS(PatchRoutine)
-	ADD_STRINGPROP_FLAG(Filename, "", PF_DIMS | PF_FILENAME | PF_LOCALDIMS | PF_MODEL)
-	ADD_STRINGPROP_FLAG(Skin, "", PF_FILENAME)
 	ADD_LONGINTPROP(Health,0)
 	ADD_LONGINTPROP(Energy,0)
+	ADD_LONGINTPROP(DistAboveFloor,60)
 END_CLASS_DEFAULT(PatchRoutine, GameBase, NULL, NULL)
-
-// The drain rate in units per second
-#define PATCH_ROUTINE_DRAIN_AMOUNT_PER_SECOND 40.0f
 
 // ----------------------------------------------------------------------- //
 //
@@ -40,8 +59,13 @@ PatchRoutine::PatchRoutine() : GameBase()
 	m_nTotalEnergy = 0;
 	m_nCurrentHealth = 0;
 	m_nCurrentEnergy = 0;
-	m_bActive = false;
+	m_fDistAboveFloor = 0;
 	m_pPlayer = NULL;
+	m_hIdleFX = LTNULL;
+	m_hTransferFX = LTNULL;
+	m_bActive = false;
+	m_bFromWorld = true;
+	m_bInfinite = false;
 }
 
 
@@ -55,6 +79,17 @@ PatchRoutine::PatchRoutine() : GameBase()
 
 PatchRoutine::~PatchRoutine()
 {
+	if (m_hIdleFX)
+	{
+		g_pLTServer->RemoveObject(m_hIdleFX);
+		m_hIdleFX = LTNULL;
+	}
+
+	if (m_hTransferFX)
+	{
+		g_pLTServer->RemoveObject(m_hTransferFX);
+		m_hTransferFX = LTNULL;
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -76,47 +111,190 @@ uint32 PatchRoutine::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fDat
 			if((fData == PRECREATE_WORLDFILE) || (fData == PRECREATE_STRINGPROP))
 			{
 				ReadProp((ObjectCreateStruct*)pData);
+				m_bFromWorld = true;
+			}
+			else
+			{
+				m_bFromWorld = false;
 			}
 
 			return ret;
 		}
 
+		case MID_INITIALUPDATE:
+		{
+			InitialUpdate();
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE | USRFLG_PATCHROUTINE, USRFLG_CAN_ACTIVATE | USRFLG_PATCHROUTINE);
+		}
+		break;
+
 		case MID_SAVEOBJECT:
 		{
-			// NOTE: If you want to save the base class first,
-			// just switch the following two lines of code.
             Save((ILTMessage_Write*)pData, (uint32)fData);
-			LTRESULT ret = GameBase::EngineMessageFn(messageID, pData, fData);
-
-			return ret;
+			return GameBase::EngineMessageFn(messageID, pData, fData);
 		}
 
 		case MID_LOADOBJECT:
 		{
-			// NOTE: If you want to load the base class first,
-			// just switch the following two lines of code.
             Load((ILTMessage_Read*)pData, (uint32)fData);
-			LTRESULT ret = GameBase::EngineMessageFn(messageID, pData, fData);
-
-			return ret;
-		}
-
-		case MID_UPDATE:
-		{
-			// Let our function determine whether or not we call the base class
-			if(Update())
-				return LT_OK;
-
-			return(GameBase::EngineMessageFn(messageID, pData, fData));
-		}
-
-		case MID_INITIALUPDATE:
-		{
-			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
-			return LT_OK;
+			return GameBase::EngineMessageFn(messageID, pData, fData);
 		}
 
 		default: break;
+	}
+
+	return LT_OK;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PatchRoutine::ObjectMessageFn
+//
+//	PURPOSE:	Handle object-to-object messages
+//
+// ----------------------------------------------------------------------- //
+
+uint32 PatchRoutine::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
+{
+	pMsg->SeekTo(0);
+	uint32 messageID = pMsg->Readuint32();
+
+	switch(messageID)
+	{
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			uint8 nNumProps = pMsg->Readuint8();
+			uint8 nNumPropsProcessed = 0;
+
+			// See what we need to send down
+			if(nNumProps > 0)
+			{
+				// Start the message
+				CAutoMessage cTempMsg;
+
+				// Loop through the props
+				uint8 iProp;
+				for(int i=0;i<nNumProps;i++)
+				{
+					// Get the prop
+					iProp = pMsg->Readuint8();
+					if (m_nCurrentHealth > 0 && iProp == PATCHROUTINE_HEALTH)
+					{
+						cTempMsg.Writeuint8(iProp);
+						cTempMsg.Writeint32(m_nCurrentHealth);
+						nNumPropsProcessed++;
+					}
+					else if (m_nCurrentEnergy > 0 && iProp == PATCHROUTINE_ENERGY)
+					{
+						cTempMsg.Writeuint8(iProp);
+						cTempMsg.Writeint32(m_nCurrentEnergy);
+						nNumPropsProcessed++;
+					}
+				}
+
+				// Build the actual message to send back down to the client
+				if(nNumPropsProcessed > 0)
+				{
+					// Get the player
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
+					if(pPlayer)
+					{
+						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8(MID_QUERY_TARGET_PROPERTIES);
+						cPropMsg.WriteObject(m_hObject);
+						cPropMsg.Writeuint8(nNumPropsProcessed);
+						cPropMsg.WriteMessage(cTempMsg.Read());
+						g_pLTServer->SendToClient(cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+					}
+				}
+			}
+		}
+		break;
+
+		case MID_PATCHROUTINE_DRAIN:
+		{
+			int nAmount = pMsg->Readint32();
+			if (nAmount <= 0 || !m_pPlayer) break;
+
+			CDestructible* pDest = m_pPlayer->GetDestructible();
+
+			// RETAIL: what is given is the amount asked, not the amount
+			// left (see RETAIL_BUGS.md)
+			int nGive = nAmount;
+
+			if (m_nCurrentHealth > 0)
+			{
+				if (nAmount > m_nCurrentHealth) nAmount = m_nCurrentHealth;
+
+				int nHitPoints = (int)pDest->GetHitPoints();
+				int nMaxHitPoints = (int)pDest->GetMaxHitPoints();
+				if (nHitPoints + nAmount > nMaxHitPoints)
+				{
+					nGive = nMaxHitPoints - nHitPoints;
+				}
+
+				if (!nGive)
+				{
+					HandleStopActivate(true);
+					break;
+				}
+
+				pDest->SetHitPoints((LTFLOAT)(nHitPoints + nGive));
+
+				if (!m_bInfinite)
+				{
+					m_nCurrentHealth -= nGive;
+				}
+			}
+			else if (m_nCurrentEnergy > 0)
+			{
+				if (nAmount > m_nCurrentEnergy) nAmount = m_nCurrentEnergy;
+
+				int nEnergy = (int)pDest->GetEnergy();
+				int nMaxEnergy = (int)pDest->GetMaxEnergy();
+				if (nEnergy + nAmount > nMaxEnergy)
+				{
+					nGive = nMaxEnergy - nEnergy;
+				}
+
+				if (!nGive)
+				{
+					HandleStopActivate(true);
+					break;
+				}
+
+				pDest->SetEnergy((LTFLOAT)(nEnergy + nGive));
+
+				if (!m_bInfinite)
+				{
+					m_nCurrentEnergy -= nGive;
+				}
+			}
+			else
+			{
+				g_pLTServer->CPrint("ERROR - PatchRoutine received an activate message and it had nothing to give!");
+			}
+		}
+		break;
+
+		case MID_PATCHROUTINE_STOP:
+		{
+			HandleStopActivate(false);
+
+			pMsg->Readuint8();
+			pMsg->Readuint32();
+
+			// All given: we are done
+			if (!m_nCurrentHealth && !m_nCurrentEnergy)
+			{
+				HandleStopActivate(true);
+				Remove();
+			}
+		}
+		break;
+
+		default:
+			return GameBase::ObjectMessageFn(hSender, pMsg);
 	}
 
 	return LT_OK;
@@ -135,16 +313,40 @@ LTBOOL PatchRoutine::ReadProp(ObjectCreateStruct *pData)
 	// Sanity check
     if (!pData) return LTFALSE;
 
+	pData->m_Flags |= FLAG_FORCECLIENTUPDATE | FLAG_SOLID | FLAG_RAYHIT;
+	pData->m_Flags2 |= FLAG2_SERVERDIMS;
+
 	// Read them in
 	GenericProp genProp;
 	if ( g_pLTServer->GetPropGeneric("Health", &genProp) == LT_OK )
 	{
-	    m_nTotalHealth = genProp.m_Long;
+		if (genProp.m_Long == -1)
+		{
+			m_bInfinite = true;
+			m_nTotalHealth = 0x7fffffff;
+		}
+		else
+		{
+			m_nTotalHealth = genProp.m_Long;
+		}
 	}
 
 	if ( g_pLTServer->GetPropGeneric("Energy", &genProp) == LT_OK )
 	{
-	    m_nTotalEnergy = genProp.m_Long;
+		if (genProp.m_Long == -1)
+		{
+			m_bInfinite = true;
+			m_nTotalEnergy = 0x7fffffff;
+		}
+		else
+		{
+			m_nTotalEnergy = genProp.m_Long;
+		}
+	}
+
+	if ( g_pLTServer->GetPropGeneric("DistAboveFloor", &genProp) == LT_OK )
+	{
+		m_fDistAboveFloor = genProp.m_Float;
 	}
 
 	// Sanity check
@@ -173,10 +375,14 @@ void PatchRoutine::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
 
-	SAVE_DWORD(m_nTotalHealth);
-	SAVE_DWORD(m_nTotalEnergy);
-	SAVE_DWORD(m_nCurrentHealth);
-	SAVE_DWORD(m_nCurrentEnergy);
+	SAVE_INT(m_nTotalHealth);
+	SAVE_INT(m_nTotalEnergy);
+	SAVE_INT(m_nCurrentHealth);
+	SAVE_INT(m_nCurrentEnergy);
+	SAVE_FLOAT(m_fDistAboveFloor);
+	SAVE_HOBJECT(m_hIdleFX);
+	SAVE_HOBJECT(m_hTransferFX);
+	SAVE_bool(m_bInfinite);
 
 	// We specifically don't save the player because we don't support
 	// saving/loading during a transfer
@@ -195,16 +401,19 @@ void PatchRoutine::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
-	LOAD_DWORD(m_nTotalHealth);
-	LOAD_DWORD(m_nTotalEnergy);
-	LOAD_DWORD(m_nCurrentHealth);
-	LOAD_DWORD(m_nCurrentEnergy);
-
-	m_bActive = false;
+	LOAD_INT(m_nTotalHealth);
+	LOAD_INT(m_nTotalEnergy);
+	LOAD_INT(m_nCurrentHealth);
+	LOAD_INT(m_nCurrentEnergy);
+	LOAD_FLOAT(m_fDistAboveFloor);
+	LOAD_HOBJECT(m_hIdleFX);
+	LOAD_HOBJECT(m_hTransferFX);
+	LOAD_bool(m_bInfinite);
 
 	// We specifically don't save the player because we don't support
 	// saving/loading during a transfer
-	HOBJECT hPlayer = NULL;
+	KillTransferFX();
+	m_bActive = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -217,27 +426,21 @@ void PatchRoutine::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 bool PatchRoutine::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
 	static CParsedMsg::CToken s_cTok_Activate("ACTIVATE");
-	static CParsedMsg::CToken s_cTok_StopActivate("STOPACTIVATE");
-	
+
 	if (cMsg.GetArg(0) == s_cTok_Activate)
 	{
 		HandleActivate(hSender);
+		return true;
 	}
-	else if (cMsg.GetArg(0) == s_cTok_StopActivate)
-	{
-		HandleStopActivate();
-	}
-	else
-		return GameBase::OnTrigger(hSender, cMsg);
 
-	return true;
+	return GameBase::OnTrigger(hSender, cMsg);
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	PatchRoutine::HandleActivate
 //
-//	PURPOSE:	Start activating
+//	PURPOSE:	Start activating: the player's client drains us
 //
 // ----------------------------------------------------------------------- //
 void PatchRoutine::HandleActivate(HOBJECT hSender)
@@ -258,34 +461,49 @@ void PatchRoutine::HandleActivate(HOBJECT hSender)
 		return;
 	}
 
-	// Make sure we've got goodness left to give
-	if(!m_nCurrentHealth && !m_nCurrentEnergy)
-		return;
-
 	// Make sure the player can take it
 	CTronPlayerObj* pPlayer = (CTronPlayerObj*) g_pLTServer->HandleToObject(hSender);
-	CDestructible* pDest = m_pPlayer->GetDestructible();
-	ASSERT(pDest);
-	
-	if(m_nCurrentHealth)
+	CDestructible* pDest = pPlayer->GetDestructible();
+
+	uint8 nKind;
+	int nAmount;
+	if(m_nCurrentHealth > 0)
 	{
 		// If the player is already at his max, we're done.
 		if(pDest->GetHitPoints() >= pDest->GetMaxHitPoints())
 			return;
+
+		nAmount = m_nCurrentHealth;
+		nKind = PATCHROUTINE_HEALTH;
 	}
-	else // m_nCurrentEnergy - assumed because we've checked this above
+	else if(m_nCurrentEnergy > 0)
 	{
 		// If the player is already at his max, we're done.
 		if(pDest->GetEnergy() >= pDest->GetMaxEnergy())
 			return;
+
+		nAmount = m_nCurrentEnergy;
+		nKind = PATCHROUTINE_ENERGY;
 	}
+	else
+	{
+		g_pLTServer->CPrint("ERROR - PatchRoutine received an activate message and it had nothing to give!");
+		return;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PATCHROUTINE_BEGIN);
+	cMsg.Writeuint8(nKind);
+	cMsg.WriteObject(m_hObject);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writeint32(nAmount);
+	g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
 
 	// We're all good
 	m_pPlayer = pPlayer;
 	m_bActive = true;
-	
-	// Let the updating BEGIN!!!!
-	SetNextUpdate(0.001f);
+
+	CreateTransferFX();
 }
 
 // ----------------------------------------------------------------------- //
@@ -295,103 +513,137 @@ void PatchRoutine::HandleActivate(HOBJECT hSender)
 //	PURPOSE:	Stop activating
 //
 // ----------------------------------------------------------------------- //
-void PatchRoutine::HandleStopActivate()
+void PatchRoutine::HandleStopActivate(bool bTellClient)
 {
-	// Stop updating us
-	SetNextUpdate(0.0f);
+	KillTransferFX();
 
-	// And clear our player pointer
+	if (bTellClient && m_pPlayer)
+	{
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PATCHROUTINE_STOP);
+		cMsg.Writeuint8(1);
+		g_pLTServer->SendToClient(cMsg.Read(), m_pPlayer->GetClient(), MESSAGE_GUARANTEED);
+	}
+
 	m_pPlayer = NULL;
-
 	m_bActive = false;
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PatchRoutine::Update
+//	ROUTINE:	PatchRoutine::Remove
 //
-//	PURPOSE:	Update function - drain some health/energy
+//	PURPOSE:	All given: go away, with an fx
 //
 // ----------------------------------------------------------------------- //
-LTBOOL PatchRoutine::Update()
+void PatchRoutine::Remove()
 {
-	// If we're updating, then we need to be giving goodies to the player
-	ASSERT(m_bActive && m_pPlayer);
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
 
-	// Get the player's damage aggregage
-	CDestructible* pDest = m_pPlayer->GetDestructible();
-	ASSERT(pDest);
-
-	// Figure out how much energy to drain based on how much time has passed
-	float fLastFrameDelta = g_pLTServer->GetFrameTime();
-	int nAdjustedAmount = (int)(PATCH_ROUTINE_DRAIN_AMOUNT_PER_SECOND / fLastFrameDelta);
-
-	int nMax;
-	int nCur;
-	int nCanTake;
-
-	SetNextUpdate(0.001f);
-
-	// Check if we're doing health
-	if(m_nCurrentHealth)
+	if (m_hIdleFX)
 	{
-		// See how much the player can take
-		nMax = (int)pDest->GetMaxHitPoints();
-		nCur = (int)pDest->GetHitPoints();
-		nCanTake = nMax - nCur;
-
-		// Upper bound (by player)
-		if(nCanTake > nAdjustedAmount)
-			nCanTake = nAdjustedAmount;
-
-		// Lower bound (by how much we have left)
-		if(nCanTake > m_nCurrentHealth)
-			nCanTake = m_nCurrentHealth;
-
-		// And make it so
-		if(nCanTake != 0)
-		{
-			m_nCurrentHealth -= nCanTake;
-			pDest->SetHitPoints((float)(nCur + nCanTake));
-		}
-		else
-		{
-			// Player is already max'd out
-			HandleStopActivate();
-		}
+		g_pLTServer->RemoveObject(m_hIdleFX);
+		m_hIdleFX = LTNULL;
 	}
-	else if(m_nCurrentEnergy)
+
+	LTVector vPos;
+	LTRotation rRot;
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+	g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+
+	if (m_nTotalHealth > 0)
 	{
-		// See how much the player can take
-		nMax = (int)pDest->GetMaxEnergy();
-		nCur = (int)pDest->GetEnergy();
-		nCanTake = nMax - nCur;
-
-		// Upper bound (by player)
-		if(nCanTake > nAdjustedAmount)
-			nCanTake = nAdjustedAmount;
-
-		// Lower bound (by how much we have left)
-		if(nCanTake > m_nCurrentEnergy)
-			nCanTake = m_nCurrentEnergy;
-
-		// And make it so
-		if(nCanTake != 0)
-		{
-			m_nCurrentEnergy -= nCanTake;
-			pDest->SetEnergy((float)(nCur + nCanTake));
-		}
-		else
-		{
-			// Player is already max'd out
-			HandleStopActivate();
-		}
+		PlayClientFX("WORLDS_PatchRoutine_Health_Remove", LTNULL, &vPos, &rRot, 0);
 	}
 	else
 	{
-		// We've got nothing left to give to the world!
-		HandleStopActivate();
+		PlayClientFX("WORLDS_PatchRoutine_Energy_Remove", LTNULL, &vPos, &rRot, 0);
 	}
 
-	return LTTRUE;
+	g_pLTServer->RemoveObject(m_hObject);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PatchRoutine::KillTransferFX
+//
+//	PURPOSE:	Stop the transfer fx
+//
+// ----------------------------------------------------------------------- //
+void PatchRoutine::KillTransferFX()
+{
+	if (m_hTransferFX)
+	{
+		g_pLTServer->RemoveObject(m_hTransferFX);
+		m_hTransferFX = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PatchRoutine::CreateTransferFX
+//
+//	PURPOSE:	Start the transfer fx
+//
+// ----------------------------------------------------------------------- //
+void PatchRoutine::CreateTransferFX()
+{
+	if (m_hTransferFX) return;
+
+	char szProps[1024];
+	if (m_nCurrentHealth)
+	{
+		sprintf(szProps, "FxName %s;Loop 1;SmoothShutdown 0", !m_bInfinite ? "WORLDS_PatchRoutine_Health_Transfer" : "WORLDS_PatchRoutine_Health_Transfer_Infinite");
+	}
+	else
+	{
+		sprintf(szProps, "FxName %s;Loop 1;SmoothShutdown 0", !m_bInfinite ? "WORLDS_PatchRoutine_Energy_Transfer" : "WORLDS_PatchRoutine_Energy_Transfer_Infinite");
+	}
+
+	m_hTransferFX = CreateClientFXObject(szProps, m_hObject, LTNULL, LTNULL);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PatchRoutine::InitialUpdate
+//
+//	PURPOSE:	Our dims; to the floor; the idle fx
+//
+// ----------------------------------------------------------------------- //
+void PatchRoutine::InitialUpdate()
+{
+	LTVector vDims;
+	vDims.y = vDims.x = vDims.z = 20.0f;
+	g_pPhysicsLT->SetObjectDims(m_hObject, &vDims, 0);
+
+	if (!m_bFromWorld) return;
+	if (!m_nCurrentHealth && !m_nCurrentEnergy) return;
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+	IntersectQuery IQuery;
+	IntersectInfo IInfo;
+
+	IQuery.m_From = vPos;
+	IQuery.m_To = LTVector(vPos.x, vPos.y - 10000.0f, vPos.z);
+	IQuery.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
+
+	if (g_pLTServer->IntersectSegment(&IQuery, &IInfo))
+	{
+		vPos.y -= (vPos.y - IInfo.m_Point.y - m_fDistAboveFloor) - (vDims.y + 0.1f);
+		g_pLTServer->SetObjectPos(m_hObject, &vPos);
+	}
+
+	char szProps[1024];
+	if (m_nCurrentHealth)
+	{
+		sprintf(szProps, "FxName %s;Loop 1;SmoothShutdown 0", !m_bInfinite ? "WORLDS_PatchRoutine_Health_Idle" : "WORLDS_PatchRoutine_Health_Idle_Infinite");
+	}
+	else
+	{
+		sprintf(szProps, "FxName %s;Loop 1;SmoothShutdown 0", !m_bInfinite ? "WORLDS_PatchRoutine_Energy_Idle" : "WORLDS_PatchRoutine_Energy_Idle_Infinite");
+	}
+
+	m_hIdleFX = CreateClientFXObject(szProps, m_hObject, LTNULL, LTNULL);
 }
