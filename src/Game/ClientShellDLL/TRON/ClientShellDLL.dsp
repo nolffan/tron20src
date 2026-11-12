@@ -268,6 +268,10 @@ SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCyclePowerupIcon.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDPermissions.cpp
 # End Source File
 # Begin Source File
@@ -561,6 +565,10 @@ SOURCE=.\HUDIOCamera.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleLives.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCyclePowerupIcon.h
 # End Source File
 # Begin Source File
 
