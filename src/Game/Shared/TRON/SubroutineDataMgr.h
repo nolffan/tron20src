@@ -243,6 +243,13 @@ public:
 		return szBuffer;
 	}
 
+	char* GetFullAttribName(const char* szAttrib, char* szBuffer)
+	{
+		strcpy(szBuffer, szAttrib);
+		strcat(szBuffer, m_szFullSuffix);
+		return szBuffer;
+	}
+
 	void CheckSuccess(const char* szTag, const char* szAttrib)
 	{
 		if (!m_pButeMgr->Success())
@@ -267,9 +274,7 @@ public:
 	{
 		char szAttribName[64];
 		// RETAIL: strings are per version too, so they take the full suffix.
-		strcpy(szAttribName, szAttrib);
-		strcat(szAttribName, m_szFullSuffix);
-		m_pButeMgr->GetString(m_szTag, szAttribName, szResult, nResultLen);
+		m_pButeMgr->GetString(m_szTag, GetFullAttribName(szAttrib, szAttribName), szResult, nResultLen);
 		CheckSuccess(m_szTag, szAttribName);
 	}
 
