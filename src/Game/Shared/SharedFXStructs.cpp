@@ -694,6 +694,55 @@ void MINECREATESTRUCT::Read(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLIENTFXUSERCREATESTRUCT::CLIENTFXUSERCREATESTRUCT()
+//
+//	PURPOSE:	No model yet (RETAIL: Tron's, retail 0x10114140)
+//
+// ----------------------------------------------------------------------- //
+
+CLIENTFXUSERCREATESTRUCT::CLIENTFXUSERCREATESTRUCT()
+{
+	eModelId = eModelIdInvalid;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLIENTFXUSERCREATESTRUCT::Write()
+//
+//	PURPOSE:	Write the data to the message (RETAIL: folds with
+//				PVCREATESTRUCT's, retail 0x10114160)
+//
+// ----------------------------------------------------------------------- //
+
+void CLIENTFXUSERCREATESTRUCT::Write(ILTMessage_Write *pMsg)
+{
+	if (!pMsg) return;
+
+    SFXCREATESTRUCT::Write(pMsg);
+
+	pMsg->Writeuint8(eModelId);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLIENTFXUSERCREATESTRUCT::Read()
+//
+//	PURPOSE:	Read the data from the message (RETAIL: folds with
+//				PVCREATESTRUCT's, retail 0x10114180)
+//
+// ----------------------------------------------------------------------- //
+
+void CLIENTFXUSERCREATESTRUCT::Read(ILTMessage_Read *pMsg)
+{
+	if (!pMsg) return;
+
+    SFXCREATESTRUCT::Read(pMsg);
+
+    eModelId = (ModelId) pMsg->Readuint8();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	PVCREATESTRUCT::Write()
 //
 //	PURPOSE:	Write the data to the message

@@ -210,6 +210,10 @@ SOURCE=.\MultiplayerLevelInfoMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Optimizer.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\PatchRoutine.cpp
 # End Source File
 # Begin Source File
@@ -227,6 +231,10 @@ SOURCE=.\ProjectileClusterDisc.cpp
 # Begin Source File
 
 SOURCE=.\ProjectileDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SecRezzer.cpp
 # End Source File
 # Begin Source File
 
@@ -325,6 +333,10 @@ SOURCE=.\LightCycleZones.h
 # Begin Source File
 
 SOURCE=.\MultiplayerLevelInfoMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Optimizer.h
 # End Source File
 # Begin Source File
 

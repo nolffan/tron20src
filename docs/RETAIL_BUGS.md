@@ -171,6 +171,17 @@ Core dumps only get their items from bodies, which may never hold custom
 items.
 
 Not fixed yet.
+### A patch routine gives the amount asked, not what it has left
+
+Object.lto, PatchRoutine::ObjectMessageFn (TRON/PatchRoutine.cpp; retail
+0x10032d29, 0x10032d95). When the player's client drains a health or
+energy patch routine, the amount asked is clamped to what the routine has
+left only to test the player's maximum; what is given (and taken from the
+routine) is the unclamped amount. A request larger than what is left gives
+the player more than the routine had and leaves its count negative (it is
+then neither > 0 nor == 0: the routine is never removed).
+
+Not fixed yet: the modern build should give the clamped amount.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
