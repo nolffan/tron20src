@@ -421,7 +421,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 				{
 					if((info.nTrail != -1) && pCyclist->bShield)
 					{
-						HandleShieldCollision(pCyclist, &info, true, 0);
+						HandleShieldCollision(pCyclist, &info, true, false);
 						DeactivateShield(pCyclist, true);
 
 						pTrail = pCyclist->pCurTrail;
@@ -447,7 +447,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 			{
 				if((info.nTrail != -1) && pCyclist->bShield)
 				{
-					HandleShieldCollision(pCyclist, &info, true, 0);
+					HandleShieldCollision(pCyclist, &info, true, false);
 					DeactivateShield(pCyclist, true);
 
 					pTrail = pCyclist->pCurTrail;
@@ -471,7 +471,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 			{
 				if((info.nTrail != -1) && pCyclist->bShield)
 				{
-					HandleShieldCollision(pCyclist, &info, true, 0);
+					HandleShieldCollision(pCyclist, &info, true, false);
 					DeactivateShield(pCyclist, true);
 					pTrail = pCyclist->pCurTrail;
 				}
@@ -1284,6 +1284,169 @@ void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, uint32 nTronUnkno
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::HandleShieldCollision
+//
+//	PURPOSE:	A shielded cycle hit a trail: the trail is cut in two at the
+//				hit segment (the new trail gets the points after it).
+//				RETAIL: 0x10100960
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail)
+{
+	LIGHT_CYCLIST* pOther = pInfo->pCyclist;
+	if(pInfo->nTrail == -1)
+		return true;
+
+	if(pOther)
+	{
+		LIGHT_CYCLE_TRAIL* pTrail = NULL;
+		if(bCurrentTrail)
+		{
+			pTrail = pOther->pCurTrail;
+		}
+		else if((int)pOther->collTrails.size() > pInfo->nTrail)
+		{
+			pTrail = pOther->collTrails[pInfo->nTrail];
+		}
+
+		if(pTrail && ((int)pTrail->collTrailPoints.size() > pInfo->nSegment))
+		{
+			LIGHT_CYCLE_TRAIL* pNewTrail = debug_new(LIGHT_CYCLE_TRAIL);
+
+			if(pTrail->fDerezStartTime == 0.0f)
+			{
+				pTrail->fDerezStartTime = LCM_LT->GetTime();
+			}
+			else
+			{
+				pNewTrail->fDerezStartTime = pTrail->fDerezStartTime;
+			}
+
+			if(pTrail->m_bTronUnknownC)
+			{
+				pNewTrail->m_bTronUnknownC = true;
+				pTrail->fDerezStartTime = LCM_LT->GetTime();
+				pNewTrail->fDerezStartTime = LCM_LT->GetTime();
+			}
+
+			if(pTrail == pOther->pCurTrail)
+			{
+				pOther->pCurTrail = pNewTrail;
+			}
+			else if(pNewTrail->fDerezStartTime == 0.0f)
+			{
+				pNewTrail->fDerezStartTime = LCM_LT->GetTime();
+			}
+
+			int nPoints = pTrail->collTrailPoints.size();
+			if(pInfo->nSegment + 1 >= nPoints)
+			{
+				pInfo->nSegment = nPoints - 2;
+			}
+
+			// The new trail: from the hit segment on
+			LIGHT_CYCLE_TRAIL_POINT* pSegment = &pTrail->collTrailPoints[pInfo->nSegment];
+			pNewTrail->collTrailPoints.insert(pNewTrail->collTrailPoints.begin(), pSegment, pTrail->collTrailPoints.end());
+
+			bool bKeep = true;
+			if(!CutTrailPoint(pNewTrail->collTrailPoints, pNewTrail->collTrailPoints.begin(), pNewTrail->collTrailPoints.begin() + 1, pInfo))
+			{
+				if(pNewTrail->collTrailPoints.size() > 2)
+				{
+					pNewTrail->collTrailPoints.erase(pNewTrail->collTrailPoints.begin());
+				}
+				else if(pOther->pCurTrail == pNewTrail)
+				{
+					*pNewTrail->collTrailPoints.begin() = *(pNewTrail->collTrailPoints.begin() + 1);
+				}
+				else
+				{
+					pNewTrail->collTrailPoints.erase(pNewTrail->collTrailPoints.begin(), pNewTrail->collTrailPoints.end());
+					debug_delete(pNewTrail);
+					bKeep = false;
+				}
+			}
+
+			if(bKeep)
+			{
+				pOther->collTrails.push_back(pNewTrail);
+
+				if((pOther->pCurTrail == pNewTrail) && (pNewTrail->collTrailPoints.size() > 1))
+				{
+					pNewTrail->fLength = 0.0f;
+					for(uint32 i = 0; i < pNewTrail->collTrailPoints.size() - 1; i++)
+					{
+						LIGHT_CYCLE_TRAIL_POINT* pPoints = pNewTrail->collTrailPoints.begin();
+						float fLength = (float)fabs(pPoints[i].vPoint.x - pPoints[i+1].vPoint.x);
+						if(!(fLength > 0.0001f))
+						{
+							fLength = (float)fabs(pPoints[i].vPoint.z - pPoints[i+1].vPoint.z);
+						}
+						pNewTrail->fLength += fLength;
+					}
+				}
+			}
+
+			// The old trail: up to the hit segment
+			if((int)pTrail->collTrailPoints.size() > pInfo->nSegment + 2)
+			{
+				pTrail->collTrailPoints.erase(pSegment + 2, pTrail->collTrailPoints.end());
+			}
+
+			nPoints = pTrail->collTrailPoints.size();
+			if(!CutTrailPoint(pTrail->collTrailPoints, &pTrail->collTrailPoints[nPoints-1], &pTrail->collTrailPoints[nPoints-2], pInfo))
+			{
+				if(pTrail->collTrailPoints.size() > 2)
+				{
+					// RETAIL: erases end() (docs/RETAIL_BUGS.md): with STLport
+					// that drops the last point
+					pTrail->collTrailPoints.erase(pTrail->collTrailPoints.end());
+				}
+				else
+				{
+					pTrail->collTrailPoints.erase(pTrail->collTrailPoints.begin(), pTrail->collTrailPoints.end());
+
+					if(pOther->pCurTrail != pTrail)
+					{
+						std::vector<LIGHT_CYCLE_TRAIL*>::iterator iter = pOther->collTrails.begin();
+						while(iter != pOther->collTrails.end())
+						{
+							if((*iter) == pTrail)
+							{
+								pOther->collTrails.erase(iter);
+							}
+							else
+							{
+								iter++;
+							}
+						}
+
+						if(pOther->pSpikeTrail == pTrail)
+						{
+							pOther->pSpikeTrail = NULL;
+						}
+						else if(pOther->pSpikeTrail2 == pTrail)
+						{
+							pOther->pSpikeTrail2 = NULL;
+						}
+
+						debug_delete(pTrail);
+					}
+				}
+			}
+		}
+	}
+
+	if(bNotify)
+	{
+		TrailCut(pInfo);
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::TrimTrail
 //
 //	PURPOSE:	Drops the current trail's points before nPoint.
@@ -1337,6 +1500,114 @@ bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, 
 	}
 
 	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::CutTrailPoint
+//
+//	PURPOSE:	Pulls the trail point back from the hit point by 64; if it
+//				would pass its neighbour, drops it. RETAIL: 0x10100fb0
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPoints, LIGHT_CYCLE_TRAIL_POINT* pPoint,
+	LIGHT_CYCLE_TRAIL_POINT* pNeighbour, LightCycleCollisionInfo* pInfo)
+{
+	uint32 nPoints = collPoints.size();
+	float fDX = (float)fabs(pPoint->vPoint.x - pNeighbour->vPoint.x);
+	float fDZ = (float)fabs(pPoint->vPoint.z - pNeighbour->vPoint.z);
+
+	uint32 nIndex = 0;
+	while((nIndex < nPoints) && (pPoint != &collPoints[nIndex]))
+	{
+		nIndex++;
+	}
+
+	if(fDX > fDZ)
+	{
+		if(pNeighbour->vPoint.x < pPoint->vPoint.x)
+		{
+			if(pPoint->vPoint.x == pInfo->vCollisionPoint.x)
+			{
+				float fX = pInfo->vCollisionPoint.x - 64.0f;
+				if(!(fX > pNeighbour->vPoint.x))
+					return false;
+				pPoint->vPoint.x = fX;
+				return true;
+			}
+
+			float fX = pInfo->vCollisionPoint.x - 64.0f;
+			if(!(fX < pNeighbour->vPoint.x))
+			{
+				pPoint->vPoint.x = fX;
+				return true;
+			}
+		}
+		else
+		{
+			if(pPoint->vPoint.x == pInfo->vCollisionPoint.x)
+			{
+				float fX = pInfo->vCollisionPoint.x + 64.0f;
+				if(!(fX < pNeighbour->vPoint.x))
+					return false;
+				pPoint->vPoint.x = fX;
+				return true;
+			}
+
+			float fX = pInfo->vCollisionPoint.x + 64.0f;
+			if(!(fX > pNeighbour->vPoint.x))
+			{
+				pPoint->vPoint.x = fX;
+				return true;
+			}
+		}
+	}
+	else
+	{
+		if(pNeighbour->vPoint.z < pPoint->vPoint.z)
+		{
+			if(pPoint->vPoint.z == pInfo->vCollisionPoint.z)
+			{
+				float fZ = pInfo->vCollisionPoint.z - 64.0f;
+				if(!(fZ > pNeighbour->vPoint.z))
+					return false;
+				pPoint->vPoint.z = fZ;
+				return true;
+			}
+
+			float fZ = pInfo->vCollisionPoint.z - 64.0f;
+			if(!(fZ < pNeighbour->vPoint.z))
+			{
+				pPoint->vPoint.z = fZ;
+				return true;
+			}
+		}
+		else
+		{
+			if(pPoint->vPoint.z == pInfo->vCollisionPoint.z)
+			{
+				float fZ = pInfo->vCollisionPoint.z + 64.0f;
+				if(!(fZ < pNeighbour->vPoint.z))
+					return false;
+				pPoint->vPoint.z = fZ;
+				return true;
+			}
+
+			float fZ = pInfo->vCollisionPoint.z + 64.0f;
+			if(!(fZ > pNeighbour->vPoint.z))
+			{
+				pPoint->vPoint.z = fZ;
+				return true;
+			}
+		}
+	}
+
+	// It would pass its neighbour: drop it
+	if(nPoints <= 2)
+		return false;
+
+	collPoints.erase(&collPoints[nIndex]);
+	return true;
 }
 
 // ----------------------------------------------------------------------- //

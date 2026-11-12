@@ -262,7 +262,7 @@ class CLightCycleMgr
 		virtual void TronUnknownVirtual7() = 0;
 
 		// A shielded cyclist's hit. RETAIL: 0x10100960
-		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bTronUnknown, uint32 nTronUnknown);
+		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail);
 		// Drops the first points of the current trail up to nPoint (or the
 		// first if two are left, snapping the next). RETAIL: 0x10100df0
 		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown);
@@ -284,8 +284,9 @@ class CLightCycleMgr
 		virtual std::string TronUnknownVirtual19(uint32) { return std::string(""); }
 		// RETAIL: slot 20, 0x10010a30 (inline, empty)
 		virtual void TronUnknownVirtual20(uint32, uint32, uint32, uint32, uint32) {}
+		// A trail was cut by a shielded cycle (HandleShieldCollision).
 		// RETAIL: slot 21, 0x100a9310 (inline, empty, folded)
-		virtual void TronUnknownVirtual21(uint32) {}
+		virtual void TrailCut(LightCycleCollisionInfo* pInfo) {}
 
 		LIGHT_CYCLIST* FindCyclist(HOBJECT hObj);	// RETAIL: 0x100ff280
 
@@ -312,6 +313,10 @@ class CLightCycleMgr
 		// Cuts the trail's tail to the cyclist's max trail length.
 		// RETAIL: 0x100ffc00
 		void TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, bool bToTrailEnd);
+		// Pulls the trail point back from a (shield) hit point, dropping
+		// the point if it passes its neighbour. RETAIL: 0x10100fb0
+		bool CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPoints, LIGHT_CYCLE_TRAIL_POINT* pPoint,
+			LIGHT_CYCLE_TRAIL_POINT* pNeighbour, LightCycleCollisionInfo* pInfo);
 		uint32 AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, LTVector& vPos);	// RETAIL: 0x100ff1f0
 
 		// The wall acceleration of the cyclist's wall distance. RETAIL: 0x101004d0
