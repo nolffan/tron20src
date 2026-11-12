@@ -473,6 +473,40 @@ void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTV
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::SnapToGrid
+//
+//	PURPOSE:	Snaps the position to the bute grid. RETAIL: 0x100ffec0
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::SnapToGrid(LTVector & vPos)
+{
+	float fGridSize = m_ButeMgr.GetGridSize();
+
+	int nX = LCM_ROUND(vPos.x);
+	if(fGridSize > 1.0f)
+	{
+		nX = LCM_ROUND(nX / fGridSize);
+		vPos.x = nX * fGridSize;
+	}
+	else
+	{
+		vPos.x = (float)nX;
+	}
+
+	int nZ = LCM_ROUND(vPos.z);
+	if(fGridSize > 1.0f)
+	{
+		nZ = LCM_ROUND(nZ / fGridSize);
+		vPos.z = nZ * fGridSize;
+	}
+	else
+	{
+		vPos.z = (float)nZ;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::HandleCollision
 //
 //	PURPOSE:	Handles a collision. RETAIL: 0x100ffbe0
@@ -546,6 +580,58 @@ void CLightCycleMgr::RemoveAllCyclists()
 	}
 
 	m_collCyclists.clear();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::UpdateDerez
+//
+//	PURPOSE:	Frees the cyclists flagged for a derez and the trails whose
+//				derez is over. RETAIL: 0x101005e0
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::UpdateDerez()
+{
+	std::vector<LIGHT_CYCLIST*>::iterator iter = m_collCyclists.begin();
+	while(iter != m_collCyclists.end())
+	{
+		LIGHT_CYCLIST* pCyclist = (*iter);
+		if(pCyclist->bDerezRequested)
+		{
+			debug_delete(pCyclist);
+			m_collCyclists.erase(iter);
+			continue;
+		}
+
+		std::vector<LIGHT_CYCLE_TRAIL*>::iterator iterTrail = pCyclist->collTrails.begin();
+		while(iterTrail != pCyclist->collTrails.end())
+		{
+			// A dead cyclist's trails go at once
+			float fDelay = (pCyclist->fStartDerezTime > 0.0f) ? 0.0f : m_ButeMgr.GetTrailDerezDelay();
+
+			LIGHT_CYCLE_TRAIL* pTrail = (*iterTrail);
+			if(pTrail->fDerezStartTime > 0.0f)
+			{
+				float fDerezTime = m_ButeMgr.GetTrailDerezTime();
+				if((LCM_LT->GetTime() - pTrail->fDerezStartTime - fDelay) > fDerezTime)
+				{
+					if(pTrail == pCyclist->pSpikeTrail)
+						pCyclist->pSpikeTrail = NULL;
+
+					if(pTrail == pCyclist->pSpikeTrail2)
+						pCyclist->pSpikeTrail2 = NULL;
+
+					debug_delete(pTrail);
+					pCyclist->collTrails.erase(iterTrail);
+					continue;
+				}
+			}
+
+			iterTrail++;
+		}
+
+		iter++;
+	}
 }
 
 // ----------------------------------------------------------------------- //

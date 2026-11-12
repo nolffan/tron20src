@@ -285,6 +285,13 @@ class CLightCycleMgr
 
 		LIGHT_CYCLIST* FindCyclist(HOBJECT hObj);	// RETAIL: 0x100ff280
 
+		// Snaps the position to the bute grid. RETAIL: 0x100ffec0
+		void SnapToGrid(LTVector & vPos);
+
+		// Frees the cyclists flagged for a derez and the trails whose derez
+		// is over. RETAIL: 0x101005e0
+		void UpdateDerez();
+
 		// The next living cyclist after hObj's (the first if NULL); wraps
 		// to the first if bWrap. RETAIL: 0x100ff2b0
 		LIGHT_CYCLIST* GetNextCyclist(HOBJECT hObj, bool bWrap);
