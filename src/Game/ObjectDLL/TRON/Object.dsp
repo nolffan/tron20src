@@ -178,6 +178,10 @@ SOURCE=.\ArchiveBin.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ArenaStartPoint.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\BossButeMgr.cpp
 # End Source File
 # Begin Source File
@@ -325,6 +329,10 @@ SOURCE=.\AIGoalLead.h
 # Begin Source File
 
 SOURCE=.\ArchiveBin.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ArenaStartPoint.h
 # End Source File
 # Begin Source File
 
