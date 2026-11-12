@@ -285,12 +285,12 @@ bool Finder::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_DrawScanVolume(s_szDrawScanVolume);
 	static CParsedMsg::CToken s_cTok_ScanInfinite(s_szScanInfinite);
 
-	if (cMsg.GetArg(0) == s_cTok_DrawScanVolume)
+	if (s_cTok_DrawScanVolume == cMsg.GetArg(0))
 	{
 		LTFLOAT fDraw;
 		if (cMsg.GetArgCount() == 1)
 		{
-			fDraw = (s_vtDrawScanVolume.GetFloat() == 0.0f) ? 1.0f : 0.0f;
+			fDraw = (0.0f == s_vtDrawScanVolume.GetFloat()) ? 1.0f : 0.0f;
 		}
 		else
 		{
@@ -300,10 +300,15 @@ bool Finder::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		s_vtDrawScanVolume.SetFloat(fDraw);
 		return true;
 	}
-	else if (cMsg.GetArg(0) == s_cTok_ScanInfinite)
+	else if (s_cTok_ScanInfinite == cMsg.GetArg(0))
 	{
-		bool bScan = (cMsg.GetArgCount() == 1) ? true : (atoi(cMsg.GetArg(1)) > 0);
-		if (bScan)
+		if (cMsg.GetArgCount() != 1 && atoi(cMsg.GetArg(1)) <= 0)
+		{
+			m_LingerTimer.Start(0.0f);
+			m_bScanInfinite = false;
+			m_vScanInfiniteDir.Init();
+		}
+		else
 		{
 			PauseKeyframer();
 
@@ -312,12 +317,6 @@ bool Finder::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			m_vScanInfiniteDir = rRot.Forward();
 			m_bScanInfinite = true;
 			SetState(eStateLingering);
-		}
-		else
-		{
-			m_LingerTimer.Start(0.0f);
-			m_bScanInfinite = false;
-			m_vScanInfiniteDir.Init();
 		}
 	}
 
@@ -387,15 +386,15 @@ void Finder::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	SetWeapon(pMsg->Readuint32());
 
-	FREE_HSTRING(m_hstrWeapon);
+	if (m_hstrWeapon) g_pLTServer->FreeString(m_hstrWeapon);
 	LOAD_HSTRING(m_hstrWeapon);
 	LOAD_bool(m_bHasWeapon);
 	LOAD_HOBJECT(m_hKeyframer);
-	FREE_HSTRING(m_hstrKeyframerName);
+	if (m_hstrKeyframerName) g_pLTServer->FreeString(m_hstrKeyframerName);
 	LOAD_HSTRING(m_hstrKeyframerName);
-	FREE_HSTRING(m_hstrClearAlarmCommand);
+	if (m_hstrClearAlarmCommand) g_pLTServer->FreeString(m_hstrClearAlarmCommand);
 	LOAD_HSTRING(m_hstrClearAlarmCommand);
-	FREE_HSTRING(m_hstrDeathCommand);
+	if (m_hstrDeathCommand) g_pLTServer->FreeString(m_hstrDeathCommand);
 	LOAD_HSTRING(m_hstrDeathCommand);
 	LOAD_bool(m_bFakeDeath);
 	LOAD_BYTE_CAST(m_eState, State);
@@ -508,19 +507,19 @@ bool Finder::ReadProp(ObjectCreateStruct *pStruct)
 
 	if (g_pLTServer->GetPropGeneric("KeyframerName", &genProp) == LT_OK)
 	{
-		FREE_HSTRING(m_hstrKeyframerName);
+		if (m_hstrKeyframerName) g_pLTServer->FreeString(m_hstrKeyframerName);
 		m_hstrKeyframerName = g_pLTServer->CreateString(genProp.m_String);
 	}
 
 	if (g_pLTServer->GetPropGeneric("ClearAlarmCommand", &genProp) == LT_OK)
 	{
-		FREE_HSTRING(m_hstrClearAlarmCommand);
+		if (m_hstrClearAlarmCommand) g_pLTServer->FreeString(m_hstrClearAlarmCommand);
 		m_hstrClearAlarmCommand = g_pLTServer->CreateString(genProp.m_String);
 	}
 
 	if (g_pLTServer->GetPropGeneric("DeathCommand", &genProp) == LT_OK)
 	{
-		FREE_HSTRING(m_hstrDeathCommand);
+		if (m_hstrDeathCommand) g_pLTServer->FreeString(m_hstrDeathCommand);
 		m_hstrDeathCommand = g_pLTServer->CreateString(genProp.m_String);
 	}
 
@@ -534,7 +533,7 @@ bool Finder::ReadProp(ObjectCreateStruct *pStruct)
 
 	if (g_pLTServer->GetPropGeneric("DeathFX", &genProp) == LT_OK)
 	{
-		FREE_HSTRING(m_hstrDeathFX);
+		if (m_hstrDeathFX) g_pLTServer->FreeString(m_hstrDeathFX);
 		m_hstrDeathFX = g_pLTServer->CreateString(genProp.m_String);
 	}
 
@@ -549,7 +548,9 @@ bool Finder::ReadProp(ObjectCreateStruct *pStruct)
 
 bool Finder::PostPropRead(ObjectCreateStruct *pStruct)
 {
-	return pStruct != LTNULL;
+	if (!pStruct) return false;
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -867,8 +868,9 @@ bool Finder::AllObjectsCreated()
 		if (_stricmp(pWeapon->szName, "NoWeapon"))
 		{
 			m_bHasWeapon = true;
-			SetWeapon(pWeapon->nId);
 		}
+
+		SetWeapon(pWeapon->nId);
 
 		g_pLTServer->FreeString(m_hstrWeapon);
 		m_hstrWeapon = LTNULL;
@@ -877,11 +879,13 @@ bool Finder::AllObjectsCreated()
 	if (m_hstrKeyframerName)
 	{
 		ObjArray<HOBJECT, MAX_OBJECT_ARRAY_SIZE> objArray;
-		g_pLTServer->FindNamedObjects(g_pLTServer->GetStringData(m_hstrKeyframerName), objArray);
+		uint32 nNumFound;
+		const char* szKeyframer = g_pLTServer->GetStringData(m_hstrKeyframerName);
+		g_pLTServer->FindNamedObjects(szKeyframer, objArray, &nNumFound);
 
 		HCLASS hKeyframer = g_pLTServer->GetClass("KeyFramer");
 
-		for (uint32 i = 0; i < objArray.NumObjects(); i++)
+		for (uint32 i = 0; i < nNumFound; i++)
 		{
 			LTObjRef hObj;
 			hObj = objArray.GetObject(i);
@@ -992,9 +996,7 @@ bool Finder::UpdateFocusing()
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pLTServer->GetObjectPos(m_hLastDetectedEnemy, &vEnemyPos);
 
-	LTVector vDir = vEnemyPos - vPos;
-	vDir.Normalize();
-	TurnTo(vDir);
+	TurnTo((vEnemyPos - vPos).Unit());
 
 	return true;
 }
@@ -1019,9 +1021,7 @@ bool Finder::UpdateLocked()
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pLTServer->GetObjectPos(m_hLastDetectedEnemy, &vEnemyPos);
 
-	LTVector vDir = vEnemyPos - vPos;
-	vDir.Normalize();
-	if (TurnTo(vDir) < 1e-11f)
+	if (TurnTo((vEnemyPos - vPos).Unit()) < 1e-11f)
 	{
 		Fire();
 	}
@@ -1051,17 +1051,7 @@ bool Finder::UpdateLingering()
 
 	if (m_eLingerState == eLingerReturningFromLeft || m_eLingerState == eLingerReturningFromRight)
 	{
-		LTFLOAT fDot = vForward.Dot(m_vLingerDir);
-		if (fDot < -1.0f)
-		{
-			fDot = -1.0f;
-		}
-		else if (fDot > 1.0f)
-		{
-			fDot = 1.0f;
-		}
-
-		if (fDot > 0.9f)
+		if (LTCLAMP(vForward.Dot(m_vLingerDir), -1.0f, 1.0f) > 0.9f)
 		{
 			if (m_eLingerState == eLingerReturningFromLeft)
 			{
@@ -1172,15 +1162,7 @@ LTFLOAT Finder::TurnTo(const LTVector &vDir)
 	LTRotation rRot;
 	g_pLTServer->GetObjectRotation(m_hObject, &rRot);
 
-	LTFLOAT fDot = rRot.Forward().Dot(vTarget);
-	if (fDot < -1.0f)
-	{
-		fDot = -1.0f;
-	}
-	else if (fDot > 1.0f)
-	{
-		fDot = 1.0f;
-	}
+	LTFLOAT fDot = LTCLAMP(rRot.Forward().Dot(vTarget), -1.0f, 1.0f);
 
 	if ((LTFLOAT)acos(fDot) <= fMaxTurn)
 	{
@@ -1192,15 +1174,7 @@ LTFLOAT Finder::TurnTo(const LTVector &vDir)
 	LTVector vUp = rRot.Up();
 	LTVector vForward = rRot.Forward();
 
-	LTFLOAT fSide = vTarget.Dot(rRot.Right());
-	if (fSide < -1.0f)
-	{
-		fSide = -1.0f;
-	}
-	else if (fSide > 1.0f)
-	{
-		fSide = 1.0f;
-	}
+	LTFLOAT fSide = LTCLAMP(vTarget.Dot(rRot.Right()), -1.0f, 1.0f);
 
 	int nDir = 0;
 	if (fDot < 0.0f && fDot > 0.0f)
@@ -1540,7 +1514,8 @@ LTBOOL Finder::IsDead() const
 LTBOOL Finder::UpdateTargets()
 {
 	FinderTargetList::iterator it = m_lstTargets.begin();
-	while (it != m_lstTargets.end())
+	FinderTargetList::iterator itEnd = m_lstTargets.end();
+	while (it != itEnd)
 	{
 		FinderTargetList::iterator itNext = it;
 		++itNext;
@@ -1555,15 +1530,17 @@ LTBOOL Finder::UpdateTargets()
 
 	// RETAIL bug: compares the time left with the game time (and the
 	// timers were started with a time as their duration, AddTarget)
+	float (CTimer::*pfnTimeLeft)() const = &CTimer::GetCountdownTime;
 	LTFLOAT fTime = g_pLTServer->GetTime();
 
 	it = m_lstTargets.begin();
-	while (it != m_lstTargets.end())
+	itEnd = m_lstTargets.end();
+	while (it != itEnd)
 	{
 		FinderTargetList::iterator itNext = it;
 		++itNext;
 
-		if (it->m_Timer.GetCountdownTime() < fTime)
+		if ((it->m_Timer.*pfnTimeLeft)() < fTime)
 		{
 			m_lstTargets.erase(it);
 		}
@@ -1610,8 +1587,10 @@ struct FinderTargetIs : public std::binary_function<FinderTarget, HOBJECT, bool>
 
 FinderTarget* Finder::FindTarget(HOBJECT hObj)
 {
+	// RETAIL: looks for the stimulus, not for hObj (they are the same at
+	// every call)
 	FinderTargetList::iterator it = std::find_if(m_lstTargets.begin(), m_lstTargets.end(),
-		std::bind2nd(FinderTargetIs(), hObj));
+		std::bind2nd(FinderTargetIs(), (HOBJECT)m_hStimulus));
 
 	if (it != m_lstTargets.end())
 	{
