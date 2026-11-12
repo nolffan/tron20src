@@ -2427,14 +2427,12 @@ void CPlayerMgr::SetSpectatorMode(LTBOOL bOn)
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerMgr::ChangeWeapon(uint8 nWeaponId, 
+bool CPlayerMgr::ChangeWeapon(uint8 nWeaponId, 
 							  uint8 nAmmoId,/*= WMGR_INVALID_ID*/
 							  int dwAmmo/*= -1*/)
 {
-     if (m_pClientWeaponMgr->ChangeWeapon( nWeaponId, nAmmoId, dwAmmo ))
-	 {
-		 
-	 }
+	// RETAIL: Tron's returns the weapon manager's answer
+	return m_pClientWeaponMgr->ChangeWeapon( nWeaponId, nAmmoId, dwAmmo );
 }
 
 

@@ -202,6 +202,18 @@ public :
 	uint16					GetModifierDescriptionId(eSkill skl, uint8 nMod);
 #endif
 
+	// RETAIL: build 51's per-skill accessors, which Tron's CTronPlayerStats
+	// inlines (retail 0x100a9410..0x100a94f0; Tron's modifier tables are
+	// 12, 20, 12, 8, 8, 8, 8 and 4 bytes a level, from +0x124c)
+	const StealthModifiers*	GetStealth(eSkillLevel lvl)	{ return &m_Stealth[lvl]; }
+	const StaminaModifiers*	GetStamina(eSkillLevel lvl)	{ return &m_Stamina[lvl]; }
+	const AimModifiers*		GetAim(eSkillLevel lvl)		{ return &m_Aim[lvl]; }
+	const CarryModifiers*	GetCarry(eSkillLevel lvl)	{ return &m_Carry[lvl]; }
+	const ArmorModifiers*	GetArmor(eSkillLevel lvl)	{ return &m_Armor[lvl]; }
+	const WeaponModifiers*	GetWeapon(eSkillLevel lvl)	{ return &m_Weapon[lvl]; }
+	const GadgetModifiers*	GetGadget(eSkillLevel lvl)	{ return &m_Gadget[lvl]; }
+	const SearchModifiers*	GetSearch(eSkillLevel lvl)	{ return &m_Search[lvl]; }
+
 	uint32		GetMultiplayerPool() {return m_nMPPool;}
 	eSkillLevel GetDefaultMultiplayerLevel(eSkill skl) {return m_MPSkillLevel[skl];}
 

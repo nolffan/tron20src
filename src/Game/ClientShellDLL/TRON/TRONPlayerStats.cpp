@@ -504,6 +504,24 @@ void CTronPlayerStats::UpdateMaxEnergy(uint32 nEnergy)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerStats::UseEnergy()
+//
+//	PURPOSE:	RETAIL: retail 0x100a9d00 (the name is ours): energy spent
+//				is the server's to take (Tron's message 162)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerStats::UseEnergy(float fEnergy)
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(162);	// RETAIL: Tron's MsgID, not yet in our MsgIDs.h
+	cMsg.Writeuint8(1);
+	cMsg.Writefloat(fEnergy);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerStats::UpdateMaxArmor()
 //
 //	PURPOSE:	Update the armor stat maximum
@@ -1816,4 +1834,25 @@ void CTronPlayerStats::ClearMissionInfo()
 	m_nDamage = 0;
 	m_Keys.Clear();
 	m_IntelList.Clear();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerStats::CanChangeToWeapon()
+//
+//	PURPOSE:	RETAIL: retail 0x100ac370 (the name is ours): no weapon
+//				always; else the weapon must be usable (retail 0x100ac2f0)
+//				and its energy cost met (a Tron client weapon's slots 0x16c,
+//				0x168). PORT: those are not yet in our tree; having the
+//				weapon stands in
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
+{
+	const WEAPON* pNoWeapon = g_pWeaponMgr->GetWeapon("NoWeapon");
+	if (pNoWeapon && nWeaponId == pNoWeapon->nId)
+		return true;
+
+	return !!HaveWeapon(nWeaponId);
 }

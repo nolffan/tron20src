@@ -33,6 +33,10 @@ const float kActivationDist = 100.0f;
 
 CTronTargetMgr::CTronTargetMgr() : CTargetMgr()
 {
+	// PORT: retail's (0x100ae410) sets other members; until the target
+	// properties set the permission (+0x874), none is required
+	m_bPermissionRequired = false;
+	m_nPermissionRequired = 0;
 }
 
 // ----------------------------------------------------------------------- //

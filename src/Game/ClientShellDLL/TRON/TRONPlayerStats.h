@@ -148,14 +148,17 @@ public:
 	// RETAIL: Tron's slots of CPlayerStats' (stand-ins, to be written from
 	// the retail code)
 	uint32		TronUnknownVirtual110() { return 0; }
-	const void*	TronUnknownVirtual134() { return LTNULL; }
-	const void*	TronUnknownVirtual138() { return LTNULL; }
-	const void*	TronUnknownVirtual13C() { return LTNULL; }
-	const void*	TronUnknownVirtual140() { return LTNULL; }
-	const void*	TronUnknownVirtual144() { return LTNULL; }
-	const void*	TronUnknownVirtual148() { return LTNULL; }
-	const void*	TronUnknownVirtual14C() { return LTNULL; }
-	const void*	TronUnknownVirtual150() { return LTNULL; }
+	// RETAIL: slots 0x134..0x150 (retail 0x100a9410..0x100a94f0): build 51's
+	// Get*Modifiers (commented out below), the search ones by the stealth
+	// skill as build 51's
+	const void*	TronUnknownVirtual134() { return g_pSkillsButeMgr->GetStealth((eSkillLevel)m_nSkills[SKL_STEALTH]); }
+	const void*	TronUnknownVirtual138() { return g_pSkillsButeMgr->GetStamina((eSkillLevel)m_nSkills[SKL_STAMINA]); }
+	const void*	TronUnknownVirtual13C() { return g_pSkillsButeMgr->GetAim((eSkillLevel)m_nSkills[SKL_AIM]); }
+	const void*	TronUnknownVirtual140() { return g_pSkillsButeMgr->GetCarry((eSkillLevel)m_nSkills[SKL_CARRY]); }
+	const void*	TronUnknownVirtual144() { return g_pSkillsButeMgr->GetArmor((eSkillLevel)m_nSkills[SKL_ARMOR]); }
+	const void*	TronUnknownVirtual148() { return g_pSkillsButeMgr->GetWeapon((eSkillLevel)m_nSkills[SKL_WEAPON]); }
+	const void*	TronUnknownVirtual14C() { return g_pSkillsButeMgr->GetGadget((eSkillLevel)m_nSkills[SKL_GADGET]); }
+	const void*	TronUnknownVirtual150() { return g_pSkillsButeMgr->GetSearch((eSkillLevel)m_nSkills[SKL_STEALTH]); }
 	// RETAIL: 0x100ac5b0, 0x100ac5c0, 0x100ac5d0, 0x100ac5f0: set, clear,
 	// read (single player only) and assign one flag (+0x2404)
 	void		TronUnknownVirtual154() { m_bTronUnknown2404 = true; }
@@ -196,6 +199,14 @@ public:
 	uint32 GetMaxEnergy()		{ return m_nMaxEnergy;}
 	void UpdateEnergy(uint32 nEnergy);
 	void UpdateMaxEnergy(uint32 nEnergy);
+
+	// RETAIL: Tron's (retail 0x100a9d00; the name is ours): energy spent,
+	// told to the server (Tron's message 162)
+	void UseEnergy(float fEnergy);
+
+	// RETAIL: whether the weapon can be chosen (retail 0x100ac370; the name
+	// is ours)
+	bool CanChangeToWeapon(uint8 nWeaponId);
 	
 	void	ClearPermissions();
 	void	ClearRequiredPermissions();
