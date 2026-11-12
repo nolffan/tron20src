@@ -341,12 +341,7 @@ LIGHT_CYCLE_TRAIL* CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist,
 	}
 
 	// Add the point
-	if(AddLightCycleTrailPoint(pCyclist, pTrail, vPos))
-	{
-		return pTrail;
-	}
-
-	return NULL;
+	return (AddLightCycleTrailPoint(pCyclist, pTrail, vPos) > 0) ? pTrail : NULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -757,6 +752,63 @@ void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, uint32 nTronUnkno
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::TrimTrail
+//
+//	PURPOSE:	Drops the current trail's points before nPoint.
+//				RETAIL: 0x10100df0
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown)
+{
+	if(!pCyclist)
+		return false;
+
+	if((int)pCyclist->collTrails.size() <= nTrail)
+		return false;
+
+	LIGHT_CYCLE_TRAIL* pTrail = pCyclist->collTrails[nTrail];
+	if(!pTrail || (pTrail != pCyclist->pCurTrail))
+		return false;
+
+	int nPoints = pTrail->collTrailPoints.size();
+	if(nPoints > nPoint + 2)
+	{
+		pTrail->collTrailPoints.erase(pTrail->collTrailPoints.begin(), pTrail->collTrailPoints.begin() + nPoint + 1);
+		return true;
+	}
+
+	if(nPoints == 2)
+	{
+		pTrail->collTrailPoints.erase(pTrail->collTrailPoints.begin());
+
+		// Snap the new first point to the grid
+		LTVector & vPos = pTrail->collTrailPoints.begin()->vPoint;
+
+		int nX = LCM_ROUND(vPos.x);
+		int nZ = LCM_ROUND(vPos.z);
+
+		float fGridSize = m_ButeMgr.GetGridSize();
+		if(fGridSize > 1.0f)
+		{
+			nX = LCM_ROUND(nX / fGridSize);
+			vPos.x = nX * fGridSize;
+			nZ = LCM_ROUND(nZ / fGridSize);
+			vPos.z = nZ * fGridSize;
+		}
+		else
+		{
+			vPos.x = (float)nX;
+			vPos.z = (float)nZ;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::GetLivingCyclist
 //
 //	PURPOSE:	The object's cyclist, unless it is derezzing.
@@ -921,11 +973,6 @@ bool CLightCycleMgr::TronUnknownVirtual8(uint32, uint32, uint32, uint32)
 	return false;
 }
 
-// RETAIL: 0x10100df0 (441 bytes)
-bool CLightCycleMgr::TronUnknownVirtual9(uint32, uint32, uint32, uint32)
-{
-	return false;
-}
 
 // RETAIL: 0x10101280 (666 bytes)
 bool CLightCycleMgr::TronUnknownVirtual10(LIGHT_CYCLIST* pCyclist, uint32)

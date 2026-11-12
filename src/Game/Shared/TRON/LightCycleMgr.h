@@ -261,7 +261,9 @@ class CLightCycleMgr
 		virtual void TronUnknownVirtual7() = 0;
 
 		virtual bool TronUnknownVirtual8(uint32, uint32, uint32, uint32);	// RETAIL: 0x10100960
-		virtual bool TronUnknownVirtual9(uint32, uint32, uint32, uint32);	// RETAIL: 0x10100df0
+		// Drops the first points of the current trail up to nPoint (or the
+		// first if two are left, snapping the next). RETAIL: 0x10100df0
+		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown);
 		virtual bool TronUnknownVirtual10(LIGHT_CYCLIST* pCyclist, uint32);	// RETAIL: 0x10101280
 		virtual bool TronUnknownVirtual11(LIGHT_CYCLIST* pCyclist);			// RETAIL: 0x10101520
 		virtual bool TronUnknownVirtual12(LIGHT_CYCLIST* pCyclist, uint32);	// RETAIL: 0x100fffd0
