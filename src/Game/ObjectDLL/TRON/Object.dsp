@@ -178,6 +178,10 @@ SOURCE=.\EnergyZone.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Finder.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
@@ -292,6 +296,10 @@ SOURCE=.\CoreDump.h
 # Begin Source File
 
 SOURCE=.\EnergyZone.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Finder.h
 # End Source File
 # Begin Source File
 
