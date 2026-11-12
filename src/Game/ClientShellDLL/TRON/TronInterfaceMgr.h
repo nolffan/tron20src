@@ -44,6 +44,15 @@ public:
 
 	bool			IsDisplayingProgress() {return m_bDisplayProgress;}
 
+	// RETAIL: Tron's flags (the names are ours). +0x28ae8: set from a
+	// server message (retail 0x1009dc1a), cleared on entering a world; the
+	// I/O node camera HUD shows while it is (CHUDIOCamera::Render, retail
+	// 0x1002b8fc). +0x28b14: set on entering a world (0x1009d938; cleared
+	// for some multiplayer games); most HUD items draw only while it is
+	// (CHUDArmor::Render, 0x10022098)
+	bool			GetTronUnknown28AE8() {return m_bTronUnknown28AE8;}
+	bool			GetTronUnknown28B14() {return m_bTronUnknown28B14;}
+
 protected:
 	// Message function
 	virtual LTBOOL OnMessage(uint8 messageID, ILTMessage_Read *pMsg);
@@ -55,5 +64,10 @@ private:
 	CSubroutineMgr		m_SubroutineMgr;
 	CTronLayoutMgr		m_TronLayoutMgr;		// same as g_pLayoutMgr
 	bool				m_bDisplayProgress;		// flag for displaying objectives and procedurals
+
+	// RETAIL: at retail's +0x28ae8 and +0x28b14 (where this class's other
+	// members are not yet placed: see the accessors)
+	bool				m_bTronUnknown28AE8;
+	bool				m_bTronUnknown28B14;
 };
 #endif // __TRONINTERFACE_MGR_H__

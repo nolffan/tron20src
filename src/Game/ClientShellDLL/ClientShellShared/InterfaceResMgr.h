@@ -48,7 +48,8 @@ public:
 	// (RETAIL: 0x100c57a0; the name is ours)
 	CUIFont*			GetFontForHeight(int nHeight);
 
-	HSURFACE			GetSurfaceCursor();
+	// RETAIL: Tron has no software cursor (no GetSurfaceCursor, no
+	// "interface\\cursor0.pcx" in retail CShell.dll)
 
 	const char			*GetSoundSelect();
 	const char			*GetSoundChange();
@@ -102,7 +103,8 @@ protected:
 
 	FontArray			m_FontArray;
 
-	HSURFACE			m_hSurfCursor;			// The software cursor surface
+	// RETAIL: no m_hSurfCursor in Tron: its constructor (CShell.dll
+	// 0x100c4a40) has the yes/no key codes at +0x20/+0x24 and m_fXRatio at +0x44
 
 	int					m_nYesVKeyCode;			// The virtual key code for "yes" responses
 	int					m_nNoVKeyCode;			// The virtual key code for "no" responses

@@ -84,6 +84,16 @@ levels may not use lures, so it may never show.
 
 Not fixed yet.
 
+### The energy transfer meter draws part of its fill twice
+
+CShell.dll 0x100294c0 (CHUDEnergyTransfer::Update, TRON/HUDEnergyTransfer.cpp).
+Past half way the fill is three triangles fanned from the meter's center:
+-90..-45, -45..0, and then -45..the transfer's angle instead of 0..the
+angle. The third covers the second again, so with the meter's alpha blend
+the -45..0 wedge draws brighter than the rest once the fill passes 0.
+
+Not fixed yet: the modern build should start the third triangle at 0.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
