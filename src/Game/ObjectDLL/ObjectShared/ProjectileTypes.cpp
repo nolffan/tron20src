@@ -179,7 +179,7 @@ CGrenade::~CGrenade()
 //
 // ----------------------------------------------------------------------- //
 
-void CGrenade::Detonate(HOBJECT hObj)
+void CGrenade::Detonate(HOBJECT hObj, bool bTronUnknown)
 {
 	// We're blowing up, take us out of the grenade list
 	if( m_bAddToGrenadeList )
@@ -2184,7 +2184,7 @@ void CBearTrap::HandleImpact( HOBJECT hObj )
 //
 // ----------------------------------------------------------------------- //
 
-void CBearTrap::Detonate( HOBJECT hObj )
+void CBearTrap::Detonate( HOBJECT hObj, bool bTronUnknown )
 {
 	// Show the beartrap snap shut but don't get rid of the pickup item so it can be reused...
 
@@ -2453,7 +2453,7 @@ void CBanana::HandleImpact( HOBJECT hObj )
 	}
 }
 
-void CBanana::Detonate( HOBJECT hObj )
+void CBanana::Detonate( HOBJECT hObj, bool bTronUnknown )
 {
 	// Create banana debris...
 

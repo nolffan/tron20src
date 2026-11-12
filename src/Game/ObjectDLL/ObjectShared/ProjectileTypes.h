@@ -44,7 +44,7 @@ class CGrenade : public CProjectile
 		virtual void UpdateGrenade();
         virtual void ResetRotationVel(LTVector* pvNewVel=LTNULL, SURFACE* pSurf=LTNULL);
 		virtual void RotateToRest();
-		virtual void Detonate(HOBJECT hObj);
+		virtual void Detonate(HOBJECT hObj, bool bTronUnknown = false);
 
         virtual void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         virtual void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
@@ -221,7 +221,7 @@ class CBearTrap : CProjectile
 		uint32 EngineMessageFn( uint32 messageID, void *pData, LTFLOAT fData );
 
 		virtual void	HandleImpact( HOBJECT hObj );
-		virtual void	Detonate( HOBJECT hObj );
+		virtual void	Detonate( HOBJECT hObj, bool bTronUnknown = false );
 
 		virtual void	UpdateTrap( );
 		virtual void	Save( ILTMessage_Write *pMsg, uint32 dwSaveFlags );
@@ -250,7 +250,7 @@ class CBanana : CGrenade
 		uint32 EngineMessageFn( uint32 messageID, void *pData, LTFLOAT fData );
 		
 		virtual void	HandleImpact( HOBJECT hObj );
-		virtual void	Detonate( HOBJECT hObj );
+		virtual void	Detonate( HOBJECT hObj, bool bTronUnknown = false );
 
 		virtual LTBOOL ShouldPlayBounceSound(SURFACE* pSurface);
 		virtual const char* GetBounceSound(SURFACE* pSurface);

@@ -177,6 +177,18 @@ CProjectile::CProjectile()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CProjectile::~CProjectile
+//
+//	PURPOSE:	Destructor (RETAIL: out of line, 0x1011e260)
+//
+// ----------------------------------------------------------------------- //
+
+CProjectile::~CProjectile()
+{
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CProjectile::EngineMessageFn
 //
 //	PURPOSE:	Handle engine messages
@@ -921,6 +933,51 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 
 // ----------------------------------------------------------------------- //
 //
+//	Tron's new CProjectile virtuals (slots 28, 30..33, 40..42).
+//
+//	PORT: Tron's bodies are not written yet; these stand in so that the
+//	vtable has retail's shape.  Only Tron's own classes call them.
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectile::TronUnknownVirtual28(WeaponFireInfo const& info)
+{
+	// RETAIL: 0x1011e970 sets m_fVelocity (from the fire info's override,
+	// or the ammo's projectile FX velocity / alt velocity).
+}
+
+void CProjectile::TronUnknownVirtual30(HOBJECT hObj)
+{
+	HandleTouch(hObj);
+}
+
+void CProjectile::TronUnknownVirtual31(void *pTronUnknown1, void *pTronUnknown2)
+{
+}
+
+void CProjectile::TronUnknownVirtual32()
+{
+}
+
+void CProjectile::TronUnknownVirtual33(void *pTronUnknown)
+{
+}
+
+void CProjectile::TronUnknownVirtual40(HOBJECT hTronUnknown1, void *pTronUnknown2)
+{
+}
+
+void CProjectile::TronUnknownVirtual41(HOBJECT hTronUnknown1, void *pTronUnknown2)
+{
+}
+
+void CProjectile::TronUnknownVirtual42(HOBJECT hTronUnknown1, void *pTronUnknown2)
+{
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CProjectile::HandleTouchSky()
 //
 //	PURPOSE:	Handle cases where projectile touches the sky
@@ -945,7 +1002,8 @@ void CProjectile::HandleTouchSky(HOBJECT hObj)
 
 void CProjectile::HandleImpact(HOBJECT hObj)
 {
-	Detonate(hObj);
+	// RETAIL: 0x10120730 passes a second argument of 0.
+	Detonate(hObj, false);
 }
 
 
@@ -957,7 +1015,7 @@ void CProjectile::HandleImpact(HOBJECT hObj)
 //
 // ----------------------------------------------------------------------- //
 
-void CProjectile::Detonate(HOBJECT hObj)
+void CProjectile::Detonate(HOBJECT hObj, bool bTronUnknown)
 {
 	if (m_bDetonated) return;
 

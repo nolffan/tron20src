@@ -26,7 +26,7 @@
 // LithTech Macros
 //
 BEGIN_CLASS(CDisc)
-END_CLASS_DEFAULT_FLAGS(CDisc, CProjectile, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(CDisc, CTronProjectile, NULL, NULL, CF_HIDDEN)
 
 //
 // Defines
@@ -132,7 +132,7 @@ void CDisc::RemoveObject()
 		HandleImpact(NULL);
 	}
 
-	CProjectile::RemoveObject();
+	CTronProjectile::RemoveObject();
 }
 
 
@@ -213,7 +213,7 @@ CDisc::~CDisc()
 LTBOOL CDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 {
 	// setup the base class
-	LTBOOL bResult = CProjectile::Setup( pWeapon, info );
+	LTBOOL bResult = CTronProjectile::Setup( pWeapon, info );
 
 	// get the ammo data
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
@@ -461,7 +461,7 @@ uint32 CDisc::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 	}
 
 	// pass the message to the base class
-	return CProjectile::EngineMessageFn(messageID, pData, fData);
+	return CTronProjectile::EngineMessageFn(messageID, pData, fData);
 }
 
 
@@ -554,7 +554,7 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 	};
 
 	// pass the message to the base class
-	return CProjectile::ObjectMessageFn( hSender, pMsg );
+	return CTronProjectile::ObjectMessageFn( hSender, pMsg );
 }
 
 
@@ -572,7 +572,7 @@ void CDisc::HandleTouch( HOBJECT hObj )
 	{
 		case DISC_STATE_FLYING:
 		{
-			CProjectile::HandleTouch( hObj );
+			CTronProjectile::HandleTouch( hObj );
 
 			// base class will call our HandleImpact
 			//HandleImpact( hObj );
@@ -1017,7 +1017,7 @@ void CDisc::EnterReturnMode( bool bImpact )
 //
 // ----------------------------------------------------------------------- //
 
-void CDisc::Detonate( HOBJECT hObj )
+void CDisc::Detonate( HOBJECT hObj, bool bTronUnknown )
 {
 //	HandleImpact( hObj );
 }

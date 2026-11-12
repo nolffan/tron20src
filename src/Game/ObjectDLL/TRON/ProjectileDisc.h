@@ -17,7 +17,7 @@
 //
 // Includes
 //
-#include "Projectile.h"
+#include "TronProjectile.h"
 
 
 // forward define to reduce header dependancies
@@ -27,7 +27,7 @@ struct WeaponFireInfo;
 ///
 // class CDisc
 //
-class CDisc : public CProjectile
+class CDisc : public CTronProjectile
 {
 public:
 	CDisc();
@@ -49,7 +49,7 @@ protected:
 
 	virtual bool        UpdateDisc();
 
-	virtual void        Detonate( HOBJECT );
+	virtual void        Detonate( HOBJECT, bool bTronUnknown = false );
 
 	LTVector			GetReturnToPosition(const LTVector& vOffset);
 

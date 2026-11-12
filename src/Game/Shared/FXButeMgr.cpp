@@ -104,6 +104,9 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_PROJECTILEFX_LIFETIME              "Lifetime"
 #define FXBMGR_PROJECTILEFX_VELOCITY              "Velocity"
 #define FXBMGR_PROJECTILEFX_ALTVELOCITY           "AltVelocity"
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINMIN        "EnergyDrainMin"	// RETAIL: Tron's
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINMAX        "EnergyDrainMax"
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE      "EnergyDrainSurge"
 #define FXBMGR_PROJECTILEFX_FIRE_OFFSET           "FireOffset"
 #define FXBMGR_PROJECTILEFX_SMOKETRAILTYPE        "SmokeTrailType"
 #define FXBMGR_PROJECTILEFX_CANHITSAMEKIND        "CanHitSameKind"
@@ -2456,6 +2459,9 @@ PROJECTILEFX::PROJECTILEFX()
 	nCanImpactSameKind     = 0;
 
 	pClassData             = LTNULL;
+	fEnergyDrainMin        = 0.0f;
+	fEnergyDrainMax        = 0.0f;
+	fEnergyDrainSurge      = 0.0f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2514,6 +2520,11 @@ LTBOOL PROJECTILEFX::Init(CButeMgr & buteMgr, char* aTagName)
 	nSmokeTrailType      = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SMOKETRAILTYPE);
 	nVelocity            = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_VELOCITY);
 	nAltVelocity         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_ALTVELOCITY);
+	// PORT: Tron reads these here (its strings follow AltVelocity's); the
+	// exact code is not checked
+	fEnergyDrainMin      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMIN, 0.0) );
+	fEnergyDrainMax      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMAX, 0.0) );
+	fEnergyDrainSurge    = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE, 0.0) );
 	fFireOffset          = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_FIRE_OFFSET) );
 	nLightRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_LIGHTRADIUS);
 	nSoundRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SOUNDRADIUS);

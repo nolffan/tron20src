@@ -284,6 +284,10 @@ SOURCE=.\TronPlayerObj.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronProjectile.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronTurret.cpp
 # End Source File
 # Begin Source File
@@ -422,6 +426,10 @@ SOURCE=..\..\Shared\TRON\TronMissionButeMgr.h
 # Begin Source File
 
 SOURCE=.\TronPlayerObj.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronProjectile.h
 # End Source File
 # Begin Source File
 

@@ -350,6 +350,14 @@ struct PROJECTILEFX
 
 	// Data specific to our class (i.e., szClass)...
 	PROJECTILECLASSDATA* pClassData;
+
+	// RETAIL: Tron's energy drain of a projectile (attributes
+	// EnergyDrainMin/Max/Surge; retail Object.lto's CTronProjectile reads
+	// them at 0x224..0x22c).  Retail's place in the struct is not known:
+	// they are added at the end.
+	LTFLOAT		fEnergyDrainMin;
+	LTFLOAT		fEnergyDrainMax;
+	LTFLOAT		fEnergyDrainSurge;
 };
 
 typedef CTList<PROJECTILEFX*> ProjectileFXList;
