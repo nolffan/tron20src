@@ -63,7 +63,7 @@ BEGIN_CLASS(CScanner)
 	
 	ADD_BOOLPROP_FLAG(CanTransition, LTFALSE, PF_HIDDEN)
 
-END_CLASS_DEFAULT_FLAGS_PLUGIN(CScanner, Prop, NULL, NULL, CF_HIDDEN, CScannerPlugin)
+END_CLASS_DEFAULT_FLAGS_PLUGIN(CScanner, PropType, NULL, NULL, CF_HIDDEN, CScannerPlugin)
 #pragma force_active off
 
 //
@@ -90,7 +90,7 @@ LTRESULT CScannerPlugin::PreHook_PropChanged( const char *szObjName,
 {
 	// See if the propplugin will handle the change...
 
-	if( CPropPlugin::PreHook_PropChanged( szObjName,
+	if( CPropTypePlugin::PreHook_PropChanged( szObjName,
 										  szPropName,
 										  nPropType,
 										  gpPropValue,
@@ -194,7 +194,7 @@ bool CScanner::SeeThroughPolyFilterFn(HPOLY hPoly, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-CScanner::CScanner() : Prop()
+CScanner::CScanner() : PropType()
 {
 	//we don't want the prop being able to deactivate us sine we will control
 	//that ourselves based upon the state of the camera
@@ -350,7 +350,7 @@ uint32 CScanner::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		default : break;
 	}
 
-	return Prop::EngineMessageFn(messageID, pData, fData);
+	return PropType::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //

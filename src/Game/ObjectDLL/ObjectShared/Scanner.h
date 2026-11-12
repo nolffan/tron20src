@@ -15,7 +15,7 @@
 #define __SCANNER_H__
 
 #include "ltengineobjects.h"
-#include "Prop.h"
+#include "PropType.h"
 #include "IObjectRelationMgrUser.h"
 #include "Timer.h"
 #include "CommandMgr.h"
@@ -30,8 +30,9 @@ enum  EnumAISenseType;
 
 LINKTO_MODULE( Scanner );
 
-// RETAIL: Tron's CScanner is an IObjectRelationMgrUser too (its RTTI)
-class CScanner : public Prop, public IAISensing, public IObjectRelationMgrUser
+// RETAIL: Tron's CScanner is a PropType (not a Prop) and an
+// IObjectRelationMgrUser too, its plugin a CPropTypePlugin (their RTTI)
+class CScanner : public PropType, public IAISensing, public IObjectRelationMgrUser
 {
 	public :
 
@@ -177,7 +178,7 @@ class CScanner : public Prop, public IAISensing, public IObjectRelationMgrUser
 		void	Load(ILTMessage_Read *pMsg);
 };
 
-class CScannerPlugin : public CPropPlugin
+class CScannerPlugin : public CPropTypePlugin
 {
 	public:
 
