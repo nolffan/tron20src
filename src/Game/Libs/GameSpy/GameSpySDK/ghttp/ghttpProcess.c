@@ -42,21 +42,11 @@ static GHTTPBool ghiParseURL
 	URL = connection->URL;
 
 	// Check for "http://".
+	// TRON: no https (or connection->protocol) in the 2003 SDK.
 	//////////////////////
-	if(strncmp(URL, "http://", 7) == 0)
-	{
-		connection->protocol = GHIHttp;
-		URL += 7;
-	}
-	else if (strncmp(URL, "https://", 8) == 0)
-	{
-		connection->protocol = GHIHttps;
-		URL += 8;
-	}
-	else
-	{
+	if(strncmp(URL, "http://", 7) != 0)
 		return GHTTPFalse;
-	}
+	URL += 7;
 
 	// Read the address.
 	////////////////////
@@ -84,10 +74,7 @@ static GHTTPBool ghiParseURL
 	}
 	else
 	{
-		if (connection->protocol == GHIHttps)
-			connection->serverPort = GHI_DEFAULT_SECURE_PORT;
-		else
-			connection->serverPort = GHI_DEFAULT_PORT;
+		connection->serverPort = GHI_DEFAULT_PORT;
 	}
 
 	// Read the path.
@@ -130,10 +117,10 @@ void ghiDoSocketInit
 		return;
 	}
 
-	// Progress.
-	////////////
-	connection->state = GHTTPHostLookup;
-	ghiCallProgressCallback(connection, NULL, 0);
+	// PORT: the 2003 SDK has no GHTTPHostLookup state (CShell.dll 1.030);
+	// until this file is written from the retail code (0x10020500 on), the
+	// lookup is done here, and it moves the state on to GHTTPConnecting.
+	ghiDoHostLookup(connection);
 }
 
 /****************
@@ -637,8 +624,10 @@ void ghiDoReceivingStatus
 			return;
 
 		// Store the position of the start of the headers.
+		// TRON: the 2003 SDK keeps it in the receive buffer's pos (CShell.dll
+		// 1.030, 0x10020b1d).
 		//////////////////////////////////////////////////
-		connection->headerStringIndex = (statusLength + 2);
+		connection->recvBuffer.pos = (statusLength + 2);
 
 
 		// We're receiving headers now.
@@ -783,7 +772,7 @@ static void ghiAppendToChunkHeaderBuffer
 
 		// How many bytes are we copying?
 		/////////////////////////////////
-		numBytes = min(CHUNK_HEADER_SIZE - connection->chunkHeaderLen, len);
+		numBytes = (((CHUNK_HEADER_SIZE - connection->chunkHeaderLen) < len) ? (CHUNK_HEADER_SIZE - connection->chunkHeaderLen) : len);
 		
 		// Move the (possibly partial) header into the buffer.
 		//////////////////////////////////////////////////////
@@ -886,7 +875,7 @@ static GHTTPBool ghiProcessIncomingFileData
 
 				// How many bytes of data are we dealing with?
 				//////////////////////////////////////////////
-				numBytes = min(connection->chunkBytesLeft, len);
+				numBytes = ((connection->chunkBytesLeft < len) ? connection->chunkBytesLeft : len);
 
 				gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_Network, GSIDebugLevel_RawDump,
 					"Read %d bytes of chunk\n", numBytes);
@@ -1012,7 +1001,9 @@ void ghiDoReceivingHeaders
 
 	// Cache a pointer to the front of the headers.
 	///////////////////////////////////////////////
-	headers = (connection->recvBuffer.data + connection->headerStringIndex);
+	// TRON: the 2003 SDK's start of the headers is the receive buffer's pos
+	// (CShell.dll 1.030, 0x10020ca2).
+	headers = (connection->recvBuffer.data + connection->recvBuffer.pos);
 
 	// Check if the headers are finished.
 	/////////////////////////////////////

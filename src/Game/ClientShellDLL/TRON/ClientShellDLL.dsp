@@ -54,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386
-# ADD LINK32 winmm.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Release\ClientShellDll\TRON\CShell.dll"
+# ADD LINK32 winmm.lib wsock32.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Release\ClientShellDll\TRON\CShell.dll"
 # SUBTRACT LINK32 /pdb:none /map
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Release\ClientShellDll\TRON\CShell.dll
@@ -132,7 +132,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Final\ClientShellDll\TRON\CShell.dll"
 # SUBTRACT BASE LINK32 /pdb:none /map
-# ADD LINK32 winmm.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Final\ClientShellDll\TRON\CShell.dll"
+# ADD LINK32 winmm.lib wsock32.lib ole32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /dll /machine:I386 /nodefaultlib:"LIBCMTD" /out:"..\..\Built\Final\ClientShellDll\TRON\CShell.dll"
 # SUBTRACT LINK32 /pdb:none /map
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Final\ClientShellDll\TRON\CShell.dll
@@ -214,6 +214,11 @@ SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpPost.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpProcess.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
@@ -282,6 +287,16 @@ SOURCE=..\..\..\engine\sdk\inc\ltobjref.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Engine\sdk\inc\ltquatbase.cpp
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\md5c.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\nonport.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
