@@ -1051,7 +1051,8 @@ bool Finder::UpdateLingering()
 
 	if (m_eLingerState == eLingerReturningFromLeft || m_eLingerState == eLingerReturningFromRight)
 	{
-		if (LTCLAMP(vForward.Dot(m_vLingerDir), -1.0f, 1.0f) > 0.9f)
+		LTVector vLingerDir = m_vLingerDir;
+		if (LTCLAMP(vForward.Dot(vLingerDir), -1.0f, 1.0f) > 0.9f)
 		{
 			if (m_eLingerState == eLingerReturningFromLeft)
 			{
