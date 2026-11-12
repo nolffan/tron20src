@@ -16,6 +16,7 @@
 
 #include "stdafx.h"
 #include "ClientWeaponContinuousFireBase.h"
+#include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x100182c0..)
 
 // RETAIL: 0x10018360
 CClientWeaponContinuousFireBase::CClientWeaponContinuousFireBase()

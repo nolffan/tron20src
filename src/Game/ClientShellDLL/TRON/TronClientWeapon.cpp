@@ -15,6 +15,7 @@
 #include "stdafx.h"
 #include "TronClientWeapon.h"
 #include "MsgIDs.h"
+#include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x10096ff0..)
 
 // RETAIL: 0x10097090
 CTronClientWeapon::CTronClientWeapon()
