@@ -206,6 +206,10 @@ SOURCE=.\ClientWeaponPrankster.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponSequencerDisc.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponSuffusion.cpp
 # End Source File
 # Begin Source File
@@ -588,6 +592,10 @@ SOURCE=.\ClientWeaponLOL.h
 # Begin Source File
 
 SOURCE=.\ClientWeaponPrankster.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponSequencerDisc.h
 # End Source File
 # Begin Source File
 
