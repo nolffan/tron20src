@@ -822,7 +822,7 @@ void CSubroutineMgr::ComputeArmorCoverage()
 	g_pTronPlayerStats->UpdateSubroutineArmor(fArmorCoverage, fVirusCoverage, fArmorScalar);
 }
 
-bool CSubroutineMgr::HaveArmorPiece(int iPiece)
+PlayerSubroutine* CSubroutineMgr::HaveArmorPiece(int iPiece)
 {
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
 	while (iter != m_PlayerSubroutineArray.end())
@@ -834,13 +834,13 @@ bool CSubroutineMgr::HaveArmorPiece(int iPiece)
 			{
 				if (pTronSub->nArmorPiece == iPiece)
 				{
-					return true;
+					return *iter;
 				}
 			}
 		}
 		iter++;
 	}
-	return false;
+	return LTNULL;
 }
 
 void CSubroutineMgr::GivePlayerPrimitive(char * name)
