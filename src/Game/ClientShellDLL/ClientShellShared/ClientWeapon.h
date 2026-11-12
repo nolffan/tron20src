@@ -512,6 +512,32 @@ protected:
 	
 	// Is the weapon supposed to be paused...
 	bool			m_bPaused;
+
+	// RETAIL: Tron's CClientWeapon is 0x204 bytes (CTronClientWeapon's ctor,
+	// 0x10097090, puts its first member at 0x204); ours is 0x158 up to here.
+	// The members before differ too (retail's 0xC..0x138 per the ctor at
+	// 0x1012ec30), so this tail only brings the size -- and the members of
+	// the classes derived from it -- to retail's.  The members Tron's
+	// weapons use from 0x158 on are at retail's offsets; shrink the padding
+	// when the members above are fixed.
+	char			m_xTronUnknown155[3];
+	union
+	{
+		float		m_fTronUnknown158;		// RETAIL: +0x158 (BallLauncher's fire rate)
+		int			m_nTronUnknown158;		// RETAIL: +0x158 (DrunkenDims' vectors)
+	};
+	float			m_fTronUnknown15C;		// RETAIL: +0x15c (LOL energy)
+	float			m_fTronUnknown160;		// RETAIL: +0x160 (Sequencer energy)
+	float			m_fTronUnknown164;		// RETAIL: +0x164 (BallLauncher, DrunkenDims)
+	char			m_xTronUnknown168[0x74];
+	float			m_fTronUnknown1DC;		// RETAIL: +0x1dc (Prankster)
+	float			m_fTronUnknown1E0;
+	float			m_fTronUnknown1E4;		// RETAIL: +0x1e4 (Cluster)
+	// RETAIL: +0x13c, eleven pairs of bools (CTronClientWeapon 0x10097f40
+	// clears them); the weapons test [n][0] for their subroutine.  Not at
+	// retail's offset until the members above are fixed.
+	bool			m_abTronUnknown13C[11][2];
+	char			m_xTronUnknown1FE[6];
 };
 
 
