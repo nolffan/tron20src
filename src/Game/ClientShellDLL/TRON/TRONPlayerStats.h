@@ -211,6 +211,10 @@ public:
 	// RETAIL: whether the weapon can be chosen (retail 0x100ac370; the name
 	// is ours)
 	bool CanChangeToWeapon(uint8 nWeaponId);
+
+	// RETAIL: whether the weapon's subroutines are the player's (retail
+	// 0x100ac2f0; the name is ours)
+	bool IsWeaponCompiled(uint8 nWeaponId);
 	
 	void	ClearPermissions();
 	void	ClearRequiredPermissions();

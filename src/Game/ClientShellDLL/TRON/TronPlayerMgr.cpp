@@ -23,13 +23,12 @@
 #include "GameClientShell.h"
 #include "VehicleMgr.h"
 #include "PlayerCamera.h"
+// RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
+// 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
+#include "ScreenSubroutines.h"
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
-// RETAIL: two globals set up here and used nowhere (retail 0x1026ef4c,
-// 0x1026ef48: 15 degrees, and a third of it). The names are ours
-float g_fTronUnknownAngle = MATH_DEGREES_TO_RADIANS(15.0f);
-float g_fTronUnknownAngleThird = g_fTronUnknownAngle / 3.0f;
 
 // ----------------------------------------------------------------------- //
 //

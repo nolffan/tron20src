@@ -1670,14 +1670,32 @@ void CTronPlayerStats::GetPermissions(uint8 &iPermissions, uint8 &iRequiredPermi
 // -------------------------------------------------------------------
 void CTronPlayerStats::SetJetVersion(uint16 iVersion)
 {
-	int iPreviousVersion = m_nVersion;
-	if (iVersion != 100)
+	// RETAIL: Tron's (retail 0x100abf90): a major version up gives rating
+	// goo for each, a minor one says how many points came
+	int iMajor = iVersion / 100;
+	int iPreviousMajor = m_nVersion / 100;
+
+	if (iMajor > iPreviousMajor)
 	{
-		if ((iVersion / 100) > (iPreviousVersion / 100))
+		int nUpgrades = iMajor - iPreviousMajor;
+		while (nUpgrades--)
 		{
-			// FIXME hook up the upgrade indicator
+			// PORT: retail adds Tron's rating manager's goo per version
+			// (+0x1130) to its goo (+0x112c); ours keeps neither yet
 		}
+
+		// PORT: retail shows string 3821 on a Tron HUD item (0x1026edf0,
+		// its slot 0x54) and the "ratings" tip (+0x1290's 0x1003f9d0);
+		// neither is in our tree yet
+		LoadTempString(3821);
 	}
+	else if (iVersion > m_nVersion)
+	{
+		char szMsg[1024];
+		FormatString(3822, szMsg, sizeof(szMsg), iVersion - m_nVersion);
+		g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
+	}
+
 	m_nVersion = iVersion;
 	g_pHUDMgr->QueueUpdate(kHUDVersion);
 }
@@ -1731,22 +1749,29 @@ void CTronPlayerStats::Compile()
 
 	cMsg.Writeuint8(MID_COMPILE);
 
+	// RETAIL: Tron's (retail 0x100ac1a0): no armor scalar; each rating
+	// with its second level (Tron's CRatingMgr's +0x113e), then a float of
+	// the subroutine manager's
+
 	// the percentage of armor
 	cMsg.Writefloat(m_fSubroutineArmor);
 
 	// percentage protection from infection
 	cMsg.Writefloat(m_fVirusArmor);
 
-	// A float (0-1) on how much to scale the damage to energy points
-	cMsg.Writefloat(m_fArmorScalar);
-
 	// Include a byte for each performance rating
 	for (int i = 0; i < NUM_RATINGS; i++)
 	{
-		uint8 iRating;
-		iRating = (uint8)GetRating((PerformanceRating)i);
+		uint8 iRating = m_RatingMgr.GetRating((PerformanceRating)i);
+		// PORT: retail reads Tron's second rating array directly
+		uint8 iBase = m_RatingMgr.GetBaseRating((PerformanceRating)i);
 		cMsg.Writeuint8(iRating);
+		cMsg.Writeuint8(iBase);
 	}
+
+	// PORT: retail writes Tron's subroutine manager's +0x11a4 (the energy
+	// its subroutines hold), not yet in ours
+	cMsg.Writefloat(0.0f);
 
 	// End of line.
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);  
@@ -1854,11 +1879,30 @@ void CTronPlayerStats::ClearMissionInfo()
 //
 // ----------------------------------------------------------------------- //
 
+bool CTronPlayerStats::IsWeaponCompiled(uint8 nWeaponId)
+{
+	// Anything goes while the flag (+0x2404) is up in single player
+	if (!IsMultiplayerGame() && m_bTronUnknown2404)
+		return true;
+
+	// PORT: retail asks the subroutine manager whether the player has the
+	// weapon's subroutine (Tron's WEAPON +0xa4, its 0x100952e0) and, if
+	// it names one, its primitive (+0xa8, 0x10095340); neither is in our
+	// tree yet, so having the weapon stands in
+	return !!HaveWeapon(nWeaponId);
+}
+
 bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
 {
 	const WEAPON* pNoWeapon = g_pWeaponMgr->GetWeapon("NoWeapon");
 	if (pNoWeapon && nWeaponId == pNoWeapon->nId)
 		return true;
 
-	return !!HaveWeapon(nWeaponId);
+	if (!IsWeaponCompiled(nWeaponId))
+		return false;
+
+	// PORT: retail then asks the Tron client weapon (slots 0x16c, 0x168)
+	// whether the player's energy (GetEnergy) covers it; not yet in our
+	// client weapons
+	return true;
 }
