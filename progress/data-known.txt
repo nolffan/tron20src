@@ -176,8 +176,6 @@ Object.lto	ours	Client Camera Offset time is low, possible lag\n
 Object.lto	ours	ClusterAutoBurstDiscClassData
 Object.lto	ours	CoinBounce
 Object.lto	ours	CoinBounceLiquid
-Object.lto	ours	CoreDumpRemove_%d
-Object.lto	ours	CoreDump_%d
 Object.lto	ours	DDMissions.txt
 Object.lto	ours	DMMissions.txt
 Object.lto	ours	DMTouchPickup
@@ -212,7 +210,6 @@ Object.lto	ours	Doomsday_transmitter
 Object.lto	ours	DrawOrder
 Object.lto	ours	DropBody
 Object.lto	ours	DropZoneRadius
-Object.lto	ours	ERROR - CoreDump received a complete message from an object other than a player!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	ERROR NULL WeightSet not found!
@@ -245,7 +242,6 @@ Object.lto	ours	Flashlight OFF
 Object.lto	ours	Flashlight ON
 Object.lto	ours	FullAirLostTime
 Object.lto	ours	FullAirRegenTime
-Object.lto	ours	FxName %s;Loop 1;SmoothShutdown 1
 Object.lto	ours	GADGET_TRACKER
 Object.lto	ours	Goal %s triggered by sense %s (%.2f)\n
 Object.lto	ours	Grief
@@ -353,7 +349,6 @@ Object.lto	ours	Running Sense Command: %s
 Object.lto	ours	SCORE
 Object.lto	ours	SCORE <+/-amount>
 Object.lto	ours	SLEEPFOREVER
-Object.lto	ours	STOPACTIVATE
 Object.lto	ours	SafeExecute
 Object.lto	ours	Score
 Object.lto	ours	ScoreLimit reached.
@@ -422,7 +417,6 @@ Object.lto	ours	TurnRateMax
 Object.lto	ours	TurnRateMin
 Object.lto	ours	TurnRateSurge
 Object.lto	ours	UPPER Tracker Cur Anim: %i Looping: %i Playing: %i Enabled: %i
-Object.lto	ours	USER32.dll
 Object.lto	ours	UndeterminedVisible
 Object.lto	ours	Unrecognized property group: "%s"
 Object.lto	ours	VISIBLE <1 or 0>
@@ -460,7 +454,6 @@ Object.lto	retail	 queuesound : %s %f
 Object.lto	retail	!!! AI deactivating with reset true. !!!
 Object.lto	retail	!!! AI resetting animation after goal is completed. !!!
 Object.lto	retail	!!! Received ANIM with 0 importance. !!!
-Object.lto	retail	%s %s %s %s
 Object.lto	retail	%s (active)
 Object.lto	retail	%s (inactive)
 Object.lto	retail	%s : Archive bin is empty on initial update.
@@ -481,7 +474,6 @@ Object.lto	retail	%s:HandleGoalSenseTrigger: Wrong Goal Type
 Object.lto	retail	%s\\Attributes\\subroutines.txt
 Object.lto	retail	(Locked)
 Object.lto	retail	.?AUBALLCLASSDATA@@
-Object.lto	retail	.?AUCLIENTFXUSERCREATESTRUCT@@
 Object.lto	retail	.?AUCORRUPTICDIMSCLASSDATA@@
 Object.lto	retail	.?AUIGuestDataMgr@@
 Object.lto	retail	.?AUITargetCommand@@
@@ -489,7 +481,6 @@ Object.lto	retail	.?AULIGHTCYCLECREATESTRUCT@@
 Object.lto	retail	.?AUPRANKSTERCLASSDATA@@
 Object.lto	retail	.?AURefreshCacheIfSame@@
 Object.lto	retail	.?AUSetAllowUpdate@@
-Object.lto	retail	.?AV?$AutoCommand@VSingleDispatch@@@@
 Object.lto	retail	.?AV?$CGenericTarget@VCAIGoalAbstract@@@@
 Object.lto	retail	.?AVAIInfoVolume@@
 Object.lto	retail	.?AVAIInfoVolumePlugin@@
@@ -499,11 +490,9 @@ Object.lto	retail	.?AVAINodeExitLevelByRezOut@@
 Object.lto	retail	.?AVAINodeExitLevelByRezOutPlugin@@
 Object.lto	retail	.?AVAIVolumePlugin@@
 Object.lto	retail	.?AVAbstractTarget@@
-Object.lto	retail	.?AVArchiveBin@@
 Object.lto	retail	.?AVArena@@
 Object.lto	retail	.?AVArenaStartPoint@@
 Object.lto	retail	.?AVAttachedExplosion@@
-Object.lto	retail	.?AVBerry@@
 Object.lto	retail	.?AVCAIGoalChaseAbstract@@
 Object.lto	retail	.?AVCAIGoalDash@@
 Object.lto	retail	.?AVCAIGoalExitLevelAbstract@@
@@ -518,7 +507,6 @@ Object.lto	retail	.?AVCAIHumanStateDash@@
 Object.lto	retail	.?AVCAIHumanStateSeekerHitchDown@@
 Object.lto	retail	.?AVCAILCPlugin@@
 Object.lto	retail	.?AVCAIVolumePlayerInfoMgr@@
-Object.lto	retail	.?AVCArchiveBinPlugin@@
 Object.lto	retail	.?AVCArenaPlugin@@
 Object.lto	retail	.?AVCArenaStartPointPlugin@@
 Object.lto	retail	.?AVCBodyStateGib@@
@@ -543,38 +531,24 @@ Object.lto	retail	.?AVCProjectileDrunkenDims@@
 Object.lto	retail	.?AVCProjectileEnergyClaw@@
 Object.lto	retail	.?AVCProjectilePrankster@@
 Object.lto	retail	.?AVCServerLightCycleMgr@@
-Object.lto	retail	.?AVCServerSubroutineMgr@@
 Object.lto	retail	.?AVCSubroutineDataMgr@@
 Object.lto	retail	.?AVCThorne@@
 Object.lto	retail	.?AVCTronProjectile@@
-Object.lto	retail	.?AVFinder@@
-Object.lto	retail	.?AVFinderPlugin@@
 Object.lto	retail	.?AVHostButeMgr@@
 Object.lto	retail	.?AVIActivationObserver@@
 Object.lto	retail	.?AVLightCycle@@
 Object.lto	retail	.?AVLightCycleMissile@@
 Object.lto	retail	.?AVLightCyclePowerup@@
-Object.lto	retail	.?AVLightCycleVolume@@
-Object.lto	retail	.?AVLightCycleVolumeCascader@@
-Object.lto	retail	.?AVLightCycleVolumeObjectPlugin@@
 Object.lto	retail	.?AVOccludingArmor@@
-Object.lto	retail	.?AVOptimizer@@
-Object.lto	retail	.?AVOptimizerExplosion@@
-Object.lto	retail	.?AVSecrezzerPlugin@@
-Object.lto	retail	.?AVSingleDispatch@@
 Object.lto	retail	.?AVSpectatorObject@@
 Object.lto	retail	.?AVThorneBall@@
 Object.lto	retail	.?AVThorneObjectPlugin@@
-Object.lto	retail	.?AVTronTurret@@
-Object.lto	retail	.?AVTronTurretPlugin@@
 Object.lto	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 Object.lto	retail	1PCAM
 Object.lto	retail	3PCAM
-Object.lto	retail	ACQUIRENOTE
 Object.lto	retail	ACQUIRENOTE <Note Name>
 Object.lto	retail	ACQUIREPOWERUP
 Object.lto	retail	ACQUIREPRIM %s
-Object.lto	retail	ACQUIREPSET
 Object.lto	retail	ACQUIREPSET <permission set number | all>
 Object.lto	retail	ACQUIRESUB %s
 Object.lto	retail	ADDBUILDPOINTS <number to add>
@@ -583,13 +557,11 @@ Object.lto	retail	ADDPING <Ping Name> <1/0 (Play sound or not, defaults to 1>
 Object.lto	retail	AI '%s' fell thru the level!! Popping back up.
 Object.lto	retail	AI: ObjectRelationMgr attempted to add a relation when none existed.
 Object.lto	retail	AIAlternateVolume
-Object.lto	retail	AICRASH
 Object.lto	retail	AIGoalExitLevel
 Object.lto	retail	AIInfoVolume
 Object.lto	retail	AIInfoVolume OFF
 Object.lto	retail	AIInfoVolume ON
 Object.lto	retail	AINodeExitLevelByRezOut
-Object.lto	retail	AISTART
 Object.lto	retail	AIShowEnergyCLawDamage
 Object.lto	retail	AIShowEnergyClawDamage
 Object.lto	retail	AIShowGoalAttack
@@ -597,7 +569,6 @@ Object.lto	retail	AIShowPRodDamage
 Object.lto	retail	AIShowRange
 Object.lto	retail	AIShowStateAttack
 Object.lto	retail	AISoundVolumeScalar
-Object.lto	retail	AISpeedBoost
 Object.lto	retail	ALLOWROTATION
 Object.lto	retail	ALLOWSUMMON
 Object.lto	retail	ANNOUNCEMENT
@@ -613,27 +584,7 @@ Object.lto	retail	ARMOR_REMOVE
 Object.lto	retail	ARMOR_UNLOCK
 Object.lto	retail	ASKICON
 Object.lto	retail	ATTACHSTANDINGON
-Object.lto	retail	AcquireForceUse
-Object.lto	retail	AcquireMissileBlaster
-Object.lto	retail	AcquirePowerupGrab
-Object.lto	retail	AcquireShieldBreak
-Object.lto	retail	AcquireTurboBoost
-Object.lto	retail	AcquireTurboCurse
-Object.lto	retail	AcquireWallExtender
-Object.lto	retail	AcquireWallReset
-Object.lto	retail	AcquireWallSpike
-Object.lto	retail	ActivateForceUse
-Object.lto	retail	ActivateGrabFromCyclist
-Object.lto	retail	ActivateGrabFromFloor
-Object.lto	retail	ActivateGrabFromSelf
 Object.lto	retail	ActivateId
-Object.lto	retail	ActivateMissileBlaster
-Object.lto	retail	ActivateShieldBreak
-Object.lto	retail	ActivateTrailReset
-Object.lto	retail	ActivateTurboBoost
-Object.lto	retail	ActivateTurboCurse
-Object.lto	retail	ActivateWallExtender
-Object.lto	retail	ActivateWallSpike
 Object.lto	retail	ActiveWorldModelInvalidPSet
 Object.lto	retail	AddPing
 Object.lto	retail	All clients connected, performing level switch...
@@ -644,11 +595,6 @@ Object.lto	retail	AltCruiseSound
 Object.lto	retail	AngerChance
 Object.lto	retail	Anim Name: 
 Object.lto	retail	Anim Props: 
-Object.lto	retail	AnnouncePowerupGrab
-Object.lto	retail	AnnounceTurboCurse
-Object.lto	retail	AnnounceWallReset
-Object.lto	retail	ArchiveBin
-Object.lto	retail	ArchiveBin
 Object.lto	retail	ArchiveBinInvalidPSet
 Object.lto	retail	ArchiveBin_Frame
 Object.lto	retail	AreaDamageAlways
@@ -663,7 +609,6 @@ Object.lto	retail	Attributes/pings.txt
 Object.lto	retail	Attributes\\LightCycles.txt
 Object.lto	retail	Attributes\\Subroutines.txt
 Object.lto	retail	Attributes\\bosses.txt
-Object.lto	retail	Attributes\\subroutines.txt
 Object.lto	retail	AvailableSub%d
 Object.lto	retail	BALLLAUNCHER
 Object.lto	retail	BALLLAUNCHERRADIUS
@@ -681,7 +626,6 @@ Object.lto	retail	BaseBallHealth
 Object.lto	retail	BaseSpeed
 Object.lto	retail	BaseVelocity
 Object.lto	retail	Behavior
-Object.lto	retail	Berry
 Object.lto	retail	Berry
 Object.lto	retail	BinaryBit::HandleActivateMessage - ERROR - Binary Bit was in a powered down state but had no energy requirements.\n  Since 0 was specified, the bit should have started at it's socket.\n
 Object.lto	retail	BinaryBitInvalidPSet
@@ -728,11 +672,9 @@ Object.lto	retail	CProjectileEnergyClaw
 Object.lto	retail	CProjectilePrankster
 Object.lto	retail	CREATEBALL
 Object.lto	retail	CRUSH
-Object.lto	retail	CServerSubroutineMgr::Init: Failed to parse %s
 Object.lto	retail	CThorne
 Object.lto	retail	CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.
 Object.lto	retail	CTronProjectile
-Object.lto	retail	CascadeRate
 Object.lto	retail	CascadeRate
 Object.lto	retail	ChanceToCorrupt
 Object.lto	retail	Character
@@ -750,7 +692,6 @@ Object.lto	retail	CircuitCompleteId
 Object.lto	retail	CircuitCompleteSound
 Object.lto	retail	CircuitNameId
 Object.lto	retail	ClassDataName
-Object.lto	retail	ClearAlarmCommand
 Object.lto	retail	Client Camera Offset time is old, possible lag\n
 Object.lto	retail	Cluster
 Object.lto	retail	ClusterAutoBurst
@@ -760,21 +701,12 @@ Object.lto	retail	Controlable
 Object.lto	retail	CoreDumpItem1
 Object.lto	retail	CoreDumpItem2
 Object.lto	retail	CoreDumpItem3
-Object.lto	retail	CoreDump_RibbonsFade
-Object.lto	retail	CoreDump_Ribbons_Destroy
-Object.lto	retail	CoreDump_Tetras_Destroy
 Object.lto	retail	Corrode
 Object.lto	retail	CorrodeAmount
 Object.lto	retail	CorrodeDuration
 Object.lto	retail	Corrupt
 Object.lto	retail	CorrupticDims
 Object.lto	retail	CorrupticDimsClassData
-Object.lto	retail	Cost1
-Object.lto	retail	Cost2
-Object.lto	retail	Cost3
-Object.lto	retail	Cost4
-Object.lto	retail	Cost5
-Object.lto	retail	Cost6
 Object.lto	retail	Could not find scripted animation: %s
 Object.lto	retail	Counter Value: %d  Locked: %d
 Object.lto	retail	CrashCmd
@@ -785,19 +717,7 @@ Object.lto	retail	CruiseSound
 Object.lto	retail	Crypt
 Object.lto	retail	Custom
 Object.lto	retail	CustomCmd
-Object.lto	retail	CustomCmd1
-Object.lto	retail	CustomCmd2
-Object.lto	retail	CustomCmd3
-Object.lto	retail	CustomCmd4
-Object.lto	retail	CustomCmd5
-Object.lto	retail	CustomCmd6
 Object.lto	retail	CustomCmdName
-Object.lto	retail	CustomCmdName1
-Object.lto	retail	CustomCmdName2
-Object.lto	retail	CustomCmdName3
-Object.lto	retail	CustomCmdName4
-Object.lto	retail	CustomCmdName5
-Object.lto	retail	CustomCmdName6
 Object.lto	retail	CycleColor
 Object.lto	retail	CycleColor %s
 Object.lto	retail	CycleDialog
@@ -807,11 +727,9 @@ Object.lto	retail	CycleRace
 Object.lto	retail	CycleType
 Object.lto	retail	CyclesAllowed
 Object.lto	retail	DAMAGESCALAR
-Object.lto	retail	DEATHFX
 Object.lto	retail	DEATHFX_%s_%s_Exp
 Object.lto	retail	DEATHFX_thornboss_dissipate
 Object.lto	retail	DEATHFX_thornboss_fire
-Object.lto	retail	DECISIONABORTED
 Object.lto	retail	DECISIONABORTED
 Object.lto	retail	DPBLoop
 Object.lto	retail	DPBStop
@@ -842,13 +760,8 @@ Object.lto	retail	DeflectFinalRadius
 Object.lto	retail	DeflectInitialRadius
 Object.lto	retail	DeflectTotalTime
 Object.lto	retail	DeflectVelocity
-Object.lto	retail	DerezzGenericCyclist
-Object.lto	retail	DerezzLocalCyclist
 Object.lto	retail	DestroyProjectile
 Object.lto	retail	DestroyedInFlightFXName
-Object.lto	retail	Disable
-Object.lto	retail	Disable Secrezzer
-Object.lto	retail	Disabled
 Object.lto	retail	DiscAutoAimAngleDecayMult
 Object.lto	retail	DiscAutoAimAngleMult
 Object.lto	retail	DiscAutoAimRadius
@@ -872,14 +785,10 @@ Object.lto	retail	DiscMagneticShowTarget
 Object.lto	retail	DiscResponsivenessMultiplier
 Object.lto	retail	DiscVelocity
 Object.lto	retail	DiscVelocityReturn
-Object.lto	retail	DistAboveFloor
 Object.lto	retail	DistHitBoxMethod
 Object.lto	retail	DistressTimeMax
-Object.lto	retail	DisturbanceAlarmLevel
-Object.lto	retail	DisturbanceRadius
 Object.lto	retail	DoFiringTrails
 Object.lto	retail	DocumentBerry
-Object.lto	retail	DrawScanVolume
 Object.lto	retail	DrunkenDims
 Object.lto	retail	DrunkenDimsRadius
 Object.lto	retail	Drunken_dims
@@ -894,8 +803,6 @@ Object.lto	retail	ERROR - Could not spawn AI!
 Object.lto	retail	ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!\n
 Object.lto	retail	ERROR - Couldn't find Light Cycle Color %s\n
 Object.lto	retail	ERROR - Looked for LCSpawner%2d and found %d objects!\n
-Object.lto	retail	ERROR - PatchRoutine received an activate message and it had nothing to give!
-Object.lto	retail	ERROR in TronTurret, could not find a parent %s
 Object.lto	retail	ERROR! - ValidateDelcmd()
 Object.lto	retail	ERROR! - ValidateTalkIcon()
 Object.lto	retail	ERROR!!!  %s given command to take control of node %s while owned by %s!  This may lead to gameplay deadlocks and other horrible events.  Please see your local AI programmer right now!
@@ -909,13 +816,6 @@ Object.lto	retail	Elasticity
 Object.lto	retail	Electrocute.wav
 Object.lto	retail	EliminateTargetsFX
 Object.lto	retail	Email
-Object.lto	retail	EmailName
-Object.lto	retail	EmailName1
-Object.lto	retail	EmailName2
-Object.lto	retail	EmailName3
-Object.lto	retail	EmailName4
-Object.lto	retail	EmailName5
-Object.lto	retail	EmailName6
 Object.lto	retail	Empty_archloop_01
 Object.lto	retail	EnableRecoilWeaponNodeTracking
 Object.lto	retail	EnableSoundDebugInfo
@@ -943,36 +843,18 @@ Object.lto	retail	FULLENERGY
 Object.lto	retail	Failed to find a valid start postion for gametype %s, using startpoint 0
 Object.lto	retail	Failed to parse file: 
 Object.lto	retail	FailureChance
-Object.lto	retail	FakeDeath
 Object.lto	retail	FconMonster
-Object.lto	retail	Finder
-Object.lto	retail	Finder0x%08x
-Object.lto	retail	FinderDrawScanVolume
-Object.lto	retail	FinderExplosionAmmo
-Object.lto	retail	FinderWeapon
-Object.lto	retail	FinderWeaponBlue
-Object.lto	retail	FinderWeaponGreen
-Object.lto	retail	FinderWeaponPurple
 Object.lto	retail	FireAnimationRateMultiplier
-Object.lto	retail	FireFOV
-Object.lto	retail	FireSocket
-Object.lto	retail	FireSocket1
 Object.lto	retail	FireSocketName
-Object.lto	retail	Fire_2
-Object.lto	retail	ForceUse
 Object.lto	retail	ForceWalk
-Object.lto	retail	Foreign
 Object.lto	retail	Frame
 Object.lto	retail	From: 
 Object.lto	retail	FrontSensorDist
-Object.lto	retail	Function
 Object.lto	retail	Fuzzy_signature
 Object.lto	retail	FxName %s%s%s
 Object.lto	retail	FxName %s%s%s;Loop 1;SmoothShutdown 0
 Object.lto	retail	FxName %s;Loop 0;SmoothShutdown 0 
-Object.lto	retail	FxName %s;Loop 1;SmoothShutdown %d
 Object.lto	retail	GOAL_SpecialDamage CONTINUOUSFIRERELEASE=0
-Object.lto	retail	GOINGBETWEENWALLS
 Object.lto	retail	GameSpeedScalars
 Object.lto	retail	GameSpy error: %s
 Object.lto	retail	German
@@ -987,12 +869,9 @@ Object.lto	retail	GoalId
 Object.lto	retail	Green
 Object.lto	retail	GridCyclist
 Object.lto	retail	GridSize
-Object.lto	retail	HIDE_ATTACHFX
 Object.lto	retail	HIDE_ATTACHFX 0
-Object.lto	retail	HOOKSENDER
 Object.lto	retail	HUDLivesIconTex
 Object.lto	retail	HUDRosterIconTex
-Object.lto	retail	HUNTINGPLAYER
 Object.lto	retail	HalfHeight
 Object.lto	retail	HalfLength
 Object.lto	retail	HalfWidth
@@ -1003,13 +882,6 @@ Object.lto	retail	HeadShotBack
 Object.lto	retail	HeadShotBack2
 Object.lto	retail	HeadShotBack3
 Object.lto	retail	HeavyWeaponMovement
-Object.lto	retail	HelpFile
-Object.lto	retail	HelpFile1
-Object.lto	retail	HelpFile2
-Object.lto	retail	HelpFile3
-Object.lto	retail	HelpFile4
-Object.lto	retail	HelpFile5
-Object.lto	retail	HelpFile6
 Object.lto	retail	HiddenInDEditToAIWeaponList
 Object.lto	retail	HiddenPieces
 Object.lto	retail	HideWeaponWhileClipEmpty
@@ -1020,10 +892,6 @@ Object.lto	retail	Homing
 Object.lto	retail	HorizontalFactor
 Object.lto	retail	HumanDash
 Object.lto	retail	HumanSeekerHitchDown
-Object.lto	retail	IC_Finder
-Object.lto	retail	IC_Finder_AlansPC
-Object.lto	retail	IC_Finder_Fcon
-Object.lto	retail	IC_Finder_Internet
 Object.lto	retail	IGNOREDIALOGUE
 Object.lto	retail	IGNOREFOV
 Object.lto	retail	INSUREANIMOBJECTCLOSED
@@ -1034,12 +902,10 @@ Object.lto	retail	IdealBuildPoints
 Object.lto	retail	IdealProcedurals
 Object.lto	retail	IdealSubroutines
 Object.lto	retail	IdealWeapons
-Object.lto	retail	IgnoreDist
 Object.lto	retail	Image
 Object.lto	retail	InRangePVAttachFX
 Object.lto	retail	IncidentAngleToControlLine
 Object.lto	retail	IncidentAngleToControlLineDecay
-Object.lto	retail	Infected
 Object.lto	retail	InitialAngle
 Object.lto	retail	InitialExplosionSuppressTime
 Object.lto	retail	InitialLives
@@ -1052,17 +918,9 @@ Object.lto	retail	Invalid summon command %s
 Object.lto	retail	Is %f far away from last node
 Object.lto	retail	IsPlayerPrimitive
 Object.lto	retail	Item %d has a type but no valid name.  Items must be named to exist.
-Object.lto	retail	Item1
-Object.lto	retail	Item2
-Object.lto	retail	Item3
-Object.lto	retail	Item4
-Object.lto	retail	Item5
-Object.lto	retail	Item6
-Object.lto	retail	JUSTPASSEDPLAYER
 Object.lto	retail	Joint6
 Object.lto	retail	KILLALLAILC
 Object.lto	retail	KNUCKLESANDWICH
-Object.lto	retail	KeyframerName
 Object.lto	retail	Kicking Client %d: CheatBootPlayer
 Object.lto	retail	Kicking Client %d: Handshake 0
 Object.lto	retail	Kicking Client %d: Handshake 1
@@ -1093,8 +951,6 @@ Object.lto	retail	LOCKDISC
 Object.lto	retail	LOCKIGNOREVOLUMESTATE
 Object.lto	retail	LOCKIGNOREVOLUMESTATE <1-or-0>
 Object.lto	retail	LOCKWEAPON
-Object.lto	retail	LOSTPLAYER
-Object.lto	retail	LOSTPLAYERSTILLCHASING
 Object.lto	retail	L_Arm_Shell
 Object.lto	retail	LeftArmDestroy
 Object.lto	retail	LeftCanHurt
@@ -1104,9 +960,6 @@ Object.lto	retail	LightCycleMissile
 Object.lto	retail	LightCyclePowerup
 Object.lto	retail	LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n
 Object.lto	retail	LightCycleRed
-Object.lto	retail	LightCycleVolume
-Object.lto	retail	LightCycleVolumeCascader
-Object.lto	retail	LingerMaxDegreesToTurn
 Object.lto	retail	ListenIcon <true/false> [string-id]
 Object.lto	retail	LithTech
 Object.lto	retail	Locked the RezOut goal, should not be interuptable.
@@ -1124,7 +977,6 @@ Object.lto	retail	MagneticMiddleInfluence
 Object.lto	retail	MagneticRadius
 Object.lto	retail	Map%d
 Object.lto	retail	MapName
-Object.lto	retail	MaxActive
 Object.lto	retail	MaxAmmoOverride
 Object.lto	retail	MaxDefendPercentage
 Object.lto	retail	MaxDist
@@ -1152,14 +1004,12 @@ Object.lto	retail	MinSlowZoneSpeed
 Object.lto	retail	MinSpeed
 Object.lto	retail	MinThrowTime
 Object.lto	retail	MinThrowVelocity
-Object.lto	retail	Missile
 Object.lto	retail	MissileSpeed
 Object.lto	retail	Model%dColor%dHHDisc
 Object.lto	retail	Model%dColor%dRezIn
 Object.lto	retail	Model%dColor%dSkin%d
 Object.lto	retail	Model%dName
 Object.lto	retail	Model%dNameId
-Object.lto	retail	ModelTemplate
 Object.lto	retail	ModelTemplate
 Object.lto	retail	ModelTemplate
 Object.lto	retail	ModifyPriorityWithDist
@@ -1171,45 +1021,28 @@ Object.lto	retail	NameKey
 Object.lto	retail	NameSeed
 Object.lto	retail	No challenge value was received from the master server.
 Object.lto	retail	No valid start position types for gametype %s, using startpoint 0
-Object.lto	retail	NoWeapon
 Object.lto	retail	Node%dIgnoreParent
 Object.lto	retail	NormalAccelRate
 Object.lto	retail	NormalDecelRate
 Object.lto	retail	NormalLock%d
 Object.lto	retail	NumRandomSubs
-Object.lto	retail	NumberToSpawn
 Object.lto	retail	ON <Radius Center>
 Object.lto	retail	OPTIMIZEREXPLOSION
 Object.lto	retail	OccludingArmor
 Object.lto	retail	OldStyleBeamName
 Object.lto	retail	OnAICrash
-Object.lto	retail	OnActivate
 Object.lto	retail	OnDestroyFX
 Object.lto	retail	OnMatchEnd
 Object.lto	retail	OnMatchStart
-Object.lto	retail	OnOptimize
 Object.lto	retail	OnPlayerCrash
 Object.lto	retail	OnPlayerDeath
 Object.lto	retail	OnPlayerSpawn
 Object.lto	retail	OnPointEnd
 Object.lto	retail	OnPointStart
-Object.lto	retail	OnUseCmd
 Object.lto	retail	OnWithdraw
-Object.lto	retail	OnWithdraw1
-Object.lto	retail	OnWithdraw2
-Object.lto	retail	OnWithdraw3
-Object.lto	retail	OnWithdraw4
-Object.lto	retail	OnWithdraw5
-Object.lto	retail	OnWithdraw6
 Object.lto	retail	OnlyDamagedByPlayer
 Object.lto	retail	Open Archivebin
-Object.lto	retail	Open Coredump
 Object.lto	retail	Optimizer
-Object.lto	retail	Optimizer
-Object.lto	retail	Optimizer missing animation %s
-Object.lto	retail	Optimizer::GetAnim void pointer for anim name
-Object.lto	retail	OptimizerExplosion
-Object.lto	retail	OptimzerInvalidPSet
 Object.lto	retail	OrientationDeadZone
 Object.lto	retail	OrientationMaxDefense
 Object.lto	retail	OrientationMaxZone
@@ -1218,26 +1051,15 @@ Object.lto	retail	PDeath
 Object.lto	retail	PDeath2
 Object.lto	retail	PDeath3
 Object.lto	retail	PERMISSION_DEPENDANT
-Object.lto	retail	PLAYERCLOSEBEHIND
-Object.lto	retail	PLAYERCLOSEINFRONT
-Object.lto	retail	PLAYERCRASH
 Object.lto	retail	PLAYERONLY
 Object.lto	retail	PLAYERPERMISSIONS
 Object.lto	retail	PLAYERPERMISSIONS <bool> If true, AI has same permissions as player
-Object.lto	retail	PLAYERTURNSAWAY
 Object.lto	retail	POWERBLOCK
 Object.lto	retail	PRANKSTERBIT
 Object.lto	retail	PRANKSTERBITIMPLODE
 Object.lto	retail	PRodCrouch
 Object.lto	retail	PSetBerry
 Object.lto	retail	PSetNumber
-Object.lto	retail	PSetNumber1
-Object.lto	retail	PSetNumber2
-Object.lto	retail	PSetNumber3
-Object.lto	retail	PSetNumber4
-Object.lto	retail	PSetNumber5
-Object.lto	retail	PSetNumber6
-Object.lto	retail	ParentSocket
 Object.lto	retail	Permission Set
 Object.lto	retail	PerturbMultiplier
 Object.lto	retail	Player with client ID (%d) had too slow of a ping for this server (%d)
@@ -1249,10 +1071,8 @@ Object.lto	retail	Player with client ID (%d) just left the spectators\n
 Object.lto	retail	PlayerFiredAbortCmd
 Object.lto	retail	PlayerNoticeDist
 Object.lto	retail	PlayerOnly
-Object.lto	retail	PlayerSpeedBoost
 Object.lto	retail	Popoff
 Object.lto	retail	PowerBlock
-Object.lto	retail	Powerup
 Object.lto	retail	Powerup%d
 Object.lto	retail	Prankster
 Object.lto	retail	PranksterBitImplode
@@ -1260,23 +1080,9 @@ Object.lto	retail	PranksterClassData
 Object.lto	retail	Prankster_bit
 Object.lto	retail	Prankstered
 Object.lto	retail	Primary
-Object.lto	retail	Primitive
 Object.lto	retail	PrimitiveName
-Object.lto	retail	PrimitiveName1
-Object.lto	retail	PrimitiveName2
-Object.lto	retail	PrimitiveName3
-Object.lto	retail	PrimitiveName4
-Object.lto	retail	PrimitiveName5
-Object.lto	retail	PrimitiveName6
 Object.lto	retail	Primitive_charge
-Object.lto	retail	Procedural
 Object.lto	retail	ProceduralName
-Object.lto	retail	ProceduralName1
-Object.lto	retail	ProceduralName2
-Object.lto	retail	ProceduralName3
-Object.lto	retail	ProceduralName4
-Object.lto	retail	ProceduralName5
-Object.lto	retail	ProceduralName6
 Object.lto	retail	Profiler
 Object.lto	retail	ProjectileCollisionDebug
 Object.lto	retail	ProjectileNewCollision
@@ -1299,26 +1105,21 @@ Object.lto	retail	RESET_ATTACHFX 0
 Object.lto	retail	REZINFX
 Object.lto	retail	RIOTSHIELDAMMO
 Object.lto	retail	R_Arm_Shell
-Object.lto	retail	RaiseEW
-Object.lto	retail	RaiseNS
 Object.lto	retail	RamWeapon
 Object.lto	retail	RampDownTimePercent
 Object.lto	retail	RampUpTimePercent
-Object.lto	retail	Random
 Object.lto	retail	RandomAngleAdjust
 Object.lto	retail	RandomSub%d
 Object.lto	retail	Randomness
 Object.lto	retail	RandomnessMultiplier
 Object.lto	retail	RandomnessRampUpTime
 Object.lto	retail	Ranged Weapon
-Object.lto	retail	RateOfFire
 Object.lto	retail	Received level switch request, waiting for all players to be connected to initiate switch...
 Object.lto	retail	RechargeRate
 Object.lto	retail	Regular
 Object.lto	retail	Reinforcement
 Object.lto	retail	RemoveCmd
 Object.lto	retail	RequiredPermissionSets
-Object.lto	retail	ResetPath
 Object.lto	retail	ReturnToOwner
 Object.lto	retail	RezInFX
 Object.lto	retail	RezInFXDoneCommand
@@ -1337,13 +1138,11 @@ Object.lto	retail	SCREENGLOWFOGNEARZ
 Object.lto	retail	SCREENGLOWFOGNEARZ <near z>
 Object.lto	retail	SEEKCHARACTER
 Object.lto	retail	SELECT
-Object.lto	retail	SELECT
 Object.lto	retail	SEQUENCER
 Object.lto	retail	SETBUILDPOINTS
 Object.lto	retail	SETONLYDAMAGEBYPLAYER
 Object.lto	retail	SETSUBHELP
 Object.lto	retail	SETSYSTEMCONFIG
-Object.lto	retail	SHOW_ATTACHFX
 Object.lto	retail	SHOW_ATTACHFX 0
 Object.lto	retail	SHOW_ATTACHFX 1
 Object.lto	retail	SHOW_ATTACHFX 2
@@ -1353,14 +1152,12 @@ Object.lto	retail	SLEEPING
 Object.lto	retail	SLIPPERY
 Object.lto	retail	SPAWNAICYCLES
 Object.lto	retail	STARTSUPERCYCLE
-Object.lto	retail	STUCK
 Object.lto	retail	SUFFUSION
 Object.lto	retail	SUFFUSIONGIB
 Object.lto	retail	SUMMON
 Object.lto	retail	SWATBLOCKMELEEATTACK
 Object.lto	retail	SWORD
 Object.lto	retail	SayIcon <true/false> [string-id]
-Object.lto	retail	ScanInfinite
 Object.lto	retail	ScreenGlow
 Object.lto	retail	ScreenGlowFogEnable
 Object.lto	retail	ScreenGlowFogEnable
@@ -1369,21 +1166,15 @@ Object.lto	retail	ScreenGlowFogFarZ
 Object.lto	retail	ScreenGlowFogNearZ
 Object.lto	retail	ScreenGlowFogNearZ
 Object.lto	retail	Scripted
-Object.lto	retail	SecondsToLinger
-Object.lto	retail	SecondsToLock
-Object.lto	retail	Secrezzer
-Object.lto	retail	SecrezzerInvalidPSet
 Object.lto	retail	SeekerHitch
 Object.lto	retail	SeekerHitchDown
 Object.lto	retail	SenseRecorder attempting to copy a sense record it does not support.
 Object.lto	retail	Senses: 0\n
 Object.lto	retail	Senses: 1\n
-Object.lto	retail	SensingSocket
 Object.lto	retail	Sequencer
 Object.lto	retail	SetEnergy
 Object.lto	retail	SetHitPoints
 Object.lto	retail	Shade
-Object.lto	retail	Shield
 Object.lto	retail	Shield_prism
 Object.lto	retail	ShowNodeCover
 Object.lto	retail	SlowZoneDecelRate
@@ -1393,35 +1184,13 @@ Object.lto	retail	SoundLocalToPlayer
 Object.lto	retail	Spectator
 Object.lto	retail	SpectatorObject
 Object.lto	retail	SpeedZoneAccelRate
-Object.lto	retail	SpotRange
 Object.lto	retail	StandardCycleRestrictionId
-Object.lto	retail	StartCompressed
 Object.lto	retail	StartDefendPercentage
-Object.lto	retail	StartWallFollow
-Object.lto	retail	Subroutine
 Object.lto	retail	SubroutineBerry
 Object.lto	retail	SubroutineBuild
-Object.lto	retail	SubroutineBuild1
-Object.lto	retail	SubroutineBuild2
-Object.lto	retail	SubroutineBuild3
-Object.lto	retail	SubroutineBuild4
-Object.lto	retail	SubroutineBuild5
-Object.lto	retail	SubroutineBuild6
 Object.lto	retail	SubroutineCondition
-Object.lto	retail	SubroutineCondition1
-Object.lto	retail	SubroutineCondition2
-Object.lto	retail	SubroutineCondition3
-Object.lto	retail	SubroutineCondition4
-Object.lto	retail	SubroutineCondition5
-Object.lto	retail	SubroutineCondition6
 Object.lto	retail	SubroutineConfig
 Object.lto	retail	SubroutineName
-Object.lto	retail	SubroutineName1
-Object.lto	retail	SubroutineName2
-Object.lto	retail	SubroutineName3
-Object.lto	retail	SubroutineName4
-Object.lto	retail	SubroutineName5
-Object.lto	retail	SubroutineName6
 Object.lto	retail	Suffusion
 Object.lto	retail	SuffusionGib
 Object.lto	retail	SummonCmd
@@ -1436,12 +1205,9 @@ Object.lto	retail	SwaySpeedMultiplier
 Object.lto	retail	SystemNameId
 Object.lto	retail	TRANSMISSION <transmission id> [ActivePlayerComm]
 Object.lto	retail	TRON 12
-Object.lto	retail	TRON TURRET ERROR : MSG TARGET, NOT ENOUGH ARGS
 Object.lto	retail	TURN <left/right>
 Object.lto	retail	T_PRodLightning
 Object.lto	retail	TalkToPlayerCleanupDist
-Object.lto	retail	TankGun
-Object.lto	retail	Tank_Blast
 Object.lto	retail	TargetAngleTrackThreshold
 Object.lto	retail	TargetObject
 Object.lto	retail	Team 1
@@ -1460,31 +1226,18 @@ Object.lto	retail	TimeVictimStasisRange
 Object.lto	retail	TrailDerezDelay
 Object.lto	retail	TrailDerezTime
 Object.lto	retail	TrailLengthValues
-Object.lto	retail	TrailReset
-Object.lto	retail	TrailSpike
 Object.lto	retail	TrailSpikeDelay
 Object.lto	retail	TrailSpikeDist
 Object.lto	retail	TrailSpikeSpeed
 Object.lto	retail	Transitioning: 
 Object.lto	retail	Triangulate
 Object.lto	retail	TronProjectile
-Object.lto	retail	TronTurret
-Object.lto	retail	Turbo
 Object.lto	retail	TurboAccelRate
-Object.lto	retail	TurboCurse
 Object.lto	retail	TurboCurseAccelRate
 Object.lto	retail	TurboCurseTime
 Object.lto	retail	TurboTime
-Object.lto	retail	TurnRate
 Object.lto	retail	TurnSound
 Object.lto	retail	TurnSpeedLossPercent
-Object.lto	retail	Turret
-Object.lto	retail	Type1
-Object.lto	retail	Type2
-Object.lto	retail	Type3
-Object.lto	retail	Type4
-Object.lto	retail	Type5
-Object.lto	retail	Type6
 Object.lto	retail	UNLOCKWEAPON
 Object.lto	retail	UR2Bl
 Object.lto	retail	UR2CBl
@@ -1507,32 +1260,17 @@ Object.lto	retail	Unknown Weapon: %d
 Object.lto	retail	UnlockAnimPostFireNormalLock%d
 Object.lto	retail	UnlockAnimPostFireWithMovementLock%d
 Object.lto	retail	Unlocks
-Object.lto	retail	Use Optimizer
 Object.lto	retail	UseAIState
 Object.lto	retail	ValidAIToSpawn
 Object.lto	retail	Value%d
 Object.lto	retail	VelocityRange
 Object.lto	retail	VerticalFactor
 Object.lto	retail	VeryHard
-Object.lto	retail	ViewFOV
 Object.lto	retail	Virus_scan
 Object.lto	retail	WAIT_DIST
-Object.lto	retail	WALLFOLLOWINGPLAYERINSIGHT
-Object.lto	retail	WALLFOLLOWPLAYERCLOSE
 Object.lto	retail	WARNING: Invalid skel specification for AddAnimsLTB%d for smart goal %s
 Object.lto	retail	WAVECOMPLETE
-Object.lto	retail	WORLDS_PatchRoutine_Energy_Idle
-Object.lto	retail	WORLDS_PatchRoutine_Energy_Idle_Infinite
-Object.lto	retail	WORLDS_PatchRoutine_Energy_Remove
-Object.lto	retail	WORLDS_PatchRoutine_Energy_Transfer
-Object.lto	retail	WORLDS_PatchRoutine_Energy_Transfer_Infinite
-Object.lto	retail	WORLDS_PatchRoutine_Health_Idle
-Object.lto	retail	WORLDS_PatchRoutine_Health_Idle_Infinite
-Object.lto	retail	WORLDS_PatchRoutine_Health_Remove
-Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer
-Object.lto	retail	WORLDS_PatchRoutine_Health_Transfer_Infinite
 Object.lto	retail	WORLDS_lcpowerup_
-Object.lto	retail	WallExtender
 Object.lto	retail	WallExtenderAdd
 Object.lto	retail	Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0
 Object.lto	retail	WaveCount
@@ -1562,16 +1300,10 @@ Object.lto	retail	attributes\\subroutines.txt
 Object.lto	retail	autoaim
 Object.lto	retail	avoid
 Object.lto	retail	bl.dat
-Object.lto	retail	chars\\snd\\tanks\\fire.wav
-Object.lto	retail	chars\\snd\\tanks\\loop_turret.wav
-Object.lto	retail	chars\\snd\\tanks\\start_turret.wav
-Object.lto	retail	chars\\snd\\tanks\\stop_turret.wav
 Object.lto	retail	choke01.wav
 Object.lto	retail	choke02.wav
-Object.lto	retail	coredump
 Object.lto	retail	corrupted
 Object.lto	retail	cycletype
-Object.lto	retail	deathloop
 Object.lto	retail	deathpoints
 Object.lto	retail	deaths_
 Object.lto	retail	dedicated
@@ -1604,11 +1336,9 @@ Object.lto	retail	import MSVCIRT.dll ?ends@@YAAAVostream@@AAV1@@Z
 Object.lto	retail	import MSVCIRT.dll ?freeze@strstreambuf@@QAEXH@Z
 Object.lto	retail	import MSVCIRT.dll ?lock@ios@@QAAXXZ
 Object.lto	retail	import MSVCIRT.dll ?unlock@ios@@QAAXXZ
-Object.lto	retail	import MSVCRT.dll _CIfmod
 Object.lto	retail	import MSVCRT.dll _HUGE
 Object.lto	retail	import MSVCRT.dll _finite
 Object.lto	retail	import MSVCRT.dll _itoa
-Object.lto	retail	import MSVCRT.dll _snprintf
 Object.lto	retail	import MSVCRT.dll isalnum
 Object.lto	retail	import USER32.dll FindWindowA
 Object.lto	retail	import USER32.dll MessageBoxA
@@ -1631,7 +1361,6 @@ Object.lto	retail	info.txt
 Object.lto	retail	killpoints
 Object.lto	retail	leftcommandobject
 Object.lto	retail	lefthitpoints
-Object.lto	retail	liveloop
 Object.lto	retail	localip%d
 Object.lto	retail	localport
 Object.lto	retail	mapname
@@ -1649,7 +1378,6 @@ Object.lto	retail	null.wav
 Object.lto	retail	numplayers
 Object.lto	retail	numteams
 Object.lto	retail	openplaying
-Object.lto	retail	optimize
 Object.lto	retail	option remove 5115
 Object.lto	retail	option remove 5251
 Object.lto	retail	password
@@ -1669,14 +1397,11 @@ Object.lto	retail	score_t
 Object.lto	retail	setbuildpoints %d
 Object.lto	retail	skill_
 Object.lto	retail	snd\\event\\spawn_player.wav
-Object.lto	retail	startdeath
 Object.lto	retail	statechanged
-Object.lto	retail	target
 Object.lto	retail	team_
 Object.lto	retail	team_t
 Object.lto	retail	teamfraglimit
 Object.lto	retail	teamplay
-Object.lto	retail	tetra%d
 Object.lto	retail	timeelapsed
 Object.lto	retail	timelimit
 Object.lto	retail	traillength
@@ -1687,7 +1412,6 @@ Object.lto	retail	turns off armor if character has power armor
 Object.lto	retail	turns on armor and locks it on if character has power armor
 Object.lto	retail	turns on armor if character has power armor
 Object.lto	retail	unknown
-Object.lto	retail	virus_scan
 Object.lto	retail	voice\\%d.wav
 Object.lto	retail	waitweaps
 Object.lto	retail	wander
@@ -1757,7 +1481,6 @@ CShell.dll	ours	BindingNumbers
 CShell.dll	ours	BlueTeamColor
 CShell.dll	ours	Bonus
 CShell.dll	ours	BurstDrain
-CShell.dll	ours	CDKey validation error: %s
 CShell.dll	ours	CHUDSubtitles::Show(%d) : No Text
 CShell.dll	ours	COCBLNHWT
 CShell.dll	ours	CSCKKUJNVVP
@@ -1836,7 +1559,6 @@ CShell.dll	ours	FontFace%d
 CShell.dll	ours	FontFace0
 CShell.dll	ours	FrameRect
 CShell.dll	ours	GADGET_TRACKER
-CShell.dll	ours	GameMOTDRect
 CShell.dll	ours	GameTypeRect
 CShell.dll	ours	Gear! (as in 'Boy the Beatles sure are Gear!')
 CShell.dll	ours	God Mode: OFF
@@ -1902,7 +1624,6 @@ CShell.dll	ours	Interface\\hud\\protection_submask.dtx
 CShell.dll	ours	Interface\\hud\\protection_support_safeguard.dtx
 CShell.dll	ours	Interface\\hud\\protection_truncate_plate.dtx
 CShell.dll	ours	Interface\\hud\\protection_viral_shield.dtx
-CShell.dll	ours	Jet v%d.%d.%d
 CShell.dll	ours	KillColumn
 CShell.dll	ours	Knock em out the box Luke...
 CShell.dll	ours	LO_VJHN
@@ -1910,7 +1631,6 @@ CShell.dll	ours	LPSPTA@M[Y
 CShell.dll	ours	LargeFontSize
 CShell.dll	ours	LargeIconSize
 CShell.dll	ours	LaunchFontSize
-CShell.dll	ours	Level0
 CShell.dll	ours	LevelFontSize
 CShell.dll	ours	LevelWidth
 CShell.dll	ours	ListFontFace
@@ -1929,7 +1649,6 @@ CShell.dll	ours	MenuKeys
 CShell.dll	ours	MenuMission
 CShell.dll	ours	MenuPlayer
 CShell.dll	ours	MessageDur
-CShell.dll	ours	MessageFontSize
 CShell.dll	ours	Mission%d
 CShell.dll	ours	Mission0
 CShell.dll	ours	MissionFontSize
@@ -1940,7 +1659,6 @@ CShell.dll	ours	MoveMgr Object Touch:
 CShell.dll	ours	Movies\\foxlogo.bik
 CShell.dll	ours	Movies\\ltLogo.bik
 CShell.dll	ours	Movies\\sierralogo.bik
-CShell.dll	ours	Music/TronTheme.wav
 CShell.dll	ours	NBSQ^O
 CShell.dll	ours	NOLF2Srv.exe
 CShell.dll	ours	NOLF2Srv.exe -profile 
@@ -1978,20 +1696,9 @@ CShell.dll	ours	PopupSize
 CShell.dll	ours	PowerupFX
 CShell.dll	ours	PreCacheAssets
 CShell.dll	ours	PreCacheAssets
-CShell.dll	ours	ProceduralAlpha
-CShell.dll	ours	ProceduralColor
-CShell.dll	ours	ProceduralFont
-CShell.dll	ours	ProceduralFontSize
-CShell.dll	ours	ProceduralHeight
 CShell.dll	ours	Progress
 CShell.dll	ours	ProgressSkin
 CShell.dll	ours	QMKR@^@MPY[
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_MOTD)
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_MOTD) : FAILED
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_Validate_CDKey)
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_Validate_CDKey) : FAILED
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_Validate_Version)
-CShell.dll	ours	QueueRequest(IServerDirectory::eRequest_Validate_Version) : FAILED
 CShell.dll	ours	RAWWR!!!
 CShell.dll	ours	RC@P@P\\Y\\_YXHP
 CShell.dll	ours	RIVJIf
@@ -2039,7 +1746,6 @@ CShell.dll	ours	ScreenPlayerTeam
 CShell.dll	ours	ScreenPlayerTextColor
 CShell.dll	ours	ScreenTeam
 CShell.dll	ours	ScreenTextColor
-CShell.dll	ours	ServerDir request error: %s
 CShell.dll	ours	ServerRect
 CShell.dll	ours	SetGameOption
 CShell.dll	ours	SetMission
@@ -2061,8 +1767,6 @@ CShell.dll	ours	ShardsTotalPerturbSurge
 CShell.dll	ours	ShardsTotalSurge
 CShell.dll	ours	Show position disabled.
 CShell.dll	ours	Show position enabled.
-CShell.dll	ours	SierraUp.exe
-CShell.dll	ours	SierraUp.exe ProductName "NOLF2" CurrentVersion "%s" ResourceDllFile "NOLF2Up.dll"
 CShell.dll	ours	SmallerFontSize
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing1.wav
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing2.wav
@@ -2083,7 +1787,6 @@ CShell.dll	ours	SwatDefendOrientationMinDefendPercentage
 CShell.dll	ours	SwatDefendPVFXName
 CShell.dll	ours	SwatDefendStartDefendPercentage
 CShell.dll	ours	SwatDefendStartMaxDefendPercentage
-CShell.dll	ours	SystemMOTDRect
 CShell.dll	ours	TagColumn
 CShell.dll	ours	TakingArmorFXName
 CShell.dll	ours	TakingHealthFXName
@@ -2185,7 +1888,6 @@ CShell.dll	ours	interface\\hud\\WpnClass%d.dtx
 CShell.dll	ours	interface\\hud\\WpnClass%dD.dtx
 CShell.dll	ours	interface\\hud\\WpnClass%dU.dtx
 CShell.dll	ours	interface\\hud\\hudhub.dtx
-CShell.dll	ours	interface\\hud\\protection_base.dtx
 CShell.dll	ours	interface\\hud\\pset_red_%d.dtx
 CShell.dll	ours	interface\\hud\\skill_empty.dtx
 CShell.dll	ours	interface\\hud\\skill_full.dtx
@@ -2309,13 +2011,10 @@ CShell.dll	retail	.?AVCScreenHostConnection@@
 CShell.dll	retail	.?AVCScreenHostGame@@
 CShell.dll	retail	.?AVCScreenHostMaps@@
 CShell.dll	retail	.?AVCScreenJoinServerList@@
-CShell.dll	retail	.?AVCScreenJoystick@@
 CShell.dll	retail	.?AVCScreenLightCycleCircuit@@
 CShell.dll	retail	.?AVCScreenLightCycleCustomMaps@@
 CShell.dll	retail	.?AVCScreenLightCycleGame@@
 CShell.dll	retail	.?AVCScreenLightCyclePlayerConfig@@
-CShell.dll	retail	.?AVCScreenLightCycleVictory@@
-CShell.dll	retail	.?AVCScreenPlayer@@
 CShell.dll	retail	.?AVCScreenServerInfo@@
 CShell.dll	retail	.?AVCScreenTeamSelect@@
 CShell.dll	retail	.?AVCSpectatorObjectFX@@
@@ -2325,7 +2024,6 @@ CShell.dll	retail	.?AVCTronLoadingScreen@@
 CShell.dll	retail	.?AVCTronMissionMgr@@
 CShell.dll	retail	.?AVCTronWeaponChooser@@
 CShell.dll	retail	.?AVCircuitButeMgr@@
-CShell.dll	retail	.?AVLCHUDHelper@@
 CShell.dll	retail	.?AVTronClientMultiplayerMgr@@
 CShell.dll	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 CShell.dll	retail	1 player is waiting for you.
@@ -2408,15 +2106,8 @@ CShell.dll	retail	BallLauncher
 CShell.dll	retail	BallLauncherRadius
 CShell.dll	retail	BallRadius
 CShell.dll	retail	Ball_launcher
-CShell.dll	retail	Band2Column
-CShell.dll	retail	Band2Pos
-CShell.dll	retail	Band2Width
-CShell.dll	retail	BandwidthColumn
-CShell.dll	retail	BandwidthPos
-CShell.dll	retail	BandwidthWidth
 CShell.dll	retail	BarHeight
 CShell.dll	retail	BarWidth
-CShell.dll	retail	BaseColor
 CShell.dll	retail	BaseScreenHost
 CShell.dll	retail	BaseSpeed
 CShell.dll	retail	BaseVelocity
@@ -2428,7 +2119,6 @@ CShell.dll	retail	BoxSize
 CShell.dll	retail	BrakeDecelRate
 CShell.dll	retail	BriefingId
 CShell.dll	retail	BuildInfo
-CShell.dll	retail	BuildNoteCount
 CShell.dll	retail	BuildNoteCountColor
 CShell.dll	retail	BuildNoteCountPos
 CShell.dll	retail	BuildNoteCountSize
@@ -2497,10 +2187,7 @@ CShell.dll	retail	ClientWeaponEnableClientFX
 CShell.dll	retail	Cluster
 CShell.dll	retail	ClusterAutoBurst
 CShell.dll	retail	ClusterShardAmmo
-CShell.dll	retail	ColorLeftArrowPos
 CShell.dll	retail	ColorNameId%d
-CShell.dll	retail	ColorRightArrowPos
-CShell.dll	retail	ColorTextPos
 CShell.dll	retail	CompletedCircuitColor
 CShell.dll	retail	CompletedLightCycleCircuits
 CShell.dll	retail	ConfigTitlePos
@@ -2618,7 +2305,6 @@ CShell.dll	retail	DrawGuns 0
 CShell.dll	retail	DrunkenDims
 CShell.dll	retail	DrunkenDimsRadius
 CShell.dll	retail	Drunken_dims
-CShell.dll	retail	DynamicLight
 CShell.dll	retail	EAXImagePos
 CShell.dll	retail	EAXImageRect
 CShell.dll	retail	EAXImageTexture
@@ -2678,7 +2364,6 @@ CShell.dll	retail	FireAnimationRateMultiplier
 CShell.dll	retail	FlyBySoundRadius
 CShell.dll	retail	Font0
 CShell.dll	retail	FontColor
-CShell.dll	retail	FontNum
 CShell.dll	retail	ForceUse
 CShell.dll	retail	ForceWalk
 CShell.dll	retail	Frame <piece> <edge> <value>
@@ -2695,7 +2380,6 @@ CShell.dll	retail	GameSpeedScalars
 CShell.dll	retail	GameSpyHTTP/1.0
 CShell.dll	retail	GameSpyPos
 CShell.dll	retail	GameSpyWidth
-CShell.dll	retail	GameTypePos
 CShell.dll	retail	GamesWonColumn
 CShell.dll	retail	German
 CShell.dll	retail	GibFX
@@ -2723,7 +2407,6 @@ CShell.dll	retail	HealthFGOffset
 CShell.dll	retail	HealthTex
 CShell.dll	retail	HealthTextOffset
 CShell.dll	retail	HeavyWeaponMovement
-CShell.dll	retail	Height
 CShell.dll	retail	HelpFileTransfer
 CShell.dll	retail	HiddenPieces
 CShell.dll	retail	HideWeaponWhileClipEmpty
@@ -2785,7 +2468,6 @@ CShell.dll	retail	Interface\\hud\\circle_empty.dtx
 CShell.dll	retail	Interface\\hud\\circle_full.dtx
 CShell.dll	retail	Interface\\subroutines\\Models\\sys_basecode.ltb
 CShell.dll	retail	Interface\\subroutines\\Skins\\sys_basecode.dtx
-CShell.dll	retail	IntroAnim
 CShell.dll	retail	IntroEntryHeight
 CShell.dll	retail	IntroEntrySpace
 CShell.dll	retail	IntroHFrameBorder
@@ -2892,7 +2574,6 @@ CShell.dll	retail	LP_PJMNN\\ZVRf
 CShell.dll	retail	LabelPos
 CShell.dll	retail	LaunchTex
 CShell.dll	retail	LaunchTexH
-CShell.dll	retail	Layer
 CShell.dll	retail	LeftColumnPos
 CShell.dll	retail	LeftInfoWidth
 CShell.dll	retail	LeftPlayerWidth
@@ -2939,9 +2620,6 @@ CShell.dll	retail	MagneticAngleMax
 CShell.dll	retail	MagneticEdgeInfluence
 CShell.dll	retail	MagneticMiddleInfluence
 CShell.dll	retail	MagneticRadius
-CShell.dll	retail	MajorUpgradeColor
-CShell.dll	retail	MajorUpgradeLoopLength
-CShell.dll	retail	MajorUpgradeLoops
 CShell.dll	retail	MapColumn
 CShell.dll	retail	MapName
 CShell.dll	retail	Margins
@@ -2977,18 +2655,12 @@ CShell.dll	retail	MinSpeed
 CShell.dll	retail	MinThrowTime
 CShell.dll	retail	MinThrowVelocity
 CShell.dll	retail	MinValue
-CShell.dll	retail	MinorUpgradeColor
-CShell.dll	retail	MinorUpgradeLoopLength
-CShell.dll	retail	MinorUpgradeLoops
 CShell.dll	retail	Missile
 CShell.dll	retail	Model%dColor%dHHDisc
 CShell.dll	retail	Model%dColor%dRezIn
 CShell.dll	retail	Model%dColor%dSkin%d
 CShell.dll	retail	Model%dName
 CShell.dll	retail	Model%dNameId
-CShell.dll	retail	ModelLeftArrowPos
-CShell.dll	retail	ModelRightArrowPos
-CShell.dll	retail	ModelTextPos
 CShell.dll	retail	ModifyPriorityWithDist
 CShell.dll	retail	MouseClosesPopup
 CShell.dll	retail	MouseInvertLCY
@@ -3011,7 +2683,6 @@ CShell.dll	retail	MusicVolumeMin
 CShell.dll	retail	MusicVolumeSliderIncrement
 CShell.dll	retail	NameID
 CShell.dll	retail	NameKey
-CShell.dll	retail	NamePos
 CShell.dll	retail	NameSeed
 CShell.dll	retail	New flicker
 CShell.dll	retail	New profile
@@ -3054,8 +2725,6 @@ CShell.dll	retail	POISON
 CShell.dll	retail	POWERBLOCK
 CShell.dll	retail	PRANKSTERBIT
 CShell.dll	retail	PRANKSTERBITIMPLODE
-CShell.dll	retail	ParentPiece
-CShell.dll	retail	ParentSocket
 CShell.dll	retail	PerturbMultiplier
 CShell.dll	retail	PickupMessage
 CShell.dll	retail	Piece1MaxAlpha
@@ -3097,7 +2766,6 @@ CShell.dll	retail	PowerBlock
 CShell.dll	retail	Powerup
 CShell.dll	retail	Powerup%d
 CShell.dll	retail	PowerupIconPos
-CShell.dll	retail	PowerupIconTexture
 CShell.dll	retail	PranksterBit
 CShell.dll	retail	PranksterBitImplode
 CShell.dll	retail	PranksterClassData
@@ -3105,7 +2773,6 @@ CShell.dll	retail	Prankster_bit
 CShell.dll	retail	PrimitiveCharge
 CShell.dll	retail	PrimitiveTransfer
 CShell.dll	retail	Primitive_charge
-CShell.dll	retail	ProceduralHUD
 CShell.dll	retail	ProceduralTransfer
 CShell.dll	retail	Profiler
 CShell.dll	retail	ProfilerPos
@@ -3180,7 +2847,6 @@ CShell.dll	retail	ScreenLightCycleCircuit
 CShell.dll	retail	ScreenLightCycleCustomGame
 CShell.dll	retail	ScreenLightCycleCustomMap
 CShell.dll	retail	ScreenLightCyclePlayerConfig
-CShell.dll	retail	ScreenLightCycleVictory
 CShell.dll	retail	ScreenServerInfo
 CShell.dll	retail	ScreenSubroutines
 CShell.dll	retail	Sequencer
@@ -3342,9 +3008,6 @@ CShell.dll	retail	VerbId
 CShell.dll	retail	VersionSize
 CShell.dll	retail	VerticalFactor
 CShell.dll	retail	VeryHard
-CShell.dll	retail	VictoryId
-CShell.dll	retail	VictoryStringRect
-CShell.dll	retail	VictoryStringSize
 CShell.dll	retail	Virus_scan
 CShell.dll	retail	WALLFOLLOWINGPLAYERINSIGHT
 CShell.dll	retail	WALLFOLLOWPLAYERCLOSE
@@ -3523,7 +3186,6 @@ CShell.dll	retail	insufficient_energy
 CShell.dll	retail	interface/menu/art/E3Upsell.pcx
 CShell.dll	retail	interface/menu/art/E3Upsell_2.pcx
 CShell.dll	retail	interface\\Menu\\sprtex\\gamespy.dtx
-CShell.dll	retail	interface\\hud\\armor_bg.dtx
 CShell.dll	retail	interface\\hud\\chooser_insert_number_on.dtx
 CShell.dll	retail	interface\\hud\\damagearrow.dtx
 CShell.dll	retail	interface\\hud\\email_icon.dtx
@@ -3533,8 +3195,6 @@ CShell.dll	retail	interface\\hud\\plasma.dtx
 CShell.dll	retail	interface\\hud\\playing_game.dtx
 CShell.dll	retail	interface\\hud\\progressbar_alpha.dtx
 CShell.dll	retail	interface\\hud\\pset_icon_%d.dtx
-CShell.dll	retail	interface\\hud\\transfer_meter_bg.dtx
-CShell.dll	retail	interface\\hud\\transfer_meter_fg.dtx
 CShell.dll	retail	interface\\hud\\tronnumber_0.dtx
 CShell.dll	retail	interface\\hud\\tronnumber_1.dtx
 CShell.dll	retail	interface\\hud\\tronnumber_2.dtx
@@ -3549,10 +3209,6 @@ CShell.dll	retail	interface\\icons\\refresh_normal.dtx
 CShell.dll	retail	interface\\icons\\refresh_selected.dtx
 CShell.dll	retail	interface\\icons\\sort_down.dtx
 CShell.dll	retail	interface\\icons\\sort_up.dtx
-CShell.dll	retail	interface\\menu\\sprtex\\arrowlt.dtx
-CShell.dll	retail	interface\\menu\\sprtex\\arrowlt_h.dtx
-CShell.dll	retail	interface\\menu\\sprtex\\arrowrt.dtx
-CShell.dll	retail	interface\\menu\\sprtex\\arrowrt_h.dtx
 CShell.dll	retail	interface\\menu\\sprtex\\frame_solid.dtx
 CShell.dll	retail	interface\\snd\\actioncomplete.wav
 CShell.dll	retail	interface\\snd\\cantafford.wav
@@ -3606,7 +3262,6 @@ CShell.dll	retail	optring_gold
 CShell.dll	retail	perf_decrease
 CShell.dll	retail	perf_increase
 CShell.dll	retail	perf_surge
-CShell.dll	retail	permissionkey
 CShell.dll	retail	pickup_badblock
 CShell.dll	retail	pickup_corrupt
 CShell.dll	retail	pickup_foreign
@@ -3703,7 +3358,6 @@ CShell.dll	retail	winpoints
 CShell.dll	ours	.?AV?$CMoArray@VCString@@VDefaultCache@@@@
 CShell.dll	ours	.?AV?$CStandardCreator@VIClientWeaponBase@@VCClientWeapon@@@@
 CShell.dll	ours	.?AV?$GenList@VCString@@@@
-CShell.dll	ours	.?AVCDMButeMgr@@
 CShell.dll	ours	.?AVCHUDAmmoChooser@@
 CShell.dll	ours	.?AVCHUDWeapons@@
 CShell.dll	ours	.?AVCScreenCrosshair@@
