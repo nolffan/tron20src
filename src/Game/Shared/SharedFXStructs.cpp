@@ -701,8 +701,9 @@ void MINECREATESTRUCT::Read(ILTMessage_Read *pMsg)
 // ----------------------------------------------------------------------- //
 
 CLIENTFXUSERCREATESTRUCT::CLIENTFXUSERCREATESTRUCT()
+:	SFXCREATESTRUCT	(),
+	eModelId		( eModelIdInvalid )
 {
-	eModelId = eModelIdInvalid;
 }
 
 // ----------------------------------------------------------------------- //
