@@ -202,6 +202,10 @@ SOURCE=.\HUDHealthEnergy.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDIOCamera.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
@@ -452,6 +456,10 @@ SOURCE=.\HUDEnergyTransfer.h
 # Begin Source File
 
 SOURCE=.\HUDHealthEnergy.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDIOCamera.h
 # End Source File
 # Begin Source File
 

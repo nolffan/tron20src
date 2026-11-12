@@ -20,21 +20,35 @@
 //******************************************************************************************
 
 
-CHUDVersion::CHUDVersion()
+CHUDVersion::CHUDVersion() : m_pString(LTNULL)
 {
 	LTIntPt kNullPt(0,0);
 
 	m_UpdateFlags = kHUDVersion;
-	m_pString = LTNULL;
 	m_BasePos = kNullPt;
 	m_fUpdateTime = 1.0f;
-	m_vColor = LTVector(1.0f,1.0f,1.0f);	
+	m_vColor = LTVector(32.0f,32.0f,255.0f);	// RETAIL: 0x1003e379
 }
 
 
+// RETAIL: 0x1003e390
 LTBOOL CHUDVersion::Init()
 {
 	UpdateLayout();
+
+	m_BasePos			= g_pLayoutMgr->GetPoint("VersionNumber", "Position");
+	m_nFont				= g_pLayoutMgr->GetInt("VersionNumber", "Font");
+	m_nFontSize			= g_pLayoutMgr->GetInt("VersionNumber", "FontSize");
+	m_vColor			= g_pLayoutMgr->GetVector("VersionNumber", "BaseColor");
+	m_nMajorLoops		= g_pLayoutMgr->GetInt("VersionNumber", "MajorUpgradeLoops");
+	m_fMajorLoopLength	= g_pLayoutMgr->GetFloat("VersionNumber", "MajorUpgradeLoopLength");
+	m_vMajorColor		= g_pLayoutMgr->GetVector("VersionNumber", "MajorUpgradeColor");
+	m_nMinorLoops		= g_pLayoutMgr->GetInt("VersionNumber", "MinorUpgradeLoops");
+	m_fMinorLoopLength	= g_pLayoutMgr->GetFloat("VersionNumber", "MinorUpgradeLoopLength");
+	m_vMinorColor		= g_pLayoutMgr->GetVector("VersionNumber", "MinorUpgradeColor");
+
+	m_fUpdateTime = 1.0f;
+
 	return LTTRUE;
 }
 
@@ -47,98 +61,102 @@ void CHUDVersion::Term()
 	}
 }
 
+// RETAIL: 0x1003e520: single player only, flashing towards the upgrade's
+// colour and back once a loop
 void CHUDVersion::Render()
 {
-	if (m_pString)
+	if (IsMultiplayerGame()) return;
+	if (!((CTronInterfaceMgr*)g_pInterfaceMgr)->GetTronUnknown28B14()) return;
+	if (!IsEnabled()) return;
+
+	LTVector vColor = m_vColor;
+
+	if (m_nLoops)
 	{
-		// If there was a recent change to the version number, this allows us to
-		// set a time during which the version number flashes or something.
-/*
-		if (m_fTimeRemaining)
+		float fTime = g_pLTClient->GetTime();
+		float fDelta = fTime - m_fLastTime;
+		m_fLastTime = fTime;
+
+		m_fLoopTime -= fDelta;
+		if (m_fLoopTime < 0.0f)
 		{
-			// Set the color here.
-			m_pString->SetColor(SETRGB(m_vColor.x, m_vColor.y, m_vColor.z));
-			// FIXME reduce m_fTimeRemaining by some amount
-		}
-		else
-*/
-		{
-//			m_pString->SetColor(SETRGB(m_vColor.x, m_vColor.y, m_vColor.z));
+			m_fLoopTime += m_fLoopLength;
+			m_nLoops--;
 		}
 
-		// Finally...render the string
-		m_pString->Render();
+		if (m_nLoops)
+		{
+			float fPhase = (m_fLoopLength - m_fLoopTime) / m_fLoopLength;
+			float fBlend = (fPhase > 0.5f) ? (2.0f - fPhase * 2.0f) : (fPhase * 2.0f);
+
+			vColor.x = (m_vFlashColor.x - m_vColor.x) * fBlend + m_vColor.x;
+			vColor.y = (m_vFlashColor.y - m_vColor.y) * fBlend + m_vColor.y;
+			vColor.z = (m_vFlashColor.z - m_vColor.z) * fBlend + m_vColor.z;
+		}
 	}
 
+	if (m_pString)
+	{
+		m_pString->SetColor(SET_ARGB(0xFF, vColor.x, vColor.y, vColor.z));
+		m_pString->Render();
+	}
 }
 
+// RETAIL: 0x1003e660
 void CHUDVersion::Update()
 {
+	float xs = g_pInterfaceResMgr->GetXRatio();
+
 	// build the new string
+	int nOldVersion = m_iVersion;
 	uint16 newVersion;
 	g_pTronPlayerStats->GetJetVersion(newVersion);
 
-	// Start some visual effect to denote that there was a change
-	// Set the time for how long the visual effect lasts based upon which of the
-	// three digits of the version number got updated.
 	m_fTimeRemaining = m_fUpdateTime;
+	m_iVersion = newVersion;
 
-	// do the sprintf here!
+	// a change of version flashes the number: a major one in its colour,
+	// a minor one in its own
+	if (nOldVersion / 100 != newVersion / 100)
+	{
+		m_fLastTime = g_pLTClient->GetTime();
+		m_fLoopLength = m_fLoopTime = m_fMajorLoopLength;
+		m_nLoops = m_nMajorLoops;
+		m_vFlashColor = m_vMajorColor;
+	}
+	else if (nOldVersion != newVersion)
+	{
+		m_fLastTime = g_pLTClient->GetTime();
+		m_fLoopLength = m_fLoopTime = m_fMinorLoopLength;
+		m_nLoops = m_nMinorLoops;
+		m_vFlashColor = m_vMinorColor;
+	}
+
 	int major = newVersion / 100;
 	newVersion -= 100 * major;
 	int minor = newVersion / 10;
 	newVersion -= 10 * minor;
-	
-	char szVersionStr[64];		// buffer to create the new string
-	sprintf(szVersionStr,"Jet v%d.%d.%d",major,minor,newVersion);
 
-	if (m_pString)
+	CUIFont* pFont;
+	if (!m_pString)
 	{
-		// String exists, just setText
-		m_pString->SetText(szVersionStr);
-	}
-	else
-	{
-/*
-	char *pTag = "ChatInput";
-	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
-	CUIFont* pFont	= g_pInterfaceResMgr->GetFont(nFont);
-*/
-		CUIFont * pFont = g_pInterfaceResMgr->GetFont(0);
-		float x = (float)m_BasePos.x * g_pInterfaceResMgr->GetXRatio();
-		float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
-
-		m_pString = g_pLTClient->GetFontManager()->CreatePolyString(pFont, LTGUIWideString(szVersionStr), x, y);
+		pFont = g_pInterfaceResMgr->GetFontForHeight((int)(m_nFontSize * xs));
+		m_pString = g_pLTClient->GetFontManager()->CreatePolyString(pFont, std::wstring(), (float)m_BasePos.x, (float)m_BasePos.y);
+		m_pString->SetDropShadow(true);
 		m_pString->SetColor(0xFF2020FF);
-// FIXME make this additive blend work!
-//		m_pString->SetBlendMode(DRAWPRIM_BLEND_ADD);
+		m_pString->SetCharScreenHeight(m_nFontSize);
 	}
 
+	pFont = g_pInterfaceResMgr->GetFontForHeight((int)(m_nFontSize * xs));
+	m_pString->SetFont(pFont);
+	m_pString->SetCharScreenHeight((int)(m_nFontSize * xs));
+	m_pString->SetPosition((int)(m_BasePos.x * xs), (int)(g_pInterfaceResMgr->GetYRatio() * m_BasePos.y));
+
+	// RETAIL: string 3820 (0xeec), the version as "%d.%d.%d"
+	m_pString->SetText(FormatTempString(3820, major, minor, newVersion));
 }
 
 void CHUDVersion::UpdateLayout()
 {
 	int nCurrentLayout = GetConsoleInt("HUDLayout",0);
-
-	m_BasePos.x = 10;
-	m_BasePos.y = 10;
-
-	m_fUpdateTime = 1.0f;
-
-	m_vColor.x = 255;
-	m_vColor.y = 0;
-	m_vColor.z = 0;
-
-//	m_BasePos		= g_pLayoutMgr->GetJetVersionPos(nCurrentLayout);
-//	m_fUpdateTime   = g_pLayoutMgr->GetVersionUpdateTime(nCurrentLayout);
-//	m_vColor		= g_pLayoutMgr->GetVersionColor(nCurrentLayout);
-
-/*
-	char *pTag = "ChatInput";
-	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
-	CUIFont* pFont	= g_pInterfaceResMgr->GetFont(nFont);
-*/
 }
-
