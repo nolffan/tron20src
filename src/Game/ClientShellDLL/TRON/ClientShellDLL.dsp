@@ -296,13 +296,11 @@ SOURCE=..\..\..\Engine\sdk\inc\ltquatbase.cpp
 # Begin Source File
 
 SOURCE=..\..\Libs\GameSpy\md5c.c
-SOURCE=..\..\Libs\GameSpy\GameSpySDK\md5c.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\Libs\GameSpy\nonport.c
-SOURCE=..\..\Libs\GameSpy\GameSpySDK\nonport.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
