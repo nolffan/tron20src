@@ -223,6 +223,11 @@ SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\hashtable.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDArmor.cpp
 # End Source File
 # Begin Source File
@@ -264,6 +269,10 @@ SOURCE=.\HUDLightCycleLives.cpp
 # Begin Source File
 
 SOURCE=.\HUDPermissions.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProfiler.cpp
 # End Source File
 # Begin Source File
 
@@ -552,6 +561,10 @@ SOURCE=.\HUDIOCamera.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleLives.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProfiler.h
 # End Source File
 # Begin Source File
 
