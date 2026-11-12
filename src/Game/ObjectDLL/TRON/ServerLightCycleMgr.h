@@ -88,7 +88,7 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		void SendCyclistsToClient(HCLIENT hClient);
 
 		// RETAIL: 0x10052900
-		void SendTronUnknown21(int8 nTronUnknown, HCLIENT hClient);
+		void SendTronUnknown21(HCLIENT hClient, int8 nTronUnknown);
 
 		// The power-ups lying around. RETAIL: 0x10052380 (Remove)
 		void AddPowerup(LightCyclePowerup* pPowerup) { m_collPowerups.push_back(pPowerup); }
