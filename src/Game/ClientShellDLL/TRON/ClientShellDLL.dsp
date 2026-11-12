@@ -263,6 +263,14 @@ SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDPermissions.cpp
 # End Source File
 # Begin Source File
@@ -552,6 +560,14 @@ SOURCE=.\HUDIOCamera.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleLives.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # End Source File
 # Begin Source File
 

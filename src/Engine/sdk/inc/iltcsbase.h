@@ -548,8 +548,10 @@ Used for: Misc.
 */
     virtual const char* GetVarValueString(HCONSOLEVAR hVar) = 0;
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual44() = 0;
+    // TRON: a virtual of Tron's that NOLF2's interface does not have.
+    // RETAIL: returns a float time (CShell 0x101007ff: the light cycle
+    // power-up start time; GetTime is used next to it elsewhere)
+    virtual LTFLOAT TronUnknownVirtual44() = 0;
 
     // TRON: a virtual of Tron's that NOLF2's interface does not have
     virtual void TronUnknownVirtual45() = 0;

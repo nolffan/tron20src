@@ -448,7 +448,12 @@ LTBOOL CLightCycleButeMgr::Init(const char* szAttributeFile)
 			// RETAIL: && for ||, the error is never printed (docs/RETAIL_BUGS.md)
 			if (fPriority < 0.0f && fPriority > 1.0f)
 			{
+#ifdef _CLIENTBUILD
+				// RETAIL: CShell 0x100442eb
+				g_pLTClient->CPrint("ERROR: Priority value %f < 0 or %f > 1 for %s", fPriority, fPriority, s_aAttName);
+#else
 				g_pLTServer->CPrint("ERROR: Priority value %f < 0 or %f > 1 for %s", fPriority, fPriority, s_aAttName);
+#endif
 			}
 
 			m_pCycleDialogs[i].aTypes[nType].fPriority = fPriority;
