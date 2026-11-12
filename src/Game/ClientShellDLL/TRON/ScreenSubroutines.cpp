@@ -1826,3 +1826,15 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 	// Fail case.  Should only be reached if no object was created
 	debug_delete(pPiece);
 }
+
+
+// PORT: the 1.030 screen's rating bars are not written yet; these stand in
+// for retail 0x10080070 (set rating bar nRating to nValue) and 0x100800c0
+// (show the upgrade points) so CRatingMgr::PopulateRatings links.
+void CScreenSubroutines::SetRating(int nRating, int nValue)
+{
+}
+
+void CScreenSubroutines::SetRatingPoints(int nPoints)
+{
+}

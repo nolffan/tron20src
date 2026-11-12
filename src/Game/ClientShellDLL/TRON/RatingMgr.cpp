@@ -4,49 +4,27 @@
 // Written 11/10/01 by A. Megowan
 //
 // Class to encapsulate management of the Performance Ratings
+//
+// RETAIL: the 1.030 manager (RatingMgr.h), written from the retail code
+// (CShell.dll 0x100511a0..0x10051980).  Build 69's additives are gone.
+//
 #include "stdafx.h"
 #include "RatingMgr.h"
+#include "ScreenSubroutines.h"
 
-// TODO
-// differentiate between m_AddArray and m_PlayerAddArray
+CRatingMgr* g_pRatingMgr = LTNULL;	// RETAIL: 0x1026e250
 
-CRatingMgr* g_pRatingMgr = LTNULL;
+#define RATINGS_TAG				"Ratings"
 
-#define ADDITIVE_TAG			"Additive"
+#define RATINGS_POINTSPERLEVEL	"PointsPerLevel"
+#define RATINGS_INITIALPOINTS	"InitialPoints"
+#define RATINGS_INITIALVALUE	"InitialValue"
+#define RATINGS_MINVALUE		"MinValue"
+#define RATINGS_MAXVALUE		"MaxValue"
 
-#define ADDITIVE_NAME			"Name"
-#define ADDITIVE_NAME_ID		"NameId"
-#define ADDITIVE_DESC_ID		"DescriptionId"
-#define ADDITIVE_SPRITE			"Sprite"
+// the rating the transfer rates scale with (RETAIL: 3; Build 69's Stealth)
+#define RATING_TRANSFER			Rating_Stealth
 
-
-static char s_aTagName[30];
-static char s_aAttName[30];
-
-const char * szRatings[] = {
-	"Health",
-	"Energy",
-	"Accuracy",
-	"Stealth",
-	"Efficiency",
-};
-
-
-ADDITIVE::ADDITIVE()
-{
-	szName[0]		= 0;
-	nNameId			= 0;
-	nDescriptionId	= 0;
-
-	szSprite[0]		= 0;
-	pSprite			= LTNULL;
-
-	for (int i = 0; i < NUM_RATINGS; i++)
-		Adjust[i] = 0;
-
-	nSlot			= -1;
-	nTempSlot		= -1;
-}
 
 CRatingMgr::CRatingMgr()
 {
@@ -57,6 +35,7 @@ CRatingMgr::~CRatingMgr()
 	Term();
 }
 
+// RETAIL: 0x100512d0
 LTBOOL CRatingMgr::Init(const char* szAttributeFile)
 {
 	if (g_pRatingMgr) return LTFALSE;
@@ -64,181 +43,142 @@ LTBOOL CRatingMgr::Init(const char* szAttributeFile)
 	// Set up global pointer...
 	g_pRatingMgr = this;
 
-	m_AddArray.clear();
-	m_AddArray.reserve(5);
-
-	m_PlayerAddArray.clear();
-
-	// Check for legitimate additive file
-    if (!szAttributeFile) return LTFALSE;
-    if (!Parse(szAttributeFile))
+	int i;
+	for (i = 0; i < NUM_RATINGS; i++)
 	{
-		// If you broke on this assert,
-		// you need to grab "attributes/additives.txt" out of SourceSafe
-		ASSERT(LTFALSE);
-		return LTFALSE;
+		m_nRating[i] = 0;
+		m_nMinRating[i] = 0;
+		m_nMaxRating[i] = 20;
 	}
-	
-	// TODO for now, setting all ratings to "50" eventually set these elsewhere
-	for (int i = 0; i < NUM_RATINGS; i++)
+	m_nPoints = 0;
+	m_nLevelPoints = m_nPointsPerLevel = 7;
+
+	// RETAIL: a missing or bad file still succeeds
+    if (!szAttributeFile) return LTTRUE;
+    if (!Parse(szAttributeFile)) return LTTRUE;
+	if (!m_buteMgr.Exist(RATINGS_TAG)) return LTTRUE;
+
+	m_nLevelPoints = m_nPointsPerLevel = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_POINTSPERLEVEL);
+	m_nInitialPoints = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_INITIALPOINTS);
+	m_nInitialValue = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_INITIALVALUE);
+	m_nMinValue = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_MINVALUE);
+	m_nMaxValue = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_MAXVALUE);
+
+	m_nPoints = m_nInitialPoints;
+	for (i = 0; i < NUM_RATINGS; i++)
 	{
-		m_iBaseRating[i] = 50;
+		m_nRating[i] = m_nInitialValue;
+		m_nMinRating[i] = m_nMinValue;
+		m_nMaxRating[i] = m_nMaxValue;
 	}
 
-	m_iRatingGoo = 0;
+	m_vAlphaSubTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "AlphaSubTransfer");
+	m_vBetaSubTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "BetaSubTransfer");
+	m_vGoldSubTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "GoldSubTransfer");
+	m_vProceduralTransfer	= m_buteMgr.GetVector(RATINGS_TAG, "ProceduralTransfer");
+	m_vPrimitiveTransfer	= m_buteMgr.GetVector(RATINGS_TAG, "PrimitiveTransfer");
+	m_vPsetTransfer			= m_buteMgr.GetVector(RATINGS_TAG, "PsetTransfer");
+	m_vEmailTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "EmailTransfer");
+	m_vHelpFileTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "HelpFileTransfer");
+	m_vCustomTransfer		= m_buteMgr.GetVector(RATINGS_TAG, "CustomTransfer");
 
-	// Read in all of the additives
-	uint16 nNumAdditives = 0;
-
-	sprintf(s_aTagName, "%s0", ADDITIVE_TAG);
-	while (m_buteMgr.Exist(s_aTagName))
-	{
-		ADDITIVE* pNew = debug_new(ADDITIVE);
-		m_buteMgr.GetString(s_aTagName, ADDITIVE_NAME, "", pNew->szName, sizeof(pNew->szName));
-		pNew->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, ADDITIVE_NAME_ID, 0);
-		pNew->nDescriptionId = (uint16)m_buteMgr.GetInt(s_aTagName, ADDITIVE_DESC_ID, 0);
-
-		m_buteMgr.GetString(s_aTagName, ADDITIVE_SPRITE, "", pNew->szSprite, sizeof(pNew->szSprite));
-		pNew->pSprite = LTNULL;
-
-		for (int i = 0; i < NUM_RATINGS; i++)
-		{
-			pNew->Adjust[i] = (int8)m_buteMgr.GetInt(s_aTagName, szRatings[i], 0);
-		}
-		m_AddArray.push_back(pNew);
-
-		nNumAdditives++;
-		sprintf(s_aTagName, "%s%d", ADDITIVE_TAG, nNumAdditives);
-	}
 	m_buteMgr.Term();
 
-	return (LTTRUE);
+	return LTTRUE;
 }
 
+// RETAIL: 0x10051640
+void CRatingMgr::ResetRatings()
+{
+	m_nPoints = m_nInitialPoints;
+	for (int i = 0; i < NUM_RATINGS; i++)
+	{
+		m_nRating[i] = m_nInitialValue;
+		m_nMinRating[i] = m_nMinValue;
+		m_nMaxRating[i] = m_nMaxValue;
+	}
+}
+
+// RETAIL: 0x10051680
 void CRatingMgr::Term()
 {
-	AdditiveArray::iterator iter = m_AddArray.begin();
-
-	while (iter != m_AddArray.end())
-	{
-		debug_delete(*iter);
-		iter++;
-	}
-
-	m_AddArray.clear();
-	m_PlayerAddArray.clear();
-
 	g_pRatingMgr = LTNULL;
 }
 
-void CRatingMgr::SetPerformanceRating(PerformanceRating p, int iVal)
+// RETAIL: 0x10051690
+void CRatingMgr::SetPerformanceRating(PerformanceRating p, uint8 nVal)
 {
-	m_iBaseRating[p] = iVal;
-	ComputeAdjustedRatings();
+	m_nRating[p] = nVal;
 }
 
-uint8 CRatingMgr::GetRating(PerformanceRating p)
+// RETAIL: 0x100516b0
+int CRatingMgr::GetRating(PerformanceRating p)
 {
-	return (m_iAdjustedRating[p] > 100 ? 100: m_iAdjustedRating[p]);
+	if (m_nRating[p] > 100)
+		return 100;
+	return m_nRating[p];
 }
 
-uint8 CRatingMgr::GetBaseRating(PerformanceRating p)
+// RETAIL: 0x100516d0
+void CRatingMgr::PopulateRatings(CScreenSubroutines *pScreen)
 {
-	return (m_iBaseRating[p] > 100 ? 100: m_iBaseRating[p]);
+	if (!pScreen) return;
+
+	for (int i = 0; i < NUM_RATINGS; i++)
+		pScreen->SetRating(i, m_nRating[i]);
+	pScreen->SetRatingPoints(m_nPoints);
 }
 
-
-void CRatingMgr::RemovePlayerAdditives()
+// RETAIL: 0x10051710
+LTFLOAT CRatingMgr::GetTransferRate(RatingTransferType eType, int nBuild)
 {
-	AdditiveArray::iterator iter = m_AddArray.begin();
-
-	while (iter != m_AddArray.end())
+	LTVector vRate;
+	switch (eType)
 	{
-		(*iter)->nSlot = -1;
-		iter++;
+		case kTransfer_Subroutine:
+		{
+			switch (nBuild)
+			{
+				case 0: vRate = m_vAlphaSubTransfer; break;
+				case 2: vRate = m_vGoldSubTransfer; break;
+				case 1: vRate = m_vBetaSubTransfer; break;
+				default: vRate = m_vAlphaSubTransfer; break;
+			}
+		}
+		break;
+		case kTransfer_Procedural:	vRate = m_vProceduralTransfer; break;
+		case kTransfer_Primitive:	vRate = m_vPrimitiveTransfer; break;
+		case kTransfer_Pset:		vRate = m_vPsetTransfer; break;
+		case kTransfer_Email:		vRate = m_vEmailTransfer; break;
+		case kTransfer_HelpFile:	vRate = m_vHelpFileTransfer; break;
+		case kTransfer_Custom:		vRate = m_vCustomTransfer; break;
 	}
-	ComputeAdjustedRatings();
+	return InterpolateRating<LTFLOAT>(RATING_TRANSFER, vRate.x, vRate.y, vRate.z);
 }
 
-void CRatingMgr::GivePlayerAdditive(char * pszName)
+// PORT: Build 69's additives are not in the retail manager (RatingMgr.h)
+void CRatingMgr::GivePlayerAdditive(char *pszName)
 {
-	ADDITIVE * pAdditive = GetAdditive(pszName);
+}
 
-	if (!pAdditive)
+// RETAIL: 0x100518d0
+void CRatingMgr::Save(ILTMessage_Write *pMsg)
+{
+	for (int i = 0; i < NUM_RATINGS; i++)
 	{
-		// assert out here
-		return;
+		pMsg->Writeuint8(m_nRating[i]);
+		pMsg->Writeuint8(m_nMaxRating[i]);
 	}
-	GivePlayerAdditive(pAdditive);
+	pMsg->Writeint32(m_nPoints);
 }
 
-
-void CRatingMgr::GivePlayerAdditive(ADDITIVE * pAdditive)
+// RETAIL: 0x10051930
+void CRatingMgr::Load(ILTMessage_Read *pMsg)
 {
-	if (!pAdditive)
+	for (int i = 0; i < NUM_RATINGS; i++)
 	{
-		// assert out here
-		return;
+		m_nRating[i] = pMsg->Readuint8();
+		m_nMaxRating[i] = pMsg->Readuint8();
 	}
-	// Add the Additive to the end of the list and recompute all adjustments
-	m_AddArray.push_back(pAdditive);
-	ComputeAdjustedRatings();
+	m_nPoints = pMsg->Readint32();
 }
-
-bool CRatingMgr::PlayerHasAdditive(ADDITIVE * pAdditive)
-{
-	return (pAdditive->nSlot != -1);
-}
-
-bool CRatingMgr::PlayerHasAdditive(char * pszName)
-{
-	ASSERT (pszName != LTNULL);
-
-	ADDITIVE * pAdd = GetAdditive(pszName);
-
-	if (!pAdd)
-		return false;
-
-	if (pAdd->nSlot == -1)
-		return false;
-
-	return true;
-}
-
-void CRatingMgr::PopulateRatings()
-{
-	// function to fill the ratings screen
-}
-
-ADDITIVE* CRatingMgr::GetAdditive(const char *pszName)
-{
-	if (!pszName || !pszName[0]) return LTNULL;
-	AdditiveArray::iterator iter = m_AddArray.begin();
-	while (iter != m_AddArray.end() && stricmp(pszName,(*iter)->szName) != 0)
-	{
-		iter++;
-	}
-
-	if (iter != m_AddArray.end())
-		return (*iter);
-	return LTNULL;
-}
-
-void CRatingMgr::ComputeAdjustedRatings()
-{
-	for (int i = 0; i <= (int)NUM_RATINGS; i++)
-		m_iAdjustedRating[i] = m_iBaseRating[i];
-
-	AdditiveArray::iterator iter = m_AddArray.begin();
-
-	// Traverse the array of additives and add them to the adjusted stats
-	while (iter != m_AddArray.end())
-	{
-		ADDITIVE * pAdd = *iter;
-		for (int iter = 0; iter < NUM_RATINGS; iter++)
-			m_iAdjustedRating[i] += pAdd->Adjust[iter];
-
-		iter++;
-	}
-}
-
