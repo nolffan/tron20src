@@ -8,8 +8,8 @@ Copyright 1999-2003 GameSpy Industries, Inc
 /*
  * RETAIL: Tron's 2003 SDK, written from what Object.lto links (the key list
  * at 0x102dc630, qr2_register_key at 0x10043380) with the 2007 snapshot in
- * cjacksrc as the template. The 2003 list ends at score_t (no nn_groupid,
- * country or region keys).
+ * cjacksrc as the template. The 2003 list ends at modname (30; no
+ * nn_groupid, country or region keys).
  */
 #ifndef _QR2REGKEYS_H_
 #define _QR2REGKEYS_H_
@@ -52,6 +52,7 @@ extern "C" {
 #define PID__KEY			27
 #define TEAM_T_KEY			28
 #define SCORE_T_KEY			29
+#define MODNAME_KEY			30
 
 extern const char *qr2_registered_key_list[];
 

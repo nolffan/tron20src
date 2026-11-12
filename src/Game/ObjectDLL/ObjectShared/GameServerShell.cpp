@@ -4522,6 +4522,30 @@ LTRESULT CGameServerShell::ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CGameServerShell::GetMaxPlayers
+//
+//	PURPOSE:	RETAIL: Object.lto 0x100e3570: the game type's player limit, for the
+//				server shell's GameSpy reporting (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+uint8 CGameServerShell::GetMaxPlayers()
+{
+	switch( m_ServerGameOptions.m_eGameType )
+	{
+		case eGameTypeMultiplayerLightcycles:
+			return m_ServerGameOptions.m_nLCMaxPlayers;
+		case eGameTypeDiscTournament:
+			return m_ServerGameOptions.m_nTournMaxPlayers;
+		case eGameTypeDiscArena:
+			return m_ServerGameOptions.m_nArenaMaxPlayers;
+	}
+
+	return 1;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CGameServerShell::GetFirstNetPlayer
 //
 //	PURPOSE:	
@@ -4661,6 +4685,20 @@ void CGameServerShell::SetCurLevel( char const* pszWorldName )
 	// caching of the level specific files for this new level...
 	// (see the CacheLevelSpecificFiles() function)
 	m_bCachedLevelFiles = false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::GetGameTypeName
+//
+//	PURPOSE:	RETAIL: Object.lto 0x100e3760: the game type's name, for the server
+//				shell's GameSpy reporting (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+char const* CGameServerShell::GetGameTypeName()
+{
+	return GameTypeToString( ( GameType )m_ServerGameOptions.m_eGameType );
 }
 
 // ----------------------------------------------------------------------- //

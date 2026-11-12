@@ -170,6 +170,9 @@ class DoomsdayGameOptions
 // PORT: NOLF2's per game type options (and its restriction sets) are kept as
 // static members, so the NOLF2 code still standing in for Tron's compiles
 // without their taking room in the layout.
+struct qr2_keybuffer_s;	// GameSpy SDK (qr2.h)
+struct qr2_buffer_s;
+
 class ServerGameOptions
 {
 	public:
@@ -275,6 +278,16 @@ class ServerGameOptions
 
 		StringArray*	GetMapList( );
 		uint32		GetTronUnknownCC( ) const;
+
+#ifndef _CLIENTBUILD
+		// RETAIL: Object.lto 0x10114e60, 0x10114f50, 0x101150a0: the GameSpy
+		// keys of the game type, registered, listed and reported for the
+		// server shell's query callbacks (the names are ours; nKeyType is a
+		// qr2_key_type)
+		void		RegisterGameSpyKeys( );
+		void		AddGameSpyKeys( int nKeyType, qr2_keybuffer_s* pKeyBuffer );
+		bool		GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf );
+#endif // _CLIENTBUILD
 
 		CoopGameOptions&		GetCoop() { return m_Coop;	}
 		DMGameOptions&			GetDeathmatch() { return m_DM; }

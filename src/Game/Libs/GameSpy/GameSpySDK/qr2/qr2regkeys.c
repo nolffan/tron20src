@@ -7,7 +7,7 @@ Copyright 1999-2003 GameSpy Industries, Inc
 ******/
 /*
  * RETAIL: Tron's 2003 SDK as Object.lto links it: the list at 0x102dc630,
- * qr2_register_key at 0x10043380.
+ * qr2_register_key at 0x10043380. The 2003 list ends at modname (30).
  */
 #include "qr2regkeys.h"
 
@@ -42,7 +42,8 @@ const char *qr2_registered_key_list[MAX_REGISTERED_KEYS] =
 	"deaths_",		//26
 	"pid_",			//27
 	"team_t",		//28
-	"score_t"		//29
+	"score_t",		//29
+	"modname"		//30
 };
 
 void qr2_register_key(int keyid, const char *key)
