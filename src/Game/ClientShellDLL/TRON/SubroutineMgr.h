@@ -170,6 +170,9 @@ public:
 
 	// Search functions
 	TronSubroutine*		GetSubroutine(const char *pszName);
+	// RETAIL: 0x100947a0, the player's subroutine of that name (not in
+	// pExcludeState, when given). The name is ours.
+	PlayerSubroutine*	GetPlayerSubroutine(const char *pszName, SubState *pExcludeState);
 	Procedural *		GetProcedural(const char * name);
 	Procedural *		GetProcedural(int iProcNum) {return m_ProceduralArray[iProcNum];}
 	

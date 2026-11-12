@@ -523,6 +523,32 @@ TronSubroutine* CSubroutineMgr::GetSubroutine(const char *pszName)
 	return LTNULL;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetPlayerSubroutine
+//
+//	PURPOSE:	RETAIL: 0x100947a0 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+PlayerSubroutine* CSubroutineMgr::GetPlayerSubroutine(const char *pszName, SubState *pExcludeState)
+{
+	if (!pszName || !pszName[0])
+		return LTNULL;
+
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_PlayerSubroutineArray.begin(); iter != m_PlayerSubroutineArray.end(); iter++)
+	{
+		if ((*iter)->pTronSubroutine && !stricmp(pszName, (*iter)->pTronSubroutine->szName))
+		{
+			if (!pExcludeState || (*iter)->eState != *pExcludeState)
+				return (*iter);
+		}
+	}
+
+	return LTNULL;
+}
+
 void CSubroutineMgr::ClearPlayerSubroutines()
 {
 /*

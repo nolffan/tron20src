@@ -304,6 +304,16 @@ static LTBOOL HandleDebugKey(int key )
 
 CInterfaceMgr::CInterfaceMgr()
 {
+	// RETAIL: layout anchors from retail's constructor (0x100c67b0): fail
+	// to compile when a member's size changes (adjust m_aTronUnknownPad)
+	typedef char TronCheckInitialized[offsetof(CInterfaceMgr, m_bInitialized) == 0xf980 ? 1 : -1];
+	typedef char TronCheckSize[sizeof(CInterfaceMgr) == 0x10108 ? 1 : -1];
+	typedef char TronCheckCursorMgr[offsetof(CInterfaceMgr, m_CursorMgr) == 0x40 ? 1 : -1];
+	typedef char TronCheckMessageBox[offsetof(CInterfaceMgr, m_MessageBox) == 0x7c ? 1 : -1];
+	typedef char TronCheckInterfaceResMgr[offsetof(CInterfaceMgr, m_InterfaceResMgr) == 0x624 ? 1 : -1];
+	typedef char TronCheckMenuMgr[offsetof(CInterfaceMgr, m_MenuMgr) == 0xebc ? 1 : -1];
+	typedef char TronCheckScreenSpriteMgr[offsetof(CInterfaceMgr, m_ScreenSpriteMgr) == 0xe73c ? 1 : -1];
+
 	g_pInterfaceMgr	= this;
 
 	m_eGameState			= GS_UNDEFINED;
@@ -549,7 +559,7 @@ LTBOOL CInterfaceMgr::Init()
 	g_pPaused->Init();
 
 	m_PopupText.Init();
-	m_WeaponChooser.Init();
+	GetWeaponChooser()->Init();
 	m_AmmoChooser.Init();
 
 
@@ -645,7 +655,7 @@ void CInterfaceMgr::Term()
 		g_pLayoutMgr->Term();
 	GetPlayerStats( )->Term();
 	GetHUDMgr()->Term();
-	m_WeaponChooser.Term();
+	GetWeaponChooser()->Term();
 	m_AmmoChooser.Term();
 	m_InterfaceResMgr.Term();
 
@@ -742,9 +752,9 @@ void CInterfaceMgr::OnExitWorld()
 	{
 		m_AmmoChooser.Close();
 	}
-	if (m_WeaponChooser.IsOpen())
+	if (GetWeaponChooser()->IsOpen())
 	{
-		m_WeaponChooser.Close();
+		GetWeaponChooser()->Close();
 	}
 
 
@@ -1006,7 +1016,7 @@ void CInterfaceMgr::UpdatePlayingState()
 	GetPlayerStats()->Update();
 
 	// Update auto chooser switching...
-	m_WeaponChooser.Update();
+	GetWeaponChooser()->Update();
 	m_AmmoChooser.Update();
 
 	// Update the player stats...
@@ -2556,9 +2566,9 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			{
 				m_AmmoChooser.Close();
 			}
-			if (m_WeaponChooser.IsOpen())
+			if (GetWeaponChooser()->IsOpen())
 			{
-				m_WeaponChooser.Close();
+				GetWeaponChooser()->Close();
 			}
 
             return LTTRUE;
@@ -2576,9 +2586,9 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			{
 				m_AmmoChooser.Close();
 			}
-			if (m_WeaponChooser.IsOpen())
+			if (GetWeaponChooser()->IsOpen())
 			{
-				m_WeaponChooser.Close();
+				GetWeaponChooser()->Close();
 			}
 
             return LTTRUE;
@@ -2599,9 +2609,9 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			{
 				m_AmmoChooser.Close();
 			}
-			if (m_WeaponChooser.Open(0))
+			if (GetWeaponChooser()->Open(0))
 			{
-				m_WeaponChooser.PrevWeapon();
+				GetWeaponChooser()->PrevWeapon();
 			}
 
             return LTTRUE;
@@ -2638,9 +2648,9 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 
 			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
 
-			if (m_WeaponChooser.IsOpen())
+			if (GetWeaponChooser()->IsOpen())
 			{
-				m_WeaponChooser.Close();
+				GetWeaponChooser()->Close();
 			}
 			if (m_AmmoChooser.Open())
 			{
@@ -2733,8 +2743,8 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 		{
 			if (IsChoosingWeapon())
 			{
-                uint8 nCurrWeapon = m_WeaponChooser.GetCurrentSelection();
-				m_WeaponChooser.Close();
+                uint8 nCurrWeapon = GetWeaponChooser()->GetCurrentSelection();
+				GetWeaponChooser()->Close();
 				g_pPlayerMgr->ChangeWeapon( nCurrWeapon );
 
                 return LTTRUE;
@@ -2782,14 +2792,14 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 		case COMMAND_ID_NEXT_WEAPON_6 :
 		{
 			// End the timer for quick weapon changing...
-			m_WeaponChooser.EndAutoSwitch();
+			GetWeaponChooser()->EndAutoSwitch();
 		}
 		break;
 
 		case COMMAND_ID_PREV_WEAPON :
 		{
 			// End the timer for quick weapon changing...
-			m_WeaponChooser.EndAutoSwitch(false);
+			GetWeaponChooser()->EndAutoSwitch(false);
 		}
 		break;
 
@@ -2940,7 +2950,7 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 					{
 						if (IsChoosingWeapon())
 						{
-							m_WeaponChooser.Close();
+							GetWeaponChooser()->Close();
 							bHandled = true;
 						}
 						if (IsChoosingAmmo())
@@ -3158,7 +3168,7 @@ LTBOOL CInterfaceMgr::Draw()
 		{
 			if (IsChoosingWeapon())
 			{
-				m_WeaponChooser.Close();
+				GetWeaponChooser()->Close();
 			}
 
 			if (IsChoosingAmmo())
@@ -4175,7 +4185,9 @@ LTBOOL CInterfaceMgr::PreChangeState(GameState eCurState, GameState eNewState)
 //
 // --------------------------------------------------------------------------- //
 
-void CInterfaceMgr::Save(ILTMessage_Write *pMsg)
+// PORT: Tron's (0x100cc550) also writes its +0x100fc records (see the
+// header); not yet written.
+void CInterfaceMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 {
 	// Make sure we're initialized.
 	if( !IsInitialized( ))
@@ -6073,9 +6085,9 @@ void CInterfaceMgr::NextWeapon(int nCommand)
 	{
 		m_AmmoChooser.Close();
 	}
-	if (m_WeaponChooser.Open(nClass))
+	if (GetWeaponChooser()->Open(nClass))
 	{
-		m_WeaponChooser.NextWeapon(nClass);
+		GetWeaponChooser()->NextWeapon(nClass);
 	}
 }
 
@@ -6184,6 +6196,21 @@ void CInterfaceMgr::LoadFailed(eScreenID eScreenToShow /*= SCREEN_ID_NONE*/, uin
 	else
 		m_eLoadFailedScreen = eScreenToShow;
 
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::TronUnknownVirtual98
+//
+//	PURPOSE:	RETAIL: 0x100cfd60, slot 0x98 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown)
+{
+	// PORT: not yet written (retail checks the client shell's +0x1d7,
+	// looks for the "LCC" object and calls 0x100cfed0 or 0x100cfdf0 with
+	// nTronUnknown)
 }
 
 void CInterfaceMgr::HandlePlayerTeamChange()

@@ -15,6 +15,8 @@
 #include "stdafx.h"
 #include "TronClientWeapon.h"
 #include "MsgIDs.h"
+#include "SubroutineMgr.h"
+#include "GameClientShell.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x10096ff0..)
 
 // RETAIL: 0x10097090
@@ -127,14 +129,19 @@ void CTronClientWeapon::TronUnknownVirtual178( ILTMessage_Read *pMsg )
 {
 }
 
-// RETAIL: 0x10098b30 (105 bytes; m_fTronUnknown204 and the player stats)
-// not yet written
+// RETAIL: 0x10098b30 (105 bytes) not yet written: it drains
+// m_fTronUnknown204 * the frame time (client shell +0x7bac) of energy through
+// Tron's float energy API of CTronPlayerStats (0x100a9c90 the energy left
+// after the subroutines' reserve, 0x100a9d00 telling the server), which our
+// CTronPlayerStats (uint32 energy) does not have yet
 void CTronClientWeapon::TronUnknownVirtual180()
 {
 }
 
-// RETAIL: 0x10098be0 (asks the player stats about GetWeaponId()) not yet
-// written
+// RETAIL: 0x10098be0 not yet written: it returns
+// g_pTronPlayerStats's 0x100ac2f0 (GetWeaponId(); that weapon's subroutine,
+// through the weapon's +0xa4 and the subroutine manager's 0x100952e0),
+// neither written yet
 bool CTronClientWeapon::TronUnknownVirtual184()
 {
 	return false;
@@ -160,15 +167,35 @@ bool CTronClientWeapon::TronUnknownVirtual18C()
 	return true;
 }
 
-// RETAIL: 0x10098c00 (132 bytes; the subroutine's state and the game's
-// difficulty) not yet written
+// RETAIL: 0x10098c00: the player's subroutine's version and state, and
+// the game's difficulty
 SubroutineDataKey CTronClientWeapon::GetSubroutineDataKey( const char *szName )
 {
-	return SubroutineDataKey( 0, 0, 0 );
+	PlayerSubroutine *pSub = g_pSubroutineMgr->GetPlayerSubroutine( szName, LTNULL );
+
+	int nVersion = kSubData_Alpha;
+	switch ( pSub->eVersion )
+	{
+		case VERSION_ALPHA: nVersion = kSubData_Alpha; break;
+		case VERSION_BETA:  nVersion = kSubData_Beta;  break;
+		case VERSION_GOLD:  nVersion = kSubData_Gold;  break;
+	}
+
+	int nState = kSubData_Okay;
+	switch ( pSub->eState )
+	{
+		case SUBSTATE_OKAY:    nState = kSubData_Okay;    break;
+		case SUBSTATE_CORRUPT: nState = kSubData_Corrupt; break;
+	}
+
+	return SubroutineDataKey( nVersion, nState,
+		g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy );
 }
 
-// RETAIL: 0x10098c90 (119 bytes; the weapon's data and a rating) not yet
-// written
+// RETAIL: 0x10098c90 (119 bytes) not yet written: it is
+// InterpolateRating<float>(Rating_Accuracy, ...) of three floats of Tron's
+// AMMO at +0x18, +0x1c and +0x20 (energy use min, max, surge), which our
+// AMMO (NOLF2's) does not have yet
 float CTronClientWeapon::GetBaseEnergyUse()
 {
 	return 0.0f;

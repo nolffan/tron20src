@@ -63,6 +63,8 @@ typedef std::vector<ScreenSpriteFrame *> FrameArray;
 class CScreenSprite
 {
 	friend class CScreenSpriteMgr;
+	// RETAIL: CTronInterfaceMgr::Init (0x1009d075) sets m_bShow itself
+	friend class CTronInterfaceMgr;
 public:
 	CScreenSprite();
 	~CScreenSprite();
