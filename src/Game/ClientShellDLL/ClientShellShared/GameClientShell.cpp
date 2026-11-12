@@ -4168,7 +4168,7 @@ void CGameClientShell::BuildClientSaveMsg(ILTMessage_Write *pMsg, SaveDataState 
 
 	// Save complex data members...
 
-	GetInterfaceMgr( )->Save(pMsg);
+	GetInterfaceMgr( )->Save(pMsg, eSaveDataState);
 	GetPlayerMgr()->Save(pMsg, eSaveDataState);
 
 	m_Music.Save(pMsg);

@@ -205,20 +205,29 @@ class CInterfaceMgr
 		}
 
 		//mouse messages
-        void OnLButtonUp(int x, int y);
-		void OnLButtonDown(int x, int y);
-		void OnLButtonDblClick(int x, int y);
-		void OnRButtonUp(int x, int y);
-		void OnRButtonDown(int x, int y);
-		void OnRButtonDblClick(int x, int y);
-		void OnMouseMove(int x, int y);
-		void OnChar(unsigned char c);
+		// RETAIL: Tron's CInterfaceMgr has 42 virtuals (vtable 0x101e9f34):
+		// these input handlers, the updates, Draw, Save/Load and more are
+		// virtual (slots 0x30..0x6c)
+        virtual void OnLButtonUp(int x, int y);
+		virtual void OnLButtonDown(int x, int y);
+		virtual void OnLButtonDblClick(int x, int y);
+		virtual void OnRButtonUp(int x, int y);
+		virtual void OnRButtonDown(int x, int y);
+		virtual void OnRButtonDblClick(int x, int y);
+		virtual void OnMouseMove(int x, int y);
+		virtual void OnChar(unsigned char c);
 
-        LTBOOL   PreUpdate();
-        LTBOOL   Update();
-        LTBOOL   PostUpdate();
+		// RETAIL: slots 0x50 and 0x54, both "return true" here (0x100d1580);
+		// CTronInterfaceMgr's (0x1009cc70, 0x1009cca0) answer false while
+		// its +0x28c48 object is active. Unidentified; the names are ours.
+		virtual bool	TronUnknownVirtual50() { return true; }
+		virtual bool	TronUnknownVirtual54() { return true; }
 
-        LTBOOL   Draw();
+        virtual LTBOOL   PreUpdate();
+        virtual LTBOOL   Update();
+        virtual LTBOOL   PostUpdate();
+
+        virtual LTBOOL   Draw();
 
 		LTBOOL	 DrawSFX();
 
@@ -245,8 +254,10 @@ class CInterfaceMgr
 		void	Disconnected(uint32 nDisconnectFlag);
 		void	ConnectionFailed(uint32 nConnectionError);
 
-		void	Save(ILTMessage_Write *pMsg);
-		void	Load(ILTMessage_Read *pMsg);
+		// RETAIL: virtual (slots 0x68, 0x6c); Tron's Save takes the save
+		// state too (0x100cc550 returns 8)
+		virtual void	Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState);
+		virtual void	Load(ILTMessage_Read *pMsg);
 
         void    SetSwitchingRenderModes(LTBOOL bSwitch)  { m_bSwitchingModes = bSwitch; }
 
@@ -270,6 +281,11 @@ class CInterfaceMgr
 		virtual CScreenMgr* GetScreenMgr( ) = 0;
 		virtual CPlayerStats* GetPlayerStats( ) = 0;
 
+		// RETAIL: slot 0x7c, empty here ("ret 4", 0x100a9310); called with a
+		// client's record from OnMessage (0x100c9a04); CTronInterfaceMgr's
+		// (0x1009d7a0) picks the HUD's status string for it. The name is ours.
+		virtual void	TronUnknownVirtual7C(void* pTronUnknown) {}
+
         uint32          GetAdvancedOptions() const { return m_dwAdvancedOptions; }
 
  		void        EnableCrosshair(LTBOOL bOn)       { /*m_stats.EnableCrosshair(bOn); */}
@@ -279,23 +295,34 @@ class CInterfaceMgr
 
 		void		SetHUDRenderLevel(eHUDRenderLevel eLevel) {GetHUDMgr()->SetRenderLevel(eLevel);}
 
-        LTBOOL      IsChoosingWeapon()				{ return m_WeaponChooser.IsOpen();}
+        LTBOOL      IsChoosingWeapon()				{ return GetWeaponChooser()->IsOpen();}
         LTBOOL      IsChoosingAmmo()                { return m_AmmoChooser.IsOpen();}
-		void		CloseChoosers()					{ m_WeaponChooser.Close();m_AmmoChooser.Close();}
+		void		CloseChoosers()					{ GetWeaponChooser()->Close();m_AmmoChooser.Close();}
 
-		virtual CWeaponChooser*	GetWeaponChooser()	{ return &m_WeaponChooser;}
+		// RETAIL: Tron's weapon chooser is the derived class's
+		// (CTronWeaponChooser, CTronInterfaceMgr +0x26790): slot 0x80 is pure
+		virtual CWeaponChooser*	GetWeaponChooser()	= 0;
 		virtual CAmmoChooser*	GetAmmoChooser()	{ return &m_AmmoChooser;}
+
+		// RETAIL: slot 0x88, empty (0x101c9040); called by
+		// CTronWeaponChooser (0x100b020b, 0x100b023a, ..). The name is ours.
+		virtual void	TronUnknownVirtual88() {}
 
         LTBOOL      AllowCameraMovement();
 		LTBOOL		AllowCameraRotation();
 
         virtual void UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nType2, LTFLOAT fAmount);
 
-		void		ScreenDimsChanged();
+		virtual void	ScreenDimsChanged();
 
         LTIntPt     GetCursorPos() {return m_CursorPos;}
 		void		UseCursor(LTBOOL bUseCursor, LTBOOL bLockCursorToCenter = LTFALSE) {m_CursorMgr.UseCursor(bUseCursor,bLockCursorToCenter);}
-		void		UpdateCursorState(); // hides or shows cursor based on current game state
+		virtual void	UpdateCursorState(); // hides or shows cursor based on current game state
+
+		// RETAIL: slot 0x98 (0x100cfd60, two arguments: called (0, 0) from
+		// 0x100a7e9c and (1, 1) from 0x1011d3e8; looks for the "LCC" object
+		// when the client shell's +0x1d7 is set). The name is ours.
+		virtual void	TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown);
 
 		void		UpdateOverlays();
 		bool		IsOverlayActive(eOverlayMask eMask) {return (m_hOverlays[eMask] != NULL);}
@@ -387,11 +414,15 @@ class CInterfaceMgr
 		bool	StartingNewGame( );
 
 	protected:
-		CWeaponChooser	m_WeaponChooser;		// Next/previous weapon interface
+		// RETAIL: no weapon chooser here (the ammo chooser is at +0x4, the
+		// game state at +0x3c: constructor 0x100c67b0); Tron's is the
+		// derived class's (GetWeaponChooser)
 		CAmmoChooser	m_AmmoChooser;			// Next ammo interface
 		GameState		m_eGameState;			// Current game state
 
-	private :
+	// RETAIL: CTronInterfaceMgr uses the members below (the cursor, the
+	// message box, the screen sprites, the client info)
+	protected :
 		CInterfaceResMgr	m_InterfaceResMgr;		// manages shared resources
 		CMenuMgr			m_MenuMgr;
 //		CLayoutMgr			m_LayoutMgr;			// bute mgr for layout info
@@ -510,7 +541,7 @@ class CInterfaceMgr
 protected:
         LTBOOL	PrePlayingState(GameState eCurState);
 		virtual void UpdatePlayingState();
-        LTBOOL  PostPlayingState(GameState eNewState);
+        virtual LTBOOL  PostPlayingState(GameState eNewState);
 
 private:
         LTBOOL  PreMenuState(GameState eCurState);
@@ -522,7 +553,10 @@ private:
         LTBOOL  PostPopupState(GameState eNewState);
 
         LTBOOL  PreLoadingLevelState(GameState eCurState);
-		void	UpdateLoadingLevelState();
+	protected:
+		// RETAIL: virtual (slot 0xa4); CTronInterfaceMgr overrides it
+		virtual void	UpdateLoadingLevelState();
+	private:
         LTBOOL  PostLoadingLevelState(GameState eNewState);
 
         LTBOOL  PreExitingLevelState(GameState eCurState);
@@ -565,7 +599,10 @@ private:
 
 		void	HandlePlayerTeamChange();
 
+	protected:
+		// RETAIL: CTronInterfaceMgr::OnCommandOn calls it (0x1009d3f6)
 		void	NextWeapon(int nCommand);
+	private:
 
 		void	NextDemoScreen();
 		LTBOOL	m_bQuitAfterDemoScreens;
@@ -580,11 +617,32 @@ private:
 
 		float	m_fLastUpdateRequestTime;
 
+		// RETAIL: our members above do not yet match retail's (sizes and
+		// order differ: constructor 0x100c67b0); this pad puts m_bInitialized
+		// at retail's +0xf980 (checked in the constructor). Shrink it when
+		// a member above grows.
+		char	m_aTronUnknownPad[0xf980 - 0xeaa4];
+
 		// true after Init called.  false after Term called.
 		bool	m_bInitialized;
 
 		bool			m_bHideHUDInPopup;
 		eHUDRenderLevel m_ePrePopupHUDRenderLevel;
+
+		// RETAIL: Tron's members after these (constructor 0x100c67b0;
+		// unidentified, the names are ours): sizeof(CInterfaceMgr) is
+		// 0x10108 (CTronInterfaceMgr's first member is at +0x10108)
+		bool	m_bTronUnknownF988;				// +0xf988
+		float	m_fTronUnknownF98C;				// +0xf98c, -1.0f
+		uint32	m_nTronUnknownF990;				// +0xf990
+		char	m_szTronUnknownF994[128];		// +0xf994
+		char	m_szTronUnknownFA14[64];		// +0xfa14
+		bool	m_bTronUnknownFA54;				// +0xfa54, true
+		char	m_aTronUnknownFA55[0x100f8 - 0xfa55];
+		uint32	m_nTronUnknown100F8;			// +0x100f8
+		// +0x100fc: 0x58-byte records, saved by Save (0x100cc550) and
+		// loaded by Load (0x100cc5d0)
+		uint32	m_aTronUnknown100FC[3];
 };
 
 
