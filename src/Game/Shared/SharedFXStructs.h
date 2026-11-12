@@ -451,6 +451,27 @@ inline TRIGGERCREATESTRUCT::TRIGGERCREATESTRUCT()
 
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// CLIENTFXUSERCREATESTRUCT class Definition
+//
+// RETAIL: Tron's; its constructor is retail 0x10114140, its Write and Read
+// fold with PVCREATESTRUCT's (0x10114160, 0x10114180). Used by Thorne
+// (Thorne.cpp). The name is retail's (RTTI); the member's is ours.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+struct CLIENTFXUSERCREATESTRUCT : public SFXCREATESTRUCT
+{
+	CLIENTFXUSERCREATESTRUCT();
+
+	virtual void Write(ILTMessage_Write *pMsg);
+	virtual void Read(ILTMessage_Read *pMsg);
+
+	ModelId		eModelId;
+};
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // RADAROBJCREATESTRUCT class Definition

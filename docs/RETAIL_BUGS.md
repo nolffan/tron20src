@@ -84,6 +84,24 @@ levels may not use lures, so it may never show.
 
 Not fixed yet.
 
+### Thorne reports a valid summon command as invalid
+
+Object.lto 0x10058497 (CThorne::ReadProp, TRON/Thorne.cpp). The
+`SummonCmd` property is checked with `if (g_pCmdMgr->IsValidCmd(cmd))
+ObjectCPrint(..., "Invalid summon command %s", ...)`: the test is
+inverted, so a valid command prints the error (in the editor/console only)
+and an invalid one passes silently. It should be `!IsValidCmd(...)`.
+
+Not fixed yet.
+
+### Thorne builds a special-fx message he never sends
+
+Object.lto 0x10058dc1 (CThorne::InitialUpdate). After setting his SFX
+message, Thorne writes a second MID_SFX_MESSAGE (his id, object and create
+struct) and drops it without sending it. Harmless, wasted work.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

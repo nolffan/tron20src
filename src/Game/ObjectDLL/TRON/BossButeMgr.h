@@ -38,7 +38,9 @@ enum ThorneAnim
 // destructor work through its address, retail 0x100151d1, 0x10015369)
 struct ThorneAttributes
 {
-	typedef std::multimap<std::string, int> AnimMap;
+	// RETAIL: keyed by ThorneAnim (ReadThorne's insert 0x1001577a, Thorne's
+	// lookup 0x10059dfb)
+	typedef std::multimap<int, std::string> AnimMap;
 
 	LTFLOAT			fAngerChance;
 	LTFLOAT			fBaseBallHealth;
@@ -58,6 +60,9 @@ class CBossButeMgr : public CGameButeMgr
 
 		LTBOOL	Init(const char* szAttributeFile);
 		void	Term() {}
+
+		// RETAIL: Thorne reads these directly (Thorne.cpp)
+		const ThorneAttributes&	GetThorne() const { return m_Thorne; }
 
 	protected :
 

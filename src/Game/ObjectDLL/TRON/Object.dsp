@@ -239,6 +239,10 @@ SOURCE=.\Stdafx.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Thorne.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronGameServerShell.cpp
 # End Source File
 # Begin Source File
@@ -344,6 +348,10 @@ SOURCE=.\ServerSubroutineMgr.h
 # Begin Source File
 
 SOURCE=.\Stdafx.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\Thorne.h
 # End Source File
 # Begin Source File
 
