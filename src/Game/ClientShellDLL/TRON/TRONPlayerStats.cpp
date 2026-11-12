@@ -20,6 +20,8 @@
 #include "ClientWeaponMgr.h"
 #include "MissionMgr.h"
 #include "KeyMgr.h"
+// RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
+#include "ScreenSubroutines.h"
 
 CTronPlayerStats* g_pTronPlayerStats = LTNULL;
 

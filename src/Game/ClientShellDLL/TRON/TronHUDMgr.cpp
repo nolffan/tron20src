@@ -17,6 +17,8 @@
 #include "TRONPlayerStats.h"
 #include "SurfaceFunctions.h"
 #include "CharacterFX.h"
+// RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
+#include "ScreenSubroutines.h"
 
 extern CGameClientShell* g_pGameClientShell;
 
