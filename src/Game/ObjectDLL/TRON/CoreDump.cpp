@@ -46,8 +46,6 @@ END_CLASS_DEFAULT_FLAGS(CoreDump, GameBase, NULL, NULL, CF_HIDDEN)
 const float g_fCoreDumpLifeTime = 50.0f;
 const float g_fCoreDumpRibbonTime = 29.9f;
 
-// RETAIL: 0x10376da0; defined with the class (not written yet)
-CSubroutineDataMgr* g_pSubroutineDataMgr = LTNULL;
 
 // ----------------------------------------------------------------------- //
 //
@@ -772,14 +770,14 @@ void CoreDump::ShowContents()
 		PlayerSubroutineSlot* pSlot = m_pPlayer->FindSubroutine("virus_scan");
 		if (pSlot && pSlot->nTronUnknown40 && pSlot->nTronUnknown41)
 		{
-			SubroutineDataKey keyA = { 0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 };
-			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->m_lstChances.at(g_pSubroutineDataMgr->GetIndex(keyA)).fChanceA)
+			SubroutineDataKey keyA(0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->m_vecVirusScan.at(g_pSubroutineDataMgr->GetIndex(keyA)).fFailureChance)
 			{
 				bScanShowsNormal = true;
 			}
 
-			SubroutineDataKey keyB = { 1, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 };
-			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->m_lstChances.at(g_pSubroutineDataMgr->GetIndex(keyB)).fChanceA)
+			SubroutineDataKey keyB(1, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->m_vecVirusScan.at(g_pSubroutineDataMgr->GetIndex(keyB)).fFailureChance)
 			{
 				bScanShowsGuess = true;
 			}
@@ -908,8 +906,8 @@ void CoreDump::HandleChoice(uint8 nChoice)
 			PlayerSubroutineSlot* pSlot = m_pPlayer->FindSubroutine("virus_scan");
 			if (pSlot && pSlot->nTronUnknown40 && pSlot->nTronUnknown41)
 			{
-				SubroutineDataKey key = { 0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 };
-				if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->GetChance(g_pSubroutineDataMgr->GetIndex(key)).fChanceB)
+				SubroutineDataKey key(0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+				if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->m_vecVirusScan.at(g_pSubroutineDataMgr->GetIndex(key)).fChanceToCorrupt)
 				{
 					bScanned = true;
 				}
