@@ -174,6 +174,46 @@ SOURCE=.\ClientWeaponDisc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\darray.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\gcdkey\gcdkeyc.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpBuffer.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpCallbacks.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpCommon.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpConnection.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpMain.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\ghttp\ghttpPost.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
