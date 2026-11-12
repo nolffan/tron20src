@@ -182,6 +182,10 @@ SOURCE=.\EnergyZone.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Finder.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
@@ -199,6 +203,14 @@ SOURCE=.\IONode.cpp
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolume.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolumeCascader.cpp
 # End Source File
 # Begin Source File
 
@@ -260,6 +272,10 @@ SOURCE=.\TronGameServerShell.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\TronMissionButeMgr.cpp
 # End Source File
 # Begin Source File
@@ -312,6 +328,10 @@ SOURCE=.\EnergyZone.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\Finder.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HealthZone.h
 # End Source File
 # Begin Source File
@@ -325,6 +345,14 @@ SOURCE=.\IONode.h
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolume.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolumeCascader.h
 # End Source File
 # Begin Source File
 
@@ -382,6 +410,10 @@ SOURCE=..\..\Shared\TRON\SubroutineDataMgr.h
 # Begin Source File
 
 SOURCE=.\TronGameServerShell.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.h
 # End Source File
 # Begin Source File
 
