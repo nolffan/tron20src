@@ -16,9 +16,9 @@
   },
   "Object.lto": {
    "cmd": "ef039926ad8ab16f3badfb3cbc15478bf6182f0a858c4322f5955c2e11d18659",
-   "image": "609d5b1899f2e7cc51e67e2189e201319f26a3fa0e582f24618e71922e1d256e",
+   "image": "fb870df34cbbc6b28dce335560c81303cbd3894a7f4fce286af40d29357b1a31",
    "link_command": "cd src/Game/ObjectDLL/TRON && { printf '%s\\n' 'kernel32.lib' 'user32.lib' 'gdi32.lib' 'winspool.lib' 'comdlg32.lib' 'advapi32.lib' 'shell32.lib' 'ole32.lib' 'oleaut32.lib' 'uuid.lib' 'odbc32.lib' 'odbccp32.lib' '/nologo' '/subsystem:windows' '/dll' '/machine:I386' '/out:..\\..\\Built\\Final\\ObjectDLL\\TRON\\Object.lto' '/map:s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.map' '..\\..\\built\\Final\\ObjectDll\\TRON\\BinaryBit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ArchiveBin.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\BossButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\BuildNote.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\CoreDump.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\EnergyZone.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\Finder.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\GlobalsInit.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\HealthZone.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\InfoString.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\IONode.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleVolume.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleVolumeCascader.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleZones.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\MultiplayerLevelInfoMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\Optimizer.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\PatchRoutine.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\PingButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterAutoBurstDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileClusterDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ProjectileDisc.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\SecRezzer.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\SecRezzerPoint.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\ServerSubroutineMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\Stdafx.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\SubroutineDataMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronGameServerShell.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\LightCycleButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronMissionButeMgr.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronPlayerObj.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronTurret.obj' '..\\..\\built\\Final\\ObjectDll\\TRON\\TronVersionMgr.obj' '..\\..\\built\\Final\\ObjectDll\\ObjectShared\\ObjectShared.lib' '..\\..\\..\\libs\\built\\Final\\ButeMgr\\ButeMgr.lib' '..\\..\\..\\libs\\built\\Final\\MFCStub\\MFCStub.lib' '..\\..\\..\\libs\\built\\Final\\CryptMgr\\CryptMgr.lib' '..\\..\\..\\libs\\built\\Final\\Lib_StdLith\\Lib_StdLith.lib' '..\\..\\..\\libs\\built\\Final\\Lib_Lith\\Lib_Lith.lib' '..\\..\\..\\libs\\built\\Final\\RegMgr\\regmgr.lib' > /repo/out/release-tree/src/Game/built/Final/ObjectDll/TRON/Object.lto.rsp; } && WINEPREFIX=/repo/out/release-tree/.wine/drives WINEPATH='t:\\msvc-6.00-8168\\BIN;t:\\msvc-6.00-9782\\Common\\MSDev98\\Bin' INCLUDE='t:\\dxsdk-8.1\\include;t:\\msvc-6.00-8168\\INCLUDE;t:\\msvc-6.00-8168\\MFC\\INCLUDE;s:\\tron20src' LIB='t:\\dxsdk-8.1\\lib;t:\\msvc-6.00-8168\\LIB;t:\\msvc-6.00-8168\\MFC\\LIB' wine /repo/out/release-tree/toolchains/msvc-6.00-8168/BIN/link.exe '@s:\\Game\\built\\Final\\ObjectDll\\TRON\\Object.lto.rsp'",
-   "map": "b153656633df989535c12628fd876c550ef68205996dfc1c8967c0d122a027f2",
+   "map": "39197249575a15e2526c21ee791c144cc1ad3f01ec5e4624e3cb0531d0d0a679",
    "rsp": "2f0f116232155701163b1517df8e3a10a6425dd52afec6e1a58ee82ba106774b"
   },
   "SndDrv.dll": {
@@ -57,12 +57,12 @@
   "out/reference/server.dll": "4a6f2f305996edd30f56e71b70d0ef1dfb2dc1a08f19eec8010891f98ebd002b"
  },
  "result": {
-  "out/progress/functions.csv": "6d9c9be76af716921a4a1dd3c3c69faadebd099852f619c0de9b5485ab4f2a29",
-  "out/progress/summary.json": "01bd19c402d15a23b1e9da6b0ea38ee5f5e065f9c70ce592e3c76c696a8b5c43"
+  "out/progress/functions.csv": "5733e39ff282a708b489cddcaa5582cd696f8fb7e23ef8f094e847072c20b360",
+  "out/progress/summary.json": "6b88e4a11c8c3dbcccf980056388d0d8a7b300fdac4167882074a30592888435"
  },
  "source": {
   "modified_files": 0,
-  "revision": "ba62c681e18f0ecb516453e39397f60576747de0",
+  "revision": "2344ef98e334d68def3c1091634520827e40316b",
   "submodule rez": "240ec46824d729c1b3bb7164bf39cdd15fd3bc6a",
   "submodule toolchains": "6988d3294df9286dde2526fef409ab864477fe3d",
   "submodule tools": "5d44dcdefc8c29da464c3f202c685de38d7dbd2b"
