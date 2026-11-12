@@ -19,6 +19,7 @@
 #include "InventoryButeMgr.h"
 #include "ModelButeMgr.h"
 #include "CommandMgr.h"
+#include "ServerSoundMgr.h"
 
 extern CInventoryButeMgr s_InventoryButeMgr;
 
@@ -675,12 +676,107 @@ void ArchiveBin::CreateBerries()
 {
 }
 
-// RETAIL: 0x10010e40
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::HandleModelString
+//
+//	PURPOSE:	Handle the model's sound keys (RETAIL: as IONode's; PORT: Tron's PlaySoundFromObject
+//				takes one more argument)
+//
+// ----------------------------------------------------------------------- //
+
 void ArchiveBin::HandleModelString(ArgList* pArgList)
 {
+	static CParsedMsg::CToken s_cTok_KEY_BUTE_SOUND("BUTE_SOUND_KEY");
+	static CParsedMsg::CToken s_cTok_KEY_BUTE_SOUND_LOOPING("BUTE_SOUND_KEY_LOOPING");
+	static CParsedMsg::CToken s_cTok_KILL_LOOPING_SOUND("KILL_LOOPING_SOUND");
+
+	if (!pArgList || !pArgList->argv || pArgList->argc == 0) return;
+
+	char* pKey = pArgList->argv[0];
+	if (!pKey) return;
+
+	CParsedMsg::CToken tok( pKey );
+
+	if (tok == s_cTok_KEY_BUTE_SOUND)
+	{
+		if (pArgList->argc > 1 && pArgList->argv[1])
+		{
+			g_pServerSoundMgr->PlaySoundFromObject(m_hObject, pArgList->argv[1]);
+		}
+	}
+	else if (tok == s_cTok_KEY_BUTE_SOUND_LOOPING)
+	{
+		if (pArgList->argc > 1 && pArgList->argv[1])
+		{
+			if (m_hstrLoopSound)
+			{
+				g_pLTServer->FreeString(m_hstrLoopSound);
+				m_hstrLoopSound = LTNULL;
+			}
+
+			m_hstrLoopSound = g_pLTServer->CreateString(pArgList->argv[1]);
+			PlayLoopSound();
+		}
+	}
+	else if (tok == s_cTok_KILL_LOOPING_SOUND)
+	{
+		bool bLoop = false;
+		if (pArgList->argc > 1 && pArgList->argv[1])
+		{
+			if (atoi(pArgList->argv[1]) == 1)
+			{
+				bLoop = true;
+			}
+		}
+
+		if (m_hLoopSound)
+		{
+			if (bLoop)
+			{
+				g_pLTServer->SoundMgr()->KillSoundLoop(m_hLoopSound);
+			}
+			else
+			{
+				g_pLTServer->SoundMgr()->KillSound(m_hLoopSound);
+			}
+
+			m_hLoopSound = LTNULL;
+		}
+
+		if (m_hstrLoopSound)
+		{
+			g_pLTServer->FreeString(m_hstrLoopSound);
+			m_hstrLoopSound = LTNULL;
+		}
+	}
 }
 
-// RETAIL: 0x10011110
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::PlayLoopSound
+//
+//	PURPOSE:	(Re)start the looping sound
+//
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::PlayLoopSound
+//
+//	PURPOSE:	(Re)start the looping sound (RETAIL: as IONode's; PORT: Tron's PlaySoundFromObject
+//				takes one more argument)
+//
+// ----------------------------------------------------------------------- //
+
 void ArchiveBin::PlayLoopSound()
 {
+	if (!m_hstrLoopSound) return;
+
+	if (m_hLoopSound)
+	{
+		g_pLTServer->SoundMgr()->KillSound(m_hLoopSound);
+	}
+
+	m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, g_pLTServer->GetStringData(m_hstrLoopSound), -1.0f,
+		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
 }
