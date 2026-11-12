@@ -5,6 +5,8 @@
 // PURPOSE : Tron's client-side energy claw (retail only: RTTI
 //           .?AVCClientWeaponEnergyClaw@@, vtable 0x101e6320; CShell.dll
 //           0x1001a5f0..0x1001ac93).  Member names are ours.
+//           Not yet written: 0x1001a7a0 (the claw's target and in-range
+//           FX, which Update calls first) and its helpers 0x1001ab60..0x1001ac10.
 //
 // ----------------------------------------------------------------------- //
 
@@ -28,10 +30,6 @@ protected:
 
 	virtual float GetEnergyUse();
 	virtual void  TronUnknownVirtual180();
-
-	// RETAIL: 0x1001a7a0 (707 bytes: the claw's target and its in-range FX)
-	// not yet written
-	void          UpdateInRange();
 
 	bool          m_bInRange;		// RETAIL: +0x20c
 };

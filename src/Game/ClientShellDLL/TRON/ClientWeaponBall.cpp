@@ -36,22 +36,9 @@ void CClientWeaponBall::Save( ILTMessage_Write *pMsg )
 	CTronClientWeapon::Save( pMsg );
 }
 
-// RETAIL: 0x10017910 (608 bytes) not yet written; PORT: CClientWeapon's
-bool CClientWeaponBall::PlayFireAnimation( bool bResetAni )
-{
-	return CTronClientWeapon::PlayFireAnimation( bResetAni );
-}
-
 // RETAIL: 0x10017b70
 void CClientWeaponBall::HandleFireKeyDownTransition()
 {
 	m_fFireKeyDownTime = g_pLTClient->GetTime();
 }
 
-// RETAIL: 0x10017b90 writes a float the ammo's BALLCLASSDATA (retail only)
-// interpolates by how long the fire key was down; not yet written (the
-// class data and WEAPON/AMMO's layout are missing).  PORT: CClientWeapon's.
-void CClientWeaponBall::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg )
-{
-	CTronClientWeapon::AddExtraFireMessageInfo( bFire, pMsg );
-}

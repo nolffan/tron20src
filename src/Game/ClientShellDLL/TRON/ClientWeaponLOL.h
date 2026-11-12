@@ -4,6 +4,8 @@
 //
 // PURPOSE : Tron's client-side LOL weapon (retail only: RTTI .?AVCClientWeaponLOL@@, vtable
 //           0x101e64b4; CShell.dll 0x1001acc0..0x1001b09c).  Member names are ours.
+//           Not yet written: PlayFireAnimation (0x1001ae80) and
+//           0x1001b090 (it reads CClientWeapon+0x154, not in ours).
 //
 // ----------------------------------------------------------------------- //
 
@@ -22,7 +24,6 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 protected:
-	virtual bool  PlayFireAnimation( bool bResetAni );
 
 	// RETAIL: 0x1001acd0
 	virtual uint8 GetFireMessageType() const { return kTronFire_LOL; }
