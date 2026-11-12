@@ -364,6 +364,7 @@ SOURCE=.\Stdafx.cpp
 # Begin Source File
 
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
