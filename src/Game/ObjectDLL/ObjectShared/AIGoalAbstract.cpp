@@ -101,6 +101,7 @@ CAIGoalAbstract::CAIGoalAbstract()
 	m_bRequiresImmediateResponse = LTFALSE;
 	m_bRequiresUpdates = LTFALSE;
 	m_bPermanentGoal = LTFALSE;
+	m_bTronUnknown58 = LTFALSE;
 
 	m_pGoalMgr	= LTNULL;
 	m_pAI		= LTNULL;
@@ -148,6 +149,7 @@ void CAIGoalAbstract::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bRequiresImmediateResponse);
 	SAVE_BOOL(m_bRequiresUpdates);
 	SAVE_BOOL(m_bPermanentGoal);
+	SAVE_BOOL(m_bTronUnknown58);
 	SAVE_HOBJECT(m_hBlockedAttractorNode);
 }
 
@@ -168,6 +170,7 @@ void CAIGoalAbstract::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bRequiresImmediateResponse);
 	LOAD_BOOL(m_bRequiresUpdates);
 	LOAD_BOOL(m_bPermanentGoal);
+	LOAD_BOOL(m_bTronUnknown58);
 	LOAD_HOBJECT(m_hBlockedAttractorNode);
 }
 

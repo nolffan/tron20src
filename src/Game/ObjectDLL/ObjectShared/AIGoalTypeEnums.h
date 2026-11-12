@@ -95,3 +95,8 @@ ADD_GOAL_TYPE(SpecialDamage)			// kGoal_SpecialDamage
 ADD_GOAL_TYPE(Tail)						// kGoal_Tail
 ADD_GOAL_TYPE(Talk)						// kGoal_Talk
 ADD_GOAL_TYPE(Work)						// kGoal_Work
+// RETAIL: Tron 2.0 has more goals (retail .rdata 0x102dc090: FconMonster 56,
+// SeekerHitch 57, Glitch 58, Lead 59, ...); its list is ordered differently,
+// so these ADDs give the right names but not yet retail's values.
+ADD_GOAL_TYPE(Glitch)					// kGoal_Glitch
+ADD_GOAL_TYPE(Lead)						// kGoal_Lead

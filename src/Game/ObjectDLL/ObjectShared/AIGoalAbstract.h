@@ -176,6 +176,10 @@ class CAIGoalAbstract : public CAIClassAbstract
 		LTBOOL				m_bRequiresImmediateResponse;	// Goal reqires an immediate response from the GoalMgr.
 		LTBOOL				m_bRequiresUpdates;				// Goal reqires updatesfrom the GoalMgr.
 		LTBOOL				m_bPermanentGoal;				// Permanent goals cannot be removed.
+		// RETAIL: Tron adds a BOOL at 0x58 (ctor 0x101e0d60 clears it after
+		// m_bPermanentGoal; Save 0x101e0ec0 writes it after m_bPermanentGoal).
+		// Its users are not yet identified.
+		LTBOOL				m_bTronUnknown58;
 
 		// NOTE:  These BOOLS should really be enumerated flags.
 };
