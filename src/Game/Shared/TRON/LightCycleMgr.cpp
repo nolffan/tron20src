@@ -182,7 +182,7 @@ LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor
 
 	pCyclist->bUpdating = bUpdate;
 	pCyclist->hObject = hObj;
-	pCyclist->m_nTronUnknownE0 = 0;
+	pCyclist->fTrailCheckTime = 0.0f;
 	pCyclist->m_vTronUnknownE4.Init();
 	pCyclist->fStartDerezTime = 0.0f;
 	UpdateCyclistForward(pCyclist);
@@ -353,19 +353,149 @@ LIGHT_CYCLE_TRAIL* CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist,
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckCollision, LTVector* pvForward, bool bTronUnknown)
 {
-	// RETAIL: 0x100fedd0 (1055 bytes) is not written yet: the trail is only
-	// started (see BeginLightCycleTrail).
 	if(!pCyclist)
 		return false;
 
-	if(!pCyclist->pCurTrail)
+	LIGHT_CYCLE_TRAIL_POINT newPoint;
+	CreateTrailPointFromVector(newPoint, pCyclist->vLastPos);
+
+	LIGHT_CYCLE_TRAIL* pTrail = pCyclist->pCurTrail;
+	if(!pTrail)
 	{
+		// Simple case: We're starting a new trail
 		return (BeginLightCycleTrail(pCyclist, pCyclist->vLastPos) != NULL);
 	}
 
+	// Save the old forward vector
+	LTVector vOldForward = pCyclist->vForward;
 	if(pvForward)
 	{
 		pCyclist->vForward = *pvForward;
+
+		LTVector vDims;
+		UpdateCyclistDims(pCyclist, vDims, false);
+	}
+
+	int nPoints = pTrail->collTrailPoints.size();
+	if(nPoints > 0)
+	{
+		// Get the last point
+		LIGHT_CYCLE_TRAIL_POINT* pOldPoint = &(pTrail->collTrailPoints[nPoints-1]);
+		LIGHT_CYCLE_TRAIL_POINT turnPoint = *pOldPoint;
+
+		float fDist = (float)(fabs(pOldPoint->GetZ() - newPoint.GetZ()) + fabs(pOldPoint->GetX() - newPoint.GetX()));
+		if(fDist < 1.0f)
+			return true;
+
+		if(bTronUnknown || !pCyclist->bFixedDims)
+		{
+			pTrail->fLength += fDist;
+		}
+
+		if(nPoints > 1)
+		{
+			// Check for a turn
+			if(pvForward && (pvForward->x != vOldForward.x) && (pvForward->z != vOldForward.z))
+			{
+				// The turn point keeps the old travel's axis of the
+				// new position
+				if(vOldForward.x > 0.5f)
+				{
+					turnPoint.SetX(pCyclist->vLastPos.x);
+				}
+				else if(vOldForward.x < -0.5f)
+				{
+					turnPoint.SetX(pCyclist->vLastPos.x);
+				}
+				else if(vOldForward.z > 0.5f)
+				{
+					turnPoint.SetZ(pCyclist->vLastPos.z);
+				}
+				else
+				{
+					turnPoint.SetZ(pCyclist->vLastPos.z);
+				}
+
+				LightCycleCollisionInfo info;
+				if(CheckForCollision(pCyclist, pOldPoint, &turnPoint.vPoint, &info, bCheckCollision, NULL) && bCheckCollision)
+				{
+					if((info.nTrail != -1) && pCyclist->bShield)
+					{
+						HandleShieldCollision(pCyclist, &info, true, 0);
+						DeactivateShield(pCyclist, true);
+
+						pTrail = pCyclist->pCurTrail;
+						pOldPoint = &(pTrail->collTrailPoints[pTrail->collTrailPoints.size()-1]);
+					}
+					else
+					{
+						HandleCollision(pCyclist, info);
+						return true;
+					}
+				}
+
+				// Change the last point to the turn point and start the
+				// new leg there
+				*pOldPoint = turnPoint;
+				pTrail->collTrailPoints.push_back(turnPoint);
+				pOldPoint = &(pTrail->collTrailPoints[pTrail->collTrailPoints.size()-1]);
+			}
+
+			// Move the last point to our location
+			LightCycleCollisionInfo info;
+			if(CheckForCollision(pCyclist, pOldPoint, &newPoint.vPoint, &info, bCheckCollision, NULL) && bCheckCollision)
+			{
+				if((info.nTrail != -1) && pCyclist->bShield)
+				{
+					HandleShieldCollision(pCyclist, &info, true, 0);
+					DeactivateShield(pCyclist, true);
+
+					pTrail = pCyclist->pCurTrail;
+					pOldPoint = &(pTrail->collTrailPoints[pTrail->collTrailPoints.size()-1]);
+				}
+				else
+				{
+					HandleCollision(pCyclist, info);
+					return true;
+				}
+			}
+
+			*pOldPoint = newPoint;
+		}
+		else
+		{
+			// We only have one point on our list (the starting point)
+			// so add a new one
+			LightCycleCollisionInfo info;
+			if(CheckForCollision(pCyclist, pOldPoint, &newPoint.vPoint, &info, bCheckCollision, NULL) && bCheckCollision)
+			{
+				if((info.nTrail != -1) && pCyclist->bShield)
+				{
+					HandleShieldCollision(pCyclist, &info, true, 0);
+					DeactivateShield(pCyclist, true);
+					pTrail = pCyclist->pCurTrail;
+				}
+				else
+				{
+					HandleCollision(pCyclist, info);
+					return true;
+				}
+			}
+
+			pTrail->collTrailPoints.push_back(newPoint);
+		}
+
+		if(pCyclist->bFixedDims && !bTronUnknown)
+		{
+			if(LCM_LT->GetTime() == pCyclist->fTrailCheckTime)
+			{
+				TrimTrailLength(pCyclist, pTrail, true);
+			}
+		}
+		else
+		{
+			TrimTrailLength(pCyclist, pTrail, false);
+		}
 	}
 
 	return true;
@@ -468,6 +598,111 @@ void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTV
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::TrimTrailLength
+//
+//	PURPOSE:	Cuts the trail's tail to the cyclist's max trail length, a
+//				grid multiple at a time. RETAIL: 0x100ffc00
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, bool bToTrailEnd)
+{
+	if(!(pCyclist->fMaxTrailLength > 0.0f))
+		return;
+
+	if(!(pTrail->fLength > pCyclist->fMaxTrailLength))
+		return;
+
+	float fExcess = pTrail->fLength - pCyclist->fMaxTrailLength;
+	float fGridSize = m_ButeMgr.GetGridSize();
+	if(fExcess < fGridSize)
+		return;
+
+	if(fGridSize > 1.0f)
+	{
+		fExcess = (float)LCM_ROUND(fExcess / fGridSize) * fGridSize;
+	}
+	else
+	{
+		fExcess = (float)LCM_ROUND(fExcess);
+	}
+
+	pTrail->m_fTronUnknown14 -= fExcess;
+
+	int nRemove = 0;
+	bool bDone = false;
+	int nLast = pTrail->collTrailPoints.size() - 1;
+
+	for(int i = 0; !bDone && (i < nLast); i++)
+	{
+		LIGHT_CYCLE_TRAIL_POINT* pPoints = pTrail->collTrailPoints.begin();
+		LIGHT_CYCLE_TRAIL_POINT* pCur = &pPoints[i];
+		LIGHT_CYCLE_TRAIL_POINT* pNext;
+		LIGHT_CYCLE_TRAIL_POINT endPoint;
+
+		if(bToTrailEnd && (i + 1 == nLast))
+		{
+			CreateTrailPointFromVector(endPoint, pCyclist->m_vTronUnknownE4);
+			pNext = &endPoint;
+		}
+		else
+		{
+			pNext = &pPoints[i + 1];
+		}
+
+		float fDX = (float)fabs(pCur->vPoint.x - pNext->vPoint.x);
+		float fDZ = (float)fabs(pCur->vPoint.z - pNext->vPoint.z);
+		float fSegment = (fDX > fDZ) ? fDX : fDZ;
+
+		if(fSegment < fExcess)
+		{
+			// The whole segment goes
+			fExcess -= fSegment;
+			nRemove++;
+			pTrail->fLength -= fSegment;
+		}
+		else if(fDX > fDZ)
+		{
+			if(pNext->vPoint.x < pCur->vPoint.x)
+			{
+				pCur->vPoint.x -= fExcess;
+			}
+			else
+			{
+				pCur->vPoint.x += fExcess;
+			}
+
+			bDone = true;
+			pTrail->fLength -= fExcess;
+		}
+		else
+		{
+			if(pNext->vPoint.z < pCur->vPoint.z)
+			{
+				pCur->vPoint.z -= fExcess;
+			}
+			else
+			{
+				pCur->vPoint.z += fExcess;
+			}
+
+			bDone = true;
+			pTrail->fLength -= fExcess;
+		}
+
+		if(pTrail->m_fTronUnknown14 < 0.0f)
+		{
+			pTrail->m_fTronUnknown14 += m_fTronUnknown20 + 8.0f;
+		}
+	}
+
+	if(nRemove > 0)
+	{
+		pTrail->collTrailPoints.erase(pTrail->collTrailPoints.begin(), pTrail->collTrailPoints.begin() + nRemove);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::SnapToGrid
 //
 //	PURPOSE:	Snaps the position to the bute grid. RETAIL: 0x100ffec0
@@ -502,6 +737,303 @@ void CLightCycleMgr::SnapToGrid(LTVector & vPos)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::CheckForCollision
+//
+//	PURPOSE:	Checks the move from the trail's last point to vPos against
+//				the other cycles and all the trails (on the grid's integer
+//				coordinates); also finds the nearest parallel wall.
+//				RETAIL: 0x100ff360
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL_POINT* pLast, LTVector* pvPos,
+	LightCycleCollisionInfo* pInfo, bool bCheckCollision, LIGHT_CYCLIST* pOwner)
+{
+	if(!pCyclist)
+		return false;
+
+	pCyclist->nWallDist = pCyclist->nMaxWallDist + 100;
+
+	std::vector<LIGHT_CYCLIST*>::iterator iter;
+	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
+	{
+		LIGHT_CYCLIST* pOther = (*iter);
+
+		// The cycles
+		if(bCheckCollision && (pOther->fStartDerezTime == 0.0f) &&
+			((!pCyclist->m_bTronUnknownD1 && (pCyclist != pOther)) || (pCyclist->m_bTronUnknownD1 && (pOwner != pOther))))
+		{
+			float fMinX = (pvPos->x < pLast->vPoint.x) ? pvPos->x : pLast->vPoint.x;
+			float fMaxX = (pvPos->x > pLast->vPoint.x) ? pvPos->x : pLast->vPoint.x;
+			float fMinZ = (pvPos->z < pLast->vPoint.z) ? pvPos->z : pLast->vPoint.z;
+			float fMaxZ = (pvPos->z > pLast->vPoint.z) ? pvPos->z : pLast->vPoint.z;
+
+			if(pCyclist->vForward.x == 0.0f)
+			{
+				fMinX -= 16.0f;
+				fMaxX += 16.0f;
+				fMinZ -= pCyclist->fLength;
+				fMaxZ += pCyclist->fLength;
+			}
+			else
+			{
+				fMinZ -= 16.0f;
+				fMaxZ += 16.0f;
+				fMinX -= pCyclist->fLength;
+				fMaxX += pCyclist->fLength;
+			}
+
+			float fOtherMinX, fOtherMaxX, fOtherMinZ, fOtherMaxZ;
+			if(pOther->vForward.x == 0.0f)
+			{
+				fOtherMinX = pOther->vLastPos.x - 16.0f;
+				fOtherMaxX = pOther->vLastPos.x + 16.0f;
+				fOtherMinZ = pOther->vLastPos.z - pOther->fLength;
+				fOtherMaxZ = pOther->vLastPos.z + pOther->fLength;
+			}
+			else
+			{
+				fOtherMinX = pOther->vLastPos.x - pOther->fLength;
+				fOtherMaxX = pOther->vLastPos.x + pOther->fLength;
+				fOtherMinZ = pOther->vLastPos.z - 16.0f;
+				fOtherMaxZ = pOther->vLastPos.z + 16.0f;
+			}
+
+			if(!(fOtherMaxX < fMinX) && !(fOtherMinX > fMaxX) && !(fOtherMaxZ < fMinZ) && !(fOtherMinZ > fMaxZ))
+			{
+				pInfo->pCyclist = pOther;
+				pInfo->nTrail = -1;
+
+				if(pCyclist->m_bTronUnknownD1)
+					return true;
+
+				if(pCyclist->bShield && !pOther->bShield)
+				{
+					// The shield wins
+					CyclistCrash(pOther, pCyclist, true);
+				}
+				else
+				{
+					if(!pCyclist->bShield && pOther->bShield)
+						return true;
+
+					bool bAlongX = (pCyclist->vForward.x != 0.0f);
+					bool bOtherAlongX = (pOther->vForward.x != 0.0f);
+					if(bAlongX != bOtherAlongX)
+						return true;
+
+					if(bAlongX)
+					{
+						if(pCyclist->vForward.x == pOther->vForward.x)
+							return true;
+					}
+					else
+					{
+						if(pCyclist->vForward.z == pOther->vForward.z)
+							return true;
+					}
+
+					HeadOnCollision(pCyclist, pOther);
+					return true;
+				}
+			}
+		}
+
+		// The trails
+		std::vector<LIGHT_CYCLE_TRAIL*>::iterator iterTrail;
+		for(iterTrail=pOther->collTrails.begin();iterTrail!=pOther->collTrails.end();iterTrail++)
+		{
+			LIGHT_CYCLE_TRAIL* pTrail = (*iterTrail);
+
+			// Skip the segments next to the owner's own cycle
+			int nLastSegment = -1;
+			LIGHT_CYCLIST* pTrailOwner = pOwner ? pOwner : pCyclist;
+			if((pOther == pTrailOwner) && (pTrail == pTrailOwner->pCurTrail))
+			{
+				uint32 nPoints = pTrail->collTrailPoints.size();
+				if(nPoints >= 4)
+					nLastSegment = nPoints - 4;
+			}
+			else
+			{
+				nLastSegment = pTrail->collTrailPoints.size() - 2;
+			}
+
+			int nToX = (int)pvPos->x;
+			int nToZ = (int)pvPos->z;
+			int nFromX = (int)pLast->vPoint.x;
+			int nFromZ = (int)pLast->vPoint.z;
+
+			for(int i = 0; i <= nLastSegment; i++)
+			{
+				LIGHT_CYCLE_TRAIL_POINT* pPoints = pTrail->collTrailPoints.begin();
+				int nSX = (int)pPoints[i].vPoint.x;
+				int nSZ = (int)pPoints[i].vPoint.z;
+				int nEX = (int)pPoints[i+1].vPoint.x;
+				int nEZ = (int)pPoints[i+1].vPoint.z;
+
+				if(nSX == nEX)
+				{
+					// The segment runs along z
+					if(nFromX == nToX)
+					{
+						// ...and so do we
+						int nWidth = (int)pCyclist->fWidth;
+						int nLo = nToX - nWidth;
+						int nHi = nToX + nWidth;
+						if((nLo <= nSX) && (nHi >= nSX))
+						{
+							int nMin = (nFromZ < nToZ) ? nFromZ : nToZ;
+							int nMax = (nFromZ > nToZ) ? nFromZ : nToZ;
+							int nSMin = (nSZ < nEZ) ? nSZ : nEZ;
+							int nSMax = (nSZ > nEZ) ? nSZ : nEZ;
+							if((nMin <= nSMax) && (nMax >= nSMin))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = iterTrail - pOther->collTrails.begin();
+								pInfo->nSegment = i;
+								pInfo->vCollisionPoint.x = pvPos->x;
+								pInfo->vCollisionPoint.y = pvPos->y;
+								if(nToZ > nFromZ)
+									pInfo->vCollisionPoint.z = (float)((nFromZ > nSMin) ? nFromZ : nSMin);
+								else
+									pInfo->vCollisionPoint.z = (float)((nFromZ < nSMax) ? nFromZ : nSMax);
+								return true;
+							}
+						}
+						else
+						{
+							// A parallel wall: how near?
+							int nLoDist = abs(nLo - nSX);
+							int nHiDist = abs(nHi - nSX);
+							int nDist = (nLoDist < nHiDist) ? nLoDist : nHiDist;
+							if(nDist < pCyclist->nWallDist)
+							{
+								int nMin = (nFromZ < nToZ) ? nFromZ : nToZ;
+								int nMax = (nFromZ > nToZ) ? nFromZ : nToZ;
+								int nSMin = (nSZ < nEZ) ? nSZ : nEZ;
+								int nSMax = (nSZ > nEZ) ? nSZ : nEZ;
+								if((nMin < nSMax) && (nMax > nSMin))
+								{
+									pCyclist->nWallDist = nDist;
+									if(nLoDist < nHiDist)
+										pCyclist->m_bTronUnknownAC = (nToZ > nFromZ);
+									else
+										pCyclist->m_bTronUnknownAC = (nToZ < nFromZ);
+								}
+							}
+						}
+					}
+					else
+					{
+						// We cross it along x
+						int nWidth = (int)pCyclist->fWidth;
+						int nLo = nToZ - nWidth;
+						int nHi = nToZ + nWidth;
+						int nSMin = (nSZ < nEZ) ? nSZ : nEZ;
+						int nSMax = (nSZ > nEZ) ? nSZ : nEZ;
+						if((nLo <= nSMax) && (nHi >= nSMin))
+						{
+							int nMin = (nFromX < nToX) ? nFromX : nToX;
+							int nMax = (nFromX > nToX) ? nFromX : nToX;
+							if((nMin <= nSX) && (nMax >= nSX))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = iterTrail - pOther->collTrails.begin();
+								pInfo->nSegment = i;
+								pInfo->vCollisionPoint.x = (float)nSX;
+								pInfo->vCollisionPoint.y = pvPos->y;
+								pInfo->vCollisionPoint.z = pvPos->z;
+								return true;
+							}
+						}
+					}
+				}
+				else
+				{
+					// The segment runs along x
+					if(nFromZ == nToZ)
+					{
+						// ...and so do we
+						int nWidth = (int)pCyclist->fWidth;
+						int nLo = nToZ - nWidth;
+						int nHi = nToZ + nWidth;
+						if((nLo <= nSZ) && (nHi >= nSZ))
+						{
+							int nMin = (nFromX < nToX) ? nFromX : nToX;
+							int nMax = (nFromX > nToX) ? nFromX : nToX;
+							int nSMin = (nSX < nEX) ? nSX : nEX;
+							int nSMax = (nSX > nEX) ? nSX : nEX;
+							if((nMin <= nSMax) && (nMax >= nSMin))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = iterTrail - pOther->collTrails.begin();
+								pInfo->nSegment = i;
+								if(nToX > nFromX)
+									pInfo->vCollisionPoint.x = (float)((nFromX > nSMin) ? nFromX : nSMin);
+								else
+									pInfo->vCollisionPoint.x = (float)((nFromX < nSMax) ? nFromX : nSMax);
+								pInfo->vCollisionPoint.y = pvPos->y;
+								pInfo->vCollisionPoint.z = pvPos->z;
+								return true;
+							}
+						}
+						else
+						{
+							// A parallel wall: how near?
+							int nLoDist = abs(nLo - nSZ);
+							int nHiDist = abs(nHi - nSZ);
+							int nDist = (nLoDist < nHiDist) ? nLoDist : nHiDist;
+							if(nDist < pCyclist->nWallDist)
+							{
+								int nMin = (nFromX < nToX) ? nFromX : nToX;
+								int nMax = (nFromX > nToX) ? nFromX : nToX;
+								int nSMin = (nSX < nEX) ? nSX : nEX;
+								int nSMax = (nSX > nEX) ? nSX : nEX;
+								if((nMin < nSMax) && (nMax > nSMin))
+								{
+									pCyclist->nWallDist = nDist;
+									if(nLoDist < nHiDist)
+										pCyclist->m_bTronUnknownAC = (nToX > nFromX);
+									else
+										pCyclist->m_bTronUnknownAC = (nToX < nFromX);
+								}
+							}
+						}
+					}
+					else
+					{
+						// We cross it along z
+						int nWidth = (int)pCyclist->fWidth;
+						int nLo = nToX - nWidth;
+						int nHi = nToX + nWidth;
+						int nSMin = (nSX < nEX) ? nSX : nEX;
+						int nSMax = (nSX > nEX) ? nSX : nEX;
+						if((nLo <= nSMax) && (nHi >= nSMin))
+						{
+							int nMin = (nFromZ < nToZ) ? nFromZ : nToZ;
+							int nMax = (nFromZ > nToZ) ? nFromZ : nToZ;
+							if((nMin <= nSZ) && (nMax >= nSZ))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = iterTrail - pOther->collTrails.begin();
+								pInfo->nSegment = i;
+								pInfo->vCollisionPoint.x = pvPos->x;
+								pInfo->vCollisionPoint.y = pvPos->y;
+								pInfo->vCollisionPoint.z = (float)nSZ;
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::HandleCollision
 //
 //	PURPOSE:	Handles a collision. RETAIL: 0x100ffbe0
@@ -509,7 +1041,7 @@ void CLightCycleMgr::SnapToGrid(LTVector & vPos)
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::HandleCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisionInfo &info)
 {
-	TronUnknownVirtual5(pCyclist, info.nTronUnknown0, true);
+	CyclistCrash(pCyclist, info.pCyclist, true);
 }
 
 // ----------------------------------------------------------------------- //
@@ -967,11 +1499,6 @@ void CLightCycleMgr::UpdateCyclistForward(LIGHT_CYCLIST* pCyclist)
 // given); they do nothing.
 // ----------------------------------------------------------------------- //
 
-// RETAIL: 0x10100960 (1156 bytes)
-bool CLightCycleMgr::TronUnknownVirtual8(uint32, uint32, uint32, uint32)
-{
-	return false;
-}
 
 
 // RETAIL: 0x10101280 (666 bytes)

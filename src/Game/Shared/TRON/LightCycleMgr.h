@@ -121,7 +121,7 @@ struct LIGHT_CYCLIST
 		vLastPos.x = 0.0f;
 		vLastPos.y = 0.0f;
 		vLastPos.z = 0.0f;
-		m_nTronUnknownE0 = 0;
+		fTrailCheckTime = 0.0f;
 		m_vTronUnknownE4.x = 0.0f;
 		m_vTronUnknownE4.y = 0.0f;
 		m_vTronUnknownE4.z = 0.0f;
@@ -192,7 +192,7 @@ struct LIGHT_CYCLIST
 	bool	m_bTronUnknownD1;				// RETAIL: +0xd1
 	LCTronUnknownPair m_TronUnknownD4;		// RETAIL: +0xd4
 	int		nCycleDialog;					// RETAIL: +0xdc
-	int		m_nTronUnknownE0;				// RETAIL: +0xe0
+	float	fTrailCheckTime;				// RETAIL: +0xe0 (UpdateLightCycleTrail)
 	LTVector m_vTronUnknownE4;				// RETAIL: +0xe4
 	int		nPowerup;						// RETAIL: +0xf0 LCPowerupType, LC_NO_POWERUP
 	// RETAIL: +0xf4, bit fields (retail tests them with shifts); the names
@@ -230,12 +230,13 @@ struct LIGHT_CYCLIST
 	bool	m_bTronUnknown130;				// RETAIL: +0x130
 };
 
-// RETAIL: the collision info of UpdateLightCycleTrail (its frame +0x40)
+// RETAIL: 0x18 bytes, filled by CheckForCollision (0x100ff360)
 struct LightCycleCollisionInfo
 {
-	int		nTronUnknown0;		// RETAIL: +0x00 (HandleCollision's 2nd argument)
-	int		nTronUnknown4;		// RETAIL: +0x04 (-1: none)
-	LTVector vCollisionPoint;	// RETAIL: +0x08
+	LIGHT_CYCLIST* pCyclist;	// RETAIL: +0x00 the cyclist hit (or whose trail was hit)
+	int		nTrail;				// RETAIL: +0x04 index of the trail hit, -1: the cycle
+	int		nSegment;			// RETAIL: +0x08 index of the trail's segment hit
+	LTVector vCollisionPoint;	// RETAIL: +0x0c
 };
 
 class CLightCycleMgr
@@ -253,14 +254,15 @@ class CLightCycleMgr
 			LTVector* pvDims, uint32 nTronUnknown4, uint32 nTronUnknown5);
 		virtual bool DerezCyclist(HOBJECT hObj);	// RETAIL: 0x100fec30
 
-		// RETAIL: slot 5, pure (HandleCollision's)
-		virtual void TronUnknownVirtual5(LIGHT_CYCLIST* pCyclist, int nTronUnknown, bool bTronUnknown) = 0;
-		// RETAIL: slot 6, 0x100991a0 (empty, folded)
-		virtual void TronUnknownVirtual6(uint32, uint32) {}
+		// A cyclist crashed (into pOther or its trail). RETAIL: slot 5, pure
+		virtual void CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bTronUnknown) = 0;
+		// Two cycles met head on. RETAIL: slot 6, 0x100991a0 (empty, folded)
+		virtual void HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther) {}
 		// RETAIL: slot 7, pure
 		virtual void TronUnknownVirtual7() = 0;
 
-		virtual bool TronUnknownVirtual8(uint32, uint32, uint32, uint32);	// RETAIL: 0x10100960
+		// A shielded cyclist's hit. RETAIL: 0x10100960
+		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bTronUnknown, uint32 nTronUnknown);
 		// Drops the first points of the current trail up to nPoint (or the
 		// first if two are left, snapping the next). RETAIL: 0x10100df0
 		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown);
@@ -303,6 +305,13 @@ class CLightCycleMgr
 
 		LIGHT_CYCLE_TRAIL* BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos);	// RETAIL: 0x100fec60
 		bool UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckCollision, LTVector* pvForward, bool bTronUnknown);	// RETAIL: 0x100fedd0
+		// Checks the move from the trail's last point to vPos for a hit.
+		// RETAIL: 0x100ff360
+		bool CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL_POINT* pLast, LTVector* pvPos,
+			LightCycleCollisionInfo* pInfo, bool bCheckCollision, LIGHT_CYCLIST* pOwner);
+		// Cuts the trail's tail to the cyclist's max trail length.
+		// RETAIL: 0x100ffc00
+		void TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, bool bToTrailEnd);
 		uint32 AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, LTVector& vPos);	// RETAIL: 0x100ff1f0
 
 		// The wall acceleration of the cyclist's wall distance. RETAIL: 0x101004d0
