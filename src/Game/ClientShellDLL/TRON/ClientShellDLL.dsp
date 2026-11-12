@@ -166,11 +166,51 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponBall.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponBallLauncher.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponBlaster.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponClusterDisc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponContinuousFireBase.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponDrunkenDims.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponEnergyClaw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponLOL.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponPrankster.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponSequencerDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponSuffusion.cpp
 # End Source File
 # Begin Source File
 
@@ -486,6 +526,10 @@ SOURCE=.\SubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronClientWeapon.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TRONClientWeaponAllocator.cpp
 # End Source File
 # Begin Source File
@@ -546,11 +590,51 @@ SOURCE=.\CheatMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponBall.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponBallLauncher.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponBlaster.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponClusterDisc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponContinuousFireBase.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponDisc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponDrunkenDims.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponEnergyClaw.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponLOL.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponPrankster.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponSequencerDisc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientWeaponSuffusion.h
 # End Source File
 # Begin Source File
 
@@ -755,6 +839,10 @@ SOURCE=.\SubroutineMgr.h
 # Begin Source File
 
 SOURCE=.\TO2ScreenMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronClientWeapon.h
 # End Source File
 # Begin Source File
 

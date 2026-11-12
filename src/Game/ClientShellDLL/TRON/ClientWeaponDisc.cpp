@@ -53,12 +53,17 @@ namespace
 //
 // ---------------------------------------------------------------------- //
 
+// RETAIL: 0x10018b60 (near: it also clears CClientWeapon+0x12c, inits a
+// "DiscControlRate" console variable, 0x10018a60, and starts
+// m_fTimeDiscActive at 0)
 CClientWeaponDisc::CClientWeaponDisc() :
-	  m_nSwatDefenseAni( INVALID_ANI )
+	  CTronClientWeapon()
+	, m_nSwatDefenseAni( INVALID_ANI )
 	, m_nPreHoldDefenseAni( INVALID_ANI )
 	, m_nHoldDefenseAni( INVALID_ANI )
 	, m_nImpactHoldDefenseAni( INVALID_ANI )
 	, m_nPostHoldDefenseAni( INVALID_ANI )
+	, m_bPlayImpactHoldAnimation( false )
 	, m_bIsDiscActive( false )
 	, m_bFireMessageSent( false )
 	, m_bDiscNeedsUpdates( false )
@@ -460,7 +465,7 @@ void CClientWeaponDisc::InitAnimations( bool bAllowSelectOverride )
 	m_nPostHoldDefenseAni = g_pLTClient->GetAnimIndex( m_hObject, ns_szPostHoldDefenseAnimationName );
 
 	// init the base class animations
-	CClientWeapon::InitAnimations( bAllowSelectOverride );
+	CTronClientWeapon::InitAnimations( bAllowSelectOverride );
 }
 
 
@@ -790,7 +795,7 @@ bool CClientWeaponDisc::OnModelKey( HLOCALOBJ hObj, ArgList* pArgs )
 
 	// if this point is reached the message was not
 	// handled by the Disc, try another object
-	return CClientWeapon::OnModelKey( hObj, pArgs );
+	return CTronClientWeapon::OnModelKey( hObj, pArgs );
 }
 
 
@@ -883,7 +888,7 @@ WeaponState CClientWeaponDisc::Update( bool bFire,
 		ASSERT( LT_OK == ltResult );
 	}
 
-	return CClientWeapon::Update( bFire, eFireType );
+	return CTronClientWeapon::Update( bFire, eFireType );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1502,7 +1507,7 @@ void CClientWeaponDisc::Fire( bool bFire )
 	m_bDiscNeedsUpdates = true;
 
 	// now call the the parent's version
-	CClientWeapon::Fire( bFire );
+	CTronClientWeapon::Fire( bFire );
 }
 
 
@@ -1655,4 +1660,45 @@ void CClientWeaponDisc::IncrementAmmo( int nAmount /*=1*/ )
 			m_nAmmoInClip = m_pWeapon->nShotsPerClip;
 		}
 	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::Load() / Save()
+//
+//	PURPOSE:	RETAIL: 0x10019690 / 0x10019710 (retail only)
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponDisc::Load( ILTMessage_Read *pMsg )
+{
+	m_bPlayImpactHoldAnimation = pMsg->Readbool();
+	m_bIsDiscActive = pMsg->Readbool();
+	m_bFireMessageSent = pMsg->Readbool();
+	m_bDiscNeedsUpdates = pMsg->Readbool();
+	m_bIgnoreFireKeyframe = pMsg->Readbool();
+	CTronClientWeapon::Load( pMsg );
+}
+
+void CClientWeaponDisc::Save( ILTMessage_Write *pMsg )
+{
+	pMsg->Writebool( m_bPlayImpactHoldAnimation );
+	pMsg->Writebool( m_bIsDiscActive );
+	pMsg->Writebool( m_bFireMessageSent );
+	pMsg->Writebool( m_bDiscNeedsUpdates );
+	pMsg->Writebool( m_bIgnoreFireKeyframe );
+	CTronClientWeapon::Save( pMsg );
+}
+
+// RETAIL: 0x1001a1f0
+bool CClientWeaponDisc::TronUnknownVirtual19C()
+{
+	return 0 < g_pPlayerStats->GetAmmoCount( m_nAmmoId );
+}
+
+// RETAIL: 0x1001a210
+bool CClientWeaponDisc::TronUnknownVirtual1A0()
+{
+	return g_pPlayerStats->GetAmmoCount( m_nAmmoId ) != (uint32)m_pAmmo->GetMaxAmount( LTNULL );
 }
