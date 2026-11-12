@@ -1501,7 +1501,9 @@ void CTronPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 	if(eModel == PPM_LIGHTCYCLE)
 	{
 		// Add ourselves to the light cycle manager and start it up
-		g_pLightCycleMgr->AddCyclist(m_hObject);
+		// PORT: build 69's call, with the arguments of retail's virtual
+		// AddCyclist (ServerLightCycleMgr.h) defaulted
+		g_pLightCycleMgr->AddCyclist(m_hObject, "", true, NULL, 0, false);
 	}
 
 	CPlayerObj::SetVehiclePhysicsModel(eModel);

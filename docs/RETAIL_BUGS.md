@@ -251,6 +251,16 @@ slc_initiallistcomplete callback, so an asynchronous LAN browse is never
 told it finished. GameSpy fixed it in serverbrowsing 2.00.36 (2003-11-10).
 
 Not fixed yet: the modern build should make the callback.
+### The light cycle dialog plays a line it has already popped
+
+Object.lto 0x100509af (CServerLightCycleMgr::Update,
+ObjectDLL/TRON/ServerLightCycleMgr.cpp). It keeps a pointer to the top of
+the rider dialog priority_queue, pops it, then reads and plays through the
+pointer. pop() moves the queue's last line into the top slot, so the line
+checked and played is not the one that had the highest priority (unless the
+queue held one line).
+
+Not fixed yet: the modern build should copy the top entry before pop().
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

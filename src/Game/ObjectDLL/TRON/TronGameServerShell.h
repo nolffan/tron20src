@@ -14,7 +14,7 @@
 #include "GameServerShell.h"
 #include "TronVersionMgr.h"
 #include "TronMissionButeMgr.h"
-#include "LightCycleMgr.h"
+#include "ServerLightCycleMgr.h"
 
 class Body;
 
@@ -58,7 +58,7 @@ class CTronGameServerShell : public CGameServerShell
 		virtual CPlayerObj* CreatePlayer(HCLIENT hClient, ModelId ePlayerModelId); // PORT: NOLF2's interface
 		CTronVersionMgr		m_VersionMgr; // Same as g_pVersionMgr
 		CTronMissionButeMgr	m_MissionButeMgr;	// Same as g_pMissionButeMgr
-		CLightCycleMgr m_LightCycleMgr; // Same as g_pLightCycleMgr
+		CServerLightCycleMgr m_LightCycleMgr; // Same as g_pLightCycleMgr, g_pServerLightCycleMgr
 };
 
 

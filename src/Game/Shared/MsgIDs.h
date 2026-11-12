@@ -84,6 +84,29 @@
 	#define LCI_ADD_CYCLIST				1
 	#define LCI_REMOVE_CYCLIST			2
 	#define LCI_DEREZ_CYCLIST			3
+	// RETAIL: Tron's further sub-ids, from the server's CServerLightCycleMgr
+	// (Object.lto 0x1004f420..0x10053050); the names are ours.
+	#define LCI_TRONUNKNOWN_6			6	// Client to Server: a string for the player
+	#define LCI_TURBO					8
+	#define LCI_START_LIGHT_CYCLE		9	// Client to Server
+	#define LCI_END_LIGHT_CYCLE			10	// Client to Server
+	#define LCI_SET_POWERUP				11	// Server to Client
+	#define LCI_ACTIVATE_POWERUP		12
+	#define LCI_TRONUNKNOWN_13			13	// Server to Client
+	#define LCI_TRONUNKNOWN_14			14
+	#define LCI_START_UPDATING			15	// Client to Server; Server to the cycle object
+	#define LCI_UPDATING_STARTED		16	// Server to Client
+	#define LCI_DIALOG					22	// Server to Client: a rider's line
+	#define LCI_POSITION				24	// Client to Server
+	#define LCI_COLLISION				25	// Server to Client
+	#define LCI_TRONUNKNOWN_26			26	// Server to Client
+	#define LCI_GAME_SPEED				27	// Server to Client
+	#define LCI_TRAIL_LENGTH			28	// Server to Client
+	#define LCI_POWERUP_GRABBED			30	// Server to Client
+	#define LCI_POWERUP_TAKEN			31	// Server to Client
+	#define LCI_CYCLISTS				32	// Server to Client: all the cyclists
+	#define LCI_TRONUNKNOWN_33			33	// Server to Client
+	#define LCI_GRAB_FAILED				34	// Server to Client
 ///////////////////////////////////////////
 
 #define	MID_PERFORMANCE					137
