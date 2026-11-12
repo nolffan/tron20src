@@ -1784,27 +1784,31 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 			m_ModelPieceArray.push_back(pPiece);
 
 			// Note the extra functionality of this piece, if any, and assign it to a library
-			if (pSubModel->szFunction[0])
+			// PORT: Tron's INT_MENUPIECE has no "Function" (retail layout, see
+			// TronLayoutMgr.h); retail (0x1007ee80) matches the pieces' names
+			// ("sub_hub", "browser_top", ...) instead. Build 69's checks kept,
+			// on the name, until this function is written from retail.
+			if (pSubModel->szName[0])
 			{
-				if (!strcmpi(pSubModel->szFunction, "hub"))
+				if (!strcmpi(pSubModel->szName, "hub"))
 				{
 					m_SystemMemoryCtrl.AssociateHObject(hObj, "skt_hub");
 					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
 					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
 				}
-				else if (!strcmpi(pSubModel->szFunction, "browser_top"))
+				else if (!strcmpi(pSubModel->szName, "browser_top"))
 				{
 					m_CombatCtrl.AssociateHObject(hObj, LTNULL);
 				}
-				else if (!strcmpi(pSubModel->szFunction, "browser_left"))
+				else if (!strcmpi(pSubModel->szName, "browser_left"))
 				{
 					m_DefenseCtrl.AssociateHObject(hObj, LTNULL);
 				}
-				else if (!strcmpi(pSubModel->szFunction, "browser_right"))
+				else if (!strcmpi(pSubModel->szName, "browser_right"))
 				{
 					m_UtilityCtrl.AssociateHObject(hObj, LTNULL);
 				}
-				else if (!strcmpi(pSubModel->szFunction, "proc_dock"))
+				else if (!strcmpi(pSubModel->szName, "proc_dock"))
 				{
 					for (int i = 0; i < 5; i++)
 					{

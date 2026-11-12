@@ -147,7 +147,6 @@ public:
 
 	// RETAIL: Tron's slots of CPlayerStats' (stand-ins, to be written from
 	// the retail code)
-	int			TronUnknownVirtual94() { return 0; }
 	uint32		TronUnknownVirtual110() { return 0; }
 	const void*	TronUnknownVirtual134() { return LTNULL; }
 	const void*	TronUnknownVirtual138() { return LTNULL; }
@@ -157,10 +156,12 @@ public:
 	const void*	TronUnknownVirtual148() { return LTNULL; }
 	const void*	TronUnknownVirtual14C() { return LTNULL; }
 	const void*	TronUnknownVirtual150() { return LTNULL; }
-	void		TronUnknownVirtual154() {}
-	void		TronUnknownVirtual158() {}
-	bool		TronUnknownVirtual15C() { return false; }
-	void		TronUnknownVirtual160(bool bValue) {}
+	// RETAIL: 0x100ac5b0, 0x100ac5c0, 0x100ac5d0, 0x100ac5f0: set, clear,
+	// read (single player only) and assign one flag (+0x2404)
+	void		TronUnknownVirtual154() { m_bTronUnknown2404 = true; }
+	void		TronUnknownVirtual158() { m_bTronUnknown2404 = false; }
+	bool		TronUnknownVirtual15C() { if (IsMultiplayerGame()) return false; return m_bTronUnknown2404; }
+	void		TronUnknownVirtual160(bool bValue) { m_bTronUnknown2404 = bValue; }
 //	const StealthModifiers* GetStealthModifiers() 
 //		{return g_pSkillsButeMgr->GetStealth((eSkillLevel)m_nSkills[SKL_STEALTH]);}
 
@@ -290,6 +291,9 @@ protected:
 	CRatingMgr		m_RatingMgr;
 
 	MissionStats	m_MissionStats;
+
+	// RETAIL: +0x2404, see TronUnknownVirtual154..160
+	bool			m_bTronUnknown2404;
 };
 
 extern CTronPlayerStats* g_pTronPlayerStats;

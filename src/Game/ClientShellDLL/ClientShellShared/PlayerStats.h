@@ -77,9 +77,10 @@ public:
 	virtual void		OnObjectivesDataMessage(ILTMessage_Read *pMsg) = 0;
 
 	// RETAIL: no ClearMissionInfo in Tron's interface
+	// RETAIL: Tron's slot 0x90 clears the damage (retail CTronPlayerStats
+	// 0x100a9320) and 0x94 returns it (0x100a9330)
+	virtual void		ClearMissionDamage() = 0;
 	virtual int			GetMissionDamage() = 0;
-	// RETAIL: Tron's (retail CTronPlayerStats 0x100a9330: a member's value). Not yet named
-	virtual int		TronUnknownVirtual94() = 0;
 
 	virtual void		SetObjectivesSeen() {};
 	

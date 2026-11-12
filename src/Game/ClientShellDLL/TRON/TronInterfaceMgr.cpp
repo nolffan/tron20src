@@ -18,6 +18,8 @@
 #include "GameClientShell.h"
 #include "TronMissionButeMgr.h"
 #include "MissionMgr.h"
+// RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
+#include "ScreenSubroutines.h"
 
 // ----------------------------------------------------------------------- //
 //

@@ -20,6 +20,8 @@
 #include "ClientWeaponMgr.h"
 #include "MissionMgr.h"
 #include "KeyMgr.h"
+// RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
+#include "ScreenSubroutines.h"
 
 CTronPlayerStats* g_pTronPlayerStats = LTNULL;
 
@@ -1574,12 +1576,20 @@ void CTronPlayerStats::SetPermissions(uint8 nPermissionSet)
 {
 	m_nPermissions = nPermissionSet;
 	g_pHUDMgr->QueueUpdate(kHUDPermissions);
+
+	// RETAIL: 0x100abed0 plays the permission key sound; Tron's PlaySoundLocal
+	// takes one more argument (1.0f) than ours
+	g_pClientSoundMgr->PlaySoundLocal("permissionkey", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
 }
 
 void CTronPlayerStats::SetRequiredPermissions(uint8 nPermissionSet)
 {
 	m_nRequiredPermissions = nPermissionSet;
 	g_pHUDMgr->QueueUpdate(kHUDPermissions);
+
+	// RETAIL: 0x100abf10 plays the permission key sound; Tron's PlaySoundLocal
+	// takes one more argument (1.0f) than ours
+	g_pClientSoundMgr->PlaySoundLocal("permissionkey", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
 }
 
 void CTronPlayerStats::ClearPermissions()
