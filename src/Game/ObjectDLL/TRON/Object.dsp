@@ -162,6 +162,10 @@ SOURCE=.\BinaryBit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIGoalFconMonster.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIGoalGlitch.cpp
 # End Source File
 # Begin Source File
@@ -305,6 +309,10 @@ SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # Begin Source File
 
 SOURCE=.\AutoCommand.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIGoalFconMonster.h
 # End Source File
 # Begin Source File
 
