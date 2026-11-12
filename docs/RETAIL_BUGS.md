@@ -102,6 +102,34 @@ struct) and drops it without sending it. Harmless, wasted work.
 
 Not fixed yet.
 
+### A turret without a PropType reads an uninitialised prop type
+
+Object.lto 0x1006a330 (TronTurret::ReadProp, TRON/TronTurret.cpp). The
+PROPTYPE pointer is only set when the PropType property is found and not
+empty, but it is tested (and used to set up the model) at the end either
+way: a TronTurret without a PropType uses whatever was on the stack. It
+should start as NULL.
+
+Not fixed yet.
+
+### A turret without a ViewFOV takes its default cosine for an angle
+
+Object.lto 0x1006a330 (TronTurret::ReadProp). The view FOV member starts as
+1.57 (a half angle in radians) and, with no ViewFOV property, is turned
+into cos(1.57 * PI/360) as if it were degrees: an almost zero-wide view
+cone. The editor always writes the property (default 180), so it may never
+show.
+
+Not fixed yet.
+
+### A parented turret reads its parent's transform and drops it
+
+Object.lto 0x1006bf20 (TronTurret's first update). With a parent, the
+parent's position and rotation are read into locals and never used. The
+per-frame update reads the parent again, so it is only wasted work.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
