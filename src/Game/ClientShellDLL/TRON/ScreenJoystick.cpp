@@ -44,16 +44,17 @@ CScreenJoystick::~CScreenJoystick()
 }
 
 // Build the screen
+// RETAIL: 0x10065030. Tron's string IDs (its string table) and screen ID
+// (SCREEN_ID_JOYSTICK is 0x17 in Tron's ScreenEnum) are retail's numbers.
 LTBOOL CScreenJoystick::Build()
 {
-	CreateTitle(IDS_TITLE_JOYSTICK);
-	
-	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOYSTICK,"ColumnWidth");
-	uint8 nLarge = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOYSTICK,"HeaderFontSize");
+	CreateTitle(15);
 
-	
-	CLTGUICycleCtrl *pCtrl = AddCycle(IDS_JOYSTICK_AXIS, NULL, kGap, NULL, kDefaultPos, LTTRUE );
-	pCtrl->AddString(LoadTempString(IDS_JOYSTICK_ACTION));
+	kGap = g_pLayoutMgr->GetScreenCustomInt((eScreenID)0x17,"ColumnWidth");
+	uint8 nLarge = g_pLayoutMgr->GetScreenCustomInt((eScreenID)0x17,"HeaderFontSize");
+
+	CLTGUICycleCtrl *pCtrl = AddCycle(0x16c, NULL, kGap, NULL, kDefaultPos, LTTRUE );
+	pCtrl->AddString(LoadTempWString(0x16d));
 	pCtrl->SetFont(NULL,nLarge);
 	m_nextPos.y += 8;
 
@@ -62,28 +63,29 @@ LTBOOL CScreenJoystick::Build()
 		CDeviceAxisData *pAxisData = g_pProfileMgr->GetAxisData(axis);
 		if (!pAxisData || !strlen(pAxisData->m_sName)) continue;
 
-		CLTGUICycleCtrl *pCtrl = AddCycle(pAxisData->m_sName, IDS_HELP_AXIS, kGap, &m_nAxis[axis] );
+		std::wstring sName;
+		LTGUIWiden(sName, pAxisData->m_sName);
+
+		CLTGUICycleCtrl *pCtrl = AddCycle(sName, 0x173, kGap, &m_nAxis[axis] );
 		pCtrl->SetParam1(axis);
-		pCtrl->AddString(LoadTempString(IDS_JOYSTICK_AXISNONE));
+		pCtrl->AddString(LoadTempWString(0x172));
 
 		switch (pAxisData->m_nType)
 		{
 			case CONTROLTYPE_XAXIS:
 			case CONTROLTYPE_RXAXIS:
 			case CONTROLTYPE_ZAXIS:
-				pCtrl->AddString(LoadTempString(IDS_JOYSTICK_TURN));
-				pCtrl->AddString(LoadTempString(IDS_JOYSTICK_STRAFE));
+				pCtrl->AddString(LoadTempWString(0x167));
+				pCtrl->AddString(LoadTempWString(0x16a));
 				break;
 			case CONTROLTYPE_YAXIS:
 			case CONTROLTYPE_RYAXIS:
 			case CONTROLTYPE_RZAXIS:
-				pCtrl->AddString(LoadTempString(IDS_JOYSTICK_LOOK));
-				pCtrl->AddString(LoadTempString(IDS_JOYSTICK_MOVE));
-				pCtrl->AddString(LoadTempString(IDS_JOYSTICK_INVERT));
+				pCtrl->AddString(LoadTempWString(0x168));
+				pCtrl->AddString(LoadTempWString(0x169));
+				pCtrl->AddString(LoadTempWString(0x170));
 				break;
 		}
-
-//		pCtrl->NotifyOnChange(CMD_UPDATE,this);
 	}
 
 	for (int POV = 0; POV < g_pProfileMgr->GetNumPOV(); POV++)
@@ -91,12 +93,18 @@ LTBOOL CScreenJoystick::Build()
 		CDevicePOVData *pPOVData = g_pProfileMgr->GetPOVData(POV);
 		if (!pPOVData || !strlen(pPOVData->m_sName)) continue;
 
-		CLTGUICycleCtrl *pCtrl = AddCycle(pPOVData->m_sName, IDS_HELP_POV, kGap, &m_nPOV[POV] );
-		pCtrl->SetParam1(POV);
-		pCtrl->AddString(LoadTempString(IDS_JOYSTICK_AXISNONE));
+		std::wstring sName;
+		sName.erase(sName.begin(), sName.end());
+		uint32 nLen = strlen(pPOVData->m_sName);
+		for (uint32 i = 0; i < nLen; i++)
+			sName.push_back((wchar_t)(uint8)pPOVData->m_sName[i]);
 
-		pCtrl->AddString(LoadTempString(IDS_POV_LOOK));
-		pCtrl->AddString(LoadTempString(IDS_POV_MOVE));
+		CLTGUICycleCtrl *pCtrl = AddCycle(sName, 0x214, kGap, &m_nPOV[POV] );
+		pCtrl->SetParam1(POV);
+		pCtrl->AddString(LoadTempWString(0x172));
+
+		pCtrl->AddString(LoadTempWString(0x171));
+		pCtrl->AddString(LoadTempWString(0x16f));
 	}
 
 

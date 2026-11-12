@@ -373,6 +373,10 @@ SOURCE=.\ScreenKeyboard.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenLightCycleVictory.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenLoad.cpp
 # End Source File
 # Begin Source File
@@ -615,6 +619,10 @@ SOURCE=.\ScreenJoystick.h
 # Begin Source File
 
 SOURCE=.\ScreenKeyboard.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenLightCycleVictory.h
 # End Source File
 # Begin Source File
 

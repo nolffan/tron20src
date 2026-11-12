@@ -33,6 +33,9 @@
 
 namespace
 {
+	// RETAIL: 0x1021a0f0; the name is ours
+	bool s_bSkipDisconnect = true;
+
 	void QuitCallBack(LTBOOL bReturn, void *pData)
 	{
 		CScreenMain *pThisScreen = (CScreenMain *)pData;
@@ -189,56 +192,38 @@ LTBOOL CScreenMain::Build()
 	return LTTRUE;
 }
 
+// RETAIL: 0x1006f300. Tron's disconnects through the multiplayer manager
+// and lets Render finish it (s_bSkipDisconnect).
 void CScreenMain::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| // Make sure we're disconnected from server.
-		//| if(g_pLTClient->IsConnected())
-		((CTronScreenMgr*)m_pScreenMgr)->PlayMenuMusic();
-
-		SetSelection(-1);
-
-		// Make sure we're always disconnected when we get to this screen.  You must abort to get here.
+		// Make sure we're disconnected from server.
 		if(g_pLTClient->IsConnected())
 		{
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| g_pInterfaceMgr->SetIntentionalDisconnect( true );
-			//| g_pClientMultiplayerMgr->ForceDisconnect();
-			g_pInterfaceMgr->StartingNewGame( );
-			g_pLTClient->Disconnect();
+			g_pInterfaceMgr->SetIntentionalDisconnect( true );
+			g_pClientMultiplayerMgr->ForceDisconnect();
 		}
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| //since can get here from various points in the game, let's make sure that we're not fading in or out...
-//| g_pInterfaceMgr->AbortScreenFade();
-//| SetSelection(-1);
-//| // Always assume sp save/load when in the main screen.  This is so the
-//| // "continue game" and "quick load" assumes sp.
-//| g_pGameClientShell->SetGameType( eGameTypeSingle );
-//| m_pGameType->Show(LTFALSE);
-//| m_pGameType->SetSelection(kNoSelection);
-//| m_pGameTypeFrame->Show(LTFALSE);
-//| // Initialize to the sp mission bute.
-//| if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
-//| {
-//| g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", MISSION_DEFAULT_FILE );
-//| return;
-//| }
+		s_bSkipDisconnect = true;
+
+		SetSelection(kNoSelection);
+
+		// Initialize to the sp mission bute.
+		if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
+		{
+			g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", MISSION_DEFAULT_FILE );
+			return;
+		}
+
+		// Always assume sp save/load when in the main screen.  This is so the
+		// "continue game" and "quick load" assumes sp.
+		g_pGameClientShell->SetGameType( eGameTypeSingle );
+		g_pClientSaveLoadMgr->SetUseMultiplayerFolders( false );
+		g_pClientMultiplayerMgr->SetupServerSinglePlayer( );
 
 		// Setup continue game selection.
-			m_pResume->SetHelpID(IDS_HELP_CONTINUE_GAME);
-			m_pResume->CLTGUICtrl::Create(CMD_CONTINUE_GAME,0,0);
-		m_pResume->Enable( g_pClientSaveLoadMgr->CanContinueGame() );
-		m_pResume->SetString( LoadTempString( IDS_CONTINUE_GAME ));
-
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| g_pClientSaveLoadMgr->SetUseMultiplayerFolders( false );
-		//| g_pClientMultiplayerMgr->SetupServerSinglePlayer( );
-		//| m_pResume->Enable( g_pClientSaveLoadMgr->CanContinueGame() );
-		// Always assume sp save/load when in the main screen.  This is so the 
-		// "continue game" assumes sp.
-		g_pClientSaveLoadMgr->SetUseMultiplayerFolders( false );
+		if (m_pResume)
+			m_pResume->Enable( g_pClientSaveLoadMgr->CanContinueGame() );
 
 		// We don't go thru the main screen when joining from command line, so disable it if
 		// we get here.
@@ -459,10 +444,15 @@ uint32 CScreenMain::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 };
 
 // Screen specific rendering
+// RETAIL: 0x1006f580: the disconnect OnFocus asked for, a frame later
 LTBOOL   CScreenMain::Render(HSURFACE hDestSurf)
 {
-	return CBaseScreen::Render(hDestSurf);
+	if (s_bSkipDisconnect)
+		s_bSkipDisconnect = false;
+	else if (g_pLTClient->IsConnected())
+		g_pLTClient->Disconnect();
 
+	return (CBaseScreen::Render(hDestSurf) != LTFALSE);
 }
 
 #ifdef _TRON_E3_DEMO

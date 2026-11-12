@@ -126,6 +126,7 @@ CBaseScreen::CBaseScreen()
 
 	m_SelectedColor		= argbWhite;
 	m_NonSelectedColor	= argbBlack;
+	m_dwInterfaceSoundMask = 0xFFFFFFFF;	// RETAIL: Tron's (+0x78c)
 	m_DisabledColor		= argbGray;
 
     m_pNext = LTNULL;
@@ -1187,13 +1188,14 @@ CLTGUIListCtrl* CBaseScreen::CreateList(LTIntPt pos, uint16 nHeight, LTBOOL bUse
 
 CLTGUICycleCtrl* CBaseScreen::CreateCycle(int stringID, int helpID, int nHeaderWidth, uint8 *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
-	CLTGUICycleCtrl* pCtrl=CreateCycle(LoadTempString(stringID), helpID, nHeaderWidth, pnValue, pos, bFixed, nFont);
+	CLTGUICycleCtrl* pCtrl=CreateCycle(LoadTempWString(stringID), helpID, nHeaderWidth, pnValue, pos, bFixed, nFont);
 
 	return pCtrl;
 
 }
 
-CLTGUICycleCtrl* CBaseScreen::CreateCycle(char *pString, int helpID, int nHeaderWidth, uint8 *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
+// TRON: the header as wide text (RETAIL: 0x100d3d20)
+CLTGUICycleCtrl* CBaseScreen::CreateCycle(std::wstring sString, int helpID, int nHeaderWidth, uint8 *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUICycleCtrl* pCtrl=debug_new(CLTGUICycleCtrl);
 
@@ -1206,7 +1208,7 @@ CLTGUICycleCtrl* CBaseScreen::CreateCycle(char *pString, int helpID, int nHeader
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
 
 
-    if (!pCtrl->Create(pString, helpID, pFont, nFontSize, nHeaderWidth, pnValue))
+    if (!pCtrl->Create(sString, helpID, pFont, nFontSize, nHeaderWidth, pnValue))
 	{
 		debug_delete(pCtrl);
         return LTNULL;
@@ -2271,3 +2273,10 @@ void HandleEditKey(int key)
 
 }
 
+
+// RETAIL: Tron's (0x100d6750); the name is ours
+void CBaseScreen::PlayInterfaceSound(int nSound)
+{
+	if (m_dwInterfaceSoundMask & (1 << nSound))
+		g_pInterfaceMgr->RequestInterfaceSound((InterfaceSound)nSound);
+}

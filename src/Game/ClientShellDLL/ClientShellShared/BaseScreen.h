@@ -142,6 +142,8 @@ public:
 
     CLTGUICycleCtrl*     AddCycle(int stringID, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
     CLTGUICycleCtrl*     AddCycle(char *pString, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: a wide header (RETAIL: 0x100655c0, the copy kept from ScreenJoystick)
+    CLTGUICycleCtrl*     AddCycle(std::wstring sString, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
 
     CLTGUIToggle*     AddToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
     CLTGUIToggle*     AddToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
@@ -167,7 +169,13 @@ public:
 	CLTGUIListCtrl*		CreateList(LTIntPt pos, uint16 nHeight, LTBOOL bUseArrows = LTFALSE, uint16 nArrowOffset = 0);
 
     CLTGUICycleCtrl*     CreateCycle(int stringID, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
-    CLTGUICycleCtrl*     CreateCycle(char *pString, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: the header is a wide string, by value (RETAIL: 0x100d3d20)
+    CLTGUICycleCtrl*     CreateCycle(std::wstring sString, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// PORT: ours, for the code that still makes its text narrow
+    CLTGUICycleCtrl*     CreateCycle(char *pString, int helpID, int nHeaderWidth, uint8 *pnValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1)
+	{
+		return CreateCycle(LTGUIWideString(pString), helpID, nHeaderWidth, pnValue, pos, bFixed, nFont);
+	}
 
     CLTGUIToggle*     CreateToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
     CLTGUIToggle*     CreateToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
@@ -217,6 +225,10 @@ protected:
 	void			CreateAttachFX(INT_ATTACH *pAttach);
 	void			ClearAttachFX();	// RETAIL: not virtual in Tron (its vtable)
 
+	// RETAIL: Tron's (0x100d6750): requests interface sound nSound if this
+	// screen's mask has it; the name is ours
+	void			PlayInterfaceSound(int nSound);
+
 	void			SetPolyRenderState();
 	void			InitPoly(LTPoly_GT4* pPoly, LTIntPt pos, HTEXTURE hTex);
 	void			ScalePoly(LTPoly_GT4* pPoly, LTIntPt pos, HTEXTURE hTex);
@@ -249,6 +261,10 @@ protected:
 
 	// Array of free controls that this screen owns
 	ControlArray		m_controlArray;
+
+	// RETAIL: Tron has a third vector here (+0x50, its ctor; CBaseScreen's
+	// colors are at +0x78 in retail); its use not yet identified
+	ControlArray		m_xTronUnknown50;
 
 	int				m_nItemSpacing;
 
@@ -294,6 +310,10 @@ protected:
 	uint16			m_nRMouseDownItemSel;
 
 	ChainFXList		m_Chains;
+
+	// RETAIL: Tron's, +0x78c (its ctor sets all bits): which interface sounds
+	// this screen plays (PlayInterfaceSound, 0x100d6750); the name is ours
+	uint32			m_dwInterfaceSoundMask;
 
     static LTVector		s_vPos; 
 	static LTVector		s_vU; 
@@ -344,6 +364,14 @@ inline  CLTGUICycleCtrl* CBaseScreen::AddCycle(char *pString, int helpID, int nH
 	return pCtrl;
 }
 
+
+inline  CLTGUICycleCtrl* CBaseScreen::AddCycle(std::wstring sString, int helpID, int nHeaderWidth, uint8 *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
+{
+	CLTGUICycleCtrl* pCtrl = CreateCycle(sString, helpID, nHeaderWidth, pnValue, pos, bFixed, nFont);
+	if (pCtrl)
+		AddControl(pCtrl);
+	return pCtrl;
+}
 
 inline  CLTGUIToggle* CBaseScreen::AddToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {

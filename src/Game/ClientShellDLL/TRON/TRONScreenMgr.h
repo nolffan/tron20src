@@ -36,7 +36,7 @@ public:
 protected:
 
 	void			AddScreen(eScreenID screenID);
-	virtual void	SwitchToScreen(CBaseScreen *pNewScreen);
+	virtual void	SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory = true);
 
 	// [kml] 3/11/02
 	// This is a temporary solution until we

@@ -47,6 +47,9 @@
 //under options/controls
 #include "ScreenMouse.h"
 #include "ScreenKeyboard.h"
+#include "ScreenJoystick.h"
+#include "ScreenPlayer.h"
+#include "ScreenLightCycleVictory.h"
 #include "ScreenConfigure.h"
 
 //Player management screens
@@ -113,10 +116,10 @@ LTBOOL CTronScreenMgr::Init()
 }
 
 
-void CTronScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen)
+void CTronScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory)
 {
 
-	CScreenMgr::SwitchToScreen(pNewScreen);
+	CScreenMgr::SwitchToScreen(pNewScreen, bAddToHistory);
 
 	// Do any special case work for each screen
 	if (m_eCurrentScreenID == SCREEN_ID_MAIN)
@@ -196,6 +199,16 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_KEYBOARD:
 		pScreen = debug_new(CScreenKeyboard);
+		break;
+	// RETAIL: Tron has these screens (their vtables); ours to create them
+	case SCREEN_ID_JOYSTICK:
+		pScreen = debug_new(CScreenJoystick);
+		break;
+	case SCREEN_ID_PLAYER:
+		pScreen = debug_new(CScreenPlayer);
+		break;
+	case SCREEN_ID_LIGHTCYCLE_VICTORY:
+		pScreen = debug_new(CScreenLightCycleVictory);
 		break;
 	case SCREEN_ID_CONFIGURE:
 		pScreen = debug_new(CScreenConfigure);
