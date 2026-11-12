@@ -131,14 +131,14 @@ struct LIGHT_CYCLIST
 		fPowerupDuration = 1.0f;
 		pSpikeTrail = NULL;
 		pSpikeTrail2 = NULL;
-		m_nTronUnknown108 = 0;
-		m_nTronUnknown10C = 0;
-		m_nTronUnknown110 = 0;
-		m_nTronUnknown114 = 0;
-		m_nTronUnknown118 = 0;
-		m_nTronUnknown11C = 0;
-		m_vTronUnknown120.Init(0.0f, 0.0f, 0.0f);
-		m_nTronUnknown12C = 0;
+		vSpikeDir.x = 0.0f;
+		vSpikeDir.y = 0.0f;
+		vSpikeDir.z = 0.0f;
+		vSpikeDir2.x = 0.0f;
+		vSpikeDir2.y = 0.0f;
+		vSpikeDir2.z = 0.0f;
+		vSpikePos.Init(0.0f, 0.0f, 0.0f);
+		fSpikeFullTime = 0.0f;
 		m_bTronUnknownD1 = false;
 		m_bTronUnknown130 = false;
 	}
@@ -219,14 +219,10 @@ struct LIGHT_CYCLIST
 	float	fPowerupDuration;				// RETAIL: +0xfc
 	LIGHT_CYCLE_TRAIL* pSpikeTrail;			// RETAIL: +0x100
 	LIGHT_CYCLE_TRAIL* pSpikeTrail2;		// RETAIL: +0x104
-	uint32	m_nTronUnknown108;				// RETAIL: +0x108
-	uint32	m_nTronUnknown10C;				// RETAIL: +0x10c
-	uint32	m_nTronUnknown110;				// RETAIL: +0x110
-	uint32	m_nTronUnknown114;				// RETAIL: +0x114
-	uint32	m_nTronUnknown118;				// RETAIL: +0x118
-	uint32	m_nTronUnknown11C;				// RETAIL: +0x11c
-	LTVector m_vTronUnknown120;				// RETAIL: +0x120
-	uint32	m_nTronUnknown12C;				// RETAIL: +0x12c
+	LTVector vSpikeDir;						// RETAIL: +0x108 (BeginTrailSpike)
+	LTVector vSpikeDir2;					// RETAIL: +0x114
+	LTVector vSpikePos;						// RETAIL: +0x120
+	float	fSpikeFullTime;					// RETAIL: +0x12c (0: still growing)
 	bool	m_bTronUnknown130;				// RETAIL: +0x130
 };
 
@@ -266,8 +262,10 @@ class CLightCycleMgr
 		// Drops the first points of the current trail up to nPoint (or the
 		// first if two are left, snapping the next). RETAIL: 0x10100df0
 		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown);
-		virtual bool TronUnknownVirtual10(LIGHT_CYCLIST* pCyclist, uint32);	// RETAIL: 0x10101280
-		virtual bool TronUnknownVirtual11(LIGHT_CYCLIST* pCyclist);			// RETAIL: 0x10101520
+		// Starts the trail spike's two trails at vPos. RETAIL: 0x10101280
+		virtual bool BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);
+		// Grows the trail spike, then removes it. RETAIL: 0x10101520
+		virtual void UpdateTrailSpike(LIGHT_CYCLIST* pCyclist);
 		virtual bool TronUnknownVirtual12(LIGHT_CYCLIST* pCyclist, uint32);	// RETAIL: 0x100fffd0
 
 		// Sets the cycle's dims, turned to its forward. RETAIL: 0x10100520
@@ -275,7 +273,7 @@ class CLightCycleMgr
 		// Frees all the cyclists. RETAIL: 0x10100580
 		virtual void RemoveAllCyclists();
 		virtual bool SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x10100770
-		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown);	// RETAIL: 0x101007a0
+		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);	// RETAIL: 0x101007a0
 		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown);	// RETAIL: 0x10100950
 		virtual void Update();					// RETAIL: 0x10101910
 

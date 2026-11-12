@@ -1186,7 +1186,7 @@ bool CLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
 //	PURPOSE:	Uses a cyclist's power-up. RETAIL: 0x101007a0
 //
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown)
+bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 {
 	if(!pCyclist)
 		return false;
@@ -1214,7 +1214,7 @@ bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknow
 		{
 			pCyclist->ClearTrailSpike();
 			pCyclist->bTrailSpike = true;
-			TronUnknownVirtual10(pCyclist, nTronUnknown);
+			BeginTrailSpike(pCyclist, pvPos);
 		}
 		break;
 
@@ -1629,6 +1629,201 @@ LIGHT_CYCLIST* CLightCycleMgr::GetLivingCyclist(HOBJECT hObj)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::BeginTrailSpike
+//
+//	PURPOSE:	Starts the trail spike's two trails at vPos, across the
+//				cycle's travel. RETAIL: 0x10101280
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
+{
+	pCyclist->vSpikePos = *pvPos;
+
+	if(pCyclist->vForward.x > 0.5f)
+	{
+		pCyclist->vSpikeDir.z = 1.0f;
+		pCyclist->vSpikeDir.x = 0.0f;
+		pCyclist->vSpikeDir2.x = 0.0f;
+		pCyclist->vSpikeDir2.z = -1.0f;
+	}
+	else if(pCyclist->vForward.x < -0.5f)
+	{
+		pCyclist->vSpikeDir.z = -1.0f;
+		pCyclist->vSpikeDir.x = 0.0f;
+		pCyclist->vSpikeDir2.x = 0.0f;
+		pCyclist->vSpikeDir2.z = 1.0f;
+	}
+	else if(pCyclist->vForward.z > 0.5f)
+	{
+		pCyclist->vSpikeDir.x = -1.0f;
+		pCyclist->vSpikeDir.z = 0.0f;
+		pCyclist->vSpikeDir2.x = 1.0f;
+		pCyclist->vSpikeDir2.z = 0.0f;
+	}
+	else
+	{
+		pCyclist->vSpikeDir.x = 1.0f;
+		pCyclist->vSpikeDir.z = 0.0f;
+		pCyclist->vSpikeDir2.x = -1.0f;
+		pCyclist->vSpikeDir2.z = 0.0f;
+	}
+
+	LIGHT_CYCLE_TRAIL* pTrail = debug_new(LIGHT_CYCLE_TRAIL);
+	pTrail->m_bTronUnknownC = true;
+	pCyclist->collTrails.push_back(pTrail);
+	pCyclist->pSpikeTrail = pTrail;
+
+	pTrail = debug_new(LIGHT_CYCLE_TRAIL);
+	pTrail->m_bTronUnknownC = true;
+	pCyclist->collTrails.push_back(pTrail);
+	pCyclist->pSpikeTrail2 = pTrail;
+
+	LTVector vStart = (pCyclist->vSpikeDir * 48.0f) + pCyclist->vSpikePos;
+	LTVector vStart2 = (pCyclist->vSpikeDir2 * 48.0f) + pCyclist->vSpikePos;
+
+	// Each trail starts as two points, its end is moved by UpdateTrailSpike
+	AddLightCycleTrailPoint(pCyclist, pCyclist->pSpikeTrail, vStart);
+	AddLightCycleTrailPoint(pCyclist, pCyclist->pSpikeTrail2, vStart2);
+	AddLightCycleTrailPoint(pCyclist, pCyclist->pSpikeTrail, vStart);
+	AddLightCycleTrailPoint(pCyclist, pCyclist->pSpikeTrail2, vStart2);
+
+	pCyclist->fSpikeFullTime = 0.0f;
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::UpdateTrailSpike
+//
+//	PURPOSE:	Grows the trail spike's ends to the bute distance; after the
+//				bute delay its starts follow, then it is removed.
+//				RETAIL: 0x10101520
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
+{
+	bool bRemove = false;
+
+	if(pCyclist->pSpikeTrail || pCyclist->pSpikeTrail2)
+	{
+		LTVector* pPoint = NULL;
+		LTVector* pPoint2 = NULL;
+
+		if(pCyclist->fSpikeFullTime > 0.0f)
+		{
+			// Grown: after the delay its starts close in
+			float fDelay = m_ButeMgr.GetTrailSpikeDelay();
+			if((fDelay + pCyclist->fSpikeFullTime) > LCM_LT->TronUnknownVirtual44())
+				return;
+
+			if(pCyclist->pSpikeTrail)
+				pPoint = &pCyclist->pSpikeTrail->collTrailPoints.begin()->vPoint;
+
+			if(pCyclist->pSpikeTrail2)
+				pPoint2 = &pCyclist->pSpikeTrail2->collTrailPoints.begin()->vPoint;
+		}
+		else
+		{
+			if(pCyclist->pSpikeTrail)
+				pPoint = &(pCyclist->pSpikeTrail->collTrailPoints.begin() + 1)->vPoint;
+
+			if(pCyclist->pSpikeTrail2)
+				pPoint2 = &(pCyclist->pSpikeTrail2->collTrailPoints.begin() + 1)->vPoint;
+		}
+
+		float fMove = LCM_LT->TronUnknownVirtual45() * m_ButeMgr.GetTrailSpikeSpeed();
+
+		LTVector* pDir = NULL;
+		LTVector* pNew = NULL;
+		LTVector vNew, vNew2;
+
+		if(pPoint)
+		{
+			vNew = *pPoint + (pCyclist->vSpikeDir * fMove);
+			pDir = &pCyclist->vSpikeDir;
+			pNew = &vNew;
+		}
+
+		if(pPoint2)
+		{
+			vNew2 = *pPoint2 + (pCyclist->vSpikeDir2 * fMove);
+			pDir = &pCyclist->vSpikeDir2;
+			pNew = &vNew2;
+		}
+
+		if(pDir && pNew)
+		{
+			float fDist = m_ButeMgr.GetTrailSpikeDist();
+			bool bFull = false;
+
+			if(pDir->x > 0.5f)
+			{
+				bFull = ((pNew->x - pCyclist->vSpikePos.x) > fDist);
+			}
+			else if(pDir->x < -0.5f)
+			{
+				bFull = ((pCyclist->vSpikePos.x - pNew->x) > fDist);
+			}
+			else if(pDir->z > 0.5f)
+			{
+				bFull = ((pNew->z - pCyclist->vSpikePos.z) > fDist);
+			}
+			else
+			{
+				bFull = ((pCyclist->vSpikePos.z - pNew->z) > fDist);
+			}
+
+			if(bFull)
+			{
+				if(pCyclist->fSpikeFullTime > 0.0f)
+				{
+					// The starts reached the ends: done
+					bRemove = true;
+				}
+				else
+				{
+					// Clamp the ends to the distance
+					if((pDir->x > 0.5f) || (pDir->x < -0.5f))
+					{
+						if(pPoint)
+							vNew.x = (fDist * pCyclist->vSpikeDir.x) + pCyclist->vSpikePos.x;
+						if(pPoint2)
+							vNew2.x = (fDist * pCyclist->vSpikeDir2.x) + pCyclist->vSpikePos.x;
+					}
+					else
+					{
+						if(pPoint)
+							vNew.z = (fDist * pCyclist->vSpikeDir.z) + pCyclist->vSpikePos.z;
+						if(pPoint2)
+							vNew2.z = (fDist * pCyclist->vSpikeDir2.z) + pCyclist->vSpikePos.z;
+					}
+
+					pCyclist->fSpikeFullTime = LCM_LT->TronUnknownVirtual44();
+				}
+			}
+
+			if(pPoint && (pCyclist->pSpikeTrail->fDerezStartTime == 0.0f))
+			{
+				pPoint->x = vNew.x;
+				pPoint->z = vNew.z;
+			}
+
+			if(pPoint2 && (pCyclist->pSpikeTrail2->fDerezStartTime == 0.0f))
+			{
+				pPoint2->x = vNew2.x;
+				pPoint2->z = vNew2.z;
+			}
+
+			if(!bRemove)
+				return;
+		}
+	}
+
+	pCyclist->ClearTrailSpike();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::Update
 //
 //	PURPOSE:	Starts the derez of the living cyclists' old trails.
@@ -1772,17 +1967,6 @@ void CLightCycleMgr::UpdateCyclistForward(LIGHT_CYCLIST* pCyclist)
 
 
 
-// RETAIL: 0x10101280 (666 bytes)
-bool CLightCycleMgr::TronUnknownVirtual10(LIGHT_CYCLIST* pCyclist, uint32)
-{
-	return false;
-}
-
-// RETAIL: 0x10101520 (1008 bytes)
-bool CLightCycleMgr::TronUnknownVirtual11(LIGHT_CYCLIST* pCyclist)
-{
-	return false;
-}
 
 // RETAIL: 0x100fffd0 (1275 bytes)
 bool CLightCycleMgr::TronUnknownVirtual12(LIGHT_CYCLIST* pCyclist, uint32)

@@ -554,7 +554,9 @@ Used for: Misc.
     virtual LTFLOAT TronUnknownVirtual44() = 0;
 
     // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual45() = 0;
+    // RETAIL: returns a float: the frame time of TronUnknownVirtual44's
+    // clock (CShell 0x101015d4, the trail spike's speed * it)
+    virtual LTFLOAT TronUnknownVirtual45() = 0;
 
 
 
