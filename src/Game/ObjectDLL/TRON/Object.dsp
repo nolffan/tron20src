@@ -234,6 +234,10 @@ SOURCE=.\PingButeMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileBallLauncher.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileClusterAutoBurstDisc.cpp
 # End Source File
 # Begin Source File
@@ -242,7 +246,19 @@ SOURCE=.\ProjectileClusterDisc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileCorrupticDims.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileDrunkenDims.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileEnergyClaw.cpp
 # End Source File
 # Begin Source File
 
@@ -285,6 +301,10 @@ SOURCE=..\..\Shared\TRON\TronMissionButeMgr.cpp
 # Begin Source File
 
 SOURCE=.\TronPlayerObj.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronProjectile.cpp
 # End Source File
 # Begin Source File
 
@@ -380,6 +400,10 @@ SOURCE=.\PingButeMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileBallLauncher.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileClusterAutoBurstDisc.h
 # End Source File
 # Begin Source File
@@ -388,7 +412,19 @@ SOURCE=.\ProjectileClusterDisc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileCorrupticDims.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileDisc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileDrunkenDims.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileEnergyClaw.h
 # End Source File
 # Begin Source File
 
@@ -430,6 +466,10 @@ SOURCE=..\..\Shared\TRON\TronMissionButeMgr.h
 # Begin Source File
 
 SOURCE=.\TronPlayerObj.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronProjectile.h
 # End Source File
 # Begin Source File
 

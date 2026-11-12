@@ -261,6 +261,14 @@ checked and played is not the one that had the highest priority (unless the
 queue held one line).
 
 Not fixed yet: the modern build should copy the top entry before pop().
+### The energy claw's line-of-sight test always passes
+
+Object.lto 0x1003eb90 (CProjectileEnergyClaw::CanSee, ObjectDLL/TRON/
+ProjectileEnergyClaw.cpp). It gets the position of the first object for both
+ends of the segment it tests, so the segment is empty, nothing is hit, and
+the claw "sees" any AI in range: it seeks and chases through walls.
+
+Not fixed yet: the modern build should take the second end from hTo.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

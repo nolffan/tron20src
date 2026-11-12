@@ -289,6 +289,63 @@ struct CLUSTERAUTOBURSTDISCCLASSDATA : public CLUSTERDISCCLASSDATA
 	float			fMaxBurstDistance;
 };
 
+// RETAIL: Tron's class data of its retail-only projectiles (RTTI
+// CORRUPTICDIMSCLASSDATA, BALLCLASSDATA, PRANKSTERCLASSDATA; their Init
+// 0x10145df0, 0x10145ed0, 0x10145ff0 and attribute names are retail's, the
+// member names ours).  Retail's offsets are 0x10 more: Tron's
+// FXBMGR_MAX_NAME_LENGTH is 48 (PROJECTILECLASSDATA::Init 0x101452f0).
+
+struct CORRUPTICDIMSCLASSDATA : public PROJECTILECLASSDATA
+{
+	CORRUPTICDIMSCLASSDATA();
+	virtual ~CORRUPTICDIMSCLASSDATA() {}
+
+	LTBOOL			Init( CButeMgr &buteMgr, char *aTagName );
+
+	LTFLOAT			fRandomness;
+	LTFLOAT			fRandomnessRampUpTime;
+	LTFLOAT			fHorizontalFactor;
+	LTFLOAT			fVerticalFactor;
+	bool			bHoming;
+	LTFLOAT			fTurnRate;		// radians/second
+};
+
+struct BALLCLASSDATA : public PROJECTILECLASSDATA
+{
+	BALLCLASSDATA();
+	virtual ~BALLCLASSDATA() {}
+
+	LTBOOL			Init( CButeMgr &buteMgr, char *aTagName );
+
+	LTFLOAT			fMinThrowTime;
+	LTFLOAT			fMaxThrowTime;
+	LTFLOAT			fMinThrowVelocity;
+	LTFLOAT			fMaxThrowVelocity;
+	LTFLOAT			fProximityThreshold;
+	LTFLOAT			fProximitySecondsToArm;
+	LTFLOAT			fProximityDistance;
+	char			szProximityBombEffectName[ FXBMGR_MAX_NAME_LENGTH ];
+	LTFLOAT			fRandomAngleAdjust;
+};
+
+struct PRANKSTERCLASSDATA : public PROJECTILECLASSDATA
+{
+	PRANKSTERCLASSDATA();
+	virtual ~PRANKSTERCLASSDATA() {}
+
+	LTBOOL			Init( CButeMgr &buteMgr, char *aTagName );
+
+	char			szEliminateTargetsFX[ FXBMGR_MAX_NAME_LENGTH ];
+	LTFLOAT			fTimeToAcquireTargets;
+	LTFLOAT			fTimeVictimStasis;
+	LTFLOAT			fTimeVictimStasisRange;
+	LTFLOAT			fMaxDistance;
+	int				nMaxTargets;
+	LTFLOAT			fBaseVelocity;
+	LTFLOAT			fVelocityRange;
+	LTFLOAT			fDeathRadius;
+};
+
 struct PROJECTILEFX
 {
 	PROJECTILEFX();
@@ -350,6 +407,14 @@ struct PROJECTILEFX
 
 	// Data specific to our class (i.e., szClass)...
 	PROJECTILECLASSDATA* pClassData;
+
+	// RETAIL: Tron's energy drain of a projectile (attributes
+	// EnergyDrainMin/Max/Surge; retail Object.lto's CTronProjectile reads
+	// them at 0x224..0x22c).  Retail's place in the struct is not known:
+	// they are added at the end.
+	LTFLOAT		fEnergyDrainMin;
+	LTFLOAT		fEnergyDrainMax;
+	LTFLOAT		fEnergyDrainSurge;
 };
 
 typedef CTList<PROJECTILEFX*> ProjectileFXList;
