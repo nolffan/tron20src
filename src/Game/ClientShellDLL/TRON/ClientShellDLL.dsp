@@ -255,6 +255,11 @@ SOURCE=..\..\Libs\GameSpy\md5c.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\nonport.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProceduralCtrl.cpp
 # End Source File
 # Begin Source File
