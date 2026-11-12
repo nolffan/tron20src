@@ -411,8 +411,9 @@ struct PVCREATESTRUCT : public SFXCREATESTRUCT
 // CLIENTFXUSERCREATESTRUCT class Definition
 //
 // RETAIL: Tron's (RTTI; vtable 0x102980a4): the model whose client fx an
-// object plays (Optimizer's special fx message). Its constructor is out of
-// line (retail 0x10114140); the member's name is ours
+// object plays (Optimizer's and Thorne's special fx messages). Its
+// constructor is out of line (retail 0x10114140); its Write and Read fold
+// with PVCREATESTRUCT's (0x10114160, 0x10114180); the member's name is ours
 //
 /////////////////////////////////////////////////////////////////////////////
 
@@ -471,26 +472,6 @@ inline TRIGGERCREATESTRUCT::TRIGGERCREATESTRUCT()
 
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// CLIENTFXUSERCREATESTRUCT class Definition
-//
-// RETAIL: Tron's; its constructor is retail 0x10114140, its Write and Read
-// fold with PVCREATESTRUCT's (0x10114160, 0x10114180). Used by Thorne
-// (Thorne.cpp). The name is retail's (RTTI); the member's is ours.
-//
-/////////////////////////////////////////////////////////////////////////////
-
-struct CLIENTFXUSERCREATESTRUCT : public SFXCREATESTRUCT
-{
-	CLIENTFXUSERCREATESTRUCT();
-
-	virtual void Write(ILTMessage_Write *pMsg);
-	virtual void Read(ILTMessage_Read *pMsg);
-
-	ModelId		eModelId;
-};
 
 /////////////////////////////////////////////////////////////////////////////
 //
