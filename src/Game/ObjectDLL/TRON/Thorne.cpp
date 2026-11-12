@@ -132,6 +132,18 @@ uint32 CThorne::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 {
 	switch (messageID)
 	{
+		case MID_SAVEOBJECT:
+		{
+			Save((ILTMessage_Write*)pData);
+		}
+		break;
+
+		case MID_LOADOBJECT:
+		{
+			Load((ILTMessage_Read*)pData);
+		}
+		break;
+
 		case MID_PRECREATE:
 		{
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
@@ -147,15 +159,15 @@ uint32 CThorne::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 
-		case MID_UPDATE:
-		{
-			Update();
-		}
-		break;
-
 		case MID_ALLOBJECTSCREATED:
 		{
 			AllObjectsCreated();
+		}
+		break;
+
+		case MID_UPDATE:
+		{
+			Update();
 		}
 		break;
 
@@ -175,24 +187,12 @@ uint32 CThorne::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			while (g_pCommonLT->Parse(&parse) == LT_OK)
 			{
-				if (parse.m_nArgs > 0 && parse.m_Args[0])
+				if (parse.m_nArgs && parse.m_Args[0])
 				{
 					CParsedMsg cParsedMsg(parse.m_nArgs, parse.m_Args);
 					HandleModelString(m_hObject, cParsedMsg);
 				}
 			}
-		}
-		break;
-
-		case MID_LOADOBJECT:
-		{
-			Load((ILTMessage_Read*)pData);
-		}
-		break;
-
-		case MID_SAVEOBJECT:
-		{
-			Save((ILTMessage_Write*)pData);
 		}
 		break;
 	}
@@ -724,7 +724,7 @@ void CThorne::UpdateState()
 		case kThorneAnim_CreateBall:
 		{
 			ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-			if (pBall->GetDestructible()->IsDead())
+			if (pBall->GetDestructible()->IsDead() == LTTRUE)
 			{
 				SetState(kThorneAnim_Disrupt);
 			}
@@ -738,12 +738,11 @@ void CThorne::UpdateState()
 		case kThorneAnim_ChargeBall:
 		{
 			ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-			if (pBall->GetDestructible()->IsDead())
+			if (pBall->GetDestructible()->IsDead() == LTTRUE)
 			{
 				SetState(kThorneAnim_Disrupt);
 			}
-			else if (GetChargeTime() - m_fChargeStartTime >= m_fChargeDuration ||
-				m_fChargeStartTime + m_fChargeDuration - GetChargeTime() <= 0.0f)
+			else if (GetChargeElapsed() >= m_fChargeDuration || GetChargeLeft() <= 0.0f)
 			{
 				SetState(kThorneAnim_ThrowBall);
 			}
@@ -893,7 +892,8 @@ LTRESULT ThorneObjectPlugin::PreHook_EditStringList(const char* szRezPath,
 
 	if (!_stricmp("ModelTemplate", szPropName))
 	{
-		for (uint32 i = 0; i < (uint32)g_pModelButeMgr->GetNumModels(); i++)
+		uint32 cModels = g_pModelButeMgr->GetNumModels();
+		for (uint32 i = 0; i < cModels; i++)
 		{
 			strncpy(aszStrings[(*pcStrings)++], g_pModelButeMgr->GetModelName((ModelId)i), cMaxStringLength);
 		}

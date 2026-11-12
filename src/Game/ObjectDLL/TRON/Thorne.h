@@ -104,6 +104,8 @@ class CThorne : public GameBase, public IHitBoxUser
 		// Time since the charge began, or until it ends; a set m_fChargePauseTime
 		// stands for now
 		LTFLOAT	GetChargeTime() { return m_fChargePauseTime > 0.0f ? m_fChargePauseTime : g_pLTServer->GetTime(); }
+		LTFLOAT	GetChargeElapsed() { return GetChargeTime() - m_fChargeStartTime; }
+		LTFLOAT	GetChargeLeft() { return (m_fChargeStartTime + m_fChargeDuration) - GetChargeTime(); }
 
 		int				m_eState;				// ThorneAnim (BossButeMgr.h)
 		LTFLOAT			m_fChargeStartTime;
