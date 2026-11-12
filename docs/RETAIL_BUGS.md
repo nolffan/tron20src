@@ -219,6 +219,30 @@ reads it. Init always reads both, and GetShade's default shade is static
 
 Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
 
+### A CD key server reply with no second backslash crashes the server
+
+Object.lto 0x10020690 (cdkey_process_buf, Libs/GameSpy/GameSpySDK/gcdkey/
+gcdkeys.c, GameSpy's 2003 CD key SDK). A packet from the key server (or
+anyone spoofing it on the query socket) that starts with `\` is searched
+for the next `\` with strchr, and `pos - buf` is compared with 32 without
+checking pos for NULL: with no second backslash the difference is negative,
+passes the test, and strncpy is handed a huge length. GameSpy's later SDKs
+test `pos &&` first.
+
+Not fixed yet: the modern build should test pos for NULL, as the 2007 SDK.
+
+### The query SDK's host lookup can hand back an uninitialized hostent
+
+Object.lto 0x10042450 (get_sockaddrin, Libs/GameSpy/GameSpySDK/qr2/qr2.c,
+GameSpy's 2003 Query & Reporting 2 SDK). `hent` is only set when the host
+needs a DNS lookup, but is stored through `savehent` whenever that is not
+NULL: for a numeric address the caller would get whatever the stack slot
+held (the compiler reuses the `saddr` argument's slot, so it is `saddr`).
+The SDK's only caller (qr2_init_socket) passes NULL, so it never shows.
+
+Not fixed yet: harmless; the modern build may initialize it to NULL, as the
+2007 SDK does.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
