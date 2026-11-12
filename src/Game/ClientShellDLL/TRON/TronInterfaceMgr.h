@@ -53,6 +53,10 @@ public:
 	bool			GetTronUnknown28AE8() {return m_bTronUnknown28AE8;}
 	bool			GetTronUnknown28B14() {return m_bTronUnknown28B14;}
 
+	// RETAIL: +0x28b18, the id of the string CHUDSingleString shows (set
+	// from server messages, 0x1009d805..; the name is ours)
+	int				GetTronUnknown28B18() {return m_nTronUnknown28B18;}
+
 protected:
 	// Message function
 	virtual LTBOOL OnMessage(uint8 messageID, ILTMessage_Read *pMsg);
@@ -69,5 +73,6 @@ private:
 	// members are not yet placed: see the accessors)
 	bool				m_bTronUnknown28AE8;
 	bool				m_bTronUnknown28B14;
+	int					m_nTronUnknown28B18;
 };
 #endif // __TRONINTERFACE_MGR_H__

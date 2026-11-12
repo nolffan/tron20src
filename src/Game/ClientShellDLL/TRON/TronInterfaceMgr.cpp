@@ -33,6 +33,7 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	// clears Tron's flags
 	m_bTronUnknown28AE8 = false;
 	m_bTronUnknown28B14 = false;
+	m_nTronUnknown28B18 = 0;
 }
 
 
