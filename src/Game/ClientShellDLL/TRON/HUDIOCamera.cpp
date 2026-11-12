@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "TronHUDMgr.h"
+#include "ScreenSubroutines.h"	// RETAIL: its constants' initialisers are in this TU
 #include "TronInterfaceMgr.h"
 #include "HUDIOCamera.h"
 

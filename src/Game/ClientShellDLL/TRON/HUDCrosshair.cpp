@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "ClientRes.h"
 #include "TronHUDMgr.h"
+#include "ScreenSubroutines.h"	// RETAIL: its constants' initialisers are in this TU
 #include "HUDCrosshair.h"
 #include "TronPlayerStats.h"
 #include "SurfaceFunctions.h"
