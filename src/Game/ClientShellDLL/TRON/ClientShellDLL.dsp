@@ -223,6 +223,11 @@ SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\hashtable.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDArmor.cpp
 # End Source File
 # Begin Source File
@@ -325,7 +330,37 @@ SOURCE=.\ProceduralCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2regkeys.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\RatingMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\serverbrowsing\sb_crypt.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\serverbrowsing\sb_queryengine.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\serverbrowsing\sb_server.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\serverbrowsing\sb_serverbrowsing.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\serverbrowsing\sb_serverlist.c
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
