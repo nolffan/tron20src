@@ -20,6 +20,18 @@ END_CLASS_DEFAULT_FLAGS(CTronProjectile, CProjectile, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronProjectile::~CTronProjectile
+//
+//	PURPOSE:	Destructor (RETAIL: 0x10068ad0, before the constructor)
+//
+// ----------------------------------------------------------------------- //
+
+CTronProjectile::~CTronProjectile()
+{
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronProjectile::CTronProjectile
 //
 //	PURPOSE:	Constructor (RETAIL: 0x10068b10)

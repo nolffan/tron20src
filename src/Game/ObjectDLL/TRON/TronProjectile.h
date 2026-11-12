@@ -22,7 +22,7 @@ class CTronProjectile : public CProjectile
 	public :
 
 		CTronProjectile();
-		virtual ~CTronProjectile() {}
+		virtual ~CTronProjectile();
 
 		virtual LTBOOL	Setup(CWeapon const* pWeapon, WeaponFireInfo const& info);
 

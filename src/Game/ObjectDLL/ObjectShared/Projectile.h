@@ -187,7 +187,15 @@ class CProjectile : public GameBase
 		int             m_nLastRicochetUpdateNum;	// 0xec (-1)
 
 		bool			m_xTronUnknownF0;
-		uint32			m_xTronUnknownF4[0x31];	// RETAIL: 0xc4 bytes the constructor does not set
+		// RETAIL: 0xc4 bytes the constructor does not set
+		uint32			m_xTronUnknownF4;
+		bool			m_bTronUnknownF8;
+		bool			m_bTronUnknownF9;		// RETAIL: CProjectileBallLauncher::Setup 0x10035594
+		bool			m_bTronUnknownFA;
+		bool			m_bTronUnknownFB;		// RETAIL: CProjectileDrunkenDims::Setup 0x1003d914
+		uint32			m_xTronUnknownFC[3];
+		LTFLOAT			m_fTronUnknown108;		// RETAIL: a scale when 0xf9 is set (0x1003559e)
+		uint32			m_xTronUnknown10C[0x2b];
 		uint32			m_xTronUnknown1B8;		// RETAIL: an STL list (node 0x1c)
 		uint32			m_xTronUnknown1BC;		// RETAIL: an STL list (node 0x8c)
 		bool			m_xTronUnknown1C0;		// RETAIL: tested on touch (0x1011e82c)

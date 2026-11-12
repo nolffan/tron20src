@@ -234,6 +234,10 @@ SOURCE=.\PingButeMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileBallLauncher.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileClusterAutoBurstDisc.cpp
 # End Source File
 # Begin Source File
@@ -242,7 +246,15 @@ SOURCE=.\ProjectileClusterDisc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileCorrupticDims.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileDisc.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileDrunkenDims.cpp
 # End Source File
 # Begin Source File
 
@@ -380,6 +392,10 @@ SOURCE=.\PingButeMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileBallLauncher.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileClusterAutoBurstDisc.h
 # End Source File
 # Begin Source File
@@ -388,7 +404,15 @@ SOURCE=.\ProjectileClusterDisc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileCorrupticDims.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileDisc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileDrunkenDims.h
 # End Source File
 # Begin Source File
 
