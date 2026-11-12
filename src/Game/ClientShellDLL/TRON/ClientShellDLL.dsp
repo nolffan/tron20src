@@ -363,6 +363,10 @@ SOURCE=.\Stdafx.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SubroutineMgr.cpp
 # End Source File
 # Begin Source File
@@ -600,6 +604,10 @@ SOURCE=.\ScreenWeaponControls.h
 # Begin Source File
 
 SOURCE=.\Stdafx.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\SubroutineDataMgr.h
 # End Source File
 # Begin Source File
 
