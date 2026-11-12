@@ -95,6 +95,7 @@ is corrupt. Later SDKs send through `ghiTrySendThenBuffer`. Only a post
 that fills the socket's buffer shows it.
 
 Not fixed yet (the modern build replaces GameSpy's services anyway).
+
 ### Thorne reports a valid summon command as invalid
 
 Object.lto 0x10058497 (CThorne::ReadProp, TRON/Thorne.cpp). The
@@ -140,6 +141,7 @@ parent's position and rotation are read into locals and never used. The
 per-frame update reads the parent again, so it is only wasted work.
 
 Not fixed yet.
+
 ### The energy transfer meter draws part of its fill twice
 
 CShell.dll 0x100294c0 (CHUDEnergyTransfer::Update, TRON/HUDEnergyTransfer.cpp).
@@ -171,6 +173,7 @@ Core dumps only get their items from bodies, which may never hold custom
 items.
 
 Not fixed yet.
+
 ### A patch routine gives the amount asked, not what it has left
 
 Object.lto, PatchRoutine::ObjectMessageFn (TRON/PatchRoutine.cpp; retail
