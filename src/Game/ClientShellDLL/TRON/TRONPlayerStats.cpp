@@ -53,8 +53,8 @@ CTronPlayerStats::CTronPlayerStats()
 	m_nArmor			= 0;
 	m_nMaxHealth		= 0;
 	m_nMaxArmor			= 0;
-	m_nEnergy			= 100;
-	m_nMaxEnergy		= 100;
+	m_fEnergy			= 100.0f;
+	m_fMaxEnergy		= 100.0f;
 	m_nCurrentWeapon	= WMGR_INVALID_ID;
 	m_nCurrentAmmo		= WMGR_INVALID_ID;
 
@@ -229,8 +229,8 @@ void CTronPlayerStats::Term()
 	m_nArmor		= 0;
 	m_nMaxHealth	= 0;
 	m_nMaxArmor		= 0;
-	m_nEnergy		= 0;
-	m_nMaxEnergy	= 0;
+	m_fEnergy		= 0.0f;
+	m_fMaxEnergy	= 0.0f;
 
 	if (m_pnAmmo)
 	{
@@ -340,8 +340,8 @@ void CTronPlayerStats::Clear()
 	UpdateHealth(0);
 	m_nDamage = 0;
 	UpdateArmor(0);
-	UpdateMaxEnergy(100);
-	UpdateEnergy(100);
+	UpdateMaxEnergy(100.0f);
+	UpdateEnergy(100.0f);
 
 	// Get rid of any weapons, ammo, gear or mods..
 	
@@ -468,20 +468,29 @@ void CTronPlayerStats::UpdateMaxHealth(uint32 nHealth)
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateEnergy(uint32 nEnergy)
+void CTronPlayerStats::UpdateEnergy(float fEnergy)
 {
-	if (nEnergy > m_nMaxEnergy)
-		nEnergy = m_nMaxEnergy;
+	if (fEnergy > m_fMaxEnergy)
+		fEnergy = m_fMaxEnergy;
+	else if (fEnergy < 0.0f)
+		fEnergy = 0.0f;
 
 	// update the member variable
-	m_nEnergy = nEnergy;
+	m_fEnergy = fEnergy;
     g_pHUDMgr->QueueUpdate(kHUDEnergy);
 }
 
-uint32 CTronPlayerStats::GetEnergy()
+float CTronPlayerStats::GetEnergy()
 {
-	return m_nEnergy;
+	// PORT: retail leaves out what the subroutines hold (Tron's subroutine
+	// manager's +0x11a4, not yet in ours)
+	return m_fEnergy;
 }	// Energy levels
+
+float CTronPlayerStats::GetFullEnergy()
+{
+	return m_fEnergy;
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -491,13 +500,13 @@ uint32 CTronPlayerStats::GetEnergy()
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateMaxEnergy(uint32 nEnergy)
+void CTronPlayerStats::UpdateMaxEnergy(float fEnergy)
 {
 	// update the member variable
-	m_nMaxEnergy = nEnergy;
+	m_fMaxEnergy = fEnergy;
 
-	if (m_nEnergy > m_nMaxEnergy)
-		m_nEnergy = m_nMaxEnergy;
+	if (m_fEnergy > fEnergy)
+		m_fEnergy = fEnergy;
 
     g_pHUDMgr->QueueUpdate(kHUDEnergy);
 }
@@ -1052,8 +1061,8 @@ void CTronPlayerStats::Save(ILTMessage_Write *pMsg)
     pMsg->Writeuint32(m_nArmor);
     pMsg->Writeuint32(m_nMaxHealth);
     pMsg->Writeuint32(m_nMaxArmor);
-	pMsg->Writeuint32(m_nEnergy);
-	pMsg->Writeuint32(m_nMaxEnergy);
+	pMsg->Writefloat(m_fEnergy);
+	pMsg->Writefloat(m_fMaxEnergy);
 
 	int nNumAmmoTypes = g_pWeaponMgr->GetNumAmmoIds();
     uint8 i;
@@ -1120,8 +1129,8 @@ void CTronPlayerStats::Load(ILTMessage_Read *pMsg)
     m_nArmor            = pMsg->Readuint32();
     m_nMaxHealth        = pMsg->Readuint32();
     m_nMaxArmor         = pMsg->Readuint32();
-	m_nEnergy			= pMsg->Readuint32();
-	m_nMaxEnergy		= pMsg->Readuint32();
+	m_fEnergy			= pMsg->Readfloat();
+	m_fMaxEnergy		= pMsg->Readfloat();
 
 
     uint8 i;
@@ -1691,19 +1700,16 @@ void CTronPlayerStats::IncrementJetVersion(uint8 iVersionPoints)
 	}
 }
 
-void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus, float fScalar)
+void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 {
 	// Clipping
 	if (fArmor < 0.0f) fArmor = 0.0f;
-	if (fArmor > 1.0f) fArmor = 1.0f;
+	else if (fArmor > 1.0f) fArmor = 1.0f;
 	if (fVirus < 0.0f) fVirus = 0.0f;
-	if (fVirus > 1.0f) fVirus = 1.0f;
-	if (fScalar < 0.0f) fScalar = 0.0f;
-	if (fScalar > 1.0f) fScalar = 1.0f;
+	else if (fVirus > 1.0f) fVirus = 1.0f;
 
 	m_fSubroutineArmor = fArmor;
 	m_fVirusArmor = fVirus;
-	m_fArmorScalar = fScalar;
 
 	g_pHUDMgr->QueueUpdate(kHUDArmor);
 }

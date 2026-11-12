@@ -1459,10 +1459,9 @@ int CTronPlayerMgr::TronUnknownVirtualA4(int nArg)
 
 void CTronPlayerMgr::DoActivate()
 {
-	CTronTargetMgr* pTargetMgr = g_pTronPlayerMgr->GetTronTargetMgr();
-	if (pTargetMgr->IsPermissionRequired())
+	if (g_pTronPlayerMgr->GetTronTargetMgr()->IsPermissionRequired())
 	{
-		uint8 nRequired = pTargetMgr->GetPermissionRequired();
+		uint8 nRequired = g_pTronPlayerMgr->GetTronTargetMgr()->GetPermissionRequired();
 		uint8 nPermissions, nRequiredPermissions;
 		g_pTronPlayerStats->GetPermissions(nPermissions, nRequiredPermissions);
 		if ((uint8)((nPermissions | nRequired) - nPermissions))
@@ -1471,10 +1470,9 @@ void CTronPlayerMgr::DoActivate()
 		}
 	}
 
-	pTargetMgr = g_pTronPlayerMgr->GetTronTargetMgr();
-	if (pTargetMgr->IsEnergyRequired())
+	if (g_pTronPlayerMgr->GetTronTargetMgr()->IsEnergyRequired())
 	{
-		float fEnergyRequired = (float)pTargetMgr->GetEnergyRequired();
+		float fEnergyRequired = (float)g_pTronPlayerMgr->GetTronTargetMgr()->GetEnergyRequired();
 		if (g_pTronPlayerStats->GetEnergy() < fEnergyRequired)
 		{
 			g_pPickupMsgs->AddMessage(IDS_INSUFFICIENT_ENERGY, (const char*)LTNULL);

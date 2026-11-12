@@ -195,10 +195,14 @@ public:
 //		{return g_pSkillsButeMgr->GetSearch((eSkillLevel)m_nSkills[SKL_STEALTH]);}
 
 	// ABM Tron stuff
-	uint32 GetEnergy();//			{ return m_nEnergy;}	// Energy levels
-	uint32 GetMaxEnergy()		{ return m_nMaxEnergy;}
-	void UpdateEnergy(uint32 nEnergy);
-	void UpdateMaxEnergy(uint32 nEnergy);
+	// RETAIL: Tron's energy is a float (retail +0xc8, +0xcc; UpdateEnergy
+	// 0x100a9c40, GetEnergy 0x100a9c90, GetFullEnergy 0x100a9cb0 (the name
+	// is ours), UpdateMaxEnergy 0x100a9cc0)
+	float GetEnergy();
+	float GetFullEnergy();
+	float GetMaxEnergy()		{ return m_fMaxEnergy;}
+	void UpdateEnergy(float fEnergy);
+	void UpdateMaxEnergy(float fEnergy);
 
 	// RETAIL: Tron's (retail 0x100a9d00; the name is ours): energy spent,
 	// told to the server (Tron's message 162)
@@ -230,7 +234,16 @@ public:
 	void	GivePlayerAdditive(char * pName) {m_RatingMgr.GivePlayerAdditive(pName);}
 
 	// Subroutine Armor
-    void    UpdateSubroutineArmor(float fArmor, float fVirus, float fScalar);
+    void    UpdateSubroutineArmor(float fArmor, float fVirus);	// RETAIL: 0x100ac0b0
+	// PORT: ours keeps the subroutine manager's armor scalar too (Tron's
+	// has none)
+    void    UpdateSubroutineArmor(float fArmor, float fVirus, float fScalar)
+	{
+		if (fScalar < 0.0f) fScalar = 0.0f;
+		if (fScalar > 1.0f) fScalar = 1.0f;
+		m_fArmorScalar = fScalar;
+		UpdateSubroutineArmor(fArmor, fVirus);
+	}
 
 	// Compile
 	void	Compile();	// called when the player compiles()
@@ -277,8 +290,14 @@ protected:
 	IDList	m_CompletedObjectives;
 	IDList	m_Parameters;
 	IDList	m_Keys;
-	
-	CIntelItemList	m_IntelList;
+
+	// RETAIL: Tron's (retail ctor 0x100a8fd0: a sixth list at +0x9c, which
+	// Save 0x100ab090 leaves out; +0xa8, cleared with the objectives,
+	// 0x100aa8c0). Not yet named
+	IDList	m_TronUnknownList9C;
+	bool	m_bTronUnknownA8;
+
+	CIntelItemList	m_IntelList;	// RETAIL: +0xac
 
 
 	LTBOOL			m_bObjAdded;
@@ -288,23 +307,27 @@ protected:
 	// ABM new stuff
 	uint16			m_nVersion;			// Jet's version number (major, minor, sub)
 
-	uint32			m_nEnergy;			// energy for shields, ammo, subroutines
-	uint32			m_nMaxEnergy;
+	float			m_fEnergy;			// energy for shields, ammo, subroutines
+	float			m_fMaxEnergy;
 
 	uint8			m_nPermissions;		// 8-bits of which permissions the player has
 	uint8			m_nRequiredPermissions;	// 8 bits of which permissions the player needs
 
-	float			m_fSubroutineArmor;
-	float			m_fVirusArmor;
-	float			m_fArmorScalar;
+	float			m_fSubroutineArmor;	// RETAIL: +0xd4
+	float			m_fVirusArmor;		// RETAIL: +0xd8
 
 	// Performance ratings
-	CRatingMgr		m_RatingMgr;
+	CRatingMgr		m_RatingMgr;		// RETAIL: +0xdc (retail's 0x11b4 bytes; a
+										// Tron object of 0x1138 follows, +0x1290)
 
 	MissionStats	m_MissionStats;
 
 	// RETAIL: +0x2404, see TronUnknownVirtual154..160
 	bool			m_bTronUnknown2404;
+
+	// PORT: Tron's UpdateSubroutineArmor (retail 0x100ac0b0) takes no
+	// scalar and keeps none; ours still does, after retail's members
+	float			m_fArmorScalar;
 };
 
 extern CTronPlayerStats* g_pTronPlayerStats;
