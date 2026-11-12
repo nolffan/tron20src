@@ -20,6 +20,10 @@
 
 //class CTronLayoutMgr;
 //extern CTronLayoutMgr* g_pTronLayoutMgr;
+
+// RETAIL: Tron's code reaches its layout manager by dynamic_cast'ing
+// g_pLayoutMgr each time (e.g. retail 0x10040cb0); the macro's name is ours.
+#define g_pTronLayoutMgr (dynamic_cast<CTronLayoutMgr*>(g_pLayoutMgr))
  
 struct INT_SUBMODEL
 {
@@ -59,6 +63,9 @@ class LCHUDHelper;
 
 class CTronLayoutMgr : public CLayoutMgr
 {
+	// RETAIL: LCHUDHelper reads m_buteMgr directly (retail 0x10040cb0)
+	friend class LCHUDHelper;
+
 public:
 	CTronLayoutMgr();
 	virtual ~CTronLayoutMgr();

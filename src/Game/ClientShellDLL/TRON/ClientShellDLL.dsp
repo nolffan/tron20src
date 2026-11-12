@@ -226,6 +226,10 @@ SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LCHUDHelper.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -242,6 +246,16 @@ SOURCE=..\..\..\engine\sdk\inc\ltobjref.cpp
 # Begin Source File
 
 SOURCE=..\..\..\Engine\sdk\inc\ltquatbase.cpp
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\md5c.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\nonport.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
@@ -464,6 +478,10 @@ SOURCE=.\HUDProgress.h
 # Begin Source File
 
 SOURCE=.\HUDWeapon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LCHUDHelper.h
 # End Source File
 # Begin Source File
 
