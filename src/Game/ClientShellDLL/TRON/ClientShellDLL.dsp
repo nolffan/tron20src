@@ -182,6 +182,10 @@ SOURCE=.\HUDArmor.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDBuildNoteCount.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDChooser.cpp
 # End Source File
 # Begin Source File
@@ -448,6 +452,10 @@ SOURCE=.\ClientWeaponDisc.h
 # Begin Source File
 
 SOURCE=.\HUDArmor.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDBuildNoteCount.h
 # End Source File
 # Begin Source File
 
