@@ -219,6 +219,57 @@ reads it. Init always reads both, and GetShade's default shade is static
 
 Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
 
+### Updating a listed server by IP adds it to the list again
+
+CShell.dll 0x10052f50 (ServerBrowserAuxUpdateIPA, GameSpy SDK
+serverbrowsing/sb_serverbrowsing.c, 2003). Updating a server directly
+(not via the master), the browser looks the server up by IP and port and,
+when it is already in the list, re-queries that entry, but then appends the
+server to the list in both cases: an already-listed server appears twice and
+the browser callback reports it added again. GameSpy fixed it in
+serverbrowsing 2.02.11 (2004-05-24).
+
+Not fixed yet: the modern build should append only a new server.
+
+### The query engine marks timed-out servers in the wrong field
+
+CShell.dll 0x10052220 (TimeoutOldQueries, GameSpy SDK
+serverbrowsing/sb_queryengine.c). A server whose query timed out gets
+STATE_QUERYFAILED set and its pending-query states cleared in `flags` (the
+server's address flags) instead of `state`: the server keeps its pending
+state and its flags gain bits that mean "has ICMP address"/"private port".
+The 2007 SDK still has it.
+
+Not fixed yet: the modern build should set them in `state`.
+
+### A LAN browse never reports that its list is complete
+
+CShell.dll 0x10053e30 (ProcessLanData, GameSpy SDK
+serverbrowsing/sb_serverlist.c, 2003). When the LAN search time ends, the
+list closes its socket and goes disconnected without the
+slc_initiallistcomplete callback, so an asynchronous LAN browse is never
+told it finished. GameSpy fixed it in serverbrowsing 2.00.36 (2003-11-10).
+
+Not fixed yet: the modern build should make the callback.
+### The light cycle dialog plays a line it has already popped
+
+Object.lto 0x100509af (CServerLightCycleMgr::Update,
+ObjectDLL/TRON/ServerLightCycleMgr.cpp). It keeps a pointer to the top of
+the rider dialog priority_queue, pops it, then reads and plays through the
+pointer. pop() moves the queue's last line into the top slot, so the line
+checked and played is not the one that had the highest priority (unless the
+queue held one line).
+
+Not fixed yet: the modern build should copy the top entry before pop().
+### The energy claw's line-of-sight test always passes
+
+Object.lto 0x1003eb90 (CProjectileEnergyClaw::CanSee, ObjectDLL/TRON/
+ProjectileEnergyClaw.cpp). It gets the position of the first object for both
+ends of the segment it tests, so the segment is empty, nothing is hit, and
+the claw "sees" any AI in range: it seeks and chases through walls.
+
+Not fixed yet: the modern build should take the second end from hTo.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

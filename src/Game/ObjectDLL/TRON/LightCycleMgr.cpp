@@ -14,29 +14,19 @@
 #include "LightCycleMgr.h"
 #include "MsgIDs.h"
 
-CLightCycleMgr* g_pLightCycleMgr = NULL;
-
-// ----------------------------------------------------------------------- //
+// RETAIL: g_pLightCycleMgr is defined with g_pServerLightCycleMgr in
+// ServerLightCycleMgr.cpp (their data is adjacent, 0x1035a54c).
 //
-//	ROUTINE:	LIGHT_CYCLIST::~LIGHT_CYCLIST
-//
-//	PURPOSE:	Destructor
-//
-// ----------------------------------------------------------------------- //
-LIGHT_CYCLIST::~LIGHT_CYCLIST()
-{
-	std::vector<LIGHT_CYCLE_TRAIL*>::iterator iter;
-	for(iter=collTrails.begin();iter!=collTrails.end();iter++)
-	{
-		debug_delete(*iter);
-	}
-}
+// PORT: the functions marked so are build 69's or stand-ins; retail's base
+// (0x100bb180..0x100be640) is not written yet.
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	LIGHT_CYCLIST::FindTrail
 //
-//	PURPOSE:	Looks for a trail in the list by unique ID (word)
+//	PURPOSE:	Looks for a trail in the list by unique ID
+//
+//	PORT: build 69's (retail's trails have no id at build 69's place)
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLE_TRAIL* LIGHT_CYCLIST::FindTrail(uint16 wTrailID)
@@ -44,7 +34,7 @@ LIGHT_CYCLE_TRAIL* LIGHT_CYCLIST::FindTrail(uint16 wTrailID)
 	std::vector<LIGHT_CYCLE_TRAIL*>::iterator iter;
 	for(iter=collTrails.begin();iter!=collTrails.end();iter++)
 	{
-		if((*iter)->wID == wTrailID)
+		if((*iter)->nTronUnknown10 == wTrailID)
 			return(*iter);
 	}
 
@@ -57,9 +47,15 @@ LIGHT_CYCLE_TRAIL* LIGHT_CYCLIST::FindTrail(uint16 wTrailID)
 //
 //	PURPOSE:	Constructor
 //
+//	RETAIL: 0x100bb180
+//
 // ----------------------------------------------------------------------- //
 CLightCycleMgr::CLightCycleMgr()
 {
+	m_nDifficulty = 0;
+	m_fTronUnknown20 = 500.0f;
+	m_fGameSpeedScalar = 1.0f;
+	m_fTrailLength = 30000.0f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -68,11 +64,16 @@ CLightCycleMgr::CLightCycleMgr()
 //
 //	PURPOSE:	Initialization
 //
+//	RETAIL: 0x100bb200
+//
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::Init()
 {
-	g_pLightCycleMgr = this;
 	m_bUpdating = true;
+	if(!m_LightCycleButeMgr.Init(LCBMGR_DEFAULT_FILE))
+		return false;
+
+	RemoveAllCyclists();
 	return true;
 }
 
@@ -82,15 +83,12 @@ bool CLightCycleMgr::Init()
 //
 //	PURPOSE:	Cleanup
 //
+//	RETAIL: 0x100bb230
+//
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::Term()
 {
-	std::vector<LIGHT_CYCLIST*>::iterator iter;
-	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
-	{
-		debug_delete(*iter);
-	}
-
+	RemoveAllCyclists();
 	g_pLightCycleMgr = NULL;
 }
 
@@ -98,90 +96,42 @@ void CLightCycleMgr::Term()
 //
 //	ROUTINE:	CLightCycleMgr::AddCyclist
 //
-//	PURPOSE:	Creats a new cyclist and adds it to the list
+//	PURPOSE:	Creates a new cyclist and adds it to the list
+//
+//	PORT: build 69's, without retail's set up from the light cycle butes
 //
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::AddCyclist(HOBJECT hObj, bool bUpdate)
+LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor, bool bUpdate,
+	const LTVector* pvDims, uint32 nNameId, bool bTronUnknown)
 {
 	// Allocate
 	LIGHT_CYCLIST* pCyclist = debug_new(LIGHT_CYCLIST);
 	pCyclist->bUpdating = bUpdate;
 	pCyclist->hObject = hObj;
+	pCyclist->bIsPlayer = (pvDims != NULL);
 
 	// Add to our list
 	m_collCyclists.push_back(pCyclist);
-
-	// Tell the client
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
-	cMsg.Writeuint8(LCI_ADD_CYCLIST);
-	cMsg.WriteObject(hObj);
-	cMsg.Writeuint8((uint8)bUpdate);
-	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CLightCycleMgr::DerezCyclist
-//
-//	PURPOSE:	Starts a light cycle derez
-//
-// ----------------------------------------------------------------------- //
-bool CLightCycleMgr::DerezCyclist(HOBJECT hObj)
-{
-	// Sanity check
-	LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
-	if(!pCyclist)
-		return false;
-
-	// Maybe we're already derezzing
-	if(pCyclist->fStartDerezTime != 0.0f)
-	{
-		ASSERT(FALSE);
-		return true;
-	}
-
-	// Start the derez timer
-	pCyclist->fStartDerezTime = g_pLTServer->GetTime();
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
-	cMsg.Writeuint8(LCI_DEREZ_CYCLIST);
-	cMsg.WriteObject(hObj);
-	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
-	return true;
+	return pCyclist;
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLightCycleMgr::RemoveCyclist
 //
-//	PURPOSE:	Completely removes a light cycle from the manager
+//	PURPOSE:	Marks a light cycle for removal
+//
+//	RETAIL: 0x100bb7f0
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::RemoveCyclist(HOBJECT hObj)
 {
-	// Since we're removing from the list, we need to walk it manually
 	std::vector<LIGHT_CYCLIST*>::iterator iter;
 	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
 	{
 		if((*iter)->hObject == hObj)
 		{
-			// We found him. Killlllll! KIIIILLLLLLLLL!
-			LIGHT_CYCLIST* pCyclist = (*iter);
-			debug_delete(pCyclist);
-
-			// Remove from list
-			m_collCyclists.erase(iter);
-
-			// Notify the client
-			CAutoMessage cMsg;
-			cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO); // PORT: the id was SendToClient's argument
-			cMsg.Writeuint8(LCI_REMOVE_CYCLIST);
-			cMsg.WriteObject(hObj);
-			g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
-
+			(*iter)->bRemove = true;
 			return true;
 		}
 	}
@@ -193,7 +143,9 @@ bool CLightCycleMgr::RemoveCyclist(HOBJECT hObj)
 //
 //	ROUTINE:	CLightCycleMgr::FindCyclist
 //
-//	PURPOSE:	Looks for a cyclist in the list by unique ID (dword)
+//	PURPOSE:	Looks for a cyclist in the list by its object
+//
+//	RETAIL: 0x100bbe10
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST* CLightCycleMgr::FindCyclist(HOBJECT hObj)
@@ -210,12 +162,32 @@ LIGHT_CYCLIST* CLightCycleMgr::FindCyclist(HOBJECT hObj)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::GetActiveCyclist
+//
+//	PURPOSE:	The object's cyclist if it is not derezzing
+//
+//	RETAIL: 0x100bdde0 (uses g_pLightCycleMgr, not this)
+//
+// ----------------------------------------------------------------------- //
+LIGHT_CYCLIST* CLightCycleMgr::GetActiveCyclist(HOBJECT hObj)
+{
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if(pCyclist && (pCyclist->fStartDerezTime == 0.0f))
+		return pCyclist;
+
+	return NULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::BeginLightCycleTrail
 //
 //	PURPOSE:	Starts a new light cycle trail
 //
+//	PORT: build 69's
+//
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos)
+bool CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos, bool bTronUnknown)
 {
 	ASSERT(pCyclist);
 	if(!pCyclist)
@@ -223,9 +195,6 @@ bool CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPo
 
 	// Create a new trail
 	LIGHT_CYCLE_TRAIL* pTrail = debug_new(LIGHT_CYCLE_TRAIL);
-
-	// Set the unique Trail ID and increment it
-	pTrail->wID = pCyclist->wNextTrailID++;
 
 	// Add this trail to the light cycle's list
 	pCyclist->collTrails.push_back(pTrail);
@@ -246,12 +215,119 @@ bool CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPo
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::RemoveAllCyclists
+//
+//	RETAIL: 0x100bd110
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::RemoveAllCyclists()
+{
+	std::vector<LIGHT_CYCLIST*>::iterator iter;
+	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
+	{
+		debug_delete(*iter);
+		*iter = NULL;
+	}
+
+	m_collCyclists.clear();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::SetPowerup
+//
+//	RETAIL: 0x100bd300
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::SetPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
+{
+	if(pCyclist && ((nPowerup < kLCPowerup_Random) || (nPowerup == LC_NO_POWERUP)))
+	{
+		pCyclist->nPowerup = nPowerup;
+		return true;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::TronUnknownVirtual17
+//
+//	RETAIL: 0x100bd4e0
+//
+// ----------------------------------------------------------------------- //
+void CLightCycleMgr::TronUnknownVirtual17(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown)
+{
+	pCyclist->dwFlags &= ~1;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	PORT: stand-ins for retail's base functions not written yet
+//	(0x100bb990, 0x100bd170, 0x100bd330, 0x100bd4f0, 0x100bd980,
+//	0x100be0b0, 0x100bcb60, 0x100be4a0)
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::AddTrailPoints(LIGHT_CYCLIST* pCyclist, bool bTronUnknown1, LTVector& vPos, bool bTronUnknown2)
+{
+	if(!pCyclist->pCurTrail)
+		return BeginLightCycleTrail(pCyclist, pCyclist->vPos, false);
+
+	return UpdateLightCycleTrail(pCyclist, pCyclist->vPos);
+}
+
+void CLightCycleMgr::TronUnknownUpdate()
+{
+}
+
+// PORT: retail's 0x1013c350 is in a TU not identified yet
+int TronUnknownGetRandomPowerup()
+{
+	return 0;
+}
+
+bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVector& vPos)
+{
+	if(pCyclist->nPowerup == LC_NO_POWERUP)
+		return false;
+
+	pCyclist->nPowerup = LC_NO_POWERUP;
+	return true;
+}
+
+bool CLightCycleMgr::HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bTronUnknown1, bool bTronUnknown2)
+{
+	return DerezCyclist(pCyclist, pInfo->pCyclist, false);
+}
+
+bool CLightCycleMgr::TronUnknownVirtual9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown1, uint32 nTronUnknown2, bool bTronUnknown)
+{
+	return true;
+}
+
+void CLightCycleMgr::TronUnknownVirtual11(LIGHT_CYCLIST* pCyclist)
+{
+}
+
+bool CLightCycleMgr::TronUnknownVirtual12(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown)
+{
+	return false;
+}
+
+void CLightCycleMgr::TronUnknownVirtual18()
+{
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::UpdateLightCycleTrail
 //
 //	PURPOSE:	Updates a ligt cyclist's trail
 //
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos, int nTrailID)
+// PORT: build 69's; retail's (0x100bde10) has no trail id argument
+bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos)
 {
 	ASSERT(pCyclist);
 	if(!pCyclist)
@@ -262,15 +338,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vP
 	CreateTrailPointFromVector(newPoint,vPos);
 
 	// See which trail we're dealing with
-	LIGHT_CYCLE_TRAIL* pTrail;
-	if(nTrailID == CURRENT_TRAIL_ID)
-	{
-		pTrail = pCyclist->pCurTrail;
-	}
-	else
-	{
-		pTrail = pCyclist->FindTrail((uint16)nTrailID);
-	}
+	LIGHT_CYCLE_TRAIL* pTrail = pCyclist->pCurTrail;
 
 	ASSERT(pTrail);
 	if(!pTrail)
@@ -470,100 +538,4 @@ void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTV
 {
 	// For now, it's just a straight copy
 	pt.vPoint = vPos;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CLightCycleMgr::Update
-//
-//	PURPOSE:	Updates the light cycle mgr
-//
-// ----------------------------------------------------------------------- //
-void CLightCycleMgr::Update()
-{
-	if(!m_bUpdating)
-		return;
-
-	// Vars
-	LTVector vPos;
-	LTVector vOldForward;
-	LIGHT_CYCLIST* pCyclist;
-	LIGHT_CYCLE_TRAIL *pTrail;
-	std::vector<LIGHT_CYCLIST*>::iterator iter;
-
-	// Walk the list
-	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
-	{
-		pCyclist = (*iter);
-		if(pCyclist->bUpdating)
-		{
-			// Update his trail
-			ASSERT(pCyclist->hObject);
-			g_pLTServer->GetObjectPos(pCyclist->hObject,&vPos);
-
-			pTrail = pCyclist->pCurTrail;
-
-			// Check to see if we have a trail
-			if(pTrail)
-			{
-				vOldForward = pCyclist->vForward;
-
-				// Update the trail
-				UpdateLightCycleTrail(pCyclist, vPos);
-			}
-			else
-			{
-				// Simple case: We're starting a new trail
-				BeginLightCycleTrail(pCyclist,vPos);
-			}
-
-			// Now we check to see if this guy collided
-			LightCycleCollisionInfo info;
-			if(CheckForCollision(pCyclist,info))
-			{
-				// Uh-oh. We have a crash. And crashing is bad, m'kay?
-				HandleCollision(pCyclist,info);
-			}
-		}
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CLightCycleMgr::CheckForCollision
-//
-//	PURPOSE:	Checks for a collision
-//
-// ----------------------------------------------------------------------- //
-bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisionInfo &info)
-{
-	if(!pCyclist)
-		return false;
-
-	LIGHT_CYCLE_TRAIL* pTrail = pCyclist->pCurTrail;
-
-	if(!pTrail)
-		return false;
-
-	// Let's walk his list of points
-	std::vector<LIGHT_CYCLE_TRAIL_POINT>::iterator iter;
-
-	// Walk the list
-	int nPoint = 0;
-	for(iter=pTrail->collTrailPoints.begin();iter!=pTrail->collTrailPoints.end();iter++)
-	{
-	}	
-
-	return false;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CLightCycleMgr::HandleCollision
-//
-//	PURPOSE:	Handles a collision
-//
-// ----------------------------------------------------------------------- //
-void CLightCycleMgr::HandleCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisionInfo &info)
-{
 }

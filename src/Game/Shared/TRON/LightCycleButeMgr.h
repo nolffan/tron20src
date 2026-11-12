@@ -349,6 +349,16 @@ class CLightCycleButeMgr : public CGameButeMgr
 		LTFLOAT	GetSpeedZoneAccelRate()		const { return m_fSpeedZoneAccelRate; }
 		LTFLOAT	GetSlowZoneDecelRate()		const { return m_fSlowZoneDecelRate; }
 
+		// CycleDialogParams (RETAIL: read by the server's light cycle
+		// manager, 0x100500ce, 0x1004f67f, 0x1004f906)
+		LTFLOAT	GetMinTimeBetweenDialog()	const { return m_fMinTimeBetweenDialog; }
+		LTFLOAT	GetMaxTimeBetweenDialog()	const { return m_fMaxTimeBetweenDialog; }
+		bool	GetModifyPriorityWithDist()	const { return m_bModifyPriorityWithDist; }
+		LTFLOAT	GetDialogMaxDist()			const { return m_fDialogMaxDist; }
+		LTFLOAT	GetDialogSoundRadius()		const { return m_fDialogSoundRadius; }
+		bool	GetDialogSoundLocalToPlayer() const { return m_bDialogSoundLocalToPlayer; }
+		bool	GetEnableSoundDebugInfo()	const { return m_bEnableSoundDebugInfo; }
+
 	protected :
 
 		// RETAIL: offsets are retail's (ours are 0x40 more, see above)

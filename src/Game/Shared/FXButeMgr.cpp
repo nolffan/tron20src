@@ -104,6 +104,9 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_PROJECTILEFX_LIFETIME              "Lifetime"
 #define FXBMGR_PROJECTILEFX_VELOCITY              "Velocity"
 #define FXBMGR_PROJECTILEFX_ALTVELOCITY           "AltVelocity"
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINMIN        "EnergyDrainMin"	// RETAIL: Tron's
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINMAX        "EnergyDrainMax"
+#define FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE      "EnergyDrainSurge"
 #define FXBMGR_PROJECTILEFX_FIRE_OFFSET           "FireOffset"
 #define FXBMGR_PROJECTILEFX_SMOKETRAILTYPE        "SmokeTrailType"
 #define FXBMGR_PROJECTILEFX_CANHITSAMEKIND        "CanHitSameKind"
@@ -156,6 +159,11 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_SPAWNCLASS_STICKTOWORLD	"StickToWorld"
 
 #define FXBMGR_DISCCLASS_TAG									"DiscClassData"
+
+// RETAIL: Tron's retail-only class data (attribute names from retail Object.lto)
+#define FXBMGR_CORRUPTICDIMSCLASS_TAG			"CorrupticDimsClassData"
+#define FXBMGR_BALLCLASS_TAG					"BallClassData"
+#define FXBMGR_PRANKSTERCLASS_TAG				"PranksterClassData"
 #define FXBMGR_DISCCLASS_INITIALANGLEMIN						"InitialAngleMin"
 #define FXBMGR_DISCCLASS_INITIALANGLEMAX						"InitialAngleMax"
 #define FXBMGR_DISCCLASS_INITIALANGLESURGE						"InitialAngleSurge"
@@ -605,6 +613,78 @@ LTBOOL CFXButeMgr::Init(const char* szAttributeFile)
 		++nNum;
 		sprintf( s_aTagName, "%s%d", FXBMGR_CLUSTERDISCCLASS_TAG, nNum );
 	}	
+
+	// RETAIL: Tron's CORRUPTICDIMSCLASSDATA records (PORT: their place in retail's
+	// Init is not checked)
+
+	nNum = 0;
+	sprintf( s_aTagName, "%s%d", FXBMGR_CORRUPTICDIMSCLASS_TAG, nNum );
+
+	while( m_buteMgr.Exist( s_aTagName ))
+	{
+		PROJECTILECLASSDATA *pPCD = debug_new( CORRUPTICDIMSCLASSDATA );
+
+		if( pPCD && pPCD->Init( m_buteMgr, s_aTagName ))
+		{
+			m_ProjClassDataList.AddTail( pPCD );
+		}
+		else
+		{
+			debug_delete( pPCD );
+			return LTFALSE;
+		}
+
+		++nNum;
+		sprintf( s_aTagName, "%s%d", FXBMGR_CORRUPTICDIMSCLASS_TAG, nNum );
+	}
+
+	// RETAIL: Tron's BALLCLASSDATA records (PORT: their place in retail's
+	// Init is not checked)
+
+	nNum = 0;
+	sprintf( s_aTagName, "%s%d", FXBMGR_BALLCLASS_TAG, nNum );
+
+	while( m_buteMgr.Exist( s_aTagName ))
+	{
+		PROJECTILECLASSDATA *pPCD = debug_new( BALLCLASSDATA );
+
+		if( pPCD && pPCD->Init( m_buteMgr, s_aTagName ))
+		{
+			m_ProjClassDataList.AddTail( pPCD );
+		}
+		else
+		{
+			debug_delete( pPCD );
+			return LTFALSE;
+		}
+
+		++nNum;
+		sprintf( s_aTagName, "%s%d", FXBMGR_BALLCLASS_TAG, nNum );
+	}
+
+	// RETAIL: Tron's PRANKSTERCLASSDATA records (PORT: their place in retail's
+	// Init is not checked)
+
+	nNum = 0;
+	sprintf( s_aTagName, "%s%d", FXBMGR_PRANKSTERCLASS_TAG, nNum );
+
+	while( m_buteMgr.Exist( s_aTagName ))
+	{
+		PROJECTILECLASSDATA *pPCD = debug_new( PRANKSTERCLASSDATA );
+
+		if( pPCD && pPCD->Init( m_buteMgr, s_aTagName ))
+		{
+			m_ProjClassDataList.AddTail( pPCD );
+		}
+		else
+		{
+			debug_delete( pPCD );
+			return LTFALSE;
+		}
+
+		++nNum;
+		sprintf( s_aTagName, "%s%d", FXBMGR_PRANKSTERCLASS_TAG, nNum );
+	}
 
 	// Read in the properties for the Auto Burst Disc
 
@@ -2456,6 +2536,9 @@ PROJECTILEFX::PROJECTILEFX()
 	nCanImpactSameKind     = 0;
 
 	pClassData             = LTNULL;
+	fEnergyDrainMin        = 0.0f;
+	fEnergyDrainMax        = 0.0f;
+	fEnergyDrainSurge      = 0.0f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2514,6 +2597,11 @@ LTBOOL PROJECTILEFX::Init(CButeMgr & buteMgr, char* aTagName)
 	nSmokeTrailType      = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SMOKETRAILTYPE);
 	nVelocity            = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_VELOCITY);
 	nAltVelocity         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_ALTVELOCITY);
+	// PORT: Tron reads these here (its strings follow AltVelocity's); the
+	// exact code is not checked
+	fEnergyDrainMin      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMIN, 0.0) );
+	fEnergyDrainMax      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMAX, 0.0) );
+	fEnergyDrainSurge    = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE, 0.0) );
 	fFireOffset          = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_FIRE_OFFSET) );
 	nLightRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_LIGHTRADIUS);
 	nSoundRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SOUNDRADIUS);
@@ -3342,6 +3430,102 @@ LTBOOL CLUSTERAUTOBURSTDISCCLASSDATA::Init(CButeMgr &buteMgr,char *aTagName)
 
 	fMinBurstDistance = static_cast<LTFLOAT>(buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERAUTOBURSTCLASS_MINBURSTDIST ));
 	fMaxBurstDistance = static_cast<LTFLOAT>(buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERAUTOBURSTCLASS_MAXBURSTDIST ));
+
+	return LTTRUE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	Tron's retail-only class data (RETAIL: constructors 0x10145ea0,
+//	0x10145fe0.., Init 0x10145df0, 0x10145ed0, 0x10145ff0)
+//
+// ----------------------------------------------------------------------- //
+
+CORRUPTICDIMSCLASSDATA::CORRUPTICDIMSCLASSDATA()
+{
+	fRandomness = 0.0f;
+	fRandomnessRampUpTime = 0.0f;
+	fHorizontalFactor = 0.0f;
+	fVerticalFactor = 0.0f;
+	bHoming = false;
+	fTurnRate = 0.0f;
+}
+
+LTBOOL CORRUPTICDIMSCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
+{
+	if ( !aTagName ) return LTFALSE;
+	if ( !PROJECTILECLASSDATA::Init( buteMgr, aTagName ) ) return LTFALSE;
+
+	fRandomness				= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "Randomness" ) );
+	fRandomnessRampUpTime	= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "RandomnessRampUpTime" ) );
+	fHorizontalFactor		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "HorizontalFactor" ) );
+	fVerticalFactor			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "VerticalFactor" ) );
+	bHoming					= !!buteMgr.GetInt( aTagName, "Homing" );
+	fTurnRate				= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TurnRate" ) ) );
+
+	return LTTRUE;
+}
+
+BALLCLASSDATA::BALLCLASSDATA()
+{
+	fMinThrowTime = 0.0f;
+	fMaxThrowTime = 0.0f;
+	fMinThrowVelocity = 0.0f;
+	fMaxThrowVelocity = 0.0f;
+	fProximityThreshold = 0.0f;
+	fProximitySecondsToArm = 0.0f;
+	fProximityDistance = 0.0f;
+	fRandomAngleAdjust = 0.0f;
+	szProximityBombEffectName[0] = '\0';
+}
+
+LTBOOL BALLCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
+{
+	if ( !aTagName ) return LTFALSE;
+	if ( !PROJECTILECLASSDATA::Init( buteMgr, aTagName ) ) return LTFALSE;
+
+	fMinThrowTime			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MinThrowTime" ) );
+	fMaxThrowTime			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MaxThrowTime" ) );
+	fMinThrowVelocity		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MinThrowVelocity" ) );
+	fMaxThrowVelocity		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MaxThrowVelocity" ) );
+	fProximityThreshold		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ProximityThreshold" ) );
+	fProximitySecondsToArm	= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ProximitySecondsToArm" ) );
+	fProximityDistance		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ProximityDistance" ) );
+	buteMgr.GetString( aTagName, "ProximityBombEffectName", szProximityBombEffectName, ARRAY_LEN( szProximityBombEffectName ) );
+	fRandomAngleAdjust		= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "RandomAngleAdjust" ) ) );
+
+	return LTTRUE;
+}
+
+PRANKSTERCLASSDATA::PRANKSTERCLASSDATA()
+{
+	szEliminateTargetsFX[0] = '\0';
+	fTimeToAcquireTargets = 0.0f;
+	fTimeVictimStasis = 0.0f;
+	fTimeVictimStasisRange = 0.0f;
+	fMaxDistance = 0.0f;
+	nMaxTargets = 0;
+	fBaseVelocity = 0.0f;
+	fVelocityRange = 0.0f;
+	fDeathRadius = 0.0f;
+}
+
+LTBOOL PRANKSTERCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
+{
+	if ( !aTagName ) return LTFALSE;
+	if ( !PROJECTILECLASSDATA::Init( buteMgr, aTagName ) ) return LTFALSE;
+
+	buteMgr.GetString( aTagName, "Name", szName, ARRAY_LEN( szName ) );
+	buteMgr.GetString( aTagName, "EliminateTargetsFX", szEliminateTargetsFX, ARRAY_LEN( szEliminateTargetsFX ) );
+	fTimeToAcquireTargets	= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TimeToAcquireTargets" ) );
+	fTimeVictimStasis		= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TimeVictimStasis" ) );
+	fTimeVictimStasisRange	= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TimeVictimStasisRange" ) );
+	fMaxDistance			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MaxDistance" ) );
+	nMaxTargets				= buteMgr.GetInt( aTagName, "MaxTargets" );
+	fBaseVelocity			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "BaseVelocity" ) );
+	fVelocityRange			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "VelocityRange" ) );
+	fDeathRadius			= static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeathRadius" ) );
 
 	return LTTRUE;
 }

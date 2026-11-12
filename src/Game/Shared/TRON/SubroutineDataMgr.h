@@ -309,6 +309,17 @@ public:
 		return nIndex;
 	}
 
+	// RETAIL: the client weapons' reads of their subroutine's data (inlined
+	// in CShell 0x10017e90.., names ours)
+	SequencerData		GetSequencerData( SubroutineDataKey key ) const		{ return m_vecSequencer.at( GetIndex( key ) ); }
+	ClusterData			GetClusterData( SubroutineDataKey key ) const		{ return m_vecCluster.at( GetIndex( key ) ); }
+	SuffusionData		GetSuffusionData( SubroutineDataKey key ) const		{ return m_vecSuffusion.at( GetIndex( key ) ); }
+	LOLData				GetLOLData( SubroutineDataKey key ) const			{ return m_vecLOL.at( GetIndex( key ) ); }
+	BallLauncherData	GetBallLauncherData( SubroutineDataKey key ) const	{ return m_vecBallLauncher.at( GetIndex( key ) ); }
+	DrunkenDimsData		GetDrunkenDimsData( SubroutineDataKey key ) const	{ return m_vecDrunkenDims.at( GetIndex( key ) ); }
+	EnergyClawData		GetEnergyClawData( SubroutineDataKey key ) const	{ return m_vecEnergyClaw.at( GetIndex( key ) ); }
+	PranksterBitData	GetPranksterBitData( SubroutineDataKey key ) const	{ return m_vecPranksterBit.at( GetIndex( key ) ); }
+
 protected:
 
 	char* FindTag(const char* szTagBase, const char* szAttrib, const char* szValue, char* szResult, uint32 nResultLen);
