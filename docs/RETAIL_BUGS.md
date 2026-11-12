@@ -84,6 +84,18 @@ levels may not use lures, so it may never show.
 
 Not fixed yet.
 
+### A posted string that takes more than one send is sent again from its start
+
+CShell.dll 0x100202c0 (ghiPostStringStateDoPosting, the GameSpy SDK's
+ghttp/ghttpPost.c as Tron links it, 2003). A string field of a multipart
+HTTP post is sent with `ghiDoSend(connection, string, len - pos)`: the
+length left, but from the string's start rather than `string + pos`, so a
+partial send is followed by the beginning of the string again and the post
+is corrupt. Later SDKs send through `ghiTrySendThenBuffer`. Only a post
+that fills the socket's buffer shows it.
+
+Not fixed yet (the modern build replaces GameSpy's services anyway).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

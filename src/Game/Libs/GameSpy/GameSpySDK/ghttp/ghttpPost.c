@@ -719,8 +719,9 @@ static GHIPostingResult ghiPostStringStateDoPosting
 	GHIConnection * connection
 )
 {
-	//GHTTPBool result;
-	
+	int rcode;
+	int len;
+
 	assert(state->pos >= 0);
 
 	// Is this an empty string?
@@ -732,6 +733,8 @@ static GHIPostingResult ghiPostStringStateDoPosting
 
 	// If we're doing a simple post, we need to fix invalid characters.
 	//   - only applies to simple posts
+	// TRON: the 2003 SDK's (CShell.dll 1.030, 0x100202c0): the fixed string
+	// is only buffered, and the plain one sent at once.
 	///////////////////////////////////////////////////////////////////
 	if(!connection->post->hasFiles && state->data->data.string.invalidChars)
 	{
@@ -739,7 +742,7 @@ static GHIPostingResult ghiPostStringStateDoPosting
 		int c;
 		const char * string = state->data->data.string.string;
 		char hex[4] = "%00";
-		GHIBuffer *writeBuffer = &connection->sendBuffer;
+
 		// This could probably be done a lot better.
 		////////////////////////////////////////////
 		for(i = 0 ; (c = string[i]) != 0 ; i++)
@@ -748,15 +751,13 @@ static GHIPostingResult ghiPostStringStateDoPosting
 			{
 				// Legal.
 				/////////
-				//result = ghiAppendCharToBuffer(writeBuffer, c);
-				ghiAppendCharToBuffer(writeBuffer, c);
+				ghiAppendCharToBuffer(&connection->sendBuffer, c);
 			}
 			else if(c == ' ')
 			{
 				// Space.
 				/////////
-				//result = ghiAppendCharToBuffer(writeBuffer, '+');
-				ghiAppendCharToBuffer(writeBuffer, '+');
+				ghiAppendCharToBuffer(&connection->sendBuffer, '+');
 			}
 			else
 			{
@@ -765,28 +766,32 @@ static GHIPostingResult ghiPostStringStateDoPosting
 				assert((c / 16) < 16);
 				hex[1] = GHI_DIGITS[c / 16];
 				hex[2] = GHI_DIGITS[c % 16];
-				//result = ghiAppendDataToBuffer(writeBuffer, hex, 3);
-				ghiAppendDataToBuffer(writeBuffer, hex, 3);
+				ghiAppendDataToBuffer(&connection->sendBuffer, hex, 3);
 			}
 		}
-	}
-	else
-	{
-		// copy the string as-is, encrypting if necessary
-		GHITrySendResult result = ghiTrySendThenBuffer(connection, 
-			state->data->data.string.string, state->data->data.string.len);
-		if (result == GHITrySendError)
-			return GHIPostingError;
-		else
-			return GHIPostingDone;
+
+		return GHIPostingDone;
 	}
 
-	// Send the URL fixed string.
-	if (!ghiSendBufferedData(&connection->sendBuffer, connection))
+	// Send what we can.
+	// RETAIL: from the string's start, not its pos (the SDK's bug: a string
+	// that took more than one send is sent from the start again).
+	////////////////////
+	len = (state->data->data.string.len - state->pos);
+	rcode = ghiDoSend(connection, state->data->data.string.string, len);
+	if(rcode == -1)
 		return GHIPostingError;
-	if (connection->sendBuffer.pos == connection->sendBuffer.len)
-		ghiResetBuffer(&connection->sendBuffer);
-	return GHIPostingDone;
+
+	// Update the pos.
+	//////////////////
+	state->pos += rcode;
+
+	// Did we send it all?
+	//////////////////////
+	if(rcode == len)
+		return GHIPostingDone;
+
+	return GHIPostingPosting;
 }
 
 static GHIPostingResult ghiPostFileDiskStateDoPosting
@@ -867,26 +872,21 @@ static GHIPostingResult ghiPostFileMemoryStateDoPosting
 	assert(state->pos < state->data->data.fileMemory.len);
 
 	// Send what we can.
+	// TRON: the 2003 SDK's (CShell.dll 1.030, 0x100204a0): one send a call.
 	////////////////////
-	do
-	{
-		// Do the send.
-		///////////////
-		len = (state->data->data.fileMemory.len - state->pos);
-		rcode = ghiDoSend(connection, state->data->data.fileMemory.buffer + state->pos, len);
-		if(gsiSocketIsError(rcode))
-			return GHIPostingError;
+	len = (state->data->data.fileMemory.len - state->pos);
+	rcode = ghiDoSend(connection, state->data->data.fileMemory.buffer + state->pos, len);
+	if(rcode == -1)
+		return GHIPostingError;
 
-		// Update the pos.
-		//////////////////
-		state->pos += rcode;
+	// Update the pos.
+	//////////////////
+	state->pos += rcode;
 
-		// Did we send it all?
-		//////////////////////
-		if(state->data->data.fileMemory.len == state->pos)
-			return GHIPostingDone;
-	}
-	while(rcode);
+	// Did we send it all?
+	//////////////////////
+	if(rcode == len)
+		return GHIPostingDone;
 
 	return GHIPostingPosting;
 }
@@ -944,17 +944,14 @@ static GHIPostingResult ghiPostStateDoPosting
 			{
 				const char * filename;
 				const char * contentType;
-				int filelen;
 
 				if(state->data->type == GHIFileDisk)
 				{
-					filelen = state->state.fileDisk.len;
 					filename = state->data->data.fileDisk.reportFilename;
 					contentType = state->data->data.fileDisk.contentType;
 				}
 				else
 				{
-					filelen = state->data->data.fileMemory.len;
 					filename = state->data->data.fileMemory.reportFilename;
 					contentType = state->data->data.fileMemory.contentType;
 				}
@@ -987,8 +984,8 @@ static GHIPostingResult ghiPostStateDoPosting
 		if(result == GHITrySendBuffered)
 			return GHIPostingPosting;
 
-		// We sent everything, reset the send buffer to conserve space
-		ghiResetBuffer(&connection->sendBuffer);
+		// TRON: the 2003 SDK does not reset the send buffer here (CShell.dll
+		// 1.030, 0x10020150).
 	}
 
 	// Post based on type.
@@ -1027,8 +1024,9 @@ GHIPostingResult ghiPostDoPosting
 	len = ArrayLength(postingState->states);
 
 	// Check for buffered data.
+	// TRON: the 2003 SDK's tests (CShell.dll 1.030, 0x10020060).
 	///////////////////////////
-	if(connection->sendBuffer.pos < connection->sendBuffer.len)
+	if(connection->sendBuffer.len)
 	{
 		// Send the buffered data.
 		//////////////////////////
@@ -1096,7 +1094,7 @@ GHIPostingResult ghiPostDoPosting
 
 	// We're not done if there's stuff in the buffer.
 	/////////////////////////////////////////////////
-	if(connection->sendBuffer.pos < connection->sendBuffer.len)
+	if(connection->sendBuffer.len)
 		return GHIPostingPosting;
 
 	return GHIPostingDone;
