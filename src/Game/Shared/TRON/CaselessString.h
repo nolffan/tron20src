@@ -17,6 +17,16 @@
 
 #include <string>
 
+// RETAIL: the length is never expanded inline (Object.lto 0x10015130 and
+// CShell.dll 0x10088c30, called everywhere, one copy per image) while
+// compare is: so the length is a file-static helper that is not marked
+// inline (/Ob1 does not expand it; /OPT:ICF folds the copies).  Ours.
+static size_t CaselessStrLen(const char* s)
+{
+	if (!s) return 0;
+	return strlen(s);
+}
+
 // A char_traits that compares without case (the name is ours)
 struct CaselessCharTraits : public std::char_traits<char>
 {
@@ -27,8 +37,7 @@ struct CaselessCharTraits : public std::char_traits<char>
 
 	static size_t length(const char* s)
 	{
-		if (!s) return 0;
-		return strlen(s);
+		return CaselessStrLen(s);
 	}
 };
 

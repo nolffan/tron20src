@@ -240,6 +240,7 @@ SOURCE=.\Stdafx.cpp
 # Begin Source File
 
 SOURCE=.\Thorne.cpp
+SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -283,7 +284,7 @@ SOURCE=.\BuildNote.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CaselessString.h
+SOURCE=..\..\Shared\TRON\CaselessString.h
 # End Source File
 # Begin Source File
 
@@ -356,6 +357,7 @@ SOURCE=.\Stdafx.h
 # Begin Source File
 
 SOURCE=.\Thorne.h
+SOURCE=..\..\Shared\TRON\SubroutineDataMgr.h
 # End Source File
 # Begin Source File
 
