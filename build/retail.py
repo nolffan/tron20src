@@ -1,6 +1,6 @@
-# The retail game's layout, for tools/retailextract.py (it reads this file
+# The retail game's layout, for ext/tools/retailextract.py (it reads this file
 # from build/; see its header): Tron 2.0 (USA) with Update 2 (v1.030), as
-# rez/ installs it (rez/games/tron2-usa-1.030, build/retail.sh).
+# ext/rez/ installs it (ext/rez/games/tron2-usa-1.030, build/retail.sh).
 
 # The archives, under their installed names. GameDLL.rez holds the 1.010
 # game DLLs (July 2003); Update 2 adds Gamep3.rez, the English CRES.dll,

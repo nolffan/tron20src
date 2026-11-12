@@ -25,8 +25,8 @@ the legacy build keeps matching the retail one.
 
 ## Where it stands
 
-Started. The retail game is installed from its discs and update (`rez/`),
-the compiler is in `toolchains/` (`msvc-6.00-8168`), and the scoreboard
+Started. The retail game is installed from its discs and update (`ext/rez/`),
+the compiler is in `ext/toolchains/` (`msvc-6.00-8168`), and the scoreboard
 scores every retail binary against our build. `docs/PLAN.md` is the plan,
 package by package.
 
@@ -66,8 +66,8 @@ the evidence, is `progress/COMPILERS.md`.
 ## Building
 
 Needs docker and the three submodules (`git submodule update --init`):
-`toolchains/` (the compilers), `rez/` (which fetches the USA discs from
-archive.org and installs the game with Update 2) and `tools/` (the
+`ext/toolchains/` (the compilers), `ext/rez/` (which fetches the USA discs from
+archive.org and installs the game with Update 2) and `ext/tools/` (the
 reconstruction tools).
 
 ```sh

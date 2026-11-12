@@ -6,12 +6,12 @@
 #                 fails if a function recorded as identical stops matching
 #   make help     everything else
 #
-# Needs only docker on the host and the three submodules (`git submodule
-# update --init`): the compilers, toolchains/ (toolchains/README.md); rez/,
-# which fetches the redump images of the USA discs from archive.org and
-# installs the game from them with Update 2, v1.030 (rez/README.md;
-# `make retail`, which every build runs first, does it once); and tools/, the
-# reconstruction tools. Every step runs in a throwaway container of the image
+# Needs only docker on the host and the three submodules in ext/ (`git
+# submodule update --init`): the compilers, ext/toolchains/
+# (ext/toolchains/README.md); ext/rez/, which fetches the redump images of
+# the USA discs from archive.org and installs the game from them with
+# Update 2, v1.030 (ext/rez/README.md; `make retail`, which every build runs
+# first, does it once); and ext/tools/, the reconstruction tools. Every step runs in a throwaway container of the image
 # docker/Dockerfile describes, with this checkout mounted at /repo, as you.
 
 IMAGE     ?= tron20src-build
@@ -26,8 +26,8 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 
 # VC6 as Tron 2.0's Rich headers name it: cl and link 12.00.8168
 # (progress/COMPILERS.md). The DirectX 9 SDK the engine needs is not in
-# toolchains/ yet (docs/PLAN.md, package 2).
-TOOLCHAIN_FILES = toolchains/msvc-6.00-8168/BIN/cl.exe toolchains/msvc-6.00-8168/BIN/link.exe
+# ext/toolchains/ yet (docs/PLAN.md, package 2).
+TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-rez check-tools check-toolchain \
 	check-build reference progress progress-update shell clean distclean help
@@ -47,8 +47,8 @@ help:
 	@echo "make progress-update  record the score in progress/ and README.md"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     fetch the two disc images and install the retail game and its"
-	@echo "                Update 2 from them (rez/, once; every build runs it); check it"
-	@echo "make shell      a shell in the build container (build/*.sh, tools/ work there)"
+	@echo "                Update 2 from them (ext/rez/, once; every build runs it); check it"
+	@echo "make shell      a shell in the build container (build/*.sh, ext/tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"
 	@echo "make distclean  clean, and remove the docker image too"
@@ -88,7 +88,7 @@ endif
 	@echo "== docker image $(IMAGE) ready"
 
 # The retail game the build takes its data from (build/retail.sh): installed
-# by rez/ the first time, checked against rez/games.sha256 every time.
+# by ext/rez/ the first time, checked against ext/rez/games.sha256 every time.
 retail: check-rez check-tools image
 	@$(DOCKER_RUN) bash -c 'source build/retail.sh && retail_install && retail_verify'
 
@@ -96,17 +96,17 @@ reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
 
 check-rez:
-	@[ -f rez/install-games.sh ] || { echo "error: rez/ is empty -- the disc images and their installer are the rez/ submodule: run git submodule update --init (see rez/README.md)" >&2; exit 1; }
+	@[ -f ext/rez/install-games.sh ] || { echo "error: ext/rez/ is empty -- the disc images and their installer are the ext/rez/ submodule: run git submodule update --init (see ext/rez/README.md)" >&2; exit 1; }
 
 check-tools:
-	@[ -f tools/progress.py ] || { echo "error: tools/ is empty -- the reconstruction tools are the tools/ submodule: run git submodule update --init" >&2; exit 1; }
+	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }
 
 check-toolchain:
 	@for f in $(TOOLCHAIN_FILES); do \
-	  [ -f "$$f" ] || { echo "error: $$f is missing -- the compilers are the toolchains/ submodule: run git submodule update --init (see toolchains/README.md)" >&2; exit 1; }; \
+	  [ -f "$$f" ] || { echo "error: $$f is missing -- the compilers are the ext/toolchains/ submodule: run git submodule update --init (see ext/toolchains/README.md)" >&2; exit 1; }; \
 	done
 
-# what tools/evidence.py cannot ask git for in the container (the build
+# what ext/tools/evidence.py cannot ask git for in the container (the build
 # image has no git)
 EVIDENCE_ENV = EVIDENCE_REVISION=$(shell git rev-parse HEAD 2>/dev/null) \
 	EVIDENCE_MODIFIED=$(shell git status --porcelain --untracked-files=no 2>/dev/null | wc -l) \
