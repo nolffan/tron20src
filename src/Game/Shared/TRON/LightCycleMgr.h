@@ -30,6 +30,14 @@
 // Defines (Build 69)
 #define CURRENT_TRAIL_ID -1
 
+// UpdateCyclistMovement's flags (the names are ours)
+#define LCMF_TURNLEFT		0x00000010
+#define LCMF_TURNRIGHT		0x00000100
+#define LCMF_ACCELERATE		0x00001000
+#define LCMF_BRAKE			0x00010000
+#define LCMF_SPEEDZONE		0x00100000
+#define LCMF_SLOWZONE		0x01000000
+
 // The no-power-up value of LIGHT_CYCLIST::nPowerup (ours; RETAIL: 0xc)
 #define LC_NO_POWERUP	12
 
@@ -97,10 +105,10 @@ struct LIGHT_CYCLIST
 		nRed = 0;
 		nGreen = 0;
 		nBlue = 0;
-		m_fTronUnknown6C = 0.0f;
+		fAccelRate = 0.0f;
 		fBaseSpeed = 800.0f;
 		fSpeed = 0.0f;
-		m_fTronUnknown78 = 0.0f;
+		fMaxSpeed = 0.0f;
 		fTurboAccelRate = 400.0f;
 		fBrakeDecelRate = 400.0f;
 		fMaxManualSpeedAdd = 1600.0f;
@@ -163,10 +171,10 @@ struct LIGHT_CYCLIST
 	uint8	nRed;							// RETAIL: +0x68
 	uint8	nGreen;							// RETAIL: +0x69
 	uint8	nBlue;							// RETAIL: +0x6a
-	float	m_fTronUnknown6C;				// RETAIL: +0x6c
+	float	fAccelRate;						// RETAIL: +0x6c (UpdateCyclistMovement)
 	float	fBaseSpeed;						// RETAIL: +0x70
 	float	fSpeed;							// RETAIL: +0x74
-	float	m_fTronUnknown78;				// RETAIL: +0x78
+	float	fMaxSpeed;						// RETAIL: +0x78 (UpdateCyclistMovement)
 	float	fMaxManualSpeedAdd;				// RETAIL: +0x7c
 	float	fMaxExternalSpeedAdd;			// RETAIL: +0x80
 	float	fMaxTurboSpeed;					// RETAIL: +0x84
@@ -266,7 +274,9 @@ class CLightCycleMgr
 		virtual bool BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);
 		// Grows the trail spike, then removes it. RETAIL: 0x10101520
 		virtual void UpdateTrailSpike(LIGHT_CYCLIST* pCyclist);
-		virtual bool TronUnknownVirtual12(LIGHT_CYCLIST* pCyclist, uint32);	// RETAIL: 0x100fffd0
+		// Turns and accelerates the object's cycle from the LCMF_ flags and
+		// sets its velocity. RETAIL: 0x100fffd0
+		virtual bool UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags);
 
 		// Sets the cycle's dims, turned to its forward. RETAIL: 0x10100520
 		virtual void UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector & vDims, bool bTronUnknown);
@@ -280,8 +290,9 @@ class CLightCycleMgr
 		// RETAIL: slot 19, 0x10010970 (inline; returns a string made from
 		// a global char array, 0x10236c98)
 		virtual std::string TronUnknownVirtual19(uint32) { return std::string(""); }
-		// RETAIL: slot 20, 0x10010a30 (inline, empty)
-		virtual void TronUnknownVirtual20(uint32, uint32, uint32, uint32, uint32) {}
+		// The cycle turned or its acceleration or max speed changed
+		// (UpdateCyclistMovement). RETAIL: slot 20, 0x10010a30 (inline, empty)
+		virtual void CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool bTurned, float fAccel, float fWallAccel, uint32 nFlags) {}
 		// A trail was cut by a shielded cycle (HandleShieldCollision).
 		// RETAIL: slot 21, 0x100a9310 (inline, empty, folded)
 		virtual void TrailCut(LightCycleCollisionInfo* pInfo) {}
