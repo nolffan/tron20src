@@ -58,6 +58,12 @@ public:
 
 	void		Compile();
 
+	// RETAIL: the 1.030 screen shows the performance ratings, which
+	// CRatingMgr::PopulateRatings (0x100516d0) fills; not written yet
+	// (names ours).
+	void		SetRating(int nRating, int nValue);	// RETAIL: 0x10080070
+	void		SetRatingPoints(int nPoints);			// RETAIL: 0x100800c0
+
 protected:
 
     uint32		OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);

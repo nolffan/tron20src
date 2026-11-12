@@ -230,6 +230,39 @@ point, so it works as a pop_back.
 
 Not fixed yet: the modern build should call pop_back().
 
+### Updating a listed server by IP adds it to the list again
+
+CShell.dll 0x10052f50 (ServerBrowserAuxUpdateIPA, GameSpy SDK
+serverbrowsing/sb_serverbrowsing.c, 2003). Updating a server directly
+(not via the master), the browser looks the server up by IP and port and,
+when it is already in the list, re-queries that entry, but then appends the
+server to the list in both cases: an already-listed server appears twice and
+the browser callback reports it added again. GameSpy fixed it in
+serverbrowsing 2.02.11 (2004-05-24).
+
+Not fixed yet: the modern build should append only a new server.
+
+### The query engine marks timed-out servers in the wrong field
+
+CShell.dll 0x10052220 (TimeoutOldQueries, GameSpy SDK
+serverbrowsing/sb_queryengine.c). A server whose query timed out gets
+STATE_QUERYFAILED set and its pending-query states cleared in `flags` (the
+server's address flags) instead of `state`: the server keeps its pending
+state and its flags gain bits that mean "has ICMP address"/"private port".
+The 2007 SDK still has it.
+
+Not fixed yet: the modern build should set them in `state`.
+
+### A LAN browse never reports that its list is complete
+
+CShell.dll 0x10053e30 (ProcessLanData, GameSpy SDK
+serverbrowsing/sb_serverlist.c, 2003). When the LAN search time ends, the
+list closes its socket and goes disconnected without the
+slc_initiallistcomplete callback, so an asynchronous LAN browse is never
+told it finished. GameSpy fixed it in serverbrowsing 2.00.36 (2003-11-10).
+
+Not fixed yet: the modern build should make the callback.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

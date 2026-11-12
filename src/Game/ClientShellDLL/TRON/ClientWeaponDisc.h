@@ -13,14 +13,15 @@
 #ifndef  _ClientWeaponDisc_h_INCLUDED_
 #define  _ClientWeaponDisc_h_INCLUDED_
 
-#include "ClientWeapon.h"
+#include "TronClientWeapon.h"
 
 
 // forward declarations to reduce header dependancies
 struct DISCCLASSDATA;
 
 
-class CClientWeaponDisc : public CClientWeapon
+// RETAIL: derives from CTronClientWeapon (RTTI); its members are at 0x208..
+class CClientWeaponDisc : public CTronClientWeapon
 {
 public:
 	CClientWeaponDisc();
@@ -31,6 +32,10 @@ public:
 
 	// callbacks from the animation system
 	virtual bool  OnModelKey( HLOCALOBJ hObj, ArgList* pArgs );
+
+	// RETAIL: 0x10019690 / 0x10019710
+	virtual void  Load( ILTMessage_Read *pMsg );
+	virtual void  Save( ILTMessage_Write *pMsg );
 
 	// override the main update function
 	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
@@ -64,6 +69,14 @@ protected:
 	virtual bool  PlaySwatDefenseAnimation( bool bResetAni );
 	virtual bool  PlayHoldDefenseAnimation( bool bResetAni );
 
+	// RETAIL: slots 103/104 (0x1001a1f0, 0x1001a210; names ours): any
+	// ammo, and not a full load of it
+	virtual bool  TronUnknownVirtual19C();
+	virtual bool  TronUnknownVirtual1A0();
+
+	// RETAIL: slot 50 (0x10018150, emitted in ClientWeaponClusterDisc's TU)
+	virtual bool  TronUnknownVirtualC8() { return !TronUnknownVirtual1A0(); }
+
 	// helper to handle the projectile messages that come down the pike
 	virtual bool  HandleMessageProjectile( uint8 messageID, ILTMessage_Read *pMsg );
 
@@ -72,7 +85,7 @@ protected:
 
 	// return the "type" identifier (1st part of a fire message)
 	// NOTE: currently the server handles VECTOR and PROJECTILE the same
-	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_DISC; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_DISC; }	// RETAIL: 0x10018160 returns 3 (kTronFire_Disc); our MsgIDs.h and server still say 2
 
 	// send a message to the server telling it a defense is starting
 	void          SendDefendMessage( uint8 cBlockMsgType, uint32 nAni ) const;
@@ -106,6 +119,9 @@ private:
 	HMODELANIM    m_nImpactHoldDefenseAni;  // Hold defense impact
 	HMODELANIM    m_nPostHoldDefenseAni;    // Hold defense end
 
+	// RETAIL: the order below is retail's (0x21c..0x225, from Load/Save);
+	// which retail bool is which of ours is a guess.
+
 	// true if we should play the hold impact defenese animation
 	// during the update (only works if the defense hold is already
 	// playing)
@@ -119,21 +135,15 @@ private:
 	// the server has been notified its been sent
 	bool          m_bFireMessageSent;
 
+	// time that the disc is in use (-1.0f when not in use)
+	float         m_fTimeDiscActive;
+
 	// true if we should be sending updates to the server
 	bool          m_bDiscNeedsUpdates;
 
-	// The disc is a click-to-fire and click-to-return
-	// weapon.  This variable will check if the player has
-	// clicked the fire button to return before the the
-	// disc actually fires (before we receive the fire key
-	// that fires the disc).  This will get set to false
-	// when the disc prefire animation starts, and if the
-	// user "clicks-to-return" before the fire key, this
-	// will be set to true and the fire key will be ignored.
+	// The disc is a click-to-fire and click-to-return weapon: true when
+	// the player clicked to return before the fire key (see b69).
 	bool          m_bIgnoreFireKeyframe;
-
-	// time that the disc is in use (-1.0f when not in use)
-	float         m_fTimeDiscActive;
 };
 
 #endif //_ClientWeaponDisc_h_INCLUDED_
