@@ -22,6 +22,9 @@ namespace
 	const float EPSILON = 0.001f;
 	const float RAD_TO_DEG = 180.0f / MATH_PI;
 	const float DEG_TO_RAD = MATH_PI / 180.f;
+	// RETAIL: Tron's (0x10236c20, set at 0x10001040; IsOnMe and 0x10001f40 read
+	// it); the name is ours.
+	const float ARC_GAP_ANGLE = DEG_TO_RAD * 10.0f;
 
     LTRotation g_rRot;
     LTVector g_vPos, g_vU, g_vR, g_vF;
