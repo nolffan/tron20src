@@ -37,12 +37,6 @@ void CClientWeaponLOL::Save( ILTMessage_Write *pMsg )
 	CTronClientWeapon::Save( pMsg );
 }
 
-// RETAIL: 0x1001ae80 (528 bytes) not yet written; PORT: CClientWeapon's
-bool CClientWeaponLOL::PlayFireAnimation( bool bResetAni )
-{
-	return CTronClientWeapon::PlayFireAnimation( bResetAni );
-}
-
 // RETAIL: 0x1001ad80
 float CClientWeaponLOL::GetEnergyUse()
 {
