@@ -226,6 +226,10 @@ SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LCHUDHelper.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -464,6 +468,10 @@ SOURCE=.\HUDProgress.h
 # Begin Source File
 
 SOURCE=.\HUDWeapon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LCHUDHelper.h
 # End Source File
 # Begin Source File
 
