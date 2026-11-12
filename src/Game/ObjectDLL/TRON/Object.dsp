@@ -198,6 +198,14 @@ SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleVolume.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolumeCascader.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleZones.cpp
 # End Source File
 # Begin Source File
@@ -300,6 +308,14 @@ SOURCE=.\IONode.h
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolume.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleVolumeCascader.h
 # End Source File
 # Begin Source File
 
