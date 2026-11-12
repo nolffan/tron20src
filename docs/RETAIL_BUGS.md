@@ -96,6 +96,27 @@ it may never show.
 
 Not fixed yet: the modern build should read the properties for both.
 
+### A light cycle dialog's bad priority is never reported
+
+Object.lto 0x10025b30 (CLightCycleButeMgr::Init, Shared/TRON/
+LightCycleButeMgr.cpp; CShell.dll has its own copy). Reading a CycleDialog
+<Type>Priority, the check is `if (fPriority < 0.0f && fPriority > 1.0f)`,
+which is never true: a priority out of [0, 1] goes unreported ("ERROR:
+Priority value %f < 0 or %f > 1 for %s") and is kept. It should be `||`.
+
+Not fixed yet: the modern build should test with `||` (and clamp).
+
+### A light cycle shade's Super color is not cleared
+
+Object.lto 0x10026858 and 0x1002802a (LIGHTCYCLESHADE's constructor, inlined
+in CLightCycleButeMgr::Init and GetShade, Shared/TRON/LightCycleButeMgr.h).
+It clears the first two characters of the Regular color name instead of the
+first of each color, so the Super color of a new shade is garbage until Init
+reads it. Init always reads both, and GetShade's default shade is static
+(zeroed), so it should never show.
+
+Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

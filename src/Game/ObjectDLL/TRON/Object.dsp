@@ -259,6 +259,10 @@ SOURCE=.\TronGameServerShell.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\TronMissionButeMgr.cpp
 # End Source File
 # Begin Source File
@@ -380,6 +384,10 @@ SOURCE=.\Stdafx.h
 # Begin Source File
 
 SOURCE=.\TronGameServerShell.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.h
 # End Source File
 # Begin Source File
 
