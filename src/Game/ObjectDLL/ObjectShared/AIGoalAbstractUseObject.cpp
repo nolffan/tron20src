@@ -40,6 +40,7 @@ CAIGoalAbstractUseObject::CAIGoalAbstractUseObject()
 	m_bHolstered = LTFALSE;
 	m_bLockedNode = LTFALSE;
 	m_bPlayedSpecialDeathAnim = LTFALSE;
+	m_bTronUnknown100 = LTFALSE;
 
 	m_eWeaponPosition = kAP_Down;
 }
@@ -87,6 +88,7 @@ void CAIGoalAbstractUseObject::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bHolstered);
 	SAVE_BOOL(m_bLockedNode);
 	SAVE_BOOL(m_bPlayedSpecialDeathAnim);
+	SAVE_BOOL(m_bTronUnknown100);
 }
 
 void CAIGoalAbstractUseObject::Load(ILTMessage_Read *pMsg)
@@ -104,6 +106,7 @@ void CAIGoalAbstractUseObject::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bHolstered);
 	LOAD_BOOL(m_bLockedNode);
 	LOAD_BOOL(m_bPlayedSpecialDeathAnim);
+	LOAD_BOOL(m_bTronUnknown100);
 }
 
 // ----------------------------------------------------------------------- //

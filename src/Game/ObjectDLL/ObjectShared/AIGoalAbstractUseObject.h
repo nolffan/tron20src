@@ -87,6 +87,9 @@ class CAIGoalAbstractUseObject : public CAIGoalAbstractSearch
 		LTBOOL				m_bHolstered;
 		LTBOOL				m_bLockedNode;
 		LTBOOL				m_bPlayedSpecialDeathAnim;
+		// RETAIL: Tron adds a BOOL at 0x100 (ctor 0x10271d30 clears it, Save
+		// 0x10271f80 / Load write and read it last). Users not yet identified.
+		LTBOOL				m_bTronUnknown100;
 };
 
 
