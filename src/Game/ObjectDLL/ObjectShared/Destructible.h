@@ -217,6 +217,8 @@ class CDestructible : public IAggregate
         void SetCanHeal(LTBOOL bCanHeal)			{ m_bCanHeal = bCanHeal; }
         void SetCanRepair(LTBOOL bCanRepair)		{ m_bCanRepair = bCanRepair; }
         void SetCanDamage(LTBOOL bCanDamage)		{ m_bCanDamage = bCanDamage; }
+		// RETAIL: Thorne sets it on his ball (retail 0x100594f3)
+		void SetTronUnknown6D0(bool b)				{ m_bTronUnknown6D0 = b; }
         void SetNeverDestroy(LTBOOL bNeverDestroy)	{ m_bNeverDestroy = bNeverDestroy; }
         void SetApplyDamagePhysics(LTBOOL b)		{ m_bApplyDamagePhysics = b; }
         void	SetCantDamageFlags(DamageFlags nFlags)	{ m_nCantDamageFlags = nFlags; }

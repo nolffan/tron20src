@@ -239,6 +239,10 @@ SOURCE=.\Stdafx.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\Thorne.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronGameServerShell.cpp
 # End Source File
 # Begin Source File
@@ -248,6 +252,10 @@ SOURCE=..\..\Shared\TRON\TronMissionButeMgr.cpp
 # Begin Source File
 
 SOURCE=.\TronPlayerObj.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronTurret.cpp
 # End Source File
 # Begin Source File
 
@@ -347,6 +355,10 @@ SOURCE=.\Stdafx.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\Thorne.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronGameServerShell.h
 # End Source File
 # Begin Source File
@@ -356,6 +368,10 @@ SOURCE=..\..\Shared\TRON\TronMissionButeMgr.h
 # Begin Source File
 
 SOURCE=.\TronPlayerObj.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronTurret.h
 # End Source File
 # Begin Source File
 

@@ -96,7 +96,7 @@ void CBossButeMgr::ReadThorne()
 			CButeTools::GetValidatedString(m_buteMgr, szTag, szLabel, szValue, sizeof(szValue));
 			sAnim = szValue;
 
-			m_Thorne.mapAnims.insert(ThorneAttributes::AnimMap::value_type(sAnim, iAnim));
+			m_Thorne.mapAnims.insert(ThorneAttributes::AnimMap::value_type(iAnim, sAnim));
 		}
 	}
 }
