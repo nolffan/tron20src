@@ -308,6 +308,11 @@ CInterfaceMgr::CInterfaceMgr()
 	// to compile when a member's size changes (adjust m_aTronUnknownPad)
 	typedef char TronCheckInitialized[offsetof(CInterfaceMgr, m_bInitialized) == 0xf980 ? 1 : -1];
 	typedef char TronCheckSize[sizeof(CInterfaceMgr) == 0x10108 ? 1 : -1];
+	typedef char TronCheckCursorMgr[offsetof(CInterfaceMgr, m_CursorMgr) == 0x40 ? 1 : -1];
+	typedef char TronCheckMessageBox[offsetof(CInterfaceMgr, m_MessageBox) == 0x7c ? 1 : -1];
+	typedef char TronCheckInterfaceResMgr[offsetof(CInterfaceMgr, m_InterfaceResMgr) == 0x624 ? 1 : -1];
+	typedef char TronCheckMenuMgr[offsetof(CInterfaceMgr, m_MenuMgr) == 0xebc ? 1 : -1];
+	typedef char TronCheckScreenSpriteMgr[offsetof(CInterfaceMgr, m_ScreenSpriteMgr) == 0xe73c ? 1 : -1];
 
 	g_pInterfaceMgr	= this;
 

@@ -423,17 +423,29 @@ class CInterfaceMgr
 	// RETAIL: CTronInterfaceMgr uses the members below (the cursor, the
 	// message box, the screen sprites, the client info)
 	protected :
-		CInterfaceResMgr	m_InterfaceResMgr;		// manages shared resources
-		CMenuMgr			m_MenuMgr;
+		// RETAIL: retail's order (constructor 0x100c67b0) and offsets; the
+		// pads stand in for the difference between retail's sizes of these
+		// classes and ours (checked in the constructor)
+		CCursorMgr		m_CursorMgr;			// +0x40 Cursor handler (new for Tron/TO2)
+		char			m_aTronPadCursorMgr[0x3c - sizeof(CCursorMgr)];
+		CMessageBox		m_MessageBox;			// +0x7c Used for simple dialog boxes
+		char			m_aTronPadMessageBox[0x5a8 - sizeof(CMessageBox)];
+		CInterfaceResMgr	m_InterfaceResMgr;		// +0x624 manages shared resources
+		char			m_aTronPadInterfaceResMgr[0x898 - sizeof(CInterfaceResMgr)];
+		CMenuMgr			m_MenuMgr;				// +0xebc
+		char			m_aTronPadMenuMgr[0x5ce8 - sizeof(CMenuMgr)];
 //		CLayoutMgr			m_LayoutMgr;			// bute mgr for layout info
 		CPerformanceMgr		m_PerformanceMgr;		// manages performance settings
 		CProfileMgr			m_ProfileMgr;			// manages player profiles
 
         CClientInfoMgr  m_ClientInfo;           // Client info mgr
+		// RETAIL: retail's performance and profile managers are smaller than
+		// ours, and its client info bigger (+0xe408; a CString before it at
+		// +0xe400): this pad takes the differences
+		char			m_aTronPadClientInfo[0x1118 + 0x6744 + 0x8 + 0x334 - sizeof(CPerformanceMgr) - sizeof(CProfileMgr) - sizeof(CClientInfoMgr)];
 
-		CScreenSpriteMgr m_ScreenSpriteMgr;		// Screen sprite mgr (new for Tron/TO2)
+		CScreenSpriteMgr m_ScreenSpriteMgr;		// +0xe73c Screen sprite mgr (new for Tron/TO2)
 
-		CCursorMgr		m_CursorMgr;			// Cursor handler (new for Tron/TO2)
 
 		CGameSettings	m_Settings;
 		CInterfaceTimer m_InterfaceTimer;		// Main interface timer
@@ -441,7 +453,6 @@ class CInterfaceMgr
 		CInterfaceTimer m_BlueInterfaceTimer;	// Red team interface timer
 		CCredits		m_Credits;				// Display credits
 		CPopupText		m_PopupText;			// Display in game text
-		CMessageBox		m_MessageBox;			// Used for simple dialog boxes
 
 		CFullScreenTint m_FullScreenTint;		// All full screen tinting (used for pause)
 
@@ -621,7 +632,7 @@ private:
 		// order differ: constructor 0x100c67b0); this pad puts m_bInitialized
 		// at retail's +0xf980 (checked in the constructor). Shrink it when
 		// a member above grows.
-		char	m_aTronUnknownPad[0xf980 - 0xeaa4];
+		char	m_aTronUnknownPad[0xf980 - 0xf534];
 
 		// true after Init called.  false after Term called.
 		bool	m_bInitialized;
