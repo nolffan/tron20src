@@ -184,9 +184,9 @@ bool CTronGameServerShell::DropInventoryObject(Body* pBody)
 		pObj = (CoreDump*)g_pLTServer->CreateObject(hClass, &ocs);
 		if(pObj)
 		{
-			// Fill out the inventory
-			pObj->SetInventory(pBody->GetInventory());
-			pObj->Init(pBody->GetEnergy());
+			// PORT: retail gives it the body's energy and health and its
+			// archive items (Tron's Body, not written yet)
+			pObj->Init(pBody->GetEnergy(), 0.0f);
 			return true;
 		}
 		else

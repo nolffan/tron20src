@@ -10,14 +10,22 @@
 ;
 ****************************************************************************/
 
+// RETAIL: retail's core dump is not Build 69's (that drained energy and ran
+// its inventory's commands): it holds up to three archive items a player
+// can take through the decision window, plus energy and health, under
+// ribbon and tetra fx. Written from retail Object.lto (0x10017dd0..
+// 0x1001a080; vtable 0x1029382c, 0x13c bytes). Member and function names
+// not in Build 69 are ours.
 
 #ifndef _COREDUMP_H_
 #define _COREDUMP_H_
 
 #include "GameBase.h"
-#include "GeneralInventory.h"
+#include "ArchiveItem.h"
+#include "Timer.h"
+#include "ActivateTypeMgr.h"
 
-#define MAX_CORE_DUMP_FX 4
+#define CD_MAX_ITEMS	3
 
 class CTronPlayerObj;
 
@@ -28,36 +36,58 @@ class CoreDump : public GameBase
 		CoreDump();
 		~CoreDump();
 
-		void SetInventory(GEN_INVENTORY_LIST& lst) { m_lstInventory = lst; }
-		void Init(float fEnergy) { m_fCurrentEnergy = m_fTotalEnergy = fEnergy; m_bActive = false; }
+		// RETAIL: inline (CTronGameServerShell::DropInventoryObject,
+		// retail 0x1005f20d)
+		void Init(float fEnergy, float fHealth)
+		{
+			m_bActive = false;
+			m_fHealth = m_fTotalHealth = fHealth;
+			m_fEnergy = m_fTotalEnergy = fEnergy;
+		}
+
+		void SetItems(ArchiveItem* aItems);
 
 	protected :
 
         virtual uint32 EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
+		virtual uint32 ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg);
 		virtual bool OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);
 
 	private :
 
-		void Term();
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
+		int GetNumItems();
+		void CreateTetras();
+		HOBJECT CreateFX(const char* pszFXName, bool bSmoothShutdown);
 		void HandleActivate(HOBJECT hSender);
 		void HandleStopActivate();
-		void HandleComplete(HOBJECT hSender);
-		
-		LTBOOL InitialUpdate();
 		LTBOOL Update();
-        LTBOOL ReadProp(ObjectCreateStruct *pData);
+		void Term();
+		void ShowContents();
+		void HandleChoice(uint8 nChoice);
 
-		// Energy
+		// Energy and health the player gets, decaying
 		float m_fTotalEnergy;
-		float m_fCurrentEnergy;
+		float m_fEnergy;
+		float m_fTotalHealth;
+		float m_fHealth;
 
-		uint8 m_bActive;
+		uint8 m_bShown;
+		bool m_bActive;
 		CTronPlayerObj* m_pPlayer;
-		HOBJECT m_collFX[MAX_CORE_DUMP_FX];
 
-		GEN_INVENTORY_LIST	m_lstInventory;	// General inventory items (see GeneralInventory.h)
+		ArchiveItem m_aItems[CD_MAX_ITEMS];
+		int m_aeShownCondition[CD_MAX_ITEMS];	// What a virus scan may show of each condition
+		uint32 m_nNumItems;
+
+		CTimer m_RibbonTimer;
+		CTimer m_LifeTimer;
+
+		LTObjRef m_hRibbons;
+		LTObjRef m_hTetras;
+
+		CActivateTypeHandler m_ActivateTypeHandler;
 };
 
 #endif // _COREDUMP_H_

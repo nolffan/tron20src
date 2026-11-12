@@ -27,6 +27,9 @@ namespace
 
 CServerSubroutineMgr* g_pServerSubroutineMgr = LTNULL;
 
+// PORT: retail constructs it in a TU of its own (0x10089180..0x100893f0)
+CServerSubroutineMgr g_ServerSubroutineMgr;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CServerSubroutineMgr::Init()

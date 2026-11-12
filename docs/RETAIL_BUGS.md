@@ -84,6 +84,28 @@ levels may not use lures, so it may never show.
 
 Not fixed yet.
 
+### A core dump never tells the player how much energy it gave
+
+Object.lto 0x10019200 (CoreDump::HandleActivate, TRON/CoreDump.cpp). It
+adds its energy to the player's (clamped to his maximum), then measures
+what he gained as the new energy less the sum it clamped, which already
+holds the core dump's energy: never more than 0, so the "energy gained"
+message (164) it sends when that is over 1 is never sent. It should
+subtract the player's energy before the core dump's was added.
+
+Not fixed yet.
+
+### Taking a custom item from a core dump sends an uninitialized message
+
+Object.lto 0x10019da0 (CoreDump::HandleChoice, TRON/CoreDump.cpp). The
+trigger message sent to the player is only built for subroutines,
+procedurals, primitives, permission sets, emails and help files; for any
+other item type (Custom) the uninitialized stack buffer is sent as it is.
+Core dumps only get their items from bodies, which may never hold custom
+items.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
