@@ -479,4 +479,24 @@ inline RADAROBJCREATESTRUCT::RADAROBJCREATESTRUCT()
 	nTeamId = INVALID_TEAM;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// CLIENTFXUSERCREATESTRUCT class Definition
+//
+// RETAIL: Tron's (RTTI; vtable 0x102980a4, its constructor, Write and Read
+// at 0x10114140..0x1011419b); used by the server-side Optimizer. The
+// member's name is ours
+//
+/////////////////////////////////////////////////////////////////////////////
+
+struct CLIENTFXUSERCREATESTRUCT : public SFXCREATESTRUCT
+{
+	CLIENTFXUSERCREATESTRUCT();
+
+	virtual void Write(ILTMessage_Write *pMsg);
+	virtual void Read(ILTMessage_Read *pMsg);
+
+	ModelId		eModelId;
+};
+
 #endif  // __SHARED_FX_STRUCTS_H__

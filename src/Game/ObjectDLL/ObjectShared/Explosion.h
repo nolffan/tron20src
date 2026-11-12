@@ -25,6 +25,9 @@ class Explosion : public GameBase
 	public :
 
  		Explosion();
+		// RETAIL: declared in the class (inline): it stores Explosion's vtables
+		// and is emitted where used (retail 0x10030380, in Optimizer's module)
+		~Explosion() {}
         void Setup(HOBJECT hFiredFrom, uint8 nAmmoType);
 
 		HOBJECT GetFiredFrom() const { return m_hFiredFrom; }

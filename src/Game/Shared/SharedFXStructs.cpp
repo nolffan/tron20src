@@ -784,6 +784,55 @@ void TRIGGERCREATESTRUCT::Read( ILTMessage_Read *pMsg )
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// CLIENTFXUSERCREATESTRUCT class Definition
+//
+// RETAIL: Tron's (retail 0x10114140..0x1011419b)
+//
+/////////////////////////////////////////////////////////////////////////////
+
+CLIENTFXUSERCREATESTRUCT::CLIENTFXUSERCREATESTRUCT()
+:	SFXCREATESTRUCT	( ),
+	eModelId		( eModelIdInvalid )
+{
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLIENTFXUSERCREATESTRUCT::Write()
+//
+//	PURPOSE:	Write the data to the message
+//
+// ----------------------------------------------------------------------- //
+
+void CLIENTFXUSERCREATESTRUCT::Write(ILTMessage_Write *pMsg)
+{
+	if (!pMsg) return;
+
+	SFXCREATESTRUCT::Write(pMsg);
+
+	pMsg->Writeuint8(eModelId);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLIENTFXUSERCREATESTRUCT::Read()
+//
+//	PURPOSE:	Read the data from the message
+//
+// ----------------------------------------------------------------------- //
+
+void CLIENTFXUSERCREATESTRUCT::Read(ILTMessage_Read *pMsg)
+{
+	if (!pMsg) return;
+
+	SFXCREATESTRUCT::Read(pMsg);
+
+	eModelId = (ModelId) pMsg->Readuint8();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // RADAROBJCREATESTRUCT class Definition
 //
 // (used by client-side CRadarObjectFX and server-side RadarObject classes)

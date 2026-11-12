@@ -84,6 +84,18 @@ levels may not use lures, so it may never show.
 
 Not fixed yet.
 
+### A spawned optimizer reads none of its properties
+
+Object.lto 0x10030760 (Optimizer::EngineMessageFn, TRON/Optimizer.cpp; our
+code matches retail's, but for the switch's jump table, which the scorer
+reads as instructions). MID_PRECREATE calls ReadProp only for
+PRECREATE_WORLDFILE, not for PRECREATE_STRINGPROP as IONode and most
+classes do: an optimizer made by a spawner gets no model, permission sets,
+keyframer or commands. Tron's levels may only place them in the world, so
+it may never show.
+
+Not fixed yet: the modern build should read the properties for both.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

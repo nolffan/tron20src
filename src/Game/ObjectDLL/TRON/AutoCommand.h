@@ -8,7 +8,7 @@
 // Object.lto. The class names are retail's (RTTI: AutoCommand<MultiDispatch>,
 // vtable 0x102935b4; AutoCommand<SingleDispatch>, 0x102935d0); the module,
 // members and functions are ours. Its users are IONode, ArchiveBin,
-// BinaryBit and others. Its string is a CaselessString (CaselessString.h).
+// BinaryBit, Optimizer and others. Its string is a CaselessString (CaselessString.h).
 //
 // ----------------------------------------------------------------------- //
 
@@ -22,15 +22,34 @@
 // The command runs whenever told to
 class MultiDispatch
 {
-};
-
-// RETAIL: one member (AutoCommand<SingleDispatch>'s string is at +8);
-// not yet identified
-class SingleDispatch
-{
 	protected :
 
-		uint32	m_nTronUnknown0;
+		bool	CanDispatch() const { return true; }
+		void	SetDispatched() {}
+
+		void	SaveDispatch(ILTMessage_Write* pMsg) {}
+		void	LoadDispatch(ILTMessage_Read* pMsg) {}
+};
+
+// The command runs once only
+// RETAIL: one bool (AutoCommand<SingleDispatch>'s string is at +8): false
+// until the command ran (Optimizer, retail 0x100308e4); saved after the
+// command (retail 0x1003216c)
+class SingleDispatch
+{
+	public :
+
+		SingleDispatch() : m_bDispatched(false) {}
+
+	protected :
+
+		bool	CanDispatch() const { return !m_bDispatched; }
+		void	SetDispatched() { m_bDispatched = true; }
+
+		void	SaveDispatch(ILTMessage_Write* pMsg) { pMsg->Writebool(m_bDispatched); }
+		void	LoadDispatch(ILTMessage_Read* pMsg) { m_bDispatched = pMsg->Readbool(); }
+
+		bool	m_bDispatched;
 };
 
 template <class Dispatch>
@@ -53,12 +72,7 @@ class AutoCommand : public Dispatch
 			if (pszCommand)
 			{
 				m_sCommand = pszCommand;
-
-				if (!IsEmpty() && !g_pCmdMgr->IsValidCmd(m_sCommand.c_str()))
-				{
-					g_pLTServer->CPrint("Invalid Command Message: %s", m_sCommand.c_str());
-					Clear();
-				}
+				Validate();
 			}
 			else
 			{
@@ -67,17 +81,35 @@ class AutoCommand : public Dispatch
 			}
 		}
 
+		// Drop the command when it is not a valid one
+		// RETAIL: out of line where the compiler stopped inlining
+		// (AutoCommand<MultiDispatch>'s 0x100324c0, <SingleDispatch>'s
+		// 0x10032550)
+		bool Validate()
+		{
+			if (!IsEmpty() && !g_pCmdMgr->IsValidCmd(m_sCommand.c_str()))
+			{
+				g_pLTServer->CPrint("Invalid Command Message: %s", m_sCommand.c_str());
+				Clear();
+				return false;
+			}
+
+			return true;
+		}
+
 		void Execute(HOBJECT hSender, HOBJECT hTarget)
 		{
-			if (!IsEmpty())
+			if (Dispatch::CanDispatch() && !IsEmpty())
 			{
 				g_pCmdMgr->Process(m_sCommand.c_str(), hSender, hTarget);
+				Dispatch::SetDispatched();
 			}
 		}
 
 		void Save(ILTMessage_Write* pMsg)
 		{
 			pMsg->WriteString(m_sCommand.c_str());
+			Dispatch::SaveDispatch(pMsg);
 		}
 
 		void Load(ILTMessage_Read* pMsg)
@@ -85,6 +117,7 @@ class AutoCommand : public Dispatch
 			char szCommand[1024];
 			pMsg->ReadString(szCommand, sizeof(szCommand));
 			m_sCommand = szCommand;
+			Dispatch::LoadDispatch(pMsg);
 		}
 
 	protected :
