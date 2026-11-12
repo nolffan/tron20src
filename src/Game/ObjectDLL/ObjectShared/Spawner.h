@@ -18,6 +18,8 @@
 LINKTO_MODULE( Spawner );
 
 BaseClass *SpawnObject( char const* pszSpawn, const LTVector& vPos, const LTRotation& rRot );
+// RETAIL: Tron's SecRezzer spawns a template (retail 0x10046a6e)
+BaseClass *SpawnObjectTemplate(const char *pszSpawn, const char *pName, const LTVector& vPos, const LTRotation& rRot);
 
 class Spawner : public GameBase
 {
@@ -41,6 +43,8 @@ class Spawner : public GameBase
 
         void    Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void    Load(ILTMessage_Read *pMsg, uint32 dwSaveFlags);
+
+	protected : // RETAIL: Tron's SecRezzer uses them (retail 0x100468be)
 
 		std::string	m_sDefaultSpawn;
 		std::string	m_sTarget;

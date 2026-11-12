@@ -230,6 +230,10 @@ SOURCE=.\ProjectileDisc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\SecRezzer.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SecRezzerPoint.cpp
 # End Source File
 # Begin Source File
