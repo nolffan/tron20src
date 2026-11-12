@@ -15,6 +15,9 @@
 
 namespace
 {
+	// PORT: build 69's textures: retail takes each piece's two from its
+	// subroutine (CSubroutineMgr 0x10095210; TronSubroutine +0x195, +0x1d5),
+	// which this tree's SubroutineMgr does not read
 	char * szPieceTex[] =
 	{
 		"Interface\\hud\\protection_submask.dtx",
@@ -34,15 +37,15 @@ namespace
 
 CHUDArmor::CHUDArmor()
 {
-	// Make this something new
 	m_UpdateFlags = kHUDArmor;
-
 	m_hBaseTex = LTNULL;
 	for (int i = 0; i < 6; i++)
 	{
 		m_hArmorPieceTex[i] = LTNULL;
+		m_hCorruptPieceTex[i] = LTNULL;
 	}
 	m_fScale = 0.0f;
+	m_fLayoutScale = 1000.0f;
 }
 
 
@@ -50,18 +53,16 @@ LTBOOL CHUDArmor::Init()
 {
 	UpdateLayout();
 
-	// Load textures here
-	g_pDrawPrim->SetRGBA(&m_Base,argbWhite);
-	g_pDrawPrim->SetUVWH(&m_Base, 0.0f, 0.0f, 1.0f, 1.0f );
-	m_hBaseTex = g_pInterfaceResMgr->GetTexture("interface\\hud\\protection_base.dtx");
+	g_pDrawPrim->SetRGBA(&m_Base, argbWhite);
+	m_hBaseTex = g_pInterfaceResMgr->GetTexture("interface\\hud\\armor_bg.dtx");
+	SetupQuadUVs(m_Base, m_hBaseTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	for (int i = 0; i < 6; i++)
 	{
-		g_pDrawPrim->SetRGBA(&m_ArmorPiece[i],argbWhite);
-		g_pDrawPrim->SetUVWH( &m_ArmorPiece[i], 0.0f, 0.0f, 1.0f, 1.0f );
-
-		m_hArmorPieceTex[i] = g_pInterfaceResMgr->GetTexture(szPieceTex[i]);
+		g_pDrawPrim->SetRGBA(&m_ArmorPiece[i], argbWhite);
+		SetupQuadUVs(m_ArmorPiece[i], m_hBaseTex, 0.0f, 0.0f, 1.0f, 1.0f);
 	}
+
 	return LTTRUE;
 }
 
@@ -72,36 +73,53 @@ void CHUDArmor::Term()
 
 void CHUDArmor::Render()
 {
+	if (!((CTronInterfaceMgr*)g_pInterfaceMgr)->GetTronUnknown28B14()) return;
+	if (!IsEnabled()) return;
+
 	SetRenderState();
 
 	// Render the base
 	g_pDrawPrim->SetTexture(m_hBaseTex);
-	g_pDrawPrim->DrawPrim(&m_Base);
+	g_pDrawPrim->DrawPrim(&m_Base, 1);
 
-	// Render the correct pieces
+	// Render the pieces we have
 	for (int i = 0; i < 6; i++)
 	{
-		// Do we have it?
-		if (m_bHavePiece[i])
+		if (m_bHavePiece[i] && m_hArmorPieceTex[i])
 		{
-			// Render the piece
-			g_pDrawPrim->SetTexture(m_hArmorPieceTex[i]);
-			g_pDrawPrim->DrawPrim(&m_ArmorPiece[i]);
+			HTEXTURE hTex = m_hArmorPieceTex[i];
+			if (m_bCorrupt[i])
+			{
+				hTex = m_hCorruptPieceTex[i];
+				if (!hTex) continue;
+			}
+
+			g_pDrawPrim->SetTexture(hTex);
+			g_pDrawPrim->DrawPrim(&m_ArmorPiece[i], 1);
 		}
 	}
 }
 
 void CHUDArmor::Update()
 {
-	for(int i = 0; i < 6; i++)
-	{
-		m_bHavePiece[i] = g_pSubroutineMgr->HaveArmorPiece(i);
-	}
-
 	if (m_fScale != g_pInterfaceResMgr->GetXRatio())
 	{
 		UpdateLayout();
 		m_fScale = g_pInterfaceResMgr->GetXRatio();
+	}
+
+	for (int i = 0; i < 6; i++)
+	{
+		m_bHavePiece[i] = false;
+		m_bCorrupt[i] = false;
+
+		PlayerSubroutine* pSub = g_pSubroutineMgr->HaveArmorPiece(i);
+		if (pSub)
+		{
+			m_bHavePiece[i] = true;
+			if (pSub->eState == SUBSTATE_CORRUPT)
+				m_bCorrupt[i] = true;
+		}
 	}
 }
 
@@ -109,21 +127,29 @@ void CHUDArmor::UpdateLayout()
 {
 	int nCurrentLayout = GetConsoleInt("HUDLayout",0);
 
-	// Position all of the pieces relative to the xy of the base
 	float xs = g_pInterfaceResMgr->GetXRatio();
 	float ys = g_pInterfaceResMgr->GetYRatio();
 
-	float x = 0.0f;// * xs;
-	float y = (480.0f * ys) - 64.0f;
-
-	float w = 64.0f;// * xs;
-	float h = 64.0f;// * ys;
-
-	g_pDrawPrim->SetXYWH( &m_Base, x, y, w, h);
+	LTIntPt offset = g_pLayoutMgr->GetArmorIconOffset(nCurrentLayout);
 
 	for (int i = 0; i < 6; i++)
 	{
-		g_pDrawPrim->SetXYWH( &m_ArmorPiece[i], x, y, w, h);
+		// PORT: see szPieceTex
+		m_hArmorPieceTex[i] = g_pInterfaceResMgr->GetTexture(szPieceTex[i]);
+		m_hCorruptPieceTex[i] = m_hArmorPieceTex[i];
 	}
-}
 
+	// from the bottom right corner
+	uint32 nWidth, nHeight;
+	g_pTexInterface->GetTextureDims(m_hBaseTex, nWidth, nHeight);
+	float x = (640.0f * xs) - (int)(offset.x + nWidth);
+	float y = (480.0f * ys) - (int)(offset.y + nHeight);
+
+	g_pDrawPrim->SetXYWH(&m_Base, x, y, (float)nWidth, (float)nHeight);
+	for (int j = 0; j < 6; j++)
+	{
+		g_pDrawPrim->SetXYWH(&m_ArmorPiece[j], x, y, (float)nWidth, (float)nHeight);
+	}
+
+	m_fLayoutScale = xs;
+}

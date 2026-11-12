@@ -197,7 +197,9 @@ public:
 
 	// Gameplay-specific functions
 	void				ComputeArmorCoverage();
-	bool				HaveArmorPiece(int iPiece);
+	// RETAIL: the player's subroutine giving the piece (0x100951c0; CHUDArmor
+	// reads its state), not a bool
+	PlayerSubroutine*	HaveArmorPiece(int iPiece);
 
 	void				Compile();
 

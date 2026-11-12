@@ -615,14 +615,17 @@ class ILTDrawPrim : public IBase
 
         virtual LTRESULT DrawPrim (LT_POLYGT4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
+    // TRON: an overload of Tron's that NOLF2's interface does not have: its
+    // slot is among the DrawPrim overloads, which VC6 lays out together (in
+    // reverse declaration order: declared here, between LT_POLYGT4's and
+    // LT_POLYFT4's, it takes +0x60 and LT_POLYFT4's +0x5c, as retail's
+    // calls have them: CShell.dll 0x1002948a, 0x100220db)
+    virtual LTRESULT DrawPrim(struct TronDrawPrim18 *pPrim, const uint32 nCount) = 0;
         virtual LTRESULT DrawPrim (LT_POLYFT4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
         virtual LTRESULT DrawPrim (LT_POLYG4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
 
-    // TRON: an overload of Tron's that NOLF2's interface does not have: its
-    // slot is among the DrawPrim overloads, which VC6 lays out together
-    virtual LTRESULT DrawPrim(struct TronDrawPrim18 *pPrim, const uint32 nCount) = 0;
         virtual LTRESULT DrawPrim (LT_POLYF4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
 

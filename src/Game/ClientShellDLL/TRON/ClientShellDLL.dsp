@@ -227,6 +227,10 @@ SOURCE=.\HUDArmor.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDBuildNoteCount.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDChooser.cpp
 # End Source File
 # Begin Source File
@@ -239,11 +243,19 @@ SOURCE=.\HUDDamageDir.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDiscScores.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDEnergyTransfer.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDHealthEnergy.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDIOCamera.cpp
 # End Source File
 # Begin Source File
 
@@ -256,6 +268,10 @@ SOURCE=.\HUDPermissions.cpp
 # Begin Source File
 
 SOURCE=.\HUDProgress.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDSingleString.cpp
 # End Source File
 # Begin Source File
 
@@ -502,11 +518,19 @@ SOURCE=.\HUDArmor.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDBuildNoteCount.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDChooser.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDDamageDir.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDDiscScores.h
 # End Source File
 # Begin Source File
 
@@ -518,11 +542,19 @@ SOURCE=.\HUDHealthEnergy.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDIOCamera.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDLightCycleLives.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDProgress.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDSingleString.h
 # End Source File
 # Begin Source File
 

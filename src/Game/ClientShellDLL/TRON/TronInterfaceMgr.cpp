@@ -31,6 +31,11 @@
 
 CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 {
+	// PORT: retail's constructor (0x1009cxxx) is not yet written; ours
+	// clears Tron's flags
+	m_bTronUnknown28AE8 = false;
+	m_bTronUnknown28B14 = false;
+	m_nTronUnknown28B18 = 0;
 }
 
 
@@ -268,6 +273,9 @@ void CTronInterfaceMgr::OnEnterWorld(LTBOOL bRestoringGame)
 {
 	// Call down to the base class first
 	CInterfaceMgr::OnEnterWorld(bRestoringGame);
+
+	// RETAIL: the HUD items' flag is set first thing (0x1009d938)
+	m_bTronUnknown28B14 = true;
 
 	m_bDisplayProgress = false;
 

@@ -33,7 +33,6 @@ CInterfaceResMgr::CInterfaceResMgr()
 {
 	g_pInterfaceResMgr = this;
 
-	m_hSurfCursor = NULL;
 
 	m_dwScreenWidth = 0;
 	m_dwScreenHeight = 0;
@@ -156,11 +155,6 @@ void CInterfaceResMgr::Term()
 	}
 	m_TextureSet.clear();
 
-	if (m_hSurfCursor)
-	{
-        g_pLTClient->DeleteSurface(m_hSurfCursor);
-		m_hSurfCursor = NULL;
-	}
 
 }
 
@@ -342,13 +336,6 @@ void CInterfaceResMgr::ScreenDimsChanged()
 }
 
 
-HSURFACE CInterfaceResMgr::GetSurfaceCursor()
-{
-	if (!m_hSurfCursor)
-        m_hSurfCursor = g_pLTClient->CreateSurfaceFromBitmap("interface\\cursor0.pcx");
-	_ASSERT(m_hSurfCursor);
-	return m_hSurfCursor;
-};
 
 
 const char *CInterfaceResMgr::GetSoundSelect()

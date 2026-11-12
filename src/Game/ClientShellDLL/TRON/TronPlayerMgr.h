@@ -70,6 +70,10 @@ public:
 	// RETAIL: any of the four transfers
 	bool	IsTransferringEnergy() {return (m_bTransferringEnergy || m_bTronUnknown1E9 || m_bTronUnknown1EA || m_bTronUnknown1EB);}
 
+	// RETAIL: the first or the fourth transfer: what CHUDEnergyTransfer's
+	// Render shows (inlined there, retail 0x10029430; the name is ours)
+	bool	IsShowingEnergyTransfer() {return (m_bTransferringEnergy || m_bTronUnknown1EB);}
+
 	// RETAIL: Tron's EndZoom (retail 0x100a54d0, slot 0xb4)
 	void	EndZoom();
 
