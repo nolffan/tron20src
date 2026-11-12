@@ -64,10 +64,6 @@ protected:
 	// code to handle state changing information on ReturnMode
 	virtual void        EnterReturnMode( bool bImpact );
 
-	// handles everything necessary to send request to the owner
-	// to stop or start sending projectile messages
-	void                RequestStartSendingMessages();
-	void                RequestStopSendingMessages();
 
 	// current state...what is the disc doing?
 	// NOTE: these are enumerated states, the enumerations
@@ -93,9 +89,6 @@ protected:
 	// is not INVALID_MODEL_SOCKET
 	HMODELSOCKET		m_hReturnToSocket;
 
-	// keep track if we've requested messages or not
-	// (to cut down no message traffic)
-	bool                m_bReceivingMessages;
 
 	// Store the ID of the Catch enabling stimulus so that it can
 	// be turned off when the disc is caught.  Currently set if the

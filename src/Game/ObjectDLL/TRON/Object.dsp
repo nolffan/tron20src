@@ -258,6 +258,10 @@ SOURCE=.\ProjectileDrunkenDims.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileEnergyClaw.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SecRezzer.cpp
 # End Source File
 # Begin Source File
@@ -413,6 +417,10 @@ SOURCE=.\ProjectileDisc.h
 # Begin Source File
 
 SOURCE=.\ProjectileDrunkenDims.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileEnergyClaw.h
 # End Source File
 # Begin Source File
 

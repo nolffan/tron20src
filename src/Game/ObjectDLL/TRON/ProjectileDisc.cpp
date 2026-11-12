@@ -153,7 +153,6 @@ CDisc::CDisc() :
 	, m_hObjectTarget( LTNULL )
 	, m_vControlDirection()
 	, m_vControlPosition()
-	, m_bReceivingMessages( false )
 	, m_hReturnToSocket( INVALID_MODEL_SOCKET )
 	, m_eDiscCatchableStimID( kStimID_Unset )
 	, m_eDiscBlockableStimID( kStimID_Unset )
@@ -1485,97 +1484,3 @@ bool CDisc::IsDiscReturning()
 	return ( m_eDiscState == DISC_STATE_RETURNING );
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	FUNCTION:	CDisc::RequestStartSendingMessages()
-//
-//	PURPOSE:	
-//
-// ----------------------------------------------------------------------- //
-
-void CDisc::RequestStartSendingMessages()
-{
-	if ( false == m_bReceivingMessages )
-	{
-		//
-		// tell owner we want messages
-		//
-
-		ASSERT( 0 != m_hObject );
-		ASSERT( m_hFiredFrom );
-
-		CAutoMessage cMsg;
-		LTRESULT ltResult;
-
-		cMsg.Writeuint32( MID_PROJECTILE );
-
-		// write the mesasge subtype
-		cMsg.Writeuint8( MPROJ_START_SENDING_MESSAGES );
-
-		// write the number of objects that want messages
-		cMsg.Writeuint8( 1 );
-
-		// write the hobject that wants updates
-		cMsg.WriteObject( m_hObject );
-
-		// send to the owner
-		ltResult = g_pLTServer->SendToObject(
-				cMsg.Read(),
-				m_hObject,
-				m_hFiredFrom,
-				MESSAGE_GUARANTEED
-			);
-		ASSERT( LT_OK == ltResult );
-
-		// keep track that we want messages
-		m_bReceivingMessages = true;
-	}
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	FUNCTION:	CDisc::RequestStopSendingMessages()
-//
-//	PURPOSE:	
-//
-// ----------------------------------------------------------------------- //
-
-void CDisc::RequestStopSendingMessages()
-{
-	if ( true == m_bReceivingMessages )
-	{
-		//
-		// tell owner we don't want messages
-		//
-
-		ASSERT( 0 != m_hObject );
-		ASSERT( m_hFiredFrom );
-
-		CAutoMessage cMsg;
-		LTRESULT ltResult;
-
-		cMsg.Writeuint32( MID_PROJECTILE );
-
-		// write the mesasge subtype
-		cMsg.Writeuint8( MPROJ_STOP_SENDING_MESSAGES );
-
-		// write the number of objects that don't need messages anymore
-		cMsg.Writeuint8( 1 );
-
-		// write the hobject to remove from getting updates
-		cMsg.WriteObject( m_hObject );
-
-		// send to the owner
-		ltResult = g_pLTServer->SendToObject(
-				cMsg.Read(),
-				m_hObject,
-				m_hFiredFrom,
-				MESSAGE_GUARANTEED
-			);
-		ASSERT( LT_OK == ltResult );
-
-		// keep track that we don't want messages
-		m_bReceivingMessages = false;
-	}
-}

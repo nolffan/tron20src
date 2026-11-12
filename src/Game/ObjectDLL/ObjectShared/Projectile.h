@@ -117,6 +117,12 @@ class CProjectile : public GameBase
 		// 0x10120730 passes 0).  Its name is ours.
 		virtual void Detonate(HOBJECT hObj, bool bTronUnknown = false);
 
+		// RETAIL: Tron moved these from CDisc to here (0x10123a80, 0x10123b90)
+		// handles everything necessary to send request to the owner
+		// to stop or start sending projectile messages
+		void	RequestStartSendingMessages();
+		void	RequestStopSendingMessages();
+
 		// Check if we got deflected.
 		bool	Deflect( HOBJECT hTarget, const LTVector &vFirePos, const LTVector &vImpactPos, const LTVector &vNormal );
 
@@ -186,7 +192,9 @@ class CProjectile : public GameBase
 		int             m_nUpdateNum;			// 0xe8 (MID_UPDATE increments it)
 		int             m_nLastRicochetUpdateNum;	// 0xec (-1)
 
-		bool			m_xTronUnknownF0;
+		// keep track if we've requested messages or not
+		// (to cut down no message traffic)
+		bool			m_bReceivingMessages;	// 0xf0 RETAIL: Tron moved it here from CDisc
 		// RETAIL: 0xc4 bytes the constructor does not set
 		uint32			m_xTronUnknownF4;
 		bool			m_bTronUnknownF8;

@@ -140,6 +140,7 @@ CProjectile::CProjectile()
 	m_bNumCallsToAddImpact = 0;
 
 	m_bProcessInvImpact = LTFALSE;
+	m_bReceivingMessages = false;
 	m_vInvisVel.Init();
 	m_vInvisNewPos.Init();
 
@@ -2429,4 +2430,103 @@ bool CProjectile::IsMyTeam( HOBJECT hPlayer ) const
 	}
 
 	return bMyTeam;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	FUNCTION:	CProjectile::RequestStartSendingMessages()
+//
+//	RETAIL: 0x10123a80; PORT: Build 69's CDisc version
+//
+//	PURPOSE:	
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectile::RequestStartSendingMessages()
+{
+	if ( false == m_bReceivingMessages )
+	{
+		//
+		// tell owner we want messages
+		//
+
+		ASSERT( 0 != m_hObject );
+		ASSERT( m_hFiredFrom );
+
+		CAutoMessage cMsg;
+		LTRESULT ltResult;
+
+		cMsg.Writeuint32( MID_PROJECTILE );
+
+		// write the mesasge subtype
+		cMsg.Writeuint8( MPROJ_START_SENDING_MESSAGES );
+
+		// write the number of objects that want messages
+		cMsg.Writeuint8( 1 );
+
+		// write the hobject that wants updates
+		cMsg.WriteObject( m_hObject );
+
+		// send to the owner
+		ltResult = g_pLTServer->SendToObject(
+				cMsg.Read(),
+				m_hObject,
+				m_hFiredFrom,
+				MESSAGE_GUARANTEED
+			);
+		ASSERT( LT_OK == ltResult );
+
+		// keep track that we want messages
+		m_bReceivingMessages = true;
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	FUNCTION:	CProjectile::RequestStopSendingMessages()
+//
+//	RETAIL: 0x10123b90; PORT: Build 69's CDisc version
+//
+//	PURPOSE:	
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectile::RequestStopSendingMessages()
+{
+	if ( true == m_bReceivingMessages )
+	{
+		//
+		// tell owner we don't want messages
+		//
+
+		ASSERT( 0 != m_hObject );
+		ASSERT( m_hFiredFrom );
+
+		CAutoMessage cMsg;
+		LTRESULT ltResult;
+
+		cMsg.Writeuint32( MID_PROJECTILE );
+
+		// write the mesasge subtype
+		cMsg.Writeuint8( MPROJ_STOP_SENDING_MESSAGES );
+
+		// write the number of objects that don't need messages anymore
+		cMsg.Writeuint8( 1 );
+
+		// write the hobject to remove from getting updates
+		cMsg.WriteObject( m_hObject );
+
+		// send to the owner
+		ltResult = g_pLTServer->SendToObject(
+				cMsg.Read(),
+				m_hObject,
+				m_hFiredFrom,
+				MESSAGE_GUARANTEED
+			);
+		ASSERT( LT_OK == ltResult );
+
+		// keep track that we don't want messages
+		m_bReceivingMessages = false;
+	}
 }
