@@ -250,6 +250,11 @@ SOURCE=..\..\..\Engine\sdk\inc\ltquatbase.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\md5c.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProceduralCtrl.cpp
 # End Source File
 # Begin Source File
