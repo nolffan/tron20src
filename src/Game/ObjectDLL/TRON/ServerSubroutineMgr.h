@@ -23,6 +23,9 @@
 
 class CServerSubroutineMgr;
 extern CServerSubroutineMgr* g_pServerSubroutineMgr;
+// RETAIL: the server's one (0x1035bbe0; its constructor runs in a TU of
+// its own, 0x10089180..0x100893f0); the name is ours
+extern CServerSubroutineMgr g_ServerSubroutineMgr;
 
 // What GetNameId looks in
 enum ServerSubroutineType

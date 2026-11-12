@@ -24,13 +24,17 @@ class MultiDispatch
 {
 };
 
-// RETAIL: one member (AutoCommand<SingleDispatch>'s string is at +8);
-// not yet identified
+// The command runs the first time only (RETAIL: Optimizer's, retail
+// 0x100308f3; its flag is saved after the command, retail 0x1003216c)
 class SingleDispatch
 {
+	public :
+
+		SingleDispatch() : m_bDispatched(false) {}
+
 	protected :
 
-		uint32	m_nTronUnknown0;
+		bool	m_bDispatched;
 };
 
 template <class Dispatch>
@@ -45,6 +49,20 @@ class AutoCommand : public Dispatch
 
 		void Clear() { m_sCommand.clear(); }
 
+		// Drop the command when it is not a valid command (RETAIL: out of
+		// line where not inlined, retail 0x100324c0, 0x10032550)
+		bool Validate()
+		{
+			if (!IsEmpty() && !g_pCmdMgr->IsValidCmd(m_sCommand.c_str()))
+			{
+				g_pLTServer->CPrint("Invalid Command Message: %s", m_sCommand.c_str());
+				Clear();
+				return false;
+			}
+
+			return true;
+		}
+
 		// Read the command from the property of that name, dropping it
 		// when it is not a valid command
 		void ReadProp(const ObjectCreateStruct* pStruct, const char* szPropName)
@@ -53,12 +71,7 @@ class AutoCommand : public Dispatch
 			if (pszCommand)
 			{
 				m_sCommand = pszCommand;
-
-				if (!IsEmpty() && !g_pCmdMgr->IsValidCmd(m_sCommand.c_str()))
-				{
-					g_pLTServer->CPrint("Invalid Command Message: %s", m_sCommand.c_str());
-					Clear();
-				}
+				Validate();
 			}
 			else
 			{
@@ -91,5 +104,31 @@ class AutoCommand : public Dispatch
 
 		CaselessString	m_sCommand;
 };
+
+template <>
+inline void AutoCommand<SingleDispatch>::Execute(HOBJECT hSender, HOBJECT hTarget)
+{
+	if (!m_bDispatched && !IsEmpty())
+	{
+		g_pCmdMgr->Process(m_sCommand.c_str(), hSender, hTarget);
+		m_bDispatched = true;
+	}
+}
+
+template <>
+inline void AutoCommand<SingleDispatch>::Save(ILTMessage_Write* pMsg)
+{
+	pMsg->WriteString(m_sCommand.c_str());
+	pMsg->Writebool(m_bDispatched);
+}
+
+template <>
+inline void AutoCommand<SingleDispatch>::Load(ILTMessage_Read* pMsg)
+{
+	char szCommand[1024];
+	pMsg->ReadString(szCommand, sizeof(szCommand));
+	m_sCommand = szCommand;
+	m_bDispatched = pMsg->Readbool();
+}
 
 #endif // __AUTOCOMMAND_H__
