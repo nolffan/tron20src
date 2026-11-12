@@ -280,6 +280,10 @@ SOURCE=.\HUDPings.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDProcedurals.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDProfiler.cpp
 # End Source File
 # Begin Source File
@@ -582,6 +586,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.h
 # Begin Source File
 
 SOURCE=.\HUDPings.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProcedurals.h
 # End Source File
 # Begin Source File
 
