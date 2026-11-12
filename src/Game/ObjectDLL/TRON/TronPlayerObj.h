@@ -22,6 +22,9 @@
 
 class CTronPlayerObj : public CPlayerObj
 {
+	// RETAIL: its light cycle messages start and end the cycle (0x1005139b)
+	friend class CServerLightCycleMgr;
+
 	public :
 
 		// Constructor/destructor

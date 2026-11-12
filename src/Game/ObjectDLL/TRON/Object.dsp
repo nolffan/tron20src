@@ -254,6 +254,10 @@ SOURCE=.\SecRezzerPoint.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ServerLightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ServerSubroutineMgr.cpp
 # End Source File
 # Begin Source File
@@ -393,6 +397,10 @@ SOURCE=.\SecRezzer.h
 # Begin Source File
 
 SOURCE=.\SecRezzerPoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerLightCycleMgr.h
 # End Source File
 # Begin Source File
 
