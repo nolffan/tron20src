@@ -97,17 +97,18 @@ bool CSubroutineDataMgr::Init(CButeMgr* pButeMgr)
 
 	// Map the subroutine names to their string ids.
 
-	char szTag[64];
+	char szTag[128];
 	int i = 0;
 	while (true)
 	{
-		sprintf(szTag, "%s%d", "Subroutine", i++);
+		sprintf(szTag, "%s%d", "Subroutine", i);
+		i++;
 		const char* szName = m_pButeMgr->GetString(szTag, "Name");
 		if (!m_pButeMgr->Success() || !szName)
 			break;
 
 		uint16 nNameId = (uint16)m_pButeMgr->GetInt(szTag, "NameId", 0);
-		m_mapNameIds[std::string(szName)] = nNameId;
+		m_mapNameIds[CaselessString(szName)] = nNameId;
 	}
 
 	LoadData(m_vecSequencer, "Sequencer");

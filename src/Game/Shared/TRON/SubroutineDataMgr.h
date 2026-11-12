@@ -22,7 +22,7 @@
 
 #include "ltbasedefs.h"
 #include "ButeMgr.h"
-#include "CommonUtilities.h"
+#include "CaselessString.h"
 
 #pragma warning( disable : 4786 )
 #include <vector>
@@ -283,7 +283,7 @@ protected:
 };
 
 typedef std::vector<int> SubDataAxis;
-typedef std::map<std::string, uint16, CaselessLesser> SubNameIdMap;
+typedef std::map<CaselessString, uint16> SubNameIdMap;
 
 class CSubroutineDataMgr
 {
@@ -322,8 +322,9 @@ protected:
 			{
 				for (SubDataAxis::iterator itDiff = m_Difficulties.begin(); itDiff != m_Difficulties.end(); ++itDiff)
 				{
+					SubroutineDataKey key(*itVersion, *itState, *itDiff);
 					T data;
-					Read(szTag, &data, SubroutineDataKey(*itVersion, *itState, *itDiff));
+					Read(szTag, &data, key);
 					vecData.push_back(data);
 				}
 			}

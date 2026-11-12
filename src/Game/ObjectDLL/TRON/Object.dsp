@@ -275,7 +275,7 @@ SOURCE=.\BuildNote.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CaselessString.h
+SOURCE=..\..\Shared\TRON\CaselessString.h
 # End Source File
 # Begin Source File
 
