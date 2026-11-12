@@ -1,14 +1,10 @@
-// MERGE: NOLF2 1.3's TO2 ScreenMulti.h, standing in for Build 69's Tron one, which is
-// TO2's spring 2002 multiplayer screen (WON's server directory, host
-// settings in the profile); retail Tron's browses and hosts through GameSpy,
-// and is to be written from the retail code.
 // ----------------------------------------------------------------------- //
 //
 // MODULE  : ScreenMulti.h
 //
 // PURPOSE : Interface screen for hosting and joining multi player games
 //
-// (c) 1999-2001 Monolith Productions, Inc.  All Rights Reserved
+// (c) 1999-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
 
@@ -21,6 +17,9 @@
 
 #include "BaseScreen.h"
 
+// RETAIL: Tron's multiplayer screen (CShell.dll 0x1006fb90..0x1006fe20,
+// vtable 0x101e8224): four items -- player, join (internet or LAN) and host
+// -- and no members of its own (NOLF2's CD key and MOTD screen is not Tron's)
 class CScreenMulti : public CBaseScreen
 {
 public:
@@ -29,54 +28,10 @@ public:
 
 	// Build the screen
     LTBOOL   Build();
-
-	LTBOOL	Render(HSURFACE hDestSurf);
-
     void    OnFocus(LTBOOL bFocus);
 
 protected:
     uint32	OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
-	uint32	HandleCallback(uint32 dwParam1, uint32 dwParam2);
-	void	ChangeCDKey();
-	void	RequestMOTD();
-	void	RequestValidate();
-	LTBOOL	LaunchSierraUp();
-	void	CreateDMMissionFile();
-//	void	CreateTDMMissionFile();
-	void	CreateDDMissionFile();
-
-	void	Update();
-
-	CLTGUIColumnCtrl* m_pCDKeyCtrl;
-
-	std::string m_sCurCDKey;
-	std::string m_sLastValidCDKey;
-	std::string	m_sGameMOTD;
-	std::string	m_sSysMOTD;
-
-	enum EState {
-		eState_Startup,
-		eState_VersionCheck,
-		eState_NoCDKey,
-		eState_ValidateCDKey,
-		eState_MOTD,
-		eState_Ready,
-	};
-	EState m_eCurState;
-
-	CLTGUIWindow*	m_pWait;
-	CLTGUICtrl*		m_pJoin;
-	CLTGUICtrl*		m_pHost;
-
-	CLTGUITextCtrl*		m_pStatusCtrl;
-	CLTGUITextCtrl*		m_pUpdate;
-	CLTGUILargeText*	m_pSysMOTD;
-	CLTGUIFrame*		m_pSysFrame;
-	CLTGUILargeText*	m_pGameMOTD;
-	CLTGUIFrame*		m_pGameFrame;
-	CLTGUITextCtrl*		m_pWaitText;
-	
-
 };
 
 #endif // _SCREEN_MULTI_H_

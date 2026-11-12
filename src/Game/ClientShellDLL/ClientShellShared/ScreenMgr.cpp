@@ -166,13 +166,13 @@ LTBOOL CScreenMgr::PreviousScreen()
     return LTFALSE;
 }
 
-LTBOOL CScreenMgr::SetCurrentScreen(eScreenID screenID)
+LTBOOL CScreenMgr::SetCurrentScreen(eScreenID screenID, bool bAddToHistory)
 {
 
 	CBaseScreen *pNewScreen=GetScreenFromID(screenID);
 	if (pNewScreen)
 	{
-		SwitchToScreen(pNewScreen);
+		SwitchToScreen(pNewScreen, bAddToHistory);
 
 		// The music may change per screen...
         //g_pInterfaceMgr->SetupMusic();
@@ -202,7 +202,7 @@ void CScreenMgr::ExitScreens()
 }
 
 
-void CScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen)
+void CScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory)
 {
 
 	CBaseScreen *pOldScreen = m_pCurrentScreen;
@@ -210,6 +210,8 @@ void CScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen)
 	if (m_pCurrentScreen && pNewScreen != m_pCurrentScreen)
 	{
         m_pCurrentScreen->OnFocus(LTFALSE);
+	  if (bAddToHistory)
+	  {
 		int insert = 0;
 
 		//look through the list of screens we've visited, if we find the
@@ -231,6 +233,7 @@ void CScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen)
 		{
 			m_nHistoryLen = insert;
 		}
+	  }
 	}
 
 	m_pCurrentScreen=pNewScreen;

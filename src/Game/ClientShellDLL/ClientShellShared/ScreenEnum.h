@@ -81,6 +81,10 @@ ADD_SCREEN(POSTLOAD,ScreenPostload)
 // Tron's player management screen
 ADD_SCREEN(SUBROUTINES,ScreenSubroutines)
 
+// RETAIL: Tron's light cycle screens (their RTTI; Tron's own ScreenEnum
+// numbers them differently: the victory screen is 0x27)
+ADD_SCREEN(LIGHTCYCLE_VICTORY,ScreenLightCycleVictory)
+
 //this must be the last id
 ADD_SCREEN(UNASSIGNED,GenericScreen)
 

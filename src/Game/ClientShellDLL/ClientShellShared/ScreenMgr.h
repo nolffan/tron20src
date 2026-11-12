@@ -60,7 +60,9 @@ public:
 	virtual eScreenID	GetCurrentScreenID()		{return m_eCurrentScreenID;}
 	virtual eScreenID	GetLastScreenID()			{return m_eLastScreenID;}
 	virtual uint16		GetScreenIDFromName(char * pName) = 0;
-    virtual LTBOOL      SetCurrentScreen(eScreenID screenID);
+	// RETAIL: Tron's takes whether the screen we leave goes in the history
+	// (CScreenMgr 0x101451f0, SwitchToScreen 0x10145260); the name is ours
+    virtual LTBOOL      SetCurrentScreen(eScreenID screenID, bool bAddToHistory = true);
     virtual LTBOOL      PreviousScreen();
 	virtual void		EscapeCurrentScreen();
 	virtual void		ExitScreens();
@@ -87,7 +89,7 @@ protected:
 	// note that the screen should already have been initted before being added
 	virtual void	AddScreen(CBaseScreen* pScreen);
 
-	virtual void	SwitchToScreen(CBaseScreen *pNewScreen);
+	virtual void	SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory = true);	// RETAIL: as SetCurrentScreen
 
 protected:
 
