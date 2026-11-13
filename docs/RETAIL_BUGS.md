@@ -530,7 +530,7 @@ Not fixed yet.
 ### Anisotropic filtering is never switched on
 
 Lithtech.exe 0x4ca140 (CD3D_Device::SetDefaultRenderStates, src/Engine/
-runtime/render_a/src/sys/d3d/d3d_device.cpp) and d3d_SetDefaultTextureStates
+runtime/render_a/src/sys/d3d/d3d_device.cpp) and d3d_ReadExtraConsoleVariables
 (d3d_init.cpp). With the Anisotropic console variable set, the renderer
 asks for D3DTEXF_ANISOTROPIC minification and magnification only if the
 device's VertexTextureFilterCaps (D3DCAPS9 +0x124) has the anisotropic
