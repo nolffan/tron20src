@@ -1001,7 +1001,8 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	// Get the number of updates installed.  Make sure to do this after the content
 	// addons so they override anything.
 	DWORD nUpdateNum = 0;
-	if( pReg->GetField( "UpdateNum", &nUpdateNum ))
+	// RETAIL: 0x409d68, the registry manager is tested here (only here)
+	if( pReg && pReg->GetField( "UpdateNum", &nUpdateNum ))
 	{
 		char szCommandLineKey[256] = "";
 

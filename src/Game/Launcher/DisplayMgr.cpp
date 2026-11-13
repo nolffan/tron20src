@@ -17,13 +17,16 @@
 #include "DisplayMgr.h"
 #include "io.h"
 
-#include "d3d8.h"
+// RETAIL: Tron 2.0's launcher enumerates through Direct3D 9 (0x4053b0);
+// TronD3D9.h stands in for the DirectX 9 SDK's d3d9.h
+#include "TronD3D9.h"
 
 // Dummy declaration for proper linking
-IDirect3D8 * WINAPI Direct3DCreate8(UINT SDKVersion) { return 0; }
-typedef IDirect3D8 *(WINAPI *TD3DCreateFn)(UINT SDKVersion);
+IDirect3D9 * WINAPI Direct3DCreate9(UINT SDKVersion) { return 0; }
+typedef IDirect3D9 *(WINAPI *TD3DCreateFn)(UINT SDKVersion);
 
-#define DX8_RENDERER_NAME "DX8 Renderer"
+// RETAIL: 0x4131ec
+#define DX8_RENDERER_NAME "DX9 Renderer"
 
 // Functions...
 
@@ -402,17 +405,17 @@ BOOL CDisplay::FillListBox(HWND hList)
 
 BOOL CRenderer::Init(const char* sFile)
 {
-	// Load d3d8.dll
-	HMODULE hD3DDll = LoadLibrary("d3d8.dll");
+	// Load d3d9.dll
+	HMODULE hD3DDll = LoadLibrary("d3d9.dll");
 	if (!hD3DDll)
 		return FALSE;
 
-	TD3DCreateFn exp_Direct3DCreate8 = (TD3DCreateFn)GetProcAddress(hD3DDll, "Direct3DCreate8");
-	if (!exp_Direct3DCreate8)
+	TD3DCreateFn exp_Direct3DCreate9 = (TD3DCreateFn)GetProcAddress(hD3DDll, "Direct3DCreate9");
+	if (!exp_Direct3DCreate9)
 		return FALSE;
 
 	// Gimmie D3D, baby!
-	IDirect3D8 *pD3D = exp_Direct3DCreate8(D3D_SDK_VERSION);
+	IDirect3D9 *pD3D = exp_Direct3DCreate9(D3D9_SDK_VERSION);
 	if (!pD3D)
 		return FALSE;
 
@@ -420,16 +423,17 @@ BOOL CRenderer::Init(const char* sFile)
 	uint32 nAdapterCount = pD3D->GetAdapterCount();
     for (uint32 iAdapter = 0; iAdapter < nAdapterCount; ++iAdapter) 
 	{
-        D3DADAPTER_IDENTIFIER8 AdapterInfo;		// Fill in adapter info
+        D3DADAPTER_IDENTIFIER9 AdapterInfo;		// Fill in adapter info
 		pD3D->GetAdapterIdentifier(iAdapter,0,&AdapterInfo);
 
-		// Enumerate all display modes on this adapter...
-        uint32 iNumAdapterModes = pD3D->GetAdapterModeCount(iAdapter);
+		// Enumerate all display modes on this adapter (Direct3D 9 counts
+		// and enumerates the modes of one format)...
+        uint32 iNumAdapterModes = pD3D->GetAdapterModeCount(iAdapter, D3DFMT_X8R8G8B8);
 
         for (uint32 iMode = 0; iMode < iNumAdapterModes; iMode++) 
 		{
 			D3DDISPLAYMODE d3dDisplayMode; // Get the display mode attributes
-			pD3D->EnumAdapterModes(iAdapter,iMode, &d3dDisplayMode);
+			pD3D->EnumAdapterModes(iAdapter, D3DFMT_X8R8G8B8, iMode, &d3dDisplayMode);
 
 			// Filter out low-resolution modes
 			if (d3dDisplayMode.Width < 640 || d3dDisplayMode.Height < 480) 

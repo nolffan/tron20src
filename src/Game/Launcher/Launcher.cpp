@@ -23,8 +23,9 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-COLORREF crHighlightText = RGB(255, 255, 0);
-COLORREF crNormalText = RGB(192, 160, 32);
+// RETAIL: 0x4132c4, Tron 2.0's colours
+COLORREF crHighlightText = RGB(200, 250, 255);
+COLORREF crNormalText = RGB(180, 225, 253);
 
 // RETAIL: no GAME_NAME[] (NOLF2's "No One Lives Forever 2"): Tron's registry
 // key is named by IDS_GAME_NAME (OpenRegistryKey)

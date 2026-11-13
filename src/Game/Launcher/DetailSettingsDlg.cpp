@@ -29,7 +29,7 @@ static char THIS_FILE[] = __FILE__;
 #define DSD_CANCEL_X			178
 #define DSD_CANCEL_Y			440
 
-#define DSD_HIGHDETAIL_X		143 // Original = 123
+#define DSD_HIGHDETAIL_X		122 // RETAIL: 0x40433e, Tron 2.0's (NOLF2: 143; "Original = 123")
 #define DSD_HIGHDETAIL_Y		168
 #define DSD_MEDIUMDETAIL_X		DSD_HIGHDETAIL_X
 #define DSD_MEDIUMDETAIL_Y		277
