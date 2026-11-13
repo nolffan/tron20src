@@ -42,32 +42,150 @@ public :
     // engine's holders ask for it, server.dll 0x10001a38..)
     interface_version(IClientShell, 3);
 
-/*!
-Called at the beginning of every update cycle -- before Update().
+    // TRON: Tron's slot order, read from Lithtech.exe's calls into the
+    // shell (PreUpdate, Update and PostUpdate at +0x5c..+0x64 in
+    // CClientMgr::Update 0x40dd31; OnEvent +0x40 in CClientMgr::ProcessError
+    // 0x41b682; OnPlaySound +0x44 in CClientMgr::PlaySound 0x40e2b0) and
+    // the argument counts of IClientShellStub's slots (CShell.dll's vtable
+    // 0x101ea210); NOLF2's and Build 51's orders differ
 
-\note Technically, Update() is called immediately after PreUpdate(). 
-Therefore, the only benefit to having code in PreUpdate() is purely 
-organizational.
+/*!
+\param  command     ID of the command that was turned off.
+
+Called whenever a "command" is turned off (i.e. usually when a key 
+is released).  Input is processed during each update loop, before 
+PreUpdate() is called.
 
 Used for: ClientShell Callbacks.
 */
-    virtual void PreUpdate() = 0;
+    virtual void OnCommandOff(int command) = 0;
 
 /*!
-Called at the end of every update cycle -- after Update(), *and* after 
-all client-side objects have been processed by the engine.
+Called when the client exits a world (after disconnecting/unloading 
+the server and all objects have been deleted). You lose \em all server 
+objects when you exit the world, so don't reference them after exiting 
+the world!
 
 Used for: ClientShell Callbacks.
 */
-    virtual void PostUpdate() = 0;
+    virtual void OnExitWorld() = 0;
 
 /*!
-Called during every update cycle. This is the function that usually 
-updates all client-side systems, objects, etc.
+\param  hObj        The object associated with the special effect. If NULL, 
+                    then this is an "instant" special effect.
+\param  pMessage    Special effect message.
+
+Called when the server tells the client about a special effect on an object.
+If hObj is NULL, then this is an "instant" special effect (ie. it's not 
+associated with an object, but instead, with a location).  These messages 
+are those that are defined by game code, and are usually (but not necessarily) 
+sent via game code.
 
 Used for: ClientShell Callbacks.
 */
-    virtual void Update() = 0;
+    virtual void SpecialEffectNotify(HLOCALOBJ hObj, ILTMessage_Read *pMessage) = 0;
+
+/*!
+\param  hObj    The object that is about to be removed.
+
+Called when an object with client flag CF_NOTIFYONREMOVE is removed.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnObjectRemove(HLOCALOBJ hObj) = 0;
+
+/*!
+\param  command     ID of the command that was turned on.
+
+Called whenever a "command" is turned on (i.e. usually when a key 
+is pressed).  Input is processed during each update loop, before 
+PreUpdate() is called.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnCommandOn(int command) = 0;
+
+/*!
+\param  key     The keycode for the key that was pressed.
+\param  rep     number of repetitions that have occurred since the last 
+                update.
+
+Called each update loop if a key is pressed (or held). Try to use 
+OnCommandOn() whenever possible because key up/down notification is 
+not portable.  Input is processed during each update loop, before 
+PreUpdate() is called.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnKeyDown(int key, int rep) = 0;
+
+/*!
+\param  key     The keycode for the key that was released.
+
+Called if a key is released.  Try to use OnCommandOff() whenever 
+possible because key up/down notification is not portable.  Input 
+is processed during each update loop, before PreUpdate() is called.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnKeyUp(int key) = 0;
+
+/*!
+\param  messageID   ID of message. This is a custom ID, not an engine ID.
+\param  pMessage    The message.
+
+Called whenever the client receives a message from the server.  These 
+messages are those that are defined and sent via game code.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnMessage(ILTMessage_Read *pMessage) = 0;
+
+/*!
+\param  hObj    The model that is currently hitting the frame key.
+\param  pArgs   The frame string, broken up into an array of tokens.
+
+Called when a model object with client flag CF_NOTIFYMODELKEYS hits a
+frame key.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnModelKey(HLOCALOBJ hObj, ArgList *pArgs) = 0;
+
+/*!
+Called when the client enters a world (after the world has been loaded and 
+all objects have been loaded, etc).
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void OnEnterWorld() = 0;
+
+/*!
+\param  pWorldName  Name of the world about to be loaded.
+
+Called right before a world is loaded.  Typically this function 
+displays a "loading" screen.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void PreLoadWorld(const char *pWorldName) = 0;
+
+/*!
+\param  hObj        The object that is about to move.
+\param  bTeleport   Teleport status. True = object is teleporting. 
+                    False = object is moving normally, and thus physics are 
+                    applied.
+\param  pNewPos     The destination position.  This CAN be intercepted and 
+                    modified in this function.
+
+\return \b ???
+
+Called just before the engine moves an object.  pNewPos can be 
+modified at this time.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual LTRESULT OnObjectMove(HLOCALOBJ hObj, bool bTeleport, LTVector *pNewPos) = 0;
 
 /*!
 \param  hObj        The object that is about to rotate.
@@ -135,20 +253,6 @@ Used for: ClientShell Callbacks.
     virtual void OnEvent(uint32 dwEventID, uint32 dwParam) = 0;
 
 /*!
-\param  hMain       The object involved in this collision.
-\param  pInfo       Collision info (provided by engine).
-\param  forceMag    Magnitude of collision (provided by engine).
-
-\return \b ???
-
-Called when an object (with FLAG_TOUCH_NOTIFY) moved on the client 
-collides with another object or the world.
-
-Used for: ClientShell Callbacks.
-*/
-	virtual LTRESULT OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, float forceMag) = 0;
-
-/*!
 \param  pPlaySoundInfo  Description of sound (provided by engine).
 
 Called just after a sound is played by the client or server.
@@ -156,6 +260,21 @@ Called just after a sound is played by the client or server.
 Used for: ClientShell Callbacks.
 */
     virtual void OnPlaySound(PlaySoundInfo *pPlaySoundInfo) = 0;
+
+/*!
+\param	pData		Pointer to a CConsolePrintData structure containing
+					information about the string to be printed.
+
+\return	\b ???
+
+Called when the engine wishes to send output to the console.  Any changes
+to the pData structure are reflected in the output, so setting 
+pData->m_pMessage to NULL will prevent the engine from printing a message
+to the console, etc.
+
+Used for: ClientShell Callbacks.
+*/
+	virtual	void OnConsolePrint (CConsolePrintData *pData) = 0;
 
 /*!
 \param  pData       The packet data.
@@ -176,163 +295,52 @@ Used for: ServerShell Callbacks.
 The game should pause any secondary rendering threads when this function is called.
 */
 	virtual void OnLockRenderer() = 0;
+
 /*!
 The game should resume any secondary rendering threads when this function is called.
 */
 	virtual void OnUnLockRenderer() = 0;
 
 /*!
-\param	pData		Pointer to a CConsolePrintData structure containing
-					information about the string to be printed.
-
-\return	\b ???
-
-Called when the engine wishes to send output to the console.  Any changes
-to the pData structure are reflected in the output, so setting 
-pData->m_pMessage to NULL will prevent the engine from printing a message
-to the console, etc.
-
-Used for: ClientShell Callbacks.
-*/
-	virtual	void OnConsolePrint (CConsolePrintData *pData) = 0;
-
-/*!
-\param  key     The keycode for the key that was released.
-
-Called if a key is released.  Try to use OnCommandOff() whenever 
-possible because key up/down notification is not portable.  Input 
-is processed during each update loop, before PreUpdate() is called.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnKeyUp(int key) = 0;
-
-/*!
-\param  key     The keycode for the key that was pressed.
-\param  rep     number of repetitions that have occurred since the last 
-                update.
-
-Called each update loop if a key is pressed (or held). Try to use 
-OnCommandOn() whenever possible because key up/down notification is 
-not portable.  Input is processed during each update loop, before 
-PreUpdate() is called.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnKeyDown(int key, int rep) = 0;
-
-/*!
-\param  command     ID of the command that was turned off.
-
-Called whenever a "command" is turned off (i.e. usually when a key 
-is released).  Input is processed during each update loop, before 
-PreUpdate() is called.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnCommandOff(int command) = 0;
-
-/*!
-\param  command     ID of the command that was turned on.
-
-Called whenever a "command" is turned on (i.e. usually when a key 
-is pressed).  Input is processed during each update loop, before 
-PreUpdate() is called.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnCommandOn(int command) = 0;
-
-/*!
-\param  hObj    The model that is currently hitting the frame key.
-\param  pArgs   The frame string, broken up into an array of tokens.
-
-Called when a model object with client flag CF_NOTIFYMODELKEYS hits a
-frame key.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnModelKey(HLOCALOBJ hObj, ArgList *pArgs) = 0;
-
-/*!
-Called when the client enters a world (after the world has been loaded and 
-all objects have been loaded, etc).
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnEnterWorld() = 0;
-
-/*!
-Called when the client exits a world (after disconnecting/unloading 
-the server and all objects have been deleted). You lose \em all server 
-objects when you exit the world, so don't reference them after exiting 
-the world!
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnExitWorld() = 0;
-
-/*!
-\param  messageID   ID of message. This is a custom ID, not an engine ID.
-\param  pMessage    The message.
-
-Called whenever the client receives a message from the server.  These 
-messages are those that are defined and sent via game code.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void OnMessage(ILTMessage_Read *pMessage) = 0;
-
-/*!
-\param  pWorldName  Name of the world about to be loaded.
-
-Called right before a world is loaded.  Typically this function 
-displays a "loading" screen.
-
-Used for: ClientShell Callbacks.
-*/
-    virtual void PreLoadWorld(const char *pWorldName) = 0;
-
-/*!
-\param  hObj        The object that is about to move.
-\param  bTeleport   Teleport status. True = object is teleporting. 
-                    False = object is moving normally, and thus physics are 
-                    applied.
-\param  pNewPos     The destination position.  This CAN be intercepted and 
-                    modified in this function.
+\param  hMain       The object involved in this collision.
+\param  pInfo       Collision info (provided by engine).
+\param  forceMag    Magnitude of collision (provided by engine).
 
 \return \b ???
 
-Called just before the engine moves an object.  pNewPos can be 
-modified at this time.
+Called when an object (with FLAG_TOUCH_NOTIFY) moved on the client 
+collides with another object or the world.
 
 Used for: ClientShell Callbacks.
 */
-    virtual LTRESULT OnObjectMove(HLOCALOBJ hObj, bool bTeleport, LTVector *pNewPos) = 0;
+	virtual LTRESULT OnTouchNotify(HOBJECT hMain, CollisionInfo *pInfo, float forceMag) = 0;
 
 /*!
-\param  hObj        The object associated with the special effect. If NULL, 
-                    then this is an "instant" special effect.
-\param  pMessage    Special effect message.
+Called at the beginning of every update cycle -- before Update().
 
-Called when the server tells the client about a special effect on an object.
-If hObj is NULL, then this is an "instant" special effect (ie. it's not 
-associated with an object, but instead, with a location).  These messages 
-are those that are defined by game code, and are usually (but not necessarily) 
-sent via game code.
+\note Technically, Update() is called immediately after PreUpdate(). 
+Therefore, the only benefit to having code in PreUpdate() is purely 
+organizational.
 
 Used for: ClientShell Callbacks.
 */
-    virtual void SpecialEffectNotify(HLOCALOBJ hObj, ILTMessage_Read *pMessage) = 0;
+    virtual void PreUpdate() = 0;
 
 /*!
-\param  hObj    The object that is about to be removed.
-
-Called when an object with client flag CF_NOTIFYONREMOVE is removed.
+Called during every update cycle. This is the function that usually 
+updates all client-side systems, objects, etc.
 
 Used for: ClientShell Callbacks.
 */
-    virtual void OnObjectRemove(HLOCALOBJ hObj) = 0;
+    virtual void Update() = 0;
+
+/*!
+Called at the end of every update cycle -- after Update(), *and* after 
+all client-side objects have been processed by the engine.
+
+Used for: ClientShell Callbacks.
+*/
+    virtual void PostUpdate() = 0;
 
 
 }; 

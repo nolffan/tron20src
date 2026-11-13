@@ -3056,3 +3056,71 @@ LTRESULT CSoundMgr::EnableSoundFilter(bool bEnable)
 }
    
 #endif
+
+// RETAIL: Tron's own (Lithtech.exe 0x4b4e70..0x4b5092, ILTClientSoundMgr's
+// slots 22..25; unnamed, ours): a client sound's sample, or failing that
+// its 3D sample, to the sound driver's Tron additions. A sound is taken as
+// the instance its handle is, not looked up; all three report a bad one as
+// SetUpdateSoundParam
+LTRESULT CSoundMgr::TronUnknownVirtual22( HLTSOUND hSound, uint32 nOn )
+{
+	if (!hSound)
+		RETURN_ERROR(1, CSoundMgr::SetUpdateSoundParam, LT_INVALIDPARAMS);
+
+	CSoundInstance *pSoundInstance = (CSoundInstance*)hSound;
+	if (pSoundInstance->GetPlaySoundFlags() & PLAYSOUND_CLIENT)
+	{
+		LHSAMPLE hSample = pSoundInstance->GetSample();
+		LH3DSAMPLE h3DSample = pSoundInstance->Get3DSample();
+		if (hSample)
+			return g_pSoundSys->TronUnknownVirtual23(hSample, nOn) ? LT_OK : LT_ERROR;
+		if (h3DSample)
+			return g_pSoundSys->TronUnknownVirtual24(h3DSample, nOn) ? LT_OK : LT_ERROR;
+	}
+
+	return LT_ERROR;
+}
+
+LTRESULT CSoundMgr::TronUnknownVirtual24( HLTSOUND hSound, uint32 nOn, float f, uint32 a, uint32 b )
+{
+	if (!hSound)
+		RETURN_ERROR(1, CSoundMgr::SetUpdateSoundParam, LT_INVALIDPARAMS);
+
+	CSoundInstance *pSoundInstance = (CSoundInstance*)hSound;
+	if (pSoundInstance->GetPlaySoundFlags() & PLAYSOUND_CLIENT)
+	{
+		LHSAMPLE hSample = pSoundInstance->GetSample();
+		LH3DSAMPLE h3DSample = pSoundInstance->Get3DSample();
+		if (hSample)
+			return g_pSoundSys->TronUnknownVirtual26(hSample, nOn, f, a, b) ? LT_OK : LT_ERROR;
+		if (h3DSample)
+			return g_pSoundSys->TronUnknownVirtual28(h3DSample, nOn, f, a, b) ? LT_OK : LT_ERROR;
+	}
+
+	return LT_ERROR;
+}
+
+LTRESULT CSoundMgr::TronUnknownVirtual23( HLTSOUND hSound, uint32 a, uint32 b, uint32 c )
+{
+	if (!hSound)
+		RETURN_ERROR(1, CSoundMgr::SetUpdateSoundParam, LT_INVALIDPARAMS);
+
+	CSoundInstance *pSoundInstance = (CSoundInstance*)hSound;
+	if (pSoundInstance->GetPlaySoundFlags() & PLAYSOUND_CLIENT)
+	{
+		LHSAMPLE hSample = pSoundInstance->GetSample();
+		LH3DSAMPLE h3DSample = pSoundInstance->Get3DSample();
+		if (hSample)
+			return g_pSoundSys->TronUnknownVirtual25(hSample, a, b, c) ? LT_OK : LT_ERROR;
+		if (h3DSample)
+			return g_pSoundSys->TronUnknownVirtual27(h3DSample, a, b, c) ? LT_OK : LT_ERROR;
+	}
+
+	return LT_ERROR;
+}
+
+LTRESULT CSoundMgr::TronUnknownVirtual25( uint32 nRun )
+{
+	g_pSoundSys->TronUnknownVirtual29(nRun);
+	return LT_OK;
+}

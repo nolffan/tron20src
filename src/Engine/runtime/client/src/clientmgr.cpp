@@ -156,7 +156,6 @@ extern LTBOOL g_bSoundEnable;
 extern uint32 g_nSoundDebugLevel;
 extern LTBOOL g_bSoundShowCounts;
 extern LTBOOL g_bNullRender;
-extern LTBOOL g_bHWTnLDisabled;
 
 // ----------------------------------------------------------------------- //
 // CClientMgr functions.
@@ -171,7 +170,8 @@ void _GetRModeFromConsoleVariables(RMode *pMode)
     pMode->m_Width = g_ScreenWidth;
     pMode->m_Height = g_ScreenHeight;
     pMode->m_BitDepth = g_CV_BitDepth;
-	pMode->m_bHWTnL = !g_bHWTnLDisabled;
+	// RETAIL: m_bHWTnL is left as the memset leaves it: Tron has no
+	// HWTnLDisabled (Lithtech.exe 0x40f186, inlined in StartRenderFromGlobals)
 
     // Use a specific card description if they want.
     pVar = cc_FindConsoleVar(&g_ClientConsoleState, "carddesc");
@@ -209,10 +209,8 @@ LTRESULT CClientMgr::Init(const char *resTrees[MAX_RESTREES], uint32 nResTrees, 
 {
     const char *pDLLPath;
     char cmd[64];
-    // RETAIL: a vector with room for the trees, its elements written through
-    // &treeTypes[0] without a size (Lithtech.exe 0x40fb16)
-    std::vector<TreeType> treeTypes;
-    treeTypes.reserve(nResTrees);
+    // RETAIL: an array on the stack, as NOLF2's (Lithtech.exe 0x40cc3d)
+    TreeType treeTypes[MAX_RESTREES];
     int nTreesLoaded;
     LTRESULT dResult;
     RMode defaultMode;
@@ -246,6 +244,11 @@ LTRESULT CClientMgr::Init(const char *resTrees[MAX_RESTREES], uint32 nResTrees, 
 
 
     // Add files to the file manager.
+	// RETAIL: at most MAX_RESTREES, kept in an array (Lithtech.exe
+	// 0x40cc08..0x40cc49), as NOLF2's
+    if (nResTrees > MAX_RESTREES)
+        nResTrees = MAX_RESTREES;
+
     if (nResTrees == 0)
     {
         SetupError(LT_NOGAMERESOURCES);
@@ -253,11 +256,10 @@ LTRESULT CClientMgr::Init(const char *resTrees[MAX_RESTREES], uint32 nResTrees, 
         RETURN_ERROR(1, CClientMgr::Init, LT_NOGAMERESOURCES);
     }
 
-    // RETAIL: 0x40fc25..0x40fc76
-    m_ResTrees.reserve(nResTrees);
-    m_ResTrees.insert(m_ResTrees.begin(), resTrees, resTrees + nResTrees);
+    memcpy(m_ResTrees, resTrees, sizeof(m_ResTrees));
+    m_nResTrees = nResTrees;
 
-    client_file_mgr->AddResourceTrees(&m_ResTrees[0], m_ResTrees.size(), &treeTypes[0], &nTreesLoaded);
+    client_file_mgr->AddResourceTrees(resTrees, nResTrees, treeTypes, &nTreesLoaded);
     if (nTreesLoaded == 0)
     {
         SetupError(LT_CANTLOADGAMERESOURCES, resTrees[0]);
@@ -1514,6 +1516,7 @@ void cm_Init()
     g_pClientMgr->m_bTrackingInputDevices = false;
     g_pClientMgr->m_ModelHookFn = NULL;
     g_pClientMgr->m_ModelHookUser = NULL;
+    g_pClientMgr->m_nResTrees = 0;	// RETAIL: Lithtech.exe 0x40e518, as NOLF2's
 
     LT_MEM_TRACK_ALLOC(g_pClientMgr->m_MoveAbstract = new CMoveAbstract(), LT_MEM_TYPE_MISC);
 
@@ -1565,7 +1568,8 @@ void CClientMgr::Term()
         RemoveObjectsInList(&m_ObjectMgr.m_ObjectLists[i], false);
     }
 
-    // RETAIL: no SaveAutoConfig("autoexec.cfg") here (Lithtech.exe 0x40f880)
+	// RETAIL: as NOLF2's (Lithtech.exe 0x40e94c, inlined)
+    SaveAutoConfig("autoexec.cfg");
 
     // Stop getting input.
     m_InputMgr->Term(m_InputMgr);
@@ -1950,8 +1954,9 @@ void CClientMgr::RunCommandLine(uint32 flags)
 			const char* pszCurrArgParam = command_line_args->Argv(nCurrArg + 1);
             LTSNPrintF(fullCmd, sizeof(fullCmd), "(%s) (%s)", &pszCurrArg[1], pszCurrArgParam);
 
-            // RETAIL: as command-line variables (Lithtech.exe 0x40df19)
-            cc_HandleCommand3(&g_ClientConsoleState, fullCmd, flags, VARFLAG_COMMANDLINE);
+            // RETAIL: as NOLF2's (Lithtech.exe 0x40ce95, inlined in Init):
+            // Contract J.A.C.K.'s command-line variable flag is not Tron's
+            cc_HandleCommand2(&g_ClientConsoleState, fullCmd, flags);
         }
     }
 }
@@ -2074,14 +2079,16 @@ void CClientMgr::RemoveObjectsInList(LTList *pList, bool bServerOnly) {
 // notifications and whatnot
 void CClientMgr::RemoveClientObject(LTObject *pObj)
 {
-	LTLink *pListHead = &m_ObjectMgr.m_ObjectLists[pObj->m_ObjectType].m_Head;
+	// RETAIL: as NOLF2's: the list by the world tree's object type, the
+	// link removed without the list's count (Lithtech.exe 0x40fc6d, inlined
+	// in RemoveObjectFromClientWorld)
+	LTLink *pListHead = &m_ObjectMgr.m_ObjectLists[pObj->GetObjType()].m_Head;
     LTLink *pCur = pListHead->m_pNext;
     while (pCur != pListHead)
     {
         LTLink *pNext = pCur->m_pNext;
-		// RETAIL: removed with the list's count (Lithtech.exe 0x40ec50)
 		if ((LTObject*)pCur->m_pData == pObj)
-			dl_RemoveAt(&m_ObjectMgr.m_ObjectLists[pObj->m_ObjectType], pCur);
+			dl_Remove(pCur);
 		pCur = pNext;
 	}
 }

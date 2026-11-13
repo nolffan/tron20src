@@ -161,3 +161,5 @@ addr,reason
 0x004a0065,"NOT A FUNCTION: interior block of sub_49fbff (0x0049fbff): 0x004a005e `fsub DWORD PTR [esp+0x8c]` falls through into 0x004a0065; nothing calls 0x004a0065"
 0x004a0078,"NOT A FUNCTION: interior block of sub_49fbff (0x0049fbff): decoded from that start, 0x004a0075 is `fmul DWORD PTR [esp+0x2c]`, so 0x004a0078 is inside that instruction"
 0x004a017f,"NOT A FUNCTION: interior block of sub_49fbff (0x0049fbff): 0x004a017d `je 0x4a01b2` falls through into 0x004a017f; nothing calls 0x004a017f"
+0x0040cf99,"NOT A FUNCTION: interior block of sub_40cb60 (0x0040cb60), CClientMgr::Init: decoded from that start, 0x0040cf97 is `mov ecx,DWORD PTR ds:0x5b1570`, so 0x0040cf99 is inside that instruction"
+0x004aa75f,"NOT A FUNCTION: interior block of sub_4aa750 (0x004aa750): decoded from that start, 0x004aa75c is `fstp DWORD PTR ds:0x5db874`, so 0x004aa75f is inside that instruction"
