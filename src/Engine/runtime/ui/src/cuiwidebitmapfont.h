@@ -52,9 +52,9 @@ class CUIWideBitmapFont : public CUIFont_Impl
 		virtual CUI_RESULTTYPE	TronUnknownVirtual2(int8 nValue)	{ m_LineSpacing = nValue; return (CUI_RESULTTYPE)0; }
 		virtual CUI_RESULTTYPE	TronUnknownVirtual3(int8 nValue)	{ m_LineSpacing = nValue; return (CUI_RESULTTYPE)0; }
 		virtual uint32			GetDefCharScreenHeight()	{ return m_CharHeight; }
-		virtual int8			GetLineSpacing()		{ return m_LineSpacing; }
-		virtual int8			GetCharSpacing()		{ return m_CharSpacing; }
-		virtual uint8			GetSpaceWidth()		{ return m_SpaceWidth; }
+		virtual int32			GetLineSpacing()		{ return m_LineSpacing; }
+		virtual int32			GetCharSpacing()		{ return m_CharSpacing; }
+		virtual uint32			GetSpaceWidth()		{ return m_SpaceWidth; }
 		virtual HTEXTURE		GetTexture(uint8 nPage)		{ return m_hPages[nPage]; }
 		virtual uint16			GetDefaultChar()		{ return m_DefaultChar; }
 		virtual bool			IsRemapped()		{ return m_bRemap == 1; }
