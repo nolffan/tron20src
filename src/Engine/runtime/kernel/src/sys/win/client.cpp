@@ -637,11 +637,9 @@ int RunClientApp(HINSTANCE hInstance) {
                 pGlob->m_hInstance,										// program instance handle
                 LTNULL);												// creation parameters
 
-    // RETAIL: the window's small and large icons (0x405d47)
-    SendMessage(pGlob->m_hMainWnd, WM_SETICON, ICON_SMALL,
-        (LPARAM)LoadImage(GetModuleHandle(LTNULL), MAKEINTRESOURCE(128), IMAGE_ICON, 16, 16, 0));
-    SendMessage(pGlob->m_hMainWnd, WM_SETICON, ICON_BIG,
-        (LPARAM)LoadImage(GetModuleHandle(LTNULL), MAKEINTRESOURCE(128), IMAGE_ICON, 32, 32, 0));
+    // TRON: no WM_SETICON for the window's small and large icons (Contract
+    // J.A.C.K.'s): Lithtech.exe stores the window (0x404f81) and goes on, and
+    // imports no SendMessageA (nor does the developer build)
 
 
     bPrevHighPriority = LTFALSE;

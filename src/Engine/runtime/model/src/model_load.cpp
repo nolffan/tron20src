@@ -996,7 +996,11 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 
 				// TRON: the child's skeleton must be the parent's (server.dll
 				// 0x1001a1ac). RETAIL BUG: with no child model loaded (pModel
-				// NULL) the check reads through it (docs/RETAIL_BUGS.md)
+				// NULL) the check reads through it (docs/RETAIL_BUGS.md).
+				// Lithtech.exe has no such check (no "Skeleton Mismatch"
+				// string; the developer build's has): a debugging aid that,
+				// as netmgr.cpp's packet parser, only the server keeps
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 				if(!CompareSkeletons(this, pModel))
 				{
 					buffer256 error_string("Model Load ERROR!!! Skeleton Mismatch between parent and child model: %s %s\n", pFilename, pModel->GetFilename());
@@ -1005,6 +1009,7 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 					OutputDebugString(error_string);
 #endif
 				}
+#endif
 
 				// Make sure the child model doesn't have any child models.
 				if(pModel && pModel->NumChildModels() > 1)

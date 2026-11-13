@@ -32,8 +32,14 @@ Counter g_NMTimeCounter(CSTART_MILLI);
 // Helpers
 // ------------------------------------------------------------------------ //
 
-// TRON: the packet parser is in the final build too (server.dll 0x10021a76,
-// ParsePacket; ParseNet's console variables are its). Tron's is not the
+// TRON: the packet parser is in server.dll's final build (0x10021a76,
+// ParsePacket; ParseNet's console variables are its) but not in Lithtech.exe's:
+// none of its strings there, and SendPacket (0x45b650) and GetPacket
+// (0x45b830) call nothing for ParseNet -- ParseMsg is empty in the final exe,
+// the server as if built without _FINAL (the developer build's exe of
+// 2003-08-05 has the parser too). ParsePacket is still compiled there, and
+// dropped by the linker: its out-of-line LTStrCat is the copy the exe keeps
+// (Lithtech.exe 0x50e250, 60 bytes, not D3DRender's). Tron's is not the
 // 2003/2006 Jupiter one (cjacksrc's, NOLF2's, Build 69's), which takes each
 // object update apart: it names a message by its game message ID
 // (0x10021945) and an update's change flags by their whole names, and has
@@ -270,6 +276,7 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 
 void ParseMsg(const CPacket_Read &cPacket, uint32 nFlags, uint32 nTravelDir, CBaseConn *pConn)
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 	if (nFlags == 0)
 		return;
 
@@ -307,6 +314,7 @@ void ParseMsg(const CPacket_Read &cPacket, uint32 nFlags, uint32 nTravelDir, CBa
 
 	if(bPrint)
 		dsi_ConsolePrint(aMsgBuff);
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 // ------------------------------------------------------------------------ //

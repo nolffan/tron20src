@@ -668,18 +668,10 @@ void CRenderShadowList::QueueShadows(ModelInstance* pInstance, const CRelevantLi
 		DrawLinesFromLights(LightList, pInstance->GetPos());
 	}
 
-	//Determine where the model is, we need to track the translation node if possible for models
-	//that are cinematic and extend beyond their bounding box
+	// TRON: the model's own position: no lookup of a "translation" node for
+	// cinematic models (no such string in Lithtech.exe; Build 69's and the
+	// developer build's have it: taken out before release)
 	LTVector vModelPos	= pInstance->GetPos();
-
-	ModelNode* pNode = pInstance->GetModelDB()->FindNode("translation");
-	if(pNode)
-	{
-		//we have the node, lets get its position
-		LTMatrix mMat;
-		pInstance->GetNodeTransform(pNode->m_NodeIndex, mMat, true);
-		mMat.GetTranslation(vModelPos);
-	}
 
 	uint32 nShadows = 0;
 
