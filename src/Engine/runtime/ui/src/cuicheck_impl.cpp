@@ -434,8 +434,9 @@ void CUICheck_Impl::Reposition()
 //  ---------------------------------------------------------------------------
 void CUICheck_Impl::AlignTextInWidget()
 {
-	float w, h;
-	float ypos, xpos;
+	// RETAIL: integers (0x56f7a0), as Tron's polystrings measure
+	int32 w, h;
+	int32 ypos, xpos;
 
 	if (m_pPolyStr) {
 		
@@ -445,15 +446,15 @@ void CUICheck_Impl::AlignTextInWidget()
 		switch (m_Valign) {
 
 			case CUI_VALIGN_TOP:
-				ypos = m_Rect.y + m_GutterTop;
+				ypos = (int32)m_Rect.y + m_GutterTop;
 				break;
 
 			case CUI_VALIGN_CENTER:
-				ypos = m_Rect.y + (m_Rect.height - h) / 2;
+				ypos = (int32)m_Rect.y + ((int32)m_Rect.height - h) / 2;
 				break;
 
 			case CUI_VALIGN_BOTTOM:
-				ypos = m_Rect.y + (m_Rect.height - h - m_GutterBottom);
+				ypos = (int32)m_Rect.y + ((int32)m_Rect.height - h - m_GutterBottom);
 				break;
 
 		}
@@ -465,11 +466,11 @@ void CUICheck_Impl::AlignTextInWidget()
 			case CUI_HALIGN_JUSTIFY:
 				// fall through...
 			case CUI_HALIGN_LEFT:
-				xpos = m_Rect.x + m_Rect.width - m_GutterRight - w;
+				xpos = (int32)m_Rect.x + (int32)m_Rect.width - m_GutterRight - w;
 				break;
 
 			case CUI_HALIGN_RIGHT:				
-				xpos = m_Rect.x + m_GutterLeft;
+				xpos = (int32)m_Rect.x + m_GutterLeft;
 				break;
 
 		}
