@@ -258,6 +258,10 @@ Object.lto: 152 classes still differ.
   the wide font's destructor frame and 14 functions; with `/Ob2` its
   static initializers' `jmp` stubs fold away: 178 more functions identical
   without it).
+  The engine's StdLith is `/O2` without `/Ob2` too (sb_Term calls
+  sb_Term2, 0x561b90), the game DLLs' `/Ob2`: the engine's workspace builds
+  it as `src/libs/stdlith/Lib_StdLithEngine.dsp` (ours; the library keeps
+  its name) for Lithtech.exe and server.dll.
 - **Rich header:** 292 C++ objects of 8168 (ours); D3DX9's are the 110
   C++ and 3 C objects of cl 13.00.9178, 6 of masm 6.14.8444 and 9 C
   objects of cl 13.10.2067 (the developer build of 2003-08-05 has the

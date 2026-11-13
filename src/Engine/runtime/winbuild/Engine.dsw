@@ -51,7 +51,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "Lib_StdLith"=..\..\..\libs\stdlith\Lib_StdLith.dsp - Package Owner=<4>
+Project: "Lib_StdLithEngine"=..\..\..\libs\stdlith\Lib_StdLithEngine.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -96,7 +96,7 @@ Package=<4>
     Project_Dep_Name Lib_RezMgr
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name Lib_StdLith
+    Project_Dep_Name Lib_StdLithEngine
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name Lib_UI
@@ -135,7 +135,7 @@ Package=<4>
     Project_Dep_Name Lib_RezMgr
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name Lib_StdLith
+    Project_Dep_Name Lib_StdLithEngine
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name Lib_Lith
