@@ -84,6 +84,11 @@
 	#define LCI_ADD_CYCLIST				1
 	#define LCI_REMOVE_CYCLIST			2
 	#define LCI_DEREZ_CYCLIST			3
+	// RETAIL: the client's light cycle manager sends these (CShell
+	// 0x10013c90, 0x10014620, 0x10011410; the names are ours)
+	#define LCI_CYCLIST_MOVEMENT		8
+	#define LCI_TRIM_TRAIL				14
+	#define LCI_CYCLIST_POSITION		24
 ///////////////////////////////////////////
 
 #define	MID_PERFORMANCE					137

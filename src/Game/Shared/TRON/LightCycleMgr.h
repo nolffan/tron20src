@@ -258,18 +258,20 @@ class CLightCycleMgr
 			LTVector* pvDims, uint32 nTronUnknown4, uint32 nTronUnknown5);
 		virtual bool DerezCyclist(HOBJECT hObj);	// RETAIL: 0x100fec30
 
-		// A cyclist crashed (into pOther or its trail). RETAIL: slot 5, pure
-		virtual void CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bTronUnknown) = 0;
+		// A cyclist crashed (into pOther or its trail); false if it was
+		// already derezzing. RETAIL: slot 5, pure (the client's: 0x10010fb0)
+		virtual bool CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify) = 0;
 		// Two cycles met head on. RETAIL: slot 6, 0x100991a0 (empty, folded)
 		virtual void HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther) {}
-		// RETAIL: slot 7, pure
-		virtual void TronUnknownVirtual7() = 0;
+		// Moves the cycles and their trails (the name is ours). RETAIL: slot
+		// 7, pure (the client's: 0x10011410)
+		virtual void UpdateCyclists() = 0;
 
 		// A shielded cyclist's hit. RETAIL: 0x10100960
 		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail);
 		// Drops the first points of the current trail up to nPoint (or the
 		// first if two are left, snapping the next). RETAIL: 0x10100df0
-		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown);
+		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify);
 		// Starts the trail spike's two trails at vPos. RETAIL: 0x10101280
 		virtual bool BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);
 		// Grows the trail spike, then removes it. RETAIL: 0x10101520
@@ -284,12 +286,13 @@ class CLightCycleMgr
 		virtual void RemoveAllCyclists();
 		virtual bool SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x10100770
 		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);	// RETAIL: 0x101007a0
-		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown);	// RETAIL: 0x10100950
+		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify);	// RETAIL: 0x10100950
 		virtual void Update();					// RETAIL: 0x10101910
 
-		// RETAIL: slot 19, 0x10010970 (inline; returns a string made from
-		// a global char array, 0x10236c98)
-		virtual std::string TronUnknownVirtual19(uint32) { return std::string(""); }
+		// The cyclist's name (the name is ours). RETAIL: slot 19, 0x10010970
+		// (inline; returns a string made from a global char array,
+		// 0x10236c98; the client's: 0x10012dd0)
+		virtual std::string GetCyclistName(HOBJECT hObj) { return std::string(""); }
 		// The cycle turned or its acceleration or max speed changed
 		// (UpdateCyclistMovement). RETAIL: slot 20, 0x10010a30 (inline, empty)
 		virtual void CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool bTurned, float fAccel, float fWallAccel, uint32 nFlags) {}

@@ -324,6 +324,16 @@ class CLightCycleButeMgr : public CGameButeMgr
 		LTFLOAT				GetGameSpeedScalar(int nIndex);		// RETAIL: 0x100280f0
 		LTFLOAT				GetTrailLengthValue(int nIndex);	// RETAIL: 0x10028100
 
+#ifdef _CLIENTBUILD
+		// The client's (CShell.dll only; the names are ours):
+		// a random string id of the TextIds list, 0 if none. RETAIL: CShell 0x10045310
+		int					GetRandomTextId(int eTextId);
+		// The power-up's data (a default one if the bute file has none).
+		// RETAIL: CShell 0x10045350, 0x10045440
+		LCPOWERUPDATA*		GetPowerupData(int nPowerup);
+		LCPOWERUPDATA*		GetPowerupData(CaselessString sName);
+#endif
+
 		int					GetNumCycleTypes()	const { return m_nNumCycleTypes; }
 		int					GetNumCycleMods()	const { return m_nNumCycleMods; }
 		int					GetNumCycleDialogs()const { return m_nNumCycleDialogs; }

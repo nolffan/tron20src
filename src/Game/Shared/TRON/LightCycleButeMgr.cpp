@@ -805,3 +805,53 @@ LTFLOAT CLightCycleButeMgr::GetTrailLengthValue(int nIndex)
 {
 	return m_afTrailLengthValues[nIndex];
 }
+
+#ifdef _CLIENTBUILD
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleButeMgr::GetRandomTextId()
+//
+//	PURPOSE:	RETAIL: CShell 0x10045310 (client only; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+int CLightCycleButeMgr::GetRandomTextId(int eTextId)
+{
+	LCIntArray & aIds = m_aTextIds[eTextId];
+	int nIds = aIds.size();
+	if (!nIds)
+	{
+		return 0;
+	}
+
+	return aIds[GetRandom(0, nIds - 1)];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleButeMgr::GetPowerupData()
+//
+//	PURPOSE:	RETAIL: CShell 0x10045350, 0x10045440 (client only; the
+//				names are ours)
+//
+// ----------------------------------------------------------------------- //
+
+LCPOWERUPDATA* CLightCycleButeMgr::GetPowerupData(int nPowerup)
+{
+	return GetPowerupData(CaselessString(g_aszLCPowerupNames[nPowerup]));
+}
+
+LCPOWERUPDATA* CLightCycleButeMgr::GetPowerupData(CaselessString sName)
+{
+	LCPowerupMap::iterator iter = m_mapPowerups.find(sName);
+	if (iter != m_mapPowerups.end())
+	{
+		return &(*iter).second;
+	}
+
+	static LCPOWERUPDATA s_Default(0, kNumLCTextIds);
+	return &s_Default;
+}
+
+#endif // _CLIENTBUILD

@@ -19,6 +19,7 @@
 #include "TronPlayerMgr.h"
 #include "TronClientWeaponAllocator.h"
 #include "TronMissionButeMgr.h"
+#include "ClientLightCycleMgr.h"
 
 class CTronGameClientShell : public CGameClientShell
 {
@@ -44,6 +45,7 @@ class CTronGameClientShell : public CGameClientShell
 		CTronVersionMgr				m_VersionMgr;		// Same as g_pVersionMgr
 		CTronPlayerMgr				m_PlayerMgr;		// Player manager
 		CTronMissionButeMgr			m_MissionButeMgr;	// Same as g_pMissionButeMgr
+		CClientLightCycleMgr		m_LightCycleMgr;	// Same as g_pLightCycleMgr (RETAIL: +0x32e00)
 
 		// allocator for client weapons
 		CTronClientWeaponAllocator	m_ClientWeaponAllocator;

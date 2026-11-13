@@ -1472,7 +1472,7 @@ bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 //	PURPOSE:	Drops a cyclist's shield. RETAIL: 0x10100950
 //
 // ----------------------------------------------------------------------- //
-void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown)
+void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify)
 {
 	pCyclist->bShield = false;
 }
@@ -1648,7 +1648,7 @@ bool CLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCo
 //				RETAIL: 0x10100df0
 //
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, uint32 nTronUnknown)
+bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify)
 {
 	if(!pCyclist)
 		return false;

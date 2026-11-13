@@ -577,8 +577,9 @@ class ILTDrawPrim : public IBase
         */
         virtual LTRESULT SetCullMode(ELTDPCullMode ecullmode) = 0;
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual13() = 0;
+    // TRON: Build 69's SetFogEnable (slot 13; CShell 0x10011ac0 calls it
+    // with the FogEnable console variable around its draws)
+    virtual LTRESULT SetFogEnable(bool bFogEnable) = 0;
 
 		/*!
         \param bReallyClose - Specifies whether or not the draw primitive will be rendered in the really close range.

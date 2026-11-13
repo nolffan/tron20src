@@ -166,6 +166,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientLightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -595,6 +599,10 @@ SOURCE=.\ArcCtrl.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientLightCycleMgr.h
 # End Source File
 # Begin Source File
 
