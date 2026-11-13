@@ -270,6 +270,17 @@ the claw "sees" any AI in range: it seeks and chases through walls.
 
 Not fixed yet: the modern build should take the second end from hTo.
 
+### A light cycle with an unknown color dereferences NULL
+
+Object.lto 0x10025503 (LightCycle::SetModel, ObjectDLL/TRON/LightCycle.cpp).
+It reads the color's cycle type (and does nothing with it) before checking
+that the CycleColor was found, so a cycle whose CycleColor names no color
+reads through NULL before it can print its "Couldn't find Light Cycle
+Color" error.
+
+Not fixed yet: the modern build should drop the unused lookup, or make it
+after the check.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

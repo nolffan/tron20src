@@ -427,6 +427,34 @@ struct CLIENTFXUSERCREATESTRUCT : public SFXCREATESTRUCT
 	ModelId		eModelId;
 };
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// LIGHTCYCLECREATESTRUCT class Definition
+//
+// RETAIL: Tron's (RTTI; Object.lto vtable 0x10293d54, CShell.dll 0x101eb178):
+// the special fx of a LightCycle (client CLightCycleFX). Its constructor is
+// inline (retail LightCycle::LightCycle 0x10024fb0); its Write folds with
+// PVCREATESTRUCT's (0x10114160); its Read is 0x10114120. The member's name
+// is ours: the rider's client id, 0xff for none (retail 0x10025341).
+//
+/////////////////////////////////////////////////////////////////////////////
+
+struct LIGHTCYCLECREATESTRUCT : public SFXCREATESTRUCT
+{
+	LIGHTCYCLECREATESTRUCT();
+
+    virtual void Write(ILTMessage_Write *pMsg);
+    virtual void Read(ILTMessage_Read *pMsg);
+
+	uint8		nClientID;
+};
+
+inline LIGHTCYCLECREATESTRUCT::LIGHTCYCLECREATESTRUCT()
+:	SFXCREATESTRUCT	(),
+	nClientID		( 0xff )
+{
+}
+
 inline PVCREATESTRUCT::PVCREATESTRUCT()
 {
 	ePhysicsModel = PPM_NORMAL;

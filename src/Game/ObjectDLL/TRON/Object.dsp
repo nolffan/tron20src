@@ -202,6 +202,10 @@ SOURCE=.\IONode.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycle.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -365,6 +369,10 @@ SOURCE=.\InfoString.h
 # Begin Source File
 
 SOURCE=.\IONode.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycle.h
 # End Source File
 # Begin Source File
 
