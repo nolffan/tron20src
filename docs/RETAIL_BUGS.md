@@ -475,7 +475,10 @@ with the parent's node for node. The callback may load nothing (pModel
 NULL, LT_NOCHANGE: the default callback, or a request without child
 models), and the comparison then reads the NULL model's node count: a
 crash. It should skip the check when there is no child model, as the
-loader does for the rest of the child's setup.
+loader does for the rest of the child's setup. Lithtech.exe has no such
+check (no "Skeleton Mismatch" string; the developer build's exe has it),
+and the game's own local server is linked into it: only server.dll (the
+dedicated server's) can crash this way.
 
 Not fixed yet.
 

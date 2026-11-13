@@ -644,8 +644,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 	uint32 nDrawTime = 0;
 
 	// Implementation note: Transformed world rendering doesn't do any occlusion or frustum checking
-	// RETAIL: DebugRBOccludeWorld 0 draws them all (0x4a9f0d)
-	if (g_CV_DebugRBAll.m_Val || bTransformed || !g_CV_DebugRBOccludeWorld.m_Val)
+	if (g_CV_DebugRBAll.m_Val || bTransformed)
 	{
 		for (uint32 nRBDrawLoop = 0; nRBDrawLoop < m_nRenderBlockCount; ++nRBDrawLoop)
 		{
@@ -719,38 +718,20 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 					continue;
 				}
 
-				// RETAIL: an entirely visible block takes its subtree untested
-				// (0x4aa0ca)
-				if ((eVisibility == FrontSide) && g_CV_DebugRBOccludeEarlyVisible.m_Val)
-				{
-					static TRBQueue cVisibleQueue;
-					cVisibleQueue.push(pCurBlock);
-					while (!cVisibleQueue.empty())
-					{
-						pCurBlock = cVisibleQueue.top();
-						cVisibleQueue.pop();
+				// TRON: no early out for an entirely visible block (Contract
+				// J.A.C.K.'s, under DebugRBOccludeEarlyVisible, with its own
+				// static stack): every block is tested, as Build 69's. RETAIL:
+				// Draw (0x4d5280) builds one static stack (0x5ddf38, at
+				// 0x4d5586), and has no such console variable or frame stat
 
-						IncFrameStat(eFS_WorldBlocksEarlyOutVisible, 1);
-						m_aVisibleRBs.push_back(pCurBlock);
-						CD3D_RenderBlock *pChild = pCurBlock->GetChild(0);
-						if (pChild)
-							cVisibleQueue.push(pChild);
-						pChild = pCurBlock->GetChild(1);
-						if (pChild)
-							cVisibleQueue.push(pChild);
-					}
-				}
-				else
-				{
-					// Add it to the list and recurse into its children
-					m_aVisibleRBs.push_back(pCurBlock);
-					CD3D_RenderBlock *pChild1, *pChild2;
-					GetRBChildrenSorted(Params, pCurBlock, pChild1, pChild2);
-					if (pChild2)
-						cRBQueue.push(pChild2);
-					if (pChild1)
-						cRBQueue.push(pChild1);
-				}
+				// Add it to the list and recurse into its children
+				m_aVisibleRBs.push_back(pCurBlock);
+				CD3D_RenderBlock *pChild1, *pChild2;
+				GetRBChildrenSorted(Params, pCurBlock, pChild1, pChild2);
+				if (pChild2)
+					cRBQueue.push(pChild2);
+				if (pChild1)
+					cRBQueue.push(pChild1);
 			}
 		}
 	}
@@ -804,7 +785,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 
 	// RETAIL: the main world's shaders, when it asks for it (0x4aa500); else
 	// d3d_FlushObjectQueues and the sky flush them
-	if (g_Device.m_pRenderWorld->m_bFlushOnDraw || g_CV_DebugRBFlushOnDraw.m_Val)
+	if (g_Device.m_pRenderWorld->m_bFlushOnDraw)
 		FlushShaders();
 
 	if (g_CV_DebugRBDrawOccluders.m_Val)

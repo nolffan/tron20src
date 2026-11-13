@@ -498,7 +498,7 @@ public:
 				}
 				if (!iCurSection->m_bQueuedForRender)
 				{
-					if (iCurSection->m_bBreakBatch || g_CV_DebugRBDrawExact.m_Val)
+					if (iCurSection->m_bBreakBatch)
 					{
 						iCurSection->m_bBreakBatch = false;
 						break;

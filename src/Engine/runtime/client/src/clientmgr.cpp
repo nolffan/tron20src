@@ -108,9 +108,9 @@ static IServerFileMgr *server_filemgr;
 define_holder(IServerFileMgr, server_filemgr);
 #endif
 
-//Interface to the internal instance of DrawPrim
-static ILTDrawPrim* g_pLTDrawPrimInternal;
-define_holder_to_instance(ILTDrawPrim, g_pLTDrawPrimInternal, Internal);
+// TRON: no holder of the internal DrawPrim here: retail's clientmgr.obj has
+// none (its last holder is IServerFileMgr's, 0x5ae878: "IServerFileMgr.Default"
+// is followed by "carddesc", 0x5ae938), and no DrawPrim camera (see below)
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------
