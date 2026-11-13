@@ -25,6 +25,9 @@ class CTronPlayerObj : public CPlayerObj
 	// RETAIL: its light cycle messages start and end the cycle (0x1005139b)
 	friend class CServerLightCycleMgr;
 
+	// RETAIL: a missile flies through its rider's cycle (0x1002aa27)
+	friend class LightCycleMissile;
+
 	public :
 
 		// Constructor/destructor

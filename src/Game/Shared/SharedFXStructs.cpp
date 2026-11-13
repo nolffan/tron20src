@@ -694,6 +694,42 @@ void MINECREATESTRUCT::Read(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	LIGHTCYCLECREATESTRUCT::Write()
+//
+//	PURPOSE:	Write the data to the message (RETAIL: Tron's; folds with
+//				PVCREATESTRUCT's, retail 0x10114160)
+//
+// ----------------------------------------------------------------------- //
+
+void LIGHTCYCLECREATESTRUCT::Write(ILTMessage_Write *pMsg)
+{
+	if (!pMsg) return;
+
+    SFXCREATESTRUCT::Write(pMsg);
+
+	pMsg->Writeuint8(nClientID);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	LIGHTCYCLECREATESTRUCT::Read()
+//
+//	PURPOSE:	Read the data from the message (RETAIL: Tron's, retail
+//				0x10114120)
+//
+// ----------------------------------------------------------------------- //
+
+void LIGHTCYCLECREATESTRUCT::Read(ILTMessage_Read *pMsg)
+{
+	if (!pMsg) return;
+
+    SFXCREATESTRUCT::Read(pMsg);
+
+    nClientID = pMsg->Readuint8();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLIENTFXUSERCREATESTRUCT::CLIENTFXUSERCREATESTRUCT()
 //
 //	PURPOSE:	No model yet (RETAIL: Tron's, retail 0x10114140)

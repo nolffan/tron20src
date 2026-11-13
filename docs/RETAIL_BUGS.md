@@ -378,6 +378,38 @@ size twice.
 
 Not fixed yet: harmless (four pings show); the modern build may use all
 eight.
+### A light cycle with an unknown color dereferences NULL
+
+Object.lto 0x10025503 (LightCycle::SetModel, ObjectDLL/TRON/LightCycle.cpp).
+It reads the color's cycle type (and does nothing with it) before checking
+that the CycleColor was found, so a cycle whose CycleColor names no color
+reads through NULL before it can print its "Couldn't find Light Cycle
+Color" error.
+
+Not fixed yet: the modern build should drop the unused lookup, or make it
+after the check.
+
+### The light cycle missile's stand-in cyclist is left uninitialized
+
+Object.lto 0x10029fd0 (LIGHT_CYCLIST's (float, float, bool) constructor,
+ObjectDLL/TRON/LightCycleMgr.h; used for LightCycleMissile's static
+cyclist, 0x10358ca0). It "calls" the default constructor with
+`LIGHT_CYCLIST();`, which builds and destroys a temporary, so only the three
+fields it sets afterwards are initialized. The rest of the static is zero
+only because it is a static (its direction, flags and power-up are 0, not
+the defaults).
+
+Not fixed yet: the modern build should initialize the fields in the
+constructor itself.
+
+### A light cycle power-up's AllowInCustom cannot be turned off
+
+Object.lto 0x1002b502 (LightCyclePowerup::ReadProp, ObjectDLL/TRON/
+LightCyclePowerup.cpp). The property is only copied when it is true, and the
+default is true, so a power-up set not to appear in custom light cycle games
+appears anyway.
+
+Not fixed yet: the modern build should copy the property's value always.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

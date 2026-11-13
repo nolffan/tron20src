@@ -229,7 +229,19 @@ SOURCE=.\IONode.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycle.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMissile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCyclePowerup.cpp
 # End Source File
 # Begin Source File
 
@@ -429,7 +441,19 @@ SOURCE=.\IONode.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycle.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMissile.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCyclePowerup.h
 # End Source File
 # Begin Source File
 

@@ -162,6 +162,305 @@ LIGHT_CYCLIST* CLightCycleMgr::FindCyclist(HOBJECT hObj)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLightCycleMgr::CheckForCollision
+//
+//	PURPOSE:	Does the segment ptStart..ptEnd of a cyclist hit a live
+//				cycle, or a trail? The first hit is put in pInfo (its
+//				nTrail -1 for a cycle). Also keeps the nearest wall a
+//				cycle runs beside (nTronUnknownA4) and its side
+//				(bTronUnknownAC).
+//
+//	RETAIL: 0x100bbef0 (Tron's; the names of the parameters and locals
+//	are ours)
+//
+// ----------------------------------------------------------------------- //
+bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL_POINT& ptStart, LIGHT_CYCLE_TRAIL_POINT& ptEnd,
+	LightCycleCollisionInfo* pInfo, bool bCheckCycles, LIGHT_CYCLIST* pIgnore)
+{
+	if(!pCyclist)
+		return false;
+
+	pCyclist->nTronUnknownA4 = pCyclist->nMaxWallDist + 100;
+
+	std::vector<LIGHT_CYCLIST*>::iterator iter;
+	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
+	{
+		LIGHT_CYCLIST* pOther = (*iter);
+
+		// The cycles first
+		if(bCheckCycles && (pOther->fStartDerezTime == 0.0f))
+		{
+			if((!pCyclist->bTronUnknownD1 && (pOther != pCyclist)) || (pCyclist->bTronUnknownD1 && (pOther != pIgnore)))
+			{
+				float fMinX = LTMIN(ptEnd.GetX(), ptStart.GetX());
+				float fMaxX = LTMAX(ptEnd.GetX(), ptStart.GetX());
+				float fMinZ = LTMIN(ptEnd.GetZ(), ptStart.GetZ());
+				float fMaxZ = LTMAX(ptEnd.GetZ(), ptStart.GetZ());
+
+				if(pCyclist->vForward.x == 0.0f)
+				{
+					fMinX -= 16.0f;
+					fMaxX += 16.0f;
+					fMinZ -= pCyclist->fHalfHeight;
+					fMaxZ += pCyclist->fHalfHeight;
+				}
+				else
+				{
+					fMinZ -= 16.0f;
+					fMaxZ += 16.0f;
+					fMinX -= pCyclist->fHalfHeight;
+					fMaxX += pCyclist->fHalfHeight;
+				}
+
+				float fOtherMinX, fOtherMaxX, fOtherMinZ, fOtherMaxZ;
+				if(pOther->vForward.x == 0.0f)
+				{
+					fOtherMinX = pOther->vPos.x - 16.0f;
+					fOtherMaxX = pOther->vPos.x + 16.0f;
+					fOtherMinZ = pOther->vPos.z - pOther->fHalfHeight;
+					fOtherMaxZ = pOther->vPos.z + pOther->fHalfHeight;
+				}
+				else
+				{
+					fOtherMinX = pOther->vPos.x - pOther->fHalfHeight;
+					fOtherMaxX = pOther->vPos.x + pOther->fHalfHeight;
+					fOtherMinZ = pOther->vPos.z - 16.0f;
+					fOtherMaxZ = pOther->vPos.z + 16.0f;
+				}
+
+				if((fOtherMaxX >= fMinX) && (fOtherMinX <= fMaxX) && (fOtherMaxZ >= fMinZ) && (fOtherMinZ <= fMaxZ))
+				{
+					pInfo->pCyclist = pOther;
+					pInfo->nTrail = -1;
+
+					if(pCyclist->bTronUnknownD1)
+						return true;
+
+					if((pCyclist->dwFlags & 1) && !(pOther->dwFlags & 1))
+					{
+						// Only we have it: the other one derezzes
+						DerezCyclist(pOther, pCyclist, true);
+					}
+					else
+					{
+						if(!(pCyclist->dwFlags & 1) && (pOther->dwFlags & 1))
+							return true;
+
+						// Head on?
+						bool bAlongX = (pCyclist->vForward.x != 0.0f);
+						bool bOtherAlongX = (pOther->vForward.x != 0.0f);
+						if(bAlongX == bOtherAlongX)
+						{
+							if(bAlongX)
+							{
+								if(pCyclist->vForward.x != pOther->vForward.x)
+								{
+									HandleHeadOnCollision(pCyclist, pOther);
+									return true;
+								}
+							}
+							else if(pCyclist->vForward.z != pOther->vForward.z)
+							{
+								HandleHeadOnCollision(pCyclist, pOther);
+								return true;
+							}
+						}
+
+						return true;
+					}
+				}
+			}
+		}
+
+		// Then its trails
+		std::vector<LIGHT_CYCLE_TRAIL*>::iterator trailIter;
+		for(trailIter=pOther->collTrails.begin();trailIter!=pOther->collTrails.end();trailIter++)
+		{
+			LIGHT_CYCLE_TRAIL* pTrail = (*trailIter);
+			int nLastPoint = -1;
+
+			// Not the end of our own trail, we are on it
+			LIGHT_CYCLIST* pSelf = pIgnore ? pIgnore : pCyclist;
+			if((pOther == pSelf) && (pTrail == pSelf->pCurTrail))
+			{
+				if(pTrail->collTrailPoints.size() >= 4)
+					nLastPoint = pTrail->collTrailPoints.size() - 4;
+			}
+			else
+			{
+				nLastPoint = pTrail->collTrailPoints.size() - 2;
+			}
+
+			int nEndX = (int)ptEnd.GetX();
+			int nEndZ = (int)ptEnd.GetZ();
+			int nStartX = (int)ptStart.GetX();
+			int nStartZ = (int)ptStart.GetZ();
+
+			for(int i=0;i<=nLastPoint;i++)
+			{
+				LIGHT_CYCLE_TRAIL_POINT* pPt1 = &pTrail->collTrailPoints[i];
+				LIGHT_CYCLE_TRAIL_POINT* pPt2 = &pTrail->collTrailPoints[i+1];
+
+				int nX1 = (int)pPt1->GetX();
+				int nZ1 = (int)pPt1->GetZ();
+				int nX2 = (int)pPt2->GetX();
+				int nZ2 = (int)pPt2->GetZ();
+
+				if(nX1 == nX2)
+				{
+					// A wall along z
+					if(nStartX == nEndX)
+					{
+						// We go along it
+						int nHalf = (int)pCyclist->fHalfLength;
+						if((nEndX - nHalf <= nX1) && (nEndX + nHalf >= nX1))
+						{
+							int nMinZ = (nStartZ < nEndZ) ? nStartZ : nEndZ;
+							int nMaxZ = (nStartZ > nEndZ) ? nStartZ : nEndZ;
+							int nWallMinZ = (nZ1 < nZ2) ? nZ1 : nZ2;
+							int nWallMaxZ = (nZ1 > nZ2) ? nZ1 : nZ2;
+							if((nMinZ <= nWallMaxZ) && (nMaxZ >= nWallMinZ))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = trailIter - pOther->collTrails.begin();
+								pInfo->nPoint = i;
+								pInfo->vCollisionPoint.x = ptEnd.GetX();
+								pInfo->vCollisionPoint.y = ptEnd.GetY();
+								if(nEndZ > nStartZ)
+									pInfo->vCollisionPoint.z = (float)((nStartZ > nWallMinZ) ? nStartZ : nWallMinZ);
+								else
+									pInfo->vCollisionPoint.z = (float)((nStartZ < nWallMaxZ) ? nStartZ : nWallMaxZ);
+								return true;
+							}
+						}
+						else
+						{
+							// How near is it?
+							int nDist1 = abs((nEndX - nHalf) - nX1);
+							int nDist2 = abs((nEndX + nHalf) - nX1);
+							int nDist = (nDist1 < nDist2) ? nDist1 : nDist2;
+							if(nDist < pCyclist->nTronUnknownA4)
+							{
+								int nMinZ = (nStartZ < nEndZ) ? nStartZ : nEndZ;
+								int nMaxZ = (nStartZ > nEndZ) ? nStartZ : nEndZ;
+								int nWallMinZ = (nZ1 < nZ2) ? nZ1 : nZ2;
+								int nWallMaxZ = (nZ1 > nZ2) ? nZ1 : nZ2;
+								if((nMinZ < nWallMaxZ) && (nMaxZ > nWallMinZ))
+								{
+									pCyclist->nTronUnknownA4 = nDist;
+									if(nDist1 < nDist2)
+										pCyclist->bTronUnknownAC = (nEndZ > nStartZ);
+									else
+										pCyclist->bTronUnknownAC = (nEndZ < nStartZ);
+								}
+							}
+						}
+					}
+					else
+					{
+						// We cross it
+						int nHalf = (int)pCyclist->fHalfLength;
+						int nWallMinZ = (nZ1 < nZ2) ? nZ1 : nZ2;
+						int nWallMaxZ = (nZ1 > nZ2) ? nZ1 : nZ2;
+						if((nEndZ - nHalf <= nWallMaxZ) && (nEndZ + nHalf >= nWallMinZ))
+						{
+							int nMinX = (nStartX < nEndX) ? nStartX : nEndX;
+							int nMaxX = (nStartX > nEndX) ? nStartX : nEndX;
+							if((nMinX <= nX1) && (nMaxX >= nX1))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = trailIter - pOther->collTrails.begin();
+								pInfo->nPoint = i;
+								pInfo->vCollisionPoint.x = (float)nX1;
+								pInfo->vCollisionPoint.y = ptEnd.GetY();
+								pInfo->vCollisionPoint.z = ptEnd.GetZ();
+								return true;
+							}
+						}
+					}
+				}
+				else
+				{
+					// A wall along x
+					if(nStartZ == nEndZ)
+					{
+						// We go along it
+						int nHalf = (int)pCyclist->fHalfLength;
+						if((nEndZ - nHalf <= nZ1) && (nEndZ + nHalf >= nZ1))
+						{
+							int nMinX = (nStartX < nEndX) ? nStartX : nEndX;
+							int nMaxX = (nStartX > nEndX) ? nStartX : nEndX;
+							int nWallMinX = (nX1 < nX2) ? nX1 : nX2;
+							int nWallMaxX = (nX1 > nX2) ? nX1 : nX2;
+							if((nMinX <= nWallMaxX) && (nMaxX >= nWallMinX))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = trailIter - pOther->collTrails.begin();
+								pInfo->nPoint = i;
+								if(nEndX > nStartX)
+									pInfo->vCollisionPoint.x = (float)((nStartX > nWallMinX) ? nStartX : nWallMinX);
+								else
+									pInfo->vCollisionPoint.x = (float)((nStartX < nWallMaxX) ? nStartX : nWallMaxX);
+								pInfo->vCollisionPoint.y = ptEnd.GetY();
+								pInfo->vCollisionPoint.z = ptEnd.GetZ();
+								return true;
+							}
+						}
+						else
+						{
+							// How near is it?
+							int nDist1 = abs((nEndZ - nHalf) - nZ1);
+							int nDist2 = abs((nEndZ + nHalf) - nZ1);
+							int nDist = (nDist1 < nDist2) ? nDist1 : nDist2;
+							if(nDist < pCyclist->nTronUnknownA4)
+							{
+								int nMinX = (nStartX < nEndX) ? nStartX : nEndX;
+								int nMaxX = (nStartX > nEndX) ? nStartX : nEndX;
+								int nWallMinX = (nX1 < nX2) ? nX1 : nX2;
+								int nWallMaxX = (nX1 > nX2) ? nX1 : nX2;
+								if((nMinX < nWallMaxX) && (nMaxX > nWallMinX))
+								{
+									pCyclist->nTronUnknownA4 = nDist;
+									if(nDist2 < nDist1)
+										pCyclist->bTronUnknownAC = (nEndX > nStartX);
+									else
+										pCyclist->bTronUnknownAC = (nEndX < nStartX);
+								}
+							}
+						}
+					}
+					else
+					{
+						// We cross it
+						int nHalf = (int)pCyclist->fHalfLength;
+						int nWallMinX = (nX1 < nX2) ? nX1 : nX2;
+						int nWallMaxX = (nX1 > nX2) ? nX1 : nX2;
+						if((nEndX - nHalf <= nWallMaxX) && (nEndX + nHalf >= nWallMinX))
+						{
+							int nMinZ = (nStartZ < nEndZ) ? nStartZ : nEndZ;
+							int nMaxZ = (nStartZ > nEndZ) ? nStartZ : nEndZ;
+							if((nMinZ <= nZ1) && (nMaxZ >= nZ1))
+							{
+								pInfo->pCyclist = pOther;
+								pInfo->nTrail = trailIter - pOther->collTrails.begin();
+								pInfo->nPoint = i;
+								pInfo->vCollisionPoint.x = ptEnd.GetX();
+								pInfo->vCollisionPoint.y = ptEnd.GetY();
+								pInfo->vCollisionPoint.z = (float)nZ1;
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLightCycleMgr::GetActiveCyclist
 //
 //	PURPOSE:	The object's cyclist if it is not derezzing

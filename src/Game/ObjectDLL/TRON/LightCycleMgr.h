@@ -74,6 +74,70 @@ struct LIGHT_CYCLE_TRAIL
 // the server's code reads are named; their names are ours.
 struct LIGHT_CYCLIST
 {
+	// RETAIL: inline (debug_new_fn<LIGHT_CYCLIST> 0x100bee20, called by
+	// AddCyclist)
+	LIGHT_CYCLIST() : nClientID(0), nNameId(0)
+	{
+		fStartDerezTime = 0.0f;
+		bUpdating = true;
+		bRemove = false;
+		pCurTrail = NULL;
+		hObject = LTNULL;
+		vForward.Init();
+		fMaxTrailLength = 0.0f;
+		nCycleType = 0;
+		szCycleColor[0] = '\0';
+		nRed = 0;
+		nGreen = 0;
+		nBlue = 0;
+		fTronUnknown6C = 0.0f;
+		fSpeed = 800.0f;
+		fTronUnknown74 = 0.0f;
+		fTronUnknown78 = 0.0f;
+		fMaxManualSpeedAdd = 1600.0f;
+		fMaxExternalSpeedAdd = 2400.0f;
+		fMaxTurboSpeed = 5000.0f;
+		fMinSpeed = 400.0f;
+		fTurboAccelRate = 400.0f;
+		fBrakeDecelRate = 400.0f;
+		fNormalAccelRate = 100.0f;
+		fNormalDecelRate = 100.0f;
+		fMaxWallAccelRate = 400.0f;
+		fTurnSpeedLossPercent = 0.5f;
+		nMaxWallDist = 50;
+		bTronUnknownAC = false;
+		fHalfHeight = fHalfLength = fHalfWidth = 0.0f;
+		bIsPlayer = false;
+		nCycleDialog = 0;
+		vPos.Init();
+		fLastPosUpdateTime = 0.0f;
+		vTronUnknownE4.Init();
+		nPowerup = LC_NO_POWERUP;
+		dwFlags = 0;
+		fFlagsTime = 0.0f;
+		fFlagsDuration = 1.0f;
+		pTronUnknownTrail100 = NULL;
+		pTronUnknownTrail104 = NULL;
+		vTronUnknown108.Init();
+		vTronUnknown114.Init();
+		ptTronUnknown120.vPoint.Init(0.0f, 0.0f, 0.0f);
+		fTronUnknown12C = 0.0f;
+		bTronUnknownD1 = false;
+		bTronUnknown130 = false;
+	}
+
+	// RETAIL: inline (out of line at 0x10029fd0, for LightCycleMissile's
+	// stand-in cyclist). Its "LIGHT_CYCLIST();" builds and destroys a
+	// temporary: it does not initialize this cyclist (see
+	// docs/RETAIL_BUGS.md). The parameters' names are ours.
+	LIGHT_CYCLIST(float fHeight, float fLength, bool bTronUnknown)
+	{
+		LIGHT_CYCLIST();
+		fHalfHeight = fHeight;
+		fHalfLength = fLength;
+		bTronUnknownD1 = bTronUnknown;
+	}
+
 	LIGHT_CYCLE_TRAIL* FindTrail(uint16 wTrailID);
 
 	// Collection of trails (normally just 1 except in special cases)
@@ -128,6 +192,7 @@ struct LIGHT_CYCLIST
 	float	fTronUnknownC8;							// RETAIL: +0xc8
 	float	fLeftSensorDist;						// RETAIL: +0xcc
 	bool	bIsPlayer;								// RETAIL: +0xd0
+	bool	bTronUnknownD1;							// RETAIL: +0xd1 (LightCycleMissile's: hits its own trails, 0x100bbf5c)
 	uint32	nClientID;								// RETAIL: +0xd4 (-1 for AI)
 	uint32	nNameId;								// RETAIL: +0xd8
 	uint32	nCycleDialog;							// RETAIL: +0xdc
@@ -214,14 +279,20 @@ class CLightCycleMgr
 		void SetUpdating(bool bUpdating) { m_bUpdating = bUpdating; }
 
 		LIGHT_CYCLIST* FindCyclist(HOBJECT hObj);						// RETAIL: 0x100bbe10
+
+		// Does the segment ptStart..ptEnd of pCyclist hit a cycle or a trail
+		// (pIgnore's excepted)? Fills pInfo. RETAIL: 0x100bbef0
+		bool CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL_POINT& ptStart, LIGHT_CYCLE_TRAIL_POINT& ptEnd,
+			LightCycleCollisionInfo* pInfo, bool bTronUnknown, LIGHT_CYCLIST* pIgnore);
+
+		// RETAIL: public (LightCycleMissile::Update calls it)
+		void CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTVector& vPos);	// RETAIL: 0x100bbed0
 		LIGHT_CYCLIST* GetActiveCyclist(HOBJECT hObj);						// RETAIL: 0x100bdde0
 		void TronUnknownUpdate();										// RETAIL: 0x100bd170
 		bool AddTrailPoints(LIGHT_CYCLIST* pCyclist, bool bTronUnknown1, LTVector& vPos, bool bTronUnknown2);	// RETAIL: 0x100bb990
 		uint32 AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, LTVector& vPos);	// RETAIL: 0x100bbd80
 
 	protected:
-
-		void CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTVector& vPos);	// RETAIL: 0x100bbed0
 
 		// Collection of light cyclist data
 		std::vector<LIGHT_CYCLIST*> m_collCyclists;		// RETAIL: +0x04
