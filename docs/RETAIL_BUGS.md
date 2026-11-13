@@ -251,6 +251,7 @@ slc_initiallistcomplete callback, so an asynchronous LAN browse is never
 told it finished. GameSpy fixed it in serverbrowsing 2.00.36 (2003-11-10).
 
 Not fixed yet: the modern build should make the callback.
+
 ### The light cycle dialog plays a line it has already popped
 
 Object.lto 0x100509af (CServerLightCycleMgr::Update,
@@ -261,6 +262,7 @@ checked and played is not the one that had the highest priority (unless the
 queue held one line).
 
 Not fixed yet: the modern build should copy the top entry before pop().
+
 ### The energy claw's line-of-sight test always passes
 
 Object.lto 0x1003eb90 (CProjectileEnergyClaw::CanSee, ObjectDLL/TRON/
@@ -269,6 +271,7 @@ ends of the segment it tests, so the segment is empty, nothing is hit, and
 the claw "sees" any AI in range: it seeks and chases through walls.
 
 Not fixed yet: the modern build should take the second end from hTo.
+
 ### A CD key server reply with no second backslash crashes the server
 
 Object.lto 0x10020690 (cdkey_process_buf, Libs/GameSpy/GameSpySDK/gcdkey/
@@ -292,6 +295,68 @@ The SDK's only caller (qr2_init_socket) passes NULL, so it never shows.
 
 Not fixed yet: harmless; the modern build may initialize it to NULL, as the
 2007 SDK does.
+
+### A texture script's Sin is the cosine, and its Cos the sine
+
+Lithtech.exe 0x554fc0 and 0x554fd0 (TSFuncSin and TSFuncCos, the engine's
+texturescriptinterpreter.cpp; not reconstructed yet, so read from the
+retail machine code). The interpreter calls a script's functions through
+the table g_FuncHandlers at 0x5c4000, in the order of TSFUNC_SIN and
+TSFUNC_COS: its first entry, 0x554fc0, is `fld [esp+4]; fcos`, and its
+second, 0x554fd0, is `fsin` (then Tan at 0x554fe0, and SqrSin at
+0x554ff0, which does use fsin). So a script's `Sin(x)` runs as `cos(x)`
+and its `Cos(x)` as `sin(x)`. Build 69's source has the same lines
+(TSFuncSin returning `cos(fVal)`), as do NOLF2's and Contract J.A.C.K.'s
+engines. The shipped .tfs scripts were written and tuned on it: a rotation
+built from the two is still a rotation, a quarter turn off.
+
+Not fixed yet (the engine is not rebuilt): the modern fix must also turn
+the shipped scripts' Sin and Cos round (or keep the swap for them), or
+every effect built on them moves a quarter turn.
+
+### Three render styles use a colour operation that does not exist
+
+RS/FULLBRIGHTON_ALPHA_SPECULAR.ltb (Game2.rez), PROPS/RS/ARCHIVECUBE.ltb
+and CHARS/RS/INNER_GLOW.ltb (Game.rez): the second texture stage of their
+only pass has colour op 19 (read from the files: the first stage has 3,
+MODULATE; stages 3 and 4 are 0), but ltrenderstyle.h has 16 colour ops
+(RENDERSTYLE_COLOROP_TYPE_COUNT). Build 69's renderer turns an op into
+Direct3D's through CRenderStyleLookupTables::m_nColorOp[16], with
+m_nAlphaOp right after it, so 19 reads m_nAlphaOp[3]: by NOLF2's tables
+D3DTOP_MODULATE. That much is inferred: Tron 2.0's renderer is not
+reconstructed, so its tables are not checked.
+
+Not fixed yet (the engine is not rebuilt): the modern build should give
+these stages the op they mean (MODULATE, as they now get) in the files, or
+clamp an unknown op.
+
+### A lip-sync file's long node name overruns a stack buffer
+
+CShell.dll 0x10185b30 (CNodeController::HandleNodeControlLipSync,
+ClientShellShared/NodeController.cpp; our function is near, not identical
+yet, so read from the retail code). For each node the .lip file names, it
+reads a 4-byte length (0x10185d19) and then that many bytes into the
+256-byte `szBone` on the stack (0x10185d2f), and writes the terminator at
+`szBone[length]` (0x10185d40), with no check: a name of 256 bytes or more
+overwrites the stack. No shipped name is longer than 17 bytes, so only a
+broken or hostile file shows it.
+
+Not fixed yet: the modern build should refuse a length over 255.
+
+### An empty sprite file divides by zero
+
+Lithtech.exe 0x484e7e..0x484ef9 (spr_Create, the engine's sprite.cpp; not
+reconstructed yet, so read from the retail code). It reads the frame
+count, frame rate and three more dwords, then sets the animation's length
+to `(1000 / rate) * frames` (`div` at 0x484ef9) before it looks at the
+stream's error status. The rez stream zeroes what it cannot read (Build
+69's RezFileStream::Read), so an empty file gives a rate of 0 and a divide
+by zero. FX/SPR/FAKE.SPR, FX/SPR/JETREZIN.SPR and
+INTERFACE/MENU/SPR/LOADING.SPR in Game.rez are 0 bytes; nothing loads
+them, so it never shows.
+
+Not fixed yet (the engine is not rebuilt): the modern build should check
+the stream, or a rate of 0, before dividing.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
