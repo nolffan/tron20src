@@ -53,6 +53,7 @@
 #include "ClientFXDB.h"
 #include <sys/timeb.h>
 #include "PerformanceTest.h"
+#include "CircuitButeMgr.h"
 #include "ScmdConsole.h"
 #include "ScmdConsoleDriver_CShell.h"
 #include "mmsystem.h"
@@ -871,6 +872,13 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		SetWindowSize(pMode->m_Width, pMode->m_Height);
 	}
 
+	// RETAIL: Tron's circuit attributes (0x100e270f)
+	m_pCircuitButeMgr = debug_new(CircuitButeMgr);
+	if (!m_pCircuitButeMgr || !m_pCircuitButeMgr->Init("Attributes\\Circuits.txt"))
+	{
+		return LT_ERROR;
+	}
+
 
 	// Initialize all the global bute mgrs...
 
@@ -1308,6 +1316,14 @@ void CGameClientShell::OnEngineTerm()
 	{
 		debug_delete( m_pPerformanceTest );
 		m_pPerformanceTest = NULL;
+	}
+
+	// RETAIL: 0x100e3668
+	if (m_pCircuitButeMgr)
+	{
+		m_pCircuitButeMgr->Term();
+		debug_delete( m_pCircuitButeMgr );
+		m_pCircuitButeMgr = NULL;
 	}
 }
 

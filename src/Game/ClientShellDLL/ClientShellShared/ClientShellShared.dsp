@@ -186,6 +186,10 @@ SOURCE=.\CheatMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\CircuitButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\client_physics.cpp
 # End Source File
 # Begin Source File
@@ -1053,6 +1057,10 @@ SOURCE=.\CharacterFX.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\CircuitButeMgr.h
 # End Source File
 # Begin Source File
 

@@ -387,6 +387,9 @@ public:
 	// CTronGameClientShell::OnEnterWorld for game type 7, cleared on
 	// leaving the world; the HUD reads it. The name is ours
 	bool	m_bTronUnknown833A;
+
+	// RETAIL: Tron's circuits (+0x8340; inline, the name is ours)
+	class CircuitButeMgr*	GetCircuitButeMgr() { return m_pCircuitButeMgr; }
 private:
 
 	// Performance testing variables
@@ -395,7 +398,7 @@ private:
 
 	// RETAIL: Tron's circuit attributes (Attributes\Circuits.txt),
 	// created in OnEngineInitialized and deleted in OnEngineTerm (+0x8340)
-	class CCircuitButeMgr*	m_pCircuitButeMgr;
+	class CircuitButeMgr*	m_pCircuitButeMgr;
 };
 
 void DefaultModelHook(ModelHookData *pData, void *pUser);

@@ -180,10 +180,6 @@ SOURCE=.\BaseScreenJoin.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CircuitButeMgr.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -638,10 +634,6 @@ SOURCE=.\BaseScreenJoin.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\CircuitButeMgr.h
 # End Source File
 # Begin Source File
 

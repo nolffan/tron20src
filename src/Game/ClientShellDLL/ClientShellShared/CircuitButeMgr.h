@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "CaselessString.h"
+#include "TRON/CaselessString.h"
 
 // One wave of a circuit: the string ids of its speed scalar and trail length
 // (0x8 bytes). RETAIL: Load 0x1000ba90
