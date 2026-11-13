@@ -44,14 +44,14 @@ CScreenJoystick::~CScreenJoystick()
 }
 
 // Build the screen
-// RETAIL: 0x10065030. Tron's string IDs (its string table) and screen ID
-// (SCREEN_ID_JOYSTICK is 0x17 in Tron's ScreenEnum) are retail's numbers.
+// RETAIL: 0x10065030. Tron's string IDs (its string table) are retail's
+// numbers.
 LTBOOL CScreenJoystick::Build()
 {
 	CreateTitle(15);
 
-	kGap = g_pLayoutMgr->GetScreenCustomInt((eScreenID)0x17,"ColumnWidth");
-	uint8 nLarge = g_pLayoutMgr->GetScreenCustomInt((eScreenID)0x17,"HeaderFontSize");
+	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOYSTICK,"ColumnWidth");
+	uint8 nLarge = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_JOYSTICK,"HeaderFontSize");
 
 	CLTGUICycleCtrl *pCtrl = AddCycle(0x16c, NULL, kGap, NULL, kDefaultPos, LTTRUE );
 	pCtrl->AddString(LoadTempWString(0x16d));

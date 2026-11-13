@@ -240,7 +240,7 @@ class CInterfaceMgr
 		HLOCALOBJ	GetInterfaceCamera()	const	{ return m_hInterfaceCamera; }
 
 		eScreenID	GetCurrentScreen();
-        LTBOOL       SwitchToScreen(eScreenID screenID);
+        LTBOOL       SwitchToScreen(eScreenID screenID, bool bAddToHistory = true);
         LTBOOL       SwitchToMenu(eMenuID menuID);
         LTBOOL       ForceScreenUpdate(eScreenID screenID);
 

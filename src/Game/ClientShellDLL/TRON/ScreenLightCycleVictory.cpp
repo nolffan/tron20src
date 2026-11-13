@@ -21,7 +21,7 @@
 
 namespace
 {
-	const eScreenID kScreenID = (eScreenID)0x27;	// RETAIL: Tron's
+	const eScreenID kScreenID = SCREEN_ID_LIGHTCYCLE_VICTORY;
 
 	float g_fDuration = 0.0f;
 	float g_fMinDelay = 3.0f;

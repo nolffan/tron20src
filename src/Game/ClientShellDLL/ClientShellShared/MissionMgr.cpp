@@ -676,31 +676,12 @@ bool CMissionMgr::HandleEndGame( ILTMessage_Read& msg  )
 		//we're done performance testing go back to performance screen
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PERFORMANCE);
 	}
-	else if (IsMultiplayerGame())
+	// RETAIL: 0x100ebfb0: Tron goes back to the main screen after a single
+	// player game (no end mission screen, no EndGame registry key) and
+	// nowhere after a multiplayer one
+	else if (!IsMultiplayerGame())
 	{
-		switch( g_pGameClientShell->GetGameType( ))
-		{
-			case eGameTypeCooperative:
-				g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_END_COOP_MISSION);
-				break;
-			case eGameTypeDeathmatch:
-			case eGameTypeTeamDeathmatch:
-			case eGameTypeDoomsDay:
-				g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_END_DM_MISSION);
-				break;
-		}
-	}
-	else
-	{
-		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_END_MISSION);
-
-		//record the completion
-		CRegMgr* pRegMgr = g_pVersionMgr->GetRegMgr();
-		if (pRegMgr->IsValid())
-		{
-			pRegMgr->Set("EndGame",1);
-		}
-
+		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_MAIN);
 	}
 
 	return true;

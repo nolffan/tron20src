@@ -157,20 +157,12 @@ LTBOOL CScreenGame::Build()
 	return LTTRUE;
 }
 
+// RETAIL: Tron has no crosshair screen (no CScreenCrosshair, no CROSSHAIR
+// id): its CScreenGame::OnCommand (vtable slot 1) is the one-line body
+// shared with CScreenDisplay's (0x1006fac0)
 uint32 CScreenGame::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
 {
-
-	switch(dwCommand)
-	{
-	case CMD_CROSSHAIR:
-		{
-			m_pScreenMgr->SetCurrentScreen(SCREEN_ID_CROSSHAIR);
-			break;
-		}
-	default:
-		return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
-	}
-	return 1;
+	return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
 };
 
 void CScreenGame::OnFocus(LTBOOL bFocus)

@@ -37,7 +37,7 @@ private:
 	CLTGUITextCtrl*	m_pLoadCtrl;
 	CLTGUITextCtrl*	m_pPlayerCtrl;
 	CLTGUITextCtrl*	m_pTeamCtrl;
-	CLTGUITextCtrl*	m_pHostCtrl;
+	CLTGUITextCtrl*	m_pHostCtrl;	// RETAIL: unused in Tron (no host options control); layout unverified
 	CLTGUITextCtrl*	m_pServerCtrl;
 };
 
