@@ -487,9 +487,45 @@ Once the config file has parsed, DoHost calls
 returned `IDS_NETERR_CORRUPTCONFIG` ("The config file could not be read
 properly") when it failed. A config with a bad or missing setting is hosted
 with whatever the options held, and the error that exists for it is never
-shown.
+shown. (Tron's LoadFromBute returns false only when it had to correct the
+options -- a backslash in the server name, more than 8 light cycle players
+-- so the config is hosted, corrected, either way.)
 
 Not fixed yet (the modern build's server work, `MODERN.md`).
+
+### A saved tournament mode is never loaded back
+
+CShell.dll 0x100ea210, TRONSrv.exe 0x408160 (ServerGameOptions::LoadFromBute,
+src/Game/Shared/ProfileUtils.cpp). SaveToBute (CShell.dll 0x100e9ab0) writes
+the disc tournament's "TournamentMode", but LoadFromBute reads every other
+tournament key and not that one, so the mode a player saves in a config
+comes back as the default every time the config is loaded, in the game's
+host screens and on the dedicated server.
+
+Not fixed yet.
+
+### A config without the light cycle power-up keys turns every power-up off
+
+CShell.dll 0x100ea210, TRONSrv.exe 0x408b22 (ServerGameOptions::LoadFromBute,
+src/Game/Shared/ProfileUtils.cpp). Clear allows every power-up
+(m_nLCPowerups = 0xFFFFFFFF), but LoadFromBute sets the mask to 0 before it
+reads the nine "PowerupAllow*" keys and passes each bit as its key's
+default: the bit it has just cleared. A key missing from the config (an
+older or hand-written one) leaves its power-up disallowed instead of at
+the default, allowed.
+
+Not fixed yet.
+
+### The packet parser clears four bytes of its message buffer
+
+server.dll 0x10021a76 (ParsePacket, src/Engine/runtime/kernel/net/src/
+netmgr.cpp). On the first packet it clears the buffer with
+`memset(aMsgBuff, 0, sizeof(aMsgBuff))`, the size of the pointer rather than
+of the buffer, then appends to it with LTStrCat; it only works because the
+first byte is cleared. The same line is in Jupiter's later netmgr.cpp. Only
+the ParseNet console variable's debug output uses it.
+
+Not fixed yet.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

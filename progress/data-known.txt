@@ -428,8 +428,6 @@ Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 1;MPRespawn 0;WeaponType Coin;Am
 Object.lto	ours	WeaponItem MPRespawn 0;WeaponType TimeBomb;AmmoCount 1;MoveToFloor 0
 Object.lto	ours	WeaponSndRadius
 Object.lto	ours	WelderBurn
-Object.lto	ours	\\Campaigns\\
-Object.lto	ours	\\DM_Campaigns\\
 Object.lto	ours	default_campaign.txt
 Object.lto	ours	error in %s: can't find search item "%s"
 Object.lto	ours	import KERNEL32.dll OpenFile
@@ -505,7 +503,6 @@ Object.lto	retail	.?AVCProjectilePrankster@@
 Object.lto	retail	.?AVHostButeMgr@@
 Object.lto	retail	.?AVOccludingArmor@@
 Object.lto	retail	.?AVSpectatorObject@@
-Object.lto	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 Object.lto	retail	1PCAM
 Object.lto	retail	3PCAM
 Object.lto	retail	ACQUIRENOTE <Note Name>
@@ -636,7 +633,6 @@ Object.lto	retail	Counter Value: %d  Locked: %d
 Object.lto	retail	CreateCoreDump
 Object.lto	retail	CrouchCDeath
 Object.lto	retail	CrouchPDeath
-Object.lto	retail	Crypt
 Object.lto	retail	Custom
 Object.lto	retail	CustomCmd
 Object.lto	retail	CustomCmdName
@@ -963,7 +959,6 @@ Object.lto	retail	SetEnergy
 Object.lto	retail	SetHitPoints
 Object.lto	retail	ShowNodeCover
 Object.lto	retail	Socket
-Object.lto	retail	Software\\GameSpy\\GameSpy 3D\\Registration
 Object.lto	retail	SpectatorObject
 Object.lto	retail	StandardCycleRestrictionId
 Object.lto	retail	StartDefendPercentage
@@ -979,7 +974,6 @@ Object.lto	retail	SuppressResetWhenNotCurrent
 Object.lto	retail	SwatBlockMeleeAttack
 Object.lto	retail	SystemNameId
 Object.lto	retail	TRANSMISSION <transmission id> [ActivePlayerComm]
-Object.lto	retail	TRON 12
 Object.lto	retail	TURN <left/right>
 Object.lto	retail	T_PRodLightning
 Object.lto	retail	TalkToPlayerCleanupDist
@@ -1020,8 +1014,6 @@ Object.lto	retail	WeaponSet
 Object.lto	retail	WeaponUsableByAIs
 Object.lto	retail	WindowStyle
 Object.lto	retail	World Dims: %.0f, %.0f, %.0f
-Object.lto	retail	Worlds\\RetailLightCycle
-Object.lto	retail	Worlds\\RetailMultiPlayer\\DiscArena
 Object.lto	retail	acquireproc %s
 Object.lto	retail	acquiresub %s %s %s
 Object.lto	retail	alpha
@@ -1036,10 +1028,7 @@ Object.lto	retail	delay 0.5 (msg <CPlayerObj> (PLAYSOUND PlayerCriticalHitKill))
 Object.lto	retail	efficiency
 Object.lto	retail	energy
 Object.lto	retail	health
-Object.lto	retail	import ADVAPI32.dll RegOpenKeyExA
-Object.lto	retail	import ADVAPI32.dll RegSetValueExA
 Object.lto	retail	import KERNEL32.dll GetFileAttributesA
-Object.lto	retail	import KERNEL32.dll QueryPerformanceCounter
 Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@I@Z
 Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@PBX@Z
 Object.lto	retail	import MSVCIRT.dll ?clear@ios@@QAEXH@Z
@@ -1094,9 +1083,6 @@ CShell.dll	ours	.?AVCObjectiveCtrl@@
 CShell.dll	ours	.?AVCRadarTypeMgr@@
 CShell.dll	ours	.?AVCSkillCtrl@@
 CShell.dll	ours	.?AVCSkillPopup@@
-CShell.dll	ours	.?AVScmdConsoleCommandHandler_ListGameOptions@@
-CShell.dll	ours	.?AVScmdConsoleCommandHandler_NextRound@@
-CShell.dll	ours	.?AVScmdConsoleCommandHandler_SetGameOption@@
 CShell.dll	ours	.default
 CShell.dll	ours	<Frags>
 CShell.dll	ours	<Ping>
@@ -1274,8 +1260,6 @@ CShell.dll	ours	LargeIconSize
 CShell.dll	ours	LevelFontSize
 CShell.dll	ours	LevelWidth
 CShell.dll	ours	ListFontFace
-CShell.dll	ours	ListGameOptions
-CShell.dll	ours	ListMissions
 CShell.dll	ours	LoopArmSound
 CShell.dll	ours	LoopArmedFX
 CShell.dll	ours	Lots of guns...
@@ -1298,8 +1282,6 @@ CShell.dll	ours	NOLF2Srv.exe
 CShell.dll	ours	NOLF2Srv.exe -profile 
 CShell.dll	ours	NameStr
 CShell.dll	ours	NetRegionCode
-CShell.dll	ours	NextMission
-CShell.dll	ours	NextRound
 CShell.dll	ours	No surface
 CShell.dll	ours	Node%dAttachSpears
 CShell.dll	ours	Novice
@@ -1364,8 +1346,6 @@ CShell.dll	ours	ScoreTag
 CShell.dll	ours	Scores
 CShell.dll	ours	ScreenPlayerTextColor
 CShell.dll	ours	ScreenTextColor
-CShell.dll	ours	SetGameOption
-CShell.dll	ours	SetMission
 CShell.dll	ours	ShardHorizontalPerturbMax
 CShell.dll	ours	ShardHorizontalPerturbMin
 CShell.dll	ours	ShardHorizontalPerturbSurge
@@ -1443,8 +1423,6 @@ CShell.dll	ours	WeaponSndRadius
 CShell.dll	ours	WorkSkin
 CShell.dll	ours	You can never have too many bullets...
 CShell.dll	ours	You got mad skillz, d00d...
-CShell.dll	ours	\\Campaigns\\
-CShell.dll	ours	\\DM_Campaigns\\
 CShell.dll	ours	attributes\\additives.txt
 CShell.dll	ours	attributes\\damagefx.txt
 CShell.dll	ours	avail
@@ -1613,7 +1591,6 @@ CShell.dll	retail	.?AVCTronMissionMgr@@
 CShell.dll	retail	.?AVCTronWeaponChooser@@
 CShell.dll	retail	.?AVCircuitButeMgr@@
 CShell.dll	retail	.?AVTronClientMultiplayerMgr@@
-CShell.dll	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 CShell.dll	retail	1 player is waiting for you.
 CShell.dll	retail	<color
 CShell.dll	retail	AIAlternateVolume
@@ -1743,7 +1720,6 @@ CShell.dll	retail	CorrupticDims
 CShell.dll	retail	Corruption
 CShell.dll	retail	Corruption!
 CShell.dll	retail	Could not init CircuitButeMgr!
-CShell.dll	retail	Crypt
 CShell.dll	retail	CursorFX
 CShell.dll	retail	CustomMaps
 CShell.dll	retail	CustomSettings
@@ -2049,7 +2025,6 @@ CShell.dll	retail	LightCycleRed_3
 CShell.dll	retail	LightCycleYellow_1
 CShell.dll	retail	LightCycleYellow_2
 CShell.dll	retail	LightCycleYellow_3
-CShell.dll	retail	ListMaps
 CShell.dll	retail	LithTech
 CShell.dll	retail	LivesPos
 CShell.dll	retail	LostTargetFlightTime
@@ -2101,7 +2076,6 @@ CShell.dll	retail	MusicVolumeSliderIncrement
 CShell.dll	retail	NameID
 CShell.dll	retail	NameKey
 CShell.dll	retail	NameSeed
-CShell.dll	retail	NextMap
 CShell.dll	retail	No binding found for %d
 CShell.dll	retail	NoBodies
 CShell.dll	retail	Node%dIgnoreParent
@@ -2197,7 +2171,6 @@ CShell.dll	retail	Sequencer
 CShell.dll	retail	ServerConfig
 CShell.dll	retail	ServerData
 CShell.dll	retail	ServerData\\
-CShell.dll	retail	SetMap
 CShell.dll	retail	Setting game type: %s
 CShell.dll	retail	ShadeLeftArrowPos
 CShell.dll	retail	ShadeRightArrowPos
@@ -2206,7 +2179,6 @@ CShell.dll	retail	ShellCasings
 CShell.dll	retail	ShellCasings
 CShell.dll	retail	Shield_prism
 CShell.dll	retail	SkipSubIntro
-CShell.dll	retail	Software\\GameSpy\\GameSpy 3D\\Registration
 CShell.dll	retail	SpectatorColumn
 CShell.dll	retail	SpectatorPingColumn
 CShell.dll	retail	SpectatorRect
@@ -2247,7 +2219,6 @@ CShell.dll	retail	SwayAmountMultiplier
 CShell.dll	retail	SwaySpeedMultiplier
 CShell.dll	retail	SysNamePos
 CShell.dll	retail	SystemNameId
-CShell.dll	retail	TRON 12
 CShell.dll	retail	TRONSrv.exe
 CShell.dll	retail	TRONSrv.exe -config "
 CShell.dll	retail	TabBodyRect
@@ -2335,9 +2306,7 @@ CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_red.dtx
 CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_white.dtx
 CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_yellow.dtx
 CShell.dll	retail	WorkSound
-CShell.dll	retail	Worlds\\RetailLightCycle
 CShell.dll	retail	Worlds\\RetailLightCycle\\
-CShell.dll	retail	Worlds\\RetailMultiPlayer\\DiscArena
 CShell.dll	retail	You are waiting for %i players.
 CShell.dll	retail	You are waiting for %s.
 CShell.dll	retail	You are waiting for 1 player.
@@ -2407,14 +2376,11 @@ CShell.dll	retail	hl_on
 CShell.dll	retail	http://motd.gamespy.com/motd/vercheck.asp?userid=%d&productid=%d&versionuniqueid=%s&distid=%d&uniqueid=%s
 CShell.dll	retail	ilinear
 CShell.dll	retail	ilinearFiltering
-CShell.dll	retail	import ADVAPI32.dll RegOpenKeyExA
 CShell.dll	retail	import KERNEL32.dll GetFileAttributesA
-CShell.dll	retail	import KERNEL32.dll QueryPerformanceCounter
 CShell.dll	retail	import MSVCRT.dll fseek
 CShell.dll	retail	import MSVCRT.dll ftell
 CShell.dll	retail	import MSVCRT.dll rewind
 CShell.dll	retail	import MSVCRT.dll strncat
-CShell.dll	retail	import MSVCRT.dll time
 CShell.dll	retail	import MSVCRT.dll wcsncmp
 CShell.dll	retail	import SHELL32.dll ShellExecuteA
 CShell.dll	retail	import USER32.dll FindWindowA
@@ -2576,3 +2542,6 @@ CShell.dll	retail	AvailRect
 CShell.dll	retail	CommandPos
 CShell.dll	retail	Retail
 CShell.dll	retail	SelectRect
+
+# Not text (2026-11-13): wave.cpp's FOURCC tags LIST, info and lith (s_tagLIST, s_tagINFO, s_tagLITH, whose addresses are taken) are 12 bytes with no NUL; in retail the next object's data starts with padding before a double, which ends the run as a string, in ours it is CWorldBlindObjectData's vtable. A difference in what is linked after wave.obj (the next object's data), not in the tags; to go with the engine's link order.
+server.dll	retail	LISTinfolith
