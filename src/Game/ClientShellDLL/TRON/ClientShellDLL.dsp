@@ -374,6 +374,10 @@ SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONodeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LCHUDHelper.cpp
 # End Source File
 # Begin Source File
@@ -758,6 +762,10 @@ SOURCE=.\HUDSubChooser.h
 # Begin Source File
 
 SOURCE=.\HUDWeapon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\IONodeMgr.h
 # End Source File
 # Begin Source File
 
