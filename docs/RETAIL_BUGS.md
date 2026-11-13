@@ -357,6 +357,16 @@ them, so it never shows.
 
 Not fixed yet (the engine is not rebuilt): the modern build should check
 the stream, or a rate of 0, before dividing.
+### The pings HUD sets up only four of its eight pings
+
+CShell.dll 0x100311e0 (CHUDPings::Init, ClientShellDLL/TRON/HUDPings.cpp).
+The item holds eight pings, but Init sets the UVs, the color and the name
+of the first four only, and Update (0x10031490) fills four at most; the
+other four are never shown. UpdateLayout (0x10031960) also reads the font
+size twice.
+
+Not fixed yet: harmless (four pings show); the modern build may use all
+eight.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

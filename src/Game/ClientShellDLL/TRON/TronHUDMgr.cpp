@@ -105,6 +105,20 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_WpnChooser, eGameType);
 	AddItem(&m_AmmoChooser, eGameType);
 
+	// RETAIL: Tron's retail-only items (PORT: retail's order is by their
+	// place in the class, which is not yet retail's: the weapon, the
+	// pings, ..., the subroutine chooser, the profiler, Tron's decision)
+	AddItem(&m_Pings, eGameType);
+	AddItem(&m_DamageDir, eGameType);
+	AddItem(&m_BuildNoteCount, eGameType);
+	AddItem(&m_IOCamera, eGameType);
+	AddItem(&m_SingleString, eGameType);
+	AddItem(&m_LightCycleLives, eGameType);
+	AddItem(&m_LightCyclePowerupIcon, eGameType);
+	AddItem(&m_Procedurals, eGameType);
+	AddItem(&m_SubChooser, eGameType);
+	AddItem(&m_Profiler, eGameType);
+
 	m_Crosshair.Init();
 	m_Weapons.Init();
 	m_Version.Init();
@@ -116,6 +130,16 @@ bool CTronHUDMgr::AddItems()
 	m_Weapon.Init();
 	m_WpnChooser.Init();
 	m_AmmoChooser.Init();
+	m_Pings.Init();
+	m_DamageDir.Init();
+	m_BuildNoteCount.Init();
+	m_IOCamera.Init();
+	m_SingleString.Init();
+	m_LightCycleLives.Init();
+	m_LightCyclePowerupIcon.Init();
+	m_Procedurals.Init();
+	m_SubChooser.Init();
+	m_Profiler.Init();
 
     return CHUDMgr::AddItems();
 }

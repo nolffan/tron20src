@@ -20,7 +20,19 @@ class CHUDPermissions : public CHUDItem
 {
 public:
 	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+	virtual bool	IsUsedInGameType(GameType eGameType)
+	{
+		switch (eGameType)
+		{
+			case eGameTypeSingle:
+			case eGameTypeCooperative:
+			case eGameTypeDeathmatch:
+			case eGameTypeDiscArena:
+			case eGameTypeDiscTournament:
+				return true;
+		}
+		return false;
+	}
 
 	CHUDPermissions();
 
@@ -33,16 +45,18 @@ public:
     void        UpdateLayout();
 
 private:
-	float		m_fScale;
-	uint8		m_nPermissions;
-	uint8		m_nRequiredPermissions;
+	// RETAIL: Tron's layout (retail 0x10030b30..0x10031086): the pieces
+	// the player has flash when new; build 69's missing pieces are gone
+	float		m_fScale;				// +0x10
+	uint8		m_nPermissions;			// +0x14
+	uint8		m_nNewPermissions;		// +0x15: those flashing
+	uint8		m_nFlashCount;			// +0x16
+	float		m_fFlashTime;			// +0x18
 
-	LT_POLYFT4	m_Base[8];
-	LT_POLYFT4	m_Have[8];
-	LT_POLYFT4	m_Need[8];
-	HTEXTURE	m_hBaseTex;
-	HTEXTURE	m_hHaveTex[8];
-	HTEXTURE	m_hNeedTex[8];
+	LT_POLYFT4	m_Base;					// +0x1c
+	LT_POLYFT4	m_Have[8];				// +0x70
+	HTEXTURE	m_hBaseTex;				// +0x310
+	HTEXTURE	m_hHaveTex[8];			// +0x314
 };
 
 #endif

@@ -119,6 +119,10 @@ public:
 	// UpdateCameraSway (0x100a52a0, slot 0xb0); not yet written, CPlayerMgr's
 	// stand in
 
+	// RETAIL: inlined in CHUDProfiler::Render (retail 0x100328b0): true
+	// while the player is being profiled (the name is ours)
+	bool	IsTronUnknown205() {return m_bTronUnknown205;}
+
 private:
 
 	// RETAIL: the four transfers' updates (retail 0x100a5690, 0x100a5860,

@@ -32,6 +32,18 @@
 #include "HUDChooser.h"
 #include "HUDWeapon.h"
 
+// Tron's retail-only items (RETAIL: written from retail CShell.dll)
+#include "HUDDamageDir.h"
+#include "HUDBuildNoteCount.h"
+#include "HUDIOCamera.h"
+#include "HUDSingleString.h"
+#include "HUDLightCycleLives.h"
+#include "HUDLightCyclePowerupIcon.h"
+#include "HUDPings.h"
+#include "HUDProcedurals.h"
+#include "HUDProfiler.h"
+#include "HUDSubChooser.h"
+
 //******************************************************************************************
 //** Tron HUD Manager
 //******************************************************************************************
@@ -60,6 +72,20 @@ protected:
 	CHUDWpnChooser		m_WpnChooser;
 	CHUDAmmoChooser		m_AmmoChooser;
 	CHUDWeapon			m_Weapon;
+
+	// RETAIL: Tron's retail-only items. PORT: their place in the class is
+	// not yet retail's (retail 0x1009b240's constructor and 0x1009ba50's
+	// AddItems: the pings at +0xb418, the profiler at +0xca28)
+	CHUDDamageDir				m_DamageDir;
+	CHUDBuildNoteCount			m_BuildNoteCount;
+	CHUDIOCamera				m_IOCamera;
+	CHUDSingleString			m_SingleString;
+	CHUDLightCycleLives			m_LightCycleLives;
+	CHUDLightCyclePowerupIcon	m_LightCyclePowerupIcon;
+	CHUDPings					m_Pings;
+	CHUDProcedurals				m_Procedurals;
+	CHUDSubChooser				m_SubChooser;
+	CHUDProfiler				m_Profiler;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 

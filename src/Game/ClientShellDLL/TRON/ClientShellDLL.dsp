@@ -308,7 +308,23 @@ SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCyclePowerupIcon.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDPermissions.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDPings.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProcedurals.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProfiler.cpp
 # End Source File
 # Begin Source File
 
@@ -317,6 +333,10 @@ SOURCE=.\HUDProgress.cpp
 # Begin Source File
 
 SOURCE=.\HUDSingleString.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDSubChooser.cpp
 # End Source File
 # Begin Source File
 
@@ -333,6 +353,11 @@ SOURCE=.\HUDWeapons.cpp
 # Begin Source File
 
 SOURCE=.\LCHUDHelper.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
@@ -674,11 +699,31 @@ SOURCE=.\HUDLightCycleLives.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCyclePowerupIcon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDPings.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProcedurals.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDProfiler.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDProgress.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\HUDSingleString.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDSubChooser.h
 # End Source File
 # Begin Source File
 

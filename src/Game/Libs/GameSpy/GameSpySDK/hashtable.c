@@ -31,6 +31,8 @@
 #endif
 
 
+/* RETAIL: Tron's CShell.dll has the SDK of 2002, whose table functions do
+ * not check for a NULL table (0x10021c20..0x10021d90): the checks are gone. */
 struct HashImplementation 
 {
 	DArray *buckets;
@@ -80,8 +82,6 @@ void TableFree(HashTable table)
 	
 	assert(table);
 
-	if (NULL == table )
-		return;
 	
 	for (i = 0 ; i < table->nbuckets ; i++)
 		ArrayFree(table->buckets[i]);
@@ -96,8 +96,6 @@ int TableCount(HashTable table)
 	
 	assert(table);
 
-	if (NULL == table )
-		return count;
 
 	for (i = 0 ; i < table->nbuckets ; i++)
 		count += ArrayLength(table->buckets[i]);
@@ -112,8 +110,6 @@ void TableEnter(HashTable table, const void *newElem)
 	
 	assert(table);
 
-	if (NULL == table )
-		return;
 
 	hash = table->hashfn(newElem, table->nbuckets);
 	itempos = ArraySearch(table->buckets[hash], newElem, table->compfn, 0,0);
@@ -129,8 +125,6 @@ int TableRemove(HashTable table, const void *delElem)
 	
 	assert(table);
 
-	if (NULL == table )
-		return 0;
 
 	hash = table->hashfn(delElem, table->nbuckets);
 	itempos = ArraySearch(table->buckets[hash], delElem, table->compfn, 0,0);
@@ -147,8 +141,6 @@ void *TableLookup(HashTable table, const void *elemKey)
 	
 	assert(table);
 
-	if (NULL == table )
-		return NULL;
 
 	hash = table->hashfn(elemKey, table->nbuckets);
 	itempos = ArraySearch(table->buckets[hash], elemKey, table->compfn, 0,
