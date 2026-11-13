@@ -61,7 +61,7 @@ CUIWideBitmapFont::~CUIWideBitmapFont()
 // pixels (a line feed starts a new one; the height it adds is not used)
 uint32 CUIWideBitmapFont::GetTextWidth(const std::wstring& sText)
 {
-	if (sText.begin() == sText.end())
+	if (sText.empty())
 		return 0;
 
 	int32 nLen		= sText.size();
