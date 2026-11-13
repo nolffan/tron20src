@@ -2630,3 +2630,18 @@ CShell.dll	ours	.?AVCScreenHostLevels@@
 CShell.dll	ours	.?AVCScreenJoin@@
 CShell.dll	ours	.?AVCScreenJoinLAN@@
 Object.lto	ours	.?AVCClusterAutoBurstDisc@@
+
+# Not written yet (2026-11-13): retail's Tron CAI::HandleDead (Object.lto 0x1012d930) prints "AI is Dead" through ObjectCPrint and fires the music manager's AI-death event (CMusicMgr::DoEvent(eEventAIDie)); ours is NOLF2's, which does neither.
+Object.lto	retail	AI is Dead
+# Not written yet (2026-11-13): retail Object.lto imports FindWindowA, ShowWindow and MessageBoxA from USER32 for Tron server code not written yet; our link keeps only USER32's name.
+Object.lto	ours	USER32.dll
+# Not written yet (2026-11-13): CSubroutineMgr::AddBadBlock and AddBaseCodeBlock (CShell 0x100955f0, 0x10095680) are written, but their callers (e.g. 0x10093650) are not, so the link drops them and their strings.
+CShell.dll	retail	bad_block
+CShell.dll	retail	base_code
+# Not written yet (2026-11-13): Tron's player manager drives the searcher (CSearcher::Update, CShell 0x101c3900, plays it); ours does not use CSearcher yet, so the link drops it.
+CShell.dll	retail	interface\\snd\\SearchComplete.wav
+# Not Tron's (2026-11-13): the HUD's armor icon and profiler positions come through NOLF2's CLayoutMgr getters, whose attribute names Tron's layout manager does not have; to go when CTronLayoutMgr's own HUD getters are written.
+CShell.dll	ours	AmmoBarOffset
+CShell.dll	ours	ArmorIconOffset
+# Not Tron's (2026-11-13): the 2007 ghttp SDK in src/Game/Libs/GameSpy/GameSpySDK reads a content length with _atoi64; Tron's older ghttp does not. To go when ghttp is rolled back to Tron's version, as the server browser was.
+CShell.dll	ours	import MSVCRT.dll _atoi64

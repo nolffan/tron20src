@@ -377,7 +377,7 @@ void LightCyclePowerup::ObjectTouch(HOBJECT hObj)
 		}
 		else
 		{
-			g_pLTServer->CPrint("LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s", szCmd);
+			g_pLTServer->CPrint("LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n", szCmd);
 		}
 	}
 
