@@ -372,6 +372,10 @@ class CLightCycleMgr
 
 	protected:
 
+		// RETAIL: Object.lto's AILightCycle reads the cyclists and the
+		// difficulty (0x10002e48, 0x10004a17)
+		friend class AILightCycle;
+
 		// Collision handler. RETAIL: 0x100ffbe0
 		void HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo &info);
 

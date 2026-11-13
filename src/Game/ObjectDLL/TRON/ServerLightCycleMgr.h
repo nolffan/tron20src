@@ -103,6 +103,11 @@ class CServerLightCycleMgr : public CLightCycleMgr
 
 	protected:
 
+		// RETAIL: AILightCycle asks for the player's cyclist and the
+		// nearest power-up (0x10007140, 0x10004063)
+		friend class AILightCycle;
+
+
 		// The non-virtual workers of the virtuals above
 		bool DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pKiller, bool bTronUnknown, bool bNotifyMission);	// RETAIL: 0x10050eb0
 		bool TrimTrailExcept(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, HCLIENT hExclude);	// RETAIL: 0x10051e50

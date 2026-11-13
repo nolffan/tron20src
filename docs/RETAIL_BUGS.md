@@ -411,6 +411,36 @@ appears anyway.
 
 Not fixed yet: the modern build should copy the property's value always.
 
+### An AI light cycle's Behavior property is ignored
+
+Object.lto 0x1000259e (AILightCycle::ReadProp, ObjectDLL/TRON/
+AILightCycle.cpp). The Behavior property ("aggressive", "wander", "avoid")
+is read and compared, but the default behavior is then set to wander
+whatever it said; "avoid" maps to wander as well. Every AI light cycle
+starts wandering.
+
+Not fixed yet: the modern build should keep the value read (aggressive 1,
+wander 0, avoid 2).
+
+### An AI light cycle only looks at the first trail of each cyclist
+
+Object.lto 0x10002e92, 0x100031d0 (AILightCycle::Probe and ProbeAll). The
+loops over a cyclist's trails check `collTrails[0]` every time instead of
+the trail of the loop, so the AI does not see older trails (those left by
+a trail spike or a derez) in its forward and side probes. CheckPath
+(0x100036b9) indexes the trails properly.
+
+Not fixed yet: the modern build should check `collTrails[j]`.
+
+### An AI light cycle's trigger messages read past a light cycle message
+
+Object.lto 0x10002079 (AILightCycle::ObjectMessageFn). The
+MID_LIGHT_CYCLE_INFO case falls through into MID_TRIGGER after
+LCI_START_UPDATING, which then reads the rest of the message as a trigger
+string pointer.
+
+Not fixed yet: the modern build should break after that case.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
