@@ -186,16 +186,19 @@ $(call tool,$(1),$(4) | wine-drives,\
     cd $(2) && $(ENV_GAME) $(WINE) $(RC) $(TRON20SRC_RCFLAGS) $(call q,$(5) $(3)))
 endef
 
-# $(call library,<lib>,<project dir>,<flags>,<objects>,<objects as the project dir sees them>)
-# $(call library,<lib>,<project dir>,<flags>,<objects>,<objects as the project dir sees them>)
+# $(call library,<lib>,<project dir>,<flags>,<objects>,<objects as the project dir sees them>,<env>,<exe>)
+# (the project's environment and librarian, as dsp2mk.py passes them; the
+# game's when none)
 define library
 $(call tool,$(1),$(4) | wine-drives,\
     cd $(2) && { printf '%s\n' $(call q,$(3) $(subst /,\,$(5))) > $(1:%=$(ROOT)/%).rsp; } && \
-    $(ENV_GAME) $(WINE) $(LIBEXE) '@$(call ws,$(ROOT)/$(1)).rsp')
+    $(or $(6),$(ENV_GAME)) $(WINE) $(or $(7),$(LIBEXE)) '@$(call ws,$(ROOT)/$(1)).rsp')
 endef
 
 # $(call binary,<dll or exe>,<project dir>,<flags>,<prerequisites>,<inputs as the project dir sees them>,
-#   <the libraries' precompiled-header objects, as the project dir sees them>)
+#   <the libraries' precompiled-header objects, as the project dir sees them>,<env>,<exe>)
+# Linked in the project's environment (ENV_<project>: the engine's has the
+# DirectX 9 SDK's libraries, d3d9.lib and d3dx9.lib), the game's when none.
 # Through a response file, as Developer Studio links; with a map beside it.
 # Compiled with /Z7 (the debug builds), the libraries' precompiled-header
 # objects are linked too: the others refer to the type information in them
@@ -204,15 +207,15 @@ Z7 := $(findstring /Z7,$(TRON20SRC_CFLAGS))
 define link_binary
 $(call tool,$(1),$(4) | wine-drives,\
     cd $(2) && { printf '%s\n' $(call q,$(TRON20SRC_LDFLAGS) $(3) /map:$(call ws,$(ROOT)/$(basename $(1))).map $(subst /,\,$(5) $(if $(Z7),$(6)))) > $(1:%=$(ROOT)/%).rsp; } && \
-    $(ENV_GAME) $(WINE) $(LINK) '@$(call ws,$(ROOT)/$(1)).rsp')
+    $(or $(7),$(ENV_GAME)) $(WINE) $(or $(8),$(LINK)) '@$(call ws,$(ROOT)/$(1)).rsp')
 endef
 
 # Modern builds link both names from the same launcher objects. At startup
 # the original game filename selects direct launch; *Launcher.exe selects UI.
 MODERN_LAUNCHER := $(findstring TRON20_MODERN,$(TRON20SRC_CFLAGS))
 define binary
-$(call link_binary,$(1),$(2),$(3),$(4),$(5),$(6))
-$(if $(and $(MODERN_LAUNCHER),$(filter %/Tron.exe,$(1))),$(call link_binary,$(patsubst %.exe,%Launcher.exe,$(1)),$(2),$(subst Tron.exe,TronLauncher.exe,$(3)),$(4),$(5),$(6)))
+$(call link_binary,$(1),$(2),$(3),$(4),$(5),$(6),$(7),$(8))
+$(if $(and $(MODERN_LAUNCHER),$(filter %/Tron.exe,$(1))),$(call link_binary,$(patsubst %.exe,%Launcher.exe,$(1)),$(2),$(subst Tron.exe,TronLauncher.exe,$(3)),$(4),$(5),$(6),$(7),$(8)))
 endef
 
 # $(call custom,<outputs>,<input>,<project dir>,<commands>): a source's

@@ -1124,10 +1124,10 @@ void CConsole::Draw() {
 	if (!m_pStruct) return;
 
 	// Preserve current viewport
-	D3DVIEWPORT8 oldViewportData;
+	D3DVIEWPORT9 oldViewportData;
     PD3DDEVICE->GetViewport(&oldViewportData);
 
-	D3DVIEWPORT8 viewportData;
+	D3DVIEWPORT9 viewportData;
 	viewportData.X		= 0;	
 	viewportData.Y		= 0;
 	viewportData.Width	= g_ScreenWidth;
@@ -1320,10 +1320,10 @@ void CConsole::DrawSmall(int nLines)
 	//	if (!m_pFontBitmapData) return;
 
 	// Preserve current viewport
-	D3DVIEWPORT8 oldViewportData;
+	D3DVIEWPORT9 oldViewportData;
     PD3DDEVICE->GetViewport(&oldViewportData);
 
-	D3DVIEWPORT8 viewportData;
+	D3DVIEWPORT9 viewportData;
 	viewportData.X		= 0;	
 	viewportData.Y		= 0;
 	viewportData.Width	= g_ScreenWidth;
