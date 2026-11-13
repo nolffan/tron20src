@@ -43,18 +43,18 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `Lithtech.exe` | the engine | 0 / 8,917 | 0 / 1,497,739 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 8,917 | 0 |
+| `Lithtech.exe` | the engine | 5,535 / 7,682 | 939,798 / 1,379,079 bytes | `█████████████░░░░░░░` 68.1% | 765 | 110 |
 | `server.dll` | the engine's server | 2,899 / 3,540 | 296,637 / 319,661 bytes | `██████████████████░░` 92.7% | 10 | 8 |
 | `SndDrv.dll` | the sound driver | 121 / 284 | 15,446 / 39,010 bytes | `███████░░░░░░░░░░░░░` 39.5% | 44 | 0 |
 | `Tron.exe` | the launcher | 311 / 348 | 44,730 / 45,159 bytes | `███████████████████░` 99.0% | 0 | 0 |
 | `TRONSrv.exe` | the dedicated server | 477 / 564 | 76,889 / 82,500 bytes | `██████████████████░░` 93.1% | 0 | 5 |
-| `CShell.dll` | the game: client | 4,523 / 9,411 | 678,189 / 1,825,721 bytes | `███████░░░░░░░░░░░░░` 37.1% | 1,213 | 111 |
+| `CShell.dll` | the game: client | 4,524 / 9,411 | 678,465 / 1,825,721 bytes | `███████░░░░░░░░░░░░░` 37.1% | 1,207 | 105 |
 | `Object.lto` | the game: server objects | 9,479 / 15,406 | 1,173,076 / 2,457,745 bytes | `█████████░░░░░░░░░░░` 47.7% | 835 | 352 |
 | `ClientFx.fxd` | the game: client effects | 308 / 557 | 61,689 / 135,077 bytes | `█████████░░░░░░░░░░░` 45.6% | 29 | 9 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 0 / 463 resources | 0 / 561,414 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 463 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **18,118 / 39,027** | **2,346,656 / 6,402,612 bytes** | `███████░░░░░░░░░░░░░` **36.6%** | **11,048** | **485** |
+| **All** | | **23,654 / 37,792** | **3,286,730 / 6,283,952 bytes** | `██████████░░░░░░░░░░` **52.3%** | **2,890** | **589** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and
