@@ -480,7 +480,7 @@ DWORD CServerDlg::DoHost( )
 	}
 
 	// Get the path to the profile file for parsing.
-	std::string sProfilePath = GetProfileFile( m_sConfigName.c_str( ));
+	std::string sProfilePath = s_sConfigDir + m_sConfigName.c_str( ) + s_sConfigExt;
 
 	// Parse the bute file.  If we didn't find the 
 	CButeMgr userProfile;
@@ -489,8 +489,8 @@ DWORD CServerDlg::DoHost( )
 		return IDS_NETERR_CORRUPTCONFIG;
 	}
 
-	if( !m_ServerGameOptions.LoadFromBute( userProfile ))
-		return IDS_NETERR_CORRUPTCONFIG;
+	// RETAIL: 0x40b185, the result is not checked
+	m_ServerGameOptions.LoadFromBute( userProfile );
 
 	// Force this to be a dedicated server.
 	m_ServerGameOptions.m_bDedicated = true;
@@ -499,12 +499,28 @@ DWORD CServerDlg::DoHost( )
 	ParseCommandLine( false, &m_ServerGameOptions );
 
 	// Get the server name so we can display it.
-	m_sServerName = m_ServerGameOptions.GetSessionName();
+	m_sServerName = m_ServerGameOptions.m_sSessionName.c_str( );
 
-	// Fill in the name of the game type and max players...
-	
-	m_sGameType.LoadString( m_ServerGameOptions.GetGameTypeStringID() );
-	m_nMaxPlayers = m_ServerGameOptions.GetMaxPlayers();
+	// Fill in the name of the game type and max players... RETAIL:
+	// 0x40b1ae, Tron's server works both out of the game type itself
+	m_nMaxPlayers = 0;
+	int nGameTypeIndex = 0;
+	switch( m_ServerGameOptions.m_eGameType )
+	{
+		case eGameTypeDiscArena:
+			nGameTypeIndex = 0;
+			m_nMaxPlayers = m_ServerGameOptions.m_nArenaMaxPlayers;
+			break;
+		case eGameTypeDiscTournament:
+			nGameTypeIndex = 1;
+			m_nMaxPlayers = m_ServerGameOptions.m_nTournMaxPlayers;
+			break;
+		case eGameTypeMultiplayerLightcycles:
+			nGameTypeIndex = 2;
+			m_nMaxPlayers = m_ServerGameOptions.m_nLCMaxPlayers;
+			break;
+	}
+	m_sGameType.LoadString( IDS_GAMETYPE_DISCARENA + nGameTypeIndex );
 	m_sNumPlayers.Format("%d/%d", 0, m_nMaxPlayers);
 
 	// Set the selected mod so players know what we are playing...
@@ -533,7 +549,9 @@ DWORD CServerDlg::DoHost( )
 	if( !szSelectedMod[0] )
 	{
 		CString sModName;
-		sModName.LoadString( IDS_RETAIL );
+		// RETAIL: 0x40b353, the name itself (TRONSrv.exe has no IDS_RETAIL
+		// string)
+		sModName = "Retail";
 		m_ServerGameOptions.m_sModName = sModName;
 	}
 
@@ -545,7 +563,7 @@ DWORD CServerDlg::DoHost( )
 	strncpy( netHost.m_sName, m_sServerName, sizeof( netHost.m_sName ));
 	netHost.m_sName[ sizeof( netHost.m_sName ) - 1 ] = '\0';
 	netHost.m_bHasPassword = m_ServerGameOptions.m_bUsePassword;
-	netHost.m_nGameType = (uint8)m_ServerGameOptions.m_eGameType;
+	// RETAIL: 0x40b3e5, Tron's server leaves NetHost::m_nGameType unset
 
 	// Start hosting.
 	if( !m_pServerMgr->HostGame( &netHost ))

@@ -8,6 +8,14 @@
 //
 
 #include "Resource.h"
+#include <string>
+
+// RETAIL: Tron 2.0's server keeps its configs as ServerData\<name>.txt; each
+// file that includes this header has its own copy of the two strings (their
+// dynamic initializers open SelectConfigDlg.obj and ServerDlg.obj in
+// TRONSrv.exe, 0x406bc0 and 0x409b60). The names are ours.
+static std::string const s_sConfigDir( "ServerData\\" );
+static std::string const s_sConfigExt( ".txt" );
 
 /////////////////////////////////////////////////////////////////////////////
 // CSelectConfigDlg dialog
