@@ -202,9 +202,6 @@ LTRESULT OnHelloPacket(CPacket_Read &cPacket, Client *pClient)
     }
 
     pClient->m_ClientFlags |= CFLAG_GOT_HELLO;
-
-    // RETAIL: the server shell hears of the client now (0x100345af)
-    i_server_shell->OnAddClient((HCLIENT)pClient);
     return LT_OK;
 }
 

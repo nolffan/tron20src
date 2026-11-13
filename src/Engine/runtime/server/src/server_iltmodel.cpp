@@ -154,6 +154,12 @@ LTRESULT CLTModelServer::SetPieceHideStatus(HOBJECT pObj, HMODELPIECE hPiece, bo
 
     // ILTModel does most of the work.
     dResult = ILTModel::SetPieceHideStatus(pObj, hPiece, bHidden);
+    // TRON: and the clients are told, with the attachments (server.dll
+    // 0x10048c30: CF_ATTACHMENTS)
+    if (dResult == LT_OK)
+    {
+		SetObjectChangeFlags(pObj, CF_ATTACHMENTS);
+    }
     return dResult;
 }
 

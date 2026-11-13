@@ -289,7 +289,6 @@ public:
 	virtual LTRESULT RemoveObject(const HCLASS hClass, LPBASECLASS pObject);
 	virtual LTRESULT GetClientPing(HCLIENT hClient, float &ping);
 	virtual LTRESULT GetClientAddr(HCLIENT hClient, uint8 pAddr[4], uint16 *pPort);
-	virtual LTRESULT FinishClientConnect(HCLIENT hClient);	// RETAIL
 	virtual LTRESULT GetNetFlags(HOBJECT hObj, uint32 &flags);
 	virtual LTRESULT SetNetFlags(HOBJECT pObj, uint32 flags);
 	virtual LTRESULT SetObjectUnguaranteedData(HOBJECT hObj, uint32 nData);	// RETAIL
@@ -319,7 +318,6 @@ public:
 	virtual LTRESULT SendSFXMessage(ILTMessage_Read *pMsg, const LTVector &pos, uint32 flags);
 	virtual LTRESULT SendToServer(ILTMessage_Read *pMsg, HOBJECT hSender, uint32 flags);
     virtual LTRESULT GetSaveFileVersion( uint32& nSaveFileVersion ) { nSaveFileVersion = g_dwSaveFileVersion; return LT_OK; }
-	virtual LTRESULT GetUDPSocket(uint32 *phSocket);	// RETAIL
 
 
 // Internal.
@@ -545,20 +543,6 @@ bool CLTServer::SetClientData( HCLIENT hClient, uint8 const* pData, int len)
 	pClient->m_ClientDataLen = len;
 
 	return true;
-}
-
-// RETAIL: server.dll 0x100397f0
-LTRESULT CLTServer::FinishClientConnect(HCLIENT hClient)
-{
-	Client *pClient = (Client*)hClient;
-	if (!pClient)
-		RETURN_ERROR(1, CLTServer::FinishClientConnect, LT_INVALIDPARAMS);
-
-	if (pClient->m_State != CLIENT_CONNECTED)
-		return LT_ERROR;
-
-	sm_SetClientState(pClient, CLIENT_WAITINGTOENTERWORLD);
-	return LT_OK;
 }
 
 LTRESULT CLTServer::GetNetFlags(HOBJECT hObj, uint32 &flags)
@@ -2777,13 +2761,10 @@ void si_SetObjectPos(HOBJECT hObj, const LTVector *pos)
 	if (!pObj)
 		return;
 
-	// RETAIL: only when the position changes (server.dll 0x1003c5a8)
-	const LTVector &vCurPos = pObj->GetPos();
-	if (pos->x != vCurPos.x || pos->y != vCurPos.y || pos->z != vCurPos.z)
-	{
-		FullMoveObject(pObj, pos,
-			MO_DETACHSTANDING|MO_SETCHANGEFLAG|MO_MOVESTANDINGONS|MO_TELEPORT);
-	}
+	// TRON: NOLF2's: moved whether or not the position changes (server.dll
+	// 0x10030f9b)
+	FullMoveObject(pObj, pos,
+		MO_DETACHSTANDING|MO_SETCHANGEFLAG|MO_MOVESTANDINGONS|MO_TELEPORT);
 }
 
 LTRESULT si_TeleportObject(HOBJECT hObj, const LTVector *pNewPos)
@@ -3063,6 +3044,20 @@ LTRESULT si_GetMaxConnections(uint32 &nMaxConnections)
 	return g_pServerMgr->m_NetMgr.GetMaxConnections(nMaxConnections);
 }
 
+// TRON: RETAIL: the internet driver's socket, ILTServer's function pointer
+// (server.dll 0x100314fb; a virtual in Contract J.A.C.K.'s engine)
+static LTRESULT si_GetUDPSocket(uint32 *phSocket)
+{
+	CBaseDriver *pDriver = g_pServerMgr->m_NetMgr.GetDriver("internet");
+	if (pDriver)
+	{
+		*phSocket = (uint32)((CUDPDriver*)pDriver)->m_Socket;
+		return LT_OK;
+	}
+
+	return LT_NOTFOUND;
+}
+
 LTRESULT si_SendToServerApp( ILTMessage_Read& msg ) 
 {
 	if (!g_pServerMgr->m_pServerAppHandler) 
@@ -3077,19 +3072,6 @@ FileEntry* si_GetFileList(const char *pDirName)
 		return LTNULL;
 
 	return server_filemgr->GetFileList(pDirName);
-}
-
-// RETAIL: the internet driver's socket (server.dll 0x1003bc10)
-LTRESULT CLTServer::GetUDPSocket(uint32 *phSocket)
-{
-	CBaseDriver *pDriver = g_pServerMgr->m_NetMgr.GetDriver("internet");
-	if (pDriver)
-	{
-		*phSocket = (uint32)((CUDPDriver*)pDriver)->m_Socket;
-		return LT_OK;
-	}
-
-	return LT_NOTFOUND;
 }
 
 void CLTServer::SetupFunctionPointers() 
@@ -3227,6 +3209,7 @@ void CLTServer::SetupFunctionPointers()
 	UpdateSessionName = si_UpdateSessionName;
 	GetSessionName = si_GetSessionName;
 	GetMaxConnections = si_GetMaxConnections;
+	GetUDPSocket = si_GetUDPSocket;
 	SendToServerApp = si_SendToServerApp;
 	GetTcpIpAddress = si_GetTcpIpAddress;
 

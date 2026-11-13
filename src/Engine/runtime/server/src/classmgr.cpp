@@ -472,9 +472,10 @@ CClassData* CClassMgr::FindClassData(const char *pName)
 }
 
 
+// TRON: the class tick counts are in the final build too (server.dll
+// 0x1000212c..0x100021cc), as Tron's servermgr.cpp counts them
 void CClassMgr::ShowTickCounts()
 {
-#ifndef _FINAL
 
     if (g_CV_ShowClassTicks)  
     {
@@ -508,24 +509,20 @@ void CClassMgr::ShowTickCounts()
 		CalculateSimpleTickInfo();
     }
 
-#endif // _FINAL
 }
 
 void CClassMgr::ClearTickCounts()
 {
-#ifndef _FINAL
     // Clear tick counts for each class.
     for (int i=0; i < m_nClassDatas; i++)
     {
 		m_ClassDatas[i].ResetPerUpdateTickData();
     }
-#endif // _FINAL
 }
 
 // Display tick count information for ALL active object classes...
 void CClassMgr::DisplayTickCounts()
 {
-#ifndef _FINAL
 	
 	g_Ticks_ClassUpdate = 0;
 	uint32 nClassTicksAverage = 0;
@@ -606,13 +603,11 @@ void CClassMgr::DisplayTickCounts()
 	dsi_ConsolePrint("---------------------------------------------------------------------------------");
 	dsi_ConsolePrint(" ");
 
-#endif // _FINAL
 }
 
 // Display detailed tick count information for ALL active objects of a particular class...
 void CClassMgr::DisplayClassTickCounts(const char* pClassName)
 {
-#ifndef _FINAL
 
 	if (!pClassName || !(*pClassName)) return;
 
@@ -650,12 +645,10 @@ void CClassMgr::DisplayClassTickCounts(const char* pClassName)
 		}
 	}
 
-#endif // _FINAL
 }
 
 void CClassMgr::CalculateSimpleTickInfo()
 {
-#ifndef _FINAL
 
     g_Ticks_ClassUpdate = 0;
 
@@ -667,19 +660,16 @@ void CClassMgr::CalculateSimpleTickInfo()
 		m_ClassDatas[i].ResetAllTickData();
     }
 
-#endif // _FINAL
 }
 
 void CClassMgr::CalculateVerboseTickInfo()
 {
-#ifndef _FINAL
 
     for (int i=0; i < m_nClassDatas; i++)
     {
 		m_ClassDatas[i].CalculateTotalFrameTicks();
     }
 
-#endif // _FINAL
 }
 
 

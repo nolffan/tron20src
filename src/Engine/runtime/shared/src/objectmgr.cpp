@@ -1199,6 +1199,11 @@ void ModelInstance::ResetCachedTransformNodeStates()
 	{
 		SetNodeEvaluated(nCurrNode, false);
 		SetNodeEvaluatedRendering(nCurrNode, false);
+
+		// TRON: a controlled node's path is set up again here (server.dll
+		// 0x10025088)
+		if (HasNodeControlFn(nCurrNode))
+			SetupNodePath(nCurrNode);
 	}
 }
 

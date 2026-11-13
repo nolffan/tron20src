@@ -111,6 +111,7 @@ int32	g_CV_NetMaxUnguaranteedPeriod = 500;	// RETAIL: ms (server.dll 0x10074110)
 
 float	g_CV_MaxExtrapolateTime = 0.5f;  // Maximum amount of time to extrapolate a position
 float	g_CV_MaxExtrapolateDist = 64.0f;	// RETAIL: the same, as a distance (server.dll 0x10074118)
+int32	g_CV_AlwaysUpdate;	// TRON: (server.dll 0x10060978, zeroed)
 
 float	g_CV_NearRoundoff = 0.001f; // Max distance to consider two points in the same place
 
@@ -217,6 +218,9 @@ int32 g_CV_UDPSimulateCorruption = 0;
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 
+// TRON: Tron 2.0's table is NOLF2's with Contract J.A.C.K.'s two
+// unguaranteed periods, without HWTnLDisabled and LTRConsoleOutput, and with
+// AlwaysUpdate: 107 entries of 20 bytes (server.dll 0x100557c0)
 static LTEngineVar g_LTEngineVars[] =
 {
 	EV_STRING("BindIP", &g_CV_BindIP),
@@ -240,28 +244,28 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("DelimitPackets", &g_CV_DelimitPackets),
 	EV_LONG("ForceConsole", &g_CV_ForceConsole),
 	EV_LONG("IPDevice", &g_CV_IPDevice),
-	EV_LONG_NOCMDLINE("IPDebug", &g_CV_IPDebug),
-	EV_LONG_NOCMDLINE("UDPDebug", &g_CV_UDPDebug),
-	EV_LONG_NOCMDLINE("InputDebug", &g_CV_InputDebug),
-	EV_LONG_NOCMDLINE("UpdateRate", &g_CV_UpdateRate),
+	EV_LONG("IPDebug", &g_CV_IPDebug),
+	EV_LONG("UDPDebug", &g_CV_UDPDebug),
+	EV_LONG("InputDebug", &g_CV_InputDebug),
+	EV_LONG("UpdateRate", &g_CV_UpdateRate),
 	EV_LONG("InputRate", &g_CV_InputRate),
-	EV_LONG_NOCMDLINE("ForceRemote", &g_bForceRemote),
+	EV_LONG("ForceRemote", &g_bForceRemote),
 	EV_LONG("DebugLevel", &g_DebugLevel),
 	EV_LONG("ShowRunningTime", &g_bShowRunningTime),
 	EV_LONG("NullRender", &g_bNullRender),
 	EV_LONG("LocalDebug", &g_bLocalDebug),
-	EV_LONG_NOCMDLINE("TransportDebug", &g_TransportDebug),
-	EV_LONG_NOCMDLINE("ParseNet_Incoming", &g_CV_ParseNet_Incoming),
-	EV_LONG_NOCMDLINE("ParseNet_Outgoing", &g_CV_ParseNet_Outgoing),
-	EV_LONG_NOCMDLINE("ParseNet", &g_CV_ParseNet),
+	EV_LONG("TransportDebug", &g_TransportDebug),
+	EV_LONG("ParseNet_Incoming", &g_CV_ParseNet_Incoming),
+	EV_LONG("ParseNet_Outgoing", &g_CV_ParseNet_Outgoing),
+	EV_LONG("ParseNet", &g_CV_ParseNet),
 	EV_LONG("NetMaxQueue", &g_CV_NetMaxQueue),
-	EV_LONG("NetMinUnguaranteedPeriod", &g_CV_NetMinUnguaranteedPeriod),	// RETAIL
-	EV_LONG("NetMaxUnguaranteedPeriod", &g_CV_NetMaxUnguaranteedPeriod),	// RETAIL
+	EV_LONG("NetMinUnguaranteedPeriod", &g_CV_NetMinUnguaranteedPeriod),
+	EV_LONG("NetMaxUnguaranteedPeriod", &g_CV_NetMaxUnguaranteedPeriod),
 	EV_LONG("ClientSleepMS", &g_ClientSleepMS),
 	EV_LONG("ShowTickCounts", &g_ShowTickCounts),
 	EV_LONG("ShowMemStats", &g_bShowMemStats),
-	EV_LONG_NOCMDLINE("Prediction", &g_bPrediction),
-	EV_LONG_NOCMDLINE("PredictionLines", &g_nPredictionLines),
+	EV_LONG("Prediction", &g_bPrediction),
+	EV_LONG("PredictionLines", &g_nPredictionLines),
 	EV_LONG("DebugStrings", &g_bDebugStrings),
 	EV_LONG("DebugPackets", &g_bDebugPackets),
 	EV_LONG("DoExtraObjectStuff", &g_bDoExtraObjectStuff),
@@ -277,7 +281,6 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("ScreenHeight", &g_ScreenHeight),
 	EV_LONG("Software", &g_bSoftware),
 	EV_LONG("BitDepth", &g_CV_BitDepth),
-	EV_LONG("HWTnLDisabled", &g_bHWTnLDisabled),
 	EV_LONG("MusicEnable", &g_bMusicEnable),
 	EV_LONG("SoundEnable", &g_bSoundEnable),
 	EV_LONG("ForceSoundDisable", &g_CV_ForceSoundDisable),
@@ -292,7 +295,7 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("ForceClear", &g_CV_ForceClear),
 	EV_LONG("ModelTransitionMS", &g_CV_ModelTransitionMS),
 	EV_LONG("HighPriority", &g_CV_HighPriority),
-	EV_LONG_NOCMDLINE("ShowConnStats", &g_CV_ShowConnStats),
+	EV_LONG("ShowConnStats", &g_CV_ShowConnStats),
 	EV_LONG("MasterPaletteMode", &g_CV_MasterPaletteMode),
 
 	EV_LONG("LTDMConsoleOutput", &g_CV_LTDMConsoleOutput),
@@ -306,24 +309,17 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_CVAR("Name", &g_pNameVar),
 
 	#ifdef LITHTECH_ESD
-	EV_LONG("LTRConsoleOutput", &g_CV_LTRConsoleOutput),
 	#endif // LITHTECH_ESD
 
 	EV_FLOAT("DefaultDrawIndexedDist", &g_CV_DefaultDrawIndexedDist),
 	EV_FLOAT("MaxFPS", &g_CV_MaxFPS),
-#ifdef CJACK_MODERN
-	EV_FLOAT("FrameTimeLog", &g_CV_FrameTimeLog),	// MODERN.md EN-42
-#endif
 	EV_FLOAT("LatencySim", &g_CV_LatencySim),
 	EV_FLOAT("DropRate", &g_CV_DropRate),
 	EV_FLOAT("LODScale", &g_fLodScale),
 	EV_FLOAT("DebugMaxDims", &g_DebugMaxDims),
 	EV_FLOAT("DebugMaxPos", &g_DebugMaxPos),
 	EV_FLOAT("TimeScale", &g_ServerTimeScale),
-	// RETAIL: both floats in the table's integer slot (Lithtech.exe's and
-	// server.dll's tables say so), and not for the command line
-	EV_LONG_NOCMDLINE("MaxExtrapolateTime", &g_CV_MaxExtrapolateTime),
-	EV_LONG_NOCMDLINE("MaxExtrapolateDist", &g_CV_MaxExtrapolateDist),
+	EV_FLOAT("MaxExtrapolateTime", &g_CV_MaxExtrapolateTime),
 	EV_FLOAT("NearRoundoff", &g_CV_NearRoundoff),
 
 	EV_LONG("ConsoleHistoryLen", &g_CV_ConsoleHistoryLen),
@@ -356,58 +352,12 @@ static LTEngineVar g_LTEngineVars[] =
 
 	EV_LONG("DebugModelRez", &g_CV_DebugModelRez),
 
-	EV_LONG_NOCMDLINE("NewPlayerPhysics", &g_CV_NewPlayerPhysics),
+	EV_LONG("NewPlayerPhysics", &g_CV_NewPlayerPhysics),
 
-	EV_LONG_NOCMDLINE("UDPSimulatePacketLoss", &g_CV_UDPSimulatePacketLoss),
-	EV_LONG_NOCMDLINE("UDPSimulateCorruption", &g_CV_UDPSimulateCorruption),
-
-	// RETAIL: the renderer's console variables that would show what a player
-	// is not meant to see (fog, the draw switches, wireframe...), listed by
-	// name alone so that the command line cannot set them (Lithtech.exe's and
-	// server.dll's tables both end with them)
-	EV_NOCMDLINE("TableFog"),
-	EV_NOCMDLINE("FogEnable"),
-	EV_NOCMDLINE("FogR"),
-	EV_NOCMDLINE("FogG"),
-	EV_NOCMDLINE("FogB"),
-	EV_NOCMDLINE("FogNearZ"),
-	EV_NOCMDLINE("FogFarZ"),
-	EV_NOCMDLINE("SkyFogNearZ"),
-	EV_NOCMDLINE("SkyFogFarZ"),
-	EV_NOCMDLINE("FarZ"),
-	EV_NOCMDLINE("DebugRBOccludeEarlyVisible"),
-	EV_NOCMDLINE("DebugRBNoOccluders"),
-	EV_NOCMDLINE("DebugRBDrawOccluders"),
-	EV_NOCMDLINE("DebugRBSortOccluders"),
-	EV_NOCMDLINE("DebugRBTime"),
-	EV_NOCMDLINE("DebugRBDraw"),
-	EV_NOCMDLINE("DebugRBOldOccludeeShape"),
-	EV_NOCMDLINE("GammaR"),
-	EV_NOCMDLINE("GammaG"),
-	EV_NOCMDLINE("GammaB"),
-	EV_NOCMDLINE("ModelLODOffset"),
-	EV_NOCMDLINE("TextureModels"),
-	EV_NOCMDLINE("ModelDebug_DrawBoxes"),
-	EV_NOCMDLINE("ModelDebug_DrawSkeleton"),
-	EV_NOCMDLINE("DrawCanvases"),
-	EV_NOCMDLINE("DrawModels"),
-	EV_NOCMDLINE("DrawSolidModels"),
-	EV_NOCMDLINE("DrawTranslucentModels"),
-	EV_NOCMDLINE("DrawWorld"),
-	EV_NOCMDLINE("DrawSky"),
-	EV_NOCMDLINE("DrawSprites"),
-	EV_NOCMDLINE("DrawPolyGrids"),
-	EV_NOCMDLINE("DrawParticles"),
-	EV_NOCMDLINE("DrawVolumeEffects"),
-	EV_NOCMDLINE("DrawLineSystems"),
-	EV_NOCMDLINE("DrawWorldModels"),
-	EV_NOCMDLINE("Wireframe"),
-	EV_NOCMDLINE("WireframeModels"),
-	EV_NOCMDLINE("LightMap"),
-	EV_NOCMDLINE("DrawFlat"),
-	EV_NOCMDLINE("LightmapsOnly"),
-	EV_NOCMDLINE("DrawSorted"),
-	EV_NOCMDLINE("DrawVolumeEffectVolumes"),
+	EV_LONG("UDPSimulatePacketLoss", &g_CV_UDPSimulatePacketLoss),
+	EV_LONG("UDPSimulateCorruption", &g_CV_UDPSimulateCorruption),
+	// TRON: (server.dll 0x10055c24, the table's last; nothing reads it)
+	EV_LONG("AlwaysUpdate", &g_CV_AlwaysUpdate),
 };
 
 

@@ -29,7 +29,12 @@ bool TransformMaker::IsValid()
 		if(i != 0)
 		{
 			if(pAnim->m_iWeightSet >= pModel->NumWeightSets())
+			{
+				// TRON: said so (server.dll 0x100371c3)
+				dsi_PrintToConsole("ERROR  %s's weight index for model %s is bad. Use ModelEdit to fix.",
+					pAnim->GetAnim1()->GetName(), pModel->GetFilename());
 				return false;
+			}
 		}
 	}
 

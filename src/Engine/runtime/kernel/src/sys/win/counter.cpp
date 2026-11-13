@@ -115,7 +115,7 @@ unsigned long cnt_EndCounterFinal(CounterFinal &cCounter)
 }
 
 
-#ifndef _FINAL
+// TRON: as counter.h, in the final build too
 
 float CountPercent::CalcPercent()
 {
@@ -188,4 +188,3 @@ uint CountPercent::Out()
 	return (uint)(result.QuadPart);
 }
 
-#endif // !_FINAL

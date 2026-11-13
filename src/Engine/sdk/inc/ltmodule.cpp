@@ -314,6 +314,8 @@ void CInterfaceDatabase::RemoveAPI(IBase *api, const char *implemented_class_nam
     if (ptrs->use_database->IsEmpty()) {
         //the database is empty, destroy it.
         ptrs->use_database->Destroy();
+        // TRON: and forget it (server.dll 0x10014705)
+        ptrs->use_database = NULL;
     }
 }
 
@@ -351,6 +353,8 @@ void CInterfaceDatabase::RemoveHolder(CAPIHolderBase *holder) {
     if (ptrs->use_database->IsEmpty()) {
         //the database is empty, destroy it.
         ptrs->use_database->Destroy();
+        // TRON: and forget it (server.dll 0x100147ce)
+        ptrs->use_database = NULL;
         return;
     }
 }
@@ -1132,6 +1136,8 @@ void __declspec(dllexport) SetMasterDatabase(CInterfaceDatabase *new_database) {
 
         //our database is empty now.
         ptrs->local_database->Destroy();
+        // TRON: and forgotten (server.dll 0x1001514e)
+        ptrs->local_database = NULL;
     }
 
     //use the master database from now on.

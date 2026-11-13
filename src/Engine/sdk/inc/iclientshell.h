@@ -38,7 +38,9 @@ Lithtech will call to notify you of things.
 */
 class IClientShell : public IBase {
 public :
-    interface_version(IClientShell, 4);
+    // TRON: 3 (CShell.dll registers its shell with it, 0x10021669; the
+    // engine's holders ask for it, server.dll 0x10001a38..)
+    interface_version(IClientShell, 3);
 
 /*!
 Called at the beginning of every update cycle -- before Update().
@@ -377,7 +379,7 @@ Interface class that manages the client shell DLL's windows instance handle.
 */
 class IInstanceHandleClient : public IBase {
 public:
-    interface_version(IInstanceHandleClient, 4);
+    interface_version(IInstanceHandleClient, 0);	// TRON: 0 (the holders' version)
 
 /*!
 Called by the engine if the interface is defined.  If the client shell

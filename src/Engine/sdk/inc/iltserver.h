@@ -158,7 +158,7 @@ functionality.
 // does not have, is kept past its end.
 class ILTServer : public ILTCSBase {
 public:
-    interface_version_derived(ILTServer, ILTCSBase, 4);
+    interface_version_derived(ILTServer, ILTCSBase, 0);	// TRON: 600 (iltcsbase.h)
     
     
 
@@ -1425,6 +1425,20 @@ Used for: Networking.
 */
     LTRESULT (*GetMaxConnections)(uint32 &nMaxConnections);
 
+/*!
+\param phSocket (return) the socket.
+
+\return LT_NOTFOUND if there is no internet driver; otherwise, returns LT_OK.
+
+TRON: Tron 2.0's: the internet driver's UDP socket, which the game's GameSpy
+query reporting shares (Object.lto's TronGameServerShell). RETAIL:
+server.dll 0x100314fb, set at +0x1a0 (0x1003191d); the name is Contract
+J.A.C.K.'s engine's, where it is a virtual (cjacksrc).
+
+Used for: Networking.
+*/
+    LTRESULT (*GetUDPSocket)(uint32 *phSocket);
+
 
 /*!
 \param pDirName The directory path.
@@ -1450,10 +1464,6 @@ Use when you're done with each list you get from GetFileList().
 Used for: Misc.
 */
     void (*FreeFileList)(FileEntry *pHead);
-
-    // TRON: a slot of Tron's ILTServer at 0x1a8 that neither its engine's
-    // function-pointer setup nor the game's code was seen to use
-    void *m_pTronUnknown_1a8;
 
 /*!
 Model manipulation.

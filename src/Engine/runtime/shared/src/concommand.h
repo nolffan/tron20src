@@ -21,7 +21,8 @@ class HHashTable;
 // RETAIL: Contract J.A.C.K. sets this for the variables of the engine's
 // command line (CClientMgr::RunCommandLine), where an engine variable
 // marked bNoCommandLine is not taken (cc_HandleCommand3, server.dll
-// 0x1000986f)
+// 0x1000986f). TRON: Tron 2.0's engine variables have no such mark, and
+// cc_HandleCommand3 does not look at the flag (server.dll 0x10007f66)
 #define VARFLAG_COMMANDLINE	(1<<1)
 
 
@@ -29,15 +30,12 @@ class HHashTable;
 
 
 // Helpers to define engine variable tables.
-#define EV_FLOAT(name, addr) { name, addr, NULL, NULL, NULL, false }
-#define EV_LONG(name, addr) { name, NULL, (int32*)(addr), NULL, NULL, false }
-#define EV_CVAR(name, addr) { name, NULL, NULL, addr, NULL, false }
-#define EV_STRING(name, addr) { name, NULL, NULL, NULL, addr, false }
-// RETAIL: the same, not to be set from the command line; and a name alone,
-// for a variable that is not the engine's (the renderer's) but is not to be
-// set from the command line either (the tables' entries are 24 bytes)
-#define EV_LONG_NOCMDLINE(name, addr) { name, NULL, (int32*)(addr), NULL, NULL, true }
-#define EV_NOCMDLINE(name) { name, NULL, NULL, NULL, NULL, true }
+// TRON: Tron 2.0's entries are 20 bytes, with no command-line flag
+// (server.dll's table 0x100557c0)
+#define EV_FLOAT(name, addr) { name, addr, NULL, NULL, NULL }
+#define EV_LONG(name, addr) { name, NULL, (int32*)(addr), NULL, NULL }
+#define EV_CVAR(name, addr) { name, NULL, NULL, addr, NULL }
+#define EV_STRING(name, addr) { name, NULL, NULL, NULL, addr }
 
 
 
@@ -66,7 +64,6 @@ struct LTEngineVar
 	int32	*pValueAddressLong;
 	LTCommandVar **pCommandVarAddress;
 	char	**pValueAddressString;
-	bool	bNoCommandLine;		// RETAIL: VARFLAG_COMMANDLINE does not set it
 };
 
 

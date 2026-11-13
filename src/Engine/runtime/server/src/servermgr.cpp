@@ -387,9 +387,8 @@ void SendLoadRequest(const Model*pModel, Client *pClient)
 // This is implemented in servermain.cpp.
 void _ServerStringWhine(const char *pString, void *pUser) 
 {
-	// RETAIL: only at debug level 1 and up (Lithtech.exe 0x46c8c0, server.dll
-	// 0x1003df60)
-	DEBUG_PRINT(1, ("Unfreed (server) string: %s", pString));
+	// TRON: NOLF2's: at any debug level (server.dll 0x100321df)
+	dsi_PrintToConsole("Unfreed (server) string: %s", pString);
 }
 
  

@@ -32,7 +32,8 @@ Counter g_NMTimeCounter(CSTART_MILLI);
 // Helpers
 // ------------------------------------------------------------------------ //
 
-#ifndef _FINAL
+// TRON: the packet parser is in the final build too (server.dll 0x10021a76,
+// ParsePacket; ParseNet's console variables are its)
 
 void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint32 nBufferSize, uint8 nTravelDir = NETMGR_TRAVELDIR_UNKNOWN)
 {
@@ -538,12 +539,6 @@ void ParseMsg(const CPacket_Read &cPacket, uint32 nFlags, uint32 nTravelDir, CBa
 	if(bPrint)
 		dsi_ConsolePrint(aMsgBuff);
 }
-
-#else
-
-void ParseMsg(const CPacket_Read &cPacket, uint32 nFlags, uint32 nTravelDir, CBaseConn *pConn) {}
-
-#endif //_FINAL
 
 // ------------------------------------------------------------------------ //
 // CBaseConn

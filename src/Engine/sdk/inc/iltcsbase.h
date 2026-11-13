@@ -33,7 +33,9 @@ class ILTMessage_Read;
 // ILTServer-vtable.csv.
 class ILTCSBase : public IBase {
 public:
-    interface_version(ILTCSBase, 4);
+    // TRON: 6 (with ILTServer's and ILTClient's 0: their holders ask for
+    // 600, server.dll 0x100017e9, Object.lto 0x100211a0, CShell.dll 0x10021500)
+    interface_version(ILTCSBase, 6);
 
 /*!
 \return Pointer to the \b ILTCommon interface.

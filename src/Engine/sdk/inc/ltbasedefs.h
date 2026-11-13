@@ -130,8 +130,24 @@ inline void LTStrCat(char *pDest, const char *pSrc, uint32 destBytes)
     if (destBytes == 0)
         return;
 
+#ifdef DIRECTENGINE_COMPILE
+	// TRON: the engine's is Build 69's, its truncation check's length taken
+	// in the final build too (server.dll 0x1000932a, out of line, as
+	// LTStrCpy); the game DLLs' is the plain one
+	uint32 destLen = strlen(pDest);
+	uint32 catLen = destBytes - destLen - 1;
+
+	if( pSrc && catLen < strlen(pSrc) )
+	{
+		ASSERT(!"LTStrCat : Concatenate source is truncated");
+	}
+
+	strncat(pDest, pSrc, catLen);
+	pDest[destLen + catLen] = '\0';
+#else
     strncat(pDest, pSrc, destBytes - 1);
     pDest[destBytes - 1] = '\0';
+#endif
 }
 
 /*!

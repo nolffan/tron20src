@@ -24,7 +24,9 @@ extern ILTServer *g_pLTServer;
 
 class IServerShell : public IBase {
 public:
-    interface_version(IServerShell, 4);
+    // TRON: 3 (server.dll's holder 0x10001a3e; Object.lto registers its shell
+    // with it, 0x10021319)
+    interface_version(IServerShell, 3);
 
     inline ILTServer *GetServerDE() const {return g_pLTServer;}
     inline ILTServer *GetLTServer() const {return g_pLTServer;}
@@ -279,7 +281,7 @@ Interface class that manages the server shell DLL's windows instance handle.
 */
 class IInstanceHandleServer : public IBase {
 public:
-    interface_version(IInstanceHandleServer, 1);
+    interface_version(IInstanceHandleServer, 0);	// TRON: 0 (the holders' version)
 
 /*!
 Called by the engine if the interface is defined.  If the server shell

@@ -191,7 +191,7 @@ define_holder(ILTClient, your_var);
 class ILTClient : public ILTCSBase
 {
 public:
-    interface_version_derived(ILTClient, ILTCSBase, 4);
+    interface_version_derived(ILTClient, ILTCSBase, 0);	// TRON: 600 (iltcsbase.h)
 
 /*!  
 \ingroup ConnectionStuff

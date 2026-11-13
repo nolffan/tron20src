@@ -125,9 +125,7 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 	m_ClientFlags |= CFLAG_WANTALLFILES | CFLAG_SENDGLOBALLIGHT;
 
 	m_ClientFlags |= CFLAG_SENDCOBJROTATION;
-	// RETAIL: connected only; the game moves the client on with
-	// ILTServer::FinishClientConnect (0x10030c89)
-	m_State = CLIENT_CONNECTED;
+	m_State = CLIENT_WAITINGTOENTERWORLD;
 	LT_MEM_TRACK_ALLOC(m_Name = (char*)dalloc(1),LT_MEM_TYPE_MISC);
 	m_Name[0] = 0;
 	m_AttachmentLink.m_pData = this;
@@ -196,7 +194,8 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 	// Add us to the list of clients.
 	dl_AddHead(&g_pServerMgr->m_Clients, &m_Link, this);
 	
-	// RETAIL: the server shell is told on the client's hello (OnHelloPacket)
+	// Tell the server shell they're in.
+	i_server_shell->OnAddClient((HCLIENT)this);
 
 	// Don't let them send anything yet..
 	pBaseConn->SetBandwidth(0);
@@ -227,7 +226,9 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 	}
 	fts_FlushAddedFiles(m_hFTServ); 
 	
-	// RETAIL: not yet in the world's queue: FinishClientConnect puts them there
+	// Now set them up to try to get into the world, after their file transfer
+	// has completed.
+	sm_SetClientState(this, CLIENT_WAITINGTOENTERWORLD);
 
 	dsi_ConsolePrint("New client, id %d, for a total of %d.", m_ClientID, g_pServerMgr->m_Clients.m_nElements);
 
@@ -238,45 +239,12 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 
 Client::~Client( )
 { 
-	// Free up everything.
-	fts_Term(m_hFTServ);
-	m_hFTServ = NULL; 
-
-	LTLink *pCur;
-	pCur = m_Events.m_Head.m_pNext;
-	while( pCur != &m_Events.m_Head )
-	{
-		LTLink *pNext = pCur->m_pNext;
-		CServerEvent *pEvent = (CServerEvent*)pCur->m_pData;
-		pEvent->DecrementRefCount();
-		pCur = pNext;
-	}
-
-	dfree(m_ObjInfos);
-	dfree(m_SentLists[0].m_ObjectIDs);
-	dfree(m_SentLists[1].m_ObjectIDs);
-
-	dfree(m_Name);
-
-	// Free the fileid info structures...
-	HHashIterator *hIterator = hs_GetFirstElement(m_hFileIDTable);
-	while( hIterator )
-	{
-		HHashElement *hElement = hs_GetNextElement(hIterator);
-		if (hElement) 
-		{
-			sb_Free(&g_pServerMgr->m_FileIDInfoBank, hs_GetElementUserData(hElement));
-		}
-	}
-	hs_DestroyHashTable(m_hFileIDTable);
-
+	// TRON: the rest is freed before the client is deleted (sm_FreeClient)
 	if (m_pClientData) 
 	{
 		delete[] m_pClientData;
-		m_pClientData = NULL;
 	}
 
-	if( !m_Link.IsTiedOff( ))
 	dl_RemoveAt(&g_pServerMgr->m_Clients, &m_Link);
 }
 
@@ -577,6 +545,45 @@ void sm_GetClientOutOfWorld(Client *pClient)
     }
 }
 
+// TRON: what NOLF2's ~Client frees, freed here before the client is deleted
+// (server.dll 0x1002772d; the name is ours)
+static void sm_FreeClient(Client *pClient)
+{
+	// Free up everything.
+	fts_Term(pClient->m_hFTServ);
+	pClient->m_hFTServ = NULL; 
+
+	LTLink *pCur;
+	pCur = pClient->m_Events.m_Head.m_pNext;
+	while( pCur != &pClient->m_Events.m_Head )
+	{
+		LTLink *pNext = pCur->m_pNext;
+		CServerEvent *pEvent = (CServerEvent*)pCur->m_pData;
+		pEvent->DecrementRefCount();
+		pCur = pNext;
+	}
+
+	dfree(pClient->m_ObjInfos);
+	dfree(pClient->m_SentLists[0].m_ObjectIDs);
+	dfree(pClient->m_SentLists[1].m_ObjectIDs);
+
+	dfree(pClient->m_Name);
+
+	// Free the fileid info structures...
+	HHashIterator *hIterator = hs_GetFirstElement(pClient->m_hFileIDTable);
+	while( hIterator )
+	{
+		HHashElement *hElement = hs_GetNextElement(hIterator);
+		if (hElement) 
+		{
+			sb_Free(&g_pServerMgr->m_FileIDInfoBank, hs_GetElementUserData(hElement));
+		}
+	}
+	hs_DestroyHashTable(pClient->m_hFileIDTable);
+
+	delete pClient;
+}
+
 // ----------------------------------------------------------------------- //
 // Interface functions.
 // ----------------------------------------------------------------------- //
@@ -706,14 +713,14 @@ void sm_RemoveClient(Client *pClient)
 		g_pServerMgr->m_InternalFlags &= ~SFLAG_LOCAL;
 	}
 
-	// Get them out of the world.. (RETAIL: disconnected, 0x10032143)
-	sm_SetClientState(pClient, CLIENT_DISCONNECTED);
+	// Get them out of the world..
+	sm_SetClientState(pClient, CLIENT_CONNECTED);
 
 	// Notify the shell.
 	i_server_shell->OnRemoveClient((HCLIENT)pClient);
 
 	// Remove the client.
-	delete pClient;
+	sm_FreeClient(pClient);
 	pClient = NULL;
 
 	// The flow control needs re-balancing now...

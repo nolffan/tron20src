@@ -134,9 +134,8 @@ bool CTronGameServerShell::TronUnknownVirtual4C()
 	SOCKET hSocket;
 	g_pLTServer->GetTcpIpAddress( szAddress, sizeof( szAddress ), nPort );
 
-	// RETAIL: Tron's ILTServer has its UDP socket's getter at 0x1a0, where
-	// our iltserver.h has GetFileList
-	if( ( ( LTRESULT ( * )( SOCKET* ))g_pLTServer->GetFileList )( &hSocket ) != LT_OK )
+	// RETAIL: Tron's ILTServer has its UDP socket's getter at 0x1a0
+	if( g_pLTServer->GetUDPSocket( ( uint32* )&hSocket ) != LT_OK )
 		return false;
 
 	char szSecretKey[] = { 't', '9', 'D', '3', 'v', 'B', '\0' };
