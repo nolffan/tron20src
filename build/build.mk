@@ -75,8 +75,10 @@ TRON20SRC_RCFLAGS ?=
 WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
-    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL \
-    src/Engine/runtime/winbuild/Engine.dsw:Lithtech,server
+    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL
+# The engine (src/Engine/runtime, from cjacksrc's, being brought to
+# Tron 2.0's): add `src/Engine/runtime/winbuild/Engine.dsw:<projects>` above
+# as each of Lithtech and server compiles.
 
 # ---------------------------------------------------------------------------
 # Wine and the toolchains
