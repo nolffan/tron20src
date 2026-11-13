@@ -132,6 +132,9 @@ ENV_Lithtech     = $(ENV_ENGINE9)
 ENV_D3DRender    = $(ENV_ENGINE9)
 ENV_Lib_UI       = $(ENV_ENGINE9)
 ENV_Lib_ILTSound = $(ENV_ENGINE9)
+# server.dll includes the shared render structs (renderstruct.h,
+# d3dddstructs.h), which name Direct3D 9's types
+ENV_server       = $(ENV_ENGINE9)
 
 # The prefix: made the first time, then only checked; every tool run waits
 # for it (an order-only prerequisite, so it causes no rebuild).
