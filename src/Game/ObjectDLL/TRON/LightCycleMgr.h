@@ -292,7 +292,15 @@ class CLightCycleMgr
 		bool AddTrailPoints(LIGHT_CYCLIST* pCyclist, bool bTronUnknown1, LTVector& vPos, bool bTronUnknown2);	// RETAIL: 0x100bb990
 		uint32 AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, LTVector& vPos);	// RETAIL: 0x100bbd80
 
+		// Rounds vPos's x and z to the grid. RETAIL: 0x100bca50
+		void SnapToGrid(LTVector& vPos);
+		// The game's difficulty. RETAIL: 0x100be510
+		int GetDifficulty();
+
 	protected:
+
+		// RETAIL: AILightCycle reads the cyclists (0x10002e48)
+		friend class AILightCycle;
 
 		// Collection of light cyclist data
 		std::vector<LIGHT_CYCLIST*> m_collCyclists;		// RETAIL: +0x04

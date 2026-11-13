@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include "LightCycleMgr.h"
 #include "MsgIDs.h"
+#include "GameServerShell.h"
 
 // RETAIL: g_pLightCycleMgr is defined with g_pServerLightCycleMgr in
 // ServerLightCycleMgr.cpp (their data is adjacent, 0x1035a54c).
@@ -837,4 +838,58 @@ void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTV
 {
 	// For now, it's just a straight copy
 	pt.vPoint = vPos;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::SnapToGrid
+//
+//	PURPOSE:	Rounds a position's x and z to the light cycle grid
+//
+//	RETAIL: 0x100bca50 (written for AILightCycle, which calls it)
+//
+// ----------------------------------------------------------------------- //
+
+#define LCMGR_ROUND(x)		((int)((x) + (((x) > 0.0f) ? 0.5 : -0.5)))
+
+void CLightCycleMgr::SnapToGrid(LTVector& vPos)
+{
+	float fGridSize = m_LightCycleButeMgr.GetGridSize();
+
+	int nX = LCMGR_ROUND(vPos.x);
+	if (fGridSize > 1.0f)
+	{
+		nX = LCMGR_ROUND(nX / fGridSize);
+		vPos.x = nX * fGridSize;
+	}
+	else
+	{
+		vPos.x = (float)nX;
+	}
+
+	int nZ = LCMGR_ROUND(vPos.z);
+	if (fGridSize > 1.0f)
+	{
+		nZ = LCMGR_ROUND(nZ / fGridSize);
+		vPos.z = nZ * fGridSize;
+	}
+	else
+	{
+		vPos.z = (float)nZ;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMgr::GetDifficulty
+//
+//	PURPOSE:	The game's difficulty
+//
+//	RETAIL: 0x100be510 (written for AILightCycle, which calls it)
+//
+// ----------------------------------------------------------------------- //
+
+int CLightCycleMgr::GetDifficulty()
+{
+	return g_pGameServerShell->GetDifficulty();
 }

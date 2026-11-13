@@ -36,6 +36,11 @@ class LightCyclePowerup : public GameBase
 
 	protected :
 
+		// RETAIL: AILightCycle claims a power-up in m_nTronUnknown5C
+		// (0x10004072)
+		friend class AILightCycle;
+
+
 		virtual uint32	EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);	// RETAIL: 0x1002afc0
 		virtual bool	OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);			// RETAIL: 0x1002b8a0 (slot 24)
 
