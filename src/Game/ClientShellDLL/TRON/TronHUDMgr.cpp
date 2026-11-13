@@ -118,6 +118,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_Procedurals, eGameType);
 	AddItem(&m_SubChooser, eGameType);
 	AddItem(&m_Profiler, eGameType);
+	AddItem(&m_SecurityCamera, eGameType);
 
 	m_Crosshair.Init();
 	m_Weapons.Init();
@@ -140,6 +141,7 @@ bool CTronHUDMgr::AddItems()
 	m_Procedurals.Init();
 	m_SubChooser.Init();
 	m_Profiler.Init();
+	m_SecurityCamera.Init();
 
     return CHUDMgr::AddItems();
 }

@@ -350,6 +350,10 @@ SOURCE=.\HUDProgress.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDSecurityCamera.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDSingleString.cpp
 # End Source File
 # Begin Source File
@@ -370,6 +374,10 @@ SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONodeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LCHUDHelper.cpp
 # End Source File
 # Begin Source File
@@ -380,6 +388,10 @@ SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
 # Begin Source File
 
 SOURCE=.\LightLine.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\MenuPieceModel.cpp
 # End Source File
 # Begin Source File
 
@@ -741,6 +753,10 @@ SOURCE=.\HUDProgress.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDSecurityCamera.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDSingleString.h
 # End Source File
 # Begin Source File
@@ -753,11 +769,19 @@ SOURCE=.\HUDWeapon.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\IONodeMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LCHUDHelper.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\LightLine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\MenuPieceModel.h
 # End Source File
 # Begin Source File
 

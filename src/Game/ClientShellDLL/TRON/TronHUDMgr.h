@@ -43,6 +43,7 @@
 #include "HUDProcedurals.h"
 #include "HUDProfiler.h"
 #include "HUDSubChooser.h"
+#include "HUDSecurityCamera.h"
 
 //******************************************************************************************
 //** Tron HUD Manager
@@ -86,6 +87,7 @@ protected:
 	CHUDProcedurals				m_Procedurals;
 	CHUDSubChooser				m_SubChooser;
 	CHUDProfiler				m_Profiler;
+	CHUDSecurityCamera			m_SecurityCamera;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 

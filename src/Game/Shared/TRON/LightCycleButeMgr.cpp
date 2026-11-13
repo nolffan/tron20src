@@ -784,6 +784,92 @@ LIGHTCYCLECOLOR* CLightCycleButeMgr::GetShadeCycleColor(uint8 nStyle, uint8 nSha
 	return GetCycleColor(GetShade(nShade)->szCycleColors[nStyle]);
 }
 
+#ifdef _CLIENTBUILD
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleButeMgr::GetColorShade()
+//
+//	PURPOSE:	The style (its cycle type) and the shade a color is of
+//				(RETAIL: CShell 0x100450e0; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CLightCycleButeMgr::GetColorShade(LIGHTCYCLECOLOR* pColor, uint8 & nStyle, uint8 & nShade)
+{
+	if (!pColor) return;
+
+	nStyle = (uint8)pColor->nCycleType;
+	nShade = 0;
+
+	for (uint32 i = 0; i < m_nNumShades; i++)
+	{
+		LIGHTCYCLESHADE* pShade = GetShade(i);
+		if (!stricmp(pShade->szCycleColors[nStyle], pColor->szName))
+		{
+			nShade = (uint8)i;
+			return;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleButeMgr::GetMaxTurboSpeed() etc.
+//
+//	PURPOSE:	A color's handling: its cycle type's, scaled by its mod's
+//				(RETAIL: CShell 0x10045150..0x100452a0, in this order; the
+//				names are ours). Members that use the global, not this.
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT CLightCycleButeMgr::GetMaxTurboSpeed(LIGHTCYCLECOLOR* pColor)
+{
+	LIGHTCYCLEMOD* pMod = g_pLightCycleButeMgr->GetCycleMod(pColor->nCycleMod);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType || !pMod) return 0.0f;
+
+	return pType->fMaxTurboSpeed * pMod->fMaxTurboSpeed;
+}
+
+LTFLOAT CLightCycleButeMgr::GetMaxSpeed(LIGHTCYCLECOLOR* pColor)
+{
+	LIGHTCYCLEMOD* pMod = g_pLightCycleButeMgr->GetCycleMod(pColor->nCycleMod);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType || !pMod) return 0.0f;
+
+	return pType->fMaxManualSpeedAdd * pMod->fMaxManualSpeedAdd + pType->fBaseSpeed * pMod->fBaseSpeed;
+}
+
+LTFLOAT CLightCycleButeMgr::GetMinSpeed(LIGHTCYCLECOLOR* pColor)
+{
+	LIGHTCYCLEMOD* pMod = g_pLightCycleButeMgr->GetCycleMod(pColor->nCycleMod);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType || !pMod) return 0.0f;
+
+	return pType->fMinSpeed * pMod->fMinSpeed;
+}
+
+LTFLOAT CLightCycleButeMgr::GetTurboAccelRate(LIGHTCYCLECOLOR* pColor)
+{
+	LIGHTCYCLEMOD* pMod = g_pLightCycleButeMgr->GetCycleMod(pColor->nCycleMod);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType || !pMod) return 0.0f;
+
+	return pType->fTurboAccelRate * pMod->fTurboAccelRate;
+}
+
+LTFLOAT CLightCycleButeMgr::GetTurnSpeedLossPercent(LIGHTCYCLECOLOR* pColor)
+{
+	LIGHTCYCLEMOD* pMod = g_pLightCycleButeMgr->GetCycleMod(pColor->nCycleMod);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType || !pMod) return 0.0f;
+
+	return pType->fTurnSpeedLossPercent * pMod->fTurnSpeedLossPercent;
+}
+
+#endif // _CLIENTBUILD
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLightCycleButeMgr::GetGameSpeedScalar()

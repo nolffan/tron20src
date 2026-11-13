@@ -332,6 +332,14 @@ class CLightCycleButeMgr : public CGameButeMgr
 		// RETAIL: CShell 0x10045350, 0x10045440
 		LCPOWERUPDATA*		GetPowerupData(int nPowerup);
 		LCPOWERUPDATA*		GetPowerupData(CaselessString sName);
+
+		// RETAIL: CShell 0x100450e0..0x100452a0 (the names are ours)
+		void				GetColorShade(LIGHTCYCLECOLOR* pColor, uint8 & nStyle, uint8 & nShade);
+		LTFLOAT				GetMaxTurboSpeed(LIGHTCYCLECOLOR* pColor);
+		LTFLOAT				GetMaxSpeed(LIGHTCYCLECOLOR* pColor);
+		LTFLOAT				GetMinSpeed(LIGHTCYCLECOLOR* pColor);
+		LTFLOAT				GetTurboAccelRate(LIGHTCYCLECOLOR* pColor);
+		LTFLOAT				GetTurnSpeedLossPercent(LIGHTCYCLECOLOR* pColor);
 #endif
 
 		int					GetNumCycleTypes()	const { return m_nNumCycleTypes; }
