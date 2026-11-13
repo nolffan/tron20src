@@ -70,6 +70,52 @@ void CAIGoalFollow::Load(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIGoalFollow::InitGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x102076a0): hook the goal up to the AI's
+//				activation notifications.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalFollow::InitGoal(CAI* pAI)
+{
+	super::InitGoal(pAI);
+
+	m_ActivationNotifier.SetSubject( pAI );
+	m_ActivationNotifier.SetObserver( this );
+	m_ActivationNotifier.SetCallback( &IActivationObserver::OnActivation );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalFollow::OnActivation
+//
+//	PURPOSE:	RETAIL: Tron's (0x10207700): activating our AI makes it
+//				follow the activator, or stop following.
+//
+// ----------------------------------------------------------------------- //
+
+int CAIGoalFollow::OnActivation(ActivationInfo* pInfo)
+{
+	if( pInfo && ( pInfo->hAI == m_pAI->GetUserObject() ) )
+	{
+		m_hTarget = pInfo->hActivator;
+
+		if( m_fCurImportance == 0.f )
+		{
+			SetCurToBaseImportance();
+		}
+		else if( m_fCurImportance == m_fBaseImportance )
+		{
+			m_fCurImportance = 0.f;
+		}
+	}
+
+	return 0;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIGoalFollow::ActivateGoal
 //
 //	PURPOSE:	Activate goal.
@@ -201,13 +247,13 @@ void CAIGoalFollow::HandleStatePanic()
 
 LTBOOL CAIGoalFollow::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 {
+	// RETAIL: Tron's (0x10207890): a sense ends the goal, it never
+	// triggers it (NOLF2 triggered on seeing the target). Tron calls
+	// CAIGoalAbstract's directly (super does not override it).
+
 	if( super::HandleGoalSenseTrigger(pSenseRecord) )
 	{
-		// Check if sees target.
-		if(pSenseRecord->hLastStimulusSource == m_hTarget)
-		{
-			return LTTRUE;
-		}
+		m_fCurImportance = 0.f;
 	}
 
 	return LTFALSE;
@@ -230,7 +276,13 @@ LTBOOL CAIGoalFollow::HandleNameValuePair(const char *szName, const char *szValu
 		return LTTRUE;
 	}
 
-	if ( !_stricmp(szName, "PANICCANACTIVATE") )
+	// RETAIL: Tron's "ACTIVATE" (0x102078b0) starts following.
+	if ( !_stricmp(szName, "ACTIVATE") )
+	{
+		SetCurToBaseImportance();
+		return LTTRUE;
+	}
+	else if ( !_stricmp(szName, "PANICCANACTIVATE") )
 	{
 		m_bPanicCanActivate = IsTrueChar(*szValue);
 		return LTTRUE;

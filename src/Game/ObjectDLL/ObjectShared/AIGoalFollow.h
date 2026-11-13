@@ -14,8 +14,12 @@
 
 #include "AIGoalAbstractTargeted.h"
 #include "AnimationProp.h"
+#include "ActivationObserver.h"
 
-class CAIGoalFollow : public CAIGoalAbstractTargeted
+// RETAIL: Tron's CAIGoalFollow also derives IActivationObserver (+0x74,
+// RTTI) and holds an ActivationNotifier (+0x88); size 0x94 (factory
+// 0x10207430, constructor 0x102074e0).
+class CAIGoalFollow : public CAIGoalAbstractTargeted, public IActivationObserver
 {
 	typedef CAIGoalAbstractTargeted super;
 
@@ -29,6 +33,12 @@ class CAIGoalFollow : public CAIGoalAbstractTargeted
 
 		virtual void	Save(ILTMessage_Write *pMsg);
         virtual void	Load(ILTMessage_Read *pMsg);
+
+		// RETAIL: Tron's (0x102076a0): registers the activation notifier.
+		virtual void	InitGoal(CAI* pAI);
+
+		// RETAIL: Tron's IActivationObserver (0x10207700).
+		virtual int		OnActivation(ActivationInfo* pInfo);
 
 		// Activation.
 
@@ -59,6 +69,7 @@ class CAIGoalFollow : public CAIGoalAbstractTargeted
 		EnumAnimProp		m_eMovement;
 		LTFLOAT				m_fRangeTime;
 		LTFLOAT				m_fRangeSqr;
+		ActivationNotifier	m_ActivationNotifier;	// RETAIL: Tron's (+0x88)
 };
 
 

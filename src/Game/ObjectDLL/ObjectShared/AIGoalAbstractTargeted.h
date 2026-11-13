@@ -25,6 +25,10 @@ class CAIGoalAbstractTargeted : public CAIGoalAbstract, public ILTObjRefReceiver
 
 		DECLARE_AI_FACTORY_CLASS_ABSTRACT_SPECIFIC(Goal);
 
+		// RETAIL: Tron's (0x10272b20, called by the Tail, Guard and Follow
+		// constructors): makes the goal m_hTarget's receiver.
+		CAIGoalAbstractTargeted();
+
 		// Save / Load
 
 		virtual void	Save(ILTMessage_Write *pMsg);

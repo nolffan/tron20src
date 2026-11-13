@@ -13,6 +13,7 @@
 #define __AIGOAL_FLEE_H__
 
 #include "AIGoalAbstractStimulated.h"
+#include "ActivationObserver.h"
 
 
 // Forward Declarations.
@@ -20,7 +21,10 @@ class AINode;
 
 
 
-class CAIGoalFlee : public CAIGoalAbstractStimulated
+// RETAIL: Tron's CAIGoalFlee also derives IActivationObserver (+0xa0,
+// RTTI) and holds an ActivationNotifier (+0xc8); size 0xd4 (factory
+// 0x10207c40, constructor 0x10207cf0).
+class CAIGoalFlee : public CAIGoalAbstractStimulated, public IActivationObserver
 {
 	typedef CAIGoalAbstractStimulated super;
 
@@ -34,6 +38,12 @@ class CAIGoalFlee : public CAIGoalAbstractStimulated
 
 		virtual void	Save(ILTMessage_Write *pMsg);
         virtual void	Load(ILTMessage_Read *pMsg);
+
+		// RETAIL: Tron's (0x10207fc0): registers the activation notifier.
+		virtual void	InitGoal(CAI* pAI);
+
+		// RETAIL: Tron's IActivationObserver (0x10208270).
+		virtual int		OnActivation(ActivationInfo* pInfo);
 
 		// Activation.
 
@@ -68,6 +78,7 @@ class CAIGoalFlee : public CAIGoalAbstractStimulated
         LTObjRef	m_hDestNode;
 		LTObjRef	m_hDangerObject;
 		LTFLOAT		m_fRelaxTime;
+		ActivationNotifier	m_ActivationNotifier;	// RETAIL: Tron's (+0xc8)
 };
 
 

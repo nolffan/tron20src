@@ -66,6 +66,47 @@ void CAIGoalFlee::Load(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIGoalFlee::InitGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x10207fc0): hook the goal up to the AI's
+//				activation notifications.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalFlee::InitGoal(CAI* pAI)
+{
+	super::InitGoal(pAI);
+
+	m_ActivationNotifier.SetSubject( pAI );
+	m_ActivationNotifier.SetObserver( this );
+	m_ActivationNotifier.SetCallback( &IActivationObserver::OnActivation );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalFlee::OnActivation
+//
+//	PURPOSE:	RETAIL: Tron's (0x10208270): activating a panicking AI
+//				calms it down.
+//
+// ----------------------------------------------------------------------- //
+
+int CAIGoalFlee::OnActivation(ActivationInfo* pInfo)
+{
+	if( pInfo && ( pInfo->hAI == m_pAI->GetUserObject() ) &&
+		m_pGoalMgr->IsCurGoal( this ) &&
+		m_pAI->GetState() && ( m_pAI->GetState()->GetStateType() == kState_HumanPanic ) )
+	{
+		m_pAI->FaceObject( pInfo->hActivator );
+		m_pAI->PlaySound( kAIS_UnpanicActivate, LTFALSE );
+		m_fCurImportance = 0.f;
+	}
+
+	return 0;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIGoalFlee::ActivateGoal
 //
 //	PURPOSE:	Activate goal.
@@ -319,20 +360,9 @@ LTBOOL CAIGoalFlee::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			return LTFALSE;
 		}
 
-		// Neutrals do not flee when they see enemies.
-		// They only flee when they see/hear gunfire.
-
-		if( ( pSenseRecord->eSenseType == kSense_SeeEnemy ) && IsCharacter( m_hStimulusSource ) )
-		{
-			CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject( m_hStimulusSource );
-
-			if ( NEUTRAL == GetRelativeAlignment( m_pAI->GetRelationSet(), pCharacter->GetRelationData()) )
-			{
-				return LTFALSE;
-			}
-		}
-
-		m_pAI->Target( m_hStimulusSource );
+		// RETAIL: Tron's (0x102084d0) has neither NOLF2's neutral test
+		// (neutrals not fleeing from enemies they only see) nor its
+		// Target() of the stimulus source.
 
 		return LTTRUE;
 	}
