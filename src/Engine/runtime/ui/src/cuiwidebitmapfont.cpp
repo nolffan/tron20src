@@ -121,7 +121,9 @@ bool CUIWideBitmapFont::HasChar(uint16 nChar)
 		return true;
 	}
 
-	return (nChar == ' ');
+	// RETAIL: a bool local (0x567fc5: sete al, no xor eax first)
+	bool bSpace = (nChar == ' ');
+	return bSpace;
 }
 
 
@@ -130,8 +132,11 @@ bool CUIWideBitmapFont::HasChar(uint16 nChar)
 bool CUIWideBitmapFont::Load(ILTStream* pStream)
 {
 	char	sName[256];
-	uint32	nPos;
+	// RETAIL: two flags (0x567fe0: the pages' at +0x12, the characters'
+	// at +0x13) and the read position scoped where it is read: its slot
+	// holds the page loop's counter (0x5680c4)
 	uint8	bPresent;
+	uint8	bCharPresent;
 	int		i, j;
 
 	if (!pStream)
@@ -144,7 +149,10 @@ bool CUIWideBitmapFont::Load(ILTStream* pStream)
 	if (!m_xTronUnknownC)
 		m_SpaceWidth = m_DefaultSpaceWidth;
 
-	pStream->GetPos(&nPos);
+	{
+		uint32 nPos;
+		pStream->GetPos(&nPos);
+	}
 
 	// the remap tables, one per high byte the file has
 	memset(m_pRemap, 0, sizeof(m_pRemap));
@@ -169,7 +177,10 @@ bool CUIWideBitmapFont::Load(ILTStream* pStream)
 		memset(m_pRemap, 0, sizeof(m_pRemap));
 	}
 
-	pStream->GetPos(&nPos);
+	{
+		uint32 nPos;
+		pStream->GetPos(&nPos);
+	}
 
 	// the characters
 	memset(m_pChars, 0, sizeof(m_pChars));
@@ -181,8 +192,8 @@ bool CUIWideBitmapFont::Load(ILTStream* pStream)
 			m_pChars[i] = (CUIWideFontChar**)new uint8[0x400];
 			for (j = 0; j < 256; j++)
 			{
-				pStream->Read(&bPresent, 1);
-				if (bPresent)
+				pStream->Read(&bCharPresent, 1);
+				if (bCharPresent)
 				{
 					m_pChars[i][j] = (CUIWideFontChar*)new uint8[sizeof(CUIWideFontChar)];
 					pStream->Read(m_pChars[i][j], sizeof(CUIWideFontChar));
