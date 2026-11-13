@@ -351,17 +351,20 @@ void CUIFormattedPolyString_Impl::GetExtents()
 	if (pPolys)
 	{
 		uint32 i;
-		int32 v;
 		LT_POLYGT4* pPoly;
 
 		miny = maxy = (int32)pPolys->verts[0].y;
 
 		for (i = 0, pPoly = pPolys; i < m_Text.size(); i++, pPoly++)
 		{
-			for (v = 0; v < 4; v++)
-				if (maxy <= (int32)pPoly->verts[v].y) maxy = (int32)pPoly->verts[v].y;
-			for (v = 0; v < 4; v++)
-				if (miny >= (int32)pPoly->verts[v].y) miny = (int32)pPoly->verts[v].y;
+			maxy = LTMAX(maxy, pPoly->verts[0].y);
+			maxy = LTMAX(maxy, pPoly->verts[1].y);
+			maxy = LTMAX(maxy, pPoly->verts[2].y);
+			maxy = LTMAX(maxy, pPoly->verts[3].y);
+			miny = LTMIN(miny, pPoly->verts[0].y);
+			miny = LTMIN(miny, pPoly->verts[1].y);
+			miny = LTMIN(miny, pPoly->verts[2].y);
+			miny = LTMIN(miny, pPoly->verts[3].y);
 		}
 
 		if (!m_WrapWidth)
@@ -370,10 +373,14 @@ void CUIFormattedPolyString_Impl::GetExtents()
 
 			for (i = 0, pPoly = pPolys; i < m_Text.size(); i++, pPoly++)
 			{
-				for (v = 0; v < 4; v++)
-					if (maxx <= (int32)pPoly->verts[v].x) maxx = (int32)pPoly->verts[v].x;
-				for (v = 0; v < 4; v++)
-					if (minx >= (int32)pPoly->verts[v].x) minx = (int32)pPoly->verts[v].x;
+				maxx = LTMAX(maxx, pPoly->verts[0].x);
+				maxx = LTMAX(maxx, pPoly->verts[1].x);
+				maxx = LTMAX(maxx, pPoly->verts[2].x);
+				maxx = LTMAX(maxx, pPoly->verts[3].x);
+				minx = LTMIN(minx, pPoly->verts[0].x);
+				minx = LTMIN(minx, pPoly->verts[1].x);
+				minx = LTMIN(minx, pPoly->verts[2].x);
+				minx = LTMIN(minx, pPoly->verts[3].x);
 			}
 		}
 	}
