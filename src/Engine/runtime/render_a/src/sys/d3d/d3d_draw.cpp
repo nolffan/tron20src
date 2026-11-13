@@ -203,7 +203,8 @@ static void d3d_DrawLightAddPoly(const LTVector& vAdd, const LTRect& Rect)
 	StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_ONE);
 	StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_ONE);
 
-	D3D_CALL(PD3DDEVICE->SetVertexShader(TLVERTEX_FORMAT));
+	D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+	D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 	D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(TLVertex)));
 }
 
@@ -256,7 +257,8 @@ static void d3d_DrawLightScalePoly(const LTVector& vScale, const LTRect& Rect)
 	StateSet ssSrcBlend(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
 	StateSet ssDestBlend(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
 
-	D3D_CALL(PD3DDEVICE->SetVertexShader(TLVERTEX_FORMAT));
+	D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+	D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 	D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(TLVertex)));
 }
 
@@ -346,10 +348,10 @@ void d3d_Clear(LTRect *pRect, uint32 flags, LTRGBColor& ClearColor)
 		} 
 	}
 
-	D3DVIEWPORT8 oldViewportData;
+	D3DVIEWPORT9 oldViewportData;
 	PD3DDEVICE->GetViewport(&oldViewportData);
 
-	D3DVIEWPORT8 viewportData;
+	D3DVIEWPORT9 viewportData;
 	viewportData.X		= 0;
 	viewportData.Y		= 0;
 	viewportData.Width	= g_ScreenWidth;

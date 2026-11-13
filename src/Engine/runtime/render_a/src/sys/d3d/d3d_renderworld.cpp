@@ -239,7 +239,8 @@ void CD3D_RenderWorld::DrawOccluder(const COccludee::COutline &cOutline)
 		aOccluderBuffer[nFillLoop].m_nColor = 0xFF202020;
 	}
 
-	PD3DDEVICE->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 	PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, cOutline.size() - 2, aOccluderBuffer, sizeof(SOccluderVert));
 }
 
@@ -780,7 +781,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 		StageStateSet state20(2, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU | 2);
 
 		PD3DDEVICE->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-		PD3DDEVICE->SetRenderState(D3DRS_SOFTWAREVERTEXPROCESSING, ((g_Device.GetDeviceCaps()->DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) == 0) ? 1 : 0);
+		PD3DDEVICE->SetSoftwareVertexProcessing(((g_Device.GetDeviceCaps()->DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) == 0) ? 1 : 0);
 		PD3DDEVICE->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
 
 		if (g_CV_DebugRBDraw.m_Val)

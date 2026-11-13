@@ -39,7 +39,7 @@ bool CRenderShader_Lightmap::ValidateShader(const CRBSection &cSection)
 	if (!pFormat)
 		return false;
 
-	IDirect3DTexture8 *pTempTexture;
+	IDirect3DTexture9 *pTempTexture;
 	if (!SUCCEEDED(PD3DDEVICE->CreateTexture(256, 256, 1, 0,
 		pFormat->m_PF, D3DPOOL_MANAGED, &pTempTexture)))
 		return false;
@@ -52,8 +52,8 @@ bool CRenderShader_Lightmap::ValidateShader(const CRBSection &cSection)
 	StageStateSet state04(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 	StageStateSet state05(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 	// RETAIL: the clamps before stage 1's (0x4eac24), as PreFlush has them
-	StageStateSet stateWrap0(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-	StageStateSet stateWrap1(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 	StageStateSet state10(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	StageStateSet state11(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
@@ -236,8 +236,9 @@ void CRenderShader_Lightmap::UpdateLightmap_Internal(const CRBSection &cSection,
 void CRenderShader_Lightmap::DrawLights(const DrawState &cState, uint32 nRenderBlock)
 {
 	// Set up our call
-	PD3DDEVICE->SetIndices(m_pIB, 0);
-	PD3DDEVICE->SetVertexShader(k_SVertex_Lightmap_FVF);
+	PD3DDEVICE->SetIndices(m_pIB);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(k_SVertex_Lightmap_FVF);
 
 	PreFlush();
 
@@ -273,8 +274,8 @@ void CRenderShader_Lightmap::DrawLights(const DrawState &cState, uint32 nRenderB
 	PostFlush();
 
 	// Don't leak the VB or IB
-	PD3DDEVICE->SetStreamSource(0, 0, 0);
-	PD3DDEVICE->SetIndices(0, 0);
+	PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+	PD3DDEVICE->SetIndices(0);
 }
 
 void CRenderShader_Lightmap::DrawNormal(const DrawState &cState, uint32 nRenderBlock)
@@ -300,8 +301,8 @@ void CRenderShader_Lightmap::PreFlush()
 	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 }
@@ -330,8 +331,8 @@ void CRenderShader_Lightmap::PostFlush()
 	d3d_DisableTexture(0);
 
 	// Restore the wrapping mode
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 }
 
 void CRenderShader_Lightmap::DebugTri(
@@ -384,7 +385,8 @@ void CRenderShader_Lightmap::DebugTri(
 	aTriVerts[2].m_vPos.z = 0.0f;
 	aTriVerts[2].m_fRHW = 0.0f;
 
-	PD3DDEVICE->SetVertexShader(D3DFVF_XYZRHW);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(D3DFVF_XYZRHW);
 
 	StateSet stateAlpha(D3DRS_ALPHABLENDENABLE, TRUE);
 	StateSet stateSrcBlend(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
@@ -501,7 +503,8 @@ void CRenderShader_Lightmap_Texture::DrawNormal(const DrawState &cState, uint32 
 void CRenderShader_Lightmap_Texture::PreFlush()
 {
 
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 1);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 1);
 
 	// Set up our call
 	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nFlushStateAlpha0);
@@ -567,7 +570,8 @@ void CRenderShader_Lightmap_Texture::PostFlush()
 	PD3DDEVICE->SetRenderState(D3DRS_SRCBLEND, m_nFlushStateAlpha1);
 	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nFlushStateAlpha2);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGCOLOR, m_nFlushStateFogColor);
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 0);
 }
 
 void CRenderShader_Lightmap_Texture::DebugTri(
@@ -644,7 +648,8 @@ void CRenderShader_Lightmap_Texture::DebugTri(
 	aTriVerts[2].m_vPos.z = 0.0f;
 	aTriVerts[2].m_fRHW = 0.0f;
 
-	PD3DDEVICE->SetVertexShader(D3DFVF_XYZRHW);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(D3DFVF_XYZRHW);
 
 	StateSet stateAlpha(D3DRS_ALPHABLENDENABLE, TRUE);
 	StateSet stateSrcBlend(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
@@ -805,7 +810,8 @@ void CRenderShader_Lightmap_Texture_Detail::DrawNormal(const DrawState &cState, 
 void CRenderShader_Lightmap_Texture_Detail::PreFlush()
 {
 	// Set up our call
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 1);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 1);
 
 	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nFlushStateAlpha0);
 	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -880,7 +886,8 @@ void CRenderShader_Lightmap_Texture_Detail::PostFlush()
 	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nFlushStateAlpha2);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGCOLOR, m_nFlushStateFogColor);
 
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 0);
 }
 
 void CRenderShader_Lightmap_Texture_Detail::GetMemStats(CMemStats_World &cMemStats) const
@@ -1003,7 +1010,8 @@ void CRenderShader_Lightmap_Texture_EnvMap::DrawNormal(const DrawState &cState, 
 void CRenderShader_Lightmap_Texture_EnvMap::PreFlush()
 {
 	// Set up our call
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 1);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 1);
 
 	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nFlushStateAlpha0);
 	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -1094,7 +1102,8 @@ void CRenderShader_Lightmap_Texture_EnvMap::PostFlush()
 	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nFlushStateAlpha2);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGCOLOR, m_nFlushStateFogColor);
 
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 0);
 }
 
 void CRenderShader_Lightmap_Texture_EnvMap::GetMemStats(CMemStats_World &cMemStats) const
@@ -1279,7 +1288,8 @@ void CRenderShader_Lightmap_Texture_EnvBumpMap::DrawNormal(const DrawState &cSta
 void CRenderShader_Lightmap_Texture_EnvBumpMap::PreFlush()
 {
 	// Set up our call
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 1);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 1);
 
 	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nFlushStateAlpha0);
 	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -1393,7 +1403,8 @@ void CRenderShader_Lightmap_Texture_EnvBumpMap::PostFlush()
 	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nFlushStateAlpha2);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGCOLOR, m_nFlushStateFogColor);
 
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 0);
 }
 
 void CRenderShader_Lightmap_Texture_EnvBumpMap::GetMemStats(CMemStats_World &cMemStats) const
@@ -1525,7 +1536,8 @@ void CRenderShader_Lightmap_Texture_DualTexture::DrawNormal(const DrawState &cSt
 void CRenderShader_Lightmap_Texture_DualTexture::PreFlush()
 {
 	// Set up our call
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 1);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 1);
 
 	PD3DDEVICE->GetRenderState(D3DRS_ALPHABLENDENABLE, (DWORD*)&m_nFlushStateAlpha0);
 	PD3DDEVICE->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -1588,7 +1600,8 @@ void CRenderShader_Lightmap_Texture_DualTexture::PostFlush()
 	PD3DDEVICE->SetRenderState(D3DRS_DESTBLEND, m_nFlushStateAlpha2);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGCOLOR, m_nFlushStateFogColor);
 
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);
+	// RETAIL: no depth bias in Tron (Build 69 left it out too)
+	//PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, 0);
 }
 
 void CRenderShader_Lightmap_Texture_DualTexture::GetMemStats(CMemStats_World &cMemStats) const

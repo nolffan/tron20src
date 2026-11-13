@@ -28,7 +28,11 @@
 // true); the name bCompileShader is borrowed from Jupiter's AddPixelShader.
 //
 // .ps file format: uint32 'LTPS', uint32 version (1), uint32 size,
-// then size bytes of D3D8 pixel shader tokens.
+// then size bytes of pixel shader tokens.
+//
+// RETAIL: Tron's is this manager on Direct3D 9, the shader an
+// IDirect3DPixelShader9 released where Direct3D 8 deleted a handle
+// (Lithtech.exe 0x512fc0..0x51359e).
 //------------------------------------------------------------------
 
 #include "precompile.h"
@@ -50,7 +54,7 @@ define_holder(IClientFileMgr, g_pIClientFileMgr);
 // CPixelShaderMgr::SPixelShader
 //------------------------------------------------------------------
 
-CPixelShaderMgr::SPixelShader::SPixelShader(const char* pszName, uint8* pFunction, DWORD hShader, bool bCompileShader) :
+CPixelShaderMgr::SPixelShader::SPixelShader(const char* pszName, uint8* pFunction, IDirect3DPixelShader9* hShader, bool bCompileShader) :
 	m_hShader(hShader),
 	m_pFunction(NULL),
 	m_pszName(NULL),
@@ -75,7 +79,7 @@ CPixelShaderMgr::SPixelShader::~SPixelShader()
 	m_pszName = NULL;
 
 	m_nRefCount = 0;
-	m_hShader = 0;
+	m_hShader = NULL;
 }
 
 //------------------------------------------------------------------
@@ -171,7 +175,7 @@ CPixelShaderHandle CPixelShaderMgr::LoadPixelShader(const char* pszFilename, boo
 	pStream->Release();
 
 	//create the shader on the device
-	DWORD hShader;
+	IDirect3DPixelShader9* hShader;
 	if(FAILED(PD3DDEVICE->CreatePixelShader((DWORD*)pFunction, &hShader)))
 	{
 		delete [] pFunction;
@@ -182,7 +186,7 @@ CPixelShaderHandle CPixelShaderMgr::LoadPixelShader(const char* pszFilename, boo
 	if(FAILED(PD3DDEVICE->SetPixelShader(hShader)))
 	{
 		delete [] pFunction;
-		PD3DDEVICE->DeletePixelShader(hShader);
+		hShader->Release();
 		return CPixelShaderHandle();
 	}
 
@@ -211,7 +215,11 @@ void CPixelShaderMgr::FreeDeviceObjects()
 	{
 		if(*it && (*it)->m_bCreated)
 		{
-			PD3DDEVICE->DeletePixelShader((*it)->m_hShader);
+			if((*it)->m_hShader)
+			{
+				(*it)->m_hShader->Release();
+				(*it)->m_hShader = NULL;
+			}
 			(*it)->m_bCreated = false;
 		}
 	}
@@ -237,7 +245,7 @@ bool CPixelShaderMgr::SetPixelShaderConstants(uint32 nNumConstants, const float*
 {
 	if((nNumConstants > 0) && pConstants)
 	{
-		if(SUCCEEDED(PD3DDEVICE->SetPixelShaderConstant(nStartRegister, pConstants, nNumConstants)))
+		if(SUCCEEDED(PD3DDEVICE->SetPixelShaderConstantF(nStartRegister, pConstants, nNumConstants)))
 			return true;
 	}
 
@@ -283,9 +291,10 @@ void CPixelShaderMgr::FreeShader(uint32 nShader)
 	if(!m_PixelShaders[nShader])
 		return;
 
-	if(m_PixelShaders[nShader]->m_bCreated)
+	if(m_PixelShaders[nShader]->m_bCreated && m_PixelShaders[nShader]->m_hShader)
 	{
-		PD3DDEVICE->DeletePixelShader(m_PixelShaders[nShader]->m_hShader);
+		m_PixelShaders[nShader]->m_hShader->Release();
+		m_PixelShaders[nShader]->m_hShader = NULL;
 	}
 
 	delete m_PixelShaders[nShader];

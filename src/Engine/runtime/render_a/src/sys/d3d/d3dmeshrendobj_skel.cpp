@@ -501,7 +501,7 @@ void CD3DSkelMesh::BeginRender(CD3DRenderStyle* pRenderStyle, uint32 iRenderPass
 	// We need software processing 
 	if(m_bSWVertProcessing)
 	{
-		PD3DDEVICE->SetRenderState(D3DRS_SOFTWAREVERTEXPROCESSING, TRUE);
+		PD3DDEVICE->SetSoftwareVertexProcessing(TRUE);
 	}
 
 	if (!m_VBController.getVertexFormat(0) || m_bNonFixPipeData)
@@ -530,7 +530,7 @@ void CD3DSkelMesh::EndRender()
 
 	if(m_bSWVertProcessing)
 	{
-		PD3DDEVICE->SetRenderState(D3DRS_SOFTWAREVERTEXPROCESSING, FALSE);
+		PD3DDEVICE->SetSoftwareVertexProcessing(FALSE);
 	}
 
 	PD3DDEVICE->SetRenderState(D3DRS_VERTEXBLEND,D3DVBF_DISABLE);
@@ -538,6 +538,6 @@ void CD3DSkelMesh::EndRender()
 	PD3DDEVICE->SetRenderState(D3DRS_FOGTABLEMODE, m_nPrevFogTableMode);
 	PD3DDEVICE->SetRenderState(D3DRS_FOGVERTEXMODE, m_nPrevFogVertexMode);
 
-	PD3DDEVICE->SetStreamSource(0, 0, 0);
-	PD3DDEVICE->SetIndices(0, 0);
+	PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+	PD3DDEVICE->SetIndices(0);
 }

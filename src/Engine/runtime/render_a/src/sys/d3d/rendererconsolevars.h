@@ -129,9 +129,12 @@ RCONVAR(g_CV_Bilinear, "Bilinear", int, 1);
 RCONVAR(g_CV_OptimizeSurfaces, "OptimizeSurfaces", int, 0);
 RCONVAR(g_CV_CullWorldTree, "CullWorldTree", int, 0);
 RCONVAR(g_CV_FarZ, "FarZ", float, 10000.0f);
-// RETAIL: Contract J.A.C.K.'s (objects 0x57d488, 0x57d4a0)
+// RETAIL: Build 69's, in its order (the names at Lithtech.exe 0x5c1350..);
+// no LockableBackBuffer in Tron
+RCONVAR(g_CV_PreventFrameBuffering, "PreventFrameBuffering", int, 1);
+RCONVAR(g_CV_ShowFrameBufferingInfo, "ShowFrameBufferingInfo", int, 0);
+RCONVAR(g_CV_MultiPassLightMatch, "MultiPassLightMatch", int, 0);         // use first renderpass dynamic light on all passes
 RCONVAR(g_CV_Use0WeightsForDisable, "Use0WeightsForDisable", int, 0);
-RCONVAR(g_CV_LockableBackBuffer, "LockableBackBuffer", int, 0);
 
 //------------------------------
 // Gamma Control
