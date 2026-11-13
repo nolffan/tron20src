@@ -13,6 +13,7 @@
 #ifndef __TRONINTERFACE_MGR_H__
 #define __TRONINTERFACE_MGR_H__
 
+#include "ServerOptionMgr.h"
 #include "InterfaceMgr.h"
 #include "TRONHUDMgr.h"
 #include "TRONScreenMgr.h"
@@ -161,9 +162,9 @@ private:
 	// 0x101e95b0; not yet written)
 	CWeaponChooser		m_WeaponChooser;		// +0x26790
 	char				m_aTronPadWeaponChooser[0x118 - sizeof(CWeaponChooser)];
-	// PORT: two unidentified objects (a vector, then a CButeMgr at +0x10;
-	// Init 0x100df900 / 0x10047030, Term 0x100dfad0 / 0x10047200)
-	uint8				m_aTronUnknown268A8[0x111c];	// +0x268a8
+	CServerOptionMgr	m_ServerOptionMgr;		// +0x268a8 same as g_pServerOptionMgr
+	// PORT: an unidentified object of the same shape (a vector, then a
+	// CButeMgr at +0x10; Init 0x10047030, Term 0x10047200)
 	uint8				m_aTronUnknown279C4[0x111c];	// +0x279c4
 	CScreenSprite*		m_pTurnArrowLeft;		// +0x28ae0 "Interface\Spr\TurnArrowLeft.spr"
 	CScreenSprite*		m_pTurnArrowRight;		// +0x28ae4 "Interface\Spr\TurnArrowRight.spr"

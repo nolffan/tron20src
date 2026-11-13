@@ -10,6 +10,7 @@
 
 
 #include "stdafx.h"
+#include "ServerOptionMgr.h"
 #include "MissionMgr.h"
 #include "GameClientShell.h"
 #include "VarTrack.h"
@@ -121,7 +122,7 @@ bool CMissionMgr::StartGameNew( )
 		// Get the first mission to play from the missions file.
 		char szMission[4];
 		CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
-		char const* pszCampaignFile = GetCampaignFile( pUserProfile->m_ServerGameOptions );
+		char const* pszCampaignFile = GetCampaignFile( (*g_pServerOptionMgr->GetCurrent()) );
 		if (!CWinUtil::FileExist( pszCampaignFile ))
 			return false;
 
