@@ -49,9 +49,10 @@ CScreenLoad::~CScreenLoad()
 
 }
 
+// RETAIL: 0x1006e480
 LTBOOL CScreenLoad::Build()
 {
-	CreateTitle(IDS_TITLE_LOADGAME);
+	CreateTitle(6);
 
 	kNameWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_LOAD,"NameWidth");
 	kTimeWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_LOAD,"TimeWidth");
@@ -78,6 +79,7 @@ void CScreenLoad::OnFocus(LTBOOL bFocus)
 	CBaseScreen::OnFocus(bFocus);
 }
 
+// RETAIL: 0x1006e550
 uint32 CScreenLoad::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
 {
 	if (dwCommand >= CMD_CUSTOM && dwCommand <= CMD_CUSTOM+1+kMaxSave)
@@ -99,125 +101,84 @@ uint32 CScreenLoad::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 			bLoaded = bLoaded && g_pMissionMgr->StartGameFromSaveSlot( slot );
 		}
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| if ( !bLoaded )
-		//| {
 		if ( !bLoaded )
 		{
 			MBCreate mb;
-	        g_pInterfaceMgr->ShowMessageBox(IDS_LOADGAMEFAILED,&mb);
+			g_pInterfaceMgr->ShowMessageBox(0x386,&mb);
 			return 0;
 		}
 
 		return 1;
 	}
-	else
-		return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
 
+	return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
 };
 
 
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| CLTGUIColumnCtrl* CScreenLoad::BuildSaveControls( char const* pszIniKey, uint32 nCommandId, uint32 nControlHelpStringId,
-//| bool bUserName )
-//| {
-//| // Check inputs.
-//| if( !pszIniKey || !pszIniKey[0] )
+// RETAIL: 0x1006e620. Tron's rows are the name and the time, wide
 bool CScreenLoad::BuildSaveControls( char const* pszIniKey, uint32 nCommandId, uint32 nControlHelpStringId, 
-									bool bUserName )
+									bool bUserName, CLTGUIListCtrl *pList )
 {
 	// Check inputs.
 	if( !pszIniKey || !pszIniKey[0] )
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| ASSERT( !"CScreenLoad::BuildSaveControls:  Invalid inputs." );
-		//| return NULL;
-		//| }
-		ASSERT( !"CScreenLoad::BuildSaveControls:  Invalid inputs." );
 		return false;
 	}
 
+	SaveGameData saveGameData;
 	char szSaveTitle[SLMGR_MAX_INISTR_LEN+1];
 	char szWorldName[MAX_PATH*2];
 	time_t saveTime;
-	SaveGameData saveGameData;
+	std::wstring sText;
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| if( !g_pClientSaveLoadMgr->ReadSaveINI( pszIniKey, szSaveTitle, ARRAY_LEN( szSaveTitle ),
-	//| szWorldName, ARRAY_LEN( szWorldName ), &saveTime ))
-	//| return NULL;
 	if( !g_pClientSaveLoadMgr->ReadSaveINI( pszIniKey, szSaveTitle, ARRAY_LEN( szSaveTitle ), 
 		szWorldName, ARRAY_LEN( szWorldName ), &saveTime ))
 		return false;
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| ParseSaveString( szWorldName, szSaveTitle, saveTime, &saveGameData, bUserName );
-	//| if( !saveGameData.szUserName[0] )
-	//| return NULL;
 	ParseSaveString( szWorldName, szSaveTitle, saveTime, &saveGameData, bUserName );
 	if( !saveGameData.szUserName[0] )
 		return false;
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| CLTGUIColumnCtrl* pColCtrl = CreateColumnCtrl(nCommandId, nControlHelpStringId);
-	//| pColCtrl->SetFont(LTNULL,kSmallFontSize);
-	//| // The world name column
-	//| pColCtrl->AddColumn(saveGameData.szUserName, kNameWidth);
-	CLTGUIColumnCtrl* pColCtrl = AddColumnCtrl(nCommandId, nControlHelpStringId);
-	pColCtrl->SetFont(LTNULL,kSmallFontSize);
-
-	// add a column to indent the name
-	pColCtrl->AddColumn("", kIndent);
+	CLTGUIColumnCtrl* pColCtrl = CreateColumnCtrl(nCommandId, nControlHelpStringId);
+	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(kSmallFontSize);
+	pColCtrl->SetFont(pFont,kSmallFontSize);
 
 	// The world name column
-	pColCtrl->AddColumn(saveGameData.szUserName, kNameWidth);
+	LTGUIWiden(sText,saveGameData.szUserName);
+	pColCtrl->AddColumn(sText, kNameWidth);
 
 	// The column that contains the date/time
-	pColCtrl->AddColumn(saveGameData.szTime, kTimeWidth);
+	LTGUIWiden(sText,saveGameData.szTime);
+	pColCtrl->AddColumn(sText, kTimeWidth);
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| return pColCtrl;
-	//| }
+	if (pList)
+		pList->AddControl(pColCtrl);
+	else
+		AddControl(pColCtrl);
+
 	return true;
-		
 }
 
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| void CScreenLoad::BuildSavedLevelLists()
-//| {
-//| if (g_pClientSaveLoadMgr->QuickSaveExists())
-//| {
-//| CLTGUITextCtrl *pCtrl = AddTextItem( IDS_QUICKLOAD,LTNULL,LTNULL,kDefaultPos,LTTRUE);
-//| pCtrl->Enable(LTFALSE);
-//| CLTGUIColumnCtrl*  pColCtrl = BuildSaveControls( QUICKSAVE_INIKEY, CMD_CUSTOM, IDS_HELP_QUICKLOAD, false );
-//| AddControl(pColCtrl);
-//| m_nextPos.y += kSmallFontSize;
-//| }
+// RETAIL: 0x1006e8c0
 void CScreenLoad::BuildSavedLevelLists()
 {
 	if (g_pClientSaveLoadMgr->QuickSaveExists())
 	{
-		CLTGUITextCtrl *pCtrl = AddTextItem( IDS_QUICKLOAD,LTNULL,LTNULL,kDefaultPos,LTTRUE);
+		CLTGUITextCtrl *pCtrl = AddTextItem( 0x122,LTNULL,LTNULL,kDefaultPos,LTTRUE);
 		pCtrl->Enable(LTFALSE);
-		BuildSaveControls( QUICKSAVE_INIKEY, CMD_CUSTOM, IDS_HELP_QUICKLOAD, false );
+		BuildSaveControls( QUICKSAVE_INIKEY, CMD_CUSTOM, 0xCE, false, LTNULL );
+		m_nextPos.y += kSmallFontSize;
 	}
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| if (g_pClientSaveLoadMgr->ReloadSaveExists())
-	//| {
-	//| CLTGUITextCtrl *pCtrl = AddTextItem( IDS_LOADCURRENT,LTNULL,LTNULL,kDefaultPos,LTTRUE);
-	//| pCtrl->Enable(LTFALSE);
-	//| CLTGUIColumnCtrl*  pColCtrl = BuildSaveControls( RELOADLEVEL_INIKEY, CMD_CUSTOM+1, IDS_HELP_RELOAD, false );
-	//| AddControl(pColCtrl);
-	//| m_nextPos.y += kSmallFontSize;
 	if (g_pClientSaveLoadMgr->ReloadSaveExists())
 	{
-		CLTGUITextCtrl *pCtrl = AddTextItem( IDS_LOADCURRENT,LTNULL,LTNULL,kDefaultPos,LTTRUE);
+		CLTGUITextCtrl *pCtrl = AddTextItem( 0x124,LTNULL,LTNULL,kDefaultPos,LTTRUE);
 		pCtrl->Enable(LTFALSE);
-		BuildSaveControls( RELOADLEVEL_INIKEY, CMD_CUSTOM+1, IDS_HELP_RELOAD, false );
+		BuildSaveControls( RELOADLEVEL_INIKEY, CMD_CUSTOM+1, 0xD0, false, LTNULL );
+		m_nextPos.y += kSmallFontSize;
 	}
 	
-	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_LOAD_USERGAME,LTNULL,LTNULL,kDefaultPos,LTTRUE);
+	CLTGUITextCtrl *pCtrl = AddTextItem(0x22C,LTNULL,LTNULL,kDefaultPos,LTTRUE);
 	pCtrl->Enable(LTFALSE);
 
 	LTIntPt pos = m_nextPos;
@@ -225,7 +186,9 @@ void CScreenLoad::BuildSavedLevelLists()
 	uint16 nHeight = (GetPageBottom() - pos.y);
 	uint16 nWidth = (GetPageRight() - pos.x) - 32;
 	CLTGUIListCtrl *pList = AddList(pos,nHeight,true,nWidth);
-	pList->SetFrameWidth(2);
+	// RETAIL: here Tron's list control takes a frame texture
+	// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0):
+	// left out, our LTGUIMgr's list control has none yet
 	pList->SetColors(m_NonSelectedColor,m_NonSelectedColor,m_NonSelectedColor);
 	pList->SetIndent(LTIntPt(4,4));
 	pList->SetScrollWrap(LTFALSE);
@@ -233,11 +196,8 @@ void CScreenLoad::BuildSavedLevelLists()
 	{
 		if (g_pClientSaveLoadMgr->SlotSaveExists( i+1 ))
 		{
-			// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-			//| CLTGUIColumnCtrl*  pColCtrl = BuildSaveControls( g_pClientSaveLoadMgr->GetSlotSaveKey( i+1 ), CMD_CUSTOM+2+i, IDS_HELP_LOADGAME, true );
-			//| pList->AddControl(pColCtrl);
 			BuildSaveControls( g_pClientSaveLoadMgr->GetSlotSaveKey( i+1 ), CMD_CUSTOM+2+i, 
-				IDS_HELP_LOADGAME, true );
+				0xCF, true, pList );
 		}
 	}
 }
@@ -359,6 +319,7 @@ static void ExitLoadScreenCB(LTBOOL bReturn, void *pData)
 
 
 
+// RETAIL: 0x1006ed70
 void CScreenLoad::Escape()
 {
 	// If we're playing mp, and we're about to go to the host screen, then warn
@@ -371,7 +332,7 @@ void CScreenLoad::Escape()
 			mb.eType = LTMB_YESNO;
 			mb.pFn = ExitLoadScreenCB;
 			mb.pData = this;
-			g_pInterfaceMgr->ShowMessageBox(IDS_SHUTDOWNSERVER,&mb);
+			g_pInterfaceMgr->ShowMessageBox(0x395,&mb);
 			return;
 		}
 	}

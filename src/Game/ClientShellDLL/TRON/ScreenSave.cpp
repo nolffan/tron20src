@@ -29,6 +29,8 @@ namespace
 	const int kMaxSave = SLMGR_MAX_SAVE_SLOTS;
 	int	 g_nSaveSlot = -1;
 	int	 g_nSaveIndex = -1;
+
+	// RETAIL: 0x10076fa0
 	void OverwriteCallBack(LTBOOL bReturn, void *pData)
 	{
 		CScreenSave *pThisScreen = (CScreenSave *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_SAVE);
@@ -37,14 +39,16 @@ namespace
 	}
 	CLTGUIColumnCtrl* g_pColCtrl = LTNULL;
 
-	char g_szOldName[40]	= { '\0' };
-	char g_szOldTime[40]	= { '\0' };
+	// RETAIL: Tron keeps the row's old text wide (0x1026eb50, 0x1026eb40)
+	std::wstring g_sOldName;
+	std::wstring g_sOldTime;
 
 	int kNameWidth = 0;
 	int kTimeWidth = 0;
 	int kIndent = 0;
 	int kSmallFontSize = 4;
 
+	// RETAIL: 0x10076fd0
 	void EditCallBack(LTBOOL bReturn, void *pData)
 	{
 		CScreenSave *pThisScreen = (CScreenSave *)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_SAVE);
@@ -61,14 +65,21 @@ namespace
 				//globals above.
 				if(g_pColCtrl)
 				{
-					g_pColCtrl->SetString(1, g_szOldName);
-					g_pColCtrl->SetString(2, g_szOldTime);
+					g_pColCtrl->SetString(1, g_sOldName);
+					g_pColCtrl->SetString(2, g_sOldTime);
 				}
 			}
 		}
 	};
 
-
+	// RETAIL: inline: a wide string's low bytes into a cleared buffer (the
+	// edit box's text is wide); the name is ours
+	inline void NarrowInto(char *pszOut, const std::wstring &sText, uint32 nSize)
+	{
+		memset(pszOut,0,nSize);
+		for (uint32 i = 0; i < sText.length() && i < nSize; i++)
+			pszOut[i] = (char)sText[i];
+	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -84,9 +95,10 @@ CScreenSave::~CScreenSave()
 
 }
 
+// RETAIL: 0x100771b0
 LTBOOL CScreenSave::Build()
 {
-	CreateTitle(IDS_TITLE_SAVEGAME);
+	CreateTitle(7);
 
 	kNameWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SAVE,"NameWidth");
 	kTimeWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SAVE,"TimeWidth");
@@ -114,6 +126,7 @@ void CScreenSave::OnFocus(LTBOOL bFocus)
 	CBaseScreen::OnFocus(bFocus);
 }
 
+// RETAIL: 0x10077290
 uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
 {
 	if (dwCommand >= CMD_CUSTOM && dwCommand <= CMD_CUSTOM+kMaxSave)
@@ -129,7 +142,7 @@ uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 			mb.eType = LTMB_YESNO;
 			mb.pFn = OverwriteCallBack,
 			mb.pData = this;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRMSAVE,&mb);
+			g_pInterfaceMgr->ShowMessageBox(0x391,&mb);
 			return 1;
 		}
 		if (g_nSaveSlot > 0)
@@ -140,7 +153,7 @@ uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 		else if (!SaveGame(g_nSaveSlot))
 		{
 			MBCreate mb;
-			g_pInterfaceMgr->ShowMessageBox(IDS_SAVEGAMEFAILED,&mb);
+			g_pInterfaceMgr->ShowMessageBox(0x387,&mb);
 		}
 
 
@@ -151,16 +164,27 @@ uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 	}
 	else if (dwCommand == CMD_EDIT_NAME)
 	{
-		char *pStr = (char *)dwParam1;
-		if (strlen(pStr))
+		// RETAIL: Tron's edit box hands back wide text
+		char szName[40];
+		NarrowInto(szName,std::wstring((wchar_t*)dwParam1),sizeof(szName));
+
+		// '|' separates the fields of the save ini
+		uint32 nBar;
+		while ((nBar = strcspn(szName,"|")) < sizeof(szName) - 1 && szName[nBar] == '|')
 		{
-			SAFE_STRCPY(m_szSaveName,pStr);
+			szName[nBar] = '_';
+		}
+		szName[sizeof(szName) - 1] = 0;
+
+		if (strlen(szName))
+		{
+			SAFE_STRCPY(m_szSaveName,szName);
 		}
 		ForceMouseUpdate();
 		if (!SaveGame(g_nSaveSlot))
 		{
 			MBCreate mb;
-			g_pInterfaceMgr->ShowMessageBox(IDS_SAVEGAMEFAILED,&mb);
+			g_pInterfaceMgr->ShowMessageBox(0x387,&mb);
 			return 0;
 		}
 	}
@@ -171,14 +195,18 @@ uint32 CScreenSave::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2
 	return 1;
 };
 
+// RETAIL: 0x10077570
 void CScreenSave::BuildSavedLevelList()
 {
-	AddTextItem(IDS_QUICKSAVE,CMD_CUSTOM,IDS_HELP_QUICKSAVE);
+	AddTextItem(0x123,CMD_CUSTOM,0xCC);
 
 	int nFirstEmpty = -1;
 	
-	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_LOAD_USERGAME,LTNULL,LTNULL,kDefaultPos,LTTRUE);
+	CLTGUITextCtrl *pCtrl = AddTextItem(0x22C,LTNULL,LTNULL,kDefaultPos,LTTRUE);
 	pCtrl->Enable(LTFALSE);
+
+	std::wstring sText;
+	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(kSmallFontSize);
 
  	for (int i = 0; i < kMaxSave; i++)
 	{
@@ -186,11 +214,6 @@ void CScreenSave::BuildSavedLevelList()
 
 		if (g_pClientSaveLoadMgr->SlotSaveExists( i+1 ))
 		{
-			char strSaveGameSetting[256] = {0};
-
-			int mission = -1;
-			int level = -1;
-			struct tm* pTimeDate = LTNULL;
 			char strTime[128] = "";
 
 			char szSaveTitle[SLMGR_MAX_INISTR_LEN+1];
@@ -200,7 +223,7 @@ void CScreenSave::BuildSavedLevelList()
 			if( g_pClientSaveLoadMgr->ReadSaveINI( g_pClientSaveLoadMgr->GetSlotSaveKey( i+1 ), 
 				szSaveTitle, ARRAY_LEN( szSaveTitle ), szWorldName, ARRAY_LEN( szWorldName ), &saveTime ))
 			{
-				pTimeDate = localtime (&saveTime);
+				struct tm* pTimeDate = localtime (&saveTime);
 				if (pTimeDate)
 				{
 					if (g_pInterfaceResMgr->IsEnglish())
@@ -218,7 +241,6 @@ void CScreenSave::BuildSavedLevelList()
 
 
 			char *pWorld = LTNULL;
-			char *pTime = LTNULL;
 			if ( szSaveTitle[0] )
 			{
 				pWorld = szSaveTitle;
@@ -233,20 +255,22 @@ void CScreenSave::BuildSavedLevelList()
 
 			if (pWorld)
 			{
-				CLTGUIColumnCtrl* pCtrl = AddColumnCtrl(CMD_CUSTOM+1+i, IDS_HELP_SAVEGAME);
-				pCtrl->SetFont(LTNULL,kSmallFontSize);
+				CLTGUIColumnCtrl* pCtrl = AddColumnCtrl(CMD_CUSTOM+1+i, 0xCD);
+				pCtrl->SetFont(pFont,kSmallFontSize);
 				pCtrl->SetParam1( m_controlArray.size() - 1);
 
 				// This is a spacer
-				pCtrl->AddColumn("", kIndent, LTTRUE);
+				pCtrl->AddColumn(std::wstring(), kIndent);
 
 				// The world name column
-				pCtrl->AddColumn(pWorld, kNameWidth);
+				LTGUIWiden(sText,pWorld);
+				pCtrl->AddColumn(sText, kNameWidth);
 
 				if (strlen(strTime))
 				{
 					// The column that contains the date/time
-					pCtrl->AddColumn(strTime, kTimeWidth);
+					LTGUIWiden(sText,strTime);
+					pCtrl->AddColumn(sText, kTimeWidth);
 				}
 			}
 
@@ -261,20 +285,17 @@ void CScreenSave::BuildSavedLevelList()
 
 	if (nFirstEmpty >= 0)
 	{
-		CLTGUIColumnCtrl* pCtrl = AddColumnCtrl(CMD_CUSTOM+1+nFirstEmpty, IDS_HELP_SAVEGAME);
-		pCtrl->SetFont(LTNULL,kSmallFontSize);
+		CLTGUIColumnCtrl* pCtrl = AddColumnCtrl(CMD_CUSTOM+1+nFirstEmpty, 0xCD);
+		pCtrl->SetFont(pFont,kSmallFontSize);
 		pCtrl->SetParam1( m_controlArray.size() - 1);
 		// This is a spacer
-		pCtrl->AddColumn("", kIndent, LTTRUE);
+		pCtrl->AddColumn(L" ", kIndent);
 
 		// The world name column
-		char szTmp[64];
-		FormatString(IDS_EMPTY,szTmp,sizeof(szTmp));
-		pCtrl->AddColumn(szTmp, kNameWidth);
-
+		pCtrl->AddColumn(LoadTempWString(0x295), kNameWidth);
 
 		// The column that contains the date/time
-		pCtrl->AddColumn("", kTimeWidth);
+		pCtrl->AddColumn(L" ", kTimeWidth);
 	}
 
 }
@@ -304,10 +325,11 @@ LTBOOL CScreenSave::SaveGame(uint32 slot)
 }
 
 
+// RETAIL: 0x10077b30
 LTBOOL CScreenSave::HandleKeyDown(int key, int rep)
 {
 
-	if (key == VK_F6)
+	if (key == VK_F5)
 	{
 		SendCommand(CMD_CUSTOM,0,0);
         return LTTRUE;
@@ -317,6 +339,7 @@ LTBOOL CScreenSave::HandleKeyDown(int key, int rep)
 }
 
 
+// RETAIL: 0x10077b60
 void CScreenSave::NameSaveGame(uint32 slot, int index)
 {
 	sprintf(m_szSaveName,"%s", g_pMissionMgr->GetCurrentWorldName());
@@ -351,11 +374,11 @@ void CScreenSave::NameSaveGame(uint32 slot, int index)
 		return;
 	LTIntPt pos = g_pColCtrl->GetPos();
 
-	SAFE_STRCPY(g_szOldName,LTGUINarrowString(g_pColCtrl->GetString(1)).c_str());	// PORT: Tron's text is wide
-	SAFE_STRCPY(g_szOldTime,LTGUINarrowString(g_pColCtrl->GetString(2)).c_str());
+	g_sOldName = g_pColCtrl->GetString(1);
+	g_sOldTime = g_pColCtrl->GetString(2);
 
-	g_pColCtrl->SetString(1, "  ");
-	g_pColCtrl->SetString(2, "  ");
+	g_pColCtrl->SetString(1, L" ");
+	g_pColCtrl->SetString(2, L" ");
 
 	//show edit box here	
 	MBCreate mb;
@@ -363,6 +386,6 @@ void CScreenSave::NameSaveGame(uint32 slot, int index)
 	mb.pFn = EditCallBack;
 	mb.pString = m_szSaveName;
 	mb.nMaxChars = 40;
-	g_pInterfaceMgr->ShowMessageBox(IDS_ENTER_NAME,&mb);
+	g_pInterfaceMgr->ShowMessageBox(0x44,&mb);
 
 }

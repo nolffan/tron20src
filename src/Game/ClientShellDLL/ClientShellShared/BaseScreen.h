@@ -137,6 +137,8 @@ public:
 	// These AddXXX() functions call CreateXXX() and then add the control to the control list
     CLTGUITextCtrl*     AddTextItem(int stringID, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
     CLTGUITextCtrl*     AddTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: a wide string, by value (RETAIL: 0x10003810, emitted out of line)
+    CLTGUITextCtrl*     AddTextItem(std::wstring sString, uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
 
 	CLTGUIListCtrl*		AddList(LTIntPt pos, uint16 nHeight, LTBOOL bUseArrows = LTFALSE, uint16 nArrowOffset = 0);
 
@@ -334,6 +336,14 @@ inline  CLTGUITextCtrl* CBaseScreen::AddTextItem(int stringID, uint32 commandID,
 inline  CLTGUITextCtrl* CBaseScreen::AddTextItem(char *pString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUITextCtrl* pCtrl = CreateTextItem(pString, commandID, helpID,  pos, bFixed, nFont);
+	if (pCtrl)
+		AddControl(pCtrl);
+	return pCtrl;
+}
+
+inline  CLTGUITextCtrl* CBaseScreen::AddTextItem(std::wstring sString, uint32 commandID, int helpID, LTIntPt pos, LTBOOL bFixed, int nFont)
+{
+	CLTGUITextCtrl* pCtrl = CreateTextItem(sString, commandID, helpID,  pos, bFixed, nFont);
 	if (pCtrl)
 		AddControl(pCtrl);
 	return pCtrl;
