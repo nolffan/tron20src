@@ -158,12 +158,10 @@ void CRenderShader_Gouraud_Texture_Fullbright::DrawNormal(const DrawState &cStat
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -210,7 +208,9 @@ void CRenderShader_Gouraud_Texture_Fullbright::PreFlushBlock(CInternalSection &c
 		cSection.m_pTextureEffect->Install(2, TSChannel_Base, TSChannel_Base);
 }
 
-void CRenderShader_Gouraud_Texture_Fullbright::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_Texture_Fullbright::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Clear texture effects
 	if (cSection.m_pTextureEffect)
@@ -406,12 +406,10 @@ void CRenderShader_Gouraud_Detail_Fullbright::DrawNormal(const DrawState &cState
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -471,7 +469,9 @@ void CRenderShader_Gouraud_Detail_Fullbright::PreFlushBlock(CInternalSection &cS
 		cSection.m_pTextureEffect->Install(4, TSChannel_Base, TSChannel_Detail, TSChannel_Null, TSChannel_Base);
 }
 
-void CRenderShader_Gouraud_Detail_Fullbright::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_Detail_Fullbright::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Clear texture effects
 	if (cSection.m_pTextureEffect)
@@ -688,12 +688,10 @@ void CRenderShader_Gouraud_EnvMap_Fullbright::DrawNormal(const DrawState &cState
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -763,7 +761,9 @@ void CRenderShader_Gouraud_EnvMap_Fullbright::PreFlushBlock(CInternalSection &cS
 		cSection.m_pTextureEffect->Install(4, TSChannel_Base, TSChannel_EnvMap, TSChannel_Null, TSChannel_Base);
 }
 
-void CRenderShader_Gouraud_EnvMap_Fullbright::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_EnvMap_Fullbright::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Clear texture effects
 	if (cSection.m_pTextureEffect)

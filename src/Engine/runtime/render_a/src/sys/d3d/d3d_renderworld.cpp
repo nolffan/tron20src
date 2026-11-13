@@ -30,8 +30,7 @@ CD3D_RenderWorld::CD3D_RenderWorld() :
 	m_pRenderBlocks(0),
 	m_nRenderBlockCount(0),
 	m_nOccludeCollectTime(0),
-	m_bBlocksDirty(true),
-	m_bFlushOnDraw(false)	// RETAIL: 0x4a9039
+	m_bBlocksDirty(true)
 {
 	for (uint32 nShaderLoop = 0; nShaderLoop < k_eShader_Num + 2; ++nShaderLoop)
 		m_aShaders[nShaderLoop] = 0;
@@ -246,7 +245,6 @@ void CD3D_RenderWorld::DrawOccluder(const COccludee::COutline &cOutline)
 
 void CD3D_RenderWorld::StartFrame(const ViewParams& Params)
 {
-	GetShaderDrawRange().Reset();	// RETAIL: 0x4aaba0
 	m_aOccluderOutlines.resize(0);	// RETAIL: resize(0) (Lithtech.exe 0x4aaba0)
 	m_nOccludeCollectTime = 0;
 
@@ -351,76 +349,6 @@ void CD3D_RenderWorld::GetFrameOccluders(const ViewParams& Params)
 	}
 }
 
-// RETAIL: 0x4a9470
-PolySide CD3D_RenderWorld::GetAABBVisibility(const ViewParams& Params, const LTVector &vMin, const LTVector &vMax, bool bUseOccluders) const
-{
-	if (!m_pRenderBlocks)
-		return FrontSide;
-
-	// Check for a box which actually contains the viewing position
-	if ((vMin.x <= Params.m_Pos.x) && (vMin.y <= Params.m_Pos.y) && (vMin.z <= Params.m_Pos.z) &&
-		(vMax.x >= Params.m_Pos.x) && (vMax.y >= Params.m_Pos.y) && (vMax.z >= Params.m_Pos.z))
-	{
-		IncFrameStat(eFS_InsideBoxCullCount, 1);
-		return Intersect;
-	}
-
-	// Use a static occludee
-	static COccludee cOccludee;
-	cOccludee.Init();
-
-	PolySide nBoxSide = m_cFrameFrustumOccluder.ClassifyAABB(vMin, vMax, Params.m_FarZ);
-	if (nBoxSide == BackSide)
-	{
-		IncFrameStat(eFS_FrustumCulledCount, 1);
-		return BackSide;
-	}
-
-	// Short-cut out if there aren't any visible occluders
-	if (!bUseOccluders || m_aFrameOccluders.empty())
-		return nBoxSide;
-
-	cOccludee.InitAABB(Params, vMin, vMax, true);
-	if (nBoxSide == Intersect)
-	{
-		// Clip it to the frustum
-		if (m_cFrameFrustumOccluder.Occlude2D(cOccludee) == BackSide)
-			return Intersect;
-	}
-
-	// Find out if it's visible
-	bool bVisible = true;
-	bool bPartial = false;
-
-	float fOccludeeArea = cOccludee.CalcArea2D(true);
-	float fOccluderAreaRemaining = m_fFrameOccluders_ScreenArea;
-
-	TOccluderList::const_iterator iCurOccluder = m_aFrameOccluders.begin();
-	for (; bVisible && (fOccluderAreaRemaining >= fOccludeeArea) && (iCurOccluder != m_aFrameOccluders.end()); ++iCurOccluder)
-	{
-		// Move the visible portions into the occluded bucket
-		cOccludee.m_aOccluded.resize(0);
-		cOccludee.m_aOccluded.swap(cOccludee.m_aVisible);
-		PolySide nResult = iCurOccluder->Occlude2D(cOccludee);
-		bVisible = nResult != BackSide;
-		if (nResult == Intersect)
-		{
-			fOccludeeArea -= cOccludee.CalcArea2D(false);
-			bPartial = true;
-		}
-		// Adjust the occluder area remaining
-		fOccluderAreaRemaining -= iCurOccluder->m_fScreenArea;
-	}
-
-	if (!bVisible)
-	{
-		IncFrameStat(eFS_OccluderCulledCount, 1);
-		return BackSide;
-	}
-
-	return bPartial ? Intersect : FrontSide;
-}
-
 bool CD3D_RenderWorld::IsAABBVisible(const ViewParams& Params, const LTVector &vMin, const LTVector &vMax, bool bUseOccluders) const
 {
 	if (!m_pRenderBlocks)
@@ -505,33 +433,6 @@ bool CD3D_RenderWorld::IsAABBVisible(const ViewParams& Params, const LTVector &v
 	return bVisible;
 }
 
-// RETAIL: 0x4a8100
-void CD3D_RenderWorld::PreBindBlocks()
-{
-	for (uint32 nRBBindLoop = 0; nRBBindLoop < m_nRenderBlockCount; ++nRBBindLoop)
-		m_pRenderBlocks[nRBBindLoop].PreBind();
-}
-
-// RETAIL: 0x4a8130
-void CD3D_RenderWorld::BindBlocks()
-{
-	for (uint32 nRBBindLoop = 0; nRBBindLoop < m_nRenderBlockCount; ++nRBBindLoop)
-		m_pRenderBlocks[nRBBindLoop].Bind();
-	m_bBlocksDirty = false;
-}
-
-// RETAIL: 0x4a8170
-void CD3D_RenderWorld::FlushShaders()
-{
-	for (uint32 nCurShader = 0; nCurShader < k_eShader_Num; ++nCurShader)
-	{
-		if (g_Device.m_pRenderWorld->m_aShaders[nCurShader])
-			g_Device.m_pRenderWorld->m_aShaders[nCurShader]->Flush();
-	}
-}
-
-// RETAIL: each step over the main world and its world models in turn
-// (0x4a8860)
 void CD3D_RenderWorld::BindAll()
 {
 	if (!m_bBlocksDirty)
@@ -543,14 +444,17 @@ void CD3D_RenderWorld::BindAll()
 	CRenderShader_DynamicLight::GetSingleton()->Bind();
 	CModelShadowShader::GetSingleton()->Bind();
 
-	PreBindBlocks();
-	TWorldModelMap::iterator iCurWorldModel = m_aWorldModels.begin();
-	for (; iCurWorldModel != m_aWorldModels.end(); ++iCurWorldModel)
-		iCurWorldModel->second->PreBindBlocks();
+	// Pre-bind the renderblocks
+	for (uint32 nRBBindLoop = 0; nRBBindLoop < m_nRenderBlockCount; ++nRBBindLoop)
+	{
+		m_pRenderBlocks[nRBBindLoop].PreBind();
+	}
 
-	BindBlocks();
-	for (iCurWorldModel = m_aWorldModels.begin(); iCurWorldModel != m_aWorldModels.end(); ++iCurWorldModel)
-		iCurWorldModel->second->BindBlocks();
+	// Bind the renderblocks
+	for (nRBBindLoop = 0; nRBBindLoop < m_nRenderBlockCount; ++nRBBindLoop)
+	{
+		m_pRenderBlocks[nRBBindLoop].Bind();
+	}
 
 	//Build up the memory stats
 	for(uint32 nCurrShader = 0; nCurrShader < k_eShader_Num; nCurrShader++)
@@ -559,9 +463,17 @@ void CD3D_RenderWorld::BindAll()
 			m_aShaders[nCurrShader]->GetMemStats(m_cTotalMemStats);
 	}
 
-	// Inherit the texture usage
-	for (iCurWorldModel = m_aWorldModels.begin(); iCurWorldModel != m_aWorldModels.end(); ++iCurWorldModel)
+	// Bind all the worldmodels, too....
+	TWorldModelMap::iterator iCurWorldModel = m_aWorldModels.begin();
+	for (; iCurWorldModel != m_aWorldModels.end(); ++iCurWorldModel)
+	{
+		// Inherit the texture usage
 		iCurWorldModel->second->m_cTotalMemStats.FilterTextures(m_cTotalMemStats);
+
+		iCurWorldModel->second->BindAll();
+	}
+
+	m_bBlocksDirty = false;
 }
 
 
@@ -633,8 +545,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 
 	if (m_bBlocksDirty)
 	{
-		// RETAIL: through the main world (0x4a9ec3)
-		g_Device.m_pRenderWorld->BindAll();
+		BindAll();
 	}
 
 	LT_MEM_TRACK_ALLOC(m_aVisibleRBs.reserve(m_nRenderBlockCount), LT_MEM_TYPE_RENDERER);
@@ -644,8 +555,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 	uint32 nDrawTime = 0;
 
 	// Implementation note: Transformed world rendering doesn't do any occlusion or frustum checking
-	// RETAIL: DebugRBOccludeWorld 0 draws them all (0x4a9f0d)
-	if (g_CV_DebugRBAll.m_Val || bTransformed || !g_CV_DebugRBOccludeWorld.m_Val)
+	if (g_CV_DebugRBAll.m_Val || bTransformed)
 	{
 		for (uint32 nRBDrawLoop = 0; nRBDrawLoop < m_nRenderBlockCount; ++nRBDrawLoop)
 		{
@@ -712,45 +622,20 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 				cRBQueue.pop();
 
 				IncFrameStat(eFS_WorldBlocksCullTested, 1);
-				PolySide eVisibility = GetAABBVisibility(Params, pCurBlock->GetBoundsMin(), pCurBlock->GetBoundsMax(), true);
-				if (eVisibility == BackSide)
+				if (!IsAABBVisible(Params, pCurBlock->GetBoundsMin(), pCurBlock->GetBoundsMax(), true))
 				{
 					IncFrameStat(eFS_WorldBlocksCulled, 1);
 					continue;
 				}
 
-				// RETAIL: an entirely visible block takes its subtree untested
-				// (0x4aa0ca)
-				if ((eVisibility == FrontSide) && g_CV_DebugRBOccludeEarlyVisible.m_Val)
-				{
-					static TRBQueue cVisibleQueue;
-					cVisibleQueue.push(pCurBlock);
-					while (!cVisibleQueue.empty())
-					{
-						pCurBlock = cVisibleQueue.top();
-						cVisibleQueue.pop();
-
-						IncFrameStat(eFS_WorldBlocksEarlyOutVisible, 1);
-						m_aVisibleRBs.push_back(pCurBlock);
-						CD3D_RenderBlock *pChild = pCurBlock->GetChild(0);
-						if (pChild)
-							cVisibleQueue.push(pChild);
-						pChild = pCurBlock->GetChild(1);
-						if (pChild)
-							cVisibleQueue.push(pChild);
-					}
-				}
-				else
-				{
-					// Add it to the list and recurse into its children
-					m_aVisibleRBs.push_back(pCurBlock);
-					CD3D_RenderBlock *pChild1, *pChild2;
-					GetRBChildrenSorted(Params, pCurBlock, pChild1, pChild2);
-					if (pChild2)
-						cRBQueue.push(pChild2);
-					if (pChild1)
-						cRBQueue.push(pChild1);
-				}
+				// Add it to the list and recurse into its children
+				m_aVisibleRBs.push_back(pCurBlock);
+				CD3D_RenderBlock *pChild1, *pChild2;
+				GetRBChildrenSorted(Params, pCurBlock, pChild1, pChild2);
+				if (pChild2)
+					cRBQueue.push(pChild2);
+				if (pChild1)
+					cRBQueue.push(pChild1);
 			}
 		}
 	}
@@ -799,13 +684,15 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 			{
 				(*iCurRB)->Draw(Params);
 			}
+
+			// Flush the shaders 
+			for (uint32 nCurShader = 0; nCurShader < k_eShader_Num; ++nCurShader)
+			{
+				if (m_aShaders[nCurShader])
+					m_aShaders[nCurShader]->Flush();
+			}
 		}
 	}
-
-	// RETAIL: the main world's shaders, when it asks for it (0x4aa500); else
-	// d3d_FlushObjectQueues and the sky flush them
-	if (g_Device.m_pRenderWorld->m_bFlushOnDraw || g_CV_DebugRBFlushOnDraw.m_Val)
-		FlushShaders();
 
 	if (g_CV_DebugRBDrawOccluders.m_Val)
 	{
@@ -1111,11 +998,10 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 			break;
 	}
 
-	// RETAIL: the shaders are the main world's (Lithtech.exe 0x4aacc0)
 	CRenderShader *pShader = 0;
 	do 
 	{
-		pShader = g_Device.m_pRenderWorld->m_aShaders[eResult];
+		pShader = m_aShaders[eResult];
 		if (!pShader)
 		{
 			switch (eResult)
@@ -1178,7 +1064,7 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 		}
 		if (!pShader || !pShader->ValidateShader(cSection))
 		{
-			if (!g_Device.m_pRenderWorld->m_aShaders[eResult])
+			if (!m_aShaders[eResult])
 				delete pShader;
 			pShader = 0;
 			// Choose a more stable shader.. (Would rather this happened automatically...)
@@ -1227,7 +1113,7 @@ CRenderShader *CD3D_RenderWorld::AllocShader(const CRBSection &cSection)
 		}
 	} while (!pShader);
 
-	g_Device.m_pRenderWorld->m_aShaders[eResult] = pShader;
+	m_aShaders[eResult] = pShader;
 
 	return pShader;
 }

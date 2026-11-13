@@ -811,7 +811,7 @@ bool CD3D_RenderBlock::DrawAggregateShader(IAggregateShader *pShader)
 
 	// Make sure we're good with our shaders
 	if (!m_bShadersBound)
-		g_Device.m_pRenderWorld->BindAll();
+		m_pWorld->BindAll();
 
 	// Update the shader data if they're not up to date
 	if (m_bShadersDirty)
@@ -823,7 +823,7 @@ bool CD3D_RenderBlock::DrawAggregateShader(IAggregateShader *pShader)
 	for (uint32 nShaderLoop = 0; nShaderLoop < k_eShader_Num; ++nShaderLoop)
 	{
 		if (m_aShaderIndices[nShaderLoop] != k_InvalidShaderIndex)
-			g_Device.m_pRenderWorld->GetShader((ERenderShader)nShaderLoop)->DrawAggregateShader(pShader, m_aShaderIndices[nShaderLoop]);
+			m_pWorld->GetShader((ERenderShader)nShaderLoop)->DrawAggregateShader(pShader, m_aShaderIndices[nShaderLoop]);
 	}
 
 	return true;
@@ -833,7 +833,7 @@ void CD3D_RenderBlock::PreDraw(const ViewParams& Params)
 {
 	// Make sure we're good with our shaders
 	if (!m_bShadersBound)
-		g_Device.m_pRenderWorld->BindAll();
+		m_pWorld->BindAll();
 
 	// Update the shader data if they're not up to date
 	if (m_bShadersDirty)
@@ -867,7 +867,7 @@ bool CD3D_RenderBlock::Draw(const ViewParams& Params)
 	{
 		if (m_aShaderIndices[nShaderLoop] == k_InvalidShaderIndex)
 			continue;
-		CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader((ERenderShader)nShaderLoop);
+		CRenderShader *pShader = m_pWorld->GetShader((ERenderShader)nShaderLoop);
 		pShader->Draw(cDrawState, m_aShaderIndices[nShaderLoop]);
 	}
 
@@ -1065,7 +1065,7 @@ void CD3D_RenderBlock::UpdateShaderLightmaps(bool bFullUpdate)
 	uint8 *pLMScratchPad = 0;
 
 	// Point directly at the lightmap shader
-	CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader(eShader_Lightmap);
+	CRenderShader *pShader = m_pWorld->GetShader(eShader_Lightmap);
 	CRenderShader_Lightmap *pLMShader = reinterpret_cast<CRenderShader_Lightmap*>(pShader);
 
 	for (uint32 nCurSection = 0; nCurSection < m_aSections.size(); ++nCurSection)
@@ -1284,7 +1284,7 @@ void CD3D_RenderBlock::UpdateShaderData(bool bFullUpdate)
 		if (m_aShaderIndices[nCurShader] == k_InvalidShaderIndex)
 			continue;
 
-		CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader((ERenderShader)nCurShader);
+		CRenderShader *pShader = m_pWorld->GetShader((ERenderShader)nCurShader);
 		if (pShader)
 			pShader->Lock(m_aShaderIndices[nCurShader]);
 	}
@@ -1296,9 +1296,9 @@ void CD3D_RenderBlock::UpdateShaderData(bool bFullUpdate)
 		if ((uint32)iCurSection->m_eBoundShader > nEndShader)
 			continue;
 
-		CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader(iCurSection->m_eBoundShader);
+		CRenderShader *pShader = m_pWorld->GetShader(iCurSection->m_eBoundShader);
 		if (pShader)
-			pShader->AddSection(m_pWorld, *iCurSection, m_aIndices, pFinalVertices, m_aVertices);
+			pShader->AddSection(*iCurSection, m_aIndices, pFinalVertices, m_aVertices);
 	}
 
  	//we now need to mark all the section boundaries
@@ -1307,7 +1307,7 @@ void CD3D_RenderBlock::UpdateShaderData(bool bFullUpdate)
  		if (m_aShaderIndices[nCurShader] == k_InvalidShaderIndex)
  			continue;
  
- 		CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader((ERenderShader)nCurShader);
+ 		CRenderShader *pShader = m_pWorld->GetShader((ERenderShader)nCurShader);
  		if (pShader)
  			pShader->MarkSectionBreaks();
  	}
@@ -1318,7 +1318,7 @@ void CD3D_RenderBlock::UpdateShaderData(bool bFullUpdate)
 		if (m_aShaderIndices[nCurShader] == k_InvalidShaderIndex)
 			continue;
 
-		CRenderShader *pShader = g_Device.m_pRenderWorld->GetShader((ERenderShader)nCurShader);
+		CRenderShader *pShader = m_pWorld->GetShader((ERenderShader)nCurShader);
 		if (pShader)
 			pShader->Unlock();
 	}
@@ -1336,7 +1336,7 @@ void CD3D_RenderBlock::PreBind()
 	for (; iCurSection != m_aSections.end(); ++iCurSection)
 	{
 		CRBSection &cSection = *iCurSection;
-		CRenderShader *pShader = g_Device.m_pRenderWorld->AllocShader(cSection);
+		CRenderShader *pShader = m_pWorld->AllocShader(cSection);
 		if (!pShader)
 		{
 			// This is valid in some cases..  For example, on the lightmap shader when lightmaps are disabled
@@ -1540,7 +1540,7 @@ void CD3D_RenderBlock::DebugTri(const SIntersection &sIntersect, float fX, float
 	}
 
 	// Hand it off to the shader for the actual drawing
-	g_Device.m_pRenderWorld->GetShader(pSection->m_eBoundShader)->DebugTri(
+	m_pWorld->GetShader(pSection->m_eBoundShader)->DebugTri(
 		m_aShaderIndices[pSection->m_eBoundShader],
 		*pSection, sIntersect.m_nTriIndex * 3, m_aIndices, m_aVertices, fX, fY, fSizeX, fSizeY);
 }
@@ -1649,7 +1649,7 @@ void CD3D_RenderBlock::GetMemStats(CMemStats_World &cMemStats) const
 	for (uint32 nShaderLoop = 0; nShaderLoop < k_eShader_Num; ++nShaderLoop)
 	{
 		if (m_aShaderIndices[nShaderLoop] != k_InvalidShaderIndex)
-			g_Device.m_pRenderWorld->GetShader((ERenderShader)nShaderLoop)->GetMemStats(cMemStats);
+			m_pWorld->GetShader((ERenderShader)nShaderLoop)->GetMemStats(cMemStats);
 	}
 
 	// Add in the dynamic light memory usage

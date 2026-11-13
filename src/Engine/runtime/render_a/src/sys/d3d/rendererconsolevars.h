@@ -89,9 +89,6 @@ RCONVAR(g_CV_DebugRBTri, "DebugRBTri", int, 0);
 RCONVAR(g_CV_DebugRBCur, "DebugRBCur", int, 0);
 RCONVAR(g_CV_DebugRBAll, "DebugRBAll", int, 0);
 RCONVAR(g_CV_DebugRBFrustum, "DebugRBFrustum", int, 0);
-// RETAIL: Contract J.A.C.K.'s (objects 0x57d140, 0x57d158)
-RCONVAR(g_CV_DebugRBOccludeWorld, "DebugRBOccludeWorld", int, 1);
-RCONVAR(g_CV_DebugRBOccludeEarlyVisible, "DebugRBOccludeEarlyVisible", int, 1);
 RCONVAR(g_CV_DebugRBNoOccluders, "DebugRBNoOccluders", int, 0);
 RCONVAR(g_CV_DebugRBDrawOccluders, "DebugRBDrawOccluders", int, 0);
 RCONVAR(g_CV_DebugRBSortOccluders, "DebugRBSortOccluders", int, 1);
@@ -99,9 +96,6 @@ RCONVAR(g_CV_DebugRBTime, "DebugRBTime", int, 0);
 RCONVAR(g_CV_DebugRBDraw, "DebugRBDraw", int, 1);
 RCONVAR(g_CV_DebugRBOldOccludeeShape, "DebugRBOldOccludeeShape", int, 0);
 RCONVAR(g_CV_DebugRBFindSlivers, "DebugRBFindSlivers", int, 0);
-// RETAIL: Contract J.A.C.K.'s (objects 0x57d218, 0x57d230, 0x57d248)
-RCONVAR(g_CV_DebugRBDrawExact, "DebugRBDrawExact", int, 0);
-RCONVAR(g_CV_DebugRBFlushOnDraw, "DebugRBFlushOnDraw", int, 0);
 RCONVAR(g_CV_LockPVS, "LockPVS", int, 0);
 RCONVAR(g_CV_DisableRenderObjectGroups, "DisableRenderObjectGroups", int, 0);
 

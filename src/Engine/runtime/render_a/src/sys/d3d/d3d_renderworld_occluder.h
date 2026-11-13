@@ -186,36 +186,7 @@ public:
 	PolySide Occlude(COccludee &cOccludee) const;
 	PolySide Occlude2D(COccludee &cOccludee) const;
 
-	// RETAIL: the edge planes are a fixed array of 16 in the occluder, with an
-	// end pointer (Init 0x4f5a20, AddPlane 0x4f2940, the copy constructor
-	// 0x4aba70, operator= 0x4abae0)
-	class CPlaneList
-	{
-	public:
-		typedef LTPlane *iterator;
-		typedef const LTPlane *const_iterator;
-		CPlaneList() : m_pEnd(m_aPlanes) {}
-		CPlaneList(const CPlaneList &cOther) : m_pEnd(m_aPlanes + cOther.size())
-			{ memcpy(m_aPlanes, cOther.m_aPlanes, sizeof(LTPlane) * size()); }
-		CPlaneList &operator=(const CPlaneList &cOther)
-			{ resize(cOther.size()); memcpy(m_aPlanes, cOther.m_aPlanes, sizeof(LTPlane) * size()); return *this; }
-		void push_back(const LTPlane &cPlane) { if (size() < k_MaxPlanes) { *m_pEnd = cPlane; ++m_pEnd; } }
-		void clear() { m_pEnd = m_aPlanes; }
-		void resize(uint32 nSize) { if (nSize < k_MaxPlanes) m_pEnd = m_aPlanes + nSize; }
-		void reserve(uint32) {}
-		uint32 size() const { return m_pEnd - m_aPlanes; }
-		bool empty() const { return m_pEnd == m_aPlanes; }
-		iterator begin() { return m_aPlanes; }
-		iterator end() { return m_pEnd; }
-		const_iterator begin() const { return m_aPlanes; }
-		const_iterator end() const { return m_pEnd; }
-		void swap(CPlaneList &cOther) { std::swap(*this, cOther); }
-	private:
-		enum { k_MaxPlanes = 16 };
-		LTPlane m_aPlanes[k_MaxPlanes];
-		LTPlane *m_pEnd;
-	};
-	typedef CPlaneList TPlaneList;
+	typedef std::vector<LTPlane> TPlaneList;
 	TPlaneList m_aEdgePlanes;
 	LTPlane m_cPolyPlane;
 	EAABBCorner m_ePolyPlaneCorner;
@@ -260,8 +231,7 @@ public:
 	PolySide Classify(COccludee &cOccludee) const;
 	PolySide ClassifyAABB(const LTVector &vMin, const LTVector &vMax, float fFarZ) const;
 
-	typedef std::vector<LTPlane> TWorldPlaneList;
-	TWorldPlaneList m_aWorldEdgePlanes;
+	TPlaneList m_aWorldEdgePlanes;
 	typedef std::vector<EAABBCorner> TCornerList;
 	TCornerList m_aEdgeCorners; 
 };
