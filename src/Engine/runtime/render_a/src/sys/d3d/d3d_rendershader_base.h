@@ -199,8 +199,9 @@ public:
 			for (; iCurVB != m_aVBs.end(); ++iCurVB)
 			{
 				// Lock it
-				void *plv = 0;
-				m_aLockedVertices.push_back(plv);
+				// RETAIL: an element left unset for Lock to fill (Lithtech.exe
+				// 0x4dd8a6)
+				m_aLockedVertices.push_back();
 				if (!SUCCEEDED((*iCurVB)->Lock(0, 0, (void **)&m_aLockedVertices.back(), 0)))
 				{
 					ASSERT(!"Unable to lock vertex buffer!");
@@ -356,6 +357,7 @@ public:
 
 		if (!pShader->BeginShader(	sizeof(SVertex),
 									nFVF,
+									NULL,
 									0,
 									m_pIB,
 									GetShaderID()))
@@ -477,11 +479,11 @@ public:
 			IncFrameStat(eFS_ShaderVerts, nNumVerts);
 			IncFrameStat(eFS_ShaderDrawPrim, 1);
 
-			// Draw (Build 69's effect path is not in Tron)
+			// Draw (RETAIL: neither Build 69's effect path nor its debug print,
+			// Lithtech.exe 0x4ddf1e)
 			PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
 				0, nStartVertex, nNumVerts,
 				nStartIndex, nNumTris);
-			DEBUG_PRINT(2,("Brush Section: (%p) Start: (%d) Verts: (%d) sIdx: (%d) Tris: (%d)", &(*iFirstSection), nStartVertex, nNumVerts, nStartIndex, nNumTris));
 
 			IncFrameStat(eFS_WorldTriangles, nNumTris);
 
@@ -840,12 +842,11 @@ protected:
 		StageStateSet stateTSS03(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 		StageStateSet stateTSS04(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		StageStateSet stateTSS05(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-		// (retail sets the wrap modes before disabling stage 1)
-		SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
-		SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
-
 		StageStateSet stateTSS16(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet stateTSS17(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+		SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+		SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 
 		PD3DDEVICE->SetVertexShader(NULL);
 		PD3DDEVICE->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
@@ -901,12 +902,11 @@ private:
 
 		// Go through the starting points...
 		TRenderBlockPreviewList::iterator iCurPreviewRB = m_aPreviewRenderBlocks.begin();
+		CRenderBlockData rbd;
 		for (; iCurPreviewRB != m_aPreviewRenderBlocks.end(); ++iCurPreviewRB)
 		{
 			// Add a new renderblock
-			// cjacksrc: Visual C++ .NET 2003's vector has no push_back(); a
-			// temporary each time round (RETAIL: 0x4c17b3)
-			m_aRenderBlocks.push_back(CRenderBlockData());
+			m_aRenderBlocks.push_back(rbd);
 			CRenderBlockData &cRB = m_aRenderBlocks.back();
 
 			// Figure out how many sections are in this block
@@ -968,12 +968,11 @@ private:
 
 		// Put them in order
 		TIndexList::iterator iCurIndex = aSortIndices.begin();
+		CInternalSection is;
 		for (; iCurIndex != aSortIndices.end(); ++iCurIndex)
 		{
 			// Move the section
-			// cjacksrc: no push_back() in Visual C++ .NET 2003's vector; a
-			// temporary each time round, destroyed after it (RETAIL: 0x4c29b0)
-			aSortedSections.push_back(CInternalSection());
+			aSortedSections.push_back(is);
 			aSortedSections.back() = m_aSections[iCurIndex->m_nSection];
 
 			// Adjust the RB section index
