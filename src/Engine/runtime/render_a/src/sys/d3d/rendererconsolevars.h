@@ -198,6 +198,8 @@ RCONVAR(g_CV_ZBiasModelRSPasses, "ZBiasModelRSPasses", int, 1);
 RCONVAR(g_CV_ModelDebug_DrawBoxes, "ModelDebug_DrawBoxes", int, 0);
 RCONVAR(g_CV_ModelDebug_DrawTouchingLights, "ModelDebug_DrawTouchingLights", int, 0);
 RCONVAR(g_CV_ModelDebug_DrawSkeleton, "ModelDebug_DrawSkeleton", int, 0);
+// TRON: Build 69's; RETAIL: ModelDraw::QueueModel 0x553085 reads it
+RCONVAR(g_CV_ModelDebug_DrawOBBS, "ModelDebug_DrawOBBS", int, 0);
 
 //------------------------------
 // Primitive Control

@@ -300,3 +300,286 @@ void NModelDebug::DrawModelSkeleton(ModelInstance* pInstance)
 		}
 	}
 }
+
+// TRON: Build 69's (Jupiter), as retail Lithtech.exe has them: RETAIL:
+// DrawModelOBBS 0x55bca0, draw_obb 0x55be60 (not inlined), and the
+// LTMatrix::Apply it calls 0x55ca40. Build 69's DrawModelVertexNormals is not
+// in Tron.
+
+static inline void draw_obb( const LTMatrix &mat, const LTVector &size )
+{
+	LTVector vmin(-.5f,-.5f,-.5f),vmax(.5f,.5f,.5f) ;
+	LTVector vminres, vmaxres, tmpa,tmpb ;
+	uint32  color = 0x00ff00ff ; // green
+
+	vmin = vmin * size ; vmax = vmax * size ;
+
+	LT_LINEF Line;
+
+	//setup the line color
+	Line.rgba.r = 0;
+	Line.rgba.g = 255;
+	Line.rgba.b = 0;
+	Line.rgba.a = 255;
+
+	//now the positions
+	vminres = vmin ;
+	vmaxres = vmax ;
+
+	// top
+	tmpa.x = vmin.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmin.y;
+	tmpb.z = vmin.z;
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmin.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmin.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+
+	tmpa.x = vmax.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmin.y;
+	tmpb.z = vmax.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+
+	tmpa.x = vmax.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmin.y;
+	tmpb.z = vmax.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmin.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmin.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	// bottom
+	tmpa.x = vmax.x;
+	tmpa.y = vmax.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmax.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmin.x;
+	tmpa.y = vmax.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmin.x;
+	tmpa.y = vmax.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmax.x;
+	tmpa.y = vmax.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmax.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	// sides
+	tmpa.x = vmin.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmax.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmin.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmin.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+	tmpa.x = vmax.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmax.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmax.z;
+
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+
+
+	tmpa.x = vmin.x;
+	tmpa.y = vmin.y;
+	tmpa.z = vmax.z;
+
+	tmpb.x = vmin.x;
+	tmpb.y = vmax.y;
+	tmpb.z = vmax.z;
+	mat.Apply(tmpa, vminres);
+	mat.Apply(tmpb, vmaxres);
+
+	memcpy( &Line.verts[0], &vminres, sizeof(float) *3 );
+	memcpy( &Line.verts[1], &vmaxres, sizeof(float) *3 );
+
+	g_pILTDrawPrimInternal->DrawPrim(&Line, 1);
+}
+
+
+//draws the obbs of a model
+void NModelDebug::DrawModelOBBS( ModelInstance * pInstance )
+{
+	//setup the draw primitive for line rendering
+	if (!g_pILTDrawPrimInternal) 
+		return; 
+
+	// check if model has obbs.
+	const uint32 num_obb  = pInstance->NumCollisionObjects();
+
+	if( num_obb <= 0)
+		return ;
+
+	// set to plain vanilla rendering.
+	g_pILTDrawPrimInternal->SetTexture(NULL);
+	g_pILTDrawPrimInternal->SetTransformType(DRAWPRIM_TRANSFORM_WORLD);
+	g_pILTDrawPrimInternal->SetColorOp(DRAWPRIM_NOCOLOROP);
+	g_pILTDrawPrimInternal->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+	g_pILTDrawPrimInternal->SetZBufferMode(DRAWPRIM_ZRW);
+	g_pILTDrawPrimInternal->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+	g_pILTDrawPrimInternal->SetClipMode(DRAWPRIM_FASTCLIP);
+
+	// draw the obbs. 
+	LTMatrix obb_mat ;
+	ModelOBB obb ;
+
+	// iterate through available obbs and draw them.
+	for( uint32 obb_cnt = 0; obb_cnt < num_obb ; obb_cnt++ )
+	{
+		pInstance->UpdateCollisionObject( obb_cnt,  obb );
+
+		// setup the coordinate frame of the obb.
+		obb_mat.Identity();
+		obb_mat.SetBasisVectors( &obb.m_Basis[0],
+			&obb.m_Basis[1],
+			&obb.m_Basis[2]);
+		obb_mat.SetTranslation( obb.m_Pos );
+
+		draw_obb(obb_mat, obb.m_Size);
+	}
+}
