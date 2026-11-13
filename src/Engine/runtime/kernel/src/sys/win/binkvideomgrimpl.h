@@ -50,6 +50,12 @@ typedef struct BINK
 // BinkCopyToBuffer flags
 #define BINKCOPY2XHI		0x20000000L
 
+// BinkCopyToBuffer surface types (the values of retail's table,
+// Lithtech.exe 0x5ac214: 3, 10, 1)
+#define BINKSURFACE24		1
+#define BINKSURFACE32		3
+#define BINKSURFACE565		10
+
 typedef void *BINKSNDOPEN;
 typedef BINKSNDOPEN (RADEXPLINK *BINKSNDSYSOPEN)(u32 param);
 

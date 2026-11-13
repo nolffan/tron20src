@@ -579,6 +579,30 @@ long the frame took.
 Fixed in the modern build: clientmgr.cpp does not call it; its own frame
 limiter replaces it (MODERN.md EN-40).
 
+### The VersionInfo console command calls a null pointer
+
+Lithtech.exe 0x41ad9f (con_ShowVersionInfo, src/Engine/runtime/client/src/
+consolecommands.cpp) and 0x40bef6 (CLTClient::InitFunctionPointers,
+clientde_impl.cpp). The command calls ILTClient's GetVersionInfoExt
+(+0x2b8) without testing it, and the engine never sets that pointer (nor
+GetPerformanceInfo's beside it), so typing it in the console crashes the
+game.
+
+Fixed in the modern build: clientde_impl.cpp sets both, and the command
+tests the pointer (MODERN.md EN-3).
+
+### HighPriority announces itself every frame and cannot be undone
+
+Lithtech.exe 0x405193 (RunClientApp's main loop, src/Engine/runtime/
+kernel/src/sys/win/client.cpp). The loop compares the HighPriority console
+variable with bPrevHighPriority, which it never updates: while the
+variable is set, every frame prints "Setting process to high priority" to
+the console and sets the priority class again, and clearing it never puts
+the process back to normal priority (the compiler drops that branch, and
+its string, as unreachable).
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

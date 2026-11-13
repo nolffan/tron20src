@@ -217,9 +217,8 @@ void CClientShell::Term()
     g_pClientMgr->m_NetMgr.Disconnect(m_HostID, DISCONNECTREASON_VOLUNTARY_CLIENTSIDE);
     m_HostID = INVALID_CONNID;
 
-    // RETAIL: only if it is still this shell's (Lithtech.exe 0x411947)
-    if (g_pClientMgr->m_NetMgr.m_pHandler == this)
-        g_pClientMgr->m_NetMgr.SetNetHandler(NULL);
+    // RETAIL: unconditionally, as NOLF2's (Lithtech.exe 0x410eb0)
+    g_pClientMgr->m_NetMgr.SetNetHandler(NULL);
 
     // Uninit the server mugger if there is one.
     if (g_pServerMgr) {

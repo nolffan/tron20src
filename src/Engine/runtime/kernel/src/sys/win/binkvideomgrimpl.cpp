@@ -286,6 +286,13 @@ bool BinkVideoInst::ClearSurface()
 	return true;	
 }
 
+// RETAIL: Build 69's: the bink format by a table (Lithtech.exe 0x5ac214,
+// its first entry, BINKSURFACE32), saved by InitScreen and used by
+// UpdateOnScreen, not asked of Bink for the surface
+uint32		nBinkFormatList[] = {	BINKSURFACE32,
+									BINKSURFACE565,
+									BINKSURFACE24 };
+
 LTRESULT BinkVideoInst::InitScreen()
 {
 	// clean old data //
@@ -338,6 +345,9 @@ LTRESULT BinkVideoInst::InitScreen()
 	//save our dimensions
 	m_nTextureWidth = nTexWidth;
 	m_nTextureHeight = nTexHeight;
+
+	//save our bink image format
+	m_BufferFormat = nBinkFormatList[0];
 
 	// decompress next frame so that we will be ready on our first update
     m_pMgr->m_BinkDoFrame( m_bnk );
@@ -443,16 +453,12 @@ LTRESULT BinkVideoInst::UpdateOnScreen()
 	}
 
 
-	//figure out what format we need bink to decompress to
-	int32 nBinkFormat = m_pMgr->m_BinkDX8SurfaceTypeFn(pSurface);
-
-
     // copy bink's decompressed pixels to destination
     m_pMgr->m_BinkToBuffer( m_bnk, LockedRect.pBits,
 							LockedRect.Pitch,
 							m_bnk->Height,
 							0, 0,
-							nBinkFormat );
+							m_BufferFormat );
 
 	//we are done with our surface handle
 	pSurface->UnlockRect();

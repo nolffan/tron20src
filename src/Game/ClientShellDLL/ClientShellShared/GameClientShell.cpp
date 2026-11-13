@@ -4873,7 +4873,7 @@ void CGameClientShell::PostLevelLoadFirstUpdate()
 void CGameClientShell::UpdateSpeedMonitor()
 {
 	LTFLOAT fLocalTime = g_pLTClient->GetTime();
-	LTFLOAT fServerTime = g_pLTClient->GetGameTime();
+	LTFLOAT fServerTime = g_pLTClient->TronUnknownVirtual44();	// TRON: the game clock (iltclient.h)
 	if(fServerTime - m_fInitialServerTime > 5.0f)
 	{
 		// time to do our check

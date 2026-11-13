@@ -535,6 +535,10 @@ Used for: Audio.
  
 		virtual LTRESULT	SetListener( bool bListenerInClient, 
 			LTVector *pPos, LTRotation *pRot, bool bTeleport ) = 0;
+
+// TRON: slot 33 (Lithtech.exe 0x4b50a0; its name from its error messages):
+// a client sound's volume, through its instance's SetVolume
+		virtual LTRESULT	SetSoundVolume( HLTSOUND hSound, uint16 nVolume ) = 0;
 		
 	};
 

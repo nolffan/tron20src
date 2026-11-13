@@ -3124,3 +3124,19 @@ LTRESULT CSoundMgr::TronUnknownVirtual25( uint32 nRun )
 	g_pSoundSys->TronUnknownVirtual29(nRun);
 	return LT_OK;
 }
+
+// RETAIL: Tron's own (Lithtech.exe 0x4b50a0, ILTClientSoundMgr's slot 33)
+LTRESULT CSoundMgr::SetSoundVolume( HLTSOUND hSound, uint16 nVolume )
+{
+	if (!hSound)
+		RETURN_ERROR(1, CSoundMgr::SetSoundVolume, LT_ERROR);
+
+	CSoundInstance *pSoundInstance = (CSoundInstance*)hSound;
+	if (!(pSoundInstance->GetPlaySoundFlags() & PLAYSOUND_CLIENT))
+		RETURN_ERROR(1, CSoundMgr::SetSoundVolume, LT_INVALIDPARAMS);
+
+	if (pSoundInstance->SetVolume(nVolume) != LT_OK)
+		RETURN_ERROR(1, CSoundMgr::SetSoundVolume, LT_ERROR);
+
+	return LT_OK;
+}
