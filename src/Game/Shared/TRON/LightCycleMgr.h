@@ -8,15 +8,18 @@
 //
 // RETAIL: Tron 2.0's, retail-only (RTTI .?AVCLightCycleMgr@@, a virtual
 // class; Build 69's ObjectDLL/TRON/LightCycleMgr is its early, non-virtual
-// server-only ancestor). Written from retail CShell.dll 0x100fe3b0..
-// 0x10101a40 (vtable 0x101e572c); the same TU is in Object.lto at
-// 0x100bb200.. (vtable 0x10294bcc). The class, LIGHT_CYCLIST,
-// LIGHT_CYCLE_TRAIL(_POINT), LightCycleCollisionInfo and the names Build 69
-// has are Monolith's; the other names are ours.
+// server-only ancestor). One TU in both DLLs: CShell.dll 0x100fe3b0..
+// 0x10101b60 (vtable 0x101e572c) and Object.lto 0x100baf70..0x100be640
+// (vtable 0x10294bcc), function for function in the same order and, but
+// for what _CLIENTBUILD marks (AddCyclist's SetObjectPos, the end of
+// UpdateLightCycleTrail, GetDifficulty), the same code. Object.lto's link
+// drops the three functions only the client calls (GetGameSpeedIndex,
+// GetTrailLengthIndex, GetTronUnknown1338). The class,
+// LIGHT_CYCLIST, LIGHT_CYCLE_TRAIL(_POINT), LightCycleCollisionInfo and the
+// names Build 69 has are Monolith's; the other names are ours.
 //
-// RETAIL: layout. CLightCycleButeMgr is 0x40 bytes bigger in our build
-// (Tron's CButeMgr is smaller), so the members after m_ButeMgr are 0x40
-// further than retail's offsets given below.
+// RETAIL: layout. The offsets given below are retail's (and ours, now that
+// CButeMgr has Tron's layout: libs/ButeMgr/butemgr.h).
 //
 // ----------------------------------------------------------------------- //
 
@@ -41,6 +44,15 @@
 // The no-power-up value of LIGHT_CYCLIST::nPowerup (ours; RETAIL: 0xc)
 #define LC_NO_POWERUP	12
 
+// LIGHT_CYCLIST::nFlags as masks, for the server's code that tests them so
+// (names ours): bTurbo, bTrailSpike and bTurboCursed, and what a timed
+// power-up's end clears (bTurbo, bTurboCursed, bTurboCurse; RETAIL:
+// Object.lto 0x10050278)
+#define LCF_TURBO					(1<<1)
+#define LCF_TRAILSPIKE				(1<<2)
+#define LCF_TURBOCURSED				(1<<5)
+#define LCF_TIMED_MASK				(~0x422)
+
 // RETAIL: 12 bytes
 struct LIGHT_CYCLE_TRAIL_POINT
 {
@@ -56,7 +68,8 @@ struct LIGHT_CYCLE_TRAIL_POINT
 	void SetZ(float z) { vPoint.z = z; }
 };
 
-// RETAIL: 0x1c bytes (the new function: CShell 0x10016070)
+// RETAIL: 0x1c bytes (the new function: CShell 0x10016070, Object.lto
+// 0x100bf020)
 struct LIGHT_CYCLE_TRAIL
 {
 	LIGHT_CYCLE_TRAIL()
@@ -73,32 +86,21 @@ struct LIGHT_CYCLE_TRAIL
 	bool	m_bTronUnknownC;		// RETAIL: +0x0c
 	float	fLength;				// RETAIL: +0x10 (summed by UpdateLightCycleTrail)
 	float	m_fTronUnknown14;		// RETAIL: +0x14
-	float	fDerezStartTime;		// RETAIL: +0x18 (set by Update)
-};
-
-// RETAIL: +0xd4 of LIGHT_CYCLIST: a member with a constructor that clears
-// two dwords (the type and its name are ours)
-struct LCTronUnknownPair
-{
-	LCTronUnknownPair() : m_nA(0), m_nB(0) {}
-	uint32	m_nA;
-	uint32	m_nB;
+	float	fDerezStartTime;		// RETAIL: +0x18 (set by DerezOldTrails)
 };
 
 // RETAIL: 0x134 bytes (the new function and its inline constructor: CShell
-// 0x10015dd0)
+// 0x10015dd0, Object.lto 0x100bee20)
 struct LIGHT_CYCLIST
 {
-	LIGHT_CYCLIST()
+	LIGHT_CYCLIST() : nClientID(0), nNameId(0)
 	{
 		fStartDerezTime = 0.0f;
 		bUpdating = true;
-		bDerezRequested = false;
+		bRemove = false;
 		pCurTrail = NULL;
 		hObject = NULL;
-		vForward.x = 0.0f;
-		vForward.y = 0.0f;
-		vForward.z = 0.0f;
+		vForward.Init(0.0f, 0.0f, 0.0f);
 		fMaxTrailLength = 0.0f;
 		nCycleType = 0;
 		szCycleColor[0] = '\0';
@@ -124,35 +126,41 @@ struct LIGHT_CYCLIST
 		fHeight = 0.0f;
 		fWidth = 0.0f;
 		fLength = 0.0f;
-		bFixedDims = false;
+		bIsPlayer = false;
 		nCycleDialog = 0;
-		vLastPos.x = 0.0f;
-		vLastPos.y = 0.0f;
-		vLastPos.z = 0.0f;
+		vLastPos.Init(0.0f, 0.0f, 0.0f);
 		fTrailCheckTime = 0.0f;
-		m_vTronUnknownE4.x = 0.0f;
-		m_vTronUnknownE4.y = 0.0f;
-		m_vTronUnknownE4.z = 0.0f;
+		m_vTronUnknownE4.Init(0.0f, 0.0f, 0.0f);
 		nPowerup = LC_NO_POWERUP;
 		nFlags = 0;
 		fPowerupStartTime = 0.0f;
 		fPowerupDuration = 1.0f;
 		pSpikeTrail = NULL;
 		pSpikeTrail2 = NULL;
-		vSpikeDir.x = 0.0f;
-		vSpikeDir.y = 0.0f;
-		vSpikeDir.z = 0.0f;
-		vSpikeDir2.x = 0.0f;
-		vSpikeDir2.y = 0.0f;
-		vSpikeDir2.z = 0.0f;
+		vSpikeDir.Init(0.0f, 0.0f, 0.0f);
+		vSpikeDir2.Init(0.0f, 0.0f, 0.0f);
 		vSpikePos.Init(0.0f, 0.0f, 0.0f);
 		fSpikeFullTime = 0.0f;
 		m_bTronUnknownD1 = false;
 		m_bTronUnknown130 = false;
 	}
-	~LIGHT_CYCLIST();						// RETAIL: 0x100fe3c0
 
-	// Removes and frees the trail spike's trails. RETAIL: 0x100fe4e0
+	// RETAIL: Object.lto only, out of line at 0x10029fd0 (LightCycleMissile's
+	// stand-in cyclist). Its "LIGHT_CYCLIST();" builds and destroys a
+	// temporary: it does not initialize this cyclist (see
+	// docs/RETAIL_BUGS.md). The parameters' names are ours.
+	LIGHT_CYCLIST(float fNewLength, float fNewWidth, bool bTronUnknownD1)
+	{
+		LIGHT_CYCLIST();
+		fLength = fNewLength;
+		fWidth = fNewWidth;
+		m_bTronUnknownD1 = bTronUnknownD1;
+	}
+
+	~LIGHT_CYCLIST();						// RETAIL: CShell 0x100fe3c0, Object.lto 0x100baf80
+
+	// Removes and frees the trail spike's trails. RETAIL: CShell 0x100fe4e0,
+	// Object.lto 0x100bb0a0
 	void ClearTrailSpike();
 
 	// Collection of trails (normally just 1 except in special cases)
@@ -160,7 +168,7 @@ struct LIGHT_CYCLIST
 
 	float	fStartDerezTime;				// RETAIL: +0x0c
 	bool	bUpdating;						// RETAIL: +0x10
-	bool	bDerezRequested;				// RETAIL: +0x11 (set by DerezCyclist)
+	bool	bRemove;						// RETAIL: +0x11 (set by RemoveCyclist, freed by UpdateDerez)
 	LIGHT_CYCLE_TRAIL* pCurTrail;			// RETAIL: +0x14
 	LTVector vForward;						// RETAIL: +0x18
 	LTVector vLastPos;						// RETAIL: +0x24
@@ -196,9 +204,10 @@ struct LIGHT_CYCLIST
 	float	fRightSensorDist;				// RETAIL: +0xc4
 	float	m_fTronUnknownC8;				// RETAIL: +0xc8
 	float	fLeftSensorDist;				// RETAIL: +0xcc
-	bool	bFixedDims;						// RETAIL: +0xd0 (AddCyclist's pvDims)
-	bool	m_bTronUnknownD1;				// RETAIL: +0xd1
-	LCTronUnknownPair m_TronUnknownD4;		// RETAIL: +0xd4
+	bool	bIsPlayer;						// RETAIL: +0xd0 (AddCyclist's pvDims: players')
+	bool	m_bTronUnknownD1;				// RETAIL: +0xd1 (LightCycleMissile's: hits its own trails, Object.lto 0x100bbf5c)
+	uint32	nClientID;						// RETAIL: +0xd4 (the player's client id; -1 for AI)
+	uint32	nNameId;						// RETAIL: +0xd8 (the AI's name string id)
 	int		nCycleDialog;					// RETAIL: +0xdc
 	float	fTrailCheckTime;				// RETAIL: +0xe0 (UpdateLightCycleTrail)
 	LTVector m_vTronUnknownE4;				// RETAIL: +0xe4
@@ -234,7 +243,7 @@ struct LIGHT_CYCLIST
 	bool	m_bTronUnknown130;				// RETAIL: +0x130
 };
 
-// RETAIL: 0x18 bytes, filled by CheckForCollision (0x100ff360)
+// RETAIL: 0x18 bytes, filled by CheckForCollision (CShell 0x100ff360)
 struct LightCycleCollisionInfo
 {
 	LIGHT_CYCLIST* pCyclist;	// RETAIL: +0x00 the cyclist hit (or whose trail was hit)
@@ -247,25 +256,32 @@ class CLightCycleMgr
 {
 	public:
 
+		// RETAIL: the addresses are CShell's; the Object.lto ones are in
+		// the .cpp
 		CLightCycleMgr();						// RETAIL: 0x100fe5c0
 		virtual ~CLightCycleMgr() {}			// RETAIL: 0x10010850 (inline)
 
 		virtual bool Init();					// RETAIL: 0x100fe640
 		virtual void Term();					// RETAIL: 0x100fe670
 
-		// Adds (or resets) the cyclist of the object. RETAIL: 0x100fe680
+		// Adds (or resets) the cyclist of the object; pvDims is given for
+		// players. The base does not use the last two (the server's sends
+		// them to the clients). RETAIL: 0x100fe680
 		virtual LIGHT_CYCLIST* AddCyclist(HOBJECT hObj, const char* szCycleColor, bool bUpdate,
-			LTVector* pvDims, uint32 nTronUnknown4, uint32 nTronUnknown5);
-		virtual bool DerezCyclist(HOBJECT hObj);	// RETAIL: 0x100fec30
+			const LTVector* pvDims, uint32 nNameId, bool bTronUnknown);
+		// Flags the cyclist for removal (UpdateDerez frees it; Build 69's
+		// name, which removed it at once). RETAIL: 0x100fec30
+		virtual bool RemoveCyclist(HOBJECT hObj);
 
-		// A cyclist crashed (into pOther or its trail); false if it was
-		// already derezzing. RETAIL: slot 5, pure (the client's: 0x10010fb0)
-		virtual bool CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify) = 0;
+		// Starts the derez of a cyclist that crashed (into pOther or its
+		// trail); false if it was already derezzing (Build 69's name).
+		// RETAIL: slot 5, pure
+		virtual bool DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify) = 0;
 		// Two cycles met head on. RETAIL: slot 6, 0x100991a0 (empty, folded)
 		virtual void HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther) {}
-		// Moves the cycles and their trails (the name is ours). RETAIL: slot
-		// 7, pure (the client's: 0x10011410)
-		virtual void UpdateCyclists() = 0;
+		// Moves the cycles and their trails (Build 69's name). RETAIL: slot
+		// 7, pure
+		virtual void Update() = 0;
 
 		// A shielded cyclist's hit. RETAIL: 0x10100960
 		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail);
@@ -287,7 +303,9 @@ class CLightCycleMgr
 		virtual bool SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x10100770
 		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);	// RETAIL: 0x101007a0
 		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify);	// RETAIL: 0x10100950
-		virtual void Update();					// RETAIL: 0x10101910
+		// Starts the derez of every living cyclist's trails but the current
+		// one (the name is ours). RETAIL: 0x10101910
+		virtual void DerezOldTrails();
 
 		// The cyclist's name (the name is ours). RETAIL: slot 19, 0x10010970
 		// (inline; returns a string made from a global char array,
@@ -305,7 +323,7 @@ class CLightCycleMgr
 		// Snaps the position to the bute grid. RETAIL: 0x100ffec0
 		void SnapToGrid(LTVector & vPos);
 
-		// Frees the cyclists flagged for a derez and the trails whose derez
+		// Frees the cyclists flagged for removal and the trails whose derez
 		// is over. RETAIL: 0x101005e0
 		void UpdateDerez();
 
@@ -341,17 +359,22 @@ class CLightCycleMgr
 		// RETAIL: 0x101019e0
 		int GetTrailLengthIndex();
 
-		int GetTronUnknown1338();
+		int GetTronUnknown1338();				// RETAIL: 0x10101a30 (m_nTronUnknown1338)
 
 		// Turns the cycle's forward to the axis nearest its rotation's.
 		// RETAIL: 0x10101a40
-		void UpdateCyclistForward(LIGHT_CYCLIST* pCyclist);					// RETAIL: 0x10101a30
+		void UpdateCyclistForward(LIGHT_CYCLIST* pCyclist);
 
 		void SetUpdating(bool bUpdating) { m_bUpdating = bUpdating; }
 
+		// RETAIL: public (Object.lto's LightCycleMissile::Update calls it)
+		void CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTVector& vPos);	// RETAIL: 0x100ff340
+
 	protected:
 
-		void CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTVector& vPos);	// RETAIL: 0x100ff340
+		// RETAIL: Object.lto's AILightCycle reads the cyclists and the
+		// difficulty (0x10002e48, 0x10004a17)
+		friend class AILightCycle;
 
 		// Collision handler. RETAIL: 0x100ffbe0
 		void HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo &info);
@@ -361,7 +384,7 @@ class CLightCycleMgr
 
 		// Collection of light cyclist data
 		std::vector<LIGHT_CYCLIST*> m_collCyclists;		// RETAIL: +0x04
-		std::vector<uint32>			m_collTronUnknown10;// RETAIL: +0x10 (4-byte elements)
+		std::vector<LIGHT_CYCLIST*>	m_collTronUnknown10;// RETAIL: +0x10 (4-byte elements; the type makes ~CLightCycleMgr identical)
 
 		// Are we updating or not
 		bool				m_bUpdating;				// RETAIL: +0x1c
@@ -372,6 +395,6 @@ class CLightCycleMgr
 		int					m_nTronUnknown1338;			// RETAIL: +0x1338
 };
 
-extern CLightCycleMgr* g_pLightCycleMgr;	// RETAIL: CShell 0x10236d98
+extern CLightCycleMgr* g_pLightCycleMgr;	// RETAIL: CShell 0x10236d98, Object.lto 0x1035a54c
 
 #endif // __TRON_LIGHTCYCLEMGR_H__

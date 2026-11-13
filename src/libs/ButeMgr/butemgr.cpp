@@ -273,10 +273,12 @@ CButeMgr::CButeMgr()
 	// TableOfItems
 	// TableOfTags
 
-	// m_stringHolder
-	// m_tagTab
-	// m_auxTagTab
-	// m_newTagTab
+	// RETAIL: Object 0x1006d730 zeroes the table pointers here and news
+	// them after the banks.
+	m_pStringHolder = NULL;
+	m_pTagTab = NULL;
+	m_pAuxTagTab = NULL;
+	m_pNewTagTab = NULL;
 
 	m_pCurrTabOfItems = 0;
 
@@ -306,6 +308,11 @@ CButeMgr::CButeMgr()
 	m_AVectorBank.Init( 8, 0 );
 	m_ARangeBank.Init( 8, 0 );
 	m_SymTabItemBank.Init( 64, 0 );
+
+	m_pStringHolder = new StringHolder;
+	m_pTagTab = new TableOfTags;
+	m_pAuxTagTab = new TableOfTags;
+	m_pNewTagTab = new TableOfTags;
 }
 
 
@@ -327,6 +334,32 @@ bool CButeMgr::TraverseTableOfTagsDeleteSymTab( char const* pszTagName, TableOfI
 CButeMgr::~CButeMgr()
 {
 	Term( );
+
+	// RETAIL: Object 0x1006dbb0 clears and deletes the tables Term leaves
+	// empty, in this order.
+	if( m_pTagTab )
+	{
+		m_pTagTab->clear( );
+		delete m_pTagTab;
+	}
+
+	if( m_pAuxTagTab )
+	{
+		m_pAuxTagTab->clear( );
+		delete m_pAuxTagTab;
+	}
+
+	if( m_pNewTagTab )
+	{
+		m_pNewTagTab->clear( );
+		delete m_pNewTagTab;
+	}
+
+	if( m_pStringHolder )
+	{
+		m_pStringHolder->clear( );
+		delete m_pStringHolder;
+	}
 }
 
 
@@ -363,65 +396,75 @@ void CButeMgr::Init(void (*pF)(const char* szMsg))
 void CButeMgr::Term( )
 {
 	// Traverse the items of the tags and delete them.
-	TraverseTableOfTags( m_tagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the tag table
-	{ 
-		TableOfTags::iterator iter = m_tagTab.begin( );
-		while( iter != m_tagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
-
-			iter++;
-		}
-	}
-
-	m_tagTab.clear();
-
-	TraverseTableOfTags( m_auxTagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the aux tag table
+	// RETAIL: Object 0x1006de50 tests each table pointer.
+	if( m_pTagTab )
 	{
-		TableOfTags::iterator iter = m_auxTagTab.begin( );
-		while( iter != m_auxTagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
+		TraverseTableOfTags( *m_pTagTab, TraverseTableOfTagsDeleteSymTab, this );
 
-			iter++;
+		// Remove all the tableofitems from the tag table
+		{ 
+			TableOfTags::iterator iter = m_pTagTab->begin( );
+			while( iter != m_pTagTab->end( ) )
+			{
+				// Get the tag data.
+				TableOfItems* pTableOfItems = (*iter).second;
+				if( pTableOfItems )
+				{
+					delete pTableOfItems;
+				}
+
+				iter++;
+			}
 		}
+
+		m_pTagTab->clear();
 	}
 
-	m_auxTagTab.clear();
-
-	TraverseTableOfTags( m_newTagTab, TraverseTableOfTagsDeleteSymTab, this );
-
-	// Remove all the tableofitems from the new tag table
+	if( m_pAuxTagTab )
 	{
-		TableOfTags::iterator iter = m_newTagTab.begin( );
-		while( iter != m_newTagTab.end( ) )
-		{
-			// Get the tag data.
-			TableOfItems* pTableOfItems = (*iter).second;
-			if( pTableOfItems )
-			{
-				delete pTableOfItems;
-			}
+		TraverseTableOfTags( *m_pAuxTagTab, TraverseTableOfTagsDeleteSymTab, this );
 
-			iter++;
+		// Remove all the tableofitems from the aux tag table
+		{
+			TableOfTags::iterator iter = m_pAuxTagTab->begin( );
+			while( iter != m_pAuxTagTab->end( ) )
+			{
+				// Get the tag data.
+				TableOfItems* pTableOfItems = (*iter).second;
+				if( pTableOfItems )
+				{
+					delete pTableOfItems;
+				}
+
+				iter++;
+			}
 		}
+
+		m_pAuxTagTab->clear();
 	}
 
-	m_newTagTab.clear();
+	if( m_pNewTagTab )
+	{
+		TraverseTableOfTags( *m_pNewTagTab, TraverseTableOfTagsDeleteSymTab, this );
+
+		// Remove all the tableofitems from the new tag table
+		{
+			TableOfTags::iterator iter = m_pNewTagTab->begin( );
+			while( iter != m_pNewTagTab->end( ) )
+			{
+				// Get the tag data.
+				TableOfItems* pTableOfItems = (*iter).second;
+				if( pTableOfItems )
+				{
+					delete pTableOfItems;
+				}
+
+				iter++;
+			}
+		}
+
+		m_pNewTagTab->clear();
+	}
 
 	m_RectBank.Init( 8, 0 );
 	m_PointBank.Init( 8, 0 );
@@ -430,7 +473,8 @@ void CButeMgr::Term( )
 	m_SymTabItemBank.Init( 64, 0 );
 
 
-	m_stringHolder.clear();
+	if( m_pStringHolder )
+		m_pStringHolder->clear();
 
 	delete[] m_szLineBuffer;
 	m_szLineBuffer = 0;
@@ -932,13 +976,13 @@ bool CButeMgr::Tag()
 	m_sTagName = m_szTokenString;
 	if (!m_pSaveData)
 	{
-		if( FindTableOfItems( m_tagTab, m_szTokenString ))
+		if( FindTableOfItems( *m_pTagTab, m_szTokenString ))
 		{
 			DisplayMessage("Duplicate tag encountered - %s", m_szTokenString);
 			return false;
 		}
 
-		m_pCurrTabOfItems = CreateTableOfItems( m_tagTab, m_szTokenString );
+		m_pCurrTabOfItems = CreateTableOfItems( *m_pTagTab, m_szTokenString );
 	}
 	if (!Match(TagEndTok))
 		return false;
@@ -1038,7 +1082,7 @@ bool CButeMgr::TagList()
 		
 		if (m_pSaveData) // Add new items if saving
 		{
-			TableOfItems* pTableOfItems = FindTableOfItems( m_auxTagTab, m_sTagName );
+			TableOfItems* pTableOfItems = FindTableOfItems( *m_pAuxTagTab, m_sTagName );
 			if( pTableOfItems )
 			{
 				TraverseTableOfItems( *pTableOfItems, AuxTabItemsSave, m_pSaveData );
@@ -1139,7 +1183,7 @@ bool CButeMgr::Save(const char* szNewFileName)
 	TagList();
 
 	// add new tag items
-	TraverseTableOfTags( m_newTagTab, NewTabsSave, m_pSaveData );
+	TraverseTableOfTags( *m_pNewTagTab, NewTabsSave, m_pSaveData );
 
 	m_pSaveData->clear();
 	if (m_bCrypt)
@@ -1166,7 +1210,7 @@ bool CButeMgr::Save(const char* szNewFileName)
 bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
 {
 	// Find the table of items in the auxiliary tag table.
-	TableOfItems* pTabOfItems = FindTableOfItems( m_auxTagTab, szTagName );
+	TableOfItems* pTabOfItems = FindTableOfItems( *m_pAuxTagTab, szTagName );
 
 	// Check if we found the table of items.
 	if( pTabOfItems )
@@ -1182,7 +1226,7 @@ bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
 	}
 
 	// Find the table of items in the main tag table.
-	pTabOfItems = FindTableOfItems( m_tagTab, szTagName );
+	pTabOfItems = FindTableOfItems( *m_pTagTab, szTagName );
 
 	// Check if we found the table of items.
 	if( pTabOfItems )
@@ -1198,7 +1242,7 @@ bool CButeMgr::Exist(const char* szTagName, const char* szAttName)
 	}
 
 	// Find the table of items in the new tag table.
-	pTabOfItems = FindTableOfItems( m_newTagTab, szTagName );
+	pTabOfItems = FindTableOfItems( *m_pNewTagTab, szTagName );
 
 	// Check if we found the table of items.
 	if( pTabOfItems )
@@ -1230,9 +1274,9 @@ bool CButeMgr::GetTagsTraverseFunc( char const* pszTagName, TableOfItems& theTab
 void CButeMgr::GetTags( GetTagsCallback pCallback, void* pContext )
 {
 	GetTagsData data( pCallback, pContext );
-	TraverseTableOfTags( m_tagTab, GetTagsTraverseFunc, &data );
-	TraverseTableOfTags( m_auxTagTab, GetTagsTraverseFunc, &data );
-	TraverseTableOfTags( m_newTagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( *m_pTagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( *m_pAuxTagTab, GetTagsTraverseFunc, &data );
+	TraverseTableOfTags( *m_pNewTagTab, GetTagsTraverseFunc, &data );
 }
 
 
@@ -1251,13 +1295,13 @@ void CButeMgr::GetKeys( const char* pszTagName, GetKeysCallback pCallback, void*
 
 	GetKeysData data( pCallback, pContext );
 
-	pTableOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	pTableOfItems = FindTableOfItems( *m_pTagTab, pszTagName );
 	if( pTableOfItems )
 		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
-	pTableOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+	pTableOfItems = FindTableOfItems( *m_pAuxTagTab, pszTagName );
 	if( pTableOfItems )
 		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
-	pTableOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+	pTableOfItems = FindTableOfItems( *m_pNewTagTab, pszTagName );
 	if( pTableOfItems )
 		TraverseTableOfItems( *pTableOfItems, GetKeysTraverseFunc, &data );
 }
@@ -1295,7 +1339,7 @@ CButeMgr::SymTypes CButeMgr::GetType(const char* szTagName, const char* szAttNam
 CString const& CButeMgr::AddString( char const* pszString )
 {
 	// Add the string to the string holder.
-	std::pair< StringHolder::const_iterator, bool > pr = m_stringHolder.insert( CString( pszString ) );
+	std::pair< StringHolder::const_iterator, bool > pr = m_pStringHolder->insert( CString( pszString ) );
 
 	// pr.first is a pointer to a CString.  So, dereferance and return the CString.
 	return *pr.first;
@@ -1456,21 +1500,21 @@ CButeMgr::CSymTabItem* CButeMgr::FindSymTabItem( char const* pszTagName, char co
 
 	TableOfItems* pTabOfItems;
 
-	pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( *m_pTagTab, pszTagName );
 	if( pTabOfItems )
 	{
 		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
 		if (pItem)
 			return pItem;
 	}
-	pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( *m_pAuxTagTab, pszTagName );
 	if( pTabOfItems )
 	{
 		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
 		if (pItem)
 			return pItem;
 	}
-	pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+	pTabOfItems = FindTableOfItems( *m_pNewTagTab, pszTagName );
 	if( pTabOfItems )
 	{
 		CSymTabItem* pItem = FindSymTabItem( *pTabOfItems, pszAttName );
@@ -1510,7 +1554,7 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const ch
 	CSymTabItem* pItem = NULL;
 
 	// Find table of items in main tag table.
-	TableOfItems* pTabOfItems = FindTableOfItems( m_tagTab, pszTagName );
+	TableOfItems* pTabOfItems = FindTableOfItems( *m_pTagTab, pszTagName );
 	if( pTabOfItems )
 	{
 		// Find attribute in table of items.
@@ -1520,7 +1564,7 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const ch
 		if( !pItem )
 		{
 			// Find table of items in auxiliary table.
-			pTabOfItems = FindTableOfItems( m_auxTagTab, pszTagName );
+			pTabOfItems = FindTableOfItems( *m_pAuxTagTab, pszTagName );
 
 			// Check if we found the table of items.
 			if( pTabOfItems )
@@ -1539,7 +1583,7 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const ch
 			else
 			{
 				// Create the new TableOfItems.
-				TableOfItems* pTableOfItems = CreateTableOfItems( m_auxTagTab, pszTagName );
+				TableOfItems* pTableOfItems = CreateTableOfItems( *m_pAuxTagTab, pszTagName );
 				if( !pTableOfItems )
 					return NULL;
 
@@ -1552,7 +1596,7 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const ch
 	else
 	{
 		// Find the TableOfItems in the new tag table.
-		pTabOfItems = FindTableOfItems( m_newTagTab, pszTagName );
+		pTabOfItems = FindTableOfItems( *m_pNewTagTab, pszTagName );
 
 		// Check if we found the TableOfItems.
 		if( pTabOfItems )
@@ -1570,7 +1614,7 @@ CButeMgr::CSymTabItem* CButeMgr::GetSymTabItem( const char* pszTagName, const ch
 		// We didn't find the TableOfItems, so we need to add a new one and then add a new CSymTabItem to it.
 		else
 		{
-			TableOfItems* pTableOfItems = CreateTableOfItems( m_newTagTab, pszTagName );
+			TableOfItems* pTableOfItems = CreateTableOfItems( *m_pNewTagTab, pszTagName );
 			if( !pTableOfItems )
 				return NULL;
 
@@ -2172,28 +2216,28 @@ bool CButeMgr::AddTag(const char *szTagName)
 	m_bSuccess = true;
 
 	// See if the tag exists in the main tag table.
-	pTabOfItems = FindTableOfItems( m_tagTab, szTagName );
+	pTabOfItems = FindTableOfItems( *m_pTagTab, szTagName );
 	if( pTabOfItems )
 	{
 		return true;		
 	}
 
 	// See if the tag exists in the auxiliary tag table.
-	pTabOfItems = FindTableOfItems( m_auxTagTab, szTagName );
+	pTabOfItems = FindTableOfItems( *m_pAuxTagTab, szTagName );
 	if( pTabOfItems )
 	{
 		return true;		
 	}
 
 	// See if the tag exists in the new tag table.
-	pTabOfItems = FindTableOfItems( m_newTagTab, szTagName );
+	pTabOfItems = FindTableOfItems( *m_pNewTagTab, szTagName );
 	if( pTabOfItems )
 	{
 		return true;		
 	}
 
 	// Create the tag in the new tag table.
-	pTabOfItems = CreateTableOfItems( m_newTagTab, szTagName );
+	pTabOfItems = CreateTableOfItems( *m_pNewTagTab, szTagName );
 	if( pTabOfItems )
 		return true;		
 

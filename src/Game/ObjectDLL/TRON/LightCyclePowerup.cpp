@@ -362,7 +362,7 @@ void LightCyclePowerup::ObjectTouch(HOBJECT hObj)
 	if (!pCyclist) return;
 
 	int nType = GetType();
-	if (!g_pLightCycleMgr->SetPowerup(pCyclist, nType)) return;
+	if (!g_pLightCycleMgr->SetCyclistPowerup(pCyclist, nType)) return;
 
 	char szFX[64];
 	sprintf(szFX, "%s%s%s", LCPOWERUP_SOUND_PREFIX, g_aszLCPowerupNames[m_nType], LCPOWERUP_SOUND_TOUCH);
@@ -377,7 +377,7 @@ void LightCyclePowerup::ObjectTouch(HOBJECT hObj)
 		}
 		else
 		{
-			g_pLTServer->CPrint("LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s", szCmd);
+			g_pLTServer->CPrint("LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n", szCmd);
 		}
 	}
 

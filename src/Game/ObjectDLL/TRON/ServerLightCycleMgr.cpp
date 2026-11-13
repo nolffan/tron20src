@@ -265,7 +265,7 @@ void CServerLightCycleMgr::Update()
 	if(!m_bUpdating)
 		return;
 
-	TronUnknownUpdate();
+	UpdateDerez();
 
 	std::vector<LIGHT_CYCLIST*>::iterator iter;
 	for(iter = m_collCyclists.begin(); iter != m_collCyclists.end(); iter++)
@@ -278,17 +278,17 @@ void CServerLightCycleMgr::Update()
 			RemoveCyclist(pCyclist->hObject);
 		}
 
-		if((pCyclist->dwFlags & LCF_TRONUNKNOWN_2) || (pCyclist->dwFlags & LCF_TRONUNKNOWN_20))
+		if((pCyclist->nFlags & LCF_TURBO) || (pCyclist->nFlags & LCF_TURBOCURSED))
 		{
-			if(pCyclist->fFlagsDuration + pCyclist->fFlagsTime <= g_pLTServer->GetTime())
+			if(pCyclist->fPowerupDuration + pCyclist->fPowerupStartTime <= g_pLTServer->GetTime())
 			{
-				pCyclist->dwFlags &= LCF_TIMED_MASK;
+				pCyclist->nFlags &= LCF_TIMED_MASK;
 			}
 		}
 
-		if(pCyclist->dwFlags & LCF_TRONUNKNOWN_4)
+		if(pCyclist->nFlags & LCF_TRAILSPIKE)
 		{
-			TronUnknownVirtual11(pCyclist);
+			UpdateTrailSpike(pCyclist);
 		}
 
 		if(!pCyclist->bUpdating)
@@ -298,47 +298,47 @@ void CServerLightCycleMgr::Update()
 		{
 			// The AI: follow the object and tell the clients
 			LTVector vForward = pCyclist->vForward;
-			g_pLTServer->GetObjectPos(pCyclist->hObject, &pCyclist->vPos);
+			g_pLTServer->GetObjectPos(pCyclist->hObject, &pCyclist->vLastPos);
 
 			LIGHT_CYCLE_TRAIL* pTrail = pCyclist->pCurTrail;
 			if(pTrail && (pTrail->collTrailPoints.size() > 1))
 			{
 				LIGHT_CYCLE_TRAIL_POINT &pt = pTrail->collTrailPoints[pTrail->collTrailPoints.size() - 1];
-				if(pt.vPoint.x < pCyclist->vPos.x)
+				if(pt.vPoint.x < pCyclist->vLastPos.x)
 				{
 					vForward.x = 1.0f;
 					vForward.z = 0.0f;
 				}
-				else if(pt.vPoint.x > pCyclist->vPos.x)
+				else if(pt.vPoint.x > pCyclist->vLastPos.x)
 				{
 					vForward.x = -1.0f;
 					vForward.z = 0.0f;
 				}
-				else if(pt.vPoint.z < pCyclist->vPos.z)
+				else if(pt.vPoint.z < pCyclist->vLastPos.z)
 				{
 					vForward.x = 0.0f;
 					vForward.z = 1.0f;
 				}
-				else if(pt.vPoint.z > pCyclist->vPos.z)
+				else if(pt.vPoint.z > pCyclist->vLastPos.z)
 				{
 					vForward.x = 0.0f;
 					vForward.z = -1.0f;
 				}
 			}
 
-			AddTrailPoints(pCyclist, true, vForward, true);
+			UpdateLightCycleTrail(pCyclist, true, &vForward, true);
 
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 			cMsg.Writeuint8(LCI_POSITION);
 			cMsg.WriteObject(pCyclist->hObject);
-			cMsg.Writefloat(pCyclist->vPos.x);
-			cMsg.Writefloat(pCyclist->vPos.z);
+			cMsg.Writefloat(pCyclist->vLastPos.x);
+			cMsg.Writefloat(pCyclist->vLastPos.z);
 			cMsg.Writeint8((int8)pCyclist->vForward.x);
 			cMsg.Writeint8((int8)pCyclist->vForward.z);
 			g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 		}
-		else if(pCyclist->fLastPosUpdateTime != 0.0f)
+		else if(pCyclist->fTrailCheckTime != 0.0f)
 		{
 			// A player: apply what its client told us
 			LTVector vOldForward = pCyclist->vForward;
@@ -353,26 +353,26 @@ void CServerLightCycleMgr::Update()
 				if(pUpdate->hObject != pCyclist->hObject)
 					continue;
 
-				pCyclist->vPos.y = vObjPos.y;
-				pCyclist->vPos.x = pUpdate->fX;
-				pCyclist->vPos.z = pUpdate->fZ;
+				pCyclist->vLastPos.y = vObjPos.y;
+				pCyclist->vLastPos.x = pUpdate->fX;
+				pCyclist->vLastPos.z = pUpdate->fZ;
 
 				LTVector vForward(pUpdate->fForwardX, 0.0f, pUpdate->fForwardZ);
 
 				if(pCyclist->bIsPlayer)
 				{
 					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(pCyclist->hObject);
-					g_pLTServer->MoveObject(pPlayer->m_hObject, &pCyclist->vPos);
+					g_pLTServer->MoveObject(pPlayer->m_hObject, &pCyclist->vLastPos);
 
 					LTVector vCurPos;
 					g_pLTServer->GetObjectPos(pPlayer->m_hObject, &vCurPos);
-					if(vCurPos != pCyclist->vPos)
+					if(vCurPos != pCyclist->vLastPos)
 					{
-						g_pLTServer->SetObjectPos(pPlayer->m_hObject, &pCyclist->vPos);
+						g_pLTServer->SetObjectPos(pPlayer->m_hObject, &pCyclist->vLastPos);
 					}
 				}
 
-				AddTrailPoints(pCyclist, true, vForward, true);
+				UpdateLightCycleTrail(pCyclist, true, &vForward, true);
 
 				if(vForward != vOldForward)
 				{
@@ -380,8 +380,8 @@ void CServerLightCycleMgr::Update()
 					cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 					cMsg.Writeuint8(LCI_POSITION);
 					cMsg.WriteObject(pCyclist->hObject);
-					cMsg.Writefloat(pCyclist->vPos.x);
-					cMsg.Writefloat(pCyclist->vPos.z);
+					cMsg.Writefloat(pCyclist->vLastPos.x);
+					cMsg.Writefloat(pCyclist->vLastPos.z);
 					cMsg.Writeint8((int8)pCyclist->vForward.x);
 					cMsg.Writeint8((int8)pCyclist->vForward.z);
 					g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
@@ -399,14 +399,14 @@ void CServerLightCycleMgr::Update()
 				cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 				cMsg.Writeuint8(LCI_POSITION);
 				cMsg.WriteObject(pCyclist->hObject);
-				cMsg.Writefloat(pCyclist->vPos.x);
-				cMsg.Writefloat(pCyclist->vPos.z);
+				cMsg.Writefloat(pCyclist->vLastPos.x);
+				cMsg.Writefloat(pCyclist->vLastPos.z);
 				cMsg.Writeint8((int8)pCyclist->vForward.x);
 				cMsg.Writeint8((int8)pCyclist->vForward.z);
 				g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 			}
 
-			pCyclist->fLastPosUpdateTime = 0.0f;
+			pCyclist->fTrailCheckTime = 0.0f;
 		}
 	}
 
@@ -434,7 +434,7 @@ void CServerLightCycleMgr::Update()
 		pEntry = &m_DialogQueue.top();
 		m_DialogQueue.pop();
 
-		if(!GetActiveCyclist(pEntry->pCyclist->hObject))
+		if(!GetLivingCyclist(pEntry->pCyclist->hObject))
 		{
 			bSkip = true;
 			if(pEntry->pSounds->eType == kLCDialog_AICrash)
@@ -644,15 +644,15 @@ bool CServerLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 	std::vector<LIGHT_CYCLE_TRAIL*>::iterator iter;
 	for(iter = pCyclist->collTrails.begin(); iter != pCyclist->collTrails.end(); iter++)
 	{
-		if((*iter)->fDerezTime == 0.0f)
+		if((*iter)->fDerezStartTime == 0.0f)
 		{
-			(*iter)->fDerezTime = g_pLTServer->GetTime();
+			(*iter)->fDerezStartTime = g_pLTServer->GetTime();
 		}
 	}
 
 	pCyclist->pCurTrail = NULL;
-	pCyclist->fLastPosUpdateTime = 0.0f;
-	pCyclist->vTronUnknownE4.Init();
+	pCyclist->fTrailCheckTime = 0.0f;
+	pCyclist->m_vTronUnknownE4.Init();
 
 	HOBJECT hObj = pCyclist->hObject;
 	HOBJECT hKiller = NULL;
@@ -704,7 +704,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 				pUpdate->fForwardX = (float)pMsg->Readint8();
 				pUpdate->fForwardZ = (float)pMsg->Readint8();
 				m_lstPositionUpdates.push_back(pUpdate);
-				pCyclist->fLastPosUpdateTime = g_pLTServer->GetTime();
+				pCyclist->fTrailCheckTime = g_pLTServer->GetTime();
 			}
 			return true;
 		}
@@ -720,7 +720,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 				float fTronUnknown3 = pMsg->Readfloat();
 				float fTronUnknown4 = pMsg->Readfloat();
 				uint32 nTronUnknown = pMsg->Readuint32();
-				SendCyclistTurbo(pCyclist, bTronUnknown, fTronUnknown1, fTronUnknown2, fTronUnknown3, fTronUnknown4, nTronUnknown, hSender);
+				SendCyclistMovement(pCyclist, bTronUnknown, fTronUnknown1, fTronUnknown2, fTronUnknown3, fTronUnknown4, nTronUnknown, hSender);
 			}
 			return true;
 		}
@@ -777,7 +777,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 			{
 				uint32 nTronUnknown1 = pMsg->Readuint32();
 				uint32 nTronUnknown2 = pMsg->Readuint32();
-				TronUnknown9(pCyclist, nTronUnknown1, nTronUnknown2, hSender);
+				TrimTrailExcept(pCyclist, nTronUnknown1, nTronUnknown2, hSender);
 			}
 			return true;
 		}
@@ -790,7 +790,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 				LTVector vPos;
 				pMsg->ReadType(&vPos);
 				LTVector vCopy = vPos;
-				ActivatePowerup(pCyclist, vCopy);
+				ActivatePowerup(pCyclist, &vCopy);
 			}
 			return true;
 		}
@@ -829,7 +829,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::OnCyclistTurbo
+//	ROUTINE:	CServerLightCycleMgr::CyclistMovementChanged
 //
 //	PURPOSE:	A cycle used its turbo: some dialog, and the clients
 //
@@ -837,7 +837,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::OnCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2, uint32 nTronUnknown)
+void CServerLightCycleMgr::CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool bTurned, float fAccel, float fWallAccel, uint32 nFlags)
 {
 	if(!pCyclist->bIsPlayer)
 	{
@@ -849,13 +849,13 @@ void CServerLightCycleMgr::OnCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnk
 		PlayDialog(pListener, kLCDialog_PlayerSpeedBoost);
 	}
 
-	SendCyclistTurbo(pCyclist, bTronUnknown, pCyclist->fTronUnknown6C, pCyclist->fTronUnknown74,
-		fTronUnknown1, fTronUnknown2, nTronUnknown, NULL);
+	SendCyclistMovement(pCyclist, bTurned, pCyclist->fAccelRate, pCyclist->fSpeed,
+		fAccel, fWallAccel, nFlags, NULL);
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::SendCyclistTurbo
+//	ROUTINE:	CServerLightCycleMgr::SendCyclistMovement
 //
 //	PURPOSE:	Tells the clients (but hExclude) about a turbo
 //
@@ -863,7 +863,7 @@ void CServerLightCycleMgr::OnCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnk
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::SendCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2,
+void CServerLightCycleMgr::SendCyclistMovement(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2,
 	float fTronUnknown3, float fTronUnknown4, uint32 nTronUnknown, HCLIENT hExclude)
 {
 	CAutoMessage cMsg;
@@ -914,7 +914,7 @@ LIGHT_CYCLIST* CServerLightCycleMgr::GetPlayerCyclist()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::SetPowerup
+//	ROUTINE:	CServerLightCycleMgr::SetCyclistPowerup
 //
 //	PURPOSE:	Gives a cyclist a power-up
 //
@@ -922,14 +922,14 @@ LIGHT_CYCLIST* CServerLightCycleMgr::GetPlayerCyclist()
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::SetPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
+bool CServerLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
 {
 	if(nPowerup == kLCPowerup_Random)
 	{
 		nPowerup = TronUnknownGetRandomPowerup();
 	}
 
-	if(CLightCycleMgr::SetPowerup(pCyclist, nPowerup))
+	if(CLightCycleMgr::SetCyclistPowerup(pCyclist, nPowerup))
 	{
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
@@ -953,7 +953,7 @@ bool CServerLightCycleMgr::SetPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVector& vPos)
+bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 {
 	int nPowerup = pCyclist->nPowerup;
 
@@ -971,14 +971,14 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 		}
 	}
 
-	if(!CLightCycleMgr::ActivatePowerup(pCyclist, vPos))
+	if(!CLightCycleMgr::ActivatePowerup(pCyclist, pvPos))
 		return false;
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 	cMsg.Writeuint8(LCI_ACTIVATE_POWERUP);
 	cMsg.WriteObject(pCyclist->hObject);
-	cMsg.WriteLTVector(vPos);
+	cMsg.WriteLTVector(*pvPos);
 	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 
 	switch(nPowerup)
@@ -1015,7 +1015,7 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 			if(pVictim)
 			{
 				nGrabbed = pVictim->nPowerup;
-				SetPowerup(pVictim, LC_NO_POWERUP);
+				SetCyclistPowerup(pVictim, LC_NO_POWERUP);
 				SendPowerupGrabbed(pCyclist, pVictim);
 			}
 			else
@@ -1031,14 +1031,14 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 
 			if(nGrabbed != LC_NO_POWERUP)
 			{
-				SetPowerup(pCyclist, nGrabbed);
+				SetCyclistPowerup(pCyclist, nGrabbed);
 			}
 		}
 		break;
 
 		case kLCPowerup_TrailReset:
 		{
-			TronUnknownVirtual18();
+			DerezOldTrails();
 		}
 		break;
 
@@ -1051,7 +1051,7 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 				LIGHT_CYCLIST* pOther = (*iter);
 				if(pOther->nPowerup != LC_NO_POWERUP)
 				{
-					ActivatePowerup(pOther, pOther->vPos);
+					ActivatePowerup(pOther, &pOther->vLastPos);
 				}
 			}
 		}
@@ -1066,22 +1066,22 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::TronUnknown9
+//	ROUTINE:	CServerLightCycleMgr::TrimTrailExcept
 //
 //	RETAIL: 0x10051e50
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::TronUnknown9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown1, uint32 nTronUnknown2, HCLIENT hExclude)
+bool CServerLightCycleMgr::TrimTrailExcept(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, HCLIENT hExclude)
 {
-	if(CLightCycleMgr::TronUnknownVirtual9(pCyclist, nTronUnknown1, nTronUnknown2, true))
+	if(CLightCycleMgr::TrimTrail(pCyclist, nTrail, nPoint, true))
 	{
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 		cMsg.Writeuint8(LCI_TRIM_TRAIL);
 		cMsg.WriteObject(pCyclist->hObject);
-		cMsg.Writeuint32(nTronUnknown1);
-		cMsg.Writeuint32(nTronUnknown2);
+		cMsg.Writeuint32(nTrail);
+		cMsg.Writeuint32(nPoint);
 
 		CLTMsgRef_Read cRead = cMsg.Read();
 		HCLIENT hNext = g_pLTServer->GetNextClient(NULL);
@@ -1102,28 +1102,28 @@ bool CServerLightCycleMgr::TronUnknown9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnk
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::TronUnknownVirtual9
+//	ROUTINE:	CServerLightCycleMgr::TrimTrail
 //
 //	RETAIL: 0x10051fc0
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::TronUnknownVirtual9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown1, uint32 nTronUnknown2, bool bTronUnknown)
+bool CServerLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify)
 {
-	return TronUnknown9(pCyclist, nTronUnknown1, nTronUnknown2, NULL);
+	return TrimTrailExcept(pCyclist, nTrail, nPoint, NULL);
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::TronUnknownVirtual17
+//	ROUTINE:	CServerLightCycleMgr::DeactivateShield
 //
 //	RETAIL: 0x10051fe0
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::TronUnknownVirtual17(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown)
+void CServerLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify)
 {
-	CLightCycleMgr::TronUnknownVirtual17(pCyclist, nTronUnknown);
+	CLightCycleMgr::DeactivateShield(pCyclist, bNotify);
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
@@ -1134,7 +1134,7 @@ void CServerLightCycleMgr::TronUnknownVirtual17(LIGHT_CYCLIST* pCyclist, uint32 
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::HandleCollision
+//	ROUTINE:	CServerLightCycleMgr::HandleShieldCollision
 //
 //	PURPOSE:	A cycle ran into a trail: tell the clients
 //
@@ -1142,7 +1142,7 @@ void CServerLightCycleMgr::TronUnknownVirtual17(LIGHT_CYCLIST* pCyclist, uint32 
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bTronUnknown1, bool bTronUnknown2)
+bool CServerLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail)
 {
 	if(pInfo->nTrail == -1)
 		return true;
@@ -1151,16 +1151,16 @@ bool CServerLightCycleMgr::HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCo
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 	cMsg.Writeuint8(LCI_COLLISION);
 	cMsg.WriteObject(pCyclist->hObject);
-	cMsg.Writeuint32(pInfo->nPoint);
+	cMsg.Writeuint32(pInfo->nSegment);
 	cMsg.Writeuint32(pInfo->nTrail);
 	cMsg.WriteObject(pInfo->pCyclist->hObject);
 	cMsg.Writefloat(pInfo->vCollisionPoint.x);
 	cMsg.Writefloat(pInfo->vCollisionPoint.z);
-	cMsg.Writebool(bTronUnknown1);
-	cMsg.Writebool(bTronUnknown2);
+	cMsg.Writebool(bNotify);
+	cMsg.Writebool(bCurrentTrail);
 	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 
-	return CLightCycleMgr::HandleCollision(pCyclist, pInfo, bTronUnknown1, bTronUnknown2);
+	return CLightCycleMgr::HandleShieldCollision(pCyclist, pInfo, bNotify, bCurrentTrail);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1193,7 +1193,7 @@ LIGHT_CYCLIST* CServerLightCycleMgr::FindNearestCyclist(LIGHT_CYCLIST* pCyclist,
 		LTVector vPos;
 		g_pLTServer->GetObjectPos((*iter)->hObject, &vPos);
 
-		float fDistSqr = vPos.DistSqr(pCyclist->vPos);
+		float fDistSqr = vPos.DistSqr(pCyclist->vLastPos);
 		if((fDistSqr < fNearestDistSqr) && ((*iter)->fStartDerezTime <= 0.0f))
 		{
 			fNearestDistSqr = fDistSqr;
@@ -1299,7 +1299,7 @@ LightCyclePowerup* CServerLightCycleMgr::FindNearestPowerup(HOBJECT hObj, bool b
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::TronUnknownVirtual18
+//	ROUTINE:	CServerLightCycleMgr::DerezOldTrails
 //
 //	PURPOSE:	Makes every live cycle's trail end at its last point, then
 //				the base's work, and tells the clients
@@ -1308,7 +1308,7 @@ LightCyclePowerup* CServerLightCycleMgr::FindNearestPowerup(HOBJECT hObj, bool b
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::TronUnknownVirtual18()
+void CServerLightCycleMgr::DerezOldTrails()
 {
 	std::vector<LIGHT_CYCLIST*>::iterator iter;
 	for(iter = m_collCyclists.begin(); iter != m_collCyclists.end(); iter++)
@@ -1325,11 +1325,11 @@ void CServerLightCycleMgr::TronUnknownVirtual18()
 		info.pCyclist = pCyclist;
 		info.nTrail = 0;
 		info.vCollisionPoint = pTrail->collTrailPoints[pTrail->collTrailPoints.size() - 1].vPoint;
-		info.nPoint = pTrail->collTrailPoints.size() - 2;
-		HandleCollision(pCyclist, &info, true, true);
+		info.nSegment = pTrail->collTrailPoints.size() - 2;
+		HandleShieldCollision(pCyclist, &info, true, true);
 	}
 
-	CLightCycleMgr::TronUnknownVirtual18();
+	CLightCycleMgr::DerezOldTrails();
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
@@ -1482,10 +1482,10 @@ void CServerLightCycleMgr::WriteCyclist(LIGHT_CYCLIST* pCyclist, ILTMessage_Writ
 	pMsg->Writeuint8(pCyclist->nRed);
 	pMsg->Writeuint8(pCyclist->nGreen);
 	pMsg->Writeuint8(pCyclist->nBlue);
-	pMsg->Writefloat(pCyclist->fTronUnknown6C);
+	pMsg->Writefloat(pCyclist->fAccelRate);
+	pMsg->Writefloat(pCyclist->fBaseSpeed);
 	pMsg->Writefloat(pCyclist->fSpeed);
-	pMsg->Writefloat(pCyclist->fTronUnknown74);
-	pMsg->Writefloat(pCyclist->fTronUnknown78);
+	pMsg->Writefloat(pCyclist->fMaxSpeed);
 	pMsg->Writefloat(pCyclist->fTurboAccelRate);
 	pMsg->Writefloat(pCyclist->fBrakeDecelRate);
 	pMsg->Writefloat(pCyclist->fMaxManualSpeedAdd);
@@ -1497,25 +1497,25 @@ void CServerLightCycleMgr::WriteCyclist(LIGHT_CYCLIST* pCyclist, ILTMessage_Writ
 	pMsg->Writefloat(pCyclist->fMaxWallAccelRate);
 	pMsg->Writefloat(pCyclist->fTurnSpeedLossPercent);
 	pMsg->Writeuint32(pCyclist->nMaxWallDist);
-	pMsg->Writefloat(pCyclist->fHalfWidth);
-	pMsg->Writefloat(pCyclist->fHalfLength);
-	pMsg->Writefloat(pCyclist->fHalfHeight);
+	pMsg->Writefloat(pCyclist->fHeight);
+	pMsg->Writefloat(pCyclist->fWidth);
+	pMsg->Writefloat(pCyclist->fLength);
 	pMsg->Writebool(pCyclist->bIsPlayer);
 	pMsg->Writeuint32(pCyclist->nCycleDialog);
 	pMsg->Writeuint8((uint8)pCyclist->nPowerup);
-	pMsg->Writeuint32(pCyclist->dwFlags);
-	pMsg->Writefloat(pCyclist->fFlagsTime);
-	pMsg->Writefloat(pCyclist->fFlagsDuration);
+	pMsg->Writeuint32(pCyclist->nFlags);
+	pMsg->Writefloat(pCyclist->fPowerupStartTime);
+	pMsg->Writefloat(pCyclist->fPowerupDuration);
 	pMsg->Writeuint32(pCyclist->nClientID);
-	pMsg->Writebool(pCyclist->bTronUnknownAC);
+	pMsg->Writebool(pCyclist->m_bTronUnknownAC);
 
-	if(pCyclist->pTronUnknownTrail100 && pCyclist->pTronUnknownTrail104)
+	if(pCyclist->pSpikeTrail && pCyclist->pSpikeTrail2)
 	{
 		pMsg->Writebool(true);
-		pMsg->WriteType(pCyclist->vTronUnknown108);
-		pMsg->WriteType(pCyclist->vTronUnknown114);
-		pMsg->WriteType(pCyclist->ptTronUnknown120);
-		pMsg->Writefloat(pCyclist->fTronUnknown12C);
+		pMsg->WriteType(pCyclist->vSpikeDir);
+		pMsg->WriteType(pCyclist->vSpikeDir2);
+		pMsg->WriteType(pCyclist->vSpikePos);
+		pMsg->Writefloat(pCyclist->fSpikeFullTime);
 	}
 	else
 	{
@@ -1530,11 +1530,11 @@ void CServerLightCycleMgr::WriteCyclist(LIGHT_CYCLIST* pCyclist, ILTMessage_Writ
 		{
 			pMsg->Writeuint8(0);
 		}
-		else if(pTrail == pCyclist->pTronUnknownTrail100)
+		else if(pTrail == pCyclist->pSpikeTrail)
 		{
 			pMsg->Writeuint8(1);
 		}
-		else if(pTrail == pCyclist->pTronUnknownTrail104)
+		else if(pTrail == pCyclist->pSpikeTrail2)
 		{
 			pMsg->Writeuint8(2);
 		}
@@ -1557,8 +1557,8 @@ void CServerLightCycleMgr::WriteCyclist(LIGHT_CYCLIST* pCyclist, ILTMessage_Writ
 
 void CServerLightCycleMgr::WriteTrail(LIGHT_CYCLE_TRAIL* pTrail, ILTMessage_Write* pMsg)
 {
-	pMsg->Writebool(pTrail->bTronUnknownC);
-	pMsg->Writefloat(pTrail->fDerezTime);
+	pMsg->Writebool(pTrail->m_bTronUnknownC);
+	pMsg->Writefloat(pTrail->fDerezStartTime);
 	pMsg->Writeuint32(pTrail->collTrailPoints.size());
 
 	for(uint32 i = 0; i < pTrail->collTrailPoints.size(); i++)
@@ -1591,7 +1591,7 @@ LCPositionUpdate* CServerLightCycleMgr::NewPositionUpdate()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerLightCycleMgr::HandleHeadOnCollision
+//	ROUTINE:	CServerLightCycleMgr::HeadOnCollision
 //
 //	PURPOSE:	Two cycles ran into each other: both derez
 //
@@ -1599,7 +1599,7 @@ LCPositionUpdate* CServerLightCycleMgr::NewPositionUpdate()
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::HandleHeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther)
+void CServerLightCycleMgr::HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther)
 {
 	DerezCyclist(pCyclist, pOther, false, false);
 	DerezCyclist(pOther, pCyclist, false, false);
@@ -1613,4 +1613,18 @@ void CServerLightCycleMgr::HandleHeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_
 		// (0x1035a574) here: 0x10054b50(pPlayer, pOtherPlayer, true). That
 		// class is not written yet.
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TronUnknownGetRandomPowerup
+//
+//	PURPOSE:	PORT: retail's 0x1013c350 (it returns 0) is in a TU not
+//				identified yet
+//
+// ----------------------------------------------------------------------- //
+
+int TronUnknownGetRandomPowerup()
+{
+	return 0;
 }

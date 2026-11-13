@@ -197,7 +197,7 @@ void CClientLightCycleMgr::Term()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CClientLightCycleMgr::CyclistCrash
+//	ROUTINE:	CClientLightCycleMgr::DerezCyclist
 //
 //	PURPOSE:	Derezzes the crashed cyclist. RETAIL: 0x10010fb0. PORT: left
 //				out are the light cycle roster's update (0x1002ee50, on
@@ -210,7 +210,7 @@ void CClientLightCycleMgr::Term()
 //
 // ----------------------------------------------------------------------- //
 
-bool CClientLightCycleMgr::CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify)
+bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify)
 {
 	if (pCyclist->fStartDerezTime > 0.0f)
 	{
@@ -288,7 +288,7 @@ bool CClientLightCycleMgr::CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CClientLightCycleMgr::UpdateCyclists
+//	ROUTINE:	CClientLightCycleMgr::Update
 //
 //	PURPOSE:	Moves the cycles and their trails; the local cycle sends
 //				its position. RETAIL: 0x10011410. PORT: left out are the
@@ -299,7 +299,7 @@ bool CClientLightCycleMgr::CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 //
 // ----------------------------------------------------------------------- //
 
-void CClientLightCycleMgr::UpdateCyclists()
+void CClientLightCycleMgr::Update()
 {
 	if (!m_bUpdating)
 	{
@@ -566,11 +566,11 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 	}
 
 	// RETAIL: +0xd0 is set for the players' cycles
-	if (pCyclist->bFixedDims)
+	if (pCyclist->bIsPlayer)
 	{
 		if (IsMultiplayerGame())
 		{
-			const char* szName = g_pInterfaceMgr->GetClientInfoMgr()->GetPlayerName(pCyclist->m_TronUnknownD4.m_nA);
+			const char* szName = g_pInterfaceMgr->GetClientInfoMgr()->GetPlayerName(pCyclist->nClientID);
 			if (!szName)
 			{
 				return std::string("");
@@ -595,7 +595,7 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 	}
 
 	char szName[80] = "";
-	FormatString(pCyclist->m_TronUnknownD4.m_nB, szName, sizeof(szName));
+	FormatString(pCyclist->nNameId, szName, sizeof(szName));
 	return std::string(szName);
 }
 

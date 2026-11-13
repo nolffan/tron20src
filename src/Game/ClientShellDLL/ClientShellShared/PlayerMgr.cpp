@@ -927,8 +927,8 @@ void CPlayerMgr::Update()
 			}
 			break;
 
-			// RETAIL: Tron's screen ids (0x23, 0x25) and two-argument
-			// SwitchToScreen (retail 0x100cc6a0) are not yet in our tree
+			// RETAIL: Tron's two-argument SwitchToScreen (retail 0x100cc6a0)
+			// is not yet in our tree
 			case eGameTypeSingleLightCycleCircuit:
 			{
 				g_pInterfaceMgr->ChangeState(GS_SCREEN);
@@ -937,7 +937,7 @@ void CPlayerMgr::Update()
 				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
 				pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
 				pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
-				g_pInterfaceMgr->SwitchToScreen((eScreenID)0x23);
+				g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LIGHTCYCLE_CIRCUIT);
 			}
 			break;
 
@@ -949,7 +949,7 @@ void CPlayerMgr::Update()
 				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
 				pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
 				pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
-				g_pInterfaceMgr->SwitchToScreen((eScreenID)0x25);
+				g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LIGHTCYCLE_CUSTOMMAP);
 			}
 			break;
 		}

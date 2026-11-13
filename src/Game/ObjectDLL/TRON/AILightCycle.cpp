@@ -103,9 +103,9 @@ static float GetTimeToPoint(LIGHT_CYCLIST* pCyclist, const LTVector & vPoint)
 		g_pLTServer->GetObjectPos(pCyclist->hObject, &vPos);
 
 		LTVector vDiff = vPoint - vPos;
-		if (pCyclist->fTronUnknown74 != 0.0f)
+		if (pCyclist->fSpeed != 0.0f)
 		{
-			return vDiff.Mag() / pCyclist->fTronUnknown74;
+			return vDiff.Mag() / pCyclist->fSpeed;
 		}
 	}
 
@@ -550,7 +550,7 @@ void AILightCycle::Start()
 	m_pCyclist = g_pLightCycleMgr->AddCyclist(m_hObject, m_szCycleColor, false, LTNULL, m_nNameId, bTronUnknown);
 	m_bWaitingForClient = true;
 	m_bFirstUpdate = false;
-	m_fCycleLength = m_pCyclist->fHalfHeight * 2.0f;
+	m_fCycleLength = m_pCyclist->fLength * 2.0f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -679,7 +679,7 @@ int AILightCycle::Probe(int nDir, AILCProbeResult* pResult, float fDist)
 				AILCProbeResult result;
 				result.info.pCyclist = pCyclist;
 				result.info.nTrail = nPoint;
-				result.info.nPoint = j;
+				result.info.nSegment = j;
 				result.info.vCollisionPoint = vHit;
 				result.fDist = fHitDist;
 
@@ -702,7 +702,7 @@ int AILightCycle::Probe(int nDir, AILCProbeResult* pResult, float fDist)
 	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vNormal))
 	{
 		pResult->info.vCollisionPoint = vHit;
-		pResult->info.nPoint = 0;
+		pResult->info.nSegment = 0;
 		pResult->info.pCyclist = LTNULL;
 		pResult->info.nTrail = 0;
 		pResult->fDist = fHitDist;
@@ -761,7 +761,7 @@ int AILightCycle::ProbeAll(int nDir, AILCProbeResultList* pResults, float fDist)
 				AILCProbeResult result;
 				result.info.pCyclist = pCyclist;
 				result.info.nTrail = 0;
-				result.info.nPoint = j;
+				result.info.nSegment = j;
 				result.info.vCollisionPoint = vHit;
 				result.fDist = fHitDist;
 				pResults->push_back(result);
@@ -776,7 +776,7 @@ int AILightCycle::ProbeAll(int nDir, AILCProbeResultList* pResults, float fDist)
 		AILCProbeResult result;
 		result.info.pCyclist = LTNULL;
 		result.info.nTrail = 0;
-		result.info.nPoint = 0;
+		result.info.nSegment = 0;
 		result.info.vCollisionPoint = vHit;
 		result.fDist = fHitDist;
 		pResults->push_back(result);
@@ -1121,8 +1121,7 @@ void AILightCycle::UpdateGoForward()
 {
 	g_pLTServer->SetObjectRotation(m_hObject, &s_arDirections[m_nDirection]);
 
-	// PORT: retail's slot 12 takes the cycle's object (0x100bcb6d)
-	g_pLightCycleMgr->TronUnknownVirtual12((LIGHT_CYCLIST*)(HOBJECT)m_hObject, m_dwMoveFlags | AILC_MOVE_GO);
+	g_pLightCycleMgr->UpdateCyclistMovement(m_hObject, m_dwMoveFlags | AILC_MOVE_GO);
 
 	m_bMoved = true;
 	SetNextUpdate(m_fUpdateDelta);
@@ -1166,7 +1165,8 @@ void AILightCycle::UsePowerup()
 {
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
-	g_pServerLightCycleMgr->ActivatePowerup(m_pCyclist, LTVector(vPos));
+	LTVector vActivatePos = vPos;
+	g_pServerLightCycleMgr->ActivatePowerup(m_pCyclist, &vActivatePos);
 
 	m_TronUnknown108.fDuration = 0.0f;
 	m_TronUnknown108.fTime = 0.0f;
@@ -1393,7 +1393,7 @@ int AILightCycle::GetPowerup()
 
 bool AILightCycle::HasFlag(uint32 nFlag)
 {
-	return (m_pCyclist->dwFlags & nFlag) != 0;
+	return (m_pCyclist->nFlags & nFlag) != 0;
 }
 
 // ----------------------------------------------------------------------- //

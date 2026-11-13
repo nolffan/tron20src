@@ -44,17 +44,10 @@ typedef std::vector<AILCProbeResult>	AILCProbeResultList;
 #define AILC_HIT_VOLUME			0x10
 #define AILC_HIT_OUTOFBOUNDS	0x20
 
-// RETAIL: the movement flags the AI gives the light cycle manager's
-// movement update (slot 12, m_dwMoveFlags); as the client's LCMF_ flags
-// (Shared/TRON/LightCycleMgr.h). 1 is set by every AI update (0x100046ce);
-// the names are ours.
+// RETAIL: the movement flag every AI update gives the light cycle
+// manager's UpdateCyclistMovement besides the LCMF_ ones (0x100046ce); the
+// name is ours.
 #define AILC_MOVE_GO			0x00000001
-#define AILC_MOVE_TURNLEFT		0x00000010
-#define AILC_MOVE_TURNRIGHT		0x00000100
-#define AILC_MOVE_ACCELERATE	0x00001000
-#define AILC_MOVE_BRAKE			0x00010000
-#define AILC_MOVE_SPEEDZONE		0x00100000
-#define AILC_MOVE_SLOWZONE		0x01000000
 
 // RETAIL: the turns of GetTurnPoint (0x10003790); the names are ours
 enum AILCTurn
