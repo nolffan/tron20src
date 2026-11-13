@@ -97,6 +97,9 @@ LINK32=link.exe
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
 InputPath=\proj\TRON\source\Game\Built\Debug\ClientShellDll\TRON\CShell.dll
+# End Source File
+# Begin Source File
+
 SOURCE="$(InputPath)"
 
 "$(GAME_REZ_DIR)\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -137,6 +140,9 @@ LINK32=link.exe
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Final\ClientShellDll\TRON\CShell.dll
 InputPath=\proj\TRON\source\Game\Built\Final\ClientShellDll\TRON\CShell.dll
+# End Source File
+# Begin Source File
+
 SOURCE="$(InputPath)"
 
 "$(GAME_REZ_DIR)\cshell.dll" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -167,6 +173,9 @@ SOURCE=.\ArcCtrl.cpp
 # Begin Source File
 
 SOURCE=.\ClientLightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\BaseScreenJoin.cpp
 # End Source File
 # Begin Source File
@@ -367,6 +376,9 @@ SOURCE=.\LCHUDHelper.cpp
 
 SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
 # SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightLine.cpp
 # End Source File
 # Begin Source File

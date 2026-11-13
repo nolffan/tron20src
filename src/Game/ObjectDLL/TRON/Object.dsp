@@ -97,6 +97,9 @@ LINK32=link.exe
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Debug\ObjectDLL\TRON\Object.lto
 InputPath=\proj\TRON\source\Game\Built\Debug\ObjectDLL\TRON\Object.lto
+# End Source File
+# Begin Source File
+
 SOURCE="$(InputPath)"
 
 "$(GAME_REZ_DIR)\object.lto" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -137,6 +140,9 @@ LINK32=link.exe
 # Begin Custom Build
 TargetPath=\proj\TRON\source\Game\Built\Final\ObjectDLL\TRON\Object.lto
 InputPath=\proj\TRON\source\Game\Built\Final\ObjectDLL\TRON\Object.lto
+# End Source File
+# Begin Source File
+
 SOURCE="$(InputPath)"
 
 "$(GAME_REZ_DIR)\object.lto" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
