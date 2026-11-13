@@ -73,11 +73,7 @@ SOURCE=.\src\cuimessagequeue.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\cuibitmapfont.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\cuivectorfont.cpp
+SOURCE=.\src\cuiwidebitmapfont.cpp
 # End Source File
 # Begin Source File
 

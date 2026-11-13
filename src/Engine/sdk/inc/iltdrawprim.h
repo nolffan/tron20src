@@ -629,10 +629,7 @@ class ILTDrawPrim : public IBase
     // reverse declaration order: declared here, between LT_POLYGT4's and
     // LT_POLYFT4's, it takes +0x60 and LT_POLYFT4's +0x5c, as retail's
     // calls have them: CShell.dll 0x1002948a, 0x100220db)
-    // It is Build 69's "special version added by adam s. for optimized wide
-    // font rendering": an array of pointers to the quads (RETAIL: 0x41f540).
-		virtual LTRESULT DrawPrim (LT_POLYGT4 **ppPrim, 
-                                   const uint32 nCount = 1) = 0;
+    virtual LTRESULT DrawPrim(LT_POLYGT4 **ppPrim, const uint32 nCount = 1) = 0; // Build 69's wide-font version (RETAIL: 0x41f540)
         virtual LTRESULT DrawPrim (LT_POLYFT4 *pPrim, 
                                    const uint32 nCount = 1) = 0;
         virtual LTRESULT DrawPrim (LT_POLYG4 *pPrim, 
@@ -809,11 +806,7 @@ class ILTDrawPrim : public IBase
 
     // TRON: an overload of Tron's that NOLF2's interface does not have: its
     // slot is among the SetUVWH overloads, which VC6 lays out together
-    // It is Build 69's SetUVWH in texels of a texture (RETAIL: 0x41e540: the
-    // texture's dimensions from ILTTexInterface::GetTextureDims).
-		virtual void SetUVWH (LT_POLYGT4 *pPrim, HTEXTURE pTex,
-                             float u, float v,
-                             float w, float h) = 0;
+    virtual void SetUVWH(LT_POLYGT4 *pPrim, HTEXTURE pTex, float u, float v, float w, float h) = 0; // Build 69's, in texels (RETAIL: 0x41e540)
 
         virtual void SetUVWH (LT_POLYFT4 *pPrim,
                              float u, float v,

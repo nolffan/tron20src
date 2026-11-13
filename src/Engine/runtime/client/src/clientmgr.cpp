@@ -516,10 +516,11 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
             }
 
             // Connect to the given address.
-            // RETAIL: a new socket unless the request brings one (Lithtech.exe 0x40f68c)
-            // (through a local, which retail keeps on the stack)
-            bool bNewSocket = (pRequest->m_hSocket == (uint32)-1);
-            dResult = pDriver->ConnectTCP(bNewSocket, pRequest->m_TCPAddress);
+            // TRON: NOLF2's ConnectTCP(address) (RETAIL: Lithtech.exe 0x40d53e,
+            // driver slot 0x58): Tron's StartGameRequest brings no socket.
+            // PORT: Contract J.A.C.K.'s driver takes whether to open a new
+            // socket first, which here is always so.
+            dResult = pDriver->ConnectTCP(true, pRequest->m_TCPAddress);
             if (dResult != LT_OK)
                 return dResult;
 

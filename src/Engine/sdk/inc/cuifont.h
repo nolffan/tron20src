@@ -104,7 +104,7 @@ class CUIFont
 		virtual bool			TronUnknownVirtual12() = 0;
 		virtual void*			TronUnknownVirtual13() = 0;
 		virtual uint32			TronUnknownVirtual14(const std::wstring& sText) = 0;
-		virtual void*			TronUnknownVirtual15(uint16 nChar) = 0;
+		virtual bool			TronUnknownVirtual15(uint16 nChar) = 0;	// RETAIL: 0x567f80, whether the font has the character
 
 	protected:
 

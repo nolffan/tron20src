@@ -105,11 +105,7 @@ Used for: Models and Animation.
 */
     virtual LTRESULT GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket);
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    // (the name is ours, from its error string "ILTModel::
-    // GetSocketParentNode"; RETAIL: Lithtech.exe 0x4aaf10, CLTModelClient
-    // vtable slot 6): the node a socket is attached to, INVALID_MODEL_NODE
-    // and LT_NOTFOUND if the model has no such socket.
+    // TRON: Tron's, not NOLF2's (our name, from its error string; RETAIL: Lithtech.exe 0x4aaf10, slot 6): the node a socket is on
     virtual LTRESULT GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode);
 
 /*! 
@@ -141,9 +137,7 @@ Used for: Models and Animation.
                                         LTransform &transform,
                                         bool bWorldSpace);
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    // ("ILTModel::GetNumSockets"; RETAIL: Lithtech.exe 0x4aada0, slot 8):
-    // the number of sockets of the object's model (LT_ERROR without one).
+    // TRON: Tron's, not NOLF2's ("ILTModel::GetNumSockets"; RETAIL: Lithtech.exe 0x4aada0, slot 8): LT_ERROR without a model
     virtual LTRESULT GetNumSockets(HOBJECT hObj, uint32 &nSockets);
 
 /*!

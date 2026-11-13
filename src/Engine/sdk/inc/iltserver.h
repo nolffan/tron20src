@@ -1910,11 +1910,7 @@ Used for: Object.
 */
     virtual LTRESULT SetNetFlags(HOBJECT hObj, uint32 flags)=0;
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have:
-    // Contract J.A.C.K.'s SetObjectUnguaranteedData (cjacksrc), after
-    // SetNetFlags as there. RETAIL: Lithtech.exe 0x475020 (the local
-    // CLTServer's vtable 0x58cc00, slot 75), "CLTServer::
-    // SetObjectUnguaranteedData".
+    // TRON: CJ's SetObjectUnguaranteedData (RETAIL: Lithtech.exe 0x475020, the local CLTServer's slot 75)
     virtual LTRESULT SetObjectUnguaranteedData(HOBJECT hObj, uint32 nData) = 0;
 
     // TRON: NOLF2's virtuals that Tron's engine does not have (past the end of

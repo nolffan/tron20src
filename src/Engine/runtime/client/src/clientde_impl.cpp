@@ -2814,9 +2814,9 @@ bool ci_SetupVolumeEffect(HLOCALOBJ hObj, VolumeEffectInfo& info)
 }
 
 
-bool ci_GetParticleBlockersInAABB(const LTVector& pos, const LTVector& dims, uint32* pIndices, uint32& nNumIndices)
+bool ci_GetParticleBlockersInAABB(const LTVector& pos, const LTVector& dims, std::vector<uint32>& indices)
 {
-	return world_particle_blocker_data->GetBlockersInAABB( pos, dims, pIndices, nNumIndices );
+	return world_particle_blocker_data->GetBlockersInAABB( pos, dims, indices );
 }
 
 
