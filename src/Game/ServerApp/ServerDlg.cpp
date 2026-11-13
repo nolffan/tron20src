@@ -675,9 +675,10 @@ BOOL CServerDlg::OnInitDialog()
 	m_Players.GetWindowRect( &rect );
 	int nWidth = rect.Width() - 22;
 
-	m_Players.SetColumnWidth( ePlayerColumnsName,	(int)(nWidth * 0.35));
+	// RETAIL: 0x40bb81, Tron's column widths
+	m_Players.SetColumnWidth( ePlayerColumnsName,	(int)(nWidth * 0.39));
 	m_Players.SetColumnWidth( ePlayerColumnsPing,	(int)(nWidth * 0.11));
-	m_Players.SetColumnWidth( ePlayerColumnsKills,	(int)(nWidth * 0.11));
+	m_Players.SetColumnWidth( ePlayerColumnsKills,	(int)(nWidth * 0.18));
 	m_Players.SetColumnWidth( ePlayerColumnsScore,	(int)(nWidth * 0.13));
 	m_Players.SetColumnWidth( ePlayerColumnsTime,	(int)(nWidth * 0.18));
 
@@ -765,9 +766,21 @@ void CServerDlg::UpdateUI()
 		StopServer( );
 	}
 
-	// Check if we're in the middle of changing levels.
+	// Check if we're in the middle of changing levels. RETAIL: 0x40bec3,
+	// Tron's server disables the level controls until the level is loaded
 	if( m_bChangingLevels_Shell )
+	{
+		CWnd* pWnd = GetDlgItem( IDC_COMMANDS_SELLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
+		pWnd = GetDlgItem( IDC_COMMANDS_NEXTLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
+		pWnd = GetDlgItem( IDC_LEVELS );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
 		return;
+	}
 
 	// Block the shell thread while we make some copies of its data.
 	EnterCriticalSection( &m_CS );
@@ -783,6 +796,20 @@ void CServerDlg::UpdateUI()
 
 	// Unblock the shell thread.
 	LeaveCriticalSection( &m_CS );
+
+	// RETAIL: 0x40bf94, and enables them again once it is
+	if( bLevelChanged )
+	{
+		CWnd* pWnd = GetDlgItem( IDC_COMMANDS_SELLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+		pWnd = GetDlgItem( IDC_COMMANDS_NEXTLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+		pWnd = GetDlgItem( IDC_LEVELS );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+	}
 
 	// Update the server time.
 	serverRunTime = CTime::GetCurrentTime( ) - m_serverStartTime;
@@ -1045,8 +1072,16 @@ void CServerDlg::OnShellInit( ILTMessage_Read& msg )
 	{
 		msg.ReadString( szMission, ARRAY_LEN( szMission ));
 
+		// RETAIL: 0x40ca68, Tron's list shows the world's name without its
+		// directory
+		char const* pszWorld = strrchr( szMission, '\\' );
+		if( !pszWorld )
+			pszWorld = szMission;
+		else
+			pszWorld++;
+
 		// Add the mission to the list.
-		m_Levels.InsertItem( m_Levels.GetItemCount( ), szMission );
+		m_Levels.InsertItem( m_Levels.GetItemCount( ), pszWorld );
 	}
 
 	// Make sure there's at least 1 level specified.
