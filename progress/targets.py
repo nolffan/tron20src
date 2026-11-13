@@ -112,13 +112,18 @@ TARGETS = [
          # every redirected call site's import, from the unprotected
          # developer build of 2003-08-05 (tools/demoimports.py, profile
          # tron2): scored as if put back on its IAT slot
-         iat_calls="progress/engine/Lithtech-iat-calls.csv"),
-         # D3DX, statically linked from a DirectX 9 SDK's d3dx9.lib (the
-         # Rich header's 110 C++ and 3 C objects of cl 13.00.9178, 6 of
-         # masm 6.14.8444, and 9 C objects of cl 13.10 build 2067; the
-         # engine imports d3d9.dll), is somewhere inside `app` until that
-         # SDK is in toolchains/ and libscan.py can place it: then its
-         # block becomes `middleware`, with third_party=["d3dx9.lib"].
+         iat_calls="progress/engine/Lithtech-iat-calls.csv",
+         # D3DX, statically linked from the DirectX 9.0 SDK's d3dx9.lib
+         # (toolchains/dxsdk-9.0; the Rich header's 110 C++ and 3 C objects
+         # of cl 13.00.9178, 6 of masm 6.14.8444, and 9 C objects of cl
+         # 13.10 build 2067; the engine imports d3d9.dll). libscan.py
+         # (on demoimports.py's readable image) places it in two blocks:
+         # its math, d3dxmath.obj's WithinEpsilon to amdmath.obj's last
+         # thunk (279 functions at one address), and its texture code,
+         # d3dx9tex.obj's D3DXLoadSurfaceFromMemory to dxtn.obj's
+         # D3DXEncodeDXT5 (149; its first pages are the encrypted ones).
+         middleware=[(0x004b59b0, 0x004c8060), (0x00574678, 0x00581b9b)],
+         third_party=["d3dx9.lib"]),
     dict(label="server.dll", what="the engine's server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
          built="src/Engine/built/Final/server/server.dll", optional=True,
