@@ -76,15 +76,12 @@ WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
     src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL,Launcher,ServerApp \
-    src/Engine/runtime/winbuild/Engine.dsw:server
+    src/Engine/runtime/winbuild/Engine.dsw:Lithtech,server
 # The engine (src/Engine/runtime, from cjacksrc's, being brought to
-# Tron 2.0's): add `src/Engine/runtime/winbuild/Engine.dsw:<projects>` above
-# as each of Lithtech and server compiles.
-# Until then a workspace can be built on demand, as
-#   build/compile.sh 'TRON20SRC_WORKSPACES=src/Engine/runtime/winbuild/Engine.dsw:Lithtech' \
-#       'DXSDK9=$(TC)/<a DirectX 9 SDK>' Lithtech
-# (the engine is one workspace: name both projects in one entry,
-# Engine.dsw:Lithtech,server, when both are wanted).
+# Tron 2.0's) is one workspace: both of its projects, Lithtech.exe and
+# server.dll, in one entry. Another project of a workspace can be built on
+# demand, as
+#   build/compile.sh 'TRON20SRC_WORKSPACES=<workspace>:<project>' <project>
 TRON20SRC_WORKSPACES ?=
 WORKSPACES += $(TRON20SRC_WORKSPACES)
 
