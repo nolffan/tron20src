@@ -529,15 +529,26 @@ protected:
 	float			m_fTronUnknown15C;		// RETAIL: +0x15c (LOL energy)
 	float			m_fTronUnknown160;		// RETAIL: +0x160 (Sequencer energy)
 	float			m_fTronUnknown164;		// RETAIL: +0x164 (BallLauncher, DrunkenDims)
-	char			m_xTronUnknown168[0x74];
+	// RETAIL: +0x13c, eleven pairs of bools (CTronClientWeapon 0x10097f40
+	// clears them): [n][0] is whether the shot's subroutine n is active
+	// (0..7 the weapons' own, 8 Megahurtz, 9 Corrode, 10 Primitive Charge;
+	// 0x10097ab0/0x10097c30 save and load them).  Not at retail's offset
+	// until the members above are fixed; here it sits in retail's +0x154
+	// union of the weapons' subroutine data (the floats around it).
+	bool			m_abTronUnknown13C[11][2];
+	char			m_xTronUnknown17E[0x5e];
 	float			m_fTronUnknown1DC;		// RETAIL: +0x1dc (Prankster)
 	float			m_fTronUnknown1E0;
 	float			m_fTronUnknown1E4;		// RETAIL: +0x1e4 (Cluster)
-	// RETAIL: +0x13c, eleven pairs of bools (CTronClientWeapon 0x10097f40
-	// clears them); the weapons test [n][0] for their subroutine.  Not at
-	// retail's offset until the members above are fixed.
-	bool			m_abTronUnknown13C[11][2];
-	char			m_xTronUnknown1FE[6];
+	// RETAIL: +0x1e8, +0x1f0, +0x1fc: the shot's MegaHurtzData,
+	// CorrodeData and PrimitiveChargeData (SubroutineDataMgr.h)
+	float			m_fTronMegaHurtzDamage;			// RETAIL: +0x1e8
+	float			m_fTronMegaHurtzEnergyUse;		// RETAIL: +0x1ec
+	float			m_fTronCorrodeDuration;			// RETAIL: +0x1f0
+	float			m_fTronCorrodeAmount;			// RETAIL: +0x1f4
+	float			m_fTronCorrodeEnergyUse;		// RETAIL: +0x1f8
+	float			m_fTronPrimitiveChargeDamage;	// RETAIL: +0x1fc
+	float			m_fTronPrimitiveChargeEnergyUse;	// RETAIL: +0x200
 };
 
 
