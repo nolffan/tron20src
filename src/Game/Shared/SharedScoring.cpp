@@ -169,11 +169,12 @@ void CPlayerScore::UpdateClients(HCLIENT hClients /*= LTNULL*/)
 {
 	if (GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
+		uint32 nClientID = m_nClientID;
 		CAutoMessage cMsg;
 
 		cMsg.Writeuint8(MID_TRON_SCORE);
 		cMsg.Writebool(true);
-		cMsg.Writeuint32(m_nClientID);
+		cMsg.Writeuint32(nClientID);
 
 		WriteTronUnknownA(cMsg);
 		WriteTronUnknownB(cMsg);
