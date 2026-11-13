@@ -531,6 +531,10 @@ SOURCE=.\ScreenSave.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenServerInfo.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenSingle.cpp
 # End Source File
 # Begin Source File
@@ -862,6 +866,10 @@ SOURCE=.\ScreenProfile.h
 # Begin Source File
 
 SOURCE=.\ScreenSave.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenServerInfo.h
 # End Source File
 # Begin Source File
 

@@ -28,6 +28,7 @@
 
 //under multi
 #include "ScreenJoinServerList.h"
+#include "ScreenServerInfo.h"
 
 //under options
 #include "ScreenDisplay.h"
@@ -139,8 +140,8 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// for screens whose class we have not written yet are missing here:
 	// HOST_CONNECTION (CScreenHostConnection) and LIGHTCYCLE_CIRCUIT,
 	// _CUSTOMMAP, _CUSTOMGAME, _PLAYERCONFIG after SAVE; HOST_GAME, HOST_MAPS
-	// after LIGHTCYCLE_VICTORY; SERVERINFO after JOIN_SERVERLIST; TEAMSELECT
-	// (CScreenTeamSelect) after SUBROUTINES.
+	// after LIGHTCYCLE_VICTORY; TEAMSELECT (CScreenTeamSelect) after
+	// SUBROUTINES.
 	switch (screenID)
 	{
 	case SCREEN_ID_MAIN:
@@ -169,6 +170,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_JOIN_SERVERLIST:
 		pScreen = debug_new(CScreenJoinServerList);
+		break;
+	case SCREEN_ID_SERVERINFO:
+		pScreen = debug_new(CScreenServerInfo);
 		break;
 	case SCREEN_ID_PLAYER:
 		pScreen = debug_new(CScreenPlayer);
