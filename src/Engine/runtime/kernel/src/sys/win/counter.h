@@ -43,7 +43,11 @@
 	unsigned long cnt_EndCounterFinal(CounterFinal &cCounter);
 
 
-#ifdef _FINAL
+// TRON: Tron 2.0's engine counts in its final build too: Counter is
+// CounterFinal (server.dll's eleven CounterFinal constructions: CountAdder in
+// df_Open 0x10008f52, dalloc and dfree, MoveObject, the class ticks of
+// PreUpdateObjects 0x10032e70, ...); these stubs came later
+#if 0
 	class Counter
 	{
 	public:
