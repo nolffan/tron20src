@@ -191,6 +191,13 @@ bool CD3D_Device::ReleaseDevObjects(bool bFullRelease)
 	if (m_pRenderWorld)
 		m_pRenderWorld->Release();
 
+	// RETAIL: Build 69's (Lithtech.exe 0x4c99c0)
+	if( m_pEndOfFrameQuery )
+	{
+		m_pEndOfFrameQuery->Release();
+		m_pEndOfFrameQuery = NULL;
+	}
+
 	// Don't actually delete them unless we really want to
 	if (bFullRelease)
 	{
@@ -765,6 +772,10 @@ bool CD3D_Device::Start3D()
 
 	HRESULT hResult = D3D_CALL(g_Device.m_pD3DDevice->BeginScene());
 	g_Device.m_bIn3D = (hResult == D3D_OK);
+
+	// RETAIL: Build 69's (Lithtech.exe 0x4caaab)
+	D3D_CALL(g_Device.m_pD3DDevice->SetVertexShader(NULL));
+	D3D_CALL(g_Device.m_pD3DDevice->SetFVF(D3DFVF_XYZ));
 
 	return g_Device.m_bIn3D;
 }
