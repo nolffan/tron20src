@@ -387,6 +387,10 @@ SOURCE=.\LightLine.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\MenuPieceModel.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -762,6 +766,10 @@ SOURCE=.\LCHUDHelper.h
 # Begin Source File
 
 SOURCE=.\LightLine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\MenuPieceModel.h
 # End Source File
 # Begin Source File
 
