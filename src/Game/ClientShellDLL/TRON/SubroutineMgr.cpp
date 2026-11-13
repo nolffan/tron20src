@@ -426,6 +426,45 @@ void CSubroutineMgr::Pause(LTBOOL bPause)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CSubroutineMgr::GetSubroutineInSector
+//
+//	PURPOSE:	RETAIL: 0x100938f0 (the name is ours): the installed
+//				subroutine covering the system memory sector (an alpha
+//				covers three sectors, a beta two, a gold one)
+//
+// ----------------------------------------------------------------------- //
+
+PlayerSubroutine* CSubroutineMgr::GetSubroutineInSector(int iSector)
+{
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	PlayerSubroutineArray::iterator end = m_PlayerSubroutineArray.end();
+
+	for (; iter != end; iter++)
+	{
+		PlayerSubroutine *pSub = *iter;
+		int nSlot = pSub->nSlot;
+
+		if (nSlot >= 0 && nSlot < 24)
+		{
+			if (nSlot == iSector)
+				return pSub;
+
+			if (pSub->eVersion != VERSION_GOLD)
+			{
+				if ((nSlot + 1) % 24 == iSector)
+					return pSub;
+
+				if (pSub->eVersion == VERSION_ALPHA && (nSlot + 2) % 24 == iSector)
+					return pSub;
+			}
+		}
+	}
+
+	return LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CSubroutineMgr::Update()
 //
 //	PURPOSE:	Note the passage of time when the game is not paused
@@ -1211,25 +1250,37 @@ void CSubroutineMgr::Compile()
 //				'c' or 'C'	= a base code block
 //
 // ----------------------------------------------------------------------- //
-bool CSubroutineMgr::SetSystemMemoryConfiguration(const char* pSystemMemoryConfig)
+bool CSubroutineMgr::SetSystemMemoryConfiguration(const char* pSystemMemoryConfig, int nTronUnknown)
 {
-	if (m_SystemMemoryArray)
-		debug_delete(m_SystemMemoryArray);
+	// RETAIL: 0x100954b0
+	if (nTronUnknown != -1)
+		m_nTronUnknown114C = nTronUnknown;
 
 	int iLen = 0;
 
-	if(pSystemMemoryConfig)
+	// RETAIL: the old bad blocks and base code go (not deleted: see
+	// RETAIL_BUGS.md), the other subroutines are uninstalled
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
 	{
-		m_SystemMemoryArray = strdup(pSystemMemoryConfig);
-		iLen = strlen(pSystemMemoryConfig);
+		if ((*iter)->eState == SUBSTATE_UNUSABLE)
+		{
+			iter = m_PlayerSubroutineArray.erase(iter);
+		}
+		else
+		{
+			(*iter)->nSlot = -1;
+			iter++;
+		}
 	}
-	else
+
+	if (pSystemMemoryConfig)
 	{
-		m_SystemMemoryArray = LTNULL;
+		iLen = strlen(pSystemMemoryConfig);
+		if (iLen > 24) iLen = 24;
 	}
 
 	// loop through the string and create the bad blocks.
-	if (iLen > 24) iLen = 24;
 	
 	for (int i = 0; i < iLen; i++)
 	{

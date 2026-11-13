@@ -193,6 +193,7 @@ public:
 
 	void		Pause(LTBOOL bPause); // pause and unpause the game
 	void		Update();	// advance all timers
+	PlayerSubroutine*	GetSubroutineInSector(int iSector);	// RETAIL: 0x100938f0 (the name is ours)
 
 	uint16		GetNumSubroutines() {return m_SubroutineArray.size();}
 	// RETAIL: inlined in CHUDSubChooser::Init (retail 0x1003b5a6); the name is ours
@@ -251,7 +252,7 @@ public:
 	void				Compile();
 
 	// To set the system memory configuration (bad blocks, base code, etc...)
-	bool				SetSystemMemoryConfiguration(const char* pSystemMemoryConfig);
+	bool				SetSystemMemoryConfiguration(const char* pSystemMemoryConfig, int nTronUnknown = -1);	// RETAIL: 0x100954b0
 	void				AddBadBlock(int iSectorNumber);	// create a subroutine that's unusable
 	void				AddBaseCodeBlock(int iSectorNumber, bool bPrev, bool bNext); // create a subroutine that's unusable
 

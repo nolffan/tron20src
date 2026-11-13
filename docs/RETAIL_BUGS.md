@@ -565,6 +565,17 @@ trilinear. Build 69's Direct3D 9 renderer has the same lines.
 
 Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md M-G45.
 
+### A new system memory configuration leaks the old bad blocks
+
+CShell.dll 0x100954b0 (CSubroutineMgr::SetSystemMemoryConfiguration,
+src/Game/ClientShellDLL/TRON/SubroutineMgr.cpp). Before it lays out the new
+bad blocks and base code, it erases the player's unusable subroutines (the
+old bad blocks and base code, made by AddBadBlock/AddBaseCodeBlock with
+debug_new) from its array without deleting them. Each new configuration
+(each level's) leaks those PlayerSubroutines (0x2c bytes each).
+
+Not fixed yet (the modern build should delete them as it erases them).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
