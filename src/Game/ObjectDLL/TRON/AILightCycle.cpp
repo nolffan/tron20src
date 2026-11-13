@@ -160,6 +160,32 @@ static LTRotation s_arDirections[4] =
 	LTRotation(0.0f, MATH_PI + MATH_HALFPI, 0.0f),
 };
 
+inline const LTRotation & AILightCycle::GetDirectionRotation()
+{
+	return s_arDirections[m_nDirection];
+}
+
+// RETAIL: how much of the cycle's length the AI goes before turning again,
+// by difficulty (0x102932b0). The name is ours.
+static const float s_afDifficultyTurnScale[] = { 1.0f, 0.75f, 0.5f, 0.25f };
+
+// RETAIL: how long the AI keeps a power-up before using it anyway, by
+// power-up (0x102d67ac). The name is ours.
+static float s_afPowerupHoldTime[] =
+{
+	15.0f,		// kLCPowerup_Shield
+	15.0f,		// kLCPowerup_Turbo
+	FLT_MAX,	// kLCPowerup_TrailSpike
+	FLT_MAX,	// kLCPowerup_Missile
+	15.0f,		// kLCPowerup_WallExtender
+	15.0f,		// kLCPowerup_TurboCurse
+	15.0f,		// kLCPowerup_Grab
+	40.0f,		// kLCPowerup_TrailReset
+	15.0f,		// kLCPowerup_ForceUse
+	15.0f,		// kLCPowerup_Random
+	15.0f,
+};
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	MovePoint
@@ -180,14 +206,14 @@ static inline void MovePoint(LTVector & vPos, int nDir, float fDist)
 }
 
 // RETAIL: the directions to the right and to the left of a direction
-static inline int TurnRight(int nDir)
+static inline int DirRightOf(int nDir)
 {
 	nDir++;
 	if (nDir > 3) nDir = 0;
 	return nDir;
 }
 
-static inline int TurnLeft(int nDir)
+static inline int DirLeftOf(int nDir)
 {
 	nDir--;
 	if (nDir < 0) nDir = 3;
@@ -971,11 +997,11 @@ bool AILightCycle::FindPowerup()
 			int nPlayerDir = GetPlayerDirection();
 			if (IsToLeft(vPos))
 			{
-				if (nPlayerDir == TurnRight(m_nDirection)) return false;
+				if (nPlayerDir == DirRightOf(m_nDirection)) return false;
 			}
 			else
 			{
-				if (nPlayerDir == TurnLeft(m_nDirection)) return false;
+				if (nPlayerDir == DirLeftOf(m_nDirection)) return false;
 			}
 		}
 	}
@@ -1171,6 +1197,738 @@ void AILightCycle::UsePowerup()
 	m_TronUnknown108.fDuration = 0.0f;
 	m_TronUnknown108.fTime = 0.0f;
 	m_TronUnknown108.bOn = false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AILightCycle::UpdateAI
+//
+//	PURPOSE:	The AI state: look around, use the power-up, then go on
+//				or turn as the behavior says
+//
+// ----------------------------------------------------------------------- //
+
+void AILightCycle::UpdateAI()
+{
+	float fTurnScale = s_afDifficultyTurnScale[g_pServerLightCycleMgr->GetDifficulty()];
+	float fSpeed = m_pCyclist->fSpeed;
+	float fFrameDist = g_pLTServer->GetFrameTime() * fSpeed;
+
+	bool bFrontBlocked = false;
+	bool bPlayerAhead = false;
+	bool bCanReachTarget = false;
+	bool bStuck = false;
+
+	float fHalfLength = m_fCycleLength * 0.5f;
+	float fFarDist = m_pCyclist->fFrontSensorDist * 10.0f;
+	float fFrontDist = fFrameDist * 2.0f;
+
+	AILCProbeResult rRight, rLeft, rFront, rFarLeft, rFarRight;
+
+	int nRight = Probe(DirRightOf(m_nDirection), &rRight, m_pCyclist->fRightSensorDist);
+	int nLeft = Probe(DirLeftOf(m_nDirection), &rLeft, m_pCyclist->fLeftSensorDist);
+
+	// RETAIL: Probe looks from beside the cycle, alternately left and
+	// right, so a clear front is looked at twice
+	int nFront = Probe(m_nDirection, &rFront, fFrontDist);
+	if (!nFront)
+	{
+		nFront = Probe(m_nDirection, &rFront, fFrontDist);
+	}
+
+	int nFarLeft = Probe(DirLeftOf(m_nDirection), &rFarLeft, fFarDist);
+	int nFarRight = Probe(DirRightOf(m_nDirection), &rFarRight, fFarDist);
+
+	bool bPlayerDead = IsPlayerDead();
+	float fDistSinceTurn = GetDistSinceTurn();
+
+	// A new power-up: use it, at the latest, after its hold time
+	if (GetPowerup() != LC_NO_POWERUP && m_nLastPowerup != GetPowerup())
+	{
+		m_TronUnknown108.fDuration = s_afPowerupHoldTime[GetPowerup()];
+		m_TronUnknown108.fStartTime = g_pLTServer->GetTime();
+		m_TronUnknown108.bOn = true;
+	}
+
+	// Not moved since the last update: stuck
+	LTVector vPos;
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+	if (m_vTronUnknown11C == vPos)
+	{
+		g_pLightCycleMgr->DerezCyclist(m_pCyclist, LTNULL, true);
+	}
+
+	LTVector vMoved = GetPos() - m_vTronUnknown11C;
+	m_vTronUnknown11C = GetPos();
+	m_nLastPowerup = GetPowerup();
+
+	if (nFront)
+	{
+		bFrontBlocked = true;
+	}
+
+	float fPlayerDist;
+	LTVector vPlayerPos;
+	if (!bPlayerDead)
+	{
+		bPlayerAhead = GetPlayerAhead(&fPlayerDist, &vPlayerPos);
+		if (bPlayerAhead)
+		{
+			m_vTronUnknown9C = vPlayerPos;
+		}
+		else
+		{
+			LTVector vAhead = GetPos() + m_pCyclist->vForward;
+			if ((m_vTronUnknown9C - GetPos()).Mag() < m_pCyclist->fPlayerNoticeDist)
+			{
+				float fDist;
+				LTVector vHit;
+				bCanReachTarget = !CheckPath(vAhead, m_vTronUnknown9C, &fDist, &vHit);
+			}
+		}
+	}
+
+	if (nRight && nLeft)
+	{
+		g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_GoingBetweenWalls);
+	}
+
+	// Four turns the same way: stuck in a spiral?
+	bool bAllLeft = (m_anTurns[0] == 0 && m_anTurns[1] == 0 && m_anTurns[2] == 0 && m_anTurns[3] == 0);
+	if ((m_anTurns[0] == 1 && m_anTurns[1] == 1 && m_anTurns[2] == 1 && m_anTurns[3] == 1) || bAllLeft)
+	{
+		bStuck = IsTrailTight();
+		if (bStuck)
+		{
+			g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_Stuck);
+		}
+	}
+
+	if (m_eTronUnknown8C != kAILCBehavior_Aggressive && m_eBehavior == kAILCBehavior_Aggressive && bPlayerAhead)
+	{
+		g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_HuntingPlayer);
+	}
+
+	bool bNoTurn = false;
+	bool bPlayerClose = true;
+	if (m_pCyclist->fPlayerNoticeDist * 0.2f <= fPlayerDist)
+	{
+		bPlayerClose = false;
+	}
+
+	bool bPlayerHasPowerup = bPlayerDead ? false : (GetPlayerCyclist()->nPowerup != LC_NO_POWERUP);
+
+	// Use the power-up?
+	if (GetPowerup() != kLCPowerup_Shield && !HasFlag(1))
+	{
+		if (GetPowerup() == kLCPowerup_Missile)
+		{
+			AILCProbeResultList results;
+			int nHits = ProbeAll(m_nDirection, &results, 10000.0f);
+			if (nHits)
+			{
+				if (GetHitType(&results[0].info) == AILC_HIT_VOLUME)
+				{
+					bNoTurn = false;
+				}
+				else
+				{
+					bool bLeft;
+					int nPlayerDir;
+					float fTime = GetTimeToPoint(m_pCyclist, results[results.size() - 1].info.vCollisionPoint);
+					if (bPlayerDead) goto FireMissile;
+					if (!bPlayerAhead && bPlayerClose && nHits >= 1 && IsInFront(vPlayerPos))
+					{
+						bLeft = IsToLeft(vPlayerPos);
+						nPlayerDir = GetPlayerDirection();
+						if (nPlayerDir == (m_nDirection + 2) % 4) goto FireMissile;
+						if (nPlayerDir == DirRightOf(m_nDirection) && bLeft) goto FireMissile;
+						if (nPlayerDir == DirLeftOf(m_nDirection) && !bLeft)
+						{
+FireMissile:
+							UsePowerup();
+							AddTurn(0xff);
+							m_TronUnknownF8.Start(fTime);
+						}
+					}
+				}
+			}
+		}
+		else if (GetPowerup() != kLCPowerup_Turbo && GetPowerup() != kLCPowerup_TurboCurse)
+		{
+			if (GetPowerup() == kLCPowerup_TrailSpike)
+			{
+				bool bPlayerSoon = (GetTimeToPoint(GetPlayerCyclist(), GetPos()) < 0.3f);
+				bool bPlayerBehind = !IsInFront(vPlayerPos);
+				bool bSameDir = (GetPlayerDirection() == m_nDirection);
+				bool bBetweenWalls = (nLeft && nRight);
+
+				if (m_eBehavior == kAILCBehavior_Aggressive)
+				{
+					m_eBehavior = kAILCBehavior_Wander;
+				}
+
+				if ((!bPlayerSoon && bPlayerClose && bPlayerBehind && bSameDir) || bBetweenWalls)
+				{
+					bNoTurn = true;
+					UsePowerup();
+					m_TronUnknownF8.Start(1.5f);
+				}
+			}
+			else if (GetPowerup() == kLCPowerup_WallExtender)
+			{
+				UsePowerup();
+			}
+			else if (GetPowerup() == kLCPowerup_Grab || GetPowerup() == kLCPowerup_ForceUse)
+			{
+				if (bPlayerClose && (bPlayerHasPowerup & bPlayerAhead))
+				{
+					UsePowerup();
+				}
+			}
+			else if (GetPowerup() == kLCPowerup_TrailReset)
+			{
+				if (bStuck && bPlayerClose)
+				{
+					UsePowerup();
+				}
+			}
+		}
+		else
+		{
+			float fTime = GetTimeToPoint(GetPlayerCyclist(), GetPos());
+			bool bAvoiding = (m_eBehavior == kAILCBehavior_Avoid || m_eBehavior == kAILCBehavior_TronUnknown3);
+			bool bPlayerSoon = (fTime < 5.0f);
+			if (bAvoiding && bPlayerSoon && bPlayerClose)
+			{
+				UsePowerup();
+			}
+
+			if (m_eBehavior == kAILCBehavior_Aggressive && bPlayerAhead && bPlayerClose)
+			{
+				UsePowerup();
+			}
+		}
+	}
+	else
+	{
+		// The shield: on as soon as we have it; jump the wall ahead
+		if (!HasFlag(1))
+		{
+			UsePowerup();
+		}
+
+		if (nFront && !(nFront & AILC_HIT_VOLUME))
+		{
+			float fTime = GetTimeToPoint(m_pCyclist, rFront.info.vCollisionPoint);
+			bNoTurn = true;
+
+			AILCProbeResultList results;
+			int nHits = ProbeAll(m_nDirection, &results, 1000.0f);
+			if (!nHits)
+			{
+				bNoTurn = false;
+			}
+			else
+			{
+				if (nHits > 1)
+				{
+					if ((results[1].info.vCollisionPoint - results[0].info.vCollisionPoint).Mag() < 228.0f)
+					{
+						bNoTurn = false;
+					}
+
+					if (GetHitType(&results[1].info) == AILC_HIT_VOLUME)
+					{
+						bNoTurn = false;
+					}
+
+					fTime = GetTimeToPoint(m_pCyclist, results[0].info.vCollisionPoint);
+				}
+
+				if (bNoTurn)
+				{
+					AddTurn(0xff);
+					m_TronUnknownF8.Start(fTime);
+				}
+			}
+		}
+	}
+
+	// Held the power-up long enough: use it
+	if (m_TronUnknown108.bOn && m_TronUnknown108.IsTimedOut() && GetPowerup() != LC_NO_POWERUP)
+	{
+		UsePowerup();
+		m_TronUnknown108.Stop();
+	}
+
+	// Not gone far enough since the last turn, or riding out a jump: on
+	if (fTurnScale * fHalfLength > fDistSinceTurn || !m_TronUnknownF8.IsTimedOut())
+	{
+		if (!bFrontBlocked)
+		{
+			KeepGoing();
+			SetNextUpdate(m_fUpdateDelta);
+			return;
+		}
+	}
+
+	if (nLeft && nFront)
+	{
+		// Boxed in on the left
+		TurnRight();
+		SetBehavior(kAILCBehavior_Wander);
+	}
+	else if (nRight)
+	{
+		if (nFront)
+		{
+			// Boxed in on the right
+			TurnLeft();
+			SetBehavior(kAILCBehavior_Wander);
+		}
+		else
+		{
+			goto FrontClear;
+		}
+	}
+	else if (nFront)
+	{
+		// A wall ahead: score the turns
+		int nLeftScore = 0;
+		int nRightScore = 0;
+
+		if (m_eBehavior == kAILCBehavior_Aggressive)
+		{
+			if (bPlayerAhead)
+			{
+				bFrontBlocked = IsToLeft(vPlayerPos);
+				bool bInFront = IsInFront(vPlayerPos);
+				int nPlayerDir = GetPlayerDirection();
+
+				if (bInFront && m_fCycleLength * 4.0f > fPlayerDist)
+				{
+					g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_PlayerCloseInFront);
+				}
+
+				if (bFrontBlocked)
+				{
+					nLeftScore = 5;
+					if (nPlayerDir != DirRightOf(m_nDirection))
+					{
+						nLeftScore += 5;
+					}
+				}
+				else
+				{
+					nRightScore = 5;
+				}
+
+				if (nPlayerDir == DirRightOf(m_nDirection))
+				{
+					nRightScore += 5;
+				}
+			}
+			else if (bCanReachTarget && !bPlayerDead)
+			{
+				bool bLeft = IsToLeft(m_vTronUnknown9C);
+				if (IsInFront(m_vTronUnknown9C))
+				{
+					if (bLeft)
+					{
+						nLeftScore = 10;
+					}
+					else
+					{
+						nRightScore = 10;
+					}
+				}
+			}
+
+			g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_StartWallFollow);
+		}
+
+		// The nearer a wall on a side, the less we turn to it
+		if (nFarRight)
+		{
+			LTVector vDiff(rFarRight.info.vCollisionPoint.x - GetPos().x,
+				rFarRight.info.vCollisionPoint.y - GetPos().y,
+				rFarRight.info.vCollisionPoint.z - GetPos().z);
+			float fRatio = vDiff.Length() / fFarDist;
+			nLeftScore += (int)((1.0f - fRatio * fRatio) * 20.0f);
+		}
+
+		if (nFarLeft)
+		{
+			LTVector vDiff(rFarLeft.info.vCollisionPoint.x - GetPos().x,
+				rFarLeft.info.vCollisionPoint.y - GetPos().y,
+				rFarLeft.info.vCollisionPoint.z - GetPos().z);
+			float fRatio = vDiff.Length() / fFarDist;
+			nRightScore += (int)((1.0f - fRatio * fRatio) * 20.0f);
+		}
+
+		// Turn the other way from the last time, if it's open
+		if (!nFarRight && m_anTurns[0] == 0)
+		{
+			nRightScore += 10;
+		}
+
+		if (!nFarLeft && m_anTurns[0] == 1)
+		{
+			nLeftScore += 10;
+		}
+
+		if (!bNoTurn)
+		{
+			if (nRightScore > nLeftScore)
+			{
+				TurnRight();
+			}
+			else
+			{
+				TurnLeft();
+			}
+		}
+	}
+	else
+	{
+FrontClear:
+		if ((nRight & AILC_HIT_PLAYERTRAIL) && (nLeft & AILC_HIT_PLAYERTRAIL))
+		{
+			// Between the player's walls
+			SetBehavior(kAILCBehavior_Wander);
+		}
+		else if (nRight & AILC_HIT_PLAYERTRAIL)
+		{
+			// Follow the player's wall on our right
+			m_nTronUnknown80 = 1;
+			m_vStartPos = GetPos();
+			SetBehavior(kAILCBehavior_TronUnknown3);
+
+			if (bPlayerAhead)
+			{
+				if (IsToLeft(vPlayerPos))
+				{
+					m_nTronUnknown80 = -1;
+					m_eBehavior = kAILCBehavior_Aggressive;
+					SetBehavior(kAILCBehavior_Aggressive);
+					TurnLeft();
+				}
+
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_WallFollowingPlayerInSight);
+			}
+
+			if (m_bTronUnknown70)
+			{
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_PlayerTurnsAway);
+			}
+		}
+		else if (nLeft & AILC_HIT_PLAYERTRAIL)
+		{
+			// Follow the player's wall on our left
+			m_nTronUnknown80 = 3;
+			m_vStartPos = GetPos();
+			SetBehavior(kAILCBehavior_TronUnknown3);
+
+			if (bPlayerAhead)
+			{
+				if (!IsToLeft(vPlayerPos))
+				{
+					m_nTronUnknown80 = -1;
+					SetBehavior(kAILCBehavior_Aggressive);
+					TurnRight();
+				}
+
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_WallFollowingPlayerInSight);
+			}
+		}
+		else if (m_eBehavior == kAILCBehavior_Aggressive)
+		{
+			if (bPlayerAhead)
+			{
+				// Head the player off
+				GetRandomUnit();
+
+				float fPlayerSpeed = GetPlayerCyclist()->fSpeed;
+				float fPlayerFrameDist = g_pLTServer->GetFrameTime() * fPlayerSpeed;
+				float fLead = m_fCycleLength * 0.5f + fPlayerFrameDist;
+
+				LTVector vTarget = vPlayerPos + GetPlayerCyclist()->vForward * fLead;
+				int nDirTo = GetDirectionTo(vTarget);
+				bool bInFront = IsInFront(vTarget);
+				bFrontBlocked = IsToLeft(vTarget);
+
+				g_pLTServer->GetObjectPos(m_hObject, &vPos);
+				float fDist = (vPlayerPos - vPos).Mag();
+
+				if (m_fCycleLength * 4.0f > fPlayerDist)
+				{
+					if (bInFront)
+					{
+						g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_PlayerCloseInFront);
+					}
+					else if (nDirTo == (m_nDirection + 2) % 4)
+					{
+						g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_PlayerCloseBehind);
+					}
+				}
+
+				int nPlayerDir = GetPlayerDirection();
+				if (bInFront &&
+					(nDirTo == DirRightOf(m_nDirection) || nDirTo == DirLeftOf(m_nDirection)) &&
+					(nPlayerDir == DirLeftOf(m_nDirection) || nPlayerDir == DirRightOf(m_nDirection)))
+				{
+					// Crossing paths: who gets to the crossing first?
+					LTVector vMyPos = GetPos();
+					LTVector vMyAhead = vMyPos + m_pCyclist->vForward * fDist;
+					LTVector vPlayer = vPlayerPos;
+					LTVector vPlayerAhead = vPlayerPos + GetPlayerCyclist()->vForward * fDist;
+
+					LTVector vHit, vHit2;
+					if (IntersectSegments(vMyPos, vMyAhead, vPlayer, vPlayerAhead, &vHit, &vHit2) == 1)
+					{
+						float fMyTime = (vHit - vMyPos).Mag() / m_pCyclist->fSpeed;
+						LTVector vPlayerDiff = vHit - vPlayer;
+						float fPlayerTime = vPlayerDiff.Mag() / GetPlayerCyclist()->fSpeed;
+						if (fPlayerTime > fMyTime) goto Done;
+					}
+				}
+
+				if (bNoTurn) goto Done;
+
+				float fClose = fFrontDist + fHalfLength;
+				bool bRightClose = false;
+				bool bLeftClose = false;
+				if (nFarRight && rFarRight.fDist < fClose)
+				{
+					bRightClose = true;
+				}
+				if (nFarLeft && rFarLeft.fDist < fClose)
+				{
+					bLeftClose = true;
+				}
+
+				if (nDirTo == DirRightOf(m_nDirection) && !bRightClose)
+				{
+					TurnRight();
+				}
+				else if (nDirTo == DirLeftOf(m_nDirection) && !bLeftClose)
+				{
+					TurnLeft();
+				}
+				else if (nDirTo == (m_nDirection + 2) % 4)
+				{
+					// Behind us: turn toward its side, if open
+					if (bFrontBlocked)
+					{
+						if (!nLeft) TurnLeft();
+					}
+					else
+					{
+						if (!nRight) TurnRight();
+					}
+				}
+			}
+			else if (!bPlayerDead && fPlayerDist <= m_pCyclist->fPlayerNoticeDist)
+			{
+				if (!bCanReachTarget)
+				{
+					SetBehavior(kAILCBehavior_Wander);
+					goto Done;
+				}
+
+				// Lost sight of the player: go where we saw it last
+				float fClose = (fTurnScale + 1.0f) * fFrameDist + fHalfLength;
+				bool bRightClose = false;
+				bFrontBlocked = false;
+				if (nFarRight && rFarRight.fDist < fClose)
+				{
+					bRightClose = true;
+				}
+				if (nFarLeft && rFarLeft.fDist < fClose)
+				{
+					bFrontBlocked = true;
+				}
+
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_LostPlayerStillChasing);
+
+				LTVector vTarget = m_vTronUnknown9C;
+				if (IsInFront(vTarget))
+				{
+					LTVector vTurn;
+					GetTurnPoint(kAILCTurn_Forward, vTarget, vTurn);
+					if (vTurn != vTarget)
+					{
+						vTarget = vTurn + m_pCyclist->vForward * fFrameDist;
+					}
+				}
+
+				int nDirTo = GetDirectionTo(vTarget);
+				if (nDirTo == DirRightOf(m_nDirection) && !bRightClose)
+				{
+					TurnRight();
+				}
+				else if (nDirTo == DirLeftOf(m_nDirection) && !bFrontBlocked)
+				{
+					TurnLeft();
+				}
+			}
+			else
+			{
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_LostPlayer);
+				SetBehavior(kAILCBehavior_Wander);
+			}
+		}
+		else if (m_eBehavior == kAILCBehavior_Avoid)
+		{
+			// Back the way we went along the wall
+			if (m_nTronUnknown80 == 3)
+			{
+				TurnLeft();
+				m_nTronUnknown80 = -1;
+			}
+			else if (m_nTronUnknown80 == 1)
+			{
+				TurnRight();
+				m_nTronUnknown80 = -1;
+			}
+		}
+		else if (m_eBehavior == kAILCBehavior_Wander)
+		{
+			if (bPlayerAhead && fPlayerDist < m_pCyclist->fPlayerNoticeDist)
+			{
+				g_pServerLightCycleMgr->PlayDialog(m_pCyclist, kLCDialog_HuntingPlayer);
+				SetBehavior(kAILCBehavior_Aggressive);
+			}
+			else if (!bPlayerDead)
+			{
+				// Now and then, turn toward the player
+				if (GetRandomUnit() < 0.05f)
+				{
+					LTVector vTarget = (!bPlayerAhead && bCanReachTarget) ? m_vTronUnknown9C : vPlayerPos;
+					int nDirTo = GetDirectionTo(vTarget);
+					if (nDirTo == DirRightOf(m_nDirection) && !nRight)
+					{
+						if (m_anTurns[0] != 1)
+						{
+							TurnRight();
+						}
+					}
+					else if (nDirTo == DirLeftOf(m_nDirection) && !nLeft && m_anTurns[0] != 0)
+					{
+						TurnLeft();
+					}
+				}
+			}
+			else
+			{
+				// Now and then, turn at random
+				float fRandom = GetRandomUnit();
+				if (fRandom < 0.001f)
+				{
+					if (nLeft)
+					{
+						TurnRight();
+					}
+					else
+					{
+						TurnLeft();
+					}
+				}
+				else if (fRandom > 0.999f)
+				{
+					if (nRight)
+					{
+						TurnLeft();
+					}
+					else
+					{
+						TurnRight();
+					}
+				}
+			}
+		}
+		else if (m_eBehavior == kAILCBehavior_TronUnknown3)
+		{
+			// Followed the player's wall far enough: avoid, or hunt
+			LTVector vMyPos;
+			g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
+			LTVector vDiff(vMyPos.x - m_vStartPos.x, vMyPos.y - m_vStartPos.y, vMyPos.z - m_vStartPos.z);
+			if (vDiff.Length() > m_fCycleLength * 1.5)
+			{
+				SetBehavior(kAILCBehavior_Avoid);
+
+				if (bPlayerAhead)
+				{
+					bool bLeft = IsToLeft(vPlayerPos);
+					if (m_nTronUnknown80 == 3)
+					{
+						if (bLeft)
+						{
+							m_nTronUnknown80 = -1;
+							SetBehavior(kAILCBehavior_Aggressive);
+						}
+					}
+					else if (m_nTronUnknown80 == 1)
+					{
+						if (!bLeft)
+						{
+							m_nTronUnknown80 = -1;
+							SetBehavior(kAILCBehavior_Aggressive);
+						}
+					}
+				}
+			}
+		}
+		else if (m_eBehavior == kAILCBehavior_Powerup)
+		{
+			if (IsPathClear())
+			{
+				LTVector vNext = m_lstPath.front();
+				LTVector vMyPos;
+				g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
+				if ((vNext - vMyPos).Mag() <= fFrameDist)
+				{
+					if (m_lstPath.size() >= 2)
+					{
+						m_lstPath.erase(m_lstPath.begin());
+						if (IsToLeft(m_lstPath.front()))
+						{
+							TurnLeft();
+						}
+						else
+						{
+							TurnRight();
+						}
+					}
+					else
+					{
+						m_lstPath.erase(m_lstPath.begin());
+					}
+				}
+			}
+			else
+			{
+				DropPowerup();
+			}
+		}
+	}
+
+Done:
+	if (GetPowerup() != LC_NO_POWERUP)
+	{
+		DropPowerup();
+	}
+	else
+	{
+		FindPowerup();
+	}
+
+	KeepGoing();
+	SetNextUpdate(m_fUpdateDelta);
+
+	m_eTronUnknown8C = m_eBehavior;
+	m_bTronUnknown70 = bPlayerAhead;
 }
 
 // ----------------------------------------------------------------------- //

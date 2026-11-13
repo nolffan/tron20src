@@ -82,6 +82,32 @@ struct AILCTimer
 		bOn = false;
 	}
 
+	// RETAIL: inline in UpdateAI (0x100050cf, 0x100055b3, 0x10005275)
+	void	Start(float fTimerDuration)
+	{
+		fDuration = fTimerDuration;
+		fStartTime = g_pLTServer->GetTime();
+		bOn = true;
+	}
+
+	void	Stop()
+	{
+		fDuration = 0.0f;
+		fTime = 0.0f;
+		bOn = false;
+	}
+
+	// fTime, when set, stands in for the game time
+	bool	IsTimedOut()
+	{
+		if (fTime > 0.0f)
+		{
+			return !((fTime - fStartTime) < fDuration);
+		}
+
+		return !((g_pLTServer->GetTime() - fStartTime) < fDuration);
+	}
+
 	float	fStartTime;		// RETAIL: +0x00
 	float	fDuration;		// RETAIL: +0x04
 	float	fTime;			// RETAIL: +0x08
@@ -195,6 +221,51 @@ class AILightCycle : public LightCycle
 			};
 			return s_avBack[m_nDirection];
 		}
+
+		// Where the cycle is (inline)
+		LTVector	GetPos()
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos(m_hObject, &vPos);
+			return vPos;
+		}
+
+		// Faces the direction and moves on (inline in UpdateAI)
+		void	KeepGoing()
+		{
+			if (!m_bMoved)
+			{
+				g_pLTServer->SetObjectRotation(m_hObject, &GetDirectionRotation());
+				g_pLightCycleMgr->UpdateCyclistMovement(m_hObject, m_dwMoveFlags | AILC_MOVE_GO);
+				m_bMoved = true;
+			}
+		}
+
+		// Turn a quarter right or left (inline in UpdateAI)
+		void	TurnRight()
+		{
+			if (++m_nDirection > 3) m_nDirection = 0;
+			m_nTronUnknownC4++;
+			g_pLTServer->SetObjectRotation(m_hObject, &GetDirectionRotation());
+			g_pLightCycleMgr->UpdateCyclistMovement(m_hObject, m_dwMoveFlags | LCMF_TURNRIGHT);
+			m_nTronUnknown80 = -1;
+			AddTurn(1);
+			m_bMoved = true;
+		}
+
+		void	TurnLeft()
+		{
+			if (--m_nDirection < 0) m_nDirection = 3;
+			m_nTronUnknownC4--;
+			g_pLTServer->SetObjectRotation(m_hObject, &GetDirectionRotation());
+			g_pLightCycleMgr->UpdateCyclistMovement(m_hObject, m_dwMoveFlags | LCMF_TURNLEFT);
+			m_nTronUnknown80 = -1;
+			AddTurn(0);
+			m_bMoved = true;
+		}
+
+		// The rotation of m_nDirection (AILightCycle.cpp's table)
+		inline const LTRotation & GetDirectionRotation();
 
 		// Remembers a turn (the last four). RETAIL: 0x10006e40
 		void	AddTurn(uint32 nTurn)
