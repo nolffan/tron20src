@@ -51,8 +51,10 @@ protected:
 	void	BuildSavedLevelLists();
 	void	ClearSavedLevelLists();
 	void	ParseSaveString(char const* pszWorldName, char const* pszTitle, time_t const& saveTime, SaveGameData *pSG, bool bUserName);
+	// RETAIL: Tron's adds the row to pList, or to the screen without one
+	// (0x1006e620)
 	bool	BuildSaveControls( char const* pszIniKey, uint32 nCommandId, uint32 nControlHelpStringId, 
-									bool bUserName );
+									bool bUserName, CLTGUIListCtrl *pList );
 
 };
 

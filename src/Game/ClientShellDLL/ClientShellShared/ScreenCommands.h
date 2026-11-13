@@ -29,17 +29,18 @@ enum eScreenCmds
 	CMD_UPDATE,
 
 //  Main menu
+	// RETAIL: Tron's main menu commands (CScreenMain::OnCommand 0x1006f3e0,
+	// its jump table for 9..0x11; Build 0x1006eeb0): NOLF2's LAN and game
+	// type commands are gone and the credits' is new (its name is ours).
+	// CScreenSave::OnCommand (0x10077290: CMD_OVERWRITE 0x1b, CMD_EDIT_NAME
+	// 0x1c) agrees.
 	CMD_SINGLE_PLAYER,
 	CMD_CONTINUE_GAME,
 	CMD_MULTI_PLAYER,
-	CMD_MULTI_PLAYER_LAN,
-	CMD_COOP,
-	CMD_DM,
-	CMD_TEAM_DM,
-	CMD_DOOM,
 	CMD_OPTIONS,
 	CMD_RESUME,
 	CMD_PROFILE,
+	CMD_CREDITS,
 	CMD_EXIT, 
 	CMD_QUIT,
 
@@ -126,7 +127,10 @@ enum eScreenCmds
 	CMD_RENAME,
 	CMD_EDIT,
 
-	CMD_CUSTOM, //this needs to be the last cmd, so that custom commands may be defined after it
+	// RETAIL: Tron's custom commands start at 0x433 (CScreenMain::OnCommand
+	// 0x1006f3e0, CScreenLoad::OnCommand 0x1006e550; the join and light
+	// cycle screens' commands follow it)
+	CMD_CUSTOM = 0x433, //this needs to be the last cmd, so that custom commands may be defined after it
 };
 
 

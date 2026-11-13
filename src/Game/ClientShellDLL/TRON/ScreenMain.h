@@ -47,8 +47,7 @@ protected:
 	void	BuildCustomLevelsList();
 #endif
 
-	CLTGUIListCtrl* m_pGameType;
-	CLTGUIFrame*	m_pGameTypeFrame;
+	// RETAIL: Tron's has no game type list (sizeof 0x794)
 
 };
 

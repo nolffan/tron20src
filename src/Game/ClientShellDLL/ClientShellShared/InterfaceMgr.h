@@ -273,6 +273,8 @@ class CInterfaceMgr
 
 		CGameSettings*	GetSettings()		{ return &m_Settings; }
         CClientInfoMgr* GetClientInfoMgr()  { return &m_ClientInfo; }
+		// RETAIL: inline in Tron's main menu (CScreenMain::OnCommand 0x1006f3e0)
+		CCredits*		GetCredits()		{ return &m_Credits; }
 		CMenuMgr*		GetMenuMgr()		{ return &m_MenuMgr; }
 
 		CFullScreenTint* GetFullScreenTint() { return &m_FullScreenTint; }
