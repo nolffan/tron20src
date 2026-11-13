@@ -15,9 +15,8 @@
 ;	is Object.lto 0x100bb180..0x100be640. The layout below is retail's
 ;	(constructor 0x100bb180, destructor 0x1004fc60, the cyclist allocation in
 ;	0x100bb240); the names of the members, of the virtuals not in build 69
-;	and of the cyclist's fields are ours. Tron's CButeMgr is 0x40 bytes
-;	smaller than ours, so from m_LightCycleButeMgr on, our offsets are 0x40
-;	more than the retail ones given here.
+;	and of the cyclist's fields are ours. Our offsets are the retail ones
+;	given here (CButeMgr has Tron's layout: libs/ButeMgr/butemgr.h).
 ;
 ****************************************************************************/
 

@@ -10,8 +10,7 @@
 // a member of CTronGameClientShell (retail +0x32e00, 0x2844 bytes). The
 // class name is Monolith's; the other names are ours unless said.
 //
-// RETAIL: layout. The offsets below are retail's; ours are 0x40 more (the
-// base's CLightCycleButeMgr is 0x40 bytes bigger, see LightCycleMgr.h).
+// RETAIL: layout. The offsets below are retail's (and ours).
 //
 // ----------------------------------------------------------------------- //
 
