@@ -213,8 +213,9 @@ void CHUDScores::Update()
 			sprintf(szTmp,"%d",pCI->sScore.GetFrags());
 			m_Columns[nTeam][ndx].GetPolyString(2)->SetText(szTmp);
 
-			sprintf(szTmp,"%d",pCI->sScore.GetTags());
-			m_Columns[nTeam][ndx].GetPolyString(3)->SetText(szTmp);
+			// PORT: NOLF2's tags column; Tron's CPlayerScore keeps no tags
+			// (Shared/SharedScoring.h), so it stays empty
+			m_Columns[nTeam][ndx].GetPolyString(3)->SetText("");
 
 			sprintf(szTmp,"%d",pCI->nPing);
 			m_Columns[nTeam][ndx].GetPolyString(4)->SetText(szTmp);

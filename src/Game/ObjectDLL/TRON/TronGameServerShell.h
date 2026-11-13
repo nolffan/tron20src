@@ -19,6 +19,7 @@
 #include "BossButeMgr.h"
 #include "SubroutineDataMgr.h"
 #include "MultiplayerLevelInfoMgr.h"
+#include "SharedScoring.h"
 #include "GameSpy/GameSpySDK/qr2/qr2.h"
 #include <list>
 
@@ -130,8 +131,7 @@ class CTronGameServerShell : public CGameServerShell
 		bool				m_bTronUnknown1D0E4;	// +0x1d0e4
 		bool				m_bLevelSwitchRequested;	// +0x1d0e5 (ours; retail 0x1005e090)
 		uint32				m_nLevelSwitchArg;		// +0x1d0e8 (ours; retail 0x1005e090)
-		// RETAIL: +0x1d0ec, an object of a class not yet written (its
-		// constructor, retail 0x1005c2c0, builds 17 entries of 0x2c bytes)
+		CTronTeamMgr		m_TeamMgr;			// +0x1d0ec Same as g_pTronTeamMgr (its constructor and destructor, retail 0x1005c2c0, 0x1005c9a0)
 };
 
 

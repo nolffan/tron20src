@@ -1206,7 +1206,6 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Overlay("Overlay");
 	static CParsedMsg::CToken s_cTok_WakeUp("WakeUp");
 	static CParsedMsg::CToken s_cTok_DropBody( "DropBody" );
-	static CParsedMsg::CToken s_cTok_Score( "Score" );
 
 
 	// Default to not finding the trigger.
@@ -1472,15 +1471,8 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	{
 		DropCarriedObject();
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Score )
-	{
-		if( cMsg.GetArgCount( ) > 1 )
-		{
-			int nScore = atoi( cMsg.GetArg( 1 ));
-			GetPlayerScore( )->AddBonus( nScore );
-			bRet = true;
-		}
-	}
+	// RETAIL: no "Score" command in Tron (no such string in retail; Tron's
+	// CPlayerScore has no bonus to add)
 
     return bRet;
 }

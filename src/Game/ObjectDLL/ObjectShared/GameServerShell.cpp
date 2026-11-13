@@ -4847,9 +4847,24 @@ void CGameServerShell::ServerAppShellUpdate( )
 
 		cMsg.Writeuint16( g_pLTServer->GetClientID( hClient ));
 		cMsg.WriteString( pPlayer->GetNetUniqueName( ));
-		cMsg.Writeint16( pPlayer->GetPlayerScore()->GetFrags( ));
-		cMsg.Writeint16( pPlayer->GetPlayerScore()->GetTags( ));
-		cMsg.Writeint16( pPlayer->GetPlayerScore()->GetScore( ));
+
+		// RETAIL: Tron's two figures by game type (retail 0x100e3b53)
+		switch( GetGameType( ))
+		{
+			case eGameTypeDiscArena:
+			case eGameTypeDiscTournament:
+				cMsg.Writeint16( pPlayer->GetPlayerScore()->GetFrags( ));
+				cMsg.Writeint16( pPlayer->GetPlayerScore()->GetScore( ));
+				break;
+			case eGameTypeMultiplayerLightcycles:
+				cMsg.Writeint16( pPlayer->GetPlayerScore()->GetTronUnknown6( ));
+				cMsg.Writeint16( pPlayer->GetPlayerScore()->GetTronUnknownC( ));
+				break;
+			default:
+				cMsg.Writeint16( 0 );
+				cMsg.Writeint16( 0 );
+				break;
+		}
 	}
 
 	// Signal end of player list.
