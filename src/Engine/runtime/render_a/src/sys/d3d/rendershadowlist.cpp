@@ -836,7 +836,7 @@ void CRenderShadowList::RenderQueuedShadows(const ViewParams& Params)
 	//see if we have any shadows to render
 	if(nShadowsToRender == 0)
 	{
-		m_cShadowList.resize(0);	// RETAIL: 0x4dd83c
+		m_cShadowList.clear();
 		return;
 	}
 
@@ -846,7 +846,7 @@ void CRenderShadowList::RenderQueuedShadows(const ViewParams& Params)
 	//just bail if we don't have any shadows, otherwise we will just infinitely loop
 	if(m_cTextureList.size() == 0)
 	{
-		m_cShadowList.resize(0);
+		m_cShadowList.clear();
 		return;
 	}
 
@@ -954,7 +954,7 @@ void CRenderShadowList::RenderQueuedShadows(const ViewParams& Params)
 	pDepthStencilBuffer->Release();	pDepthStencilBuffer	  = NULL;
 
 	//clear out the list
-	m_cShadowList.resize(0);	// RETAIL: 0x4ddb60
+	m_cShadowList.clear();
 
 	//restore our device state
 	g_Device.SetDefaultRenderStates();
@@ -1397,6 +1397,5 @@ void CRenderShadowList::QueueShadow(ModelInstance* pInstance, const LTVector& vM
 //this will empty all shadows out of the list
 void CRenderShadowList::FlushShadows()
 {
-	// RETAIL: resize(0), not clear() (0x4ddbc0, called from d3d_DrawGlowModels)
-	m_cShadowList.resize(0);
+	m_cShadowList.clear();
 }

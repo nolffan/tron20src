@@ -406,8 +406,6 @@ PolySide COccludee::SplitOutline2D(const LTPlane &cPlane, const COutline &sInput
 		return Intersect;
 }
 
-// RETAIL: each case breaks out of the switch and the loop goes on over
-// every outline (Lithtech.exe 0x4f3360); the fear tree left after the first.
 PolySide COccludee::SplitPlane(const LTPlane &cPlane, bool bSplitOccluded)
 {
 	// Split the outlines into visible and occluded portions
@@ -485,8 +483,6 @@ PolySide COccludee::SplitPlane(const LTPlane &cPlane, bool bSplitOccluded)
 	return Intersect;
 }
 
-// RETAIL: each case breaks out of the switch and the loop goes on over
-// every outline (Lithtech.exe 0x4f36f0); the fear tree left after the first.
 PolySide COccludee::SplitPlane2D(const LTPlane &cPlane, bool bSplitOccluded)
 {
 	// Split the outlines into visible and occluded portions
@@ -699,8 +695,7 @@ PolySide COccluder::Occlude2D(COccludee &cOccludee) const
 			cOccludee.m_aVisible.insert(cOccludee.m_aVisible.end(), cOccludee.m_aOccluded.begin(), cOccludee.m_aOccluded.end());
 			cOccludee.m_aOccluded.clear();
 		}
-		// RETAIL: in front only if the box is entirely in front (0x4f3c31)
-		return GetAABBPlaneSideFront(m_ePolyPlaneCorner, m_cPolyPlane, cOccludee.m_vMin, cOccludee.m_vMax) ? FrontSide : Intersect;
+		return FrontSide;
 	}
 
 	TPlaneList::const_iterator iCurPlane = m_aEdgePlanes.begin();

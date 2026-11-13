@@ -646,9 +646,9 @@ bool CD3D_RenderBlock::Load(ILTStream *pStream)
 	LT_MEM_TRACK_ALLOC(m_aLightGroups.reserve(nLightGroupCount), LT_MEM_TYPE_RENDER_LIGHTGROUP);
 	for (; nLightGroupCount; --nLightGroupCount)
 	{
-		// RETAIL: a temporary each time round, not Build 69's one local
-		// (Lithtech.exe 0x52a6d0)
-		m_aLightGroups.push_back(SRBLightGroup());
+		// RETAIL: STLport's push_back(), constructing in place, not Build
+		// 69's copy of one local (Lithtech.exe 0x52b1b1)
+		m_aLightGroups.push_back();
 		*pStream >> m_aLightGroups.back();
 	}
 
