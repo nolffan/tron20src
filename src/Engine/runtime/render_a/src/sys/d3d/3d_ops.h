@@ -80,7 +80,7 @@ public:
 class CReallyCloseData
 {
 public:
-	D3DVIEWPORT8	m_OldViewport;
+	D3DVIEWPORT9	m_OldViewport;
 	D3DMATRIX		m_OldProj;
 	D3DMATRIX		m_OldView;
 };

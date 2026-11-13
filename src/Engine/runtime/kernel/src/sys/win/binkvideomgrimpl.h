@@ -142,7 +142,7 @@ private:
     BinkVideoMgr		*m_pMgr;
     
     // The on-screen rendering surface
-    LPDIRECT3DTEXTURE8  m_pTexture;
+    LPDIRECT3DTEXTURE9  m_pTexture;
 
 	//flags for the video
     uint32				m_Flags;

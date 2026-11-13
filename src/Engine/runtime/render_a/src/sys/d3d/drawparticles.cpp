@@ -297,7 +297,8 @@ static void d3d_DrawParticles(LTParticleSystem *pSystem)
 	int nExtra		= pSystem->m_nParticles % PARTICLE_BATCH_SIZE;
 
 	//setup our vertex shader for this particle system
-	D3D_CALL(PD3DDEVICE->SetVertexShader(PARTICLEVERTEX_FORMAT));
+	D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+	D3D_CALL(PD3DDEVICE->SetFVF(PARTICLEVERTEX_FORMAT));
 
 	// Draw all the batches and extra particles..
 	PSParticle *pCurPos = pSystem->m_ParticleHead.m_pNext;
@@ -449,8 +450,8 @@ void d3d_DrawParticleSystem(const ViewParams& Params, LTParticleSystem *pParticl
 
 	//don't let the texture wrap, this prevents pixels from appearring on opposite sides
 	//due to filtering
-	StageStateSet ssWrapModeU0(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-	StageStateSet ssWrapModeV0(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	SamplerStateSet ssWrapModeU0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	SamplerStateSet ssWrapModeV0(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
 	d3d_DrawParticles(pParticleSystem);
 

@@ -1054,7 +1054,8 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 		CPixelShaderMgr::GetSingleton().InstallPixelShader(hPixelShader);
 
 		//now actually draw the polygrid
-		D3D_CALL(PD3DDEVICE->SetVertexShader(nVertexFVF));
+		D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+		D3D_CALL(PD3DDEVICE->SetFVF(nVertexFVF));
 		D3D_CALL(PD3DDEVICE->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,nNumVerts,(pGrid->m_nIndices)/3,pGrid->m_Indices,D3DFMT_INDEX16,g_TriVertList, nVertexSize));
 
 		// Uninstall the pixel shader.
@@ -1066,7 +1067,8 @@ void d3d_DrawPolyGrid(const ViewParams &Params, LTObject *pObj)
 	else
 	{
 		//now actually draw the polygrid
-		D3D_CALL(PD3DDEVICE->SetVertexShader(nVertexFVF));
+		D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+		D3D_CALL(PD3DDEVICE->SetFVF(nVertexFVF));
 
 		D3D_CALL(PD3DDEVICE->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,nNumVerts,(pGrid->m_nIndices)/3,pGrid->m_Indices,D3DFMT_INDEX16,g_TriVertList, nVertexSize));
 
