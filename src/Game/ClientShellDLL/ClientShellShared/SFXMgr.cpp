@@ -89,7 +89,7 @@ static unsigned int s_nDynArrayMaxNums[DYN_ARRAY_SIZE] =
 	50,		// Particle trail segments
 	50,		// Smoke
 	50,		// Bullet trail
-	100,	// Volume brush
+	50,		// Volume brush (RETAIL: Tron's 50)
 	200,	// Shell casings
 	1,		// Camera - Unused, it has its own list
 	20,		// Particle explosions
@@ -101,7 +101,7 @@ static unsigned int s_nDynArrayMaxNums[DYN_ARRAY_SIZE] =
 	100,	// Marks - bullet holes
 	100,	// Light
 	50,		// Random sparks
-	200,	// Pickup item
+	50,		// Pickup item (RETAIL: Tron's 50)
 	200,	// Character
 	20,		// Player sounds
 	1000,	// Node Lines (used for AI nodes)
@@ -128,15 +128,20 @@ static unsigned int s_nDynArrayMaxNums[DYN_ARRAY_SIZE] =
 	1,		// Texture FX, has its own list
 	50,		// Snow
 	20,		// JumpVolumes
-	5,		// PlayerLure
+	6,		// PlayerLure (RETAIL: Tron's 6)
 	50,		// GadgetTargets
 	1,		// DisplayTimer, doesn't need a list.
 	50,		// Dynamic Occluder volumes
 	50,		// Scatter
 	50,		// Trigger
 	20,		// RadarObject
-	512,	// ActivateObject
-	3,		// DoomsDay pieces
+	200,	// ActivateObject (RETAIL: Tron's 200)
+	// RETAIL: Tron's (its table, 0x1022c470)
+	10,		// Light cycles
+	1,		// Prankster projectiles
+	100,	// ClientFX users
+	20,		// ClientFX and activate types
+	16,		// Spectator objects
 };
 
 
