@@ -253,9 +253,11 @@ Object.lto: 152 classes still differ.
 - **Base:** cjacksrc's engine (`src/Engine/runtime`), compiled with VC6
   8168 and STLport (retail's engine RTTI is `_STL`'s; D3DX9's VC7 `std::`
   classes sit beside it) and NOLF2's VC6 flags: Lithtech `/O2 /Ob2`, no
-  `/GX`; D3DRender, Lib_UI, Lib_ILTSound `/GX /O2 /Ob2` (retail's EH
-  frames all lie above 0x4c0000; Lib_UI without `/GX` loses the wide
-  font's destructor frame and 14 functions).
+  `/GX`; D3DRender `/GX /O2 /Ob2`, Lib_UI and Lib_ILTSound `/GX /O2`
+  (retail's EH frames all lie above 0x4c0000; Lib_UI without `/GX` loses
+  the wide font's destructor frame and 14 functions; with `/Ob2` its
+  static initializers' `jmp` stubs fold away: 178 more functions identical
+  without it).
 - **Rich header:** 292 C++ objects of 8168 (ours); D3DX9's are the 110
   C++ and 3 C objects of cl 13.00.9178, 6 of masm 6.14.8444 and 9 C
   objects of cl 13.10.2067 (the developer build of 2003-08-05 has the
