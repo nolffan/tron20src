@@ -37,8 +37,7 @@ protected:
     LTBOOL          m_bAutoCenter;
 	int				m_nNormalTurn;
 	int	  			m_nFastTurn;
-	int	  			m_nVehicleTurn;
-	int				m_nLookUp;
+	int				m_nLookUp;		// RETAIL: +0x7a0 (Tron's has no vehicle turn speed)
 
 
 };
