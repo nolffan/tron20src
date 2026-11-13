@@ -131,6 +131,7 @@ extern int32 g_CV_ForceConsole;
 extern int32 g_CV_RenderEnable;
 extern int32 g_CV_ForceSoundDisable;
 extern int32 g_CV_DrawDebugGeometry;
+extern int32 g_CV_AlwaysUpdate;	// TRON: the "AlwaysUpdate" console variable
 
 #ifdef LITHTECH_ESD
 ILTRealAudioPlayer* g_pRealAudioPlayer = LTNULL;
@@ -754,10 +755,10 @@ void cm_HandleMaxFPS(uint32 frameTicks)
 
 
 #ifdef TRON20SRC_MODERN
-// MODERN.md EN-40: the frame limiter. MaxFPS limits the frame rate only
-// outside the final build (cm_HandleMaxFPS above, which retail's
-// Lithtech.exe has but never calls), so the game has always run as fast
-// as it could. Parts of the game went wrong at high frame rates (the AIs,
+// MODERN.md EN-40: the frame limiter. Retail's MaxFPS is 0 (no limit)
+// unless set, and when set its cm_HandleMaxFPS above times the frame from
+// an uninitialised value (Update, Lithtech.exe 0x40df80), so the game has
+// always run as fast as it could; the modern build does not call it. Parts of the game went wrong at high frame rates (the AIs,
 // the music, the player's walk and the per-frame pushes and dampings:
 // EN-41, GAME-40, CL-41 to CL-45), so the modern build limits it: to
 // MaxFPS (240 unless set, the fastest common refresh rate; 0 is no limit;
@@ -1015,9 +1016,11 @@ LTRESULT CClientMgr::Update()
     LTRESULT dResult;
     static LTRect rFPS (480,10,630,80);
 
-#ifndef _FINAL
+	// RETAIL: declared outside the debug block and set only inside it, so
+	// the final build hands cm_HandleMaxFPS an uninitialised frameTicks
+	// (Lithtech.exe 0x40df80; docs/RETAIL_BUGS.md)
     uint32 frameTicks;
-
+#ifndef _FINAL
 	ctik_ResetCounters();
     cnt_StartCounter(totalCounter);
 
@@ -1043,7 +1046,8 @@ LTRESULT CClientMgr::Update()
 	}
 
     // Update framerate (don't want to update it if the client's not active).
-    if (dsi_IsClientActive())
+	// RETAIL: or while AlwaysUpdate is set (Lithtech.exe 0x40db62)
+    if (dsi_IsClientActive() || g_CV_AlwaysUpdate)
 	{
 		m_nCurUpdateTimeMS	= time_GetMSTime();
 		m_nFrameTimeMS		= m_nCurUpdateTimeMS - m_nLastUpdateTimeMS;
@@ -1104,7 +1108,8 @@ LTRESULT CClientMgr::Update()
     }
 
     // Gather and send current input.
-    if (dsi_IsClientActive())
+	// RETAIL: or while AlwaysUpdate is set (Lithtech.exe 0x40dc9e)
+    if (dsi_IsClientActive() || g_CV_AlwaysUpdate)
 	{
         CountAdder cntAdd(&g_Ticks_Input);
 #ifdef TRON20SRC_MODERN
@@ -1216,8 +1221,10 @@ LTRESULT CClientMgr::Update()
 	ctik_ShowTickStatus();
     mw_ShowMemoryWatches();
 
+#endif
+#ifndef TRON20SRC_MODERN
+	// RETAIL: in the final build too (Lithtech.exe 0x40df21, inlined)
     cm_HandleMaxFPS(frameTicks);                    // Lock framerate if they want.
-
 #endif
 #ifdef TRON20SRC_MODERN
     // EN-40: multiplayer is a shell that is not a normal (single-player)
@@ -1277,7 +1284,8 @@ void CClientMgr::ProcessAllInput(bool bForceClear) {
 
     ForwardCommandChanges(&changes[0], nChanges);
 
-	if (m_pCurShell && m_pCurShell->m_bWorldOpened && m_pCurShell->m_HostID)
+	// RETAIL: no test of the host ID (Lithtech.exe 0x40e13a; NOLF2 tests it)
+	if (m_pCurShell && m_pCurShell->m_bWorldOpened)
 	{
 		SendUpdate(&m_NetMgr, m_pCurShell->m_HostID);
 	}

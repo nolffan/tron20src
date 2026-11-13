@@ -565,6 +565,20 @@ trilinear. Build 69's Direct3D 9 renderer has the same lines.
 
 Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md M-G45.
 
+### The MaxFPS frame limiter times the frame from garbage
+
+Lithtech.exe 0x40df21 (CClientMgr::Update, cm_HandleMaxFPS inlined; src/
+Engine/runtime/client/src/clientmgr.cpp). Update declares frameTicks for
+the frame-rate limiter but sets it only in the debug build's tick
+counting; the final build still calls the limiter, which divides that
+uninitialised value (the stack slot last holding the frame's time in
+milliseconds, 0x40df80) by the counter's ticks per second. With MaxFPS
+(0, off, by default) set, the wait per frame bears no relation to how
+long the frame took.
+
+Fixed in the modern build: clientmgr.cpp does not call it; its own frame
+limiter replaces it (MODERN.md EN-40).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

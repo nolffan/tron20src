@@ -115,7 +115,8 @@ unsigned long cnt_EndCounterFinal(CounterFinal &cCounter)
 }
 
 
-// TRON: as counter.h, in the final build too
+// TRON: as counter.h: in server.dll's final build only
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 
 float CountPercent::CalcPercent()
 {
@@ -188,3 +189,4 @@ uint CountPercent::Out()
 	return (uint)(result.QuadPart);
 }
 
+#endif // !_FINAL || DE_SERVER_COMPILE
