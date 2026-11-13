@@ -105,8 +105,19 @@ Used for: Models and Animation.
 */
     virtual LTRESULT GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket);
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual6() = 0;
+/*!
+\param hObj Model instance.
+\param hSocket Socket of its model.
+\param hNode (return) the node the socket is attached to.
+\return \b LT_INVALIDPARAMS if hObj is not a model, \b LT_NOTFOUND if the
+		socket is not found.
+
+TRON: a virtual NOLF2's interface does not have. RETAIL: server.dll
+0x1004789e, "ILTModel::GetSocketParentNode" (the name is retail's).
+
+Used for: Models and Animation.
+*/
+    virtual LTRESULT GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode);
 
 /*! 
 \param hObj     Model instance handle.
@@ -137,8 +148,18 @@ Used for: Models and Animation.
                                         LTransform &transform,
                                         bool bWorldSpace);
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual8() = 0;
+/*!
+\param hObj Model instance.
+\param nSockets (return) the number of sockets its model has.
+\return \b LT_INVALIDPARAMS if hObj is not a model, \b LT_ERROR if it has
+		no model.
+
+TRON: a virtual NOLF2's interface does not have. RETAIL: server.dll
+0x1004775a, "ILTModel::GetNumSockets" (the name is retail's).
+
+Used for: Models and Animation.
+*/
+    virtual LTRESULT GetNumSockets(HOBJECT hObj, uint32 &nSockets);
 
 /*!
 \param hObj		  Model instance reference.

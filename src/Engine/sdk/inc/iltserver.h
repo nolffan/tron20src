@@ -1910,8 +1910,15 @@ Used for: Object.
 */
     virtual LTRESULT SetNetFlags(HOBJECT hObj, uint32 flags)=0;
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual26() = 0;
+/*!
+TRON: a virtual NOLF2's interface does not have: set the object's
+unguaranteed data, sent to the clients with its unguaranteed updates.
+RETAIL: server.dll 0x1002f3c3 (CLTServer vtable 0x100521a0, slot 75); the
+name is Contract J.A.C.K.'s engine's (cjacksrc), where it is the same code.
+
+Used for: Object.
+*/
+    virtual LTRESULT SetObjectUnguaranteedData(HOBJECT hObj, uint32 nData)=0;
 
     // TRON: NOLF2's virtuals that Tron's engine does not have (past the end of
     // its vtable): kept for the shared code, which must not call them

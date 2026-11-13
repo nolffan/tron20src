@@ -178,6 +178,22 @@ LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void* p
 	return LT_OK ;
 }
 
+// TRON: RETAIL: server.dll 0x1004775a (not in NOLF2's or Contract J.A.C.K.'s
+// engine; written from retail)
+LTRESULT ILTModel::GetNumSockets(HOBJECT hObj, uint32 &nSockets)
+{
+    CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetNumSockets);
+
+    Model *pModel = hObj->ToModel()->GetModelDB();
+    if (pModel)
+    {
+        nSockets = pModel->NumSockets();
+        return LT_OK;
+    }
+
+    return LT_ERROR;
+}
+
 LTRESULT ILTModel::GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket)
 {
     ModelInstance *pInst;
@@ -205,6 +221,26 @@ LTRESULT ILTModel::GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET
 }
 
 
+// TRON: RETAIL: server.dll 0x1004789e (not in NOLF2's or Contract J.A.C.K.'s
+// engine; written from retail): no range check of hSocket
+LTRESULT ILTModel::GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode)
+{
+    CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetSocketParentNode);
+
+    Model *pModel = hObj->ToModel()->GetModelDB();
+    hNode = INVALID_MODEL_NODE;
+    if (pModel)
+    {
+        ModelSocket *pSocket = pModel->GetSocket(hSocket);
+        if (pSocket)
+        {
+            hNode = pSocket->m_iNode;
+            return LT_OK;
+        }
+    }
+
+    RETURN_ERROR(1, ILTModel::GetSocketParentNode, LT_NOTFOUND);
+}
 LTRESULT ILTModel::GetNode(HOBJECT hObj, const char *pNodeName, HMODELNODE &hNode)
 {
     ModelInstance *pInst;

@@ -250,6 +250,8 @@ public:
 	virtual const char* GetStringData(HSTRING hString);
 	virtual float GetVarValueFloat(HCONVAR hVar);
 	virtual const char* GetVarValueString(HCONVAR hVar);
+	virtual LTFLOAT TronUnknownVirtual44();	// RETAIL
+	virtual LTFLOAT TronUnknownVirtual45();	// RETAIL
 	virtual LTFLOAT GetTime();
 	virtual LTFLOAT GetFrameTime();
 	virtual LTRESULT GetSourceWorldOffset(LTVector& vOffset);
@@ -1006,6 +1008,19 @@ const char *CLTServer::GetVarValueString(HCONVAR hVar)
 		return LTNULL;
 
 	return ((LTCommandVar*)hVar)->pStringVal;
+}
+
+// TRON: RETAIL: server.dll 0x1002ee28 (CLTServer vtable slot 44): the server's
+// is GetTime, called through the vtable (the client's may be another clock)
+LTFLOAT CLTServer::TronUnknownVirtual44()
+{
+	return GetTime();
+}
+
+// TRON: RETAIL: server.dll 0x1002ee30 (slot 45): GetFrameTime, likewise
+LTFLOAT CLTServer::TronUnknownVirtual45()
+{
+	return GetFrameTime();
 }
 
 LTFLOAT CLTServer::GetTime()
