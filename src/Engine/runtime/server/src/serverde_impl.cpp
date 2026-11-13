@@ -250,6 +250,8 @@ public:
 	virtual const char* GetStringData(HSTRING hString);
 	virtual float GetVarValueFloat(HCONVAR hVar);
 	virtual const char* GetVarValueString(HCONVAR hVar);
+	virtual LTFLOAT TronUnknownVirtual44();
+	virtual LTFLOAT TronUnknownVirtual45();
 	virtual LTFLOAT GetTime();
 	virtual LTFLOAT GetFrameTime();
 	virtual LTRESULT GetSourceWorldOffset(LTVector& vOffset);
@@ -1006,6 +1008,20 @@ const char *CLTServer::GetVarValueString(HCONVAR hVar)
 		return LTNULL;
 
 	return ((LTCommandVar*)hVar)->pStringVal;
+}
+
+// RETAIL: Lithtech.exe 0x474970 and 0x474980 (CLTServer vtable slots 44
+// and 45, before GetTime): the server's game time and frame time, through
+// GetTime and GetFrameTime (ILTCSBase's virtuals the client answers with
+// its shell's game clock; the SDK's names are Tron's unknowns)
+LTFLOAT CLTServer::TronUnknownVirtual44()
+{
+	return GetTime();
+}
+
+LTFLOAT CLTServer::TronUnknownVirtual45()
+{
+	return GetFrameTime();
 }
 
 LTFLOAT CLTServer::GetTime()

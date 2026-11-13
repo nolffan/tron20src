@@ -240,6 +240,12 @@ LTRESULT CD3DDrawPrim::SetCullMode(ELTDPCullMode eCullMode)
 	SETDRAWPRIMSTATE(m_eCullMode, eCullMode, SetCullMode);
 }
 
+// set the fog enable status (Build 69's; RETAIL: Lithtech.exe 0x41d770)
+LTRESULT CD3DDrawPrim::SetFogEnable(bool bFogEnable)
+{
+	SETDRAWPRIMSTATE(m_bFogEnable, bFogEnable, SetFogEnable);
+}
+
 //saves the current D3D state into the member variables
 void CD3DDrawPrim::SaveStates(LPDIRECT3DDEVICE8 pDevice)
 {
@@ -653,6 +659,11 @@ void CD3DDrawPrim::SetCullMode(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
+void CD3DDrawPrim::SetFogEnable(LPDIRECT3DDEVICE8 pDevice)
+{
+	pDevice->SetRenderState(D3DRS_FOGENABLE, m_bFogEnable);
+}
+
 // Set the render states (and save the old ones)...
 void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE8 pDevice)
 {
@@ -675,6 +686,7 @@ void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE8 pDevice)
 	SetTestMode(pDevice);
 	SetFillMode(pDevice);
 	SetCullMode(pDevice);
+	SetFogEnable(pDevice);
 	SetTexture(pDevice);
 	SetCamera(pDevice);
 
@@ -733,6 +745,60 @@ void CD3DDrawPrim::PopRenderStates(LPDIRECT3DDEVICE8 pDevice)
 	m_bReallyClose = m_bPrevReallyClose;
 }
 
+
+
+// PORT: Build 69's SetUVWH in texels, SaveViewport and RestoreViewport
+// (D3D9 there; RETAIL: Lithtech.exe 0x41e540, 0x41e650, 0x41e670), on this
+// Direct3D 8 renderer until the renderer is Tron's Direct3D 9 one
+static ILTTexInterface *pTexInterface;
+define_holder(ILTTexInterface, pTexInterface);
+
+void CD3DDrawPrim::SetUVWH (LT_POLYGT4 *pPrim, HTEXTURE pTex,
+							 float u, float v,
+							 float w, float h)
+{
+	if (!pPrim) return;
+
+	uint32 ttw,tth;
+	float tw, th;
+	
+	if (pTex) {
+		pTexInterface->GetTextureDims(pTex, ttw, tth);
+		tw = (float)ttw;
+		th = (float)tth;
+
+		float factor = 1.0f;
+
+		float pixelcenterh = 0.05/tw;
+		float pixelcenterv = 0.05/th;
+
+		pPrim->verts[0].u = u / tw					+ pixelcenterh;
+		pPrim->verts[0].v = v / th					+ pixelcenterv;
+		pPrim->verts[1].u = (u + w + factor) / tw	+ pixelcenterh;
+		pPrim->verts[1].v = v / th					+ pixelcenterv;
+		pPrim->verts[2].u = (u + w + factor) / tw	+ pixelcenterh;
+		pPrim->verts[2].v = (v + h + factor) / th	+ pixelcenterv;
+		pPrim->verts[3].u = u / tw					+ pixelcenterh;
+		pPrim->verts[3].v = (v + h + factor) / th	+ pixelcenterv;
+
+	}
+	else {
+		pPrim->verts[0].u = pPrim->verts[1].u = pPrim->verts[2].u = pPrim->verts[3].u = 0.0f;
+		pPrim->verts[0].v = pPrim->verts[1].v = pPrim->verts[2].v = pPrim->verts[3].v = 0.0f;
+	}			
+}
+
+
+void CD3DDrawPrim::SaveViewport( void )
+{
+	PD3DDEVICE->GetViewport( &m_SavedViewport );
+}
+
+
+void CD3DDrawPrim::RestoreViewport( void )
+{
+	PD3DDEVICE->SetViewport( &m_SavedViewport );
+}
 
 
 // Draw primitive calls (triangles)
@@ -1072,6 +1138,102 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 		if (hRes != D3D_OK)
 			return LT_ERROR;
 		 }
+
+	return LT_OK;
+}
+
+
+// Build 69's "special version added by adam s. for optimized wide font
+// rendering": the quads through an array of pointers (RETAIL: Lithtech.exe
+// 0x41f540). PORT: its Direct3D 9 code on Direct3D 8 here.
+LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 **ppPrim, uint32 nCount) {
+	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	if (!pDevice) return LT_ERROR;
+	CAutoDrawPrimBlock AutoDPBlock(this);
+
+	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
+		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		LT_POLYGT4** ppPrimPtr = ppPrim;
+		while (nCount) 
+		{	// Note: Not checking return everytime for speed...
+			hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, *ppPrimPtr, sizeof(LT_VERTGT));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
+			--nCount; ++ppPrimPtr; }
+		 }
+	else {	// Use Transform and Lit verts...
+		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		if (nCount > 2) {
+			LT_POLYGT4**	pPtrArray	= ppPrim;
+			LT_POLYGT4*		pSrcPtr;
+			while (nCount) {
+				
+				DRAWPRIM_D3DTRANS_TEX* pDstPtr = m_VertTransBufT;
+				uint32 nDrawCount	= 0;
+				int32 nDstBufSize	= CD3DDRAWPRIM_BUFSIZE - 6;
+				while (nCount && nDstBufSize > 0) {		// Copy the tri to the buffer,..
+					pSrcPtr = *pPtrArray;
+
+					pDstPtr->x	    = pSrcPtr->verts[0].x; pDstPtr->y = pSrcPtr->verts[0].y; pDstPtr->z = pSrcPtr->verts[0].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[0].rgba.r,pSrcPtr->verts[0].rgba.g,pSrcPtr->verts[0].rgba.b,pSrcPtr->verts[0].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[0].u; pDstPtr->v = pSrcPtr->verts[0].v; 
+					++pDstPtr;
+
+					pDstPtr->x	    = pSrcPtr->verts[1].x; pDstPtr->y = pSrcPtr->verts[1].y; pDstPtr->z = pSrcPtr->verts[1].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[1].rgba.r,pSrcPtr->verts[1].rgba.g,pSrcPtr->verts[1].rgba.b,pSrcPtr->verts[1].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[1].u; pDstPtr->v = pSrcPtr->verts[1].v; 
+					++pDstPtr;
+
+					pDstPtr->x	    = pSrcPtr->verts[2].x; pDstPtr->y = pSrcPtr->verts[2].y; pDstPtr->z = pSrcPtr->verts[2].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[2].rgba.r,pSrcPtr->verts[2].rgba.g,pSrcPtr->verts[2].rgba.b,pSrcPtr->verts[2].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[2].u; pDstPtr->v = pSrcPtr->verts[2].v; 
+					++pDstPtr;
+
+					pDstPtr->x	    = pSrcPtr->verts[0].x; pDstPtr->y = pSrcPtr->verts[0].y; pDstPtr->z = pSrcPtr->verts[0].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[0].rgba.r,pSrcPtr->verts[0].rgba.g,pSrcPtr->verts[0].rgba.b,pSrcPtr->verts[0].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[0].u; pDstPtr->v = pSrcPtr->verts[0].v; 
+					++pDstPtr;
+
+					pDstPtr->x	    = pSrcPtr->verts[2].x; pDstPtr->y = pSrcPtr->verts[2].y; pDstPtr->z = pSrcPtr->verts[2].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[2].rgba.r,pSrcPtr->verts[2].rgba.g,pSrcPtr->verts[2].rgba.b,pSrcPtr->verts[2].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[2].u; pDstPtr->v = pSrcPtr->verts[2].v; 
+					++pDstPtr;
+
+					pDstPtr->x	    = pSrcPtr->verts[3].x; pDstPtr->y = pSrcPtr->verts[3].y; pDstPtr->z = pSrcPtr->verts[3].z;
+					pDstPtr->rhw	= 1.0f;
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[3].rgba.r,pSrcPtr->verts[3].rgba.g,pSrcPtr->verts[3].rgba.b,pSrcPtr->verts[3].rgba.a);
+					pDstPtr->u	    = pSrcPtr->verts[3].u; pDstPtr->v = pSrcPtr->verts[3].v; 
+					++pDstPtr;
+
+					--nCount; nDstBufSize -= 6; nDrawCount += 2; ++pPtrArray; }
+				hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nDrawCount, m_VertTransBufT, sizeof(DRAWPRIM_D3DTRANS_TEX));
+				if (hRes != D3D_OK)
+					return LT_ERROR;
+		} }
+		else {
+  			LT_POLYGT4** pPrimPtr = ppPrim;
+  			while (nCount) 
+			{	// Note: Not checking return everytime for speed...
+  				for (int i=0;i<4;++i) {
+  					m_VertTransBufT[i].x	= (*pPrimPtr)->verts[i].x; m_VertTransBufT[i].y = (*pPrimPtr)->verts[i].y; m_VertTransBufT[i].z = (*pPrimPtr)->verts[i].z; m_VertTransBufT[i].rhw = 1.0f;
+  					m_VertTransBufT[i].rgba = RGBA_MAKE((*pPrimPtr)->verts[i].rgba.r,(*pPrimPtr)->verts[i].rgba.g,(*pPrimPtr)->verts[i].rgba.b,(*pPrimPtr)->verts[i].rgba.a);
+  					m_VertTransBufT[i].u	= (*pPrimPtr)->verts[i].u; m_VertTransBufT[i].v = (*pPrimPtr)->verts[i].v; }
+
+  			hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertTransBufT, sizeof(DRAWPRIM_D3DTRANS_TEX));
+			if (hRes != D3D_OK)
+				return LT_ERROR; 
+			--nCount; ++pPrimPtr; } }
+
+		}
 
 	return LT_OK;
 }

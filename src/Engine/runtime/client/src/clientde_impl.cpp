@@ -374,6 +374,8 @@ class CLTClient : public ILTClient {
 	virtual float GetVarValueFloat(HCONSOLEVAR hVar);
 	virtual const char* GetVarValueString(HCONSOLEVAR hVar);
 
+	virtual LTFLOAT TronUnknownVirtual44();
+	virtual LTFLOAT TronUnknownVirtual45();
 	virtual LTFLOAT GetTime();
 	virtual LTFLOAT GetFrameTime();
 	virtual LTRESULT GetSourceWorldOffset(LTVector& vOffset);
@@ -1357,6 +1359,35 @@ const char *CLTClient::GetVarValueString(HCONSOLEVAR hVar)
 	else
 	{
 		return LTNULL;
+	}
+}
+
+// RETAIL: 0x408d10 and 0x408d30 (CLTClient vtable slots 44 and 45): the
+// game time and game frame time of the current shell, 0 without one --
+// ci_GetGameTime and ci_GetGameFrameTime's bodies, as virtuals of
+// ILTCSBase (the SDK's names are Tron's unknowns: the function-pointer
+// members already have those names)
+LTFLOAT CLTClient::TronUnknownVirtual44()
+{
+	if (g_pClientMgr->m_pCurShell)
+	{
+		return g_pClientMgr->m_pCurShell->m_GameTime;
+	}
+	else
+	{
+		return 0.0f;
+	}
+}
+
+LTFLOAT CLTClient::TronUnknownVirtual45()
+{
+	if (g_pClientMgr->m_pCurShell)
+	{
+		return g_pClientMgr->m_pCurShell->m_GameFrameTime;
+	}
+	else
+	{
+		return 0.0f;
 	}
 }
 

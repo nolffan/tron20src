@@ -178,6 +178,21 @@ LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void* p
 	return LT_OK ;
 }
 
+// RETAIL: Lithtech.exe 0x4aada0, before GetSocket
+LTRESULT ILTModel::GetNumSockets(HOBJECT hObj, uint32 &nSockets)
+{
+    CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetNumSockets);
+
+    Model *pModel = ((ModelInstance*)hObj)->GetModelDB();
+    if (!pModel)
+    {
+        return LT_ERROR;
+    }
+
+    nSockets = pModel->NumSockets();
+    return LT_OK;
+}
+
 LTRESULT ILTModel::GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket)
 {
     ModelInstance *pInst;
@@ -204,6 +219,27 @@ LTRESULT ILTModel::GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET
     }
 }
 
+
+// RETAIL: Lithtech.exe 0x4aaf10, after GetSocket (the socket index is not
+// checked against the model's count)
+LTRESULT ILTModel::GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode)
+{
+    CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetSocketParentNode);
+
+    Model *pModel = ((ModelInstance*)hObj)->GetModelDB();
+    hNode = INVALID_MODEL_NODE;
+    if (pModel)
+    {
+        ModelSocket *pSocket = pModel->GetSocket(hSocket);
+        if (pSocket)
+        {
+            hNode = pSocket->m_iNode;
+            return LT_OK;
+        }
+    }
+
+    RETURN_ERROR(1, ILTModel::GetSocketParentNode, LT_NOTFOUND);
+}
 
 LTRESULT ILTModel::GetNode(HOBJECT hObj, const char *pNodeName, HMODELNODE &hNode)
 {

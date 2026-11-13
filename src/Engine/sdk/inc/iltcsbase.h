@@ -576,8 +576,13 @@ Used for: Misc.
 */
     virtual LTFLOAT GetFrameTime() = 0;
 
-    // TRON: a virtual of Tron's that NOLF2's interface does not have
-    virtual void TronUnknownVirtual48() = 0;
+    // TRON: a virtual of Tron's that NOLF2's interface does not have:
+    // Contract J.A.C.K.'s GetObjectUnguaranteedData (cjacksrc), here after
+    // GetFrameTime. RETAIL: Lithtech.exe 0x407530 (CLTClient vtable slot
+    // 48), "CLTClient::GetObjectUnguaranteedData": the object's
+    // unguaranteed data (+0xac) into *pData, LT_INVALIDPARAMS for a NULL
+    // object or pointer.
+    virtual LTRESULT GetObjectUnguaranteedData(HOBJECT hObj, uint32 *pData) = 0;
 
 /*!
 Messaging functions.  All of these functions are obsolete.  Use

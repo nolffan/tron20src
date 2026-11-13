@@ -28,7 +28,7 @@ CFG=Lithtech - Win32 Final
 # retail's own objects (progress/COMPILERS.md). The libraries are named on
 # the link line, in the order retail has their code: ltmem, StdLith,
 # RezMgr, the renderer, the sound loader, the UI, Lith, then D3DX.
-# d3dx9.lib asks for VC6's old iostream library, libci.lib, which VC .NET
+# d3dx8.lib asks for VC6's old iostream library, libci.lib, which VC .NET
 # 2003 does not have: /nodefaultlib:libci.lib.
 # Begin Project
 # PROP AllowPerConfigDependencies 0
@@ -61,7 +61,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 ltmem.lib Lib_StdLith.lib Lib_RezMgr.lib D3DRender.lib Lib_ILTSound.lib Lib_UI.lib Lib_Lith.lib d3dx9.lib kernel32.lib user32.lib gdi32.lib advapi32.lib ole32.lib winmm.lib wsock32.lib dinput8.lib dxguid.lib d3d9.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libci.lib" /libpath:"..\..\..\built\Final\ltmem" /libpath:"..\..\..\..\libs\built\Final\Lib_StdLith" /libpath:"..\..\..\built\Final\Lib_RezMgr" /libpath:"..\..\..\built\Final\D3DRender" /libpath:"..\..\..\built\Final\Lib_ILTSound" /libpath:"..\..\..\built\Final\Lib_UI" /libpath:"..\..\..\..\libs\built\Final\Lib_Lith" /out:"..\..\..\built\Final\Lithtech\Lithtech.exe"
+# ADD LINK32 ltmem.lib Lib_StdLith.lib Lib_RezMgr.lib D3DRender.lib Lib_ILTSound.lib Lib_UI.lib Lib_Lith.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib advapi32.lib ole32.lib winmm.lib wsock32.lib dinput8.lib dxguid.lib d3d8.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libci.lib" /libpath:"..\..\..\built\Final\ltmem" /libpath:"..\..\..\..\libs\built\Final\Lib_StdLith" /libpath:"..\..\..\built\Final\Lib_RezMgr" /libpath:"..\..\..\built\Final\D3DRender" /libpath:"..\..\..\built\Final\Lib_ILTSound" /libpath:"..\..\..\built\Final\Lib_UI" /libpath:"..\..\..\..\libs\built\Final\Lib_Lith" /out:"..\..\..\built\Final\Lithtech\Lithtech.exe"
 !ENDIF 
 
 # Begin Target
