@@ -259,6 +259,27 @@ void CTronClientWeapon::TronUnknown98B20()
 	m_fTronUnknown204 = 0.0f;
 }
 
+// RETAIL: 0x10097a20
+void CTronClientWeapon::Fire( bool bFire )
+{
+	CClientWeapon::Fire( bFire );
+
+	if ( TronUnknownVirtual188() )
+	{
+		float fEnergy = GetEnergyUse();
+		g_pTronPlayerStats->UseEnergy( fEnergy );
+	}
+
+	TronUnknown97F40();
+}
+
+// RETAIL: 0x10098ba0
+bool CTronClientWeapon::TronUnknownVirtual164()
+{
+	float fEnergy = g_pTronPlayerStats->GetEnergy();
+	return ( GetEnergyUse() <= fEnergy );
+}
+
 // RETAIL: 0x10097f40 clears eleven pairs of bools at CClientWeapon+0x13c
 // (not yet at retail's offset in ours)
 void CTronClientWeapon::TronUnknown97F40()
