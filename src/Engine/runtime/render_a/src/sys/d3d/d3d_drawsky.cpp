@@ -77,7 +77,6 @@ void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 					if (pWorldModel)
 					{
 						pWorldModel->Draw(SkyParams, true);
-						g_Device.m_pRenderWorld->FlushShaders();	// RETAIL: 0x50c380
 					}
 				}
 

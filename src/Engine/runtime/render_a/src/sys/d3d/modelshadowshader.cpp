@@ -106,6 +106,7 @@ bool CModelShadowShader::SetWorldTransform(const LTMatrix& mInvWorldTrans)
 //as setting up the vertex shader, the vertex buffers, etc.
 bool CModelShadowShader::BeginShader(	uint32 nVertSize,				//the size of the vertices
 										uint32 nVertType,				//the type of vertex as passed to D3D
+										IDirect3DVertexShader9 *pShader, // for DX9 FVF is separate
 										IDirect3DVertexBuffer9 *pVB,	//pointer to the vertex buffer
 										IDirect3DIndexBuffer9 *pIB,		//the index buffer
 										ERenderShader eShaderID			//the ID of the shader for custom setup

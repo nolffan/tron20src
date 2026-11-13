@@ -115,12 +115,11 @@ void CRenderShader_Gouraud::DrawNormal(const DrawState &cState, uint32 nRenderBl
 		if (nOldAlphaBlendEnable == 0)
 		{
 			DrawLights(cState, nRenderBlock);
-			BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc0ba
 			return;
 		}
 	}
 
-	QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+	QueueRenderBlock(nRenderBlock);
 }
 
 void CRenderShader_Gouraud::PreFlush()
@@ -283,13 +282,15 @@ void CRenderShader_Gouraud_Texture::DrawNormal(const DrawState &cState, uint32 n
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Just Draw it
-				GetShaderDrawRange().Add(cSection.m_nStartIndex, cSection.m_nEndIndex, cSection.m_nStartVertex, cSection.m_nEndVertex);
-				GetShaderDrawRange().Draw();	// RETAIL: 0x4fd4b5
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
 
-				PostFlushBlock(cSection);
-				GetShaderDrawRange().Reset();
+				PostFlushBlock(cSection,
+					cSection.m_nStartIndex, cSection.m_nStartIndex + cSection.m_nTriCount * 3,
+					cSection.m_nStartVertex, cSection.m_nStartVertex + cSection.m_nVertexCount);
 			}
 
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, m_nOldAlphaTest);
@@ -302,12 +303,10 @@ void CRenderShader_Gouraud_Texture::DrawNormal(const DrawState &cState, uint32 n
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -344,13 +343,11 @@ void CRenderShader_Gouraud_Texture::PreFlushBlock(CInternalSection &cSection)
 	// Setup texture effects
 	if (cSection.m_pTextureEffect)
 		cSection.m_pTextureEffect->Install(1, TSChannel_Base);					
-
-	// RETAIL: a fullbright section starts a new draw range (Lithtech.exe 0x4fba3d)
-	if (cSection.m_bFullbright)
-		GetShaderDrawRange().Reset();
 }
 
-void CRenderShader_Gouraud_Texture::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_Texture::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Fullbright it
 	if (cSection.m_bFullbright)
@@ -361,7 +358,12 @@ void CRenderShader_Gouraud_Texture::PostFlushBlock(CInternalSection &cSection)
 
 		StageStateSet state2over(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 
-		DrawQueuedRange();	// RETAIL: the shared range (0x4feaa0)
+		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+			0, nStartVertex, nEndVertex - nStartVertex,
+			nStartIndex, nNumTris);
+
+		IncFrameStat(eFS_WorldTriangles, nNumTris);
 	}
 
 	// Clear texture effects
@@ -614,13 +616,15 @@ void CRenderShader_Gouraud_Detail::DrawNormal(const DrawState &cState, uint32 nR
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Draw it
-				GetShaderDrawRange().Add(cSection.m_nStartIndex, cSection.m_nEndIndex, cSection.m_nStartVertex, cSection.m_nEndVertex);
-				GetShaderDrawRange().Draw();	// RETAIL: 0x4fd4b5
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
 
-				PostFlushBlock(cSection);
-				GetShaderDrawRange().Reset();
+				PostFlushBlock(cSection,
+					cSection.m_nStartIndex, cSection.m_nStartIndex + cSection.m_nTriCount * 3,
+					cSection.m_nStartVertex, cSection.m_nStartVertex + cSection.m_nVertexCount);
 			}
 
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, m_nOldAlphaTest);
@@ -635,12 +639,10 @@ void CRenderShader_Gouraud_Detail::DrawNormal(const DrawState &cState, uint32 nR
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -690,13 +692,11 @@ void CRenderShader_Gouraud_Detail::PreFlushBlock(CInternalSection &cSection)
 	// Setup texture effects
 	if (cSection.m_pTextureEffect)
 		cSection.m_pTextureEffect->Install(2, TSChannel_Base, TSChannel_Detail);					
-
-	// RETAIL: a fullbright section starts a new draw range (Lithtech.exe 0x4fba3d)
-	if (cSection.m_bFullbright)
-		GetShaderDrawRange().Reset();
 }
 
-void CRenderShader_Gouraud_Detail::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_Detail::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Fullbright it
 	if (cSection.m_bFullbright)
@@ -708,7 +708,12 @@ void CRenderShader_Gouraud_Detail::PostFlushBlock(CInternalSection &cSection)
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
-		DrawQueuedRange();	// RETAIL: the shared range (0x4feaa0)
+		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+			0, nStartVertex, nEndVertex - nStartVertex,
+			nStartIndex, nNumTris);
+
+		IncFrameStat(eFS_WorldTriangles, nNumTris);
 	}
 
 	if (cSection.m_pTextureEffect)
@@ -994,13 +999,15 @@ void CRenderShader_Gouraud_EnvMap::DrawNormal(const DrawState &cState, uint32 nR
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Draw it
-				GetShaderDrawRange().Add(cSection.m_nStartIndex, cSection.m_nEndIndex, cSection.m_nStartVertex, cSection.m_nEndVertex);
-				GetShaderDrawRange().Draw();	// RETAIL: 0x4fd4b5
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
 
-				PostFlushBlock(cSection);
-				GetShaderDrawRange().Reset();
+				PostFlushBlock(cSection,
+					cSection.m_nStartIndex, cSection.m_nStartIndex + cSection.m_nTriCount * 3,
+					cSection.m_nStartVertex, cSection.m_nStartVertex + cSection.m_nVertexCount);
 			}
 
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, m_nOldAlphaTest);
@@ -1021,12 +1028,10 @@ void CRenderShader_Gouraud_EnvMap::DrawNormal(const DrawState &cState, uint32 nR
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -1093,13 +1098,11 @@ void CRenderShader_Gouraud_EnvMap::PreFlushBlock(CInternalSection &cSection)
 	// Setup texture effects
 	if (cSection.m_pTextureEffect)
 		cSection.m_pTextureEffect->Install(2, TSChannel_Base, TSChannel_EnvMap);
-
-	// RETAIL: a fullbright section starts a new draw range (Lithtech.exe 0x4fba3d)
-	if (cSection.m_bFullbright)
-		GetShaderDrawRange().Reset();
 }
 
-void CRenderShader_Gouraud_EnvMap::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_EnvMap::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Fullbright it
 	if (cSection.m_bFullbright)
@@ -1111,7 +1114,12 @@ void CRenderShader_Gouraud_EnvMap::PostFlushBlock(CInternalSection &cSection)
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
-		DrawQueuedRange();	// RETAIL: the shared range (0x4feaa0)
+		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+			0, nStartVertex, nEndVertex - nStartVertex,
+			nStartIndex, nNumTris);
+
+		IncFrameStat(eFS_WorldTriangles, nNumTris);
 	}
 
 	// Clear texture effects
@@ -1397,13 +1405,15 @@ void CRenderShader_Gouraud_EnvBumpMap::DrawNormal(const DrawState &cState, uint3
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Draw it
-				GetShaderDrawRange().Add(cSection.m_nStartIndex, cSection.m_nEndIndex, cSection.m_nStartVertex, cSection.m_nEndVertex);
-				GetShaderDrawRange().Draw();	// RETAIL: 0x4fd4b5
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
 				
-				PostFlushBlock(cSection);
-				GetShaderDrawRange().Reset();
+				PostFlushBlock(cSection,
+					cSection.m_nStartIndex, cSection.m_nStartIndex + cSection.m_nTriCount * 3,
+					cSection.m_nStartVertex, cSection.m_nStartVertex + cSection.m_nVertexCount);
 			}
 
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, m_nOldAlphaTest);
@@ -1426,12 +1436,10 @@ void CRenderShader_Gouraud_EnvBumpMap::DrawNormal(const DrawState &cState, uint3
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -1519,13 +1527,11 @@ void CRenderShader_Gouraud_EnvBumpMap::PreFlushBlock(CInternalSection &cSection)
 	// Setup texture effects
 	if (cSection.m_pTextureEffect)
 		cSection.m_pTextureEffect->Install(3, TSChannel_Base, TSChannel_Null, TSChannel_Base);
-
-	// RETAIL: a fullbright section starts a new draw range (Lithtech.exe 0x4fba3d)
-	if (cSection.m_bFullbright)
-		GetShaderDrawRange().Reset();
 }
 
-void CRenderShader_Gouraud_EnvBumpMap::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_EnvBumpMap::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	// Fullbright it
 	if (cSection.m_bFullbright)
@@ -1537,7 +1543,12 @@ void CRenderShader_Gouraud_EnvBumpMap::PostFlushBlock(CInternalSection &cSection
 		StageStateSet state12over(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet state15over(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
-		DrawQueuedRange();	// RETAIL: the shared range (0x4feaa0)
+		uint32 nNumTris = (nEndIndex - nStartIndex) / 3;
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+			0, nStartVertex, nEndVertex - nStartVertex,
+			nStartIndex, nNumTris);
+
+		IncFrameStat(eFS_WorldTriangles, nNumTris);
 	}
 
 	// Clear texture effects
@@ -1788,13 +1799,15 @@ void CRenderShader_Gouraud_DualTexture::DrawNormal(const DrawState &cState, uint
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Draw it
-				GetShaderDrawRange().Add(cSection.m_nStartIndex, cSection.m_nEndIndex, cSection.m_nStartVertex, cSection.m_nEndVertex);
-				GetShaderDrawRange().Draw();	// RETAIL: 0x4fd4b5
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,
+					0, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				IncFrameStat(eFS_WorldTriangles, cSection.m_nTriCount);
 
-				PostFlushBlock(cSection);
-				GetShaderDrawRange().Reset();
+				PostFlushBlock(cSection,
+					cSection.m_nStartIndex, cSection.m_nStartIndex + cSection.m_nTriCount * 3,
+					cSection.m_nStartVertex, cSection.m_nStartVertex + cSection.m_nVertexCount);
 			}
 
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, m_nOldAlphaTest);
@@ -1808,12 +1821,10 @@ void CRenderShader_Gouraud_DualTexture::DrawNormal(const DrawState &cState, uint
 
 		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
 		PD3DDEVICE->SetIndices(0);
-
-		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
 	else
 	{
-		QueueRenderBlock(*cState.m_pParams, nRenderBlock);
+		QueueRenderBlock(nRenderBlock);
 	}
 }
 
@@ -1877,7 +1888,9 @@ void CRenderShader_Gouraud_DualTexture::PreFlushBlock(CInternalSection &cSection
 		cSection.m_pTextureEffect->Install(2, TSChannel_Base, TSChannel_DualTexture);
 }
 
-void CRenderShader_Gouraud_DualTexture::PostFlushBlock(CInternalSection &cSection)
+void CRenderShader_Gouraud_DualTexture::PostFlushBlock(CInternalSection &cSection,
+		uint32 nStartIndex, uint32 nEndIndex,
+		uint32 nStartVertex, uint32 nEndVertex)
 {
 	if (cSection.m_pTextureEffect)
 		cSection.m_pTextureEffect->Uninstall(2, TSChannel_Base, TSChannel_DualTexture);

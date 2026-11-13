@@ -520,7 +520,7 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 	g_Device.SetDefaultRenderStates();		
 
 	//we are done, clear out the lists
-	m_cPieceList.resize(0);	// RETAIL: 0x50db63
+	m_cPieceList.clear();
 }
 
 //call this to free all memory associated with the piece list. This will require it to grow

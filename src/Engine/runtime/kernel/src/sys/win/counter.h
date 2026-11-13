@@ -46,8 +46,11 @@
 // TRON: Tron 2.0's engine counts in its final build too: Counter is
 // CounterFinal (server.dll's eleven CounterFinal constructions: CountAdder in
 // df_Open 0x10008f52, dalloc and dfree, MoveObject, the class ticks of
-// PreUpdateObjects 0x10032e70, ...); these stubs came later
-#if 0
+// PreUpdateObjects 0x10032e70, ...; Lithtech.exe's client). The renderer's
+// library (D3DRender: _LIB, not the engine's DIRECTENGINE_COMPILE) has the
+// stubs: its CountAdders construct nothing (CD3D_RenderWorld::StartFrame,
+// Lithtech.exe 0x4d42c0, only an unwind state for one).
+#if defined(_FINAL) && defined(_LIB) && !defined(DIRECTENGINE_COMPILE)
 	class Counter
 	{
 	public:

@@ -5,7 +5,6 @@
 #include "draw_canvas.h"
 #include "renderstruct.h"
 #include "d3d_draw.h"
-#include "d3d_renderworld.h"	// RETAIL: FlushShaders, m_bFlushOnDraw
 #include "common_draw.h"
 #include "setupmodel.h"
 #include "rendershadowlist.h"
@@ -61,9 +60,10 @@ LTVector d3d_GetDims_ParticleSystem(LTObject *pObject)
 {
     LTParticleSystem *pSystem = (LTParticleSystem*)pObject;
 
-	// NOLF2 (retail 0x5198f0): the system radius alone, not the distance to
-	// the system's centre too
-	return pSystem->m_Scale * pSystem->m_SystemRadius;
+	//find the distance to our system radius
+	float fDistToSystemCenter = (pSystem->m_Pos - pSystem->m_SystemCenter).Mag();
+
+	return pSystem->m_Scale * (pSystem->m_SystemRadius + fDistToSystemCenter);
 }
 
 // NOLF2 has no d3d_GetDims_PolyGrid: polygrids use the generic dims
@@ -190,12 +190,6 @@ void d3d_FlushObjectQueues(const ViewParams& Params)
   	// Draw all the solid things.
    	d3d_DrawSolidWorldModels(Params);
 
-	// RETAIL: the solid world models' sections are drawn now, then the world
-	// transform goes back to identity (Lithtech.exe 0x4df561)
-	if (g_Device.m_pRenderWorld)
-		g_Device.m_pRenderWorld->FlushShaders();
-	d3d_SetD3DMat(D3DTS_WORLD, &Params.m_mIdentity);
-
 	d3d_DrawSolidPolyGrids(Params);
 
 	d3d_DrawSolidVolumeEffects(Params);
@@ -210,10 +204,6 @@ void d3d_FlushObjectQueues(const ViewParams& Params)
 	//may still be using transparency so this is safest if done last
 	d3d_DrawSolidModels(Params);
 	
-	// RETAIL: translucent world models flush as each one draws (0x4df5b8)
-	if (g_Device.m_pRenderWorld)
-		g_Device.m_pRenderWorld->m_bFlushOnDraw = true;
-
 	// Last, draw all the translucent things.
 	d3d_SetTranslucentObjectStates();
 
@@ -245,9 +235,6 @@ void d3d_FlushObjectQueues(const ViewParams& Params)
 		d3d_DrawNoZSprites(Params);
 
 	d3d_UnsetTranslucentObjectStates(true);
-
-	if (g_Device.m_pRenderWorld)
-		g_Device.m_pRenderWorld->m_bFlushOnDraw = false;	// RETAIL: 0x4df64d
 
 	if(g_CV_ShowRenderedObjectCounts.m_Val)
 	{

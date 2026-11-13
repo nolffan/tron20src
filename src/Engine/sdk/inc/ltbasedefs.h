@@ -130,10 +130,13 @@ inline void LTStrCat(char *pDest, const char *pSrc, uint32 destBytes)
     if (destBytes == 0)
         return;
 
-#ifdef DIRECTENGINE_COMPILE
+#if defined(DIRECTENGINE_COMPILE) || defined(__D3DREND)
 	// TRON: the engine's is Build 69's, its truncation check's length taken
 	// in the final build too (server.dll 0x1000932a, out of line, as
-	// LTStrCpy); the game DLLs' is the plain one
+	// LTStrCpy); the game DLLs' is the plain one. The engine's libraries
+	// (__D3DREND without DIRECTENGINE_COMPILE) have Build 69's too, whose
+	// check compiles away there: the renderer calls it out of line
+	// (Lithtech.exe 0x50e250, from d3d_MakeCubicEnvMap 0x5273a0)
 	uint32 destLen = strlen(pDest);
 	uint32 catLen = destBytes - destLen - 1;
 
