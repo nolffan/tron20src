@@ -603,6 +603,23 @@ its string, as unreachable).
 
 Not fixed yet.
 
+### DrawPrim never uses its camera's viewport
+
+Lithtech.exe 0x41d8e0 (CD3DDrawPrim::SetCamera, src/Engine/runtime/
+render_b/src/sys/d3d/d3ddrawprim.cpp; Build 69's code). When the draw
+primitive's camera rectangle differs from the current viewport, it sets
+the current viewport again (only its depth range changes) instead of the
+camera's rectangle, so primitives drawn through a camera that does not
+cover the screen are not confined to it.
+
+Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
-(none checked yet)
+- Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
+  quads with each quad's first vertex colour, and its DrawPrim functions
+  check only the last draw's result: Tron's are Build 69's (each vertex's
+  own colour, every result checked; Lithtech.exe 0x41f140).
+- Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
+  the saved viewport and leaves the new viewport's size unset: Tron's is
+  Build 69's (0x41d8e0; its own bug is above).

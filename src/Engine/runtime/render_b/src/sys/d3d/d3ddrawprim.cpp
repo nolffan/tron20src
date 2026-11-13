@@ -17,6 +17,10 @@
 #include "render.h"
 #include "de_objects.h"
 #include "d3d_device.h"
+#include "rendererconsolevars.h"
+#include "common_draw.h"
+#include "d3d_draw.h"
+#include "3d_ops.h"
 
 #ifndef __D3DX9_H__
 #include <d3dx9.h>
@@ -78,6 +82,9 @@ static void ModernPixelAlign(DRAWPRIM_D3DTRANS_TEX* pVert, DRAWPRIM_D3DTRANS_TEX
 // this is intended for use inside of draw primitive functions so that the
 // block doesn't have to be ended in every single return branch. It will begin
 // the block in the constructor, and end it in the destructor
+// RETAIL: the DrawPrim functions check each draw's result in their loops,
+// as Build 69's (Lithtech.exe 0x41fdf3, DrawPrim(LT_POLYF4*)); Contract
+// J.A.C.K.'s check only the last
 class CAutoDrawPrimBlock
 {
 public:
@@ -313,61 +320,60 @@ void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE9 pDevice)
 	float MinZ = (m_bReallyClose) ? 0.0f : m_PrevViewport.MinZ;
 	float MaxZ = (m_bReallyClose) ? 0.1f : m_PrevViewport.MaxZ;
 
-	if (m_pCamera)
+	if (m_pCamera) 
 	{
 		LTObject* pLTCameraObj = (LTObject*)m_pCamera;				// Set the Camera (if there is one)...
 		CameraInstance* pCamera = pLTCameraObj->ToCamera();
 
-		if ((pCamera->m_Left != (int)PrevViewport.X) ||
-			(pCamera->m_Top != (int)PrevViewport.Y) ||
-			((pCamera->m_Right - pCamera->m_Left) != (int)PrevViewport.Width) ||
-			((pCamera->m_Bottom - pCamera->m_Top) != (int)PrevViewport.Height))
+		if ((pCamera->m_Left != (int)PrevViewport.X) || 
+			(pCamera->m_Top != (int)PrevViewport.Y) || 
+			((pCamera->m_Right - pCamera->m_Left) != (int)PrevViewport.Width) || 
+			((pCamera->m_Bottom - pCamera->m_Top) != (int)PrevViewport.Height)) 
 		{
 			D3DVIEWPORT9 vp;
-			vp.MinZ = MinZ;
+			vp.MinZ = MinZ; 
 			vp.MaxZ = MaxZ;
 
+			// RETAIL: Build 69's: the camera's rectangle is tested but the
+			// current viewport's is set again (Lithtech.exe 0x41d8e0;
+			// docs/RETAIL_BUGS.md); the modern build sets the camera's
+#ifdef TRON20SRC_MODERN
 			vp.X = pCamera->m_Left;
 			vp.Y = pCamera->m_Top;
 
-			// RETAIL: the camera's size goes into the saved viewport (which
-			// PopRenderStates restores) and vp.Width/Height are left unset
-			// (Lithtech.exe 0x41c296; RETAIL_BUGS.md, MODERN.md EN-8)
-			m_PrevViewport.Width  = pCamera->m_Right - pCamera->m_Left;
-			m_PrevViewport.Height = pCamera->m_Bottom - pCamera->m_Top;
-#ifdef TRON20SRC_MODERN
-			vp.Width  = m_PrevViewport.Width;
-			vp.Height = m_PrevViewport.Height;
+			vp.Width = pCamera->m_Right - pCamera->m_Left;
+			vp.Height = pCamera->m_Bottom - pCamera->m_Top;
+#else
+			vp.X = PrevViewport.X;
+			vp.Y = PrevViewport.Y;
+
+			vp.Width = PrevViewport.Width;
+			vp.Height = PrevViewport.Height;
 #endif
 
 			PD3DDEVICE->SetViewport(&vp);
 
-			m_bResetViewport = true;
-		}
+			m_bResetViewport = true; 
+		} 
 	}
-	else
+	else 
 	{
-		if (0 != m_PrevViewport.X || 0 != PrevViewport.Y || g_ScreenWidth != PrevViewport.Width || g_ScreenHeight != PrevViewport.Height)
+		if (0 != PrevViewport.X || 0 != PrevViewport.Y || g_ScreenWidth != PrevViewport.Width || g_ScreenHeight != PrevViewport.Height) 
 		{
 			D3DVIEWPORT9 vp;
-			vp.MinZ = MinZ;
+			vp.MinZ = MinZ; 
 			vp.MaxZ = MaxZ;
 
-			vp.X = 0;
+			vp.X = 0; 
 			vp.Y = 0;
-
-			// As above: retail writes the size into the saved viewport only.
-			m_PrevViewport.Width  = g_ScreenWidth;
-			m_PrevViewport.Height = g_ScreenHeight;
-#ifdef TRON20SRC_MODERN
+			
 			vp.Width  = g_ScreenWidth;
 			vp.Height = g_ScreenHeight;
-#endif
 
 			PD3DDEVICE->SetViewport(&vp);
 
-			m_bResetViewport = true;
-		}
+			m_bResetViewport = true; 
+		} 
 	}
 }
 
@@ -387,13 +393,20 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE9 pDevice)
 	//with a different projection matrix
 	if(m_bReallyClose)
 	{
+		// RETAIL: Build 69's: the current viewport's rectangle, the
+		// projection from the screen's shape and the renderer's console
+		// variables (Lithtech.exe 0x41dad1..0x41db7e; the screen's shape
+		// keeps the player-view models right on a wide screen too)
 		// The viewport minZ & maxZ needs to be changed for accurately
 		// setting the position for a reallyclose primitive.
+		D3DVIEWPORT9 curVP;
+		PD3DDEVICE->GetViewport(&curVP);
+
 		D3DVIEWPORT9 ViewportData;
-		ViewportData.X		= 0;
-		ViewportData.Y		= 0;
-		ViewportData.Width	= g_ScreenWidth;
-		ViewportData.Height = g_ScreenHeight;
+		ViewportData.X		= curVP.X;
+		ViewportData.Y		= curVP.Y;
+		ViewportData.Width	= curVP.Width;
+		ViewportData.Height = curVP.Height;
 		ViewportData.MinZ	= 0;
 		ViewportData.MaxZ	= 0.1f;
 
@@ -401,42 +414,14 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE9 pDevice)
 		m_bResetViewport = true;
 
 		//setup our new projection based on player view parameters.
-		float fFOV		= 75.0f;
-		float fAspect	= 1.0f;
-		float fNear		= 0.1f;
-		float fFar		= 7.0f;
-
-		// nolf2src: retail looks the variables up with ci_GetConsoleVar
-		// (clientde_impl.cpp), which does what r_GetParameter does; it is
-		// not in the build yet.
-		HLTPARAM hVar;
-		if ((hVar = r_GetParameter("PVModelFOV")) != NULL)
-			fFOV = r_GetParameterValueFloat(hVar);
-		if ((hVar = r_GetParameter("PVModelAspect")) != NULL)
-			fAspect = r_GetParameterValueFloat(hVar);
-#ifdef TRON20SRC_MODERN
-		// MODERN.md EN-34: the player-view effects' aspect (PVModelAspect,
-		// which the game never sets) is the one they were made with at
-		// 4:3; on a wider screen they would stretch with it. Widen it by
-		// the screen's shape over 4:3, as the models' own projection
-		// (d3d_SetReallyClose) takes the screen's shape.
-		{
-			D3DVIEWPORT9 Viewport;
-			if (SUCCEEDED(PD3DDEVICE->GetViewport(&Viewport)) && Viewport.Height > 0)
-			{
-				float fWiden = ((float)Viewport.Width / (float)Viewport.Height) / (4.0f / 3.0f);
-				if (fWiden > 1.0f)
-					fAspect *= fWiden;
-			}
-		}
-#endif
-		if ((hVar = r_GetParameter("reallyclose_near")) != NULL)
-			fNear = r_GetParameterValueFloat(hVar);
-		if ((hVar = r_GetParameter("reallyclose_far")) != NULL)
-			fFar = r_GetParameterValueFloat(hVar);
-
 		D3DXMATRIX NewProj;
-		D3DXMatrixPerspectiveFovLH(&NewProj, fFOV * 0.01745329251994f, fAspect, fNear, fFar);
+
+		float aspect = g_ScreenWidth / float(g_ScreenHeight);
+
+		D3DXMatrixPerspectiveFovLH(&NewProj,g_CV_PVModelFOV.m_Val * 0.01745329251994f,
+											aspect,
+											g_CV_ModelNear.m_Val,
+											g_CV_ModelFar.m_Val);
 
 		//setup the new matrices
 		PD3DDEVICE->SetTransform(D3DTS_PROJECTION, &NewProj);
@@ -447,26 +432,37 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE9 pDevice)
 		//not really close, so pick the transform that is most applicable
 		switch (m_eTransType)
 		{
+		// RETAIL: Build 69's: the camera's frustum and transforms
+		// (Lithtech.exe 0x41dc58, 0x41dd30). Near: retail's frame is 0x40
+		// bytes smaller (0x424 against ours 0x464), the size of a matrix
 		case DRAWPRIM_TRANSFORM_WORLD  :
-			if (pCamera)
+			if (m_pCamera)
 			{
-				// View matrix from the camera's position and rotation
-				// (the projection is left as it is)...
-				D3DXQUATERNION qRot(pCamera->m_Rotation.m_Quat[0], pCamera->m_Rotation.m_Quat[1],
-									pCamera->m_Rotation.m_Quat[2], pCamera->m_Rotation.m_Quat[3]);
+				ViewParams cDrawPrimParams;
+				d3d_InitFrustum(&cDrawPrimParams, pCamera->m_xFov, pCamera->m_yFov,
+					// Note : This sucks, but we don't have any other way of getting the near/farZ at this point
+					g_ViewParams.m_NearZ, g_ViewParams.m_FarZ,
+					pCamera->m_Left, pCamera->m_Top, pCamera->m_Right, pCamera->m_Bottom,
+					&pCamera->m_Pos, &pCamera->m_Rotation,
+					ViewParams::eRenderMode_Normal);
 
-				D3DXMATRIX mView, mTrans, mTemp;
-				D3DXMatrixRotationQuaternion(&mView, &qRot);
-				D3DXMatrixTranspose(&mView, &mView);
-				D3DXMatrixTranslation(&mTrans, -pCamera->m_Pos.x, -pCamera->m_Pos.y, -pCamera->m_Pos.z);
-				D3DXMatrixMultiply(&mTemp, &mTrans, &mView);
-				mView = mTemp;
-
-				PD3DDEVICE->SetTransform(D3DTS_VIEW, &mView);
+				d3d_SetD3DTransformStates(cDrawPrimParams);
 			}
 			break;
 
 		case DRAWPRIM_TRANSFORM_CAMERA :
+			if (m_pCamera)
+			{
+				ViewParams cDrawPrimParams;
+				d3d_InitFrustum(&cDrawPrimParams, pCamera->m_xFov, pCamera->m_yFov,
+					// Note : This sucks, but we don't have any other way of getting the near/farZ at this point
+					g_ViewParams.m_NearZ, g_ViewParams.m_FarZ,
+					pCamera->m_Left, pCamera->m_Top, pCamera->m_Right, pCamera->m_Bottom,
+					&pCamera->m_Pos, &pCamera->m_Rotation,
+					ViewParams::eRenderMode_Normal);
+
+				d3d_SetD3DTransformStates(cDrawPrimParams);
+			}
 			PD3DDEVICE->SetTransform(D3DTS_VIEW,&mIdentity);
 			break;
 
@@ -486,8 +482,10 @@ void CD3DDrawPrim::SetColorOp(LPDIRECT3DDEVICE9 pDevice)
 	switch (m_ColorOp)
 	{
 	case DRAWPRIM_NOCOLOROP :
-		pDevice->SetTextureStageState(0,D3DTSS_COLOROP,D3DTOP_DISABLE);
-		pDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_DISABLE);
+		// RETAIL: Build 69's: the diffuse colour selected, not the stage
+		// disabled (Lithtech.exe 0x41e12b)
+		pDevice->SetTextureStageState(0,D3DTSS_COLOROP,D3DTOP_SELECTARG2);
+		pDevice->SetTextureStageState(0,D3DTSS_ALPHAOP,D3DTOP_SELECTARG2);
 		break;
 	case DRAWPRIM_MODULATE	:
 		pDevice->SetTextureStageState(0,D3DTSS_COLOROP,D3DTOP_MODULATE);
@@ -694,7 +692,7 @@ void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE9 pDevice)
 	//SetReallyClose(pDevice);
 
 	//setup states that are independant of the various possible settings
-	pDevice->SetRenderState(D3DRS_FOGENABLE,false);
+	// RETAIL: fog is left to SetFogEnable, as Build 69's (Lithtech.exe 0x41e0b0)
 	pDevice->SetRenderState(D3DRS_LIGHTING,false);
 
 	pDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
@@ -1069,14 +1067,8 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF3 *pPrim, uint32 nCount) {
 }
 
 // Draw primitive calls (quadrilaterals)
-// RETAIL: the batched screen-space POLYGT4 path colours all six vertices
-// with the first vertex's colour (Lithtech.exe 0x41d8ef; RETAIL_BUGS.md);
-// the modern build uses each vertex's own.
-#ifdef TRON20SRC_MODERN
-#define GT4_BATCH_RGBA(pSrc, i)	RGBA_MAKE((pSrc)->verts[i].rgba.r,(pSrc)->verts[i].rgba.g,(pSrc)->verts[i].rgba.b,(pSrc)->verts[i].rgba.a)
-#else
-#define GT4_BATCH_RGBA(pSrc, i)	RGBA_MAKE((pSrc)->verts[0].rgba.r,(pSrc)->verts[0].rgba.g,(pSrc)->verts[0].rgba.b,(pSrc)->verts[0].rgba.a)
-#endif
+// RETAIL: Build 69's: each draw's result checked, each batched vertex
+// with its own colour (Lithtech.exe 0x41f140)
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
@@ -1122,13 +1114,13 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 
 					pDstPtr->x	    = pSrcPtr->verts[1].x; pDstPtr->y = pSrcPtr->verts[1].y; pDstPtr->z = pSrcPtr->verts[1].z;
 					pDstPtr->rhw	= 1.0f;
-					pDstPtr->rgba   = GT4_BATCH_RGBA(pSrcPtr, 1);
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[1].rgba.r,pSrcPtr->verts[1].rgba.g,pSrcPtr->verts[1].rgba.b,pSrcPtr->verts[1].rgba.a);
 					pDstPtr->u	    = pSrcPtr->verts[1].u; pDstPtr->v = pSrcPtr->verts[1].v; 
 					++pDstPtr;
 
 					pDstPtr->x	    = pSrcPtr->verts[2].x; pDstPtr->y = pSrcPtr->verts[2].y; pDstPtr->z = pSrcPtr->verts[2].z;
 					pDstPtr->rhw	= 1.0f;
-					pDstPtr->rgba   = GT4_BATCH_RGBA(pSrcPtr, 2);
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[2].rgba.r,pSrcPtr->verts[2].rgba.g,pSrcPtr->verts[2].rgba.b,pSrcPtr->verts[2].rgba.a);
 					pDstPtr->u	    = pSrcPtr->verts[2].u; pDstPtr->v = pSrcPtr->verts[2].v; 
 					++pDstPtr;
 
@@ -1140,18 +1132,22 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 
 					pDstPtr->x	    = pSrcPtr->verts[2].x; pDstPtr->y = pSrcPtr->verts[2].y; pDstPtr->z = pSrcPtr->verts[2].z;
 					pDstPtr->rhw	= 1.0f;
-					pDstPtr->rgba   = GT4_BATCH_RGBA(pSrcPtr, 2);
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[2].rgba.r,pSrcPtr->verts[2].rgba.g,pSrcPtr->verts[2].rgba.b,pSrcPtr->verts[2].rgba.a);
 					pDstPtr->u	    = pSrcPtr->verts[2].u; pDstPtr->v = pSrcPtr->verts[2].v; 
 					++pDstPtr;
 
 					pDstPtr->x	    = pSrcPtr->verts[3].x; pDstPtr->y = pSrcPtr->verts[3].y; pDstPtr->z = pSrcPtr->verts[3].z;
 					pDstPtr->rhw	= 1.0f;
-					pDstPtr->rgba   = GT4_BATCH_RGBA(pSrcPtr, 3);
+					pDstPtr->rgba   = RGBA_MAKE(pSrcPtr->verts[3].rgba.r,pSrcPtr->verts[3].rgba.g,pSrcPtr->verts[3].rgba.b,pSrcPtr->verts[3].rgba.a);
 					pDstPtr->u	    = pSrcPtr->verts[3].u; pDstPtr->v = pSrcPtr->verts[3].v; 
 					++pDstPtr;
 
 					--nCount; nDstBufSize -= 6; nDrawCount += 2; ++pSrcPtr; }
 				MODERN_PIXEL_ALIGN(m_VertTransBufT, pDstPtr); hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nDrawCount, m_VertTransBufT, sizeof(DRAWPRIM_D3DTRANS_TEX));
+				if (hRes != D3D_OK)
+				{
+					return LT_ERROR;
+				}
 		} }
 		else {
   			LT_POLYGT4* pPrimPtr = pPrim;
@@ -1162,11 +1158,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
   					m_VertTransBufT[i].u	= pPrimPtr->verts[i].u; m_VertTransBufT[i].v = pPrimPtr->verts[i].v; }
 
   			MODERN_PIXEL_ALIGN(m_VertTransBufT, m_VertTransBufT + 4); hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertTransBufT, sizeof(DRAWPRIM_D3DTRANS_TEX));
+			if (hRes != D3D_OK) 
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; } }
 
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41db35)
-		if (hRes != D3D_OK)
-			return LT_ERROR;
 		 }
 
 	return LT_OK;
@@ -1294,10 +1289,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT4 *pPrim, uint32 nCount) {
 				m_VertBufGT[i].rgba = pPrimPtr->rgba;
 				m_VertBufGT[i].u	= pPrimPtr->verts[i].u; m_VertBufGT[i].v = pPrimPtr->verts[i].v; }
 			hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertBufGT, sizeof(LT_VERTGT));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41db70)
-		if (hRes != D3D_OK)
-			return LT_ERROR;
 		 }
 	else {	// Use Transform and Lit verts...
 		HRESULT hRes = pDevice->SetVertexShader(NULL);
@@ -1313,10 +1307,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT4 *pPrim, uint32 nCount) {
 				m_VertTransBufT[i].rgba = RGBA_MAKE(pPrimPtr->rgba.r,pPrimPtr->rgba.g,pPrimPtr->rgba.b,pPrimPtr->rgba.a);
 				m_VertTransBufT[i].u	= pPrimPtr->verts[i].u; m_VertTransBufT[i].v = pPrimPtr->verts[i].v; }
 			MODERN_PIXEL_ALIGN(m_VertTransBufT, m_VertTransBufT + 4); hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertTransBufT, sizeof(DRAWPRIM_D3DTRANS_TEX));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41db70)
-		if (hRes != D3D_OK)
-			return LT_ERROR; 
 		}
 
 	return LT_OK;
@@ -1338,10 +1331,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG4 *pPrim, uint32 nCount) {
 		while (nCount) 
 		{	// Note: Not checking return everytime for speed...
 			hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, pPrimPtr, sizeof(LT_VERTG));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41dd90)
-		if (hRes != D3D_OK)
-			return LT_ERROR; 
 		}
 	else {	// Use Transform and Lit verts...
 		HRESULT hRes = pDevice->SetVertexShader(NULL);
@@ -1356,10 +1348,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG4 *pPrim, uint32 nCount) {
 				m_VertTransBuf[i].x	= pPrimPtr->verts[i].x; m_VertTransBuf[i].y = pPrimPtr->verts[i].y; m_VertTransBuf[i].z = pPrimPtr->verts[i].z; m_VertTransBuf[i].rhw = 1.0f;
 				m_VertTransBuf[i].rgba = RGBA_MAKE(pPrimPtr->verts[i].rgba.r,pPrimPtr->verts[i].rgba.g,pPrimPtr->verts[i].rgba.b,pPrimPtr->verts[i].rgba.a); }
 			MODERN_PIXEL_ALIGN(m_VertTransBuf, m_VertTransBuf + 4); hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertTransBuf, sizeof(DRAWPRIM_D3DTRANS));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41dd90)
-		if (hRes != D3D_OK)
-			return LT_ERROR; 
 		}
 
 	return LT_OK;
@@ -1383,10 +1374,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF4 *pPrim, uint32 nCount) {
 				m_VertBufG[i].x	= pPrimPtr->verts[i].x; m_VertBufG[i].y = pPrimPtr->verts[i].y; m_VertBufG[i].z = pPrimPtr->verts[i].z;
 				m_VertBufG[i].rgba = pPrimPtr->rgba; }
 			hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertBufG, sizeof(LT_VERTG));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41dfee)
-		if (hRes != D3D_OK)
-			return LT_ERROR; 
 		}
 	else {	// Use Transform and Lit verts...
 		HRESULT hRes = pDevice->SetVertexShader(NULL);
@@ -1401,10 +1391,9 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF4 *pPrim, uint32 nCount) {
 				m_VertTransBuf[i].x	= pPrimPtr->verts[i].x; m_VertTransBuf[i].y = pPrimPtr->verts[i].y; m_VertTransBuf[i].z = pPrimPtr->verts[i].z; m_VertTransBuf[i].rhw = 1.0f;
 				m_VertTransBuf[i].rgba = RGBA_MAKE(pPrimPtr->rgba.r,pPrimPtr->rgba.g,pPrimPtr->rgba.b,pPrimPtr->rgba.a); }
 			MODERN_PIXEL_ALIGN(m_VertTransBuf, m_VertTransBuf + 4); hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, m_VertTransBuf, sizeof(DRAWPRIM_D3DTRANS));
+			if (hRes != D3D_OK)
+				return LT_ERROR;
 			--nCount; ++pPrimPtr; }
-		// RETAIL: only the last draw's result is checked (Lithtech.exe 0x41e0a9)
-		if (hRes != D3D_OK)
-			return LT_ERROR; 
 		}
 
 	return LT_OK;
