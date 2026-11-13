@@ -30,7 +30,8 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalDistress, kGoal_Distress);
 
 CAIGoalDistress::CAIGoalDistress()
 {
-	m_bCanActivate		= LTTRUE;
+	// RETAIL: Tron's constructor (0x10209870) clears it; NOLF2 set LTTRUE.
+	m_bCanActivate		= LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -53,6 +54,43 @@ void CAIGoalDistress::Load(ILTMessage_Read *pMsg)
 	super::Load(pMsg);
 
 	LOAD_BOOL(m_bCanActivate);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalDistress::InitGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x102099f0): hook the goal up to the AI's
+//				activation notifications.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalDistress::InitGoal(CAI* pAI)
+{
+	super::InitGoal(pAI);
+
+	m_ActivationNotifier.SetSubject( pAI );
+	m_ActivationNotifier.SetObserver( this );
+	m_ActivationNotifier.SetCallback( &IActivationObserver::OnActivation );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalDistress::OnActivation
+//
+//	PURPOSE:	RETAIL: Tron's (0x10209a50): when our AI is activated, the
+//				goal is done.
+//
+// ----------------------------------------------------------------------- //
+
+int CAIGoalDistress::OnActivation(ActivationInfo* pInfo)
+{
+	if( pInfo && ( pInfo->hAI == m_pAI->GetUserObject() ) )
+	{
+		m_fCurImportance = 0.f;
+	}
+
+	return 0;
 }
 
 // ----------------------------------------------------------------------- //
@@ -186,10 +224,34 @@ LTBOOL CAIGoalDistress::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			return LTFALSE;
 		}
 
-		// Only distress if see a character with a dangerous weapon aimed at me.
+		// RETAIL: Tron's (0x10209b80): only distress if the stimulus
+		// source has a dangerous weapon and faces us (NOLF2 asked the
+		// brain whether the target aims at us). The test is the one of
+		// CAIHumanStateDistress::Update.
 
-		m_pAI->Target( m_hStimulusSource );
-		if( m_pAI->GetBrain()->TargetIsAimingAtMe() )
+		CCharacter* pCharacter = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( pSenseRecord->hLastStimulusSource ) );
+		if( pCharacter && !pCharacter->HasDangerousWeapon() )
+		{
+			return LTFALSE;
+		}
+
+		LTRotation rRot;
+		LTVector vForward;
+		g_pLTServer->GetObjectRotation( pCharacter->GetUserObject(), &rRot );
+		vForward = rRot.Forward();
+		vForward.y = 0;
+
+		LTVector vPos;
+		g_pLTServer->GetObjectPos( pCharacter->GetUserObject(), &vPos );
+
+		LTVector vDir;
+		vDir = m_pAI->GetPosition() - vPos;
+		vDir.y = 0;
+		vDir.Normalize();
+
+		const static LTFLOAT fThreshhold = m_pAI->GetBrain()->GetDistressFacingThreshhold();
+
+		if ( vDir.Dot(vForward) > fThreshhold )
 		{
 			return LTTRUE;
 		}

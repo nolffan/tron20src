@@ -12,6 +12,18 @@
 #include "stdafx.h"
 #include "AIGoalAbstractTargeted.h"
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAbstractTargeted::CAIGoalAbstractTargeted
+//
+//	PURPOSE:	RETAIL: Tron's (0x10272b20)
+//
+// ----------------------------------------------------------------------- //
+
+CAIGoalAbstractTargeted::CAIGoalAbstractTargeted()
+{
+	m_hTarget.SetReceiver( *this );
+}
 
 // ----------------------------------------------------------------------- //
 //

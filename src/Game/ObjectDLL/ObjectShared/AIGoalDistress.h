@@ -13,9 +13,13 @@
 #define __AIGOAL_DISTESS_H__
 
 #include "AIGoalAbstractStimulated.h"
+#include "ActivationObserver.h"
 
 
-class CAIGoalDistress : public CAIGoalAbstractStimulated
+// RETAIL: Tron's CAIGoalDistress also derives IActivationObserver (+0xa0,
+// RTTI) and holds an ActivationNotifier (+0xa8); size 0xb4 (factory
+// 0x102097c0, constructor 0x10209870).
+class CAIGoalDistress : public CAIGoalAbstractStimulated, public IActivationObserver
 {
 	typedef CAIGoalAbstractStimulated super;
 
@@ -29,6 +33,12 @@ class CAIGoalDistress : public CAIGoalAbstractStimulated
 
 		virtual void	Save(ILTMessage_Write *pMsg);
         virtual void	Load(ILTMessage_Read *pMsg);
+
+		// RETAIL: Tron's (0x102099f0): registers the activation notifier.
+		virtual void	InitGoal(CAI* pAI);
+
+		// RETAIL: Tron's IActivationObserver (0x10209a50).
+		virtual int		OnActivation(ActivationInfo* pInfo);
 
 		// Activation.
 
@@ -56,6 +66,7 @@ class CAIGoalDistress : public CAIGoalAbstractStimulated
 	protected:
 
 		LTBOOL				m_bCanActivate;
+		ActivationNotifier	m_ActivationNotifier;	// RETAIL: Tron's (+0xa8)
 };
 
 
