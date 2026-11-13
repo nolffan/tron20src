@@ -741,10 +741,10 @@ bool CScreenGlowMgr::DisplayBlendedTexture()
 	// Note : This has to be static so that broken drivers can DMA the vertices after the DrawPrimitive call
 	static TLVertex Verts[4];
 
-	float fX1	= 0.0f;
-	float fY1	= 0.0f;
-	float fX2	= g_ViewParams.m_fScreenWidth;
-	float fY2	= g_ViewParams.m_fScreenHeight;
+	float fX1	= (float)g_ViewParams.m_Rect.left;
+	float fY1	= (float)g_ViewParams.m_Rect.top;
+	float fX2	= (float)g_ViewParams.m_Rect.right;
+	float fY2	= (float)g_ViewParams.m_Rect.bottom;
 
 	//offset the UL by one texel in order to compensate for the rendering bias towards right pixels
 	//and the UL .5 texel which we don't want
@@ -780,7 +780,7 @@ bool CScreenGlowMgr::DisplayBlendedTexture()
 	D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 	D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, Verts, sizeof(TLVertex)));
 
-	// (retail leaves the glow texture set: no d3d_SetTextureDirect(NULL, 0) here)
+	d3d_SetTextureDirect(NULL, 0);
 
 	return true;
 }
@@ -819,6 +819,7 @@ bool CScreenGlowMgr::DrawDebugTexture()
 	D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 	D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, Verts, sizeof(TLVertex)));
 
+	d3d_SetTextureDirect(NULL, 0);
 
 	return true;
 }

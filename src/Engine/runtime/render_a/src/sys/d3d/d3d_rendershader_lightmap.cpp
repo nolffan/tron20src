@@ -841,7 +841,7 @@ void CRenderShader_Lightmap_Texture_Detail::PreFlush()
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ALPHAARG2, D3DTA_CURRENT);
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
-	// RETAIL: stage 1's texture coordinates left as they are (0x4ebd04)
+	PD3DDEVICE->SetTextureStageState(1, D3DTSS_TEXCOORDINDEX, 1);
 	PD3DDEVICE->SetTextureStageState(2, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	PD3DDEVICE->SetTextureStageState(2, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 }
