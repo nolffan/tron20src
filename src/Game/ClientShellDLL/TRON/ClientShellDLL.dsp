@@ -166,6 +166,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BaseScreenJoin.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -587,6 +591,10 @@ SOURCE=.\AdditiveCtrl.h
 # Begin Source File
 
 SOURCE=.\ArcCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenJoin.h
 # End Source File
 # Begin Source File
 
