@@ -883,17 +883,19 @@ bool AILightCycle::CheckPath(const LTVector & vStart, const LTVector & vEnd, flo
 		}
 	}
 
+	float fVolumeDist;
 	LTVector vHit2;
-	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vHit2))
+	if (IntersectLightCycleVolumes(vStart, vEnd, &fVolumeDist, &vHit, &vHit2))
 	{
-		if (fHitDist < *pfDist)
+		if (fVolumeDist < *pfDist)
 		{
-			*pfDist = fHitDist;
+			*pfDist = fVolumeDist;
 			*pvHit = vHit;
 		}
 	}
 
-	return (HUGE_VAL != *pfDist);
+	if (*pfDist == HUGE_VAL) return false;
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -937,7 +939,8 @@ bool AILightCycle::IsToLeft(LTVector vPos)
 	LTVector vMyPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
 	LTVector vDiff = vPos - vMyPos;
-	return (GetLeft().Dot(vDiff) > 0.0f);
+	if (GetLeft().Dot(vDiff) > 0.0f) return true;
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -950,10 +953,9 @@ bool AILightCycle::IsToLeft(LTVector vPos)
 
 bool AILightCycle::IsInFront(const LTVector & vPos)
 {
-	LTVector vMyPos;
-	g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
-	LTVector vDiff = vPos - vMyPos;
-	return (GetForward().Dot(vDiff) > 0.0f);
+	LTVector vDiff = vPos - GetPos();
+	if (GetForward().Dot(vDiff) > 0.0f) return true;
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1069,16 +1071,20 @@ Failed:
 
 bool AILightCycle::ReplanPowerupPath()
 {
-	if (!m_pPowerup) return false;
+	if (m_pPowerup)
+	{
+		LTVector vPos;
+		g_pLTServer->GetObjectPos(m_pPowerup->m_hObject, &vPos);
 
-	LTVector vPos;
-	g_pLTServer->GetObjectPos(m_pPowerup->m_hObject, &vPos);
+		m_lstPath.clear();
 
-	m_lstPath.clear();
+		if (IsInFront(vPos))
+		{
+			return PlanPath(m_nDirection, vPos);
+		}
+	}
 
-	if (!IsInFront(vPos)) return false;
-
-	return PlanPath(m_nDirection, vPos);
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1169,7 +1175,7 @@ float AILightCycle::GetDistSinceTurn()
 	if (!pTrail) return 0.0f;
 
 	uint32 nNumPoints = pTrail->collTrailPoints.size();
-	if (nNumPoints == 0) return 0.0f;
+	if (!nNumPoints) return 0.0f;
 	if (nNumPoints < 2) return 0.0f;
 
 	LTVector vPoint = pTrail->collTrailPoints.at(nNumPoints - 2).vPoint;
@@ -2064,20 +2070,26 @@ LTVector AILightCycle::GetPlayerPos()
 
 bool AILightCycle::IsTrailTight()
 {
-	if (!m_pCyclist) return false;
+	if (m_pCyclist)
+	{
+		LIGHT_CYCLE_TRAIL* pTrail = m_pCyclist->pCurTrail;
+		if (pTrail)
+		{
+			uint32 nNumPoints = pTrail->collTrailPoints.size();
+			if (nNumPoints >= 5)
+			{
+				float fPrevLen = (pTrail->collTrailPoints[nNumPoints - 4].vPoint - pTrail->collTrailPoints[nNumPoints - 3].vPoint).Mag();
+				LTVector vLast = pTrail->collTrailPoints[nNumPoints - 2].vPoint - pTrail->collTrailPoints[nNumPoints - 1].vPoint;
 
-	LIGHT_CYCLE_TRAIL* pTrail = m_pCyclist->pCurTrail;
-	if (!pTrail) return false;
+				if (fPrevLen <= 15000.0f && vLast.Mag() < fPrevLen)
+				{
+					return true;
+				}
+			}
+		}
+	}
 
-	uint32 nNumPoints = pTrail->collTrailPoints.size();
-	if (nNumPoints < 5) return false;
-
-	float fPrevLen = (pTrail->collTrailPoints[nNumPoints - 4].vPoint - pTrail->collTrailPoints[nNumPoints - 3].vPoint).Mag();
-	LTVector vLast = pTrail->collTrailPoints[nNumPoints - 2].vPoint - pTrail->collTrailPoints[nNumPoints - 1].vPoint;
-
-	if (fPrevLen > 15000.0f) return false;
-
-	return (vLast.Mag() < fPrevLen);
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2120,12 +2132,15 @@ int AILightCycle::SetBehavior(int eBehavior)
 
 int AILightCycle::GetHitType(LightCycleCollisionInfo* pInfo)
 {
-	if (!pInfo) return AILC_HIT_NONE;
+	if (pInfo)
+	{
+		if (pInfo->pCyclist == m_pCyclist) return AILC_HIT_OWNTRAIL;
+		if (pInfo->pCyclist == GetPlayerCyclist()) return AILC_HIT_PLAYERTRAIL;
 
-	if (pInfo->pCyclist == m_pCyclist) return AILC_HIT_OWNTRAIL;
-	if (pInfo->pCyclist == GetPlayerCyclist()) return AILC_HIT_PLAYERTRAIL;
+		return pInfo->pCyclist ? AILC_HIT_AITRAIL : AILC_HIT_VOLUME;
+	}
 
-	return pInfo->pCyclist ? AILC_HIT_AITRAIL : AILC_HIT_VOLUME;
+	return AILC_HIT_NONE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2180,13 +2195,11 @@ static int IsBetween(LTVector p, LTVector a, LTVector b)
 {
 	if (a.x != b.x)
 	{
-		if (a.x <= p.x && p.x <= b.x) return 1;
-		if (a.x >= p.x && p.x >= b.x) return 1;
+		if ((a.x <= p.x && p.x <= b.x) || (a.x >= p.x && p.x >= b.x)) return 1;
 		return 0;
 	}
 
-	if (a.z <= p.z && p.z <= b.z) return 1;
-	if (a.z >= p.z && p.z >= b.z) return 1;
+	if ((a.z <= p.z && p.z <= b.z) || (a.z >= p.z && p.z >= b.z)) return 1;
 	return 0;
 }
 
