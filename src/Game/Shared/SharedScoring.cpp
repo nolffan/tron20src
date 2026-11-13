@@ -19,11 +19,10 @@
 #include "ServerUtilities.h"
 #endif
 
-#ifndef _CLIENTBUILD
-// RETAIL: Tron's server message to a client (as TronGameServerShell.cpp's)
-// and its sub-id for the teams (retail 0x1013fb00); the names are ours
-#define MID_TRON_SERVERMESSAGE	200
-#define TSM_TEAMS				80
+#ifdef _CLIENTBUILD
+#include "InterfaceMgr.h"
+#include "ClientUtilities.h"
+#include "ClientResShared.h"
 #endif
 
 CTronTeamMgr* g_pTronTeamMgr = LTNULL;
@@ -434,6 +433,102 @@ CPlayerObj* CTronTeam::GetPlayer(uint32 nIndex)
 	return pPlayer;
 }
 
+#else // _CLIENTBUILD
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronTeam::ReadData
+//
+//	PURPOSE:	Read the team the server sent (RETAIL: CShell.dll
+//				0x100fae60; the counterpart of WriteData)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronTeam::ReadData(ILTMessage_Read *pMsg)
+{
+	if (!pMsg) return;
+
+	m_nID = pMsg->Readuint8();
+	m_eState = (TronTeamState)pMsg->Readuint8();
+	m_nTronUnknownC = pMsg->Readint16();
+	m_nTronUnknownE = pMsg->Readint16();
+	m_nMaxClients = pMsg->Readuint8();
+	m_nTeamSize = pMsg->Readuint8();
+	m_nTronUnknown12 = pMsg->Readint16();
+	uint32 nNumClients = pMsg->Readuint8();
+
+	m_Clients.clear();
+	m_Clients.reserve(nNumClients);
+
+	for (uint32 i = 0; i < nNumClients; i++)
+	{
+		m_Clients.push_back(pMsg->Readuint32());
+	}
+}
+
+// RETAIL: the team's name string ids (CShell.dll 0x101ea528, and 0x101ea548
+// which holds only four: see docs/RETAIL_BUGS.md)
+static int s_nTeamNameIds[8] =
+{
+	3350, 3351, 3352, 3353, 3354, 3355, 3356, 3357,
+};
+static int s_nTeamTronUnknownNameIds[4] =
+{
+	3370, 3371, 3372, 3373,
+};
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronTeam::GetName
+//
+//	PURPOSE:	The team's name: its one player's for a team of one, or its
+//				string (RETAIL: CShell.dll 0x100fafc0; the argument names
+//				are ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronTeam::GetName(bool bPlayerName, std::string& sName, bool bTronUnknown)
+{
+	if (m_nMaxClients < 2 && m_nTeamSize < 2)
+	{
+		char* pszName;
+		if (m_Clients.empty())
+		{
+			pszName = "";
+			sName.assign(pszName, pszName + strlen(pszName));
+		}
+		else
+		{
+			pszName = const_cast<char*>(g_pInterfaceMgr->GetClientInfoMgr()->GetPlayerName(m_Clients[0]));
+			sName.assign(pszName, pszName + strlen(pszName));
+		}
+		return;
+	}
+
+	if (bPlayerName && m_Clients.size() == 1)
+	{
+		char* pszName = const_cast<char*>(g_pInterfaceMgr->GetClientInfoMgr()->GetPlayerName(m_Clients[0]));
+		sName.assign(pszName, pszName + strlen(pszName));
+		return;
+	}
+
+	if (m_nID < 8)
+	{
+		// RETAIL BUG: the second table has four ids; teams 4 to 7 read past it
+		if (bTronUnknown)
+			sName = LoadTempString(s_nTeamTronUnknownNameIds[m_nID]);
+		else
+			sName = LoadTempString(s_nTeamNameIds[m_nID]);
+	}
+	else
+	{
+		// RETAIL: string 3358, after the eight team names (0x100fb1f7)
+		sName = LoadTempString(3358);
+	}
+}
+
+#endif // _CLIENTBUILD
+
 // RETAIL: retail 0x1013f710 (the meaning, and the name, are ours)
 uint8 CTronTeam::GetTronUnknownIndex()
 {
@@ -470,8 +565,6 @@ uint32 CTronTeam::GetClient(uint32 nIndex)
 	return m_Clients[nIndex];
 }
 
-#endif // _CLIENTBUILD
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronTeamMgr::Init
@@ -493,8 +586,33 @@ void CTronTeamMgr::Init()
 
 	m_nNumTeams = 0;
 	m_nTeamSize = -1;
+#ifndef _CLIENTBUILD
 	m_nMaxPlayers = 0;
+#endif
 }
+
+#ifdef _CLIENTBUILD
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronTeamMgr::MoveClient
+//
+//	PURPOSE:	Ask the server to move a client to a team (RETAIL:
+//				CShell.dll 0x100fb900; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronTeamMgr::MoveClient(uint32 nClientID, uint32 nTeam)
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
+	cMsg.Writeuint8(TSM_MOVECLIENT);
+	cMsg.Writeuint32(nClientID);
+	cMsg.Writeuint8(nTeam);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+}
+
+#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //
@@ -517,9 +635,8 @@ CTronTeam* CTronTeamMgr::GetTeam(uint32 nTeam, bool bMapped)
 	return &m_aTeams[nTeam];
 }
 
-#ifndef _CLIENTBUILD
-
-// RETAIL: retail 0x1013f810: the team holding the client, or -1
+// RETAIL: retail 0x1013f810 (CShell.dll 0x100fba30): the team holding the
+// client, or -1
 int CTronTeamMgr::GetTeamOfClient(uint32 nClientID)
 {
 	for (int i = 0; i <= TRON_UNASSIGNED_TEAM; i++)
@@ -530,6 +647,8 @@ int CTronTeamMgr::GetTeamOfClient(uint32 nClientID)
 
 	return -1;
 }
+
+#ifndef _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //

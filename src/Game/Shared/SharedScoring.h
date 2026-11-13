@@ -17,11 +17,19 @@
 #include "ClientServerShared.h"
 
 #include <vector>
+#include <string>
 
 // RETAIL: Tron's own score message (retail Object.lto 0x1013f030,
 // 0x1013f5d0): a bool, true for a player's score, false for a team's. The
 // name is ours
 #define MID_TRON_SCORE				122
+
+// RETAIL: Tron's message between the server and the host's client, and its
+// sub-ids for the teams (Object.lto 0x1013fb00; CShell.dll 0x100fb954). The
+// names are ours
+#define MID_TRON_SERVERMESSAGE		200
+#define TSM_TEAMS					80
+#define TSM_MOVECLIENT				81
 
 // RETAIL: Tron's CPlayerScore, not NOLF2's (Tron forked before NOLF2's was
 // written): retail Object.lto 0x1013eed0 to 0x1013f230, 0x1c bytes, CPlayerObj's
@@ -121,12 +129,25 @@ public:
 	void	SetMaxClients(uint8 nMaxClients, uint8 nTeamSize);
 	void	UpdateClients(HCLIENT hClients = LTNULL);
 	class CPlayerObj* GetPlayer(uint32 nIndex);
+#else
+	// RETAIL: the client's copy (CShell.dll 0x100fae60, 0x100fafc0)
+	void	ReadData(ILTMessage_Read *pMsg);
+	void	GetName(bool bPlayerName, std::string& sName, bool bTronUnknown);
+#endif
 	uint8	GetTronUnknownIndex();
 
 	TronTeamState GetState() { return m_eState; }
 	int		FindClient(uint32 nClientID);
 	uint32	GetClient(uint32 nIndex);
-#endif
+
+	// RETAIL: inline accessors the client's HUDs use (the names are ours)
+	uint8	GetID() { return m_nID; }
+	uint8	GetMaxClients() { return m_nMaxClients; }
+	uint8	GetTeamSize() { return m_nTeamSize; }
+	int16	GetTronUnknownC() { return m_nTronUnknownC; }
+	int16	GetTronUnknownE() { return m_nTronUnknownE; }
+	int16	GetTronUnknown12() { return m_nTronUnknown12; }
+	uint32	GetNumClients() { return m_Clients.size(); }
 
 private:
 	uint8	m_nID;				// +0x00 (0xff until Init)
@@ -162,8 +183,13 @@ public:
 
 	int		GetNumTeams() { return m_nNumTeams; }
 
-#ifndef _CLIENTBUILD
 	int		GetTeamOfClient(uint32 nClientID);
+
+#ifdef _CLIENTBUILD
+	// RETAIL: the client asks the server to move a client to a team
+	// (CShell.dll 0x100fb900); the name is ours
+	void	MoveClient(uint32 nClientID, uint32 nTeam);
+#else
 	bool	SetupTeams(uint32 nTeamSize, uint32 nMaxPlayers);
 	bool	RemoveClient(uint32 nClientID);
 	bool	MoveClient(uint32 nClientID, uint32 nTeam);
@@ -177,7 +203,11 @@ private:
 	CTronTeam	m_aTeams[TRON_MAX_TEAMS + 1];	// +0x004
 	uint32		m_aTeamIndex[TRON_MAX_TEAMS];	// +0x2f0
 	uint32		m_nTeamSize;					// +0x330 (-1 until set up)
+#ifndef _CLIENTBUILD
+	// RETAIL: the server's only: the client's copy is 0x334 bytes
+	// (CTronInterfaceMgr +0xe408 to +0xe73c; its Init, 0x100fb2e0)
 	uint32		m_nMaxPlayers;					// +0x334
+#endif
 };
 
 extern CTronTeamMgr* g_pTronTeamMgr;

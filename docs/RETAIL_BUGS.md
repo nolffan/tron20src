@@ -565,6 +565,18 @@ trilinear. Build 69's Direct3D 9 renderer has the same lines.
 
 Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md M-G45.
 
+### A team's alternative name is read past its table for teams 4 to 7
+
+CShell.dll 0x100fafc0 (CTronTeam::GetName, Shared/SharedScoring.cpp). A
+team of more than one player takes its name from one of two string id
+tables by its id, for ids up to 7; the first table (0x101ea528) has eight
+ids, the second (0x101ea548, chosen by the third argument) only four, so
+teams 4 to 7 read whatever follows it (code addresses) as a string id and
+get an empty or wrong name.
+
+Not fixed yet: the modern build should give the second table eight ids or
+fall back to the first for ids past it.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
