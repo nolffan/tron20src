@@ -11,6 +11,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#include "ServerOptionMgr.h"
 #include "ClientMultiplayerMgr.h"
 #include "GameClientShell.h"
 #include "MsgIds.h"
@@ -160,7 +161,7 @@ bool ClientMultiplayerMgr::InitMultiPlayer()
 	GameDifficulty eDiff = GD_NORMAL;
 	if (g_pGameClientShell->GetGameType() == eGameTypeCooperative)
 	{
-		eDiff = (GameDifficulty)pProfile->m_ServerGameOptions.GetCoop().m_nDifficulty;
+		eDiff = (GameDifficulty)(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nDifficulty;
 	}
 	g_pGameClientShell->SetDifficulty(eDiff);
 
@@ -325,7 +326,7 @@ bool ClientMultiplayerMgr::SetupServerSinglePlayer( )
 	m_StartGameRequest.m_Type = STARTGAME_NORMAL;
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	m_ServerGameOptions = pProfile->m_ServerGameOptions;
+	m_ServerGameOptions = (*g_pServerOptionMgr->GetCurrent());
 	m_ServerGameOptions.m_bPreCacheAssets = (pProfile->m_sPerformance.nSettings[kPerform_PreCacheAssets] > 0);
 	m_ServerGameOptions.m_bPerformanceTest = g_pGameClientShell->IsRunningPerformanceTest();
 
@@ -348,8 +349,8 @@ bool ClientMultiplayerMgr::SetupServerHost( int nPort, bool bLANOnly )
 	memset( &m_NetClientData, 0, sizeof( m_NetClientData ));
 	
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	m_ServerGameOptions = pProfile->m_ServerGameOptions;
-	m_ServerGameOptions.m_bLANOnly = pProfile->m_ServerGameOptions.m_bLANOnly = bLANOnly;
+	m_ServerGameOptions = (*g_pServerOptionMgr->GetCurrent());
+	m_ServerGameOptions.m_bLANOnly = (*g_pServerOptionMgr->GetCurrent()).m_bLANOnly = bLANOnly;
 	m_ServerGameOptions.m_bPreCacheAssets = (pProfile->m_sPerformance.nSettings[kPerform_PreCacheAssets] > 0);
 
 	if( !UpdateNetClientData( ))
@@ -361,30 +362,30 @@ bool ClientMultiplayerMgr::SetupServerHost( int nPort, bool bLANOnly )
 	switch (g_pGameClientShell->GetGameType())
 	{
 	case eGameTypeCooperative:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pProfile->m_ServerGameOptions.GetCoop().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, pProfile->m_ServerGameOptions.GetCoop().m_sSessionName.c_str( ),
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nMaxPlayers-1;
+		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetCoop().m_sSessionName.c_str( ),
 					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
 		break;
 	case eGameTypeDeathmatch:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pProfile->m_ServerGameOptions.GetDeathmatch().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, pProfile->m_ServerGameOptions.GetDeathmatch().m_sSessionName.c_str( ),
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nMaxPlayers-1;
+		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_sSessionName.c_str( ),
 					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
 		break;
 	case eGameTypeTeamDeathmatch:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_sSessionName.c_str( ),
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nMaxPlayers-1;
+		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_sSessionName.c_str( ),
 					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
 		break;
 	case eGameTypeDoomsDay:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pProfile->m_ServerGameOptions.GetDoomsday().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, pProfile->m_ServerGameOptions.GetDoomsday().m_sSessionName.c_str( ),
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nMaxPlayers-1;
+		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_sSessionName.c_str( ),
 					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
 		break;
 	};
 
 
-	m_StartGameRequest.m_HostInfo.m_bHasPassword = pProfile->m_ServerGameOptions.m_bUsePassword;
-	m_StartGameRequest.m_HostInfo.m_nGameType = (uint8)pProfile->m_ServerGameOptions.m_eGameType;
+	m_StartGameRequest.m_HostInfo.m_bHasPassword = (*g_pServerOptionMgr->GetCurrent()).m_bUsePassword;
+	m_StartGameRequest.m_HostInfo.m_nGameType = (uint8)(*g_pServerOptionMgr->GetCurrent()).m_eGameType;
 	
 	// Set the name of the mod we are using...
 	

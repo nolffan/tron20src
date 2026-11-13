@@ -91,8 +91,10 @@ LTBOOL CTronInterfaceMgr::Init()
 
 	CreateIOCamera();
 
-	// PORT: retail initializes its objects at +0x268a8 and +0x279c4 here
-	// (0x100df900, 0x10047030), not yet written
+	m_ServerOptionMgr.Init();
+
+	// PORT: retail initializes its object at +0x279c4 here (0x10047030),
+	// not yet written
 
 	m_pTurnArrowLeft = g_pScreenSpriteMgr->CreateScreenSprite("Interface\\Spr\\TurnArrowLeft.spr", false, SPRITELAYER_DEFAULT);
 	m_pTurnArrowLeft->m_bShow = LTTRUE;
@@ -136,8 +138,10 @@ void CTronInterfaceMgr::Term()
 		m_hIOCamera = LTNULL;
 	}
 
-	// PORT: retail terms its objects at +0x268a8 and +0x279c4 here
-	// (0x100dfad0, 0x10047200), not yet written
+	m_ServerOptionMgr.Term();
+
+	// PORT: retail terms its object at +0x279c4 here (0x10047200), not
+	// yet written
 
 	CInterfaceMgr::Term();
 

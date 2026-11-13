@@ -799,6 +799,10 @@ SOURCE=.\SearchLightFX.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ServerOptionMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\SFXMgr.cpp
 # End Source File
 # Begin Source File
@@ -1661,6 +1665,10 @@ SOURCE=..\..\Shared\SearchItemMgr.h
 # Begin Source File
 
 SOURCE=.\SearchLightFX.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerOptionMgr.h
 # End Source File
 # Begin Source File
 

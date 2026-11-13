@@ -204,6 +204,7 @@ CUserProfile::CUserProfile()
 	m_nSensitivity = 0;
 
 	m_bAutoCenter = LTFALSE;
+	m_nTronUnknown20 = 0;
 	m_nNormalTurn = 15;
 	m_nFastTurn = 23;
 	m_nLookUp = 25;
@@ -494,6 +495,11 @@ void CUserProfile::LoadMultiplayer()
 	}
 	m_sPlayerGuid = szStr;
 
+	// RETAIL: the host option set's name, the profile's by default
+	// (0x100ed6fd); the sets are CServerOptionMgr's
+	m_buteMgr.GetString(s_aTagName, "ServerConfig", m_sName.c_str(), szStr, sizeof(szStr));
+	m_sServerOptions = szStr;
+
 	m_nCPPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"PlayerModel",0);
 	m_nDMPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"DMPlayerModel",0);
 
@@ -539,20 +545,6 @@ void CUserProfile::LoadMultiplayer()
 	m_nClientPort = (uint16)m_buteMgr.GetInt(s_aTagName,"ClientPort",27888);
 
 	m_bMPRadar = m_buteMgr.GetBool( s_aTagName, "MPRadar", true );
-
-	// Set the default properties on the session name and password.
-	m_ServerGameOptions.m_sPassword = LoadTempString( IDS_PASSWORD_DEFAULT );
-	m_ServerGameOptions.m_sScmdPassword = LoadTempString( IDS_PASSWORD_DEFAULT );
-
-	// Load the options from the bute file.
-	if( !m_ServerGameOptions.LoadFromBute( m_buteMgr ))
-	{
-		ASSERT( !"CUserProfile::LoadMultiplayer: Could not read multiplayer info from profile." );
-		return;
-	}
-
-	// Make sure the name of the profile is correct.
-	m_ServerGameOptions.m_sProfileName = m_sName;
 
 	ApplyMultiplayer(false);
 }
@@ -706,6 +698,7 @@ void CUserProfile::SaveMultiplayer()
 	strcpy(s_aTagName,"Multiplayer");
 	m_buteMgr.SetString(s_aTagName, "PlayerName",m_sPlayerName.c_str());
 	m_buteMgr.SetString( s_aTagName, "Guid", m_sPlayerGuid.c_str( ));
+	m_buteMgr.SetString( s_aTagName, "ServerConfig", m_sServerOptions.c_str( ));
 	m_buteMgr.SetInt(s_aTagName,"PlayerModel",(int)m_nCPPlayerModel);
 	m_buteMgr.SetInt(s_aTagName,"DMPlayerModel",(int)m_nDMPlayerModel);
 
@@ -720,8 +713,6 @@ void CUserProfile::SaveMultiplayer()
 	m_buteMgr.SetInt(s_aTagName,"ClientPort",(int)m_nClientPort);
 
 	m_buteMgr.SetBool( s_aTagName, "MPRadar", m_bMPRadar );
-
-	m_ServerGameOptions.SaveToBute( m_buteMgr );
 }
 
 void CUserProfile::SaveGameOptions()
