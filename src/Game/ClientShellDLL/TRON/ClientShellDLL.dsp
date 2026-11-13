@@ -336,6 +336,10 @@ SOURCE=.\LCHUDHelper.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightLine.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -687,6 +691,10 @@ SOURCE=.\HUDWeapon.h
 # Begin Source File
 
 SOURCE=.\LCHUDHelper.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightLine.h
 # End Source File
 # Begin Source File
 

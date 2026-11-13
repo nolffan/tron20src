@@ -98,6 +98,10 @@ Contains coordinate and color information for a Gouraud-shaded vertex.
 */
 struct LT_VERTG
 {       
+    // RETAIL: Tron's SDK gives it a constructor too (z = 0: the glint of
+    // retail CShell.dll 0x100d7c10 builds its LT_POLYG4s with it)
+    LT_VERTG() { z = 0.0f; }
+
     float                           x,y,z;
     LT_VERTRGBA                     rgba;
 };
@@ -108,6 +112,10 @@ Contains coordinate information for a flat-shaded vertex.
 */
 struct LT_VERTF
 {       
+    // RETAIL: Tron's SDK gives it a constructor too (z = 0: CBaseScreenJoin's
+    // constructor, retail CShell.dll 0x10006660, builds its LT_POLYF4s with it)
+    LT_VERTF() { z = 0.0f; }
+
     float                           x,y,z;
 };
 
