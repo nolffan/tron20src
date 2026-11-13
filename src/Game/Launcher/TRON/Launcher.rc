@@ -404,7 +404,7 @@ BEGIN
     IDS_SIERRAWEBPAGE               "http://www.sierra.com"
     IDS_HELPFILE                    "tron.chm"
     IDS_CANTFINDHELPFILE            "ERROR - Could not find the TRON 2.0 help file.  Please make sure that TRON 2.0 is installed properly."
-    IDS_SYSTEMCHECKEXE              "Setup.EXE"
+    IDS_INSTALLEREXE                "Setup.EXE"
     IDS_CANTLAUNCHSYSTEMCHECK       "ERROR - Unable to launch the system check program.  Please make sure that your TRON 2.0 CD is in the drive and try again."
     IDS_WEBDISCLAIMER               "PLEASE NOTE:  This software includes the capability to connect to the Internet.  By clicking on the link, you are making an online connection and will have the ability to access non-BVI sites via the Internet. Buena Vista Interactive and The Walt Disney Company are not responsible for the content or nature of any non-BVI Web site.  As with all Internet access, responsible and age-appropriate use is advised.  Parents are encouraged to exercise appropriate supervision and control."
 END

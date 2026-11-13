@@ -9,9 +9,10 @@ CFG=Launcher - Win32 Final
 # tron20src: Tron.exe, the launcher: Build 69's Launcher\TRON project
 # (MFC 4.2 in a DLL) with the files and the Final configuration the retail
 # Tron.exe was built from. Build 69's project (in ext/rez's
-# jupiter-b69/Game/Launcher/TRON) has only Release and Debug, and builds
-# AniButton, AnimDlg and MultiplayerDlg, which retail has none of, and not
-# CustomizeDlg, which it has (IDD_CUSTOMIZE_DIALOG, "CJ Modification %i").
+# jupiter-b69/Game/Launcher/TRON) has only Release and Debug, and lacks
+# CustomizeDlg, which retail has (IDD_CUSTOMIZE_DIALOG, "CJ Modification
+# %i"); its AniButton, AnimDlg and MultiplayerDlg stay (retail's .text
+# opens with CAniButton::OnMouseMove and CAnimDlg::OnTimer).
 # The flags are NOLF2's Final launcher's (its source release's
 # TO2\Launcher.dsp), linked without /incremental: retail's .text opens with
 # code (BitmapCheckButton.obj's), not an incremental-link jump table. This
@@ -45,6 +46,14 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;rc;lib"
+# Begin Source File
+
+SOURCE=..\AniButton.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\AnimDlg.cpp
+# End Source File
 # Begin Source File
 
 SOURCE=..\BitmapCheckButton.cpp
@@ -92,6 +101,10 @@ SOURCE=..\MessageBoxDlg.cpp
 # Begin Source File
 
 SOURCE=..\MoveDlg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\MultiplayerDlg.cpp
 # End Source File
 # Begin Source File
 

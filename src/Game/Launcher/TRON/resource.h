@@ -67,7 +67,7 @@
 // Tron.exe's string 68 is "ERROR - Unable to find any custom directories."
 #define IDS_HELPFILE                    59
 #define IDS_CANTFINDHELPFILE            60
-#define IDS_SYSTEMCHECKEXE              61
+#define IDS_INSTALLEREXE                61
 #define IDS_CANTLAUNCHSYSTEMCHECK       62
 #define IDS_WEBDISCLAIMER               63
 #define IDS_UNNAMED1                    66

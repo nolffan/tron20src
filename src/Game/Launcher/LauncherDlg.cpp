@@ -42,33 +42,34 @@ static char THIS_FILE[] = __FILE__;
 // Button and image coordinates
 /////////////////////////////////////////////
 
+// RETAIL: Tron 2.0's layout (CLauncherDlg::OnInitDialog, 0x4088f0): a Help
+// button in the column, the Customize button at the bottom, no server or
+// LithTech button
 #define LD_CLOSE_X			503
 #define LD_CLOSE_Y			6
 #define LD_MINIMIZE_X		487
 #define LD_MINIMIZE_Y		6
 #define LD_PLAY_X			413
 #define LD_PLAY_Y			25
-#define LD_SERVER_X			413
-#define LD_SERVER_Y			61
 #define LD_DISPLAY_X		413
-#define LD_DISPLAY_Y		97
+#define LD_DISPLAY_Y		61
 #define LD_OPTIONS_X		413
-#define LD_OPTIONS_Y		133
+#define LD_OPTIONS_Y		97
 #define LD_UNINSTALL_X		413
-#define LD_UNINSTALL_Y		169
+#define LD_UNINSTALL_Y		133
+#define LD_HELP_X			413
+#define LD_HELP_Y			169
 #define LD_QUIT_X			413
 #define LD_QUIT_Y			205
 #define LD_PUBLISHERWEB_X	14
 #define LD_PUBLISHERWEB_Y	187
-#define LD_COMPANYWEB_X		76
-#define LD_COMPANYWEB_Y		187
-#define LD_LITHTECHWEB_X	76
-#define LD_LITHTECHWEB_Y	210
+#define LD_COMPANYWEB_X		66
+#define LD_COMPANYWEB_Y		203
 #define LD_SIERRAWEB_X		147
 #define LD_SIERRAWEB_Y		198
 
-#define LD_CUSTOMIZE_X		413
-#define LD_CUSTOMIZE_Y		61
+#define LD_CUSTOMIZE_X		213
+#define LD_CUSTOMIZE_Y		205
 
 //#define LD_ANIMAIN_X		43
 //#define LD_ANIMAIN_Y		82
@@ -107,13 +108,13 @@ BEGIN_MESSAGE_MAP(CLauncherDlg, CMoveDialog)
 	ON_BN_CLICKED(IDC_MINIMIZE, OnMinimize)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
 	ON_BN_CLICKED(IDC_OPTIONS, OnOptions)
+	ON_BN_CLICKED(IDC_HELPBUTTON, OnHelp)
 	ON_BN_CLICKED(IDC_DISPLAY, OnDisplay)
 	ON_BN_CLICKED(IDC_UNINSTALL, OnUninstall)
 	ON_BN_CLICKED(IDC_QUIT, OnQuit)
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_PUBLISHERWEB, OnPublisherweb)
 	ON_BN_CLICKED(IDC_COMPANYWEB, OnCompanyWeb)
-	ON_BN_CLICKED(IDC_LITHTECHWEB, OnLithtechWeb)
 	ON_BN_CLICKED(IDC_SIERRAWEB, OnSierraWeb)
 	ON_BN_CLICKED(IDC_CUSTOM, OnCustomize)
 	//}}AFX_MSG_MAP
@@ -148,9 +149,9 @@ BOOL CLauncherDlg::OnInitDialog()
 	AddButton(IDC_OPTIONS,LD_OPTIONS_X,LD_OPTIONS_Y);
 	AddButton(IDC_UNINSTALL,LD_UNINSTALL_X,LD_UNINSTALL_Y);
 	AddButton(IDC_QUIT,LD_QUIT_X,LD_QUIT_Y);
+	AddButton(IDC_HELPBUTTON,LD_HELP_X,LD_HELP_Y);
 	AddButton( IDC_PUBLISHERWEB, LD_PUBLISHERWEB_X, LD_PUBLISHERWEB_Y, IDC_WEBHAND );
 	AddButton( IDC_COMPANYWEB, LD_COMPANYWEB_X, LD_COMPANYWEB_Y, IDC_WEBHAND );
-	AddButton( IDC_LITHTECHWEB, LD_LITHTECHWEB_X, LD_LITHTECHWEB_Y, IDC_WEBHAND );
 	AddButton( IDC_SIERRAWEB, LD_SIERRAWEB_X, LD_SIERRAWEB_Y, IDC_WEBHAND );
 	
 	// Check for the custom directory before creating this button...
@@ -168,6 +169,10 @@ BOOL CLauncherDlg::OnInitDialog()
 		{
 			bModFound = true;
 			bDirFound = cFileFinder.FindNextFile();
+
+			// RETAIL: 0x408a9f, Tron's launcher takes the file's name here and
+			// does nothing with it
+			CString sFileName = cFileFinder.GetFileName();
 
 			// Ignore the 'dots' directories and all files...
 
@@ -370,7 +375,9 @@ void CLauncherDlg::OnMinimize()
 void CLauncherDlg::OnPlay() 
 {
 	// Launch the game or the installer
-	if(theApp.m_bInstalled && !ExistProcess(theApp.m_csSetupExe, 2))
+	// RETAIL: 0x408de0, Tron's installer is IDS_INSTALLEREXE's, which must
+	// not be running either
+	if(theApp.m_bInstalled && !ExistProcess(theApp.m_csSetupExe, 2) && !ExistProcess(theApp.m_csInstallerExe, 2))
 	{
 		if(theApp.CD_VerifyGame())
 		{
@@ -391,10 +398,12 @@ void CLauncherDlg::OnPlay()
 
 		// In the debug version, don't actually launch the installer
 		// just set up the registry
+		CString csGameName;
+		csGameName.LoadString(IDS_GAME_NAME);
 		CRegMgr32* pReg = &theApp.m_RegMgr;
-		if(!pReg->CreateKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)GAME_NAME,(char *)(LPCTSTR)theApp.m_csAppVersion))
+		if(!pReg->CreateKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)(LPCTSTR)csGameName,(char *)(LPCTSTR)theApp.m_csAppVersion))
 		{
-			if(!pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)GAME_NAME,(char *)(LPCTSTR)theApp.m_csAppVersion))
+			if(!pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)(LPCTSTR)csGameName,(char *)(LPCTSTR)theApp.m_csAppVersion))
 			{
 				theApp.MessageBox( IDS_DEBUG_REGCREATEERROR, IDS_GAME_NAME, MB_OK | MB_ICONSTOP );
 				return;
@@ -438,7 +447,7 @@ void CLauncherDlg::OnPlay()
 
 #else  // Retail install
 
-		if(WinExec(theApp.m_csSetupExe,SW_SHOW) > 31)
+		if(WinExec(theApp.m_csInstallerExe,SW_SHOW) > 31)
 		{
 			// Just let it happen...
 //			EndDialog(ACTION_INSTALL);
@@ -531,6 +540,23 @@ void CLauncherDlg::OnOptions()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CLauncherDlg::OnHelp
+//
+//	PURPOSE:	Help button handler: opens Tron 2.0's help file (tron.chm).
+//				RETAIL: 0x409070; Tron's own, the name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CLauncherDlg::OnHelp()
+{
+	if ((UINT)ShellExecute(NULL, NULL, theApp.m_csHelpFile, NULL, NULL, SW_SHOWNORMAL) <= 32)
+	{
+		theApp.MessageBox(IDS_CANTFINDHELPFILE, IDS_GAME_NAME, MB_OK | MB_ICONSTOP);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CLauncherDlg::OnDisplay
 //
 //	PURPOSE:	Display button handler
@@ -571,8 +597,10 @@ void CLauncherDlg::OnUninstall()
 #ifndef _FINAL
 
 	// In a debug build, just remove the registry key
+	CString csGameName;
+	csGameName.LoadString(IDS_GAME_NAME);
 	CRegMgr32* pReg = &theApp.m_RegMgr;
-	pReg->DeleteKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char*)GAME_NAME,(char *)(LPCTSTR)theApp.m_csAppVersion);
+	pReg->DeleteKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)(LPCTSTR)csGameName,(char *)(LPCTSTR)theApp.m_csAppVersion);
 	theApp.MessageBox( IDS_DEBUG_UNINSTALLSUCCESS, IDS_GAME_NAME, MB_OK | MB_ICONINFORMATION);
 	//GetDlgItem(IDC_MULTIPLAYER)->EnableWindow(FALSE);
 	//GetDlgItem(IDC_SERVER)->EnableWindow(FALSE);
@@ -592,10 +620,15 @@ void CLauncherDlg::OnUninstall()
 
 #else
 
+	// RETAIL: the registry key is named by the game's name string (NOLF2's
+	// launcher had GAME_NAME[], "No One Lives Forever 2")
+	CString csGameName;
+	csGameName.LoadString(IDS_GAME_NAME);
+
 	// Make sure we use the install path so we can uninstall from anywhere...
 
 	CRegMgr32* pReg = &theApp.m_RegMgr;
-	if(pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",( char* )GAME_NAME,(char *)(LPCTSTR)theApp.m_csAppVersion))
+	if(pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)(LPCTSTR)csGameName,(char *)(LPCTSTR)theApp.m_csAppVersion))
 	{
 		// Get the installed directory
 		char sDir[256];
@@ -638,6 +671,13 @@ void CLauncherDlg::OnUninstall()
 
 void CLauncherDlg::OnCompanyWeb()
 {
+	// RETAIL: Tron's launcher asks first (IDS_WEBDISCLAIMER: the web site is
+	// not Buena Vista Interactive's)
+	if(theApp.MessageBox(IDS_WEBDISCLAIMER, IDS_GAME_NAME, MB_OKCANCEL) != IDOK)
+	{
+		return;
+	}
+
 	CString	sURL;
 	sURL.LoadString( IDS_COMPANYWEBPAGE );
 
@@ -660,6 +700,13 @@ void CLauncherDlg::OnCompanyWeb()
 // ----------------------------------------------------------------------- //
 void CLauncherDlg::OnPublisherweb() 
 {
+	// RETAIL: Tron's launcher asks first (IDS_WEBDISCLAIMER: the web site is
+	// not Buena Vista Interactive's)
+	if(theApp.MessageBox(IDS_WEBDISCLAIMER, IDS_GAME_NAME, MB_OKCANCEL) != IDOK)
+	{
+		return;
+	}
+
 	CString	sURL;
 	sURL.LoadString( IDS_PUBLISHERWEBPAGE );
 
@@ -669,23 +716,8 @@ void CLauncherDlg::OnPublisherweb()
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CLauncherDlg::OnLithtechWeb
-//
-//  PURPOSE:	Bring the user to the lithtech web page
-//
-// ----------------------------------------------------------------------- //
-void CLauncherDlg::OnLithtechWeb() 
-{
-	CString	sURL;
-	sURL.LoadString( IDS_LITHTECHWEBPAGE );
-
-	if ((UINT)ShellExecute(NULL, NULL, sURL, NULL, NULL, SW_SHOWNORMAL) <= 32)
-	{
-		theApp.MessageBox(IDS_LAUNCHBROWSERERROR, IDS_GAME_NAME , MB_OK | MB_ICONEXCLAMATION);
-	}
-}
+// RETAIL: Tron 2.0's launcher has no LithTech button: no OnLithtechWeb
+// (NOLF2's brought the user to IDS_LITHTECHWEBPAGE)
 
 
 // ----------------------------------------------------------------------- //
@@ -697,6 +729,13 @@ void CLauncherDlg::OnLithtechWeb()
 // ----------------------------------------------------------------------- //
 void CLauncherDlg::OnSierraWeb() 
 {
+	// RETAIL: Tron's launcher asks first (IDS_WEBDISCLAIMER: the web site is
+	// not Buena Vista Interactive's)
+	if(theApp.MessageBox(IDS_WEBDISCLAIMER, IDS_GAME_NAME, MB_OKCANCEL) != IDOK)
+	{
+		return;
+	}
+
 	CString	sURL;
 	sURL.LoadString( IDS_SIERRAWEBPAGE );
 
@@ -830,8 +869,13 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 
 	// Get the install path from the registry...
 
+	// RETAIL: the registry key is named by the game's name string (NOLF2's
+	// launcher had GAME_NAME[], "No One Lives Forever 2")
+	CString csGameName;
+	csGameName.LoadString(IDS_GAME_NAME);
+
 	CRegMgr32* pReg = &theApp.m_RegMgr;
-	if(!pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",( char* )GAME_NAME,(char *)(LPCTSTR)theApp.m_csAppVersion))
+	if(!pReg->OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char *)(LPCTSTR)csGameName,(char *)(LPCTSTR)theApp.m_csAppVersion))
 	{
 		theApp.MessageBox( IDS_CANTLAUNCHCLIENTEXE, IDS_GAME_NAME, MB_OK | MB_ICONSTOP );
 		return FALSE;

@@ -97,12 +97,14 @@ public:
 	CString m_csAppCD2Check;				// "Please insert CD #2"
 	CString m_csRezBase;					// Base rez directory/file
 	CString m_csSetupExe;					// Name of installer executable
+	CString m_csInstallerExe;				// RETAIL: what Tron's Install button runs, "Setup.EXE" (IDS_INSTALLEREXE, 0x154; the name is ours)
 	CString	m_csServerExe;					// Name of stand-alone server executable
 	CString m_csLanguage;					// Language (for language rez files)
 	CString m_csCDRoot;						// Root CDRom drive
 	CString m_csCommands;					// Command-line commands specified by the user
 	CString	m_csInstallDir;					// Directory where the game is installed
 	CString m_csAppVersion;					// Application version
+	CString m_csHelpFile;					// RETAIL: Tron's help file, tron.chm (IDS_HELPFILE, 0x170; the name is ours)
 
 	// Graphical message box functions
 	int		MessageBox(const char *szText, const char *szCaption, DWORD dwType = MB_OK);
@@ -147,7 +149,6 @@ extern CLauncherApp theApp;
 
 extern COLORREF crHighlightText;
 extern COLORREF crNormalText;
-extern char const GAME_NAME[];
 
 
 

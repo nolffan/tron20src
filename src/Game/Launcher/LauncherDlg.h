@@ -57,6 +57,7 @@ protected:
 	afx_msg void OnPlay();
 	afx_msg void OnMultiplayer();
 	afx_msg void OnOptions();
+	afx_msg void OnHelp();
 	afx_msg void OnDisplay();
 	afx_msg void OnUninstall();
 	afx_msg void OnQuit();
@@ -64,7 +65,6 @@ protected:
 	afx_msg void OnCompanyWeb();
 	afx_msg void OnServer();
 	afx_msg void OnPublisherweb();
-	afx_msg void OnLithtechWeb();
 	afx_msg void OnSierraWeb();
 	afx_msg void OnCustomize();
 	//}}AFX_MSG

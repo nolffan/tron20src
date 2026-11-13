@@ -26,11 +26,8 @@ static char THIS_FILE[] = __FILE__;
 COLORREF crHighlightText = RGB(255, 255, 0);
 COLORREF crNormalText = RGB(192, 160, 32);
 
-#ifdef _TO2DEMO
-char const GAME_NAME[] = "No One Lives Forever 2 (Official Demo)";
-#else
-char const GAME_NAME[] = "No One Lives Forever 2";
-#endif
+// RETAIL: no GAME_NAME[] (NOLF2's "No One Lives Forever 2"): Tron's registry
+// key is named by IDS_GAME_NAME (OpenRegistryKey)
 
 /////////////////////////////////////////////////////////////////////////////
 // CLauncherApp
@@ -48,6 +45,9 @@ END_MESSAGE_MAP()
 
 CLauncherApp::CLauncherApp()
 {
+	// RETAIL: 0x407050 stores these in this order: Tron's launcher disables
+	// hardware sound by default, and sets the last random value and the
+	// detail level right after the sound options
 	m_bDisableSound = FALSE;
 
 	m_bDisableMusic = FALSE;
@@ -56,17 +56,17 @@ CLauncherApp::CLauncherApp()
 	m_bDisableTripleBuffering = FALSE;
 	m_bDisableHardwareCursor = FALSE;
 	m_bDisableAnimatedLoadScreen = FALSE;
-	m_bDisableHardwareSound = FALSE;
+	m_bDisableHardwareSound = TRUE;
 	m_bDisableSoundFilters = TRUE;
+	m_dwLastRandom = 1;
+	m_dwDetailSetting = DETAIL_MEDIUM;
 	m_bRestoreDefaults = FALSE;
 	m_bSaveCommands = FALSE;
 	m_dwNumLauncherRuns = 0;
 	m_bHasProfile = FALSE;
 	m_chDrive = 0;
-	m_dwLastRandom = 1;
 	m_bUseDisplaySettings = FALSE;
 	m_bUseDetailSettings = FALSE;
-	m_dwDetailSetting = DETAIL_MEDIUM;
 	m_bGoMultiHost = FALSE;
 	m_bGoMultiJoin = FALSE;
 	m_bGoGame = FALSE;
@@ -89,6 +89,12 @@ BOOL CLauncherApp::InitInstance()
 	//  of your final executable, you should remove from the following
 	//  the specific initialization routines you do not need.
 
+	// RETAIL: 0x407481 (NOLF2's source release has this; Build 69 does not)
+#ifdef _AFXDLL
+	Enable3dControls();			// Call this when using MFC in a shared DLL
+#else
+	Enable3dControlsStatic();	// Call this when linking to MFC statically
+#endif
 
 	// Load some strings
 	m_csAppName.LoadString(IDS_GAME_NAME);
@@ -97,9 +103,11 @@ BOOL CLauncherApp::InitInstance()
 	m_csAppCD2Check.LoadString(IDS_APPCD2CHECK);
 	m_csRezBase.LoadString(IDS_REZBASE);
 	m_csSetupExe.LoadString(IDS_SETUPEXE);
+	m_csInstallerExe.LoadString(IDS_INSTALLEREXE);
 	m_csServerExe.LoadString(IDS_SERVEREXE);
 	m_csLanguage.LoadString(IDS_LANGUAGE);
 	m_csAppVersion.LoadString(IDS_APPVERSION);
+	m_csHelpFile.LoadString(IDS_HELPFILE);
 
 	// Check if we are already running...
 
@@ -388,6 +396,12 @@ BOOL CLauncherApp::CD_ExistGame(BOOL & bDisc2)
 {
 	// Use the new function to search across multiple drives...
 	char chDrive = CD_GetDriveLetterWithGame(bDisc2);
+
+	// RETAIL: 0x4080ed, no drive with the game is no game
+	if(!chDrive)
+	{
+		return(FALSE);
+	}
 
 	// Update the rez files if necessary...
 	char* sGameRez = GetGameRezFile();
@@ -692,6 +706,9 @@ CString CLauncherApp::GetAdvancedOptionsCommandLineString()
 
 BOOL CLauncherApp::OpenRegistryKey()
 {
-	return(m_RegMgr.OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char*)GAME_NAME,(char *)(LPCTSTR)m_csAppVersion));
+	// RETAIL: 0x408530, the key is named by the game's name string
+	CString csName;
+	csName.LoadString(IDS_GAME_NAME);
+	return(m_RegMgr.OpenKey(HKEY_LOCAL_MACHINE,"SOFTWARE","Monolith Productions",(char*)(LPCTSTR)csName,(char *)(LPCTSTR)m_csAppVersion));
 }
 
