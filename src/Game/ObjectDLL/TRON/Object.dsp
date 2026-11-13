@@ -210,6 +210,14 @@ SOURCE=.\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleMissile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCyclePowerup.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleVolume.cpp
 # End Source File
 # Begin Source File
@@ -377,6 +385,14 @@ SOURCE=.\LightCycle.h
 # Begin Source File
 
 SOURCE=.\LightCycleMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMissile.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCyclePowerup.h
 # End Source File
 # Begin Source File
 

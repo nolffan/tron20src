@@ -17,6 +17,8 @@
 #include "TronPlayerObj.h"
 #include "ServerUtilities.h"
 #include "ModelButeMgr.h"
+#include "LightCycleMissile.h"
+#include "LightCyclePowerup.h"
 
 CLightCycleMgr* g_pLightCycleMgr = NULL;				// RETAIL: 0x1035a54c
 CServerLightCycleMgr* g_pServerLightCycleMgr = NULL;	// RETAIL: 0x1035a550
@@ -983,12 +985,26 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 	{
 		case kLCPowerup_Missile:
 		{
-			// PORT: retail creates a "LightCycleMissile" at the cycle (its
-			// ObjectCreateStruct with the cycle's position and rotation),
-			// sets the missile's owner (its LTObjRef at retail +0x4c), its
-			// position (+0x5c), the cycle's direction (+0x68) and cyclist
-			// (+0x74), or prints "ERROR - Could not create the light cycle
-			// object!\n". LightCycleMissile is not written yet.
+			ObjectCreateStruct theStruct;
+			INIT_OBJECTCREATESTRUCT(theStruct);
+
+			g_pLTServer->GetObjectPos(pCyclist->hObject, &theStruct.m_Pos);
+			g_pLTServer->GetObjectRotation(pCyclist->hObject, &theStruct.m_Rotation);
+
+			HCLASS hClass = g_pLTServer->GetClass("LightCycleMissile");
+			LightCycleMissile* pMissile = (LightCycleMissile*)g_pLTServer->CreateObject(hClass, &theStruct);
+			if(pMissile)
+			{
+				HOBJECT hOwner = pCyclist->hObject;
+				pMissile->m_hOwner = hOwner;
+				pMissile->m_vStartPos = theStruct.m_Pos;
+				pMissile->m_vDir = pCyclist->vForward;
+				pMissile->m_pOwnerCyclist = FindCyclist(hOwner);
+			}
+			else
+			{
+				g_pLTServer->CPrint("ERROR - Could not create the light cycle object!\n");
+			}
 		}
 		break;
 
@@ -1008,10 +1024,8 @@ bool CServerLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVect
 				if(!pPowerup)
 					break;
 
-				// PORT: retail takes the power-up's type (0x1002ba70) and
-				// picks it up (0x1002b800(false)); LightCyclePowerup is not
-				// written yet.
-				nGrabbed = LC_NO_POWERUP;
+				nGrabbed = pPowerup->GetType();
+				pPowerup->SetEnabled(false);
 				SendPowerupTaken(pCyclist);
 			}
 
@@ -1230,12 +1244,12 @@ void CServerLightCycleMgr::EnableDialog(bool bEnable)
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerLightCycleMgr::RemovePowerup(LightCyclePowerup* pPowerup)
+bool CServerLightCycleMgr::RemovePowerup(HOBJECT hPowerup)
 {
 	LCPowerupList::iterator iter;
 	for(iter = m_collPowerups.begin(); iter != m_collPowerups.end(); iter++)
 	{
-		if(((LPBASECLASS)(*iter))->m_hObject == ((LPBASECLASS)pPowerup)->m_hObject)
+		if(((LPBASECLASS)(*iter))->m_hObject == hPowerup)
 		{
 			m_collPowerups.erase(iter);
 			return true;
@@ -1272,9 +1286,7 @@ LightCyclePowerup* CServerLightCycleMgr::FindNearestPowerup(HOBJECT hObj, bool b
 		float fDistSqr = (vPowerupPos - vPos).MagSqr();
 		if(fDistSqr < fNearestDistSqr)
 		{
-			// RETAIL: a byte of the power-up at retail +0x58 (LightCyclePowerup
-			// is not written yet)
-			if(bAny || ((uint8*)(*iter))[0x58])
+			if(bAny || (*iter)->IsEnabled())
 			{
 				fNearestDistSqr = fDistSqr;
 				pNearest = (*iter);

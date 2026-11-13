@@ -92,7 +92,7 @@ class CServerLightCycleMgr : public CLightCycleMgr
 
 		// The power-ups lying around. RETAIL: 0x10052380 (Remove)
 		void AddPowerup(LightCyclePowerup* pPowerup) { m_collPowerups.push_back(pPowerup); }
-		bool RemovePowerup(LightCyclePowerup* pPowerup);
+		bool RemovePowerup(HOBJECT hPowerup);
 
 		// RETAIL: 0x10052360 (writes g_pServerLightCycleMgr's flag)
 		static void EnableDialog(bool bEnable);
