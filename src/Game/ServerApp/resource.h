@@ -44,6 +44,11 @@
 #define IDS_COLUMNHEADER_TIMEONSERVER   548
 #define IDS_ERROR_CANTSAVEOPTIONS       549
 #define IDS_NEWPLAYER                   550
+// tron20src: Tron 2.0's game type names (TRONSrv.exe's strings 551..553;
+// the names are ours)
+#define IDS_GAMETYPE_DISCARENA          551
+#define IDS_GAMETYPE_DISCTOURNAMENT     552
+#define IDS_GAMETYPE_LIGHTCYCLES        553
 #define IDC_SERVER_NAME                 551
 #define IDC_PLAYER_BOOT                 552
 #define IDC_CONSOLE_COMMAND             553

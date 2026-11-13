@@ -42,6 +42,7 @@
 #define IDS_OD_DISABLEMUSIC             38
 #define IDS_OD_DISABLEMOVIES            39
 #define IDS_OD_DISABLEFOG               40
+#define IDS_APPNAME_DEMO                40
 #define IDS_OD_DISABLEJOYSTICKS         41
 #define IDS_OD_DISABLETRIPLEBUFFERING   42
 #define IDS_OD_DISABLEHARDWARECURSOR    43
@@ -56,10 +57,26 @@
 #define IDS_HELP_DISABLEHARDWARESOUND   52
 #define IDS_HELP_DISABLESOUNDFILTERS    53
 #define IDS_OD_DISABLEHARDWARESOUND     54
-#define IDS_OD_DISABLESOUNDFILTERS		55
+#define IDS_OD_DISABLESOUNDFILTERS      55
+#define IDS_CANTOPENCOMMANDFILE         56
+#define IDS_LITHTECHWEBPAGE             57
+#define IDS_SIERRAWEBPAGE               58
+// tron20src: 59 to 67 are Tron 2.0's own (the developer build of
+// 2003-08-05 has them; the names are ours). NOLF2's IDS_NOCUSTOMDIR, 59
+// in its launcher, came over with the Customize dialog as 68: retail
+// Tron.exe's string 68 is "ERROR - Unable to find any custom directories."
+#define IDS_HELPFILE                    59
+#define IDS_CANTFINDHELPFILE            60
+#define IDS_INSTALLEREXE                61
+#define IDS_CANTLAUNCHSYSTEMCHECK       62
+#define IDS_WEBDISCLAIMER               63
+#define IDS_UNNAMED1                    66
+#define IDS_UNNAMED2                    67
+#define IDS_NOCUSTOMDIR                 68
 #define IDD_LAUNCHER_DIALOG             102
 #define IDR_MAINFRAME                   128
 #define IDB_BACKGROUND                  130
+#define IDB_E3BACKGROUND                131
 #define IDD_MULTIPLAYER_DIALOG          145
 #define IDD_OPTIONS_DIALOG              146
 #define IDB_MD_BACKGROUND               146
@@ -87,6 +104,9 @@
 #define IDB_WARNING                     298
 #define IDC_WEBHAND                     308
 #define IDR_AVI_OK                      317
+#define IDB_DEMOBACKGROUND              320
+#define IDD_CUSTOMIZE_DIALOG            322
+#define IDB_CD_BACKGROUND               323
 #define IDC_MP_HOST                     1001
 #define IDC_MP_JOIN                     1002
 #define IDC_CLOSE                       1003
@@ -103,6 +123,8 @@
 #define IDC_OPTIONS                     1011
 #define IDC_OD_CLOSE                    1012
 #define IDC_UNINSTALL                   1012
+// tron20src: Tron 2.0's Help button (the name is ours)
+#define IDC_HELPBUTTON                  1013
 #define IDC_OD_DISABLESOUND             1014
 #define IDC_OD_DISABLEMUSIC             1015
 #define IDC_OD_DISABLEMOVIES            1016
@@ -145,16 +167,37 @@
 #define IDC_MONOLITH                    1058
 #define IDC_COMPANYWEB                  1058
 #define IDC_PUBLISHERWEB                1059
+#define IDC_LITHTECHWEB                 1060
+#define IDC_SIERRAWEB                   1061
 #define IDC_MB_ICON                     1067
+#define IDC_CUSTOM                      1068
+#define IDC_CD_OK                       1069
+#define IDC_CD_CANCEL                   1070
+#define IDC_CD_CLOSE                    1071
+#define IDC_CD_MOD_01                   1072
+#define IDC_CD_MOD_02                   1073
+#define IDC_CD_MOD_03                   1074
+#define IDC_CD_MOD_04                   1075
+#define IDC_CD_MOD_05                   1076
+#define IDC_CD_MOD_06                   1077
+#define IDC_CD_MOD_07                   1078
+#define IDC_CD_MOD_08                   1079
+#define IDC_CD_MOD_09                   1080
+#define IDC_CD_MOD_10                   1081
+#define IDC_CD_PREVIOUS                 1082
+#define IDC_CD_NEXT                     1083
+#define IDC_CD_MOD_11                   1084
+#define IDC_CD_MOD_12                   1085
+
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        320
+#define _APS_NEXT_RESOURCE_VALUE        324
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_CONTROL_VALUE         1086
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -47,10 +47,11 @@ SETUP_GPLTSERVER();
 // Column identifiers for player list control.
 enum PlayerColumns
 {
+	// RETAIL: Tron's server has no tags column (TRONSrv.exe's strings have
+	// no IDS_COLUMNHEADER_TAGS; CPlayerInfo is 0x30 bytes, no m_nTags)
 	ePlayerColumnsName,
 	ePlayerColumnsPing,
 	ePlayerColumnsKills,
-	ePlayerColumnsTags,
 	ePlayerColumnsScore,
 	ePlayerColumnsTime,
 };
@@ -457,8 +458,9 @@ DWORD CServerDlg::DoHost( )
 	// Process command line for the config file to use.
 	ParseCommandLine( true, &m_ServerGameOptions );
 
-	// Check if no profile was specified.
-	if( m_ServerGameOptions.m_sProfileName.empty( ))
+	// Check if no profile was specified. RETAIL: 0x40af39, Tron keeps the
+	// config's name in the dialog (m_sConfigName, the name is ours)
+	if( m_sConfigName.empty( ))
 	{
 		// Ask the user to select from a config.
 		CSelectConfigDlg dlg;
@@ -468,17 +470,17 @@ DWORD CServerDlg::DoHost( )
 		}
 
 		// Get the config the user selected.
-		m_ServerGameOptions.m_sProfileName = dlg.GetSelectedConfig( );
+		m_sConfigName = dlg.GetSelectedConfig( );
 
 		// If the config is still empty, then we cannot proceed.
-		if( m_ServerGameOptions.m_sProfileName.empty( ))
+		if( m_sConfigName.empty( ))
 		{
 			return IDS_NETERR_NOCONFIGS;
 		}
 	}
 
 	// Get the path to the profile file for parsing.
-	std::string sProfilePath = GetProfileFile( m_ServerGameOptions.m_sProfileName.c_str( ));
+	std::string sProfilePath = s_sConfigDir + m_sConfigName.c_str( ) + s_sConfigExt;
 
 	// Parse the bute file.  If we didn't find the 
 	CButeMgr userProfile;
@@ -487,8 +489,8 @@ DWORD CServerDlg::DoHost( )
 		return IDS_NETERR_CORRUPTCONFIG;
 	}
 
-	if( !m_ServerGameOptions.LoadFromBute( userProfile ))
-		return IDS_NETERR_CORRUPTCONFIG;
+	// RETAIL: 0x40b185, the result is not checked
+	m_ServerGameOptions.LoadFromBute( userProfile );
 
 	// Force this to be a dedicated server.
 	m_ServerGameOptions.m_bDedicated = true;
@@ -497,12 +499,28 @@ DWORD CServerDlg::DoHost( )
 	ParseCommandLine( false, &m_ServerGameOptions );
 
 	// Get the server name so we can display it.
-	m_sServerName = m_ServerGameOptions.GetSessionName();
+	m_sServerName = m_ServerGameOptions.m_sSessionName.c_str( );
 
-	// Fill in the name of the game type and max players...
-	
-	m_sGameType.LoadString( m_ServerGameOptions.GetGameTypeStringID() );
-	m_nMaxPlayers = m_ServerGameOptions.GetMaxPlayers();
+	// Fill in the name of the game type and max players... RETAIL:
+	// 0x40b1ae, Tron's server works both out of the game type itself
+	m_nMaxPlayers = 0;
+	int nGameTypeIndex = 0;
+	switch( m_ServerGameOptions.m_eGameType )
+	{
+		case eGameTypeDiscArena:
+			nGameTypeIndex = 0;
+			m_nMaxPlayers = m_ServerGameOptions.m_nArenaMaxPlayers;
+			break;
+		case eGameTypeDiscTournament:
+			nGameTypeIndex = 1;
+			m_nMaxPlayers = m_ServerGameOptions.m_nTournMaxPlayers;
+			break;
+		case eGameTypeMultiplayerLightcycles:
+			nGameTypeIndex = 2;
+			m_nMaxPlayers = m_ServerGameOptions.m_nLCMaxPlayers;
+			break;
+	}
+	m_sGameType.LoadString( IDS_GAMETYPE_DISCARENA + nGameTypeIndex );
 	m_sNumPlayers.Format("%d/%d", 0, m_nMaxPlayers);
 
 	// Set the selected mod so players know what we are playing...
@@ -531,7 +549,9 @@ DWORD CServerDlg::DoHost( )
 	if( !szSelectedMod[0] )
 	{
 		CString sModName;
-		sModName.LoadString( IDS_RETAIL );
+		// RETAIL: 0x40b353, the name itself (TRONSrv.exe has no IDS_RETAIL
+		// string)
+		sModName = "Retail";
 		m_ServerGameOptions.m_sModName = sModName;
 	}
 
@@ -543,7 +563,7 @@ DWORD CServerDlg::DoHost( )
 	strncpy( netHost.m_sName, m_sServerName, sizeof( netHost.m_sName ));
 	netHost.m_sName[ sizeof( netHost.m_sName ) - 1 ] = '\0';
 	netHost.m_bHasPassword = m_ServerGameOptions.m_bUsePassword;
-	netHost.m_nGameType = (uint8)m_ServerGameOptions.m_eGameType;
+	// RETAIL: 0x40b3e5, Tron's server leaves NetHost::m_nGameType unset
 
 	// Start hosting.
 	if( !m_pServerMgr->HostGame( &netHost ))
@@ -647,8 +667,6 @@ BOOL CServerDlg::OnInitDialog()
 	m_Players.InsertColumn( ePlayerColumnsPing, sColumnHeader );
 	sColumnHeader.LoadString( IDS_COLUMNHEADER_KILLS );
 	m_Players.InsertColumn( ePlayerColumnsKills, sColumnHeader );
-	sColumnHeader.LoadString( IDS_COLUMNHEADER_TAGS );
-	m_Players.InsertColumn( ePlayerColumnsTags, sColumnHeader );
 	sColumnHeader.LoadString( IDS_COLUMNHEADER_SCORE );
 	m_Players.InsertColumn( ePlayerColumnsScore, sColumnHeader );
 	sColumnHeader.LoadString( IDS_COLUMNHEADER_TIMEONSERVER );
@@ -657,10 +675,10 @@ BOOL CServerDlg::OnInitDialog()
 	m_Players.GetWindowRect( &rect );
 	int nWidth = rect.Width() - 22;
 
-	m_Players.SetColumnWidth( ePlayerColumnsName,	(int)(nWidth * 0.35));
+	// RETAIL: 0x40bb81, Tron's column widths
+	m_Players.SetColumnWidth( ePlayerColumnsName,	(int)(nWidth * 0.39));
 	m_Players.SetColumnWidth( ePlayerColumnsPing,	(int)(nWidth * 0.11));
-	m_Players.SetColumnWidth( ePlayerColumnsKills,	(int)(nWidth * 0.11));
-	m_Players.SetColumnWidth( ePlayerColumnsTags,	(int)(nWidth * 0.11));
+	m_Players.SetColumnWidth( ePlayerColumnsKills,	(int)(nWidth * 0.18));
 	m_Players.SetColumnWidth( ePlayerColumnsScore,	(int)(nWidth * 0.13));
 	m_Players.SetColumnWidth( ePlayerColumnsTime,	(int)(nWidth * 0.18));
 
@@ -748,9 +766,21 @@ void CServerDlg::UpdateUI()
 		StopServer( );
 	}
 
-	// Check if we're in the middle of changing levels.
+	// Check if we're in the middle of changing levels. RETAIL: 0x40bec3,
+	// Tron's server disables the level controls until the level is loaded
 	if( m_bChangingLevels_Shell )
+	{
+		CWnd* pWnd = GetDlgItem( IDC_COMMANDS_SELLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
+		pWnd = GetDlgItem( IDC_COMMANDS_NEXTLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
+		pWnd = GetDlgItem( IDC_LEVELS );
+		if( pWnd )
+			pWnd->EnableWindow( FALSE );
 		return;
+	}
 
 	// Block the shell thread while we make some copies of its data.
 	EnterCriticalSection( &m_CS );
@@ -766,6 +796,20 @@ void CServerDlg::UpdateUI()
 
 	// Unblock the shell thread.
 	LeaveCriticalSection( &m_CS );
+
+	// RETAIL: 0x40bf94, and enables them again once it is
+	if( bLevelChanged )
+	{
+		CWnd* pWnd = GetDlgItem( IDC_COMMANDS_SELLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+		pWnd = GetDlgItem( IDC_COMMANDS_NEXTLEVEL );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+		pWnd = GetDlgItem( IDC_LEVELS );
+		if( pWnd )
+			pWnd->EnableWindow( TRUE );
+	}
 
 	// Update the server time.
 	serverRunTime = CTime::GetCurrentTime( ) - m_serverStartTime;
@@ -871,13 +915,6 @@ void CServerDlg::UpdateUI()
 			if( m_Players.GetItemText( nPlayer, ePlayerColumnsKills ).Compare( sVal ))
 			{
 				m_Players.SetItemText( nPlayer, ePlayerColumnsKills, sVal );
-			}
-
-			// Update tags.
-			sVal.Format( "%d", playerInfo[nPlayer].m_nTags );
-			if( m_Players.GetItemText( nPlayer, ePlayerColumnsTags ).Compare( sVal ))
-			{
-				m_Players.SetItemText( nPlayer, ePlayerColumnsTags, sVal );
 			}
 
 			// Update score.
@@ -1006,6 +1043,12 @@ void CServerDlg::OnShellMessage( ILTMessage_Read& msg )
 		case SERVERAPP_POSTLOADWORLD:
 			OnShellPostLoadWorld( msg );
 			break;
+		case SERVERAPP_MISSIONFAILED:
+			// RETAIL: 0x40c988, Tron's server hands it to a handler that does
+			// nothing (NOLF2's relayed it back to the server shell)
+			OnShellMissionFailed( msg );
+			break;
+
 		case SERVERAPP_CONSOLEMESSAGE:
 		{
 			char szMsg[1024];
@@ -1013,22 +1056,6 @@ void CServerDlg::OnShellMessage( ILTMessage_Read& msg )
 			m_lstShellMsgs_Shell.AddTail( szMsg );
 			break;
 		}
-		case SERVERAPP_MISSIONFAILED:
-		{
-			// Just relay a message back to the server shell...
-
-			CAutoMessage cMsg;
-			cMsg.Writeuint8( SERVERSHELL_MISSIONFAILED );
-
-			CLTMsgRef_Read cMsgRef = cMsg.Read();
-			
-			EnterCriticalSection( &m_CS );
-				m_pServerMgr->SendToServerShell( *cMsgRef );
-			LeaveCriticalSection( &m_CS );				
-			
-		}
-		break;
-
 		default:
 			break;
 	}
@@ -1045,8 +1072,16 @@ void CServerDlg::OnShellInit( ILTMessage_Read& msg )
 	{
 		msg.ReadString( szMission, ARRAY_LEN( szMission ));
 
+		// RETAIL: 0x40ca68, Tron's list shows the world's name without its
+		// directory
+		char const* pszWorld = strrchr( szMission, '\\' );
+		if( !pszWorld )
+			pszWorld = szMission;
+		else
+			pszWorld++;
+
 		// Add the mission to the list.
-		m_Levels.InsertItem( m_Levels.GetItemCount( ), szMission );
+		m_Levels.InsertItem( m_Levels.GetItemCount( ), pszWorld );
 	}
 
 	// Make sure there's at least 1 level specified.
@@ -1177,7 +1212,6 @@ void CServerDlg::OnShellUpdate( ILTMessage_Read& msg )
 		msg.ReadString( pPlayerInfo->m_szPlayerHandle, sizeof( pPlayerInfo->m_szPlayerHandle ));
 		pPlayerInfo->m_szPlayerHandle[sizeof( pPlayerInfo->m_szPlayerHandle ) - 1] = 0;
 		pPlayerInfo->m_nKills = msg.Readint16( );
-		pPlayerInfo->m_nTags = msg.Readint16( );
 		pPlayerInfo->m_nScore = msg.Readint16( );
 	}
 }
@@ -1200,8 +1234,81 @@ void CServerDlg::OnShellPostLoadWorld( ILTMessage_Read& msg )
 	m_sCurLevel_Shell = szCurLevel;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CServerDlg::OnShellMissionFailed
+//
+//	PURPOSE:	RETAIL: 0x40ce10, empty in Tron 2.0 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CServerDlg::OnShellMissionFailed( ILTMessage_Read& msg )
+{
+}
+
 void CServerDlg::OnShellConsoleOutput( const char* pMsg )
 {
+	if( !pMsg )
+		return;
+
+	// RETAIL: 0x40ce20, Tron's server leaves the engine's and the game's
+	// debugging output out of its console: messages starting with these.
+	// ("Player with client ID " is there twice; retail measures both and
+	// compares with the first only.)
+	static int const s_nFilterLen00 = strlen( "!!! " );
+	static int const s_nFilterLen01 = strlen( "World Dims: " );
+	static int const s_nFilterLen02 = strlen( "Error loading model: " );
+	static int const s_nFilterLen03 = strlen( "AI ERROR: " );
+	static int const s_nFilterLen04 = strlen( "KEY COMMAND: " );
+	static int const s_nFilterLen05 = strlen( "ERROR in " );
+	static int const s_nFilterLen06 = strlen( "New client, id " );
+	static int const s_nFilterLen07 = strlen( "Removing client, id " );
+	static int const s_nFilterLen08 = strlen( "PlayClientFX()!  " );
+	static int const s_nFilterLen09 = strlen( "Kicking Client " );
+	static int const s_nFilterLen10 = strlen( "Player with client ID " );
+	static int const s_nFilterLen11 = strlen( "Player with client ID " );
+	static int const s_nFilterLen12 = strlen( "======= Team: " );
+	static int const s_nFilterLen13 = strlen( "missing ani " );
+	static int const s_nFilterLen14 = strlen( "CBodyStateExplode Vel =\t" );
+	static int const s_nFilterLen15 = strlen( "Couldn't find model skin " );
+	static int const s_nFilterLen16 = strlen( "Client Weapon " );
+	static int const s_nFilterLen17 = strlen( "Client Camera Offset " );
+
+	if( !strncmp( "!!! ", pMsg, s_nFilterLen00 ))
+		return;
+	if( !strncmp( "World Dims: ", pMsg, s_nFilterLen01 ))
+		return;
+	if( !strncmp( "Error loading model: ", pMsg, s_nFilterLen02 ))
+		return;
+	if( !strncmp( "AI ERROR: ", pMsg, s_nFilterLen03 ))
+		return;
+	if( !strncmp( "KEY COMMAND: ", pMsg, s_nFilterLen04 ))
+		return;
+	if( !strncmp( "ERROR in ", pMsg, s_nFilterLen05 ))
+		return;
+	if( !strncmp( "New client, id ", pMsg, s_nFilterLen06 ))
+		return;
+	if( !strncmp( "Removing client, id ", pMsg, s_nFilterLen07 ))
+		return;
+	if( !strncmp( "PlayClientFX()!  ", pMsg, s_nFilterLen08 ))
+		return;
+	if( !strncmp( "Kicking Client ", pMsg, s_nFilterLen09 ))
+		return;
+	if( !strncmp( "Player with client ID ", pMsg, s_nFilterLen10 ))
+		return;
+	if( !strncmp( "======= Team: ", pMsg, s_nFilterLen12 ))
+		return;
+	if( !strncmp( "missing ani ", pMsg, s_nFilterLen13 ))
+		return;
+	if( !strncmp( "CBodyStateExplode Vel =\t", pMsg, s_nFilterLen14 ))
+		return;
+	if( !strncmp( "Couldn't find model skin ", pMsg, s_nFilterLen15 ))
+		return;
+	if( !strncmp( "Client Weapon ", pMsg, s_nFilterLen16 ))
+		return;
+	if( !strncmp( "Client Camera Offset ", pMsg, s_nFilterLen17 ))
+		return;
+
 	// Record shell messages for UI to grab.
 	m_lstShellMsgs_Shell.AddTail( CString( pMsg ));
 }
@@ -1663,7 +1770,7 @@ void CServerDlg::ParseCommandLine( bool bCheckForProfile, ServerGameOptions* pSe
 				else if( stricmp( __argv[nArg], "-name" ) == 0 )
 				{
 					// Set the server name.
-					pServerGameOptions->SetSessionName(__argv[nArg + 1]);
+					pServerGameOptions->m_sSessionName = __argv[nArg + 1];
 
 					// Skip the value.
 					nArg++;
@@ -1700,11 +1807,12 @@ void CServerDlg::ParseCommandLine( bool bCheckForProfile, ServerGameOptions* pSe
 		}
 		else
 		{
-			// Check if it's profile file.
-			if( stricmp( __argv[nArg], "-profile" ) == 0 )
+			// Check if it's the config file. RETAIL: 0x40e3f1, Tron's is
+			// "-config", and the dialog keeps it
+			if( stricmp( __argv[nArg], "-config" ) == 0 )
 			{
 				// Set the config value.
-				pServerGameOptions->m_sProfileName = __argv[nArg + 1];
+				m_sConfigName = __argv[nArg + 1];
 
 				// Skip the value.
 				nArg++;

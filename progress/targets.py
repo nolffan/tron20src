@@ -140,15 +140,18 @@ TARGETS = [
     dict(label="Tron.exe", what="the launcher", kind="image",
          shipped=REFERENCE + "/Tron.exe", stem="Tron",
          built="src/Game/built/Final/Launcher/Tron.exe", optional=True,
-         # provisional: MFC42.DLL's import thunks from 0x40cb30, then
+         # our map: MFC42.DLL's import thunks from 0x40cb30, then
          # msvcrt.lib from __onexit (0x40cf2e) to crtexew.obj's
          # WinMainCRTStartup and mfcs42.lib's AfxInitialize (0x40d128).
-         # Not linked /incremental: .text opens with code, not a jump table
+         # Retail is at the same addresses. Not linked /incremental: .text
+         # opens with code (AniButton.obj's), not a jump table
          app=[(0x00401000, 0x0040cb30)]),
     dict(label="TRONSrv.exe", what="the dedicated server", kind="image",
          shipped=REFERENCE + "/TRONSrv.exe", stem="TRONSrv",
          built="src/Game/built/Final/ServerApp/TRONSrv.exe", optional=True,
-         # provisional: a run of 185 import thunks from 0x416240, then
+         # provisional (ours are 0x1050 bytes later, at 0x417290, until
+         # the shared ScmdConsole and ProfileUtils are Tron's): a run of
+         # 185 import thunks from 0x416240, then
          # msvcrt.lib from __onexit (0x416696) and mfcs42.lib's
          # AfxInitialize (0x416928)
          app=[(0x00401000, 0x00416240)]),

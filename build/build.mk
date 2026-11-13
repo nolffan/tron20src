@@ -75,7 +75,7 @@ TRON20SRC_RCFLAGS ?=
 WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
-    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL
+    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL,Launcher,ServerApp
 # The engine (src/Engine/runtime, from cjacksrc's, being brought to
 # Tron 2.0's): add `src/Engine/runtime/winbuild/Engine.dsw:<projects>` above
 # as each of Lithtech and server compiles.
@@ -263,8 +263,16 @@ all game: $(WANTED)
 
 # A DLL's import library is written by the DLL's link; a project that
 # links it depends on the DLL (the dedicated server, TRONSrv.exe, links
-# server.dll's)
+# server.dll's). Until the engine's workspace builds server.dll, its import
+# library is made from the retail server.dll's exports
+# (build/server-imports.def) by VC6's lib.exe.
+ifneq ($(filter server,$(PROJECTS)),)
 src/Engine/built/Final/server/server.lib: src/Engine/built/Final/server/server.dll ;
+else
+$(eval $(call tool,src/Engine/built/Final/server/server.lib,build/server-imports.def | wine-drives,\
+    $(ENV_GAME) $(WINE) $(LIBEXE) /nologo /machine:i386 \
+    '/def:$(call ws,$(ROOT)/build/server-imports.def)' '/out:$(call ws,$(ROOT)/src/Engine/built/Final/server/server.lib)'))
+endif
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share
