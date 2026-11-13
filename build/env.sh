@@ -19,7 +19,7 @@ export WINEDEBUG=-all
 export WINEDLLOVERRIDES="mscoree,mshtml="
 # the variant macros ext/tools/releasesrc.py resolves, and the project's own
 # header directory ext/tools/mkdeps.py follows
-export RELEASESRC_VARIANTS="TRON20_MODERN TRON20_DEBUG"
+export RELEASESRC_VARIANTS="TRON20_MODERN TRON20_DEBUG TRON20SRC_MODERN"
 export MKDEPS_PROJECT_INCLUDE=src/tron20src
 
 # Extra flags for every compile and every link, for the debug and modern

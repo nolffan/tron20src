@@ -755,7 +755,7 @@ void cm_HandleMaxFPS(uint32 frameTicks)
 
 
 
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 // MODERN.md EN-40: the frame limiter. MaxFPS limits the frame rate only
 // outside the final build (cm_HandleMaxFPS above, which retail's
 // Lithtech.exe has but never calls), so the game has always run as fast
@@ -1024,7 +1024,7 @@ LTRESULT CClientMgr::Update()
     cnt_StartCounter(totalCounter);
 
 #endif
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
     // EN-42: the frame log, at the frame's start
     cm_ModernFrameLog();
 #endif
@@ -1032,7 +1032,7 @@ LTRESULT CClientMgr::Update()
     // Update videos.
     if (m_pVideoMgr)
 	{
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
         CModernFrameSection cSection(MFL_VIDEO);	// EN-42
 #endif
         m_pVideoMgr->UpdateVideos();
@@ -1109,7 +1109,7 @@ LTRESULT CClientMgr::Update()
     if (dsi_IsClientActive())
 	{
         CountAdder cntAdd(&g_Ticks_Input);
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
         CModernFrameSection cSection(MFL_INPUT);	// EN-42
 #endif
         ProcessAllInput(false);
@@ -1118,7 +1118,7 @@ LTRESULT CClientMgr::Update()
     // Update client shells.
     if (m_pCurShell)
     {
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
         CModernFrameSection cSection(MFL_SHELL);	// EN-42
 #endif
 		// RETAIL: as the 2006 tree (Lithtech.exe 0x40e952)
@@ -1142,7 +1142,7 @@ LTRESULT CClientMgr::Update()
     }
     else if (i_client_shell != NULL)
 	{
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
         CModernFrameSection cSection(MFL_SHELL);	// EN-42
 #endif
         // If we don't have any client shells right now, do a 'fake' update.
@@ -1158,7 +1158,7 @@ LTRESULT CClientMgr::Update()
     }
 
     // Update all sounds.
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
     {
         CModernFrameSection cSection(MFL_SOUND);	// EN-42
         UpdateAllSounds();
@@ -1221,7 +1221,7 @@ LTRESULT CClientMgr::Update()
     cm_HandleMaxFPS(frameTicks);                    // Lock framerate if they want.
 
 #endif
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
     // EN-40: multiplayer is a shell that is not a normal (single-player)
     // game, hosting one or joining one
     cm_ModernFrameLimit(m_pCurShell && m_pCurShell->m_ShellMode != STARTGAME_NORMAL);
@@ -1318,7 +1318,7 @@ void CClientMgr::ShowDrawSurface(uint flags)
 	#endif // LITHTECH_ESD
 
     graph_mgr->Mgr()->Draw();
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 
     CModernFrameSection cSection(MFL_PRESENT);	// EN-42
 #endif
@@ -2080,7 +2080,7 @@ void CClientMgr::RemoveClientObject(LTObject *pObj)
 	}
 }
 
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 // MODERN.md EN-30: widescreen field of view (Hor+). The game sets one pair
 // of angles for every screen (FovX 90, FovY 78: a 4:3 view), so a wider
 // screen showed the same view stretched sideways. A view of the world
@@ -2108,7 +2108,7 @@ static float cm_WidescreenFovX(float xFov, int drawMode, const LTRect &rect, uin
     return 2.0f * ltatanf(lttanf(xFov * 0.5f) * fWiden);
 }
 
-#endif // CJACK_MODERN
+#endif // TRON20SRC_MODERN
 ///////////////////////////////////////////////////////////////////////////////
 // BSP world rep functionality
 bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjects, int nObjects, float fFrameTime)
@@ -2157,7 +2157,7 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
         pDesc->m_Rect.right = pCamera->m_Right;
         pDesc->m_Rect.bottom = pCamera->m_Bottom;
     }
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
     // EN-30: widescreen field of view (Hor+)
     pDesc->m_xFov = cm_WidescreenFovX(pDesc->m_xFov, drawMode, pDesc->m_Rect, width, height);
 #endif
@@ -2198,7 +2198,7 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
 
 	{
 		CountAdder cntAdd(&g_Ticks_Render);
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
         CModernFrameSection cSection(MFL_RENDER);	// EN-42
 #endif
 
@@ -2628,7 +2628,7 @@ void CClientMgr::UpdateObjects()
 {
 	g_Ticks_UpdateObjects = 0;
 	CountAdder cntUpdate(&g_Ticks_UpdateObjects);
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
     CModernFrameSection cSection(MFL_OBJECTS);	// EN-42
 #endif
 
