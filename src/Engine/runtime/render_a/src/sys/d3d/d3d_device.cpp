@@ -846,3 +846,56 @@ bool CD3D_Device::LoadWorldData(ILTStream *pStream)
 	LT_MEM_TRACK_ALLOC(m_pRenderWorld = new CD3D_RenderWorld,LT_MEM_TYPE_RENDERER);
 	return m_pRenderWorld->Load(pStream);
 }
+
+// RETAIL: Build 69's (Lithtech.exe 0x4caf10): wait for the previous frame's
+// end-of-frame query, at most a second, so the driver queues no more than
+// one frame; the query is made the first time, and given up on for good if
+// the device has none.
+void CD3D_Device::PreventFrameBuffering()
+{
+	if (!g_CV_PreventFrameBuffering)
+		return;
+
+	// Check for frame buffer prevention support
+	if (!m_pEndOfFrameQuery)
+	{
+		static bool bKillFrameBufferPrevention = false;
+		if (bKillFrameBufferPrevention)
+			return;
+		HRESULT hr = PD3DDEVICE->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEndOfFrameQuery);
+		if (FAILED(hr))
+		{
+			dsi_ConsolePrint("Frame buffer prevention not available.");
+			bKillFrameBufferPrevention = true;
+			return;
+		}
+		ASSERT(m_pEndOfFrameQuery);
+	}
+
+	uint nStartTime = timeGetTime();
+
+	// Wait until the previous frame is done
+	HRESULT hr;
+	BOOL bStatus;
+	for(;;)
+	{
+		hr = m_pEndOfFrameQuery->GetData(&bStatus, sizeof(bStatus), D3DGETDATA_FLUSH);
+		if (!SUCCEEDED(hr) || ((hr == S_OK) && bStatus))
+			break;
+		// Yield a timeslice
+		Sleep(0);
+		// Don't wait for more than 1 second.
+		if ((timeGetTime() - nStartTime) > 1000)
+			break;
+	}
+
+	// Show stats if necessary
+	if (g_CV_ShowFrameBufferingInfo)
+	{
+		uint nTotalTicks = timeGetTime() - nStartTime;
+		dsi_ConsolePrint("Buffered frame delay: %3dms", nTotalTicks);
+	}
+
+	// Issue the query for the next frame
+	m_pEndOfFrameQuery->Issue(D3DISSUE_END);
+}
