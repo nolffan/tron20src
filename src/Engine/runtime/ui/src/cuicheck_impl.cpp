@@ -280,13 +280,11 @@ CUI_RESULTTYPE CUICheck_Impl::SetAlignmentV(CUI_ALIGNMENTTYPE align)
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUICheck_Impl::SetText(const char* pText)
+CUI_RESULTTYPE CUICheck_Impl::SetText(const std::wstring& sText)
 {
 	float x		= m_Rect.x + m_GutterLeft; 
 	float y		= m_Rect.y + m_GutterTop; 
 	uint32 wrap	= (uint32) (m_Rect.width - m_GutterRight - m_GutterLeft);
-
-	int32 len = strlen(pText);
 
 	// if not polystring exists, make one
 	if (!m_pPolyStr) {
@@ -299,13 +297,14 @@ CUI_RESULTTYPE CUICheck_Impl::SetText(const char* pText)
 	// make the polystring conform to the label
 	//m_pPolyStr->SetWrapWidth(wrap);
 
-	m_pPolyStr->SetAlignmentH(CUI_HALIGN_LEFT);
+	// RETAIL: slot +0x78 (0x56f5a1), see cuipolystring.h
+	m_pPolyStr->TronUnknownVirtual30(CUI_HALIGN_LEFT);
 	m_pPolyStr->SetCharScreenHeight(m_CharHeight);
 	m_pPolyStr->SetColors(m_pTextColors[0], m_pTextColors[1], m_pTextColors[2], m_pTextColors[3]);
 		
 	// if we set the text after all the formatting is set, we save time because
 	// we're not re-visiting polys over and over
-	m_pPolyStr->SetText(pText);
+	m_pPolyStr->SetText(sText);	// RETAIL: the wide one (0x56f4c0)
 
 	AlignTextInWidget();
 	

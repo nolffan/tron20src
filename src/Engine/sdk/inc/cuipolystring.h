@@ -109,8 +109,11 @@ class CUIPolyString
 											  int32 start = 0,
 											  int32 end = -1) = 0;
 
-		// TRON: returns true (0x482590), whatever it is given.
-		virtual bool			TronUnknownVirtual30(void* pValue) = 0;
+		// TRON: returns true (0x482590), whatever it is given. RETAIL: the
+		// static text (Lithtech.exe 0x571b1b) and the check box (0x56f5a1)
+		// call it with their horizontal alignment where NOLF2's call
+		// SetAlignmentH (the formatted polystring's own is slot +0xb0).
+		virtual bool			TronUnknownVirtual30(CUI_ALIGNMENTTYPE align) = 0;
 
 		// TRON: calls SetCharScreenSize (0x565c30); the game's text controls
 		// call this one where NOLF2's call SetCharScreenHeight.

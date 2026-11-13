@@ -57,13 +57,11 @@ CUIStaticText_Impl::~CUIStaticText_Impl()
 
 	
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIStaticText_Impl::SetText(const char* pText)
+CUI_RESULTTYPE CUIStaticText_Impl::SetText(const std::wstring& sText)
 {
 	float x		= m_Rect.x + m_GutterLeft; 
 	float y		= m_Rect.y + m_GutterTop; 
 	uint32 wrap	= (uint32) (m_Rect.width - m_GutterRight - m_GutterLeft);
-
-	int32 len = strlen(pText);
 
 	// make sure there's a font
 	if (!m_pFont) return CUIR_NO_FONT;
@@ -86,8 +84,8 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetText(const char* pText)
 	
 
 	if (!m_pPolyStr) {
-		// PORT: Tron's polystrings are wide (the char SetText below widens)
-		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, std::wstring(), x, y, m_Halign);
+		// RETAIL: a wide string made from NULL, as the check box's (0x571813)
+		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, NULL, x, y, m_Halign);
 	}
 
 	// if the 'new' was successful...
@@ -97,7 +95,7 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetText(const char* pText)
 	m_pPolyStr->SetWrapWidth(wrap);
 	m_pPolyStr->SetCharScreenHeight(m_CharHeight);
 	m_pPolyStr->SetColors(m_pTextColors[0], m_pTextColors[1], m_pTextColors[2], m_pTextColors[3]);
-	m_pPolyStr->SetText(pText);
+	m_pPolyStr->SetText(sText);	// RETAIL: the wide one (0x571760)
 
 	AlignTextInWidget();
 	
@@ -213,7 +211,8 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetAlignmentH(CUI_ALIGNMENTTYPE align)
 	CUIWidget_Impl::SetAlignmentH(align);
 
 	if (m_pPolyStr) {
-		m_pPolyStr->SetAlignmentH(align);	
+		// RETAIL: slot +0x78 (0x571b1b), see cuipolystring.h
+		m_pPolyStr->TronUnknownVirtual30(align);
 		this->AlignTextInWidget();
 	}
 

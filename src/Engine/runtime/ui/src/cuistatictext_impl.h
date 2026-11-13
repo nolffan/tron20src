@@ -40,7 +40,7 @@ class CUIStaticText_Impl : public CUIWidget_Impl
 		virtual const char*		GetClassName() { return "CUIStaticText"; }	
 		
 		// set data
-		virtual CUI_RESULTTYPE	SetText(const char* pText);
+		virtual CUI_RESULTTYPE	SetText(const std::wstring& sText);
 		virtual CUI_RESULTTYPE	SetFont(CUIFont* pFont);
 		
 		//virtual CUI_RESULTTYPE	SetColor(CUI_ELEMENTTYPE elm, uint32 argb);

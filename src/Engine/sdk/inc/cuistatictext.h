@@ -81,7 +81,9 @@ font must be set before calling SetText()
 
 Used for: Text and UI.
 */
-		virtual CUI_RESULTTYPE	SetText(const char* pBuffer);
+		// TRON: wide, as the polystrings (RETAIL: Lithtech.exe 0x571760
+		// passes it to the polystring's SetText(const std::wstring&))
+		virtual CUI_RESULTTYPE	SetText(const std::wstring& sText);
 
 
 /*!
