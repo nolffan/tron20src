@@ -227,8 +227,24 @@ BOOL CLauncherApp::InitInstance()
 	m_Font.CreateFontIndirect(&lf);
 
 	CLauncherDlg dlg;
+#ifdef TRON20_MODERN
+	// MODERN.md: the modern build links this launcher twice (build/build.mk):
+	// as TronLauncher.exe, the launcher, and as Tron.exe, which starts the
+	// game at once, as Play would (the saved options, the rez files, the
+	// first run's detail prompt). Not installed, Tron.exe is the launcher
+	// too, for its Install button.
+	if(m_bInstalled && IsDirectLaunch())
+	{
+		dlg.LaunchDirect();
+	}
+	else
+	{
+#endif
 	m_pMainWnd = &dlg;
 	int nResponse = dlg.DoModal();
+#ifdef TRON20_MODERN
+	}
+#endif
 
 	m_dwNumLauncherRuns++;
 
@@ -260,6 +276,33 @@ BOOL CLauncherApp::InitInstance()
 	//  application, rather than start the application's message pump.
 	return FALSE;
 }
+
+#ifdef TRON20_MODERN
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLauncherApp::IsDirectLaunch
+//
+//	PURPOSE:	MODERN.md: whether this executable is Tron.exe, which
+//				starts the game directly (TronLauncher.exe is the launcher)
+//
+// ----------------------------------------------------------------------- //
+
+BOOL CLauncherApp::IsDirectLaunch()
+{
+	char sPath[MAX_PATH];
+	DWORD nLen = GetModuleFileName(NULL, sPath, sizeof(sPath));
+	if(nLen == 0 || nLen >= sizeof(sPath))
+	{
+		return FALSE;
+	}
+
+	char sName[_MAX_FNAME];
+	char sExt[_MAX_EXT];
+	_splitpath(sPath, NULL, NULL, sName, sExt);
+	return _stricmp(sName, "Tron") == 0 && _stricmp(sExt, ".exe") == 0;
+}
+
+#endif // TRON20_MODERN
 
 // ----------------------------------------------------------------------- //
 //

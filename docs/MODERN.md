@@ -40,12 +40,18 @@ first; `docs/PLAN.md`, package 9):
 * raw mouse input;
 * controllers through XInput, in place of DirectInput joysticks;
 * our Bink player on FFmpeg in place of RAD's `binkw32.dll`, as nolf2src's;
-* the launcher as `TronLauncher.exe`, and `Tron.exe` starting the game
-  directly, as if Launch had been clicked in the launcher;
 * from nolf2src's modern build, where Tron has the same code: windowed
   modes at any size, a frame limiter, Internet play without the dead
   GameSpy master servers.
 
 ## Done
 
-(nothing yet)
+* **The launcher as `TronLauncher.exe`; `Tron.exe` starts the game.**
+  build/build.mk links the launcher's objects twice in the modern build.
+  `CLauncherApp::IsDirectLaunch` tells the two apart by the executable's
+  name; `Tron.exe`, once the game is installed, skips the launcher window
+  and does what its Play button does (`CLauncherDlg::LaunchDirect`: the
+  same checks, then `LaunchGame(ACTION_PLAY)`, with the saved options, the
+  rez files and the first run's detail prompt). Not installed, `Tron.exe`
+  is the launcher, for its Install button. (`src/Game/Launcher/Launcher.cpp`,
+  `LauncherDlg.cpp`)

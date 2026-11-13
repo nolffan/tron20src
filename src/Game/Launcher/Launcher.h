@@ -126,6 +126,9 @@ public:
 
 	// General functions
 	CString GetAdvancedOptionsCommandLineString();
+#ifdef TRON20_MODERN
+	BOOL	IsDirectLaunch();
+#endif
 	BOOL	ReadConfigFile(const char* sFile);
 
 // Overrides

@@ -538,6 +538,27 @@ void CLauncherDlg::OnOptions()
 	dlg.DoModal();
 }
 
+#ifdef TRON20_MODERN
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLauncherDlg::LaunchDirect
+//
+//	PURPOSE:	MODERN.md: Tron.exe starts the game with no launcher window,
+//				as the launcher's Play button would (OnPlay, installed)
+//
+// ----------------------------------------------------------------------- //
+
+void CLauncherDlg::LaunchDirect()
+{
+	if(!ExistProcess(theApp.m_csSetupExe, 2) && !ExistProcess(theApp.m_csInstallerExe, 2) &&
+		theApp.CD_VerifyGame())
+	{
+		LaunchGame(ACTION_PLAY);
+	}
+}
+
+#endif // TRON20_MODERN
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLauncherDlg::OnHelp
