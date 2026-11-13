@@ -768,7 +768,7 @@ bool CServerLightCycleMgr::OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender)
 			return true;
 		}
 
-		case LCI_TRONUNKNOWN_14:
+		case LCI_TRIM_TRAIL:
 		{
 			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
 			if(pCyclist)
@@ -1064,7 +1064,7 @@ bool CServerLightCycleMgr::TronUnknown9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnk
 	{
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
-		cMsg.Writeuint8(LCI_TRONUNKNOWN_14);
+		cMsg.Writeuint8(LCI_TRIM_TRAIL);
 		cMsg.WriteObject(pCyclist->hObject);
 		cMsg.Writeuint32(nTronUnknown1);
 		cMsg.Writeuint32(nTronUnknown2);

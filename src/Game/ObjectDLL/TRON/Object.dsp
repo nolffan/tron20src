@@ -285,6 +285,9 @@ SOURCE=.\ProjectileDrunkenDims.cpp
 # Begin Source File
 
 SOURCE=.\ProjectileEnergyClaw.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -317,6 +320,9 @@ SOURCE=.\Stdafx.cpp
 # Begin Source File
 
 SOURCE=.\Thorne.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -498,6 +504,9 @@ SOURCE=.\Stdafx.h
 # Begin Source File
 
 SOURCE=.\Thorne.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.h
 # End Source File
 # Begin Source File

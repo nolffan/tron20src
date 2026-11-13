@@ -93,7 +93,7 @@
 	#define LCI_SET_POWERUP				11	// Server to Client
 	#define LCI_ACTIVATE_POWERUP		12
 	#define LCI_TRONUNKNOWN_13			13	// Server to Client
-	#define LCI_TRONUNKNOWN_14			14
+	#define LCI_TRIM_TRAIL				14	// both ways: a trail trimmed (CShell 0x10014620)
 	#define LCI_START_UPDATING			15	// Client to Server; Server to the cycle object
 	#define LCI_UPDATING_STARTED		16	// Server to Client
 	#define LCI_DIALOG					22	// Server to Client: a rider's line

@@ -219,6 +219,17 @@ reads it. Init always reads both, and GetShade's default shade is static
 
 Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
 
+### A shield hit drops a trail's last point by erasing end()
+
+CShell.dll 0x10100ce0 (CLightCycleMgr::HandleShieldCollision,
+Shared/TRON/LightCycleMgr.cpp; the same code is in Object.lto's copy). When
+the cut-off part of the hit trail cannot be shortened, the code calls
+`collTrailPoints.erase(collTrailPoints.end())`: erasing end() is undefined.
+With STLport 4.0 the copy loop runs no times and the end moves back one
+point, so it works as a pop_back.
+
+Not fixed yet: the modern build should call pop_back().
+
 ### Updating a listed server by IP adds it to the list again
 
 CShell.dll 0x10052f50 (ServerBrowserAuxUpdateIPA, GameSpy SDK

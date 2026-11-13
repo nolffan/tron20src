@@ -57,6 +57,15 @@ CTronGameClientShell::~CTronGameClientShell()
 uint32 CTronGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 {
 	uint32 nResult = CGameClientShell::OnEngineInitialized(pMode, pAppGuid);
+
+	// RETAIL: 0x1009a020 then inits the light cycle manager. PORT: and two
+	// members of Tron's (+0x3695c, +0x3696c) and registers the "Frame" and
+	// "FrameUV" console programs: not in our build yet
+	if (nResult == LT_OK)
+	{
+		m_LightCycleMgr.Init();
+	}
+
 	return nResult;
 }
 

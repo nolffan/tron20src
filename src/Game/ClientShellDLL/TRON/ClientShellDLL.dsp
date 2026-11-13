@@ -166,6 +166,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientLightCycleMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -309,6 +313,10 @@ SOURCE=.\HUDLightCycleLives.cpp
 # Begin Source File
 
 SOURCE=.\HUDLightCyclePowerupIcon.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -615,6 +623,10 @@ SOURCE=.\CheatMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientLightCycleMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.h
 # End Source File
 # Begin Source File
@@ -712,6 +724,14 @@ SOURCE=.\HUDProcedurals.h
 # Begin Source File
 
 SOURCE=.\HUDProfiler.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleButeMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # End Source File
 # Begin Source File
 
