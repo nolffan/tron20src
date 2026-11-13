@@ -216,7 +216,7 @@ enum LoadGameType
 #define MID_SERVER_ERROR                        190
 #define MID_LOAD_FAILED							191
 #define MID_OBJECTIVES_DATA						192
-#define MID_SCMD								193
+#define MID_SCMD								201	// RETAIL: 201 in Tron (retail ScmdConsole_Impl::OnMessage, TRONSrv.exe 0x403d8c, CShell.dll 0x1017eadc; ScmdServer_Impl::OnMessage, Object.lto 0x101c5cf8)
 
 #define MID_MULTIPLAYER_DATA                    202
 #define MID_MULTIPLAYER_SERVERDIR				203 // server directory message

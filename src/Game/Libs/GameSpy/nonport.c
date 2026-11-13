@@ -212,7 +212,11 @@ static int Util_RandInt(int low, int high);
 static long longrand(void);
 static long nextlongrand(long seed);
 
-const char * GOAGetUniqueID(void)
+static const char * GOAGetUniqueID_Internal(void);
+
+GetUniqueIDFunction GOAGetUniqueID = GOAGetUniqueID_Internal;
+
+static const char * GOAGetUniqueID_Internal(void)
 {
 	static char keyval[MAX_PATH] = "";
 	unsigned int ret;

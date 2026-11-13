@@ -25,6 +25,15 @@ class CButeMgr;
 
 #define MAX_PROFILE_NAME	16
 
+// PORT: ours. NOLF2's per game type options, restriction sets and campaign
+// files are only for the NOLF2 code in Object.lto and CShell.dll still standing
+// in for Tron's; Tron's dedicated server (which defines neither build) has
+// none of them (TRONSrv.exe has no static options to construct, and no
+// campaign directories).
+#if defined( _CLIENTBUILD ) || defined( _SERVERBUILD )
+#define PROFILEUTILS_NOLF2_OPTIONS
+#endif
+
 
 class CoopGameOptions
 {
@@ -194,7 +203,11 @@ class ServerGameOptions
 		void	Clear( );
 
 		bool	LoadFromBute( CButeMgr& bute );
-		bool	SaveToBute( CButeMgr& bute );
+		void	SaveToBute( CButeMgr& bute );
+
+		// RETAIL: TRONSrv.exe 0x408130 and 0x408fd0 (the names are ours)
+		bool	Validate( );
+		bool	FixSessionName( );
 
 		// "Settings"
 		std::string		m_sOptionsName;				// +0x00 ".Default" (ours)
@@ -255,7 +268,7 @@ class ServerGameOptions
 		uint16			m_nLCTotalPoints;			// +0xac
 		uint16			m_nLCTotalTime;
 		uint16			m_nLCMaxPing;				// +0xb0
-		uint32			m_nLCPowerups;				// +0xb4 "PowerupAllow*", a bit each
+		uint32			m_nLCPowerups;				// +0xb4 "PowerupAllow*", a bit each (ProfileUtils.cpp's LCPowerupBits)
 		int8			m_nLCKillPointValue;		// +0xb8
 		int8			m_nLCSelfKillPointValue;
 		int8			m_nLCWinRacePointValue;
@@ -267,9 +280,11 @@ class ServerGameOptions
 		uint32			m_nTronUnknownCC;			// +0xcc RETAIL: retail 0x10114e50 returns it
 
 		//for the current game type
+#ifdef PROFILEUTILS_NOLF2_OPTIONS
 		bool		IsDefaultCampaign() const;
 		const char*	GetCampaignName() const;
 		void		SetCampaignName(const char*	pszName);
+#endif // PROFILEUTILS_NOLF2_OPTIONS
 		const char*	GetSessionName() const;
 		void		SetSessionName(const char*	pszName);
 		
@@ -289,6 +304,7 @@ class ServerGameOptions
 		bool		GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf );
 #endif // _CLIENTBUILD
 
+#ifdef PROFILEUTILS_NOLF2_OPTIONS
 		CoopGameOptions&		GetCoop() { return m_Coop;	}
 		DMGameOptions&			GetDeathmatch() { return m_DM; }
 		TeamDMGameOptions&		GetTeamDeathmatch() { return m_TeamDM; }
@@ -305,14 +321,17 @@ class ServerGameOptions
 		static DMGameOptions		m_DM;
 		static TeamDMGameOptions	m_TeamDM;
 		static DoomsdayGameOptions	m_DD;
+#endif // PROFILEUTILS_NOLF2_OPTIONS
 };
 
 
 
 const char*	GetProfileDir( char const* pszProfileName );
 const char*	GetProfileFile( char const* pszProfileName );
+#ifdef PROFILEUTILS_NOLF2_OPTIONS
 const char*	GetCampaignDir( char const* pszProfileName, GameType eGameType );
 const char*	GetCampaignFile( ServerGameOptions const& serverGameOptions );
+#endif // PROFILEUTILS_NOLF2_OPTIONS
 
 
 #endif // PROFILEUTILS_H

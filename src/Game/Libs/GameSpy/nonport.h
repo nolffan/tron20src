@@ -156,7 +156,12 @@ void SocketShutDown(void);
 gsi_time current_time(void);
 void msleep(gsi_time msec);
 char * goastrdup(const char *src);
-const char * GOAGetUniqueID(void);
+// RETAIL: a pointer to the unique ID function, which the game may replace
+// (each retail image keeps it in its data after nonport.c's randSeed:
+// TRONSrv.exe 0x41e288, CShell.dll 0x10217248, Object.lto 0x102da900); the
+// typedef's and the default function's names are ours
+typedef const char * (* GetUniqueIDFunction)(void);
+extern GetUniqueIDFunction GOAGetUniqueID;
 
 // Synchronous name resolution only (the 2007 ghttp resolves on a thread
 // unless GSI_NO_THREADS: 2003's never did)

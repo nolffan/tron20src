@@ -143,27 +143,9 @@ class ScmdConsoleCommandHandler_NextMission : public ScmdConsoleCommandHandler
 {
 	public:
 
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "NextMission" ); return cTok; }
+		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "NextMap" ); return cTok; }
 		virtual ScmdCommand CommandId( ) { return kScmdCommandNextMission; }
 		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_NEXTMISSION; }
-};
-
-
-// ----------------------------------------------------------------------- //
-//
-//	CLASS:		ScmdConsoleCommandHandler_NextRound
-//
-//	PURPOSE:	Sends/receives nextround command.
-//
-// ----------------------------------------------------------------------- //
-
-class ScmdConsoleCommandHandler_NextRound: public ScmdConsoleCommandHandler
-{
-	public:
-
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "NextRound" ); return cTok; }
-		virtual ScmdCommand CommandId( ) { return kScmdCommandNextRound; }
-		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_NEXTROUND; }
 };
 
 
@@ -179,7 +161,7 @@ class ScmdConsoleCommandHandler_ListMissions : public ScmdConsoleCommandHandler
 {
 	public:
 
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "ListMissions" ); return cTok; }
+		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "ListMaps" ); return cTok; }
 		virtual ScmdCommand CommandId( ) { return kScmdCommandListMissions; }
 		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_LISTMISSIONS; }
 		virtual bool Receive( ScmdCommandStatus eScmdCommandStatus, ILTMessage_Read& msg );
@@ -198,7 +180,7 @@ class ScmdConsoleCommandHandler_SetMission : public ScmdConsoleCommandHandler
 {
 	public:
 
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "SetMission" ); return cTok; }
+		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "SetMap" ); return cTok; }
 		virtual ScmdCommand CommandId( ) { return kScmdCommandSetMission; }
 		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_SETMISSION; }
 		virtual bool Send( char const* pszCommand );
@@ -315,44 +297,6 @@ class ScmdConsoleCommandHandler_BanClient : public ScmdConsoleCommandHandler
 		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "BanClient" ); return cTok; }
 		virtual ScmdCommand CommandId( ) { return kScmdCommandBanClient; }
 		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_BANID; }
-		virtual bool Send( char const* pszCommand );
-};
-
-
-// ----------------------------------------------------------------------- //
-//
-//	CLASS:		ScmdConsoleCommandHandler_ListGameOptions
-//
-//	PURPOSE:	Sends/receives ListGameOptions command.
-//
-// ----------------------------------------------------------------------- //
-
-class ScmdConsoleCommandHandler_ListGameOptions : public ScmdConsoleCommandHandler
-{
-	public:
-
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "ListGameOptions" ); return cTok; }
-		virtual ScmdCommand CommandId( ) { return kScmdCommandListGameOptions; }
-		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_LISTGAMEOPTIONS; }
-		virtual bool Receive( ScmdCommandStatus eScmdCommandStatus, ILTMessage_Read& msg );
-};
-
-
-// ----------------------------------------------------------------------- //
-//
-//	CLASS:		ScmdConsoleCommandHandler_SetGameOption
-//
-//	PURPOSE:	Sends/receives SetGameOption command.
-//
-// ----------------------------------------------------------------------- //
-
-class ScmdConsoleCommandHandler_SetGameOption : public ScmdConsoleCommandHandler
-{
-	public:
-
-		virtual CParsedMsg::CToken const& Token( ) { static CParsedMsg::CToken cTok( "SetGameOption" ); return cTok; }
-		virtual ScmdCommand CommandId( ) { return kScmdCommandSetGameOption; }
-		virtual uint32 HelpId( ) { return IDS_SCMD_HELP_SETGAMEOPTION; }
 		virtual bool Send( char const* pszCommand );
 };
 
@@ -508,7 +452,6 @@ bool ScmdConsole_Impl::Init( ScmdConsoleDriver& scmdClientDriver )
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_ListClients ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_ListMissions ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_NextMission ));
-	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_NextRound ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_SetMission ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_BootName ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_BootId ));
@@ -516,8 +459,6 @@ bool ScmdConsole_Impl::Init( ScmdConsoleDriver& scmdClientDriver )
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_RemoveBan ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_ListBans ));
 	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_BanClient ));
-	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_ListGameOptions ));
-	m_ScmdConsoleCommandHandlerList.push_back( debug_new( ScmdConsoleCommandHandler_SetGameOption ));
 
 	return true;
 }
@@ -1044,10 +985,10 @@ bool ScmdConsoleCommandHandler_ListClients::Receive( ScmdCommandStatus eScmdComm
 			{
 				ScmdClientInfo& clientInfo = *iter;
 				
-				// Format the info string.
-				_snprintf( szClientInfo, ARRAY_LEN( szClientInfo ), "%d) [%s] [%d] [%d.%d.%d.%d]", 
-					clientInfo.m_nClientID, clientInfo.m_szName, clientInfo.m_nPing, 
-					clientInfo.m_aIP[0], clientInfo.m_aIP[1], clientInfo.m_aIP[2], clientInfo.m_aIP[3] );
+				// Format the info string. RETAIL: TRONSrv.exe 0x404845, Tron's
+				// leaves out the IP it reads.
+				_snprintf( szClientInfo, ARRAY_LEN( szClientInfo ), "%d) [%s] [%d]", 
+					clientInfo.m_nClientID, clientInfo.m_szName, clientInfo.m_nPing );
 				szClientInfo[ ARRAY_LEN( szClientInfo ) - 1 ] = 0;
 
 				ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteMessage( szClientInfo );
@@ -1346,175 +1287,6 @@ bool ScmdConsoleCommandHandler_BanClient::Send( char const* pszCommand )
 	cMsg.Writeuint8( MID_SCMD );
 	cMsg.Writeuint8( CommandId( ));
 	cMsg.Writeuint16( nClientId );
-	ScmdConsole::Instance( ).GetScmdConsoleDriver( ).SendToServer( *cMsg.Read( ));
-
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	WriteOutGameOption
-//
-//	PURPOSE:	Writes out game option.
-//
-//	ARGUMENTS:	nIndex - The index to write into output.
-//				pszValueFormat - the printf format specifier to use when writing value out.
-//				nLabelId - the CRES string id for the label.
-//				value - the value to write into output.
-//
-//	RETURN:		true if successful.
-//
-// ----------------------------------------------------------------------- //
-
-template< class T >
-static bool WriteOutGameOption( uint32 nIndex, char const* pszValueFormat, uint32 nLabelId, T value )
-{
-	if( !pszValueFormat )
-		return false;
-
-	char szFormat[256] = "";
-	char szOut[256] = "";
-
-	// Create the format string using the passed in format for the value.
-	sprintf( szFormat, "%%d) [%%s][%s]", pszValueFormat );
-	char const* pszLabel = ScmdConsole::Instance( ).GetScmdConsoleDriver( ).LoadStringResId( nLabelId );
-	sprintf( szOut, szFormat, nIndex, pszLabel, value );
-	ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteMessage( szOut );
-
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ScmdConsoleCommandHandler_ListGameOptions::Receive
-//
-//	PURPOSE:	Handles receiving response.
-//
-//	RETURN:		true if handled.
-//
-// ----------------------------------------------------------------------- //
-
-bool ScmdConsoleCommandHandler_ListGameOptions::Receive( ScmdCommandStatus eScmdCommandStatus, ILTMessage_Read& msg )
-{
-	switch( eScmdCommandStatus )
-	{
-		case kScmdCommandStatusOk:
-		{
-			// Write the header out.
-			ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_SCMD_LISTGAMEOPTIONSHEADER );
-
-			// Each game type can have different options.
-			GameType eGameType = ( GameType )msg.Readuint8( );
-			switch( eGameType )
-			{
-				case eGameTypeDeathmatch:
-				{
-					ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_DEATHMATCH );
-
-					uint32 nIndex = 0;
-					WriteOutGameOption( nIndex++, "%d", IDS_RUN_SPEED, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_FRAG_LIMIT, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_TIME_LIMIT, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_ROUNDS, msg.Readuint8( ));
-				}
-				break;
-
-				case eGameTypeTeamDeathmatch:
-				{
-					ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_TEAMDEATHMATCH );
-
-					uint32 nIndex = 0;
-					WriteOutGameOption( nIndex++, "%d", IDS_RUN_SPEED, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_FRAG_LIMIT, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_TIME_LIMIT, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_ROUNDS, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_FRIENDLY_FIRE, msg.Readbool( ));
-				}
-				break;
-
-				case eGameTypeDoomsDay:
-				{
-					ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_DOOMSDAY );
-
-					uint32 nIndex = 0;
-					WriteOutGameOption( nIndex++, "%d", IDS_RUN_SPEED, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_TIME_LIMIT, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_ROUNDS, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_FRIENDLY_FIRE, msg.Readbool( ));
-				}
-				break;
-
-				case eGameTypeCooperative:
-				{
-					ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_COOPERATIVE );
-
-					uint32 nIndex = 0;
-					WriteOutGameOption( nIndex++, "%d", IDS_FRIENDLY_FIRE, msg.Readbool( ));
-					WriteOutGameOption( nIndex++, "%d", IDS_DIFFICULTY, msg.Readuint8( ));
-					WriteOutGameOption( nIndex++, "%f", IDS_HOST_PLAYERDIFF, msg.Readfloat( ));
-				}
-				break;
-
-				default:
-				{
-					ScmdConsole::Instance( ).GetScmdConsoleDriver( ).WriteStringResId( IDS_SCMD_NOGAMEOPTIONS );
-				}
-				break;
-			}
-
-			return true;
-		}
-		break;
-
-		default:
-		{
-			return ScmdConsoleCommandHandler::Receive( eScmdCommandStatus, msg );
-		}
-		break;
-	}
-
-	return false;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ScmdConsoleCommandHandler_SetGameOption::Send
-//
-//	PURPOSE:	Sends setgameoption command.
-//
-//	RETURN:		false on error.
-//
-// ----------------------------------------------------------------------- //
-
-bool ScmdConsoleCommandHandler_SetGameOption::Send( char const* pszCommand )
-{
-	// Check inputs.
-	if( !pszCommand || !pszCommand[0] )
-	{
-		return false;
-	}
-
-	// Parse the message.
-	ConParse parse;
-	parse.Init( pszCommand );
-	g_pCommonLT->Parse( &parse );
-	if( parse.m_nArgs < 2 )
-		return false;
-
-	CParsedMsg cCurMsg( parse.m_nArgs, parse.m_Args );
-
-	// Convert the first parameter to the game option index.
-	uint8 nGameOption = ( uint8 )atoi( cCurMsg.GetArg( 0 ));
-
-	// Convert the rest to the value.
-	char szVal[256];
-	cCurMsg.ReCreateMsg( szVal, ARRAY_LEN( szVal ), 1 );
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_SCMD );
-	cMsg.Writeuint8( CommandId( ));
-	cMsg.Writeuint8( nGameOption );
-	cMsg.WriteString( szVal );
 	ScmdConsole::Instance( ).GetScmdConsoleDriver( ).SendToServer( *cMsg.Read( ));
 
 	return true;

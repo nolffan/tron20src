@@ -14,6 +14,9 @@
 #ifndef SCMDSHARED_H
 #define SCMDSHARED_H
 
+// RETAIL: Tron's commands, 0..12 (the handlers' CommandId, TRONSrv.exe
+// 0x405840..0x405e40, and the server's switch, Object.lto 0x101c5e80): NOLF2's
+// without its NextRound, ListGameOptions and SetGameOption.
 enum ScmdCommand
 {
 	kScmdCommandHelp,
@@ -22,7 +25,6 @@ enum ScmdCommand
 	kScmdCommandListClients,
 	kScmdCommandListMissions,
 	kScmdCommandNextMission,
-	kScmdCommandNextRound,
 	kScmdCommandSetMission,
 	kScmdCommandBootName,
 	kScmdCommandBootId,
@@ -30,8 +32,6 @@ enum ScmdCommand
 	kScmdCommandRemoveBan,
 	kScmdCommandListBans,
 	kScmdCommandBanClient,
-	kScmdCommandListGameOptions,
-	kScmdCommandSetGameOption,
 };
 
 

@@ -30,7 +30,9 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-char const REGPRODUCTNAME[] = "No One Lives Forever 2";
+// RETAIL: TRONSrv.exe 0x40b254, 0x40dad3: the product's registry key is the
+// game's name (VersionMgr.h's GAME_NAME, "TRON 2.0": retail has the one copy)
+#define REGPRODUCTNAME GAME_NAME
 char const REGPRODUCTVER[] = "1.0";
 
 //#define DIR_CUSTOM					"Custom"
@@ -1917,7 +1919,8 @@ bool CServerDlg::InitErrorLog( )
 
 	if( m_sErrorLogFileName.empty( ))
 	{
-		m_sErrorLogFileName = "nolf2srv.log";
+		// RETAIL: TRONSrv.exe 0x40e75d
+		m_sErrorLogFileName = "tronsrv.log";
 	}
 
 	// Make sure we start fresh.

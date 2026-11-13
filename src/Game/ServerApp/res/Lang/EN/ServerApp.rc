@@ -300,45 +300,7 @@ LANGUAGE 9, 1
 #include "..\..\ServerApp.rc2"  // non-Microsoft Visual C++ edited resources
 #include "afxres.rc"         // Standard components
 #endif
-// RETAIL: Tron 2.0's SCMD strings, as TRONSrv.exe has them (2400..2427: the
-// IDs of Tron's ResShared.h, whose names are lost; src/Game/Shared's
-// ResShared.h and ResShared.rc are NOLF2's, IDs 100..142, which Tron's
-// server has none of)
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-STRINGTABLE DISCARDABLE
-BEGIN
-    2400                            "SCMD login successful."
-    2401                            "Admin already logged into SCMD."
-    2402                            "Incorrect SCMD password."
-    2403                            "Logged out of SCMD."
-    2404                            "Not logged into SCMD."
-    2405                            "SCMD Commands:"
-    2406                            "HELP - List all available SCMD commands."
-    2407                            "LOGOUT - Logs out as SCMD Administrator."
-    2408                            "LOGIN <password> - Logs in as SCMD Administrator."
-    2410                            "Client List format: ClientId) [name][ping]"
-    2411                            "No clients."
-    2412                            "LISTCLIENTS - Displays list of clients."
-    2414                            "NEXTMAP - Go to next map in map list."
-    2415                            "SCMD Command failed."
-END
-
-STRINGTABLE DISCARDABLE
-BEGIN
-    2416                            "BOOTNAME <playername> - Boots client by player name."
-    2417                            "BOOTID <clientid> - Boots client by client id."
-    2418                            "Map List format: map_index) [map][*]"
-    2419                            "SCMD Command successful."
-    2420                            "LISTMAPS - List all maps in current config."
-    2421                            "SETMAP <map_index> - Switch to map_index."
-    2422                            "ADDBAN <IP> - Adds IP to ban list (e.g. 123.456.789.012 or 123.456.*)"
-    2423                            "REMOVEBAN <banid> - Removes player from ban list by banid."
-    2424                            "LISTBANS - Lists all current banned players."
-    2425                            "Banned Player List format: banid) [name]"
-    2426                            "No player bans."
-    2427                            "BANCLIENT <clientid> - Bans client by client id."
-END
-#endif
+#include "..\..\..\..\shared\Lang\En\ResShared.rc"
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

@@ -80,9 +80,6 @@ class ScmdServer_Impl : public ScmdServer
 		// Handle nextmission message.
 		bool HandleNextMission( HCLIENT hClient, ILTMessage_Read& msg );
 
-		// Handle nextround message.
-		bool HandleNextRound( HCLIENT hClient, ILTMessage_Read& msg );
-
 		// Handle setmission message.
 		bool HandleSetMission( HCLIENT hClient, ILTMessage_Read& msg );
 
@@ -103,12 +100,6 @@ class ScmdServer_Impl : public ScmdServer
 
 		// Handle banid message.
 		bool HandleBanClient( HCLIENT hClient, ILTMessage_Read& msg );
-
-		// Handle listgameoptions message.
-		bool HandleListGameOptions( HCLIENT hClient, ILTMessage_Read& msg );
-
-		// Handle setgameoption message.
-		bool HandleSetGameOption( HCLIENT hClient, ILTMessage_Read& msg );
 
 		// Handles directing message to serverapp or hclient.
 		bool SendMessage( HCLIENT hClient, ILTMessage_Write& msg );
@@ -369,7 +360,8 @@ bool ScmdServer_Impl::HandleScmdMessage( HCLIENT hClient, ILTMessage_Read& msg )
 		return false;
 	}
 
-
+	// RETAIL: Object.lto 0x101c5e80, Tron's commands 1..12: NOLF2's NextRound,
+	// ListGameOptions and SetGameOption (and their handlers) are not Tron's.
 	switch( eScmdCommand )
 	{
 		case kScmdCommandLogin:
@@ -390,10 +382,6 @@ bool ScmdServer_Impl::HandleScmdMessage( HCLIENT hClient, ILTMessage_Read& msg )
 
 		case kScmdCommandNextMission:
 			return HandleNextMission( hClient, msg );
-			break;
-
-		case kScmdCommandNextRound:
-			return HandleNextRound( hClient, msg );
 			break;
 
 		case kScmdCommandSetMission:
@@ -422,14 +410,6 @@ bool ScmdServer_Impl::HandleScmdMessage( HCLIENT hClient, ILTMessage_Read& msg )
 
 		case kScmdCommandBanClient:
 			return HandleBanClient( hClient, msg );
-			break;
-
-		case kScmdCommandListGameOptions:
-			return HandleListGameOptions( hClient, msg );
-			break;
-
-		case kScmdCommandSetGameOption:
-			return HandleSetGameOption( hClient, msg );
 			break;
 
 	}
@@ -662,26 +642,6 @@ bool ScmdServer_Impl::HandleNextMission( HCLIENT hClient, ILTMessage_Read& msg )
 		return false;
 
 	g_pServerMissionMgr->NextMission( );
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ScmdServer_Impl::HandleNextRound
-//
-//	PURPOSE:	Handles nextround command.
-//
-//	RETURN:		false on error.
-//
-// ----------------------------------------------------------------------- //
-
-bool ScmdServer_Impl::HandleNextRound( HCLIENT hClient, ILTMessage_Read& msg )
-{
-	// Tell the client it worked.
-	if( !SendStatusMessage( hClient, kScmdCommandNextRound, kScmdCommandStatusOk ))
-		return false;
-
-	g_pServerMissionMgr->NextRound( );
 	return true;
 }
 
@@ -983,318 +943,6 @@ bool ScmdServer_Impl::HandleBanClient( HCLIENT hClient, ILTMessage_Read& msg )
 	ScmdCommandStatus eScmdCommandStatus = ( bOk ) ? kScmdCommandStatusOk : kScmdCommandStatusFailed;
 	if( !SendStatusMessage( hClient, kScmdCommandBanClient, eScmdCommandStatus ))
 		return false;
-
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ScmdServer_Impl::HandleListGameOptions
-//
-//	PURPOSE:	Handles listgameoptions command.
-//
-//	RETURN:		false on error.
-//
-// ----------------------------------------------------------------------- //
-
-bool ScmdServer_Impl::HandleListGameOptions( HCLIENT hClient, ILTMessage_Read& msg )
-{
-	ServerMissionSettings sms = g_pServerMissionMgr->GetServerSettings();
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_SCMD );
-	cMsg.Writeuint8( kScmdCommandListGameOptions );
-	cMsg.Writeuint8( kScmdCommandStatusOk );
-
-	cMsg.Writeuint8( g_pGameServerShell->GetGameType( ));
-
-	switch( g_pGameServerShell->GetGameType( ))
-	{
-		case eGameTypeDeathmatch:
-		{
-			cMsg.Writeuint8( sms.m_nRunSpeed );
-			cMsg.Writeuint8( sms.m_nScoreLimit );
-			cMsg.Writeuint8( sms.m_nTimeLimit );
-			cMsg.Writeuint8( sms.m_nRounds );
-		}
-		break;
-
-		case eGameTypeTeamDeathmatch:
-		{
-			cMsg.Writeuint8( sms.m_nRunSpeed );
-			cMsg.Writeuint8( sms.m_nScoreLimit );
-			cMsg.Writeuint8( sms.m_nTimeLimit );
-			cMsg.Writeuint8( sms.m_nRounds );
-			cMsg.Writebool( sms.m_bFriendlyFire) ;
-		}
-		break;
-
-		case eGameTypeDoomsDay:
-		{
-			cMsg.Writeuint8( sms.m_nRunSpeed );
-			cMsg.Writeuint8( sms.m_nTimeLimit );
-			cMsg.Writeuint8( sms.m_nRounds );
-			cMsg.Writebool( sms.m_bFriendlyFire );
-		}
-		break;
-
-		case eGameTypeCooperative:
-		{
-			cMsg.Writebool( sms.m_bFriendlyFire) ;
-			cMsg.Writeuint8( sms.m_nMPDifficulty );
-			cMsg.Writefloat( sms.m_fPlayerDiffFactor );
-		}
-		break;
-
-		default:
-		{
-		}
-		break;
-	}
-
-	// Send the message.
-	SendMessage( hClient, *cMsg );
-
-	return true;
-}
-
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	SetGameOption
-//
-//	PURPOSE:	Handles setgameoption command.
-//
-//	RETURN:		false on error.
-//
-// ----------------------------------------------------------------------- //
-
-template< class T, class U >
-void static SetGameOption( U& setting, T value, T lower, T upper )
-{
-	U clampedVal = ( U )Clamp( value, lower, upper );
-	setting = clampedVal;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ScmdServer_Impl::HandleSetGameOption
-//
-//	PURPOSE:	Handles setgameoption command.
-//
-//	RETURN:		false on error.
-//
-// ----------------------------------------------------------------------- //
-
-bool ScmdServer_Impl::HandleSetGameOption( HCLIENT hClient, ILTMessage_Read& msg )
-{
-	bool bOk = true;
-
-	// Get the game option they are setting.
-	uint8 nGameOption = msg.Readuint8( );
-
-	// Read in the value.
-	char szVal[256];
-	msg.ReadString( szVal, ARRAY_LEN( szVal ));
-
-	ServerMissionSettings sms = g_pServerMissionMgr->GetServerSettings();
-	switch( g_pGameServerShell->GetGameType( ))
-	{
-		case eGameTypeDeathmatch:
-		{
-			switch( nGameOption )
-			{
-				// Runspeed.
-				case 0:
-				{
-					SetGameOption( sms.m_nRunSpeed, atoi( szVal ), 100, 150 );
-				}
-				break;
-				// Score limit.
-				case 1:
-				{
-					SetGameOption( sms.m_nScoreLimit, atoi( szVal ), 0, 255 );
-				}
-				break;
-				// Time limit.
-				case 2:
-				{
-					SetGameOption( sms.m_nTimeLimit, atoi( szVal ), 0, 255 );
-				}
-				break;
-				// Rounds.
-				case 3:
-				{
-					SetGameOption( sms.m_nRounds, atoi( szVal ), 1, 255 );
-				}
-				break;
-				default:
-				{
-					bOk = false;
-				}
-				break;
-			}
-		}
-		break;
-
-		case eGameTypeTeamDeathmatch:
-		{
-			switch( nGameOption )
-			{
-				// Runspeed.
-				case 0:
-				{
-					SetGameOption( sms.m_nRunSpeed, atoi( szVal ), 100, 150 );
-				}
-				break;
-				// Score limit.
-				case 1:
-				{
-					SetGameOption( sms.m_nScoreLimit, atoi( szVal ), 0, 255 );
-				}
-				break;
-				// Time limit.
-				case 2:
-				{
-					SetGameOption( sms.m_nTimeLimit, atoi( szVal ), 0, 255 );
-				}
-				break;
-				// Rounds.
-				case 3:
-				{
-					SetGameOption( sms.m_nRounds, atoi( szVal ), 1, 255 );
-				}
-				break;
-				// Friendly fire.
-				case 4:
-				{
-					SetGameOption( sms.m_bFriendlyFire, ( bool )( !!atoi( szVal )), false, true );
-				}
-				break;
-				default:
-				{
-					bOk = false;
-				}
-				break;
-			}
-		}
-		break;
-
-		case eGameTypeDoomsDay:
-		{
-			switch( nGameOption )
-			{
-				// Runspeed.
-				case 0:
-				{
-					SetGameOption( sms.m_nRunSpeed, atoi( szVal ), 100, 150 );
-				}
-				break;
-				// Time limit.
-				case 1:
-				{
-					SetGameOption( sms.m_nTimeLimit, atoi( szVal ), 0, 255 );
-				}
-				break;
-				// Rounds.
-				case 2:
-				{
-					SetGameOption( sms.m_nRounds, atoi( szVal ), 1, 255 );
-				}
-				break;
-				// Friendly fire.
-				case 3:
-				{
-					SetGameOption( sms.m_bFriendlyFire, ( bool )( !!atoi( szVal )), false, true );
-				}
-				break;
-				default:
-				{
-					bOk = false;
-				}
-				break;
-			}
-		}
-		break;
-
-		case eGameTypeCooperative:
-		{
-			switch( nGameOption )
-			{
-				// Friendly fire.
-				case 0:
-				{
-					SetGameOption( sms.m_bFriendlyFire, ( bool )( !!atoi( szVal )), false, true );
-				}
-				break;
-
-				// mp difficulty.
-				case 1:
-				{
-					SetGameOption( sms.m_nMPDifficulty, atoi( szVal ), 0, 255 );
-				}
-				break;
-
-				// player diff factor.
-				case 2:
-				{
-					SetGameOption( sms.m_fPlayerDiffFactor, ( float )atof( szVal ), 0.0f, 20.0f );
-				}
-				break;
-
-				default:
-				{
-					bOk = false;
-				}
-				break;
-			}
-		}
-		break;
-
-		default:
-		{
-			bOk = false;
-		}
-		break;
-	}
-	
-	// We need to tell the host client about the new settings.
-	if( bOk )
-	{
-		// Record any changes.
-		g_pServerMissionMgr->SetServerSettings(sms);
-
-		// Try to find a local host if one exists.
-		HCLIENT hHost = g_pLTServer->GetNextClient( NULL );
-		while( hHost )
-		{
-			uint32 nClientInfoFlags = g_pLTServer->GetClientInfoFlags( hHost );
-			if( nClientInfoFlags & CIF_LOCAL )
-			{
-				break;
-			}
-
-			hHost = g_pLTServer->GetNextClient( hHost );
-		}
-		
-		// If we have a host, tell them about the new settings.
-		if( hHost )
-		{
-			CAutoMessage cMsg;
-			cMsg.Writeuint8( MID_MULTIPLAYER_OPTIONS );
-			cMsg.Writeuint8( sms.m_nRunSpeed);
-			cMsg.Writeuint8( sms.m_nScoreLimit);
-			cMsg.Writeuint8( sms.m_nTimeLimit);
-			cMsg.Writeuint8( sms.m_nRounds);
-			cMsg.Writebool( sms.m_bFriendlyFire);
-			cMsg.Writeuint8( sms.m_nMPDifficulty);
-			cMsg.Writefloat( sms.m_fPlayerDiffFactor);
-			g_pLTServer->SendToClient( cMsg.Read( ), hHost, MESSAGE_GUARANTEED );
-		}
-	}
-
-	SendStatusMessage( hClient, kScmdCommandSetGameOption, ( bOk ) ? kScmdCommandStatusOk : kScmdCommandStatusFailed );
 
 	return true;
 }

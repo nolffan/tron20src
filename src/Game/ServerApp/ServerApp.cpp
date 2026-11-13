@@ -38,7 +38,8 @@ CServerApp::CServerApp(LPCTSTR lpszAppName) : CWinApp(lpszAppName)
 /////////////////////////////////////////////////////////////////////////////
 // The one and only CServerApp object
 
-CServerApp theApp("NOLF2Srv");
+// RETAIL: TRONSrv.exe 0x407bb1
+CServerApp theApp("TRON2Srv");
 
 CServerApp* GetTheApp()
 {
