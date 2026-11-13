@@ -39,6 +39,7 @@ CMusic::CMusic( )
 
 	m_nMenuVolume	= 0;
 	m_nTriggerVolume	= 0;
+	m_bSuspended = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -486,6 +487,9 @@ LTDMEnactTypes CMusic::StringToEnactType(const char* sName)
 // Begin playing music
 void CMusic::Play(int32 nIntensity /* = -1 */, int32 nStart /* = LTDMEnactDefault */)
 {
+	// RETAIL: Tron's: nothing while the interface holds the music (0x10173a20)
+	if (m_bSuspended) return;
+
 	// make sure mgrs are initialized
 	if (!IsInitialized()) return;
 	if (!IsLevelInitialized()) return;
@@ -498,15 +502,15 @@ void CMusic::Play(int32 nIntensity /* = -1 */, int32 nStart /* = LTDMEnactDefaul
 
 	m_State.bPlaying = LTTRUE;
 
-	// Use the new intensity values...
-
-	if ( nIntensity != -1 )
+	// RETAIL: Tron plays a given intensity without keeping it in the state
+	if ( nIntensity == -1 )
 	{
-		m_State.nIntensity		= nIntensity;
-		m_State.nIntensityEnact = (LTDMEnactTypes)nStart;
+		m_pMusicMgr->ChangeIntensity(m_State.nIntensity, m_State.nIntensityEnact);
 	}
-
-	m_pMusicMgr->ChangeIntensity(m_State.nIntensity, m_State.nIntensityEnact);
+	else
+	{
+		m_pMusicMgr->ChangeIntensity(nIntensity, (LTDMEnactTypes)nStart);
+	}
 }
 
 
@@ -591,7 +595,16 @@ void CMusic::SetMenuVolume(const long nVolume)
 	if (!IsLevelInitialized()) return;
 	if (m_pMusicMgr == NULL) return;
 
-	m_pMusicMgr->SetVolume(m_nMenuVolume+m_nTriggerVolume);
+	// RETAIL: Tron silences the music outright at a menu volume of zero
+	// (0x10173b05, 0x10173d05)
+	if (!m_nMenuVolume)
+	{
+		m_pMusicMgr->SetVolume(0);
+	}
+	else
+	{
+		m_pMusicMgr->SetVolume(m_nMenuVolume+m_nTriggerVolume);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -649,7 +662,16 @@ void CMusic::SetTriggerVolume(const long nVolume)
 	if (!IsLevelInitialized()) return;
 	if (m_pMusicMgr == NULL) return;
 
-	m_pMusicMgr->SetVolume(m_nMenuVolume+m_nTriggerVolume);
+	// RETAIL: Tron silences the music outright at a menu volume of zero
+	// (0x10173b05, 0x10173d05)
+	if (!m_nMenuVolume)
+	{
+		m_pMusicMgr->SetVolume(0);
+	}
+	else
+	{
+		m_pMusicMgr->SetVolume(m_nMenuVolume+m_nTriggerVolume);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -669,6 +691,10 @@ void CMusic::ChangeIntensity(const int nIntensity, const LTDMEnactTypes nStart)
 	// Just set our intensity back to whatever it was...
 
 	Play(nIntensity, nStart);
+
+	// RETAIL: Tron keeps the intensity here, not in Play (0x10173d57)
+	m_State.nIntensityEnact = nStart;
+	m_State.nIntensity = nIntensity;
 }
 
 
@@ -724,10 +750,16 @@ LTBOOL CMusic::RestoreMusicState(const CMusicState & newState, bool bForce)
 //	PURPOSE:	Save the state of the music 
 //
 // ----------------------------------------------------------------------- //
-void CMusic::Save(ILTMessage_Write *pMsg)
+void CMusic::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 {
 	if (!pMsg) return;
 
+	// RETAIL: Tron's: the music state is restored only from autosaves,
+	// level switches and transitions (0x10173e30)
+	m_bUseSavedState = ( eSaveDataState == eSaveDataAutoSave ||
+		eSaveDataState == eSaveDataStateSwitchLevels ||
+		eSaveDataState == eSaveDataStateTransitionLevels );
+	pMsg->Writebool( m_bUseSavedState );
 	pMsg->Writeint32( m_State.nIntensity );
 	pMsg->Writeuint8( m_State.nIntensityEnact );
 }
@@ -743,7 +775,7 @@ void CMusic::Load(ILTMessage_Read *pMsg)
 {
 	if (!pMsg) return;
 
-	m_bUseSavedState = true;
+	m_bUseSavedState = pMsg->Readbool();
 
 	m_SavedState.nIntensity		 = pMsg->Readint32();
 	m_SavedState.nIntensityEnact = (LTDMEnactTypes) pMsg->Readuint8();

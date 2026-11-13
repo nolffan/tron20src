@@ -4171,7 +4171,7 @@ void CGameClientShell::BuildClientSaveMsg(ILTMessage_Write *pMsg, SaveDataState 
 	GetInterfaceMgr( )->Save(pMsg, eSaveDataState);
 	GetPlayerMgr()->Save(pMsg, eSaveDataState);
 
-	m_Music.Save(pMsg);
+	m_Music.Save(pMsg, eSaveDataState);
 
 	// Save all necessary data members...
 

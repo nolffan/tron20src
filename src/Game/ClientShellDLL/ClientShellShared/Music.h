@@ -17,6 +17,8 @@
 #include "iltclient.h"
 #include "iltdirectmusic.h"
 
+#include "ClientServerShared.h"
+
 class CPlayerObj;
 
 // Class Definition...
@@ -85,7 +87,8 @@ class CMusic
 		// Terminate mgr
 		void Term();
 
-		void Save(ILTMessage_Write *pMsg);
+		// RETAIL: Tron's Save takes the save state (0x10173e30)
+		void Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState);
 		void Load(ILTMessage_Read *pMsg);
 
 		// Returns true if mgr has been initialized
@@ -173,6 +176,12 @@ class CMusic
 
 		bool				m_bUseSavedState;
 		CMusicState			m_SavedState;
+
+	public:
+		// RETAIL: Tron's (+0x28c): set while the interface holds the music
+		// stopped (CInterfaceMgr, 0x100cb791), Play does nothing meanwhile
+		// (0x10173a23). The name is ours.
+		bool				m_bSuspended;
 };
 
 #endif // __MUSIC_H__
