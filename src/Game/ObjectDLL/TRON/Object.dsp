@@ -184,6 +184,10 @@ SOURCE=.\AILightCycle.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AILightCycleVolumes.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ArchiveBin.cpp
 # End Source File
 # Begin Source File

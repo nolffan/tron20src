@@ -724,8 +724,8 @@ int AILightCycle::Probe(int nDir, AILCProbeResult* pResult, float fDist)
 		}
 	}
 
-	LTVector vNormal;
-	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vNormal))
+	LTVector vHit2;
+	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vHit2))
 	{
 		pResult->info.vCollisionPoint = vHit;
 		pResult->info.nSegment = 0;
@@ -796,8 +796,8 @@ int AILightCycle::ProbeAll(int nDir, AILCProbeResultList* pResults, float fDist)
 		}
 	}
 
-	LTVector vNormal;
-	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vNormal))
+	LTVector vHit2;
+	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vHit2))
 	{
 		AILCProbeResult result;
 		result.info.pCyclist = LTNULL;
@@ -883,8 +883,8 @@ bool AILightCycle::CheckPath(const LTVector & vStart, const LTVector & vEnd, flo
 		}
 	}
 
-	LTVector vNormal;
-	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vNormal))
+	LTVector vHit2;
+	if (IntersectLightCycleVolumes(vStart, vEnd, &fHitDist, &vHit, &vHit2))
 	{
 		if (fHitDist < *pfDist)
 		{

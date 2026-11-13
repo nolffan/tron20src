@@ -345,10 +345,12 @@ class AILightCycle : public LightCycle
 // light cycle volumes' code too (0x1000a711). RETAIL: 0x100073d0
 int IntersectSegments(LTVector p1, LTVector p2, LTVector p3, LTVector p4, LTVector* pvHit, LTVector* pvHit2);
 
-// RETAIL: the light cycle volumes' code (0x1000a1f0.., not written yet):
-// is vPos in one (0x1000a5b0); does vStart..vEnd cross one, where and how
-// far (0x1000a620). The names are ours.
-bool IsPointInLightCycleVolume(const LTVector & vPos);
-bool IntersectLightCycleVolumes(const LTVector & vStart, const LTVector & vEnd, float* pfDist, LTVector* pvHit, LTVector* pvNormal);
+// RETAIL: the light cycle AI's walls: the enabled AI volumes' outlines
+// (AILightCycleVolumes.cpp, 0x1000a1f0..0x1000abc0). The names are ours.
+void InitLightCycleVolumes();												// RETAIL: 0x1000a4e0
+void ClearLightCycleVolumes();												// RETAIL: 0x1000a570
+bool IsPointInLightCycleVolume(const LTVector & vPos);						// RETAIL: 0x1000a5b0
+bool IntersectLightCycleVolumes(const LTVector & vStart, const LTVector & vEnd,
+	float* pfDist, LTVector* pvHit, LTVector* pvHit2);						// RETAIL: 0x1000a620
 
 #endif // __AILIGHTCYCLE_H__
