@@ -2190,13 +2190,14 @@ static void DoPointCollision
 	const Node *pNode;
 	LTVector iPos;
 	LTPlane iPlane;
+	bool bContinue;
 
 	pInfo->m_FinalPos = request.m_NewPos;
 
-	// RETAIL: no progress ends it, and a floor hit sets what the object
-	// stands on (server.dll 0x10007620)
 	for(i=0; i < MAX_PHYSICS_ITERATIONS; i++)
 	{
+		bContinue = false;
+
 		// Do a fast test to see if we hit anything.
 		pNode = IntersectLine(	request.m_pWorld->GetRootNode(), 
 								&request.m_OriginalPos,
@@ -2205,29 +2206,24 @@ static void DoPointCollision
 								&iPlane
 								);
 
-		if (!pNode)
-			return;
-
-		if ((pInfo->m_FinalPos - iPos).MagSqr() == 0.0f)
-			return;
-
-		// Have it adjust the velocity.
-		DoObjectCollisionResponse( request, pInfo, pNode );
-
-		// Move back to the point of intersection
-		pInfo->m_FinalPos = iPos;
-
-		++pInfo->m_nHits;
-
-		if (pNode->GetPlane()->m_Normal.y > 0.01f)
+		if( pNode )
 		{
-			if (!pInfo->m_pStandingOn ||
-				(pInfo->m_pStandingOn->GetPlane()->m_Normal.y < pNode->GetPlane()->m_Normal.y))
-				pInfo->m_pStandingOn = pNode;
+			// Have it adjust the velocity.
+			DoObjectCollisionResponse( request, pInfo, pNode );
+
+			// Move back to the point of intersection
+			pInfo->m_FinalPos = iPos;
+
+			++pInfo->m_nHits;
+			bContinue = true;
 		}
+		
+		if(!bContinue)
+			return;
 	}
 
-	// RETAIL: the iterations ran out (Lithtech.exe 0x416e2e)
+	// Got into a potentially recursive situation and kept hitting stuff.
+	// Just put them back at their original position.
 	if(g_DebugLevel > 0)
 	{
 		dsi_ConsolePrint("Error: (point) physics recursed infinitely on a %s",

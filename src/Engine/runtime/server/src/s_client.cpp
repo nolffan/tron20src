@@ -1331,7 +1331,8 @@ static int WriteUnguaranteedDataWithAttachments(LTObject* pObject, ObjInfo* pObj
 
 //Handles updating the send time of the specified object and all of its attachments
 // RETAIL: and the time of the last complete send (0x10030640)
-static void UpdateSendTimeWithAttachments(LTObject* pObject, UpdateInfo *pInfo, bool bFull, const uint32 k_nUnguaranteedMask)
+// TRON: the mask before the flag (server.dll 0x100287fa)
+static void UpdateSendTimeWithAttachments(LTObject* pObject, UpdateInfo *pInfo, const uint32 k_nUnguaranteedMask, bool bFull)
 {
 	// Update the send time
 	// RETAIL: the element is indexed afresh for each store (server.dll 0x10030640)
@@ -1392,7 +1393,7 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 				WriteUnguaranteedDataWithAttachments(pObject, pObjInfo, true, pInfo->m_cUnguaranteed, k_nUnguaranteedMask);
 
 				// Update the send time
-				UpdateSendTimeWithAttachments(pObject, pInfo, true, k_nUnguaranteedMask);				
+				UpdateSendTimeWithAttachments(pObject, pInfo, k_nUnguaranteedMask, true);				
 			}
 		}
 	}
@@ -1484,7 +1485,7 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 
 			// Update the send time
 			if (nResult)
-				UpdateSendTimeWithAttachments(pObject, pInfo, nResult == 2, k_nUnguaranteedMask);
+				UpdateSendTimeWithAttachments(pObject, pInfo, k_nUnguaranteedMask, nResult == 2);
 
 			// Next!
 			aObjects.pop();

@@ -1228,14 +1228,9 @@ static void DetectAndProcessCollisions
 			FindObjectsCB, &objectArray);
 	}
 
-	// RETAIL: the objects sorted, the main world, then the solid worlds,
-	// then the solid objects first, and walked forwards (server.dll 0x10022abf)
-	std::sort(objectArray.m_pObjects, objectArray.m_pObjects + objectArray.m_nObjects,
-		SObjectCollideOrder(pState->m_bServer != 0));
-
 	pHitObjects[0] = pHitObjects[1] = LTNULL;
 
-	for( i = 0, nRestarts = 0; i < objectArray.m_nObjects && nRestarts < 10; i++ )
+	for( i = objectArray.m_nObjects - 1, nRestarts = 0; i >= 0 && nRestarts < 10; i-- )
 	{
 		pTestObj = objectArray.m_pObjects[i];
 
@@ -1257,7 +1252,7 @@ static void DetectAndProcessCollisions
 
 			SetObjectBoundingBox(pState->m_pObj, LTTRUE);
 
-			i = -1;
+			i = objectArray.m_nObjects;
 			nRestarts++;
 
 			// Reset some info...
@@ -1833,11 +1828,8 @@ void RotateWorldModel(MoveState *pState,
 	memset( &collisionInfo, 0, sizeof( CollisionInfo ));
 
 	// Transfer the objects that are on object now, so we can move them later...
-	// RETAIL: CJ counts the riders from 0 and stores before counting
-	// (server.dll 0x10023d14, Lithtech.exe 0x44bc34), so the 32-entry
-	// array is never overrun, and moves them first to last below.
 	pCur = pObj->m_ObjectsStandingOn.m_pNext;
-	nNumObjectsStanding = 0;
+	nNumObjectsStanding = -1;
 	while(pCur != &pObj->m_ObjectsStandingOn )
 	{
 		pNext = pCur->m_pNext;
@@ -1852,9 +1844,9 @@ void RotateWorldModel(MoveState *pState,
 		{
 			if( nNumObjectsStanding < MAX_CARRIED_OBJECTS )
 			{
+				nNumObjectsStanding++;
 				startPosInfo[nNumObjectsStanding].m_pObj = pObjOn;
 				startPosInfo[nNumObjectsStanding].m_vRelPos = pObjOn->GetPos();
-				nNumObjectsStanding++;
 			}
 			// Too many...
 			else
@@ -1884,16 +1876,18 @@ void RotateWorldModel(MoveState *pState,
 	}
 
 	// Offset everyone that was standing on us by the same amount.
-	for( int32 nObj = 0; nObj < nNumObjectsStanding; nObj++ )
+	while( nNumObjectsStanding >= 0 )
 	{
-		pObjOn = startPosInfo[nObj].m_pObj;
+		pObjOn = startPosInfo[nNumObjectsStanding].m_pObj;
 
 		// Rotate its position.
-		MatVMul_H(&newPos, &fullTransform, &startPosInfo[nObj].m_vRelPos);
+		MatVMul_H(&newPos, &fullTransform, &startPosInfo[nNumObjectsStanding].m_vRelPos);
 		moveState.Setup(pState->m_pWorldTree, pState->m_pAbstract, pObjOn, pObjOn->m_BPriority);
 		// Move down a little so it will hit the object again...
 		newPos.y -= 0.5f;
 		MoveObject(&moveState, newPos, MO_DETACHSTANDING|MO_SETCHANGEFLAG|MO_MOVESTANDINGONS);
+
+		nNumObjectsStanding--;
 	}
 
 	// We're done moving.

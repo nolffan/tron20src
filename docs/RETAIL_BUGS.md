@@ -466,6 +466,19 @@ with an error (or not close the socket it keeps using).
 
 Not fixed yet.
 
+### A model whose child model is not loaded is checked through a NULL pointer
+
+server.dll 0x1001a1ac (Model::Load, the engine's model/src/model_load.cpp;
+the check itself at 0x1001a4ee). Each child model of a model file is
+loaded through the request's callback, and its skeleton is then compared
+with the parent's node for node. The callback may load nothing (pModel
+NULL, LT_NOCHANGE: the default callback, or a request without child
+models), and the comparison then reads the NULL model's node count: a
+crash. It should skip the check when there is no child model, as the
+loader does for the rest of the child's setup.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

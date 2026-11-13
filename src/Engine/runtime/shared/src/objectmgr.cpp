@@ -1410,8 +1410,8 @@ bool ModelInstance::GetRenderStyle(uint32 iIndex, CRenderStyle** ppRenderStyle)
 // ------------------------------------------------------------------------
 void ModelInstance::DisableCollisionObjects()
 {
-	// free all the data.
-	if( m_NumOBBs > 0)
+	// free all the data. (TRON: a test for none, server.dll 0x100252bf)
+	if( m_NumOBBs != 0)
 	{
 		delete [] m_ModelOBBs;
 		m_ModelOBBs = NULL;

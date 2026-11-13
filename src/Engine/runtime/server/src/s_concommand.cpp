@@ -286,7 +286,7 @@ static LTCommandStruct g_ServerCommandStructs[] =
     { "DisableWMPhysics", con_DisableWMPhysics, 0 },
     { "ExhaustMemory", con_ExhaustMemory, 0 },
     { "SpawnObject", con_SpawnObject, 0 },
-	{ "Mem", LTMemConsole, 0 },
+	// TRON: no "Mem" command (server.dll's table has 7, 0x1002997a)
 };
 
 #define NUM_SERVERCOMMANDSTRUCTS    (sizeof(g_ServerCommandStructs) / sizeof(LTCommandStruct))

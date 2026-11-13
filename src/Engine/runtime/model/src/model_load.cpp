@@ -756,6 +756,8 @@ bool Model::LoadWeightSets(ILTStream &file)
 //  This is really puff right now, b/c it has to support
 // both ltb and abc.
 // ----------------------------------------------------------------
+static bool CompareSkeletons(Model *pParent, Model *pChild);
+
 LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 {
 	LTRESULT dRet, dResult;
@@ -992,6 +994,18 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 					pRequest->m_bAllChildrenLoaded = false;
 				}
 
+				// TRON: the child's skeleton must be the parent's (server.dll
+				// 0x1001a1ac). RETAIL BUG: with no child model loaded (pModel
+				// NULL) the check reads through it (docs/RETAIL_BUGS.md)
+				if(!CompareSkeletons(this, pModel))
+				{
+					buffer256 error_string("Model Load ERROR!!! Skeleton Mismatch between parent and child model: %s %s", pFilename, pModel->GetFilename());
+					dsi_PrintToConsole(error_string);
+#if !defined(__LINUX)
+					OutputDebugString(error_string);
+#endif
+				}
+
 				// Make sure the child model doesn't have any child models.
 				if(pModel && pModel->NumChildModels() > 1)
 				{
@@ -1104,6 +1118,31 @@ Error:
 
 	Term();
 	return dRet;
+}
+
+// TRON: whether two models' skeletons match, node for node by their number of
+// children (server.dll 0x1001a4ee; the name is ours)
+static bool CompareSkeletons(Model *pParent, Model *pChild)
+{
+	bool bMatch = true;
+
+	if (pParent->NumNodes() == pChild->NumNodes())
+	{
+		for (uint32 i=0; i < pParent->NumNodes(); i++)
+		{
+			if (pParent->GetNode(i)->NumChildren() != pChild->GetNode(i)->NumChildren())
+			{
+				bMatch = false;
+				break;
+			}
+		}
+	}
+	else
+	{
+		bMatch = false;
+	}
+
+	return bMatch;
 }
 
 

@@ -806,12 +806,16 @@ void CPlayerMover::CollideWithWorldModel_Poly(const WorldPoly *pPoly, const LTVe
 	// Early-out if we're outside the polygon's sphere
 	float fOffsetMagSqr = vOffset.MagSqr();
 	LTVector vStartPolyCenterOffset = pPoly->GetCenter() - vStart;
-	// RETAIL: no zero test, no square root (server.dll 0x10027c90)
-	float fClosestOnOffsetTime = vStartPolyCenterOffset.Dot(vOffset) / fOffsetMagSqr;
-	LTVector vClosestOnOffset = vStart + vOffset * fClosestOnOffsetTime;
-	float fCombinedRadius = m_fPlayerSphereRadius + pPoly->GetRadius();
-	if ((vClosestOnOffset - pPoly->GetCenter()).MagSqr() > (fCombinedRadius * fCombinedRadius))
-		return;
+	float fCenterOffsetMagSqr = vStartPolyCenterOffset.MagSqr();
+	ASSERT(fOffsetMagSqr != 0.0f);
+	if (fCenterOffsetMagSqr != 0.0f)
+	{
+		float fClosestOnOffsetTime = vOffset.Dot(vStartPolyCenterOffset) / (sqrtf(fCenterOffsetMagSqr) * fOffsetMagSqr);
+		LTVector vClosestOnOffset = vStart + vOffset * fClosestOnOffsetTime;
+		float fCombinedRadius = m_fPlayerSphereRadius + pPoly->GetRadius();
+		if ((vClosestOnOffset - pPoly->GetCenter()).MagSqr() > (fCombinedRadius * fCombinedRadius))
+			return;
+	}
 
 	// Find out how the starting position relates to the extension of the plane by the projection
 	float fPlaneDist = cPolyPlane.DistTo(vStart);
@@ -955,7 +959,7 @@ void CPlayerMover::CollideWithWorldModel(LTObject *pObject, const LTVector &vSta
 	// Pre-calculate some helpful acceleration information
 	LTVector vCurMidPt = (vStart + vEnd) * 0.5f;
 	LTVector vOffset = vEnd - vStart;
-	float fMoveRadius = vOffset.Mag() * 0.5f + m_fPlayerSphereRadius;	// RETAIL: 0x10028310
+	float fMoveRadius = vOffset.Mag() + m_fPlayerSphereRadius;
 
 	const Node *pRoot = pBSP->GetRootNode();
 
