@@ -413,13 +413,13 @@ void CUIFormattedPolyString_Impl::ApplyColors(uint32 start, int32 count)
 // black, at the text's alpha.
 void CUIFormattedPolyString_Impl::ApplyFormattedColors(uint32 start, int32 count)
 {
-	uint16 nLen = m_Text.size();
 	const wchar_t* pRaw = m_RawText.data();
+	uint16 nLen = m_Text.size();
 	std::wstring sTag(sColorTag);
 	uint32 color = m_pColors[0];
 	int32 nPoly = 0;
 
-	for (uint16 i = nLen; i; i--)
+	for (uint32 i = 0; i < nLen; i++)
 	{
 		if (*pRaw == '<')
 		{
