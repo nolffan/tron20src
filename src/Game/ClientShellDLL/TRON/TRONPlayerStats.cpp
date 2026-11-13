@@ -1763,8 +1763,9 @@ void CTronPlayerStats::Compile()
 	for (int i = 0; i < NUM_RATINGS; i++)
 	{
 		uint8 iRating = m_RatingMgr.GetRating((PerformanceRating)i);
-		// PORT: retail reads Tron's second rating array directly
-		uint8 iBase = m_RatingMgr.GetBaseRating((PerformanceRating)i);
+		// RETAIL: the rating's maximum (retail 0x100ac22a reads the rating
+		// manager's +0x113e directly)
+		uint8 iBase = m_RatingMgr.GetMaxRating((PerformanceRating)i);
 		cMsg.Writeuint8(iRating);
 		cMsg.Writeuint8(iBase);
 	}
