@@ -73,8 +73,8 @@ Used for: Text and UI.   */
 // retail Lithtech.exe), which read their character tables from a font file
 // and their pages from "\interface\fonts\%s_%03i.dtx". Their 18 virtuals
 // are not NOLF2's; the slots, and how each was named, are in
-// progress/engine/CUIFont-vtable.csv. Most are not yet identified, and the
-// game calls only GetDefCharScreenHeight (whose name is ours).
+// progress/engine/CUIFont-vtable.csv. The names are ours (from what the
+// polystrings use them for); the game calls only GetDefCharScreenHeight.
 class CUIFont
 {
 	public:
@@ -91,20 +91,20 @@ class CUIFont
 		// TRON: the font's height in pixels (from its file).
 		virtual uint32			GetDefCharScreenHeight() = 0;
 
-		virtual int8			TronUnknownVirtual5() = 0;
-		virtual int8			TronUnknownVirtual6() = 0;
-		virtual uint8			TronUnknownVirtual7() = 0;
+		virtual int8			GetLineSpacing() = 0;
+		virtual int8			GetCharSpacing() = 0;
+		virtual uint8			GetSpaceWidth() = 0;
 
 		// TRON: the texture of one of the font's pages.
 		virtual HTEXTURE		GetTexture(uint8 nPage) = 0;
 
-		virtual uint16			TronUnknownVirtual9() = 0;
-		virtual bool			TronUnknownVirtual10() = 0;
-		virtual uint16**		TronUnknownVirtual11() = 0;
+		virtual uint16			GetDefaultChar() = 0;
+		virtual bool			IsRemapped() = 0;
+		virtual uint16**		GetRemapTables() = 0;
 		virtual bool			TronUnknownVirtual12() = 0;
-		virtual void*			TronUnknownVirtual13() = 0;
-		virtual uint32			TronUnknownVirtual14(const std::wstring& sText) = 0;
-		virtual bool			TronUnknownVirtual15(uint16 nChar) = 0;	// RETAIL: 0x567f80, whether the font has the character
+		virtual void*			GetCharTables() = 0;
+		virtual uint32			GetTextWidth(const std::wstring& sText) = 0;
+		virtual bool			HasChar(uint16 nChar) = 0;	// RETAIL: 0x567f80, whether the font has the character
 
 	protected:
 

@@ -527,6 +527,30 @@ the ParseNet console variable's debug output uses it.
 
 Not fixed yet.
 
+### A polystring's drop shadow takes the text colour at one corner
+
+Lithtech.exe 0x563e20 (CUIPolyString_Impl::ApplyColors, src/Engine/runtime/
+ui/src/cuipolystring_impl.cpp). Each character's shadow polygon is coloured
+`SetRGBA4(shadow, m_pColors[0], 0xff000000, 0xff000000, 0xff000000)`: the
+first vertex (the top left) gets the text's own colour where the other three
+are opaque black, so every shadowed glyph has a tinted corner fading into
+it. The formatted polystring's tag colouring (0x569550) makes the shadow
+black at the text's alpha, as was meant; probably `m_pColors[0] &
+0xff000000` was meant here.
+
+Not fixed yet.
+
+### A colour tag without three numbers reads past the end of the text
+
+Lithtech.exe 0x569830 (CUIFormattedPolyString_Impl::ParseColor, src/Engine/
+runtime/ui/src/cuiformattedpolystring_impl.cpp). After "<color " the parser
+skips to the next digit, reads a number, and does so three times, without
+stopping at the string's end or at the tag's '>': a malformed tag such as
+"<color red>" walks on through the terminator into whatever memory follows
+the string.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

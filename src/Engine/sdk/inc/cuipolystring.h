@@ -118,19 +118,19 @@ class CUIPolyString
 
 	protected:
 
-		// TRON: the engine's own: building the polygons, applying the font
-		// and the colors (0x563710 .. 0x5645b0).
-		virtual void			TronUnknownVirtual32() = 0;
-		virtual void			TronUnknownVirtual33() = 0;
-		virtual void			TronUnknownVirtual34() = 0;
-		virtual void			TronUnknownVirtual35() = 0;
-		virtual void			TronUnknownVirtual36() = 0;
-		virtual void			TronUnknownVirtual37() = 0;
-		virtual void			TronUnknownVirtual38() = 0;
-		virtual void			TronUnknownVirtual39() = 0;
-		virtual void			TronUnknownVirtual40() = 0;
-		virtual void			TronUnknownVirtual41() = 0;
-		virtual void			TronUnknownVirtual42() = 0;
+		// TRON: the engine's own (0x563710 .. 0x5645b0; the names are ours).
+		struct CUIPolyMap;	// the polygons by font page (the engine's)
+		virtual void			AllocPolys() = 0;
+		virtual void			ApplyFont() = 0;
+		virtual void			Layout() = 0;
+		virtual void			ClipPolys(LT_POLYGT4* pPolys) = 0;
+		virtual void			ApplyColors(uint32 start, int32 count) = 0;
+		virtual void			Format() = 0;
+		virtual void			GetExtents() = 0;
+		virtual void			ClearClipped() = 0;
+		virtual void			AddPolyToMap(CUIPolyMap& map, uint8 page, LT_POLYGT4* pPoly) = 0;
+		virtual void			ClearPolyMap(CUIPolyMap& map, bool bDestroy) = 0;
+		virtual uint32			GetFontHeight() = 0;
 };
 
 #endif //__CUIPOLYSTRING_H__

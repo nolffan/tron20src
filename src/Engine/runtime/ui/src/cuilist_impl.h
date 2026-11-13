@@ -52,10 +52,10 @@ class CUIList_Impl : public CUIWidget_Impl
 										  uint32 argb3);
 		
 		// actions
-		virtual CUI_RESULTTYPE	AddItem(const char* item, int32 index);
+		virtual CUI_RESULTTYPE	AddItem(const std::wstring& item, int32 index);
 		virtual CUI_RESULTTYPE	RemoveItem(int32 index);
-		virtual int32			FindItem(const char* pText);
-		virtual const char*		GetItem(int32 index);
+		virtual int32			FindItem(const std::wstring& text);
+		virtual const std::wstring&	GetItem(int32 index);
 		virtual CUI_RESULTTYPE	SetSelection(int32 index);
 		virtual int32			GetSelection() { return m_Selection; }
 		virtual uint32			GetItemCount() { return m_ItemCount; }

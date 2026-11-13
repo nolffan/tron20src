@@ -60,7 +60,7 @@ class CUIStaticText_Impl : public CUIWidget_Impl
 		virtual CUI_RESULTTYPE	SetAlignmentV(CUI_ALIGNMENTTYPE align);
 		
 		// get data
-		virtual const char*		GetText();
+		virtual const std::wstring&	GetText();
 		virtual CUIFont*		GetFont() { return m_pFont; } 
 
 		// actions

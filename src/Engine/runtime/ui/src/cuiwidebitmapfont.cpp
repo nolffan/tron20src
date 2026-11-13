@@ -31,10 +31,6 @@
 #include "iltstream.h"
 #endif
 
-#ifndef __ILTDRAWPRIM_H__
-#include "iltdrawprim.h"
-#endif
-
 #include <stdio.h>
 #include <string.h>
 
@@ -43,10 +39,6 @@
 static ILTTexInterface *pTexInterface = NULL;
 define_holder(ILTTexInterface, pTexInterface);
 
-// RETAIL: the holder at 0x5ecd78 (its registration 0x568510); nothing in
-// the file uses it
-static ILTDrawPrim *pDrawPrim = NULL;
-define_holder(ILTDrawPrim, pDrawPrim);
 
 
 //	--------------------------------------------------------------------------
@@ -67,7 +59,7 @@ CUIWideBitmapFont::~CUIWideBitmapFont()
 //	--------------------------------------------------------------------------
 // RETAIL: 0x567e00 (slot 14): the width of the string's last line in
 // pixels (a line feed starts a new one; the height it adds is not used)
-uint32 CUIWideBitmapFont::TronUnknownVirtual14(const std::wstring& sText)
+uint32 CUIWideBitmapFont::GetTextWidth(const std::wstring& sText)
 {
 	if (sText.begin() == sText.end())
 		return 0;
@@ -87,7 +79,7 @@ uint32 CUIWideBitmapFont::TronUnknownVirtual14(const std::wstring& sText)
 			case '\n':
 				nWidth		= 0;
 				nCharWidth	= 0;
-				nHeight		+= TronUnknownVirtual5() + nCharHeight;
+				nHeight		+= GetLineSpacing() + nCharHeight;
 				break;
 
 			case '\r':
@@ -95,24 +87,24 @@ uint32 CUIWideBitmapFont::TronUnknownVirtual14(const std::wstring& sText)
 				break;
 
 			case ' ':
-				nCharWidth	= TronUnknownVirtual7();
+				nCharWidth	= GetSpaceWidth();
 				break;
 
 			default:
-				if (TronUnknownVirtual10() && TronUnknownVirtual11()[c >> 8])
+				if (IsRemapped() && GetRemapTables()[c >> 8])
 				{
-					c = TronUnknownVirtual11()[c >> 8][c & 0xff];
+					c = GetRemapTables()[c >> 8][c & 0xff];
 				}
-				if (!((CUIWideFontChar***)TronUnknownVirtual13())[c >> 8] ||
-					!((CUIWideFontChar***)TronUnknownVirtual13())[c >> 8][c & 0xff])
+				if (!((CUIWideFontChar***)GetCharTables())[c >> 8] ||
+					!((CUIWideFontChar***)GetCharTables())[c >> 8][c & 0xff])
 				{
-					c = TronUnknownVirtual9();
+					c = GetDefaultChar();
 				}
-				nCharWidth = ((CUIWideFontChar***)TronUnknownVirtual13())[c >> 8][c & 0xff]->m_Width;
+				nCharWidth = ((CUIWideFontChar***)GetCharTables())[c >> 8][c & 0xff]->m_Width;
 				break;
 		}
 
-		nWidth += TronUnknownVirtual6() + nCharWidth;
+		nWidth += GetCharSpacing() + nCharWidth;
 	}
 
 	return nWidth;
@@ -121,10 +113,10 @@ uint32 CUIWideBitmapFont::TronUnknownVirtual14(const std::wstring& sText)
 
 //	--------------------------------------------------------------------------
 // RETAIL: 0x567f80 (slot 15)
-bool CUIWideBitmapFont::TronUnknownVirtual15(uint16 nChar)
+bool CUIWideBitmapFont::HasChar(uint16 nChar)
 {
-	if (((CUIWideFontChar***)TronUnknownVirtual13())[nChar >> 8] &&
-		((CUIWideFontChar***)TronUnknownVirtual13())[nChar >> 8][nChar & 0xff])
+	if (((CUIWideFontChar***)GetCharTables())[nChar >> 8] &&
+		((CUIWideFontChar***)GetCharTables())[nChar >> 8][nChar & 0xff])
 	{
 		return true;
 	}

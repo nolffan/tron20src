@@ -77,10 +77,6 @@ SOURCE=.\src\cuiwidebitmapfont.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\cuipolystring.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\cuidropdownlist.cpp
 # End Source File
 # Begin Source File
@@ -146,10 +142,6 @@ SOURCE=.\src\cuidropdownlist_impl.cpp
 # Begin Source File
 
 SOURCE=.\src\cuifont_impl.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\cuiformattedpolystring.cpp
 # End Source File
 # Begin Source File
 

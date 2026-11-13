@@ -2,15 +2,16 @@
 //
 //   MODULE    : CUIFORMATTEDPOLYSTRING_IMPL.CPP
 //
-//   PURPOSE   : implements the CUIFormattedPolyString_Impl text 
-//				 class.
+//   PURPOSE   : implements the CUIFormattedPolyString_Impl Class
 //
-//   CREATED   : 1/01 
+//   CREATED   : 1/01
 //
 //   COPYRIGHT : (C) 2001 LithTech Inc
 //
 //-------------------------------------------------------------------
-
+//
+// TRON: written from retail Lithtech.exe (0x568550..0x569920); see
+// cuiformattedpolystring_impl.h.
 
 
 #ifndef __CUIFORMATTEDPOLYSTRING_IMPL_H__
@@ -25,697 +26,455 @@
 #include "iltdrawprim.h"
 #endif
 
-#ifndef __ILTTEXINTERFACE_H__
-#include "ilttexinterface.h"
-#endif
+#include <math.h>
+#include <string.h>
 
 
-// use the internal drawprim interface
-static ILTDrawPrim *pDrawPrimInternal;
-define_holder_to_instance(ILTDrawPrim, pDrawPrimInternal, Internal);
+// RETAIL: the holder at 0x5ecd78 (its registration 0x568510): the default
+// drawprim, where the polystring's is the internal one
+static ILTDrawPrim *pDrawPrim = NULL;
+define_holder(ILTDrawPrim, pDrawPrim);
 
-static ILTTexInterface *pTexInterface = NULL;
-define_holder(ILTTexInterface, pTexInterface);
+
+// the colour tag
+static const wchar_t sColorTag[] = L"<color ";
 
 
 //  ---------------------------------------------------------------------------
-CUIFormattedPolyString_Impl::CUIFormattedPolyString_Impl(CUIFont* pFont, 
-							 const char* pText,
-							 float x,
-							 float y,
-							 CUI_ALIGNMENTTYPE alignment)
+// RETAIL: 0x568550
+CUIFormattedPolyString_Impl::CUIFormattedPolyString_Impl()
 {
-	m_Valid		= false;
-	m_pFont		= pFont;
-	m_pChars	= NULL;
-	m_pPolys	= NULL;	
-	m_pLetters	= NULL;
-
-	m_Alignment	= alignment;
-
-	m_Flags		= 0;
-	m_Bold		= 0;
-	m_Italic	= 0;
-
-	m_WordCount = 0;
-	m_LineCount = 0;
-	
-	m_NumAllocatedChars = 0;
-	m_NumAllocatedPolys = 0;
-
-	m_Length	= 0;
-
-	if (!pFont) return; // string will be invalid
-	m_CharScreenWidth  = pFont->GetDefCharScreenWidth();
-	m_CharScreenHeight = pFont->GetDefCharScreenHeight();
-
-	memcpy(&m_pColors, pFont->GetDefColors(), sizeof(uint32) * 4);
-
-	m_X = x;
-	m_Y = y;
-
-	memset(&m_Rect, 0, sizeof(CUIRECT));
-
-	m_WrapWidth		= 0;
-
-	// must be valid before we call settext!
-	m_Valid = true;
-
-	if (pText) {
-		this->SetText(pText);	
-	}	
-
+	m_WrapWidth = 0;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUIFormattedPolyString_Impl::~CUIFormattedPolyString_Impl() 
+// RETAIL: 0x568640
+CUIFormattedPolyString_Impl::~CUIFormattedPolyString_Impl()
 {
-	// ascii (handled by superclass)
-	//if (m_pChars)	delete [] m_pChars;
-
-	// rendering (handled by superclass)
-	//if (m_pPolys)	delete [] m_pPolys;	
-
-	// formatting
-	if (m_pLetters)	delete [] m_pLetters;
-	m_pLetters = NULL;
-
-	m_Valid = false;
+	m_Lines.clear();
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetCharScreenWidth(uint8 width)
+// RETAIL: 0x568750
+CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetWrapWidth(uint32 wrap)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-
-	m_CharScreenWidth  = width;
-
-	this->Parse();
-	this->ApplyXYZ();
-
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetCharScreenHeight(uint8 height)
-{
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
-	m_CharScreenHeight = height;
-
-	this->Parse();
-	this->ApplyXYZ();
-
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetCharScreenSize(uint8 height, uint8 width)
-{
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
-	m_CharScreenHeight = height;
-	m_CharScreenWidth  = width;
-
-	this->Parse();
-	this->ApplyXYZ();
-
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetFont(CUIFont* pFont) 
-{
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
-	if (pFont) {
-		m_pFont = pFont;
-
-		this->Parse();
-		this->ApplyFont();
-		this->ApplyXYZ();
-
-		GetExtents(&m_Rect);
-
-		return CUIR_OK;
-	}
-
-	return CUIR_NO_FONT;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIFormattedPolyString_Impl::SetAlignmentH(CUI_ALIGNMENTTYPE align)
-{
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
-	m_Alignment = align;
-
-	this->ApplyXYZ();
-
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIFormattedPolyString_Impl::SetWrapWidth(uint16 wrap)
-{
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
 	m_WrapWidth = wrap;
 
-	this->Parse();
-	this->ApplyXYZ();
+	Format();
+	Layout();
 
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIFormattedPolyString_Impl::SetText(const char* pBuf)
+// RETAIL: 0x568780
+CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetAlignmentH(CUI_ALIGNMENTTYPE halign)
 {
-	// make sure we have a font pointer
-	if (!m_pFont) {
-		return CUIR_NO_FONT;
-	}
-	// and a non-empty character buffer
-	if (!pBuf) {
-		return CUIR_ERROR;
-	}
-	// is the font valid
-	if (!m_Valid) {
-		return CUIR_INVALID_POLYSTRING;
-	}
+	m_Alignment = halign;
 
-	m_Length = strlen(pBuf);
-	
-	// allocate the characters if they don't exist or the buffer
-	// ain't big enough
-	if (!m_pChars || m_NumAllocatedChars < m_Length + (uint32)1) {
-		if (m_pChars) 
-			delete [] m_pChars;
-		LT_MEM_TRACK_ALLOC(m_pChars = new char[m_Length+1],LT_MEM_TYPE_UI);	// str + NULL
-		m_NumAllocatedChars = m_Length+1;
+	Format();
+	Layout();
 
-		if (m_pLetters)
-			delete [] m_pLetters;
-		LT_MEM_TRACK_ALLOC(m_pLetters = new uint8[m_NumAllocatedChars*2],LT_MEM_TYPE_UI);
-	}
-
-	if (m_Length && (!m_pChars || !m_pLetters)) {
-		CUI_ERR("Out of Memory\n");
-		m_NumAllocatedChars = 0;
-		return CUIR_OUT_OF_MEMORY;
-	}
-
-	strcpy(m_pChars, pBuf);
-
-	// allocate the polys if they don't exist or the array
-	// ain't big enough
-	if (!m_pPolys || m_NumAllocatedPolys < m_Length) {
-		if (m_pPolys) 
-			delete [] m_pPolys;
-		LT_MEM_TRACK_ALLOC(m_pPolys = new LT_POLYGT4[m_Length],LT_MEM_TYPE_UI);
-		m_NumAllocatedPolys = m_Length;
-		memset(m_pPolys, 0, sizeof(LT_POLYGT4) * m_NumAllocatedPolys);
-	}
-	
-	if (m_Length && !m_pPolys) {
-		CUI_ERR("Out of Memory\n");
-		m_NumAllocatedPolys = 0;
-		return CUIR_OUT_OF_MEMORY;
-	}
-
-	// ask the font to set up the polygons
-	// they can be manipulated later
-	this->Parse();
-	this->ApplyFont();
-	this->ApplyXYZ();
-	this->ApplyColors();
-	
-	// get the extents of the new polystring
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
+	return CUIPS_OK;
 }
 
 
-
 //  ---------------------------------------------------------------------------
-//  ---------------------------------------------------------------------------
-//
-//		APPLY FUNCTIONS
-//
-//  ---------------------------------------------------------------------------
-//  ---------------------------------------------------------------------------
-
-
-//  ---------------------------------------------------------------------------
-void CUIFormattedPolyString_Impl::Parse()
+// RETAIL: 0x5687b0: the polystring's, again
+CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const char* pBuffer)
 {
-	// this function goes through a string and calculates word boundaries
-	// and line breaks
+	if (!pBuffer)
+		return CUIPS_ERROR;
 
-	// m_pWords[] = | word start | word end | pixel width |
-	
-	// m_pLines[] = | word index of line end | wrapped? |
+	std::wstring sText;
+	sText.erase(sText.begin(), sText.end());
 
-	// m_pLetters = | table index | screen width |
-
-
-	// sanity check -- don't bother with an empty string
-	if (!m_Length) return;
-
-
-	int32 i ,line_width, old_wordcount;
-	uint8 cidx;
-
-	CUIFont*	pFont		= m_pFont;
-	uint8*		pFontMap	= m_pFont->GetFontMap();
-	uint16*		pFontTable	= m_pFont->GetFontTable();
-
-	float sh, cth, ctw;
-	float storedw = m_CharScreenWidth;
-	
-	sh = m_CharScreenHeight;
-
-	cth = m_pFont->GetCharTexHeight();
-
-	m_WordCount = m_LineCount = 0;
-    line_width = 0;
-
-	// see which FX to apply
-	uint32 bd = 0;
-	uint32 em = 0;
-	uint32 sp = m_pFont->GetDefSpacingH();
-
-	if (m_Flags & CUI_FONT_BOLD)	bd = m_Bold;
-	if (m_Flags & CUI_FONT_ITALIC)	em = m_Italic;
-
-	bool bNoDraw;
-	bool bNewline		= false;
-	bool bWhitespace	= true;
-	bool bClamp			= false;
-
-	memset(m_pWords, 0, sizeof(uint16) * MAX_POLYSTRING_WORDS);
-	memset(m_pLines, 0, sizeof(uint16) * MAX_POLYSTRING_LINES);
-	memset(m_pLetters, 0, sizeof(uint8) * m_NumAllocatedChars * 2);
-
-	old_wordcount = 0;
-
-	for (i=0; i<m_Length; i++) 
+	uint32 nLen = strlen(pBuffer);
+	for (uint32 i = 0; i < nLen; i++)
 	{
+		sText += (wchar_t)(uint8)pBuffer[i];
+	}
 
-		////////////////////////////////////////////////////////////
-		//	store the width of each character
-		//	get the char index
-		//	get the width of the character's texture
-
-		cidx = m_pChars[i];
-		
-		switch (cidx) {
-
-			case 10:
-				bNoDraw  = true;
-				bNewline = true;
-				cidx = 254;
-				break;
-
-			case 32:
-				bNoDraw = true;
-				cidx = 255;
-				break;
-
-			default:
-				if (pFontMap) cidx = pFontMap[cidx];
-				bNoDraw = false;
-		}
-
-		char* pStr = &m_pChars[i];
-
-		// get the width of the character's texture
-		m_pLetters[i*2] = cidx;
+	return SetText(sText);
+}
 
 
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x568930: keeps the text, and gives the polystring the text without
+// its colour tags (at most 1,021 characters)
+CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const std::wstring& sText)
+{
+	wchar_t sBuffer[1024];
 
-		if (pFontTable && !bNoDraw)
+	m_RawText = sText;
+
+	int32 nLen = m_RawText.size() + 1;
+	if (nLen > 1024)
+	{
+		nLen = 1022;
+		m_RawText.resize(nLen);
+	}
+
+	memset(sBuffer, 0, nLen * sizeof(wchar_t));
+
+	const wchar_t* pSrc = m_RawText.data();
+	wchar_t* pDest = sBuffer;
+	bool bInTag = false;
+
+	while (*pSrc)
+	{
+		if (bInTag)
 		{
-			// if there's a font table, this means a proportional font, and
-			// a few extra calculations
-			ctw = pFontTable[cidx * 3];
+			if (*pSrc == '>')
+				bInTag = false;
 		}
-		else if (bNewline)
+		else if (*pSrc == '<')
 		{
-			ctw = 0.0f;
+			std::wstring sTag(sColorTag);
+			std::wstring sHere(pSrc);
+
+			if (sHere.compare(0, 7, sTag) == 0)
+				bInTag = true;
+
+			if (!bInTag)
+				*pDest++ = *pSrc;
 		}
 		else
 		{
-			ctw = m_CharScreenWidth;
+			*pDest++ = *pSrc;
 		}
 
-		m_pLetters[i*2+1]  = ( uint8 )((( float )ctw * sh / cth ) + 0.5f );
-
-		////////////////////////////////////////////////////////////
-		//	get the word breaks -- may only be necessary for 
-		//	justified text
-
-		if (bNoDraw) {
-			if (!bWhitespace) { // we hit whitespace after a letter
-				bWhitespace = true;
-				m_pWords[m_WordCount * 3 + 1] = i-1;	
-				m_WordCount++;
-				if (m_WordCount >= MAX_POLYSTRING_WORDS-1) {
-					ASSERT(0);
-					bClamp = true;
-				}
-			}
-		}
-		else {
-			if (bWhitespace) { // we hit a letter after whitespace
-				bWhitespace = false;
-				m_pWords[m_WordCount * 3] = (uint16)i;
-				
-			}
-		}
-
-		if (bClamp) break;
-
-		////////////////////////////////////////////////////////////
-		// calculate newlines and wraps
-
-		line_width += m_pLetters[i*2+1] + bd + sp + ( em > 0 ? em : 0);
-
-		// need to also handle the case where there's a really long word that
-		// is wider than m_WrapWidth
-
-#ifdef TRON20SRC_MODERN
-		// MODERN.md EN-33: a letter wider than the wrap width, at the start
-		// of its word, stays on its line. Retail broke the word before it,
-		// which ends the word before it starts (at the string's first
-		// letter, at index -1, 65535 in a uint16), and stepped back onto
-		// the same letter, again and again until the word table was full;
-		// the widths of those words then read 64K letters past the string.
-		// (nolf2src saw it crash NOLF2 at 3840x2160: a narrow HUD column
-		// given its letters' new height before its new width.)
-		if ( m_WrapWidth  && (line_width >= m_WrapWidth) &&
-			!(old_wordcount == m_WordCount && (int32)m_pWords[m_WordCount * 3] >= i) ) {
-#else
-		if ( m_WrapWidth  && (line_width >= m_WrapWidth) ) {
-#endif
-
- 
-            if (old_wordcount == m_WordCount) {
-                // insert an artificial word break!
-                bWhitespace = true;
-                m_pWords[m_WordCount * 3 + 1] = i-1;    
-                i--;
-                m_WordCount++;
-				if (m_WordCount >= MAX_POLYSTRING_WORDS-1) {
-					ASSERT(0);
-					bClamp = true;
-				}
-
-
-				old_wordcount = m_WordCount;
-			}
-			m_pLines[m_LineCount*2]		= m_WordCount > 0 ? m_WordCount - 1 : 0;
-			m_pLines[m_LineCount*2 + 1]	= 1;
-
-			if (bClamp) break;
-
-			line_width = 0;
-
-			// recalc the line width for the overshoot chars
-			if (old_wordcount != m_WordCount) {
-				for (int q=m_pWords[m_pLines[m_LineCount*2] * 3 + 1]; q<=i; q++) {
-					line_width += m_pLetters[q*2+1] + bd + sp + ( em > 0 ? em : 0);
-				}
-			}
-			m_LineCount++;
-			if (m_LineCount >= MAX_POLYSTRING_LINES-1) {
-				ASSERT(0);
-				bClamp = true;
-			}
-			
-			old_wordcount = m_WordCount;
-		}
-
-		if (bClamp) break;
-
-		if (bNewline) {
-			bNewline = false;
-	
-			m_pLines[m_LineCount*2]		= m_WordCount > 0 ? m_WordCount - 1 : 0;
-			m_pLines[m_LineCount*2 + 1]	= 0;
-
-			line_width = 0;
-			m_LineCount++;
-			if (m_LineCount >= MAX_POLYSTRING_LINES-1) {
-				ASSERT(0);
-				bClamp = true;
-			}
-			old_wordcount = m_WordCount;
-		}
-
-		if (bClamp) break;
+		pSrc++;
 	}
 
-	m_pWords[m_WordCount * 3 + 1] = i-1;
-	m_WordCount++;
-
-	// last (or only) line
-	m_pLines[m_LineCount*2]		= m_WordCount - 1;
-	m_pLines[m_LineCount*2 + 1]	= 0;
-	m_LineCount++;
-
-	// revisit the words, and calculate pixel widths
-	uint32 w, p;
-
-	for (i=0; i<m_WordCount; i++) {
-		w=0;
-
-		for (p=m_pWords[i*3]; p<m_pWords[i*3+1]; p++) {
-			w += m_pLetters[p*2+1] + bd + sp + ( em > 0 ? em : 0);
-		}
-
-		m_pWords[i*3+2] = w;
-	}
+	std::wstring sStripped(sBuffer);
+	return CUIPolyString_Impl::SetText(sStripped);
 }
 
 
 //  ---------------------------------------------------------------------------
-void CUIFormattedPolyString_Impl::ApplyXYZ()
+// RETAIL: 0x568bb0 (slot 37): breaks the text into lines: at a line feed, and
+// where a character would pass the wrap width, at the last space (or before
+// the character, when the line has none)
+void CUIFormattedPolyString_Impl::Format()
 {
-	int32	lines, i;
-	CUI_ALIGNMENTTYPE	align;
+	if (m_Text.empty() || !m_pFont)
+		return;
 
-	float   sx,sy,sw,sh;		// screen
-	float	cspw, cth;		// character-texture
-	float	leftover, linewidth;
+	int32 nLen			= m_Text.size();
+	int32 nWordStart	= 0;
+	bool bAtBreak		= true;		// the last character was white space
+	bool bNoBreak		= true;		// the line has no white space yet
+	int32 nFontHeight	= m_pFont->GetDefCharScreenHeight();
+	int32 nHeight		= m_ScaledHeight;
+	CUIFormatLine line;
 
-	int8	em = 0;
-	int8	bd = 0;
+	m_Lines.clear();
 
+	int32 x = 0;
+	int32 i;
+	for (i = 0; i < nLen; i++)
+	{
+		uint16 c = m_Text[i];
+		int32 nWidth;
 
-	// sanity check -- don't bother with an empty string
-	if (!m_Length) return;
-
-
-	uint8*	pFontMap   = m_pFont->GetFontMap();
-	uint16*	pFontTable = m_pFont->GetFontTable(); 
-
-	// see which FX to apply
-	if (m_Flags & CUI_FONT_BOLD)	bd = m_Bold;
-	if (m_Flags & CUI_FONT_ITALIC)	em = m_Italic;
-
-	cth  = (float) (m_pFont->GetCharTexHeight() + 2);
-
-	cspw = m_pFont->GetDefSpacingH();
-	
-	sh = m_CharScreenHeight;
-
-	int32 start_idx, stop_idx, start_word, line_start;
-	int32 stop_word, current_word;
-
-	// for each line
-	sy = m_Y;
-
-	start_word	 = 0;
-	start_idx	 = 0;
-	stop_idx	 = 0;
-	line_start	 = 0;
-	current_word = 0;
-
-	for (lines=0; lines<m_LineCount; lines++) {
-
-		// handle the newline vs. wordwrap of justified strings
-		if (m_Alignment == CUI_HALIGN_JUSTIFY && !m_pLines[lines*2+1]) {
-			align = CUI_HALIGN_LEFT;
-		}
-		else align = m_Alignment;
-
-		// m_pWords[] = | word start | word end | pixel width |
-		// m_pLines[] = | word index of line end | wrapped? |
-		// m_pLetters = | table index | screen width |
-
-		start_idx = m_pWords[start_word * 3];
-		stop_idx  = m_pWords[ m_pLines[lines*2] * 3 + 1];
-
-		// calc the width of the line
-		linewidth = 0;
-		for (i=start_idx; i<=stop_idx; i++) {
-			linewidth += m_pLetters[i*2 + 1] + bd + cspw + ( em > 0 ? em : 0);
-		}
-
-		leftover = m_WrapWidth - linewidth;
-
-		if (align == CUI_HALIGN_JUSTIFY) {
-			stop_word = m_pLines[lines*2];
-			leftover = leftover / (float)(stop_word - start_word);
-		}
-
-		sx = 0;//m_X; //0;
-	
-		switch (align) {
-		
-			// be a little bit sneaky, and reuse more code 
-			case CUI_HALIGN_RIGHT:
-				//sx = leftover/2;
-				sx -= linewidth/2;
-
-			case CUI_HALIGN_CENTER:
-				sx -= linewidth/2;
-
-			case CUI_HALIGN_LEFT:
-			case CUI_HALIGN_JUSTIFY:
-				sx += m_X;
-				
-				//char* pStr;
-
-				for (i=line_start; i<=stop_idx; i++) {
-
-					//pStr = &m_pChars[i];
-
-					sw = m_pLetters[i*2 + 1];
-
-					// set the polygon coords
-					pDrawPrimInternal->SetXY4(&m_pPolys[i],
-						sx + em,           sy,
-						sx + sw + bd + em, sy,
-						sx + sw + bd,      sy + sh,
-						sx,                sy + sh);
-
-					m_pPolys[i].verts[0].z = 
-						m_pPolys[i].verts[1].z =
-							m_pPolys[i].verts[2].z = 
-								m_pPolys[i].verts[3].z = SCREEN_NEAR_Z;
-
-
-					if (i >= start_idx) {
-						sx += sw + bd + cspw + ( em > 0 ? em : 0);
-
-						if (m_Alignment == CUI_HALIGN_JUSTIFY) {
-							
-							// we need to add a fraction of the leftover if we ended a word
-							if (i>m_pWords[current_word * 3 + 1]) {
-								if (align == CUI_HALIGN_JUSTIFY) {
-									sx += leftover;
-								}
-								current_word++;
-							}	
-						}
-					}			
-				}
-
-				if (line_start < stop_idx) current_word++;
-				line_start = i;
+		switch (c)
+		{
+			case '\n':
+				line.m_LastChar	= i;
+				line.m_Width	= x;
+				m_Lines.push_back(line);
+				nWidth			= 0;
+				x				= 0;
+				line.m_Width	= 0;
+				bAtBreak		= false;
+				bNoBreak		= true;
 				break;
-		}
 
-		start_word = m_pLines[lines*2] + 1;
-		sy += sh;
-	}
-}
+			case '\r':
+				if (!bAtBreak)
+				{
+					line.m_Width	= x;
+					line.m_LastChar	= i;
+					bAtBreak		= true;
+					bNoBreak		= false;
+				}
+				nWidth = 0;
+				break;
 
-
-//  ---------------------------------------------------------------------------
-void CUIFormattedPolyString_Impl::ApplyFont()
-{
-	uint8		cidx;
-	
-	int32		i; 
-	uint32		texw, texh;
-	uint32		tx, ty, tw, th;	
-
-
-	// sanity check -- don't bother with an empty string
-	if (!m_Length) return;
-
-
-	HTEXTURE	pFontTex	= m_pFont->GetTexture();
-	uint16*		pFontTable	= m_pFont->GetFontTable();
-	uint8*		pFontMap	= m_pFont->GetFontMap();
-
-	pTexInterface->GetTextureDims(pFontTex, texw, texh);
-  	
-	th = m_pFont->GetCharTexHeight() + 2;
-
-	// the main polygon texturing loop 
-	for (i=0; i<m_Length; i++) {
-		
-		// get the initial character index
-		cidx = m_pLetters[i*2];
-
-		switch (cidx) {
-			
-			case 254:  // newline
-			case 255:  // space
-				this->MakeBlankPoly(&m_pPolys[i]);
+			case ' ':
+				if (!bAtBreak)
+				{
+					line.m_Width	= x;
+					line.m_LastChar	= i;
+					bAtBreak		= true;
+					bNoBreak		= false;
+				}
+				nWidth = m_pFont->GetSpaceWidth() * nHeight / nFontHeight;
 				break;
 
 			default:
-				
-				// choose between monospace and proportional
-				if ( m_pFont->IsProportional() ) {
-					tw = pFontTable[(cidx) *3];
-    				tx = pFontTable[(cidx) *3 + 1];
-      				ty = pFontTable[(cidx) *3 + 2];	
-				}
-				else {
-					tw = m_pFont->GetCharTexWidth() + 2;
-    				tx = tw * ((cidx) % (texw/tw)) + 1;
-      				ty = th * ((cidx) / (texw/tw)) + 1;
+			{
+				CUIWideFontChar* pChar = CUIGetFontChar(m_pFont, c);
+				nWidth = (int32)ceil((float)pChar->m_Width * nHeight / nFontHeight);
+
+				if (bAtBreak)
+				{
+					bAtBreak	= false;
+					nWordStart	= i;
 				}
 
-				// texture coords.
+				if (i && i > nWordStart && m_WrapWidth > 0 &&
+					(int32)(m_pFont->GetCharSpacing() + nWidth + x) > (int32)m_WrapWidth)
+				{
+					if (bNoBreak)
+					{
+						// no white space on the line: break before this
+						line.m_Width	= x;
+						line.m_LastChar	= --i;
+					}
+					else
+					{
+						// back to the start of the word
+						line.m_LastChar	= nWordStart - 1;
+						i				= nWordStart - 1;
+					}
 
-				// Fonts have some extra spacing added to each letter to prevent texturing artifacts.
-				// If the letters are spaced too closely together in the font bitmap, unsightly lines
-				// can appear around characters on screen (this is texture blending from the adjacent
-				// character).
+					bAtBreak = true;
+					bNoBreak = true;
+					m_Lines.push_back(line);
 
-				pDrawPrimInternal->SetUV4(&m_pPolys[i], 
-						(float)(tx)			/ (float)texw, (float)(ty)		/ (float)texh,
-						(float)(tx+tw-1)	/ (float)texw, (float)(ty)		/ (float)texh,
-						(float)(tx+tw-1)	/ (float)texw, (float)(ty+th-1)	/ (float)texh,
-						(float)(tx)			/ (float)texw, (float)(ty+th-1)	/ (float)texh);
-
+					x = -(m_pFont->GetCharSpacing() + nWidth);
+				}
+				break;
+			}
 		}
+
+		x += m_pFont->GetCharSpacing() + nWidth;
+	}
+
+	line.m_LastChar	= i - 1;
+	line.m_Width	= x;
+	m_Lines.push_back(line);
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x568f00 (slot 34): the polystring's, line by line
+void CUIFormattedPolyString_Impl::Layout()
+{
+	if (m_Text.empty() || !m_pFont)
+		return;
+
+	uint32 nLen			= m_Text.size();
+	int32 nFontHeight	= m_pFont->GetDefCharScreenHeight();
+	std::list<CUIFormatLine>::iterator iLine = m_Lines.begin();
+
+	int32 x				= (int32)m_Rect.x + GetLineOffset(*iLine);
+	int32 y				= (int32)m_Rect.y;
+	int32 nHeight		= m_ScaledHeight;
+
+	for (uint32 i = 0; i < nLen; i++)
+	{
+		uint16 c = m_Text[i];
+		int32 nWidth;
+
+		switch (c)
+		{
+			case '\n':
+				nWidth = 0;
+				pDrawPrim->SetXYWH(&m_pPolys[i], (float)x, (float)y, 0, 0);
+				if (m_pShadowPolys)
+					pDrawPrim->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
+				break;
+
+			case '\r':
+				nWidth = 0;
+				pDrawPrim->SetXYWH(&m_pPolys[i], (float)x, (float)y, 0, 0);
+				if (m_pShadowPolys)
+					pDrawPrim->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
+				break;
+
+			case ' ':
+				nWidth = (int32)ceil((float)m_pFont->GetSpaceWidth() * (float)nHeight / nFontHeight);
+				pDrawPrim->SetXYWH(&m_pPolys[i], (float)x, (float)y, (float)nWidth, (float)nHeight);
+				if (m_pShadowPolys)
+					pDrawPrim->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
+				break;
+
+			default:
+			{
+				CUIWideFontChar* pChar = CUIGetFontChar(m_pFont, c);
+
+				nWidth = (int32)ceil((float)pChar->m_Width * (float)nHeight / nFontHeight);
+				pDrawPrim->SetXYWH(&m_pPolys[i], (float)x, (float)y, (float)nWidth, (float)nHeight);
+				if (m_pShadowPolys)
+					pDrawPrim->SetXYWH(&m_pShadowPolys[i],
+									   (float)(x + m_ShadowOffsetX),
+									   (float)(y + m_ShadowOffsetY),
+									   (float)nWidth, (float)nHeight);
+				break;
+			}
+		}
+
+		x += m_pFont->GetCharSpacing() + nWidth;
+
+		if (i == (uint32)(*iLine).m_LastChar)
+		{
+			++iLine;
+			x = (int32)m_Rect.x + GetLineOffset(*iLine);
+			y += m_pFont->GetLineSpacing() + m_CharScreenHeight;
+		}
+	}
+
+	GetExtents();
+	ClearClipped();
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5692e0 (slot 38): with a wrap width, the string is as wide as it
+void CUIFormattedPolyString_Impl::GetExtents()
+{
+	if (!m_bGetExtents)
+		return;
+
+	int32 minx = (int32)m_Rect.x;
+	int32 maxx = minx + m_WrapWidth;
+	int32 miny = 0;
+	int32 maxy = 0;
+
+	LT_POLYGT4* pPolys = m_pPolys;
+	if (pPolys)
+	{
+		uint32 i;
+		int32 v;
+		LT_POLYGT4* pPoly;
+
+		miny = maxy = (int32)pPolys->verts[0].y;
+
+		for (i = 0, pPoly = pPolys; i < m_Text.size(); i++, pPoly++)
+		{
+			for (v = 0; v < 4; v++)
+				if (maxy <= (int32)pPoly->verts[v].y) maxy = (int32)pPoly->verts[v].y;
+			for (v = 0; v < 4; v++)
+				if (miny >= (int32)pPoly->verts[v].y) miny = (int32)pPoly->verts[v].y;
+		}
+
+		if (!m_WrapWidth)
+		{
+			minx = maxx = (int32)pPolys->verts[0].x;
+
+			for (i = 0, pPoly = pPolys; i < m_Text.size(); i++, pPoly++)
+			{
+				for (v = 0; v < 4; v++)
+					if (maxx <= (int32)pPoly->verts[v].x) maxx = (int32)pPoly->verts[v].x;
+				for (v = 0; v < 4; v++)
+					if (minx >= (int32)pPoly->verts[v].x) minx = (int32)pPoly->verts[v].x;
+			}
+		}
+	}
+
+	m_Rect.x		= (float)minx;
+	m_Rect.y		= (float)miny;
+	m_Rect.width	= (float)(maxx - minx);
+	m_Rect.height	= (float)(maxy - miny);
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x569500 (slot 36): a text with colour tags takes its colours from
+// them
+void CUIFormattedPolyString_Impl::ApplyColors(uint32 start, int32 count)
+{
+	if (m_Text.empty() || !m_pFont)
+		return;
+
+	if (m_RawText.size() != m_Text.size())
+		ApplyFormattedColors(start, count);
+	else
+		CUIPolyString_Impl::ApplyColors(start, count);
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x569550: every character's colour, from the tags before it (the
+// first colour until the first tag); the range is not used. The shadow is
+// black, at the text's alpha.
+void CUIFormattedPolyString_Impl::ApplyFormattedColors(uint32 start, int32 count)
+{
+	uint16 nLen = m_Text.size();
+	const wchar_t* pRaw = m_RawText.data();
+	std::wstring sTag(sColorTag);
+	uint32 color = m_pColors[0];
+	int32 nPoly = 0;
+
+	for (uint16 i = nLen; i; i--)
+	{
+		if (*pRaw == '<')
+		{
+			std::wstring sHere(pRaw);
+
+			if (sHere.compare(0, 7, sTag) == 0)
+			{
+				pRaw += 7;
+				color = ParseColor(pRaw, color);
+
+				while (*pRaw != '>' && *pRaw)
+					pRaw++;
+
+				if (*pRaw == '>')
+					pRaw++;
+			}
+		}
+
+		int32 v;
+		for (v = 0; v < 4; v++)
+		{
+			m_pPolys[nPoly].verts[v].rgba.b = (uint8)color;
+			m_pPolys[nPoly].verts[v].rgba.g = (uint8)(color >> 8);
+			m_pPolys[nPoly].verts[v].rgba.r = (uint8)(color >> 16);
+			m_pPolys[nPoly].verts[v].rgba.a = (uint8)(color >> 24);
+		}
+
+		if (m_pShadowPolys)
+		{
+			for (v = 0; v < 4; v++)
+			{
+				m_pShadowPolys[nPoly].verts[v].rgba.b = 0;
+				m_pShadowPolys[nPoly].verts[v].rgba.g = 0;
+				m_pShadowPolys[nPoly].verts[v].rgba.r = 0;
+				m_pShadowPolys[nPoly].verts[v].rgba.a = (uint8)(color >> 24);
+			}
+		}
+
+		nPoly++;
+		pRaw++;
 	}
 }
 
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x569830: "r g b" (decimal, any separators) after a colour tag; the
+// alpha is the colour before it
+uint32 CUIFormattedPolyString_Impl::ParseColor(const wchar_t* pStr, uint32 color)
+{
+	uint32 a = color & 0xff000000;
+	uint32 r = 0;
+	uint32 g = 0;
+	uint32 b = 0;
+
+	while (*pStr < '0' || *pStr > '9') pStr++;
+	while (*pStr >= '0' && *pStr <= '9') r = r * 10 + (uint8)*pStr++ - '0';
+
+	while (*pStr < '0' || *pStr > '9') pStr++;
+	while (*pStr >= '0' && *pStr <= '9') g = g * 10 + (uint8)*pStr++ - '0';
+
+	while (*pStr < '0' || *pStr > '9') pStr++;
+	while (*pStr >= '0' && *pStr <= '9') b = b * 10 + (uint8)*pStr++ - '0';
+
+	return a | ((uint8)r << 16) | ((uint8)g << 8) | (uint8)b;
+}

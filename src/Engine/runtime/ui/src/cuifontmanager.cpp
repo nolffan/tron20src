@@ -15,20 +15,16 @@
 #include "cuifontmanager.h"
 #endif
 
-#ifndef __CUIBITMAPFONT_H__
-#include "cuibitmapfont.h"
+#ifndef __CUIWIDEBITMAPFONT_H__
+#include "cuiwidebitmapfont.h"
 #endif
 
-#ifndef __CUIVECTORFONT_H__
-#include "cuivectorfont.h"
+#ifndef __CUIPOLYSTRING_IMPL_H__
+#include "cuipolystring_impl.h"
 #endif
 
-#ifndef __CUIPOLYSTRING_H__
-#include "cuipolystring.h"
-#endif
-
-#ifndef __CUIFORMATTEDPOLYSTRING_H__
-#include "cuiformattedpolystring.h"
+#ifndef __CUIFORMATTEDPOLYSTRING_IMPL_H__
+#include "cuiformattedpolystring_impl.h"
 #endif
 
 #ifndef __CUIDEBUG_H__
@@ -36,11 +32,12 @@
 #endif
 
 
-// interface database
+// interface database (RETAIL: the registration 0x566180)
 define_interface(CUIFontManager, ILTFontManager); 
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x5661e0
 CUIFontManager::CUIFontManager()
 {
 	m_bInitted = false;	
@@ -48,6 +45,7 @@ CUIFontManager::CUIFontManager()
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x5661f0
 CUIFontManager::~CUIFontManager()
 {
 	if (m_bInitted) {
@@ -57,14 +55,9 @@ CUIFontManager::~CUIFontManager()
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x566200
 void CUIFontManager::Init()
 {
-	// for the moment, you may wonder why is this empty?  Its use is
-	// reserved for later.  But now that ILTFontManager is availible
-	// via the Interface Manager, we have no guarantee of the order in
-	// which interfaces are destroyed.  Thus the need for Init/Shutdown
-	// functions to be called from OnEngineTerm()
-
 	if (m_bInitted) return;
 
 	m_NumValidFonts = 0;
@@ -74,14 +67,9 @@ void CUIFontManager::Init()
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x566220
 void CUIFontManager::Term()
 {
-	// for the moment, you may wonder why is this empty?  Its use is
-	// reserved for later.  But now that ILTFontManager is availible
-	// via the Interface Manager, we have no guarantee of the order in
-	// which interfaces are destroyed.  Thus the need for Init/Shutdown
-	// functions to be called from OnEngineTerm()
-
 	if (!m_bInitted) return;
 
 	if (m_NumValidFonts) {
@@ -93,167 +81,35 @@ void CUIFontManager::Term()
 
 
 //	--------------------------------------------------------------------------
-CUIFont* CUIFontManager::CreateFont(HTEXTURE hTex, 
-									uint8	 charw, 
-									uint8	 charh,
-									uint8*	 pMap)	// optional
+// RETAIL: 0x566230: a wide bitmap font from a font file the game opened
+CUIFont* CUIFontManager::CreateFont(ILTStream* pStream)
 {
-	CUIFont*	pFont;
-
-	// Create a monospace bitmap font
 	if (!m_bInitted) {
 		CUI_ERR("ILTFontManager was never initialized!\n");
 		return NULL;
 	}
 
-	LT_MEM_TRACK_ALLOC(pFont = new CUIBitmapFont(hTex, charw, charh, pMap),LT_MEM_TYPE_UI);
-	
+	CUIWideBitmapFont* pFont;
+	LT_MEM_TRACK_ALLOC(pFont = new CUIWideBitmapFont,LT_MEM_TYPE_UI);
+
 	if (pFont) {
-		if (!pFont->IsValid()) {
+		pFont->Load(pStream);
+
+		if (!pFont->m_bLoaded) {
 			delete pFont;
 			pFont = NULL;
-			CUI_ERR("Font creation failed\n");
 		}
 		else {
 			m_NumValidFonts++;
 		}
 	}
 
-	return pFont; // could be NULL
+	return pFont;
 }
 
 
 //	--------------------------------------------------------------------------
-CUIFont* CUIFontManager::CreateFont(HTEXTURE hTex, 
-									uint16*  pTable, 
-									uint8    charh,
-									uint8*   pMap)	// optional
-{
-	CUIFont*	pFont;
-
-	// Create a proportional bitmap font
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	LT_MEM_TRACK_ALLOC(pFont = new CUIBitmapFont(hTex, pTable, charh, pMap),LT_MEM_TYPE_UI);	
-
-	if (pFont) {
-		if (!pFont->IsValid()) {
-			delete pFont;
-			pFont = NULL;
-			CUI_ERR("Font creation failed\n");
-		}
-		else {
-			m_NumValidFonts++;
-		}
-	}
-
-	return pFont; // could be NULL
-}
-
-
-//	--------------------------------------------------------------------------
-CUIFont* CUIFontManager::CreateFont(HTEXTURE hTex, 
-									uint8*   pMap)	// optional
-{
-	CUIFont*	pFont;
-
-	// Create a proportional bitmap font and font table
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	LT_MEM_TRACK_ALLOC(pFont = new CUIBitmapFont(hTex, pMap),LT_MEM_TYPE_UI);	
-
-	if (pFont) {
-		if (!pFont->IsValid()) {
-			delete pFont;
-			pFont = NULL;
-			CUI_ERR("Font creation failed\n");
-		}
-		else {
-			m_NumValidFonts++;
-		}
-	}
-
-	return pFont; // could be NULL
-}
-
-
-//	--------------------------------------------------------------------------
-CUIFont* CUIFontManager::CreateFont( char const* pszFontFile,
-									char const* pszFontFace,
-								  	uint32 pointSize,
-								  	uint8  asciiStart,
-								  	uint8  asciiEnd)
-{
-
-	CUIVectorFont*	pFont;
-
-	// Create a vector (truetype) font
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	LT_MEM_TRACK_ALLOC(pFont = new CUIVectorFont( ),LT_MEM_TYPE_UI);	
-	if( pFont )
-	{
-		if( !pFont->Init( pszFontFile, pszFontFace, pointSize, asciiStart, asciiEnd ))
-		{
-			if (!pFont->IsValid()) 
-			{
-				delete pFont;
-				pFont = NULL;
-				CUI_ERR("Font creation failed\n");
-			}
-		}
-		else
-		{
-			m_NumValidFonts++;
-		}
-	}
-	
-	return pFont; // could be NULL
-}
-
-
-//	--------------------------------------------------------------------------
-CUIFont* CUIFontManager::CreateFont( char const* pszFontFile,
-									char const* pszFontFace,
-					  				uint32 pointSize,
-					  				char*  pCharacters){
-	CUIVectorFont*	pFont;
-
-	// Create a vector (truetype) font
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	LT_MEM_TRACK_ALLOC(pFont = new CUIVectorFont( ),LT_MEM_TYPE_UI);	
-	if( pFont )
-	{
-		if( !pFont->Init( pszFontFile, pszFontFace, pointSize, pCharacters ))
-		{
-			delete pFont;
-			pFont = NULL;
-			CUI_ERR("Font creation failed\n");
-		}
-		else 
-		{
-			m_NumValidFonts++;
-		}
-	}
-
-	return pFont; // could be NULL
-}
-
-
-//	--------------------------------------------------------------------------
+// RETAIL: 0x5662e0: only a loaded font is deleted
 void CUIFontManager::DestroyFont(CUIFont* font)
 {
 	if (!m_bInitted) {
@@ -261,16 +117,15 @@ void CUIFontManager::DestroyFont(CUIFont* font)
 		return;
 	}
 
-	if (font) {
-		if (font->IsValid()) {
-			m_NumValidFonts--;
-		}
+	if (font && ((CUIFont_Impl*)font)->m_bLoaded) {
+		m_NumValidFonts--;
 		delete font;
 	}
 }
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x566310
 uint32 CUIFontManager::GetNumFontsInUse()
 {
 	if (!m_bInitted) {
@@ -283,49 +138,9 @@ uint32 CUIFontManager::GetNumFontsInUse()
 
 
 //	--------------------------------------------------------------------------
-HTEXTURE CUIFontManager::CharToTexture(uint8* pTTFData, uint32 dataSize, uint32 character, uint32 pointSize)
-{
-
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	return NULL; // CUIVectorFont::CharToTexture(pTTFData, dataSize, character, pointSize);
-}
-
-
-//	--------------------------------------------------------------------------
-HTEXTURE CUIFontManager::StringToTexture(uint8* pTTFData, uint32 dataSize, char* pCharacters, uint32 pointSize)
-{
-
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	return NULL; // CUIVectorFont::StringToTexture(pTTFData, dataSize, pCharacters, pointSize);
-
-}
-
-
-//	--------------------------------------------------------------------------
-HTEXTURE CUIFontManager::StringToTexture(uint8* pTTFData, uint32 dataSize, uint32* pCharacters, uint32 pointSize)
-{
-
-	if (!m_bInitted) {
-		CUI_ERR("ILTFontManager was never initialized!\n");
-		return NULL;
-	}
-
-	return NULL; // CUIVectorFont::StringToTexture(pTTFData, dataSize, pCharacters, pointSize);
-
-}
-
-
-//	--------------------------------------------------------------------------
+// RETAIL: 0x566320
 CUIPolyString* CUIFontManager::CreatePolyString(CUIFont* font, 
-										  char* buf,
+										  const std::wstring& sText,
 										  float x,
 										  float y)
 {
@@ -335,15 +150,20 @@ CUIPolyString* CUIFontManager::CreatePolyString(CUIFont* font,
 	}
 
 	CUIPolyString* p;
-	LT_MEM_TRACK_ALLOC(p = new CUIPolyString(font, buf, x, y),LT_MEM_TYPE_UI);	
+	LT_MEM_TRACK_ALLOC(p = new CUIPolyString_Impl,LT_MEM_TYPE_UI);
+
+	p->SetFont(font);
+	p->SetPosition((int32)x, (int32)y);
+	p->SetText(sText);
+
 	return p;
 }
 
 
-
 //	--------------------------------------------------------------------------
+// RETAIL: 0x5663d0
 CUIFormattedPolyString*	CUIFontManager::CreateFormattedPolyString(CUIFont* font, 
-											     char* buf,
+											     const std::wstring& sText,
 											     float x,
 											     float y,
 												 CUI_ALIGNMENTTYPE alignment)
@@ -353,13 +173,20 @@ CUIFormattedPolyString*	CUIFontManager::CreateFormattedPolyString(CUIFont* font,
 		return NULL;
 	}
 
-	CUIFormattedPolyString*	p;
-	LT_MEM_TRACK_ALLOC(p = new CUIFormattedPolyString(font, buf, x, y, alignment),LT_MEM_TYPE_UI);
-	return p;
+	CUIFormattedPolyString_Impl* p;
+	LT_MEM_TRACK_ALLOC(p = new CUIFormattedPolyString_Impl,LT_MEM_TYPE_UI);
+
+	p->SetFont(font);
+	p->SetAlignmentH(alignment);
+	p->SetPosition((int32)x, (int32)y);
+	p->SetText(sText);
+
+	return p->GetInterface();
 }
 
 
 //	--------------------------------------------------------------------------
+// RETAIL: 0x566490
 void CUIFontManager::DestroyPolyString(CUIPolyString* polystring)
 {
 	if (!m_bInitted) {

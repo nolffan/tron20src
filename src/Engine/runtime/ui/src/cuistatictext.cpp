@@ -69,7 +69,7 @@ CUI_RESULTTYPE CUIStaticText::SetCharHeight(uint8 height)
 
 
 //  ---------------------------------------------------------------------------
-const char* CUIStaticText::GetText()
+const std::wstring& CUIStaticText::GetText()
 {
 	return ((CUIStaticText_Impl*)m_pImpl)->GetText();
 }

@@ -86,7 +86,8 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetText(const char* pText)
 	
 
 	if (!m_pPolyStr) {
-		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, NULL, x, y, m_Halign);
+		// PORT: Tron's polystrings are wide (the char SetText below widens)
+		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, std::wstring(), x, y, m_Halign);
 	}
 
 	// if the 'new' was successful...
@@ -234,7 +235,7 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetAlignmentV(CUI_ALIGNMENTTYPE align)
 
 
 //  ---------------------------------------------------------------------------
-const char* CUIStaticText_Impl::GetText()
+const std::wstring& CUIStaticText_Impl::GetText()
 {
 	return m_pPolyStr->GetText();
 }
@@ -259,15 +260,16 @@ void CUIStaticText_Impl::Resize(float w, float h)
 //  ---------------------------------------------------------------------------
 void CUIStaticText_Impl::Move(float x, float y)
 {
-	float oldx, oldy;
+	int32 oldx, oldy;
 	float dx, dy;
 	
-	// and move the text string
+	// and move the text string (PORT: Tron's polystrings are placed in
+	// whole pixels)
 	if (m_pPolyStr) {
 		m_pPolyStr->GetPosition(&oldx, &oldy);
 		dx = oldx - m_Rect.x;
 		dy = oldy - m_Rect.y;				
-		m_pPolyStr->SetPosition(x + dx, y + dy);
+		m_pPolyStr->SetPosition((int32)(x + dx), (int32)(y + dy));
 	}
 	
 	// move the control
@@ -330,7 +332,7 @@ void CUIStaticText_Impl::AlignTextInWidget()
 				break;
 		}
 
-		m_pPolyStr->SetPosition(xpos, ypos);
+		m_pPolyStr->SetPosition((int32)xpos, (int32)ypos);
 	}
 }
 

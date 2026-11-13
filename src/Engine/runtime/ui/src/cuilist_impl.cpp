@@ -19,6 +19,10 @@
 #include "iltfontmanager.h"
 #endif
 
+#ifndef __CUIPOLYSTRING_IMPL_H__
+#include "cuipolystring_impl.h"
+#endif
+
 
 // use the ILTFontManager for polystring allocation
 static ILTFontManager *pLTFontManager;
@@ -120,7 +124,8 @@ CUI_RESULTTYPE CUIList_Impl::SetCharHeight(uint8 height)
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIList_Impl::AddItem(const char* text, int32 index)
+// RETAIL: 0x56e360: Tron's items are wide
+CUI_RESULTTYPE CUIList_Impl::AddItem(const std::wstring& text, int32 index)
 {
 	CUIPolyString*  pStr;
 	CUIListNode*	pNode;
@@ -130,7 +135,9 @@ CUI_RESULTTYPE CUIList_Impl::AddItem(const char* text, int32 index)
 	if (!m_pFont) return CUIR_NO_FONT;
 
 	// allocate a new string
-	LT_MEM_TRACK_ALLOC(pStr = new CUIPolyString(m_pFont, text),LT_MEM_TYPE_UI);
+	LT_MEM_TRACK_ALLOC(pStr = new CUIPolyString_Impl,LT_MEM_TYPE_UI);
+	pStr->SetFont(m_pFont);
+	pStr->SetText(text);
 	if (!pStr) return CUIR_OUT_OF_MEMORY;
 
 	// set it's dims
@@ -233,7 +240,8 @@ CUI_RESULTTYPE CUIList_Impl::RemoveItem(int32 index)
 
 
 //  ---------------------------------------------------------------------------
-int32 CUIList_Impl::FindItem(const char* text)
+// RETAIL: 0x56e5a0
+int32 CUIList_Impl::FindItem(const std::wstring& text)
 {
 	CUIListNode*	pNode;
 	CUIPolyString*	pStr;
@@ -246,7 +254,7 @@ int32 CUIList_Impl::FindItem(const char* text)
 		while (pNode) {			
 			index++;
 			pStr = (CUIPolyString*) pNode->m_pData;
-			if (strcmp(pStr->GetText(), text) == 0) {
+			if (pStr->GetText() == text) {
 				break;
 			}
 			pNode = pNode->m_pNext;
@@ -258,7 +266,10 @@ int32 CUIList_Impl::FindItem(const char* text)
 
 
 //  ---------------------------------------------------------------------------
-const char* CUIList_Impl::GetItem(int32 index)
+// RETAIL: 0x56e660: an empty string (0x5ed798) for an index not in the list
+static const std::wstring s_NoItem;
+
+const std::wstring& CUIList_Impl::GetItem(int32 index)
 {
 	CUIListNode*	pNode;
 	CUIPolyString*	pStr;
@@ -278,7 +289,7 @@ const char* CUIList_Impl::GetItem(int32 index)
 		}
 	}
 
-	return NULL;
+	return s_NoItem;
 }
 
 
@@ -503,11 +514,12 @@ void CUIList_Impl::AlignTextInWidget()
 {
 	CUIListNode*	pNode;
 	CUIPolyString*	pStr;
-	float			x,y;
+	int32			x,y;
 	int32			curindex = 0;
 
-	x = m_Rect.x + m_GutterLeft;
-	y = m_Rect.y + m_GutterTop;
+	// RETAIL: 0x56eab0: integer positions; the font's line spacing
+	x = (int32)m_Rect.x + m_GutterLeft;
+	y = (int32)m_Rect.y + m_GutterTop;
 
 	// get the list of strings
 	if (m_pList) {
@@ -518,7 +530,7 @@ void CUIList_Impl::AlignTextInWidget()
 			if (curindex >= m_WindowStart) {
 				pStr = (CUIPolyString*) pNode->m_pData;
 				if (pStr) pStr->SetPosition(x,y);
-				y += m_CharHeight + m_pFont->GetDefSpacingV();
+				y += m_pFont->GetLineSpacing() + m_CharHeight;
 			}
 			pNode = pNode->m_pNext;
 			curindex++;

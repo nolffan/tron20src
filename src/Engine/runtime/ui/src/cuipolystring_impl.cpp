@@ -2,13 +2,16 @@
 //
 //   MODULE    : CUIPOLYSTRING_IMPL.CPP
 //
-//   PURPOSE   : implements the CUIPolyString_Impl bridge Class
+//   PURPOSE   : implements the CUIPolyString_Impl Class
 //
-//   CREATED   : 1/01 
+//   CREATED   : 1/01
 //
 //   COPYRIGHT : (C) 2001 LithTech Inc
 //
 //-------------------------------------------------------------------
+//
+// TRON: written from retail Lithtech.exe (0x562ba0..0x5645b0, and the
+// inline accessors 0x565af0..0x565c40); see cuipolystring_impl.h.
 
 
 #ifndef __CUIPOLYSTRING_IMPL_H__
@@ -27,798 +30,649 @@
 #include "iltdrawprim.h"
 #endif
 
-#ifndef __ILTTEXINTERFACE_H__
-#include "ilttexinterface.h"
-#endif
+#include <math.h>
+#include <string.h>
 
 
-// use the internal drawprim interface
+// use the internal drawprim interface (RETAIL: the holder's registration
+// 0x562b60)
 static ILTDrawPrim *pDrawPrimInternal;
 define_holder_to_instance(ILTDrawPrim, pDrawPrimInternal, Internal);
 
-static ILTTexInterface *pTexInterface = NULL;
-define_holder(ILTTexInterface, pTexInterface);
-
-//the default size of the poly buffer used for clipping
-#define CLIP_BUFFER_LEN 512
 
 //  ---------------------------------------------------------------------------
+// RETAIL: 0x562ba0
 CUIPolyString_Impl::CUIPolyString_Impl()
 {
-	
+	m_pColors[0] = m_pColors[1] = m_pColors[2] = m_pColors[3] = 0xffffffff;
+
+	m_pPolys					= NULL;
+	m_NumAllocatedPolys			= 0;
+	m_pShadowPolys				= NULL;
+	m_NumAllocatedShadowPolys	= 0;
+
+	m_ShadowOffsetX		= 1;
+	m_ShadowOffsetY		= 1;
+	m_bDropShadow		= false;
+	m_bClip				= false;
+	m_bClipped			= false;
+	m_bKeepMaps			= true;
+	m_bGetExtents		= true;
+	m_ScaledHeight		= 0;
+	m_CharScreenHeight	= 0;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUIPolyString_Impl::CUIPolyString_Impl(CUIFont* pFont, 
-							 const char* pBuf,
-							 float x,
-							 float y)
+// RETAIL: 0x562dd0
+CUIPolyString_Impl::~CUIPolyString_Impl()
 {
-	m_Valid		= false;
-	m_pFont		= pFont;
-	m_pChars	= NULL;
-	m_pPolys	= NULL;	
-
-	m_Flags		= 0;
-	m_Bold		= 0;
-	m_Italic	= 0;
-
-	m_Length	= 0;
-	
-	m_NumAllocatedChars = 0;
-	m_NumAllocatedPolys = 0;
-	
-	// if there's no font, we can't do much!  String is invalid.
-	if (!pFont) return;
-	m_CharScreenWidth  = pFont->GetDefCharScreenWidth();
-	m_CharScreenHeight = pFont->GetDefCharScreenHeight();
-
-	memcpy(&m_pColors, pFont->GetDefColors(), sizeof(uint32) * 4);
-
-	m_X = x;
-	m_Y = y;
-
-	memset(&m_Rect, 0, sizeof(CUIRECT));
-
-	// must be valid before we call settext!
-	m_Valid = true;
-
-	if (pBuf) {
-		this->SetText(pBuf);	
-	}	
-}
-
-
-//  ---------------------------------------------------------------------------
-CUIPolyString_Impl::~CUIPolyString_Impl() 
-{
-	if (m_pChars) delete [] m_pChars;
-	m_pChars = NULL;
-	if (m_pPolys) delete [] m_pPolys;	
-	m_pPolys = NULL;
-
-	m_Valid = false;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::SetPosition(float x, float y)
-{
-	// apply the new coords to the polygons
-	int32 i, v;
-
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-	
-	float dx = x - m_X;
-	float dy = y - m_Y;
-		
-	for (i=0; i<m_Length; i++) {
-		for (v=0; v<4; v++) {
-			m_pPolys[i].verts[v].x += dx;
-			m_pPolys[i].verts[v].y += dy;
-		}
+	if (m_pPolys) {
+		delete [] m_pPolys;
+		m_pPolys = NULL;
 	}
-	
-	m_X = x;
-	m_Y = y;
 
-	GetExtents(&m_Rect);
-	
-	return CUIR_OK;
-}	
-	
+	if (m_pShadowPolys) {
+		delete [] m_pShadowPolys;
+		m_pShadowPolys = NULL;
+	}
 
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::GetRect(CUIRECT* rect)
-{
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-
-	rect->x 	 = m_Rect.x;
-	rect->y 	 = m_Rect.y;
-	rect->height = m_Rect.height;
-	rect->width  = m_Rect.width;
-	
-	return CUIR_OK;
+	ClearPolyMap(m_PolyMap, true);
+	ClearPolyMap(m_ShadowPolyMap, true);
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::GetPosition(float* x, float* y)
+// RETAIL: 0x562f40
+CUI_RESULTTYPE CUIPolyString_Impl::SetFont(CUIFont* pFont)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
+	m_pFont = pFont;
 
-	*x = m_X;
-	*y = m_Y;
-	
-	return CUIR_OK;
+	uint32 nHeight = pFont->GetDefCharScreenHeight();
+	float fHeight = (float)nHeight;
+	m_CharScreenHeight = nHeight;
+
+	float fScale = (float)GetFontHeight() / fHeight;
+	m_ScaledHeight = (int32)(fHeight * fScale);
+
+	ApplyFont();
+	Format();
+	Layout();
+
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::GetDims(float* width, float* height)
+// RETAIL: 0x562fd0
+CUI_RESULTTYPE CUIPolyString_Impl::SetCharScreenSize(uint32 height)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-
-	*width  = m_Rect.width;
-	*height = m_Rect.height;
-	
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIPolyString_Impl::SetCharScreenWidth(uint8 width)
-{
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-
-	m_CharScreenWidth  = width;
-
-	this->ApplyFont(m_pFont, 0, m_Length, true);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIPolyString_Impl::SetCharScreenHeight(uint8 height)
-{
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
-
 	m_CharScreenHeight = height;
 
-	this->ApplyFont(m_pFont, 0, m_Length, true);
+	float fHeight = (float)m_pFont->GetDefCharScreenHeight();
+	float fScale = fHeight / (float)GetFontHeight();
+	m_ScaledHeight = (int32)((float)m_CharScreenHeight * fScale);
 
-	return CUIR_OK;
+	Format();
+	Layout();
+
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIPolyString_Impl::SetCharScreenSize(uint8 height, uint8 width)
+// RETAIL: 0x563060
+CUI_RESULTTYPE CUIPolyString_Impl::SetText(const std::wstring& sText)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
+	m_Text = sText;
 
-	m_CharScreenHeight = height;
-	m_CharScreenWidth  = width;
+	AllocPolys();
+	ApplyFont();
+	ApplyColors(0, -1);
+	Format();
+	Layout();
 
-	this->ApplyFont(m_pFont, 0, m_Length, true);
-
-	return CUIR_OK;
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::SetColor(uint32 argb)
+// RETAIL: 0x563120: widens each character (as unsigned)
+CUI_RESULTTYPE CUIPolyString_Impl::SetText(const char* pBuffer)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
+	if (!pBuffer)
+		return CUIPS_ERROR;
 
-	m_pColors[0] = 
-		m_pColors[1] = 
-			m_pColors[2] = 
-				m_pColors[3] = argb;
-	
-	this->ApplyColors();
+	std::wstring sText;
+	sText.erase(sText.begin(), sText.end());
 
-	return CUIR_OK;
+	uint32 nLen = strlen(pBuffer);
+	for (uint32 i = 0; i < nLen; i++)
+	{
+		sText += (wchar_t)(uint8)pBuffer[i];
+	}
+
+	return SetText(sText);
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::SetColors(uint32 argb0, uint32 argb1,
-											  uint32 argb2, uint32 argb3)
+// RETAIL: 0x5632a0
+CUI_RESULTTYPE CUIPolyString_Impl::SetPosition(int32 x, int32 y)
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
+	m_Rect.x = (float)x;
+	m_Rect.y = (float)y;
 
-	m_pColors[0] = argb0; 
+	Format();
+	Layout();
+
+	return CUIPS_OK;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5632d0
+CUI_RESULTTYPE CUIPolyString_Impl::SetColors(uint32 argb0,
+											 uint32 argb1,
+											 uint32 argb2,
+											 uint32 argb3)
+{
+	m_pColors[0] = argb0;
 	m_pColors[1] = argb1;
 	m_pColors[2] = argb2;
 	m_pColors[3] = argb3;
-	
-	this->ApplyColors();
 
-	return CUIR_OK;
+	ApplyColors(0, -1);
+
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-void	CUIPolyString_Impl::ApplyColors()
+// RETAIL: 0x563300
+CUI_RESULTTYPE CUIPolyString_Impl::SetClipRect(CUIRECT* pRect)
 {
-	uint32 i,v;
+	if (!pRect)
+		return CUIPS_ERROR;
 
-	for (i=0; i<m_Length; i++) {
-		for (v=0; v<4; v++) {
-			m_pPolys[i].verts[v].rgba.b = (m_pColors[v])       & 0xFF;
-			m_pPolys[i].verts[v].rgba.g = (m_pColors[v] >> 8)  & 0xFF;
-			m_pPolys[i].verts[v].rgba.r = (m_pColors[v] >> 16) & 0xFF;
-			m_pPolys[i].verts[v].rgba.a = (m_pColors[v] >> 24) & 0xFF;
+	m_ClipRect = *pRect;
+
+	Format();
+	Layout();
+
+	return CUIPS_OK;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x563350
+CUI_RESULTTYPE CUIPolyString_Impl::GetClipRect(CUIRECT* pRect)
+{
+	if (!pRect)
+		return CUIPS_ERROR;
+
+	*pRect = m_ClipRect;
+
+	return CUIPS_OK;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x563380
+CUI_RESULTTYPE CUIPolyString_Impl::SetDropShadow(bool bDropShadow)
+{
+	m_bDropShadow = bDropShadow;
+
+	if (bDropShadow)
+	{
+		uint32 nLen = m_Text.size();
+
+		if (m_pShadowPolys && nLen > m_NumAllocatedShadowPolys)
+		{
+			delete [] m_pShadowPolys;
+			m_pShadowPolys = NULL;
+		}
+
+		if (!m_pShadowPolys && m_bDropShadow)
+		{
+			int32 nPolys = ((int32)nLen < 1) ? 1 : nLen;
+			m_NumAllocatedShadowPolys = nPolys;
+			LT_MEM_TRACK_ALLOC(m_pShadowPolys = new LT_POLYGT4[nPolys],LT_MEM_TYPE_UI);
+		}
+
+		ApplyFont();
+		ApplyColors(0, -1);
+		Layout();
+	}
+	else if (m_pShadowPolys)
+	{
+		delete [] m_pShadowPolys;
+		m_pShadowPolys = NULL;
+		m_NumAllocatedShadowPolys = 0;
+	}
+
+	return CUIPS_OK;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5634a0
+CUI_RESULTTYPE CUIPolyString_Impl::EnableClipping(bool bClip)
+{
+	m_bClip = bClip;
+	return CUIPS_OK;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5634b0: (start, count); a string on one font page draws its
+// polygons in one call, any other page by page from the maps
+CUI_RESULTTYPE CUIPolyString_Impl::Render(int32 start, int32 end)
+{
+	if (!m_pPolys)
+		return CUIPS_ERROR;
+
+	if (!m_pFont)
+		return CUIPS_ERROR;
+
+	CUIRenderState::SetRenderState(NULL);
+
+	if (m_bOnePage)
+	{
+		CUIRenderState::SetRenderState(m_pFont->GetTexture(m_Page));
+
+		if (!start && end == -1)
+		{
+			if (m_pShadowPolys)
+			{
+				pDrawPrimInternal->DrawPrim(m_pShadowPolys, m_Text.size());
+				CUIRenderState::SetRenderState(m_pFont->GetTexture(m_Page));
+			}
+
+			pDrawPrimInternal->DrawPrim(m_pPolys, m_Text.size());
+			return CUIPS_OK;
+		}
+
+		if (m_pShadowPolys)
+		{
+			pDrawPrimInternal->DrawPrim(&m_pShadowPolys[start], end);
+			CUIRenderState::SetRenderState(m_pFont->GetTexture(m_Page));
+		}
+
+		pDrawPrimInternal->DrawPrim(&m_pPolys[start], end);
+		return CUIPS_OK;
+	}
+
+	CUIPolyMap::iterator iter;
+
+	for (iter = m_ShadowPolyMap.begin(); iter != m_ShadowPolyMap.end(); iter++)
+	{
+		CUIPolyVector* pPolys = (*iter).second;
+		if (pPolys->begin() != pPolys->end())
+		{
+			CUIRenderState::SetRenderState(m_pFont->GetTexture((*iter).first));
+			pDrawPrimInternal->DrawPrim(pPolys->begin(), pPolys->size());
 		}
 	}
+
+	for (iter = m_PolyMap.begin(); iter != m_PolyMap.end(); ++iter)
+	{
+		CUIPolyVector* pPolys = (*iter).second;
+		if (pPolys->begin() != pPolys->end())
+		{
+			CUIRenderState::SetRenderState(m_pFont->GetTexture((*iter).first));
+			pDrawPrimInternal->DrawPrim(pPolys->begin(), pPolys->size());
+		}
+	}
+
+	return CUIPS_OK;
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::SetText(const char* buf)
+// RETAIL: 0x5636b0
+CUI_RESULTTYPE CUIPolyString_Impl::RenderClipped(CUIRECT* pClipRect, int32 start, int32 end)
 {
-	// make sure we have a font pointer
-	if (!m_pFont) {
-		return CUIR_NO_FONT;
-	}
-	// and a non-empty character buffer
-	if (!buf) {
-		return CUIR_ERROR;
-	}
-	// is the polystring itself valid?
-	if (!m_Valid) {
-		return CUIR_INVALID_POLYSTRING;
+	if (m_bClip && !m_bClipped)
+	{
+		m_ClipRect = *pClipRect;
+		ClipPolys(m_pPolys);
+		ClipPolys(m_pShadowPolys);
 	}
 
-	m_Length = strlen(buf);
-	
-	// allocate the characters if they don't exist or the buffer
-	// ain't big enough
-	if (!m_pChars || m_NumAllocatedChars < m_Length + (uint32)1) {
-		if (m_pChars)
-			delete [] m_pChars;
-		LT_MEM_TRACK_ALLOC(m_pChars = new char[m_Length+1],LT_MEM_TYPE_UI);	// str + NULL
-		m_NumAllocatedChars = m_Length+1;
-	}
-
-	if (m_Length && !m_pChars) {
-		CUI_ERR("Out of Memory\n");
-		m_NumAllocatedChars = 0;
-		return CUIR_OUT_OF_MEMORY;
-	}
-
-	strcpy(m_pChars, buf);
-
-	// allocate the polys if they don't exist or the array
-	// ain't big enough
-	if (!m_pPolys || m_NumAllocatedPolys < m_Length) {
-		if (m_pPolys)
-			delete [] m_pPolys;
-		LT_MEM_TRACK_ALLOC(m_pPolys = new LT_POLYGT4[m_Length],LT_MEM_TYPE_UI);
-		m_NumAllocatedPolys = m_Length;
-		memset(m_pPolys, 0, sizeof(LT_POLYGT4) * m_NumAllocatedPolys);
-	}
-	
-	if (m_Length && !m_pPolys) {
-		CUI_ERR("Out of Memory\n");
-		m_NumAllocatedPolys = 0;
-		return CUIR_OUT_OF_MEMORY;
-	}
-
-	// ask the font to set up the polygons
-	this->ApplyFont(m_pFont, 0, m_Length, true);
-
-	return CUIR_OK;
+	return Render(start, end);
 }
 
 
 //  ---------------------------------------------------------------------------
-void CUIPolyString_Impl::MapCharacter(CUIFont* pFont,
-									  uint8 cidx,
-									  LT_POLYGT4* pPoly,
-									  int32 *w, 
-									  uint32 texw, 
-									  uint32 texh)
+// RETAIL: 0x563710 (slot 32): one polygon per character
+void CUIPolyString_Impl::AllocPolys()
 {
-	//uint32* pColors		= pFont->GetDefColors();
-	uint16*  pFontTable	= pFont->GetFontTable();
-	uint32	h			= m_CharScreenHeight;//pFont->GetCharScreenHeight();
+	if (m_pPolys && m_Text.size() > m_NumAllocatedPolys)
+	{
+		delete [] m_pPolys;
+		m_pPolys = NULL;
 
-	uint32 tx, ty, tw, th;	
-
-	th = pFont->GetCharTexHeight() + 2;
-	
-	// choose between monospace and proportional
-	if ( pFont->IsProportional() ) {
-		tw = pFontTable[(cidx) *3];
-    	tx = pFontTable[(cidx) *3 + 1];
-      	ty = pFontTable[(cidx) *3 + 2];	
-		*w = tw * h / th;
-	}
-	else {
-		tw = pFont->GetCharTexWidth() + 2;
-    	tx = tw * ((cidx) % (texw/tw)) + 1;
-      	ty = th * ((cidx) / (texw/tw)) + 1;
+		if (m_pShadowPolys)
+		{
+			delete [] m_pShadowPolys;
+			m_pShadowPolys = NULL;
+		}
 	}
 
-	// vertex colors			
-	
-	// This was commented out, but it caused the console to fail drawing
-	//  As a temporary fix I uncommented it. AdamS should determine the more
-	//  proper fix. JpB
-	
-	
-	pDrawPrimInternal->SetRGBA4(pPoly, 
-			m_pColors[0],
-			m_pColors[1],
-			m_pColors[2],
-			m_pColors[3]);
-	/*
-	
-	pDrawPrimInternal->SetRGBA4(pPoly, 
-			pColors[0],
-			pColors[1],
-			pColors[2],
-			pColors[3]);
-	*/
-				
-	// texture coords.
+	if (!m_pPolys)
+	{
+		int32 nPolys = m_Text.size();
+		if (nPolys < 1) nPolys = 1;
 
-	// Fonts have some extra spacing added to each letter to prevent texturing artifacts.
-	// If the letters are spaced too closely together in the font bitmap, unsightly lines
-	// can appear around characters on screen (this is texture blending from the adjacent
-	// character).
+		m_NumAllocatedPolys = nPolys;
+		LT_MEM_TRACK_ALLOC(m_pPolys = new LT_POLYGT4[nPolys],LT_MEM_TYPE_UI);
+	}
 
-	pDrawPrimInternal->SetUV4(pPoly, 
-			(float)(tx)			/ (float)texw, (float)(ty)		/ (float)texh,
-			(float)(tx+tw-1)	/ (float)texw, (float)(ty)		/ (float)texh,
-			(float)(tx+tw-1)	/ (float)texw, (float)(ty+th-1)	/ (float)texh,
-			(float)(tx)			/ (float)texw, (float)(ty+th-1)	/ (float)texh);
-
+	if (!m_pShadowPolys && m_bDropShadow)
+	{
+		LT_MEM_TRACK_ALLOC(m_pShadowPolys = new LT_POLYGT4[m_NumAllocatedPolys],LT_MEM_TYPE_UI);
+	}
 }
 
 
 //  ---------------------------------------------------------------------------
-void CUIPolyString_Impl::MakeBlankPoly(LT_POLYGT4* pPoly)
+// RETAIL: 0x563840 (slot 40)
+void CUIPolyString_Impl::AddPolyToMap(CUIPolyMap& map, uint8 page, LT_POLYGT4* pPoly)
 {
-	// tex coords.
-	pDrawPrimInternal->SetUVWH(pPoly, 
-			0, 0,
-			0, 0);
-	
-	// vertex colors			
-	pDrawPrimInternal->SetRGBA(pPoly, 0x00000000);
+	CUIPolyVector* pPolys;
+
+	CUIPolyMap::iterator iter = map.find(page);
+	if (iter == map.end())
+	{
+		LT_MEM_TRACK_ALLOC(pPolys = new CUIPolyVector,LT_MEM_TYPE_UI);
+		pPolys->reserve(8);
+		map[page] = pPolys;
+	}
+	else
+	{
+		pPolys = (*iter).second;
+	}
+
+	pPolys->push_back(pPoly);
 }
 
 
 //  ---------------------------------------------------------------------------
-void CUIPolyString_Impl::SetPolyXYZ(LT_POLYGT4* pPoly, float cx, float cy, 
-									int32 w, int32 h, float em, float bold)
+// RETAIL: 0x5639b0 (slot 41): empties each page's vector; frees the vectors
+// (and empties the map) unless they are kept
+void CUIPolyString_Impl::ClearPolyMap(CUIPolyMap& map, bool bDestroy)
 {
-	// polygon coords.
-	pDrawPrimInternal->SetXY4(pPoly, 
-			cx+em,				 cy,
-			cx+em+(float)w+bold, cy,
-			cx+(float)w+bold,    cy+(float)h,
-			cx,					 cy+(float)h);
+	CUIPolyMap::iterator iter = map.begin();
+	while (iter != map.end())
+	{
+		CUIPolyVector* pPolys = (*iter).second;
+		iter++;
 
-	// place the text at the front of the view
-	pPoly->verts[0].z = 
-		pPoly->verts[1].z = 
-			pPoly->verts[2].z = 
-				pPoly->verts[3].z = SCREEN_NEAR_Z;
+		pPolys->clear();
+
+		if (bDestroy || !m_bKeepMaps)
+		{
+			delete pPolys;
+		}
+	}
+
+	if (bDestroy || !m_bKeepMaps)
+	{
+		map.clear();
+	}
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIPolyString_Impl::SetFont(CUIFont* pFont) 
+// RETAIL: 0x563ab0 (slot 34): places each character's polygon
+void CUIPolyString_Impl::Layout()
 {
-	if (!m_Valid) return CUIR_INVALID_POLYSTRING;
+	if (m_Text.empty() || !m_pFont)
+		return;
 
-	m_pFont = pFont;
-	return this->ApplyFont(pFont, 0, m_Length, false);
-}
+	int32 nLen			= m_Text.size();
+	int32 nFontHeight	= m_pFont->GetDefCharScreenHeight();
+	int32 x				= (int32)m_Rect.x;
+	int32 y				= (int32)m_Rect.y;
+	int32 nHeight		= m_ScaledHeight;
 
+	for (int32 i = 0; i < nLen; i++)
+	{
+		uint16 c = m_Text[i];
+		int32 nWidth;
 
-//	---------------------------------------------------------------------------
-//	---------------------------------------------------------------------------
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIPolyString_Impl::ApplyFont(
-	CUIFont* pFont, 
-	int16 index, 
-	int16 num,
-	bool  bProcessRemainder)
-{
-	uint8		cidx;
-	uint8		*pFontMap;
+		switch (c)
+		{
+			case '\n':
+				nWidth = 0;
+				x = (int32)m_Rect.x;
+				y += m_pFont->GetLineSpacing() + m_CharScreenHeight;
+				pDrawPrimInternal->SetXYWH(&m_pPolys[i], (float)x, (float)y, 0, 0);
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
+				break;
 
-	int32		i, len, storedWidth; 
-	int32		w,h;
-	int32		delta;
+			case '\r':
+				nWidth = 0;
+				pDrawPrimInternal->SetXYWH(&m_pPolys[i], (float)x, (float)y, 0, 0);
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
+				break;
 
-	uint32		texturew, textureh;
-	uint32		fontFlags;
-
-	bool 		draw,drawblank;
-
-	float		pstrx, pstry;
-  	float		cx, cy;
-	float		spacing, em, bold;
-
-	const char* str;
-	
-	HTEXTURE	pFontTex;
-
-	LT_POLYGT4* pArray;
-
-	// sanity checks
-	if (!pDrawPrimInternal) return CUIR_ILT_DRAWPRIM_ERROR;
-	if (!pFont) return CUIR_NO_FONT;
-
-	if (pFont->IsProportional() && !pFont->GetFontTable())
-		return CUIR_INVALID_FONT;
-
-	pFontTex		= pFont->GetTexture();
-	storedWidth		= m_CharScreenWidth;//pFont->GetCharScreenWidth();
-	w				= storedWidth;					// padding
-  	h				= m_CharScreenHeight;//pFont->GetCharScreenHeight(); // padding
-	pFontMap		= pFont->GetFontMap();
-  	spacing			= pFont->GetDefSpacingH();
-
-	pTexInterface->GetTextureDims(pFontTex, texturew, textureh);
-  
-	// get some coords
-	this->GetPosition(&cx, &cy);
-	pstrx = cx;
-	pstry = cy;
-	
-	// set flag attrs.
-	fontFlags = pFont->GetAttributes();
-	em   = 0;
-	bold = 0;
-	if (fontFlags & CUI_FONT_ITALIC) em    =	pFont->GetDefSlant();
-	if (fontFlags & CUI_FONT_BOLD )  bold  =	pFont->GetDefBold();
-	
-	// are we applying to all of the string or only part?
-  	len = m_Length;
-	if (num == 0) num = (uint16)len;
-	num = (index + num > len) ? (len) : (index+num);
-	
-	str      = m_pChars + index;
-	pArray	 = m_pPolys;	
-
-	// place this character next to the previous one
-	if (index > 0) cx = (int16)(pArray[index-1].verts[1].x + spacing);		
-	
-	// the main polygon texturing loop 
-  	for (i=index; i<num; i++) {
-
-		draw		= true;
-		drawblank	= false;
-
-		// apply the font map(if any)
-		//if (pFontMap) cidx = pFontMap[*str];
-		//else		  cidx = (*str);
-		cidx = (*str);
-
-		// handle chars that shouldn't be subtracted (newlines, tabs, etc.)
-		switch (cidx) {
-			
-			case 32:
-				drawblank = true;
+			case ' ':
+				nWidth = (int32)ceil((float)m_pFont->GetSpaceWidth() * (float)nHeight / nFontHeight);
+				pDrawPrimInternal->SetXYWH(&m_pPolys[i], (float)x, (float)y, (float)nWidth, (float)nHeight);
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetXYWH(&m_pShadowPolys[i], (float)x, (float)y, 0, 0);
 				break;
 
 			default:
-
-				if (!pFontMap) {
-					// if there's no fontmap, turn ascii into indices
-					//cidx = (*str);
-					cidx -= 33;
-					if (cidx > 93) draw = false;
-				}	
-				else {
-					cidx = pFontMap[cidx];
-				}
-		}
-		
-		if (!draw || drawblank) {			
-			// draw a blank, transparent poly for a space
-			w = storedWidth;
-			this->MakeBlankPoly(&pArray[i]);
-		}
-		
-		if (draw && !drawblank) {
-			// set the UV coords
-			MapCharacter(pFont, cidx, &pArray[i], &w, texturew, textureh);
-		}
-		else {
-			if (!drawblank) w = 0 - (int16)(bold + spacing);
-		}
-    	
-		// apply the new XYZ coords
-		SetPolyXYZ(&pArray[i], cx, cy, w, h, em, bold);
-
-		// increment the x position for the next char.
-		cx = cx + int16(w + bold + spacing);			
-
-		// increment our string pointer
-    	str++;
-  	}  	
-	
-	// move the polys we did not process so there won't be gaps or overlaps
-	// in the string
-
-	if (bProcessRemainder) {	
-		if (num<len) {			
-			delta = (int32) (pArray[num-1].verts[1].x - pArray[num].verts[0].x);
-			
-			for (i=num; i<len; i++) {
-				pArray[i].verts[0].x += delta;
-				pArray[i].verts[1].x += delta;
-				pArray[i].verts[2].x += delta;
-				pArray[i].verts[3].x += delta;
-			}
-		}
-	}
-
-	// get the extents of the new polystring
-	GetExtents(&m_Rect);
-
-	return CUIR_OK;
-}
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::Render(int32 start, int32 end)
-{
-	if (!m_pPolys) return CUIR_ERROR;
-	if (!m_Valid)  return CUIR_INVALID_POLYSTRING;
-
-	//no character so nothing to draw
-	if (!m_Length)  return CUIR_OK;
-	
-	// set up the render state
-	CUIRenderState::SetRenderState(m_pFont->GetTexture());
-	//this->SetRenderState(m_pFont->GetTexture());
-		
-	// draw our string
-
-	if (end < 0)
-		end = m_Length;
-
-	int32 len = (end - start);
-	
-
-	pDrawPrimInternal->DrawPrim(&m_pPolys[start], len);
-	
-
-	return CUIR_OK;
-}
-
-
-
-//  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::RenderClipped(CUIRECT* clip, 
-										  int32 start, 
-										  int32 end)
-{
-	// cull out polygons that are completely outside the clip rect, and clip
-	// the polys that are straddling the rect border
-	int drawPolys = 0;
-
-	float minx,maxx,miny,maxy;
-	float minu,maxu,minv,maxv;
-
-	int32 i, v;//, startidx, endidx;
-
-	//no character so nothing to draw
-	if (!m_Length)  return CUIR_OK;
-
-	if (!m_pPolys)	return CUIR_ERROR;
-	if (!clip)		return CUIR_INVALID_POINTER;
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
-
-
-	//allocate a buffer on the stack to avoid dynamic allocations
-	LT_POLYGT4 newPolys[CLIP_BUFFER_LEN];
-	LT_POLYGT4* pNewPolys = newPolys;
-	bool bDynamicBuffer = false;
-
-	int32 len = (end>=0) ? end : m_Length;
-	
-	for (i=start; i<len; i++) {
-
-		// find the extents of the poly
-		// we do this because there's no guarantee that v0 is the 'upper left'
-		// since the user can muck about with the polygons all they like for FX
-		// and it reduces the number of tests we do later
-
-		minx = m_pPolys[i].verts[0].x;
-		maxx = m_pPolys[i].verts[0].x;
-		miny = m_pPolys[i].verts[0].y;
-		maxy = m_pPolys[i].verts[0].y;
-
-		for (v=1; v<4; v++) {
-			if (m_pPolys[i].verts[v].x > maxx) maxx = m_pPolys[i].verts[v].x;
-			if (m_pPolys[i].verts[v].x < minx) minx = m_pPolys[i].verts[v].x;
-			if (m_pPolys[i].verts[v].y > maxy) maxy = m_pPolys[i].verts[v].y;
-			if (m_pPolys[i].verts[v].y < miny) miny = m_pPolys[i].verts[v].y;
-		}
-
-		// ok, now about that clipping...
-
-		// case 0:  the poly is completely inside the cliprect
-		if ( minx >= clip->x               &&
-			 maxx <= clip->x + clip->width &&
-			 miny >= clip->y               &&
-			 maxy <= clip->y + clip->height ) {
-
-			if (drawPolys >= CLIP_BUFFER_LEN && !bDynamicBuffer)
 			{
-				ASSERT(drawPolys < CLIP_BUFFER_LEN);
+				CUIWideFontChar* pChar = CUIGetFontChar(m_pFont, c);
 
-				//not enough room in buffer so allocate a new one dynamically
-				bDynamicBuffer = LTTRUE;
-				LT_MEM_TRACK_ALLOC(pNewPolys = new LT_POLYGT4[m_Length],LT_MEM_TYPE_UI);
-				if (!pNewPolys) return CUIR_OUT_OF_MEMORY;
-
-				//copy from the stack to the newly allocated buffer
-				memcpy(pNewPolys, &newPolys, sizeof(LT_POLYGT4) * drawPolys);
-				
-			}
-			memcpy(&pNewPolys[drawPolys], &m_pPolys[i], sizeof(LT_POLYGT4));
-			drawPolys++;
-			continue;
-		}
-		
-		// case 1:  the poly is completely outside the cliprect
-		if ( minx > clip->x + clip->width  ||
-			 maxx < clip->x                ||
-			 miny > clip->y + clip->height ||
-			 maxy < clip->y  ) {
-
-			continue;
-		}
-
-		// case 2:  anything left is the tricky case, 
-		//			where the poly straddles the border
-
-		if (drawPolys >= CLIP_BUFFER_LEN && !bDynamicBuffer)
-		{
-			ASSERT(drawPolys < CLIP_BUFFER_LEN);
-			
-			//not enough room in buffer so allocate a new one dynamically
-			bDynamicBuffer = LTTRUE;
-			LT_MEM_TRACK_ALLOC(pNewPolys = new LT_POLYGT4[m_Length],LT_MEM_TYPE_UI);
-			if (!pNewPolys) return CUIR_OUT_OF_MEMORY;
-
-			//copy from the stack to the newly allocated buffer
-			memcpy(pNewPolys, &newPolys, sizeof(LT_POLYGT4) * drawPolys);
-			
-		}
-
-		// find the u,v extents
-		minu = m_pPolys[i].verts[0].u;
-		maxu = m_pPolys[i].verts[0].u;
-		minv = m_pPolys[i].verts[0].v;
-		maxv = m_pPolys[i].verts[0].v;
-
-		for (v=1; v<4; v++) {
-			if (m_pPolys[i].verts[v].u > maxu) maxu = m_pPolys[i].verts[v].u;
-			if (m_pPolys[i].verts[v].u < minu) minu = m_pPolys[i].verts[v].u;
-			if (m_pPolys[i].verts[v].v > maxv) maxv = m_pPolys[i].verts[v].v;
-			if (m_pPolys[i].verts[v].v < minv) minv = m_pPolys[i].verts[v].v;
-		}
-
-		// add the poly
-		memcpy(&pNewPolys[drawPolys], &m_pPolys[i], sizeof(LT_POLYGT4));
-
-		// clip the xy/uv coords
-		for (v=0; v<4; v++) {
-
-			if (pNewPolys[drawPolys].verts[v].x < clip->x) {
-				// fix the u
-				pNewPolys[drawPolys].verts[v].u += (maxu-minu) *
-					(clip->x - pNewPolys[drawPolys].verts[v].x) / 
-					(maxx - minx);  
-				// fix the x
-				pNewPolys[drawPolys].verts[v].x = clip->x;
-			}
-
-			if (pNewPolys[drawPolys].verts[v].x > clip->x + clip->width) {
-				// fix the u
-				pNewPolys[drawPolys].verts[v].u -= (maxu-minu) *
-					(pNewPolys[drawPolys].verts[v].x - (clip->x + clip->width)) /
-					(maxx-minx);  
-				// fix the x
-				pNewPolys[drawPolys].verts[v].x = clip->x + clip->width;
-			}
-
-			if (pNewPolys[drawPolys].verts[v].y < clip->y) {
-				// fix the v
-				pNewPolys[drawPolys].verts[v].v += (maxv-minv) *
-					(clip->y - pNewPolys[drawPolys].verts[v].y) / 
-					(maxy - miny);  
-				// fix the y
-				pNewPolys[drawPolys].verts[v].y = clip->y;
-			}
-
-			if (pNewPolys[drawPolys].verts[v].y > clip->y + clip->height) {
-				// fix the v
-				pNewPolys[drawPolys].verts[v].v -= (maxv-minv) *
-					(pNewPolys[drawPolys].verts[v].y - (clip->y + clip->height)) /
-					(maxy-miny);  
-				// fix the y
-				pNewPolys[drawPolys].verts[v].y = clip->y + clip->height;
+				nWidth = (int32)ceil((float)pChar->m_Width * (float)nHeight / nFontHeight);
+				pDrawPrimInternal->SetXYWH(&m_pPolys[i], (float)x, (float)y, (float)nWidth, (float)nHeight);
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetXYWH(&m_pShadowPolys[i],
+											   (float)(x + m_ShadowOffsetX),
+											   (float)(y + m_ShadowOffsetY),
+											   (float)nWidth, (float)nHeight);
+				break;
 			}
 		}
 
-		drawPolys++;
+		x += m_pFont->GetCharSpacing() + nWidth;
 	}
-				
-	// don't call drawprim unless we have polys to draw!!
-	if (drawPolys) {	
-		// set up the render state
-		CUIRenderState::SetRenderState(m_pFont->GetTexture());
-		//this->SetRenderState(m_pFont->GetTexture());
-			
-		// draw our clipped string
-		pDrawPrimInternal->DrawPrim(pNewPolys, drawPolys);
-	}
-	
-	// clean up after ourselves!
-	if (bDynamicBuffer) 
-		delete [] pNewPolys;
 
-	return CUIR_OK;
+	GetExtents();
+	ClearClipped();
 }
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE	CUIPolyString_Impl::GetExtents(CUIRECT* pRect)
+// RETAIL: 0x563e20 (slot 36): (start, count); white space is transparent
+void CUIPolyString_Impl::ApplyColors(uint32 start, int32 count)
 {
-	int32 i,v;
+	if (m_Text.empty() || !m_pFont)
+		return;
 
-	if (!pRect)		return CUIR_INVALID_POINTER;
-	if (!m_Valid)	return CUIR_INVALID_POLYSTRING;
+	if (count < 0)
+		count = m_Text.size();
 
-	float minx = 0;
-	float maxx = 0;
-	float miny = 0;
-	float maxy = 0;
+	uint32 end = start + count;
+	for (uint32 i = start; i < end; i++)
+	{
+		switch (m_Text[i])
+		{
+			case '\n':
+			case '\r':
+			case ' ':
+				pDrawPrimInternal->SetRGBA4(&m_pPolys[i], 0, 0, 0, 0);
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetRGBA4(&m_pShadowPolys[i], 0, 0, 0, 0);
+				break;
 
-	if (m_pPolys) {
-		
-		minx = maxx = m_pPolys[0].verts[0].x;
-		miny = maxy = m_pPolys[0].verts[0].y;
-
-		for (i=0; i<m_Length; i++) {
-			
-			for (v=0; v<4; v++) {
-				if (m_pPolys[i].verts[v].x > maxx) {
-					maxx = m_pPolys[i].verts[v].x;
-				}
-				if (m_pPolys[i].verts[v].x < minx) {
-					minx = m_pPolys[i].verts[v].x;
-				}
-				if (m_pPolys[i].verts[v].y > maxy) {
-					maxy = m_pPolys[i].verts[v].y;
-				}
-				if (m_pPolys[i].verts[v].y < miny) {
-					miny = m_pPolys[i].verts[v].y;
-				}
-			}
+			default:
+				pDrawPrimInternal->SetRGBA4(&m_pPolys[i], m_pColors[0], m_pColors[1], m_pColors[2], m_pColors[3]);
+				// RETAIL: the shadow's first vertex takes the text's colour
+				// (docs/RETAIL_BUGS.md)
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetRGBA4(&m_pShadowPolys[i], m_pColors[0], 0xff000000, 0xff000000, 0xff000000);
+				break;
 		}
 	}
 
-	pRect->x	  = minx;
-	pRect->y	  = miny;
-	pRect->width  = maxx - minx;
-	pRect->height = maxy - miny;
-
-	return CUIR_OK;
+	if (m_bClip)
+		m_bClipped = false;
 }
 
 
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x563f40 (slot 33): each character's place on its font page, and
+// the polygons by page
+void CUIPolyString_Impl::ApplyFont()
+{
+	if (m_Text.empty() || !m_pFont)
+		return;
+
+	int32 nLen	= m_Text.size();
+	int32 nPage	= -1;
+
+	ClearPolyMap(m_PolyMap, false);
+	ClearPolyMap(m_ShadowPolyMap, false);
+
+	m_bOnePage = true;
+
+	for (int32 i = 0; i < nLen; i++)
+	{
+		uint16 c = m_Text[i];
+
+		if (c == '\n' || c == '\r' || c == ' ')
+		{
+			pDrawPrimInternal->SetUVWH(&m_pPolys[i], 0, 0, 0, 0);
+			if (m_pShadowPolys)
+				pDrawPrimInternal->SetUVWH(&m_pShadowPolys[i], 0, 0, 0, 0);
+			continue;
+		}
+
+		CUIWideFontChar* pChar = CUIGetFontChar(m_pFont, c);
+		float fWidth = (float)pChar->m_Width;
+
+		if (nPage < 0)
+		{
+			m_Page = pChar->m_Page;
+			nPage = pChar->m_Page;
+		}
+		else if (nPage != pChar->m_Page)
+		{
+			m_bOnePage = false;
+		}
+
+		pDrawPrimInternal->SetUVWH(&m_pPolys[i], m_pFont->GetTexture(pChar->m_Page),
+								   (float)pChar->m_U, (float)pChar->m_V,
+								   fWidth, (float)m_pFont->GetDefCharScreenHeight());
+		AddPolyToMap(m_PolyMap, pChar->m_Page, &m_pPolys[i]);
+
+		if (m_pShadowPolys)
+		{
+			pDrawPrimInternal->SetUVWH(&m_pShadowPolys[i], m_pFont->GetTexture(pChar->m_Page),
+									   (float)pChar->m_U, (float)pChar->m_V,
+									   fWidth, (float)m_pFont->GetDefCharScreenHeight());
+			AddPolyToMap(m_ShadowPolyMap, pChar->m_Page, &m_pShadowPolys[i]);
+		}
+	}
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x564250 (slot 35): hides each polygon not wholly inside the clip
+// rectangle (NOLF2's cut polygons at its edges)
+void CUIPolyString_Impl::ClipPolys(LT_POLYGT4* pPolys)
+{
+	if (!m_bClip || m_Text.empty() || !m_pFont || !pPolys)
+		return;
+
+	float left		= m_ClipRect.x;
+	float right		= m_ClipRect.x + m_ClipRect.width;
+	float top		= m_ClipRect.y;
+	float bottom	= m_ClipRect.y + m_ClipRect.height;
+
+	int32 nLen = m_Text.size();
+	for (int32 i = 0; i < nLen; i++, pPolys++)
+	{
+		float minx = pPolys->verts[0].x;
+		float maxx = pPolys->verts[0].x;
+		float miny = pPolys->verts[0].y;
+		float maxy = pPolys->verts[0].y;
+
+		for (int32 v = 1; v < 4; v++)
+		{
+			if (pPolys->verts[v].x > maxx) maxx = pPolys->verts[v].x;
+			if (pPolys->verts[v].x < minx) minx = pPolys->verts[v].x;
+			if (pPolys->verts[v].y > maxy) maxy = pPolys->verts[v].y;
+			if (pPolys->verts[v].y < miny) miny = pPolys->verts[v].y;
+		}
+
+		// wholly outside
+		if (minx > right || maxx < left || miny > bottom || maxy < top)
+		{
+			pDrawPrimInternal->SetRGBA4(pPolys, 0, 0, 0, 0);
+		}
+		// partly outside
+		else if (minx < left || maxx > right || miny < top || maxy > bottom)
+		{
+			pDrawPrimInternal->SetRGBA4(pPolys, 0, 0, 0, 0);
+		}
+	}
+
+	m_bClipped = true;
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5643f0 (slot 38): the rectangle the polygons cover
+void CUIPolyString_Impl::GetExtents()
+{
+	if (!m_bGetExtents)
+		return;
+
+	int32 minx = 0;
+	int32 maxx = 0;
+	int32 miny = 0;
+	int32 maxy = 0;
+
+	LT_POLYGT4* pPoly = m_pPolys;
+	if (pPoly)
+	{
+		minx = maxx = (int32)pPoly->verts[0].x;
+		miny = maxy = (int32)pPoly->verts[0].y;
+
+		for (uint32 i = 0; i < m_Text.size(); i++, pPoly++)
+		{
+			int32 v;
+
+			for (v = 0; v < 4; v++)
+				if (maxx <= (int32)pPoly->verts[v].x) maxx = (int32)pPoly->verts[v].x;
+			for (v = 0; v < 4; v++)
+				if (minx >= (int32)pPoly->verts[v].x) minx = (int32)pPoly->verts[v].x;
+			for (v = 0; v < 4; v++)
+				if (maxy <= (int32)pPoly->verts[v].y) maxy = (int32)pPoly->verts[v].y;
+			for (v = 0; v < 4; v++)
+				if (miny >= (int32)pPoly->verts[v].y) miny = (int32)pPoly->verts[v].y;
+		}
+	}
+
+	m_Rect.x		= (float)minx;
+	m_Rect.y		= (float)miny;
+	m_Rect.width	= (float)(maxx - minx);
+	m_Rect.height	= (float)(maxy - miny);
+}
+
+
+//  ---------------------------------------------------------------------------
+// RETAIL: 0x5645b0 (slot 42)
+uint32 CUIPolyString_Impl::GetFontHeight()
+{
+	return m_pFont->GetDefCharScreenHeight();
+}

@@ -214,10 +214,13 @@ void r_GenericTextPrint(char *pMsg, const LTRect *pRect, uint32 textColor);
 extern int32 g_ScreenWidth, g_ScreenHeight;
 void CDIDebugText::Render()
 {
+	// RETAIL: 0x425430: Tron's polystring is made, then placed, given the
+	// font and the text (its char SetText widens it)
 	if (!m_pPolyString && m_Font) {
-		uint32 i32Color = RGBA_MAKE(m_DPVert.rgba.r,m_DPVert.rgba.g,m_DPVert.rgba.b,m_DPVert.rgba.a);
-		//m_Font->SetColor(i32Color);
-		LT_MEM_TRACK_ALLOC(m_pPolyString = new CUIPolyString(m_Font, m_Text, m_DPVert.x, m_DPVert.y),LT_MEM_TYPE_MISC);
+		LT_MEM_TRACK_ALLOC(m_pPolyString = new CUIPolyString_Impl,LT_MEM_TYPE_MISC);
+		m_pPolyString->SetPosition((int32)m_DPVert.x, (int32)m_DPVert.y);
+		m_pPolyString->SetFont(m_Font);
+		m_pPolyString->SetText(m_Text);
 	}
 
 	if (m_pPolyString) {

@@ -27,6 +27,9 @@ class CUIPolyString;
 // bitmap and vector fonts are gone.
 class CUIFont_Impl : public CUIFont
 {
+	// the font manager reads m_bLoaded (0x5662ef)
+	friend class CUIFontManager;
+
 	public:
 
 		CUIFont_Impl();

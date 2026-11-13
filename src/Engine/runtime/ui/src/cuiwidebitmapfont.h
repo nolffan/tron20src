@@ -29,15 +29,19 @@
 // one character of a wide font (8 bytes in the file)
 struct CUIWideFontChar
 {
-	int16		m_xTronUnknown0;
-	int16		m_Width;			// RETAIL: the advance TronUnknownVirtual14 adds
-	int16		m_xTronUnknown4;
-	int16		m_xTronUnknown6;
+	uint8		m_Page;				// RETAIL: the texture page (the polystrings' ApplyFont, 0x563f40)
+	uint8		m_xTronUnknown1;
+	int16		m_Width;			// RETAIL: the advance GetTextWidth adds
+	int16		m_U;				// the character's place on its page, in texels
+	int16		m_V;
 };
 
 
 class CUIWideBitmapFont : public CUIFont_Impl
 {
+	// the font manager loads fonts (ILTFontManager::CreateFont, 0x566230)
+	friend class CUIFontManager;
+
 	public:
 
 		CUIWideBitmapFont();
@@ -48,16 +52,16 @@ class CUIWideBitmapFont : public CUIFont_Impl
 		virtual CUI_RESULTTYPE	TronUnknownVirtual2(int8 nValue)	{ m_LineSpacing = nValue; return (CUI_RESULTTYPE)0; }
 		virtual CUI_RESULTTYPE	TronUnknownVirtual3(int8 nValue)	{ m_LineSpacing = nValue; return (CUI_RESULTTYPE)0; }
 		virtual uint32			GetDefCharScreenHeight()	{ return m_CharHeight; }
-		virtual int8			TronUnknownVirtual5()		{ return m_LineSpacing; }
-		virtual int8			TronUnknownVirtual6()		{ return m_CharSpacing; }
-		virtual uint8			TronUnknownVirtual7()		{ return m_SpaceWidth; }
+		virtual int8			GetLineSpacing()		{ return m_LineSpacing; }
+		virtual int8			GetCharSpacing()		{ return m_CharSpacing; }
+		virtual uint8			GetSpaceWidth()		{ return m_SpaceWidth; }
 		virtual HTEXTURE		GetTexture(uint8 nPage)		{ return m_hPages[nPage]; }
-		virtual uint16			TronUnknownVirtual9()		{ return m_DefaultChar; }
-		virtual bool			TronUnknownVirtual10()		{ return m_bRemap == 1; }
-		virtual uint16**		TronUnknownVirtual11()		{ return m_pRemap; }
-		virtual void*			TronUnknownVirtual13()		{ return m_pChars; }
-		virtual uint32			TronUnknownVirtual14(const std::wstring& sText);
-		virtual bool			TronUnknownVirtual15(uint16 nChar);
+		virtual uint16			GetDefaultChar()		{ return m_DefaultChar; }
+		virtual bool			IsRemapped()		{ return m_bRemap == 1; }
+		virtual uint16**		GetRemapTables()		{ return m_pRemap; }
+		virtual void*			GetCharTables()		{ return m_pChars; }
+		virtual uint32			GetTextWidth(const std::wstring& sText);
+		virtual bool			HasChar(uint16 nChar);
 
 	protected:
 

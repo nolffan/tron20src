@@ -38,14 +38,14 @@
 0x074,RenderClipped,0x5636b0,(rect; start; end): with clipping on copies the rectangle and renders
 0x078,TronUnknownVirtual30,0x482590,returns true (one argument)
 0x07c,SetCharScreenHeight(uint32),0x565c30,calls slot 0x024; the game's text controls call it where NOLF2's call SetCharScreenHeight
-0x080,TronUnknownVirtual32,0x563710,the engine's own
-0x084,TronUnknownVirtual33,0x563f40,the engine's own
-0x088,TronUnknownVirtual34,0x563ab0,the engine's own (lays the characters out)
-0x08c,TronUnknownVirtual35,0x564250,the engine's own (clips)
-0x090,TronUnknownVirtual36,0x563e20,the engine's own (applies the colors; start; end)
-0x094,TronUnknownVirtual37,0x404970,empty here; CUIFormattedPolyString's formats
-0x098,TronUnknownVirtual38,0x5643f0,the engine's own
-0x09c,TronUnknownVirtual39,0x565c40,clears +0x49
-0x0a0,TronUnknownVirtual40,0x563840,the engine's own
-0x0a4,TronUnknownVirtual41,0x5639b0,the engine's own
-0x0a8,TronUnknownVirtual42,0x5645b0,the font's height (font slot 0x10)
+0x080,AllocPolys,0x563710,one polygon per character (and one per shadow); the name is ours
+0x084,ApplyFont,0x563f40,each character's UVs and page; fills the page maps; the name is ours
+0x088,Layout,0x563ab0,places each character's polygon; the name is ours
+0x08c,ClipPolys,0x564250,hides the polygons not inside the clip rectangle; the name is ours
+0x090,ApplyColors,0x563e20,(start; count) the colors; white space transparent
+0x094,Format,0x404970,empty here; CUIFormattedPolyString's breaks the lines; the name is ours
+0x098,GetExtents,0x5643f0,the rectangle the polygons cover (+0x28); NOLF2's name
+0x09c,ClearClipped,0x565c40,clears +0x49 (the polygons are clipped); the name is ours
+0x0a0,AddPolyToMap,0x563840,(map; page; polygon) a std::map<uint8; std::vector<LT_POLYGT4*>*>; the name is ours
+0x0a4,ClearPolyMap,0x5639b0,(map; destroy) empties the vectors; frees them unless +0x26 keeps them; the name is ours
+0x0a8,GetFontHeight,0x5645b0,the font's height (font slot 0x10); the name is ours

@@ -315,11 +315,12 @@ void CUIDropDownList_Impl::AlignTextInWidget()
 {
 	CUIListNode*	pNode;
 	CUIPolyString*	pStr;
-	float			x,y;
+	int32			x,y;
 	int32			curindex = 0;
 
-	x = m_Rect.x + m_GutterLeft*2;
-	y = m_Rect.y + m_GutterTop*2;
+	// RETAIL: 0x56ddb0: integer positions; the font's line spacing
+	x = (int32)m_Rect.x + m_GutterLeft*2;
+	y = (int32)m_Rect.y + m_GutterTop*2;
 
 	// get the list of strings
 	if (m_pList) {
@@ -330,7 +331,7 @@ void CUIDropDownList_Impl::AlignTextInWidget()
 			if (curindex >= m_WindowStart) {
 				pStr = (CUIPolyString*) pNode->m_pData;
 				if (pStr) pStr->SetPosition(x,y);
-				y += m_CharHeight + m_pFont->GetDefSpacingV();
+				y += m_pFont->GetLineSpacing() + m_CharHeight;
 			}
 			pNode = pNode->m_pNext;
 			curindex++;
@@ -344,7 +345,8 @@ void CUIDropDownList_Impl::ResizeDropDown()
 {
 	float height = (float) m_CharHeight;
 
-	if (m_pFont) height += m_pFont->GetDefSpacingV();
+	// RETAIL: 0x56de30
+	if (m_pFont) height += m_pFont->GetLineSpacing();
 
 	// left side
 	m_DrawDropDownBG.m_Poly.verts[0].x = m_Rect.x + m_GutterLeft;

@@ -1208,57 +1208,40 @@ int CConsole::CalcStringOffset(const char *pStr, int iLength)
 
 void CConsole::DrawTextLine(const char *pText, const LTRect *pRect, COLORREF textColor)
 {
+	// PORT: Tron's engine has no console font: its font manager makes fonts
+	// only from a font file (ILTFontManager::CreateFont(ILTStream*)), and
+	// retail's console never makes one (m_Font is only ever destroyed,
+	// Lithtech.exe 0x499d34; the texture likewise). cjacksrc's console drew
+	// with a font made from console_font.dtx; here a font, if one is ever
+	// set, draws through a wide polystring, and without one nothing is drawn.
 	const uint32 iCharWidth = 7;
+	if (!m_Font || !g_IFontManager) return;
 	if ((m_Rect.right > 0) && (pRect->left > m_Rect.right)) return;
 
-	// If we haven't create it yet, create the Font we're going to use for the Debug Text...
-	if (!m_Font) 
+	char* pCh = const_cast<char*>(pText); 
+	char szBuff[256]; 
+	uint32 iCh = 0; 
+	char* pB = szBuff; 
+	uint32 iW = 0;
+
+	while (*pCh && (iW + iCharWidth <= (uint32)(pRect->right - pRect->left)) && iCh < 255) 
+	{ 
+		*pB = *pCh; 
+		++pCh; 
+		++pB; 
+		++iCh; 
+		iW += iCharWidth; 
+	} 
+
+	*pB = NULL;
+
+	CUIPolyString* pString = g_IFontManager->CreatePolyString(m_Font, std::wstring(), (float)pRect->left, (float)pRect->top);
+	if (pString)
 	{
-		if (g_IFontManager && g_ITexInterface) 
-		{
-			assert(!m_Tex); 
-			m_Tex = NULL; 
-
-			if (g_CV_Console_FontTexFile) 
-			{
-				g_ITexInterface->CreateTextureFromName(m_Tex,g_CV_Console_FontTexFile);
-			}
-			else
-			{
-				g_ITexInterface->CreateTextureFromName(m_Tex,"console\\console_font.dtx");
-			}
-
-			if (m_Tex) 
-			{
-				m_Font = g_IFontManager->CreateFont(m_Tex,9,9);
-				m_Font->SetDefCharWidth(iCharWidth); m_Font->SetDefCharHeight(9); 
-			} 
-		} 
-	}
-
-	if (m_Font) 
-	{
-		m_Font->SetDefColor(textColor);
-
- 		char* pCh = const_cast<char*>(pText); 
-		char szBuff[256]; 
-		uint32 iCh = 0; 
-		char* pB = szBuff; 
-		uint32 iW = 0;
-
- 		while (*pCh && (iW + iCharWidth <= (uint32)(pRect->right - pRect->left)) && iCh < 255) 
-		{ 
-			*pB = *pCh; 
-			++pCh; 
-			++pB; 
-			++iCh; 
-			iW += iCharWidth; 
-		} 
-
-		*pB = NULL;
-
- 		m_Font->DrawString((float)pRect->left,(float)pRect->top,szBuff); 
-
+		pString->SetText(szBuff);
+		pString->SetColor(textColor);
+		pString->Render();
+		g_IFontManager->DestroyPolyString(pString);
 	}
 
 

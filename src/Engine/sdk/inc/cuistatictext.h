@@ -58,7 +58,7 @@ This function gets the ascii text stored in a static text widget
 
 Used for: Text and UI.
 */
-		virtual const char*		GetText();
+		virtual const std::wstring&	GetText();	// TRON: the polystring's (wide)
 
 
 /*!

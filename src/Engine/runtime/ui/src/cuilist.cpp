@@ -69,7 +69,7 @@ CUI_RESULTTYPE CUIList::SetCharHeight(uint8 height)
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIList::AddItem(const char* text, int32 index)
+CUI_RESULTTYPE CUIList::AddItem(const std::wstring& text, int32 index)
 {
 	return ((CUIList_Impl*)m_pImpl)->AddItem(text, index);
 }
@@ -83,14 +83,14 @@ CUI_RESULTTYPE CUIList::RemoveItem(int32 index)
 
 
 //  ---------------------------------------------------------------------------
-int32 CUIList::FindItem(const char* text)
+int32 CUIList::FindItem(const std::wstring& text)
 {
 	return ((CUIList_Impl*)m_pImpl)->FindItem(text);
 }
 
 
 //  ---------------------------------------------------------------------------
-const char* CUIList::GetItem(int32 index)
+const std::wstring& CUIList::GetItem(int32 index)
 {
 	return ((CUIList_Impl*)m_pImpl)->GetItem(index);
 }

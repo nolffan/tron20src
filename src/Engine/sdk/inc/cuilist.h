@@ -86,7 +86,7 @@ greater than the number of items currently in the list, the new item will
 be added at the end.
 
 Used for: Text and UI.   */	
-		virtual CUI_RESULTTYPE	AddItem(const char* pText, int32 index = -1);
+		virtual CUI_RESULTTYPE	AddItem(const std::wstring& sText, int32 index = -1);	// TRON: wide (RETAIL: 0x56e360)
 
 /*!  
 \param index index of item to remove
@@ -107,7 +107,7 @@ matched and the match is case sensitive.
 in the list.
 
 Used for: Text and UI.   */	
-		virtual int32			FindItem(const char* pText);
+		virtual int32			FindItem(const std::wstring& sText);
 
 /*!  
 \param index item to retrieve
@@ -117,7 +117,7 @@ Use this function to retrieve the text of an item in the list.
 \return item text
 
 Used for: Text and UI.   */	
-		virtual const char*		GetItem(int32 index);
+		virtual const std::wstring&	GetItem(int32 index);
 
 /*!  
 \param index index of the item to select
