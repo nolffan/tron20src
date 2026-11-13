@@ -233,7 +233,7 @@ SOURCE=.\LightCycle.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\LightCycleMgr.cpp
+SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -445,7 +445,7 @@ SOURCE=.\LightCycle.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\LightCycleMgr.h
+SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # End Source File
 # Begin Source File
 

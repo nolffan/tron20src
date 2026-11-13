@@ -162,7 +162,7 @@ void LightCycleMissile::Update()
 	LIGHT_CYCLIST* pOwner = m_hOwner ? m_pOwnerCyclist : NULL;
 
 	LightCycleCollisionInfo info;
-	while (g_pLightCycleMgr->CheckForCollision(&s_MissileCyclist, ptStart, ptEnd, &info, true, pOwner))
+	while (g_pLightCycleMgr->CheckForCollision(&s_MissileCyclist, &ptStart, &ptEnd.vPoint, &info, true, pOwner))
 	{
 		bool bNewHit;
 		if (g_pLTServer->GetTime() - m_fLastHitTime < 0.5f)
@@ -182,7 +182,7 @@ void LightCycleMissile::Update()
 		}
 		else
 		{
-			g_pLightCycleMgr->HandleCollision(&s_MissileCyclist, &info, bNewHit, false);
+			g_pLightCycleMgr->HandleShieldCollision(&s_MissileCyclist, &info, bNewHit, false);
 		}
 	}
 

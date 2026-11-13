@@ -38,8 +38,8 @@ class CClientLightCycleMgr : public CLightCycleMgr
 		virtual bool Init();					// RETAIL: 0x10010bc0
 		virtual void Term();					// RETAIL: 0x10010f50
 
-		virtual bool CyclistCrash(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify);	// RETAIL: 0x10010fb0
-		virtual void UpdateCyclists();			// RETAIL: 0x10011410
+		virtual bool DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther, bool bNotify);	// RETAIL: 0x10010fb0
+		virtual void Update();			// RETAIL: 0x10011410
 
 		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify);	// RETAIL: 0x10014620
 		virtual void UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector & vDims, bool bTronUnknown);	// RETAIL: 0x100143d0
@@ -83,7 +83,7 @@ class CClientLightCycleMgr : public CLightCycleMgr
 		HTEXTURE	m_hTailStartTex;		// RETAIL: +0x2830 props\skins\TailStart.dtx
 		HLTSOUND	m_hDialogSnd;			// RETAIL: +0x2834 (0x10013100, the message handler)
 		uint32		m_nTronUnknown2838;		// RETAIL: +0x2838 (not touched in this TU)
-		float		m_fLastPredictTime;		// RETAIL: +0x283c (UpdateCyclists)
+		float		m_fLastPredictTime;		// RETAIL: +0x283c (Update)
 		float		m_fPredictInterval;		// RETAIL: +0x2840 (1/15 s)
 };
 

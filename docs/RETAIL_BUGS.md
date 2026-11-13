@@ -392,7 +392,7 @@ after the check.
 ### The light cycle missile's stand-in cyclist is left uninitialized
 
 Object.lto 0x10029fd0 (LIGHT_CYCLIST's (float, float, bool) constructor,
-ObjectDLL/TRON/LightCycleMgr.h; used for LightCycleMissile's static
+Shared/TRON/LightCycleMgr.h; used for LightCycleMissile's static
 cyclist, 0x10358ca0). It "calls" the default constructor with
 `LIGHT_CYCLIST();`, which builds and destroys a temporary, so only the three
 fields it sets afterwards are initialized. The rest of the static is zero
