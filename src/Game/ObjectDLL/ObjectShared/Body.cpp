@@ -581,11 +581,7 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 				pDeadPlayer->Revive();
 
-				CPlayerObj *pReviver = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( hSender ));
-				if (pReviver)
-				{
-					pReviver->GetPlayerScore()->AddBonus(g_pServerMissionMgr->GetServerSettings().m_nReviveScore);
-				}
+				// RETAIL: Tron's CPlayerScore has no bonus for the reviver (SharedScoring.h)
 								
 				// Get rid of any weapons or other poerups we had...
 

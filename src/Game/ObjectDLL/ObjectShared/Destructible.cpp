@@ -678,58 +678,9 @@ void CDestructible::AddProgressiveDamage(DamageStruct & damage)
 		}
 	}
 
-	if (IsScoreTagType(damage.eType) && IsPlayer(hDamager) && m_bIsPlayer && !IsTakingProgressiveDamage(damage.eType))
-	{
-		CPlayerObj* pPlayer = dynamic_cast<CPlayerObj*> (g_pLTServer->HandleToObject(hDamager));
-		CPlayerObj* pTarget = dynamic_cast<CPlayerObj*> (g_pLTServer->HandleToObject(m_hObject));
-
-		if (hDamager == m_hObject)
-		{
-			pPlayer->GetPlayerScore()->RemoveTag();
-		}
-		else
-		{
-			if( IsTeamGameType() )
-			{
-				if( pPlayer->GetTeamID() == pTarget->GetTeamID() )
-				{
-					// The player is either stupid or a jack-ass so penalize him and the team...
-				
-					pPlayer->GetPlayerScore()->RemoveTag();
-				}
-				else
-				{
-					// The player tagged another player of a different team so this is valid...
-
-					pPlayer->GetPlayerScore()->AddTag();
-				}	
-			}
-			else
-			{
-				pPlayer->GetPlayerScore()->AddTag();
-			}
-		}
-
-		HCLIENT hClientTarget = pTarget->GetClient();
-		HCLIENT hClientPlayer = pPlayer->GetClient();
-		if (hClientTarget)
-		{
-			uint32 nTargetID = g_pLTServer->GetClientID (hClientTarget);
-			uint32 nPlayerID = g_pLTServer->GetClientID (hClientPlayer);
-
-			CAutoMessage cMsg;
-			cMsg.Writeuint8(MID_PLAYER_SCORED);
-			cMsg.Writebool(false);
-			cMsg.Writeuint32(nTargetID);
-			cMsg.Writeuint32(nPlayerID);
-			g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-		}
-
-		if( g_pGameServerShell )
-		{
-			g_pGameServerShell->SetUpdateGameServ();
-		}
-	}
+	// RETAIL: Tron scores no tags (retail CDestructible::AddProgressiveDamage,
+	// 0x100e7f70, has none of NOLF2's tag scoring; nor has Tron's
+	// CPlayerScore tags, SharedScoring.h)
 
 
 
@@ -1298,6 +1249,10 @@ void CDestructible::SetLastDamager(HOBJECT hDamager)
 
 void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
 {
+	// RETAIL: Tron's (retail 0x100e8e70): only a player killed by another
+	// player in a revive game type scores, a frag to the killer (one off for
+	// a team mate), and the message has the death type, not NOLF2's flag
+
 	if (!m_bIsPlayer) return;
 
 	// Stop player movement if dead...
@@ -1306,99 +1261,56 @@ void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
 	vZero.Init();
     g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 
-    CPlayerObj* pVictim = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( m_hObject));
+    CPlayerObj* pVictim = (CPlayerObj*)g_pLTServer->HandleToObject( m_hObject );
 	if (!pVictim) return;
 
 	pVictim->GetMissionStats()->dwNumTimesKilled++;
 
-	bool bKillerIdentified = false;
-
 	// If another player killed us, give them the score.
-    CPlayerObj* pPlayerKiller = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( hDamager ));
-	if( pPlayerKiller )
+    CPlayerObj* pPlayerKiller = IsPlayer( hDamager ) ? (CPlayerObj*)g_pLTServer->HandleToObject( hDamager ) : LTNULL;
+	if( IsRevivePlayerGameType( ) && pPlayerKiller && pVictim != pPlayerKiller )
 	{
-		bKillerIdentified = true;
+		bool bTeamKill = false;
 
-		// Check if we killed ourselves.
-		if (pVictim == pPlayerKiller)
-		{
-			//don't count it against them if they were switching teams
-			if (!pVictim->RequestedTeamChange())
-				pVictim->GetPlayerScore()->RemoveFrag();
-		}
-		else
-		{
-			if( IsTeamGameType() )
-			{
-				if( pPlayerKiller->GetTeamID() == pVictim->GetTeamID() )
-				{
-					// The player is either stupid or a jack-ass so penalize him and the team...
-				
-					pPlayerKiller->GetPlayerScore()->RemoveFrag();
-				}
-				else
-				{
-					// The player killed another player of a different team so this is valid...
+		uint32 nKillerID = g_pLTServer->GetClientID( pPlayerKiller->GetClient( ));
+		uint32 nVictimID = g_pLTServer->GetClientID( pVictim->GetClient( ));
 
-					pPlayerKiller->GetPlayerScore()->AddFrag();
-				}	
-			}
+		int nKillerTeam = g_pTronTeamMgr->GetTeamOfClient( nKillerID );
+		int nVictimTeam = g_pTronTeamMgr->GetTeamOfClient( nVictimID );
+
+		if( nKillerTeam == nVictimTeam && nKillerTeam < TRON_UNASSIGNED_TEAM )
+			bTeamKill = true;
+
+		if( pPlayerKiller->GetPlayerScore()->GetTronUnknown18() == 0 && pVictim->GetPlayerScore()->GetTronUnknown18() == 0 )
+		{
+			// A team mate's kill costs a frag
+			if( bTeamKill )
+				pPlayerKiller->GetPlayerScore()->AddFrags( -1 );
 			else
-			{
-				pPlayerKiller->GetPlayerScore()->AddFrag();
-			}
+				pPlayerKiller->GetPlayerScore()->AddFrags( 1 );
+
+			pPlayerKiller->GetPlayerScore()->UpdateClients();
 		}
 	}
-
-	if( !bKillerIdentified )
-	{
-		// If the killer was identified, then then the scoring is handled elsewhere.
-		DoomsDayDevice* pDoomsDayDevice = dynamic_cast< DoomsDayDevice* >( g_pLTServer->HandleToObject( hDamager ));
-		if( pDoomsDayDevice )
-		{
-			bKillerIdentified = true;
-		}
-	}
-
-	if( !bKillerIdentified )
-	{
-		// If the killer was not an AI, then assume we killed ourselves.
-		CAI* pAIKiller = dynamic_cast< CAI* >( g_pLTServer->HandleToObject( hDamager ));
-		if( pAIKiller )
-		{
-			bKillerIdentified = true;
-		}
-		else
-		{
-			// No killer, so they must have killed themselves, but don't count it against them
-			//	if they were switching teams
-			if (!pVictim->RequestedTeamChange())
-				pVictim->GetPlayerScore()->RemoveFrag();
-		}
-	}
-
 
 	if (g_pGameServerShell)
 	{
 		g_pGameServerShell->SetUpdateGameServ();
 	}
 
-	if (!pVictim->RequestedTeamChange())
+	HCLIENT hClientVictim = pVictim->GetClient();
+	HCLIENT hClientKiller = ( pPlayerKiller ) ? pPlayerKiller->GetClient() : NULL;
+	if (hClientVictim )
 	{
-		HCLIENT hClientVictim = pVictim->GetClient();
-		HCLIENT hClientKiller = ( pPlayerKiller ) ? pPlayerKiller->GetClient() : NULL;
-		if (hClientVictim )
-		{
-			uint32 nVictimID = g_pLTServer->GetClientID (hClientVictim);
-			uint32 nKillerID = ( hClientKiller ) ? g_pLTServer->GetClientID (hClientKiller) : -1;
+		uint32 nVictimID = g_pLTServer->GetClientID (hClientVictim);
+		uint32 nKillerID = ( hClientKiller ) ? g_pLTServer->GetClientID (hClientKiller) : -1;
 
-			CAutoMessage cMsg;
-			cMsg.Writeuint8(MID_PLAYER_SCORED);
-			cMsg.Writebool( true );
-			cMsg.Writeuint32(nVictimID);
-			cMsg.Writeuint32(nKillerID);
-			g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-		}
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_SCORED);
+		cMsg.Writeuint32(nVictimID);
+		cMsg.Writeuint32(nKillerID);
+		cMsg.Writeuint8(GetDeathType());
+		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 	}
 }
 

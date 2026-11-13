@@ -735,10 +735,7 @@ bool DoomsDayDevice::Fire( CPlayerObj& playerObj )
 	cMsg.Writeuint8( m_nOwningTeamID );
 	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
 
-	// Give the activating player a bunch of points.
-	ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-	uint32 nBonus = sgo.GetDoomsday( ).m_nDeviceCompletedScore;
-	playerObj.GetPlayerScore()->AddBonus( nBonus );
+	// RETAIL: Tron's CPlayerScore has no bonus to add (SharedScoring.h)
 
 	if( !BeginFire( ))
 		return false;
@@ -822,10 +819,7 @@ bool DoomsDayDevice::AddDoomsDayPiece( DoomsDayPiece *pDDPiece, CPlayerObj *pPla
 
 	m_lstPiecesOnDevice.push_back( pDDPiece );
 
-	// Give the player points for adding the piece.
-	ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-	uint32 nBonus = pDDPiece->IsHeavy( ) ? sgo.GetDoomsday( ).m_nHeavyPiecePlacedScore : sgo.GetDoomsday( ).m_nLightPiecePlacedScore;
-	pPlayer->GetPlayerScore()->AddBonus( nBonus );
+	// RETAIL: Tron's CPlayerScore has no bonus to add (SharedScoring.h)
 
 	if( m_lstPiecesOnDevice.size() == kDoomsDay_MAXTYPES )
 	{
@@ -903,13 +897,7 @@ bool DoomsDayDevice::RemoveDoomsDayPiece( DoomsDayPiece *pDDPiece, CPlayerObj* p
 
 	g_pCommonLT->SetObjectFlags( m_lsthTargets[pDDPiece->GetDoomsDayPieceType()], OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
 
-	// Give the player some points for removing the piece.
-	if( pPlayer )
-	{
-		ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-		uint32 nBonus = sgo.GetDoomsday( ).m_nPieceRemovedScore;
-		pPlayer->GetPlayerScore()->AddBonus( nBonus );
-	}
+	// RETAIL: Tron's CPlayerScore has no bonus to add (SharedScoring.h)
 
 	return true;
 }

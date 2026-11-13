@@ -453,6 +453,7 @@ class CGameServerShell : public IServerShellStub
         LTBOOL		IsClientInList(HCLIENT hClient);
 		CPlayerObj*	GetPlayerFromClientList(HCLIENT hClient);
 		HCLIENT		GetClientFromID(uint32 nID);
+		friend class CTronTeam;	// RETAIL: Tron's team record calls GetClientFromID (retail 0x1013f6e9)
 
 		LTBOOL IsPositionOccupied(LTVector & vPos, CPlayerObj* pPlayer);
 

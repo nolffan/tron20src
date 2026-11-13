@@ -81,6 +81,10 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 	
 	m_LightCycleMgr.Init();
 
+	// RETAIL: retail 0x1005cb6e
+	g_pTronTeamMgr = &m_TeamMgr;
+	m_TeamMgr.Init();
+
 	return res;
 }
 
@@ -360,9 +364,7 @@ void CTronGameServerShell::GameSpyPlayerKey( int nKeyId, int nIndex, qr2_buffer_
 			qr2_buffer_add( pOutBuf, pPlayer->GetNetUniqueName( ));
 			break;
 		case SCORE__KEY:
-			// RETAIL: Tron's CPlayerScore keeps the score in 16 bits at +0x14
-			// (SharedScoring.h has NOLF2's class standing in)
-			qr2_buffer_add_int( pOutBuf, *( int16* )(( uint8* )pPlayer->GetPlayerScore( ) + 0x14 ));
+			qr2_buffer_add_int( pOutBuf, pPlayer->GetPlayerScore( )->GetScore( ));
 			break;
 		case PING__KEY:
 			qr2_buffer_add_int( pOutBuf, GetPlayerPing( pPlayer ));
