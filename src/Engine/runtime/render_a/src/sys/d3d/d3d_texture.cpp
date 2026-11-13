@@ -708,9 +708,9 @@ bool CTextureManager::SelectTextureFormats()
 	else { AddDebugMessage(0, "FORMAT_NORMAL texture format missing."); return false; }
 
 	// Check for a valid FORMAT_INTERFACE...
-	if (PDIRECT3D->CheckDeviceFormat(pAdapterInfo->iAdapterNum,pDeviceInfo->DeviceType,pDisplayMode->Format,NULL,D3DRTYPE_TEXTURE,D3DFMT_A8R8G8B8) == D3D_OK) {
-		SetTextureFormatFromD3DFormat(CTextureManager::FORMAT_INTERFACE,D3DFMT_A8R8G8B8); }
-	else if (PDIRECT3D->CheckDeviceFormat(pAdapterInfo->iAdapterNum,pDeviceInfo->DeviceType,pDisplayMode->Format,NULL,D3DRTYPE_TEXTURE,D3DFMT_A1R5G5B5) == D3D_OK) {
+	// RETAIL: no 32-bit interface textures in Tron (Lithtech.exe 0x518b80
+	// asks for A1R5G5B5, then A4R4G4B4)
+	if (PDIRECT3D->CheckDeviceFormat(pAdapterInfo->iAdapterNum,pDeviceInfo->DeviceType,pDisplayMode->Format,NULL,D3DRTYPE_TEXTURE,D3DFMT_A1R5G5B5) == D3D_OK) {
 		SetTextureFormatFromD3DFormat(CTextureManager::FORMAT_INTERFACE,D3DFMT_A1R5G5B5); }
 	else if (PDIRECT3D->CheckDeviceFormat(pAdapterInfo->iAdapterNum,pDeviceInfo->DeviceType,pDisplayMode->Format,NULL,D3DRTYPE_TEXTURE,D3DFMT_A4R4G4B4) == D3D_OK) {
 		SetTextureFormatFromD3DFormat(CTextureManager::FORMAT_INTERFACE,D3DFMT_A4R4G4B4); }
