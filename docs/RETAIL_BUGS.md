@@ -527,6 +527,20 @@ the ParseNet console variable's debug output uses it.
 
 Not fixed yet.
 
+### Anisotropic filtering is never switched on
+
+Lithtech.exe 0x4ca140 (CD3D_Device::SetDefaultRenderStates, src/Engine/
+runtime/render_a/src/sys/d3d/d3d_device.cpp) and d3d_SetDefaultTextureStates
+(d3d_init.cpp). With the Anisotropic console variable set, the renderer
+asks for D3DTEXF_ANISOTROPIC minification and magnification only if the
+device's VertexTextureFilterCaps (D3DCAPS9 +0x124) has the anisotropic
+bits: the filter caps of vertex shader texture sampling, which no card of
+the time had. It should test TextureFilterCaps. So anisotropic filtering
+only ever sets D3DSAMP_MAXANISOTROPY, and the textures stay bilinear or
+trilinear. Build 69's Direct3D 9 renderer has the same lines.
+
+Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md M-G45.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
