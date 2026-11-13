@@ -22,7 +22,9 @@ CFG=D3DRender - Win32 Final
 
 # cjacksrc: the renderer, render_a (LIB_D3DRender in the LithTech Jupiter
 # tree, ported there to Direct3D 9; nolf2src's back-port to NOLF2's
-# Direct3D 8), a static library of Lithtech.exe (Engine.dsw).
+# Direct3D 8), a static library of Lithtech.exe (Engine.dsw). Tron's is
+# Direct3D 9 again: Build 69's device wrapper, shell and API calls on
+# Contract J.A.C.K.'s renderer (docs/PLAN.md, package 5).
 # Begin Project
 # PROP AllowPerConfigDependencies 0
 # PROP Scc_ProjName ""
