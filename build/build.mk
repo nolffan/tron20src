@@ -113,6 +113,21 @@ ENV_GAME := WINEPREFIX=$(PFX) WINEPATH='$(call ws,$(VC6))\BIN;$(call ws,$(VC9782
     INCLUDE='$(call ws,$(DXSDK))\include;$(call ws,$(VC6))\INCLUDE;$(call ws,$(VC6))\MFC\INCLUDE;$(call ws,$(ROOT)/src/tron20src)' \
     LIB='$(call ws,$(DXSDK))\lib;$(call ws,$(VC6))\LIB;$(call ws,$(VC6))\MFC\LIB'
 
+# The engine (Lithtech.exe and its renderer, UI and sound loader) is
+# Direct3D 9 (retail imports d3d9.dll and links D3DX9 statically): a
+# DirectX 9 SDK comes first on its paths. Which one is still open (docs/
+# PLAN.md, package 5: the 2003 SDK whose d3dx9.lib has retail's 110 C++
+# and 3 C objects of cl 13.00.9178 and 9 C of 13.10.2067); DXSDK9 names it,
+# overridable for a stand-in until it is in ext/toolchains/.
+DXSDK9  ?= $(TC)/dxsdk-9.0
+ENV_ENGINE9 := WINEPREFIX=$(PFX) WINEPATH='$(call ws,$(VC6))\BIN;$(call ws,$(VC9782))\Common\MSDev98\Bin' \
+    INCLUDE='$(call ws,$(DXSDK9))\include;$(call ws,$(DXSDK))\include;$(call ws,$(VC6))\INCLUDE;$(call ws,$(VC6))\MFC\INCLUDE;$(call ws,$(ROOT)/src/tron20src)' \
+    LIB='$(call ws,$(DXSDK9))\lib;$(call ws,$(DXSDK))\lib;$(call ws,$(VC6))\LIB;$(call ws,$(VC6))\MFC\LIB'
+ENV_Lithtech     = $(ENV_ENGINE9)
+ENV_D3DRender    = $(ENV_ENGINE9)
+ENV_Lib_UI       = $(ENV_ENGINE9)
+ENV_Lib_ILTSound = $(ENV_ENGINE9)
+
 # The prefix: made the first time, then only checked; every tool run waits
 # for it (an order-only prerequisite, so it causes no rebuild).
 $(PFX)/.ready:

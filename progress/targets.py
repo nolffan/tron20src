@@ -108,7 +108,11 @@ TARGETS = [
          # in 0x581e80..0x58b000 against 14 below it). Provisional: the
          # boundary is that one hit.
          app=[(0x00401000, 0x00581e80)],
-         encrypted=[(0x00572000, 0x00577000)]),
+         encrypted=[(0x00572000, 0x00577000)],
+         # every redirected call site's import, from the unprotected
+         # developer build of 2003-08-05 (tools/demoimports.py, profile
+         # tron2): scored as if put back on its IAT slot
+         iat_calls="progress/engine/Lithtech-iat-calls.csv"),
          # D3DX, statically linked from a DirectX 9 SDK's d3dx9.lib (the
          # Rich header's 110 C++ and 3 C objects of cl 13.00.9178, 6 of
          # masm 6.14.8444, and 9 C objects of cl 13.10 build 2067; the
