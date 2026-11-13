@@ -52,6 +52,11 @@ IMAGES = {
         (RT_GROUP_ICON, 128): "Launcher.ico",
         (RT_GROUP_CURSOR, 308): "WebHand.cur",
     }),
+    "TRONSrv.exe": ("ServerApp", {
+        (RT_BITMAP, 535): "splash.bmp",
+        (RT_GROUP_ICON, 524): "ServerApp.ico",
+        (RT_GROUP_ICON, 526): "selected.ico",
+    }),
 }
 
 

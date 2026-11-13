@@ -1,5 +1,11 @@
 //Microsoft Developer Studio generated resource script.
 //
+// tron20src: Tron 2.0's dedicated server resources, as the retail
+// TRONSrv.exe (1.030) has them: NOLF2's script with Tron 2.0's caption,
+// strings and version. The icons and the splash screen are the retail
+// game's: build/appres.py writes them out of the retail image into
+// src/Game/built/retail/ServerApp/ (the project's /i path) before the
+// build.
 #include "..\..\..\resource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
@@ -68,8 +74,8 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME           ICON    DISCARDABLE     "..\\..\\ServerApp.ico"
-IDI_SELECTED            ICON    DISCARDABLE     "..\\..\\selected.ico"
+IDR_MAINFRAME           ICON    DISCARDABLE     "ServerApp.ico"
+IDI_SELECTED            ICON    DISCARDABLE     "selected.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

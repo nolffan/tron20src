@@ -1,0 +1,16 @@
+; build/server-imports.def: server.dll's exports, as the retail server.dll
+; (1.030) has them, ordinals and all. Until the engine's server.dll is
+; built here (src/Engine/runtime/winbuild/server), build/build.mk makes
+; server.lib, the import library the dedicated server (TRONSrv.exe) links,
+; from this with VC6's lib.exe. TRONSrv.exe imports CreateServer and
+; DeleteServer by ordinal, as an import library made from a .def with
+; ordinals has it do.
+
+LIBRARY      "server.DLL"
+
+EXPORTS
+
+	CreateServer @1
+	DeleteServer @2
+	LTGetILTMemory @3
+	SetMasterDatabase @4
