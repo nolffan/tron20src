@@ -1,5 +1,16 @@
+/******
+qr2regkeys.h
+GameSpy Query & Reporting 2 SDK: the reserved keys
 
+Copyright 1999-2003 GameSpy Industries, Inc
 
+******/
+/*
+ * RETAIL: Tron's 2003 SDK, written from what Object.lto links (the key list
+ * at 0x102dc630, qr2_register_key at 0x10043380) with the 2007 snapshot in
+ * cjacksrc as the template. The 2003 list ends at modname (30; no
+ * nn_groupid, country or region keys).
+ */
 #ifndef _QR2REGKEYS_H_
 #define _QR2REGKEYS_H_
 
@@ -8,12 +19,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	
 
 #define MAX_REGISTERED_KEYS 254
 #define NUM_RESERVED_KEYS 50
-	
-	
+
 #define HOSTNAME_KEY		1
 #define GAMENAME_KEY		2
 #define GAMEVER_KEY			3
@@ -43,42 +52,14 @@ extern "C" {
 #define PID__KEY			27
 #define TEAM_T_KEY			28
 #define SCORE_T_KEY			29
-#define NN_GROUP_ID_KEY		30
-
-// Query-From-Master-Only keys
-// - these two values are retrieved only from the master server so we need to make
-//   sure not to overwrite them when querying servers directly
-#define COUNTRY_KEY			31
-#define REGION_KEY			32
-
-	
-#ifndef GSI_UNICODE
-	#define qr2_register_key	qr2_register_keyA
-#else
-	#define qr2_register_key	qr2_register_keyW
-#endif
+#define MODNAME_KEY			30
 
 extern const char *qr2_registered_key_list[];
-void qr2_register_key(int keyid, const gsi_char *key);
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-// Necessary for unicode support.  Must store a copy of the UTF8 keys
-// generated from qr2_register_keyW
-void qr2_internal_key_list_append(char* theKey);
-void qr2_internal_key_list_free(); // call this at qr2 shutdown
-
-// internal function used by ServerBrowser to check if a key is Query-Master-Only
-gsi_bool qr2_internal_is_master_only_key(const char * keyname);
-
-
-// Always define for direct access
-void qr2_register_keyA(int keyid, const char *key);
-void qr2_register_keyW(int keyid, const unsigned short *key);
+void qr2_register_key(int keyid, const char *key);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

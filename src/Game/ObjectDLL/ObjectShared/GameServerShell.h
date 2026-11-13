@@ -103,7 +103,7 @@ class CGameServerShell : public IServerShellStub
 		// destructor, then these, in this order. Four pure ones first, which
 		// CTronGameServerShell implements: GameSpy's, by what they touch (the
 		// "tron20" game name, a packet's address and port); not yet named
-		virtual void	TronUnknownVirtual4C() = 0;
+		virtual bool	TronUnknownVirtual4C() = 0;	// RETAIL: returns whether GameSpy started (retail 0x1005d3f0)
 		virtual void	TronUnknownVirtual50() = 0;
 		virtual bool	TronUnknownVirtual54() = 0;
 		virtual void	TronUnknownVirtual58( char* pData, uint32 nDataLen, uint8 senderAddr[4], uint16 senderPort ) = 0;	// RETAIL: ProcessPacket (retail 0x100e34b0) hands it the GameSpy queries
@@ -153,6 +153,8 @@ class CGameServerShell : public IServerShellStub
 		virtual void	SetCurLevel( char const* pszWorldName );	// RETAIL: virtual in Tron (slot 23, retail 0x100e3710)
 		char const*	GetHostName();
 		int			GetNumPlayers();
+		uint8		GetMaxPlayers();		// RETAIL: Tron's (0x100e3570); the name is ours
+		char const*	GetGameTypeName();	// RETAIL: Tron's (0x100e3760); the name is ours
 
 		CPlayerObj*	GetFirstNetPlayer();
 		CPlayerObj*	GetNextNetPlayer();

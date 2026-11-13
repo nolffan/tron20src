@@ -202,6 +202,11 @@ SOURCE=.\Finder.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\gcdkey\gcdkeys.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=.\GlobalsInit.cpp
 # End Source File
 # Begin Source File
@@ -235,6 +240,11 @@ SOURCE=.\LightCycleZones.cpp
 # Begin Source File
 
 SOURCE=.\MultiplayerLevelInfoMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\nonport.c
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 
@@ -275,6 +285,13 @@ SOURCE=.\ProjectileDrunkenDims.cpp
 # Begin Source File
 
 SOURCE=.\ProjectileEnergyClaw.cpp
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2regkeys.c
+# SUBTRACT CPP /YX /Yc /Yu
 # End Source File
 # Begin Source File
 

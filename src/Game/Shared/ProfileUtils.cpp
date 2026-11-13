@@ -5,6 +5,9 @@
 #include "ModelButeMgr.h"
 #include "CommonUtilities.h"
 #include "ResShared.h"
+#ifndef _CLIENTBUILD
+#include "GameSpy/GameSpySDK/qr2/qr2.h"
+#endif // _CLIENTBUILD
 #ifdef _CLIENTBUILD
 #include "ClientUtilities.h"
 #include "ClientResShared.h"
@@ -440,6 +443,229 @@ uint32 ServerGameOptions::GetTronUnknownCC( ) const
 {
 	return m_nTronUnknownCC;
 }
+
+#ifndef _CLIENTBUILD
+
+// RETAIL: Tron's own GameSpy keys (qr2_register_key ids; the names are ours,
+// after the key strings)
+enum GameSpyKey
+{
+	kGSKeyFriendlyFire	= 50,	// "friendlyfire"
+	kGSKeyMatchPoints	= 51,	// "matchpoints"
+	kGSKeyMatchTime		= 52,	// "matchtime"
+	kGSKeyGamesPerMap	= 53,	// "gamespermap"
+	kGSKeyTournMode		= 54,	// reported for the disc tournament; registered nowhere seen
+	kGSKeyAirControl	= 55,	// "aircontrol"
+	kGSKeyDedicated		= 56,	// "dedicated"
+	kGSKeyWaitWeaps		= 57,	// "waitweaps"
+	kGSKeyAutoAim		= 58,	// "autoaim"
+	kGSKeyCycleType		= 59,	// "cycletype"
+	kGSKeyTrailLength	= 60,	// "traillength"
+	kGSKeyMaxPing		= 61,	// "maxping"
+	kGSKeyKillPoints	= 62,	// "killpoints"
+	kGSKeyDeathPoints	= 63,	// "deathpoints"
+	kGSKeyWinPoints		= 64,	// "winpoints"
+	kGSKeyPowerups		= 65,	// "powerups"
+};
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ServerGameOptions::RegisterGameSpyKeys
+//
+//	PURPOSE:	RETAIL: Object.lto 0x10114e60: register the game type's keys
+//
+// ----------------------------------------------------------------------- //
+void ServerGameOptions::RegisterGameSpyKeys( )
+{
+	qr2_register_key( kGSKeyDedicated, "dedicated" );
+
+	switch( m_eGameType )
+	{
+		case eGameTypeMultiplayerLightcycles:
+		{
+			qr2_register_key( kGSKeyCycleType, "cycletype" );
+			qr2_register_key( kGSKeyTrailLength, "traillength" );
+			qr2_register_key( kGSKeyMaxPing, "maxping" );
+			qr2_register_key( kGSKeyKillPoints, "killpoints" );
+			qr2_register_key( kGSKeyDeathPoints, "deathpoints" );
+			qr2_register_key( kGSKeyWinPoints, "winpoints" );
+			qr2_register_key( kGSKeyPowerups, "powerups" );
+			qr2_register_key( kGSKeyGamesPerMap, "gamespermap" );
+		}
+		break;
+
+		case eGameTypeDiscArena:
+		{
+			qr2_register_key( kGSKeyFriendlyFire, "friendlyfire" );
+			qr2_register_key( kGSKeyWaitWeaps, "waitweaps" );
+			qr2_register_key( kGSKeyAutoAim, "autoaim" );
+			qr2_register_key( kGSKeyMatchPoints, "matchpoints" );
+			qr2_register_key( kGSKeyMatchTime, "matchtime" );
+			qr2_register_key( kGSKeyGamesPerMap, "gamespermap" );
+			qr2_register_key( kGSKeyMaxPing, "maxping" );
+			qr2_register_key( kGSKeyAirControl, "aircontrol" );
+		}
+		break;
+
+		case eGameTypeDiscTournament:
+		{
+			qr2_register_key( kGSKeyFriendlyFire, "friendlyfire" );
+			qr2_register_key( kGSKeyWaitWeaps, "waitweaps" );
+			qr2_register_key( kGSKeyAutoAim, "autoaim" );
+			qr2_register_key( kGSKeyMatchPoints, "matchpoints" );
+			qr2_register_key( kGSKeyMatchTime, "matchtime" );
+			qr2_register_key( kGSKeyGamesPerMap, "gamespermap" );
+			qr2_register_key( kGSKeyMaxPing, "maxping" );
+			qr2_register_key( kGSKeyAirControl, "aircontrol" );
+		}
+		break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ServerGameOptions::AddGameSpyKeys
+//
+//	PURPOSE:	RETAIL: Object.lto 0x10114f50: the server keys the game type
+//				reports, after the shell's own
+//
+// ----------------------------------------------------------------------- //
+void ServerGameOptions::AddGameSpyKeys( int nKeyType, qr2_keybuffer_s* pKeyBuffer )
+{
+	if( nKeyType != key_server )
+		return;
+
+	qr2_keybuffer_add( pKeyBuffer, kGSKeyDedicated );
+
+	switch( m_eGameType )
+	{
+		case eGameTypeMultiplayerLightcycles:
+		{
+			qr2_keybuffer_add( pKeyBuffer, TEAMPLAY_KEY );
+			qr2_keybuffer_add( pKeyBuffer, FRAGLIMIT_KEY );
+			qr2_keybuffer_add( pKeyBuffer, TIMELIMIT_KEY );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyCycleType );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyTrailLength );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyGamesPerMap );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMaxPing );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyKillPoints );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyDeathPoints );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyWinPoints );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyPowerups );
+		}
+		break;
+
+		case eGameTypeDiscTournament:
+		{
+			qr2_keybuffer_add( pKeyBuffer, TEAMPLAY_KEY );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyFriendlyFire );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyWaitWeaps );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyAutoAim );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMatchPoints );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMatchTime );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyGamesPerMap );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMaxPing );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyAirControl );
+		}
+		break;
+
+		case eGameTypeDiscArena:
+		{
+			qr2_keybuffer_add( pKeyBuffer, TEAMPLAY_KEY );
+			qr2_keybuffer_add( pKeyBuffer, FRAGLIMIT_KEY );
+			qr2_keybuffer_add( pKeyBuffer, TIMELIMIT_KEY );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyFriendlyFire );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyWaitWeaps );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyAutoAim );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMatchPoints );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMatchTime );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyGamesPerMap );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyMaxPing );
+			qr2_keybuffer_add( pKeyBuffer, kGSKeyAirControl );
+		}
+		break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ServerGameOptions::GetGameSpyKeyValue
+//
+//	PURPOSE:	RETAIL: Object.lto 0x101150a0: report the value of one of
+//				the game type's keys; false if it is not one of them
+//
+// ----------------------------------------------------------------------- //
+bool ServerGameOptions::GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf )
+{
+	if( nKeyId == kGSKeyDedicated )
+	{
+		qr2_buffer_add_int( pOutBuf, m_bDedicated );
+		return true;
+	}
+
+	switch( m_eGameType )
+	{
+		case eGameTypeMultiplayerLightcycles:
+		{
+			switch( nKeyId )
+			{
+				case TEAMPLAY_KEY:		qr2_buffer_add_int( pOutBuf, ( m_nLCMaxTeamSize > 1 ) ? m_nLCMaxTeamSize : 0 ); return true;
+				case kGSKeyCycleType:	qr2_buffer_add_int( pOutBuf, m_nLCAllowedCycleType ); return true;
+				case kGSKeyTrailLength:	qr2_buffer_add_int( pOutBuf, m_nLCTrailLength ); return true;
+				case kGSKeyGamesPerMap:	qr2_buffer_add_int( pOutBuf, m_nLCTotalRaces ); return true;
+				case FRAGLIMIT_KEY:		qr2_buffer_add_int( pOutBuf, m_nLCTotalPoints ); return true;
+				case TIMELIMIT_KEY:		qr2_buffer_add_int( pOutBuf, m_nLCTotalTime ); return true;
+				case kGSKeyMaxPing:		qr2_buffer_add_int( pOutBuf, m_nLCMaxPing ); return true;
+				case kGSKeyKillPoints:	qr2_buffer_add_int( pOutBuf, m_nLCKillPointValue ); return true;
+				case kGSKeyDeathPoints:	qr2_buffer_add_int( pOutBuf, m_nLCSelfKillPointValue ); return true;
+				case kGSKeyWinPoints:	qr2_buffer_add_int( pOutBuf, m_nLCWinRacePointValue ); return true;
+				case kGSKeyPowerups:	qr2_buffer_add_int( pOutBuf, m_nLCPowerups ); return true;
+			}
+		}
+		break;
+
+		case eGameTypeDiscTournament:
+		{
+			switch( nKeyId )
+			{
+				case TEAMPLAY_KEY:		qr2_buffer_add_int( pOutBuf, ( m_nTournMaxTeamSize > 1 ) ? m_nTournMaxTeamSize : 0 ); return true;
+				case kGSKeyTournMode:	qr2_buffer_add_int( pOutBuf, m_nTournMode ); return true;
+				case kGSKeyFriendlyFire:	qr2_buffer_add_int( pOutBuf, m_bTournFriendlyFire ); return true;
+				case kGSKeyWaitWeaps:	qr2_buffer_add_int( pOutBuf, m_bTournDiscsInSpectator ); return true;
+				case kGSKeyAutoAim:		qr2_buffer_add_int( pOutBuf, m_bTournAllowAutoAim ); return true;
+				case kGSKeyMatchPoints:	qr2_buffer_add_int( pOutBuf, m_nTournPointsPerMatch ); return true;
+				case kGSKeyMatchTime:	qr2_buffer_add_int( pOutBuf, m_nTournMatchTimeLimit ); return true;
+				case kGSKeyGamesPerMap:	qr2_buffer_add_int( pOutBuf, m_nTournGamesPerMap ); return true;
+				case kGSKeyMaxPing:		qr2_buffer_add_int( pOutBuf, m_nTournMaxPing ); return true;
+				case kGSKeyAirControl:	qr2_buffer_add_int( pOutBuf, m_nTournAirControl ); return true;
+			}
+		}
+		break;
+
+		case eGameTypeDiscArena:
+		{
+			switch( nKeyId )
+			{
+				case TEAMPLAY_KEY:		qr2_buffer_add_int( pOutBuf, ( m_nArenaMaxTeamSize > 1 ) ? m_nArenaMaxTeamSize : 0 ); return true;
+				case FRAGLIMIT_KEY:		qr2_buffer_add_int( pOutBuf, m_nArenaWinLimit ); return true;
+				case TIMELIMIT_KEY:		qr2_buffer_add_int( pOutBuf, m_nArenaTimeLimit ); return true;
+				case kGSKeyFriendlyFire:	qr2_buffer_add_int( pOutBuf, m_bArenaFriendlyFire ); return true;
+				case kGSKeyWaitWeaps:	qr2_buffer_add_int( pOutBuf, m_bArenaDiscsInSpectator ); return true;
+				case kGSKeyAutoAim:		qr2_buffer_add_int( pOutBuf, m_bArenaAllowAutoAim ); return true;
+				case kGSKeyMatchPoints:	qr2_buffer_add_int( pOutBuf, m_nArenaPointsPerMatch ); return true;
+				case kGSKeyMatchTime:	qr2_buffer_add_int( pOutBuf, m_nArenaMatchTimeLimit ); return true;
+				case kGSKeyGamesPerMap:	qr2_buffer_add_int( pOutBuf, m_nArenaGamesPerMap ); return true;
+				case kGSKeyMaxPing:		qr2_buffer_add_int( pOutBuf, m_nArenaMaxPing ); return true;
+				case kGSKeyAirControl:	qr2_buffer_add_int( pOutBuf, m_nArenaAirControl ); return true;
+			}
+		}
+		break;
+	}
+
+	return false;
+}
+
+#endif // _CLIENTBUILD
 
 bool ServerGameOptions::IsDefaultCampaign() const
 {

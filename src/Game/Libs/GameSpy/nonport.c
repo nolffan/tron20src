@@ -7,6 +7,9 @@ Copyright 1999-2003 GameSpy Industries, Inc
 ******/
 /*
  * RETAIL: Tron's copy, linked into CShell.dll (0x1004e070..0x1004e453).
+ * Object.lto links the same file (0x1002f920..0x1002fcd4: current_time,
+ * SocketShutDown, goastrdup, CanReceiveOnSocket, getlocalhost and the
+ * unique ID code), for its GameSpy reporting.
  * cjacksrc's reconstruction of the 2003 SDK's file (written there from the
  * 2007 snapshot's common/gsPlatformUtil.c and gsPlatformSocket.c), with the
  * unique ID code in the order Tron's retail has it: GOAGetUniqueID first,
