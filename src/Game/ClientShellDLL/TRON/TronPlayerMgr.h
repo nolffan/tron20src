@@ -107,7 +107,7 @@ public:
 
 	// RETAIL: a subroutine's state, as the subroutine manager tells it
 	// (retail 0x100a7720; the name is ours)
-	void	OnSubroutineChanged(const char* pszName, bool bActive, bool bVersion, uint8 nVersion);
+	void	OnSubroutineChanged(const char* pszName, bool bActive, bool bVersion, int nVersion);	// RETAIL: the version is passed whole (0x10095441)
 
 	// RETAIL: called by the light cycle manager (retail 0x100a7eb0,
 	// 0x100a8000; the names are ours)

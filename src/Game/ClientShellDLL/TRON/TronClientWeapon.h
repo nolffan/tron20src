@@ -57,6 +57,12 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 protected:
+	// RETAIL: slot 57 (0x10097a20): firing spends the shot's energy
+	virtual void  Fire( bool bFire );
+
+	// RETAIL: slot 89 (0x10098ba0): whether the player's energy covers a shot
+	virtual bool  TronUnknownVirtual164();
+
 	//
 	// RETAIL: the new virtuals, slots 90..99 (names ours)
 	//

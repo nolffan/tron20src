@@ -1384,7 +1384,7 @@ bool CTronPlayerMgr::TronUnknownVirtual9C(void* pData, int nArg)
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerMgr::OnSubroutineChanged(const char* pszName, bool bActive, bool bVersion, uint8 nVersion)
+void CTronPlayerMgr::OnSubroutineChanged(const char* pszName, bool bActive, bool bVersion, int nVersion)
 {
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_OBJECT_MESSAGE);

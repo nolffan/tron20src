@@ -21,6 +21,8 @@
 #include "InterfaceMgr.h"
 #include "TronPlayerStats.h"
 #include "TronMissionButeMgr.h"
+#include "TronPlayerMgr.h"
+#include "GameClientShell.h"
 
 #define SUBROUTINE_TAG				"Subroutine"
 
@@ -36,8 +38,20 @@
 #define SUBROUTINE_ARMORPIECE		"ArmorPiece"
 
 // utility-specific fields
-#define SUBROUTINE_CONTINUOUS_DRAIN "ContinuousDrain"
-#define SUBROUTINE_BURST_DRAIN		"BurstDrain"
+#define SUBROUTINE_DESC_ALPHA		"DescriptionAlpha"
+#define SUBROUTINE_DESC_BETA		"DescriptionBeta"
+#define SUBROUTINE_DESC_GOLD		"DescriptionGold"
+#define SUBROUTINE_ICONMODEL		"IconModel"
+#define SUBROUTINE_ICONSKIN			"IconSkin"
+#define SUBROUTINE_CURSORFX			"CursorFX"
+#define SUBROUTINE_ENERGYDRAIN		"EnergyDrain"
+#define SUBROUTINE_ARMORTEX			"ArmorTex"
+#define SUBROUTINE_CORRUPTTEX		"CorruptTex"
+#define SUBROUTINE_HUDICON			"HUDIcon"
+#define SUBROUTINE_PROFILER			"profiler"
+#define SUBROUTINE_DISTANCE			"Distance"
+#define SUBROUTINE_CORRUPTION_TAG	"Corruption"
+#define SUBROUTINE_SPREADTIME		"SpreadTime"
 
 #define PROCEDURAL_TAG				"Procedural"
 
@@ -57,10 +71,18 @@
 #define PROCEDURAL_WORKSKIN			"WorkSkin"
 #define PROCEDURAL_CONDITIONSKIN	"ConditionSkin"
 #define PROCEDURAL_PROGRESSSKIN		"ProgressSkin"
+#define PROCEDURAL_VERB				"VerbId"
+#define PROCEDURAL_DECISIONICON		"DecisionIcon"
+#define PROCEDURAL_TOOLTIPICON		"ToolTipIcon"
+#define PROCEDURAL_INDICATORICON	"IndicatorIcon"
+#define PROCEDURAL_WORKSOUND		"WorkSound"
+#define PROCEDURAL_ADDITIONALTIME	"AdditionalTimeRequired"
 
 #define PRIMITIVE_TAG				"Primitive"
 #define PRIMITIVE_NAME				"Name"
 #define PRIMITIVE_NAME_ID			"NameId"
+#define PRIMITIVE_SPRITE			"Sprite"
+#define PRIMITIVE_HANDS				"hands"
            
 CSubroutineMgr* g_pSubroutineMgr = LTNULL;
 
@@ -77,69 +99,88 @@ char * szRingTex[] =
 // Default constructors
 TronSubroutine::TronSubroutine()
 {
-	szName[0]		= 0;
-	nNameId			= 0;
-	nDescriptionId	= 0;
-	szSprite[0]		= 0;
-
-	eFunction		= FUNCTION_COMBAT;
+	// RETAIL: 0x10091e50
+	szName[0]			= 0;
+	nNameId				= 0;
+	nDescriptionId		= 0;
+	nDescriptionAlphaId	= 0;
+	nDescriptionBetaId	= 0;
+	nDescriptionGoldId	= 0;
+	szSprite[0]			= 0;
+	szIconModel[0]		= 0;
+	szIconSkin[0]		= 0;
+	szCursorFX[0]		= 0;
+	vEnergyDrain.Init(15.0f, 10.0f, 5.0f);
+	eFunction			= FUNCTION_COMBAT;
 
 	// Defensive-only fields
-	nDeflection		= 0;
-	nAntivirus		= 0;
-	nArmorPiece		= -1;
+	vDeflection.Init(0.0f, 0.0f, 0.0f);
+	vAntivirus.Init(0.0f, 0.0f, 0.0f);
+	nArmorPiece			= -1;
+	szArmorTex[0]		= 0;
 
 	// Utility-only fields
-	fContinuousEnergyDrain = 0.0f;
-	fBurstEnergyDrain = 0.0f;
+	szHUDIcon[0]		= 0;
 }
 
 PlayerSubroutine::PlayerSubroutine()
 {
+	// RETAIL: 0x10091ee0
 	pTronSubroutine = LTNULL;
 	eVersion		= VERSION_ALPHA;
 	nSlot			= -1;
 	nTempSlot		= -1;
-	fPercentCorrupt = 0.0f;
 	fPercentDone	= 0.0f;
 	eState			= SUBSTATE_OKAY;
-	bWorking		= false;
-
-	// field for utility subroutine
-	// TODO set this back to false when we have the mechanism for activating!
-	bActive			= true;
+	pProcedural		= LTNULL;
+	nTronUnknown1C	= 0;
+	fTronUnknown20	= 0.0f;
+	nTronUnknown24	= 0;
 
 	// hack for base code
 	bPrevious		= false;
 	bNext			= false;
+
+	// PORT: build 69's members (retail has none of these)
+	bErased			= false;
+	fPercentCorrupt = 0.0f;
+	bWorking		= false;
+	bActive			= true;
 }
 
 Procedural::Procedural()
 {
+	// RETAIL: 0x10091f10
 	szName[0]		= 0;
 	nNameId			= 0;
 	nDescriptionId	= 0;
+	nVerbId			= 0;
 	nCompletionId	= 0;
 	iProcSlot		= 0;
 	bPlayerHasThis	= false;
-	fTimeRequired	= 1.0f;
-	szIntroFX[0]	= 0;
-
+	vTimeRequired.Init(10.0f, 10.0f, 10.0f);
+	szWorkSound[0]	= 0;
 	CenterPos.x		= 320;
 	CenterPos.y		= 240;
 	iRadius			= 16;
+	szToolTipIcon[0]	= 0;
+	szDecisionIcon[0]	= 0;
+	szIndicatorIcon[0]	= 0;
+	eAffectState	= SUBSTATE_OKAY;
+	pSub			= LTNULL;
 
+	// PORT: build 69's members (retail has none of these)
+	fTimeRequired		= 1.0f;
+	szIntroFX[0]		= 0;
 	szIdleSkin[0]		= 0;
 	szWorkSkin[0]		= 0;
 	szConditionSkin[0]	= 0;
 	szProgressSkin[0]	= 0;
-
-	eAffectState	= SUBSTATE_OKAY;
-	pSub			= LTNULL;
 }
 
 Primitive::Primitive()
 {
+	// RETAIL: 0x10091f80
 	szName[0]		= 0;
 	nNameId			= 0;
 	bPlayerHasThis	= false;
@@ -149,12 +190,14 @@ Primitive::Primitive()
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+// RETAIL: 0x10091f90
 CSubroutineMgr::CSubroutineMgr()
 {
-	m_SystemMemoryArray = LTNULL;
 	m_fLastUpdateTime = 0.0f;
+	m_SystemMemoryArray = LTNULL;
 }
 
+// RETAIL: 0x100920c0
 CSubroutineMgr::~CSubroutineMgr()
 {
 	Term();
@@ -166,86 +209,147 @@ CSubroutineMgr::~CSubroutineMgr()
 //
 //	ROUTINE:	CSubroutineMgr::Init()
 //
-//	PURPOSE:	Init mgr
+//	PURPOSE:	Init mgr (RETAIL: 0x10092200, slot 0)
 //
 // ----------------------------------------------------------------------- //
 
 LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 {
-	int iTemp;
-	float fTemp;
-
 	if (g_pSubroutineMgr)
 		return LTFALSE;
 
-	// Set up global pointer...
 	g_pSubroutineMgr = this;
 
-	m_PlayerSubroutineArray.clear();
-	m_SubroutineArray.clear();
-	m_ProceduralArray.clear();
 	m_PrimitiveArray.clear();
 
-    if (!szAttributeFile) return LTFALSE;
-    if (!Parse(szAttributeFile))
+	m_fTronUnknown115C = 0.0f;
+	m_SystemMemoryArray = LTNULL;
+	m_nTronUnknown1160 = 0;
+	m_fTronUnknown11A4 = 0.0f;
+	m_pTronUnknown1180 = LTNULL;
+	m_nTronUnknown114C = 0;
+
+	if (!szAttributeFile) return LTFALSE;
+	if (!Parse(szAttributeFile)) return LTFALSE;
+
+	CRect &rcSpread = m_buteMgr.GetRect(SUBROUTINE_CORRUPTION_TAG, SUBROUTINE_SPREADTIME);
+	m_afCorruptionSpreadTime[0] = (float)rcSpread.left;
+	m_afCorruptionSpreadTime[1] = (float)rcSpread.top;
+	m_afCorruptionSpreadTime[2] = (float)rcSpread.right;
+	m_afCorruptionSpreadTime[3] = (float)rcSpread.bottom;
+
+	// PORT: here retail makes its IGuestDataMgr (0x10095df0, +0x11a8; it
+	// fails Init without one) and has it read the attributes; not written yet
+
+	LoadSubroutines();
+	LoadProcedurals();
+
+	// Load the primitives
+	uint16 nNumPrimitives = 0;
+	sprintf(s_aTagName, "%s0", PRIMITIVE_TAG);
+	while (m_buteMgr.Exist(s_aTagName))
 	{
-		// If you broke on this assert,
-		// you need to grab "attributes/subroutines.txt" out of SourceSafe
-		ASSERT(LTFALSE);
-		return LTFALSE;
+		Primitive * pNewPrim = debug_new(Primitive);
+
+		m_buteMgr.GetString(s_aTagName, PRIMITIVE_NAME, "", pNewPrim->szName, sizeof(pNewPrim->szName));
+		pNewPrim->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, PRIMITIVE_NAME_ID, 0);
+		m_buteMgr.GetString(s_aTagName, PRIMITIVE_SPRITE, "", pNewPrim->szSprite, sizeof(pNewPrim->szSprite));
+
+		m_PrimitiveArray.push_back(pNewPrim);
+
+		// RETAIL: the player always has his hands
+		if (!_strcmpi(pNewPrim->szName, PRIMITIVE_HANDS))
+			pNewPrim->bPlayerHasThis = true;
+
+		nNumPrimitives++;
+		sprintf(s_aTagName, "%s%d", PRIMITIVE_TAG, nNumPrimitives);
 	}
 
+	m_buteMgr.Term();
 
-	// Read in all of the Subroutine descriptions
-	uint16 nNumSubroutines = 0;
+    return LTTRUE;
+}
 
-	while (nNumSubroutines < 100)
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::LoadSubroutines()
+//
+//	PURPOSE:	RETAIL: 0x10092410 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::LoadSubroutines()
+{
+	m_PlayerSubroutineArray.clear();
+	m_SubroutineArray.clear();
+
+	for (int i = 0; i < 100; i++)
 	{
-		sprintf(s_aTagName, "%s%d", SUBROUTINE_TAG, nNumSubroutines);
-		if (m_buteMgr.Exist(s_aTagName))
+		sprintf(s_aTagName, "%s%d", SUBROUTINE_TAG, i);
+		if (!m_buteMgr.Exist(s_aTagName))
+			continue;
+
+		TronSubroutine* pNew = debug_new(TronSubroutine);
+
+		m_buteMgr.GetString(s_aTagName, SUBROUTINE_NAME, "", pNew->szName, sizeof(pNew->szName));
+		pNew->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_NAME_ID, 0);
+		pNew->nDescriptionId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DESC, 0);
+		pNew->nDescriptionAlphaId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DESC_ALPHA, 0);
+		pNew->nDescriptionBetaId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DESC_BETA, 0);
+		pNew->nDescriptionGoldId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DESC_GOLD, 0);
+		m_buteMgr.GetString(s_aTagName, SUBROUTINE_SPRITE, "", pNew->szSprite, sizeof(pNew->szSprite));
+		m_buteMgr.GetString(s_aTagName, SUBROUTINE_ICONMODEL, "", pNew->szIconModel, sizeof(pNew->szIconModel));
+		m_buteMgr.GetString(s_aTagName, SUBROUTINE_ICONSKIN, "", pNew->szIconSkin, sizeof(pNew->szIconSkin));
+		m_buteMgr.GetString(s_aTagName, SUBROUTINE_CURSORFX, "", pNew->szCursorFX, sizeof(pNew->szCursorFX));
+		pNew->eFunction = (SubFunction)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_FUNCTION, 0);
+
+		CAVector &vDrain = m_buteMgr.GetVector(s_aTagName, SUBROUTINE_ENERGYDRAIN);
+		pNew->vEnergyDrain = LTVector((float)vDrain.Geti(), (float)vDrain.Getj(), (float)vDrain.Getk());
+
+		if (pNew->eFunction == FUNCTION_DEFENSE)
 		{
-			TronSubroutine* pNew = debug_new(TronSubroutine);
-			m_buteMgr.GetString(s_aTagName, SUBROUTINE_NAME, "", pNew->szName, sizeof(pNew->szName));
-			pNew->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_NAME_ID, 0);
-			pNew->nDescriptionId = (uint16)m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DESC, 0);
-			m_buteMgr.GetString(s_aTagName, SUBROUTINE_SPRITE, "", pNew->szSprite, sizeof(pNew->szSprite));
+			CAVector &vDeflect = m_buteMgr.GetVector(s_aTagName, SUBROUTINE_DEFLECTION);
+			pNew->vDeflection = LTVector((float)vDeflect.Geti(), (float)vDeflect.Getj(), (float)vDeflect.Getk());
 
-			// Combat/defense/util/Unusable
-			iTemp = m_buteMgr.GetInt(s_aTagName, SUBROUTINE_FUNCTION, 0);
-			if (iTemp >= (int)FUNCTION_COMBAT && iTemp < (int)FUNCTION_LAST)
-				pNew->eFunction = (SubFunction)iTemp;
+			CAVector &vAnti = m_buteMgr.GetVector(s_aTagName, SUBROUTINE_ANTIVIRUS);
+			pNew->vAntivirus = LTVector((float)vAnti.Geti(), (float)vAnti.Getj(), (float)vAnti.Getk());
 
-			// Defense-specific fields
-			if (pNew->eFunction == FUNCTION_DEFENSE)
-			{
-				iTemp = m_buteMgr.GetInt(s_aTagName, SUBROUTINE_DEFLECTION, 0);
-				if (iTemp >= 0 && iTemp <= 100)
-					pNew->nDeflection = (uint8)iTemp;
+			int iTemp = m_buteMgr.GetInt(s_aTagName, SUBROUTINE_ARMORPIECE, 0);
+			if (iTemp >= 0 && iTemp <= 100)
+				pNew->nArmorPiece = (uint8)iTemp;
 
-				iTemp = m_buteMgr.GetInt(s_aTagName, SUBROUTINE_ANTIVIRUS, 0);
-				if (iTemp >= 0 && iTemp <= 100)
-					pNew->nAntivirus = (uint8)iTemp;
-
-				iTemp = m_buteMgr.GetInt(s_aTagName, SUBROUTINE_ARMORPIECE, 0);
-				if (iTemp >= 0 && iTemp <= 100)
-					pNew->nArmorPiece = (uint8)iTemp;
-			}
-			else if (pNew->eFunction == FUNCTION_UTILITY)
-			{
-				fTemp = m_buteMgr.GetFloat(s_aTagName, SUBROUTINE_CONTINUOUS_DRAIN, 0.0f);
-				if (fTemp >= 0.0f && fTemp < 100.0f)
-					pNew->fContinuousEnergyDrain = fTemp;
-
-				fTemp = m_buteMgr.GetFloat(s_aTagName, SUBROUTINE_BURST_DRAIN, 0.0f);
-				if (fTemp >= 0.0f && fTemp < 100.0f)
-					pNew->fBurstEnergyDrain = fTemp;
-			}
-
-			m_SubroutineArray.push_back(pNew);
-
+			m_buteMgr.GetString(s_aTagName, SUBROUTINE_ARMORTEX, "", pNew->szArmorTex, sizeof(pNew->szArmorTex));
+			m_buteMgr.GetString(s_aTagName, SUBROUTINE_CORRUPTTEX, "", pNew->szCorruptTex, sizeof(pNew->szCorruptTex));
 		}
-		nNumSubroutines++;
+		else if (pNew->eFunction == FUNCTION_UTILITY)
+		{
+			m_buteMgr.GetString(s_aTagName, SUBROUTINE_HUDICON, "", pNew->szHUDIcon, sizeof(pNew->szHUDIcon));
+
+			if (!_strcmpi(pNew->szName, SUBROUTINE_PROFILER))
+			{
+				CAVector &vDist = m_buteMgr.GetVector(s_aTagName, SUBROUTINE_DISTANCE);
+				m_afProfilerDistance[0] = (float)vDist.Geti();
+				m_afProfilerDistance[1] = (float)vDist.Getj();
+				m_afProfilerDistance[2] = (float)vDist.Getk();
+			}
+		}
+
+		m_SubroutineArray.push_back(pNew);
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::LoadProcedurals()
+//
+//	PURPOSE:	RETAIL: 0x100927d0 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::LoadProcedurals()
+{
+	m_ProceduralArray.clear();
+
 	uint16 nNumProcedurals = 0;
 	sprintf(s_aTagName, "%s0", PROCEDURAL_TAG);
 	while (m_buteMgr.Exist(s_aTagName))
@@ -255,31 +359,29 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 		m_buteMgr.GetString(s_aTagName, PROCEDURAL_NAME, "", pNew->szName, sizeof(pNew->szName));
 		pNew->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, PROCEDURAL_NAME_ID, 0);
 		pNew->nDescriptionId = (uint16)m_buteMgr.GetInt(s_aTagName, PROCEDURAL_DESC, 0);
+		pNew->nVerbId = (uint16)m_buteMgr.GetInt(s_aTagName, PROCEDURAL_VERB, 0);
 		pNew->nCompletionId = (uint16)m_buteMgr.GetInt(s_aTagName, PROCEDURAL_COMPLETION, 0);
-		m_buteMgr.GetString(s_aTagName, PROCEDURAL_INTROFX, "", pNew->szIntroFX, sizeof(pNew->szIntroFX));
 
 		CPoint pos = m_buteMgr.GetPoint(s_aTagName, PROCEDURAL_CENTERPOS);
 		pNew->CenterPos.x = pos.x;
 		pNew->CenterPos.y = pos.y;
-
 		pNew->iRadius = (uint16)m_buteMgr.GetInt(s_aTagName, PROCEDURAL_RADIUS, 16);
 
-		m_buteMgr.GetString(s_aTagName, PROCEDURAL_IDLESKIN,		"", pNew->szIdleSkin,		sizeof(pNew->szIdleSkin));
-		m_buteMgr.GetString(s_aTagName, PROCEDURAL_WORKSKIN,		"", pNew->szWorkSkin,		sizeof(pNew->szWorkSkin));
-		m_buteMgr.GetString(s_aTagName, PROCEDURAL_CONDITIONSKIN,	"", pNew->szConditionSkin,	sizeof(pNew->szConditionSkin));
-		m_buteMgr.GetString(s_aTagName, PROCEDURAL_PROGRESSSKIN,	"", pNew->szProgressSkin,	sizeof(pNew->szProgressSkin));
-		
-		// What kind of sub does it work on
-		iTemp = m_buteMgr.GetInt(s_aTagName, PROCEDURAL_EFFECT, 0);
-		if (iTemp >= (int)SUBSTATE_OKAY && iTemp < (int)SUBSTATE_LAST)
+		m_buteMgr.GetString(s_aTagName, PROCEDURAL_DECISIONICON,	"", pNew->szDecisionIcon,	sizeof(pNew->szDecisionIcon));
+		m_buteMgr.GetString(s_aTagName, PROCEDURAL_TOOLTIPICON,		"", pNew->szToolTipIcon,	sizeof(pNew->szToolTipIcon));
+		m_buteMgr.GetString(s_aTagName, PROCEDURAL_INDICATORICON,	"", pNew->szIndicatorIcon,	sizeof(pNew->szIndicatorIcon));
+		m_buteMgr.GetString(s_aTagName, PROCEDURAL_WORKSOUND,		"", pNew->szWorkSound,		sizeof(pNew->szWorkSound));
+
+		int iTemp = m_buteMgr.GetInt(s_aTagName, PROCEDURAL_EFFECT, 0);
+		if (iTemp >= (int)SUBSTATE_OKAY && iTemp < (int)SUBSTATE_DELETED)
 			pNew->eAffectState = (SubState)iTemp;
 
-		// Time required
-		fTemp = m_buteMgr.GetFloat(s_aTagName, PROCEDURAL_TIME, 1.0f);
-		if (fTemp >= 1.0f && fTemp < 10000.0f)
-			pNew->fTimeRequired = fTemp;
+		CAVector &vTime = m_buteMgr.GetVector(s_aTagName, PROCEDURAL_TIME);
+		pNew->vTimeRequired = LTVector((float)vTime.Geti(), (float)vTime.Getj(), (float)vTime.Getk());
 
-		// Slot on the sub screen
+		CAVector &vAddTime = m_buteMgr.GetVector(s_aTagName, PROCEDURAL_ADDITIONALTIME);
+		pNew->vAdditionalTimeRequired = LTVector((float)vAddTime.Geti(), (float)vAddTime.Getj(), (float)vAddTime.Getk());
+
 		iTemp = m_buteMgr.GetInt(s_aTagName, PROCEDURAL_SLOT, 1);
 		if (iTemp >= 1 && iTemp <= 5)
 			pNew->iProcSlot = iTemp;
@@ -289,25 +391,6 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 		nNumProcedurals++;
 		sprintf(s_aTagName, "%s%d", PROCEDURAL_TAG, nNumProcedurals);
 	}
-
-	// Read all the primitives available
-	uint16 nNumPrimitives = 0;
-	sprintf(s_aTagName, "%s0", PRIMITIVE_TAG);
-	while (m_buteMgr.Exist(s_aTagName))
-	{
-		Primitive * pNewPrim = debug_new(Primitive);
-
-		m_buteMgr.GetString(s_aTagName, PRIMITIVE_NAME, "", pNewPrim->szName, sizeof(pNewPrim->szName));
-		pNewPrim->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, PRIMITIVE_NAME_ID, 0);
-
-		m_PrimitiveArray.push_back(pNewPrim);
-		nNumPrimitives++;
-		sprintf(s_aTagName, "%s%d", PRIMITIVE_TAG, nNumPrimitives);
-	}
-
-	// clean up memory used for parsing the bute file
-	m_buteMgr.Term();
-	return LTTRUE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -339,6 +422,45 @@ void CSubroutineMgr::Pause(LTBOOL bPause)
 	{
 		m_fLastUpdateTime = g_pLTClient->GetTime();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetSubroutineInSector
+//
+//	PURPOSE:	RETAIL: 0x100938f0 (the name is ours): the installed
+//				subroutine covering the system memory sector (an alpha
+//				covers three sectors, a beta two, a gold one)
+//
+// ----------------------------------------------------------------------- //
+
+PlayerSubroutine* CSubroutineMgr::GetSubroutineInSector(int iSector)
+{
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	PlayerSubroutineArray::iterator end = m_PlayerSubroutineArray.end();
+
+	for (; iter != end; iter++)
+	{
+		PlayerSubroutine *pSub = *iter;
+		int nSlot = pSub->nSlot;
+
+		if (nSlot >= 0 && nSlot < 24)
+		{
+			if (nSlot == iSector)
+				return pSub;
+
+			if (pSub->eVersion != VERSION_GOLD)
+			{
+				if ((nSlot + 1) % 24 == iSector)
+					return pSub;
+
+				if (pSub->eVersion == VERSION_ALPHA && (nSlot + 2) % 24 == iSector)
+					return pSub;
+			}
+		}
+	}
+
+	return LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -523,6 +645,38 @@ TronSubroutine* CSubroutineMgr::GetSubroutine(const char *pszName)
 	return LTNULL;
 }
 
+// RETAIL: 0x10094720 (the name is ours)
+TronSubroutine* CSubroutineMgr::GetSubroutineByNameId(uint32 nNameId)
+{
+	if (nNameId)
+	{
+		SubroutineArray::iterator iter = m_SubroutineArray.begin();
+		while (iter != m_SubroutineArray.end() && (*iter)->nNameId != nNameId)
+			iter++;
+
+		if (iter != m_SubroutineArray.end())
+			return *iter;
+	}
+
+	return LTNULL;
+}
+
+// RETAIL: 0x10094760 (the name is ours)
+Primitive* CSubroutineMgr::GetPrimitiveByNameId(uint32 nNameId)
+{
+	if (nNameId)
+	{
+		PrimitiveArray::iterator iter = m_PrimitiveArray.begin();
+		while (iter != m_PrimitiveArray.end() && (*iter)->nNameId != nNameId)
+			iter++;
+
+		if (iter != m_PrimitiveArray.end())
+			return *iter;
+	}
+
+	return LTNULL;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CSubroutineMgr::GetPlayerSubroutine
@@ -551,19 +705,59 @@ PlayerSubroutine* CSubroutineMgr::GetPlayerSubroutine(const char *pszName, SubSt
 
 void CSubroutineMgr::ClearPlayerSubroutines()
 {
-/*
-	// Wipe the array of player subroutines, because the Subroutine Screen is about to spit a new list back
+	// RETAIL: 0x10094870
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
-
 	while (iter != m_PlayerSubroutineArray.end())
 	{
 		debug_delete(*iter);
 		iter++;
 	}
-*/
+
 	m_PlayerSubroutineArray.clear();
 }
 
+// RETAIL: 0x100948d0 (the name is ours): the player keeps only his hands
+void CSubroutineMgr::ResetPrimitives()
+{
+	PrimitiveArray::iterator iter = m_PrimitiveArray.begin();
+	while (iter != m_PrimitiveArray.end())
+	{
+		if (!_strcmpi((*iter)->szName, PRIMITIVE_HANDS))
+			(*iter)->bPlayerHasThis = true;
+		else
+			(*iter)->bPlayerHasThis = false;
+		iter++;
+	}
+}
+
+// RETAIL: 0x10094920 (the name is ours)
+void CSubroutineMgr::ResetProcedurals()
+{
+	ProceduralArray::iterator iter = m_ProceduralArray.begin();
+	while (iter != m_ProceduralArray.end())
+	{
+		(*iter)->bPlayerHasThis = false;
+		(*iter)->pSub = LTNULL;
+		iter++;
+	}
+}
+
+// RETAIL: 0x10094810 (the name is ours)
+PlayerSubroutine* CSubroutineMgr::GetPlayerSubroutineByNameId(uint32 nNameId)
+{
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
+	{
+		TronSubroutine *pTronSub = (*iter)->pTronSubroutine;
+		if (pTronSub && pTronSub->nNameId == nNameId)
+			return *iter;
+		iter++;
+	}
+	return LTNULL;
+}
+
+// PORT: build 69's (retail has no such function; its CScreenSubroutines
+// code may have it inlined)
 void CSubroutineMgr::AddPlayerSubroutine(PlayerSubroutine * pSub)
 {
 	// assume that all duplicates have been removed
@@ -654,6 +848,7 @@ void CSubroutineMgr::PopulateSubroutineScreen()
 
 bool CSubroutineMgr::IsUtilitySubroutineActive(char * name)
 {
+	// RETAIL: 0x10094e10: an installed subroutine of that name
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
 	while (iter != m_PlayerSubroutineArray.end())
 	{
@@ -662,11 +857,27 @@ bool CSubroutineMgr::IsUtilitySubroutineActive(char * name)
 		if (pSub->nSlot >= 0 && pSub->nSlot < 100)
 		{
 			// look for a name match.  Should only be one.
-			if (!strcmpi(name, pSub->pTronSubroutine->szName))
-			{
-				if (pSub->bActive)
-					return true;
-			}
+			if (!_strcmpi(name, pSub->pTronSubroutine->szName))
+				return true;
+		}
+		iter++;
+	}
+	return false;
+}
+
+// RETAIL: 0x10094e70 (the name is ours): whether the player's copy of the
+// subroutine is installed
+bool CSubroutineMgr::IsSubroutineInstalled(TronSubroutine *pTronSub)
+{
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
+	{
+		PlayerSubroutine * pSub = *iter;
+		if (pSub->pTronSubroutine == pTronSub)
+		{
+			if (pSub->nSlot < 0 || pSub->nSlot >= 100)
+				return false;
+			return true;
 		}
 		iter++;
 	}
@@ -675,6 +886,7 @@ bool CSubroutineMgr::IsUtilitySubroutineActive(char * name)
 
 SubVersion CSubroutineMgr::GetActiveSubroutineVersion(char * name)
 {
+	// RETAIL: 0x10094eb0
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
 	while (iter != m_PlayerSubroutineArray.end())
 	{
@@ -683,17 +895,55 @@ SubVersion CSubroutineMgr::GetActiveSubroutineVersion(char * name)
 		if (pSub->nSlot >= 0 && pSub->nSlot < 100)
 		{
 			// look for a name match.  Should only be one.
-			if (!strcmpi(name, pSub->pTronSubroutine->szName))
-			{
-				if (pSub->bActive)
-				{
-					return (pSub->eVersion);
-				}
-			}
+			if (!_strcmpi(name, pSub->pTronSubroutine->szName))
+				return (pSub->eVersion);
 		}
 		iter++;
 	}
 	return VERSION_ALPHA;
+}
+
+// RETAIL: 0x10094f10 (the name is ours): how far the corruption has got
+// through the subroutine (0..1): its whole steps of (3 - version) * 3, and
+// the part of the current step's spread time gone
+float CSubroutineMgr::GetSubroutineCorruption(PlayerSubroutine *pSub)
+{
+	if (!pSub)
+		return 0.0f;
+
+	int nSteps = pSub->nTronUnknown1C;
+	if (!nSteps)
+		return 0.0f;
+
+	int nMaxSteps = (3 - pSub->eVersion) * 3;
+	if (nSteps >= nMaxSteps)
+		return 1.0f;
+
+	float fMaxSteps = (float)nMaxSteps;
+
+	return (float)nSteps / fMaxSteps +
+		(GetCorruptionSpreadTime() - pSub->fTronUnknown20) / GetCorruptionSpreadTime() * (1.0f / fMaxSteps);
+}
+
+// RETAIL: 0x10094fb0 (the name is ours): whether the installed subroutine
+// of that name is corrupt
+bool CSubroutineMgr::IsSubroutineCorrupt(const char *name)
+{
+	if (name)
+	{
+		PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+		while (iter != m_PlayerSubroutineArray.end())
+		{
+			PlayerSubroutine * pSub = *iter;
+			if (!_strcmpi(name, pSub->pTronSubroutine->szName) &&
+				pSub->nSlot >= 0 && pSub->nSlot < 100)
+			{
+				return (pSub->eState == SUBSTATE_CORRUPT);
+			}
+			iter++;
+		}
+	}
+	return false;
 }
 
 float CSubroutineMgr::GetActiveSubroutineCorruption(char * name)
@@ -771,22 +1021,20 @@ bool CSubroutineMgr::CanProcHookSub(Procedural *pProc, PlayerSubroutine *pSub)
 
 void CSubroutineMgr::HookProcToSub(Procedural *pProc, PlayerSubroutine *pSub)
 {
+	// RETAIL: 0x100950c0
 	// Clear out any previous hook
 	if (pProc->pSub)
 	{
-		pProc->pSub->bWorking = false;
+		pProc->pSub->fPercentDone = 0.0f;
+		pProc->pSub->pProcedural = LTNULL;
 		pProc->pSub = LTNULL;
 	}
 
-	if (pSub)
+	if (pSub && CanProcHookSub(pProc, pSub))
 	{
-		pSub->bWorking = pProc ? true : false;
-
-		if (!CanProcHookSub(pProc, pSub))
-			return;
+		pSub->pProcedural = pProc;
+		pProc->pSub = pSub;
 	}
-
-	pProc->pSub = pSub;
 }
 
 Procedural * CSubroutineMgr::WhoHookedToSub(PlayerSubroutine *pSub)
@@ -805,47 +1053,37 @@ Procedural * CSubroutineMgr::WhoHookedToSub(PlayerSubroutine *pSub)
 
 void CSubroutineMgr::ComputeArmorCoverage()
 {
+	// RETAIL: 0x10095110: the installed defense subroutines' deflection and
+	// antivirus (by version, in percent; halved while corrupt)
 	float fArmorCoverage	= 0.0f;
 	float fVirusCoverage	= 0.0f;
-	float fArmorScalar		= 0.0f;
 
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
 	while (iter != m_PlayerSubroutineArray.end())
 	{
-		// For each installed subroutine
-		if ((*iter)->nSlot >= 0 && (*iter)->nSlot < 100)
+		PlayerSubroutine *pSub = *iter;
+
+		// For each installed subroutine that's DEFENSE
+		if (pSub->nSlot >= 0 && pSub->nSlot < 100)
 		{
-			// For each installed subroutine that's DEFENSE
-			TronSubroutine *pTronSub = (*iter)->pTronSubroutine;
+			TronSubroutine *pTronSub = pSub->pTronSubroutine;
 			if (pTronSub->eFunction == FUNCTION_DEFENSE)
 			{
-//---------------------------------
-				float fWeight = 0.0f;
-				float fDeflect = (float)pTronSub->nDeflection / 100.0f;
+				if (pSub->eState == SUBSTATE_CORRUPT)
+					fArmorCoverage += (&pTronSub->vDeflection.x)[pSub->eVersion] * 0.5f;
+				else
+					fArmorCoverage += (&pTronSub->vDeflection.x)[pSub->eVersion];
 
-				// Percentage of damage converted to energy drain
-				fArmorCoverage += fDeflect;
-
-				// Computation of scalar to energy cost
-				if ((*iter)->eVersion == VERSION_ALPHA)
-					fWeight = 1.0f;
-				else if ((*iter)->eVersion == VERSION_BETA)
-					fWeight = 0.75f;
-				else if ((*iter)->eVersion == VERSION_GOLD)
-					fWeight = 0.5f;
-
-				fArmorScalar += fDeflect * fWeight;
-
-				// Virus coverage
-				fVirusCoverage += (float)pTronSub->nAntivirus / 100.0f;
-//---------------------------------
+				if (pSub->eState == SUBSTATE_CORRUPT)
+					fVirusCoverage += (&pTronSub->vAntivirus.x)[pSub->eVersion] * 0.5f;
+				else
+					fVirusCoverage += (&pTronSub->vAntivirus.x)[pSub->eVersion];
 			}
 		}
 		iter++;
 	}
-	fArmorScalar /= fArmorCoverage;
 
-	g_pTronPlayerStats->UpdateSubroutineArmor(fArmorCoverage, fVirusCoverage, fArmorScalar);
+	g_pTronPlayerStats->UpdateSubroutineArmor(fArmorCoverage * 0.01f, fVirusCoverage * 0.01f);
 }
 
 PlayerSubroutine* CSubroutineMgr::HaveArmorPiece(int iPiece)
@@ -864,6 +1102,20 @@ PlayerSubroutine* CSubroutineMgr::HaveArmorPiece(int iPiece)
 				}
 			}
 		}
+		iter++;
+	}
+	return LTNULL;
+}
+
+// RETAIL: 0x10095210 (the name is ours): the defense subroutine giving the
+// armor piece
+TronSubroutine* CSubroutineMgr::GetArmorSubroutine(int iPiece)
+{
+	SubroutineArray::iterator iter = m_SubroutineArray.begin();
+	while (iter != m_SubroutineArray.end())
+	{
+		if ((*iter)->eFunction == FUNCTION_DEFENSE && (*iter)->nArmorPiece == iPiece)
+			return *iter;
 		iter++;
 	}
 	return LTNULL;
@@ -898,10 +1150,12 @@ void CSubroutineMgr::GivePlayerPrimitive(char * name)
 
 bool CSubroutineMgr::DoesPlayerHavePrimitive(char * name)
 {
+	// RETAIL: 0x100952e0
 	PrimitiveArray::iterator iter = m_PrimitiveArray.begin();
 	while (iter != m_PrimitiveArray.end())
 	{
-		if (!strcmpi((*iter)->szName, name))
+		Primitive *pPrim = *iter;
+		if (!_strcmpi(pPrim->szName, name) && pPrim->bPlayerHasThis)
 		{
 			return true;
 		}
@@ -910,12 +1164,75 @@ bool CSubroutineMgr::DoesPlayerHavePrimitive(char * name)
 	return false;
 }
 
+// RETAIL: 0x10095340 (the name is ours): whether the player has the named
+// subroutine installed
+bool CSubroutineMgr::IsSubroutineInstalled(const char *name)
+{
+	TronSubroutine *pTronSub = GetSubroutine(name);
+	if (pTronSub)
+	{
+		PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+		while (iter != m_PlayerSubroutineArray.end())
+		{
+			if ((*iter)->pTronSubroutine == pTronSub &&
+				(*iter)->nSlot >= 0 && (*iter)->nSlot < 100)
+			{
+				return true;
+			}
+			iter++;
+		}
+	}
+	return false;
+}
+
 void CSubroutineMgr::Compile()
 {
+	// RETAIL: 0x10095390
 	// Compute armor, armor efficiency and sent to PlayerStats
 	ComputeArmorCoverage();
 
-	// TODO add any other Compile-related tasks here
+	// the utility subroutines' energy drain, and the player manager told
+	// of each of them
+	m_fTronUnknown11A4 = 0.0f;
+
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
+	{
+		PlayerSubroutine *pSub = *iter;
+
+		if (pSub->pTronSubroutine->eFunction == FUNCTION_UTILITY)
+		{
+			bool bInstalled = true;
+
+			if (pSub->nSlot >= 0 && pSub->nSlot <= 24)
+			{
+				if (pSub->eVersion == VERSION_ALPHA)
+					m_fTronUnknown11A4 += pSub->pTronSubroutine->vEnergyDrain.x;
+				else if (pSub->eVersion == VERSION_BETA)
+					m_fTronUnknown11A4 += pSub->pTronSubroutine->vEnergyDrain.y;
+				else if (pSub->eVersion == VERSION_GOLD)
+					m_fTronUnknown11A4 += pSub->pTronSubroutine->vEnergyDrain.z;
+			}
+			else
+			{
+				bInstalled = false;
+			}
+
+			g_pHUDMgr->QueueUpdate(0x80000);	// RETAIL: Tron's flag
+
+			if (pSub->eState != SUBSTATE_FOREIGN)
+			{
+				g_pTronPlayerMgr->OnSubroutineChanged(pSub->pTronSubroutine->szName, bInstalled,
+					pSub->eState == SUBSTATE_CORRUPT, pSub->eVersion);
+			}
+		}
+
+		iter++;
+	}
+
+	g_pHUDMgr->QueueUpdate(0x80000);	// RETAIL: Tron's flag
+	g_pHUDMgr->QueueUpdate(kHUDProcedurals);
+	g_pHUDMgr->QueueUpdate(kHUDEnergy);
 
 	g_pTronPlayerStats->Compile();
 }
@@ -933,25 +1250,37 @@ void CSubroutineMgr::Compile()
 //				'c' or 'C'	= a base code block
 //
 // ----------------------------------------------------------------------- //
-bool CSubroutineMgr::SetSystemMemoryConfiguration(const char* pSystemMemoryConfig)
+bool CSubroutineMgr::SetSystemMemoryConfiguration(const char* pSystemMemoryConfig, int nTronUnknown)
 {
-	if (m_SystemMemoryArray)
-		debug_delete(m_SystemMemoryArray);
+	// RETAIL: 0x100954b0
+	if (nTronUnknown != -1)
+		m_nTronUnknown114C = nTronUnknown;
 
 	int iLen = 0;
 
-	if(pSystemMemoryConfig)
+	// RETAIL: the old bad blocks and base code go (not deleted: see
+	// RETAIL_BUGS.md), the other subroutines are uninstalled
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
 	{
-		m_SystemMemoryArray = strdup(pSystemMemoryConfig);
-		iLen = strlen(pSystemMemoryConfig);
+		if ((*iter)->eState == SUBSTATE_UNUSABLE)
+		{
+			iter = m_PlayerSubroutineArray.erase(iter);
+		}
+		else
+		{
+			(*iter)->nSlot = -1;
+			iter++;
+		}
 	}
-	else
+
+	if (pSystemMemoryConfig)
 	{
-		m_SystemMemoryArray = LTNULL;
+		iLen = strlen(pSystemMemoryConfig);
+		if (iLen > 24) iLen = 24;
 	}
 
 	// loop through the string and create the bad blocks.
-	if (iLen > 24) iLen = 24;
 	
 	for (int i = 0; i < iLen; i++)
 	{
@@ -1038,4 +1367,39 @@ void CSubroutineMgr::AddBaseCodeBlock(int iSectorNumber, bool bPrev, bool bNext)
 
 	// send a message that this subroutine has been successfully acquired
 //	g_pLTClient->CPrint("Acquired base code on sector (%d)", iSectorNumber);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetProfilerDistance
+//
+//	PURPOSE:	RETAIL: 0x10095730 (the name is ours): the profiler's
+//				"Distance" for the player's version of it
+//
+// ----------------------------------------------------------------------- //
+
+float CSubroutineMgr::GetProfilerDistance()
+{
+	PlayerSubroutine *pSub = GetPlayerSubroutine(SUBROUTINE_PROFILER, LTNULL);
+	if (!pSub)
+		return 100000.0f;
+
+	return m_afProfilerDistance[pSub->eVersion];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetCorruptionSpreadTime
+//
+//	PURPOSE:	RETAIL: 0x10095760 (the name is ours): the time corruption
+//				takes to spread a step, by difficulty (at least a second)
+//
+// ----------------------------------------------------------------------- //
+
+float CSubroutineMgr::GetCorruptionSpreadTime()
+{
+	float fTime = m_afCorruptionSpreadTime[g_pGameClientShell->GetDifficulty()];
+	if (fTime <= 1.0f)
+		return 1.0f;
+	return fTime;
 }

@@ -16,6 +16,8 @@
 #include "TronClientWeapon.h"
 #include "MsgIDs.h"
 #include "SubroutineMgr.h"
+#include "TRONPlayerStats.h"
+#include "RatingMgr.h"
 #include "GameClientShell.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x10096ff0..)
 
@@ -105,10 +107,53 @@ void CTronClientWeapon::Save( ILTMessage_Write *pMsg )
 	CClientWeapon::Save( pMsg );
 }
 
-// RETAIL: 0x10097200 (651 bytes) not yet written
+// RETAIL: 0x10097200: the base energy use plus what the utility
+// subroutines add; while the shot is out (W_BEGIN_FIRING) those of the
+// shot's data (Load's), else the player's current ones
 float CTronClientWeapon::GetEnergyUse()
 {
-	return 0.0f;
+	float fBase = GetBaseEnergyUse();
+	float fEnergy = fBase;
+
+	if ( W_BEGIN_FIRING == GetState() )
+	{
+		if ( m_abTronUnknown13C[8][0] )
+		{
+			fEnergy = ( m_fTronMegaHurtzEnergyUse + 1.0f ) * fBase;
+		}
+
+		if ( m_abTronUnknown13C[9][0] )
+		{
+			fEnergy += fBase * m_fTronCorrodeEnergyUse;
+		}
+
+		if ( m_abTronUnknown13C[10][0] && m_pWeapon->bIsPlayerPrimitive )
+		{
+			fEnergy += fBase * m_fTronPrimitiveChargeEnergyUse;
+		}
+
+		return fEnergy;
+	}
+
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "Megahurtz" ) )
+	{
+		MegaHurtzData data = g_pSubroutineDataMgr->GetMegaHurtzData( GetSubroutineDataKey( "Megahurtz" ) );
+		fEnergy = ( data.fEnergyUseMultiplier + 1.0f ) * fBase;
+	}
+
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "Corrode" ) )
+	{
+		CorrodeData data = g_pSubroutineDataMgr->GetCorrodeData( GetSubroutineDataKey( "Corrode" ) );
+		fEnergy += data.fEnergyUseMultiplier * fBase;
+	}
+
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "PrimitiveCharge" ) && m_pWeapon->bIsPlayerPrimitive )
+	{
+		PrimitiveChargeData data = g_pSubroutineDataMgr->GetPrimitiveChargeData( GetSubroutineDataKey( "PrimitiveCharge" ) );
+		fEnergy += data.fEnergyUseMultiplier * fBase;
+	}
+
+	return fEnergy;
 }
 
 // RETAIL: 0x100976c0
@@ -129,22 +174,30 @@ void CTronClientWeapon::TronUnknownVirtual178( ILTMessage_Read *pMsg )
 {
 }
 
-// RETAIL: 0x10098b30 (105 bytes) not yet written: it drains
-// m_fTronUnknown204 * the frame time (client shell +0x7bac) of energy through
-// Tron's float energy API of CTronPlayerStats (0x100a9c90 the energy left
-// after the subroutines' reserve, 0x100a9d00 telling the server), which our
-// CTronPlayerStats (uint32 energy) does not have yet
+// RETAIL: 0x10098b30: a continuous drain of m_fTronUnknown204 energy per
+// second, sent to the server (CTronPlayerStats::UseEnergy)
 void CTronClientWeapon::TronUnknownVirtual180()
 {
+	if ( m_fTronUnknown204 == 0.0f )
+	{
+		return;
+	}
+
+	float fEnergy = g_pGameClientShell->GetFrameTime() * m_fTronUnknown204;
+
+	if ( g_pTronPlayerStats->GetEnergy() - fEnergy < 0.0f )
+	{
+		g_pTronPlayerStats->UseEnergy( fEnergy );
+		return;
+	}
+
+	g_pTronPlayerStats->UseEnergy( fEnergy );
 }
 
-// RETAIL: 0x10098be0 not yet written: it returns
-// g_pTronPlayerStats's 0x100ac2f0 (GetWeaponId(); that weapon's subroutine,
-// through the weapon's +0xa4 and the subroutine manager's 0x100952e0),
-// neither written yet
+// RETAIL: 0x10098be0: whether the weapon's subroutines are the player's
 bool CTronClientWeapon::TronUnknownVirtual184()
 {
-	return false;
+	return g_pTronPlayerStats->IsWeaponCompiled( GetWeaponId() ) ? true : false;
 }
 
 // RETAIL: 0x10098d10
@@ -192,19 +245,39 @@ SubroutineDataKey CTronClientWeapon::GetSubroutineDataKey( const char *szName )
 		g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy );
 }
 
-// RETAIL: 0x10098c90 (119 bytes) not yet written: it is
-// InterpolateRating<float>(Rating_Accuracy, ...) of three floats of Tron's
-// AMMO at +0x18, +0x1c and +0x20 (energy use min, max, surge), which our
-// AMMO (NOLF2's) does not have yet
+// RETAIL: 0x10098c90: the ammo's energy use (Tron's AMMO +0x18, +0x1c,
+// +0x20: min, max, surge) by the accuracy rating
 float CTronClientWeapon::GetBaseEnergyUse()
 {
-	return 0.0f;
+	return InterpolateRating<float>( Rating_Accuracy,
+		m_pAmmo->fEnergyRequiredMin, m_pAmmo->fEnergyRequiredMax, m_pAmmo->fEnergyRequiredSurge );
 }
 
 // RETAIL: 0x10098b20
 void CTronClientWeapon::TronUnknown98B20()
 {
 	m_fTronUnknown204 = 0.0f;
+}
+
+// RETAIL: 0x10097a20
+void CTronClientWeapon::Fire( bool bFire )
+{
+	CClientWeapon::Fire( bFire );
+
+	if ( TronUnknownVirtual188() )
+	{
+		float fEnergy = GetEnergyUse();
+		g_pTronPlayerStats->UseEnergy( fEnergy );
+	}
+
+	TronUnknown97F40();
+}
+
+// RETAIL: 0x10098ba0
+bool CTronClientWeapon::TronUnknownVirtual164()
+{
+	float fEnergy = g_pTronPlayerStats->GetEnergy();
+	return ( GetEnergyUse() <= fEnergy );
 }
 
 // RETAIL: 0x10097f40 clears eleven pairs of bools at CClientWeapon+0x13c

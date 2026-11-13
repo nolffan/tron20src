@@ -99,6 +99,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_WEAPON_FIRERECOILPITCH			"FireRecoilPitch"
 #define WMGR_WEAPON_FIRERECOILDECAY			"FireRecoilDecay"
 #define WMGR_WEAPON_FIREDELAY				"FireDelay"
+#define WMGR_WEAPON_ISPLAYERPRIMITIVE		"IsPlayerPrimitive"	// RETAIL: Tron's
 #define WMGR_WEAPON_HOLSTERATTACHMNET		"HolsterAttachment"
 #define WMGR_WEAPON_PRIMITIVE_TYPE			"PrimitiveType"
 #define WMGR_WEAPON_SUBROUTINE_NEEDED		"SubroutineNeeded"
@@ -121,6 +122,9 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_AMMO_DESCID            "DescId"
 #define WMGR_AMMO_TYPE              "Type"
 #define WMGR_AMMO_PRIORITY          "Priority"
+#define WMGR_AMMO_ENERGYREQUIREDMIN		"EnergyRequiredMin"		// RETAIL: Tron's
+#define WMGR_AMMO_ENERGYREQUIREDMAX		"EnergyRequiredMax"		// RETAIL: Tron's
+#define WMGR_AMMO_ENERGYREQUIREDSURGE	"EnergyRequiredSurge"	// RETAIL: Tron's
 #define WMGR_AMMO_ICON              "Icon"
 #define WMGR_AMMO_MAXAMOUNT         "MaxAmount"
 #define WMGR_AMMO_SPAWNEDAMOUNT     "SpawnedAmount"
@@ -1478,6 +1482,8 @@ WEAPON::WEAPON()
 
 	bServerRestricted = false;
 	bCanServerRestrict = true;
+
+	bIsPlayerPrimitive = 0;	// RETAIL: Tron's (CShell 0x101386af)
 }
 
 
@@ -1828,6 +1834,9 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	bRespawnWaitTranslucent	= !!(buteMgr.GetInt( aTagName, WMGR_WEAPON_RESPAWNWAITTRANSLUCENT, bRespawnWaitTranslucent ));
 	
 	bCanServerRestrict = !!( buteMgr.GetInt( aTagName, WMGR_ALL_CANSERVERRESTRICT, bCanServerRestrict ));
+
+	// RETAIL: Tron's (CShell 0x101394c7, last in its InitMembers)
+	bIsPlayerPrimitive = buteMgr.GetByte( aTagName, WMGR_WEAPON_ISPLAYERPRIMITIVE );
 }
 
 // ----------------------------------------------------------------------- //
@@ -2165,6 +2174,11 @@ AMMO::AMMO()
 	eType       = UNKNOWN_AMMO_TYPE;
 	fPriority   = -1.0f;
 
+	// RETAIL: Tron's (CShell 0x10139c89)
+	fEnergyRequiredMin		= 0.0f;
+	fEnergyRequiredMax		= 0.0f;
+	fEnergyRequiredSurge	= 0.0f;
+
 	szIcon  = LTNULL;
 	szName  = LTNULL;
 	szLongName			= LTNULL;
@@ -2245,6 +2259,10 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	nDescId               = buteMgr.GetInt( aTagName, WMGR_AMMO_DESCID, nDescId );
 	eType                 = (AmmoType) buteMgr.GetInt( aTagName, WMGR_AMMO_TYPE, eType );
 	fPriority             = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PRIORITY, fPriority );
+	// RETAIL: Tron's (CShell 0x10139e2c, right after the priority)
+	fEnergyRequiredMin    = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_ENERGYREQUIREDMIN, fEnergyRequiredMin );
+	fEnergyRequiredMax    = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_ENERGYREQUIREDMAX, fEnergyRequiredMax );
+	fEnergyRequiredSurge  = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_ENERGYREQUIREDSURGE, fEnergyRequiredSurge );
 	nMaxAmount            = buteMgr.GetInt( aTagName, WMGR_AMMO_MAXAMOUNT, nMaxAmount );
 	nSpawnedAmount        = buteMgr.GetInt( aTagName, WMGR_AMMO_SPAWNEDAMOUNT, nSpawnedAmount );
 	nSelectionAmount      = buteMgr.GetInt( aTagName, WMGR_AMMO_SELECTIONAMOUNT, nSelectionAmount );

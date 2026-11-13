@@ -389,6 +389,13 @@ private:
 	char           *szIcon;
 
 	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
+
+public:
+	// RETAIL: Tron's energy a shot needs (retail AMMO +0x18, +0x1c, +0x20:
+	// "EnergyRequiredMin", "...Max", "...Surge"), by the accuracy rating
+	LTFLOAT         fEnergyRequiredMin;
+	LTFLOAT         fEnergyRequiredMax;
+	LTFLOAT         fEnergyRequiredSurge;
 };
 
 typedef CTList<AMMO*> AmmoList;
@@ -527,6 +534,10 @@ private:
 	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
 	char	*szIcon; 
 
+public:
+	// RETAIL: Tron's "IsPlayerPrimitive" (retail WEAPON +0x184, a byte; the
+	// Primitive Charge subroutine adds to such a weapon's energy use)
+	uint8	bIsPlayerPrimitive;
 };
 
 typedef CTList<WEAPON*> WeaponList;

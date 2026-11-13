@@ -319,6 +319,10 @@ public:
 	DrunkenDimsData		GetDrunkenDimsData( SubroutineDataKey key ) const	{ return m_vecDrunkenDims.at( GetIndex( key ) ); }
 	EnergyClawData		GetEnergyClawData( SubroutineDataKey key ) const	{ return m_vecEnergyClaw.at( GetIndex( key ) ); }
 	PranksterBitData	GetPranksterBitData( SubroutineDataKey key ) const	{ return m_vecPranksterBit.at( GetIndex( key ) ); }
+	// RETAIL: the utility subroutines' (inlined in CShell 0x10097200)
+	MegaHurtzData		GetMegaHurtzData( SubroutineDataKey key ) const		{ return m_vecMegaHurtz.at( GetIndex( key ) ); }
+	CorrodeData			GetCorrodeData( SubroutineDataKey key ) const		{ return m_vecCorrode.at( GetIndex( key ) ); }
+	PrimitiveChargeData	GetPrimitiveChargeData( SubroutineDataKey key ) const	{ return m_vecPrimitiveCharge.at( GetIndex( key ) ); }
 
 protected:
 
