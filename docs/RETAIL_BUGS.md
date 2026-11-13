@@ -219,6 +219,17 @@ reads it. Init always reads both, and GetShade's default shade is static
 
 Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
 
+### The pings HUD sets up only four of its eight pings
+
+CShell.dll 0x100311e0 (CHUDPings::Init, ClientShellDLL/TRON/HUDPings.cpp).
+The item holds eight pings, but Init sets the UVs, the color and the name
+of the first four only, and Update (0x10031490) fills four at most; the
+other four are never shown. UpdateLayout (0x10031960) also reads the font
+size twice.
+
+Not fixed yet: harmless (four pings show); the modern build may use all
+eight.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
