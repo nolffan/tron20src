@@ -111,7 +111,7 @@ CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const std::wstring& sText)
 
 	m_RawText = sText;
 
-	int32 nLen = m_RawText.size() + 1;
+	int32 nLen = sText.size() + 1;
 	if (nLen > 1024)
 	{
 		nLen = 1022;
@@ -131,20 +131,20 @@ CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const std::wstring& sText)
 			if (*pSrc == '>')
 				bInTag = false;
 		}
-		else if (*pSrc == '<')
+		else
 		{
-			std::wstring sTag(sColorTag);
-			std::wstring sHere(pSrc);
+			// RETAIL: the strings are gone before the copy (0x568ae6)
+			if (*pSrc == '<')
+			{
+				std::wstring sTag(sColorTag);
+				std::wstring sHere(pSrc);
 
-			if (sHere.compare(0, 7, sTag) == 0)
-				bInTag = true;
+				if (sHere.compare(0, 7, sTag) == 0)
+					bInTag = true;
+			}
 
 			if (!bInTag)
 				*pDest++ = *pSrc;
-		}
-		else
-		{
-			*pDest++ = *pSrc;
 		}
 
 		pSrc++;
