@@ -42,6 +42,9 @@ LTRESULT ILTModel::GetRootNode( HOBJECT hObj, HMODELNODE &hNode )
 }
 
 
+// RETAIL: Tron's FN_NAMEs are each function's own name (server.dll's strings,
+// "ILTModel::GetBindPoseNodeTransform", "ILTModel::AddNodeControlFn", ...),
+// where Jupiter's later source copied some from their neighbours.
 LTRESULT ILTModel::GetParent( HOBJECT hObj, HMODELNODE node, HMODELNODE &parent )
 {
 	FN_NAME(ILTModel::GetParent);
@@ -105,7 +108,7 @@ LTRESULT ILTModel::GetNumNodes( HOBJECT hObj, uint32 &num_nodes )
 
 LTRESULT ILTModel::GetBindPoseNodeTransform( HOBJECT hObj, HMODELNODE node, LTMatrix &mat )
 {
-		FN_NAME(ILTModel::GetNumNodes);
+		FN_NAME(ILTModel::GetBindPoseNodeTransform);
     CHECK_PARAMS2(hObj && hObj->m_ObjectType == OT_MODEL);
 
 	Model *pModel = hObj->ToModel()->GetModelDB();
@@ -122,7 +125,7 @@ LTRESULT ILTModel::GetBindPoseNodeTransform( HOBJECT hObj, HMODELNODE node, LTMa
 
 LTRESULT ILTModel::AddNodeControlFn( HOBJECT hObj, HMODELNODE hNode, NodeControlFn pFn, void *pUserData)
 {
-	FN_NAME(ILTModel::SetNodeControlFn);
+	FN_NAME(ILTModel::AddNodeControlFn);
     ModelInstance *pInst;
 
     CHECK_PARAMS2(hObj && (hObj->m_ObjectType == OT_MODEL) && (hNode != INVALID_MODEL_NODE));
@@ -135,7 +138,7 @@ LTRESULT ILTModel::AddNodeControlFn( HOBJECT hObj, HMODELNODE hNode, NodeControl
 
 LTRESULT ILTModel::AddNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void *pUserData)
 {
-	FN_NAME(ILTModel::SetNodeControlFn);
+	FN_NAME(ILTModel::AddNodeControlFn);
     ModelInstance *pInst;
 
     CHECK_PARAMS2(hObj && (hObj->m_ObjectType == OT_MODEL));
@@ -148,7 +151,7 @@ LTRESULT ILTModel::AddNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void *pUse
 
 LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, HMODELNODE hNode, NodeControlFn pFn, void* pUserData)
 {
-	FN_NAME(ILTModel::SetNodeControlFn);
+	FN_NAME(ILTModel::RemoveNodeControlFn);
     ModelInstance *pInst;
 
     CHECK_PARAMS2(hObj && (hObj->m_ObjectType == OT_MODEL) && (hNode != INVALID_MODEL_NODE));
@@ -164,7 +167,7 @@ LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, HMODELNODE hNode, NodeCont
 
 LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void* pUserData)
 {
-	FN_NAME(ILTModel::SetNodeControlFn);
+	FN_NAME(ILTModel::RemoveNodeControlFn);
     ModelInstance *pInst;
 
     CHECK_PARAMS2(hObj && hObj->m_ObjectType == OT_MODEL);
@@ -271,7 +274,7 @@ LTRESULT ILTModel::GetNode(HOBJECT hObj, const char *pNodeName, HMODELNODE &hNod
 
 LTRESULT ILTModel::GetNumPieces( HOBJECT hObj, uint32 & NumPieces )
 {
-	FN_NAME(ILTModel::GetPiece);
+	FN_NAME(ILTModel::GetNumPieces);
     CHECK_PARAMS2(hObj && hObj->m_ObjectType == OT_MODEL);
 
 	NumPieces = hObj->ToModel()->GetModelDB()->m_Pieces.GetSize();
@@ -311,7 +314,7 @@ LTRESULT ILTModel::GetPiece(HOBJECT hObj, const char *pName, HMODELPIECE &hPiece
 
 LTRESULT ILTModel::FindWeightSet(HOBJECT hObj, const char *pName, HMODELWEIGHTSET &hSet)
 {
-    FN_NAME(ILTModel::GetWeightSet);
+    FN_NAME(ILTModel::FindWeightSet);
     ModelInstance *pInst;
     Model *pModel;
 
@@ -355,7 +358,7 @@ LTRESULT ILTModel::GetPieceHideStatus(HOBJECT pObj, HMODELPIECE hPiece, bool &bH
 
 LTRESULT ILTModel::SetPieceHideStatus(HOBJECT pObj, HMODELPIECE hPiece, bool bHidden)
 {
-    FN_NAME(ServerModelLT::SetPieceHideStatus);
+    FN_NAME(ILTModel::SetPieceHideStatus);
     ModelInstance *pInst;
 
     CHECK_PARAMS2(pObj && pObj->m_ObjectType == OT_MODEL);
@@ -709,7 +712,7 @@ LTRESULT ILTModel::GetAnimLength(HOBJECT hModel, HMODELANIM hAnim,
 	uint32 &length)
 {
 	length = 0;
-	FN_NAME(ILTModel::GetCurAnimLength);
+	FN_NAME(ILTModel::GetAnimLength);
 	CHECK_PARAMS2(hModel);
 	ModelInstance* pModel = hModel->ToModel();
 	CHECK_PARAMS2(pModel);
@@ -788,7 +791,7 @@ LTRESULT ILTModel::SetHintNode(
                    HOBJECT hModel, ANIMTRACKERID TrackerID, 
 			       HMODELNODE hNode)
 {
-	FN_NAME(ILTModel::SetCurAnimTime);
+	FN_NAME(ILTModel::SetHintNode);
 	CHECK_PARAMS2(hModel);
 	ModelInstance* pModel = hModel->ToModel();
 	CHECK_PARAMS2(pModel);

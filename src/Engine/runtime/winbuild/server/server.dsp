@@ -235,6 +235,10 @@ SOURCE=..\..\kernel\src\sys\win\lthread.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\kernel\mem\src\ltmemory.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\shared\src\ltmessage.cpp
 # End Source File
 # Begin Source File

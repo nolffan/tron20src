@@ -379,7 +379,7 @@ ILTSoundMgr *CLTServer::SoundMgr()
 
 LTRESULT CLTServer::GetNumClassProps(const HCLASS hClass, uint32 &count)
 {
-	FN_NAME(CLTServer::GetClassDef);
+	FN_NAME(CLTServer::GetNumClassProps);
 
 	count = 0;
 	CHECK_PARAMS2(hClass);
@@ -400,7 +400,7 @@ LTRESULT CLTServer::GetNumClassProps(const HCLASS hClass, uint32 &count)
 LTRESULT CLTServer::GetClassProp(const HCLASS hClass,
 	const uint32 iProp, ClassPropInfo &info)
 {
-	FN_NAME(CLTServer::GetClassDef);
+	FN_NAME(CLTServer::GetClassProp);
 
 	info.m_PropName[0] = 0;
 	CHECK_PARAMS2(hClass);
@@ -628,7 +628,8 @@ LTRESULT CLTServer::FindNamedObjects(const char *pName,
 LTRESULT CLTServer::FindWorldModelObjectIntersections(HOBJECT hObj,
 	const LTVector &vNewPos, const LTRotation &rNewRot, BaseObjArray<HOBJECT> &objArray)
 {
-	FN_NAME(CLTServer::FindObjectIntersections);
+	// RETAIL: Tron names it so (server.dll 0x1005a354)
+	FN_NAME(CLTServer::FindWorldModelIntersections);
 	CHECK_PARAMS2(hObj);
 
 	LTObject* pObj = HandleToServerObj(hObj);
@@ -752,7 +753,7 @@ LTRESULT CLTServer::UnloadFile(const char *pFilename, uint32 type)
 
 LTRESULT CLTServer::OpenFile(const char *pFilename, ILTStream **pStream)
 {
-	FN_NAME(ILTPhysics::OpenFile);
+	FN_NAME(CLTServer::OpenFile);
 
 	CHECK_PARAMS2(pFilename && pStream);
 
@@ -1203,7 +1204,7 @@ LTRESULT CLTServer::GetObjectPos(HOBJECT hObj, LTVector *pPos)
 
 LTRESULT CLTServer::GetObjectRotation(HOBJECT hObj, LTRotation *pRotation)
 {
-	FN_NAME(CLTServer::GetObjectPos);
+	FN_NAME(CLTServer::GetObjectRotation);
 	CHECK_PARAMS2(hObj && pRotation);
 
 	*pRotation = HandleToServerObj(hObj)->m_Rotation;

@@ -33,7 +33,49 @@ Counter g_NMTimeCounter(CSTART_MILLI);
 // ------------------------------------------------------------------------ //
 
 // TRON: the packet parser is in the final build too (server.dll 0x10021a76,
-// ParsePacket; ParseNet's console variables are its)
+// ParsePacket; ParseNet's console variables are its). Tron's is not the
+// 2003/2006 Jupiter one (cjacksrc's, NOLF2's, Build 69's), which takes each
+// object update apart: it names a message by its game message ID
+// (0x10021945) and an update's change flags by their whole names, and has
+// the network protocol's older packet IDs (0xF..0x16, 0x32, 0x36).
+
+// RETAIL: server.dll 0x10021945, the game's message names (NOLF's MID_s,
+// TRON's few of its own); the name is ours
+static const char* GetMsgName(uint32 nMsgID)
+{
+	switch (nMsgID)
+	{
+		case 100 : return "PLAYER_UPDATE";
+		case 101 : return "PLAYER_SKILLS";
+		case 102 : return "PLAYER_SUMMARY";
+		case 103 : return "PLAYER_INFOCHANGE";
+		case 104 : return "PLAYER_SCORE";
+		case 105 : return "PLAYER_STATE_CHANGE";
+		case 106 : return "PLAYER_MESSAGE";
+		case 107 : return "PLAYER_CHEAT";
+		case 108 : return "PLAYER_ORIENTATION";
+		case 109 : return "PLAYER_INFO";
+		case 110 : return "PLAYER_REMOVED";
+		case 111 : return "PLAYER_SCORED";
+		case 112 : return "PLAYER_RESPAWN";
+		case 113 : return "PLAYER_CANCELREVIVE";
+		case 114 : return "PLAYER_MULTIPLAYER_INIT";
+		case 115 : return "PLAYER_SINGLEPLAYER_INIT";
+		case 116 : return "PLAYER_LOADCLIENT";
+		case 117 : return "PLAYER_DAMAGE";
+		case 118 : return "PLAYER_ACTIVATE";
+		case 130 : return "WEAPON_CHANGE";
+		case 212 : return "CLIENT_PLAYER_UPDATE";
+		case 214 : return "PINGTIMES";
+		case 231 : return "SFX_MESSAGE";
+		default :
+		{
+			static char aBuffer[256];
+			LTSNPrintF(aBuffer, sizeof(aBuffer), "%d", nMsgID);
+			return aBuffer;
+		}
+	}
+}
 
 void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint32 nBufferSize, uint8 nTravelDir = NETMGR_TRAVELDIR_UNKNOWN)
 {
@@ -49,6 +91,7 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 
 	if(bFirst)
 	{
+		// RETAIL: clears the pointer's size, not the buffer's (as Jupiter's)
 		memset(aMsgBuff, 0, sizeof(aMsgBuff));
 	}
 
@@ -91,164 +134,60 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 
 		case 8 : //SMSG_UPDATE
 		{
-			LTStrCat(aMsgBuff, "(UPD) ", nBufferSize);
+			LTSNPrintF(aTemp, sizeof(aTemp), "(UPD) |%d| ", cParsePacket.TellEnd());
+			LTStrCat(aMsgBuff, aTemp, nBufferSize);
 
-			while (cParsePacket.TellEnd())
+			while (!cParsePacket.EOP())
 			{
-				uint8 nSubLen = cParsePacket.Readuint8() * 8;
-				if (!nSubLen)
-					break;
+				// Each object's update is preceded by its length
+				uint32 nUpdateLen = cParsePacket.Readuint32();
+				uint32 nUpdateEnd = cParsePacket.Tell() + nUpdateLen;
 
-				if (cParsePacket.TellEnd() < nSubLen)
-				{
-					LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-					break;
-				}
-
-				ParsePacket(CPacket_Read(cParsePacket, cParsePacket.Tell(), nSubLen), false, aMsgBuff, nTravelDir);
-				cParsePacket.Seek(nSubLen);
-			}
-
-			while(cParsePacket.TellEnd())
-			{
 				uint32 nFlags = (uint32)cParsePacket.Readuint8();
-
 				if(nFlags & (1<<7)) //CF_OTHER
-				{
-					if (cParsePacket.TellEnd() < 8)
-					{
-						LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-						break;
-					}
-
 					nFlags |= (uint32)cParsePacket.Readuint8() << 8;
-				}
 
-				if(nFlags)
-				{
-					if(cParsePacket.TellEnd() < 16)
-					{
-						LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-						break;
-					}
+				uint16 nObjectID = cParsePacket.Readuint16();
+				LTSNPrintF(aTemp, sizeof(aTemp), "\n    %04x ", nObjectID);
+				LTStrCat(aMsgBuff, aTemp, nBufferSize);
 
-					uint16 nObjectID = cParsePacket.Readuint16();
-					LTSNPrintF(aTemp, sizeof(aTemp), "|%04x| ", nObjectID);
-					LTStrCat(aMsgBuff, aTemp, nBufferSize);
+				if (nFlags & (1<<0))
+					LTStrCat(aMsgBuff, "NEWOBJECT ", nBufferSize);
+				if (nFlags & (1<<1))
+					LTStrCat(aMsgBuff, "POSITION ", nBufferSize);
+				if (nFlags & (1<<2))
+					LTStrCat(aMsgBuff, "ROTATION ", nBufferSize);
+				if (nFlags & (1<<3))
+					LTStrCat(aMsgBuff, "FLAGS ", nBufferSize);
+				if (nFlags & (1<<4))
+					LTStrCat(aMsgBuff, "SCALE ", nBufferSize);
+				if (nFlags & (1<<5))
+					LTStrCat(aMsgBuff, "MODELINFO ", nBufferSize);
+				if (nFlags & (1<<6))
+					LTStrCat(aMsgBuff, "RENDERINFO ", nBufferSize);
+				if (nFlags & (1<<8))
+					LTStrCat(aMsgBuff, "ATTACHMENTS ", nBufferSize);
+				if (nFlags & (1<<9))
+					LTStrCat(aMsgBuff, "TELEPORT ", nBufferSize);
+				if (nFlags & (1<<10))
+					LTStrCat(aMsgBuff, "SNAPROTATION ", nBufferSize);
+				if (nFlags & (1<<11))
+					LTStrCat(aMsgBuff, "FILENAMES ", nBufferSize);
+				if (nFlags & (1<<13))
+					LTStrCat(aMsgBuff, "FORCEMODELINFO ", nBufferSize);
+				if (nFlags & (1<<14))
+					LTStrCat(aMsgBuff, "PREDICTIONCAP ", nBufferSize);
+				if (nFlags & (1<<15))
+					LTStrCat(aMsgBuff, "DIMS ", nBufferSize);
 
-					if (nFlags & (1<<0)) //CF_NEWOBJECT
-						LTStrCat(aMsgBuff, "NEW ", nBufferSize);
-					else
-					{
-						if ( nFlags & ((1<<5)|(1<<13)) ) //CF_MODELINFO|CF_FORCEMODELINFO
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "MI  |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & (1<<3)) //CF_FLAGS
-						{
-							LTStrCat(aMsgBuff, "FLG ", nBufferSize);
-							if (cParsePacket.TellEnd() < 80)
-							{
-								LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-								break;
-							}
-
-							uint32 nFlags1 = cParsePacket.Readuint32();
-							uint16 nFlags2 = cParsePacket.Readuint16();
-							uint32 nUserFlags = cParsePacket.Readuint32();
-							LTSNPrintF(aTemp, sizeof(aTemp), "|%08hx %04hx %08x| ", nFlags1, (uint16)nFlags2, nUserFlags);
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-						}
-						if (nFlags & (1<<6)) //CF_COLORINFO
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "CLR |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & (1<<4)) //CF_SCALE
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "SCL |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & ((1<<1)|(1<<9))) //(CF_POSITION|CF_TELEPORT)
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "POS |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & ((1<<2)|(1<<10))) //(CF_ROTATION|CF_SNAPROTATION)
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "ROT |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & (1<<8)) //CF_ATTACHMENTS
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "ATT |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-						if (nFlags & (1<<11)) //CF_FILENAMES
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "FILEN |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-						}
-					}
-				}
-				else
-				{
-					if(cParsePacket.TellEnd() < 8)
-					{
-						LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-						break;
-					}
-
-					uint8 nType = cParsePacket.Readuint8();
-
-					switch(nType)
-					{
-						case 0 : //UPDATESUB_PLAYSOUND
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "SND |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-							break;
-						}
-						case 1 : //UPDATESUB_SOUNDTRACK
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "STK |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-							break;
-						}
-						case 3 : //UPDATESUB_OBJECTREMOVES
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "REM |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-							break;
-						}
-						default :
-						{
-							LTSNPrintF(aTemp, sizeof(aTemp), "UNK |%d| ", cParsePacket.TellEnd());
-							LTStrCat(aMsgBuff, aTemp, nBufferSize);
-							cParsePacket.SeekTo(cParsePacket.Size());
-							break;
-						}
-					}
-				}
+				cParsePacket.SeekTo(nUpdateEnd);
 			}
 			break;
 		}
 
 		case 0xA : //SMSG_UNGUARANTEEDUPDATE
 		{
-			LTStrCat(aMsgBuff, "(UUP) ", nBufferSize);
-			LTSNPrintF(aTemp, sizeof(aTemp), "|%d| ", cParsePacket.TellEnd() / 8);
+			LTSNPrintF(aTemp, sizeof(aTemp), "(UUP) |%d| ", cParsePacket.TellEnd());
 			LTStrCat(aMsgBuff, aTemp, nBufferSize);
 			break;
 		}
@@ -266,161 +205,9 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 				LTStrCat(aMsgBuff, "BAD ", nBufferSize);
 				break;
 			}
-			// Strip the message ID off the end
-			CPacket_Read cSubPacket(cParsePacket, cParsePacket.Tell(), cParsePacket.TellEnd() - 8);
-			cParsePacket.Seek(cSubPacket.Size());
 			uint8 nMsgID = cParsePacket.Readuint8();
-			cParsePacket = cSubPacket;
-			switch (nMsgID)
-			{
-				case 100 : // MID_PLAYER_UPDATE
-				{
-					LTSNPrintF(aTemp, sizeof(aTemp), "[PLU] |%d| ", cParsePacket.TellEnd());
-					LTStrCat(aMsgBuff, aTemp, nBufferSize);
-
-					if (cParsePacket.TellEnd() < 16)
-					{
-						LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-						break;
-					}
-
-					uint16 nChangeID = cParsePacket.Readuint16();
-
-					if(nChangeID & 0x0001) // CLIENTUPDATE_POSITION
-						LTStrCat(aMsgBuff, "POS ", nBufferSize);
-
-					if(nChangeID & 0x0002) // CLIENTUPDATE_ROTATION
-						LTStrCat(aMsgBuff, "ROT ", nBufferSize);
-
-					if(nChangeID & 0x0004) // CLIENTUPDATE_VELOCITY
-						LTStrCat(aMsgBuff, "VEL ", nBufferSize);
-
-					if(nChangeID & 0x0008) // CLIENTUPDATE_AIMING
-						LTStrCat(aMsgBuff, "AIM ", nBufferSize);
-
-					if(nChangeID & 0x0010) // CLIENTUPDATE_INPUTALLOWED
-						LTStrCat(aMsgBuff, "INP ", nBufferSize);
-
-					if(nChangeID & 0x0020) // CLIENTUPDATE_SCALE
-						LTStrCat(aMsgBuff, "SCA ", nBufferSize);
-
-					if(nChangeID & 0x0040) // CLIENTUPDATE_DIMS
-						LTStrCat(aMsgBuff, "DIM ", nBufferSize);
-
-					if(nChangeID & 0x0080) // CLIENTUPDATE_FLAGS
-						LTStrCat(aMsgBuff, "FL1 ", nBufferSize);
-
-					if(nChangeID & 0x0100) // CLIENTUPDATE_FLAGS2
-						LTStrCat(aMsgBuff, "FL2 ", nBufferSize);
-
-					if(nChangeID & 0x0200) // CLIENTUPDATE_MOVEMENTSTATE
-						LTStrCat(aMsgBuff, "MST ", nBufferSize);
-
-					if(nChangeID & 0x0400) // CLIENTUPDATE_CTRLFLAGS
-						LTStrCat(aMsgBuff, "CTR ", nBufferSize);
-
-					break;
-				}
-
-				case 102 : // MID_PLAYER_INFOCHANGE
-				{
-					LTStrCat(aMsgBuff, "PIC ", nBufferSize);
-
-					if (cParsePacket.TellEnd() < 8)
-					{
-						LTStrCat(aMsgBuff, "BAD ", nBufferSize);
-						break;
-					}
-
-					uint8 nChangeID = cParsePacket.Readuint8();
-
-					switch (nChangeID)
-					{
-						case 1 : //IC_AMMO_ID
-							LTStrCat(aMsgBuff, "AMO ", nBufferSize);
-							break;
-						case 2 : //IC_HEALTH_ID
-							LTStrCat(aMsgBuff, "HEA ", nBufferSize);
-							break;
-						case 3 : //IC_ARMOR_ID
-							LTStrCat(aMsgBuff, "ARM ", nBufferSize);
-							break;
-						case 4 : //IC_WEAPON_ID
-							LTStrCat(aMsgBuff, "WEA ", nBufferSize);
-							break;
-						case 5 : //IC_WEAPON_PICKUP_ID
-							LTStrCat(aMsgBuff, "WPI ", nBufferSize);
-							break;
-						case 6 : //IC_AIRLEVEL_ID
-							LTStrCat(aMsgBuff, "AIR ", nBufferSize);
-							break;
-						case 7 : //IC_ROCKETLOCK_ID
-							LTStrCat(aMsgBuff, "ROC ", nBufferSize);
-							break;
-						case 8 : //IC_OUTOFAMMO_ID
-							LTStrCat(aMsgBuff, "OUT ", nBufferSize);
-							break;
-						case 9 : //IC_OBJECTIVE_ID
-							LTStrCat(aMsgBuff, "OBJ ", nBufferSize);
-							break;
-						case 10 : //IC_MOD_PICKUP_ID
-							LTStrCat(aMsgBuff, "MOD ", nBufferSize);
-							break;
-						case 11 : //IC_EMPTY ??
-							LTStrCat(aMsgBuff, "EMP ", nBufferSize);
-							break;
-						case 12 : //IC_RESET_INVENTORY_ID
-							LTStrCat(aMsgBuff, "INV ", nBufferSize);
-							break;
-						case 13 : //IC_MISSION_TEXT_ID
-							LTStrCat(aMsgBuff, "MTX ", nBufferSize);
-							break;
-						case 14	: //IC_MISSION_FAILED_ID
-							LTStrCat(aMsgBuff, "MFA ", nBufferSize);
-							break;
-						case 15 : //IC_MAX_HEALTH_ID
-							LTStrCat(aMsgBuff, "MXH ", nBufferSize);
-							break;
-						case 16 : //IC_MAX_ARMOR_ID
-							LTStrCat(aMsgBuff, "MXA ", nBufferSize);
-							break;
-						case 17 : //IC_FILL_ALL_CLIPS_ID
-							LTStrCat(aMsgBuff, "FAC ", nBufferSize);
-							break;
-						case 18 : //IC_CANNON_CHARGE_ID
-							LTStrCat(aMsgBuff, "CAN ", nBufferSize);
-							break;
-						case 19 : //IC_BATTERY_CHARGE_ID
-							LTStrCat(aMsgBuff, "BAT ", nBufferSize);
-							break;
-						default :
-							LTStrCat(aMsgBuff, "UNK ", nBufferSize);
-							break;
-					}
-					break;
-				}
-
-				case 106 : // MID_PLAYER_ORIENTATION
-					LTSNPrintF(aTemp, sizeof(aTemp), "PLO |%d|", cParsePacket.TellEnd());
-					LTStrCat(aMsgBuff, aTemp, nBufferSize);
-					break;
-
-				case 113 : // MID_PLAYER_DAMAGE
-					LTSNPrintF(aTemp, sizeof(aTemp), "PLD |%d|", cParsePacket.TellEnd());
-					LTStrCat(aMsgBuff, aTemp, nBufferSize);
-					break;
-
-				case 190 : //MID_PHYSICS_UPDATE
-					LTStrCat(aMsgBuff, "PHU ", nBufferSize);
-					break;
-
-				default :
-				{
-					LTSNPrintF(aTemp, sizeof(aTemp), "%2x |%d| ", (uint32)nMsgID, cParsePacket.TellEnd());
-					LTStrCat(aMsgBuff, aTemp, nBufferSize);
-					break;
-				}
-			}
+			LTSNPrintF(aTemp, sizeof(aTemp), "%s |%d| ", GetMsgName(nMsgID), cParsePacket.TellEnd());
+			LTStrCat(aMsgBuff, aTemp, nBufferSize);
 			break;
 		}
 
@@ -428,68 +215,50 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 			LTStrCat(aMsgBuff, "(GRP) ", nBufferSize);
 			break;
 
-//		case 0xF : //SMSG_CHANGEOBJECTFILENAMES
-//			LTStrCat(aMsgBuff, "(COF) ", nBufferSize);
-//			break;
-
-		case 0x10 : //SMSG_CONSOLEVAR
+		case 0xF : //SMSG_CONSOLEVAR
 			LTStrCat(aMsgBuff, "(CV ) ", nBufferSize);
 			break;
 
-		case 0x11 : //SMSG_SKYDEF
+		case 0x10 : //SMSG_SKYDEF
 			LTStrCat(aMsgBuff, "(SKY) ", nBufferSize);
 			break;
 
-		case 0x12 : //SMSG_INSTANTSPECIALEFFECT
-			LTStrCat(aMsgBuff, "(ISE) ", nBufferSize);
+		case 0x11 : //SMSG_INSTANTSPECIALEFFECT
+			LTSNPrintF(aTemp, sizeof(aTemp), "(ISE) |%d|", cParsePacket.TellEnd());
+			LTStrCat(aMsgBuff, aTemp, nBufferSize);
 			break;
 
-		case 0x13 : //SMSG_PORTALFLAGS
-			LTStrCat(aMsgBuff, "(PF ) ", nBufferSize);
-			break;
-
-		case 0x15 : //SMSG_PRELOADLIST
+		case 0x13 : //SMSG_PRELOADLIST
 			LTStrCat(aMsgBuff, "(PLL) ", nBufferSize);
 			break;
 
-		case 0x17 : //SMSG_THREADLOAD
+		case 0x14 : //SMSG_THREADLOAD
 			LTStrCat(aMsgBuff, "(THL) ", nBufferSize);
 			break;
 
-		case 0x18 : //SMSG_UNLOAD
+		case 0x15 : //SMSG_UNLOAD
 			LTStrCat(aMsgBuff, "(UL ) ", nBufferSize);
 			break;
 
-		case 0x19 : //SMSG_LMANIMINFO
-			LTStrCat(aMsgBuff, "(LMA) ", nBufferSize);
-			break;
-
-		case 0x1A : //SMSG_GLOBALLIGHT
+		case 0x16 : //SMSG_GLOBALLIGHT
 			LTStrCat(aMsgBuff, "(GL ) ", nBufferSize);
 			break;
 
 		case 0x32 : //STC_FILEDESC
+		{
 			LTStrCat(aMsgBuff, "(FD ) ", nBufferSize);
+			while (!cParsePacket.EOP())
+			{
+				cParsePacket.Seek(48);
+				cParsePacket.ReadString(aTemp, sizeof(aTemp));
+				LTStrCat(aMsgBuff, "\n    ", nBufferSize);
+				LTStrCat(aMsgBuff, aTemp, nBufferSize);
+			}
 			break;
-
-		case 0x33 : //STC_STARTTRANSFER
-			LTStrCat(aMsgBuff, "(ST ) ", nBufferSize);
-			break;
-
-		case 0x34 : //STC_CANCELFILETRANSFER
-			LTStrCat(aMsgBuff, "(CFT) ", nBufferSize);
-			break;
-
-		case 0x35 : //STC_FILEBLOCK
-			LTStrCat(aMsgBuff, "(FB ) ", nBufferSize);
-			break;
+		}
 
 		case 0x36 : //CTS_FILESTATUS
 			LTStrCat(aMsgBuff, "(FS ) ", nBufferSize);
-			break;
-
-		case 0x38 : //CTS_GOTYOSHIT
-			LTStrCat(aMsgBuff, "(GYS) ", nBufferSize);
 			break;
 
 		default :

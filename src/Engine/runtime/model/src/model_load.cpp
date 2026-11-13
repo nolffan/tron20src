@@ -999,7 +999,7 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 				// NULL) the check reads through it (docs/RETAIL_BUGS.md)
 				if(!CompareSkeletons(this, pModel))
 				{
-					buffer256 error_string("Model Load ERROR!!! Skeleton Mismatch between parent and child model: %s %s", pFilename, pModel->GetFilename());
+					buffer256 error_string("Model Load ERROR!!! Skeleton Mismatch between parent and child model: %s %s\n", pFilename, pModel->GetFilename());
 					dsi_PrintToConsole(error_string);
 #if !defined(__LINUX)
 					OutputDebugString(error_string);
