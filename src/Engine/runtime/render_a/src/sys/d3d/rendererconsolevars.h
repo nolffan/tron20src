@@ -89,6 +89,9 @@ RCONVAR(g_CV_DebugRBTri, "DebugRBTri", int, 0);
 RCONVAR(g_CV_DebugRBCur, "DebugRBCur", int, 0);
 RCONVAR(g_CV_DebugRBAll, "DebugRBAll", int, 0);
 RCONVAR(g_CV_DebugRBFrustum, "DebugRBFrustum", int, 0);
+// TRON: none of Contract J.A.C.K.'s DebugRBOccludeWorld,
+// DebugRBOccludeEarlyVisible, DebugRBDrawExact, DebugRBFlushOnDraw (no such
+// strings in Lithtech.exe or the developer build)
 RCONVAR(g_CV_DebugRBNoOccluders, "DebugRBNoOccluders", int, 0);
 RCONVAR(g_CV_DebugRBDrawOccluders, "DebugRBDrawOccluders", int, 0);
 RCONVAR(g_CV_DebugRBSortOccluders, "DebugRBSortOccluders", int, 1);

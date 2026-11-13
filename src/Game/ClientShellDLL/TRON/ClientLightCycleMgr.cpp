@@ -35,6 +35,7 @@
 #include "HUDSubtitles.h"
 #include "ClientMultiplayerMgr.h"
 #include "MsgIDs.h"
+#include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x10010650..0x100106b2)
 
 extern CGameClientShell* g_pGameClientShell;
 extern bool GroundFilterFn(HOBJECT hObj, void *pUserData);	// BodyFX.cpp

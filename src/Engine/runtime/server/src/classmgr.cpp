@@ -472,10 +472,14 @@ CClassData* CClassMgr::FindClassData(const char *pName)
 }
 
 
-// TRON: the class tick counts are in the final build too (server.dll
-// 0x1000212c..0x100021cc), as Tron's servermgr.cpp counts them
+// TRON: the class tick counts are in server.dll's final build (0x1000212c..
+// 0x100021cc), as its servermgr.cpp counts them, but not in Lithtech.exe's
+// (none of their strings; CClassData's ctor 0x403c50 is followed by
+// CClassMgr's, 0x403cb0): Contract J.A.C.K.'s `#ifndef _FINAL` holds for the
+// exe, the server as if built without _FINAL (see netmgr.cpp's parser)
 void CClassMgr::ShowTickCounts()
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 
     if (g_CV_ShowClassTicks)  
     {
@@ -509,20 +513,24 @@ void CClassMgr::ShowTickCounts()
 		CalculateSimpleTickInfo();
     }
 
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 void CClassMgr::ClearTickCounts()
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
     // Clear tick counts for each class.
     for (int i=0; i < m_nClassDatas; i++)
     {
 		m_ClassDatas[i].ResetPerUpdateTickData();
     }
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 // Display tick count information for ALL active object classes...
 void CClassMgr::DisplayTickCounts()
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 	
 	g_Ticks_ClassUpdate = 0;
 	uint32 nClassTicksAverage = 0;
@@ -603,11 +611,13 @@ void CClassMgr::DisplayTickCounts()
 	dsi_ConsolePrint("---------------------------------------------------------------------------------");
 	dsi_ConsolePrint(" ");
 
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 // Display detailed tick count information for ALL active objects of a particular class...
 void CClassMgr::DisplayClassTickCounts(const char* pClassName)
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 
 	if (!pClassName || !(*pClassName)) return;
 
@@ -645,10 +655,12 @@ void CClassMgr::DisplayClassTickCounts(const char* pClassName)
 		}
 	}
 
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 void CClassMgr::CalculateSimpleTickInfo()
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 
     g_Ticks_ClassUpdate = 0;
 
@@ -660,16 +672,19 @@ void CClassMgr::CalculateSimpleTickInfo()
 		m_ClassDatas[i].ResetAllTickData();
     }
 
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 void CClassMgr::CalculateVerboseTickInfo()
 {
+#if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
 
     for (int i=0; i < m_nClassDatas; i++)
     {
 		m_ClassDatas[i].CalculateTotalFrameTicks();
     }
 
+#endif // !_FINAL || DE_SERVER_COMPILE
 }
 
 

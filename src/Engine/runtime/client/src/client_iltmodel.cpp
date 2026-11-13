@@ -87,7 +87,8 @@ LTRESULT CLTModelClient::GetFilenames(HOBJECT hModel, char *pFilename, uint32 fi
 // ------------------------------------------------------------------------
 LTRESULT CLTModelClient::GetModelDBFilename( HOBJECT hModel, char *pRetFilename, uint32 fileBufLen )
 {
-		FN_NAME(CLTModelClient::GetFilenames);
+	// TRON: its own name, as the server's (Lithtech.exe .data 0x5bbf84)
+	FN_NAME(CLTModelClient::GetModelDBFilename);
     ModelInstance *pInst;
     
     CHECK_PARAMS2(hModel && hModel->m_ObjectType == OT_MODEL);
@@ -112,7 +113,8 @@ LTRESULT CLTModelClient::GetModelDBFilename( HOBJECT hModel, char *pRetFilename,
 // ------------------------------------------------------------------------
 LTRESULT CLTModelClient::GetSkinFilename( HOBJECT hModel, uint32 skin_index, char *pRetFilenames, uint32 fileBufLen )
 {
-	FN_NAME(CLTModelClient::GetFilenames);
+	// TRON: its own name, as the server's (Lithtech.exe .data 0x5bbf64)
+	FN_NAME(CLTModelClient::GetSkinFilename);
     ModelInstance *pInst;
     
     CHECK_PARAMS2(hModel && hModel->m_ObjectType == OT_MODEL);
