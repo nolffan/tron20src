@@ -278,11 +278,9 @@ public:
 	//****************** display
 	sPerformCfg m_sPerformance;
 
-	// PORT: build 51's weapon bindings, which Tron's HUDWeapons reads (where
-	// build 51 has it, after the display settings); how retail loads and
-	// saves it is to be written from the retail code
-	//****************** weapon bindings
-	int		m_nWpnActions[10];
+	// RETAIL: Tron's profile has no weapon bindings (build 51's
+	// m_nWpnActions): its CUserProfile is 0x6310 bytes, its bindings at
+	// +0x248 (constructor 0x100ec8a0)
 
 private:
 	//load parts of profile to file (file must already have been parsed by m_buteMgr)
@@ -309,7 +307,9 @@ private:
 	LTBOOL		m_bInitted;
 	CButeMgr	m_buteMgr;
 	char*		m_pCryptKey;
-	uint32		m_nSaveVersion;
+	// RETAIL: Tron's profile keeps no save version (NOLF2's m_nSaveVersion
+	// and its "Version" section are later): CUserProfile ends at +0x630c,
+	// where CProfileMgr's axis count is (0x100f00d3)
 };
 
 

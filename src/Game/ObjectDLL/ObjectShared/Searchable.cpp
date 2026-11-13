@@ -402,12 +402,11 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 
 	if (!bPickedUp)
 	{
+		// RETAIL: Tron's search skill has no junk modifier (CSkillsButeMgr):
+		// its call (Object.lto 0x10194c83) passes only the result. PORT:
+		// NOLF2's SEARCH_SET still takes one; it gets 1, no change
 		CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
 		float fJunkMod = 1.0f;
-		if( pPlayer )
-		{
-			fJunkMod = pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_SEARCH,SearchModifiers::eFindJunk);
-		}
 
 
 		// Determine what type of item to give...

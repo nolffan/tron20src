@@ -97,16 +97,17 @@ void CHUDWeapons::Update()
 	UpdateStyle();
 	if (!m_bDraw) return;
 
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-
 	float sz = (float)m_nIconSize;
 	float ix = 640.0f * g_pInterfaceResMgr->GetXRatio() - sz;
 	float ox = 640.0f * g_pInterfaceResMgr->GetXRatio() + sz;
 	float y = 240.0f * g_pInterfaceResMgr->GetYRatio() - (5.0f * sz);
 	for( int i = 0; i < 10; ++i )
 	{
-		// Get the weapon id
-		uint8 nWeaponId =  g_pWeaponMgr->GetWeaponId(pProfile->m_nWpnActions[i]);
+		// PORT: build 51 took the weapon from the profile's weapon bindings,
+		// which Tron's profile does not have (retail's CHUDWeapons::Update,
+		// 0x100300b0, is a match timer and score display still to be
+		// written); this shows the first ten weapons
+		uint8 nWeaponId = (uint8)i;
 		if ( WMGR_INVALID_ID != nWeaponId  )
 		{
 			// Get the weapon structure

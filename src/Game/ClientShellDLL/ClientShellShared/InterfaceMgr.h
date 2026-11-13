@@ -275,6 +275,7 @@ class CInterfaceMgr
         CClientInfoMgr* GetClientInfoMgr()  { return &m_ClientInfo; }
 		// RETAIL: inline in Tron's main menu (CScreenMain::OnCommand 0x1006f3e0)
 		CCredits*		GetCredits()		{ return &m_Credits; }
+		CTronTeamMgr*	GetTeamMgr()		{ return &m_TeamMgr; }
 		CMenuMgr*		GetMenuMgr()		{ return &m_MenuMgr; }
 
 		CFullScreenTint* GetFullScreenTint() { return &m_FullScreenTint; }
@@ -440,11 +441,10 @@ class CInterfaceMgr
 		CPerformanceMgr		m_PerformanceMgr;		// manages performance settings
 		CProfileMgr			m_ProfileMgr;			// manages player profiles
 
-        CClientInfoMgr  m_ClientInfo;           // Client info mgr
-		// RETAIL: retail's performance and profile managers are smaller than
-		// ours, and its client info bigger (+0xe408; a CString before it at
-		// +0xe400): this pad takes the differences
-		char			m_aTronPadClientInfo[0x1118 + 0x6744 + 0x8 + 0x334 - sizeof(CPerformanceMgr) - sizeof(CProfileMgr) - sizeof(CClientInfoMgr)];
+        CClientInfoMgr  m_ClientInfo;           // +0xe400 Client info mgr
+		// RETAIL: Tron's client copy of the server's team manager (+0xe408,
+		// built in the constructor after the client info, 0x100c68a8)
+		CTronTeamMgr	m_TeamMgr;
 
 		CScreenSpriteMgr m_ScreenSpriteMgr;		// +0xe73c Screen sprite mgr (new for Tron/TO2)
 

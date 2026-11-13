@@ -82,7 +82,17 @@
 #define SFX_RADAROBJECT_ID			56
 #define SFX_ACTIVATEOBJECT_ID		57
 #define SFX_DOOMSDAYPIECE_ID		58
-#define SFX_TOTAL_NUMBER			58	// Important that this is the same as the last FX defined...
+
+// RETAIL: Tron's: its special fx classes' GetSFXID (CShell.dll's vtables)
+// give id 58 to CLightCycleFX (NOLF2's doomsday piece is gone from the
+// client) and add four more; CSpecialFX's own id is 63 (0x1004d370), and
+// CSFXMgr keeps 63 lists (its constructor, 0x100e1f5e). The names are ours.
+#define SFX_LIGHTCYCLE_ID			58
+#define SFX_PRANKSTERPROJECTILE_ID	59
+#define SFX_CLIENTFXUSER_ID			60
+#define SFX_CLIENTFXANDACTIVATETYPE_ID	61
+#define SFX_SPECTATOROBJECT_ID		62
+#define SFX_TOTAL_NUMBER			62	// Important that this is the same as the last FX defined...
 
 // Shared fx related stuff...
 

@@ -59,20 +59,25 @@ struct RANK
 
 const uint8 kMaxModifiers = 5;
 
-class SkillModifiers
+// RETAIL: Tron's modifier tables are sized by their own modifier counts
+// (12, 20, 12, 8, 8, 8, 8, 4 and 4 bytes a level from +0x124c: the
+// constructors 0x10168ee0 (client) and 0x10185f10 (server)), as build 51's
+// structs were, each constructor a chained assignment (the stores run from
+// the last modifier down). NOLF2 gave them all kMaxModifiers floats in a
+// common base. The modifier names are NOLF2's enums; Tron adds Energy's
+// one and keeps one for Search (retail CSkillsButeMgr::Init 0x10169110).
+#define SKILL_MODIFIERS_1(cls, a) \
+	cls() { fModifier[a] = 1.0f; }
+#define SKILL_MODIFIERS_2(cls, a, b) \
+	cls() { fModifier[a] = fModifier[b] = 1.0f; }
+#define SKILL_MODIFIERS_3(cls, a, b, c) \
+	cls() { fModifier[a] = fModifier[b] = fModifier[c] = 1.0f; }
+#define SKILL_MODIFIERS_5(cls, a, b, c, d, e) \
+	cls() { fModifier[a] = fModifier[b] = fModifier[c] = fModifier[d] = fModifier[e] = 1.0f; }
+
+class StealthModifiers
 {
 public:
-	SkillModifiers()
-		{ for (uint8 m = 0; m < kMaxModifiers; ++m) fModifier[m] = 1.0f;}
-	float	fModifier[kMaxModifiers];
-};
-
-
-
-class StealthModifiers : public SkillModifiers
-{
-public:
-	StealthModifiers() {}
 	enum eMods
 	{
 		eRadius,		//	Sound radii for footsteps, weapon reload, etc.
@@ -80,13 +85,13 @@ public:
 		eEvasion,		//	How effectively player ditches pursuers
 		kNumModifiers
 	};
-
+	SKILL_MODIFIERS_3(StealthModifiers, eRadius, eHideTime, eEvasion)
+	float	fModifier[kNumModifiers];
 };
 
-class StaminaModifiers : public SkillModifiers
+class StaminaModifiers
 {
 public:
-	StaminaModifiers() {}
 	enum eMods
 	{
 		eMaxHealth,			//	The size of player health meter
@@ -96,13 +101,13 @@ public:
 		eDamage,			//	Multiplier for how much damage the player takes
 		kNumModifiers
 	};
-
+	SKILL_MODIFIERS_5(StaminaModifiers, eMaxHealth, eMoveDamage, eResistance, eHealthPickup, eDamage)
+	float	fModifier[kNumModifiers];
 };
 
-class AimModifiers : public SkillModifiers
+class AimModifiers
 {
 public:
-	AimModifiers() {}
 	enum eMods
 	{
 		eAccuracy,		//	The amount of weapon perturb
@@ -110,68 +115,86 @@ public:
 		eCorrection,	//	How quickly player's perturb recovers after moving.
 		kNumModifiers
 	};
+	SKILL_MODIFIERS_3(AimModifiers, eAccuracy, eZoomSway, eCorrection)
+	float	fModifier[kNumModifiers];
 };
 
-class CarryModifiers : public SkillModifiers
+class CarryModifiers
 {
 public:
-	CarryModifiers() {}
 	enum eMods
 	{
 		eMaxAmmo,				//	How much ammunition the player can carry
-		eCarryBodyMovement,		//	Affects movement modifiers for carrying bodies
+		eCarryBodyMovement,		//	RETAIL: read as "HeavyWeaponMovement" (build 51's name)
 		kNumModifiers
 	};
+	SKILL_MODIFIERS_2(CarryModifiers, eMaxAmmo, eCarryBodyMovement)
+	float	fModifier[kNumModifiers];
 };
 
-class ArmorModifiers : public SkillModifiers
+class ArmorModifiers
 {
 public:
-	ArmorModifiers() {}
 	enum eMods
 	{
 		eMaxArmor,		//	The size of the player armor meter
 		eArmorPickup,	//	Multiplier for how many armor points the player gets from an armor pickup
 		kNumModifiers
 	};
+	SKILL_MODIFIERS_2(ArmorModifiers, eMaxArmor, eArmorPickup)
+	float	fModifier[kNumModifiers];
 };
 
-class WeaponModifiers : public SkillModifiers
+class WeaponModifiers
 {
 public:
-	WeaponModifiers() {}
 	enum eMods
 	{
 		eDamage,		//	The amount of damage caused by a weapon
 		eReload,		//	Weapon reload and select times
 		kNumModifiers
 	};
+	SKILL_MODIFIERS_2(WeaponModifiers, eDamage, eReload)
+	float	fModifier[kNumModifiers];
 };
 
-class GadgetModifiers : public SkillModifiers
+class GadgetModifiers
 {
 public:
-	GadgetModifiers() {}
 	enum eMods
 	{
 		eEffect,		//	Effectiveness of the gadget
 		eSelect,		//	Gadget select times
 		kNumModifiers
 	};
+	SKILL_MODIFIERS_2(GadgetModifiers, eEffect, eSelect)
+	float	fModifier[kNumModifiers];
 };
 
-class SearchModifiers : public SkillModifiers
+// RETAIL: Tron's (build 51's EnergyModifiers: fMaxEnergy); Init reads none
+class EnergyModifiers
 {
 public:
-	SearchModifiers() {}
+	enum eMods
+	{
+		eMaxEnergy,		//	Maximum amount of energy
+		kNumModifiers
+	};
+	SKILL_MODIFIERS_1(EnergyModifiers, eMaxEnergy)
+	float	fModifier[kNumModifiers];
+};
+
+class SearchModifiers
+{
+public:
 	enum eMods
 	{
 		eSearchSpeed,	//	How quickly player searches things
-		eFindJunk,		//	Reduces chance of finding worthless items when searching
-		kNumModifiers
+		kNumModifiers	//	RETAIL: Tron has no FindJunk
 	};
+	SKILL_MODIFIERS_1(SearchModifiers, eSearchSpeed)
+	float	fModifier[kNumModifiers];
 };
-
 
 class CSkillsButeMgr : public CGameButeMgr
 {
@@ -187,13 +210,15 @@ public :
 
 	const RANK*	GetRank(uint32 nScore);
 
-	uint32		GetIntelSkillBonus() {return m_nIntelBonus; }
+	// RETAIL: Tron reads no intel bonus (Init 0x10169110 has no "Bonus"
+	// tag, the manager no member for it); NOLF2's CSkills still asks
+	uint32		GetIntelSkillBonus() {return 0; }
 
 	uint32		GetCostToUpgrade(eSkill skl, eSkillLevel tgtLevel) {return m_nCosts[skl][tgtLevel];}
 
 	bool		IsAvailable(eSkill skl) {return (m_nCosts[skl][SKL_AMATEUR] > 0);}
 
-	const SkillModifiers*	GetModifiers(eSkill skl, eSkillLevel lvl);
+	const float*			GetModifiers(eSkill skl, eSkillLevel lvl);
 	float					GetModifier(eSkill skl, eSkillLevel lvl, uint8 nMod);
 	uint8					GetNumModifiers(eSkill skl);
 
@@ -212,6 +237,7 @@ public :
 	const ArmorModifiers*	GetArmor(eSkillLevel lvl)	{ return &m_Armor[lvl]; }
 	const WeaponModifiers*	GetWeapon(eSkillLevel lvl)	{ return &m_Weapon[lvl]; }
 	const GadgetModifiers*	GetGadget(eSkillLevel lvl)	{ return &m_Gadget[lvl]; }
+	const EnergyModifiers*	GetEnergy(eSkillLevel lvl)	{ return &m_Energy[lvl]; }
 	const SearchModifiers*	GetSearch(eSkillLevel lvl)	{ return &m_Search[lvl]; }
 
 	uint32		GetMultiplayerPool() {return m_nMPPool;}
@@ -225,8 +251,6 @@ private:
 
 	uint32		m_nCosts[kNumSkills][kNumSkillLevels];
 
-	uint32		m_nIntelBonus;
-
 	uint32		m_nMPPool;
 	eSkillLevel m_MPSkillLevel[kNumSkills];
 
@@ -237,6 +261,7 @@ private:
 	ArmorModifiers		m_Armor[kNumSkillLevels];
 	WeaponModifiers		m_Weapon[kNumSkillLevels];
 	GadgetModifiers		m_Gadget[kNumSkillLevels];
+	EnergyModifiers		m_Energy[kNumSkillLevels];
 	SearchModifiers		m_Search[kNumSkillLevels];
 };
 

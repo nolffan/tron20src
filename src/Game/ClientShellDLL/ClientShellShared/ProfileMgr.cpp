@@ -260,8 +260,6 @@ CUserProfile::CUserProfile()
 	m_nBandwidthClientCustom = g_BandwidthClient[m_nBandwidthClient];
 	m_nClientPort = 27888;
 	m_nDifficulty = 1;
-
-	m_nSaveVersion = 0;
 }
 
 static bool CreatePlayerGuid( char* pszPlayerGuid, int nSize )
@@ -376,8 +374,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 
 void CUserProfile::Load()
 {
-	m_nSaveVersion = m_buteMgr.GetInt( "Version", "VersionNumber", 0 );
-
 	LoadControls();
 	LoadMultiplayer();
 	LoadGameOptions();
@@ -631,9 +627,6 @@ void CUserProfile::Save()
 {
 	// PORT: NOLF2's body; Tron's (retail 0x100ee500) saves two sections more
 	// and always closes and reopens its bute file
-	m_nSaveVersion = g_pVersionMgr->GetSaveVersion( );
-	m_buteMgr.SetInt( "Version","VersionNumber", m_nSaveVersion );
-
 	SaveControls();
 	SaveMultiplayer();
 	SaveGameOptions();

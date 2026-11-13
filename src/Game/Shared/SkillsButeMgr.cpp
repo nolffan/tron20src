@@ -138,7 +138,6 @@ CSkillsButeMgr* g_pSkillsButeMgr = LTNULL;
 CSkillsButeMgr::CSkillsButeMgr()
 {
 	memset(m_nCosts,0,sizeof(m_nCosts));
-	m_nIntelBonus = 0;
 }
 
 
@@ -248,7 +247,8 @@ LTBOOL CSkillsButeMgr::Init(const char* szAttributeFile)
 		if (m_buteMgr.Exist(s_aTagName))
 		{
 			m_Carry[lvl].fModifier[CarryModifiers::eMaxAmmo] = (float)m_buteMgr.GetDouble(s_aTagName,"MaxAmmo",1.0);
-			m_Carry[lvl].fModifier[CarryModifiers::eCarryBodyMovement] = (float)m_buteMgr.GetDouble(s_aTagName,"CarryBodyMovement",1.0);
+			// RETAIL: Tron reads build 51's name (0x10169545)
+			m_Carry[lvl].fModifier[CarryModifiers::eCarryBodyMovement] = (float)m_buteMgr.GetDouble(s_aTagName,"HeavyWeaponMovement",1.0);
 		}
 
 		sprintf(s_aTagName, "Armor%d", lvl);
@@ -276,7 +276,6 @@ LTBOOL CSkillsButeMgr::Init(const char* szAttributeFile)
 		if (m_buteMgr.Exist(s_aTagName))
 		{
 			m_Search[lvl].fModifier[SearchModifiers::eSearchSpeed] = (float)m_buteMgr.GetDouble(s_aTagName,"SearchSpeed",1.0);
-			m_Search[lvl].fModifier[SearchModifiers::eFindJunk] = (float)m_buteMgr.GetDouble(s_aTagName,"FindJunk",1.0);
 		}
 
 
@@ -297,9 +296,6 @@ LTBOOL CSkillsButeMgr::Init(const char* szAttributeFile)
 		m_MPSkillLevel[skl] = (eSkillLevel)l;
 
 	}
-
-	m_nIntelBonus = m_buteMgr.GetInt("Bonus", "Intel", 0);
-
 
     return LTTRUE;
 }
@@ -337,26 +333,31 @@ const RANK* CSkillsButeMgr::GetRank(uint32 nScore)
 	return &m_Ranks[n];
 }
 
-const SkillModifiers* CSkillsButeMgr::GetModifiers(eSkill skl, eSkillLevel lvl)
+// PORT: NOLF2's; Tron's CSkillsButeMgr TU has none of GetModifiers,
+// GetModifier and GetNumModifiers (retail 0x10169110..0x101697c0), but our
+// NOLF2 callers (MenuPlayer, CSkills) still use them.
+const float* CSkillsButeMgr::GetModifiers(eSkill skl, eSkillLevel lvl)
 {
 	switch (skl)
 	{
 		case SKL_STEALTH:
-			return &m_Stealth[lvl];
+			return m_Stealth[lvl].fModifier;
 		case SKL_STAMINA:
-			return &m_Stamina[lvl];
+			return m_Stamina[lvl].fModifier;
 		case SKL_AIM:
-			return &m_Aim[lvl];
+			return m_Aim[lvl].fModifier;
 		case SKL_CARRY:
-			return &m_Carry[lvl];
+			return m_Carry[lvl].fModifier;
 		case SKL_ARMOR:
-			return &m_Armor[lvl];
+			return m_Armor[lvl].fModifier;
 		case SKL_WEAPON:
-			return &m_Weapon[lvl];
+			return m_Weapon[lvl].fModifier;
 		case SKL_GADGET:
-			return &m_Gadget[lvl];
+			return m_Gadget[lvl].fModifier;
+		case SKL_ENERGY:
+			return m_Energy[lvl].fModifier;
 		case SKL_SEARCH:
-			return &m_Search[lvl];
+			return m_Search[lvl].fModifier;
 	}
 
 	ASSERT(!"Invalid Skill specified.");
@@ -373,9 +374,9 @@ float CSkillsButeMgr::GetModifier(eSkill skl, eSkillLevel lvl, uint8 nMod)
 		return 1.0f;
 	}
 
-	const SkillModifiers* pMods = GetModifiers(skl, lvl);
+	const float* pMods = GetModifiers(skl, lvl);
 
-	return pMods->fModifier[nMod];
+	return pMods[nMod];
 }
 
 #ifdef _CLIENTBUILD
@@ -425,6 +426,8 @@ uint8 CSkillsButeMgr::GetNumModifiers(eSkill skl)
 			return WeaponModifiers::kNumModifiers;
 		case SKL_GADGET:
 			return GadgetModifiers::kNumModifiers;
+		case SKL_ENERGY:
+			return EnergyModifiers::kNumModifiers;
 		case SKL_SEARCH:
 			return SearchModifiers::kNumModifiers;
 	}

@@ -13,6 +13,59 @@
 #include "stdafx.h"
 #include "TeamMgr.h"
 #include "MsgIDs.h"
+#include "ButeStrings.h"
+#include "ButeMgr.h"
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetButeString
+//
+//	PURPOSE:	Read an attribute string (RETAIL: CShell.dll 0x10147740)
+//
+// ----------------------------------------------------------------------- //
+
+void GetButeString(CButeMgr& buteMgr, const char* pszTag, const char* pszAttr, std::string& sValue)
+{
+	const char* pszValue = buteMgr.GetString(pszTag, pszAttr);
+	if (buteMgr.Success() && pszValue)
+	{
+		sValue = pszValue;
+	}
+	else
+	{
+		// RETAIL: the default is assigned through a null check (0x101477d6)
+		const char* pszDefault = "";
+		sValue.assign(pszDefault, pszDefault + (pszDefault ? strlen(pszDefault) : 0));
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetButeStringList
+//
+//	PURPOSE:	Read the numbered attribute strings (RETAIL: CShell.dll
+//				0x10147830)
+//
+// ----------------------------------------------------------------------- //
+
+void GetButeStringList(CButeMgr& buteMgr, const char* pszTag, const char* pszAttrBase, std::vector<std::string>& lstValues)
+{
+	lstValues.clear();
+
+	char szAttr[80];
+	int nIndex = 0;
+	while (true)
+	{
+		std::string sValue;
+		sprintf(szAttr, "%s%d", pszAttrBase, nIndex);
+		nIndex++;
+		GetButeString(buteMgr, pszTag, szAttr, sValue);
+		if (!buteMgr.Success())
+			break;
+
+		lstValues.push_back(sValue);
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //
