@@ -395,6 +395,10 @@ SOURCE=.\LightLine.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LTGUIListItemCtrl.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\MenuPieceModel.cpp
 # End Source File
 # Begin Source File
@@ -786,6 +790,10 @@ SOURCE=.\LightCycleGameDataMgr.h
 # Begin Source File
 
 SOURCE=.\LightLine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LTGUIListItemCtrl.h
 # End Source File
 # Begin Source File
 
