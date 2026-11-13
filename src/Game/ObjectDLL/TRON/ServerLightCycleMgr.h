@@ -6,7 +6,7 @@
 //
 // RETAIL: Tron 2.0's, not in any source release; written from retail
 // Object.lto. RTTI .?AVCServerLightCycleMgr@@, vtable 0x10294b70; it derives
-// from CLightCycleMgr (LightCycleMgr.h, vtable 0x10294bcc). Its TU is
+// from CLightCycleMgr (Shared/TRON/LightCycleMgr.h, vtable 0x10294bcc). Its TU is
 // 0x1004f420..0x10053b50 (with the STL templates it emits). The class name
 // is retail's; the file name, the members and the names of the functions
 // not in the base are ours. Retail offsets are given (ours are the same).
@@ -21,6 +21,11 @@
 #include <queue>
 
 class LightCyclePowerup;
+
+// RETAIL: what CServerLightCycleMgr::SetCyclistPowerup calls for a random
+// power-up: 0x1013c350, which returns 0 (its TU is not identified; the name
+// is ours)
+int TronUnknownGetRandomPowerup();
 
 // A queued rider dialog line (0x18 bytes; the names are ours)
 struct LCDialogQueueEntry
@@ -62,15 +67,15 @@ class CServerLightCycleMgr : public CLightCycleMgr
 			const LTVector* pvDims, uint32 nNameId, bool bTronUnknown);	// RETAIL: 0x10050aa0
 		virtual bool RemoveCyclist(HOBJECT hObj);	// RETAIL: 0x10050d30
 		virtual bool DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pKiller, bool bTronUnknown);	// RETAIL: 0x10050e90
-		virtual void HandleHeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther);	// RETAIL: 0x10053050
+		virtual void HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pOther);	// RETAIL: 0x10053050
 		virtual void Update();						// RETAIL: 0x100501d0
-		virtual bool HandleCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bTronUnknown1, bool bTronUnknown2);	// RETAIL: 0x100520d0
-		virtual bool TronUnknownVirtual9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown1, uint32 nTronUnknown2, bool bTronUnknown);	// RETAIL: 0x10051fc0
-		virtual bool SetPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x10051840
-		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, const LTVector& vPos);	// RETAIL: 0x10051980
-		virtual void TronUnknownVirtual17(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown);	// RETAIL: 0x10051fe0
-		virtual void TronUnknownVirtual18();		// RETAIL: 0x100524c0
-		virtual void OnCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2, uint32 nTronUnknown);	// RETAIL: 0x10051620
+		virtual bool HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail);	// RETAIL: 0x100520d0
+		virtual bool TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify);	// RETAIL: 0x10051fc0
+		virtual bool SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x10051840
+		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);	// RETAIL: 0x10051980
+		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify);	// RETAIL: 0x10051fe0
+		virtual void DerezOldTrails();		// RETAIL: 0x100524c0
+		virtual void CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool bTurned, float fAccel, float fWallAccel, uint32 nFlags);	// RETAIL: 0x10051620
 
 		// A client's light cycle message (MID_LIGHT_CYCLE_INFO). RETAIL: 0x10051150
 		bool OnMessage(ILTMessage_Read* pMsg, HCLIENT hSender);
@@ -100,8 +105,8 @@ class CServerLightCycleMgr : public CLightCycleMgr
 
 		// The non-virtual workers of the virtuals above
 		bool DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* pKiller, bool bTronUnknown, bool bNotifyMission);	// RETAIL: 0x10050eb0
-		bool TronUnknown9(LIGHT_CYCLIST* pCyclist, uint32 nTronUnknown1, uint32 nTronUnknown2, HCLIENT hExclude);	// RETAIL: 0x10051e50
-		void SendCyclistTurbo(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2,
+		bool TrimTrailExcept(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, HCLIENT hExclude);	// RETAIL: 0x10051e50
+		void SendCyclistMovement(LIGHT_CYCLIST* pCyclist, bool bTronUnknown, float fTronUnknown1, float fTronUnknown2,
 			float fTronUnknown3, float fTronUnknown4, uint32 nTronUnknown, HCLIENT hExclude);	// RETAIL: 0x10051690
 
 		// Rider dialog. RETAIL: 0x1004f660, 0x1004f8c0, 0x10052330

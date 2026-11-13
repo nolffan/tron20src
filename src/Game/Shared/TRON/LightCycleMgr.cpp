@@ -5,9 +5,12 @@
 // PURPOSE : The light cycle manager (the base of the client's and the
 //           server's), see LightCycleMgr.h
 //
-// RETAIL: written from retail CShell.dll 0x100fe3b0..0x10101a40; the
-// functions are in retail's order. Object.lto has the same TU at
-// 0x100bb200.. (the Build 69 ancestor: ObjectDLL/TRON/LightCycleMgr.cpp).
+// RETAIL: written from retail CShell.dll 0x100fe3b0..0x10101b60; the
+// functions are in retail's order. Built in both projects: Object.lto has
+// the same TU at 0x100baf70..0x100be640 (each function's comment gives both
+// addresses); _CLIENTBUILD marks where the two copies differ. The Build
+// 69 ancestor was a server-only
+// ObjectDLL/TRON/LightCycleMgr.cpp.
 //
 // ----------------------------------------------------------------------- //
 
@@ -19,10 +22,15 @@
 #include "GameClientShell.h"
 #define LCM_LT	g_pLTClient
 #else
+#include "GameServerShell.h"
 #define LCM_LT	g_pLTServer
 #endif
 
-CLightCycleMgr* g_pLightCycleMgr = NULL;	// RETAIL: CShell 0x10236d98
+// RETAIL: CShell 0x10236d98, in this TU's data; Object.lto's (0x1035a54c)
+// is defined with g_pServerLightCycleMgr in ServerLightCycleMgr.cpp
+#ifdef _CLIENTBUILD
+CLightCycleMgr* g_pLightCycleMgr = NULL;
+#endif
 
 // RETAIL: the rounding of BeginLightCycleTrail (inline; the name is ours)
 #define LCM_ROUND(fVal)	((int)((fVal) + ((fVal) > 0.0f ? 0.5 : -0.5)))
@@ -32,7 +40,7 @@ CLightCycleMgr* g_pLightCycleMgr = NULL;	// RETAIL: CShell 0x10236d98
 //	ROUTINE:	LCMGroundFilterFn
 //
 //	PURPOSE:	The ground intersect filter of AddCyclist: skips the cycle.
-//				RETAIL: 0x100fe3b0 (the name is ours)
+//				RETAIL: CShell 0x100fe3b0, Object.lto 0x100baf70 (the name is ours)
 //
 // ----------------------------------------------------------------------- //
 static bool LCMGroundFilterFn(HOBJECT hTest, void *pUserData)
@@ -44,7 +52,7 @@ static bool LCMGroundFilterFn(HOBJECT hTest, void *pUserData)
 //
 //	ROUTINE:	LIGHT_CYCLIST::~LIGHT_CYCLIST
 //
-//	PURPOSE:	Destructor. RETAIL: 0x100fe3c0
+//	PURPOSE:	Destructor. RETAIL: CShell 0x100fe3c0, Object.lto 0x100baf80
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST::~LIGHT_CYCLIST()
@@ -60,7 +68,7 @@ LIGHT_CYCLIST::~LIGHT_CYCLIST()
 //
 //	ROUTINE:	LIGHT_CYCLIST::ClearTrailSpike
 //
-//	PURPOSE:	Removes the trail spike's trails. RETAIL: 0x100fe4e0
+//	PURPOSE:	Removes the trail spike's trails. RETAIL: CShell 0x100fe4e0, Object.lto 0x100bb0a0
 //
 // ----------------------------------------------------------------------- //
 void LIGHT_CYCLIST::ClearTrailSpike()
@@ -100,7 +108,7 @@ void LIGHT_CYCLIST::ClearTrailSpike()
 //
 //	ROUTINE:	CLightCycleMgr::CLightCycleMgr
 //
-//	PURPOSE:	Constructor. RETAIL: 0x100fe5c0
+//	PURPOSE:	Constructor. RETAIL: CShell 0x100fe5c0, Object.lto 0x100bb180
 //
 // ----------------------------------------------------------------------- //
 CLightCycleMgr::CLightCycleMgr()
@@ -115,7 +123,7 @@ CLightCycleMgr::CLightCycleMgr()
 //
 //	ROUTINE:	CLightCycleMgr::Init
 //
-//	PURPOSE:	Initialization. RETAIL: 0x100fe640
+//	PURPOSE:	Initialization. RETAIL: CShell 0x100fe640, Object.lto 0x100bb200
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::Init()
@@ -133,7 +141,7 @@ bool CLightCycleMgr::Init()
 //
 //	ROUTINE:	CLightCycleMgr::Term
 //
-//	PURPOSE:	Cleanup. RETAIL: 0x100fe670
+//	PURPOSE:	Cleanup. RETAIL: CShell 0x100fe670, Object.lto 0x100bb230
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::Term()
@@ -147,11 +155,11 @@ void CLightCycleMgr::Term()
 //	ROUTINE:	CLightCycleMgr::AddCyclist
 //
 //	PURPOSE:	Creates a new cyclist (or resets the object's) and sets it
-//				up from its cycle color. RETAIL: 0x100fe680
+//				up from its cycle color. RETAIL: CShell 0x100fe680, Object.lto 0x100bb240
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor, bool bUpdate,
-	LTVector* pvDims, uint32 nTronUnknown4, uint32 nTronUnknown5)
+	const LTVector* pvDims, uint32 nNameId, bool bTronUnknown)
 {
 	LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
 	if(pCyclist)
@@ -169,7 +177,7 @@ LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor
 		pCyclist->pSpikeTrail2 = NULL;
 		pCyclist->nPowerup = LC_NO_POWERUP;
 		pCyclist->nFlags = 0;
-		pCyclist->bDerezRequested = false;
+		pCyclist->bRemove = false;
 	}
 	else
 	{
@@ -237,7 +245,7 @@ LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor
 	LTVector vDims;
 	if(pvDims)
 	{
-		pCyclist->bFixedDims = true;
+		pCyclist->bIsPlayer = true;
 		vDims = *pvDims;
 		pCyclist->fWidth = 4.0f;
 		pCyclist->fHeight = vDims.y;
@@ -271,7 +279,11 @@ LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor
 		if(fHeight > vDims.y)
 		{
 			vPos.y -= fHeight - (vDims.y + 0.1f);
-			LCM_LT->SetObjectPos(pCyclist->hObject, &vPos, LTTRUE);
+#ifdef _CLIENTBUILD
+			g_pLTClient->SetObjectPos(pCyclist->hObject, &vPos, LTTRUE);
+#else
+			g_pLTServer->SetObjectPos(pCyclist->hObject, &vPos);
+#endif
 		}
 	}
 
@@ -280,19 +292,19 @@ LIGHT_CYCLIST* CLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycleColor
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CLightCycleMgr::DerezCyclist
+//	ROUTINE:	CLightCycleMgr::RemoveCyclist
 //
-//	PURPOSE:	Flags a cyclist for a derez. RETAIL: 0x100fec30
+//	PURPOSE:	Flags a cyclist for removal. RETAIL: CShell 0x100fec30, Object.lto 0x100bb7f0
 //
 // ----------------------------------------------------------------------- //
-bool CLightCycleMgr::DerezCyclist(HOBJECT hObj)
+bool CLightCycleMgr::RemoveCyclist(HOBJECT hObj)
 {
 	std::vector<LIGHT_CYCLIST*>::iterator iter;
 	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
 	{
 		if((*iter)->hObject == hObj)
 		{
-			(*iter)->bDerezRequested = true;
+			(*iter)->bRemove = true;
 			return true;
 		}
 	}
@@ -305,7 +317,7 @@ bool CLightCycleMgr::DerezCyclist(HOBJECT hObj)
 //	ROUTINE:	CLightCycleMgr::BeginLightCycleTrail
 //
 //	PURPOSE:	Starts a new light cycle trail at the grid-snapped position.
-//				RETAIL: 0x100fec60
+//				RETAIL: CShell 0x100fec60, Object.lto 0x100bb820
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLE_TRAIL* CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist, LTVector& vPos)
@@ -348,7 +360,7 @@ LIGHT_CYCLE_TRAIL* CLightCycleMgr::BeginLightCycleTrail(LIGHT_CYCLIST* pCyclist,
 //
 //	ROUTINE:	CLightCycleMgr::UpdateLightCycleTrail
 //
-//	PURPOSE:	Updates a light cyclist's trail. RETAIL: 0x100fedd0
+//	PURPOSE:	Updates a light cyclist's trail. RETAIL: CShell 0x100fedd0, Object.lto 0x100bb990
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckCollision, LTVector* pvForward, bool bTronUnknown)
@@ -387,7 +399,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 		if(fDist < 1.0f)
 			return true;
 
-		if(bTronUnknown || !pCyclist->bFixedDims)
+		if(bTronUnknown || !pCyclist->bIsPlayer)
 		{
 			pTrail->fLength += fDist;
 		}
@@ -485,7 +497,10 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 			pTrail->collTrailPoints.push_back(newPoint);
 		}
 
-		if(pCyclist->bFixedDims && !bTronUnknown)
+		// RETAIL: only the client trims a player's trail to its end
+		// (Object.lto 0x100bbd67 always trims it to the length)
+#ifdef _CLIENTBUILD
+		if(pCyclist->bIsPlayer && !bTronUnknown)
 		{
 			if(LCM_LT->GetTime() == pCyclist->fTrailCheckTime)
 			{
@@ -493,6 +508,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 			}
 		}
 		else
+#endif
 		{
 			TrimTrailLength(pCyclist, pTrail, false);
 		}
@@ -505,7 +521,7 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 //
 //	ROUTINE:	CLightCycleMgr::AddLightCycleTrailPoint
 //
-//	PURPOSE:	Adds a point onto a light cycle trail. RETAIL: 0x100ff1f0
+//	PURPOSE:	Adds a point onto a light cycle trail. RETAIL: CShell 0x100ff1f0, Object.lto 0x100bbd80
 //
 // ----------------------------------------------------------------------- //
 uint32 CLightCycleMgr::AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, LTVector& vPos)
@@ -531,7 +547,7 @@ uint32 CLightCycleMgr::AddLightCycleTrailPoint(LIGHT_CYCLIST* pCyclist, LIGHT_CY
 //
 //	ROUTINE:	CLightCycleMgr::FindCyclist
 //
-//	PURPOSE:	Looks for a cyclist in the list by object. RETAIL: 0x100ff280
+//	PURPOSE:	Looks for a cyclist in the list by object. RETAIL: CShell 0x100ff280, Object.lto 0x100bbe10
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST* CLightCycleMgr::FindCyclist(HOBJECT hObj)
@@ -550,7 +566,7 @@ LIGHT_CYCLIST* CLightCycleMgr::FindCyclist(HOBJECT hObj)
 //
 //	ROUTINE:	CLightCycleMgr::GetNextCyclist
 //
-//	PURPOSE:	The next living cyclist after the object's. RETAIL: 0x100ff2b0
+//	PURPOSE:	The next living cyclist after the object's. RETAIL: CShell 0x100ff2b0, Object.lto 0x100bbe40
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST* CLightCycleMgr::GetNextCyclist(HOBJECT hObj, bool bWrap)
@@ -587,7 +603,7 @@ LIGHT_CYCLIST* CLightCycleMgr::GetNextCyclist(HOBJECT hObj, bool bWrap)
 //
 //	PURPOSE:	Creates a trail point from a vector and will do
 //				grid-snapping or alignment if we ever need it.
-//				RETAIL: 0x100ff340
+//				RETAIL: CShell 0x100ff340, Object.lto 0x100bbed0
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTVector &vPos)
@@ -601,7 +617,7 @@ void CLightCycleMgr::CreateTrailPointFromVector(LIGHT_CYCLE_TRAIL_POINT &pt, LTV
 //	ROUTINE:	CLightCycleMgr::TrimTrailLength
 //
 //	PURPOSE:	Cuts the trail's tail to the cyclist's max trail length, a
-//				grid multiple at a time. RETAIL: 0x100ffc00
+//				grid multiple at a time. RETAIL: CShell 0x100ffc00, Object.lto 0x100bc790
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL* pTrail, bool bToTrailEnd)
@@ -705,7 +721,7 @@ void CLightCycleMgr::TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL*
 //
 //	ROUTINE:	CLightCycleMgr::SnapToGrid
 //
-//	PURPOSE:	Snaps the position to the bute grid. RETAIL: 0x100ffec0
+//	PURPOSE:	Snaps the position to the bute grid. RETAIL: CShell 0x100ffec0, Object.lto 0x100bca50
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::SnapToGrid(LTVector & vPos)
@@ -742,7 +758,7 @@ void CLightCycleMgr::SnapToGrid(LTVector & vPos)
 //	PURPOSE:	Checks the move from the trail's last point to vPos against
 //				the other cycles and all the trails (on the grid's integer
 //				coordinates); also finds the nearest parallel wall.
-//				RETAIL: 0x100ff360
+//				RETAIL: CShell 0x100ff360, Object.lto 0x100bbef0
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL_POINT* pLast, LTVector* pvPos,
@@ -809,7 +825,7 @@ bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAI
 				if(pCyclist->bShield && !pOther->bShield)
 				{
 					// The shield wins
-					CyclistCrash(pOther, pCyclist, true);
+					DerezCyclist(pOther, pCyclist, true);
 				}
 				else
 				{
@@ -1036,12 +1052,12 @@ bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAI
 //
 //	ROUTINE:	CLightCycleMgr::HandleCollision
 //
-//	PURPOSE:	Handles a collision. RETAIL: 0x100ffbe0
+//	PURPOSE:	Handles a collision. RETAIL: CShell 0x100ffbe0, Object.lto 0x100bc770
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::HandleCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisionInfo &info)
 {
-	CyclistCrash(pCyclist, info.pCyclist, true);
+	DerezCyclist(pCyclist, info.pCyclist, true);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1049,7 +1065,7 @@ void CLightCycleMgr::HandleCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisio
 //	ROUTINE:	CLightCycleMgr::UpdateCyclistMovement
 //
 //	PURPOSE:	Turns and accelerates the object's cycle from the LCMF_
-//				flags and sets its velocity. RETAIL: 0x100fffd0
+//				flags and sets its velocity. RETAIL: CShell 0x100fffd0, Object.lto 0x100bcb60
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags)
@@ -1244,7 +1260,7 @@ bool CLightCycleMgr::UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags)
 //	ROUTINE:	CLightCycleMgr::GetWallAccelRate
 //
 //	PURPOSE:	The extra acceleration of riding close to a wall.
-//				RETAIL: 0x101004d0
+//				RETAIL: CShell 0x101004d0, Object.lto 0x100bd060
 //
 // ----------------------------------------------------------------------- //
 float CLightCycleMgr::GetWallAccelRate(LIGHT_CYCLIST* pCyclist)
@@ -1265,7 +1281,7 @@ float CLightCycleMgr::GetWallAccelRate(LIGHT_CYCLIST* pCyclist)
 //
 //	ROUTINE:	CLightCycleMgr::UpdateCyclistDims
 //
-//	PURPOSE:	Sets the cycle's dims along its forward. RETAIL: 0x10100520
+//	PURPOSE:	Sets the cycle's dims along its forward. RETAIL: CShell 0x10100520, Object.lto 0x100bd0b0
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector & vDims, bool bTronUnknown)
@@ -1289,7 +1305,7 @@ void CLightCycleMgr::UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector & vDims
 //
 //	ROUTINE:	CLightCycleMgr::RemoveAllCyclists
 //
-//	PURPOSE:	Frees all the cyclists. RETAIL: 0x10100580
+//	PURPOSE:	Frees all the cyclists. RETAIL: CShell 0x10100580, Object.lto 0x100bd110
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::RemoveAllCyclists()
@@ -1308,8 +1324,8 @@ void CLightCycleMgr::RemoveAllCyclists()
 //
 //	ROUTINE:	CLightCycleMgr::UpdateDerez
 //
-//	PURPOSE:	Frees the cyclists flagged for a derez and the trails whose
-//				derez is over. RETAIL: 0x101005e0
+//	PURPOSE:	Frees the cyclists flagged for removal and the trails whose
+//				derez is over. RETAIL: CShell 0x101005e0, Object.lto 0x100bd170
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::UpdateDerez()
@@ -1318,7 +1334,7 @@ void CLightCycleMgr::UpdateDerez()
 	while(iter != m_collCyclists.end())
 	{
 		LIGHT_CYCLIST* pCyclist = (*iter);
-		if(pCyclist->bDerezRequested)
+		if(pCyclist->bRemove)
 		{
 			debug_delete(pCyclist);
 			m_collCyclists.erase(iter);
@@ -1360,7 +1376,7 @@ void CLightCycleMgr::UpdateDerez()
 //
 //	ROUTINE:	CLightCycleMgr::SetCyclistPowerup
 //
-//	PURPOSE:	Gives a cyclist a power-up. RETAIL: 0x10100770
+//	PURPOSE:	Gives a cyclist a power-up. RETAIL: CShell 0x10100770, Object.lto 0x100bd300
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
@@ -1378,7 +1394,7 @@ bool CLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
 //
 //	ROUTINE:	CLightCycleMgr::ActivatePowerup
 //
-//	PURPOSE:	Uses a cyclist's power-up. RETAIL: 0x101007a0
+//	PURPOSE:	Uses a cyclist's power-up. RETAIL: CShell 0x101007a0, Object.lto 0x100bd330
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
@@ -1469,7 +1485,7 @@ bool CLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 //
 //	ROUTINE:	CLightCycleMgr::DeactivateShield
 //
-//	PURPOSE:	Drops a cyclist's shield. RETAIL: 0x10100950
+//	PURPOSE:	Drops a cyclist's shield. RETAIL: CShell 0x10100950, Object.lto 0x100bd4e0
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify)
@@ -1483,7 +1499,7 @@ void CLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify)
 //
 //	PURPOSE:	A shielded cycle hit a trail: the trail is cut in two at the
 //				hit segment (the new trail gets the points after it).
-//				RETAIL: 0x10100960
+//				RETAIL: CShell 0x10100960, Object.lto 0x100bd4f0
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCollisionInfo* pInfo, bool bNotify, bool bCurrentTrail)
@@ -1645,7 +1661,7 @@ bool CLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCo
 //	ROUTINE:	CLightCycleMgr::TrimTrail
 //
 //	PURPOSE:	Drops the current trail's points before nPoint.
-//				RETAIL: 0x10100df0
+//				RETAIL: CShell 0x10100df0, Object.lto 0x100bd980
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, bool bNotify)
@@ -1702,7 +1718,7 @@ bool CLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nPoint, 
 //	ROUTINE:	CLightCycleMgr::CutTrailPoint
 //
 //	PURPOSE:	Pulls the trail point back from the hit point by 64; if it
-//				would pass its neighbour, drops it. RETAIL: 0x10100fb0
+//				would pass its neighbour, drops it. RETAIL: CShell 0x10100fb0, Object.lto 0x100bdb40
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPoints, LIGHT_CYCLE_TRAIL_POINT* pPoint,
@@ -1810,7 +1826,7 @@ bool CLightCycleMgr::CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPo
 //	ROUTINE:	CLightCycleMgr::GetLivingCyclist
 //
 //	PURPOSE:	The object's cyclist, unless it is derezzing.
-//				RETAIL: 0x10101250
+//				RETAIL: CShell 0x10101250, Object.lto 0x100bdde0
 //
 // ----------------------------------------------------------------------- //
 LIGHT_CYCLIST* CLightCycleMgr::GetLivingCyclist(HOBJECT hObj)
@@ -1827,7 +1843,7 @@ LIGHT_CYCLIST* CLightCycleMgr::GetLivingCyclist(HOBJECT hObj)
 //	ROUTINE:	CLightCycleMgr::BeginTrailSpike
 //
 //	PURPOSE:	Starts the trail spike's two trails at vPos, across the
-//				cycle's travel. RETAIL: 0x10101280
+//				cycle's travel. RETAIL: CShell 0x10101280, Object.lto 0x100bde10
 //
 // ----------------------------------------------------------------------- //
 bool CLightCycleMgr::BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
@@ -1892,7 +1908,7 @@ bool CLightCycleMgr::BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 //
 //	PURPOSE:	Grows the trail spike's ends to the bute distance; after the
 //				bute delay its starts follow, then it is removed.
-//				RETAIL: 0x10101520
+//				RETAIL: CShell 0x10101520, Object.lto 0x100be0b0
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
@@ -2019,13 +2035,13 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CLightCycleMgr::Update
+//	ROUTINE:	CLightCycleMgr::DerezOldTrails
 //
 //	PURPOSE:	Starts the derez of the living cyclists' old trails.
-//				RETAIL: 0x10101910
+//				RETAIL: CShell 0x10101910, Object.lto 0x100be4a0
 //
 // ----------------------------------------------------------------------- //
-void CLightCycleMgr::Update()
+void CLightCycleMgr::DerezOldTrails()
 {
 	std::vector<LIGHT_CYCLIST*>::iterator iter;
 	for(iter=m_collCyclists.begin();iter!=m_collCyclists.end();iter++)
@@ -2049,7 +2065,7 @@ void CLightCycleMgr::Update()
 //
 //	ROUTINE:	CLightCycleMgr::GetDifficulty
 //
-//	PURPOSE:	The game's difficulty. RETAIL: 0x10101980
+//	PURPOSE:	The game's difficulty. RETAIL: CShell 0x10101980, Object.lto 0x100be510
 //
 // ----------------------------------------------------------------------- //
 int CLightCycleMgr::GetDifficulty()
@@ -2116,7 +2132,7 @@ int CLightCycleMgr::GetTronUnknown1338()
 //	ROUTINE:	CLightCycleMgr::UpdateCyclistForward
 //
 //	PURPOSE:	Turns the cycle's forward to the axis nearest its rotation's.
-//				RETAIL: 0x10101a40
+//				RETAIL: CShell 0x10101a40, Object.lto 0x100be520
 //
 // ----------------------------------------------------------------------- //
 void CLightCycleMgr::UpdateCyclistForward(LIGHT_CYCLIST* pCyclist)
