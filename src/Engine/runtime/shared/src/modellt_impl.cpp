@@ -178,13 +178,13 @@ LTRESULT ILTModel::RemoveNodeControlFn( HOBJECT hObj, NodeControlFn pFn, void* p
 	return LT_OK ;
 }
 
-// TRON: RETAIL: server.dll 0x1004775a (not in NOLF2's or Contract J.A.C.K.'s
-// engine; written from retail)
+// RETAIL: Lithtech.exe 0x4aada0, before GetSocket; server.dll 0x1004775a
+// (/O1 there: the test is the model's presence, the error its fall-through)
 LTRESULT ILTModel::GetNumSockets(HOBJECT hObj, uint32 &nSockets)
 {
     CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetNumSockets);
 
-    Model *pModel = hObj->ToModel()->GetModelDB();
+    Model *pModel = ((ModelInstance*)hObj)->GetModelDB();
     if (pModel)
     {
         nSockets = pModel->NumSockets();
@@ -221,13 +221,13 @@ LTRESULT ILTModel::GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET
 }
 
 
-// TRON: RETAIL: server.dll 0x1004789e (not in NOLF2's or Contract J.A.C.K.'s
-// engine; written from retail): no range check of hSocket
+// RETAIL: Lithtech.exe 0x4aaf10, after GetSocket (the socket index is not
+// checked against the model's count)
 LTRESULT ILTModel::GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode)
 {
     CHECK_PARAMS(hObj && hObj->m_ObjectType == OT_MODEL, ILTModel::GetSocketParentNode);
 
-    Model *pModel = hObj->ToModel()->GetModelDB();
+    Model *pModel = ((ModelInstance*)hObj)->GetModelDB();
     hNode = INVALID_MODEL_NODE;
     if (pModel)
     {
@@ -241,6 +241,7 @@ LTRESULT ILTModel::GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODE
 
     RETURN_ERROR(1, ILTModel::GetSocketParentNode, LT_NOTFOUND);
 }
+
 LTRESULT ILTModel::GetNode(HOBJECT hObj, const char *pNodeName, HMODELNODE &hNode)
 {
     ModelInstance *pInst;

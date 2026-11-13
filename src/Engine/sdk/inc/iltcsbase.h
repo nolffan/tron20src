@@ -576,17 +576,8 @@ Used for: Misc.
 */
     virtual LTFLOAT GetFrameTime() = 0;
 
-/*!
-\param hObj the object; \param pData (return) its unguaranteed data.
-
-TRON: a virtual NOLF2's interface does not have: a 32-bit value the server
-sends its clients with an object's unguaranteed updates. RETAIL: server.dll
-0x1002f372 (CLTServer vtable 0x100521a0, slot 48: [hObj+0xac]); the name
-is Contract J.A.C.K.'s engine's (cjacksrc), where it is the same code.
-
-Used for: Object.
-*/
-    virtual LTRESULT GetObjectUnguaranteedData(HLOCALOBJ hObj, uint32 *pData) = 0;
+    // TRON: CJ's GetObjectUnguaranteedData (RETAIL: Lithtech.exe 0x407530, CLTClient slot 48)
+    virtual LTRESULT GetObjectUnguaranteedData(HOBJECT hObj, uint32 *pData) = 0;
 
 /*!
 Messaging functions.  All of these functions are obsolete.  Use

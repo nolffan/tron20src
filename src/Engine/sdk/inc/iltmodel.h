@@ -105,18 +105,7 @@ Used for: Models and Animation.
 */
     virtual LTRESULT GetSocket(HOBJECT hObj, const char *pSocketName, HMODELSOCKET &hSocket);
 
-/*!
-\param hObj Model instance.
-\param hSocket Socket of its model.
-\param hNode (return) the node the socket is attached to.
-\return \b LT_INVALIDPARAMS if hObj is not a model, \b LT_NOTFOUND if the
-		socket is not found.
-
-TRON: a virtual NOLF2's interface does not have. RETAIL: server.dll
-0x1004789e, "ILTModel::GetSocketParentNode" (the name is retail's).
-
-Used for: Models and Animation.
-*/
+    // TRON: Tron's, not NOLF2's (our name, from its error string; RETAIL: Lithtech.exe 0x4aaf10, slot 6): the node a socket is on
     virtual LTRESULT GetSocketParentNode(HOBJECT hObj, HMODELSOCKET hSocket, HMODELNODE &hNode);
 
 /*! 
@@ -148,17 +137,7 @@ Used for: Models and Animation.
                                         LTransform &transform,
                                         bool bWorldSpace);
 
-/*!
-\param hObj Model instance.
-\param nSockets (return) the number of sockets its model has.
-\return \b LT_INVALIDPARAMS if hObj is not a model, \b LT_ERROR if it has
-		no model.
-
-TRON: a virtual NOLF2's interface does not have. RETAIL: server.dll
-0x1004775a, "ILTModel::GetNumSockets" (the name is retail's).
-
-Used for: Models and Animation.
-*/
+    // TRON: Tron's, not NOLF2's ("ILTModel::GetNumSockets"; RETAIL: Lithtech.exe 0x4aada0, slot 8): LT_ERROR without a model
     virtual LTRESULT GetNumSockets(HOBJECT hObj, uint32 &nSockets);
 
 /*!
