@@ -162,8 +162,9 @@ LTRESULT dsi_DoErrorMessage(const char *pMessage);
 // Retrieves path to a file.  If the file is outside of a rez file, then 
 // the full input path is returned.  If the file is inside a rez file,
 // a temporary file is created based on the pTempPath parameter.
+// TRON: RETAIL: server.dll 0x1000b49c
 LTRESULT GetOrCopyFile(char const* pszTempPath, char const* pszFilename, 
-					   char* pszOutName, int outNameLen, bool& bFileCopied);
+					   char* pszOutName, int outNameLen, bool *pbFileCopied);
 LTRESULT GetOrCopyClientFile( char const* pszFilename, char* pszOutName, 
 							 int outNameLen, bool& bFileCopied);
 

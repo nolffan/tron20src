@@ -441,6 +441,19 @@ string pointer.
 
 Not fixed yet: the modern build should break after that case.
 
+### Loading object.lto leaks or mis-frees its class module on an error
+
+server.dll 0x10001839 (cb_LoadModule, the engine's shared/src/classbind.cpp).
+The module record (12 bytes) is allocated with `new` (LTMemAlloc) before
+object.lto is bound; when the DLL cannot be found or has no ObjectDLLSetup
+it is never freed, and on a version mismatch it is freed with the C
+runtime's `free()`, which is not the allocator that made it. The game then
+fails to start the world either way, so it only shows as a leak (or a heap
+complaint in a debug runtime).
+
+Not fixed yet: the modern build should allocate it after the binding
+succeeds and release it with `delete`.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

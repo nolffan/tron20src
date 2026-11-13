@@ -1086,7 +1086,7 @@ void sm_SaveObjects(ILTStream *pStream, ObjectList *pList, uint32 dwParam, uint3
         pObj = HandleToServerObj(pLink->m_hObject);
 
 		// Skip the always load objects.
-        if( cb_IsClassFlagSet( &g_pServerMgr->m_ClassMgr.m_ClassModule, pObj->sd->m_pClass, CF_ALWAYSLOAD ))
+        if( cb_IsClassFlagSet( g_pServerMgr->m_ClassMgr.m_ClassModule, pObj->sd->m_pClass, CF_ALWAYSLOAD ))
 			continue;
 
 		// Skip objects that are flagged to go away.

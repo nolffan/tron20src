@@ -6,19 +6,15 @@
 #define BINDTYPE_SERVER	0
 #define BINDTYPE_DLL	1
 
-#include <string>
-
 // RETAIL: Contract J.A.C.K.'s bind manager calls kernel32 itself, not the
 // 2004 tree's LTLibraryLoader (server.dll 0x10001830..0x100019a0)
+// TRON: Tron 2.0's is older: no temporary file name in the binding, which
+// is 8 bytes (server.dll 0x1000174d: LTMemAlloc(8)), and bm_BindModule takes
+// no bTempFile
 typedef struct
 {
 	HINSTANCE	m_hInstance;
 	int			m_Type;
-
-	// Holds name of dll file so that it can be
-	// deleted when freed.
-	std::string m_sTempFileName;
-
 } WinBind;
 
 typedef void (*SetInstanceHandleFn)(void *handle);
@@ -27,7 +23,8 @@ typedef void (*SetInstanceHandleFn)(void *handle);
 // Main interface functions.
 // --------------------------------------------------------- //
 
-int bm_BindModule(const char *pModuleName, bool bTempFile, CBindModuleType *&pModule)
+// RETAIL: server.dll 0x1000174d
+int bm_BindModule(const char *pModuleName, CBindModuleType *&pModule)
 {
 	// Check if we already have this module loaded.  If we do
 	// then we don't need to do the setmasterdatabase.
@@ -45,7 +42,6 @@ int bm_BindModule(const char *pModuleName, bool bTempFile, CBindModuleType *&pMo
 	{
 		//merge our interface database with the database in the DLL we just loaded.
 		TSetMasterFn pSetMasterFn = (TSetMasterFn)GetProcAddress(hModule, "SetMasterDatabase");
-		
 		//check if the function existed.
 		if (pSetMasterFn != NULL)
 		{
@@ -59,12 +55,12 @@ int bm_BindModule(const char *pModuleName, bool bTempFile, CBindModuleType *&pMo
 	LT_MEM_TRACK_ALLOC(( pBind = new WinBind ),LT_MEM_TYPE_MISC);
 	pBind->m_hInstance = hModule;
 	pBind->m_Type = BINDTYPE_DLL;
-	pBind->m_sTempFileName = bTempFile ? pModuleName : "";
 
 	pModule = (CBindModuleType *)pBind;
 	return BIND_NOERROR;
 }
 
+// RETAIL: server.dll 0x100017ac
 void bm_UnbindModule(CBindModuleType *hModule)
 {
 	WinBind *pBind = (WinBind*)hModule;
@@ -76,22 +72,7 @@ void bm_UnbindModule(CBindModuleType *hModule)
 		FreeLibrary(pBind->m_hInstance);
 	}
 
-	// Delete the temporary file.
-	if( pBind->m_sTempFileName.length( ))
-	{
-
-#ifdef __LINUX
-		::remove(pBind->m_sTempFileName.c_str( ));
-#else
-		DeleteFile( pBind->m_sTempFileName.c_str( ));
-#endif
-
-		pBind->m_sTempFileName = "";
-
-	}
-
 	delete pBind;
-	pBind = NULL;
 }
 
 

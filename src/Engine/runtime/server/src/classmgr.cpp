@@ -417,7 +417,18 @@ void CClassMgr::Term()
 {
     int i;
 
-	cb_UnloadModule(m_ClassModule);
+	// TRON: RETAIL: server.dll 0x1000201d
+    if (m_hShellModule)
+    {
+        bm_UnbindModule(m_hShellModule);
+        m_hShellModule = LTNULL;
+    }
+
+    if (m_ClassModule)
+    {
+        cb_UnloadModule(m_ClassModule);
+        m_ClassModule = LTNULL;
+    }
 
     if (m_hServerResourceModule)
     {
@@ -685,8 +696,8 @@ static LTRESULT InitExtraClassData(CClassMgr *pClassMgr)
 
  
     
-    pClasses = cb_GetClassDefs(&pClassMgr->m_ClassModule);
-    nClasses = cb_GetNumClassDefs(&pClassMgr->m_ClassModule);
+    pClasses = cb_GetClassDefs(pClassMgr->m_ClassModule);
+    nClasses = cb_GetNumClassDefs(pClassMgr->m_ClassModule);
 
 
     if (nClasses > 0)
@@ -757,8 +768,8 @@ static void SetupClassFunctions(CClassMgr *pClassMgr)
     int i, nClasses;
 
  
-    pClasses = cb_GetClassDefs(&pClassMgr->m_ClassModule);
-    nClasses = cb_GetNumClassDefs(&pClassMgr->m_ClassModule);
+    pClasses = cb_GetClassDefs(pClassMgr->m_ClassModule);
+    nClasses = cb_GetNumClassDefs(pClassMgr->m_ClassModule);
     
     // Make any LTNULL functions go to their parent class.
     for (i=0; i < nClasses; i++)

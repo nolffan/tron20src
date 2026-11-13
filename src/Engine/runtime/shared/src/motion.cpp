@@ -30,13 +30,14 @@ void CalcMotion
 	LTBOOL bFriction;
 
 	bFriction = LTFALSE;
-	timeIntegral = dt * dt * 0.5f;	
 	velocityMagSqr = v.MagSqr();
 	accelMagSqr = a.MagSqr();
 
 	// [KLS - 3/12/02] - Added support for per-object force override...
 
 	LTVector vForce = pObj->GetGlobalForceOverride();
+	// TRON: computed here (server.dll 0x1001a8e9)
+	timeIntegral = dt * dt * 0.5f;	
 	
 	// If the global force override is zero, use the MotionInfo force...
 

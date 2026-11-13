@@ -430,7 +430,7 @@ class CServerMgr : public CNetHandler
 
 		CNetMgr*		GetNetMgr()	 { return &m_NetMgr; }
 
-		ClassBindModule *GetClassModule()   {return &m_ClassMgr.m_ClassModule;}
+		ClassBindModule *GetClassModule()   {return m_ClassMgr.m_ClassModule;}
 
 		
 	/*

@@ -23,7 +23,8 @@ class CBindModuleType;
 
 
 // Bind and unbind to modules...
-int bm_BindModule(const char *pModuleName, bool bTempFile, CBindModuleType *&pModule);
+// TRON: Tron 2.0's takes no bTempFile (server.dll 0x1000174d)
+int bm_BindModule(const char *pModuleName, CBindModuleType *&pModule);
 void bm_UnbindModule(CBindModuleType *hModule);
 
 // Create a binding for the given handle

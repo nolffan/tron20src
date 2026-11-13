@@ -49,9 +49,10 @@
 // [KLS 4/19/02] - All the class-tick stuff is really just debugging info, so make sure we aren't
 // wasting anytime doing anything in final builds...
 //
-#ifndef _FINAL
+// TRON: Tron 2.0's server counts them in its final build too (server.dll
+// 0x10032df6, PreUpdateObjects: ClearTickCounts, the CounterFinal around
+// each object's update): it predates that change
 #define _PROCESS_CLASS_TICKS_
-#endif
 
 //------------------------------------------------------------------
 //------------------------------------------------------------------

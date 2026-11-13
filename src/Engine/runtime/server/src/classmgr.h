@@ -152,8 +152,12 @@ public:
 
 public:
 
-	ClassBindModule		m_ClassModule;
+	// TRON: Tron 2.0's CClassMgr is 0x20 bytes (server.dll 0x10001ff3): the
+	// class module is cb_LoadModule's pointer, and object.lto is bound a
+	// second time as the shell module (dsi_LoadServerObjects, 0x1000b577)
+	ClassBindModule		*m_ClassModule;
 	CBindModuleType     *m_hServerResourceModule;
+	CBindModuleType     *m_hShellModule;	// TRON (Build 69's tools' name)
 	
 	ClassDef			*m_pBaseClass;
 	

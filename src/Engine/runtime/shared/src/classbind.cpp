@@ -49,14 +49,22 @@ extern ClassDef** ObjectDLLSetup(int *nDefs, ILTServer *pServer, int *version);
 //extern ClassDef** ObjectDLLSetup(int *nDefs, ILTServer *pServer, int *version);
 //#endif // !_WIN32
 
-int cb_LoadModule(const char *pModuleName, bool bTempFile, ClassBindModule& classBindModule, int *version)
-
+// TRON: Tron 2.0's is the older interface (server.dll 0x10001839): the
+// module is allocated here and returned through ppModule, and the binding
+// takes no bTempFile.  RETAIL BUG: the module is allocated before the
+// binding and leaked when it fails, and freed with free() (it was allocated
+// with new, LTMemAlloc) on a version mismatch (docs/RETAIL_BUGS.md)
+int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *version)
 {
+    ClassBindModule *pModule;
     CBindModuleType *hModule;
     ObjectDLLSetupFn theFunction;
     int status;
 
-    status = bm_BindModule(pModuleName, bTempFile, hModule);
+    // this is alloced here and then returned
+    LT_MEM_TRACK_ALLOC(pModule = new ClassBindModule, LT_MEM_TYPE_MISC);
+
+    status = bm_BindModule(pModuleName, hModule);
     if (status == BIND_CANTFINDMODULE)
         return CB_CANTFINDMODULE;
 
@@ -69,29 +77,28 @@ int cb_LoadModule(const char *pModuleName, bool bTempFile, ClassBindModule& clas
     }
 
     // Ok.. setup the classbindmodule.
-    classBindModule.m_hModule = hModule;
-    classBindModule.m_pClassDefs = theFunction(&classBindModule.m_nClassDefs, ilt_server, version);
+    pModule->m_hModule = hModule;
+    pModule->m_pClassDefs = theFunction(&pModule->m_nClassDefs, ilt_server, version);
 
     if (*version != SERVEROBJ_VERSION)
     {
+        free(pModule);
         bm_UnbindModule(hModule);
         return CB_VERSIONMISMATCH;
     }
 
     // Verify all properties!
-    cb_VerifyClassDefProperties(&classBindModule);
+    cb_VerifyClassDefProperties(pModule);
 
+    pModuleOut = pModule;
     return CB_NOERROR;
 }
 
-
-void cb_UnloadModule( ClassBindModule& classBindModule )
+// TRON: RETAIL: server.dll 0x10001918: frees the module cb_LoadModule made
+void cb_UnloadModule(ClassBindModule *pModule)
 {
-	if( classBindModule.m_hModule )
-{
-		bm_UnbindModule( classBindModule.m_hModule );
-		classBindModule.m_hModule = NULL;
-	}
+    bm_UnbindModule(pModule->m_hModule);
+    delete pModule;
 }
 
 

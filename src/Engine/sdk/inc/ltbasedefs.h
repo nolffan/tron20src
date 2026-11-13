@@ -83,13 +83,40 @@ a normal string copy.
     }\
 }
 
+#ifdef DIRECTENGINE_COMPILE
+/*!
+The length of a string, 0 for NULL.
+
+TRON: Build 69's (Jupiter, 2006); the engine's LTStrCpy has its check
+(server.dll 0x10001c30).
+*/
+inline uint32 LTStrLen(const char* pszStr1)
+{
+	if(pszStr1)
+		return (uint32)strlen(pszStr1);
+	return 0;
+}
+#endif
+
 /*!
 Safe string copy (strncpy doesn't always null terminate, but this does).
+
+TRON: the engine's has Build 69's truncation check, whose assertion
+compiles out and leaves the length taken (server.dll 0x10001c30, the
+engine's one out-of-line copy); not Build 69's checks of the pointers.
+The game DLLs' copies are this one without it (CShell.dll, Object.lto and
+ClientFx.fxd lose identical functions with it): their SDK headers are not
+the engine's own.
 */
 inline void LTStrCpy(char *pDest, const char *pSrc, uint32 destBytes) 
 {
     if (destBytes == 0)
         return;
+
+#ifdef DIRECTENGINE_COMPILE
+	if (!(destBytes > LTStrLen(pSrc)))
+		ASSERT(!"LTStrCpy : Copy source is truncated");
+#endif
 
     strncpy(pDest, pSrc, destBytes - 1);
     pDest[destBytes - 1] = '\0';

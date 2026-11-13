@@ -52,7 +52,7 @@ void CLTMessage_Write_Server::WriteCompPos(CPacket_Write &cPacket, const LTVecto
 
 uint8 *CLTMessage_Write_Server::FormatHString(int nStringCode, va_list *pList, uint32 *pLength)
 {
-	return str_FormatString(g_pServerMgr->m_ClassMgr.m_ClassModule.m_hModule, nStringCode, pList, (int*)pLength);
+	return str_FormatString(g_pServerMgr->m_ClassMgr.m_ClassModule->m_hModule, nStringCode, pList, (int*)pLength);
 }
 
 //////////////////////////////////////////////////////////////////////////////

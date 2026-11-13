@@ -251,67 +251,74 @@ void* dsi_GetResourceModule() {
 }
 
 
-LTRESULT GetOrCopyFile( char const* pszFilename, 
-					   char* pszOutName, int outNameLen, bool& bFileCopied )
+// TRON: Tron 2.0's is the older one (server.dll 0x1000b49c): the caller
+// gives the temporary directory, the file is copied there under its own
+// name first, and under a temporary name only if that fails
+LTRESULT GetOrCopyFile(char const* pszTempPath, char const* pszFilename,
+					   char* pszOutName, int outNameLen, bool *pbFileCopied)
 {
     HLTFileTree *hTree;
     LTRESULT dResult;
-    
-	bFileCopied = false;
-    if (server_filemgr->DoesFileExist(pszFilename, &hTree, LTNULL) && 
-        (df_GetTreeType(hTree) == DosTree)) 
+    char szTempFilename[MAX_PATH];
+
+    if (server_filemgr->DoesFileExist(pszFilename, &hTree, LTNULL) &&
+        (df_GetTreeType(hTree) == DosTree))
     {
-        int status = df_GetFullFilename(hTree, ( char* )pszFilename, pszOutName, outNameLen);
-        ASSERT(status != 0);
+        df_GetFullFilename(hTree, ( char* )pszFilename, pszOutName, outNameLen);
         return LT_OK;
     }
 
-    // Get the temp path.
-	char szTempPath[MAX_PATH*2] = "";
-    if( !GetTempPath( sizeof( szTempPath ), szTempPath )) 
-		{
-        strcpy( szTempPath, ".\\" );
-        }
+    // Copy it into the temp directory, under its own name.
+    LTSNPrintF(pszOutName, outNameLen, "%s%s", pszTempPath, pszFilename);
+    dResult = server_filemgr->CopyFile(pszFilename, pszOutName);
+    if (dResult == LT_OK)
+    {
+        if (pbFileCopied)
+            *pbFileCopied = false;
+        return LT_OK;
+    }
 
-	// Get a temp filename.
-    char szTempFilename[MAX_PATH*2] = "";
-	if( !GetTempFileName( szTempPath, pszFilename, 0, szTempFilename ))
-				{
-		strcpy( szTempFilename, pszFilename );
-                }
+    // That failed (it may be in use): try a temporary name.
+    if (GetTempFileName(pszTempPath, pszFilename, 0, szTempFilename))
+    {
+        LTRESULT dTempResult = server_filemgr->CopyFile(pszFilename, szTempFilename);
+        if (dTempResult != LT_OK)
+            return dTempResult;
 
-	// Copy the file.
-    dResult = server_filemgr->CopyFile( pszFilename, szTempFilename );
-    if( dResult != LT_OK )
-	{
-                    return dResult;
-                }
+        if (pbFileCopied)
+            *pbFileCopied = true;
+        LTStrCpy(pszOutName, szTempFilename, outNameLen);
+        return LT_OK;
+    }
 
-	bFileCopied = true;
-    LTStrCpy( pszOutName, szTempFilename, outNameLen );
+    return dResult;
+}
 
-    return LT_OK;
-        }
-
+// TRON: Tron 2.0's (server.dll 0x1000b577): object.lto is bound a second
+// time as the shell module, whose instance handle the game is given
 LTRESULT dsi_LoadServerObjects(CClassMgr *pClassMgr) 
 {
-    char fileName[256];
-    int status;
+    char fileName[256], path[200];
+    int status, version;
     char *pDLLName;
+
+    // Get the temp path.
+    if (!GetTempPath(sizeof(path), path))
+    {
+        strcpy(path, ".\\");
+    }
 
     pDLLName = "object.lto";
 
     //Copy the object.lto file out of the res so we can run it.
-	bool bFileCopied = false;
-    if (GetOrCopyFile( pDLLName, fileName, sizeof(fileName), bFileCopied) != LT_OK) 
+    if (GetOrCopyFile(path, pDLLName, fileName, sizeof(fileName), LTNULL) != LT_OK) 
 	{
         sm_SetupError(LT_ERRORCOPYINGFILE, pDLLName);
         RETURN_ERROR_PARAM(1, LoadServerObjects, LT_ERRORCOPYINGFILE, pDLLName);
     }
 
     //load the object.lto DLL.
-    int version;
-    status = cb_LoadModule(fileName, bFileCopied, pClassMgr->m_ClassModule, &version);
+    status = cb_LoadModule(fileName, pClassMgr->m_ClassModule, &version);
 
     //check for errors.
     if (status == CB_CANTFINDMODULE) {
@@ -327,24 +334,38 @@ LTRESULT dsi_LoadServerObjects(CClassMgr *pClassMgr)
         RETURN_ERROR_PARAM(1, LoadObjectsInDirectory, LT_INVALIDOBJECTDLLVERSION, pDLLName);
     }
 
-    // Get sres.dll.
-	bFileCopied = false;
-    if ((GetOrCopyFile("sres.dll", fileName, sizeof(fileName),bFileCopied) != LT_OK)
-        || (bm_BindModule(fileName, bFileCopied, pClassMgr->m_hServerResourceModule) != BIND_NOERROR))
+    // Load the shell module (out of the same file).
+    if (bm_BindModule(fileName, pClassMgr->m_hShellModule) == BIND_CANTFINDMODULE)
     {
-		cb_UnloadModule( pClassMgr->m_ClassModule );
-
-        sm_SetupError(LT_ERRORCOPYINGFILE, "sres.dll");
-        RETURN_ERROR_PARAM(1, LoadServerObjects, LT_ERRORCOPYINGFILE, "sres.dll");
+        sm_SetupError(LT_MISSINGSHELLDLL, fileName);
+        RETURN_ERROR_PARAM(1, LoadServerObjects, LT_MISSINGSHELLDLL, pDLLName);
     }
 
-    //let the dll know it's instance handle.
-    if (instance_handle_server != NULL) 
-	{
-        instance_handle_server->SetInstanceHandle( pClassMgr->m_ClassModule.m_hModule );
+    //check if we now have the IServerShell interface instantiated.
+    if (i_server_shell == NULL)
+    {
+        sm_SetupError(LT_INVALIDSHELLDLL, fileName);
+        RETURN_ERROR_PARAM(1, LoadServerObjects, LT_INVALIDSHELLDLL, pDLLName);
     }
-    
-    return LT_OK;
+
+    // Get sres.dll.
+    if ((GetOrCopyFile(path, "sres.dll", fileName, sizeof(fileName), LTNULL) == LT_OK)
+        && (bm_BindModule(fileName, pClassMgr->m_hServerResourceModule) == BIND_NOERROR))
+    {
+        //let the dll know it's instance handle.
+        if (instance_handle_server != NULL) 
+        {
+            instance_handle_server->SetInstanceHandle( pClassMgr->m_hShellModule );
+        }
+
+        return LT_OK;
+    }
+
+    bm_UnbindModule(pClassMgr->m_hShellModule);
+    pClassMgr->m_hShellModule = LTNULL;
+
+    sm_SetupError(LT_ERRORCOPYINGFILE, "sres.dll");
+    RETURN_ERROR_PARAM(1, LoadServerObjects, LT_ERRORCOPYINGFILE, "sres.dll");
 }
 
 void dsi_ServerSleep(uint32 ms) {
@@ -520,7 +541,7 @@ LTRESULT dsi_InitClientShellDE()
     }
 
     //load the DLL.
-    status = bm_BindModule(fileName, bFileCopied, g_pClientMgr->m_hShellModule);
+    status = bm_BindModule(fileName, g_pClientMgr->m_hShellModule);	// TRON: no bTempFile (server.dll 0x1000174d)
 
     //check if it loaded correctly.
     if (status == BIND_CANTFINDMODULE) {
@@ -548,7 +569,7 @@ LTRESULT dsi_InitClientShellDE()
     }
 
     //load the DLL.
-    status = bm_BindModule(fileName, bFileCopied, g_pClientMgr->m_hClientResourceModule);
+    status = bm_BindModule(fileName, g_pClientMgr->m_hClientResourceModule);	// TRON: likewise
 
     //check if it was loaded.
     if (status == BIND_CANTFINDMODULE) {

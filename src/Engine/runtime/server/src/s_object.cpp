@@ -393,7 +393,7 @@ LTRESULT LoadObjects(ILTStream *pStream, const char *pWorldName, bool bAllObject
             if (pClass->m_ClassFlags & CF_NORUNTIME)
                 pClass = LTNULL;
             // If only loading LOADALWAYS objects, then skip the ones without the flag set...
-            else if (!bAllObjects && !cb_IsClassFlagSet(&g_pServerMgr->m_ClassMgr.m_ClassModule, pClass, CF_ALWAYSLOAD))
+            else if (!bAllObjects && !cb_IsClassFlagSet(g_pServerMgr->m_ClassMgr.m_ClassModule, pClass, CF_ALWAYSLOAD))
                 pClass = LTNULL;
         }
         else

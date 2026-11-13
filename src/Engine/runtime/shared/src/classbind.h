@@ -25,8 +25,9 @@ public:
 };
 
 // Returns a CB_ status. version is set if it returns CB_VERSIONMISMATCH.
-int			cb_LoadModule(const char *pModuleName, bool bTempFile, ClassBindModule& classBindModule, int *version);
-void		cb_UnloadModule(ClassBindModule& module);
+// TRON: Tron 2.0's: cb_LoadModule allocates the module (server.dll 0x10001839)
+int			cb_LoadModule(const char *pModuleName, ClassBindModule *&pModule, int *version);
+void		cb_UnloadModule(ClassBindModule *pModule);
 
 int			cb_GetNumClassDefs(ClassBindModule *hModule);
 ClassDef**	cb_GetClassDefs(ClassBindModule *hModule);
