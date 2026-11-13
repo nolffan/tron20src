@@ -1554,8 +1554,8 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 			{
 				if( hResult == DI_BUFFEROVERFLOW )
 				{
-					// RETAIL: only at debug level 1 (Lithtech.exe 0x42ffbc)
-					DEBUG_PRINT(1, ("Input buffer overflow on %s", pDevice->m_InstanceName));
+					// RETAIL: always, as NOLF2's (Lithtech.exe 0x432e9f, 0x435614)
+					dsi_ConsolePrint ("Input buffer overflow on %s", pDevice->m_InstanceName);
 				}
 				else
 				{
@@ -2545,8 +2545,8 @@ static bool input_TrackDevice( DeviceInput *pInputArray, uint32 *pnInOut )
 			{
 				if( hResult == DI_BUFFEROVERFLOW )
 				{
-					// RETAIL: only at debug level 1 (Lithtech.exe 0x431270)
-					DEBUG_PRINT(1, ("Input buffer overflow on %s", pDevice->m_InstanceName));
+					// RETAIL: always, as NOLF2's (Lithtech.exe 0x432e9f, 0x435614)
+					dsi_ConsolePrint ("Input buffer overflow on %s", pDevice->m_InstanceName);
 				}
 				else
 				{

@@ -106,14 +106,16 @@ compiles out and leaves the length taken (server.dll 0x10001c30, the
 engine's one out-of-line copy); not Build 69's checks of the pointers.
 The game DLLs' copies are this one without it (CShell.dll, Object.lto and
 ClientFx.fxd lose identical functions with it): their SDK headers are not
-the engine's own.
+the engine's own. Lithtech.exe's is the plain one too (CServerMgr::
+GetErrorString, 0x47a540, and the other inlined copies take no length), so
+the check is server.dll's build alone.
 */
 inline void LTStrCpy(char *pDest, const char *pSrc, uint32 destBytes) 
 {
     if (destBytes == 0)
         return;
 
-#ifdef DIRECTENGINE_COMPILE
+#if defined(DIRECTENGINE_COMPILE) && defined(DE_SERVER_COMPILE)
 	if (!(destBytes > LTStrLen(pSrc)))
 		ASSERT(!"LTStrCpy : Copy source is truncated");
 #endif

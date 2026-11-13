@@ -475,56 +475,60 @@ LTRESULT dsi_ShutdownRender(uint32 flags) {
 }
 
 
-LTRESULT GetOrCopyClientFile( char const* pszFilename, 
-							 char* pszOutName, int outNameLen, bool& bFileCopied ) 
+// RETAIL: Tron's has the server's GetOrCopyFile's shape: the caller's temp
+// path, the file copied under its own name first, a temporary name only if
+// that fails (Lithtech.exe 0x42a040)
+LTRESULT GetOrCopyClientFile(char const* pszTempPath, char const* pszFilename,
+							 char* pszOutName, int outNameLen, bool *pbFileCopied)
 {
     FileIdentifier *pIdent;
     FileRef ref;
     LTRESULT dResult;
+    char szTempFilename[MAX_PATH + 1];	// RETAIL: 0x108 bytes of frame (0x42a040)
 
-	bFileCopied = false;
     ref.m_FileType = FILE_ANYFILE;
     ref.m_pFilename = pszFilename;
     pIdent = client_file_mgr->GetFileIdentifier(&ref, TYPECODE_DLL);
-    if (pIdent && ((df_GetTreeType(pIdent->m_hFileTree) == DosTree))) 
-	{
-        int status = df_GetFullFilename(pIdent->m_hFileTree, ( char* )pszFilename, pszOutName, outNameLen);
-        ASSERT(status != 0);
+    if (pIdent && ((df_GetTreeType(pIdent->m_hFileTree) == DosTree)))
+    {
+        df_GetFullFilename(pIdent->m_hFileTree, ( char* )pszFilename, pszOutName, outNameLen);
         return LT_OK;
     }
 
-    // Get the temp path.
-	char szTempPath[MAX_PATH*2] = "";
-    if( !GetTempPath( sizeof( szTempPath ), szTempPath )) 
-		{
-        strcpy( szTempPath, ".\\" );
-        }
+    // Copy it into the temp directory, under its own name.
+    LTSNPrintF(pszOutName, outNameLen, "%s%s", pszTempPath, pszFilename);
+    dResult = client_file_mgr->CopyFile(pszFilename, pszOutName);
+    if (dResult == LT_OK)
+    {
+        if (pbFileCopied)
+            *pbFileCopied = false;
+        return LT_OK;
+    }
 
-	// Get a temp filename.
-    char szTempFilename[MAX_PATH*2] = "";
-	if( !GetTempFileName( szTempPath, pszFilename, 0, szTempFilename ))
-				{
-		strcpy( szTempFilename, pszFilename );
-                }
+    // That failed (it may be in use): try a temporary name.
+    if (GetTempFileName(pszTempPath, pszFilename, 0, szTempFilename))
+    {
+        LTRESULT dTempResult = client_file_mgr->CopyFile(pszFilename, szTempFilename);
+        if (dTempResult != LT_OK)
+            return dTempResult;
 
-	// Copy the file.
-    dResult = client_file_mgr->CopyFile( pszFilename, szTempFilename );
-    if( dResult != LT_OK )
-				{
-                    return dResult;
-                }
+        if (pbFileCopied)
+            *pbFileCopied = true;
+        LTStrCpy(pszOutName, szTempFilename, outNameLen);
+        return LT_OK;
+    }
 
-	bFileCopied = true;
-    LTStrCpy( pszOutName, szTempFilename, outNameLen );
-
-    return LT_OK;
-            }
+    return dResult;
+}
 
 
 
 LTRESULT dsi_InitClientShellDE() 
 {
-    char fileName[MAX_PATH];
+	// RETAIL: the temp path found here, ".\\" without one (Lithtech.exe
+	// 0x42a1b6), the copies not told whether they were copied
+    char tempPath[200];
+    char fileName[256];
     int status;
     LTRESULT dResult;
 
@@ -532,9 +536,13 @@ LTRESULT dsi_InitClientShellDE()
     g_pClientMgr->m_hLocalizedClientResourceModule = LTNULL;
     g_pClientMgr->m_hShellModule = LTNULL;
 
+    if (!GetTempPath(sizeof(tempPath), tempPath))
+    {
+        strcpy(tempPath, ".\\");
+    }
+
     // Setup the cshell.dll file.
-	bool bFileCopied = false;
-    dResult = GetOrCopyClientFile( "cshell.dll", fileName, sizeof(fileName), bFileCopied );
+    dResult = GetOrCopyClientFile(tempPath, "cshell.dll", fileName, sizeof(fileName), LTNULL);
     if (dResult != LT_OK) {
         g_pClientMgr->SetupError(LT_ERRORCOPYINGFILE, "cshell.dll");
         RETURN_ERROR_PARAM(1, InitClientShellDE, LT_ERRORCOPYINGFILE, "cshell.dll");
@@ -560,8 +568,7 @@ LTRESULT dsi_InitClientShellDE()
     //
 
     //copy the file out of the res file.
-	bFileCopied = false;
-    dResult = GetOrCopyClientFile( "cres.dll", fileName, sizeof(fileName), bFileCopied );
+    dResult = GetOrCopyClientFile(tempPath, "cres.dll", fileName, sizeof(fileName), LTNULL);
     if (dResult != LT_OK) 
 	{
         g_pClientMgr->SetupError(LT_ERRORCOPYINGFILE, "cres.dll");

@@ -438,6 +438,17 @@ Used for: Audio.
 
 #endif
 
+// TRON: four slots more (22..25), before SetSoundPosition (Lithtech.exe's
+// CSoundMgr vtable 0x58d9a8; the shell's PauseSounds and ResumeSounds are
+// slots 28 and 29). Unnamed (ours): each hands a client sound's sample to
+// one of the sound driver's own Tron additions (ILTSoundSys slots 23..29,
+// runtime/sound/src/iltsound.h); the three that take a sound report a bad
+// one as "CSoundMgr::SetUpdateSoundParam"
+    virtual LTRESULT TronUnknownVirtual22(HLTSOUND hSound, uint32 nOn) = 0;
+    virtual LTRESULT TronUnknownVirtual23(HLTSOUND hSound, uint32 a, uint32 b, uint32 c) = 0;
+    virtual LTRESULT TronUnknownVirtual24(HLTSOUND hSound, uint32 nOn, float f, uint32 a, uint32 b) = 0;
+    virtual LTRESULT TronUnknownVirtual25(uint32 nRun) = 0;
+
 /*!
 \param  hSound      Handle to sound.
 \param  pPos        New position of sound. Can be \b NULL.
@@ -524,6 +535,10 @@ Used for: Audio.
  
 		virtual LTRESULT	SetListener( bool bListenerInClient, 
 			LTVector *pPos, LTRotation *pRot, bool bTeleport ) = 0;
+
+// TRON: slot 33 (Lithtech.exe 0x4b50a0; its name from its error messages):
+// a client sound's volume, through its instance's SetVolume
+		virtual LTRESULT	SetSoundVolume( HLTSOUND hSound, uint16 nVolume ) = 0;
 		
 	};
 

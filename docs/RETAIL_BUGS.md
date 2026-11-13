@@ -603,6 +603,61 @@ these widgets, so it is never reached in play.
 
 Not fixed yet.
 
+### The MaxFPS frame limiter times the frame from garbage
+
+Lithtech.exe 0x40df21 (CClientMgr::Update, cm_HandleMaxFPS inlined; src/
+Engine/runtime/client/src/clientmgr.cpp). Update declares frameTicks for
+the frame-rate limiter but sets it only in the debug build's tick
+counting; the final build still calls the limiter, which divides that
+uninitialised value (the stack slot last holding the frame's time in
+milliseconds, 0x40df80) by the counter's ticks per second. With MaxFPS
+(0, off, by default) set, the wait per frame bears no relation to how
+long the frame took.
+
+Fixed in the modern build: clientmgr.cpp does not call it; its own frame
+limiter replaces it (MODERN.md EN-40).
+
+### The VersionInfo console command calls a null pointer
+
+Lithtech.exe 0x41ad9f (con_ShowVersionInfo, src/Engine/runtime/client/src/
+consolecommands.cpp) and 0x40bef6 (CLTClient::InitFunctionPointers,
+clientde_impl.cpp). The command calls ILTClient's GetVersionInfoExt
+(+0x2b8) without testing it, and the engine never sets that pointer (nor
+GetPerformanceInfo's beside it), so typing it in the console crashes the
+game.
+
+Fixed in the modern build: clientde_impl.cpp sets both, and the command
+tests the pointer (MODERN.md EN-3).
+
+### HighPriority announces itself every frame and cannot be undone
+
+Lithtech.exe 0x405193 (RunClientApp's main loop, src/Engine/runtime/
+kernel/src/sys/win/client.cpp). The loop compares the HighPriority console
+variable with bPrevHighPriority, which it never updates: while the
+variable is set, every frame prints "Setting process to high priority" to
+the console and sets the priority class again, and clearing it never puts
+the process back to normal priority (the compiler drops that branch, and
+its string, as unreachable).
+
+Not fixed yet.
+
+### DrawPrim never uses its camera's viewport
+
+Lithtech.exe 0x41d8e0 (CD3DDrawPrim::SetCamera, src/Engine/runtime/
+render_b/src/sys/d3d/d3ddrawprim.cpp; Build 69's code). When the draw
+primitive's camera rectangle differs from the current viewport, it sets
+the current viewport again (only its depth range changes) instead of the
+camera's rectangle, so primitives drawn through a camera that does not
+cover the screen are not confined to it.
+
+Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
-(none checked yet)
+- Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
+  quads with each quad's first vertex colour, and its DrawPrim functions
+  check only the last draw's result: Tron's are Build 69's (each vertex's
+  own colour, every result checked; Lithtech.exe 0x41f140).
+- Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
+  the saved viewport and leaves the new viewport's size unset: Tron's is
+  Build 69's (0x41d8e0; its own bug is above).

@@ -165,8 +165,9 @@ LTRESULT dsi_DoErrorMessage(const char *pMessage);
 // TRON: RETAIL: server.dll 0x1000b49c
 LTRESULT GetOrCopyFile(char const* pszTempPath, char const* pszFilename, 
 					   char* pszOutName, int outNameLen, bool *pbFileCopied);
-LTRESULT GetOrCopyClientFile( char const* pszFilename, char* pszOutName, 
-							 int outNameLen, bool& bFileCopied);
+// TRON: RETAIL: Lithtech.exe 0x42a040, the same shape
+LTRESULT GetOrCopyClientFile(char const* pszTempPath, char const* pszFilename,
+							 char* pszOutName, int outNameLen, bool *pbFileCopied);
 
 
 void dsi_PrintToConsole(const char *pMsg, ...);   // Print to console.

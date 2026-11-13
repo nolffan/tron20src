@@ -377,7 +377,10 @@ class CClientMgr {
 
         // RETAIL: a vector, not NOLF2's array and count (CClientMgr::Init
         // reserves and inserts, 0x40fc25)
-        std::vector<const char*> m_ResTrees;
+        // RETAIL: an array and its count, as NOLF2's (0xa70, 0xac0:
+        // CClientMgr::Init, Lithtech.exe 0x40cc1d)
+        const char              *m_ResTrees[MAX_RESTREES];
+        uint32                  m_nResTrees;
 
         VideoMgr                *m_pVideoMgr;
 
@@ -548,11 +551,10 @@ private:
 		virtual void	HandleUnknownPacket(const CPacket_Read &cPacket, uint8 senderAddr[4], uint16 senderPort);
 	};
 
+	// RETAIL: the last member (0xaf4; sizeof 0xaf8: cm_Init's new,
+	// Lithtech.exe 0x40e2c2). Contract J.A.C.K.'s four bytes after it are
+	// not Tron's
 	CDefaultNetHandler m_cDefaultNetHandler;
-
-	// RETAIL: four more bytes that no code of retail's reads or writes
-	// (sizeof 0xaa0: cm_Init's new, Lithtech.exe 0x40ff31)
-	uint32 m_nUnknownA9C;
 
 #ifdef COMPILE_JUPITER_EVAL
 	WaterMark				m_WaterMark;

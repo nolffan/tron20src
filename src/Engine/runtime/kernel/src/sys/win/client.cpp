@@ -78,11 +78,11 @@ uint32 g_EngineStartMS;
 static bool StartClient(ClientGlob *pGlob) 
 {
     uint32 initStartTime;
-    // RETAIL: Contract J.A.C.K. collects the res trees in a vector, with
-    // room for 32 and no limit (0x4058ad)
-    std::vector<const char*> resTrees;
-    resTrees.reserve(32);
+    // RETAIL: an array of at most MAX_RESTREES, as NOLF2's (Lithtech.exe
+    // 0x404fdc..0x405033, inlined in RunClientApp)
+    const char *resTrees[MAX_RESTREES];
     char strVersion[32];
+    uint32 nResTrees;
 
 #ifdef _M_IX86
     short control;
@@ -98,18 +98,23 @@ static bool StartClient(ClientGlob *pGlob)
     pGlob->m_pWorldName = command_line_args->FindArgDash("world");
 
     // Find all the res trees.
+    nResTrees = 0;
+
     for (uint32 i = 0; i < command_line_args->Argc() - 1; i++) {
         //check if this argument is -rez
         if (stricmp(command_line_args->Argv(i), "-rez") == 0) {
             //save this parameter.
-            resTrees.push_back(command_line_args->Argv(i + 1));
+            resTrees[nResTrees++] = command_line_args->Argv(i + 1);
+            if (nResTrees+1 >= MAX_RESTREES) {
+                break;
+            }
         }
     }
 
     // Add the default engine resource...
     if (!g_CV_NoDefaultEngineRez) 
 	{
-        resTrees.push_back("engine.rez"); 
+        resTrees[nResTrees++] = "engine.rez"; 
     }
 
     if (command_line_args->FindArgDash("noinput")) 
@@ -158,7 +163,7 @@ static bool StartClient(ClientGlob *pGlob)
 #endif  // USE_ABSTRACT_SOUND_INTERFACES
 
     initStartTime = timeGetTime();
-    if (g_pClientMgr->Init(&resTrees[0], resTrees.size(), nNumConfigFiles, pszConfigFiles) != LT_OK) {
+    if (g_pClientMgr->Init(resTrees, nResTrees, nNumConfigFiles, pszConfigFiles) != LT_OK) {
         return LTFALSE;
     }
   
@@ -614,8 +619,9 @@ int RunClientApp(HINSTANCE hInstance) {
     wndclass.cbClsExtra    = 0;
     wndclass.cbWndExtra    = 0;
     wndclass.hInstance     = pGlob->m_hInstance;
-    // RETAIL: the executable's own icon, resource 128 (0x405cb2)
-    wndclass.hIcon         = LoadIcon (GetModuleHandle(LTNULL), MAKEINTRESOURCE(128));
+    // RETAIL: the standard icon, as NOLF2's (Lithtech.exe 0x404eef);
+    // Contract J.A.C.K.'s own icons are not Tron's
+    wndclass.hIcon         = LoadIcon (LTNULL, IDI_APPLICATION);
     wndclass.hCursor       = LoadCursor (LTNULL, IDC_ARROW);
     wndclass.hbrBackground = (HBRUSH)GetStockObject (BLACK_BRUSH);
     wndclass.lpszMenuName  = LTNULL;

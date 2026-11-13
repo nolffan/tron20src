@@ -322,7 +322,7 @@ void CClientLightCycleMgr::Update()
 
 		if (pCyclist->bTurbo || pCyclist->bTurboCursed)
 		{
-			if (pCyclist->fPowerupDuration + pCyclist->fPowerupStartTime <= g_pLTClient->GetGameTime())
+			if (pCyclist->fPowerupDuration + pCyclist->fPowerupStartTime <= g_pLTClient->TronUnknownVirtual44())	// TRON: the game clock (iltclient.h)
 			{
 				pCyclist->bTurbo = false;
 				pCyclist->bTurboCursed = false;

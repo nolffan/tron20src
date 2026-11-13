@@ -2014,31 +2014,32 @@ Used for: Input.
    LTRESULT (*SetRawDeviceActuatorData)(uint32 deviceNum,
         void* pData);
 
+    // TRON: DebugOut and GetSkyDef at 0x1e4 and 0x1e8, where NOLF2 has the
+    // game clock's two function pointers: Tron's game clock is ILTCSBase's
+    // slots 44 and 45 (TronUnknownVirtual44 and 45, iltcsbase.h), and its
+    // InitFunctionPointers stores ::DebugOut and ci_GetSkyDef here
+    // (Lithtech.exe 0x40bc5b)
 /*!
-\return Number of seconds since the game was started.
+\param  pMsg    The printf-styled format string to display.  This parameter can be followed 
+                by the usual format parameters.
 
-Get the time since the game was started.  This accesses the GAME timer
-on the server. Since this value comes from the server, it will be
-intermittent, so only use it for things that must be synced with the
-server. This timer will not update when there isn't a connection to
-the server.
- 
-Used for: Misc.  
+Used to output a TRACE message to the Debug Output window.  Newlines
+must be explicitly used.
+
+Used for: Misc.
 */
-    float (*GetGameTime)();
+    void (*DebugOut)(const char *pMsg, ...);
 
 /*!
-\return Number of seconds since the previous frame.
+\param  pDef    (return) Sky definition structure (filled in by function).
+\return Always returns \b LT_OK.
 
-Get the time since the frame was started.  This accesses the GAME
-timer on the server. Since this value comes from the server, it will
-be intermittent, so only use it for things that must be synced with
-the server. This timer will not update when there isn't a connection
-to the server.
+Get the sky definition.
 
-Used for: Misc.  
+Used for: Special FX.
 */
-    float (*GetGameFrameTime)();
+    LTRESULT (*GetSkyDef)(SkyDef *pDef);
+
 
 /*!
 \param  commandNum      Command ID to query.
@@ -2825,14 +2826,11 @@ Used for: Networking.
 */
     LTRESULT (*GetLobbyLaunchInfo)(const char* sDriver, void** ppLobbyLaunchData);
 
-    // TRON: a slot of Tron's ILTClient at 0x2b8 that neither its engine's
-    // function-pointer setup nor the game's code was seen to use
-    void *m_pTronUnknown_2b8;
-
-    // TRON: a slot of Tron's ILTClient at 0x2bc that neither its engine's
-    // function-pointer setup nor the game's code was seen to use
-    void *m_pTronUnknown_2bc;
-
+    // TRON: GetVersionInfoExt, GetPerformanceInfo and SetConsoleEnable at
+    // 0x2b8..0x2c0, as NOLF2 has them together: the console's VersionInfo
+    // calls 0x2b8 with an LTVERSIONINFOEXT (Lithtech.exe 0x41ad9f) and
+    // InitFunctionPointers stores ci_SetConsoleEnable at 0x2c0 (0x40bef6),
+    // leaving the first two NULL (docs/RETAIL_BUGS.md)
 /*!
 \param pVersionInfo (return) \b LTVERSIONINFOEXT struct to be filled in by the function
 \return \b LT_INVALIDPARAMS if \b pVersionInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
@@ -2842,6 +2840,28 @@ Get the extended version info.
 Used for: Misc.
 */
     LTRESULT (*GetVersionInfoExt)(LTVERSIONINFOEXT* pVersionInfo);
+
+/*!
+\param pPerformanceInfo (return) \b LTPERFORMANCEINFO struct to be filled in by the function
+\return LT_INVALIDPARAMS if \b pPerformanceInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
+
+Get run-time performance info for last frame.
+
+The renderer is queried for some of the performance info.
+
+Used for: Misc.
+*/
+    LTRESULT (*GetPerformanceInfo)(LTPERFORMANCEINFO* pPerformanceInfo);
+
+/*!
+\param bEnable Enable/Disable access to the console.
+\return LT_OK on success.
+
+Enable/Disable access to the console.
+
+Used for: Misc.
+*/
+    LTRESULT (*SetConsoleEnable)(bool bEnable);
 
 /*!  
 Network startup/join/host functions.  
@@ -2945,53 +2965,6 @@ Used for: Networking.
 
     LTRESULT (*AddInternetDriver)();
     LTRESULT (*RemoveInternetDriver)();
-
-    // TRON: NOLF2's members that have no slot below 0x2e4 in Tron's ILTClient
-    // (its engine sets none of them there): kept for the shared code, past
-    // every slot retail is known to use
-
-/*!
-\param  pMsg    The printf-styled format string to display.  This parameter can be followed 
-                by the usual format parameters.
-
-Used to output a TRACE message to the Debug Output window.  Newlines
-must be explicitly used.
-
-Used for: Misc.
-*/
-    void (*DebugOut)(const char *pMsg, ...);
-
-/*!
-\param  pDef    (return) Sky definition structure (filled in by function).
-\return Always returns \b LT_OK.
-
-Get the sky definition.
-
-Used for: Special FX.
-*/
-    LTRESULT (*GetSkyDef)(SkyDef *pDef);
-
-/*!
-\param pPerformanceInfo (return) \b LTPERFORMANCEINFO struct to be filled in by the function
-\return LT_INVALIDPARAMS if \b pPerformanceInfo is \b NULL or if it's not the expected size (i.e., different versions of the struct); otherwise, returns \b LT_OK.
-
-Get run-time performance info for last frame.
-
-The renderer is queried for some of the performance info.
-
-Used for: Misc.
-*/
-    LTRESULT (*GetPerformanceInfo)(LTPERFORMANCEINFO* pPerformanceInfo);
-
-/*!
-\param bEnable Enable/Disable access to the console.
-\return LT_OK on success.
-
-Enable/Disable access to the console.
-
-Used for: Misc.
-*/
-    LTRESULT (*SetConsoleEnable)(bool bEnable);
 
 	virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
 

@@ -70,6 +70,7 @@ define_holder(IWorldBlindObjectData, g_iWorldBlindObjectData);
 
 extern LTBOOL g_bUpdateServer;
 extern int32 g_CV_MasterPaletteMode, g_bForceRemote;
+extern int32 g_CV_AlwaysUpdate;	// TRON: the "AlwaysUpdate" console variable
 
 CClientShell *g_pClientShell;
 
@@ -216,9 +217,8 @@ void CClientShell::Term()
     g_pClientMgr->m_NetMgr.Disconnect(m_HostID, DISCONNECTREASON_VOLUNTARY_CLIENTSIDE);
     m_HostID = INVALID_CONNID;
 
-    // RETAIL: only if it is still this shell's (Lithtech.exe 0x411947)
-    if (g_pClientMgr->m_NetMgr.m_pHandler == this)
-        g_pClientMgr->m_NetMgr.SetNetHandler(NULL);
+    // RETAIL: unconditionally, as NOLF2's (Lithtech.exe 0x410eb0)
+    g_pClientMgr->m_NetMgr.SetNetHandler(NULL);
 
     // Uninit the server mugger if there is one.
     if (g_pServerMgr) {
@@ -297,16 +297,10 @@ LTRESULT CClientShell::StartupLocal(StartGameRequest *pRequest,
     }
 
 
-    // Give the server the CBaseDriver we have setup.
-    // RETAIL: before the resources (Lithtech.exe 0x411d6e)
-    if (pServerDriver)
-    {
-        g_pServerMgr->TransferNetDriver(pServerDriver);
-    }
-
     // Add the resources to it and listen locally by default.
-    // RETAIL: from the vector (Lithtech.exe 0x411d85)
-    if (!g_pServerMgr->AddResources(&g_pClientMgr->m_ResTrees[0], g_pClientMgr->m_ResTrees.size()))
+    // RETAIL: as NOLF2's: the resources first, the net driver after the
+    // listen (Lithtech.exe 0x4110d8)
+    if (!g_pServerMgr->AddResources(g_pClientMgr->m_ResTrees, g_pClientMgr->m_nResTrees))
     {
         g_pServerMgr->GetErrorString(errorString, 256);
         RETURN_ERROR_PARAM(1, CClientShell::StartupLocal, LT_SERVERERROR, errorString);
@@ -327,6 +321,12 @@ LTRESULT CClientShell::StartupLocal(StartGameRequest *pRequest,
     }
 
     m_bLocal = true;
+
+    // Give the server the CBaseDriver we have setup.
+    if (pServerDriver)
+    {
+        g_pServerMgr->TransferNetDriver(pServerDriver);
+    }
 
     if (bSelfConnect)
     {
@@ -437,7 +437,8 @@ LTRESULT CClientShell::Update()
 
 
     // Call PreUpdate and Update functions.
-    if (dsi_IsClientActive())
+	// RETAIL: or while AlwaysUpdate is set (Lithtech.exe 0x411332, 0x411363)
+    if (dsi_IsClientActive() || g_CV_AlwaysUpdate)
     {
 		// Give the predictive views some time!
 		pd_Update(this);
@@ -451,7 +452,7 @@ LTRESULT CClientShell::Update()
         i_client_shell->Update();
     }
 
-    if (dsi_IsClientActive())
+    if (dsi_IsClientActive() || g_CV_AlwaysUpdate)
     {
         // Update all the client object structures from their script counterparts.
         g_pClientMgr->UpdateObjects();

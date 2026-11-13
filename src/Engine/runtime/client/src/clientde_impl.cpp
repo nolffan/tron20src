@@ -2398,30 +2398,6 @@ LTRESULT ci_SetRawDeviceActuatorData(uint32 deviceNum, void *pData)
 	return LT_ERROR;
 }
 
-float ci_GetGameTime()
-{
-	if (g_pClientMgr->m_pCurShell)
-	{
-		return g_pClientMgr->m_pCurShell->m_GameTime;
-	}
-	else
-	{
-		return 0.0f;
-	}
-}
-
-float ci_GetGameFrameTime()
-{
-	if (g_pClientMgr->m_pCurShell)
-	{
-		return g_pClientMgr->m_pCurShell->m_GameFrameTime;
-	}
-	else
-	{
-		return 0.0f;
-	}
-}
-
 LTRESULT ci_GetSkyDef(SkyDef *pDef)
 {
 	memcpy(pDef, &g_pClientMgr->m_SkyDef, sizeof(SkyDef));
@@ -3264,8 +3240,8 @@ void CLTClient::InitFunctionPointers()
 	GetRawDeviceActuatorDataSize = ci_GetRawDeviceActuatorDataSize;
 	SetRawDeviceActuatorData = ci_SetRawDeviceActuatorData;
 
-	GetGameTime = ci_GetGameTime;
-	GetGameFrameTime = ci_GetGameFrameTime;
+	// RETAIL: no game clock pointers: the clock is ILTCSBase's slots 44 and
+	// 45 (Lithtech.exe 0x40bc5b stores DebugOut right after the raw devices)
 
 	DebugOut = ::DebugOut;
 	GetSkyDef = ci_GetSkyDef;
@@ -3360,8 +3336,9 @@ void CLTClient::InitFunctionPointers()
 	GetPerformanceInfo = in_GetPerformanceInfo;
 #else
 	// RETAIL: GetVersionInfoExt and GetPerformanceInfo are left NULL
-	// (Lithtech.exe 0x40c16d), though the console's ShowVersionInfo calls
-	// the first (RETAIL_BUGS.md); the game does not call them
+	// (InitFunctionPointers, Lithtech.exe 0x40bef6), though the console's
+	// VersionInfo calls the first (0x41ad9f; docs/RETAIL_BUGS.md); the game
+	// does not call them
 #endif
 
 	SetConsoleEnable = ci_SetConsoleEnable;

@@ -404,6 +404,24 @@ public:
 	virtual bool		SetEAX20BufferSettings( LHSAMPLE hSample, LTSOUNDFILTERDATA* pFilterData ) = 0;
 #endif
 
+	// TRON: seven slots more (23..29) before Set3DProviderMinBuffers: the
+	// engine's calls from Set3DProviderMinBuffers on are 7 slots higher
+	// than NOLF2's (Lithtech.exe: CSoundMgr::Init 0x4b1f8c, the sound
+	// instances 0x482837..), and retail SndDrv.dll's CDx8SoundSys vtable
+	// (0x1000c1e0) has them at 0x10005c60..0x10005fa0. Unnamed (ours): a
+	// record per sample of 0x1c bytes in a table of 16 (+0x4c8), switched
+	// (23, 24), set up (26, 28) or set up from the record's own value (25,
+	// 27) for a sound instance's sample and its 3D sample, under the
+	// driver's mutex; and one that suspends or resumes the sound thread
+	// (29). CSoundMgr's own additions call them (0x4b4e70..0x4b5080)
+	virtual bool		TronUnknownVirtual23( LHSAMPLE hS, uint32 nOn ) = 0;		// 0x10005c60
+	virtual bool		TronUnknownVirtual24( LH3DSAMPLE hS, uint32 nOn ) = 0;		// 0x10005cc0
+	virtual bool		TronUnknownVirtual25( LHSAMPLE hS, uint32 a, uint32 b, uint32 c ) = 0;	// 0x10005e80
+	virtual bool		TronUnknownVirtual26( LHSAMPLE hS, uint32 nOn, float f, uint32 a, uint32 b ) = 0;	// 0x10005d20
+	virtual bool		TronUnknownVirtual27( LH3DSAMPLE hS, uint32 a, uint32 b, uint32 c ) = 0;	// 0x10005f10
+	virtual bool		TronUnknownVirtual28( LH3DSAMPLE hS, uint32 nOn, float f, uint32 a, uint32 b ) = 0;	// 0x10005dd0
+	virtual void		TronUnknownVirtual29( uint32 nRun ) = 0;					// 0x10005fa0
+
 	// 3d sound provider functions
 	virtual void		Set3DProviderMinBuffers( uint32 uiMinBuffers ) = 0;
 	virtual sint32		Open3DProvider( LHPROVIDER hLib ) = 0;

@@ -333,19 +333,24 @@ void ps_UpdateParticles(LTParticleSystem *pSystem, LTFLOAT t)
 }
 
 
+// RETAIL: Build 69's: a local system's box is transformed by the system's
+// own transform and its radius scaled (Lithtech.exe 0x4626b0, out of line)
 void ps_UpdateParticleBoundingBox(LTParticleSystem *pSystem)
 {
 	LTVector halfBox = (pSystem->m_MaxPos - pSystem->m_MinPos) * 0.5f;
 
-	// RETAIL: Contract J.A.C.K. only moves a local system's box to the
-	// system's position, neither rotated nor scaled (0x457d60)
-	pSystem->m_SystemCenter = pSystem->m_MinPos + halfBox;
 	if(!(pSystem->m_psFlags & PS_WORLDSPACE))
 	{
-		pSystem->m_SystemCenter += pSystem->GetPos();
+		LTMatrix mTransform;
+		pSystem->SetupTransform(mTransform);
+		mTransform.Apply(pSystem->m_MinPos + halfBox, pSystem->m_SystemCenter);
+	}
+	else
+	{
+		pSystem->m_SystemCenter = pSystem->m_MinPos + halfBox;
 	}
 
-	pSystem->m_SystemRadius = halfBox.Mag();
+	pSystem->m_SystemRadius = halfBox.Mag() * LTMAX(pSystem->m_Scale.x, LTMAX(pSystem->m_Scale.y, pSystem->m_Scale.z));
 	pSystem->m_Radius = pSystem->m_SystemRadius;
 }
 

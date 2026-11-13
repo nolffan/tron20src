@@ -387,6 +387,13 @@ public:
 	virtual LTRESULT	EnableSoundFilter( bool bEnable );
 #endif
 
+	// TRON: ILTClientSoundMgr's slots 22..25 (iltsoundmgr.h)
+	virtual LTRESULT	TronUnknownVirtual22( HLTSOUND hSound, uint32 nOn );
+	virtual LTRESULT	TronUnknownVirtual23( HLTSOUND hSound, uint32 a, uint32 b, uint32 c );
+	virtual LTRESULT	TronUnknownVirtual24( HLTSOUND hSound, uint32 nOn, float f, uint32 a, uint32 b );
+	virtual LTRESULT	TronUnknownVirtual25( uint32 nRun );
+	virtual LTRESULT	SetSoundVolume( HLTSOUND hSound, uint16 nVolume );
+
 public:
 
 	ObjectBank< CSoundBuffer > &GetSoundBufferBank( ) 

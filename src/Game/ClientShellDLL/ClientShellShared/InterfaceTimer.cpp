@@ -49,7 +49,7 @@ void CInterfaceTimer::Draw()
 
 	// RETAIL: reconstructed from the retail 1.3 CShell.dll (0x100eb260): the
 	// time left is counted from the game time on every draw, paused or not.
-	float fTimeLeft = m_fTime - g_pLTClient->GetGameTime( );
+	float fTimeLeft = m_fTime - g_pLTClient->TronUnknownVirtual44( );	// TRON: the game clock (iltclient.h)
 
 	// Update/Draw the timer if there is anytime left...
 	if( fTimeLeft <= 0.0f )
