@@ -206,6 +206,7 @@ public:
 
 	//keyboard
     LTBOOL      m_bAutoCenter;
+	int			m_nTronUnknown20;	// RETAIL: Tron's (+0x20, 0 in the constructor 0x100ec8a0)
 	int			m_nNormalTurn;
 	int	  		m_nFastTurn;
 	int			m_nLookUp;
@@ -222,6 +223,9 @@ public:
 	//****************** multiplayer
 	std::string		m_sPlayerName;
 	std::string		m_sPlayerGuid;
+	// RETAIL: the name of the host option set in use ("ServerConfig"; retail
+	// +0x5c): Tron keeps the sets in CServerOptionMgr, not in the profile
+	std::string		m_sServerOptions;
 	uint8			m_nCPPlayerModel;
 	uint8			m_nDMPlayerModel;
 	uint8			m_nPlayerSkills[kNumSkills];
@@ -230,8 +234,10 @@ public:
 	bool			m_bMPRadar;
 	uint16			m_nClientPort;
 
-	//****************** multiplayer server game options
-	ServerGameOptions	m_ServerGameOptions;
+	// PORT: what retail keeps where NOLF2 had its server game options is
+	// not yet laid out (the constructor, 0x100ec8a0, has two more strings,
+	// two vectors and six ints); this keeps the size retail's
+	char			m_aTronPadServerOptions[sizeof(ServerGameOptions) - sizeof(std::string) - sizeof(int)];
 
 	//****************** game options
     uint8	            m_nSubtitles;

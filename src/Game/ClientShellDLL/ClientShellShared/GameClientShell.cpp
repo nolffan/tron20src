@@ -11,6 +11,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#include "ServerOptionMgr.h"
 #include "GameClientShell.h"
 #include "InterfaceMgr.h"
 #include "PlayerMgr.h"
@@ -506,7 +507,7 @@ CGameClientShell::CGameClientShell()
 {
 	//AfxSetAllocStop(37803);
 
-	m_pMissionMgr = NULL;
+	// RETAIL: Tron's constructor leaves +0x4 (m_pMissionMgr) alone
 	m_pClientSaveLoadMgr = NULL;
 
 	
@@ -569,8 +570,6 @@ CGameClientShell::CGameClientShell()
 
 	m_pClientTrackedNodeMgr = NULL;
 
-	m_pClientMultiplayerMgr = NULL;
-
 	m_bInWorld = false;
 
 	m_bQuickSave = false;
@@ -579,9 +578,7 @@ CGameClientShell::CGameClientShell()
 	m_eSwitchingWorldsState = eSwitchingWorldsStateNone;
 
 
-	m_fInitialServerTime = 0.0f;
-	m_fInitialLocalTime = 0.0f;
-	m_nSpeedCheatCounter = 0;
+	m_bTronUnknown833A = false;
  
 	m_bRunningPerfTest = false;
 	m_pPerformanceTest = LTNULL;
@@ -628,12 +625,6 @@ CGameClientShell::~CGameClientShell()
 	{
 		debug_delete( m_pClientTrackedNodeMgr );
 		m_pClientTrackedNodeMgr = 0;
-	}
-
-	if( m_pClientMultiplayerMgr )
-	{
-		debug_delete( m_pClientMultiplayerMgr );
-		m_pClientMultiplayerMgr = NULL;
 	}
 }
 
@@ -1117,7 +1108,14 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	g_waterPhysicsState.m_fVelocityDampen = 0.25f;
 
 
-	m_pClientMultiplayerMgr = debug_new( ClientMultiplayerMgr );
+	// PORT: retail's ClientMultiplayerMgr is CTronGameClientShell's member
+	// (+0x35644, which sets g_pClientMultiplayerMgr); until it is there,
+	// NOLF2's allocation stands in (never freed, as the shell lives as
+	// long as the DLL)
+	if (!g_pClientMultiplayerMgr)
+	{
+		debug_new( ClientMultiplayerMgr );
+	}
 
 	// Init the special fx mgr...
 	if (!m_sfxMgr.Init(g_pLTClient))
@@ -1164,7 +1162,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 			// Initialize the mission mgr with the appropriate file based on game type...
 
 			std::string sMissionFile;
-			switch( pProfile->m_ServerGameOptions.m_eGameType )
+			switch( (*g_pServerOptionMgr->GetCurrent()).m_eGameType )
 			{
 				case eGameTypeCooperative:
 				{
@@ -1202,7 +1200,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 
 			// Start the server..
 
-			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( pProfile->m_ServerGameOptions.m_nPort , pProfile->m_ServerGameOptions.m_bLANOnly );
+			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( (*g_pServerOptionMgr->GetCurrent()).m_nPort , (*g_pServerOptionMgr->GetCurrent()).m_bLANOnly );
 			bOk = bOk && g_pMissionMgr->StartGameNew();
 			
 			if( !bOk )
@@ -1298,12 +1296,6 @@ void CGameClientShell::OnEngineTerm()
 		m_pClientSaveLoadMgr = NULL;
 	}
 
-	if( m_pMissionMgr )
-	{
-		m_pMissionMgr->Term();
-		m_pMissionMgr = NULL;
-	}
-
 	//Make sure that the FX Mgr isn't still holding on to our camera
 	m_ClientFXMgr.SetCamera(NULL);
 
@@ -1311,12 +1303,6 @@ void CGameClientShell::OnEngineTerm()
 
 	m_Music.Term();
 	m_LightScaleMgr.Term();
-
-	if( m_pClientMultiplayerMgr )
-	{
-		debug_delete( m_pClientMultiplayerMgr );
-		m_pClientMultiplayerMgr = NULL;
-	}
 
 	if (m_pPerformanceTest)
 	{
@@ -1516,10 +1502,11 @@ void CGameClientShell::OnExitWorld()
 
 	// Not in world any more.
     m_bInWorld = false;
+	m_bTronUnknown833A = false;
 
 	m_DamageFXMgr.Clear();					// Remove all the sfx
 	m_sfxMgr.RemoveAll();					// Remove all the sfx
-	m_ClientFXMgr.ShutdownAllFX();			// Stop all the client FX
+	m_ClientFXMgr.Term();					// RETAIL: Tron terms the client FX (0x100e3a4f)
 
 	GetInterfaceMgr( )->OnExitWorld();
 
@@ -1587,6 +1574,13 @@ void CGameClientShell::Update()
 
 	if (GetInterfaceMgr( )->Update())
 	{
+		// RETAIL: Tron keeps a multiplayer player's frame and the fx going
+		// behind the interface (0x100e3b40)
+		if (IsMultiplayerGame() && GetPlayerMgr()->IsPlayerInWorld())
+		{
+			GetPlayerMgr()->UpdateFrame();
+			UpdateInterfaceFX();
+		}
 		return;
 	}
 
@@ -2448,27 +2442,27 @@ void CGameClientShell::HandleMsgMultiplayerOptions( ILTMessage_Read* pMsg )
 	switch (m_eGameType)
 	{
 	case eGameTypeCooperative:
-		pProfile->m_ServerGameOptions.GetCoop().m_bFriendlyFire = bFriendlyFire;
-		pProfile->m_ServerGameOptions.GetCoop().m_nDifficulty = nDifficulty;
+		(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_bFriendlyFire = bFriendlyFire;
+		(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nDifficulty = nDifficulty;
 		break;
 	case eGameTypeDeathmatch:
-		pProfile->m_ServerGameOptions.GetDeathmatch().m_nRunSpeed = nRunSpeed;
-		pProfile->m_ServerGameOptions.GetDeathmatch().m_nScoreLimit = nScoreLimit;
-		pProfile->m_ServerGameOptions.GetDeathmatch().m_nTimeLimit = nTimeLimit;
-		pProfile->m_ServerGameOptions.GetDeathmatch().m_nRounds = nRounds;
+		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nRunSpeed = nRunSpeed;
+		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nScoreLimit = nScoreLimit;
+		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nTimeLimit = nTimeLimit;
+		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nRounds = nRounds;
 		break;
 	case eGameTypeTeamDeathmatch:
-		pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_nRunSpeed = nRunSpeed;
-		pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_nScoreLimit = nScoreLimit;
-		pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_nTimeLimit = nTimeLimit;
-		pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_nRounds = nRounds;
-		pProfile->m_ServerGameOptions.GetTeamDeathmatch().m_bFriendlyFire = bFriendlyFire;
+		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nRunSpeed = nRunSpeed;
+		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nScoreLimit = nScoreLimit;
+		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nTimeLimit = nTimeLimit;
+		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nRounds = nRounds;
+		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_bFriendlyFire = bFriendlyFire;
 		break;
 	case eGameTypeDoomsDay:
-		pProfile->m_ServerGameOptions.GetDoomsday().m_nRunSpeed = nRunSpeed;
-		pProfile->m_ServerGameOptions.GetDoomsday().m_nTimeLimit = nTimeLimit;
-		pProfile->m_ServerGameOptions.GetDoomsday().m_nRounds = nRounds;
-		pProfile->m_ServerGameOptions.GetDoomsday().m_bFriendlyFire = bFriendlyFire;
+		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nRunSpeed = nRunSpeed;
+		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nTimeLimit = nTimeLimit;
+		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nRounds = nRounds;
+		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_bFriendlyFire = bFriendlyFire;
 		break;
 	}
 
@@ -4099,7 +4093,7 @@ void CGameClientShell::ResetDynamicWorldProperties(LTBOOL bUseWorldFog)
 void CGameClientShell::RenderCamera(bool bDrawInterface)
 {
 	if (!m_bMainWindowFocus) return;
-	
+
 	if (!GetPlayerMgr()->PreRender()) return;
 
 
@@ -4112,28 +4106,27 @@ void CGameClientShell::RenderCamera(bool bDrawInterface)
 
 	m_DamageFXMgr.Update();
 
-	//make sure to update the gore settings in case they changed
-	UpdateGoreSettings();
-
 	HLOCALOBJ hCamera = GetPlayerMgr()->GetCamera();
 
 	//handle updating the paused status
-	m_ClientFXMgr.Pause(IsServerPaused());
+	m_ClientFXMgr.Pause(m_bServerPaused);
 
-	//update all the effects status as well as any that might effect the camera
-	m_ClientFXMgr.UpdateAllActiveFX( m_bMainWindowFocus );
+	// RETAIL: Tron keeps the fx running in a multiplayer game when the
+	// window has no focus (0x100e65f1)
+	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
 
     g_pLTClient->Start3D();
 
-	float fFrameTime = (IsServerPaused()) ? 0.0f : GetFrameTime();
-
-    g_pLTClient->RenderCamera(hCamera, fFrameTime);
+    g_pLTClient->RenderCamera(hCamera, m_bServerPaused ? 0.0f : m_fFrameTime);
 
 	// Render the the dynamic FX.
 	m_sfxMgr.RenderFX(hCamera);
 
 	// Render the effects
 	m_ClientFXMgr.RenderAllActiveFX(m_bMainWindowFocus );
+
+	// RETAIL: Tron's (0x100e6659)
+	g_pPlayerMgr->TronUnknownVirtual5C();
 
     g_pLTClient->StartOptimized2D();
 
@@ -4144,8 +4137,27 @@ void CGameClientShell::RenderCamera(bool bDrawInterface)
 	RenderDebugStrings();
 
     g_pLTClient->EndOptimized2D();
-    g_pLTClient->End3D();
+    g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameClientShell::UpdateInterfaceFX
+//
+//	PURPOSE:	Keep the fx running while the interface draws instead of
+//				the world (RETAIL: 0x100e66a0; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameClientShell::UpdateInterfaceFX()
+{
+	GetPlayerMgr()->PreRender();
+
+	m_sfxMgr.UpdateSpecialFX();
+
+	m_ClientFXMgr.Pause(m_bServerPaused);
+	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
 }
 
 
@@ -4862,49 +4874,6 @@ void CGameClientShell::PostLevelLoadFirstUpdate()
 	RestoreMusic();
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameClientShell::UpdateSpeedMonitor()
-//
-//	PURPOSE:	Handle updating the server speed monitor...
-//
-// ----------------------------------------------------------------------- //
-
-void CGameClientShell::UpdateSpeedMonitor()
-{
-	LTFLOAT fLocalTime = g_pLTClient->GetTime();
-	LTFLOAT fServerTime = g_pLTClient->GetGameTime();
-	if(fServerTime - m_fInitialServerTime > 5.0f)
-	{
-		// time to do our check
-		LTFLOAT fServerDelta	= fServerTime - m_fInitialServerTime;
-		LTFLOAT fLocalDelta		= fLocalTime - m_fInitialLocalTime;
-
-		if(fServerDelta / fLocalDelta < 0.98)
-		{
-			// possible cheater, increment cheat counter
-			m_nSpeedCheatCounter++;
-
-			if(m_nSpeedCheatCounter > 24)
-			{
-				// Disconnect from the server.
-				if(g_pLTClient->IsConnected())
-				{
-					g_pLTClient->Disconnect();
-				}
-			}
-		}
-		else
-		{
-			// reset the instance counter
-			m_nSpeedCheatCounter = 0;
-		}
-
-		// reset the time counters
-		m_fInitialServerTime	= fServerTime;
-		m_fInitialLocalTime		= fLocalTime;
-	}
-}
 
 
 // ----------------------------------------------------------------------- //

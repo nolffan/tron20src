@@ -124,6 +124,9 @@ public:
 	virtual CInterfaceMgr*		GetInterfaceMgr() { return NULL; }
 	virtual CPlayerMgr*			GetPlayerMgr() = 0;
 	virtual CClientWeaponAllocator const *GetClientWeaponAllocator() const = 0;
+	// RETAIL: Tron's slot 0x7c: NULL here (0x100c04e0); CTronGameClientShell
+	// returns one of its members (+0x317d4, 0x10099d30)
+	virtual void*				TronUnknownVirtual7C() { return NULL; }
 
     LTBOOL      IsWorldLoaded()	const			{ return m_bInWorld; }
     void        SetWorldNotLoaded()				{ m_bInWorld = LTFALSE; }
@@ -135,6 +138,17 @@ public:
 	// This happens while the loading screen is still visible so we're not stuck at 
 	// a black screen.
 	virtual void	PostLevelLoadFirstUpdate();
+
+	// RETAIL: Tron's virtuals after NOLF2's (slots 0x88..0x94 of the
+	// vtable 0x101ea174; the names are ours but RenderCamera's).
+	// CTronGameClientShell overrides all four (0x100a8040, 0x1009a1e0,
+	// 0x1009a670, 0x1009a700); slot 0x94 is its command handler
+	virtual void	TronUnknownVirtual88(int nTronUnknown) {}
+    virtual void    RenderCamera(bool bDrawInterface = true);
+	// the frame's fx update when the interface draws instead of the world
+	// (0x100e66a0; Update calls it in a multiplayer game)
+	virtual void	UpdateInterfaceFX();
+	virtual void	TronUnknownVirtual94(int nCommand) {}
 
 
 	// Called when done with loading and postloading screens.
@@ -169,7 +183,6 @@ protected :
 	void		OnModelKey(HLOCALOBJ hObj, ArgList *pArgs);
 	void		OnPlaySound(PlaySoundInfo* pPlaySoundInfo);
 
-    void        RenderCamera(bool bDrawInterface = true);
 
 	void		OnLockRenderer();
 	void		OnUnLockRenderer();
@@ -344,8 +357,6 @@ private :
 
     bool  UpdateCheats();
 
-	// Speed Hack security monitor
-	void	UpdateSpeedMonitor();
 
 	// Debugging variables...
 
@@ -361,23 +372,30 @@ private :
 	CUIPolyString* 	m_pLeftDebugString[kMaxDebugStrings];
 	CUIPolyString* 	m_pRightDebugString[kMaxDebugStrings];
 
-	// Contains all multiplayer functionality.
-	ClientMultiplayerMgr*	m_pClientMultiplayerMgr;
+	// RETAIL: Tron's base shell holds no ClientMultiplayerMgr (it is
+	// CTronGameClientShell's member, +0x35644) and has no speed hack
+	// monitor (constructor 0x100e1ed0; this tail is +0x8338..+0x8344)
 
 	// Are we in a world
-    bool	m_bInWorld;
+    bool	m_bInWorld;						// +0x8338
 
 	// Set when we get an oncommandon for quicksave.
-	bool	m_bQuickSave;
+	bool	m_bQuickSave;					// +0x8339
 
-	// Speed Hack security monitor variables
-	float				m_fInitialServerTime;
-	float				m_fInitialLocalTime;
-	uint8				m_nSpeedCheatCounter;
+public:
+	// RETAIL: Tron's (+0x833a): set by the multiplayer screens and by
+	// CTronGameClientShell::OnEnterWorld for game type 7, cleared on
+	// leaving the world; the HUD reads it. The name is ours
+	bool	m_bTronUnknown833A;
+private:
 
 	// Performance testing variables
-	bool				m_bRunningPerfTest;
-	CPerformanceTest	*m_pPerformanceTest;
+	bool				m_bRunningPerfTest;		// +0x833b
+	CPerformanceTest	*m_pPerformanceTest;	// +0x833c
+
+	// RETAIL: Tron's circuit attributes (Attributes\Circuits.txt),
+	// created in OnEngineInitialized and deleted in OnEngineTerm (+0x8340)
+	class CCircuitButeMgr*	m_pCircuitButeMgr;
 };
 
 void DefaultModelHook(ModelHookData *pData, void *pUser);
