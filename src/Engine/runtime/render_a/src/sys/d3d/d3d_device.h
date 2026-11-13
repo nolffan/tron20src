@@ -4,9 +4,9 @@
 #ifndef __D3D_DEVICE_H__
 #define __D3D_DEVICE_H__
 
-#ifndef __D3D8_H__
-#include <d3d8.h>
-#define __D3D8_H__
+#ifndef __D3D9_H__
+#include <d3d9.h>
+#define __D3D9_H__
 #endif
 
 #ifndef __RENDEROBJECT_H__
@@ -27,7 +27,7 @@ struct D3DDeviceInfo;
 struct D3DModeInfo;
 class CD3D_RenderWorld;
 
-class CDirect3DDevice8Wrapper;
+class CDirect3DDevice9Wrapper;
 
 struct ExtraDeviceCaps 
 {
@@ -79,8 +79,10 @@ public:
 	static bool				End3D();			// Call when you are done rendering a frame...
 	static bool				IsIn3D();
 
+	void					PreventFrameBuffering();
+
 	// Cap info (some precomputed caps)...
-	D3DCAPS8*				GetDeviceCaps()		{ return &m_DeviceCaps; }
+	D3DCAPS9*				GetDeviceCaps()		{ return &m_DeviceCaps; }
 	ExtraDeviceCaps*		GetExtraDevCaps()	{ return &m_ExtraDevCaps; }
 	void					CheckSpecialCards();// Check for some specific cards and disable/enable stuff...
 	void					PreCalcSomeDeviceCaps();
@@ -98,7 +100,7 @@ public:
 	D3DFORMAT				GetDefaultDepthStencilFormat(uint32 iZBitDepth,uint32 iStencilBitDepth);
 
 	// Note: m_pD3DDevice is public for quick access...
-    CDirect3DDevice8Wrapper *m_pD3DDevice;		// The D3D rendering device
+    CDirect3DDevice9Wrapper *m_pD3DDevice;		// The D3D rendering device
 
 	// Pointer to the active rendering world
 	CD3D_RenderWorld		*m_pRenderWorld;
@@ -108,7 +110,7 @@ private:
 	void					SetPresentationParams(D3DPRESENT_PARAMETERS& PresentationParam,D3DModeInfo* pMode);
 
 	// Device Info/Data...
-	D3DCAPS8				m_DeviceCaps;		// Device Caps...
+	D3DCAPS9				m_DeviceCaps;		// Device Caps...
 	ExtraDeviceCaps			m_ExtraDevCaps;		// Lith defined extra Caps...
 	D3DAdapterInfo*			m_pAdapter;			// My Adaptor Info Pointer (Points into g_D3DShell's device list)
     D3DDeviceInfo*			m_pDevice;			// My Device Info Pointer (Points into g_D3DShell's device list)
@@ -122,12 +124,17 @@ private:
 
 	// The critical section restricting access to the rendering device while loading
 	mutable LCriticalSection m_hLoadRenderCS;
+
+	// RETAIL: Build 69's end-of-frame query, at +0x188 (PreventFrameBuffering,
+	// Lithtech.exe 0x4caf10); Build 69's frame textures and default render
+	// targets are not in Tron's device (FreeDevice, 0x4c98d0)
+	IDirect3DQuery9*		m_pEndOfFrameQuery;
 };
 
 extern CD3D_Device g_Device;					// The global D3D Device...
 #define PD3DDEVICE (g_Device.m_pD3DDevice)		// Use for quick access to the D3DDevice...
 
-static LPDIRECT3DDEVICE8 d3d_GetD3DDevice() { return PD3DDEVICE ? PD3DDEVICE->GetDevice() : 0; }	// For the RenderStruct...
+static LPDIRECT3DDEVICE9 d3d_GetD3DDevice() { return PD3DDEVICE ? PD3DDEVICE->GetDevice() : 0; }	// For the RenderStruct...
 
 inline DWORD F2DW( FLOAT f ) { return *((DWORD*)&f); }
 

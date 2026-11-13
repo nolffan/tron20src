@@ -526,7 +526,7 @@ void d3d_BlitToScreen3D(BlitRequest *pRequest)
 	verts[0].rhw = verts[1].rhw = verts[2].rhw = verts[3].rhw = 1.0f;
 
 	// Remember the previous texture in there.
-	LPDIRECT3DBASETEXTURE8 pOldTexture = NULL;
+	LPDIRECT3DBASETEXTURE9 pOldTexture = NULL;
 	D3D_CALL(PD3DDEVICE->GetTexture(0, &pOldTexture));
 
 	// Draw each tile.
@@ -559,7 +559,8 @@ void d3d_BlitToScreen3D(BlitRequest *pRequest)
 
 			d3d_SetTextureDirect(pTile->m_pTexture, 0);
 
-			D3D_CALL(PD3DDEVICE->SetVertexShader(TLVERTEX_FORMAT));
+			D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+			D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 			HRESULT hResult = D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(TLVertex)));
 		}
 	}
@@ -598,7 +599,7 @@ void d3d_WarpToScreen3D(BlitRequest *pRequest)
 	VERIFY_RENDERSTATE(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	VERIFY_RENDERSTATE(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
-	LPDIRECT3DBASETEXTURE8 pOldTexture = NULL;		// Remember the previous texture so we can reset it at the end
+	LPDIRECT3DBASETEXTURE9 pOldTexture = NULL;		// Remember the previous texture so we can reset it at the end
 	D3D_CALL(PD3DDEVICE->GetTexture(0, &pOldTexture));
 
 	TLVertex verts[12];								// Set all of the verticies to the same default values for color, alpha, and rhw
@@ -652,7 +653,8 @@ void d3d_WarpToScreen3D(BlitRequest *pRequest)
 			// Set the texture to the correct tile, and draw it using the verticies
 			d3d_SetTextureDirect(pTile->m_pTexture, 0);
 
-			D3D_CALL(PD3DDEVICE->SetVertexShader(TLVERTEX_FORMAT));
+			D3D_CALL(PD3DDEVICE->SetVertexShader(NULL));
+			D3D_CALL(PD3DDEVICE->SetFVF(TLVERTEX_FORMAT));
 			HRESULT hResult = D3D_CALL(PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, verts, sizeof(TLVertex)));
 
 			// Increment the X position

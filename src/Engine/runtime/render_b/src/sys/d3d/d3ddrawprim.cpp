@@ -18,9 +18,9 @@
 #include "de_objects.h"
 #include "d3d_device.h"
 
-#ifndef __D3DX8_H__
-#include <d3dx8.h>
-#define __D3DX8_H__
+#ifndef __D3DX9_H__
+#include <d3dx9.h>
+#define __D3DX9_H__
 #endif
 
 
@@ -39,11 +39,11 @@ extern uint32 g_ScreenHeight;
 // put the edges between pixels (the same pixels are covered, wholly).
 static bool s_bModernHalfPixel = false;
 
-static void ModernCheckHalfPixel(LPDIRECT3DDEVICE8 pDevice)
+static void ModernCheckHalfPixel(LPDIRECT3DDEVICE9 pDevice)
 {
 	s_bModernHalfPixel = false;
-	IDirect3DSurface8* pTarget = NULL;
-	if (!pDevice || FAILED(pDevice->GetRenderTarget(&pTarget)) || !pTarget)
+	IDirect3DSurface9* pTarget = NULL;
+	if (!pDevice || FAILED(pDevice->GetRenderTarget(0, &pTarget)) || !pTarget)
 		return;
 	D3DSURFACE_DESC Desc;
 	if (SUCCEEDED(pTarget->GetDesc(&Desc)))
@@ -247,7 +247,7 @@ LTRESULT CD3DDrawPrim::SetFogEnable(bool bFogEnable)
 }
 
 //saves the current D3D state into the member variables
-void CD3DDrawPrim::SaveStates(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SaveStates(LPDIRECT3DDEVICE9 pDevice)
 {
 	// Save the render states...
 	pDevice->GetTextureStageState(0,D3DTSS_COLOROP,(unsigned long*)&m_PrevColorOp);
@@ -272,7 +272,7 @@ void CD3DDrawPrim::SaveStates(LPDIRECT3DDEVICE8 pDevice)
 
 
 //sets up the appropriate state for the each section
-void CD3DDrawPrim::SetClipMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetClipMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_eClipType)
 	{
@@ -286,7 +286,7 @@ void CD3DDrawPrim::SetClipMode(LPDIRECT3DDEVICE8 pDevice)
 	}
 
 }
-void CD3DDrawPrim::SetTexture(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetTexture(LPDIRECT3DDEVICE9 pDevice)
 {
 	if (m_pTexture)
 	{
@@ -298,16 +298,16 @@ void CD3DDrawPrim::SetTexture(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetReallyClose(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetReallyClose(LPDIRECT3DDEVICE9 pDevice)
 {
 	SetCamera(pDevice);
 	SetTransformMode(pDevice);
 }
 
-void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE9 pDevice)
 {
 	// Check the current viewport, may need to get changed...
-	D3DVIEWPORT8 PrevViewport;
+	D3DVIEWPORT9 PrevViewport;
 	pDevice->GetViewport(&PrevViewport);
 
 	float MinZ = (m_bReallyClose) ? 0.0f : m_PrevViewport.MinZ;
@@ -323,7 +323,7 @@ void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE8 pDevice)
 			((pCamera->m_Right - pCamera->m_Left) != (int)PrevViewport.Width) ||
 			((pCamera->m_Bottom - pCamera->m_Top) != (int)PrevViewport.Height))
 		{
-			D3DVIEWPORT8 vp;
+			D3DVIEWPORT9 vp;
 			vp.MinZ = MinZ;
 			vp.MaxZ = MaxZ;
 
@@ -349,7 +349,7 @@ void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE8 pDevice)
 	{
 		if (0 != m_PrevViewport.X || 0 != PrevViewport.Y || g_ScreenWidth != PrevViewport.Width || g_ScreenHeight != PrevViewport.Height)
 		{
-			D3DVIEWPORT8 vp;
+			D3DVIEWPORT9 vp;
 			vp.MinZ = MinZ;
 			vp.MaxZ = MaxZ;
 
@@ -371,7 +371,7 @@ void CD3DDrawPrim::SetCamera(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	D3DXMATRIX mIdentity;
 	D3DXMatrixIdentity(&mIdentity);
@@ -389,7 +389,7 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE8 pDevice)
 	{
 		// The viewport minZ & maxZ needs to be changed for accurately
 		// setting the position for a reallyclose primitive.
-		D3DVIEWPORT8 ViewportData;
+		D3DVIEWPORT9 ViewportData;
 		ViewportData.X		= 0;
 		ViewportData.Y		= 0;
 		ViewportData.Width	= g_ScreenWidth;
@@ -421,7 +421,7 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE8 pDevice)
 		// the screen's shape over 4:3, as the models' own projection
 		// (d3d_SetReallyClose) takes the screen's shape.
 		{
-			D3DVIEWPORT8 Viewport;
+			D3DVIEWPORT9 Viewport;
 			if (SUCCEEDED(PD3DDEVICE->GetViewport(&Viewport)) && Viewport.Height > 0)
 			{
 				float fWiden = ((float)Viewport.Width / (float)Viewport.Height) / (4.0f / 3.0f);
@@ -481,7 +481,7 @@ void CD3DDrawPrim::SetTransformMode(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetColorOp(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetColorOp(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_ColorOp)
 	{
@@ -507,7 +507,7 @@ void CD3DDrawPrim::SetColorOp(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetBlendMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetBlendMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_BlendMode) 
 	{
@@ -570,7 +570,7 @@ void CD3DDrawPrim::SetBlendMode(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetZBufferMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetZBufferMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_eZBufferMode) 
 	{
@@ -593,7 +593,7 @@ void CD3DDrawPrim::SetZBufferMode(LPDIRECT3DDEVICE8 pDevice)
 
 }
 
-void CD3DDrawPrim::SetTestMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetTestMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_eTestMode) 
 	{
@@ -631,7 +631,7 @@ void CD3DDrawPrim::SetTestMode(LPDIRECT3DDEVICE8 pDevice)
 
 }
 
-void CD3DDrawPrim::SetFillMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetFillMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_eFillMode) 
 	{
@@ -645,7 +645,7 @@ void CD3DDrawPrim::SetFillMode(LPDIRECT3DDEVICE8 pDevice)
 
 }
 
-void CD3DDrawPrim::SetCullMode(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetCullMode(LPDIRECT3DDEVICE9 pDevice)
 {
 	switch (m_eCullMode) 
 	{
@@ -659,13 +659,13 @@ void CD3DDrawPrim::SetCullMode(LPDIRECT3DDEVICE8 pDevice)
 	}
 }
 
-void CD3DDrawPrim::SetFogEnable(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::SetFogEnable(LPDIRECT3DDEVICE9 pDevice)
 {
 	pDevice->SetRenderState(D3DRS_FOGENABLE, m_bFogEnable);
 }
 
 // Set the render states (and save the old ones)...
-void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE8 pDevice)
+void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE9 pDevice)
 {
 
 	//saves the current D3D state into the member variables
@@ -709,7 +709,7 @@ void CD3DDrawPrim::PushRenderStates(LPDIRECT3DDEVICE8 pDevice)
 }
 
 // Reset the old renderstates...
-void CD3DDrawPrim::PopRenderStates(LPDIRECT3DDEVICE8 pDevice) 
+void CD3DDrawPrim::PopRenderStates(LPDIRECT3DDEVICE9 pDevice) 
 {
 	pDevice->SetTextureStageState(0,D3DTSS_COLOROP,m_PrevColorOp);
 	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,m_PrevAlphaBlendEnable);
@@ -803,13 +803,16 @@ void CD3DDrawPrim::RestoreViewport( void )
 
 // Draw primitive calls (triangles)
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT3 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
 
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nCount, pPrim, sizeof(LT_VERTGT));
@@ -817,7 +820,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT3 *pPrim, uint32 nCount) {
 			return LT_ERROR; 
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYGT3* pSrcPtr		= pPrim;
@@ -855,12 +861,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT3 *pPrim, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT3 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYFT3* pSrcPtr		= pPrim;
@@ -891,7 +900,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT3 *pPrim, uint32 nCount) {
 				return LT_ERROR; 
 	} }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYFT3* pSrcPtr		= pPrim;
@@ -929,12 +941,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT3 *pPrim, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG3 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nCount, pPrim, sizeof(LT_VERTG));
@@ -942,7 +957,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG3 *pPrim, uint32 nCount) {
 			return LT_ERROR; 
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYG3* pSrcPtr		= pPrim;
@@ -977,12 +995,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG3 *pPrim, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF3 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYF3* pSrcPtr		= pPrim;
@@ -1010,7 +1031,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF3 *pPrim, uint32 nCount) {
 				return LT_ERROR; 
 	} }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYF3* pSrcPtr		= pPrim;
@@ -1055,12 +1079,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF3 *pPrim, uint32 nCount) {
 #endif
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYGT4* pPrimPtr = pPrim;
@@ -1074,7 +1101,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		if (nCount > 2) {
@@ -1147,12 +1177,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 *pPrim, uint32 nCount) {
 // rendering": the quads through an array of pointers (RETAIL: Lithtech.exe
 // 0x41f540). PORT: its Direct3D 9 code on Direct3D 8 here.
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 **ppPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYGT4** ppPrimPtr = ppPrim;
@@ -1164,7 +1197,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 **ppPrim, uint32 nCount) {
 			--nCount; ++ppPrimPtr; }
 		 }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		if (nCount > 2) {
@@ -1240,12 +1276,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYGT4 **ppPrim, uint32 nCount) {
 
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT4 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYFT4* pPrimPtr = pPrim;
@@ -1261,7 +1300,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT4 *pPrim, uint32 nCount) {
 			return LT_ERROR;
 		 }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYFT4* pPrimPtr = pPrim;
@@ -1281,12 +1323,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYFT4 *pPrim, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG4 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYG4* pPrimPtr = pPrim;
@@ -1299,7 +1344,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG4 *pPrim, uint32 nCount) {
 			return LT_ERROR; 
 		}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYG4* pPrimPtr = pPrim;
@@ -1318,12 +1366,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYG4 *pPrim, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF4 *pPrim, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYF4* pPrimPtr = pPrim;
@@ -1338,7 +1389,10 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF4 *pPrim, uint32 nCount) {
 			return LT_ERROR; 
 		}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_POLYF4* pPrimPtr = pPrim;
@@ -1359,12 +1413,15 @@ LTRESULT CD3DDrawPrim::DrawPrim(LT_POLYF4 *pPrim, uint32 nCount) {
 // Draw primitives using lines (Note: nCount is Line count).
 LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEGT *pPrim, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_LINELIST, nCount, pPrim, sizeof(LT_VERTGT));
@@ -1372,7 +1429,10 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEGT *pPrim, uint32 nCount)
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEGT* pSrcPtr		= pPrim;
@@ -1405,12 +1465,15 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEGT *pPrim, uint32 nCount)
 
 LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEFT *pPrim, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEFT* pSrcPtr		= pPrim;
@@ -1436,7 +1499,10 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEFT *pPrim, uint32 nCount)
 				return LT_ERROR;
 	} }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEFT* pSrcPtr		= pPrim;
@@ -1469,12 +1535,15 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEFT *pPrim, uint32 nCount)
 
 LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEG *pPrim, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_LINELIST, nCount, pPrim, sizeof(LT_VERTG));
@@ -1482,7 +1551,10 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEG *pPrim, uint32 nCount)
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEG* pSrcPtr		= pPrim;
@@ -1513,12 +1585,15 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEG *pPrim, uint32 nCount)
 
 LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEF *pPrim, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEF* pSrcPtr		= pPrim;
@@ -1542,7 +1617,10 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEF *pPrim, uint32 nCount)
 				return LT_ERROR;
 	} }
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_LINEF* pSrcPtr		= pPrim;
@@ -1574,13 +1652,16 @@ LTRESULT CD3DDrawPrim::DrawPrim (LT_LINEF *pPrim, uint32 nCount)
 // Draw primitives using points (Note: nCount is Point count).
 LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTGT *pVerts, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
 
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_POINTLIST, nCount, pVerts, sizeof(LT_VERTGT));
@@ -1588,7 +1669,10 @@ LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTGT *pVerts, uint32 nCount)
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTGT* pSrcPtr		= pVerts;
@@ -1615,12 +1699,15 @@ LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTGT *pVerts, uint32 nCount)
 
 LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTG *pVerts, uint32 nCount)
 {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_POINTLIST, nCount, pVerts, sizeof(LT_VERTG));
@@ -1628,7 +1715,10 @@ LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTG *pVerts, uint32 nCount)
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTG* pSrcPtr		= pVerts;
@@ -1654,12 +1744,15 @@ LTRESULT CD3DDrawPrim::DrawPrimPoint (LT_VERTG *pVerts, uint32 nCount)
 
 // Draw primitive calls using triangle fans
 LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTGT *pVerts, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, nCount-2, pVerts, sizeof(LT_VERTGT));
@@ -1667,7 +1760,10 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTGT *pVerts, uint32 nCount) {
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1699,12 +1795,15 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTGT *pVerts, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRGBA rgba) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1732,7 +1831,10 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRGBA
 
 			if (nCount) { --pSrcPtr; nCount += 2; } } }				// Skip back one (see notes by bNotFirstLoop)... 
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1764,12 +1866,15 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRGBA
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTG *pVerts, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, nCount-2, pVerts, sizeof(LT_VERTG));
@@ -1777,7 +1882,10 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTG *pVerts, uint32 nCount) {
 			return LT_ERROR;
 	}
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1807,12 +1915,15 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTG *pVerts, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTF *pVerts, uint32 nCount, LT_VERTRGBA rgba) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1838,7 +1949,10 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTF *pVerts, uint32 nCount, LT_VERTRGBA 
 
 			if (nCount) { --pSrcPtr; nCount += 2; } } }				// Skip back one (see notes by bNotFirstLoop)... 
 	else {	// Use Transform and Lit verts...
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		bool bNotFirstLoop = false;
@@ -1869,12 +1983,15 @@ LTRESULT CD3DDrawPrim::DrawPrimFan(LT_VERTF *pVerts, uint32 nCount, LT_VERTRGBA 
 
 // Draw primitive calls using triangle strips
 LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTGT *pVerts, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, nCount-2, pVerts, sizeof(LT_VERTGT));
@@ -1882,7 +1999,10 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTGT *pVerts, uint32 nCount) {
 			return LT_ERROR;
 	}
 	else {
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTGT* pSrcPtr		= pVerts;
@@ -1907,12 +2027,15 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTGT *pVerts, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRGBA rgba) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTFT* pSrcPtr		= pVerts;
@@ -1933,7 +2056,10 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRG
 
 			if (nCount) { pSrcPtr -= 2; nCount += 2; } } }	// Skip back two (since it's a strip - need to send those two again)...Need to check the Cull direction (might be backwards).
 	else {
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_TEX_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_TEX_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTFT* pSrcPtr		= pVerts;
@@ -1958,12 +2084,15 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTFT *pVerts, uint32 nCount, LT_VERTRG
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTG *pVerts, uint32 nCount) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		hRes = pDevice->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, nCount-2, pVerts, sizeof(LT_VERTG));
@@ -1971,7 +2100,10 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTG *pVerts, uint32 nCount) {
 			return LT_ERROR;
 	}
 	else {
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTG* pSrcPtr		= pVerts;
@@ -1995,12 +2127,15 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTG *pVerts, uint32 nCount) {
 }
 
 LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTF *pVerts, uint32 nCount, LT_VERTRGBA rgba) {
-	LPDIRECT3DDEVICE8 pDevice = r_GetRenderStruct()->GetD3DDevice();
+	LPDIRECT3DDEVICE9 pDevice = r_GetRenderStruct()->GetD3DDevice();
 	if (!pDevice) return LT_ERROR;
 	CAutoDrawPrimBlock AutoDPBlock(this);
 
 	if (m_eTransType != DRAWPRIM_TRANSFORM_SCREEN) {
-		HRESULT hRes = pDevice->SetVertexShader(D3DFVF_XYZ | D3DFVF_DIFFUSE);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTF* pSrcPtr		= pVerts;
@@ -2020,7 +2155,10 @@ LTRESULT CD3DDrawPrim::DrawPrimStrip(LT_VERTF *pVerts, uint32 nCount, LT_VERTRGB
 
 			if (nCount) { pSrcPtr -= 2; nCount += 2; } } } 	// Skip back two (since it's a strip - need to send those two again)...Need to check the Cull direction (might be backwards).
 	else {
-		HRESULT hRes = pDevice->SetVertexShader(DRAWPRIM_D3DTRANS_FLAGS);
+		HRESULT hRes = pDevice->SetVertexShader(NULL);
+		if (hRes != D3D_OK) return LT_ERROR;
+
+		hRes = pDevice->SetFVF(DRAWPRIM_D3DTRANS_FLAGS);
 		if (hRes != D3D_OK) return LT_ERROR;
 
 		LT_VERTF* pSrcPtr		= pVerts;

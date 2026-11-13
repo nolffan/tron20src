@@ -60,29 +60,49 @@ void d3d_ReadExtraConsoleVariables()
 #ifdef TRON20SRC_MODERN
 	// MODERN.md M-G45: Anisotropic is the degree (the Performance screen's
 	// 2x to 16x), held to what the card can do
-	uint32 nModernAniso = (uint32)g_CV_Anisotropic.m_Val;
+	uint32 nModernAniso = g_CV_Anisotropic.m_Val ? (uint32)g_CV_Anisotropic.m_Val : 1;
 	if (g_Device.GetDeviceCaps()->MaxAnisotropy && nModernAniso > g_Device.GetDeviceCaps()->MaxAnisotropy)
 		nModernAniso = g_Device.GetDeviceCaps()->MaxAnisotropy;
+	// and the texture filter caps (retail read the vertex texture filter
+	// caps: docs/RETAIL_BUGS.md)
+	DWORD nModernFilterCaps = g_Device.GetDeviceCaps()->TextureFilterCaps;
 #endif
+	// RETAIL: Build 69's sampler states
 	for(uint32 nCurrStage = 0; nCurrStage < 4; nCurrStage++)
 	{
-		if (g_CV_Anisotropic.m_Val)
-		{
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MINFILTER, D3DTEXF_ANISOTROPIC));
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MAGFILTER, D3DTEXF_ANISOTROPIC));
 #ifdef TRON20SRC_MODERN
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MAXANISOTROPY, nModernAniso));
+		D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAXANISOTROPY, nModernAniso));
+
+		if ((nModernFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) && (g_CV_Anisotropic.m_Val))
 #else
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MAXANISOTROPY, g_CV_Anisotropic.m_Val));
+		D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAXANISOTROPY, g_CV_Anisotropic.m_Val ? g_CV_Anisotropic.m_Val : 1));
+
+		// check for device caps anisotropic filter for min filter
+		if ((g_Device.GetDeviceCaps()->VertexTextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) && (g_CV_Anisotropic.m_Val))
 #endif
+		{
+			D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC));
 		}
 		else
 		{
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MINFILTER, g_CV_Bilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
-			D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MAGFILTER, g_CV_Bilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
+			D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MINFILTER, g_CV_Bilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
 		}
 
-		D3D_CALL(PD3DDEVICE->SetTextureStageState(nCurrStage, D3DTSS_MIPFILTER, g_CV_Trilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
+		// check for device cpas anistropic filter for mag filter
+#ifdef TRON20SRC_MODERN
+		if ((nModernFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) && (g_CV_Anisotropic.m_Val))
+#else
+		if ((g_Device.GetDeviceCaps()->VertexTextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) && (g_CV_Anisotropic.m_Val))
+#endif
+		{
+			D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAGFILTER, D3DTEXF_ANISOTROPIC));
+		}
+		else
+		{
+			D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAGFILTER, g_CV_Bilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
+		}
+
+		D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MIPFILTER, g_CV_Trilinear.m_Val ? D3DTEXF_LINEAR : D3DTEXF_POINT));
 	}
 }
 

@@ -40,7 +40,7 @@ struct SShaderDrawRange
 	void Draw()
 	{
 		uint32 nNumTris = (m_nEndIndex - m_nStartIndex) / 3;
-		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, m_nStartVertex, m_nEndVertex - m_nStartVertex, m_nStartIndex, nNumTris);
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, m_nStartVertex, m_nEndVertex - m_nStartVertex, m_nStartIndex, nNumTris);
 	}
 	uint32 m_nStartVertex, m_nEndVertex, m_nStartIndex, m_nEndIndex;
 };
@@ -232,7 +232,7 @@ public:
 				// Lock it
 				void *plv = 0;
 				m_aLockedVertices.push_back(plv);
-				if (!SUCCEEDED((*iCurVB)->Lock(0, 0, (BYTE**)&m_aLockedVertices.back(), 0)))
+				if (!SUCCEEDED((*iCurVB)->Lock(0, 0, (void **)&m_aLockedVertices.back(), 0)))
 				{
 					ASSERT(!"Unable to lock vertex buffer!");
 					return;
@@ -240,7 +240,7 @@ public:
 			}
 
 			// Lock the IB
-			if (!SUCCEEDED(m_pIB->Lock(0, 0, (BYTE**)&m_pLockedIndices, 0)))
+			if (!SUCCEEDED(m_pIB->Lock(0, 0, (void **)&m_pLockedIndices, 0)))
 			{
 				ASSERT(!"Unable to lock index buffer!");
 				return;
@@ -415,8 +415,8 @@ public:
 		}
 
 		// Don't leak the VB or IB
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		return true;
 	}
@@ -435,8 +435,9 @@ public:
 
 		PreFlush();
 
-		PD3DDEVICE->SetVertexShader(nFVF);
-		PD3DDEVICE->SetIndices(m_pIB, 0);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(nFVF);
+		PD3DDEVICE->SetIndices(m_pIB);
 
 		m_nCurVB = m_aVBs.size();
 
@@ -530,8 +531,8 @@ public:
 
 		PostFlush();
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 	}
 
 protected:
@@ -573,7 +574,7 @@ protected:
 			ChangeSection(cSection);
 
 			// Draw it
-			PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, cSection.m_nStartVertex, cSection.m_nVertexCount,
+			PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, cSection.m_nStartVertex, cSection.m_nVertexCount,
 				cSection.m_nStartIndex, cSection.m_nTriCount);
 
 			// Count it
@@ -627,7 +628,7 @@ protected:
 				IncFrameStat(eFS_ShaderDrawPrim, 1);
 
 				// Draw it
-				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, cSection.m_nStartVertex, cSection.m_nVertexCount,
+				PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, cSection.m_nStartVertex, cSection.m_nVertexCount,
 					cSection.m_nStartIndex, cSection.m_nTriCount);
 
 				// Count it
@@ -661,7 +662,7 @@ protected:
 
 			if (bLightBackfacing)
 			{
-				PD3DDEVICE->SetIndices(m_pIB, 0);
+				PD3DDEVICE->SetIndices(m_pIB);
 			}
 
 			CRenderBlockData &cRB = m_aRenderBlocks[nRenderBlock];
@@ -675,7 +676,7 @@ protected:
 				// Draw it
 				if (bLightBackfacing)
 				{
-					PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, cSection.m_nStartVertex, cSection.m_nVertexCount,
+					PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, cSection.m_nStartVertex, cSection.m_nVertexCount,
 						cSection.m_nStartIndex, cSection.m_nTriCount);
 					IncFrameStat(eFS_DynamicLightTriangles, cSection.m_nTriCount);
 				}
@@ -778,8 +779,8 @@ protected:
 			PD3DDEVICE->SetRenderState(D3DRS_ALPHATESTENABLE, (DWORD)nOldAlphaTest);
 		}
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 	}
 
 	// RETAIL: a renderblock drawn directly (with its lights) breaks the
@@ -859,7 +860,7 @@ protected:
 	}
 
 	// Convenience function for drawing a textured quad on the screen for debugging
-	virtual void DebugDrawTextureQuad(IDirect3DTexture8 *pTexture,
+	virtual void DebugDrawTextureQuad(IDirect3DTexture9 *pTexture,
 									  float fMinU, float fMinV, float fMaxU, float fMaxV,
 									  float fX, float fY, float fSizeX, float fSizeY)
 	{
@@ -901,13 +902,14 @@ protected:
 		StageStateSet stateTSS04(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 		StageStateSet stateTSS05(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 		// (retail sets the wrap modes before disabling stage 1)
-		StageStateSet stateWrap0(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-		StageStateSet stateWrap1(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+		SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+		SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 
 		StageStateSet stateTSS16(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		StageStateSet stateTSS17(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 
-		PD3DDEVICE->SetVertexShader(D3DFVF_XYZRHW | D3DFVF_TEX1);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
 
 		PD3DDEVICE->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, aQuad, sizeof(SQuadVert));
 	}
@@ -918,7 +920,7 @@ protected:
 		if (m_nCurVB != cSection.m_nVBIndex)
 		{
 			m_nCurVB = cSection.m_nVBIndex;
-			PD3DDEVICE->SetStreamSource(0, m_aVBs[m_nCurVB], sizeof(SVertex));
+			PD3DDEVICE->SetStreamSource(0, m_aVBs[m_nCurVB], 0, sizeof(SVertex));
 		}
 	}
 
@@ -1329,9 +1331,9 @@ protected:
 		TSectionList &m_aSections;
 	};
 
-	IDirect3DIndexBuffer8 *m_pIB;
+	IDirect3DIndexBuffer9 *m_pIB;
 	uint32 m_nTotalTriCount;
-	typedef std::vector<IDirect3DVertexBuffer8*> TVBList;
+	typedef std::vector<IDirect3DVertexBuffer9*> TVBList;
 	TVBList m_aVBs;
 	uint32 m_nTotalVertexCount;
 

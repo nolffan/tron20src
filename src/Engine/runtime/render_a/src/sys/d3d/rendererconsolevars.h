@@ -108,7 +108,7 @@ RCONVAR(g_CV_DisableRenderObjectGroups, "DisableRenderObjectGroups", int, 0);
 //------------------------------
 // Renderer Settings
 RCONVAR(g_CV_VSyncOnFlip, "VSyncOnFlip", int, 1);
-RCONVAR(g_CV_MipMapBias, "MipMapBias", int, 0);	// an int in NOLF2 (retail d3d_SetTextureDirect, 0x50fd6e: fild)
+RCONVAR(g_CV_MipMapBias, "MipMapBias", float, 0.0f);	// RETAIL: a float in Tron, as Build 69 (d3d_SetTextureDirect, Lithtech.exe 0x519770: fadd)
 RCONVAR(g_CV_Trilinear, "Trilinear", int, 0);
 RCONVAR(g_CV_Anisotropic, "Anisotropic", int, 0);
 RCONVAR(g_CV_RefRast, "RefRast", int, 0);
@@ -129,9 +129,12 @@ RCONVAR(g_CV_Bilinear, "Bilinear", int, 1);
 RCONVAR(g_CV_OptimizeSurfaces, "OptimizeSurfaces", int, 0);
 RCONVAR(g_CV_CullWorldTree, "CullWorldTree", int, 0);
 RCONVAR(g_CV_FarZ, "FarZ", float, 10000.0f);
-// RETAIL: Contract J.A.C.K.'s (objects 0x57d488, 0x57d4a0)
+// RETAIL: Build 69's, in its order (the names at Lithtech.exe 0x5c1350..);
+// no LockableBackBuffer in Tron
+RCONVAR(g_CV_PreventFrameBuffering, "PreventFrameBuffering", int, 1);
+RCONVAR(g_CV_ShowFrameBufferingInfo, "ShowFrameBufferingInfo", int, 0);
+RCONVAR(g_CV_MultiPassLightMatch, "MultiPassLightMatch", int, 0);         // use first renderpass dynamic light on all passes
 RCONVAR(g_CV_Use0WeightsForDisable, "Use0WeightsForDisable", int, 0);
-RCONVAR(g_CV_LockableBackBuffer, "LockableBackBuffer", int, 0);
 
 //------------------------------
 // Gamma Control

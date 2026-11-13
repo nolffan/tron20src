@@ -370,11 +370,13 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 	CDeviceLightList*		pPrevLightList		= NULL;
 	bool					bPrevPieceScaled	= false;
 
-	LPDIRECT3DBASETEXTURE8	PrevTextureList[MAX_PIECE_TEXTURES];
+	LPDIRECT3DBASETEXTURE9	PrevTextureList[MAX_PIECE_TEXTURES];
 
 	//save the z bias so we can restore it later
-	DWORD					nOldZBias;
-	PD3DDEVICE->GetRenderState(D3DRS_ZBIAS, &nOldZBias);
+	// RETAIL: Direct3D 9's depth bias, read and restored only: Build 69's
+	// per-pass bias is not in Tron either (Lithtech.exe 0x556659)
+	DWORD					nOldDepthBias;
+	PD3DDEVICE->GetRenderState(D3DRS_DEPTHBIAS, &nOldDepthBias);
 
 	//clear out the texture list
 	memset(PrevTextureList, 0, sizeof(PrevTextureList));
@@ -419,11 +421,6 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 			//run through each pass of the current render style
 			for(uint32 nCurrPass = 0; nCurrPass < pCurrRenderStyle->GetRenderPassCount(); nCurrPass++)
 			{
-				if(g_CV_ZBiasModelRSPasses.m_Val)
-				{
-					PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, nCurrPass);
-				}
-
 				bool bModifiedReallyCloseEnvMap = false;
 
 				//setup all the texture and render style information
@@ -517,7 +514,7 @@ void CRenderModelPieceList::RenderPieceList(float fAlpha)
 	g_RenderStateMgr.SetTransform(D3DTS_WORLDMATRIX(0),&mIdentity);
 
 	//restore our Z bias
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, nOldZBias);
+	PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, nOldDepthBias);
 
 	// Need to reset every time till the render state mgr handles things...
 	g_Device.SetDefaultRenderStates();		

@@ -20,11 +20,11 @@ extern void d3d_DrawSprite(const ViewParams &Params, LTObject *pObj);
 void d3d_DrawSkyObjects(const ViewParams& SkyParams)
 {
 	//preserve our old viewport
-	D3DVIEWPORT8 cOldViewport;
+	D3DVIEWPORT9 cOldViewport;
 	PD3DDEVICE->GetViewport(&cOldViewport);
 
 	//setup our new viewport that matches our sky dimensions
-	D3DVIEWPORT8 cViewPort;
+	D3DVIEWPORT9 cViewPort;
 	cViewPort.X			= SkyParams.m_Rect.left;
 	cViewPort.Y			= SkyParams.m_Rect.top;
 	cViewPort.Width		= SkyParams.m_Rect.right - SkyParams.m_Rect.left;

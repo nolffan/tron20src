@@ -232,8 +232,8 @@ void CD3DVAMesh::Render(D3DMATRIX& WorldTransform, CD3DRenderStyle* pRenderStyle
 
 	m_VBController.Render(0,0,m_iVertCount,m_iPolyCount);
 
-	PD3DDEVICE->SetStreamSource(0, 0, 0);
-	PD3DDEVICE->SetIndices(0, 0);
+	PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+	PD3DDEVICE->SetIndices(0);
 }
 
 void CD3DVAMesh::CalcUsedNodes( Model *pModel )

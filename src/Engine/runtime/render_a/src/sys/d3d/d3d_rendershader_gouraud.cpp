@@ -62,8 +62,9 @@ void CRenderShader_Gouraud::TranslateVertices(SVertex_Gouraud *pOut, const SRBVe
 void CRenderShader_Gouraud::DrawLights(const DrawState &cState, uint32 nRenderBlock)
 {
 	// Set up our call
-	PD3DDEVICE->SetIndices(m_pIB, 0);
-	PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_FVF);
+	PD3DDEVICE->SetIndices(m_pIB);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(k_SVertex_Gouraud_FVF);
 
 	d3d_DisableTexture(0);
 
@@ -86,7 +87,7 @@ void CRenderShader_Gouraud::DrawLights(const DrawState &cState, uint32 nRenderBl
 		ChangeSection(cSection);
 
 		// Draw it
-		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, cSection.m_nStartVertex, cSection.m_nVertexCount, 
+		PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, cSection.m_nStartVertex, cSection.m_nVertexCount, 
 			cSection.m_nStartIndex, cSection.m_nTriCount);
 
 		// Count it
@@ -99,8 +100,8 @@ void CRenderShader_Gouraud::DrawLights(const DrawState &cState, uint32 nRenderBl
 
 	DrawLightList(cState, nRenderBlock);
 
-	PD3DDEVICE->SetStreamSource(0, 0, 0);
-	PD3DDEVICE->SetIndices(0, 0);
+	PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+	PD3DDEVICE->SetIndices(0);
 }
 
 void CRenderShader_Gouraud::DrawNormal(const DrawState &cState, uint32 nRenderBlock)
@@ -231,8 +232,9 @@ void CRenderShader_Gouraud_Texture::DrawNormal(const DrawState &cState, uint32 n
 	if (ShouldDrawLights(cState))
 	{
 		// Set up our call
-		PD3DDEVICE->SetIndices(m_pIB, 0);
-		PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_Texture_FVF);
+		PD3DDEVICE->SetIndices(m_pIB);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(k_SVertex_Gouraud_Texture_FVF);
 
 		DWORD nFogEnabled;
 		PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, &nFogEnabled);
@@ -298,8 +300,8 @@ void CRenderShader_Gouraud_Texture::DrawNormal(const DrawState &cState, uint32 n
 		if (nFogEnabled)
 			DrawFogPass(nRenderBlock);
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
@@ -555,8 +557,9 @@ void CRenderShader_Gouraud_Detail::DrawNormal(const DrawState &cState, uint32 nR
 	if (ShouldDrawLights(cState))
 	{
 		// Set up our call
-		PD3DDEVICE->SetIndices(m_pIB, 0);
-		PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_Detail_FVF);
+		PD3DDEVICE->SetIndices(m_pIB);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(k_SVertex_Gouraud_Detail_FVF);
 
 		DWORD nFogEnabled;
 		PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, &nFogEnabled);
@@ -630,8 +633,8 @@ void CRenderShader_Gouraud_Detail::DrawNormal(const DrawState &cState, uint32 nR
 		if (nFogEnabled)
 			DrawFogPass(nRenderBlock);
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
@@ -931,8 +934,9 @@ void CRenderShader_Gouraud_EnvMap::DrawNormal(const DrawState &cState, uint32 nR
 			nStage1Op = g_CV_EnvMapAdd.m_Val ? D3DTOP_ADDSIGNED : D3DTOP_MODULATE;
 
 		// Set up our call
-		PD3DDEVICE->SetIndices(m_pIB, 0);
-		PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_EnvMap_FVF);
+		PD3DDEVICE->SetIndices(m_pIB);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(k_SVertex_Gouraud_EnvMap_FVF);
 
 		DWORD nFogEnabled;
 		PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, &nFogEnabled);
@@ -1015,8 +1019,8 @@ void CRenderShader_Gouraud_EnvMap::DrawNormal(const DrawState &cState, uint32 nR
 		mIdentity.Identity();
 		PD3DDEVICE->SetTransform(D3DTS_TEXTURE1, (D3DMATRIX*)&mIdentity);
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
@@ -1317,8 +1321,9 @@ void CRenderShader_Gouraud_EnvBumpMap::DrawNormal(const DrawState &cState, uint3
 	if (ShouldDrawLights(cState))
 	{
 		// Set up our call
-		PD3DDEVICE->SetIndices(m_pIB, 0);
-		PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_EnvBumpMap_FVF);
+		PD3DDEVICE->SetIndices(m_pIB);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(k_SVertex_Gouraud_EnvBumpMap_FVF);
 
 		// Find the operation we want to use to blend the environment map
 		DWORD nEnvBlendOp = g_CV_EnvMapAdd.m_Val ? D3DTOP_ADDSIGNED : D3DTOP_MODULATE;
@@ -1419,8 +1424,8 @@ void CRenderShader_Gouraud_EnvBumpMap::DrawNormal(const DrawState &cState, uint3
 		mIdentity.Identity();
 		PD3DDEVICE->SetTransform(D3DTS_TEXTURE1, (D3DMATRIX*)&mIdentity);
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}
@@ -1719,8 +1724,9 @@ void CRenderShader_Gouraud_DualTexture::DrawNormal(const DrawState &cState, uint
 	if (ShouldDrawLights(cState) || s_bTwoPass)
 	{
 		// Set up our call
-		PD3DDEVICE->SetIndices(m_pIB, 0);
-		PD3DDEVICE->SetVertexShader(k_SVertex_Gouraud_DualTexture_FVF);
+		PD3DDEVICE->SetIndices(m_pIB);
+		PD3DDEVICE->SetVertexShader(NULL);
+		PD3DDEVICE->SetFVF(k_SVertex_Gouraud_DualTexture_FVF);
 
 		DWORD nFogEnabled;
 		PD3DDEVICE->GetRenderState(D3DRS_FOGENABLE, &nFogEnabled);
@@ -1800,8 +1806,8 @@ void CRenderShader_Gouraud_DualTexture::DrawNormal(const DrawState &cState, uint
 		if (nFogEnabled)
 			DrawFogPass(nRenderBlock);
 
-		PD3DDEVICE->SetStreamSource(0, 0, 0);
-		PD3DDEVICE->SetIndices(0, 0);
+		PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+		PD3DDEVICE->SetIndices(0);
 
 		BreakRenderBlockBatch(nRenderBlock);	// RETAIL: 0x4fc78f
 	}

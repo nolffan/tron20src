@@ -91,6 +91,17 @@ bool CD3DRenderStateMgr::SetRenderStyleStates(CD3DRenderStyle* pRenderStyle, uin
 	RenderPassOp RenderPass;
 	if (!pRenderStyle->GetRenderPass(iRenderPass,&RenderPass)) return false;
 
+	// RETAIL: Build 69's MultiPassLightMatch (Lithtech.exe 0x553a97), without
+	// its later specular material
+	bool forceAdditionalPassLighting = false;
+	if( (iRenderPass > 0) && g_CV_MultiPassLightMatch && !RenderPass.DynamicLight )
+	{
+		RenderPassOp firstRenderPass;
+		if( !pRenderStyle->GetRenderPass(0, &firstRenderPass) )
+			return false;
+		forceAdditionalPassLighting = firstRenderPass.DynamicLight;
+	}
+
 	// Dynamic Lighting...
 	if (RenderPass.DynamicLight)
 	{
@@ -101,6 +112,17 @@ bool CD3DRenderStateMgr::SetRenderStyleStates(CD3DRenderStyle* pRenderStyle, uin
 		m_Material.Specular.r	= 0;										   m_Material.Specular.g = 0;											m_Material.Specular.b = 0;											 m_Material.Specular.a = 0;
 		m_Material.Power		= 0;
 		PD3DDEVICE->SetMaterial(&m_Material);
+	}
+	else if( forceAdditionalPassLighting )
+	{
+		PD3DDEVICE->SetRenderState(D3DRS_LIGHTING,true);
+		m_Material.Ambient.r = m_Material.Ambient.g = m_Material.Ambient.b = m_Material.Ambient.a = 0.0f;
+		m_Material.Diffuse.r = m_Material.Diffuse.g = m_Material.Diffuse.b = m_Material.Diffuse.a = 1.0f;
+		m_Material.Emissive.r = m_Material.Emissive.g = m_Material.Emissive.b = m_Material.Emissive.a = 0.0f;
+		m_Material.Specular.r = m_Material.Specular.g = m_Material.Specular.b = m_Material.Specular.a = 0.0f;
+		m_Material.Power = 0.0f;
+
+		PD3DDEVICE->SetMaterial(&m_Material); 
 	}
 	else
 	{
@@ -195,13 +217,13 @@ bool CD3DRenderStateMgr::SetRenderStyleStates(CD3DRenderStyle* pRenderStyle, uin
 		PD3DDEVICE->SetTextureStageState(iTexStage, D3DTSS_TEXCOORDINDEX, kTables.m_nUVSource[TexStage.UVSource] | nStageMask);
 
 		//setup the UV addressing modes
-		PD3DDEVICE->SetTextureStageState(iTexStage, D3DTSS_ADDRESSU, kTables.m_nAddress[TexStage.UAddress]);
-		PD3DDEVICE->SetTextureStageState(iTexStage, D3DTSS_ADDRESSV, kTables.m_nAddress[TexStage.VAddress]);
+		PD3DDEVICE->SetSamplerState(iTexStage, D3DSAMP_ADDRESSU, kTables.m_nAddress[TexStage.UAddress]);
+		PD3DDEVICE->SetSamplerState(iTexStage, D3DSAMP_ADDRESSV, kTables.m_nAddress[TexStage.VAddress]);
 
 		//setup the texture filtering
-		PD3DDEVICE->SetTextureStageState(iTexStage,D3DTSS_MINFILTER, kTables.m_nMinFilter[TexStage.TexFilter]);
-		PD3DDEVICE->SetTextureStageState(iTexStage,D3DTSS_MAGFILTER, kTables.m_nMagFilter[TexStage.TexFilter]);
-		PD3DDEVICE->SetTextureStageState(iTexStage,D3DTSS_MIPFILTER, kTables.m_nMipFilter[TexStage.TexFilter]);
+		PD3DDEVICE->SetSamplerState(iTexStage, D3DSAMP_MINFILTER, kTables.m_nMinFilter[TexStage.TexFilter]);
+		PD3DDEVICE->SetSamplerState(iTexStage, D3DSAMP_MAGFILTER, kTables.m_nMagFilter[TexStage.TexFilter]);
+		PD3DDEVICE->SetSamplerState(iTexStage, D3DSAMP_MIPFILTER, kTables.m_nMipFilter[TexStage.TexFilter]);
 
 		if (RenderPass.TextureStages[iTexStage].UVTransform_Enable)
 		{
@@ -256,7 +278,7 @@ bool CD3DRenderStateMgr::SetRenderStyleStates(CD3DRenderStyle* pRenderStyle, uin
 
 void CD3DRenderStateMgr::SetBumpEnvMapMatrix(uint32 BumpEnvMapStage)
 {
-	D3DVIEWPORT8 vp; PD3DDEVICE->GetViewport(&vp);
+	D3DVIEWPORT9 vp; PD3DDEVICE->GetViewport(&vp);
 
 	D3DXMATRIX VS; ZeroMemory(&VS, sizeof(D3DMATRIX));
 	VS._11	= (float)vp.Width/2;						// Create view scaling matrix:
@@ -298,111 +320,3 @@ void CD3DRenderStateMgr::SetBumpEnvMapMatrix(uint32 BumpEnvMapStage)
 	PD3DDEVICE->SetTextureStageState(BumpEnvMapStage, D3DTSS_BUMPENVMAT11, F2UINT32(0.25f * costhetau));
 }
 
-// RETAIL: kept in the shipped engine though nothing calls it (Lithtech.exe
-// 0x504610); the 2003 render styles editor's copy, as Direct3D 8 has it.
-// Go through what they've selected and set it in the regs...
-bool CD3DRenderStateMgr::SetVertexShaderConstants(CD3DRenderStyle* pRenderStyle, RSD3DRenderPass* pD3DOptions, uint32 iSkinBones)
-{
-	if (!pD3DOptions) return false;
-
-	// Constant Vectors...
-	if (pD3DOptions->ConstVector_ConstReg1 > -1) {
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->ConstVector_ConstReg1,&(pD3DOptions->ConstVector_Param1.x),1); }
-	if (pD3DOptions->ConstVector_ConstReg2 > -1) {
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->ConstVector_ConstReg2,&(pD3DOptions->ConstVector_Param2.x),1); }
-	if (pD3DOptions->ConstVector_ConstReg3 > -1) {
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->ConstVector_ConstReg3,&(pD3DOptions->ConstVector_Param3.x),1); }
-
-	// Transforms...
-	if (pD3DOptions->WorldViewTransform_ConstReg > -1) {
-		for (uint32 i = 0; i < pD3DOptions->WorldViewTransform_Count; ++i) {
-			D3DXMATRIX matWorldViewT; D3DXMatrixMultiply(&matWorldViewT, &m_World[i], &m_View); D3DXMatrixTranspose(&matWorldViewT,&matWorldViewT); assert(i < MAX_WORLDMATRIX);
-			PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->WorldViewTransform_ConstReg + i*4,&matWorldViewT._11,4); } }
-	if (pD3DOptions->ProjTransform_ConstReg > -1) {
-		D3DXMATRIX matProjT; D3DXMatrixTranspose(&matProjT,&m_Proj);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->ProjTransform_ConstReg,&matProjT._11,4); }
-	if (pD3DOptions->WorldViewProjTransform_ConstReg > -1) {
-		D3DXMATRIX matViewProj; D3DXMatrixMultiply(&matViewProj, &m_View, &m_Proj);
-		D3DXMATRIX matWorldViewProjT; D3DXMatrixMultiply(&matWorldViewProjT, &m_World[0], &matViewProj); D3DXMatrixTranspose(&matWorldViewProjT,&matWorldViewProjT);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->WorldViewProjTransform_ConstReg,&matWorldViewProjT._11,4); }
-	if (pD3DOptions->ViewProjTransform_ConstReg > -1) {
-		D3DXMATRIX matViewProjT; D3DXMatrixMultiply(&matViewProjT, &m_View, &m_Proj); D3DXMatrixTranspose(&matViewProjT,&matViewProjT);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->ViewProjTransform_ConstReg,&matViewProjT._11,4); }
-
-	D3DXMATRIX InverseWorldMatrix;							// May need to figure out the inverse Model Matrix...
-	if ((pD3DOptions->LightPosition_MSpc_ConstReg > -1) || (pD3DOptions->CamPos_MSpc_ConstReg > -1)) {
-		D3DXMatrixInverse(&InverseWorldMatrix, NULL, &m_World[0]); }
-
-	D3DXMATRIX InverseViewMatrix; D3DXMATRIX InvModelView;	// May need to figure out the inverse View Matrix...
-	if (pD3DOptions->CamPos_MSpc_ConstReg > -1) {
-		D3DXMatrixInverse(&InverseViewMatrix, NULL, &m_View); 
-		InvModelView = InverseViewMatrix * InverseWorldMatrix; }
-
-	// Camera Pos...
-	if (pD3DOptions->CamPos_MSpc_ConstReg > -1) {
-		FourFloatVector CamPos_MSpc; D3DXVECTOR3 vCameraPos(0.0f,0.0f,0.0f); 
-		D3DXVec3Transform((D3DXVECTOR4*)(&CamPos_MSpc),&vCameraPos,&InvModelView);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->CamPos_MSpc_ConstReg,&CamPos_MSpc,pD3DOptions->Light_Count); }
-
-	// Lights...
-	if (pD3DOptions->LightPosition_MSpc_ConstReg > -1) {
-		FourFloatVector LightPosition[MAX_D3DLIGHTS];
-		for (uint32 i = 0; i < pD3DOptions->Light_Count; ++i) {
-			D3DXVec3Transform((D3DXVECTOR4*)(&LightPosition[i]),(D3DXVECTOR3*)(&m_Lights[i].Position),&InverseWorldMatrix); assert(i < MAX_D3DLIGHTS); }
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->LightPosition_MSpc_ConstReg,LightPosition,pD3DOptions->Light_Count); }
-	if (pD3DOptions->LightPosition_CSpc_ConstReg > -1) {
-		FourFloatVector LightPosition[MAX_D3DLIGHTS];
-		for (uint32 i = 0; i < pD3DOptions->Light_Count; ++i) {
-			D3DXVec3Transform((D3DXVECTOR4*)(&LightPosition[i]),(D3DXVECTOR3*)(&m_Lights[i].Position),&m_View); assert(i < MAX_D3DLIGHTS); }
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->LightPosition_CSpc_ConstReg,LightPosition,pD3DOptions->Light_Count); }
-	if (pD3DOptions->LightColor_ConstReg > -1) {
-		FourFloatVector LightColor[MAX_D3DLIGHTS]; 
-		for (uint32 i = 0; i < pD3DOptions->Light_Count; ++i) { assert(i < MAX_D3DLIGHTS); 
-			if (m_bLightEnable[i]) { LightColor[i].x = m_Lights[i].Diffuse.r; LightColor[i].y = m_Lights[i].Diffuse.g; LightColor[i].z = m_Lights[i].Diffuse.b; LightColor[i].w = m_Lights[i].Diffuse.a; }
-			else { LightColor[i].x = 0.0f; LightColor[i].y = 0.0f; LightColor[i].z = 0.0f; LightColor[i].w = 0.0f; } }
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->LightColor_ConstReg,LightColor,pD3DOptions->Light_Count); }
-	if (pD3DOptions->LightAtt_ConstReg > -1) {
-		FourFloatVector LightAtt[MAX_D3DLIGHTS];
-		for (uint32 i = 0; i < pD3DOptions->Light_Count; ++i) { assert(i < MAX_D3DLIGHTS);
-			if (m_bLightEnable[i]) { LightAtt[i].x = m_Lights[i].Attenuation0; LightAtt[i].y = m_Lights[i].Attenuation1; LightAtt[i].z = m_Lights[i].Attenuation2;  }
-			else { LightAtt[i].x = 10000000.0f; LightAtt[i].y = 10000000.0f; LightAtt[i].z = 10000000.0f; } }
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->LightAtt_ConstReg,LightAtt,pD3DOptions->Light_Count); }
-
-	// Material Properities...
-	if (pD3DOptions->Material_AmbDifEm_ConstReg > -1) {
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Material_AmbDifEm_ConstReg+0,&pRenderStyle->m_LightingMaterial.Ambient,1); 
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Material_AmbDifEm_ConstReg+1,&pRenderStyle->m_LightingMaterial.Diffuse,1);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Material_AmbDifEm_ConstReg+2,&pRenderStyle->m_LightingMaterial.Emissive,1); }
-	if (pD3DOptions->Material_Specular_ConstReg > -1) {
-		FourFloatVector Specular(pRenderStyle->m_LightingMaterial.Specular.r,pRenderStyle->m_LightingMaterial.Specular.g,pRenderStyle->m_LightingMaterial.Specular.b,pRenderStyle->m_LightingMaterial.SpecularPower);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Material_Specular_ConstReg,&Specular,1); }
-
-	// Ambient Light...
-	if (pD3DOptions->AmbientLight_ConstReg > -1) {
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->AmbientLight_ConstReg,&m_AmbientLight,1); }
-
-	// Previous WorldView Transforms...
-	if (pD3DOptions->PrevWorldViewTrans_ConstReg > -1) {
-		m_PrevWorld.push_front(m_World[0]);
-		if (m_PrevWorld.size() > MAX_PREVWORLDMATRIX) m_PrevWorld.pop_back();  // Pop off the last one (if it's bigger than what we are saving)...
-		list<D3DXMATRIX>::iterator it = m_PrevWorld.begin(); uint32 iCount = 0;
-		for (uint32 z = 0; z < 5; ++z) if (it != m_PrevWorld.end()) ++it;
-		while ((iCount < pD3DOptions->PrevWorldViewTrans_Count) && (it != m_PrevWorld.end())) {
-			D3DXMATRIX matWorldViewT; D3DXMatrixMultiply(&matWorldViewT, &(*it), &m_View); D3DXMatrixTranspose(&matWorldViewT,&matWorldViewT);
-			PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->PrevWorldViewTrans_ConstReg + (iCount * 4),&(matWorldViewT._11),4); 
-			++iCount; for (uint32 z = 0; z < 5; ++z) if (it != m_PrevWorld.end()) ++it; } 
-		while (iCount < pD3DOptions->PrevWorldViewTrans_Count) {
-			D3DXMATRIX matWorldViewT; D3DXMatrixMultiply(&matWorldViewT, &m_World[0], &m_View); D3DXMatrixTranspose(&matWorldViewT,&matWorldViewT);
-			PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->PrevWorldViewTrans_ConstReg + (iCount * 4),&(matWorldViewT._11),4); 
-			++iCount; } }
-
-	// SkinBones...
-	uint32 iMaxConst = g_Device.GetDeviceCaps()->MaxVertexShaderConst - 5;
-	if (iSkinBones) { FourFloatVector vConsts(1.0,-1.0,0.0,4.0); PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Last_ConstReg,&vConsts,4); }
-	for (uint32 i = 0; i < iSkinBones; ++i) { 
-		if (pD3DOptions->Last_ConstReg + i*4 + 1 > iMaxConst) break;
-		D3DXMATRIX matWorldViewT; D3DXMatrixMultiply(&matWorldViewT, &m_World[i], &m_View); D3DXMatrixTranspose(&matWorldViewT,&matWorldViewT); assert(i < MAX_WORLDMATRIX);
-		PD3DDEVICE->SetVertexShaderConstant(pD3DOptions->Last_ConstReg + 1 + i*4,&matWorldViewT._11,4); }
-
-	return true;
-}

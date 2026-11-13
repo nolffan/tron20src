@@ -96,29 +96,30 @@ bool VertexBufferController::CreateIndexBuffer(int32 iIndexCount, bool bDynamic,
 
 // Call this before a render call - sets the streams and stuff like that...
 //	(Just need to call it once per group of render calls)
-void VertexBufferController::SetStreamSources(uint32 iBaseVertexIndex)
+void VertexBufferController::SetStreamSources()
 {
-	// RETAIL: the streams first, then the indices (Lithtech.exe 0x502660)
+	// RETAIL: the streams first, then the indices (Lithtech.exe 0x54bf00),
+	// Contract J.A.C.K.'s order on Direct3D 9's calls
 	// Setup the Streams...
 	for (uint32 i = 0; i < VERTEXBUFFER_STREAMCOUNT; ++i) 
 	{
 		if (m_pVB_VertStream[i]) 
 		{
-			if (FAILED(PD3DDEVICE->SetStreamSource(i,m_pVB_VertStream[i], m_VertexSize[i])))	{ assert(0); return; } 
+			if (FAILED(PD3DDEVICE->SetStreamSource(i,m_pVB_VertStream[i],0, m_VertexSize[i])))	{ assert(0); return; } 
 		} 
 	}
 
 	if (m_pVB_Index) 
 	{ 
-		PD3DDEVICE->SetIndices(m_pVB_Index, iBaseVertexIndex);
+		PD3DDEVICE->SetIndices(m_pVB_Index);
 	}
 }
 
 // One stop shop - transform/light/render all in one call...
-void VertexBufferController::Render(uint32 MinVertIndexed,uint32 StartIndex,uint32 VertCount,uint32 TriCount)
+void VertexBufferController::Render(uint32 MinVertIndexed,uint32 StartIndex,uint32 VertCount,uint32 TriCount, uint32 iVertOffset)
 {
 	// Render the sucker...
-	if (FAILED(PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,MinVertIndexed,VertCount,StartIndex,TriCount)))	{ return; } //assert(0); return; }
+	if (FAILED(PD3DDEVICE->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,iVertOffset,MinVertIndexed,VertCount,StartIndex,TriCount)))	{ return; } //assert(0); return; }
 }
 
 // For rendering non-indexed points...
@@ -136,19 +137,19 @@ bool VertexBufferController::Lock(VB_TYPE Type,bool bDiscardContents,bool bNoOve
 	switch (Type) {
 	case eVERTSTREAM0 :
 		if (m_pVert_Data[0]) return true;
-		if (FAILED(m_pVB_VertStream[0]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(BYTE**)&m_pVert_Data[0],uFlags)))	{ assert(0); return false; } break;
+		if (FAILED(m_pVB_VertStream[0]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(void **)&m_pVert_Data[0],uFlags)))	{ assert(0); return false; } break;
 	case eVERTSTREAM1 :
 		if (m_pVert_Data[1]) return true;
-		if (FAILED(m_pVB_VertStream[1]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(BYTE**)&m_pVert_Data[1],uFlags)))	{ assert(0); return false; } break;
+		if (FAILED(m_pVB_VertStream[1]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(void **)&m_pVert_Data[1],uFlags)))	{ assert(0); return false; } break;
 	case eVERTSTREAM2 :
 		if (m_pVert_Data[2]) return true;
-		if (FAILED(m_pVB_VertStream[2]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(BYTE**)&m_pVert_Data[2],uFlags)))	{ assert(0); return false; } break;
+		if (FAILED(m_pVB_VertStream[2]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(void **)&m_pVert_Data[2],uFlags)))	{ assert(0); return false; } break;
 	case eVERTSTREAM3 :
 		if (m_pVert_Data[3]) return true;
-		if (FAILED(m_pVB_VertStream[3]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(BYTE**)&m_pVert_Data[3],uFlags)))	{ assert(0); return false; } break;
+		if (FAILED(m_pVB_VertStream[3]->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(void **)&m_pVert_Data[3],uFlags)))	{ assert(0); return false; } break;
 	case eINDEX :
 		if (m_pIndex_Data) return true;
-		if (FAILED(m_pVB_Index->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(BYTE**)&m_pIndex_Data,uFlags)))			{ assert(0); return false; } break;
+		if (FAILED(m_pVB_Index->Lock(iOffsetToLock_Bytes,iSizeToLock_Bytes,(void **)&m_pIndex_Data,uFlags)))			{ assert(0); return false; } break;
 	default : assert(0); return false; }
 	return true;
 }

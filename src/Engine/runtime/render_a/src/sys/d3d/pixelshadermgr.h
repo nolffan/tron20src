@@ -86,10 +86,10 @@ private:
 
 	struct SPixelShader
 	{
-		SPixelShader(const char* pszName, uint8* pFunction, DWORD hShader, bool bCompileShader);
+		SPixelShader(const char* pszName, uint8* pFunction, IDirect3DPixelShader9* hShader, bool bCompileShader);
 		~SPixelShader();
 
-		DWORD		m_hShader;			//the D3D shader handle
+		IDirect3DPixelShader9*	m_hShader;	//the D3D shader
 		uint8*		m_pFunction;		//the shader tokens loaded from the file
 		char*		m_pszName;			//the file this shader was loaded from
 		uint32		m_nRefCount;		//the number of handles that refer to this shader

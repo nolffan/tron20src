@@ -285,9 +285,25 @@ Object.lto: 152 classes still differ.
   +0x60/+0x6c), the formatted polystring (0x568550.., derived from it),
   the font manager (0x566200..0x5664a5), the console's text and the
   widgets that draw text are what keep Lithtech from compiling.
-- **The renderer** is still cjacksrc's Direct3D 8 one (the engine links
-  d3d8/d3dx8 meanwhile); Build 69's render_a/render_b D3D9 code is the
-  base for Tron's.
+- **The renderer** is Direct3D 9 (DirectX 9.0 SDK, `ext/toolchains/
+  dxsdk-9.0`): Build 69's CDirect3DDevice9Wrapper (its render state
+  tables are retail's, 0x5c204c/0x5c2120), its shell (modes by known
+  format, 0x5c236c), device (end-of-frame query at +0x188,
+  PreventFrameBuffering; not its frame textures or render targets),
+  sampler states, SetFVF, depth bias and stream offsets on cjacksrc's
+  renderer; DrawPrim, the render struct and Bink likewise. No effects,
+  vertex shader manager or render targets in Tron (no strings); the pixel
+  shader manager is NOLF2's on IDirect3DPixelShader9 (0x512fc0..). D3DX9
+  is middleware (libscan.py: 0x4b59b0..0x4c8060, 0x574678..0x581b9b).
+  What is left is not Direct3D's: Contract J.A.C.K.'s world-model render
+  block batching (CRenderShader_Base's m_nFirstQueuedSection/
+  m_nLastQueuedSection, CInternalSection's m_pWorld/m_mWorld/
+  m_bBreakBatch, AddSection's world, GetShaderDrawRange) is not in Tron:
+  its shader members sit 8 bytes lower (nearpos.py: every Pre/PostFlush
+  and FlushChangeSection off by 8) and CD3D_RenderWorld is 0x14c bytes,
+  not 0x248 (LoadWorldData, 0x4cae80). Build 69's shader base without
+  its effect code is the model. client/src/sys/win/winconsole_impl.cpp
+  still names D3DVIEWPORT8 (four lines).
 
 ### 9. modern
 

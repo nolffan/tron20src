@@ -106,8 +106,8 @@ bool CModelShadowShader::SetWorldTransform(const LTMatrix& mInvWorldTrans)
 //as setting up the vertex shader, the vertex buffers, etc.
 bool CModelShadowShader::BeginShader(	uint32 nVertSize,				//the size of the vertices
 										uint32 nVertType,				//the type of vertex as passed to D3D
-										IDirect3DVertexBuffer8 *pVB,	//pointer to the vertex buffer
-										IDirect3DIndexBuffer8 *pIB,		//the index buffer
+										IDirect3DVertexBuffer9 *pVB,	//pointer to the vertex buffer
+										IDirect3DIndexBuffer9 *pIB,		//the index buffer
 										ERenderShader eShaderID			//the ID of the shader for custom setup
 									 )
 {	
@@ -128,17 +128,18 @@ bool CModelShadowShader::BeginShader(	uint32 nVertSize,				//the size of the ver
 	}
 
 	PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, F2DW(-(float)GetZBias(eShaderID)));*/
-	// RETAIL: Direct3D 8's single Z bias (0x4ef009)
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, GetZBias(eShaderID));
+	// RETAIL: no depth bias in Tron's Direct3D 9 shadows (as Build 69;
+	// Lithtech.exe sets D3DRS_DEPTHBIAS only at 0x4ca140 and 0x5565c0)
 
 	//setup our input streams for D3D
-	PD3DDEVICE->SetVertexShader(nVertType);
+	PD3DDEVICE->SetVertexShader(NULL);
+	PD3DDEVICE->SetFVF(nVertType);
 
-	PD3DDEVICE->SetStreamSource(0, pVB, nVertSize);
+	PD3DDEVICE->SetStreamSource(0, pVB, 0, nVertSize);
 
 	if(!g_CV_ModelShadow_Proj_BackFaceCull.m_Val)
 	{
-		PD3DDEVICE->SetIndices(pIB, 0);
+		PD3DDEVICE->SetIndices(pIB);
 	}
 
 	return true;
@@ -173,7 +174,7 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 	if(!g_CV_ModelShadow_Proj_BackFaceCull.m_Val)
 	{
 		//we don't have to cull, just blit our block and bail
-		PD3DDEVICE->DrawIndexedPrimitive(nPrimType, nStartVert, nTotalVertCount, nStartIndex, nTotalIndexCount / 3);
+		PD3DDEVICE->DrawIndexedPrimitive(nPrimType, 0, nStartVert, nTotalVertCount, nStartIndex, nTotalIndexCount / 3);
 
 		//update our model shadow tri count
 		IncFrameStat(eFS_ModelShadowTriangles, nTotalIndexCount / 3);	
@@ -218,8 +219,8 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 			{
 				m_pTempIB->Unlock();
 				pOutIndices = NULL;
-				PD3DDEVICE->SetIndices(m_pTempIB, 0);
-				PD3DDEVICE->DrawIndexedPrimitive(nPrimType, nStartVert, nTotalVertCount, m_nTempIBIndex, nBaseIndex / 3);
+				PD3DDEVICE->SetIndices(m_pTempIB);
+				PD3DDEVICE->DrawIndexedPrimitive(nPrimType, 0, nStartVert, nTotalVertCount, m_nTempIBIndex, nBaseIndex / 3);
 				IncFrameStat(eFS_ModelShadowTriangles, nBaseIndex / 3);
 				m_nTempIBIndex = k_nTempIBSize;
 				nBaseIndex = 0;
@@ -231,7 +232,7 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 					m_nTempIBIndex = 0;
 
 				HRESULT hr = m_pTempIB->Lock(m_nTempIBIndex * sizeof(uint16), (k_nTempIBSize - m_nTempIBIndex) * sizeof(uint16),
-								(BYTE**)&pOutIndices, m_nTempIBIndex ? D3DLOCK_NOOVERWRITE : D3DLOCK_DISCARD);
+								(void **)&pOutIndices, m_nTempIBIndex ? D3DLOCK_NOOVERWRITE : D3DLOCK_DISCARD);
 				if (FAILED(hr))
 				{
 					m_bErrorOccurred = true;
@@ -249,8 +250,8 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 		if (pOutIndices)
 		{
 			m_pTempIB->Unlock();
-			PD3DDEVICE->SetIndices(m_pTempIB, 0);
-			PD3DDEVICE->DrawIndexedPrimitive(nPrimType, nStartVert, nTotalVertCount, m_nTempIBIndex, nBaseIndex / 3);
+			PD3DDEVICE->SetIndices(m_pTempIB);
+			PD3DDEVICE->DrawIndexedPrimitive(nPrimType, 0, nStartVert, nTotalVertCount, m_nTempIBIndex, nBaseIndex / 3);
 			IncFrameStat(eFS_ModelShadowTriangles, nBaseIndex / 3);
 			m_nTempIBIndex += nBaseIndex;
 		}
@@ -263,7 +264,7 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 	uint16 *pOutIndices;
 
 	HRESULT hr = m_pTempIB->Lock(m_nTempIBIndex * sizeof(uint16), (k_nTempIBSize - m_nTempIBIndex) * sizeof(uint16), 
-					(BYTE**)&pOutIndices, m_nTempIBIndex ? D3DLOCK_NOOVERWRITE : D3DLOCK_DISCARD);
+					(void **)&pOutIndices, m_nTempIBIndex ? D3DLOCK_NOOVERWRITE : D3DLOCK_DISCARD);
 	
 	//sanity check
 	if (FAILED(hr))
@@ -311,8 +312,8 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 			m_pTempIB->Unlock();
 
 			//draw our polys
-			PD3DDEVICE->SetIndices(m_pTempIB, 0);
-			PD3DDEVICE->DrawIndexedPrimitive(nPrimType, nStartVert, nTotalVertCount, 0, nBaseIndex / 3);
+			PD3DDEVICE->SetIndices(m_pTempIB);
+			PD3DDEVICE->DrawIndexedPrimitive(nPrimType, 0, nStartVert, nTotalVertCount, 0, nBaseIndex / 3);
 
 			//update our model shadow tri count
 			IncFrameStat(eFS_ModelShadowTriangles, nBaseIndex / 3);	
@@ -321,7 +322,7 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 			m_nTempIBIndex	= 0;
 			nBaseIndex		= 0;
 
-			m_pTempIB->Lock(0, 0, (BYTE**)&pOutIndices, D3DLOCK_DISCARD);
+			m_pTempIB->Lock(0, 0, (void **)&pOutIndices, D3DLOCK_DISCARD);
 		}
 
 		// Write out the indices
@@ -341,8 +342,8 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 	if (nBaseIndex != m_nTempIBIndex)
 	{
 		//we did, so we need to render them
-		PD3DDEVICE->SetIndices(m_pTempIB, 0);
-		PD3DDEVICE->DrawIndexedPrimitive(nPrimType, nStartVert, nTotalVertCount, 0, nBaseIndex / 3);
+		PD3DDEVICE->SetIndices(m_pTempIB);
+		PD3DDEVICE->DrawIndexedPrimitive(nPrimType, 0, nStartVert, nTotalVertCount, 0, nBaseIndex / 3);
 
 		//update our model shadow tri count
 		IncFrameStat(eFS_ModelShadowTriangles, nBaseIndex / 3);	
@@ -392,8 +393,8 @@ bool CModelShadowShader::SetRenderStates()
 	//-----------------------------
 
 	//setup the texture so that it will clamp UV coordinates on our shadow texture
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
 	//setup our input parameters for the texture coordinates
 	if(m_bPerspective)
@@ -418,8 +419,8 @@ bool CModelShadowShader::SetRenderStates()
 	//-----------------------------
 
 	//setup the texture so that it will clamp UV coordinates on our shadow texture
-	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
-	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	PD3DDEVICE->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
 	//setup our input parameters for the texture coordinates
 	PD3DDEVICE->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
@@ -516,10 +517,10 @@ bool CModelShadowShader::RestoreRenderStates()
 	PD3DDEVICE->SetRenderState(D3DRS_FOGENABLE,			m_nSBFogEnable);
 
 	//restore the texture wrapping
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-	PD3DDEVICE->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
-	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-	PD3DDEVICE->SetTextureStageState(1, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(1, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+	PD3DDEVICE->SetSamplerState(1, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 
 	//turn off the texture transformation
 	PD3DDEVICE->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS,  D3DTTFF_DISABLE);
@@ -530,7 +531,7 @@ bool CModelShadowShader::RestoreRenderStates()
 	//turn off Z biasing
 //	PD3DDEVICE->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, F2DW(0.0f));
 //	PD3DDEVICE->SetRenderState(D3DRS_DEPTHBIAS, F2DW(0.0f));
-	PD3DDEVICE->SetRenderState(D3DRS_ZBIAS, 0);	// RETAIL: 0x4eed41
+
 
 	//clear out the textures
 	d3d_DisableTexture(0);
@@ -579,7 +580,7 @@ bool CModelShadowShader::IsExcluded(ERenderShader eShaderID) const
 
 //called to set up the shadow information
 void CModelShadowShader::SetShadowInfo(	const ViewParams& Params,			//the view params for rendering
-									    IDirect3DBaseTexture8* pTexture,	//the texture for the shadow
+									    IDirect3DBaseTexture9* pTexture,	//the texture for the shadow
 										const ShadowLightInfo* pInfo,		//info for the projection
 										float fTexScaleX, float fTexScaleY,	//scale of the texture to the area
 										bool bPerspective,					//ortho or perspective

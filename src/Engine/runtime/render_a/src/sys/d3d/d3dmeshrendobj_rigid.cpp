@@ -175,6 +175,6 @@ void CD3DRigidMesh::BeginRender(CD3DRenderStyle* pRenderStyle, uint32 iRenderPas
 
 void CD3DRigidMesh::EndRender()
 {
-	PD3DDEVICE->SetStreamSource(0, 0, 0);
-	PD3DDEVICE->SetIndices(0, 0);
+	PD3DDEVICE->SetStreamSource(0, 0, 0, 0);
+	PD3DDEVICE->SetIndices(0);
 }
