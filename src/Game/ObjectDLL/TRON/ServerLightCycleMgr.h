@@ -9,8 +9,7 @@
 // from CLightCycleMgr (LightCycleMgr.h, vtable 0x10294bcc). Its TU is
 // 0x1004f420..0x10053b50 (with the STL templates it emits). The class name
 // is retail's; the file name, the members and the names of the functions
-// not in the base are ours. Retail offsets are given; from 0x133c on ours
-// are 0x40 more (Tron's CButeMgr is 0x40 bytes smaller than ours).
+// not in the base are ours. Retail offsets are given (ours are the same).
 //
 // ----------------------------------------------------------------------- //
 
@@ -136,6 +135,9 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		float					m_fDialogDelay;				// RETAIL: +0x1358
 		float					m_fDialogPauseTime;			// RETAIL: +0x135c
 		bool					m_bDialogPlayed;			// RETAIL: +0x1360
+		// RETAIL: +0x1361..0x1363 are never read or written in the TU
+		// (0x1004f420..0x10053b50); m_bDialogEnabled is at +0x1364 (0x1005236d).
+		uint8					m_xTronUnknown1361[3];
 		bool					m_bDialogEnabled;			// RETAIL: +0x1364
 		bool					m_bTronUnknown1365;			// RETAIL: +0x1365
 		LCPowerupList			m_collPowerups;				// RETAIL: +0x1368

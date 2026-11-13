@@ -112,8 +112,7 @@ class CTronGameServerShell : public CGameServerShell
 
 		// RETAIL: the members in the order the constructor (retail 0x1005bfc0)
 		// builds them, at retail's offsets. Ours are larger until CVersionMgr
-		// (0x264 bytes in Tron), CButeMgr (0x40 smaller) and the light cycle
-		// manager are Tron's
+		// (0x264 bytes in Tron) and the light cycle manager are Tron's
 		CTronVersionMgr		m_VersionMgr;		// +0x17494 Same as g_pVersionMgr
 		CTronMissionButeMgr	m_MissionButeMgr;	// +0x176f8 Same as g_pMissionButeMgr
 		CServerLightCycleMgr	m_LightCycleMgr;	// +0x18840 Same as g_pLightCycleMgr, g_pServerLightCycleMgr (0x137c bytes in retail)

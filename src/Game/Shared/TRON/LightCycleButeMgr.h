@@ -11,9 +11,9 @@
 // members and functions are named by us. CShell.dll has its own copy of
 // this class.
 //
-// RETAIL: layout. Tron's CButeMgr is 0x40 bytes smaller than ours, so every
-// member of CLightCycleButeMgr is 0x40 further in our build than retail's
-// offsets given below (retail sizeof(CLightCycleButeMgr) = 0x130c).
+// RETAIL: layout. The offsets given below are retail's and ours (retail
+// sizeof(CLightCycleButeMgr) = 0x130c; CButeMgr is Tron's 0x110c bytes,
+// libs/ButeMgr/butemgr.h).
 //
 // ----------------------------------------------------------------------- //
 
@@ -371,7 +371,7 @@ class CLightCycleButeMgr : public CGameButeMgr
 
 	protected :
 
-		// RETAIL: offsets are retail's (ours are 0x40 more, see above)
+		// RETAIL: offsets are retail's (and ours, see above)
 		int					m_nNumCycleColors;			// RETAIL: +0x111c
 		LIGHTCYCLECOLOR*	m_pCycleColors;				// RETAIL: +0x1120
 		int					m_nNumCycleTypes;			// RETAIL: +0x1124

@@ -14,9 +14,8 @@
 // LIGHT_CYCLE_TRAIL(_POINT), LightCycleCollisionInfo and the names Build 69
 // has are Monolith's; the other names are ours.
 //
-// RETAIL: layout. CLightCycleButeMgr is 0x40 bytes bigger in our build
-// (Tron's CButeMgr is smaller), so the members after m_ButeMgr are 0x40
-// further than retail's offsets given below.
+// RETAIL: layout. The offsets given below are retail's (and ours, now that
+// CButeMgr has Tron's layout: libs/ButeMgr/butemgr.h).
 //
 // ----------------------------------------------------------------------- //
 

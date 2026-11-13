@@ -285,19 +285,26 @@ private:
 	// Used to define map of strings to TableOfItems.
 	typedef std::hash_map< char const*, TableOfItems*, hash_str_nocase, equal_str_nocase > TableOfTags;
 
+	// RETAIL: Tron's CButeMgr holds its four tables by pointer (0x110c bytes,
+	// not NOLF2's 0x114c, where they are embedded STLport hashtables of 0x14):
+	// the constructor (Object 0x1006d730) news them at +0x1c/+0x20/+0x24/+0x28
+	// after zeroing them, Term (0x1006de50) reaches them through the pointers
+	// and the destructor (0x1006dbb0) clears and deletes them.  The member
+	// names are ours (NOLF2's names with a 'p').
+
 	// Holds all strings for keys and string values.
-	StringHolder m_stringHolder;
+	StringHolder* m_pStringHolder;
 
 	// Main table of tags.  This table is created when a butefile is parsed.
-	TableOfTags m_tagTab;
+	TableOfTags* m_pTagTab;
 
 	// Auxiliary table of tags.  This table is created by creating new attributes in a tag that
 	// already exists in the main table.
-	TableOfTags m_auxTagTab;
+	TableOfTags* m_pAuxTagTab;
 
 	// New tags.  This table is created by creating new tags that don't exist in the main 
 	// table of tags.
-	TableOfTags m_newTagTab;
+	TableOfTags* m_pNewTagTab;
 
 	// Current table of items.
 	TableOfItems* m_pCurrTabOfItems;
