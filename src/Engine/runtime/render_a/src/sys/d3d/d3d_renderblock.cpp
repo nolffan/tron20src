@@ -765,7 +765,7 @@ void CD3D_RenderBlock::GetLightList(const ViewParams& Params, const DynamicLight
 	//  But it's much cheaper than allocating it for every render block
 	typedef vector<DynamicLight*> TLightList;
 	static TLightList aLightList;
-	aLightList.resize(0);	// RETAIL: 0x4e60db
+	aLightList.clear();
 
 	DynamicLight **pCurLight = g_WorldDynamicLights;
 	DynamicLight **pLastLight = &g_WorldDynamicLights[g_nNumWorldDynamicLights];
@@ -1469,7 +1469,7 @@ uint32 CD3D_RenderBlock::IntersectRay(const SRay &sRay, TIntersectionList &sResu
 {
 	const float k_fEqualDistanceEpsilon = 0.0001f;
 
-	sResults.resize(0);	// RETAIL: 0x4e64d2
+	sResults.clear();
 
 	if (!Intersect_Ray_AABB(sRay, m_vBoundsMin, m_vBoundsMax))
 		return 0;
@@ -1496,7 +1496,7 @@ uint32 CD3D_RenderBlock::IntersectRay(const SRay &sRay, TIntersectionList &sResu
 		if (eIntersect == eIntersectionType_First && !sResults.empty() && 
 			(sResults.front().m_fDistance > (sCurIntersect.m_fDistance + k_fEqualDistanceEpsilon)))
 		{
-			sResults.resize(0);	// RETAIL: 0x4e662a
+			sResults.clear();
 		}
 
 		sResults.push_back(sCurIntersect);

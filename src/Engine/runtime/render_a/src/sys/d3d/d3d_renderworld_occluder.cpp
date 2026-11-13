@@ -668,7 +668,7 @@ PolySide COccluder::Occlude(COccludee &cOccludee) const
 		else
 		{
 			cOccludee.m_aVisible.insert(cOccludee.m_aVisible.end(), cOccludee.m_aOccluded.begin(), cOccludee.m_aOccluded.end());
-			cOccludee.m_aOccluded.resize(0);	// RETAIL: 0x4f3ad3
+			cOccludee.m_aOccluded.clear();
 		}
 		return FrontSide;
 	}
@@ -697,7 +697,7 @@ PolySide COccluder::Occlude2D(COccludee &cOccludee) const
 		else
 		{
 			cOccludee.m_aVisible.insert(cOccludee.m_aVisible.end(), cOccludee.m_aOccluded.begin(), cOccludee.m_aOccluded.end());
-			cOccludee.m_aOccluded.resize(0);	// RETAIL: 0x4f3ad3
+			cOccludee.m_aOccluded.clear();
 		}
 		// RETAIL: in front only if the box is entirely in front (0x4f3c31)
 		return GetAABBPlaneSideFront(m_ePolyPlaneCorner, m_cPolyPlane, cOccludee.m_vMin, cOccludee.m_vMax) ? FrontSide : Intersect;

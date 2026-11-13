@@ -245,7 +245,7 @@ void CD3D_RenderWorld::DrawOccluder(const COccludee::COutline &cOutline)
 
 void CD3D_RenderWorld::StartFrame(const ViewParams& Params)
 {
-	m_aOccluderOutlines.resize(0);	// RETAIL: resize(0) (Lithtech.exe 0x4aaba0)
+	m_aOccluderOutlines.clear();
 	m_nOccludeCollectTime = 0;
 
 	// Don't do any occluder stuff if we're fiddling with console variables
@@ -265,7 +265,7 @@ void CD3D_RenderWorld::StartFrame(const ViewParams& Params)
 
 void CD3D_RenderWorld::GetFrameOccluders(const ViewParams& Params)
 {
-	m_aFrameOccluders.resize(0);	// RETAIL: 0x4aa74d
+	m_aFrameOccluders.clear();
 
 	if (g_CV_DebugRBNoOccluders.m_Val != 0.0f)
 		return;
@@ -399,7 +399,7 @@ bool CD3D_RenderWorld::IsAABBVisible(const ViewParams& Params, const LTVector &v
 	for (; bVisible && (fOccluderAreaRemaining >= fOccludeeArea) && (iCurOccluder != m_aFrameOccluders.end()); ++iCurOccluder)
 	{
 		// Move the visible portions into the occluded bucket
-		cOccludee.m_aOccluded.resize(0);	// RETAIL: 0x4a964a
+		cOccludee.m_aOccluded.clear();
 		cOccludee.m_aOccluded.swap(cOccludee.m_aVisible);
 		PolySide nResult = iCurOccluder->Occlude2D(cOccludee);
 		bVisible = nResult != BackSide;
@@ -492,7 +492,7 @@ bool CD3D_RenderWorld::DrawAggregateShader(uint32 nNumFrustumPlanes, const LTPla
 
 	// Now we need to find all intersecting render blocks
 	static TRBList aVisibleRBs;
-	aVisibleRBs.resize(0);	// RETAIL: 0x4a8e81
+	aVisibleRBs.clear();
 
 	GetFrustumRBList(Params, aVisibleRBs);
 
@@ -549,7 +549,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 	}
 
 	LT_MEM_TRACK_ALLOC(m_aVisibleRBs.reserve(m_nRenderBlockCount), LT_MEM_TYPE_RENDERER);
-	m_aVisibleRBs.resize(0);	// RETAIL: 0x4a9ee4
+	m_aVisibleRBs.clear();
 
 	uint32 nOccludeTime = 0;
 	uint32 nDrawTime = 0;
@@ -609,7 +609,7 @@ void CD3D_RenderWorld::Draw(const ViewParams& Params, bool bTransformed)
 			CountAdder cOccludeCollect(&nOccludeTime);
 
 			// Forget which ones are visible if we're going to use occlusion
-			m_aVisibleRBs.resize(0);
+			m_aVisibleRBs.clear();
 
 			// Get the visible RB set
 			typedef std::stack<CD3D_RenderBlock*> TRBQueue;
@@ -1134,7 +1134,7 @@ void CD3D_RenderWorld::DebugTri(const ViewParams& Params)
 		nIntersectionBlock = nIntersectLoop;
 
 		// Clear the current intersection list
-		aIntersections.resize(0);	// RETAIL: resize(0) (Lithtech.exe 0x4a9910)
+		aIntersections.clear();
 
 		// Find the closest intersection distance
 		float fClosestDist = aBlockIntersections[0].m_fDistance;
@@ -1181,7 +1181,7 @@ bool CD3D_RenderWorld::CastRay(
 	CD3D_RenderBlock::SRay sRay(vOrigin, vDir, fMinDist, fMaxDist);
 	static CD3D_RenderBlock::TIntersectionList aBlockIntersections;
 	static CD3D_RenderBlock::TIntersectionList aFinalIntersections;
-	aFinalIntersections.resize(0);	// RETAIL: 0x4a9c00
+	aFinalIntersections.clear();
 	CD3D_RenderBlock::EIntersectionType eIntersection;
 	if (bFirstIntersect)
 		eIntersection = CD3D_RenderBlock::eIntersectionType_First;
@@ -1191,7 +1191,7 @@ bool CD3D_RenderWorld::CastRay(
 	uint32 nIntersectionBlock = 0;
 	for (uint32 nIntersectLoop = 0; nIntersectLoop < m_nRenderBlockCount; ++nIntersectLoop)
 	{
-		aBlockIntersections.resize(0);
+		aBlockIntersections.clear();
 
 		uint32 nBlockTrisChecked;
 		if (!m_pRenderBlocks[nIntersectLoop].IntersectRay(sRay, aBlockIntersections, eIntersection, &nBlockTrisChecked))
@@ -1234,7 +1234,7 @@ bool CD3D_RenderWorld::CastRay(
 	}
 
 	// Don't leave anything lying around
-	aFinalIntersections.resize(0);
+	aFinalIntersections.clear();
 
 	return true;
 }
