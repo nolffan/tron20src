@@ -436,10 +436,6 @@ SharedTexture *CD3D_RenderBlock::LoadSpriteData(CRBSection &cSection, uint32 nTe
 	return pResult;
 }
 
-// The engine's debug level (bdefs.cpp), which the renderer's headers do not
-// declare
-extern int32 g_DebugLevel;
-
 bool CD3D_RenderBlock::Load(ILTStream *pStream)
 {
 	if (m_bShadersBound)
@@ -514,16 +510,14 @@ bool CD3D_RenderBlock::Load(ILTStream *pStream)
 
 			if ((cCurSection.m_eShader != eShader_Gouraud) && 
 				(cCurSection.m_eShader != eShader_Lightmap) && 
-				(cCurSection.m_pTexture[0] == NULL) &&
-				(g_DebugLevel >= 1))	// RETAIL: 0x4e70c6
+				(cCurSection.m_pTexture[0] == NULL))
 			{
 				dsi_ConsolePrint("Renderer: Error loading texture %s", sTextureName[0]);
 			}
 
 			// Handle the dual texture cases
 			if (((cCurSection.m_eShader == eShader_Gouraud_DualTexture) || (cCurSection.m_eShader == eShader_Lightmap_DualTexture)) &&
-				(cCurSection.m_pTexture[1] == NULL) &&
-				(g_DebugLevel >= 1))	// RETAIL: 0x4e70f8
+				(cCurSection.m_pTexture[1] == NULL))
 			{
 				dsi_ConsolePrint("Renderer: Error loading texture %s", sTextureName[1]);
 			}
@@ -652,8 +646,8 @@ bool CD3D_RenderBlock::Load(ILTStream *pStream)
 	LT_MEM_TRACK_ALLOC(m_aLightGroups.reserve(nLightGroupCount), LT_MEM_TYPE_RENDER_LIGHTGROUP);
 	for (; nLightGroupCount; --nLightGroupCount)
 	{
-		// cjacksrc: no push_back() in Visual C++ .NET 2003's vector; a
-		// temporary each time round (RETAIL: 0x4e7466)
+		// RETAIL: a temporary each time round, not Build 69's one local
+		// (Lithtech.exe 0x52a6d0)
 		m_aLightGroups.push_back(SRBLightGroup());
 		*pStream >> m_aLightGroups.back();
 	}
@@ -1549,15 +1543,12 @@ void CD3D_RenderBlock::DebugTri(const SIntersection &sIntersect, float fX, float
 // screen filled with sky when it shouldn't.
 void CD3D_RenderBlock::ExtendSkyBounds(const ViewParams& Params, float &fMinX, float &fMinY, float &fMaxX, float &fMaxY) const
 {
-	// RETAIL: Contract J.A.C.K.'s form (0x4e5cd0): the clipped edge's point
-	// and the unclipped vertices extend the bounds, and the polygon is
-	// tested and clamped against the screen, before NOLF2's "SKYBOX FIX for
-	// Multiple Cameras" (the viewport rectangle)
 	TGeometryPolyList::const_iterator iCurPoly = m_aSkyPortals.begin();
 	for (; iCurPoly != m_aSkyPortals.end(); ++iCurPoly)
 	{
 		const SRBGeometryPoly &sCurPoly = *iCurPoly;
 
+		uint32 nNear = 0;
 		float fLocalMinX = FLT_MAX, fLocalMinY = FLT_MAX, fLocalMaxX = -FLT_MAX, fLocalMaxY = -FLT_MAX;
 
 		LTVector vPrevVert = sCurPoly.m_aVerts.back();
@@ -1572,48 +1563,56 @@ void CD3D_RenderBlock::ExtendSkyBounds(const ViewParams& Params, float &fMinX, f
 			float fCurNearDist = Params.m_ClipPlanes[CPLANE_NEAR_INDEX].DistTo(vCurVert);
 			bool bCurClip = fCurNearDist > 0.0f;
 
+			bool bVertOK = true;
+
 			if (bCurClip != bPrevClip)
 			{
 				float fInterpolant = (fCurNearDist != fPrevNearDist) ? -fPrevNearDist / (fCurNearDist - fPrevNearDist) : 0.0f;
 				LTVector vTemp;
 				VEC_LERP(vTemp, vPrevVert, vCurVert, fInterpolant);
-
-				// Transform all the way to screen space
-				MatVMul_InPlace_H(&(Params.m_FullTransform), &vTemp);
-				// Update the extents
-				fLocalMinX = LTMIN(fLocalMinX, vTemp.x);
-				fLocalMinY = LTMIN(fLocalMinY, vTemp.y);
-				fLocalMaxX = LTMAX(fLocalMaxX, vTemp.x);
-				fLocalMaxY = LTMAX(fLocalMaxY, vTemp.y);
+				vCurVert = vTemp;
 			}
 
-			if (bCurClip)
-			{
-				// Transform all the way to screen space
-				MatVMul_InPlace_H(&(Params.m_FullTransform), &vCurVert);
-				// Update the extents
-				fLocalMinX = LTMIN(fLocalMinX, vCurVert.x);
-				fLocalMinY = LTMIN(fLocalMinY, vCurVert.y);
-				fLocalMaxX = LTMAX(fLocalMaxX, vCurVert.x);
-				fLocalMaxY = LTMAX(fLocalMaxY, vCurVert.y);
-			}
+			// Transform all the way to screen space
+			MatVMul_InPlace_H(&(Params.m_FullTransform), &vCurVert);
+			// Update the extents
+			fLocalMinX = LTMIN(fLocalMinX, vCurVert.x);
+			fLocalMinY = LTMIN(fLocalMinY, vCurVert.y);
+			fLocalMaxX = LTMAX(fLocalMaxX, vCurVert.x);
+			fLocalMaxY = LTMAX(fLocalMaxY, vCurVert.y);
 
 			vPrevVert = *iCurVert;
 			fPrevNearDist = fCurNearDist;
 			bPrevClip = bCurClip;
 		}
-		// Skip over polys that are entirely outside the screen
-		if ((fLocalMaxX < 0.0f) ||
+		// Skip over polys that are entirely outside the clipping area
+		if ((nNear == sCurPoly.m_aVerts.size()) || 
+		// SKYBOX FIX for Multiple Cameras
+			/*
+			(fLocalMaxX < 0.0f) ||
 			(fLocalMaxY < 0.0f) ||
 			(fLocalMinX > Params.m_fScreenWidth) ||
 			(fLocalMinY > Params.m_fScreenHeight))
+			*/
+			(fLocalMaxX < static_cast<float>(Params.m_Rect.left))  ||
+			(fLocalMaxY < static_cast<float>(Params.m_Rect.top))   ||
+			(fLocalMinX > static_cast<float>(Params.m_Rect.right)) ||
+			(fLocalMinY > static_cast<float>(Params.m_Rect.bottom)) )
 			continue;
 
+		// SKYBOX FIX for Multiple Cameras
+		/*
 		// Clamp to the screen
 		fLocalMinX = LTMAX(0.0f, fLocalMinX);
 		fLocalMinY = LTMAX(0.0f, fLocalMinY);
 		fLocalMaxX = LTMIN(Params.m_fScreenWidth, fLocalMaxX);
 		fLocalMaxY = LTMIN(Params.m_fScreenHeight, fLocalMaxY);
+		*/
+		//Clamp to the viewport
+		fLocalMinX = LTMAX(static_cast<float>(Params.m_Rect.left), fLocalMinX);
+		fLocalMinY = LTMAX(static_cast<float>(Params.m_Rect.top), fLocalMinY);
+		fLocalMaxX = LTMIN(static_cast<float>(Params.m_Rect.right), fLocalMaxX);
+		fLocalMaxY = LTMIN(static_cast<float>(Params.m_Rect.bottom), fLocalMaxY);
 
 		// Extend the bounds
 		fMinX = LTMIN(fMinX, fLocalMinX);
