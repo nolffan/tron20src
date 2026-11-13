@@ -343,7 +343,6 @@ class CLTClient : public ILTClient {
 	virtual LTRESULT StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID);
 	virtual LTRESULT GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLatency);
 	virtual LTRESULT RemovePing(uint32 nPingID);
-	virtual LTRESULT OpenSocket(uint32 *phSocket);	// RETAIL
 
 	virtual uint32 GetModelAnimation(HLOCALOBJ hObj);
 	virtual void SetModelAnimation(HLOCALOBJ hObj, uint32 iAnim);
@@ -812,27 +811,6 @@ LTRESULT CLTClient::GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLate
 		if (pDriver->m_DriverFlags & NETDRIVER_TCPIP)
 		{
 			return pDriver->GetPingStatus(nPingID, pStatus, pLatency);
-		}
-	}
-
-	return LT_NOTINITIALIZED;
-}
-
-// RETAIL: the internet driver's OpenSocket, as the server's (0x1003cc70)
-LTRESULT CLTClient::OpenSocket(uint32 *phSocket)
-{
-	// RETAIL: as StartPing, it starts the networking when there is no
-	// driver yet (Lithtech.exe 0x40c3c0)
-	if (g_pClientMgr->m_NetMgr.m_Drivers.GetSize() == 0)
-		InitNetworking(NULL, 0);
-
-	for (uint32 i=0; i < g_pClientMgr->m_NetMgr.m_Drivers; i++)
-	{
-		CBaseDriver *pDriver = g_pClientMgr->m_NetMgr.m_Drivers[i];
-
-		if (pDriver->m_DriverFlags & NETDRIVER_TCPIP)
-		{
-			return pDriver->OpenSocket((SOCKET*)phSocket);
 		}
 	}
 

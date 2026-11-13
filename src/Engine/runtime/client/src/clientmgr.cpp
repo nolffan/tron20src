@@ -516,10 +516,9 @@ LTRESULT CClientMgr::StartShell(StartGameRequest *pRequest)
             }
 
             // Connect to the given address.
-            // RETAIL: a new socket unless the request brings one (Lithtech.exe 0x40f68c)
-            // (through a local, which retail keeps on the stack)
-            bool bNewSocket = (pRequest->m_hSocket == (uint32)-1);
-            dResult = pDriver->ConnectTCP(bNewSocket, pRequest->m_TCPAddress);
+            // TRON: Tron 2.0's driver has no socket to hand over (server.dll's
+            // CUDPDriver vtable 0x1005263c: ConnectTCP takes the address only)
+            dResult = pDriver->ConnectTCP(pRequest->m_TCPAddress);
             if (dResult != LT_OK)
                 return dResult;
 

@@ -1,4 +1,9 @@
 #include "bdefs.h"
+
+// TRON: Tron 2.0's driver is NOLF2's without the game type (no Get/SetGameType,
+// none in its query responses; server.dll's CUDPDriver vtable 0x1005263c), with
+// Contract J.A.C.K.'s bandwidth periods and unguaranteed drop rate, and
+// without CJ's socket hand-over (OpenSocket, the listen thread's pause)
 #include "sysudpdriver.h"
 #include "sysdebugging.h"
 #include "netmgr.h"
@@ -79,14 +84,15 @@ CUDPConn::CUDPConn() :
 	m_nNumOutOfOrderPackets(0),
 	m_bFlowControlInitialized(false),
 	m_nFlowControlCurPeriodSent(0),
-	m_nFlowControlLastPeriodSent(0)
+	m_nFlowControlLastPeriodSent(0),
+	// TRON: initialized with the members (server.dll 0x10037e01)
+	m_eLastDisconnectReason(DISCONNECTREASON_KICKED)
 {
 	uint32 nCurTime = timeGetTime();
 	m_nLastHeartbeatTime = nCurTime;
 	m_nLastPingTimeStamp = nCurTime;
 	m_nLastSendTime = nCurTime;
 	m_nLastRecvTime = nCurTime;
-	m_eLastDisconnectReason = DISCONNECTREASON_KICKED;
 	AccumulateHistory(m_aOutgoingBandwidthHistory);
 	AccumulateHistory(m_aIncomingBandwidthHistory);
 }
@@ -1887,13 +1893,11 @@ CUDPDriver::CUDPDriver()
 	m_Socket = INVALID_SOCKET;
 	m_SessionName = LTNULL;
 	m_bPassword = false;
-	m_nGameType = 0;
 	m_nMaxConnections = 0;
 	m_QuerySocket = INVALID_SOCKET;
 	SAFE_STRCPY(m_Name, "internet");
 	m_DriverFlags = NETDRIVER_TCPIP;
 	m_nCurPingID = 0;
-	m_hThread_Listen = 0;	// RETAIL: 0x1004a210
 	memset(&m_cGUID, 0, sizeof(m_cGUID));
 }
 
@@ -1947,17 +1951,18 @@ bool CUDPDriver::Init()
 }
 
 
-void CUDPDriver::Term2(bool bFullShutdown, bool bShutdownSocket)
+void CUDPDriver::Term2(bool bFullShutdown)
 {
 	// Close down any connections.
 	m_cCS_Connections.Enter();
 	MDeleteAndRemoveElements(m_Connections);
 	m_cCS_Connections.Leave();
 
-	// RETAIL: the 2006 tree's choice (0x1004b2e0)
-	if (bShutdownSocket)
+	if (m_Socket != INVALID_SOCKET)
 	{
 		StopThread_Listen();
+		closesocket(m_Socket);
+		m_Socket = INVALID_SOCKET;
 	}
 
 	// Get rid of the query stuff.
@@ -1970,7 +1975,6 @@ void CUDPDriver::Term2(bool bFullShutdown, bool bShutdownSocket)
 	}
 
 	m_bPassword = false;
-	m_nGameType = 0;
 
 	if (bFullShutdown)
 	{
@@ -2006,7 +2010,7 @@ void CUDPDriver::Term()
 
 	m_cCS_Connections.Leave();
 
-	Term2(true, true);
+	Term2(true);
 }
 
 
@@ -2304,9 +2308,6 @@ LTRESULT CUDPDriver::UpdateQuery()
 		// Password?
 		pQuery->m_bPassword = cIncomingPacket.Readbool();
 
-		// GameType?
-		pQuery->m_nGameType = cIncomingPacket.Readuint8();
-
 		// We've gotten a response from this one.  Stop bothering them.
 		pQuery->m_nQueriesRemaining = 0;
 	}
@@ -2348,7 +2349,6 @@ LTRESULT CUDPDriver::GetQueryResults(NetSession* &pListHead)
 				pSession->m_HostPort = ntohs(pSession->m_Addr.sin_port);
 
 				pSession->m_bHasPassword = pQuery->m_bPassword;
-				pSession->m_nGameType = pQuery->m_nGameType;
 
 				pSession->m_pNext = pListHead;
 				pListHead = pSession;
@@ -2587,7 +2587,7 @@ LTRESULT CUDPDriver::HostSession(NetHost* pHost)
 	char portStr[64];
 
 	// Clear everything we've got so far..
-	Term2(false, true);
+	Term2(false);
 
 	port = (uint16)pHost->m_Port;
 	if(port == 0)
@@ -2615,7 +2615,6 @@ LTRESULT CUDPDriver::HostSession(NetHost* pHost)
 	m_nMaxConnections = pHost->m_dwMaxConnections;
 	SetSessionName(pHost->m_sName);
 	SetHasPassword(pHost->m_bHasPassword);
-	SetGameType(pHost->m_nGameType);
 	m_cCS_SessionData.Leave();
 
 	return LT_OK;
@@ -2628,7 +2627,7 @@ LTRESULT CUDPDriver::JoinSession(NetSession *pNetSession)
 
 	pSession = (CUDPSession*)pNetSession;
 	ASSERT(pSession->m_pDriver == this); // Make sure we're the right driver.
-	return ReallyJoinSession(true, &pSession->m_Addr);
+	return ReallyJoinSession(&pSession->m_Addr);
 }
 
 
@@ -2676,7 +2675,6 @@ void CUDPDriver::HandleUnconnectedData(CPacket_Read &cPacket, sockaddr_in *pSend
 			cResponse.WriteString(m_SessionName);
 			cResponse.Writeuint8(nQueryNum);
 			cResponse.Writebool(m_bPassword);
-			cResponse.Writeuint8(m_nGameType);
 			m_cCS_SessionData.Leave();
 
 			SendTo(m_Socket, CPacket_Read(cResponse), pSender);
@@ -2992,41 +2990,60 @@ bool CUDPDriver::GetLocalIpAddress(char* sBuffer, uint32 dwBufferSize, uint16 &h
 }
 
 
-// RETAIL: the 2006 tree's, on the 2002 locks (server.dll 0x1004b500)
-LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
+LTRESULT CUDPDriver::ReallyJoinSession(sockaddr_in *addr)
 {
 	uint32 startTime, curTime, lastSendTime;
-	sockaddr_in queryAddr, senderAddr, myAddr;
+	sockaddr_in localInfo, queryAddr, senderAddr, myAddr;
 	int status;
 	socklen_t size;
 	CUDPConn *pConn;
 	char addrStr[128];
 
+
+
 	// Remember the remote address, then get rid of all our connections and stuff.
-	queryAddr = ( *addr );
-	Term2(false, bOpenNewSocket);
+	queryAddr = *addr;
+	Term2(false);
+
+	SOCKET theSocket = LTNULL;
+
+	// Try to bind to some port to talk thru (when you specify
+	// 0, it tries to find one for you).
+	udp_SetupLocalSockaddr(&localInfo, (u_short)g_CV_IPClientPort);
 
 	// In case we return an error.
 	LTSNPrintF(addrStr, sizeof(addrStr), ADDR_PRINTF, EXPAND_ADDR(*addr));
 
-	if ( bOpenNewSocket )
+	int32 bindPort = udp_GetFirstClientPort();
+	int32 bindAttempts = 0;
+
+	while (!theSocket)
 	{
-		LTRESULT ltRes = OpenSocket( NULL );
-		if ( ltRes != LT_OK )
+		udp_SetupLocalSockaddr(&localInfo, (u_short)bindPort);
+		theSocket = udp_BindToPort(&localInfo, &localInfo);
+		//
+		if (theSocket == INVALID_SOCKET)
 		{
-			return ltRes;
+			if (bindPort == 0)
+			{
+				if(g_CV_UDPDebug)
+				{
+					dsi_ConsolePrint("UDP: Error: bind to port 0 failed!");
+				}
+				RETURN_ERROR_PARAM(2, CUDPDriver::JoinSession, LT_CANTBINDTOPORT, addrStr);
+			}
+
+			if(g_CV_UDPDebug)
+			{
+				dsi_ConsolePrint("UDP: Bind to port %d failed.  Trying next port.", (int)bindPort);
+			}
+			bindPort = udp_GetNextClientPort(++bindAttempts); // last port to try is always port 0
 		}
 	}
-
-	// Tell the listen thread to pause.
-	m_hEvent_Thread_Listen_Pause.Set( );
 	
-	// RETAIL: the Win32 wait the 2006 tree has commented out (0x1004b639)
-	// Stop here until we need to shutdown or the thread has confirmed it is paused.
-	HANDLE aEvents[] = { m_hEvent_Thread_Listen_Shutdown.GetEvent( ), m_hEvent_Thread_Listen_Paused.GetEvent( )};
-	if( WaitForMultipleObjects( 2, aEvents, FALSE, INFINITE ) == WAIT_OBJECT_0 )
+	if(g_CV_UDPDebug)
 	{
-		return LT_OK;
+		dsi_ConsolePrint("UDP: Joining on port %d", ntohs(localInfo.sin_port));
 	}
 
 	CPacket_Write cConnectionPacket_Write;
@@ -3040,9 +3057,6 @@ LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
 	// Send off and wait for a response.
 	startTime = timeGetTime();
 	lastSendTime = startTime - CONN_SEND_INTERVAL;
-	bool bConnected = false;
-	LTRESULT ltRes = LT_TIMEOUT;
-
 	do
 	{
 		curTime = timeGetTime();
@@ -3056,13 +3070,13 @@ LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
 					EXPAND_ADDR(queryAddr));
 			}
 
-			SendTo(m_Socket, cConnectionPacket, &queryAddr);
+			SendTo(theSocket, cConnectionPacket, &queryAddr);
 			lastSendTime = curTime;
 		}
 
 		// See if we've gotten a response yet.
 		CPacket_Read cResponsePacket;
-		if (!udp_RecvFromSocket(m_Socket, &cResponsePacket, &senderAddr))
+		if (!udp_RecvFromSocket(theSocket, &cResponsePacket, &senderAddr))
 			continue;
 
 		if (cResponsePacket.Readuint32() != UNCONNECTED_DATA_TOKEN)
@@ -3086,18 +3100,14 @@ LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
 		if (!bAccept)
 		{
 			bool bServerFull = cResponsePacket.Readbool();
-			StopThread_Listen();
+			closesocket(theSocket);
 			if (bServerFull)
 			{
-				GENERATE_ERROR(2, CUDPDriver::JoinSession, LT_REJECTED, addrStr);
-				ltRes = LT_REJECTED;
-				break;
+				RETURN_ERROR_PARAM(2, CUDPDriver::JoinSession, LT_REJECTED, addrStr);
 			}
 			else
 			{
-				GENERATE_ERROR(2, CUDPDriver::JoinSession, LT_NOTSAMEGUID, addrStr);
-				ltRes = LT_NOTSAMEGUID;
-				break;
+				RETURN_ERROR_PARAM(2, CUDPDriver::JoinSession, LT_NOTSAMEGUID, addrStr);
 			}
 		}
 
@@ -3113,17 +3123,16 @@ LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
 
 		LT_MEM_TRACK_ALLOC(pConn = new CUDPConn,LT_MEM_TYPE_NETWORKING);
 		if (!pConn)
-		{
-			ltRes = LT_ERROR;
 			break;
-		}
 		pConn->m_RemoteAddr = senderAddr;
-		pConn->m_Socket = m_Socket;
+		pConn->m_Socket = theSocket;
 		pConn->m_pDriver = this;
 		
 		if(m_pNetMgr->NewConnectionNotify(pConn))
 		{
 			m_Connections.AddHead(pConn, &pConn->m_Node);
+			m_Socket = theSocket;
+			StartThread_Listen();
 
 			if(g_CV_UDPDebug)
 			{
@@ -3140,29 +3149,22 @@ LTRESULT CUDPDriver::ReallyJoinSession( bool bOpenNewSocket, sockaddr_in *addr )
 				}
 			}
 
-			bConnected = true;
-			break;
+			return LT_OK;
 		}
 		else
 		{
 			delete pConn;
+			// TRON: RETAIL: and its socket closed (server.dll 0x1003c347),
+			// though the loop goes on waiting on it (docs/RETAIL_BUGS.md)
+			closesocket(theSocket);
 		}
 
 	} while ((curTime - startTime) < CONN_WAIT_TIME);
 
-	// Tell listen thread it can go now.
-	m_hEvent_Thread_Listen_Pause.Set( );
-
-	if ( !bConnected )
-	{
-		GENERATE_ERROR(2, CUDPDriver::JoinSession, ltRes, addrStr);
-		return ltRes;
-	}
-
-	return LT_OK;
+	RETURN_ERROR_PARAM(2, CUDPDriver::JoinSession, LT_TIMEOUT, addrStr);
 }
 
-LTRESULT CUDPDriver::ConnectTCP(bool bOpenNewSocket, const char* sAddress)
+LTRESULT CUDPDriver::ConnectTCP( const char* sAddress)
 {
 	sockaddr_in addr;
 
@@ -3171,47 +3173,8 @@ LTRESULT CUDPDriver::ConnectTCP(bool bOpenNewSocket, const char* sAddress)
 		RETURN_ERROR(1, ConnectTCP, LT_CANTBINDTOPORT);
 	}
 
-	return ReallyJoinSession(bOpenNewSocket, &addr);
+	return ReallyJoinSession(&addr);
 }
-
-// RETAIL: the 2006 tree's (server.dll 0x1004c290)
-LTRESULT CUDPDriver::OpenSocket( SOCKET* phSocket )
-{
-	StopThread_Listen( );
-
-	int32 bindPort = udp_GetFirstClientPort();
-	int32 bindAttempts = 0;
-
-	while( m_Socket == INVALID_SOCKET )
-	{
-		sockaddr_in cAddr;
-		udp_SetupLocalSockaddr(&cAddr, (u_short)bindPort);
-		m_Socket = udp_BindToPort(&cAddr, &cAddr);
-		if (m_Socket == INVALID_SOCKET)
-		{
-			if( bindPort == 0 )
-			{
-				RETURN_ERROR_PARAM(2, CUDPDriver::OpenSocket, LT_ERROR, "Can't bind to port");
-			}
-			if( g_CV_UDPDebug )
-			{
-				dsi_ConsolePrint("UDP: Bind to port %d failed.  Trying next port.", (int)bindPort);
-			}
-			bindPort = udp_GetNextClientPort(++bindAttempts); // last port to try is always port 0
-		}
-	}
-
-	// Tell them about their socket.
-	if( phSocket )
-	{
-		*phSocket = m_Socket;
-	}
-
-	// Start listening to traffic.
-	StartThread_Listen();
-	return LT_OK;
-}
-
 
 LTRESULT CUDPDriver::SendTcpIp(const CPacket_Read &cMsg, const char *sAddr, uint32 port)
 {
@@ -3289,34 +3252,44 @@ LTRESULT CUDPDriver::RemovePing(uint32 nPingID)
 	return LT_OK;
 }
 
-// RETAIL: the 2006 tree's (server.dll 0x10047ec0)
 LTRESULT CUDPDriver::SendPing(const char *pAddr, uint16 nPort, uint32 nID)
 {
-	sockaddr_in cAddr;
-
-	LTRESULT ltRes = OpenSocket( NULL );
-	if ( ltRes != LT_OK )
-	{
-		return ltRes;
-	}
-
-	if (!udp_BuildSockaddrFromString(pAddr, &cAddr))
-	{
+	sockaddr_in cPingAddr;
+	if (!udp_BuildSockaddrFromString(pAddr, &cPingAddr))
 		return LT_ERROR;
-	}
+	cPingAddr.sin_port = htons((u_short)nPort);
 
-	cAddr.sin_port = htons((u_short)nPort);
+	// Make sure we have a socket...
+	if (m_Socket == INVALID_SOCKET)
+	{
+		int32 bindPort = udp_GetFirstClientPort();
+		int32 bindAttempts = 0;
+
+		while (m_Socket == INVALID_SOCKET)
+		{
+			sockaddr_in cAddr;
+			udp_SetupLocalSockaddr(&cAddr, (u_short)bindPort);
+			m_Socket = udp_BindToPort(&cAddr, &cAddr);
+			if (m_Socket == INVALID_SOCKET)
+			{
+				if (bindPort == 0)
+				{
+					RETURN_ERROR_PARAM(2, CUDPDriver::SendPing, LT_ERROR, "Can't bind to port");
+				}
+				bindPort = udp_GetNextClientPort(++bindAttempts); // last port to try is always port 0
+			}
+		}
+		// Make sure we'll get the response...
+		StartThread_Listen();
+	}
 
 	// Send the ping
 	CPacket_Write cPing;
 	cPing.Writeuint32(UNCONNECTED_DATA_TOKEN);
 	cPing.WriteBits(UNCONNECTED_MSG_PING, UNCONNECTED_MSG_BITS);
 	cPing.WriteBits(nID, k_nPing_Bits);
-
-	if (!SendTo(m_Socket, CPacket_Read(cPing), &cAddr))
-	{
+	if (!SendTo(m_Socket, CPacket_Read(cPing), &cPingAddr))
 		return LT_ERROR;
-	}
 
 	return LT_OK;
 }
@@ -3330,10 +3303,6 @@ void CUDPDriver::UpdateGUID(LTGUID &cGUID)
 
 void CUDPDriver::StartThread_Listen()
 {
-	// RETAIL: once (0x1004bdb0)
-	if (m_hThread_Listen)
-		return;
-
 	ASSERT(m_Socket != INVALID_SOCKET);
 	unsigned long nThreadID;
 	m_hThread_Listen = CreateThread(NULL, 0, ThreadBootstrap_Listen, (void *)this, 0, &nThreadID);
@@ -3344,23 +3313,14 @@ void CUDPDriver::StopThread_Listen()
 {
 	// Signal the shutdown
 	m_hEvent_Thread_Listen_Shutdown.Set();
-
 	// Closing the socket is the only way to release the thread...  :(
-	// RETAIL: and it is closed here (0x10046320)
-	if (m_Socket != INVALID_SOCKET)
-	{
-		closesocket(m_Socket);
-		m_Socket = INVALID_SOCKET;
-	}
-
+	closesocket(m_Socket);
 	// Wait for it to shut down
 	WaitForSingleObject(m_hThread_Listen, INFINITE);
 	// Clean up
 	CloseHandle(m_hThread_Listen);
 	m_hThread_Listen = 0;
 	m_hEvent_Thread_Listen_Shutdown.Clear();
-	m_hEvent_Thread_Listen_Pause.Clear();
-	m_hEvent_Thread_Listen_Paused.Clear();
 }
 
 unsigned long CUDPDriver::ThreadBootstrap_Listen(void *pUserData)
@@ -3394,22 +3354,6 @@ uint32 CUDPDriver::Thread_Listen()
 			if (m_hEvent_Thread_Listen_Shutdown.IsSet())
 			{
 				break;
-			}
-			// RETAIL: the 2006 tree's pause, with the Win32 wait (0x1004afd6)
-			// Check if we need to pause.
-			else if (m_hEvent_Thread_Listen_Pause.IsSet())
-			{
-				// Clear the pause event.
-				m_hEvent_Thread_Listen_Pause.Clear();
-				// Tell main thread we're paused.
-				m_hEvent_Thread_Listen_Paused.Set();
-				// Stop here until we're told to shutdown or resume.
-				HANDLE aEvents[] = { m_hEvent_Thread_Listen_Shutdown.GetEvent(), m_hEvent_Thread_Listen_Pause.GetEvent() };
-				if (WaitForMultipleObjects(2, aEvents, FALSE, INFINITE) == WAIT_OBJECT_0)
-					break;
-				// Done with the pause.
-				m_hEvent_Thread_Listen_Paused.Clear();
-				m_hEvent_Thread_Listen_Pause.Clear();
 			}
 			// Go to sleep if there's nothing waiting on the line
 			else if (nRecvStatus == WSAEWOULDBLOCK)

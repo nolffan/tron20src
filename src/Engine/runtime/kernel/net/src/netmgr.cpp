@@ -737,8 +737,8 @@ LTRESULT CNetMgr::GetLocalIpAddress(char *pAddress, uint32 bufLen, uint16 &hostP
 		pAddress[0] = 0;
 		return LT_NOTINITIALIZED;
 	}
-	// RETAIL: the driver's bool becomes an LTRESULT (server.dll 0x10029e13)
-	return m_pMainDriver->GetLocalIpAddress(pAddress, bufLen, hostPort) ? LT_OK : LT_ERROR;
+	// TRON: NOLF2's: the driver's bool as it is (server.dll 0x1002229b)
+	return m_pMainDriver->GetLocalIpAddress(pAddress, bufLen, hostPort);
 }
 
 LTRESULT CNetMgr::GetMaxConnections(uint32 &nMaxConnections)

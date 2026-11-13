@@ -649,7 +649,6 @@ public:
         m_HostIP[0] = 0;
         m_HostPort = NO_HOST_PORT;
         m_pNext = LTNULL;
-		m_nGameType = 0;
     }
 
     uint32 m_dwFlags;
@@ -667,7 +666,8 @@ Host info.  0 length string and NO_HOST_PORT if not on TCP/IP.
 
     char m_sName[MAX_NETSESSIONNAME_LEN];
 	char m_bHasPassword;
-	uint8 m_nGameType;
+	// TRON: no game type in Tron 2.0's sessions (server.dll 0x1003b085,
+	// NetSession::Clear; its driver has no Get/SetGameType)
     NetSession *m_pNext;
 };
 
@@ -680,6 +680,8 @@ struct NetHost {
     uint32 m_dwMaxConnections;
     char m_sName[MAX_NETSESSIONNAME_LEN];
     bool m_bHasPassword;
+	// TRON: not read by Tron 2.0's engine (server.dll's HostSession
+	// 0x1003b51f; its dedicated server leaves it unset)
 	uint8 m_nGameType;
 };
 

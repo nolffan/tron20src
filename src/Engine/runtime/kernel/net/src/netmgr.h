@@ -201,17 +201,13 @@ class CBaseDriver
 		virtual	bool		GetLocalIpAddress(char* sBuffer, uint32 dwBufferSize, uint16 &hostPort) { return(false); }
 
 		// Joins the first session on the given tcp/ip address...
-		// RETAIL: whether to open a new socket first (Lithtech.exe 0x40f68c)
-		virtual LTRESULT	ConnectTCP(bool bOpenNewSocket, const char* sAddress) { return(false); }
+		virtual LTRESULT	ConnectTCP(const char* sAddress) { return(false); }
 
 		virtual LTRESULT	SendTcpIp(const CPacket_Read &cMsg, const char *sAddr, uint32 port) {return LT_ERROR;}
 
 		virtual LTRESULT	StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID) { return LT_ERROR; }
 		virtual LTRESULT	GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLatency) { return LT_ERROR; }
 		virtual LTRESULT	RemovePing(uint32 nPingID) { return LT_ERROR; }
-
-		// RETAIL: open the socket and start listening (slot 27, as the 2006 tree)
-		virtual LTRESULT	OpenSocket(SOCKET* phSocket) { return LT_ERROR; }
 
 		// Update the GUID
 		virtual void		UpdateGUID(LTGUID &cGUID) { }

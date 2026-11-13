@@ -262,7 +262,6 @@ public:
 	virtual LTRESULT StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID);
 	virtual LTRESULT GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLatency);
 	virtual LTRESULT RemovePing(uint32 nPingID);
-	virtual LTRESULT OpenSocket(uint32 *phSocket);	// RETAIL
 
 	virtual LTRESULT GetTextureEffectVarID(const char *pName, uint32 nStage, uint32 *pResult) const;
 
@@ -1128,22 +1127,6 @@ LTRESULT CLTServer::GetPingStatus(uint32 nPingID, uint32 *pStatus, uint32 *pLate
 		if (pDriver->m_DriverFlags & NETDRIVER_TCPIP)
 		{
 			return pDriver->GetPingStatus(nPingID, pStatus, pLatency);
-		}
-	}
-
-	return LT_NOTINITIALIZED;
-}
-
-// RETAIL: the internet driver's OpenSocket (server.dll 0x1003cc70)
-LTRESULT CLTServer::OpenSocket(uint32 *phSocket)
-{
-	for (uint32 i=0; i < g_pServerMgr->m_NetMgr.m_Drivers; i++)
-	{
-		CBaseDriver *pDriver = g_pServerMgr->m_NetMgr.m_Drivers[i];
-
-		if (pDriver->m_DriverFlags & NETDRIVER_TCPIP)
-		{
-			return pDriver->OpenSocket((SOCKET*)phSocket);
 		}
 	}
 

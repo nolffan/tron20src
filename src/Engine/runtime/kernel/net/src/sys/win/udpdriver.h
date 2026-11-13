@@ -92,7 +92,6 @@ public:
     sockaddr_in m_Addr;         // The real connection address.
     char *m_pName;       // Session name.  LTNULL if we haven't gotten a response.
 	bool m_bPassword;	// Does it have a password?
-	uint8 m_nGameType;	// what type of game?
     float m_QueryTime;    // When we sent our query.
     float m_Ping;
 };
@@ -216,7 +215,7 @@ private:
 		k_nPingNAKMultiplier = 1, // Wait Ping * this number of ms before re-sending packets
 		k_nPingFirstNAKMultiplier = 1, // Wait Ping * this number of ms extra before re-sending packets the first time
 		k_nMaxPingNAKTime = 1000, // Don't wait longer than this to send a NAK
-		k_nTroubleDelay = 120000, // After 2 minutes, consider the connection in trouble
+		k_nTroubleDelay = 60000, // TRON: after 1 minute, consider the connection in trouble (server.dll 0x1003994e)
 		k_nNAKFlushTroubleDelay = 120000, // After 2 minutes of trying to flush, it's in trouble
 		k_nGuaranteedBlockCount = 2, // If we've retried a packet in the queue more times than this, 
 									 // stop sending guaranteed packets for a while
@@ -531,7 +530,7 @@ public:
 
     virtual bool Init();
 
-    void Term2(bool bFullShutdown, bool bShutdownSocket);
+    void Term2(bool bFullShutdown);
     virtual void Term();
 
     
@@ -566,20 +565,6 @@ public:
 		return LT_OK; 
 	}
 
-    virtual LTRESULT GetGameType(uint8 *nGameType) 
-	{ 
-		CWinSync_CSAuto cCS(m_cCS_SessionData); 
-		*nGameType = m_nGameType; 
-		return LT_OK; 
-	}
-	
-    virtual LTRESULT SetGameType(uint8 nGameType)  
-	{ 
-		CWinSync_CSAuto cCS(m_cCS_SessionData); 
-		m_nGameType = nGameType; 
-		return LT_OK; 
-	}
-
     virtual LTRESULT GetMaxConnections(uint32 &nMaxConnections);
 
     virtual void Update();
@@ -588,9 +573,8 @@ public:
     virtual LTRESULT JoinSession(NetSession *pSession);
 
     virtual bool GetLocalIpAddress(char* sBuffer, uint32 dwBufferSize, uint16 &hostPort);
-    LTRESULT ReallyJoinSession(bool bOpenNewSocket, sockaddr_in *addr);
-    virtual LTRESULT ConnectTCP(bool bOpenNewSocket, const char* sAddress);
-    virtual LTRESULT OpenSocket(SOCKET* phSocket);	// RETAIL: 0x1004c290
+    LTRESULT ReallyJoinSession(sockaddr_in *addr);
+    virtual LTRESULT ConnectTCP( const char* sAddress );
     virtual LTRESULT SendTcpIp(const CPacket_Read &cMsg, const char *sAddr, uint32 port);
 
 	virtual LTRESULT StartPing(const char *pAddr, uint16 nPort, uint32 *pPingID);
@@ -639,9 +623,6 @@ private:
 	HANDLE m_hThread_Listen;
 	CWinSync_Event m_cEvent_Thread_Listen_Ready;
 	CWinSync_Event m_hEvent_Thread_Listen_Shutdown;
-	// RETAIL: the 2006 tree's pause handshake (the constructor makes four events)
-	CWinSync_Event m_hEvent_Thread_Listen_Pause;
-	CWinSync_Event m_hEvent_Thread_Listen_Paused;
 
 
 
@@ -728,7 +709,6 @@ public:
     uint32 m_nMaxConnections; // Max remote connections if we're the host.
     char *m_SessionName;
 	bool m_bPassword;
-	uint8 m_nGameType;
 
 	bool IsHosting() 
 	{ 

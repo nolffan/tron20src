@@ -454,6 +454,18 @@ complaint in a debug runtime).
 Not fixed yet: the modern build should allocate it after the binding
 succeeds and release it with `delete`.
 
+### A refused connection leaves the client waiting on a closed socket
+
+server.dll 0x1003bfaa (CUDPDriver::ReallyJoinSession, the engine's
+kernel/net/src/sys/win/udpdriver.cpp; Lithtech.exe has the same driver).
+When the server accepts but the engine's NewConnectionNotify refuses the
+connection, the new connection is deleted and its socket closed, and the
+loop then goes on receiving on that closed socket until the connection
+time-out (10 s) passes and LT_TIMEOUT is returned. It should stop at once
+with an error (or not close the socket it keeps using).
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)
