@@ -82,54 +82,43 @@ IDI_SELECTED            ICON    DISCARDABLE     "selected.ico"
 // Dialog
 //
 
-IDD_GAMESERVER DIALOG DISCARDABLE  0, 0, 430, 263
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "No One Lives Forever 2 - Dedicated Server"
+// RETAIL: Tron 2.0's, as TRONSrv.exe has it (written out by ext/tools/rsrc2rc.py)
+IDD_GAMESERVER DIALOG 0, 0, 423, 279
+STYLE WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | DS_SETFONT | DS_MODALFRAME
+CAPTION "TRON 2.0 - Dedicated Server"
 FONT 8, "MS Sans Serif"
 BEGIN
-    GROUPBOX        "Server Info",IDC_STATIC,7,7,267,51
-    LTEXT           "Server Name:",IDC_STATIC,17,17,47,12
-    CONTROL         "<server name>",IDC_SERVER_NAME,"Static",
-                    SS_LEFTNOWORDWRAP | WS_GROUP,68,17,68,12
-    LTEXT           "Running Time:",IDC_STATIC,17,41,47,12
-    CONTROL         "<server time>",IDC_SERVER_TIME,"Static",
-                    SS_LEFTNOWORDWRAP | WS_GROUP,68,41,66,12
-    LTEXT           "Current Players:",IDC_STATIC,18,159,50,12
-    EDITTEXT        IDC_TOTALPLAYERS,218,28,48,12,ES_AUTOHSCROLL | 
-                    ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
-    RTEXT           "Total/Unique Players:",IDC_STATIC,141,28,71,12
-    EDITTEXT        IDC_PEAKPLAYERS,218,17,47,12,ES_AUTOHSCROLL | 
-                    ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
-    LTEXT           "Time in Level:",IDC_STATIC,310,17,45,12
-    LTEXT           "Static",IDC_TIMEINLEVEL,358,17,36,12
-    LTEXT           "Average Ping:",IDC_STATIC,109,159,46,12
-    EDITTEXT        IDC_AVERAGEPING,158,159,20,12,ES_AUTOHSCROLL | 
-                    ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
-    GROUPBOX        "Players",IDC_STATIC,7,59,267,115
-    CONTROL         "List1",IDC_PLAYERS,"SysListView32",LVS_REPORT | 
-                    LVS_SINGLESEL | LVS_NOSORTHEADER | WS_BORDER | 
-                    WS_TABSTOP,17,69,250,85
-    PUSHBUTTON      "&Boot Player",IDC_PLAYER_BOOT,199,157,68,12,WS_DISABLED
-    GROUPBOX        "Missions",IDC_STATIC,283,7,140,167
-    CONTROL         "List1",IDC_LEVELS,"SysListView32",LVS_REPORT | 
-                    LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOLABELWRAP | 
-                    LVS_NOCOLUMNHEADER | LVS_NOSORTHEADER | WS_BORDER | 
-                    WS_TABSTOP,293,30,114,124
-    PUSHBUTTON      "&Next Mission",IDC_COMMANDS_NEXTLEVEL,293,157,55,12
-    PUSHBUTTON      "Select &Mission",IDC_COMMANDS_SELLEVEL,352,157,55,12
-    PUSHBUTTON      "S&top Server",IDC_STOPSERVER,199,41,68,12
-    GROUPBOX        "Console",IDC_STATIC,7,176,416,80
-    EDITTEXT        IDC_CONSOLE_COMMAND,17,240,330,12,ES_AUTOHSCROLL
-    PUSHBUTTON      "Clear",IDC_CONSOLE_CLEAR,352,240,55,12
-    EDITTEXT        IDC_CONSOLE_WINDOW,17,186,390,52,ES_MULTILINE | 
-                    ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
-    DEFPUSHBUTTON   "*Send*",IDC_CONSOLE_SEND,390,0,40,8,NOT WS_VISIBLE
-    PUSHBUTTON      "*Button1*",IDC_STARTUP,348,0,40,8,NOT WS_VISIBLE
-    LTEXT           "Game Type:",IDC_STATIC,17,29,47,12
-    CONTROL         "<game type>",IDC_GAME_TYPE,"Static",SS_LEFTNOWORDWRAP | 
-                    WS_GROUP,68,29,66,12
-    RTEXT           "Peak Players:",IDC_STATIC,163,17,49,12
-    LTEXT           "<players>",IDC_NUM_PLAYERS,70,159,31,12
+    GROUPBOX        "Server Info", IDC_STATIC, 7, 7, 267, 64
+    LTEXT           "Server Name:", IDC_STATIC, 17, 17, 47, 12
+    CONTROL         "<server name>", IDC_SERVER_NAME, "Static", WS_GROUP | SS_LEFTNOWORDWRAP, 68, 17, 198, 12
+    LTEXT           "Running Time:", IDC_STATIC, 17, 41, 47, 12
+    CONTROL         "<server time>", IDC_SERVER_TIME, "Static", WS_GROUP | SS_LEFTNOWORDWRAP, 68, 41, 66, 12
+    LTEXT           "Current Players:", IDC_STATIC, 18, 172, 50, 12
+    EDITTEXT        IDC_TOTALPLAYERS, 218, 40, 48, 12, ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
+    RTEXT           "Total/Unique Players:", IDC_STATIC, 141, 40, 71, 12
+    EDITTEXT        IDC_PEAKPLAYERS, 218, 29, 47, 12, ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
+    LTEXT           "Time in Level:", IDC_STATIC, 310, 17, 45, 12
+    LTEXT           "Static", IDC_TIMEINLEVEL, 358, 17, 36, 12
+    LTEXT           "Average Ping:", IDC_STATIC, 109, 172, 46, 12
+    EDITTEXT        IDC_AVERAGEPING, 158, 172, 20, 12, ES_AUTOHSCROLL | ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
+    GROUPBOX        "Players", IDC_STATIC, 7, 72, 267, 115
+    CONTROL         "List1", IDC_PLAYERS, "SysListView32", WS_BORDER | WS_TABSTOP | 0x8005, 17, 82, 250, 85
+    PUSHBUTTON      "&Boot Player", IDC_PLAYER_BOOT, 199, 170, 68, 12, WS_DISABLED
+    GROUPBOX        "Levels", IDC_STATIC, 283, 7, 132, 180
+    CONTROL         "List1", IDC_LEVELS, "SysListView32", WS_BORDER | WS_TABSTOP | 0xc08d, 293, 30, 114, 133
+    PUSHBUTTON      "&Next Level", IDC_COMMANDS_NEXTLEVEL, 293, 170, 55, 12
+    PUSHBUTTON      "Select &Level", IDC_COMMANDS_SELLEVEL, 352, 170, 55, 12
+    PUSHBUTTON      "S&top Server", IDC_STOPSERVER, 199, 53, 68, 12
+    GROUPBOX        "Console", IDC_STATIC, 7, 192, 408, 80
+    EDITTEXT        IDC_CONSOLE_COMMAND, 17, 256, 330, 12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Clear", IDC_CONSOLE_CLEAR, 352, 256, 55, 12
+    EDITTEXT        IDC_CONSOLE_WINDOW, 17, 202, 390, 52, WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY
+    DEFPUSHBUTTON   "*Send*", IDC_CONSOLE_SEND, 376, 0, 40, 8, NOT WS_VISIBLE
+    PUSHBUTTON      "*Button1*", IDC_STARTUP, 334, 0, 40, 8, NOT WS_VISIBLE
+    LTEXT           "Game Type:", IDC_STATIC, 17, 29, 47, 12
+    CONTROL         "<game type>", IDC_GAME_TYPE, "Static", WS_GROUP | SS_LEFTNOWORDWRAP, 68, 29, 66, 12
+    RTEXT           "Peak Players:", IDC_STATIC, 163, 29, 49, 12
+    LTEXT           "<players>", IDC_NUM_PLAYERS, 70, 172, 31, 12
 END
 
 IDD_SELECTCONFIG DIALOG DISCARDABLE  0, 0, 162, 81
@@ -168,16 +157,16 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", "monolith@lith.com\0"
+            VALUE "Comments", ""
             VALUE "CompanyName", "Monolith Productions Inc.\0"
-            VALUE "FileDescription", "NOLF2 Stand-Alone Server\0"
+            VALUE "FileDescription", "TRON 2.0 Stand-Alone Server\0"
             VALUE "FileVersion", "1, 0, 0, 0\0"
-            VALUE "InternalName", "NOLF2Serv\0"
-            VALUE "LegalCopyright", "Copyright (C) 2002, Monolith Productions, Inc.\0"
+            VALUE "InternalName", "TRONServ\0"
+            VALUE "LegalCopyright", "Copyright (C) 2003, Monolith Productions, Inc.\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "NOLF2Serv.exe\0"
+            VALUE "OriginalFilename", "TRONServ.exe\0"
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "NOLF2\0"
+            VALUE "ProductName", "TRON 2.0\0"
             VALUE "ProductVersion", "1, 0, 0, 0\0"
             VALUE "SpecialBuild", "\0"
         END
@@ -252,8 +241,8 @@ BEGIN
     IDS_ERROR_WORLDS        "ERROR - Unabe to get world list from server."
     IDS_COLUMNHEADER_NAME   "Name"
     IDS_COLUMNHEADER_PING   "Ping"
-    IDS_COLUMNHEADER_KILLS  "Kills"
-    IDS_COLUMNHEADER_SCORE  "Score"
+    IDS_COLUMNHEADER_KILLS  "Derezzes"
+    IDS_COLUMNHEADER_SCORE  "Wins"
     IDS_COLUMNHEADER_WORLD  "World"
 END
 
@@ -268,8 +257,8 @@ BEGIN
     IDS_NETERR_HOSTSESSION  "ERROR - Unable to host the game session."
     IDS_NETERR_INIT         "ERROR - Unable to initialize the networking system."
     IDS_NETERR_SETNETSERVICE "ERROR - Unable to set the network service."
-    IDS_APPREGNAME          "No One Lives Forever 2"
-    IDS_APPNAME             "NOLF2Svr"
+    IDS_APPREGNAME          "TRON 2.0"
+    IDS_APPNAME             "TRONSrv"
     IDS_NETERR_NOCONFIGS    "ERROR - No server configuration file.  A configuration file must be setup inside the game menus and selected for the server."
     IDS_NETERR_CORRUPTCONFIG 
                             "ERROR - The config file could not be read properly. The file may be corrupt."
@@ -277,13 +266,15 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_COLUMNHEADER_TAGS   "Tags"
     IDS_SERVER              "Server"
     IDS_NONE                "None"
     IDS_COLUMNHEADER_TIMEONSERVER "Time"
     IDS_ERROR_CANTSAVEOPTIONS 
                             "ERROR - Unable to save the options into autoexec.cfg."
     IDS_NEWPLAYER           "<Incoming Player>"
+    IDS_GAMETYPE_DISCARENA  "Disc Arena"
+    IDS_GAMETYPE_DISCTOURNAMENT "Disc Tournament"
+    IDS_GAMETYPE_LIGHTCYCLES "Light Cycles"
 END
 
 #endif    // English (U.S.) resources
@@ -309,7 +300,45 @@ LANGUAGE 9, 1
 #include "..\..\ServerApp.rc2"  // non-Microsoft Visual C++ edited resources
 #include "afxres.rc"         // Standard components
 #endif
-#include "..\..\..\..\shared\Lang\En\ResShared.rc"
+// RETAIL: Tron 2.0's SCMD strings, as TRONSrv.exe has them (2400..2427: the
+// IDs of Tron's ResShared.h, whose names are lost; src/Game/Shared's
+// ResShared.h and ResShared.rc are NOLF2's, IDs 100..142, which Tron's
+// server has none of)
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+STRINGTABLE DISCARDABLE
+BEGIN
+    2400                            "SCMD login successful."
+    2401                            "Admin already logged into SCMD."
+    2402                            "Incorrect SCMD password."
+    2403                            "Logged out of SCMD."
+    2404                            "Not logged into SCMD."
+    2405                            "SCMD Commands:"
+    2406                            "HELP - List all available SCMD commands."
+    2407                            "LOGOUT - Logs out as SCMD Administrator."
+    2408                            "LOGIN <password> - Logs in as SCMD Administrator."
+    2410                            "Client List format: ClientId) [name][ping]"
+    2411                            "No clients."
+    2412                            "LISTCLIENTS - Displays list of clients."
+    2414                            "NEXTMAP - Go to next map in map list."
+    2415                            "SCMD Command failed."
+END
+
+STRINGTABLE DISCARDABLE
+BEGIN
+    2416                            "BOOTNAME <playername> - Boots client by player name."
+    2417                            "BOOTID <clientid> - Boots client by client id."
+    2418                            "Map List format: map_index) [map][*]"
+    2419                            "SCMD Command successful."
+    2420                            "LISTMAPS - List all maps in current config."
+    2421                            "SETMAP <map_index> - Switch to map_index."
+    2422                            "ADDBAN <IP> - Adds IP to ban list (e.g. 123.456.789.012 or 123.456.*)"
+    2423                            "REMOVEBAN <banid> - Removes player from ban list by banid."
+    2424                            "LISTBANS - Lists all current banned players."
+    2425                            "Banned Player List format: banid) [name]"
+    2426                            "No player bans."
+    2427                            "BANCLIENT <clientid> - Bans client by client id."
+END
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
