@@ -143,7 +143,6 @@ Object.lto	ours	BodyCarried
 Object.lto	ours	BodyDropped
 Object.lto	ours	BodyLedge
 Object.lto	ours	BodyStairs
-Object.lto	ours	Bonus
 Object.lto	ours	CAIGoalChase: KEEPDISTANCE=%d
 Object.lto	ours	CAIGoalChase: NEVERGIVEUP=1
 Object.lto	ours	CAIGoalChase: SEEKPLAYER=1
@@ -168,7 +167,6 @@ Object.lto	ours	CTeam::AddPlayer() - FAILED: Invalid ClientID (%i) Team '%s'
 Object.lto	ours	Can't ride vehicles while carrying a something heavy
 Object.lto	ours	CanServerRestrict
 Object.lto	ours	CanTransition
-Object.lto	ours	CarryBodyMovement
 Object.lto	ours	Character at x:%f y:%f z:%f without an information Volume/Region
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveCloth_1.WAV
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveLeather_1.WAV
@@ -236,7 +234,6 @@ Object.lto	ours	FallOffLedge
 Object.lto	ours	FallOffLedgeBack
 Object.lto	ours	FallOffLedgeStart
 Object.lto	ours	FallOffLedgeStop
-Object.lto	ours	FindJunk
 Object.lto	ours	FireAnimRateScale
 Object.lto	ours	Flashlight OFF
 Object.lto	ours	Flashlight ON
@@ -719,9 +716,6 @@ Object.lto	retail	EndDefendPercentage
 Object.lto	retail	EnemyDisc
 Object.lto	retail	EnergyClaw
 Object.lto	retail	EnergyClawCrouch
-Object.lto	retail	EnergyRequiredMax
-Object.lto	retail	EnergyRequiredMin
-Object.lto	retail	EnergyRequiredSurge
 Object.lto	retail	Error in CCharacter::HandleModelString msg SetDims could not get current animation. 
 Object.lto	retail	Escapable
 Object.lto	retail	Exhausted junction %s\n
@@ -751,7 +745,6 @@ Object.lto	retail	HeadShot3
 Object.lto	retail	HeadShotBack
 Object.lto	retail	HeadShotBack2
 Object.lto	retail	HeadShotBack3
-Object.lto	retail	HeavyWeaponMovement
 Object.lto	retail	HiddenInDEditToAIWeaponList
 Object.lto	retail	HiddenPieces
 Object.lto	retail	HideWeaponWhileClipEmpty
@@ -778,7 +771,6 @@ Object.lto	retail	InitialLives
 Object.lto	retail	InitiallyLock
 Object.lto	retail	Interface\\snd\\archive_dn.wav
 Object.lto	retail	Interface\\snd\\archive_up.wav
-Object.lto	retail	IsPlayerPrimitive
 Object.lto	retail	Item %d has a type but no valid name.  Items must be named to exist.
 Object.lto	retail	Joint6
 Object.lto	retail	KILLALLAILC
@@ -1115,8 +1107,6 @@ CShell.dll	ours	BindingIconAlpha
 CShell.dll	ours	BindingIconSize
 CShell.dll	ours	BindingNumbers
 CShell.dll	ours	BlueTeamColor
-CShell.dll	ours	Bonus
-CShell.dll	ours	BurstDrain
 CShell.dll	ours	CHUDSubtitles::Show(%d) : No Text
 CShell.dll	ours	COCBLNHWT
 CShell.dll	ours	CSCKKUJNVVP
@@ -1125,7 +1115,6 @@ CShell.dll	ours	Calculated Velocity Percent: %.2f
 CShell.dll	ours	CameraCollisionObjScale
 CShell.dll	ours	CanServerRestrict
 CShell.dll	ours	CarryBody
-CShell.dll	ours	CarryBodyMovement
 CShell.dll	ours	ChatFX
 CShell.dll	ours	ChooserIconHeight
 CShell.dll	ours	ChooserTextureScale
@@ -1135,9 +1124,7 @@ CShell.dll	ours	CompassPos
 CShell.dll	ours	CompassSize
 CShell.dll	ours	CompilePos
 CShell.dll	ours	CompletedColor
-CShell.dll	ours	ConditionSkin
 CShell.dll	ours	ConsoleEnable
-CShell.dll	ours	ContinuousDrain
 CShell.dll	ours	Core_
 CShell.dll	ours	Could not setup server.
 CShell.dll	ours	CrosshairBarMax
@@ -1181,13 +1168,11 @@ CShell.dll	ours	Failed to create default resoltution software TnL, falling back 
 CShell.dll	ours	Final m_fYawDelta\t\t= %.2f
 CShell.dll	ours	Final vPYR.y\t\t\t= %.2f
 CShell.dll	ours	Final vPlayerPYR.y\t\t= %.2f
-CShell.dll	ours	FindJunk
 CShell.dll	ours	FireAnimRateScale
 CShell.dll	ours	FontFace%d
 CShell.dll	ours	FontFace0
 CShell.dll	ours	FrameRect
 CShell.dll	ours	GADGET_TRACKER
-CShell.dll	ours	GameTypeRect
 CShell.dll	ours	Gear! (as in 'Boy the Beatles sure are Gear!')
 CShell.dll	ours	God Mode: OFF
 CShell.dll	ours	God Mode: ON
@@ -1218,7 +1203,6 @@ CShell.dll	ours	I live...again.
 CShell.dll	ours	I see dead people...
 CShell.dll	ours	ICNJQT
 CShell.dll	ours	Idle1
-CShell.dll	ours	IdleSkin
 CShell.dll	ours	IncidentAngleToControlLineDecayMax
 CShell.dll	ours	IncidentAngleToControlLineDecayMin
 CShell.dll	ours	IncidentAngleToControlLineDecaySurge
@@ -1232,7 +1216,6 @@ CShell.dll	ours	Initial vPlayerPYR.y\t= %.2f
 CShell.dll	ours	InitialAngleMax
 CShell.dll	ours	InitialAngleMin
 CShell.dll	ours	InitialAngleSurge
-CShell.dll	ours	Intel
 CShell.dll	ours	Interface//Subroutines//Models//%s
 CShell.dll	ours	Interface\\DemoEndSplash1.pcx
 CShell.dll	ours	Interface\\DemoEndSplash2.pcx
@@ -1309,7 +1292,6 @@ CShell.dll	ours	PowerupFX
 CShell.dll	ours	PreCacheAssets
 CShell.dll	ours	PreCacheAssets
 CShell.dll	ours	Progress
-CShell.dll	ours	ProgressSkin
 CShell.dll	ours	QMKR@^@MPY[
 CShell.dll	ours	RAWWR!!!
 CShell.dll	ours	RC@P@P\\Y\\_YXHP
@@ -1416,11 +1398,9 @@ CShell.dll	ours	UVProgressFull
 CShell.dll	ours	Upgrade
 CShell.dll	ours	User chose to not create software TnL device. Exiting.
 CShell.dll	ours	VehicleContour
-CShell.dll	ours	Version
 CShell.dll	ours	WORLD
 CShell.dll	ours	We got def star, we got def star!
 CShell.dll	ours	WeaponSndRadius
-CShell.dll	ours	WorkSkin
 CShell.dll	ours	You can never have too many bullets...
 CShell.dll	ours	You got mad skillz, d00d...
 CShell.dll	ours	attributes\\additives.txt
@@ -1467,7 +1447,6 @@ CShell.dll	ours	expand_top
 CShell.dll	ours	fAdjustedYawDelta\t\t= %.2f
 CShell.dll	ours	failed
 CShell.dll	ours	import KERNEL32.dll OpenFile
-CShell.dll	ours	import MSVCRT.dll _getcwd
 CShell.dll	ours	import MSVCRT.dll _mbsinc
 CShell.dll	ours	import MSVCRT.dll _mbsnbcnt
 CShell.dll	ours	import MSVCRT.dll _strdup
@@ -1525,7 +1504,6 @@ CShell.dll	retail	%s_bar
 CShell.dll	retail	%s_button_left
 CShell.dll	retail	%s_button_right
 CShell.dll	retail	%s_fixedbar
-CShell.dll	retail	- none - 
 CShell.dll	retail	.?AUCLIENTFXUSERCREATESTRUCT@@
 CShell.dll	retail	.?AUIGuestDataMgr@@
 CShell.dll	retail	.?AULIGHTCYCLECREATESTRUCT@@
@@ -1564,7 +1542,6 @@ CShell.dll	retail	.?AVCHUDLightCycleRoster@@
 CShell.dll	retail	.?AVCHUDLightCycleSpeedometer@@
 CShell.dll	retail	.?AVCHUDMatchStats@@
 CShell.dll	retail	.?AVCHUDMultiAnnouncementMsgQueue@@
-CShell.dll	retail	.?AVCHUDSecurityCamera@@
 CShell.dll	retail	.?AVCHUDTronDecision@@
 CShell.dll	retail	.?AVCIONodeMgr@@
 CShell.dll	retail	.?AVCLTGUIListItemCtrl@@
@@ -1582,14 +1559,12 @@ CShell.dll	retail	.?AVCScreenLightCycleCircuit@@
 CShell.dll	retail	.?AVCScreenLightCycleCustomMaps@@
 CShell.dll	retail	.?AVCScreenLightCycleGame@@
 CShell.dll	retail	.?AVCScreenLightCyclePlayerConfig@@
-CShell.dll	retail	.?AVCScreenServerInfo@@
 CShell.dll	retail	.?AVCScreenTeamSelect@@
 CShell.dll	retail	.?AVCSpectatorObjectFX@@
 CShell.dll	retail	.?AVCSubroutineDataMgr@@
 CShell.dll	retail	.?AVCTronLoadingScreen@@
 CShell.dll	retail	.?AVCTronMissionMgr@@
 CShell.dll	retail	.?AVCTronWeaponChooser@@
-CShell.dll	retail	.?AVCircuitButeMgr@@
 CShell.dll	retail	.?AVTronClientMultiplayerMgr@@
 CShell.dll	retail	1 player is waiting for you.
 CShell.dll	retail	<color
@@ -1597,7 +1572,6 @@ CShell.dll	retail	AIAlternateVolume
 CShell.dll	retail	AISoundVolumeScalar
 CShell.dll	retail	AI_TALKICON
 CShell.dll	retail	ActivationDistanceLong
-CShell.dll	retail	AdditionalTimeRequired
 CShell.dll	retail	All ALPHA Subroutines acquired!
 CShell.dll	retail	All BETA Subroutines acquired!
 CShell.dll	retail	All GOLD Subroutines acquired!
@@ -1612,11 +1586,9 @@ CShell.dll	retail	AnnouncementMessageQueue
 CShell.dll	retail	AreaDamageAlways
 CShell.dll	retail	AreaDamageIgnoreOwner
 CShell.dll	retail	ArmorOffset
-CShell.dll	retail	ArmorTex
 CShell.dll	retail	ArrowLeftRect%d
 CShell.dll	retail	ArrowRightRect%d
 CShell.dll	retail	AttachmentSubstitution
-CShell.dll	retail	Attributes\\Circuits.txt
 CShell.dll	retail	Attributes\\Ratings.txt
 CShell.dll	retail	AutoAmmoSwitch
 CShell.dll	retail	BALLLAUNCHER
@@ -1692,11 +1664,6 @@ CShell.dll	retail	ChooserSpacing
 CShell.dll	retail	ChooserTex
 CShell.dll	retail	ChooserTexHi
 CShell.dll	retail	ChooserTitleHeight
-CShell.dll	retail	Circuit%d
-CShell.dll	retail	CircuitCompleteId
-CShell.dll	retail	CircuitCompleteSound
-CShell.dll	retail	CircuitNameId
-CShell.dll	retail	CircuitSettings
 CShell.dll	retail	ClassDataName
 CShell.dll	retail	ClassNumber
 CShell.dll	retail	ClassNumberHi
@@ -1711,21 +1678,14 @@ CShell.dll	retail	CompletedLightCycleCircuits
 CShell.dll	retail	ConfigTitlePos
 CShell.dll	retail	ConfigurationPos
 CShell.dll	retail	Controlable
-CShell.dll	retail	Corrode
 CShell.dll	retail	CorrodeAmount
 CShell.dll	retail	CorrodeDuration
 CShell.dll	retail	Corrupt
-CShell.dll	retail	CorruptTex
 CShell.dll	retail	CorrupticDims
-CShell.dll	retail	Corruption
 CShell.dll	retail	Corruption!
 CShell.dll	retail	Could not init CircuitButeMgr!
-CShell.dll	retail	CursorFX
-CShell.dll	retail	CustomMaps
-CShell.dll	retail	CustomSettings
 CShell.dll	retail	CycleNamePos
 CShell.dll	retail	CycleShade
-CShell.dll	retail	CyclesAllowed
 CShell.dll	retail	DRUNKENDIMS
 CShell.dll	retail	DRUNKENDIMSRADIUS
 CShell.dll	retail	DamageMax
@@ -1758,7 +1718,6 @@ CShell.dll	retail	Debug LipFlap: g_pLTClient->GetSoundOffset() returned LT_OK
 CShell.dll	retail	Debug LipFlap: made it past call to 'g_pModelButeMgr->GetSkeletonNode()'
 CShell.dll	retail	Debug LipFlap: setting pNodeControl = %d
 CShell.dll	retail	DebugLipFlap
-CShell.dll	retail	DecisionIcon
 CShell.dll	retail	DecisionWindow%d
 CShell.dll	retail	DefendPVFXName
 CShell.dll	retail	DefenseClassData
@@ -1768,9 +1727,6 @@ CShell.dll	retail	DeflectFinalRadius
 CShell.dll	retail	DeflectInitialRadius
 CShell.dll	retail	DeflectTotalTime
 CShell.dll	retail	DeflectVelocity
-CShell.dll	retail	DescriptionAlpha
-CShell.dll	retail	DescriptionBeta
-CShell.dll	retail	DescriptionGold
 CShell.dll	retail	DestroyedInFlightFXName
 CShell.dll	retail	DialogBox
 CShell.dll	retail	DialogFontNum
@@ -1788,7 +1744,6 @@ CShell.dll	retail	DiscMatches
 CShell.dll	retail	DiscResponsivenessMultiplier
 CShell.dll	retail	DiscScores
 CShell.dll	retail	DiscTournamentDefault
-CShell.dll	retail	Distance
 CShell.dll	retail	DistanceIconAlpha
 CShell.dll	retail	DistanceIconBlinkSpeed
 CShell.dll	retail	DistanceIconFadeOutSpeed
@@ -1822,11 +1777,7 @@ CShell.dll	retail	EnergyBGTex
 CShell.dll	retail	EnergyBarWidth
 CShell.dll	retail	EnergyClaw
 CShell.dll	retail	EnergyDeficitTex
-CShell.dll	retail	EnergyDrain
 CShell.dll	retail	EnergyFGOffset
-CShell.dll	retail	EnergyRequiredMax
-CShell.dll	retail	EnergyRequiredMin
-CShell.dll	retail	EnergyRequiredSurge
 CShell.dll	retail	EnergyTex
 CShell.dll	retail	EnergyTextOffset
 CShell.dll	retail	EnergyUseMultiplier
@@ -1853,7 +1804,6 @@ CShell.dll	retail	FrameVBorder
 CShell.dll	retail	GamesWonColumn
 CShell.dll	retail	German
 CShell.dll	retail	GibFX
-CShell.dll	retail	HUDIcon
 CShell.dll	retail	HUDLayout0
 CShell.dll	retail	HUDOffset
 CShell.dll	retail	HealthBGOffset
@@ -1865,15 +1815,12 @@ CShell.dll	retail	HealthEnergyFontSize
 CShell.dll	retail	HealthFGOffset
 CShell.dll	retail	HealthTex
 CShell.dll	retail	HealthTextOffset
-CShell.dll	retail	HeavyWeaponMovement
 CShell.dll	retail	HiddenPieces
 CShell.dll	retail	HideWeaponWhileClipEmpty
 CShell.dll	retail	HitpointsDropped
 CShell.dll	retail	Hollow
 CShell.dll	retail	Hudlayout0
 CShell.dll	retail	IOScene
-CShell.dll	retail	IconModel
-CShell.dll	retail	IconSkin
 CShell.dll	retail	IdealBuildPoints
 CShell.dll	retail	IdealProcedurals
 CShell.dll	retail	IdealSubroutines
@@ -1886,14 +1833,11 @@ CShell.dll	retail	ImageSize
 CShell.dll	retail	InRangePVAttachFX
 CShell.dll	retail	IncidentAngleToControlLine
 CShell.dll	retail	IncidentAngleToControlLineDecay
-CShell.dll	retail	IndicatorIcon
 CShell.dll	retail	InfoColumn1
 CShell.dll	retail	InfoColumn2
 CShell.dll	retail	InfoColumn3
 CShell.dll	retail	InitialAngle
 CShell.dll	retail	InitialExplosionSuppressTime
-CShell.dll	retail	InitialLives
-CShell.dll	retail	InitiallyLock
 CShell.dll	retail	Input Value is %d
 CShell.dll	retail	Inscribe
 CShell.dll	retail	Interface\\HUD\\reticle_psets_empty_%d.dtx
@@ -1903,7 +1847,6 @@ CShell.dll	retail	Interface\\Subroutines\\Sprtex\\foreign_0.dtx
 CShell.dll	retail	Interface\\Subroutines\\icons\\skins\\opt_ring_alpha.dtx
 CShell.dll	retail	Interface\\Subroutines\\icons\\skins\\opt_ring_beta.dtx
 CShell.dll	retail	Interface\\Subroutines\\icons\\skins\\opt_ring_gold.dtx
-CShell.dll	retail	Interface\\hud\\SecurityCam_overlay.dtx
 CShell.dll	retail	Interface\\hud\\circle_empty.dtx
 CShell.dll	retail	Interface\\hud\\circle_full.dtx
 CShell.dll	retail	Interface\\subroutines\\Models\\sys_basecode.ltb
@@ -1921,7 +1864,6 @@ CShell.dll	retail	IntroValueOffset
 CShell.dll	retail	IntroValueTime
 CShell.dll	retail	InvertLCMouse
 CShell.dll	retail	IsCharacter
-CShell.dll	retail	IsPlayerPrimitive
 CShell.dll	retail	Justify
 CShell.dll	retail	KNUCKLESANDWICH
 CShell.dll	retail	KnuckleSandwich
@@ -1999,9 +1941,6 @@ CShell.dll	retail	LP_KIPN\\NK^gY
 CShell.dll	retail	LP_KIc
 CShell.dll	retail	LP_PJMNN\\ZVRf
 CShell.dll	retail	LabelPos
-CShell.dll	retail	LeftColumnPos
-CShell.dll	retail	LeftInfoWidth
-CShell.dll	retail	LeftPlayerWidth
 CShell.dll	retail	LevelNameId
 CShell.dll	retail	LightCycleBackgroundPos
 CShell.dll	retail	LightCycleBackgroundRect
@@ -2009,8 +1948,6 @@ CShell.dll	retail	LightCycleBackgroundTextureName
 CShell.dll	retail	LightCycleBlue
 CShell.dll	retail	LightCycleConfig
 CShell.dll	retail	LightCycleDefault
-CShell.dll	retail	LightCycleGameData
-CShell.dll	retail	LightCycleGameData\\
 CShell.dll	retail	LightCycleGreen_1
 CShell.dll	retail	LightCycleGreen_2
 CShell.dll	retail	LightCycleGreen_3
@@ -2035,17 +1972,14 @@ CShell.dll	retail	MagneticAngleMax
 CShell.dll	retail	MagneticEdgeInfluence
 CShell.dll	retail	MagneticMiddleInfluence
 CShell.dll	retail	MagneticRadius
-CShell.dll	retail	MapName
 CShell.dll	retail	Margins
 CShell.dll	retail	MarkerCycleTime
 CShell.dll	retail	MatchesWonColumn
-CShell.dll	retail	MaxAICyclists
 CShell.dll	retail	MaxAmmoOverride
 CShell.dll	retail	MaxDefendPercentage
 CShell.dll	retail	MaxSearchTime
 CShell.dll	retail	Maxed performance ratings!
 CShell.dll	retail	MegaHurtz
-CShell.dll	retail	Megahurtz
 CShell.dll	retail	MenuBuildNotes
 CShell.dll	retail	MenuEmails
 CShell.dll	retail	MenuHelp
@@ -2074,7 +2008,6 @@ CShell.dll	retail	MusicVolumeMax
 CShell.dll	retail	MusicVolumeMin
 CShell.dll	retail	MusicVolumeSliderIncrement
 CShell.dll	retail	NameID
-CShell.dll	retail	NameKey
 CShell.dll	retail	NameSeed
 CShell.dll	retail	No binding found for %d
 CShell.dll	retail	NoBodies
@@ -2088,8 +2021,6 @@ CShell.dll	retail	OKSelected
 CShell.dll	retail	OPTIMIZEREXPLOSION
 CShell.dll	retail	ObjectiveSpacing
 CShell.dll	retail	OldStyleBeamName
-CShell.dll	retail	OpponentCycleType
-CShell.dll	retail	OpponentSkill
 CShell.dll	retail	OptimizerExplosion
 CShell.dll	retail	OptimizerHitRect
 CShell.dll	retail	OrientationDeadZone
@@ -2117,7 +2048,6 @@ CShell.dll	retail	PowerupIconPos
 CShell.dll	retail	PranksterBit
 CShell.dll	retail	PranksterBitImplode
 CShell.dll	retail	Prankster_bit
-CShell.dll	retail	PrimitiveCharge
 CShell.dll	retail	Primitive_charge
 CShell.dll	retail	Profiler
 CShell.dll	retail	ProfilerPos
@@ -2128,16 +2058,12 @@ CShell.dll	retail	RampDownTimePercent
 CShell.dll	retail	RampUpTimePercent
 CShell.dll	retail	RandomnessMultiplier
 CShell.dll	retail	RechargeRate
-CShell.dll	retail	RefreshPos
 CShell.dll	retail	RegularPos
 CShell.dll	retail	RemoveItems
 CShell.dll	retail	RemoveWindow
 CShell.dll	retail	RestrictionPos
 CShell.dll	retail	ReturnToOwner
 CShell.dll	retail	RezInFX
-CShell.dll	retail	RightColumnPos
-CShell.dll	retail	RightInfoWidth
-CShell.dll	retail	RightPlayerWidth
 CShell.dll	retail	RiotShieldAmmo
 CShell.dll	retail	RosterEnableIconScaling
 CShell.dll	retail	RosterIconBaseSizeIfScalingIsEnabled
@@ -2168,9 +2094,6 @@ CShell.dll	retail	ScreenGlowFogFarZ
 CShell.dll	retail	ScreenGlowFogNearZ
 CShell.dll	retail	ScreenSubroutines
 CShell.dll	retail	Sequencer
-CShell.dll	retail	ServerConfig
-CShell.dll	retail	ServerData
-CShell.dll	retail	ServerData\\
 CShell.dll	retail	Setting game type: %s
 CShell.dll	retail	ShadeLeftArrowPos
 CShell.dll	retail	ShadeRightArrowPos
@@ -2182,7 +2105,6 @@ CShell.dll	retail	SkipSubIntro
 CShell.dll	retail	SpectatorColumn
 CShell.dll	retail	SpectatorPingColumn
 CShell.dll	retail	SpectatorRect
-CShell.dll	retail	SpeedScalarId
 CShell.dll	retail	SpeedometerFontNum
 CShell.dll	retail	SpeedometerFrameHeight
 CShell.dll	retail	SpeedometerFrameWidth
@@ -2190,8 +2112,6 @@ CShell.dll	retail	SpeedometerHBorder
 CShell.dll	retail	SpeedometerTextHeight
 CShell.dll	retail	SpeedometerTexturedFrameName
 CShell.dll	retail	SpeedometerVBorder
-CShell.dll	retail	SpreadTime
-CShell.dll	retail	StandardCycleRestrictionId
 CShell.dll	retail	StartDefendPercentage
 CShell.dll	retail	StatSize
 CShell.dll	retail	StatsPos
@@ -2199,7 +2119,6 @@ CShell.dll	retail	StayTime
 CShell.dll	retail	SubroutineConfig
 CShell.dll	retail	Suffusion
 CShell.dll	retail	SuffusionGib
-CShell.dll	retail	SuperCycleRestrictionId
 CShell.dll	retail	SuperCycle_Green_1
 CShell.dll	retail	SuperCycle_Green_2
 CShell.dll	retail	SuperCycle_Green_3
@@ -2235,12 +2154,10 @@ CShell.dll	retail	ToolTipAlpha
 CShell.dll	retail	ToolTipColor
 CShell.dll	retail	ToolTipFontSize
 CShell.dll	retail	ToolTipFrameColor
-CShell.dll	retail	ToolTipIcon
 CShell.dll	retail	ToolTipTitlePos
 CShell.dll	retail	ToolTipTogglePos
 CShell.dll	retail	ToolTipWidth
 CShell.dll	retail	TopSckt
-CShell.dll	retail	TrailLengthId
 CShell.dll	retail	Training
 CShell.dll	retail	Triangulate
 CShell.dll	retail	TripleBuffer 0
@@ -2264,18 +2181,15 @@ CShell.dll	retail	UnknownCycle
 CShell.dll	retail	UnlockedLightCycleBikes
 CShell.dll	retail	UnlockedLightCycleCustomMaps
 CShell.dll	retail	UnlockedLightCyclePowerUps
-CShell.dll	retail	Unlocks
 CShell.dll	retail	UseJumpHeightInFallDamage
 CShell.dll	retail	VehicleColor
 CShell.dll	retail	VehicleTurnScaleEnd
 CShell.dll	retail	VehicleTurnScaleStart
-CShell.dll	retail	VerbId
 CShell.dll	retail	VersionSize
 CShell.dll	retail	VeryHard
 CShell.dll	retail	Virus_scan
 CShell.dll	retail	WORLDS_lcpowerup_
 CShell.dll	retail	Warning!  String ID '%d' is not in CRES!
-CShell.dll	retail	WaveCount
 CShell.dll	retail	WavesPos
 CShell.dll	retail	WeaponIndicatorAnimTime
 CShell.dll	retail	WeaponIndicatorIconOffset
@@ -2305,7 +2219,6 @@ CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_purple.dtx
 CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_red.dtx
 CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_white.dtx
 CShell.dll	retail	Weapons\\Hands\\skins_pv\\PV_Hands_yellow.dtx
-CShell.dll	retail	WorkSound
 CShell.dll	retail	Worlds\\RetailLightCycle\\
 CShell.dll	retail	You are waiting for %i players.
 CShell.dll	retail	You are waiting for %s.
@@ -2321,12 +2234,10 @@ CShell.dll	retail	_remove
 CShell.dll	retail	_touch
 CShell.dll	retail	acers
 CShell.dll	retail	acers
-CShell.dll	retail	aircontrol
 CShell.dll	retail	alpha
 CShell.dll	retail	animatingsubroutine
 CShell.dll	retail	anisotropic
 CShell.dll	retail	attributes\\pings.txt
-CShell.dll	retail	autoaim
 CShell.dll	retail	autoexec.cfg
 CShell.dll	retail	bottom
 CShell.dll	retail	buildpoints_bar
@@ -2344,10 +2255,8 @@ CShell.dll	retail	corruption_alpha
 CShell.dll	retail	corruption_beta
 CShell.dll	retail	corruption_gold
 CShell.dll	retail	corruption_lib
-CShell.dll	retail	cycletype
 CShell.dll	retail	dead_optimizer
 CShell.dll	retail	deadloop
-CShell.dll	retail	deathpoints
 CShell.dll	retail	defrag
 CShell.dll	retail	disinfect
 CShell.dll	retail	download
@@ -2365,10 +2274,7 @@ CShell.dll	retail	excitedloop_menu
 CShell.dll	retail	foreign
 CShell.dll	retail	foreign_sub
 CShell.dll	retail	fresnelpolygrids
-CShell.dll	retail	friendlyfire
-CShell.dll	retail	gamespermap
 CShell.dll	retail	guns\\skins_pv\\MultiHands_pv.dtx
-CShell.dll	retail	hands
 CShell.dll	retail	helpfile
 CShell.dll	retail	hl_loop
 CShell.dll	retail	hl_off
@@ -2412,14 +2318,10 @@ CShell.dll	retail	interface\\subroutines\\snd\\clickon.wav
 CShell.dll	retail	interface\\subroutines\\snd\\mouseover.wav
 CShell.dll	retail	interface\\subroutines\\snd\\slideout.wav
 CShell.dll	retail	intro fx done
-CShell.dll	retail	killpoints
 CShell.dll	retail	lcpu_%s
 CShell.dll	retail	left_right
 CShell.dll	retail	liveloopmenu
 CShell.dll	retail	lyGridBumpmap
-CShell.dll	retail	matchpoints
-CShell.dll	retail	matchtime
-CShell.dll	retail	maxping
 CShell.dll	retail	mission_obj
 CShell.dll	retail	mouseover
 CShell.dll	retail	mouseover_activememory_no
@@ -2447,8 +2349,6 @@ CShell.dll	retail	pickup_badblock
 CShell.dll	retail	pickup_corrupt
 CShell.dll	retail	pickup_foreign
 CShell.dll	retail	pickup_subroutine
-CShell.dll	retail	player
-CShell.dll	retail	powerups
 CShell.dll	retail	press
 CShell.dll	retail	press_ccw
 CShell.dll	retail	press_cw
@@ -2458,14 +2358,12 @@ CShell.dll	retail	proc_left_base
 CShell.dll	retail	proc_progress
 CShell.dll	retail	proc_right_base
 CShell.dll	retail	proc_working
-CShell.dll	retail	profiler
 CShell.dll	retail	progress
 CShell.dll	retail	rating%d
 CShell.dll	retail	ratings
 CShell.dll	retail	ratings_bar_surge
 CShell.dll	retail	right
 CShell.dll	retail	right_left
-CShell.dll	retail	score
 CShell.dll	retail	screenglowenable
 CShell.dll	retail	screenglowenable %d
 CShell.dll	retail	screenglowenable 0
@@ -2479,7 +2377,6 @@ CShell.dll	retail	skt_lib_%d
 CShell.dll	retail	skt_ratbar_%d
 CShell.dll	retail	skt_right
 CShell.dll	retail	skt_sys_%d
-CShell.dll	retail	snd\\amb\\tvmontAmb.wav
 CShell.dll	retail	snd\\event\\buildnote_pu.WAV
 CShell.dll	retail	snd\\event\\mp_countdown.WAV
 CShell.dll	retail	snd\\event\\mp_matchloss.WAV
@@ -2499,7 +2396,6 @@ CShell.dll	retail	tailLevel
 CShell.dll	retail	tailTextures
 CShell.dll	retail	tailtextures
 CShell.dll	retail	toggletooltips
-CShell.dll	retail	traillength
 CShell.dll	retail	triplebuffer
 CShell.dll	retail	und16bit
 CShell.dll	retail	undQuality
@@ -2514,8 +2410,6 @@ CShell.dll	retail	voice\\%d.wav
 CShell.dll	retail	voice\\20980.wav
 CShell.dll	retail	voice\\21010.wav
 CShell.dll	retail	voice\\21013.wav
-CShell.dll	retail	waitweaps
-CShell.dll	retail	winpoints
 
 # With /GR (retail has RTTI for Tron's own classes, so Tron's projects were built with it, as Build 69's say): classes of ours that retail has no RTTI for, so does not have -- the screens NOLF2's stand in for (CScreenHost, CScreenHostLevels, CScreenJoin, CScreenJoinLAN; retail has CScreenHostGame, CScreenJoinServerList, ...) and May 2002 classes Tron dropped before shipping (CClusterAutoBurstDisc, CHUDAmmoChooser, CHUDWeapons, CScreenCrosshair, CDMButeMgr, the base CClientWeapon creator, the CString containers): to go as those are brought to retail's.
 CShell.dll	ours	.?AV?$CStandardCreator@VIClientWeaponBase@@VCClientWeapon@@@@
@@ -4341,7 +4235,6 @@ Lithtech.exe	ours	import WSOCK32.dll #9
 
 # Not text (Lithtech.exe, 2026-11-13): as server.dll's LISTinfolith above: wave.cpp's 12-byte FOURCC tags run into the next object's data, in retail a vtable pointer whose low bytes are printable (0x486d30, '0mH'), in ours one whose low byte is NUL. A difference in what is linked after wave.obj, not in the tags; to go with the engine's link order.
 Lithtech.exe	retail	LISTinfolith0mH
-Lithtech.exe	ours	LISTinfolith
 
 # Not written yet (Lithtech.exe, 2026-11-13): retail 0x5544b0 frees through HeapFree(heap 0x5dc480, 0, p) (progress/engine/Lithtech-iat-calls.csv; the developer build's 0x55a4a0 likewise), called by the renderer at 0x528f67, 0x529039, 0x529053: an allocator our tree does not have. To go with that TU (0x5544b0 lies in e-ui's band, 0x550000..0x580000; its callers in e-ren's).
 Lithtech.exe	retail	import kernel32.dll HeapFree
@@ -4362,5 +4255,4 @@ Lithtech.exe	retail	CSoundMgr::SetSoundVolume
 Lithtech.exe	retail	CSoundMgr::SetUpdateSoundParam
 
 # Not written yet (Lithtech.exe, 2026-11-13): two of Build 69's console variables our CJ-based renderer lacks: ModelDebug_DrawOBBS (rendererconsolevars.h after ModelDebug_DrawSkeleton, registered at 0x4d0632; B69's setupmodel.cpp draws the model OBBs with it) and ScreenGlow_DrawCanvases (screenglowmgr.cpp's own ConVar, registered at 0x5138df; B69's screenglowmgr.cpp:28/451). To come with those renderer TUs (e-ren).
-Lithtech.exe	retail	ModelDebug_DrawOBBS
 Lithtech.exe	retail	ScreenGlow_DrawCanvases
