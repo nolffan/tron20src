@@ -400,7 +400,7 @@ void CUIFormattedPolyString_Impl::ApplyColors(uint32 start, int32 count)
 	if (m_Text.empty() || !m_pFont)
 		return;
 
-	if (m_RawText.size() != m_Text.size())
+	if (m_Text.size() != m_RawText.size())
 		ApplyFormattedColors(start, count);
 	else
 		CUIPolyString_Impl::ApplyColors(start, count);
