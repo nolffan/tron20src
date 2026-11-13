@@ -54,7 +54,7 @@ class CUICheck_Impl : public CUIButton_Impl
 
 		virtual CUI_RESULTTYPE	SetGutter(int16 left, int16 right, int16 top, int16 bottom);
 		
-		virtual CUI_RESULTTYPE	SetText(const char* pText);
+		virtual CUI_RESULTTYPE	SetText(const std::wstring& sText);
 
 		// actions
 		virtual bool			Toggle();

@@ -593,12 +593,12 @@ void CUIPolyString_Impl::ClipPolys(LT_POLYGT4* pPolys)
 	if (!m_bClip || m_Text.empty() || !m_pFont || !pPolys)
 		return;
 
+	int32 nLen = m_Text.size();
+
 	float left		= m_ClipRect.x;
 	float right		= m_ClipRect.x + m_ClipRect.width;
 	float top		= m_ClipRect.y;
 	float bottom	= m_ClipRect.y + m_ClipRect.height;
-
-	int32 nLen = m_Text.size();
 	for (int32 i = 0; i < nLen; i++, pPolys++)
 	{
 		float minx = pPolys->verts[0].x;

@@ -19,6 +19,9 @@ namespace NModelDebug
 
 	//draws the skeleton of a model
 	void DrawModelSkeleton(ModelInstance* pInstance);
+
+	//draws the oriented bounding boxes of a model (TRON: Build 69's)
+	void DrawModelOBBS(ModelInstance* pInstance);
 };
 
 

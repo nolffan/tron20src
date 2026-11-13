@@ -122,7 +122,7 @@ class CUIPolyString_Impl : public CUIPolyString
 		virtual CUI_RESULTTYPE	RenderClipped(CUIRECT* pClipRect,
 											  int32 start = 0,
 											  int32 end = -1);
-		virtual bool			TronUnknownVirtual30(void* pValue)	{ return true; }
+		virtual bool			TronUnknownVirtual30(CUI_ALIGNMENTTYPE align)	{ return true; }
 		virtual CUI_RESULTTYPE	SetCharScreenHeight(uint32 height)	{ return SetCharScreenSize(height); }
 
 	protected:

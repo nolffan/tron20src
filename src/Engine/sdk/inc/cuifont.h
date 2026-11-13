@@ -91,9 +91,11 @@ class CUIFont
 		// TRON: the font's height in pixels (from its file).
 		virtual uint32			GetDefCharScreenHeight() = 0;
 
-		virtual int8			GetLineSpacing() = 0;
-		virtual int8			GetCharSpacing() = 0;
-		virtual uint8			GetSpaceWidth() = 0;
+		// TRON: the font's int8/uint8 fields widened to 32 bits (RETAIL:
+		// 0x568470, 0x568480 movsx; 0x568490 zero-extends).
+		virtual int32			GetLineSpacing() = 0;
+		virtual int32			GetCharSpacing() = 0;
+		virtual uint32			GetSpaceWidth() = 0;
 
 		// TRON: the texture of one of the font's pages.
 		virtual HTEXTURE		GetTexture(uint8 nPage) = 0;

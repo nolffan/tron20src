@@ -168,8 +168,12 @@ Contains vertex structure information for a textured, Gouraud shaded quadrilater
 struct LT_POLYGT4
 {
     // RETAIL: Tron's SDK clears it (CHUDDamageDir's constructor, retail
-    // CShell.dll 0x100250d0)
+    // CShell.dll 0x100250d0); the engine's does not (Lithtech.exe's
+    // CUIPolyString_Impl::AllocPolys, 0x563710, only constructs the
+    // vertices), so the engine (__D3DREND) leaves it out.
+#ifndef __D3DREND
     LT_POLYGT4() { memset(this, 0, sizeof(LT_POLYGT4)); }
+#endif
 
     LT_VERTGT                       verts[4];
 };

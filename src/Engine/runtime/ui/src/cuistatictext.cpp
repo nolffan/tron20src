@@ -48,7 +48,7 @@ CUIStaticText::~CUIStaticText()
 
 
 //  ---------------------------------------------------------------------------
-CUI_RESULTTYPE CUIStaticText::SetText(const char* text)
+CUI_RESULTTYPE CUIStaticText::SetText(const std::wstring& text)
 {
 	return ((CUIStaticText_Impl*)m_pImpl)->SetText(text);
 }

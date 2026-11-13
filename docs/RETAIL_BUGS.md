@@ -589,6 +589,19 @@ get an empty or wrong name.
 
 Not fixed yet: the modern build should give the second table eight ids or
 fall back to the first for ids past it.
+### A UI static text or check box reads address 0 when it first gets text
+
+Lithtech.exe 0x571760 (CUIStaticText_Impl::SetText) and 0x56f4c0
+(CUICheck_Impl::SetText, src/Engine/runtime/ui/src/cuistatictext_impl.cpp,
+cuicheck_impl.cpp). The first SetText creates the widget's polystring with
+`CreateFormattedPolyString(m_pFont, NULL, ...)`, whose text parameter is a
+`const std::wstring&`: the NULL becomes a wide string read from address 0
+(0x571815: `cmp WORD PTR ds:0x0`), an access violation. NOLF2's
+CreateFormattedPolyString took a `const char*`, for which NULL was safe;
+Tron's wide polystrings made it a crash. The game itself makes none of
+these widgets, so it is never reached in play.
+
+Not fixed yet.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

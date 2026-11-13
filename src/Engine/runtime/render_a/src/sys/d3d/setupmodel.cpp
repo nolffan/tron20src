@@ -562,6 +562,11 @@ void ModelDraw::QueueModel(ModelInstance *pInstance)
 		NModelDebug::DrawModelBox(pInstance); 
 	}
 
+	// TRON: Build 69's (RETAIL: 0x553085)
+	if( g_CV_ModelDebug_DrawOBBS )
+	{
+		NModelDebug::DrawModelOBBS(pInstance);
+	}
 	
 	if(g_CV_ModelDebug_DrawSkeleton)
 	{

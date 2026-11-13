@@ -50,6 +50,8 @@ void CRenderModelInfoList::FreeListMemory()
 //clears the list of all the information it has stored
 void CRenderModelInfoList::Clear()
 {
+	// RETAIL: Tron's is clear() (0x5558f0, tail-called from d3d_ModelPreFrame
+	// 0x54b390); Contract J.A.C.K.'s is resize(0) (its 0x50c600)
 	m_cInfoList.clear();
 }
 

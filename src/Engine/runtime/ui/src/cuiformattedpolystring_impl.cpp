@@ -111,7 +111,7 @@ CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const std::wstring& sText)
 
 	m_RawText = sText;
 
-	int32 nLen = m_RawText.size() + 1;
+	int32 nLen = sText.size() + 1;
 	if (nLen > 1024)
 	{
 		nLen = 1022;
@@ -131,20 +131,20 @@ CUI_RESULTTYPE CUIFormattedPolyString_Impl::SetText(const std::wstring& sText)
 			if (*pSrc == '>')
 				bInTag = false;
 		}
-		else if (*pSrc == '<')
+		else
 		{
-			std::wstring sTag(sColorTag);
-			std::wstring sHere(pSrc);
+			// RETAIL: the strings are gone before the copy (0x568ae6)
+			if (*pSrc == '<')
+			{
+				std::wstring sTag(sColorTag);
+				std::wstring sHere(pSrc);
 
-			if (sHere.compare(0, 7, sTag) == 0)
-				bInTag = true;
+				if (sHere.compare(0, 7, sTag) == 0)
+					bInTag = true;
+			}
 
 			if (!bInTag)
 				*pDest++ = *pSrc;
-		}
-		else
-		{
-			*pDest++ = *pSrc;
 		}
 
 		pSrc++;
@@ -400,7 +400,7 @@ void CUIFormattedPolyString_Impl::ApplyColors(uint32 start, int32 count)
 	if (m_Text.empty() || !m_pFont)
 		return;
 
-	if (m_RawText.size() != m_Text.size())
+	if (m_Text.size() != m_RawText.size())
 		ApplyFormattedColors(start, count);
 	else
 		CUIPolyString_Impl::ApplyColors(start, count);
@@ -413,13 +413,13 @@ void CUIFormattedPolyString_Impl::ApplyColors(uint32 start, int32 count)
 // black, at the text's alpha.
 void CUIFormattedPolyString_Impl::ApplyFormattedColors(uint32 start, int32 count)
 {
-	uint16 nLen = m_Text.size();
 	const wchar_t* pRaw = m_RawText.data();
+	uint16 nLen = m_Text.size();
 	std::wstring sTag(sColorTag);
 	uint32 color = m_pColors[0];
 	int32 nPoly = 0;
 
-	for (uint16 i = nLen; i; i--)
+	for (uint32 i = 0; i < nLen; i++)
 	{
 		if (*pRaw == '<')
 		{

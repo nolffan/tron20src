@@ -22,8 +22,11 @@ CFG=Lib_UI - Win32 Final
 
 # cjacksrc: the UI library (Lib_UI: the CUI widgets, the bitmap and GDI
 # vector fonts), a static library of Lithtech.exe (Engine.dsw), as
-# nolf2src had it, /O2 /Ob2; cuivectorfont.cpp's std::string calls
-# MSVCP71.dll in retail.
+# nolf2src had it /O2 /Ob2; Tron's is /O2 alone (/Ob1): RETAIL: each
+# global's dynamic initializer is a `jmp` stub to its body (_$E1 -> _$E2,
+# e.g. 0x567800 -> 0x567810 in cuimessagequeue.cpp) and each CAPIHolder's
+# a `call; jmp` pair (0x5679c0), which /Ob2 folds into one function;
+# cuivectorfont.cpp's std::string calls MSVCP71.dll in retail.
 # Begin Project
 # PROP AllowPerConfigDependencies 0
 # PROP Scc_ProjName ""
@@ -44,7 +47,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\..\built\Final\Lib_UI"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /Ob2 /I "..\..\..\libs\STLPort-4.0\stlport" /I "src" /I "..\client\src" /I "..\shared\src" /I "..\kernel\src" /I "..\kernel\mem\src" /I "..\world\src" /I "..\kernel\io\src" /I "..\kernel\net\src" /I "..\model\src" /I "..\sound\src" /I "..\shared\src\sys\win" /I "..\lithtemplate" /I "..\physics\src" /I "..\render_b\src" /I "src" /I "..\controlfilemgr" /I "..\server\src" /I "..\kernel\src\sys\win" /I "..\kernel\io\src\sys\win" /I "..\kernel\mem\src\sys\win" /I "..\kernel\net\src\sys\win" /I "..\client\src\sys\win" /I "..\render_a\src\sys\d3d" /I "..\..\sdk\inc" /I "..\..\sdk\inc\physics" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\lith" /I "..\..\libs\rezmgr" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_FINAL" /D "__D3D" /D "__D3DREND" /D "_LIB" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "..\..\..\libs\STLPort-4.0\stlport" /I "src" /I "..\client\src" /I "..\shared\src" /I "..\kernel\src" /I "..\kernel\mem\src" /I "..\world\src" /I "..\kernel\io\src" /I "..\kernel\net\src" /I "..\model\src" /I "..\sound\src" /I "..\shared\src\sys\win" /I "..\lithtemplate" /I "..\physics\src" /I "..\render_b\src" /I "src" /I "..\controlfilemgr" /I "..\server\src" /I "..\kernel\src\sys\win" /I "..\kernel\io\src\sys\win" /I "..\kernel\mem\src\sys\win" /I "..\kernel\net\src\sys\win" /I "..\client\src\sys\win" /I "..\render_a\src\sys\d3d" /I "..\..\sdk\inc" /I "..\..\sdk\inc\physics" /I "..\..\..\libs\stdlith" /I "..\..\..\libs\lith" /I "..\..\libs\rezmgr" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_FINAL" /D "__D3D" /D "__D3DREND" /D "_LIB" /FD /c
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
