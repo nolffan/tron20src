@@ -463,10 +463,6 @@ SOURCE=.\ScreenControls.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ScreenCrosshair.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\ScreenDisplay.cpp
 # End Source File
 # Begin Source File
@@ -480,26 +476,6 @@ SOURCE=.\ScreenFailure.cpp
 # Begin Source File
 
 SOURCE=.\ScreenGame.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHost.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHostLevels.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHostMission.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenJoin.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenJoinLAN.cpp
 # End Source File
 # Begin Source File
 
@@ -817,10 +793,6 @@ SOURCE=.\ScreenControls.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ScreenCrosshair.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\ScreenDisplay.h
 # End Source File
 # Begin Source File
@@ -838,26 +810,6 @@ SOURCE=.\ScreenFailure.h
 # Begin Source File
 
 SOURCE=.\ScreenGame.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHost.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHostLevels.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenHostMission.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenJoin.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ScreenJoinLAN.h
 # End Source File
 # Begin Source File
 

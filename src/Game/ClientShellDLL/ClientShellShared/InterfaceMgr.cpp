@@ -58,6 +58,11 @@ static enum MovieOrderEnum
 //hack to track whether we are trying to host/join a LAN only or an internet game
 bool g_bLAN = false;
 
+// RETAIL: set by SwitchToScreen (0x100cc6a0) around the change to the screen
+// state when the subroutines screen is the target, read by PreScreenState
+// (0x100cb6aa): that screen keeps the game's music. The name is ours.
+static LTBOOL s_bKeepGameMusic = LTFALSE;
+
 static MovieOrderEnum gMovieOrder[] =
 {
 	eSierra, eFox, eMonolith, eLithTech
@@ -1075,8 +1080,12 @@ void CInterfaceMgr::UpdateExitingLevelState()
 	// Update the screen fade.
 	UpdateScreenFade();
 
+	// RETAIL: 0x100c8bc0: Tron has no deathmatch end screen; its disc and
+	// light cycle multiplayer games go through the preload screen, a finished
+	// single player game back to the main screen. A multiplayer game does
+	// not wait for the fade.
 	// Check if screen is done fading out or is fading in at all.
-	if( ScreenFadedOut( ) || FadingScreenIn( ))
+	if( ScreenFadedOut( ) || FadingScreenIn( ) || IsMultiplayerGame( ))
 	{
 		if (g_pMissionMgr->IsExitingMission())
 		{
@@ -1085,45 +1094,47 @@ void CInterfaceMgr::UpdateExitingLevelState()
 				case eGameTypeCooperative:
 					SwitchToScreen(SCREEN_ID_END_COOP_MISSION);
 					break;
-				case eGameTypeTeamDeathmatch:
-				case eGameTypeDeathmatch:
-				case eGameTypeDoomsDay:
-					SwitchToScreen(SCREEN_ID_END_DM_MISSION);
-					break;
+
+				case eGameTypeDiscArena:
+				case eGameTypeDiscTournament:
+				case eGameTypeMultiplayerLightcycles:
+				{
+					CScreenPreload *pPreload = (CScreenPreload *) (GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
+					if (pPreload)
+						pPreload->SetWaitingToExit(true);
+					g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PRELOAD);
+				}
+				break;
+
 				default:
-					SwitchToScreen(SCREEN_ID_END_MISSION);
-					break;
+				{
+					if (g_pMissionMgr->IsGameOver())
+					{
+						g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_MAIN);
+					}
+					else
+					{
+						CScreenPreload *pPreload = (CScreenPreload *) (g_pInterfaceMgr->GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
+						if (pPreload)
+							pPreload->SetWaitingToExit(true);
+						g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PRELOAD);
+					}
+				}
+				break;
 			}
 		}
 		else
 		{
-			switch( g_pGameClientShell->GetGameType( ))
+			CScreenPreload *pPreload = (CScreenPreload *) (GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
+			if (pPreload)
 			{
-				case eGameTypeTeamDeathmatch:
-				case eGameTypeDeathmatch:
-				case eGameTypeDoomsDay:
-				{
-					SwitchToScreen(SCREEN_ID_END_DM_MISSION);
-				}
-				break;
-				
-				case eGameTypeCooperative:
-				default:
-				{
-					CScreenPreload *pPreload = (CScreenPreload *) (GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
-					if (pPreload)
-					{
-						pPreload->SetWaitingToExit(true);
-						SwitchToScreen(SCREEN_ID_PRELOAD);
-
-					}
-					else
-					{
-						g_pMissionMgr->FinishExitLevel();
-					}
-				}
-				break;
-			}			
+				pPreload->SetWaitingToExit(true);
+				SwitchToScreen(SCREEN_ID_PRELOAD);
+			}
+			else
+			{
+				g_pMissionMgr->FinishExitLevel();
+			}
 		}
 	}
 }
@@ -1148,11 +1159,8 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 		m_LoadingScreen.Hide();
 
 
-		if (IsTeamGameType() && !g_pClientMultiplayerMgr->HasSelectedTeam())
-		{
-			SwitchToScreen(SCREEN_ID_PLAYER_TEAM);
-		}
-		else if (m_LoadingScreen.NeedsPostLoadScreen() && GetConsoleInt("LoadScreenWait",1) )
+		// RETAIL: 0x100c8d30: no team selection screen here in Tron
+		if (m_LoadingScreen.NeedsPostLoadScreen() && GetConsoleInt("LoadScreenWait",1) )
 		{
 			SwitchToScreen( m_ePostLoadScreenID );
 		}
@@ -3270,7 +3278,8 @@ LTBOOL CInterfaceMgr::PreScreenState(GameState eCurState)
 	
 	// Initialize the music...
 
-	SetupMusic();
+	if (!s_bKeepGameMusic)
+		SetupMusic();
 
     return LTTRUE;
 }
@@ -4240,7 +4249,9 @@ eScreenID CInterfaceMgr::GetCurrentScreen()
 //
 // --------------------------------------------------------------------------- //
 
-LTBOOL CInterfaceMgr::SwitchToScreen(eScreenID screenID)
+// RETAIL: 0x100cc6a0: Tron's takes bAddToHistory and passes it on to the
+// screen manager
+LTBOOL CInterfaceMgr::SwitchToScreen(eScreenID screenID, bool bAddToHistory)
 {
 	if (m_eGameState != GS_SCREEN)
 	{
@@ -4248,11 +4259,17 @@ LTBOOL CInterfaceMgr::SwitchToScreen(eScreenID screenID)
 		{
 			StartScreenFadeIn(g_vtMainScreenFadeIn.GetFloat());
 		}
+		else if (screenID == SCREEN_ID_SUBROUTINES)
+		{
+			s_bKeepGameMusic = LTTRUE;
+		}
 
-        if (!ChangeState(GS_SCREEN)) return LTFALSE;
+		LTBOOL bChanged = ChangeState(GS_SCREEN);
+		s_bKeepGameMusic = LTFALSE;
+        if (!bChanged) return LTFALSE;
 	}
 
-	GetScreenMgr( )->SetCurrentScreen(screenID);
+	GetScreenMgr( )->SetCurrentScreen(screenID, bAddToHistory);
 
     return LTTRUE;
 }
@@ -5789,10 +5806,9 @@ void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 			break;
 		case eDisconnect_WrongPassword:
 			nMsgId = IDS_NETERR_WRONGPASS;
-			if (g_bLAN)
-				destination = SCREEN_ID_JOIN_LAN;
-			else
-				destination = SCREEN_ID_JOIN;
+			// RETAIL: 0x100ced40: Tron has one join screen (and a third
+			// disconnect code, not yet in our tree, that also goes there)
+			destination = SCREEN_ID_JOIN_SERVERLIST;
 			break;
 
 		case 0 : // Avoid the warning..
@@ -5851,13 +5867,10 @@ void CInterfaceMgr::ConnectionFailed(uint32 nConnectionError)
 {
 	if (GetGameState() == GS_LOADINGLEVEL)
 	{
-		if (IsMultiplayerGame())
+		// RETAIL: 0x100cee90: back to the multiplayer screen, as below
+		if (IsMultiplayerGame() && !GetCommandLineJoin( ))
 		{
-			if (g_bLAN)
-				LoadFailed(SCREEN_ID_JOIN_LAN);
-			else
-				LoadFailed(SCREEN_ID_JOIN);
-
+			LoadFailed(SCREEN_ID_MULTI);
 		}
 		else
 		{

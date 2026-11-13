@@ -27,9 +27,6 @@
 #include "ScreenSave.h"
 
 //under multi
-#include "ScreenHost.h"
-#include "ScreenJoin.h"
-#include "ScreenJoinLAN.h"
 #include "ScreenJoinServerList.h"
 
 //under options
@@ -38,12 +35,6 @@
 #include "ScreenControls.h"
 #include "ScreenGame.h"
 #include "ScreenPerformance.h"
-
-//under multi/host
-#include "ScreenHostLevels.h"
-
-//under options/game
-#include "ScreenCrosshair.h"
 
 //under options/controls
 #include "ScreenMouse.h"
@@ -55,7 +46,6 @@
 
 //Player management screens
 #include "ScreenSubroutines.h"
-#include "ScreenRatings.h"
 
 #include "ScreenFailure.h"
 #include "ScreenEndMission.h"
@@ -142,6 +132,15 @@ void CTronScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory)
 void CTronScreenMgr::AddScreen(eScreenID screenID)
 {
     CBaseScreen* pScreen = LTNULL;
+	// RETAIL: the cases in retail's order (0x100ad240: its case bodies and
+	// the debug_new_fn<> instances they call, 0x100ad520.., are laid out in
+	// this order). Retail has no case for HOST, HOST_OPTIONS, HOST_MISSION,
+	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
+	// for screens whose class we have not written yet are missing here:
+	// HOST_CONNECTION (CScreenHostConnection) and LIGHTCYCLE_CIRCUIT,
+	// _CUSTOMMAP, _CUSTOMGAME, _PLAYERCONFIG after SAVE; HOST_GAME, HOST_MAPS
+	// after LIGHTCYCLE_VICTORY; SERVERINFO after JOIN_SERVERLIST; TEAMSELECT
+	// (CScreenTeamSelect) after SUBROUTINES.
 	switch (screenID)
 	{
 	case SCREEN_ID_MAIN:
@@ -165,35 +164,29 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	case SCREEN_ID_SAVE:
 		pScreen = debug_new(CScreenSave);
 		break;
-	case SCREEN_ID_HOST:
-		pScreen = debug_new(CScreenHost);
+	case SCREEN_ID_LIGHTCYCLE_VICTORY:
+		pScreen = debug_new(CScreenLightCycleVictory);
 		break;
-	case SCREEN_ID_HOST_LEVELS:
-		pScreen = debug_new(CScreenHostLevels);
-		break;
-	case SCREEN_ID_JOIN:
-		pScreen = debug_new(CScreenJoin);
-		break;
-	case SCREEN_ID_JOIN_LAN:
-		pScreen = debug_new(CScreenJoinLAN);
-		break;
-	case SCREEN_ID_JOIN_SERVERLIST:	// RETAIL: 0x100adac0
+	case SCREEN_ID_JOIN_SERVERLIST:
 		pScreen = debug_new(CScreenJoinServerList);
+		break;
+	case SCREEN_ID_PLAYER:
+		pScreen = debug_new(CScreenPlayer);
 		break;
 	case SCREEN_ID_AUDIO:
 		pScreen = debug_new(CScreenAudio);
 		break;
-	case SCREEN_ID_DISPLAY	:
+	case SCREEN_ID_JOYSTICK:
+		pScreen = debug_new(CScreenJoystick);
+		break;
+	case SCREEN_ID_DISPLAY:
 		pScreen = debug_new(CScreenDisplay);
 		break;
-	case SCREEN_ID_GAME	:
+	case SCREEN_ID_GAME:
 		pScreen = debug_new(CScreenGame);
 		break;
-	case SCREEN_ID_PERFORMANCE	:
+	case SCREEN_ID_PERFORMANCE:
 		pScreen = debug_new(CScreenPerformance);
-		break;
-	case SCREEN_ID_CROSSHAIR:
-		pScreen = debug_new(CScreenCrosshair);
 		break;
 	case SCREEN_ID_CONTROLS:
 		pScreen = debug_new(CScreenControls);
@@ -204,25 +197,12 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	case SCREEN_ID_KEYBOARD:
 		pScreen = debug_new(CScreenKeyboard);
 		break;
-	// RETAIL: Tron has these screens (their vtables); ours to create them
-	case SCREEN_ID_JOYSTICK:
-		pScreen = debug_new(CScreenJoystick);
-		break;
-	case SCREEN_ID_PLAYER:
-		pScreen = debug_new(CScreenPlayer);
-		break;
-	case SCREEN_ID_LIGHTCYCLE_VICTORY:
-		pScreen = debug_new(CScreenLightCycleVictory);
-		break;
 	case SCREEN_ID_CONFIGURE:
 		pScreen = debug_new(CScreenConfigure);
 		break;
 	case SCREEN_ID_SUBROUTINES:
 		pScreen = debug_new(CScreenSubroutines);
 		break;
-//	case SCREEN_ID_RATINGS:
-//		pScreen = debug_new(CScreenRatings);
-//		break;
 	case SCREEN_ID_FAILURE:
 		pScreen = debug_new(CScreenFailure);
 		break;

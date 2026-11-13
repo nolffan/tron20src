@@ -26,10 +26,10 @@ namespace
 	const uint32 kCmdJoin		= 0x1F;
 	const uint32 kCmdJoinLAN	= 0x20;
 
-	// RETAIL: Tron's screen IDs
-	const eScreenID kScreenPlayer	= (eScreenID)0x08;
-	const eScreenID kScreenJoin		= (eScreenID)0x0A;
-	const eScreenID kScreenHost		= (eScreenID)0x1F;
+	// RETAIL: Tron's screens (its host screen is HOST_CONNECTION)
+	const eScreenID kScreenPlayer	= SCREEN_ID_PLAYER;
+	const eScreenID kScreenJoin		= SCREEN_ID_JOIN_SERVERLIST;
+	const eScreenID kScreenHost		= SCREEN_ID_HOST_CONNECTION;
 }
 
 //////////////////////////////////////////////////////////////////////

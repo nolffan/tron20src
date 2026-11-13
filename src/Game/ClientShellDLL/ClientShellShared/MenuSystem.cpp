@@ -18,12 +18,14 @@ namespace
 {
 	enum eMenuCmds
 	{
+		// RETAIL: Tron's commands (CMenuSystem::OnCommand's jump table,
+		// 0x101c80c8, and Init, 0x101c7df0): no host options, team before
+		// player
 		MC_LOAD = MC_CUSTOM,
 		MC_SAVE,
 		MC_OPTIONS,
-		MC_HOST_OPTIONS,
-		MC_PLAYER,
 		MC_TEAM,
+		MC_PLAYER,
 		MC_MAIN,
 		MC_ABORT,
 		MC_QUIT,
@@ -72,14 +74,12 @@ LTBOOL CMenuSystem::Init()
 
 	AddControl(IDS_OPTIONS,MC_OPTIONS);
 
-	uint16 nHostCtrlId = AddControl(IDS_HOST_OPTIONS,MC_HOST_OPTIONS);
-	m_pHostCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nHostCtrlId );
+	// RETAIL: 0x101c7df0: no host options control in Tron
+	uint16 nTeamCtrlId = AddControl(IDS_CHOOSE_TEAM,MC_TEAM);
+	m_pTeamCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nTeamCtrlId );
 
 	uint16 nPlayerCtrlId = AddControl(IDS_PLAYER,MC_PLAYER);
 	m_pPlayerCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nPlayerCtrlId );
-
-	uint16 nTeamCtrlId = AddControl(IDS_CHOOSE_TEAM,MC_TEAM);
-	m_pTeamCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nTeamCtrlId );
 	
 	AddControl(IDS_ABORT,MC_ABORT);
 	AddControl(IDS_EXIT,MC_QUIT);
@@ -107,28 +107,13 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 	case MC_OPTIONS:
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_OPTIONS);
 		break;
-	case MC_HOST_OPTIONS:
-		switch (g_pGameClientShell->GetGameType())
-		{
-		case eGameTypeCooperative:
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_HOST_OPTIONS);
-			break;
-		case eGameTypeDeathmatch:
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_HOST_DM_OPTIONS);
-			break;
-		case eGameTypeTeamDeathmatch:
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_HOST_TDM_OPTIONS);
-			break;
-		case eGameTypeDoomsDay:
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_HOST_DD_OPTIONS);
-			break;
-		};
+	// RETAIL: 0x101c7ed0: the team command goes to Tron's team selection
+	// screen
+	case MC_TEAM:
+		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_TEAMSELECT);
 		break;
 	case MC_PLAYER:
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PLAYER);
-		break;
-	case MC_TEAM:
-		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PLAYER_TEAM);
 		break;
 	case MC_MAIN:
 		{
@@ -212,7 +197,6 @@ void CMenuSystem::OnFocus(LTBOOL bFocus)
 		{
 			m_pPlayerCtrl->Show( LTTRUE );
 			m_pTeamCtrl->Show( IsTeamGameType() );
-			m_pHostCtrl->Show( !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) );
 			m_pServerCtrl->Show(g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ));
 
 			if (g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
@@ -229,7 +213,6 @@ void CMenuSystem::OnFocus(LTBOOL bFocus)
 		{
 			m_pPlayerCtrl->Show( LTFALSE );
 			m_pTeamCtrl->Show( LTFALSE );
-			m_pHostCtrl->Show( LTFALSE  );
 			m_pServerCtrl->Show( LTFALSE  );
 		}
 
