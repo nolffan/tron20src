@@ -312,7 +312,6 @@ Object.lto	ours	OnMarkingCommand
 Object.lto	ours	Photo
 Object.lto	ours	PlayerAnimationDebug
 Object.lto	ours	PlayerDamageSound%d
-Object.lto	ours	Point %d: <%f, %f, %f>\n
 Object.lto	ours	Posture: %i LastPosture: %i
 Object.lto	ours	PowerupFX
 Object.lto	ours	Profiles\\
@@ -350,7 +349,6 @@ Object.lto	ours	SCORE
 Object.lto	ours	SCORE <+/-amount>
 Object.lto	ours	SLEEPFOREVER
 Object.lto	ours	SafeExecute
-Object.lto	ours	Score
 Object.lto	ours	ScoreLimit reached.
 Object.lto	ours	ScoreTag
 Object.lto	ours	SearchBodyTime
@@ -401,7 +399,6 @@ Object.lto	ours	SwatDefendStartDefendPercentage
 Object.lto	ours	SwatDefendStartMaxDefendPercentage
 Object.lto	ours	TRANSMISSION <transmission id> [ActivePlayerComm] [TeamNumber]
 Object.lto	ours	Team%i
-Object.lto	ours	Team%i: '%s' Score: %i
 Object.lto	ours	Team0
 Object.lto	ours	Team1
 Object.lto	ours	TeamDeathmatch
@@ -477,7 +474,6 @@ Object.lto	retail	.?AUSetAllowUpdate@@
 Object.lto	retail	.?AV?$CGenericTarget@VCAIGoalAbstract@@@@
 Object.lto	retail	.?AVAIInfoVolume@@
 Object.lto	retail	.?AVAIInfoVolumePlugin@@
-Object.lto	retail	.?AVAILightCycle@@
 Object.lto	retail	.?AVAINodeChangeWeaponsPlugin@@
 Object.lto	retail	.?AVAINodeExitLevelByRezOut@@
 Object.lto	retail	.?AVAINodeExitLevelByRezOutPlugin@@
@@ -494,7 +490,6 @@ Object.lto	retail	.?AVCAIGoalSeekerHitch@@
 Object.lto	retail	.?AVCAIGoalSeekerHitchDown@@
 Object.lto	retail	.?AVCAIHumanStateDash@@
 Object.lto	retail	.?AVCAIHumanStateSeekerHitchDown@@
-Object.lto	retail	.?AVCAILCPlugin@@
 Object.lto	retail	.?AVCAIVolumePlayerInfoMgr@@
 Object.lto	retail	.?AVCArenaPlugin@@
 Object.lto	retail	.?AVCBodyStateGib@@
@@ -508,7 +503,6 @@ Object.lto	retail	.?AVCPRodFireHelper@@
 Object.lto	retail	.?AVCProjectileBall@@
 Object.lto	retail	.?AVCProjectilePrankster@@
 Object.lto	retail	.?AVHostButeMgr@@
-Object.lto	retail	.?AVIActivationObserver@@
 Object.lto	retail	.?AVOccludingArmor@@
 Object.lto	retail	.?AVSpectatorObject@@
 Object.lto	retail	0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -577,7 +571,6 @@ Object.lto	retail	BallLauncher
 Object.lto	retail	BallLauncherRadius
 Object.lto	retail	BallRadius
 Object.lto	retail	BanName%d
-Object.lto	retail	Behavior
 Object.lto	retail	Berry
 Object.lto	retail	BinaryBit::HandleActivateMessage - ERROR - Binary Bit was in a powered down state but had no energy requirements.\n  Since 0 was specified, the bit should have started at it's socket.\n
 Object.lto	retail	BinaryBitInvalidPSet
@@ -640,7 +633,6 @@ Object.lto	retail	CoreDumpItem3
 Object.lto	retail	CorrupticDims
 Object.lto	retail	Could not find scripted animation: %s
 Object.lto	retail	Counter Value: %d  Locked: %d
-Object.lto	retail	CrashCmd
 Object.lto	retail	CreateCoreDump
 Object.lto	retail	CrouchCDeath
 Object.lto	retail	CrouchPDeath
@@ -754,7 +746,6 @@ Object.lto	retail	GibFX
 Object.lto	retail	GlowFogEnable
 Object.lto	retail	GlowFogFarZ
 Object.lto	retail	GlowFogNearZ
-Object.lto	retail	GoForward
 Object.lto	retail	Goal %s triggered by %s; sense %s (%.2f) ()\n
 Object.lto	retail	GoalId
 Object.lto	retail	HIDE_ATTACHFX 0
@@ -823,7 +814,6 @@ Object.lto	retail	LOCKIGNOREVOLUMESTATE
 Object.lto	retail	LOCKIGNOREVOLUMESTATE <1-or-0>
 Object.lto	retail	LOCKWEAPON
 Object.lto	retail	LeftRod
-Object.lto	retail	LightCyclePowerup::ObjectTouch - ERROR - Invalid command: %s\n
 Object.lto	retail	ListenIcon <true/false> [string-id]
 Object.lto	retail	LithTech
 Object.lto	retail	Locked the RezOut goal, should not be interuptable.
@@ -926,7 +916,6 @@ Object.lto	retail	RampUpTimePercent
 Object.lto	retail	Ranged Weapon
 Object.lto	retail	Received level switch request, waiting for all players to be connected to initiate switch...
 Object.lto	retail	Reinforcement
-Object.lto	retail	RemoveCmd
 Object.lto	retail	RequiredPermissionSets
 Object.lto	retail	ReturnToOwner
 Object.lto	retail	RezInFX
@@ -965,7 +954,6 @@ Object.lto	retail	ScreenGlowFogFarZ
 Object.lto	retail	ScreenGlowFogFarZ
 Object.lto	retail	ScreenGlowFogNearZ
 Object.lto	retail	ScreenGlowFogNearZ
-Object.lto	retail	Scripted
 Object.lto	retail	SeekerHitch
 Object.lto	retail	SeekerHitchDown
 Object.lto	retail	SenseRecorder attempting to copy a sense record it does not support.
@@ -1036,12 +1024,10 @@ Object.lto	retail	Worlds\\RetailLightCycle
 Object.lto	retail	Worlds\\RetailMultiPlayer\\DiscArena
 Object.lto	retail	acquireproc %s
 Object.lto	retail	acquiresub %s %s %s
-Object.lto	retail	aggressive
 Object.lto	retail	alpha
 Object.lto	retail	alpha
 Object.lto	retail	attributes\\fx.txt
 Object.lto	retail	attributes\\subroutines.txt
-Object.lto	retail	avoid
 Object.lto	retail	bl.dat
 Object.lto	retail	choke01.wav
 Object.lto	retail	choke02.wav
@@ -1087,7 +1073,6 @@ Object.lto	retail	turns off armor and turns off on lock if character has power a
 Object.lto	retail	turns off armor if character has power armor
 Object.lto	retail	turns on armor and locks it on if character has power armor
 Object.lto	retail	turns on armor if character has power armor
-Object.lto	retail	wander
 
 # UNREVIEWED, recorded at CShell.dll's first build (2026-11-02): NOLF2 1.3's shared client code with Build 69's May 2002 Tron files, merged and ported, and NOLF2's multiplayer and performance screens standing in for Tron's (docs/PLAN.md, package 4). To be worked down.
 CShell.dll	ours	  Object Type: %d
@@ -1117,14 +1102,10 @@ CShell.dll	ours	<Frags>
 CShell.dll	ours	<Ping>
 CShell.dll	ours	<Score>
 CShell.dll	ours	<Tags>
-CShell.dll	ours	<bandwidth>
 CShell.dll	ours	<error>
-CShell.dll	ours	<host name>
 CShell.dll	ours	<level name>
 CShell.dll	ours	<mission name>
-CShell.dll	ours	<password>
 CShell.dll	ours	<player name>
-CShell.dll	ours	<port>
 CShell.dll	ours	>POS:LL
 CShell.dll	ours	>POS:LR
 CShell.dll	ours	>POS:UL
@@ -1132,8 +1113,6 @@ CShell.dll	ours	>POS:UR
 CShell.dll	ours	>TIME:
 CShell.dll	ours	AIIgnoreBody
 CShell.dll	ours	AITracking
-CShell.dll	ours	AddPos
-CShell.dll	ours	AddressWidth
 CShell.dll	ours	AmmoOffset
 CShell.dll	ours	ArmDefendPVFXName
 CShell.dll	ours	ArmedFX
@@ -1146,7 +1125,6 @@ CShell.dll	ours	AutoBurstMaxDist
 CShell.dll	ours	AutoBurstMinDist
 CShell.dll	ours	BackBufferCount 1
 CShell.dll	ours	Bad Block Removed\n
-CShell.dll	ours	BaseFilterPos
 CShell.dll	ours	BindingIconAlpha
 CShell.dll	ours	BindingIconSize
 CShell.dll	ours	BindingNumbers
@@ -1175,9 +1153,7 @@ CShell.dll	ours	ConditionSkin
 CShell.dll	ours	ConsoleEnable
 CShell.dll	ours	ContinuousDrain
 CShell.dll	ours	Core_
-CShell.dll	ours	Could not load campaign file %s.
 CShell.dll	ours	Could not setup server.
-CShell.dll	ours	Crosshair%d
 CShell.dll	ours	CrosshairBarMax
 CShell.dll	ours	CrosshairBarMin
 CShell.dll	ours	CrosshairGapMax
@@ -1198,8 +1174,6 @@ CShell.dll	ours	Detail
 CShell.dll	ours	DetailLevel
 CShell.dll	ours	DetailLevel
 CShell.dll	ours	DetailTextures
-CShell.dll	ours	DetailsFrame
-CShell.dll	ours	DetailsRect
 CShell.dll	ours	Doctor Dentz!
 CShell.dll	ours	DoomsDayBurn
 CShell.dll	ours	DrawOrder
@@ -1218,13 +1192,10 @@ CShell.dll	ours	FXSmoothShutdown
 CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_L.spr
 CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_R.spr
 CShell.dll	ours	Failed to create default resoltution software TnL, falling back to 640x480
-CShell.dll	ours	FilterItemSpacing
-CShell.dll	ours	FilterNameWidth
 CShell.dll	ours	Final m_fYawDelta\t\t= %.2f
 CShell.dll	ours	Final vPYR.y\t\t\t= %.2f
 CShell.dll	ours	Final vPlayerPYR.y\t\t= %.2f
 CShell.dll	ours	FindJunk
-CShell.dll	ours	FindPos
 CShell.dll	ours	FireAnimRateScale
 CShell.dll	ours	FontFace%d
 CShell.dll	ours	FontFace0
@@ -1236,7 +1207,6 @@ CShell.dll	ours	God Mode: OFF
 CShell.dll	ours	God Mode: ON
 CShell.dll	ours	Grief
 CShell.dll	ours	Groovy
-CShell.dll	ours	HUDCrosshair
 CShell.dll	ours	HUDRadar: failed adding object (duplicate)
 CShell.dll	ours	HUDRadar: failed adding object (no texture %s)
 CShell.dll	ours	HUDRadar: failed adding object (unknown type %d)
@@ -1301,17 +1271,13 @@ CShell.dll	ours	LO_VJHN
 CShell.dll	ours	LPSPTA@M[Y
 CShell.dll	ours	LargeFontSize
 CShell.dll	ours	LargeIconSize
-CShell.dll	ours	LaunchFontSize
 CShell.dll	ours	LevelFontSize
 CShell.dll	ours	LevelWidth
 CShell.dll	ours	ListFontFace
 CShell.dll	ours	ListGameOptions
 CShell.dll	ours	ListMissions
-CShell.dll	ours	ListPos
-CShell.dll	ours	LockWidth
 CShell.dll	ours	LoopArmSound
 CShell.dll	ours	LoopArmedFX
-CShell.dll	ours	LoopMissions
 CShell.dll	ours	Lots of guns...
 CShell.dll	ours	MPRadar
 CShell.dll	ours	MenuIntel
@@ -1320,12 +1286,9 @@ CShell.dll	ours	MenuKeys
 CShell.dll	ours	MenuMission
 CShell.dll	ours	MenuPlayer
 CShell.dll	ours	MessageDur
-CShell.dll	ours	Mission%d
 CShell.dll	ours	Mission0
 CShell.dll	ours	MissionFontSize
 CShell.dll	ours	MissionList
-CShell.dll	ours	MissionSourceFile
-CShell.dll	ours	ModWidth
 CShell.dll	ours	MoveMgr Object Touch:
 CShell.dll	ours	Movies\\foxlogo.bik
 CShell.dll	ours	Movies\\ltLogo.bik
@@ -1342,8 +1305,6 @@ CShell.dll	ours	Node%dAttachSpears
 CShell.dll	ours	Novice
 CShell.dll	ours	OBJECT
 CShell.dll	ours	OCgRHS\\[PUU
-CShell.dll	ours	OptionsFontSize
-CShell.dll	ours	OptionsHeight
 CShell.dll	ours	PerturbDecreaseSpeed
 CShell.dll	ours	PerturbFiringDecreaseSpeed
 CShell.dll	ours	PerturbFiringIncreaseSpeed
@@ -1352,7 +1313,6 @@ CShell.dll	ours	PerturbRotationEffect
 CShell.dll	ours	PerturbWalkPercent
 CShell.dll	ours	Photo
 CShell.dll	ours	PhotoRect
-CShell.dll	ours	PingWidth
 CShell.dll	ours	PlayerAlive
 CShell.dll	ours	PlayerDamageSound%d
 CShell.dll	ours	PlayerDead
@@ -1360,7 +1320,6 @@ CShell.dll	ours	PlayerSkills%d
 CShell.dll	ours	PlayerSkills0
 CShell.dll	ours	PlayerTalk
 CShell.dll	ours	PlayerTracking
-CShell.dll	ours	PlayerWidth
 CShell.dll	ours	PolyGridBumpmap
 CShell.dll	ours	PopupPos
 CShell.dll	ours	PopupSize
@@ -1385,7 +1344,6 @@ CShell.dll	ours	RadarType
 CShell.dll	ours	RadarTypeMgr
 CShell.dll	ours	RedTeamColor
 CShell.dll	ours	ReloadAnimRateScale
-CShell.dll	ours	RemovePos
 CShell.dll	ours	RespawnDoomsdayWaitTime
 CShell.dll	ours	RespawnWaitFX
 CShell.dll	ours	RespawnWaitRenderStyle
@@ -1404,20 +1362,8 @@ CShell.dll	ours	ScopeUPGap
 CShell.dll	ours	ScoreColumn
 CShell.dll	ours	ScoreTag
 CShell.dll	ours	Scores
-CShell.dll	ours	ScreenCrosshair
-CShell.dll	ours	ScreenEndDMMission
-CShell.dll	ours	ScreenHostDDOptions
-CShell.dll	ours	ScreenHostDMOptions
-CShell.dll	ours	ScreenHostTDMOptions
-CShell.dll	ours	ScreenHostWeapons
-CShell.dll	ours	ScreenJoin
-CShell.dll	ours	ScreenJoinLAN
-CShell.dll	ours	ScreenPlayerSkills
-CShell.dll	ours	ScreenPlayerTeam
 CShell.dll	ours	ScreenPlayerTextColor
-CShell.dll	ours	ScreenTeam
 CShell.dll	ours	ScreenTextColor
-CShell.dll	ours	ServerRect
 CShell.dll	ours	SetGameOption
 CShell.dll	ours	SetMission
 CShell.dll	ours	ShardHorizontalPerturbMax
@@ -1499,7 +1445,6 @@ CShell.dll	ours	You can never have too many bullets...
 CShell.dll	ours	You got mad skillz, d00d...
 CShell.dll	ours	\\Campaigns\\
 CShell.dll	ours	\\DM_Campaigns\\
-CShell.dll	ours	_A.dtx
 CShell.dll	ours	attributes\\additives.txt
 CShell.dll	ours	attributes\\damagefx.txt
 CShell.dll	ours	avail
@@ -1544,7 +1489,6 @@ CShell.dll	ours	expand_top
 CShell.dll	ours	fAdjustedYawDelta\t\t= %.2f
 CShell.dll	ours	failed
 CShell.dll	ours	import KERNEL32.dll OpenFile
-CShell.dll	ours	import KERNEL32.dll WritePrivateProfileStringA
 CShell.dll	ours	import MSVCRT.dll _getcwd
 CShell.dll	ours	import MSVCRT.dll _mbsinc
 CShell.dll	ours	import MSVCRT.dll _mbsnbcnt
@@ -1553,7 +1497,6 @@ CShell.dll	ours	import MSVCRT.dll strrchr
 CShell.dll	ours	ingame_procedurals_disc.ltb
 CShell.dll	ours	ingame_procedurals_disc_cond.ltb
 CShell.dll	ours	ingame_procedurals_disc_prog.ltb
-CShell.dll	ours	init sessions
 CShell.dll	ours	interface\\cursor0.pcx
 CShell.dll	ours	interface\\hud\\WpnClass%d.dtx
 CShell.dll	ours	interface\\hud\\WpnClass%dD.dtx
@@ -1716,7 +1659,6 @@ CShell.dll	retail	BallRadius
 CShell.dll	retail	Ball_launcher
 CShell.dll	retail	BarHeight
 CShell.dll	retail	BarWidth
-CShell.dll	retail	BaseScreenHost
 CShell.dll	retail	Blaster
 CShell.dll	retail	BlockedPVFXName
 CShell.dll	retail	BriefingId
@@ -2245,19 +2187,11 @@ CShell.dll	retail	ScoreColumn2
 CShell.dll	retail	ScoreColumn3
 CShell.dll	retail	ScoreColumn4
 CShell.dll	retail	ScoreColumn5
-CShell.dll	retail	ScreenBaseLightCycle
 CShell.dll	retail	ScreenGlowEnable
 CShell.dll	retail	ScreenGlowEnable
 CShell.dll	retail	ScreenGlowFogEnable
 CShell.dll	retail	ScreenGlowFogFarZ
 CShell.dll	retail	ScreenGlowFogNearZ
-CShell.dll	retail	ScreenHostConnection
-CShell.dll	retail	ScreenHostGame
-CShell.dll	retail	ScreenHostMaps
-CShell.dll	retail	ScreenLightCycleCircuit
-CShell.dll	retail	ScreenLightCycleCustomGame
-CShell.dll	retail	ScreenLightCycleCustomMap
-CShell.dll	retail	ScreenLightCyclePlayerConfig
 CShell.dll	retail	ScreenSubroutines
 CShell.dll	retail	Sequencer
 CShell.dll	retail	ServerConfig
@@ -2321,7 +2255,6 @@ CShell.dll	retail	TargetAngleTrackThreshold
 CShell.dll	retail	TeamChatColor
 CShell.dll	retail	TeamColumn
 CShell.dll	retail	TeamRect
-CShell.dll	retail	TeamSelect
 CShell.dll	retail	TextDisabled
 CShell.dll	retail	TextNormal
 CShell.dll	retail	TextSelected
@@ -2619,16 +2552,9 @@ CShell.dll	retail	waitweaps
 CShell.dll	retail	winpoints
 
 # With /GR (retail has RTTI for Tron's own classes, so Tron's projects were built with it, as Build 69's say): classes of ours that retail has no RTTI for, so does not have -- the screens NOLF2's stand in for (CScreenHost, CScreenHostLevels, CScreenJoin, CScreenJoinLAN; retail has CScreenHostGame, CScreenJoinServerList, ...) and May 2002 classes Tron dropped before shipping (CClusterAutoBurstDisc, CHUDAmmoChooser, CHUDWeapons, CScreenCrosshair, CDMButeMgr, the base CClientWeapon creator, the CString containers): to go as those are brought to retail's.
-CShell.dll	ours	.?AV?$CMoArray@VCString@@VDefaultCache@@@@
 CShell.dll	ours	.?AV?$CStandardCreator@VIClientWeaponBase@@VCClientWeapon@@@@
-CShell.dll	ours	.?AV?$GenList@VCString@@@@
 CShell.dll	ours	.?AVCHUDAmmoChooser@@
 CShell.dll	ours	.?AVCHUDWeapons@@
-CShell.dll	ours	.?AVCScreenCrosshair@@
-CShell.dll	ours	.?AVCScreenHost@@
-CShell.dll	ours	.?AVCScreenHostLevels@@
-CShell.dll	ours	.?AVCScreenJoin@@
-CShell.dll	ours	.?AVCScreenJoinLAN@@
 Object.lto	ours	.?AVCClusterAutoBurstDisc@@
 
 # Not written yet (2026-11-13): retail's Tron CAI::HandleDead (Object.lto 0x1012d930) prints "AI is Dead" through ObjectCPrint and fires the music manager's AI-death event (CMusicMgr::DoEvent(eEventAIDie)); ours is NOLF2's, which does neither.
@@ -2645,3 +2571,8 @@ CShell.dll	ours	AmmoBarOffset
 CShell.dll	ours	ArmorIconOffset
 # Not Tron's (2026-11-13): the 2007 ghttp SDK in src/Game/Libs/GameSpy/GameSpySDK reads a content length with _atoi64; Tron's older ghttp does not. To go when ghttp is rolled back to Tron's version, as the server browser was.
 CShell.dll	ours	import MSVCRT.dll _atoi64
+# Not written yet (2026-11-13): retail's Tron host screens (CScreenHostMaps and its siblings, retail AddScreen ids 0x1e..0x21) read the layout attributes AvailRect, SelectRect and CommandPos, and the server-info screens name an unmodded server "Retail"; our NOLF2 CScreenHostLevels and CScreenJoin used the same strings but are gone (retail has neither class).
+CShell.dll	retail	AvailRect
+CShell.dll	retail	CommandPos
+CShell.dll	retail	Retail
+CShell.dll	retail	SelectRect

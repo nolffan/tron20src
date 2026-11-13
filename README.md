@@ -48,13 +48,13 @@ those functions make up.
 | `SndDrv.dll` | the sound driver | 121 / 284 | 15,446 / 39,010 bytes | `███████░░░░░░░░░░░░░` 39.5% | 44 | 0 |
 | `Tron.exe` | the launcher | 0 / 366 | 0 / 45,159 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 366 | 0 |
 | `TRONSrv.exe` | the dedicated server | 0 / 612 | 0 / 82,500 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 612 | 0 |
-| `CShell.dll` | the game: client | 4,276 / 9,423 | 621,539 / 1,825,734 bytes | `██████░░░░░░░░░░░░░░` 34.0% | 1,061 | 184 |
-| `Object.lto` | the game: server objects | 9,043 / 15,419 | 1,089,323 / 2,457,765 bytes | `████████░░░░░░░░░░░░` 44.3% | 948 | 310 |
+| `CShell.dll` | the game: client | 4,493 / 9,413 | 670,401 / 1,825,721 bytes | `███████░░░░░░░░░░░░░` 36.7% | 1,210 | 114 |
+| `Object.lto` | the game: server objects | 9,461 / 15,407 | 1,170,652 / 2,457,745 bytes | `█████████░░░░░░░░░░░` 47.6% | 836 | 361 |
 | `ClientFx.fxd` | the game: client effects | 304 / 558 | 61,195 / 135,077 bytes | `█████████░░░░░░░░░░░` 45.3% | 30 | 9 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 0 / 463 resources | 0 / 561,414 bytes | `░░░░░░░░░░░░░░░░░░░░` 0.0% | 463 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **13,744 / 39,129** | **1,787,503 / 6,402,663 bytes** | `█████░░░░░░░░░░░░░░░` **27.9%** | **15,528** | **503** |
+| **All** | | **14,379 / 39,107** | **1,917,694 / 6,402,630 bytes** | `█████░░░░░░░░░░░░░░░` **29.9%** | **15,565** | **484** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `progress/identical.txt`, and
