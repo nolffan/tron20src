@@ -4250,9 +4250,5 @@ Lithtech.exe	retail	__search_marker_holder__
 Lithtech.exe	retail	__search_marker_holder__
 Lithtech.exe	retail	__search_marker_holder__
 
-# Not written yet (Lithtech.exe, 2026-11-13): CSoundMgr::SetUpdateSoundParam and CSoundMgr::SetSoundVolume, the RETURN_ERROR names of Tron's own CSoundMgr functions after EnableSoundFilter (todo at 0x4b4e70, 0x4b4f10, 0x4b4fd0, which push them at 0x4b4e9c.. and 0x4b50cf..): to come with soundmgr.cpp's Tron additions.
-Lithtech.exe	retail	CSoundMgr::SetSoundVolume
-Lithtech.exe	retail	CSoundMgr::SetUpdateSoundParam
-
 # Not written yet (Lithtech.exe, 2026-11-13): two of Build 69's console variables our CJ-based renderer lacks: ModelDebug_DrawOBBS (rendererconsolevars.h after ModelDebug_DrawSkeleton, registered at 0x4d0632; B69's setupmodel.cpp draws the model OBBs with it) and ScreenGlow_DrawCanvases (screenglowmgr.cpp's own ConVar, registered at 0x5138df; B69's screenglowmgr.cpp:28/451). To come with those renderer TUs (e-ren).
 Lithtech.exe	retail	ScreenGlow_DrawCanvases
