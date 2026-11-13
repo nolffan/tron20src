@@ -167,6 +167,7 @@ SOURCE=.\ArcCtrl.cpp
 # Begin Source File
 
 SOURCE=.\ClientLightCycleMgr.cpp
+SOURCE=.\BaseScreenJoin.cpp
 # End Source File
 # Begin Source File
 
@@ -366,6 +367,7 @@ SOURCE=.\LCHUDHelper.cpp
 
 SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
 # SUBTRACT CPP /YX /Yc /Yu
+SOURCE=.\LightLine.cpp
 # End Source File
 # Begin Source File
 
@@ -486,6 +488,10 @@ SOURCE=.\ScreenJoin.cpp
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoinServerList.cpp
 # End Source File
 # Begin Source File
 
@@ -616,6 +622,10 @@ SOURCE=.\AdditiveCtrl.h
 # Begin Source File
 
 SOURCE=.\ArcCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenJoin.h
 # End Source File
 # Begin Source File
 
@@ -755,6 +765,10 @@ SOURCE=.\LCHUDHelper.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightLine.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.h
 # End Source File
 # Begin Source File
@@ -832,6 +846,10 @@ SOURCE=.\ScreenJoin.h
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoinServerList.h
 # End Source File
 # Begin Source File
 

@@ -30,6 +30,7 @@
 #include "ScreenHost.h"
 #include "ScreenJoin.h"
 #include "ScreenJoinLAN.h"
+#include "ScreenJoinServerList.h"
 
 //under options
 #include "ScreenDisplay.h"
@@ -175,6 +176,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_JOIN_LAN:
 		pScreen = debug_new(CScreenJoinLAN);
+		break;
+	case SCREEN_ID_JOIN_SERVERLIST:	// RETAIL: 0x100adac0
+		pScreen = debug_new(CScreenJoinServerList);
 		break;
 	case SCREEN_ID_AUDIO:
 		pScreen = debug_new(CScreenAudio);

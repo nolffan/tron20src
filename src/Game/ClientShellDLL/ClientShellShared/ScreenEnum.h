@@ -85,6 +85,12 @@ ADD_SCREEN(SUBROUTINES,ScreenSubroutines)
 // numbers them differently: the victory screen is 0x27)
 ADD_SCREEN(LIGHTCYCLE_VICTORY,ScreenLightCycleVictory)
 
+// RETAIL: Tron's join screens (their RTTI and retail's screen name table,
+// retail CShell.dll 0x1021e454: Tron's ScreenEnum numbers them 0xa and 0xb,
+// after HOST; NOLF2's JOIN/JOIN_LAN are not in Tron)
+ADD_SCREEN(JOIN_SERVERLIST,ScreenJoinServerList)
+ADD_SCREEN(SERVERINFO,ScreenServerInfo)
+
 //this must be the last id
 ADD_SCREEN(UNASSIGNED,GenericScreen)
 
