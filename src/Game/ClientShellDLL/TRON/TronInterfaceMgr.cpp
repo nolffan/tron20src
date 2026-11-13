@@ -93,8 +93,7 @@ LTBOOL CTronInterfaceMgr::Init()
 
 	m_ServerOptionMgr.Init();
 
-	// PORT: retail initializes its object at +0x279c4 here (0x10047030),
-	// not yet written
+	m_LightCycleGameDataMgr.Init();
 
 	m_pTurnArrowLeft = g_pScreenSpriteMgr->CreateScreenSprite("Interface\\Spr\\TurnArrowLeft.spr", false, SPRITELAYER_DEFAULT);
 	m_pTurnArrowLeft->m_bShow = LTTRUE;
@@ -140,8 +139,7 @@ void CTronInterfaceMgr::Term()
 
 	m_ServerOptionMgr.Term();
 
-	// PORT: retail terms its object at +0x279c4 here (0x10047200), not
-	// yet written
+	m_LightCycleGameDataMgr.Term();
 
 	CInterfaceMgr::Term();
 

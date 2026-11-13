@@ -512,6 +512,12 @@ uint32 ServerGameOptions::GetTronUnknownCC( ) const
 	return m_nTronUnknownCC;
 }
 
+// RETAIL: CShell.dll 0x100eb5a0 (the name is ours)
+void ServerGameOptions::SetTronUnknownCC( uint32 nValue )
+{
+	m_nTronUnknownCC = nValue;
+}
+
 // RETAIL: TRONSrv.exe 0x408fd0, CShell.dll 0x100eb530: turns the session
 // name's backslashes into slashes, true if there were any. The name is ours.
 bool ServerGameOptions::FixSessionName( )

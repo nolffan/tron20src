@@ -382,6 +382,10 @@ SOURCE=.\LCHUDHelper.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleGameDataMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -774,6 +778,10 @@ SOURCE=.\IONodeMgr.h
 # Begin Source File
 
 SOURCE=.\LCHUDHelper.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleGameDataMgr.h
 # End Source File
 # Begin Source File
 

@@ -293,6 +293,10 @@ class ServerGameOptions
 
 		StringArray*	GetMapList( );
 		uint32		GetTronUnknownCC( ) const;
+		// RETAIL: CShell.dll 0x100eb5a0: the light cycle game data manager
+		// stores its current settings here (CLightCycleGameDataMgr::
+		// SetCurrent). The name is ours
+		void		SetTronUnknownCC( uint32 nValue );
 
 #ifndef _CLIENTBUILD
 		// RETAIL: Object.lto 0x10114e60, 0x10114f50, 0x101150a0: the GameSpy
