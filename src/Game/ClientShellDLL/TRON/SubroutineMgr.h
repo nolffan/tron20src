@@ -167,6 +167,8 @@ public:
 	void		Update();	// advance all timers
 
 	uint16		GetNumSubroutines() {return m_SubroutineArray.size();}
+	// RETAIL: inlined in CHUDSubChooser::Init (retail 0x1003b5a6); the name is ours
+	TronSubroutine*	GetSubroutineByIndex(uint16 nIndex) {return m_SubroutineArray[nIndex];}
 
 	// Search functions
 	TronSubroutine*		GetSubroutine(const char *pszName);

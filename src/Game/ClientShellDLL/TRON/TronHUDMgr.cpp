@@ -116,6 +116,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_LightCycleLives, eGameType);
 	AddItem(&m_LightCyclePowerupIcon, eGameType);
 	AddItem(&m_Procedurals, eGameType);
+	AddItem(&m_SubChooser, eGameType);
 	AddItem(&m_Profiler, eGameType);
 
 	m_Crosshair.Init();
@@ -137,6 +138,7 @@ bool CTronHUDMgr::AddItems()
 	m_LightCycleLives.Init();
 	m_LightCyclePowerupIcon.Init();
 	m_Procedurals.Init();
+	m_SubChooser.Init();
 	m_Profiler.Init();
 
     return CHUDMgr::AddItems();

@@ -296,6 +296,10 @@ SOURCE=.\HUDSingleString.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDSubChooser.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDVersion.cpp
 # End Source File
 # Begin Source File
@@ -602,6 +606,10 @@ SOURCE=.\HUDProgress.h
 # Begin Source File
 
 SOURCE=.\HUDSingleString.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDSubChooser.h
 # End Source File
 # Begin Source File
 

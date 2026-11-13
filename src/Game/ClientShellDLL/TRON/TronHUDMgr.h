@@ -42,6 +42,7 @@
 #include "HUDPings.h"
 #include "HUDProcedurals.h"
 #include "HUDProfiler.h"
+#include "HUDSubChooser.h"
 
 //******************************************************************************************
 //** Tron HUD Manager
@@ -83,6 +84,7 @@ protected:
 	CHUDLightCyclePowerupIcon	m_LightCyclePowerupIcon;
 	CHUDPings					m_Pings;
 	CHUDProcedurals				m_Procedurals;
+	CHUDSubChooser				m_SubChooser;
 	CHUDProfiler				m_Profiler;
 };
 extern CHUDCrosshair*		g_pCrosshair;
