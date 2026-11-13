@@ -297,7 +297,7 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 	//to the list to be rendered
 	SQueuedPiece Info;
 	Info.m_bReallyClose			= (pInstance->m_Flags & FLAG_REALLYCLOSE) != 0;
-	Info.m_nRenderPriority		= pPiece->m_nRenderPriority;
+	Info.m_nRenderPriority		= pLOD->m_nRenderPriority;
 	Info.m_pLightList			= pLightList;
 	Info.m_pRenderPiece			= pLOD;
 	Info.m_pInstance			= pInstance;
@@ -306,7 +306,7 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 
 	//get the appropriate render style (or the backup one if none exists)
 	Info.m_pRenderStyle			= NULL;
-	if (!pInstance->GetRenderStyle(pPiece->m_iRenderStyle,(CRenderStyle**)(&Info.m_pRenderStyle)) || !Info.m_pRenderStyle) 
+	if (!pInstance->GetRenderStyle(pLOD->m_iRenderStyle,(CRenderStyle**)(&Info.m_pRenderStyle)) || !Info.m_pRenderStyle) 
 	{
 		//failed to get the associated render style, get the default
 		Info.m_pRenderStyle = g_RenderStateMgr.GetBackupRenderStyle(); 
@@ -315,12 +315,12 @@ void CRenderModelPieceList::QueuePiece(ModelInstance* pInstance, ModelPiece* pPi
 	uint32 nCurrTexture = 0;
 	if(bTexture)
 	{
-		for(; nCurrTexture < pPiece->m_nNumTextures; nCurrTexture++)
+		for(; nCurrTexture < pLOD->m_nNumTextures; nCurrTexture++)
 		{
-			if (pInstance->m_pSkins[pPiece->m_iTextures[nCurrTexture]] && 
-				pInstance->m_pSkins[pPiece->m_iTextures[nCurrTexture]]->m_pRenderData) 
+			if (pInstance->m_pSkins[pLOD->m_iTextures[nCurrTexture]] && 
+				pInstance->m_pSkins[pLOD->m_iTextures[nCurrTexture]]->m_pRenderData) 
 			{
-				Info.m_TextureList[nCurrTexture] = pInstance->m_pSkins[pPiece->m_iTextures[nCurrTexture]]; 
+				Info.m_TextureList[nCurrTexture] = pInstance->m_pSkins[pLOD->m_iTextures[nCurrTexture]]; 
 			}
 			else 
 			{ 

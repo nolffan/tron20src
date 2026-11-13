@@ -537,17 +537,24 @@ bool ModelPiece::Load(ILTStream &file, LTB_Header& LTBHeader, uint32 nFileVersio
 
     uint32 render_object_type;
 
+	// TRON: each LOD keeps its own appearance (server.dll 0x10019850)
+	uint32 nNumTextures;
+	int32 iTextures[MAX_PIECE_TEXTURES];
+	int32 iRenderStyle;
+	uint8 nRenderPriority;
+	uint32 j;
+
 	// load up the lods
     for (i = 0; i < m_nLODs; ++i) 
 	{		
-		file >> m_nNumTextures;
-		for (uint32 j = 0; j < MAX_PIECE_TEXTURES; ++j)
+		file >> nNumTextures;
+		for (j = 0; j < MAX_PIECE_TEXTURES; ++j)
 		{
-			file >> m_iTextures[j];
+			file >> iTextures[j];
 		}
 
-		file >> m_iRenderStyle;
-		file >> m_nRenderPriority;
+		file >> iRenderStyle;
+		file >> nRenderPriority;
 
         file >> render_object_type ;
 
@@ -572,6 +579,14 @@ bool ModelPiece::Load(ILTStream &file, LTB_Header& LTBHeader, uint32 nFileVersio
 			m_pRenderObjects[i]->CreateUsedNodeList(m_pRenderObjects[i]->m_UsedNodeListSize);
 			file.Read( m_pRenderObjects[i]->m_pUsedNodeList, sizeof(uint8) * m_pRenderObjects[i]->m_UsedNodeListSize) ;
 		}	
+
+		m_pRenderObjects[i]->m_iRenderStyle = iRenderStyle;
+		m_pRenderObjects[i]->m_nNumTextures = nNumTextures;
+		m_pRenderObjects[i]->m_nRenderPriority = nRenderPriority;
+		for (j = 0; j < MAX_PIECE_TEXTURES; ++j)
+		{
+			m_pRenderObjects[i]->m_iTextures[j] = iTextures[j];
+		}
 	}
 
 	return true;
@@ -862,19 +877,10 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 	m_NumOBBs = num_obb;
 	if(m_NumOBBs>0)
  	{
-		if(m_FileVersion >= MIN_MODELOBB_FILE_VERSION)
-		{
- 			LT_MEM_TRACK_ALLOC(m_ModelOBBs = new ModelOBB [m_NumOBBs],LT_MEM_TYPE_MODEL);
-			file.Read(m_ModelOBBs,sizeof(ModelOBB)*m_NumOBBs);
-		}
-		else
-		{
-			// If our model format doesn't support the new OOB format,
-			// read in the data in the old format, then throw it away.
-			ModelOBB_Depricated *tmp = new ModelOBB_Depricated [ num_obb ] ;
-			file.Read( tmp, sizeof(ModelOBB_Depricated) * num_obb );
-			delete [] tmp;
-		}
+		// TRON: read whatever the file's version, 0x40 bytes each (server.dll
+		// 0x10019f68)
+ 		LT_MEM_TRACK_ALLOC(m_ModelOBBs = new ModelOBB [m_NumOBBs],LT_MEM_TYPE_MODEL);
+		file.Read(m_ModelOBBs,sizeof(ModelOBB)*m_NumOBBs);
  	}
 #else 
 	// if there's obb info just slurp it up into nothing.

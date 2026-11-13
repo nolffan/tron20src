@@ -65,7 +65,9 @@ class LAlloc;
 // nolf2src: NOLF2 shipped without them (the retail Model::Load skips them with
 // "this feature is not supported in this version of exe"; the Mac build's
 // ILTModel::GetModelOBBCopy/UpdateModelOBB only fail).
-#define MODEL_OBB 0
+// TRON: Tron 2.0's engine has them, as Build 69's (server.dll 0x100488bf,
+// ILTModel::GetModelOBBCopy, copies the instance's collision objects).
+#define MODEL_OBB 1
 
 class ModelNode;
 class ModelAnim;
@@ -709,6 +711,14 @@ public :
 
 	uint8*					m_pUsedNodeList; // most distal nodes used by this mesh.
 	uint8				 	m_UsedNodeListSize;
+
+	// TRON: the appearance is the LOD's, not the piece's (server.dll
+	// 0x100199c8, ModelPiece::Load; the server's drawable is 0x30 bytes,
+	// 0x10008a86)
+	uint32					m_nNumTextures;
+	int32					m_iTextures[MAX_PIECE_TEXTURES];
+	int32					m_iRenderStyle;
+	uint8					m_nRenderPriority;
 };
 
 //  ----------------------------------------------------------------
@@ -761,12 +771,6 @@ public :
 	// Load
 	bool			Load(ILTStream &file, LTB_Header& LTBHeader, uint32 nFileVersion);
 
-	// appearance of piece
-	uint32			m_nNumTextures;
-	int32			m_iTextures[MAX_PIECE_TEXTURES];
-	int32			m_iRenderStyle;
-	uint8			m_nRenderPriority;
-
 	// LOD interface
 	uint32			NumLODs() const					{ return m_nLODs; }
 
@@ -789,6 +793,9 @@ private:
 	// LOD Info
 	float			*m_pLODDists;	// array of lod distances
 	uint32			 m_nLODs ;		// size of array
+
+	// TRON: no appearance here: each LOD has its own (CDIModelDrawable);
+	// ModelPiece is 0x14 bytes (server.dll 0x1001a697, BaseNew_1P)
 };
 
 
