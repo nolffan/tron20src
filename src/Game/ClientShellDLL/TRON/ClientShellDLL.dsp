@@ -464,6 +464,10 @@ SOURCE=.\ScreenJoinLAN.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenJoinServerList.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenJoystick.cpp
 # End Source File
 # Begin Source File
@@ -783,6 +787,10 @@ SOURCE=.\ScreenJoin.h
 # Begin Source File
 
 SOURCE=.\ScreenJoinLAN.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenJoinServerList.h
 # End Source File
 # Begin Source File
 

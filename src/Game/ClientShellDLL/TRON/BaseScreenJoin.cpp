@@ -125,12 +125,12 @@ LTBOOL CBaseScreenJoin::Build()
 	HTEXTURE hHot = g_pInterfaceResMgr->GetTexture(szTex);
 
 	pLaunch->Create(kCmdJoinServer,0x20D,hNormal,hHot);
-	pLaunch->SetFont(g_pInterfaceResMgr->GetFont(nFontSize),nFontSize);
+	pLaunch->SetFont(g_pInterfaceResMgr->GetFontForHeight(nFontSize),nFontSize);
 	pLaunch->SetText(LoadTempWString(0x1F7),LTTRUE);
 	pLaunch->SetBasePos(launchPos);
 	pLaunch->SetScale(g_pInterfaceResMgr->GetXRatio());
 	pLaunch->SetCommandHandler(this);
-	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nFontSize);
+	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 	pLaunch->SetFont(pFont,nFontSize);
 	pLaunch->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 	m_controlArray.push_back(pLaunch);

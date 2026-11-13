@@ -86,7 +86,9 @@ protected:
 
 	CLTGUITextCtrl*	m_pServerListTab;	// +0x790
 	CLTGUITextCtrl*	m_pServerInfoTab;	// +0x794
-	LTBOOL			m_bInternet;		// +0x798: (ours) gates the light cycle warning and the update check; set by the server list
+public:
+	LTBOOL			m_bInternet;		// +0x798: (ours) gates the light cycle warning and the update check; the server list passes it to the server info screen
+protected:
 	LTBOOL			m_bJoinPending;		// +0x79c
 	std::string		m_sPassword;		// +0x7a0
 	uint32			m_nTabColor;		// +0x7ac
