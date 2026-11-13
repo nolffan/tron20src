@@ -60,9 +60,10 @@ LTVector d3d_GetDims_ParticleSystem(LTObject *pObject)
 {
     LTParticleSystem *pSystem = (LTParticleSystem*)pObject;
 
-	// NOLF2 (retail 0x5198f0): the system radius alone, not the distance to
-	// the system's centre too
-	return pSystem->m_Scale * pSystem->m_SystemRadius;
+	//find the distance to our system radius
+	float fDistToSystemCenter = (pSystem->m_Pos - pSystem->m_SystemCenter).Mag();
+
+	return pSystem->m_Scale * (pSystem->m_SystemRadius + fDistToSystemCenter);
 }
 
 // NOLF2 has no d3d_GetDims_PolyGrid: polygrids use the generic dims
