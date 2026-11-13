@@ -18,6 +18,10 @@
 #include "BodyFX.h"
 #include "PickupItemFX.h"
 #include "PlayerMgr.h"
+#include "HUDMgr.h"
+// RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
+// 0x100afbb0, 0x100afbd0)
+#include "ScreenSubroutines.h"
 
 // PORT: build 51's TargetMgr.h had this, which Tron's code uses; NOLF2's
 // TargetMgr reads it from the client butes instead (ActivationDistance)
@@ -33,6 +37,18 @@ const float kActivationDist = 100.0f;
 
 CTronTargetMgr::CTronTargetMgr() : CTargetMgr()
 {
+	// PORT: retail's (0x100ae410) sets other members; until the target
+	// properties set the permission (+0x874), none is required
+	m_bPermissionRequired = false;
+	m_nPermissionRequired = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		m_anTronUnknown878[i] = 0;
+	}
+	m_anTronUnknown888[0] = 0;
+	m_anTronUnknown888[1] = 0;
+	m_anTronUnknown888[2] = 0;
+	m_bTronUnknown895 = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -363,3 +379,32 @@ let the crosshair know when a a transfer starts
 	IDS_TRANSFER_ENERGY_SUCCESS		"Energy transfer successful."
 
 */
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronTargetMgr::ClearTargetProperties
+//
+//	PURPOSE:	RETAIL: retail 0x100afa90 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronTargetMgr::ClearTargetProperties()
+{
+	if (m_bTronUnknown895)
+	{
+		m_anTronUnknown878[0] = 0;
+		m_anTronUnknown878[1] = 0;
+		m_anTronUnknown878[2] = 0;
+		m_anTronUnknown878[3] = 0;
+		m_anTronUnknown878[4] = 0;
+		m_anTronUnknown878[5] = 0;
+		m_anTronUnknown878[6] = 0;
+		m_anTronUnknown878[7] = 0;
+		m_anTronUnknown888[0] = 0;
+		m_anTronUnknown888[1] = 0;
+		m_anTronUnknown888[2] = 0;
+		m_bTronUnknown895 = false;
+
+		g_pHUDMgr->QueueUpdate(kHUDScores);	// RETAIL: 0x100000
+	}
+}

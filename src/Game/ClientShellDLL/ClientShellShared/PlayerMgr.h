@@ -192,7 +192,9 @@ public:
     void        HandleWeaponDisable(LTBOOL bDisabled);
 
 	// RETAIL: both virtual in Tron (slots 0x44, 0x48)
-	virtual void ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
+	// RETAIL: Tron's returns whether it changed (CTronPlayerMgr's, retail
+	// 0x100a7b00, returns false)
+	virtual bool ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
 	virtual void ToggleHolster(bool bPlayDeselect);
 	void		LastWeapon();
 
@@ -200,7 +202,7 @@ public:
 
 	// RETAIL: Tron's slots 0x50..0xa8 (retail CPlayerMgr's vtable 0x101eb278:
 	// most are empty or constant here, and CTronPlayerMgr's own). Not yet
-	// named; the arguments are retail's counts
+	// named; the arguments are retail's (CTronPlayerMgr's show their types)
 	virtual void	TronUnknownVirtual50() {}
 	virtual void	TronUnknownVirtual54() {}
 	virtual void	TronUnknownVirtual58();
@@ -209,21 +211,21 @@ public:
 	virtual bool	TronUnknownVirtual64() { return true; }
 	virtual void	TronUnknownVirtual68(int nArg) {}
 	virtual void	TronUnknownVirtual6C(int nArg) {}
-	virtual bool	TronUnknownVirtual70(int nArg1, int nArg2, int nArg3) { return false; }
-	virtual bool	TronUnknownVirtual74(int nArg1, int nArg2, int nArg3) { return false; }
-	virtual bool	TronUnknownVirtual78(int nArg1, int nArg2) { return false; }
-	virtual bool	TronUnknownVirtual7C(int nArg1, int nArg2, int nArg3, int nArg4) { return false; }
+	virtual bool	TronUnknownVirtual70(HOBJECT hObj, char* pszModel, char* pszSkin) { return false; }
+	virtual bool	TronUnknownVirtual74(HOBJECT hObj, char* pszBuf, int nBufLen) { return false; }
+	virtual bool	TronUnknownVirtual78(HOBJECT hObj, char* pszBuf) { return false; }
+	virtual bool	TronUnknownVirtual7C(HOBJECT hObj, char* psz1, char* psz2, char* psz3) { return false; }
 	virtual bool	TronUnknownVirtual80() { return m_bTronUnknown1E4; }
 	virtual void	TronUnknownVirtual84(bool b) { m_bTronUnknown1E4 = b; }
-	virtual bool	TronUnknownVirtual88() = 0;
+	virtual uint8	TronUnknownVirtual88() = 0;
 	virtual void	TronUnknownVirtual8C() = 0;
-	virtual void	TronUnknownVirtual90() = 0;
-	virtual void	TronUnknownVirtual94() = 0;
-	virtual void	TronUnknownVirtual98() = 0;
-	virtual bool	TronUnknownVirtual9C(int nArg1, int nArg2) { return true; }
+	virtual void	TronUnknownVirtual90(const char* pszColor, bool bSend, bool bSave) = 0;
+	virtual bool	TronUnknownVirtual94() = 0;
+	virtual void	TronUnknownVirtual98(int nArg) = 0;
+	virtual bool	TronUnknownVirtual9C(void* pData, int nArg) { return true; }
 	virtual int		TronUnknownVirtualA0() { return 0; }
 	virtual int		TronUnknownVirtualA4(int nArg) { return nArg; }
-	virtual void	TronUnknownVirtualA8(int nArg) {}
+	virtual void	TronUnknownVirtualA8(bool bHide) {}
 
 	void		Teleport(const LTVector & vPos);
 
@@ -434,7 +436,7 @@ protected:
 	// RETAIL: Tron's two before the model glow (+0xb8, a bool the ctor
 	// clears; +0xbc). Not yet named
 	bool				m_bTronUnknownB8;
-	LTFLOAT				m_fTronUnknownBC;
+	HOBJECT				m_hTronUnknownBC;	// RETAIL: an object (the watched light cycle, CTronPlayerMgr 0x100a7eb0, 0x100a8000)
 
 	// Glowing models...
 

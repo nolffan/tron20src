@@ -291,7 +291,7 @@ void CHUDCrosshair::Update()
 	{
 		int iEnergy = g_pTronPlayerMgr->GetTronTargetMgr()->GetEnergyRequired();
 		m_pInfoStr->SetText(FormatTempString(IDS_REQUIRES_ENERGY,iEnergy));
-		int iPlayerEnergy = g_pTronPlayerStats->GetEnergy();
+		int iPlayerEnergy = (int)g_pTronPlayerStats->GetEnergy();
 		m_pInfoStr->SetColor((iPlayerEnergy > iEnergy) ? m_InfoColor : m_InfoBadColor);
 	}
 	else

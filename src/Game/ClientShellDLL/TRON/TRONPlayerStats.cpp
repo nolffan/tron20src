@@ -53,8 +53,8 @@ CTronPlayerStats::CTronPlayerStats()
 	m_nArmor			= 0;
 	m_nMaxHealth		= 0;
 	m_nMaxArmor			= 0;
-	m_nEnergy			= 100;
-	m_nMaxEnergy		= 100;
+	m_fEnergy			= 100.0f;
+	m_fMaxEnergy		= 100.0f;
 	m_nCurrentWeapon	= WMGR_INVALID_ID;
 	m_nCurrentAmmo		= WMGR_INVALID_ID;
 
@@ -229,8 +229,8 @@ void CTronPlayerStats::Term()
 	m_nArmor		= 0;
 	m_nMaxHealth	= 0;
 	m_nMaxArmor		= 0;
-	m_nEnergy		= 0;
-	m_nMaxEnergy	= 0;
+	m_fEnergy		= 0.0f;
+	m_fMaxEnergy	= 0.0f;
 
 	if (m_pnAmmo)
 	{
@@ -340,8 +340,8 @@ void CTronPlayerStats::Clear()
 	UpdateHealth(0);
 	m_nDamage = 0;
 	UpdateArmor(0);
-	UpdateMaxEnergy(100);
-	UpdateEnergy(100);
+	UpdateMaxEnergy(100.0f);
+	UpdateEnergy(100.0f);
 
 	// Get rid of any weapons, ammo, gear or mods..
 	
@@ -468,20 +468,29 @@ void CTronPlayerStats::UpdateMaxHealth(uint32 nHealth)
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateEnergy(uint32 nEnergy)
+void CTronPlayerStats::UpdateEnergy(float fEnergy)
 {
-	if (nEnergy > m_nMaxEnergy)
-		nEnergy = m_nMaxEnergy;
+	if (fEnergy > m_fMaxEnergy)
+		fEnergy = m_fMaxEnergy;
+	else if (fEnergy < 0.0f)
+		fEnergy = 0.0f;
 
 	// update the member variable
-	m_nEnergy = nEnergy;
+	m_fEnergy = fEnergy;
     g_pHUDMgr->QueueUpdate(kHUDEnergy);
 }
 
-uint32 CTronPlayerStats::GetEnergy()
+float CTronPlayerStats::GetEnergy()
 {
-	return m_nEnergy;
+	// PORT: retail leaves out what the subroutines hold (Tron's subroutine
+	// manager's +0x11a4, not yet in ours)
+	return m_fEnergy;
 }	// Energy levels
+
+float CTronPlayerStats::GetFullEnergy()
+{
+	return m_fEnergy;
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -491,15 +500,33 @@ uint32 CTronPlayerStats::GetEnergy()
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateMaxEnergy(uint32 nEnergy)
+void CTronPlayerStats::UpdateMaxEnergy(float fEnergy)
 {
 	// update the member variable
-	m_nMaxEnergy = nEnergy;
+	m_fMaxEnergy = fEnergy;
 
-	if (m_nEnergy > m_nMaxEnergy)
-		m_nEnergy = m_nMaxEnergy;
+	if (m_fEnergy > fEnergy)
+		m_fEnergy = fEnergy;
 
     g_pHUDMgr->QueueUpdate(kHUDEnergy);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerStats::UseEnergy()
+//
+//	PURPOSE:	RETAIL: retail 0x100a9d00 (the name is ours): energy spent
+//				is the server's to take (Tron's message 162)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerStats::UseEnergy(float fEnergy)
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(162);	// RETAIL: Tron's MsgID, not yet in our MsgIDs.h
+	cMsg.Writeuint8(1);
+	cMsg.Writefloat(fEnergy);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1034,8 +1061,8 @@ void CTronPlayerStats::Save(ILTMessage_Write *pMsg)
     pMsg->Writeuint32(m_nArmor);
     pMsg->Writeuint32(m_nMaxHealth);
     pMsg->Writeuint32(m_nMaxArmor);
-	pMsg->Writeuint32(m_nEnergy);
-	pMsg->Writeuint32(m_nMaxEnergy);
+	pMsg->Writefloat(m_fEnergy);
+	pMsg->Writefloat(m_fMaxEnergy);
 
 	int nNumAmmoTypes = g_pWeaponMgr->GetNumAmmoIds();
     uint8 i;
@@ -1102,8 +1129,8 @@ void CTronPlayerStats::Load(ILTMessage_Read *pMsg)
     m_nArmor            = pMsg->Readuint32();
     m_nMaxHealth        = pMsg->Readuint32();
     m_nMaxArmor         = pMsg->Readuint32();
-	m_nEnergy			= pMsg->Readuint32();
-	m_nMaxEnergy		= pMsg->Readuint32();
+	m_fEnergy			= pMsg->Readfloat();
+	m_fMaxEnergy		= pMsg->Readfloat();
 
 
     uint8 i;
@@ -1643,14 +1670,32 @@ void CTronPlayerStats::GetPermissions(uint8 &iPermissions, uint8 &iRequiredPermi
 // -------------------------------------------------------------------
 void CTronPlayerStats::SetJetVersion(uint16 iVersion)
 {
-	int iPreviousVersion = m_nVersion;
-	if (iVersion != 100)
+	// RETAIL: Tron's (retail 0x100abf90): a major version up gives rating
+	// goo for each, a minor one says how many points came
+	int iMajor = iVersion / 100;
+	int iPreviousMajor = m_nVersion / 100;
+
+	if (iMajor > iPreviousMajor)
 	{
-		if ((iVersion / 100) > (iPreviousVersion / 100))
+		int nUpgrades = iMajor - iPreviousMajor;
+		while (nUpgrades--)
 		{
-			// FIXME hook up the upgrade indicator
+			// PORT: retail adds Tron's rating manager's goo per version
+			// (+0x1130) to its goo (+0x112c); ours keeps neither yet
 		}
+
+		// PORT: retail shows string 3821 on a Tron HUD item (0x1026edf0,
+		// its slot 0x54) and the "ratings" tip (+0x1290's 0x1003f9d0);
+		// neither is in our tree yet
+		LoadTempString(3821);
 	}
+	else if (iVersion > m_nVersion)
+	{
+		char szMsg[1024];
+		FormatString(3822, szMsg, sizeof(szMsg), iVersion - m_nVersion);
+		g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
+	}
+
 	m_nVersion = iVersion;
 	g_pHUDMgr->QueueUpdate(kHUDVersion);
 }
@@ -1673,19 +1718,16 @@ void CTronPlayerStats::IncrementJetVersion(uint8 iVersionPoints)
 	}
 }
 
-void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus, float fScalar)
+void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 {
 	// Clipping
 	if (fArmor < 0.0f) fArmor = 0.0f;
-	if (fArmor > 1.0f) fArmor = 1.0f;
+	else if (fArmor > 1.0f) fArmor = 1.0f;
 	if (fVirus < 0.0f) fVirus = 0.0f;
-	if (fVirus > 1.0f) fVirus = 1.0f;
-	if (fScalar < 0.0f) fScalar = 0.0f;
-	if (fScalar > 1.0f) fScalar = 1.0f;
+	else if (fVirus > 1.0f) fVirus = 1.0f;
 
 	m_fSubroutineArmor = fArmor;
 	m_fVirusArmor = fVirus;
-	m_fArmorScalar = fScalar;
 
 	g_pHUDMgr->QueueUpdate(kHUDArmor);
 }
@@ -1707,22 +1749,29 @@ void CTronPlayerStats::Compile()
 
 	cMsg.Writeuint8(MID_COMPILE);
 
+	// RETAIL: Tron's (retail 0x100ac1a0): no armor scalar; each rating
+	// with its second level (Tron's CRatingMgr's +0x113e), then a float of
+	// the subroutine manager's
+
 	// the percentage of armor
 	cMsg.Writefloat(m_fSubroutineArmor);
 
 	// percentage protection from infection
 	cMsg.Writefloat(m_fVirusArmor);
 
-	// A float (0-1) on how much to scale the damage to energy points
-	cMsg.Writefloat(m_fArmorScalar);
-
 	// Include a byte for each performance rating
 	for (int i = 0; i < NUM_RATINGS; i++)
 	{
-		uint8 iRating;
-		iRating = (uint8)GetRating((PerformanceRating)i);
+		uint8 iRating = m_RatingMgr.GetRating((PerformanceRating)i);
+		// PORT: retail reads Tron's second rating array directly
+		uint8 iBase = m_RatingMgr.GetBaseRating((PerformanceRating)i);
 		cMsg.Writeuint8(iRating);
+		cMsg.Writeuint8(iBase);
 	}
+
+	// PORT: retail writes Tron's subroutine manager's +0x11a4 (the energy
+	// its subroutines hold), not yet in ours
+	cMsg.Writefloat(0.0f);
 
 	// End of line.
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);  
@@ -1816,4 +1865,44 @@ void CTronPlayerStats::ClearMissionInfo()
 	m_nDamage = 0;
 	m_Keys.Clear();
 	m_IntelList.Clear();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerStats::CanChangeToWeapon()
+//
+//	PURPOSE:	RETAIL: retail 0x100ac370 (the name is ours): no weapon
+//				always; else the weapon must be usable (retail 0x100ac2f0)
+//				and its energy cost met (a Tron client weapon's slots 0x16c,
+//				0x168). PORT: those are not yet in our tree; having the
+//				weapon stands in
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerStats::IsWeaponCompiled(uint8 nWeaponId)
+{
+	// Anything goes while the flag (+0x2404) is up in single player
+	if (!IsMultiplayerGame() && m_bTronUnknown2404)
+		return true;
+
+	// PORT: retail asks the subroutine manager whether the player has the
+	// weapon's subroutine (Tron's WEAPON +0xa4, its 0x100952e0) and, if
+	// it names one, its primitive (+0xa8, 0x10095340); neither is in our
+	// tree yet, so having the weapon stands in
+	return !!HaveWeapon(nWeaponId);
+}
+
+bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
+{
+	const WEAPON* pNoWeapon = g_pWeaponMgr->GetWeapon("NoWeapon");
+	if (pNoWeapon && nWeaponId == pNoWeapon->nId)
+		return true;
+
+	if (!IsWeaponCompiled(nWeaponId))
+		return false;
+
+	// PORT: retail then asks the Tron client weapon (slots 0x16c, 0x168)
+	// whether the player's energy (GetEnergy) covers it; not yet in our
+	// client weapons
+	return true;
 }

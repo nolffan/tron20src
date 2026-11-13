@@ -142,9 +142,9 @@ void CHUDHealthEnergy::Update()
 	}
 
 	m_iHealth = g_pPlayerStats->GetHealth();
-	m_iEnergy = g_pTronPlayerStats->GetEnergy();
+	m_iEnergy = (uint32)g_pTronPlayerStats->GetEnergy();
 	m_iHealthMax = g_pPlayerStats->GetMaxHealth();
- 	m_iEnergyMax = g_pTronPlayerStats->GetMaxEnergy();
+ 	m_iEnergyMax = (uint32)g_pTronPlayerStats->GetMaxEnergy();
 
 	m_bHealthBlink = ((oldHealth != m_iHealth) || (oldHealthMax != m_iHealthMax));
 	bool bEnergyBlink = ((oldEnergy != m_iEnergy) || (oldEnergyMax != m_iEnergyMax));
