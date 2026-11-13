@@ -479,6 +479,18 @@ loader does for the rest of the child's setup.
 
 Not fixed yet.
 
+### The dedicated server hosts a config it could not read
+
+TRONSrv.exe 0x40b185 (CServerDlg::DoHost, src/Game/ServerApp/ServerDlg.cpp).
+Once the config file has parsed, DoHost calls
+`ServerGameOptions::LoadFromBute` and goes on whatever it returns; NOLF2's
+returned `IDS_NETERR_CORRUPTCONFIG` ("The config file could not be read
+properly") when it failed. A config with a bad or missing setting is hosted
+with whatever the options held, and the error that exists for it is never
+shown.
+
+Not fixed yet (the modern build's server work, `MODERN.md`).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 (none checked yet)

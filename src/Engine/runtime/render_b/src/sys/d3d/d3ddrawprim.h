@@ -106,8 +106,20 @@ class CD3DDrawPrim : public CGenDrawPrim
 		// set the cull mode
 		virtual LTRESULT SetCullMode(ELTDPCullMode eCullMode);
 
+		// set the fog enable status (Build 69's)
+		virtual LTRESULT SetFogEnable(bool bFogEnable);
+
         //Specifiy whether or not to be in really close space for rendering
         virtual LTRESULT SetReallyClose(bool bReallyClose);
+
+		// texture coordinates in texels of a texture (Build 69's)
+		virtual void SetUVWH (LT_POLYGT4 *pPrim, HTEXTURE pTex,
+							 float u, float v,
+							 float w, float h);
+
+		// save and restore the device's viewport (Build 69's)
+		virtual void SaveViewport();
+		virtual void RestoreViewport();
 
 		// Draw primitives (triangles)
 		virtual LTRESULT DrawPrim (LT_POLYGT3 *pPrim, 
@@ -121,6 +133,10 @@ class CD3DDrawPrim : public CGenDrawPrim
 	
 		// Draw primitives (quadrilaterals)
 		virtual LTRESULT DrawPrim (LT_POLYGT4 *pPrim, 
+	                           	const uint32 nCount = 1);
+		// Build 69's "special version added by adam s. for optimized wide
+		// font rendering"
+		virtual LTRESULT DrawPrim (LT_POLYGT4 **ppPrim, 
 	                           	const uint32 nCount = 1);
 
 		virtual LTRESULT DrawPrim (LT_POLYFT4 *pPrim, 
@@ -186,6 +202,7 @@ class CD3DDrawPrim : public CGenDrawPrim
 		void		SetTestMode(LPDIRECT3DDEVICE8 pDevice);
 		void		SetFillMode(LPDIRECT3DDEVICE8 pDevice);
 		void		SetCullMode(LPDIRECT3DDEVICE8 pDevice);
+		void		SetFogEnable(LPDIRECT3DDEVICE8 pDevice);
 		void		SetTexture(LPDIRECT3DDEVICE8 pDevice);
 		void		SetCamera(LPDIRECT3DDEVICE8 pDevice);
 		void		SetReallyClose(LPDIRECT3DDEVICE8 pDevice);
@@ -212,6 +229,7 @@ class CD3DDrawPrim : public CGenDrawPrim
 		D3DMATRIX	m_PrevTransView;
 		D3DMATRIX	m_PrevTransProj;
 		D3DVIEWPORT8 m_PrevViewport;
+		D3DVIEWPORT8 m_SavedViewport;
 		bool		m_bPrevReallyClose;
 		bool		m_bResetViewport;
 

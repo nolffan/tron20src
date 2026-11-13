@@ -108,7 +108,11 @@ TARGETS = [
          # in 0x581e80..0x58b000 against 14 below it). Provisional: the
          # boundary is that one hit.
          app=[(0x00401000, 0x00581e80)],
-         encrypted=[(0x00572000, 0x00577000)]),
+         encrypted=[(0x00572000, 0x00577000)],
+         # every redirected call site's import, from the unprotected
+         # developer build of 2003-08-05 (tools/demoimports.py, profile
+         # tron2): scored as if put back on its IAT slot
+         iat_calls="progress/engine/Lithtech-iat-calls.csv"),
          # D3DX, statically linked from a DirectX 9 SDK's d3dx9.lib (the
          # Rich header's 110 C++ and 3 C objects of cl 13.00.9178, 6 of
          # masm 6.14.8444, and 9 C objects of cl 13.10 build 2067; the
@@ -136,15 +140,18 @@ TARGETS = [
     dict(label="Tron.exe", what="the launcher", kind="image",
          shipped=REFERENCE + "/Tron.exe", stem="Tron",
          built="src/Game/built/Final/Launcher/Tron.exe", optional=True,
-         # provisional: MFC42.DLL's import thunks from 0x40cb30, then
+         # our map: MFC42.DLL's import thunks from 0x40cb30, then
          # msvcrt.lib from __onexit (0x40cf2e) to crtexew.obj's
          # WinMainCRTStartup and mfcs42.lib's AfxInitialize (0x40d128).
-         # Not linked /incremental: .text opens with code, not a jump table
+         # Retail is at the same addresses. Not linked /incremental: .text
+         # opens with code (AniButton.obj's), not a jump table
          app=[(0x00401000, 0x0040cb30)]),
     dict(label="TRONSrv.exe", what="the dedicated server", kind="image",
          shipped=REFERENCE + "/TRONSrv.exe", stem="TRONSrv",
          built="src/Game/built/Final/ServerApp/TRONSrv.exe", optional=True,
-         # provisional: a run of 185 import thunks from 0x416240, then
+         # provisional (ours are 0x1050 bytes later, at 0x417290, until
+         # the shared ScmdConsole and ProfileUtils are Tron's): a run of
+         # 185 import thunks from 0x416240, then
          # msvcrt.lib from __onexit (0x416696) and mfcs42.lib's
          # AfxInitialize (0x416928)
          app=[(0x00401000, 0x00416240)]),

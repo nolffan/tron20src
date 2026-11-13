@@ -373,6 +373,8 @@ class CLTClient : public ILTClient {
 	virtual float GetVarValueFloat(HCONSOLEVAR hVar);
 	virtual const char* GetVarValueString(HCONSOLEVAR hVar);
 
+	virtual LTFLOAT TronUnknownVirtual44();
+	virtual LTFLOAT TronUnknownVirtual45();
 	virtual LTFLOAT GetTime();
 	virtual LTFLOAT GetFrameTime();
 	virtual LTRESULT GetSourceWorldOffset(LTVector& vOffset);
@@ -904,7 +906,7 @@ LTRESULT CLTClient::GetCanvasRadius(HOBJECT hCanvas, float &radius)
 
 LTRESULT CLTClient::SetCanvasRadius(HOBJECT hCanvas, float radius)
 {
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md M-E11: the check names its own function
 	FN_NAME(CLTClient::SetCanvasRadius);
 #else
@@ -929,7 +931,7 @@ LTRESULT CLTClient::GetMaxRadiusInPoly(const HPOLY hPoly, const LTVector& vPos, 
 	{
 		// Give them a decent default
 		fMaxRadius = 0.0f;
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 		// MODERN.md M-E11: the check names its own function
 		RETURN_ERROR(5, CLTClient::GetMaxRadiusInPoly, LT_NOTFOUND);
 #else
@@ -1075,7 +1077,7 @@ void CLTClient::CPrint(const char *pMsg, ...)
 
 	static const uint32 knBufferSize = 512;
 	char str[knBufferSize];
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md M-E10: a message that filled the buffer had its newline
 	// and terminator written one past the end; an empty one read the
 	// byte before it. Keep room for the newline.
@@ -1086,7 +1088,7 @@ void CLTClient::CPrint(const char *pMsg, ...)
 	va_end(marker);
 
 	uint32 len = strlen(str);
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	if (len == 0 || str[len-1] != '\n')
 #else
 	if (str[len-1] != '\n')
@@ -1335,6 +1337,35 @@ const char *CLTClient::GetVarValueString(HCONSOLEVAR hVar)
 	else
 	{
 		return LTNULL;
+	}
+}
+
+// RETAIL: 0x408d10 and 0x408d30 (CLTClient vtable slots 44 and 45): the
+// game time and game frame time of the current shell, 0 without one --
+// ci_GetGameTime and ci_GetGameFrameTime's bodies, as virtuals of
+// ILTCSBase (the SDK's names are Tron's unknowns: the function-pointer
+// members already have those names)
+LTFLOAT CLTClient::TronUnknownVirtual44()
+{
+	if (g_pClientMgr->m_pCurShell)
+	{
+		return g_pClientMgr->m_pCurShell->m_GameTime;
+	}
+	else
+	{
+		return 0.0f;
+	}
+}
+
+LTFLOAT CLTClient::TronUnknownVirtual45()
+{
+	if (g_pClientMgr->m_pCurShell)
+	{
+		return g_pClientMgr->m_pCurShell->m_GameFrameTime;
+	}
+	else
+	{
+		return 0.0f;
 	}
 }
 
@@ -1938,7 +1969,7 @@ LTRESULT ci_GetSoundTimer(HLTSOUND hSound, LTFLOAT *fTimer)
 		return LT_OK;
 
 	if (!hSound || !fTimer)
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 		// MODERN.md M-E11: the check names its own function
 		RETURN_ERROR(1, GetSoundTimer, LT_INVALIDPARAMS);
 #else
@@ -2737,7 +2768,7 @@ LTRESULT ci_SortParticles(HLOCALOBJ hSystem, const LTVector& vDir, uint32 nNumIt
 	LTParticleSystem *pSystem = (LTParticleSystem*)hSystem;
 	if (!pSystem || pSystem->m_ObjectType != OT_PARTICLESYSTEM)
 	{
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 		// MODERN.md M-E11: the check names its own function
 		RETURN_ERROR(1, CLTClient::SortParticles, LT_INVALIDPARAMS);
 #else
@@ -2761,9 +2792,9 @@ bool ci_SetupVolumeEffect(HLOCALOBJ hObj, VolumeEffectInfo& info)
 }
 
 
-bool ci_GetParticleBlockersInAABB(const LTVector& pos, const LTVector& dims, uint32* pIndices, uint32& nNumIndices)
+bool ci_GetParticleBlockersInAABB(const LTVector& pos, const LTVector& dims, std::vector<uint32>& indices)
 {
-	return world_particle_blocker_data->GetBlockersInAABB( pos, dims, pIndices, nNumIndices );
+	return world_particle_blocker_data->GetBlockersInAABB( pos, dims, indices );
 }
 
 
@@ -2907,7 +2938,7 @@ void ci_SetLightColor(HLOCALOBJ hObject, float r, float g, float b)
 float ci_GetLightRadius(HLOCALOBJ hObj)
 {
 	DynamicLight *pObject = (DynamicLight*)hObj;
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md M-E8: every other accessor checks the handle
 	if (!pObject)
 		return 1.0f;
@@ -2925,7 +2956,7 @@ float ci_GetLightRadius(HLOCALOBJ hObj)
 void ci_SetLightRadius(HLOCALOBJ hObj, float radius)
 {
 	DynamicLight *pObject = (DynamicLight*)hObj;
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md M-E8: every other accessor checks the handle
 	if (!pObject)
 		return;
@@ -3025,7 +3056,7 @@ LTRESULT ci_GetServiceList(NetService* &pListHead)
 
 LTRESULT ci_FreeServiceList(NetService *pListHead)
 {
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md M-E11: the check names its own function
 	CHECK_PARAMS(pListHead, CLTClient::FreeServiceList);
 #else
@@ -3323,7 +3354,7 @@ void CLTClient::InitFunctionPointers()
 	IsLobbyLaunched = ci_IsLobbyLaunched;
 	GetTcpIpAddress = ci_GetTcpIpAddress;
 
-#ifdef CJACK_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md EN-3: the two are set, so ShowVersionInfo works
 	GetVersionInfoExt = in_GetVersionInfoExt;
 	GetPerformanceInfo = in_GetPerformanceInfo;

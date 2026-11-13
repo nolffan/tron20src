@@ -2,126 +2,50 @@
 //
 //   MODULE    : CUIFONT_IMPL.H
 //
-//   PURPOSE   : defines the CUIFont_Impl font Class
+//   PURPOSE   : defines the CUIFont_Impl common font base class
 //
-//   CREATED   : 7/00 
+//   CREATED   : 1/01 
 //
-//   COPYRIGHT : (C) 2000 LithTech Inc
+//   COPYRIGHT : (C) 2001 LithTech Inc
 //
 //-------------------------------------------------------------------
 
-
 #ifndef __CUIFONT_IMPL_H__
 #define __CUIFONT_IMPL_H__
-
 
 #ifndef __CUIFONT_H__
 #include "cuifont.h"
 #endif
 
+class CUIPolyString;
+
+// TRON: Tron 2.0's font base, under NOLF2's name. RETAIL: Lithtech.exe
+// constructor 0x565d40, destructor 0x565d80, vtable 0x5918d8 (every slot
+// _purecall but the destructor and slot 12): far smaller than NOLF2's
+// CUIFont_Impl -- the font data are the wide bitmap font's
+// (cuiwidebitmapfont.h). The only font left is CUIWideBitmapFont; NOLF2's
+// bitmap and vector fonts are gone.
 class CUIFont_Impl : public CUIFont
 {
 	public:
-			
+
 		CUIFont_Impl();
 		virtual ~CUIFont_Impl();
 
-		// all CUI calsses support this
-		virtual const char* GetClassName() = 0;
-
-	public:
-		
-
-		bool			IsValid()				{ return m_Valid; }
-		bool			IsProportional()		{ return m_Proportional; }
-	
-		HTEXTURE		GetTexture()			{ return m_Texture; }
-		uint32			GetAttributes()			{ return m_Flags; }
-
-		int8			GetDefCharScreenWidth()	{ return m_DefaultCharScreenWidth; }
-		int8			GetDefCharScreenHeight(){ return m_DefaultCharScreenHeight; }
-
-		int8			GetCharTexWidth()		{ return m_CharTexWidth; }
-		int8			GetCharTexHeight()		{ return m_CharTexHeight; }
-
-		int8			GetDefSpacingH()		{ return m_DefaultHorizontalSpacing; }
-		int8			GetDefSpacingV()		{ return m_DefaultVerticalSpacing; }
-
-		int8			GetDefSlant()			{ return m_DefaultSlant; }
-		int8			GetDefBold()			{ return m_DefaultBold; }
-
-		uint16*			GetFontTable()			{ return m_pFontTable; }
-		uint8*			GetFontMap()			{ return m_pFontMap; }
-		uint32*			GetDefColors()			{ return m_DefaultColors; }
-			
-		CUI_RESULTTYPE	SetTexture(HTEXTURE hTex, 
-							   uint8 cwidth  = 0,
-							   uint8 cheight = 0);
-		
-		CUI_RESULTTYPE	SetTexture(HTEXTURE hTex, 
-							   uint16* pTable  = NULL,
-							   uint8  cheight = 0);
-							   
-							   
-		void		SetMap(uint8* fMap);
-		void		SetAttributes(uint32 attrs);
-		void		UnsetAttributes(uint32 attrs);
-		
-		void		SetDefCharWidth(int8 width);
-		void		SetDefCharHeight(int8 height);
-
-		void		SetDefSpacingH(int8 spacing);
-		void		SetDefSpacingV(int8 vspacing);
-		
-		
-		void		SetDefSlant(int8 slant);
-		void		SetDefBold(int8 bold);
-
-		void		SetDefColor(uint32 argb);
-
-		void		SetDefColors(uint32 argb0,
-							  uint32 argb1,
-							  uint32 argb2,
-							  uint32 argb3);
-
-
-		void		DrawString(float x, float y, char* text);
-
-		void 		Apply(CUIPolyString* pPolyStr,
-						  int16 index = 0,
-						  int16 num   = 0);
-	
-		
-	protected:
-		void		ReleaseDrawString();
+		// slot 12 (RETAIL: 0x566120): whether the font file said the font
+		// is valid
+		virtual bool	TronUnknownVirtual12()	{ return m_Valid; }
 
 	protected:
-	
-		int32		m_PointSize;
-		bool		m_Valid;
-		bool		m_Proportional;		
-		bool		m_bAllocatedTable;
-		bool		m_bAllocatedMap;	
-		uint32		m_Flags;	
-		HTEXTURE	m_Texture;
-		uint16*		m_pFontTable;
-		uint8*		m_pFontMap;
 
-		uint8		m_CharTexWidth;
-		uint8		m_CharTexHeight;
-		uint8		m_DefaultCharScreenWidth;
-		uint8		m_DefaultCharScreenHeight;
-				
-		uint8		m_DefaultHorizontalSpacing;
-		uint8		m_DefaultVerticalSpacing;
-
-		int8		m_DefaultSlant;
-		int8		m_DefaultBold;
-
-		uint32		m_DefaultColors[4];
-
+		// the polystring NOLF2's fonts drew strings with: deleted with the
+		// last font (Tron's fonts no longer make one; the destructor keeps
+		// the clean-up)
 		static CUIPolyString*	sm_pDrawStr;
-};
 
+		uint32		m_xTronUnknown4;	// RETAIL: +0x4, zeroed by the constructor
+		bool		m_bLoaded;			// RETAIL: +0x8, set by Load, cleared by Term
+		bool		m_Valid;			// RETAIL: +0x9, read from the font file
+};
 
 #endif //__CUIFONT_IMPL_H__

@@ -146,7 +146,7 @@ public:
 	
     virtual ELoadWorldStatus Load( ILTStream *pStream );
 
-	virtual bool GetBlockersInAABB( const LTVector& pos, const LTVector& dims, uint32* pIndices, uint32& nNumIndices );
+	virtual bool GetBlockersInAABB( const LTVector& pos, const LTVector& dims, std::vector<uint32>& indices );
 	virtual bool GetBlockerEdgesXZ( uint32 index, LTPlane& blockerPlane, uint32& numEdges, LTPlane*& edgePlanes );
 
 private:
@@ -208,10 +208,11 @@ ELoadWorldStatus CWorldParticleBlockerData::Load( ILTStream *pStream )
 }
 
 
-bool CWorldParticleBlockerData::GetBlockersInAABB( const LTVector& pos, const LTVector& dims, uint32* pIndices, uint32& nNumIndices )
+// TRON: NOLF2's vector form, as Tron's ILTClient has it (Contract J.A.C.K.
+// later took an array and a count)
+bool CWorldParticleBlockerData::GetBlockersInAABB( const LTVector& pos, const LTVector& dims, std::vector<uint32>& indices )
 {
-	// RETAIL: an array (or NULL, to count) and a count (server.dll 0x10056ae0)
-	nNumIndices = 0;
+	indices.clear();
 
 	LTVector min = pos - dims;
 	LTVector max = pos + dims;
@@ -225,10 +226,8 @@ bool CWorldParticleBlockerData::GetBlockersInAABB( const LTVector& pos, const LT
 			((min.z > m_Blockers[i]->m_MaxBounds.z) || (m_Blockers[i]->m_MinBounds.z > max.z)) )
 				continue;
 
-		// they overlap, so add the blocker to the list
-		if( pIndices )
-			pIndices[nNumIndices] = i;
-		++nNumIndices;
+		// they overlap, so add the blocker to the vector
+		indices.push_back( i );
 	}
 
 	return true;

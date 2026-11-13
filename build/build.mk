@@ -75,11 +75,18 @@ TRON20SRC_RCFLAGS ?=
 WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
-    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL \
+    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL,Launcher,ServerApp \
     src/Engine/runtime/winbuild/Engine.dsw:server
 # The engine (src/Engine/runtime, from cjacksrc's, being brought to
 # Tron 2.0's): add `src/Engine/runtime/winbuild/Engine.dsw:<projects>` above
 # as each of Lithtech and server compiles.
+# Until then a workspace can be built on demand, as
+#   build/compile.sh 'TRON20SRC_WORKSPACES=src/Engine/runtime/winbuild/Engine.dsw:Lithtech' \
+#       'DXSDK9=$(TC)/<a DirectX 9 SDK>' Lithtech
+# (the engine is one workspace: name both projects in one entry,
+# Engine.dsw:Lithtech,server, when both are wanted).
+TRON20SRC_WORKSPACES ?=
+WORKSPACES += $(TRON20SRC_WORKSPACES)
 
 # ---------------------------------------------------------------------------
 # Wine and the toolchains
@@ -113,6 +120,21 @@ ws = $(if $(filter $(ROOT)/src $(ROOT)/src/%,$(1)),s:$(subst /,\,$(patsubst $(RO
 ENV_GAME := WINEPREFIX=$(PFX) WINEPATH='$(call ws,$(VC6))\BIN;$(call ws,$(VC9782))\Common\MSDev98\Bin' \
     INCLUDE='$(call ws,$(DXSDK))\include;$(call ws,$(VC6))\INCLUDE;$(call ws,$(VC6))\MFC\INCLUDE;$(call ws,$(ROOT)/src/tron20src)' \
     LIB='$(call ws,$(DXSDK))\lib;$(call ws,$(VC6))\LIB;$(call ws,$(VC6))\MFC\LIB'
+
+# The engine (Lithtech.exe and its renderer, UI and sound loader) is
+# Direct3D 9 (retail imports d3d9.dll and links D3DX9 statically): a
+# DirectX 9 SDK comes first on its paths. Which one is still open (docs/
+# PLAN.md, package 5: the 2003 SDK whose d3dx9.lib has retail's 110 C++
+# and 3 C objects of cl 13.00.9178 and 9 C of 13.10.2067); DXSDK9 names it,
+# overridable for a stand-in until it is in ext/toolchains/.
+DXSDK9  ?= $(TC)/dxsdk-9.0
+ENV_ENGINE9 := WINEPREFIX=$(PFX) WINEPATH='$(call ws,$(VC6))\BIN;$(call ws,$(VC9782))\Common\MSDev98\Bin' \
+    INCLUDE='$(call ws,$(DXSDK9))\include;$(call ws,$(DXSDK))\include;$(call ws,$(VC6))\INCLUDE;$(call ws,$(VC6))\MFC\INCLUDE;$(call ws,$(ROOT)/src/tron20src)' \
+    LIB='$(call ws,$(DXSDK9))\lib;$(call ws,$(DXSDK))\lib;$(call ws,$(VC6))\LIB;$(call ws,$(VC6))\MFC\LIB'
+ENV_Lithtech     = $(ENV_ENGINE9)
+ENV_D3DRender    = $(ENV_ENGINE9)
+ENV_Lib_UI       = $(ENV_ENGINE9)
+ENV_Lib_ILTSound = $(ENV_ENGINE9)
 
 # The prefix: made the first time, then only checked; every tool run waits
 # for it (an order-only prerequisite, so it causes no rebuild).
@@ -242,8 +264,16 @@ all game: $(WANTED)
 
 # A DLL's import library is written by the DLL's link; a project that
 # links it depends on the DLL (the dedicated server, TRONSrv.exe, links
-# server.dll's)
+# server.dll's). Until the engine's workspace builds server.dll, its import
+# library is made from the retail server.dll's exports
+# (build/server-imports.def) by VC6's lib.exe.
+ifneq ($(filter server,$(PROJECTS)),)
 src/Engine/built/Final/server/server.lib: src/Engine/built/Final/server/server.dll ;
+else
+$(eval $(call tool,src/Engine/built/Final/server/server.lib,build/server-imports.def | wine-drives,\
+    $(ENV_GAME) $(WINE) $(LIBEXE) /nologo /machine:i386 \
+    '/def:$(call ws,$(ROOT)/build/server-imports.def)' '/out:$(call ws,$(ROOT)/src/Engine/built/Final/server/server.lib)'))
+endif
 
 # ---------------------------------------------------------------------------
 # The rules all compiles and tools share

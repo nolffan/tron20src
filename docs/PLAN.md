@@ -248,6 +248,47 @@ Tron's IClientShell order differs from both NOLF2's and build 51's, and is
 to be read from the engine's calls into it, as ILTClient's was.
 Object.lto: 152 classes still differ.
 
+### 5. engine (Lithtech.exe; first steps)
+
+- **Base:** cjacksrc's engine (`src/Engine/runtime`), compiled with VC6
+  8168 and STLport (retail's engine RTTI is `_STL`'s; D3DX9's VC7 `std::`
+  classes sit beside it) and NOLF2's VC6 flags: Lithtech `/O2 /Ob2`, no
+  `/GX`; D3DRender, Lib_UI, Lib_ILTSound `/GX /O2 /Ob2` (retail's EH
+  frames all lie above 0x4c0000; Lib_UI without `/GX` loses the wide
+  font's destructor frame and 14 functions).
+- **Rich header:** 292 C++ objects of 8168 (ours); D3DX9's are the 110
+  C++ and 3 C objects of cl 13.00.9178, 6 of masm 6.14.8444 and 9 C
+  objects of cl 13.10.2067 (the developer build of 2003-08-05 has the
+  same D3DX rows, with its own code at 8966): a DirectX 9 SDK of early
+  2003 (9.0 or 9.0a, before 9.0b's August release: to be told by matching
+  its `d3dx9.lib` against retail). `ext/toolchains/` has none:
+  `build/build.mk` takes it as `DXSDK9` (default `dxsdk-9.0`) for the
+  engine's projects only. Its `d3d9.h` must give D3D_SDK_VERSION as
+  retail passes it.
+- **SecuROM:** `ext/tools/demoimports.py` profile `tron2`, keyed by the
+  unprotected developer build (`ext/rez/installed/devtools/tron2-devbuild`):
+  1,463 redirected calls (1,372 through 24 `.khpb` slots, 91 through
+  three `.ifkui` dispatchers), 1,336 paired exactly, 89 by context, 38
+  weakly (`progress/engine/Lithtech-iat-calls.csv`, the target's
+  `iat_calls`). The original import directory is at 0x5a9428 (WINMM's and
+  DINPUT8's descriptors first). `plain` fills 0x572000..0x577000 from the
+  developer build at shifts -0x5fb0..-0x600a.
+- **The SDK's unknowns, named from retail:** ILTCSBase slot 48
+  (GetObjectUnguaranteedData), ILTServer's after SetNetFlags
+  (SetObjectUnguaranteedData), ILTModel slots 6 and 8 (GetSocketParentNode,
+  GetNumSockets), ILTDrawPrim's Build 69 SaveViewport/RestoreViewport,
+  SetFogEnable, DrawPrim(LT_POLYGT4 **), SetUVWH(.., HTEXTURE, ..).
+  ILTCSBase 44/45 are the game clock (client: the shell's game time).
+- **The text API** (Tron's wide fonts and polystrings; package 4a) is the
+  engine's own: CUIFont_Impl and CUIWideBitmapFont are written; the
+  polystring (0x562ba0.., 0x84 bytes: a std::wstring, two STLport maps at
+  +0x60/+0x6c), the formatted polystring (0x568550.., derived from it),
+  the font manager (0x566200..0x5664a5), the console's text and the
+  widgets that draw text are what keep Lithtech from compiling.
+- **The renderer** is still cjacksrc's Direct3D 8 one (the engine links
+  d3d8/d3dx8 meanwhile); Build 69's render_a/render_b D3D9 code is the
+  base for Tron's.
+
 ### 9. modern
 
 What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`

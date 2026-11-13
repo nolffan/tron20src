@@ -80,7 +80,8 @@ BOOL CSelectConfigDlg::AddConfigFilesToControl( )
 	CString sConfigFileSearch;
 
 	// Create a search string to find all the config files in the config directory.
-	sConfigFileSearch = GetProfileFile( "*" );
+	std::string sSearch = s_sConfigDir + "*" + s_sConfigExt;
+	sConfigFileSearch = sSearch.c_str( );
 	BOOL bFound = fileFind.FindFile( sConfigFileSearch );
 	while( bFound )
 	{

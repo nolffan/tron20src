@@ -40,6 +40,7 @@ class CGenDrawPrim : public ILTDrawPrim
             m_eTestMode			= DRAWPRIM_NOALPHATEST;
             m_eFillMode			= DRAWPRIM_FILL ;
             m_eCullMode			= DRAWPRIM_CULL_NONE;
+			m_bFogEnable		= false;
 			m_bReallyClose		= false;
         }
 
@@ -684,6 +685,9 @@ class CGenDrawPrim : public ILTDrawPrim
         ELTDPCullMode m_eCullMode;
 		// Really close
 		bool		 m_bReallyClose;
+		// Fog enable (Build 69's; RETAIL: Lithtech.exe 0x41d777, after
+		// m_bReallyClose)
+		bool		m_bFogEnable;
 };
 
 #endif
