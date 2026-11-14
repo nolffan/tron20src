@@ -814,9 +814,7 @@ bool CDestructibleModel::TronUnknownVirtual14( DamageStruct* pDamage )
 {
 	if( 0.0f < pDamage->fDuration )
 	{
-		// RETAIL: damage types 0x21 and 0x23 (Tron's own; its enum is not
-		// rebuilt yet)
-		if( pDamage->eType == (DamageType)0x21 || pDamage->eType == (DamageType)0x23 )
+		if( pDamage->eType == DT_PROD || pDamage->eType == DT_ENERGYCLAW )
 		{
 			pDamage->fDamage *= g_pLTServer->GetFrameTime();
 			pDamage->fDuration = 0.0f;

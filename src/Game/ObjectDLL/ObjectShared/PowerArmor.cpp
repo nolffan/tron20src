@@ -41,15 +41,14 @@ BEGIN_CLASS(PowerArmor)
 END_CLASS_DEFAULT_FLAGS(PowerArmor, Prop, NULL, NULL, CF_HIDDEN)
 
 // RETAIL: the damage types the armor stops whole at the two easier
-// difficulties (Object.lto .data 0x102fa9e4: Tron's own types, its enum is
-// not rebuilt yet). The name is ours
+// difficulties (Object.lto .data 0x102fa9e4). The name is ours
 static DamageType s_aeArmorProofDamageTypes[] =
 {
-	(DamageType)0x25,
-	(DamageType)0x26,
-	(DamageType)0x27,
-	(DamageType)0x30,
-	(DamageType)0x32,
+	DT_DISC,
+	DT_SEQUENCER,
+	DT_CLUSTER,
+	DT_ENEMYDISC,
+	DT_CLUSTERAUTOBURST,
 };
 
 // RETAIL: the armor's hit points (Object.lto 0x102987f8). The name is ours

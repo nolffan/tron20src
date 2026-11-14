@@ -36,6 +36,10 @@ enum DamageType
 	kNumDamageTypes
 };
 
+// PORT: NOLF2's tracker gadget: Tron has no such damage type. NOLF2 code
+// that still names it compares with a type no damage has.
+#define DT_GADGET_TRACKER	DT_INVALID
+
 static const char* pDTNames[kNumDamageTypes] =
 {
 #define INCLUDE_AS_STRING

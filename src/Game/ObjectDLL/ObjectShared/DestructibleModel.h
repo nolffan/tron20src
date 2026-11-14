@@ -72,9 +72,9 @@ class CDestructibleModel : public CDestructible
 		virtual ~CDestructibleModel();
 
 		// RETAIL: Tron's (slot 0x14, retail 0x10110310): the damage filter
-		// (DestructibleModelFilterHook) calls it; for two damage types (0x21,
-		// 0x23) with a duration it scales the damage by the frame time and
-		// clears the duration. Always returns true. Not yet named
+		// (DestructibleModelFilterHook) calls it; for DT_PROD and
+		// DT_ENERGYCLAW with a duration it scales the damage by the frame
+		// time and clears the duration. Always returns true. Not yet named
 		virtual bool	TronUnknownVirtual14( DamageStruct* pDamage );
 
         void        DoExplosion(char* pTargetName=LTNULL);
