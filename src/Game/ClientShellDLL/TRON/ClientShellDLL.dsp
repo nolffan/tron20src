@@ -519,6 +519,10 @@ SOURCE=.\ScreenLightCycleCircuit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenLightCycleGame.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenLightCycleVictory.cpp
 # End Source File
 # Begin Source File
@@ -882,6 +886,10 @@ SOURCE=.\ScreenKeyboard.h
 # Begin Source File
 
 SOURCE=.\ScreenLightCycleCircuit.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenLightCycleGame.h
 # End Source File
 # Begin Source File
 
