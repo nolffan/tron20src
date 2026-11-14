@@ -21,6 +21,7 @@
 #include "TronMissionButeMgr.h"
 #include "ClientLightCycleMgr.h"
 #include "DiscMatchMgr.h"
+#include "TronCDKey.h"
 #include "LightCycleMatchMgr.h"
 
 class CTronGameClientShell : public CGameClientShell
@@ -49,9 +50,14 @@ class CTronGameClientShell : public CGameClientShell
 		// sees the keys first in the light cycle game type
 		virtual void OnKeyDown(int key, int rep);
 
+		// RETAIL: Tron's slot 0x98 (0x10099d20, its last), the CD key
+		// holder (the name is ours)
+		virtual CTronCDKey* GetCDKey() { return &m_CDKey; }
+
 	private:
 		CTronInterfaceMgr			m_InterfaceMgr;		// Interface manager
 		CTronVersionMgr				m_VersionMgr;		// Same as g_pVersionMgr
+		CTronCDKey					m_CDKey;			// RETAIL: +0x31a74
 		CTronPlayerMgr				m_PlayerMgr;		// Player manager
 		CTronMissionButeMgr			m_MissionButeMgr;	// Same as g_pMissionButeMgr
 		CClientLightCycleMgr		m_LightCycleMgr;	// Same as g_pLightCycleMgr (RETAIL: +0x32e00)

@@ -609,6 +609,8 @@ void CLightCycleMatchMgr::HandleMsgMatchOver(ILTMessage_Read *pMsg)
 	g_pLTClient->GetLocalClientID(&nLocalID);
 	int nLocalTeam = g_pGameClientShell->GetInterfaceMgr()->GetTeamMgr()->GetTeamOfClient(nLocalID);
 
+	// RETAIL: the win sound when the team sent is not the local team's
+	// (0x10017215): the team sent may be the match's loser (not known yet)
 	if (nWinner != nLocalTeam)
 	{
 		g_pClientSoundMgr->PlayInterfaceSound("snd\\event\\mp_matchwin.WAV");
