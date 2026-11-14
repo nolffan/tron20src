@@ -1090,6 +1090,19 @@ uint16 CBaseScreen::AddControl(CLTGUICtrl* pCtrl)
 }
 
 
+// TRON: the third control array's (RETAIL: 0x100d38d0, 0x100d3900; their
+// callers, 0x10060a60 and 0x10069480, are not yet written: the names are
+// ours)
+void CBaseScreen::AddTronUnknownControl(CLTGUICtrl* pCtrl)
+{
+	m_xTronUnknown50.push_back(pCtrl);
+}
+
+void CBaseScreen::ClearTronUnknownControls()
+{
+	m_xTronUnknown50.clear();
+}
+
 // Calls UpdateData on each control in the menu
 void CBaseScreen::UpdateData(LTBOOL bSaveAndValidate)
 {
@@ -1204,8 +1217,9 @@ CLTGUICycleCtrl* CBaseScreen::CreateCycle(std::wstring sString, int helpID, int 
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+	// TRON: the font for the scaled height, as CreateTextItem (RETAIL: 0x100d3d20)
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
     if (!pCtrl->Create(sString, helpID, pFont, nFontSize, nHeaderWidth, pnValue))
@@ -1224,7 +1238,7 @@ CLTGUICycleCtrl* CBaseScreen::CreateCycle(std::wstring sString, int helpID, int 
 	}
 	pCtrl->SetBasePos(pos);
 
-	m_nextPos.y += (pCtrl->GetBaseHeight() + m_nItemSpacing);
+	m_nextPos.y += (pCtrl->GetHeight() + m_nItemSpacing);	// TRON: GetHeight
 
 	pCtrl->SetScale(g_pInterfaceResMgr->GetXRatio());
 	
@@ -1250,13 +1264,16 @@ CLTGUICycleCtrl* CBaseScreen::CreateCycle(std::wstring sString, int helpID, int 
 CLTGUIToggle* CBaseScreen::CreateToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 
-	CLTGUIToggle* pCtrl=CreateToggle(LoadTempString(stringID), helpID, nHeaderWidth, pbValue, pos, bFixed, nFont);
+	// TRON: the header as wide text (RETAIL: 0x100d3f40)
+	CLTGUIToggle* pCtrl=CreateToggle(LoadTempWString(stringID), helpID, nHeaderWidth, pbValue, pos, bFixed, nFont);
 
 	return pCtrl;
 
 }
 
-CLTGUIToggle* CBaseScreen::CreateToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
+// TRON: the header as wide text, the font for the scaled height, as
+// CreateTextItem (RETAIL: 0x100d3f90)
+CLTGUIToggle* CBaseScreen::CreateToggle(std::wstring sString, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUIToggle* pCtrl=debug_new(CLTGUIToggle);
 
@@ -1265,11 +1282,11 @@ CLTGUIToggle* CBaseScreen::CreateToggle(char *pString, int helpID, int nHeaderWi
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
-    if (!pCtrl->Create(pString, helpID, pFont, nFontSize, nHeaderWidth, pbValue))
+    if (!pCtrl->Create(sString, helpID, pFont, nFontSize, nHeaderWidth, pbValue))
 	{
 		debug_delete(pCtrl);
         return LTNULL;
@@ -1285,12 +1302,13 @@ CLTGUIToggle* CBaseScreen::CreateToggle(char *pString, int helpID, int nHeaderWi
 	}
 	pCtrl->SetBasePos(pos);
 
-	m_nextPos.y += (pCtrl->GetBaseHeight() + m_nItemSpacing);
+	m_nextPos.y += (pCtrl->GetHeight() + m_nItemSpacing);
 
 	pCtrl->SetScale(g_pInterfaceResMgr->GetXRatio());
 
-	pCtrl->SetOnString(LoadTempString(IDS_ON));
-	pCtrl->SetOffString(LoadTempString(IDS_OFF));
+	// RETAIL: Tron's on and off strings (0x33, 0x34)
+	pCtrl->SetOnString(LoadTempWString(0x33));
+	pCtrl->SetOffString(LoadTempWString(0x34));
 
 	if (bFixed)
 	{

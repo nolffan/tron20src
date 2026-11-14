@@ -164,6 +164,13 @@ void FragSelfFn(int argc, char **argv)
 	SendEmptyServerMsg(MID_FRAG_SELF);
 }
 
+// TRON: prints the build (RETAIL: 0x100e0e60, the console program
+// "BuildInfo"; the name is ours)
+void BuildInfoFn(int argc, char **argv)
+{
+	g_pLTClient->CPrint("%s", g_pVersionMgr->GetBuild());
+}
+
 void ClientFXFn(int argc, char **argv)
 {
 	if(argc == 4)
@@ -938,6 +945,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
     g_pLTClient->RegisterConsoleProgram("RemoveGoal", RemoveGoalFn);
     g_pLTClient->RegisterConsoleProgram("Alpha", ObjectAlphaFn);
 	g_pLTClient->RegisterConsoleProgram("ClientFX", ClientFXFn);
+	g_pLTClient->RegisterConsoleProgram("BuildInfo", BuildInfoFn);	// TRON: (RETAIL: 0x100e2ed2)
 
     g_pLTClient->SetModelHook((ModelHookFn)DefaultModelHook, this);
 
@@ -4452,6 +4460,20 @@ void DefaultModelHook (ModelHookData *pData, void *pUser)
 
 
 
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL	0x020A
+#endif
+
+// TRON: the mouse wheel scrolls the screens (RETAIL: 0x100e6e00; the name
+// is ours)
+static void OnMouseWheel(HWND hWnd, int nDelta)
+{
+	if (nDelta > 0)
+		g_pInterfaceMgr->GetScreenMgr()->OnWheelUp();
+	else
+		g_pInterfaceMgr->GetScreenMgr()->OnWheelDown();
+}
+
 // --------------------------------------------------------------------------- //
 //
 //	ROUTINE:	HookedWindowProc
@@ -4473,6 +4495,11 @@ LRESULT CALLBACK HookedWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		HANDLE_MSG(hWnd, WM_MOUSEMOVE, CGameClientShell::OnMouseMove);
 		HANDLE_MSG(hWnd, WM_CHAR, CGameClientShell::OnChar);
 		HANDLE_MSG(hWnd, WM_SETCURSOR, OnSetCursor);
+
+		// TRON: (RETAIL: 0x100e6e30)
+		case WM_MOUSEWHEEL:
+			OnMouseWheel(hWnd, (short)HIWORD(wParam));
+			return 0;
 	}
 	_ASSERT(g_pfnMainWndProc);
 	return(CallWindowProc(g_pfnMainWndProc,hWnd,uMsg,wParam,lParam));
