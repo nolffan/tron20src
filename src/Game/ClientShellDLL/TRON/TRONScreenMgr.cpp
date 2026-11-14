@@ -29,6 +29,7 @@
 //under multi
 #include "ScreenJoinServerList.h"
 #include "ScreenHostConnection.h"
+#include "ScreenHostGame.h"
 #include "ScreenHostMaps.h"
 #include "ScreenServerInfo.h"
 
@@ -143,7 +144,7 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
 	// for screens whose class we have not written yet are missing here:
 	// LIGHTCYCLE_CUSTOMMAP between _CIRCUIT and _CUSTOMGAME, _PLAYERCONFIG
-	// after _CUSTOMGAME; HOST_GAME (CScreenHostGame) before HOST_MAPS;
+	// after _CUSTOMGAME;
 	// TEAMSELECT (CScreenTeamSelect) after SUBROUTINES.
 	switch (screenID)
 	{
@@ -179,6 +180,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_LIGHTCYCLE_VICTORY:
 		pScreen = debug_new(CScreenLightCycleVictory);
+		break;
+	case SCREEN_ID_HOST_GAME:
+		pScreen = debug_new(CScreenHostGame);
 		break;
 	case SCREEN_ID_HOST_MAPS:
 		pScreen = debug_new(CScreenHostMaps);
