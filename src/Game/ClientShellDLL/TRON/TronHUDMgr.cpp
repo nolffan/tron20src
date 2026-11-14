@@ -34,6 +34,7 @@ inline void CHUDItem::SetRenderState()
 }
 
 CHUDCrosshair*		g_pCrosshair = LTNULL;
+CHUDScores*			g_pScores = LTNULL;	// RETAIL: 0x1026ee04
 // RETAIL: 0x1026ee24 (retail's constructor news the item; the destructor
 // clears it)
 CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
@@ -49,6 +50,7 @@ CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
 
 CTronHUDMgr::CTronHUDMgr()
 {
+	m_pScores = debug_new(CHUDScores);
 }
 
 // ----------------------------------------------------------------------- //
@@ -61,6 +63,12 @@ CTronHUDMgr::CTronHUDMgr()
 
 CTronHUDMgr::~CTronHUDMgr()
 {
+	if (m_pScores)
+	{
+		debug_delete(m_pScores);
+		m_pScores = LTNULL;
+	}
+	g_pScores = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -74,6 +82,7 @@ CTronHUDMgr::~CTronHUDMgr()
 LTBOOL CTronHUDMgr::Init()
 {
 	g_pCrosshair = &m_Crosshair;
+	g_pScores = m_pScores;
 	g_pLightCycleLives = &m_LightCycleLives;
 	g_pLightCycleRoster = &m_LightCycleRoster;
 
@@ -150,7 +159,24 @@ bool CTronHUDMgr::AddItems()
 	m_SubChooser.Init();
 	m_Profiler.Init();
 	m_SecurityCamera.Init();
+	m_pScores->Init();
 
     return CHUDMgr::AddItems();
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronHUDMgr::TronUnknownVirtual40()
+//
+//	PURPOSE:	Adds the items CTronHUDMgr news for the game type being
+//				played (RETAIL: 0x1009c3f0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronHUDMgr::TronUnknownVirtual40()
+{
+	GameType eGameType = g_pGameClientShell->GetGameType();
+
+	AddItem(m_pScores, eGameType);
+}

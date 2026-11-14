@@ -370,6 +370,10 @@ SOURCE=.\HUDProgress.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDScores.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDSecurityCamera.cpp
 # End Source File
 # Begin Source File
@@ -835,6 +839,10 @@ SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # Begin Source File
 
 SOURCE=.\HUDProgress.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDScores.h
 # End Source File
 # Begin Source File
 

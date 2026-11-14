@@ -51,6 +51,11 @@ public:
 
 	void	Toggle() {m_bEnabled = !m_bEnabled;}
 
+	// RETAIL: the scores hide the crosshair while they are drawn (retail
+	// CHUDScores::Render, 0x1003563d, writes the flag at +0x82 that the
+	// constructor sets, 0x10024153). The name is ours
+	void	Enable(bool bEnable) {m_bEnabled = bEnable;}
+
 protected:
 
 	LT_POLYGT4		m_Poly;

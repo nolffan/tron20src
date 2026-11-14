@@ -25,7 +25,8 @@
 #include "HUDPopup.h"
 #include "HUDRadar.h"
 #include "HUDDisplayMeter.h"
-#include "HUDScores.h"
+// RETAIL: Tron's CHUDScores is CTronHUDMgr's (TRON/HUDScores.h)
+class CHUDScores;
 
 enum eHUDUpdateFlag
 {
@@ -119,7 +120,6 @@ protected:
 	CHUDRewardMsgQueue	m_RewardMsgs;
 	CHUDPaused			m_Paused;
 	CHUDDisplayMeter	m_DisplayMeter;
-	CHUDScores			m_Scores;
 
 	//items
 	typedef std::vector<CHUDItem *> ItemArray;

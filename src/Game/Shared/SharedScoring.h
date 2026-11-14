@@ -77,7 +77,10 @@ public:
 	int16	GetTronUnknown6() {return m_nTronUnknown6;}	// RETAIL: the light cycle game type's server app figures (0x100e3b6a)
 	int16	GetTronUnknown8() {return m_nTronUnknown8;}
 	int16	GetTronUnknownC() {return m_nTronUnknownC;}	// RETAIL: the light cycle game type's server app figures (0x100e3b80)
-	uint32	GetTronUnknown18() {return m_nTronUnknown18;}	// RETAIL: 0 or 3 for the players CTronTeamMgr::SendToTeam may send to (0x1013fc75)
+	uint32	GetTronUnknown18() {return m_nTronUnknown18;}
+	// RETAIL: CHUDScores reads these (CShell.dll 0x10034a72, 0x10034d6e)
+	int16	GetTronUnknown2() {return m_nTronUnknown2;}
+	bool	GetTronUnknownE() {return m_bTronUnknownE;}	// RETAIL: 0 or 3 for the players CTronTeamMgr::SendToTeam may send to (0x1013fc75)
 
 private:
 	// RETAIL: the client's match managers read +0x18 directly (no "this"
@@ -187,6 +190,8 @@ public:
 	CTronTeam* GetTeam(uint32 nTeam, bool bMapped);
 
 	int		GetNumTeams() { return m_nNumTeams; }
+	// RETAIL: inline: CHUDScores reads it (CShell.dll 0x10036585); the name is ours
+	uint32	GetTeamSize() { return m_nTeamSize; }
 
 	int		GetTeamOfClient(uint32 nClientID);
 
