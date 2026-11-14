@@ -402,6 +402,10 @@ SOURCE=.\AIHumanStateCatch.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIHumanStateDash.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIHumanStateDeflect.cpp
 # End Source File
 # Begin Source File
@@ -1796,6 +1800,10 @@ SOURCE=.\AIHumanStateAttackProne.h
 # Begin Source File
 
 SOURCE=.\AIHumanStateCatch.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIHumanStateDash.h
 # End Source File
 # Begin Source File
 

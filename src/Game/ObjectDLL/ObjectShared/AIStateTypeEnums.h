@@ -100,7 +100,7 @@ ADD_STATE_HUMAN(UseObject)					// kState_HumanUseObject
 ADD_STATE_HUMAN(Talk)						// kState_HumanTalk
 ADD_STATE_HUMAN(GetBackup)					// kState_HumanGetBackup
 ADD_STATE_HUMAN(Charge)						// kState_HumanCharge
-ADD_STATE_HUMAN_UNWRITTEN(Dash)				// kState_HumanDash
+ADD_STATE_HUMAN(Dash)							// kState_HumanDash
 ADD_STATE_HUMAN(Animate)					// kState_HumanAnimate
 ADD_STATE_HUMAN(Follow)						// kState_HumanFollow
 ADD_STATE_HUMAN(LongJump)					// kState_HumanLongJump
