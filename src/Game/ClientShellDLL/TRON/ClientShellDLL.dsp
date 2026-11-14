@@ -689,6 +689,10 @@ SOURCE=.\ClientWeaponPrankster.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientWeaponPRod.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponSequencerDisc.h
 # End Source File
 # Begin Source File
