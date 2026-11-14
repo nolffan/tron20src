@@ -51,6 +51,7 @@ CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
 CTronHUDMgr::CTronHUDMgr()
 {
 	m_pScores = debug_new(CHUDScores);
+	m_pDiscScores = debug_new(CHUDDiscScores);
 	m_pDiscMatches = debug_new(CHUDDiscMatches);
 }
 
@@ -69,12 +70,18 @@ CTronHUDMgr::~CTronHUDMgr()
 		debug_delete(m_pScores);
 		m_pScores = LTNULL;
 	}
+	if (m_pDiscScores)
+	{
+		debug_delete(m_pDiscScores);
+		m_pDiscScores = LTNULL;
+	}
 	if (m_pDiscMatches)
 	{
 		debug_delete(m_pDiscMatches);
 		m_pDiscMatches = LTNULL;
 	}
 	g_pScores = LTNULL;
+	g_pDiscScores = LTNULL;
 	g_pDiscMatches = LTNULL;
 }
 
@@ -90,6 +97,7 @@ LTBOOL CTronHUDMgr::Init()
 {
 	g_pCrosshair = &m_Crosshair;
 	g_pScores = m_pScores;
+	g_pDiscScores = m_pDiscScores;
 	g_pDiscMatches = m_pDiscMatches;
 	g_pLightCycleLives = &m_LightCycleLives;
 	g_pLightCycleRoster = &m_LightCycleRoster;
@@ -168,6 +176,7 @@ bool CTronHUDMgr::AddItems()
 	m_Profiler.Init();
 	m_SecurityCamera.Init();
 	m_pScores->Init();
+	m_pDiscScores->Init();
 	m_pDiscMatches->Init();
 
     return CHUDMgr::AddItems();
@@ -188,5 +197,6 @@ void CTronHUDMgr::TronUnknownVirtual40()
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
 	AddItem(m_pScores, eGameType);
+	AddItem(m_pDiscScores, eGameType);
 	AddItem(m_pDiscMatches, eGameType);
 }
