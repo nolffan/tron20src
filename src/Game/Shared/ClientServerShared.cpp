@@ -233,3 +233,20 @@ bool IsRevivePlayerGameType()
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	IsDiscGameType
+//
+//  PURPOSE:	The disc arena and tournament. RETAIL: Tron's (CShell.dll
+//				0x100fa3d0); the name is ours
+//
+// ----------------------------------------------------------------------- //
+
+bool IsDiscGameType()
+{
+	GameType eGameType = GetGameType();
+	if (eGameType >= eGameTypeDiscArena && eGameType <= eGameTypeDiscTournament)
+		return true;
+	return false;
+}
+

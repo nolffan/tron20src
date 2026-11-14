@@ -46,6 +46,7 @@
 #include "HUDSubChooser.h"
 #include "HUDSecurityCamera.h"
 #include "HUDScores.h"
+#include "HUDDiscMatches.h"
 
 //******************************************************************************************
 //** Tron HUD Manager
@@ -100,6 +101,7 @@ protected:
 	// +0x115ac, +0x115b0), deleted by the destructor; Init points the
 	// globals at them (0x1009b9b0)
 	CHUDScores*					m_pScores;
+	CHUDDiscMatches*			m_pDiscMatches;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 

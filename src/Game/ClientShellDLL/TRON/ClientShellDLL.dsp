@@ -318,6 +318,10 @@ SOURCE=.\HUDDamageDir.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDiscMatches.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDDiscScores.cpp
 # End Source File
 # Begin Source File
@@ -787,6 +791,10 @@ SOURCE=.\HUDChooser.h
 # Begin Source File
 
 SOURCE=.\HUDDamageDir.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDDiscMatches.h
 # End Source File
 # Begin Source File
 

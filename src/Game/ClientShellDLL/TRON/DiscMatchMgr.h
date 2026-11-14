@@ -59,6 +59,8 @@ class CDiscMatchMgr
 
 		int		GetState() const { return m_nState; }
 		float	GetTronUnknownC() const { return m_fTronUnknownC; }
+		// RETAIL: inline: CHUDDiscMatches::Update shows it (0x100262f5)
+		uint32	GetTronUnknown8() const { return m_nTronUnknown8; }
 
 	protected:
 
