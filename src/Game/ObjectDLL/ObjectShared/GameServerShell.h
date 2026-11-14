@@ -46,6 +46,7 @@ class CLiteObjectMgr;
 class CServerMissionMgr;
 class CServerSaveLoadMgr;
 class Body;
+class CCharacter;
 class CCharacterMgr;
 class CParsedMsg;
 struct ObjectiveMsgInfo;
@@ -167,7 +168,11 @@ class CGameServerShell : public IServerShellStub
 		LTRESULT	ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort);
 
 		GameStartPoint* FindStartPoint(CPlayerObj* pPlayer);
-		virtual bool DropInventoryObject(Body* pBody) = 0;
+
+		// RETAIL: Tron's takes the dead character (CCharacter::HandleDead
+		// calls it when m_bTronUnknown4C is set): its core dump drops its
+		// energy and archive items (CTronGameServerShell's, retail 0x1005efe0)
+		virtual bool DropInventoryObject(CCharacter* pCharacter) = 0;
 
 		// Server directory access
 		// Note : The server directory is owned by this object once you pass it in.

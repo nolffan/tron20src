@@ -718,47 +718,62 @@ void CTronGameServerShell::HandleTronServerMessage(HCLIENT hSender, ILTMessage_R
 	}
 }
 
-bool CTronGameServerShell::DropInventoryObject(Body* pBody)
+bool CTronGameServerShell::DropInventoryObject(CCharacter* pCharacter)
 {
-	// Sanity check
-	ASSERT(pBody);
-	if(!pBody)
+	if (!pCharacter)
+	{
 		return false;
+	}
 
-	// Check the position of the object
 	LTVector vPos;
-	g_pLTServer->GetObjectPos(pBody->m_hObject,&vPos);
+	g_pLTServer->GetObjectPos(pCharacter->m_hObject, &vPos);
 
-	// Now create a Core Dump object there
 	ObjectCreateStruct ocs;
-	INIT_OBJECTCREATESTRUCT(ocs);
-	ocs.m_Rotation.Init();
 	ocs.m_Pos = vPos;
+	ocs.m_Rotation.Init();
 
-	CoreDump* pObj;
+	// RETAIL: CCharacter's three items at +0xc6c are ArchiveItems (their type
+	// first, -1 for none; CoreDump::SetItems takes them)
+	ArchiveItem* aItems = (ArchiveItem*)pCharacter->m_aTronUnknownC6C;
+
+	int nItems = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (aItems[i].m_eType != kAIT_None)
+		{
+			nItems++;
+		}
+	}
+
+	// Nothing to drop
+	if (!nItems && pCharacter->m_damage.GetEnergy() == 0.0f)
+	{
+		return false;
+	}
+
 	HCLASS hClass = g_pLTServer->GetClass("CoreDump");
-	if(hClass)
+	if (!hClass)
 	{
-		// Here's where we actually create the object
-		pObj = (CoreDump*)g_pLTServer->CreateObject(hClass, &ocs);
-		if(pObj)
-		{
-			// PORT: retail gives it the body's energy and health and its
-			// archive items (Tron's Body, not written yet)
-			pObj->Init(pBody->GetEnergy(), 0.0f);
-			return true;
-		}
-		else
-		{
-			// Couldn't create the object
-			ASSERT(FALSE);
-		}
-	}
-	else
-	{
-		// Couldn't find the class
-		ASSERT(FALSE);
+		return false;
 	}
 
-	return false;
+	CoreDump* pObj = (CoreDump*)g_pLTServer->CreateObject(hClass, &ocs);
+	if (!pObj)
+	{
+		return false;
+	}
+
+	// RETAIL: its health is a 16-bit value of the character's model (retail
+	// 0x100c61e0, the record's +0x370; paired with GetModelNameId, not
+	// verified)
+	float fHealth = (float)g_pModelButeMgr->GetModelNameId(pCharacter->m_eModelId);
+	if (pCharacter->m_damage.GetEnergy() != 0.0f)
+	{
+		pObj->Init(pCharacter->m_damage.GetEnergy(), fHealth);
+	}
+
+	pObj->SetItems(aItems);
+	pCharacter->m_hTronUnknownCF0 = pObj->m_hObject;
+
+	return true;
 }

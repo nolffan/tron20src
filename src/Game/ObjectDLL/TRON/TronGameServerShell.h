@@ -24,6 +24,7 @@
 #include <list>
 
 class Body;
+class CCharacter;
 class CLightCycleMatchMgr;
 
 class CTronGameServerShell : public CGameServerShell
@@ -35,7 +36,7 @@ class CTronGameServerShell : public CGameServerShell
         CTronGameServerShell();
 		~CTronGameServerShell();
 
-		virtual bool DropInventoryObject(Body* pBody);
+		virtual bool DropInventoryObject(CCharacter* pCharacter);
 
 		// RETAIL: CGameServerShell's four pure slots (GameServerShell.h): Tron's
 		// GameSpy reporting, retail 0x1005d3f0 (start the query and CD key
