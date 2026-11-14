@@ -1827,6 +1827,42 @@ bool CTronPlayerObj::TronUnknownVirtual128( WEAPON const* pWeapon )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual127
+//
+//	PURPOSE:	Acquire what a subroutine record's weapon needs, in the
+//				record's state and condition (RETAIL: retail 0x10066f20)
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: the record's state and condition names (retail 0x102de3a8,
+// 0x102de3d8); ours
+static char const s_aszSubroutineStates[][15] = { "alpha", "beta", "gold" };
+static char const s_aszSubroutineConditions[][15] = { "normal", "infected" };
+
+bool CTronPlayerObj::TronUnknownVirtual127( char const* pszRecord )
+{
+	if( !pszRecord )
+		return false;
+
+	WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( pszRecord );
+	if( !pWeapon )
+		return false;
+
+	AcquirePrimitive( pWeapon->szPrimitiveType );
+
+	if( pWeapon->szSubroutineNeeded[0] )
+	{
+		TronSubroutineRecord const* pRecord = (TronSubroutineRecord const*)pszRecord;
+		AcquireSubroutine( pWeapon->szSubroutineNeeded,
+			s_aszSubroutineStates[pRecord->nState],
+			s_aszSubroutineConditions[pRecord->nCondition] );
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerObj::TronUnknownVirtual129
 //
 //	PURPOSE:	Acquire what a player weapon needs (RETAIL: retail
