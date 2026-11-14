@@ -44,6 +44,7 @@ BEGIN_CLASS( Dialogue )
 	ADD_STRINGPROP_FLAG( StartCommand, "", PF_NOTIFYCHANGE )
 	ADD_STRINGPROP_FLAG( FinishedCommand, "", PF_NOTIFYCHANGE )
 	ADD_STRINGPROP_FLAG( CleanUpCommand, "", PF_NOTIFYCHANGE )
+	ADD_BOOLPROP( UseAIState, 1 )	// RETAIL: Tron's (ClassDef initializer 0x10265210)
 	ADD_BOOLPROP( RemoveWhenComplete, 1 )
 	
 	PROP_DEFINEGROUP(Dialogue, PF_GROUP(1))
@@ -128,7 +129,8 @@ Dialogue::Dialogue( )
 	m_hstrStartCommand		( LTNULL ),
 	m_hstrFinishedCommand	( LTNULL ),
 	m_hstrCleanUpCommand	( LTNULL ),
-	m_bOn					( LTFALSE )
+	m_bOn					( LTFALSE ),
+	m_bUseAIState			( true )
 {
 	for( int i = 0; i < MAX_DIALOGUES; ++i )
 	{
@@ -276,6 +278,12 @@ void Dialogue::ReadProps( ObjectCreateStruct *pOCS )
 	{
 		m_bRemoveWhenComplete = !!gProp.m_Bool;
 	}
+
+	// RETAIL: Tron's (ReadProps 0x10266be0)
+	if( g_pLTServer->GetPropGeneric( "UseAIState", &gProp ) == LT_OK )
+	{
+		m_bUseAIState = !!gProp.m_Bool;
+	}
 	
 	// Read every dialogue property value...
 
@@ -400,6 +408,9 @@ LTBOOL Dialogue::NotifySpeakers( )
 						CAIGoalTalk* pGoalTalk = (CAIGoalTalk*)pAI->GetGoalMgr()->FindGoalByType( kGoal_Talk );
 						if( pGoalTalk && pGoalTalk->HasTalkNode() )
 						{
+							// PORT: retail passes m_bUseAIState too (0x10266ff9,
+							// CAIGoalTalk::RequestDialogue 0x101fa800 takes two
+							// arguments in Tron); ours takes one
 							if( !pGoalTalk->RequestDialogue( m_hObject ) )
 							{
 								return LTFALSE;
@@ -841,6 +852,7 @@ void Dialogue::Save( ILTMessage_Write *pMsg )
 	SAVE_HSTRING( m_hstrFinishedCommand );
 	SAVE_HSTRING( m_hstrCleanUpCommand );
 	SAVE_BOOL( m_bOn );
+	SAVE_bool( m_bUseAIState );	// RETAIL: Tron's (0x102679c0)
 
 	// Save Dialogue data...
 
@@ -875,6 +887,7 @@ void Dialogue::Load( ILTMessage_Read *pMsg )
 	LOAD_HSTRING( m_hstrFinishedCommand );
 	LOAD_HSTRING( m_hstrCleanUpCommand );
 	LOAD_BOOL( m_bOn );
+	LOAD_bool( m_bUseAIState );	// RETAIL: Tron's
 
 	// Load Dialogue data...
 

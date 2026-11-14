@@ -78,6 +78,7 @@ class Dialogue : public GameBase
 		HSTRING		m_hstrDialogueStartCmd[MAX_DIALOGUES];	// Array of conmmands to process when a dialogue is done
 
 		bool		m_bRemoveWhenComplete;					// Remove the object when done.
+		bool		m_bUseAIState;							// RETAIL: Tron's UseAIState property (+0x155), passed to the talk goal
 
 };
 
