@@ -51,8 +51,8 @@ protected:
 	CLTGUITextCtrl*	m_pRemove;				// +0xa18
 	CLTGUITextCtrl*	m_pAddAll;				// +0xa1c
 	CLTGUITextCtrl*	m_pRemoveAll;			// +0xa20
-	CLTGUITextCtrl*	m_pMoveDown;			// +0xa24
-	CLTGUITextCtrl*	m_pMoveUp;				// +0xa28
+	CLTGUITextCtrl*	m_pMoveUp;				// +0xa24
+	CLTGUITextCtrl*	m_pMoveDown;			// +0xa28
 	CLTGUIListCtrl*	m_pAvailMissions;		// +0xa2c
 	CLTGUIListCtrl*	m_pSelMissions;			// +0xa30
 	StringArray		m_saMaps;				// +0xa34: the folder's maps (no extension)

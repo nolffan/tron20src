@@ -96,6 +96,11 @@ public:
 	void		MoveControlUp ( uint16 nIndex );
 	void		MoveControlDown ( uint16 nIndex );
 
+	// TRON: inline setters of retail's 0x66c and 0x670 (the light cycle
+	// custom map screen's Build, 0x10069e17; names ours)
+	void		SetMouseMoveSelects(LTBOOL bSelects)	{ m_bMouseMoveSelects = bSelects; }
+	void		SetEnterOnSelect(LTBOOL bEnter)			{ m_bEnterOnSelect = bEnter; }
+
 
 	//when list is selected/deselected
 	void		OnSelChange();

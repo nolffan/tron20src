@@ -13,8 +13,24 @@
 #ifndef __LOADINGSCREEN_H__
 #define __LOADINGSCREEN_H__
 
-#include "BaseScreen.h"
+// RETAIL: Tron's loading screen header does not bring in BaseScreen.h (it
+// needs CBaseScreen only by pointer): BaseScreen.h's kDefaultPos has a
+// dynamic initializer in exactly the client TUs that include BaseScreen.h
+// themselves or through ScreenPreload.h/ScreenPostload.h (InterfaceMgr,
+// BaseScreen, MissionMgr, ScreenMgr, LoadingScreen, ScreenPreload,
+// ScreenPostload: CShell.dll 0x100c6180, 0x100d16e0, 0x100eb5c0,
+// 0x10144f20, 0x10161750, 0x1016a830, 0x1016b150), not in the many that
+// reach it through InterfaceMgr.h; so it is not in this project's
+// precompiled header either (VC6 emits the initializers of a precompiled
+// header's constants only in the /Yc object, StdAfx.obj, never linked).
+// The headers BaseScreen.h brought in for this one are kept.
+#include "LTGUIMgr.h"
+#include "BaseScaleFX.h"
+#include "ChainedFX.h"
+#include "LTPoly.h"
 #include "ScreenMgr.h"
+
+class CBaseScreen;
 
 class CLoadingScreen
 {

@@ -33,7 +33,14 @@ public:
 
 protected:
 
-	CLTGUITextCtrl		*m_pString;
+	// RETAIL: Tron's has NOLF2's mission statistics (retail CShell.dll
+	// 0x1005a1a0..0x1005aaf0; ctor 0x1005a210)
+	CLTGUITextCtrl		*m_pMission;		// +0x790
+	CLTGUITextCtrl		*m_pAccuracy;		// +0x794
+	CLTGUITextCtrl		*m_pMarksmanship;	// +0x798
+	CLTGUITextCtrl		*m_pNonInjury;		// +0x79c
+	CLTGUITextCtrl		*m_pTimesHit;		// +0x7a0
+	CLTGUIListCtrl		*m_pList;			// +0x7a4
 
 
 };

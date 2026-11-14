@@ -544,6 +544,10 @@ SOURCE=.\ScreenHostConnection.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenHostGame.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenHostMaps.cpp
 # End Source File
 # Begin Source File
@@ -561,6 +565,10 @@ SOURCE=.\ScreenKeyboard.cpp
 # Begin Source File
 
 SOURCE=.\ScreenLightCycleCircuit.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenLightCycleCustomMaps.cpp
 # End Source File
 # Begin Source File
 
@@ -966,6 +974,10 @@ SOURCE=.\ScreenHostConnection.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenHostGame.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenHostMaps.h
 # End Source File
 # Begin Source File
@@ -983,6 +995,10 @@ SOURCE=.\ScreenKeyboard.h
 # Begin Source File
 
 SOURCE=.\ScreenLightCycleCircuit.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenLightCycleCustomMaps.h
 # End Source File
 # Begin Source File
 
