@@ -1825,6 +1825,10 @@ void CMoveMgr::UpdatePlayerAnimation()
 
 	if (!(hClientObj = g_pLTClient->GetClientObject())) return;
 
+	// RETAIL: 0x100f84a0 -- not for the light cycle.
+	if (m_pVehicleMgr && m_pVehicleMgr->GetPhysicsModel() == PPM_LIGHTCYCLE) return;
+	if (GetGameType() == eGameTypeMultiplayerLightcycles) return;
+
 	// Make sure our solid object is on the same animation.
 	
 	curModelAnim = g_pLTClient->GetModelAnimation(m_hObject);
