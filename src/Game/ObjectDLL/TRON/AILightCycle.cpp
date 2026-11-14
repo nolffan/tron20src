@@ -592,15 +592,16 @@ int AILightCycle::GetDirectionTo(const LTVector & vPos)
 	LTVector vMyPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vMyPos);
 
-	float fX = vPos.x - vMyPos.x;
-	float fZ = vPos.z - vMyPos.z;
+	// RETAIL: the difference is kept in vMyPos (0x1000288c stores its z there)
+	vMyPos.x = vPos.x - vMyPos.x;
+	vMyPos.z = vPos.z - vMyPos.z;
 
-	if (fabs(fZ) > fabs(fX))
+	if (fabs(vMyPos.z) > fabs(vMyPos.x))
 	{
-		return (fZ < 0.0f) ? 2 : 0;
+		return (vMyPos.z < 0.0f) ? 2 : 0;
 	}
 
-	return (fX > 0.0f) ? 1 : 3;
+	return (vMyPos.x > 0.0f) ? 1 : 3;
 }
 
 // ----------------------------------------------------------------------- //
@@ -894,7 +895,8 @@ bool AILightCycle::CheckPath(const LTVector & vStart, const LTVector & vEnd, flo
 		}
 	}
 
-	if (*pfDist == HUGE_VAL) return false;
+	// RETAIL: compared as a float (retail 0x10003770)
+	if (*pfDist == (float)HUGE_VAL) return false;
 	return true;
 }
 
