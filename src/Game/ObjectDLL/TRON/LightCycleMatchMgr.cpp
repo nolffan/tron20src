@@ -51,8 +51,8 @@ CLightCycleMatchMgr::CLightCycleMatchMgr()
 	m_nGameSpeed = 1;
 	m_nTrailLength = 1;
 	m_nMaxTeamSize = 1;
-	m_fRaceStartDelay = 5.0f;
 	m_nPowerups = (uint32)-1;
+	m_fRaceStartDelay = 5.0f;
 	m_nWinner = -1;
 	m_nNextLevel = -1;
 	m_fLastSendTime = 0.0f;
@@ -208,8 +208,8 @@ void CLightCycleMatchMgr::Update()
 					return;
 				}
 
-				uint32 nTimeLeft = (uint8)(m_fTimeLimit - (g_pLTServer->GetTime() - m_fClockStartTime - m_fPausedTime));
-				if ((int)nTimeLeft < (int)m_nCountdown)
+				int nTimeLeft = (uint8)(m_fTimeLimit - (g_pLTServer->GetTime() - m_fClockStartTime - m_fPausedTime));
+				if (nTimeLeft < m_nCountdown)
 				{
 					CAutoMessage cMsg;
 					cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
@@ -442,38 +442,37 @@ void CLightCycleMatchMgr::PlacePlayer(CPlayerObj* pPlayer)
 	if (nTeam < 0 || nTeam == TRON_UNASSIGNED_TEAM)
 	{
 		AddSpectator(pPlayer);
+		return;
 	}
-	else
+
+	switch (m_eState)
 	{
-		switch (m_eState)
+		case kState_None:
+		case kState_Waiting:
 		{
-			case kState_None:
-			case kState_Waiting:
+			if (AddRacer(pPlayer, true))
 			{
-				if (AddRacer(pPlayer, true))
-				{
-					StartWaiting();
-				}
-				else
-				{
-					AddWaiting(pPlayer);
-				}
+				StartWaiting();
 			}
-			break;
-
-			case kState_Racing:
-			case kState_RaceOver:
-			case kState_GameOver:
+			else
 			{
-				CAutoMessage cMsg;
-				cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
-				cMsg.Writeuint8(LCMM_MSG_GAMEINPROGRESS);
-				g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
-
 				AddWaiting(pPlayer);
 			}
-			break;
 		}
+		break;
+
+		case kState_Racing:
+		case kState_RaceOver:
+		case kState_GameOver:
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
+			cMsg.Writeuint8(LCMM_MSG_GAMEINPROGRESS);
+			g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+
+			AddWaiting(pPlayer);
+		}
+		break;
 	}
 }
 

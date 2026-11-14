@@ -101,6 +101,21 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronGameServerShell::PreStartWorld
+//
+//	PURPOSE:	A world is about to start: the last one's light cycle
+//				power-ups are gone
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::PreStartWorld(bool bSwitchingWorlds)
+{
+	CGameServerShell::PreStartWorld(bSwitchingWorlds);
+
+	((CServerLightCycleMgr*)g_pLightCycleMgr)->RemoveAllPowerups();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronGameServerShell::OnRemoveClient
 //
 //	PURPOSE:	A client is gone: RETAIL: retail 0x1005d3c0, only the base's
@@ -523,6 +538,7 @@ void CTronGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	switch (messageID)
 	{
 		case MID_COMPILE:	HandlePlayerCompile	(hSender, pMsg);	break;
+		case MID_LIGHT_CYCLE_INFO:	HandleLightCycleInfo	(hSender, pMsg);	break;
 		case MID_TRON_SERVERMESSAGE:	HandleTronServerMessage	(hSender, pMsg);	break;
 		default: CGameServerShell::OnMessage(hSender,pMsg);
 	}
@@ -675,6 +691,16 @@ void CTronGameServerShell::HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read 
 	{
 		pPlayer->HandleCompile(pMsg);
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleLightCycleInfo
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	((CServerLightCycleMgr*)g_pLightCycleMgr)->OnMessage(pMsg, hSender);
 }
 
 // ----------------------------------------------------------------------- //

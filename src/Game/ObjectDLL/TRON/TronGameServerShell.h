@@ -53,6 +53,9 @@ class CTronGameServerShell : public CGameServerShell
 	protected:
 		virtual LTRESULT OnServerInitialized();
 
+		// RETAIL: retail 0x1005cea0
+		void			PreStartWorld(bool bSwitchingWorlds);
+
 		// RETAIL: retail 0x1005d3c0, only the base's
 		void			OnRemoveClient(HCLIENT hClient);
 		virtual void OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
@@ -72,6 +75,9 @@ class CTronGameServerShell : public CGameServerShell
 		// RETAIL: retail 0x1005ed50: MID_TRON_SERVERMESSAGE goes to the game
 		// type's manager (the name is ours)
 		void HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x1005eda0: MID_LIGHT_CYCLE_INFO goes to the light
+		// cycle manager (the name is ours)
+		void HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg);
 
 	private:
 
