@@ -131,17 +131,18 @@ inline char** GetStringArray( CButeMgr & buteMgr, const char* szTagName, const c
 }
 
 
+// RETAIL: Tron's has no W_BEGIN_FIRING, W_END_FIRING or W_ARM_DEFENSE:
+// W_FIRING is 2, W_FIRED 3, W_SWAT_DEFENSE 4, W_HOLD_DEFENSE 5, W_RELOADING 6,
+// W_DESELECT 9, W_AUTO_SWITCH 10 (CClientWeaponDisc 0x10018df0,
+// CClientWeapon::Update 0x10130680, CClientWeaponMgr::Update 0x101684c0)
 enum WeaponState
 {
 	W_INACTIVE,
 	W_IDLE,
-	W_BEGIN_FIRING,
 	W_FIRING,
 	W_FIRED,
-	W_END_FIRING,
 	W_SWAT_DEFENSE,
 	W_HOLD_DEFENSE,
-	W_ARM_DEFENSE,
 	W_RELOADING,
 	W_FIRING_NOAMMO,
 	W_SELECT,

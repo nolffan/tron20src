@@ -25,9 +25,9 @@ CClientWeaponEnergyClaw::~CClientWeaponEnergyClaw()
 
 // RETAIL: 0x1001a650.  It skips CClientWeaponContinuousFireBase's; retail
 // first updates the claw's target (0x1001a7a0, not yet written).
-WeaponState CClientWeaponEnergyClaw::Update( bool bFire, FireType eFireType )
+WeaponState CClientWeaponEnergyClaw::Update( bool bFire, bool bAltFire, FireType eFireType )
 {
-	return CTronClientWeapon::Update( bFire, eFireType );
+	return CTronClientWeapon::Update( bFire, bAltFire, eFireType );
 }
 
 // RETAIL: 0x1001a680
@@ -36,7 +36,7 @@ float CClientWeaponEnergyClaw::GetEnergyUse()
 	float fEnergy = CTronClientWeapon::GetEnergyUse();
 	float fBase = GetBaseEnergyUse();
 
-	if ( W_BEGIN_FIRING == GetState() )
+	if ( W_FIRING == GetState() )
 	{
 		if ( m_abTronUnknown13C[6][0] )
 		{

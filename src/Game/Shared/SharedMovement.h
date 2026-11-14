@@ -105,6 +105,9 @@ PlayerPhysicsModel GetPlayerPhysicsModelFromPropertyName(char* pPropertyName);
 #define BC_CFLG_ALT_FIRING		(1<<19)
 #define BC_CFLG_LEAN_LEFT		(1<<20)
 #define BC_CFLG_LEAN_RIGHT		(1<<21)
+// RETAIL: Tron's alt-fire key (CPlayerMgr's update hands it to
+// CClientWeaponMgr::Update, 0x101272aa); the name is ours
+#define BC_CFLG_TRON_ALT_FIRE	(1<<22)
 
 #ifdef __PSX2
 	// [kml] For variable degrees of lookage.

@@ -74,7 +74,8 @@ public:
 	virtual void          Term() {}
 
 	// main update function
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE ) { return W_IDLE; }
+	// RETAIL: Tron's takes the alt-fire key too (every override ends ret 0xc)
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE ) { return W_IDLE; }
 
 	// RETAIL: Tron's (slot 8, empty here and in CClientWeapon). Not yet named
 	virtual void          TronUnknownVirtual20() {}

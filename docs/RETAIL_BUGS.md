@@ -780,6 +780,21 @@ fails silently, should be the one reported).
 
 Not fixed yet: the driver has no modern build of its own yet.
 
+### A client weapon's alt-fire key-up follows the fire key
+
+CShell.dll 0x10130680 (CClientWeapon::Update, ClientShellShared/
+ClientWeapon.cpp). Tron's update takes a second, alt-fire key and keeps its
+state from last update (+0xc2) to call the weapon's alt-fire key-down and
+key-up transitions (slots 0xf8, 0xfc). The key-down test uses the alt-fire
+key, but the key-up test (`m_bAltFireKeyDownLastUpdate && !bFire`) and the
+remembered state (`m_bAltFireKeyDownLastUpdate = bFire`) use the fire key:
+the alt-fire state copies the fire key, so its key-up transition runs when
+the fire key is up rather than when alt-fire is released, and an alt-fire
+key held down calls the key-down transition every update while fire is up.
+Both should use bAltFire.
+
+Not fixed yet: the modern build should test and store bAltFire.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
