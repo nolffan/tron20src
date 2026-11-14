@@ -361,7 +361,7 @@ void CBaseScreen::Escape()
 	}
 	else
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+		PlayInterfaceSound(IS_PAGE);
 	}
 }
 
@@ -574,7 +574,7 @@ LTBOOL CBaseScreen::HandleKeyDown(int key, int rep)
 				{
 					handled = pCtrl->HandleKeyDown(key,rep);
 					if (handled && (key == VK_NEXT || key == VK_PRIOR))
-						g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+						PlayInterfaceSound(IS_CHANGE);
 				}
 				else
 					handled = LTFALSE;
@@ -598,7 +598,7 @@ LTBOOL CBaseScreen::OnUp()
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnUp())
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 		UpdateHelpText();
 		return LTTRUE;
 	}
@@ -614,7 +614,7 @@ LTBOOL CBaseScreen::OnDown()
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnDown())
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 		UpdateHelpText();
 		return LTTRUE;
 	}
@@ -632,7 +632,7 @@ LTBOOL CBaseScreen::OnLeft()
 	if (pCtrl)
 		handled = pCtrl->OnLeft();
 	if (handled)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		PlayInterfaceSound(IS_SELECT);
 	return handled;
 }
 
@@ -646,7 +646,7 @@ LTBOOL CBaseScreen::OnRight()
 	if (pCtrl)
 		handled = pCtrl->OnRight();
 	if (handled)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		PlayInterfaceSound(IS_SELECT);
 	return handled;
 }
 
@@ -663,9 +663,9 @@ LTBOOL CBaseScreen::OnEnter()
 		if (handled)
 		{
 			if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+				PlayInterfaceSound(IS_PAGE);
 			else
-				g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+				PlayInterfaceSound(IS_SELECT);
 		}
 	}
 	return handled;
@@ -776,9 +776,9 @@ LTBOOL CBaseScreen::OnLButtonUp(int x, int y)
 				if (bHandled)
 				{
 					if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-						g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+						PlayInterfaceSound(IS_PAGE);
 					else
-						g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+						PlayInterfaceSound(IS_SELECT);
 				}
 				return bHandled;
 
@@ -838,9 +838,9 @@ LTBOOL CBaseScreen::OnRButtonUp(int x, int y)
 				SetSelection(nControlIndex);
 				LTBOOL bHandled = pCtrl->OnRButtonUp(x,y);
 				if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-					g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+					PlayInterfaceSound(IS_PAGE);
 				else
-					g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+					PlayInterfaceSound(IS_SELECT);
 				return bHandled;
 			}
 		}
@@ -898,7 +898,7 @@ LTBOOL CBaseScreen::OnMouseMove(int x, int y)
 
 		if (pCtrl->OnMouseMove(x,y))
 		{
-			g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+			PlayInterfaceSound(IS_CHANGE);
 			UpdateHelpText();
 		}
 	}
@@ -1002,7 +1002,7 @@ uint16 CBaseScreen::SetSelection(uint16 select, LTBOOL bFindSelectable)
 	pSelCtrl->Select(LTTRUE);
 
 	if (m_nSelection != nOldSelect)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 
 
 
@@ -2292,7 +2292,8 @@ void HandleEditKey(int key)
 }
 
 
-// RETAIL: Tron's (0x100d6750); the name is ours
+// RETAIL: Tron's (0x100d6750); the name is ours. All of CBaseScreen's
+// interface sounds go through it (its callers 0x100d2822..0x100d3657)
 void CBaseScreen::PlayInterfaceSound(int nSound)
 {
 	if (m_dwInterfaceSoundMask & (1 << nSound))
