@@ -25,7 +25,7 @@ class DoomsDayPiece;
 	
 LINKTO_MODULE( DoomsDayDevice );
 
-class DoomsDayDevice : public PropType 
+class DoomsDayDevice : public NOLF2PropType 
 {
 	public: // Methods...
 

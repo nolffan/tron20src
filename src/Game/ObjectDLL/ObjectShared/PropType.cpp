@@ -113,6 +113,180 @@ uint32 PropType::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
+				ReadProp((ObjectCreateStruct*)pData);
+			}
+
+			return dwRet;
+		}
+		break;
+
+		default : break;
+	}
+
+	return Prop::EngineMessageFn(messageID, pData, fData);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	PropType::ReadProp()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x100f55b0): set the prop up from
+//				its prop type at precreate (Build 51's shape, NOLF2's later
+//				members)
+//
+// ----------------------------------------------------------------------- //
+
+void PropType::ReadProp(ObjectCreateStruct *pData)
+{
+	if (!pData) return;
+
+	// Type
+
+    PROPTYPE* pPropType = LTNULL;
+	GenericProp genProp;
+
+    if (g_pLTServer->GetPropGeneric("Type", &genProp) == LT_OK)
+	{
+		if (genProp.m_String[0])
+		{
+			pPropType = g_pPropTypeMgr->GetPropType(genProp.m_String);
+		}
+	}
+
+	// Model
+
+	if (!pPropType || pPropType->sFilename.empty( )) return;
+
+	pPropType->SetupModel( pData );
+
+	// Disturbance
+
+	PROP_DISTURB* pDisturb = pPropType->pDisturb;
+	if(pDisturb != LTNULL)
+	{
+		if(m_pDisturb == LTNULL)
+		{
+			m_pDisturb = debug_new(PropDisturbStruct);
+			m_dwFlags |= FLAG_TOUCH_NOTIFY;
+		}
+
+		if ( !pDisturb->sTouchSound.empty( ))
+		{
+		    m_pDisturb->sTouchSoundName = pDisturb->sTouchSound;
+		}
+
+		m_pDisturb->pPD = pDisturb;
+
+		m_damage.SetDestroyedStimulus(pDisturb->fStimRadius, pDisturb->nDestroyAlarmLevel);
+	}
+
+	m_vObjectColor	= pPropType->vObjectColor;
+	m_bMoveToFloor	= pPropType->bMoveToFloor;
+	m_fAlpha		= pPropType->fAlpha;
+
+	// Only use the prop type scale if the scale wasn't set in DEdit...
+
+	if (m_vScale.x == 1.0 && m_vScale.y == 1.0 && m_vScale.z == 1.0)
+	{
+		m_vScale = pPropType->vScale;
+	}
+
+	m_dwFlags = (pPropType->bVisible ? (m_dwFlags | FLAG_VISIBLE) : (m_dwFlags & ~FLAG_VISIBLE));
+	m_dwFlags = (pPropType->bSolid ? (m_dwFlags | FLAG_SOLID) : (m_dwFlags & ~FLAG_SOLID));
+	m_dwFlags = (pPropType->bGravity ? (m_dwFlags | FLAG_GRAVITY) : (m_dwFlags & ~FLAG_GRAVITY));
+	m_dwFlags = (pPropType->bShadow	? (m_dwFlags | FLAG_SHADOW) : (m_dwFlags & ~FLAG_SHADOW));
+
+	if (pPropType->bRayHit)
+	{
+		// Set touch notify so projectiles can impact with us...
+		m_dwFlags |= FLAG_TOUCH_NOTIFY;
+		m_dwFlags |= FLAG_RAYHIT;
+	}
+	else
+	{
+		m_dwFlags &= ~FLAG_TOUCH_NOTIFY;
+		m_dwFlags &= ~FLAG_RAYHIT;
+	}
+
+	if(pPropType->bActivateable)
+	{
+		m_dwUsrFlgs |= USRFLG_CAN_ACTIVATE;
+		
+		// Since we are activateable try and set our activate type...
+
+		if( !pPropType->sActivateType.empty() )
+		{
+			m_ActivateTypeHandler.SetActivateType( pPropType->sActivateType.c_str() );
+		}
+	}
+
+	m_bTouchable = pPropType->bTouchable;
+
+	m_damage.SetArmorPoints(0.0f);
+	m_damage.SetMaxArmorPoints(0.0f);
+    m_damage.SetCanHeal(LTFALSE);
+    m_damage.SetCanRepair(LTFALSE);
+    m_damage.SetApplyDamagePhysics(LTFALSE);
+	m_damage.m_bRemoveOnDeath = LTFALSE;
+
+	if (pPropType->nHitPoints >= 0)
+	{
+        m_damage.SetMaxHitPoints((LTFLOAT)pPropType->nHitPoints);
+        m_damage.SetHitPoints((LTFLOAT)pPropType->nHitPoints);
+	}
+	else
+	{
+		m_damage.SetMaxHitPoints(1.0f);
+		m_damage.SetHitPoints(1.0f);
+        m_damage.SetNeverDestroy( LTTRUE );
+	}
+
+	// Set the debris type...
+
+	if (!pPropType->sDebrisType.empty( ))
+	{
+		DEBRIS* pDebris = g_pDebrisMgr->GetDebris(pPropType->sDebrisType.c_str( ));
+		if (pDebris)
+		{
+			m_damage.m_nDebrisId = pDebris->nId;
+		}
+	}
+
+	// RETAIL: Tron's death FX (Object.lto 0x100f5876)
+
+	if (pPropType->sDeathClientFX != "")
+	{
+		m_damage.m_sDestroyFX = pPropType->sDeathClientFX;
+	}
+}
+
+// ======================================================================= //
+//
+// PORT: NOLF2's runtime prop types (SetPropType). Tron's PropType has no
+// members (retail's class is Prop's size, 0x840) and sets itself up only at
+// precreate; NOLF2's DoomsDay objects, not in Tron, still need these, so
+// they derive from this class (ours) instead.
+//
+// ======================================================================= //
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	NOLF2PropType::EngineMessageFn
+//
+//	PURPOSE:	Handle engine messages
+//
+// ----------------------------------------------------------------------- //
+
+uint32 NOLF2PropType::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
+{
+	switch(messageID)
+	{
+		case MID_PRECREATE:
+		{
+            uint32 dwRet = Prop::EngineMessageFn(messageID, pData, fData);
+
+			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
+			{
 				ObjectCreateStruct* pStruct = (ObjectCreateStruct*)pData;
 				if( !ReadProp(pStruct))
 					return 0;
@@ -144,13 +318,13 @@ uint32 PropType::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PropType::PropRead()
+//	ROUTINE:	NOLF2PropType::PropRead()
 //
 //	PURPOSE:	Update properties
 //
 // ----------------------------------------------------------------------- //
 
-bool PropType::ReadProp(ObjectCreateStruct *pData)
+bool NOLF2PropType::ReadProp(ObjectCreateStruct *pData)
 {
 	if (!pData) 
 		return false;
@@ -180,13 +354,13 @@ bool PropType::ReadProp(ObjectCreateStruct *pData)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PropType::Setup()
+//	ROUTINE:	NOLF2PropType::Setup()
 //
 //	PURPOSE:	Sets up proptype object from PROPTYPE struct.
 //
 // ----------------------------------------------------------------------- //
 
-bool PropType::SetPropType( char const* pszPropType )
+bool NOLF2PropType::SetPropType( char const* pszPropType )
 {
 	// Check inputs.
 	// Check inputs.
@@ -200,13 +374,13 @@ bool PropType::SetPropType( char const* pszPropType )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PropType::Setup()
+//	ROUTINE:	NOLF2PropType::Setup()
 //
 //	PURPOSE:	Sets up proptype based on member variables.
 //
 // ----------------------------------------------------------------------- //
 
-bool PropType::Setup( )
+bool NOLF2PropType::Setup( )
 {
 	PROPTYPE* pPropType = g_pPropTypeMgr->GetPropType(( char* )m_sPropType.c_str( ));
 	if( !pPropType )
@@ -312,7 +486,7 @@ bool PropType::Setup( )
 		return false;
 
 	// Let the prop do some setup.
-	// PORT: Tron's PropType::Setup (Object.lto 0x100f55b0) does not call
+	// PORT: Tron's NOLF2PropType::Setup (Object.lto 0x100f55b0) does not call
 	// Prop::Setup (which returns nothing in Tron); not yet rebuilt
 	Prop::Setup( );
 
@@ -321,13 +495,13 @@ bool PropType::Setup( )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PropType::Save
+//	ROUTINE:	NOLF2PropType::Save
 //
 //	PURPOSE:	Save the object
 //
 // ----------------------------------------------------------------------- //
 
-void PropType::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
+void NOLF2PropType::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg)
 		return;
@@ -337,13 +511,13 @@ void PropType::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PropType::Load
+//	ROUTINE:	NOLF2PropType::Load
 //
 //	PURPOSE:	Load the object
 //
 // ----------------------------------------------------------------------- //
 
-void PropType::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
+void NOLF2PropType::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg)
 		return;

@@ -37,7 +37,7 @@ PieceType const c_aDDPieceTypes[] =
 	{ "Doomsday_Core", true },
 };
 
-class DoomsDayPiece : public PropType 
+class DoomsDayPiece : public NOLF2PropType 
 {
 	public: // Methods...
 

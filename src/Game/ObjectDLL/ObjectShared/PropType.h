@@ -21,10 +21,24 @@ LINKTO_MODULE( PropType );
 
 class PropType : public Prop
 {
+	protected :
+
+        uint32  EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
+
+	private :
+
+		// RETAIL: Tron's (Object.lto 0x100f55b0); Tron's PropType has no
+		// members, no Save/Load and no runtime SetPropType
+		void ReadProp(ObjectCreateStruct *pData);
+};
+
+// PORT: NOLF2's runtime prop types for NOLF2's DoomsDay objects (not in
+// Tron; PropType.cpp). Ours
+class NOLF2PropType : public PropType
+{
 	public :
 
 		const char* GetPropTypeName( ) { return m_sPropType.c_str(); }
-		
 
 	protected :
 
@@ -33,7 +47,6 @@ class PropType : public Prop
 		bool	SetPropType( char const* pszPropType );
 
 		bool	Setup( );
-
 
 	protected:
 
@@ -44,7 +57,6 @@ class PropType : public Prop
 		bool ReadProp(ObjectCreateStruct *pData);
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
-
 };
 
 #ifndef __PSX2
