@@ -24,6 +24,7 @@
 #include <list>
 
 class Body;
+class CLightCycleMatchMgr;
 
 class CTronGameServerShell : public CGameServerShell
 {
@@ -58,8 +59,19 @@ class CTronGameServerShell : public CGameServerShell
 
 		virtual void Update(LTFLOAT timeElapsed);
 
+		// RETAIL: the player events the game type's manager gets (slots 29..33,
+		// retail 0x1005dec0, 0x1005df10, 0x1005dfe0, 0x1005e040, 0x1005e090)
+		virtual void	TronUnknownVirtual74( HCLIENT hClient );
+		virtual void	TronUnknownVirtual78( HCLIENT hClient );
+		virtual void	TronUnknownVirtual7C( CPlayerObj* pPlayer );
+		virtual void	TronUnknownVirtual80( CPlayerObj* pPlayer );
+		virtual void	TronUnknownVirtual84( uint32 nLevel );
+
 		// Tron specific MID_ messages
 		void HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x1005ed50: MID_TRON_SERVERMESSAGE goes to the game
+		// type's manager (the name is ours)
+		void HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
 
 	private:
 
@@ -118,7 +130,7 @@ class CTronGameServerShell : public CGameServerShell
 		CTronMissionButeMgr	m_MissionButeMgr;	// +0x176f8 Same as g_pMissionButeMgr
 		CServerLightCycleMgr	m_LightCycleMgr;	// +0x18840 Same as g_pLightCycleMgr, g_pServerLightCycleMgr (0x137c bytes in retail)
 		void*				m_pTronUnknown19BBC;	// +0x19bbc RETAIL: the revive game types' manager; not yet known
-		void*				m_pTronUnknown19BC0;	// +0x19bc0 RETAIL: the light cycle game type's; not yet known
+		CLightCycleMatchMgr*	m_pLightCycleMatchMgr;	// +0x19bc0 the light cycle game type's (Same as g_pLightCycleMatchMgr)
 		CPingButeMgr		m_PingButeMgr;		// +0x19bc4
 		CBossButeMgr		m_BossButeMgr;		// +0x1ace8
 		CSubroutineDataMgr	m_SubroutineDataMgr;	// +0x1be50

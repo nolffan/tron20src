@@ -241,6 +241,10 @@ SOURCE=.\LightCycle.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleMatchMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -454,6 +458,10 @@ SOURCE=.\IONode.h
 # Begin Source File
 
 SOURCE=.\LightCycle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMatchMgr.h
 # End Source File
 # Begin Source File
 

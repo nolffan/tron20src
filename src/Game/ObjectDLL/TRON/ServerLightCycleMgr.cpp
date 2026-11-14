@@ -19,6 +19,7 @@
 #include "ModelButeMgr.h"
 #include "LightCycleMissile.h"
 #include "LightCyclePowerup.h"
+#include "LightCycleMatchMgr.h"
 
 CLightCycleMgr* g_pLightCycleMgr = NULL;				// RETAIL: 0x1035a54c
 CServerLightCycleMgr* g_pServerLightCycleMgr = NULL;	// RETAIL: 0x1035a550
@@ -632,9 +633,8 @@ bool CServerLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 				pKillerPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(pKiller->hObject);
 			}
 
-			// PORT: retail tells the light cycle mission's manager
-			// (0x1035a574) here: 0x10054b50(pPlayer, pKillerPlayer, false).
-			// That class is not written yet.
+			// RETAIL: the light cycle game's manager scores it (0x10050f9d)
+			g_pLightCycleMatchMgr->HandleDerez(pPlayer, pKillerPlayer, false);
 		}
 	}
 
@@ -1609,9 +1609,8 @@ void CServerLightCycleMgr::HeadOnCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIS
 		CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(pCyclist->hObject);
 		CPlayerObj* pOtherPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(pOther->hObject);
 
-		// PORT: retail tells the light cycle mission's manager
-		// (0x1035a574) here: 0x10054b50(pPlayer, pOtherPlayer, true). That
-		// class is not written yet.
+		// RETAIL: the light cycle game's manager scores both (0x1005309f)
+		g_pLightCycleMatchMgr->HandleDerez(pPlayer, pOtherPlayer, true);
 	}
 }
 

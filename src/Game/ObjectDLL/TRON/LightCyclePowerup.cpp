@@ -15,6 +15,7 @@
 #include "ParsedMsg.h"
 #include "CommandMgr.h"
 #include "GameServerShell.h"
+#include "LightCycleMatchMgr.h"
 
 extern CGameServerShell* g_pGameServerShell;
 
@@ -106,10 +107,9 @@ LightCyclePowerup::~LightCyclePowerup()
 //
 //	PURPOSE:	The power-ups the game allows, a bit each (GetPowerupFlag)
 //
-//	RETAIL: inline (0x1002b0c1, 0x1002bab1; the name is ours). PORT: in a
-//	multiplayer light cycle game retail reads its light cycle game's copy
-//	(Object.lto 0x1035a574, +0x88; that class is not written yet) of the
-//	server options' m_nLCPowerups, read here instead.
+//	RETAIL: inline (0x1002b0c1, 0x1002bab1; the name is ours). In a
+//	multiplayer light cycle game, the light cycle game's copy of the server
+//	options' m_nLCPowerups (g_pLightCycleMatchMgr, 0x1035a574, +0x88).
 //
 // ----------------------------------------------------------------------- //
 
@@ -136,7 +136,7 @@ inline uint32 GetAllowedPowerups()
 
 		case eGameTypeMultiplayerLightcycles:
 		{
-			dwAllowed = g_pGameServerShell->GetServerGameOptions().m_nLCPowerups;
+			dwAllowed = g_pLightCycleMatchMgr->GetAllowedPowerups();
 		}
 		break;
 	}

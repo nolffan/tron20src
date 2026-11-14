@@ -28,6 +28,10 @@ class CTronPlayerObj : public CPlayerObj
 	// RETAIL: a missile flies through its rider's cycle (0x1002aa27)
 	friend class LightCycleMissile;
 
+	// RETAIL: the light cycle game starts and ends its racers' cycles
+	// (0x1005401a, 0x100562f2)
+	friend class CLightCycleMatchMgr;
+
 	public :
 
 		// Constructor/destructor

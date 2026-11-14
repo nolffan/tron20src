@@ -74,6 +74,11 @@ struct ObjectiveMsgInfo
 
 class CPlayerObj : public CCharacter
 {
+	// RETAIL: Tron's game type managers keep the players' scores, flags and
+	// counters themselves (Object.lto 0x10053b80..0x10057220)
+	friend class CLightCycleMatchMgr;
+	friend class CDiscMatchMgr;
+
 	public :
 
 		CPlayerObj();
