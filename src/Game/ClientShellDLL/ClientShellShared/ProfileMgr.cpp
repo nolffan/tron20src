@@ -26,6 +26,7 @@
 #include "MsgIds.h"
 #include "VersionMgr.h"
 #include "PlayerCamera.h"
+#include "ClientSoundMgr.h"
 #include "VehicleMgr.h"
 #include "PlayerMgr.h"
 
@@ -62,9 +63,9 @@ CProfileMgr* g_pProfileMgr = LTNULL;
 
 // RETAIL: string table entries 752 and 753 ("TRUE" or "FALSE" by the
 // language build; the developer build's CRes.dll has "FALSE") say whether
-// gore and bodies are allowed (LoadGameOptions 0x100ed8d0); names ours.
-const int kGoreAllowedStringId = 752;
-const int kBodiesAllowedStringId = 753;
+// the build has no gore and no bodies (LoadGameOptions 0x100ed8d0); names ours.
+const int kNoGoreStringId = 752;
+const int kNoBodiesStringId = 753;
 
 namespace
 {
@@ -560,13 +561,13 @@ void CUserProfile::LoadGameOptions()
 {
 	strcpy(s_aTagName,"Game");
 
-	// RETAIL: 0x100ed8d0 -- whether gore and bodies are allowed come from
-	// the string table.
+	// RETAIL: 0x100ed8d0 -- the string table says whether this build has
+	// no gore or no bodies ("TRUE").
 	char szAllowed[8];
-	FormatString(kGoreAllowedStringId,szAllowed,sizeof(szAllowed));
-	m_bGoreAllowed = (stricmp(szAllowed,"TRUE") == 0);
-	FormatString(kBodiesAllowedStringId,szAllowed,sizeof(szAllowed));
-	m_bBodiesAllowed = ((stricmp(szAllowed,"TRUE") == 0) && !GetConsoleInt("NoBodies",0));
+	FormatString(kNoGoreStringId,szAllowed,sizeof(szAllowed));
+	m_bGoreAllowed = (stricmp(szAllowed,"TRUE") != 0);
+	FormatString(kNoBodiesStringId,szAllowed,sizeof(szAllowed));
+	m_bBodiesAllowed = ((stricmp(szAllowed,"TRUE") != 0) && !GetConsoleInt("NoBodies",0));
 
 	m_nDifficulty = m_buteMgr.GetInt(s_aTagName,"Difficulty",2);
     m_nSubtitles  = (uint8)m_buteMgr.GetInt(s_aTagName,"Subtitles",0);
@@ -1073,6 +1074,7 @@ void CUserProfile::ApplyBindings()
 void CUserProfile::ApplyMouse()
 {
 	WriteConsoleInt("MouseInvertY",m_bInvertY);
+	WriteConsoleInt("MouseInvertLCY",m_bInvertLCMouse);
 	WriteConsoleInt("MouseLook",m_bMouseLook);
 	WriteConsoleFloat("MouseSensitivity",(float)m_nSensitivity);
 	WriteConsoleFloat("InputRate",(float)m_nInputRate);
@@ -1199,9 +1201,27 @@ void CUserProfile::ApplySound()
 	WriteConsoleFloat( "speechsoundmultiplier", m_fSpeechSoundMultiplier );
 	ImplementSoundVolume();
 
+	// RETAIL: 0x100ef800 -- Tron's EAX option turns the sound filters on
+	// and off.
+	if (!m_bEAXEnabled)
+	{
+		ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
+		if (pSoundMgr)
+		{
+			pSoundMgr->EnableSoundFilter(m_bEAXEnabled != LTFALSE);
+		}
+	}
+	else
+	{
+		g_pClientSoundMgr->SetSoundFilter(g_pGameClientShell->GetPlayerMgr()->GetSoundFilter());
+	}
+
+	LTBOOL bOldEAX = GetConsoleInt("SoundFilters",0);
+	WriteConsoleInt("SoundFilters",(int)m_bEAXEnabled);
+
 	LTBOOL bOldSoundQuality = GetConsoleInt("sound16bit",0);
 	WriteConsoleInt("sound16bit",(int)m_bSoundQuality);
-	if (m_bSoundQuality != bOldSoundQuality)
+	if (m_bSoundQuality != bOldSoundQuality || bOldEAX != m_bEAXEnabled)
 	{
 		g_pGameClientShell->InitSound();
 	}
@@ -1210,6 +1230,9 @@ void CUserProfile::ApplySound()
 
 	WriteConsoleInt("MusicQuality",(int)m_bMusicQuality);
 	g_pGameClientShell->GetMusic()->SetQuality(!!m_bMusicQuality);	
+
+	// RETAIL: Tron rereads the performance settings here.
+	g_pPerformanceMgr->GetPerformanceOptions(&m_sPerformance);
 
 	//if we haven't gotten to the menus yet, don't start the music yet...
 	if (g_pInterfaceMgr->HasEnteredScreenState())
@@ -1624,6 +1647,7 @@ void CUserProfile::SetMouse()
 
 	m_bMouseLook = GetConsoleInt("MouseLook",1);
 	m_bInvertY = GetConsoleInt("MouseInvertY",0);
+	m_bInvertLCMouse = GetConsoleInt("MouseInvertLCY",0);
 
 	m_nInputRate = GetConsoleInt("InputRate",20);
 	
@@ -1728,6 +1752,8 @@ void CUserProfile::SetSound()
 
 	m_bSoundQuality = (LTBOOL)GetConsoleInt("sound16bit",0);
 	m_bMusicQuality = (LTBOOL)GetConsoleInt("MusicQuality",0);
+	// RETAIL: 0x100f07f0 -- EAX is the "SoundFilters" console variable
+	m_bEAXEnabled = (LTBOOL)GetConsoleInt("SoundFilters",0);
 
 	if (!GetConsoleInt("MusicEnable",0) || !GetConsoleInt("MusicActive",0))
 		m_nMusicVolume = MUSIC_MIN_VOL;

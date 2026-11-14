@@ -38,10 +38,12 @@ enum JoystickAxisBindings
 	eJoystick_LookInvert,
 };
 
-const int MUSIC_MIN_VOL		= -2500;
+// RETAIL: Tron's music volume floor is -3000 and its default 0 (CUserProfile's
+// constructor 0x100ec8a0, LoadSound 0x100edc80, ApplySound 0x100ef800)
+const int MUSIC_MIN_VOL		= -3000;
 const int MUSIC_MAX_VOL		= 5000;
 const int MUSIC_SLIDER_INC	= 250;
-const int MUSIC_DEFAULT_VOL	= 2500;
+const int MUSIC_DEFAULT_VOL	= 0;
 
 const int SOUND_MIN_VOL		= 0;
 const int SOUND_MAX_VOL		= 100;
