@@ -33,6 +33,9 @@ class CCheatMgr
         void	ClearCheater() { m_bPlayerCheated = LTFALSE; }
         LTBOOL	IsCheater() { return m_bPlayerCheated; }
 
+		// RETAIL: Tron's (0x100f1e30; the name is ours)
+		LTBOOL	IsCheatActive(int nCheatCode);
+
 		bool	Process( CheatCode nCheatCode, CParsedMsg &cMsg );
 
 	private:

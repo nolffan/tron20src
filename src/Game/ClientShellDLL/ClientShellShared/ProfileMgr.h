@@ -20,6 +20,7 @@
 #include "SkillsButeMgr.h"
 #include "NetDefs.h"
 #include "ProfileUtils.h"
+#include "TRON/CaselessString.h"
 
 class CProfileMgr;
 extern CProfileMgr* g_pProfileMgr;
@@ -234,10 +235,24 @@ public:
 	bool			m_bMPRadar;
 	uint16			m_nClientPort;
 
+	// RETAIL: Tron's light cycle settings (the light cycle screens',
+	// CBaseScreenLightCycle 0x1000a3a0, 0x1000a560, 0x1000a600, 0x1000a660;
+	// the names are ours). Retail keeps them at +0x200 (the light cycle
+	// player name), +0x20c and +0x210 (the cycle's shade style and shade)
+	// and +0x220 (the names of the cycle colors unlocked). PORT: ours sit
+	// here, in the space below, until the profile is laid out as retail's
+	// (they are not loaded or saved yet; two bytes keep them aligned)
+	char			m_aTronPadAlign[2];
+	std::string		m_sLightCycleName;
+	int				m_nLightCycleStyle;
+	int				m_nLightCycleShade;
+	std::vector<CaselessString>	m_UnlockedCycleColors;
+
 	// PORT: what retail keeps where NOLF2 had its server game options is
 	// not yet laid out (the constructor, 0x100ec8a0, has two more strings,
 	// two vectors and six ints); this keeps the size retail's
-	char			m_aTronPadServerOptions[sizeof(ServerGameOptions) - sizeof(std::string) - sizeof(int)];
+	char			m_aTronPadServerOptions[sizeof(ServerGameOptions) - sizeof(std::string) - sizeof(int)
+						- 2 - sizeof(std::string) - 2 * sizeof(int) - sizeof(std::vector<CaselessString>)];
 
 	//****************** game options
     uint8	            m_nSubtitles;

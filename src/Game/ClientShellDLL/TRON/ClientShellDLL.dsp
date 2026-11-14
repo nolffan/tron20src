@@ -180,6 +180,10 @@ SOURCE=.\BaseScreenJoin.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BaseScreenLightCycle.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -638,6 +642,10 @@ SOURCE=.\ArcCtrl.h
 # Begin Source File
 
 SOURCE=.\BaseScreenJoin.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenLightCycle.h
 # End Source File
 # Begin Source File
 

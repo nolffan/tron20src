@@ -260,6 +260,10 @@ CUserProfile::CUserProfile()
 	m_nBandwidthClient = 3;
 	m_nBandwidthClientCustom = g_BandwidthClient[m_nBandwidthClient];
 	m_nClientPort = 27888;
+
+	// PORT: ours (retail's constructor leaves its +0x20c and +0x210 alone)
+	m_nLightCycleStyle = 0;
+	m_nLightCycleShade = 0;
 	m_nDifficulty = 1;
 }
 

@@ -140,6 +140,16 @@ void CCheatMgr::Init()
 
 }
 
+// RETAIL: Tron's (0x100f1e30; the name is ours): whether a cheat is on.
+// PORT: retail's range is its own 58 cheats (0..0x39); ours is NOLF2's
+// list's until Tron's cheats are written
+LTBOOL CCheatMgr::IsCheatActive(int nCheatCode)
+{
+	if (nCheatCode <= CHEAT_NONE || nCheatCode >= CHEAT_MAX)
+		return LTFALSE;
+	return s_CheatInfo[nCheatCode].bActive;
+}
+
 
 // ----------------------------------------------------------------------- //
 //
