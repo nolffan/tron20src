@@ -444,6 +444,12 @@ void CAIHuman::DestroyArmor()
 {
 	CAI::DestroyArmor();
 
+	// RETAIL: Tron checks the attachments (retail 0x1016cebe)
+	if( !m_pAttachments )
+	{
+		return;
+	}
+
 	// Get a list of all of the prop-objects attatched as the m_ap* versions
 	// are unreliable
 	BaseClass* apObjects[AI_MAX_OBJECTS];
