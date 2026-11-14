@@ -33,11 +33,6 @@ struct SecRezzerPointInfo
 
 typedef std::vector<SecRezzerPointInfo> SecRezzerPointList;
 
-// RETAIL: CDestructibleModel is 0x738 bytes in retail (its constructor,
-// retail 0x1010ebd0), 0x728 in ours: this pads SecRezzer's members to
-// retail's offsets. Remove it when CDestructibleModel is retail's (it
-// then fails to compile: an array of size 0)
-#define SECREZZER_DESTRUCTIBLEMODEL_PAD		(0x738 - sizeof(CDestructibleModel))
 
 class SecRezzer : public Spawner
 {
@@ -96,7 +91,6 @@ class SecRezzer : public Spawner
 		void	Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
 		CDestructibleModel				m_damage;
-		uint8							m_aDestructibleModelPad[SECREZZER_DESTRUCTIBLEMODEL_PAD];
 		int								m_eState;
 		int								m_nMaxActive;			// At most this many of our programs at once
 		int								m_nNumberToSpawn;		// Rezzed each time we are told ON
