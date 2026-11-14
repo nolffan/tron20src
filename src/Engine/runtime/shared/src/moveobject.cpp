@@ -735,20 +735,11 @@ inline LTBOOL DoSolidBBoxCollision(MoveState *pState, LTObject *pTestObj,
 			// The push amount is the distance along the normal behind the plane.  If we had used
 			// a dot product, this number would be negative...
 			fDot2 = -pushAmount.Mag();
-			// RETAIL: a zero push moves the whole way (server.dll 0x100244d0)
-			if (fDot2 == 0.0f)
-			{
-				newPos = vDeltaPos + pTestObj->GetPos();
-				DEBUG_PRINT(1, ("fDot2 = 0.0"));
-			}
-			else
-			{
 			vNormal = pushAmount / -fDot2;
 			
 			fDot1 = fDot2 + vNormal.Dot(vDeltaPos);
 			newPos = vDeltaPos * (1.0f - ( -fDot1 / ( fDot2 - fDot1 )));
 			newPos += pTestObj->GetPos();
-			}
 		}
 
 		moveState.Inherit(pState, pTestObj);
@@ -816,16 +807,12 @@ inline LTBOOL DoSolidBBoxCollision(MoveState *pState, LTObject *pTestObj,
 	}
 	else
 	{
+		// RETAIL: not for a push of (nearly) nothing (server.dll 0x1001c8e2)
+		if (!pushAmount.NearlyEquals(LTVector(0.0f, 0.0f, 0.0f), 0.0001f))
+		{
 		// The push amount is the distance along the normal behind the plane.  If we had used
 		// a dot product, this number would be negative...
 		fDot2 = -pushAmount.Mag();
-		// RETAIL: and says so (server.dll 0x1002478c)
-		if (fDot2 == 0.0f)
-		{
-			dsi_PrintToConsole("fDot2 = 0.0");
-		}
-		else
-		{
 		vNormal = pushAmount / -fDot2;
 		
 		fDot1 = fDot2 - vNormal.Dot(vDeltaPos);
@@ -1474,9 +1461,6 @@ void MoveObject
 		return;
     }
 
-	// Break its links to containers / contained objects.
-	pState->m_pAbstract->BreakContainerLinks(pState->m_pObj);
-
 	// Save some work if we can.
 	if( pState->m_pAbstract->CanOptimizeObject( pState->m_pObj ) )
 	{
@@ -1498,6 +1482,11 @@ void MoveObject
 	pOldCollisionInfo = pState->m_pAbstract->GetCollisionInfo();
 	pState->m_pAbstract->GetCollisionInfo() = &collisionInfo;
 	memset( &collisionInfo, 0, sizeof( CollisionInfo ));
+
+	// Break its links to containers / contained objects.
+	// RETAIL: only now, after the optimized case (Lithtech.exe 0x451aec,
+	// server.dll 0x1001b503)
+	pState->m_pAbstract->BreakContainerLinks(pState->m_pObj);
 
 	// Set the moving flag so we can't be moved by things we push. 
 	// Also set the apply physics flag so we do physics calcs next time around.
@@ -1523,10 +1512,7 @@ void MoveObject
 		pWasStandingOnObj = LTNULL;
 	}
 
-	// RETAIL: CJ counts the riders from 0 and stores before counting
-	// (server.dll 0x10022e22, as in RotateWorldModel), and moves them
-	// first to last below.
-	nNumObjectsStanding = 0;
+	nNumObjectsStanding = -1;
 	if(flags & MO_MOVESTANDINGONS)
 	{
 		// Transfer the objects that are on object now, so we can move them later...
@@ -1546,9 +1532,9 @@ void MoveObject
 			{
 				if( nNumObjectsStanding < MAX_CARRIED_OBJECTS )
 				{
+					nNumObjectsStanding++;
 					startPosInfo[nNumObjectsStanding].m_pObj = pObjOn;
 					startPosInfo[nNumObjectsStanding].m_vRelPos = pObjOn->GetPos() - pState->m_pObj->GetPos();
-					nNumObjectsStanding++;
 				}
 				else
 				{
@@ -1608,10 +1594,10 @@ void MoveObject
 	if(flags & MO_MOVESTANDINGONS)
 	{
 		// Offset everyone that was standing on us by the same amount.
-		for( int32 nObj = 0; nObj < nNumObjectsStanding; nObj++ )
+		while( nNumObjectsStanding >= 0 )
 		{
-			pObjOn = startPosInfo[nObj].m_pObj;
-			newPos = pState->m_pObj->GetPos() + startPosInfo[nObj].m_vRelPos;
+			pObjOn = startPosInfo[nNumObjectsStanding].m_pObj;
+			newPos = pState->m_pObj->GetPos() + startPosInfo[nNumObjectsStanding].m_vRelPos;
 			// Push the carried object into whatever it's standing on so it resets the standing on flag properly
 			newPos -= LTVector(0.0f, 0.1f, 0.0f);
 			
@@ -1628,6 +1614,8 @@ void MoveObject
 			{
 				SetObjectStanding(pObjOn, pState->m_pObj, LTNULL); // It's still standing on me...
 			}
+			
+			nNumObjectsStanding--;
 		}
 	}
 
