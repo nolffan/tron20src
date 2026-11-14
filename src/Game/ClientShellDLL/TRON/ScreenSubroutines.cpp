@@ -53,7 +53,6 @@ namespace
 	} LibraryState;
 
 	// RETAIL: the screen's sounds, 0x1007d090..0x1007d3a2 (names ours).
-	// PORT: retail's PlaySoundLocal takes one more argument (1.0f).
 	void PlaySubroutineStartSound()
 	{
 		g_pClientSoundMgr->PlaySoundLocal("subroutinestart", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);

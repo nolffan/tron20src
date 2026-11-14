@@ -4866,7 +4866,8 @@ void CClientWeapon::Fire( bool bFire )
 	}
 
 	LTVector vPos( 0, 0, 0 );
-	::PlayWeaponSound( m_pWeapon, vPos, eSoundId, LTTRUE );
+	// RETAIL: 0x101343ad
+	::PlayWeaponSound( m_pWeapon, vPos, eSoundId, 1.0f, TronUnknownVirtual160( 6 ), LTTRUE );
 
 	// send a fire message to the server
 	SendFireMessage( bFire, fPerturb, vFirePos, vF, vObjectImpactPos, hObjectImpact );

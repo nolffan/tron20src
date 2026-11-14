@@ -384,7 +384,8 @@ static bool FillPSIFromButeOrParams( char const* pName, PlaySoundInfo& psi, floa
 
 HLTSOUND CGameSoundMgr::PlaySoundFromObject(HOBJECT hObject, char const* pName, LTFLOAT fORadius,
                                         SoundPriority ePriority, uint32 dwFlags, uint8 nVolume,
-										float fPitchShift, LTFLOAT fIRadius, uint8 nSoundClass )
+										float fPitchShift, LTFLOAT fIRadius, uint8 nSoundClass,
+										LTFLOAT fVolumeScale )
 {
     if (!pName || !hObject) return LTNULL;
 
@@ -419,6 +420,13 @@ HLTSOUND CGameSoundMgr::PlaySoundFromObject(HOBJECT hObject, char const* pName, 
 		psi.m_dwFlags |= PLAYSOUND_ATTACHED;
 	}
 
+	// RETAIL: Tron scales the volume by fVolumeScale when it lies in [0, 1]
+	// (Object 0x100ce4d1, 0x100ce80c).
+	if (0.0f <= fVolumeScale && 1.0f >= fVolumeScale)
+	{
+		psi.m_nVolume = (uint8)(psi.m_nVolume * fVolumeScale);
+	}
+
 	if (psi.m_nVolume < 100)
 	{
 		psi.m_dwFlags |= PLAYSOUND_CTRL_VOL;
@@ -441,7 +449,8 @@ HLTSOUND CGameSoundMgr::PlaySoundFromObject(HOBJECT hObject, char const* pName, 
 
 HLTSOUND CGameSoundMgr::PlaySoundFromPos(LTVector & vPos, char const* pName, LTFLOAT fORadius,
                                      SoundPriority ePriority, uint32 dwFlags,
-									 uint8 nVolume, float fPitchShift, LTFLOAT fIRadius, uint8 nSoundClass )
+									 uint8 nVolume, float fPitchShift, LTFLOAT fIRadius, uint8 nSoundClass,
+										LTFLOAT fVolumeScale )
 {
     if (!pName) return LTNULL;
 
@@ -462,7 +471,15 @@ HLTSOUND CGameSoundMgr::PlaySoundFromPos(LTVector & vPos, char const* pName, LTF
 	if( !FillPSIFromButeOrParams( pName, psi, fORadius, ePriority, dwFlags, nVolume, fPitchShift, fInnerRadius ))
 		return NULL;
 
-	if (nVolume < 100)
+	// RETAIL: Tron scales the volume by fVolumeScale when it lies in [0, 1]
+	// (Object 0x100ce4d1, 0x100ce80c).
+	if (0.0f <= fVolumeScale && 1.0f >= fVolumeScale)
+	{
+		psi.m_nVolume = (uint8)(psi.m_nVolume * fVolumeScale);
+	}
+
+	// RETAIL: Tron tests the (scaled) volume of psi, not nVolume (0x100ce85c).
+	if (psi.m_nVolume < 100)
 	{
 		psi.m_dwFlags |= PLAYSOUND_CTRL_VOL;
 	}
