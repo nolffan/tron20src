@@ -183,9 +183,9 @@ LTBOOL CMoveMgr::Init()
 	m_CV_SpectatorSpeedMul.Init(g_pLTClient, "SpectatorSpeedMul", NULL, 1.0f);
 
  	g_vtFallDamageMinHeight.Init(g_pLTClient, "FallDamageMinHeight", LTNULL, 300.0f);
-    g_vtFallDamageMaxHeight.Init(g_pLTClient, "FallDamageMaxHeight", LTNULL, 500.0f);
-    g_vtFallDamageMin.Init(g_pLTClient, "FallDamageMin", LTNULL, 5.0f);
-    g_vtFallDamageMax.Init(g_pLTClient, "FallDamageMax", LTNULL, 500.0f);
+    g_vtFallDamageMaxHeight.Init(g_pLTClient, "FallDamageMaxHeight", LTNULL, 620.0f);
+    g_vtFallDamageMin.Init(g_pLTClient, "FallDamageMin", LTNULL, 1.0f);
+    g_vtFallDamageMax.Init(g_pLTClient, "FallDamageMax", LTNULL, 400.0f);
 
     g_vtCamLandMinHeight.Init(g_pLTClient, "CamLandMinHeight", LTNULL, 50.0f);
     g_vtCamLandMoveDist.Init(g_pLTClient, "CamLandMoveDist", LTNULL, -15.0f);
@@ -1890,6 +1890,10 @@ LTBOOL CMoveMgr::AreDimsCorrect()
 {
 	if(!m_hObject || !g_pPhysicsLT)
         return LTTRUE;
+
+	// RETAIL: 0x100f8630 -- the light cycle's dims are always right.
+	if (m_pVehicleMgr && m_pVehicleMgr->GetPhysicsModel() == PPM_LIGHTCYCLE)
+		return LTTRUE;
 
     LTVector curDims;
 
