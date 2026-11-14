@@ -961,3 +961,17 @@ bool CMissionMgr::SendStartGameMessage( )
 	
 	return true;
 }
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMissionMgr::GetCurrentWorldName
+//
+//	PURPOSE:	The current world's name (RETAIL: 0x100ec4e0)
+//
+// --------------------------------------------------------------------------- //
+char const* CMissionMgr::GetCurrentWorldName() const
+{
+	// RETAIL: an empty string without a buffer
+	char const* pszWorldName = m_sCurrentWorldName;
+	return pszWorldName ? pszWorldName : "";
+}

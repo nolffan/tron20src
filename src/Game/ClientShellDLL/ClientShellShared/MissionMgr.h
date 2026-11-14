@@ -60,7 +60,8 @@ class CMissionMgr
 		bool			IsCustomLevel()   const {return m_bCustomLevel;}
 		int				GetCurrentMission() const {return m_nCurrentMission;}
 		int				GetCurrentLevel()	const {return m_nCurrentLevel;}
-		char const*		GetCurrentWorldName() const	{ return m_sCurrentWorldName; }
+		// RETAIL: out of line (0x100ec4e0)
+		char const*		GetCurrentWorldName() const;
 		bool			IsNewMission( ) const { return m_bNewMission; }
 		bool			IsRestoringLevel( ) const { return m_bRestoringLevel; }
 

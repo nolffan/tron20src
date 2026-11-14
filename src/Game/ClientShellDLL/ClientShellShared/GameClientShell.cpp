@@ -763,7 +763,7 @@ void CGameClientShell::InitSound()
 	}
 
 	soundInfo.m_fDistanceFactor = 1.0f / 64.0f;
-	soundInfo.m_fDopplerFactor = 1.0f;
+	soundInfo.m_fDopplerFactor = 0.75f;	// RETAIL: 0x100e2563: Tron's doppler factor
 
 	// Go initialize the sounds...
 
