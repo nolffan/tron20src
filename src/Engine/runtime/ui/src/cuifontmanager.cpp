@@ -104,7 +104,7 @@ CUIFont* CUIFontManager::CreateFont(ILTStream* pStream)
 		}
 	}
 
-	return pFont;
+	return (CUIFont*)pFont;	// (CUIFont_Impl is not derived from CUIFont)
 }
 
 
