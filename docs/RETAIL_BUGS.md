@@ -817,6 +817,19 @@ when it is removed. KILL_LOOPING_SOUND and a new looping sound free it.
 
 Fixed in the modern build: Prop.cpp (TRON20SRC_MODERN frees m_hstrLoopSound).
 
+### ARMOR_UNLOCK never unlocks a power armor
+
+Object.lto 0x1013b430 (PowerArmor::ObjectMessageFn, ObjectShared/
+PowerArmor.cpp). Tron's power armor can be locked on or off (ARMOR_LOCK_ON,
+ARMOR_LOCK_OFF) and has an ARMOR_UNLOCK command (its string is in the image,
+0x102987b0), but the trigger handler compares the message with an empty
+string instead (0x1013b5b4): ARMOR_UNLOCK falls through and does nothing,
+and only an empty trigger message unlocks the armor. A locked armor stays
+locked.
+
+Fixed in the modern build: PowerArmor.cpp (TRON20SRC_MODERN compares with
+KEY_UNLOCK).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

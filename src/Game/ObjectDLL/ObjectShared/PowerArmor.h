@@ -35,6 +35,16 @@ LINKTO_MODULE( PowerArmor );
 
 const char KEY_TURNON[]			= "ARMOR_ON";
 const char KEY_TURNOFF[]		= "ARMOR_OFF";
+// RETAIL: Tron's (Object.lto .rdata 0x10298790..0x102987e4)
+const char KEY_LOCKON[]			= "ARMOR_LOCK_ON";
+const char KEY_LOCKOFF[]		= "ARMOR_LOCK_OFF";
+const char KEY_UNLOCK[]			= "ARMOR_UNLOCK";
+const char KEY_REMOVE[]			= "ARMOR_REMOVE";
+const char KEY_CANDAMAGE[]		= "ARMOR_CAN_DAMAGE";
+const char KEY_CANTDAMAGE[]		= "ARMOR_CANT_DAMAGE";
+
+class CProjectile;
+class CAttachmentPosition;
 
 //----------------------------------------------------------------------------
 //              
@@ -53,7 +63,13 @@ class PowerArmor : public Prop
 		// Ctors/Dtors/etc
 		PowerArmor();
 		virtual ~PowerArmor();
-		
+
+		// RETAIL: Tron's (Object.lto 0x1013bb40): a projectile hits the
+		// armor at pAttachPos; the armor takes its damage (or, at the two
+		// easier difficulties, blocks some damage types whole) and is
+		// destroyed when its hit points run out. Returns true when the armor
+		// handled the hit. The name is ours
+		bool HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPosition* pAttachPos );
 
 	protected:
 		// Protected members
@@ -70,6 +86,9 @@ class PowerArmor : public Prop
 		void HandleOff();
 		void HandleTurningOn();
 		void HandleTurningOff();
+
+		// RETAIL: Tron's (Object.lto 0x1013ba20)
+		void ReadProp(ObjectCreateStruct *pStruct);
 
 	private:
 		// Private members
@@ -88,8 +107,23 @@ class PowerArmor : public Prop
 			kPA_TurningOff,
 		};
 
+		// RETAIL: Tron's lock (ARMOR_LOCK_ON/OFF; the names are ours)
+		enum ePA_Lock
+		{
+			kPA_LockedOn,
+			kPA_LockedOff,
+			kPA_Unlocked,
+		};
+
 		ePA_State	m_eState;		// What is the armor doing?
-		LTBOOL		m_bDisabled;	// Does this armor function?
+		// RETAIL: Tron has no m_bDisabled; its members (0x844..0x860) are
+		// below, the names ours
+		ePA_Lock	m_eLock;
+		std::string	m_sOnDestroyFX;	// "OnDestroyFX"
+		bool		m_bAttached;	// cleared by ARMOR_REMOVE
+		LTFLOAT		m_fHitPoints;
+		LTFLOAT		m_fMaxHitPoints;
+		bool		m_bCanDamage;	// ARMOR_CAN_DAMAGE / ARMOR_CANT_DAMAGE
 };
 
 

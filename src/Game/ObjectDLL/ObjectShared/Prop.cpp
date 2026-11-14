@@ -148,8 +148,10 @@ static CVarTrack	s_vtAttachmentMinVel;
 static CVarTrack	s_vtAttachmentMaxVel;
 static CVarTrack	s_vtAttachmentMinYAdd;
 static CVarTrack	s_vtAttachmentMaxYAdd;
-static CVarTrack	s_vtAttachmentFadeDelay;
-static CVarTrack	s_vtAttachmentFadeDuration;
+// RETAIL: not file-static in Tron: PowerArmor fades with them
+// (Object.lto 0x1013b770)
+CVarTrack			s_vtAttachmentFadeDelay;
+CVarTrack			s_vtAttachmentFadeDuration;
 
 
 // ----------------------------------------------------------------------- //

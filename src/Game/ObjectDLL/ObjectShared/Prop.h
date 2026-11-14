@@ -82,6 +82,8 @@ class Prop : public GameBase
 		virtual void HandleDestroy(HOBJECT hDamager);
 
 		void	StartFade( float fDuration, float fDelayStartTime = 0.0f, float fEndAlpha = 0.0f, bool bRemove = true );
+		// RETAIL: PowerArmor calls it (Object.lto 0x1013b6e3)
+		void	UpdateFade();
 
 		CDestructibleModel			m_damage;
 
@@ -168,7 +170,6 @@ class Prop : public GameBase
 
 		void	HandleAttachmentTouch( HOBJECT hToucher );
 
-		void	UpdateFade();
 		void	Update();
 
 		// RETAIL: Tron's (Object.lto 0x100fd330)
