@@ -25,6 +25,7 @@
 #include "CharacterFX.h"
 #include "VarTrack.h"
 #include "VehicleMgr.h"
+#include "PlayerCamera.h"
 #include "BankedList.h"
 #include "PlayerStats.h"
 #include "LeanMgr.h"
@@ -2632,8 +2633,12 @@ void CMoveMgr::OnServerForcePos(ILTMessage_Read *pMsg)
 		m_fLastOnGroundY = MIN_ONGROUND_Y;
 	}
 
+	// RETAIL: 0x100f9730
+	g_pPlayerMgr->GetPlayerCamera()->SetTronUnknown104(0);
+
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
-	
+
+	m_bForceToServerPos = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //

@@ -100,6 +100,8 @@ class CPlayerCamera
 		void SetTronUnknownF8(float f) { m_fTronUnknownF8 = f; }
 		float GetTronUnknownFC() const { return m_fTronUnknownFC; }
 		void SetTronUnknownFC(float f) { m_fTronUnknownFC = f; }
+		// RETAIL: cleared when the server moves the player (CMoveMgr::OnServerForcePos 0x100f9730)
+		void SetTronUnknown104(uint32 n) { m_nTronUnknown104 = n; }
 
 		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
 		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);
