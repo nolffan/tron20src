@@ -57,12 +57,11 @@ LTBOOL CMenuMgr::Init()
 	m_MenuArray.reserve(MENU_ID_UNASSIGNED);
 
 	//add menus here
+	// PORT: Tron's four menus (see MenuMgr.h)
 	m_MenuArray.push_back(&m_MenuSystem);
 	m_MenuArray.push_back(&m_MenuMission);
-	m_MenuArray.push_back(&m_MenuInventory);
 	m_MenuArray.push_back(&m_MenuKeys);
 	m_MenuArray.push_back(&m_MenuIntel);
-	m_MenuArray.push_back(&m_MenuPlayer);
 
 	//init menus
 	MenuArray::iterator iter = m_MenuArray.begin();
@@ -945,7 +944,6 @@ void CMenuMgr::EnableMenus()
 	m_MenuMission.Enable(bSPMenus);
 	m_MenuKeys.Enable(bSPMenus);
 	m_MenuIntel.Enable(bSPMenus);
-	m_MenuPlayer.Enable(bSPMenus);
 
 }
 

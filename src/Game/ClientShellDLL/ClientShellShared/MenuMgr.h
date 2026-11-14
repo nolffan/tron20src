@@ -149,12 +149,17 @@ private:
 	typedef std::vector<CMenuHotKey *> KeyArray;
 	KeyArray m_HotKeys;			// Pointer to each Menu
 
+	// RETAIL: Tron has four menus (constructor 0x101705a0): CMenuSystem
+	// (+0x674), CMenuBuildNotes (+0x13e0), CMenuHelp (+0x2c0c) and
+	// CMenuEmails (+0x4438; their RTTI), and CMenuMgr is 0x5ce8 bytes (the
+	// pad after CInterfaceMgr::m_MenuMgr). PORT: until Tron's three are
+	// written NOLF2's mission, keys and intel menus stand in for them;
+	// NOLF2's inventory and player menus are left out so that CMenuMgr
+	// fits retail's size (with LTGUIMgr's controls at retail's sizes).
 	CMenuSystem		m_MenuSystem;
 	CMenuMission	m_MenuMission;
-	CMenuInventory	m_MenuInventory;
 	CMenuKeys		m_MenuKeys;
 	CMenuIntel		m_MenuIntel;
-	CMenuPlayer		m_MenuPlayer;
 
 	CMenuSlide		m_MenuSlide;
 	CMenuSlide		m_BarSlide;

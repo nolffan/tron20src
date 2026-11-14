@@ -119,7 +119,11 @@ protected:
 	CHUDRewardMsgQueue	m_RewardMsgs;
 	CHUDPaused			m_Paused;
 	CHUDDisplayMeter	m_DisplayMeter;
-	CHUDScores			m_Scores;
+	// RETAIL: Tron's scores are on the heap (CTronHUDMgr's constructor,
+	// 0x1009adb0, news a 0xb9d0-byte CHUDScores and keeps it at +0x115a8).
+	// PORT: allocated here, where NOLF2 kept the member, until
+	// CTronHUDMgr's constructor is written
+	CHUDScores*			m_pScores;
 
 	//items
 	typedef std::vector<CHUDItem *> ItemArray;

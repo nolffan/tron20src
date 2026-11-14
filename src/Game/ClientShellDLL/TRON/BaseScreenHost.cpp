@@ -434,7 +434,7 @@ void CBaseScreenHost::Launch()
 	UpdateData(LTTRUE);
 
 	ServerGameOptions *pOptions = g_pServerOptionMgr->GetCurrent();
-	if (pOptions->HasNoMaps())
+	if (pOptions->IsMapListEmpty())
 	{
 		MBCreate mb;
 		mb.eType = LTMB_OK;
@@ -468,9 +468,9 @@ LTBOOL CBaseScreenHost::StartServer()
 		return LTFALSE;
 
 	// RETAIL: asked twice
-	if (pOptions->HasNoMaps())
+	if (pOptions->IsMapListEmpty())
 		return LTFALSE;
-	if (pOptions->HasNoMaps())
+	if (pOptions->IsMapListEmpty())
 		return LTFALSE;
 
 	StringArray *pMaps = pOptions->GetMapList();

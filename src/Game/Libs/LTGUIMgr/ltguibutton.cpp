@@ -183,6 +183,13 @@ void CLTGUIButton::Render()
 
 
 // Enter was pressed
+// TRON: (RETAIL: 0x100ba1e0)
+void CLTGUIButton::SetAlpha(uint8 nAlpha)
+{
+	g_pDrawPrim->SetALPHA(&m_Poly,nAlpha);
+	CLTGUICtrl::SetAlpha(nAlpha);
+}
+
 LTBOOL CLTGUIButton::OnEnter ( )
 {
 	// Send the command

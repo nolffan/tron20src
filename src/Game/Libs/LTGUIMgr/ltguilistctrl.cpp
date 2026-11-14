@@ -32,6 +32,9 @@ CLTGUIListCtrl::CLTGUIListCtrl()
 	m_bNeedsRecalculation	= LTTRUE;
 	m_bScrollWrap			= LTTRUE;
 	m_bScrollByPage			= LTFALSE;
+	// TRON: (RETAIL: 0x100b8020)
+	m_bMouseMoveSelects		= LTTRUE;
+	m_bEnterOnSelect		= LTFALSE;
 	m_nFrameWidth			= 0;
 
 	m_pUp = LTNULL;
@@ -98,6 +101,10 @@ void CLTGUIListCtrl::Render ( )
 		g_pDrawPrim->DrawPrim(m_Frame,4);
 	}
 
+	// TRON: the textured frame (RETAIL: 0x100b8270)
+	if (m_bFrameTexture)
+		m_FrameTexture.Render();
+
 
 	if (m_controlArray.size() > 0)
 	{
@@ -108,9 +115,10 @@ void CLTGUIListCtrl::Render ( )
 				m_controlArray[i]->Render ();
 		}
 
-		if (m_pUp && m_bEnabled && m_nFirstShown > 0)
+		// TRON: the arrows show whenever the list is enabled (RETAIL: 0x100b8270)
+		if (m_pUp && m_bEnabled)
 			m_pUp->Render();
-		if (m_pDown && m_bEnabled && m_nLastShown < (m_controlArray.size()-1) )
+		if (m_pDown && m_bEnabled)
 			m_pDown->Render();
 
 	}
@@ -119,6 +127,33 @@ void CLTGUIListCtrl::Render ( )
 		
 }
 
+
+// TRON: fade the frame and the controls shown (RETAIL: 0x100b8370)
+void CLTGUIListCtrl::SetAlpha(uint8 nAlpha)
+{
+	if (m_nFrameWidth)
+	{
+		for (int f = 0;f < 4; ++f)
+			g_pDrawPrim->SetALPHA(&m_Frame[f],nAlpha);
+	}
+
+	if (m_bFrameTexture)
+		m_FrameTexture.SetAlpha(nAlpha);
+
+	if (m_controlArray.size() > 0)
+	{
+		for (uint16 i = m_nFirstShown; i <= m_nLastShown; i++ )
+		{
+			if (m_controlArray[i] && m_controlArray[i]->IsVisible())
+				m_controlArray[i]->SetAlpha(nAlpha);
+		}
+
+		if (m_pUp)
+			m_pUp->SetAlpha(nAlpha);
+		if (m_pDown)
+			m_pDown->SetAlpha(nAlpha);
+	}
+}
 
 // Returns the height
 uint16	CLTGUIListCtrl::GetHeight ( )
@@ -160,7 +195,15 @@ LTBOOL CLTGUIListCtrl::OnUp ( )
 	if (m_bScrollByPage) return OnPageUp();
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnUp())
+	{
+		// TRON: (RETAIL: 0x100b84d0)
+		if (m_bEnterOnSelect)
+		{
+			m_pEnteredCtrl = pCtrl;
+			pCtrl->OnEnter();
+		}
 		return LTTRUE;
+	}
 
 	uint32 sel = m_nCurrentIndex;
 	return (sel != PreviousSelection() || m_bScrollWrap);
@@ -171,7 +214,15 @@ LTBOOL CLTGUIListCtrl::OnDown ( )
 	if (m_bScrollByPage) return OnPageDown();
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnDown())
+	{
+		// TRON: (RETAIL: 0x100b8550)
+		if (m_bEnterOnSelect)
+		{
+			m_pEnteredCtrl = pCtrl;
+			pCtrl->OnEnter();
+		}
 		return LTTRUE;
+	}
 
 	uint32 sel = m_nCurrentIndex;
 	return (sel != NextSelection() || m_bScrollWrap);
@@ -314,8 +365,50 @@ LTBOOL CLTGUIListCtrl::OnLButtonUp(int x, int y)
 		// then send the "enter" message to the control.
 		if (nControlIndex == m_nLBDownSel)
 		{
+			// TRON: (RETAIL: 0x100b87f0)
+			m_pEnteredCtrl = pCtrl;
 			return m_controlArray[nControlIndex]->OnLButtonUp(x,y);
 		}
+	}
+	else
+	{
+		m_nLBDownSel=kNoSelection;
+	}
+    return LTFALSE;
+}
+
+// TRON: Handles the left button double click message (RETAIL: 0x100b8890)
+LTBOOL CLTGUIListCtrl::OnLButtonDblClick(int x, int y)
+{
+	// Get the control that the click was on
+	uint16 nControlIndex=0;
+	CLTGUICtrl *pCtrl = GetControlUnderPoint(x, y, &nControlIndex);
+	if(pCtrl)
+	{
+		// Make sure we're enabled
+		if(!pCtrl->IsEnabled())
+            return LTFALSE;
+
+		if (pCtrl == m_pUp)
+		{
+			m_nLBDownSel=kNoSelection;
+			m_pUp->Select(LTTRUE);
+			return LTTRUE;
+		}
+		else if (pCtrl == m_pDown)
+		{
+			m_nLBDownSel=kNoSelection;
+			m_pDown->Select(LTTRUE);
+			return LTTRUE;
+		}
+
+		// Select the control
+		SetSelection(nControlIndex);
+
+		m_nLBDownSel=nControlIndex;
+		if (nControlIndex != kNoSelection)
+			m_controlArray[nControlIndex]->OnLButtonDblClick(x,y);
+        return LTTRUE;
 	}
 	else
 	{
@@ -434,6 +527,10 @@ LTBOOL CLTGUIListCtrl::OnMouseMove(int x, int y)
 		if(!pCtrl->IsEnabled())
             return LTFALSE;
 
+		// TRON: (RETAIL: 0x100b8a50)
+		if (!m_bMouseMoveSelects || m_bEnterOnSelect)
+            return LTFALSE;
+
 		pCtrl->OnMouseMove(x,y);
 
 		if (GetSelectedIndex() != nControlUnderPoint)
@@ -495,6 +592,30 @@ void CLTGUIListCtrl::RemoveControl ( uint16 nIndex, LTBOOL bDelete )
 }
 
 // Removes all of the controls
+// TRON: (RETAIL: 0x100b8c60)
+void CLTGUIListCtrl::MoveControlUp ( uint16 nIndex )
+{
+	if (nIndex < m_controlArray.size() && nIndex != 0)
+	{
+		CLTGUICtrl *pCtrl = m_controlArray[nIndex];
+		m_controlArray[nIndex] = m_controlArray[nIndex-1];
+		m_controlArray[nIndex-1] = pCtrl;
+		m_bNeedsRecalculation = LTTRUE;
+	}
+}
+
+// TRON: (RETAIL: 0x100b8cb0)
+void CLTGUIListCtrl::MoveControlDown ( uint16 nIndex )
+{
+	if (nIndex < m_controlArray.size()-1)
+	{
+		CLTGUICtrl *pCtrl = m_controlArray[nIndex];
+		m_controlArray[nIndex] = m_controlArray[nIndex+1];
+		m_controlArray[nIndex+1] = pCtrl;
+		m_bNeedsRecalculation = LTTRUE;
+	}
+}
+
 void CLTGUIListCtrl::RemoveAll ( LTBOOL bDelete )
 {
 	if (bDelete)
@@ -523,6 +644,9 @@ CLTGUICtrl *CLTGUIListCtrl::GetControl ( uint16 nIndex )
 // Select a control
 void CLTGUIListCtrl::ClearSelection()
 {
+	// TRON: the selection stays (RETAIL: 0x100b8db0)
+	if (m_bEnterOnSelect) return;
+
 	if (m_nCurrentIndex < m_controlArray.size() )
 	{
 		m_controlArray[m_nCurrentIndex]->Select(LTFALSE);
@@ -543,6 +667,9 @@ uint16 CLTGUIListCtrl::SetSelection( uint16 nIndex )
 		if (m_nCurrentIndex < m_controlArray.size() )
 		{
 			m_controlArray[m_nCurrentIndex]->Select(LTTRUE);
+			// TRON: (RETAIL: 0x100b8df0)
+			if (m_bEnterOnSelect)
+				m_controlArray[m_nCurrentIndex]->OnEnter();
 		}
 		return m_nCurrentIndex;
 	}
@@ -561,6 +688,9 @@ uint16 CLTGUIListCtrl::SetSelection( uint16 nIndex )
 		return nIndex;
 
 	m_controlArray[m_nCurrentIndex]->Select(LTTRUE);
+	// TRON: (RETAIL: 0x100b8df0)
+	if (m_bEnterOnSelect)
+		m_controlArray[m_nCurrentIndex]->OnEnter();
 
 	if (m_bNeedsRecalculation)
 		CalculatePositions();
@@ -651,6 +781,10 @@ void CLTGUIListCtrl::CalculatePositions()
 
 		y += (h + m_nItemSpacing);
 
+		// TRON: stops at the first control that does not fit (RETAIL: 0x100b8f80)
+		if (i > m_nLastShown)
+			break;
+
 	}
 
 	if (m_pUp && nBaseWidth < m_nWidth)
@@ -680,6 +814,9 @@ void CLTGUIListCtrl::CalculatePositions()
 	float fh = frameW;
 	g_pDrawPrim->SetXYWH(&m_Frame[0],fx,fy,fw,fh);
 
+	// TRON: the textured frame (RETAIL: 0x100b8f80)
+	m_FrameTexture.SetBasePos(LTIntPt((int)fx,(int)fy));
+
 	//right
 	fx = (float)(m_pos.x + m_nWidth);
 	fy = (float)m_pos.y - frameW;
@@ -693,6 +830,9 @@ void CLTGUIListCtrl::CalculatePositions()
 	fw = (float)m_nWidth + frameW;
 	fh = frameW;
 	g_pDrawPrim->SetXYWH(&m_Frame[2],fx,fy,fw,fh);
+
+	// TRON: (RETAIL: 0x100b8f80)
+	m_FrameTexture.SetSize(m_nWidth + (uint16)frameW, GetHeight() + (uint16)frameW);
 
 	//left
 	fx = (float)m_pos.x - frameW;
@@ -710,13 +850,14 @@ CLTGUICtrl *CLTGUIListCtrl::GetControlUnderPoint(int xPos, int yPos, uint16 *pnI
 {
 	ASSERT(pnIndex);
 
-	if (m_pUp && (m_nFirstShown > 0) && m_pUp->IsOnMe(xPos,yPos))
+	// TRON: the arrows are always live (RETAIL: 0x100b9390)
+	if (m_pUp && m_pUp->IsOnMe(xPos,yPos))
 	{
 		*pnIndex=kNoSelection;
 		return m_pUp;
 	}
 
-	if (m_pDown && (m_nLastShown < (m_controlArray.size()-1)) && m_pDown->IsOnMe(xPos,yPos))
+	if (m_pDown && m_pDown->IsOnMe(xPos,yPos))
 	{
 		*pnIndex=kNoSelection;
 		return m_pDown;
@@ -872,7 +1013,11 @@ void CLTGUIListCtrl::SetScale(float fScale)
 void CLTGUIListCtrl::OnSelChange()
 {
 	if (IsSelected())
-		SetSelection(0);
+	{
+		// TRON: keeps the entered control (RETAIL: 0x100b9740)
+		if (!m_bEnterOnSelect || !m_pEnteredCtrl)
+			SetSelection(0);
+	}
 	else
 	{
 		if (m_pUp)
@@ -927,6 +1072,23 @@ void CLTGUIListCtrl::SetFrameWidth(uint8 nFrameWidth)
 	m_nFrameWidth = nFrameWidth;
 	if (nFrameWidth)
 	{
+		m_bNeedsRecalculation = LTTRUE;
+	}
+}
+
+// TRON: (RETAIL: 0x100b98e0)
+void CLTGUIListCtrl::SetFrameTexture(HTEXTURE hFrame)
+{
+	if (!hFrame)
+	{
+		m_bFrameTexture = false;
+		m_FrameTexture.SetFrame(hFrame);
+	}
+	else
+	{
+		m_bFrameTexture = true;
+		m_FrameTexture.SetFrame(hFrame);
+		m_nFrameWidth = 0;
 		m_bNeedsRecalculation = LTTRUE;
 	}
 }

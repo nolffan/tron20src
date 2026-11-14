@@ -1987,6 +1987,25 @@ CCharacterFX* CSFXMgr::GetCharacterFX(HOBJECT hObject)
 }
 
 
+// TRON: the character of a client (RETAIL: 0x10108540; the name is ours)
+CCharacterFX* CSFXMgr::GetCharacterFromClientID(uint8 nClientID)
+{
+	CCharacterFX* pCharacterFX = NULL;
+	int cCharacterFX  = m_dynSFXLists[SFX_CHARACTER_ID].GetSize();
+
+	for ( int iCharacterFX = 0 ; iCharacterFX < cCharacterFX ; iCharacterFX++ )
+	{
+		pCharacterFX = (CCharacterFX*)m_dynSFXLists[SFX_CHARACTER_ID][iCharacterFX];
+		if (pCharacterFX && pCharacterFX->m_cs.nClientID == nClientID)
+		{
+			return pCharacterFX;
+		}
+	}
+
+	return LTNULL;
+}
+
+
 CCharacterFX* CSFXMgr::GetCharacterFromHitBox(HOBJECT hHitBox)
 {
 	CCharacterFX* pCharacterFX = NULL;
@@ -2040,6 +2059,27 @@ CBodyFX* CSFXMgr::GetBodyFromHitBox(HOBJECT hHitBox)
 			{
 				return pBodyFX;
 			}
+		}
+	}
+
+	return LTNULL;
+}
+
+// TRON: a spectator object's fx (RETAIL: 0x101086a0; the name is ours;
+// Tron's spectator fx class is not yet written)
+CSpecialFX* CSFXMgr::GetSpectatorFX(HOBJECT hObject)
+{
+	if (!hObject) return LTNULL;
+
+	CSpecialFX* pFX = NULL;
+	int cFX  = m_dynSFXLists[SFX_SPECTATOROBJECT_ID].GetSize();
+
+	for ( int iFX = 0 ; iFX < cFX ; iFX++ )
+	{
+		pFX = m_dynSFXLists[SFX_SPECTATOROBJECT_ID][iFX];
+		if (pFX && pFX->GetServerObj() == hObject)
+		{
+			return pFX;
 		}
 	}
 

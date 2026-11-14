@@ -17,6 +17,10 @@
 
 
 typedef std::vector<CLTGUITextCtrl*> TextControlArray;
+// TRON: the icon columns (RETAIL: 0x100bc3e0; names ours)
+typedef std::vector<HTEXTURE> IconTextureArray;
+typedef std::vector<LT_POLYFT4*> IconPolyArray;
+typedef std::vector<uint16> IconOffsetArray;
 
 class CLTGUIColumnCtrl : public CLTGUICtrl
 {
@@ -70,6 +74,15 @@ public:
 		SetString(nColumnIndex, LTGUIWideString(pString));
 	}
 
+	// TRON: adds an icon drawn nOffset pixels from the control's left, at
+	// its texture's size; returns its index. LTNULL removes all the icons.
+	// (RETAIL: 0x100bc3e0; name ours)
+	uint8			AddIconColumn(HTEXTURE hIcon, uint16 nOffset);
+
+	// TRON: a background of this colour behind the columns; 0 for none
+	// (RETAIL: 0x100bceb0; name ours)
+	void			SetBackgroundColor(uint32 argbColor);
+
 	void			RemoveColumn(uint8 nIndex);			// Removes a column
 	void			RemoveAllColumns();					// Removes all of the columns
 
@@ -89,6 +102,8 @@ public:
 	// Handle the Enter key being pressed
     virtual LTBOOL   OnEnter ( );
     virtual LTBOOL   OnLButtonUp(int x, int y) {return OnEnter();}
+	// TRON: sends the command with nParam2 1 (RETAIL: 0x100bcaf0)
+    virtual LTBOOL   OnLButtonDblClick(int x, int y);
 
 protected:
 	virtual void	OnSelChange();
@@ -105,6 +120,14 @@ protected:
     uint16		m_nHeight;             // The height of the control
 
 	TextControlArray	m_columnArray;	// The array of columns
+
+	// TRON: retail's 0x5c..0x5a8 (RETAIL: the constructor 0x100bbf90;
+	// names ours)
+	IconTextureArray	m_IconTextures;
+	IconPolyArray		m_IconPolys;
+	IconOffsetArray		m_IconOffsets;
+	CLTGUIFrame			m_Background;
+	bool				m_bBackground;
 
 	// Receives a message when the "enter" key is pressed.
 	CLTGUICommandHandler	*m_pCommandHandler;

@@ -28,6 +28,7 @@ CLTGUIColumnCtrl::CLTGUIColumnCtrl()
 	m_nHeight		= 0;
 
     m_pCommandHandler=LTNULL;
+	m_bBackground	= false;	// TRON: (RETAIL: 0x100bbf90)
 
 }
 
@@ -53,6 +54,8 @@ LTBOOL CLTGUIColumnCtrl::Create (	uint32 nCommandID,
 	SetFont(pFont,nFontSize,LTFALSE);
 
 	CLTGUICtrl::Create(nCommandID,nHelpID,nParam1,nParam2);
+	// TRON: (RETAIL: 0x100bc180)
+	m_Background.Create((uint32)0,1,1);
     return LTTRUE;
 }
 
@@ -97,6 +100,38 @@ uint8 CLTGUIColumnCtrl::AddColumn(std::wstring sText, uint16 nWidth, LTBOOL bCli
 
 
     return m_columnArray.size() - 1;
+}
+
+// TRON: (RETAIL: 0x100bc3e0)
+uint8 CLTGUIColumnCtrl::AddIconColumn(HTEXTURE hIcon, uint16 nOffset)
+{
+	if (!hIcon)
+	{
+		m_IconOffsets.clear();
+		IconPolyArray::iterator iter = m_IconPolys.begin();
+		while (iter != m_IconPolys.end())
+		{
+			debug_delete(*iter);
+			iter++;
+		}
+		m_IconPolys.clear();
+		m_IconTextures.clear();
+		return 0;
+	}
+
+	LT_POLYFT4 *pPoly = debug_new(LT_POLYFT4);
+
+	uint32 nWidth, nHeight;
+	g_pTexInterface->GetTextureDims(hIcon,nWidth,nHeight);
+	g_pDrawPrim->SetXYWH(pPoly,(float)(m_pos.x + nOffset),(float)m_pos.y,(float)nWidth,(float)nHeight);
+	m_IconTextures.push_back(hIcon);
+
+	g_pDrawPrim->SetUVWH(pPoly,0.0f,0.0f,1.0f,1.0f);
+	g_pDrawPrim->SetRGBA(pPoly,0xFFFFFFFF);
+	m_IconPolys.push_back(pPoly);
+	m_IconOffsets.push_back(nOffset);
+
+	return m_IconPolys.size() - 1;
 }
 
 
@@ -166,6 +201,16 @@ void CLTGUIColumnCtrl::RemoveAllColumns()
 	}
 	m_columnArray.clear();
 
+	// TRON: the icons' quads (RETAIL: 0x100bc850); their textures and
+	// offsets stay
+	IconPolyArray::iterator iIcon = m_IconPolys.begin();
+	while (iIcon != m_IconPolys.end())
+	{
+		debug_delete(*iIcon);
+		iIcon++;
+	}
+	m_IconPolys.clear();
+
 }
 
 // Render the control
@@ -173,10 +218,36 @@ void CLTGUIColumnCtrl::Render ()
 {
 	if (!IsVisible()) return;
 
+	// TRON: (RETAIL: 0x100bc8e0)
+	if (m_bBackground)
+		m_Background.Render();
+
 	for (int i=0; i < GetNumColumns(); i++)
 	{
 		if (m_columnArray[i]->IsVisible())
 			m_columnArray[i]->Render();
+	}
+
+	// TRON: the icons (RETAIL: 0x100bc8e0)
+	if (!m_IconPolys.empty())
+	{
+		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ); 
+		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+
+		IconPolyArray::iterator iPoly = m_IconPolys.begin();
+		IconTextureArray::iterator iTex = m_IconTextures.begin();
+		while (iPoly != m_IconPolys.end())
+		{
+			g_pDrawPrim->SetTexture(*iTex);
+			g_pDrawPrim->DrawPrim(*iPoly);
+			iPoly++;
+			iTex++;
+		}
 	}
 }
 
@@ -228,6 +299,17 @@ LTBOOL CLTGUIColumnCtrl::OnEnter ( )
     return LTFALSE;
 }
 
+// TRON: (RETAIL: 0x100bcaf0)
+LTBOOL CLTGUIColumnCtrl::OnLButtonDblClick(int x, int y)
+{
+	if ( m_pCommandHandler )
+	{
+		if	(m_pCommandHandler->SendCommand(m_nCommandID, m_nParam1, 1))
+            return LTTRUE;
+	}
+    return LTFALSE;
+}
+
 
 void CLTGUIColumnCtrl::CalculateSize()
 {
@@ -238,6 +320,7 @@ void CLTGUIColumnCtrl::CalculateSize()
 	// find the size
 	for (int i=0; i < GetNumColumns(); i++)
 	{
+		m_nWidth += m_columnArray[i]->GetWidth();	// TRON: (RETAIL: 0x100bcb20)
 		m_nBaseWidth += (m_columnArray[i]->GetFixedWidth() + (m_nBaseFontSize/2));
 		if (m_columnArray[i]->GetHeight() > m_nHeight)
 		{
@@ -259,17 +342,35 @@ void CLTGUIColumnCtrl::CalculateSize()
 			m_columnArray[i]->SetBasePos(pos);
 		}
 	}
+
+	// TRON: (RETAIL: 0x100bcb20)
+	m_Background.SetSize((uint16)((float)m_nWidth / m_fScale),(uint16)((float)m_nHeight / m_fScale));
 }
 
 
 void CLTGUIColumnCtrl::SetBasePos ( LTIntPt pos )
 { 
 	CLTGUICtrl::SetBasePos(pos);
+	m_Background.SetBasePos(pos);	// TRON: (RETAIL: 0x100bcc90)
 	LTIntPt tmpPos = m_basePos;
 	for (int i=0; i < GetNumColumns(); i++)
 	{
 		m_columnArray[i]->SetBasePos(tmpPos);
 		tmpPos.x += (m_columnArray[i]->GetFixedWidth() + (m_nBaseFontSize/2) );
+	}
+
+	// TRON: the icons (RETAIL: 0x100bcc90)
+	IconPolyArray::iterator iPoly = m_IconPolys.begin();
+	IconTextureArray::iterator iTex = m_IconTextures.begin();
+	IconOffsetArray::iterator iOffset = m_IconOffsets.begin();
+	while (iPoly != m_IconPolys.end())
+	{
+		uint32 nWidth, nHeight;
+		g_pTexInterface->GetTextureDims(*iTex,nWidth,nHeight);
+		g_pDrawPrim->SetXYWH(*iPoly,(float)(m_pos.x + *iOffset),(float)m_pos.y,(float)nWidth,(float)nHeight);
+		iPoly++;
+		iTex++;
+		iOffset++;
 	}
 
 	CalculateSize();
@@ -284,6 +385,7 @@ void CLTGUIColumnCtrl::SetScale(float fScale)
 	{
 		m_columnArray[i]->SetScale(fScale);
 	}
+	m_Background.SetScale(fScale);	// TRON: (RETAIL: 0x100bcdd0)
 	CalculateSize();
 
 }
@@ -294,6 +396,20 @@ void CLTGUIColumnCtrl::SetColors(uint32 argbSelected, uint32 argbNormal, uint32 
 	for (int i=0; i < GetNumColumns(); i++)
 	{
 		m_columnArray[i]->SetColors(m_argbSelected, m_argbNormal, m_argbDisabled);
+	}
+}
+
+// TRON: (RETAIL: 0x100bceb0)
+void CLTGUIColumnCtrl::SetBackgroundColor(uint32 argbColor)
+{
+	if (argbColor)
+	{
+		m_bBackground = true;
+		m_Background.SetColor(argbColor);
+	}
+	else
+	{
+		m_bBackground = false;
 	}
 }
 

@@ -111,13 +111,8 @@ public:
 
 	// RETAIL: Tron's, the slot after SetColors (retail 0x100bfcc0): the alpha of
 	// all three colors. The name is ours
-	virtual void	SetAlpha(uint8 nAlpha)
-	{
-		uint32 nA = (uint32)nAlpha << 24;
-		m_argbSelected = (m_argbSelected & 0x00FFFFFF) | nA;
-		m_argbNormal = (m_argbNormal & 0x00FFFFFF) | nA;
-		m_argbDisabled = (m_argbDisabled & 0x00FFFFFF) | nA;
-	}
+	// TRON: out of line (RETAIL: 0x100bfcc0, after SetScale in ltguictrl.cpp)
+	virtual void	SetAlpha(uint8 nAlpha);
 	
 
 	// Access to member variables

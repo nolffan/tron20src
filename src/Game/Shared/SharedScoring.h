@@ -199,6 +199,10 @@ public:
 	// 80 sets both (CShell.dll 0x1000e2c0); the names are ours
 	void	SetNumTeams(int nNumTeams) { m_nNumTeams = nNumTeams; }
 	void	SetTeamSize(uint32 nTeamSize) { m_nTeamSize = nTeamSize; }
+
+	// RETAIL: CShell.dll 0x100fb330, 0x100fba70 (the names are ours)
+	void	SortTeams();
+	uint8	GetTeamColor(uint8 nIndex, bool bRandom);
 #else
 	bool	SetupTeams(uint32 nTeamSize, uint32 nMaxPlayers);
 	bool	RemoveClient(uint32 nClientID);

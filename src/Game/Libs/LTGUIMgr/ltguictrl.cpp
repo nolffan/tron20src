@@ -68,3 +68,11 @@ void CLTGUICtrl::SetScale(float fScale)
 	m_pos.y = (int)(fScale * (float)m_basePos.y);
 	m_fScale = fScale;
 }
+// TRON: (RETAIL: 0x100bfcc0)
+void CLTGUICtrl::SetAlpha(uint8 nAlpha)
+{
+	uint32 nA = (uint32)nAlpha << 24;
+	m_argbSelected = (m_argbSelected & 0x00FFFFFF) | nA;
+	m_argbNormal = (m_argbNormal & 0x00FFFFFF) | nA;
+	m_argbDisabled = (m_argbDisabled & 0x00FFFFFF) | nA;
+}

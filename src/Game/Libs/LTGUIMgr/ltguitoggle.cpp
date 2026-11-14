@@ -34,18 +34,19 @@ CLTGUIToggle::~CLTGUIToggle()
 // nFontSize		- The font size to use for this string.
 // nHeaderWidth	- The width to use for the header string
 // pbValue			  - Value to store the on/off status in when UpdateData is called
-LTBOOL CLTGUIToggle::Create ( const char *pText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize,
+LTBOOL CLTGUIToggle::Create ( std::wstring sText, uint32 nHelpID, CUIFont *pFont, uint8 nFontSize,
                         uint16 nHeaderWidth, LTBOOL *pbValue)
 {
 
 	// Initialize the base class
-    if (!CLTGUICycleCtrl::Create(pText, nHelpID, pFont, nFontSize, nHeaderWidth, LTNULL))
+    if (!CLTGUICycleCtrl::Create(sText, nHelpID, pFont, nFontSize, nHeaderWidth, LTNULL))
 	{
         return LTFALSE;
 	}
 
-	AddString("OFF");
-	AddString("ON");
+	// TRON: wide (RETAIL: 0x100bff70)
+	AddString(L"OFF");
+	AddString(L"ON");
 
 	m_pbValue=pbValue;
 
@@ -95,14 +96,14 @@ void CLTGUIToggle::SetOn(LTBOOL bOn)
 }
 
 // Set the string to use for "ON"
-void CLTGUIToggle::SetOnString(const char *pStrOn)
+void CLTGUIToggle::SetOnString(std::wstring sOn)
 {
-	m_stringArray[1]->SetText((char *)pStrOn);
+	m_stringArray[1]->SetText(sOn);
 }
 
 // Set the string to use for "OFF"
-void CLTGUIToggle::SetOffString(const char *pStrOff)
+void CLTGUIToggle::SetOffString(std::wstring sOff)
 {
-	m_stringArray[0]->SetText((char *)pStrOff);
+	m_stringArray[0]->SetText(sOff);
 }
 

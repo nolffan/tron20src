@@ -66,6 +66,8 @@ public:
 
 	// turns on or off numerical display
 	void			SetNumericDisplay(LTBOOL bDisplay);
+	// TRON: (RETAIL: 0x100c0a60; name ours)
+	void			ShowBar(LTBOOL bShow);
 
 	// for controls to display a value, but not accept input
 	void			SetDisplayOnly(bool bDisplayOnly);
@@ -119,9 +121,9 @@ protected:
 
 	bool		m_bDisplayOnly;
 
-	// TRON: a flag of Tron's, TRUE from the constructor (RETAIL: 0x100c0540;
-	// what reads it is not yet identified)
-	LTBOOL		m_xTronUnknown54;
+	// TRON: whether Render draws the bar, TRUE from the constructor
+	// (RETAIL: 0x100c0540, 0x100c0da0; name ours)
+	LTBOOL		m_bShowBar;
     LTBOOL			m_bNumDisplay;
 	int*			m_pnValue;
 	int				m_nMinSlider;

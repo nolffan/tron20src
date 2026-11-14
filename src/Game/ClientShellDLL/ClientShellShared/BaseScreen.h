@@ -109,6 +109,9 @@ public:
 	inline int 		GetPageBottom() const {return m_PageRect.bottom;}
 
 	uint16			AddControl(CLTGUICtrl* pCtrl);
+	// TRON: (RETAIL: 0x100d38d0, 0x100d3900; the names are ours)
+	void			AddTronUnknownControl(CLTGUICtrl* pCtrl);
+	void			ClearTronUnknownControls();
 	void			RemoveControl(CLTGUICtrl* pControl,LTBOOL bDelete = LTTRUE);
 
 	// RETAIL: virtual in Tron (retail's CBaseScreen vtable, slot 0x5c)
@@ -180,7 +183,13 @@ public:
 	}
 
     CLTGUIToggle*     CreateToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
-    CLTGUIToggle*     CreateToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: the header as wide text (RETAIL: 0x100d3f90)
+    CLTGUIToggle*     CreateToggle(std::wstring sString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// PORT: ours, for the code that still makes its text narrow
+    CLTGUIToggle*     CreateToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1)
+	{
+		return CreateToggle(LTGUIWideString(pString), helpID, nHeaderWidth, pbValue, pos, bFixed, nFont);
+	}
 
     CLTGUISlider*     CreateSlider(int stringID,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
 								int *pnValue = LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
@@ -387,14 +396,24 @@ inline  CLTGUIToggle* CBaseScreen::AddToggle(int stringID, int helpID, int nHead
 {
 	CLTGUIToggle* pCtrl = CreateToggle(stringID, helpID, nHeaderWidth, pbValue,  pos, bFixed, nFont);
 	if (pCtrl)
+	{
 		AddControl(pCtrl);
+		// TRON: shows the value at once (RETAIL: e.g. 0x10055238)
+		if (pbValue)
+			pCtrl->SetOn(*pbValue);
+	}
 	return pCtrl;
 }
 inline  CLTGUIToggle* CBaseScreen::AddToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUIToggle* pCtrl = CreateToggle(pString, helpID, nHeaderWidth, pbValue, pos, bFixed, nFont);
 	if (pCtrl)
+	{
 		AddControl(pCtrl);
+		// TRON: shows the value at once (RETAIL: e.g. 0x10055238)
+		if (pbValue)
+			pCtrl->SetOn(*pbValue);
+	}
 	return pCtrl;
 }
 
