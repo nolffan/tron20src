@@ -8801,6 +8801,40 @@ PlayerSubroutineSlot* CPlayerObj::FindSubroutine( char const* pszName )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CPlayerObj::HandleKilledCharacter
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100862e0): we killed pVictim; an
+//				enemy killed by a critical hit plays our critical hit kill
+//				sound (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::HandleKilledCharacter( CCharacter* pVictim )
+{
+	if( BAD == GetRelativeAlignment( GetRelationSet(), pVictim->GetRelationData() ) &&
+		!pVictim->GetDestructible()->GetTronUnknown30() &&
+		( g_pModelButeMgr->GetSkeletonNodeFlags( pVictim->GetModelSkeleton(), pVictim->GetModelNodeLastHit() ) & NODEFLAG_CRITICALHIT ))
+	{
+		SendTriggerMsgToObject( this, GetUserObject(), LTFALSE, "delay 0.5 (msg <CPlayerObj> (PLAYSOUND PlayerCriticalHitKill))" );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::AllowDiskSpike
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100864f0): players can be disc
+//				spiked in the disc game types (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CPlayerObj::AllowDiskSpike()
+{
+	return IsDiscGameType() ? LTTRUE : LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CPlayerObj::SetupTeamModel
 //
 //	PURPOSE:	Setup our team model.

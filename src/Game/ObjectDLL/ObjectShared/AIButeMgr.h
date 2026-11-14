@@ -72,6 +72,12 @@ typedef struct
 	AISenseDistanceMap mapSenseDistance;
 
 	uint32 iUseableVolumesMask;
+
+	// RETAIL: Tron's "AllowDiskSpike" (retail SetTemplate 0x1019f67a; at
+	// +0x134 in retail, after a "RamWeapon" WEAPON* at +0x11c, the sense map
+	// at +0x120, the volumes mask at +0x12c and a weapon set at +0x130:
+	// the rest of Tron's template layout is not done yet)
+	LTBOOL bAllowDiskSpike;
 }
 AIBM_Template;
 

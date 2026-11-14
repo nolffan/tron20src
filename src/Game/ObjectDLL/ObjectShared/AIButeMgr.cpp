@@ -358,6 +358,9 @@ void CAIButeMgr::SetTemplate(int iTemplate)
 
 	Template.fDefensePercentage				= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,	"DefensePercentage", 1.0f);
 
+	// RETAIL: Tron's (retail 0x1019f66d)
+	Template.bAllowDiskSpike				= CButeTools::GetValidatedBool(m_buteMgr, s_aTagName,	"AllowDiskSpike", LTTRUE);
+
 	Template.flSentryChallengeScanDistMax	= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryChallengeScanDistMax", 0.0f);
 	Template.flSentryChallengeDistMax		= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryChallengeDistMax", 0.0f);
 	Template.flSentryMarkDistMax			= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryMarkDistMax", 0.0f);
