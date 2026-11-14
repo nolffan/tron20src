@@ -7118,7 +7118,7 @@ void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 				AMMO const *pAmmo     = g_pWeaponMgr->GetAmmo(pWeaponStruct->nDefaultAmmoId);		
 
 				//if we have valid data for the weapon and ammo, create one...
-				if (pAmmo && !pAmmo->bServerRestricted && pWeaponStruct && !pWeaponStruct->bServerRestricted && 
+				if (pAmmo && pWeaponStruct && !pWeaponStruct->bServerRestricted && 
 					pWeaponStruct->szHHModel[0])
 				{
 					sprintf(szSpawn, "WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0",
@@ -7157,7 +7157,7 @@ void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 			AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(i);
 			int nAmmoCount = m_pPlayerAttachments->GetAmmoCount(i);
 
-			if (pAmmo && !pAmmo->bServerRestricted && nAmmoCount > 0)
+			if (pAmmo && nAmmoCount > 0)
 			{
 
 				sprintf(szSpawn, "AmmoBox MPRespawn 0;AmmoType1 %s;AmmoCount1 %d", pAmmo->szName, nAmmoCount);
@@ -8108,7 +8108,7 @@ bool CPlayerObj::AcquireLevelDefaultWeapons( int nMissionId, int nLevelId )
 			}
 
 			AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo(pWeaponData->nDefaultAmmoId);
-			if( !pAmmoData || pAmmoData->bServerRestricted )
+			if( !pAmmoData )
 			{
 				ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid ammoid" );
 				continue;
@@ -8148,7 +8148,7 @@ END HACK - for DM testing */
 		}
 
 		AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo(pWeaponData->nDefaultAmmoId);
-		if( !pAmmoData || pAmmoData->bServerRestricted )
+		if( !pAmmoData )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid ammoid" );
 			continue;
@@ -8185,7 +8185,7 @@ END HACK - for DM testing */
 		}
 
 		AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo( pWeaponData->nDefaultAmmoId );
-		if( !pAmmoData || pAmmoData->bServerRestricted )
+		if( !pAmmoData )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid ammoid" );
 			continue;
@@ -8345,7 +8345,7 @@ bool CPlayerObj::AcquireLevelDefaultAmmo( int nMissionId, int nLevelId )
 		int nAmmoId = pMission->aDefaultAmmo[i];
 
 		pAmmo = g_pWeaponMgr->GetAmmo( nAmmoId );
-		if( !pAmmo || pAmmo->bServerRestricted )
+		if( !pAmmo )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultMods: Invalid ammoid" );
 			continue;
@@ -8362,7 +8362,7 @@ bool CPlayerObj::AcquireLevelDefaultAmmo( int nMissionId, int nLevelId )
 		int nAmmoId = pLevel->aDefaultAmmo[i];
 
 		pAmmo = g_pWeaponMgr->GetAmmo( nAmmoId );
-		if( !pAmmo || pAmmo->bServerRestricted )
+		if( !pAmmo )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultMods: Invalid ammoid" );
 			continue;

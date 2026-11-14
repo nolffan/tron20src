@@ -216,25 +216,8 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 	if( !pAmmo )
 		return false;
 	
-	// If the ammo is restricted, we need to check if
-	// the default ammo is restricted too.  If so, we don'
-	// allow this weapon.  If the default ammo is ok, 
-	// we'll just switch to that.
-	if( pAmmo->bServerRestricted )
-	{
-		// Check if this is the default ammo, which means the only ammo.
-		if( m_nAmmoId == pWeapon->nDefaultAmmoId )
-			return false;
-
-		// Make sure the default ammo id is not restricted too.  If it is, we can't
-		// use this weapon.
-		pAmmo = g_pWeaponMgr->GetAmmo( pWeapon->nDefaultAmmoId );
-		if( !pAmmo || pAmmo->bServerRestricted )
-			return false;
-
-		// Default isn't restricted.  We'll just use that.
-		m_nAmmoId = pWeapon->nDefaultAmmoId;
-	}
+	// RETAIL: Tron's AMMO cannot be server restricted (no such member):
+	// NOLF2 fell back to the default ammo here
 
 	return true;
 }

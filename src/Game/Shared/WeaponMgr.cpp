@@ -134,6 +134,8 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_AMMO_AREADAMAGE        "AreaDamage"
 #define WMGR_AMMO_AREADAMAGETYPE    "AreaDamageType"
 #define WMGR_AMMO_AREADAMAGERADIUS  "AreaDamageRadius"
+#define WMGR_AMMO_AREADAMAGEIGNOREOWNER	"AreaDamageIgnoreOwner"	// RETAIL: Tron's
+#define WMGR_AMMO_AREADAMAGEALWAYS	"AreaDamageAlways"		// RETAIL: Tron's
 #define WMGR_AMMO_PROGDAMAGE        "ProgDamage"
 #define WMGR_AMMO_PROGDAMAGETYPE    "ProgDamageType"
 #define WMGR_AMMO_PROGDAMAGEDUR     "ProgDamageDuration"
@@ -145,6 +147,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_AMMO_MOVEABLEIMPACTOVERRIDEFX	"MoveableImpactOverrideFXName"
 #define WMGR_AMMO_RICOCHETFX        "RicochetFXName"
 #define WMGR_AMMO_BLOCKEDFX         "BlockedFXName"
+#define WMGR_AMMO_DEADLYBLOCKEDFX   "DeadlyBlockedFXName"	// RETAIL: Tron's
 #define WMGR_AMMO_FIREFX            "FireFXName"
 #define WMGR_AMMO_TRACERFX          "TracerFXName"
 #define WMGR_AMMO_PROJECTILEFX      "ProjectileFXName"
@@ -2181,19 +2184,19 @@ AMMO::AMMO()
 
 	szIcon  = LTNULL;
 	szName  = LTNULL;
-	szLongName			= LTNULL;
-	szShortName			= LTNULL;
 
 	nMaxAmount          = 0;
 	nSpawnedAmount      = 0;
 	nSelectionAmount    = 0;
 
-	nInstDamage     = 0;
+	fInstDamage     = 0.0f;
 	eInstDamageType = DT_INVALID;
 
-	nAreaDamage         = 0;
-	nAreaDamageRadius   = 0;
+	fAreaDamage         = 0.0f;
+	fAreaDamageRadius   = 0.0f;
 	eAreaDamageType     = DT_INVALID;
+	bAreaDamageIgnoreOwner	= false;
+	bAreaDamageAlways		= false;
 	fFireRecoilMult     = 1.0f;
 
 	fProgDamage         = 0.0f;
@@ -2208,15 +2211,12 @@ AMMO::AMMO()
 	pProjectileFX			= NULL;
 	pImpactFX				= NULL;
 	pUWImpactFX				= NULL;
-	pRicochetFX				= NULL;
 	pBlockedFX				= NULL;
+	pDeadlyBlockedFX		= NULL;
 	pFireFX					= NULL;
 	pAniOverrides			= NULL;
 	pTracerFX				= NULL;
 	pMoveableImpactOverrideFX = NULL;
-
-	bServerRestricted = false;
-	bCanServerRestrict = true;
 }
 
 
@@ -2234,8 +2234,6 @@ AMMO::~AMMO()
 
 	debug_deletea( szName );
 	debug_deletea( szIcon );
-	debug_deletea( szLongName );
-	debug_deletea( szShortName );
 }
 
 
@@ -2253,8 +2251,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	// Use the members as the default value incase the attribute doesn't exist...
 
-	char const* pszValue = "";
-
 	nNameId               = buteMgr.GetInt( aTagName, WMGR_AMMO_NAMEID, nNameId );
 	nDescId               = buteMgr.GetInt( aTagName, WMGR_AMMO_DESCID, nDescId );
 	eType                 = (AmmoType) buteMgr.GetInt( aTagName, WMGR_AMMO_TYPE, eType );
@@ -2266,20 +2262,17 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	nMaxAmount            = buteMgr.GetInt( aTagName, WMGR_AMMO_MAXAMOUNT, nMaxAmount );
 	nSpawnedAmount        = buteMgr.GetInt( aTagName, WMGR_AMMO_SPAWNEDAMOUNT, nSpawnedAmount );
 	nSelectionAmount      = buteMgr.GetInt( aTagName, WMGR_AMMO_SELECTIONAMOUNT, nSelectionAmount );
-	nInstDamage           = buteMgr.GetInt( aTagName, WMGR_AMMO_INSTDAMAGE, nInstDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_INSTDAMAGETYPE, "" );
-	if( pszValue[0] )
-		eInstDamageType       = StringToDamageType( pszValue );
-	nAreaDamage           = buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGE, nAreaDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_AREADAMAGETYPE, "" );
-	if( pszValue[0] )
-		eAreaDamageType       = StringToDamageType( pszValue );
-	nAreaDamageRadius     = buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGERADIUS, nAreaDamageRadius );
+	// RETAIL: Tron reads the damages as floats and the types as numbers
+	fInstDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_INSTDAMAGE, fInstDamage );
+	eInstDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_INSTDAMAGETYPE, eInstDamageType );
+	fAreaDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_AREADAMAGE, fAreaDamage );
+	eAreaDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGETYPE, eAreaDamageType );
+	fAreaDamageRadius     = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_AREADAMAGERADIUS, fAreaDamageRadius );
+	bAreaDamageIgnoreOwner = buteMgr.GetBool( aTagName, WMGR_AMMO_AREADAMAGEIGNOREOWNER, bAreaDamageIgnoreOwner );
+	bAreaDamageAlways     = buteMgr.GetBool( aTagName, WMGR_AMMO_AREADAMAGEALWAYS, bAreaDamageAlways );
 	fFireRecoilMult       = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_FIRERECOILMULT, fFireRecoilMult );
 	fProgDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGE, fProgDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_PROGDAMAGETYPE, "" );
-	if( pszValue[0] )
-		eProgDamageType       = StringToDamageType( pszValue );
+	eProgDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_PROGDAMAGETYPE, eProgDamageType );
 	fProgDamageDuration   = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGEDUR, fProgDamageDuration );
 	fProgDamageRadius     = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGERADIUS, fProgDamageRadius );
 	fProgDamageLifetime   = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGELIFE, fProgDamageLifetime );
@@ -2290,7 +2283,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	GetStringIfExist( buteMgr, aTagName, WMGR_AMMO_ICON, &szIcon, WMGR_MAX_FILE_PATH );
 
 
-	int nId = 0;
 	char szStr[128] = "";
 	buteMgr.GetString(aTagName, WMGR_AMMO_IMPACTFX, "", szStr, sizeof(szStr));
 	if( buteMgr.Success( ))
@@ -2319,22 +2311,22 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 		}
 	}
 
-	buteMgr.GetString(aTagName, WMGR_AMMO_RICOCHETFX, "", szStr, sizeof(szStr));
-	if( buteMgr.Success( ))
-	{
-		if (szStr[0])
-		{
-			pRicochetFX = g_pFXButeMgr->GetImpactFX(szStr);
-		}
-	}
-
-
 	buteMgr.GetString(aTagName, WMGR_AMMO_BLOCKEDFX, "", szStr, sizeof(szStr));
 	if( buteMgr.Success( ))
 	{
 		if (szStr[0])
 		{
 			pBlockedFX = g_pFXButeMgr->GetImpactFX(szStr);
+		}
+	}
+
+	// RETAIL: Tron's
+	buteMgr.GetString(aTagName, WMGR_AMMO_DEADLYBLOCKEDFX, "", szStr, sizeof(szStr));
+	if( buteMgr.Success( ))
+	{
+		if (szStr[0])
+		{
+			pDeadlyBlockedFX = g_pFXButeMgr->GetImpactFX(szStr);
 		}
 	}
 
@@ -2382,8 +2374,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 			pTracerFX = g_pFXButeMgr->GetTracerFX(szStr);
 		}
 	}
-
-	bCanServerRestrict = !!( buteMgr.GetInt( aTagName, WMGR_ALL_CANSERVERRESTRICT, bCanServerRestrict ));
 }
 
 // ----------------------------------------------------------------------- //
@@ -2394,6 +2384,7 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's keeps only the name (no long and short names)
 LTBOOL AMMO::Init(CButeMgr & buteMgr, char* aTagName)
 {
 	if (!aTagName) return LTFALSE;
@@ -2409,47 +2400,6 @@ LTBOOL AMMO::Init(CButeMgr & buteMgr, char* aTagName)
 	// Initialize all other values...
 
 	InitMembers( buteMgr, aTagName );
-
-#ifdef _CLIENTBUILD
-	char szTmp[128] = "";
-	LoadString(nNameId,szTmp,sizeof(szTmp));
-
-	char* pTok = strtok(szTmp,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szLongName = debug_newa( char, l);
-		LTStrCpy(szLongName,pTok,l);
-	}
-	else
-	{
-		szLongName = debug_newa( char, 1);
-		szLongName[0] = NULL;
-	}
-
-	pTok = strtok(NULL,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,pTok,l);
-	}
-	else
-	{
-		int l = strlen(szLongName)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,szLongName,l);
-	}
-#else
-	int l = strlen(szName)+1;
-	szLongName = debug_newa( char, l);
-	LTStrCpy(szLongName,szName,l);
-	szShortName = debug_newa( char, l);
-	LTStrCpy(szShortName,szName,l);
-
-#endif
 
 	return LTTRUE;
 }
@@ -2489,8 +2439,10 @@ int AMMO::GetMaxAmount(HOBJECT hCharacter) const
 
 #ifdef _CLIENTBUILD
 
-	LTFLOAT fMult = g_pPlayerStats->GetSkillModifier(SKL_CARRY,CarryModifiers::eMaxAmmo);
-    nMaxAmmo =  (int) ( fMult * (LTFLOAT)nMaxAmmo );
+	// RETAIL: the carry modifiers straight from CTronPlayerStats' slot 0x140
+	// (0x1013a433)
+	LTFLOAT fMult = ((CarryModifiers const *)g_pPlayerStats->TronUnknownVirtual140())->fModifier[CarryModifiers::eMaxAmmo];
+    nMaxAmmo =  (int) ( fMult * nMaxAmmo );
 
 #else
 

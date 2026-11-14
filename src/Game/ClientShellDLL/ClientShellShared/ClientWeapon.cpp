@@ -1388,10 +1388,10 @@ void CClientWeapon::ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce /*=false
 			// Add a message so the user knows he switched ammo (sometimes it
 			// isn't that obvious)...
 
-			if (strlen(m_pAmmo->szShortName))
+			if (strlen(m_pAmmo->szName))
 			{
 				char szMsg[128];
-				FormatString(IDS_CHANGING_AMMO, szMsg, sizeof(szMsg), m_pAmmo->szShortName);
+				FormatString(IDS_CHANGING_AMMO, szMsg, sizeof(szMsg), m_pAmmo->szName);
 				std::string icon = m_pAmmo->GetNormalIcon();
 				g_pPickupMsgs->AddMessage(szMsg, icon.c_str());
 			}

@@ -36,7 +36,7 @@ inline char* GetAmmoString(int nAmmoId)
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(nAmmoId);
 	if (!pAmmo) return WS_ERROR_STRING;
 
-	return pAmmo->szShortName;
+	return pAmmo->szName;
 }
 
 #endif // __WEAPON_STRING_DEFS_H__

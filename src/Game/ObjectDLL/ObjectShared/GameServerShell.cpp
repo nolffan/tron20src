@@ -5310,19 +5310,7 @@ void CGameServerShell::ApplyWeaponRestrictions( )
 			pWeapon->bServerRestricted = true;
 	}
 
-	iter = m_ServerGameOptions.m_setRestrictedAmmo.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedAmmo.end( ))
-	{
-		std::string const& sValue = *iter;
-		iter++;
-
-		AMMO* pAmmo = ( AMMO* )g_pWeaponMgr->GetAmmo( sValue.c_str( ));
-		if( !pAmmo )
-			continue;
-
-		if( pAmmo->bCanServerRestrict )
-			pAmmo->bServerRestricted = true;
-	}
+	// RETAIL: Tron's AMMO cannot be server restricted (no such members)
 
 	iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
 	while( iter != m_ServerGameOptions.m_setRestrictedGear.end( ))

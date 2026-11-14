@@ -684,7 +684,7 @@ LTFLOAT CWeapon::GetInstDamage() const
 {
 	if (!m_pAmmoData) return 0.0f;
 
-    LTFLOAT fDamage = (LTFLOAT) m_pAmmoData->nInstDamage;
+    LTFLOAT fDamage = (LTFLOAT) m_pAmmoData->fInstDamage;
 
 	fDamage *= GetRandom(0.8f, 1.2f) * m_fDamageFactor;
 	

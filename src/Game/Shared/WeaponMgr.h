@@ -316,6 +316,10 @@ private:
 
 typedef CTList<WEAPONANIS*> WeaponAnisList;
 
+// RETAIL: Tron's AMMO is 0xa0 bytes in both DLLs (CShell's ctor 0x10139c10,
+// InitMembers 0x10139dc0): one name, no long/short names, no ricochet FX and
+// no server restriction; the damages are floats, read with GetDouble, and
+// the damage types are read as numbers.
 struct AMMO
 {
 	AMMO();
@@ -334,27 +338,33 @@ struct AMMO
 
 	int             nId;
 
-//	int             nNameId;
+	int             nNameId;
 	int             nDescId;
 	AmmoType        eType;
 
 	LTFLOAT         fPriority;
 
-	char*			szName;
+	// RETAIL: Tron's energy a shot needs ("EnergyRequiredMin", "...Max",
+	// "...Surge"), by the accuracy rating
+	LTFLOAT         fEnergyRequiredMin;
+	LTFLOAT         fEnergyRequiredMax;
+	LTFLOAT         fEnergyRequiredSurge;
 
-	char*			szLongName;
-	char*			szShortName;
+	char*			szName;
 
 	int             GetMaxAmount(HOBJECT hCharacter) const;
 	int             nSpawnedAmount;
 	int             nSelectionAmount;
 
-	int             nInstDamage;
+	LTFLOAT         fInstDamage;
 	DamageType      eInstDamageType;
 
-	int             nAreaDamage;
-	int             nAreaDamageRadius;
+	LTFLOAT         fAreaDamage;
+	LTFLOAT         fAreaDamageRadius;
 	DamageType      eAreaDamageType;
+	// RETAIL: Tron's ("AreaDamageIgnoreOwner", "AreaDamageAlways")
+	bool            bAreaDamageIgnoreOwner;
+	bool            bAreaDamageAlways;
 
 	float           fFireRecoilMult;
 
@@ -372,31 +382,18 @@ struct AMMO
 	PROJECTILEFX   *pProjectileFX;			// Points at CFXButeMgr::m_ProjectileFXList element
 	IMPACTFX       *pImpactFX;				// Points at CFXButeMgr::m_ImpactFXList element
 	IMPACTFX       *pUWImpactFX;			// Points at CFXButeMgr::m_ImpactFXList element
-	IMPACTFX       *pRicochetFX;			// Points at CFXButeMgr::m_ImpactFXList element
 	IMPACTFX       *pBlockedFX;				// Points at CFXButeMgr::m_ImpactFXList element
+	IMPACTFX       *pDeadlyBlockedFX;		// RETAIL: Tron's ("DeadlyBlockedFXName")
 	IMPACTFX       *pMoveableImpactOverrideFX; // Points at CFXButeMgr::m_MoveableImpactOverrideFXName element
 	FIREFX         *pFireFX;				// Points at CFXButeMgr::m_FireFXList element
 	WEAPONANIS     *pAniOverrides;			// Points at m_pWeaponAnisList element
 	TRACERFX       *pTracerFX;				// Points at CFXButeMgr::m_TracerFXList element
 
-	// Indicates server option has set restriction.
-	bool	bServerRestricted;
-	bool	bCanServerRestrict;
-
-public:	// PORT: Tron's code reads the name's string id (same place)
-	int             nNameId;
 private:
 	int             nMaxAmount;
 	char           *szIcon;
 
 	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
-
-public:
-	// RETAIL: Tron's energy a shot needs (retail AMMO +0x18, +0x1c, +0x20:
-	// "EnergyRequiredMin", "...Max", "...Surge"), by the accuracy rating
-	LTFLOAT         fEnergyRequiredMin;
-	LTFLOAT         fEnergyRequiredMax;
-	LTFLOAT         fEnergyRequiredSurge;
 };
 
 typedef CTList<AMMO*> AmmoList;

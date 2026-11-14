@@ -149,8 +149,8 @@ LTBOOL CWeaponFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
     if (!m_pWeapon) return LTFALSE;
 
-    m_fInstDamage   = (LTFLOAT) m_pAmmo->nInstDamage;
-    m_fAreaDamage   = (LTFLOAT) m_pAmmo->nAreaDamage;
+    m_fInstDamage   = (LTFLOAT) m_pAmmo->fInstDamage;
+    m_fAreaDamage   = (LTFLOAT) m_pAmmo->fAreaDamage;
 
 	m_nShooterId	= pCS->nShooterId;
 	m_bLocal		= pCS->bLocal;
@@ -878,7 +878,7 @@ void CWeaponFX::CreateWeaponSpecificFX()
 	// Only do impact fx if the client can see the impact position
 	// or the impact fx may last a little while...
 
-	if (g_bCanSeeImpactPos || m_pAmmo->fProgDamage > 0.0f || m_pAmmo->nAreaDamage > 0)
+	if (g_bCanSeeImpactPos || m_pAmmo->fProgDamage > 0.0f || m_pAmmo->fAreaDamage > 0.0f)
 	{
 		IFXCS cs;
 		cs.eCode		= m_eCode;
@@ -887,8 +887,8 @@ void CWeaponFX::CreateWeaponSpecificFX()
 		cs.vDir			= m_vDir;
 		cs.vPos			= m_vPos;
 		cs.vSurfNormal	= m_vSurfaceNormal;
-		cs.fBlastRadius = (LTFLOAT) m_pAmmo->nAreaDamageRadius;
-		cs.fTintRange   = (LTFLOAT) (m_pAmmo->nAreaDamageRadius * 5);
+		cs.fBlastRadius = (LTFLOAT) m_pAmmo->fAreaDamageRadius;
+		cs.fTintRange   = (LTFLOAT) (m_pAmmo->fAreaDamageRadius * 5);
 
 		//determine if the object we hit is a model 
 		bool bHitMovable = false;

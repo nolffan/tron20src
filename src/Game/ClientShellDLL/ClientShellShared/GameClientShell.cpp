@@ -4846,11 +4846,11 @@ void CGameClientShell::HandleAmmoPickup(uint8 nAmmoId, int nAmmoCount,
 	if (bSuccess)
 	{
 		//check for "infinite" ammo types
-		FormatString(IDS_AMMOPICKUP,szMsg,sizeof(szMsg),nAmmoCount,pAmmo->szShortName);
+		FormatString(IDS_AMMOPICKUP,szMsg,sizeof(szMsg),nAmmoCount,pAmmo->szName);
 	}
 	else if( IsCoopMultiplayerGameType( ))
 	{
-		FormatString(IDS_AMMO_NOPICKUP,szMsg,sizeof(szMsg),pAmmo->szShortName);
+		FormatString(IDS_AMMO_NOPICKUP,szMsg,sizeof(szMsg),pAmmo->szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
