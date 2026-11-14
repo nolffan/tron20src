@@ -242,6 +242,10 @@ SOURCE=.\AIGoalCover.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIGoalDash.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIGoalDeflect.cpp
 # End Source File
 # Begin Source File
@@ -1628,6 +1632,10 @@ SOURCE=.\AIGoalCheckBody.h
 # Begin Source File
 
 SOURCE=.\AIGoalCover.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIGoalDash.h
 # End Source File
 # Begin Source File
 

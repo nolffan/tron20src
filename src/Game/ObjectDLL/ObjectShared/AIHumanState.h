@@ -471,6 +471,9 @@ class CAIHumanStateAttackFromVantage : public CAIHumanState
 		LTFLOAT			m_fAttackTimer;
 		LTBOOL			m_bIgnoreVisibility;
 		LTBOOL			m_bFired;
+		// RETAIL: Tron's (ctor 0x101f0a70 clears the bytes at +0x8c, +0x8d).
+		bool			m_bTronUnknown8C;
+		bool			m_bTronUnknown8D;
 };
 
 class CAIHumanStateAttackFromView : public CAIHumanState
@@ -683,6 +686,8 @@ class CAIHumanStatePatrol : public CAIHumanState
 		LTBOOL					m_bForward;
         AINodePatrol*			m_pNode;
         AINodePatrol*			m_pLastNode;
+		// RETAIL: Tron's (ctor 0x101e4aa0 zeroes +0x94).
+		uint32					m_xTronUnknown94;
 };
 
 class CAIHumanStateGoto : public CAIHumanState
@@ -1180,6 +1185,8 @@ class CAIHumanStateChase : public CAIHumanState
 		AIVolume*		m_pJunctionVolume;
 		AIVolume*		m_pJunctionActionVolume;
 		AIVolume*		m_pJunctionCorrectVolume;
+		// RETAIL: Tron's (ctor 0x101eb760 zeroes +0xc0).
+		uint32			m_xTronUnknownC0;
 };
 
 class CAIHumanStateGetBackup : public CAIHumanState
@@ -1304,6 +1311,8 @@ class CAIHumanStateCharge : public CAIHumanState
 		LTFLOAT		m_fYellDistanceSqr;
 		LTBOOL		m_bStopped;
 		LTFLOAT		m_fStopDistanceSqr;
+		// RETAIL: Tron's (ctor 0x101f36d0 sets +0x94 to FLT_MAX).
+		LTFLOAT		m_fTronUnknown94;
 };
 
 class CAIHumanStateAnimate : public CAIHumanState

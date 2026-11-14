@@ -274,6 +274,8 @@ CAIHumanStateAware::CAIHumanStateAware()
 	m_eAISound		= kAIS_None;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -489,6 +491,9 @@ CAIHumanStatePatrol::CAIHumanStatePatrol()
 
 	m_pNode = LTNULL;
 	m_pLastNode = LTNULL;
+
+	m_bAllowGhosting = LTFALSE;
+	m_xTronUnknown94 = 0;
 }
 
 CAIHumanStatePatrol::~CAIHumanStatePatrol()
@@ -1319,6 +1324,8 @@ CAIHumanStateSearch::CAIHumanStateSearch()
 
 	m_pLastVolume		= LTNULL;
 	m_pJunctionVolume	= LTNULL;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -3114,6 +3121,8 @@ CAIHumanStateFollowFootprint::CAIHumanStateFollowFootprint()
 	m_fLastTimestamp = 0.f;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateFollowFootprint::~CAIHumanStateFollowFootprint()
@@ -3271,6 +3280,8 @@ CAIHumanStateInvestigate::CAIHumanStateInvestigate()
 
 	m_eAISound = kAIS_None;
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateInvestigate::~CAIHumanStateInvestigate()
@@ -3903,6 +3914,9 @@ CAIHumanStateChase::CAIHumanStateChase()
 	m_fSeeEnemyTime = 0.f;
 	m_fEnduranceTime = 0.f;
 	m_fVisionBlockedTime = 0.f;
+
+	m_bAllowGhosting = LTFALSE;
+	m_xTronUnknownC0 = 0;
 }
 
 CAIHumanStateChase::~CAIHumanStateChase()
@@ -4744,9 +4758,12 @@ CAIHumanStateDraw::CAIHumanStateDraw()
 	m_bPlayFirstSound = LTTRUE;
 	m_bFired = LTFALSE;
 
-	m_bFaceTarget = LTFALSE;
+	// RETAIL: TRUE in Tron (ctor 0x101ed950).
+	m_bFaceTarget = LTTRUE;
 
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateDraw::~CAIHumanStateDraw()
@@ -5221,6 +5238,8 @@ CAIHumanStateAttack::CAIHumanStateAttack()
 	m_dwAttackFlags = kAttk_None;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttack::~CAIHumanStateAttack()
@@ -5831,6 +5850,8 @@ CAIHumanStateAttackProp::CAIHumanStateAttackProp()
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
 
 	m_hProp = NULL;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackProp::~CAIHumanStateAttackProp()
@@ -5968,6 +5989,8 @@ CAIHumanStateAttackFromCover::CAIHumanStateAttackFromCover()
 	m_bCovered = LTFALSE;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromCover::~CAIHumanStateAttackFromCover()
@@ -6629,6 +6652,10 @@ CAIHumanStateAttackFromVantage::CAIHumanStateAttackFromVantage()
 
 	m_bPlayFirstSound = LTTRUE;
 	m_bIgnoreVisibility = LTFALSE;
+	m_bTronUnknown8C = false;
+	m_bTronUnknown8D = false;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromVantage::~CAIHumanStateAttackFromVantage()
@@ -7069,6 +7096,8 @@ CAIHumanStateAttackFromView::CAIHumanStateAttackFromView()
 
 	m_pViewNode = LTNULL;
 	m_fChaseTimer = 0.0f;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromView::~CAIHumanStateAttackFromView()
@@ -8019,6 +8048,8 @@ CAIHumanStateGetBackup::CAIHumanStateGetBackup()
 	m_pBackupNode = LTNULL;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -8341,8 +8372,11 @@ CAIHumanStateCharge::CAIHumanStateCharge()
 	m_bYelled = LTFALSE;
 	m_fYellDistanceSqr = 900.f * 900.f;
 	m_fStopDistanceSqr = 200.f * 200.f;
+	m_fTronUnknown94 = FLT_MAX;
 
 	m_pStrategyFollowPath = AI_FACTORY_NEW(CAIHumanStrategyFollowPath);
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateCharge::~CAIHumanStateCharge()
@@ -9156,6 +9190,8 @@ CAIHumanStateLongJump::CAIHumanStateLongJump()
 	// Are we jumping to a target, or away.
 	m_bJumpToTarget = LTTRUE;
 	m_fLongJumpStopDist = 128.f;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //

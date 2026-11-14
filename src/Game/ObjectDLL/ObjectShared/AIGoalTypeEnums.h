@@ -65,7 +65,7 @@ ADD_GOAL_TYPE(Charge)							// kGoal_Charge
 ADD_GOAL_TYPE(Chase)							// kGoal_Chase
 ADD_GOAL_TYPE(CheckBody)						// kGoal_CheckBody
 ADD_GOAL_TYPE(Cover)							// kGoal_Cover
-ADD_GOAL_TYPE_UNWRITTEN(Dash)					// kGoal_Dash
+ADD_GOAL_TYPE(Dash)								// kGoal_Dash
 ADD_GOAL_TYPE(Deflect)							// kGoal_Deflect
 ADD_GOAL_TYPE(Destroy)							// kGoal_Destroy
 ADD_GOAL_TYPE(DisappearReappear)				// kGoal_DisappearReappear

@@ -44,6 +44,8 @@ class CAIHumanStateAttackMove : public CAIHumanState
 		EnumAnimProp	m_eAttackMove;
 		LTVector		m_vAttackMoveDest;
 		LTBOOL			m_bTurnedAround;
+		// RETAIL: Tron's (ctor 0x102290d0 zeroes +0x90).
+		uint32			m_xTronUnknown90;
 };
 
 #endif
