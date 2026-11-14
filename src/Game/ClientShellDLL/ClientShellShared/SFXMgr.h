@@ -63,9 +63,11 @@ class CSFXMgr
 		void OnSFXMessage(ILTMessage_Read *pMsg);
 
 		CCharacterFX* GetCharacterFX(HOBJECT hObject);
+		CCharacterFX* GetCharacterFromClientID(uint8 nClientID);	// TRON (RETAIL: 0x10108540)
 		CCharacterFX* GetCharacterFromHitBox(HOBJECT hHitBox);
 		CBodyFX* GetBodyFX(HOBJECT hObject);
 		CBodyFX* GetBodyFromHitBox(HOBJECT hHitBox);
+		CSpecialFX* GetSpectatorFX(HOBJECT hObject);	// TRON (RETAIL: 0x101086a0)
 
 #ifdef __PSX2
 		// Get nearby characters
