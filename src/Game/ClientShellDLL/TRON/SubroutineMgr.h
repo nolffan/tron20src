@@ -210,6 +210,7 @@ public:
 	Procedural *		GetProcedural(int iProcNum) {return m_ProceduralArray[iProcNum];}
 	
 	// Subroutine functions
+	void				Reset();				// RETAIL: 0x10094850 (the name is ours)
 	void				ClearPlayerSubroutines();
 	void				ResetPrimitives();		// RETAIL: 0x100948d0 (the name is ours)
 	void				ResetProcedurals();		// RETAIL: 0x10094920 (the name is ours)

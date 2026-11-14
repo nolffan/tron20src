@@ -205,10 +205,15 @@ LTBOOL CTronPlayerStats::Init()
 	ResetSkills();
 	ResetMissionStats();
 
-	m_RatingMgr.Init("attributes\\additives.txt");
+	// RETAIL: 0x100a9710: Tron's file names, and the pings
+	m_RatingMgr.Init("Attributes\\Ratings.txt");
+	m_IONodeMgr.Init("attributes\\pings.txt");
 
 	g_pPlayerStats = this;
 	g_pTronPlayerStats = this;
+
+	m_bTronUnknownA8 = false;
+	m_bTronUnknown2404 = false;
 
     return LTTRUE;
 }
@@ -287,6 +292,7 @@ void CTronPlayerStats::Term()
         m_pbCanUseGear = LTNULL;
 	}
 
+	m_IONodeMgr.Term();
 	m_RatingMgr.Term();
 }
 
@@ -350,9 +356,15 @@ void CTronPlayerStats::Clear()
 	ResetSkills();
 	ResetMissionStats();
 
+	// RETAIL: 0x100a9ac0: Tron's also clears the ratings, the subroutines,
+	// the pings and the intel, and starts at version 0
+	m_RatingMgr.ResetRatings();
+	g_pSubroutineMgr->Reset();
+	m_IONodeMgr.ClearPings();
+	m_IntelList.Clear();
 
 	ClearPermissions();
-	SetJetVersion(100); // version 1.0.0
+	SetJetVersion(0);
 }
 
 
@@ -1056,6 +1068,9 @@ void CTronPlayerStats::Save(ILTMessage_Write *pMsg)
     m_Parameters.Save(pMsg);
     m_Keys.Save(pMsg);
     m_IntelList.Save(pMsg);
+	// RETAIL: 0x100ab1fc
+	m_IONodeMgr.Save(pMsg);
+	m_RatingMgr.Save(pMsg);
 
     pMsg->Writeuint32(m_nHealth);
     pMsg->Writeuint32(m_nDamage);
@@ -1124,6 +1139,9 @@ void CTronPlayerStats::Load(ILTMessage_Read *pMsg)
     m_Parameters.Load(pMsg);
     m_Keys.Load(pMsg);
     m_IntelList.Load(pMsg);
+	// RETAIL: 0x100ab63a
+	m_IONodeMgr.Load(pMsg);
+	m_RatingMgr.Load(pMsg);
 
     m_nHealth           = pMsg->Readuint32();
     m_nDamage           = pMsg->Readuint32();

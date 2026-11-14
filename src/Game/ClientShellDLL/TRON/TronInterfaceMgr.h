@@ -163,8 +163,6 @@ private:
 	CTronPlayerStats	m_stats;				// +0x2206c Player statistics (health, ammo, armor, etc.)
 	CSubroutineMgr		m_SubroutineMgr;		// +0x24474
 	CTronLayoutMgr		m_TronLayoutMgr;		// +0x25620, same as g_pLayoutMgr
-	// (our CTronLayoutMgr is smaller than retail's 0x1170 bytes)
-	char				m_aTronPadLayout[0x1170 - sizeof(CTronLayoutMgr)];
 	// PORT: retail's is a CTronWeaponChooser (0x118 bytes, vtable
 	// 0x101e95b0; not yet written)
 	CWeaponChooser		m_WeaponChooser;		// +0x26790

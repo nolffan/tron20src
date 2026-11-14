@@ -707,6 +707,14 @@ PlayerSubroutine* CSubroutineMgr::GetPlayerSubroutine(const char *pszName, SubSt
 	return LTNULL;
 }
 
+// RETAIL: 0x10094850 (the name is ours): CTronPlayerStats::Clear's
+void CSubroutineMgr::Reset()
+{
+	ClearPlayerSubroutines();
+	ResetPrimitives();
+	ResetProcedurals();
+}
+
 void CSubroutineMgr::ClearPlayerSubroutines()
 {
 	// RETAIL: 0x10094870
