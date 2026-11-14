@@ -6,8 +6,7 @@
 //			 the upgrade (build) points they are bought with
 //
 // RETAIL: written from retail CShell.dll 0x1004fa70..0x100510f8 (see the
-// header). PORT: retail's PlaySoundLocal takes one more argument (1.0f)
-// than ours, so the functions playing sounds stay near.
+// header).
 //
 //-------------------------------------------------------------------------
 

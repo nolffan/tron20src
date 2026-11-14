@@ -9,8 +9,7 @@
 // (c) 2001-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // RETAIL: written from retail CShell.dll 0x1004e460..0x1004f760 (see the
-// header). PORT: retail's PlaySoundLocal takes one more argument (1.0f)
-// than ours, so the functions playing sounds stay near.
+// header).
 //
 //-------------------------------------------------------------------------
 
