@@ -577,6 +577,10 @@ SOURCE=.\SubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TexturedFrame.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronClientWeapon.cpp
 # End Source File
 # Begin Source File
@@ -930,6 +934,10 @@ SOURCE=..\..\Shared\TRON\SubroutineDataMgr.h
 # Begin Source File
 
 SOURCE=.\SubroutineMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TexturedFrame.h
 # End Source File
 # Begin Source File
 
