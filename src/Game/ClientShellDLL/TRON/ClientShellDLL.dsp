@@ -318,6 +318,10 @@ SOURCE=.\HUDDamageDir.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDiscMatches.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDDiscScores.cpp
 # End Source File
 # Begin Source File
@@ -346,6 +350,10 @@ SOURCE=.\HUDLightCycleRoster.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDMatchStats.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -370,6 +378,10 @@ SOURCE=.\HUDProgress.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDScores.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDSecurityCamera.cpp
 # End Source File
 # Begin Source File
@@ -387,10 +399,6 @@ SOURCE=.\HUDVersion.cpp
 # Begin Source File
 
 SOURCE=.\HUDWeapon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
@@ -786,6 +794,10 @@ SOURCE=.\HUDDamageDir.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDDiscMatches.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDDiscScores.h
 # End Source File
 # Begin Source File
@@ -814,6 +826,10 @@ SOURCE=.\HUDLightCycleRoster.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDMatchStats.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDPings.h
 # End Source File
 # Begin Source File
@@ -835,6 +851,10 @@ SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # Begin Source File
 
 SOURCE=.\HUDProgress.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDScores.h
 # End Source File
 # Begin Source File
 

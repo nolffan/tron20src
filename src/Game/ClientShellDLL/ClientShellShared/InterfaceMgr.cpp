@@ -2758,14 +2758,8 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		}
 		break;
 
-		case COMMAND_ID_MISSION:
-		{
-			if (m_eGameState == GS_PLAYING && !IsCoopMultiplayerGameType() )
-			{
-				g_pScores->Show(true);
-				return LTTRUE;
-			};
-		} break;
+		// RETAIL: Tron's scores are the light cycle match manager's to show
+		// (NOLF2's mission key showed them here)
 
 		default :
 		break;
@@ -2875,10 +2869,8 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 		}
 		break;
 
-		case COMMAND_ID_MISSION:
-		{
-			g_pScores->Show(false);
-		} break;
+		// RETAIL: Tron's scores are the light cycle match manager's to show
+		// (NOLF2's mission key showed them here)
 
 		default : break;
 	}

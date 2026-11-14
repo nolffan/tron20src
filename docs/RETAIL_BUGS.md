@@ -707,6 +707,17 @@ the vertical values want the Y ratio), so at any resolution that is not
 
 Not fixed yet.
 
+### The light cycle scores never free their controls
+
+CShell.dll 0x10035500 (CHUDScores::Term, src/Game/ClientShellDLL/TRON/
+HUDScores.cpp). Term destroys the score titles' column control and three
+of the frames only when the controls were never created (it tests the
+"created" flag the wrong way round), so the controls it did create are
+never destroyed, and the header, footer and row column controls are not
+in its list at all.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

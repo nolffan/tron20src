@@ -442,10 +442,6 @@ SOURCE=.\HUDRadar.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\HUDScores.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\HUDSubtitles.cpp
 # End Source File
 # Begin Source File
@@ -1305,10 +1301,6 @@ SOURCE=.\HUDPopup.h
 # Begin Source File
 
 SOURCE=.\HUDRadar.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\HUDScores.h
 # End Source File
 # Begin Source File
 

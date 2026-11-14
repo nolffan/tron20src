@@ -412,6 +412,9 @@ bool IsDeathmatchGameType();
 bool IsCoopMultiplayerGameType();
 bool IsTeamGameType();
 bool IsRevivePlayerGameType( );
+// RETAIL: Tron's, the disc games (CShell.dll 0x100fa3d0, after GetGameType;
+// the name is ours)
+bool IsDiscGameType( );
 bool IsDifficultyGameType();
 
 #define GAME_HANDSHAKE_PASSWORD		0x40404040

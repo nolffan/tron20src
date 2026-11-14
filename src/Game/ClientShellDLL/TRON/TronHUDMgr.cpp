@@ -34,6 +34,7 @@ inline void CHUDItem::SetRenderState()
 }
 
 CHUDCrosshair*		g_pCrosshair = LTNULL;
+CHUDScores*			g_pScores = LTNULL;	// RETAIL: 0x1026ee04
 // RETAIL: 0x1026ee24 (retail's constructor news the item; the destructor
 // clears it)
 CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
@@ -49,6 +50,8 @@ CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
 
 CTronHUDMgr::CTronHUDMgr()
 {
+	m_pScores = debug_new(CHUDScores);
+	m_pDiscMatches = debug_new(CHUDDiscMatches);
 }
 
 // ----------------------------------------------------------------------- //
@@ -61,6 +64,18 @@ CTronHUDMgr::CTronHUDMgr()
 
 CTronHUDMgr::~CTronHUDMgr()
 {
+	if (m_pScores)
+	{
+		debug_delete(m_pScores);
+		m_pScores = LTNULL;
+	}
+	if (m_pDiscMatches)
+	{
+		debug_delete(m_pDiscMatches);
+		m_pDiscMatches = LTNULL;
+	}
+	g_pScores = LTNULL;
+	g_pDiscMatches = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -74,6 +89,8 @@ CTronHUDMgr::~CTronHUDMgr()
 LTBOOL CTronHUDMgr::Init()
 {
 	g_pCrosshair = &m_Crosshair;
+	g_pScores = m_pScores;
+	g_pDiscMatches = m_pDiscMatches;
 	g_pLightCycleLives = &m_LightCycleLives;
 	g_pLightCycleRoster = &m_LightCycleRoster;
 
@@ -96,7 +113,7 @@ bool CTronHUDMgr::AddItems()
 	//crosshair should be first so that it is rendered first (potential overlap)
 	AddItem(&m_Crosshair, eGameType);
 
-	AddItem(&m_Weapons, eGameType);
+	AddItem(&m_MatchStats, eGameType);
 	AddItem(&m_Version, eGameType);
 
 	// Tron-specific items
@@ -128,7 +145,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_SecurityCamera, eGameType);
 
 	m_Crosshair.Init();
-	m_Weapons.Init();
+	m_MatchStats.Init();
 	m_Version.Init();
 	m_Permissions.Init();
 	m_HealthEnergy.Init();
@@ -150,7 +167,26 @@ bool CTronHUDMgr::AddItems()
 	m_SubChooser.Init();
 	m_Profiler.Init();
 	m_SecurityCamera.Init();
+	m_pScores->Init();
+	m_pDiscMatches->Init();
 
     return CHUDMgr::AddItems();
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronHUDMgr::TronUnknownVirtual40()
+//
+//	PURPOSE:	Adds the items CTronHUDMgr news for the game type being
+//				played (RETAIL: 0x1009c3f0)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronHUDMgr::TronUnknownVirtual40()
+{
+	GameType eGameType = g_pGameClientShell->GetGameType();
+
+	AddItem(m_pScores, eGameType);
+	AddItem(m_pDiscMatches, eGameType);
+}

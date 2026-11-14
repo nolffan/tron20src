@@ -20,7 +20,7 @@
 // TO2 dependencies
 #include "HUDCrosshair.h"
 #include "HUDDamage.h"
-#include "HUDWeapons.h"
+#include "HUDMatchStats.h"
 
 // Tron dependencies
 #include "HUDPermissions.h"
@@ -45,6 +45,8 @@
 #include "HUDProfiler.h"
 #include "HUDSubChooser.h"
 #include "HUDSecurityCamera.h"
+#include "HUDScores.h"
+#include "HUDDiscMatches.h"
 
 //******************************************************************************************
 //** Tron HUD Manager
@@ -59,10 +61,16 @@ public:
 	LTBOOL		Init();
 	bool		AddItems();
 
+	// RETAIL: slot 16 (0x1009c3f0): adds the scores (and the disc games'
+	// items) for the game being played
+	virtual void	TronUnknownVirtual40();
+
 protected:
 
 	CHUDCrosshair		m_Crosshair;
-	CHUDWeapons			m_Weapons;
+	// RETAIL: retail has no CHUDWeapons; its disc match stats stand here
+	// (PORT: their place in the class is not yet retail's)
+	CHUDMatchStats		m_MatchStats;
 
 	// New Tron items
 	CHUDPermissions		m_Permissions;
@@ -90,6 +98,12 @@ protected:
 	CHUDSubChooser				m_SubChooser;
 	CHUDProfiler				m_Profiler;
 	CHUDSecurityCamera			m_SecurityCamera;
+
+	// RETAIL: newed by the constructor (0x1009af48..0x1009afdf: +0x115a8,
+	// +0x115ac, +0x115b0), deleted by the destructor; Init points the
+	// globals at them (0x1009b9b0)
+	CHUDScores*					m_pScores;
+	CHUDDiscMatches*			m_pDiscMatches;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 
