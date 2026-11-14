@@ -813,9 +813,10 @@ Object.lto 0x10260d30 (EventCounter's command manager table,
 ObjectShared/EventCounter.cpp). Tron added RESET and REPORT messages to the
 event counter (OnTrigger 0x102611e0 handles both), but the table entry for
 REPORT is named "RESET" with the syntax "REPORT" (a copy of the line above):
-the command manager knows RESET twice and REPORT not at all, so a command
-sending REPORT to an event counter fails the command manager's message
-check, and the counter's value is never printed.
+the command manager knows RESET twice and REPORT not at all, so the
+editor-time command check (CCommandMgrPlugin::PreCheckMsg) rejects a
+command sending REPORT to an event counter as an unknown message, although
+the game itself handles it.
 
 Fixed in the modern build: EventCounter.cpp (TRON20SRC_MODERN registers
 REPORT).
