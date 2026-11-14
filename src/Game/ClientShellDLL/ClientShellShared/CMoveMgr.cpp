@@ -2221,7 +2221,8 @@ void CMoveMgr::ShowPos(char *pBlah)
 
 void CMoveMgr::Update()
 {
-	if (g_pGameClientShell->IsGamePaused()) return;
+	// RETAIL: 0x100f8e60 -- Tron only stops for the server's pause.
+	if (g_pGameClientShell->IsServerPaused()) return;
 	
 	HOBJECT hObj = g_pLTClient->GetClientObject();
 	if (!m_hObject || !hObj) return;
@@ -2907,7 +2908,8 @@ LTBOOL CMoveMgr::IsPlayerModel()
 // ----------------------------------------------------------------------- //
 void CMoveMgr::AddDamagePenalty(LTFLOAT fDuration)
 {
-	fDuration *= g_pPlayerStats->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMoveDamage);
+	// RETAIL: 0x100f9e80 -- Tron reads the stamina modifiers directly.
+	fDuration *= ((const StaminaModifiers*)g_pPlayerStats->TronUnknownVirtual138())->fModifier[StaminaModifiers::eMoveDamage];
 	if (fDuration > m_DamageTimer.GetCountdownTime())
 		m_DamageTimer.Start(fDuration);
 }
@@ -2942,7 +2944,8 @@ LTFLOAT CMoveMgr::CalculateMovementPenalty() const
 	{
 		LTFLOAT fDamageMovePenalty = GetConsoleFloat("DamageMovePenalty",0.5f);
 
-		fDamageMovePenalty *= g_pPlayerStats->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMoveDamage);
+		// RETAIL: 0x100f9f70 -- Tron reads the stamina modifiers directly.
+		fDamageMovePenalty *= ((const StaminaModifiers*)g_pPlayerStats->TronUnknownVirtual138())->fModifier[StaminaModifiers::eMoveDamage];
 
 		if (fDamageMovePenalty > fPenalty)
 			fPenalty = fDamageMovePenalty;
