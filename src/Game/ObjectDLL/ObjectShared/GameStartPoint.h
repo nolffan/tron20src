@@ -53,6 +53,12 @@ class GameStartPoint : public GameBase
 		bool		IsStartPoint()		const { return m_bStartPoint; }
 		bool		IsSpawnPoint()		const { return m_bSpawnPoint; }
 
+		// RETAIL: Tron's: a player respawned at it (retail CPlayerObj::Respawn
+		// sets it, 0x1007dc92; the server shell's ResetStartPoints, 0x100e46f0,
+		// and the light cycle game clear it). The names are ours
+		bool		IsInUse()			const { return m_bInUse; }
+		void		SetInUse(bool bInUse)	{ m_bInUse = bInUse; }
+
 	protected :
 
         uint32	EngineMessageFn(uint32 messageID, void *pData, LTFLOAT lData);
@@ -82,6 +88,11 @@ class GameStartPoint : public GameBase
 		
 		bool		m_bStartPoint;	// Can this start point be used as an initial start point?
 		bool		m_bSpawnPoint;	// Can this start point be used as a respawn point?
+
+		// RETAIL: at +0x5c in Tron's GameStartPoint (its constructor,
+		// 0x1014f990, clears it last); ours is at the end until the class has
+		// Tron's layout (+0x38..+0x58 differ from NOLF2's too)
+		bool		m_bInUse;
 };
 
 

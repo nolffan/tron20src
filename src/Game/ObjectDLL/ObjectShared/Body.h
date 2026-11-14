@@ -119,9 +119,6 @@ class Body : public Prop, public IHitBoxUser
 		HOBJECT			GetCharacter( ) const { return m_hCharacter; }
 
 
-		// [kml] 3/19/02
-		// For general inventory stuff
-		void			DropInventoryObject();
 
 		LTBOOL			CanCheckPulse();
 		bool			CanBeSearched(); 

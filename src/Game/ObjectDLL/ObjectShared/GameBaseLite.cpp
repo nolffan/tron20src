@@ -18,13 +18,9 @@
 
 LINKFROM_MODULE( GameBaseLite );
 
+// RETAIL: Tron's ClassDef (0x102fd3f8) has no properties: the GameType
+// group came to NOLF2 later
 BEGIN_CLASS(GameBaseLite)
-	PROP_DEFINEGROUP(GameType, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(SinglePlayer, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(Cooperative, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(Deathmatch, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(TeamDeathmatch, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(DoomsDay, 1, PF_GROUP(16))
 END_CLASS_DEFAULT_FLAGS(GameBaseLite, BaseClass, NULL, NULL, CF_HIDDEN | CF_CLASSONLY)
 
 GameBaseLite::GameBaseLite(bool bStartActive) :
@@ -37,11 +33,17 @@ GameBaseLite::GameBaseLite(bool bStartActive) :
 	// Clear out the invalid data from BaseClass
 	m_hObject = 0;
 	m_nType = OT_NORMAL;
+
+	// RETAIL: 0x10153390 (Tron's, as GameBase's)
+	m_nSaveVersion = g_pVersionMgr->GetSaveVersion();
+	m_hstrSave = LTNULL;
 }
 
 GameBaseLite::~GameBaseLite()
 {
 	ASSERT(!g_pGameServerShell->GetLiteObjectMgr()->HasObject(this));
+
+	FREE_HSTRING(m_hstrSave);	// RETAIL: 0x10153470
 }
 
 uint32 GameBaseLite::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
@@ -65,36 +67,20 @@ uint32 GameBaseLite::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 	return BaseClass::ObjectMessageFn(hSender, pMsg);
 }
 
+// RETAIL: 0x101535a0/0x101535e0: Tron saves GameBase's way (no version
+// manager calls, no 2001 save-file branch)
 void GameBaseLite::Save(ILTMessage_Write *pMsg)
 {
-	SAVE_DWORD(g_pVersionMgr->GetSaveVersion());
 	SAVE_bool(m_bActive);
+	SAVE_DWORD(m_nSaveVersion);
+	SAVE_HSTRING(m_hstrSave);
 }
 
 void GameBaseLite::Load(ILTMessage_Read *pMsg)
 {
-	// This old version didn't save the version number at the top.  We need
-	// to use an engine value to determine the version.
-	uint32 nSaveFileVersion = 0;
-	g_pLTServer->GetSaveFileVersion( nSaveFileVersion );
-	if( nSaveFileVersion == 2001 )
-	{
-		LOAD_bool(m_bActive);
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		HSTRING hDummy = NULL;
-		LOAD_HSTRING(hDummy);
-		g_pLTServer->FreeString( hDummy );
-		hDummy = NULL;
-	}
-	else
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		LOAD_bool(m_bActive);
-	}
+	LOAD_bool(m_bActive);
+	LOAD_DWORD(m_nSaveVersion);
+	LOAD_HSTRING(m_hstrSave);
 }
 
 void GameBaseLite::InitialUpdate(float fUpdateType)
@@ -127,7 +113,8 @@ void GameBaseLite::Deactivate()
 
 void GameBaseLite::SetName(const char *pName)
 {
-	if (m_bRegistered)
+	// RETAIL: 0x10153670 asks the virtual IsRegistered()
+	if (IsRegistered())
 	{
 		m_bRegistered = false;
 		g_pGameServerShell->GetLiteObjectMgr()->RenameObject(this, pName);
@@ -141,22 +128,27 @@ bool GameBaseLite::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
 	static CParsedMsg::CToken s_cTok_Remove("REMOVE");
 
-	if (cMsg.GetArg(0) == s_cTok_Remove)
+	// RETAIL: 0x10153720: Tron only answers REMOVE while registered, and
+	// does not remove the object here (no CLiteObjectMgr call)
+	if (IsRegistered() && (cMsg.GetArg(0) == s_cTok_Remove))
 	{
-		// Remove ourselves from the ObjectLiteMgr
+#ifdef TRON20SRC_MODERN
+		// RETAIL BUG: (docs/RETAIL_BUGS.md) REMOVE is accepted but the
+		// object stays; remove it as NOLF2 does
 		g_pGameServerShell->GetLiteObjectMgr()->RemoveObject(this);
-	}
-	else
-	{
-		return false;
+#endif
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 void GameBaseLite::TriggerMsg(HOBJECT hSender, const char* pMsg)
 {
 	if (!pMsg) return;
+
+	// RETAIL: 0x101537c0
+	if (!IsRegistered()) return;
 
 	ConParse parse;
 	parse.Init(pMsg);
@@ -203,45 +195,9 @@ uint32 GameBaseLite::OnPrecreate(ObjectCreateStruct* pOCS, float precreateType)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's is empty (slot 30 is the shared "return true" at
+// 0x100dd4f0); NOLF2's game type filter is not in it
 bool GameBaseLite::ReadProp( ObjectCreateStruct* pStruct )
 {
-	if( !pStruct )
-		return false;
-
-	// Read properties based on gametype.
-	switch( g_pGameServerShell->GetGameType( ))
-	{
-		case eGameTypeSingle:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "SinglePlayer", true ))
-				return false;
-		}
-		break;
-		case eGameTypeCooperative:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "Cooperative", true ))
-				return false;
-		}
-		break;
-		case eGameTypeDeathmatch:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "Deathmatch", true ))
-				return false;
-		}
-		break;
-		case eGameTypeTeamDeathmatch:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "TeamDeathmatch", true ))
-				return false;
-		}
-		break;
-		case eGameTypeDoomsDay:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "DoomsDay", true ))
-				return false;
-		}	
-		break;
-	}
-
 	return true;
 }

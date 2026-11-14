@@ -31,6 +31,9 @@ extern CGameServerShell* g_pGameServerShell;
 
 namespace
 {
+	// RETAIL: build 51's defaults, 3 seconds each in Tron (0x10304ca0/a4)
+	float fDefaultMinTime = 3.0f;
+	float fDefaultMaxTime = 3.0f;
 	float fMinTimePerItem = 0.1f;
 }
 
@@ -47,6 +50,8 @@ namespace
 CSearchable::CSearchable() : IAggregate()
 {
     m_hObject			= LTNULL;
+	m_fMinSearchTime	= -1.0f;
+	m_fMaxSearchTime	= -1.0f;
 	m_pRandomItemSet	= NULL;
 	
 	m_nPickupItems		= NULL;
@@ -62,7 +67,7 @@ CSearchable::CSearchable() : IAggregate()
 	m_fSoundRadius		= 200.0f;
 
 	m_bGaveLastItem		= false;
-	m_bIsBody			= false;
+	m_bForcePickup		= true;
 	m_hstrSpecificItem	= LTNULL;
 
 	m_bSearchStarted	= false;
@@ -175,6 +180,20 @@ LTBOOL CSearchable::ReadProp(LPBASECLASS pObject, ObjectCreateStruct *pStruct)
     if (!pStruct) return LTFALSE;
 
 	GenericProp genProp;
+    if (g_pLTServer->GetPropGeneric("MinSearchTime", &genProp) == LT_OK)
+	{
+		m_fMinSearchTime = genProp.m_Float;
+	}
+    if (g_pLTServer->GetPropGeneric("MaxSearchTime", &genProp) == LT_OK)
+	{
+		// RETAIL BUG: (docs/RETAIL_BUGS.md) 0x1019478d stores the maximum
+		// over the minimum, as build 51 does
+#ifdef TRON20SRC_MODERN
+		m_fMaxSearchTime = genProp.m_Float;
+#else
+		m_fMinSearchTime = genProp.m_Float;
+#endif
+	}
     if (g_pLTServer->GetPropGeneric("SpecificItems", &genProp) == LT_OK)
 	{
 		if (genProp.m_String[0])
@@ -224,6 +243,13 @@ void CSearchable::InitialUpdate(LPBASECLASS pObject)
 
 	//force the user flags to be set
 	Enable(m_bEnabled);
+
+	// RETAIL: 0x101948ba: build 51's search times
+	if (m_fMinSearchTime < 0.0f)
+		m_fMinSearchTime = fDefaultMinTime;
+	if (m_fMaxSearchTime < 0.0f)
+		m_fMaxSearchTime = fDefaultMaxTime;
+
 	if (!m_pRandomItemSet)
 	{
 		m_pRandomItemSet = g_pSearchItemMgr->GetSet((uint8)0);
@@ -234,7 +260,7 @@ void CSearchable::InitialUpdate(LPBASECLASS pObject)
 		m_hstrSoundName = g_pLTServer->CreateString("Interface\\Snd\\SearchPropLoop.wav");
 	}
 
-	CalcTotalTime();
+	m_fRemainingTime = m_fTotalTime = GetRandom( m_fMinSearchTime, m_fMaxSearchTime );
 	CalcSearchTime();
 }
 
@@ -290,15 +316,12 @@ void CSearchable::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, ILTMessage
 					if (m_nPickupItems)
 					{
 
-						PickupItem *pItem  = dynamic_cast<PickupItem*>(g_pLTServer->HandleToObject( m_ahPickupItems[m_nPickupItems-1].m_hItem ));
+						// RETAIL: 0x10194a4e: no dynamic_cast, and the item
+						// stays in the list whether it was picked up or not
+						PickupItem *pItem  = (PickupItem*)g_pLTServer->HandleToObject( m_ahPickupItems[m_nPickupItems-1] );
 						if (pItem)
 						{
-							pItem->ObjectTouch(hSender, m_ahPickupItems[m_nPickupItems-1].m_bForcePickup);
-							bPickedUp = pItem->WasPickedUp();
-							if( bPickedUp )
-							{
-								m_ahPickupItems[m_nPickupItems-1].m_hItem = LTNULL;
-							}
+							pItem->ObjectTouch(hSender, m_bForcePickup);
 						}
 						
 						m_nPickupItems--;
@@ -377,7 +400,7 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 					if ( pPlayer )
 					{
 						SendTriggerMsgToObjects(pPlayer, pStr, "ACTIVATE");
-						bPickedUp = true;
+						// RETAIL: Tron does not count this as picked up (0x10194b30 sets it only from WasPickedUp)
 					}
 				}
 			}
@@ -390,7 +413,7 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 				if ( g_pCmdMgr->IsValidCmd( pStr ) )
 				{
 					g_pCmdMgr->Process( pStr, m_hObject, NULL );
-					bPickedUp = true;
+					// RETAIL: Tron does not count this as picked up (0x10194b30 sets it only from WasPickedUp)
 				}
 			}
 		}
@@ -399,13 +422,11 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 		FREE_HSTRING(m_hstrSpecificItem);
 		m_hstrSpecificItem = LTNULL;
 	}
-
-	if (!bPickedUp)
+	else	// RETAIL: 0x10194c69: no random item after a specific one
 	{
 		// RETAIL: Tron's search skill has no junk modifier (CSkillsButeMgr):
 		// its call (Object.lto 0x10194c83) passes only the result. PORT:
 		// NOLF2's SEARCH_SET still takes one; it gets 1, no change
-		CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
 		float fJunkMod = 1.0f;
 
 
@@ -420,6 +441,8 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 			{
 				case SEARCH_SET::eItemObjectType :
 				{
+					// RETAIL: 0x10194cce looks the player up here
+					CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
 					CAutoMessage cMsg;
 					cMsg.Writeuint8( MID_SEARCH );
 					cMsg.Writeuint8( SEARCH_FOUND );
@@ -427,10 +450,7 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 					cMsg.Writeuint8( soResult.nId );
 					g_pLTServer->SendToClient( cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED );
 
-					// Since we essentially just give these items to the player and there is no object to pick up
-					// we need to pretend we picked one up so we know the last search item was given away...
-					
-					bPickedUp = true;
+					// RETAIL: Tron does not count this as picked up (0x10194b30 sets it only from WasPickedUp)
 				}
 				break;
 
@@ -490,12 +510,14 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 				SendTriggerMsgToObject(pClass, hObj, LTFALSE, "HIDDEN 1");
 				
 				// However, see if the player can pick it up now...
+				// RETAIL: 0x10194f4e: the flag is cleared for the last item
+				m_bForcePickup = false;
 				if (IsKindOf(hObj, "PickupItem"))
 				{
 					PickupItem *pItem  = (PickupItem *)g_pLTServer->HandleToObject(hObj);
 					if (pItem)
 					{
-						pItem->ObjectTouch(hSender, false);
+						pItem->ObjectTouch(hSender, m_bForcePickup);
 
 						bPickedUp = pItem->WasPickedUp();
 						if (!bPickedUp)
@@ -537,20 +559,21 @@ void CSearchable::Load(ILTMessage_Read *pMsg)
 
 	LOAD_HOBJECT(m_hObject);
 	LOAD_bool(m_bEnabled);
+	LOAD_FLOAT(m_fMinSearchTime);
+	LOAD_FLOAT(m_fMaxSearchTime);
 	uint8 nRandomItemSet;
 	LOAD_BYTE(nRandomItemSet);
 	m_pRandomItemSet = g_pSearchItemMgr->GetSet(nRandomItemSet);
 
 	LOAD_bool(m_bGaveLastItem);
-	LOAD_bool(m_bIsBody);
+	LOAD_bool(m_bForcePickup);
 	
 	LOAD_HSTRING(m_hstrSpecificItem);
 
 	LOAD_BYTE(m_nPickupItems);
 	for (int i = 0; i < kMaxPickupItems; i++)
 	{
-		LOAD_HOBJECT(m_ahPickupItems[i].m_hItem);
-		LOAD_bool(m_ahPickupItems[i].m_bForcePickup);
+		LOAD_HOBJECT(m_ahPickupItems[i]);
 	}
 
 	LOAD_FLOAT(m_fTotalTime);
@@ -592,18 +615,20 @@ void CSearchable::Save(ILTMessage_Write *pMsg)
 
     SAVE_HOBJECT(m_hObject);
 	SAVE_bool(m_bEnabled);
-	SAVE_BYTE( (m_pRandomItemSet ? m_pRandomItemSet->nId : (uint8)-1) );
+	SAVE_FLOAT(m_fMinSearchTime);
+	SAVE_FLOAT(m_fMaxSearchTime);
+	// RETAIL: 0x1019526a: no NULL check (InitialUpdate always sets one)
+	SAVE_BYTE( m_pRandomItemSet->nId );
 
 	SAVE_bool(m_bGaveLastItem);
-	SAVE_bool(m_bIsBody);
+	SAVE_bool(m_bForcePickup);
 	
 	SAVE_HSTRING(m_hstrSpecificItem);
 
 	SAVE_BYTE(m_nPickupItems);
 	for (int i = 0; i < kMaxPickupItems; i++)
 	{
-		SAVE_HOBJECT(m_ahPickupItems[i].m_hItem);
-		SAVE_bool(m_ahPickupItems[i].m_bForcePickup);
+		SAVE_HOBJECT(m_ahPickupItems[i]);
 	}
 		
 	SAVE_FLOAT(m_fTotalTime);
@@ -629,7 +654,7 @@ void CSearchable::Save(ILTMessage_Write *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-bool CSearchable::AddPickupItem(HOBJECT hItem, bool bForcePickup /* = false */)
+bool CSearchable::AddPickupItem(HOBJECT hItem)
 {
 	if (!hItem || m_nPickupItems >= kMaxPickupItems) return false;
 
@@ -638,9 +663,11 @@ bool CSearchable::AddPickupItem(HOBJECT hItem, bool bForcePickup /* = false */)
 	// Clear Activatable flag on the pickup items, it belongs to us now...
 	g_pCommonLT->SetObjectFlags(hItem, OFT_User, 0, USRFLG_CAN_ACTIVATE);
 
-	m_ahPickupItems[m_nPickupItems].m_hItem = hItem;
-	m_ahPickupItems[m_nPickupItems].m_bForcePickup = bForcePickup;
+	m_ahPickupItems[m_nPickupItems] = hItem;
 	m_nPickupItems++;
+
+	// RETAIL: 0x10195417: each item adds to the search time
+	m_fRemainingTime += fMinTimePerItem;
 
 	CalcSearchTime();
 	return true;
@@ -653,15 +680,15 @@ void CSearchable::RemovePickupItem(HOBJECT hItem)
 
 	for( uint8 iItem = 0; iItem < kMaxPickupItems; ++iItem )
 	{
-		if( m_ahPickupItems[iItem].m_hItem == hItem )
+		if( m_ahPickupItems[iItem] == hItem )
 		{
-			m_ahPickupItems[iItem].m_hItem = NULL;
+			m_ahPickupItems[iItem] = NULL;
 			m_nPickupItems--;
 			for( int iCur = iItem; iCur < kMaxPickupItems; ++iCur )
 			{
 				if( iCur == (kMaxPickupItems - 1))
 				{
-					m_ahPickupItems[iCur].m_hItem = LTNULL;
+					m_ahPickupItems[iCur] = LTNULL;
 				}
 				else
 				{
@@ -676,12 +703,12 @@ void CSearchable::ClearPickupItems()
 {
 	for (uint8 iItem = 0; iItem < kMaxPickupItems; iItem++)
 	{
-		if (m_ahPickupItems[iItem].m_hItem)
+		if (m_ahPickupItems[iItem])
 		{
-			g_pLTServer->RemoveObject(m_ahPickupItems[iItem].m_hItem);
+			g_pLTServer->RemoveObject(m_ahPickupItems[iItem]);
 		}
 		
-		m_ahPickupItems[iItem].m_hItem = NULL;
+		m_ahPickupItems[iItem] = NULL;
 	}
 
 	m_nPickupItems = 0;
@@ -693,12 +720,12 @@ void CSearchable::ResetPickupItems()
 	uint8 nPickupItems = 0;
 	for (uint8 iItem = 0; iItem < kMaxPickupItems; iItem++)
 	{
-		if (m_ahPickupItems[iItem].m_hItem)
+		if (m_ahPickupItems[iItem])
 		{
 			if (iItem > nPickupItems)
 			{
 				m_ahPickupItems[nPickupItems] = m_ahPickupItems[iItem];
-				m_ahPickupItems[iItem].m_hItem = NULL;
+				m_ahPickupItems[iItem] = NULL;
 			}
 
 			nPickupItems++;
@@ -717,8 +744,6 @@ void CSearchable::ResetPickupItems()
 	{
 		m_fNextFindTime = fMinTimePerItem;
 	}
-
-	CalcTotalTime();
 }
 
 
@@ -737,22 +762,6 @@ void CSearchable::CalcSearchTime()
 	{
 		m_fNextFindTime = 0.0f;
 	}
-}
-
-void CSearchable::CalcTotalTime()
-{
-
-	float fTime;
-	if (m_bIsBody)
-		fTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_SEARCHBODY);
-	else
-		fTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_SEARCHPROP);
-
-	//hack to handle empty search sets
-	if (m_bGaveLastItem)
-		fTime = 0.0f;
-		
-	m_fRemainingTime = m_fTotalTime = fTime + ((float)m_nPickupItems * fMinTimePerItem);
 }
 
 // ----------------------------------------------------------------------- //
@@ -842,19 +851,7 @@ void CSearchable::EndSearch()
 
 	m_bSearchStarted = false;
 
-	//hack to force body to fade out after search is complete in non-ai based games.
-	if( m_bIsBody && !HasItem() && !IsCoopMultiplayerGameType( ))
-	{
-		Body* pBody = dynamic_cast<Body*>(g_pLTServer->HandleToObject( m_hObject ));
-		if( pBody )
-		{
-			// Make sure our body is not permanent when we try to fade it away...
-
-			pBody->SetPermanentBody( false );
-			pBody->SetState( kState_BodyFade );
-		}
-
-	}
+	// RETAIL: 0x10195960 ends here: no body fade (Tron has no body flag)
 
 }
 
@@ -888,15 +885,17 @@ void CSearchable::Enable(bool bEnable)
 
 void CSearchable::CopySearchProperties(const CSearchable* pSearchable)
 {
+	m_fMinSearchTime	= pSearchable->m_fMinSearchTime;
+	m_fMaxSearchTime	= pSearchable->m_fMaxSearchTime;
 	m_pRandomItemSet	= pSearchable->m_pRandomItemSet;
 	m_bGaveLastItem		= pSearchable->m_bGaveLastItem;
-	m_bIsBody			= pSearchable->m_bIsBody;
+	m_bForcePickup		= pSearchable->m_bForcePickup;
 
 	ClearPickupItems();
 
 	for (int i = 0; i < pSearchable->m_nPickupItems; i++)
 	{
-		AddPickupItem(pSearchable->m_ahPickupItems[i].m_hItem,pSearchable->m_ahPickupItems[i].m_bForcePickup);
+		AddPickupItem(pSearchable->m_ahPickupItems[i]);
 	}
 
 	m_fTotalTime		= pSearchable->m_fTotalTime;
@@ -913,21 +912,8 @@ void CSearchable::CopySearchProperties(const CSearchable* pSearchable)
 
 void CSearchable::SetRandomItemSet(char* szSetName)
 {
+	// RETAIL: 0x10195b50: Tron only looks the set up
 	m_pRandomItemSet = g_pSearchItemMgr->GetSet(szSetName);
-	//if we don't have a set, or we don't have any items disable the random items
-	if (m_pRandomItemSet) 
-	{
-		uint8 nRandomItems = m_pRandomItemSet->nAmmos + m_pRandomItemSet->nItems + m_pRandomItemSet->nGears + m_pRandomItemSet->nWeapons;
-		if (nRandomItems)
-		{
-			m_bGaveLastItem = false;
-			return;
-		}
-	}
-
-	//hack to fool us into thinking we've already given away everything 
-	m_bGaveLastItem = true;
-	m_fRemainingTime = m_fTotalTime = 0.0f;
 }
 
 // ----------------------------------------------------------------------- //

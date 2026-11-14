@@ -204,10 +204,7 @@ CommandObject::~CommandObject()
 
 bool CommandObject::ReadProp( ObjectCreateStruct *pOCS )
 {
-	if ( !GameBaseLite::ReadProp( pOCS ) )
-	{
-		return false;
-	}
+	// RETAIL: 0x10152390 does not call GameBaseLite::ReadProp
 
 	ASSERT( pOCS != LTNULL );
 	
@@ -316,6 +313,13 @@ bool CommandObject::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 			 (cMsg.GetArg(0) == s_cTok_Stop) ||
 			 (cMsg.GetArg(0) == s_cTok_Abort))
 	{
+			// RETAIL: 0x101529ef: Tron marks every command unprocessed so
+			// the chain can run again
+			for( EVENT_CMD_LIST::iterator iter = m_lstEventCmds.begin(); iter != m_lstEventCmds.end(); ++iter )
+			{
+				(*iter)->m_bProcessed = LTFALSE;
+			}
+
 			m_Timer.Stop();
 			Deactivate();
 	}
