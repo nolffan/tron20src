@@ -292,6 +292,9 @@ class ServerGameOptions
 		int			GetGameTypeStringID() const;
 
 		StringArray*	GetMapList( );
+		// RETAIL: CShell.dll 0x100eb4d0: true if the game type has no map
+		// list or its first map is empty (the name is ours)
+		bool		HasNoMaps( );
 		uint32		GetTronUnknownCC( ) const;
 		// RETAIL: CShell.dll 0x100eb5a0: the light cycle game data manager
 		// stores its current settings here (CLightCycleGameDataMgr::

@@ -172,6 +172,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BaseScreenHost.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientLightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -511,6 +515,14 @@ SOURCE=.\ScreenGame.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenHostConnection.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostMaps.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenJoinServerList.cpp
 # End Source File
 # Begin Source File
@@ -646,6 +658,10 @@ SOURCE=.\AdditiveCtrl.h
 # Begin Source File
 
 SOURCE=.\ArcCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenHost.h
 # End Source File
 # Begin Source File
 
@@ -878,6 +894,14 @@ SOURCE=.\ScreenFailure.h
 # Begin Source File
 
 SOURCE=.\ScreenGame.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostConnection.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostMaps.h
 # End Source File
 # Begin Source File
 
