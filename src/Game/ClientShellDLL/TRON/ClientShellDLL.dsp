@@ -601,6 +601,10 @@ SOURCE=.\SubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronCDKey.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronClientWeapon.cpp
 # End Source File
 # Begin Source File
@@ -982,6 +986,10 @@ SOURCE=.\SubroutineMgr.h
 # Begin Source File
 
 SOURCE=.\TO2ScreenMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronCDKey.h
 # End Source File
 # Begin Source File
 
