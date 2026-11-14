@@ -807,6 +807,20 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### The archive bin's, I/O node's and optimizer's loop sounds do not loop
+
+Object.lto 0x10011110 (ArchiveBin::PlayLoopSound), 0x10024bc0
+(IONode::PlayLoopSound), 0x10032420 (Optimizer::PlayLoopSound;
+TRON/ArchiveBin.cpp, IONode.cpp, Optimizer.cpp). Each plays its "LoopSound"
+property with PLAYSOUND_ATTACHED | PLAYSOUND_GETHANDLE (0x18, at 0x10011161,
+0x10024c11, 0x10032465) rather than PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE
+(0x14, which Tron's turret passes for its loop at 0x1006ca5d): the sound is
+kept by handle so it can be killed, but it plays once and stops. Unless the
+sound files themselves loop, a level designer's loop sound is heard only
+when the object starts or loads.
+
+Not fixed yet: the modern build should add PLAYSOUND_LOOP.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
