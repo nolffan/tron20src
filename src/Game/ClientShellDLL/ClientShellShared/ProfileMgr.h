@@ -38,7 +38,9 @@ enum JoystickAxisBindings
 	eJoystick_LookInvert,
 };
 
-const int MUSIC_MIN_VOL		= -2500;
+// RETAIL: Tron's is -3000 (the profile 0x100edd95, 0x100ef94e, 0x100f08ba;
+// CPerformanceMgr::SetPerformanceOptions 0x10142863)
+const int MUSIC_MIN_VOL		= -3000;
 const int MUSIC_MAX_VOL		= 5000;
 const int MUSIC_SLIDER_INC	= 250;
 const int MUSIC_DEFAULT_VOL	= 2500;

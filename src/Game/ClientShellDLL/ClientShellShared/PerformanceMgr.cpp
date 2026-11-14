@@ -96,9 +96,11 @@ LTBOOL CPerformanceMgr::Init()
 {
 	g_pPerformanceMgr = this;
 
-	LoadString(IDS_PERFORM_HIGH,cfgDefaultHigh.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
-	LoadString(IDS_PERFORM_MEDIUM,cfgDefaultMid.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
-	LoadString(IDS_PERFORM_LOW,cfgDefaultLow.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
+	// RETAIL: Tron's strings (0x10142250): CRes.dll's 566..568 are "Low
+	// Detail", "Medium Detail" and "High Detail"
+	LoadString(566,cfgDefaultHigh.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
+	LoadString(567,cfgDefaultMid.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
+	LoadString(568,cfgDefaultLow.szNiceName,sizeof(cfgDefaultHigh.szNiceName));
 
 
 //	char szCfg[64];
@@ -243,28 +245,18 @@ LTBOOL	CPerformanceMgr::IsCurrentConfig(int nCfg,bool bIgnoreResolution)
 		}
 	}
 
+	// RETAIL: Tron's (0x101426c0) has no special case for the high detail
+	// configuration's triple buffering, and prints the setting that failed
 	for (int i = 0; i < kNumDetailSettings; i++)
 	{
 		if (kPerform_TripleBuffering == i && !(dwAdvancedOptions & AO_TRIPLEBUFFER))
 			continue;
-		if (nCfg == 2 && kPerform_TripleBuffering == i)
-		{
-			//for high detail, the triple buffering default value depends on the VSyncOnFlip setting
-			int buff = GetConsoleInt(sSettings[i].szVar,0);
-			int vsync = !!GetConsoleInt("VSyncOnFlip",1);
-			if (buff != (vsync + 1))
-			{
-//				g_pLTClient->CPrint("CPerformanceMgr::IsCurrentConfig(%d) : failed on %s",nCfg,sSettings[i].szName);
-				return LTFALSE;
-			}
-			continue;		
-		}
 		if (kPerform_MusicActive == i && !(dwAdvancedOptions & AO_MUSIC))
 			continue;
 		int n = GetConsoleInt(sSettings[i].szVar,0);
 		if (n != pCfg->nSettings[i])
 		{
-//			g_pLTClient->CPrint("CPerformanceMgr::IsCurrentConfig(%d) : failed on %s",nCfg,sSettings[i].szName);
+			g_pLTClient->CPrint("CPerformanceMgr::IsCurrentConfig(%d) : failed on %s",nCfg,sSettings[i].szName);
 			return LTFALSE;
 		}
 
@@ -323,18 +315,13 @@ void CPerformanceMgr::SetPerformanceOptions(sPerformCfg *pCfg, int nCfg)
 	}
 
 	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
+	// RETAIL: Tron's (0x101427f0) turns triple buffering off without the
+	// advanced option, and has no high detail special case
 	//disable triple buffer 
 	if ( !(dwAdvancedOptions & AO_TRIPLEBUFFER))
 	{
-		
+		WriteConsoleInt(sSettings[kPerform_TripleBuffering].szVar,0);
 	}
-	if (nCfg == 2 && kPerform_TripleBuffering)
-	{
-		//for high detail, the triple buffering default value depends on the VSyncOnFlip setting
-		int vsync = !!GetConsoleInt("VSyncOnFlip",1);
-		WriteConsoleInt(sSettings[kPerform_TripleBuffering].szVar,vsync+1);
-	}
-
 
 	//disable music
 	if ( !(dwAdvancedOptions & AO_MUSIC))
@@ -428,7 +415,8 @@ void CPerformanceMgr::SetPerformanceOptions(sPerformCfg *pCfg, int nCfg)
 		WriteConsoleString("PerformanceConfig",pPresetCfg->szName);
 	}
 
-//	g_pLTClient->WriteConfigFile("autoexec.cfg");
+	// RETAIL: Tron writes the config file (0x10142ab9)
+	g_pLTClient->WriteConfigFile("autoexec.cfg");
 
 }
 
