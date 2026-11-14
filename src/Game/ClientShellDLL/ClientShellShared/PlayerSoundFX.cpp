@@ -66,6 +66,9 @@ LTBOOL CPlayerSoundFX::CreateObject(ILTClient *pClientDE)
 		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
 		if (!pWeapon) return LTFALSE;
 
+		// PORT: retail passes Tron's volume scale (+0x48, fire sounds only) and
+		// the byte at +0x4c (0x101949d7); ours has neither, so the defaults
+		// stand in.
 		PlayWeaponSound(pWeapon, m_vPos, (PlayerSoundId)m_nType);
 	}
 	else

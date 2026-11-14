@@ -124,7 +124,8 @@ HLTSOUND CClientSoundMgr::PlayInterfaceSound(const char *pName, uint32 dwFlags)
 // ----------------------------------------------------------------------- //
 
 HLTSOUND CClientSoundMgr::PlaySoundLocal(const char *pName, SoundPriority ePriority,
-	uint32 dwFlags, uint8 nVolume, float fPitchShift, uint8 nSoundClass )
+	uint32 dwFlags, uint8 nVolume, float fPitchShift, uint8 nSoundClass,
+	float fVolumeScale )
 {
     if (!pName) return LTNULL;
 	if (!GetConsoleInt("SoundEnable",1)) return LTNULL;
@@ -171,13 +172,21 @@ HLTSOUND CClientSoundMgr::PlaySoundLocal(const char *pName, SoundPriority ePrior
 		psi.m_nSoundVolumeClass = nSoundClass;
 	}
 
+	// RETAIL: Tron scales the volume by fVolumeScale when it lies in [0, 1]
+	// (CShell 0x100fa9aa).
+	if (0.0f <= fVolumeScale && 1.0f >= fVolumeScale)
+	{
+		psi.m_nVolume = (uint8)(psi.m_nVolume * fVolumeScale);
+	}
+
 	psi.m_dwFlags = PLAYSOUND_LOCAL;
 	psi.m_dwFlags |= dwFlags;
 
 	// Make sure local sounds aren't 3d...
 	psi.m_dwFlags &= ~PLAYSOUND_3D;
 
-	if (nVolume < 100)
+	// RETAIL: Tron tests the (scaled) volume of psi, not nVolume (0x100fa9ff).
+	if (psi.m_nVolume < 100)
 	{
 		psi.m_dwFlags |= PLAYSOUND_CTRL_VOL;
 	}
