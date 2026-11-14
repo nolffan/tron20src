@@ -819,6 +819,18 @@ that removes a command object to stop it does nothing.
 Fixed in the modern build: GameBaseLite.cpp (TRON20SRC_MODERN calls
 CLiteObjectMgr::RemoveObject).
 
+### A searchable object's MaxSearchTime is read into its minimum
+
+Object.lto 0x10194700 (CSearchable::ReadProp, ObjectShared/Searchable.cpp).
+The search aggregate reads MinSearchTime and then MaxSearchTime, but stores
+the second one over the minimum too (0x1019478d writes +0x18, not +0x1c), as
+build 51's code already did. A level designer's MinSearchTime is lost and the
+maximum stays unset, so InitialUpdate gives it the 3 second default: a search
+lasts a random time between MaxSearchTime and 3 seconds.
+
+Fixed in the modern build: Searchable.cpp (TRON20SRC_MODERN stores
+m_fMaxSearchTime).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
