@@ -310,7 +310,7 @@ AINodeTail* CAINodeMgr::FindTailNode(CAI* pAI, const LTVector& vTargetPos, const
 uint32 CAINodeMgr::GetNodeIndexFromName(AINode* pNode)
 {
 	const char *pChar;
-	pChar = g_pLTServer->GetStringData(pNode->GetName());
+	pChar = pNode->GetName().c_str();
 	pChar += strlen(pChar) - 1;
 
 	if(!isdigit(*pChar))
@@ -1257,7 +1257,8 @@ AINode* CAINodeMgr::GetNode(HSTRING hstrName)
 	for(it = m_mapAINodes.begin(); it != m_mapAINodes.end(); ++it)
 	{
 		pNode = it->second;
-        if ( g_pLTServer->CompareStringsUpper(pNode->GetName(), hstrName) )
+		// RETAIL: a caseless compare of the node's name (retail 0x101a96a0)
+        if ( pNode->GetName() == g_pLTServer->GetStringData(hstrName) )
 		{
 			return pNode;
 		}
@@ -1284,7 +1285,7 @@ AINode* CAINodeMgr::GetNode(const char *szName)
 	for(it = m_mapAINodes.begin(); it != m_mapAINodes.end(); ++it)
 	{
 		pNode = it->second;
-        const char* szNodeName = g_pLTServer->GetStringData(pNode->GetName());
+        const char* szNodeName = pNode->GetName().c_str();
 
 		if ( !_stricmp(szNodeName, szName) )
 		{

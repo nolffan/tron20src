@@ -8,6 +8,15 @@
 #include "AnimationProp.h"
 #include "GameBase.h"
 #include "DebugLineSystem.h"
+#include "TRON/CaselessString.h"
+#include "AITypes.h"
+
+// RETAIL: Tron's node names are CaselessStrings (AINode::GetName); the AI
+// traces print them (ours: the specialization stands in for HSTRING's)
+inline const char* ToString<CaselessString>(const CaselessString& sString)
+{
+	return sString.c_str();
+}
 
 // Forward declarations.
 enum EnumAISoundType;
@@ -93,7 +102,9 @@ class AINode : public GameBase
 
 		// Name
 
-		HSTRING GetName() const { return m_hstrName; }
+		// RETAIL: Tron keeps the name as a CaselessString (AINode's
+		// constructor at retail 0x1009e7d0 builds a string at 0x38)
+		const CaselessString& GetName() const { return m_strName; }
 
 		// Face
 
@@ -185,7 +196,7 @@ class AINode : public GameBase
 
 	protected :
 	
-		HSTRING		m_hstrName;
+		CaselessString	m_strName;
 
 		LTVector	m_vPos;
 

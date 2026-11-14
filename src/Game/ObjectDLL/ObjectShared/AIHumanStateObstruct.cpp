@@ -138,7 +138,7 @@ bool CAIHumanStateObstruct::IsValidObstructNode( AINodeObstruct& Node )
 	if ( Node.IsLockedDisabledOrTimedOut() )
 	{
 		g_pLTServer->CPrint("OBSTRUCTNODE DEST=%s - Obstruct node is already locked!",
-			g_pLTServer->GetStringData(Node.GetName()));
+			Node.GetName().c_str());
 
 		return false;
 	}
@@ -176,7 +176,7 @@ bool CAIHumanStateObstruct::AttemptSetPathToNode(AINodeObstruct& Node)
 		return true;
 	}
 
-	g_pLTServer->CPrint("USEOBJECT OBJECT=%s -- unable to find path!", g_pLTServer->GetStringData(Node.GetName()));
+	g_pLTServer->CPrint("USEOBJECT OBJECT=%s -- unable to find path!", Node.GetName().c_str());
 	return false;
 }
 
