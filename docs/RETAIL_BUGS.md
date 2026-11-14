@@ -821,6 +821,19 @@ the game itself handles it.
 Fixed in the modern build: EventCounter.cpp (TRON20SRC_MODERN registers
 REPORT).
 
+### An AI path's initial direction ignores its second control point
+
+Object.lto 0x10231970 (CAIPath::GetInitialDir, ObjectShared/AIPath.cpp).
+Tron's version finds the first two control-point waypoints and stores the
+unit direction from the first to the second in the result, then breaks out
+of the loop into the code meant for a path with a single control point,
+which overwrites the result with the unit direction from the first control
+point to the AI's position (0x10231aff jumps back to 0x102319da). The
+direction to the second point is never returned; for an AI standing at the
+path's start the result points backwards.
+
+Not fixed yet: the modern build should return after the two-point case.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
