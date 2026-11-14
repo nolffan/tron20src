@@ -77,8 +77,6 @@ struct DAMAGEFX
 	char		*m_szStartSound;
 	char		*m_szLoopSound;
 	char		*m_szFXName;
-	char		*m_szTakingHealthFXName;
-	char		*m_szTakingArmorFXName;
 	char		*m_sz3rdPersonFXName;
 	char		*m_sz3rdPersonInstFXName;
 	char		*m_sz3rdPersonDeathFXName;
@@ -119,9 +117,11 @@ struct DAMAGEFX
 	LTBOOL		m_bFade;			// Are we fading?
 	LTFLOAT		m_fFadeTm;			// How long does it take to fade this fx
 
-	bool		m_bAllowMovement;
-	bool		m_bAllowInput;
-	bool		m_bAllowWeapons;
+	// RETAIL: Tron's DAMAGEFX (constructor 0x10157f00, Init 0x10158180):
+	// LTBOOLs, no weapon flag, and no taking health/armor FX (both kept at
+	// the end, PORT)
+	LTBOOL		m_bAllowMovement;
+	LTBOOL		m_bAllowInput;
 
 	LTBOOL		m_bJumpRequested;	// Did the player tap jump?
 	int8		m_nNumJumps;		// How many times the player jumped so far
@@ -146,6 +146,11 @@ struct DAMAGEFX
 
 	LTBOOL		m_bAnimationControlsFX;		// Does the animation contain keys for turning certain fx on and off
 	LTBOOL		m_bUpdateSoundAndVisuals;	// Should we update the sound and visual fx... can be controlled by anis
+
+	// PORT: NOLF2's, not in Tron's DAMAGEFX
+	char		*m_szTakingHealthFXName;
+	char		*m_szTakingArmorFXName;
+	bool		m_bAllowWeapons;
 };
 
 typedef CTList<DAMAGEFX*> DamageFxList;
@@ -190,7 +195,8 @@ class CDamageFXMgr : public CGameButeMgr
 
 		void		SetDamageFXTintColor( LTVector &vCol, bool bForce );
 		void		SetDamageFXLightScale( LTVector &vCol, bool bForce );
-		void		SetDamageFXMovementAndInput( bool bMove, bool bInput, bool bAlloWeapons );
+		// RETAIL: Tron's (0x10157d00) only clears the flags
+		void		SetDamageFXMovementAndInput( LTBOOL bMove, LTBOOL bInput );
 		
 		void		Update();
 		void		Clear();
@@ -214,8 +220,8 @@ class CDamageFXMgr : public CGameButeMgr
 		LTBOOL				m_bTintColorChanged;
 		LTVector			m_vDamageFXLightScaleColor;
 		LTBOOL				m_bLightScaleColorChanged;
-		bool				m_bAllowMovement;
-		bool				m_bAllowInput;
+		LTBOOL				m_bAllowMovement;	// RETAIL: +0x116c
+		LTBOOL				m_bAllowInput;		// RETAIL: +0x1170
 		uint32				m_nDisableWeaponCounts;
 
 };

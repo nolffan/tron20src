@@ -1441,7 +1441,8 @@ void CPlayerMgr::HandleMsgPlayerDamage (ILTMessage_Read *pMsg)
 		{
 			// Test the damage flags against the DamageFX...
 
-			if( dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f )
+			// PORT: Tron's DAMAGEFX has no taking health FX (DamageFXMgr.h)
+			if( pDamageFX->m_szTakingHealthFXName && (dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f) )
 			{
 				CLIENTFX_CREATESTRUCT fxInit( pDamageFX->m_szTakingHealthFXName, FXFLAG_REALLYCLOSE, LTVector(0,0,0) ); 
 				g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
@@ -1459,7 +1460,8 @@ void CPlayerMgr::HandleMsgPlayerDamage (ILTMessage_Read *pMsg)
 		{
 			// Test the damage flags against the DamageFX...
 
-			if( dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f )
+			// PORT: Tron's DAMAGEFX has no taking armor FX (DamageFXMgr.h)
+			if( pDamageFX->m_szTakingArmorFXName && (dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f) )
 			{
 				CLIENTFX_CREATESTRUCT fxInit( pDamageFX->m_szTakingArmorFXName, FXFLAG_REALLYCLOSE, LTVector(0,0,0) ); 
 				g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );

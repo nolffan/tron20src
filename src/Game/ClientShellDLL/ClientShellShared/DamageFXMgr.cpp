@@ -475,12 +475,13 @@ void CDamageFXMgr::SetDamageFXLightScale( LTVector &vCol, bool bForce )
 //
 // ----------------------------------------------------------------------- //
 
-void CDamageFXMgr::SetDamageFXMovementAndInput( bool bMove, bool bInput, bool bAllowWeapons )
+void CDamageFXMgr::SetDamageFXMovementAndInput( LTBOOL bMove, LTBOOL bInput )
 {
-	m_bAllowMovement = bMove;
-	m_bAllowInput = bInput;
-	if( !bAllowWeapons )
-		m_nDisableWeaponCounts++;
+	if( !bMove )
+		m_bAllowMovement = LTFALSE;
+
+	if( !bInput )
+		m_bAllowInput = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -666,8 +667,6 @@ LTBOOL DAMAGEFX::Init( CButeMgr &ButeMgr, char *aTagName )
 	m_szStartSound				= GetString( ButeMgr, aTagName, DMGFXMGR_STARTSND, DMGFXMGR_MAX_PATH );
 	m_szLoopSound				= GetString( ButeMgr, aTagName, DMGFXMGR_LOOPSND, DMGFXMGR_MAX_PATH );
 	m_szFXName					= GetString( ButeMgr, aTagName, DMGFXMGR_FXNAME, DMGFXMGR_MAX_NAME_LEN );
-	m_szTakingHealthFXName		= GetString( ButeMgr, aTagName, DMGFXMGR_HEALTHFX, DMGFXMGR_MAX_NAME_LEN );
-	m_szTakingArmorFXName		= GetString( ButeMgr, aTagName, DMGFXMGR_ARMORFX, DMGFXMGR_MAX_NAME_LEN );
 	m_sz3rdPersonFXName			= GetString( ButeMgr, aTagName, DMGFXMGR_3RDPERSONFXNAME, DMGFXMGR_MAX_NAME_LEN );
 	m_sz3rdPersonInstFXName		= GetString( ButeMgr, aTagName, DMGFXMGR_3RDPERSONINSTFXNAME, DMGFXMGR_MAX_NAME_LEN );
 	m_sz3rdPersonDeathFXName	= GetString( ButeMgr, aTagName, DMGFXMGR_3RDPERSONDEATHFXNAME, DMGFXMGR_MAX_NAME_LEN );
@@ -706,8 +705,8 @@ LTBOOL DAMAGEFX::Init( CButeMgr &ButeMgr, char *aTagName )
 	m_vLightScaleColor	= ButeMgr.GetVector( aTagName, DMGFXMGR_LIGHTSCALECOLOR );
 	m_vLightScaleColor	*= MATH_ONE_OVER_255;
 
-	m_bAllowMovement	= !!ButeMgr.GetInt( aTagName, DMGFXMGR_ALLOWMOVEMENT );
-	m_bAllowInput		= !!ButeMgr.GetInt( aTagName, DMGFXMGR_ALLOWINPUT );
+	m_bAllowMovement	= ButeMgr.GetInt( aTagName, DMGFXMGR_ALLOWMOVEMENT );
+	m_bAllowInput		= ButeMgr.GetInt( aTagName, DMGFXMGR_ALLOWINPUT );
 
 	m_nJumpsToEscape	= ButeMgr.GetInt( aTagName, DMGFXMGR_NUMJUMPSTOESCAPE );
 
@@ -720,7 +719,8 @@ LTBOOL DAMAGEFX::Init( CButeMgr &ButeMgr, char *aTagName )
 
 	// Set up the flag for testing against this DamageFX...
 
-	int nDamageType = StringToDamageType( ButeMgr.GetString( aTagName, DMGFXMGR_DAMAGETYPE ));
+	// RETAIL: Tron's damage type is a number (0x1015886f)
+	int nDamageType = ButeMgr.GetInt( aTagName, DMGFXMGR_DAMAGETYPE );
 	m_nDamageFlag = DamageFlags( (DamageFlags)1 << (DamageFlags)nDamageType );
 
 	// Init the VarTrack for easy testing...
@@ -742,6 +742,8 @@ LTBOOL DAMAGEFX::Init( CButeMgr &ButeMgr, char *aTagName )
 
 void DAMAGEFX::Start( )
 {
+	// RETAIL: Tron's Start (0x101588d0): no ladder check, no weapon flag,
+	// input left alone and no loop sound message
 	if( m_bActive || !g_pMoveMgr || !g_pHUDMgr || !g_pDamageFXMgr || !g_pClientFXMgr || g_pPlayerMgr->IsPlayerDead() )
 		return;
 
@@ -757,7 +759,7 @@ void DAMAGEFX::Start( )
 
 	// Should we start sound and visual fx now or wait for the animation...
 
-	m_bUpdateSoundAndVisuals = !m_bAnimationControlsFX || g_pMoveMgr->IsBodyOnLadder();
+	m_bUpdateSoundAndVisuals = !m_bAnimationControlsFX;
 	if( m_bUpdateSoundAndVisuals )
 	{
 		StartSoundAndVisuals();
@@ -771,9 +773,7 @@ void DAMAGEFX::Start( )
 
 	m_nNumJumps = 0;
 
-	m_bAllowWeapons = true;
-
-	if( !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() )
+	if( !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() && !g_pMoveMgr->IsBodyOnLadder() )
 	{
 		if( m_bShowClientModel )
 			g_pCommonLT->SetObjectFlags( g_pLTClient->GetClientObject(), OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
@@ -781,28 +781,9 @@ void DAMAGEFX::Start( )
 		if( m_bAttachCameraToAni )
 		{
 			g_pPlayerMgr->AttachCameraToHead( LTTRUE );	// PORT: Tron's does not interpolate
-			m_bAllowWeapons = false;
 			g_pPlayerMgr->GetClientWeaponMgr()->DisableWeapons();
-			
-			// Send message to server so all clients can stop the sound...
-			// An id of invalid means stop
-
-			IClientWeaponBase *pWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-			if( pWeapon )
-			{
-				CAutoMessage cMsg;
-				cMsg.Writeuint8( MID_WEAPON_SOUND_LOOP );
-				cMsg.Writeuint8( PSI_INVALID );
-				cMsg.Writeuint8( pWeapon->GetWeaponId() );
-				g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
-			}
 		}
-
-		if (!m_bAllowInput)
-			g_pPlayerMgr->AllowPlayerMovement(LTFALSE);
-
 	}
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -815,13 +796,14 @@ void DAMAGEFX::Start( )
 
 void DAMAGEFX::Stop( LTBOOL bFade /* = LTTRUE  */ )
 {
+	// RETAIL: Tron's Stop (0x10158a30)
 	if( !m_bActive || !g_pPlayerMgr || !g_pClientFXMgr )
 		return;
 
 	m_bActive = LTFALSE;
 	m_bUpdateSoundAndVisuals = LTFALSE;
 	
-	if( !m_bAnimationControlsFX || g_pPlayerMgr->IsPlayerDead() || g_pMoveMgr->IsBodyOnLadder() )
+	if( !m_bAnimationControlsFX || g_pPlayerMgr->IsPlayerDead() )
 	{
 		StopSoundAndVisuals( bFade );
 	}
@@ -833,21 +815,8 @@ void DAMAGEFX::Stop( LTBOOL bFade /* = LTTRUE  */ )
 
 	if( m_bAttachCameraToAni )
 	{
-		// Reset the player movement before detaching the camera from the head...
-
-		if (!m_bAllowInput)
-			g_pPlayerMgr->AllowPlayerMovement(LTTRUE);
-
 		g_pPlayerMgr->AttachCameraToHead( LTFALSE );
-
-		if( !m_bAllowWeapons )
-			g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();
-		
-		IClientWeaponBase *pWeapon = g_pPlayerMgr->GetClientWeaponMgr()->GetCurrentClientWeapon();
-		if( pWeapon )
-		{
-			pWeapon->ClearFiring();
-		}
+		g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();
 	}
 }
 
@@ -1082,7 +1051,7 @@ void DAMAGEFX::Update( float fElapsedTime )
 	}
 
 	// Set our movement and input...
-	g_pDamageFXMgr->SetDamageFXMovementAndInput( m_bAllowMovement, m_bAllowInput, m_bAllowWeapons );
+	g_pDamageFXMgr->SetDamageFXMovementAndInput( m_bAllowMovement, m_bAllowInput );
 
 	if( !IsActive() )
 	{
