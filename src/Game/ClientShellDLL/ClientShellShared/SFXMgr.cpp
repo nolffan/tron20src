@@ -546,19 +546,7 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read *pMsg)
 		}
 		break;
 
-		case SFX_DOOMSDAYPIECE_ID :
-		{
-			DOOMSDAYPIECECREATESTRUCT DoomsdayPieceCS;
-
-			DoomsdayPieceCS.hServerObj = hObj;
-            DoomsdayPieceCS.eType = (DDPieceType)pMsg->Readuint8();
-			DoomsdayPieceCS.bCarried = pMsg->Readbool();
-			DoomsdayPieceCS.nTeam = pMsg->Readuint8();
-			DoomsdayPieceCS.bPlanted = pMsg->Readbool();
-
-			CreateSFX(nId, &DoomsdayPieceCS);
-		}
-		break;
+		// RETAIL: no doomsday piece in Tron's client: 58 is its light cycle fx
 
 		case SFX_GADGETTARGET_ID :
 		{
@@ -962,11 +950,7 @@ void CSFXMgr::DeleteSFX(CSpecialFX* pFX)
 		}
 		break;
 
-		case SFX_DOOMSDAYPIECE_ID :
-		{
-			g_SFXBank_DoomsdayPiece.Delete((CDoomsdayPieceFX*)pFX);
-		}
-		break;
+		// RETAIL: no doomsday piece in Tron's client: 58 is its light cycle fx
 
 		case SFX_GADGETTARGET_ID :
 		{
@@ -1311,11 +1295,7 @@ CSpecialFX* CSFXMgr::CreateSFX(uint8 nId, SFXCREATESTRUCT *psfxCreateStruct,
 		}
 		break;
 
-		case SFX_DOOMSDAYPIECE_ID :
-		{
-			pSFX = g_SFXBank_DoomsdayPiece.New();
-		}
-		break;
+		// RETAIL: no doomsday piece in Tron's client: 58 is its light cycle fx
 
 		case SFX_GADGETTARGET_ID :
 		{
