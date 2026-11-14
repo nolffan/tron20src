@@ -552,10 +552,10 @@ void CLightCycleMatchMgr::HandleMsgTeamChange(ILTMessage_Read *pMsg)
 	if (nLocalID != nClientID)
 		return;
 
-	// RETAIL: Tron's profile byte +0x6a (our m_nPlayerSkills[0] sits
-	// there) takes the profile's +0x69
+	// RETAIL: Tron's profile byte +0x6a (m_nPlayerColor) takes the
+	// profile's +0x69
 	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
-	pProfile->m_nPlayerSkills[0] = pProfile->m_nDMPlayerModel;
+	pProfile->m_nPlayerColor = pProfile->m_nDMPlayerModel;
 
 	// PORT: with a team, retail then gives the local cycle the profile's
 	// cycle color (Tron's profile string at +0x1d4, which our CUserProfile

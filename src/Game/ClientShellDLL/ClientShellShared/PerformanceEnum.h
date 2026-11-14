@@ -15,8 +15,14 @@
 #endif
 
 //console var, friendly name, low perf setting, medium perf setting, high perf setting
-ADD_OPTION(dynamiclightworld,DynamicLight,1,0,0)
+// RETAIL: Tron's 20 detail settings (CShell.dll's setting table at 0x1022f7d0
+// and its .DefaultLow/.DefaultMid/.DefaultHigh configurations at 0x10230248,
+// 0x102302e8, 0x10230388): ScreenGlowEnable is new, the dynamic light and
+// triple buffering console variables are "dynamiclight" and "triplebuffer",
+// and several medium values differ from NOLF2's
+ADD_OPTION(dynamiclight,DynamicLight,1,0,0)
 ADD_OPTION(ShadowDetail,ShadowDetail,2,1,0)
+ADD_OPTION(ScreenGlowEnable,ScreenGlowEnable,1,0,0)
 ADD_OPTION(bumpmappolygrids,PolyGridBumpmap,1,0,0)
 ADD_OPTION(fresnelpolygrids,PolyGridFresnel,1,1,0)
 ADD_OPTION(envbumpmapenable,EnvironmentBumpMapping,1,1,0)
@@ -24,8 +30,8 @@ ADD_OPTION(anisotropic,AnisotropicFiltering,1,0,0)
 ADD_OPTION(trilinear,TrilinearFiltering,1,0,0)
 ADD_OPTION(envmapenable,EnvironmentMapping,1,1,1)
 ADD_OPTION(detailtextures,DetailTextures,1,1,1)
-ADD_OPTION(BackBufferCount,TripleBuffering,2,1,1)
-ADD_OPTION(Tracers,Tracers,1,1,0)
+ADD_OPTION(triplebuffer,TripleBuffering,1,0,0)
+ADD_OPTION(Tracers,Tracers,2,1,0)
 ADD_OPTION(ShellCasings,ShellCasings,1,1,0)
 ADD_OPTION(EnvironmentalDetail,EnvironmentalDetail,3,2,0)
 ADD_OPTION(FXDetail,FXDetail,2,1,0)

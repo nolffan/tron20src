@@ -148,10 +148,9 @@ bool ClientMultiplayerMgr::InitMultiPlayer()
     cMsg.Writeuint8(( uint8 )modelId );
 	cMsg.Writeuint8( m_nTeam );
 
-	for (uint8 i = 0; i < kNumSkills; i++)
-	{
-		cMsg.Writeuint8(pProfile->m_nPlayerSkills[i]);
-	}
+	// PORT: Tron's profile has no skills; retail InitMultiPlayer (0x100e84f0)
+	// writes the profile's +0x68, +0x6a and +0x69 here
+	cMsg.Writeuint8(pProfile->m_nPlayerColor);
 
 
     g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
