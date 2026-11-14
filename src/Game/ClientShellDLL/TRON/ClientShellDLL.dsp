@@ -350,6 +350,10 @@ SOURCE=.\HUDLightCycleRoster.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDMatchStats.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -395,10 +399,6 @@ SOURCE=.\HUDVersion.cpp
 # Begin Source File
 
 SOURCE=.\HUDWeapon.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\HUDWeapons.cpp
 # End Source File
 # Begin Source File
 
@@ -823,6 +823,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleRoster.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDMatchStats.h
 # End Source File
 # Begin Source File
 

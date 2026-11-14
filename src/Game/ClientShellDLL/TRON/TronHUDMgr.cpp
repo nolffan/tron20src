@@ -113,7 +113,7 @@ bool CTronHUDMgr::AddItems()
 	//crosshair should be first so that it is rendered first (potential overlap)
 	AddItem(&m_Crosshair, eGameType);
 
-	AddItem(&m_Weapons, eGameType);
+	AddItem(&m_MatchStats, eGameType);
 	AddItem(&m_Version, eGameType);
 
 	// Tron-specific items
@@ -145,7 +145,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_SecurityCamera, eGameType);
 
 	m_Crosshair.Init();
-	m_Weapons.Init();
+	m_MatchStats.Init();
 	m_Version.Init();
 	m_Permissions.Init();
 	m_HealthEnergy.Init();

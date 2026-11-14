@@ -20,7 +20,7 @@
 // TO2 dependencies
 #include "HUDCrosshair.h"
 #include "HUDDamage.h"
-#include "HUDWeapons.h"
+#include "HUDMatchStats.h"
 
 // Tron dependencies
 #include "HUDPermissions.h"
@@ -68,7 +68,9 @@ public:
 protected:
 
 	CHUDCrosshair		m_Crosshair;
-	CHUDWeapons			m_Weapons;
+	// RETAIL: retail has no CHUDWeapons; its disc match stats stand here
+	// (PORT: their place in the class is not yet retail's)
+	CHUDMatchStats		m_MatchStats;
 
 	// New Tron items
 	CHUDPermissions		m_Permissions;
