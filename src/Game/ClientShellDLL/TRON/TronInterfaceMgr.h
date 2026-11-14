@@ -22,6 +22,7 @@
 #include "SubroutineMgr.h"
 #include "TronLayoutMgr.h"
 #include "ScreenSpriteMgr.h"
+#include "DuplicateSubroutineDlg.h"
 #include <list>
 #include <vector>
 
@@ -65,11 +66,15 @@ struct TronInterfaceRecord
 	float	m_fTronUnknown6C;	// +0x6c
 };
 
-// RETAIL: the 0xc0-byte elements of CTronInterfaceMgr's vector at +0x29484
-// (destroyed by 0x1009fba0). Unidentified; the name is ours.
-struct TronInterfaceRecord29484
+// RETAIL: the 0x180-byte elements of CTronInterfaceMgr's vector at
+// +0x29484 (pushed by 0x1009f0c0, taken by UpdatePlayingState 0x1009e6f0;
+// deallocated by 0x1009fba0): a subroutine picked up while the duplicate
+// subroutine box was up. The names are ours
+struct TronPendingSubroutine
 {
-	uint8	m_aTronUnknown[0xc0];
+	char	szName[128];
+	char	szVersion[128];
+	char	szState[128];
 };
 
 class CTronInterfaceMgr : public CInterfaceMgr
@@ -89,7 +94,7 @@ public:
 
 	// RETAIL: slots 0x50 and 0x54 (see CInterfaceMgr)
 	virtual bool	TronUnknownVirtual50();
-	virtual bool	TronUnknownVirtual54() { return !m_bTronUnknown28C51; }
+	virtual bool	TronUnknownVirtual54() { return !m_DuplicateDlg.IsVisible(); }
 
 	virtual void	TronUnknownVirtual7C(void* pTronUnknown);
 
@@ -143,6 +148,9 @@ protected:
 	void			UpdateIOCamera();				// 0x1009e240
 	void			CreateIOCamera();				// 0x1009e390
 	void			ClearTronRecords();				// 0x1009f050
+	void			QueueSubroutinePickup(const char* szName, const char* szVersion, const char* szState);	// 0x1009f0c0
+	void			HandleSubroutinePickup(char* szName, char* szVersion, char* szState);	// 0x1009f200
+	void			OnDuplicateDlgClick(int x, int y);	// 0x1009f510
 
 private:
 	// RETAIL: layout from the constructor (0x1009ca20) and destructor
@@ -153,10 +161,6 @@ private:
 	char				m_aTronPadHUD[0x11eec - sizeof(CTronHUDMgr)];
 	CTronScreenMgr		m_ScreenMgr;			// +0x21ff4
 	CTronPlayerStats	m_stats;				// +0x2206c Player statistics (health, ammo, armor, etc.)
-	// (our CTronLayoutMgr is bigger than retail's: this pad also takes the
-	// difference, so m_SubroutineMgr and m_TronLayoutMgr are not yet at
-	// retail's offsets)
-	char				m_aTronPadStats[0x2408 + 0x11ac + 0x1170 - sizeof(CTronPlayerStats) - sizeof(CSubroutineMgr) - sizeof(CTronLayoutMgr)];
 	CSubroutineMgr		m_SubroutineMgr;		// +0x24474
 	CTronLayoutMgr		m_TronLayoutMgr;		// +0x25620, same as g_pLayoutMgr
 	// PORT: retail's is a CTronWeaponChooser (0x118 bytes, vtable
@@ -182,18 +186,17 @@ private:
 	// PORT: retail's is a CTronLoadingScreen (0x124 bytes, vtable
 	// 0x101e904c, CInterfaceMgr's +0xf8e4 points at it); not yet written
 	uint8				m_aTronLoadingScreen[0x124];	// +0x28b24
-	// PORT: an unidentified 0x770-byte object (constructor 0x1001cb70,
-	// destructor 0x1001ccc0, Init 0x1001cd20, Term 0x1001d640, Draw
-	// 0x1001e790); its +0x9 says it is active
-	uint8				m_aTronUnknown28C48[9];	// +0x28c48
-	bool				m_bTronUnknown28C51;	// +0x28c51
-	uint8				m_aTronUnknown28C52[0x770 - 0xa];
-	uint32				m_nTronUnknown293B8;	// +0x293b8
-	void*				m_pTronUnknown293BC;	// +0x293bc, deleted by Term
-	char				m_szTronUnknown293C0[64];	// +0x293c0
-	char				m_szTronUnknown29400[64];	// +0x29400
-	char				m_szTronUnknown29440[64];	// +0x29440
-	int					m_nTronUnknown29480;	// +0x29480, 2
-	std::vector<TronInterfaceRecord29484> m_TronUnknown29484;	// +0x29484
+	// RETAIL: the duplicate subroutine box (CTronInterfaceMgr's use of it:
+	// 0x1009f200, 0x1009f470..0x1009f5e0)
+	CDuplicateSubroutineDlg	m_DuplicateDlg;		// +0x28c48
+	// RETAIL: the duplicate subroutine box's two copies, and the new one's
+	// pickup (0x1009f200; the names are ours)
+	PlayerSubroutine*	m_pDuplicateOld;		// +0x293b8 the player's
+	PlayerSubroutine*	m_pDuplicateNew;		// +0x293bc, deleted by Term
+	char				m_szDuplicateName[64];		// +0x293c0
+	char				m_szDuplicateVersion[64];	// +0x29400
+	char				m_szDuplicateState[64];		// +0x29440
+	eHUDRenderLevel		m_eDuplicateRenderLevel;	// +0x29480 the HUD's, while the box is up
+	std::vector<TronPendingSubroutine> m_PendingSubroutines;	// +0x29484
 };
 #endif // __TRONINTERFACE_MGR_H__

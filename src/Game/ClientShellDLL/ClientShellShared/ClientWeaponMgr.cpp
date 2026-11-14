@@ -522,6 +522,28 @@ IClientWeaponBase *CClientWeaponMgr::GetCurrentClientWeapon() const
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CClientWeaponMgr::GetClientWeapon()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x10168cb0; the name is ours): the
+//				client weapon of that weapon id
+//
+// ----------------------------------------------------------------------- //
+
+IClientWeaponBase *CClientWeaponMgr::GetClientWeapon( int nWeaponId ) const
+{
+	for ( int i = 0; i < m_nMaxWeapons; ++i )
+	{
+		if ( nWeaponId == m_apClientWeapon[ i ]->GetWeaponId() )
+		{
+			return m_apClientWeapon[ i ];
+		}
+	}
+
+	return 0;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	FUNCTION:	CClientWeaponMgr::GetCurrentWeaponId()
 //
 //	PURPOSE:	Return the index of the current weapon
