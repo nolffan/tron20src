@@ -98,6 +98,10 @@ VarTrack	g_vtSlideToStopTime;
 
 VarTrack	g_vtMaxPushYVelocity;
 
+// RETAIL: Tron's console variables (Init 0x100f4d50).
+VarTrack	g_vtUseJumpHeightInFallDamage;
+VarTrack	g_vtBunnyHopping;
+
 
 LTBOOL g_bJumpRequested  = LTFALSE;
 
@@ -140,7 +144,7 @@ CMoveMgr::CMoveMgr()
 	m_bJumped	= LTFALSE;
     m_bRunLock	= LTFALSE;
 
-	m_bGravityOverride = false;
+	m_bHaveDims = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -202,6 +206,8 @@ LTBOOL CMoveMgr::Init()
     g_vtSlideToStopTime.Init(g_pLTClient, "SlideToStopTime", LTNULL, 0.1f);
 
     g_vtMaxPushYVelocity.Init(g_pLTClient, "PusherMaxYVelocity", LTNULL, 100.0f);
+	g_vtUseJumpHeightInFallDamage.Init(g_pLTClient, "UseJumpHeightInFallDamage", LTNULL, 0.0f);
+	g_vtBunnyHopping.Init(g_pLTClient, "BunnyHopping", LTNULL, 0.0f);
 
 
  	// Init some defaults.  These should NEVER get used because we don't
@@ -570,7 +576,11 @@ void CMoveMgr::UpdateNormalControlFlags()
 	if ((m_dwControlFlags & BC_CFLG_JUMP) &&
 		!(m_dwLastControlFlags & BC_CFLG_JUMP))
 	{
-        g_bJumpRequested = LTTRUE;
+		// RETAIL: 0x100f5670 -- no new jump while jumping unless BunnyHopping.
+		if (g_vtBunnyHopping.GetFloat() != 0.0f || !m_bJumped)
+		{
+			g_bJumpRequested = LTTRUE;
+		}
 	}
 }
 
@@ -648,8 +658,14 @@ void CMoveMgr::UpdateContainerGravity( CContainerInfo *pInfo )
 	if( pInfo->m_ePPhysicsModel != m_pVehicleMgr->GetPhysicsModel() )
 		return;
 
-	m_bGravityOverride = true;
-	m_fTotalContainerGravity += pInfo->m_fGravity;
+	// RETAIL: 0x100f5b60 -- Tron's gravity volumes add their gravity to the
+	// player's acceleration in place of world gravity (no gravity override
+	// in the global force).
+	LTVector vAccel;
+	g_pPhysicsLT->GetAcceleration(m_hObject, &vAccel);
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAG_GRAVITY);
+	vAccel.y += pInfo->m_fGravity;
+	g_pPhysicsLT->SetAcceleration(m_hObject, &vAccel);
 }
 
 // ----------------------------------------------------------------------- //
@@ -812,6 +828,14 @@ void CMoveMgr::UpdateOnGround()
         LTFLOAT fDistFell = m_fLastOnGroundY - vPos.y;
 		m_fLastOnGroundY = vPos.y;
 
+		// RETAIL: 0x100f5db0 -- a landing after a jump counts as at least
+		// CamLandMinHeight.
+		LTFLOAT fMinLandHeight = g_vtCamLandMinHeight.GetFloat();
+		if (m_bJumped && fDistFell < fMinLandHeight)
+		{
+			fDistFell = fMinLandHeight;
+		}
+
 		if (fDistFell > 1.0f && !m_bBodyOnLadder)
 		{
 			HandleFallLand(fDistFell);
@@ -862,7 +886,9 @@ void CMoveMgr::UpdateOnGround()
 			// If we're moving up (i.e., jumping, on a lift, etc.), update
 			// our last on ground y pos...
 
-			if (vPos.y > m_fLastOnGroundY)
+			// RETAIL: 0x100f5db0 -- unless we jumped (UseJumpHeightInFallDamage).
+			bool bUpdateGroundY = (g_vtUseJumpHeightInFallDamage.GetFloat() != 0.0f) || !m_bJumped;
+			if (vPos.y > m_fLastOnGroundY && bUpdateGroundY)
 			{
 				m_fLastOnGroundY = vPos.y;
 			}
@@ -1122,10 +1148,6 @@ void CMoveMgr::UpdateMotion()
 		g_pPhysicsLT->SetVelocity(m_hObject, &vVec);
 		return;
 	}
-
-	// Make sure this gets reset...
-	m_fTotalContainerGravity = 0.0f;
-	m_bGravityOverride = false;
 
 	if (m_pVehicleMgr->IsVehiclePhysics())
 	{
@@ -1925,6 +1947,38 @@ void CMoveMgr::ResetDims(LTVector *pOffset)
 
 bool CMoveMgr::CanStandUp()
 {
+	// RETAIL: 0x100f8830 -- Tron reads the player's crouch and stand dims
+	// here, once, instead of when the client object is created.
+	if (!m_bHaveDims)
+	{
+		// Note : This queries the anim for the dims of the player.  That information is all available
+		// on the server, but it's not on the client.  This is a lot easier than trying to transmit
+		// that information or something.
+		HMODELANIM hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_CROUCH);
+		if (hAnim == INVALID_MODEL_ANIM)
+		{
+			ASSERT(!"Unable to find player crouch animation");
+			m_vCrouchDims.Init(24.0f, 31.5f, 24.0f);
+		}
+		else
+		{
+			g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vCrouchDims, hAnim);
+		}
+
+		hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_STAND);
+		if (hAnim == INVALID_MODEL_ANIM)
+		{
+			ASSERT(!"Unable to find player stand animation");
+			m_vStandDims.Init(24.0f, 53.0f, 24.0f);
+		}
+		else
+		{
+			g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vStandDims, hAnim);
+		}
+
+		m_bHaveDims = true;
+	}
+
 	// Are you currently crouching
 	LTVector vCurDims;
 	g_pPhysicsLT->GetObjectDims(m_hObject, &vCurDims);
@@ -1989,7 +2043,7 @@ void CMoveMgr::MoveLocalSolidObject()
 
 
 	LTVector vOldGlobalForce(0, 0, 0);
-	LTVector vNewGlobalForce(0, m_bGravityOverride ? m_fTotalContainerGravity : m_fGravity, 0);
+	LTVector vNewGlobalForce(0, m_fGravity, 0);
 
 	pPhysics->GetGlobalForce(vOldGlobalForce);
 	pPhysics->SetGlobalForce(vNewGlobalForce);
@@ -2306,30 +2360,7 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 		{
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_Client, CF_DONTSETDIMS, CF_DONTSETDIMS);
 
-			// Note : This queries the anim for the dims of the player.  That information is all available
-			// on the server, but it's not on the client.  This is a lot easier than trying to transmit
-			// that information or something.
-			HMODELANIM hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_CROUCH);
-			if (hAnim == INVALID_MODEL_ANIM)
-			{
-				ASSERT(!"Unable to find player crouch animation");
-				m_vCrouchDims.Init(24.0f, 31.5f, 24.0f);
-			}
-			else
-			{
-				g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vCrouchDims, hAnim);
-			}
-
-			hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_STAND);
-			if (hAnim == INVALID_MODEL_ANIM)
-			{
-				ASSERT(!"Unable to find player stand animation");
-				m_vStandDims.Init(24.0f, 53.0f, 24.0f);
-			}
-			else
-			{
-				g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vStandDims, hAnim);
-			}
+			// RETAIL: Tron reads the player dims in CanStandUp (0x100f8830).
 
 		}
 	}
@@ -2814,7 +2845,7 @@ void CMoveMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
 
 	m_bLoading = LTTRUE;
 
-	m_pVehicleMgr->Load(pMsg, eLoadDataState);
+	// RETAIL: Tron's CVehicleMgr has no Save/Load.
 
 	m_bJumped = (pMsg->Readbool() ? LTTRUE : LTFALSE);
 }
@@ -2847,7 +2878,7 @@ void CMoveMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 	pMsg->Writefloat(m_DamageTimer.GetCountdownTime());
 	pMsg->WriteLTVector( m_vWantedDims );
 
-	m_pVehicleMgr->Save(pMsg, eSaveDataState);
+	// RETAIL: Tron's CVehicleMgr has no Save/Load.
 
 	pMsg->Writebool(m_bJumped ? true : false);
 }

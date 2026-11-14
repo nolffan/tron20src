@@ -168,6 +168,9 @@ CVehicleMgr::CVehicleMgr()
     m_hVehicleAccelSnd  = LTNULL;
     m_hVehicleDecelSnd  = LTNULL;
 	m_hVehicleImpactSnd = LTNULL;
+	// RETAIL: 0x1011a2b0 clears the cruise and +0x2c sounds here.
+	m_hVehicleCruiseSnd	= LTNULL;
+	m_hTronUnknownSnd2c	= LTNULL;
 	m_hIdleSnd			= LTNULL;
 	m_hBrakeSnd			= LTNULL;
 
@@ -183,13 +186,18 @@ CVehicleMgr::CVehicleMgr()
 
 	m_fHandlebarRoll = 0.0f;
 	m_fContourRoll = 0.0f;
+	m_vTronUnknown211c.Init();
+	m_nTronUnknown2134 = 0;
 	m_bTurned = false;
-	m_bHolsteredWeapon = false;
 
 	m_vLastPlayerAngles.Init();
 	m_vLastCameraAngles.Init();
 	m_vLastVehiclePYR.Init();
 	m_vVehiclePYR.Init();
+
+	m_fTronUnknown2058 = 0.4f;
+	m_fTronUnknown205c = 1.0f;
+	m_bTronUnknown2170 = false;
 
 	InitWorldData();
 }
@@ -369,9 +377,17 @@ void CVehicleMgr::InitWorldData()
 
 	m_bHaveJumpVolumeVel	= LTFALSE;
 	m_fJumpVolumeVel		= 0.0f;
-	m_bTurned				= false;
-	m_bHolsteredWeapon			= false;
 
+	// RETAIL: 0x1011b5a0 -- Tron's light cycle state.
+	m_nTronUnknown2134		= 0;
+	m_bTronUnknown2158		= false;
+	m_TronUnknownFX2138.ClearLink();
+	m_TronUnknownFX213c.ClearLink();
+	m_TronUnknownFX2140.ClearLink();
+	m_TronUnknownFX2144.ClearLink();
+
+	if (g_pPlayerMgr)
+		g_pPlayerMgr->TronUnknownVirtualA8(false);
 }
 
 // ----------------------------------------------------------------------- //
@@ -399,6 +415,8 @@ void CVehicleMgr::OnExitWorld()
 {
 	// Turn off vehicle...
 
+	// RETAIL: 0x1011b710 resets the model before switching.
+	m_ePPhysicsModel = PPM_NORMAL;
 	SetNormalPhysicsModel();
 
 	// Clean up any level specific shiznit...
@@ -1329,38 +1347,41 @@ LTBOOL CVehicleMgr::CanDismount()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron keeps this in a file static (0x10271b14), not a member.
+static LTBOOL s_bHolsteredWeapon = LTFALSE;
+
 void CVehicleMgr::EnableWeapon( bool bEnable )
 {
 	// Get our weapon.
 	CClientWeaponMgr *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
 	IClientWeaponBase* pClientWeapon = pClientWeaponMgr->GetCurrentClientWeapon();
-	if( !pClientWeapon || g_pPlayerMgr->IsCarryingHeavyObject() )
+	// RETAIL: 0x1011cc80 has no heavy object check.
+	if( !pClientWeapon )
 		return;
 
 	// Enable the weapon...
 	if( bEnable )
 	{
-		// We must enable the weapon before holstering it...
-		
-		pClientWeaponMgr->EnableWeapons();
-		
 		// Check if we have a holstered weapon.
-		if( m_bHolsteredWeapon )
+		if( s_bHolsteredWeapon )
 		{
 			g_pPlayerMgr->ToggleHolster( false );
-			m_bHolsteredWeapon = false;
+			s_bHolsteredWeapon = LTFALSE;
 		}
+
+		// RETAIL: Tron enables the weapons after unholstering.
+		pClientWeaponMgr->EnableWeapons();
 	}
 	// Disable the weapon.
 	else
 	{
-		if( !m_bHolsteredWeapon )
+		if( !s_bHolsteredWeapon )
 		{
 			// Can't holster melee weapon. (why i don't know BEP).
 			if (!pClientWeapon->IsMeleeWeapon())
 			{
 				g_pPlayerMgr->ToggleHolster( false );
-				m_bHolsteredWeapon = true;
+				s_bHolsteredWeapon = LTTRUE;
 			}
 		}
 
@@ -2450,6 +2471,19 @@ void CVehicleMgr::KillAllVehicleSounds(HLTSOUND hException)
 	{
         g_pLTClient->SoundMgr()->KillSound(m_hBrakeSnd);
         m_hBrakeSnd = LTNULL;
+	}
+
+	// RETAIL: 0x1011eb10 also kills the cruise and +0x2c sounds.
+	if (m_hVehicleCruiseSnd && hException != m_hVehicleCruiseSnd)
+	{
+        g_pLTClient->SoundMgr()->KillSound(m_hVehicleCruiseSnd);
+        m_hVehicleCruiseSnd = LTNULL;
+	}
+
+	if (m_hTronUnknownSnd2c && hException != m_hTronUnknownSnd2c)
+	{
+        g_pLTClient->SoundMgr()->KillSound(m_hTronUnknownSnd2c);
+        m_hTronUnknownSnd2c = LTNULL;
 	}
 }
 
@@ -4488,121 +4522,6 @@ void CVehicleMgr::SetPlayerLureId( uint32 nPlayerLureId )
 	m_bResetLure = true; 
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CVehicleMgr::Save
-//
-//	PURPOSE:	Serialization
-//
-// ----------------------------------------------------------------------- //
-
-void CVehicleMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
-{
-	// Saving this flag is fine since it doesn't deal with any actualy physics info
-	// and is needed so we know if we should holster the current weapon when the 
-	// physics model gets reset...
-
-	pMsg->Writebool( m_bHolsteredWeapon );
-
-// IMPORTANT NOTE!!! 
-// Serialization of VehicleMgr is very bad, since the rest of the code assumes it's going
-// to have to reset the state of the player physics model
-/*
-	pMsg->Writeuint32(m_ePPhysicsModel);
-
-	pMsg->Writefloat(m_fAccelStart);
-	pMsg->Writefloat(m_fDecelStart);
-	pMsg->Writeuint32(m_dwControlFlags);
-	pMsg->Writeuint32(m_dwLastControlFlags);
-	pMsg->Writefloat(m_fVehicleBaseMoveAccel);
-
-	pMsg->Writeint32(m_nCurGear);
-	pMsg->Writeint32(m_nLastGear);
-	pMsg->Writebool(m_bTurned);
-
-	pMsg->Writebool(m_bVehicleStopped != LTFALSE);
-	pMsg->Writebool(m_bVehicleAtMaxSpeed != LTFALSE);
-	pMsg->Writebool(m_bVehicleTurning != LTFALSE);
-	pMsg->Writeint32(m_nVehicleTurnDirection);
-
-	pMsg->WriteLTVector(m_vVehiclePYR);
-
-	pMsg->Writefloat(m_fContourRoll);
-
-	pMsg->Writeuint32(m_eSurface);
-	pMsg->Writeuint32(m_eLastSurface);
-
-	pMsg->Writefloat(m_fYawDiff);
-	pMsg->Writefloat(m_fYawDelta);
-	pMsg->Writefloat(m_fHandlebarRoll);
-	pMsg->Writefloat(m_fHeadYaw);
-
-	pMsg->Writeuint32(m_nPlayerLureId);
-
-	pMsg->Writebool(m_bHaveJumpVolumeVel != LTFALSE);
-	pMsg->Writefloat(m_fJumpVolumeVel);
-
-	pMsg->Writebool(m_bSetLastAngles);
-	pMsg->WriteLTVector(m_vLastVehiclePYR);
-	pMsg->WriteLTVector(m_vLastPlayerAngles);
-	pMsg->WriteLTVector(m_vLastCameraAngles);
-*/
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CVehicleMgr::Load
-//
-//	PURPOSE:	Serialization
-//
-// ----------------------------------------------------------------------- //
-
-void CVehicleMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
-{
-	m_bHolsteredWeapon = pMsg->Readbool();
-
-// IMPORTANT NOTE!!! 
-// Serialization of VehicleMgr is very bad, since the rest of the code assumes it's going
-// to have to reset the state of the player physics model
-/*
-	SetPhysicsModel((PlayerPhysicsModel)pMsg->Readuint32());
-
-	m_fAccelStart = pMsg->Readfloat();
-	m_fDecelStart = pMsg->Readfloat();
-	m_dwControlFlags = pMsg->Readuint32();
-	m_dwLastControlFlags = pMsg->Readuint32();
-	m_fVehicleBaseMoveAccel = pMsg->Readfloat();
-
-	m_nCurGear = pMsg->Readuint32();
-	m_nLastGear = pMsg->Readuint32();
-	m_bTurned = pMsg->Readbool();
-
-	m_bVehicleStopped = pMsg->Readbool() ? LTTRUE : LTFALSE;
-	m_bVehicleAtMaxSpeed = pMsg->Readbool() ? LTTRUE : LTFALSE;
-	m_bVehicleTurning = pMsg->Readbool() ? LTTRUE : LTFALSE;
-	m_nVehicleTurnDirection = pMsg->Readuint32();
-
-	m_vVehiclePYR = pMsg->ReadLTVector();
-
-	m_fContourRoll = pMsg->Readfloat();
-
-	m_eSurface = (SurfaceType)pMsg->Readuint32();
-	m_eLastSurface = (SurfaceType)pMsg->Readuint32();
-
-	m_fYawDiff = pMsg->Readfloat();
-	m_fYawDelta = pMsg->Readfloat();
-	m_fHandlebarRoll = pMsg->Readfloat();
-	m_fHeadYaw = pMsg->Readfloat();
-
-	m_nPlayerLureId = pMsg->Readuint32();
-
-	m_bHaveJumpVolumeVel = pMsg->Readbool() ? LTTRUE : LTFALSE;
-	m_fJumpVolumeVel = pMsg->Readfloat();
-
-	m_bSetLastAngles = pMsg->Readbool();
-	m_vLastVehiclePYR = pMsg->ReadLTVector();
-	m_vLastPlayerAngles = pMsg->ReadLTVector();
-	m_vLastCameraAngles = pMsg->ReadLTVector();
-*/
-}
+// RETAIL: Tron's CVehicleMgr has no Save/Load (CMoveMgr::Save 0x100f9d30
+// doesn't call one).
 
