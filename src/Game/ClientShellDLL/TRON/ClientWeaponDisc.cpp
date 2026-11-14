@@ -19,6 +19,7 @@
 #include "PlayerStats.h"
 #include "RatingMgr.h"
 #include "FXButeMgr.h"
+#include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x100189d0..0x10018a00)
 
 
 //

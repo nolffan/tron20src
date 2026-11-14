@@ -59,11 +59,9 @@ CScreenPerformance::CScreenPerformance()
 	m_pDisplayFrame = LTNULL;
 	m_pSFXFrame = LTNULL;
 
-	m_pPerformanceTest = LTNULL;
-
+	// RETAIL: Tron's has no performance test control, and leaves the
+	// triple buffer setting alone (0x100700a0)
 	memset(&m_sCfg,0,sizeof(m_sCfg));
-
-	m_nTripleBuffer = 1;
 
 
 }

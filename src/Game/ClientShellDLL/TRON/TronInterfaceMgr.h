@@ -23,6 +23,12 @@
 #include "TronLayoutMgr.h"
 #include "ScreenSpriteMgr.h"
 #include "DuplicateSubroutineDlg.h"
+// RETAIL: every client TU that includes this header runs ScreenSubroutines.h's
+// constant initializers, kDefaultPos then SLICE_SIZE (GlobalsInit 0x10021350,
+// ScreenEndMission 0x1005a1b0, ScreenFailure 0x1005ab00,
+// ScreenLightCycleVictory 0x1006de90, TronInterfaceMgr 0x1009c990, ...) while
+// those that only reach InterfaceMgr.h do not: Tron's header brings it in.
+#include "ScreenSubroutines.h"
 #include <list>
 #include <vector>
 
