@@ -184,6 +184,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		LTBOOL IsArmored() { return m_bArmored; }
 		virtual void CreateArmor();
 		virtual void DestroyArmor();
+		// RETAIL: Tron's (slot 0x74, retail 0x101027b0: empty). CAIHuman's
+		// (retail 0x1016cf20) sends "ARMOR_REMOVE" to its attached objects;
+		// CAIHuman::UpdateAnimation calls it once dead. Name ours
+		virtual void RemoveArmor() {}
 
 		LTBOOL HasFlashLight();
 		void CreateFlashLight();
@@ -352,6 +356,16 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// is 0.7, the character will take 3 points of damage.
 		virtual float	GetDefensePercentage( LTVector const *pIncomingProjectilePosition = 0 ) const { return 0.0f; }
 		
+		// RETAIL: Tron's (slot 0xdc, retail 0x10061ac0: false). CTronPlayerObj's
+		// (retail 0x100629a0) returns the flag its start/stop fire messages
+		// set for the continuous (PRod, energy claw) weapons. Name ours
+		virtual bool	IsContinuousFiring() { return false; }
+
+		// RETAIL: Tron's (slot 0xe0, retail 0x101e4350: 0). The disc asks its
+		// victim (retail 0x1003d23e); CPlayerObj's is IsDiscGameType(), CAIHuman's
+		// its template's "AllowDiskSpike". Name ours
+		virtual LTBOOL	AllowDiskSpike() { return LTFALSE; }
+
 		virtual CAnimator* GetAnimator() { return m_pAnimator; }
 		// RETAIL: IHitBoxUser's (retail 0x10062940)
 		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
@@ -362,6 +376,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		friend class CAttachments;
 
 		virtual void	UpdateAnimation();
+		// RETAIL: Tron's (slot 0xe8, retail 0x100903a0): UpdateAnimation calls
+		// it once dead. Name ours
+		virtual void	HandleAttachmentsDead();
 
         virtual LTVector GetHeadOffset();
 
@@ -395,6 +412,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		virtual void	HandleVolumeExit(AIVolume* pVolume) {} 
 		virtual void	HandleVolumeEnter(AIInformationVolume* pVolume) {}
 		virtual void	HandleVolumeExit(AIInformationVolume* pVolume) {} 
+		// RETAIL: Tron's third pair (slots 0x124/0x130; retail 0x10093aa0, the
+		// player info volumes' update, calls them)
+		virtual void	HandleVolumeEnter(AIVolumePlayerInfo* pVolume) {}
+		virtual void	HandleVolumeExit(AIVolumePlayerInfo* pVolume) {} 
 		virtual float	GetVerticalThreshold() const;
 		virtual float	GetInfoVerticalThreshold() const;
 
@@ -433,6 +454,16 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		// Get the User-Flag version of our surface type
 		virtual uint32	GetUserFlagSurfaceType();
+
+		// RETAIL: Tron's (slots 0x18c, 0x190): the continuous fire helpers'
+		// update (Update calls it first) and stop (HandleDead calls it
+		// first). Names ours
+		virtual void	UpdateFireHelpers();
+		virtual void	StopFireHelpers();
+
+		// RETAIL: Tron's (slot 0x194, retail 0x100e2900: empty): StartDeath
+		// tells the character that killed us (retail 0x10091d36). Name ours
+		virtual void	HandleKilledCharacter(CCharacter* pVictim) {}
 
 		// Check if we should be doing lipsyncing on the dialog.
 		bool			DoLipSyncingOnDlgSound( HOBJECT hSpeaker );
