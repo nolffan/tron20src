@@ -71,6 +71,9 @@ class CTronPlayerObj : public CPlayerObj
 		void HandleEnergy(ILTMessage_Read *pMsg);
 		void HandleSwat(ILTMessage_Read *pMsg);
 
+		// RETAIL: the "mpenergy" cheat (retail 0x10068680; the name is ours)
+		void EnergyCheat();
+
 		// Defense
 		virtual bool	IsDefending() const;
 		virtual float	GetDefensePercentage(  LTVector const *pIncomingProjectilePosition = 0 ) const;

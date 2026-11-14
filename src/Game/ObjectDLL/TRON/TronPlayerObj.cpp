@@ -798,6 +798,19 @@ void CTronPlayerObj::HandleCompile(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerObj::EnergyCheat
+//
+//	PURPOSE:	Fill the player's energy (RETAIL: retail 0x10068680, the
+//				server shell's "mpenergy" cheat 0x1005ef90; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::EnergyCheat()
+{
+	m_damage.SetEnergy( m_damage.GetMaxEnergy() );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerObj::IsDefending()
 //
 //	PURPOSE:	Return if the player is attempting to defend.
