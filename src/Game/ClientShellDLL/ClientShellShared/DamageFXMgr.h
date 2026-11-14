@@ -118,8 +118,7 @@ struct DAMAGEFX
 	LTFLOAT		m_fFadeTm;			// How long does it take to fade this fx
 
 	// RETAIL: Tron's DAMAGEFX (constructor 0x10157f00, Init 0x10158180):
-	// LTBOOLs, no weapon flag, and no taking health/armor FX (both kept at
-	// the end, PORT)
+	// LTBOOLs, no weapon flag, and no taking health/armor FX
 	LTBOOL		m_bAllowMovement;
 	LTBOOL		m_bAllowInput;
 
@@ -147,10 +146,9 @@ struct DAMAGEFX
 	LTBOOL		m_bAnimationControlsFX;		// Does the animation contain keys for turning certain fx on and off
 	LTBOOL		m_bUpdateSoundAndVisuals;	// Should we update the sound and visual fx... can be controlled by anis
 
-	// PORT: NOLF2's, not in Tron's DAMAGEFX
-	char		*m_szTakingHealthFXName;
-	char		*m_szTakingArmorFXName;
-	bool		m_bAllowWeapons;
+	// RETAIL: Tron's DAMAGEFX is 0x168 bytes (debug_new 0x10159ee0): one
+	// more member, not set by the constructor or Init.
+	uint32		m_dwTronUnknown164;
 };
 
 typedef CTList<DAMAGEFX*> DamageFxList;
@@ -190,7 +188,8 @@ class CDamageFXMgr : public CGameButeMgr
 
 		bool		AllowMovement() const { return m_bAllowMovement; }
 		bool		AllowInput() const { return m_bAllowInput; }
-		bool		AllowWeapons( ) const { return ( m_nDisableWeaponCounts == 0 ); }
+		// PORT: Tron's damage FX do not disable weapons this way
+		bool		AllowWeapons( ) const { return true; }
 		bool		IsFOVAffected();
 
 		void		SetDamageFXTintColor( LTVector &vCol, bool bForce );
@@ -222,7 +221,6 @@ class CDamageFXMgr : public CGameButeMgr
 		LTBOOL				m_bLightScaleColorChanged;
 		LTBOOL				m_bAllowMovement;	// RETAIL: +0x116c
 		LTBOOL				m_bAllowInput;		// RETAIL: +0x1170
-		uint32				m_nDisableWeaponCounts;
 
 };
 

@@ -106,8 +106,7 @@ CDamageFXMgr::CDamageFXMgr()
 	m_bTintColorChanged			( LTFALSE ),
 	m_vDamageFXLightScaleColor	( 0.0f, 0.0f, 0.0f ),
 	m_bLightScaleColorChanged	( false ),
-	m_bAllowMovement			( true ),
-	m_nDisableWeaponCounts		( 0 )
+	m_bAllowMovement			( true )
 {
     m_lstDamageFx.Init( LTTRUE );
 	m_lstActiveDmgFx.Init( LTFALSE );
@@ -298,8 +297,6 @@ void CDamageFXMgr::Update()
 
 	m_bAllowMovement	= true;
 	m_bAllowInput		= true;
-	bool bHadDisableWeaponCounts = ( m_nDisableWeaponCounts > 0 );
-	m_nDisableWeaponCounts = 0;
 
 	// Update all active Damage FX...
 	
@@ -326,11 +323,8 @@ void CDamageFXMgr::Update()
 	else
 		g_pGameClientShell->GetLightScaleMgr()->ClearLightScale(CLightScaleMgr::eLightScaleDamage);
 
-	// Check if we should try to enable our weapons.
-	if( m_nDisableWeaponCounts == 0 && bHadDisableWeaponCounts )
-	{
-		g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();
-	}
+	// RETAIL: Tron's (0x10157941) sets the input state here
+	g_pLTClient->SetInputState( !!m_bAllowInput );
 }
 
 
@@ -555,8 +549,6 @@ DAMAGEFX::DAMAGEFX()
 	m_szStartSound			( LTNULL ),
 	m_szLoopSound			( LTNULL ),
 	m_szFXName				( LTNULL ),
-	m_szTakingHealthFXName	( LTNULL ),
-	m_szTakingArmorFXName	( LTNULL ),
 	m_sz3rdPersonFXName		( LTNULL ),
 	m_sz3rdPersonInstFXName	( LTNULL ),
 	m_sz3rdPersonDeathFXName( LTNULL ),
@@ -591,7 +583,6 @@ DAMAGEFX::DAMAGEFX()
 	m_fFadeTm				( 0.0f ),
 	m_bAllowMovement		( true ),
 	m_bAllowInput			( true ),
-	m_bAllowWeapons			( true ),
 	m_hLoopSound			( LTNULL ),
 	m_pSprinkles			( LTNULL ),
 	m_nNumSprinkles			( 0 ),
@@ -629,8 +620,6 @@ DAMAGEFX::~DAMAGEFX()
 	debug_deletea( m_szStartSound );
 	debug_deletea( m_szLoopSound );
 	debug_deletea( m_szFXName );
-	debug_deletea( m_szTakingHealthFXName );
-	debug_deletea( m_szTakingArmorFXName );
 	debug_deletea( m_sz3rdPersonFXName );
 	debug_deletea( m_sz3rdPersonInstFXName );
 	debug_deletea( m_sz3rdPersonDeathFXName );

@@ -1427,49 +1427,8 @@ void CPlayerMgr::HandleMsgPlayerDamage (ILTMessage_Read *pMsg)
 *******************************/
 
 	
-	// Do some camera FX for taking armor and taking health...
-	// Tie this into the DamageSector at some point??
-
-	DamageFlags dmgFlag = DamageTypeToFlag( eType );
-
-	if( bTookHealth )
-	{
-		// Play the taking health fx for the DamageFX associated with the damage type...
-
-		DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstDamageFX();
-		while( pDamageFX )
-		{
-			// Test the damage flags against the DamageFX...
-
-			// PORT: Tron's DAMAGEFX has no taking health FX (DamageFXMgr.h)
-			if( pDamageFX->m_szTakingHealthFXName && (dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f) )
-			{
-				CLIENTFX_CREATESTRUCT fxInit( pDamageFX->m_szTakingHealthFXName, FXFLAG_REALLYCLOSE, LTVector(0,0,0) ); 
-				g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
-			}
-			
-			pDamageFX = g_pDamageFXMgr->GetNextDamageFX();
-		}
-	}
-	else
-	{
-		// Play the taking armor fx for the DamageFX associated with the damage type...
-
-		DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstDamageFX();
-		while( pDamageFX )
-		{
-			// Test the damage flags against the DamageFX...
-
-			// PORT: Tron's DAMAGEFX has no taking armor FX (DamageFXMgr.h)
-			if( pDamageFX->m_szTakingArmorFXName && (dmgFlag & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f) )
-			{
-				CLIENTFX_CREATESTRUCT fxInit( pDamageFX->m_szTakingArmorFXName, FXFLAG_REALLYCLOSE, LTVector(0,0,0) ); 
-				g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
-			}
-			
-			pDamageFX = g_pDamageFXMgr->GetNextDamageFX();
-		}
-	}
+	// PORT: NOLF2's taking health/armor FX are gone: Tron's DAMAGEFX has
+	// none (DamageFXMgr.h)
 
 	// Tilt the camera based on the direction the damage came from...
 
