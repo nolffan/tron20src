@@ -542,11 +542,12 @@ void CSoundMgr::Term(bool bRemoveSounds)
                     if (g_DebugLevel >= 2)
                     {
                         pSoundBuffer = pSoundInstance->GetSoundBuffer();
-                        // RETAIL: each through DEBUG_PRINT (Lithtech.exe 0x49d83f)
+                        // RETAIL: straight to the console, as NOLF2 (Lithtech.exe
+                        // 0x4b235d; Contract J.A.C.K.'s goes through DEBUG_PRINT)
                         if (pSoundBuffer)
-                            DEBUG_PRINT(1, ("Unfreed sound handle %s", pSoundBuffer->GetFileIdent()->m_Filename))
+                            dsi_PrintToConsole("Unfreed sound handle %s", pSoundBuffer->GetFileIdent()->m_Filename);
                         else
-                            DEBUG_PRINT(1, ("Unfreed sound handle 0x%x", pSoundInstance))
+                            dsi_PrintToConsole("Unfreed sound handle 0x%x", pSoundInstance);
                     }
                 }
 
