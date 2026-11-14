@@ -1977,7 +1977,13 @@ bool CMoveMgr::CanStandUp()
 		if (hAnim == INVALID_MODEL_ANIM)
 		{
 			ASSERT(!"Unable to find player stand animation");
+			// RETAIL: 0x100f88a2 -- Tron sets the crouch dims here (retail bug,
+			// docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
 			m_vStandDims.Init(24.0f, 53.0f, 24.0f);
+#else
+			m_vCrouchDims.Init(24.0f, 53.0f, 24.0f);
+#endif
 		}
 		else
 		{
