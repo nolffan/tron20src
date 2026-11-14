@@ -894,7 +894,7 @@ void CScreenConfigure::AdjustControlFrame()
 	{
 		LTIntPt pos = pCtrl->GetBasePos();
 		
-		uint16 nHt = (pos.y - listpos.y) + pCtrl->GetBaseHeight() + 4;
+		uint16 nHt = (pos.y - listpos.y) + pCtrl->GetHeight() + 4;	// RETAIL: its scaled height (0x10058068)
 
 		m_pFrame->SetSize(nWd+8,nHt);
 		m_pList[m_nType]->SetHeight(nHt);
