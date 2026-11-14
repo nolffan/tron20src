@@ -502,7 +502,9 @@ bool FillPacketFromInfo(Client *pClient, LTObject *pObj, ObjInfo *pInfo, CPacket
     // If it's a new object the client will teleport it automatically.
     if (changeFlags & CF_NEWOBJECT)
     {
-        changeFlags |= CF_POSITION|CF_ROTATION;	// RETAIL: and its rotation (server.dll 0x100354bd)
+        // RETAIL: CF_POSITION only (or 2: Lithtech.exe 0x46eb5c, server.dll 0x1002a1f7);
+        // Contract J.A.C.K.'s engine adds CF_ROTATION here.
+        changeFlags |= CF_POSITION;
         changeFlags &= ~CF_TELEPORT;
 		changeFlags &= ~CF_FILENAMES;
 

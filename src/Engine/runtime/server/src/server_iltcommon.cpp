@@ -142,7 +142,9 @@ LTRESULT CLTCommonServer::SetObjectFlags(HOBJECT hObj, const ObjFlagType nFlagTy
 		case OFT_Flags2 :
 		case OFT_User :
 		{
-            SetObjectChangeFlags(hObj, CF_FLAGS);
+            // RETAIL: only when a flag changes (Lithtech.exe 0x4adb4b).
+            if (nChangingFlags)
+                SetObjectChangeFlags(hObj, CF_FLAGS);
 		}
 		break;
     }

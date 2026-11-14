@@ -3210,8 +3210,9 @@ void CLTServer::SetupFunctionPointers()
 	UpdateSessionName = si_UpdateSessionName;
 	GetSessionName = si_GetSessionName;
 	GetMaxConnections = si_GetMaxConnections;
-	GetUDPSocket = si_GetUDPSocket;
+	// RETAIL: 0x4786c6 sets SendToServerApp (+0x198) before GetUDPSocket (+0x1a0).
 	SendToServerApp = si_SendToServerApp;
+	GetUDPSocket = si_GetUDPSocket;
 	GetTcpIpAddress = si_GetTcpIpAddress;
 
 	GetFileList = si_GetFileList;

@@ -216,6 +216,7 @@ LTRESULT sm_AllocateID(LTLink **ppIDLink, uint16 objectID)
 		pInfo->m_nSoundFlags = 0;
 		pInfo->m_nLastSentG = nCurTime;
 		pInfo->m_nLastSentU = nCurTime;
+		pInfo->m_nLastSentUFull = nCurTime;	// RETAIL: Lithtech.exe 0x478eb1
 	}
 
 	return LT_OK;
