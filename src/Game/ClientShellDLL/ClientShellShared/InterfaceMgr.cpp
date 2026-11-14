@@ -6074,11 +6074,15 @@ LTVector CInterfaceMgr::GetScreenFromWorldPos(LTVector vPos, HOBJECT hCamera)
 }
 
 
-void CInterfaceMgr::SetMouseFX(char* pFXName)
+// RETAIL: 0x100cf870: a second argument (UpdateInterfaceSFX reads it,
+// 0x100ce6e5), and the old effect is hidden before it is shut down
+void CInterfaceMgr::SetMouseFX(char* pFXName, bool bTronUnknown)
 {
 	SAFE_STRCPY(m_szMouseFXName,pFXName);
+	m_bTronUnknownF988 = bTronUnknown;
 	if (m_MouseFX.IsValid())
 	{
+		m_MouseFX.GetInstance()->Hide();
 		m_InterfaceFXMgr.ShutdownClientFX(&m_MouseFX);
 	}
 }
@@ -6200,8 +6204,7 @@ void CInterfaceMgr::OnObjectRemove(HLOCALOBJ hObj)
 	if (g_pDecision->IsVisible() && g_pDecision->GetObject() == hObj)
 		g_pDecision->OnObjectRemove(hObj);
 
-	if( g_pGameClientShell->ShouldUseRadar())
-		g_pRadar->RemoveObject( hObj );
+	// RETAIL: 0x100cfc60: no radar here in Tron
 }
 
 // ----------------------------------------------------------------------- //
@@ -6257,12 +6260,13 @@ bool CInterfaceMgr::HandleDisplayTimerMsg( ILTMessage_Read& msg )
 
 void CInterfaceMgr::LoadFailed(eScreenID eScreenToShow /*= SCREEN_ID_NONE*/, uint32 nLoadFailedMsgId /* = -1 */ )  
 {	
-	m_bLoadFailed = LTTRUE;
+	// RETAIL: 0x100cfd00: not the multiplayer screen after a command line join
 	m_nLoadFailedMsgId = nLoadFailedMsgId;
+	m_bLoadFailed = LTTRUE;
 
 	if (eScreenToShow == SCREEN_ID_NONE)
 	{
-		if (IsMultiplayerGame())
+		if (IsMultiplayerGame() && !GetCommandLineJoin( ))
 		{
 			m_eLoadFailedScreen = SCREEN_ID_MULTI;
 		}

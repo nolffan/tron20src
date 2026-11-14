@@ -416,7 +416,7 @@ class CInterfaceMgr
 
 		void	UpdateClientList();
 
-		void	SetMouseFX(char* pFXName);
+		void	SetMouseFX(char* pFXName, bool bTronUnknown = false);
 		void	SetSelectFX(char* pFXName);
 		void	ShowMouseFX();
 		void	ShowSelectFX(const LTIntPt &pos);
