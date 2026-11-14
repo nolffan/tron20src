@@ -15,13 +15,25 @@
 
 #include "SFXMsgIds.h"              // Special fx message ids
 
+// RETAIL: Tron's numbering. Tron forked NOLF2's ids in 2002 and added its
+// own: the values below are retail Tron's, read from the dispatch switches
+// of both retail images (CShell.dll: CGameClientShell::OnMessage
+// 0x100e42c0, CInterfaceMgr::OnMessage 0x100c9770, CTronInterfaceMgr's
+// 0x1009d9b0, CPlayerMgr's 0x10125360, CTronPlayerMgr's 0x100a4b80,
+// ClientMultiplayerMgr's 0x100e8cd0, CMissionMgr's 0x100ebe10; Object.lto:
+// CGameServerShell::OnMessage 0x100deab0, CTronGameServerShell's
+// 0x1005e0b0, CServerMissionMgr's 0x10161df0, CServerSaveLoadMgr's
+// 0x101ca250) and from the ids the message-writing call sites write.
+// Names marked "ours" are Tron's ids we named from what their handlers do;
+// MID_TRON_UNKNOWN_<id> are Tron's ids not yet identified.
+
 // General Client <-> Server messages
 
 #define MID_PLAYER_UPDATE				100
 #define MID_PLAYER_SKILLS				101 // Both ways
 #define MID_PLAYER_SUMMARY				102 
 #define MID_PLAYER_INFOCHANGE			103 // Both ways
-#define MID_PLAYER_SCORE				104
+#define MID_TRON_UNKNOWN_104			104	// RETAIL: Tron's, server to client (CTronPlayerObj 0x10067ce0 from a command "off"/"stop"/"revert"/"restore" with three floats; CTronInterfaceMgr 0x1009de00 dispatches its sub-ids 0 to 3)
 #define	MID_PLAYER_STATE_CHANGE			105
 #define MID_PLAYER_MESSAGE				106
 #define MID_PLAYER_CHEAT				107
@@ -39,8 +51,7 @@
 
 #define MID_PLAYER_REMOVED				110
 #define MID_PLAYER_SCORED				111
-#define MID_PLAYER_RESPAWN				112
-#define MID_PLAYER_CANCELREVIVE			113
+#define MID_PLAYER_RESPAWN				113	// RETAIL: 113 in Tron, as Build 51's (retail CGameServerShell::OnMessage's case for HandlePlayerRespawn 0x100df2e0)
 #define MID_PLAYER_MULTIPLAYER_INIT		114
 #define MID_PLAYER_SINGLEPLAYER_INIT	115
 #define MID_PLAYER_LOADCLIENT			116
@@ -56,13 +67,15 @@
 #define MID_PLAYER_CLIENTMSG			119	// Client to server
 #define MID_PLAYER_OVERLAY				120 // Server to client
 #define MID_PLAYER_TELEPORT				121 // Client to server
+#define MID_PLAYER_SCORE				122	// RETAIL: 122 in Tron, Tron's CPlayerScore (CInterfaceMgr's case 0x100c98e3; SharedScoring's MID_TRON_SCORE)
 
 #define MID_PLAYER_TRANSMISSION			123 // Server to client
 #define MID_PLAYER_CHATMODE				124	// Client to server
 #define MID_PLAYER_GHOSTMESSAGE			125
 #define MID_PLAYER_CREDITS				126
-#define MID_PLAYER_TEAM					127
+#define MID_TRON_HUD_TEXT				127	// RETAIL: Tron's, server to client: two string ids shown with the "msgfadeout" sound (CTronInterfaceMgr 0x1009df00). The name is ours
 #define MID_PLAYER_CONNECTED			128
+#define MID_SET_PERFORMANCE_RATING		129	// RETAIL: Tron's, server to client: a rating and its value (CTronInterfaceMgr 0x1009e03b, CRatingMgr::SetPerformanceRating). The name is ours
 
 #define MID_WEAPON_CHANGE				130	  // Both ways
 #define MID_WEAPON_SOUND				131
@@ -109,7 +122,7 @@
 	#define LCI_GRAB_FAILED				34	// Server to Client
 ///////////////////////////////////////////
 
-#define	MID_PERFORMANCE					137
+#define	MID_PERFORMANCE					149	// RETAIL: 149 in Tron (CUserProfile::SendPerformanceMsg, CShell.dll; CGameServerShell::HandlePerformanceMessage's case, Object.lto 0x100ded8a)
 
 
 // Messages regarding projectiles
@@ -134,6 +147,10 @@
 	#define MPROJ_DISC_TRACKING_POINT_GUIDED    102
 	#define MPROJ_DISC_TRACKING_CONTROL_LINE    103
 
+#define MID_WEAPON_CONTINUOUS_FIRE_START		139	// RETAIL: Tron's, client to server (CShell.dll 0x10018810, CClientWeaponContinuousFireBase's TU; CGameServerShell's handler 0x100def60 calls CPlayerObj's virtual 107). The name is ours
+#define MID_WEAPON_CONTINUOUS_FIRE_STOP			140	// RETAIL: Tron's, client to server (CShell.dll 0x10018470; handler 0x100def90, CPlayerObj's virtual 108). The name is ours
+#define MID_DISC_HOLD_DEFENSE					142	// RETAIL: Tron's, client to server (CClientWeaponDisc, CShell.dll 0x10019e77; CTronGameServerShell's case to CTronPlayerObj 0x10063d60, a vector). The name is ours
+
 #define MID_CLIENT_LOADED						144	// RETAIL: 144 in Tron (retail CGameServerShell::OnMessage 0x100deab0 sends it to HandleClientLoaded)
 #define MID_SWITCHINGWORLDSSTATE				145	// RETAIL: 145 in Tron (retail Object.lto 0x100dda93, 0x100e1a34)
 enum SwitchingWorldsState
@@ -148,7 +165,7 @@ enum SwitchingWorldsState
 #define MID_CLIENT_READY_FOR_AUTOLOAD			141	// Client to Server- Lets server know the client is ready to begin an automatic load.
 
 // Info on doomsday objects...
-#define MID_DOOMSDAY_MESSAGE					142 // Server -> Client
+#define MID_DOOMSDAY_MESSAGE					198 // Server -> Client. PORT: NOLF2's; Tron has none (142 is Tron's MID_DISC_HOLD_DEFENSE): moved to an id Tron leaves free
 	#define	MID_DOOMSDAY_PIECE_PICKEDUP			0
 	#define MID_DOOMSDAY_PIECE_DROPPED			1
 	#define MID_DOOMSDAY_PIECE_PLACED			2
@@ -158,17 +175,30 @@ enum SwitchingWorldsState
 
 #define MID_PLAYER_TAUNT                        146
 #define MID_MULTIPLAYER_UPDATE                  147
-#define MID_MULTIPLAYER_OPTIONS                 148
-#define	MID_TEAM_INFO							149
+#define MID_TRON_DISC_FIRED                     148	// RETAIL: Tron's, client to server, no data: sent from the disc's fire animation (CShell.dll 0x1001a370); CTronGameServerShell's case 0x1005e168 sets CTronPlayerObj's flag (0x10068660). The name is ours
+#define MID_TRON_EXIT_REQUEST					150	// RETAIL: Tron's, client to server: a bool (CShell.dll 0x1011df1c); CTronGameServerShell's case to CTronPlayerObj 0x10068560 ("ExitTrigger", "ENDLIGHTCYCLE", "exit"). The name is ours
+#define MID_TRON_UNKNOWN_151					151	// RETAIL: Tron's, server to client (CTronPlayerObj::FilterDamage; CTronInterfaceMgr 0x1009dde4 hands it to the subroutine manager, 0x10093580)
+#define MID_TRON_UNKNOWN_152					152	// RETAIL: Tron's, server to client: a bool (CTronPlayerObj::OnTrigger; CTronPlayerMgr 0x100a6ec0)
+
+// PORT: NOLF2's, not in Tron (their ids are Tron's MID_TRON_DISC_FIRED,
+// MID_PERFORMANCE, MID_TRON_EXIT_REQUEST): moved to ids Tron leaves free
+#define MID_MULTIPLAYER_OPTIONS                 199
+#define	MID_TEAM_INFO							204
 	#define MTEAM_FULL							0
 	#define MTEAM_SCORE							1
-#define	MID_TEAM_ADD							150
+#define	MID_TEAM_ADD							205
+#define MID_PLAYER_CANCELREVIVE					196	// PORT: NOLF2's (113 is Tron's MID_PLAYER_RESPAWN)
+#define MID_PLAYER_TEAM							197	// PORT: NOLF2's (127 is Tron's MID_TRON_HUD_TEXT)
 
 #define MID_MUSIC                               153
 
-#define MID_START_ENERGY_TRANSFER				155	// Server to Client
-#define MID_STOP_ENERGY_TRANSFER				156	// Client to Server
-#define MID_ENERGY_TRANSFER_COMPLETE			157 // Client to Server
+// RETAIL: 154 to 156 in Tron (CTronPlayerMgr::OnMessage's cases; BinaryBit
+// and PatchRoutine, Object.lto 0x10032af5: the client's stop and complete
+// come back as object messages)
+#define MID_START_ENERGY_TRANSFER				154	// Server to Client
+#define MID_STOP_ENERGY_TRANSFER				155	// Client to Server
+#define MID_ENERGY_TRANSFER_COMPLETE			156 // Client to Server
+#define MID_TRON_UNKNOWN_157					157	// RETAIL: Tron's, server to client: a float for the subroutine manager (CTronInterfaceMgr 0x1009de96)
 
 #define MID_QUERY_TARGET_PROPERTIES				158 // Client <-> Server
 // Target Property ID's:
@@ -181,6 +211,12 @@ enum SwitchingWorldsState
 #define MID_GAME_PAUSE                          160
 #define MID_GAME_UNPAUSE                        161
 
+#define MID_USE_ENERGY							162	// RETAIL: Tron's, client to server: energy used (CTronPlayerStats::UseEnergy, CSubroutineMgr::Update; CTronGameServerShell's case to CTronPlayerObj 0x10063cb0). The name is ours
+#define MID_TRON_UNKNOWN_163					163	// RETAIL: Tron's, server to client (CTronPlayerObj::OnTrigger; CTronInterfaceMgr 0x1009ddae: string 3235 on the subroutines screen)
+#define MID_TRON_ENERGY_GAINED					164	// RETAIL: Tron's, server to client: a byte for string 3271 (CoreDump; CTronInterfaceMgr 0x1009dec8). The name is ours
+#define MID_SYSTEM_MEMORY_CONFIGURATION			165	// RETAIL: Tron's, server to client: a string (CTronPlayerObj::OnTrigger; CTronInterfaceMgr 0x1009e093, CSubroutineMgr::SetSystemMemoryConfiguration). The name is ours
+#define MID_TRON_UNKNOWN_166					166	// RETAIL: Tron's, server to client: a uint32, a byte and a string for the subroutines screen (CTronPlayerObj 0x10066b90; CTronInterfaceMgr 0x1009dd4b)
+
 #define MID_GEAR_PICKEDUP                       170
 #define MID_INTEL_PICKEDUP                      171
 
@@ -188,6 +224,10 @@ enum SwitchingWorldsState
 #define MID_ADDITIVE_OBTAINED					173
 #define MID_PROCEDURAL_OBTAINED					174
 #define MID_PRIMITIVE_OBTAINED					175
+#define MID_TRON_PING							176	// RETAIL: Tron's, server to client: a string and add or remove (CTronInterfaceMgr 0x1009db90, CTronPlayerStats::AddPing). The name is ours
+#define MID_OPTIMIZER_BEGIN						177	// RETAIL: Tron's, server to client (Optimizer, Object.lto 0x10031769; CTronInterfaceMgr 0x1009dd06 opens the subroutines screen). The name is ours
+#define MID_OPTIMIZER_RESULT					178	// RETAIL: Tron's, client to server as an object message (Optimizer 0x100308bd). The name is ours
+#define MID_TRON_UNKNOWN_180					180	// RETAIL: Tron's, server to client: a bool, a position and a rotation (CTronPlayerObj::OnTrigger; CTronInterfaceMgr 0x1009dc03)
 
 #define MID_SAVE_GAME                           181
 
@@ -212,10 +252,15 @@ enum LoadGameType
 #define MID_EXIT_LEVEL							186
 
 #define MID_SAVE_DATA							187
+#define MID_TRON_UNKNOWN_188					188	// RETAIL: Tron's, server to client: a bool (CTronPlayerObj::OnTrigger; CTronInterfaceMgr 0x1009dcdc)
 
 #define MID_SERVER_ERROR                        190
 #define MID_LOAD_FAILED							191
 #define MID_OBJECTIVES_DATA						192
+#define MID_SYSTEM_MEMORY						193	// RETAIL: Tron's, server to client (CTronPlayerMgr::HandleMsgSystemMemory 0x100a6740). The name is ours
+#define MID_TRON_UNKNOWN_194					194	// RETAIL: Tron's, server to client (Object.lto 0x101ccc00; CMissionMgr::OnMessage's case to its virtual 1)
+#define MID_TRON_UNKNOWN_195					195	// RETAIL: Tron's, server to client (Object.lto 0x101ccc00; CMissionMgr::OnMessage's case to its virtual 2)
+#define MID_TRON_SERVERMESSAGE					200	// RETAIL: Tron's, both ways, with sub-ids (SharedScoring.h; CTronPlayerMgr 0x100a6e50, CTronGameServerShell's case). The name is ours
 #define MID_SCMD								201	// RETAIL: 201 in Tron (retail ScmdConsole_Impl::OnMessage, TRONSrv.exe 0x403d8c, CShell.dll 0x1017eadc; ScmdServer_Impl::OnMessage, Object.lto 0x101c5cf8)
 
 #define MID_MULTIPLAYER_DATA                    202
@@ -238,6 +283,7 @@ enum LoadGameType
 #define MID_DIFFICULTY							240 // Client to server
 #define MID_GAMETEXMGR							241	// Server to client
 #define MID_DISPLAY_METER						243	// Server to client						
+#define MID_TRON_VERSION						244	// RETAIL: Tron's, server to client: show the jet version (CTronPlayerObj::OnTrigger; CTronInterfaceMgr 0x1009df94, string 2557). The name is ours
 
 #define MID_HANDSHAKE                           245 // Both ways, handshake negotiation
 // Handshake sub-messages

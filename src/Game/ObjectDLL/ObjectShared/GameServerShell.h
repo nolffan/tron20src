@@ -253,6 +253,9 @@ class CGameServerShell : public IServerShellStub
 		//			Handle OnMessage Type			(sender,  message)
         void        HandlePlayerUpdate				(HCLIENT, ILTMessage_Read*);
         void        HandleWeaponFire				(HCLIENT, ILTMessage_Read*);
+		// RETAIL: Tron's (retail 0x100def60, 0x100def90); the names are ours
+		void		HandleWeaponContinuousFireStart	(HCLIENT, ILTMessage_Read*);
+		void		HandleWeaponContinuousFireStop	(HCLIENT, ILTMessage_Read*);
 		void		HandleWeaponReload				(HCLIENT, ILTMessage_Read*);
 		void		HandleWeaponSound				(HCLIENT, ILTMessage_Read*);
         void		HandleWeaponSoundLoop			(HCLIENT, ILTMessage_Read*);

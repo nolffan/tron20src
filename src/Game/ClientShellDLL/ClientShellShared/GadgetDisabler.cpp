@@ -114,7 +114,9 @@ void CGadgetDisabler::Update( )
 		// Send message to target with the amount of time left...
 
 		CAutoMessage cMsg;
-		cMsg.Writeuint8( MID_GADGETTARGET );
+		// RETAIL: MID_SEARCH, 248, in Tron (retail 0x101c3900; the server's
+		// HandleSearch sends the target "update %f")
+		cMsg.Writeuint8( MID_SEARCH );
 
 		cMsg.WriteObject( m_hTargetObj );
 		cMsg.Writefloat( m_fTimer);

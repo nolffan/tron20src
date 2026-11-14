@@ -2297,7 +2297,8 @@ void CGameClientShell::OnMessage(ILTMessage_Read *pMsg)
 		case MID_PROJECTILE:		HandleMsgProjectile			(messageID, cSubMsg); break;
 		case MID_GAME_PAUSE:		HandleMsgPauseGame			(cSubMsg); break;
 		case MID_SWITCHINGWORLDSSTATE:	HandleMsgSwitchingWorldState(cSubMsg); break;
-		case MID_MULTIPLAYER_OPTIONS:	HandleMsgMultiplayerOptions(cSubMsg); break;
+		// RETAIL: no MID_MULTIPLAYER_OPTIONS in Tron (retail 0x100e42c0; 148
+		// is Tron's MID_TRON_DISC_FIRED)
 		
 		case STC_BPRINT:			HandleMsgBPrint				(cSubMsg);	break;
 		default: 					HandleMsgDefault			(cSubMsg);	break;

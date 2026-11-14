@@ -553,8 +553,8 @@ bool CMissionMgr::OnMessage( uint8 messageID, ILTMessage_Read & msg )
 	switch(messageID)
 	{
 		case MID_EXIT_LEVEL:		HandleExitLevel			( msg );	return true;
-		case 194:					TronUnknownVirtual4		( msg );	return true;
-		case 195:					TronUnknownVirtual8		( msg );	return true;
+		case MID_TRON_UNKNOWN_194:	TronUnknownVirtual4		( msg );	return true;
+		case MID_TRON_UNKNOWN_195:	TronUnknownVirtual8		( msg );	return true;
 		case MID_END_GAME:			HandleEndGame			( msg );	return true;
 	}
 

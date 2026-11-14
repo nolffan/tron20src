@@ -563,20 +563,7 @@ bool ClientMultiplayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_MULTIPLAYER_DATA:
 			return HandleMsgMultiplayerData( *pMsg );
 			break;
-		case MID_MULTIPLAYER_SERVERDIR:
-			if (GetServerDir())
-			{
-				char aAddrBuffer[16];
-				sprintf(aAddrBuffer, "%d.%d.%d.%d", 
-					(uint32)m_aCurMessageSourceAddr[0], 
-					(uint32)m_aCurMessageSourceAddr[1], 
-					(uint32)m_aCurMessageSourceAddr[2], 
-					(uint32)m_aCurMessageSourceAddr[3]);
-				return GetServerDir()->HandleNetMessage(*CLTMsgRef_Read(pMsg->SubMsg(pMsg->Tell())), aAddrBuffer, m_nCurMessageSourcePort);
-			}
-			else
-				return false;
-			break;
+		// RETAIL: no MID_MULTIPLAYER_SERVERDIR in Tron (retail 0x100e8cd0)
 		default:
 			break;
 		

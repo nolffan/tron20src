@@ -60,6 +60,8 @@ class CTronGameServerShell : public CGameServerShell
 
 		// Tron specific MID_ messages
 		void HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x1005eda0 (the name is ours)
+		void HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg);
 
 	private:
 
