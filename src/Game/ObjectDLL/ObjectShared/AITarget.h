@@ -7,16 +7,22 @@
 #include "LTObjRef.h"
 #include "RelationChangeObserver.h"
 
+class CAI;
+class CCharacter;
 
-class CAITarget : public CAIClassAbstract, public IRelationChangeObserver //: DEFINE_FACTORY_CLASS(CAITarget)
+
+// RETAIL: Tron splits NOLF2's CAITarget: AbstractTarget (RTTI; ctor
+// 0x101df0e0, vtable 0x1029b3b0: OnRelationChange, a pure virtual dtor and
+// a pure GetAI) holds the target tracking, CAITarget (0x101e03b0, 0xd4
+// bytes) adds its CAI and the push. CGenericTarget<CAIGoalAbstract> is
+// another AbstractTarget in retail (not written yet).
+
+class AbstractTarget : public IRelationChangeObserver
 {
-//	DEFINE_FACTORY_METHODS(CAITarget);
-
 	public : // Public methods
 
-		DECLARE_AI_FACTORY_CLASS(CAITarget);
-
-		CAITarget( );
+		AbstractTarget( );
+		virtual ~AbstractTarget( ) = 0;
 
         LTBOOL IsVisibleCompletely() const { return IsVisibleFromEye() && IsVisibleFromWeapon(); }
         LTBOOL IsVisiblePartially() const { return IsVisibleFromEye() || IsVisibleFromWeapon(); }
@@ -28,32 +34,23 @@ class CAITarget : public CAIClassAbstract, public IRelationChangeObserver //: DE
         LTBOOL IsAttacking() const { return m_bAttacking; }
 
 		void UpdateVisibility();
-		void UpdatePush( CCharacter* pChar );
 
 		HOBJECT GetObject() const { return m_hObject; }
-        CCharacter* GetCharacter() const
-		{ 
-			if( !IsCharacter( m_hObject ) )
-			{
-				return NULL;
-			}
-
-			return (CCharacter*)g_pLTServer->HandleToObject(m_hObject);
-		}
+		// RETAIL: out of line (0x101e02c0), a dynamic_cast.
+        CCharacter* GetCharacter() const;
 
         const LTVector& GetVisiblePosition() const { return m_vVisiblePosition; }
         void GetShootPosition(LTVector* pvShootPos);
 
-		void SetPushSpeed(LTFLOAT fPushSpeed) { m_fPushSpeed = fPushSpeed; }
-		void SetPushMinDist(LTFLOAT fPushMinDist) { m_fPushMinDist = fPushMinDist; m_fPushMinDistSqr = fPushMinDist* fPushMinDist; }
-
 		virtual int OnRelationChange(HOBJECT);
+
 	protected : // Protected methods
 
 		friend class CAI;
 
-		void Init(CAI* pAI);
-		CAI* GetAI() { return m_pAI; }
+		virtual CAI* GetAI() = 0;
+
+		void Init();
 
         LTBOOL IsValid() { return ( m_hObject != NULL ); }
         void SetCanUpdateVisibility(LTBOOL bCanUpdate) { m_bCanUpdateVisibility = bCanUpdate; }
@@ -69,13 +66,12 @@ class CAITarget : public CAIClassAbstract, public IRelationChangeObserver //: DE
 		void Save(ILTMessage_Write *pMsg);
 		void Load(ILTMessage_Read *pMsg);
 
-	private : // Private member variables
+	protected : // Protected member variables
 
-		CAI*		m_pAI;
+		LTObjRef	m_hObject;
 		LTBOOL		m_bCanUpdateVisibility;
         LTBOOL		m_bVisibleFromEye;
         LTBOOL		m_bVisibleFromWeapon;
-		LTObjRef	m_hObject;
 		LTObjRef	m_hVisionBlocker;
 		LTVector	m_vTargetDims;
         LTVector	m_vPosition;
@@ -96,15 +92,51 @@ class CAITarget : public CAIClassAbstract, public IRelationChangeObserver //: DE
 		int32		m_nResetPhase;
 		LTFLOAT		m_fPhaseStep;
 
+		// RETAIL: Tron's, saved after m_fPhaseStep (Save 0x101df3f0).
+		LTFLOAT		m_fTronUnknown98;
+		LTVector	m_vTronUnknown9C;
+
+		RelationChangeNotifier m_hRelationNotifier; // Reset before set
+
+		// RETAIL: Tron's registration with its AI's +0x1010 object (Init
+		// 0x101df2e0 sets these: owner, callback 0x101df7c0, registry).
+		void*		m_pTronUnknownB0;
+		void*		m_pTronUnknownB4;
+		void*		m_pTronUnknownB8;
+};
+
+
+class CAITarget : public CAIClassAbstract, public AbstractTarget
+{
+	public : // Public methods
+
+		DECLARE_AI_FACTORY_CLASS(CAITarget);
+
+		CAITarget( );
+
+		void UpdatePush( CCharacter* pChar );
+
+		void SetPushSpeed(LTFLOAT fPushSpeed) { m_fPushSpeed = fPushSpeed; }
+		void SetPushMinDist(LTFLOAT fPushMinDist) { m_fPushMinDist = fPushMinDist; m_fPushMinDistSqr = fPushMinDist* fPushMinDist; }
+
+	protected : // Protected methods
+
+		friend class CAI;
+
+		void Init(CAI* pAI);
+		virtual CAI* GetAI() { return m_pAI; }
+
+		void Save(ILTMessage_Write *pMsg);
+		void Load(ILTMessage_Read *pMsg);
+
+	private : // Private member variables
+
+		CAI*		m_pAI;
+
 		LTFLOAT		m_fPushSpeed;
 		LTFLOAT		m_fPushMinDist;
 		LTFLOAT		m_fPushMinDistSqr;
 		LTFLOAT		m_fPushThreshold;
-
-		LTBOOL		m_bPrimaryOnLeft;
-
-		RelationChangeNotifier m_hRelationNotifier; // Reset before set
-
 };
 
 #endif
