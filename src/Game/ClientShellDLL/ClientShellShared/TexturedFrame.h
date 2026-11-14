@@ -48,6 +48,9 @@ public:
 	CTexturedFrame();
 	~CTexturedFrame();
 
+	// RETAIL: empty (CHUDDecision::Term calls it: folded, 0x100abb80)
+	void	Term();
+
 	// the layout's frame of that name (CLayoutMgr::GetTexturedFrame); it
 	// becomes the one the "Frame"/"FrameUV" console programs adjust
 	void	Init(const char* szName);
@@ -68,6 +71,9 @@ public:
 	void	SetPosition(int x, int y);
 	void	SetSize(int w, int h);
 	void	SetRect(LTRect rect);
+
+	// RETAIL: inline (CHUDDecision::ShowDecision copies all four)
+	LTRect	GetMargins() { return m_rcMargins; }
 
 private:
 	void	Update();

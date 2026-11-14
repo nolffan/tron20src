@@ -28,6 +28,11 @@ CTexturedFrame::~CTexturedFrame()
 {
 }
 
+// RETAIL: an empty function (folded: 0x100abb80)
+void CTexturedFrame::Term()
+{
+}
+
 // RETAIL: 0x1013e1b0
 void CTexturedFrame::Init(const char* szName)
 {
@@ -102,7 +107,7 @@ void CTexturedFrame::Init(INT_TEXTUREDFRAME* pFrame)
 // RETAIL: 0x1013e740 (the "Frame" console program's)
 void CTexturedFrame::AdjustPiece(int nPiece, int nEdge, int nDelta)
 {
-	// RETAIL: lets nPiece be 9 (one past the polygons)
+	// RETAIL: lets nPiece be 9, one past the polygons (docs/RETAIL_BUGS.md)
 	if (nPiece < 0 || nPiece > 9 || nEdge < 0 || nEdge > 4) return;
 
 	LT_POLYFT4* pPoly = &m_Poly[nPiece];

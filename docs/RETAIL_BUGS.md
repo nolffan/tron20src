@@ -652,6 +652,29 @@ cover the screen are not confined to it.
 
 Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
 
+### Cancelling a decision window resets the memory after its choices
+
+CShell.dll 0x10140810 (CHUDDecision::Choose, ClientShellShared/
+HUDDecision.cpp). A choice of MAX_DECISION_CHOICES or more (cancelling the
+window) is clamped to MAX_DECISION_CHOICES and, when the layout's
+RemoveItems is set, m_Choices[nChoice].Reset() runs on it: one past the
+array. That "choice" starts at the window's CTexturedFrame (+0x1b54) and
+runs past the end of CHUDDecision (0x1f6c bytes) into CHUDTronDecision's
+members: Reset clears the frame's first byte, frees the two pointers it
+finds at +0x1fcc/+0x1fd0 as poly strings if they are set, and writes 200
+and two nulls at +0x1fc8..+0x1fd0.
+
+Not fixed yet: the modern build should reset only a real choice.
+
+### The textured frame tuners accept a tenth piece
+
+CShell.dll 0x1013e740 and 0x1013e8c0 (CTexturedFrame::AdjustPiece and
+AdjustPieceUV, ClientShellShared/TexturedFrame.cpp, the "Frame" and
+"FrameUV" console programs). The piece index is checked against 9, not 8,
+so piece 9 writes past the nine quads and texture rects. A debugging aid.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
