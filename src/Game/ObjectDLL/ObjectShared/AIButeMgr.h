@@ -15,6 +15,9 @@
 #include <vector>
 
 #include "UberAssert.h"
+#include "TRON\CaselessString.h"
+
+struct WEAPON;
 
 
 // Forward declarations.
@@ -36,6 +39,26 @@ static const char* s_aszSenseTypes[] =
 
 
 typedef std::map<EnumAISenseType, LTFLOAT> AISenseDistanceMap;
+
+// RETAIL: Tron's AI weapon sets: a list of 0x18-byte entries in CAIButeMgr
+// (+0x113c), a name then a vector of 12-byte records (the default one's
+// ctor is retail 0x1019f8e0, its dtor 0x1019f950); a template points at
+// its set (SetTemplate 0x1019f7cc). The records are not identified yet;
+// the names are ours
+struct AIBM_WeaponSetRecord
+{
+	uint32	m_xTronUnknown0;
+	uint32	m_xTronUnknown4;
+	uint32	m_xTronUnknown8;
+};
+
+struct AIBM_WeaponSet
+{
+	CaselessInlineString				sName;	// RETAIL: compared with _memicmp, length inline (0x1019f7f3)
+	std::vector<AIBM_WeaponSetRecord>	vecRecords;
+};
+
+typedef std::vector<AIBM_WeaponSet> AIBM_WeaponSetList;
 
 typedef struct
 {
@@ -65,18 +88,25 @@ typedef struct
 	LTFLOAT fVerticalThreshold;
 	LTFLOAT fDefensePercentage;
 
+	// RETAIL: +0x110..+0x118: Tron's SetTemplate (0x1019f3f0) does not read
+	// NOLF2's sentry distances, and the template's ctor (0x101a1ec0) does not
+	// set them: they are kept here, unset, for NOLF2's AI code that still
+	// asks for them
 	LTFLOAT flSentryChallengeScanDistMax;
 	LTFLOAT flSentryChallengeDistMax;
 	LTFLOAT flSentryMarkDistMax;
+
+	// RETAIL: Tron's "RamWeapon" (+0x11c, SetTemplate 0x1019f6a5)
+	const WEAPON* pRamWeapon;
 
 	AISenseDistanceMap mapSenseDistance;
 
 	uint32 iUseableVolumesMask;
 
-	// RETAIL: Tron's "AllowDiskSpike" (retail SetTemplate 0x1019f67a; at
-	// +0x134 in retail, after a "RamWeapon" WEAPON* at +0x11c, the sense map
-	// at +0x120, the volumes mask at +0x12c and a weapon set at +0x130:
-	// the rest of Tron's template layout is not done yet)
+	// RETAIL: Tron's "WeaponSet" (+0x130, SetTemplate 0x1019f83b)
+	AIBM_WeaponSet* pWeaponSet;
+
+	// RETAIL: Tron's "AllowDiskSpike" (+0x134, SetTemplate 0x1019f67a)
 	LTBOOL bAllowDiskSpike;
 }
 AIBM_Template;
@@ -284,6 +314,9 @@ typedef struct
 	LTBOOL bEnableMeleeRepathing;
 	LTBOOL bKeepInvalidNodeHistory;
 	LTBOOL bUseTrueWeaponPosition;
+	// RETAIL: Tron's (SetRules 0x101a0cef)
+	LTBOOL bEnableRecoilWeaponNodeTracking;
+	LTFLOAT fTalkToPlayerCleanupDist;
 }
 AIBM_Rules;
 
@@ -361,6 +394,8 @@ class CAIButeMgr : public CGameButeMgr
 
 		int 					m_cDamageMaskID;
 		AIBM_DamageMask* 		m_aDamageMasks;
+
+		AIBM_WeaponSetList		m_lstWeaponSets;	// RETAIL: Tron's (+0x113c)
 
 		AIBM_ResetTimers		m_ResetTimers;
 		AIBM_TextIDs			m_TextIDs;

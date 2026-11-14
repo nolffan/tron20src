@@ -120,6 +120,12 @@ private :
 	virtual uint32 EngineMessageFn(uint32 messageID, void *pData, float lData) 
 		{ return BaseClass::EngineMessageFn(messageID, pData, lData); }
 
+	// RETAIL: Tron keeps GameBase's save version and save string here too
+	// (ctor 0x10153390 sets +0x14 from g_pVersionMgr->GetSaveVersion(), +0x18
+	// NULL; the dtor frees +0x18; Save 0x101535a0/Load 0x101535e0 write them).
+	uint32 m_nSaveVersion;
+	HSTRING m_hstrSave;
+
 	// These variables are invalid on these objects
 	HOBJECT m_hObject;
     uint8 m_nType;

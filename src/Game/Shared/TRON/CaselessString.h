@@ -43,4 +43,26 @@ struct CaselessCharTraits : public std::char_traits<char>
 
 typedef std::basic_string<char, CaselessCharTraits> CaselessString;
 
+// RETAIL: a second caseless string in Tron whose length IS expanded inline
+// (with its null check): CDestructibleModel's destroy FX and the prop type's
+// string it is set from (Object.lto 0x1010f910, 0x10110282, 0x100f5876),
+// where the same code with CaselessString calls CaselessStrLen. Whether
+// Tron's source had two traits or wrote these otherwise is unknown; the
+// names are ours.
+struct CaselessInlineCharTraits : public std::char_traits<char>
+{
+	static int compare(const char* s1, const char* s2, size_t n)
+	{
+		return _memicmp(s1, s2, n);
+	}
+
+	static size_t length(const char* s)
+	{
+		if (!s) return 0;
+		return strlen(s);
+	}
+};
+
+typedef std::basic_string<char, CaselessInlineCharTraits> CaselessInlineString;
+
 #endif // __CASELESSSTRING_H__
