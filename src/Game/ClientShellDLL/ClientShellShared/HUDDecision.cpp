@@ -85,7 +85,7 @@ void CHUDDecisionChoice::Init(int nNumber, uint32 nStringID, int nFontSize, int 
 	sText.erase(sText.begin(), sText.end());
 	uint32 nLen = strlen(szTmp);
 	for (uint32 i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)szTmp[i]);
+		sText += (wchar_t)(uint8)szTmp[i];
 
 	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
 	m_pNumber->SetCharScreenHeight(20);
@@ -94,7 +94,7 @@ void CHUDDecisionChoice::Init(int nNumber, uint32 nStringID, int nFontSize, int 
 	sText.erase(sText.begin(), sText.end());
 	nLen = strlen(szTmp);
 	for (i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)szTmp[i]);
+		sText += (wchar_t)(uint8)szTmp[i];
 
 	pFont = g_pInterfaceResMgr->GetFontForHeight((int)((float)nFontSize * fYRatio));
 	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
@@ -128,7 +128,7 @@ void CHUDDecisionChoice::Init(int nNumber, HSTRING hString, int nFontSize, int n
 	sText.erase(sText.begin(), sText.end());
 	uint32 nLen = strlen(szTmp);
 	for (uint32 i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)szTmp[i]);
+		sText += (wchar_t)(uint8)szTmp[i];
 
 	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
 	m_pNumber->SetCharScreenHeight(20);
@@ -137,7 +137,7 @@ void CHUDDecisionChoice::Init(int nNumber, HSTRING hString, int nFontSize, int n
 	sText.erase(sText.begin(), sText.end());
 	nLen = strlen(pString);
 	for (i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)pString[i]);
+		sText += (wchar_t)(uint8)pString[i];
 
 	pFont = g_pInterfaceResMgr->GetFontForHeight((int)((float)nFontSize * fYRatio));
 	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
@@ -197,7 +197,7 @@ void CHUDDecisionChoice::Render()
 // the choices a decision message carries
 struct DecisionChoiceData
 {
-	DecisionChoiceData() : bString(false), hString(LTNULL), nStringID(0) {}
+	DecisionChoiceData();
 
 	bool	bString;
 	HSTRING	hString;
@@ -330,7 +330,7 @@ void CHUDDecision::ShowDecision(ILTMessage_Read *pMsg)
 		LTVector vObjPos, vPos;
 		g_pLTClient->GetObjectPos(hRangeObj, &vObjPos);
 		g_pLTClient->GetObjectPos(g_pPlayerMgr->GetMoveMgr()->GetObject(), &vPos);
-		float fDist = (vPos - vObjPos).Mag();
+		float fDist = (vPos - vObjPos).Length();
 
 		//if we're out of range, bail right away
 		if (!bForce && fRad > 0.0f && fDist > fRad)
@@ -427,6 +427,14 @@ void CHUDDecision::ShowDecision(ILTMessage_Read *pMsg)
 	}
 }
 
+// RETAIL: 0x10140800
+DecisionChoiceData::DecisionChoiceData() :
+	bString(false),
+	hString(LTNULL),
+	nStringID(0)
+{
+}
+
 // RETAIL: 0x10140810
 void CHUDDecision::Choose(uint8 nChoice)
 {
@@ -455,10 +463,9 @@ void CHUDDecision::Choose(uint8 nChoice)
 
 	for (int i = 0; i < MAX_DECISION_CHOICES; i++)
 	{
-		if (m_Choices[i].IsVisible()) break;
+		if (m_Choices[i].IsVisible()) goto Found;
 	}
 
-	if (i >= MAX_DECISION_CHOICES)
 	{
 		CAutoMessage cAllMsg;
 		cAllMsg.Writeuint8(MID_OBJECT_MESSAGE);
@@ -467,16 +474,22 @@ void CHUDDecision::Choose(uint8 nChoice)
 		cAllMsg.Writeuint8(DECISION_ALL_CHOSEN);
 		g_pLTClient->SendToServer(cAllMsg.Read(), MESSAGE_GUARANTEED);
 	}
-	else if (!m_bRemoveWindow && nChoice != MAX_DECISION_CHOICES)
-	{
-		return;
-	}
+	goto Close;
 
+Found:
+	// keep the window for the choices left
+	if (!m_bRemoveWindow && nChoice != MAX_DECISION_CHOICES)
+		goto Done;
+
+Close:
 	m_bVisible = LTFALSE;
 	m_hObject = LTNULL;
 	m_hRangeObject = LTNULL;
 	m_bTronUnknown4c = false;
 	m_bTronUnknown4d = true;
+
+Done:
+	;
 }
 
 // RETAIL: 0x10140a20

@@ -114,6 +114,10 @@ SOURCE=.\ActivateObjectFX.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AttachClientFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\ActivateTypeMgr.cpp
 # End Source File
 # Begin Source File
@@ -993,6 +997,10 @@ SOURCE=..\..\Shared\WinUtil.cpp
 # Begin Source File
 
 SOURCE=.\ActivateObjectFX.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AttachClientFX.h
 # End Source File
 # Begin Source File
 
