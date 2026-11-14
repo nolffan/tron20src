@@ -399,10 +399,14 @@ void CMoveMgr::UpdateControlFlags()
 	m_dwLastControlFlags = m_dwControlFlags;
 	m_dwControlFlags = 0;
 	
-	if( !m_hObject )
+	// RETAIL: 0x100f55e0 -- while the camera can't move, keep ducking.
+	if( !m_hObject || !g_pInterfaceMgr->AllowCameraMovement() )
+	{
+		m_dwControlFlags |= (m_dwLastControlFlags & BC_CFLG_DUCK);
 		return;
+	}
 
-	if (m_pVehicleMgr->IsVehiclePhysics())
+	if (m_pVehicleMgr->IsVehiclePhysics() && !g_pPlayerMgr->TronUnknownVirtual3C(false))
 	{
 		m_pVehicleMgr->UpdateControlFlags();
 		m_dwControlFlags = m_pVehicleMgr->GetControlFlags();
