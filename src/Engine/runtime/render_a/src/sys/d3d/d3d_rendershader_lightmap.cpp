@@ -51,11 +51,12 @@ bool CRenderShader_Lightmap::ValidateShader(const CRBSection &cSection)
 	StageStateSet state03(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 	StageStateSet state04(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 	StageStateSet state05(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-	// RETAIL: the clamps before stage 1's (0x4eac24), as PreFlush has them
-	SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
-	SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 	StageStateSet state10(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
 	StageStateSet state11(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+
+	// RETAIL: the clamps after stage 1's, as Build 69 (Lithtech.exe 0x539499)
+	SamplerStateSet stateWrap0(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+	SamplerStateSet stateWrap1(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
 
 	d3d_SetTextureDirect(pTempTexture, 0);
 

@@ -718,6 +718,18 @@ in its list at all.
 
 Not fixed yet.
 
+### The sky is clipped to the whole screen, not to the camera's viewport
+
+Lithtech.exe 0x52cd00 (CD3D_RenderBlock::ExtendSkyBounds, the engine's
+d3d_renderblock.cpp). The bounds of the sky portals seen through a camera
+are tested against and clamped to 0..m_fScreenWidth/m_fScreenHeight, the
+screen's extents, where they should be the view's rectangle (m_Rect). With
+a camera that draws into part of the screen (a split or inset view) the sky
+is drawn for portals outside that view, or past its edges. Contract
+J.A.C.K.'s engine has the fix ("SKYBOX FIX for Multiple Cameras": m_Rect).
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
