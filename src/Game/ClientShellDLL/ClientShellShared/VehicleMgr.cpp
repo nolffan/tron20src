@@ -4522,6 +4522,89 @@ void CVehicleMgr::SetPlayerLureId( uint32 nPlayerLureId )
 	m_bResetLure = true; 
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::KillLightCycleSounds
+//
+//	PURPOSE:	Stop the light cycle's looping sounds
+//				(RETAIL: 0x10122140; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::KillLightCycleSounds()
+{
+	if (m_hVehicleCruiseSnd)
+	{
+        g_pLTClient->SoundMgr()->KillSound(m_hVehicleCruiseSnd);
+        m_hVehicleCruiseSnd = LTNULL;
+	}
+
+	if (m_hTronUnknownSnd2c)
+	{
+        g_pLTClient->SoundMgr()->KillSound(m_hTronUnknownSnd2c);
+        m_hTronUnknownSnd2c = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::ShutdownLightCycleFX
+//
+//	PURPOSE:	Shut down the light cycle's client fx
+//				(RETAIL: 0x10122190; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::ShutdownLightCycleFX()
+{
+	// The +0x2138 fx is left running while +0x2158 is set with +0x215c 1.
+	if (m_TronUnknownFX2138.IsValid() && (!m_bTronUnknown2158 || m_nTronUnknown215c != 1))
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2138);
+		m_TronUnknownFX2138.ClearLink();
+		m_bTronUnknown2158 = false;
+	}
+
+	if (m_TronUnknownFX213c.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX213c);
+		m_TronUnknownFX213c.ClearLink();
+	}
+
+	if (m_TronUnknownFX2140.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2140);
+		m_TronUnknownFX2140.ClearLink();
+	}
+
+	if (m_TronUnknownFX2144.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2144);
+		m_TronUnknownFX2144.ClearLink();
+	}
+
+	if (m_TronUnknownFX2148.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2148);
+		m_TronUnknownFX2148.ClearLink();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::ResetLightCyclePhysics
+//
+//	PURPOSE:	Leave and re-enter the light cycle physics model
+//				(RETAIL: 0x10122260; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::ResetLightCyclePhysics()
+{
+	SetPhysicsModel(PPM_NORMAL);
+	SetPhysicsModel(PPM_LIGHTCYCLE);
+}
+
 // RETAIL: Tron's CVehicleMgr has no Save/Load (CMoveMgr::Save 0x100f9d30
 // doesn't call one).
 

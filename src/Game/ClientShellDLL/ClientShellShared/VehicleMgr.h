@@ -88,6 +88,12 @@ class CVehicleMgr
 	void		AdjustCameraRoll(LTFLOAT & fRoll);
 
 	void		SetPlayerLureId( uint32 nPlayerLureId );
+
+	// RETAIL: Tron's light cycle helpers (0x10122140, 0x10122190,
+	// 0x10122260; names ours; called by CClientLightCycleMgr)
+	void		KillLightCycleSounds();
+	void		ShutdownLightCycleFX();
+	void		ResetLightCyclePhysics();
 	uint32		GetPlayerLureId( ) { return m_nPlayerLureId; }
 
 	float		GetVehicleContourRoll() const { return m_ePPhysicsModel == PPM_SNOWMOBILE ? m_fContourRoll : 0.0f; }
