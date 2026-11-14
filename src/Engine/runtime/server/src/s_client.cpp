@@ -195,7 +195,9 @@ bool Client::Init( CBaseConn *pBaseConn, bool bIsLocal )
 	dl_AddHead(&g_pServerMgr->m_Clients, &m_Link, this);
 	
 	// Tell the server shell they're in.
-	i_server_shell->OnAddClient((HCLIENT)this);
+	// RETAIL: the shell can refuse them (Lithtech.exe 0x4697a8)
+	if (!i_server_shell->OnAddClient((HCLIENT)this))
+		return false;
 
 	// Don't let them send anything yet..
 	pBaseConn->SetBandwidth(0);
@@ -547,6 +549,10 @@ void sm_GetClientOutOfWorld(Client *pClient)
 
 // TRON: what NOLF2's ~Client frees, freed here before the client is deleted
 // (server.dll 0x1002772d; the name is ours)
+// RETAIL: not expanded into sm_RemoveClient, which calls it (Lithtech.exe
+// 0x46a610 from 0x46ada4); VC6 inlines it at /Ob2 without the pragma (ours:
+// how retail's build kept it out of line is not known)
+#pragma auto_inline(off)
 static void sm_FreeClient(Client *pClient)
 {
 	// Free up everything.
@@ -583,6 +589,7 @@ static void sm_FreeClient(Client *pClient)
 
 	delete pClient;
 }
+#pragma auto_inline(on)
 
 // ----------------------------------------------------------------------- //
 // Interface functions.
@@ -1430,10 +1437,6 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 				if ((pObject->sd->m_NetFlags & k_nUnguaranteedMask) == 0)
 					continue;
 
-				// RETAIL: 0x10032876
-				if (!(pObject->m_Flags & FLAG_VISIBLE))
-					continue;
-
 				ObjInfo* pObjInfo = &pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID];
 				if (pInfo->m_pClient->m_pObject == pObject)
 					pObjInfo->m_ChangeFlags &= ~(CF_UNGUARANTEED_POS|CF_UNGUARANTEED_ROT|CF_UNGUARANTEED_DATA);
@@ -1467,13 +1470,14 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 
 		while (!aObjects.empty())
 		{
+			// RETAIL: the object read through the queue's top each time
+			// (server.dll 0x10028687, 0x100286fe)
 			const CUnguaranteedObjTrack &cCurObj = aObjects.top();
-			LTObject *pObject = cCurObj.m_pObject;
-			ObjInfo *pObjInfo = &pInfo->m_pClient->m_ObjInfos[pObject->m_ObjectID];
+			ObjInfo *pObjInfo = &pInfo->m_pClient->m_ObjInfos[cCurObj.m_pObject->m_ObjectID];
 			bool bForce = bLossy | ((pInfo->m_nUpdateTime + nJitter - pObjInfo->m_nLastSentUFull) > (uint32)g_CV_NetMaxUnguaranteedPeriod);
 
 			//write out all the unguaranteed data
-			int nResult = WriteUnguaranteedDataWithAttachments(pObject, pObjInfo, bForce, pInfo->m_cUnguaranteed, k_nUnguaranteedMask);
+			int nResult = WriteUnguaranteedDataWithAttachments(cCurObj.m_pObject, pObjInfo, bForce, pInfo->m_cUnguaranteed, k_nUnguaranteedMask);
 
 			// Jump out if we're sending too much...
 			if (pInfo->m_cUnguaranteed.Size() >= nUpdateSizeRemaining)
@@ -1485,7 +1489,7 @@ void SendAllObjectsUnguaranteed(ObjectMgr *pObjectMgr, UpdateInfo *pInfo)
 
 			// Update the send time
 			if (nResult)
-				UpdateSendTimeWithAttachments(pObject, pInfo, k_nUnguaranteedMask, nResult == 2);
+				UpdateSendTimeWithAttachments(cCurObj.m_pObject, pInfo, k_nUnguaranteedMask, nResult == 2);
 
 			// Next!
 			aObjects.pop();
