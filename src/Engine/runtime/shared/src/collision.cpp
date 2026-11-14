@@ -2342,7 +2342,7 @@ void CollideWithWorld
 			if (bCylinderCollide || bHitStairStep)
 			{
 				static IWorldBlockerData::TNormalList aRestrictNormals;
-				aRestrictNormals.resize(0);	// RETAIL: 0x100079cf
+				aRestrictNormals.clear();
 
 				// If we are standing on something, restrict the player to moving along the plane they're standing on
 				if (bHitStairStep)

@@ -1398,11 +1398,10 @@ bool ModelInstance::GetRenderStyle(uint32 iIndex, CRenderStyle** ppRenderStyle)
  	Model *pModel = GetModelDB();
  	m_NumOBBs = pModel->GetNumOBB();
  	
-	if(m_NumOBBs > 0)
-	{
-		LT_MEM_TRACK_ALLOC(m_ModelOBBs = new ModelOBB [m_NumOBBs], LT_MEM_TYPE_OBJECT); 	
-		pModel->GetCopyOfOBBSet( m_ModelOBBs);
-	}
+	// RETAIL: allocated and copied even when there are none (Lithtech.exe
+	// 0x45e16b, server.dll 0x10025259)
+	LT_MEM_TRACK_ALLOC(m_ModelOBBs = new ModelOBB [m_NumOBBs], LT_MEM_TYPE_OBJECT); 	
+	pModel->GetCopyOfOBBSet( m_ModelOBBs);
  }
 
 // ------------------------------------------------------------------------
