@@ -46,7 +46,8 @@
 // the polygons of one font page
 typedef std::vector<LT_POLYGT4*> CUIPolyVector;
 
-struct CUIPolyString::CUIPolyMap : public std::map<uint8, CUIPolyVector*>
+// (the SDK declares its own, CUIPolyString::CUIPolyMap, for the slots)
+struct CUIPolyMap : public std::map<uint8, CUIPolyVector*>
 {
 };
 
@@ -70,7 +71,10 @@ inline CUIWideFontChar* CUIGetFontChar(CUIFont* pFont, uint16 c)
 }
 
 
-class CUIPolyString_Impl : public CUIPolyString
+// RETAIL: not derived from CUIPolyString: the same virtuals in the same
+// slots, handed to the game as one (its constructor stores only its own
+// vtable and has no EH state for a base, Lithtech.exe 0x562ba0)
+class CUIPolyString_Impl
 {
 	public:
 

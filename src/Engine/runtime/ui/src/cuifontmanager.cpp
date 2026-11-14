@@ -150,7 +150,7 @@ CUIPolyString* CUIFontManager::CreatePolyString(CUIFont* font,
 	}
 
 	CUIPolyString* p;
-	LT_MEM_TRACK_ALLOC(p = new CUIPolyString_Impl,LT_MEM_TYPE_UI);
+	LT_MEM_TRACK_ALLOC(p = (CUIPolyString*)new CUIPolyString_Impl,LT_MEM_TYPE_UI);
 
 	p->SetFont(font);
 	p->SetPosition((int32)x, (int32)y);

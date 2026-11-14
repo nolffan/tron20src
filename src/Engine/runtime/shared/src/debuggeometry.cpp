@@ -217,7 +217,7 @@ void CDIDebugText::Render()
 	// RETAIL: 0x425430: Tron's polystring is made, then placed, given the
 	// font and the text (its char SetText widens it)
 	if (!m_pPolyString && m_Font) {
-		LT_MEM_TRACK_ALLOC(m_pPolyString = new CUIPolyString_Impl,LT_MEM_TYPE_MISC);
+		LT_MEM_TRACK_ALLOC(m_pPolyString = (CUIPolyString*)new CUIPolyString_Impl,LT_MEM_TYPE_MISC);
 		m_pPolyString->SetPosition((int32)m_DPVert.x, (int32)m_DPVert.y);
 		m_pPolyString->SetFont(m_Font);
 		m_pPolyString->SetText(m_Text);

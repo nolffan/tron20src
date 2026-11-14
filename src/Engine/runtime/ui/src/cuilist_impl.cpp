@@ -135,7 +135,7 @@ CUI_RESULTTYPE CUIList_Impl::AddItem(const std::wstring& text, int32 index)
 	if (!m_pFont) return CUIR_NO_FONT;
 
 	// allocate a new string
-	LT_MEM_TRACK_ALLOC(pStr = new CUIPolyString_Impl,LT_MEM_TYPE_UI);
+	LT_MEM_TRACK_ALLOC(pStr = (CUIPolyString*)new CUIPolyString_Impl,LT_MEM_TYPE_UI);
 	pStr->SetFont(m_pFont);
 	pStr->SetText(text);
 	if (!pStr) return CUIR_OUT_OF_MEMORY;
