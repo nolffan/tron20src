@@ -163,6 +163,11 @@ class CAIHuman : public CAI
 		virtual void PreCreateSpecialFX(CHARCREATESTRUCT& cs);
 		virtual void DestroyArmor();
 		virtual void CreateArmor();
+		virtual void RemoveArmor();		// RETAIL: Tron's (retail 0x1016cf20)
+
+		// RETAIL: Tron's CCharacter virtuals (retail 0x10171010, 0x1016d3a0)
+		virtual LTBOOL AllowDiskSpike();
+		virtual void HandleKilledCharacter(CCharacter* pVictim);
 
 		// Handlers
 

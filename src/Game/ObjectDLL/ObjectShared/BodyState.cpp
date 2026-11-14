@@ -135,10 +135,9 @@ void CBodyStateNormal::Update()
 			return;
 		}
 
-		// m_pBody->ReleasePowerups() handles dropping weapons & spears, etc...
-		// Since we don't want that, we use DropInventoryObject() for general inventory.
-		// If you're not using the general inventory, then just ignore this.
-		m_pBody->DropInventoryObject();
+		// RETAIL: no DropInventoryObject here in Tron: the character drops
+		// its core dump as it dies (CCharacter::HandleDead, 0x1009103b, the
+		// shell's only caller)
 		g_pLTServer->RemoveObject( m_pBody->m_hObject );
 		m_pBody = NULL;
 		return;

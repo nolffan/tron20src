@@ -1884,22 +1884,6 @@ bool  Body::CanBeSearched() {return m_pSearch->IsEnabled();}
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	Body::DropInventoryObject
-//
-//	PURPOSE:	ReleasePowerups() handles dropping weapons & spears, etc...
-//				Since we don't want that, we use DropInventoryObject() 
-//				for general inventory. If you're not using the general 
-//				inventory, then just ignore this.
-//
-// ----------------------------------------------------------------------- //
-void Body::DropInventoryObject()
-{
-	// Go through the gameservershell since this is game specific
-	g_pGameServerShell->DropInventoryObject(this);
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	Body::OnLinkBroken
 //
 //	PURPOSE:	Handle case where other object referred to gets deleted.

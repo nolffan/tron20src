@@ -74,6 +74,11 @@ struct ObjectiveMsgInfo
 
 class CPlayerObj : public CCharacter
 {
+	// RETAIL: Tron's game type managers keep the players' scores, flags and
+	// counters themselves (Object.lto 0x10053b80..0x10057220)
+	friend class CLightCycleMatchMgr;
+	friend class CDiscMatchMgr;
+
 	public :
 
 		CPlayerObj();
@@ -436,6 +441,10 @@ class CPlayerObj : public CCharacter
 		void	ChangeToWeapon(const char* pWeaponName);
 
 		virtual void HandleVolumeEnter(AIInformationVolume* pNewVolume);
+
+		// RETAIL: Tron's CCharacter virtuals (retail 0x100864f0, 0x100862e0)
+		virtual LTBOOL AllowDiskSpike();
+		virtual void HandleKilledCharacter(CCharacter* pVictim);
 		virtual float GetVerticalThreshold() const;
 		virtual float GetInfoVerticalThreshold() const;
 

@@ -6239,31 +6239,9 @@ const AIBM_Template* const CAI::GetAITemplate() const
 //	return pTemplate;
 }
 
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	CAI::UpdateRelationButeMgr()
-//              
-//	PURPOSE:	If we can see our target, then preserve any relationship with 
-//				them that we have.  This MAY allow relationships to fail when
-//				they should be preserved if are unable to maintain their 
-//				targets.
-//              
-//----------------------------------------------------------------------------
-void CAI::UpdateRelationMgr()
-{
-	if ( HasTarget() && GetTarget()->IsVisibleFromEye() )
-	{
-		// Find out if the Object is entered in the ObjectRelationMgrs 
-		// database of relation objects.  It should be.
-		CObjectRelationMgr* pORM = CRelationMgr::GetGlobalRelationMgr()->GetObjectRelationMgr(GetTarget()->GetObject());
-		if ( pORM )
-		{
-			m_pRelationMgr->ResetRelationTime(pORM);
-		}
-	}
-
-	CCharacter::UpdateRelationMgr();
-}
+// RETAIL: NOLF2's CAI::UpdateRelationMgr (which kept the relation with a
+// visible target alive) is not in Tron: its CAI uses CCharacter's (retail
+// 0x1008e5d0 in CAI's vtable, slot 0x90)
 
 // ----------------------------------------------------------------------- //
 //

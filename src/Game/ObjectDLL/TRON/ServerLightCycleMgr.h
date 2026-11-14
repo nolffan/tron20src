@@ -97,6 +97,9 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		// The power-ups lying around. RETAIL: 0x10052380 (Remove)
 		void AddPowerup(LightCyclePowerup* pPowerup) { m_collPowerups.push_back(pPowerup); }
 		bool RemovePowerup(HOBJECT hPowerup);
+		// RETAIL: inline: a new world has none yet (CTronGameServerShell's
+		// PreStartWorld, 0x1005cea0; the name is ours)
+		void RemoveAllPowerups() { m_collPowerups.clear(); }
 
 		// RETAIL: 0x10052360 (writes g_pServerLightCycleMgr's flag)
 		static void EnableDialog(bool bEnable);
