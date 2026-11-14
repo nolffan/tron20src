@@ -443,7 +443,8 @@ bool CScreenLightCycleCircuit::IsCircuitCompleted(const Circuit *pCircuit)
 {
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	StringArray::iterator it;
-	for (it = pProfile->m_CompletedCircuits.begin(); it != pProfile->m_CompletedCircuits.end(); ++it)
+	StringArray::iterator itEnd = pProfile->m_CompletedCircuits.end();
+	for (it = pProfile->m_CompletedCircuits.begin(); it != itEnd; ++it)
 	{
 		if (LCNameEquals(*it,pCircuit->sNameKey))
 			break;
@@ -469,7 +470,8 @@ bool CScreenLightCycleCircuit::IsCycleAllowed()
 	GetProfileCycleColor(&pColor,&nStyle,&nShade);
 
 	CircuitStringArray::const_iterator it;
-	for (it = pCircuit->aCyclesAllowed.begin(); it != pCircuit->aCyclesAllowed.end(); ++it)
+	CircuitStringArray::const_iterator itEnd = pCircuit->aCyclesAllowed.end();
+	for (it = pCircuit->aCyclesAllowed.begin(); it != itEnd; ++it)
 	{
 		if (LCNameEquals(*it,pColor->szName))
 			break;
@@ -484,7 +486,8 @@ bool CScreenLightCycleCircuit::IsCycleAllowed()
 	if (!pProfile) return false;
 
 	StringArray::iterator itColor;
-	for (itColor = pProfile->m_UnlockedCycleColors.begin(); itColor != pProfile->m_UnlockedCycleColors.end(); ++itColor)
+	StringArray::iterator itColorEnd = pProfile->m_UnlockedCycleColors.end();
+	for (itColor = pProfile->m_UnlockedCycleColors.begin(); itColor != itColorEnd; ++itColor)
 	{
 		if (LCNameEquals(*itColor,pColor->szName))
 			break;

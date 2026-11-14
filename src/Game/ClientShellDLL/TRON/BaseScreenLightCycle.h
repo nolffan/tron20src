@@ -49,7 +49,8 @@ inline bool LCNameEquals(const std::string &sName, const char *pszName)
 
 inline bool LCNameEquals(const std::string &sName, const std::string &sOther)
 {
-	return (sName.size() == sOther.size() && !_memicmp(sName.data(),sOther.data(),sName.size()));
+	uint32 nLen = sName.size();
+	return (nLen == sOther.size() && !_memicmp(sName.data(),sOther.data(),nLen));
 }
 
 class CBaseScreenLightCycle : public CBaseScreen

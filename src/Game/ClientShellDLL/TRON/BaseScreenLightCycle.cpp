@@ -663,7 +663,8 @@ bool CBaseScreenLightCycle::IsCycleColorLocked(const char *pszColor)
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	StringArray::iterator it;
-	for (it = pProfile->m_UnlockedCycleColors.begin(); it != pProfile->m_UnlockedCycleColors.end(); ++it)
+	StringArray::iterator itEnd = pProfile->m_UnlockedCycleColors.end();
+	for (it = pProfile->m_UnlockedCycleColors.begin(); it != itEnd; ++it)
 	{
 		if (LCNameEquals(*it,pszColor))
 			break;

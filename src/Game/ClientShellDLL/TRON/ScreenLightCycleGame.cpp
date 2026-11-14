@@ -340,7 +340,8 @@ bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 	const char *pszName = g_aszLCPowerupNames[nPowerup];
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	StringArray::iterator it;
-	for (it = pProfile->m_UnlockedPowerups.begin(); it != pProfile->m_UnlockedPowerups.end(); ++it)
+	StringArray::iterator itEnd = pProfile->m_UnlockedPowerups.end();
+	for (it = pProfile->m_UnlockedPowerups.begin(); it != itEnd; ++it)
 	{
 		if (LCNameEquals(*it,pszName))
 			break;
