@@ -1,9 +1,13 @@
 // s_dx8.cpp: the LithTech sound driver for DirectSound 8 -- the engine's
 // SndDrv.dll -- reconstructed from the retail No One Lives Forever 2 1.3
-// binary. Its classes and code follow Monolith's later revision of the same
-// driver (the Jupiter EX engine's sound/src/sys/s_dx8), trimmed and corrected
-// function by function against the retail code: where the two differ, the
-// retail bytes decided. Retail addresses are cited as 0x1000xxxx.
+// binary (nolf2src's), then brought to Tron 2.0's (1.030). Its classes and
+// code follow Monolith's later revision of the same driver (the Jupiter EX
+// engine's sound/src/sys/s_dx8), trimmed and corrected function by function
+// against the retail code: where the two differ, the retail bytes decided.
+// Retail addresses are cited as 0x1000xxxx, Tron 2.0's
+// (out/reference/SndDrv.dll). Tron's additions: EAX 3.0 (the EAX 2.0
+// functions hand over to it when the card has it), the parameter fades and
+// the thread that steps them, and the missing MP3 codec's message box.
 
 #include "s_dx8.h"
 #include "eax.h"
@@ -14,9 +18,20 @@
 
 #include "counter.h"
 
+// RETAIL: EAX 3.0's property sets (0x1000c168, 0x1000c178)
+extern "C" const GUID DSPROPSETID_EAX30_ListenerProperties =
+	{ 0xa8fa6882, 0xb476, 0x11d3, { 0xbd, 0xb9, 0x00, 0xc0, 0xf0, 0x2d, 0xdf, 0x87 } };
+extern "C" const GUID DSPROPSETID_EAX30_BufferProperties =
+	{ 0xa8fa6881, 0xb476, 0x11d3, { 0xbd, 0xb9, 0x00, 0xc0, 0xf0, 0x2d, 0xdf, 0x87 } };
+
 CDx8SoundSys* g_pSoundSys = NULL;
 
 FILE* g_pLogFile = NULL;
+
+// RETAIL: Tron's own: the parameter thread (SoundParamThread), which
+// CDx8SoundSys::Init starts and Term ends (0x1002f888, 0x1002f88c)
+DWORD g_dwSoundParamThreadId = 0;
+HANDLE g_hSoundParamThread = NULL;
 
 #ifdef _DEBUG
 #ifdef _LOG_OUTPUT
@@ -799,6 +814,8 @@ CSample::CSample( )
 {
 	memset( &m_userData, 0, sizeof( m_userData ));
 	m_bLoopBlock = false;
+	m_bTronUnknown91 = false;
+	m_pSoundParam = NULL;
 	m_lnkLoopNotify.Init2( this );
 	Reset( );
 }
@@ -829,6 +846,7 @@ void CheckLinkList( )
 
 void CSample::Reset( )
 {
+	m_pDSBuffer8 = NULL;
 	m_pDSBuffer = NULL;
 	m_pSoundData = NULL;
 	m_uiSoundDataLen = 0;
@@ -890,15 +908,12 @@ bool CSample::Init( HRESULT& hResult, LPDIRECTSOUND pDS, uint32 uiNumSamples,
 		m_dsbDesc.dwFlags &= ~DSBCAPS_CTRLFX;
 	}
 
-	LPDIRECTSOUNDBUFFER pDSBuffer;
-
-	hResult = pDS->CreateSoundBuffer( &m_dsbDesc, &pDSBuffer, NULL );
+	hResult = pDS->CreateSoundBuffer( &m_dsbDesc, &m_pDSBuffer, NULL );
 
 	if( FAILED(hResult))
 		return false;
 
-	hResult = pDSBuffer->QueryInterface(IID_IDirectSoundBuffer8, (void**)&m_pDSBuffer);
-	pDSBuffer->Release();
+	hResult = m_pDSBuffer->QueryInterface(IID_IDirectSoundBuffer8, (void**)&m_pDSBuffer8);
 	if( FAILED(hResult))
 		return false;
 
@@ -1207,7 +1222,23 @@ bool CSample::Init( HRESULT& hResult, LPDIRECTSOUND pDS, uint32 uiNumSamples,
 
 #ifdef USE_EAX20_HARDWARE_FILTERS
 
-	if ( g_pSoundSys->SupportsEAX20Filter( ))
+	if ( g_pSoundSys->SupportsEAX30Filter( ))
+	{
+
+		if ( b3DBuffer )
+		{
+			LPKSPROPERTYSET pKSPropertySet = NULL;
+			hResult = m_pDSBuffer->QueryInterface(IID_IKsPropertySet, (LPVOID *)&pKSPropertySet);
+			if ( hResult != DS_OK )
+				return false;
+
+			hResult = pKSPropertySet->Set(DSPROPSETID_EAX30_BufferProperties, DSPROPERTY_EAX30BUFFER_DIRECT, NULL, 0, (void*)&g_iCurrentEAXDirectSetting, sizeof(unsigned long));
+			if ( hResult != DS_OK )
+				return false;
+			pKSPropertySet->Release();
+		}
+	}
+	else if ( g_pSoundSys->SupportsEAX20Filter( ))
 	{
 
 		if ( b3DBuffer )
@@ -1231,6 +1262,9 @@ bool CSample::Init( HRESULT& hResult, LPDIRECTSOUND pDS, uint32 uiNumSamples,
 void CSample::Term( )
 {
 	dl_Remove( &m_lnkLoopNotify );
+
+ 	if( m_pDSBuffer8 != NULL )
+		m_pDSBuffer8->Release( );
 
  	if( m_pDSBuffer != NULL )
 		m_pDSBuffer->Release( );
@@ -1576,38 +1610,29 @@ CStream::~CStream( )
 
 void CStream::ReadStreamIntoBuffer( CDx8SoundSys* pSoundSys, BYTE* pBuffer, int32 nBufferSize )
 {
-	if( IsLooping( ))
-{
-		uint32 nTotalBytesRead = 0;
-
-		while( 1 )
+	// RETAIL: Tron reads first and only then, if the data ran out, loops
+	// back to the start or fills the rest with silence (0x10002ee0)
+	int32 nTotalBytesRead = pSoundSys->ReadStream( m_pWaveFile, pBuffer, nBufferSize );
+	if( nTotalBytesRead < nBufferSize )
 	{
-
-			BYTE* pBufferFill = pBuffer + nTotalBytesRead;
-			uint32 nBytesToRead = nBufferSize - nTotalBytesRead;
-			uint32 nBytesRead = pSoundSys->ReadStream( m_pWaveFile, pBufferFill, nBytesToRead );
-
-			nTotalBytesRead += nBytesRead;
-
-			if( nTotalBytesRead >= ( uint32 )nBufferSize )
+		if( !IsLooping( ))
 		{
-				break;
-			}
-
-			m_pWaveFile->Cue( );
+			BYTE nZeroValue = (BYTE)(m_pWaveFile->m_pwfmt->wBitsPerSample == 8 ? 128 : 0 );
+			BYTE* pBufferEnd = pBuffer + nTotalBytesRead;
+			uint32 nBytesToZero = nBufferSize - nTotalBytesRead;
+			FillMemory( pBufferEnd, nBytesToZero, nZeroValue );
 		}
-		}
-
 		else
 		{
-		int32 uiBytesRead = pSoundSys->ReadStream( m_pWaveFile, pBuffer, nBufferSize );
-		if( uiBytesRead < nBufferSize )
+			do
 			{
+				m_pWaveFile->Cue( );
 
-			BYTE nZeroValue = (BYTE)(m_pWaveFile->m_pwfmt->wBitsPerSample == 8 ? 128 : 0 );
-			BYTE* pBufferEnd = pBuffer + uiBytesRead;
-			uint32 nBytesToZero = nBufferSize - uiBytesRead;
-			FillMemory( pBufferEnd, nBytesToZero, nZeroValue );
+				BYTE* pBufferFill = pBuffer + nTotalBytesRead;
+				uint32 nBytesToRead = nBufferSize - nTotalBytesRead;
+				nTotalBytesRead += pSoundSys->ReadStream( m_pWaveFile, pBufferFill, nBytesToRead );
+			}
+			while( nTotalBytesRead < nBufferSize );
 		}
 	}
 }
@@ -1766,6 +1791,74 @@ BOOL CStream::SetCurrentPosition( DWORD dwStartOffset )
 	return TRUE;
 }
 
+// RETAIL: Tron's own (0x10003390; the name is ours): one step of a
+// parameter fade, the value along the line from m_fStart to m_fEnd for the
+// time since m_nStartTime, or m_fEnd once m_nDuration has passed (once
+// more: then not again until it is set up anew). A fade of type 0 sets the
+// sample's playback frequency: its own rate times the value, where
+// DirectSound takes it.
+void UpdateSoundParam( SSoundParam* pParam )
+{
+	float fValue;
+	uint32 nElapsed = timeGetTime( ) - pParam->m_nStartTime;
+
+	if( nElapsed > pParam->m_nDuration )
+	{
+		if( pParam->m_fCurrent == pParam->m_fEnd )
+			return;
+
+		fValue = pParam->m_fEnd;
+	}
+	else
+	{
+		fValue = ( float )nElapsed / pParam->m_nDuration * ( pParam->m_fEnd - pParam->m_fStart ) + pParam->m_fStart;
+	}
+
+	if( pParam->m_nType == 0 )
+	{
+		CSample* pSample = pParam->m_pSample;
+		uint32 nFrequency = ( uint32 )( pSample->m_waveFormat.nSamplesPerSec * fValue );
+		if( nFrequency <= 200000 && nFrequency >= DSBFREQUENCY_MIN )
+			pSample->m_pDSBuffer->SetFrequency( nFrequency );
+	}
+
+	pParam->m_fCurrent = fValue;
+}
+
+// RETAIL: Tron's own (0x10003430; the name is ours): the parameter thread,
+// which steps the active fades every 20 ms until it is sent WM_QUIT
+// (CDx8SoundSys::Term). It locks them with the mutex "SoundParamMutex",
+// which nobody creates (docs/RETAIL_BUGS.md).
+unsigned long _stdcall SoundParamThread( void* pUserData )
+{
+	CDx8SoundSys* pSoundSys = ( CDx8SoundSys* )pUserData;
+	bool bQuit = false;
+	HANDLE hMutex = OpenMutex( MUTEX_ALL_ACCESS, FALSE, "SoundParamMutex" );
+
+	do
+	{
+		Sleep( 20 );
+
+		WaitForSingleObject( hMutex, INFINITE );
+		for( int i = 0; i < MAX_SOUND_PARAMS; i++ )
+		{
+			if( pSoundSys->m_aSoundParams[i].m_bActive )
+				UpdateSoundParam( &pSoundSys->m_aSoundParams[i] );
+		}
+		ReleaseMutex( hMutex );
+
+		MSG msg;
+		while( PeekMessage( &msg, NULL, 0, 0, PM_REMOVE ))
+		{
+			if( msg.message == WM_QUIT )
+				bQuit = true;
+		}
+	}
+	while( !bQuit );
+
+	return 0;
+}
+
 #define NUM_PLAY_NOTIFICATIONS  16
 #define STREAM_BUF_SECONDS	3
 
@@ -1784,7 +1877,7 @@ uint32 CDx8SoundSys::Thread_Func()
 
 	while (WaitForMultipleObjects(3, aEvents, FALSE, INFINITE ) != WAIT_OBJECT_0)
 	{
-		uint32 nTheadedTickCounts;
+		uint32 nTheadedTickCounts = 0;
 
 
 		if( WaitForSingleObject( m_cEvent_StreamingActive.GetEvent( ), 0 ) == WAIT_OBJECT_0 )
@@ -1838,11 +1931,10 @@ uint32 CDx8SoundSys::Thread_Func()
 				m_cEvent_SampleLoopActive.Clear();
 		}
 
-		// The thread's ticks are not counted in the Final build: the lock is
-		// taken and released with nothing between (0x100032a6), and
-		// m_nThreadedTickCounts stays 0.
+		// RETAIL: Tron's Final build counts the thread's ticks (0x1000372e)
 		{
 			CWinSync_CSAuto cThreadTickCountsProtection(m_cCS_ThreadedTickCounts);
+			m_nThreadedTickCounts += nTheadedTickCounts;
 		}
 
 		if( WaitForSingleObject( m_cEvent_Shutdown.GetEvent( ), 10 ) == WAIT_OBJECT_0 )
@@ -1851,6 +1943,13 @@ uint32 CDx8SoundSys::Thread_Func()
 	}
 
 	return 0;
+}
+
+// RETAIL: 0x10003790 (counter.h), after Thread_Func as retail has it
+CountAdder::~CountAdder()
+{
+	uint32 nCount = cnt_EndCounterFinal(m_Counter);
+	*m_pNum += nCount;
 }
 
 #define HANDLE_DS_ERROR( hr, val )
@@ -1900,6 +1999,7 @@ void CDx8SoundSys::Reset( )
 {
 	m_bCOMInitialized = false;
 	m_bLocked = false;
+	m_bSoundParamThreadRunning = true;
 	m_pDirectSound = NULL;
 
 	m_pDSPrimaryBuffer = NULL;
@@ -1918,8 +2018,10 @@ void CDx8SoundSys::Reset( )
 	m_pDecompressedBuffer = NULL;
 	m_iCur3DProvider = SOUND3DPROVIDERID_NONE;
 	m_dwMinHardwareBuffers = 0;
+	m_hSoundParamMutex = NULL;
 #ifdef USE_EAX20_HARDWARE_FILTERS
 	m_bSupportsEAX20Filtering = false;
+	m_bSupportsEAX30Filtering = false;
 #endif
 	m_pKSPropertySet = NULL;
 #ifdef USE_EAX20_HARDWARE_FILTERS
@@ -1949,6 +2051,24 @@ static bool QueryEAXSupport( IKsPropertySet& ksPropertySet, U32 uiQuery )
 {
 	ULONG ulSupport = 0;
 	HRESULT hr = ksPropertySet.QuerySupport(DSPROPSETID_EAX_ListenerProperties, uiQuery, &ulSupport);
+	if( FAILED( hr ))
+		return false;
+
+	if ( (ulSupport&(KSPROPERTY_SUPPORT_GET|KSPROPERTY_SUPPORT_SET)) == (KSPROPERTY_SUPPORT_GET|KSPROPERTY_SUPPORT_SET) )
+	{
+
+		return true;
+	}
+
+	return false;
+}
+
+// RETAIL: Tron's own: QueryEAXSupport for EAX 3.0's listener (inlined in
+// InitEAX20Filtering, 0x10003b7c)
+static bool QueryEAX30Support( IKsPropertySet& ksPropertySet, U32 uiQuery )
+{
+	ULONG ulSupport = 0;
+	HRESULT hr = ksPropertySet.QuerySupport(DSPROPSETID_EAX30_ListenerProperties, uiQuery, &ulSupport);
 	if( FAILED( hr ))
 		return false;
 
@@ -2011,10 +2131,23 @@ bool CDx8SoundSys::GetPropertySetForEAX( )
 void CDx8SoundSys::InitEAX20Filtering()
 {
 
-	m_bSupportsEAX20Filtering = false;
+	m_bSupportsEAX30Filtering = false;
 
 	if( !GetPropertySetForEAX( ))
 		return;
+
+	// RETAIL: Tron's own: EAX 3.0 first (0x10003b7c)
+	m_bSupportsEAX30Filtering = QueryEAX30Support( *m_pKSPropertySet, DSPROPERTY_EAX30LISTENER_ALLPARAMETERS );
+	if( m_bSupportsEAX30Filtering )
+	{
+		EAX30LISTENERPROPERTIES props;
+		props.lRoom = -10000;
+		m_hResult = m_pKSPropertySet->Set(DSPROPSETID_EAX30_ListenerProperties, DSPROPERTY_EAX30LISTENER_ROOM, NULL, 0, (void*)&props.lRoom, sizeof(FLOAT));
+		if ( m_hResult != DS_OK )
+			m_bSupportsEAX30Filtering = false;
+	}
+
+	m_bSupportsEAX20Filtering = false;
 
 	bool bOk = true;
 
@@ -2035,7 +2168,8 @@ void CDx8SoundSys::InitEAX20Filtering()
 	bOk = bOk && QueryEAXSupport( *m_pKSPropertySet, DSPROPERTY_EAXLISTENER_AIRABSORPTIONHF );
 	bOk = bOk && QueryEAXSupport( *m_pKSPropertySet, DSPROPERTY_EAXBUFFER_DIRECT );
 
-	if( bOk )
+	// RETAIL: with EAX 3.0 the room is not set again (0x10003e86)
+	if( bOk && !m_bSupportsEAX30Filtering )
 	{
 
 		EAXLISTENERPROPERTIES props;
@@ -2147,6 +2281,10 @@ bool CDx8SoundSys::Init( )
 	m_pcLastError = LastError( );
 	DS_CHECK
 
+	g_hSoundParamThread = CreateThread( NULL, 0, SoundParamThread, (void*) this, 0, &g_dwSoundParamThreadId);
+	m_pcLastError = LastError( );
+	DS_CHECK
+
 	g_pSoundSys = this;
 
 	return true;
@@ -2180,6 +2318,11 @@ void CDx8SoundSys::Term( )
 		m_pStreams = m_pStreams->m_pNext;
 		delete pStream;
 	}
+
+	PostThreadMessage( g_dwSoundParamThreadId, WM_QUIT, 0, 0 );
+	WaitForSingleObject( g_hSoundParamThread, INFINITE );
+	CloseHandle( g_hSoundParamThread );
+	CloseHandle( m_hSoundParamMutex );
 
 	LOG_CLOSE;
 
@@ -2652,6 +2795,9 @@ S32	CDx8SoundSys::Startup( void )
 	mmResult = acmDriverOpen( &m_hAcmPCMDriver, m_hAcmPCMDriverId, 0 );
 	if ( mmResult != 0 )
   	{
+		// RETAIL: Tron shows this in the Final build too (0x10005083),
+		// though it is the PCM converter that is missing
+  		MessageBox( NULL, "Sound System Startup - Missing .mp3 codec", NULL, MB_OK );
    		return LS_ERROR;
   	}
 
@@ -2866,6 +3012,10 @@ S32	CDx8SoundSys::DigitalHandleReacquire( LHDIGDRIVER hDriver )
 bool CDx8SoundSys::SetEAX20Filter( bool bEnable, LTSOUNDFILTERDATA* pFilterData )
 {
 
+	// RETAIL: Tron's own: EAX 3.0 takes over (0x10005588)
+	if( m_bSupportsEAX30Filtering )
+		return SetEAX30Filter( bEnable, pFilterData );
+
 	if( !m_bSupportsEAX20Filtering )
 		return false;
 
@@ -2985,6 +3135,130 @@ bool CDx8SoundSys::SetEAX20Filter( bool bEnable, LTSOUNDFILTERDATA* pFilterData 
 	return true;
 }
 
+// RETAIL: Tron's own (0x100057e0): SetEAX20Filter for EAX 3.0's listener
+// properties. The disabled branch's room is a variable of its own, at the
+// frame's first slot (0x10005850)
+bool CDx8SoundSys::SetEAX30Filter( bool bEnable, LTSOUNDFILTERDATA* pFilterData )
+{
+
+	if( !m_bSupportsEAX30Filtering )
+		return false;
+
+	LTFILTERREVERB* pLTReverb;
+
+	if ( pFilterData == NULL )
+		return false;
+
+	if ( pFilterData->uiFilterType != FilterReverb )
+		return false;
+
+	pLTReverb = (LTFILTERREVERB*) pFilterData->pSoundFilter;
+
+	if( !m_pKSPropertySet )
+		return false;
+
+	if ( !bEnable )
+	{
+		long lRoom = -10000;
+		m_hResult = m_pKSPropertySet->Set(DSPROPSETID_EAX30_ListenerProperties, DSPROPERTY_EAX30LISTENER_ROOM, NULL, 0, (void*)&lRoom, sizeof(FLOAT));
+		char* m_pcLastError = LastError( );
+		if ( m_hResult != DS_OK )
+		{
+			return false;
+		}
+		g_iCurrentEAXDirectSetting = pLTReverb->lDirect = 0;
+	}
+	else
+	{
+		EAX30LISTENERPROPERTIES props;
+		uint32 uiFilterParamFlags;
+
+		uiFilterParamFlags = pFilterData->pSoundFilter->uiFilterParamFlags;
+		if( uiFilterParamFlags & SET_REVERB_ENVIRONMENT )
+		{
+			unsigned long nEnvironment = pLTReverb->lEnvironment;
+
+			m_hResult = m_pKSPropertySet->Set(DSPROPSETID_EAX30_ListenerProperties, DSPROPERTY_EAX30LISTENER_ENVIRONMENT, NULL, 0, (void*)&nEnvironment, sizeof(nEnvironment));
+			m_pcLastError = LastError( );
+			if ( m_hResult != DS_OK )
+			{
+				return false;
+			}
+		}
+
+		unsigned long uPropSize;
+		m_hResult = m_pKSPropertySet->Get(DSPROPSETID_EAX30_ListenerProperties, DSPROPERTY_EAX30LISTENER_ALLPARAMETERS, NULL, 0, (void*)&props, sizeof(EAX30LISTENERPROPERTIES), &uPropSize);
+		char* m_pcLastError = LastError( );
+		if ( m_hResult != DS_OK )
+		{
+			return false;
+		}
+
+		if ( uiFilterParamFlags & SET_REVERB_ROOM )
+		{
+			props.lRoom = pLTReverb->lRoom;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_ROOMHF )
+		{
+			props.lRoomHF = pLTReverb->lRoomHF;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_ROOMROLLOFFFACTOR )
+		{
+			props.flRoomRolloffFactor = pLTReverb->fRoomRolloffFactor;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_DECAYTIME )
+		{
+			props.flDecayTime = pLTReverb->fDecayTime;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_DECAYHFRATIO )
+		{
+			props.flDecayHFRatio = pLTReverb->fDecayHFRatio;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_REFLECTIONS )
+		{
+			props.lReflections = pLTReverb->lReflections;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_REFLECTIONSDELAY )
+		{
+			props.flReflectionsDelay = pLTReverb->fReflectionsDelay;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_REVERB )
+		{
+			props.lReverb = pLTReverb->lReverb;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_REVERBDELAY )
+		{
+			props.flReverbDelay = pLTReverb->fReverbDelay;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_SIZE )
+		{
+			props.flEnvironmentSize = pLTReverb->fSize;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_DIFFUSION )
+		{
+			props.flEnvironmentDiffusion = pLTReverb->fDiffusion;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_AIRABSORPTIONHF )
+		{
+			props.flAirAbsorptionHF = pLTReverb->fAirAbsorptionHF;
+		}
+		if ( uiFilterParamFlags & SET_REVERB_DIRECT )
+		{
+
+			g_iCurrentEAXDirectSetting = pLTReverb->lDirect;
+		}
+
+		m_hResult = m_pKSPropertySet->Set(DSPROPSETID_EAX30_ListenerProperties, DSPROPERTY_EAX30LISTENER_ALLPARAMETERS, NULL, 0, (void*)&props, sizeof(EAX30LISTENERPROPERTIES));
+		m_pcLastError = LastError( );
+		if ( m_hResult != DS_OK )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool CDx8SoundSys::SetEAX20BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDATA* pFilterData )
 {
 	uint32 uiFilterParamFlags;
@@ -2992,6 +3266,10 @@ bool CDx8SoundSys::SetEAX20BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDA
 	LTFILTERREVERB* pLTReverb;
 	C3DSample* p3DSample = (C3DSample*) h3DSample;
 	CSample* pSample = &p3DSample->m_sample;
+
+	// RETAIL: Tron's own: EAX 3.0 takes over (0x10005a2c)
+	if( m_bSupportsEAX30Filtering )
+		return SetEAX30BufferSettings( h3DSample, pFilterData );
 
 	if( !m_bSupportsEAX20Filtering )
 		return false;
@@ -3032,11 +3310,233 @@ bool CDx8SoundSys::SetEAX20BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDA
 	return true;
 }
 
+// RETAIL: Tron's own (0x10005b50): SetEAX20BufferSettings for EAX 3.0, with
+// the direct level in a variable of its own (no frame)
+bool CDx8SoundSys::SetEAX30BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDATA* pFilterData )
+{
+	uint32 uiFilterParamFlags;
+	long lDirect;
+	LTFILTERREVERB* pLTReverb;
+	C3DSample* p3DSample = (C3DSample*) h3DSample;
+	CSample* pSample = &p3DSample->m_sample;
+
+	if( !m_bSupportsEAX30Filtering )
+		return false;
+
+	if ( pSample == NULL )
+		return false;
+
+	if ( pSample->m_pDSBuffer == NULL )
+		return false;
+
+	if ( pFilterData == NULL )
+		return false;
+
+	if ( pFilterData->uiFilterType != FilterReverb )
+		return false;
+
+	uiFilterParamFlags = pFilterData->pSoundFilter->uiFilterParamFlags;
+	pLTReverb = (LTFILTERREVERB*) pFilterData->pSoundFilter;
+
+	LPKSPROPERTYSET pKSPropertySet = NULL;
+  	m_hResult = pSample->m_pDSBuffer->QueryInterface(IID_IKsPropertySet, (LPVOID *)&pKSPropertySet);
+	char* m_pcLastError = LastError( );
+	if ( m_hResult != DS_OK )
+		return false;
+
+	if ( uiFilterParamFlags & SET_REVERB_DIRECT )
+	{
+
+		lDirect = pLTReverb->lDirect;
+		m_hResult = pKSPropertySet->Set(DSPROPSETID_EAX30_BufferProperties, DSPROPERTY_EAX30BUFFER_DIRECT, NULL, 0, (void*)&lDirect, sizeof(unsigned long));
+		char* m_pcLastError = LastError( );
+		if ( m_hResult != DS_OK )
+			return false;
+
+		pKSPropertySet->Release();
+	}
+
+	return true;
+}
+
 bool CDx8SoundSys::SupportsEAX20Filter()
 {
 	return m_bSupportsEAX20Filtering;
 }
+bool CDx8SoundSys::SupportsEAX30Filter()
+{
+	return m_bSupportsEAX30Filtering;
+}
 #endif
+
+// RETAIL: Tron's own (0x10005c60..0x10005fa0), the parameter fades. Each
+// takes m_hSoundParamMutex, which is never opened (docs/RETAIL_BUGS.md).
+
+bool CDx8SoundSys::TronUnknownVirtual23( LHSAMPLE hS, bool bActive )
+{
+	bool bResult = true;
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	CSample* pSample = ( CSample* )hS;
+	if( pSample->m_pSoundParam )
+		pSample->m_pSoundParam->m_bActive = bActive;
+	else
+		bResult = false;
+
+	ReleaseMutex( m_hSoundParamMutex );
+	return bResult;
+}
+
+bool CDx8SoundSys::TronUnknownVirtual24( LH3DSAMPLE hS, bool bActive )
+{
+	bool bResult = true;
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	C3DSample* p3DSample = ( C3DSample* )hS;
+	if( p3DSample->m_sample.m_pSoundParam )
+		p3DSample->m_sample.m_pSoundParam->m_bActive = bActive;
+	else
+		bResult = false;
+
+	ReleaseMutex( m_hSoundParamMutex );
+	return bResult;
+}
+
+// a fade for the sample: its own, or the first free one of m_aSoundParams
+bool CDx8SoundSys::TronUnknownVirtual26( LHSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration )
+{
+	bool bResult = true;
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	CSample* pSample = ( CSample* )hS;
+	SSoundParam* pParam = pSample->m_pSoundParam;
+	if( pParam == NULL )
+	{
+		int i;
+		for( i = 0; i < MAX_SOUND_PARAMS; i++ )
+		{
+			if( !m_aSoundParams[i].m_bActive )
+				break;
+		}
+
+		if( i == MAX_SOUND_PARAMS )
+		{
+			bResult = false;
+			goto done;
+		}
+
+		pParam = &m_aSoundParams[i];
+	}
+
+	pParam->m_bActive = true;
+	pParam->m_nStartTime = timeGetTime( );
+	pParam->m_nDuration = nDuration;
+	pParam->m_fCurrent = -1.0f;
+	pParam->m_fStart = fStart;
+	pParam->m_fEnd = fEnd;
+	pParam->m_nType = nType;
+	pParam->m_pSample = pSample;
+	pSample->m_pSoundParam = pParam;
+
+done:
+	ReleaseMutex( m_hSoundParamMutex );
+	return bResult;
+}
+
+bool CDx8SoundSys::TronUnknownVirtual28( LH3DSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration )
+{
+	bool bResult = true;
+	CSample* pSample = &( ( C3DSample* )hS )->m_sample;
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	SSoundParam* pParam = pSample->m_pSoundParam;
+	if( pParam == NULL )
+	{
+		int i;
+		for( i = 0; i < MAX_SOUND_PARAMS; i++ )
+		{
+			if( !m_aSoundParams[i].m_bActive )
+				break;
+		}
+
+		if( i == MAX_SOUND_PARAMS )
+		{
+			bResult = false;
+			goto done;
+		}
+
+		pParam = &m_aSoundParams[i];
+	}
+
+	pParam->m_bActive = true;
+	pParam->m_nStartTime = timeGetTime( );
+	pParam->m_nDuration = nDuration;
+	pParam->m_fCurrent = -1.0f;
+	pParam->m_fStart = fStart;
+	pParam->m_fEnd = fEnd;
+	pParam->m_nType = nType;
+	pParam->m_pSample = pSample;
+	pSample->m_pSoundParam = pParam;
+
+done:
+	ReleaseMutex( m_hSoundParamMutex );
+	return bResult;
+}
+
+// a fade from where the sample's is now (from 1 if it has none)
+bool CDx8SoundSys::TronUnknownVirtual25( LHSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration )
+{
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	CSample* pSample = ( CSample* )hS;
+	if( pSample->m_pSoundParam )
+	{
+		float fCurrent = pSample->m_pSoundParam->m_fCurrent;
+		ReleaseMutex( m_hSoundParamMutex );
+		return TronUnknownVirtual26( hS, nType, fCurrent, fEnd, nDuration );
+	}
+
+	ReleaseMutex( m_hSoundParamMutex );
+	return TronUnknownVirtual26( hS, nType, 1.0f, fEnd, nDuration );
+}
+
+bool CDx8SoundSys::TronUnknownVirtual27( LH3DSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration )
+{
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+
+	C3DSample* p3DSample = ( C3DSample* )hS;
+	if( p3DSample->m_sample.m_pSoundParam )
+	{
+		float fCurrent = p3DSample->m_sample.m_pSoundParam->m_fCurrent;
+		ReleaseMutex( m_hSoundParamMutex );
+		return TronUnknownVirtual28( hS, nType, fCurrent, fEnd, nDuration );
+	}
+
+	ReleaseMutex( m_hSoundParamMutex );
+	return TronUnknownVirtual28( hS, nType, 1.0f, fEnd, nDuration );
+}
+
+// the parameter thread suspended (false) or resumed
+void CDx8SoundSys::TronUnknownVirtual29( bool bRun )
+{
+	if( !bRun )
+	{
+		if( m_bSoundParamThreadRunning )
+		{
+			SuspendThread( g_hSoundParamThread );
+			m_bSoundParamThreadRunning = false;
+		}
+	}
+	else
+	{
+		if( !m_bSoundParamThreadRunning )
+		{
+			ResumeThread( g_hSoundParamThread );
+			m_bSoundParamThreadRunning = true;
+		}
+	}
+}
+
 
 void CDx8SoundSys::Set3DProviderMinBuffers( U32 uiMinBuffers )
 {
@@ -3281,8 +3781,15 @@ LH3DSAMPLE CDx8SoundSys::Allocate3DSampleHandle( LHPROVIDER hLib )
 
 	p3DSample->Init( m_hResult, m_pDirectSound, m_waveFormat.nSamplesPerSec, &pSample->m_waveFormat, NULL );
 
+	// RETAIL: Tron's own: a sample that failed is freed (0x100068c8)
+	if( FAILED( m_hResult ))
+	{
+		delete p3DSample;
+		return NULL;
+	}
+
 #ifdef USE_EAX20_HARDWARE_FILTERS
-	if( m_bSupportsEAX20Filtering && !m_pKSPropertySet )
+	if( ( m_bSupportsEAX20Filtering || m_bSupportsEAX30Filtering ) && !m_pKSPropertySet )
 #else
 	if( !m_pKSPropertySet )
 #endif
@@ -3321,6 +3828,10 @@ void CDx8SoundSys::Stop3DSample( LH3DSAMPLE hS )
 	p3DSample->m_status = LS_STOPPED;
 
 	SetSampleNotify( &p3DSample->m_sample, false );
+
+	// RETAIL: Tron's own: the sample's parameter fade ends with it
+	EndSoundParam( &p3DSample->m_sample );
+
 	char* m_pcLastError = LastError( );
 }
 
@@ -3366,6 +3877,10 @@ void CDx8SoundSys::End3DSample( LH3DSAMPLE hS )
 	p3DSample->m_status = LS_DONE;
 
 	SetSampleNotify( &p3DSample->m_sample, false );
+
+	// RETAIL: Tron's own: the sample's parameter fade ends with it
+	EndSoundParam( &p3DSample->m_sample );
+
 	char* m_pcLastError = LastError( );
 }
 
@@ -3705,6 +4220,13 @@ LHSAMPLE CDx8SoundSys::AllocateSampleHandle( LHDIGDRIVER hDig )
 
 	pSample->Init( m_hResult, m_pDirectSound, m_waveFormat.nSamplesPerSec, false );
 
+	// RETAIL: Tron's own: a sample that failed is freed (0x10007a0a)
+	if( FAILED( m_hResult ))
+	{
+		delete pSample;
+		return NULL;
+	}
+
 	SetSampleNotify( pSample, true );
 
 	return pSample;
@@ -3758,6 +4280,10 @@ void CDx8SoundSys::StopSample( LHSAMPLE hS )
 	m_hResult = pSample->Stop( true );
 
 	SetSampleNotify( pSample, false );
+
+	// RETAIL: Tron's own: the sample's parameter fade ends with it
+	EndSoundParam( pSample );
+
 	char* m_pcLastError = LastError( );
 }
 
@@ -3799,6 +4325,10 @@ void CDx8SoundSys::EndSample( LHSAMPLE hS )
 	m_hResult = pSample->Stop( true );
 
 	SetSampleNotify( pSample, false );
+
+	// RETAIL: Tron's own: the sample's parameter fade ends with it
+	EndSoundParam( pSample );
+
 	char* m_pcLastError = LastError( );
 }
 

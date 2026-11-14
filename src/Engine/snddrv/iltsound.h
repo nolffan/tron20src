@@ -1,8 +1,10 @@
 // iltsound.h: ILTSoundSys, the engine's interface to a sound driver, as the
-// NOLF2 engine (Lithtech.exe) calls it and SndDrv.dll implements it. The
-// slot order is the retail driver's vtable's (0x1000b194, 104 slots; the
-// abstract table at 0x1000b334 has 103): Monolith's later revision of this
-// header less CommitDeferred.
+// engine (Lithtech.exe) calls it and SndDrv.dll implements it. The slot
+// order is Tron 2.0's retail driver's vtable's (CDx8SoundSys 0x1000c1e0, 114
+// slots; the abstract table at 0x1000c3a8 has 113): NOLF2's (Monolith's
+// later revision of this header less CommitDeferred) with Tron's ten more --
+// seven after the EAX 2.0 functions (slots 23..29) and the EAX 3.0 three
+// after HasOnBoardMemory (110..112).
 
 #ifndef __ILTSOUND_H__
 #define __ILTSOUND_H__
@@ -218,6 +220,22 @@ public:
 	virtual bool		SetEAX20BufferSettings( LHSAMPLE hSample, LTSOUNDFILTERDATA* pFilterData ) = 0;
 #endif
 
+	// RETAIL: Tron's own (slots 23..29, 0x10005c60..0x10005fa0), named as the
+	// engine's iltsound.h names them (src/Engine/runtime/sound/src): a
+	// parameter fade per sample (CDx8SoundSys::m_aSoundParams, which the
+	// driver's second thread steps; a fade of type 0 is the sample's
+	// playback frequency, as a factor of its own rate) -- switched on or off
+	// (23 for a sample, 24 for a 3D sample), set up from a start value (26,
+	// 28) or from where the fade is now (25, 27); and the thread suspended or
+	// resumed (29)
+	virtual bool		TronUnknownVirtual23( LHSAMPLE hS, bool bActive ) = 0;
+	virtual bool		TronUnknownVirtual24( LH3DSAMPLE hS, bool bActive ) = 0;
+	virtual bool		TronUnknownVirtual25( LHSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration ) = 0;
+	virtual bool		TronUnknownVirtual26( LHSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration ) = 0;
+	virtual bool		TronUnknownVirtual27( LH3DSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration ) = 0;
+	virtual bool		TronUnknownVirtual28( LH3DSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration ) = 0;
+	virtual void		TronUnknownVirtual29( bool bRun ) = 0;
+
 	virtual void		Set3DProviderMinBuffers( uint32 uiMinBuffers ) = 0;
 	virtual sint32		Open3DProvider( LHPROVIDER hLib ) = 0;
 	virtual void		Close3DProvider( LHPROVIDER hLib ) = 0;
@@ -307,6 +325,13 @@ public:
 	virtual uint32		GetThreadedSoundTicks( ) = 0;
 
 	virtual bool		HasOnBoardMemory( ) = 0;
+
+	// RETAIL: Tron's EAX 3.0 support (slots 110..112, 0x100057e0,
+	// 0x10005c50, 0x10005b50; the names are ours, after the EAX 2.0 three):
+	// the EAX 2.0 functions hand over to these when the card has EAX 3.0
+	virtual bool		SetEAX30Filter( bool bEnable, LTSOUNDFILTERDATA* pFilterData ) = 0;
+	virtual bool		SupportsEAX30Filter() = 0;
+	virtual bool		SetEAX30BufferSettings( LHSAMPLE hSample, LTSOUNDFILTERDATA* pFilterData ) = 0;
 
 public:
 };

@@ -40,6 +40,9 @@ typedef lpvoid	PTR;
 
 #define STR_BUFFER_SIZE			8192
 
+// RETAIL: the parameter fades (CDx8SoundSys::m_aSoundParams, 0x4c4)
+#define MAX_SOUND_PARAMS		16
+
 #ifndef SUCCESS
 #define SUCCESS TRUE
 #define FAILURE FALSE
@@ -48,6 +51,38 @@ typedef lpvoid	PTR;
 #define DOUT	(void)
 
 class CDx8SoundSys;
+class CSample;
+
+// RETAIL: Tron's own (0x1c bytes; the names are ours): a fade of one of a
+// sample's parameters from m_fStart to m_fEnd over m_nDuration ms, which
+// the driver's parameter thread steps (UpdateSoundParam, 0x10003390). Of
+// the types only 0 does anything: the sample's playback frequency, as a
+// factor of its own rate. Reset is what the constructor (0x100037e7) and
+// Stop/EndSample (0x10006a09) leave.
+struct SSoundParam
+{
+	SSoundParam( ) { Reset( ); }
+	void Reset( )
+	{
+		m_bActive = false;
+		m_nStartTime = 0;
+		m_nDuration = 0;
+		m_fCurrent = 0;
+		m_fEnd = 0;
+		m_fStart = 0;
+		m_nType = 0;
+		m_pSample = NULL;
+	}
+
+	CSample*	m_pSample;
+	bool		m_bActive;
+	uint8		m_nType;
+	float		m_fStart;
+	float		m_fEnd;
+	uint32		m_nDuration;
+	float		m_fCurrent;
+	uint32		m_nStartTime;
+};
 
 class WaveFile
 {
@@ -186,6 +221,9 @@ public:
 public:
 	WAVEFORMATEX			m_waveFormat;
 	DSBUFFERDESC			m_dsbDesc;
+	// RETAIL: Tron keeps the buffer CreateSoundBuffer gives and the
+	// IDirectSoundBuffer8 it queries from it both (0x10002497, 0x100024be)
+	LPDIRECTSOUNDBUFFER8	m_pDSBuffer8;
 	LPDIRECTSOUNDBUFFER		m_pDSBuffer;
 	void*					m_pSoundData;
 	uint32					m_uiSoundDataLen;
@@ -197,6 +235,10 @@ public:
 	uint32					m_nLastPlayPos;
 	LTLink					m_lnkLoopNotify;
 	bool					m_bLooping;
+	// RETAIL: Tron's own: a flag the constructor clears and nothing reads
+	// (0x10002d41), and the sample's parameter fade, if it has one
+	bool					m_bTronUnknown91;
+	SSoundParam*			m_pSoundParam;
 
 	static 	LTLink			m_lstSampleLoopHead;
 };
@@ -297,6 +339,14 @@ public:
 	virtual	bool		SetEAX20BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDATA* pFilterData );
 #endif
 
+	virtual bool		TronUnknownVirtual23( LHSAMPLE hS, bool bActive );
+	virtual bool		TronUnknownVirtual24( LH3DSAMPLE hS, bool bActive );
+	virtual bool		TronUnknownVirtual25( LHSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration );
+	virtual bool		TronUnknownVirtual26( LHSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration );
+	virtual bool		TronUnknownVirtual27( LH3DSAMPLE hS, uint8 nType, float fEnd, uint32 nDuration );
+	virtual bool		TronUnknownVirtual28( LH3DSAMPLE hS, uint8 nType, float fStart, float fEnd, uint32 nDuration );
+	virtual void		TronUnknownVirtual29( bool bRun );
+
 	virtual void		Set3DProviderMinBuffers( U32 uiMinBuffers );
 	virtual S32			Open3DProvider( LHPROVIDER hLib );
 	virtual void		Close3DProvider( LHPROVIDER hLib );
@@ -389,6 +439,10 @@ public:
 
 	virtual bool		HasOnBoardMemory( );
 
+	virtual bool		SetEAX30Filter( bool bEnable, LTSOUNDFILTERDATA* pFilterData );
+	virtual bool		SupportsEAX30Filter();
+	virtual bool		SetEAX30BufferSettings( LH3DSAMPLE h3DSample, LTSOUNDFILTERDATA* pFilterData );
+
 public:
 	CSample*			CreateBuffer( WAVEFORMATEX* pWaveFormat, DWORD dwBufferSize, DWORD dwFlags );
 	void				DestroyBuffer( CSample* pSoundBuffer );
@@ -396,6 +450,21 @@ public:
 	uint32				GetThreadedSoundTicks( );
 
 	bool SetSampleNotify( CSample* pSample, bool bEnable );
+
+	// RETAIL: Tron's own (inlined in Stop3DSample, End3DSample and
+	// StopSample/EndSample, 0x100069f0; the name is ours): the sample's
+	// parameter fade freed
+	void EndSoundParam( CSample* pSample )
+	{
+		SSoundParam* pParam = pSample->m_pSoundParam;
+		if( pParam )
+		{
+			WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+			pParam->Reset( );
+			pSample->m_pSoundParam = NULL;
+			ReleaseMutex( m_hSoundParamMutex );
+		}
+	}
 
 private:
 	void Reset( );
@@ -414,6 +483,8 @@ public:
 public:
 	bool				m_bCOMInitialized;
 	bool				m_bLocked;
+	// RETAIL: Tron's own: whether the parameter thread runs (TronUnknownVirtual29)
+	bool				m_bSoundParamThreadRunning;
 	LPDIRECTSOUND8		m_pDirectSound;
 	LPDIRECTSOUNDBUFFER m_pDSPrimaryBuffer;
 	LPKSPROPERTYSET     m_pKSPropertySet;
@@ -429,9 +500,13 @@ public:
 	HACMDRIVER			m_hAcmMP3Driver;
 	sint32				m_iCur3DProvider;
 	DWORD				m_dwMinHardwareBuffers;
+	// RETAIL: Tron's own: the lock of m_aSoundParams that the Tron functions
+	// take. Nothing sets it (Reset clears it, 0x100039d6): docs/RETAIL_BUGS.md
+	HANDLE				m_hSoundParamMutex;
 
 #ifdef USE_EAX20_HARDWARE_FILTERS
 	bool				m_bSupportsEAX20Filtering;
+	bool				m_bSupportsEAX30Filtering;
 #endif
 
 public:
@@ -442,6 +517,9 @@ public:
 
 	BYTE*				m_pCompressedBuffer;
 	BYTE*				m_pDecompressedBuffer;
+
+	// RETAIL: Tron's own (0x4c4)
+	SSoundParam			m_aSoundParams[MAX_SOUND_PARAMS];
 
 	WaveFile			m_WaveStream[MAX_WAVE_STREAMS];
 

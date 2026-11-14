@@ -134,10 +134,12 @@ TARGETS = [
     dict(label="SndDrv.dll", what="the sound driver", kind="image",
          shipped=REFERENCE + "/SndDrv.dll", stem="SndDrv",
          built="src/Engine/built/Final/snddrv/SndDrv.dll", optional=True,
-         # provisional: msvcrt.lib from ulldiv.obj's __aulldiv (0x1000b040)
-         # to crtdll.obj's _DllMainCRTStartup; the two padded wrappers
-         # before it (0x1000b020, 0x1000b030) are compiled code of its own
-         app=[(0x10001000, 0x1000b040)]),
+         # our map, at retail's addresses: the objects' code to
+         # s_dx8.obj's last STL helper, MSACM32.dll's 14 import thunks
+         # (0x1000ada0..0x1000adf4, the linker's), ltmem.lib's ltmem.obj
+         # (0x1000ae00..0x1000b03b), then msvcrt.lib from ulldiv.obj's
+         # __aulldiv (0x1000b040) to crtdll.obj's _DllMainCRTStartup
+         app=[(0x10001000, 0x1000ada0), (0x1000ae00, 0x1000b040)]),
     dict(label="ltmsg.dll", what="the engine's messages", kind="resources",
          shipped=REFERENCE + "/ltmsg.dll", stem="ltmsg",
          built="src/Engine/built/Final/ltmsg/ltmsg.dll", optional=True),

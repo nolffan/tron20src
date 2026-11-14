@@ -1,8 +1,10 @@
-// eax.h: what the sound driver uses of Creative's EAX 2.0 interface -- the
-// property sets it reaches through IKsPropertySet, their property ids and
-// the two property structures. Written for this project from the interface
-// as the retail driver uses it (the ids it passes, the sizes it reserves);
-// the GUIDs themselves are defined in eaxguid/eaxguid.cpp.
+// eax.h: what the sound driver uses of Creative's EAX 2.0 and 3.0
+// interfaces -- the property sets it reaches through IKsPropertySet, their
+// property ids and the property structures. Written for this project from
+// the interface as the retail driver uses it (the ids it passes, the sizes it
+// reserves); the EAX 2.0 GUIDs are defined in eaxguid/eaxguid.cpp, the two
+// EAX 3.0 ones in s_dx8.cpp (Tron's driver has them in its own .rdata,
+// 0x1000c168, not in eaxguid.lib's).
 
 #ifndef __EAX_H__
 #define __EAX_H__
@@ -21,6 +23,10 @@ extern const GUID DSPROPSETID_EAX20_BufferProperties;
 extern const GUID CLSID_EAX20_Manager;
 extern const GUID IID_EAX20_Manager;
 extern const GUID CLSID_EAXDirectSound;
+
+// EAX 3.0
+extern const GUID DSPROPSETID_EAX30_ListenerProperties;
+extern const GUID DSPROPSETID_EAX30_BufferProperties;
 
 #ifdef __cplusplus
 }
@@ -104,5 +110,83 @@ typedef struct _EAXBUFFERPROPERTIES
 	float flAirAbsorptionFactor;
 	unsigned long dwFlags;
 } EAXBUFFERPROPERTIES, *LPEAXBUFFERPROPERTIES;
+
+// EAX 3.0 listener properties
+typedef enum
+{
+	DSPROPERTY_EAX30LISTENER_NONE,
+	DSPROPERTY_EAX30LISTENER_ALLPARAMETERS,
+	DSPROPERTY_EAX30LISTENER_ENVIRONMENT,
+	DSPROPERTY_EAX30LISTENER_ENVIRONMENTSIZE,
+	DSPROPERTY_EAX30LISTENER_ENVIRONMENTDIFFUSION,
+	DSPROPERTY_EAX30LISTENER_ROOM,
+	DSPROPERTY_EAX30LISTENER_ROOMHF,
+	DSPROPERTY_EAX30LISTENER_ROOMLF,
+	DSPROPERTY_EAX30LISTENER_DECAYTIME,
+	DSPROPERTY_EAX30LISTENER_DECAYHFRATIO,
+	DSPROPERTY_EAX30LISTENER_DECAYLFRATIO,
+	DSPROPERTY_EAX30LISTENER_REFLECTIONS,
+	DSPROPERTY_EAX30LISTENER_REFLECTIONSDELAY,
+	DSPROPERTY_EAX30LISTENER_REFLECTIONSPAN,
+	DSPROPERTY_EAX30LISTENER_REVERB,
+	DSPROPERTY_EAX30LISTENER_REVERBDELAY,
+	DSPROPERTY_EAX30LISTENER_REVERBPAN,
+	DSPROPERTY_EAX30LISTENER_ECHOTIME,
+	DSPROPERTY_EAX30LISTENER_ECHODEPTH,
+	DSPROPERTY_EAX30LISTENER_MODULATIONTIME,
+	DSPROPERTY_EAX30LISTENER_MODULATIONDEPTH,
+	DSPROPERTY_EAX30LISTENER_AIRABSORPTIONHF,
+	DSPROPERTY_EAX30LISTENER_HFREFERENCE,
+	DSPROPERTY_EAX30LISTENER_LFREFERENCE,
+	DSPROPERTY_EAX30LISTENER_ROOMROLLOFFFACTOR,
+	DSPROPERTY_EAX30LISTENER_FLAGS
+} DSPROPERTY_EAX30_LISTENERPROPERTY;
+
+typedef struct _EAXVECTOR
+{
+	float x;
+	float y;
+	float z;
+} EAXVECTOR;
+
+// 0x70 bytes (the size SetEAX30Filter passes, 0x10005900)
+typedef struct _EAX30LISTENERPROPERTIES
+{
+	unsigned long ulEnvironment;
+	float flEnvironmentSize;
+	float flEnvironmentDiffusion;
+	long lRoom;
+	long lRoomHF;
+	long lRoomLF;
+	float flDecayTime;
+	float flDecayHFRatio;
+	float flDecayLFRatio;
+	long lReflections;
+	float flReflectionsDelay;
+	EAXVECTOR vReflectionsPan;
+	long lReverb;
+	float flReverbDelay;
+	EAXVECTOR vReverbPan;
+	float flEchoTime;
+	float flEchoDepth;
+	float flModulationTime;
+	float flModulationDepth;
+	float flAirAbsorptionHF;
+	float flHFReference;
+	float flLFReference;
+	float flRoomRolloffFactor;
+	unsigned long ulFlags;
+} EAX30LISTENERPROPERTIES, *LPEAX30LISTENERPROPERTIES;
+
+// EAX 3.0 buffer properties
+typedef enum
+{
+	DSPROPERTY_EAX30BUFFER_NONE,
+	DSPROPERTY_EAX30BUFFER_ALLPARAMETERS,
+	DSPROPERTY_EAX30BUFFER_OBSTRUCTIONPARAMETERS,
+	DSPROPERTY_EAX30BUFFER_OCCLUSIONPARAMETERS,
+	DSPROPERTY_EAX30BUFFER_EXCLUSIONPARAMETERS,
+	DSPROPERTY_EAX30BUFFER_DIRECT
+} DSPROPERTY_EAX30_BUFFERPROPERTY;
 
 #endif // __EAX_H__
