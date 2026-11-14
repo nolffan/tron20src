@@ -94,6 +94,12 @@ class CPlayerCamera
 		// RETAIL: Tron's (the names are ours)
 		float GetTronUnknown100() const { return m_fTronUnknown100; }
 		void SetTronUnknown100(float f) { m_fTronUnknown100 = f; }
+		// RETAIL: the light cycle camera's pitch and yaw in radians
+		// (CUserProfile::ApplyGameOptions 0x100ef510)
+		float GetTronUnknownF8() const { return m_fTronUnknownF8; }
+		void SetTronUnknownF8(float f) { m_fTronUnknownF8 = f; }
+		float GetTronUnknownFC() const { return m_fTronUnknownFC; }
+		void SetTronUnknownFC(float f) { m_fTronUnknownFC = f; }
 
 		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
 		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);

@@ -25,6 +25,9 @@
 #include "CMoveMgr.h"
 #include "MsgIds.h"
 #include "VersionMgr.h"
+#include "PlayerCamera.h"
+#include "VehicleMgr.h"
+#include "PlayerMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -38,8 +41,30 @@ VarTrack	g_vtMouseMaxSensitivity;
 VarTrack	g_vtMouseMinInputRate;
 VarTrack	g_vtMouseMaxInputRate;
 
+// RETAIL: Tron builds the profile file names from these (0x10270818 and
+// 0x10270808; Init 0x100ecc40, Save 0x100ee500)
+static std::string s_sProfileDir = PROFILE_DIR;
+static std::string s_sProfileExt = PROFILE_EXT;
+
+// RETAIL: the light cycle progress section and its keys (0x101ea2e4)
+static const char* const s_aLightCycleInfoKeys[] =
+{
+	"LightCycleInfo",
+	"CompletedLightCycleCircuits",
+	"UnlockedLightCycleBikes",
+	"UnlockedLightCyclePowerUps",
+	"UnlockedLightCycleCustomMaps",
+};
+const int kMaxLightCycleInfoItems = 40;
+
 
 CProfileMgr* g_pProfileMgr = LTNULL;
+
+// RETAIL: string table entries 752 and 753 ("TRUE" or "FALSE" by the
+// language build; the developer build's CRes.dll has "FALSE") say whether
+// gore and bodies are allowed (LoadGameOptions 0x100ed8d0); names ours.
+const int kGoreAllowedStringId = 752;
+const int kBodiesAllowedStringId = 753;
 
 namespace
 {
@@ -193,18 +218,27 @@ const CommandData* GetCommandData(int nIndex)
 
 CUserProfile::CUserProfile()
 {
+	// RETAIL: 0x100ec8a0
 	m_sName			= "";		
 	m_bInitted		= LTFALSE;
 	m_pCryptKey		= LTNULL;
 
 	//controls
     m_bInvertY = LTFALSE;
+	m_bInvertLCMouse = LTFALSE;
     m_bMouseLook = LTFALSE;
 	m_nInputRate = 0;
 	m_nSensitivity = 0;
 
+	m_nLCCamLag = 5;
+	m_nLCCamSpeed = 2;
+	m_bLCDialog = LTTRUE;
+	m_fLCCamZoom = 0.0f;
+	m_fLCCamPitch = 0.0f;
+	m_fLCCamYaw = 0.0f;
+	m_fLCPlayerPitch = 0.0f;
+
 	m_bAutoCenter = LTFALSE;
-	m_nTronUnknown20 = 0;
 	m_nNormalTurn = 15;
 	m_nFastTurn = 23;
 	m_nLookUp = 25;
@@ -217,15 +251,21 @@ CUserProfile::CUserProfile()
 	//game options
 	m_nDifficulty = 1;
     m_nSubtitles  = 0;
-    m_bGore = LTFALSE;
+	m_bGoreAllowed = true;
+	m_bBodiesAllowed = true;
+    m_bGore = false;
+	m_bLCThirdPersonCam = true;
+	m_bSkipSubIntro = false;
+	m_bLCManualCam = false;
 	m_bAlwaysRun = LTTRUE;
 	m_nLayout = 0;
 	m_nHeadBob = 0;
 	m_nWeaponSway = 0;
 	m_nMsgDur = 0;
-	m_bAutoWeaponSwitch = LTFALSE;
 	m_bLoadScreenTips = LTFALSE;
-	m_bVehicleContour = LTFALSE;
+	m_bAlwaysShowToolTip = true;
+	m_bMouseClosesPopup = LTFALSE;
+	m_bDiscAutoAim = LTFALSE;
 
 	m_bCrosshair = LTTRUE;
 	m_CrosshairR = 0x1F;
@@ -241,6 +281,7 @@ CUserProfile::CUserProfile()
 	m_nMusicVolume=MUSIC_DEFAULT_VOL;
     m_bSoundQuality=LTFALSE;
     m_bMusicQuality=LTFALSE;
+	m_bEAXEnabled=LTFALSE;
 
 
 	//display
@@ -256,15 +297,15 @@ CUserProfile::CUserProfile()
 	//multi player
 	m_nCPPlayerModel = 0;
 	m_nDMPlayerModel = 0;
-	memset(m_nPlayerSkills,0,sizeof(m_nPlayerSkills));
+	m_nPlayerColor = 0;
 	m_nBandwidthClient = 3;
 	m_nBandwidthClientCustom = g_BandwidthClient[m_nBandwidthClient];
-	m_nClientPort = 27888;
+	m_nDifficulty = 1;
 
-	// PORT: ours (retail's constructor leaves its +0x20c and +0x210 alone)
+	//misc
+	m_szVehicleColor[0] = 0;
 	m_nLightCycleStyle = 0;
 	m_nLightCycleShade = 0;
-	m_nDifficulty = 1;
 }
 
 static bool CreatePlayerGuid( char* pszPlayerGuid, int nSize )
@@ -298,9 +339,9 @@ static bool CreatePlayerGuid( char* pszPlayerGuid, int nSize )
 
 LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 {
-	std::string fn = GetProfileFile( profileName.c_str( ));
-	std::string dfn = PROFILE_DIR;
-	dfn += "default.prf";
+	// RETAIL: 0x100ecc40
+	std::string fn = s_sProfileDir + profileName + s_sProfileExt;
+	std::string dfn = s_sProfileDir + "default.prf";
 
 	g_vtMouseMinSensitivity.Init(g_pLTClient, "MouseSensitivityMin", NULL, 0.0);
 	g_vtMouseMaxSensitivity.Init(g_pLTClient, "MouseSensitivityMax", NULL, 10.0);
@@ -309,7 +350,8 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 
 	LTBOOL bRet = LTFALSE;
 
-	m_buteMgr.Term();
+	if (m_bInitted)
+		m_buteMgr.Term();
 
 	if (m_pCryptKey)
 	{
@@ -328,9 +370,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	// Handle brand new profile.
 	else
 	{
-		//clear out any old data
-		m_buteMgr.Term();
-
 		// No previous profile and not told to create one.
 		if (!bCreate)
 			return LTFALSE;
@@ -343,7 +382,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 		}
 		else
 		{
-			
 			bRet = m_buteMgr.Parse(dfn.c_str());
 		}
 
@@ -353,12 +391,26 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	
 	// Since we changed our profile, we'll need to re-init the saveloadmgr, which
 	// uses the profile name.
-	if( !g_pClientSaveLoadMgr->Init( m_sName.c_str( ), IsMultiplayerGame() ))
+	if( !g_pClientSaveLoadMgr->Init( m_sName.c_str( ), false ))
 		return LTFALSE;
 
-	Load( );
+	LoadControls();
+	LoadMultiplayer();
+	LoadGameOptions();
+	LoadSound(true);
+	LoadLightCycleInfo();
+	LoadMisc();
 
-	if (m_buteMgr.Exist("Settings"))
+	// A performance level from the command line replaces the profile's.
+	char* pszPerformance = GetConsoleTempString("SetPerformanceLevel","");
+	if (pszPerformance[0])
+	{
+		g_pPerformanceMgr->SetPerformanceCfg(pszPerformance);
+		g_pPerformanceMgr->GetPerformanceOptions(&m_sPerformance);
+		SavePerformance();
+		WriteConsoleString("SetPerformanceLevel","");
+	}
+	else if (m_buteMgr.Exist("Settings"))
 	{
 		LoadPerformance(false);//defer applying now, because ApplyPerformance() will do it below
 	}
@@ -375,14 +427,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 
 	return LTTRUE;
 
-}
-
-void CUserProfile::Load()
-{
-	LoadControls();
-	LoadMultiplayer();
-	LoadGameOptions();
-	LoadSound(true);
 }
 
 void CUserProfile::LoadControls()
@@ -436,6 +480,7 @@ void CUserProfile::LoadControls()
 
 	strcpy(s_aTagName,"Controls");
     m_bInvertY = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"InvertMouse",0);
+	m_bInvertLCMouse = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"InvertLCMouse",0);
     m_bMouseLook = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MouseLook",1);
 	m_nInputRate = m_buteMgr.GetInt(s_aTagName,"InputRate",12);
 	m_nSensitivity = m_buteMgr.GetInt(s_aTagName,"Sensitivity",5);
@@ -505,52 +550,13 @@ void CUserProfile::LoadMultiplayer()
 	m_sServerOptions = szStr;
 
 	m_nCPPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"PlayerModel",0);
-	m_nDMPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"DMPlayerModel",0);
-
-
-	//see if the MP skills settings are valid
-	sprintf(s_aAttName,"PlayerSkills0");
-	int nTest = m_buteMgr.GetInt(s_aTagName,s_aAttName,-1);
-
-	
-	if (nTest >= 0)
-	{
-		//if valid, read 'em in
-		for (uint8 i = 0; i < kNumSkills; i++)
-		{
-			eSkill skl = (eSkill)i;
-			if (g_pSkillsButeMgr->IsAvailable(skl) )
-			{
-				sprintf(s_aAttName,"PlayerSkills%d",i);
-				int nDef = (int)g_pSkillsButeMgr->GetDefaultMultiplayerLevel(skl);
-				m_nPlayerSkills[i] = (uint8)m_buteMgr.GetInt(s_aTagName,s_aAttName,nDef);
-			}
-			else
-				m_nPlayerSkills[i] = 0;
-		}
-	}
-	else
-	{
-		//if the first was not valid, get 'em from the SkillsButeMgr
-		for (uint8 i = 0; i < kNumSkills; i++)
-		{
-			eSkill skl = (eSkill)i;
-			if (g_pSkillsButeMgr->IsAvailable(skl) )
-			{
-				m_nPlayerSkills[i] = (uint8)g_pSkillsButeMgr->GetDefaultMultiplayerLevel(skl);
-			}
-			else
-				m_nPlayerSkills[i] = 0;
-		}
-	}
+	// RETAIL: 0x100ed5a0 -- Tron keeps a player colour, no skills
+	m_nDMPlayerModel = m_nPlayerColor = (uint8)m_buteMgr.GetInt(s_aTagName,"PlayerColor",0);
 
 	m_nBandwidthClient = (uint8)m_buteMgr.GetInt(s_aTagName,"BandwidthClient",3);
 	m_nBandwidthClientCustom = (uint16)m_buteMgr.GetInt(s_aTagName,"BandwidthClientCustom",g_BandwidthClient[3]);
-	m_nClientPort = (uint16)m_buteMgr.GetInt(s_aTagName,"ClientPort",27888);
 
-	m_bMPRadar = m_buteMgr.GetBool( s_aTagName, "MPRadar", true );
-
-	ApplyMultiplayer(false);
+	ApplyMultiplayer();
 }
 
 
@@ -558,17 +564,29 @@ void CUserProfile::LoadGameOptions()
 {
 	strcpy(s_aTagName,"Game");
 
+	// RETAIL: 0x100ed8d0 -- whether gore and bodies are allowed come from
+	// the string table.
+	char szAllowed[8];
+	FormatString(kGoreAllowedStringId,szAllowed,sizeof(szAllowed));
+	m_bGoreAllowed = (stricmp(szAllowed,"TRUE") == 0);
+	FormatString(kBodiesAllowedStringId,szAllowed,sizeof(szAllowed));
+	m_bBodiesAllowed = ((stricmp(szAllowed,"TRUE") == 0) && !GetConsoleInt("NoBodies",0));
+
 	m_nDifficulty = m_buteMgr.GetInt(s_aTagName,"Difficulty",2);
     m_nSubtitles  = (uint8)m_buteMgr.GetInt(s_aTagName,"Subtitles",0);
-    m_bGore = (!g_pVersionMgr->IsLowViolence() && (m_buteMgr.GetInt(s_aTagName,"Gore",0) > 0));
+    m_bGore = (m_bGoreAllowed && (m_buteMgr.GetInt(s_aTagName,"Gore",0) > 0));
+	m_bLCThirdPersonCam = !!m_buteMgr.GetInt(s_aTagName,"LCThirdPersonCam",1);
+	m_bSkipSubIntro = !!m_buteMgr.GetInt(s_aTagName,"SkipSubIntro",0);
+	m_bLCManualCam = !!m_buteMgr.GetInt(s_aTagName,"LCManualCam",1);
 	m_bAlwaysRun = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"AlwaysRun",1);
 	m_nLayout = m_buteMgr.GetInt(s_aTagName,"HUDLayout",0);
 	m_nHeadBob = m_buteMgr.GetInt(s_aTagName,"HeadBob",0);
 	m_nWeaponSway = m_buteMgr.GetInt(s_aTagName,"WeaponSway",0);
-	m_nMsgDur = m_buteMgr.GetInt(s_aTagName,"MessageDur",0);
-	m_bAutoWeaponSwitch = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"AutoWeaponSwitch",1);
+	m_nMsgDur = m_buteMgr.GetInt(s_aTagName,"PickupMessage",0);
 	m_bLoadScreenTips = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"LoadScreenTips",1);
-	m_bVehicleContour = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"VehicleContour",1);
+	m_bAlwaysShowToolTip = !!m_buteMgr.GetInt(s_aTagName,"AlwaysShowToolTip",1);
+	m_bMouseClosesPopup = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MouseClosesPopup",0);
+	m_bDiscAutoAim = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"DiscAutoAim",0);
 
 	m_bCrosshair = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"UseCrosshair",1);
 	m_CrosshairR = (uint32)m_buteMgr.GetInt(s_aTagName,"CrosshairRed",0x1F);
@@ -577,8 +595,14 @@ void CUserProfile::LoadGameOptions()
 	m_CrosshairA = (uint8)m_buteMgr.GetInt(s_aTagName,"CrosshairAlpha",0xBF);
 	m_nStyle = m_buteMgr.GetInt(s_aTagName,"CrosshairStyle",0);
     m_bDynamic = m_buteMgr.GetInt(s_aTagName,"CrosshairDynamic",1);
-	
-	m_bSPRadar = m_buteMgr.GetBool( s_aTagName, "SPRadar", true );
+
+	m_nLCCamSpeed = m_buteMgr.GetInt(s_aTagName,"LCCamSpeed",2);
+	m_nLCCamLag = m_buteMgr.GetInt(s_aTagName,"LCCamLag",5);
+	m_bLCDialog = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"LCDialog",1);
+	m_fLCCamZoom = m_buteMgr.GetFloat(s_aTagName,"LCCamZoom",1000.0f);
+	m_fLCCamPitch = m_buteMgr.GetFloat(s_aTagName,"LCCamPitch",55.0f);
+	m_fLCCamYaw = m_buteMgr.GetFloat(s_aTagName,"LCCamYaw",94.0f);
+	m_fLCPlayerPitch = m_buteMgr.GetFloat(s_aTagName,"LCPlayerPitch",0.0f);
 
 	ApplyGameOptions();
 	ApplyCrosshair();
@@ -598,6 +622,7 @@ void CUserProfile::LoadSound(bool bApply)
 
 	m_bSoundQuality = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"sound16bit",0);
 	m_bMusicQuality = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MusicQuality",0);
+	m_bEAXEnabled = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"eaxenabled",0);
 
 	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
 	if (!(dwAdvancedOptions & AO_MUSIC))
@@ -618,20 +643,136 @@ void CUserProfile::LoadPerformance(bool bApply)
 
 }
 
+// RETAIL: 0x100eddc0 (name ours)
+void CUserProfile::LoadMisc()
+{
+	strcpy(s_aTagName,"Misc");
+
+	m_buteMgr.GetString(s_aTagName,"VehicleColor","LightCycleBlue",m_szVehicleColor,sizeof(m_szVehicleColor));
+
+	char szStr[64];
+	m_buteMgr.GetString(s_aTagName,"LightCycleConfig",m_sName.c_str(),szStr,sizeof(szStr));
+	m_sLightCycleConfig = szStr;
+
+	m_buteMgr.GetString(s_aTagName,"LightCyclePlayerName",m_sLightCycleName.c_str(),szStr,sizeof(szStr));
+	m_sLightCycleName = szStr;
+
+	m_nLightCycleStyle = m_buteMgr.GetInt(s_aTagName,"CycleType");
+	m_nLightCycleShade = m_buteMgr.GetInt(s_aTagName,"CycleShade");
+
+	ApplyMisc();
+}
+
+// RETAIL: 0x100edfc0 (name ours)
+void CUserProfile::LoadLightCycleInfo()
+{
+	const char* pszTag = s_aLightCycleInfoKeys[0];
+
+	m_CompletedCircuits.clear();
+	m_UnlockedCycleColors.clear();
+	m_UnlockedPowerups.clear();
+	m_UnlockedCustomMaps.clear();
+
+	for (int i0 = 0; i0 < kMaxLightCycleInfoItems; i0++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i0);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_CompletedCircuits.push_back(std::string(szValue));
+		}
+	}
+
+	for (int i1 = 0; i1 < kMaxLightCycleInfoItems; i1++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i1);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedCycleColors.push_back(std::string(szValue));
+		}
+	}
+
+	for (int i2 = 0; i2 < kMaxLightCycleInfoItems; i2++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i2);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedPowerups.push_back(std::string(szValue));
+		}
+	}
+
+	for (int i3 = 0; i3 < kMaxLightCycleInfoItems; i3++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i3);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedCustomMaps.push_back(std::string(szValue));
+		}
+	}
+}
+
 
 void CUserProfile::Save()
 {
-	// PORT: NOLF2's body; Tron's (retail 0x100ee500) saves two sections more
-	// and always closes and reopens its bute file
+	// RETAIL: 0x100ee500
+	std::string fn = s_sProfileDir + m_sName + s_sProfileExt;
+
 	SaveControls();
 	SaveMultiplayer();
 	SaveGameOptions();
 	SaveSound();
 	SavePerformance();
+	SaveLightCycleInfo();
+	SaveMisc();
 
-	std::string fn = GetProfileFile( m_sName.c_str( ));
 	m_buteMgr.Save(fn.c_str());
 
+	// Reread what we wrote.
+	m_buteMgr.Term();
+	m_buteMgr.Init();
+	if (m_pCryptKey)
+	{
+		m_buteMgr.Parse(fn.c_str(), m_pCryptKey);
+	}
+	else
+	{
+		m_buteMgr.Parse(fn.c_str());
+	}
 }
 
 void CUserProfile::SaveControls()
@@ -673,6 +814,7 @@ void CUserProfile::SaveControls()
 
 	//save mouse
 	m_buteMgr.SetInt(s_aTagName,"InvertMouse",(int)m_bInvertY);
+	m_buteMgr.SetInt(s_aTagName,"InvertLCMouse",(int)m_bInvertLCMouse);
 	m_buteMgr.SetInt(s_aTagName,"MouseLook",(int)m_bMouseLook);
     m_buteMgr.SetInt(s_aTagName,"InputRate",m_nInputRate);
     m_buteMgr.SetInt(s_aTagName,"Sensitivity",m_nSensitivity);
@@ -704,19 +846,9 @@ void CUserProfile::SaveMultiplayer()
 	m_buteMgr.SetString( s_aTagName, "Guid", m_sPlayerGuid.c_str( ));
 	m_buteMgr.SetString( s_aTagName, "ServerConfig", m_sServerOptions.c_str( ));
 	m_buteMgr.SetInt(s_aTagName,"PlayerModel",(int)m_nCPPlayerModel);
-	m_buteMgr.SetInt(s_aTagName,"DMPlayerModel",(int)m_nDMPlayerModel);
-
-	for (uint8 i = 0; i < kNumSkills; i++)
-	{
-		sprintf(s_aAttName,"PlayerSkills%d",i);
-		m_buteMgr.SetInt(s_aTagName,s_aAttName,(int)m_nPlayerSkills[i]);
-	}
-
+	m_buteMgr.SetInt(s_aTagName,"PlayerColor",(int)m_nDMPlayerModel);
 	m_buteMgr.SetInt(s_aTagName,"BandwidthClient",(int)m_nBandwidthClient);
 	m_buteMgr.SetInt(s_aTagName,"BandwidthClientCustom",(int)m_nBandwidthClientCustom);
-	m_buteMgr.SetInt(s_aTagName,"ClientPort",(int)m_nClientPort);
-
-	m_buteMgr.SetBool( s_aTagName, "MPRadar", m_bMPRadar );
 }
 
 void CUserProfile::SaveGameOptions()
@@ -724,17 +856,20 @@ void CUserProfile::SaveGameOptions()
 	strcpy(s_aTagName,"Game");
 	m_buteMgr.SetInt(s_aTagName,"Difficulty",m_nDifficulty);
     m_buteMgr.SetInt(s_aTagName,"Subtitles",m_nSubtitles);
-    m_buteMgr.SetInt(s_aTagName,"Gore",(int)(!g_pVersionMgr->IsLowViolence() && m_bGore));
+    m_buteMgr.SetInt(s_aTagName,"Gore",(int)(m_bGoreAllowed && m_bGore));
+	m_buteMgr.SetInt(s_aTagName,"LCThirdPersonCam",(int)m_bLCThirdPersonCam);
+	m_buteMgr.SetInt(s_aTagName,"SkipSubIntro",(int)m_bSkipSubIntro);
+	m_buteMgr.SetInt(s_aTagName,"LCManualCam",(int)m_bLCManualCam);
 	m_buteMgr.SetInt(s_aTagName,"AlwaysRun",(int)m_bAlwaysRun);
 	m_buteMgr.SetInt(s_aTagName,"HUDLayout",m_nLayout);
 	m_buteMgr.SetInt(s_aTagName,"HeadBob",m_nHeadBob);
 	m_buteMgr.SetInt(s_aTagName,"WeaponSway",m_nWeaponSway);
-	m_buteMgr.SetInt(s_aTagName,"MessageDur",m_nMsgDur);
-	m_buteMgr.SetInt(s_aTagName,"AutoWeaponSwitch",(int)m_bAutoWeaponSwitch);
+	m_buteMgr.SetInt(s_aTagName,"PickupMessage",m_nMsgDur);
 	m_buteMgr.SetInt(s_aTagName,"LoadScreenTips",(int)m_bLoadScreenTips);
-	m_buteMgr.SetInt(s_aTagName,"VehicleContour",(int)m_bVehicleContour);
+	m_buteMgr.SetInt(s_aTagName,"AlwaysShowToolTip",(int)m_bAlwaysShowToolTip);
+	m_buteMgr.SetInt(s_aTagName,"MouseClosesPopup",(int)m_bMouseClosesPopup);
+	m_buteMgr.SetInt(s_aTagName,"DiscAutoAim",(int)m_bDiscAutoAim);
 
-	
 	m_buteMgr.SetInt(s_aTagName,"UseCrosshair",m_bCrosshair);
 	m_buteMgr.SetInt(s_aTagName,"CrosshairRed",(int)m_CrosshairR);
 	m_buteMgr.SetInt(s_aTagName,"CrosshairGreen",(int)m_CrosshairG);
@@ -743,7 +878,13 @@ void CUserProfile::SaveGameOptions()
 	m_buteMgr.SetInt(s_aTagName,"CrosshairStyle",m_nStyle);
     m_buteMgr.SetInt(s_aTagName,"CrosshairDynamic",m_bDynamic);
 
-	m_buteMgr.SetBool( s_aTagName, "SPRadar", m_bSPRadar );
+	m_buteMgr.SetInt(s_aTagName,"LCCamSpeed",m_nLCCamSpeed);
+	m_buteMgr.SetInt(s_aTagName,"LCCamLag",m_nLCCamLag);
+	m_buteMgr.SetInt(s_aTagName,"LCDialog",(int)m_bLCDialog);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamZoom",m_fLCCamZoom);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamPitch",m_fLCCamPitch);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamYaw",m_fLCCamYaw);
+	m_buteMgr.SetFloat(s_aTagName,"LCPlayerPitch",m_fLCPlayerPitch);
 }
 
 
@@ -759,11 +900,85 @@ void CUserProfile::SaveSound()
 	
 	m_buteMgr.SetInt(s_aTagName,"sound16bit",(int)m_bSoundQuality);
 	m_buteMgr.SetInt(s_aTagName,"MusicQuality",(int)m_bMusicQuality);
+	m_buteMgr.SetInt(s_aTagName,"eaxenabled",(int)m_bEAXEnabled);
+}
+
+// RETAIL: 0x100eee40 (name ours)
+void CUserProfile::SaveMisc()
+{
+	strcpy(s_aTagName,"Misc");
+	m_buteMgr.SetString(s_aTagName,"VehicleColor",m_szVehicleColor);
+	m_buteMgr.SetString(s_aTagName,"LightCycleConfig",m_sLightCycleConfig.c_str());
+	m_buteMgr.SetString(s_aTagName,"LightCyclePlayerName",m_sLightCycleName.c_str());
+	m_buteMgr.SetInt(s_aTagName,"CycleType",m_nLightCycleStyle);
+	m_buteMgr.SetInt(s_aTagName,"CycleShade",m_nLightCycleShade);
 }
 
 void CUserProfile::SavePerformance()
 {
 	g_pPerformanceMgr->SavePerformanceOptions(m_buteMgr,&m_sPerformance);
+}
+
+// RETAIL: 0x100eef10 (name ours)
+void CUserProfile::SaveLightCycleInfo()
+{
+	const char* pszTag = s_aLightCycleInfoKeys[0];
+
+	for (uint32 i0 = 0; i0 < kMaxLightCycleInfoItems; i0++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i0);
+		if (i0 < m_CompletedCircuits.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_CompletedCircuits[i0].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (uint32 i1 = 0; i1 < kMaxLightCycleInfoItems; i1++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i1);
+		if (i1 < m_UnlockedCycleColors.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCycleColors[i1].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (uint32 i2 = 0; i2 < kMaxLightCycleInfoItems; i2++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i2);
+		if (i2 < m_UnlockedPowerups.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedPowerups[i2].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (uint32 i3 = 0; i3 < kMaxLightCycleInfoItems; i3++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i3);
+		if (i3 < m_UnlockedCustomMaps.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCustomMaps[i3].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
 }
 
 void CUserProfile::Term()
@@ -891,46 +1106,80 @@ void CUserProfile::ApplyKeyboard()
 	WriteConsoleFloat("VehicleTurnRateScale",fTemp);
 }
 
-void CUserProfile::ApplyMultiplayer(bool bLAN)
+void CUserProfile::ApplyMultiplayer()
 {
-	// Use max on LAN games
-	float fMinBandwidth = (bLAN) ? k_fMaxBandwidth : 0.0f;
-
+	// RETAIL: 0x100ef4c0 -- no LAN case and no clamp in Tron
 	//set mp console vars here
 	if (m_nBandwidthClient < eBandwidth_Custom)
-		WriteConsoleFloat("BandwidthTargetClient",LTCLAMP(((float)g_BandwidthClient[m_nBandwidthClient] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+		WriteConsoleFloat("BandwidthTargetClient",((float)g_BandwidthClient[m_nBandwidthClient] * 1024.0f));
 	else
-		WriteConsoleFloat("BandwidthTargetClient",LTCLAMP(((float)m_nBandwidthClientCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+		WriteConsoleFloat("BandwidthTargetClient",((float)m_nBandwidthClientCustom * 1024.0f));
 
 }
 
 void CUserProfile::ApplyGameOptions()
 {
-	int nGore = (int)(!g_pVersionMgr->IsLowViolence() && m_bGore);
+	// RETAIL: 0x100ef510
+	int nGore = (int)(m_bGoreAllowed && m_bGore);
 	WriteConsoleInt("Gore", nGore);
 	WriteConsoleInt("Subtitles",m_nSubtitles);
 	WriteConsoleInt("HUDLayout",m_nLayout);
 	WriteConsoleInt("Difficulty",m_nDifficulty);
 
-	GameDifficulty eDiff = GD_NORMAL;
-	if (IsDifficultyGameType())
-	{
-		eDiff = (GameDifficulty)m_nDifficulty;
-	}
-	g_pGameClientShell->SetDifficulty(eDiff);
-
-	
+	g_pGameClientShell->SetDifficulty((GameDifficulty)m_nDifficulty);
 
 	WriteConsoleFloat("HeadBob",((LTFLOAT)m_nHeadBob / 10.0f));
 	WriteConsoleFloat("WeaponSway",((LTFLOAT)m_nWeaponSway / 10.0f));
 	WriteConsoleFloat("MessageDuration",((LTFLOAT)m_nMsgDur / 10.0f));
 
-	WriteConsoleInt("AutoWeaponSwitch",(int)m_bAutoWeaponSwitch);
-	WriteConsoleInt("VehicleContour",(int)m_bVehicleContour);
-
 	g_pMoveMgr->SetRunLock(m_bAlwaysRun);
 
-	g_pGameClientShell->UpdateGoreSettings();
+	// The light cycle camera...
+	if (g_pPlayerMgr)
+	{
+		g_pPlayerMgr->TronUnknownVirtual24(m_bLCThirdPersonCam, false);
+		g_pPlayerMgr->TronUnknownVirtual28(m_bLCManualCam);
+
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknown100(m_fLCCamZoom);
+
+		float fPitch = RAD2DEG(m_fLCPlayerPitch) + m_fLCCamPitch;
+		if (fPitch < 0.0f || fPitch > 90.0f)
+		{
+			m_fLCPlayerPitch = 0.0f;
+			m_fLCCamPitch = 45.0f;
+		}
+
+		if (m_fLCCamYaw < 0.0f || m_fLCCamYaw > 360.0f)
+		{
+			m_fLCCamYaw = 94.0f;
+			m_fLCPlayerPitch = 0.0f;
+		}
+
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknownF8(DEG2RAD(m_fLCCamPitch));
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknownFC(DEG2RAD(m_fLCCamYaw));
+		g_pPlayerMgr->SetPitch(m_fLCPlayerPitch);
+	}
+
+	if (g_pMoveMgr && g_pMoveMgr->GetVehicleMgr())
+	{
+		float fLag;
+		if (m_nLCCamLag == 11)
+		{
+			fLag = -1.0f;
+		}
+		else if (m_nLCCamLag == 0)
+		{
+			fLag = 0.0f;
+		}
+		else
+		{
+			fLag = (float)(m_nLCCamLag - 1) * (1.0f / 9.0f) + 1.0f;
+		}
+		g_pMoveMgr->GetVehicleMgr()->SetLightCycleCamLag(fLag);
+		g_pMoveMgr->GetVehicleMgr()->SetLightCycleCamSpeed((float)m_nLCCamSpeed * 0.2f);
+	}
+
+	g_pGameClientShell->GetClientFXMgr()->SetGoreEnabled(nGore != 0);
 }
 
 void CUserProfile::ApplyCrosshair()
@@ -1082,6 +1331,13 @@ void CUserProfile::ApplyDisplay()
 		g_pCursorMgr->UseHardwareCursor(m_bHardwareCursor,true);
 	}
 
+}
+
+// RETAIL: 0x100efc80 (name ours)
+void CUserProfile::ApplyMisc()
+{
+	if (g_pPlayerMgr)
+		g_pPlayerMgr->SetTronUnknown1B5(m_szVehicleColor);
 }
 
 void CUserProfile::SetPerformanceCfg(char *pszCfg)
@@ -1436,20 +1692,20 @@ void CUserProfile::SetMultiplayer()
 
 void CUserProfile::SetGameOptions()
 {
-	m_bGore = !g_pVersionMgr->IsLowViolence() && (LTBOOL)GetConsoleInt("Gore",0);
+	// RETAIL: 0x100f0720
+	m_bGore = m_bGoreAllowed && GetConsoleInt("Gore",0);
 	m_nDifficulty = g_pGameClientShell->GetDifficulty();
 	m_nSubtitles = GetConsoleInt("Subtitles",0);
 
 	m_bAlwaysRun = (LTBOOL)g_pMoveMgr->RunLock();
+
+	SetLightCycleCamera();
 
 	m_nLayout = GetConsoleInt("HUDLayout",0);
 
 	m_nHeadBob = (int)(10.0f * GetConsoleFloat("HeadBob",1.0f));
 	m_nWeaponSway = (int)(10.0f * GetConsoleFloat("WeaponSway",1.0f));
 	m_nMsgDur = (int)(10.0f * GetConsoleFloat("MessageDuration",1.0f));
-
-	m_bAutoWeaponSwitch = (LTBOOL)GetConsoleInt("AutoWeaponSwitch",1);
-	m_bVehicleContour = (LTBOOL)GetConsoleInt("VehicleContour",1);
 }
 
 
@@ -1980,3 +2236,26 @@ bool GetDefaultSessionName( GameType eGameType, char* pszSessionName, uint32 nSe
 	return true;
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CUserProfile::SetLightCycleCamera
+//
+//	PURPOSE:	Read the light cycle camera settings back from the player
+//				(RETAIL: 0x100f18b0, the TU's last function; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CUserProfile::SetLightCycleCamera()
+{
+	m_bLCThirdPersonCam = g_pPlayerMgr->GetTronUnknown1D7();
+	m_bLCManualCam = g_pPlayerMgr->GetTronUnknown1D8();
+
+	if (g_pPlayerMgr->IsPlayerInWorld())
+	{
+		m_fLCCamZoom = g_pPlayerMgr->GetPlayerCamera()->GetTronUnknown100();
+		m_fLCCamPitch = RAD2DEG(g_pPlayerMgr->GetPlayerCamera()->GetTronUnknownF8());
+		m_fLCCamYaw = RAD2DEG(g_pPlayerMgr->GetPlayerCamera()->GetTronUnknownFC());
+		m_fLCPlayerPitch = g_pPlayerMgr->GetPitch();
+	}
+}

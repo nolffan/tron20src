@@ -887,7 +887,7 @@ void CMoveMgr::UpdateOnGround()
 			// our last on ground y pos...
 
 			// RETAIL: 0x100f5db0 -- unless we jumped (UseJumpHeightInFallDamage).
-			bool bUpdateGroundY = (g_vtUseJumpHeightInFallDamage.GetFloat() != 0.0f) || !m_bJumped;
+			bool bUpdateGroundY = (g_vtUseJumpHeightInFallDamage.GetFloat() != 0.0f) ? true : (m_bJumped == LTFALSE);
 			if (vPos.y > m_fLastOnGroundY && bUpdateGroundY)
 			{
 				m_fLastOnGroundY = vPos.y;

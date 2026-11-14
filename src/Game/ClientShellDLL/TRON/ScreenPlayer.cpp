@@ -314,7 +314,7 @@ void CScreenPlayer::OnFocus(LTBOOL bFocus)
 		pProfile->m_nBandwidthClientCustom = (uint16)atol(m_sBandwidth);
 
 		pProfile->Save();
-		pProfile->ApplyMultiplayer(g_bLAN);
+		pProfile->ApplyMultiplayer();
 
 		int n;
 		for (n = 0; n < g_pModelButeMgr->GetNumTeamModels(); n++)

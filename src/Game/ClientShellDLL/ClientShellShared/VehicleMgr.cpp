@@ -195,8 +195,8 @@ CVehicleMgr::CVehicleMgr()
 	m_vLastVehiclePYR.Init();
 	m_vVehiclePYR.Init();
 
-	m_fTronUnknown2058 = 0.4f;
-	m_fTronUnknown205c = 1.0f;
+	m_fLightCycleCamSpeed = 0.4f;
+	m_fLightCycleCamLag = 1.0f;
 	m_bTronUnknown2170 = false;
 
 	InitWorldData();

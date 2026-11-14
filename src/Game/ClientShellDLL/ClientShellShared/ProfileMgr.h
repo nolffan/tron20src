@@ -151,7 +151,7 @@ public:
 	void		ApplyKeyboard();
 	void		ApplyJoystick();
 
-	void		ApplyMultiplayer(bool bLAN);
+	void		ApplyMultiplayer();
 
 	void		ApplyGameOptions();
 	void		ApplyCrosshair();
@@ -161,6 +161,7 @@ public:
 	void		ImplementMusicVolume();
 
 	void		ApplyDisplay();
+	void		ApplyMisc();			// RETAIL: 0x100efc80 (name ours)
 
 	void		SetPerformanceCfg(char *pszCfg);
 	void		ApplyPerformance(bool bForceDisplay);  //this may affect sound and display settings as well
@@ -176,6 +177,7 @@ public:
 	void		SetMultiplayer();
 
 	void		SetGameOptions();
+	void		SetLightCycleCamera();		// RETAIL: 0x100f18b0 (name ours)
 	void		SetCrosshair();
 
 	void		SetSound();
@@ -185,7 +187,7 @@ public:
 	void		SetPerformance();
 
 	// load/save profile to file
-	void		Load( );
+	// RETAIL: Tron has no Load(): Init (0x100ecc40) loads the sections itself
 	// RETAIL: no argument in Tron (its callers push none: CScreenJoystick's
 	// OnFocus, retail 0x10065787); NOLF2 1.x added bForceClose
 	void		Save();
@@ -197,16 +199,20 @@ public:
 
 	std::string		m_sName;
 
+	// RETAIL: Tron's profile is laid out after its constructor (0x100ec8a0)
+	// and the Load/Save sections (0x100ed180..0x100eef10); the names of
+	// Tron's new members are ours, taken from their keys in the profile.
+
 	//****************** controls
 	//mouse
     LTBOOL		m_bInvertY;
+	LTBOOL		m_bInvertLCMouse;		// "InvertLCMouse"
     LTBOOL		m_bMouseLook;
 	int			m_nInputRate;
 	int			m_nSensitivity;
 
 	//keyboard
     LTBOOL      m_bAutoCenter;
-	int			m_nTronUnknown20;	// RETAIL: Tron's (+0x20, 0 in the constructor 0x100ec8a0)
 	int			m_nNormalTurn;
 	int	  		m_nFastTurn;
 	int			m_nLookUp;
@@ -226,50 +232,41 @@ public:
 	// RETAIL: the name of the host option set in use ("ServerConfig"; retail
 	// +0x5c): Tron keeps the sets in CServerOptionMgr, not in the profile
 	std::string		m_sServerOptions;
-	uint8			m_nCPPlayerModel;
-	uint8			m_nDMPlayerModel;
-	uint8			m_nPlayerSkills[kNumSkills];
+	uint8			m_nCPPlayerModel;		// "PlayerModel"
+	uint8			m_nDMPlayerModel;		// "PlayerColor"
+	// RETAIL: +0x6a, loaded from "PlayerColor" too and sent to the server
+	// by InitMultiPlayer (0x100e84f0); the light cycle and disc match
+	// managers set it to the team's colour
+	uint8			m_nPlayerColor;
 	uint8			m_nBandwidthClient;
 	uint16			m_nBandwidthClientCustom;
-	bool			m_bMPRadar;
-	uint16			m_nClientPort;
-
-	// RETAIL: Tron's light cycle settings (the light cycle screens',
-	// CBaseScreenLightCycle 0x1000a3a0, 0x1000a560, 0x1000a600, 0x1000a660;
-	// the names are ours). Retail keeps them at +0x200 (the light cycle
-	// player name), +0x20c and +0x210 (the cycle's shade style and shade)
-	// +0x214 (the names of the circuits completed), +0x220 (the names of
-	// the cycle colors unlocked) and +0x22c (the names of the power-ups
-	// unlocked). PORT: ours sit
-	// here, in the space below, until the profile is laid out as retail's
-	// (they are not loaded or saved yet; two bytes keep them aligned)
-	char			m_aTronPadAlign[2];
-	std::string		m_sLightCycleName;
-	int				m_nLightCycleStyle;
-	int				m_nLightCycleShade;
-	StringArray		m_CompletedCircuits;
-	StringArray		m_UnlockedCycleColors;
-	StringArray		m_UnlockedPowerups;
-
-	// PORT: what retail keeps where NOLF2 had its server game options is
-	// not yet laid out (the constructor, 0x100ec8a0, has two more strings,
-	// two vectors and six ints); this keeps the size retail's
-	char			m_aTronPadServerOptions[sizeof(ServerGameOptions) - sizeof(std::string) - sizeof(int)
-						- 2 - sizeof(std::string) - 2 * sizeof(int) - 3 * sizeof(StringArray)];
 
 	//****************** game options
     uint8	            m_nSubtitles;
+	bool				m_bGoreAllowed;			// string 0x2f0 is "TRUE"
+	bool				m_bLCThirdPersonCam;	// "LCThirdPersonCam"
+	bool				m_bSkipSubIntro;		// "SkipSubIntro"
+	bool				m_bLCManualCam;			// "LCManualCam"
+	bool				m_bBodiesAllowed;		// string 0x2f1 is "TRUE" and no "NoBodies"
     bool				m_bGore;
 	uint8				m_nDifficulty;
 	LTBOOL				m_bAlwaysRun;
 	uint8				m_nLayout;
 	int					m_nHeadBob;
 	int					m_nWeaponSway;
-	int					m_nMsgDur;
-	bool				m_bSPRadar;
-	LTBOOL				m_bAutoWeaponSwitch;
+	int					m_nMsgDur;				// "PickupMessage"
+	bool				m_bSPRadar;				// RETAIL: +0x8c, not referenced
 	LTBOOL				m_bLoadScreenTips;
-	LTBOOL				m_bVehicleContour;
+	bool				m_bAlwaysShowToolTip;	// "AlwaysShowToolTip"
+	LTBOOL				m_bMouseClosesPopup;	// "MouseClosesPopup"
+	LTBOOL				m_bDiscAutoAim;			// "DiscAutoAim"
+	int					m_nLCCamLag;			// "LCCamLag"
+	int					m_nLCCamSpeed;			// "LCCamSpeed"
+	LTBOOL				m_bLCDialog;			// "LCDialog"
+	float				m_fLCCamZoom;			// "LCCamZoom"
+	float				m_fLCCamPitch;			// "LCCamPitch"
+	float				m_fLCCamYaw;			// "LCCamYaw"
+	float				m_fLCPlayerPitch;		// "LCPlayerPitch"
 
 	//crosshair
     LTBOOL				m_bCrosshair;
@@ -290,6 +287,7 @@ public:
 	float	m_fDefaultSoundMultiplier;
 	float	m_fWeaponsSoundMultiplier;
 	float	m_fSpeechSoundMultiplier;
+	LTBOOL	m_bEAXEnabled;				// "eaxenabled"
 
 	//****************** display
 	LTBOOL	m_bHardwareCursor;
@@ -302,6 +300,28 @@ public:
 	//****************** display
 	sPerformCfg m_sPerformance;
 
+	// RETAIL: up to +0x1d4, untouched by the constructor and the Load/Save
+	// sections. The constructor clears 0x9c bytes of m_sPerformance (0x27
+	// dwords) where our sPerformCfg is 0x9a: Tron's is probably two detail
+	// settings longer (PerformanceMgr.h is not ours to change this round).
+	char			m_aTronUnknown19e[0x36];
+
+	//****************** misc ("Misc")
+	char			m_szVehicleColor[32];		// "VehicleColor"
+	std::string		m_sLightCycleConfig;		// "LightCycleConfig"
+
+	// RETAIL: Tron's light cycle settings (the light cycle screens',
+	// CBaseScreenLightCycle 0x1000a3a0, 0x1000a560, 0x1000a600, 0x1000a660).
+	std::string		m_sLightCycleName;			// "LightCyclePlayerName"
+	int				m_nLightCycleStyle;			// "CycleType"
+	int				m_nLightCycleShade;			// "CycleShade"
+
+	//****************** light cycle progress ("LightCycleInfo")
+	StringArray		m_CompletedCircuits;		// "CompletedLightCycleCircuits%d"
+	StringArray		m_UnlockedCycleColors;		// "UnlockedLightCycleBikes%d"
+	StringArray		m_UnlockedPowerups;			// "UnlockedLightCyclePowerUps%d"
+	StringArray		m_UnlockedCustomMaps;		// "UnlockedLightCycleCustomMaps%d"
+
 	// RETAIL: Tron's profile has no weapon bindings (build 51's
 	// m_nWpnActions): its CUserProfile is 0x6310 bytes, its bindings at
 	// +0x248 (constructor 0x100ec8a0)
@@ -313,6 +333,8 @@ private:
 	void		LoadGameOptions();
 	void		LoadSound(bool bApply); //optionlly defer applying these settings
 	void		LoadPerformance(bool bApply); //optionlly defer applying these settings
+	void		LoadMisc();				// RETAIL: 0x100eddc0 (names ours)
+	void		LoadLightCycleInfo();	// RETAIL: 0x100edfc0
 
 	//save parts of profile to file
 	void		SaveControls();
@@ -320,6 +342,8 @@ private:
 	void		SaveGameOptions();
 	void		SaveSound();
 	void		SavePerformance();
+	void		SaveMisc();				// RETAIL: 0x100eee40
+	void		SaveLightCycleInfo();	// RETAIL: 0x100eef10
 
 
 

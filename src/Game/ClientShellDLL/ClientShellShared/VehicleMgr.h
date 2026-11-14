@@ -106,6 +106,9 @@ class CVehicleMgr
 	// Serialization
 
 	// Is it safe to save?
+	void		SetLightCycleCamSpeed(float f)	{ m_fLightCycleCamSpeed = f; }
+	void		SetLightCycleCamLag(float f)	{ m_fLightCycleCamLag = f; }
+
 	bool		CanSave() const { return m_bHaveJumpVolumeVel == LTFALSE; }
 
   protected:
@@ -226,9 +229,10 @@ class CVehicleMgr
 	float			m_fContourRoll;
 
 	// RETAIL: +0x2058 and +0x205c, set to 0.4 and 1.0 by the constructor
-	// (0x1011a2b0); not yet identified.
-	float			m_fTronUnknown2058;
-	float			m_fTronUnknown205c;
+	// (0x1011a2b0) and from the profile's "LCCamSpeed" and "LCCamLag" by
+	// CUserProfile::ApplyGameOptions (0x100ef510); names ours.
+	float			m_fLightCycleCamSpeed;
+	float			m_fLightCycleCamLag;
 
 	SurfaceType		m_eSurface;
 	SurfaceType		m_eLastSurface;

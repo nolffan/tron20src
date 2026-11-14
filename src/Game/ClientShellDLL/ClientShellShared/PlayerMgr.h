@@ -91,6 +91,9 @@ public:
     CAttachButeMgr*     GetAttachButeMgr()          { return m_pAttachButeMgr; }
 	CCameraOffsetMgr*	GetCameraOffsetMgr()		{ return m_pCameraOffsetMgr; }
 	CPlayerCamera*		GetPlayerCamera()			{ return m_pPlayerCamera; }
+	// RETAIL: read by CUserProfile::SetLightCycleCamera (0x100f18b0)
+	bool		GetTronUnknown1D7() const	{ return m_bTronUnknown1D7; }
+	bool		GetTronUnknown1D8() const	{ return m_bTronUnknown1D8; }
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }
 	CTargetMgr*			GetTargetMgr()				{ return m_pTargetMgr; }
 	CGadgetDisabler*	GetGadgetDisabler()			{ return m_pGadgetDisabler;	}

@@ -180,9 +180,9 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 		m_nHeadBob = pProfile->m_nHeadBob;
 		m_nWeaponSway = pProfile->m_nWeaponSway;
 		m_nMsgDur = pProfile->m_nMsgDur;
-		m_bAutoWeaponSwitch = pProfile->m_bAutoWeaponSwitch;
+		// PORT: Tron's profile has no AutoWeaponSwitch or VehicleContour (retail
+		// OnFocus 0x1005b850 shows the light cycle options instead)
 		m_bLoadScreenTips = pProfile->m_bLoadScreenTips;
-		m_bVehicleContour = pProfile->m_bVehicleContour;
 
 		m_pDifficultyCtrl->Enable( !(g_pLTClient->IsConnected() && IsMultiplayerGame())	);
 
@@ -200,9 +200,7 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 		pProfile->m_nHeadBob = m_nHeadBob;
 		pProfile->m_nWeaponSway = m_nWeaponSway;
 		pProfile->m_nMsgDur = m_nMsgDur;
-		pProfile->m_bAutoWeaponSwitch = m_bAutoWeaponSwitch;
 		pProfile->m_bLoadScreenTips = m_bLoadScreenTips;
-		pProfile->m_bVehicleContour = m_bVehicleContour;
 
 		pProfile->ApplyGameOptions();
 		pProfile->Save();
