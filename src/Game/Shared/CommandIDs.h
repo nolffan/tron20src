@@ -108,6 +108,16 @@
 #define COMMAND_ID_DEFEND			190
 #define COMMAND_ID_DEFEND_MODIFIER	191
 
+// RETAIL: more of Tron's actions, named after retail autoexec.cfg's
+// AddAction lines (ManualLCCam 70, SendTeamMessage 93, UtilityChooser 160,
+// NextUtility 161, ToggleLightCycleCamera 192); CUserProfile's command
+// table (CShell.dll 0x1022af80) binds them
+#define COMMAND_ID_MANUAL_LC_CAM		70
+#define COMMAND_ID_SEND_TEAM_MESSAGE	93
+#define COMMAND_ID_UTILITY_CHOOSER		160
+#define COMMAND_ID_NEXT_UTILITY			161
+#define COMMAND_ID_TOGGLE_LC_CAMERA		192
+
 // Special command ids...
 
 #define COMMAND_ID_UNASSIGNED		201	// always leave this unassigned - used in input code
