@@ -217,7 +217,7 @@ bool AINode::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 //
 // ----------------------------------------------------------------------- //
 
-void AINode::SetNodeOwner(HOBJECT hOwner)
+LTRESULT AINode::SetNodeOwner(HOBJECT hOwner)
 {
 	// Nodes may only be owned by 1 object at a time.
 	// The owner may be an AI or another node.
@@ -228,6 +228,8 @@ void AINode::SetNodeOwner(HOBJECT hOwner)
 	m_hNodeOwner = hOwner;
 
 	AITRACE( AIShowNodes, ( m_hObject, "Setting owner: %s", GetObjectName( m_hNodeOwner ) ) );
+
+	return LT_OK;
 }
 
 // ----------------------------------------------------------------------- //
@@ -238,17 +240,21 @@ void AINode::SetNodeOwner(HOBJECT hOwner)
 //
 // ----------------------------------------------------------------------- //
 
-void AINode::Lock(HOBJECT hAI)
+LTRESULT AINode::Lock(HOBJECT hAI)
 {
 	AITRACE( AIShowNodes, ( hAI, "Locking node %s (%d)\n", ::ToString( GetName() ), m_nNodeLockCount ) );
 	++m_nNodeLockCount; 
+
+	return LT_OK;
 }
 
-void AINode::Unlock(HOBJECT hAI)
+LTRESULT AINode::Unlock(HOBJECT hAI)
 {
 	AITRACE( AIShowNodes, ( hAI, "Unlocking node %s (%d)\n", ::ToString( GetName() ), m_nNodeLockCount ) );
 	AIASSERT(m_nNodeLockCount > 0, m_hObject, "AINode::Unlock: Node is not locked.");
 	--m_nNodeLockCount;
+
+	return LT_OK;
 }
 
 LTBOOL AINode::IsLocked() const

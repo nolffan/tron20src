@@ -112,7 +112,9 @@ class AINode : public GameBase
 
 		// Owner
 
-		void	SetNodeOwner(HOBJECT hOwner);
+		// RETAIL: Tron's SetNodeOwner, Lock and Unlock return 0 (retail
+		// 0x1009f070, 0x1009f170, 0x1009f260; the type is ours)
+		LTRESULT	SetNodeOwner(HOBJECT hOwner);
 		HOBJECT GetNodeOwner() { return m_hNodeOwner; }
 
 		// Containing volume
@@ -151,8 +153,8 @@ class AINode : public GameBase
 
 		// Lock/Unlock
 
-		void Lock(HOBJECT hAI);
-		void Unlock(HOBJECT hAI);
+		LTRESULT Lock(HOBJECT hAI);
+		LTRESULT Unlock(HOBJECT hAI);
 		LTBOOL IsLocked() const;
 		uint32 GetLockCount() const { return m_nNodeLockCount; }
 		
