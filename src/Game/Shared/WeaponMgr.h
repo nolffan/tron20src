@@ -637,8 +637,6 @@ class CWeaponMgr : public CGameButeMgr
 		// Checks if weaponida is better than weaponidb.
 		bool		IsBetterWeapon( uint8 nWeaponIdA, uint8 nWeaponIdB ) const;
 
-		const char* GetMPDefaultWeapons() const;
-
 	protected :
 
 		WEAPON**			m_pWeaponList;		// All weapon data
@@ -652,6 +650,12 @@ class CWeaponMgr : public CGameButeMgr
 
 		GEAR**				m_pGearList;		// All gear data
 		int32				m_nNumGear;
+
+		// RETAIL: Tron's: a list and its count between the gear and the weapon
+		// anis (+0x113c, +0x1140; ctor 0x10135e60, lookup by name
+		// 0x101383c0). Not yet identified
+		void**				m_pTronUnknown113C;
+		int32				m_nTronUnknown1140;
 	
 		WEAPONANIS**		m_pWeaponAnisList;	// Weapon Ani overrides
 		int32				m_nNumWeaponAnis;
@@ -670,7 +674,8 @@ class CWeaponMgr : public CGameButeMgr
 
 		uint32				m_nFileCRC;
 
-		std::string		m_sMPDefaults;
+		// RETAIL: Tron's has no multiplayer default weapons string (its ctor,
+		// 0x10135e60, ends at +0x1168)
 };
 
 

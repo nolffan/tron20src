@@ -302,6 +302,9 @@ CWeaponMgr::CWeaponMgr()
 	m_pGearList = LTNULL;
 	m_nNumGear = 0;
 
+	m_pTronUnknown113C = LTNULL;	// RETAIL: Tron's
+	m_nTronUnknown1140 = 0;
+
 	m_pWeaponAnisList = LTNULL;
 	m_nNumWeaponAnis = 0;
 
@@ -317,8 +320,6 @@ CWeaponMgr::CWeaponMgr()
 	m_nLastPlayerWeapon = 0;
 
 	m_nFileCRC = 0;
-
-	m_sMPDefaults = "";
 }
 
 
@@ -751,9 +752,7 @@ LTBOOL CWeaponMgr::Init(const char* szAttributeFile)
 		}
 	}
 
-	char szTmp[128];
-	m_buteMgr.GetString(WMGR_MULTI_TAG, WMGR_MULTI_DEFAULTS,"", szTmp, sizeof(szTmp));
-	m_sMPDefaults = szTmp;
+	// RETAIL: Tron's does not read the multiplayer default weapons here
 
 
 	// Free up the bute mgr's memory...
@@ -1357,11 +1356,6 @@ bool CWeaponMgr::IsBetterWeapon( uint8 nWeaponIdA, uint8 nWeaponIdB ) const
 	}
 
 	return false;
-}
-
-const char* CWeaponMgr::GetMPDefaultWeapons() const
-{
-	return m_sMPDefaults.c_str();
 }
 
 
