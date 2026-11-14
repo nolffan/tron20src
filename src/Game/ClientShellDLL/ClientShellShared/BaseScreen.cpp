@@ -860,8 +860,14 @@ LTBOOL CBaseScreen::OnLButtonDblClick(int x, int y)
 	if (m_pCaptureCtrl && pCtrl != m_pCaptureCtrl)
         return LTFALSE;
 
+	// RETAIL: 0x100d3300: a sound when the control handles it
 	if (pCtrl)
-		return pCtrl->OnLButtonDblClick(x, y);
+	{
+		LTBOOL bHandled = pCtrl->OnLButtonDblClick(x, y);
+		if (bHandled)
+			PlayInterfaceSound(IS_SELECT);
+		return bHandled;
+	}
 	else
         return LTFALSE;
 }
