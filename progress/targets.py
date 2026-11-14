@@ -122,7 +122,11 @@ TARGETS = [
          # thunk (279 functions at one address), and its texture code,
          # d3dx9tex.obj's D3DXLoadSurfaceFromMemory to dxtn.obj's
          # D3DXEncodeDXT5 (149; its first pages are the encrypted ones).
-         middleware=[(0x004b59b0, 0x004c8060), (0x00574678, 0x00581b9b)],
+         # The texture block runs on to 0x581c2c: four more of D3DX's
+         # functions (0x581b9b..0x581c23; the developer build has the same
+         # bytes at 0x587bbf) and d3d9.lib's Direct3DCreate9 thunk
+         # (0x581c26).
+         middleware=[(0x004b59b0, 0x004c8060), (0x00574678, 0x00581c2c)],
          third_party=["d3dx9.lib"]),
     dict(label="server.dll", what="the engine's server", kind="image",
          shipped=REFERENCE + "/server.dll", stem="server",
