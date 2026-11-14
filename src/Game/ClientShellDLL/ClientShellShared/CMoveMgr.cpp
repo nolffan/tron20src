@@ -2531,11 +2531,7 @@ LTRESULT CMoveMgr::OnObjectRotate(HOBJECT hObj, bool bTeleport, LTRotation *pNew
 
 LTRESULT CMoveMgr::AddPusher(const LTVector &pos, float radius, float startDelay, float duration, float strength)
 {
-	// Don't push a dead player...
-	
-	if( g_pPlayerMgr->IsPlayerDead() )
-		return LT_ERROR;
-
+	// RETAIL: 0x100f9680 -- Tron pushes dead players too.
 	Pusher *pPusher = Pusher::GetBank()->New();
 
 	if(!pPusher)
@@ -2656,7 +2652,8 @@ void CMoveMgr::WritePositionInfo(ILTMessage_Write *pMsg)
 	{
 		g_pLTClient->GetObjectPos(m_hObject, &myPos);
 		// If we're paused on our end, tell the server we're not going to move
-		if (g_pGameClientShell->IsGamePaused())
+		// RETAIL: 0x100f98c0 -- Tron tests only the server's pause.
+		if (g_pGameClientShell->IsServerPaused())
 			myVel = LTVector(0.0f, 0.0f, 0.0f);
 		else
 			myVel = GetVelocity();
@@ -2735,23 +2732,12 @@ LTFLOAT CMoveMgr::GetMaxVelMag() const
 			}
 		}
 
-		if( g_pPlayerMgr->IsCarryingHeavyObject() && fMaxVel > m_fWalkVel)
-		{
-
-			float fDiff = (fMaxVel - m_fWalkVel);
-
-			fDiff *= g_pPlayerStats->GetSkillModifier(SKL_CARRY,CarryModifiers::eCarryBodyMovement);
-
-			fMaxVel -= fDiff;
-
-		}
-
-
+		// RETAIL: 0x100f99d0 -- Tron has no carrying penalty.
 
 		//Calculate any movement penalties
 		LTFLOAT fPenalty = CalculateMovementPenalty();
 
-		fMaxVel *= ((1.0f - fPenalty) * fMoveMultiplier);
+		fMaxVel = (1.0f - fPenalty) * fMaxVel * fMoveMultiplier;
 
 	}
 
