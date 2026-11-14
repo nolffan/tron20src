@@ -9,8 +9,6 @@
 #include "ltmodule.h"
 #include "loadstatus.h"
 
-class CPlayerMover;
-
 class IWorldBlockerData : public IBase
 {
 public:
@@ -36,7 +34,6 @@ public:
 		const LTVector &vStartPt, // Starting point
 		const LTVector &vEndPt, // Ending point
 		const LTVector &vDims, // Dims of the player
-		const CPlayerMover *pMover, // RETAIL: the mover that collides
 		float *pTime, // Time of first intersection
 		LTVector *pNormal // Normal of first intersection
 		) = 0;
