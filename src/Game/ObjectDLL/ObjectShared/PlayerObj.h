@@ -436,6 +436,10 @@ class CPlayerObj : public CCharacter
 		void	ChangeToWeapon(const char* pWeaponName);
 
 		virtual void HandleVolumeEnter(AIInformationVolume* pNewVolume);
+
+		// RETAIL: Tron's CCharacter virtuals (retail 0x100864f0, 0x100862e0)
+		virtual LTBOOL AllowDiskSpike();
+		virtual void HandleKilledCharacter(CCharacter* pVictim);
 		virtual float GetVerticalThreshold() const;
 		virtual float GetInfoVerticalThreshold() const;
 

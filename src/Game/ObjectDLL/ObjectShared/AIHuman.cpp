@@ -458,6 +458,29 @@ void CAIHuman::DestroyArmor()
 	}
 }
 
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	CAIHuman::RemoveArmor()
+//              
+//	PURPOSE:	RETAIL: Tron's (retail 0x1016cf20): tells the armor to
+//				come off once we're dead (name ours)
+//              
+//----------------------------------------------------------------------------
+void CAIHuman::RemoveArmor()
+{
+	if( m_pAttachments )
+	{
+		BaseClass* apObjects[AI_MAX_OBJECTS];
+		CAttachmentPosition* apObjectPositions[AI_MAX_OBJECTS];
+		int cObjects = m_pAttachments->EnumerateObjects(apObjects, apObjectPositions, AI_MAX_OBJECTS);
+
+		for(int i = 0; i < cObjects; i++ )
+		{
+			SendTriggerMsgToObject( LTNULL, apObjects[i]->m_hObject, LTFALSE, "ARMOR_REMOVE" );
+		}
+	}
+}
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -605,6 +628,24 @@ void CAIHuman::PlayDeathSound()
 
 	// RETAIL: a sound, not dialogue, in Tron (retail 0x1016d320)
 	CCharacter::PlaySound(szDeathSound, m_fSoundRadius, LTFALSE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHuman::HandleKilledCharacter()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1016d3a0): we killed pVictim; say
+//				something if it was an enemy player (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHuman::HandleKilledCharacter(CCharacter* pVictim)
+{
+	if( IsKindOf( pVictim->GetUserObject(), "CPlayerObj" ) &&
+		BAD == GetRelativeAlignment( GetRelationSet(), pVictim->GetRelationData() ))
+	{
+		PlaySound( kAIS_PlayerDeathResponse, LTTRUE );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1656,6 +1697,8 @@ void CAIHuman::UpdateAnimation()
 	CAI::UpdateAnimation();
 	if(m_damage.IsDead())
 	{
+		// RETAIL: Tron's (retail 0x1016f9c6)
+		RemoveArmor();
 		return;
 	}
 
@@ -2458,6 +2501,25 @@ void CAIHuman::SetAIType( const char* const szType )
 		g_pLTServer->CPrint( "Unknown CharacterType: %s, defaulting to ground", szType );
 		SetHumanType(eHT_Ground);
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHuman::AllowDiskSpike()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x10171010): the template's
+//				"AllowDiskSpike" (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CAIHuman::AllowDiskSpike()
+{
+	if( !GetAITemplate() )
+	{
+		return LTFALSE;
+	}
+
+	return GetAITemplate()->bAllowDiskSpike;
 }
 
 

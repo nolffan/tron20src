@@ -74,6 +74,9 @@ class CTronPlayerObj : public CPlayerObj
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
 
+		// RETAIL: CCharacter's Tron virtual (slot 0xdc, retail 0x100629a0)
+		virtual bool	IsContinuousFiring() { return m_bTronUnknown325c; }
+
 		// RETAIL: no HandleDamage override in Tron (its slot 106 is
 		// CPlayerObj's)
 
@@ -166,7 +169,7 @@ class CTronPlayerObj : public CPlayerObj
 		PingList	m_lstPings;		// RETAIL: 0x3228 ("AddPing", 0x100675c5)
 		LTObjRef	m_hLightCycle;					// RETAIL: 0x322c (RemoveVehicleModel removes it)
 		char		m_szLightCycleModel[32];		// RETAIL: 0x323c ("LightCycleBlue")
-		bool		m_bTronUnknown325c;
+		bool		m_bTronUnknown325c;	// RETAIL: set/cleared by the continuous weapons' start/stop fire (0x10062fa0, 0x10062ff0)
 		uint8		m_iPerformanceRatings[NUM_RATINGS];		// 0x325d
 		uint8		m_iSurgePerformanceRatings[NUM_RATINGS];	// 0x3262
 		char		m_szTronUnknown3267[64];

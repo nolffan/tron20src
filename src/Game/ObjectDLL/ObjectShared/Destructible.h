@@ -234,6 +234,7 @@ class CDestructible : public IAggregate
 		LTFLOAT     GetEnergy()		        const { return m_fEnergy; }
         LTFLOAT     GetArmorPoints()        const { return m_fArmorPoints; }
         LTBOOL      IsDead()                const { return m_bDead; }
+		LTBOOL		GetTronUnknown30()		const { return m_bTronUnknown30; }	// RETAIL: CPlayerObj::HandleKilledCharacter reads it (retail 0x1008630b)
 		DamageType	GetDeathType()			const { return m_eDeathType; }
 		DamageType	GetLastDamageType()		const { return m_eLastDamageType; }
         LTFLOAT     GetDeathDamage()        const { return m_fDeathDamage; }
