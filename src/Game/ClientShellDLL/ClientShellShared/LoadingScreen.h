@@ -21,7 +21,11 @@ class CLoadingScreen
 // External functions
 public:
 	CLoadingScreen();
-	~CLoadingScreen();
+	// RETAIL: virtual: retail's CLoadingScreen has a vtable (0x101eb940,
+	// two slots: this, then 0x10161f70, not yet identified), so its
+	// members sit 4 bytes later (CInterfaceMgr's inline uses read the
+	// state at +0x30: 0x100c8680)
+	virtual ~CLoadingScreen();
 
 	// Note : Init/Term will be called automatically when needed, so
 	// you shouldn't ever actually need to call them.

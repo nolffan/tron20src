@@ -390,16 +390,22 @@ class CInterfaceMgr
 		// (Note : This does not change out of the loading state, it only stops the loading screen's rendering)
 		void	HideLoadScreen();
 
+		// RETAIL: out of line (0x100d05e0..0x100d0640), each checks the
+		// loading screen pointer
 		// Is the loading screen visible?
-		bool	IsLoadScreenVisible() { return m_LoadingScreen.IsVisible() != LTFALSE; }
+		bool	IsLoadScreenVisible();
 		// Pause the loading screen animation
-		void	PauseLoadScreen() { m_LoadingScreen.Pause(); }
+		void	PauseLoadScreen();
 		// Resume the loading screen animation
-		void	ResumeLoadScreen() { m_LoadingScreen.Resume(); }
+		void	ResumeLoadScreen();
 		// Update loading screen mission info
-		void	UpdateLoadScreenInfo() { m_LoadingScreen.UpdateMissionInfo(); }
+		void	UpdateLoadScreenInfo();
 		// Set the screen to render on the loading screen
-		void	SetLoadingRenderScreen( CBaseScreen *pScreen ) { m_LoadingScreen.SetRenderScreen( pScreen ); }
+		void	SetLoadingRenderScreen( CBaseScreen *pScreen ) { if (m_pLoadingScreen) m_pLoadingScreen->SetRenderScreen( pScreen ); }
+
+		// RETAIL: CTronInterfaceMgr's constructor sets it (0x1009cb97)
+		void	SetLoadingScreen( CLoadingScreen *pLoadingScreen ) { m_pLoadingScreen = pLoadingScreen; }
+		CLoadingScreen* GetLoadingScreen() const { return m_pLoadingScreen; }
 		
 
 		//called to indicate an intentional disconnection from the server
@@ -429,10 +435,6 @@ class CInterfaceMgr
 		// should take special precautions if we fail.
 		bool	GetCommandLineJoin( ) const { return m_bCommandLineJoin; }
 		void	SetCommandLineJoin( bool bCommandLineJoin ) { m_bCommandLineJoin = bCommandLineJoin; }
-
-		void	SkipPreLoad( bool bSkip ) { m_bSkipPreLoadScreen = bSkip; }
-		bool	ShouldSkipPreLoad() const { return m_bSkipPreLoadScreen; }
-		void	SetPostLoadScreenID( eScreenID eID = SCREEN_ID_POSTLOAD ) { m_ePostLoadScreenID = eID; }
 
 		// Called when a new game is started.
 		bool	StartingNewGame( );
@@ -468,16 +470,21 @@ class CInterfaceMgr
 		CTronTeamMgr	m_TeamMgr;
 
 		CScreenSpriteMgr m_ScreenSpriteMgr;		// +0xe73c Screen sprite mgr (new for Tron/TO2)
+		// (CScreenSpriteMgr is retail's 0x28 bytes: its constructor 0x10164c00)
+		char			m_aTronPadScreenSpriteMgr[0x28 - sizeof(CScreenSpriteMgr)];
 
+		CGameSettings	m_Settings;				// +0xe764
+		// RETAIL: one timer, no team timers (Tron's CInterfaceTimer is 0x18
+		// bytes, no team id or colour: its Draw 0x10170230); ours is 0x1c,
+		// so m_Credits and m_PopupText sit 4 bytes late until it is fixed
+		// (the pad below takes the difference back)
+		CInterfaceTimer m_InterfaceTimer;		// +0xe904 Main interface timer
+		CCredits		m_Credits;				// +0xe91c Display credits
+		CPopupText		m_PopupText;			// +0xe93c Display in game text
+		// (CPopupText is retail's 0xad0 bytes: its constructor 0x1014eb00)
+		char			m_aTronPadPopupText[0xad0 - sizeof(CPopupText) - (sizeof(CInterfaceTimer) - 0x18)];
 
-		CGameSettings	m_Settings;
-		CInterfaceTimer m_InterfaceTimer;		// Main interface timer
-		CInterfaceTimer m_RedInterfaceTimer;	// Blue team interface timer
-		CInterfaceTimer m_BlueInterfaceTimer;	// Red team interface timer
-		CCredits		m_Credits;				// Display credits
-		CPopupText		m_PopupText;			// Display in game text
-
-		CFullScreenTint m_FullScreenTint;		// All full screen tinting (used for pause)
+		CFullScreenTint m_FullScreenTint;		// +0xf40c All full screen tinting (used for pause)
 
 		GameState		m_eLastGameState;		// Previous game state
 
@@ -553,7 +560,10 @@ class CInterfaceMgr
         LTBOOL      m_bSavedGameMusic;          // Did we save the game music state?
 		CMusicState	m_GameMusicState;			// State of the game music
 
-		CLoadingScreen m_LoadingScreen;			// The loading screen object/thread
+		// RETAIL: a pointer (+0xf8e4): CTronInterfaceMgr's constructor
+		// (0x1009cb97) points it at its CTronLoadingScreen; every use
+		// checks it
+		CLoadingScreen* m_pLoadingScreen;		// +0xf8e4 The loading screen object/thread
 		LTBOOL		m_bLoadFailed;
 		bool		m_bCommandLineJoin;
 		eScreenID	m_eLoadFailedScreen;
@@ -568,10 +578,9 @@ class CInterfaceMgr
 		bool	m_bEnteredScreenState;
 		bool	m_bIntentionalDisconnect;
 
-		// Pre/Post load screen...
-
-		bool		m_bSkipPreLoadScreen;
-		eScreenID	m_ePostLoadScreenID;
+		// RETAIL: Tron has no pre/post load screen members; the letter box
+		// borders are here (+0xf900, UpdateLetterBox 0x100cd850)
+		LT_POLYF4	m_LetterBox[2];				// Letterbox top/bottom border
 		
 protected:
         LTBOOL	PrePlayingState(GameState eCurState);
@@ -651,12 +660,6 @@ private:
 		LTBOOL  m_bStartedNew;
 
 		float	m_fLastUpdateRequestTime;
-
-		// RETAIL: our members above do not yet match retail's (sizes and
-		// order differ: constructor 0x100c67b0); this pad puts m_bInitialized
-		// at retail's +0xf980 (checked in the constructor). Shrink it when
-		// a member above grows.
-		char	m_aTronUnknownPad[0xf980 - 0xf5cc];
 
 		// true after Init called.  false after Term called.
 		bool	m_bInitialized;

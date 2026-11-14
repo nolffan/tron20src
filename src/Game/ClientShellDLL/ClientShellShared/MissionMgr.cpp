@@ -851,23 +851,8 @@ bool CMissionMgr::SetLoadingLevel( )
 		return true;
 	}
 
-	// Change to the loading level state.
-	if (!m_bServerWaiting)
-	{
-		//  if we are the host, we can ignore this
-		if (g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) )
-			g_pInterfaceMgr->ChangeState(GS_LOADINGLEVEL);
-
-		return true;
-
-	}
-	else if( g_pInterfaceMgr->ShouldSkipPreLoad() )
-	{
-		// Skipping pre-load, go right into level loading...
-
-		g_pInterfaceMgr->ChangeState( GS_LOADINGLEVEL );
-	}
-	else
+	// RETAIL: 0x100ec1c0: Tron goes to the preload screen; no server
+	// waiting or skip pre-load checks
 	{
 		CScreenPreload *pPreload = (CScreenPreload *) (g_pInterfaceMgr->GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
   		if (pPreload)
