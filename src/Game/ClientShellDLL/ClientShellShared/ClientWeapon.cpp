@@ -3490,14 +3490,8 @@ bool CClientWeapon::PlayReloadAnimation()
 		}
 
 		ASSERT( 0 != g_pPlayerStats );
+		// RETAIL: Tron's weapons have no reload animation rate scale
 		LTFLOAT fRate = 1.0f;
-		
-		// Scale the animation rate...
-
-		if( m_pWeapon )
-		{
-			fRate *= m_pWeapon->fReloadAnimRateScale;
-		}
 
 		// Scale the animation rate based on skill modifiers...
 		
@@ -3656,13 +3650,8 @@ bool CClientWeapon::PlayFireAnimation( bool bResetAni )
 	bool bIsCurAniDone		= !!(dwState & MS_PLAYDONE);
 
 	
-	// Scale the animation rate...
-	
+	// RETAIL: Tron's weapons have no fire animation rate scale
 	float fRate = 1.0f;
-	if( m_pWeapon )
-	{
-		fRate *= m_pWeapon->fFireAnimRateScale;
-	}
 
 	// KLS 4/26/02 - Re-wrote this logic to fix some bugs and to make things
 	// a bit clearer.

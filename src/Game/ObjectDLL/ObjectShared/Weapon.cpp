@@ -232,45 +232,8 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 	AmmoType eAmmoType = m_pAmmoData->eType;
 
 
-	// Restrict the rate of fire
-	if ((info.nFireTimestamp - m_nLastTimestamp) < m_pWeaponData->m_nFireDelay)
-	{
-		// Hey!  That was too fast!
-		// Don't actually fire but decrement the ammo count.
-		
-		if( nAmmo > 0 )
-		{
-			if (m_nAmmoInClip > 0)
-			{
-				if (nShotsPerClip > 0 && !bInfiniteAmmo)
-				{
-					m_nAmmoInClip--;
-				}
-
-				if (!bInfiniteAmmo)
-				{
-					m_pParent->DecrementAmmo(m_nAmmoId);
-				}
-			}
-
-			// Check to see if we need to reload...
-
-			if (nShotsPerClip > 0)
-			{
-				if (m_nAmmoInClip <= 0)
-				{
-					// Only automatically reload if we're the player... and don't play the animation.
-
-					if ( IsPlayer(info.hFiredFrom) )
-					{
-						ReloadClip(LTFALSE, nAmmo);
-					}
-				}
-			}
-		}
-
-		return W_IDLE;
-	}
+	// RETAIL: Tron's Fire does not restrict the rate of fire here (its
+	// WEAPON's fire delay is in seconds; 0x10157540)
 
 	// Remember when this shot went off..
 	m_nLastTimestamp = info.nFireTimestamp;

@@ -256,6 +256,8 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
 
 	char* pSnd = LTNULL;
 
+	// RETAIL: Tron's weapons have no WeaponSndRadius: the non-fire sounds
+	// keep this radius (CShell 0x100d8730)
 	LTFLOAT fRadius = WEAPON_SOUND_RADIUS;
 
 	switch (eSoundId)
@@ -293,21 +295,18 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
 		case PSI_RELOAD3:
 		{
 			pSnd = pWeapon->szReloadSounds[eSoundId - PSI_RELOAD];
-			fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 		}
 		break;
 
 		case PSI_SELECT:
 		{
 			pSnd = pWeapon->szSelectSound;
-			fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 		}
 		break;
 
 		case PSI_DESELECT:
 		{
 			pSnd = pWeapon->szDeselectSound;
-			fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 		}
 		break;
 
@@ -318,7 +317,6 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
 		case PSI_WEAPON_MISC5:
 		{
 			pSnd = pWeapon->szMiscSounds[eSoundId - PSI_WEAPON_MISC1];
-			fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 		}
 		break; 
 

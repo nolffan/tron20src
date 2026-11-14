@@ -195,10 +195,7 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 		}
 	}
 
-	// See if this weapon has been restricted.  If it was,
-	// don't allow the weapon.
-	if( pWeapon->bServerRestricted )
-		return false;
+	// RETAIL: Tron's WEAPON cannot be server restricted (no such member)
 
 	// This allows ammo type to be specified without appending it
 	// to the WeaponType attribute (e.g., a spawned weapon)...
@@ -258,7 +255,7 @@ bool WeaponItem::PostPropRead(ObjectCreateStruct *pStruct)
 	m_hstrRespawnSoundFile = g_pLTServer->CreateString( WEAPONITEM_RESPAWN_SOUND );
 
 	m_vScale = pWeapon->vHHScale;
-	m_sClientFX = pWeapon->szPowerupFX;
+	// RETAIL: Tron's WEAPON has no PowerupFX
 
     m_bBounce = LTFALSE;
     m_bRotate = LTFALSE;
@@ -331,33 +328,8 @@ void WeaponItem::PickedUp( ILTMessage_Read *pMsg )
 {
 	PickupItem::PickedUp( pMsg );
 
-	if( m_bRespawn )
-	{
-		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( m_nWeaponId );
-		if( !pWeapon )
-			return;
-
-		// Change the skins and renderstyles to the waiting to respawn files...
-
-		ObjectCreateStruct ocs;
-
-		pWeapon->blrRespawnWaitSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-		pWeapon->blrRespawnWaitRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-		if( pWeapon->blrRespawnWaitRenderStyles.GetNumItems() < 1 )
-			LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-		
-		g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-		// Stop playing PowerupFX and play RespawnWaitFX...
-	
-		SetClientFX( pWeapon->szRespawnWaitFX );
-
-		// Set our visibility and translucency...
-
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, pWeapon->bRespawnWaitVisible ? FLAG_VISIBLE : 0, FLAG_VISIBLE );
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, pWeapon->bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
-	}
+	// RETAIL: Tron's WEAPON has no respawn-wait skins, render styles or FX
+	// (PORT: NOLF2 switched to them here while the item waited to respawn)
 }
 
 // ----------------------------------------------------------------------- //
@@ -392,9 +364,7 @@ void WeaponItem::Respawn( )
 
 	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
 
-	// Stop playing RespawnWaitFX and play PowerupFX...
-	
-	SetClientFX( pWeapon->szPowerupFX );
+	// RETAIL: Tron's WEAPON has no PowerupFX
 }
 
 // ----------------------------------------------------------------------- //

@@ -7118,7 +7118,7 @@ void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 				AMMO const *pAmmo     = g_pWeaponMgr->GetAmmo(pWeaponStruct->nDefaultAmmoId);		
 
 				//if we have valid data for the weapon and ammo, create one...
-				if (pAmmo && pWeaponStruct && !pWeaponStruct->bServerRestricted && 
+				if (pAmmo && pWeaponStruct && 
 					pWeaponStruct->szHHModel[0])
 				{
 					sprintf(szSpawn, "WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0",
@@ -8101,7 +8101,7 @@ bool CPlayerObj::AcquireLevelDefaultWeapons( int nMissionId, int nLevelId )
 			}
 
 			WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
-			if( !pWeaponData || pWeaponData->bServerRestricted )
+			if( !pWeaponData )
 			{
 				ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid weapon data" );
 				continue;
@@ -8141,7 +8141,7 @@ END HACK - for DM testing */
 		}
 
 		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
-		if( !pWeaponData || pWeaponData->bServerRestricted )
+		if( !pWeaponData )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid weapon data" );
 			continue;
@@ -8178,7 +8178,7 @@ END HACK - for DM testing */
 		}
 
 		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
-		if( !pWeaponData || pWeaponData->bServerRestricted )
+		if( !pWeaponData )
 		{
 			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid weapon data" );
 			continue;

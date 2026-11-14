@@ -399,6 +399,11 @@ private:
 typedef CTList<AMMO*> AmmoList;
 
 
+// RETAIL: Tron's WEAPON is 0x18c bytes in both DLLs (CShell's ctor
+// 0x101384a0, InitMembers 0x10138880): one name, no weapon sound radius,
+// animation rate scales, powerup/respawn-wait FX or server restriction; it
+// adds HideWeaponWhileClipEmpty, DefenseClassData, WeaponUsableByAIs,
+// Translucent and IsPlayerPrimitive, and keeps its fire delay in seconds.
 struct WEAPON
 {
 	WEAPON();
@@ -416,18 +421,15 @@ struct WEAPON
 	void	Save(CButeMgr & buteMgr) const;
 
 	LTBOOL  bInited;
-
 	int		nId;
 
+	int		nNameId;
 	int		nDescriptionId;
 	int		nClientWeaponType;
 	int		nIsAmmoNoPickupId;
 	int		nAniType;
 
 	char*	szName;
-
-	char*	szLongName;
-	char*	szShortName;
 
 	LTVector vPos;
   	LTVector vMuzzlePos;
@@ -438,6 +440,7 @@ struct WEAPON
 
 	CButeListReader blrPVSkins;
 	CButeListReader blrHHSkins;
+
 	CButeListReader blrPVRenderStyles;
 	CButeListReader blrHHRenderStyles;
 
@@ -458,21 +461,22 @@ struct WEAPON
 
 	int		nFireSoundRadius;
 	int		nAIFireSoundRadius;
-	int		nWeaponSoundRadius;		// All non-fire sounds (Reload, Select, Deselect... etc.)
-
 	LTBOOL  bEnvironmentMap;
 	LTBOOL  bInfiniteAmmo;
 	LTBOOL  bLooksDangerous;
 	LTBOOL	bHideWhenEmpty;
 	LTBOOL	bIsAmmo;
 	LTBOOL	bUseUWMuzzleFX;
-
 	int		nShotsPerClip;
+	LTBOOL	bHideWeaponWhileClipEmpty;	// RETAIL: Tron's ("HideWeaponWhileClipEmpty")
 
 	int		nNumAmmoIds;
 	int		*aAmmoIds;
-
 	int		nDefaultAmmoId;
+
+	// RETAIL: Tron's: the id of the MOD named by "DefenseClassData" (the
+	// name is ours)
+	int		nDefenseClassModId;
 
 	int		nNumModIds;
 	int		*aModIds;
@@ -482,7 +486,6 @@ struct WEAPON
 
 	int		nMinPerturb;
 	int		nMaxPerturb;
-
 	int		nRange;
 	LTVector vRecoil;
 	int		nVectorsPerRound;
@@ -498,44 +501,28 @@ struct WEAPON
 	float	fFireRecoilDecay;
 
 	CMuzzleFX	*pPVMuzzleFX;	// Player-view muzzle fx
-
 	char	*szPVMuzzleFxName;
 	char	*szHHMuzzleFxName;
 
 	int		nNumPVAttachClientFX;		// FXEd player view attachments
 	char	*szPVAttachClientFX[ WMGR_MAX_PVCLIENTFX_ATTACHMENTS ];
 
-	uint32	m_nFireDelay;		// Minimum time (ms) between firing
+	// RETAIL: Tron's is in seconds ("FireDelay" is read in ms and scaled)
+	float	m_fFireDelay;		// Minimum time between firing
 
 	char	*szHolsterAttachment;
-	
-	float	fFireAnimRateScale;
-	float	fReloadAnimRateScale;
 
-	char	*szPowerupFX;
-	char	*szRespawnWaitFX;
-
-	CButeListReader	blrRespawnWaitSkins;
-	CButeListReader	blrRespawnWaitRenderStyles;
-
-	bool	bRespawnWaitVisible;
-	bool	bRespawnWaitTranslucent;
-
-	// Indicates server option has set restriction.
-	bool	bServerRestricted;
-	bool	bCanServerRestrict;
-
-public:	// PORT: Tron's code reads the name's string id (same place)
-
-	int		nNameId;
-private:
-	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
-	char	*szIcon; 
-
-public:
-	// RETAIL: Tron's "IsPlayerPrimitive" (retail WEAPON +0x184, a byte; the
-	// Primitive Charge subroutine adds to such a weapon's energy use)
+	// RETAIL: Tron's "IsPlayerPrimitive" (a byte; the Primitive Charge
+	// subroutine adds to such a weapon's energy use)
 	uint8	bIsPlayerPrimitive;
+	bool	bWeaponUsableByAIs;		// RETAIL: Tron's ("WeaponUsableByAIs")
+	bool	bTranslucent;			// RETAIL: Tron's ("Translucent")
+
+private:
+
+	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
+
+	char	*szIcon; 
 };
 
 typedef CTList<WEAPON*> WeaponList;

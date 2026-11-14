@@ -4714,7 +4714,7 @@ void CGameClientShell::HandleWeaponPickup(uint8 nWeaponID, bool bSuccess /* = tr
 		}
 		else
 		{
-			FormatString(IDS_GUNPICKUP,szMsg,sizeof(szMsg),pWeapon->szShortName);
+			FormatString(IDS_GUNPICKUP,szMsg,sizeof(szMsg),pWeapon->szName);
 		}
 	}
 	else if( IsCoopMultiplayerGameType( ))
@@ -4725,11 +4725,11 @@ void CGameClientShell::HandleWeaponPickup(uint8 nWeaponID, bool bSuccess /* = tr
 		}
 		else if (pWeapon->bInfiniteAmmo)
 		{
-			FormatString(IDS_GUN_NOPICKUP_INF,szMsg,sizeof(szMsg),pWeapon->szShortName);
+			FormatString(IDS_GUN_NOPICKUP_INF,szMsg,sizeof(szMsg),pWeapon->szName);
 		}
 		else
 		{
-			FormatString(IDS_GUN_NOPICKUP,szMsg,sizeof(szMsg),pWeapon->szShortName);
+			FormatString(IDS_GUN_NOPICKUP,szMsg,sizeof(szMsg),pWeapon->szName);
 		}
 
 		// Play the sound bute NoPickupSound
