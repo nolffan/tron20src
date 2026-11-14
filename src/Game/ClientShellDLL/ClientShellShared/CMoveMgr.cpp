@@ -2339,8 +2339,14 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 		}
 
         theStruct.m_ObjectType = OT_MODEL;
-		theStruct.m_Flags = FLAG_SOLID | FLAG_GRAVITY | FLAG_STAIRSTEP;
+		theStruct.m_Flags = FLAG_SOLID | FLAG_STAIRSTEP;
 		theStruct.m_Flags2 = FLAG2_PLAYERCOLLIDE | FLAG2_SPECIALNONSOLID;
+
+		// RETAIL: 0x100f8f20 -- no gravity for multiplayer light cycles
+		if (GetGameType() != eGameTypeMultiplayerLightcycles)
+		{
+			theStruct.m_Flags |= FLAG_GRAVITY;
+		}
 
 		HOBJECT hClientObj = g_pLTClient->GetClientObject();
 		if( hClientObj )
@@ -2348,9 +2354,7 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 			g_pLTClient->GetObjectPos(hClientObj, &theStruct.m_Pos);
 			g_pCommonLT->SetObjectFilenames(hClientObj, &theStruct);
 
-			// Since the object was created in the correct position we don't need to force it later...
-
-			m_bForceToServerPos = LTFALSE;
+			// RETAIL: 0x100f8f20 -- Tron leaves m_bForceToServerPos alone here.
 		}
 		else
 			m_bForceToServerPos = LTTRUE;
