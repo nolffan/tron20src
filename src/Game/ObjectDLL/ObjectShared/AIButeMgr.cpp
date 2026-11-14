@@ -361,9 +361,15 @@ void CAIButeMgr::SetTemplate(int iTemplate)
 	// RETAIL: Tron's (retail 0x1019f66d)
 	Template.bAllowDiskSpike				= CButeTools::GetValidatedBool(m_buteMgr, s_aTagName,	"AllowDiskSpike", LTTRUE);
 
-	Template.flSentryChallengeScanDistMax	= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryChallengeScanDistMax", 0.0f);
-	Template.flSentryChallengeDistMax		= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryChallengeDistMax", 0.0f);
-	Template.flSentryMarkDistMax			= CButeTools::GetValidatedDouble(m_buteMgr, s_aTagName,   "SentryMarkDistMax", 0.0f);
+	// RETAIL: 0x1019f67f: Tron's ram weapon (no sentry distances read)
+	char szRamWeapon[256];
+	szRamWeapon[0] = '\0';
+	Template.pRamWeapon = LTNULL;
+	CButeTools::GetValidatedString(m_buteMgr, s_aTagName, "RamWeapon", szRamWeapon, sizeof(szRamWeapon));
+	if( szRamWeapon[0] )
+	{
+		Template.pRamWeapon = g_pWeaponMgr->GetWeapon(szRamWeapon);
+	}
 
 	// Create map of sense to sense distance.
 	// Only add map entries if sense is set to TRUE.
@@ -388,6 +394,32 @@ void CAIButeMgr::SetTemplate(int iTemplate)
 		if ( LTTRUE == CButeTools::GetValidatedBool(m_buteMgr, s_aTagName, s_aAttName, LTTRUE ) )
 		{
 			Template.iUseableVolumesMask |= (AIVolume::EnumVolumeType)(1 << nVolumeType);
+		}
+	}
+
+	// RETAIL: 0x1019f7cc: Tron's weapon set, by name; the first set if the
+	// name is not one, an empty one if there are none
+	char szWeaponSet[64];
+	CButeTools::GetValidatedString(m_buteMgr, s_aTagName, "WeaponSet", szWeaponSet, sizeof(szWeaponSet));
+	for( AIBM_WeaponSetList::iterator it = m_lstWeaponSets.begin(); it != m_lstWeaponSets.end(); ++it )
+	{
+		if( it->sName == szWeaponSet )
+		{
+			Template.pWeaponSet = it;
+			break;
+		}
+	}
+
+	if( !Template.pWeaponSet )
+	{
+		if( m_lstWeaponSets.size() == 0 )
+		{
+			static AIBM_WeaponSet s_DefaultWeaponSet;
+			Template.pWeaponSet = &s_DefaultWeaponSet;
+		}
+		else
+		{
+			Template.pWeaponSet = &m_lstWeaponSets[0];
 		}
 	}
 }
@@ -794,9 +826,13 @@ void CAIButeMgr::SetSenses()
 
 void CAIButeMgr::SetRules()
 {
-	m_Rules.bEnableMeleeRepathing			= CButeTools::GetValidatedBool(m_buteMgr, "Rules", "EnableDeltaRepathing");
-	m_Rules.bKeepInvalidNodeHistory			= CButeTools::GetValidatedBool(m_buteMgr, "Rules", "KeepInvalidNodeHistory");
-	m_Rules.bUseTrueWeaponPosition			= CButeTools::GetValidatedBool(m_buteMgr, "Rules", "UseTrueWeaponPosition");
+	// RETAIL: 0x101a0c90: Tron copies the tag name to the stack
+	char szRules[] = "Rules";
+	m_Rules.bEnableMeleeRepathing			= CButeTools::GetValidatedBool(m_buteMgr, szRules, "EnableDeltaRepathing");
+	m_Rules.bKeepInvalidNodeHistory			= CButeTools::GetValidatedBool(m_buteMgr, szRules, "KeepInvalidNodeHistory");
+	m_Rules.bUseTrueWeaponPosition			= CButeTools::GetValidatedBool(m_buteMgr, szRules, "UseTrueWeaponPosition");
+	m_Rules.bEnableRecoilWeaponNodeTracking	= CButeTools::GetValidatedBool(m_buteMgr, szRules, "EnableRecoilWeaponNodeTracking");
+	m_Rules.fTalkToPlayerCleanupDist		= CButeTools::GetValidatedDouble(m_buteMgr, szRules, "TalkToPlayerCleanupDist");
 }
 
 void CAIButeMgr::SetAttract()
