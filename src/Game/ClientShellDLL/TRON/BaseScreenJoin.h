@@ -81,6 +81,14 @@ protected:
 	bool	ParseAddress(const std::string &sAddress, char *pszIP, uint16 *pnPort);
 	SBServer FindServer(const char *pszIP, uint16 nPort);
 
+public:
+	// RETAIL: Tron's check for a patch (0x10007b40, 0x10007c40, 0x10007d70;
+	// the names are ours)
+	void	HandleUpdate(bool bDownload);
+	void	PatchCallback(bool bAvailable, bool bMandatory, const char *pszVersion, int nFileID, const char *pszURL);
+protected:
+	void	CheckForUpdate();
+
 	// RETAIL: 0x100be620 (identical code, folded with CHUDMessage's)
 	void	SetRenderState();
 
