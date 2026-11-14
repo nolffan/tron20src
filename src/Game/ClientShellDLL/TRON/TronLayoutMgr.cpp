@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "TronLayoutMgr.h"
 #include "LCHUDHelper.h"
+#include "SubroutineMgr.h"
 
 #define LO_MENUPIECE_TAG			"MenuPiece"
 
@@ -141,9 +142,25 @@ INT_MENUPIECE* CTronLayoutMgr::GetMenuPiece(char * szPieceName)
 	return LTNULL;
 }
 
-// TODO: retail 0x100a0550 builds an INT_MENUPIECE for a PlayerSubroutine
-// ("sub:%s", its TronSubroutine's IconModel at +0xb0 and IconSkin at +0xf0)
-// -- not written yet: our TronSubroutine lacks those members.
+// RETAIL: 0x100a0550, a new menu piece for a subroutine's icon model (the
+// caller deletes it; the name is ours)
+INT_MENUPIECE* CTronLayoutMgr::GetSubroutinePiece(PlayerSubroutine * pSub)
+{
+	if (!pSub)
+		return LTNULL;
+
+	INT_MENUPIECE *pPiece = debug_new(INT_MENUPIECE);
+	sprintf(pPiece->szName, "sub:%s", pSub->pTronSubroutine->szName);
+	sprintf(pPiece->szModel, pSub->pTronSubroutine->szIconModel);
+	pPiece->szIntroAnim[0] = 0;
+	SAFE_STRCPY(pPiece->szLoopAnim, "loop");
+	pPiece->szParentPiece[0] = 0;
+	pPiece->szParentSocket[0] = 0;
+	pPiece->blrSkins.SetItem(0, pSub->pTronSubroutine->szIconSkin, 128);
+	pPiece->blrRenderStyles.SetItem(0, "RS\\Alpha_fullbright.ltb", 64);
+	pPiece->nLayer = 300;
+	return pPiece;
+}
 
 // RETAIL: the getters below are retail 0x100a0600..0x100a21f0, in order.
 

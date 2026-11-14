@@ -125,7 +125,9 @@ protected:
 	CArcCtrl	m_UtilityCtrl;
 	CArcCtrl	* m_pHotArc;
 
-	CProceduralCtrl m_ProcCtrl[5];
+	// RETAIL: three (retail's +0xdb8, 0x444 bytes each)
+	enum { NUM_PROC_CTRLS = 3 };
+	CProceduralCtrl m_ProcCtrl[NUM_PROC_CTRLS];
 
 	PlayerSubroutine * m_pHotSub;
 	PlayerSubroutine * m_pCursorSub;

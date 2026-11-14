@@ -351,11 +351,8 @@ LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 {
 	m_SystemMemoryCtrl.Render();
 
-	// render procedural controls
-	for (int i = 0; i < 5; i++)
-	{
-		m_ProcCtrl[i].Render();
-	}
+	// PORT: retail's procedural controls are menu piece models, which
+	// the interface draws (no Render of their own)
 
 	if (!m_bDoneIntro)	
 		UpdateMenuPieces(); // See if any models need to be made visible
@@ -397,7 +394,7 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 	m_pHotSub = LTNULL;
 	m_pHotProc = LTNULL;
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < NUM_PROC_CTRLS; i++)
 	{
 		m_ProcCtrl[i].OnMouseMove(x,y, m_pCursorSub);
 		if (!m_pHotProc)
@@ -635,7 +632,7 @@ void CScreenSubroutines::AddProcedural(Procedural * pProcedural)
 
 	int iSlot = pProcedural->iProcSlot;
 
-	ASSERT(iSlot >= 0 && iSlot <= 4);
+	ASSERT(iSlot >= 0 && iSlot < NUM_PROC_CTRLS);
 
 	// Hook the control to its procedural
 	// NOTE that we want to hook the procedural to the control only if the player has it.
@@ -824,7 +821,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 		if (!g_pSubroutineMgr->CanProcHookSub(m_pHotProc, m_pCursorSub))
 			return;
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < NUM_PROC_CTRLS; i++)
 		{
 			if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 			{
@@ -1020,7 +1017,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 
 		if (pSub)
 		{
-			for (int i = 0; i < 5; i++)
+			for (int i = 0; i < NUM_PROC_CTRLS; i++)
 			{
 				if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 				{
@@ -1587,7 +1584,7 @@ void CScreenSubroutines::BuildHotSubInfo()
 	TronSubroutine * pSub = m_pHotSub->pTronSubroutine;
 
 	Procedural * pProc = LTNULL;
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < NUM_PROC_CTRLS; i++)
 	{
 		if (m_ProcCtrl[i].GetProc())
 		{
@@ -1810,14 +1807,10 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 				}
 				else if (!strcmpi(pSubModel->szName, "proc_dock"))
 				{
-					for (int i = 0; i < 5; i++)
-					{
-						char buf[20];
-						sprintf(buf,"skt_%d",i);
-						m_ProcCtrl[i].AssociateHObject(hObj, buf);
-						g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
-						g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
-					}
+					// PORT: retail's procedural controls attach their own
+					// models (no AssociateHObject)
+					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
+					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
 				}
 			}
 			return;
