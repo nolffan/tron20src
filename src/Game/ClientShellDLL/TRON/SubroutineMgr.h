@@ -215,7 +215,7 @@ public:
 	void				ResetProcedurals();		// RETAIL: 0x10094920 (the name is ours)
 	PlayerSubroutine*	GetPlayerSubroutineByNameId(uint32 nNameId);	// RETAIL: 0x10094810 (the name is ours)
 	void				AddPlayerSubroutine(PlayerSubroutine *pSub);
-	void				GivePlayerSubroutine(char * name, char * state, char * condition);
+	void				GivePlayerSubroutine(char * name, char * version, char * state, bool bNotify);	// RETAIL: 0x10094950
 	void				PopulateSubroutineScreen();
 
 	// Utility Subroutine Functions

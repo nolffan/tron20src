@@ -20,6 +20,10 @@
 #include "MissionMgr.h"
 // RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
 #include "ScreenSubroutines.h"
+#include "VarTrack.h"
+
+// RETAIL: 0x1026ee38, set up by Init (the name is ours; nothing reads it)
+static VarTrack s_vtIOScene;
 
 // ----------------------------------------------------------------------- //
 //
@@ -34,6 +38,7 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	// RETAIL: layout anchors (see the header): fail to compile when a
 	// member's size changes (adjust the pads)
 	typedef char TronCheckHUD[offsetof(CTronInterfaceMgr, m_HUD) == 0x10108 ? 1 : -1];
+	typedef char TronCheckSubroutineMgr[offsetof(CTronInterfaceMgr, m_SubroutineMgr) == 0x24474 ? 1 : -1];
 	typedef char TronCheckWeaponChooser[offsetof(CTronInterfaceMgr, m_WeaponChooser) == 0x26790 ? 1 : -1];
 	typedef char TronCheckSize[sizeof(CTronInterfaceMgr) == 0x29490 ? 1 : -1];
 
@@ -45,18 +50,17 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	m_hIOCamera = LTNULL;
 	m_nTronUnknown28B18 = 0;
 	m_bTronUnknown28B1C = false;
-	m_pTronUnknown293BC = LTNULL;
-	m_nTronUnknown293B8 = 0;
-	m_szTronUnknown293C0[0] = 0;
-	m_szTronUnknown29400[0] = 0;
-	m_szTronUnknown29440[0] = 0;
-	m_nTronUnknown29480 = 2;
+	m_pDuplicateNew = LTNULL;
+	m_pDuplicateOld = LTNULL;
+	m_szDuplicateName[0] = 0;
+	m_szDuplicateVersion[0] = 0;
+	m_szDuplicateState[0] = 0;
+	m_eDuplicateRenderLevel = kHUDRenderFull;
 
 	// PORT: retail leaves these to the members' constructors (not yet
 	// written); ours clears them
 	m_bTronUnknown28AE8 = false;
 	m_bTronUnknown28B14 = false;
-	m_bTronUnknown28C51 = false;
 	m_bDisplayProgress = false;
 	m_nTronUnknown28AF0 = 0;
 }
@@ -100,11 +104,12 @@ LTBOOL CTronInterfaceMgr::Init()
 	m_pTurnArrowRight = g_pScreenSpriteMgr->CreateScreenSprite("Interface\\Spr\\TurnArrowRight.spr", false, SPRITELAYER_DEFAULT);
 	m_pTurnArrowRight->m_bShow = LTTRUE;
 
-	// PORT: retail initializes its +0x28c48 object (0x1001cd20) and finds
-	// (or creates) the "IOScene" console variable here; not yet written
+	m_DuplicateDlg.Init();
 
-	m_pTronUnknown293BC = LTNULL;
-	m_nTronUnknown293B8 = 0;
+	s_vtIOScene.Init(g_pLTClient, "IOScene", NULL, 1.0f);
+
+	m_pDuplicateNew = LTNULL;
+	m_pDuplicateOld = LTNULL;
 
 	return bRet;
 }
@@ -145,13 +150,13 @@ void CTronInterfaceMgr::Term()
 
 	m_SubroutineMgr.Term();
 
-	if (m_pTronUnknown293BC)
+	if (m_pDuplicateNew)
 	{
-		delete m_pTronUnknown293BC;
-		m_pTronUnknown293BC = LTNULL;
+		delete m_pDuplicateNew;
+		m_pDuplicateNew = LTNULL;
 	}
 
-	// PORT: retail terms its +0x28c48 object here (0x1001d640)
+	m_DuplicateDlg.Term();
 }
 
 // ----------------------------------------------------------------------- //
@@ -178,7 +183,7 @@ void CTronInterfaceMgr::OnExitWorld()
 
 	ClearTronRecords();
 
-	// PORT: retail tells its +0x28c48 object here (0x1001e780)
+	m_DuplicateDlg.Hide();
 }
 
 // ----------------------------------------------------------------------- //
@@ -191,7 +196,7 @@ void CTronInterfaceMgr::OnExitWorld()
 
 LTBOOL CTronInterfaceMgr::OnKeyDown(int key, int rep)
 {
-	if (m_bTronUnknown28C51)
+	if (m_DuplicateDlg.IsVisible())
 	{
 		return LTTRUE;
 	}
@@ -457,6 +462,8 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 	{
 		case MID_SUBROUTINE_OBTAINED:
 		{
+			// RETAIL: 0x1009d9ed: "all" gives every subroutine; a pickup
+			// waits for the duplicate subroutine box (0x1009f0c0)
   			char pName[64];
   			char pState[64];
   			char pCondition[64];
@@ -465,7 +472,18 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			pMsg->ReadString(pState,64);
   			pMsg->ReadString(pCondition,64);
 
-			m_SubroutineMgr.GivePlayerSubroutine(pName, pState, pCondition);
+			if (!stricmp(pName, "all"))
+			{
+				uint16 nNumSubroutines = m_SubroutineMgr.GetNumSubroutines();
+				for (int i = 0; i < nNumSubroutines; i++)
+				{
+					m_SubroutineMgr.GivePlayerSubroutine(m_SubroutineMgr.GetSubroutineByIndex(i)->szName, pState, pCondition, true);
+				}
+			}
+			else
+			{
+				QueueSubroutinePickup(pName, pState, pCondition);
+			}
             return LTTRUE;
 		}
 
@@ -608,9 +626,13 @@ void CTronInterfaceMgr::UpdatePlayingState()
 {
 	g_pSubroutineMgr->Update();
 
-	// PORT: unless the +0x28c48 object is active, retail hands the last of
-	// its +0x29484 records to 0x1009f200 (its three 0x80-byte strings) and
-	// pops it
+	// RETAIL: one waiting pickup at a time, while the box is down
+	if (!m_DuplicateDlg.IsVisible() && !m_PendingSubroutines.empty())
+	{
+		TronPendingSubroutine& pending = m_PendingSubroutines.back();
+		HandleSubroutinePickup(pending.szName, pending.szVersion, pending.szState);
+		m_PendingSubroutines.pop_back();
+	}
 
 	CInterfaceMgr::UpdatePlayingState();
 }
@@ -782,6 +804,147 @@ void CTronInterfaceMgr::ClearTronRecords()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronInterfaceMgr::QueueSubroutinePickup
+//
+//	PURPOSE:	RETAIL: 0x1009f0c0 (the name is ours): keeps a picked up
+//				subroutine for UpdatePlayingState. An infected one is
+//				clean while the gold virus scan is installed.
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::QueueSubroutinePickup(const char* szName, const char* szVersion, const char* szState)
+{
+	if (!szName || !szName[0] || !szVersion || !szVersion[0] || !szState || !szState[0])
+		return;
+
+	if (!strcmpi(szState, "infected"))
+	{
+		PlayerSubroutine* pScan = g_pSubroutineMgr->GetPlayerSubroutine("virus_scan", LTNULL);
+		if (pScan && pScan->eVersion == VERSION_GOLD && pScan->nSlot >= 0 && pScan->nSlot < 100)
+		{
+			szState = "okay";
+		}
+	}
+
+	TronPendingSubroutine pending;
+	strncpy(pending.szName, szName, sizeof(pending.szName) - 1);
+	pending.szName[sizeof(pending.szName) - 1] = 0;
+	strncpy(pending.szVersion, szVersion, sizeof(pending.szVersion) - 1);
+	pending.szVersion[sizeof(pending.szVersion) - 1] = 0;
+	strncpy(pending.szState, szState, sizeof(pending.szState) - 1);
+	pending.szState[sizeof(pending.szState) - 1] = 0;
+
+	m_PendingSubroutines.push_back(pending);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::HandleSubroutinePickup
+//
+//	PURPOSE:	RETAIL: 0x1009f200 (the name is ours): a subroutine the
+//				player has (and that is no better, or infected) shows the
+//				duplicate subroutine box and pauses the game; any other
+//				is given.
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::HandleSubroutinePickup(char* szName, char* szVersion, char* szState)
+{
+	if (!szName || !szName[0] || !szVersion || !szVersion[0] || !szState || !szState[0])
+		return;
+
+	SubState eExclude = SUBSTATE_FOREIGN;
+	m_pDuplicateOld = m_SubroutineMgr.GetPlayerSubroutine(szName, &eExclude);
+
+	SubVersion eVersion = VERSION_ALPHA;
+	if (m_pDuplicateOld)
+	{
+		if (!strcmpi(szVersion, "beta"))
+			eVersion = VERSION_BETA;
+		else if (!strcmpi(szVersion, "gold"))
+			eVersion = VERSION_GOLD;
+
+		if (strcmpi(szState, "noncompatible") && strcmpi(szState, "foreign") &&
+			(eVersion <= m_pDuplicateOld->eVersion || !strcmpi(szState, "infected")))
+		{
+			if (m_pDuplicateNew)
+			{
+				delete m_pDuplicateNew;
+			}
+
+			m_pDuplicateNew = debug_new(PlayerSubroutine);
+			m_pDuplicateNew->pTronSubroutine = m_SubroutineMgr.GetSubroutine(szName);
+			m_pDuplicateNew->eVersion = eVersion;
+			m_pDuplicateNew->eState = SUBSTATE_OKAY;
+			m_pDuplicateNew->nSlot = -1;
+			if (!strcmpi(szState, "infected"))
+			{
+				m_pDuplicateNew->eState = SUBSTATE_CORRUPT;
+				m_pDuplicateNew->nTronUnknown1C = (LAST_VERSION - m_pDuplicateNew->eVersion) * 3;
+			}
+
+			strncpy(m_szDuplicateName, szName, sizeof(m_szDuplicateName) - 1);
+			m_szDuplicateName[sizeof(m_szDuplicateName) - 1] = 0;
+			strncpy(m_szDuplicateVersion, szVersion, sizeof(m_szDuplicateVersion) - 1);
+			m_szDuplicateVersion[sizeof(m_szDuplicateVersion) - 1] = 0;
+			strncpy(m_szDuplicateState, szState, sizeof(m_szDuplicateState) - 1);
+			m_szDuplicateState[sizeof(m_szDuplicateState) - 1] = 0;
+
+			m_DuplicateDlg.Show(m_pDuplicateOld, m_pDuplicateNew);
+
+			m_eDuplicateRenderLevel = GetHUDMgr()->GetRenderLevel();
+			GetHUDMgr()->SetRenderLevel(kHUDRenderNone);
+
+			m_CursorMgr.UseCursor(LTTRUE);
+			m_CursorMgr.UseSprite("Interface\\cursor.dtx");
+			m_CursorMgr.UseGlowSprite("Interface\\cursor_glow.dtx");
+			m_CursorMgr.SetCenter(32, 32);
+
+			g_pGameClientShell->PauseGame(true);
+			return;
+		}
+	}
+
+	m_SubroutineMgr.GivePlayerSubroutine(szName, szVersion, szState, true);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::OnDuplicateDlgClick
+//
+//	PURPOSE:	RETAIL: 0x1009f510 (the name is ours): a KEEP button
+//				closes the duplicate subroutine box; keeping the new copy
+//				gives it (and so replaces the old one).
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::OnDuplicateDlgClick(int x, int y)
+{
+	PlayerSubroutine* pKept = m_DuplicateDlg.GetKeptSubroutine(x, y);
+	if (!pKept)
+		return;
+
+	m_DuplicateDlg.Hide();
+
+	m_CursorMgr.UseCursor(LTFALSE, LTTRUE);
+	GetHUDMgr()->SetRenderLevel(m_eDuplicateRenderLevel);
+	g_pHUDMgr->QueueUpdate(kHUDAll);
+
+	if (pKept == m_pDuplicateNew)
+	{
+		m_SubroutineMgr.GivePlayerSubroutine(m_szDuplicateName, m_szDuplicateVersion, m_szDuplicateState, true);
+	}
+
+	delete m_pDuplicateNew;
+	m_pDuplicateNew = LTNULL;
+	m_pDuplicateOld = LTNULL;
+
+	g_pGameClientShell->PauseGame(false);
+	g_pLTClient->ClearInput();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronInterfaceMgr::OnLButtonUp
 //
 //	PURPOSE:	RETAIL: 0x1009f470
@@ -790,8 +953,11 @@ void CTronInterfaceMgr::ClearTronRecords()
 
 void CTronInterfaceMgr::OnLButtonUp(int x, int y)
 {
-	// PORT: while the +0x28c48 object is active retail first calls
-	// 0x1009f510 with (x, y), not yet written
+	if (m_DuplicateDlg.IsVisible())
+	{
+		OnDuplicateDlgClick(x, y);
+	}
+
 	CInterfaceMgr::OnLButtonUp(x, y);
 }
 
@@ -805,7 +971,11 @@ void CTronInterfaceMgr::OnLButtonUp(int x, int y)
 
 void CTronInterfaceMgr::OnRButtonUp(int x, int y)
 {
-	// PORT: see OnLButtonUp
+	if (m_DuplicateDlg.IsVisible())
+	{
+		OnDuplicateDlgClick(x, y);
+	}
+
 	CInterfaceMgr::OnRButtonUp(x, y);
 }
 
@@ -821,8 +991,10 @@ void CTronInterfaceMgr::OnMouseMove(int x, int y)
 {
 	CInterfaceMgr::OnMouseMove(x, y);
 
-	// PORT: while the +0x28c48 object is active retail passes (x, y) to it
-	// (0x1001e9b0)
+	if (m_DuplicateDlg.IsVisible())
+	{
+		m_DuplicateDlg.OnMouseMove(x, y);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -837,9 +1009,9 @@ LTBOOL CTronInterfaceMgr::Draw()
 {
 	LTBOOL bRet = CInterfaceMgr::Draw();
 
-	if (m_bTronUnknown28C51)
+	if (m_DuplicateDlg.IsVisible())
 	{
-		// PORT: retail draws its +0x28c48 object first (0x1001e790)
+		m_DuplicateDlg.Draw();
 		m_CursorMgr.Update();
 		m_ScreenSpriteMgr.Update();
 	}
@@ -857,11 +1029,11 @@ LTBOOL CTronInterfaceMgr::Draw()
 
 bool CTronInterfaceMgr::TronUnknownVirtual50()
 {
-	if (g_pDecision->IsVisible() || m_bTronUnknown28C51)
+	if (g_pDecision->IsVisible() || m_DuplicateDlg.IsVisible())
 	{
-		return false;
+		return LTFALSE;
 	}
-	return true;
+	return LTTRUE;
 }
 
 // ----------------------------------------------------------------------- //

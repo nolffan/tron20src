@@ -72,7 +72,6 @@ CTronPlayerStats::CTronPlayerStats()
 
 	m_fSubroutineArmor	= 0.0f;
 	m_fVirusArmor		= 0.0f;
-	m_fArmorScalar		= 1.0f;
 
 	memset(m_nSkills,0,sizeof(m_nSkills));
 }
@@ -1730,6 +1729,12 @@ void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 	m_fVirusArmor = fVirus;
 
 	g_pHUDMgr->QueueUpdate(kHUDArmor);
+}
+
+// RETAIL: 0x100ac160 (the name is ours)
+bool CTronPlayerStats::AddPing(const char* szName)
+{
+	return m_IONodeMgr.AddPing(szName);
 }
 
 

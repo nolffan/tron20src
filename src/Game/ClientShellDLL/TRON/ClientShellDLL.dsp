@@ -228,6 +228,10 @@ SOURCE=.\ClientWeaponSuffusion.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\DuplicateSubroutineDlg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Libs\GameSpy\GameSpySDK\darray.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -698,6 +702,10 @@ SOURCE=.\ClientWeaponSequencerDisc.h
 # Begin Source File
 
 SOURCE=.\ClientWeaponSuffusion.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\DuplicateSubroutineDlg.h
 # End Source File
 # Begin Source File
 

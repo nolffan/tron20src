@@ -21,6 +21,7 @@
 #include "SkillsButeMgr.h"
 #include "PlayerStats.h"
 #include "RatingMgr.h"
+#include "IONodeMgr.h"
 #include "SharedMission.h"
 
 class CTronPlayerStats : public CPlayerStats
@@ -232,6 +233,9 @@ public:
 	void GetJetVersion(uint16 &iVersion);
 	void IncrementJetVersion(uint8 iVersionPoints);
 
+	// RETAIL: the I/O node pings (the name is ours)
+	bool	AddPing(const char* szName);
+
 	// Performance Ratings
 	int8	GetRating(PerformanceRating p) {return m_RatingMgr.GetRating(p);}
 	void	SetPerformanceRating(PerformanceRating p, int i) {m_RatingMgr.SetPerformanceRating(p,i);}
@@ -239,15 +243,6 @@ public:
 
 	// Subroutine Armor
     void    UpdateSubroutineArmor(float fArmor, float fVirus);	// RETAIL: 0x100ac0b0
-	// PORT: ours keeps the subroutine manager's armor scalar too (Tron's
-	// has none)
-    void    UpdateSubroutineArmor(float fArmor, float fVirus, float fScalar)
-	{
-		if (fScalar < 0.0f) fScalar = 0.0f;
-		if (fScalar > 1.0f) fScalar = 1.0f;
-		m_fArmorScalar = fScalar;
-		UpdateSubroutineArmor(fArmor, fVirus);
-	}
 
 	// Compile
 	void	Compile();	// called when the player compiles()
@@ -321,17 +316,15 @@ protected:
 	float			m_fVirusArmor;		// RETAIL: +0xd8
 
 	// Performance ratings
-	CRatingMgr		m_RatingMgr;		// RETAIL: +0xdc (retail's 0x11b4 bytes; a
-										// Tron object of 0x1138 follows, +0x1290)
+	CRatingMgr		m_RatingMgr;		// RETAIL: +0xdc
+
+	// RETAIL: +0x1290, the I/O node pings (constructed 0x100a9131)
+	CIONodeMgr		m_IONodeMgr;
 
 	MissionStats	m_MissionStats;
 
 	// RETAIL: +0x2404, see TronUnknownVirtual154..160
 	bool			m_bTronUnknown2404;
-
-	// PORT: Tron's UpdateSubroutineArmor (retail 0x100ac0b0) takes no
-	// scalar and keeps none; ours still does, after retail's members
-	float			m_fArmorScalar;
 };
 
 extern CTronPlayerStats* g_pTronPlayerStats;

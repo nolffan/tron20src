@@ -86,6 +86,10 @@
            
 CSubroutineMgr* g_pSubroutineMgr = LTNULL;
 
+// RETAIL: CRes.dll's strings (the names are ours)
+#define IDS_SUBROUTINE_ACQUIRED			3247	// "Acquired subroutine: <color 165 233 255>%1!s!"
+#define IDS_SUBROUTINE_ACQUIRED_UNKNOWN	3249	// "Acquired unknown subroutine"
+
 static char s_aTagName[30];
 static char s_aAttName[30];
 
@@ -766,60 +770,121 @@ void CSubroutineMgr::AddPlayerSubroutine(PlayerSubroutine * pSub)
 }
 
 
-void CSubroutineMgr::GivePlayerSubroutine(char * name, char * state, char * condition)
+// RETAIL: 0x10094950. Tron's takes the version and the state (Build 69's
+// took the state and the condition), replaces the copy the player has (the
+// foreign one with a foreign one, the other with any other) keeping its
+// slot when the new one is no worse, and tells the player.
+void CSubroutineMgr::GivePlayerSubroutine(char * name, char * version, char * state, bool bNotify)
 {
+	int nOldSlot = -1;
+	int nOldVersion = VERSION_ALPHA;
+
 	// Get a pointer to the subroutine template, if any
 	TronSubroutine * pSub = GetSubroutine(name);
 	if (pSub == LTNULL)
 		return;
-/* DUPLICATE subs are now allowed 3/28/02
-	// iterate through player's subroutines and make sure that they don't already have it
+
+	// bad blocks and base code are never given
+	if (pSub->eFunction == FUNCTION_BADBLOCK || pSub->eFunction == FUNCTION_BASECODE)
+		return;
+
+	bool bForeign = false;
+	if (!strcmpi(state, "noncompatible") || !strcmpi(state, "foreign"))
+		bForeign = true;
+
+	// take away the copy the player has
+	bool bDone = false;
 	PlayerSubroutineArray::iterator playerIter = m_PlayerSubroutineArray.begin();
-	while (playerIter != m_PlayerSubroutineArray.end())
+	while (playerIter != m_PlayerSubroutineArray.end() && !bDone)
 	{
-		if ((*playerIter)->pTronSubroutine == pSub)
+		PlayerSubroutine *pPlayerSub = *playerIter;
+		if (pPlayerSub->pTronSubroutine == pSub &&
+			((pPlayerSub->eState == SUBSTATE_FOREIGN && bForeign) ||
+			 (pPlayerSub->eState != SUBSTATE_FOREIGN && !bForeign)))
 		{
-			// send a message to screen that the player already has this sub
-			g_pLTClient->CPrint("Player already has '%s'.\n");
-			return;
+			if (pPlayerSub->pProcedural)
+				pPlayerSub->pProcedural->pSub = LTNULL;
+
+			if ((*playerIter)->nSlot >= 0 && (*playerIter)->nSlot < 100)
+			{
+				nOldSlot = (*playerIter)->nSlot;
+				nOldVersion = (*playerIter)->eVersion;
+			}
+
+			m_PlayerSubroutineArray.erase(playerIter);
+			g_pHUDMgr->QueueUpdate(0x80000);	// RETAIL: Tron's flag
+			bDone = true;
 		}
-		playerIter++;
+		else
+		{
+			playerIter++;
+		}
 	}
-*/
+
 	// Create a new PlayerSubroutine and link it to the TronSubroutine
 	PlayerSubroutine *pPlayerSub = debug_new(PlayerSubroutine);
 	pPlayerSub->pTronSubroutine		= pSub;
 
-	// Set the state based on parameters passed to this function
+	// Set the version based on parameters passed to this function
 	pPlayerSub->eVersion			= VERSION_ALPHA;
 
-	if (!strcmpi(state,"beta"))
+	if (!strcmpi(version,"beta"))
 		pPlayerSub->eVersion = VERSION_BETA;
-	else if (!strcmpi(state, "gold"))
+	else if (!strcmpi(version, "gold"))
 		pPlayerSub->eVersion = VERSION_GOLD;
 
 	pPlayerSub->eState				= SUBSTATE_OKAY;
 
-	if (!strcmpi(condition,"infected"))
+	if (!strcmpi(state,"infected"))
+	{
 		pPlayerSub->eState = SUBSTATE_CORRUPT;
-	else if (!strcmpi(condition,"noncompatible"))
+		pPlayerSub->nTronUnknown1C = (LAST_VERSION - pPlayerSub->eVersion) * 3;
+	}
+	else if (bForeign)
+	{
 		pPlayerSub->eState = SUBSTATE_FOREIGN;
+	}
 
+	// back in the old copy's slot, unless it is worse
 	pPlayerSub->nSlot				= -1;
+	if (nOldSlot != -1 &&
+		(pPlayerSub->eState == SUBSTATE_FOREIGN || pPlayerSub->eState == SUBSTATE_OKAY) &&
+		pPlayerSub->eVersion >= nOldVersion)
+	{
+		pPlayerSub->nSlot = nOldSlot;
+	}
 
 	m_PlayerSubroutineArray.push_back(pPlayerSub);
 
 	// send a message that this subroutine has been successfully acquired
-	g_pLTClient->CPrint("Acquired %s subroutine '%s' (%s)", state, name, condition);
-/*
-	char szName[64];
-	LoadString(nNameId,szName,sizeof(szName));
-	if (!strlen(szName)) return;
+	g_pLTClient->CPrint("Acquired %s subroutine '%s' (%s)", version, name, state);
 
-	char szMsg[128];
-	FormatString(IDS_GEARPICKUP,szMsg,sizeof(szMsg),szName);
-	g_pPickupMsgs->AddMessage(szMsg,pGear->szIcon);
-*/
+	if (IsMultiplayerGame())
+		return;
+
+	if (bNotify)
+	{
+		char szMsg[1024];
+		if (bForeign)
+		{
+			FormatString(IDS_SUBROUTINE_ACQUIRED_UNKNOWN, szMsg, sizeof(szMsg));
+		}
+		else
+		{
+			FormatString(IDS_SUBROUTINE_ACQUIRED, szMsg, sizeof(szMsg), LoadTempString(pPlayerSub->pTronSubroutine->nNameId));
+		}
+		g_pPickupMsgs->AddMessage(szMsg, LTNULL);
+
+		g_pTronPlayerStats->AddPing("subroutines");
+
+		// RETAIL: the first of each function (combat, defense, utility)
+		if (pPlayerSub->pTronSubroutine->eFunction < FUNCTION_BADBLOCK)
+		{
+			m_aTronUnknown119C[pPlayerSub->pTronSubroutine->eFunction] = 1;
+		}
+	}
+
+	Compile();
 }
 
 void CSubroutineMgr::PopulateSubroutineScreen()
