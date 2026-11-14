@@ -16,6 +16,7 @@
 #include "GameButeMgr.h"
 #include "TemplateList.h"
 #include "ButeListReader.h"
+#include "TRON/CaselessString.h"
 
 struct ObjectCreateStruct;
 class CPropTypeMgr;
@@ -66,7 +67,11 @@ struct PROPTYPE
 	std::string		sType;
 	std::string		sFilename;
 	std::string		sDebrisType;
-	std::string		sActivateType;
+	// RETAIL: Tron's (0x28, Object.lto 0x100fe0fd): the ClientFX played when
+	// the prop is destroyed (CDestructibleModel::m_sDestroyFX). Caseless,
+	// as is sActivateType (0x34)
+	CaselessInlineString	sDeathClientFX;
+	CaselessInlineString	sActivateType;
 
 	CButeListReader blrPropSkinReader;
 	CButeListReader blrPropRenderStyleReader;

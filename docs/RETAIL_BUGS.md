@@ -807,6 +807,16 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### A prop's looping sound name is never freed
+
+Object.lto 0x100fa080 (Prop::~Prop, ObjectShared/Prop.cpp). Tron's props
+keep the name of a looping sound (the BUTE_SOUND_KEY_LOOPING model string)
+as an engine HSTRING (+0x838). The destructor kills the sound but never
+frees the string, so every prop that played a looping sound leaks its name
+when it is removed. KILL_LOOPING_SOUND and a new looping sound free it.
+
+Fixed in the modern build: Prop.cpp (TRON20SRC_MODERN frees m_hstrLoopSound).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

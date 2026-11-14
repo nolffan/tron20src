@@ -48,6 +48,7 @@
 #define PTMGR_FILENAME				"Filename"
 #define PTMGR_SKIN					"Skin"
 #define PTMGR_DEBRISTYPE			"DebrisType"
+#define PTMGR_DEATHCLIENTFX			"DeathClientFX"	// RETAIL: Tron's
 #define PTMGR_RENDERSTYLE			"RenderStyle"
 
 #define PTMGR_DEFAULT_TOUCHSOUNDRADIUS	0.f
@@ -328,6 +329,13 @@ LTBOOL PROPTYPE::Init(CButeMgr & buteMgr, char* aTagName, uint32 nId)
 
 	blrPropSkinReader.Read(&buteMgr, s_aTagName, PTMGR_SKIN, PROPTYPE_MAX_FILE_PATH);
 	blrPropRenderStyleReader.Read(&buteMgr, s_aTagName, PTMGR_RENDERSTYLE, PROPTYPE_MAX_FILE_PATH);
+
+	// RETAIL: Tron's (Object.lto 0x100fe0f6)
+	buteMgr.GetString(aTagName, PTMGR_DEATHCLIENTFX, s_aBuffer, ARRAY_LEN(s_aBuffer));
+	if(s_aBuffer[0])
+	{
+		sDeathClientFX = s_aBuffer;
+	}
 
 	buteMgr.GetString(aTagName, PTMGR_DEBRISTYPE, s_aBuffer, ARRAY_LEN(s_aBuffer));
 	if(s_aBuffer[0])

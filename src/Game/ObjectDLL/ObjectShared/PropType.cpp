@@ -312,8 +312,9 @@ bool PropType::Setup( )
 		return false;
 
 	// Let the prop do some setup.
-	if( !Prop::Setup( ))
-		return false;
+	// PORT: Tron's PropType::Setup (Object.lto 0x100f55b0) does not call
+	// Prop::Setup (which returns nothing in Tron); not yet rebuilt
+	Prop::Setup( );
 
 	return true;
 }

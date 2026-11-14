@@ -43,6 +43,8 @@ struct PropDisturbStruct
 
     HLTSOUND				hTouchSound;
 	HLTSOUND				hHitSound;
+	// RETAIL: Load builds it with the inline null check our STLport lacks
+	// (Object.lto 0x100f9a90): near
 	std::string				sTouchSoundName;
 	HMODELANIM				hTouchAnim;
 	HMODELANIM				hHitAnim;
@@ -70,8 +72,8 @@ class Prop : public GameBase
 
 		// Sets up object based on member varaibles.
 	// RETAIL: not virtual in Tron (its vtables; build 51 has no Setup: NOLF2's
-	// later code, standing in)
-		bool Setup( );
+	// later code, standing in) and returns nothing (Object.lto 0x100faabb)
+		void Setup( );
 
 		bool	OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);
 
@@ -102,6 +104,9 @@ class Prop : public GameBase
 
 		// Used only for sending event trigger messages.
 		bool						m_bActivatedOn;
+		// RETAIL: retail builds these from a const char* with an inline null
+		// check our STLport lacks (Object.lto 0x100fa5f3): ReadProp and Load
+		// stay near (the project keeps STLport)
 		std::string					m_sActivateOnCommand;
 		std::string					m_sActivateOffCommand;
 
@@ -131,8 +136,12 @@ class Prop : public GameBase
 		bool						m_bFadeRemoveWhenDone;
 
 		CActivateTypeHandler		m_ActivateTypeHandler;
-		
-		bool						m_bCanTransition;
+
+		// RETAIL: Tron has no m_bCanTransition (NOLF2's later addition); it
+		// has a looping sound, set by the BUTE_SOUND_KEY_LOOPING model string
+		// (Object.lto 0x100fb542, 0x100fbf92)
+		HSTRING						m_hstrLoopSound;
+		HLTSOUND					m_hLoopSound;
 
 	private :
 
@@ -161,6 +170,9 @@ class Prop : public GameBase
 
 		void	UpdateFade();
 		void	Update();
+
+		// RETAIL: Tron's (Object.lto 0x100fd330)
+		void	PlayLoopSound();
 };
 
 #ifndef __PSX2
