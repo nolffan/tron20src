@@ -490,6 +490,17 @@ ServerGameOptions& ServerGameOptions::Copy( ServerGameOptions const& other )
 	return *this;
 }
 
+// RETAIL: CShell.dll 0x100eb4d0: true if the game type has no maps (the
+// name is ours)
+bool ServerGameOptions::HasNoMaps( )
+{
+	StringArray* pMaps = GetMapList( );
+	if( pMaps && !pMaps->empty( ) && !( *pMaps )[0].empty( ))
+		return false;
+
+	return true;
+}
+
 // RETAIL: Object.lto 0x10114e20: the map list of the game type
 StringArray* ServerGameOptions::GetMapList( )
 {

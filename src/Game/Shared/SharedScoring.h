@@ -80,6 +80,11 @@ public:
 	uint32	GetTronUnknown18() {return m_nTronUnknown18;}	// RETAIL: 0 or 3 for the players CTronTeamMgr::SendToTeam may send to (0x1013fc75)
 
 private:
+	// RETAIL: the client's match managers read +0x18 directly (no "this"
+	// is formed: CShell.dll 0x1000e912, 0x1000fc99)
+	friend class CDiscMatchMgr;
+	friend class CLightCycleMatchMgr;
+
 	int16	m_nTronUnknown0;	// +0x00
 	int16	m_nTronUnknown2;	// +0x02
 	int16	m_nTronUnknown4;	// +0x04
@@ -189,6 +194,11 @@ public:
 	// RETAIL: the client asks the server to move a client to a team
 	// (CShell.dll 0x100fb900); the name is ours
 	void	MoveClient(uint32 nClientID, uint32 nTeam);
+
+	// RETAIL: inline: the disc and light cycle match managers' message
+	// 80 sets both (CShell.dll 0x1000e2c0); the names are ours
+	void	SetNumTeams(int nNumTeams) { m_nNumTeams = nNumTeams; }
+	void	SetTeamSize(uint32 nTeamSize) { m_nTeamSize = nTeamSize; }
 #else
 	bool	SetupTeams(uint32 nTeamSize, uint32 nMaxPlayers);
 	bool	RemoveClient(uint32 nClientID);

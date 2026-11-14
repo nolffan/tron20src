@@ -86,6 +86,28 @@ struct INT_CHAINFX
 	char szLoopName[128];
 };
 
+// TRON: a nine-piece textured frame ("TexturedFrame%d" in layout.txt; the
+// struct's name is ours). RETAIL: size 0x1a8 (its debug_new, 0x100ddc60);
+// the constructor is 0x100d9300, Init 0x100d9390. CTexturedFrame draws it.
+struct INT_TEXTUREDFRAME
+{
+	INT_TEXTUREDFRAME();
+
+	bool	Init(CButeMgr & buteMgr, char* aTagName);
+
+	bool	bHollow;		// "Hollow": no center piece is drawn
+	bool	bInscribe;		// "Inscribe": the pieces lie inside the rect
+	char	szName[128];
+	char	szTexture[128];
+
+	// in texels, in the order TopLeft, Top, TopRight, Left, Right,
+	// BottomLeft, Bottom, BottomRight, Center
+	LTRect	rcUV[9];
+
+	bool	bMargins;
+	LTRect	rcMargins;
+};
+
 
 class CLayoutMgr : public CGameButeMgr
 {
@@ -342,6 +364,10 @@ public:
 	void		GetMenuCustomString(eMenuID menuId, char *pAttribute, char *pBuf, int nBufLen);
     LTVector    GetMenuCustomVector(eMenuID menuId, char *pAttribute);
 
+	// TRON: the textured frame named szName, else the first one (RETAIL:
+	// 0x100dc8c0; the name is ours)
+	INT_TEXTUREDFRAME*	GetTexturedFrame(const char* szName);
+
 	LTFLOAT		GetCreditsFadeInTime();
 	LTFLOAT		GetCreditsHoldTime();
 	LTFLOAT		GetCreditsFadeOutTime();
@@ -377,6 +403,10 @@ protected:
 
 	typedef std::vector<INT_CHAINFX *> ChainFXArray;
 	ChainFXArray m_ChainFXArray;
+
+	// TRON: RETAIL: +0x1154 (the constructor, 0x100d9540, and Term, 0x100d9d90)
+	typedef std::vector<INT_TEXTUREDFRAME *> TexturedFrameArray;
+	TexturedFrameArray m_TexturedFrameArray;
 };
 
 #endif // !defined(_LAYOUTMGR_H_)

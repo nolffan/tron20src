@@ -18,6 +18,7 @@
 #include "GameClientShell.h"
 #include "TronMissionButeMgr.h"
 #include "MissionMgr.h"
+#include "LightCycleMatchMgr.h"
 // RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
 #include "ScreenSubroutines.h"
 #include "VarTrack.h"
@@ -444,7 +445,12 @@ LTBOOL CTronInterfaceMgr::Update()
 
 	// PORT: retail clears m_bTronUnknown28B14 while the player's lure
 	// (PlayerLureFX::GetPlayerLureFX of the player manager's +0x330,
-	// +0x2080) is not active, and updates a menu's title in game type 7
+	// +0x2080) is not active
+
+	if (IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		g_pLightCycleMatchMgr->Update();
+	}
 
 	return CInterfaceMgr::Update();
 }

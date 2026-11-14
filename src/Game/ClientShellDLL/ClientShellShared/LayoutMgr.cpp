@@ -348,6 +348,58 @@ bool INT_CHAINFX::Init(CButeMgr & buteMgr, char *aTagName, int iNum)
 	return (false);
 }
 
+// TRON: RETAIL: 0x100d9300
+INT_TEXTUREDFRAME::INT_TEXTUREDFRAME()
+{
+	szName[0] = 0;
+	szTexture[0] = 0;
+	for (int i = 0; i < 9; i++)
+	{
+		rcUV[i].Init(0,0,0,0);
+	}
+	bHollow = false;
+	bInscribe = true;
+	bMargins = false;
+	rcMargins.Init(0,0,0,0);
+}
+
+// TRON: RETAIL: 0x100d9390
+bool INT_TEXTUREDFRAME::Init(CButeMgr & buteMgr, char* aTagName)
+{
+	char* aszUV[9] =
+	{
+		"UVTopLeft", "UVTop", "UVTopRight",
+		"UVLeft", "UVRight",
+		"UVBottomLeft", "UVBottom", "UVBottomRight",
+		"UVCenter"
+	};
+
+	buteMgr.GetString(aTagName, "Name", "", szName, sizeof(szName));
+	if (strlen(szName) == 0) return false;
+
+	buteMgr.GetString(aTagName, "Texture", "", szTexture, sizeof(szTexture));
+	if (strlen(szTexture) == 0) return false;
+
+	bHollow = !!buteMgr.GetInt(aTagName, "Hollow");
+	bInscribe = !!buteMgr.GetInt(aTagName, "Inscribe");
+
+    CRect zero(0,0,0,0);
+	for (int i = 0; i < 9; i++)
+	{
+		CRect& rc = buteMgr.GetRect(aTagName, aszUV[i], zero);
+		rcUV[i].Init(rc.left, rc.top, rc.right, rc.bottom);
+	}
+
+	bMargins = !!buteMgr.Exist(aTagName, "Margins");
+	if (bMargins)
+	{
+		CRect& rc = buteMgr.GetRect(aTagName, "Margins");
+		rcMargins.Init(rc.left, rc.top, rc.right, rc.bottom);
+	}
+
+	return true;
+}
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -444,6 +496,22 @@ LTBOOL CLayoutMgr::Init(const char* szAttributeFile)
 		}
 		numFX++;
 		sprintf(s_aTagName, "%s%d", LO_FX_TAG, numFX);
+	}
+
+	// TRON: RETAIL: 0x100d9ab7
+	sprintf(s_aTagName, "%s0", "TexturedFrame");
+	int numFrames = 0;
+	while (m_buteMgr.Exist(s_aTagName))
+	{
+		INT_TEXTUREDFRAME *pFrame = debug_new(INT_TEXTUREDFRAME);
+		if (pFrame->Init(m_buteMgr,s_aTagName))
+			m_TexturedFrameArray.push_back(pFrame);
+		else
+		{
+			debug_delete(pFrame);
+		}
+		numFrames++;
+		sprintf(s_aTagName, "%s%d", "TexturedFrame", numFrames);
 	}
 
 	// ABM 2/6/02 parser for new layout item, the transition (chained fx mapped
@@ -547,6 +615,24 @@ void CLayoutMgr::Term()
 		fxIter++;
 	}
 	m_FXArray.clear();
+
+	// RETAIL: 0x100d9e67: Tron's also frees the transitions' chained FX
+	ChainFXArray::iterator cfxIter = m_ChainFXArray.begin();
+	while (cfxIter != m_ChainFXArray.end())
+	{
+		debug_delete(*cfxIter);
+		cfxIter++;
+	}
+	m_ChainFXArray.clear();
+
+	// TRON: and the textured frames (RETAIL: 0x100d9eb3)
+	TexturedFrameArray::iterator tfIter = m_TexturedFrameArray.begin();
+	while (tfIter != m_TexturedFrameArray.end())
+	{
+		debug_delete(*tfIter);
+		tfIter++;
+	}
+	m_TexturedFrameArray.clear();
 }
 
 
@@ -2544,6 +2630,21 @@ LTVector CLayoutMgr::GetMenuCustomVector(eMenuID menuId, char *pAttribute)
 {
 	char* pTag = (char*)g_pInterfaceMgr->GetMenuMgr()->GetMenuName(menuId);
 	return GetVector(pTag, pAttribute);
+}
+
+// TRON: RETAIL: 0x100dc8c0
+INT_TEXTUREDFRAME* CLayoutMgr::GetTexturedFrame(const char* szName)
+{
+	TexturedFrameArray::iterator iter = m_TexturedFrameArray.begin();
+	while (iter != m_TexturedFrameArray.end())
+	{
+		if (stricmp(szName, (*iter)->szName) == 0)
+			return *iter;
+		iter++;
+	}
+
+	// RETAIL: the first frame when none has the name
+	return m_TexturedFrameArray[0];
 }
 
 
