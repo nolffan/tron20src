@@ -57,7 +57,27 @@ CTronGameClientShell::~CTronGameClientShell()
 void CTronGameClientShell::OnExitWorld()
 {
 	m_DiscMatchMgr.Reset();
+	m_LightCycleMatchMgr.Reset();
 	CGameClientShell::OnExitWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameClientShell::OnKeyDown
+//
+//	PURPOSE:	RETAIL: 0x1009ac40
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::OnKeyDown(int key, int rep)
+{
+	if (IsMultiplayerGame() && GetGameType() == eGameTypeMultiplayerLightcycles &&
+		g_pLightCycleMatchMgr->OnKeyDown(key, rep))
+	{
+		return;
+	}
+
+	CGameClientShell::OnKeyDown(key, rep);
 }
 
 // ----------------------------------------------------------------------- //
@@ -79,6 +99,7 @@ uint32 CTronGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	{
 		m_LightCycleMgr.Init();
 		m_DiscMatchMgr.Init();
+		m_LightCycleMatchMgr.Init();
 	}
 
 	return nResult;

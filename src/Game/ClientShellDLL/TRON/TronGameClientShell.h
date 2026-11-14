@@ -21,6 +21,7 @@
 #include "TronMissionButeMgr.h"
 #include "ClientLightCycleMgr.h"
 #include "DiscMatchMgr.h"
+#include "LightCycleMatchMgr.h"
 
 class CTronGameClientShell : public CGameClientShell
 {
@@ -44,6 +45,10 @@ class CTronGameClientShell : public CGameClientShell
 		// RETAIL: slot 0x8 (0x10099ff0): resets the match managers
 		virtual void OnExitWorld();
 
+		// RETAIL: slot 0x18 (0x1009ac40): the light cycle match manager
+		// sees the keys first in the light cycle game type
+		virtual void OnKeyDown(int key, int rep);
+
 	private:
 		CTronInterfaceMgr			m_InterfaceMgr;		// Interface manager
 		CTronVersionMgr				m_VersionMgr;		// Same as g_pVersionMgr
@@ -51,6 +56,7 @@ class CTronGameClientShell : public CGameClientShell
 		CTronMissionButeMgr			m_MissionButeMgr;	// Same as g_pMissionButeMgr
 		CClientLightCycleMgr		m_LightCycleMgr;	// Same as g_pLightCycleMgr (RETAIL: +0x32e00)
 		CDiscMatchMgr				m_DiscMatchMgr;		// Same as g_pDiscMatchMgr (RETAIL: +0x3695c)
+		CLightCycleMatchMgr			m_LightCycleMatchMgr;	// Same as g_pLightCycleMatchMgr (RETAIL: +0x3696c)
 
 		// allocator for client weapons
 		CTronClientWeaponAllocator	m_ClientWeaponAllocator;
