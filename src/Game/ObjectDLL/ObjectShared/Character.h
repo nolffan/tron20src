@@ -374,6 +374,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		friend class CCharacterHitBox;
 		friend class CAttachments;
+		// RETAIL: its core dump takes the energy and archive items, and the
+		// character keeps the dump's handle (retail 0x1005efe0)
+		friend class CTronGameServerShell;
 
 		virtual void	UpdateAnimation();
 		// RETAIL: Tron's (slot 0xe8, retail 0x100903a0): UpdateAnimation calls
