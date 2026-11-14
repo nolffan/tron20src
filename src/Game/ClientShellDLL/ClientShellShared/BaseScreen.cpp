@@ -353,8 +353,9 @@ void CBaseScreen::Escape()
 	if (!m_pScreenMgr->PreviousScreen())
 	{
         HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
-		if (g_pPlayerMgr->IsPlayerInWorld() &&
-			(!g_pPlayerMgr->IsPlayerDead() || IsMultiplayerGame( )) )
+		// RETAIL: 0x100d27e0: back to the game when a world is loaded and
+		// there is a client object
+		if (g_pGameClientShell->IsWorldLoaded() && hPlayerObj)
 		{
 			g_pInterfaceMgr->ChangeState(GS_PLAYING);
 		}
@@ -2084,11 +2085,14 @@ void CBaseScreen::UpdateHelpText()
 			{
 				s_pHelpStr->SetText(szHelpText);
 				uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
-				float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
-				float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
 				uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-				s_pHelpStr->SetPosition(helpX,helpY);
+				// RETAIL: 0x100d60b0: the integer position, the font for the
+				// scaled height
+				s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
+					(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+				CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+				s_pHelpStr->SetFont(pHelpFont);
 				s_pHelpStr->SetCharScreenHeight(nSize);
 				s_pHelpStr->SetWrapWidth(nWidth);
 			}
@@ -2110,20 +2114,24 @@ void CBaseScreen::ScreenDimsChanged()
 	if (m_pTitleString)
 	{
 		LTIntPt pos = m_TitlePos;
-		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString->SetPosition((float)pos.x,(float)pos.y);
-		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		g_pInterfaceResMgr->ConvertScreenPos(pos.x,pos.y);
+		m_pTitleString->SetPosition(pos.x,pos.y);
+		// RETAIL: 0x100d6230: integer positions, the fonts for the scaled heights
+		uint8 nFontSize = (uint8)(g_pInterfaceResMgr->GetXRatio() * m_TitleSize);
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
+		m_pTitleString->SetFont(pFont);
 		m_pTitleString->SetCharScreenHeight(nFontSize);
 	}
 
 	if (s_pHelpStr)
 	{
 		uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
-		float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
-		float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-		s_pHelpStr->SetPosition(helpX,helpY);
+		s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
+			(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+		CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+		s_pHelpStr->SetFont(pHelpFont);
 		s_pHelpStr->SetCharScreenHeight(nSize);
 		s_pHelpStr->SetWrapWidth(nWidth);
 	}
@@ -2152,8 +2160,8 @@ void CBaseScreen::SetTitlePos(LTIntPt pt)
 	if (m_pTitleString)
 	{
 		LTIntPt pos = m_TitlePos;
-		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString->SetPosition((float)pos.x,(float)pos.y);
+		g_pInterfaceResMgr->ConvertScreenPos(pos.x,pos.y);	// RETAIL: 0x100d63c0: the integer position
+		m_pTitleString->SetPosition(pos.x,pos.y);
 	}
 }
 
@@ -2173,8 +2181,10 @@ void CBaseScreen::SetTitleSize(uint8 nFontSize)
 	m_TitleSize = nFontSize;
 	if (m_pTitleString)
 	{
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFont);
-		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		// RETAIL: 0x100d6440: the font for the scaled height
+		uint8 nFontSize = (uint8)(g_pInterfaceResMgr->GetXRatio() * m_TitleSize);
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
+		m_pTitleString->SetFont(pFont);
 		m_pTitleString->SetCharScreenHeight(nFontSize);
 	}
 }
