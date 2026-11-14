@@ -28,6 +28,11 @@ CDx8SoundSys* g_pSoundSys = NULL;
 
 FILE* g_pLogFile = NULL;
 
+// RETAIL: Tron's own: the parameter thread (SoundParamThread), which
+// CDx8SoundSys::Init starts and Term ends (0x1002f888, 0x1002f88c)
+DWORD g_dwSoundParamThreadId = 0;
+HANDLE g_hSoundParamThread = NULL;
+
 #ifdef _DEBUG
 #ifdef _LOG_OUTPUT
 #define LOG
@@ -94,11 +99,6 @@ enum
 
 static sint32 g_iCurrentEAXDirectSetting;
 #endif
-
-// RETAIL: Tron's own: the parameter thread (SoundParamThread), which
-// CDx8SoundSys::Init starts and Term ends (0x1002f888, 0x1002f88c)
-static DWORD g_dwSoundParamThreadId;
-static HANDLE g_hSoundParamThread;
 
 WaveFile::WaveFile (void)
 {
@@ -1829,7 +1829,7 @@ void UpdateSoundParam( SSoundParam* pParam )
 // which steps the active fades every 20 ms until it is sent WM_QUIT
 // (CDx8SoundSys::Term). It locks them with the mutex "SoundParamMutex",
 // which nobody creates (docs/RETAIL_BUGS.md).
-static unsigned long _stdcall SoundParamThread( void* pUserData )
+unsigned long _stdcall SoundParamThread( void* pUserData )
 {
 	CDx8SoundSys* pSoundSys = ( CDx8SoundSys* )pUserData;
 	bool bQuit = false;

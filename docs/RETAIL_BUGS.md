@@ -718,6 +718,40 @@ in its list at all.
 
 Not fixed yet.
 
+### The sound driver's parameter fades lock a mutex nobody creates
+
+SndDrv.dll, the parameter fades (src/Engine/snddrv/s_dx8.cpp). Tron's
+driver keeps 16 fades of a sample's playback frequency (CDx8SoundSys's
+m_aSoundParams, +0x4c4), which its own thread steps every 20 ms
+(SoundParamThread, 0x10003430) while the engine's sound manager sets them
+up, switches them and ends them (CDx8SoundSys's slots 23..28,
+0x10005c60..0x10005f10; Stop3DSample 0x10006990, End3DSample 0x10006c10,
+StopSample/EndSample 0x10007d00). Both sides mean to lock them, but neither
+lock exists: the thread opens a mutex named "SoundParamMutex"
+(OpenMutexA, 0x10003448) that nothing in the game creates -- no binary of
+Tron 2.0's has a CreateMutex of that name -- so it gets NULL, and the
+driver's own handle (m_hSoundParamMutex, +0xb0) is only ever cleared
+(Reset, 0x100039d6). Every WaitForSingleObject and ReleaseMutex on them
+fails at once, and the thread and the game's calls touch the fades
+unsynchronised: a fade can be freed or reassigned while the thread is
+stepping it. Term also closes the never-opened handle (0x100042d9). The
+driver should create the mutex (CreateMutexA in Init) and keep its handle
+in m_hSoundParamMutex for both sides.
+
+Not fixed yet: the driver has no modern build of its own yet.
+
+### The sound driver blames the MP3 codec when the PCM converter is missing
+
+SndDrv.dll 0x10005083 (CDx8SoundSys::Startup, src/Engine/snddrv/s_dx8.cpp).
+Startup opens the ADPCM decompressor, then the MP3 decompressor, then the
+PCM converter; only the last failing shows the message box "Sound System
+Startup - Missing .mp3 codec", though the MP3 driver opened. Build 69's
+source has the same code under `#ifndef _FINAL`; Tron's Final build shows
+it. The message should name the converter (and a missing MP3 codec, which
+fails silently, should be the one reported).
+
+Not fixed yet: the driver has no modern build of its own yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
