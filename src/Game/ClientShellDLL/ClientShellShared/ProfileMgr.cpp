@@ -66,6 +66,7 @@ CProfileMgr* g_pProfileMgr = LTNULL;
 // the build has no gore and no bodies (LoadGameOptions 0x100ed8d0); names ours.
 const int kNoGoreStringId = 752;
 const int kNoBodiesStringId = 753;
+const int kDefaultProfileNameStringId = 1008;
 
 namespace
 {
@@ -1795,7 +1796,9 @@ LTBOOL CProfileMgr::Init()
 		return LTFALSE;
 
 
-	LoadString(IDS_PLAYER,szDefProfileName,sizeof(szDefProfileName));
+	// RETAIL: 0x100f0a00 -- Tron's default profile name is its string 1008
+	// (ClientResShared.h's IDS_PLAYER is NOLF2's 1241)
+	LoadString(kDefaultProfileNameStringId,szDefProfileName,sizeof(szDefProfileName));
 
 
 
@@ -1814,8 +1817,7 @@ LTBOOL CProfileMgr::Init()
 		pRegMgr->Get("ProfileName", szProfileName, nBufSize, "");
 	}
 
-	//are we supposed to set a particular performance level?
-	char *pszPerf = GetConsoleTempString("SetPerformanceLevel","");
+	// RETAIL: Tron applies "SetPerformanceLevel" in CUserProfile::Init.
 	//if we have a profile name try to init it
 	if (strlen(szProfileName) > 0)
 	{
@@ -1828,10 +1830,6 @@ LTBOOL CProfileMgr::Init()
 				m_profile.RestoreDefaults(PROFILE_ALL);
 				WriteConsoleInt("RestoreDefaults",0);
 			}
-			
-		
-			m_profile.SetPerformanceCfg(pszPerf);
-			WriteConsoleString("SetPerformanceLevel","");
 
 
 			//we also want to make sure to save the display configuration so that parameters passed
@@ -1846,9 +1844,6 @@ LTBOOL CProfileMgr::Init()
 
 	if (!m_profile.IsInitted()) 
 		return LTFALSE;
-
-	m_profile.SetPerformanceCfg(pszPerf);
-	WriteConsoleString("SetPerformanceLevel","");
 
 
 	//we also want to make sure to save the display configuration so that parameters passed
@@ -1876,7 +1871,7 @@ void CProfileMgr::GetProfileList(StringSet& profileList)
 	struct _finddata_t file;
 	long hFile;
 
-	std::string directory = GetProfileFile( "*" );
+	std::string directory = s_sProfileDir + "*" + s_sProfileExt;
 
 	// find first file
 	if((hFile = _findfirst(directory.c_str(), &file)) != -1L)
@@ -1982,7 +1977,7 @@ void CProfileMgr::DeleteProfile(const std::string& profileName)
 		bNeedNew = LTTRUE;
 	}
 		
-	std::string fn = GetProfileFile( profileName.c_str( ));
+	std::string fn = s_sProfileDir + profileName + s_sProfileExt;
 	remove(fn.c_str());
 
 	g_pClientSaveLoadMgr->DeleteSpecificSaveDir( profileName.c_str() );
@@ -2017,8 +2012,8 @@ void CProfileMgr::RenameProfile(const std::string& oldName,const std::string& ne
 		m_profile.Term();
 	}
 		
-	std::string ofn = GetProfileFile( oldName.c_str( ));
-	std::string nfn = GetProfileFile( newName.c_str( ));
+	std::string ofn = s_sProfileDir + oldName + s_sProfileExt;
+	std::string nfn = s_sProfileDir + newName + s_sProfileExt;
 	rename(ofn.c_str(),nfn.c_str());
 
 	char oldDir[128];
@@ -2048,8 +2043,7 @@ void CProfileMgr::RenameProfile(const std::string& oldName,const std::string& ne
 
 LTBOOL CUserProfile::RestoreDefaults(uint8 nFlags)
 {
-	std::string dfn = PROFILE_DIR;
-	dfn += "default.prf";
+	std::string dfn = s_sProfileDir + "default.prf";
 
 	LTBOOL bRet = LTFALSE;
 
