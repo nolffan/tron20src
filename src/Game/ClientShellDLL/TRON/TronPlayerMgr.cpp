@@ -23,6 +23,7 @@
 #include "GameClientShell.h"
 #include "VehicleMgr.h"
 #include "PlayerCamera.h"
+#include "DiscMatchMgr.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
@@ -999,8 +1000,7 @@ void CTronPlayerMgr::HandleMsgTronUnknown200(ILTMessage_Read *pMsg)
 	}
 	else if (IsRevivePlayerGameType())
 	{
-		// PORT: retail hands it to a Tron manager (0x10236d70, its
-		// 0x1000df20) not yet in our tree
+		g_pDiscMatchMgr->OnMessage(pMsg);
 	}
 	else if (eGameType == eGameTypeMultiplayerLightcycles)
 	{

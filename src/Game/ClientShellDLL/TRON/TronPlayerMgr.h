@@ -114,6 +114,17 @@ public:
 	bool	TronUnknownLightCycleSpectate();
 	void	TronUnknownLightCycleRemoved(HOBJECT hObj);
 
+	// RETAIL: inline: stops watching a light cycle (the light cycle match
+	// manager, CShell.dll 0x10016d06, 0x10017190): +0xbc is the watched
+	// object, +0xb8 whether one is watched, +0x230 its LIGHT_CYCLIST (as
+	// TronUnknownLightCycleSpectate, 0x100a7eb0, sets them). The name is ours
+	void	TronUnknownStopSpectating()
+	{
+		m_hTronUnknownBC = LTNULL;
+		m_bTronUnknownB8 = false;
+		m_nTronUnknown230 = 0;
+	}
+
 	// PORT: Tron overrides UpdateCameraZoom (retail 0x100a4da0, slot 0xac:
 	// the LOL's and the triangulate subroutine's FOVs, +0x214..+0x220) and
 	// UpdateCameraSway (0x100a52a0, slot 0xb0); not yet written, CPlayerMgr's

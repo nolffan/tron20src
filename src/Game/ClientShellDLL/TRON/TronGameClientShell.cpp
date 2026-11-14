@@ -48,6 +48,20 @@ CTronGameClientShell::~CTronGameClientShell()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronGameClientShell::OnExitWorld
+//
+//	PURPOSE:	RETAIL: 0x10099ff0: resets the match managers
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::OnExitWorld()
+{
+	m_DiscMatchMgr.Reset();
+	CGameClientShell::OnExitWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronGameClientShell::OnEngineInitialized
 //
 //	PURPOSE:	Wrapper for OnEngineInitialized so we can do something extra
@@ -58,12 +72,13 @@ uint32 CTronGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 {
 	uint32 nResult = CGameClientShell::OnEngineInitialized(pMode, pAppGuid);
 
-	// RETAIL: 0x1009a020 then inits the light cycle manager. PORT: and two
-	// members of Tron's (+0x3695c, +0x3696c) and registers the "Frame" and
-	// "FrameUV" console programs: not in our build yet
+	// RETAIL: 0x1009a020 then inits the light cycle manager and the match
+	// managers. PORT: and registers the "Frame" and "FrameUV" console
+	// programs: not in our build yet
 	if (nResult == LT_OK)
 	{
 		m_LightCycleMgr.Init();
+		m_DiscMatchMgr.Init();
 	}
 
 	return nResult;
