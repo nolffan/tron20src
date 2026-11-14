@@ -37,22 +37,10 @@ class StartupCommand : public GameBase
 
 		void	ReadProps( ObjectCreateStruct *pOCS );
 
-		void	SendCommand( );
-
 
 	protected : // Members...
 
-		std::string		m_sStartupCmd;
-		
-		enum RoundCondition
-		{
-			kRoundCondition_All,
-			kRoundCondition_Odd,
-			kRoundCondition_Even,
-		};
-
-		RoundCondition m_eRoundCondition;
-		bool m_bSafeExecute;
+		std::string		m_sStartupCmd;	// RETAIL: +0x38; Tron has no round condition
 
 	private:
 
@@ -73,13 +61,6 @@ class CStartupCommandPlugin : public IObjectPlugin
 				const	GenericProp	&gpPropValue,
 						ILTPreInterface	*pInterface,
 				const	char		*szModifiers );
-
-		virtual LTRESULT PreHook_EditStringList(const char* szRezPath,
-												   const char* szPropName,
-												   char** aszStrings,
-												   uint32* pcStrings,
-												   const uint32 cMaxStrings,
-												   const uint32 cMaxStringLength);
 
 	private: // Members...
 

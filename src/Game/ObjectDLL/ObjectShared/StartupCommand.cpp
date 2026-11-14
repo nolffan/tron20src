@@ -16,16 +16,14 @@
 
 	#include "stdafx.h"
 	#include "StartupCommand.h"
-	#include "VersionMgr.h"
-	#include "ServerMissionMgr.h"
 
 LINKFROM_MODULE( StartupCommand );
 
 BEGIN_CLASS( StartupCommand )
 
+	// RETAIL: Tron's has only the command (ClassDef 0x1032f150: one
+	// property), as build 51's; NOLF2 1.x added RoundCondition and SafeExecute
 	ADD_STRINGPROP_FLAG( Command, "", PF_NOTIFYCHANGE )
-	ADD_STRINGPROP_FLAG( RoundCondition, "All", PF_STATICLIST)
-	ADD_BOOLPROP( SafeExecute, true )
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN( StartupCommand, GameBase, NULL, NULL, 0, CStartupCommandPlugin )
 
@@ -63,35 +61,6 @@ LTRESULT CStartupCommandPlugin::PreHook_PropChanged( const char *szObjName,
 
 // ----------------------------------------------------------------------- //
 //
-//  ROUTINE:	CStartupCommandPlugin::PreHook_EditStringList
-//
-//  PURPOSE:	Edit string list on drop downs.
-//
-// ----------------------------------------------------------------------- //
-
-LTRESULT CStartupCommandPlugin::PreHook_EditStringList(const char* szRezPath,
-												   const char* szPropName,
-												   char** aszStrings,
-												   uint32* pcStrings,
-												   const uint32 cMaxStrings,
-												   const uint32 cMaxStringLength)
-{
-
-	if( _stricmp( "RoundCondition", szPropName ) == 0 )
-	{
-		_ASSERT(cMaxStrings > (*pcStrings) + 3);
-		strcpy( aszStrings[(*pcStrings)++], "All" );
-		strcpy( aszStrings[(*pcStrings)++], "Odd" );
-		strcpy( aszStrings[(*pcStrings)++], "Even" );
-		
-		return LT_OK;
-	}
-
-	return LT_UNSUPPORTED;
-}
-
-// ----------------------------------------------------------------------- //
-//
 //  ROUTINE:	StartupCommand::StartupCommand
 //
 //  PURPOSE:	Constructor...
@@ -100,8 +69,6 @@ LTRESULT CStartupCommandPlugin::PreHook_EditStringList(const char* szRezPath,
 
 StartupCommand::StartupCommand( ) :	GameBase( OT_NORMAL )
 {
-	m_eRoundCondition = kRoundCondition_All;
-	m_bSafeExecute = true;
 }
 
 
@@ -161,21 +128,17 @@ uint32 StartupCommand::EngineMessageFn( uint32 messageID, void *pData, LTFLOAT f
 		}
 		break;
 
-		case MID_ALLOBJECTSCREATED:
-		{
-			// Check if they couldn't wait for a safe execution in MID_UPDATE.
-			// This is sometimes needed if the target of the command is something
-			// that has to be modified before the first update.
-			if( !m_bSafeExecute )
-			{
-				SendCommand( );
-			}
-		}
-		break;
-
 		case MID_UPDATE :
 		{
-			SendCommand( );
+			// RETAIL: 0x1023a646, Tron's sends the command on the first update
+			// (no round condition, no "safe execute" as NOLF2 1.x has)
+
+			if( g_pCmdMgr->IsValidCmd( m_sStartupCmd.c_str( )))
+			{
+				g_pCmdMgr->Process( m_sStartupCmd.c_str( ), m_hObject, m_hObject );
+			}
+
+			g_pLTServer->RemoveObject( m_hObject );
 		}
 		break;
 
@@ -219,27 +182,6 @@ void StartupCommand::ReadProps( ObjectCreateStruct *pOcs )
 			m_sStartupCmd = gProp.m_String;
 		}
 	}
-
-	if( g_pLTServer->GetPropGeneric( "RoundCondition", &gProp ) == LT_OK && gProp.m_String[0] )
-	{
-		if( stricmp( gProp.m_String, "Odd" ) == 0 )
-		{
-			m_eRoundCondition = kRoundCondition_Odd;
-		}
-		else if( stricmp( gProp.m_String, "Even" ) == 0 )
-		{
-			m_eRoundCondition = kRoundCondition_Even;
-		}
-		else
-		{
-			m_eRoundCondition = kRoundCondition_All;
-		}
-	}
-
-	if( g_pLTServer->GetPropGeneric( "SafeExecute", &gProp ) == LT_OK )
-	{
-		m_bSafeExecute = !!gProp.m_Bool;
-	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -252,9 +194,7 @@ void StartupCommand::ReadProps( ObjectCreateStruct *pOcs )
 
 void StartupCommand::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
-	SAVE_CHARSTRING( m_sStartupCmd.c_str( ));
-	SAVE_BYTE( m_eRoundCondition );
-	SAVE_bool( m_bSafeExecute );
+	SAVE_CHARSTRING( m_sStartupCmd.c_str( ));	// RETAIL: 0x1023a7f0
 }
 
 
@@ -271,53 +211,4 @@ void StartupCommand::Load(ILTMessage_Read *pMsg, uint32 dwSaveFlags)
 	char szString[1024];
 	LOAD_CHARSTRING( szString, ARRAY_LEN( szString ));
 	m_sStartupCmd = szString;
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-	{
-	}
-	else
-	{
-		LOAD_BYTE_CAST( m_eRoundCondition, RoundCondition );
-		LOAD_bool( m_bSafeExecute );
-	}
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	StartupCommand::SendCommand
-//
-//	PURPOSE:	Sends the command.
-//
-// ----------------------------------------------------------------------- //
-
-void StartupCommand::SendCommand( )
-{
-	// Check if we satisfy the round condition.
-	// Round 0 is considered odd, since it's the "1st" round.
-	bool bSatisfiesRoundCondition = false;
-	switch( m_eRoundCondition )
-	{
-		case kRoundCondition_All:
-			bSatisfiesRoundCondition = true;
-			break;
-		case kRoundCondition_Odd:
-			bSatisfiesRoundCondition = !( g_pServerMissionMgr->GetCurrentRound( ) & 0x1 );
-			break;
-		case kRoundCondition_Even:
-			bSatisfiesRoundCondition = ( g_pServerMissionMgr->GetCurrentRound( ) & 0x1 );
-			break;
-	}
-
-	if( bSatisfiesRoundCondition )
-	{
-		// Process the command and then remove us...
-
-		if( g_pCmdMgr->IsValidCmd( m_sStartupCmd.c_str( )))
-		{
-			g_pCmdMgr->Process( m_sStartupCmd.c_str( ), m_hObject, m_hObject );
-		}
-	}
-
-	g_pLTServer->RemoveObject( m_hObject );
 }
