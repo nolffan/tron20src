@@ -432,16 +432,11 @@ void CMoveMgr::UpdateControlFlags()
 
 void CMoveMgr::UpdateNormalControlFlags()
 {
-	if( !g_pInterfaceMgr->AllowCameraMovement() ) 
-	{
-		// Don't clear the duck flag...
-		m_dwControlFlags |= (m_dwLastControlFlags & BC_CFLG_DUCK);
-		return;
-	}
+	// RETAIL: 0x100f5670 -- UpdateControlFlags checks the camera.
 
 	// If we're doing mouse strafing, hook us up...
 
-	if (g_pPlayerMgr->IsMouseStrafing())
+	if (!g_pGameClientShell->GetTronUnknown833A() && g_pPlayerMgr->IsMouseStrafing())
 	{
 		float offsets[3];
 		g_pLTClient->GetAxisOffsets(offsets);
@@ -463,7 +458,7 @@ void CMoveMgr::UpdateNormalControlFlags()
 	}
 
 	//if you are a ghost, you can look around, but that's it
-	if (g_pPlayerMgr->GetPlayerState() == PS_GHOST) return;
+	if (g_pPlayerMgr->GetPlayerState() == PS_GHOST || g_pGameClientShell->GetTronUnknown833A()) return;
 
 
 	// Use the player's user flags instead of checking this flag directly
@@ -474,7 +469,8 @@ void CMoveMgr::UpdateNormalControlFlags()
 		m_dwControlFlags |= BC_CFLG_DUCK;
 	}
 
-	if (g_pPlayerMgr->IsCarryingHeavyObject())
+	// RETAIL: Tron tests for any carried object.
+	if (g_pPlayerMgr->GetCarryingObject())
 	{
 		m_dwControlFlags &= ~BC_CFLG_DUCK;
 	}
@@ -486,17 +482,16 @@ void CMoveMgr::UpdateNormalControlFlags()
 			m_dwControlFlags |= BC_CFLG_DUCK;
 	}
 
-	// Only process jump and run if we aren't ducking and aren't leaning...
+	// Only process jump and run if we aren't ducking, carrying or leaning...
 
-	if (!(m_dwControlFlags & BC_CFLG_DUCK) && !g_pPlayerMgr->GetLeanMgr()->IsLeaning())
+	if (!(m_dwControlFlags & BC_CFLG_DUCK) && !g_pPlayerMgr->GetCarryingObject() && !g_pPlayerMgr->GetLeanMgr()->IsLeaning())
 	{
 		if (g_pLTClient->IsCommandOn(COMMAND_ID_RUN) ^ (m_bRunLock != LTFALSE))
 		{
 			m_dwControlFlags |= BC_CFLG_RUN;
 		}
 
-		//also can't jump while carrying a body
-		if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP) && !g_pPlayerMgr->IsCarryingHeavyObject())
+		if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP))
 		{
 			m_dwControlFlags |= BC_CFLG_JUMP;
 		}
@@ -533,8 +528,12 @@ void CMoveMgr::UpdateNormalControlFlags()
 		m_dwControlFlags |= BC_CFLG_STRAFE_LEFT;
 	}
 
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_DEFEND))
+	{
+		m_dwControlFlags |= BC_CFLG_DEFEND;
+	}
 
-	if (!g_pPlayerMgr->IsCarryingHeavyObject())
+	if (!g_pPlayerMgr->GetCarryingObject())
 	{
 		if (g_pLTClient->IsCommandOn(COMMAND_ID_FIRING))
 		{
@@ -545,14 +544,6 @@ void CMoveMgr::UpdateNormalControlFlags()
 		{
 			m_dwControlFlags |= BC_CFLG_ALT_FIRING;
 		}
-
-
-		//special case for activating a gadget target
-		if (g_pLTClient->IsCommandOn(COMMAND_ID_ACTIVATE) && g_pPlayerMgr->FireOnActivate())
-		{
-			m_dwControlFlags |= BC_CFLG_FIRING;
-		}
-
 	}
 
 

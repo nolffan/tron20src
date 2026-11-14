@@ -105,6 +105,8 @@ PlayerPhysicsModel GetPlayerPhysicsModelFromPropertyName(char* pPropertyName);
 #define BC_CFLG_ALT_FIRING		(1<<19)
 #define BC_CFLG_LEAN_LEFT		(1<<20)
 #define BC_CFLG_LEAN_RIGHT		(1<<21)
+// RETAIL: Tron's disc defence (COMMAND_ID_DEFEND; CMoveMgr::UpdateNormalControlFlags 0x100f5670)
+#define BC_CFLG_DEFEND			(1<<22)
 
 #ifdef __PSX2
 	// [kml] For variable degrees of lookage.
