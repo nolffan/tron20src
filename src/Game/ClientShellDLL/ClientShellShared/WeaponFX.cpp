@@ -1366,6 +1366,9 @@ void CWeaponFX::PlayFireSound()
 		eSoundId = PSI_ALT_FIRE;
 	}
 
+	// PORT: retail passes two members of Tron's CWeaponFX (+0xfc, a volume
+	// scale, and the byte at +0x100) as PlayWeaponSound's new arguments
+	// (0x10191e5f); ours has neither, so the defaults stand in.
 	::PlayWeaponSound(m_pWeapon, m_vFirePos, eSoundId);
 }
 

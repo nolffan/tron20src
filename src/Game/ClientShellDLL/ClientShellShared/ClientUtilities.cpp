@@ -244,8 +244,12 @@ void WriteConsoleFloat(char const* sKey, LTFLOAT fValue)
 
 
 static VarTrack s_cvarFirePitchShift;
+// RETAIL: Tron's PlayWeaponSound (CShell 0x100d8730) takes a volume scale
+// (used for the fire sounds only) and a bool it ignores before bLocal; only
+// the fire sounds use the weapon's sound radius (the others keep
+// WEAPON_SOUND_RADIUS). The names of the new arguments are ours.
 void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId eSoundId,
-					 LTBOOL bLocal)
+					 LTFLOAT fVolumeScale, bool bTronUnknown, LTBOOL bLocal)
 {
 	if (!pWeapon) return;
 
@@ -259,6 +263,12 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
 	// RETAIL: Tron's weapons have no WeaponSndRadius: the non-fire sounds
 	// keep this radius (CShell 0x100d8730)
 	LTFLOAT fRadius = WEAPON_SOUND_RADIUS;
+
+	LTFLOAT fScale = 1.0f;
+	if (eSoundId >= PSI_FIRE && eSoundId <= PSI_SILENCED_FIRE)
+	{
+		fScale = fVolumeScale;
+	}
 
 	switch (eSoundId)
 	{
@@ -337,13 +347,13 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
  		if (bLocal)
 		{
 			g_pClientSoundMgr->PlaySoundLocal(pSnd, SOUNDPRIORITY_PLAYER_HIGH,
-				dwFlags, SMGR_DEFAULT_VOLUME, fPitchShift, WEAPONS_SOUND_CLASS );
+				dwFlags, SMGR_DEFAULT_VOLUME, fPitchShift, WEAPONS_SOUND_CLASS, fScale );
 		}
 		else
 		{
  			g_pClientSoundMgr->PlaySoundFromPos(const_cast<LTVector&>(vPos), pSnd,
 				fRadius, SOUNDPRIORITY_PLAYER_HIGH, dwFlags,
-				SMGR_DEFAULT_VOLUME, fPitchShift, -1.0f, WEAPONS_SOUND_CLASS );
+				SMGR_DEFAULT_VOLUME, fPitchShift, -1.0f, WEAPONS_SOUND_CLASS, fScale );
 		}
 	}
 }

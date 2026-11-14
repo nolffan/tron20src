@@ -96,8 +96,9 @@ inline LTBOOL GetAttachmentSocketTransform(HOBJECT hObj, char* pSocketName,
 struct WEAPON;
 enum PlayerSoundId;
 
+// RETAIL: Tron's has a volume scale and an (unused) bool before bLocal (0x100d8730).
 void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId eSoundId,
-					 LTBOOL bLocal=LTFALSE);
+					 LTFLOAT fVolumeScale=1.0f, bool bTronUnknown=false, LTBOOL bLocal=LTFALSE);
 
 #define IsKeyDown(key)		(GetAsyncKeyState(key) & 0x80000000)
 

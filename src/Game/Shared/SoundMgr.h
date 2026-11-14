@@ -27,11 +27,17 @@ class CGameSoundMgr : public CGameButeMgr
 
         virtual LTBOOL Init(const char* szAttributeFile);
 
+        // RETAIL: Tron's PlaySoundFromObject/PlaySoundFromPos take a 10th
+        // argument (Object 0x100ce400/0x100ce750 and CShell 0x100fe230 end
+        // in ret 0x28): a float that scales the sound's volume when it lies
+        // in [0, 1]; almost every retail caller pushes 1.0f.  The name is ours.
         HLTSOUND    PlaySoundFromObject(HOBJECT hObject, char const* pName, LTFLOAT fORadius=-1.0f, SoundPriority ePriority=SOUNDPRIORITY_MISC_LOW,
-										uint32 dwFlags=0, uint8 nVolume=SMGR_DEFAULT_VOLUME, float fPitchShift=1.0f, LTFLOAT fIRadius=-1.0f, uint8 nSoundClass = 0 );
+										uint32 dwFlags=0, uint8 nVolume=SMGR_DEFAULT_VOLUME, float fPitchShift=1.0f, LTFLOAT fIRadius=-1.0f, uint8 nSoundClass = 0,
+										LTFLOAT fVolumeScale=1.0f );
 
         HLTSOUND    PlaySoundFromPos(LTVector & vPos, char const* pName, LTFLOAT fORadius=-1.0f, SoundPriority ePriority=SOUNDPRIORITY_MISC_LOW,
-									uint32 dwFlags=0, uint8 nVolume=SMGR_DEFAULT_VOLUME, float fPitchShift=1.0f, LTFLOAT fIRadius=-1.0f, uint8 nSoundClass = 0 );
+									uint32 dwFlags=0, uint8 nVolume=SMGR_DEFAULT_VOLUME, float fPitchShift=1.0f, LTFLOAT fIRadius=-1.0f, uint8 nSoundClass = 0,
+										LTFLOAT fVolumeScale=1.0f );
 
 		void		GetRandomSoundFilename(const char* pTag, const char* pAttributeBase, char *pBuf, uint16 nBufLen);
 		void		GetSoundFilename(const char* pTag, const char* pAttribute, char *pBuf, uint16 nBufLen);
