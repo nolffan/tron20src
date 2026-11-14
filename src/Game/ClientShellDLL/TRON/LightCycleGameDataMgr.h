@@ -74,8 +74,10 @@ public:
 	std::string					m_sName;		// RETAIL: +0x00 the file's name
 	LightCycleCustomSettings	m_Custom;		// RETAIL: +0x0c CustomSettings
 	Circuit						m_Circuit;		// RETAIL: +0x30 CircuitSettings (its Map: the first string)
-	bool						m_bTronUnknownA0;	// RETAIL: +0xa0
-	bool						m_bTronUnknownA1;	// RETAIL: +0xa1
+	// RETAIL: +0xa0, +0xa1: the profile's cycle style and shade, copied as
+	// bytes by the circuit screen's launch (0x100669a0)
+	uint8						m_bTronUnknownA0;	// RETAIL: +0xa0
+	uint8						m_bTronUnknownA1;	// RETAIL: +0xa1
 };
 
 class CLightCycleGameDataMgr

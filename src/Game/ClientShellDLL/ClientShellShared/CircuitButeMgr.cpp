@@ -185,7 +185,7 @@ bool CircuitButeMgr::IsCircuitMap(const std::string& sMap) const
 //
 // ----------------------------------------------------------------------- //
 
-uint8 CircuitButeMgr::GetNumCircuits() const
+int CircuitButeMgr::GetNumCircuits() const
 {
 	return m_lstCircuits.size();
 }

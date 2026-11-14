@@ -92,7 +92,7 @@ class CircuitButeMgr : public CGameButeMgr
 		// it, without case)? (the name is ours) RETAIL: 0x1000c2c0
 		bool IsCircuitMap(const std::string& sMap) const;
 
-		uint8 GetNumCircuits() const;						// RETAIL: 0x1000c4c0
+		int GetNumCircuits() const;						// RETAIL: 0x1000c4c0 (int: its callers use all of eax)
 		// A blank circuit when out of range. RETAIL: 0x1000c4e0
 		const Circuit& GetCircuit(uint8 nCircuit) const;
 

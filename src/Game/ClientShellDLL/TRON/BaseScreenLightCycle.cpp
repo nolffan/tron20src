@@ -155,8 +155,9 @@ void CBaseScreenLightCycle::CreateSettingsList()
 	m_pSettingsList->SetIndent(LTIntPt(5,5));
 	// RETAIL: here Tron's list control takes a frame texture
 	// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0),
-	// a virtual (slot 0x80) is called with 1 and a member set (+0x670 = 1):
-	// left out, our LTGUIMgr's list control has none of them yet
+	// and a member is set (+0x670 = 1, after the Enable): left out, our
+	// LTGUIMgr's list control has neither yet
+	m_pSettingsList->Enable(LTTRUE);
 
 	m_pSettingsTitle = AddTextItem(0x25B7,0,0,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_BASE_LIGHTCYCLE,"ConfigTitlePos"),LTTRUE);
 	m_pNewSettings = AddTextItem(0x25B8,kCmdLCNewSettings,0x25B9,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_BASE_LIGHTCYCLE,"CommandPos"));
@@ -169,10 +170,10 @@ void CBaseScreenLightCycle::SetTabFrame(CLTGUICtrl *pTab)
 {
 	if (!pTab) return;
 
-	LTIntPt tabPos = pTab->GetBasePos();
+	LTIntPt tabPos = pTab->GetPos();
 	float fTabLeft = (float)tabPos.x - 10.0f;
 	float fTabTop = (float)tabPos.y - 5.0f;
-	float fTabRight = (float)pTab->GetBaseWidth() + fTabLeft;
+	float fTabRight = (float)pTab->GetWidth() + fTabLeft;
 
 	float fXRatio = g_pInterfaceResMgr->GetXRatio();
 	float fYRatio = g_pInterfaceResMgr->GetYRatio();
@@ -661,5 +662,11 @@ bool CBaseScreenLightCycle::IsCycleColorLocked(const char *pszColor)
 		return false;
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	return (std::find(pProfile->m_UnlockedCycleColors.begin(),pProfile->m_UnlockedCycleColors.end(),pszColor) == pProfile->m_UnlockedCycleColors.end());
+	StringArray::iterator it;
+	for (it = pProfile->m_UnlockedCycleColors.begin(); it != pProfile->m_UnlockedCycleColors.end(); ++it)
+	{
+		if (LCNameEquals(*it,pszColor))
+			break;
+	}
+	return (it == pProfile->m_UnlockedCycleColors.end());
 }

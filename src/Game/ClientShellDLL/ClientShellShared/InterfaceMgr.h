@@ -341,6 +341,9 @@ class CInterfaceMgr
 	    void		ShowMessageBox(int nStringID, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
 	    void		ShowMessageBox(const char *pString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
 	    void		CloseMessageBox(LTBOOL bReturn);
+		// RETAIL: Tron's (inline; out of line at 0x1000fa80, its
+		// CMessageBox::Show taking the wide text, 0x100de920)
+	    void		ShowMessageBox(std::wstring sString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
 
 
 		void		ViewOptions();
@@ -690,6 +693,11 @@ inline void CInterfaceMgr::ShowMessageBox(int nStringID, MBCreate* pCreate, uint
 inline void CInterfaceMgr::ShowMessageBox(const char *pString, MBCreate* pCreate, uint8 nFontSize, LTBOOL bDefaultReturn)
 {
 	m_MessageBox.Show(pString,pCreate,nFontSize,bDefaultReturn);
+}
+// PORT: our CMessageBox::Show takes narrow text yet
+inline void CInterfaceMgr::ShowMessageBox(std::wstring sString, MBCreate* pCreate, uint8 nFontSize, LTBOOL bDefaultReturn)
+{
+	m_MessageBox.Show(LTGUINarrowString(sString).c_str(),pCreate,nFontSize,bDefaultReturn);
 }
 inline void CInterfaceMgr::CloseMessageBox(LTBOOL bReturn)
 {

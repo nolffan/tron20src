@@ -39,6 +39,19 @@ const uint32 kCmdLCSelectSettings	= 0x43C;
 void NewSettingsCallBack(LTBOOL bReturn, void *pData);
 void RenameSettingsCallBack(LTBOOL bReturn, void *pData);
 
+// RETAIL: inline in the light cycle screens (ours): names compared without
+// case, as retail's searches of the profile's and the circuits' name lists
+inline bool LCNameEquals(const std::string &sName, const char *pszName)
+{
+	uint32 nLen = pszName ? strlen(pszName) : 0;
+	return (sName.size() == nLen && !_memicmp(sName.data(),pszName,nLen));
+}
+
+inline bool LCNameEquals(const std::string &sName, const std::string &sOther)
+{
+	return (sName.size() == sOther.size() && !_memicmp(sName.data(),sOther.data(),sName.size()));
+}
+
 class CBaseScreenLightCycle : public CBaseScreen
 {
 public:
