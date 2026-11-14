@@ -216,6 +216,11 @@ enum ERenStyle_ColorOp {
 	Color1 + (1 - Alpha1) * Color2
 	*/
 	RENDERSTYLE_COLOROP_ADDMODINVALPHA,
+	/*!
+	Use the current texture alpha to modulate the two args (Arg1 * Alpha + Arg2 * (1-Alpha))
+	TRON: Build 69's; Lithtech.exe's render style tables have it (0x55d190)
+	*/
+	RENDERSTYLE_COLOROP_MODULATETEXALPHA,
 
 	//This must come last
 	RENDERSTYLE_COLOROP_TYPE_COUNT,
@@ -302,6 +307,11 @@ enum ERenStyle_AlphaOp {
 	Out = AlphaArg1 - AlphaArg2
 	*/
 	RENDERSTYLE_ALPHAOP_SUBTRACT,
+	/*!
+	Use current texture alpha to modulate. Out = AlphaArg1 * Alpha + AlphaArg2 * (1 - Alpha)
+	TRON: Build 69's, as the colour operation
+	*/
+	RENDERSTYLE_ALPHAOP_MODULATETEXALPHA,
 
 	//This must come last
 	RENDERSTYLE_ALPHAOP_TYPE_COUNT,

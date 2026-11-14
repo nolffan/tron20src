@@ -47,7 +47,9 @@ private:
 	// Sets up m_LightAdd and g_ModelDrawFlags.
 	static void			StaticLightCB(WorldTreeObj *pObj, void *pUser);
 	float				GetDirLightAmount(ModelInstance* pInstance, const LTVector& vInstancePos);
-	void				SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList);
+	// TRON: whether the sun lights it too (bApplySun, the name is ours;
+	// Lithtech.exe 0x5527e9; QueueAllModelInfo passes true, 0x552ef7)
+	void				SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList, bool bApplySun);
 
 };
 

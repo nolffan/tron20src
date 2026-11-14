@@ -262,17 +262,14 @@ float ModelDraw::GetDirLightAmount(ModelInstance* pInstance, const LTVector& vIn
 	return fLight;
 }
 
-void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList)
+void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList, bool bApplySun)
 {
 	//setup our light list information
 	uint32 nMaxLights = LTMIN((uint32)g_CV_MaxModelLights, MAX_LIGHTS_SUPPORTED_BY_D3D);
 
-	//figure out the world position of this instance
-	LTVector vInstancePosition = pInstance->GetPos();
-
 	LightList.ClearList();
 	LightList.SetMaxLights(nMaxLights);
-	LightList.SetObjectPos(vInstancePosition);
+	LightList.SetObjectPos(pInstance->GetPos());
 	LightList.SetObjectDims(pInstance->GetDims());
 
 	// If they don't want lighting, set the values for no lighting and skip out
@@ -289,6 +286,10 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 	// Add light from the environment.
 	CRenderLight RenderLight;
 
+	//figure out the world position of this instance
+	// RETAIL: copied only now (Lithtech.exe 0x552714)
+	LTVector vInstancePosition = pInstance->GetPos();
+
 	if(bReallyClose)
 	{
 		//this is really close, we need to transform it into the world
@@ -298,7 +299,7 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 	// Global directional light dir.
 	float fDirLightAmount = 0.0f;
 
-	if (g_have_world && g_CV_ModelApplySun.m_Val && 
+	if (g_have_world && g_CV_ModelApplySun.m_Val && bApplySun &&
 		(g_pStruct->m_GlobalLightColor.x || g_pStruct->m_GlobalLightColor.y || g_pStruct->m_GlobalLightColor.z))
 	{
 		// Use the previous lighting amount if it hasn't moved
@@ -495,7 +496,7 @@ void ModelDraw::QueueAllModelInfo()
 
 			//we also need to build the lighting data
 			CRelevantLightList LightList;
-			SetupModelLight(pInstance, HookData, LightList);
+			SetupModelLight(pInstance, HookData, LightList, true);
 
 			//setup our light list
 			LightList.CreateDeviceLightList(InfoList.GetDeviceLightList(pInstance->m_nRenderInfoIndex));

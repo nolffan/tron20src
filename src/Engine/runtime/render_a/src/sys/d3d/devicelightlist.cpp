@@ -66,11 +66,8 @@ void CDeviceLightList::InstallLightList() const
 //sets the ambient color
 void CDeviceLightList::SetAmbientColor(const LTVector& vAmbient)
 {
-	// RETAIL: as bytes (0x50f760)
-	uint8 r = (uint8)(LTMIN(255.0f, vAmbient.x));
-	uint8 g = (uint8)(LTMIN(255.0f, vAmbient.y));
-	uint8 b = (uint8)(LTMIN(255.0f, vAmbient.z));
-	m_nAmbient = D3DRGB_255(r, g, b);
+	// RETAIL: in one expression, the three clamps first (0x55cfe0)
+	m_nAmbient = D3DRGB_255(LTMIN(255.0f, vAmbient.x), LTMIN(255.0f, vAmbient.y), LTMIN(255.0f, vAmbient.z));
 }
 
 //adds to the ambient color
