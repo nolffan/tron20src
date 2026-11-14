@@ -42,6 +42,7 @@ CHUDMgr::CHUDMgr()
 {
 	m_itemArray.reserve(12);
 	m_eLevel = kHUDRenderNone;
+	m_pScores = debug_new(CHUDScores);	// PORT: see the header
 }
 
 // ----------------------------------------------------------------------- //
@@ -55,6 +56,7 @@ CHUDMgr::CHUDMgr()
 CHUDMgr::~CHUDMgr()
 {
 	Term();
+	debug_delete(m_pScores);	// PORT: see the header
 }
 
 // ----------------------------------------------------------------------- //
@@ -79,7 +81,7 @@ LTBOOL CHUDMgr::Init()
 	g_pRewardMsgs = &m_RewardMsgs;
 	g_pPaused = &m_Paused;
 	g_pDisplayMeter = &m_DisplayMeter;
-	g_pScores = &m_Scores;
+	g_pScores = m_pScores;
 
 	m_nCurrentLayout = GetConsoleInt("HUDLayout",0);
 
@@ -121,7 +123,7 @@ bool CHUDMgr::AddItems()
 	AddItem(&m_Damage, eGameType);
 	AddItem(&m_Radar, eGameType);
 	AddItem(&m_DisplayMeter, eGameType);
-	AddItem(&m_Scores, eGameType);
+	AddItem(m_pScores, eGameType);
 
 	m_RewardMsgs.Init();
 	m_Popup.Init();
@@ -135,7 +137,7 @@ bool CHUDMgr::AddItems()
 	m_Damage.Init();
 	m_Radar.Init();
 	m_DisplayMeter.Init();
-	m_Scores.Init();
+	m_pScores->Init();
 
 	return true;
 }

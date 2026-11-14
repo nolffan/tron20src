@@ -72,8 +72,8 @@ typedef std::vector<CLTGUICtrl*> ControlArray;
 #include "..\ltguimgr\ltguicyclectrl.h"
 #include "..\ltguimgr\ltguitoggle.h"
 #include "..\ltguimgr\ltguislider.h"
+#include "..\ltguimgr\ltguiframe.h"		// TRON: before the column control, which has one
 #include "..\ltguimgr\ltguicolumnctrl.h"
-#include "..\ltguimgr\ltguiframe.h"
 #include "..\ltguimgr\ltguieditctrl.h"
 #include "..\ltguimgr\ltguilargetext.h"
 
