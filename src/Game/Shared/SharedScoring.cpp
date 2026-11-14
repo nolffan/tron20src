@@ -595,6 +595,69 @@ void CTronTeamMgr::Init()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronTeamMgr::SortTeams
+//
+//	PURPOSE:	Rebuild the index map in ranking order: the teams of state
+//				0 by score, highest first, then the others by score, then
+//				the empty teams (RETAIL: CShell.dll 0x100fb330; the name,
+//				and the meaning of the scores, are ours: light cycle
+//				games rank by m_nTronUnknown12, the others by
+//				m_nTronUnknownC)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronTeamMgr::SortTeams()
+{
+	typedef std::pair<int16, uint32> TeamScore;
+	typedef std::list<TeamScore> TeamScoreList;
+
+	TeamScoreList lstFirst;
+	TeamScoreList lstSecond;
+	std::list<uint32> lstEmpty;
+
+	int i;
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		for (i = 0; i < TRON_MAX_TEAMS; i++)
+		{
+			if (m_aTeams[i].GetNumClients() == 0)
+				lstEmpty.push_back(i);
+			else if (m_aTeams[i].GetState() == CTronTeam::kTronTeamState_TronUnknown0)
+				lstFirst.push_back(std::make_pair(m_aTeams[i].GetTronUnknown12(), i));
+			else
+				lstSecond.push_back(std::make_pair(m_aTeams[i].GetTronUnknown12(), i));
+		}
+	}
+	else
+	{
+		for (i = 0; i < TRON_MAX_TEAMS; i++)
+		{
+			if (m_aTeams[i].GetNumClients() == 0)
+				lstEmpty.push_back(i);
+			else if (m_aTeams[i].GetState() == CTronTeam::kTronTeamState_TronUnknown0)
+				lstFirst.push_back(std::make_pair(m_aTeams[i].GetTronUnknownC(), i));
+			else
+				lstSecond.push_back(std::make_pair(m_aTeams[i].GetTronUnknownC(), i));
+		}
+	}
+
+	lstFirst.sort();
+	lstSecond.sort();
+
+	int nIndex = 0;
+	// RETAIL: the second loop's dereference is inline in retail and out
+	// of line in ours (0x100fb82d): the function is near
+	TeamScoreList::reverse_iterator iter;
+	for (iter = lstFirst.rbegin(); iter != lstFirst.rend(); ++iter)
+		m_aTeamIndex[nIndex++] = (*iter).second;
+	for (iter = lstSecond.rbegin(); iter != lstSecond.rend(); ++iter)
+		m_aTeamIndex[nIndex++] = (*iter).second;
+	for (std::list<uint32>::iterator iEmpty = lstEmpty.begin(); iEmpty != lstEmpty.end(); ++iEmpty)
+		m_aTeamIndex[nIndex++] = *iEmpty;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronTeamMgr::MoveClient
 //
 //	PURPOSE:	Ask the server to move a client to a team (RETAIL:
@@ -647,6 +710,41 @@ int CTronTeamMgr::GetTeamOfClient(uint32 nClientID)
 
 	return -1;
 }
+
+#ifdef _CLIENTBUILD
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronTeamMgr::GetTeamColor
+//
+//	PURPOSE:	The colour of the first four teams (from GetTronUnknownIndex),
+//				or one of its two neighbours at random (RETAIL: CShell.dll
+//				0x100fba70; the name, and the meaning, are ours)
+//
+// ----------------------------------------------------------------------- //
+
+uint8 CTronTeamMgr::GetTeamColor(uint8 nIndex, bool bRandom)
+{
+	switch (nIndex)
+	{
+		case 0:
+			if (!bRandom) return 1;
+			return GetRandom(0, 2);
+		case 1:
+			if (!bRandom) return 7;
+			return GetRandom(6, 8);
+		case 2:
+			if (!bRandom) return 10;
+			return GetRandom(9, 11);
+		case 3:
+			if (!bRandom) return 13;
+			return GetRandom(12, 14);
+	}
+
+	return 0;
+}
+
+#endif // _CLIENTBUILD
 
 #ifndef _CLIENTBUILD
 

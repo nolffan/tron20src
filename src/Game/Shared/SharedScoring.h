@@ -189,6 +189,9 @@ public:
 	// RETAIL: the client asks the server to move a client to a team
 	// (CShell.dll 0x100fb900); the name is ours
 	void	MoveClient(uint32 nClientID, uint32 nTeam);
+	// RETAIL: CShell.dll 0x100fb330, 0x100fba70 (the names are ours)
+	void	SortTeams();
+	uint8	GetTeamColor(uint8 nIndex, bool bRandom);
 #else
 	bool	SetupTeams(uint32 nTeamSize, uint32 nMaxPlayers);
 	bool	RemoveClient(uint32 nClientID);
