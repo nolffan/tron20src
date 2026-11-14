@@ -158,8 +158,9 @@ CLightCycleButeMgr::CLightCycleButeMgr()
 	m_fWallExtenderAdd = 1000.0f;
 	m_fTurboCurseAccelRate = 1.0f;
 	m_fMaxTurboCurseSpeed = 5000.0f;
-	m_fTurboCurseTime = 5.0f;
+	// RETAIL: stored in this order (CShell.dll 0x100429bb, Object.lto 0x100258cb)
 	m_fTurboTime = 5.0f;
+	m_fTurboCurseTime = 5.0f;
 	m_fTrailSpikeSpeed = 1000.0f;
 	m_fTrailSpikeDist = 400.0f;
 	m_fTrailSpikeDelay = 0.0f;

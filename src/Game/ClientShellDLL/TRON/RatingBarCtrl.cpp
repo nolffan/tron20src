@@ -571,7 +571,7 @@ void CRatingBarCtrl::OnLButtonDown(int x, int y)
 
 void CRatingBarCtrl::Apply()
 {
-	g_pRatingMgr->SetPerformanceRating((PerformanceRating)m_nRating, m_nValue);
+	g_pRatingMgr->SetPerformanceRating((PerformanceRating)m_nRating, GetValue());
 }
 
 void CRatingBarCtrl::Update()

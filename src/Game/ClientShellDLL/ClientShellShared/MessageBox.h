@@ -22,6 +22,9 @@ enum eMBType
 	LTMB_OK,
 	LTMB_YESNO,
 	LTMB_EDIT,
+	// TRON: a box without buttons the code closes (CBaseScreenJoin's
+	// update check, retail 0x10007dc2); the name is ours
+	LTMB_NONE,
 };
 
 //edit boxes return a pointer to their strings in pData

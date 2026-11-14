@@ -705,6 +705,7 @@ const char* CLightCycleMatchMgr::GetTeamSound(int nKind, int nTeam)
 	{
 		case 1:		nBase = LCMM_SOUND_ROUNDOVER;	break;
 		case 0:		nBase = LCMM_SOUND_MATCHOVER;	break;
+		case 2:		return LTNULL;	// RETAIL: a third kind, without sounds
 		default:	return LTNULL;
 	}
 
