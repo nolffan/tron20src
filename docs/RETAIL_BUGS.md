@@ -807,6 +807,44 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### A "REMOVE" message does not remove a lite object
+
+Object.lto 0x10153720 (GameBaseLite::OnTrigger, ObjectShared/
+GameBaseLite.cpp). A lite object (CommandObject, Group, Controller, the AI
+volumes) that is sent REMOVE while registered answers that it handled the
+message, but Tron's code never asks the CLiteObjectMgr to remove it (NOLF2's
+calls RemoveObject), so the object stays and keeps updating. A level script
+that removes a command object to stop it does nothing.
+
+Fixed in the modern build: GameBaseLite.cpp (TRON20SRC_MODERN calls
+CLiteObjectMgr::RemoveObject).
+
+### A searchable object's MaxSearchTime is read into its minimum
+
+Object.lto 0x10194700 (CSearchable::ReadProp, ObjectShared/Searchable.cpp).
+The search aggregate reads MinSearchTime and then MaxSearchTime, but stores
+the second one over the minimum too (0x1019478d writes +0x18, not +0x1c), as
+build 51's code already did. A level designer's MinSearchTime is lost and the
+maximum stays unset, so InitialUpdate gives it the 3 second default: a search
+lasts a random time between MaxSearchTime and 3 seconds.
+
+Fixed in the modern build: Searchable.cpp (TRON20SRC_MODERN stores
+m_fMaxSearchTime).
+
+### An active world model's ADDPSET reads the sender, not its argument
+
+Object.lto 0x10176140 (ActiveWorldModel::OnTrigger, ObjectShared/
+ActiveWorldModel.cpp). Tron's doors and switches take ADDPSET <digits> and
+REMOVEPSET <digits> to change the permission sets a player needs. ADDPSET
+measures and scans the bytes of the sender's object handle (0x10176709: the
+argument's address is formed and dropped), so the digits given are ignored
+and whatever bytes the handle points at decide which sets are added.
+REMOVEPSET uses its argument but always tests eight characters (0x101767ad),
+reading past the end of a shorter argument.
+
+Fixed in the modern build: ActiveWorldModel.cpp (TRON20SRC_MODERN parses the
+argument, up to its length).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

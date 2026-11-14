@@ -30,18 +30,17 @@
 
 #define ADD_SEARCHABLE_AGGREGATE(group, flags) \
 	PROP_DEFINEGROUP(SearchProperties, (group) | (flags)) \
+		ADD_REALPROP_FLAG(MinSearchTime, -1.0f, (group) | (flags)) \
+		ADD_REALPROP_FLAG(MaxSearchTime, -1.0f, (group) | (flags)) \
 		ADD_STRINGPROP_FLAG(SpecificItems, "", (group) | (flags)) \
 		ADD_STRINGPROP_FLAG(RandomItemSet, "", (group) | (flags) | PF_STATICLIST  ) \
 		ADD_STRINGPROP_FLAG(SearchSoundName, "Interface\\Snd\\SearchBodyLoop.wav", (group) | (flags) | PF_FILENAME) \
 		ADD_REALPROP_FLAG(SearchSoundRadius, 200.0f, (group) | (flags) | PF_RADIUS)
 
-class CPickupItemRef
-{
-public:
-	CPickupItemRef() : m_hItem(NULL), m_bForcePickup(false) {}
-	LTObjRef	m_hItem;
-	bool		m_bForcePickup;
-};
+// RETAIL: Tron keeps build 51's search times (MinSearchTime/MaxSearchTime,
+// strings in this order at Object.lto 0x102eaffc..), and its pickup list is
+// plain LTObjRefs (ctor 0x10194400 builds the array with LTObjRef's ctor)
+// with one force-pickup flag for the whole searchable, not one per item.
 
 
 class CSearchable : public IAggregate
@@ -51,7 +50,11 @@ class CSearchable : public IAggregate
 		CSearchable();
 		virtual ~CSearchable();
 
-		bool AddPickupItem(HOBJECT hItem, bool bForcePickup = false);
+		// RETAIL: 0x101953b0 takes the item only (ret 4)
+		bool AddPickupItem(HOBJECT hItem);
+		// PORT: NOLF2's callers (AI.cpp, Body.cpp) pass a force-pickup flag
+		// per item; Tron's searchable has none, so it is dropped
+		bool AddPickupItem(HOBJECT hItem, bool bForcePickup) { return AddPickupItem(hItem); }
 		void RemovePickupItem(HOBJECT hItem);
 		void ClearPickupItems();
 		void ResetPickupItems();
@@ -71,7 +74,9 @@ class CSearchable : public IAggregate
 		void	StartSound();
 		void	StopSound();
 
-		void	SetIsBody(bool bBody) {m_bIsBody = bBody;}
+		// PORT: NOLF2's; CCharacter's ctor still calls it. Tron's searchable
+		// has no body flag (no retail code writes one), so it sets nothing
+		void	SetIsBody(bool bBody) {}
 
 	protected :
 
@@ -85,9 +90,11 @@ class CSearchable : public IAggregate
 
 		
 		void	CalcSearchTime();
-		void	CalcTotalTime();
 
 		LTObjRef	m_hObject;
+
+		float		m_fMinSearchTime;	// RETAIL: +0x18 (build 51's)
+		float		m_fMaxSearchTime;	// RETAIL: +0x1c
 
 		SEARCH_SET*	m_pRandomItemSet;
 
@@ -95,7 +102,7 @@ class CSearchable : public IAggregate
 
 
 		uint8			m_nPickupItems;
-		CPickupItemRef	m_ahPickupItems[kMaxPickupItems];
+		LTObjRef		m_ahPickupItems[kMaxPickupItems];
 
 		LTFLOAT		m_fTotalTime;
 		LTFLOAT		m_fRemainingTime;
@@ -103,9 +110,11 @@ class CSearchable : public IAggregate
 
 		HSTRING		m_hstrSpecificItem;
 		bool		m_bGaveLastItem;
+		// RETAIL: +0x23d, true from the ctor; HandleTrigger passes it to the
+		// pickup's ObjectTouch, the last item clears it. The name is ours
+		bool		m_bForcePickup;
 
 		bool		m_bEnabled;
-		bool		m_bIsBody;
 
 		HMODELANIM	m_hPreSearchAnimIndex;
 		uint32		m_dwPreSearchAnimTime;

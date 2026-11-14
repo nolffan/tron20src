@@ -16,6 +16,7 @@
 #include "Destructible.h"
 #include "DebrisFuncs.h"
 #include "SurfaceMgr.h"
+#include "TRON/CaselessString.h"
 
 #define DEFAULT_DWMA_MASS			2000.0f
 
@@ -70,17 +71,22 @@ class CDestructibleModel : public CDestructible
 		CDestructibleModel();
 		virtual ~CDestructibleModel();
 
-		// RETAIL: Tron's (slot 0x14, retail 0x10110310): given a damage
-		// struct, for two damage types (0x21, 0x23) with a duration it scales
-		// the damage by the frame time, clears the duration and returns true.
-		// Not yet named or written
-		virtual bool	TronUnknownVirtual14( DamageStruct* pDamage ) { return false; }
+		// RETAIL: Tron's (slot 0x14, retail 0x10110310): the damage filter
+		// (DestructibleModelFilterHook) calls it; for two damage types (0x21,
+		// 0x23) with a duration it scales the damage by the frame time and
+		// clears the duration. Always returns true. Not yet named
+		virtual bool	TronUnknownVirtual14( DamageStruct* pDamage );
 
         void        DoExplosion(char* pTargetName=LTNULL);
         void        SetDestroyedStimulus(LTFLOAT fStimRadius, uint32 nDestroyAlarmLevel);
 
         void		Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void		Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
+
+		// RETAIL: Tron's: a ClientFX played at the object when it is destroyed
+		// (0x6e8, Object.lto 0x1010f910; PropType::Setup sets it from the prop
+		// type, 0x100f58b5). The name is ours
+		CaselessInlineString	m_sDestroyFX;
 
         uint8       m_nDebrisId;
 
@@ -100,6 +106,11 @@ class CDestructibleModel : public CDestructible
 		LTBOOL		m_bSaveNeverDestroy;
 		LTBOOL		m_bSaveCanDamage;
 
+		// RETAIL: Tron's (0x724): set while "HIDDEN 1" is in effect, so that a
+		// second HIDDEN 1 does not overwrite the saved damage flags
+		// (Object.lto 0x1010f3e6). The name is ours
+		bool		m_bHidden;
+
 	protected:
 
 		EnumAIStimulusID	m_eStimID;
@@ -116,6 +127,8 @@ class CDestructibleModel : public CDestructible
 		void	CreateDebris();
 		void	SetSurfaceType();
 		void	RegisterDestroyedStimulus();
+		// RETAIL: Tron's (Object.lto 0x1010f910), the name is ours
+		void	PlayDestroyFX();
 
 	private :
 
