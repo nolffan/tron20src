@@ -37,11 +37,17 @@ GameBaseLite::GameBaseLite(bool bStartActive) :
 	// Clear out the invalid data from BaseClass
 	m_hObject = 0;
 	m_nType = OT_NORMAL;
+
+	// RETAIL: 0x10153390 (build 51's members, as GameBase's)
+	m_nSaveVersion = g_pVersionMgr->GetSaveVersion();
+	m_hstrSave = LTNULL;
 }
 
 GameBaseLite::~GameBaseLite()
 {
 	ASSERT(!g_pGameServerShell->GetLiteObjectMgr()->HasObject(this));
+
+	FREE_HSTRING(m_hstrSave);	// RETAIL: 0x10153470
 }
 
 uint32 GameBaseLite::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
@@ -67,34 +73,20 @@ uint32 GameBaseLite::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 void GameBaseLite::Save(ILTMessage_Write *pMsg)
 {
-	SAVE_DWORD(g_pVersionMgr->GetSaveVersion());
+	// RETAIL: 0x101535a0, build 51's format (NOLF2 1.x saves the version
+	// manager's save version first, and no string)
 	SAVE_bool(m_bActive);
+	SAVE_DWORD(m_nSaveVersion);
+	SAVE_HSTRING(m_hstrSave);
 }
 
 void GameBaseLite::Load(ILTMessage_Read *pMsg)
 {
-	// This old version didn't save the version number at the top.  We need
-	// to use an engine value to determine the version.
-	uint32 nSaveFileVersion = 0;
-	g_pLTServer->GetSaveFileVersion( nSaveFileVersion );
-	if( nSaveFileVersion == 2001 )
-	{
-		LOAD_bool(m_bActive);
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		HSTRING hDummy = NULL;
-		LOAD_HSTRING(hDummy);
-		g_pLTServer->FreeString( hDummy );
-		hDummy = NULL;
-	}
-	else
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
-		LOAD_bool(m_bActive);
-	}
+	// RETAIL: 0x101535e0, as Save (NOLF2's reads both formats, by the
+	// engine's save file version)
+	LOAD_bool(m_bActive);
+	LOAD_DWORD(m_nSaveVersion);
+	LOAD_HSTRING(m_hstrSave);
 }
 
 void GameBaseLite::InitialUpdate(float fUpdateType)

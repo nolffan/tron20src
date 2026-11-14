@@ -120,6 +120,13 @@ private :
 	virtual uint32 EngineMessageFn(uint32 messageID, void *pData, float lData) 
 		{ return BaseClass::EngineMessageFn(messageID, pData, lData); }
 
+	// RETAIL: Tron's GameBaseLite keeps build 51's save version and save
+	// string, as GameBase does (ctor 0x10153390 sets +0x14 from
+	// g_pVersionMgr->GetSaveVersion(), +0x18 to 0; dtor 0x10153470 frees +0x18;
+	// Save 0x101535a0 / Load 0x101535e0): sizeof 0x38.
+	uint32 m_nSaveVersion;
+	HSTRING m_hstrSave;
+
 	// These variables are invalid on these objects
 	HOBJECT m_hObject;
     uint8 m_nType;
