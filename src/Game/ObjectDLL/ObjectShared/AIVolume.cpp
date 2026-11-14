@@ -58,6 +58,44 @@ BEGIN_CLASS( AISpatialRepresentation )
 	ADD_STRINGPROP_FLAG(Region,			"",			0|PF_OBJECTLINK)
 END_CLASS_DEFAULT_FLAGS( AISpatialRepresentation, AIGeometry, NULL, NULL, CF_HIDDEN | CF_CLASSONLY )
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AIVolumePlugin::PreHook_EditStringList()
+//
+//	PURPOSE:	Fill the Alignment list in Dedit (RETAIL: retail 0x10095200)
+//
+// ----------------------------------------------------------------------- //
+
+extern CRelationButeMgr s_RelationButeMgr;
+
+LTRESULT AIVolumePlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
+{
+	if ( !s_RelationButeMgr.IsInitialized() )
+	{
+		char szFile[256];
+		sprintf(szFile, "%s\\Attributes\\RelationData.txt", szRezPath);
+		s_RelationButeMgr.SetInRezFile(LTFALSE);
+	    s_RelationButeMgr.Init(szFile);
+	}
+
+	if ( !_strcmpi("Alignment", szPropName) )
+	{
+		LTStrCpy( aszStrings[(*pcStrings)++], "None", cMaxStringLength );
+
+		CRelationButeMgr::_mapNameToID* pNames = s_RelationButeMgr.GetMapObjectRelationMgrNameToID();
+		CRelationButeMgr::_mapNameToID::iterator it;
+
+		for( it = pNames->begin(); it != pNames->end(); ++it )
+		{
+			LTStrCpy( aszStrings[(*pcStrings)++], it->first.c_str(), cMaxStringLength );
+		}
+
+		return LT_OK;
+	}
+
+	return LT_UNSUPPORTED;
+}
+
 #pragma force_active on
 BEGIN_CLASS(AIVolume)
 
@@ -66,8 +104,9 @@ BEGIN_CLASS(AIVolume)
     ADD_BOOLPROP(Lit, LTTRUE)
 	ADD_STRINGPROP_FLAG(LightSwitchNode,"",			0|PF_OBJECTLINK)
 	ADD_BOOLPROP(PreferredPath,	LTFALSE)
+	ADD_STRINGPROP_FLAG(Alignment,		"None", 				PF_STATICLIST)	// RETAIL: Tron's
 
-END_CLASS_DEFAULT_FLAGS(AIVolume, AISpatialRepresentation, NULL, NULL, CF_CLASSONLY)
+END_CLASS_DEFAULT_FLAGS_PLUGIN(AIVolume, AISpatialRepresentation, NULL, NULL, CF_CLASSONLY, AIVolumePlugin)
 
 #pragma force_active off
 
@@ -746,7 +785,8 @@ LTRESULT AIInformationVolumePlugin::PreHook_EditStringList(const char* szRezPath
 		return LT_OK;
 	}
 
-	return LT_UNSUPPORTED;
+	// RETAIL: the rest is AIVolumePlugin's (retail 0x10097f67)
+	return AIVolumePlugin::PreHook_EditStringList(szRezPath, szPropName, aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
 }
 
 //----------------------------------------------------------------------------
@@ -771,6 +811,8 @@ AIVolume::AIVolume()
 
 	m_fPathWeight = 1.f;
 	m_hReservedBy = LTNULL;
+
+	m_nRequiredRelationTemplateID = -1;
 
     m_bHadDoors = LTFALSE;
 	m_cDoors = 0;
@@ -1022,6 +1064,14 @@ bool AIVolume::ReadProp(ObjectCreateStruct *pocs)
 		}
 	}
 
+    if ( g_pLTServer->GetPropGeneric( "Alignment", &g_gp ) == LT_OK )
+	{
+		if ( g_gp.m_String[0] && stricmp( g_gp.m_String, "None" ) )
+		{
+			m_nRequiredRelationTemplateID = CRelationMgr::GetGlobalRelationMgr()->GetButeMgr()->GetObjectRelationMgrTemplateIDByName( g_gp.m_String );
+		}
+	}
+
 	return true;
 }
 
@@ -1036,6 +1086,7 @@ void AIVolume::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bLit);
 	LOAD_BOOL(m_bLitInitially);
 	LOAD_HOBJECT(m_hLightSwitchUseObjectNode);
+	LOAD_DWORD(m_nRequiredRelationTemplateID);
 
 	for ( uint32 iDoor = 0 ; iDoor < kMaxDoors ; iDoor++ )
 	{
@@ -1056,6 +1107,7 @@ void AIVolume::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bLit);
 	SAVE_BOOL(m_bLitInitially);
 	SAVE_HOBJECT(m_hLightSwitchUseObjectNode);
+	SAVE_DWORD(m_nRequiredRelationTemplateID);
 
 	for ( uint32 iDoor = 0 ; iDoor < kMaxDoors ; iDoor++ )
 	{
@@ -1240,6 +1292,28 @@ bool AIVolume::IsConnected( AISpatialRepresentation* pVolume )
 //				it unpreferable for others to path thru.
 //              
 //----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AIVolume::IsValidForPath
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100992d0): an AI of another
+//				alignment may not path through, nor one that may not use
+//				this type of volume
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL AIVolume::IsValidForPath( CAI* pAI, AIVolume* pVolumePrev )
+{
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
+	{
+		return LTFALSE;
+	}
+
+	return pAI->GetCurValidVolumeMask() & GetVolumeType();
+}
 
 void AIVolume::ReserveVolume(HOBJECT hAI)
 {
