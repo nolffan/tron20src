@@ -829,8 +829,8 @@ unit direction from the first to the second in the result, then breaks out
 of the loop into the code meant for a path with a single control point,
 which overwrites the result with the unit direction from the first control
 point to the AI's position (0x10231aff jumps back to 0x102319da). The
-direction to the second point is never returned; for an AI standing at the
-path's start the result points backwards.
+direction to the second point is never returned, and for an AI standing on
+the first control point the result divides a zero vector by zero.
 
 Not fixed yet: the modern build should return after the two-point case.
 
