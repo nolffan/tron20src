@@ -447,6 +447,10 @@ SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2regkeys.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\RatingBarCtrl.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\RatingMgr.cpp
 # End Source File
 # Begin Source File
@@ -823,6 +827,10 @@ SOURCE=..\..\..\engine\sdk\inc\ltobjref.h
 # Begin Source File
 
 SOURCE=.\ProceduralCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\RatingBarCtrl.h
 # End Source File
 # Begin Source File
 
