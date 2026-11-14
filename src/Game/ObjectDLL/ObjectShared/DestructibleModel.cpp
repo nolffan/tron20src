@@ -100,8 +100,15 @@ LTRESULT CDestructibleModelPlugin::PreHook_EditStringList(const char* szRezPath,
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's damage filter (Object.lto 0x1010ecc0): hands the damage to
+// the model's TronUnknownVirtual14. The name is ours
+static bool DestructibleModelFilterHook( GameBase *pObject, DamageStruct *pDamageStruct );
+
 CDestructibleModel::CDestructibleModel() : CDestructible()
 {
+	// RETAIL: Tron registers its filter first (Object.lto 0x1010ec3d)
+	RegisterFilterFunction( DestructibleModelFilterHook, (GameBase*)this );
+
 	m_bCreatedDebris	= LTFALSE;
 	m_nDebrisId			= DEBRISMGR_INVALID_ID;
 
@@ -123,6 +130,16 @@ CDestructibleModel::CDestructibleModel() : CDestructible()
 	m_eStimID				= kStimID_Unset;
 	m_fStimRadius			= 0.f;
 	m_nDestroyAlarmLevel	= 0;
+
+	m_bHidden				= false;
+}
+
+static bool DestructibleModelFilterHook( GameBase *pObject, DamageStruct *pDamageStruct )
+{
+	if( pObject )
+		return ((CDestructibleModel*)pObject)->TronUnknownVirtual14( pDamageStruct );
+
+	return true;
 }
 
 
@@ -325,6 +342,7 @@ uint32 CDestructibleModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender,
 
 				SpawnItem();
 				CreateDebris();
+				PlayDestroyFX();
 				CreateWorldModelDebris();
 
 				if (m_bCreateExplosion)
@@ -367,16 +385,23 @@ uint32 CDestructibleModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender,
 						{
 							// Game Base will take care of the solid and visible flags for us...
 
+							// RETAIL: Tron only hides what is shown and shows
+							// what is hidden (m_bHidden, Object.lto 0x1010f3e6)
 							if (parse.m_nArgs > 1 && parse.m_Args[1])
 							{
-								if ((_stricmp(parse.m_Args[1], "1") == 0) ||
-									(_stricmp(parse.m_Args[1], "TRUE") == 0))
+								if (!m_bHidden)
 								{
-									m_bSaveCanDamage = GetCanDamage();
-									m_bSaveNeverDestroy = GetNeverDestroy();
+									if ((_stricmp(parse.m_Args[1], "1") == 0) ||
+										(_stricmp(parse.m_Args[1], "TRUE") == 0))
+									{
+										m_bSaveCanDamage = GetCanDamage();
+										m_bSaveNeverDestroy = GetNeverDestroy();
 
-									SetCanDamage(LTFALSE);
-									SetNeverDestroy(LTTRUE);
+										SetCanDamage(LTFALSE);
+										SetNeverDestroy(LTTRUE);
+
+										m_bHidden = true;
+									}
 								}
 								else
 								{
@@ -385,6 +410,8 @@ uint32 CDestructibleModel::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender,
 									{
 										SetCanDamage(m_bSaveCanDamage);
 										SetNeverDestroy(m_bSaveNeverDestroy);
+
+										m_bHidden = false;
 									}
 								}
 							}
@@ -572,6 +599,29 @@ void CDestructibleModel::CreateWorldModelDebris()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CDestructibleModel::PlayDestroyFX()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1010f910): play the destroy
+//				ClientFX at the object. The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CDestructibleModel::PlayDestroyFX()
+{
+	if( m_sDestroyFX == "" ) return;
+
+	LTVector vPos;
+	LTRotation rRot( 0.0f, 0.0f, 0.0f, 1.0f );
+
+	g_pLTServer->GetObjectPos( m_hObject, &vPos );
+	g_pLTServer->GetObjectRotation( m_hObject, &rRot );
+
+	PlayClientFX( (char*)m_sDestroyFX.c_str(), LTNULL, &vPos, &rRot, 0 );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CDestructibleModel::CreateDebris()
 //
 //	PURPOSE:	Create debris...
@@ -711,6 +761,8 @@ void CDestructibleModel::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_DWORD( m_eStimID );
 	SAVE_FLOAT( m_fStimRadius );
 	SAVE_DWORD( m_nDestroyAlarmLevel );
+	SAVE_bool( m_bHidden );
+	SAVE_STDSTRING( m_sDestroyFX );
 }
 
 
@@ -741,4 +793,35 @@ void CDestructibleModel::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_DWORD_CAST( m_eStimID, EnumAIStimulusID );
 	LOAD_FLOAT( m_fStimRadius );
 	LOAD_DWORD( m_nDestroyAlarmLevel );
+	LOAD_bool( m_bHidden );
+
+	char szString[80];
+	LOAD_CHARSTRING( szString, ARRAY_LEN( szString ));
+	m_sDestroyFX = szString;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDestructibleModel::TronUnknownVirtual14
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10110310): progressive damage of
+//				two types is dealt at once, for this frame only
+//
+// ----------------------------------------------------------------------- //
+
+bool CDestructibleModel::TronUnknownVirtual14( DamageStruct* pDamage )
+{
+	if( 0.0f < pDamage->fDuration )
+	{
+		// RETAIL: damage types 0x21 and 0x23 (Tron's own; its enum is not
+		// rebuilt yet)
+		if( pDamage->eType == (DamageType)0x21 || pDamage->eType == (DamageType)0x23 )
+		{
+			pDamage->fDamage *= g_pLTServer->GetFrameTime();
+			pDamage->fDuration = 0.0f;
+		}
+	}
+
+	return true;
 }
