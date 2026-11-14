@@ -605,13 +605,13 @@ void CDiscMatchMgr::HandleMsgTeamChange(ILTMessage_Read *pMsg)
 	if (nLocalID != nClientID)
 		return;
 
-	// RETAIL: Tron's profile byte +0x6a (our m_nPlayerSkills[0] sits
-	// there): the team's index, or the profile's +0x69 without a team
+	// RETAIL: Tron's profile byte +0x6a (m_nPlayerColor): the team's
+	// index, or the profile's +0x69 without a team
 	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
-	pProfile->m_nPlayerSkills[0] = pProfile->m_nDMPlayerModel;
+	pProfile->m_nPlayerColor = pProfile->m_nDMPlayerModel;
 	if (nTeam < TRON_MAX_TEAMS && !bSolo)
 	{
-		pProfile->m_nPlayerSkills[0] = pTeamMgr->GetTeam(nTeam, false)->GetTronUnknownIndex();
+		pProfile->m_nPlayerColor = pTeamMgr->GetTeam(nTeam, false)->GetTronUnknownIndex();
 	}
 
 	g_pClientMultiplayerMgr->UpdateNetClientData();

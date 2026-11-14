@@ -19,6 +19,7 @@
 #include "Timer.h"
 #include "SurfaceDefs.h"
 #include "LTObjRef.h"
+#include "ClientFXMgr.h"
 
 struct VEHICLENODE
 {
@@ -87,6 +88,12 @@ class CVehicleMgr
 	void		AdjustCameraRoll(LTFLOAT & fRoll);
 
 	void		SetPlayerLureId( uint32 nPlayerLureId );
+
+	// RETAIL: Tron's light cycle helpers (0x10122140, 0x10122190,
+	// 0x10122260; names ours; called by CClientLightCycleMgr)
+	void		KillLightCycleSounds();
+	void		ShutdownLightCycleFX();
+	void		ResetLightCyclePhysics();
 	uint32		GetPlayerLureId( ) { return m_nPlayerLureId; }
 
 	float		GetVehicleContourRoll() const { return m_ePPhysicsModel == PPM_SNOWMOBILE ? m_fContourRoll : 0.0f; }
@@ -103,10 +110,11 @@ class CVehicleMgr
 	void		MoveVehicleObject( LTVector &vPos );
 
 	// Serialization
-	void		Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState);
-	void		Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState);
 
 	// Is it safe to save?
+	void		SetLightCycleCamSpeed(float f)	{ m_fLightCycleCamSpeed = f; }
+	void		SetLightCycleCamLag(float f)	{ m_fLightCycleCamLag = f; }
+
 	bool		CanSave() const { return m_bHaveJumpVolumeVel == LTFALSE; }
 
   protected:
@@ -193,6 +201,9 @@ class CVehicleMgr
     HLTSOUND        m_hVehicleAccelSnd;
     HLTSOUND        m_hVehicleDecelSnd;
     HLTSOUND        m_hVehicleCruiseSnd;
+	// RETAIL: +0x2c, a second looping sound started with the cruise sound
+	// (0x1011dc80) and killed with it (KillAllVehicleSounds 0x1011eb10).
+	HLTSOUND		m_hTronUnknownSnd2c;
 	HLTSOUND		m_hVehicleImpactSnd;
 	HLTSOUND		m_hIdleSnd;
 	HLTSOUND		m_hBrakeSnd;
@@ -209,7 +220,8 @@ class CVehicleMgr
 	int				m_nCurGear;
 	int				m_nLastGear;
 	bool			m_bTurned;
-	bool			m_bHolsteredWeapon;
+	// RETAIL: Tron keeps the holstered flag in a file static
+	// (EnableWeapon 0x1011cc80) and CVehicleMgr has no Save/Load.
 
     LTBOOL			m_bVehicleStopped;
     LTBOOL          m_bVehicleAtMaxSpeed;
@@ -221,6 +233,12 @@ class CVehicleMgr
 	LTVector		m_vVehiclePYR;
 
 	float			m_fContourRoll;
+
+	// RETAIL: +0x2058 and +0x205c, set to 0.4 and 1.0 by the constructor
+	// (0x1011a2b0) and from the profile's "LCCamSpeed" and "LCCamLag" by
+	// CUserProfile::ApplyGameOptions (0x100ef510); names ours.
+	float			m_fLightCycleCamSpeed;
+	float			m_fLightCycleCamLag;
 
 	SurfaceType		m_eSurface;
 	SurfaceType		m_eLastSurface;
@@ -253,6 +271,22 @@ class CVehicleMgr
 
 	bool			m_bWasTouched;
 	CollisionInfo	m_cLastTouchInfo;
+
+	// RETAIL: Tron's light cycle members (constructor 0x1011a2b0,
+	// InitWorldData 0x1011b5a0, destructor 0x1011a4f0); names ours.
+	LTVector		m_vTronUnknown211c;
+	LTVector		m_vTronUnknown2128;
+	uint32			m_nTronUnknown2134;
+	CLIENTFX_LINK	m_TronUnknownFX2138;	// cleared by InitWorldData
+	CLIENTFX_LINK	m_TronUnknownFX213c;	// cleared by InitWorldData
+	CLIENTFX_LINK	m_TronUnknownFX2140;	// cleared by InitWorldData
+	CLIENTFX_LINK	m_TronUnknownFX2144;	// cleared by InitWorldData
+	CLIENTFX_LINK	m_TronUnknownFX2148;	// positioned at m_vTronUnknownFXOffset
+	LTVector		m_vTronUnknownFXOffset;
+	bool			m_bTronUnknown2158;
+	uint32			m_nTronUnknown215c;
+	CTimer			m_TronUnknownTimer2160;
+	bool			m_bTronUnknown2170;
 };
 
 

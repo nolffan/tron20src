@@ -51,14 +51,14 @@ LTBOOL CRatingMgr::Init(const char* szAttributeFile)
 		m_nMaxRating[i] = 20;
 	}
 	m_nPoints = 0;
-	m_nLevelPoints = m_nPointsPerLevel = 7;
+	m_nPointsPerLevel = m_nLevelPoints = 7;
 
 	// RETAIL: a missing or bad file still succeeds
     if (!szAttributeFile) return LTTRUE;
     if (!Parse(szAttributeFile)) return LTTRUE;
 	if (!m_buteMgr.Exist(RATINGS_TAG)) return LTTRUE;
 
-	m_nLevelPoints = m_nPointsPerLevel = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_POINTSPERLEVEL);
+	m_nPointsPerLevel = m_nLevelPoints = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_POINTSPERLEVEL);
 	m_nInitialPoints = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_INITIALPOINTS);
 	m_nInitialValue = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_INITIALVALUE);
 	m_nMinValue = m_buteMgr.GetInt(RATINGS_TAG, RATINGS_MINVALUE);

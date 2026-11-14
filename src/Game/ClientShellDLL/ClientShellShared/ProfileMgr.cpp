@@ -25,6 +25,10 @@
 #include "CMoveMgr.h"
 #include "MsgIds.h"
 #include "VersionMgr.h"
+#include "PlayerCamera.h"
+#include "ClientSoundMgr.h"
+#include "VehicleMgr.h"
+#include "PlayerMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -38,8 +42,31 @@ VarTrack	g_vtMouseMaxSensitivity;
 VarTrack	g_vtMouseMinInputRate;
 VarTrack	g_vtMouseMaxInputRate;
 
+// RETAIL: Tron builds the profile file names from these (0x10270818 and
+// 0x10270808; Init 0x100ecc40, Save 0x100ee500)
+static std::string s_sProfileDir = PROFILE_DIR;
+static std::string s_sProfileExt = PROFILE_EXT;
+
+// RETAIL: the light cycle progress section and its keys (0x101ea2e4)
+static const char* const s_aLightCycleInfoKeys[] =
+{
+	"LightCycleInfo",
+	"CompletedLightCycleCircuits",
+	"UnlockedLightCycleBikes",
+	"UnlockedLightCyclePowerUps",
+	"UnlockedLightCycleCustomMaps",
+};
+const int kMaxLightCycleInfoItems = 40;
+
 
 CProfileMgr* g_pProfileMgr = LTNULL;
+
+// RETAIL: string table entries 752 and 753 ("TRUE" or "FALSE" by the
+// language build; the developer build's CRes.dll has "FALSE") say whether
+// the build has no gore and no bodies (LoadGameOptions 0x100ed8d0); names ours.
+const int kNoGoreStringId = 752;
+const int kNoBodiesStringId = 753;
+const int kDefaultProfileNameStringId = 1008;
 
 namespace
 {
@@ -71,58 +98,54 @@ namespace
 	char szDefProfileName[16] = "";
 }
 
+	// RETAIL: s_aAttName is 100 bytes (LoadControls 0x100ed180) and comes
+	// first (0x10270740; s_aTagName at 0x102707a4)
+	char s_aAttName[100];
 	char s_aTagName[30];
-	char s_aAttName[30];
 
+// RETAIL: Tron's command table (CShell.dll 0x1022af80, 35 commands and the
+// unassigned entry). The string ids are Tron's string table's (its control
+// names from 1200, its action strings from 1300, its own from 2001/2101);
+// ClientResShared.h still has NOLF2's values for the names, so the ids are
+// given as numbers here.
 CommandData g_CommandArray[] =
 {
-	{ IDS_CONTROL_FORWARD,			COMMAND_ID_FORWARD,			IDS_ACTIONSTRING_FORWARD,			COM_MOVE },
-	{ IDS_CONTROL_BACKWARD,			COMMAND_ID_REVERSE,			IDS_ACTIONSTRING_BACKWARD,			COM_MOVE },
-	{ IDS_CONTROL_STRAFELEFT,		COMMAND_ID_STRAFE_LEFT,		IDS_ACTIONSTRING_STRAFELEFT,		COM_MOVE },
-	{ IDS_CONTROL_STRAFERIGHT,		COMMAND_ID_STRAFE_RIGHT,	IDS_ACTIONSTRING_STRAFERIGHT,		COM_MOVE },
-	{ IDS_CONTROL_TURNLEFT,			COMMAND_ID_LEFT,			IDS_ACTIONSTRING_TURNLEFT,			COM_MOVE },
-	{ IDS_CONTROL_TURNRIGHT,		COMMAND_ID_RIGHT,			IDS_ACTIONSTRING_TURNRIGHT,			COM_MOVE },
-	{ IDS_CONTROL_STRAFE,			COMMAND_ID_STRAFE,			IDS_ACTIONSTRING_STRAFE,			COM_MOVE },
-	{ IDS_CONTROL_RUN,				COMMAND_ID_RUN,				IDS_ACTIONSTRING_RUN,				COM_MOVE },
-	{ IDS_CONTROL_JUMP,				COMMAND_ID_JUMP,			IDS_ACTIONSTRING_JUMP,				COM_MOVE },
-	{ IDS_CONTROL_DUCK,				COMMAND_ID_DUCK,			IDS_ACTIONSTRING_DUCK,				COM_MOVE },
-	{ IDS_CONTROL_TURNAROUND,		COMMAND_ID_TURNAROUND,		IDS_ACTIONSTRING_TURNAROUND,		COM_MOVE },
-	{ IDS_CONTROL_LEANLEFT,			COMMAND_ID_LEAN_LEFT,		IDS_ACTIONSTRING_LEANLEFT,			COM_MOVE },
-	{ IDS_CONTROL_LEANRIGHT,		COMMAND_ID_LEAN_RIGHT,		IDS_ACTIONSTRING_LEANRIGHT,			COM_MOVE },
-	{ IDS_CONTROL_RUNLOCKTOGGLE,	COMMAND_ID_RUNLOCK,			IDS_ACTIONSTRING_RUNLOCKTOGGLE,		COM_MOVE },
-	{ IDS_CONTROL_CROUCHTOGGLE,		COMMAND_ID_DUCKLOCK,		IDS_ACTIONSTRING_CROUCHTOGGLE,		COM_MOVE },
-
-	{ IDS_CONTROL_FIRE,				COMMAND_ID_FIRING,			IDS_ACTIONSTRING_FIRE,				COM_INV },
-	{ IDS_CONTROL_ACTIVATE,			COMMAND_ID_ACTIVATE,		IDS_ACTIONSTRING_ACTIVATE,			COM_INV },
-	{ IDS_CONTROL_RELOAD,			COMMAND_ID_RELOAD,			IDS_ACTIONSTRING_RELOAD,			COM_INV },
-	{ IDS_CONTROL_NEXT_AMMO,		COMMAND_ID_NEXT_AMMO,		IDS_ACTIONSTRING_NEXTAMMO,			COM_INV },
-	{ IDS_CONTROL_NEXTWEAPON,		COMMAND_ID_NEXT_WEAPON,		IDS_ACTIONSTRING_NEXTWEAPON,		COM_INV },
-	{ IDS_CONTROL_PREVIOUSWEAPON,	COMMAND_ID_PREV_WEAPON,		IDS_ACTIONSTRING_PREVIOUSWEAPON,	COM_INV },
-	{ IDS_CONTROL_HOLSTERWEAPON,	COMMAND_ID_HOLSTER,			IDS_ACTIONSTRING_HOLSTERWEAPON,		COM_INV },
-	{ IDS_CONTROL_LASTWEAPON,		COMMAND_ID_LASTWEAPON,		IDS_ACTIONSTRING_LASTWEAPON,		COM_INV },
-	{ IDS_CONTROL_MOVE_BODY,		COMMAND_ID_MOVE_BODY,		IDS_ACTIONSTRING_MOVE_BODY,			COM_INV },
-	{ IDS_CONTROL_FLASHLIGHT,		COMMAND_ID_FLASHLIGHT,		IDS_ACTIONSTRING_FLASHLIGHT,		COM_INV },
-
-
-	{ IDS_CONTROL_LOOKUP,			COMMAND_ID_LOOKUP,			IDS_ACTIONSTRING_LOOKUP,			COM_VIEW },
-	{ IDS_CONTROL_LOOKDOWN,			COMMAND_ID_LOOKDOWN,		IDS_ACTIONSTRING_LOOKDOWN,			COM_VIEW },
-	{ IDS_CONTROL_CENTERVIEW,		COMMAND_ID_CENTERVIEW,		IDS_ACTIONSTRING_CENTERVIEW,		COM_VIEW },
-	{ IDS_CONTROL_ZOOM_IN,			COMMAND_ID_ZOOM_IN,			IDS_ACTIONSTRING_ZOOMIN,			COM_VIEW },
-
-	{ IDS_CONTROL_INVENTORY,		COMMAND_ID_INVENTORY,		IDS_ACTIONSTRING_INVENTORY,			COM_MISC },
-	{ IDS_CONTROL_KEYS,				COMMAND_ID_KEYS,			IDS_ACTIONSTRING_KEYS,				COM_MISC },
-	{ IDS_CONTROL_INTEL,			COMMAND_ID_INTEL,			IDS_ACTIONSTRING_INTEL,				COM_MISC },
-	{ IDS_CONTROL_STATUS,			COMMAND_ID_STATUS,			IDS_ACTIONSTRING_STATUS,			COM_MISC },
-	{ IDS_CONTROL_MISSION,			COMMAND_ID_MISSION,			IDS_ACTIONSTRING_MISSION,			COM_MISC },
-
-	{ IDS_CONTROL_COMPASS,			COMMAND_ID_COMPASS,			IDS_ACTIONSTRING_COMPASS,			COM_MISC },
-	{ IDS_CONTROL_RADIO,			COMMAND_ID_RADIO,			IDS_ACTIONSTRING_RADIO,				COM_MISC },
-
-	{ IDS_CONTROL_SAY,				COMMAND_ID_MESSAGE,			IDS_ACTIONSTRING_SAY,				COM_MISC },
-	{ IDS_CONTROL_TEAM_SAY,			COMMAND_ID_TEAM_MESSAGE,	IDS_ACTIONSTRING_TEAM_SAY,			COM_MISC },
-
-	// This control must always remain as the last one in the array
-	{ IDS_CONTROL_UNASSIGNED,		COMMAND_ID_UNASSIGNED,		IDS_ACTIONSTRING_UNASSIGNED,		COM_MISC }
+	{ 1200,	COMMAND_ID_FORWARD,		1300,	COM_MOVE },
+	{ 1201,	COMMAND_ID_REVERSE,		1301,	COM_MOVE },
+	{ 1205,	COMMAND_ID_STRAFE_LEFT,		1305,	COM_MOVE },
+	{ 1206,	COMMAND_ID_STRAFE_RIGHT,	1306,	COM_MOVE },
+	{ 1247,	COMMAND_ID_LEAN_LEFT,		1337,	COM_MOVE },
+	{ 1248,	COMMAND_ID_LEAN_RIGHT,		1338,	COM_MOVE },
+	{ 1202,	COMMAND_ID_LEFT,		1302,	COM_MOVE },
+	{ 1203,	COMMAND_ID_RIGHT,		1303,	COM_MOVE },
+	{ 1204,	COMMAND_ID_STRAFE,		1304,	COM_MOVE },
+	{ 1211,	COMMAND_ID_JUMP,		1311,	COM_MOVE },
+	{ 1213,	COMMAND_ID_DUCK,		1313,	COM_MOVE },
+	{ 1249,	COMMAND_ID_DUCKLOCK,		1328,	COM_MOVE },
+	{ 1208,	COMMAND_ID_RUN,		1308,	COM_MOVE },
+	{ 1228,	COMMAND_ID_RUNLOCK,		1327,	COM_MOVE },
+	{ 1207,	COMMAND_ID_TURNAROUND,		1307,	COM_MOVE },
+	{ 1209,	COMMAND_ID_FIRING,		1309,	COM_INV },
+	{ 2001,	COMMAND_ID_DEFEND,		2101,	COM_INV },
+	{ 2002,	COMMAND_ID_DEFEND_MODIFIER,	2102,	COM_INV },
+	{ 1210,	COMMAND_ID_ACTIVATE,		1310,	COM_INV },
+	{ 1214,	COMMAND_ID_NEXT_WEAPON,		1314,	COM_INV },
+	{ 1215,	COMMAND_ID_PREV_WEAPON,		1315,	COM_INV },
+	{ 1221,	COMMAND_ID_HOLSTER,		1321,	COM_INV },
+	{ 1216,	COMMAND_ID_LOOKUP,		1316,	COM_VIEW },
+	{ 1217,	COMMAND_ID_LOOKDOWN,		1317,	COM_VIEW },
+	{ 1218,	COMMAND_ID_CENTERVIEW,		1318,	COM_VIEW },
+	{ 1239,	COMMAND_ID_ZOOM_IN,		1331,	COM_VIEW },
+	{ 1240,	COMMAND_ID_ZOOM_OUT,		1332,	COM_VIEW },
+	{ 1242,	COMMAND_ID_MANUAL_LC_CAM,	1333,	COM_VIEW },
+	{ 1253,	COMMAND_ID_TOGGLE_LC_CAMERA,	1335,	COM_VIEW },
+	{ 2003,	COMMAND_ID_TOGGLE_PROGRESS,	2103,	COM_MISC },
+	{ 2004,	COMMAND_ID_TOGGLE_MATCHES,	2104,	COM_MISC },
+	{ 1243,	COMMAND_ID_NEXT_UTILITY,	1342,	COM_MISC },
+	{ 1245,	COMMAND_ID_UTILITY_CHOOSER,	1343,	COM_MISC },
+	{ 1223,	COMMAND_ID_MESSAGE,		1323,	COM_MISC },
+	{ 1224,	COMMAND_ID_SEND_TEAM_MESSAGE,	1344,	COM_MISC },
+	{ 1241,	COMMAND_ID_UNASSIGNED,		1329,	COM_MISC }
 };
 
 const int g_kNumCommands = sizeof(g_CommandArray) / sizeof(g_CommandArray[0]) - 1;
@@ -193,18 +216,27 @@ const CommandData* GetCommandData(int nIndex)
 
 CUserProfile::CUserProfile()
 {
+	// RETAIL: 0x100ec8a0
 	m_sName			= "";		
 	m_bInitted		= LTFALSE;
 	m_pCryptKey		= LTNULL;
 
 	//controls
     m_bInvertY = LTFALSE;
+	m_bInvertLCMouse = LTFALSE;
     m_bMouseLook = LTFALSE;
 	m_nInputRate = 0;
 	m_nSensitivity = 0;
 
+	m_nLCCamLag = 5;
+	m_nLCCamSpeed = 2;
+	m_bLCDialog = LTTRUE;
+	m_fLCCamZoom = 0.0f;
+	m_fLCCamPitch = 0.0f;
+	m_fLCCamYaw = 0.0f;
+	m_fLCPlayerPitch = 0.0f;
+
 	m_bAutoCenter = LTFALSE;
-	m_nTronUnknown20 = 0;
 	m_nNormalTurn = 15;
 	m_nFastTurn = 23;
 	m_nLookUp = 25;
@@ -217,15 +249,21 @@ CUserProfile::CUserProfile()
 	//game options
 	m_nDifficulty = 1;
     m_nSubtitles  = 0;
-    m_bGore = LTFALSE;
+	m_bGoreAllowed = true;
+	m_bBodiesAllowed = true;
+    m_bGore = false;
+	m_bLCThirdPersonCam = true;
+	m_bSkipSubIntro = false;
+	m_bLCManualCam = false;
 	m_bAlwaysRun = LTTRUE;
 	m_nLayout = 0;
 	m_nHeadBob = 0;
 	m_nWeaponSway = 0;
 	m_nMsgDur = 0;
-	m_bAutoWeaponSwitch = LTFALSE;
 	m_bLoadScreenTips = LTFALSE;
-	m_bVehicleContour = LTFALSE;
+	m_bAlwaysShowToolTip = true;
+	m_bMouseClosesPopup = LTFALSE;
+	m_bDiscAutoAim = LTFALSE;
 
 	m_bCrosshair = LTTRUE;
 	m_CrosshairR = 0x1F;
@@ -241,6 +279,7 @@ CUserProfile::CUserProfile()
 	m_nMusicVolume=MUSIC_DEFAULT_VOL;
     m_bSoundQuality=LTFALSE;
     m_bMusicQuality=LTFALSE;
+	m_bEAXEnabled=LTFALSE;
 
 
 	//display
@@ -256,15 +295,15 @@ CUserProfile::CUserProfile()
 	//multi player
 	m_nCPPlayerModel = 0;
 	m_nDMPlayerModel = 0;
-	memset(m_nPlayerSkills,0,sizeof(m_nPlayerSkills));
+	m_nPlayerColor = 0;
 	m_nBandwidthClient = 3;
 	m_nBandwidthClientCustom = g_BandwidthClient[m_nBandwidthClient];
-	m_nClientPort = 27888;
+	m_nDifficulty = 1;
 
-	// PORT: ours (retail's constructor leaves its +0x20c and +0x210 alone)
+	//misc
+	m_szVehicleColor[0] = 0;
 	m_nLightCycleStyle = 0;
 	m_nLightCycleShade = 0;
-	m_nDifficulty = 1;
 }
 
 static bool CreatePlayerGuid( char* pszPlayerGuid, int nSize )
@@ -298,9 +337,9 @@ static bool CreatePlayerGuid( char* pszPlayerGuid, int nSize )
 
 LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 {
-	std::string fn = GetProfileFile( profileName.c_str( ));
-	std::string dfn = PROFILE_DIR;
-	dfn += "default.prf";
+	// RETAIL: 0x100ecc40
+	std::string fn = s_sProfileDir + profileName + s_sProfileExt;
+	std::string dfn = s_sProfileDir + "default.prf";
 
 	g_vtMouseMinSensitivity.Init(g_pLTClient, "MouseSensitivityMin", NULL, 0.0);
 	g_vtMouseMaxSensitivity.Init(g_pLTClient, "MouseSensitivityMax", NULL, 10.0);
@@ -309,7 +348,8 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 
 	LTBOOL bRet = LTFALSE;
 
-	m_buteMgr.Term();
+	if (m_bInitted)
+		m_buteMgr.Term();
 
 	if (m_pCryptKey)
 	{
@@ -328,9 +368,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	// Handle brand new profile.
 	else
 	{
-		//clear out any old data
-		m_buteMgr.Term();
-
 		// No previous profile and not told to create one.
 		if (!bCreate)
 			return LTFALSE;
@@ -343,7 +380,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 		}
 		else
 		{
-			
 			bRet = m_buteMgr.Parse(dfn.c_str());
 		}
 
@@ -353,12 +389,26 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 	
 	// Since we changed our profile, we'll need to re-init the saveloadmgr, which
 	// uses the profile name.
-	if( !g_pClientSaveLoadMgr->Init( m_sName.c_str( ), IsMultiplayerGame() ))
+	if( !g_pClientSaveLoadMgr->Init( m_sName.c_str( ), false ))
 		return LTFALSE;
 
-	Load( );
+	LoadControls();
+	LoadMultiplayer();
+	LoadGameOptions();
+	LoadSound(true);
+	LoadLightCycleInfo();
+	LoadMisc();
 
-	if (m_buteMgr.Exist("Settings"))
+	// A performance level from the command line replaces the profile's.
+	char* pszPerformance = GetConsoleTempString("SetPerformanceLevel","");
+	if (pszPerformance[0])
+	{
+		g_pPerformanceMgr->SetPerformanceCfg(pszPerformance);
+		g_pPerformanceMgr->GetPerformanceOptions(&m_sPerformance);
+		SavePerformance();
+		WriteConsoleString("SetPerformanceLevel","");
+	}
+	else if (m_buteMgr.Exist("Settings"))
 	{
 		LoadPerformance(false);//defer applying now, because ApplyPerformance() will do it below
 	}
@@ -375,14 +425,6 @@ LTBOOL CUserProfile::Init(const std::string& profileName, LTBOOL bCreate)
 
 	return LTTRUE;
 
-}
-
-void CUserProfile::Load()
-{
-	LoadControls();
-	LoadMultiplayer();
-	LoadGameOptions();
-	LoadSound(true);
 }
 
 void CUserProfile::LoadControls()
@@ -436,6 +478,7 @@ void CUserProfile::LoadControls()
 
 	strcpy(s_aTagName,"Controls");
     m_bInvertY = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"InvertMouse",0);
+	m_bInvertLCMouse = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"InvertLCMouse",0);
     m_bMouseLook = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MouseLook",1);
 	m_nInputRate = m_buteMgr.GetInt(s_aTagName,"InputRate",12);
 	m_nSensitivity = m_buteMgr.GetInt(s_aTagName,"Sensitivity",5);
@@ -505,52 +548,13 @@ void CUserProfile::LoadMultiplayer()
 	m_sServerOptions = szStr;
 
 	m_nCPPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"PlayerModel",0);
-	m_nDMPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"DMPlayerModel",0);
-
-
-	//see if the MP skills settings are valid
-	sprintf(s_aAttName,"PlayerSkills0");
-	int nTest = m_buteMgr.GetInt(s_aTagName,s_aAttName,-1);
-
-	
-	if (nTest >= 0)
-	{
-		//if valid, read 'em in
-		for (uint8 i = 0; i < kNumSkills; i++)
-		{
-			eSkill skl = (eSkill)i;
-			if (g_pSkillsButeMgr->IsAvailable(skl) )
-			{
-				sprintf(s_aAttName,"PlayerSkills%d",i);
-				int nDef = (int)g_pSkillsButeMgr->GetDefaultMultiplayerLevel(skl);
-				m_nPlayerSkills[i] = (uint8)m_buteMgr.GetInt(s_aTagName,s_aAttName,nDef);
-			}
-			else
-				m_nPlayerSkills[i] = 0;
-		}
-	}
-	else
-	{
-		//if the first was not valid, get 'em from the SkillsButeMgr
-		for (uint8 i = 0; i < kNumSkills; i++)
-		{
-			eSkill skl = (eSkill)i;
-			if (g_pSkillsButeMgr->IsAvailable(skl) )
-			{
-				m_nPlayerSkills[i] = (uint8)g_pSkillsButeMgr->GetDefaultMultiplayerLevel(skl);
-			}
-			else
-				m_nPlayerSkills[i] = 0;
-		}
-	}
+	// RETAIL: 0x100ed5a0 -- Tron keeps a player colour, no skills
+	m_nPlayerColor = m_nDMPlayerModel = (uint8)m_buteMgr.GetInt(s_aTagName,"PlayerColor",0);
 
 	m_nBandwidthClient = (uint8)m_buteMgr.GetInt(s_aTagName,"BandwidthClient",3);
 	m_nBandwidthClientCustom = (uint16)m_buteMgr.GetInt(s_aTagName,"BandwidthClientCustom",g_BandwidthClient[3]);
-	m_nClientPort = (uint16)m_buteMgr.GetInt(s_aTagName,"ClientPort",27888);
 
-	m_bMPRadar = m_buteMgr.GetBool( s_aTagName, "MPRadar", true );
-
-	ApplyMultiplayer(false);
+	ApplyMultiplayer();
 }
 
 
@@ -558,17 +562,29 @@ void CUserProfile::LoadGameOptions()
 {
 	strcpy(s_aTagName,"Game");
 
+	// RETAIL: 0x100ed8d0 -- the string table says whether this build has
+	// no gore or no bodies ("TRUE").
+	char szAllowed[8];
+	FormatString(kNoGoreStringId,szAllowed,sizeof(szAllowed));
+	m_bGoreAllowed = (stricmp(szAllowed,"TRUE") != 0);
+	FormatString(kNoBodiesStringId,szAllowed,sizeof(szAllowed));
+	m_bBodiesAllowed = ((stricmp(szAllowed,"TRUE") != 0) && !GetConsoleInt("NoBodies",0));
+
 	m_nDifficulty = m_buteMgr.GetInt(s_aTagName,"Difficulty",2);
     m_nSubtitles  = (uint8)m_buteMgr.GetInt(s_aTagName,"Subtitles",0);
-    m_bGore = (!g_pVersionMgr->IsLowViolence() && (m_buteMgr.GetInt(s_aTagName,"Gore",0) > 0));
+    m_bGore = (m_bGoreAllowed && (m_buteMgr.GetInt(s_aTagName,"Gore",0) > 0));
+	m_bLCThirdPersonCam = !!m_buteMgr.GetInt(s_aTagName,"LCThirdPersonCam",1);
+	m_bSkipSubIntro = !!m_buteMgr.GetInt(s_aTagName,"SkipSubIntro",0);
+	m_bLCManualCam = !!m_buteMgr.GetInt(s_aTagName,"LCManualCam",1);
 	m_bAlwaysRun = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"AlwaysRun",1);
 	m_nLayout = m_buteMgr.GetInt(s_aTagName,"HUDLayout",0);
 	m_nHeadBob = m_buteMgr.GetInt(s_aTagName,"HeadBob",0);
 	m_nWeaponSway = m_buteMgr.GetInt(s_aTagName,"WeaponSway",0);
-	m_nMsgDur = m_buteMgr.GetInt(s_aTagName,"MessageDur",0);
-	m_bAutoWeaponSwitch = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"AutoWeaponSwitch",1);
+	m_nMsgDur = m_buteMgr.GetInt(s_aTagName,"PickupMessage",0);
 	m_bLoadScreenTips = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"LoadScreenTips",1);
-	m_bVehicleContour = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"VehicleContour",1);
+	m_bAlwaysShowToolTip = !!m_buteMgr.GetInt(s_aTagName,"AlwaysShowToolTip",1);
+	m_bMouseClosesPopup = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MouseClosesPopup",0);
+	m_bDiscAutoAim = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"DiscAutoAim",0);
 
 	m_bCrosshair = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"UseCrosshair",1);
 	m_CrosshairR = (uint32)m_buteMgr.GetInt(s_aTagName,"CrosshairRed",0x1F);
@@ -577,8 +593,14 @@ void CUserProfile::LoadGameOptions()
 	m_CrosshairA = (uint8)m_buteMgr.GetInt(s_aTagName,"CrosshairAlpha",0xBF);
 	m_nStyle = m_buteMgr.GetInt(s_aTagName,"CrosshairStyle",0);
     m_bDynamic = m_buteMgr.GetInt(s_aTagName,"CrosshairDynamic",1);
-	
-	m_bSPRadar = m_buteMgr.GetBool( s_aTagName, "SPRadar", true );
+
+	m_nLCCamSpeed = m_buteMgr.GetInt(s_aTagName,"LCCamSpeed",2);
+	m_nLCCamLag = m_buteMgr.GetInt(s_aTagName,"LCCamLag",5);
+	m_bLCDialog = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"LCDialog",1);
+	m_fLCCamZoom = m_buteMgr.GetFloat(s_aTagName,"LCCamZoom",1000.0f);
+	m_fLCCamPitch = m_buteMgr.GetFloat(s_aTagName,"LCCamPitch",55.0f);
+	m_fLCCamYaw = m_buteMgr.GetFloat(s_aTagName,"LCCamYaw",94.0f);
+	m_fLCPlayerPitch = m_buteMgr.GetFloat(s_aTagName,"LCPlayerPitch",0.0f);
 
 	ApplyGameOptions();
 	ApplyCrosshair();
@@ -598,6 +620,7 @@ void CUserProfile::LoadSound(bool bApply)
 
 	m_bSoundQuality = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"sound16bit",0);
 	m_bMusicQuality = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"MusicQuality",0);
+	m_bEAXEnabled = (LTBOOL)m_buteMgr.GetInt(s_aTagName,"eaxenabled",0);
 
 	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
 	if (!(dwAdvancedOptions & AO_MUSIC))
@@ -618,20 +641,137 @@ void CUserProfile::LoadPerformance(bool bApply)
 
 }
 
+// RETAIL: 0x100eddc0 (name ours)
+void CUserProfile::LoadMisc()
+{
+	strcpy(s_aTagName,"Misc");
+
+	m_buteMgr.GetString(s_aTagName,"VehicleColor","LightCycleBlue",m_szVehicleColor,sizeof(m_szVehicleColor));
+
+	char szStr[64];
+	m_buteMgr.GetString(s_aTagName,"LightCycleConfig",m_sName.c_str(),szStr,sizeof(szStr));
+	m_sLightCycleConfig = szStr;
+
+	m_buteMgr.GetString(s_aTagName,"LightCyclePlayerName",m_sLightCycleName.c_str(),szStr,sizeof(szStr));
+	m_sLightCycleName = szStr;
+
+	m_nLightCycleStyle = m_buteMgr.GetInt(s_aTagName,"CycleType");
+	m_nLightCycleShade = m_buteMgr.GetInt(s_aTagName,"CycleShade");
+
+	ApplyMisc();
+}
+
+// RETAIL: 0x100edfc0 (name ours)
+void CUserProfile::LoadLightCycleInfo()
+{
+	const char* pszTag = s_aLightCycleInfoKeys[0];
+	int i;
+
+	m_CompletedCircuits.clear();
+	m_UnlockedCycleColors.clear();
+	m_UnlockedPowerups.clear();
+	m_UnlockedMaps.clear();
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_CompletedCircuits.push_back(std::string(szValue));
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedCycleColors.push_back(std::string(szValue));
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedPowerups.push_back(std::string(szValue));
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i);
+
+		char szValue[128];
+		szValue[0] = 0;
+		if (m_buteMgr.Exist(pszTag,szKey))
+		{
+			m_buteMgr.GetString(pszTag,szKey,szValue,sizeof(szValue));
+		}
+
+		if (szValue[0])
+		{
+			m_UnlockedMaps.push_back(std::string(szValue));
+		}
+	}
+}
+
 
 void CUserProfile::Save()
 {
-	// PORT: NOLF2's body; Tron's (retail 0x100ee500) saves two sections more
-	// and always closes and reopens its bute file
+	// RETAIL: 0x100ee500
+	std::string fn = s_sProfileDir + m_sName + s_sProfileExt;
+
 	SaveControls();
 	SaveMultiplayer();
 	SaveGameOptions();
 	SaveSound();
 	SavePerformance();
+	SaveLightCycleInfo();
+	SaveMisc();
 
-	std::string fn = GetProfileFile( m_sName.c_str( ));
 	m_buteMgr.Save(fn.c_str());
 
+	// Reread what we wrote.
+	m_buteMgr.Term();
+	m_buteMgr.Init();
+	if (m_pCryptKey)
+	{
+		m_buteMgr.Parse(fn.c_str(), m_pCryptKey);
+	}
+	else
+	{
+		m_buteMgr.Parse(fn.c_str());
+	}
 }
 
 void CUserProfile::SaveControls()
@@ -673,6 +813,7 @@ void CUserProfile::SaveControls()
 
 	//save mouse
 	m_buteMgr.SetInt(s_aTagName,"InvertMouse",(int)m_bInvertY);
+	m_buteMgr.SetInt(s_aTagName,"InvertLCMouse",(int)m_bInvertLCMouse);
 	m_buteMgr.SetInt(s_aTagName,"MouseLook",(int)m_bMouseLook);
     m_buteMgr.SetInt(s_aTagName,"InputRate",m_nInputRate);
     m_buteMgr.SetInt(s_aTagName,"Sensitivity",m_nSensitivity);
@@ -704,19 +845,9 @@ void CUserProfile::SaveMultiplayer()
 	m_buteMgr.SetString( s_aTagName, "Guid", m_sPlayerGuid.c_str( ));
 	m_buteMgr.SetString( s_aTagName, "ServerConfig", m_sServerOptions.c_str( ));
 	m_buteMgr.SetInt(s_aTagName,"PlayerModel",(int)m_nCPPlayerModel);
-	m_buteMgr.SetInt(s_aTagName,"DMPlayerModel",(int)m_nDMPlayerModel);
-
-	for (uint8 i = 0; i < kNumSkills; i++)
-	{
-		sprintf(s_aAttName,"PlayerSkills%d",i);
-		m_buteMgr.SetInt(s_aTagName,s_aAttName,(int)m_nPlayerSkills[i]);
-	}
-
+	m_buteMgr.SetInt(s_aTagName,"PlayerColor",(int)m_nDMPlayerModel);
 	m_buteMgr.SetInt(s_aTagName,"BandwidthClient",(int)m_nBandwidthClient);
 	m_buteMgr.SetInt(s_aTagName,"BandwidthClientCustom",(int)m_nBandwidthClientCustom);
-	m_buteMgr.SetInt(s_aTagName,"ClientPort",(int)m_nClientPort);
-
-	m_buteMgr.SetBool( s_aTagName, "MPRadar", m_bMPRadar );
 }
 
 void CUserProfile::SaveGameOptions()
@@ -724,17 +855,20 @@ void CUserProfile::SaveGameOptions()
 	strcpy(s_aTagName,"Game");
 	m_buteMgr.SetInt(s_aTagName,"Difficulty",m_nDifficulty);
     m_buteMgr.SetInt(s_aTagName,"Subtitles",m_nSubtitles);
-    m_buteMgr.SetInt(s_aTagName,"Gore",(int)(!g_pVersionMgr->IsLowViolence() && m_bGore));
+    m_buteMgr.SetInt(s_aTagName,"Gore",(int)(m_bGoreAllowed && m_bGore));
+	m_buteMgr.SetInt(s_aTagName,"LCThirdPersonCam",(int)m_bLCThirdPersonCam);
+	m_buteMgr.SetInt(s_aTagName,"SkipSubIntro",(int)m_bSkipSubIntro);
+	m_buteMgr.SetInt(s_aTagName,"LCManualCam",(int)m_bLCManualCam);
 	m_buteMgr.SetInt(s_aTagName,"AlwaysRun",(int)m_bAlwaysRun);
 	m_buteMgr.SetInt(s_aTagName,"HUDLayout",m_nLayout);
 	m_buteMgr.SetInt(s_aTagName,"HeadBob",m_nHeadBob);
 	m_buteMgr.SetInt(s_aTagName,"WeaponSway",m_nWeaponSway);
-	m_buteMgr.SetInt(s_aTagName,"MessageDur",m_nMsgDur);
-	m_buteMgr.SetInt(s_aTagName,"AutoWeaponSwitch",(int)m_bAutoWeaponSwitch);
+	m_buteMgr.SetInt(s_aTagName,"PickupMessage",m_nMsgDur);
 	m_buteMgr.SetInt(s_aTagName,"LoadScreenTips",(int)m_bLoadScreenTips);
-	m_buteMgr.SetInt(s_aTagName,"VehicleContour",(int)m_bVehicleContour);
+	m_buteMgr.SetInt(s_aTagName,"AlwaysShowToolTip",(int)m_bAlwaysShowToolTip);
+	m_buteMgr.SetInt(s_aTagName,"MouseClosesPopup",(int)m_bMouseClosesPopup);
+	m_buteMgr.SetInt(s_aTagName,"DiscAutoAim",(int)m_bDiscAutoAim);
 
-	
 	m_buteMgr.SetInt(s_aTagName,"UseCrosshair",m_bCrosshair);
 	m_buteMgr.SetInt(s_aTagName,"CrosshairRed",(int)m_CrosshairR);
 	m_buteMgr.SetInt(s_aTagName,"CrosshairGreen",(int)m_CrosshairG);
@@ -743,7 +877,13 @@ void CUserProfile::SaveGameOptions()
 	m_buteMgr.SetInt(s_aTagName,"CrosshairStyle",m_nStyle);
     m_buteMgr.SetInt(s_aTagName,"CrosshairDynamic",m_bDynamic);
 
-	m_buteMgr.SetBool( s_aTagName, "SPRadar", m_bSPRadar );
+	m_buteMgr.SetInt(s_aTagName,"LCCamSpeed",m_nLCCamSpeed);
+	m_buteMgr.SetInt(s_aTagName,"LCCamLag",m_nLCCamLag);
+	m_buteMgr.SetInt(s_aTagName,"LCDialog",(int)m_bLCDialog);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamZoom",m_fLCCamZoom);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamPitch",m_fLCCamPitch);
+	m_buteMgr.SetFloat(s_aTagName,"LCCamYaw",m_fLCCamYaw);
+	m_buteMgr.SetFloat(s_aTagName,"LCPlayerPitch",m_fLCPlayerPitch);
 }
 
 
@@ -759,11 +899,86 @@ void CUserProfile::SaveSound()
 	
 	m_buteMgr.SetInt(s_aTagName,"sound16bit",(int)m_bSoundQuality);
 	m_buteMgr.SetInt(s_aTagName,"MusicQuality",(int)m_bMusicQuality);
+	m_buteMgr.SetInt(s_aTagName,"eaxenabled",(int)m_bEAXEnabled);
+}
+
+// RETAIL: 0x100eee40 (name ours)
+void CUserProfile::SaveMisc()
+{
+	strcpy(s_aTagName,"Misc");
+	m_buteMgr.SetString(s_aTagName,"VehicleColor",m_szVehicleColor);
+	m_buteMgr.SetString(s_aTagName,"LightCycleConfig",m_sLightCycleConfig.c_str());
+	m_buteMgr.SetString(s_aTagName,"LightCyclePlayerName",m_sLightCycleName.c_str());
+	m_buteMgr.SetInt(s_aTagName,"CycleType",m_nLightCycleStyle);
+	m_buteMgr.SetInt(s_aTagName,"CycleShade",m_nLightCycleShade);
 }
 
 void CUserProfile::SavePerformance()
 {
 	g_pPerformanceMgr->SavePerformanceOptions(m_buteMgr,&m_sPerformance);
+}
+
+// RETAIL: 0x100eef10 (name ours)
+void CUserProfile::SaveLightCycleInfo()
+{
+	const char* pszTag = s_aLightCycleInfoKeys[0];
+	uint32 i;
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i);
+		if (i < m_CompletedCircuits.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_CompletedCircuits[i].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i);
+		if (i < m_UnlockedCycleColors.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCycleColors[i].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i);
+		if (i < m_UnlockedPowerups.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedPowerups[i].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
+
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
+	{
+		char szKey[32];
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i);
+		if (i < m_UnlockedMaps.size())
+		{
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedMaps[i].c_str());
+		}
+		else
+		{
+			m_buteMgr.SetString(pszTag,szKey,"");
+		}
+	}
 }
 
 void CUserProfile::Term()
@@ -862,6 +1077,7 @@ void CUserProfile::ApplyBindings()
 void CUserProfile::ApplyMouse()
 {
 	WriteConsoleInt("MouseInvertY",m_bInvertY);
+	WriteConsoleInt("MouseInvertLCY",m_bInvertLCMouse);
 	WriteConsoleInt("MouseLook",m_bMouseLook);
 	WriteConsoleFloat("MouseSensitivity",(float)m_nSensitivity);
 	WriteConsoleFloat("InputRate",(float)m_nInputRate);
@@ -891,46 +1107,80 @@ void CUserProfile::ApplyKeyboard()
 	WriteConsoleFloat("VehicleTurnRateScale",fTemp);
 }
 
-void CUserProfile::ApplyMultiplayer(bool bLAN)
+void CUserProfile::ApplyMultiplayer()
 {
-	// Use max on LAN games
-	float fMinBandwidth = (bLAN) ? k_fMaxBandwidth : 0.0f;
-
+	// RETAIL: 0x100ef4c0 -- no LAN case and no clamp in Tron
 	//set mp console vars here
 	if (m_nBandwidthClient < eBandwidth_Custom)
-		WriteConsoleFloat("BandwidthTargetClient",LTCLAMP(((float)g_BandwidthClient[m_nBandwidthClient] * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+		WriteConsoleFloat("BandwidthTargetClient",((float)g_BandwidthClient[m_nBandwidthClient] * 1024.0f));
 	else
-		WriteConsoleFloat("BandwidthTargetClient",LTCLAMP(((float)m_nBandwidthClientCustom * 1024.0f), fMinBandwidth, k_fMaxBandwidth) );
+		WriteConsoleFloat("BandwidthTargetClient",((float)m_nBandwidthClientCustom * 1024.0f));
 
 }
 
 void CUserProfile::ApplyGameOptions()
 {
-	int nGore = (int)(!g_pVersionMgr->IsLowViolence() && m_bGore);
+	// RETAIL: 0x100ef510
+	int nGore = (int)(m_bGoreAllowed && m_bGore);
 	WriteConsoleInt("Gore", nGore);
 	WriteConsoleInt("Subtitles",m_nSubtitles);
 	WriteConsoleInt("HUDLayout",m_nLayout);
 	WriteConsoleInt("Difficulty",m_nDifficulty);
 
-	GameDifficulty eDiff = GD_NORMAL;
-	if (IsDifficultyGameType())
-	{
-		eDiff = (GameDifficulty)m_nDifficulty;
-	}
-	g_pGameClientShell->SetDifficulty(eDiff);
-
-	
+	g_pGameClientShell->SetDifficulty((GameDifficulty)m_nDifficulty);
 
 	WriteConsoleFloat("HeadBob",((LTFLOAT)m_nHeadBob / 10.0f));
 	WriteConsoleFloat("WeaponSway",((LTFLOAT)m_nWeaponSway / 10.0f));
 	WriteConsoleFloat("MessageDuration",((LTFLOAT)m_nMsgDur / 10.0f));
 
-	WriteConsoleInt("AutoWeaponSwitch",(int)m_bAutoWeaponSwitch);
-	WriteConsoleInt("VehicleContour",(int)m_bVehicleContour);
-
 	g_pMoveMgr->SetRunLock(m_bAlwaysRun);
 
-	g_pGameClientShell->UpdateGoreSettings();
+	// The light cycle camera...
+	if (g_pPlayerMgr)
+	{
+		g_pPlayerMgr->TronUnknownVirtual24(m_bLCThirdPersonCam, false);
+		g_pPlayerMgr->TronUnknownVirtual28(m_bLCManualCam);
+
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknown100(m_fLCCamZoom);
+
+		float fPitch = RAD2DEG(m_fLCPlayerPitch) + m_fLCCamPitch;
+		if (fPitch < 0.0f || fPitch > 90.0f)
+		{
+			m_fLCPlayerPitch = 0.0f;
+			m_fLCCamPitch = 45.0f;
+		}
+
+		if (m_fLCCamYaw < 0.0f || m_fLCCamYaw > 360.0f)
+		{
+			m_fLCCamYaw = 94.0f;
+			m_fLCPlayerPitch = 0.0f;
+		}
+
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknownF8(DEG2RAD(m_fLCCamPitch));
+		g_pPlayerMgr->GetPlayerCamera()->SetTronUnknownFC(DEG2RAD(m_fLCCamYaw));
+		g_pPlayerMgr->SetPitch(m_fLCPlayerPitch);
+	}
+
+	if (g_pMoveMgr && g_pMoveMgr->GetVehicleMgr())
+	{
+		float fLag;
+		if (m_nLCCamLag == 11)
+		{
+			fLag = -1.0f;
+		}
+		else if (m_nLCCamLag == 0)
+		{
+			fLag = 0.0f;
+		}
+		else
+		{
+			fLag = (float)(m_nLCCamLag - 1) * (1.0f / 9.0f) + 1.0f;
+		}
+		g_pMoveMgr->GetVehicleMgr()->SetLightCycleCamLag(fLag);
+		g_pMoveMgr->GetVehicleMgr()->SetLightCycleCamSpeed((float)m_nLCCamSpeed * 0.2f);
+	}
+
+	g_pGameClientShell->GetClientFXMgr()->SetGoreEnabled(nGore != 0);
 }
 
 void CUserProfile::ApplyCrosshair()
@@ -954,9 +1204,27 @@ void CUserProfile::ApplySound()
 	WriteConsoleFloat( "speechsoundmultiplier", m_fSpeechSoundMultiplier );
 	ImplementSoundVolume();
 
+	// RETAIL: 0x100ef800 -- Tron's EAX option turns the sound filters on
+	// and off.
+	if (!m_bEAXEnabled)
+	{
+		ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
+		if (pSoundMgr)
+		{
+			pSoundMgr->EnableSoundFilter(m_bEAXEnabled != LTFALSE);
+		}
+	}
+	else
+	{
+		g_pClientSoundMgr->SetSoundFilter(g_pGameClientShell->GetPlayerMgr()->GetSoundFilter());
+	}
+
+	LTBOOL bOldEAX = GetConsoleInt("SoundFilters",0);
+	WriteConsoleInt("SoundFilters",(int)m_bEAXEnabled);
+
 	LTBOOL bOldSoundQuality = GetConsoleInt("sound16bit",0);
 	WriteConsoleInt("sound16bit",(int)m_bSoundQuality);
-	if (m_bSoundQuality != bOldSoundQuality)
+	if (m_bSoundQuality != bOldSoundQuality || bOldEAX != m_bEAXEnabled)
 	{
 		g_pGameClientShell->InitSound();
 	}
@@ -965,6 +1233,9 @@ void CUserProfile::ApplySound()
 
 	WriteConsoleInt("MusicQuality",(int)m_bMusicQuality);
 	g_pGameClientShell->GetMusic()->SetQuality(!!m_bMusicQuality);	
+
+	// RETAIL: Tron rereads the performance settings here.
+	g_pPerformanceMgr->GetPerformanceOptions(&m_sPerformance);
 
 	//if we haven't gotten to the menus yet, don't start the music yet...
 	if (g_pInterfaceMgr->HasEnteredScreenState())
@@ -1082,6 +1353,13 @@ void CUserProfile::ApplyDisplay()
 		g_pCursorMgr->UseHardwareCursor(m_bHardwareCursor,true);
 	}
 
+}
+
+// RETAIL: 0x100efc80 (name ours)
+void CUserProfile::ApplyMisc()
+{
+	if (g_pPlayerMgr)
+		g_pPlayerMgr->SetTronUnknown1B5(m_szVehicleColor);
 }
 
 void CUserProfile::SetPerformanceCfg(char *pszCfg)
@@ -1372,6 +1650,7 @@ void CUserProfile::SetMouse()
 
 	m_bMouseLook = GetConsoleInt("MouseLook",1);
 	m_bInvertY = GetConsoleInt("MouseInvertY",0);
+	m_bInvertLCMouse = GetConsoleInt("MouseInvertLCY",0);
 
 	m_nInputRate = GetConsoleInt("InputRate",20);
 	
@@ -1436,20 +1715,20 @@ void CUserProfile::SetMultiplayer()
 
 void CUserProfile::SetGameOptions()
 {
-	m_bGore = !g_pVersionMgr->IsLowViolence() && (LTBOOL)GetConsoleInt("Gore",0);
+	// RETAIL: 0x100f0720
+	m_bGore = m_bGoreAllowed && GetConsoleInt("Gore",0);
 	m_nDifficulty = g_pGameClientShell->GetDifficulty();
 	m_nSubtitles = GetConsoleInt("Subtitles",0);
 
 	m_bAlwaysRun = (LTBOOL)g_pMoveMgr->RunLock();
+
+	SetLightCycleCamera();
 
 	m_nLayout = GetConsoleInt("HUDLayout",0);
 
 	m_nHeadBob = (int)(10.0f * GetConsoleFloat("HeadBob",1.0f));
 	m_nWeaponSway = (int)(10.0f * GetConsoleFloat("WeaponSway",1.0f));
 	m_nMsgDur = (int)(10.0f * GetConsoleFloat("MessageDuration",1.0f));
-
-	m_bAutoWeaponSwitch = (LTBOOL)GetConsoleInt("AutoWeaponSwitch",1);
-	m_bVehicleContour = (LTBOOL)GetConsoleInt("VehicleContour",1);
 }
 
 
@@ -1476,6 +1755,8 @@ void CUserProfile::SetSound()
 
 	m_bSoundQuality = (LTBOOL)GetConsoleInt("sound16bit",0);
 	m_bMusicQuality = (LTBOOL)GetConsoleInt("MusicQuality",0);
+	// RETAIL: 0x100f07f0 -- EAX is the "SoundFilters" console variable
+	m_bEAXEnabled = (LTBOOL)GetConsoleInt("SoundFilters",0);
 
 	if (!GetConsoleInt("MusicEnable",0) || !GetConsoleInt("MusicActive",0))
 		m_nMusicVolume = MUSIC_MIN_VOL;
@@ -1517,7 +1798,9 @@ LTBOOL CProfileMgr::Init()
 		return LTFALSE;
 
 
-	LoadString(IDS_PLAYER,szDefProfileName,sizeof(szDefProfileName));
+	// RETAIL: 0x100f0a00 -- Tron's default profile name is its string 1008
+	// (ClientResShared.h's IDS_PLAYER is NOLF2's 1241)
+	LoadString(kDefaultProfileNameStringId,szDefProfileName,sizeof(szDefProfileName));
 
 
 
@@ -1536,8 +1819,7 @@ LTBOOL CProfileMgr::Init()
 		pRegMgr->Get("ProfileName", szProfileName, nBufSize, "");
 	}
 
-	//are we supposed to set a particular performance level?
-	char *pszPerf = GetConsoleTempString("SetPerformanceLevel","");
+	// RETAIL: Tron applies "SetPerformanceLevel" in CUserProfile::Init.
 	//if we have a profile name try to init it
 	if (strlen(szProfileName) > 0)
 	{
@@ -1550,10 +1832,6 @@ LTBOOL CProfileMgr::Init()
 				m_profile.RestoreDefaults(PROFILE_ALL);
 				WriteConsoleInt("RestoreDefaults",0);
 			}
-			
-		
-			m_profile.SetPerformanceCfg(pszPerf);
-			WriteConsoleString("SetPerformanceLevel","");
 
 
 			//we also want to make sure to save the display configuration so that parameters passed
@@ -1568,9 +1846,6 @@ LTBOOL CProfileMgr::Init()
 
 	if (!m_profile.IsInitted()) 
 		return LTFALSE;
-
-	m_profile.SetPerformanceCfg(pszPerf);
-	WriteConsoleString("SetPerformanceLevel","");
 
 
 	//we also want to make sure to save the display configuration so that parameters passed
@@ -1598,7 +1873,7 @@ void CProfileMgr::GetProfileList(StringSet& profileList)
 	struct _finddata_t file;
 	long hFile;
 
-	std::string directory = GetProfileFile( "*" );
+	std::string directory = s_sProfileDir + "*" + s_sProfileExt;
 
 	// find first file
 	if((hFile = _findfirst(directory.c_str(), &file)) != -1L)
@@ -1704,7 +1979,7 @@ void CProfileMgr::DeleteProfile(const std::string& profileName)
 		bNeedNew = LTTRUE;
 	}
 		
-	std::string fn = GetProfileFile( profileName.c_str( ));
+	std::string fn = s_sProfileDir + profileName + s_sProfileExt;
 	remove(fn.c_str());
 
 	g_pClientSaveLoadMgr->DeleteSpecificSaveDir( profileName.c_str() );
@@ -1739,8 +2014,8 @@ void CProfileMgr::RenameProfile(const std::string& oldName,const std::string& ne
 		m_profile.Term();
 	}
 		
-	std::string ofn = GetProfileFile( oldName.c_str( ));
-	std::string nfn = GetProfileFile( newName.c_str( ));
+	std::string ofn = s_sProfileDir + oldName + s_sProfileExt;
+	std::string nfn = s_sProfileDir + newName + s_sProfileExt;
 	rename(ofn.c_str(),nfn.c_str());
 
 	char oldDir[128];
@@ -1770,8 +2045,7 @@ void CProfileMgr::RenameProfile(const std::string& oldName,const std::string& ne
 
 LTBOOL CUserProfile::RestoreDefaults(uint8 nFlags)
 {
-	std::string dfn = PROFILE_DIR;
-	dfn += "default.prf";
+	std::string dfn = s_sProfileDir + "default.prf";
 
 	LTBOOL bRet = LTFALSE;
 
@@ -1980,3 +2254,26 @@ bool GetDefaultSessionName( GameType eGameType, char* pszSessionName, uint32 nSe
 	return true;
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CUserProfile::SetLightCycleCamera
+//
+//	PURPOSE:	Read the light cycle camera settings back from the player
+//				(RETAIL: 0x100f18b0, the TU's last function; name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CUserProfile::SetLightCycleCamera()
+{
+	m_bLCThirdPersonCam = g_pPlayerMgr->GetTronUnknown1D7();
+	m_bLCManualCam = g_pPlayerMgr->GetTronUnknown1D8();
+
+	if (g_pPlayerMgr->IsPlayerInWorld())
+	{
+		m_fLCCamZoom = g_pPlayerMgr->GetPlayerCamera()->GetTronUnknown100();
+		m_fLCCamPitch = RAD2DEG(g_pPlayerMgr->GetPlayerCamera()->GetTronUnknownF8());
+		m_fLCCamYaw = RAD2DEG(g_pPlayerMgr->GetPlayerCamera()->GetTronUnknownFC());
+		m_fLCPlayerPitch = g_pPlayerMgr->GetPitch();
+	}
+}

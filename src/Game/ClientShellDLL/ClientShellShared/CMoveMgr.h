@@ -233,8 +233,9 @@ class CMoveMgr
     LTVector    m_vTotalCurrent;
 	float		m_fTotalViscosity;
 
-	bool		m_bGravityOverride;
-	float		m_fTotalContainerGravity;
+	// RETAIL: Tron has no m_bGravityOverride/m_fTotalContainerGravity here:
+	// UpdateContainerGravity (0x100f5b60) sets the player's acceleration
+	// directly, and m_fJumpVel is at +0xa4 (Init 0x100f4d50).
 
 	// Movement speeds.
 	float		m_fJumpVel;
@@ -268,7 +269,10 @@ class CMoveMgr
 	CTimer			m_DamageTimer;
 
 	// Player dims semi-constants
-	
+
+	// RETAIL: +0x344, set once CanStandUp (0x100f8830) has read the crouch
+	// and stand dims from the player model's animations (name ours).
+	bool			m_bHaveDims;
 	LTVector		m_vCrouchDims;
 	LTVector		m_vStandDims;
 };

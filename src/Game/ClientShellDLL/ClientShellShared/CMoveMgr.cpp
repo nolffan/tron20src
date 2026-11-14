@@ -25,6 +25,7 @@
 #include "CharacterFX.h"
 #include "VarTrack.h"
 #include "VehicleMgr.h"
+#include "PlayerCamera.h"
 #include "BankedList.h"
 #include "PlayerStats.h"
 #include "LeanMgr.h"
@@ -98,6 +99,10 @@ VarTrack	g_vtSlideToStopTime;
 
 VarTrack	g_vtMaxPushYVelocity;
 
+// RETAIL: Tron's console variables (Init 0x100f4d50).
+VarTrack	g_vtUseJumpHeightInFallDamage;
+VarTrack	g_vtBunnyHopping;
+
 
 LTBOOL g_bJumpRequested  = LTFALSE;
 
@@ -140,7 +145,7 @@ CMoveMgr::CMoveMgr()
 	m_bJumped	= LTFALSE;
     m_bRunLock	= LTFALSE;
 
-	m_bGravityOverride = false;
+	m_bHaveDims = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -179,9 +184,9 @@ LTBOOL CMoveMgr::Init()
 	m_CV_SpectatorSpeedMul.Init(g_pLTClient, "SpectatorSpeedMul", NULL, 1.0f);
 
  	g_vtFallDamageMinHeight.Init(g_pLTClient, "FallDamageMinHeight", LTNULL, 300.0f);
-    g_vtFallDamageMaxHeight.Init(g_pLTClient, "FallDamageMaxHeight", LTNULL, 500.0f);
-    g_vtFallDamageMin.Init(g_pLTClient, "FallDamageMin", LTNULL, 5.0f);
-    g_vtFallDamageMax.Init(g_pLTClient, "FallDamageMax", LTNULL, 500.0f);
+    g_vtFallDamageMaxHeight.Init(g_pLTClient, "FallDamageMaxHeight", LTNULL, 620.0f);
+    g_vtFallDamageMin.Init(g_pLTClient, "FallDamageMin", LTNULL, 1.0f);
+    g_vtFallDamageMax.Init(g_pLTClient, "FallDamageMax", LTNULL, 400.0f);
 
     g_vtCamLandMinHeight.Init(g_pLTClient, "CamLandMinHeight", LTNULL, 50.0f);
     g_vtCamLandMoveDist.Init(g_pLTClient, "CamLandMoveDist", LTNULL, -15.0f);
@@ -202,6 +207,8 @@ LTBOOL CMoveMgr::Init()
     g_vtSlideToStopTime.Init(g_pLTClient, "SlideToStopTime", LTNULL, 0.1f);
 
     g_vtMaxPushYVelocity.Init(g_pLTClient, "PusherMaxYVelocity", LTNULL, 100.0f);
+	g_vtUseJumpHeightInFallDamage.Init(g_pLTClient, "UseJumpHeightInFallDamage", LTNULL, 0.0f);
+	g_vtBunnyHopping.Init(g_pLTClient, "BunnyHopping", LTNULL, 0.0f);
 
 
  	// Init some defaults.  These should NEVER get used because we don't
@@ -393,10 +400,14 @@ void CMoveMgr::UpdateControlFlags()
 	m_dwLastControlFlags = m_dwControlFlags;
 	m_dwControlFlags = 0;
 	
-	if( !m_hObject )
+	// RETAIL: 0x100f55e0 -- while the camera can't move, keep ducking.
+	if( !m_hObject || !g_pInterfaceMgr->AllowCameraMovement() )
+	{
+		m_dwControlFlags |= (m_dwLastControlFlags & BC_CFLG_DUCK);
 		return;
+	}
 
-	if (m_pVehicleMgr->IsVehiclePhysics())
+	if (m_pVehicleMgr->IsVehiclePhysics() && !g_pPlayerMgr->TronUnknownVirtual3C(false))
 	{
 		m_pVehicleMgr->UpdateControlFlags();
 		m_dwControlFlags = m_pVehicleMgr->GetControlFlags();
@@ -421,16 +432,11 @@ void CMoveMgr::UpdateControlFlags()
 
 void CMoveMgr::UpdateNormalControlFlags()
 {
-	if( !g_pInterfaceMgr->AllowCameraMovement() ) 
-	{
-		// Don't clear the duck flag...
-		m_dwControlFlags |= (m_dwLastControlFlags & BC_CFLG_DUCK);
-		return;
-	}
+	// RETAIL: 0x100f5670 -- UpdateControlFlags checks the camera.
 
 	// If we're doing mouse strafing, hook us up...
 
-	if (g_pPlayerMgr->IsMouseStrafing())
+	if (!g_pGameClientShell->GetTronUnknown833A() && g_pPlayerMgr->IsMouseStrafing())
 	{
 		float offsets[3];
 		g_pLTClient->GetAxisOffsets(offsets);
@@ -452,7 +458,7 @@ void CMoveMgr::UpdateNormalControlFlags()
 	}
 
 	//if you are a ghost, you can look around, but that's it
-	if (g_pPlayerMgr->GetPlayerState() == PS_GHOST) return;
+	if (g_pPlayerMgr->GetPlayerState() == PS_GHOST || g_pGameClientShell->GetTronUnknown833A()) return;
 
 
 	// Use the player's user flags instead of checking this flag directly
@@ -463,7 +469,8 @@ void CMoveMgr::UpdateNormalControlFlags()
 		m_dwControlFlags |= BC_CFLG_DUCK;
 	}
 
-	if (g_pPlayerMgr->IsCarryingHeavyObject())
+	// RETAIL: Tron tests for any carried object.
+	if (g_pPlayerMgr->GetCarryingObject())
 	{
 		m_dwControlFlags &= ~BC_CFLG_DUCK;
 	}
@@ -475,17 +482,16 @@ void CMoveMgr::UpdateNormalControlFlags()
 			m_dwControlFlags |= BC_CFLG_DUCK;
 	}
 
-	// Only process jump and run if we aren't ducking and aren't leaning...
+	// Only process jump and run if we aren't ducking, carrying or leaning...
 
-	if (!(m_dwControlFlags & BC_CFLG_DUCK) && !g_pPlayerMgr->GetLeanMgr()->IsLeaning())
+	if (!(m_dwControlFlags & BC_CFLG_DUCK) && !g_pPlayerMgr->GetCarryingObject() && !g_pPlayerMgr->GetLeanMgr()->IsLeaning())
 	{
 		if (g_pLTClient->IsCommandOn(COMMAND_ID_RUN) ^ (m_bRunLock != LTFALSE))
 		{
 			m_dwControlFlags |= BC_CFLG_RUN;
 		}
 
-		//also can't jump while carrying a body
-		if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP) && !g_pPlayerMgr->IsCarryingHeavyObject())
+		if (g_pLTClient->IsCommandOn(COMMAND_ID_JUMP))
 		{
 			m_dwControlFlags |= BC_CFLG_JUMP;
 		}
@@ -522,8 +528,12 @@ void CMoveMgr::UpdateNormalControlFlags()
 		m_dwControlFlags |= BC_CFLG_STRAFE_LEFT;
 	}
 
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_DEFEND))
+	{
+		m_dwControlFlags |= BC_CFLG_TRON_ALT_FIRE;
+	}
 
-	if (!g_pPlayerMgr->IsCarryingHeavyObject())
+	if (!g_pPlayerMgr->GetCarryingObject())
 	{
 		if (g_pLTClient->IsCommandOn(COMMAND_ID_FIRING))
 		{
@@ -534,14 +544,6 @@ void CMoveMgr::UpdateNormalControlFlags()
 		{
 			m_dwControlFlags |= BC_CFLG_ALT_FIRING;
 		}
-
-
-		//special case for activating a gadget target
-		if (g_pLTClient->IsCommandOn(COMMAND_ID_ACTIVATE) && g_pPlayerMgr->FireOnActivate())
-		{
-			m_dwControlFlags |= BC_CFLG_FIRING;
-		}
-
 	}
 
 
@@ -570,7 +572,11 @@ void CMoveMgr::UpdateNormalControlFlags()
 	if ((m_dwControlFlags & BC_CFLG_JUMP) &&
 		!(m_dwLastControlFlags & BC_CFLG_JUMP))
 	{
-        g_bJumpRequested = LTTRUE;
+		// RETAIL: 0x100f5670 -- no new jump while jumping unless BunnyHopping.
+		if (g_vtBunnyHopping.GetFloat() != 0.0f || !m_bJumped)
+		{
+			g_bJumpRequested = LTTRUE;
+		}
 	}
 }
 
@@ -648,8 +654,14 @@ void CMoveMgr::UpdateContainerGravity( CContainerInfo *pInfo )
 	if( pInfo->m_ePPhysicsModel != m_pVehicleMgr->GetPhysicsModel() )
 		return;
 
-	m_bGravityOverride = true;
-	m_fTotalContainerGravity += pInfo->m_fGravity;
+	// RETAIL: 0x100f5b60 -- Tron's gravity volumes add their gravity to the
+	// player's acceleration in place of world gravity (no gravity override
+	// in the global force).
+	LTVector vAccel;
+	g_pPhysicsLT->GetAcceleration(m_hObject, &vAccel);
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAG_GRAVITY);
+	vAccel.y += pInfo->m_fGravity;
+	g_pPhysicsLT->SetAcceleration(m_hObject, &vAccel);
 }
 
 // ----------------------------------------------------------------------- //
@@ -812,6 +824,14 @@ void CMoveMgr::UpdateOnGround()
         LTFLOAT fDistFell = m_fLastOnGroundY - vPos.y;
 		m_fLastOnGroundY = vPos.y;
 
+		// RETAIL: 0x100f5db0 -- a landing after a jump counts as at least
+		// CamLandMinHeight.
+		LTFLOAT fMinLandHeight = g_vtCamLandMinHeight.GetFloat();
+		if (m_bJumped && fDistFell < fMinLandHeight)
+		{
+			fDistFell = fMinLandHeight;
+		}
+
 		if (fDistFell > 1.0f && !m_bBodyOnLadder)
 		{
 			HandleFallLand(fDistFell);
@@ -862,7 +882,9 @@ void CMoveMgr::UpdateOnGround()
 			// If we're moving up (i.e., jumping, on a lift, etc.), update
 			// our last on ground y pos...
 
-			if (vPos.y > m_fLastOnGroundY)
+			// RETAIL: 0x100f5db0 -- unless we jumped (UseJumpHeightInFallDamage).
+			bool bUpdateGroundY = (g_vtUseJumpHeightInFallDamage.GetFloat() != 0.0f) ? true : (m_bJumped == LTFALSE);
+			if (vPos.y > m_fLastOnGroundY && bUpdateGroundY)
 			{
 				m_fLastOnGroundY = vPos.y;
 			}
@@ -928,7 +950,14 @@ LTBOOL CMoveMgr::CanDoFootstep()
 	// No footsteps if standing on sky/invisible texture (this should
 	// only happen in really special case levels)...
 
-	if (m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY)
+	// RETAIL: 0x100f61e0 -- never in multiplayer light cycle games, and the
+	// sky and invisible surfaces only count where players are revived.
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		return LTFALSE;
+	}
+
+	if ((m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY) && !IsRevivePlayerGameType())
 	{
         return LTFALSE;
 	}
@@ -1122,10 +1151,6 @@ void CMoveMgr::UpdateMotion()
 		g_pPhysicsLT->SetVelocity(m_hObject, &vVec);
 		return;
 	}
-
-	// Make sure this gets reset...
-	m_fTotalContainerGravity = 0.0f;
-	m_bGravityOverride = false;
 
 	if (m_pVehicleMgr->IsVehiclePhysics())
 	{
@@ -1798,6 +1823,10 @@ void CMoveMgr::UpdatePlayerAnimation()
 
 	if (!(hClientObj = g_pLTClient->GetClientObject())) return;
 
+	// RETAIL: 0x100f84a0 -- not for the light cycle.
+	if (m_pVehicleMgr && m_pVehicleMgr->GetPhysicsModel() == PPM_LIGHTCYCLE) return;
+	if (GetGameType() == eGameTypeMultiplayerLightcycles) return;
+
 	// Make sure our solid object is on the same animation.
 	
 	curModelAnim = g_pLTClient->GetModelAnimation(m_hObject);
@@ -1869,6 +1898,10 @@ LTBOOL CMoveMgr::AreDimsCorrect()
 	if(!m_hObject || !g_pPhysicsLT)
         return LTTRUE;
 
+	// RETAIL: 0x100f8630 -- the light cycle's dims are always right.
+	if (m_pVehicleMgr && m_pVehicleMgr->GetPhysicsModel() == PPM_LIGHTCYCLE)
+		return LTTRUE;
+
     LTVector curDims;
 
 	g_pPhysicsLT->GetObjectDims(m_hObject, &curDims);
@@ -1925,6 +1958,44 @@ void CMoveMgr::ResetDims(LTVector *pOffset)
 
 bool CMoveMgr::CanStandUp()
 {
+	// RETAIL: 0x100f8830 -- Tron reads the player's crouch and stand dims
+	// here, once, instead of when the client object is created.
+	if (!m_bHaveDims)
+	{
+		// Note : This queries the anim for the dims of the player.  That information is all available
+		// on the server, but it's not on the client.  This is a lot easier than trying to transmit
+		// that information or something.
+		HMODELANIM hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_CROUCH);
+		if (hAnim == INVALID_MODEL_ANIM)
+		{
+			ASSERT(!"Unable to find player crouch animation");
+			m_vCrouchDims.Init(24.0f, 31.5f, 24.0f);
+		}
+		else
+		{
+			g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vCrouchDims, hAnim);
+		}
+
+		hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_STAND);
+		if (hAnim == INVALID_MODEL_ANIM)
+		{
+			ASSERT(!"Unable to find player stand animation");
+			// RETAIL: 0x100f88a2 -- Tron sets the crouch dims here (retail bug,
+			// docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+			m_vStandDims.Init(24.0f, 53.0f, 24.0f);
+#else
+			m_vCrouchDims.Init(24.0f, 53.0f, 24.0f);
+#endif
+		}
+		else
+		{
+			g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vStandDims, hAnim);
+		}
+
+		m_bHaveDims = true;
+	}
+
 	// Are you currently crouching
 	LTVector vCurDims;
 	g_pPhysicsLT->GetObjectDims(m_hObject, &vCurDims);
@@ -1989,7 +2060,7 @@ void CMoveMgr::MoveLocalSolidObject()
 
 
 	LTVector vOldGlobalForce(0, 0, 0);
-	LTVector vNewGlobalForce(0, m_bGravityOverride ? m_fTotalContainerGravity : m_fGravity, 0);
+	LTVector vNewGlobalForce(0, m_fGravity, 0);
 
 	pPhysics->GetGlobalForce(vOldGlobalForce);
 	pPhysics->SetGlobalForce(vNewGlobalForce);
@@ -2167,7 +2238,8 @@ void CMoveMgr::ShowPos(char *pBlah)
 
 void CMoveMgr::Update()
 {
-	if (g_pGameClientShell->IsGamePaused()) return;
+	// RETAIL: 0x100f8e60 -- Tron only stops for the server's pause.
+	if (g_pGameClientShell->IsServerPaused()) return;
 	
 	HOBJECT hObj = g_pLTClient->GetClientObject();
 	if (!m_hObject || !hObj) return;
@@ -2284,8 +2356,14 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 		}
 
         theStruct.m_ObjectType = OT_MODEL;
-		theStruct.m_Flags = FLAG_SOLID | FLAG_GRAVITY | FLAG_STAIRSTEP;
+		theStruct.m_Flags = FLAG_SOLID | FLAG_STAIRSTEP;
 		theStruct.m_Flags2 = FLAG2_PLAYERCOLLIDE | FLAG2_SPECIALNONSOLID;
+
+		// RETAIL: 0x100f8f20 -- no gravity for multiplayer light cycles
+		if (GetGameType() != eGameTypeMultiplayerLightcycles)
+		{
+			theStruct.m_Flags |= FLAG_GRAVITY;
+		}
 
 		HOBJECT hClientObj = g_pLTClient->GetClientObject();
 		if( hClientObj )
@@ -2293,9 +2371,7 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 			g_pLTClient->GetObjectPos(hClientObj, &theStruct.m_Pos);
 			g_pCommonLT->SetObjectFilenames(hClientObj, &theStruct);
 
-			// Since the object was created in the correct position we don't need to force it later...
-
-			m_bForceToServerPos = LTFALSE;
+			// RETAIL: 0x100f8f20 -- Tron leaves m_bForceToServerPos alone here.
 		}
 		else
 			m_bForceToServerPos = LTTRUE;
@@ -2306,30 +2382,7 @@ void CMoveMgr::OnPhysicsUpdate(uint16 changeFlags, ILTMessage_Read *pMsg)
 		{
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_Client, CF_DONTSETDIMS, CF_DONTSETDIMS);
 
-			// Note : This queries the anim for the dims of the player.  That information is all available
-			// on the server, but it's not on the client.  This is a lot easier than trying to transmit
-			// that information or something.
-			HMODELANIM hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_CROUCH);
-			if (hAnim == INVALID_MODEL_ANIM)
-			{
-				ASSERT(!"Unable to find player crouch animation");
-				m_vCrouchDims.Init(24.0f, 31.5f, 24.0f);
-			}
-			else
-			{
-				g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vCrouchDims, hAnim);
-			}
-
-			hAnim = g_pLTClient->GetAnimIndex(m_hObject, PLAYERANIM_STAND);
-			if (hAnim == INVALID_MODEL_ANIM)
-			{
-				ASSERT(!"Unable to find player stand animation");
-				m_vStandDims.Init(24.0f, 53.0f, 24.0f);
-			}
-			else
-			{
-				g_pCommonLT->GetModelAnimUserDims(m_hObject, &m_vStandDims, hAnim);
-			}
+			// RETAIL: Tron reads the player dims in CanStandUp (0x100f8830).
 
 		}
 	}
@@ -2481,11 +2534,7 @@ LTRESULT CMoveMgr::OnObjectRotate(HOBJECT hObj, bool bTeleport, LTRotation *pNew
 
 LTRESULT CMoveMgr::AddPusher(const LTVector &pos, float radius, float startDelay, float duration, float strength)
 {
-	// Don't push a dead player...
-	
-	if( g_pPlayerMgr->IsPlayerDead() )
-		return LT_ERROR;
-
+	// RETAIL: 0x100f9680 -- Tron pushes dead players too.
 	Pusher *pPusher = Pusher::GetBank()->New();
 
 	if(!pPusher)
@@ -2586,8 +2635,12 @@ void CMoveMgr::OnServerForcePos(ILTMessage_Read *pMsg)
 		m_fLastOnGroundY = MIN_ONGROUND_Y;
 	}
 
+	// RETAIL: 0x100f9730
+	g_pPlayerMgr->GetPlayerCamera()->SetTronUnknown104(0);
+
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
-	
+
+	m_bForceToServerPos = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2606,7 +2659,8 @@ void CMoveMgr::WritePositionInfo(ILTMessage_Write *pMsg)
 	{
 		g_pLTClient->GetObjectPos(m_hObject, &myPos);
 		// If we're paused on our end, tell the server we're not going to move
-		if (g_pGameClientShell->IsGamePaused())
+		// RETAIL: 0x100f98c0 -- Tron tests only the server's pause.
+		if (g_pGameClientShell->IsServerPaused())
 			myVel = LTVector(0.0f, 0.0f, 0.0f);
 		else
 			myVel = GetVelocity();
@@ -2685,23 +2739,12 @@ LTFLOAT CMoveMgr::GetMaxVelMag() const
 			}
 		}
 
-		if( g_pPlayerMgr->IsCarryingHeavyObject() && fMaxVel > m_fWalkVel)
-		{
-
-			float fDiff = (fMaxVel - m_fWalkVel);
-
-			fDiff *= g_pPlayerStats->GetSkillModifier(SKL_CARRY,CarryModifiers::eCarryBodyMovement);
-
-			fMaxVel -= fDiff;
-
-		}
-
-
+		// RETAIL: 0x100f99d0 -- Tron has no carrying penalty.
 
 		//Calculate any movement penalties
 		LTFLOAT fPenalty = CalculateMovementPenalty();
 
-		fMaxVel *= ((1.0f - fPenalty) * fMoveMultiplier);
+		fMaxVel = (1.0f - fPenalty) * fMaxVel * fMoveMultiplier;
 
 	}
 
@@ -2814,7 +2857,7 @@ void CMoveMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
 
 	m_bLoading = LTTRUE;
 
-	m_pVehicleMgr->Load(pMsg, eLoadDataState);
+	// RETAIL: Tron's CVehicleMgr has no Save/Load.
 
 	m_bJumped = (pMsg->Readbool() ? LTTRUE : LTFALSE);
 }
@@ -2847,7 +2890,7 @@ void CMoveMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 	pMsg->Writefloat(m_DamageTimer.GetCountdownTime());
 	pMsg->WriteLTVector( m_vWantedDims );
 
-	m_pVehicleMgr->Save(pMsg, eSaveDataState);
+	// RETAIL: Tron's CVehicleMgr has no Save/Load.
 
 	pMsg->Writebool(m_bJumped ? true : false);
 }
@@ -2876,7 +2919,8 @@ LTBOOL CMoveMgr::IsPlayerModel()
 // ----------------------------------------------------------------------- //
 void CMoveMgr::AddDamagePenalty(LTFLOAT fDuration)
 {
-	fDuration *= g_pPlayerStats->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMoveDamage);
+	// RETAIL: 0x100f9e80 -- Tron reads the stamina modifiers directly.
+	fDuration *= ((const StaminaModifiers*)g_pPlayerStats->TronUnknownVirtual138())->fModifier[StaminaModifiers::eMoveDamage];
 	if (fDuration > m_DamageTimer.GetCountdownTime())
 		m_DamageTimer.Start(fDuration);
 }
@@ -2911,7 +2955,8 @@ LTFLOAT CMoveMgr::CalculateMovementPenalty() const
 	{
 		LTFLOAT fDamageMovePenalty = GetConsoleFloat("DamageMovePenalty",0.5f);
 
-		fDamageMovePenalty *= g_pPlayerStats->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMoveDamage);
+		// RETAIL: 0x100f9f70 -- Tron reads the stamina modifiers directly.
+		fDamageMovePenalty *= ((const StaminaModifiers*)g_pPlayerStats->TronUnknownVirtual138())->fModifier[StaminaModifiers::eMoveDamage];
 
 		if (fDamageMovePenalty > fPenalty)
 			fPenalty = fDamageMovePenalty;

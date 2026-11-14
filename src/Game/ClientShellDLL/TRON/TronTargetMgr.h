@@ -34,6 +34,12 @@ public:
 	// RETAIL: retail 0x100afa90 (the name is ours): the target's
 	// properties (+0x878..+0x895) go
 	void	ClearTargetProperties();
+
+	// RETAIL: retail's +0x876: the crosshair shows its "innocent" reticle
+	// while it is set (CHUDCrosshair::RenderArmed, 0x10024aae); the name is
+	// ours, and the member is at the end of ours until the class's layout
+	// is retail's
+	bool	IsTronUnknown876() {return m_bTronUnknown876;}
 private:
 	bool		m_bEnergyRequired;
 	int			m_nEnergyRequired;
@@ -45,6 +51,7 @@ private:
 	uint16		m_anTronUnknown878[8];
 	uint32		m_anTronUnknown888[3];
 	bool		m_bTronUnknown895;
+	bool		m_bTronUnknown876;		// RETAIL: +0x876 (see IsTronUnknown876)
 };
 
 #endif

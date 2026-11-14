@@ -49,6 +49,8 @@ CTronTargetMgr::CTronTargetMgr() : CTargetMgr()
 	m_anTronUnknown888[1] = 0;
 	m_anTronUnknown888[2] = 0;
 	m_bTronUnknown895 = false;
+	// PORT: ours (retail's +0x876 is not yet known to be set anywhere)
+	m_bTronUnknown876 = false;
 }
 
 // ----------------------------------------------------------------------- //

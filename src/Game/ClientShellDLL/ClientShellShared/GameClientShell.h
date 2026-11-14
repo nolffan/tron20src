@@ -74,6 +74,9 @@ public:
     float		GetFrameTime()              { return m_fFrameTime; }
     bool		IsGamePaused()			const   { return m_bGamePaused || m_bServerPaused; }
     bool		IsServerPaused()		const   { return m_bServerPaused; }
+	// RETAIL: read by CMoveMgr::UpdateNormalControlFlags (0x100f5670): no player
+	// input while it is set
+	bool		GetTronUnknown833A()	const	{ return m_bTronUnknown833A; }
     bool		IsFirstUpdate()			const   { return m_bFirstUpdate; }
 
     void		MinimizeMainWindow()            { m_bMainWindowMinimized = true; }

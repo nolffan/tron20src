@@ -780,6 +780,18 @@ fails silently, should be the one reported).
 
 Not fixed yet: the driver has no modern build of its own yet.
 
+### A player model without a stand animation gets standing dims as its crouch dims
+
+CShell.dll 0x100f8830 (CMoveMgr::CanStandUp, ClientShellShared/CMoveMgr.cpp).
+Tron reads the crouch and stand dims the first time the player asks to stand
+up. When the model has no "LSt" animation the default stand dims (24, 53, 24)
+are written over m_vCrouchDims instead of m_vStandDims (0x100f88a2), so the
+stand dims stay zero and the crouch dims become the standing size: the next
+"am I crouching" test is wrong and standing up tests against empty dims.
+Player models normally have the animation, so it does not show in the game.
+
+Fixed in the modern build: CMoveMgr.cpp (TRON20SRC_MODERN sets m_vStandDims).
+
 ### A client weapon's alt-fire key-up follows the fire key
 
 CShell.dll 0x10130680 (CClientWeapon::Update, ClientShellShared/

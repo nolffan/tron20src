@@ -15,11 +15,11 @@
 #endif
 
 //console var, friendly name, low perf setting, medium perf setting, high perf setting
-// RETAIL: Tron's twenty options (the settings table 0x1022f7d0 and the
-// defaults .DefaultLow/.DefaultMid/.DefaultHigh at 0x10230248/0x102302e8/
-// 0x10230388): ScreenGlowEnable is new; the dynamic light and triple
-// buffering variables and the tracer and triple buffering values differ
-// from NOLF2's.
+// RETAIL: Tron's 20 detail settings (CShell.dll's setting table at 0x1022f7d0
+// and its .DefaultLow/.DefaultMid/.DefaultHigh configurations at 0x10230248,
+// 0x102302e8, 0x10230388): ScreenGlowEnable is new, the dynamic light and
+// triple buffering console variables are "dynamiclight" and "triplebuffer",
+// and several medium values differ from NOLF2's
 ADD_OPTION(dynamiclight,DynamicLight,1,0,0)
 ADD_OPTION(ShadowDetail,ShadowDetail,2,1,0)
 ADD_OPTION(ScreenGlowEnable,ScreenGlowEnable,1,0,0)

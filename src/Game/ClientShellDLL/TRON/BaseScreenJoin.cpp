@@ -20,11 +20,28 @@
 #include "GameClientShell.h"
 #include "ltquaduvutils.h"
 #include "../../Libs/GameSpy/GameSpySDK/ghttp/ghttp.h"
+#include "../../Libs/GameSpy/GameSpySDK/pt/pt.h"
+#include "VersionMgr.h"
+#include <shellapi.h>
 
 // RETAIL: 0x10236c88, 0x10236c8c, 0x10236c94
 ServerBrowser	g_hServerBrowser = LTNULL;
 bool			g_bServerBrowser = false;
 SBServer		g_hJoinServer = LTNULL;
+
+// RETAIL: 0x10236c8e: GameSpy is asked for a patch once (the name is ours)
+static bool		s_bCheckedForUpdate = false;
+
+// RETAIL: Tron's string ids of the update messages and GameSpy's product id
+// for Tron 2.0 (retail pushes them; the names are ours)
+#define IDS_TRON_UPDATE_CHECKING	3991
+#define IDS_TRON_UPDATE_MANDATORY	3992
+#define IDS_TRON_UPDATE_OPTIONAL	3993
+#define IDS_TRON_UPDATE_REQUIRED	3994
+#define TRON_GAMESPY_PRODUCTID		10188
+
+// RETAIL: seconds the update check may take
+#define TRON_UPDATE_TIMEOUT			5.0f
 
 namespace
 {
@@ -143,14 +160,15 @@ LTBOOL CBaseScreenJoin::Build()
 }
 
 // RETAIL: 0x10006d40: the body's frame, opened where the selected tab is
+// (the tab's scaled position and width)
 void CBaseScreenJoin::SetTabFrame(CLTGUICtrl *pTab)
 {
 	if (!pTab) return;
 
-	LTIntPt tabPos = pTab->GetBasePos();
+	LTIntPt tabPos = pTab->GetPos();
 	float fTabLeft = (float)tabPos.x - 10.0f;
 	float fTabTop = (float)tabPos.y - 5.0f;
-	float fTabRight = (float)pTab->GetBaseWidth() + fTabLeft;
+	float fTabRight = (float)pTab->GetWidth() + fTabLeft;
 
 	float fXRatio = g_pInterfaceResMgr->GetXRatio();
 	float fYRatio = g_pInterfaceResMgr->GetYRatio();
@@ -196,14 +214,14 @@ uint32 CBaseScreenJoin::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 	case kCmdServerListTab:
 		if (m_nScreenID == SCREEN_ID_SERVERINFO)
 		{
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_JOIN_SERVERLIST);
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_JOIN_SERVERLIST, false);	// RETAIL: not added to the history
 			return 1;
 		}
 		break;
 	case kCmdServerInfoTab:
 		if (m_nScreenID != SCREEN_ID_SERVERINFO)
 		{
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_SERVERINFO);
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_SERVERINFO, false);
 			return 1;
 		}
 		break;
@@ -232,14 +250,13 @@ void CBaseScreenJoin::OnFocus(LTBOOL bFocus)
 
 		float fXRatio = g_pInterfaceResMgr->GetXRatio();
 		float fYRatio = g_pInterfaceResMgr->GetYRatio();
-		float fHeight = (float)nWidth * (float)nTexH / (float)nTexW;
+		float fHeight = (float)nTexH / (float)nTexW * (float)nWidth;
 
 		g_pDrawPrim->SetXYWH(&m_GameSpyPoly,(float)pos.x * fXRatio,(float)pos.y * fYRatio,
 			(float)nWidth * fXRatio,fHeight * fYRatio);
 
-		// RETAIL: here retail asks GameSpy for a patch (0x10007d70, with
-		// ptCheckForPatchAndTrackUsage; its answer 0x10007c40, 0x10007b40):
-		// left out, our GameSpy SDK has no pt module yet
+		// RETAIL: asks GameSpy for a patch (0x10007d70)
+		CheckForUpdate();
 	}
 
 	CBaseScreen::OnFocus(bFocus);
@@ -448,6 +465,7 @@ void CBaseScreenJoin::JoinAddress(std::string sAddress)
 	if (!g_hJoinServer)
 	{
 		MBCreate mb;
+		mb.eType = LTMB_OK;	// RETAIL: set again (stored after the constructor's)
 		g_pInterfaceMgr->ShowMessageBox(0x14C,&mb);
 		return;
 	}
@@ -479,11 +497,113 @@ LTBOOL CBaseScreenJoin::HandleKeyDown(int key, int rep)
 	if (key == VK_TAB)
 	{
 		if (m_nScreenID == SCREEN_ID_JOIN_SERVERLIST)
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_SERVERINFO);
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_SERVERINFO, false);	// RETAIL: not added to the history
 		else if (m_nScreenID == SCREEN_ID_SERVERINFO)
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_JOIN_SERVERLIST);
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_JOIN_SERVERLIST, false);
 	}
 	return CBaseScreen::HandleKeyDown(key,rep);
+}
+
+// RETAIL: 0x10007b30: the box saying an update is required closes the
+// screen (the name is ours)
+static void UpdateRequiredCallback(LTBOOL bReturn, void *pData)
+{
+	CBaseScreenJoin *pThisScreen = (CBaseScreenJoin *)pData;
+	if (pThisScreen)
+		pThisScreen->Escape();
+}
+
+// RETAIL: 0x10007b40: the answer to the update box: downloads the update
+// (the browser opens its page and the game quits) or, refused when it is
+// mandatory, says it is required
+void CBaseScreenJoin::HandleUpdate(bool bDownload)
+{
+	if (!bDownload)
+	{
+		if (m_bMandatoryUpdate)
+		{
+			s_bCheckedForUpdate = false;
+
+			MBCreate mb;
+			mb.eType = LTMB_OK;
+			mb.pFn = UpdateRequiredCallback;
+			mb.pData = this;
+			g_pInterfaceMgr->ShowMessageBox(IDS_TRON_UPDATE_REQUIRED,&mb);
+		}
+		return;
+	}
+
+	// as CJ's CGameClientShell::LaunchApplication
+	RMode rMode;
+	g_pLTClient->GetRenderMode(&rMode);
+	g_pLTClient->ShutdownRender(RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW);
+
+	if ((int)ShellExecute(NULL, NULL, m_sUpdateURL.c_str(), NULL, NULL, SW_SHOWNORMAL) <= 32)
+	{
+		g_pLTClient->SetRenderMode(&rMode);
+		return;
+	}
+
+	g_pLTClient->Shutdown();
+}
+
+// RETAIL: 0x10007c20 (the name is ours)
+static void UpdateCallback(LTBOOL bReturn, void *pData)
+{
+	CBaseScreenJoin *pThisScreen = (CBaseScreenJoin *)pData;
+	if (pThisScreen)
+		pThisScreen->HandleUpdate(!!bReturn);
+}
+
+// RETAIL: 0x10007c40: GameSpy's answer: offers the update found
+void CBaseScreenJoin::PatchCallback(bool bAvailable, bool bMandatory, const char *pszVersion, int nFileID, const char *pszURL)
+{
+	if (!m_bCheckingForUpdate) return;
+
+	g_pInterfaceMgr->CloseMessageBox(LTTRUE);
+
+	if (bAvailable)
+	{
+		MBCreate mb;
+		mb.eType = LTMB_YESNO;
+		mb.pFn = UpdateCallback;
+		mb.pData = this;
+		if (bMandatory)
+			g_pInterfaceMgr->ShowMessageBox(IDS_TRON_UPDATE_MANDATORY,&mb);
+		else
+			g_pInterfaceMgr->ShowMessageBox(IDS_TRON_UPDATE_OPTIONAL,&mb);
+	}
+
+	m_bMandatoryUpdate = bMandatory;
+	m_sUpdateURL = pszURL;
+	m_bCheckingForUpdate = false;
+}
+
+static void PatchCallbackFn(PTBool available, PTBool mandatory, const char *versionName, int fileID, const char *downloadURL, void *param);
+
+// RETAIL: 0x10007d70: asks GameSpy (once, on the internet screens) whether
+// there is a patch for this version; Render closes the box at the timeout
+void CBaseScreenJoin::CheckForUpdate()
+{
+	if (!m_bInternet || s_bCheckedForUpdate) return;
+
+	MBCreate mb;
+	mb.eType = LTMB_NONE;
+	g_pInterfaceMgr->ShowMessageBox(IDS_TRON_UPDATE_CHECKING,&mb);
+
+	const char *pszVersion = g_pVersionMgr->GetNetVersion();
+	if (!ptCheckForPatchAndTrackUsage(0, TRON_GAMESPY_PRODUCTID, pszVersion, 0, PatchCallbackFn, PTFalse, this))
+		g_pInterfaceMgr->CloseMessageBox(LTTRUE);
+
+	s_bCheckedForUpdate = true;
+	m_bCheckingForUpdate = true;
+	m_fUpdateTimeout = g_pLTClient->GetTime() + TRON_UPDATE_TIMEOUT;
+}
+
+// RETAIL: 0x10007e40 (the name is ours)
+static void PatchCallbackFn(PTBool available, PTBool mandatory, const char *versionName, int fileID, const char *downloadURL, void *param)
+{
+	((CBaseScreenJoin *)param)->PatchCallback(!!available, !!mandatory, versionName, fileID, downloadURL);
 }
 
 // RETAIL: 0x100be620 (folded with CHUDMessage::SetRenderState)
