@@ -652,6 +652,18 @@ cover the screen are not confined to it.
 
 Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
 
+### The upgrade points ring is placed with the horizontal scale only
+
+CShell.dll 0x1004fc70 (CBuildPointsCtrl::ScreenDimsChanged, src/Game/
+ClientShellDLL/TRON/RatingBarCtrl.cpp). The subroutine screen's ring of
+upgrade points scales its centre, its top and bottom and its radii from
+640x480 by the interface's X ratio alone (it reads the X ratio twice where
+the vertical values want the Y ratio), so at any resolution that is not
+4:3 the ring's hit area (0x1004fe60) and the help text's position
+(0x1004fef0) are off vertically from the ring that is drawn.
+
+Not fixed yet.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

@@ -52,8 +52,6 @@ bool g_bNoProcWorkSound = true;
 
 COptimizerCtrl::COptimizerCtrl()
 {
-	m_Center.x = 100;
-	m_Center.y = 100;
 	m_bInit = false;
 	m_bHot = false;
 	m_bBusy = false;
@@ -62,6 +60,8 @@ COptimizerCtrl::COptimizerCtrl()
 	m_HitRect.top = 0;
 	m_HitRect.right = 0;
 	m_HitRect.bottom = 0;
+	m_Center.x = 100;
+	m_Center.y = 100;
 }
 
 COptimizerCtrl::~COptimizerCtrl()
