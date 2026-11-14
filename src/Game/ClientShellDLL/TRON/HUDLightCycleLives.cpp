@@ -17,6 +17,11 @@
 #include "TronLayoutMgr.h"
 #include "LCHUDHelper.h"
 #include "ltquaduvutils.h"
+#include "TronPlayerMgr.h"
+#include "CMoveMgr.h"
+#include "LightCycleMgr.h"
+#include "LightCycleButeMgr.h"
+#include "LightCycleGameDataMgr.h"
 
 CHUDLightCycleLives::CHUDLightCycleLives() :
 	m_hBack(LTNULL),
@@ -129,20 +134,39 @@ void CHUDLightCycleLives::UpdateLayout()
 	m_pText->SetPosition(nX, (int)(fY - m_pText->GetHeight() * 0.5f + fHeight * 0.5f));
 }
 
-// RETAIL: 0x1002d890
+// RETAIL: 0x1002d890: the lives left (CTronPlayerMgr's virtual at +0x88)
+// of the current light cycle game data's circuit's lives
 void CHUDLightCycleLives::UpdateText()
 {
-	// PORT: stand-in. Retail writes "%d/%d" into the text, as a wide string:
-	// the lives left (CTronPlayerMgr's virtual at +0x88) of the current
-	// light cycle game data's lives (its +0x84; the game data manager,
-	// retail 0x10046f40.., is not in the tree yet)
+	int nLives = g_pLightCycleGameDataMgr->GetCurrent()->m_Circuit.nInitialLives;
+
+	char szText[32];
+	sprintf(szText, "%d/%d", dynamic_cast<CTronPlayerMgr*>(g_pPlayerMgr)->TronUnknownVirtual88(), nLives);
+
+	std::wstring sText;
+	LTGUIWiden(sText, szText);
+	m_pText->SetText(sText);
 }
 
-// RETAIL: 0x1002da30
+// RETAIL: 0x1002da30: the player's light cycle's color's lives icon
 void CHUDLightCycleLives::UpdateIcon()
 {
-	// PORT: stand-in. Retail finds the player's light cycle (by the move
-	// manager's object, in the client's light cycle manager, not in the
-	// tree yet) and shows its color's HUDLivesIconTex
-	// (g_pLightCycleButeMgr->GetCycleColor(name)->sHUDLivesIconTex)
+	int nNumCyclists = g_pLightCycleMgr->GetNumCyclists();
+	for (int i = 0; i < nNumCyclists; i++)
+	{
+		LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->GetCyclist(i);
+		if (pCyclist->hObject == g_pMoveMgr->GetObject())
+		{
+			LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+			m_hBack = g_pInterfaceResMgr->GetTexture(pColor->sHUDLivesIconTex.c_str());
+			return;
+		}
+	}
+}
+
+// RETAIL: 0x1002daa0: flash the lives (CTronPlayerMgr's 0x100a806c jumps
+// here); the name is ours
+void CHUDLightCycleLives::Flash()
+{
+	m_nFlashCount = 6;
 }

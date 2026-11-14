@@ -36,6 +36,7 @@
 #include "ClientMultiplayerMgr.h"
 #include "MsgIDs.h"
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x10010650..0x100106b2)
+#include "TronHUDMgr.h"	// RETAIL: g_pLightCycleRoster
 
 extern CGameClientShell* g_pGameClientShell;
 extern bool GroundFilterFn(HOBJECT hObj, void *pUserData);	// BodyFX.cpp
@@ -201,8 +202,7 @@ void CClientLightCycleMgr::Term()
 //	ROUTINE:	CClientLightCycleMgr::DerezCyclist
 //
 //	PURPOSE:	Derezzes the crashed cyclist. RETAIL: 0x10010fb0. PORT: left
-//				out are the light cycle roster's update (0x1002ee50, on
-//				g_pLCRoster 0x1026ee18), CTronPlayerMgr's 0x100a8000 and
+//				out are CTronPlayerMgr's 0x100a8000 and
 //				the local vehicle manager's two calls (0x1011ed70,
 //				0x10122140) for the local cycle, the CLightCycleFX's derez
 //				(its slot 1) for the others, and the multiplayer score
@@ -233,6 +233,11 @@ bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 	pCyclist->pCurTrail = LTNULL;
 	pCyclist->fTrailCheckTime = 0.0f;
 	pCyclist->m_vTronUnknownE4.Init(0.0f, 0.0f, 0.0f);
+
+	// RETAIL: the light cycle roster flashes it out (g_pLightCycleRoster,
+	// 0x1026ee18)
+	if (g_pLightCycleRoster)
+		g_pLightCycleRoster->DerezCyclist(pCyclist);
 
 	HOBJECT hObj = pCyclist->hObject;
 
@@ -1049,9 +1054,8 @@ void CClientLightCycleMgr::UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector &
 //
 //	ROUTINE:	CClientLightCycleMgr::RemoveAllCyclists
 //
-//	PURPOSE:	RETAIL: 0x100145f0. PORT: retail also resets the light
-//				cycle roster (0x1002efd0 on g_pLCRoster, 0x1026ee18): not
-//				in our build.
+//	PURPOSE:	RETAIL: 0x100145f0: also resets the light cycle roster
+//				(g_pLightCycleRoster, 0x1026ee18)
 //
 // ----------------------------------------------------------------------- //
 
@@ -1060,6 +1064,9 @@ void CClientLightCycleMgr::RemoveAllCyclists()
 	m_nTrailPolys = 0;
 	m_nStartPolys = 0;
 	m_nTrailBuffer = 0;
+
+	if (g_pLightCycleRoster)
+		g_pLightCycleRoster->Reset();
 
 	CLightCycleMgr::RemoveAllCyclists();
 }
