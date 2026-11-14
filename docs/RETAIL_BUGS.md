@@ -807,6 +807,19 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### An EventCounter's REPORT message is registered as a second RESET
+
+Object.lto 0x10260d30 (EventCounter's command manager table,
+ObjectShared/EventCounter.cpp). Tron added RESET and REPORT messages to the
+event counter (OnTrigger 0x102611e0 handles both), but the table entry for
+REPORT is named "RESET" with the syntax "REPORT" (a copy of the line above):
+the command manager knows RESET twice and REPORT not at all, so a command
+sending REPORT to an event counter fails the command manager's message
+check, and the counter's value is never printed.
+
+Fixed in the modern build: EventCounter.cpp (TRON20SRC_MODERN registers
+REPORT).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

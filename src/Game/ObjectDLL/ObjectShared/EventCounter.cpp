@@ -76,6 +76,14 @@ CMDMGR_BEGIN_REGISTER_CLASS( EventCounter )
 	CMDMGR_ADD_MSG( DECREMENT,	2,	NULL,	"DECREMENT <amount>" )
 	CMDMGR_ADD_MSG( LOCK,		1,	NULL,	"LOCK" )
 	CMDMGR_ADD_MSG( UNLOCK,		1,	NULL,	"UNLOCK" )
+	// RETAIL: Tron's (0x10260d30); the REPORT entry is registered under the
+	// name RESET (see docs/RETAIL_BUGS.md)
+	CMDMGR_ADD_MSG( RESET,		1,	NULL,	"RESET" )
+#ifdef TRON20SRC_MODERN
+	CMDMGR_ADD_MSG( REPORT,		1,	NULL,	"REPORT" )
+#else
+	CMDMGR_ADD_MSG( RESET,		1,	NULL,	"REPORT" )
+#endif
 
 CMDMGR_END_REGISTER_CLASS( EventCounter, BaseClass )
 
