@@ -33,6 +33,8 @@
 #include "ScreenPostload.h"
 #include "timer.h"
 #include "WaveFn.h"
+#include "CMoveMgr.h"
+#include "VehicleMgr.h"
 
 CInterfaceMgr*  g_pInterfaceMgr = LTNULL;
 
@@ -48,12 +50,13 @@ CInterfaceMgr*  g_pInterfaceMgr = LTNULL;
 #define MAX_INTERFACE_LIGHTS	5
 #define INVALID_ANI			((HMODELANIM)-1)
 
+// RETAIL: Tron's intro movies (GetCurrentMovie 0x100cec90; gMovieOrder at
+// 0x102289f4 is 0, 1, 2). The names are ours.
 static enum MovieOrderEnum 
 {
-	eSierra,
-	eFox,
+	eDisney,
 	eMonolith,
-	eLithTech
+	eNVidia
 };
 
 //hack to track whether we are trying to host/join a LAN only or an internet game
@@ -66,7 +69,7 @@ static LTBOOL s_bKeepGameMusic = LTFALSE;
 
 static MovieOrderEnum gMovieOrder[] =
 {
-	eSierra, eFox, eMonolith, eLithTech
+	eDisney, eMonolith, eNVidia
 };
 
 LTFLOAT      g_fSplashSndDuration = 0.0f;
@@ -113,6 +116,7 @@ VarTrack	g_vtMainScreenFadeIn;
 VarTrack	g_vtProgressBarScaleToSkills;
 VarTrack	g_vtExitLevelScreenFadeTime;
 
+extern CMoveMgr* g_pMoveMgr;
 extern VarTrack g_vtFOVXNormal;
 extern VarTrack g_vtFOVYNormal;
 
@@ -367,8 +371,13 @@ void TronIntelRecord::Load(ILTMessage_Read *pMsg)
 CInterfaceMgr::CInterfaceMgr()
 {
 	// RETAIL: layout anchors from retail's constructor (0x100c67b0): fail
-	// to compile when a member's size changes (adjust m_aTronUnknownPad)
+	// to compile when a member's size changes (adjust the pads)
 	typedef char TronCheckInitialized[offsetof(CInterfaceMgr, m_bInitialized) == 0xf980 ? 1 : -1];
+	typedef char TronCheckSettings[offsetof(CInterfaceMgr, m_Settings) == 0xe764 ? 1 : -1];
+	typedef char TronCheckFullScreenTint[offsetof(CInterfaceMgr, m_FullScreenTint) == 0xf40c ? 1 : -1];
+	typedef char TronCheckInterfaceSFX[offsetof(CInterfaceMgr, m_InterfaceSFX) == 0xf530 ? 1 : -1];
+	typedef char TronCheckLoadingScreen[offsetof(CInterfaceMgr, m_pLoadingScreen) == 0xf8e4 ? 1 : -1];
+	typedef char TronCheckLetterBox[offsetof(CInterfaceMgr, m_LetterBox) == 0xf900 ? 1 : -1];
 	typedef char TronCheckSize[sizeof(CInterfaceMgr) == 0x10108 ? 1 : -1];
 	typedef char TronCheckCursorMgr[offsetof(CInterfaceMgr, m_CursorMgr) == 0x40 ? 1 : -1];
 	typedef char TronCheckMessageBox[offsetof(CInterfaceMgr, m_MessageBox) == 0x7c ? 1 : -1];
@@ -426,6 +435,7 @@ CInterfaceMgr::CInterfaceMgr()
 	m_fTotalFadeTime	= 0.0f;
 	m_fCurFadeTime		= 0.0f;
     m_bFadeIn           = LTTRUE;
+	m_bTronUnknownFadeF4A0 = false;
 
 	m_bSavedGameMusic   = LTFALSE;
 
@@ -450,6 +460,7 @@ CInterfaceMgr::CInterfaceMgr()
 	m_SelectFX.ClearLink();
 
 	m_bInitialized = false;
+	m_bTronUnknownF988 = false;
 	m_bHideHUDInPopup = false;
 	m_ePrePopupHUDRenderLevel = kHUDRenderFull;
 
@@ -458,12 +469,11 @@ CInterfaceMgr::CInterfaceMgr()
 	m_bEnteredScreenState = false;
 	m_bIntentionalDisconnect = false;
 
-	m_InterfaceTimer.SetTeamId( INVALID_TEAM );
-	m_BlueInterfaceTimer.SetTeamId( 0 );
-	m_RedInterfaceTimer.SetTeamId( 1 );
-
-	m_bSkipPreLoadScreen = false;
-	m_ePostLoadScreenID	= SCREEN_ID_POSTLOAD;
+	m_fTronUnknownF98C = -1.0f;
+	m_szTronUnknownF994[0] = '\0';
+	m_szTronUnknownFA14[0] = '\0';
+	m_bTronUnknownFA54 = true;
+	m_nTronUnknown100F8 = 0;
 }
 
 
@@ -691,8 +701,8 @@ LTBOOL CInterfaceMgr::Init()
 void CInterfaceMgr::Term()
 {
 	// Turn off the loading screen if it's currently up
-	if (m_LoadingScreen.IsActive())
-		m_LoadingScreen.Hide();
+	if (m_pLoadingScreen && m_pLoadingScreen->IsActive())
+		m_pLoadingScreen->Hide();
 
 	if (m_hGamePausedSurface)
 	{
@@ -773,11 +783,14 @@ void CInterfaceMgr::OnEnterWorld(LTBOOL bRestoringGame)
 
 	GetPlayerStats( )->OnEnterWorld(bRestoringGame);
 
+	// RETAIL: 0x100c8540: Tron adds the HUD's items again, and does not
+	// enable the menus
+	GetHUDMgr()->AddItems();
+
 	// Update every HUD element so they display accurate info
 	GetHUDMgr()->QueueUpdate( kHUDAll );
 
-	GetMenuMgr()->EnableMenus();
-//		GetMenu(MENU_ID_MISSION)->Enable(g_pGameClientShell->GetGameType() != eGameTypeDeathmatch);
+	m_fTronUnknownF98C = -1.0f;
 }
 
 
@@ -804,8 +817,6 @@ void CInterfaceMgr::OnExitWorld()
 	m_Credits.Term();
 	m_PopupText.Close();
 	m_InterfaceTimer.SetTime(0.0f,false);
-	m_BlueInterfaceTimer.SetTime(0.0f,false);
-	m_RedInterfaceTimer.SetTime(0.0f,false);
 	m_FullScreenTint.TurnOn(false);
 	
 	g_pDisplayMeter->SetValue( 0 );
@@ -849,7 +860,7 @@ LTBOOL CInterfaceMgr::PreUpdate()
 		return LTFALSE;
 
 	// Don't clear the screen if the loading screen's up
-	if (m_LoadingScreen.IsVisible())
+	if (m_pLoadingScreen && m_pLoadingScreen->IsVisible())
 		return LTTRUE;
 
 	if (m_bClearScreenAlways)
@@ -1209,17 +1220,20 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 	if (g_pPlayerMgr->IsPlayerInWorld())
 	{
 		// Make sure the loading screen isn't busy
-		m_LoadingScreen.Pause();
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Pause();
 		// Let the game client shell do stuff that's time consuming so we're not stuck on a black screen
 		g_pGameClientShell->PostLevelLoadFirstUpdate();
 		// Turn off the loading screen
-		m_LoadingScreen.Hide();
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Hide();
 
 
-		// RETAIL: 0x100c8d30: no team selection screen here in Tron
-		if (m_LoadingScreen.NeedsPostLoadScreen() && GetConsoleInt("LoadScreenWait",1) )
+		// RETAIL: 0x100c8d30: no team selection screen here in Tron, and no
+		// NeedsPostLoadScreen check
+		if (m_pLoadingScreen && GetConsoleInt("LoadScreenWait",1) )
 		{
-			SwitchToScreen( m_ePostLoadScreenID );
+			SwitchToScreen( SCREEN_ID_POSTLOAD );
 		}
 		else 
 		{
@@ -1232,7 +1246,8 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 	else if ((m_bLoadFailed) || (g_pLTClient->IsConnected() && IsKeyDown(VK_ESCAPE)))
 	{
 		m_bLoadFailed = LTFALSE;
-		m_LoadingScreen.Hide();
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Hide();
 
 		// We joined using the command line, we need to visit the main screen before
 		// any other screen, since we didn't go through the normal screen
@@ -1252,11 +1267,11 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 
         ShowMessageBox( m_nLoadFailedMsgId, &mb );
 	}
-	else if (!m_LoadingScreen.IsActive() && m_LoadingScreen.IsVisible())
+	else if (m_pLoadingScreen && !m_pLoadingScreen->IsActive() && m_pLoadingScreen->IsVisible())
 	{
 		// Update the loading screen if it's not active, but it is visible
 		// so we can see the console on failure conditions.
-		m_LoadingScreen.Update();
+		m_pLoadingScreen->Update();
 	}
 }
 
@@ -1269,7 +1284,9 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 // ----------------------------------------------------------------------- //
 void CInterfaceMgr::HideLoadScreen()
 {
-	m_LoadingScreen.Hide();
+	// RETAIL: 0x100c8eb0
+	if (m_pLoadingScreen)
+		m_pLoadingScreen->Hide();
 }
 
 
@@ -2373,12 +2390,12 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 
 		case LTEVENT_RENDERINIT :
 		{
-			if (m_LoadingScreen.IsVisible())
+			if (m_pLoadingScreen && m_pLoadingScreen->IsVisible())
 			{
 				// Hide it to get rid of any resources that may have been around
-				m_LoadingScreen.Hide();
+				m_pLoadingScreen->Hide();
 				// And then start it up again
-				m_LoadingScreen.Show();
+				m_pLoadingScreen->Show();
 			}
 		}
 		break;
@@ -2389,8 +2406,8 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 		case  LTEVENT_RENDERTERM :
 		{
 			// Stop drawing the loading screen
-			if (m_LoadingScreen.IsVisible())
-				m_LoadingScreen.Pause();
+			if (m_pLoadingScreen && m_pLoadingScreen->IsVisible())
+				m_pLoadingScreen->Pause();
 		}
 		break;
 
@@ -3207,18 +3224,6 @@ LTBOOL CInterfaceMgr::Draw()
 				m_InterfaceTimer.Draw();
 			}
 
-			if( IsTeamGameType( ))
-			{
-				if (m_BlueInterfaceTimer.GetTime() > 0.0f)
-				{
-					m_BlueInterfaceTimer.Draw();
-				}
-
-				if (m_RedInterfaceTimer.GetTime() > 0.0f)
-				{
-					m_RedInterfaceTimer.Draw();
-				}
-			}
 		}
 
 		if( g_pDamageFXMgr->IsDamageActive( DamageTypeToFlag(DT_SLEEPING) ))
@@ -3648,7 +3653,8 @@ LTBOOL CInterfaceMgr::PreLoadingLevelState(GameState eCurState)
 
 	m_bUseInterfaceCamera = LTTRUE;
 
-	m_LoadingScreen.Show();
+	if (m_pLoadingScreen)
+		m_pLoadingScreen->Show();
 		
 	// Turn off the music (this will be turned on when we start the
 	// next level...
@@ -3677,7 +3683,7 @@ LTBOOL CInterfaceMgr::PostLoadingLevelState(GameState eNewState)
     if (eNewState == GS_LOADINGLEVEL) return LTFALSE;
 
 	// Don't allow the loading state to go away until the loading screen has been hidden
-	if (m_LoadingScreen.IsVisible())
+	if (m_pLoadingScreen && m_pLoadingScreen->IsVisible())
 		return LTFALSE;
 
 	RemoveAllInterfaceSFX();
@@ -4874,8 +4880,13 @@ void CInterfaceMgr::BeginZoom(LTBOOL bIn)
 
 void CInterfaceMgr::EndZoom()
 {
+	// RETAIL: 0x100cd4d0: Tron's zoom overlays too
 	RemoveOverlay(OVM_ZOOM_IN);
 	RemoveOverlay(OVM_ZOOM_OUT);
+	RemoveOverlay(OVM_TRON_9);
+	RemoveOverlay(OVM_TRON_10);
+	RemoveOverlay(OVM_TRON_12);
+	RemoveOverlay(OVM_TRON_13);
 }
 
 
@@ -5152,6 +5163,9 @@ LTBOOL CInterfaceMgr::AllowCameraMovement()
 		break;
 
 		case GS_PLAYING:
+			// RETAIL: 0x100cdbf0: the light cycle moves while chatting
+			if (g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics())
+				return LTTRUE;
 			return  !g_pChatInput->IsVisible();
 		break;
 
@@ -5784,20 +5798,16 @@ char* CInterfaceMgr::GetCurrentMovie()
 
 	switch (m_nCurMovie)
 	{
-		case eSierra :
-			pMovie = "Movies\\sierralogo.bik";
-		break;
-
-		case eFox :
-			pMovie = "Movies\\foxlogo.bik";
+		case eDisney :
+			pMovie = "Movies\\DisnLogo.bik";
 		break;
 
 		case eMonolith :
 			pMovie = "Movies\\lithLogo.bik";
 		break;
 
-		case eLithTech :
-			pMovie = "Movies\\ltLogo.bik";
+		case eNVidia :
+			pMovie = "Movies\\nvidia.bik";
 		break;
 
 		default : break;
@@ -5954,14 +5964,17 @@ void CInterfaceMgr::ConnectionFailed(uint32 nConnectionError)
 		}
 	}
 
+	// RETAIL: Tron's string ids (CRes.dll): 1013 "Unable to join. The
+	// server is full.", 1003 "ERROR - Unable to join the selected game
+	// session." (NOLF2's IDS_SERVERFULL, IDS_NETERR_JOINSESSION)
 	MBCreate mb;
 	if (nConnectionError == LT_REJECTED)
 	{
-		ShowMessageBox(IDS_SERVERFULL,&mb);
+		ShowMessageBox(1013,&mb);
 	}
 	else
 	{
-		ShowMessageBox(IDS_NETERR_JOINSESSION,&mb);
+		ShowMessageBox(1003,&mb);
 	}
 
 }
@@ -6061,11 +6074,15 @@ LTVector CInterfaceMgr::GetScreenFromWorldPos(LTVector vPos, HOBJECT hCamera)
 }
 
 
-void CInterfaceMgr::SetMouseFX(char* pFXName)
+// RETAIL: 0x100cf870: a second argument (UpdateInterfaceSFX reads it,
+// 0x100ce6e5), and the old effect is hidden before it is shut down
+void CInterfaceMgr::SetMouseFX(char* pFXName, bool bTronUnknown)
 {
 	SAFE_STRCPY(m_szMouseFXName,pFXName);
+	m_bTronUnknownF988 = bTronUnknown;
 	if (m_MouseFX.IsValid())
 	{
+		m_MouseFX.GetInstance()->Hide();
 		m_InterfaceFXMgr.ShutdownClientFX(&m_MouseFX);
 	}
 }
@@ -6187,8 +6204,7 @@ void CInterfaceMgr::OnObjectRemove(HLOCALOBJ hObj)
 	if (g_pDecision->IsVisible() && g_pDecision->GetObject() == hObj)
 		g_pDecision->OnObjectRemove(hObj);
 
-	if( g_pGameClientShell->ShouldUseRadar())
-		g_pRadar->RemoveObject( hObj );
+	// RETAIL: 0x100cfc60: no radar here in Tron
 }
 
 // ----------------------------------------------------------------------- //
@@ -6225,21 +6241,9 @@ bool CInterfaceMgr::HandleDisplayTimerMsg( ILTMessage_Read& msg )
 {
     float fGameTimeEnd = msg.Readfloat();
 	bool bPaused = !!msg.Readuint8();
-	uint8 nTeamId = msg.Readuint8( );
 
-	// Calculate time to the end.
-	switch( nTeamId )
-	{
-		case 0:
-			m_BlueInterfaceTimer.SetTime( fGameTimeEnd, bPaused );
-			break;
-		case 1:
-			m_RedInterfaceTimer.SetTime( fGameTimeEnd, bPaused );
-			break;
-		default:
-			m_InterfaceTimer.SetTime( fGameTimeEnd, bPaused );
-			break;
-	}
+	// RETAIL: 0x100cfcc0: one timer, no team id in the message
+	m_InterfaceTimer.SetTime( fGameTimeEnd, bPaused );
     return LTTRUE;
 }
 
@@ -6256,12 +6260,13 @@ bool CInterfaceMgr::HandleDisplayTimerMsg( ILTMessage_Read& msg )
 
 void CInterfaceMgr::LoadFailed(eScreenID eScreenToShow /*= SCREEN_ID_NONE*/, uint32 nLoadFailedMsgId /* = -1 */ )  
 {	
-	m_bLoadFailed = LTTRUE;
+	// RETAIL: 0x100cfd00: not the multiplayer screen after a command line join
 	m_nLoadFailedMsgId = nLoadFailedMsgId;
+	m_bLoadFailed = LTTRUE;
 
 	if (eScreenToShow == SCREEN_ID_NONE)
 	{
-		if (IsMultiplayerGame())
+		if (IsMultiplayerGame() && !GetCommandLineJoin( ))
 		{
 			m_eLoadFailedScreen = SCREEN_ID_MULTI;
 		}
@@ -6338,6 +6343,43 @@ void CInterfaceMgr::SetTronUnknownMessage(float fDuration, int nStringId, const 
 	{
 		m_szTronUnknownF994[0] = '\0';
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::IsLoadScreenVisible
+//
+//	PURPOSE:	RETAIL: 0x100d05e0 (true without a loading screen)
+//
+// ----------------------------------------------------------------------- //
+
+bool CInterfaceMgr::IsLoadScreenVisible()
+{
+	if (m_pLoadingScreen)
+		return m_pLoadingScreen->IsVisible() != LTFALSE;
+
+	return true;
+}
+
+// RETAIL: 0x100d0620
+void CInterfaceMgr::PauseLoadScreen()
+{
+	if (m_pLoadingScreen)
+		m_pLoadingScreen->Pause();
+}
+
+// RETAIL: 0x100d0630
+void CInterfaceMgr::ResumeLoadScreen()
+{
+	if (m_pLoadingScreen)
+		m_pLoadingScreen->Resume();
+}
+
+// RETAIL: 0x100d0640
+void CInterfaceMgr::UpdateLoadScreenInfo()
+{
+	if (m_pLoadingScreen)
+		m_pLoadingScreen->UpdateMissionInfo();
 }
 
 // ----------------------------------------------------------------------- //
@@ -6430,7 +6472,6 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 bool CInterfaceMgr::StartingNewGame( )
 {
 	GetClientInfoMgr()->RemoveAllClients();
-	SkipPreLoad( false );
 
 	return true;
 }

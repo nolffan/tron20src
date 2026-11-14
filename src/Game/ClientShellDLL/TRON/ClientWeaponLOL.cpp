@@ -43,7 +43,7 @@ float CClientWeaponLOL::GetEnergyUse()
 	float fEnergy = CTronClientWeapon::GetEnergyUse();
 	float fBase = GetBaseEnergyUse();
 
-	if ( W_BEGIN_FIRING == GetState() )
+	if ( W_FIRING == GetState() )
 	{
 		if ( m_abTronUnknown13C[3][0] )
 		{

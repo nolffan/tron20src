@@ -131,17 +131,18 @@ inline char** GetStringArray( CButeMgr & buteMgr, const char* szTagName, const c
 }
 
 
+// RETAIL: Tron's has no W_BEGIN_FIRING, W_END_FIRING or W_ARM_DEFENSE:
+// W_FIRING is 2, W_FIRED 3, W_SWAT_DEFENSE 4, W_HOLD_DEFENSE 5, W_RELOADING 6,
+// W_DESELECT 9, W_AUTO_SWITCH 10 (CClientWeaponDisc 0x10018df0,
+// CClientWeapon::Update 0x10130680, CClientWeaponMgr::Update 0x101684c0)
 enum WeaponState
 {
 	W_INACTIVE,
 	W_IDLE,
-	W_BEGIN_FIRING,
 	W_FIRING,
 	W_FIRED,
-	W_END_FIRING,
 	W_SWAT_DEFENSE,
 	W_HOLD_DEFENSE,
-	W_ARM_DEFENSE,
 	W_RELOADING,
 	W_FIRING_NOAMMO,
 	W_SELECT,
@@ -315,6 +316,10 @@ private:
 
 typedef CTList<WEAPONANIS*> WeaponAnisList;
 
+// RETAIL: Tron's AMMO is 0xa0 bytes in both DLLs (CShell's ctor 0x10139c10,
+// InitMembers 0x10139dc0): one name, no long/short names, no ricochet FX and
+// no server restriction; the damages are floats, read with GetDouble, and
+// the damage types are read as numbers.
 struct AMMO
 {
 	AMMO();
@@ -333,27 +338,33 @@ struct AMMO
 
 	int             nId;
 
-//	int             nNameId;
+	int             nNameId;
 	int             nDescId;
 	AmmoType        eType;
 
 	LTFLOAT         fPriority;
 
-	char*			szName;
+	// RETAIL: Tron's energy a shot needs ("EnergyRequiredMin", "...Max",
+	// "...Surge"), by the accuracy rating
+	LTFLOAT         fEnergyRequiredMin;
+	LTFLOAT         fEnergyRequiredMax;
+	LTFLOAT         fEnergyRequiredSurge;
 
-	char*			szLongName;
-	char*			szShortName;
+	char*			szName;
 
 	int             GetMaxAmount(HOBJECT hCharacter) const;
 	int             nSpawnedAmount;
 	int             nSelectionAmount;
 
-	int             nInstDamage;
+	LTFLOAT         fInstDamage;
 	DamageType      eInstDamageType;
 
-	int             nAreaDamage;
-	int             nAreaDamageRadius;
+	LTFLOAT         fAreaDamage;
+	LTFLOAT         fAreaDamageRadius;
 	DamageType      eAreaDamageType;
+	// RETAIL: Tron's ("AreaDamageIgnoreOwner", "AreaDamageAlways")
+	bool            bAreaDamageIgnoreOwner;
+	bool            bAreaDamageAlways;
 
 	float           fFireRecoilMult;
 
@@ -371,36 +382,28 @@ struct AMMO
 	PROJECTILEFX   *pProjectileFX;			// Points at CFXButeMgr::m_ProjectileFXList element
 	IMPACTFX       *pImpactFX;				// Points at CFXButeMgr::m_ImpactFXList element
 	IMPACTFX       *pUWImpactFX;			// Points at CFXButeMgr::m_ImpactFXList element
-	IMPACTFX       *pRicochetFX;			// Points at CFXButeMgr::m_ImpactFXList element
 	IMPACTFX       *pBlockedFX;				// Points at CFXButeMgr::m_ImpactFXList element
+	IMPACTFX       *pDeadlyBlockedFX;		// RETAIL: Tron's ("DeadlyBlockedFXName")
 	IMPACTFX       *pMoveableImpactOverrideFX; // Points at CFXButeMgr::m_MoveableImpactOverrideFXName element
 	FIREFX         *pFireFX;				// Points at CFXButeMgr::m_FireFXList element
 	WEAPONANIS     *pAniOverrides;			// Points at m_pWeaponAnisList element
 	TRACERFX       *pTracerFX;				// Points at CFXButeMgr::m_TracerFXList element
 
-	// Indicates server option has set restriction.
-	bool	bServerRestricted;
-	bool	bCanServerRestrict;
-
-public:	// PORT: Tron's code reads the name's string id (same place)
-	int             nNameId;
 private:
 	int             nMaxAmount;
 	char           *szIcon;
 
 	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
-
-public:
-	// RETAIL: Tron's energy a shot needs (retail AMMO +0x18, +0x1c, +0x20:
-	// "EnergyRequiredMin", "...Max", "...Surge"), by the accuracy rating
-	LTFLOAT         fEnergyRequiredMin;
-	LTFLOAT         fEnergyRequiredMax;
-	LTFLOAT         fEnergyRequiredSurge;
 };
 
 typedef CTList<AMMO*> AmmoList;
 
 
+// RETAIL: Tron's WEAPON is 0x18c bytes in both DLLs (CShell's ctor
+// 0x101384a0, InitMembers 0x10138880): one name, no weapon sound radius,
+// animation rate scales, powerup/respawn-wait FX or server restriction; it
+// adds HideWeaponWhileClipEmpty, DefenseClassData, WeaponUsableByAIs,
+// Translucent and IsPlayerPrimitive, and keeps its fire delay in seconds.
 struct WEAPON
 {
 	WEAPON();
@@ -418,18 +421,15 @@ struct WEAPON
 	void	Save(CButeMgr & buteMgr) const;
 
 	LTBOOL  bInited;
-
 	int		nId;
 
+	int		nNameId;
 	int		nDescriptionId;
 	int		nClientWeaponType;
 	int		nIsAmmoNoPickupId;
 	int		nAniType;
 
 	char*	szName;
-
-	char*	szLongName;
-	char*	szShortName;
 
 	LTVector vPos;
   	LTVector vMuzzlePos;
@@ -440,6 +440,7 @@ struct WEAPON
 
 	CButeListReader blrPVSkins;
 	CButeListReader blrHHSkins;
+
 	CButeListReader blrPVRenderStyles;
 	CButeListReader blrHHRenderStyles;
 
@@ -460,21 +461,22 @@ struct WEAPON
 
 	int		nFireSoundRadius;
 	int		nAIFireSoundRadius;
-	int		nWeaponSoundRadius;		// All non-fire sounds (Reload, Select, Deselect... etc.)
-
 	LTBOOL  bEnvironmentMap;
 	LTBOOL  bInfiniteAmmo;
 	LTBOOL  bLooksDangerous;
 	LTBOOL	bHideWhenEmpty;
 	LTBOOL	bIsAmmo;
 	LTBOOL	bUseUWMuzzleFX;
-
 	int		nShotsPerClip;
+	LTBOOL	bHideWeaponWhileClipEmpty;	// RETAIL: Tron's ("HideWeaponWhileClipEmpty")
 
 	int		nNumAmmoIds;
 	int		*aAmmoIds;
-
 	int		nDefaultAmmoId;
+
+	// RETAIL: Tron's: the id of the MOD named by "DefenseClassData" (the
+	// name is ours)
+	int		nDefenseClassModId;
 
 	int		nNumModIds;
 	int		*aModIds;
@@ -484,7 +486,6 @@ struct WEAPON
 
 	int		nMinPerturb;
 	int		nMaxPerturb;
-
 	int		nRange;
 	LTVector vRecoil;
 	int		nVectorsPerRound;
@@ -500,44 +501,28 @@ struct WEAPON
 	float	fFireRecoilDecay;
 
 	CMuzzleFX	*pPVMuzzleFX;	// Player-view muzzle fx
-
 	char	*szPVMuzzleFxName;
 	char	*szHHMuzzleFxName;
 
 	int		nNumPVAttachClientFX;		// FXEd player view attachments
 	char	*szPVAttachClientFX[ WMGR_MAX_PVCLIENTFX_ATTACHMENTS ];
 
-	uint32	m_nFireDelay;		// Minimum time (ms) between firing
+	// RETAIL: Tron's is in seconds ("FireDelay" is read in ms and scaled)
+	float	m_fFireDelay;		// Minimum time between firing
 
 	char	*szHolsterAttachment;
-	
-	float	fFireAnimRateScale;
-	float	fReloadAnimRateScale;
 
-	char	*szPowerupFX;
-	char	*szRespawnWaitFX;
-
-	CButeListReader	blrRespawnWaitSkins;
-	CButeListReader	blrRespawnWaitRenderStyles;
-
-	bool	bRespawnWaitVisible;
-	bool	bRespawnWaitTranslucent;
-
-	// Indicates server option has set restriction.
-	bool	bServerRestricted;
-	bool	bCanServerRestrict;
-
-public:	// PORT: Tron's code reads the name's string id (same place)
-
-	int		nNameId;
-private:
-	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
-	char	*szIcon; 
-
-public:
-	// RETAIL: Tron's "IsPlayerPrimitive" (retail WEAPON +0x184, a byte; the
-	// Primitive Charge subroutine adds to such a weapon's energy use)
+	// RETAIL: Tron's "IsPlayerPrimitive" (a byte; the Primitive Charge
+	// subroutine adds to such a weapon's energy use)
 	uint8	bIsPlayerPrimitive;
+	bool	bWeaponUsableByAIs;		// RETAIL: Tron's ("WeaponUsableByAIs")
+	bool	bTranslucent;			// RETAIL: Tron's ("Translucent")
+
+private:
+
+	void	InitMembers( CButeMgr &ButeMgr, char *aTagName );
+
+	char	*szIcon; 
 };
 
 typedef CTList<WEAPON*> WeaponList;
@@ -652,8 +637,6 @@ class CWeaponMgr : public CGameButeMgr
 		// Checks if weaponida is better than weaponidb.
 		bool		IsBetterWeapon( uint8 nWeaponIdA, uint8 nWeaponIdB ) const;
 
-		const char* GetMPDefaultWeapons() const;
-
 	protected :
 
 		WEAPON**			m_pWeaponList;		// All weapon data
@@ -667,6 +650,12 @@ class CWeaponMgr : public CGameButeMgr
 
 		GEAR**				m_pGearList;		// All gear data
 		int32				m_nNumGear;
+
+		// RETAIL: Tron's: a list and its count between the gear and the weapon
+		// anis (+0x113c, +0x1140; ctor 0x10135e60, lookup by name
+		// 0x101383c0). Not yet identified
+		void**				m_pTronUnknown113C;
+		int32				m_nTronUnknown1140;
 	
 		WEAPONANIS**		m_pWeaponAnisList;	// Weapon Ani overrides
 		int32				m_nNumWeaponAnis;
@@ -685,7 +674,8 @@ class CWeaponMgr : public CGameButeMgr
 
 		uint32				m_nFileCRC;
 
-		std::string		m_sMPDefaults;
+		// RETAIL: Tron's has no multiplayer default weapons string (its ctor,
+		// 0x10135e60, ends at +0x1168)
 };
 
 

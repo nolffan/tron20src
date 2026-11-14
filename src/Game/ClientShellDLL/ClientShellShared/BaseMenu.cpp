@@ -211,12 +211,6 @@ LTBOOL CBaseMenu::Init()
 	m_List.UseArrows(nOffset ,1.0f,s_Up,s_UpH,s_Down,s_DownH);
 	CLTGUIWindow::AddControl(&m_List,pos);
 
-	m_Resume.Create(LoadTempString(IDS_RESUME),MC_CLOSE,NULL,pFont,m_TitleFontSize,this);
-
-	pos.x = s_Size.x - m_Indent.x - m_Resume.GetWidth();
-	pos.y = 12;
-	CLTGUIWindow::AddControl(&m_Resume,pos);
-
 	pos.x = s_Pos;
 	pos.y = 0;
 	SetBasePos(pos);
@@ -233,9 +227,6 @@ void CBaseMenu::Term()
 
 	CLTGUIWindow::RemoveControl(&m_List,LTFALSE);
 	m_List.Destroy();
-
-	CLTGUIWindow::RemoveControl(&m_Resume,LTFALSE);
-	m_Resume.Destroy();
 
 	Destroy();
 }

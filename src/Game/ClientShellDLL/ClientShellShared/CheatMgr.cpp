@@ -37,81 +37,65 @@ void CheatFn(int argc, char **argv)
 }
 
 
+// RETAIL: Tron's table (0x1022b870), in CheatCode's order
 CCheatMgr::CheatInfo CCheatMgr::s_CheatInfo[] = {
-
-#ifdef _FINAL  // Retail cheat names (what the world sees)
-
-    { "FMC",			LTFALSE },	// god				- can't die
-    { "@KJK",			LTFALSE },	// ammo				- full ammo
-    { "@RJK_",			LTFALSE },	// armor			- full armor
-    { "ICNJQT",			LTFALSE },	// health			- full health
-    { "QMKR@^@MPY[",	LTFALSE },	// poltergeist		- AI won't see you (can still hear you)
-    { "QMP",			LTFALSE },	// pos				- give world position
-    { "JFN",			LTFALSE },	// kfa				- god, all weapons
-    { "FSM_",			LTFALSE },	// guns				- all weapons
-    { "UCNP^",			LTFALSE },  // tears			- All weapons, infinite ammo
-    { "SMPAO_O",		LTFALSE },  // rosebud			- Spawn in a snowmobile
-    { "LMC_",			LTFALSE },  // mods				- get all of the mods for currently held weapons
-    { "FCNP",			LTFALSE },  // gear				- All gear
-    { "LO_VJHN",		LTFALSE },  // maphole			- exit the current level
-    { "OCgRHS\\[PUU",	LTFALSE },  // nextmission		- exit the current mission
-    { "CMLR",			LTFALSE },  // boot				- boot a player
-    { "CSVJA",			LTFALSE },	// build			- build info
-    { "RC@P@P\\Y\\_YXHP",	LTFALSE },	// secretsquirrel	- build guid
-	{ "FWJI@A^H",		LTFALSE },	// gimmegun <gun>	- give specific weapon
-	{ "DUHWNUVL",		LTFALSE },	// gimmemod <mod>	- give specific mod
-	{ "FWJI@WHN",		LTFALSE },	// gimmegear <gear> - give specific gear
-	{ "FWJI@KVUV",		LTFALSE },	// gimmeammo <ammo> - give specific ammo
-    { "NBSQ^O",			LTFALSE },  // obtuse			- enables the console in release builds (not supported currently)
-    { "RIVJIf",			LTFALSE },  // skillz			- give skill points
-    { "DNCCLWN",		LTFALSE },  // endgame			- unlock the chapter list as if you had completed the game
-    { "COCBLNHWT",		LTFALSE },  // baddaboom		- bodies fly far with explosion damage
-    { "CSCKKUJNVVP",	LTFALSE },  // budonkadonk		- toggle chase view
-
-#else  // Development cheat names (what we're used to)...
-
-    { "LPDKA",				LTFALSE },	// mpgod
-    { "LPNIHI",				LTFALSE },	// mpammo
-    { "LPNPHI]",			LTFALSE },	// mparmor
-    { "LPWALH_R",			LTFALSE },	// mphealth
-    { "LP_KIPN\\NK^gY",		LTFALSE },	// mppoltergeist
-    { "LP_K^",				LTFALSE },	// mppos
-    { "LPHDL",				LTFALSE },	// mpkfa
-    { "LPDQK]",				LTFALSE },	// mpguns			- all weapons
-    { "LPSAL^\\",			LTFALSE },  // mptears			- All weapons, infinite ammo
-    { "LPQK^OM]M",			LTFALSE },  // mprosebud		- Spawn in a snowmobile
-    { "LPJKA]",				LTFALSE },  // mpmods			- get all of the mods for currently held weapons
-    { "LPDAL^",				LTFALSE },  // mpgear			- All gear
-    { "LPJM]THVL",			LTFALSE },  // mpmaphole		- exit the current level
-    { "LPMAePVQZY^SS",		LTFALSE },  // mpnextmission	- exit the current mission
-    { "LPAKJP",				LTFALSE },  // mpboot			- boot a player
-    { "LPAQTHO",			LTFALSE },	// mpbuild			- build info
-    { "LPPAN^N^ZgZ]gfV^",	LTFALSE },	// mpsecretsquirrel	- build guid
-	{ "LPDUHWNO\\V",		LTFALSE },	// mpgimmegun <gun> - give specific weapon
-	{ "LPDUHWNUVL",			LTFALSE },	// mpgimmemod <mod> - give specific mod
-	{ "LPDUHWNOLWY",		LTFALSE },	// mpgimmegear <gear> - give specific gear
-	{ "LPDUHWNITST",		LTFALSE },	// mpgimmeammo <ammo> - give specific ammo
-    { "LPL@Q_\\M",			LTFALSE },  // mpobtuse			- enables the console in release builds
-    { "LPPWTHWd",			LTFALSE },  // mpskillz			- give skill points
-    { "LPBLAAJUL",			LTFALSE },  // mpendgame		- unlock the chapter list as if you had completed the game
-    { "LPAMA@JLVUR",		LTFALSE },  // mpbaddaboom		- bodies fly far with explosion damage
-    { "LPN_^MJU",			LTFALSE },  // mpasscam			- toggle chase view
-
-#endif // _FINAL
-
-// Development only cheats...
-    { "LP@JT\\",			LTFALSE },	// mpclip			- spectator mode
-    { "LPSAIO[W[\\",		LTFALSE },	// mpteleport		- teleport to level start
-    { "LPT^J]",				LTFALSE },  // mpwpos			- toggle position weapon adjustment
-    { "LPTI]I\\",			LTFALSE },  // mpwmpos			- toggle position weapon muzzle adjustment 
-    { "LPAP@KLRVNMgHX",		LTFALSE },  // mpbreachoffset	- adjust player-view breach offset
-    { "LPKUBT_[JWSI",		LTFALSE },  // mplightscale		- toggle light scale adjustment
-    { "LPKUBT_IML",			LTFALSE },  // mplightadd		- toggle light add adjustment
-    { "LPEKS",				LTFALSE },  // mpfov			- toggle fov adjustment
-    { "LPAKdS\\]JQ",		LTFALSE },  // mpboyisuck		- Remove all AI in the level
-    { "LPSPTA@M[Y",			LTFALSE },  // mptriggers		- Toggle trigger boxes on/off
-	{ "LP@MHO]I",			LTFALSE },  // mpcamera			- Toggle 1st person camera adjust on/off
-    { "LP@MH\\H[",			LTFALSE },  // mpcampos			- toggle camera pos/rot
+	{ "LPDKA",					LTFALSE },	// mpgod
+	{ "LPNIHI",					LTFALSE },	// mpammo
+	{ "LPNPHI]",					LTFALSE },	// mparmor
+	{ "LPWALH_R",					LTFALSE },	// mphealth
+	{ "LP@JT\\",					LTFALSE },	// mpclip
+	{ "LP_KIPN\\NK^gY",			LTFALSE },	// mppoltergeist
+	{ "LPSAIO[W[\\",				LTFALSE },	// mpteleport
+	{ "LP_K^",					LTFALSE },	// mppos
+	{ "LPHDL",					LTFALSE },	// mpkfa
+	{ "LPDQK]",					LTFALSE },	// mpguns
+	{ "LPT^J]",					LTFALSE },	// mpwpos
+	{ "LPTI]I\\",					LTFALSE },	// mpwmpos
+	{ "LP@MHO]I",					LTFALSE },	// mpcamera
+	{ "LPKUBT_[JWSI",				LTFALSE },	// mplightscale
+	{ "LPKUBT_IML",				LTFALSE },	// mplightadd
+	{ "LPEKS",					LTFALSE },	// mpfov
+	{ "LP_KIc",					LTFALSE },	// mppoly
+	{ "LPSAL^\\",					LTFALSE },	// mptears
+	{ "LPAKdS\\]JQ",				LTFALSE },	// mpboyisuck
+	{ "LP@MH",					LTFALSE },	// mpcam
+	{ "LPQK^OM]M",				LTFALSE },	// mprosebud
+	{ "LPJKA]",					LTFALSE },	// mpmods
+	{ "LPDAL^",					LTFALSE },	// mpgear
+	{ "LPN_^MJU",					LTFALSE },	// mpasscam
+	{ "LP@MH\\H[",					LTFALSE },	// mpcampos
+	{ "LPJM]THVL",				LTFALSE },	// mpmaphole
+	{ "LPMAePVQZY^SS",			LTFALSE },	// mpnextmission
+	{ "LPAKJP",					LTFALSE },	// mpboot
+	{ "LPAQTHO",					LTFALSE },	// mpbuild
+	{ "LPBfJ^MQ]WUZT_Pe_d`",		LTFALSE },	// mpexorbitantamounts
+	{ "LPDUHWNO\\V",				LTFALSE },	// mpgimmegun
+	{ "LPDUHWNUVL",				LTFALSE },	// mpgimmemod
+	{ "LPDUHWNOLWY",				LTFALSE },	// mpgimmegear
+	{ "LPDUHWNITST",				LTFALSE },	// mpgimmeammo
+	{ "LPDUHWNZ[_R",				LTFALSE },	// mpgimmeprim
+	{ "LPL@Q_\\M",					LTFALSE },	// mpobtuse
+	{ "LPPWTHWd",					LTFALSE },	// mpskillz
+	{ "LPAP@KLRVNMgHX",			LTFALSE },	// mpbreachoffset
+	{ "LPBL@^@a",					LTFALSE },	// mpenergy
+	{ "LP__@P",					LTFALSE },	// mppset
+	{ "LP@J@K]ZZK[",				LTFALSE },	// mpclearpset
+	{ "LP_PJMNN\\ZVRf",			LTFALSE },	// mpprocedurals
+	{ "LPPQOKWZQW",				LTFALSE },	// mpsubalpha
+	{ "LPPQONN^H",				LTFALSE },	// mpsubbeta
+	{ "LPPQOAHVM",				LTFALSE },	// mpsubgold
+	{ "LP@J@K]ULSTXl",			LTFALSE },	// mpclearmemory
+	{ "LP@K_^^Z]_TT",				LTFALSE },	// mpcorruption
+	{ "LPJMe\\N\\OUYQTRTU",			LTFALSE },	// mpmaxperformance
+	{ "LP@J@K]ZLZMSg_RPRS",		LTFALSE },	// mpclearperformance
+	{ "LPVB@KW_LWgSSe",			LTFALSE },	// mpidealweapons
+	{ "LPVB@KW[\\JYSXXZPTa",		LTFALSE },	// mpidealsubroutines
+	{ "LPVB@KWZ[UHIIgeQ]a",		LTFALSE },	// mpidealprocedurals
+	{ "LPVB@KWZV_UZf",			LTFALSE },	// mpidealpoints
+	{ "LPVB@KW",					LTFALSE },	// mpideal
+	{ "LPRLIILSNZ^Jf",			LTFALSE },	// mpunlockgrids
+	{ "LPRLIILSJoHRHe",			LTFALSE },	// mpunlockcycles
+	{ "LPRLIILSYU\\Iggcc",			LTFALSE },	// mpunlockpowerups
 };
 
 

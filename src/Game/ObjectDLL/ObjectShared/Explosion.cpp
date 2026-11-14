@@ -109,8 +109,8 @@ void Explosion::Setup(HOBJECT hFiredFrom, uint8 nAmmoId)
 
     m_bRemoveWhenDone = LTTRUE;
 
-    m_fDamageRadius = (LTFLOAT) pAmmo->nAreaDamageRadius;
-    m_fMaxDamage    = (LTFLOAT) pAmmo->nAreaDamage;
+    m_fDamageRadius = (LTFLOAT) pAmmo->fAreaDamageRadius;
+    m_fMaxDamage    = (LTFLOAT) pAmmo->fAreaDamage;
 	m_eDamageType	= pAmmo->eAreaDamageType;
 
     m_fProgDamageRadius     = (LTFLOAT) pAmmo->fProgDamageRadius;

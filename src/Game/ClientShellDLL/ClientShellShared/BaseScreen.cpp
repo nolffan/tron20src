@@ -353,15 +353,16 @@ void CBaseScreen::Escape()
 	if (!m_pScreenMgr->PreviousScreen())
 	{
         HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
-		if (g_pPlayerMgr->IsPlayerInWorld() &&
-			(!g_pPlayerMgr->IsPlayerDead() || IsMultiplayerGame( )) )
+		// RETAIL: 0x100d27e0: back to the game when a world is loaded and
+		// there is a client object
+		if (g_pGameClientShell->IsWorldLoaded() && hPlayerObj)
 		{
 			g_pInterfaceMgr->ChangeState(GS_PLAYING);
 		}
 	}
 	else
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+		PlayInterfaceSound(IS_PAGE);
 	}
 }
 
@@ -574,7 +575,7 @@ LTBOOL CBaseScreen::HandleKeyDown(int key, int rep)
 				{
 					handled = pCtrl->HandleKeyDown(key,rep);
 					if (handled && (key == VK_NEXT || key == VK_PRIOR))
-						g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+						PlayInterfaceSound(IS_CHANGE);
 				}
 				else
 					handled = LTFALSE;
@@ -598,7 +599,7 @@ LTBOOL CBaseScreen::OnUp()
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnUp())
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 		UpdateHelpText();
 		return LTTRUE;
 	}
@@ -614,7 +615,7 @@ LTBOOL CBaseScreen::OnDown()
 	CLTGUICtrl* pCtrl = GetSelectedControl();
 	if (pCtrl && pCtrl->OnDown())
 	{
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 		UpdateHelpText();
 		return LTTRUE;
 	}
@@ -632,7 +633,7 @@ LTBOOL CBaseScreen::OnLeft()
 	if (pCtrl)
 		handled = pCtrl->OnLeft();
 	if (handled)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		PlayInterfaceSound(IS_SELECT);
 	return handled;
 }
 
@@ -646,7 +647,7 @@ LTBOOL CBaseScreen::OnRight()
 	if (pCtrl)
 		handled = pCtrl->OnRight();
 	if (handled)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		PlayInterfaceSound(IS_SELECT);
 	return handled;
 }
 
@@ -663,9 +664,9 @@ LTBOOL CBaseScreen::OnEnter()
 		if (handled)
 		{
 			if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-				g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+				PlayInterfaceSound(IS_PAGE);
 			else
-				g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+				PlayInterfaceSound(IS_SELECT);
 		}
 	}
 	return handled;
@@ -776,9 +777,9 @@ LTBOOL CBaseScreen::OnLButtonUp(int x, int y)
 				if (bHandled)
 				{
 					if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-						g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+						PlayInterfaceSound(IS_PAGE);
 					else
-						g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+						PlayInterfaceSound(IS_SELECT);
 				}
 				return bHandled;
 
@@ -838,9 +839,9 @@ LTBOOL CBaseScreen::OnRButtonUp(int x, int y)
 				SetSelection(nControlIndex);
 				LTBOOL bHandled = pCtrl->OnRButtonUp(x,y);
 				if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
-					g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
+					PlayInterfaceSound(IS_PAGE);
 				else
-					g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+					PlayInterfaceSound(IS_SELECT);
 				return bHandled;
 			}
 		}
@@ -859,8 +860,14 @@ LTBOOL CBaseScreen::OnLButtonDblClick(int x, int y)
 	if (m_pCaptureCtrl && pCtrl != m_pCaptureCtrl)
         return LTFALSE;
 
+	// RETAIL: 0x100d3300: a sound when the control handles it
 	if (pCtrl)
-		return pCtrl->OnLButtonDblClick(x, y);
+	{
+		LTBOOL bHandled = pCtrl->OnLButtonDblClick(x, y);
+		if (bHandled)
+			PlayInterfaceSound(IS_SELECT);
+		return bHandled;
+	}
 	else
         return LTFALSE;
 }
@@ -898,7 +905,7 @@ LTBOOL CBaseScreen::OnMouseMove(int x, int y)
 
 		if (pCtrl->OnMouseMove(x,y))
 		{
-			g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+			PlayInterfaceSound(IS_CHANGE);
 			UpdateHelpText();
 		}
 	}
@@ -1002,7 +1009,7 @@ uint16 CBaseScreen::SetSelection(uint16 select, LTBOOL bFindSelectable)
 	pSelCtrl->Select(LTTRUE);
 
 	if (m_nSelection != nOldSelect)
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
+		PlayInterfaceSound(IS_CHANGE);
 
 
 
@@ -2084,11 +2091,14 @@ void CBaseScreen::UpdateHelpText()
 			{
 				s_pHelpStr->SetText(szHelpText);
 				uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
-				float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
-				float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
 				uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-				s_pHelpStr->SetPosition(helpX,helpY);
+				// RETAIL: 0x100d60b0: the integer position, the font for the
+				// scaled height
+				s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
+					(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+				CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+				s_pHelpStr->SetFont(pHelpFont);
 				s_pHelpStr->SetCharScreenHeight(nSize);
 				s_pHelpStr->SetWrapWidth(nWidth);
 			}
@@ -2110,20 +2120,24 @@ void CBaseScreen::ScreenDimsChanged()
 	if (m_pTitleString)
 	{
 		LTIntPt pos = m_TitlePos;
-		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString->SetPosition((float)pos.x,(float)pos.y);
-		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		g_pInterfaceResMgr->ConvertScreenPos(pos.x,pos.y);
+		m_pTitleString->SetPosition(pos.x,pos.y);
+		// RETAIL: 0x100d6230: integer positions, the fonts for the scaled heights
+		uint8 nFontSize = (uint8)(g_pInterfaceResMgr->GetXRatio() * m_TitleSize);
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
+		m_pTitleString->SetFont(pFont);
 		m_pTitleString->SetCharScreenHeight(nFontSize);
 	}
 
 	if (s_pHelpStr)
 	{
 		uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
-		float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
-		float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-		s_pHelpStr->SetPosition(helpX,helpY);
+		s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
+			(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+		CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+		s_pHelpStr->SetFont(pHelpFont);
 		s_pHelpStr->SetCharScreenHeight(nSize);
 		s_pHelpStr->SetWrapWidth(nWidth);
 	}
@@ -2152,8 +2166,8 @@ void CBaseScreen::SetTitlePos(LTIntPt pt)
 	if (m_pTitleString)
 	{
 		LTIntPt pos = m_TitlePos;
-		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString->SetPosition((float)pos.x,(float)pos.y);
+		g_pInterfaceResMgr->ConvertScreenPos(pos.x,pos.y);	// RETAIL: 0x100d63c0: the integer position
+		m_pTitleString->SetPosition(pos.x,pos.y);
 	}
 }
 
@@ -2173,8 +2187,10 @@ void CBaseScreen::SetTitleSize(uint8 nFontSize)
 	m_TitleSize = nFontSize;
 	if (m_pTitleString)
 	{
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFont);
-		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		// RETAIL: 0x100d6440: the font for the scaled height
+		uint8 nFontSize = (uint8)(g_pInterfaceResMgr->GetXRatio() * m_TitleSize);
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
+		m_pTitleString->SetFont(pFont);
 		m_pTitleString->SetCharScreenHeight(nFontSize);
 	}
 }
@@ -2292,7 +2308,8 @@ void HandleEditKey(int key)
 }
 
 
-// RETAIL: Tron's (0x100d6750); the name is ours
+// RETAIL: Tron's (0x100d6750); the name is ours. All of CBaseScreen's
+// interface sounds go through it (its callers 0x100d2822..0x100d3657)
 void CBaseScreen::PlayInterfaceSound(int nSound)
 {
 	if (m_dwInterfaceSoundMask & (1 << nSound))

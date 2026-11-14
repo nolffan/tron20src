@@ -32,7 +32,7 @@ float CClientWeaponSequencerDisc::GetEnergyUse()
 	float fEnergy = CTronClientWeapon::GetEnergyUse();
 	float fBase = GetBaseEnergyUse();
 
-	if ( W_BEGIN_FIRING == GetState() )
+	if ( W_FIRING == GetState() )
 	{
 		if ( m_abTronUnknown13C[0][0] )
 		{
@@ -56,10 +56,10 @@ bool CClientWeaponSequencerDisc::TronUnknownVirtual18C()
 		return false;
 	}
 
-	if ( W_FIRING_NOAMMO == GetState() ||
+	if ( W_AUTO_SWITCH == GetState() ||
+	     W_DESELECT == GetState() ||
 	     W_RELOADING == GetState() ||
 	     W_SWAT_DEFENSE == GetState() ||
-	     W_FIRED == GetState() ||
 	     TronUnknownVirtual1A0() )
 	{
 		return false;

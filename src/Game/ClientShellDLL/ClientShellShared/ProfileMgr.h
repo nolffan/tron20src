@@ -252,12 +252,16 @@ public:
 	StringArray		m_CompletedCircuits;
 	StringArray		m_UnlockedCycleColors;
 	StringArray		m_UnlockedPowerups;
+	// RETAIL: +0x238, the names of the circuits' maps unlocked (the light
+	// cycle custom map screen's filter, 0x1006b5b2; the name is ours; taken
+	// from the space below, not yet loaded or saved)
+	StringArray		m_UnlockedMaps;
 
 	// PORT: what retail keeps where NOLF2 had its server game options is
 	// not yet laid out (the constructor, 0x100ec8a0, has two more strings,
 	// two vectors and six ints); this keeps the size retail's
 	char			m_aTronPadServerOptions[sizeof(ServerGameOptions) - sizeof(std::string) - sizeof(int)
-						- 2 - sizeof(std::string) - 2 * sizeof(int) - 3 * sizeof(StringArray)];
+						- 2 - sizeof(std::string) - 2 * sizeof(int) - 4 * sizeof(StringArray)];
 
 	//****************** game options
     uint8	            m_nSubtitles;

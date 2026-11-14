@@ -19,7 +19,10 @@ class CMissionMgr
 	public:
 
 		CMissionMgr();
-		~CMissionMgr();
+		// RETAIL: CMissionMgr has a vtable (0x101ea2b4: the destructor and
+		// two message handlers, CTronMissionMgr's vtable 0x101e8e70
+		// overrides them), so its members sit 4 bytes later
+		virtual ~CMissionMgr();
 
 		// Initialize the object.
 		bool			Init( );
@@ -57,7 +60,8 @@ class CMissionMgr
 		bool			IsCustomLevel()   const {return m_bCustomLevel;}
 		int				GetCurrentMission() const {return m_nCurrentMission;}
 		int				GetCurrentLevel()	const {return m_nCurrentLevel;}
-		char const*		GetCurrentWorldName() const	{ return m_sCurrentWorldName; }
+		// RETAIL: out of line (0x100ec4e0)
+		char const*		GetCurrentWorldName() const;
 		bool			IsNewMission( ) const { return m_bNewMission; }
 		bool			IsRestoringLevel( ) const { return m_bRestoringLevel; }
 
@@ -101,6 +105,16 @@ class CMissionMgr
 			eStartGameStarted,
 
 		};
+
+	protected:
+
+		// RETAIL: slots 1 and 2: OnMessage (0x100ebe10) hands them Tron's
+		// messages 194 and 195; ours return false as retail's do
+		// (0x100a93c0). CTronMissionMgr's are 0x100a32e0 (the light cycle
+		// match's end) and 0x100a4080 (a circuit's level by index). The
+		// names are ours.
+		virtual bool	TronUnknownVirtual4( ILTMessage_Read& msg ) { return false; }
+		virtual bool	TronUnknownVirtual8( ILTMessage_Read& msg ) { return false; }
 
 	private:
 

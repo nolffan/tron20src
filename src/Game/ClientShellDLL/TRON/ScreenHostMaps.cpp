@@ -31,9 +31,9 @@ namespace
 	// RETAIL: the most maps a game takes (NOLF2's MAX_GAME_LEVELS)
 	const uint16 kMaxMaps = 50;
 
-	// RETAIL: Tron's command IDs: the selected map down, up the list
-	const uint32 kCmdHostMapDown	= 0x43D;
-	const uint32 kCmdHostMapUp		= 0x43E;
+	// RETAIL: Tron's command IDs: the selected map up, down the list
+	const uint32 kCmdHostMapUp		= 0x43D;
+	const uint32 kCmdHostMapDown	= 0x43E;
 
 	// RETAIL: 0x10060e40: the name after the path's last backslash (the
 	// function name is ours)
@@ -62,8 +62,8 @@ CScreenHostMaps::CScreenHostMaps()
 	m_pRemove = LTNULL;
 	m_pAddAll = LTNULL;
 	m_pRemoveAll = LTNULL;
-	m_pMoveDown = LTNULL;
 	m_pMoveUp = LTNULL;
+	m_pMoveDown = LTNULL;
 }
 
 // RETAIL: 0x10060ef0
@@ -80,8 +80,8 @@ LTBOOL CScreenHostMaps::Build()
 	m_pAddAll = AddTextItem(0xE8, CMD_ADD_ALL, 0x217);
 	m_pRemove = AddTextItem(0xE7, CMD_REMOVE_LEVEL, 0x218);
 	m_pRemoveAll = AddTextItem(0xE9, CMD_REMOVE_ALL, 0x219);
-	m_pMoveDown = AddTextItem(0xCA9, kCmdHostMapDown, 0xCAA);
-	m_pMoveUp = AddTextItem(0xCAB, kCmdHostMapUp, 0xCAC);
+	m_pMoveUp = AddTextItem(0xCA9, kCmdHostMapUp, 0xCAA);
+	m_pMoveDown = AddTextItem(0xCAB, kCmdHostMapDown, 0xCAC);
 
 	LTRect rcAvailRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"AvailRect");
 	CLTGUITextCtrl *pTitle = AddTextItem(0xCE5, 0, 0, LTIntPt(rcAvailRect.left,rcAvailRect.top - 20));
@@ -90,8 +90,7 @@ LTBOOL CScreenHostMaps::Build()
 	m_pAvailMissions = AddList(LTIntPt(rcAvailRect.left,rcAvailRect.top),rcAvailRect.bottom - rcAvailRect.top,LTTRUE,m_nAvailWidth);
 	m_pAvailMissions->SetIndent(LTIntPt(5,5));
 	m_pAvailMissions->SetFrameWidth(2);
-	// RETAIL: and clears a member of Tron's list control (+0x66c): left
-	// out, ours has no such member
+	m_pAvailMissions->SetMouseMoveSelects(LTFALSE);
 
 	LTRect rcSelRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"SelectRect");
 	pTitle = AddTextItem(0xCE6, 0, 0, LTIntPt(rcSelRect.left,rcSelRect.top - 20));
@@ -100,7 +99,7 @@ LTBOOL CScreenHostMaps::Build()
 	m_pSelMissions = AddList(LTIntPt(rcSelRect.left,rcSelRect.top),rcSelRect.bottom - rcSelRect.top,LTTRUE,m_nSelWidth);
 	m_pSelMissions->SetIndent(LTIntPt(5,5));
 	m_pSelMissions->SetFrameWidth(2);
-	// RETAIL: (+0x66c of Tron's list control, as above)
+	m_pSelMissions->SetMouseMoveSelects(LTFALSE);
 
 	return bRet;
 }
@@ -133,9 +132,14 @@ uint32 CScreenHostMaps::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 
 	switch(dwCommand)
 	{
-	case CMD_BACK:
+	case CMD_REMOVE_LEVEL:
 		{
-			m_pScreenMgr->EscapeCurrentScreen();
+			int nIndex = m_pSelMissions->GetSelectedIndex();
+			if (nIndex >= 0)
+			{
+				m_pSelMissions->RemoveControl(nIndex);
+			}
+			UpdateButtons();
 		} break;
 	case CMD_ADD_LEVEL:
 		{
@@ -150,9 +154,13 @@ uint32 CScreenHostMaps::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 			}
 			UpdateButtons();
 		} break;
+	case CMD_BACK:
+		{
+			m_pScreenMgr->EscapeCurrentScreen();
+		} break;
 	case CMD_ADD_ALL:
 		{
-			if (m_pAvailMissions->GetNumControls())
+			if (m_pAvailMissions->GetNumControls() != 0)
 			{
 				for (int i = 0; i < m_pAvailMissions->GetNumControls() && (m_pSelMissions->GetNumControls() < kMaxMaps); i++)
 				{
@@ -166,14 +174,23 @@ uint32 CScreenHostMaps::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 			m_pSelMissions->ClearSelection();
 			UpdateButtons();
 		} break;
-	case CMD_REMOVE_LEVEL:
+	case kCmdHostMapDown:
 		{
 			int nIndex = m_pSelMissions->GetSelectedIndex();
-			if (nIndex >= 0)
+			if (nIndex < m_pSelMissions->GetNumControls() - 1)
 			{
-				m_pSelMissions->RemoveControl(nIndex);
+				m_pSelMissions->MoveControlDown(nIndex);
+				m_pSelMissions->SetSelection(nIndex + 1);
 			}
-			UpdateButtons();
+		} break;
+	case kCmdHostMapUp:
+		{
+			int nIndex = m_pSelMissions->GetSelectedIndex();
+			if (nIndex > 0)
+			{
+				m_pSelMissions->MoveControlUp(nIndex);
+				m_pSelMissions->SetSelection(nIndex - 1);
+			}
 		} break;
 	case CMD_REMOVE_ALL:
 		{
@@ -183,26 +200,6 @@ uint32 CScreenHostMaps::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 				m_pSelMissions->RemoveAll();
 			}
 			UpdateButtons();
-		} break;
-	case kCmdHostMapDown:
-		{
-			int nIndex = m_pSelMissions->GetSelectedIndex();
-			if (nIndex < m_pSelMissions->GetNumControls() - 1)
-			{
-				// PORT: here Tron's list control swaps the map with the next
-				// (CLTGUIListCtrl 0x100b8cb0): left out, ours cannot yet
-				m_pSelMissions->SetSelection(nIndex + 1);
-			}
-		} break;
-	case kCmdHostMapUp:
-		{
-			int nIndex = m_pSelMissions->GetSelectedIndex();
-			if (nIndex > 0)
-			{
-				// PORT: here Tron's list control swaps the map with the one
-				// before (CLTGUIListCtrl 0x100b8c60): left out, as above
-				m_pSelMissions->SetSelection(nIndex - 1);
-			}
 		} break;
 	default:
 		return CBaseScreenHost::OnCommand(dwCommand,dwParam1,dwParam2);

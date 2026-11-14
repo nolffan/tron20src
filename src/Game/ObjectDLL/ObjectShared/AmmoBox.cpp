@@ -156,17 +156,10 @@ bool AmmoBox::ReadProp(ObjectCreateStruct *pStruct)
 			if (_stricmp(genProp.m_String, UNUSED_STRING) != 0)
 			{
 				pAmmo = g_pWeaponMgr->GetAmmo(genProp.m_String);
+				// RETAIL: Tron's AMMO cannot be server restricted (no such member)
 				if( pAmmo )
 				{
-					// See if this ammo was server restricted.
-					if( pAmmo->bServerRestricted )
-					{
-						pAmmo = NULL;
-					}
-					else
-					{
-						m_nAmmoId[nNumAmmoTypes] = m_nOriginalAmmoId[nNumAmmoTypes] = pAmmo->nId;
-					}
+					m_nAmmoId[nNumAmmoTypes] = m_nOriginalAmmoId[nNumAmmoTypes] = pAmmo->nId;
 				}
 			}
 		}

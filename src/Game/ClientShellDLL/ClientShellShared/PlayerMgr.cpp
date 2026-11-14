@@ -2199,6 +2199,7 @@ void CPlayerMgr::UpdateWeaponModel()
 
 	FireType eFireType = FT_NORMAL_FIRE;
 	bool bFire = false;
+	bool bAltFire = false;
 
 	// only fire if:
 	//    fire key down (alt firing is disabled) AND
@@ -2215,9 +2216,14 @@ void CPlayerMgr::UpdateWeaponModel()
 	{
 		bFire = true;
 	}
+	// RETAIL: Tron's alt-fire key (0x101272aa)
+	else if ( m_dwPlayerFlags & BC_CFLG_TRON_ALT_FIRE )
+	{
+		bAltFire = true;
+	}
 
 	// Update the model position and state...
-	WeaponState eWeaponState = m_pClientWeaponMgr->Update( rRot, vPos, bFire, eFireType );
+	WeaponState eWeaponState = m_pClientWeaponMgr->Update( rRot, vPos, bFire, bAltFire, eFireType );
 
 	// Do fire camera jitter...
 
