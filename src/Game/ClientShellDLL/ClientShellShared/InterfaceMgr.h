@@ -451,7 +451,7 @@ class CInterfaceMgr
 		// pads stand in for the difference between retail's sizes of these
 		// classes and ours (checked in the constructor)
 		CCursorMgr		m_CursorMgr;			// +0x40 Cursor handler (new for Tron/TO2)
-		char			m_aTronPadCursorMgr[0x3c - sizeof(CCursorMgr)];
+		// (CCursorMgr is retail's 0x3c bytes)
 		CMessageBox		m_MessageBox;			// +0x7c Used for simple dialog boxes
 		// (CMessageBox is retail's 0x5a8 bytes with LTGUIMgr's controls at retail's sizes)
 		CInterfaceResMgr	m_InterfaceResMgr;		// +0x624 manages shared resources

@@ -16,6 +16,7 @@
 #include "InterfaceMgr.h"
 #include "CursorMgr.h"
 #include "ClientResShared.h"
+#include "../TRON/LightLine.h"
 
 VarTrack	g_vtCursorHack;
 
@@ -40,6 +41,8 @@ CCursorMgr::CCursorMgr()
 	m_pCursorSprite				= LTNULL;
 	m_pCursorGlowSprite			= LTNULL;
 	m_pCursorBackgroundSprite	= LTNULL;
+	m_pHorizontalLine			= LTNULL;
+	m_pVerticalLine				= LTNULL;
 }
 
 CCursorMgr::~CCursorMgr()
@@ -65,7 +68,8 @@ LTBOOL CCursorMgr::Init()
 	// The following line was pulled from InterfaceMgr::Init()
     g_vtCursorHack.Init(g_pLTClient, "CursorHack", NULL, 0.0f);
 
-	if (g_pLTClient->Cursor()->LoadCursorBitmapResource(MAKEINTRESOURCE(IDC_POINTER), m_hCursor) != LT_OK)
+	// RETAIL: Tron's CRes.dll has the cursor as 125 (0x10143132)
+	if (g_pLTClient->Cursor()->LoadCursorBitmapResource(MAKEINTRESOURCE(125), m_hCursor) != LT_OK)
 	{
 		g_pLTClient->CPrint("can't load cursor resource.");
         return LTFALSE;
@@ -79,9 +83,7 @@ LTBOOL CCursorMgr::Init()
 
 	UseHardwareCursor( GetConsoleInt("HardwareCursor",0) > 0 && GetConsoleInt("DisableHardwareCursor",0) == 0);
 
-	if (!m_hSurfCursor)
-        m_hSurfCursor = g_pLTClient->CreateSurfaceFromBitmap("interface\\cursor0.pcx");
-	_ASSERT(m_hSurfCursor);
+	// RETAIL: Tron has no cursor surface (Init 0x10143080)
 
 	m_pCursorSprite = LTNULL;	// stay with the default cursor until this points to something
 	m_pCursorGlowSprite = LTNULL;
@@ -94,6 +96,15 @@ LTBOOL CCursorMgr::Init()
 
 	m_CursorCenter.x = 16;
 	m_CursorCenter.y = 16;
+
+	// RETAIL: Tron's lines through the cursor (0x101431f4)
+	m_pHorizontalLine = debug_new(CLightLine);
+	m_pHorizontalLine->Create(0.0f, 240.0f, 640.0f, 240.0f);
+	m_pHorizontalLine->SetColor(0x80000060);
+
+	m_pVerticalLine = debug_new(CLightLine);
+	m_pVerticalLine->Create(320.0f, 0.0f, 320.0f, 480.0f);
+	m_pVerticalLine->SetColor(0x80000060);
 
 	return LTTRUE;
 }
@@ -111,17 +122,18 @@ void CCursorMgr::Term()
 	if (!m_bInitialized)
 		return;
 
-	if (m_hSurfCursor)
-	{
-		g_pLTClient->DeleteSurface(m_hSurfCursor);
-		m_hSurfCursor = LTNULL;
-	}
 	// don't need to clean this up, just erase the list.  SpriteMgr will clean up.
 	m_SpriteArray.clear();
 
 	m_pCursorSprite = LTNULL;
 	m_pCursorGlowSprite = LTNULL;
 	m_pCursorBackgroundSprite = LTNULL;
+
+	// RETAIL: Tron's lines (Term 0x10143260)
+	debug_delete(m_pHorizontalLine);
+	debug_delete(m_pVerticalLine);
+	m_pHorizontalLine = LTNULL;
+	m_pVerticalLine = LTNULL;
 
 	m_bInitialized = LTFALSE;
 }
@@ -157,7 +169,11 @@ void CCursorMgr::CheckForReinit()
 		nCursorHackFrameDelay--;
 		g_vtCursorHack.SetFloat((LTFLOAT)nCursorHackFrameDelay);
 		if (nCursorHackFrameDelay == 1)
+		{
+			// RETAIL: Tron's (0x10143330) restores the cursor mode too
 			Init();
+			UseCursor(m_bUseCursor);
+		}
 	}
 }
 
@@ -173,16 +189,19 @@ void CCursorMgr::UseCursor(LTBOOL bUseCursor, LTBOOL bLockCursorToCenter)
 {
 	m_bUseCursor = bUseCursor;
 
-	// New hardware code:
-	// if the cursor is visible and being used, ONLY enable the hardware
-	// cursor if no sprite has been specified
-	if (m_bUseCursor && m_bUseHardwareCursor && !m_pCursorSprite)
+	// RETAIL: Tron's (0x101433e0): the hardware cursor whenever one is
+	// used, sprites only without it
+	if (m_bUseCursor)
 	{
-		g_pLTClient->Cursor()->SetCursorMode(CM_Hardware);
-		// copied the following 4 lines from Init()
-		if (g_pLTClient->Cursor()->SetCursor(m_hCursor) != LT_OK)
+		if (m_bUseHardwareCursor)
 		{
-			g_pLTClient->CPrint("can't set cursor.");
+			g_pLTClient->Cursor()->SetCursorMode(CM_Hardware);
+			KillSprite();
+		}
+		else
+		{
+			g_pLTClient->Cursor()->SetCursorMode(CM_Hardware);
+			g_pLTClient->Cursor()->SetCursorMode(CM_None);
 		}
 	}
 	else
@@ -216,9 +235,11 @@ void CCursorMgr::UseHardwareCursor(LTBOOL bUseHardwareCursor,bool bForce)
 {
 	m_bUseHardwareCursor = bUseHardwareCursor;
 
-	if (m_bUseHardwareCursor && m_bUseCursor && !m_pCursorSprite)
+	// RETAIL: Tron's (0x10143490) drops the sprites for the hardware cursor
+	if (m_bUseHardwareCursor && m_bUseCursor)
 	{
 		g_pLTClient->Cursor()->SetCursorMode(CM_Hardware,bForce);
+		KillSprite();
 	}
 	else
 	{
@@ -236,34 +257,23 @@ void CCursorMgr::UseHardwareCursor(LTBOOL bUseHardwareCursor,bool bForce)
 
 void CCursorMgr::Update()
 {
-	static const HLTCOLOR kTrans	= SETRGB_T(255,0,255);
 	LTBOOL bHWC = (GetConsoleInt("HardwareCursor",0) > 0 && GetConsoleInt("DisableHardwareCursor",0) == 0);
 
 	if (bHWC != m_bUseHardwareCursor)
 		UseHardwareCursor(bHWC);
 
+	// RETAIL: Tron's (0x101434f0) draws no default software cursor, and
+	// moves the lines through the cursor
 	if (!m_bUseCursor)
 		return;
 
-	if (m_bUseHardwareCursor && !m_pCursorSprite)
+	if (m_bUseHardwareCursor)
+		return;
+
+	if (!m_pCursorSprite)
 		return;
 
 	LTIntPt CursorPos = g_pInterfaceMgr->GetCursorPos();
-
-	// If a software cursor is needed but none has been specified, use the default
-	if (!m_pCursorSprite)
-	{
-		// TODO: replace with DrawPrim
-		g_pLTClient->Start3D();
-		g_pLTClient->StartOptimized2D();
-
-		g_pLTClient->DrawSurfaceToSurfaceTransparent(g_pLTClient->GetScreenSurface(), m_hSurfCursor, LTNULL,
-												   CursorPos.x, CursorPos.y, kTrans);
-
-		g_pLTClient->EndOptimized2D();
-		g_pLTClient->End3D();
-		return;
-	}
 
 	// Update the sprite coordinates
 	m_pCursorSprite->SetPosition(CursorPos);
@@ -274,6 +284,12 @@ void CCursorMgr::Update()
 
 	if (m_pCursorBackgroundSprite)
 		m_pCursorBackgroundSprite->SetPosition(CursorPos);
+
+	if (m_bShowCursorLines)
+	{
+		m_pHorizontalLine->Move(0.0f, (float)CursorPos.y, (float)g_pInterfaceResMgr->GetScreenWidth(), (float)CursorPos.y);
+		m_pVerticalLine->Move((float)CursorPos.x, 0.0f, (float)CursorPos.x, (float)g_pInterfaceResMgr->GetScreenHeight());
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -284,6 +300,15 @@ void CCursorMgr::Update()
 //				display the current cursor position
 //
 // ----------------------------------------------------------------------- //
+
+void CCursorMgr::RenderCursorLines()
+{
+	if (m_bShowCursorLines)
+	{
+		m_pHorizontalLine->Render();
+		m_pVerticalLine->Render();
+	}
+}
 
 void CCursorMgr::SetCenter(int x, int y)
 {
@@ -313,6 +338,10 @@ void CCursorMgr::SetCenter(int x, int y)
 
 void CCursorMgr::UseSprite(char * pFile)
 {
+	// RETAIL: Tron's (0x10143690) keeps the hardware cursor
+	if (m_bUseHardwareCursor && pFile && pFile[0])
+		return;
+
 	KillSprite();
 
 	// if pFile is null, just turn the sprite off and set the pointer to null
@@ -329,7 +358,6 @@ void CCursorMgr::UseSprite(char * pFile)
 			m_pCursorSprite = *iter;
 			m_pCursorSprite->Show(LTTRUE);
 			m_pCursorSprite->SetCenter(m_CursorCenter);
-			UseHardwareCursor(LTFALSE);
 			return;
 		}
 		iter++;
@@ -347,7 +375,6 @@ void CCursorMgr::UseSprite(char * pFile)
 	pSprite->Show(LTTRUE);
 	m_SpriteArray.push_back(pSprite);
 	m_pCursorSprite = pSprite;
-	UseHardwareCursor(LTFALSE);
 }
 
 
@@ -355,6 +382,10 @@ void CCursorMgr::UseSprite(char * pFile)
 void CCursorMgr::UseSprite(CScreenSprite * pSprite)
 {
 	if (m_pCursorSprite == pSprite)
+		return;
+
+	// RETAIL: Tron's (0x10143790) keeps the hardware cursor
+	if (m_bUseHardwareCursor && pSprite)
 		return;
 
 	KillSprite();
@@ -375,7 +406,6 @@ void CCursorMgr::UseSprite(CScreenSprite * pSprite)
 			m_pCursorSprite = *iter;
 			m_pCursorSprite->SetCenter(m_CursorCenter);
 			m_pCursorSprite->Show(LTTRUE);
-			UseHardwareCursor(LTFALSE);
 			return;
 		}
 		iter++;
@@ -393,7 +423,6 @@ void CCursorMgr::UseSprite(CScreenSprite * pSprite)
 	pNewSprite->Show(LTTRUE);
 	m_SpriteArray.push_back(pNewSprite);
 	m_pCursorSprite = pNewSprite;
-	UseHardwareCursor(LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -408,15 +437,19 @@ void CCursorMgr::UseSprite(CScreenSprite * pSprite)
 
 void CCursorMgr::UseGlowSprite(char * pSpriteFile)
 {
+	// RETAIL: Tron's (0x101438a0) does nothing without a file or with the
+	// hardware cursor
+	if (!pSpriteFile)
+		return;
+
+	if (m_bUseHardwareCursor)
+		return;
+
 	if (m_pCursorGlowSprite)
 	{
 		m_pCursorGlowSprite->Show(LTFALSE);
 		m_pCursorGlowSprite = LTNULL;
 	}
-
-	// if pFile is null, just turn the sprite off and set the pointer to null
-	if (!pSpriteFile)
-		return;
 
 	// See if this sprite is in the list
 	ScreenSpriteArray::iterator iter = m_SpriteArray.begin();
@@ -428,7 +461,6 @@ void CCursorMgr::UseGlowSprite(char * pSpriteFile)
 			m_pCursorGlowSprite = *iter;
 			m_pCursorGlowSprite->SetCenter(m_CursorCenter);
 			m_pCursorGlowSprite->Show(LTTRUE);
-			UseHardwareCursor(LTFALSE);
 			return;
 		}
 		iter++;
@@ -447,7 +479,6 @@ void CCursorMgr::UseGlowSprite(char * pSpriteFile)
 	pSprite->Show(LTTRUE);
 	m_SpriteArray.push_back(pSprite);
 	m_pCursorGlowSprite = pSprite;
-	UseHardwareCursor(LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -531,5 +562,5 @@ void CCursorMgr::KillSprite()
 		m_pCursorBackgroundSprite = LTNULL;
 	}
 
-	UseHardwareCursor(LTTRUE);
+	// RETAIL: Tron's KillSprite (0x101439c0) leaves the cursor mode alone
 }
