@@ -307,6 +307,22 @@ The SDK's only caller (qr2_init_socket) passes NULL, so it never shows.
 Not fixed yet: harmless; the modern build may initialize it to NULL, as the
 2007 SDK does.
 
+### Client prediction applies gravity to visible objects, not falling ones
+
+Lithtech.exe 0x467b40 (predict_EvaluateCurve, the engine's
+client/src/predict.cpp). When it extrapolates a moving object from the
+server's last update, it tells CalcMotion whether to apply gravity with
+`pObj->m_Flags & FLAG_GRAVITY != 0`; `!=` binds first, so the test is
+`m_Flags & 1`, FLAG_VISIBLE (0x467cd4: `mov cl,[esi+0x84]; and cl,1`).
+A hidden object with FLAG_GRAVITY is extrapolated without gravity. A
+visible one without FLAG_GRAVITY gets gravity applied too, but pd_Update
+hands it a zero gravity vector, so only the first case shows. The
+developer build of 2003-08-05 has the same code; Build 69's source has
+the intended `(pObj->m_Flags & FLAG_GRAVITY) != 0`.
+
+Fixed in the modern build: src/Engine/runtime/client/src/predict.cpp
+(TRON20SRC_MODERN), not yet listed in MODERN.md.
+
 ### A texture script's Sin is the cosine, and its Cos the sine
 
 Lithtech.exe 0x554fc0 and 0x554fd0 (TSFuncSin and TSFuncCos, the engine's

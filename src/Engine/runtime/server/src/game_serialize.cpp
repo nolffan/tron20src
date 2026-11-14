@@ -1106,7 +1106,8 @@ void sm_SaveObjects(ILTStream *pStream, ObjectList *pList, uint32 dwParam, uint3
 
 
     // Save version. Version checks will be done by the game.
-	g_dwSaveFileVersion = 2002;
+	// RETAIL: written as it stands, not reset to 2002 first (server.dll
+	// 0x1000d443, Lithtech.exe 0x42d770's)
     GS_STREAM_WRITE(g_dwSaveFileVersion);
 
 
@@ -1202,9 +1203,12 @@ LTRESULT sm_RestoreObjects(ILTStream *pStream, uint32 dwParam, uint32 flags)
     LTRESULT dResult;
     LTObject **pObjects;
     int i, objectCount;
+    uint32 dwVersion;
 
 	// Load version
-    GS_STREAM_READ(g_dwSaveFileVersion);
+	// RETAIL: read into a local and checked against g_dwSaveFileVersion,
+	// which nothing changes (server.dll 0x1000e64e, 0x1000e6f3)
+    GS_STREAM_READ(dwVersion);
     GS_STREAM_READ(objectCount);
 
 	// Used for debugging...
@@ -1229,9 +1233,9 @@ LTRESULT sm_RestoreObjects(ILTStream *pStream, uint32 dwParam, uint32 flags)
 
     g_pServerMgr->m_nTimeOffsetMS = (int32)(g_pServerMgr->m_nTrueLastTimeMS) - (int32)(time_GetMSTime() + g_pServerMgr->m_nTimeOffsetMS);
 
-	// Only allow these 2 versions.  The game will handle versioning of save files from
+	// Only allow this version.  The game will handle versioning of save files from
 	// here on.
-    if( g_dwSaveFileVersion != 2001 && g_dwSaveFileVersion != 2002 )
+    if( dwVersion != g_dwSaveFileVersion )
 	{
 		RETURN_ERROR(1, sm_RestoreObjects, LT_INVALIDVERSION);
     }

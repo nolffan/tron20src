@@ -110,7 +110,8 @@ int32	g_CV_NetMinUnguaranteedPeriod = 50;	// RETAIL: ms (server.dll 0x1007410c)
 int32	g_CV_NetMaxUnguaranteedPeriod = 500;	// RETAIL: ms (server.dll 0x10074110)
 
 float	g_CV_MaxExtrapolateTime = 0.5f;  // Maximum amount of time to extrapolate a position
-float	g_CV_MaxExtrapolateDist = 64.0f;	// RETAIL: the same, as a distance (server.dll 0x10074118)
+// TRON: no MaxExtrapolateDist (Contract J.A.C.K.'s): pd_Update (0x467630)
+// does not pull predictions back towards the server's position.
 int32	g_CV_AlwaysUpdate;	// TRON: (server.dll 0x10060978, zeroed)
 
 float	g_CV_NearRoundoff = 0.001f; // Max distance to consider two points in the same place
