@@ -27,16 +27,31 @@
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalChase, kGoal_Chase);
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalChase::ActivateGoal
+//
+//	PURPOSE:	Activate goal (RETAIL: 0x1020deb0).
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalChase::ActivateGoal()
+{
+	CAIGoalAbstractStimulated::ActivateGoal();
+
+	ActivateChase();
+}
+
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::Con/destructor
+//	ROUTINE:	CAIGoalChaseAbstract::Con/destructor
 //
 //	PURPOSE:	Factory Con/destructor
 //
 // ----------------------------------------------------------------------- //
 
-CAIGoalChase::CAIGoalChase()
+CAIGoalChaseAbstract::CAIGoalChaseAbstract()
 {
 	m_pJunctionVolume		= LTNULL;
 	m_pJunctionActionVolume	= LTNULL;
@@ -51,13 +66,13 @@ CAIGoalChase::CAIGoalChase()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::Save / Load
+//	ROUTINE:	CAIGoalChaseAbstract::Save / Load
 //
 //	PURPOSE:	Save / Load
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::Save(ILTMessage_Write *pMsg)
+void CAIGoalChaseAbstract::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
@@ -83,7 +98,7 @@ void CAIGoalChase::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bContinueLost);
 }
 
-void CAIGoalChase::Load(ILTMessage_Read *pMsg)
+void CAIGoalChaseAbstract::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
 
@@ -114,16 +129,14 @@ void CAIGoalChase::Load(ILTMessage_Read *pMsg)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::ActivateGoal
+//	ROUTINE:	CAIGoalChaseAbstract::ActivateGoal
 //
 //	PURPOSE:	Activate goal.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::ActivateGoal()
+void CAIGoalChaseAbstract::ActivateChase()
 {
-	super::ActivateGoal();
-	
 	if( m_pAI->GetState()->GetStateType() == kState_HumanChase )
 	{
 		return;
@@ -146,7 +159,7 @@ void CAIGoalChase::ActivateGoal()
 
 	if( !m_pAI->GetPrimaryWeapon() )
 	{
-		AIASSERT( m_pAI->HasHolsterString(), m_pAI->m_hObject, "CAIGoalChase::ActivateGoal: AI has no current weapon or holster string." );
+		AIASSERT( m_pAI->HasHolsterString(), m_pAI->m_hObject, "CAIGoalChaseAbstract::ActivateGoal: AI has no current weapon or holster string." );
 		m_pAI->SetState( kState_HumanDraw );
 		return;
 	}
@@ -156,13 +169,13 @@ void CAIGoalChase::ActivateGoal()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::DeactivateGoal
+//	ROUTINE:	CAIGoalChaseAbstract::DeactivateGoal
 //
 //	PURPOSE:	Deactivate goal.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::DeactivateGoal()
+void CAIGoalChaseAbstract::DeactivateGoal()
 {
 	super::DeactivateGoal();
 	m_bLost = LTFALSE;
@@ -170,13 +183,13 @@ void CAIGoalChase::DeactivateGoal()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::SetStateChase
+//	ROUTINE:	CAIGoalChaseAbstract::SetStateChase
 //
 //	PURPOSE:	Setup the chase state.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::SetStateChase(LTBOOL bClearState)
+void CAIGoalChaseAbstract::SetStateChase(LTBOOL bClearState)
 {
 	// Forget any memory of junction volumes.
 	m_stkJunctions.clear();
@@ -224,13 +237,13 @@ void CAIGoalChase::SetStateChase(LTBOOL bClearState)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::UpdateGoal
+//	ROUTINE:	CAIGoalChaseAbstract::UpdateGoal
 //
 //	PURPOSE:	Update goal.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::UpdateGoal()
+void CAIGoalChaseAbstract::UpdateGoal()
 {
 	CAIState* pState = m_pAI->GetState();
 
@@ -261,19 +274,19 @@ void CAIGoalChase::UpdateGoal()
 			break;
 
 		// Unexpected State.
-		default: AIASSERT( 0, m_pAI->m_hObject, "CAIGoalChase::UpdateGoal: Unexpected State." );
+		default: AIASSERT( 0, m_pAI->m_hObject, "CAIGoalChaseAbstract::UpdateGoal: Unexpected State." );
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleStateDraw
+//	ROUTINE:	CAIGoalChaseAbstract::HandleStateDraw
 //
 //	PURPOSE:	Determine what to do when in state Draw.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateDraw()
+void CAIGoalChaseAbstract::HandleStateDraw()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -289,19 +302,19 @@ void CAIGoalChase::HandleStateDraw()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateDraw: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateDraw: Unexpected State Status.");
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleStateChase
+//	ROUTINE:	CAIGoalChaseAbstract::HandleStateChase
 //
 //	PURPOSE:	Determine what to do when in state Chase.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateChase()
+void CAIGoalChaseAbstract::HandleStateChase()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -338,19 +351,19 @@ void CAIGoalChase::HandleStateChase()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateChase: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateChase: Unexpected State Status.");
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::SetChaseStatusLost
+//	ROUTINE:	CAIGoalChaseAbstract::SetChaseStatusLost
 //
 //	PURPOSE:	Set the Chase state to the Lost status.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::SetChaseStatusLost()
+void CAIGoalChaseAbstract::SetChaseStatusLost()
 {
 	m_pAI->SetState( kState_HumanChase );
 	CAIHumanStateChase* pStateChase = (CAIHumanStateChase*)m_pAI->GetState();
@@ -371,13 +384,13 @@ void CAIGoalChase::SetChaseStatusLost()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleJunctionVolume
+//	ROUTINE:	CAIGoalChaseAbstract::HandleJunctionVolume
 //
 //	PURPOSE:	Determine what to do when in a junction volume.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleJunctionVolume()
+void CAIGoalChaseAbstract::HandleJunctionVolume()
 {
 	m_bLost = LTTRUE;
 
@@ -562,13 +575,13 @@ void CAIGoalChase::HandleJunctionVolume()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleJunctionStack
+//	ROUTINE:	CAIGoalChaseAbstract::HandleJunctionStack
 //
 //	PURPOSE:	Keep track of junctions visited.
 //
 // ----------------------------------------------------------------------- //
 
-JunctionRecord* CAIGoalChase::HandleJunctionStack()
+JunctionRecord* CAIGoalChaseAbstract::HandleJunctionStack()
 {
 	// Look for a record for this junction volume in the stack.
 
@@ -608,13 +621,13 @@ JunctionRecord* CAIGoalChase::HandleJunctionStack()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::AwareOnce
+//	ROUTINE:	CAIGoalChaseAbstract::AwareOnce
 //
 //	PURPOSE:	Look around suspiciously, and then do something else.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::AwareOnce()
+void CAIGoalChaseAbstract::AwareOnce()
 {
 	// This function just makes the AI animate one Aware loop.
 	// When the Aware state completes, it tries the next junction option or searches.
@@ -632,13 +645,13 @@ void CAIGoalChase::AwareOnce()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::GiveUpChase
+//	ROUTINE:	CAIGoalChaseAbstract::GiveUpChase
 //
 //	PURPOSE:	Go Aware until goals importance decays to zero.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::GiveUpChase(LTBOOL bSearch)
+void CAIGoalChaseAbstract::GiveUpChase(LTBOOL bSearch)
 {	
 	m_bGiveUpChase = LTTRUE;
 
@@ -661,13 +674,13 @@ void CAIGoalChase::GiveUpChase(LTBOOL bSearch)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleStateLookAt
+//	ROUTINE:	CAIGoalChaseAbstract::HandleStateLookAt
 //
 //	PURPOSE:	Determine what to do when in state LookAt.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateLookAt()
+void CAIGoalChaseAbstract::HandleStateLookAt()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -682,19 +695,19 @@ void CAIGoalChase::HandleStateLookAt()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateLookAt: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateLookAt: Unexpected State Status.");
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleStateAware
+//	ROUTINE:	CAIGoalChaseAbstract::HandleStateAware
 //
 //	PURPOSE:	Determine what to do when in state Aware.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateAware()
+void CAIGoalChaseAbstract::HandleStateAware()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -749,7 +762,7 @@ void CAIGoalChase::HandleStateAware()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateAware: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateAware: Unexpected State Status.");
 	}
 }
 
@@ -761,7 +774,7 @@ void CAIGoalChase::HandleStateAware()
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateGoto()
+void CAIGoalChaseAbstract::HandleStateGoto()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -779,19 +792,19 @@ void CAIGoalChase::HandleStateGoto()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateGoto: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateGoto: Unexpected State Status.");
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::SetStateSearch
+//	ROUTINE:	CAIGoalChaseAbstract::SetStateSearch
 //
 //	PURPOSE:	Set state to search, and set state parameters.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::SetStateSearch()
+void CAIGoalChaseAbstract::SetStateSearch()
 {
 	super::SetStateSearch();
 
@@ -806,13 +819,13 @@ void CAIGoalChase::SetStateSearch()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleStateSearch
+//	ROUTINE:	CAIGoalChaseAbstract::HandleStateSearch
 //
 //	PURPOSE:	Determine what to do when in state Search.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::HandleStateSearch()
+void CAIGoalChaseAbstract::HandleStateSearch()
 {
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
@@ -834,19 +847,19 @@ void CAIGoalChase::HandleStateSearch()
 			break;
 
 		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChase::HandleStateSearch: Unexpected State Status.");
+		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalChaseAbstract::HandleStateSearch: Unexpected State Status.");
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::RecalcImportance
+//	ROUTINE:	CAIGoalChaseAbstract::RecalcImportance
 //
 //	PURPOSE:	Lose interest in chasing if we're not alert.
 //
 // ----------------------------------------------------------------------- //
 
-void CAIGoalChase::RecalcImportance()
+void CAIGoalChaseAbstract::RecalcImportance()
 {
 	// Lose interest in chasing if the AI has lost track of his target.
 	// Chase normally does not lose importance, because we want to ensure 
@@ -868,13 +881,13 @@ void CAIGoalChase::RecalcImportance()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleNameValuePair
+//	ROUTINE:	CAIGoalChaseAbstract::HandleNameValuePair
 //
 //	PURPOSE:	Handles getting a name/value pair.
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CAIGoalChase::HandleNameValuePair(const char *szName, const char *szValue)
+LTBOOL CAIGoalChaseAbstract::HandleNameValuePair(const char *szName, const char *szValue)
 {
 	ASSERT(szName && szValue);
 
@@ -924,13 +937,13 @@ LTBOOL CAIGoalChase::HandleNameValuePair(const char *szName, const char *szValue
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::SelectTriggeredAISound
+//	ROUTINE:	CAIGoalChaseAbstract::SelectTriggeredAISound
 //
 //	PURPOSE:	Select appropriate AI sound.
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CAIGoalChase::SelectTriggeredAISound(EnumAISoundType* peAISoundType)
+LTBOOL CAIGoalChaseAbstract::SelectTriggeredAISound(EnumAISoundType* peAISoundType)
 {
 	// Chase state overrides dialogue.
 	// Let other goals (investigate) play dialogue when AI is in other states (e.g. search).
@@ -946,13 +959,13 @@ LTBOOL CAIGoalChase::SelectTriggeredAISound(EnumAISoundType* peAISoundType)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAIGoalChase::HandleSense
+//	ROUTINE:	CAIGoalChaseAbstract::HandleSense
 //
 //	PURPOSE:	React to a sense.
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CAIGoalChase::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
+LTBOOL CAIGoalChaseAbstract::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 {
 	if( super::HandleGoalSenseTrigger(pSenseRecord) )
 	{

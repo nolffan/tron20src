@@ -15,9 +15,10 @@
 #include "AIGoalChase.h"
 
 
-class CAIGoalPsychoChase : public CAIGoalChase
+// RETAIL: a CAIGoalChaseAbstract in Tron (RTTI).
+class CAIGoalPsychoChase : public CAIGoalChaseAbstract
 {
-	typedef CAIGoalChase super;
+	typedef CAIGoalChaseAbstract super;
 
 	public:
 

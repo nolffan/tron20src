@@ -41,7 +41,9 @@ void CAIGoalPsychoChase::ActivateGoal()
 		m_hStimulusSource = pPlayer->m_hObject;
 	}
 
-	super::ActivateGoal();
+	// RETAIL: 0x101ffd10 (ActivateChase before the base's ActivateGoal).
+	ActivateChase();
+	CAIGoalAbstractStimulated::ActivateGoal();
 }
 
 // ----------------------------------------------------------------------- //
