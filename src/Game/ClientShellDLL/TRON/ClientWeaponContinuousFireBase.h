@@ -20,8 +20,8 @@ public:
 	CClientWeaponContinuousFireBase();
 	virtual ~CClientWeaponContinuousFireBase();
 
-	// RETAIL: 0x10018380 (three arguments there: see TronClientWeapon.h)
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	// RETAIL: 0x10018380
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 	virtual void  Load( ILTMessage_Read *pMsg );
 	virtual void  Save( ILTMessage_Write *pMsg );

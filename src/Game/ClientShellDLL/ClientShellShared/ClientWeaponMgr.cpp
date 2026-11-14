@@ -433,7 +433,7 @@ void CClientWeaponMgr::Save( ILTMessage_Write *pMsg )
 // ----------------------------------------------------------------------- //
 
 WeaponState CClientWeaponMgr::Update( LTRotation const &rRot, LTVector const &vPos,
-                                      bool bFire, FireType eFireType /* = FT_NORMAL_FIRE */ )
+                                      bool bFire, bool bAltFire, FireType eFireType /* = FT_NORMAL_FIRE */ )
 {
 
 	if ( ( CWM_NO_WEAPON == m_iCurrentWeapon ) && ( m_pCurrentWeapon ) )
@@ -447,7 +447,7 @@ WeaponState CClientWeaponMgr::Update( LTRotation const &rRot, LTVector const &vP
 	if ( m_pCurrentWeapon )
 	{
 		m_pCurrentWeapon->SetCameraInfo( rRot, vPos );
-		eWeaponState = m_pCurrentWeapon->Update( bFire, eFireType );
+		eWeaponState = m_pCurrentWeapon->Update( bFire, bAltFire, eFireType );
 	}
 
 	// Check to see if we should auto-switch to a new weapon...

@@ -79,7 +79,7 @@ float CClientWeaponPrankster::GetEnergyUse()
 	float fEnergy = CTronClientWeapon::GetEnergyUse();
 	float fBase = GetBaseEnergyUse();
 
-	if ( W_BEGIN_FIRING == GetState() )
+	if ( W_FIRING == GetState() )
 	{
 		if ( m_abTronUnknown13C[7][0] )
 		{
@@ -171,11 +171,11 @@ bool CClientWeaponPrankster::TronUnknownVirtual18C()
 		return false;
 	}
 
-	if ( W_BEGIN_FIRING == GetState() ||
-	     W_FIRING_NOAMMO == GetState() ||
+	if ( W_FIRING == GetState() ||
+	     W_AUTO_SWITCH == GetState() ||
+	     W_DESELECT == GetState() ||
 	     W_RELOADING == GetState() ||
-	     W_SWAT_DEFENSE == GetState() ||
-	     W_FIRED == GetState() )
+	     W_SWAT_DEFENSE == GetState() )
 	{
 		return false;
 	}

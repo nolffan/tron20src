@@ -152,12 +152,9 @@ CClientWeapon::CClientWeapon() :
 	, m_nAmmoId( WMGR_INVALID_ID )
 	, m_pAmmo( 0 )
 	, m_vFlashPos( 0.0f, 0.0f, 0.0f )
-	, m_vFlashOffset( 0.0f, 0.0f, 0.0f )
 	, m_fFlashStartTime( 0.0f)
 	, m_fBobHeight( 0.0f )
 	, m_fBobWidth( 0.0f )
-	, m_fMovementPerturb( 0.0f )
-	, m_fFiringPerturb( 0.0f )
 	, m_eLastFireType( FT_NORMAL_FIRE )
 	, m_bCanSetLastFire( false )
 	, m_fNextIdleTime( 0.0f )
@@ -176,6 +173,7 @@ CClientWeapon::CClientWeapon() :
 	, m_nPostFireAni( INVALID_ANI )
 	, m_bUsingAltFireAnis( false )
 	, m_bFireKeyDownLastUpdate( false )
+	, m_bAltFireKeyDownLastUpdate( false )
 	, m_bWeaponDeselected( false )
 	, m_wIgnoreFX( 0 )
 	, m_bDisabled( true )
@@ -188,8 +186,6 @@ CClientWeapon::CClientWeapon() :
 	, m_nTracerNumber( 0 )
 	, m_bAutoSwitchEnabled( true )
 	, m_bAutoSwitch( false )
-	, m_fLastPitch( 0.0f )
-	, m_fLastYaw( 0.0f )
 	, m_KeyframedClientFX()
 	, m_bControllingFlashLight( false )
 	, m_bPaused( false )
@@ -1100,8 +1096,6 @@ void CClientWeapon::OnExitWorld()
 	m_nNewAmmoInClip = 0;
 	m_bWeaponDeselected = false;
 	m_nTracerNumber = 0;
-	m_fLastPitch = 0.0f;
-	m_fLastYaw = 0.0f;
 }
 
 
@@ -1204,7 +1198,7 @@ void CClientWeapon::RemoveWeaponModel()
 //
 // ----------------------------------------------------------------------- //
 
-WeaponState CClientWeapon::Update( bool bFire, FireType eFireType /*=FT_NORMAL_FIRE*/)
+WeaponState CClientWeapon::Update( bool bFire, bool bAltFire, FireType eFireType /*=FT_NORMAL_FIRE*/)
 {
 	ASSERT( 0 != m_hObject );
 
@@ -1251,6 +1245,18 @@ WeaponState CClientWeapon::Update( bool bFire, FireType eFireType /*=FT_NORMAL_F
 		HandleFireKeyUpTransition();
 	}
 
+	// RETAIL: Tron's alt-fire key transitions (0x1013073d).  The key-up test
+	// and the remembered state below use bFire, not bAltFire (see
+	// docs/RETAIL_BUGS.md)
+	if ( !m_bAltFireKeyDownLastUpdate && bAltFire )
+	{
+		TronUnknownVirtualF8();
+	}
+	else if ( m_bAltFireKeyDownLastUpdate && !bFire )
+	{
+		TronUnknownVirtualFC();
+	}
+
 	// Selecting Alt-fire does not fire the weapon if we are using
 	// alt fire animations...
 	if ( m_bUsingAltFireAnis && ( FT_ALT_FIRE == m_eLastFireType ) )
@@ -1267,11 +1273,21 @@ WeaponState CClientWeapon::Update( bool bFire, FireType eFireType /*=FT_NORMAL_F
 		HandleFireKeyUp();
 	}
 
+	if ( bAltFire )
+	{
+		TronUnknownVirtual100();
+	}
+	else
+	{
+		TronUnknownVirtual104();
+	}
+
 	// remember the state and fire key for future updates
 	m_bFireKeyDownLastUpdate  = bFire;
+	m_bAltFireKeyDownLastUpdate = bFire;
 
 	// Update the state of the model...
-	WeaponState eState = UpdateModelState( bFire );
+	WeaponState eState = UpdateModelState( bFire, bAltFire );
 
 	LTVector vFireOffset( 0.0f, 0.0f, 0.0f );
 	LTVector vFlashOffset( 0.0f, 0.0f, 0.0f );
@@ -1314,17 +1330,12 @@ WeaponState CClientWeapon::Update( bool bFire, FireType eFireType /*=FT_NORMAL_F
 	// Update the player-view attachments
 	g_pPVAttachmentMgr->UpdatePVAttachments();
 
-	// Update the weapon's perturb value based on the player's movement.
-	UpdateMovementPerturb();
-
-	// Update the weapon's perturb value based on current weapon firing.
-	UpdateFiringPerturb(bFiredWeapon);
-
 	// Handle Auto Ammo/Weapon switching...
 	if ( m_bAutoSwitchEnabled && m_bAutoSwitch )
 	{
 		// We only auto-switch if we are out of ammo...
-		if (g_pPlayerStats->GetAmmoCount(m_nAmmoId) <= 0)
+		// RETAIL: through slot 0x164 (0x101308f4)
+		if ( !TronUnknownVirtual164() )
 		{
 			// Tell the client weapon mgr to switch to a different weapon...
 			eState = W_AUTO_SWITCH;
@@ -1377,10 +1388,10 @@ void CClientWeapon::ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce /*=false
 			// Add a message so the user knows he switched ammo (sometimes it
 			// isn't that obvious)...
 
-			if (strlen(m_pAmmo->szShortName))
+			if (strlen(m_pAmmo->szName))
 			{
 				char szMsg[128];
-				FormatString(IDS_CHANGING_AMMO, szMsg, sizeof(szMsg), m_pAmmo->szShortName);
+				FormatString(IDS_CHANGING_AMMO, szMsg, sizeof(szMsg), m_pAmmo->szName);
 				std::string icon = m_pAmmo->GetNormalIcon();
 				g_pPickupMsgs->AddMessage(szMsg, icon.c_str());
 			}
@@ -1667,116 +1678,6 @@ void CClientWeapon::UpdateBob(LTFLOAT fWidth, LTFLOAT fHeight)
 {
 	m_fBobWidth  = fWidth;
 	m_fBobHeight = fHeight;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CClientWeapon::UpdateMovementPerturb()
-//
-//	PURPOSE:	Update our weapon's movement perturb value
-//
-// ----------------------------------------------------------------------- //
-
-void CClientWeapon::UpdateMovementPerturb()
-{
-	ASSERT( 0 != m_pWeapon );
-
-	// Make sure the weapon has perturb...
-	if ( m_pWeapon->nMaxPerturb == 0 )
-	{
-		m_fMovementPerturb = 0.0f;
-		return;
-	}
-
-	LTFLOAT fDelta = g_pGameClientShell->GetFrameTime();
-	LTFLOAT fMovePerturb = g_pPlayerMgr->GetMoveMgr()->GetMovementPercent();
-
-	if ( fMovePerturb > 1.0f )
-	{
-		fMovePerturb = 1.0f;
-	}
-
-	// If walking or zoomed
-	if ( ( ! ( g_pPlayerMgr->GetMoveMgr()->GetControlFlags() & BC_CFLG_RUN ) ) ||
-	     ( g_pPlayerMgr->IsZoomed() ) )
-	{
-		fMovePerturb *= ns_vtPerturbWalkPercent.GetFloat();
-	}
-
-	// Force greater perturb when damaged certain ways
-	if( g_pDamageFXMgr->IsDamageActive( DamageTypeToFlag(DT_POISON) | DamageTypeToFlag(DT_STUN) ) )
-	{
-		fMovePerturb = 1.0f;
-	}
-
-	// [KLS 3/20/02] - Somehow the original working NOLF rotation perturb code was removed.  
-	// Added it back in so rotation perturb will work correctly...
-
-	LTVector vPlayerRot;
-	g_pPlayerMgr->GetPlayerPitchYawRoll( vPlayerRot );
-
-    LTFLOAT fPitchDiff = (LTFLOAT)fabs(vPlayerRot.x - m_fLastPitch);
-    LTFLOAT fYawDiff = (LTFLOAT)fabs(vPlayerRot.y - m_fLastYaw);
-	
-	m_fLastPitch = vPlayerRot.x;
-	m_fLastYaw = vPlayerRot.y;
-
-	LTFLOAT fRotPerturb = ns_vtPerturbRotationEffect.GetFloat() * (fPitchDiff + fYawDiff) / (2.0f + ns_vtFastTurnRate.GetFloat() * fDelta);
-	if (fRotPerturb > 1.0f)
-	{
-		fRotPerturb = 1.0f;
-	}
-
-	// Determine the maximum amount of perturb that was caused...
-    LTFLOAT fAdjust = Max(fRotPerturb, fMovePerturb);
-    LTFLOAT fDiff = (LTFLOAT)fabs(fAdjust - m_fMovementPerturb);
-
-	if (fAdjust > m_fMovementPerturb)
-	{
-		fDelta *= ns_vtPerturbIncreaseSpeed.GetFloat();
-		m_fMovementPerturb += Min( fDelta, fDiff );
-	}
-	else if (fAdjust < m_fMovementPerturb)
-	{
-		fDelta *= (ns_vtPerturbDecreaseSpeed.GetFloat() * g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eCorrection));
-		m_fMovementPerturb -= Min( fDelta, fDiff );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CClientWeapon::UpdateFiringPerturb()
-//
-//	PURPOSE:	Update our weapon's firing perturb value
-//
-// ----------------------------------------------------------------------- //
-
-void CClientWeapon::UpdateFiringPerturb(LTBOOL bFiredWeapon)
-{
-	ASSERT(m_pWeapon);
-
-	// Make sure the weapon has perturb...
-	if (m_pWeapon->nMaxPerturb == 0)
-	{
-		m_fFiringPerturb = 0.0f;
-		return;
-	}
-
-	LTFLOAT fDelta = g_pGameClientShell->GetFrameTime();
-	LTFLOAT fFirePerturb = bFiredWeapon ? 1.0f : 0.0f;
-    LTFLOAT fDiff = (LTFLOAT)fabs(fFirePerturb - m_fFiringPerturb);
-
-	if (fFirePerturb > m_fFiringPerturb)
-	{
-		fDelta *= ns_vtFiringPerturbIncreaseSpeed.GetFloat();
-		m_fFiringPerturb += Min(fDelta, fDiff);
-	}
-	else if (fFirePerturb < m_fFiringPerturb)
-	{
-		fDelta *= (ns_vtFiringPerturbDecreaseSpeed.GetFloat() * g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eCorrection));
-		m_fFiringPerturb -= Min(fDelta, fDiff);
-	}
 }
 
 
@@ -2370,14 +2271,11 @@ void CClientWeapon::ResetData()
 	m_fFlashStartTime	= 0.0f;
 
 	m_vFlashPos.Init();
-	m_vFlashOffset.Init();
 
     m_bFire                 = false;
 	m_eLastFireType			= FT_NORMAL_FIRE;
     m_bCanSetLastFire       = false;
 	m_nTracerNumber			= 0;
-	m_fLastPitch			= 0.0f;
-	m_fLastYaw				= 0.0f;
 
 	m_nSelectAni			= INVALID_ANI;
 	m_nDeselectAni			= INVALID_ANI;
@@ -2394,6 +2292,7 @@ void CClientWeapon::ResetData()
 	m_nNewAmmoInClip		= 0;
 
     m_bFireKeyDownLastUpdate    = false;
+	m_bAltFireKeyDownLastUpdate	= false;
 	m_bAutoSwitch				= false;
 
 	m_bControllingFlashLight	= false;
@@ -3033,7 +2932,7 @@ WeaponState CClientWeapon::UpdateAmmoFromFire( bool bDecrementAmmo /*= true*/)
 //
 // ----------------------------------------------------------------------- //
 
-WeaponState CClientWeapon::UpdateModelState( bool bFire )
+WeaponState CClientWeapon::UpdateModelState( bool bFire, bool bAltFire )
 {
 	WeaponState eRet = W_IDLE;
 
@@ -3591,14 +3490,8 @@ bool CClientWeapon::PlayReloadAnimation()
 		}
 
 		ASSERT( 0 != g_pPlayerStats );
+		// RETAIL: Tron's weapons have no reload animation rate scale
 		LTFLOAT fRate = 1.0f;
-		
-		// Scale the animation rate...
-
-		if( m_pWeapon )
-		{
-			fRate *= m_pWeapon->fReloadAnimRateScale;
-		}
 
 		// Scale the animation rate based on skill modifiers...
 		
@@ -3757,13 +3650,8 @@ bool CClientWeapon::PlayFireAnimation( bool bResetAni )
 	bool bIsCurAniDone		= !!(dwState & MS_PLAYDONE);
 
 	
-	// Scale the animation rate...
-	
+	// RETAIL: Tron's weapons have no fire animation rate scale
 	float fRate = 1.0f;
-	if( m_pWeapon )
-	{
-		fRate *= m_pWeapon->fFireAnimRateScale;
-	}
 
 	// KLS 4/26/02 - Re-wrote this logic to fix some bugs and to make things
 	// a bit clearer.
@@ -4550,19 +4438,20 @@ void CClientWeapon::UpdateMuzzleFlash( WeaponState eState, LTVector const &vOffs
 	// set the flash offset to be a combination of 
 	// the weapon, muzzle, and bobbing
 	// NOTE: in camera space 
-	m_vFlashOffset = vWeaponOffset + vMuzzleOffset;
-	m_vFlashOffset.x += m_fBobWidth;
-	m_vFlashOffset.y += m_fBobHeight;
+	// RETAIL: a local in Tron (no m_vFlashOffset)
+	LTVector vFlashOffset = vWeaponOffset + vMuzzleOffset;
+	vFlashOffset.x += m_fBobWidth;
+	vFlashOffset.y += m_fBobHeight;
 
 	// add extra offset
-	m_vFlashOffset += vOffset;
+	vFlashOffset += vOffset;
 
 	// deterime the world space position of the flash,
 	// offset using the camera's local axis
 	LTVector vFlashCameraRelativeOffestInWorldSpace( 0.0f, 0.0f, 0.0f );
-	vFlashCameraRelativeOffestInWorldSpace  = vCamR * m_vFlashOffset.x;
-	vFlashCameraRelativeOffestInWorldSpace += vCamU * m_vFlashOffset.y;
-	vFlashCameraRelativeOffestInWorldSpace += vCamF * m_vFlashOffset.z;
+	vFlashCameraRelativeOffestInWorldSpace  = vCamR * vFlashOffset.x;
+	vFlashCameraRelativeOffestInWorldSpace += vCamU * vFlashOffset.y;
+	vFlashCameraRelativeOffestInWorldSpace += vCamF * vFlashOffset.z;
 
 	m_vFlashPos = m_vCamPos + vFlashCameraRelativeOffestInWorldSpace;
 	
@@ -4603,7 +4492,7 @@ void CClientWeapon::UpdateMuzzleFlash( WeaponState eState, LTVector const &vOffs
 	{
 		// Align the flash object to the direction the model is facing...
 		m_MuzzleFlashFX.GetInstance()->Show();
-		m_MuzzleFlashFX.GetInstance()->SetPos( m_vFlashPos, m_vFlashOffset );
+		m_MuzzleFlashFX.GetInstance()->SetPos( m_vFlashPos, vFlashOffset );
 	}
 }
 
@@ -4806,13 +4695,9 @@ void CClientWeapon::Fire( bool bFire )
 	}
 
 	// perturb based on player's movement/firing state
-	LTFLOAT fPerturb = GetDynamicPerturb();
-
-		// get the player's aim modifier
-		LTFLOAT fPerturbX = g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eAccuracy);
-
-		// factor the modifier into the perturb
-		fPerturb *= fPerturbX;
+	// RETAIL: Tron has no dynamic perturb; the perturb is the player's aim
+	// accuracy modifier (0x10134276: CTronPlayerStats' slot 0x13c).
+	LTFLOAT fPerturb = ((AimModifiers const *)g_pPlayerStats->TronUnknownVirtual13C())->fModifier[AimModifiers::eAccuracy];
 
 	// fire position/direction information
 	LTVector vU, vR, vF, vFirePos;
@@ -5590,7 +5475,8 @@ void CClientWeapon::HandleGadgetImpact( HOBJECT hObj, LTVector vImpactPoint )
 	}
 
 	// send the fire message to the server
-	SendFireMessage( false, GetDynamicPerturb(), vFirePos, vF, vImpactPoint, hObj );
+	// RETAIL: no perturb in Tron (0x10135341)
+	SendFireMessage( false, 0.0f, vFirePos, vF, vImpactPoint, hObj );
 
 	// Do any special processing...
 	DoSpecialFire();
@@ -6037,11 +5923,9 @@ bool CClientWeapon::TronUnknownVirtualE0( int nArg1, int nArg2 )
 	return false;
 }
 
-void CClientWeapon::TronUnknownVirtual120()
-{
-}
-
+// RETAIL: 0x1001a1f0 (folded with CClientWeaponDisc's slot 0x19c): does
+// the player have any of this weapon's ammo?
 bool CClientWeapon::TronUnknownVirtual164()
 {
-	return false;
+	return 0 < g_pPlayerStats->GetAmmoCount( m_nAmmoId );
 }

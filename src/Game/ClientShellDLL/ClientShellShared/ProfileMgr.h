@@ -302,11 +302,9 @@ public:
 	//****************** display
 	sPerformCfg m_sPerformance;
 
-	// RETAIL: up to +0x1d4, untouched by the constructor and the Load/Save
-	// sections. The constructor clears 0x9c bytes of m_sPerformance (0x27
-	// dwords) where our sPerformCfg is 0x9a: Tron's is probably two detail
-	// settings longer (PerformanceMgr.h is not ours to change this round).
-	char			m_aTronUnknown19e[0x36];
+	// RETAIL: +0x1a0..+0x1d4, untouched by the constructor and the
+	// Load/Save sections
+	char			m_aTronUnknown1a0[0x34];
 
 	//****************** misc ("Misc")
 	char			m_szVehicleColor[32];		// "VehicleColor"
@@ -322,7 +320,7 @@ public:
 	StringArray		m_CompletedCircuits;		// "CompletedLightCycleCircuits%d"
 	StringArray		m_UnlockedCycleColors;		// "UnlockedLightCycleBikes%d"
 	StringArray		m_UnlockedPowerups;			// "UnlockedLightCyclePowerUps%d"
-	StringArray		m_UnlockedCustomMaps;		// "UnlockedLightCycleCustomMaps%d"
+	StringArray		m_UnlockedMaps;		// "UnlockedLightCycleCustomMaps%d"
 
 	// RETAIL: Tron's profile has no weapon bindings (build 51's
 	// m_nWpnActions): its CUserProfile is 0x6310 bytes, its bindings at

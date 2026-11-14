@@ -48,15 +48,15 @@ bool CTronClientWeapon::OnMessage( uint8 messageID, ILTMessage_Read *pMsg )
 	return false;
 }
 
-// RETAIL: 0x10097110 (three arguments there: see the header)
-WeaponState CTronClientWeapon::Update( bool bFire, FireType eFireType )
+// RETAIL: 0x10097110
+WeaponState CTronClientWeapon::Update( bool bFire, bool bAltFire, FireType eFireType )
 {
 	bool bStopped = false;
 
 	if ( TronUnknownVirtual18C() )
 	{
 		bFire = false;
-		eFireType = FT_NORMAL_FIRE;
+		bAltFire = false;
 		bStopped = true;
 	}
 
@@ -64,10 +64,10 @@ WeaponState CTronClientWeapon::Update( bool bFire, FireType eFireType )
 
 	if ( bStopped )
 	{
-		return W_FIRING_NOAMMO;
+		return W_AUTO_SWITCH;
 	}
 
-	return CClientWeapon::Update( bFire, eFireType );
+	return CClientWeapon::Update( bFire, bAltFire, eFireType );
 }
 
 // RETAIL: 0x100971e0
@@ -108,14 +108,14 @@ void CTronClientWeapon::Save( ILTMessage_Write *pMsg )
 }
 
 // RETAIL: 0x10097200: the base energy use plus what the utility
-// subroutines add; while the shot is out (W_BEGIN_FIRING) those of the
+// subroutines add; while the shot is out (W_FIRING) those of the
 // shot's data (Load's), else the player's current ones
 float CTronClientWeapon::GetEnergyUse()
 {
 	float fBase = GetBaseEnergyUse();
 	float fEnergy = fBase;
 
-	if ( W_BEGIN_FIRING == GetState() )
+	if ( W_FIRING == GetState() )
 	{
 		if ( m_abTronUnknown13C[8][0] )
 		{
@@ -208,11 +208,11 @@ bool CTronClientWeapon::TronUnknownVirtual18C()
 		return false;
 	}
 
-	if ( W_BEGIN_FIRING == GetState() ||
-	     W_FIRING_NOAMMO == GetState() ||
+	if ( W_FIRING == GetState() ||
+	     W_AUTO_SWITCH == GetState() ||
+	     W_DESELECT == GetState() ||
 	     W_RELOADING == GetState() ||
-	     W_SWAT_DEFENSE == GetState() ||
-	     W_FIRED == GetState() )
+	     W_SWAT_DEFENSE == GetState() )
 	{
 		return false;
 	}

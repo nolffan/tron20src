@@ -62,6 +62,10 @@ public:
 	virtual void	TronUnknownVirtual24(bool b1D7, bool b1D9) { m_bTronUnknown1D7 = b1D7; m_bTronUnknown1D9 = b1D9; }
 	virtual void	TronUnknownVirtual28(bool b1D8) { m_bTronUnknown1D8 = b1D8; }
 
+	// RETAIL: CMissionMgr::HandleMissionFailed reads +0x1e0 (0x100ebeb8:
+	// 10 picks "Fatal compression error!"). Not yet named
+	uint32	GetTronUnknown1E0() const { return m_nTronUnknown1E0; }
+
 	virtual float	GetJumpVelocity(float fJumpVel, float fSuperJumpVel) { return fJumpVel; }
 
     virtual LTBOOL	OnMessage(uint8 messageID, ILTMessage_Read *pMsg);

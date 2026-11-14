@@ -151,7 +151,7 @@ uint32 CMenuInventory::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2
 		{
 			uint8 nID = (uint8) nParam1;
 			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nID);
-			m_Name.SetString(pWeapon->szLongName);
+			m_Name.SetString(pWeapon->szName);
 			m_Description.SetString(LoadTempString(pWeapon->nDescriptionId));
 
 			std::string icon = pWeapon->GetSilhouetteIcon();
@@ -172,11 +172,11 @@ uint32 CMenuInventory::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2
 					char szAmmoStr[64];
 					if (pWeapon->bInfiniteAmmo)
 					{
-						LTStrCpy(szAmmoStr,pAmmo->szLongName,sizeof(szAmmoStr));
+						LTStrCpy(szAmmoStr,pAmmo->szName,sizeof(szAmmoStr));
 					}
 					else
 					{
-						sprintf(szAmmoStr,"%s : %d/%d",pAmmo->szLongName,g_pPlayerStats->GetAmmoCount(nAmmoID),pAmmo->GetMaxAmount(LTNULL));
+						sprintf(szAmmoStr,"%s : %d/%d",pAmmo->szName,g_pPlayerStats->GetAmmoCount(nAmmoID),pAmmo->GetMaxAmount(LTNULL));
 					}
 
 					char szFinalAmmoStr[128];
@@ -263,7 +263,7 @@ void CMenuInventory::OnFocus(LTBOOL bFocus)
 						CLTGUITextCtrl* pCtrl = (CLTGUITextCtrl*)m_List.GetControl(nextItem);
 						if (pCtrl)
 						{
-							pCtrl->SetString(pWeapon->szLongName);
+							pCtrl->SetString(pWeapon->szName);
 							pCtrl->Show(LTTRUE);
 							pCtrl->SetParam1(nWpn);
 							nextItem++;
@@ -271,7 +271,7 @@ void CMenuInventory::OnFocus(LTBOOL bFocus)
 					}
 					else
 					{
-						uint16 ndx = AddControl(pWeapon->szLongName,MC_WEAPON);
+						uint16 ndx = AddControl(pWeapon->szName,MC_WEAPON);
 						CLTGUICtrl* pCtrl = m_List.GetControl(ndx);
 						pCtrl->SetParam1(nWpn);
 						nextItem++;

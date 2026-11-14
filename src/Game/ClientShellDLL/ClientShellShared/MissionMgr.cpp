@@ -23,6 +23,7 @@
 #include "ClientMultiplayerMgr.h"
 #include "ProfileMgr.h"
 #include "ScreenPreload.h"
+#include "ClientWeaponMgr.h"
 
 extern VarTrack g_vtScreenFadeInTime;
 
@@ -42,7 +43,7 @@ CMissionMgr::CMissionMgr()
 	m_nSaveSlot = -1;
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
+	// RETAIL: 0x100eb5d0, 0x100eb6e0: m_bServerWaiting is left alone
     m_nNewMission = -1;
     m_nNewLevel = -1;
 	m_bGameOver = false;
@@ -77,7 +78,6 @@ bool CMissionMgr::Init()
 	m_bExitingMission = false;
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
     m_nNewMission = -1;
     m_nNewLevel = -1;
 
@@ -109,36 +109,23 @@ void CMissionMgr::Term()
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartGameNew( )
 {
-	// Default to use the first mission.
-	int nFirstMission = 0;
-
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
-
-	// If this is a multiplayer game, then get use the campaign file to determine
-	// the first mission.
+	// RETAIL: 0x100eb740: Tron's single player game only; the client weapons
+	// are reset after the level is set
 	if( IsMultiplayerGame( ))
-	{
-		// Get the first mission to play from the missions file.
-		char szMission[4];
-		CUserProfile* pUserProfile = g_pProfileMgr->GetCurrentProfile( );
-		char const* pszCampaignFile = GetCampaignFile( (*g_pServerOptionMgr->GetCurrent()) );
-		if (!CWinUtil::FileExist( pszCampaignFile ))
-			return false;
-
-		CWinUtil::WinGetPrivateProfileString( "MissionList", "Mission0", "0", szMission, 
-			ARRAY_LEN( szMission ), pszCampaignFile );
-		nFirstMission = atoi( szMission );
-	}
+		return false;
 
 	// Get the level name for the first mission/level.
-	char const* pszLevelFilename = GetLevelFromMission( nFirstMission, 0 );
+	char const* pszLevelFilename = GetLevelFromMission( 0, 0 );
 	if( !pszLevelFilename )
 		return false;
 
 	// Start from the first level.
 	if( !StartGameFromLevel( pszLevelFilename ))
 		return false;
+
+	CClientWeaponMgr* pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
+	if( pClientWeaponMgr )
+		pClientWeaponMgr->ResetWeapons();
 
 	return true;
 }
@@ -159,13 +146,11 @@ bool CMissionMgr::StartGameFromLevel( char const* pszFilename )
 		return false;
 	}
 
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
+	// RETAIL: 0x100eb790: no StartingNewGame or server waiting in Tron
 
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
 
 	m_eStartGameState = eStartGameFromLevel;
@@ -185,14 +170,12 @@ bool CMissionMgr::StartGameFromLevel( char const* pszFilename )
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartPerformanceLevel()
 {
+	// RETAIL: 0x100eb7d0: no StartingNewGame or server waiting in Tron
+
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
-
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
 
 	// [KLS 8/30/02] Make sure the server info is setup correctly...
 	g_pClientMultiplayerMgr->SetupServerSinglePlayer();
@@ -240,32 +223,35 @@ bool CMissionMgr::FinishStartGameFromLevel()
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartGameFromQuickSave( )
 {
-	// Check if there was a save available.
+	// RETAIL: 0x100eb940: no StartingNewGame in Tron; without a quick save
+	// the mission info is cleared and the loading level set before the
+	// load fails
 	if( !g_pClientSaveLoadMgr->QuickSaveExists( ))
+	{
+		ClearMissionInfo( );
+		SetLoadingLevel( );
+		g_pInterfaceMgr->LoadFailed( );
 		return false;
-
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
+	}
 
 	// Get the worldname for the save.
 	char szWorldName[MAX_PATH];
 	if( !g_pClientSaveLoadMgr->ReadSaveINI( QUICKSAVE_INIKEY, NULL, 0, szWorldName, ARRAY_LEN( szWorldName ),
 		NULL ))
+	{
+		ClearMissionInfo( );
+		SetLoadingLevel( );
+		g_pInterfaceMgr->LoadFailed( );
 		return false;
+	}
 
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
 
-	bool bOk = true;
-
 	// Set this as the level we'll be playing.
-	bOk = SetNewLevel( szWorldName );
-
-
-	if( !bOk )
+	if( !SetNewLevel( szWorldName ))
 	{
 		g_pInterfaceMgr->LoadFailed( );
 		return false;
@@ -276,10 +262,13 @@ bool CMissionMgr::StartGameFromQuickSave( )
 }
 
 
+// RETAIL: 0x100eb9f0: Tron's finish functions set m_bServerWaiting, and
+// clear it when the load fails
 bool CMissionMgr::FinishStartGameFromQuickSave( )
 {
 	bool bOk = true;
 
+	m_bServerWaiting = true;
 	m_eStartGameState = eStartGameStarted;
 
 	// Make sure we have a server started.
@@ -294,6 +283,7 @@ bool CMissionMgr::FinishStartGameFromQuickSave( )
 	if( !bOk )
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
@@ -314,8 +304,7 @@ bool CMissionMgr::StartGameFromSaveSlot( int nSlot )
 	if( !g_pClientSaveLoadMgr->SlotSaveExists( nSlot ))
 		return false;
 
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
+	// RETAIL: 0x100eba50: no StartingNewGame in Tron
 
 	// Get the worldname for the save.
 	char szWorldName[MAX_PATH];
@@ -326,17 +315,14 @@ bool CMissionMgr::StartGameFromSaveSlot( int nSlot )
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
-
-	bool bOk = true;
+	m_bServerWaiting = true;
 
 	// Set this as the level we'll be playing.
-	bOk = bOk && SetNewLevel( szWorldName );
-
-	if( !bOk )
+	if( !SetNewLevel( szWorldName ))
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
@@ -350,6 +336,8 @@ bool CMissionMgr::StartGameFromSaveSlot( int nSlot )
 bool CMissionMgr::FinishStartGameFromSaveSlot( )
 {
 	bool bOk = true;
+
+	m_bServerWaiting = true;
 	m_eStartGameState = eStartGameStarted;
 
 	// Make sure we have a server started.
@@ -364,18 +352,18 @@ bool CMissionMgr::FinishStartGameFromSaveSlot( )
 	if( !bOk )
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
 	return true;
 }
 
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CMissionMgr::StartGameFromReload
 //
-//	PURPOSE:	Start the game from reload.
+//	PURPOSE:	Start the game from the reload save.
 //
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartGameFromReload( )
@@ -384,8 +372,7 @@ bool CMissionMgr::StartGameFromReload( )
 	if( !g_pClientSaveLoadMgr->ReloadSaveExists( ))
 		return false;
 
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
+	// RETAIL: 0x100ebb80: no StartingNewGame in Tron
 
 	// Get the worldname for the save.
 	char szWorldName[MAX_PATH];
@@ -396,17 +383,14 @@ bool CMissionMgr::StartGameFromReload( )
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
-
-	bool bOk = true;
+	m_bServerWaiting = true;
 
 	// Set this as the level we'll be playing.
-	bOk = bOk && SetNewLevel( szWorldName );
-
-	if( !bOk )
+	if( !SetNewLevel( szWorldName ))
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
@@ -418,6 +402,7 @@ bool CMissionMgr::StartGameFromReload( )
 bool CMissionMgr::FinishStartGameFromReload( )
 {
 	m_eStartGameState = eStartGameStarted;
+	m_bServerWaiting = true;
 
 	bool bOk = true;
 
@@ -427,24 +412,24 @@ bool CMissionMgr::FinishStartGameFromReload( )
 	// Send the start game message.
 	bOk = bOk && SendStartGameMessage( );
 
-	// Do the load.
+	// Do the reload.
 	bOk = bOk && g_pClientSaveLoadMgr->ReloadLevel( );
 
 	if( !bOk )
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
 	return true;
 }
 
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CMissionMgr::StartGameFromContinue
 //
-//	PURPOSE:	Start the game from continue.
+//	PURPOSE:	Start the game from the continue save.
 //
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartGameFromContinue( )
@@ -453,10 +438,9 @@ bool CMissionMgr::StartGameFromContinue( )
 	if( !g_pClientSaveLoadMgr->CanContinueGame( ))
 		return false;
 
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
+	// RETAIL: 0x100ebc80: no StartingNewGame in Tron
 
-	// Get the savekey in the continue info.
+	// Get the savekey to use.
 	char szSaveKey[SLMGR_MAX_INIKEY_LEN];
 	if( !g_pClientSaveLoadMgr->ReadContinueINI( szSaveKey, ARRAY_LEN( szSaveKey ), NULL, 0, NULL, 0 ))
 		return false;
@@ -470,19 +454,17 @@ bool CMissionMgr::StartGameFromContinue( )
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
-
-	bool bOk = true;
+	m_bServerWaiting = true;
 
 	// Set this as the level we'll be playing.
-	bOk = bOk && SetNewLevel( szWorldName );
-
-	if( !bOk )
+	if( !SetNewLevel( szWorldName ))
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
+
 	m_eStartGameState = eStartGameFromContinue;
 
 	return true;
@@ -491,6 +473,7 @@ bool CMissionMgr::StartGameFromContinue( )
 bool CMissionMgr::FinishStartGameFromContinue( )
 {
 	m_eStartGameState = eStartGameStarted;
+	m_bServerWaiting = true;
 
 	bool bOk = true;
 
@@ -500,12 +483,13 @@ bool CMissionMgr::FinishStartGameFromContinue( )
 	// Send the start game message.
 	bOk = bOk && SendStartGameMessage( );
 
-	// Do the load.
+	// Do the continue.
 	bOk = bOk && g_pClientSaveLoadMgr->ContinueGame( );
 
 	if( !bOk )
 	{
 		g_pInterfaceMgr->LoadFailed( );
+		m_bServerWaiting = false;
 		return false;
 	}
 
@@ -516,29 +500,30 @@ bool CMissionMgr::FinishStartGameFromContinue( )
 //
 //	ROUTINE:	CMissionMgr::StartGameAsClient
 //
-//	PURPOSE:	Start the game from remote server.
+//	PURPOSE:	Start the game as a remote client.
 //
 // ----------------------------------------------------------------------- //
 bool CMissionMgr::StartGameAsClient( )
 {
+	// RETAIL: 0x100ebdb0: no server waiting or StartingNewGame in Tron
+
 	// Starting new mission.
 	m_bNewMission = true;
 	m_bRestoringLevel = false;
-	m_bServerWaiting = true;
 	ClearMissionInfo( );
 
-	// Starting new game.
-	g_pInterfaceMgr->StartingNewGame( );
-
-	// We don't know our level yet, so just go to a join loading screen.
+	// Go to the loading state.
 	if( !SetLoadingLevel( ))
 	{
 		g_pInterfaceMgr->LoadFailed( );
 		return false;
 	}
+
 	m_eStartGameState = eStartGameAsClient;
+
 	return true;
 }
+
 
 bool CMissionMgr::FinishStartGameAsClient( )
 {
@@ -564,9 +549,12 @@ bool CMissionMgr::FinishStartGameAsClient( )
 bool CMissionMgr::OnMessage( uint8 messageID, ILTMessage_Read & msg )
 {
 
+	// RETAIL: 0x100ebe10: Tron's messages 194 and 195 go to the virtuals
 	switch(messageID)
 	{
 		case MID_EXIT_LEVEL:		HandleExitLevel			( msg );	return true;
+		case 194:					TronUnknownVirtual4		( msg );	return true;
+		case 195:					TronUnknownVirtual8		( msg );	return true;
 		case MID_END_GAME:			HandleEndGame			( msg );	return true;
 	}
 
@@ -588,7 +576,10 @@ bool CMissionMgr::HandleMissionFailed()
 	// [KLS 7/28/02] - Interface mgr handles forcing screen fading in
 	// if necessary, doing it here may cause problems...
 	///g_pInterfaceMgr->ForceScreenFadeIn(g_vtScreenFadeInTime.GetFloat());
-	g_pInterfaceMgr->MissionFailed(IDS_YOUWEREKILLED);
+	// RETAIL: 0x100ebea0: Tron's string ids (CRes.dll): 595 "Fatal
+	// compression error!", 1011 "END OF LINE."
+	int nStringId = (g_pPlayerMgr->GetTronUnknown1E0() == 10 ? 595 : 1011);
+	g_pInterfaceMgr->MissionFailed(nStringId);
 
 	return true;
 }
@@ -603,11 +594,14 @@ bool CMissionMgr::HandleMissionFailed()
 
 bool CMissionMgr::HandleExitLevel( ILTMessage_Read& msg  )
 {
+	// RETAIL: 0x100ebee0: no server waiting flag in Tron's message; the
+	// loading screen is hidden before exiting
 	msg.ReadString( m_sNewWorldName.GetBuffer( MAX_PATH ), MAX_PATH );
 	m_sNewWorldName.ReleaseBuffer( );
 	m_bExitingMission = msg.Readbool( );
 	m_bRestoringLevel = msg.Readbool( );
-	m_bServerWaiting  = msg.Readbool( );
+
+	m_bNewMission = m_bExitingMission;
 
 	int nMissionId, nLevel;
 
@@ -623,19 +617,6 @@ bool CMissionMgr::HandleExitLevel( ILTMessage_Read& msg  )
 		m_nNewLevel = -1;
 	}
 
-	//m_bServerWaiting should only be false in the case where we are loading a game,
-	if (!m_bServerWaiting)
-	{
-		//  if we are the host, we are already on the preload screen
-		if (g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) )
-			g_pInterfaceMgr->ChangeState(GS_LOADINGLEVEL);
-		return true;
-
-	}
-
-
-	m_bNewMission = m_bExitingMission;
-
 	// Check if we didn't get a new world.
 	if( m_sNewWorldName.IsEmpty( ))
 	{
@@ -646,6 +627,8 @@ bool CMissionMgr::HandleExitLevel( ILTMessage_Read& msg  )
 
 	// Consider ourselves to be exiting.
 	m_bExitingLevel = true;
+
+	g_pInterfaceMgr->HideLoadScreen( );
 
 	// Change to the exiting level state.
 	g_pInterfaceMgr->ChangeState(GS_EXITINGLEVEL);
@@ -706,11 +689,8 @@ bool CMissionMgr::FinishExitLevel( )
 	m_bExitingMission = false;
 
 	// Tell the server we're done exiting.
-
-	if (m_bServerWaiting)
-	{
-		SendEmptyServerMsg( MID_EXIT_LEVEL, MESSAGE_GUARANTEED );
-	}
+	// RETAIL: 0x100ec030: always
+	SendEmptyServerMsg( MID_EXIT_LEVEL, MESSAGE_GUARANTEED );
 
 	// Set our new level information.
 	if( !SetNewLevel( m_sNewWorldName ))
@@ -734,10 +714,7 @@ bool CMissionMgr::FinishStartGame( )
 {
 	g_pInterfaceMgr->ChangeState(GS_LOADINGLEVEL);
 	
-	g_pChatMsgs->ClearHistory();
-	g_pRewardMsgs->ClearHistory();
-	g_pPickupMsgs->ClearHistory();
-	g_pTransmission->Hide();
+	// RETAIL: 0x100ec080: no message histories or transmission here in Tron
 	
 	switch (m_eStartGameState)
 	{
@@ -851,23 +828,8 @@ bool CMissionMgr::SetLoadingLevel( )
 		return true;
 	}
 
-	// Change to the loading level state.
-	if (!m_bServerWaiting)
-	{
-		//  if we are the host, we can ignore this
-		if (g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) )
-			g_pInterfaceMgr->ChangeState(GS_LOADINGLEVEL);
-
-		return true;
-
-	}
-	else if( g_pInterfaceMgr->ShouldSkipPreLoad() )
-	{
-		// Skipping pre-load, go right into level loading...
-
-		g_pInterfaceMgr->ChangeState( GS_LOADINGLEVEL );
-	}
-	else
+	// RETAIL: 0x100ec1c0: Tron goes to the preload screen; no server
+	// waiting or skip pre-load checks
 	{
 		CScreenPreload *pPreload = (CScreenPreload *) (g_pInterfaceMgr->GetScreenMgr( )->GetScreenFromID(SCREEN_ID_PRELOAD));
   		if (pPreload)
@@ -952,16 +914,22 @@ bool CMissionMgr::PreLoadWorld( char const* pszNewWorldName )
 
 bool CMissionMgr::ClearMissionInfo( )
 {
-	// PORT: ClearMissionInfo is not in Tron's CPlayerStats interface; what
-	// Tron does here is to be read from the retail code
-	// g_pPlayerStats->ClearMissionInfo();
+	// RETAIL: 0x100ec300: Tron's CPlayerStats has no ClearMissionInfo; the
+	// mission damage and stats are reset and the objective lists cleared
+	// here
+	g_pPlayerStats->ClearMissionDamage();
+	g_pPlayerStats->ResetMissionStats();
+	g_pPlayerStats->GetObjectives()->Clear();
+	g_pPlayerStats->GetOptionalObjectives()->Clear();
+	g_pPlayerStats->GetCompletedObjectives()->Clear();
+	g_pPlayerStats->GetParameters()->Clear();
 
 	m_bCustomLevel = false;
     m_nCurrentMission = -1;
     m_nCurrentLevel = -1;
     m_nNewMission = -1;
     m_nNewLevel = -1;
-
+	m_bServerWaiting = false;
 	return true;
 }
 
@@ -983,8 +951,27 @@ bool CMissionMgr::SendStartGameMessage( )
 	// Tell the server to start with the specified bute.
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_START_GAME );
+	// RETAIL: 0x100ec3e0: Tron adds the profile's byte at +0x73 (as a bool;
+	// our CUserProfile names it m_nBandwidthClient, the name may be wrong)
+	// and the mission bute file
+	cMsg.Writebool( !!pProfile->m_nBandwidthClient );
+	cMsg.WriteString( g_pMissionButeMgr->GetAttributeFile( ));
 
 	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 	
 	return true;
+}
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMissionMgr::GetCurrentWorldName
+//
+//	PURPOSE:	The current world's name (RETAIL: 0x100ec4e0)
+//
+// --------------------------------------------------------------------------- //
+char const* CMissionMgr::GetCurrentWorldName() const
+{
+	// RETAIL: an empty string without a buffer
+	char const* pszWorldName = m_sCurrentWorldName;
+	return pszWorldName ? pszWorldName : "";
 }

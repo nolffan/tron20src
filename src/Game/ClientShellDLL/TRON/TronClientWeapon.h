@@ -48,9 +48,8 @@ public:
 	// RETAIL: slot 1 (0x100970e0)
 	virtual bool  OnMessage( uint8 messageID, ILTMessage_Read *pMsg );
 
-	// RETAIL: slot 7 (0x10097110).  Retail's takes three arguments (ret 0xc;
-	// so does CClientWeapon's, 0x10130680); ours keeps NOLF2's two.
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	// RETAIL: slot 7 (0x10097110)
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 	// RETAIL: slot 18 (0x100971e0)
 	virtual void  Select();

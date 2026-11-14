@@ -60,7 +60,7 @@ public:
 	virtual void          Term();
 
 	// main update function
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 	// external interfaces to change the ammo
 	virtual void          ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce= false );
@@ -80,9 +80,8 @@ public:
 	// to update the weapon bob
 	virtual void          UpdateBob( LTFLOAT fWidth, LTFLOAT fHeight );
 
-	// dynanic perturb
-	// RETAIL: not virtual in Tron (IClientWeaponBase's vtable)
-	LTFLOAT       GetDynamicPerturb()  const { return (m_fFiringPerturb > m_fMovementPerturb ? m_fFiringPerturb : m_fMovementPerturb); }
+	// RETAIL: Tron's weapons have no dynamic perturb (GetDynamicPerturb,
+	// UpdateMovementPerturb, UpdateFiringPerturb are not in CShell.dll)
 
 	// Do NOT call these functions directly.  If you want to
 	// enable/disable or show/hide the weapons, call the functions
@@ -197,12 +196,8 @@ protected:
 	HOBJECT       CreateModelObject( HOBJECT hOldObj, ObjectCreateStruct *createStruct );
 
 	WeaponState   UpdateAmmoFromFire( bool bDecrementAmmo = true );
-	virtual WeaponState   UpdateModelState( bool bFire );
+	virtual WeaponState   UpdateModelState( bool bFire, bool bAltFire );	// RETAIL: two arguments (0x10097490)
 	void          UpdateWeaponPosition( LTVector const &vOffset );  // offset is the additional offset
-
-	// Dynamic perturb updating
-	void          UpdateMovementPerturb();
-	void          UpdateFiringPerturb(LTBOOL bFiredWeapon);
 
 	// Update the weapon based on current state and
 	// animation and determines what animation to play next.
@@ -352,11 +347,11 @@ protected:
 	// special cases
 	void          DoSpecialFire();
 	virtual void  DoSpecialEndFire();
-	// RETAIL: Tron's slot 0x120 (retail 0x10135450). Not yet named
-	virtual void  TronUnknownVirtual120();
+	// RETAIL: virtual in Tron (slot 0x120, retail 0x10135450; Update
+	// calls it through the vtable)
+	virtual bool  SpecialOverrideFire();
 	void          DoSpecialCreateModel();
 	void          SpecialShowPieces( bool bShow = true, bool bForce = false );
-	bool          SpecialOverrideFire();
 
 	// handle client side impact effects
 	void          AddImpact( HLOCALOBJ hObj, LTVector const &vImpactPoint,
@@ -431,15 +426,14 @@ protected:
 	WEAPON const *m_pWeapon;
 	AMMO const   *m_pAmmo;
 
+	// RETAIL: Tron's CClientWeapon (its ctor, 0x1012ec30) has no
+	// m_vFlashOffset (UpdateMuzzleFlash keeps it local), no movement/firing
+	// perturb and no m_fLastPitch/m_fLastYaw.
 	LTVector      m_vFlashPos;
-	LTVector      m_vFlashOffset;
 	LTFLOAT       m_fFlashStartTime;       // When did flash start
 
 	LTFLOAT       m_fBobHeight;
 	LTFLOAT       m_fBobWidth;
-
-	LTFLOAT       m_fMovementPerturb;
-	LTFLOAT		  m_fFiringPerturb;
 
 	FireType      m_eLastFireType;    // How did we last fire
 	bool          m_bCanSetLastFire;  // Can we set m_eLastFireType
@@ -474,9 +468,9 @@ protected:
 
 	bool          m_bUsingAltFireAnis;        // Use the m_nAltXXX anis?
 	bool          m_bFireKeyDownLastUpdate;   // Was the fire key down last update?
-	
-    LTFLOAT		  m_fLastPitch;	// Holds last player pitch value
-    LTFLOAT		  m_fLastYaw;	// Holds last player yaw value
+	// RETAIL: +0xc2, Tron's second fire key (Update's second argument; the
+	// name is ours): was it down last update?
+	bool          m_bAltFireKeyDownLastUpdate;
 
 	uint16        m_wIgnoreFX;    // FX to ignore for current vector/projectile
 
@@ -514,13 +508,17 @@ protected:
 	bool			m_bPaused;
 
 	// RETAIL: Tron's CClientWeapon is 0x204 bytes (CTronClientWeapon's ctor,
-	// 0x10097090, puts its first member at 0x204); ours is 0x158 up to here.
-	// The members before differ too (retail's 0xC..0x138 per the ctor at
-	// 0x1012ec30), so this tail only brings the size -- and the members of
-	// the classes derived from it -- to retail's.  The members Tron's
-	// weapons use from 0x158 on are at retail's offsets; shrink the padding
-	// when the members above are fixed.
-	char			m_xTronUnknown155[3];
+	// 0x10097090, puts its first member at 0x204); the members above end at
+	// 0x139 as retail's ctor (0x1012ec30) shows.
+	char			m_xTronUnknown139[3];
+	// RETAIL: +0x13c, eleven pairs of bools (CTronClientWeapon 0x10097f40
+	// clears them): [n][0] is whether the shot's subroutine n is active
+	// (0..7 the weapons' own, 8 Megahurtz, 9 Corrode, 10 Primitive Charge;
+	// 0x10097ab0/0x10097c30 save and load them).
+	bool			m_abTronUnknown13C[11][2];
+	// RETAIL: +0x154, the union of the weapons' subroutine data (0x10097ab0
+	// writes 0x10..0x94 bytes from here by the active subroutine).
+	char			m_xTronUnknown152[6];
 	union
 	{
 		float		m_fTronUnknown158;		// RETAIL: +0x158 (BallLauncher's fire rate)
@@ -529,14 +527,7 @@ protected:
 	float			m_fTronUnknown15C;		// RETAIL: +0x15c (LOL energy)
 	float			m_fTronUnknown160;		// RETAIL: +0x160 (Sequencer energy)
 	float			m_fTronUnknown164;		// RETAIL: +0x164 (BallLauncher, DrunkenDims)
-	// RETAIL: +0x13c, eleven pairs of bools (CTronClientWeapon 0x10097f40
-	// clears them): [n][0] is whether the shot's subroutine n is active
-	// (0..7 the weapons' own, 8 Megahurtz, 9 Corrode, 10 Primitive Charge;
-	// 0x10097ab0/0x10097c30 save and load them).  Not at retail's offset
-	// until the members above are fixed; here it sits in retail's +0x154
-	// union of the weapons' subroutine data (the floats around it).
-	bool			m_abTronUnknown13C[11][2];
-	char			m_xTronUnknown17E[0x5e];
+	char			m_xTronUnknown168[0x74];
 	float			m_fTronUnknown1DC;		// RETAIL: +0x1dc (Prankster)
 	float			m_fTronUnknown1E0;
 	float			m_fTronUnknown1E4;		// RETAIL: +0x1e4 (Cluster)

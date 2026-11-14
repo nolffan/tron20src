@@ -670,7 +670,7 @@ void CUserProfile::LoadLightCycleInfo()
 	m_CompletedCircuits.clear();
 	m_UnlockedCycleColors.clear();
 	m_UnlockedPowerups.clear();
-	m_UnlockedCustomMaps.clear();
+	m_UnlockedMaps.clear();
 
 	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
@@ -740,7 +740,7 @@ void CUserProfile::LoadLightCycleInfo()
 
 		if (szValue[0])
 		{
-			m_UnlockedCustomMaps.push_back(std::string(szValue));
+			m_UnlockedMaps.push_back(std::string(szValue));
 		}
 	}
 }
@@ -970,9 +970,9 @@ void CUserProfile::SaveLightCycleInfo()
 	{
 		char szKey[32];
 		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i);
-		if (i < m_UnlockedCustomMaps.size())
+		if (i < m_UnlockedMaps.size())
 		{
-			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCustomMaps[i].c_str());
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedMaps[i].c_str());
 		}
 		else
 		{

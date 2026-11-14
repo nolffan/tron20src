@@ -38,11 +38,11 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 	// override the main update function
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 protected:
 	// update the model state for the disc
-	virtual WeaponState   UpdateModelState( bool bFire );
+	virtual WeaponState   UpdateModelState( bool bFire, bool bAltFire );
 
 	// Update the defensive capabilities of the disc
 	virtual void  UpdateFiring();

@@ -31,16 +31,16 @@ CClientWeaponContinuousFireBase::~CClientWeaponContinuousFireBase()
 {
 }
 
-// RETAIL: 0x10018380.  Retail's second argument (a bool) becomes
-// TronUnknownVirtual164() while firing; ours has no such argument.
-WeaponState CClientWeaponContinuousFireBase::Update( bool bFire, FireType eFireType )
+// RETAIL: 0x10018380: while firing, whether it may fire comes from
+// TronUnknownVirtual164()
+WeaponState CClientWeaponContinuousFireBase::Update( bool bFire, bool bAltFire, FireType eFireType )
 {
 	if ( bFire )
 	{
-		TronUnknownVirtual164();
+		bFire = TronUnknownVirtual164();
 	}
 
-	return CTronClientWeapon::Update( bFire, eFireType );
+	return CTronClientWeapon::Update( bFire, bAltFire, eFireType );
 }
 
 // RETAIL: 0x100183c0

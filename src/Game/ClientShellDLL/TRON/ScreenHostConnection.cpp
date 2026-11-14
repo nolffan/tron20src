@@ -342,7 +342,10 @@ LTBOOL CScreenHostConnection::OnRButtonUp(int x, int y)
 void CScreenHostConnection::UpdateBandwidth()
 {
 	if (m_nBandwidth >= eBandwidth_Custom)
-		m_sBandwidth.Format("%d",g_pServerOptionMgr->GetCurrent()->m_nBandwidthServerCustom);
+	{
+		uint32 nBandwidth = g_pServerOptionMgr->GetCurrent()->m_nBandwidthServerCustom;
+		m_sBandwidth.Format("%d",nBandwidth);
+	}
 	else
 		m_sBandwidth.Format("%d",g_BandwidthServer[m_nBandwidth]);
 

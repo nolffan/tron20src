@@ -104,6 +104,10 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_WEAPON_PRIMITIVE_TYPE			"PrimitiveType"
 #define WMGR_WEAPON_SUBROUTINE_NEEDED		"SubroutineNeeded"
 #define WMGR_WEAPON_USEUWMUZZLEFX			"UseUWMuzzleFX"
+#define WMGR_WEAPON_HIDEWHILECLIPEMPTY		"HideWeaponWhileClipEmpty"	// RETAIL: Tron's
+#define WMGR_WEAPON_TRANSLUCENT				"Translucent"			// RETAIL: Tron's
+#define WMGR_WEAPON_DEFENSECLASSDATA		"DefenseClassData"		// RETAIL: Tron's
+#define WMGR_WEAPON_USABLEBYAIS				"WeaponUsableByAIs"		// RETAIL: Tron's
 #define WMGR_WEAPON_FIREANIMRATESCALE		"FireAnimRateScale"
 #define WMGR_WEAPON_RELOADANIMRATESCALE		"ReloadAnimRateScale"
 #define WMGR_WEAPON_POWERUPFX				"PowerupFX"
@@ -134,6 +138,8 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_AMMO_AREADAMAGE        "AreaDamage"
 #define WMGR_AMMO_AREADAMAGETYPE    "AreaDamageType"
 #define WMGR_AMMO_AREADAMAGERADIUS  "AreaDamageRadius"
+#define WMGR_AMMO_AREADAMAGEIGNOREOWNER	"AreaDamageIgnoreOwner"	// RETAIL: Tron's
+#define WMGR_AMMO_AREADAMAGEALWAYS	"AreaDamageAlways"		// RETAIL: Tron's
 #define WMGR_AMMO_PROGDAMAGE        "ProgDamage"
 #define WMGR_AMMO_PROGDAMAGETYPE    "ProgDamageType"
 #define WMGR_AMMO_PROGDAMAGEDUR     "ProgDamageDuration"
@@ -145,6 +151,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_AMMO_MOVEABLEIMPACTOVERRIDEFX	"MoveableImpactOverrideFXName"
 #define WMGR_AMMO_RICOCHETFX        "RicochetFXName"
 #define WMGR_AMMO_BLOCKEDFX         "BlockedFXName"
+#define WMGR_AMMO_DEADLYBLOCKEDFX   "DeadlyBlockedFXName"	// RETAIL: Tron's
 #define WMGR_AMMO_FIREFX            "FireFXName"
 #define WMGR_AMMO_TRACERFX          "TracerFXName"
 #define WMGR_AMMO_PROJECTILEFX      "ProjectileFXName"
@@ -295,6 +302,9 @@ CWeaponMgr::CWeaponMgr()
 	m_pGearList = LTNULL;
 	m_nNumGear = 0;
 
+	m_pTronUnknown113C = LTNULL;	// RETAIL: Tron's
+	m_nTronUnknown1140 = 0;
+
 	m_pWeaponAnisList = LTNULL;
 	m_nNumWeaponAnis = 0;
 
@@ -310,8 +320,6 @@ CWeaponMgr::CWeaponMgr()
 	m_nLastPlayerWeapon = 0;
 
 	m_nFileCRC = 0;
-
-	m_sMPDefaults = "";
 }
 
 
@@ -744,9 +752,7 @@ LTBOOL CWeaponMgr::Init(const char* szAttributeFile)
 		}
 	}
 
-	char szTmp[128];
-	m_buteMgr.GetString(WMGR_MULTI_TAG, WMGR_MULTI_DEFAULTS,"", szTmp, sizeof(szTmp));
-	m_sMPDefaults = szTmp;
+	// RETAIL: Tron's does not read the multiplayer default weapons here
 
 
 	// Free up the bute mgr's memory...
@@ -1352,11 +1358,6 @@ bool CWeaponMgr::IsBetterWeapon( uint8 nWeaponIdA, uint8 nWeaponIdB ) const
 	return false;
 }
 
-const char* CWeaponMgr::GetMPDefaultWeapons() const
-{
-	return m_sMPDefaults.c_str();
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1385,10 +1386,9 @@ WEAPON::WEAPON()
 	nDescriptionId		= 0;
 	nIsAmmoNoPickupId	= 0;
 	nAniType			= 0;
+	bWeaponUsableByAIs	= false;	// RETAIL: Tron's (CShell 0x10138512)
 
 	szName				= LTNULL;
-	szLongName			= LTNULL;
-	szShortName			= LTNULL;
 	szIcon				= LTNULL;
 	szPVModel			= LTNULL;
 	szHHModel			= LTNULL;
@@ -1403,8 +1403,6 @@ WEAPON::WEAPON()
 	szHolsterAttachment	= LTNULL;
 	szPrimitiveType		= LTNULL;
 	szSubroutineNeeded	= LTNULL;
-	szPowerupFX			= LTNULL;
-	szRespawnWaitFX		= LTNULL;
 
 	for( i = 0; i < WMGR_MAX_RELOAD_SNDS; ++i )
 	{
@@ -1423,7 +1421,6 @@ WEAPON::WEAPON()
     
 	nFireSoundRadius	= 0;
 	nAIFireSoundRadius	= 0;
-	nWeaponSoundRadius	= (int)WEAPON_SOUND_RADIUS;
 
     bEnvironmentMap     = LTFALSE;
     bInfiniteAmmo       = LTFALSE;
@@ -1433,10 +1430,12 @@ WEAPON::WEAPON()
 	bUseUWMuzzleFX		= LTFALSE;
 
 	nShotsPerClip		= 0;
+	bHideWeaponWhileClipEmpty = LTFALSE;	// RETAIL: Tron's
 
 	nNumAmmoIds		= 0;
 	aAmmoIds			= LTNULL;
 	
+	nDefenseClassModId	= WMGR_INVALID_ID;	// RETAIL: Tron's
 
 	nDefaultAmmoId		= 0;
 
@@ -1474,16 +1473,8 @@ WEAPON::WEAPON()
 		szPVAttachClientFX[ i ] = LTNULL;
 	}
 
-	fFireAnimRateScale		= 1.0f;
-	fReloadAnimRateScale	= 1.0f;
-
-	bRespawnWaitVisible		= false;
-	bRespawnWaitTranslucent = false;
-
-	bServerRestricted = false;
-	bCanServerRestrict = true;
-
 	bIsPlayerPrimitive = 0;	// RETAIL: Tron's (CShell 0x101386af)
+	bTranslucent = false;	// RETAIL: Tron's
 }
 
 
@@ -1502,8 +1493,6 @@ WEAPON::~WEAPON()
 	bInited = LTFALSE;
 
 	debug_deletea( szName );
-	debug_deletea( szLongName );
-	debug_deletea( szShortName );
 	debug_deletea( szIcon );
 	debug_deletea( szPVModel );
 	debug_deletea( szHHModel );
@@ -1518,8 +1507,6 @@ WEAPON::~WEAPON()
 	debug_deletea( szHolsterAttachment );
 	debug_deletea( szPrimitiveType );
 	debug_deletea( szSubroutineNeeded );
-	debug_deletea( szPowerupFX );
-	debug_deletea( szRespawnWaitFX );
 
 	for( i = 0; i < WMGR_MAX_RELOAD_SNDS; ++i )
 	{
@@ -1586,8 +1573,6 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	GetStringIfExist( buteMgr, aTagName, WMGR_WEAPON_HOLSTERATTACHMNET, &szHolsterAttachment, WMGR_MAX_NAME_LENGTH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_WEAPON_PRIMITIVE_TYPE, &szPrimitiveType, WMGR_MAX_NAME_LENGTH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_WEAPON_SUBROUTINE_NEEDED, &szSubroutineNeeded, WMGR_MAX_NAME_LENGTH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_WEAPON_POWERUPFX, &szPowerupFX, WMGR_MAX_NAME_LENGTH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_WEAPON_RESPAWNWAITFX, &szRespawnWaitFX, WMGR_MAX_NAME_LENGTH );
 	
 
 	for( int i = 0; i < WMGR_MAX_RELOAD_SNDS; ++i )
@@ -1613,13 +1598,11 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	blrHiddenPieceNames.Read(&buteMgr, aTagName, WMGR_WEAPON_HIDDENPIECENAME, WMGR_MAX_NAME_LENGTH);
 
-	blrRespawnWaitSkins.Read( &buteMgr, aTagName, WMGR_WEAPON_RESPAWNWAITSKIN, WMGR_MAX_FILE_PATH );
-	blrRespawnWaitRenderStyles.Read( &buteMgr, aTagName, WMGR_WEAPON_RESPAWNWAITRENDERSTYLE, WMGR_MAX_FILE_PATH );
-	
+	// RETAIL: Tron's (CShell 0x10138c93; its default is false, not the member)
+	bWeaponUsableByAIs	= !!buteMgr.GetBool( aTagName, WMGR_WEAPON_USABLEBYAIS, false );
 
 	nFireSoundRadius	= buteMgr.GetInt(aTagName, WMGR_WEAPON_FIRESNDRADIUS, nFireSoundRadius);
     nAIFireSoundRadius  = buteMgr.GetInt(aTagName, WMGR_WEAPON_AIFIRESNDRADIUS, nAIFireSoundRadius);
-	nWeaponSoundRadius	= buteMgr.GetInt( aTagName, WMGR_WEAPON_WEAPONSNDRADIUS, nWeaponSoundRadius );
     bEnvironmentMap     = (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_ENVMAP, bEnvironmentMap);
     bInfiniteAmmo       = (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_INFINITEAMMO, bInfiniteAmmo);
     bLooksDangerous     = (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_LOOKSDANGEROUS, bLooksDangerous);
@@ -1627,7 +1610,23 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
     bIsAmmo				= (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_ISAMMO, bIsAmmo);
     nShotsPerClip       = buteMgr.GetInt(aTagName, WMGR_WEAPON_SHOTSPERCLIP, nShotsPerClip);
     bUseUWMuzzleFX		= (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_USEUWMUZZLEFX, bUseUWMuzzleFX);
+	// RETAIL: Tron's
+	bHideWeaponWhileClipEmpty = (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_HIDEWHILECLIPEMPTY, bHideWeaponWhileClipEmpty);
+	bTranslucent		= buteMgr.GetBool(aTagName, WMGR_WEAPON_TRANSLUCENT, bTranslucent);
 
+	// RETAIL: Tron's: the MOD named by "DefenseClassData"
+	{
+		char szDefenseClass[256];
+		buteMgr.GetString(aTagName, WMGR_WEAPON_DEFENSECLASSDATA, "", szDefenseClass, sizeof(szDefenseClass));
+		if( buteMgr.Success( ))
+		{
+			MOD const *pMod = g_pWeaponMgr->GetMod(szDefenseClass);
+			if( pMod )
+			{
+				nDefenseClassModId = pMod->nId;
+			}
+		}
+	}
 
 	// Build our ammo types id array...
 
@@ -1824,16 +1823,10 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 		GetStringIfExist( buteMgr, aTagName, s_aAttName, &szPVAttachClientFX[i], WMGR_MAX_NAME_LENGTH );
 	}
 
-	int nDelay = buteMgr.GetInt(aTagName, WMGR_WEAPON_FIREDELAY, m_nFireDelay );
-	m_nFireDelay = (nDelay > 0) ? nDelay : 0;
-
-	fFireAnimRateScale		= (float)buteMgr.GetDouble( aTagName, WMGR_WEAPON_FIREANIMRATESCALE, fFireAnimRateScale );
-	fReloadAnimRateScale	= (float)buteMgr.GetDouble( aTagName, WMGR_WEAPON_RELOADANIMRATESCALE, fReloadAnimRateScale );
-
-	bRespawnWaitVisible		= !!(buteMgr.GetInt( aTagName, WMGR_WEAPON_RESPAWNWAITVISIBLE, bRespawnWaitVisible ));
-	bRespawnWaitTranslucent	= !!(buteMgr.GetInt( aTagName, WMGR_WEAPON_RESPAWNWAITTRANSLUCENT, bRespawnWaitTranslucent ));
-	
-	bCanServerRestrict = !!( buteMgr.GetInt( aTagName, WMGR_ALL_CANSERVERRESTRICT, bCanServerRestrict ));
+	// RETAIL: Tron's delay is read in ms with no default and kept in seconds
+	// (CShell 0x10139498)
+	int nDelay = buteMgr.GetInt(aTagName, WMGR_WEAPON_FIREDELAY, 0 );
+	m_fFireDelay = (nDelay > 0) ? nDelay * 0.001f : 0.0f;
 
 	// RETAIL: Tron's (CShell 0x101394c7, last in its InitMembers)
 	bIsPlayerPrimitive = buteMgr.GetByte( aTagName, WMGR_WEAPON_ISPLAYERPRIMITIVE );
@@ -1862,50 +1855,6 @@ LTBOOL WEAPON::Init(CButeMgr & buteMgr, char* aTagName)
 	// Initialize all other values...
 
 	InitMembers( buteMgr, aTagName );
-
-
-#ifdef _CLIENTBUILD
-	char szTmp[128] = "";
-	LoadString(nNameId,szTmp,sizeof(szTmp));
-
-	char* pTok = strtok(szTmp,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szLongName = debug_newa( char, l);
-		LTStrCpy(szLongName,pTok,l);
-	}
-	else
-	{
-		szLongName = debug_newa( char, 1);
-		szLongName[0] = NULL;
-	}
-
-	pTok = strtok(NULL,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,pTok,l);
-	}
-	else
-	{
-		int l = strlen(szLongName)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,szLongName,l);
-	}
-#else
-	int l = strlen(szName)+1;
-	szLongName = debug_newa( char, l);
-	LTStrCpy(szLongName,szName,l);
-	szShortName = debug_newa( char, l);
-	LTStrCpy(szShortName,szName,l);
-
-#endif
-
-	
 
 	return LTTRUE;
 }
@@ -2181,19 +2130,19 @@ AMMO::AMMO()
 
 	szIcon  = LTNULL;
 	szName  = LTNULL;
-	szLongName			= LTNULL;
-	szShortName			= LTNULL;
 
 	nMaxAmount          = 0;
 	nSpawnedAmount      = 0;
 	nSelectionAmount    = 0;
 
-	nInstDamage     = 0;
+	fInstDamage     = 0.0f;
 	eInstDamageType = DT_INVALID;
 
-	nAreaDamage         = 0;
-	nAreaDamageRadius   = 0;
+	fAreaDamage         = 0.0f;
+	fAreaDamageRadius   = 0.0f;
 	eAreaDamageType     = DT_INVALID;
+	bAreaDamageIgnoreOwner	= false;
+	bAreaDamageAlways		= false;
 	fFireRecoilMult     = 1.0f;
 
 	fProgDamage         = 0.0f;
@@ -2208,15 +2157,12 @@ AMMO::AMMO()
 	pProjectileFX			= NULL;
 	pImpactFX				= NULL;
 	pUWImpactFX				= NULL;
-	pRicochetFX				= NULL;
 	pBlockedFX				= NULL;
+	pDeadlyBlockedFX		= NULL;
 	pFireFX					= NULL;
 	pAniOverrides			= NULL;
 	pTracerFX				= NULL;
 	pMoveableImpactOverrideFX = NULL;
-
-	bServerRestricted = false;
-	bCanServerRestrict = true;
 }
 
 
@@ -2234,8 +2180,6 @@ AMMO::~AMMO()
 
 	debug_deletea( szName );
 	debug_deletea( szIcon );
-	debug_deletea( szLongName );
-	debug_deletea( szShortName );
 }
 
 
@@ -2253,8 +2197,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	// Use the members as the default value incase the attribute doesn't exist...
 
-	char const* pszValue = "";
-
 	nNameId               = buteMgr.GetInt( aTagName, WMGR_AMMO_NAMEID, nNameId );
 	nDescId               = buteMgr.GetInt( aTagName, WMGR_AMMO_DESCID, nDescId );
 	eType                 = (AmmoType) buteMgr.GetInt( aTagName, WMGR_AMMO_TYPE, eType );
@@ -2266,20 +2208,17 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	nMaxAmount            = buteMgr.GetInt( aTagName, WMGR_AMMO_MAXAMOUNT, nMaxAmount );
 	nSpawnedAmount        = buteMgr.GetInt( aTagName, WMGR_AMMO_SPAWNEDAMOUNT, nSpawnedAmount );
 	nSelectionAmount      = buteMgr.GetInt( aTagName, WMGR_AMMO_SELECTIONAMOUNT, nSelectionAmount );
-	nInstDamage           = buteMgr.GetInt( aTagName, WMGR_AMMO_INSTDAMAGE, nInstDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_INSTDAMAGETYPE, "" );
-	if( pszValue[0] )
-		eInstDamageType       = StringToDamageType( pszValue );
-	nAreaDamage           = buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGE, nAreaDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_AREADAMAGETYPE, "" );
-	if( pszValue[0] )
-		eAreaDamageType       = StringToDamageType( pszValue );
-	nAreaDamageRadius     = buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGERADIUS, nAreaDamageRadius );
+	// RETAIL: Tron reads the damages as floats and the types as numbers
+	fInstDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_INSTDAMAGE, fInstDamage );
+	eInstDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_INSTDAMAGETYPE, eInstDamageType );
+	fAreaDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_AREADAMAGE, fAreaDamage );
+	eAreaDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_AREADAMAGETYPE, eAreaDamageType );
+	fAreaDamageRadius     = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_AREADAMAGERADIUS, fAreaDamageRadius );
+	bAreaDamageIgnoreOwner = buteMgr.GetBool( aTagName, WMGR_AMMO_AREADAMAGEIGNOREOWNER, bAreaDamageIgnoreOwner );
+	bAreaDamageAlways     = buteMgr.GetBool( aTagName, WMGR_AMMO_AREADAMAGEALWAYS, bAreaDamageAlways );
 	fFireRecoilMult       = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_FIRERECOILMULT, fFireRecoilMult );
 	fProgDamage           = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGE, fProgDamage );
-	pszValue = buteMgr.GetString( aTagName, WMGR_AMMO_PROGDAMAGETYPE, "" );
-	if( pszValue[0] )
-		eProgDamageType       = StringToDamageType( pszValue );
+	eProgDamageType       = (DamageType) buteMgr.GetInt( aTagName, WMGR_AMMO_PROGDAMAGETYPE, eProgDamageType );
 	fProgDamageDuration   = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGEDUR, fProgDamageDuration );
 	fProgDamageRadius     = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGERADIUS, fProgDamageRadius );
 	fProgDamageLifetime   = (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_AMMO_PROGDAMAGELIFE, fProgDamageLifetime );
@@ -2290,7 +2229,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	GetStringIfExist( buteMgr, aTagName, WMGR_AMMO_ICON, &szIcon, WMGR_MAX_FILE_PATH );
 
 
-	int nId = 0;
 	char szStr[128] = "";
 	buteMgr.GetString(aTagName, WMGR_AMMO_IMPACTFX, "", szStr, sizeof(szStr));
 	if( buteMgr.Success( ))
@@ -2319,22 +2257,22 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 		}
 	}
 
-	buteMgr.GetString(aTagName, WMGR_AMMO_RICOCHETFX, "", szStr, sizeof(szStr));
-	if( buteMgr.Success( ))
-	{
-		if (szStr[0])
-		{
-			pRicochetFX = g_pFXButeMgr->GetImpactFX(szStr);
-		}
-	}
-
-
 	buteMgr.GetString(aTagName, WMGR_AMMO_BLOCKEDFX, "", szStr, sizeof(szStr));
 	if( buteMgr.Success( ))
 	{
 		if (szStr[0])
 		{
 			pBlockedFX = g_pFXButeMgr->GetImpactFX(szStr);
+		}
+	}
+
+	// RETAIL: Tron's
+	buteMgr.GetString(aTagName, WMGR_AMMO_DEADLYBLOCKEDFX, "", szStr, sizeof(szStr));
+	if( buteMgr.Success( ))
+	{
+		if (szStr[0])
+		{
+			pDeadlyBlockedFX = g_pFXButeMgr->GetImpactFX(szStr);
 		}
 	}
 
@@ -2382,8 +2320,6 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 			pTracerFX = g_pFXButeMgr->GetTracerFX(szStr);
 		}
 	}
-
-	bCanServerRestrict = !!( buteMgr.GetInt( aTagName, WMGR_ALL_CANSERVERRESTRICT, bCanServerRestrict ));
 }
 
 // ----------------------------------------------------------------------- //
@@ -2394,6 +2330,7 @@ void AMMO::InitMembers( CButeMgr &buteMgr, char *aTagName )
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's keeps only the name (no long and short names)
 LTBOOL AMMO::Init(CButeMgr & buteMgr, char* aTagName)
 {
 	if (!aTagName) return LTFALSE;
@@ -2409,47 +2346,6 @@ LTBOOL AMMO::Init(CButeMgr & buteMgr, char* aTagName)
 	// Initialize all other values...
 
 	InitMembers( buteMgr, aTagName );
-
-#ifdef _CLIENTBUILD
-	char szTmp[128] = "";
-	LoadString(nNameId,szTmp,sizeof(szTmp));
-
-	char* pTok = strtok(szTmp,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szLongName = debug_newa( char, l);
-		LTStrCpy(szLongName,pTok,l);
-	}
-	else
-	{
-		szLongName = debug_newa( char, 1);
-		szLongName[0] = NULL;
-	}
-
-	pTok = strtok(NULL,"@");
-
-	if (pTok)
-	{
-		int l = strlen(pTok)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,pTok,l);
-	}
-	else
-	{
-		int l = strlen(szLongName)+1;
-		szShortName = debug_newa( char, l);
-		LTStrCpy(szShortName,szLongName,l);
-	}
-#else
-	int l = strlen(szName)+1;
-	szLongName = debug_newa( char, l);
-	LTStrCpy(szLongName,szName,l);
-	szShortName = debug_newa( char, l);
-	LTStrCpy(szShortName,szName,l);
-
-#endif
 
 	return LTTRUE;
 }
@@ -2489,8 +2385,10 @@ int AMMO::GetMaxAmount(HOBJECT hCharacter) const
 
 #ifdef _CLIENTBUILD
 
-	LTFLOAT fMult = g_pPlayerStats->GetSkillModifier(SKL_CARRY,CarryModifiers::eMaxAmmo);
-    nMaxAmmo =  (int) ( fMult * (LTFLOAT)nMaxAmmo );
+	// RETAIL: the carry modifiers straight from CTronPlayerStats' slot 0x140
+	// (0x1013a433)
+	LTFLOAT fMult = ((CarryModifiers const *)g_pPlayerStats->TronUnknownVirtual140())->fModifier[CarryModifiers::eMaxAmmo];
+    nMaxAmmo =  (int) ( fMult * nMaxAmmo );
 
 #else
 

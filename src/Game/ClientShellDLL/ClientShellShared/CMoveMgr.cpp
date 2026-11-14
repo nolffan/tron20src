@@ -530,7 +530,7 @@ void CMoveMgr::UpdateNormalControlFlags()
 
 	if (g_pLTClient->IsCommandOn(COMMAND_ID_DEFEND))
 	{
-		m_dwControlFlags |= BC_CFLG_DEFEND;
+		m_dwControlFlags |= BC_CFLG_TRON_ALT_FIRE;
 	}
 
 	if (!g_pPlayerMgr->GetCarryingObject())

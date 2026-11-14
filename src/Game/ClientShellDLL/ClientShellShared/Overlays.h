@@ -13,6 +13,11 @@
 
 // the order of the eOverlayMask enum determines drawing priority, only the first
 // exclusive overlay is drawn, while all active non-exclusive overlays are drawn
+// RETAIL: Tron has 15 masks (CInterfaceMgr's m_hOverlays, constructor
+// 0x100c67b0); BeginScope (0x100cd450), EndScope (0x100cd480) and EndZoom
+// (0x100cd4d0) show the first eight; the rest are Tron's (CTronPlayerMgr
+// uses them: 8, 11 and 14 one group, 9, 10, 12 and 13 the zoom overlays
+// EndZoom removes). The names of OVM_TRON_* are ours.
 enum eOverlayMask
 {
 	OVM_NONE  = -1,
@@ -30,16 +35,13 @@ enum eOverlayMask
 	OVM_ZOOM_IN,
 	OVM_ZOOM_OUT,
 
-	//cinematic overlays
-	OVM_CINEMATIC_1,
-	OVM_CINEMATIC_2,
-	OVM_CINEMATIC_3,
-	OVM_CINEMATIC_4,
-	OVM_CINEMATIC_5,
-	OVM_CINEMATIC_6,
-	OVM_CINEMATIC_7,
-	OVM_CINEMATIC_8,
-	OVM_CINEMATIC_9,
+	OVM_TRON_8,
+	OVM_TRON_9,
+	OVM_TRON_10,
+	OVM_TRON_11,
+	OVM_TRON_12,
+	OVM_TRON_13,
+	OVM_TRON_14,
 
 	NUM_OVERLAY_MASKS
 };

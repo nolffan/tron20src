@@ -126,7 +126,8 @@ protected:
 	eMenuID			m_MenuID;
 	LTIntPt			m_nextPos;
 	CLTGUITextCtrl	m_Title;
-	CLTGUITextCtrl	m_Resume;
+	// RETAIL: Tron's menus have no Resume control (ctor 0x101c6ad0: the
+	// list follows the title at +0x6cc)
 	CLTGUIListCtrl	m_List;
 
 

@@ -53,8 +53,9 @@ public:
 	void            Save( ILTMessage_Write *pMsg );
 
 	// main update function
+	// RETAIL: Tron's takes the alt-fire key too (0x101684c0)
 	WeaponState     Update( LTRotation const &rRot, LTVector const &vPos,
-	                        bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	                        bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 	// accessor functions
 	IClientWeaponBase  *GetCurrentClientWeapon() const;
