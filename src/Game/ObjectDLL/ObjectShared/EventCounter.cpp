@@ -121,6 +121,7 @@ EventCounter::EventCounter() : GameBase()
 {
     m_bLocked = LTFALSE;
 	m_nCurVal = 0;
+	m_nStartingValue = 0;	// RETAIL: 0x10260f30
 }
 
 // ----------------------------------------------------------------------- //
@@ -197,6 +198,8 @@ bool EventCounter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Decrement("DECREMENT");
 	static CParsedMsg::CToken s_cTok_Lock("LOCK");
 	static CParsedMsg::CToken s_cTok_Unlock("UNLOCK");
+	static CParsedMsg::CToken s_cTok_Reset("RESET");	// RETAIL: Tron's (0x102611e0)
+	static CParsedMsg::CToken s_cTok_Report("REPORT");	// RETAIL: Tron's
 
 	if ((cMsg.GetArg(0) == s_cTok_Inc) ||
 		(cMsg.GetArg(0) == s_cTok_Increment))
@@ -237,6 +240,14 @@ bool EventCounter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if (cMsg.GetArg(0) == s_cTok_Unlock)
 	{
         m_bLocked = LTFALSE;
+	}
+	else if (cMsg.GetArg(0) == s_cTok_Reset)
+	{
+		m_nCurVal = m_nStartingValue;
+	}
+	else if (cMsg.GetArg(0) == s_cTok_Report)
+	{
+		ObjectCPrint(m_hObject, "Counter Value: %d  Locked: %d", m_nCurVal, m_bLocked);
 	}
 	else
 		return GameBase::OnTrigger(hSender, cMsg);
@@ -352,7 +363,8 @@ LTBOOL EventCounter::ReadProp(ObjectCreateStruct *pInfo)
 
     if (g_pLTServer->GetPropGeneric("StartingValue", &genProp) == LT_OK)
 	{
-		m_nCurVal = genProp.m_Long;
+		// RETAIL: 0x1026180d, Tron keeps the starting value for RESET
+		m_nCurVal = m_nStartingValue = genProp.m_Long;
 	}
 
     return LTTRUE;
@@ -371,6 +383,7 @@ void EventCounter::Save(ILTMessage_Write *pMsg)
 {
 	SAVE_BOOL(m_bLocked);
 	SAVE_INT(m_nCurVal);
+	SAVE_INT(m_nStartingValue);	// RETAIL: Tron's
 
 	for (int i=0; i < EC_MAX_NUMBER_OF_EVENTS; i++)
 	{
@@ -390,6 +403,7 @@ void EventCounter::Load(ILTMessage_Read *pMsg)
 {
 	LOAD_BOOL(m_bLocked);
 	LOAD_INT(m_nCurVal);
+	LOAD_INT(m_nStartingValue);	// RETAIL: Tron's
 
 	for (int i=0; i < EC_MAX_NUMBER_OF_EVENTS; i++)
 	{

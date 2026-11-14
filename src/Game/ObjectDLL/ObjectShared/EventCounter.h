@@ -79,6 +79,7 @@ class EventCounter : public GameBase
 	private :
 
         LTBOOL      m_bLocked;
+		int			m_nStartingValue;	// RETAIL: Tron's (+0x3c; the RESET message's value; our name)
 		int			m_nCurVal;
 
 		EventData	m_EventData[EC_MAX_NUMBER_OF_EVENTS];
