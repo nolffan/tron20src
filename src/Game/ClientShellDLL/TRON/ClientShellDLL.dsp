@@ -507,6 +507,10 @@ SOURCE=.\ScreenHostConnection.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenHostMaps.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenJoinServerList.cpp
 # End Source File
 # Begin Source File
@@ -870,6 +874,10 @@ SOURCE=.\ScreenGame.h
 # Begin Source File
 
 SOURCE=.\ScreenHostConnection.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostMaps.h
 # End Source File
 # Begin Source File
 
