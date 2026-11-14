@@ -3843,7 +3843,8 @@ bool CVehicleMgr::MoveLocalSolidObject( )
 
 		case PPM_LIGHTCYCLE:
 		{
-			return(MoveLightCycle());
+			// RETAIL: 0x10121050 -- Tron's player manager moves the light cycle.
+			return g_pPlayerMgr->TronUnknownVirtual64();
 			break;
 		}
 
