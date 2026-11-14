@@ -220,6 +220,7 @@ class ActiveWorldModel : public WorldModel
 		// Sound methods...
 	
 		void    StartSound( const HSTRING hstrSoundName, const LTBOOL bLoop );
+		void    StartSound( const char *pSoundName, const LTBOOL bLoop );	// RETAIL: Tron's (0x10178490)
 		void	StopSound( );
 
 		// Disturbance stimulus methods...

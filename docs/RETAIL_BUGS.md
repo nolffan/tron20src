@@ -831,6 +831,20 @@ lasts a random time between MaxSearchTime and 3 seconds.
 Fixed in the modern build: Searchable.cpp (TRON20SRC_MODERN stores
 m_fMaxSearchTime).
 
+### An active world model's ADDPSET reads the sender, not its argument
+
+Object.lto 0x10176140 (ActiveWorldModel::OnTrigger, ObjectShared/
+ActiveWorldModel.cpp). Tron's doors and switches take ADDPSET <digits> and
+REMOVEPSET <digits> to change the permission sets a player needs. ADDPSET
+measures and scans the bytes of the sender's object handle (0x10176709: the
+argument's address is formed and dropped), so the digits given are ignored
+and whatever bytes the handle points at decide which sets are added.
+REMOVEPSET uses its argument but always tests eight characters (0x101767ad),
+reading past the end of a shorter argument.
+
+Fixed in the modern build: ActiveWorldModel.cpp (TRON20SRC_MODERN parses the
+argument, up to its length).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

@@ -24,7 +24,13 @@
 	#include "ParsedMsg.h"
 	#include "KeyMgr.h"
 	#include "AIUtils.h"
-	#include "..\TRON\PSets.h"	// RETAIL: Tron's permission sets
+	#include "..\TRON\PSets.h"
+	#include "Character.h"
+
+// RETAIL: the user flag Tron's permission set objects set on themselves (as
+// IONode.h's USRFLG_IONODE, ArchiveBin's); not yet identified on the client.
+// The name is ours
+#define USRFLG_AWM_PSETS		(1<<1)	// RETAIL: Tron's permission sets
 
 	extern CAIStimulusMgr* g_pAIStimulusMgr;
 
@@ -197,6 +203,28 @@ LTRESULT CActiveWorldModelPlugin::PreHook_EditStringList( const char *szRezPath,
 	}
 
 	return LT_UNSUPPORTED;
+}
+
+// PORT: retail calls a ServerUtilities function (retail 0x100cdc10, not yet
+// written) that asks the character's (in coop, every player's) permission
+// sets (retail 0x10090720); the character's own are asked here
+static bool HasPSets(CCharacter* pChar, uint8 nPSets)
+{
+	return (pChar->GetPermissionSet() & nPSets) == nPSets;
+}
+
+// RETAIL: 0x10174660: can this character activate an AWM needing these
+// permission sets? The name is ours
+static bool CanActivatePSets(HOBJECT hObj, uint8 nPSets)
+{
+	if( IsCharacter( hObj ))
+	{
+		CCharacter *pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( hObj ));
+		if( HasPSets( pChar, nPSets ))
+			return true;
+	}
+
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -821,6 +849,17 @@ void ActiveWorldModel::OnEveryObjectCreated( )
 	// door to be movied (keyframed) and still rotate correctly... maybe?
 
 	m_vRotPtOffset = m_vOriginalPos - m_vRotationPt;
+
+	// RETAIL: 0x10175a61: Tron's permission sets go to the client, and a
+	// locked AWM starts locked
+
+	SET_OBJECT_PSETS_USER_FLAGS(m_hObject, m_nPSets);
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, USRFLG_AWM_PSETS, USRFLG_AWM_PSETS );
+
+	if( m_dwPropFlags & AWM_PROP_LOCKED )
+	{
+		HandleLock( LTTRUE );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1084,62 +1123,142 @@ bool ActiveWorldModel::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 	static CParsedMsg::CToken s_cTok_SetPowerOnMultiplier("SETPOWERONMULTIPLIER");
 	static CParsedMsg::CToken s_cTok_Pause("PAUSE");
 	static CParsedMsg::CToken s_cTok_Resume("RESUME");
+	// RETAIL: Tron's (0x10176140..)
+	static CParsedMsg::CToken s_cTok_InfoString("INFOSTRING");
+	static CParsedMsg::CToken s_cTok_AddPSet("ADDPSET");
+	static CParsedMsg::CToken s_cTok_RemovePSet("REMOVEPSET");
 	
 	// Let base class handle the message first
 
 	bool bResult = WorldModel::OnTrigger( hSender, cMsg );
 
+	// RETAIL: 0x101763df: Tron returns from each case
+
 	if( cMsg.GetArg(0) == s_cTok_Activate )
 	{
 		Activate( hSender );
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Trigger )
+	
+	if( cMsg.GetArg(0) == s_cTok_Trigger )
 	{
 		HandleTriggerMsg();
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Lock )
+	
+	if( cMsg.GetArg(0) == s_cTok_Lock )
 	{
 		HandleLock( LTTRUE );
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Unlock )
+	
+	if( cMsg.GetArg(0) == s_cTok_Unlock )
 	{
 		HandleLock( LTFALSE );
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_On )
+	
+	if( cMsg.GetArg(0) == s_cTok_On )
 	{
 		if( m_nCurState == AWM_STATE_OFF || m_nCurState == AWM_STATE_POWEROFF )
 		{
 			SetActiveObj( hSender );
 			HandleTriggerMsg();
 		}
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Off )
+	
+	if( cMsg.GetArg(0) == s_cTok_Off )
 	{
 		if( m_nCurState == AWM_STATE_ON || m_nCurState == AWM_STATE_POWERON )
 		{
 			SetActiveObj( hSender );
 			HandleTriggerMsg();
 		}
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_SetPowerOnMultiplier )
+	
+	if( cMsg.GetArg(0) == s_cTok_SetPowerOnMultiplier )
 	{
 		if( cMsg.GetArgCount() > 1 )
 		{
 			m_fPowerOnMultiplier = (LTFLOAT)atof(cMsg.GetArg(1));
 		}
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Pause )
+	
+	if( cMsg.GetArg(0) == s_cTok_Pause )
 	{
 		HandlePause( );
+		return true;
 	}
-	else if( cMsg.GetArg(0) == s_cTok_Resume )
+	
+	if( cMsg.GetArg(0) == s_cTok_Resume )
 	{
 		HandleResume( );
+		return true;
 	}
-	else
-		return bResult;
 
-	return true;
+	if( cMsg.GetArg(0) == s_cTok_InfoString )
+	{
+		if( cMsg.GetArgCount() > 1 )
+		{
+			m_nStringOverrideID = atoi( cMsg.GetArg(1) );
+			g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (m_nStringOverrideID > 0) ? USRFLG_INFO_STRING : 0, USRFLG_INFO_STRING );
+		}
+		return true;
+	}
+
+	if( (cMsg.GetArg(0) == s_cTok_AddPSet) && (cMsg.GetArgCount() > 1) )
+	{
+		// RETAIL BUG: (docs/RETAIL_BUGS.md) 0x10176709 reads the permission
+		// set digits from the sender's handle, not from the argument
+#ifdef TRON20SRC_MODERN
+		const char *pPSets = cMsg.GetArg(1);
+#else
+		const CParsedMsg::CToken &cArg = cMsg.GetArg(1);
+		const char *pPSets = (const char*)hSender;
+#endif
+		int nLen = strlen( pPSets );
+		if( nLen > 8 ) nLen = 8;
+
+		for( int i = 0; i < nLen; i++ )
+		{
+			if( pPSets[i] >= '1' && pPSets[i] <= '8' )
+			{
+				m_nPSets |= 1 << (pPSets[i] - '1');
+			}
+		}
+
+		SET_OBJECT_PSETS_USER_FLAGS(m_hObject, m_nPSets);
+		return true;
+	}
+
+	if( (cMsg.GetArg(0) == s_cTok_RemovePSet) && (cMsg.GetArgCount() > 1) )
+	{
+		// RETAIL BUG: (docs/RETAIL_BUGS.md) 0x101767ad tests eight characters
+		// whatever the argument's length
+		const char *pPSets = cMsg.GetArg(1);
+#ifdef TRON20SRC_MODERN
+		int nLen = strlen( pPSets );
+		if( nLen > 8 ) nLen = 8;
+#else
+		int nLen = 8;
+#endif
+
+		for( int i = 0; i < nLen; i++ )
+		{
+			if( pPSets[i] >= '1' && pPSets[i] <= '8' )
+			{
+				m_nPSets &= ~(1 << (pPSets[i] - '1'));
+			}
+		}
+
+		SET_OBJECT_PSETS_USER_FLAGS(m_hObject, m_nPSets);
+		return true;
+	}
+
+	return bResult;
 }
 
 
@@ -1461,7 +1580,9 @@ void ActiveWorldModel::SetPowerOn( )
 
 	// Set the on state for our activate object.
 
-	m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn );
+	// RETAIL: Tron leaves a locked AWM's activate state alone
+	if( !(m_dwPropFlags & AWM_PROP_LOCKED) )
+		m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn );
 }
 
 
@@ -1496,7 +1617,7 @@ void ActiveWorldModel::SetOn( LTBOOL bInitialize )
 
 	if( !bInitialize )
 	{
-		StartSound( m_hstrOnSnd, m_dwPropFlags & AWM_PROP_LOOPSOUNDS );
+		StartSound( m_hstrOnSnd, LTFALSE );	// RETAIL: Tron never loops it
 
 		// Send a command if we have one...
 
@@ -1519,7 +1640,9 @@ void ActiveWorldModel::SetOn( LTBOOL bInitialize )
 
 	// Set the on state for our activate object.
 
-	m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn );
+	// RETAIL: Tron leaves a locked AWM's activate state alone
+	if( !(m_dwPropFlags & AWM_PROP_LOCKED) )
+		m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn );
 }
 
 
@@ -1569,7 +1692,9 @@ void ActiveWorldModel::SetPowerOff( )
 
 	// Set the off state for our activate object.
 
-	m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOff );
+	// RETAIL: Tron leaves a locked AWM's activate state alone
+	if( !(m_dwPropFlags & AWM_PROP_LOCKED) )
+		m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOff );
 }
 
 
@@ -1596,7 +1721,7 @@ void ActiveWorldModel::SetOff( LTBOOL bInitialized )
 			m_vRotateDir = m_vInitRotDir;
 		}
 
-		StartSound( m_hstrOffSnd, m_dwPropFlags & AWM_PROP_LOOPSOUNDS );
+		StartSound( m_hstrOffSnd, LTFALSE );	// RETAIL: Tron never loops it
 
 		// Send a command if we have one...
 
@@ -1619,7 +1744,9 @@ void ActiveWorldModel::SetOff( LTBOOL bInitialized )
 
 	// Set the off state for our activate object.
 
-	m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOff );
+	// RETAIL: Tron leaves a locked AWM's activate state alone
+	if( !(m_dwPropFlags & AWM_PROP_LOCKED) )
+		m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOff );
 }
 
 
@@ -2056,11 +2183,31 @@ void ActiveWorldModel::Activate( HOBJECT hObj )
 
 	if( !bAIActivated && !(m_dwPropFlags & AWM_PROP_PLAYERACTIVATE) ) return;
 
-	SetActiveObj( hObj );
+	// RETAIL: 0x10178096: Tron's permission sets: without them the AWM
+	// plays its refusal sound and runs its InvalidPSetCommand
 
-	// Lets do what we came here to do
+	if( !CanActivatePSets( hObj, m_nPSets ))
+	{
+		StartSound( "ActiveWorldModelInvalidPSet", LTFALSE );
 
-	HandleTriggerMsg();
+		if( m_hstrInvalidPSetCmd )
+		{
+			const char	*pCmd = g_pLTServer->GetStringData( m_hstrInvalidPSetCmd );
+
+			if( pCmd && g_pCmdMgr->IsValidCmd( pCmd ))
+			{
+				g_pCmdMgr->Process( pCmd, m_hObject, m_hActivateObj );
+			}
+		}
+	}
+	else
+	{
+		SetActiveObj( hObj );
+
+		// Lets do what we came here to do
+
+		HandleTriggerMsg();
+	}
 }
 
 
@@ -2199,6 +2346,50 @@ void ActiveWorldModel::StartSound( const HSTRING hstrSoundName, const LTBOOL bLo
 	}
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	ActiveWorldModel::StartSound
+//
+//  PURPOSE:	RETAIL: 0x10178490: Tron's: play a sound by name (as the
+//				HSTRING one)
+//
+// ----------------------------------------------------------------------- //
+
+void ActiveWorldModel::StartSound( const char *pSoundName, const LTBOOL bLoop )
+{
+	// Kill any currently playing sound
+
+	StopSound();
+
+	if( !pSoundName ) return;
+
+	uint32 dwSndFlags = PLAYSOUND_3D | PLAYSOUND_REVERB;
+
+	if( bLoop & (m_dwPropFlags & AWM_PROP_LOOPSOUNDS) )
+	{
+		dwSndFlags |= PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE;
+	}
+
+	// If we didn't specify a position attach it to the object
+
+	if( m_vSoundPos.NearlyEquals( LTVector( 0.0f, 0.0f, 0.0f ), 0.0f ))
+	{
+		dwSndFlags |= PLAYSOUND_ATTACHED;
+
+		m_hsndLastSound = g_pServerSoundMgr->PlaySoundFromObject( m_hObject, pSoundName, m_fSoundRadius, SOUNDPRIORITY_MISC_MEDIUM, 
+																  dwSndFlags, SMGR_DEFAULT_VOLUME, 1.0f, m_fSoundRadius * 0.25f );
+	}
+	else
+	{
+		LTVector vPos, vSndPos;
+		g_pLTServer->GetObjectPos( m_hObject, &vPos );
+		vSndPos = vPos + m_vSoundPos;
+
+		m_hsndLastSound = g_pServerSoundMgr->PlaySoundFromPos( vSndPos, pSoundName, m_fSoundRadius, SOUNDPRIORITY_MISC_MEDIUM,
+															   dwSndFlags, SMGR_DEFAULT_VOLUME, 1.0f, m_fSoundRadius * 0.25f ); 
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //
