@@ -421,7 +421,7 @@ bool CLightCycleMatchMgr::OnKeyDown(int nKey, int nRep)
 
 		if (m_nState != 1 || !m_bTronUnknown1F)
 		{
-			if (!g_pLightCycleMgr->GetLivingCyclist(g_pMoveMgr->GetServerObject()))
+			if (!g_pLightCycleMgr->GetLivingCyclist(g_pMoveMgr->GetObject()))
 			{
 				g_pTronPlayerMgr->TronUnknownLightCycleSpectate();
 				return true;
@@ -701,9 +701,8 @@ const char* CLightCycleMatchMgr::GetTeamSound(int nKind, int nTeam)
 	int nBase;
 	switch (nKind)
 	{
-		case 0:		nBase = LCMM_SOUND_MATCHOVER;	break;
 		case 1:		nBase = LCMM_SOUND_ROUNDOVER;	break;
-		case 2:
+		case 0:		nBase = LCMM_SOUND_MATCHOVER;	break;
 		default:	return LTNULL;
 	}
 
