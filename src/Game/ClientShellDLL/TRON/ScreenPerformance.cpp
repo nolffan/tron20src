@@ -128,9 +128,8 @@ LTBOOL CScreenPerformance::Build()
 
 	pCtrl = AddTextItem(IDS_SFX, CMD_SFX, IDS_HELP_SFX);
 
-	//add a gap before performance test item
-	m_nextPos.y += g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);;
-	m_pPerformanceTest = AddTextItem(IDS_PERFORMANCE_TEST,CMD_CUSTOM,IDS_HELP_PERFORMANCE_TEST);
+	// RETAIL: Tron's screen has no performance test (retail Build,
+	// 0x10070120, adds no IDS_PERFORMANCE_TEST item)
 
 	char szOn[32] = "";
 	char szOff[32] = "";
@@ -223,11 +222,8 @@ LTBOOL CScreenPerformance::Build()
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);	
 
-		pCtrl = CreateCycle(IDS_TRIPLE_BUFF, IDS_HELP_TRIPLE_BUFF,listGap, &m_nTripleBuffer);
-		pCtrl->AddString(szOff);
-		pCtrl->AddString(szOn);
-		pCtrl->SetFont(NULL,nListFontSize);
-		m_pDisplay->AddControl(pCtrl);	
+		// RETAIL: no triple buffering cycle in Tron's (retail Build adds
+		// no IDS_TRIPLE_BUFF item)
 
 		uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
 		pCtrl->Enable( (dwAdvancedOptions & AO_TRIPLEBUFFER) );
@@ -450,20 +446,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 };
 
 // Screen specific rendering
+// RETAIL: 0x10071e10, nothing more than the base's (Tron has no
+// performance test to enable)
 LTBOOL   CScreenPerformance::Render(HSURFACE hDestSurf)
 {
-	// Dumb, but need to make sure this is enabled/disabled
-	// correctly and there are a lot of timing issues with
-	// when the client is actually connected/disconnected
-	if (m_pPerformanceTest)
-	{
-#ifdef _TO2DEMO
-		m_pPerformanceTest->Enable(LTFALSE);
-#else
-		m_pPerformanceTest->Enable(!g_pLTClient->IsConnected());
-#endif // _TO2DEMO
-	}
-
 	return CBaseScreen::Render(hDestSurf);
 }
 // Change in focus
@@ -839,20 +825,9 @@ void CScreenPerformance::Escape()
 }
 
 // Calls UpdateData on each control in the screen
+// RETAIL: 0x10072870, nothing more than the base's (Tron has no triple
+// buffering setting to convert)
 void CScreenPerformance::UpdateData(LTBOOL bSaveAndValidate)
 {
-	if (!bSaveAndValidate)
-	{
-		//the TripleBuffering setting will be 1 or 2, whereas the control needs it to be 0 or 1
-		m_nTripleBuffer = m_sCfg.nSettings[kPerform_TripleBuffering]-1;
-	}
-
 	CBaseScreen::UpdateData(bSaveAndValidate);
-
-	if (bSaveAndValidate)
-	{
-		//the TripleBuffering setting will be 1 or 2, whereas the control needs it to be 0 or 1
-		m_sCfg.nSettings[kPerform_TripleBuffering] = m_nTripleBuffer+1;
-	}
-
 }
