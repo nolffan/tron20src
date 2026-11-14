@@ -1,6 +1,6 @@
 // counter.h: the engine's performance counters, as the sound driver sees
-// them in the Final build: CounterFinal and its helpers are real, the
-// profiling helpers (CountAdder) compile to nothing.
+// them in the Final build: CounterFinal, its helpers and (in Tron's) the
+// CountAdder that the sound thread times itself with.
 
 #ifndef __COUNTER_H__
 #define __COUNTER_H__
@@ -36,14 +36,24 @@ unsigned long cnt_EndCounterFinal(CounterFinal &cCounter);
 
 #ifdef _FINAL
 
-// Adds the time spent in a scope to a count: nothing in the Final build,
-// but still an object with a destructor where it is declared (Thread_Func's
-// exception states count them: 0x10003221).
+// Adds the time spent in a scope to a count. RETAIL: Tron's Final build
+// counts (NOLF2's compiled to nothing): Thread_Func's two (0x1000357a,
+// 0x1000365a). The destructor is no inline function: its copy for the
+// unwinding lies among s_dx8.cpp's code (0x10003790), not with the inline
+// functions' at the end, so it is defined there.
 class CountAdder
 {
 public:
-	CountAdder(uint32 *pNum) {}
-	~CountAdder() {}
+	CountAdder(uint32 *pNum)
+	{
+		m_pNum = pNum;
+		cnt_StartCounterFinal(m_Counter);
+	}
+
+	~CountAdder();
+
+	CounterFinal m_Counter;
+	uint32 *m_pNum;
 };
 
 #endif // _FINAL

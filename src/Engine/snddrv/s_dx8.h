@@ -451,6 +451,21 @@ public:
 
 	bool SetSampleNotify( CSample* pSample, bool bEnable );
 
+	// RETAIL: Tron's own (inlined in Stop3DSample, End3DSample and
+	// StopSample/EndSample, 0x100069f0; the name is ours): the sample's
+	// parameter fade freed
+	void EndSoundParam( CSample* pSample )
+	{
+		SSoundParam* pParam = pSample->m_pSoundParam;
+		if( pParam )
+		{
+			WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+			pParam->Reset( );
+			pSample->m_pSoundParam = NULL;
+			ReleaseMutex( m_hSoundParamMutex );
+		}
+	}
+
 private:
 	void Reset( );
 #ifdef USE_EAX20_HARDWARE_FILTERS
