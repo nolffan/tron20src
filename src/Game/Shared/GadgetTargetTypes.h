@@ -69,20 +69,22 @@ struct GTINFO
 
 // Hard table of Gadget Target Types...
 
+// RETAIL: Tron shows no time bar for coded text and invisible ink (the
+// initializers Object.lto 0x10267bb0, CShell.dll 0x10102890 and others)
 static GTINFO GTInfoArray[] =
 {			
 	//		TYPE			NAME			 BAR	  TIME	   SHOOT	LOCKPICK   WELD	  CODE
 	GTINFO( eINVALID ),
 	GTINFO( eKeyPad,		"KeyPad",		 LTTRUE,  LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTTRUE ),
 	GTINFO( eCardReader,	"CardReader",	 LTTRUE,  LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTTRUE ),
-	GTINFO( eCodedText,		"CodedText",	 LTTRUE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTTRUE ),
+	GTINFO( eCodedText,		"CodedText",	 LTFALSE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTTRUE ),
 	GTINFO( eComboLock,		"ComboLock",	 LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTTRUE,  LTFALSE ),
 	GTINFO( ePadLock,		"PadLock",		 LTTRUE,  LTTRUE,  LTTRUE,  LTTRUE,  LTFALSE, LTFALSE ),
 	GTINFO( eDoorKnob,		"DoorKnob",		 LTTRUE,  LTTRUE,  LTFALSE, LTTRUE,  LTFALSE, LTFALSE ),
 	GTINFO( eTelephone,		"Telephone",	 LTFALSE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTFALSE ),
 	GTINFO( ePhotographable,"Photographable",LTFALSE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTFALSE ),
 	GTINFO( eBombable,		"Bombable",		 LTFALSE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTFALSE ),
-	GTINFO( eInvisibleInk,	"InvisibleInk",	 LTTRUE,  LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTFALSE ),
+	GTINFO( eInvisibleInk,	"InvisibleInk",	 LTFALSE, LTTRUE,  LTFALSE, LTFALSE, LTFALSE, LTFALSE ),
 };
 
 
