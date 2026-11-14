@@ -39,6 +39,11 @@ CLTGUIFrame::CLTGUIFrame()
 	m_nBorderWidth = 0;
 	m_BorderColor = 0xFF000000;
 
+	// TRON: (RETAIL: 0x100bdc80)
+	m_bHollow = false;
+	m_bScaleSourceRects = true;
+	m_bUseSourceRects = false;
+
 }
 
 CLTGUIFrame::~CLTGUIFrame()
@@ -106,6 +111,13 @@ void CLTGUIFrame::Render()
 	{
 		g_pDrawPrim->DrawPrim(m_Poly);
 	}
+	else if (m_bHollow)
+	{
+		// TRON: a hollow frame skips its centre cell (RETAIL: 0x100bdeb0)
+		g_pDrawPrim->DrawPrim(m_Poly,4);
+		g_pDrawPrim->SetTexture(m_hFrame);
+		g_pDrawPrim->DrawPrim(&m_Poly[5],4);
+	}
 	else
 	{
 		g_pDrawPrim->DrawPrim(m_Poly,9);
@@ -149,6 +161,13 @@ void CLTGUIFrame::InitPolies()
 {
 	ScalePolies();
 
+	// TRON: (RETAIL: 0x100be030)
+	if (m_bUseSourceRects)
+	{
+		InitSourceRectPolies();
+		return;
+	}
+
 	if (m_bSimpleStretch)
 	{
 		SetupQuadUVs(m_Poly[0], m_hFrame, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -175,6 +194,13 @@ void CLTGUIFrame::InitPolies()
 
 void CLTGUIFrame::ScalePolies()
 {
+	// TRON: (RETAIL: 0x100be2b0)
+	if (m_bUseSourceRects)
+	{
+		ScaleSourceRectPolies();
+		return;
+	}
+
 	uint32 tw,th;
 	float fx = (float)m_pos.x;
 	float fy = (float)m_pos.y;
@@ -273,8 +299,86 @@ void CLTGUIFrame::SetColor(uint32 argbColor)
 {
 	m_hFrame	= LTNULL;
 	m_argbColor = argbColor;
-	g_pDrawPrim->SetRGBA(&m_Poly[0],m_argbColor);
+	// TRON: colours all nine cells (RETAIL: 0x100be710)
+	for (int i = 0; i < 9; i++)
+		g_pDrawPrim->SetRGBA(&m_Poly[i],argbColor);
 	ScalePolies();
+}
+
+// TRON: places the cells of a frame cut from source rectangles: corner
+// cells keep their texel size, edges and centre stretch (RETAIL:
+// 0x100be760; name ours). The frame reaches one pixel outside the control.
+void CLTGUIFrame::ScaleSourceRectPolies()
+{
+	if (!m_bScaleSourceRects) return;
+
+	int nLeft = m_pos.x - 1;
+	int nTop = m_pos.y - 1;
+	float fTop = (float)nTop;
+
+	int w0 = m_rcSource[0].right - m_rcSource[0].left + 1;
+	int h0 = m_rcSource[0].bottom - m_rcSource[0].top + 1;
+	g_pDrawPrim->SetXYWH(&m_Poly[0],(float)nLeft,fTop,(float)w0,(float)h0);
+
+	int y3 = nTop + h0 - 1;
+	int x1 = nLeft + w0 - 1;
+	int w2 = m_rcSource[2].right - m_rcSource[2].left + 1;
+	int h2 = m_rcSource[2].bottom - m_rcSource[2].top + 1;
+	int x2 = m_pos.x + m_nWidth - w2 + 2;
+	g_pDrawPrim->SetXYWH(&m_Poly[2],(float)x2,fTop,(float)w2,(float)h2);
+
+	int y5 = nTop + h2;
+	int h1 = m_rcSource[1].bottom - m_rcSource[1].top + 1;
+	g_pDrawPrim->SetXYWH(&m_Poly[1],(float)x1,fTop,(float)(x2 - x1 + 1),(float)h1);
+
+	nLeft = m_pos.x - 1;
+	float fLeft = (float)nLeft;
+	int w6 = m_rcSource[6].right - m_rcSource[6].left + 1;
+	int h6 = m_rcSource[6].bottom - m_rcSource[6].top + 1;
+	int y6 = m_pos.y + m_nHeight - h6 + 2;
+	g_pDrawPrim->SetXYWH(&m_Poly[6],fLeft,(float)y6,(float)w6,(float)h6);
+
+	// RETAIL: the middle left cell goes to m_Poly[6] (overwriting the
+	// bottom left one) and m_Poly[3] is never placed
+	int x7 = nLeft + w6 - 1;
+	int w3 = m_rcSource[3].right - m_rcSource[3].left + 1;
+	g_pDrawPrim->SetXYWH(&m_Poly[6],fLeft,(float)y3,(float)w3,(float)(y6 - y3 + 1));
+
+	int w8 = m_rcSource[8].right - m_rcSource[8].left + 1;
+	int h8 = m_rcSource[8].bottom - m_rcSource[8].top + 1;
+	int x8 = m_pos.x + m_nWidth - w8 + 2;
+	int y8 = m_pos.y + m_nHeight - h8 + 2;
+	g_pDrawPrim->SetXYWH(&m_Poly[8],(float)x8,(float)y8,(float)w8,(float)h8);
+
+	int h7 = m_rcSource[7].bottom - m_rcSource[7].top + 1;
+	int y7 = m_pos.y + m_nHeight - h7 + 2;
+	g_pDrawPrim->SetXYWH(&m_Poly[7],(float)x7,(float)y7,(float)(x8 - x7 + 1),(float)h7);
+
+	int w5 = m_rcSource[5].right - m_rcSource[5].left + 1;
+	int x5 = m_pos.x + m_nWidth - w5 + 2;
+	g_pDrawPrim->SetXYWH(&m_Poly[5],(float)x5,(float)y5,(float)w5,(float)(y8 - y5));
+
+	int xc = m_pos.x - 1 + (m_rcSource[3].right - m_rcSource[3].left);
+	int yc = m_pos.y + (m_rcSource[1].bottom - m_rcSource[1].top) + 1;
+	g_pDrawPrim->SetXYWH(&m_Poly[4],(float)xc,(float)yc,(float)(x5 - xc),(float)(y7 - yc));
+}
+
+// TRON: the UVs of a frame cut from source rectangles (RETAIL: 0x100beb70;
+// name ours)
+void CLTGUIFrame::InitSourceRectPolies()
+{
+	uint32 tw,th;
+	g_pTexInterface->GetTextureDims(m_hFrame,tw,th);
+
+	for (int i = 0; i < 9; i++)
+	{
+		float fu = (float)m_rcSource[i].left / (float)tw;
+		float fw = (float)(m_rcSource[i].right - m_rcSource[i].left + 1) / (float)tw;
+		float fv = (float)m_rcSource[i].top / (float)th;
+		float fh = (float)(m_rcSource[i].bottom - m_rcSource[i].top + 1) / (float)th;
+		SetupQuadUVs(m_Poly[i], m_hFrame, fu, fv, fw, fh);
+		g_pDrawPrim->SetRGBA(&m_Poly[i],0xFFFFFFFF);
+	}
 }
 
 // Sets the width of the frames's border, set to 0 to not show the frame

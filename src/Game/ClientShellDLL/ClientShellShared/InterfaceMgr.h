@@ -432,9 +432,9 @@ class CInterfaceMgr
 		CCursorMgr		m_CursorMgr;			// +0x40 Cursor handler (new for Tron/TO2)
 		char			m_aTronPadCursorMgr[0x3c - sizeof(CCursorMgr)];
 		CMessageBox		m_MessageBox;			// +0x7c Used for simple dialog boxes
-		char			m_aTronPadMessageBox[0x5a8 - sizeof(CMessageBox)];
+		// (CMessageBox is retail's 0x5a8 bytes with LTGUIMgr's controls at retail's sizes)
 		CInterfaceResMgr	m_InterfaceResMgr;		// +0x624 manages shared resources
-		char			m_aTronPadInterfaceResMgr[0x898 - sizeof(CInterfaceResMgr)];
+		// (CInterfaceResMgr is retail's 0x898 bytes with LTGUIMgr's controls at retail's sizes)
 		CMenuMgr			m_MenuMgr;				// +0xebc
 		char			m_aTronPadMenuMgr[0x5ce8 - sizeof(CMenuMgr)];
 //		CLayoutMgr			m_LayoutMgr;			// bute mgr for layout info
@@ -634,7 +634,7 @@ private:
 		// order differ: constructor 0x100c67b0); this pad puts m_bInitialized
 		// at retail's +0xf980 (checked in the constructor). Shrink it when
 		// a member above grows.
-		char	m_aTronUnknownPad[0xf980 - 0xf534];
+		char	m_aTronUnknownPad[0xf980 - 0xf5c8];
 
 		// true after Init called.  false after Term called.
 		bool	m_bInitialized;

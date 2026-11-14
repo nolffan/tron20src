@@ -41,6 +41,9 @@ public:
 	// Render the control
 	virtual void	Render ();
 
+	// TRON: fades the button's quad too (RETAIL: 0x100ba1e0)
+	virtual void	SetAlpha(uint8 nAlpha);
+
 	// Width/Height calculations
 	virtual uint16	GetWidth ( )						{ return m_nWidth; }
 	virtual uint16	GetHeight ( )						{ return m_nHeight; }

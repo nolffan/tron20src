@@ -59,6 +59,7 @@ public:
 	// Mouse messages
     virtual LTBOOL   OnLButtonDown(int x, int y);
     virtual LTBOOL   OnLButtonUp(int x, int y);
+    virtual LTBOOL   OnLButtonDblClick(int x, int y);	// TRON (RETAIL: 0x100b8890)
     virtual LTBOOL   OnRButtonDown(int x, int y);
     virtual LTBOOL   OnRButtonUp(int x, int y);
     virtual LTBOOL   OnMouseMove(int x, int y);
@@ -72,6 +73,13 @@ public:
 	// Sets the width of the list's frame, set to 0 to not show the frame
 	void		SetFrameWidth(uint8 nFrameWidth);
 
+	// TRON: a textured frame instead of the coloured one; LTNULL to remove
+	// it (RETAIL: 0x100b98e0; name ours)
+	void		SetFrameTexture(HTEXTURE hFrame);
+
+	// TRON: fade the list's frame and its controls (RETAIL: 0x100b8370)
+	virtual void SetAlpha(uint8 nAlpha);
+
 	// Add/Remove controls to the array
 	static const uint16	kMaxNumControls;
 	static const uint16	kNoSelection;
@@ -82,6 +90,11 @@ public:
 	uint16		GetNumControls ( )							{ return m_controlArray.size(); }
 
 	CLTGUICtrl	*GetControl ( uint16 nIndex );
+
+	// TRON: swap a control with the one before/after it (RETAIL: 0x100b8c60,
+	// 0x100b8cb0; names ours)
+	void		MoveControlUp ( uint16 nIndex );
+	void		MoveControlDown ( uint16 nIndex );
 
 
 	//when list is selected/deselected
@@ -142,11 +155,22 @@ protected:
 	uint8		m_nFrameWidth;
 	LT_POLYF4	m_Frame[4];
 
+	// TRON: retail's 0x134/0x138 (names ours)
+	bool		m_bFrameTexture;
+	CLTGUIFrame	m_FrameTexture;
+
 	LTBOOL		m_bNeedsRecalculation;
 	LTBOOL		m_bScrollWrap;
 	LTBOOL		m_bScrollByPage;			// scroll by pages rather than by individual items
 
+	// TRON: retail's 0x66c and 0x670 (names ours)
+	LTBOOL		m_bMouseMoveSelects;		// TRUE: the mouse selects the control under it
+	LTBOOL		m_bEnterOnSelect;			// selecting a control also "enters" it; the selection stays
+
 	ControlArray	m_controlArray;
+
+	// TRON: retail's 0x680, the control last entered by OnUp/OnDown (name ours)
+	CLTGUICtrl*		m_pEnteredCtrl;
 
 	CLTGUIButton*	m_pUp;
 	CLTGUIButton*	m_pDown;

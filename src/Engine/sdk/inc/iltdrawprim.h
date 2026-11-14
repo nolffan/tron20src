@@ -170,8 +170,11 @@ struct LT_POLYGT4
     // RETAIL: Tron's SDK clears it (CHUDDamageDir's constructor, retail
     // CShell.dll 0x100250d0); the engine's does not (Lithtech.exe's
     // CUIPolyString_Impl::AllocPolys, 0x563710, only constructs the
-    // vertices), so the engine (__D3DREND) leaves it out.
-#ifndef __D3DREND
+    // vertices), so the engine (__D3DREND) leaves it out. So does the
+    // LTGUIMgr library (LTGUIMGR_LIB, its project's define): retail's
+    // CLTGUIFrame, CLTGUIButton and CLTGUISlider constructors (CShell.dll
+    // 0x100bdc80, 0x100b9c70, 0x100c0530) only construct the vertices.
+#if !defined(__D3DREND) && !defined(LTGUIMGR_LIB)
     LT_POLYGT4() { memset(this, 0, sizeof(LT_POLYGT4)); }
 #endif
 

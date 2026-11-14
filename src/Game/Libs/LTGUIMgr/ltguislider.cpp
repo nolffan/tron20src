@@ -36,7 +36,7 @@ CLTGUISlider::CLTGUISlider()
 	m_nFontSize = 0;
 	m_nBaseFontSize = 0;
 
-	m_xTronUnknown54 = LTTRUE;
+	m_bShowBar = LTTRUE;
     m_bNumDisplay = 0;
 	m_pnValue = LTNULL;
 	m_nMinSlider = 0;
@@ -129,6 +129,12 @@ void CLTGUISlider::SetNumericDisplay(LTBOOL bDisplay)
 	}
 }
 
+
+// TRON: (RETAIL: 0x100c0a60)
+void CLTGUISlider::ShowBar(LTBOOL bShow)
+{
+	m_bShowBar = bShow;
+}
 
 // Update data
 void CLTGUISlider::UpdateData(LTBOOL bSaveAndValidate)
@@ -263,30 +269,35 @@ void CLTGUISlider::Destroy ( )
 // Render the control
 void CLTGUISlider::Render ()
 {
+	// TRON: (RETAIL: 0x100c0da0)
+	if (!IsVisible()) return;
+
 	if (m_pText)
 	{
 		m_pText->SetColor(GetCurrentColor());
 		m_pText->Render();
 	}
 
-	g_pDrawPrim->SetTexture(m_hBar);
-
 	// set up the render state	
 	SetRenderState();
 
 
 //	draw bar
+	// TRON: the bar can be hidden (RETAIL: 0x100c0da0)
 
-	if (m_bEnabled && m_nSliderPos > m_nMinSlider)
+	if (m_bShowBar)
 	{
-		g_pDrawPrim->SetTexture(m_hBar);
-		g_pDrawPrim->DrawPrim(&m_Bar[eFull]);
-	}
+		if (m_bEnabled && m_nSliderPos > m_nMinSlider)
+		{
+			g_pDrawPrim->SetTexture(m_hBar);
+			g_pDrawPrim->DrawPrim(&m_Bar[eFull]);
+		}
 
-	if (m_bEnabled && m_nSliderPos < m_nMaxSlider)
-	{
-		g_pDrawPrim->SetTexture(m_hBar);
-		g_pDrawPrim->DrawPrim(&m_Bar[eEmpty]);
+		if (m_bEnabled && m_nSliderPos < m_nMaxSlider)
+		{
+			g_pDrawPrim->SetTexture(m_hBar);
+			g_pDrawPrim->DrawPrim(&m_Bar[eEmpty]);
+		}
 	}
 	
 //	draw arrows
