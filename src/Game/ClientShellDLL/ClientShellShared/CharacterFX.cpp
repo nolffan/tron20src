@@ -2958,6 +2958,9 @@ void CCharacterFX::HandleWeaponSoundLoopMsg( ILTMessage_Read *pMsg )
 		g_pLTClient->GetObjectPos( m_hServerObject, &vPos );
 
 		// Play the sound from the character
+		// PORT: Tron's message carries a 32-bit volume scale after the weapon id
+		// (0x1017a12c), passed for the fire sounds only (0x1017a163); ours does
+		// not, so the default stands in.
 
 		m_hWeaponLoopSound = g_pClientSoundMgr->PlaySoundFromObject( m_hServerObject, pBuf, (float)pWeapon->nFireSoundRadius,
 																	 SOUNDPRIORITY_PLAYER_MEDIUM, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE, 
