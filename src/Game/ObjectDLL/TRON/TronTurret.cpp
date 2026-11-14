@@ -1229,8 +1229,6 @@ bool TronTurret::Update()
 	g_pLTServer->SetObjectPos(m_hObject, &vPos);
 	g_pLTServer->SetObjectRotation(m_hObject, &rRot);
 
-	// RETAIL: Tron's sound calls take one more argument (1.0f) than ours.
-
 	if (m_eState == 1 && m_eLastState != 1)
 	{
 		if (m_hLoopSound)
@@ -1363,9 +1361,10 @@ WeaponState TronTurret::Fire()
 	{
 		PlayClientFX("Tank_Blast", LTNULL, &m_tFire.m_Pos, &m_tFire.m_Rot, 0);
 
-		// RETAIL: Tron's sound calls take one more argument (10.0f) than ours.
+		// RETAIL: retail passes a volume scale of 10.0f (0x1006cd1f), which
+		// PlaySoundFromObject ignores as it lies outside [0, 1].
 		m_hFireSound = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, s_szFireSound, 10000.0f, SOUNDPRIORITY_MISC_MEDIUM,
-			PLAYSOUND_GETHANDLE | PLAYSOUND_TIME, 100, 1.0f, -1.0f, 0);
+			PLAYSOUND_GETHANDLE | PLAYSOUND_TIME, 100, 1.0f, -1.0f, 0, 10.0f);
 	}
 
 	return eState;

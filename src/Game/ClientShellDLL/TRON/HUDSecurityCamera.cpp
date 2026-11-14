@@ -79,7 +79,6 @@ void CHUDSecurityCamera::Render()
 	m_bShow = true;
 	if (!m_hSound)
 	{
-		// PORT: retail passes one more argument (1.0f) to PlaySoundLocal
 		m_hSound = g_pClientSoundMgr->PlaySoundLocal("snd\\amb\\tvmontAmb.wav", SOUNDPRIORITY_PLAYER_HIGH,
 			PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT, 100, 1.0f, 0);
 	}
