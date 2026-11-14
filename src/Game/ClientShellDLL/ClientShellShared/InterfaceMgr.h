@@ -115,6 +115,28 @@ const uint32	argbTransBlack	= 0x00000000;
 class CInterfaceMgr;
 extern CInterfaceMgr* g_pInterfaceMgr;
 
+// RETAIL: Tron's record of an intel item picked up (no RTTI: the names are
+// ours), 0x58 bytes: CTronPlayerStats::UpdateIntel (0x100aaac0) has
+// CInterfaceMgr add one (0x100aabc0), and CInterfaceMgr saves them
+// (0x100cc550) and loads them (0x100cc5d0). Its functions open
+// InterfaceMgr.cpp (0x100c6650..0x100c67a0).
+struct TronIntelRecord
+{
+	TronIntelRecord();
+	TronIntelRecord(uint32 nTextId, uint8 nPopupId, bool bIsIntel, const char* pszName);
+	TronIntelRecord(const TronIntelRecord& other);
+	// RETAIL: empty, and called (0x100cc683)
+	~TronIntelRecord();
+
+	void	Save(ILTMessage_Write *pMsg);
+	void	Load(ILTMessage_Read *pMsg);
+
+	uint32	m_nTextId;			// +0x00
+	uint8	m_nPopupId;			// +0x04
+	bool	m_bIsIntel;			// +0x05
+	char	m_szName[80];		// +0x06
+};
+
 typedef std::vector<LTObjRef> ObjectArray;
 
 class CInterfaceMgr
@@ -653,9 +675,9 @@ private:
 		bool	m_bTronUnknownFA54;				// +0xfa54, true
 		char	m_aTronUnknownFA55[0x100f8 - 0xfa55];
 		uint32	m_nTronUnknown100F8;			// +0x100f8
-		// +0x100fc: 0x58-byte records, saved by Save (0x100cc550) and
-		// loaded by Load (0x100cc5d0)
-		uint32	m_aTronUnknown100FC[3];
+		// +0x100fc: the intel items picked up, saved by Save (0x100cc550)
+		// and loaded by Load (0x100cc5d0)
+		std::vector<TronIntelRecord>	m_IntelRecords;
 };
 
 

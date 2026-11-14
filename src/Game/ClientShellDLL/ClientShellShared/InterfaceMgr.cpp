@@ -301,6 +301,62 @@ static LTBOOL HandleDebugKey(int key )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	TronIntelRecord
+//
+//	PURPOSE:	Tron's record of an intel item (RETAIL: 0x100c6650,
+//				0x100c6660, 0x100c66b0, 0x100c6710, 0x100c6760)
+//
+// ----------------------------------------------------------------------- //
+
+TronIntelRecord::TronIntelRecord()
+{
+	m_nTextId = 0;
+	m_nPopupId = 0;
+	m_bIsIntel = false;
+	m_szName[0] = 0;
+}
+
+TronIntelRecord::TronIntelRecord(uint32 nTextId, uint8 nPopupId, bool bIsIntel, const char* pszName)
+{
+	m_nTextId = nTextId;
+	m_nPopupId = nPopupId;
+	m_bIsIntel = bIsIntel;
+	if (pszName)
+		SAFE_STRCPY(m_szName, pszName)
+	else
+		SAFE_STRCPY(m_szName, "")
+}
+
+TronIntelRecord::TronIntelRecord(const TronIntelRecord& other)
+{
+	m_nTextId = other.m_nTextId;
+	m_nPopupId = other.m_nPopupId;
+	m_bIsIntel = other.m_bIsIntel;
+	SAFE_STRCPY(m_szName, other.m_szName);
+}
+
+TronIntelRecord::~TronIntelRecord()
+{
+}
+
+void TronIntelRecord::Save(ILTMessage_Write *pMsg)
+{
+	pMsg->Writeuint32(m_nTextId);
+	pMsg->Writeuint8(m_nPopupId);
+	pMsg->Writebool(m_bIsIntel);
+	pMsg->WriteString(m_szName);
+}
+
+void TronIntelRecord::Load(ILTMessage_Read *pMsg)
+{
+	m_nTextId = pMsg->Readuint32();
+	m_nPopupId = pMsg->Readuint8();
+	m_bIsIntel = pMsg->Readbool();
+	pMsg->ReadString(m_szName, sizeof(m_szName));
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CInterfaceMgr::CInterfaceMgr
 //
 //	PURPOSE:	Constructor
@@ -4203,6 +4259,12 @@ void CInterfaceMgr::Save(ILTMessage_Write *pMsg, SaveDataState eSaveDataState)
 		return;
 
 	GetPlayerStats( )->Save(pMsg);
+
+	// TRON: the intel items (RETAIL: 0x100cc550)
+	pMsg->Writeuint8(m_IntelRecords.size());
+	std::vector<TronIntelRecord>::iterator iter;
+	for (iter = m_IntelRecords.begin(); iter != m_IntelRecords.end(); iter++)
+		iter->Save(pMsg);
 }
 
 // --------------------------------------------------------------------------- //
@@ -4220,6 +4282,15 @@ void CInterfaceMgr::Load(ILTMessage_Read *pMsg)
 		return;
 
 	GetPlayerStats( )->Load(pMsg);
+
+	// TRON: the intel items (RETAIL: 0x100cc5d0)
+	uint8 nNumRecords = pMsg->Readuint8();
+	for (int i = 0; i < nNumRecords; i++)
+	{
+		TronIntelRecord record;
+		record.Load(pMsg);
+		m_IntelRecords.push_back(record);
+	}
 }
 
 // --------------------------------------------------------------------------- //
