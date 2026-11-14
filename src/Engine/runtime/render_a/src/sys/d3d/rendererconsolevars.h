@@ -36,7 +36,7 @@ RCONVAR(g_CV_CacheTextures, "CacheTextures", int, 0);
 //------------------------------
 // Really Close settings
 RCONVAR(g_CV_ModelNear, "reallyclose_near", float, 0.1f);
-RCONVAR(g_CV_ModelFar, "reallyclose_far", float, 10.0f);	// RETAIL: 10 (object 0x57ce40)
+RCONVAR(g_CV_ModelFar, "reallyclose_far", float, 7.0f);	// RETAIL: 7 as NOLF2 (Lithtech.exe 0x4ce320)
 RCONVAR(g_CV_PVModelFOV, "PVModelFOV", float, 75.0f);
 RCONVAR(g_CV_PVModelAspect, "PVModelAspect", float, 1.0f);
 RCONVAR(g_CV_PVModelEnvmapVelocity, "PVModelEnvmapVelocity", float, 128.0f);
@@ -61,7 +61,7 @@ RCONVAR(g_CV_SkyFogFarZ, "SkyFogFarZ", float, 2000.0f);
 // Detail Textures
 RCONVAR(g_CV_DetailTextures, "DetailTextures", int, 1);
 RCONVAR(g_CV_DetailTextureScale, "DetailTextureScale", float, 0.2f);
-RCONVAR(g_CV_DetailTextureAdd, "DetailTextureAdd", int, 1);
+RCONVAR(g_CV_DetailTextureAdd, "DetailTextureAdd", int, 0);	// RETAIL: 0 (Lithtech.exe's initializer stores 0; NOLF2: 1)
 
 //------------------------------
 // Environment Maps
@@ -130,7 +130,7 @@ RCONVAR(g_CV_FarZ, "FarZ", float, 10000.0f);
 // no LockableBackBuffer in Tron
 RCONVAR(g_CV_PreventFrameBuffering, "PreventFrameBuffering", int, 1);
 RCONVAR(g_CV_ShowFrameBufferingInfo, "ShowFrameBufferingInfo", int, 0);
-RCONVAR(g_CV_MultiPassLightMatch, "MultiPassLightMatch", int, 0);         // use first renderpass dynamic light on all passes
+RCONVAR(g_CV_MultiPassLightMatch, "MultiPassLightMatch", int, 1);         // RETAIL: 1 (Lithtech.exe 0x4cf770 stores 1); use first renderpass dynamic light on all passes
 RCONVAR(g_CV_Use0WeightsForDisable, "Use0WeightsForDisable", int, 0);
 
 //------------------------------
@@ -142,7 +142,7 @@ RCONVAR(g_CV_GammaB, "GammaB", float, 1.0f);
 //------------------------------
 // Dynamic Lights
 RCONVAR(g_CV_DynamicLight_TextureSize, "DynamicLight_TextureSize", int, 256);
-RCONVAR(g_CV_DynamicLight_Backfacing, "DynamicLight_Backfacing", int, 1);	// RETAIL: 1 in Contract J.A.C.K. (NOLF2: 0)
+RCONVAR(g_CV_DynamicLight_Backfacing, "DynamicLight_Backfacing", int, 0);	// RETAIL: 0 as NOLF2 (Lithtech.exe's initializer stores 0; Contract J.A.C.K.: 1)
 RCONVAR(g_CV_DynamicLight_Backfacing_Error, "DynamicLight_Backfacing_Error", float, 10.0f);
 RCONVAR(g_CV_LightAddPoly, "LightAddPoly", float, 1.0f);
 RCONVAR(g_CV_DynamicLight, "DynamicLight", int, 1);

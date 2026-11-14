@@ -19,6 +19,9 @@ public:
 		// Remember that the device is created with a positive refcount
 		m_nRefCount = 1;
 		m_pDevice = pDevice; 
+		// RETAIL: SetDevice reads the device's states itself (Lithtech.exe
+		// 0x4c968a: CreateDevice keeps the wrapper in a register for it)
+		SetStates();
 	}
 
 

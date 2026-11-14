@@ -169,6 +169,7 @@ bool CD3DRenderStyle::Load_LTBData(ILTStream* pFileStream)
 // Does the current device support this render style...
 bool CD3DRenderStyle::IsSupportedOnDevice()
 {
+	// RETAIL: Build 69's, with the texture-alpha blends (Lithtech.exe 0x51cbb0)
 	// Run through all the render passes, setting them, and validating them...
 	for (uint32 iRenderPass = 0; iRenderPass < GetRenderPassCount(); ++iRenderPass)
 	{
@@ -185,6 +186,7 @@ bool CD3DRenderStyle::IsSupportedOnDevice()
 			case RENDERSTYLE_COLOROP_MODULATE			: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_MODULATE))			 { return false; } break;
 			case RENDERSTYLE_COLOROP_MODULATE2X			: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_MODULATE2X))			 { return false; } break;
 			case RENDERSTYLE_COLOROP_MODULATEALPHA		: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDCURRENTALPHA))	 { return false; } break;
+			case RENDERSTYLE_COLOROP_MODULATETEXALPHA	: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDTEXTUREALPHA))   { return false; } break;
 			case RENDERSTYLE_COLOROP_MODULATETFACTOR	: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDFACTORALPHA))	 { return false; } break;
 			case RENDERSTYLE_COLOROP_ADD				: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_ADD))				 { return false; } break;
 			case RENDERSTYLE_COLOROP_DOTPRODUCT3		: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_DOTPRODUCT3))		 { return false; } break;
@@ -196,6 +198,7 @@ bool CD3DRenderStyle::IsSupportedOnDevice()
 			case RENDERSTYLE_ALPHAOP_SELECTARG2			: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_SELECTARG2))			 { return false; } break;
 			case RENDERSTYLE_ALPHAOP_MODULATE			: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_MODULATE))			 { return false; } break;
 			case RENDERSTYLE_ALPHAOP_MODULATEALPHA		: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDCURRENTALPHA))	 { return false; } break;
+			case RENDERSTYLE_ALPHAOP_MODULATETEXALPHA	: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDTEXTUREALPHA))   { return false; } break;
 			case RENDERSTYLE_ALPHAOP_MODULATETFACTOR	: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_BLENDFACTORALPHA))	 { return false; } break;
 			case RENDERSTYLE_ALPHAOP_ADD				: if (!(g_Device.GetDeviceCaps()->TextureOpCaps & D3DTEXOPCAPS_ADD))				 { return false; } break; } }
 	}

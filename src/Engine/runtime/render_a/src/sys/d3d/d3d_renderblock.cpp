@@ -1586,33 +1586,20 @@ void CD3D_RenderBlock::ExtendSkyBounds(const ViewParams& Params, float &fMinX, f
 			bPrevClip = bCurClip;
 		}
 		// Skip over polys that are entirely outside the clipping area
+		// RETAIL: the screen's extents, not the viewport's (Contract J.A.C.K.'s
+		// "SKYBOX FIX for Multiple Cameras" is later: Lithtech.exe 0x52cfcb)
 		if ((nNear == sCurPoly.m_aVerts.size()) || 
-		// SKYBOX FIX for Multiple Cameras
-			/*
 			(fLocalMaxX < 0.0f) ||
 			(fLocalMaxY < 0.0f) ||
 			(fLocalMinX > Params.m_fScreenWidth) ||
 			(fLocalMinY > Params.m_fScreenHeight))
-			*/
-			(fLocalMaxX < static_cast<float>(Params.m_Rect.left))  ||
-			(fLocalMaxY < static_cast<float>(Params.m_Rect.top))   ||
-			(fLocalMinX > static_cast<float>(Params.m_Rect.right)) ||
-			(fLocalMinY > static_cast<float>(Params.m_Rect.bottom)) )
 			continue;
 
-		// SKYBOX FIX for Multiple Cameras
-		/*
 		// Clamp to the screen
 		fLocalMinX = LTMAX(0.0f, fLocalMinX);
 		fLocalMinY = LTMAX(0.0f, fLocalMinY);
 		fLocalMaxX = LTMIN(Params.m_fScreenWidth, fLocalMaxX);
 		fLocalMaxY = LTMIN(Params.m_fScreenHeight, fLocalMaxY);
-		*/
-		//Clamp to the viewport
-		fLocalMinX = LTMAX(static_cast<float>(Params.m_Rect.left), fLocalMinX);
-		fLocalMinY = LTMAX(static_cast<float>(Params.m_Rect.top), fLocalMinY);
-		fLocalMaxX = LTMIN(static_cast<float>(Params.m_Rect.right), fLocalMaxX);
-		fLocalMaxY = LTMIN(static_cast<float>(Params.m_Rect.bottom), fLocalMaxY);
 
 		// Extend the bounds
 		fMinX = LTMIN(fMinX, fLocalMinX);

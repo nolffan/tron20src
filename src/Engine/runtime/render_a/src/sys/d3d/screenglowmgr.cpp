@@ -22,6 +22,12 @@ extern void d3d_DrawSolidWorldModels(const ViewParams& Params);
 extern void d3d_QueueTranslucentGlowModels(const ViewParams& Params, ObjectDrawList& DrawList);
 extern void d3d_QueueTranslucentWorldModels(const ViewParams& Params, ObjectDrawList& DrawList);
 
+//------------------------
+// Local console variables (RETAIL: Build 69's, Lithtech.exe 0x5138d0)
+static ConVar<int> g_CV_ScreenGlow_DrawCanvases("ScreenGlow_DrawCanvases", 1);
+
+extern void d3d_DrawSolidCanvases(const ViewParams& Params);
+
 //--------------------------------------------------------------------------------------------------
 // Utilities
 //
@@ -398,22 +404,36 @@ bool CScreenGlowMgr::RenderSceneToTexture(const SceneDesc& Scene)
 	StateSet ssFogFarZ(D3DRS_FOGEND, *((uint32*)&g_CV_ScreenGlowFogFarZ.m_Val));
 	StateSet ssFogColor(D3DRS_FOGCOLOR, D3DRGB_255(0, 0, 0));
 
+	// get the far clip distance for rendering glow geometry (RETAIL: Build 69's
+	// glow pass, Lithtech.exe 0x51409f: far clip, no sky, StartFrame, canvases)
+	float newFarZ = g_CV_ScreenGlowFogEnable ? g_CV_ScreenGlowFogFarZ : g_CV_FarZ;
+	if( newFarZ > g_CV_FarZ )
+		newFarZ = g_CV_FarZ;
+
 	//alright, now we have our scene description, setup the frame and render away!
 	ViewParams NewViewParams;
-	d3d_InitFrustum(&NewViewParams, Scene.m_xFov, Scene.m_yFov, NEARZ, g_CV_FarZ,
+	d3d_InitFrustum(&NewViewParams, Scene.m_xFov, Scene.m_yFov, NEARZ, newFarZ,
 					0, 0, (float)m_nTextureWidth, (float)m_nTextureHeight,
 					&Scene.m_Pos, &Scene.m_Rotation, ViewParams::eRenderMode_Glow);
 	d3d_SetD3DTransformStates(NewViewParams);
 
+	//don't render the skybox during the glow pass
+	int32 nNumOldSkyObjects = g_pSceneDesc->m_nSkyObjects;
+	g_pSceneDesc->m_nSkyObjects = 0;
+
 	//first draw the main world
 	if (g_Device.m_pRenderWorld && g_CV_DrawWorld && g_have_world)
 	{
+		g_Device.m_pRenderWorld->StartFrame(NewViewParams);
 		g_Device.m_pRenderWorld->Draw(NewViewParams, false);
 	}
 
 	//now we need to draw all the objects. This includes models and world models
 	d3d_DrawSolidWorldModels(NewViewParams);
 	d3d_DrawGlowModels(NewViewParams);
+
+	if(g_CV_ScreenGlow_DrawCanvases.m_Val)
+		d3d_DrawSolidCanvases(NewViewParams);
 
 
 	//now queue up all the translucent objects
@@ -425,6 +445,9 @@ bool CScreenGlowMgr::RenderSceneToTexture(const SceneDesc& Scene)
 	d3d_SetTranslucentObjectStates();
 		s_TransDrawList.Draw(NewViewParams);
 	d3d_UnsetTranslucentObjectStates(true);
+
+	//reset the number of skybox objects
+	g_pSceneDesc->m_nSkyObjects = nNumOldSkyObjects;
 
 	//handle the blurring of the texture (we cache the result to ensure that the render target
 	//will be properly restored)
@@ -682,6 +705,9 @@ bool CScreenGlowMgr::RenderBlendedTexture(bool bUsePixelShader)
 
 		RenderBlendedTextureDirectionPS(fUVScale, 0.0f, 1.0f);
 
+		// RETAIL: Build 69's unbinding of the stages (Lithtech.exe 0x515326)
+		InstallTexture(NULL, 4);
+
 		// Uninstall the pixel shader.
 		CPixelShaderMgr::GetSingleton().UninstallPixelShaders();
 	}
@@ -730,6 +756,9 @@ bool CScreenGlowMgr::RenderBlendedTexture(bool bUsePixelShader)
 		InstallTexture(m_pBlendTexture, 2);
 
 		RenderBlendedTextureDirection2Texture(fUVScale, 0.0f, 1.0f);
+
+		// RETAIL: Build 69's unbinding of the stages (Lithtech.exe 0x51594e)
+		InstallTexture(NULL, 2);
 	}
 
 	return true;

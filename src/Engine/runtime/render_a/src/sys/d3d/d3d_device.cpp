@@ -66,7 +66,6 @@ bool CD3D_Device::CreateDevice(D3DAdapterInfo* pAdapter,D3DDeviceInfo* pDevice,D
 	// Create our wrapper, which we're going to present to the world as an actual D3D device
 	LT_MEM_TRACK_ALLOC(m_pD3DDevice = new CDirect3DDevice9Wrapper,LT_MEM_TYPE_RENDERER);
 	m_pD3DDevice->SetDevice(pD3DDevice);
-	m_pD3DDevice->SetStates();
 
 	if (FAILED(m_pD3DDevice->GetDeviceCaps(&m_DeviceCaps)))
 	{

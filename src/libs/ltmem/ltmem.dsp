@@ -28,7 +28,11 @@ CFG=ltmem - Win32 Final
 # tree's: server.dll links its globals) and links of the heap (ltmemheap.cpp, the fear
 # tree's, its globals only: nothing calls it). A static library project's flags (the C
 # runtime not imported: its calls go through import thunks, in the sound
-# driver and in Lithtech.exe alike), with /Ob2 as the driver's own.
+# driver and in Lithtech.exe alike). tron20src: Tron's is /O2 without /Ob2
+# (NOLF2's had it): its global initializers are each a jump thunk and an
+# initializer, its global object's constructor calls LTMemInit, in
+# SndDrv.dll (0x1000ae00..0x1000b03b), Lithtech.exe and server.dll alike
+# (their LTMemAlloc: 0x1000b020, 0x4c8f80, 0x1004b360).
 # Begin Project
 # PROP AllowPerConfigDependencies 0
 # PROP Scc_ProjName ""
@@ -49,7 +53,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "..\..\Engine\built\Final\ltmem"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /Ob2 /I "..\..\Engine\sdk\inc" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\..\Engine\sdk\inc" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /FD /c
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo

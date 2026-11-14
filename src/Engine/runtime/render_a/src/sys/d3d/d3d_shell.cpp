@@ -169,24 +169,35 @@ bool CD3D_Shell::BuildDeviceList()
 				else 
 				{
 					bConfirmed = true;
-					// Confirm the device for HW vertex processing...
-					// RETAIL: an Intel adapter whose caps deny hardware T&L is
-					// still given it unless it is one of these eight parts
-					// (Lithtech.exe 0x4cbe38)
-					if (Device.d3dCaps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT)
+					// RETAIL: Build 69's Intel 865 test (Lithtech.exe 0x4cbe38)
+					// Confirm the device for HW vertex processing or that the Intel 865
+					// which is fast enough for Tron.
+					if (Device.d3dCaps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) 
+					{
 						bHWTnL = true;
-					else if (AdapterInfo.AdapterID.VendorId == 0x8086 &&
-						AdapterInfo.AdapterID.DeviceId != 0x2562 &&
-						AdapterInfo.AdapterID.DeviceId != 0x1132 &&
-						AdapterInfo.AdapterID.DeviceId != 0x7121 &&
-						AdapterInfo.AdapterID.DeviceId != 0x7123 &&
-						AdapterInfo.AdapterID.DeviceId != 0x7125 &&
-						AdapterInfo.AdapterID.DeviceId != 0x7127 &&
-						AdapterInfo.AdapterID.DeviceId != 0x3577 &&
-						AdapterInfo.AdapterID.DeviceId != 0x3582)
-						bHWTnL = true;
+					}
+					else if ( AdapterInfo.AdapterID.VendorId == 0x8086 ) // Intel product
+					{
+						if( ( AdapterInfo.AdapterID.DeviceId != 0x2562 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x1132 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x7121 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x7123 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x7125 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x7127 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x3577 ) &&
+							( AdapterInfo.AdapterID.DeviceId != 0x3582 ) )  // Not Previous Intel Products
+						{
+							bHWTnL = true;  // Support Intel 865 and above products
+						}
+					else 
+						{
+						bHWTnL = false; 
+				}
+					}
 					else
-						bHWTnL = false;
+					{
+						bHWTnL = false; 
+					}
 				}
 
 				LT_MEM_TRACK_ALLOC(bConfirmedFormats.push_back(bConfirmed), LT_MEM_TYPE_RENDERER);
