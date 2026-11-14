@@ -665,16 +665,17 @@ void CUserProfile::LoadMisc()
 void CUserProfile::LoadLightCycleInfo()
 {
 	const char* pszTag = s_aLightCycleInfoKeys[0];
+	int i;
 
 	m_CompletedCircuits.clear();
 	m_UnlockedCycleColors.clear();
 	m_UnlockedPowerups.clear();
 	m_UnlockedCustomMaps.clear();
 
-	for (int i0 = 0; i0 < kMaxLightCycleInfoItems; i0++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i0);
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i);
 
 		char szValue[128];
 		szValue[0] = 0;
@@ -689,10 +690,10 @@ void CUserProfile::LoadLightCycleInfo()
 		}
 	}
 
-	for (int i1 = 0; i1 < kMaxLightCycleInfoItems; i1++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i1);
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i);
 
 		char szValue[128];
 		szValue[0] = 0;
@@ -707,10 +708,10 @@ void CUserProfile::LoadLightCycleInfo()
 		}
 	}
 
-	for (int i2 = 0; i2 < kMaxLightCycleInfoItems; i2++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i2);
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i);
 
 		char szValue[128];
 		szValue[0] = 0;
@@ -725,10 +726,10 @@ void CUserProfile::LoadLightCycleInfo()
 		}
 	}
 
-	for (int i3 = 0; i3 < kMaxLightCycleInfoItems; i3++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i3);
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i);
 
 		char szValue[128];
 		szValue[0] = 0;
@@ -921,14 +922,15 @@ void CUserProfile::SavePerformance()
 void CUserProfile::SaveLightCycleInfo()
 {
 	const char* pszTag = s_aLightCycleInfoKeys[0];
+	uint32 i;
 
-	for (uint32 i0 = 0; i0 < kMaxLightCycleInfoItems; i0++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i0);
-		if (i0 < m_CompletedCircuits.size())
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[1],i);
+		if (i < m_CompletedCircuits.size())
 		{
-			m_buteMgr.SetString(pszTag,szKey,m_CompletedCircuits[i0].c_str());
+			m_buteMgr.SetString(pszTag,szKey,m_CompletedCircuits[i].c_str());
 		}
 		else
 		{
@@ -936,13 +938,13 @@ void CUserProfile::SaveLightCycleInfo()
 		}
 	}
 
-	for (uint32 i1 = 0; i1 < kMaxLightCycleInfoItems; i1++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i1);
-		if (i1 < m_UnlockedCycleColors.size())
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[2],i);
+		if (i < m_UnlockedCycleColors.size())
 		{
-			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCycleColors[i1].c_str());
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCycleColors[i].c_str());
 		}
 		else
 		{
@@ -950,13 +952,13 @@ void CUserProfile::SaveLightCycleInfo()
 		}
 	}
 
-	for (uint32 i2 = 0; i2 < kMaxLightCycleInfoItems; i2++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i2);
-		if (i2 < m_UnlockedPowerups.size())
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[3],i);
+		if (i < m_UnlockedPowerups.size())
 		{
-			m_buteMgr.SetString(pszTag,szKey,m_UnlockedPowerups[i2].c_str());
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedPowerups[i].c_str());
 		}
 		else
 		{
@@ -964,13 +966,13 @@ void CUserProfile::SaveLightCycleInfo()
 		}
 	}
 
-	for (uint32 i3 = 0; i3 < kMaxLightCycleInfoItems; i3++)
+	for (i = 0; i < kMaxLightCycleInfoItems; i++)
 	{
 		char szKey[32];
-		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i3);
-		if (i3 < m_UnlockedCustomMaps.size())
+		sprintf(szKey,"%s%d",s_aLightCycleInfoKeys[4],i);
+		if (i < m_UnlockedCustomMaps.size())
 		{
-			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCustomMaps[i3].c_str());
+			m_buteMgr.SetString(pszTag,szKey,m_UnlockedCustomMaps[i].c_str());
 		}
 		else
 		{
