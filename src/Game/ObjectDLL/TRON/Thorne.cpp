@@ -385,7 +385,6 @@ void CThorne::HandleModelString(HOBJECT hSender, const CParsedMsg &cMsg)
 	{
 		if (cMsg.GetArgCount() >= 2)
 		{
-			// PORT: Tron's PlaySoundFromObject takes one more argument (1.0f)
 			g_pServerSoundMgr->PlaySoundFromObject(m_hObject, cMsg.GetArg(1), -1.0f, SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, -1.0f, 0);
 		}
 	}

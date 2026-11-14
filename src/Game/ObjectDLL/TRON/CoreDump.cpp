@@ -863,7 +863,6 @@ void CoreDump::ShowContents()
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
-	// PORT: Tron's PlaySoundFromPos takes one more argument (1.0f)
 	g_pServerSoundMgr->PlaySoundFromPos(vPos, "coredump", 600.0f, SOUNDPRIORITY_MISC_HIGH, 0, 100, 1.0f, -1.0f, 0);
 }
 

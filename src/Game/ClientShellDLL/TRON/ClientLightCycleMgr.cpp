@@ -64,8 +64,7 @@ static bool IsLocalCyclist(HOBJECT hObj)
 //
 //	PURPOSE:	Plays a light cycle dialogue line with its subtitle.
 //				RETAIL: 0x100106e0 (the name is ours). PORT: Tron's
-//				PlaySoundLocal takes one more argument (1.0f) and its
-//				CHUDSubtitles::Show takes the sound; NOLF2's stand in.
+//				CHUDSubtitles::Show takes the sound; NOLF2's stands in.
 //
 // ----------------------------------------------------------------------- //
 
