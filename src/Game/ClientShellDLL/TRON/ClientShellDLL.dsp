@@ -172,6 +172,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BaseScreenHost.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientLightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -634,6 +638,10 @@ SOURCE=.\AdditiveCtrl.h
 # Begin Source File
 
 SOURCE=.\ArcCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenHost.h
 # End Source File
 # Begin Source File
 

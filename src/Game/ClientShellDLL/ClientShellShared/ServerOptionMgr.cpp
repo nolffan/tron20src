@@ -342,3 +342,25 @@ ServerGameOptions* CServerOptionMgr::GetCurrent()
 
 	return m_Options[m_nCurrent];
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CServerOptionMgr::GetNames
+//
+//	PURPOSE:	The names of the sets (RETAIL: 0x100478e0, the light cycle
+//				game data manager's identical code, folded)
+//
+// ----------------------------------------------------------------------- //
+
+void CServerOptionMgr::GetNames(StringList& lstNames)
+{
+	lstNames.clear();
+
+	for (uint32 i = 0; i < m_Options.size(); i++)
+	{
+		if (!m_Options[i]->m_sOptionsName.empty())
+		{
+			lstNames.push_back(m_Options[i]->m_sOptionsName);
+		}
+	}
+}

@@ -652,6 +652,16 @@ cover the screen are not confined to it.
 
 Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
 
+### The host screens pass a std::string to a "%s" format
+
+CShell.dll 0x10003f10 (CBaseScreenHost::LoadOptions, ClientShellDLL/TRON/
+BaseScreenHost.cpp). The option set's name is passed to FormatString's
+"..." as the std::string object itself (its twelve bytes copied), not its
+c_str(). It works only because STLport's string starts with the pointer to
+its text, which "%s" reads; the other two words are ignored.
+
+Not fixed yet: harmless with this STLport; the modern build should pass
+c_str().
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

@@ -10,6 +10,7 @@
 #define __SERVER_OPTION_MGR_H__
 
 #include "ProfileUtils.h"
+#include "CommonUtilities.h"
 #include "ButeMgr.h"
 #include <vector>
 #include <string>
@@ -36,6 +37,10 @@ public:
 
 	// RETAIL: 0x10047270 (out of line; its twin's, folded with it)
 	ServerGameOptions* GetCurrent();
+
+	// the names of the sets. RETAIL: 0x100478e0 (folded with
+	// CLightCycleGameDataMgr::GetNames; the host screens' list)
+	void		GetNames(StringList& lstNames);
 
 	uint32		GetNumOptions() { return m_Options.size(); }
 	ServerGameOptions* GetOptions(uint32 nIndex) { return m_Options[nIndex]; }
