@@ -40,6 +40,8 @@ public:
 
     void        UpdateLayout();
 
+	void		Flash();
+
 private:
 	void		UpdateText();
 	void		UpdateIcon();
@@ -51,5 +53,8 @@ private:
 	int				m_nFlashCount;
 	int				m_nFlashDir;
 };
+
+// RETAIL: 0x1026ee24 (set by CTronHUDMgr)
+extern CHUDLightCycleLives* g_pLightCycleLives;
 
 #endif

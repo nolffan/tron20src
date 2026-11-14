@@ -13,6 +13,7 @@
 
 #include "stdafx.h"
 #include "BaseScreenLightCycle.h"
+#include "BaseScreenHost.h"
 #include "ScreenMgr.h"
 #include "ScreenCommands.h"
 #include "MissionButeMgr.h"
@@ -46,22 +47,6 @@ namespace
 		if (bReturn && pThisScreen)
 			pThisScreen->SendCommand(CMD_OK,(uint32)pData,CMD_EDIT_NAME);
 	}
-}
-
-// RETAIL: CBaseScreenHost's (0x10002f40, 0x10002f90). PORT: here until its
-// TU is written, which should take them (and this file lose them)
-void NewSettingsCallBack(LTBOOL bReturn, void *pData)
-{
-	CBaseScreen *pThisScreen = g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(g_pInterfaceMgr->GetScreenMgr()->GetCurrentScreenID());
-	if (bReturn && pThisScreen)
-		pThisScreen->SendCommand(CMD_OK,(uint32)pData,kCmdLCNewSettings);
-}
-
-void RenameSettingsCallBack(LTBOOL bReturn, void *pData)
-{
-	CBaseScreen *pThisScreen = g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(g_pInterfaceMgr->GetScreenMgr()->GetCurrentScreenID());
-	if (bReturn && pThisScreen)
-		pThisScreen->SendCommand(CMD_OK,(uint32)pData,kCmdLCRenameSettings);
 }
 
 // RETAIL: 0x100082f0
@@ -255,7 +240,7 @@ uint32 CBaseScreenLightCycle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint3
 		{
 			MBCreate mb;
 			mb.eType = LTMB_EDIT;
-			mb.pFn = NewSettingsCallBack;
+			mb.pFn = RenameOptionsCallBack;
 			mb.pString = m_sNewName;
 			mb.nMaxChars = 16;
 			mb.eInput = CLTGUIEditCtrl::kInputFileFriendly;
@@ -267,7 +252,7 @@ uint32 CBaseScreenLightCycle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint3
 			CLightCycleGameData *pData = g_pLightCycleGameDataMgr->GetCurrent();
 			MBCreate mb;
 			mb.eType = LTMB_EDIT;
-			mb.pFn = RenameSettingsCallBack;
+			mb.pFn = DeleteOptionsCallBack;
 			mb.pString = pData->m_sName.c_str();
 			mb.nMaxChars = 16;
 			mb.eInput = CLTGUIEditCtrl::kInputFileFriendly;

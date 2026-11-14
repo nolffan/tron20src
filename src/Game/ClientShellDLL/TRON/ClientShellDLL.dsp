@@ -172,6 +172,10 @@ SOURCE=.\ArcCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\BaseScreenHost.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientLightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -229,6 +233,10 @@ SOURCE=.\ClientWeaponSequencerDisc.cpp
 # Begin Source File
 
 SOURCE=.\ClientWeaponSuffusion.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\DiscMatchMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -330,6 +338,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleRoster.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -390,6 +402,10 @@ SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleMatchMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleButeMgr.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -441,8 +457,17 @@ SOURCE=.\ProceduralCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\pt\ptMain.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2regkeys.c
 # SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=.\RatingBarCtrl.cpp
 # End Source File
 # Begin Source File
 
@@ -500,6 +525,14 @@ SOURCE=.\ScreenFailure.cpp
 # Begin Source File
 
 SOURCE=.\ScreenGame.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostConnection.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostMaps.cpp
 # End Source File
 # Begin Source File
 
@@ -589,6 +622,10 @@ SOURCE=.\SubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronCDKey.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronClientWeapon.cpp
 # End Source File
 # Begin Source File
@@ -646,6 +683,10 @@ SOURCE=.\AdditiveCtrl.h
 # Begin Source File
 
 SOURCE=.\ArcCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\BaseScreenHost.h
 # End Source File
 # Begin Source File
 
@@ -713,6 +754,10 @@ SOURCE=.\ClientWeaponSuffusion.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\DiscMatchMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDArmor.h
 # End Source File
 # Begin Source File
@@ -750,6 +795,10 @@ SOURCE=.\HUDLightCycleLives.h
 # Begin Source File
 
 SOURCE=.\HUDLightCyclePowerupIcon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleRoster.h
 # End Source File
 # Begin Source File
 
@@ -805,6 +854,10 @@ SOURCE=.\LightCycleGameDataMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleMatchMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightLine.h
 # End Source File
 # Begin Source File
@@ -834,6 +887,10 @@ SOURCE=..\..\..\engine\sdk\inc\ltobjref.h
 # Begin Source File
 
 SOURCE=.\ProceduralCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\RatingBarCtrl.h
 # End Source File
 # Begin Source File
 
@@ -870,6 +927,14 @@ SOURCE=.\ScreenFailure.h
 # Begin Source File
 
 SOURCE=.\ScreenGame.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostConnection.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenHostMaps.h
 # End Source File
 # Begin Source File
 
@@ -958,6 +1023,10 @@ SOURCE=.\SubroutineMgr.h
 # Begin Source File
 
 SOURCE=.\TO2ScreenMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronCDKey.h
 # End Source File
 # Begin Source File
 

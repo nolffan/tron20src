@@ -51,6 +51,93 @@ namespace
 		LIB_STATE_OPENING,
 		LIB_STATE_CLOSING
 	} LibraryState;
+
+	// RETAIL: the screen's sounds, 0x1007d090..0x1007d3a2 (names ours).
+	// PORT: retail's PlaySoundLocal takes one more argument (1.0f).
+	void PlaySubroutineStartSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("subroutinestart", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+	}
+
+	void PlayCompileSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("compile", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+	}
+
+	void PlayPickupSound(PlayerSubroutine * pSub)
+	{
+		if (pSub->eState == SUBSTATE_CORRUPT)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("pickup_corrupt", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+		if (pSub->eState == SUBSTATE_FOREIGN)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("pickup_foreign", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+
+		SubFunction eFunction = pSub->pTronSubroutine->eFunction;
+		if (eFunction == FUNCTION_BADBLOCK)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("pickup_badblock", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+		if (eFunction != FUNCTION_BASECODE)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("pickup_subroutine", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+		}
+	}
+
+	void PlayMouseOverSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("mouseover", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayMouseOverSound(PlayerSubroutine * pSub)
+	{
+		if (pSub->eState == SUBSTATE_CORRUPT)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("mouseover_corrupt", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+		if (pSub->eState == SUBSTATE_FOREIGN)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("mouseover_foreign", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+
+		SubFunction eFunction = pSub->pTronSubroutine->eFunction;
+		if (eFunction == FUNCTION_BADBLOCK)
+		{
+			g_pClientSoundMgr->PlaySoundLocal("mouseover_badblock", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			return;
+		}
+		if (eFunction != FUNCTION_BASECODE)
+		{
+			PlayMouseOverSound();
+		}
+	}
+
+	void PlayDropIntoSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("dropinto", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayDropIntoProceduralSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("dropintoprocedural", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayDropIntoLibrarySound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("dropintolibrary", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayCantDropSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("cantdrop", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
 }
 
 
@@ -61,6 +148,7 @@ namespace
 
 CScreenSubroutines::CScreenSubroutines()
 {
+	m_bHideNewRatings = LTFALSE;
 }
 
 CScreenSubroutines::~CScreenSubroutines()
@@ -123,6 +211,18 @@ LTBOOL CScreenSubroutines::Build()
 	m_nDefenseLibSize	= 0;
 	m_nUtilityLibSize	= 0;
 
+	// RETAIL: as retail's Build (0x1007dc01): each rating's buttons
+	for (int i = 0; i < NUM_RATINGS; i++)
+	{
+		char szName[32];
+		sprintf(szName, "ArrowLeftRect%d", i);
+		LTRect rcLeft = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_SUBROUTINES, szName);
+		sprintf(szName, "ArrowRightRect%d", i);
+		LTRect rcRight = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_SUBROUTINES, szName);
+		m_RatingBars[i].SetRects(rcLeft, rcRight);
+		m_RatingBars[i].SetBuildPoints(&m_BuildPoints);
+	}
+
 	return LTTRUE;
 }
 
@@ -138,6 +238,7 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
+		PlaySubroutineStartSound();	// RETAIL: as retail's OnFocus (0x1007e286)
 		m_bDoneIntro = false;
 
 		// Set the cursor mode to "pickup"
@@ -160,6 +261,13 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 	{
 		DestroyMenuPieces();
 		m_pScreenMgr->GetTransitionFXMgr()->SetLooping(true);
+
+		// RETAIL: as retail's OnFocus (0x1007edbd)
+		m_BuildPoints.Term();
+		for (int i = 0; i < NUM_RATINGS; i++)
+		{
+			m_RatingBars[i].Term();
+		}
 
 		// Force arcs to wipe all their contents
 		ClearScreen();
@@ -257,14 +365,23 @@ void CScreenSubroutines::BuildMenuPieces()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1007f050, leaving compiles the screen into the player's
+// subroutines
+void CScreenSubroutines::Escape()
+{
+	PlayCompileSound();
+	Compile();
+	CBaseScreen::Escape();
+}
+
 uint32 CScreenSubroutines::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
 {
 	switch(dwCommand)
 	{
 
+	// RETAIL: as retail's (0x1007ef90): Escape compiles
 	case CMD_COMPILE:
 		{
-			Compile();
 			Escape();
 			break;
 		}
@@ -351,11 +468,15 @@ LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 {
 	m_SystemMemoryCtrl.Render();
 
-	// render procedural controls
-	for (int i = 0; i < 5; i++)
+	// RETAIL: as retail's Render (0x1007f53e)
+	m_BuildPoints.Update();
+	for (int i = 0; i < NUM_RATINGS; i++)
 	{
-		m_ProcCtrl[i].Render();
+		m_RatingBars[i].Update();
 	}
+
+	// PORT: retail's procedural controls are menu piece models, which
+	// the interface draws (no Render of their own)
 
 	if (!m_bDoneIntro)	
 		UpdateMenuPieces(); // See if any models need to be made visible
@@ -393,11 +514,18 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 	Procedural * pOldProc		= m_pHotProc;
 	int iActiveSegment = 0;
 
+	// RETAIL: as retail's OnMouseMove (0x1007f92b)
+	for (int iRating = 0; iRating < NUM_RATINGS; iRating++)
+	{
+		m_RatingBars[iRating].OnMouseMove(x, y);
+	}
+	m_BuildPoints.OnMouseMove(x, y);
+
 	m_pHotArc = LTNULL;
 	m_pHotSub = LTNULL;
 	m_pHotProc = LTNULL;
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < NUM_PROC_CTRLS; i++)
 	{
 		m_ProcCtrl[i].OnMouseMove(x,y, m_pCursorSub);
 		if (!m_pHotProc)
@@ -487,6 +615,11 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 		KillHotInfo();
 
 		// The heat has changed.
+		// RETAIL: retail's OnMouseMove plays the hot subroutine's sound
+		// (0x1007fcb1)
+		if (m_pHotSub && m_pHotSub != pOldSub)
+			PlayMouseOverSound(m_pHotSub);
+
 		if (m_pHotSub && !m_pCursorSub)
 		{
 			// rebuild the "hot" window
@@ -635,7 +768,7 @@ void CScreenSubroutines::AddProcedural(Procedural * pProcedural)
 
 	int iSlot = pProcedural->iProcSlot;
 
-	ASSERT(iSlot >= 0 && iSlot <= 4);
+	ASSERT(iSlot >= 0 && iSlot < NUM_PROC_CTRLS);
 
 	// Hook the control to its procedural
 	// NOTE that we want to hook the procedural to the control only if the player has it.
@@ -675,7 +808,13 @@ void CScreenSubroutines::Compile()
 		iter++;
 	}
 
-	// TODO tell g_pSubroutineMgr about the ratings and additives, too
+	// RETAIL: as retail's Compile (0x10080379): the ratings bought
+	m_BuildPoints.Apply();
+	for (int i = 0; i < NUM_RATINGS; i++)
+	{
+		m_RatingBars[i].Apply();
+	}
+
 	g_pSubroutineMgr->Compile();
 }
 
@@ -690,6 +829,8 @@ void CScreenSubroutines::PickupSubroutine(PlayerSubroutine * pSub)
 
 	if (pSub->pTronSubroutine->eFunction == FUNCTION_BASECODE)
 		return;
+
+	PlayPickupSound(pSub);	// RETAIL: as retail's (0x100803f1)
 
 	m_pCursorSub = pSub;
 	SetCursorMode(CursorSubroutineDrop);
@@ -822,13 +963,17 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 	{
 		// Dismiss if this procedural won't work on the current cursor/subroutine
 		if (!g_pSubroutineMgr->CanProcHookSub(m_pHotProc, m_pCursorSub))
+		{
+			PlayCantDropSound();
 			return;
+		}
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < NUM_PROC_CTRLS; i++)
 		{
 			if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 			{
 				m_ProcCtrl[i].AddSub(m_pCursorSub);
+				PlayDropIntoProceduralSound();
 			}
 		}
 
@@ -904,6 +1049,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 		}
 
 		m_SystemMemoryCtrl.OccupySegment(m_pCursorSub->nTempSlot, m_pCursorSub);
+		PlayDropIntoSound();
 		SetCursorMode(CursorPickup);
 		CloseLibrary(&m_CombatCtrl);
 		CloseLibrary(&m_DefenseCtrl);
@@ -946,6 +1092,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 		m_pCursorSub->nTempSlot = 100 + iSlot;
 
 		m_CombatCtrl.OccupySegment(iSlot, m_pCursorSub);
+		PlayDropIntoLibrarySound();
 		SetCursorMode(CursorPickup);
 		if (pSub)
 		{
@@ -971,6 +1118,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 		m_pCursorSub->nTempSlot = 200 + iSlot;
 
 		m_DefenseCtrl.OccupySegment(iSlot, m_pCursorSub);
+		PlayDropIntoLibrarySound();
 		SetCursorMode(CursorPickup);
 		if (pSub)
 		{
@@ -996,6 +1144,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 		m_pCursorSub->nTempSlot = 300 + iSlot;
 
 		m_UtilityCtrl.OccupySegment(iSlot, m_pCursorSub);
+		PlayDropIntoLibrarySound();
 		SetCursorMode(CursorPickup);
 		if (pSub)
 		{
@@ -1020,7 +1169,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 
 		if (pSub)
 		{
-			for (int i = 0; i < 5; i++)
+			for (int i = 0; i < NUM_PROC_CTRLS; i++)
 			{
 				if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 				{
@@ -1080,6 +1229,12 @@ void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 
 LTBOOL CScreenSubroutines::OnLButtonDown(int x, int y)
 {
+	// RETAIL: as retail's click handlers (0x10080569, 0x10081365)
+	for (int iRating = 0; iRating < NUM_RATINGS; iRating++)
+	{
+		m_RatingBars[iRating].OnLButtonDown(x, y);
+	}
+
 	// Precedence goes to the library rotation buttons
 	switch (m_eCursorMode)
 	{
@@ -1587,7 +1742,7 @@ void CScreenSubroutines::BuildHotSubInfo()
 	TronSubroutine * pSub = m_pHotSub->pTronSubroutine;
 
 	Procedural * pProc = LTNULL;
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < NUM_PROC_CTRLS; i++)
 	{
 		if (m_ProcCtrl[i].GetProc())
 		{
@@ -1810,14 +1965,10 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 				}
 				else if (!strcmpi(pSubModel->szName, "proc_dock"))
 				{
-					for (int i = 0; i < 5; i++)
-					{
-						char buf[20];
-						sprintf(buf,"skt_%d",i);
-						m_ProcCtrl[i].AssociateHObject(hObj, buf);
-						g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
-						g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
-					}
+					// PORT: retail's procedural controls attach their own
+					// models (no AssociateHObject)
+					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
+					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
 				}
 			}
 			return;
@@ -1828,13 +1979,21 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 }
 
 
-// PORT: the 1.030 screen's rating bars are not written yet; these stand in
-// for retail 0x10080070 (set rating bar nRating to nValue) and 0x100800c0
-// (show the upgrade points) so CRatingMgr::PopulateRatings links.
+// RETAIL: 0x10080070
 void CScreenSubroutines::SetRating(int nRating, int nValue)
 {
+	if (nRating < 0 || nRating >= NUM_RATINGS)
+		return;
+
+	CRatingBarCtrl * pBar = &m_RatingBars[nRating];
+	pBar->Init(nRating, nValue);
+	if (m_bHideNewRatings)
+		pBar->Show(false);
 }
 
+// RETAIL: 0x100800c0
 void CScreenSubroutines::SetRatingPoints(int nPoints)
 {
+	m_BuildPoints.SetVisible(nPoints > 0);
+	m_BuildPoints.Init(nPoints);
 }

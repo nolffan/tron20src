@@ -73,6 +73,7 @@ public:
     LTBOOL			Init(const char* szAttributeFile=LO_DEFAULT_FILE);
 
 	INT_MENUPIECE* GetMenuPiece(char * szModelName);
+	INT_MENUPIECE* GetSubroutinePiece(struct PlayerSubroutine * pSub);	// RETAIL: 0x100a0550 (the name is ours)
 
 	LCHUDHelper*	GetLCHUDHelper() { return m_pLCHUDHelper; }
 

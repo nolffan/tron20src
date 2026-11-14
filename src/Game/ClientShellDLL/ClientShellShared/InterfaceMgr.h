@@ -158,28 +158,13 @@ class CInterfaceMgr
 		bool	IsInGame( );
 
 		// Screen Fade functions
-        void	StartScreenFadeIn(LTFLOAT fFadeTime)
-		{
-			m_bFadeInitialized = LTFALSE;
-			m_bScreenFade = LTTRUE;
-			m_fTotalFadeTime = fFadeTime;
-			m_bFadeIn = LTTRUE;
-		}
-        void    StartScreenFadeOut(LTFLOAT fFadeTime)
-		{
-			m_bFadeInitialized = LTFALSE;
-			m_bScreenFade = LTTRUE;
-			m_fTotalFadeTime = fFadeTime;
-			m_bFadeIn = LTFALSE;
-		}
-
-		void	ForceScreenFadeIn(LTFLOAT fFadeTime)
-		{
-			if (FadingScreen() && !FadingScreenIn())
-			{
-				StartScreenFadeIn(fFadeTime);
-			}
-		}
+		// RETAIL: Tron's are out of line (0x100d0650, 0x100d0690,
+		// 0x100d06e0) and take one more argument (kept at +0xf4a0); none
+		// starts a fade in while the mission manager exits the level, and a
+		// fade out only replaces a fade in then
+		void	StartScreenFadeIn(LTFLOAT fFadeTime, bool bTronUnknown = false);
+		void	StartScreenFadeOut(LTFLOAT fFadeTime, bool bTronUnknown = false);
+		void	ForceScreenFadeIn(LTFLOAT fFadeTime);
 
 		LTBOOL	FadingScreen() const { return m_bScreenFade; }
 
@@ -326,6 +311,17 @@ class CInterfaceMgr
 		// 0x100a7e9c and (1, 1) from 0x1011d3e8; looks for the "LCC" object
 		// when the client shell's +0x1d7 is set). The name is ours.
 		virtual void	TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown);
+
+		// RETAIL: Tron's timed message (0x100cff80: the text, else the
+		// string, else none; the second text is cleared): the light cycle
+		// match manager's. The names are ours
+		void	SetTronUnknownMessage(float fDuration, int nStringId, const char* pszText, bool bTronUnknown);
+		// RETAIL: 0x100cfed0: the normal FOV and the first person camera
+		// (the light cycle match manager, CTronPlayerMgr). The name is ours
+		void	TronUnknownFirstPersonCamera(bool bInstant);
+		// RETAIL: inline (the light cycle match manager, 0x1001648e)
+		void	ClearTronUnknownMessage() { m_fTronUnknownF98C = -1.0f; }
+		char*	GetTronUnknownMessageText2() { return m_szTronUnknownFA14; }
 
 		void		UpdateOverlays();
 		bool		IsOverlayActive(eOverlayMask eMask) {return (m_hOverlays[eMask] != NULL);}
@@ -508,6 +504,7 @@ class CInterfaceMgr
         LTFLOAT     m_fTotalFadeTime;           // How long to do the fade
         LTFLOAT     m_fCurFadeTime;             // Current fade time
         LTBOOL      m_bFadeIn;                  // Should we fade in (or out)
+		bool		m_bTronUnknownFadeF4A0;		// RETAIL: +0xf4a0, the fade functions' second argument
 
         LTBOOL      m_bLetterBox;               // Letter box mode?
 		LTBOOL		m_bWasLetterBox;			// Was letter box last frame?
@@ -637,7 +634,7 @@ private:
 		// order differ: constructor 0x100c67b0); this pad puts m_bInitialized
 		// at retail's +0xf980 (checked in the constructor). Shrink it when
 		// a member above grows.
-		char	m_aTronUnknownPad[0xf980 - 0xf534];
+		char	m_aTronUnknownPad[0xf980 - 0xf538];
 
 		// true after Init called.  false after Term called.
 		bool	m_bInitialized;
@@ -650,10 +647,12 @@ private:
 		// 0x10108 (CTronInterfaceMgr's first member is at +0x10108)
 		bool	m_bTronUnknownF988;				// +0xf988
 		float	m_fTronUnknownF98C;				// +0xf98c, -1.0f
-		uint32	m_nTronUnknownF990;				// +0xf990
-		char	m_szTronUnknownF994[128];		// +0xf994
-		char	m_szTronUnknownFA14[64];		// +0xfa14
-		bool	m_bTronUnknownFA54;				// +0xfa54, true
+		// RETAIL: a timed message the light cycle game types count down
+		// (SetTronUnknownMessage 0x100cff80 sets it, 0x100d0020 draws it)
+		float	m_fTronUnknownF990;				// +0xf990 its duration
+		char	m_szTronUnknownF994[128];		// +0xf994 its text
+		char	m_szTronUnknownFA14[64];		// +0xfa14 a second text (the light cycle match manager's, 0x10016ba0)
+		bool	m_bTronUnknownFA54;				// +0xfa54, true: "%s %s: %d" (else "%s %s %d")
 		char	m_aTronUnknownFA55[0x100f8 - 0xfa55];
 		uint32	m_nTronUnknown100F8;			// +0x100f8
 		// +0x100fc: 0x58-byte records, saved by Save (0x100cc550) and

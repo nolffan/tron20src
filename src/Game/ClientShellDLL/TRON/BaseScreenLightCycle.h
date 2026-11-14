@@ -34,10 +34,8 @@ const uint32 kCmdLCDeleteSettings	= 0x43B;
 const uint32 kCmdLCSelectSettings	= 0x43C;
 
 // RETAIL: the edit box callbacks of the new and rename commands are
-// CBaseScreenHost's (0x10002f40, 0x10002f90: they send CMD_OK with 0x439
-// and 0x43a to the current screen); the names are ours
-void NewSettingsCallBack(LTBOOL bReturn, void *pData);
-void RenameSettingsCallBack(LTBOOL bReturn, void *pData);
+// CBaseScreenHost's (0x10002f40, 0x10002f90, BaseScreenHost.h: whose names
+// say the host's commands, which send 0x439 and 0x43a)
 
 // RETAIL: inline in the light cycle screens (ours): names compared without
 // case, as retail's searches of the profile's and the circuits' name lists

@@ -23,9 +23,12 @@
 #include "GameClientShell.h"
 #include "VehicleMgr.h"
 #include "PlayerCamera.h"
+#include "DiscMatchMgr.h"
+#include "LightCycleMatchMgr.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
+#include "TronHUDMgr.h"	// RETAIL: g_pLightCycleLives
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
@@ -999,13 +1002,11 @@ void CTronPlayerMgr::HandleMsgTronUnknown200(ILTMessage_Read *pMsg)
 	}
 	else if (IsRevivePlayerGameType())
 	{
-		// PORT: retail hands it to a Tron manager (0x10236d70, its
-		// 0x1000df20) not yet in our tree
+		g_pDiscMatchMgr->OnMessage(pMsg);
 	}
 	else if (eGameType == eGameTypeMultiplayerLightcycles)
 	{
-		// PORT: retail hands it to a Tron manager (0x10236df0, its
-		// 0x100161e0) not yet in our tree
+		g_pLightCycleMatchMgr->OnMessage(pMsg);
 	}
 }
 
@@ -1694,8 +1695,9 @@ void CTronPlayerMgr::TronUnknownVirtual8C()
 		m_nTronUnknown236--;
 	}
 
-	// PORT: retail flashes Tron's light cycle lives HUD item (0x1026ee24,
-	// its 0x1002daa0) here; not yet in our tree
+	// RETAIL: flashes Tron's light cycle lives HUD item (0x1026ee24)
+	if (g_pLightCycleLives)
+		g_pLightCycleLives->Flash();
 }
 
 // ----------------------------------------------------------------------- //

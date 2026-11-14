@@ -896,6 +896,10 @@ SOURCE=.\TargetMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TexturedFrame.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TeamMgr.cpp
 # End Source File
 # Begin Source File
@@ -1753,6 +1757,10 @@ SOURCE=.\SystemDependant.h
 # Begin Source File
 
 SOURCE=.\TargetMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TexturedFrame.h
 # End Source File
 # Begin Source File
 

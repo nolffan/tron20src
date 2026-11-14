@@ -28,6 +28,8 @@
 
 //under multi
 #include "ScreenJoinServerList.h"
+#include "ScreenHostConnection.h"
+#include "ScreenHostMaps.h"
 #include "ScreenServerInfo.h"
 
 //under options
@@ -140,10 +142,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// this order). Retail has no case for HOST, HOST_OPTIONS, HOST_MISSION,
 	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
 	// for screens whose class we have not written yet are missing here:
-	// HOST_CONNECTION (CScreenHostConnection) after SAVE, LIGHTCYCLE_CUSTOMMAP
-	// between _CIRCUIT and _CUSTOMGAME, _PLAYERCONFIG after _CUSTOMGAME; HOST_GAME, HOST_MAPS
-	// after LIGHTCYCLE_VICTORY; TEAMSELECT (CScreenTeamSelect) after
-	// SUBROUTINES.
+	// LIGHTCYCLE_CUSTOMMAP between _CIRCUIT and _CUSTOMGAME, _PLAYERCONFIG
+	// after _CUSTOMGAME; HOST_GAME (CScreenHostGame) before HOST_MAPS;
+	// TEAMSELECT (CScreenTeamSelect) after SUBROUTINES.
 	switch (screenID)
 	{
 	case SCREEN_ID_MAIN:
@@ -167,6 +168,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	case SCREEN_ID_SAVE:
 		pScreen = debug_new(CScreenSave);
 		break;
+	case SCREEN_ID_HOST_CONNECTION:
+		pScreen = debug_new(CScreenHostConnection);
+		break;
 	case SCREEN_ID_LIGHTCYCLE_CIRCUIT:
 		pScreen = debug_new(CScreenLightCycleCircuit);
 		break;
@@ -175,6 +179,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_LIGHTCYCLE_VICTORY:
 		pScreen = debug_new(CScreenLightCycleVictory);
+		break;
+	case SCREEN_ID_HOST_MAPS:
+		pScreen = debug_new(CScreenHostMaps);
 		break;
 	case SCREEN_ID_JOIN_SERVERLIST:
 		pScreen = debug_new(CScreenJoinServerList);

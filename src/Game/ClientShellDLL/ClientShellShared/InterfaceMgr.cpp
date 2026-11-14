@@ -27,6 +27,7 @@
 #include "ClientWeaponMgr.h"
 #include "ClientMultiplayerMgr.h"
 #include "MissionMgr.h"
+#include "PlayerCamera.h"
 #include "ClientSaveLoadMgr.h"
 #include "ScreenPreload.h"
 #include "ScreenPostload.h"
@@ -6224,6 +6225,112 @@ void CInterfaceMgr::TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown)
 	// PORT: not yet written (retail checks the client shell's +0x1d7,
 	// looks for the "LCC" object and calls 0x100cfed0 or 0x100cfdf0 with
 	// nTronUnknown)
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::TronUnknownFirstPersonCamera
+//
+//	PURPOSE:	RETAIL: 0x100cfed0 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::TronUnknownFirstPersonCamera(bool bInstant)
+{
+	if (!g_pPlayerMgr)
+		return;
+
+	float fFovY = g_vtFOVYNormal.GetFloat();
+	float fFovX = g_vtFOVXNormal.GetFloat();
+	g_pPlayerMgr->SetCameraFOV(DEG2RAD(fFovX), DEG2RAD(fFovY));
+	g_pPlayerMgr->GetPlayerCamera()->GoFirstPerson(bInstant);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::SetTronUnknownMessage
+//
+//	PURPOSE:	RETAIL: 0x100cff80 (the name is ours): a timed message,
+//				its text or string (or none)
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::SetTronUnknownMessage(float fDuration, int nStringId, const char* pszText, bool bTronUnknown)
+{
+	// RETAIL: the time is ILTClient's slot 0xb0 (Tron's; not GetTime)
+	m_fTronUnknownF98C = g_pLTClient->TronUnknownVirtual44();
+	m_fTronUnknownF990 = fDuration;
+	m_bTronUnknownFA54 = bTronUnknown;
+	m_szTronUnknownFA14[0] = '\0';
+
+	if (pszText && pszText[0])
+	{
+		strcpy(m_szTronUnknownF994, pszText);
+	}
+	else if (nStringId)
+	{
+		FormatString(nStringId, m_szTronUnknownF994, sizeof(m_szTronUnknownF994));
+	}
+	else
+	{
+		m_szTronUnknownF994[0] = '\0';
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::StartScreenFadeIn
+//
+//	PURPOSE:	RETAIL: 0x100d0650
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::StartScreenFadeIn(LTFLOAT fFadeTime, bool bTronUnknown)
+{
+	if (g_pMissionMgr->IsExitingLevel())
+		return;
+
+	m_bScreenFade = LTTRUE;
+	m_bFadeIn = LTTRUE;
+	m_bFadeInitialized = LTFALSE;
+	m_fTotalFadeTime = fFadeTime;
+	m_bTronUnknownFadeF4A0 = bTronUnknown;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::StartScreenFadeOut
+//
+//	PURPOSE:	RETAIL: 0x100d0690
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::StartScreenFadeOut(LTFLOAT fFadeTime, bool bTronUnknown)
+{
+	if (m_bScreenFade && (!m_bFadeIn || !g_pMissionMgr->IsExitingLevel()))
+		return;
+
+	m_bFadeInitialized = LTFALSE;
+	m_bFadeIn = LTFALSE;
+	m_bScreenFade = LTTRUE;
+	m_fTotalFadeTime = fFadeTime;
+	m_bTronUnknownFadeF4A0 = bTronUnknown;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::ForceScreenFadeIn
+//
+//	PURPOSE:	RETAIL: 0x100d06e0
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::ForceScreenFadeIn(LTFLOAT fFadeTime)
+{
+	if (m_bScreenFade && !m_bFadeIn)
+	{
+		StartScreenFadeIn(fFadeTime, false);
+	}
 }
 
 void CInterfaceMgr::HandlePlayerTeamChange()

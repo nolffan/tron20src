@@ -74,6 +74,9 @@ public:
 
 	LTBOOL		IsSurgeRating(PerformanceRating p) {return (m_nRating[p] >= m_nMaxRating[p]); }
 	uint8		GetMaxRating(PerformanceRating p) {return m_nMaxRating[p]; }
+	// RETAIL: inlined in the rating bar control (0x10050920; names ours)
+	uint8		GetMinRating(PerformanceRating p) {return m_nMinRating[p]; }
+	int			GetLevelPoints() { return m_nLevelPoints; }
 
 	void		PopulateRatings(CScreenSubroutines *pScreen);	// fill the ratings on the subroutines screen
 
