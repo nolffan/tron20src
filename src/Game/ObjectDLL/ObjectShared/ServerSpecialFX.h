@@ -69,7 +69,7 @@ class SpecialFX : public GameBase
 		bool						m_bIsOn;
 		bool						m_bOneTime;
 		HSTRING						m_hstrTargetName;
-		HOBJECT						m_hTargetObj;
+		LTObjRef					m_hTargetObj;	// RETAIL: an LTObjRef in Tron (0x88; OnSave 0x100f34c7)
 		bool						m_bRemoveTarget;
 		bool						m_bFromSavedGame;
 };
