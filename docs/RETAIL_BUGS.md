@@ -807,6 +807,18 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### A "REMOVE" message does not remove a lite object
+
+Object.lto 0x10153720 (GameBaseLite::OnTrigger, ObjectShared/
+GameBaseLite.cpp). A lite object (CommandObject, Group, Controller, the AI
+volumes) that is sent REMOVE while registered answers that it handled the
+message, but Tron's code never asks the CLiteObjectMgr to remove it (NOLF2's
+calls RemoveObject), so the object stays and keeps updating. A level script
+that removes a command object to stop it does nothing.
+
+Fixed in the modern build: GameBaseLite.cpp (TRON20SRC_MODERN calls
+CLiteObjectMgr::RemoveObject).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
