@@ -28,7 +28,10 @@ class DisplayTimer : public GameBase
 		~DisplayTimer();
 
 		// Start the timer.
-		void	Start( float fTime );
+		// PORT: NOLF2 1.x's, for CServerMissionMgr's time limit countdown; Tron's
+		// DisplayTimer.obj has no Start (Load 0x10263e60 is its last function),
+		// so it is inline here.
+		void	Start( float fTime ) { HandleStart( fTime ); }
 
 	protected :
 
@@ -42,7 +45,6 @@ class DisplayTimer : public GameBase
         LTBOOL   m_bRemoveWhenDone;  // Remove the timer when done?
 
 		CTimer	m_Timer;			// Timer
-		uint8	m_nTeamId;			// Team this timer is for.
 
 		void	ReadProp(ObjectCreateStruct *pData);
 		void	InitialUpdate();
@@ -64,15 +66,7 @@ class CDisplayTimerPlugin : public IObjectPlugin
 {
 	public:
 
-    virtual LTRESULT PreHook_EditStringList(
-		const char* szRezPath,
-		const char* szPropName,
-		char** aszStrings,
-        uint32* pcStrings,
-        const uint32 cMaxStrings,
-        const uint32 cMaxStringLength);
-
-	virtual LTRESULT PreHook_PropChanged( 
+		virtual LTRESULT PreHook_PropChanged( 
 			const	char		*szObjName,
 			const	char		*szPropName,
 			const	int			nPropType,
