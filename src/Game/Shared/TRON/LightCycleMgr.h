@@ -319,6 +319,10 @@ class CLightCycleMgr
 		virtual void TrailCut(LightCycleCollisionInfo* pInfo) {}
 
 		LIGHT_CYCLIST* FindCyclist(HOBJECT hObj);	// RETAIL: 0x100ff280
+		// RETAIL: inline: the client's HUDs walk the cyclists themselves
+		// (CHUDLightCycleLives 0x1002da30); the names are ours
+		int GetNumCyclists() { return m_collCyclists.size(); }
+		LIGHT_CYCLIST* GetCyclist(int nIndex) { return m_collCyclists[nIndex]; }
 
 		// Snaps the position to the bute grid. RETAIL: 0x100ffec0
 		void SnapToGrid(LTVector & vPos);

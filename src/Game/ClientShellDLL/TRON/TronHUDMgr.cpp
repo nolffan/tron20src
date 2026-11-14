@@ -34,6 +34,9 @@ inline void CHUDItem::SetRenderState()
 }
 
 CHUDCrosshair*		g_pCrosshair = LTNULL;
+// RETAIL: 0x1026ee24 (retail's constructor news the item; the destructor
+// clears it)
+CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
 
 // ----------------------------------------------------------------------- //
 //
@@ -70,6 +73,7 @@ CTronHUDMgr::~CTronHUDMgr()
 LTBOOL CTronHUDMgr::Init()
 {
 	g_pCrosshair = &m_Crosshair;
+	g_pLightCycleLives = &m_LightCycleLives;
 
     return CHUDMgr::Init();
 }
