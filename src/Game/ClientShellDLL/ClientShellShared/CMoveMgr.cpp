@@ -959,7 +959,14 @@ LTBOOL CMoveMgr::CanDoFootstep()
 	// No footsteps if standing on sky/invisible texture (this should
 	// only happen in really special case levels)...
 
-	if (m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY)
+	// RETAIL: 0x100f61e0 -- never in multiplayer light cycle games, and the
+	// sky and invisible surfaces only count where players are revived.
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		return LTFALSE;
+	}
+
+	if ((m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY) && !IsRevivePlayerGameType())
 	{
         return LTFALSE;
 	}
