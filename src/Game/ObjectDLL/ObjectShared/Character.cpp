@@ -1933,6 +1933,9 @@ void CCharacter::UpdateRelationMgr()
 
 void CCharacter::Update()
 {
+	// RETAIL: Tron's (retail 0x1008e5ed)
+	UpdateFireHelpers();
+
 	UpdateTeleport( );
 
 	UpdateRelationMgr();
@@ -2035,6 +2038,40 @@ void CCharacter::Update()
 
 	// Update our playertracker for dialogue.
 	m_PlayerTrackerDialogue.Update( );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::UpdateFireHelpers()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1008e920): updates the continuous
+//				fire helpers (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::UpdateFireHelpers()
+{
+	// RETAIL: retail 0x1008e920 calls m_pPRodFireHelper's and then
+	// m_pEnergyClawFireHelper's first virtual (CContinuousFireHelper's
+	// Update, retail 0x10160b50), each if set. PORT: CContinuousFireHelper
+	// (retail 0x101608b0..0x101613ff) is not written yet and nothing in
+	// our build creates the helpers, so there is nothing to update
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::StopFireHelpers()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1008e950): stops the continuous
+//				fire helpers (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::StopFireHelpers()
+{
+	// RETAIL: retail 0x1008e950 calls CContinuousFireHelper's stop
+	// (non-virtual, retail 0x10160de0) on m_pPRodFireHelper and then on
+	// m_pEnergyClawFireHelper, each if set. PORT: as UpdateFireHelpers
 }
 
 // ----------------------------------------------------------------------- //
@@ -2537,12 +2574,31 @@ void CCharacter::UpdateAnimation()
 
 	if( m_damage.IsDead() )
 	{
+		// RETAIL: Tron's (retail 0x1009036f)
+		HandleAttachmentsDead();
 		SetDeathAnimation();
 		return;
 	}
     else if( m_pAnimator )
 	{
 		m_pAnimator->Update();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::HandleAttachmentsDead()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x100903a0): tells the attachments
+//				we're dead (name ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::HandleAttachmentsDead()
+{
+	if( m_pAttachments )
+	{
+		m_pAttachments->TronUnknownVirtual10();
 	}
 }
 
@@ -3158,6 +3214,14 @@ void CCharacter::PlayDeathSound()
 
 void CCharacter::HandleDead(LTBOOL bRemoveObj)
 {
+	// RETAIL: Tron's (retail 0x10091025)
+	StopFireHelpers();
+
+	// RETAIL: then, if m_bTronUnknown4C, g_pGameServerShell->DropInventoryObject
+	// (this) (retail 0x10091032): Tron's DropInventoryObject takes the
+	// character (retail 0x1005efe0 reads CCharacter's members), ours a Body
+	// (CTronGameServerShell's, not ours to change)
+
 	if( m_bMakeBody )
 	{
 		CreateBody();
@@ -3623,6 +3687,13 @@ void CCharacter::StartDeath()
     m_bStartedDeath = LTTRUE;
 
 	PlayDeathSound();
+
+	// RETAIL: Tron's (retail 0x10091d03): tell the character that killed us
+	if( IsKindOf( m_damage.GetLastDamager(), "CCharacter" ))
+	{
+		CCharacter* pKiller = (CCharacter*)g_pLTServer->HandleToObject( m_damage.GetLastDamager() );
+		pKiller->HandleKilledCharacter( this );
+	}
 
 	// Spawn any special item we were instructed to
 

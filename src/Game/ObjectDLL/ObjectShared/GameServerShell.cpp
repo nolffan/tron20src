@@ -4053,6 +4053,52 @@ bool CGameServerShell::StartNextMultiplayerLevel()
 }
 
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::NextLevel
+//
+//	PURPOSE:	RETAIL: retail 0x100e2860: the next level of the game type's
+//				map list (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::NextLevel()
+{
+	SwitchToLevel(m_nCurLevel + 1);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::SwitchToLevel
+//
+//	PURPOSE:	RETAIL: retail 0x100e2880: switch to a level of the game
+//				type's map list, the first past its end (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::SwitchToLevel(int nLevel)
+{
+	if (nLevel < 0)
+	{
+		nLevel = 0;
+	}
+
+	m_bShowMultiplayerSummary = LTFALSE;
+
+	StringArray* pMaps = m_ServerGameOptions.GetMapList();
+	int nNumMaps = pMaps->size();
+	m_nCurLevel = nLevel;
+	if (m_nCurLevel >= nNumMaps)
+	{
+		m_nCurLevel = 0;
+	}
+
+	char const* pszLevel = (*pMaps)[m_nCurLevel].c_str();
+
+	ResetObjectives();
+	g_pServerMissionMgr->ExitLevelToLevel(pszLevel);
+}
+
 // RETAIL: retail 0x100e2910
 void CGameServerShell::ClearClientList()
 {
@@ -5297,6 +5343,25 @@ void CGameServerShell::ResetObjectives()
 	m_OptionalObjectives.Clear();
 	m_CompletedObjectives.Clear();
 	m_Parameters.Clear();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::ResetStartPoints
+//
+//	PURPOSE:	RETAIL: retail 0x100e46f0: no start point is in use (the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::ResetStartPoints()
+{
+	GameStartPoint::StartPointList const& lstStartPoints = GameStartPoint::GetStartPointList();
+	GameStartPoint::StartPointList::const_iterator iter;
+	for (iter = lstStartPoints.begin(); iter != lstStartPoints.end(); iter++)
+	{
+		(*iter)->SetInUse(false);
+	}
 }
 
 // --------------------------------------------------------------------------- //

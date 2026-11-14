@@ -16,6 +16,7 @@
 #include "TronPlayerObj.h"
 #include "CoreDump.h"
 #include "Body.h"
+#include "LightCycleMatchMgr.h"
 #include "GameSpy/GameSpySDK/gcdkey/gcdkeys.h"
 
 // RETAIL: Tron's GameSpy product: the game name, its secret key (built on
@@ -50,7 +51,7 @@ CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 
 	m_bGameSpyInitialized = false;
 	m_pTronUnknown19BBC = LTNULL;
-	m_pTronUnknown19BC0 = LTNULL;
+	m_pLightCycleMatchMgr = LTNULL;
 	m_bTronUnknown1D0E4 = false;
 	m_nLevelSwitchArg = 0;
 	m_bLevelSwitchRequested = false;
@@ -66,6 +67,8 @@ CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 // ----------------------------------------------------------------------- //
 CTronGameServerShell::~CTronGameServerShell()
 {
+	// RETAIL: retail 0x1005c6ba
+	delete m_pLightCycleMatchMgr;
 }
 
 // ----------------------------------------------------------------------- //
@@ -85,7 +88,30 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 	g_pTronTeamMgr = &m_TeamMgr;
 	m_TeamMgr.Init();
 
+	// RETAIL: retail 0x1005cb7f: the light cycle game type's manager
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		delete m_pLightCycleMatchMgr;
+		m_pLightCycleMatchMgr = new CLightCycleMatchMgr;
+		m_pLightCycleMatchMgr->Init();
+	}
+
 	return res;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::PreStartWorld
+//
+//	PURPOSE:	A world is about to start: the last one's light cycle
+//				power-ups are gone
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::PreStartWorld(bool bSwitchingWorlds)
+{
+	CGameServerShell::PreStartWorld(bSwitchingWorlds);
+
+	((CServerLightCycleMgr*)g_pLightCycleMgr)->RemoveAllPowerups();
 }
 
 // ----------------------------------------------------------------------- //
@@ -516,11 +542,15 @@ void CTronGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	// (CTronPlayerObj 0x10063cb0), MID_DISC_HOLD_DEFENSE (0x10063d60),
 	// MID_TRON_EXIT_REQUEST (0x10068560) and MID_TRON_DISC_FIRED (0x1005ee50,
 	// CTronPlayerObj 0x10068660). PORT: the ones whose handlers are not yet
-	// in our tree are left out
+	// in our tree are left out, MID_COMPILE's among them: our
+	// HandlePlayerCompile and CTronPlayerObj::HandleCompile are retail's
+	// 148 handlers (0x1005ee50, 0x10068660; the names are older than the
+	// numbering), so they take MID_TRON_DISC_FIRED
 	switch (messageID)
 	{
-		case MID_COMPILE:			HandlePlayerCompile		(hSender, pMsg);	break;
-		case MID_LIGHT_CYCLE_INFO:	HandleLightCycleInfo	(hSender, pMsg);	break;
+		case MID_TRON_SERVERMESSAGE:	HandleTronServerMessage	(hSender, pMsg);	break;
+		case MID_LIGHT_CYCLE_INFO:		HandleLightCycleInfo	(hSender, pMsg);	break;
+		case MID_TRON_DISC_FIRED:		HandlePlayerCompile		(hSender, pMsg);	break;
 		default: CGameServerShell::OnMessage(hSender,pMsg);
 	}
 }
@@ -532,19 +562,128 @@ void CTronGameServerShell::Update(LTFLOAT timeElapsed)
 
 	// Now update the light cycle manager
 	m_LightCycleMgr.Update();
+
+	// RETAIL: retail 0x1005e223: the game type's manager
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->Update();
+	}
+
+	// RETAIL: retail 0x1005e23c: a level switch waits for every client
+	if (m_bLevelSwitchRequested)
+	{
+		CPlayerObj::PlayerObjList::const_iterator iter;
+		for (iter = CPlayerObj::GetPlayerObjList().begin(); iter != CPlayerObj::GetPlayerObjList().end(); iter++)
+		{
+			CPlayerObj* pPlayer = *iter;
+			if (pPlayer && !pPlayer->IsClientLoaded())
+			{
+				return;
+			}
+		}
+
+		uint32 nLevel = m_nLevelSwitchArg;
+		m_nLevelSwitchArg = 0;
+		m_bLevelSwitchRequested = false;
+
+		g_pLTServer->CPrint("All clients connected, performing level switch...");
+
+		if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+		{
+			m_pLightCycleMatchMgr->SetNextLevel(nLevel);
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CTronGameServerShell::HandleLightCycleInfo
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual74
 //
-//	PURPOSE:	RETAIL: retail 0x1005eda0: a light cycle message from the
-//				client, to the light cycle manager. The name is ours
+//	PURPOSE:	RETAIL: retail 0x1005dec0: a new client starts without a
+//				team
 //
 // ----------------------------------------------------------------------- //
-void CTronGameServerShell::HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg)
+
+void CTronGameServerShell::TronUnknownVirtual74( HCLIENT hClient )
 {
-	((CServerLightCycleMgr*)g_pLightCycleMgr)->OnMessage(pMsg, hSender);
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->AddClient(hClient);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual78
+//
+//	PURPOSE:	RETAIL: retail 0x1005df10: a client is gone: its team, and
+//				its CD key's authentication
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual78( HCLIENT hClient )
+{
+	bool bLocal = !!(g_pLTServer->GetClientInfoFlags(hClient) & CIF_LOCAL);
+
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->RemoveClient(hClient);
+	}
+
+	if (m_bGameSpyInitialized && !m_ServerGameOptions.m_bLANOnly && !bLocal)
+	{
+		gcd_disconnect_user(GAMESPY_CDKEY_PRODUCT, g_pLTServer->GetClientID(hClient));
+	}
+
+	m_lstCDKeyClients.remove(g_pLTServer->GetClientID(hClient));
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual7C
+//
+//	PURPOSE:	RETAIL: retail 0x1005dfe0: a player joined
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual7C( CPlayerObj* pPlayer )
+{
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->AddPlayer(pPlayer);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual80
+//
+//	PURPOSE:	RETAIL: retail 0x1005e040: a player left
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual80( CPlayerObj* pPlayer )
+{
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->RemovePlayer(pPlayer);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual84
+//
+//	PURPOSE:	RETAIL: retail 0x1005e090: switch levels once every client
+//				is in (Update)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual84( uint32 nLevel )
+{
+	g_pLTServer->CPrint("Received level switch request, waiting for all players to be connected to initiate switch...");
+	m_nLevelSwitchArg = nLevel;
+	m_bLevelSwitchRequested = true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -565,47 +704,87 @@ void CTronGameServerShell::HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read 
 	}
 }
 
-bool CTronGameServerShell::DropInventoryObject(Body* pBody)
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleLightCycleInfo
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg)
 {
-	// Sanity check
-	ASSERT(pBody);
-	if(!pBody)
+	((CServerLightCycleMgr*)g_pLightCycleMgr)->OnMessage(pMsg, hSender);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleTronServerMessage
+//
+//	PURPOSE:	MID_TRON_SERVERMESSAGE: the game type's manager's
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->OnMessage(pMsg, hSender);
+	}
+}
+
+bool CTronGameServerShell::DropInventoryObject(CCharacter* pCharacter)
+{
+	if (!pCharacter)
+	{
 		return false;
+	}
 
-	// Check the position of the object
 	LTVector vPos;
-	g_pLTServer->GetObjectPos(pBody->m_hObject,&vPos);
+	g_pLTServer->GetObjectPos(pCharacter->m_hObject, &vPos);
 
-	// Now create a Core Dump object there
 	ObjectCreateStruct ocs;
-	INIT_OBJECTCREATESTRUCT(ocs);
-	ocs.m_Rotation.Init();
 	ocs.m_Pos = vPos;
+	ocs.m_Rotation.Init();
 
-	CoreDump* pObj;
+	// RETAIL: CCharacter's three items at +0xc6c are ArchiveItems (their type
+	// first, -1 for none; CoreDump::SetItems takes them)
+	ArchiveItem* aItems = (ArchiveItem*)pCharacter->m_aTronUnknownC6C;
+
+	int nItems = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (aItems[i].m_eType != kAIT_None)
+		{
+			nItems++;
+		}
+	}
+
+	// Nothing to drop
+	if (!nItems && pCharacter->m_damage.GetEnergy() == 0.0f)
+	{
+		return false;
+	}
+
 	HCLASS hClass = g_pLTServer->GetClass("CoreDump");
-	if(hClass)
+	if (!hClass)
 	{
-		// Here's where we actually create the object
-		pObj = (CoreDump*)g_pLTServer->CreateObject(hClass, &ocs);
-		if(pObj)
-		{
-			// PORT: retail gives it the body's energy and health and its
-			// archive items (Tron's Body, not written yet)
-			pObj->Init(pBody->GetEnergy(), 0.0f);
-			return true;
-		}
-		else
-		{
-			// Couldn't create the object
-			ASSERT(FALSE);
-		}
-	}
-	else
-	{
-		// Couldn't find the class
-		ASSERT(FALSE);
+		return false;
 	}
 
-	return false;
+	CoreDump* pObj = (CoreDump*)g_pLTServer->CreateObject(hClass, &ocs);
+	if (!pObj)
+	{
+		return false;
+	}
+
+	// RETAIL: its health is a 16-bit value of the character's model (retail
+	// 0x100c61e0, the record's +0x370; paired with GetModelNameId, not
+	// verified)
+	float fHealth = (float)g_pModelButeMgr->GetModelNameId(pCharacter->m_eModelId);
+	if (pCharacter->m_damage.GetEnergy() != 0.0f)
+	{
+		pObj->Init(pCharacter->m_damage.GetEnergy(), fHealth);
+	}
+
+	pObj->SetItems(aItems);
+	pCharacter->m_hTronUnknownCF0 = pObj->m_hObject;
+
+	return true;
 }

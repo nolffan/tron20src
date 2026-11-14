@@ -46,6 +46,7 @@ class CLiteObjectMgr;
 class CServerMissionMgr;
 class CServerSaveLoadMgr;
 class Body;
+class CCharacter;
 class CCharacterMgr;
 class CParsedMsg;
 struct ObjectiveMsgInfo;
@@ -167,7 +168,11 @@ class CGameServerShell : public IServerShellStub
 		LTRESULT	ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort);
 
 		GameStartPoint* FindStartPoint(CPlayerObj* pPlayer);
-		virtual bool DropInventoryObject(Body* pBody) = 0;
+
+		// RETAIL: Tron's takes the dead character (CCharacter::HandleDead
+		// calls it when m_bTronUnknown4C is set): its core dump drops its
+		// energy and archive items (CTronGameServerShell's, retail 0x1005efe0)
+		virtual bool DropInventoryObject(CCharacter* pCharacter) = 0;
 
 		// Server directory access
 		// Note : The server directory is owned by this object once you pass it in.
@@ -197,8 +202,8 @@ class CGameServerShell : public IServerShellStub
 		virtual void	TronUnknownVirtual70( uint32 nArg ) {}
 		virtual void	TronUnknownVirtual74( HCLIENT hClient ) {}	// RETAIL: OnAddClient's last
 		virtual void	TronUnknownVirtual78( HCLIENT hClient ) {}	// RETAIL: OnRemoveClient's first
-		virtual void	TronUnknownVirtual7C( uint32 nArg ) {}
-		virtual void	TronUnknownVirtual80( uint32 nArg ) {}
+		virtual void	TronUnknownVirtual7C( CPlayerObj* pPlayer ) {}	// RETAIL: a player joined (HandleMultiplayerInit after its Respawn, 0x100df760)
+		virtual void	TronUnknownVirtual80( CPlayerObj* pPlayer ) {}	// RETAIL: a player left
 		virtual void	TronUnknownVirtual84( uint32 nArg ) {}
 
 		// Get the min music mood for the current level.
@@ -206,6 +211,15 @@ class CGameServerShell : public IServerShellStub
 
 		bool	ProcessObjectiveMessage( const CParsedMsg &cMsg, ObjectiveMsgInfo *pInfo );
 		void	ResetObjectives();
+
+		// RETAIL: Tron's: free all the start points (their in-use flag, see
+		// GameStartPoint::SetInUse; retail 0x100e46f0), the next level of the
+		// game type's map list and a level of it (retail 0x100e2860,
+		// 0x100e2880; the light cycle game's manager calls them). The names
+		// are ours
+		void	ResetStartPoints();
+		void	NextLevel();
+		void	SwitchToLevel(int nLevel);
 		
 		// These are called by CPlayerObj so the objectives will properly transition.
 		void	SaveObjectives( ILTMessage_Write *pMsg, uint32 dwSaveFlags );

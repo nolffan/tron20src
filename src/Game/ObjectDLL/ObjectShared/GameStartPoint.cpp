@@ -70,6 +70,7 @@ GameStartPoint::GameStartPoint() : GameBase()
 	m_nTeamID				= INVALID_TEAM;
 	m_bStartPoint			= true;
 	m_bSpawnPoint			= true;
+	m_bInUse				= false;	// RETAIL: Tron's (0x1014f9cb)
 }
 
 
