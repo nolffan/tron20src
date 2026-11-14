@@ -350,7 +350,8 @@ class CAI : public CCharacter, public IAISensing
 		
 		// Relation Mgr
 
-		virtual void   UpdateRelationMgr();
+		// RETAIL: no UpdateRelationMgr override in Tron (CAI's and CAIHuman's
+		// slot 0x90 is CCharacter's, retail 0x1008e5d0)
 
 		// Awareness
 
