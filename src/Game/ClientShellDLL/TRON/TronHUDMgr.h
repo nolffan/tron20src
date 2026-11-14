@@ -39,6 +39,7 @@
 #include "HUDSingleString.h"
 #include "HUDLightCycleLives.h"
 #include "HUDLightCyclePowerupIcon.h"
+#include "HUDLightCycleRoster.h"
 #include "HUDPings.h"
 #include "HUDProcedurals.h"
 #include "HUDProfiler.h"
@@ -83,6 +84,7 @@ protected:
 	CHUDSingleString			m_SingleString;
 	CHUDLightCycleLives			m_LightCycleLives;
 	CHUDLightCyclePowerupIcon	m_LightCyclePowerupIcon;
+	CHUDLightCycleRoster		m_LightCycleRoster;
 	CHUDPings					m_Pings;
 	CHUDProcedurals				m_Procedurals;
 	CHUDSubChooser				m_SubChooser;

@@ -326,6 +326,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleRoster.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -734,6 +738,10 @@ SOURCE=.\HUDLightCycleLives.h
 # Begin Source File
 
 SOURCE=.\HUDLightCyclePowerupIcon.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleRoster.h
 # End Source File
 # Begin Source File
 

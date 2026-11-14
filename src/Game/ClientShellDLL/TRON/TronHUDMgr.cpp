@@ -37,6 +37,7 @@ CHUDCrosshair*		g_pCrosshair = LTNULL;
 // RETAIL: 0x1026ee24 (retail's constructor news the item; the destructor
 // clears it)
 CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
+CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
 
 // ----------------------------------------------------------------------- //
 //
@@ -74,6 +75,7 @@ LTBOOL CTronHUDMgr::Init()
 {
 	g_pCrosshair = &m_Crosshair;
 	g_pLightCycleLives = &m_LightCycleLives;
+	g_pLightCycleRoster = &m_LightCycleRoster;
 
     return CHUDMgr::Init();
 }
@@ -119,6 +121,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_SingleString, eGameType);
 	AddItem(&m_LightCycleLives, eGameType);
 	AddItem(&m_LightCyclePowerupIcon, eGameType);
+	AddItem(&m_LightCycleRoster, eGameType);
 	AddItem(&m_Procedurals, eGameType);
 	AddItem(&m_SubChooser, eGameType);
 	AddItem(&m_Profiler, eGameType);
@@ -142,6 +145,7 @@ bool CTronHUDMgr::AddItems()
 	m_SingleString.Init();
 	m_LightCycleLives.Init();
 	m_LightCyclePowerupIcon.Init();
+	m_LightCycleRoster.Init();
 	m_Procedurals.Init();
 	m_SubChooser.Init();
 	m_Profiler.Init();
