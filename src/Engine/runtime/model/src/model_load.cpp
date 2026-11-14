@@ -941,10 +941,14 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 		error_val = 10 ; goto Error;
 	}
 
+	// TRON: only for files before version 22 (server.dll 0x1001a0bb)
+	if (m_FileVersion <= 21)
+	{
 	for( i = 0 ; i < nPieces ; i++ )
 	{
 		for( uint32 iLODCnt = 0 ; iLODCnt < m_Pieces[i]->NumLODs() ; iLODCnt++)
 			m_Pieces[i]->GetLOD(iLODCnt)->CalcUsedNodes(this);
+	}
 	}
 
 	// Load the child models.
@@ -1114,7 +1118,7 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 Error:
 
     buffer256 error_string("Error loading model: %s %d %s\n", pFilename,error_val, g_szErrorMsgMap[ error_val]);
-	DEBUG_PRINT(1, (error_string));	// RETAIL: server.dll 0x10020880
+	dsi_PrintToConsole(error_string);	// RETAIL: server.dll 0x1001a4a3
 #if !defined(__LINUX)
     OutputDebugString(error_string);
 #endif
