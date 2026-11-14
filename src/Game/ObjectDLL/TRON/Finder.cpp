@@ -1381,9 +1381,8 @@ LTBOOL Finder::Fire()
 	if (!m_bHasWeapon) return LTTRUE;
 	if (!m_pWeapon) return LTTRUE;
 
-	// PORT: Tron's WEAPON has the FireDelay in seconds (a float, +0x17c);
-	// ours (NOLF2's) has it in milliseconds
-	if (g_pLTServer->GetTime() - m_pWeapon->GetLastFireTime() <= m_pWeapon->GetWeaponData()->m_nFireDelay / 1000.0f)
+	// RETAIL: Tron's WEAPON has the FireDelay in seconds (a float, +0x17c)
+	if (g_pLTServer->GetTime() - m_pWeapon->GetLastFireTime() <= m_pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		return LTTRUE;
 	}

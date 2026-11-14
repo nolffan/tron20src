@@ -162,7 +162,7 @@ class CNodeController
 
 		enum Constants
 		{
-			kMaxNodes			= 40,
+			kMaxNodes			= 60,	// RETAIL: Tron's (CNodeController::FindNode 0x10185f30)
 			kMaxNodeControls	= 32,
 		};
 

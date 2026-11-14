@@ -26,7 +26,7 @@ inline char* GetWeaponString(uint8 nWeaponId)
 	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
 	if (!pWeapon) return WS_ERROR_STRING;
 
-	return pWeapon->szShortName;
+	return pWeapon->szName;
 }
 
 inline char* GetAmmoString(int nAmmoId)
@@ -36,7 +36,7 @@ inline char* GetAmmoString(int nAmmoId)
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(nAmmoId);
 	if (!pAmmo) return WS_ERROR_STRING;
 
-	return pAmmo->szShortName;
+	return pAmmo->szName;
 }
 
 #endif // __WEAPON_STRING_DEFS_H__

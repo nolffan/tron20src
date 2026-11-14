@@ -5296,35 +5296,10 @@ void CGameServerShell::LoadObjectives( ILTMessage_Read *pMsg, uint32 dwLoadFlags
 
 void CGameServerShell::ApplyWeaponRestrictions( )
 {
-	StringSet::iterator iter = m_ServerGameOptions.m_setRestrictedWeapons.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedWeapons.end( ))
-	{
-		std::string const& sValue = *iter;
-		iter++;
+	// RETAIL: Tron's WEAPON and AMMO cannot be server restricted (no such
+	// members)
 
-		WEAPON* pWeapon = ( WEAPON* )g_pWeaponMgr->GetWeapon( sValue.c_str( ));
-		if( !pWeapon )
-			continue;
-
-		if( pWeapon->bCanServerRestrict )
-			pWeapon->bServerRestricted = true;
-	}
-
-	iter = m_ServerGameOptions.m_setRestrictedAmmo.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedAmmo.end( ))
-	{
-		std::string const& sValue = *iter;
-		iter++;
-
-		AMMO* pAmmo = ( AMMO* )g_pWeaponMgr->GetAmmo( sValue.c_str( ));
-		if( !pAmmo )
-			continue;
-
-		if( pAmmo->bCanServerRestrict )
-			pAmmo->bServerRestricted = true;
-	}
-
-	iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
+	StringSet::iterator iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
 	while( iter != m_ServerGameOptions.m_setRestrictedGear.end( ))
 	{
 		std::string const& sValue = *iter;

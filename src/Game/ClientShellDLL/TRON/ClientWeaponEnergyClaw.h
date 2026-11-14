@@ -22,7 +22,7 @@ public:
 	virtual ~CClientWeaponEnergyClaw();
 
 	// RETAIL: 0x1001a650 (three arguments there: see TronClientWeapon.h)
-	virtual WeaponState   Update( bool bFire, FireType eFireType = FT_NORMAL_FIRE );
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
 
 protected:
 	// RETAIL: 0x1001a610

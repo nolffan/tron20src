@@ -44,7 +44,7 @@ public:
 	void	SetScale(float fScale);
 
 	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
-	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
+	virtual bool	IsVisible() {return m_bVisible && m_bEnabled;}	// RETAIL: returns a bool in Tron (Update tests al)
 
 protected:
 	CTimedText				m_Text;

@@ -1254,7 +1254,7 @@ void CProjectile::AddImpact( HOBJECT hObj,
 	CreateClientWeaponFX(fxStruct);
 
 	// Do the area and progressive (over time) damage...
-	if ((m_pAmmoData->nAreaDamage > 0.0f && eType != ST_SKY) ||
+	if ((m_pAmmoData->fAreaDamage > 0.0f && eType != ST_SKY) ||
 		 m_pAmmoData->fProgDamageLifetime > 0.0f)
 	{
 		AddExplosion(vImpactPos, vSurfaceNormal);

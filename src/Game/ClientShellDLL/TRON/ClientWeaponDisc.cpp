@@ -132,7 +132,7 @@ bool CClientWeaponDisc::OnMessage( uint8 messageID, ILTMessage_Read *pMsg )
 //
 // ----------------------------------------------------------------------- //
 
-WeaponState CClientWeaponDisc::UpdateModelState( bool bFire )
+WeaponState CClientWeaponDisc::UpdateModelState( bool bFire, bool bAltFire )
 {
 	WeaponState eRet = W_IDLE;
 
@@ -812,7 +812,7 @@ bool CClientWeaponDisc::OnModelKey( HLOCALOBJ hObj, ArgList* pArgs )
 bool g_bDisplayClientWeaponTarget = false;
 /// DEBUG CODE
 
-WeaponState CClientWeaponDisc::Update( bool bFire,
+WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
                                        FireType eFireType /*=FT_NORMAL_FIRE*/ )
 {
 /// DEBUG CODE
@@ -889,7 +889,7 @@ WeaponState CClientWeaponDisc::Update( bool bFire,
 		ASSERT( LT_OK == ltResult );
 	}
 
-	return CTronClientWeapon::Update( bFire, eFireType );
+	return CTronClientWeapon::Update( bFire, bAltFire, eFireType );
 }
 
 // ----------------------------------------------------------------------- //

@@ -1339,8 +1339,8 @@ WeaponState TronTurret::Fire()
 
 	if (!m_pWeapon) return W_IDLE;
 
-	// RETAIL: WEAPON's +0x17c (our m_nFireDelay) is compared as a float
-	if (g_pLTServer->GetTime() - m_pWeapon->GetLastFireTime() <= *(const LTFLOAT*)&m_pWeapon->GetWeaponData()->m_nFireDelay)
+	// RETAIL: WEAPON's +0x17c, the fire delay in seconds
+	if (g_pLTServer->GetTime() - m_pWeapon->GetLastFireTime() <= m_pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		return W_IDLE;
 	}

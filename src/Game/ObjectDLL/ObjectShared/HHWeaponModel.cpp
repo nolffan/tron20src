@@ -240,15 +240,12 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				case PSI_RELOAD2:
 				case PSI_RELOAD3:
 					pFilename = pWeapon->szReloadSounds[nId - PSI_RELOAD];
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				break;
 				case PSI_SELECT:
 					pFilename = pWeapon->szSelectSound;
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				break;
 				case PSI_DESELECT:
 					pFilename = pWeapon->szDeselectSound;
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				break;
 				
 				case PSI_WEAPON_MISC1:
@@ -257,7 +254,6 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				case PSI_WEAPON_MISC4:
 				case PSI_WEAPON_MISC5:
 					pFilename = pWeapon->szMiscSounds[nId - PSI_WEAPON_MISC1];
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				break;
 
 				case PSI_INVALID:
@@ -308,21 +304,18 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				case PSI_RELOAD3:												// 3
 				{
 					pBuf = pWeapon->szReloadSounds[ ( nId - PSI_RELOAD ) ];
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				}
 				break;
 
 				case PSI_SELECT:												// 4
 				{
 					pBuf = pWeapon->szSelectSound;			
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				}
 				break;	
 				
 				case PSI_DESELECT:												// 5		
 				{
 					pBuf = pWeapon->szDeselectSound;
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				}
 				break;
 				
@@ -361,7 +354,6 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				case PSI_WEAPON_MISC5:											// 14
 				{
 					pBuf = pWeapon->szMiscSounds[nId - PSI_WEAPON_MISC1];
-					fRadius = (LTFLOAT)pWeapon->nWeaponSoundRadius;
 				}
 				break; 
 				

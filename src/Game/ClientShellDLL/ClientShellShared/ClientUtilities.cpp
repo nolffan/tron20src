@@ -260,6 +260,8 @@ void PlayWeaponSound(WEAPON const *pWeapon, const LTVector &vPos, PlayerSoundId 
 
 	char* pSnd = LTNULL;
 
+	// RETAIL: Tron's weapons have no WeaponSndRadius: the non-fire sounds
+	// keep this radius (CShell 0x100d8730)
 	LTFLOAT fRadius = WEAPON_SOUND_RADIUS;
 
 	LTFLOAT fScale = 1.0f;
