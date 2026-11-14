@@ -216,6 +216,9 @@ public:
 	// RETAIL: whether the weapon's subroutines are the player's (retail
 	// 0x100ac2f0; the name is ours)
 	bool IsWeaponCompiled(uint8 nWeaponId);
+
+	// RETAIL: 0x100ac430 (the names are ours): the HUD's view of a weapon
+	void GetWeaponStatus(uint8 nWeaponId, bool* pbUnlocked, bool* pbCorrupt, bool* pbCompiled, int* pnShots);
 	
 	void	ClearPermissions();
 	void	ClearRequiredPermissions();

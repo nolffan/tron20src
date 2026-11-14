@@ -38,6 +38,9 @@ enum TronWeaponFireType
 
 class CTronClientWeapon : public CClientWeapon
 {
+	// RETAIL: CTronPlayerStats::GetWeaponStatus (0x100ac430) calls slots 90/91
+	friend class CTronPlayerStats;
+
 public:
 	CTronClientWeapon();
 	virtual ~CTronClientWeapon();

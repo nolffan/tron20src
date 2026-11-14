@@ -18,6 +18,8 @@
 #include "TronHUDMgr.h"
 #include "ClientWeaponBase.h"
 #include "ClientWeaponMgr.h"
+#include "TronClientWeapon.h"
+#include "SubroutineMgr.h"
 #include "MissionMgr.h"
 #include "KeyMgr.h"
 // RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
@@ -1900,15 +1902,90 @@ bool CTronPlayerStats::IsWeaponCompiled(uint8 nWeaponId)
 
 bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
 {
-	const WEAPON* pNoWeapon = g_pWeaponMgr->GetWeapon("NoWeapon");
-	if (pNoWeapon && nWeaponId == pNoWeapon->nId)
+	// RETAIL: 0x100ac370
+	if (nWeaponId == g_pWeaponMgr->GetWeapon("NoWeapon")->nId)
 		return true;
 
 	if (!IsWeaponCompiled(nWeaponId))
 		return false;
 
-	// PORT: retail then asks the Tron client weapon (slots 0x16c, 0x168)
-	// whether the player's energy (GetEnergy) covers it; not yet in our
-	// client weapons
-	return true;
+	// the player's energy must cover the weapon (a continuous one needs any)
+	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId));
+	if (!pClientWeapon)
+		return false;
+
+	float fEnergy = GetEnergy();
+	if (pClientWeapon->TronUnknownVirtual16C())
+	{
+		if (fEnergy > MATH_EPSILON)
+			return true;
+		return false;
+	}
+
+	if (pClientWeapon->GetEnergyUse() <= fEnergy)
+		return true;
+
+	return false;
+}
+
+// RETAIL: 0x100ac430: whether the weapon is unlocked (the single player
+// flag at +0x2404), its subroutine corrupt, it compiled (its primitive,
+// and its subroutine installed) and usable with the energy the player
+// has; *pnShots is retail's GetEnergyUse() / GetEnergy() (sic)
+void CTronPlayerStats::GetWeaponStatus(uint8 nWeaponId, bool* pbUnlocked, bool* pbCorrupt, bool* pbCompiled, int* pnShots)
+{
+	*pbUnlocked = false;
+	*pbCorrupt = false;
+	*pbCompiled = true;
+	*pnShots = 0;
+
+	if (!IsMultiplayerGame() && m_bTronUnknown2404)
+		*pbUnlocked = true;
+
+	const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
+
+	PlayerSubroutine* pSub = LTNULL;
+	char* szSub = pWeapon->szSubroutineNeeded;
+	if (szSub[0])
+	{
+		pSub = g_pSubroutineMgr->GetPlayerSubroutine(szSub, LTNULL);
+		if (pSub && pSub->eState == SUBSTATE_CORRUPT)
+			*pbCorrupt = true;
+	}
+
+	if (!*pbCompiled && g_pSubroutineMgr->DoesPlayerHavePrimitive(pWeapon->szPrimitiveType))
+	{
+		if (!szSub[0])
+		{
+			*pbCompiled = true;
+		}
+		else if (pSub && pSub->nSlot < 100 && pSub->nSlot >= 0)
+		{
+			*pbCompiled = true;
+		}
+	}
+
+	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId));
+	if (!pClientWeapon)
+		return;
+
+	float fEnergy = GetEnergy();
+	if (pClientWeapon->TronUnknownVirtual16C())
+	{
+		if (fEnergy > MATH_EPSILON)
+			return;
+
+		*pbCompiled = false;
+		*pnShots = 0;
+		return;
+	}
+
+	float fEnergyUse = pClientWeapon->GetEnergyUse();
+	if (fEnergyUse > fEnergy)
+	{
+		*pbCompiled = false;
+		return;
+	}
+
+	*pnShots = (int)(fEnergyUse / fEnergy);
 }
