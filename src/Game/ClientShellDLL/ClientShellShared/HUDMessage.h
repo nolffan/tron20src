@@ -34,8 +34,8 @@ typedef struct MsgCreate_t
 		eJustify = kMsgLeft;
 		fDuration = 0.0f;
 		fFadeDur  = 0.0f;
+		fDropShadow = 0.0f;
 		nWidth	  = 640;
-		bDropShadow = true;
 
 	};
 
@@ -49,8 +49,8 @@ typedef struct MsgCreate_t
 		eJustify = cOther.eJustify;
 		fDuration = cOther.fDuration;
 		fFadeDur  = cOther.fFadeDur;
+		fDropShadow = cOther.fDropShadow;
 		nWidth	  = cOther.nWidth;
-		bDropShadow = cOther.bDropShadow;
 		return *this;
 	}
 
@@ -64,8 +64,14 @@ typedef struct MsgCreate_t
 	MsgJustification	eJustify;
 	float 				fDuration;
 	float 				fFadeDur;
+
+	// RETAIL: Tron's MsgCreate is 0x34 bytes: NOLF2's bool bDropShadow is
+	// gone and a float at 0x2c takes its place before nWidth (the queue's
+	// constructor 0x1015e9b0 clears it; its copy in CHUDMessageQueue::Init
+	// 0x1015ebd0; CHUDMessage::Create 0x101880f0 makes a second polystring
+	// when it is above 0). The name is ours.
+	float				fDropShadow;
 	uint16				nWidth;
-	bool				bDropShadow;
 
 } MsgCreate;
 

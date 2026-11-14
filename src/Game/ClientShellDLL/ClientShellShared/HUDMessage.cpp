@@ -73,7 +73,8 @@ LTBOOL CHUDMessage::Create(MsgCreate &mc)
 	m_nTextColor = mc.nTextColor;
 	m_nFixedWidth = mc.nWidth;
 
-	m_bDropShadow = mc.bDropShadow;
+	// PORT: Tron's MsgCreate has a float drop shadow (retail 0x101880f0)
+	m_bDropShadow = (mc.fDropShadow > 0.0f);
 	
 	m_pText->SetColor(m_nTextColor);
 

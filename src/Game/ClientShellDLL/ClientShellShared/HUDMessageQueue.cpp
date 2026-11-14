@@ -11,9 +11,12 @@
 #include "HUDMgr.h"
 #include "HUDMessageQueue.h"
 #include "InterfaceMgr.h"
+#include "ClientUtilities.h"
+#include "ClientServerShared.h"
 
 
-const uint16 CHUDMessageQueue::kMaxHistory = 255;
+// RETAIL: Tron keeps 100 messages of history (AddMessage 0x1015f340)
+const uint16 CHUDMessageQueue::kMaxHistory = 100;
 
 void SimulateChatFn(int argc, char **argv)
 {
@@ -35,6 +38,7 @@ CHUDMessageQueue::CHUDMessageQueue()
 	m_bTopJustify = LTTRUE;
 	m_eLevel = kHUDRenderText;
 	m_bShowHistory = LTFALSE;
+	m_bCanShowHistory = LTFALSE;
 	m_nHistoryOffset = 0;
 	m_bDraw	= true;
 }
@@ -49,10 +53,27 @@ LTBOOL CHUDMessageQueue::Init()
 	ASSERT(m_nMaxActiveMsgs);
 	if (!m_nMaxActiveMsgs) return LTFALSE;
 
+	// RETAIL: Tron's Init (0x1015ebd0) can be called again: it deletes the
+	// messages it made before, and reserves history only for a queue that
+	// shows it.
+	MessageArray::iterator iter;
+	for (iter = m_ActiveMsgs.begin(); iter != m_ActiveMsgs.end(); iter++)
+	{
+		debug_delete(*iter);
+	}
+	m_ActiveMsgs.clear();
+
+	for (iter = m_HistoryMsgs.begin(); iter != m_HistoryMsgs.end(); iter++)
+	{
+		debug_delete(*iter);
+	}
+	m_HistoryMsgs.clear();
+
 	m_ActiveMsgs.reserve(m_nMaxActiveMsgs);
 	m_HistoryMsgs.reserve(m_nMaxHistoryMsgs);
 
-	m_History.reserve(32);
+	if (m_bCanShowHistory)
+		m_History.reserve(32);
 
 
 	MsgCreate fmt = m_MsgFormat;
@@ -100,6 +121,8 @@ void CHUDMessageQueue::Term()
 		debug_delete(pMsg);
 		iter++;
 	}
+	// RETAIL: Tron's Term (0x1015f020) empties the arrays
+	m_ActiveMsgs.clear();
 
 	iter = m_HistoryMsgs.begin();
 	while (iter !=  m_HistoryMsgs.end())
@@ -109,6 +132,7 @@ void CHUDMessageQueue::Term()
 		debug_delete(pMsg);
 		iter++;
 	}
+	m_HistoryMsgs.clear();
 
 	MCArray::iterator mcIter = m_History.begin();
 	while (mcIter != m_History.end())
@@ -116,12 +140,18 @@ void CHUDMessageQueue::Term()
 		debug_delete((*mcIter));
 		mcIter++;
 	}
+	m_History.clear();
 
 
 }
 
 void CHUDMessageQueue::Render()
 {
+	// RETAIL: Tron's Render (0x1015f100) checks the item is enabled, and
+	// steps by the message's height in 640x480 units
+	if( !IsEnabled() )
+		return;
+
 	if( !m_bDraw )
 		return;
 
@@ -142,7 +172,7 @@ void CHUDMessageQueue::Render()
 					pMsg->SetBasePos(pos);
 					pMsg->Render(LTTRUE);
 					
-					pos.y += pMsg->GetBaseHeight();
+					pos.y += (uint16)((float)pMsg->GetHeight() / g_pInterfaceResMgr->GetYRatio());
 				}
 
 				iter++;
@@ -160,7 +190,7 @@ void CHUDMessageQueue::Render()
 					pMsg->SetBasePos(pos);
 					pMsg->Render();
 					
-					pos.y += pMsg->GetBaseHeight();
+					pos.y += (uint16)((float)pMsg->GetHeight() / g_pInterfaceResMgr->GetYRatio());
 				}
 
 				iter++;
@@ -182,7 +212,7 @@ void CHUDMessageQueue::Render()
 				if (pMsg->IsVisible())
 				{
 
-					pos.y -= pMsg->GetBaseHeight();
+					pos.y -= (uint16)((float)pMsg->GetHeight() / g_pInterfaceResMgr->GetYRatio());
 					pMsg->SetBasePos(pos);
 					pMsg->Render(LTTRUE);
 				}
@@ -198,7 +228,7 @@ void CHUDMessageQueue::Render()
 				CHUDMessage *pMsg = *iter;
 				if (pMsg->IsVisible())
 				{
-					pos.y -= pMsg->GetBaseHeight();
+					pos.y -= (uint16)((float)pMsg->GetHeight() / g_pInterfaceResMgr->GetYRatio());
 					pMsg->SetBasePos(pos);
 					pMsg->Render();
 				}
@@ -228,9 +258,18 @@ void CHUDMessageQueue::AddMessage(MsgCreate &fmt, bool bHistoryOnly)
 	if (!bHistoryOnly)
 	{
 		//take the oldest active message out of the list
+		// RETAIL: Tron's (0x1015f340) makes a new one when the list is empty
+		CHUDMessage *pMsg = LTNULL;
 		MessageArray::iterator iter = m_ActiveMsgs.begin();
-		CHUDMessage *pMsg = (*iter);
-		m_ActiveMsgs.erase(iter);
+		if (iter != m_ActiveMsgs.end())
+		{
+			pMsg = (*iter);
+			m_ActiveMsgs.erase(iter);
+		}
+		else
+		{
+			pMsg = debug_new(CHUDMessage);
+		}
 
 		//overwrite the data
 		pMsg->Create(fmt);
@@ -240,17 +279,21 @@ void CHUDMessageQueue::AddMessage(MsgCreate &fmt, bool bHistoryOnly)
 		m_ActiveMsgs.push_back(pMsg);
 	}
 
-	MCArray::iterator mcIter;
-	while (m_History.size() >= kMaxHistory)
+	// RETAIL: only a queue that shows its history keeps one (0x1015f3e8)
+	if (m_bCanShowHistory)
 	{
-		mcIter = m_History.begin();
-		debug_delete(*mcIter);
-		m_History.erase(mcIter);
-	}
+		MCArray::iterator mcIter;
+		while (m_History.size() >= kMaxHistory)
+		{
+			mcIter = m_History.begin();
+			debug_delete(*mcIter);
+			m_History.erase(mcIter);
+		}
 
-	MsgCreate *pMC = debug_new(MsgCreate);
-	*pMC = fmt;
-	m_History.push_back(pMC);
+		MsgCreate *pMC = debug_new(MsgCreate);
+		*pMC = fmt;
+		m_History.push_back(pMC);
+	}
 
 	if (m_bShowHistory)
 	{
@@ -261,6 +304,10 @@ void CHUDMessageQueue::AddMessage(MsgCreate &fmt, bool bHistoryOnly)
 
 void CHUDMessageQueue::ShowHistory(LTBOOL bShow) 
 {
+	// RETAIL: Tron's guard (0x1015f540)
+	if (!m_bCanShowHistory)
+		return;
+
 	m_bShowHistory = bShow;
 	if (bShow)
 	{
@@ -279,13 +326,8 @@ void CHUDMessageQueue::ClearHistory()
 	}
 	m_History.clear();
 
-	MessageArray::iterator iter = m_ActiveMsgs.begin();
-	while (iter !=  m_ActiveMsgs.end())
-	{
-		(*iter)->Show(LTFALSE);
-		iter++;
-	}
-
+	// RETAIL: Tron's ClearHistory (0x1015f560) leaves the active messages
+	// shown: NOLF2's loop hiding them is not in it.
 }
 
 void CHUDMessageQueue::SetHistoryOffset(uint16 nOffset) 
@@ -356,9 +398,18 @@ void CHUDMessageQueue::DecHistoryOffset()
 
 }
 
+CHUDChatMsgQueue::CHUDChatMsgQueue()
+{
+	m_bCanShowHistory = LTTRUE;
+}
+
+// RETAIL: Tron's (0x1015f870) picks the layout by the game type: the
+// multiplayer one in a multiplayer game and the single player light cycle
+// games.
 void CHUDChatMsgQueue::UpdateLayout()
 {
-	UpdateLayout("ChatMessageQueue");
+	bool bMultiplayer = IsMultiplayerGame() || GetGameType() == eGameTypeSingleLightCycleCircuit || GetGameType() == eGameTypeSingleLightCycleCustom;
+	SetMultiplayerLayout(bMultiplayer);
 }
 
 void CHUDChatMsgQueue::UpdateLayout(char *pTag)
@@ -405,29 +456,25 @@ void CHUDChatMsgQueue::UpdateLayout(char *pTag)
 	nB = (uint8)vCol.z;
 	m_nMsgColors[kMsgTransmission] = SET_ARGB(0xFF,nR,nG,nB);
 
-	vCol = g_pLayoutMgr->GetVector( pTag, "ScmdColor" );
+	// RETAIL: Tron's (0x1015f8d0): no scmd color; the multiplayer
+	// announcement, team chat and a second transmission color
+	vCol = g_pLayoutMgr->GetVector(pTag,"MultiAnnounceColor");
 	nR = (uint8)vCol.x;
 	nG = (uint8)vCol.y;
 	nB = (uint8)vCol.z;
-	m_nMsgColors[kMsgScmd] = SET_ARGB(0xFF,nR,nG,nB);
+	m_nMsgColors[kMsgMultiAnnounce] = SET_ARGB(0xFF,nR,nG,nB);
 
-	vCol = g_pLayoutMgr->GetVector(pTag,"TeamColor");
+	vCol = g_pLayoutMgr->GetVector(pTag,"TeamChatColor");
 	nR = (uint8)vCol.x;
 	nG = (uint8)vCol.y;
 	nB = (uint8)vCol.z;
-	m_nMsgColors[kMsgTeam] = SET_ARGB(0xFF,nR,nG,nB);
-	
-	vCol = g_pLayoutMgr->GetVector( pTag, "RedTeamColor" );
-	nR = (uint8)vCol.x;
-	nG = (uint8)vCol.y;
-	nB = (uint8)vCol.z;
-	m_nMsgColors[kMsgRedTeam] = SET_ARGB( 0xFF, nR, nG, nB );
+	m_nMsgColors[kMsgTeamChat] = SET_ARGB(0xFF,nR,nG,nB);
 
-	vCol = g_pLayoutMgr->GetVector( pTag, "BlueTeamColor" );
+	vCol = g_pLayoutMgr->GetVector("Transmission","TextColor");
 	nR = (uint8)vCol.x;
 	nG = (uint8)vCol.y;
 	nB = (uint8)vCol.z;
-	m_nMsgColors[kMsgBlueTeam] = SET_ARGB( 0xFF, nR, nG, nB );
+	m_nMsgColors[kMsgTransmission2] = SET_ARGB(0xFF,nR,nG,nB);
 
 }
 
@@ -450,6 +497,8 @@ void CHUDChatMsgQueue::AddMessage(int nMessageID, eChatMsgType type)
 
 void CHUDPickupMsgQueue::UpdateLayout()
 {
+	// RETAIL: Tron's (0x1015fe50) reads a justification and reads the text
+	// color last
 	m_bTopJustify = LTFALSE;
 
 	char *pTag = "PickupMessageQueue";
@@ -460,12 +509,7 @@ void CHUDPickupMsgQueue::UpdateLayout()
 	m_MsgFormat.pFont = g_pInterfaceResMgr->GetFont(nFont);
 	m_MsgFormat.nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
 	m_MsgFormat.nImageSize = (uint8)g_pLayoutMgr->GetInt(pTag,"IconSize");
-
-	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"TextColor");
-	uint8 nR = (uint8)vCol.x;
-	uint8 nG = (uint8)vCol.y;
-	uint8 nB = (uint8)vCol.z;
-	m_MsgFormat.nTextColor = SET_ARGB(0xFF,nR,nG,nB);
+	m_MsgFormat.eJustify = (MsgJustification)g_pLayoutMgr->GetInt(pTag,"Justify");
 
 	m_MsgFormat.fDuration = g_pLayoutMgr->GetFloat(pTag,"MessageTime");
 	m_MsgFormat.fFadeDur  = g_pLayoutMgr->GetFloat(pTag,"MessageFade");
@@ -473,6 +517,12 @@ void CHUDPickupMsgQueue::UpdateLayout()
 
 
 	m_nMaxActiveMsgs = (uint8)g_pLayoutMgr->GetInt(pTag,"MaxMessages");
+
+	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"TextColor");
+	uint8 nR = (uint8)vCol.x;
+	uint8 nG = (uint8)vCol.y;
+	uint8 nB = (uint8)vCol.z;
+	m_MsgFormat.nTextColor = SET_ARGB(0xFF,nR,nG,nB);
 
 }
 
@@ -526,3 +576,58 @@ void CHUDRewardMsgQueue::UpdateLayout()
 	uint8 nB = (uint8)vCol.z;
 	m_nMsgColors[kMsgDefault] = SET_ARGB(0xFF,nR,nG,nB);
 }
+
+
+// RETAIL: 0x10160320 and 0x10160650 (the layout of the chat queue's
+// UpdateLayout with one text color, kept in slot 4, and centered shadowed
+// messages; retail has a copy of the body in each: the inline helper is ours)
+inline void CHUDAnnouncementMsgQueue::UpdateLayout(char *pTag)
+{
+	m_bTopJustify = LTFALSE;
+
+	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
+
+	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
+
+	m_MsgFormat.pFont = g_pInterfaceResMgr->GetFont(nFont);
+	m_MsgFormat.nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
+
+	m_MsgFormat.nTextColor = argbWhite;
+	m_MsgFormat.fDuration = g_pLayoutMgr->GetFloat(pTag,"MessageTime");
+	m_MsgFormat.fFadeDur  = g_pLayoutMgr->GetFloat(pTag,"MessageFade");
+	m_MsgFormat.nWidth  = (uint16) g_pLayoutMgr->GetInt(pTag,"Width");
+
+	m_nMaxActiveMsgs = (uint8)g_pLayoutMgr->GetInt(pTag,"MaxMessages");
+	m_nMaxHistoryMsgs = (uint8)g_pLayoutMgr->GetInt(pTag,"MaxHistory");
+
+	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"TextColor");
+	uint8 nR = (uint8)vCol.x;
+	uint8 nG = (uint8)vCol.y;
+	uint8 nB = (uint8)vCol.z;
+
+	m_nMsgColors[kMsgScmd] = SET_ARGB(0xFF,nR,nG,nB);
+	m_MsgFormat.eJustify = kMsgCenter;
+	m_MsgFormat.fDropShadow = 1.0f;
+}
+
+void CHUDAnnouncementMsgQueue::UpdateLayout()
+{
+	UpdateLayout("AnnouncementMessageQueue");
+}
+
+void CHUDMultiAnnouncementMsgQueue::UpdateLayout()
+{
+	CHUDAnnouncementMsgQueue::UpdateLayout("MultiAnnouncementMessageQueue");
+}
+
+// RETAIL: 0x101604c0
+void CHUDAnnouncementMsgQueue::AddMessage(const char *pszString, eChatMsgType type)
+{
+	MsgCreate fmt = m_MsgFormat;
+	fmt.sString = pszString;
+	fmt.nTextColor = m_nMsgColors[type];
+	fmt.eJustify = kMsgCenter;
+	fmt.fDropShadow = 1.0f;
+	CHUDMessageQueue::AddMessage(fmt,false);
+}
+
