@@ -130,8 +130,7 @@ Group::~Group()
 
 bool Group::ReadProp(ObjectCreateStruct *pStruct)
 {
-	if (!GameBaseLite::ReadProp(pStruct))
-		return false;
+	// RETAIL: 0x1025d060, Tron's does not call GameBaseLite::ReadProp
 
 	char buf[100];
 	GenericProp gProp;
