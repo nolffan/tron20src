@@ -114,10 +114,10 @@ CPixelShaderHandle CPixelShaderMgr::LoadPixelShader(const char* pszFilename, boo
 
 	for(uint32 nCurrShader = 0; nCurrShader < m_PixelShaders.size(); nCurrShader++)
 	{
-		SPixelShader* pShader = m_PixelShaders[nCurrShader];
-		if(pShader)
+		// RETAIL: the vector element read for each use (Lithtech.exe 0x51312b)
+		if(m_PixelShaders[nCurrShader])
 		{
-			if(stricmp(pShader->m_pszName, pszFilename) == 0)
+			if(stricmp(m_PixelShaders[nCurrShader]->m_pszName, pszFilename) == 0)
 			{
 				//we already have it, just add a reference
 				m_PixelShaders[nCurrShader]->m_nRefCount++;
