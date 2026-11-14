@@ -3217,10 +3217,12 @@ void CCharacter::HandleDead(LTBOOL bRemoveObj)
 	// RETAIL: Tron's (retail 0x10091025)
 	StopFireHelpers();
 
-	// RETAIL: then, if m_bTronUnknown4C, g_pGameServerShell->DropInventoryObject
-	// (this) (retail 0x10091032): Tron's DropInventoryObject takes the
-	// character (retail 0x1005efe0 reads CCharacter's members), ours a Body
-	// (CTronGameServerShell's, not ours to change)
+	// RETAIL: then the inventory drop (retail 0x10091032): Tron's
+	// DropInventoryObject takes the character
+	if( m_bTronUnknown4C )
+	{
+		g_pGameServerShell->DropInventoryObject( this );
+	}
 
 	if( m_bMakeBody )
 	{
