@@ -211,10 +211,18 @@
 												m_hParent	 = hParent;
 											}
 
-		char								m_sName[32];
+		// RETAIL: Tron's create struct is 0xf4 bytes (CShell's constructors
+		// clear 0x3d dwords, 0x1019fde0, and copy the name with
+		// strncpy(..., 0x7f)): a 128-character name, and a bool and a vector
+		// at 0xa0/0xa4 that CClientFXMgr::CreateClientFX (0x10118860) copies
+		// into the instance when the bool is set.  Their names are ours.
+		char								m_sName[128];
 		uint32								m_dwFlags;
 		LTVector							m_vPos;
 		LTRotation							m_rRot;
+
+		bool								m_bTronUnknownA0;
+		LTVector							m_vTronUnknownA4;
 	
 		HOBJECT								m_hParent;
 		char							    m_sParentNode[32];
