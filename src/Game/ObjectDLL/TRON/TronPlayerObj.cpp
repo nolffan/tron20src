@@ -667,6 +667,118 @@ LTBOOL CTronPlayerObj::Update()
 	return(CPlayerObj::Update());
 }
 
+// RETAIL: a rating's share of its surge level makes a maximum between 100
+// and 200 (300 once surging). The name is ours
+static inline float GetRatedMaximum( uint8 nRating, uint8 nSurgeRating )
+{
+	float fRatio = (float)nRating / nSurgeRating;
+	return ((fRatio >= 1.0f) ? 200.0f : fRatio * 100.0f) + 100.0f;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleRatings
+//
+//	PURPOSE:	The client's armor, ratings and energy floor (RETAIL:
+//				retail 0x10063b50, called by the server shell's message
+//				handler 0x1005ed20; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::HandleRatings(ILTMessage_Read *pMsg)
+{
+	m_fTronUnknown31f8 = pMsg->Readfloat();
+	m_fTronUnknown31fc = pMsg->Readfloat();
+
+	for( int i = 0; i < NUM_RATINGS; i++ )
+	{
+		m_iPerformanceRatings[i] = pMsg->Readuint8();
+		m_iSurgePerformanceRatings[i] = pMsg->Readuint8();
+	}
+
+	m_fTronUnknown31f4 = pMsg->Readfloat();
+
+	// RETAIL: the health and energy ratings scale the maximums between 100
+	// and 200 (300 once surging); the current values keep their share
+	float fValue = m_damage.GetHitPoints();
+	float fOldMax = m_damage.GetMaxHitPoints();
+	float fNewMax = GetRatedMaximum( m_iPerformanceRatings[Rating_Health], m_iSurgePerformanceRatings[Rating_Health] );
+	m_damage.SetMaxHitPoints( fNewMax );
+	m_damage.SetHitPoints( fNewMax / fOldMax * fValue );
+
+	fValue = m_damage.GetEnergy();
+	fOldMax = m_damage.GetMaxEnergy();
+	fNewMax = GetRatedMaximum( m_iPerformanceRatings[Rating_Energy], m_iSurgePerformanceRatings[Rating_Energy] );
+	m_damage.SetMaxEnergy( fNewMax );
+	m_damage.SetEnergy( fNewMax / fOldMax * fValue );
+
+	UpdateInterface( true );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleEnergy
+//
+//	PURPOSE:	Spend energy at once, or set the rate Update drains it at
+//				(RETAIL: retail 0x10063cb0, called by the server shell's
+//				message handler 0x1005edc0; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::HandleEnergy(ILTMessage_Read *pMsg)
+{
+	if( m_bGodMode )
+		return;
+
+	bool bInstant = !!pMsg->Readuint8();
+	float fAmount = pMsg->Readfloat();
+
+	if( bInstant )
+	{
+		float fEnergy = m_damage.GetEnergy( ) - fAmount;
+
+		if( fEnergy < m_fTronUnknown31f4 )
+		{
+			fEnergy = m_fTronUnknown31f4;
+		}
+		else if( m_damage.GetMaxEnergy( ) < fEnergy )
+		{
+			fEnergy = m_damage.GetMaxEnergy( );
+		}
+
+		m_damage.SetEnergy( fEnergy );
+	}
+	else
+	{
+		m_fTronUnknown31f0 = fAmount;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleSwat
+//
+//	PURPOSE:	Fire the swat weapon from where the client says (RETAIL:
+//				retail 0x10063d60, called by the server shell's message
+//				handler 0x1005edf0; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::HandleSwat(ILTMessage_Read *pMsg)
+{
+	if( !m_pSwatWeapon )
+		return;
+
+	WeaponFireInfo info;
+	info.hFiredFrom = m_hObject;
+
+	LTVector vPos = pMsg->ReadLTVector();
+	info.vFirePos = vPos;
+	info.vFlashPos = vPos;
+
+	LTVector vDir = pMsg->ReadLTVector();
+	info.vPath = vDir.Unit();
+
+	m_pSwatWeapon->UpdateWeapon( info, LTTRUE );
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronPlayerObj::HandleCompile

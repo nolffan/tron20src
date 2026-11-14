@@ -66,6 +66,10 @@ class CTronPlayerObj : public CPlayerObj
 
 		// Specific messages from the client
 		void HandleCompile(ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x10063b50, 0x10063cb0, 0x10063d60 (the names are ours)
+		void HandleRatings(ILTMessage_Read *pMsg);
+		void HandleEnergy(ILTMessage_Read *pMsg);
+		void HandleSwat(ILTMessage_Read *pMsg);
 
 		// Defense
 		virtual bool	IsDefending() const;
