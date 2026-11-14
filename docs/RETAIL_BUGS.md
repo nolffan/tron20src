@@ -662,6 +662,16 @@ its text, which "%s" reads; the other two words are ignored.
 
 Not fixed yet: harmless with this STLport; the modern build should pass
 c_str().
+### The host screen never sets the default remote-command password
+
+CShell.dll 0x1005bb20 (CScreenHostConnection's constructor, ClientShellDLL/
+TRON/ScreenHostConnection.cpp). It loads the default password (string
+0x1c0) into m_sPassword twice; NOLF2's CScreenHost loads it into the
+password and then the remote-command (SCMD) password. m_sScmdPassword stays
+empty until the option set is read (LoadOptions sets both), so nothing
+shows in the game.
+
+Not fixed yet: harmless; the modern build may load it into m_sScmdPassword.
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
