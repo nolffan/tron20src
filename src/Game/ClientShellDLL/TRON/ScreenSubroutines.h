@@ -19,6 +19,8 @@
 #include "BaseScaleFX.h"
 #include "ArcCtrl.h"
 #include "ProceduralCtrl.h"
+#include "RatingBarCtrl.h"
+#include "Ratings.h"
 #include "SubroutineMgr.h"
 
 const int NUM_SECTORS = 24;
@@ -46,6 +48,7 @@ public:
 
 	// This is called when the screen gets or loses focus
     virtual void    OnFocus(LTBOOL bFocus);
+	virtual void	Escape();	// RETAIL: 0x1007f050
 
 	LTBOOL		OnMouseMove(int x, int y);
 	LTBOOL		OnLButtonDown(int x, int y);
@@ -59,8 +62,7 @@ public:
 	void		Compile();
 
 	// RETAIL: the 1.030 screen shows the performance ratings, which
-	// CRatingMgr::PopulateRatings (0x100516d0) fills; not written yet
-	// (names ours).
+	// CRatingMgr::PopulateRatings (0x100516d0) fills (names ours)
 	void		SetRating(int nRating, int nValue);	// RETAIL: 0x10080070
 	void		SetRatingPoints(int nPoints);			// RETAIL: 0x100800c0
 
@@ -125,7 +127,9 @@ protected:
 	CArcCtrl	m_UtilityCtrl;
 	CArcCtrl	* m_pHotArc;
 
-	CProceduralCtrl m_ProcCtrl[5];
+	// RETAIL: three (retail's +0xdb8, 0x444 bytes each)
+	enum { NUM_PROC_CTRLS = 3 };
+	CProceduralCtrl m_ProcCtrl[NUM_PROC_CTRLS];
 
 	PlayerSubroutine * m_pHotSub;
 	PlayerSubroutine * m_pCursorSub;
@@ -133,6 +137,12 @@ protected:
 	Procedural * m_pHotProc;
 
 	CUIFormattedPolyString * m_pHotStr;
+
+	// RETAIL: the ratings and the upgrade points to raise them with
+	// (retail's +0x2100, +0x2214; the hidden flag is its +0x3ccc)
+	CBuildPointsCtrl	m_BuildPoints;
+	CRatingBarCtrl		m_RatingBars[NUM_RATINGS];
+	LTBOOL				m_bHideNewRatings;
 
 	typedef std::vector<CBaseScaleFX *> ModelPieceArray;
 	ModelPieceArray m_ModelPieceArray;

@@ -453,8 +453,17 @@ SOURCE=.\ProceduralCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Libs\GameSpy\GameSpySDK\pt\ptMain.c
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2regkeys.c
 # SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
+SOURCE=.\RatingBarCtrl.cpp
 # End Source File
 # Begin Source File
 
@@ -862,6 +871,10 @@ SOURCE=..\..\..\engine\sdk\inc\ltobjref.h
 # Begin Source File
 
 SOURCE=.\ProceduralCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\RatingBarCtrl.h
 # End Source File
 # Begin Source File
 

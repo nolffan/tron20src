@@ -8,48 +8,421 @@
 //
 // (c) 2001-2002 Monolith Productions, Inc.  All Rights Reserved
 //
+// RETAIL: written from retail CShell.dll 0x1004e460..0x1004f760 (see the
+// header). PORT: retail's PlaySoundLocal takes one more argument (1.0f)
+// than ours, so the functions playing sounds stay near.
+//
 //-------------------------------------------------------------------------
-
-// write the renderFX function
 
 #include "stdafx.h"
 #include "ProceduralCtrl.h"
 #include "InterfaceMgr.h"
+#include "InterfaceResMgr.h"
+#include "LayoutMgr.h"
+#include "ClientSoundMgr.h"
+#include "cuipolystring.h"
 
-#define DEBUG_DELETEA(x) if (x)	{debug_deletea(x);x = LTNULL;}
+extern CSubroutineMgr* g_pSubroutineMgr;
 
-#define PROC_MODEL "ingame_procedurals_disc.ltb"
-#define PROC_PROGRESS "ingame_procedurals_disc_prog.ltb"
-#define PROC_CONDITION "ingame_procedurals_disc_cond.ltb"
+// RETAIL: 0x10217570, the condition model of a corrupted subroutine, by
+// version
+char * g_szOptRingModels[LAST_VERSION] =
+{
+	"optring_alpha",
+	"optring_beta",
+	"optring_gold"
+};
 
-#define PROC_RS_FULLBRIGHT "RS\\Alpha_fullbright.ltb"
-#define PROC_RS_ADDITIVE "RS\\Alpha_Additive.ltb"
+// RETAIL: 0x1021757c (unused in retail; the name is ours)
+char * g_szAddSockets[3] =
+{
+	"skt_add_1",
+	"skt_add_2",
+	"skt_add_3"
+};
 
-#define PROC_SKIN_EMPTY "Interface\\Subroutines\\skins\\proc_empty.dtx"
-#define PROC_SKIN_HL "Interface\\Subroutines\\skins\\proc_hl.dtx"
+// RETAIL: 0x10217588, true in retail, so the procedurals' work sounds are
+// never played (the name is ours)
+bool g_bNoProcWorkSound = true;
+
+
 //////////////////////////////////////////////////////////////////////
-// CProceduralCtrl Construction/Destruction
+// COptimizerCtrl
 //////////////////////////////////////////////////////////////////////
+
+COptimizerCtrl::COptimizerCtrl()
+{
+	m_bInit = false;
+	m_bHot = false;
+	m_bBusy = false;
+	m_bDone = false;
+	m_HitRect.left = 0;
+	m_HitRect.top = 0;
+	m_HitRect.right = 0;
+	m_HitRect.bottom = 0;
+	m_Center.x = 100;
+	m_Center.y = 100;
+}
+
+COptimizerCtrl::~COptimizerCtrl()
+{
+	Term();
+}
+
+bool COptimizerCtrl::Init()
+{
+	if (m_bInit)
+		return true;
+
+	Term();
+
+	m_bInit = true;
+	m_bBusy = false;
+	m_bDone = false;
+	m_bCanAccept = false;
+
+	m_Optimizer.Create("optimizer");
+	m_Optimizer.PlayAnim("liveloopmenu", true, false);
+	m_Optimizer.Show(true);
+
+	m_DeadOptimizer.Create("dead_optimizer");
+	m_DeadOptimizer.PlayAnim("deadloop", true, false);
+	m_DeadOptimizer.Show(false);
+
+	m_Background.Create("optimizer_bg");
+	m_Background.PlayAnim("loop", true, false);
+	m_Background.Show(true);
+
+	ScreenDimsChanged();
+
+	return true;
+}
+
+void COptimizerCtrl::ScreenDimsChanged()
+{
+	if (!m_bInit)
+		return;
+
+	float fXRatio = g_pInterfaceResMgr->GetXRatio();
+	float fYRatio = g_pInterfaceResMgr->GetYRatio();
+
+	m_HitRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_SUBROUTINES, "OptimizerHitRect");
+	m_HitRect.left = (int)(m_HitRect.left * fXRatio);
+	m_HitRect.right = (int)(m_HitRect.right * fXRatio);
+	m_HitRect.top = (int)(m_HitRect.top * fYRatio);
+	m_HitRect.bottom = (int)(m_HitRect.bottom * fYRatio);
+
+	m_Center.x = (m_HitRect.left + m_HitRect.right) / 2;
+	m_Center.y = (m_HitRect.top + m_HitRect.bottom) / 2;
+}
+
+void COptimizerCtrl::Term()
+{
+	if (!m_bInit)
+		return;
+
+	if (m_bBusy)
+	{
+		m_Sub.Term();
+		m_bBusy = false;
+	}
+
+	m_Optimizer.Term();
+	m_DeadOptimizer.Term();
+	m_Background.Term();
+
+	if (m_FXLink.IsValid())
+	{
+		g_pInterfaceMgr->RemoveInterfaceFX(&m_FXLink);
+		m_FXLink.ClearLink();
+	}
+
+	m_bHot = false;
+	m_bInit = false;
+}
+
+LTBOOL COptimizerCtrl::OnMouseMove(int x, int y, PlayerSubroutine * pCursorSub)
+{
+	if (!m_bInit || m_bBusy)
+		return LTFALSE;
+
+	bool bWasAccepting = m_bCanAccept;
+	bool bWasHot = m_bHot;
+
+	m_bCanAccept = CanAccept(pCursorSub);
+	m_bHot = false;
+	if (x >= m_HitRect.left && x <= m_HitRect.right &&
+		y >= m_HitRect.top && y <= m_HitRect.bottom)
+	{
+		m_bHot = true;
+	}
+
+	if (m_bHot == bWasHot && m_bCanAccept == bWasAccepting)
+		return LTTRUE;
+
+	if (!m_bDone)
+	{
+		if (m_bHot && !bWasHot)
+		{
+			if (m_bCanAccept)
+				m_Optimizer.PlayAnim("excitedloop", true, false);
+		}
+		else if (!m_bHot && bWasHot)
+		{
+			if (m_bCanAccept)
+				m_Optimizer.PlayAnim("excitedloop_menu", true, false);
+		}
+		else if (m_bCanAccept)
+		{
+			if (!bWasAccepting)
+			{
+				if (m_bHot)
+					m_Optimizer.PlayAnim("excitedloop", true, false);
+				else
+					m_Optimizer.PlayAnim("excitedloop_menu", true, false);
+			}
+		}
+		else if (bWasAccepting)
+		{
+			m_Optimizer.PlayAnim("liveloopmenu", true, false);
+		}
+	}
+
+	return LTTRUE;
+}
+
+bool COptimizerCtrl::CanAccept(PlayerSubroutine * pSub)
+{
+	if (!m_bBusy && !m_bDone && pSub && pSub->eVersion != VERSION_GOLD &&
+		(pSub->eState == SUBSTATE_OKAY || pSub->eState == SUBSTATE_CORRUPT))
+		return true;
+
+	return false;
+}
+
+void COptimizerCtrl::Update()
+{
+	if (!m_bInit || m_bDone || !m_bBusy)
+		return;
+
+	if (!m_Optimizer.IsAnimDone())
+		return;
+
+	if (m_FXLink.IsValid())
+	{
+		g_pInterfaceMgr->RemoveInterfaceFX(&m_FXLink);
+		m_FXLink.ClearLink();
+	}
+
+	m_bDone = true;
+	m_bBusy = false;
+
+	m_Sub.Term();
+	m_Optimizer.Show(false);
+	m_DeadOptimizer.Show(true);
+	m_pSub = LTNULL;
+}
+
+void COptimizerCtrl::Optimize(PlayerSubroutine * pSub)
+{
+	if (!m_bInit || !pSub || m_bBusy || m_bDone)
+		return;
+
+	m_pSub = pSub;
+	if (pSub->eVersion < VERSION_GOLD)
+		pSub->eVersion = (SubVersion)(pSub->eVersion + 1);
+
+	m_Optimizer.PlayAnim("optimize", false, false);
+	g_pClientSoundMgr->PlaySoundLocal("optimize", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+
+	INT_MENUPIECE * pPiece = ((CTronLayoutMgr *)g_pLayoutMgr)->GetSubroutinePiece(pSub);
+	m_Sub.Create(pPiece);
+	if (pPiece)
+	{
+		debug_delete(pPiece);
+	}
+	m_Sub.Attach("optimizer", "TopSckt");
+	m_Sub.PlayAnim("loop", true, false);
+	m_Sub.Show(true);
+
+	AddFX();
+
+	m_bBusy = true;
+}
+
+void COptimizerCtrl::AddFX()
+{
+	INT_FX * pFX = g_pLayoutMgr->GetFX("SUBS_optimize");
+	if (pFX)
+	{
+		g_pInterfaceMgr->AddInterfaceFX(&m_FXLink, pFX->szFXName, pFX->vPos, LTTRUE);
+	}
+	else
+	{
+		m_FXLink.ClearLink();
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// Arcs of text
+//////////////////////////////////////////////////////////////////////
+
+void ArcPolyString(CUIPolyString * pStr, int x, int y, float fRadius, float fAngle,
+				   bool bOutside, int nJustify)
+{
+	if (!pStr)
+		return;
+
+	// lay the string out again, straight
+	pStr->SetText(pStr->GetText());
+
+	int32 nWidth, nHeight;
+	pStr->GetDims(&nWidth, &nHeight);
+	float fWidth = (float)nWidth;
+	float fHeight = (float)nHeight;
+
+	LT_POLYGT4 * pPoly = pStr->GetPolys();
+	int nLen = pStr->GetLength();
+
+	float fRad = MATH_DEGREES_TO_RADIANS(fAngle);
+	float fArc = fWidth / (fRadius * MATH_CIRCLE) * MATH_CIRCLE;
+
+	float fStart, fEnd;
+	switch (nJustify)
+	{
+		case 0:
+		{
+			if (bOutside)
+			{
+				fStart = fArc * 0.5f + fRad;
+				fEnd = fStart - fArc;
+			}
+			else
+			{
+				fStart = fRad - fArc * 0.5f;
+				fEnd = fStart + fArc;
+			}
+		}
+		break;
+
+		case 1:
+		{
+			fStart = fRad;
+			if (bOutside)
+				fEnd = fRad - fArc;
+			else
+				fEnd = fRad + fArc;
+		}
+		break;
+
+		case 2:
+		{
+			if (bOutside)
+				fStart = fArc + fRad;
+			else
+				fStart = fRad - fArc;
+			fEnd = fRad;
+		}
+		break;
+	}
+
+	while (fStart < 0.0f || fEnd < 0.0f)
+	{
+		fStart += MATH_CIRCLE;
+		fEnd += MATH_CIRCLE;
+	}
+
+	float fDone = 0.0f;
+	float fX = 0.0f;
+	float fDelta = fEnd - fStart;
+	float fCharStart = fStart;
+
+	for (int i = 0; i < nLen; i++)
+	{
+		float fCharWidth = pPoly->verts[1].x - pPoly->verts[0].x;
+		fX += fCharWidth;
+		fDone += fCharWidth / fWidth;
+		float fCharEnd = fDelta * fDone + fStart;
+
+		SetArcPoly(pPoly, x, y, fRadius, fHeight, fCharStart, fCharEnd, bOutside);
+
+		fCharStart = fCharEnd;
+		pPoly++;
+	}
+}
+
+void SetArcPoly(LT_POLYGT4 * pPoly, int x, int y, float fRadius, float fHeight,
+				float fStartAngle, float fEndAngle, bool bOutside)
+{
+	if (!pPoly)
+		return;
+
+	float fInner = fRadius - fHeight * 0.5f;
+	float fOuter = fInner + fHeight;
+
+	float fCosStart = (float)cos(fStartAngle);
+	float fCosEnd = (float)cos(fEndAngle);
+	float fSinStart = (float)sin(fStartAngle);
+	float fSinEnd = (float)sin(fEndAngle);
+
+	float fX = (float)x;
+	if (bOutside)
+	{
+		pPoly->verts[0].x = fCosStart * fOuter + fX;
+		float fY = (float)y;
+		pPoly->verts[0].y = fY - fSinStart * fOuter;
+		pPoly->verts[1].x = fCosEnd * fOuter + fX;
+		pPoly->verts[1].y = fY - fSinEnd * fOuter;
+		pPoly->verts[2].x = fCosEnd * fInner + fX;
+		pPoly->verts[2].y = fY - fSinEnd * fInner;
+		pPoly->verts[3].x = fCosStart * fInner + fX;
+		pPoly->verts[3].y = fY - fSinStart * fInner;
+	}
+	else
+	{
+		pPoly->verts[0].x = fCosStart * fInner + fX;
+		float fY = (float)y;
+		pPoly->verts[0].y = fY - fSinStart * fInner;
+		pPoly->verts[1].x = fCosEnd * fInner + fX;
+		pPoly->verts[1].y = fY - fSinEnd * fInner;
+		pPoly->verts[2].x = fCosEnd * fOuter + fX;
+		pPoly->verts[2].y = fY - fSinEnd * fOuter;
+		pPoly->verts[3].x = fCosStart * fOuter + fX;
+		pPoly->verts[3].y = fY - fSinStart * fOuter;
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// CProceduralCtrl
+//////////////////////////////////////////////////////////////////////
+
+namespace
+{
+	void PlayMouseOverYesSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("mouseover_procedural_yes", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayMouseOverNoSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("mouseover_procedural_no", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+}
+
 CProceduralCtrl::CProceduralCtrl()
 {
-	m_pProc			= LTNULL;
-
-	m_pIdleFX		= LTNULL;		// waiting or working
-	m_pWorkingFX	= LTNULL;
-	m_pSubroutineFX	= LTNULL;		// model of the subroutine
-	m_pSubBuildFX	= LTNULL;		// subroutine alpha, beta, gold model
-	m_pConditionFX	= LTNULL;		// model of how much the subroutine is affected
-	m_pProgressFX	= LTNULL;		// model of how much the subroutine has been cleared
-	m_pHighlightFX	= LTNULL;		// highlight when the mouse cursor is over
-
-	m_iSlot			= -1;
-	m_CenterPos.x	= 100;
-	m_CenterPos.y	= 100;
-	m_iRadius		= 16;
-
-	m_hObj			= LTNULL;
-	m_szSocketName[0] = 0;
-	m_bWorking		= false;
+	m_CenterPos.x = 100;
+	m_CenterPos.y = 100;
+	m_bInit = false;
+	m_pProc = LTNULL;
+	m_iSlot = -1;
+	m_iRadius = 16;
+	m_bCanAccept = false;
+	m_bWorking = false;
+	m_bHot = false;
+	m_hWorkSound = LTNULL;
 }
 
 CProceduralCtrl::~CProceduralCtrl()
@@ -57,145 +430,96 @@ CProceduralCtrl::~CProceduralCtrl()
 	Term();
 }
 
-
-CBaseScaleFX * CProceduralCtrl::CreateFX(char * szModel, char * szSkin, char *szRenderStyle, char *szAnim)
-{
-//	if (!m_pProc)
-//		return LTNULL;
-
-	if (!szModel || !szSkin)
-		return LTNULL;
-
-	if (!szRenderStyle)
-		szRenderStyle = PROC_RS_FULLBRIGHT;
-
-	// Make a few useful strings
-	CButeListReader blrSkin;
-	blrSkin.SetItem(0, szSkin, 128);
-
-	CButeListReader blrRenderStyle;
-	blrRenderStyle.SetItem(0, szRenderStyle, 128);
-
-	char szModelName[1024];
-	sprintf(szModelName, "Interface//Subroutines//Models//%s", szModel);
-
-
-	// Get some vars
-	HOBJECT hCamera = g_pInterfaceMgr->GetInterfaceCamera();
-	if (!hCamera) return LTNULL;
-
-	LTVector vPos, vU, vR, vF;
-	LTRotation rRot;
-
-    g_pLTClient->GetObjectPos(hCamera, &vPos);
-
-    g_pLTClient->GetObjectRotation(hCamera, &rRot);
-	vU = rRot.Up();
-	vR = rRot.Right();
-	vF = rRot.Forward();
-
-	BSCREATESTRUCT bcs;
-	LTVector vTemp, vScale(1.0f,1.0f,1.0f);
-
-	// If there is a model to attach it do, then set the transform to NOTHING
-	float fZ = 320.0f;
-	if (m_hObj != LTNULL)
-	{
-		fZ = 0.0f;
-	}
-
-	LTFLOAT fRot = 0.0f;
-	fRot  = MATH_PI + DEG2RAD(fRot);
-	rRot.Rotate(vU, fRot);
-
-	VEC_MULSCALAR(vTemp, vF, fZ);
-	VEC_ADD(vPos, vPos, vTemp);
-
-	VEC_COPY(bcs.vPos, vPos);
-	bcs.rRot = rRot;
-	VEC_COPY(bcs.vInitialScale, vScale);
-	VEC_COPY(bcs.vFinalScale, vScale);
-	VEC_SET(bcs.vInitialColor, 1.0f, 1.0f, 1.0f);
-	VEC_SET(bcs.vFinalColor, 1.0f, 1.0f, 1.0f);
-	bcs.bUseUserColors = LTTRUE;
-
-	bcs.pFilename = szModelName;
-	bcs.pSkinReader = &blrSkin;
-	bcs.pRenderStyleReader = &blrRenderStyle;
-	bcs.dwFlags = FLAG_VISIBLE | FLAG_FOGDISABLE;
-
-	bcs.nType = OT_MODEL;
-	bcs.fInitialAlpha = 0.99f;
-	bcs.fFinalAlpha = 0.99f;
-	bcs.fLifeTime = 1000000.0f;
-	bcs.bLoop = LTFALSE;			// all models start out as non-looping
-
-	bcs.fMinRotateVel = 1.0f;
-	bcs.fMaxRotateVel = 1.0f;
-
-	CBaseScaleFX * pPiece = debug_new(CBaseScaleFX);
-	ASSERT(pPiece != LTNULL);
-
-	if (pPiece->Init(&bcs))
-	{
-		pPiece->CreateObject(g_pLTClient);
-		HOBJECT hObj = pPiece->GetObject();
-
-		if (hObj)
-		{
-			g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, szAnim));
-			g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_MENU_ATTACH);
-			return pPiece;
-		}
-	}
-	// Fail case.  Should only be reached if no object was created
-	debug_delete(pPiece);
-	return LTNULL;
-}
-
-void CProceduralCtrl::KillFX(CBaseScaleFX * pFX)
-{
-// destroy pre-existing sub type fx
-	if (pFX)
-	{
-//		g_pInterfaceMgr->RemoveInterfaceSFX(pFX);
-		pFX->Reset();
-		pFX->Term();
-		debug_delete(pFX);
-		pFX = LTNULL;
-	}
-}
-
-void CProceduralCtrl::AssociateHObject(HOBJECT hObj, char * szSocketName)
-{
-	m_hObj = hObj;
-	m_szSocketName[0] = 0;
-
-	// sanity chex
-	if (!szSocketName) return;
-	if (!szSocketName[0]) return;
-
-	if (strlen(szSocketName) < 32)
-	{
-		SAFE_STRCPY(m_szSocketName, szSocketName);
-	}
-}
-
-// Initialization.  Called when Subroutines gain focus
 bool CProceduralCtrl::Init(Procedural * pProc)
 {
+	Term();
+
+	m_bInit = true;
 	m_bWorking = false;
 	m_pProc = pProc;
-
 	m_iSlot = pProc->iProcSlot;
-	if (m_pProc->bPlayerHasThis)
-	{
-		m_CenterPos.x = (int)(pProc->CenterPos.x * g_pInterfaceResMgr->GetXRatio());
-		m_CenterPos.y = (int)(pProc->CenterPos.y * g_pInterfaceResMgr->GetYRatio());
-		m_iRadius = (int)(pProc->iRadius * g_pInterfaceResMgr->GetXRatio());
 
-		// Create the idle model
-		m_pIdleFX = CreateFX(PROC_MODEL, m_pProc->szIdleSkin, PROC_RS_FULLBRIGHT, "loop");
+	if (pProc->bPlayerHasThis)
+	{
+		m_Progress.Create("proc_progress");
+		m_Working.Create("proc_working");
+
+		if (m_iSlot == 0)
+		{
+			m_Base.Create("proc_left_base");
+			m_Progress.Attach("proc_left_base", "skt_left");
+			m_Working.Attach("proc_left_base", "skt_left");
+		}
+		else if (m_iSlot == 1)
+		{
+			m_Base.Create("proc_right_base");
+			m_Progress.Attach("proc_right_base", "skt_right");
+			m_Working.Attach("proc_right_base", "skt_right");
+		}
+		else
+		{
+			m_Base.Create("proc_bottom_base");
+			m_Progress.Attach("proc_bottom_base", "skt_bottom");
+			m_Working.Attach("proc_bottom_base", "skt_bottom");
+		}
+		m_Base.Show(true);
+
+		m_CenterPos.x = (int)(g_pInterfaceResMgr->GetXRatio() * pProc->CenterPos.x);
+		m_CenterPos.y = (int)(g_pInterfaceResMgr->GetYRatio() * pProc->CenterPos.y);
+		m_iRadius = (int)(g_pInterfaceResMgr->GetXRatio() * pProc->iRadius);
+
+		if (m_pProc->pSub)
+		{
+			m_Base.PlayAnim("loop", true, false);
+			m_Working.PlayAnim("still", true, false);
+			m_Working.Show(true);
+
+			int nProgress = (int)(pProc->pSub->fPercentDone * 100.0f);
+			if (nProgress < 0)
+				nProgress = 0;
+			else if (nProgress > 100)
+				nProgress = 100;
+
+			m_Progress.PlayAnim("progress", false, true);
+			m_Progress.SetAnimTime(nProgress);
+			m_Progress.Show(true);
+
+			if (m_pProc->pSub->pTronSubroutine->eFunction != FUNCTION_BADBLOCK)
+			{
+				if (m_pProc->eAffectState == SUBSTATE_FOREIGN)
+				{
+					m_Sub.Create("foreign_sub");
+				}
+				else
+				{
+					INT_MENUPIECE * pPiece = ((CTronLayoutMgr *)g_pLayoutMgr)->GetSubroutinePiece(m_pProc->pSub);
+					m_Sub.Create(pPiece);
+					if (pPiece)
+					{
+						debug_delete(pPiece);
+					}
+				}
+				m_Sub.Attach(m_Base.GetName(), "proc_bottom");
+				m_Sub.PlayAnim("loop", true, false);
+				m_Sub.Show(true);
+
+				if (m_pProc->eAffectState == SUBSTATE_CORRUPT)
+				{
+					m_Condition.Create(g_szOptRingModels[m_pProc->pSub->eVersion]);
+					m_Condition.Attach(m_Base.GetName(), "proc_bottom");
+					m_Condition.PlayAnim("loop", true, false);
+					m_Condition.Show(true);
+				}
+			}
+
+			if (!g_bNoProcWorkSound)
+			{
+				m_hWorkSound = g_pClientSoundMgr->PlaySoundLocal(m_pProc->szWorkSound, SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+			}
+			m_bWorking = true;
+		}
+
+		m_bInit = true;
 	}
 	else
 	{
@@ -203,264 +527,215 @@ bool CProceduralCtrl::Init(Procedural * pProc)
 		m_CenterPos.x = 0;
 		m_CenterPos.y = 0;
 		m_iRadius = 0;
-
-		// Create the empty model
-		m_pIdleFX = CreateFX(PROC_MODEL, PROC_SKIN_EMPTY, PROC_RS_FULLBRIGHT, "loop");
-		return LTTRUE;
 	}
 
-	// Create the working model
-	m_pWorkingFX = CreateFX(PROC_MODEL, m_pProc->szWorkSkin, PROC_RS_FULLBRIGHT, "work");
+	return true;
+}
 
-	char buf[16];
-	int iDone = 0;
-	if (m_pProc->pSub)
+void CProceduralCtrl::ScreenDimsChanged()
+{
+	Procedural * pProc = m_pProc;
+	if (pProc && pProc->bPlayerHasThis)
 	{
-		iDone = (int)(pProc->pSub->fPercentDone * 26.0f);
-		if (iDone < 0)
-			iDone = 0;
-		else if (iDone > 26)
-			iDone = 26;
+		m_CenterPos.x = (int)((float)pProc->CenterPos.x * g_pInterfaceResMgr->GetXRatio());
+		m_CenterPos.y = (int)((float)pProc->CenterPos.y * g_pInterfaceResMgr->GetYRatio());
+		m_iRadius = (int)((float)pProc->iRadius * g_pInterfaceResMgr->GetXRatio());
 	}
-	sprintf(buf,"%d", iDone);
-
-	// Create the Condition model
-	m_pConditionFX = CreateFX(PROC_CONDITION, m_pProc->szConditionSkin, PROC_RS_FULLBRIGHT, buf);
-
-	// Create the progress model
-	m_pProgressFX = CreateFX(PROC_PROGRESS, m_pProc->szProgressSkin, PROC_RS_FULLBRIGHT, buf);
-
-
-	// Create the highlight model
-	m_pHighlightFX = CreateFX(PROC_MODEL, PROC_SKIN_HL, PROC_RS_ADDITIVE, "hl");
-
-	// Hide 'em.
-	if (m_pProc->pSub)
+	else
 	{
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pIdleFX);
-
-		if (m_pProc->pSub->pTronSubroutine->eFunction != FUNCTION_BADBLOCK)
-		{
-			m_pSubroutineFX = CreateFX(PROC_MODEL, m_pProc->pSub->pTronSubroutine->szSprite, PROC_RS_FULLBRIGHT, "sub");
-			m_pSubBuildFX = CreateFX(PROC_MODEL, szRingTex[m_pProc->pSub->eVersion],	PROC_RS_FULLBRIGHT, "opt");
-		}
-		m_bWorking = true;
+		m_CenterPos.x = 0;
+		m_CenterPos.y = 0;
+		m_iRadius = 0;
 	}
-	if (!m_pProc->pSub)
-	{
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pWorkingFX);
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pConditionFX);
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pProgressFX);
-	}
-	g_pInterfaceMgr->RemoveInterfaceSFX(m_pHighlightFX);
-
-	return LTTRUE;
 }
 
 void CProceduralCtrl::Term()
 {
-	m_pProc		= LTNULL;
+	if (!m_bInit)
+		return;
 
 	if (m_bWorking)
+	{
+		// keep the subroutine's progress: it stays hooked to the procedural
+		float fPercentDone = 0.0f;
+		PlayerSubroutine * pSub = LTNULL;
+		if (m_pProc->pSub)
+		{
+			fPercentDone = m_pProc->pSub->fPercentDone;
+			pSub = m_pProc->pSub;
+		}
+
 		RemoveSub();
-	
-	g_pInterfaceMgr->RemoveInterfaceSFX(m_pIdleFX);
-	KillFX(m_pIdleFX);
 
-	KillFX(m_pWorkingFX);
-	KillFX(m_pSubBuildFX);
-	KillFX(m_pProgressFX);
-	KillFX(m_pHighlightFX);
-
-	m_pIdleFX		= LTNULL;
-	m_pWorkingFX	= LTNULL;
-	m_pSubBuildFX	= LTNULL;
-	m_pProgressFX	= LTNULL;
-	m_pHighlightFX	= LTNULL;
-}
-
-bool CProceduralCtrl::Render()
-{
-//	if (!m_pProc)
-//		return true;
-
-	// if this procedural is working, then update the animation for the Condition and the Progress
-	if (m_pProc && m_pProc->pSub)
-	{
-		float fProgress = m_pProc->pSub->fPercentDone;
-		int iProgress = (int)(fProgress * 20.0f);
-		char buf[80];
-		sprintf(buf,"%d", iProgress);
-//		sprintf(buf,"%d_%d", m_iSlot + 1, iProgress);
-		if (m_pProgressFX)
+		if (pSub)
 		{
-			g_pLTClient->SetModelAnimation(m_pProgressFX->GetObject(), g_pLTClient->GetAnimIndex(m_pProgressFX->GetObject(), buf));
-		}
-		if (m_pConditionFX)
-		{
-			g_pLTClient->SetModelAnimation(m_pConditionFX->GetObject(), g_pLTClient->GetAnimIndex(m_pConditionFX->GetObject(), buf));
+			g_pSubroutineMgr->HookProcToSub(m_pProc, pSub);
+			pSub->fPercentDone = fPercentDone;
 		}
 	}
-	
-	// If a model attachment is provided, then transform all available FX to move with the specified socket
-	if (m_hObj && m_szSocketName[0])
+
+	m_pProc = LTNULL;
+
+	if (m_hWorkSound)
 	{
-		LTransform transform;
-		HMODELSOCKET hSocket;
-
-		g_pModelLT->GetSocket(m_hObj, m_szSocketName, hSocket);
-		// Iterate through all of the fx and transform them appropriately
-
-		if (g_pModelLT->GetSocketTransform(m_hObj, hSocket, transform, LTTRUE) == LT_OK)
-		{
-			TransformFX(m_pIdleFX, transform);
-			TransformFX(m_pWorkingFX, transform);
-			TransformFX(m_pSubroutineFX, transform);
-			TransformFX(m_pSubBuildFX, transform);
-			TransformFX(m_pConditionFX, transform);
-			TransformFX(m_pProgressFX, transform);
-			TransformFX(m_pHighlightFX, transform);
-		}
+		g_pLTClient->SoundMgr()->KillSoundLoop(m_hWorkSound);
+		m_hWorkSound = LTNULL;
 	}
-	return true;
+
+	m_Base.Term();
+	m_Progress.Term();
+	m_Working.Term();
+
+	m_bInit = false;
 }
 
-void CProceduralCtrl::TransformFX(CBaseScaleFX * pFX, LTransform transform)
+void CProceduralCtrl::SetHighlight(bool bHighlight)
 {
-	if (!pFX)
-		return;
+	m_bHighlight = bHighlight;
 
-	HOBJECT hObj = pFX->GetObject();
-
-	if (!hObj)
-		return;
-
-	g_pLTClient->SetObjectPosAndRotation(hObj, &transform.m_Pos, &transform.m_Rot);
+	if (bHighlight)
+	{
+		if (!m_bCanAccept)
+		{
+			m_Base.PlayAnim("hl_on", false, false);
+			m_Base.SetNextAnim("hl_loop");
+			m_Working.PlayAnim("hl", true, false);
+		}
+	}
+	else if (m_bCanAccept)
+	{
+		m_Base.PlayAnim("hl_off", false, false);
+		m_Base.SetNextAnim("loop");
+		m_Working.PlayAnim("still", true, false);
+	}
 }
 
 LTBOOL CProceduralCtrl::OnMouseMove(int mx, int my, PlayerSubroutine * pCursorSub)
 {
-	if (!m_pProc)
-		return LTTRUE;
-
-	bool bWasHot = m_bHot;
-/* pure circular hotness detection commented out
-	// Determine if the mouse is over this control
-	int dx2 = (mx - m_CenterPos.x) ^ 2;
-	int dy2 = (my - m_CenterPos.y) ^ 2;
-
-	m_bHot = ((dx2 + dy2) <= (m_iRadius ^2)) ? true : false;
-*/
-	m_bHot = true;
-
-	if (pCursorSub)
+	if (m_pProc)
 	{
-		if (pCursorSub->eState != m_pProc->eAffectState)
+		bool bWasAccepting = m_bCanAccept;
+		bool bWasHot = m_bHot;
+
+		m_bCanAccept = true;
+		m_bHot = true;
+
+		if (!pCursorSub || pCursorSub->eState != m_pProc->eAffectState)
+			m_bCanAccept = false;
+
+		if (mx < m_CenterPos.x - m_iRadius || mx > m_CenterPos.x + m_iRadius)
 		{
+			m_bCanAccept = false;
 			m_bHot = false;
 		}
-	}
-	if (mx < m_CenterPos.x - m_iRadius || mx > m_CenterPos.x + m_iRadius)
-		m_bHot = false;
-	if (m_bHot)
-	{
+
 		if (my < m_CenterPos.y - m_iRadius || my > m_CenterPos.y + m_iRadius)
 		{
+			m_bCanAccept = false;
 			m_bHot = false;
 		}
+
+		if (!bWasHot && m_bHot)
+		{
+			if (m_bCanAccept)
+				PlayMouseOverYesSound();
+			else
+				PlayMouseOverNoSound();
+		}
+
+		if (!m_bHighlight)
+		{
+			if (m_bCanAccept && !bWasAccepting)
+			{
+				m_Base.PlayAnim("hl_on", false, false);
+				m_Base.SetNextAnim("hl_loop");
+				m_Working.PlayAnim("hl", true, false);
+			}
+			else if (!m_bCanAccept && bWasAccepting)
+			{
+				m_Base.PlayAnim("hl_off", false, false);
+				m_Base.SetNextAnim("loop");
+				m_Working.PlayAnim("still", true, false);
+			}
+		}
 	}
-	if (m_bHot && !bWasHot)
-	{
-		// Do not add highlighting if the cursor is holding an inappropriate subroutine?
-		g_pInterfaceMgr->AddInterfaceSFX(m_pHighlightFX, IFX_MENU_ATTACH);
-		return LTTRUE;
-	}
-	if (!m_bHot && bWasHot)
-	{
-		// remove highlighting
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pHighlightFX);
-		return LTTRUE;
-	}
+
 	return LTTRUE;
 }
 
 void CProceduralCtrl::RemoveSub()
 {
-	// SanityChex
-	if (!m_pProc) return;
-	if (!m_pProc->pSub) return;
+	if (!m_pProc || !m_pProc->pSub || !m_bWorking)
+		return;
 
-	if (!m_bWorking) return;
+	g_pSubroutineMgr->HookProcToSub(m_pProc, LTNULL);
 
-	// Hide the working, condition and progress models.
-	if (m_pWorkingFX)
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pWorkingFX);
-
-	if (m_pConditionFX)
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pConditionFX);
-
-	if (m_pProgressFX)
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pProgressFX);
-
-	// Remove the subroutine and build models
-	if (m_pSubroutineFX)
+	if (m_hWorkSound)
 	{
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pSubroutineFX);
-		KillFX(m_pSubroutineFX);
-		m_pSubroutineFX = LTNULL;
+		g_pLTClient->SoundMgr()->KillSoundLoop(m_hWorkSound);
+		m_hWorkSound = LTNULL;
 	}
 
-	if (m_pSubBuildFX)
-	{
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pSubBuildFX);
-		KillFX(m_pSubBuildFX);
-		m_pSubBuildFX = LTNULL;
-	}
-
-	// Show the "idle" model
-	if (m_pIdleFX)
-		g_pInterfaceMgr->AddInterfaceSFX(m_pIdleFX, IFX_MENU_ATTACH);
+	m_Progress.Show(false);
+	m_Working.Show(false);
+	m_Sub.Term();
+	m_Condition.Term();
 
 	m_bWorking = false;
-	m_pProc->pSub = LTNULL;
 }
 
 void CProceduralCtrl::AddSub(PlayerSubroutine * pSub)
 {
-	// SanityChex
-	if (!m_pProc) return;
+	if (!m_pProc || !pSub)
+		return;
 
-	if (!pSub) return;
-
-	m_pProc->pSub = pSub;
+	pSub->fPercentDone = 0.0f;
+	g_pSubroutineMgr->HookProcToSub(m_pProc, pSub);
 
 	if (m_bWorking)
-	{
 		RemoveSub();
-	}
 
-	// Hide the "idle" model
-	if (m_pIdleFX)
-		g_pInterfaceMgr->RemoveInterfaceSFX(m_pIdleFX);
+	m_Working.Show(true);
+	m_Working.PlayAnim("hl", true, false);
 
+	int nProgress = (int)(m_pProc->pSub->fPercentDone * 100.0f);
+	if (nProgress < 0)
+		nProgress = 0;
+	else if (nProgress > 100)
+		nProgress = 100;
 
-	// Show the working, condition and progress models.
-	if (m_pWorkingFX)
-		g_pInterfaceMgr->AddInterfaceSFX(m_pWorkingFX, IFX_MENU_ATTACH);
+	m_Progress.Show(true);
+	m_Progress.SetAnimTime(nProgress);
 
-	if (m_pConditionFX)
-		g_pInterfaceMgr->AddInterfaceSFX(m_pConditionFX, IFX_MENU_ATTACH);
-
-	if (m_pProgressFX)
-		g_pInterfaceMgr->AddInterfaceSFX(m_pProgressFX, IFX_MENU_ATTACH);
-
-	// Add the subroutineFX and the subbuildFX
-
-	if (pSub->pTronSubroutine->eFunction != FUNCTION_BADBLOCK)
+	if (pSub->eState == SUBSTATE_FOREIGN)
 	{
-		m_pSubroutineFX = CreateFX(PROC_MODEL, pSub->pTronSubroutine->szSprite, PROC_RS_FULLBRIGHT, "sub");
-		m_pSubBuildFX = CreateFX(PROC_MODEL, szRingTex[pSub->eVersion],	PROC_RS_FULLBRIGHT, "opt");
+		m_Sub.Create("foreign_sub");
+	}
+	else
+	{
+		INT_MENUPIECE * pPiece = ((CTronLayoutMgr *)g_pLayoutMgr)->GetSubroutinePiece(pSub);
+		m_Sub.Create(pPiece);
+		if (pPiece)
+		{
+			debug_delete(pPiece);
+		}
+
+		if (pSub->eState == SUBSTATE_CORRUPT)
+		{
+			m_Condition.Create(g_szOptRingModels[m_pProc->pSub->eVersion]);
+			m_Condition.PlayAnim("loop", true, false);
+			m_Condition.Attach(m_Base.GetName(), "proc_bottom");
+			m_Condition.Show(true);
+		}
 	}
 
+	m_Sub.PlayAnim("loop", true, false);
+	m_Sub.Attach(m_Base.GetName(), "proc_bottom");
+	m_Sub.Show(true);
+
+	if (!g_bNoProcWorkSound)
+	{
+		m_hWorkSound = g_pClientSoundMgr->PlaySoundLocal(m_pProc->szWorkSound, SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
+	}
 	m_bWorking = true;
 }
