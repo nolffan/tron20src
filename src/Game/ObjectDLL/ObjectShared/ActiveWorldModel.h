@@ -173,6 +173,10 @@ class ActiveWorldModel : public WorldModel
 		HSTRING		m_hstrPowerOnCmd;	// Command to send when AWM starts PowerOn
 		HSTRING		m_hstrPowerOffCmd;	// Command to send when AWM starts PowerOff
 		HSTRING		m_hstrLockedCmd;	// Command to send when a locked AWM is activated
+		// RETAIL: Tron's (ctor 0x10174710, ReadProps 0x10174bd0)
+		HSTRING		m_hstrInvalidPSetCmd;	// "InvalidPSetCommand": run when activated without the permission sets
+		int32		m_nStringOverrideID;	// "StringOverrideID": the client's info string
+		uint8		m_nPSets;				// Key1..Key8 (PSets.h)
 
 		
 	protected: // Methods...

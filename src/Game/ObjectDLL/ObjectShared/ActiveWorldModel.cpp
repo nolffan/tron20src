@@ -24,6 +24,7 @@
 	#include "ParsedMsg.h"
 	#include "KeyMgr.h"
 	#include "AIUtils.h"
+	#include "..\TRON\PSets.h"	// RETAIL: Tron's permission sets
 
 	extern CAIStimulusMgr* g_pAIStimulusMgr;
 
@@ -91,6 +92,7 @@ BEGIN_CLASS( ActiveWorldModel )
 		ADD_STRINGPROP_FLAG(PowerOnCommand, "", PF_GROUP(5) | PF_NOTIFYCHANGE)
 		ADD_STRINGPROP_FLAG(PowerOffCommand, "", PF_GROUP(5) | PF_NOTIFYCHANGE)
 		ADD_STRINGPROP_FLAG(LockedCommand, "", PF_GROUP(5) | PF_NOTIFYCHANGE)
+		ADD_STRINGPROP_FLAG(InvalidPSetCommand, "", PF_GROUP(5) | PF_NOTIFYCHANGE)	// RETAIL: Tron's (0x10173c8d)
 
 	// Add to the disturbance group...
 
@@ -114,6 +116,10 @@ BEGIN_CLASS( ActiveWorldModel )
 	ADD_REALPROP_FLAG(MoveDelay, AWM_DEFAULT_MOVEDELAY, 0)
 	ADD_REALPROP_FLAG(OnWaitTime, AWM_DEFAULT_ONWAITTIME, 0)
 	ADD_REALPROP_FLAG(OffWaitTime, AWM_DEFAULT_OFFWAITTIME, 0)
+
+	// RETAIL: Tron's (0x10173f8a..)
+	ADD_LONGINTPROP(StringOverrideID, 0)
+	ADD_PSETS_PROP(PF_GROUP(7))
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN( ActiveWorldModel, WorldModel, NULL, NULL, CF_HIDDEN | CF_WORLDMODEL, CActiveWorldModelPlugin )
 
@@ -298,6 +304,8 @@ ActiveWorldModel::ActiveWorldModel( )
 	m_hstrPowerOnCmd( LTNULL ),
 	m_hstrPowerOffCmd( LTNULL ),
 	m_hstrLockedCmd( LTNULL ),
+	m_hstrInvalidPSetCmd( LTNULL ),
+	m_nPSets( 0 ),
 	m_nActivateAlarmLevel( 0 ),
 	m_eStimID( kStimID_Unset ),
 	m_bSearchedForNode( LTFALSE ),
@@ -332,6 +340,7 @@ ActiveWorldModel::~ActiveWorldModel( )
 	FREE_HSTRING( m_hstrPowerOnCmd );
 	FREE_HSTRING( m_hstrPowerOffCmd );
 	FREE_HSTRING( m_hstrLockedCmd );
+	FREE_HSTRING( m_hstrInvalidPSetCmd );
 
 	StopSound( );
 	
@@ -361,6 +370,9 @@ void ActiveWorldModel::ReadProps( ObjectCreateStruct *pOCS )
 	bool		bFlag;
 	int32		nType;
 	GenericProp	GenProp;
+
+	// RETAIL: 0x10174bf0: Tron's permission sets
+	HANDLE_READ_PSETS_PROPS(m_nPSets);
 
 	// Find out what kind of action this AWM does
 
@@ -419,15 +431,13 @@ void ActiveWorldModel::ReadProps( ObjectCreateStruct *pOCS )
 	}
 	
 	// Get the activate type...
+	// RETAIL: 0x10174f95: Tron reads it whether or not the player can activate
 
-	if( m_dwPropFlags & AWM_PROP_PLAYERACTIVATE )
+	if( g_pLTServer->GetPropGeneric( "ActivateType", &GenProp ) == LT_OK )
 	{
-		if( g_pLTServer->GetPropGeneric( "ActivateType", &GenProp ) == LT_OK )
+		if( GenProp.m_String[0] )
 		{
-			if( GenProp.m_String[0] )
-			{
-				m_ActivateTypeHandler.SetActivateType( GenProp.m_String );
-			}
+			m_ActivateTypeHandler.SetActivateType( GenProp.m_String );
 		}
 	}
 
@@ -522,6 +532,14 @@ void ActiveWorldModel::ReadProps( ObjectCreateStruct *pOCS )
 		}
 	}
 
+	if( g_pLTServer->GetPropGeneric( "InvalidPSetCommand", &GenProp ) == LT_OK )
+	{
+		if( GenProp.m_String[0] )
+		{
+			m_hstrInvalidPSetCmd = g_pLTServer->CreateString( GenProp.m_String );
+		}
+	}
+
 	
 	// Read disturbance props...
 
@@ -575,6 +593,12 @@ void ActiveWorldModel::ReadProps( ObjectCreateStruct *pOCS )
 		*/
 
 		m_hstrRotationPt = g_pLTServer->CreateString( szTemp );
+	}
+
+	// RETAIL: 0x10175453
+	if( g_pLTServer->GetPropGeneric( "StringOverrideID", &GenProp ) == LT_OK )
+	{
+		m_nStringOverrideID = GenProp.m_Long;
 	}
 }
 
@@ -648,6 +672,9 @@ void ActiveWorldModel::OnObjectCreated( )
 	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, dwUsrFlags, USRFLG_MOVEABLE | USRFLG_CAN_ACTIVATE | USRFLG_CANT_CRUSH );
 
 	g_pLTServer->GetObjectPos( m_hObject, &m_vOriginalPos );
+
+	// RETAIL: 0x1017563b: Tron's info string flag (as IONode's)
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, (m_nStringOverrideID > 0) ? USRFLG_INFO_STRING : 0, USRFLG_INFO_STRING );
 
 	// Calculate on and off positions and other data based on type...
 	
@@ -1220,14 +1247,17 @@ void ActiveWorldModel::HandleTriggerMsg( )
 
 void ActiveWorldModel::HandlePause( )
 {
-	// Only PAUSE if we are currently in a moving state...
+	// RETAIL: 0x10176a40: Tron pauses in any state but PAUSE, and stops
+	// updating
 
-	if( m_nCurState == AWM_STATE_POWERON || m_nCurState == AWM_STATE_POWEROFF )
+	if( m_nCurState != AWM_STATE_PAUSE )
 	{
 		m_nLastState = m_nCurState;
 		m_nCurState = AWM_STATE_PAUSE;
 
 		g_pLTServer->GetObjectPos( m_hObject, &m_vPausePos );
+
+		SetNextUpdate( UPDATE_NEVER );
 	}
 }
 
@@ -1266,7 +1296,9 @@ void ActiveWorldModel::HandleResume( )
 				m_vRotationPt = m_vOriginalPos - m_vRotPtOffset;
 			}
 		}
-		
+
+		// RETAIL: 0x10176bbd
+		SetNextUpdate( UPDATE_NEXT_FRAME );
 	}
 }
 
@@ -1280,13 +1312,28 @@ void ActiveWorldModel::HandleResume( )
 
 void ActiveWorldModel::HandleLock(LTBOOL bLock)
 {
+	// RETAIL: 0x10176bd0: Tron also sets the activate flag and the client's
+	// activate state. A locked AWM shows state 2, one past ACTIVATETYPE's
+	// eOn/eOff (Tron's name for it is unknown)
 	if( bLock )
 	{
 		m_dwPropFlags |= AWM_PROP_LOCKED;
+		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE );
+		m_ActivateTypeHandler.SetState( (ACTIVATETYPE::State)2 );
 	}
 	else
 	{
 		m_dwPropFlags &= ~AWM_PROP_LOCKED;
+		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, m_bCanActivate ? USRFLG_CAN_ACTIVATE : 0, USRFLG_CAN_ACTIVATE );
+
+		uint8 nState = m_nCurState;
+		if( nState == AWM_STATE_PAUSE )
+			nState = m_nLastState;
+
+		if( nState == AWM_STATE_ON || nState == AWM_STATE_POWERON )
+			m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn );
+		else
+			m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOff );
 	}
 
 	m_ActivateTypeHandler.SetDisabled( !!bLock );
@@ -2265,6 +2312,10 @@ void ActiveWorldModel::OnSave( ILTMessage_Write *pMsg, uint32 dwSaveFlags )
 	SAVE_HSTRING( m_hstrPowerOnCmd );
 	SAVE_HSTRING( m_hstrPowerOffCmd );
 	SAVE_HSTRING( m_hstrLockedCmd );
+	// RETAIL: 0x101789f1: Tron's
+	SAVE_HSTRING( m_hstrInvalidPSetCmd );
+	SAVE_INT( m_nStringOverrideID );
+	SAVE_BYTE( m_nPSets );
 
 }
 
@@ -2353,6 +2404,10 @@ void ActiveWorldModel::OnLoad( ILTMessage_Read *pMsg, uint32 dwSaveFlags )
 	LOAD_HSTRING( m_hstrPowerOnCmd );
 	LOAD_HSTRING( m_hstrPowerOffCmd );
 	LOAD_HSTRING( m_hstrLockedCmd );
+	// RETAIL: 0x10178f3b: Tron's
+	LOAD_HSTRING( m_hstrInvalidPSetCmd );
+	LOAD_INT( m_nStringOverrideID );
+	LOAD_BYTE( m_nPSets );
 
 
 	// Start playing sounds if we are supposed to
