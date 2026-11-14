@@ -62,73 +62,6 @@ class CBodyStateNormal : public CBodyState
 
 };
 
-class CBodyStateStairs : public CBodyState
-{
-	public :
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateStairs, kState_BodyStairs);
-
-		CBodyStateStairs();
-
-		void Init(Body* pBody);
-		void InitLoad(Body* pBody);
-
-		void Update();
-
-		void HandleTouch(HOBJECT hObject);
-		void Save(ILTMessage_Write *pMsg);
-		void Load(ILTMessage_Read *pMsg);
-
-		LTBOOL CanDeactivate() { return LTFALSE; }
-
-	protected :
-
-        LTVector    m_vDir;
-		AIVolume*	m_pVolume;
-        LTBOOL      m_bFell;
-		HMODELANIM	m_hAniStart;
-		HMODELANIM	m_hAniLoop;
-		HMODELANIM	m_hAniStop;
-};
-
-class CBodyStateLedge : public CBodyState
-{
-	public :
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateLedge, kState_BodyLedge);
-
-		CBodyStateLedge( );
-
-		void Init(Body* pBody);
-		void InitLoad(Body* pBody);
-
-		void Update();
-
-		void HandleTouch(HOBJECT hObject);
-
-		void Save(ILTMessage_Write *pMsg);
-		void Load(ILTMessage_Read *pMsg);
-
-		LTBOOL CanDeactivate() { return LTFALSE; }
-
-	protected :
-
-		enum State
-		{
-			eLeaning,
-			eFalling,
-			eLanding,
-		};
-
-	protected :
-
-		State		m_eState;
-        LTFLOAT		m_fTimer;
-        LTVector	m_vVelocity;
-		AIVolume*	m_pVolume;
-		HMODELANIM	m_hAniStart;
-		HMODELANIM	m_hAniLoop;
-		HMODELANIM	m_hAniStop;
-};
-
 class CBodyStateLadder : public CBodyState
 {
 	public :
@@ -331,40 +264,5 @@ class CBodyStateExplode : public CBodyState
 		HMODELANIM	m_hAniLoop;
 		HMODELANIM	m_hAniStop;
 };
-
-class CBodyStateCarried : public CBodyState
-{
-	public :
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateCarried, kState_BodyCarried);
-
-		void Init(Body* pBody);
-		void InitLoad(Body* pBody);
-
-		void Update();
-
-		LTBOOL CanDeactivate() { return LTFALSE; }
-
-	protected :
-
-		HMODELANIM	m_hAniStart;
-};
-
-class CBodyStateDropped : public CBodyState
-{
-	public :
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateDropped, kState_BodyDropped);
-
-		void Init(Body* pBody);
-		void InitLoad(Body* pBody);
-
-		void Update();
-
-		LTBOOL CanDeactivate() { return LTFALSE; }
-
-	protected :
-
-		HMODELANIM	m_hAniStart;
-};
-
 
 #endif

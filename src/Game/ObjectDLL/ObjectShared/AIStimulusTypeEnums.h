@@ -58,15 +58,17 @@ ADD_STIMULUS_TYPE(AllyDisturbanceSound,			18)	// kStim_AllyDisturbanceSound
 ADD_STIMULUS_TYPE(ProjectileVisible,			19)	// kStim_ProjectileVisible
 ADD_STIMULUS_TYPE(AllyDistressVisible,			20)	// kStim_AllyDistressVisible
 ADD_STIMULUS_TYPE(AllySpecialDamageVisible,		21)	// kStim_AllySpecialDamageVisible
-ADD_STIMULUS_TYPE(UndeterminedVisible,			22)	// kStim_UndeterminedVisible
+// RETAIL: Tron 2.0 has no UndeterminedVisible (stimulus name table .rdata
+// 0x102d85c4: ProhibitedProjectileVisible follows AllySpecialDamageVisible),
+// so the rest move down one and there are 29.
 
-ADD_STIMULUS_TYPE(ProhibitedProjectileVisible,		23)	// kStim_ProhibitedProjectileVisible
-ADD_STIMULUS_TYPE(ProhibitedWeaponImpactVisible,	24)	// kStim_ProhibitedWeaponImpactVisible
-ADD_STIMULUS_TYPE(ProhibitedWeaponImpactSound,		25)	// kStim_ProhibitedWeaponImpactSound
-ADD_STIMULUS_TYPE(ProhibitedWeaponFireSound,		26)	// kStim_ProhibitedWeaponFireSound
-ADD_STIMULUS_TYPE(ProhibitedWeaponFireVisible,		27)	// kStim_ProhibitedWeaponFireVisible
-ADD_STIMULUS_TYPE(CatchableProjectileVisible,		28)	// kStim_CatchableProjectileVisible
+ADD_STIMULUS_TYPE(ProhibitedProjectileVisible,		22)	// kStim_ProhibitedProjectileVisible
+ADD_STIMULUS_TYPE(ProhibitedWeaponImpactVisible,	23)	// kStim_ProhibitedWeaponImpactVisible
+ADD_STIMULUS_TYPE(ProhibitedWeaponImpactSound,		24)	// kStim_ProhibitedWeaponImpactSound
+ADD_STIMULUS_TYPE(ProhibitedWeaponFireSound,		25)	// kStim_ProhibitedWeaponFireSound
+ADD_STIMULUS_TYPE(ProhibitedWeaponFireVisible,		26)	// kStim_ProhibitedWeaponFireVisible
+ADD_STIMULUS_TYPE(CatchableProjectileVisible,		27)	// kStim_CatchableProjectileVisible
 
-ADD_STIMULUS_TYPE(EnemyCoinSound,				29)	// kStim_EnemyCoinSound
+ADD_STIMULUS_TYPE(EnemyCoinSound,				28)	// kStim_EnemyCoinSound
 
-SET_NUM_STIMULUS_TYPES(30)
+SET_NUM_STIMULUS_TYPES(29)

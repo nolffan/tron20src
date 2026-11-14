@@ -79,6 +79,10 @@ class CAIHumanState : public CAIState
 		CAIHuman*		m_pAIHuman;
 		LTBOOL			m_bInterrupt;
 		EnumAnimProp	m_ePose;
+		// RETAIL: Tron's BOOL at +0x54 (ctor 0x101e43a0 sets TRUE, Save/Load
+		// 0x101e4560/0x101e45b0 after m_bInterrupt); Init 0x101e4420 stops the
+		// AI's ghosting when it is FALSE. The name is ours.
+		LTBOOL			m_bAllowGhosting;
 
 		CAIHumanStrategyFollowPath*		m_pStrategyFollowPath;
 		CAIHumanStrategyDodge*			m_pStrategyDodge;
@@ -367,39 +371,6 @@ class CAIHumanStateAttackProp : public CAIHumanState
 };
 
 #pragma warning( pop )
-
-class CAIHumanStateAssassinate : public CAIHumanState
-{
-	typedef CAIHumanState super;
-
-	public :
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAssassinate, kState_HumanAssassinate);
-
-		CAIHumanStateAssassinate( );
-		~CAIHumanStateAssassinate( );
-
-		// Ctors/Dtors/Etc
-
-		LTBOOL Init(CAIHuman* pAIHuman);
-
-		void Load(ILTMessage_Read *pMsg);
-		void Save(ILTMessage_Write *pMsg);
-
-		// Update
-
-		void Update();
-		void UpdateAnimation();
-
-		// Simple acccessors
-
-		CMusicMgr::Mood GetMusicMood() { return CMusicMgr::eMoodAggressive; }
-
-		void SetNode(AINodeAssassinate* pNode);
-
-	protected :
-
-		LTBOOL		m_bIgnoreVisibility;
-};
 
 class CAIHumanStateAttackFromCover : public CAIHumanState
 {

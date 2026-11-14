@@ -136,7 +136,6 @@ void CAIGoalSleep::UpdateGoal()
 				| kSense_SeeCatchableProjectile
 				| kSense_SeeAllyDistress
 				| kSense_SeeAllySpecialDamage
-				| kSense_SeeUndetermined
 				| kSense_SeeInappropriateBehavior
 				| kSense_HearEnemyFootstep
 			) );

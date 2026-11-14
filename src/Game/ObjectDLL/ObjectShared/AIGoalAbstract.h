@@ -41,6 +41,10 @@ enum EnumAIGoalType
 	kGoal_Count,
 };
 
+// PORT: not in Tron's list; NOLF2's CAIHuman::HandleResurrectingGoalConditions
+// still names it (behind kAIData_Resurrecting, which Tron lacks too).
+const EnumAIGoalType kGoal_Resurrecting = kGoal_InvalidType;
+
 //
 // STRINGS: const strings for goal types.
 //

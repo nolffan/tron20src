@@ -2460,6 +2460,31 @@ void CAIHuman::SetAIType( const char* const szType )
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHuman::StartGhosting/StopGhosting()
+//
+//	PURPOSE:	RETAIL: 0x10170fd0 / 0x10170ff0: Tron's ghosting, only for
+//				AI whose AIData CanGhost is set. Names ours.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHuman::StartGhosting()
+{
+	if( m_bCanGhost )
+	{
+		m_bTronUnknown1231 = true;
+	}
+}
+
+void CAIHuman::StopGhosting()
+{
+	if( m_bCanGhost )
+	{
+		m_bTronUnknown1231 = false;
+	}
+}
+
 
 /*
 // ----------------------------------------------------------------------- //

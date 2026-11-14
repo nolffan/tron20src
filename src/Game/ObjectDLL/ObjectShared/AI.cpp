@@ -5462,17 +5462,11 @@ char* CAI::GetDeathSound()
 		case kState_BodyLaser:
 			return ::GetSound(this, kAIS_Electrocute);
 
-		case kState_BodyLedge:
-			return ::GetSound(this, kAIS_Fall);
-
 		case kState_BodyLadder:
 			return ::GetSound(this, kAIS_Fall);
 
 		case kState_BodyExplode:
 			return ::GetSound(this, kAIS_Explode);
-
-		case kState_BodyStairs:
-			return ::GetSound(this, kAIS_FallStairs);
 
 		default:
 			return ::GetSound(this, kAIS_Death);

@@ -427,10 +427,8 @@ uint32 Body::OnDeactivate()
 bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
 	static CParsedMsg::CToken s_cTok_Splash("SPLASH");
-	static CParsedMsg::CToken s_cTok_Move("CARRY");
 	static CParsedMsg::CToken s_cTok_Revive( "REVIVE" );
 	static CParsedMsg::CToken s_cTok_Search( "SEARCH" );
-	static CParsedMsg::CToken s_cTok_DropAtPos( "DROPATPOS" );
 	static CParsedMsg::CToken s_cTok_Remove( "REMOVE" );
 
 	// Handle Remove explicitly to avoid attachments getting left around
@@ -450,126 +448,9 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		g_pLTServer->SetModelAnimation(m_hObject, g_pLTServer->GetAnimIndex(m_hObject, "DSharkSplash"));
 		g_pLTServer->SetModelLooping(m_hObject, LTTRUE);
 	}
-	else if ( cMsg.GetArg(0) == s_cTok_Move && IsPlayer(hSender))
-	{
-		CPlayerObj *pPlayer = (CPlayerObj *)g_pLTServer->HandleToObject(hSender);
-		
-		if (pPlayer && m_bCanBeCarried)
-		{
-			if (kState_BodyNormal == m_eBodyState)
-			{
-				pPlayer->SetCarriedObject(m_hObject);
-				SetState(kState_BodyCarried);
-				SetNextUpdate(UPDATE_NEXT_FRAME);
-				m_bFirstUpdate = LTTRUE;
-
-				if (m_eDeathStimID != kStimID_Unset)
-					g_pAIStimulusMgr->RemoveStimulus(m_eDeathStimID);
-				m_eDeathStimID	= kStimID_Unset;
-
-//				ReleasePowerups(true);
-
-//				for ( uint32 iSpear = 0 ; iSpear < m_cSpears ; iSpear++ )
-//				{
-//					g_pCommonLT->SetObjectFlags( m_ahSpears[iSpear], OFT_Flags, FLAG_FORCECLIENTUPDATE , FLAG_FORCECLIENTUPDATE );
-//					g_pCommonLT->SetObjectFlags( m_ahSpears[iSpear], OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
-//				}
-
-
-				ShowObjectAttachments(m_hObject,false);
-
-
-			}
-			else if (kState_BodyCarried == m_eBodyState)
-			{
-				pPlayer->SetCarriedObject(LTNULL);
-				LTVector vPos, vForward, vUp(0.0f,1.0f,0.0f);
-				LTRotation rRot;
-
-				g_pLTServer->GetObjectPos(hSender, &vPos);
-				g_pLTServer->GetObjectRotation(hSender, &rRot);
-
-				vForward = rRot.Forward();
-
-				LTRotation rNewRot(vForward,vUp);
-				rNewRot.Rotate(vUp,MATH_PI);
-
-
-				g_pLTServer->SetObjectPos(m_hObject, &vPos);
-				g_pLTServer->SetObjectPos(m_hHitBox, &vPos);
-				g_pLTServer->SetObjectRotation(m_hObject, &rNewRot);
-				g_pLTServer->SetObjectRotation(m_hHitBox, &rNewRot);
-
-				if (m_hHitBox)
-				{
-					CCharacterHitBox* pHitBox = (CCharacterHitBox *)g_pLTServer->HandleToObject(m_hHitBox);
-					if (pHitBox)
-					{
-						pHitBox->SetDimsToModel();
-					}
-				}				
-
-				SetState(kState_BodyDropped);
-				SetNextUpdate(UPDATE_NEXT_FRAME);
-				m_bFirstUpdate = LTTRUE;
-
-				ShowObjectAttachments(m_hObject,true);
-//				m_pAttachments->HideAttachments(false);
-//				for ( uint32 iSpear = 0 ; iSpear < m_cSpears ; iSpear++ )
-//				{
-//					g_pCommonLT->SetObjectFlags( m_ahSpears[iSpear], OFT_Flags, 0 , FLAG_FORCECLIENTUPDATE );
-//					g_pCommonLT->SetObjectFlags( m_ahSpears[iSpear], OFT_User, 0, USRFLG_ATTACH_HIDE1SHOW3);
-//				}
-
-			}
-		}
-	}
-	else if( cMsg.GetArg( 0 ) == s_cTok_DropAtPos )
-	{
-		if( cMsg.GetArgCount() != 4 )
-			return true;
-
-		CPlayerObj *pPlayer = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject(hSender));
-		if( !pPlayer )
-			return true;
-
-		LTVector vPos, vF, vUp(0.0f,1.0f,0.0f);
-	
-		vPos.x = (float)atof( cMsg.GetArg(1).c_str() );
-		vPos.y = (float)atof( cMsg.GetArg(2).c_str() );
-		vPos.z = (float)atof( cMsg.GetArg(3).c_str() );
-
-		pPlayer->SetCarriedObject(LTNULL);
-
-		LTRotation rRot;
-		g_pLTServer->GetObjectRotation(hSender, &rRot);
-
-		vF = rRot.Forward();
-
-		LTRotation rNewRot( vF, vUp );
-		rNewRot.Rotate( vUp, MATH_PI );
-
-		g_pLTServer->SetObjectPos(m_hObject, &vPos);
-		g_pLTServer->SetObjectPos(m_hHitBox, &vPos);
-		g_pLTServer->SetObjectRotation(m_hObject, &rNewRot);
-		g_pLTServer->SetObjectRotation(m_hHitBox, &rNewRot);
-
-		if (m_hHitBox)
-		{
-			CCharacterHitBox* pHitBox = (CCharacterHitBox *)g_pLTServer->HandleToObject(m_hHitBox);
-			if (pHitBox)
-			{
-				pHitBox->SetDimsToModel();
-			}
-		}				
-
-		SetState(kState_BodyDropped);
-		SetNextUpdate(UPDATE_NEXT_FRAME);
-		m_bFirstUpdate = LTTRUE;
-
-		ShowObjectAttachments(m_hObject,true);
-
-	}
+	// RETAIL: Tron's bodies cannot be carried: no CARRY or DROPATPOS
+	// tokens (Body::OnTrigger at 0x10159760 and its tokens' _$E172 at
+	// 0x101596f0) and no Carried/Dropped body states.
 	else if( cMsg.GetArg( 0 ) == s_cTok_Revive && IsPlayer( hSender ))
 	{
 		if( IsRevivePlayerGameType( ) && m_hCharacter && IsPlayer( m_hCharacter ) && GetCanRevive( ))
@@ -831,9 +712,6 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		case kState_BodyChair:
 			m_BCS.eBodyState = eBodyStateChair;
 			break;	
-		case kState_BodyLedge:
-			m_BCS.eBodyState = eBodyStateLedge;
-			break;	
 		case kState_BodyLadder:
 			m_BCS.eBodyState = eBodyStateLadder;
 			break;	
@@ -845,9 +723,6 @@ void Body::Init(const BODYINITSTRUCT& bi)
 			break;	
 		case kState_BodyUnderwater:
 			m_BCS.eBodyState = eBodyStateUnderwater;
-			break;	
-		case kState_BodyStairs:
-			m_BCS.eBodyState = eBodyStateStairs;
 			break;	
 		case kState_BodyDecay:
 			m_BCS.eBodyState = eBodyStateDecay;
@@ -1988,10 +1863,8 @@ LTBOOL Body::CanCheckPulse()
 		switch ( m_eBodyStatePrevious )
 		{
 			case kState_BodyNormal:
-			case kState_BodyLedge:
 			case kState_BodyLadder:
 			case kState_BodyExplode:
-			case kState_BodyStairs:
 			case kState_BodyCrush:
 				return LTTRUE;
 

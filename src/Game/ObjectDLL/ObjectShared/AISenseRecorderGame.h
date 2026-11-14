@@ -40,7 +40,6 @@ class CAISenseRecorderGame : public CAISenseRecorderAbstract
 		LTBOOL HandleAllySpecialDamageVisible(CAIStimulusRecord* pStimulusRecord);
 		LTBOOL HandleAllyDeathVisible(CAIStimulusRecord* pStimulusRecord);
 		LTBOOL HandleEnemyVisible(CAIStimulusRecord* pStimulusRecord, LTBOOL bUseSightGrid, LTBOOL bUseInstantSeeDistance, LTFLOAT* pfRateModifier);
-		LTBOOL HandleUndeterminedVisible(CAIStimulusRecord* pStimulusRecord, LTFLOAT* pfRateModifier);
 
 	private : // Private member variables
 

@@ -2082,15 +2082,8 @@ void CCharacter::RegisterPersistentStimuli(void)
 		AITRACE( AIShowCharacters, ( m_hObject, "NOT Registering persistent stimulus EnemyVisible, because StimulusID %d already exists!", m_eEnemyVisibleStimID ) );
 	}
 
-	// Register for UndeterminedVisible stimulus.
-	// Save the registration ID in case we want to toggle visibility.
-	if( ( m_eUndeterminedVisibleStimID == kStimID_Unset ) ||
-		( !g_pAIStimulusMgr->StimulusExists( m_eUndeterminedVisibleStimID ) ) )
-	{
-		AITRACE( AIShowCharacters, ( m_hObject, "Registering persistent stimulus UndeterminedVisible" ) );
-		m_eUndeterminedVisibleStimID
-			= g_pAIStimulusMgr->RegisterStimulus( kStim_UndeterminedVisible, m_hObject, LTNULL, CAIStimulusRecord::kDynamicPos_TrackSource, 1.f );
-	}
+	// RETAIL: Tron registers no UndeterminedVisible stimulus (it has none:
+	// RegisterPersistentStimuli at 0x1008e9xx registers EnemyVisible only).
 }
 
 //----------------------------------------------------------------------------
@@ -3298,15 +3291,8 @@ EnumAIStateType CCharacter::GetBodyState()
 	else if ( HasLastVolume() )
 	{
 		AIVolume* pVolume = GetLastVolume();
-		if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Stairs )
-		{
-			return kState_BodyStairs;
-		}
-		else if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Ledge )
-		{
-			return kState_BodyLedge;
-		}
-		else if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Ladder )
+		// RETAIL: Tron has no Stairs or Ledge body states.
+		if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Ladder )
 		{
 			return kState_BodyLadder;
 		}
@@ -3341,11 +3327,7 @@ EnumAIStateType CCharacter::GetPriorityBodyState(EnumAIStateType bs1, EnumAIStat
 			return bs1;
 		case kState_BodyUnderwater:
 			return bs1;
-		case kState_BodyLedge:
-			return bs1;
 		case kState_BodyLadder:
-			return bs1;
-		case kState_BodyStairs:
 			return bs1;
 		case kState_BodyLaser:
 			return bs1;
@@ -3367,11 +3349,7 @@ EnumAIStateType CCharacter::GetPriorityBodyState(EnumAIStateType bs1, EnumAIStat
 			return bs2;
 		case kState_BodyUnderwater:
 			return bs2;
-		case kState_BodyLedge:
-			return bs2;
 		case kState_BodyLadder:
-			return bs2;
-		case kState_BodyStairs:
 			return bs2;
 		case kState_BodyLaser:
 			return bs2;

@@ -58,9 +58,11 @@ ADD_SENSE_TYPE(SeeDangerousProjectile,	18)		// kSense_SeeDangerousProjectile
 ADD_SENSE_TYPE(SeeCatchableProjectile,	19)		// kSense_SeeCatchableProjectile
 ADD_SENSE_TYPE(SeeAllyDistress,			20)		// kSense_SeeAllyDistress
 ADD_SENSE_TYPE(SeeAllySpecialDamage,	21)		// kSense_SeeAllySpecialDamage
-ADD_SENSE_TYPE(SeeUndetermined,			22)		// kSense_SeeUndetermined
+// RETAIL: Tron 2.0 has no SeeUndetermined (sense name table .rdata
+// 0x102d83a0: SeeInappropriateBehavior follows SeeAllySpecialDamage), so
+// the last two senses are bits 22 and 23 and there are 24.
 
-ADD_SENSE_TYPE(SeeInappropriateBehavior, 23)	// kSense_SeeInappropriateBehavior
-ADD_SENSE_TYPE(HearInappropriateBehavior, 24)	// kSense_HearInappropriateBehavior
+ADD_SENSE_TYPE(SeeInappropriateBehavior, 22)	// kSense_SeeInappropriateBehavior
+ADD_SENSE_TYPE(HearInappropriateBehavior, 23)	// kSense_HearInappropriateBehavior
 
-SET_NUM_SENSE_TYPES(25)
+SET_NUM_SENSE_TYPES(24)
