@@ -2,6 +2,11 @@
 
 *Tron 2.0* (Monolith, 2003), built from source.
 
+> [!WARNING]
+> **Work in progress.** The reconstruction is far from complete: much of the
+> game code does not match retail yet (see [`progress/README.md`](progress/README.md)),
+> and the builds have not been run as a game. Nothing here is ready to play.
+
 Monolith never released Tron 2.0's source as it shipped, as it did for *No
 One Lives Forever 2*. This project reconstructs it: the game code from
 NOLF2's source release (Tron 2.0 was built from the same TO2 tree) and the
