@@ -195,3 +195,6 @@ TARGETS = [
          kind="resources", shipped=REFERENCE + "/SRes.dll", stem="SRes",
          built="src/Game/built/Final/ServerRes/TRON/SRes.dll", optional=True),
 ]
+
+# The file ext/tools/ratchet.py keeps the progress table in.
+README = "progress/README.md"
