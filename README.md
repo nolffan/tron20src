@@ -23,13 +23,6 @@ Compiling back to the retail bytes means compiling the retail game's bugs as
 well; their fixes go behind `TRON20_MODERN`, into the modern build only, so
 the legacy build keeps matching the retail one.
 
-## Where it stands
-
-Started. The retail game is installed from its discs and update (`ext/rez/`),
-the compiler is in `ext/toolchains/` (`msvc-6.00-8168`), and the scoreboard
-scores every retail binary against our build. `docs/PLAN.md` is the plan,
-package by package.
-
 ## Progress
 
 How much of each binary compiles to exactly the bytes of the retail game
