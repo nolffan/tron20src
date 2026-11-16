@@ -188,6 +188,8 @@ class CPlayerObj : public CCharacter
 		void HandleActivateMessage(ILTMessage_Read *pMsg);
 		void HandlePlayerPositionMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);
+		// RETAIL: read inline by CContinuousFireHelper (0x10160cb0). Name ours.
+		LTVector GetClientCameraOffset() const { return m_vClientCameraOffset; }
 		void HandleWeaponSoundMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponSoundLoopMessage(ILTMessage_Read *pMsg);
 		void HandleClientMsg(ILTMessage_Read *pMsg);

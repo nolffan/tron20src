@@ -54,6 +54,7 @@
 #include "ServerMissionMgr.h"
 #include "ActiveWorldModel.h"
 #include "VersionMgr.h"
+#include "..\TRON\ContinuousFireHelper.h"	// RETAIL: Tron's fire helpers
 
 LINKFROM_MODULE( Character );
 
@@ -2051,11 +2052,16 @@ void CCharacter::Update()
 
 void CCharacter::UpdateFireHelpers()
 {
-	// RETAIL: retail 0x1008e920 calls m_pPRodFireHelper's and then
-	// m_pEnergyClawFireHelper's first virtual (CContinuousFireHelper's
-	// Update, retail 0x10160b50), each if set. PORT: CContinuousFireHelper
-	// (retail 0x101608b0..0x101613ff) is not written yet and nothing in
-	// our build creates the helpers, so there is nothing to update
+	// RETAIL: 0x1008e920
+	if( m_pPRodFireHelper )
+	{
+		m_pPRodFireHelper->Update();
+	}
+
+	if( m_pEnergyClawFireHelper )
+	{
+		m_pEnergyClawFireHelper->Update();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2069,9 +2075,16 @@ void CCharacter::UpdateFireHelpers()
 
 void CCharacter::StopFireHelpers()
 {
-	// RETAIL: retail 0x1008e950 calls CContinuousFireHelper's stop
-	// (non-virtual, retail 0x10160de0) on m_pPRodFireHelper and then on
-	// m_pEnergyClawFireHelper, each if set. PORT: as UpdateFireHelpers
+	// RETAIL: 0x1008e950
+	if( m_pPRodFireHelper )
+	{
+		m_pPRodFireHelper->Stop();
+	}
+
+	if( m_pEnergyClawFireHelper )
+	{
+		m_pEnergyClawFireHelper->Stop();
+	}
 }
 
 // ----------------------------------------------------------------------- //
