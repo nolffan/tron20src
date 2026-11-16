@@ -4049,6 +4049,12 @@ LTBOOL CPlayerMgr::IsFirstPerson()
 	return m_pPlayerCamera->IsFirstPerson();
 }
 
+// RETAIL: Tron's (0x1012ad90; the name is ours)
+LTBOOL CPlayerMgr::IsGoingFirstPerson()
+{
+	return (m_pPlayerCamera->GetCameraMode() == CPlayerCamera::GOINGFIRSTPERSON);
+}
+
 
 // --------------------------------------------------------------------------- //
 //

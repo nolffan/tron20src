@@ -374,7 +374,7 @@ bool CClientSaveLoadMgr::OnMessage( uint8 messageID, ILTMessage_Read& msg )
 	switch (messageID)
 	{
 		case MID_SAVE_DATA:		HandleSaveData			( msg );	return true; break;
-		case MID_SAVE_GAME:		HandleSaveGameMsg		( msg );	return true; break;
+		// RETAIL: Tron's handles no MID_SAVE_GAME (0x10144dc0)
 		default:
 			break;
 	}
