@@ -952,6 +952,12 @@ class CAIHumanStateUseObject : public CAIHumanState
 		LTBOOL				m_bPlayedFirstSound;
 		LTBOOL				m_bAlertFirst;
 		EnumTrackedNodeGroup m_eTrackingGroup;
+		// RETAIL: Tron's (ctor 0x101e7e64, HandleNameValuePair 0x101e8eea,
+		// Load 0x101e97f5): the ALLOWROTATION and INSUREANIMOBJECTCLOSED
+		// commands and one more saved flag (name ours).
+		LTBOOL				m_bAllowRotation;			// +0xec
+		LTBOOL				m_bInsureAnimObjectClosed;	// +0xf0
+		LTBOOL				m_bTronUnknownF4;			// +0xf4
 };
 
 class CAIHumanStateTail : public CAIHumanState

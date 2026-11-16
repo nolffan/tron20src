@@ -2071,6 +2071,10 @@ CAIHumanStateUseObject::CAIHumanStateUseObject()
 	m_bAlertFirst = LTFALSE;
 
 	m_hObject = NULL;
+
+	m_bAllowRotation = LTFALSE;
+	m_bInsureAnimObjectClosed = LTFALSE;
+	m_bTronUnknownF4 = LTFALSE;
 }
 
 CAIHumanStateUseObject::~CAIHumanStateUseObject()
@@ -2695,6 +2699,14 @@ void CAIHumanStateUseObject::HandleNameValuePair(char *szName, char *szValue)
 			m_pUseNode->Lock( GetAI()->m_hObject );
 		}
 	}
+	else if ( !_stricmp(szName, "ALLOWROTATION") )
+	{
+		m_bAllowRotation = !_stricmp(szValue, "TRUE");
+	}
+	else if ( !_stricmp(szName, "INSUREANIMOBJECTCLOSED") )
+	{
+		m_bInsureAnimObjectClosed = !_stricmp(szValue, "TRUE");
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2883,6 +2895,9 @@ void CAIHumanStateUseObject::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bVulnerable);
 	LOAD_BOOL(m_bPlayedFirstSound);
 	LOAD_BOOL(m_bAlertFirst);
+	LOAD_BOOL(m_bAllowRotation);
+	LOAD_BOOL(m_bInsureAnimObjectClosed);
+	LOAD_BOOL(m_bTronUnknownF4);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2921,6 +2936,9 @@ void CAIHumanStateUseObject::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bVulnerable);
 	SAVE_BOOL(m_bPlayedFirstSound);
 	SAVE_BOOL(m_bAlertFirst);
+	SAVE_BOOL(m_bAllowRotation);
+	SAVE_BOOL(m_bInsureAnimObjectClosed);
+	SAVE_BOOL(m_bTronUnknownF4);
 }
 
 // ----------------------------------------------------------------------- //
