@@ -101,6 +101,8 @@ CSubroutineMgr* g_pSubroutineMgr = LTNULL;
 #define IDS_TRON_SUB_FOREIGN_NAME		3417
 #define IDS_TRON_SUB_FOREIGN			3422
 #define IDS_TRON_SUB_ENERGY_DRAIN		3435
+#define IDS_TRON_PROC_WORKING			3405	// RETAIL: GetProceduralInfo's (0x10094200)
+#define IDS_TRON_PROC_IDLE				3406
 
 // RETAIL: CRes.dll's strings (the names are ours)
 #define IDS_SUBROUTINE_ACQUIRED			3247	// "Acquired subroutine: <color 165 233 255>%1!s!"
@@ -975,7 +977,7 @@ static inline void InfoStrCat(char *pDest, const char *pSrc, uint32 destBytes)
 }
 
 // RETAIL: 0x10094140 (the name is ours): the text as a wide string
-static bool CopyToWString(std::wstring & sDest, const char * szSrc)
+static inline bool CopyToWString(std::wstring & sDest, const char * szSrc)
 {
 	sDest.erase(sDest.begin(), sDest.end());
 
@@ -1088,6 +1090,51 @@ std::wstring CSubroutineMgr::GetSubroutineInfo(PlayerSubroutine * pSub)
 
 	std::wstring sInfo;
 	CopyToWString(sInfo, szInfo);
+	return sInfo;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetProceduralInfo
+//
+//	PURPOSE:	RETAIL: 0x10094200 (the name is ours): the subroutine
+//				screen's information text of a procedural
+//
+// ----------------------------------------------------------------------- //
+
+std::wstring CSubroutineMgr::GetProceduralInfo(Procedural * pProc)
+{
+	std::wstring sInfo;
+
+	if (!pProc)
+		return LTNULL;
+
+	sInfo += L"<color 165 233 255>";
+	sInfo += LoadTempWString(pProc->nNameId);
+	sInfo += L"\n";
+
+	if (pProc->pSub)
+	{
+		char szSub[256];
+		if (pProc->eAffectState == SUBSTATE_FOREIGN)
+			FormatString(IDS_TRON_SUB_FOREIGN, szSub, sizeof(szSub));
+		else
+			sprintf(szSub, LoadTempString(pProc->pSub->pTronSubroutine->nNameId));
+
+		char szMsg[1024];
+		FormatString(IDS_TRON_PROC_WORKING, szMsg, sizeof(szMsg), szSub, (int)(pProc->pSub->fPercentDone * 100.0f));
+
+		std::wstring sMsg;
+		CopyToWString(sMsg, szMsg);
+		sInfo += sMsg;
+	}
+	else
+	{
+		sInfo += LoadTempWString(IDS_TRON_PROC_IDLE);
+		sInfo += L"\n\n<color 255 255 255>";
+		sInfo.append(LoadTempWString(pProc->nDescriptionId));
+	}
+
 	return sInfo;
 }
 
