@@ -476,7 +476,7 @@ CInterfaceMgr::CInterfaceMgr()
 	m_szTronUnknownF994[0] = '\0';
 	m_szTronUnknownFA14[0] = '\0';
 	m_bTronUnknownFA54 = true;
-	m_nTronUnknown100F8 = 0;
+	m_pSpectatorText = LTNULL;
 }
 
 
@@ -3072,20 +3072,18 @@ LTBOOL CInterfaceMgr::Draw()
 
 	// Check for interface drawing override...
 
+	// RETAIL: 0x100cb320: Tron draws the light cycle countdown and the
+	// spectator's text with the HUD, the letter box after them, the paused
+	// item in a multiplayer game too and the subtitles last; its message
+	// box needs no 3D block, and the sprites update here
 	if (g_vtDrawInterface.GetFloat())
 	{
-		// Update letter box...
-
-		UpdateLetterBox();
-
-		// Find out if we're in multiplayer...
-
-		PlayerState ePlayerState = g_pPlayerMgr->GetPlayerState();
-
 		if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP)
 		{
 			// Draw the player stats (health,armor,ammo) if appropriate...
 			GetHUDMgr()->Render();
+
+			DrawTronUnknownMessage();
 
 			if (m_Credits.IsInited())
 			{
@@ -3104,7 +3102,12 @@ LTBOOL CInterfaceMgr::Draw()
 				m_InterfaceTimer.Draw();
 			}
 
+			DrawSpectatorText();
 		}
+
+		// Update letter box...
+
+		UpdateLetterBox();
 
 		if( g_pDamageFXMgr->IsDamageActive( DamageTypeToFlag(DT_SLEEPING) ))
 		{
@@ -3119,21 +3122,18 @@ LTBOOL CInterfaceMgr::Draw()
 			}
 		}
 
-
-		if (!IsMultiplayerGame())
+		if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP || GetGameState() == GS_MENU)
 		{
-			if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP || GetGameState() == GS_MENU)
-			{
-				g_pPaused->Render();
-			}
+			g_pPaused->Render();
 		}
-
 
 		// Update the screen fade alpha only if we are in the playing state and not paused...
 
 		bool bUpdateAlpha = (GetGameState() == GS_PLAYING ? !g_pGameClientShell->IsGamePaused() : false);
 
 		UpdateScreenFade(bUpdateAlpha);
+
+		g_pSubtitles->Draw();
 	}
 
 	if (GetGameState() == GS_MENU)
@@ -3148,14 +3148,13 @@ LTBOOL CInterfaceMgr::Draw()
 	//this should be last so it is always on top.
 	if (m_MessageBox.IsVisible())
 	{
-		g_pLTClient->Start3D();
         g_pLTClient->StartOptimized2D();
         m_MessageBox.Draw();
         g_pLTClient->EndOptimized2D();
-        g_pLTClient->End3D();
 	}
 
 	m_CursorMgr.Update();
+	m_ScreenSpriteMgr.Update();
 
     return LTTRUE;
 }
@@ -6365,6 +6364,48 @@ void CInterfaceMgr::DrawTronUnknownMessage()
 	else
 	{
 		g_pTransmission->Term();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::DrawSpectatorText
+//
+//	PURPOSE:	RETAIL: 0x100d03d0 (the name is ours): a light cycle
+//				game's spectator sees "SPECTATOR MODE" at the screen's
+//				bottom left
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::DrawSpectatorText()
+{
+	if (g_pPlayerMgr->TronUnknownVirtual3C(false) && GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		uint8 nSize = (uint8)((float)g_pLayoutMgr->GetHelpSize() * g_pInterfaceResMgr->GetXRatio());
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+
+		if (!m_pSpectatorText)
+		{
+			m_pSpectatorText = g_pFontManager->CreatePolyString(pFont, std::wstring(L""), 0.0f, 0.0f);
+		}
+
+		if (m_pSpectatorText)
+		{
+			m_pSpectatorText->SetColor(0xffffffff);
+			m_pSpectatorText->SetCharScreenHeight(nSize);
+			m_pSpectatorText->SetText("SPECTATOR MODE");
+
+			uint32 nWidth, nHeight;
+			g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &nWidth, &nHeight);
+			float fHeight = (float)nHeight;
+
+			m_pSpectatorText->SetPosition(0, (int)(fHeight - m_pSpectatorText->GetHeight()));
+			m_pSpectatorText->Render(0, -1);
+		}
+	}
+	else if (m_pSpectatorText)
+	{
+		m_pSpectatorText->SetText("");
 	}
 }
 
