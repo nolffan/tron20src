@@ -407,8 +407,8 @@ class CInterfaceMgr
 		void	ResumeLoadScreen();
 		// Update loading screen mission info
 		void	UpdateLoadScreenInfo();
-		// Set the screen to render on the loading screen
-		void	SetLoadingRenderScreen( CBaseScreen *pScreen ) { if (m_pLoadingScreen) m_pLoadingScreen->SetRenderScreen( pScreen ); }
+		// RETAIL: Tron's loading screen has no render screen (NOLF2 1.x's
+		// SetLoadingRenderScreen)
 
 		// RETAIL: CTronInterfaceMgr's constructor sets it (0x1009cb97)
 		void	SetLoadingScreen( CLoadingScreen *pLoadingScreen ) { m_pLoadingScreen = pLoadingScreen; }

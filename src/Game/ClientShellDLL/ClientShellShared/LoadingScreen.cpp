@@ -73,8 +73,6 @@ CLoadingScreen::~CLoadingScreen()
 
 void CLoadingScreen::CreateScaleFX(char *szFXName)
 {	
-	if( m_pRenderScreen )
-		return;
 
 	CScaleFX* pScaleFX = g_pFXButeMgr->GetScaleFX(szFXName);
 	if (pScaleFX)
@@ -102,8 +100,6 @@ void CLoadingScreen::CreateScaleFX(char *szFXName)
 
 void CLoadingScreen::CreateInterfaceSFX()
 {
-	if( m_pRenderScreen )
-		return;
 	
 	HOBJECT hCamera = g_pInterfaceMgr->GetInterfaceCamera();
 	if (!hCamera) return;
@@ -172,8 +168,6 @@ void CLoadingScreen::RemoveInterfaceSFX()
 
 void CLoadingScreen::UpdateInterfaceSFX()
 {
-	if( m_pRenderScreen )
-		return;
 
 	// Update the model's animtracker by hand...
 	g_pInterfaceMgr->UpdateModelAnimations(m_fCurFrameDelta);
@@ -185,17 +179,7 @@ LTBOOL CLoadingScreen::Init()
 	if (m_eCurState != STATE_NONE)
 		return LTFALSE;
 
-	if( m_pRenderScreen )
-	{
-		// Just let the render screen know it is about to be draw and set the state to init...
-
-		m_pRenderScreen->OnFocus( true );
-		m_eCurState = STATE_INIT;
-
-		return LTTRUE;
-	}
 	
-	m_photo = "";
 
 	// Check if we have a mission entry.
 	bool bGotMission = false;
@@ -253,10 +237,6 @@ LTBOOL CLoadingScreen::Init()
 			else
 				m_help = "";
 
-			if( !IsCoopMultiplayerGameType( ))
-			{
-				m_photo = pMission->sPhoto;
-			}
 
 
 			bGotMission = true;
@@ -377,7 +357,6 @@ LTBOOL CLoadingScreen::Init()
 
 		m_nDefaultHelpColor = SET_ARGB(0xFF,nR,nG,nB);
 
-		m_DefaultPhotoRect = g_pLayoutMgr->GetRect(szTagName,"PhotoRect");
 
 	}
 
@@ -592,29 +571,6 @@ LTBOOL CLoadingScreen::Init()
 	}
 
 
-	if( !IsCoopMultiplayerGameType() && !m_photo.empty() )
-	{
-		m_hFrame = g_pInterfaceResMgr->GetTexture(m_photo.c_str());
-		if (m_hFrame)
-		{
-			SetupQuadUVs(m_photoPoly, m_hFrame, 0.0f, 0.0f, 1.0f, 0.75f);
-			g_pDrawPrim->SetRGBA(&m_photoPoly,argbWhite);
-
-			float fScale = g_pInterfaceResMgr->GetXRatio();
-			float fx = (float)m_DefaultPhotoRect.left * fScale;
-			float fy = (float)m_DefaultPhotoRect.top * fScale;
-
-			float fw = (float)(m_DefaultPhotoRect.right - m_DefaultPhotoRect.left) * fScale;
-			float fh = (float)(m_DefaultPhotoRect.bottom - m_DefaultPhotoRect.top) * fScale;
-
-			g_pDrawPrim->SetXYWH(&m_photoPoly,fx,fy,fw,fh);
-
-		}
-	}
-	else
-	{
-		m_hFrame = LTNULL;
-	}
 
 
 	
@@ -698,33 +654,6 @@ LTBOOL CLoadingScreen::Update()
 
 	// Only draw the render screen if we have one...
 
-	if( m_pRenderScreen )
-	{
-		HSURFACE hScreen = g_pLTClient->GetScreenSurface();
-
-		g_pLTClient->Start3D();
-
-		// Draw any FX First, such as the back ground...
-
-		m_pRenderScreen->UpdateInterfaceSFX();
-		g_pInterfaceMgr->DrawSFX();
-		
-		EnterCriticalSection(&m_MissionUpdate);
-
-		g_pLTClient->StartOptimized2D();
-
-		// Actually draw the screen...
-
-		LTBOOL bRet = m_pRenderScreen->Render( hScreen );
-
-		g_pLTClient->EndOptimized2D();
-		g_pLTClient->End3D();
-		g_pLTClient->FlipScreen(0);
-
-		LeaveCriticalSection(&m_MissionUpdate);
-
-		return bRet;
-	}
 
 	g_pLTClient->ClearScreen(LTNULL, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
 	// Mmm..  Triple dimensional...
@@ -753,19 +682,6 @@ LTBOOL CLoadingScreen::Update()
 	if (m_pHelpStr)
 		m_pHelpStr->Render();
 
-	if (m_hFrame)
-	{
-		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ); 
-		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
-		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
-		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
-		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
-		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
-
-		g_pDrawPrim->SetTexture(m_hFrame);
-		g_pDrawPrim->DrawPrim(&m_photoPoly);
-	}
 
 
     g_pLTClient->EndOptimized2D();
@@ -901,13 +817,6 @@ LTBOOL CLoadingScreen::Hide()
 
 	// Let the render screen know it's going away...
 
-	if( m_pRenderScreen )
-	{
-		// Don't lose focus until after setting the state to init...
-		
-		m_pRenderScreen->OnFocus( LTFALSE );
-		m_pRenderScreen = LTNULL;
-	}
 
 	// Done!
 	return LTTRUE;
@@ -916,8 +825,6 @@ LTBOOL CLoadingScreen::Hide()
 
 void CLoadingScreen::CreateLightFX(char *szFXName)
 {
-	if( m_pRenderScreen )
-		return;
 
 	INT_LIGHT* pLight = g_pLayoutMgr->GetLight(szFXName);
 	if (pLight)
@@ -950,8 +857,6 @@ void CLoadingScreen::UpdateMissionInfo()
 {
 	// No need to update mission info if a different screen is being rendered...
 	
-	if( m_pRenderScreen )
-		return;
 
 	EnterCriticalSection(&m_MissionUpdate);
 
@@ -986,10 +891,6 @@ void CLoadingScreen::UpdateMissionInfo()
 			else
 				m_help = "";
 
-			if( !IsCoopMultiplayerGameType( ))
-			{
-				m_photo = pMission->sPhoto;
-			}
 
 		}
 
@@ -1008,29 +909,6 @@ void CLoadingScreen::UpdateMissionInfo()
 		m_pBriefingStr->SetText(m_briefing.c_str());
 	}
 
-	if( !IsCoopMultiplayerGameType() && !m_photo.empty())
-	{
-		m_hFrame = g_pInterfaceResMgr->GetTexture(m_photo.c_str());
-		if (m_hFrame)
-		{
-			SetupQuadUVs(m_photoPoly, m_hFrame, 0.0f, 0.0f, 1.0f, 0.75f);
-			g_pDrawPrim->SetRGBA(&m_photoPoly,argbWhite);
-
-			float fScale = g_pInterfaceResMgr->GetXRatio();
-			float fx = (float)m_DefaultPhotoRect.left * fScale;
-			float fy = (float)m_DefaultPhotoRect.top * fScale;
-
-			float fw = (float)(m_DefaultPhotoRect.right - m_DefaultPhotoRect.left) * fScale;
-			float fh = (float)(m_DefaultPhotoRect.bottom - m_DefaultPhotoRect.top) * fScale;
-
-			g_pDrawPrim->SetXYWH(&m_photoPoly,fx,fy,fw,fh);
-
-		}
-	}
-	else
-	{
-		m_hFrame = LTNULL;
-	}
 
 
 
