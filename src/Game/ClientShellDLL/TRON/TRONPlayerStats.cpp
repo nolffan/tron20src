@@ -536,7 +536,7 @@ void CTronPlayerStats::UpdateMaxEnergy(float fEnergy)
 void CTronPlayerStats::UseEnergy(float fEnergy)
 {
 	CAutoMessage cMsg;
-	cMsg.Writeuint8(162);	// RETAIL: Tron's MsgID, not yet in our MsgIDs.h
+	cMsg.Writeuint8(MID_USE_ENERGY);
 	cMsg.Writeuint8(1);
 	cMsg.Writefloat(fEnergy);
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);

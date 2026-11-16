@@ -793,8 +793,11 @@ LTBOOL CPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_PLAYER_ORIENTATION:		HandleMsgPlayerOrientation		(pMsg);	break;
 		case MID_WEAPON_CHANGE:				HandleMsgWeaponChange			(pMsg);	break;
 		case MID_CHANGE_WORLDPROPERTIES:	HandleMsgChangeWorldProperties	(pMsg);	break;
-		case MID_GADGETTARGET:				HandleMsgGadgetTarget			(pMsg); break;
-		// RETAIL: no MID_SEARCH in Tron (retail 0x10125360)
+		// RETAIL: Tron's case is MID_SEARCH, 248 (retail 0x10125404), and
+		// no MID_GADGETTARGET: the object it hands the message to
+		// (+0x10, retail 0x101c3be0, reading CSearchItemMgr's items) is
+		// NOLF2's searcher, which ours takes for the gadget disabler
+		case MID_SEARCH:					HandleMsgGadgetTarget			(pMsg); break;
 		case MID_ADD_PUSHER:				HandleMsgAddPusher				(pMsg); break;
 		case MID_OBJECTIVES_DATA:			HandleMsgObjectivesData			(pMsg); break;
 		default:							return LTFALSE;	break;

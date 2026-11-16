@@ -1779,14 +1779,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		}
 		break;
 
-		case MID_PLAYER_TEAM :
-		{
-			
-			g_pChatMsgs->AddMessage(LoadTempString(IDS_IWILLCHANGE));
-            return LTTRUE;
-		}
-		break;
-
 
 		case MID_PLAYER_INFO:
 		{
@@ -1899,12 +1891,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 
 
             return LTTRUE;
-		}
-		break;
-
-		case MID_TEAM_INFO:
-		{
-			CTeamMgr::Instance().UpdateTeam(pMsg);
 		}
 		break;
 
@@ -2205,113 +2191,8 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		}
 		break;
 		
-		case MID_DOOMSDAY_MESSAGE:
-		{
-			uint8 nId = pMsg->Readuint8();
-
-			switch( nId )
-			{
-				case MID_DOOMSDAY_PIECE_PICKEDUP:
-				case MID_DOOMSDAY_PIECE_DROPPED:
-				case MID_DOOMSDAY_PIECE_PLACED:
-				case MID_DOOMSDAY_PIECE_STOLEN:
-				{
-					// Static tables to make creating the transmission text easier...
-
-					static uint32 dwActionID[] = { IDS_DOOMSDAY_PICKEDUP,
-												   IDS_DOOMSDAY_DROPPED,
-												   IDS_DOOMSDAY_PLACED,
-												   IDS_DOOMSDAY_STOLE, };
-
-					static uint32 dwPieceID[] = { IDS_DOOMSDAY_TRANSMITTER, IDS_DOOMSDAY_BATTERIES, IDS_DOOMSDAY_CORE, };
-
-					static uint32 dwTeamID[] = { IDS_TEAM_1, IDS_TEAM_2, };
-					
-					static eChatMsgType eChatType[] = { kMsgBlueTeam, kMsgRedTeam };
-
-					
-					DDPieceType Piece = (DDPieceType)pMsg->Readuint8();
-					uint8		nTeam = pMsg->Readuint8();
-
-					if( Piece >= kDoomsDay_MAXTYPES )
-						return LTFALSE;
-					if( nTeam >= MAX_TEAMS )
-						return LTFALSE;
-
-					// Build the string to display...
-
-					char szTransmission[256] = {0};
-					char szTeam[32] = {0};
-					char szPiece[32] = {0};
-
-					LoadString( dwTeamID[nTeam], szTeam, ARRAY_LEN(szTeam) );
-
-					LoadString( dwPieceID[Piece], szPiece, ARRAY_LEN(szPiece) );
-					
-					FormatString( dwActionID[nId], szTransmission, ARRAY_LEN( szTransmission ), szTeam, szPiece );
-
-					g_pChatMsgs->AddMessage( szTransmission, eChatType[nTeam] );
-
-					// Play a sound...
-
-					g_pClientSoundMgr->PlayInterfaceSound( "Interface\\Snd\\chat.wav" );
-				}
-				break;
-
-				case MID_DOOMSDAY_DEVICE_COMPLETED:
-				{
-					// Get the team name.
-					uint8		nTeam = pMsg->Readuint8();
-
-					if( nTeam >= MAX_TEAMS )
-						return LTFALSE;
-
-					char szTeam[32] = {0};
-					static uint32 dwTeamID[] = { IDS_TEAM_1, IDS_TEAM_2, };
-					LoadString( dwTeamID[nTeam], szTeam, ARRAY_LEN(szTeam) );
-
-					// Build the string to display...
-					char szTransmission[256] = {0};
-                    FormatString( IDS_DOOMSDAY_DEVICE_COMPLETED, szTransmission, ARRAY_LEN( szTransmission ), szTeam );
-
-					g_pTransmission->Show( szTransmission );
-					g_pChatMsgs->AddMessage( szTransmission, kMsgTransmission );
-
-					// Play a sound...
-					g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\transmission.wav");
-				}
-				break;
-				
-				case MID_DOOMSDAY_PIECE_RESPAWNED:
-				{
-					static uint32 dwPieceID[] = { IDS_DOOMSDAY_TRANSMITTER, IDS_DOOMSDAY_BATTERIES, IDS_DOOMSDAY_CORE, };
-					
-					DDPieceType Piece = (DDPieceType)pMsg->Readuint8();
-
-					if( Piece >= kDoomsDay_MAXTYPES )
-						return LTFALSE;
-
-					char szPiece[32] = {0};
-					LoadString( dwPieceID[Piece], szPiece, ARRAY_LEN(szPiece) );
-
-					// Build the string to display...
-					
-					char szTransmission[256] = {0};
-                    FormatString( IDS_DOOMSDAY_RESPAWNED, szTransmission, ARRAY_LEN( szTransmission ), szPiece );
-
-					g_pChatMsgs->AddMessage( szTransmission );
-					
-					// Play a sound...
-
-					g_pClientSoundMgr->PlayInterfaceSound( "Interface\\Snd\\chat.wav" );
-				}
-				break;
-
-				default:
-				break;
-			}
-		}
-		break;
+		// RETAIL: no MID_DOOMSDAY_MESSAGE, MID_PLAYER_TEAM or MID_TEAM_INFO in
+		// Tron (retail 0x100c9770's cases: 142 and 127 are Tron's own ids)
 
 
 		default : break;

@@ -535,11 +535,22 @@ void CTronGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	pMsg->SeekTo(0);
 	uint8 messageID = pMsg->Readuint8();
 
+	// RETAIL: retail 0x1005e0b0 has seven cases, in this order:
+	// MID_COMPILE (its handler 0x1005ed20 hands CTronPlayerObj 0x10063b50
+	// the ratings), MID_TRON_SERVERMESSAGE (0x1005ed50, to the disc or light
+	// cycle match manager), MID_LIGHT_CYCLE_INFO, MID_USE_ENERGY
+	// (CTronPlayerObj 0x10063cb0), MID_DISC_HOLD_DEFENSE (0x10063d60),
+	// MID_TRON_EXIT_REQUEST (0x10068560) and MID_TRON_DISC_FIRED (0x1005ee50,
+	// CTronPlayerObj 0x10068660). PORT: the ones whose handlers are not yet
+	// in our tree are left out, MID_COMPILE's among them: our
+	// HandlePlayerCompile and CTronPlayerObj::HandleCompile are retail's
+	// 148 handlers (0x1005ee50, 0x10068660; the names are older than the
+	// numbering), so they take MID_TRON_DISC_FIRED
 	switch (messageID)
 	{
-		case MID_COMPILE:	HandlePlayerCompile	(hSender, pMsg);	break;
-		case MID_LIGHT_CYCLE_INFO:	HandleLightCycleInfo	(hSender, pMsg);	break;
 		case MID_TRON_SERVERMESSAGE:	HandleTronServerMessage	(hSender, pMsg);	break;
+		case MID_LIGHT_CYCLE_INFO:		HandleLightCycleInfo	(hSender, pMsg);	break;
+		case MID_TRON_DISC_FIRED:		HandlePlayerCompile		(hSender, pMsg);	break;
 		default: CGameServerShell::OnMessage(hSender,pMsg);
 	}
 }

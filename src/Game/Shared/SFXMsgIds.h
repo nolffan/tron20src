@@ -81,7 +81,7 @@
 #define SFX_TRIGGER_ID				55
 #define SFX_RADAROBJECT_ID			56
 #define SFX_ACTIVATEOBJECT_ID		57
-#define SFX_DOOMSDAYPIECE_ID		58
+#define SFX_DOOMSDAYPIECE_ID		58	// PORT: NOLF2's; Tron's client has none (58 is SFX_LIGHTCYCLE_ID, retail CSFXMgr::CreateSFX 0x10107aa5)
 
 // RETAIL: Tron's: its special fx classes' GetSFXID (CShell.dll's vtables)
 // give id 58 to CLightCycleFX (NOLF2's doomsday piece is gone from the

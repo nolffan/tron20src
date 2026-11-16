@@ -1161,8 +1161,14 @@ void CGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	
 	switch (messageID)
 	{
+		// RETAIL: Tron's cases and their order (retail 0x100deab0): the
+		// continuous fire pair after the weapon fire; no cancel revive,
+		// decision or projectile (Tron's projectile messages are object
+		// messages to the player, CTronPlayerObj::HandleMessageProjectile)
 		case MID_PLAYER_UPDATE:				HandlePlayerUpdate				(hSender, pMsg);	break;
 		case MID_WEAPON_FIRE:				HandleWeaponFire				(hSender, pMsg);	break;
+		case MID_WEAPON_CONTINUOUS_FIRE_START:	HandleWeaponContinuousFireStart	(hSender, pMsg);	break;
+		case MID_WEAPON_CONTINUOUS_FIRE_STOP:	HandleWeaponContinuousFireStop	(hSender, pMsg);	break;
 		case MID_WEAPON_RELOAD:				HandleWeaponReload				(hSender, pMsg);	break;
 		case MID_WEAPON_SOUND:				HandleWeaponSound				(hSender, pMsg);	break;
 		case MID_WEAPON_SOUND_LOOP:			HandleWeaponSoundLoop			(hSender, pMsg);	break;
@@ -1171,7 +1177,6 @@ void CGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 		case MID_PLAYER_CLIENTMSG:			HandlePlayerClientMsg			(hSender, pMsg);	break;
 		case MID_FRAG_SELF:					HandleFragSelf					(hSender, pMsg);	break;
 		case MID_PLAYER_RESPAWN:			HandlePlayerRespawn				(hSender, pMsg);	break;
-		case MID_PLAYER_CANCELREVIVE:		HandlePlayerCancelRevive		(hSender, pMsg);	break;
 		case MID_CLIENT_LOADED:				HandleClientLoaded				(hSender, pMsg);	break;
 		case MID_PLAYER_MESSAGE:			HandlePlayerMessage				(hSender, pMsg);	break;
 		case MID_PLAYER_CHEAT:				HandlePlayerCheat				(hSender, pMsg);	break;
@@ -1189,7 +1194,6 @@ void CGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 		case MID_REMOVE_GOAL:				HandleRemoveGoal				(hSender, pMsg);	break;
 		case MID_GADGETTARGET:				HandleGadgetTarget				(hSender, pMsg);	break;
 		case MID_SEARCH:					HandleSearch					(hSender, pMsg);	break;
-		case MID_DECISION:					HandleDecision					(hSender, pMsg);	break;
 		case MID_PLAYER_TAUNT:				HandlePlayerTaunt				(hSender, pMsg);	break;
 		case MID_MULTIPLAYER_UPDATE:		HandleMultiplayerUpdate			(hSender, pMsg);	break;
 		case MID_PLAYER_MULTIPLAYER_INIT:	HandleMultiplayerInit			(hSender, pMsg);	break;
@@ -1198,7 +1202,6 @@ void CGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 		case MID_PLAYER_GHOSTMESSAGE:		HandlePlayerGhostMessage		(hSender, pMsg);	break;
 		case MID_PLAYER_CHATMODE:			HandlePlayerChatMode			(hSender, pMsg);	break;
 		case MID_CLEAR_PROGRESSIVE_DAMAGE:	HandleClearProgressiveDamage	(hSender, pMsg);	break;
-		case MID_PROJECTILE:				HandleProjectileMessage         (hSender, pMsg);	break;
 		case MID_SAVE_GAME:					HandleSaveGame			        (hSender, pMsg);	break;
 		case MID_OBJECT_MESSAGE:			HandleObjectMessage				(hSender, pMsg);	break;
 		case MID_PERFORMANCE:				HandlePerformanceMessage		(hSender, pMsg);	break;
@@ -1245,6 +1248,47 @@ void CGameServerShell::HandleWeaponFire (HCLIENT hSender, ILTMessage_Read *pMsg)
 	if (pPlayer)
 	{
 		pPlayer->HandleWeaponFireMessage (pMsg);
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CGameServerShell::HandleWeaponContinuousFireStart
+//
+//  PURPOSE:	RETAIL: Tron's (retail 0x100def60): hand the player the
+//				start of a continuous fire (MID_WEAPON_CONTINUOUS_FIRE_START).
+//				The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::HandleWeaponContinuousFireStart(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	CPlayerObj* pPlayer = GET_PLAYER(hSender);
+
+	if (pPlayer)
+	{
+		pPlayer->TronUnknownVirtual107(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CGameServerShell::HandleWeaponContinuousFireStop
+//
+//  PURPOSE:	RETAIL: Tron's (retail 0x100def90): hand the player the
+//				end of a continuous fire (MID_WEAPON_CONTINUOUS_FIRE_STOP).
+//				The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::HandleWeaponContinuousFireStop(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	CPlayerObj* pPlayer = GET_PLAYER(hSender);
+
+	if (pPlayer)
+	{
+		pPlayer->TronUnknownVirtual108(pMsg);
 	}
 }
 

@@ -355,7 +355,7 @@ LTBOOL CTronPlayerMgr::OnCommandOff(int command)
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 				cMsg.WriteObject(hObj);
-				cMsg.Writeuint32(MID_START_ENERGY_TRANSFER);	// RETAIL: 155 (0x9b) here
+				cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);	// RETAIL: 155 (0x9b) here
 				cMsg.Writeuint8(1);
 				cMsg.Writefloat(m_fEnergyTransferred);
 				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
@@ -381,10 +381,13 @@ LTBOOL CTronPlayerMgr::OnCommandOff(int command)
 
 LTBOOL CTronPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 {
-	// RETAIL: retail 0x100a4b80: six of Tron's messages (its MsgIDs, not
-	// all in our MsgIDs.h yet)
+	// RETAIL: retail 0x100a4b80: six of Tron's messages
 	switch(messageID)
 	{
+		// RETAIL: in retail's order (retail 0x100a4ba2)
+		case MID_START_ENERGY_TRANSFER:	HandleMsgStartEnergyTransfer(pMsg);		break;
+		case MID_STOP_ENERGY_TRANSFER:	HandleMsgStopEnergyTransfer(pMsg);		break;
+
 		case MID_LIGHT_CYCLE_INFO:
 		{
 			// PORT: retail hands it to the client light cycle manager
@@ -392,11 +395,9 @@ LTBOOL CTronPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		}
 		break;
 
-		case 152:	HandleMsgTronUnknown152(pMsg);			break;
-		case 154:	HandleMsgStartEnergyTransfer(pMsg);		break;
-		case 155:	HandleMsgStopEnergyTransfer(pMsg);		break;
-		case 193:	HandleMsgSystemMemory(pMsg);			break;
-		case 200:	HandleMsgTronUnknown200(pMsg);			break;
+		case MID_SYSTEM_MEMORY:			HandleMsgSystemMemory(pMsg);			break;
+		case MID_TRON_SERVERMESSAGE:	HandleMsgTronUnknown200(pMsg);			break;
+		case MID_TRON_UNKNOWN_152:		HandleMsgTronUnknown152(pMsg);			break;
 		default:	return CPlayerMgr::OnMessage(messageID, pMsg);	break;
 	}
 
@@ -604,7 +605,7 @@ void CTronPlayerMgr::UpdateEnergyTransfer(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(hObj);
-		cMsg.Writeuint32(155);	// RETAIL: Tron's energy transfer message
+		cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 		cMsg.Writeuint8(0);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
@@ -641,7 +642,7 @@ void CTronPlayerMgr::UpdateHealthGain(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(m_hTronUnknown200);
-		cMsg.Writeuint32(156);	// RETAIL: Tron's transfer progress message
+		cMsg.Writeuint32(MID_ENERGY_TRANSFER_COMPLETE);
 		cMsg.Writeuint32(nDelta);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
@@ -666,7 +667,7 @@ void CTronPlayerMgr::UpdateHealthGain(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(hObj);
-		cMsg.Writeuint32(155);
+		cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat(m_fEnergyTransferred);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
@@ -706,7 +707,7 @@ void CTronPlayerMgr::UpdateEnergyGain(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(m_hTronUnknown200);
-		cMsg.Writeuint32(156);
+		cMsg.Writeuint32(MID_ENERGY_TRANSFER_COMPLETE);
 		cMsg.Writeuint32(nDelta);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
@@ -730,7 +731,7 @@ void CTronPlayerMgr::UpdateEnergyGain(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(hObj);
-		cMsg.Writeuint32(155);
+		cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat(m_fEnergyTransferred);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
@@ -771,7 +772,7 @@ void CTronPlayerMgr::UpdateTronUnknownTransfer1EB(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(hObj);
-		cMsg.Writeuint32(155);
+		cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat(m_fEnergyTransferred);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
@@ -785,7 +786,7 @@ void CTronPlayerMgr::UpdateTronUnknownTransfer1EB(float fDeltaTime)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(m_hTronUnknown200);
-		cMsg.Writeuint32(156);
+		cMsg.Writeuint32(MID_ENERGY_TRANSFER_COMPLETE);
 		cMsg.Writeuint32(nDelta);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 	}
@@ -840,7 +841,7 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 				cMsg.WriteObject(hObj);
-				cMsg.Writeuint32(155);
+				cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 				cMsg.Writeuint8(2);
 				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
@@ -863,7 +864,7 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 				cMsg.WriteObject(hObj);
-				cMsg.Writeuint32(155);
+				cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 				cMsg.Writeuint8(1);
 				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 				return;
@@ -882,7 +883,7 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 				cMsg.WriteObject(hObj);
-				cMsg.Writeuint32(155);
+				cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 				cMsg.Writeuint8(1);
 				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 				return;
@@ -961,7 +962,7 @@ void CTronPlayerMgr::HandleMsgStopEnergyTransfer(ILTMessage_Read * pMsg)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 		cMsg.WriteObject(hObj);
-		cMsg.Writeuint32(155);
+		cMsg.Writeuint32(MID_STOP_ENERGY_TRANSFER);
 		cMsg.Writeuint8(nType);
 		cMsg.Writefloat(m_fEnergyTransferred);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);

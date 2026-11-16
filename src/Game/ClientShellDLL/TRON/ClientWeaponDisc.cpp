@@ -857,7 +857,11 @@ WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
 		CAutoMessage cMsg;
 		LTRESULT ltResult;
 
-		cMsg.Writeuint8( MID_PROJECTILE );
+		// RETAIL: Tron's projectile messages are object messages to our
+		// player (retail 0x100194a0; CTronPlayerObj::HandleMessageProjectile)
+		cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+		cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+		cMsg.Writeuint32( MID_PROJECTILE );
 
 		// write the projectile message subtype
 		cMsg.Writeuint8( MPROJ_UPDATE_CONTROL_LINE );
@@ -1319,7 +1323,10 @@ void CClientWeaponDisc::SendDefendMessage( uint8 cBlockMsgType, uint32 nAni ) co
 	LTRESULT ltResult;
 	CAutoMessage cMsg;
 
-	cMsg.Writeuint8( MID_PROJECTILE );
+	// RETAIL: an object message to our player (retail 0x10097da0)
+	cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+	cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+	cMsg.Writeuint32( MID_PROJECTILE );
 
 	// write the projectile subtype
 	cMsg.Writeuint8( cBlockMsgType );
@@ -1559,7 +1566,10 @@ void CClientWeaponDisc::HandleFireKeyUpTransition()
 		CAutoMessage cMsg;
 		LTRESULT ltResult;
 
-		cMsg.Writeuint8( MID_PROJECTILE );
+		// RETAIL: an object message to our player (retail 0x10019ff0)
+		cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+		cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+		cMsg.Writeuint32( MID_PROJECTILE );
 
 		// tell the disc to return 
 		cMsg.Writeuint8( MPROJ_RETURN );
