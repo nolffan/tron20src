@@ -185,9 +185,10 @@ class CPlayerObj : public CCharacter
 		virtual void  HandleDamage(const DamageStruct& damage);
 		// RETAIL: two empty virtuals of Tron's taking a client message (the
 		// server shell hands them its player's messages, retail 0x100def81 and
-		// 0x100defb1; CTronPlayerObj's set and clear its flag at 0x325c)
-		virtual void TronUnknownVirtual107( ILTMessage_Read* /*pMsg*/ ) {}
-		virtual void TronUnknownVirtual108( ILTMessage_Read* /*pMsg*/ ) {}
+		// 0x100defb1; CTronPlayerObj's start and stop the fire helpers).
+		// The names are ours
+		virtual void StartContinuousFire( ILTMessage_Read* /*pMsg*/ ) {}
+		virtual void StopContinuousFire( ILTMessage_Read* /*pMsg*/ ) {}
 		void HandleActivateMessage(ILTMessage_Read *pMsg);
 		void HandlePlayerPositionMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);
@@ -376,7 +377,9 @@ class CPlayerObj : public CCharacter
 
         void ResetPlayer( ); // Reset the player
 		void ResetHealth(LTBOOL bMaxOnly = LTFALSE, float fHealthPercent = 1.0f, float fArmorPercent = 1.0f);
-		void ResetInventory(LTBOOL bRemoveGear=LTTRUE);
+		// RETAIL: Tron sends a second flag to the client (0x1007f390); the
+		// name is ours
+		void ResetInventory(LTBOOL bRemoveGear=LTTRUE, LTBOOL bTronUnknown=LTFALSE);
 		void ResetModel();
 
 		void TweakCameraOffset();
@@ -691,12 +694,13 @@ class CPlayerObj : public CCharacter
 		// Client-side control flags
 		uint32		m_nControlFlags;
 
-		// RETAIL: three Tron flags (retail CPlayerObj's constructor clears
+		// RETAIL: three Tron bytes (retail CPlayerObj's constructor clears
 		// them after the model; retail 0x10080f8c and 0x1008110b read them
-		// from a client message). The names are ours
-		bool		m_bTronUnknown31c8;
-		bool		m_bTronUnknown31c9;
-		bool		m_bTronUnknown31ca;
+		// from a client message: the first is the multiplayer model index,
+		// MultiplayerInit). The names are ours
+		uint8		m_bTronUnknown31c8;
+		uint8		m_bTronUnknown31c9;
+		uint8		m_bTronUnknown31ca;
 
 		// RETAIL: Tron has no last good drop position nor activation data
 		// member here: retail ClientUpdate stores the time of the client's

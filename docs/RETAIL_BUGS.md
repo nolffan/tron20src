@@ -1132,6 +1132,16 @@ value again, and the zone becomes approximately 57 times too small.
 
 Not fixed yet: the modern build should give the default in degrees.
 
+### Adding gear does not check that the gear exists
+
+Object.lto 0x100e9550 (CDestructible::AddGear,
+ObjectShared/Destructible.cpp). The function tests the GEAR pointer from
+CWeaponMgr::GetGear only before it reads bExclusive. Then it reads fArmor
+and fHealth from the pointer without a test. A gear ID that is in range but
+has no GEAR record causes a null pointer read.
+
+Not fixed yet: the modern build should return when the pointer is null.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

@@ -98,6 +98,12 @@ class CTronPlayerObj : public CPlayerObj
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
 
+		// RETAIL: CPlayerObj's slots 107 and 108. The IDs are the fire
+		// helpers' message IDs (GetMessageID).
+		enum { kContinuousFire_PRod = 6, kContinuousFire_EnergyClaw = 13 };
+		virtual void	StartContinuousFire(ILTMessage_Read *pMsg);
+		virtual void	StopContinuousFire(ILTMessage_Read *pMsg);
+
 		// RETAIL: CCharacter's Tron virtual (slot 0xdc, retail 0x100629a0)
 		virtual bool	IsContinuousFiring() { return m_bTronUnknown325c; }
 
@@ -152,6 +158,12 @@ class CTronPlayerObj : public CPlayerObj
 		bool AcquireAdditive(char const* pName);
 		bool AcquireProcedural(char const* pName);
 		bool AcquirePrimitive(char const* pName);
+		bool AcquireNote(char const* pName);
+		bool AcquireSubHelp(char const* pName);
+		bool AcquirePermissionSet(char const* pSet);
+		bool SetLightCycleColor(char const* pszColor);
+		virtual void HandleDead(LTBOOL bRemoveObj);
+		virtual void SetDeathAnimation();
 
 		// Light cycle functions
 		bool StartLightCycle( bool bSuper, bool bTronUnknown );	// RETAIL: two arguments (0x10067420)

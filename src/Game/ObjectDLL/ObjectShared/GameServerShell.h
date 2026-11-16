@@ -444,12 +444,11 @@ class CGameServerShell : public IServerShellStub
 		// RETAIL: OnServerInitialized sets it in multiplayer games;
 		// ProcessPacket and CTronGameServerShell's GameSpy slots test it (the
 		// name is ours: Build 51's m_bDontUseGameSpy, the other way round).
-		// NOLF2's player iteration index has no room in Tron's shell: kept
-		// static (PORT)
 		LTBOOL				m_bUseGameSpy;
-		static int			m_nGetPlayerIndex;
+		// RETAIL: a member at +0x17340 (GetFirstNetPlayer, 0x100e35a0).
+		// No function touches +0x17344..+0x173c3.
+		int					m_nGetPlayerIndex;
 		char				m_sSpyGameHost[MAX_GEN_STRING];
-		uint32				m_nTronUnknown173C0;	// RETAIL: Tron's; not yet known
 		CString				m_sWorld;
 		// RETAIL: 0x80 bytes of Tron's here, before the message source (+0x17448);
 		// not yet known (no shell function touches them). Tron has no WON

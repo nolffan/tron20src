@@ -121,7 +121,6 @@ CVarTrack			g_vtDisableSWM;
 CGameServerShell*   g_pGameServerShell = LTNULL;
 
 // PORT: NOLF2's (GameServerShell.h)
-int CGameServerShell::m_nGetPlayerIndex = 0;
 
 // ----------------------------------------------------------------------- //
 // Helpers for world time conversion.
@@ -1267,7 +1266,7 @@ void CGameServerShell::HandleWeaponContinuousFireStart(HCLIENT hSender, ILTMessa
 
 	if (pPlayer)
 	{
-		pPlayer->TronUnknownVirtual107(pMsg);
+		pPlayer->StartContinuousFire(pMsg);
 	}
 }
 
@@ -1287,7 +1286,7 @@ void CGameServerShell::HandleWeaponContinuousFireStop(HCLIENT hSender, ILTMessag
 
 	if (pPlayer)
 	{
-		pPlayer->TronUnknownVirtual108(pMsg);
+		pPlayer->StopContinuousFire(pMsg);
 	}
 }
 
@@ -1467,10 +1466,21 @@ void CGameServerShell::HandlePlayerRespawn (HCLIENT hSender, ILTMessage_Read *pM
     CPlayerObj* pPlayer = GET_PLAYER(hSender);
 	
 	// don't respawn player if he is alive (may cause problems for end of match spawns) 
-	if (pPlayer && pPlayer->CanRespawn( ))
+	// RETAIL: Tron resets first, and lets the shell respawn the player in
+	// the disc and light cycle games (0x100df2e0).
+	if (pPlayer && pPlayer->GetState() == PS_DEAD)
 	{
-		pPlayer->Respawn( );
 		pPlayer->ResetAfterDeath( );
+
+		GameType eGameType = g_pGameServerShell->GetGameType( );
+		if( !IsDiscGameType( ) && eGameType != eGameTypeMultiplayerLightcycles )
+		{
+			pPlayer->Respawn( );
+		}
+		else
+		{
+			TronUnknownVirtual70( (uint32)pPlayer );
+		}
 	}
 }
 
@@ -1842,6 +1852,10 @@ void CGameServerShell::HandlePlayerCheat (HCLIENT hSender, ILTMessage_Read *pMsg
 	return;  // No cheats in demo mode
 #endif
 
+	// RETAIL: Tron has no cheats in multiplayer games at all (0x100dfc80).
+	if (IsMultiplayerGame( ))
+		return;
+
 	// get a pointer to the sender's player object
 
     CPlayerObj* pPlayer = GET_PLAYER(hSender);
@@ -1856,20 +1870,6 @@ void CGameServerShell::HandlePlayerCheat (HCLIENT hSender, ILTMessage_Read *pMsg
 	// now deal with the specific cheat code
 
 	if (nCheatCode <= CHEAT_NONE || nCheatCode >= CHEAT_MAX) return; // wont the default case catch these?
-
-#ifdef _FINAL
-	if (IsMultiplayerGame( )) // No cheats in multiplayer - oh yeah?! :{
-	{
-		switch (nCheatCode)				// why always send the data? it was easier to cut & paste
-		{
-			case CHEAT_NEXTMISSION:		CheatNextMission(pPlayer, nData);	break;
-			case CHEAT_BOOT:			CheatBootPlayer	(pPlayer, nData);	break;
-		}
-		return;
-	}
-
-#endif
-
 
 	ProcessCheat( pPlayer, nCheatCode, nData );
 }
@@ -2095,9 +2095,7 @@ void CGameServerShell::HandleConsoleCommand (HCLIENT hSender, ILTMessage_Read *p
 
 void CGameServerShell::HandleDifficulty (HCLIENT hSender, ILTMessage_Read *pMsg)
 {
-
-	if (!IsDifficultyGameType()) return;
-
+	// RETAIL: Tron has no game type test (0x100e0220).
 	bool bIsHost = g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL;
 	if (!bIsHost) return;
 
@@ -2671,6 +2669,8 @@ void CGameServerShell::CheatBootPlayer(CPlayerObj* pPlayer, uint32 nData)
 	if (clientID == nData) return;
 
 	HCLIENT hClient = GetClientFromID(nData);
+	// RETAIL: Tron prints the kick (0x100e0d5f).
+	g_pLTServer->CPrint("Kicking Client %d: CheatBootPlayer", nData);
 	if (hClient) g_pLTServer->KickClient(hClient);
 }
 
@@ -3264,8 +3264,13 @@ void CGameServerShell::SetSwitchingWorldsState( SwitchingWorldsState eSwitchingW
 void CGameServerShell::StartSwitchingWorlds( )
 {
 	// Pause the game until all the clients are in.  There is an unpause
-	// in FinishSwitchingWorlds.
-	PauseGame( true );
+	// in FinishSwitchingWorlds.  RETAIL: Tron pauses only when no switch
+	// is running (0x100e1ac0).
+	if( m_eSwitchingWorldsState == eSwitchingWorldsStateFinished ||
+		m_eSwitchingWorldsState == eSwitchingWorldsStateNone )
+	{
+		PauseGame( true );
+	}
 	SetSwitchingWorldsState( eSwitchingWorldsStatePlayerHookup );
 }
 
@@ -3280,13 +3285,18 @@ void CGameServerShell::StartSwitchingWorlds( )
 
 void CGameServerShell::FinishSwitchingWorlds( )
 {
+	// RETAIL: Tron starts GameSpy here in multiplayer games, and has no
+	// LevelStarted call (0x100e1af0).
+	if( IsMultiplayerGame( ))
+	{
+		TronUnknownVirtual4C( );
+	}
+
 	// Remove our pause we put on in StartSwitchingWorlds.
 	PauseGame( false );
 
 	// Done switching worlds.
 	SetSwitchingWorldsState( eSwitchingWorldsStateFinished );
-
-	g_pServerMissionMgr->LevelStarted();
 
 }
 
@@ -3413,6 +3423,13 @@ void CGameServerShell::UpdateSwitchingWorlds( )
 		// Wait for at least one player to be loaded.
 		case eSwitchingWorldsStateWaitForClient:
 		{
+			// RETAIL: a hosted game does not wait (0x100e1b3e).
+			if( m_bGameServHosted )
+			{
+				FinishSwitchingWorlds( );
+				return;
+			}
+
 			// Iterate over all the players and see if any of them have finished loading.
 			CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
 			while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
@@ -4029,32 +4046,28 @@ void CGameServerShell::UpdateMultiplayer()
 	// Update client ping times
 	UpdateClientPingTimes();
 
+	// RETAIL: Tron updates GameSpy here (slot 21, 0x100e27f9).
+	TronUnknownVirtual54();
+
 	// Update game server info...
 	UpdateGameServer();
 
 	if (m_bShowMultiplayerSummary)
 	{
-		LTBOOL bReady = LTTRUE;
 		if (m_fSummaryEndTime > g_pLTServer->GetTime())
 		{
-			for (int i = 0; i < MAX_CLIENTS && bReady; i++)
+			for (int i = 0; i < MAX_CLIENTS; i++)
 			{
 				CPlayerObj* pPlayer = GetPlayerFromClientList(m_aClients[i]);
 				if (pPlayer)
 				{
 					if (!pPlayer->IsReadyToExit())
-					{
-						bReady = LTFALSE;
-						break;
-					}
+						return;
 				}
 			}
 		}
-		if (bReady)
-		{
-			m_bStartNextMultiplayerLevel = LTTRUE;
-		}
-		return;
+
+		m_bStartNextMultiplayerLevel = LTTRUE;
 	}
 }
 
@@ -4784,7 +4797,8 @@ bool CGameServerShell::ClientConnectionInTrouble( HCLIENT hClient )
 
 char const* CGameServerShell::GetHostName()
 {
-	return(m_ServerGameOptions.GetSessionName());
+	// RETAIL: Tron reads the name directly (0x100e36f0).
+	return(m_ServerGameOptions.m_sSessionName.c_str());
 }
 
 // ----------------------------------------------------------------------- //

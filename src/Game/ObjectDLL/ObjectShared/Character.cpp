@@ -87,7 +87,7 @@ extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
 LTBOOL s_bCharacterPluginInitted = LTFALSE;
 CInventoryButeMgr s_InventoryButeMgr;
 
-uint8 CCharacter::m_nUniqueDialogueId = 0;	// PORT: (Character.h)
+bool CCharacter::m_bRadarVisible = false;	// PORT: (Character.h)
 
 const float kDialogueTimeFudgeFactor = 5.0f;
 
@@ -198,6 +198,35 @@ static LTBOOL ValidateCrosshairMsg( ILTPreInterface *pInterface, ConParse &cpMsg
 	return LTFALSE;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	LTBOOL ValidateTalkIcon
+//
+//  PURPOSE:	Make sure the talk icon message has a boolean
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10089940 (ASKICON, SAYICON, LISTENICON).
+static LTBOOL ValidateTalkIcon( ILTPreInterface *pInterface, ConParse &cpMsgParams )
+{
+	if( !pInterface ) return LTFALSE;
+
+	if( IsTrueChar( *cpMsgParams.m_Args[1] ) ||
+		IsFalseChar( *cpMsgParams.m_Args[1] ))
+	{
+		return LTTRUE;
+	}
+
+	if( CCommandMgrPlugin::s_bShowMsgErrors )
+	{
+		pInterface->ShowDebugWindow( LTTRUE );
+		pInterface->CPrint( "ERROR! - ValidateTalkIcon()" );
+		pInterface->CPrint( "    MSG - Icon true/false is not valid!" );
+	}
+	
+	return LTFALSE;
+}
+
 //
 // Register the class with the command mgr plugin and add any messages to the class
 //
@@ -211,6 +240,15 @@ CMDMGR_BEGIN_REGISTER_CLASS( CCharacter )
 	CMDMGR_ADD_MSG( GADGET, 2, NULL, "GADGET <ammo id>" )
 	CMDMGR_ADD_MSG( CANDAMAGE, 2, ValidateBooleanMsg, "CANDAMAGE <bool>" )
 	CMDMGR_ADD_MSG( CROSSHAIR, 2, ValidateCrosshairMsg, "CROSSHAIR <style>" )
+	// RETAIL: Tron's (the static initializer at 0x10089410)
+	CMDMGR_ADD_MSG_ARG_RANGE( ASKICON, 2, 3, ValidateTalkIcon, "AskIcon <true/false> [string-id]" )
+	CMDMGR_ADD_MSG_ARG_RANGE( SAYICON, 2, 3, ValidateTalkIcon, "SayIcon <true/false> [string-id]" )
+	CMDMGR_ADD_MSG_ARG_RANGE( LISTENICON, 2, 3, ValidateTalkIcon, "ListenIcon <true/false> [string-id]" )
+	CMDMGR_ADD_MSG( ARMOR_ON, 1, NULL, "turns on armor if character has power armor" )
+	CMDMGR_ADD_MSG( ARMOR_OFF, 1, NULL, "turns off armor if character has power armor" )
+	CMDMGR_ADD_MSG( ARMOR_LOCK_ON, 1, NULL, "turns on armor and locks it on if character has power armor" )
+	CMDMGR_ADD_MSG( ARMOR_LOCK_OFF, 1, NULL, "turns off armor and turns off on lock if character has power armor" )
+	CMDMGR_ADD_MSG( PLAYERPERMISSIONS, 2, NULL, "PLAYERPERMISSIONS <bool> If true, AI has same permissions as player" )
 
 CMDMGR_END_REGISTER_CLASS( CCharacter, GameBase )
 
@@ -444,14 +482,14 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_eTeleportTriggerState = eTeleporTriggerStateNone;
 
 	m_eDeathDamageType			= DT_INVALID;
-	m_fBodyLifetime				= -1.0f;
 
 	// RETAIL: Tron's tail (Character.h)
 	m_hTronUnknownCF0			= LTNULL;
 	m_pPRodFireHelper			= debug_new( CPRodFireHelper );			// RETAIL: 0x10089fd0
 	m_pEnergyClawFireHelper		= debug_new( CEnergyClawFireHelper );
+	m_fBodyLifetime				= -1.0f;	// RETAIL: here (0x1008a028)
 	m_nCarrying					= CFX_CARRY_NONE;
-	m_bRadarVisible				= false;
+	m_nUniqueDialogueId			= 0;
 	m_bTracking					= false;
 }
 
@@ -2223,12 +2261,7 @@ void CCharacter::RemovePersistentStimuli(void)
 		m_eEnemyVisibleStimID = kStimID_Unset;
 	}
 
-	if( m_eUndeterminedVisibleStimID != kStimID_Unset )
-	{
-		AITRACE( AIShowCharacters, ( m_hObject, "Removing persistent stimulus UndeterminedVisible" ) );
-		g_pAIStimulusMgr->RemoveStimulus( m_eUndeterminedVisibleStimID );
-		m_eUndeterminedVisibleStimID = kStimID_Unset;
-	}
+	// RETAIL: Tron has no undetermined visible stimulus here (0x1008ebf0).
 }
 
 //----------------------------------------------------------------------------

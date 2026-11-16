@@ -12,6 +12,8 @@
 
 #include "stdafx.h"
 #include "TronPlayerObj.h"
+#include "ContinuousFireHelper.h"
+#include "InventoryButeMgr.h"
 #include "WeaponFireInfo.h"
 #include "Attachments.h"
 #include "ParsedMsg.h"
@@ -348,6 +350,57 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 		}
 		break;
 	};
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::StartContinuousFire
+//
+//	PURPOSE:	Start the fire of a continuous weapon (PRod, EnergyClaw)
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10062fa0, CTronPlayerObj vtable slot 107 (CPlayerObj's
+// is empty).  The names of the function and of the message IDs are ours.
+void CTronPlayerObj::StartContinuousFire(ILTMessage_Read *pMsg)
+{
+	m_bTronUnknown325c = true;
+
+	switch ((uint8)pMsg->PeekBits(8))
+	{
+		case kContinuousFire_PRod:
+			m_pPRodFireHelper->Start(pMsg);
+			break;
+
+		case kContinuousFire_EnergyClaw:
+			m_pEnergyClawFireHelper->Start(pMsg);
+			break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::StopContinuousFire
+//
+//	PURPOSE:	Stop the fire of a continuous weapon
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10062ff0, vtable slot 108.
+void CTronPlayerObj::StopContinuousFire(ILTMessage_Read *pMsg)
+{
+	m_bTronUnknown325c = false;
+
+	switch ((uint8)pMsg->ReadBits(8))
+	{
+		case kContinuousFire_PRod:
+			m_pPRodFireHelper->Stop();
+			break;
+
+		case kContinuousFire_EnergyClaw:
+			m_pEnergyClawFireHelper->Stop();
+			break;
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1576,6 +1629,120 @@ bool CTronPlayerObj::AcquirePrimitive(char const* pName)
 	return true;
 }
 
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AcquireNote
+//
+//	PURPOSE:	Tell the client about an inventory item ("ACQUIRENOTE")
+//
+// --------------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10066a10.  The name is ours.
+bool CTronPlayerObj::AcquireNote(char const* pName)
+{
+	int nIndex = g_pInventoryButeMgr->GetItemIndex(pName);
+	if (nIndex != -1)
+	{
+		int nTextId = g_pInventoryButeMgr->GetItemTextID(nIndex);
+		uint8 nPopupId = (uint8)g_pInventoryButeMgr->GetItemType(nIndex);
+		LTBOOL bIsIntel = nPopupId;
+		char* pImage = g_pInventoryButeMgr->GetItemImage(nIndex);
+		LTBOOL bAdd = LTTRUE;
+		if (nPopupId >= 2)
+			bAdd = LTFALSE;
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_INTEL_PICKEDUP);
+		cMsg.Writeuint32(nTextId);
+		cMsg.Writeuint8(nPopupId);
+		cMsg.Writeuint8(bIsIntel);
+		cMsg.Writeuint8(1);
+		cMsg.Writeuint8(bAdd);
+		cMsg.Writebool(false);
+		cMsg.WriteString(pImage);
+		g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+
+	return true;
+}
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AcquireSubHelp
+//
+//	PURPOSE:	Tell the client about an item for the subroutines screen
+//
+// --------------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10066b90.  The name is ours.
+bool CTronPlayerObj::AcquireSubHelp(char const* pName)
+{
+	int nIndex = g_pInventoryButeMgr->GetItemIndex(pName);
+	if (nIndex != -1)
+	{
+		int nTextId = g_pInventoryButeMgr->GetItemTextID(nIndex);
+		uint8 nPopupId = (uint8)g_pInventoryButeMgr->GetItemType(nIndex);
+		LTBOOL bIsIntel = nPopupId;
+		char* pImage = g_pInventoryButeMgr->GetItemImage(nIndex);
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_INTEL_PICKEDUP);
+		cMsg.Writeuint32(nTextId);
+		cMsg.Writeuint8(nPopupId);
+		cMsg.Writeuint8(bIsIntel);
+		cMsg.Writeuint8(1);
+		cMsg.Writeuint8(0);
+		cMsg.Writebool(true);
+		cMsg.WriteString(pImage);
+		g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+
+		cMsg.Reset();
+		cMsg.Writeuint8(MID_TRON_UNKNOWN_166);
+		cMsg.Writeuint32(nTextId);
+		cMsg.Writeuint8(bIsIntel);
+		cMsg.WriteString(pImage);
+		g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+
+	return true;
+}
+
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::AcquirePermissionSet
+//
+//	PURPOSE:	Add a permission set ("ACQUIREPSET <1-8|all>", 0 clears)
+//
+// --------------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10066da0.  The name is ours.
+bool CTronPlayerObj::AcquirePermissionSet(char const* pSet)
+{
+	if (!stricmp(pSet, "all"))
+	{
+		for (int i = 1; i <= 8; i++)
+		{
+			m_iPermissionSet |= (1 << (i - 1));
+		}
+		return true;
+	}
+
+	uint8 nSet = (uint8)atoi(pSet);
+	if (nSet <= 8)
+	{
+		if (nSet)
+		{
+			m_iPermissionSet |= (1 << (nSet - 1));
+		}
+		else
+		{
+			m_iPermissionSet = 0;
+		}
+	}
+
+	return true;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronPlayerObj::CheckSubState
@@ -1729,6 +1896,89 @@ void CTronPlayerObj::Respawn(uint8 nServerLoadGameFlags, bool bGetStartPt,
 	CPlayerObj::Respawn( nServerLoadGameFlags, bGetStartPt, pStartPoint, pSpawnAt );
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::SetLightCycleColor
+//
+//	PURPOSE:	Set the color of our light cycle
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10067b90.  The name is ours.
+bool CTronPlayerObj::SetLightCycleColor(char const* pszColor)
+{
+	if (!stricmp(pszColor, m_szLightCycleModel))
+		return true;
+
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pszColor);
+	if (!pColor)
+		return false;
+
+	if (!g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType))
+		return false;
+
+	strcpy(m_szLightCycleModel, pszColor);
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::SetDeathAnimation
+//
+//	PURPOSE:	On a light cycle, die without a death animation or body
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10067c10 (CCharacter's slot 64).
+void CTronPlayerObj::SetDeathAnimation()
+{
+	if (m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	{
+		if (m_bStartedDeath) return;
+
+		StartDeath();
+
+		m_eDeathType = CD_NORMAL;
+		m_eDeathDamageType = m_damage.GetDeathType();
+		m_bMakeBody = false;
+
+		HandleDead(LTFALSE);
+	}
+	else
+	{
+		CPlayerObj::SetDeathAnimation();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleDead
+//
+//	PURPOSE:	Remember our weapon and tell the server shell
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Object.lto 0x10067c60.
+void CTronPlayerObj::HandleDead(LTBOOL /*bRemoveObj*/)
+{
+	CPlayerObj::HandleDead(LTFALSE);
+
+	if (IsMultiplayerGame())
+	{
+		// Remember the weapon we had...
+
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
+		if( pWeapon && pWeapon->GetId() != WMGR_INVALID_ID &&
+			pWeapon->GetAmmoId() != WMGR_INVALID_ID && pWeapon->GetId() > 0 )
+		{
+			m_nLastWeaponId = pWeapon->GetId();
+			m_nLastAmmoId = pWeapon->GetAmmoId();
+		}
+
+		g_pGameServerShell->TronUnknownVirtual6C((uint32)this, 0);
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //

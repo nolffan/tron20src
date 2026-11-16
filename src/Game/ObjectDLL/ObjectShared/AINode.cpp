@@ -1166,7 +1166,7 @@ AINodeUseObject::AINodeUseObject()
 	m_eFirstSound	= kAIS_None;
 	m_eFidgetSound	= kAIS_None;
 	m_eSmartObjectState = kState_SmartObjectDefault;
-	m_nSmartObjectID = -1;
+	m_nSmartObjectID = 0;	// RETAIL: 0 in Tron (0x100a3e2b)
 	m_bOneWay = LTFALSE;
 }
 
@@ -1190,8 +1190,10 @@ LTBOOL AINodeUseObject::NodeTypeIsActive(EnumAINodeType eNodeType)
 
 	// Find the active node types for the current smartobject state.
 
+	// RETAIL: Tron finds the end once (0x100a3f9a).
+	SMART_OBJECT_ACTIVE_CMD_MAP::iterator itEnd = pSmartObject->mapActiveCmds.upper_bound( m_eSmartObjectState );
 	SMART_OBJECT_ACTIVE_CMD_MAP::iterator it;
-	for( it = pSmartObject->mapActiveCmds.lower_bound( m_eSmartObjectState ); it != pSmartObject->mapActiveCmds.upper_bound( m_eSmartObjectState ); ++it )
+	for( it = pSmartObject->mapActiveCmds.lower_bound( m_eSmartObjectState ); it != itEnd; ++it )
 	{
 		if( it->second == eNodeType )
 		{
@@ -1307,6 +1309,13 @@ void AINodeUseObject::ReadProp(ObjectCreateStruct* pocs)
 	}
 }
 
+// RETAIL: Object.lto 0x100a4350, out of line before Init.  The name is
+// ours: true when the child model could not be cached.
+static bool FailedToCacheChildModel( AIChildModelInfo& aiChildModelInfo )
+{
+	return g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK;
+}
+
 void AINodeUseObject::Init()
 {
 	super::Init();
@@ -1320,22 +1329,9 @@ void AINodeUseObject::Init()
 	AIGBM_SmartObjectTemplate *pSmartObject ;
 	pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(m_nSmartObjectID);
 	
-	AIGBM_SmartObjectTemplate::AIChldMdlInfoItr itr, hold_itr ;
-		
-	// go through the requested childmodels. If some of them cannot be loaded
-	// then remove them from the list.
-	for( itr = pSmartObject->addchildmodels.begin() ;
-		 itr != pSmartObject->addchildmodels.end() ;)
-	{
-		hold_itr = itr ;
-		itr++;
-		AIChildModelInfo& aiChildModelInfo = *hold_itr;
-		if(g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK )
-		{
-			pSmartObject->addchildmodels.erase(hold_itr);
-			AIASSERT2(0, m_hObject, "SmartObject %s Could not load file %s ", pSmartObject->szName, aiChildModelInfo.sFilename.c_str( ));
-		}
-	}
+	// RETAIL: Tron removes the child models that cannot be cached with
+	// remove_if (0x100a4370), without NOLF2's assert.
+	pSmartObject->addchildmodels.remove_if( FailedToCacheChildModel );
 		
 }
 

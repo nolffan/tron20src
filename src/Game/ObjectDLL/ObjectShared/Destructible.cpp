@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include <stdio.h>
 #include "Destructible.h"
+#include "ParsedMsg.h"
 #include "iltserver.h"
 #include "MsgIds.h"
 #include "Projectile.h"
@@ -347,7 +348,8 @@ LTBOOL CDestructible::ReadProp(LPBASECLASS pObject, ObjectCreateStruct *pStruct)
 
     if (g_pLTServer->GetPropGeneric("DamagePercentForCommand", &genProp) == LT_OK)
 	{
-		SetDamagePercentCommand(genProp.m_Float);
+		// RETAIL: Tron takes a percentage (0x100e720e).
+		SetDamagePercentCommand(genProp.m_Float * 0.01f);
 	}
    
     if (g_pLTServer->GetPropGeneric("DamageCommand", &genProp) == LT_OK)
@@ -587,7 +589,7 @@ void CDestructible::UpdateProgressiveDamage()
 
 			damage = m_ProgressiveDamage[i];
 			damage.fDamage = damage.fDamage * fFrameTime;
-			DoDamage(damage);
+			DoDamage(damage, true);
 
 			// Add this to the active damageflags.
 			nActiveDamageFlags |= DamageTypeToFlag( damage.eType );
@@ -657,10 +659,7 @@ void CDestructible::AddProgressiveDamage(DamageStruct & damage)
 	HOBJECT hDamager	= damage.hDamager;
     LPBASECLASS pObject = g_pLTServer->HandleToObject(m_hObject);
 
-	// No since adding progressive damage if we are already dead...
-
-	if( m_bDead )
-		return;
+	// RETAIL: Tron has no test of m_bDead here (0x100e7f70).
 
 	// If the new damage is from a container, see if this container
 	// is already damaging us...
@@ -673,6 +672,24 @@ void CDestructible::AddProgressiveDamage(DamageStruct & damage)
 			if (m_ProgressiveDamage[i].hContainer == damage.hContainer)
 			{
 				m_ProgressiveDamage[i] = damage;
+				return;
+			}
+		}
+	}
+
+	// RETAIL: Tron keeps one PRod, EnergyClaw or Corrode damage at a time:
+	// the longer one stays (0x100e7fb4).
+
+	if (damage.eType == DT_PROD || damage.eType == DT_ENERGYCLAW || damage.eType == DT_CORRODE)
+	{
+		for (i=0; i < MAX_PROGRESSIVE_DAMAGE; i++)
+		{
+			if (m_ProgressiveDamage[i].eType == damage.eType)
+			{
+				if (m_ProgressiveDamage[i].fDuration < damage.fDuration)
+				{
+					m_ProgressiveDamage[i] = damage;
+				}
 				return;
 			}
 		}
@@ -896,7 +913,8 @@ LTFLOAT CDestructible::GetStealthModifier()
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(m_hObject);
 		if (pPlayer)
 		{
-			fMult *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STEALTH,StealthModifiers::eRadius);
+			// RETAIL: Tron reads the stealth table directly (0x100e83cb).
+			fMult *= g_pSkillsButeMgr->GetStealth(pPlayer->GetPlayerSkills()->GetLevel(SKL_STEALTH))->fModifier[StealthModifiers::eRadius];
 		}
 	}
 
@@ -1000,12 +1018,31 @@ void CDestructible::HandleDamage(LPBASECLASS pObject, HOBJECT hSender, ILTMessag
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Object.lto 0x100e7f10.  Tron applies the hit's flags to a
+// character after the damage.
 void CDestructible::DoDamage(DamageStruct & damage)
+{
+	DoDamage(damage, true);
+
+	if (IsCharacter(m_hObject))
+	{
+		CCharacter *pChar = (CCharacter*)g_pLTServer->HandleToObject(m_hObject);
+		if (pChar)
+		{
+			pChar->AddDamageFlags(DamageTypeToFlag(damage.eType));
+		}
+	}
+}
+
+// RETAIL: Object.lto 0x100e85c0.  The bool is ours: when it is false, the
+// damage triggers are not sent.
+void CDestructible::DoDamage(DamageStruct & damage, bool bSendTriggers)
 {
     LTVector vDir		= damage.vDir;
     LTFLOAT fDamage		= damage.fDamage;
 	DamageType eType	= damage.eType;
 	HOBJECT hDamager	= damage.hDamager;
+	LTBOOL bTronUnknown	= damage.bTronUnknown44;
 
     LPBASECLASS pObject = g_pLTServer->HandleToObject(m_hObject);
 
@@ -1022,7 +1059,66 @@ void CDestructible::DoDamage(DamageStruct & damage)
 		if (m_nCantDamageFlags & DamageTypeToFlag(eType)) 
 			return;
 	}
+
+	if (!IsPlayer(m_hObject) && eType == DT_PLAYERONLY)
+		return;
+
+	if (m_bTronUnknown6D0 && !IsPlayer(damage.hDamager))
+	{
+		if (!bSendTriggers)
+			return;
+
+	// If this is supposed to send a damage trigger, send it now...
+
+		if (m_nDamageTriggerCounter <= 0)
+		{
+			if (m_nDamageTriggerNumSends != 0)
+			{
+				m_nDamageTriggerNumSends--;
+
+				if(m_sDamageCommand.length() )
+				{
+					const char *pCmd = m_sDamageCommand.c_str();
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
+				}
+
+				if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
+				{
+					const char *pCmd = m_sPlayerDamageCommand.c_str( );
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
+				}
+			}
+		}
+
+		// If we ought to send a percentage based damage command, do it now.
+
+		if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
+		{
+			const char *pCmd = m_sDamagePercentCommand.c_str();
+
+			if( g_pCmdMgr->IsValidCmd( pCmd ) )
+			{
+				g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+			}
+		}
+		
+		// Send message to object that damaged us...
+
+		if (hDamager && m_sDamagerMessage.length())
+		{
+			SendTriggerMsgToObject(pObject, hDamager, LTTRUE, m_sDamagerMessage.c_str());
+		}
 	
+		return;
+	}
 
 	// If the damage is only for worldmodels make sure we are a world model...
 
@@ -1032,13 +1128,13 @@ void CDestructible::DoDamage(DamageStruct & damage)
 
 	// Adjust the damage based on difficulty, who I am and who I damaged...
 
+	fDamage *= m_fTronUnknown78;
 	fDamage = AdjustDamage(fDamage, hDamager);
 	
 
 	// Process damage through any gear items...
 
 	fDamage = ProcessGear(fDamage, eType, hDamager, &vDir);
-
 
     LTFLOAT fAbsorb = 0.0f;
 
@@ -1108,7 +1204,8 @@ void CDestructible::DoDamage(DamageStruct & damage)
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(m_hObject);
 		if (pPlayer)
 		{
-			fDamage *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eDamage);
+			// RETAIL: Tron reads the stamina table directly (0x100e8ac4).
+			fDamage *= g_pSkillsButeMgr->GetStamina(pPlayer->GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eDamage];
 		}
 	}
 
@@ -1118,6 +1215,7 @@ void CDestructible::DoDamage(DamageStruct & damage)
 	m_fLastArmorAbsorb	= fAbsorb;
 	m_fLastDamage		= fDamage;
 	m_eLastDamageType	= eType;
+	m_bTronUnknown30	= bTronUnknown;
 	m_vLastDamageDir	= vDir;
 	SetLastDamager(hDamager);
 
@@ -1128,73 +1226,84 @@ void CDestructible::DoDamage(DamageStruct & damage)
 	{
 		return;
 	}
+
+	m_fArmorPoints -= fAbsorb;
+
+	if (m_fArmorPoints < 0.0f)
+	{
+		m_fArmorPoints = 0.0f;
+	}
+
+	// RETAIL: the test is made before the subtraction (0x100e8b55).
+	if (m_fTronUnknown7C != 0.0f)
+	{
+		m_fHitPoints -= fDamage;
+		LTFLOAT fMax = GetMaxHitPoints();
+		m_fHitPoints = LTMIN(fMax, LTMAX(m_fHitPoints, m_fTronUnknown7C));
+	}
 	else
 	{
-		m_fArmorPoints -= fAbsorb;
-
-		if (m_fArmorPoints < 0.0f)
-		{
-			m_fArmorPoints = 0.0f;
-		}
-
 		m_fHitPoints -= fDamage;
+	}
 
+	if (bSendTriggers)
+	{
 		if ( m_nDamageTriggerCounter > 0 )
 		{
 			m_nDamageTriggerCounter--;
 		}
-	}
-
 
 	// If this is supposed to send a damage trigger, send it now...
 
-	if (m_nDamageTriggerCounter <= 0)
-	{
-		if (m_nDamageTriggerNumSends != 0)
+		if (m_nDamageTriggerCounter <= 0)
 		{
-			m_nDamageTriggerNumSends--;
-
-			if(m_sDamageCommand.length() )
+			if (m_nDamageTriggerNumSends != 0)
 			{
-				const char *pCmd = m_sDamageCommand.c_str();
+				m_nDamageTriggerNumSends--;
 
-				if( g_pCmdMgr->IsValidCmd( pCmd ) )
+				if(m_sDamageCommand.length() )
 				{
-					g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					const char *pCmd = m_sDamageCommand.c_str();
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
 				}
-			}
 
-			if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
-			{
-				const char *pCmd = m_sPlayerDamageCommand.c_str( );
-
-				if( g_pCmdMgr->IsValidCmd( pCmd ) )
+				if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
 				{
-					g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					const char *pCmd = m_sPlayerDamageCommand.c_str( );
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
 				}
 			}
 		}
-	}
 
-	// If we ought to send a percentage based damage command, do it now.
+		// If we ought to send a percentage based damage command, do it now.
 
-	if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
-	{
-		const char *pCmd = m_sDamagePercentCommand.c_str();
-
-		if( g_pCmdMgr->IsValidCmd( pCmd ) )
+		if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
 		{
-			g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
-		}
-	}
-	
-	// Send message to object that damaged us...
+			const char *pCmd = m_sDamagePercentCommand.c_str();
 
-	if (hDamager && m_sDamagerMessage.length())
-	{
-		SendTriggerMsgToObject(pObject, hDamager, LTFALSE, m_sDamagerMessage.c_str());
-	}
+			if( g_pCmdMgr->IsValidCmd( pCmd ) )
+			{
+				g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+			}
+		}
+		
+		// Send message to object that damaged us...
+
+		if (hDamager && m_sDamagerMessage.length())
+		{
+			SendTriggerMsgToObject(pObject, hDamager, LTTRUE, m_sDamagerMessage.c_str());
+		}
 	
+	}
+
 	// Send instant damage flags for characters...
 
 	if( IsCharacter( m_hObject ) && !(damage.fDuration > 0.0f) )
@@ -1202,7 +1311,6 @@ void CDestructible::DoDamage(DamageStruct & damage)
 		CCharacter *pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( m_hObject ));
 		if( pChar )
 		{
-			// RETAIL: Tron adds the hit's flags (Object.lto 0x100e7f58)
 			pChar->AddDamageFlags( DamageTypeToFlag( eType ));
 		}
 	}
@@ -1212,7 +1320,7 @@ void CDestructible::DoDamage(DamageStruct & damage)
 
 	if (m_fHitPoints <= 1.0f && !m_bNeverDestroy && ( fDamage > 0.f ) )
 	{
-//		m_fHitPoints	= 0.0f;
+		m_fHitPoints	= 0.0f;
 		m_fDeathDamage	= fDamage;
 		m_eDeathType	= eType;
 		m_vDeathDir		= vDir;
@@ -1363,7 +1471,7 @@ void CDestructible::HandleDestruction(HOBJECT hDamager)
 	if (m_bDead) return;
 
     m_bDead      = LTTRUE;
-//	m_fHitPoints = 0.0;
+	m_fHitPoints = 0.0f;	// RETAIL: Tron sets it (0x100e9187)
 
     LPBASECLASS pD = g_pLTServer->HandleToObject(m_hObject);
 
@@ -1470,52 +1578,47 @@ LTBOOL CDestructible::AddGear(uint8 nGearId)
     LTFLOAT fOldStealth = GetStealthModifier();
 
     LTBOOL bGearAdded = LTFALSE;
-	if( !m_bIsPlayer )
-		return LTFALSE;
-	
-	if( nGearId == WMGR_INVALID_ID)
-		return LTFALSE;
-
-	CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(m_hObject);
-	if( !pPlayer )
-		return LTFALSE;
-
-	if (nGearId >= 0 && nGearId < MAX_GEAR_ITEMS)
+	// RETAIL: Tron's tests fall through to the stealth test (0x100e9550).
+	CPlayerObj* pPlayer;
+	if( m_bIsPlayer && nGearId != WMGR_INVALID_ID &&
+		(pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(m_hObject)) != LTNULL )
 	{
-		if (!m_bGearOwned[nGearId])
-		{
-			GEAR const *pGear = g_pWeaponMgr->GetGear(nGearId);
-			if( pGear )	// RETAIL: Tron's GEAR has no server restriction
+			if (nGearId >= 0 && nGearId < MAX_GEAR_ITEMS)
 			{
-				if ( pGear->bExclusive)
+				if (!m_bGearOwned[nGearId])
 				{
-					m_bGearOwned[nGearId] = LTTRUE;
-				}
+					GEAR const *pGear = g_pWeaponMgr->GetGear(nGearId);
+					// RETAIL: Tron has no bServerRestricted test, and it tests
+					// pGear only for bExclusive (0x100e95c2; docs/RETAIL_BUGS.md).
+					if ( pGear && pGear->bExclusive)
+					{
+						m_bGearOwned[nGearId] = LTTRUE;
+					}
 
-				if (pGear->fArmor)
-				{
-					LTFLOAT fRepair = pGear->fArmor;
-					fRepair *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_ARMOR,ArmorModifiers::eArmorPickup);
-					bGearAdded = Repair(fRepair);
-				}
-				else if (pGear->fHealth)
-				{
-					LTFLOAT fHealth = pGear->fHealth;
-					fHealth *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eHealthPickup);
-					bGearAdded = Heal(fHealth);
-				}
-				else
-				{
-					bGearAdded = LTTRUE;
+					if (pGear->fArmor)
+					{
+						LTFLOAT fRepair = pGear->fArmor;
+						// RETAIL: Tron reads the skill tables directly (0x100e95fc).
+						fRepair *= g_pSkillsButeMgr->GetArmor(pPlayer->GetPlayerSkills()->GetLevel(SKL_ARMOR))->fModifier[ArmorModifiers::eArmorPickup];
+						bGearAdded = Repair(fRepair);
+					}
+					else if (pGear->fHealth)
+					{
+						LTFLOAT fHealth = pGear->fHealth;
+						fHealth *= g_pSkillsButeMgr->GetStamina(pPlayer->GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eHealthPickup];
+						bGearAdded = Heal(fHealth);
+					}
+					else
+					{
+						bGearAdded = LTTRUE;
+					}
 				}
 			}
-		}
+			else
+			{
+				g_pLTServer->CPrint("Gear id out of range! : %d", nGearId);
+			}
 	}
-	else
-	{
-		g_pLTServer->CPrint("Gear id out of range! : %d", nGearId);
-	}
-
 
 	// If our stealth modifier has changed, notify the clients...
 
@@ -1663,20 +1766,32 @@ void CDestructible::Reset(LTFLOAT fHitPts, LTFLOAT fArmorPts, LTFLOAT fEnergy)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Object.lto 0x100e9940.  Tron parses the message and adds
+// "DAMAGESCALAR <float>" and "MINHITPOINTS <float>".
 void CDestructible::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, ILTMessage_Read *pMsg)
 {
 	if (m_bDead) return;
 
 	const char* szMsg = (const char*)pMsg->Readuint32();
 	if( !szMsg )
-	{
-		ASSERT( !"CDestructible::HandleTrigger:  Empty trigger message received." );
 		return;
-	}
+
+	ConParse parse;
+	parse.Init( szMsg );
+
+	if( g_pCommonLT->Parse( &parse ) != LT_OK )
+		return;
+
+	CParsedMsg cMsg( parse.m_nArgs, parse.m_Args );
+
+	static CParsedMsg::CToken s_cTok_Destroy( "DESTROY" );
+	static CParsedMsg::CToken s_cTok_Reset( "RESET" );
+	static CParsedMsg::CToken s_cTok_DamageScalar( "DAMAGESCALAR" );
+	static CParsedMsg::CToken s_cTok_MinHitPoints( "MINHITPOINTS" );
 
 	// See if we should destroy ourself...
 
-    if (_stricmp(TRIGGER_MSG_DESTROY, szMsg) == 0)
+	if( cMsg.GetArg(0) == s_cTok_Destroy )
 	{
 		DamageStruct damage;
 
@@ -1688,9 +1803,30 @@ void CDestructible::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, ILTMessa
 
 	// See if we should reset ourself...
 
-    if (_stricmp(TRIGGER_MSG_RESET, szMsg) == 0)
+	if( cMsg.GetArg(0) == s_cTok_Reset )
 	{
 		Reset(GetMaxHitPoints(), GetMaxArmorPoints(), GetMaxEnergy());
+	}
+
+	if( cMsg.GetArg(0) == s_cTok_DamageScalar )
+	{
+		if( cMsg.GetArgCount() < 2 )
+		{
+			g_pLTServer->CPrint( "DamageScalar: DamageScalar <float>" );
+		}
+		else
+		{
+			m_fTronUnknown78 = (LTFLOAT)atof( cMsg.GetArg(1) );
+		}
+	}
+
+	if( cMsg.GetArg(0) == s_cTok_MinHitPoints )
+	{
+		m_fTronUnknown7C = (LTFLOAT)atof( cMsg.GetArg(1) );
+		if( m_fTronUnknown7C < 0.01f )
+		{
+			m_fTronUnknown7C = 0.0f;
+		}
 	}
 }
 
