@@ -509,6 +509,13 @@ struct FIREFX
 	char		*szFXName;
 	char		*szBeamFXName;
 
+	// RETAIL: Tron's old style beams (FIREFX::Init 0x101449f0; the
+	// constructor 0x10144980 does not set them).  Up to three are read.
+	int			nNumOldStyleBeams;
+	BEAMFX		*aOldStyleBeams[3];
+	uint32		m_xTronUnknown28;
+	uint32		m_xTronUnknown2C;
+
 	int			nFlags;
     LTVector    vShellScale;
 };

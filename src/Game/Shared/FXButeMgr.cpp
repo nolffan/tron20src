@@ -74,6 +74,8 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_FIREFX_FIRESOUND			"FireSound"
 #define FXBMGR_FIREFX_EXITMARK			"ExitMark"
 #define FXBMGR_FIREFX_EXITDEBRIS		"ExitDebris"
+#define FXBMGR_FIREFX_OLDSTYLEBEAMNAME	"OldStyleBeamName"	// RETAIL: Tron's
+#define FXBMGR_FIREFX_MAX_OLDSTYLEBEAMS	3					// RETAIL: 0x10144d1e
 #define FXBMGR_FIREFX_SHELLMODEL		"ShellModel"
 #define FXBMGR_FIREFX_SHELLSKIN			"ShellSkin"
 #define FXBMGR_FIREFX_SHELLSCALE		"ShellScale"
@@ -2434,6 +2436,27 @@ LTBOOL FIREFX::Init(CButeMgr & buteMgr, char* aTagName)
 	if (buteMgr.GetInt(aTagName, FXBMGR_FIREFX_EXITDEBRIS))
 	{
 		nFlags |= WFX_EXITDEBRIS;
+	}
+
+	// RETAIL: Tron reads the old style beams (0x10144cde)
+	CString str;
+	nNumOldStyleBeams = 0;
+	sprintf( s_aAttName, "%s%d", FXBMGR_FIREFX_OLDSTYLEBEAMNAME, nNumOldStyleBeams );
+
+	while( buteMgr.Exist( aTagName, s_aAttName ) && nNumOldStyleBeams < FXBMGR_FIREFX_MAX_OLDSTYLEBEAMS )
+	{
+		str = buteMgr.GetString( aTagName, s_aAttName );
+		if( !str.IsEmpty() )
+		{
+			BEAMFX* pBeamFX = g_pFXButeMgr->GetBeamFX( (char*)(LPCSTR)str );
+			if( pBeamFX )
+			{
+				aOldStyleBeams[nNumOldStyleBeams] = pBeamFX;
+			}
+		}
+
+		++nNumOldStyleBeams;
+		sprintf( s_aAttName, "%s%d", FXBMGR_FIREFX_OLDSTYLEBEAMNAME, nNumOldStyleBeams );
 	}
 
 	return LTTRUE;
