@@ -62,8 +62,13 @@ void CHUDTransmission::Show(const char *pszString)
 	m_Msg.Show(LTTRUE);
 
 
+	// RETAIL: Tron's (0x10187cd4) takes the message's base size from the
+	// interface ratios; the width is not used
+	uint16 nBaseWidth = (uint16)((float)m_Msg.GetWidth() / g_pInterfaceResMgr->GetXRatio());
+	uint16 nBaseHeight = (uint16)((float)m_Msg.GetHeight() / g_pInterfaceResMgr->GetYRatio());
+
 	LTIntPt pos = m_BasePos;
-	pos.y -= m_Msg.GetBaseHeight()/2;
+	pos.y -= nBaseHeight/2;
 
 	m_Msg.SetBasePos(pos);
 }
@@ -71,21 +76,44 @@ void CHUDTransmission::Show(const char *pszString)
 void CHUDTransmission::UpdateLayout()
 {
 	char *pTag = "Transmission";
-	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
 
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
+	// RETAIL: Tron's (0x10187da0): the disc game types have their own layout
+	if (!IsDiscGameType())
+	{
+		m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
 
-	m_MsgFormat.pFont = g_pInterfaceResMgr->GetFont(nFont);
-	m_MsgFormat.nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
+		uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
 
-	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"TextColor");
-	uint8 nR = (uint8)vCol.x;
-	uint8 nG = (uint8)vCol.y;
-	uint8 nB = (uint8)vCol.z;
-	m_MsgFormat.nTextColor =  SET_ARGB(0xFF,nR,nG,nB);
-	m_MsgFormat.fDuration = g_pLayoutMgr->GetFloat(pTag,"Time");
-	m_MsgFormat.fFadeDur  = g_pLayoutMgr->GetFloat(pTag,"FadeTime");
-	m_MsgFormat.nWidth  = (uint16) g_pLayoutMgr->GetInt(pTag,"Width");
+		m_MsgFormat.pFont = g_pInterfaceResMgr->GetFont(nFont);
+		m_MsgFormat.nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
+
+		LTVector vCol = g_pLayoutMgr->GetVector(pTag,"TextColor");
+		uint8 nR = (uint8)vCol.x;
+		uint8 nG = (uint8)vCol.y;
+		uint8 nB = (uint8)vCol.z;
+		m_MsgFormat.nTextColor =  SET_ARGB(0xFF,nR,nG,nB);
+		m_MsgFormat.fDuration = g_pLayoutMgr->GetFloat(pTag,"Time");
+		m_MsgFormat.fFadeDur  = g_pLayoutMgr->GetFloat(pTag,"FadeTime");
+		m_MsgFormat.nWidth  = (uint16) g_pLayoutMgr->GetInt(pTag,"Width");
+	}
+	else
+	{
+		m_BasePos = g_pLayoutMgr->GetPoint(pTag,"DiscMPBasePos");
+
+		uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"DiscMPFont");
+
+		m_MsgFormat.pFont = g_pInterfaceResMgr->GetFont(nFont);
+		m_MsgFormat.nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"DiscMPFontSize");
+
+		LTVector vCol = g_pLayoutMgr->GetVector(pTag,"DiscMPTextColor");
+		uint8 nR = (uint8)vCol.x;
+		uint8 nG = (uint8)vCol.y;
+		uint8 nB = (uint8)vCol.z;
+		m_MsgFormat.nTextColor =  SET_ARGB(0xFF,nR,nG,nB);
+		m_MsgFormat.fDuration = g_pLayoutMgr->GetFloat(pTag,"DiscMPTime");
+		m_MsgFormat.fFadeDur  = g_pLayoutMgr->GetFloat(pTag,"DiscMPFadeTime");
+		m_MsgFormat.nWidth  = (uint16) g_pLayoutMgr->GetInt(pTag,"DiscMPWidth");
+	}
 	m_MsgFormat.eJustify = kMsgCenter;
 
 }
