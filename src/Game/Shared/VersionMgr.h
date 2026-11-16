@@ -46,9 +46,9 @@ class CVersionMgr
 		const char* GetLanguage()	const { return m_szLanguage; }
 
 		//low violence needs to be implemented on clientside only
-#ifdef _CLIENTBUILD
+		// RETAIL: Tron's server uses it too (CPlayerObj::GetDeathSound,
+		// Object.lto 0x100803eb)
 		inline bool	IsLowViolence() const { return m_bLowViolence; }
-#endif
 
 		CRegMgr*	GetRegMgr()		{ return &m_regMgr; }
 
@@ -73,14 +73,17 @@ class CVersionMgr
 	protected :
 		CRegMgr	m_regMgr;
 		char	m_szLanguage[64];
-		char	m_szNetRegion[64];
-		bool	m_bLowViolence;
+		bool	m_bLowViolence;		// RETAIL: +0x260 (Object.lto 0x10171dac)
 
 		// This is the save version of the currently loading save game.
 		// This number is only valid during a ILTServer::RestoreObjects call.
 		TSaveVersion	m_nCurrentSaveVersion;
 
 		uint8			m_nLastLGFlags;
+
+		// PORT: Tron has no net region (neither DLL has a NetRegionCode
+		// string); NOLF2's client code still asks for one. Ours
+		char	m_szNetRegion[64];
 };
 
 extern CVersionMgr* g_pVersionMgr;

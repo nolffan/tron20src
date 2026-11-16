@@ -5212,7 +5212,8 @@ bool CGameServerShell::ProcessObjectiveMessage( const CParsedMsg &cMsg, Objectiv
 	static CParsedMsg::CToken s_cTok_RemoveAll("RemoveAll");
 	static CParsedMsg::CToken s_cTok_Completed("Completed");
 
-	if (cMsg.GetArgCount() < 2)
+	// RETAIL: Tron needs three arguments (Object.lto 0x100e40ea)
+	if (cMsg.GetArgCount() < 3)
 		return false;
 
 	uint8 nType = 0;

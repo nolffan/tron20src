@@ -40,7 +40,8 @@ CVersionMgr::CVersionMgr()
 		unsigned int nBufSize = sizeof(m_szLanguage);
 		m_regMgr.Get("Language", m_szLanguage, nBufSize, "English");
 
-/* jrg - 9/26/02 - removed redundant low-violence check  (this is handled by a flag in CRes now)
+		// RETAIL: Tron still sets low violence for German (Object.lto
+		// 0x10171de1)
 		if (m_szLanguage[0])
 		{
 			if (_stricmp(m_szLanguage, "German") == 0)
@@ -48,15 +49,10 @@ CVersionMgr::CVersionMgr()
 				m_bLowViolence = true;
 			}
 		}
-*/
+	}
 
-		nBufSize = sizeof(m_szNetRegion);
-		m_regMgr.Get("NetRegionCode", m_szNetRegion, nBufSize, "EN");
-	}
-	else
-	{
-		strcpy(m_szNetRegion, "EN");
-	}
+	// PORT: Tron reads no net region (CVersionMgr.h)
+	strcpy(m_szNetRegion, "EN");
 
 	m_nCurrentSaveVersion = 0;
 }
