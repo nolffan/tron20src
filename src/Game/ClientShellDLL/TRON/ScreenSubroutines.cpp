@@ -459,7 +459,7 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 
 		SetSelection(kNoSelection);
 		UpdateData(LTTRUE);
-		g_pInterfaceMgr->GetCursorMgr()->ShowCursorLines(false);
+		g_pCursorMgr->ShowCursorLines(false);	// RETAIL: the interface manager's +0x40
 	}
 	else
 	{
@@ -681,7 +681,12 @@ LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 
 	if (m_nPopupTextId)
 	{
-		m_PopupText.Show(m_nPopupTextId, m_nPopupId, m_szPopupText);
+		// PORT: retail's CPopupText takes the text id and the text together
+		// (its inline at 0x1007f630 builds a wide string for 0x1014edf0)
+		if (m_szPopupText[0])
+			m_PopupText.Show(m_szPopupText, m_nPopupId);
+		else
+			m_PopupText.Show(m_nPopupTextId, m_nPopupId);
 		m_nPopupTextId = 0;
 	}
 
@@ -1115,8 +1120,9 @@ void CScreenSubroutines::AddSubroutine(PlayerSubroutine * pSub)
 				if (pTronSub == (*iter)->pTronSubroutine &&
 					pSub->eState != SUBSTATE_FOREIGN && (*iter)->eState != SUBSTATE_FOREIGN)
 				{
+					PlayerSubroutine * pFirst = *iter;
 					m_pDuplicateSecond = pSub;
-					m_pDuplicateFirst = *iter;
+					m_pDuplicateFirst = pFirst;
 					break;
 				}
 			}
@@ -1865,25 +1871,24 @@ void CScreenSubroutines::PutSubroutineBack(bool bKeepIcon)
 		return;
 	}
 
-	switch (m_pCursorSub->pTronSubroutine->eFunction)
+	SubFunction eFunction = m_pCursorSub->pTronSubroutine->eFunction;
+	if (eFunction == FUNCTION_COMBAT)
 	{
-	case FUNCTION_COMBAT:
 		m_Libraries[0].InsertSub(m_pCursorSub);
 		m_Libraries[0].ShowSubIcon(m_pCursorSub, bKeepIcon);
 		m_Libraries[0].SetStayOpen(false);
-		break;
-
-	case FUNCTION_DEFENSE:
+	}
+	else if (eFunction == FUNCTION_DEFENSE)
+	{
 		m_Libraries[1].InsertSub(m_pCursorSub);
 		m_Libraries[1].ShowSubIcon(m_pCursorSub, bKeepIcon);
 		m_Libraries[1].SetStayOpen(false);
-		break;
-
-	case FUNCTION_UTILITY:
+	}
+	else if (eFunction == FUNCTION_UTILITY)
+	{
 		m_Libraries[2].InsertSub(m_pCursorSub);
 		m_Libraries[2].ShowSubIcon(m_pCursorSub, bKeepIcon);
 		m_Libraries[2].SetStayOpen(false);
-		break;
 	}
 
 	PlayDropIntoLibrarySound();
@@ -1895,8 +1900,10 @@ void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 	if (m_eCursorMode == mode)
 		return;
 
-	if (m_eCursorMode == CursorSubroutineDrop)
+	switch (m_eCursorMode)
 	{
+	case CursorSubroutineDrop:
+		{
 		g_pCursorMgr->UseSprite("Interface\\cursor.dtx");
 		g_pCursorMgr->UseGlowSprite("Interface\\cursor_glow.dtx");
 		g_pCursorMgr->SetCenter(32, 32);
@@ -1911,6 +1918,8 @@ void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 
 		for (int i = 0; i < NUM_PROC_CTRLS; i++)
 			m_ProcCtrl[i].SetHighlight(false);
+		}
+		break;
 	}
 
 	switch (mode)
@@ -1948,11 +1957,11 @@ void CScreenSubroutines::ShowSubInfo(int x, int y)
 
 	std::wstring sInfo = g_pSubroutineMgr->GetSubroutineInfo(m_pHotSub);
 
-	char szIcon[128];
-	if (m_pHotSub->eState == SUBSTATE_FOREIGN)
-		sprintf(szIcon, "%s", "Interface\\Subroutines\\Sprtex\\foreign_0.dtx");
-	else
+	char szIcon[256];
+	if (m_pHotSub->eState != SUBSTATE_FOREIGN)
 		sprintf(szIcon, "%s", m_pHotSub->pTronSubroutine->szSprite);
+	else
+		sprintf(szIcon, "%s", "Interface\\Subroutines\\Sprtex\\foreign_0.dtx");
 
 	m_ToolTip.Show(x, y, sInfo, g_pInterfaceResMgr->GetTexture(szIcon));
 }
@@ -2040,7 +2049,7 @@ void CScreenSubroutines::ScreenDimsChanged()
 bool CScreenSubroutines::CanDropHere()
 {
 	if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
-		return (m_SystemMemoryCtrl.GetActiveSegment() == m_pCursorSub->nTempSlot);
+		return (m_pCursorSub->nTempSlot == m_SystemMemoryCtrl.GetActiveSegment());
 
 	if (m_pCursorSub->eState == SUBSTATE_FOREIGN)
 		return false;

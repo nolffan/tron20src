@@ -23,9 +23,6 @@ public:
 
 	void	Show(uint32 nTextId, uint8 nPopupId) { DisplayPopup( nPopupId, LTNULL, nTextId ); }
 	void	Show(char* pText, uint8 nPopupId) { DisplayPopup( nPopupId, pText, (uint32)-1 ); }
-	// TRON: (RETAIL: 0x1007f630, out of line in ScreenSubroutines.cpp;
-	// PORT: retail's builds a wide string for the popup's 0x1014edf0)
-	void	Show(uint32 nTextId, uint8 nPopupId, char* pText) { DisplayPopup( nPopupId, pText, nTextId ); }
 	void	Update();
 	void	Close();
 
