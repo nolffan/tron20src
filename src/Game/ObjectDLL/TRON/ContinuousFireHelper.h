@@ -129,7 +129,7 @@ protected:
 };
 
 // RETAIL: the two helpers CCharacter owns (CCharacter +0xc64, +0xc68).
-// Their code is outside this file (Object.lto 0x10194160..0x10194320):
+// Their code is outside this file (Object.lto 0x10194150..0x10194335):
 // declared here for CCharacter.
 
 // RETAIL: RTTI .?AVCPRodFireHelper@@, vtable 0x1029a980 (constructor
@@ -138,6 +138,9 @@ class CPRodFireHelper : public CContinuousFireHelper
 {
 public:
 	CPRodFireHelper();
+	~CPRodFireHelper();							// RETAIL: 0x101942e0
+
+	float	GetRange();							// RETAIL: 0x10194320 (name ours)
 
 protected:
 	virtual uint8	GetMessageID();
@@ -150,12 +153,16 @@ class CEnergyClawFireHelper : public CContinuousFireHelper
 {
 public:
 	CEnergyClawFireHelper();
+	~CEnergyClawFireHelper();					// RETAIL: 0x10194150
 
 	virtual void	Update();
 
 protected:
 	virtual void	WriteExtra(ILTMessage_Write *pMsg);
 	virtual uint8	GetMessageID();
+
+	float	GetRange();							// RETAIL: 0x10194280 (name ours)
+	float	GetEnergyRate();					// RETAIL: 0x101942a0 (name ours)
 };
 
 #endif //_ContinuousFireHelper_h_INCLUDED_

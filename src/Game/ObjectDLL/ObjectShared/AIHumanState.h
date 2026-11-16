@@ -910,6 +910,8 @@ class CAIHumanStateUseObject : public CAIHumanState
 		void SetActivity(EnumAnimProp eActivity) { m_eActivity = eActivity; }
 		void SetWeaponPosition(EnumAnimProp eWeaponPosition) { m_eWeaponPosition = eWeaponPosition; }
 		void SetSmartObjectCommand(HSTRING hstrCmd) { m_hstrSmartObjectCmd = hstrCmd; }
+		// RETAIL: Tron's (inlined in CAIGoalExitLevelByRezOut 0x10208dd6): the state keeps a copy of the command. Name ours.
+		void CopySmartObjectCommand(const char* szCmd) { g_pLTServer->FreeString( m_hstrSmartObjectCmd ); m_hstrSmartObjectCmd = g_pLTServer->CreateString( szCmd ); }
 		void SetRequireBareHands(LTBOOL b) { m_bRequireBareHands = b; }
 		void SetVulnerable(LTBOOL b) { m_bVulnerable = b; }
 		void SetLoopingSound(EnumAISoundType eLoopingAISound) { m_eLoopingAISound = eLoopingAISound; }

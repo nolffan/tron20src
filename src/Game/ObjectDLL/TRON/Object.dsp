@@ -192,6 +192,10 @@ SOURCE=.\AILightCycleVolumes.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AINodeExitLevelByRezOut.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ArchiveBin.cpp
 # End Source File
 # Begin Source File
@@ -377,6 +381,10 @@ SOURCE=.\TournamentBracket.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\WeaponFireHelpers.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -434,6 +442,10 @@ SOURCE=.\AIGoalRezIn.h
 # Begin Source File
 
 SOURCE=.\AILightCycle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AINodeExitLevelByRezOut.h
 # End Source File
 # Begin Source File
 
