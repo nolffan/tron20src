@@ -288,6 +288,10 @@ protected:
 	void          CreatePVAttachClientFX();
 	void          ShowPVAttachClientFX();
 	void          HidePVAttachClientFX();
+	// RETAIL: Tron's, one attachment by its index (0x10130530, 0x10130560;
+	// CClientWeaponEnergyClaw's)
+	void          ShowPVAttachClientFX( int nIndex );
+	void          HidePVAttachClientFX( int nIndex );
 	void          RemovePVAttachClientFX();
 
 	// weapon fire helpers

@@ -982,6 +982,44 @@ list before the move completes.
 
 Not fixed yet: the modern build should skip the colour when the player is
 not found.
+### The energy claw's range data uses a wrong subroutine name
+
+CShell.dll 0x1001aa70 (CClientWeaponEnergyClaw::GetClawData,
+TRON/ClientWeaponEnergyClaw.cpp). The claw looks for the utility
+subroutine "EnergyClaw" to select the version and state of its range data.
+The subroutine has the name "Energy_claw" (its energy use, 0x1001a680,
+uses that name). The look-up always fails, so the claw always uses the
+alpha, non-corrupt range and in-range FX.
+
+Not fixed yet: the modern build should use "Energy_claw".
+
+### A permission set bin gives a wrong buffer size
+
+CShell.dll 0x1003c000 (CHUDDecisionBin::Init, TRON/HUDTronDecision.cpp).
+For a permission set, Init formats the bin's text into a 128-byte buffer,
+but it gives FormatString a size of 1024. A long translated string can
+write past the buffer on the stack.
+
+Not fixed yet: the modern build should give the size of the buffer.
+
+### The circuit intro destroys two strings twice and two never
+
+CShell.dll 0x1002ce50 (CHUDLightCycleCircuitIntro::TermStrings,
+TRON/HUDLightCycleCircuitIntro.cpp). The function destroys the trail
+label and the trail value twice. It does not destroy the lives label and
+the lives value. Each Init and Term leaks the two lives strings.
+
+Not fixed yet: the modern build should destroy the lives strings in place
+of the second trail strings.
+
+### The circuit intro can format an unset string ID
+
+CShell.dll 0x1002cf00 (CHUDLightCycleCircuitIntro::UpdateText). The
+speed and trail length switches set the string ID only for the indices
+0 to 3. For a different index, FormatString gets an unset value from the
+stack.
+
+Not fixed yet: the modern build should give the ID a default value.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

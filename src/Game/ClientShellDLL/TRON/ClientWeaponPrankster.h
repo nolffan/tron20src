@@ -48,6 +48,8 @@ public:
 	virtual bool  TronUnknownVirtualC8() { return true; }
 
 protected:
+	virtual WeaponState   UpdateModelState( bool bFire, bool bAltFire );	// RETAIL: 0x1001b460
+	virtual void  Fire( bool bFire );	// RETAIL: 0x1001b760
 	virtual void  HandleFireKeyDownTransition();
 	virtual void  HandleFireKeyUpTransition();
 

@@ -15,6 +15,8 @@
 
 #include "stdafx.h"
 #include "ClientWeaponSuffusion.h"
+#include "SubroutineMgr.h"
+#include "TRONPlayerStats.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x1001bc80..)
 
 namespace
@@ -88,6 +90,27 @@ void CClientWeaponSuffusion::Save( ILTMessage_Write *pMsg )
 	CTronClientWeapon::Save( pMsg );
 }
 
+// RETAIL: 0x1001c5a0
+float CClientWeaponSuffusion::GetEnergyUse()
+{
+	float fEnergy = CTronClientWeapon::GetEnergyUse();
+	float fBase = GetBaseEnergyUse();
+
+	if ( W_FIRING == GetState() )
+	{
+		if ( m_abTronUnknown13C[2][0] )
+		{
+			return fBase * m_fTronUnknown160 + fEnergy;
+		}
+	}
+	else if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "Suffusion" ) )
+	{
+		return g_pSubroutineDataMgr->GetSuffusionData( GetSubroutineDataKey( "Suffusion" ) ).fEnergyUseMultiplier * fBase + fEnergy;
+	}
+
+	return fEnergy;
+}
+
 // RETAIL: 0x1001c6a0.  The perturb scaled by the subroutine's (retail's
 // CClientWeapon+0x158).
 void CClientWeaponSuffusion::SendFireMessage( bool bFire,
@@ -98,4 +121,16 @@ void CClientWeaponSuffusion::SendFireMessage( bool bFire,
                                               HOBJECT hObject )
 {
 	CTronClientWeapon::SendFireMessage( bFire, fPerturb * m_fTronUnknown158, vFirePos, vDir, vImpactPos, hObject );
+}
+
+// RETAIL: 0x1001c6d0: while firing, any energy left keeps it going
+bool CClientWeaponSuffusion::TronUnknownVirtual164()
+{
+	if ( W_FIRING == GetState() )
+	{
+		return g_pTronPlayerStats->GetEnergy() > 1.0e-11f;
+	}
+
+	float fEnergy = g_pTronPlayerStats->GetEnergy();
+	return ( GetEnergyUse() <= fEnergy );
 }

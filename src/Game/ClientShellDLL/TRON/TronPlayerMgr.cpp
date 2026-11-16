@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#include "HUDLightCycleCircuitIntro.h"
 #include "TronPlayerMgr.h"
 #include "TronPlayerStats.h" // needed for energy transfer data
 #include "HUDMgr.h"
@@ -1127,9 +1128,10 @@ void CTronPlayerMgr::TronUnknownVirtual50()
 	m_bTronUnknownB8 = false;
 	m_nTronUnknown230 = 0;
 
-	// PORT: retail clears a flag of the game client shell (+0x833a) and
-	// resets a Tron HUD item (0x1026ee28, its 0x1002cdf0), not yet in our
-	// tree
+	// PORT: retail clears a flag of the game client shell (+0x833a) here
+
+	// RETAIL: starts the circuit intro (0x1026ee28, its 0x1002cdf0)
+	g_pLightCycleCircuitIntro->Start();
 
 	TronUnknownVirtualA8(true);
 }

@@ -338,6 +338,10 @@ SOURCE=.\HUDIOCamera.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleCircuitIntro.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
@@ -347,6 +351,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.cpp
 # Begin Source File
 
 SOURCE=.\HUDLightCycleRoster.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleSpeedometer.cpp
 # End Source File
 # Begin Source File
 
@@ -391,6 +399,10 @@ SOURCE=.\HUDSingleString.cpp
 # Begin Source File
 
 SOURCE=.\HUDSubChooser.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDTronDecision.cpp
 # End Source File
 # Begin Source File
 
@@ -822,6 +834,10 @@ SOURCE=.\HUDIOCamera.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleCircuitIntro.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDLightCycleLives.h
 # End Source File
 # Begin Source File
@@ -831,6 +847,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleRoster.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleSpeedometer.h
 # End Source File
 # Begin Source File
 
@@ -875,6 +895,10 @@ SOURCE=.\HUDSingleString.h
 # Begin Source File
 
 SOURCE=.\HUDSubChooser.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDTronDecision.h
 # End Source File
 # Begin Source File
 
