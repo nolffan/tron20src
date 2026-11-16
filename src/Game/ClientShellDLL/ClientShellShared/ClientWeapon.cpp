@@ -5998,7 +5998,8 @@ void CClientWeapon::ClearFiring()
 {
 	// RETAIL: Tron's (0x10135af0) goes back to idle only from a fire
 	// animation
-	bool bFireAni = IsFireAni( g_pLTClient->GetModelAnimation( m_hObject ));
+	uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
+	bool bFireAni = IsFireAni( dwAni );
 
 	// Clear any current fire flag we previously set...
 	m_bFire = false;
