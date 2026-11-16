@@ -201,9 +201,11 @@ uint32 LightCycleVolumeCascader::OnLoad(ILTMessage_Read *pMsg, float dwLoadFlags
 	LOAD_FLOAT(m_fMaxRadius);
 	LOAD_FLOAT(m_fRadius);
 
-	m_lstVolumes.resize(pMsg->Readint16());
+	// RETAIL: the list is addressed before its count is read (0x1002e049)
+	VolumeList& lstVolumes = m_lstVolumes;
+	lstVolumes.resize(pMsg->Readint16());
 	ReadObjectFn fnRead = { pMsg, &ILTMessage_Read::ReadObject };
-	std::generate(m_lstVolumes.begin(), m_lstVolumes.end(), fnRead);
+	std::generate(lstVolumes.begin(), lstVolumes.end(), fnRead);
 
 	return GameBase::OnLoad(pMsg, dwLoadFlags);
 }

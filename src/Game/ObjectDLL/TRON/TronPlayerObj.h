@@ -20,6 +20,17 @@
 #include <slist>
 #include <string>
 
+// RETAIL: a mission's or level's default subroutine (0x4c bytes: retail
+// 0x100855a0 walks arrays of them and passes each to CTronPlayerObj's slot
+// 127, which reads the state and condition). The names are ours
+struct TronSubroutineRecord
+{
+	char	szName[64];
+	int		nId;			// RETAIL: a weapon id (0x10085641)
+	int		nState;			// alpha, beta, gold
+	int		nCondition;		// normal, infected
+};
+
 class CTronPlayerObj : public CPlayerObj
 {
 	// RETAIL: its light cycle messages start and end the cycle (0x1005139b)
@@ -70,6 +81,13 @@ class CTronPlayerObj : public CPlayerObj
 
 		// Specific messages from the client
 		void HandleCompile(ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x10063b50, 0x10063cb0, 0x10063d60 (the names are ours)
+		void HandleRatings(ILTMessage_Read *pMsg);
+		void HandleEnergy(ILTMessage_Read *pMsg);
+		void HandleSwat(ILTMessage_Read *pMsg);
+
+		// RETAIL: the "mpenergy" cheat (retail 0x10068680; the name is ours)
+		void EnergyCheat();
 
 		// Defense
 		virtual bool	IsDefending() const;
@@ -91,6 +109,9 @@ class CTronPlayerObj : public CPlayerObj
 		virtual void	GimmeGunCheat( uint8 nId );
 		virtual void	TronUnknownVirtual105( LTBOOL bOn );
 		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
+		// RETAIL: slot 127 (retail 0x10066f20) is given a subroutine record
+		// (TronSubroutineRecord, whose name comes first)
+		virtual bool	TronUnknownVirtual127( char const* pszRecord );
 		virtual bool	TronUnknownVirtual128( WEAPON const* pWeapon );
 		virtual bool	TronUnknownVirtual129( uint8 nWeaponId );
 

@@ -284,7 +284,17 @@ public:
 		uint32				m_dwSenseMask;
 };
 
-class AIInformationVolumePlugin : public IObjectPlugin
+// RETAIL: Tron's AIVolume has a plugin for its Alignment list (vtable
+// 0x10295ba4, PreHook_EditStringList 0x10095200)
+class AIVolumePlugin : public IObjectPlugin
+{
+public:
+	virtual LTRESULT PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
+};
+
+// RETAIL: derives from AIVolumePlugin in Tron (retail 0x10097f67 passes
+// other properties on to it)
+class AIInformationVolumePlugin : public AIVolumePlugin
 {
 public:
 	virtual LTRESULT PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
@@ -367,7 +377,8 @@ class AIVolume : public AISpatialRepresentation
 		virtual LTBOOL CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev );
 		virtual LTBOOL CanBuildPathThrough( CAI* pAI, AIVolume* pVolumePrev, AIVolume* pVolumeNext ) { return LTTRUE; }
 
-		virtual LTBOOL IsValidForPath( CAI* pAI, AIVolume* pVolumePrev ) { return LTTRUE; }
+		// RETAIL: Tron's tests the volume's alignment and type (0x100992d0)
+		virtual LTBOOL IsValidForPath( CAI* pAI, AIVolume* pVolumePrev );
 
 		void ReserveVolume(HOBJECT hAI);
 		void ClearVolumeReservation(HOBJECT hAI);
@@ -441,6 +452,11 @@ class AIVolume : public AISpatialRepresentation
 		LTVector			m_vEntryPosition;
 		LTVector			m_vWalkthroughPosition;
 		uint32				m_nPathIndex;
+
+		// RETAIL: Tron's volumes take an "Alignment" like AINode's (retail
+		// AIVolume's constructor sets 0x158 to -1, ReadProp 0x10098b80 reads
+		// it, IsValidForPath 0x100992d0 tests it; sizeof 0x15c)
+		int					m_nRequiredRelationTemplateID;
 };
 
 // ----------------------------------------------------------------------- //

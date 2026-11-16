@@ -587,7 +587,7 @@ LIGHT_CYCLIST* CLightCycleMgr::GetNextCyclist(HOBJECT hObj, bool bWrap)
 		}
 	}
 
-	if(bWrap && m_collCyclists.size() && bFound)
+	if(bWrap && (m_collCyclists.size() > 0) && bFound)
 	{
 		LIGHT_CYCLIST* pCyclist = *m_collCyclists.begin();
 		if((pCyclist->fStartDerezTime == 0.0f) && (hObj != pCyclist->hObject))

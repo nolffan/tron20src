@@ -66,8 +66,6 @@ AINode::AINode()
 	m_fRadius = (LTFLOAT)INT_MAX;
 	m_fRadiusSqr = (LTFLOAT)INT_MAX;
 
-	m_hstrName = LTNULL;
-
 	m_bContainingVolumeValid = false;
 	m_pContainingVolume = LTNULL;
 
@@ -81,7 +79,6 @@ AINode::AINode()
 
 AINode::~AINode()
 {
-	FREE_HSTRING(m_hstrName);
 }
 
 void AINode::Init()
@@ -220,7 +217,7 @@ bool AINode::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 //
 // ----------------------------------------------------------------------- //
 
-void AINode::SetNodeOwner(HOBJECT hOwner)
+LTRESULT AINode::SetNodeOwner(HOBJECT hOwner)
 {
 	// Nodes may only be owned by 1 object at a time.
 	// The owner may be an AI or another node.
@@ -231,6 +228,8 @@ void AINode::SetNodeOwner(HOBJECT hOwner)
 	m_hNodeOwner = hOwner;
 
 	AITRACE( AIShowNodes, ( m_hObject, "Setting owner: %s", GetObjectName( m_hNodeOwner ) ) );
+
+	return LT_OK;
 }
 
 // ----------------------------------------------------------------------- //
@@ -241,17 +240,21 @@ void AINode::SetNodeOwner(HOBJECT hOwner)
 //
 // ----------------------------------------------------------------------- //
 
-void AINode::Lock(HOBJECT hAI)
+LTRESULT AINode::Lock(HOBJECT hAI)
 {
 	AITRACE( AIShowNodes, ( hAI, "Locking node %s (%d)\n", ::ToString( GetName() ), m_nNodeLockCount ) );
 	++m_nNodeLockCount; 
+
+	return LT_OK;
 }
 
-void AINode::Unlock(HOBJECT hAI)
+LTRESULT AINode::Unlock(HOBJECT hAI)
 {
 	AITRACE( AIShowNodes, ( hAI, "Unlocking node %s (%d)\n", ::ToString( GetName() ), m_nNodeLockCount ) );
 	AIASSERT(m_nNodeLockCount > 0, m_hObject, "AINode::Unlock: Node is not locked.");
 	--m_nNodeLockCount;
+
+	return LT_OK;
 }
 
 LTBOOL AINode::IsLocked() const
@@ -286,7 +289,7 @@ void AINode::ReadProp(ObjectCreateStruct* pocs)
 	
     if ( g_pLTServer->GetPropGeneric( "Name", &g_gp ) == LT_OK )
 		if ( g_gp.m_String[0] )
-            m_hstrName = g_pLTServer->CreateString( g_gp.m_String );
+            m_strName = g_gp.m_String;
 
     if ( g_pLTServer->GetPropGeneric( "Radius", &g_gp ) == LT_OK )
 	{
@@ -333,7 +336,7 @@ void AINode::Save(ILTMessage_Write *pMsg)
 	SAVE_VECTOR(m_vForward);
 	SAVE_VECTOR(m_vRight);
 	SAVE_VECTOR(m_vInitialPitchYawRoll);
-	SAVE_HSTRING(m_hstrName);
+	SAVE_CHARSTRING(m_strName.c_str());
 	SAVE_INT(m_nNodeLockCount);
 	SAVE_BOOL(m_bNodeEnabled);
 	SAVE_FLOAT(m_fRadius);
@@ -354,7 +357,12 @@ void AINode::Load(ILTMessage_Read *pMsg)
 	LOAD_VECTOR(m_vForward);
 	LOAD_VECTOR(m_vRight);
 	LOAD_VECTOR(m_vInitialPitchYawRoll);
-	LOAD_HSTRING(m_hstrName);
+	{
+		// RETAIL: read into an 80 character buffer (retail 0x1009fa1a)
+		char szName[80] = {0};
+		LOAD_CHARSTRING(szName, sizeof(szName));
+		m_strName = szName[0] ? szName : "";
+	}
 	LOAD_INT(m_nNodeLockCount);
 	LOAD_BOOL(m_bNodeEnabled);
 	LOAD_FLOAT(m_fRadius);
@@ -372,7 +380,7 @@ void AINode::Verify()
 {
 	if ( NULL == g_pAIVolumeMgr->FindContainingVolume(LTNULL, m_vPos, eAxisAll, 106.0f) )
 	{
-		Warn("AINode \"%s\" is not in an AIVolume!", g_pLTServer->GetStringData(m_hstrName));
+		Warn("AINode \"%s\" is not in an AIVolume!", m_strName.c_str());
 	}
 }
 
@@ -703,7 +711,7 @@ void AINodeCover::Verify()
 	{
 		// We can't be two way AND one way cover!
 
-		Warn("AINode %s has 2way and 1way cover specified!", g_pLTServer->GetStringData(m_hstrName));
+		Warn("AINode %s has 2way and 1way cover specified!", m_strName.c_str());
 		m_dwFlags = 0;
 	}
 }
@@ -2377,13 +2385,13 @@ AINodeChangeWeapons::AINodeChangeWeapons()
 		// Report if something is entered that was not recognized as a weapon.
 		if ( WeaponSet.m_szChangeToWeapon.length() != 0 && !pChangeTo )
 		{
-			Warn("AINode %s has an unrecognized NewWeapon specified: %s!", g_pLTServer->GetStringData(m_hstrName), WeaponSet.m_szChangeToWeaponRequirement.c_str());
+			Warn("AINode %s has an unrecognized NewWeapon specified: %s!", m_strName.c_str(), WeaponSet.m_szChangeToWeaponRequirement.c_str());
 		}
 
 		// Report if something is entered that was not recognized as a weapon.
 		if ( WeaponSet.m_szChangeToWeaponRequirement.length() != 0 && !pRequired )
 		{
-			Warn("AINode %s has an unrecognized NewWeapon specified: %s!", g_pLTServer->GetStringData(m_hstrName), WeaponSet.m_szChangeToWeaponRequirement.c_str());
+			Warn("AINode %s has an unrecognized NewWeapon specified: %s!", m_strName.c_str(), WeaponSet.m_szChangeToWeaponRequirement.c_str());
 		}
 
 		// If we have a NewWeapon specified, insure that we have a valid 
@@ -2391,7 +2399,7 @@ AINodeChangeWeapons::AINodeChangeWeapons()
 		// and get rid of the NewWeapon to avoid gameplay bugs
 		if ( pChangeTo && !pRequired)
 		{
-			Warn("AINode %s has a NewWeapon specified without a RequiredWeapon!", g_pLTServer->GetStringData(m_hstrName));
+			Warn("AINode %s has a NewWeapon specified without a RequiredWeapon!", m_strName.c_str());
 			WeaponSet.m_szChangeToWeapon.assign("");
 		}
 	}

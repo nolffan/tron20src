@@ -1411,7 +1411,7 @@ void CAIHumanStateSearch::GetRandomSearch(AINodeSearch* pNode, CAnimationProps* 
 
 	if ( 0 == nAvailableSearchs )
 	{
-        g_pLTServer->CPrint("GetRandomSearch - couldn't get random search action for node %s", g_pLTServer->GetStringData(pNode->GetName()));
+        g_pLTServer->CPrint("GetRandomSearch - couldn't get random search action for node %s", pNode->GetName().c_str());
 		paniSearch->Set(kAPG_WeaponPosition, kAP_Down);
 		paniSearch->Set(kAPG_Action, kAP_Alert);
 		return;
@@ -1462,7 +1462,7 @@ void CAIHumanStateSearch::GetRandomSearch(AINodeSearch* pNode, CAnimationProps* 
 			return;
 	}
 
-    g_pLTServer->CPrint("GetRandomSearch - couldn't get search action for node %s", g_pLTServer->GetStringData(pNode->GetName()));
+    g_pLTServer->CPrint("GetRandomSearch - couldn't get search action for node %s", pNode->GetName().c_str());
 	paniSearch->Set(kAPG_WeaponPosition, kAP_Down);
 	paniSearch->Set(kAPG_Action, kAP_Alert);
 }
@@ -2268,7 +2268,7 @@ void CAIHumanStateUseObject::Update()
 
 					if( m_pUseNode )
 					{
-						AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT OBJECT=%s -- unable to find path!", g_pLTServer->GetStringData(m_pUseNode->GetName()) ) );
+						AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT OBJECT=%s -- unable to find path!", m_pUseNode->GetName().c_str() ) );
 					}
 					m_eStateStatus = kSStat_StateComplete;
 					return;
@@ -2711,7 +2711,7 @@ LTBOOL CAIHumanStateUseObject::SetNode(AINodeUseObject* pUseNode)
 
 	if( m_bStateHandlesNodeLocking && pUseNode->IsLocked() )
 	{
-		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - use node is already locked!", g_pLTServer->GetStringData(pUseNode->GetName() ) ) );
+		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - use node is already locked!", pUseNode->GetName().c_str() ) );
 		return LTFALSE;
 	}
 	
@@ -2722,7 +2722,7 @@ LTBOOL CAIHumanStateUseObject::SetNode(AINodeUseObject* pUseNode)
 		m_hObject = hObj;
 		if( LT_OK != ltRes )
 		{
-			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - this object does not exist!", g_pLTServer->GetStringData(pUseNode->GetName() ) ) );
+			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - this object does not exist!", pUseNode->GetName().c_str() ) );
 			return LTFALSE;
 		}
 	}
@@ -2757,7 +2757,7 @@ LTBOOL CAIHumanStateUseObject::SetNode(AINodeUseObject* pUseNode)
 	else
 	{
 		m_hObject = LTNULL;
-		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", g_pLTServer->GetStringData( pUseNode->GetName() ) ) );
+		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", pUseNode->GetName().c_str() ) );
 
 		// FINISHED USING OBJECT
 		m_eStateStatus = kSStat_StateComplete;
@@ -6523,7 +6523,7 @@ EnumAIStrategyType CAIHumanStateAttackFromCover::GetRandomCoverStrategy(AINodeCo
 	if ( 0 == nAvailableCovers )
 	{
 		_ASSERT(LTFALSE);
-        g_pLTServer->CPrint("GetRandomCoverStrategy - couldn't get random cover node for node %s", g_pLTServer->GetStringData(pNode->GetName()));
+        g_pLTServer->CPrint("GetRandomCoverStrategy - couldn't get random cover node for node %s", pNode->GetName().c_str());
 		return kStrat_HumanCoverBlind;
 	}
 
@@ -6535,7 +6535,7 @@ EnumAIStrategyType CAIHumanStateAttackFromCover::GetRandomCoverStrategy(AINodeCo
 	if ( dwCover == AINodeCover::kFlag2WayCorner )	return kStrat_HumanCover2WayCorner;
 
 	_ASSERT(LTFALSE);
-    g_pLTServer->CPrint("GetRandomCoverStrategy - couldn't get random cover node for node %s", g_pLTServer->GetStringData(pNode->GetName()));
+    g_pLTServer->CPrint("GetRandomCoverStrategy - couldn't get random cover node for node %s", pNode->GetName().c_str());
 	return kStrat_HumanCoverBlind;
 }
 
@@ -7824,7 +7824,7 @@ void CAIHumanStatePanic::GetRandomPanic(AINodePanic* pNode, CAnimationProp* pPro
 
 	if ( 0 == nAvailablePanics )
 	{
-        AITRACE( AIShowStates, ( GetAI()->m_hObject, "GetRandomPanic - couldn't get random Panic action for node %s", g_pLTServer->GetStringData(pNode->GetName() ) ) );
+        AITRACE( AIShowStates, ( GetAI()->m_hObject, "GetRandomPanic - couldn't get random Panic action for node %s", pNode->GetName().c_str() ) );
 		pProp->Set(kAPG_Posture, kAP_Crouch);
 		return;
 	}
@@ -7843,7 +7843,7 @@ void CAIHumanStatePanic::GetRandomPanic(AINodePanic* pNode, CAnimationProp* pPro
 		return;
 	}
 
-    AITRACE( AIShowStates, ( GetAI()->m_hObject, "GetRandomPanic - couldn't get Panic action for node %s", g_pLTServer->GetStringData(pNode->GetName() ) ) );
+    AITRACE( AIShowStates, ( GetAI()->m_hObject, "GetRandomPanic - couldn't get Panic action for node %s", pNode->GetName().c_str() ) );
 	pProp->Set(kAPG_Posture, kAP_Crouch);
 	return;
 }

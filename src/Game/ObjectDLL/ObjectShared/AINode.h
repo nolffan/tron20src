@@ -8,6 +8,15 @@
 #include "AnimationProp.h"
 #include "GameBase.h"
 #include "DebugLineSystem.h"
+#include "TRON/CaselessString.h"
+#include "AITypes.h"
+
+// RETAIL: Tron's node names are CaselessStrings (AINode::GetName); the AI
+// traces print them (ours: the specialization stands in for HSTRING's)
+inline const char* ToString<CaselessString>(const CaselessString& sString)
+{
+	return sString.c_str();
+}
 
 // Forward declarations.
 enum EnumAISoundType;
@@ -93,7 +102,9 @@ class AINode : public GameBase
 
 		// Name
 
-		HSTRING GetName() const { return m_hstrName; }
+		// RETAIL: Tron keeps the name as a CaselessString (AINode's
+		// constructor at retail 0x1009e7d0 builds a string at 0x38)
+		const CaselessString& GetName() const { return m_strName; }
 
 		// Face
 
@@ -101,7 +112,9 @@ class AINode : public GameBase
 
 		// Owner
 
-		void	SetNodeOwner(HOBJECT hOwner);
+		// RETAIL: Tron's SetNodeOwner, Lock and Unlock return 0 (retail
+		// 0x1009f070, 0x1009f170, 0x1009f260; the type is ours)
+		LTRESULT	SetNodeOwner(HOBJECT hOwner);
 		HOBJECT GetNodeOwner() { return m_hNodeOwner; }
 
 		// Containing volume
@@ -140,8 +153,8 @@ class AINode : public GameBase
 
 		// Lock/Unlock
 
-		void Lock(HOBJECT hAI);
-		void Unlock(HOBJECT hAI);
+		LTRESULT Lock(HOBJECT hAI);
+		LTRESULT Unlock(HOBJECT hAI);
 		LTBOOL IsLocked() const;
 		uint32 GetLockCount() const { return m_nNodeLockCount; }
 		
@@ -185,7 +198,7 @@ class AINode : public GameBase
 
 	protected :
 	
-		HSTRING		m_hstrName;
+		CaselessString	m_strName;
 
 		LTVector	m_vPos;
 

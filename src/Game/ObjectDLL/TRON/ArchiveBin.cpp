@@ -778,5 +778,7 @@ void ArchiveBin::PlayLoopSound()
 	}
 
 	m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, g_pLTServer->GetStringData(m_hstrLoopSound), -1.0f,
-		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
+		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_ATTACHED | PLAYSOUND_GETHANDLE);
+	// RETAIL: PLAYSOUND_ATTACHED, not PLAYSOUND_LOOP (retail pushes 0x18), so
+	// the "loop" sound plays once (docs/RETAIL_BUGS.md)
 }
