@@ -144,6 +144,11 @@ void CTargetMgr::Update()
 		m_bFirstUpdate = false;
 	}
 
+	// RETAIL: Tron keeps the distances (0x1016d91d, 0x1016d944) for the
+	// inline IsTargetInRange
+	m_fActivationDistance = g_vtActivationDistance.GetFloat();
+	m_fTargetDistance = g_vtTargetDistance.GetFloat();
+
 
 	if (m_hLockedTarget && m_hTarget == m_hLockedTarget)
 	{
@@ -1071,24 +1076,8 @@ DamageType CTargetMgr::RequiredGadgetDamageType()
 }
 
 
-bool CTargetMgr::IsTargetInRange()
-{
-	if (!m_hTarget) return false;
+// RETAIL: Tron's IsTargetInRange is inline (TargetMgr.h)
 
-	uint32 dwUserFlags;
-	g_pCommonLT->GetObjectFlags( m_hTarget, OFT_User, dwUserFlags );
-
-	if (m_ActivationData.m_nType == MID_ACTIVATE_REVIVE)
-	{
-		return (m_fTargetRange <= g_vtReviveDistance.GetFloat());
-	}
-	else if( dwUserFlags & USRFLG_GADGET_CAMERA )
-	{
-		return (m_fTargetRange <= g_vtCamZoom1MaxDist.GetFloat());
-	}
-
-	return (m_fTargetRange <= g_vtActivationDistance.GetFloat());
-}
 
 
 void CTargetMgr::ClearTargetInfo()

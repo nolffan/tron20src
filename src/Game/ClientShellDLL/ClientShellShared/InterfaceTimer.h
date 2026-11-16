@@ -23,11 +23,16 @@ class CInterfaceTimer
 {
 	public:
 
-		CInterfaceTimer();
+		// RETAIL: Tron's constructor is inline (build 51's; CInterfaceMgr's
+		// constructor, 0x100c6906..0x100c6918, sets the members)
+		CInterfaceTimer()
+		{
+			m_fTime		= 0.0f;
+			m_bPause	= false;
+			m_pTimeStr	= LTNULL;
+			m_nBaseSize = 0;
+		}
 		~CInterfaceTimer();
-
-		void		SetTeamId( uint8 nTeamId ) { m_nTeamId = nTeamId; }
-		uint8		GetTeamId( ) const { return m_nTeamId; }
 
 		void		Draw();
 
@@ -39,16 +44,17 @@ class CInterfaceTimer
 
 	private:
 
+		// RETAIL: Tron's timer is 0x18 bytes (build 51's members): it has no
+		// team or color (CInterfaceMgr's m_Credits is at +0xe91c)
+
 		// Server game time when timer runs out.
 		float					m_fTime;
 		bool					m_bPause;
-		uint8					m_nTeamId;
 
 		CUIFormattedPolyString	*m_pTimeStr;
 
 		LTIntPt			m_BasePos;
 		uint8			m_nBaseSize;
-		uint32			m_nColor;
 };
 
 #endif  // __INTERFACE_TIMER_H__

@@ -1332,7 +1332,8 @@ void CClientWeaponDisc::SendDefendMessage( uint8 cBlockMsgType, uint32 nAni ) co
 	cMsg.Writeuint8( cBlockMsgType );
 
 	// write the weapon type for server validation
-	cMsg.Writeuint8( m_nAmmoId );
+	// RETAIL: the weapon id (0x10097e43 reads +0x28), not the ammo id
+	cMsg.Writeuint8( m_nWeaponId );
 
 	// write the current timestamp (in milliseconds)
 	cMsg.Writeuint32(

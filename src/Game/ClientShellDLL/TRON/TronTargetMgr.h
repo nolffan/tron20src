@@ -41,17 +41,54 @@ public:
 	// is retail's
 	bool	IsTronUnknown876() {return m_bTronUnknown876;}
 private:
-	bool		m_bEnergyRequired;
-	int			m_nEnergyRequired;
+	// RETAIL: CTronTargetMgr is 0xca0 bytes; CTargetMgr ends at +0x85c.
+	// HandleTargetPropertiesMessage (0x100af220) sets the four flags
+	// +0x85c..+0x85f with their values +0x864..+0x870; the first pair is
+	// the energy, the others are not yet named
+	bool		m_bEnergyRequired;			// +0x85c
+	bool		m_bTronUnknown85D;
+	bool		m_bTronUnknown85E;
+	bool		m_bTronUnknown85F;
+	bool		m_bTronUnknown860;			// RETAIL: read before each of the four
+	int			m_nEnergyRequired;			// +0x864
+	int			m_nTronUnknown868;
+	int			m_nTronUnknown86C;
+	int			m_nTronUnknown870;
 	// RETAIL: see IsPermissionRequired (the names are ours)
-	bool		m_bPermissionRequired;
-	uint8		m_nPermissionRequired;
-	// RETAIL: retail's +0x878 (eight words), +0x888 (three), +0x895: more
-	// target properties, not yet named
-	uint16		m_anTronUnknown878[8];
-	uint32		m_anTronUnknown888[3];
-	bool		m_bTronUnknown895;
-	bool		m_bTronUnknown876;		// RETAIL: +0x876 (see IsTronUnknown876)
+	bool		m_bPermissionRequired;		// +0x874
+	uint8		m_nPermissionRequired;		// +0x875
+	bool		m_bTronUnknown876;			// RETAIL: +0x876 (see IsTronUnknown876)
+	bool		m_bTronUnknown877;
+	// RETAIL: +0x878..+0xc9c: the target's properties. Retail builds them
+	// in a member constructor (its vtable store comes last in 0x100ae410);
+	// the struct and its names are ours
+	struct TronTargetProps
+	{
+		TronTargetProps()
+		{
+			anTronUnknown0[0] = 0;
+			anTronUnknown0[1] = 0;
+			anTronUnknown0[2] = 0;
+			anTronUnknown0[3] = 0;
+			anTronUnknown0[4] = 0;
+			anTronUnknown0[5] = 0;
+			anTronUnknown0[6] = 0;
+			anTronUnknown0[7] = 0;
+			vTronUnknown10.Init();
+			szText[0] = 0;
+			bTronUnknown424 = false;
+		}
+
+		uint16		anTronUnknown0[8];		// +0x878
+		LTVector	vTronUnknown10;			// +0x888
+		uint8		nTronUnknown1C;			// +0x894
+		// RETAIL: +0x895: the properties' text (strncat to 0x3ff
+		// characters, 0x100af594)
+		char		szText[1024];
+		uint32		nTronUnknown420;		// +0xc98
+		bool		bTronUnknown424;		// +0xc9c
+	};
+	TronTargetProps	m_Props;
 };
 
 #endif
