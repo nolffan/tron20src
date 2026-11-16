@@ -60,9 +60,12 @@ CAIGoalSpecialDamage::CAIGoalSpecialDamage()
 	m_bProgressiveDamage = LTFALSE;
 	m_fProgressiveMinTime = 0.f;
 	m_hDamager = LTNULL;
+	m_hTronUnknownE0 = LTNULL;
+	m_hTronUnknownF0 = LTNULL;
 	m_bFleeing = LTFALSE;
 	m_fRelaxTime = 0.f;
-	m_bInfinite = LTFALSE;
+	m_bInfinite = false;
+	m_fTronUnknown108 = 0.f;
 	m_bNeedsClearState = false;
 }
 
@@ -85,10 +88,17 @@ void CAIGoalSpecialDamage::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL( m_bProgressiveDamage );
 	SAVE_FLOAT( m_fProgressiveMinTime );
 	SAVE_HOBJECT( m_hDamager );
+	SAVE_HOBJECT( m_hTronUnknownE0 );
+	SAVE_HOBJECT( m_hTronUnknownF0 );
 	SAVE_BOOL( m_bFleeing );
 	SAVE_TIME( m_fRelaxTime );
-	SAVE_BOOL( m_bInfinite );
+	SAVE_bool( m_bInfinite );
 	SAVE_bool( m_bNeedsClearState );
+	SAVE_FLOAT( m_fTronUnknown108 );
+	SAVE_TIME( m_TronUnknown110.m_fStartTime );
+	SAVE_TIME( m_TronUnknown110.m_fTime );
+	SAVE_FLOAT( m_TronUnknown110.m_fDuration );
+	SAVE_bool( m_TronUnknown110.m_bOn );
 }
 
 void CAIGoalSpecialDamage::Load(ILTMessage_Read *pMsg)
@@ -102,10 +112,17 @@ void CAIGoalSpecialDamage::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL( m_bProgressiveDamage );
 	LOAD_FLOAT( m_fProgressiveMinTime );
 	LOAD_HOBJECT( m_hDamager );
+	LOAD_HOBJECT( m_hTronUnknownE0 );
+	LOAD_HOBJECT( m_hTronUnknownF0 );
 	LOAD_BOOL( m_bFleeing );
 	LOAD_TIME( m_fRelaxTime );
-	LOAD_BOOL( m_bInfinite );
+	LOAD_bool( m_bInfinite );
 	LOAD_bool( m_bNeedsClearState );
+	LOAD_FLOAT( m_fTronUnknown108 );
+	LOAD_TIME( m_TronUnknown110.m_fStartTime );
+	LOAD_TIME( m_TronUnknown110.m_fTime );
+	LOAD_FLOAT( m_TronUnknown110.m_fDuration );
+	LOAD_bool( m_TronUnknown110.m_bOn );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1256,7 +1273,7 @@ LTBOOL CAIGoalSpecialDamage::HandleNameValuePair(const char *szName, const char 
 	{
 		if( IsTrueChar( szValue[0] ) )
 		{
-			m_bInfinite = LTTRUE;
+			m_bInfinite = true;
 			m_eDamageType = DT_SLEEPING;
 		
 			m_pAI->SetDamageFlags( DamageTypeToFlag( DT_SLEEPING ) );
