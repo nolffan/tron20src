@@ -6,6 +6,7 @@
 #include "AIState.h"
 #include "AIHumanStrategy.h"
 #include "AITypes.h"
+#include "Timer.h"
 
 // Forward declarations.
 class CAI;
@@ -330,6 +331,10 @@ class CAIHumanStateAttack : public CAIHumanState
 		CAnimationProp	m_aniPosture;
 		uint32			m_dwAttackFlags;
 		LTFLOAT			m_fCrouchTimer;
+
+		// RETAIL: Tron adds a CTimer at 0x94 (0x101ee720 ctor, 0x101ee910 Init,
+		// 0x101eea50 HandleDamage, 0x101ef790 Load); size 0xa4. Name is ours.
+		CTimer			m_DodgeTimer;
 };
 
 // For constructor.  warning C4355: 'this' : used in base member initializer list
@@ -761,6 +766,10 @@ class CAIHumanStateGoto : public CAIHumanState
 		EnumAISoundType	m_eLoopingAISound;
 		LTFLOAT			m_fCloseEnoughDistSqr;
 		LTBOOL			m_bTurnOffLights;
+
+		// RETAIL: Tron adds a BOOL at 0xf0 (0x101e55d0 ctor, 0x101e5f10 Load,
+		// 0x101e60b0 Save, read at 0x101e5944); size 0xf4. Name is ours.
+		LTBOOL			m_bTronUnknownF0;
 };
 
 class CAIHumanStateFlee : public CAIHumanStateGoto
@@ -951,6 +960,13 @@ class CAIHumanStateUseObject : public CAIHumanState
 		LTBOOL				m_bPlayedFirstSound;
 		LTBOOL				m_bAlertFirst;
 		EnumTrackedNodeGroup m_eTrackingGroup;
+
+		// RETAIL: Tron adds three BOOLs at 0xec, 0xf0, 0xf4 (0x101e7d10 ctor,
+		// 0x101e9830 Save, 0x101e8d60 HandleNameValuePair); size 0xf8.
+		// The names are ours (from the command names).
+		LTBOOL				m_bAllowRotation;			// 0xec "ALLOWROTATION"
+		LTBOOL				m_bInsureAnimObjectClosed;	// 0xf0 "INSUREANIMOBJECTCLOSED"
+		LTBOOL				m_bTronUnknownF4;			// 0xf4
 };
 
 class CAIHumanStateTail : public CAIHumanState

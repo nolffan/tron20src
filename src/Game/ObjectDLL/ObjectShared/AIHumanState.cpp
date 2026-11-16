@@ -874,6 +874,7 @@ CAIHumanStateGoto::CAIHumanStateGoto()
 	m_eMovement = kAP_Walk;
 	m_fCloseEnoughDistSqr = 0.f;
 	m_bTurnOffLights = LTFALSE;
+	m_bTronUnknownF0 = LTFALSE;
 }
 
 CAIHumanStateGoto::~CAIHumanStateGoto()
@@ -1171,6 +1172,7 @@ void CAIHumanStateGoto::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD(m_cNodes);
 	LOAD_DWORD(m_iNextNode);
 	LOAD_BOOL(m_bLoop);
+	LOAD_BOOL(m_bTronUnknownF0);
 
     int iNode;
     for ( iNode = 0 ; iNode < m_cNodes ; iNode++ )
@@ -1203,6 +1205,7 @@ void CAIHumanStateGoto::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD(m_cNodes);
 	SAVE_DWORD(m_iNextNode);
 	SAVE_BOOL(m_bLoop);
+	SAVE_BOOL(m_bTronUnknownF0);
 
 	for ( int iNode = 0 ; iNode < m_cNodes ; iNode++ )
 	{
@@ -2068,6 +2071,10 @@ CAIHumanStateUseObject::CAIHumanStateUseObject()
 	m_bAlertFirst = LTFALSE;
 
 	m_hObject = NULL;
+
+	m_bAllowRotation = LTFALSE;
+	m_bInsureAnimObjectClosed = LTFALSE;
+	m_bTronUnknownF4 = LTFALSE;
 }
 
 CAIHumanStateUseObject::~CAIHumanStateUseObject()
@@ -2692,6 +2699,15 @@ void CAIHumanStateUseObject::HandleNameValuePair(char *szName, char *szValue)
 			m_pUseNode->Lock( GetAI()->m_hObject );
 		}
 	}
+	// RETAIL: 0x101e8eea, Tron's two commands.
+	else if ( !_stricmp(szName, "ALLOWROTATION") )
+	{
+		m_bAllowRotation = !_stricmp(szValue, "TRUE");
+	}
+	else if ( !_stricmp(szName, "INSUREANIMOBJECTCLOSED") )
+	{
+		m_bInsureAnimObjectClosed = !_stricmp(szValue, "TRUE");
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2880,6 +2896,9 @@ void CAIHumanStateUseObject::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bVulnerable);
 	LOAD_BOOL(m_bPlayedFirstSound);
 	LOAD_BOOL(m_bAlertFirst);
+	LOAD_BOOL(m_bAllowRotation);
+	LOAD_BOOL(m_bInsureAnimObjectClosed);
+	LOAD_BOOL(m_bTronUnknownF4);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2918,6 +2937,9 @@ void CAIHumanStateUseObject::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bVulnerable);
 	SAVE_BOOL(m_bPlayedFirstSound);
 	SAVE_BOOL(m_bAlertFirst);
+	SAVE_BOOL(m_bAllowRotation);
+	SAVE_BOOL(m_bInsureAnimObjectClosed);
+	SAVE_BOOL(m_bTronUnknownF4);
 }
 
 // ----------------------------------------------------------------------- //
@@ -5223,6 +5245,11 @@ void CAIHumanStateHolster::Save(ILTMessage_Write *pMsg)
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1029b45c/0x1029b460 hold 3.0 and 5.0, read from memory (not
+// pushed as constants). The names are ours.
+static LTFLOAT s_fDodgeTimerMin = 3.0f;
+static LTFLOAT s_fDodgeTimerMax = 5.0f;
+
 CAIHumanStateAttack::CAIHumanStateAttack()
 {
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
@@ -5316,6 +5343,9 @@ LTBOOL CAIHumanStateAttack::Init(CAIHuman* pAIHuman)
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
 
+	// RETAIL: 0x101eea0c, Tron starts the dodge timer.
+	m_DodgeTimer.Start( GetRandom( s_fDodgeTimerMin, s_fDodgeTimerMax ) );
+
 	return LTTRUE;
 }
 
@@ -5323,13 +5353,15 @@ LTBOOL CAIHumanStateAttack::Init(CAIHuman* pAIHuman)
 
 void CAIHumanStateAttack::HandleDamage(const DamageStruct& damage)
 {
-	super::HandleDamage(damage);
-
-	// Dodge if we're getting pegged.
+	// RETAIL: 0x101eea50. Tron dodges only when the dodge timer has run out,
+	// and does not call the base class.
 
 	if( GetAI()->GetBrain()->GetDodgeVectorCheckChance() > 0.f )
 	{
-		m_dwAttackFlags |= kAttk_ForceDodge;
+		if( 0.f == m_DodgeTimer.GetCountdownTime() )
+		{
+			m_dwAttackFlags |= kAttk_ForceDodge;
+		}
 	}
 
 	// Reset our timers if we're getting pegged so we don't just stand there
@@ -5811,6 +5843,7 @@ void CAIHumanStateAttack::Load(ILTMessage_Read *pMsg)
 
 	LOAD_FLOAT(m_fCrouchTimer);
 	LOAD_DWORD(m_dwAttackFlags);
+	m_DodgeTimer.Load(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -5840,6 +5873,7 @@ void CAIHumanStateAttack::Save(ILTMessage_Write *pMsg)
 
 	SAVE_FLOAT(m_fCrouchTimer);
 	SAVE_DWORD(m_dwAttackFlags);
+	m_DodgeTimer.Save(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
