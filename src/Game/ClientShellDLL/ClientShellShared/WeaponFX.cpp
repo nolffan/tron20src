@@ -42,6 +42,7 @@ VarTrack	g_cvarShowFirePath;
 VarTrack	g_cvarLightBeamColorDelta;
 VarTrack	g_cvarImpactPitchShift;
 VarTrack	g_cvarFlyByRadius;
+VarTrack	g_cvarFlyBySoundRadius;	// RETAIL: Tron's (0x1018e635); the name is ours
 VarTrack	g_vtBloodSplatsMinNum;
 VarTrack	g_vtBloodSplatsMaxNum;
 VarTrack	g_vtBloodSplatsMinLifetime;
@@ -181,7 +182,12 @@ LTBOOL CWeaponFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	if (!g_cvarFlyByRadius.IsInitted())
 	{
-		g_cvarFlyByRadius.Init(g_pLTClient, "FlyByRadius", NULL, 600.0f);
+		g_cvarFlyByRadius.Init(g_pLTClient, "FlyByRadius", NULL, 300.0f);	// RETAIL: Tron's default (0x1018e584)
+	}
+
+	if (!g_cvarFlyBySoundRadius.IsInitted())
+	{
+		g_cvarFlyBySoundRadius.Init(g_pLTClient, "FlyBySoundRadius", NULL, 500.0f);
 	}
 
 	if (!g_vtBloodSplatsMinNum.IsInitted())
