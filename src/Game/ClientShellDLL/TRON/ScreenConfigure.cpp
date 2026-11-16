@@ -372,17 +372,23 @@ void CScreenConfigure::SetControlText(CLTGUICtrl *pCtrl)
 	}
 
 
+	// RETAIL: 0x10056ed0: Tron widens the text into one string of its own.
+	// NEAR: retail frees it through the STLport allocator proxy (out of line)
+	std::wstring sText;
+
 	// If the key is unassigned, then just set the text to the unassigned message
 	if (strlen(strControls) == 0 )
 	{
 		char szTmp[64];
 		FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
-		pCol->SetString(SCREEN_COLUMN_KEY, szTmp);
+		LTGUIWiden(sText, szTmp);
+		pCol->SetString(SCREEN_COLUMN_KEY, sText);
 	}
 	else
 	{
 		// Set the text in the control
-		pCol->SetString(SCREEN_COLUMN_KEY, strControls);
+		LTGUIWiden(sText, strControls);
+		pCol->SetString(SCREEN_COLUMN_KEY, sText);
 	}
 }
 
