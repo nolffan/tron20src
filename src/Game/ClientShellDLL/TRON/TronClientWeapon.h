@@ -59,6 +59,11 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 protected:
+	// RETAIL: slots 52, 53 (0x10097520, 0x100975e0): NOLF2's, with Tron's
+	// deselect animation (slot 92)
+	virtual void  UpdateFiring();
+	virtual void  UpdateNonFiring();
+
 	// RETAIL: slot 57 (0x10097a20): firing spends the shot's energy
 	virtual void  Fire( bool bFire );
 
