@@ -989,10 +989,7 @@ bool ClientMultiplayerMgr::StartServerAsSinglePlayer( )
 
 bool ClientMultiplayerMgr::StartClientServer( )
 {
-	//clear out old session specific data before starting new session
-	m_nTeam = INVALID_TEAM;
-	m_bHasSelectedTeam = false;
-
+	// RETAIL: Tron's (0x100e95b0) keeps the team data here
 	switch( m_StartGameRequest.m_Type )
 	{
 		case STARTGAME_NORMAL:
