@@ -950,6 +950,19 @@ the later in the level it is reset.
 Not fixed yet: the modern build should start the timer with the lifetime
 only.
 
+### Following bouncy chunks and particle systems do not follow
+
+ClientFx.fxd 0x1000ff20 (CLTBBouncyChunkFX::GetSpawnTransform) and
+0x10017d30 (CParticleSystemFX::GetSpawnTransform; the names are ours).
+For the follow type UP_FOLLOW, the function reads the parent's position
+into the effect's m_vPos, not into the position it returns. It then adds
+the offset to the old position. The chunk or system therefore starts at
+its create position plus the offset, not at the parent. The particle
+system's function also adds m_vTronUnknown to the offset two times.
+
+Not fixed yet: the modern build should read the parent's position into
+the returned position.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
