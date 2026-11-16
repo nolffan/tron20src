@@ -145,7 +145,8 @@ void CMenuHelp::OnFocus(LTBOOL bFocus)
 			}
 
 			sName.erase();
-			for (uint32 n = 0; n < strlen(pName); n++)
+			uint32 nLen = strlen(pName);
+			for (uint32 n = 0; n < nLen; n++)
 			{
 				sName += (wchar_t)(uint8)pName[n];
 			}
