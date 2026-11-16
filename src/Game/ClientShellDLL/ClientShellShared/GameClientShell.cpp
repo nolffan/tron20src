@@ -58,6 +58,15 @@
 #include "ScmdConsoleDriver_CShell.h"
 #include "mmsystem.h"
 
+// RETAIL: Tron's string ids (the names are ours; Tron's string table is
+// not NOLF2's, see ClientResShared.h)
+#define IDS_TRON_WEAPONPICKUP				600		// 0x100e7475
+#define IDS_TRON_AMMOPICKUP					603		// 0x100e782f
+#define IDS_TRON_AMMO_NOPICKUP				499		// 0x100e7848
+#define IDS_TRON_WEAPON_NOPICKUP			222		// 0x100e74dc
+#define IDS_TRON_WEAPON_NOPICKUP_INF		223		// 0x100e74c6
+#define IDS_TRON_PERFORMANCE_TEST_ABORTED	585		// 0x100e5442
+
 #ifdef STRICT
 	WNDPROC g_pfnMainWndProc = NULL;
 #else
@@ -1356,13 +1365,16 @@ void CGameClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
         case LTEVENT_LOSTFOCUS:
 		{
 			m_bMainWindowFocus = FALSE;
-			
+
+			// RETAIL: Tron's stops the music while the window is away (0x100e36df)
+			m_Music.Stop();
 		}
 		break;
 
 		case LTEVENT_GAINEDFOCUS:
 		{
 			m_bMainWindowFocus = TRUE;
+			m_Music.Play();
 		}
 		break;
 
@@ -2228,17 +2240,13 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 // ----------------------------------------------------------------------- //
 void CGameClientShell::OnKeyUp(int key)
 {
-	// The engine handles the VK_F8 key for screenshots.
-	if( key == VK_F8 )
-		return;
-
+	// RETAIL: Tron's has no test of VK_F8 here (0x100e4280)
 	if (IsRunningPerformanceTest())
 		return;
 
 	if (GetInterfaceMgr( )->OnKeyUp(key))
 		return;
-	if (GetPlayerMgr()->OnKeyUp(key)) 
-		return;
+	GetPlayerMgr()->OnKeyUp(key);
 }
 
 
@@ -2270,7 +2278,7 @@ void CGameClientShell::OnMessage(ILTMessage_Read *pMsg)
 	if( g_pClientMultiplayerMgr->OnMessage(messageID, cSubMsg ))
 		return;
 
-	if( g_pMissionMgr->OnMessage( messageID, *cSubMsg ))
+	if( GetMissionMgr( )->OnMessage( messageID, *cSubMsg ))
 		return;
 
 	if( g_pClientSaveLoadMgr->OnMessage( messageID, *cSubMsg ))
@@ -2339,8 +2347,7 @@ void CGameClientShell::HandleMsgMusic (ILTMessage_Read *pMsg)
 
 void CGameClientShell::HandleMsgPlayerLoadClient (ILTMessage_Read *pMsg)
 {
-	// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
-	pMsg->Readuint32( );
+	// RETAIL: Tron's message has no save version (0x100e4640)
 	CLTMsgRef_Read pSaveMessage = pMsg->ReadMessage();
 	UnpackClientSaveMsg(pSaveMessage);
 }
@@ -3186,7 +3193,8 @@ void CGameClientShell::PreLoadWorld(const char *pWorldName)
 		RestoreMainWindow();
 	}
 
-	g_pMissionMgr->PreLoadWorld( pWorldName );
+	// RETAIL: through the virtual accessor (0x100e5180)
+	GetMissionMgr( )->PreLoadWorld( pWorldName );
 }
 
 // ----------------------------------------------------------------------- //
@@ -3408,23 +3416,17 @@ void CGameClientShell::AbortPerformanceTest()
 		g_pClientMultiplayerMgr->ForceDisconnect();
 	}
 
+	// RETAIL: Tron's (0x100e53e0) always shows the message, then rebuilds
+	// the history and goes back to the performance screen
+	MBCreate mb;
+	GetInterfaceMgr( )->ShowMessageBox(IDS_TRON_PERFORMANCE_TEST_ABORTED, &mb);
+
 	//since our history was cleared by loading the level... rebuild it
 	g_pInterfaceMgr->GetScreenMgr()->AddScreenToHistory( SCREEN_ID_MAIN );
 	g_pInterfaceMgr->GetScreenMgr()->AddScreenToHistory( SCREEN_ID_OPTIONS );
 
-	if ( GetInterfaceMgr( )->GetGameState() == GS_LOADINGLEVEL)
-	{
-		GetInterfaceMgr( )->LoadFailed(SCREEN_ID_PERFORMANCE,IDS_PERFORMANCE_TEST_ABORTED);
-	}
-	else
-	{
-
-		MBCreate mb;
-		GetInterfaceMgr( )->ShowMessageBox(IDS_PERFORMANCE_TEST_ABORTED, &mb);
-
-		//we aborted performance testing go back to performance screen
-		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PERFORMANCE);
-	}
+	//we aborted performance testing go back to performance screen
+	g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PERFORMANCE);
 }
 
 
@@ -4095,6 +4097,11 @@ void CGameClientShell::ResetDynamicWorldProperties(LTBOOL bUseWorldFog)
 		MirrorSConVar("SC_VFogMinYVal", "VFogMinYVal");
 	}
 
+	// RETAIL: Tron's screen glow fog, also without the world's fog (0x100e6508)
+	MirrorSConVar("ScreenGlowFogEnable", "ScreenGlowFogEnable");
+	MirrorSConVar("ScreenGlowFogNearZ", "ScreenGlowFogNearZ");
+	MirrorSConVar("ScreenGlowFogFarZ", "ScreenGlowFogFarZ");
+
 	//update the shadow information
 	MirrorSConVar("ModelShadow_Proj_Alpha", "ModelShadow_Proj_Alpha");
 	MirrorSConVar("ModelShadow_Proj_MinColorComponent", "ModelShadow_Proj_MinColorComponent");
@@ -4702,20 +4709,20 @@ void CGameClientShell::HandleWeaponPickup(uint8 nWeaponID, bool bSuccess /* = tr
 	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponID);
 	if (!pWeapon) return;
 
-	char szMsg[128] = "";
+	// RETAIL: Tron's (0x100e73f0) names the weapon by its string id
+	int nNameId = pWeapon->nNameId;
+	if (!nNameId) return;
+
+	char szName[64];
+	LoadString(nNameId,szName,sizeof(szName));
+	if (!strlen(szName)) return;
+
+	char szMsg[128];
 	if (bSuccess)
 	{
-		if (g_pPlayerStats->HaveWeapon(nWeaponID) && g_pPlayerMgr->IsSearching())
-		{
-			g_pPickupMsgs->AddMessage(LoadTempString(IDS_DISARMED),"");
-			return;
-		}
-		else
-		{
-			FormatString(IDS_GUNPICKUP,szMsg,sizeof(szMsg),pWeapon->szName);
-		}
+		FormatString(IDS_TRON_WEAPONPICKUP,szMsg,sizeof(szMsg),szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
 		if (pWeapon->bIsAmmo && pWeapon->nIsAmmoNoPickupId)
 		{
@@ -4723,11 +4730,11 @@ void CGameClientShell::HandleWeaponPickup(uint8 nWeaponID, bool bSuccess /* = tr
 		}
 		else if (pWeapon->bInfiniteAmmo)
 		{
-			FormatString(IDS_GUN_NOPICKUP_INF,szMsg,sizeof(szMsg),pWeapon->szName);
+			FormatString(IDS_TRON_WEAPON_NOPICKUP_INF,szMsg,sizeof(szMsg),szName);
 		}
 		else
 		{
-			FormatString(IDS_GUN_NOPICKUP,szMsg,sizeof(szMsg),pWeapon->szName);
+			FormatString(IDS_TRON_WEAPON_NOPICKUP,szMsg,sizeof(szMsg),szName);
 		}
 
 		// Play the sound bute NoPickupSound
@@ -4737,7 +4744,7 @@ void CGameClientShell::HandleWeaponPickup(uint8 nWeaponID, bool bSuccess /* = tr
 	// If the weapon is really ammo (e.g., grenade), don't display a pickup message, only 
 	// display a message if we didn't pick up the weapon...
 
-	if (szMsg[0] && (!pWeapon->bIsAmmo || !bSuccess))
+	if (!pWeapon->bIsAmmo || !bSuccess)
 	{
 		std::string icon = pWeapon->GetSilhouetteIcon();
 		g_pPickupMsgs->AddMessage(szMsg,icon.c_str());
@@ -4840,23 +4847,30 @@ void CGameClientShell::HandleAmmoPickup(uint8 nAmmoId, int nAmmoCount,
 	if (pAmmo->nSelectionAmount >= 1000)
 		return;
 
-	char szMsg[1280] = "";
+	// RETAIL: Tron's (0x100e7780) names the ammo by its string id
+	int nNameId = pAmmo->nNameId;
+	if (!nNameId) return;
+
+	char szName[64];
+	LoadString(nNameId,szName,sizeof(szName));
+	if (!strlen(szName)) return;
+
+	char szMsg[1280] = {0};
 	if (bSuccess)
 	{
-		//check for "infinite" ammo types
-		FormatString(IDS_AMMOPICKUP,szMsg,sizeof(szMsg),nAmmoCount,pAmmo->szName);
+		FormatString(IDS_TRON_AMMOPICKUP,szMsg,sizeof(szMsg),nAmmoCount,szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
-		FormatString(IDS_AMMO_NOPICKUP,szMsg,sizeof(szMsg),pAmmo->szName);
+		FormatString(IDS_TRON_AMMO_NOPICKUP,szMsg,sizeof(szMsg),szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
 	}
 
-	if (szMsg[0])
+	if (szMsg)
 	{
-		std::string icon = pAmmo->GetNormalIcon();
+		std::string icon = pAmmo->GetUnselectedIcon();
 
 		// Use the weapon's icon if necessary...
 		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
@@ -4986,25 +5000,29 @@ void CGameClientShell::SetGameType(GameType eGameType)
 {
 	if (m_eGameType == eGameType) return;
 
-	switch( eGameType )
-	{
-		// Single player and coop use the same weapon files...
+	// RETAIL: Tron's (0x100e7d00)
+	char szMsg[256];
+	sprintf( szMsg, "Setting game type: %s", GameTypeToString( eGameType ));
+	g_pLTClient->CPrint( szMsg );
 
-		case eGameTypeSingle:
-		case eGameTypeCooperative:
-		{
-			g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_FILE );
-		}
-		break;
-
-		case eGameTypeDeathmatch:
-		case eGameTypeTeamDeathmatch:
-		case eGameTypeDoomsDay:
-		{
-			g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_MULTI_FILE );
-		}
-		break;
-		
-	}
 	m_eGameType = eGameType;
+
+	// The disc games use the multiplayer weapon files...
+	if( IsDiscGameType( ))
+	{
+		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_MULTI_FILE );
+	}
+	else
+	{
+		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_FILE );
+	}
+
+	if( eGameType != eGameTypeMultiplayerLightcycles )
+	{
+		g_pLTClient->RunConsoleString( "AlwaysUpdate 0" );
+	}
+	else
+	{
+		g_pLTClient->RunConsoleString( "AlwaysUpdate 1" );
+	}
 }
