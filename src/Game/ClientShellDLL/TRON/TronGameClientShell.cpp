@@ -17,9 +17,110 @@
 
 #include "clientmultiplayermgr.h"
 #include "iserverdir.h"
+#include "TexturedFrame.h"
 
 // Sample rate
 int g_nSampleRate = 44100;
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	LCFn
+//
+//	PURPOSE:	RETAIL: 0x10099810: the "LC" console program (the
+//				function's name is ours): "LC color <name>" sets the
+//				player's light cycle colour
+//
+// ----------------------------------------------------------------------- //
+
+static void LCFn(int argc, char **argv)
+{
+	if (argc < 2)
+	{
+		g_pLTClient->CPrint("LC <color> [color]");
+		return;
+	}
+
+	if (_stricmp(argv[0], "color") == 0)
+	{
+		g_pPlayerMgr->TronUnknownVirtual90(argv[1], true, true);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	FrameFn
+//
+//	PURPOSE:	RETAIL: 0x10099860: the "Frame" console program (the
+//				function's name is ours): moves an edge of a piece of the
+//				textured frame last initialised
+//
+// ----------------------------------------------------------------------- //
+
+static void FrameFn(int argc, char **argv)
+{
+	if (argc != 3)
+	{
+		g_pLTClient->CPrint("Frame <piece> <edge> <value>");
+		return;
+	}
+
+	int nPiece = atoi(argv[0]);
+	int nValue = atoi(argv[2]);
+	int nEdge;
+	if (_strcmpi(argv[1], "left") == 0)
+		nEdge = 0;
+	else if (_strcmpi(argv[1], "top") == 0)
+		nEdge = 1;
+	else if (_strcmpi(argv[1], "right") == 0)
+		nEdge = 2;
+	else if (_strcmpi(argv[1], "bottom") == 0)
+		nEdge = 3;
+	else
+		return;
+
+	if (g_pTexturedFrame)
+	{
+		g_pTexturedFrame->AdjustPiece(nPiece, nEdge, nValue);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	FrameUVFn
+//
+//	PURPOSE:	RETAIL: 0x10099920: the "FrameUV" console program (the
+//				function's name is ours): as "Frame", for the piece's
+//				texture coordinates
+//
+// ----------------------------------------------------------------------- //
+
+static void FrameUVFn(int argc, char **argv)
+{
+	if (argc != 3)
+	{
+		g_pLTClient->CPrint("FrameUV <piece> <edge> <value>");
+		return;
+	}
+
+	int nPiece = atoi(argv[0]);
+	int nValue = atoi(argv[2]);
+	int nEdge;
+	if (_strcmpi(argv[1], "left") == 0)
+		nEdge = 0;
+	else if (_strcmpi(argv[1], "top") == 0)
+		nEdge = 1;
+	else if (_strcmpi(argv[1], "right") == 0)
+		nEdge = 2;
+	else if (_strcmpi(argv[1], "bottom") == 0)
+		nEdge = 3;
+	else
+		return;
+
+	if (g_pTexturedFrame)
+	{
+		g_pTexturedFrame->AdjustPieceUV(nPiece, nEdge, nValue);
+	}
+}
 
 
 // ----------------------------------------------------------------------- //
@@ -93,13 +194,17 @@ uint32 CTronGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	uint32 nResult = CGameClientShell::OnEngineInitialized(pMode, pAppGuid);
 
 	// RETAIL: 0x1009a020 then inits the light cycle manager and the match
-	// managers. PORT: and registers the "Frame" and "FrameUV" console
-	// programs: not in our build yet
+	// managers, and registers the "LC", "Frame" and "FrameUV" console
+	// programs
 	if (nResult == LT_OK)
 	{
 		m_LightCycleMgr.Init();
 		m_DiscMatchMgr.Init();
 		m_LightCycleMatchMgr.Init();
+
+		g_pLTClient->RegisterConsoleProgram("LC", LCFn);
+		g_pLTClient->RegisterConsoleProgram("Frame", FrameFn);
+		g_pLTClient->RegisterConsoleProgram("FrameUV", FrameUVFn);
 	}
 
 	return nResult;
