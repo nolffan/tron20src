@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "InterfaceMgr.h"
+#include "ltquaduvutils.h"
 #include "GameClientShell.h"
 #include "MsgIDs.h"
 #include "WeaponStringDefs.h"
@@ -1063,21 +1064,55 @@ void CInterfaceMgr::UpdateScreenState()
 	// to whatever it was before the screen state was entered.
 	WriteConsoleInt("FogEnable", 0);
 
-
+	// RETAIL: 0x100c89c0: Tron draws the light cycle match's countdown, the
+	// credits and the cursor lines here, and the sprites unless a message
+	// box is up
 	if (!GetScreenMgr( )->UpdateInterfaceSFX())
+	{
 		m_bSuppressNextFlip = true;
+		return;
+	}
+
+	g_pLTClient->Start3D();
+
+	DrawSFX();
+
+	g_pLTClient->StartOptimized2D();
+
+	if (GetGameType() == eGameTypeMultiplayerLightcycles && g_pLTClient->IsConnected())
+	{
+		g_pTransmission->Update();
+		DrawTronUnknownMessage();
+		g_pTransmission->Render();
+	}
+
+	if (m_Credits.IsInited())
+	{
+		if (m_Credits.IsDone())
+		{
+			m_Credits.Term();
+		}
+		else
+		{
+			m_Credits.Update();
+		}
+	}
 	else
 	{
-		g_pLTClient->Start3D();
-
-		DrawSFX();
-
-		g_pLTClient->StartOptimized2D();
 		m_InterfaceResMgr.DrawScreen();
-		UpdateScreenFade();
-		g_pLTClient->EndOptimized2D();
-		g_pLTClient->End3D();
 	}
+
+	m_CursorMgr.RenderCursorLines();
+
+	UpdateScreenFade();
+
+	if (!m_MessageBox.IsVisible())
+	{
+		m_ScreenSpriteMgr.Update();
+	}
+
+	g_pLTClient->EndOptimized2D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -6222,6 +6257,114 @@ void CInterfaceMgr::SetTronUnknownMessage(float fDuration, int nStringId, const 
 	else
 	{
 		m_szTronUnknownF994[0] = '\0';
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::DrawTronUnknownMessage
+//
+//	PURPOSE:	RETAIL: 0x100d0020 (the name is ours): in the light cycle
+//				game types, the timed message counts down its seconds;
+//				without a text a 3, 2, 1, 0 fades through its quarters
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::DrawTronUnknownMessage()
+{
+	if (GetGameType() != eGameTypeMultiplayerLightcycles &&
+		GetGameType() != eGameTypeSingleLightCycleCircuit &&
+		GetGameType() != eGameTypeSingleLightCycleCustom)
+	{
+		return;
+	}
+
+	if (!(m_fTronUnknownF98C < 0.0f))
+	{
+	float fElapsed = g_pLTClient->TronUnknownVirtual44() - m_fTronUnknownF98C;
+	if (fElapsed > m_fTronUnknownF990)
+	{
+		m_fTronUnknownF98C = -1.0f;
+		return;
+	}
+
+	char szTex[64];
+
+	if (m_szTronUnknownF994[0])
+	{
+		uint16 nSeconds = (uint16)(m_fTronUnknownF990 - fElapsed);
+
+		char szMsg[128];
+		if (m_bTronUnknownFA54)
+		{
+			sprintf(szMsg, "%s %s: %d", m_szTronUnknownF994, m_szTronUnknownFA14, nSeconds);
+		}
+		else
+		{
+			sprintf(szMsg, "%s %s %d", m_szTronUnknownF994, m_szTronUnknownFA14, nSeconds);
+		}
+
+		g_pTransmission->Show(szMsg);
+	}
+	else
+	{
+		float fQuarter = m_fTronUnknownF990 * 0.25f;
+		float fStart;
+
+		if (fElapsed < fQuarter)
+		{
+			fStart = m_fTronUnknownF98C;
+			sprintf(szTex, "interface\\hud\\tronnumber_3.dtx");
+		}
+		else
+		{
+			float fHalf = fQuarter + fQuarter;
+			if (fElapsed < fHalf)
+			{
+				fStart = fQuarter + m_fTronUnknownF98C;
+				sprintf(szTex, "interface\\hud\\tronnumber_2.dtx");
+			}
+			else
+			{
+				float fThreeQuarters = fQuarter * 3.0f;
+				if (fElapsed < fThreeQuarters)
+				{
+					fStart = fHalf + m_fTronUnknownF98C;
+					sprintf(szTex, "interface\\hud\\tronnumber_1.dtx");
+				}
+				else
+				{
+					fStart = fThreeQuarters + m_fTronUnknownF98C;
+					sprintf(szTex, "interface\\hud\\tronnumber_0.dtx");
+				}
+			}
+		}
+
+		float fAlpha = 1.0f - (g_pLTClient->TronUnknownVirtual44() - fStart) / fQuarter;
+		HTEXTURE hTex = g_pInterfaceResMgr->GetTexture(szTex);
+
+		LT_POLYFT4 poly;
+
+		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+
+		g_pDrawPrim->SetXYWH(&poly, g_pInterfaceResMgr->GetXRatio() * 256.0f, g_pInterfaceResMgr->GetYRatio() * 20.0f,
+			g_pInterfaceResMgr->GetXRatio() * 128.0f, g_pInterfaceResMgr->GetYRatio() * 128.0f);
+		SetupQuadUVs(poly, hTex, 0.0f, 0.0f, 1.0f, 1.0f);
+		g_pDrawPrim->SetRGB(&poly, 0xffffff);
+		g_pDrawPrim->SetALPHA(&poly, (uint8)(fAlpha * 255.0f));
+		g_pDrawPrim->SetTexture(hTex);
+		g_pDrawPrim->DrawPrim(&poly, 1);
+	}
+}
+	else
+	{
+		g_pTransmission->Term();
 	}
 }
 

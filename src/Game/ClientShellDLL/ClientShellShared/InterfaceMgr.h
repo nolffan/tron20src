@@ -338,6 +338,8 @@ class CInterfaceMgr
 		// string, else none; the second text is cleared): the light cycle
 		// match manager's. The names are ours
 		void	SetTronUnknownMessage(float fDuration, int nStringId, const char* pszText, bool bTronUnknown);
+		// RETAIL: 0x100d0020: the timed message's countdown (the name is ours)
+		void	DrawTronUnknownMessage();
 		// RETAIL: 0x100cfed0: the normal FOV and the first person camera
 		// (the light cycle match manager, CTronPlayerMgr). The name is ours
 		void	TronUnknownFirstPersonCamera(bool bInstant);
