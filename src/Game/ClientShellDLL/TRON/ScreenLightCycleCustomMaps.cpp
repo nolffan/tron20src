@@ -68,6 +68,17 @@ namespace
 		return p;
 	}
 
+	// RETAIL: the maps are sorted by their file names (the comparison's
+	// list merge is 0x10062980, which both map screens call; names ours)
+	struct FileNameLess
+	{
+		bool operator()(const std::string & sA, const std::string & sB) const
+		{
+			const char *pszA = GetFileName(sA.c_str());
+			return stricmp(pszA, GetFileName(sB.c_str())) < 0;
+		}
+	};
+
 	// RETAIL: 0x1006b510: a circuit's map is locked until the profile has
 	// unlocked it
 	bool IsMapLocked(std::string sMap)
@@ -452,7 +463,7 @@ LTBOOL CScreenLightCycleCustomMaps::FillAvailList()
 	StringArray::iterator iter;
 	for (iter = m_saMaps.begin(); iter != m_saMaps.end(); ++iter)
 		lstMaps.push_back(*iter);
-	lstMaps.sort();
+	lstMaps.sort(FileNameLess());
 	m_saMaps.erase(m_saMaps.begin(),m_saMaps.end());
 	StringList::iterator iterList;
 	for (iterList = lstMaps.begin(); iterList != lstMaps.end(); ++iterList)

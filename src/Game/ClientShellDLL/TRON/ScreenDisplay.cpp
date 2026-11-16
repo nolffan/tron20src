@@ -22,14 +22,6 @@ namespace
 {
 	int kGap = 0;
 	int kWidth = 100;
-	void AreYouSureCallBack(LTBOOL bReturn, void *pData)
-	{
-		CScreenDisplay *pThisScreen = (CScreenDisplay *)pData;
-		if (pThisScreen)
-		{
-			pThisScreen->ConfirmHardwareCursor(bReturn);
-		}
-	}
 	LTBOOL bInitTex;
 	LTBOOL bInitLM;
 
@@ -137,7 +129,6 @@ CScreenDisplay::CScreenDisplay()
 	m_bEscape		=	LTFALSE;
 
     m_pResolutionCtrl   = LTNULL;
-	m_pHardwareCursor	= LTNULL;
 }
 
 CScreenDisplay::~CScreenDisplay()
@@ -178,7 +169,8 @@ LTBOOL CScreenDisplay::Build()
 	// Setup the resolution control based on the current renderer
 	SetupResolutionCtrl();
 
-	m_pHardwareCursor = AddToggle(IDS_HARDWARE_CURSOR,IDS_HELP_HARDWARE_CURSOR,kGap,&m_bHardwareCursor);
+	// RETAIL: Tron's screen has no hardware cursor control (its Build,
+	// 0x10058a10, differs more: not yet written from retail)
 
 	AddToggle(IDS_VSYNC,IDS_HELP_VSYNC,kGap,&m_bVSync);
 
@@ -433,7 +425,6 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 
 		
 
-		m_pHardwareCursor->Enable(GetConsoleInt("DisableHardwareCursor",0) == 0);
 
 		// The current render mode
 		RMode currentMode;
@@ -562,10 +553,7 @@ LTBOOL CScreenDisplay::OnLButtonUp(int x, int y)
 	if (GetControlUnderPoint(x, y, &nControlIndex))
 	{
 		CLTGUICtrl* pCtrl = GetControl(nControlIndex);
-		if (pCtrl == m_pHardwareCursor)
-		{
-			return OnRight();
-		}
+		// RETAIL: Tron's (0x10059600, 0x100596c0) has no hardware cursor control
 		if (pCtrl == m_pGamma)
 		{
 			if (!pCtrl->OnLButtonUp(x,y)) return LTFALSE;
@@ -586,10 +574,7 @@ LTBOOL CScreenDisplay::OnRButtonUp(int x, int y)
 	if (GetControlUnderPoint(x, y, &nControlIndex))
 	{
 		CLTGUICtrl* pCtrl = GetControl(nControlIndex);
-		if (pCtrl == m_pHardwareCursor)
-		{
-			return OnLeft();
-		}
+		// RETAIL: Tron's (0x10059600, 0x100596c0) has no hardware cursor control
 		if (pCtrl == m_pGamma)
 		{
 			if (!pCtrl->OnRButtonUp(x,y)) return LTFALSE;
@@ -609,23 +594,7 @@ LTBOOL CScreenDisplay::OnLeft()
 {
 	if (!CBaseScreen::OnLeft()) return LTFALSE;
 	CLTGUICtrl* pCtrl = GetSelectedControl();
-	if (pCtrl == m_pHardwareCursor)
-	{
-		m_pHardwareCursor->UpdateData(LTTRUE);
-		if (m_bHardwareCursor)
-		{
-			MBCreate mb;
-			mb.eType = LTMB_YESNO;
-			mb.pFn = AreYouSureCallBack;
-			mb.pData = this;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_CURSOR,&mb,0,LTFALSE);
-		}
-		else
-		{
-			g_pCursorMgr->UseHardwareCursor(LTFALSE);
-			WriteConsoleInt("HardwareCursor",0);
-		}
-	}
+	// RETAIL: Tron's (0x10059780, 0x10059810) has no hardware cursor control
 	if (GetSelectedControl() == m_pGamma)
 	{
 		pCtrl->UpdateData();
@@ -641,23 +610,7 @@ LTBOOL CScreenDisplay::OnRight()
 {
 	if (!CBaseScreen::OnRight()) return LTFALSE;
 	CLTGUICtrl* pCtrl = GetSelectedControl();
-	if (pCtrl == m_pHardwareCursor)
-	{
-		m_pHardwareCursor->UpdateData(LTTRUE);
-		if (m_bHardwareCursor)
-		{
-			MBCreate mb;
-			mb.eType = LTMB_YESNO;
-			mb.pFn = AreYouSureCallBack;
-			mb.pData = this;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_CURSOR,&mb,0,LTFALSE);
-		}
-		else
-		{
-			g_pCursorMgr->UseHardwareCursor(LTFALSE);
-			WriteConsoleInt("HardwareCursor",0);
-		}
-	}
+	// RETAIL: Tron's (0x10059780, 0x10059810) has no hardware cursor control
 	if (pCtrl == m_pGamma)
 	{
 		pCtrl->UpdateData();
@@ -671,16 +624,6 @@ LTBOOL CScreenDisplay::OnRight()
 LTBOOL CScreenDisplay::OnEnter()
 {
 	return CBaseScreen::OnEnter();
-}
-
-
-void CScreenDisplay::ConfirmHardwareCursor(LTBOOL bReturn)
-{
-	UpdateData(LTTRUE);
-	m_bHardwareCursor = bReturn;
-	g_pCursorMgr->UseHardwareCursor(m_bHardwareCursor);
-	WriteConsoleInt("HardwareCursor",(int)m_bHardwareCursor);
-	UpdateData(LTFALSE);
 }
 
 

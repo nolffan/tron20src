@@ -422,6 +422,10 @@ SOURCE=.\LCHUDHelper.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LibraryCtrl.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -911,6 +915,10 @@ SOURCE=.\IONodeMgr.h
 # Begin Source File
 
 SOURCE=.\LCHUDHelper.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LibraryCtrl.h
 # End Source File
 # Begin Source File
 

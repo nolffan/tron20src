@@ -156,6 +156,104 @@ float CTronClientWeapon::GetEnergyUse()
 	return fEnergy;
 }
 
+// RETAIL: 0x10097520.  NOLF2's CClientWeapon::UpdateFiring as tests of the
+// state one after another
+void CTronClientWeapon::UpdateFiring()
+{
+	m_bCanSetLastFire = true;
+
+	if ( GetState() == W_RELOADING )
+	{
+		if ( !PlayReloadAnimation() )
+		{
+			SetState( W_FIRING );
+		}
+	}
+
+	if ( GetState() == W_IDLE )
+	{
+		SetState( W_FIRING );
+	}
+
+	if ( GetState() == W_SELECT )
+	{
+		if ( !PlaySelectAnimation() )
+		{
+			SetState( W_FIRING );
+		}
+	}
+
+	if ( GetState() == W_DESELECT )
+	{
+		if ( !TronUnknownVirtual170() )
+		{
+			SetState( W_FIRING );
+		}
+	}
+
+	if ( GetState() == W_FIRING || GetState() == W_FIRING_NOAMMO )
+	{
+		if ( PlayFireAnimation( true ) )
+		{
+			m_bCanSetLastFire = false;
+		}
+	}
+}
+
+// RETAIL: 0x100975e0.  NOLF2's CClientWeapon::UpdateNonFiring as tests of
+// the state one after another
+void CTronClientWeapon::UpdateNonFiring()
+{
+	m_bCanSetLastFire = true;
+
+	if ( GetState() == W_FIRING )
+	{
+		if ( !PlayFireAnimation( false ) )
+		{
+			SetState( W_IDLE );
+		}
+		else
+		{
+			m_bCanSetLastFire = false;
+		}
+	}
+
+	if ( GetState() == W_FIRING_NOAMMO )
+	{
+		SetState( W_IDLE );
+	}
+
+	if ( GetState() == W_RELOADING )
+	{
+		if ( !PlayReloadAnimation() )
+		{
+			SetState( W_IDLE );
+		}
+	}
+
+	if ( GetState() == W_SELECT )
+	{
+		if ( !PlaySelectAnimation() )
+		{
+			SetState( W_IDLE );
+		}
+	}
+
+	if ( GetState() == W_DESELECT )
+	{
+		if ( !TronUnknownVirtual170() )
+		{
+			m_bWeaponDeselected = true;
+			SetState( W_IDLE );
+		}
+	}
+
+	if ( GetState() == W_IDLE )
+	{
+		PlayIdleAnimation();
+	}
+}
+
 // RETAIL: 0x100976c0
 bool CTronClientWeapon::TronUnknownVirtual170()
 {

@@ -86,6 +86,24 @@
            
 CSubroutineMgr* g_pSubroutineMgr = LTNULL;
 
+// RETAIL: CorruptSector's (0x10093650) strings in CRes.dll (names ours)
+#define IDS_TRON_BADBLOCK_CREATED		3297
+#define IDS_TRON_SUB_CORRUPTED			3298
+#define IDS_TRON_SUB_CORRUPT_SPREAD		3299
+
+// RETAIL: GetSubroutineInfo's (0x10093970) strings in CRes.dll (names ours)
+#define IDS_TRON_SUB_PROCEDURAL			3404
+#define IDS_TRON_SUB_PROGRESS			3431
+#define IDS_TRON_SUB_FOREIGN_DESC		3407
+#define IDS_TRON_SUB_ALPHA				3412
+#define IDS_TRON_SUB_VERSION			3415
+#define IDS_TRON_SUB_CORRUPTION			3416
+#define IDS_TRON_SUB_FOREIGN_NAME		3417
+#define IDS_TRON_SUB_FOREIGN			3422
+#define IDS_TRON_SUB_ENERGY_DRAIN		3435
+#define IDS_TRON_PROC_WORKING			3405	// RETAIL: GetProceduralInfo's (0x10094200)
+#define IDS_TRON_PROC_IDLE				3406
+
 // RETAIL: CRes.dll's strings (the names are ours)
 #define IDS_SUBROUTINE_ACQUIRED			3247	// "Acquired subroutine: <color 165 233 255>%1!s!"
 #define IDS_SUBROUTINE_ACQUIRED_UNKNOWN	3249	// "Acquired unknown subroutine"
@@ -198,7 +216,7 @@ Primitive::Primitive()
 CSubroutineMgr::CSubroutineMgr()
 {
 	m_fLastUpdateTime = 0.0f;
-	m_SystemMemoryArray = LTNULL;
+	m_fTronUnknown11A0 = 0;
 }
 
 // RETAIL: 0x100920c0
@@ -227,7 +245,7 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 	m_PrimitiveArray.clear();
 
 	m_fTronUnknown115C = 0.0f;
-	m_SystemMemoryArray = LTNULL;
+	m_fTronUnknown11A0 = 0;
 	m_nTronUnknown1160 = 0;
 	m_fTronUnknown11A4 = 0.0f;
 	m_pTronUnknown1180 = LTNULL;
@@ -242,8 +260,11 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 	m_afCorruptionSpreadTime[2] = (float)rcSpread.right;
 	m_afCorruptionSpreadTime[3] = (float)rcSpread.bottom;
 
-	// PORT: here retail makes its IGuestDataMgr (0x10095df0, +0x11a8; it
-	// fails Init without one) and has it read the attributes; not written yet
+	m_pSubroutineDataMgr = debug_new(CSubroutineDataMgr);
+	if (!m_pSubroutineDataMgr)
+		return LTFALSE;
+
+	m_pSubroutineDataMgr->Init(&m_buteMgr);
 
 	LoadSubroutines();
 	LoadProcedurals();
@@ -409,6 +430,154 @@ void CSubroutineMgr::Term()
 {
     g_pSubroutineMgr = LTNULL;
 	CleanArrays();
+
+	// RETAIL: 0x10092ac0
+	if (m_pSubroutineDataMgr)
+	{
+		debug_delete(m_pSubroutineDataMgr);
+		m_pSubroutineDataMgr = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::Save()
+//
+//	PURPOSE:	RETAIL: 0x10092b00 (no caller in retail): write the
+//				player's subroutines, procedurals and primitives
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::Save(ILTMessage_Write *pMsg)
+{
+	pMsg->Writefloat(m_fTronUnknown11A0);
+
+	pMsg->Writeuint8(m_PlayerSubroutineArray.size());
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_PlayerSubroutineArray.begin(); iter != m_PlayerSubroutineArray.end(); iter++)
+	{
+		PlayerSubroutine * pSub = *iter;
+		pMsg->WriteString(pSub->pTronSubroutine->szName);
+		pMsg->Writeuint8(pSub->eVersion);
+		pMsg->Writeuint8(pSub->eState);
+		pMsg->Writeuint32(pSub->nSlot);
+		pMsg->Writefloat(pSub->fPercentDone);
+		pMsg->Writeuint8(pSub->nTronUnknown1C);
+		pMsg->Writeuint8(pSub->nTronUnknown24);
+		pMsg->Writefloat(pSub->fTronUnknown20);
+		if (pSub->pProcedural)
+		{
+			pMsg->Writeuint8(1);
+			pMsg->WriteString(pSub->pProcedural->szName);
+		}
+		else
+		{
+			pMsg->Writeuint8(0);
+		}
+	}
+
+	uint8 nProcs = m_ProceduralArray.size();
+	pMsg->Writeuint8(nProcs);
+	for (int i = 0; i < nProcs; i++)
+	{
+		pMsg->Writeuint8(m_ProceduralArray[i]->bPlayerHasThis != false);
+		if (m_ProceduralArray[i]->pSub)
+		{
+			pMsg->Writeuint8(1);
+			pMsg->WriteString(m_ProceduralArray[i]->pSub->pTronSubroutine->szName);
+		}
+		else
+		{
+			pMsg->Writeuint8(0);
+		}
+	}
+
+	pMsg->Writeuint8(m_PrimitiveArray.size());
+	PrimitiveArray::iterator primIter;
+	for (primIter = m_PrimitiveArray.begin(); primIter != m_PrimitiveArray.end(); primIter++)
+	{
+		pMsg->Writeuint8((*primIter)->bPlayerHasThis != false);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::Load()
+//
+//	PURPOSE:	RETAIL: 0x10092d00 (no caller in retail): read what
+//				Save() wrote
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::Load(ILTMessage_Read *pMsg)
+{
+	char szName[256];
+
+	pMsg->ReadType(&m_fTronUnknown11A0);
+
+	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+	while (iter != m_PlayerSubroutineArray.end())
+	{
+		debug_delete(*iter);
+		iter++;
+	}
+	m_PlayerSubroutineArray.clear();
+
+	int nSubs = (SubVersion)pMsg->Readuint8();
+	int i;
+	for (i = 0; i < nSubs; i++)
+	{
+		PlayerSubroutine * pSub = debug_new(PlayerSubroutine);
+		pMsg->ReadString(szName, sizeof(szName));
+		pSub->pTronSubroutine = GetSubroutine(szName);
+		pSub->eVersion = (SubVersion)pMsg->Readuint8();
+		pSub->eState = (SubState)pMsg->Readuint8();
+		pSub->nSlot = pMsg->Readuint32();
+		pSub->fPercentDone = pMsg->Readfloat();
+		pSub->nTronUnknown1C = pMsg->Readuint8();
+		pSub->nTronUnknown24 = pMsg->Readuint8();
+		pSub->fTronUnknown20 = pMsg->Readfloat();
+		if (pMsg->Readuint8())
+		{
+			pMsg->ReadString(szName, sizeof(szName));
+			pSub->pProcedural = GetProcedural(szName);
+		}
+		m_PlayerSubroutineArray.push_back(pSub);
+	}
+
+	int nProcs = pMsg->Readuint8();
+	int nNumProcs = m_ProceduralArray.size();
+	for (i = 0; i < nProcs; i++)
+	{
+		uint8 nHas = pMsg->Readuint8();
+		if (i < nNumProcs)
+		{
+			m_ProceduralArray[i]->bPlayerHasThis = (nHas != 0);
+			m_ProceduralArray[i]->pSub = LTNULL;
+			if (pMsg->Readuint8())
+			{
+				// RETAIL: reads the subroutine's name but finds the
+				// procedural's subroutine by its link instead
+				pMsg->ReadString(szName, sizeof(szName));
+				GetSubroutine(szName);
+				for (iter = m_PlayerSubroutineArray.begin(); iter != m_PlayerSubroutineArray.end(); iter++)
+				{
+					if ((*iter)->pProcedural == m_ProceduralArray[i])
+					{
+						m_ProceduralArray[i]->pSub = *iter;
+					}
+				}
+			}
+		}
+	}
+
+	int nPrims = pMsg->Readuint8();
+	for (i = 0; i < nPrims; i++)
+	{
+		m_PrimitiveArray[i]->bPlayerHasThis = (pMsg->Readuint8() != 0);
+	}
+
+	Compile();
 }
 
 // ----------------------------------------------------------------------- //
@@ -426,6 +595,331 @@ void CSubroutineMgr::Pause(LTBOOL bPause)
 	{
 		m_fLastUpdateTime = g_pLTClient->GetTime();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::Update()
+//
+//	PURPOSE:	RETAIL: 0x10093030. Advance the procedurals, spread the
+//				corruption and tell the server the energy drain.
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::Update()
+{
+	if (m_bPause)
+		return;
+
+	m_bProceduralActive = false;
+
+	float fNow = g_pLTClient->GetTime();
+	float fDeltaTime = fNow - m_fLastUpdateTime;
+	m_fLastUpdateTime = fNow;
+
+	ProceduralArray::iterator iter;
+	for (iter = m_ProceduralArray.begin(); iter != m_ProceduralArray.end(); iter++)
+	{
+		Procedural *pProc = *iter;
+		if (!pProc->bPlayerHasThis)
+			continue;
+
+		PlayerSubroutine * pSub = pProc->pSub;
+		if (!pSub)
+			continue;
+
+		m_bProceduralActive = true;
+
+		float fTime = InterpolateRating<float>(Rating_Efficiency,
+			pProc->vTimeRequired.x, pProc->vTimeRequired.y, pProc->vTimeRequired.z);
+		float fAdditionalTime = InterpolateRating<float>(Rating_Efficiency,
+			pProc->vAdditionalTimeRequired.x, pProc->vAdditionalTimeRequired.y, pProc->vAdditionalTimeRequired.z);
+
+		pSub->fPercentDone += 1.0f / (GetSubroutineCorruption(pSub) * fAdditionalTime + fTime) * fDeltaTime;
+		if (pSub->fPercentDone >= 1.0f)
+		{
+			ProceduralFinished(pProc);
+		}
+	}
+
+	if (m_bProceduralActive)
+	{
+		g_pHUDMgr->QueueUpdate(kHUDProcedurals);
+	}
+
+	float fEnergy = m_fTronUnknown11A0;
+
+	memset(m_aTronUnknown1184, 0, sizeof(m_aTronUnknown1184));
+
+	PlayerSubroutineArray::iterator subIter;
+	for (subIter = m_PlayerSubroutineArray.begin(); subIter != m_PlayerSubroutineArray.end(); subIter++)
+	{
+		PlayerSubroutine * pSub = *subIter;
+		if (pSub->nSlot < 0 || pSub->nSlot >= 100)
+			continue;
+		if (pSub->eState != SUBSTATE_CORRUPT || pSub->pProcedural)
+			continue;
+		if (m_aTronUnknown1184[pSub->nSlot])
+			continue;
+
+		int nMax = (LAST_VERSION - pSub->eVersion) * 3;
+		if (pSub->nTronUnknown1C < nMax)
+		{
+			pSub->fTronUnknown20 -= fDeltaTime;
+			if (pSub->fTronUnknown20 <= 0.0f)
+			{
+				pSub->nTronUnknown1C++;
+				pSub->fTronUnknown20 += GetCorruptionSpreadTime();
+			}
+		}
+
+		if (pSub->nTronUnknown1C >= nMax)
+		{
+			// the corruption spreads to the sectors on each side
+			CorruptSector((pSub->nSlot - pSub->eVersion + 3) % NUM_SECTORS, 3, pSub);
+			CorruptSector((pSub->nSlot + NUM_SECTORS - 1) % NUM_SECTORS, 2, pSub);
+		}
+	}
+
+	if (fEnergy != m_fTronUnknown115C)
+	{
+		m_fTronUnknown115C = fEnergy;
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_USE_ENERGY);
+		cMsg.Writeuint8(0);
+		cMsg.Writefloat(fEnergy);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::ProceduralFinished()
+//
+//	PURPOSE:	RETAIL: 0x100933d0. Clean up a procedural operation.
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
+{
+	char szMsg[256];
+
+	PlayerSubroutine * pSub = pProc->pSub;
+	pSub->pProcedural = LTNULL;
+
+	// Detach the subroutine from this procedural
+	pProc->pSub = LTNULL;
+
+	switch (pProc->eAffectState)
+	{
+	case SUBSTATE_FOREIGN:			// port
+		{
+			pSub->eState = SUBSTATE_OKAY;
+			FormatString(pProc->nCompletionId, szMsg, sizeof(szMsg), LoadTempString(pSub->pTronSubroutine->nNameId));
+			g_pChatMsgs->AddMessage(szMsg);
+		}
+		break;
+
+	case SUBSTATE_CORRUPT:			// disinfect
+		{
+			pSub->eState = SUBSTATE_OKAY;
+			pSub->fTronUnknown20 = 0.0f;
+			pSub->nTronUnknown1C = 0;
+			pSub->nTronUnknown24 = 0;
+			pSub->fPercentDone = 0.0f;
+			FormatString(pProc->nCompletionId, szMsg, sizeof(szMsg), LoadTempString(pSub->pTronSubroutine->nNameId));
+			g_pChatMsgs->AddMessage(szMsg);
+
+			SubFunction eFunction = pSub->pTronSubroutine->eFunction;
+			if (eFunction == FUNCTION_UTILITY)
+			{
+				g_pHUDMgr->QueueUpdate(0x80000);	// RETAIL: Tron's flag
+				if (pSub->eState != SUBSTATE_FOREIGN)
+				{
+					g_pTronPlayerMgr->OnSubroutineChanged(pSub->pTronSubroutine->szName, true,
+						pSub->eState == SUBSTATE_CORRUPT, pSub->eVersion);
+				}
+			}
+			else if (eFunction == FUNCTION_DEFENSE)
+			{
+				g_pHUDMgr->QueueUpdate(kHUDArmor);
+			}
+			else if (eFunction == FUNCTION_COMBAT)
+			{
+				g_pHUDMgr->QueueUpdate(kHUDWeapons | kHUDChooser);
+			}
+		}
+		break;
+
+	case SUBSTATE_UNUSABLE:			// bad block
+		{
+			// REMOVE the subroutine from system memory
+			PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
+			while (iter != m_PlayerSubroutineArray.end())
+			{
+				if (*iter == pSub)
+				{
+					m_PlayerSubroutineArray.erase(iter);
+					break;
+				}
+				++iter;
+			}
+			g_pChatMsgs->AddMessage(pProc->nCompletionId);
+		}
+		break;
+	}
+
+	g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\actioncomplete.wav");
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::InfectRandomSector()
+//
+//	PURPOSE:	RETAIL: 0x10093580 (the name is ours). Unless the viral
+//				shields stop it, corrupt a random sector that does not
+//				hold a bad block or base code.
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::InfectRandomSector()
+{
+	float fShield = 0.0f;
+	TronSubroutine * pShield = GetSubroutine("viral_shield");
+
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_PlayerSubroutineArray.begin(); iter != m_PlayerSubroutineArray.end(); iter++)
+	{
+		PlayerSubroutine * pSub = *iter;
+		if (pSub->pTronSubroutine == pShield && pSub->nSlot >= 0 && pSub->nSlot < NUM_SECTORS)
+		{
+			fShield += (&pShield->vAntivirus.x)[pSub->eVersion] * 0.01f;
+		}
+	}
+
+	if (GetRandom(0.0f, 1.0f) < fShield)
+		return;
+
+	int aSectors[NUM_SECTORS];
+	int nSectors = 0;
+	for (int i = 0; i < NUM_SECTORS; i++)
+	{
+		PlayerSubroutine * pSub = GetSubroutineInSector(i);
+		if (pSub)
+		{
+			SubFunction eFunction = pSub->pTronSubroutine->eFunction;
+			if (eFunction == FUNCTION_BADBLOCK || eFunction == FUNCTION_BASECODE)
+				continue;
+		}
+		aSectors[nSectors] = i;
+		nSectors++;
+	}
+
+	if (nSectors)
+	{
+		int iSector = aSectors[GetRandom(0, nSectors - 1)];
+		CorruptSector(iSector, 1, LTNULL);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::CorruptSector()
+//
+//	PURPOSE:	RETAIL: 0x10093650 (the name is ours). Corrupt the
+//				subroutine in a system memory sector; an empty sector
+//				becomes a bad block when nSpread is 1.
+//
+// ----------------------------------------------------------------------- //
+
+void CSubroutineMgr::CorruptSector(int iSector, int nSpread, PlayerSubroutine * pSource)
+{
+	if (m_aTronUnknown1184[iSector])
+		return;
+
+	m_aTronUnknown1184[iSector] = true;
+
+	PlayerSubroutine * pSub = GetSubroutineInSector(iSector);
+	if (!pSub)
+	{
+		if (nSpread != 1)
+			return;
+
+		TronSubroutine * pBadBlock = GetSubroutine("bad_block");
+		if (!pBadBlock)
+			return;
+
+		m_aTronUnknown1184[iSector] = true;
+
+		PlayerSubroutine * pNewSub = debug_new(PlayerSubroutine);
+		pNewSub->pTronSubroutine = pBadBlock;
+		pNewSub->eVersion = VERSION_GOLD;
+		pNewSub->eState = SUBSTATE_UNUSABLE;
+		pNewSub->nSlot = iSector;
+		m_PlayerSubroutineArray.push_back(pNewSub);
+
+		char szBadBlockMsg[1024];
+		FormatString(IDS_TRON_BADBLOCK_CREATED, szBadBlockMsg, sizeof(szBadBlockMsg), (29 - iSector) % NUM_SECTORS);
+		// PORT: retail adds the message to a HUD message queue of Tron's
+		// (0x1026edf0, CTronHUDMgr +0x111f0) that our build does not have.
+		g_pChatMsgs->AddMessage(szBadBlockMsg, kMsgScmd);
+		return;
+	}
+
+	if (pSub->eState != SUBSTATE_OKAY)
+		return;
+
+	if (pSub->pProcedural && pSub->pProcedural->eAffectState == SUBSTATE_CORRUPT)
+		return;
+
+	m_aTronUnknown1184[iSector] = true;
+
+	pSub->nTronUnknown24 = nSpread;
+	pSub->fTronUnknown20 = GetCorruptionSpreadTime();
+	pSub->nTronUnknown1C += LAST_VERSION - pSub->eVersion;
+	int nMax = (LAST_VERSION - pSub->eVersion) * 3;
+	if (pSub->nTronUnknown1C > nMax)
+	{
+		pSub->nTronUnknown1C = nMax;
+	}
+	pSub->eState = SUBSTATE_CORRUPT;
+
+	SubFunction eFunction = pSub->pTronSubroutine->eFunction;
+	if (eFunction == FUNCTION_UTILITY)
+	{
+		g_pHUDMgr->QueueUpdate(0x80000);	// RETAIL: Tron's flag
+		if (pSub->eState != SUBSTATE_FOREIGN)
+		{
+			g_pTronPlayerMgr->OnSubroutineChanged(pSub->pTronSubroutine->szName, true,
+				pSub->eState == SUBSTATE_CORRUPT, pSub->eVersion);
+		}
+	}
+	else if (eFunction == FUNCTION_DEFENSE)
+	{
+		g_pHUDMgr->QueueUpdate(kHUDArmor);
+	}
+	else if (eFunction == FUNCTION_COMBAT)
+	{
+		g_pHUDMgr->QueueUpdate(kHUDWeapons | kHUDChooser);
+	}
+
+	char szName[128];
+	char szSourceName[128];
+	char szMsg[1024];
+	sprintf(szName, LoadTempString(pSub->pTronSubroutine->nNameId));
+	if (pSource)
+	{
+		sprintf(szSourceName, LoadTempString(pSource->pTronSubroutine->nNameId));
+		FormatString(IDS_TRON_SUB_CORRUPT_SPREAD, szMsg, sizeof(szMsg), szSourceName, szName);
+	}
+	else
+	{
+		FormatString(IDS_TRON_SUB_CORRUPTED, szMsg, sizeof(szMsg), szName);
+		g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\corruptedsub.wav");
+	}
+	// PORT: as above, retail's message queue of Tron's (0x1026edf0)
+	g_pChatMsgs->AddMessage(szMsg, kMsgScmd);
 }
 
 // ----------------------------------------------------------------------- //
@@ -467,130 +961,181 @@ PlayerSubroutine* CSubroutineMgr::GetSubroutineInSector(int iSector)
 	return LTNULL;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CSubroutineMgr::Update()
-//
-//	PURPOSE:	Note the passage of time when the game is not paused
-//				Advance the progress on any active procedurals and handle
-//				completion of any procedural events
-//
-// ----------------------------------------------------------------------- //
-
-void CSubroutineMgr::Update()
+// RETAIL: this file's LTStrCat keeps the destination's length, as Build
+// 69's (ltbasedefs.h) does without its truncation check; the compiler
+// calls it out of line at 0x10094100. The name is ours.
+static inline void InfoStrCat(char *pDest, const char *pSrc, uint32 destBytes)
 {
-	if (m_bPause)
+	if (destBytes == 0)
 		return;
 
-	m_bProceduralActive = false;
+	uint32 destLen = strlen(pDest);
+	uint32 catLen = destBytes - destLen - 1;
 
-	float fNow = g_pLTClient->GetTime();
+	strncat(pDest, pSrc, catLen);
+	pDest[destLen + catLen] = '\0';
+}
 
-	unsigned short iVersion;
-	g_pTronPlayerStats->GetJetVersion(iVersion);
-	float fPlayerLevel = (float)(iVersion - (iVersion % 100)) / 100.0f;
+// RETAIL: 0x10094140 (the name is ours): the text as a wide string
+static inline bool CopyToWString(std::wstring & sDest, const char * szSrc)
+{
+	sDest.erase(sDest.begin(), sDest.end());
 
-	// advance any timers.
-	float fDeltaTime = fNow - m_fLastUpdateTime;
-	m_fLastUpdateTime = fNow;
-
-	ProceduralArray::iterator iter = m_ProceduralArray.begin();
-	while (iter != m_ProceduralArray.end())
+	uint32 nLen = strlen(szSrc);
+	for (uint32 i = 0; i < nLen; i++)
 	{
-		Procedural *pProc = *iter;
-		if (pProc->bPlayerHasThis)
-		{
-			PlayerSubroutine * pSub = pProc->pSub;
-			if (pSub)
-			{
-				m_bProceduralActive = true;
-				// advance the progress based upon how much the local timer has advanced
-				// compute the advancement rate.  Start with the base procedural speed.
-				// then reduce by 10% for each level that the player has advanced?
-				float fAdjustedTime = pProc->fTimeRequired * (1.0f - (0.1f * fPlayerLevel));
-				float fAdvancementPerSecond = 1.0f / fAdjustedTime;
-
-				pSub->fPercentDone += (fAdvancementPerSecond * fDeltaTime);
-
-				if (pSub->fPercentDone >= 1.0f)
-				{
-					ProceduralFinished(pProc);
-				}
-			}
-		}
-		iter++;
+		sDest.push_back((wchar_t)(uint8)szSrc[i]);
 	}
-	if (m_bProceduralActive)
-	{
-		g_pHUDMgr->QueueUpdate(kHUDProcedurals);
-	}
-	// TODO advance any corruption UNLESS being worked on by a procedural
-	// TODO subtract any energy for continuously draining subroutines
-	// TODO write a function for burst-style energy drainage
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CSubroutineMgr::ProceduralFinished()
+//	ROUTINE:	CSubroutineMgr::GetSubroutineInfo
 //
-//	PURPOSE:	Handle the specific details of a procedural's completion
+//	PURPOSE:	RETAIL: 0x10093970 (the name is ours): the subroutine
+//				screen's information text of a subroutine
 //
 // ----------------------------------------------------------------------- //
 
-void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
+std::wstring CSubroutineMgr::GetSubroutineInfo(PlayerSubroutine * pSub)
 {
-	PlayerSubroutine * pSub = pProc->pSub;
-	pSub->bWorking = false;
+	if (!pSub)
+		return LTNULL;
 
-	// Detach the subroutine from this procedural
-	pProc->pSub = LTNULL;
+	TronSubroutine * pTronSub = pSub->pTronSubroutine;
+	bool bForeign = (pSub->eState == SUBSTATE_FOREIGN);
 
-	switch (pProc->eAffectState)
+	char szInfo[1024];
+	char szTemp[1024];
+	char szName[128];
+
+	szInfo[0] = 0;
+
+	InfoStrCat(szInfo, "<color 165 233 255>", sizeof(szInfo));
+	if (bForeign)
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN_NAME), sizeof(szInfo));
+	else
+		InfoStrCat(szInfo, LoadTempString(pTronSub->nNameId), sizeof(szInfo));
+	InfoStrCat(szInfo, "\n", sizeof(szInfo));
+
+	if (pSub->eState != SUBSTATE_UNUSABLE)
 	{
-	case SUBSTATE_FOREIGN:			// port
+		if (bForeign)
 		{
-			pSub->eState = SUBSTATE_OKAY;
-			// put up a message that this subroutine has been successfully ported
+			InfoStrCat(szInfo, "<color 255 0 0>", sizeof(szInfo));
+			InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN), sizeof(szInfo));
+			InfoStrCat(szInfo, "\n", sizeof(szInfo));
 		}
-		break;
-
-	case SUBSTATE_CORRUPT:			// disinfect
+		else if (pSub->eState == SUBSTATE_CORRUPT)
 		{
-			pSub->eState = SUBSTATE_OKAY;
-			pSub->fPercentCorrupt = 0.0f;
-			// put up a message that this subroutine has been successfully disinfected
+			InfoStrCat(szInfo, "<color 191 255 0>", sizeof(szInfo));
+			FormatString(IDS_TRON_SUB_CORRUPTION, szTemp, sizeof(szTemp), (int)(GetSubroutineCorruption(pSub) * 100.0f));
+			InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+			InfoStrCat(szInfo, "\n", sizeof(szInfo));
 		}
-		break;
 
-	case SUBSTATE_UNUSABLE:			// bad block
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_VERSION), sizeof(szInfo));
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_ALPHA + pSub->eVersion), sizeof(szInfo));
+
+		int nDrain = (int)(&pTronSub->vEnergyDrain.x)[pSub->eVersion];
+		if (nDrain > 0)
 		{
-			g_pLTClient->CPrint("Bad Block Removed\n");
-			// REMOVE the subroutine from system memory
-			PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
-			while (iter != m_PlayerSubroutineArray.end())
-			{
-				if (*iter == pSub)
-				{
-					m_PlayerSubroutineArray.erase(iter);
-					break;
-				}
-				++iter;
-			}
-			// put up a message that this block has been repaired
+			FormatString(IDS_TRON_SUB_ENERGY_DRAIN, szTemp, sizeof(szTemp), nDrain);
+			InfoStrCat(szInfo, " ", sizeof(szInfo));
+			InfoStrCat(szInfo, szTemp, sizeof(szInfo));
 		}
-		break;
-
-	case SUBSTATE_DELETED:			// undeleter
-		{
-			pSub->eState = SUBSTATE_OKAY;
-			// put up a message that this subroutine has been restored
-		}
-		break;
-
-	case SUBSTATE_OKAY:				// this was a "shredder", and should never happen
-	default:
-		break;
+		InfoStrCat(szInfo, "\n", sizeof(szInfo));
 	}
+
+	if (pSub->pProcedural)
+	{
+		strncpy(szName, LoadTempString(pSub->pProcedural->nNameId), sizeof(szName) - 1);
+		szName[sizeof(szName) - 1] = 0;
+		FormatString(IDS_TRON_SUB_PROCEDURAL, szTemp, sizeof(szTemp), szName);
+		InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+		InfoStrCat(szInfo, "\n", sizeof(szInfo));
+		FormatString(IDS_TRON_SUB_PROGRESS, szTemp, sizeof(szTemp), (int)(pSub->fPercentDone * 100.0f));
+		InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+	}
+
+	if (!pSub->pProcedural)
+	{
+		InfoStrCat(szInfo, "<color 255 255 255>", sizeof(szInfo));
+		if (bForeign)
+		{
+			InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN_DESC), sizeof(szInfo));
+		}
+		else
+		{
+			InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionId), sizeof(szInfo));
+			if (pSub->eVersion == VERSION_ALPHA && pTronSub->nDescriptionAlphaId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionAlphaId), sizeof(szInfo));
+			}
+			if (pSub->eVersion != VERSION_GOLD && pTronSub->nDescriptionBetaId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionBetaId), sizeof(szInfo));
+			}
+			if (pTronSub->nDescriptionGoldId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionGoldId), sizeof(szInfo));
+			}
+		}
+	}
+
+	std::wstring sInfo;
+	CopyToWString(sInfo, szInfo);
+	return sInfo;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetProceduralInfo
+//
+//	PURPOSE:	RETAIL: 0x10094200 (the name is ours): the subroutine
+//				screen's information text of a procedural
+//
+// ----------------------------------------------------------------------- //
+
+std::wstring CSubroutineMgr::GetProceduralInfo(Procedural * pProc)
+{
+	std::wstring sInfo;
+
+	if (!pProc)
+		return LTNULL;
+
+	sInfo += L"<color 165 233 255>";
+	sInfo += LoadTempWString(pProc->nNameId);
+	sInfo += L"\n";
+
+	if (pProc->pSub)
+	{
+		char szSub[256];
+		if (pProc->eAffectState == SUBSTATE_FOREIGN)
+			FormatString(IDS_TRON_SUB_FOREIGN, szSub, sizeof(szSub));
+		else
+			sprintf(szSub, LoadTempString(pProc->pSub->pTronSubroutine->nNameId));
+
+		char szMsg[1024];
+		FormatString(IDS_TRON_PROC_WORKING, szMsg, sizeof(szMsg), szSub, (int)(pProc->pSub->fPercentDone * 100.0f));
+
+		std::wstring sMsg;
+		CopyToWString(sMsg, szMsg);
+		sInfo += sMsg;
+	}
+	else
+	{
+		sInfo += LoadTempWString(IDS_TRON_PROC_IDLE);
+		sInfo += L"\n\n<color 255 255 255>";
+		sInfo.append(LoadTempWString(pProc->nDescriptionId));
+	}
+
+	return sInfo;
 }
 
 void CSubroutineMgr::CleanArrays()

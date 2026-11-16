@@ -159,6 +159,8 @@ public:
 
 	LTBOOL		IsOnMe(int mx, int my);							// RETAIL: 0x10002470
 	bool		IsHot() {return m_bIsHot;}
+	bool		IsStartHot() {return m_bStartHot;}	// RETAIL: inlined in CLibraryCtrl::OnMouseMove (0x100914eb; names ours)
+	bool		IsEndHot() {return m_bEndHot;}
 
 	void		Build();										// RETAIL: 0x10002760
 
