@@ -796,9 +796,8 @@ void CBodyStateExplode::InitLoad(Body* pBody)
 {
 	CBodyState::InitLoad(pBody);
 
-	m_hAniStart = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFStart");
+	// RETAIL: 0x1021c160: Tron looks up only the loop
 	m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFLoop");
-	m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFStop");
 }
 
 bool FlyingFilterFn(HOBJECT hObj, void *pUserData)

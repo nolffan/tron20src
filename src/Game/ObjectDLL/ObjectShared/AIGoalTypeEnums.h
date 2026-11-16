@@ -74,7 +74,7 @@ ADD_GOAL_TYPE(Distress)							// kGoal_Distress
 ADD_GOAL_TYPE(DrawWeapon)						// kGoal_DrawWeapon
 ADD_GOAL_TYPE(EnjoyPoster)						// kGoal_EnjoyPoster
 ADD_GOAL_TYPE(ExitLevel)						// kGoal_ExitLevel
-ADD_GOAL_TYPE_UNWRITTEN(ExitLevelByRezOut)		// kGoal_ExitLevelByRezOut
+ADD_GOAL_TYPE(ExitLevelByRezOut)          		// kGoal_ExitLevelByRezOut
 ADD_GOAL_TYPE(Flee)								// kGoal_Flee
 ADD_GOAL_TYPE(Follow)							// kGoal_Follow
 ADD_GOAL_TYPE(FollowFootprint)					// kGoal_FollowFootprint
