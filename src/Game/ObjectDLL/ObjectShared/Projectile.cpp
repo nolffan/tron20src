@@ -1631,6 +1631,55 @@ bool CanCharacterHitCharacter( CProjectile* pProjectile, HOBJECT hImpacted )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CProjectile::ScaleTronDamage...
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10121df0, 0x10121ea0,
+//				0x10121ec0): scale a damage by the modifiers the projectile
+//				has. The names are ours
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectile::ScaleTronDamage(LTFLOAT* pfDamage)
+{
+	if( m_bTronUnknownF1 )
+		*pfDamage *= m_fTronUnknown110;
+
+	if( m_bTronUnknownF3 )
+		*pfDamage *= m_fTronUnknown190;
+
+	if( m_bTronUnknownF5 )
+		*pfDamage *= m_fTronUnknown110;
+
+	if( m_bTronUnknownF7 )
+		*pfDamage *= m_fTronUnknown10C;
+
+	if( m_bTronUnknownF9 )
+		*pfDamage *= m_fTronUnknown110;
+
+	if( m_bTronUnknownFB )
+		*pfDamage *= m_fTronUnknown110;
+
+	if( m_bTronUnknownFD )
+		*pfDamage *= m_fTronUnknown114;
+
+	if( m_bTronUnknownFF )
+		*pfDamage *= m_fTronUnknown18C;
+}
+
+void CProjectile::ScaleTronDamage101(LTFLOAT* pfDamage)
+{
+	if( m_bTronUnknown101 )
+		*pfDamage *= m_fTronUnknown19C;
+}
+
+void CProjectile::ScaleTronDamage105(LTFLOAT* pfDamage)
+{
+	if( m_pWeaponData->bIsPlayerPrimitive && m_bTronUnknown105 )
+		*pfDamage *= m_fTronUnknown1B0;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CProjectile::DoProjectile
 //
 //	PURPOSE:	Do projectile stuff...

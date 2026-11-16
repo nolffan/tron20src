@@ -32,6 +32,10 @@ extern CAIStimulusMgr* g_pAIStimulusMgr;
 
 #define	KEY_BUTE_SOUND	"BUTE_SOUND_KEY"
 #define KEY_COMMAND		"CMD"
+// RETAIL: Tron's model string keys (Object.lto 0x100fb0f0)
+#define KEY_BUTE_SOUND_LOOPING	"BUTE_SOUND_KEY_LOOPING"
+#define KEY_KILL_LOOPING_SOUND	"KILL_LOOPING_SOUND"
+#define KEY_FX					"FX"
 
 LINKFROM_MODULE( Prop );
 
@@ -55,7 +59,6 @@ BEGIN_CLASS(Prop)
 	ADD_STRINGPROP_FLAG(DetailLevel, "Low", PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(CommandOn, "", PF_NOTIFYCHANGE )
 	ADD_STRINGPROP_FLAG(CommandOff, "", PF_NOTIFYCHANGE )
-	ADD_BOOLPROP_FLAG(CanTransition, LTTRUE, 0)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(Prop, GameBase, NULL, NULL, 0, CPropPlugin)
 #pragma force_active off
 
@@ -137,15 +140,18 @@ LTRESULT CPropPlugin::PreHook_PropChanged( const char *szObjName,
 #define DEFAULT_ATTACH_MAX_VEL	256.0f
 #define DEFAULT_ATTACH_MIN_YADD	128.0f
 #define DEFAULT_ATTACH_MAX_YADD	256.0f
-#define DEFAULT_ATTACH_FADE_DELAY	5.0f
+// RETAIL: 0 in Tron (Object.lto 0x100f9f6c)
+#define DEFAULT_ATTACH_FADE_DELAY	0.0f
 #define DEFAULT_ATTACH_FADE_DURATION 1.0f	
 
 static CVarTrack	s_vtAttachmentMinVel;
 static CVarTrack	s_vtAttachmentMaxVel;
 static CVarTrack	s_vtAttachmentMinYAdd;
 static CVarTrack	s_vtAttachmentMaxYAdd;
-static CVarTrack	s_vtAttachmentFadeDelay;
-static CVarTrack	s_vtAttachmentFadeDuration;
+// RETAIL: not file-static in Tron: PowerArmor fades with them
+// (Object.lto 0x1013b770)
+CVarTrack			s_vtAttachmentFadeDelay;
+CVarTrack			s_vtAttachmentFadeDuration;
 
 
 // ----------------------------------------------------------------------- //
@@ -277,9 +283,39 @@ Prop::Prop() : GameBase(OT_MODEL)
 	m_bFading				= false;	
 	m_bFadeRemoveWhenDone	= false;
 	
-	m_bCanTransition		= true;
-
 	m_ActivateTypeHandler.Init( this );
+
+	// RETAIL: Tron has no m_bCanTransition; it has a looping sound
+	// (Object.lto 0x100f9d85)
+	m_hstrLoopSound			= LTNULL;
+	m_hLoopSound			= LTNULL;
+
+	// RETAIL: Tron inits these here (Object.lto 0x100f9d91); NOLF2 does it
+	// in HandleAttachmentImpact
+	if( !s_vtAttachmentMinVel.IsInitted() )
+	{
+		s_vtAttachmentMinVel.Init( g_pLTServer, "AttachmentMinVel", LTNULL, DEFAULT_ATTACH_MIN_VEL );
+	}
+	if( !s_vtAttachmentMaxVel.IsInitted() )
+	{
+		s_vtAttachmentMaxVel.Init( g_pLTServer, "AttachmentMaxVel", LTNULL, DEFAULT_ATTACH_MAX_VEL );
+	}
+	if( !s_vtAttachmentMinYAdd.IsInitted() )
+	{
+		s_vtAttachmentMinYAdd.Init( g_pLTServer, "AttachmentMinYAdd", LTNULL, DEFAULT_ATTACH_MIN_YADD );
+	}
+	if( !s_vtAttachmentMaxYAdd.IsInitted() )
+	{
+		s_vtAttachmentMaxYAdd.Init( g_pLTServer, "AttachmentMaxYAdd", LTNULL, DEFAULT_ATTACH_MAX_YADD );
+	}
+	if( !s_vtAttachmentFadeDelay.IsInitted() )
+	{
+		s_vtAttachmentFadeDelay.Init( g_pLTServer, "AttachmentFadeDelay", LTNULL, DEFAULT_ATTACH_FADE_DELAY );
+	}
+	if( !s_vtAttachmentFadeDuration.IsInitted() )
+	{
+		s_vtAttachmentFadeDuration.Init( g_pLTServer, "AttachmentFadeDuration", LTNULL, DEFAULT_ATTACH_FADE_DURATION );
+	}
 }
 
 
@@ -295,6 +331,18 @@ Prop::~Prop()
 {
 	ClearTouchSoundIfDone( LTTRUE );
 	ClearHitSoundIfDone( LTTRUE );
+
+	// RETAIL: Tron's looping sound (Object.lto 0x100fa0c5). Its name is
+	// not freed (docs/RETAIL_BUGS.md)
+	if( m_hLoopSound )
+	{
+		g_pLTServer->SoundMgr()->KillSound( m_hLoopSound );
+		m_hLoopSound = LTNULL;
+	}
+
+#ifdef TRON20SRC_MODERN
+	FREE_HSTRING( m_hstrLoopSound );
+#endif
 
 	debug_delete(m_pDisturb);
 }
@@ -361,15 +409,6 @@ uint32 Prop::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 				{
 					m_dwFlags |= FLAG_VISIBLE;
 				}
-			}
-
-			// We must remove aggregates before sending the message to the base classs...
-
-			if( !m_bCanTransition )
-			{
-				// Disallow transitioning of this object through TransAMs...
-
-				DestroyTransitionAggregate();
 			}
 
             uint32 dwRet = GameBase::EngineMessageFn(messageID, pData, fData);
@@ -533,11 +572,6 @@ void Prop::ReadProp(ObjectCreateStruct *pData)
 		}
 	}
 
-	if( g_pLTServer->GetPropGeneric( "CanTransition", &genProp ) == LT_OK )
-	{
-		m_bCanTransition = genProp.m_Bool;
-	}
-
 }
 
 
@@ -588,7 +622,7 @@ void Prop::InitialUpdate()
 //
 // ----------------------------------------------------------------------- //
 
-bool Prop::Setup( )
+void Prop::Setup( )
 {
 	// Set Initial flags...(NOTE: The m_dwXXX variables are used so subclasses
 	// can adjust the intial state of the prop)
@@ -700,8 +734,6 @@ bool Prop::Setup( )
 	m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn, false );
 	m_ActivateTypeHandler.SetDisabled( false, false );
 	m_ActivateTypeHandler.CreateActivateTypeMsg();
-
-	return true;
 }
 
 // --------------------------------------------------------------------------- //
@@ -720,9 +752,8 @@ bool Prop::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Remove("REMOVE");
 	static CParsedMsg::CToken s_cTok_Destroy("DESTROY");
 
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags(m_hObject, OFT_User, dwFlags);
-
+	// RETAIL: Tron tests m_dwUsrFlgs, not the object's user flags
+	// (Object.lto 0x100fad42)
 	if ( cMsg.GetArg(0) == s_cTok_Anim )
 	{
         g_pLTServer->SetModelLooping(m_hObject, LTFALSE);
@@ -739,7 +770,7 @@ bool Prop::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Activate )
 	{
-		if(dwFlags & USRFLG_CAN_ACTIVATE)
+		if(m_dwUsrFlgs & USRFLG_CAN_ACTIVATE)
 		{
 			SendActivateMessage( );
 
@@ -907,6 +938,9 @@ void Prop::HandleModelString( ArgList *pArgList )
 
 	static CParsedMsg::CToken s_cTok_KEY_COMMAND( KEY_COMMAND );
 	static CParsedMsg::CToken s_cTok_KEY_BUTE_SOUND ( KEY_BUTE_SOUND );
+	static CParsedMsg::CToken s_cTok_KEY_BUTE_SOUND_LOOPING( KEY_BUTE_SOUND_LOOPING );
+	static CParsedMsg::CToken s_cTok_KEY_KILL_LOOPING_SOUND( KEY_KILL_LOOPING_SOUND );
+	static CParsedMsg::CToken s_cTok_KEY_FX( KEY_FX );
 		
 	if (!pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
@@ -952,6 +986,59 @@ void Prop::HandleModelString( ArgList *pArgList )
 			g_pCmdMgr->Process(buf, m_hObject, m_hObject);
 		}
     }
+	// RETAIL: Tron's (Object.lto 0x100fb4ad)
+	else if ( tok == s_cTok_KEY_FX )
+	{
+		if( pArgList->argc > 1 && pArgList->argv[1] )
+		{
+			PlayClientFX( pArgList->argv[1], m_hObject );
+		}
+	}
+	else if ( tok == s_cTok_KEY_BUTE_SOUND_LOOPING )
+	{
+		if( pArgList->argc > 1 && pArgList->argv[1] )
+		{
+			if( m_hstrLoopSound )
+			{
+				g_pLTServer->FreeString( m_hstrLoopSound );
+				m_hstrLoopSound = LTNULL;
+			}
+
+			m_hstrLoopSound = g_pLTServer->CreateString( pArgList->argv[1] );
+			PlayLoopSound();
+		}
+	}
+	else if ( tok == s_cTok_KEY_KILL_LOOPING_SOUND )
+	{
+		bool bLoop = false;
+		if( pArgList->argc > 1 && pArgList->argv[1] )
+		{
+			if( atoi( pArgList->argv[1] ) == 1 )
+			{
+				bLoop = true;
+			}
+		}
+
+		if( m_hLoopSound )
+		{
+			if( bLoop )
+			{
+				g_pLTServer->SoundMgr()->KillSoundLoop( m_hLoopSound );
+			}
+			else
+			{
+				g_pLTServer->SoundMgr()->KillSound( m_hLoopSound );
+			}
+
+			m_hLoopSound = LTNULL;
+		}
+
+		if( m_hstrLoopSound )
+		{
+			g_pLTServer->FreeString( m_hstrLoopSound );
+			m_hstrLoopSound = LTNULL;
+		}
+	}
 
 }
 
@@ -1216,7 +1303,6 @@ void Prop::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_FLOAT(m_fAlpha);
     SAVE_BOOL(m_bMoveToFloor);
     SAVE_BOOL(m_bFirstUpdate);
-	SAVE_bool( m_bCanDeactivate );
     SAVE_VECTOR(m_vScale);
     SAVE_VECTOR(m_vObjectColor);
 
@@ -1224,12 +1310,10 @@ void Prop::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_BOOL(m_bTouchable);
 	SAVE_DWORD(m_eState);
 	
-/* THESE SHOULD NOT NEED TO BE SAVED - THEY ARE USED FOR INITIALIZING THE OBJECT ONLY!!!
-// 8/4/02 - Remove after testing
+	// RETAIL: Tron still saves these (Object.lto 0x100fbd60)
 	SAVE_DWORD(m_dwUsrFlgs);
 	SAVE_DWORD(m_dwFlags);
 	SAVE_DWORD(m_dwFlags2);
-*/
 
 	SAVE_DWORD(m_lstWorldAnims.size());
 	for( HMODELANIM_LIST::iterator it = m_lstWorldAnims.begin(); it != m_lstWorldAnims.end(); ++it )
@@ -1270,7 +1354,7 @@ void Prop::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_FLOAT( m_fEndAlpha );
 	SAVE_bool( m_bFadeRemoveWhenDone );
 
-	SAVE_bool( m_bCanTransition );
+	SAVE_HSTRING( m_hstrLoopSound );
 }
 
 
@@ -1292,7 +1376,6 @@ void Prop::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_FLOAT(m_fAlpha);
     LOAD_BOOL(m_bMoveToFloor);
     LOAD_BOOL(m_bFirstUpdate);
-	LOAD_bool( m_bCanDeactivate );
     LOAD_VECTOR(m_vScale);
     LOAD_VECTOR(m_vObjectColor);
 
@@ -1300,12 +1383,9 @@ void Prop::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_BOOL(m_bTouchable);
 	LOAD_DWORD_CAST(m_eState, EnumAIStateType);
 
-/* THESE SHOULD NOT NEED TO BE SAVED - THEY ARE USED FOR INITIALIZING THE OBJECT ONLY!!!
-// 8/4/02 - Remove after testing
 	LOAD_DWORD(m_dwUsrFlgs);
 	LOAD_DWORD(m_dwFlags);
 	LOAD_DWORD(m_dwFlags2);
-*/
 
 	HMODELANIM hWorldAnim;
 	uint32 cWorldAnims;
@@ -1354,16 +1434,10 @@ void Prop::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_FLOAT( m_fEndAlpha );
 	LOAD_bool( m_bFadeRemoveWhenDone );
 
-	LOAD_bool( m_bCanTransition );
+	LOAD_HSTRING( m_hstrLoopSound );
 
-	// We must remove aggregates before sending the message to the base classs...
-
-	if( !m_bCanTransition )
-	{
-		// Disallow transitioning of this object through TransAMs...
-
-		DestroyTransitionAggregate();
-	}
+	m_hLoopSound = LTNULL;
+	PlayLoopSound();
 }
 
 // ----------------------------------------------------------------------- //
@@ -1515,32 +1589,6 @@ void Prop::HandleAttachmentImpact( CAttachmentPosition *pAttachPos, const LTVect
 	if( !pAttachPos )
 		return;
 
-	// TODO: Init these somewhere else
-	if( !s_vtAttachmentMinVel.IsInitted() )
-	{
-		s_vtAttachmentMinVel.Init( g_pLTServer, "AttachmentMinVel", LTNULL, DEFAULT_ATTACH_MIN_VEL );
-	}
-	if( !s_vtAttachmentMaxVel.IsInitted() )
-	{
-		s_vtAttachmentMaxVel.Init( g_pLTServer, "AttachmentMaxVel", LTNULL, DEFAULT_ATTACH_MAX_VEL );
-	}
-	if( !s_vtAttachmentMinYAdd.IsInitted() )
-	{
-		s_vtAttachmentMinYAdd.Init( g_pLTServer, "AttachmentMinYAdd", LTNULL, DEFAULT_ATTACH_MIN_YADD );
-	}
-	if( !s_vtAttachmentMaxYAdd.IsInitted() )
-	{
-		s_vtAttachmentMaxYAdd.Init( g_pLTServer, "AttachmentMaxYAdd", LTNULL, DEFAULT_ATTACH_MAX_YADD );
-	}
-	if( !s_vtAttachmentFadeDelay.IsInitted() )
-	{
-		s_vtAttachmentFadeDelay.Init( g_pLTServer, "AttachmentFadeDelay", LTNULL, DEFAULT_ATTACH_FADE_DELAY );
-	}
-	if( !s_vtAttachmentFadeDuration.IsInitted() )
-	{
-		s_vtAttachmentFadeDuration.Init( g_pLTServer, "AttachmentFadeDuration", LTNULL, DEFAULT_ATTACH_FADE_DURATION );
-	}
-	
 	// Set the owner of the attachment...
 	
 	m_hAttachmentOwner = pAttachPos->GetAttachment()->GetObject();
@@ -1741,6 +1789,10 @@ void Prop::UpdateFade()
 		g_pLTServer->GetObjectColor( m_hObject, &r, &g, &b, &a );
 		g_pLTServer->SetObjectColor( m_hObject, r, g, b, fAlpha );
 
+		// RETAIL: Tron scales the prop with its alpha (Object.lto 0x100fcfad)
+		LTVector vScale( fAlpha, fAlpha, fAlpha );
+		g_pLTServer->ScaleObject( m_hObject, &vScale );
+
 		float fDiff = (float)fabs( m_fEndAlpha - fAlpha );
 
 		if( fDiff <= MATH_EPSILON )
@@ -1869,4 +1921,27 @@ void Prop::Update()
 		// Just keep updating
 		SetNextUpdate(UPDATE_NEXT_FRAME);
 	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Prop::PlayLoopSound
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x100fd330): (re)start the
+//				looping sound
+//
+// ----------------------------------------------------------------------- //
+
+void Prop::PlayLoopSound()
+{
+	if (!m_hstrLoopSound) return;
+
+	if (m_hLoopSound)
+	{
+		g_pLTServer->SoundMgr()->KillSound(m_hLoopSound);
+	}
+
+	m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, g_pLTServer->GetStringData(m_hstrLoopSound), -1.0f,
+		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
 }

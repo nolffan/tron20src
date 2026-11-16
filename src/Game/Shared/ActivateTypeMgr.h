@@ -46,6 +46,10 @@ struct ACTIVATETYPE
 	{
 		eOn	= 0,
 		eOff,
+		// RETAIL: Tron has a third state (ACTIVATETYPE is 0x14 bytes, its
+		// constructor clears three state ids: Object.lto 0x100ca4d0; Init
+		// reads only StateON/StateOFF). The name is ours
+		eTronUnknown2,
 
 		eMaxStates
 	};

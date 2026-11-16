@@ -33,7 +33,6 @@ struct SecRezzerPointInfo
 
 typedef std::vector<SecRezzerPointInfo> SecRezzerPointList;
 
-
 class SecRezzer : public Spawner
 {
 	public :

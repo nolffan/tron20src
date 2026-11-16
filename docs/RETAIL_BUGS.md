@@ -807,6 +807,29 @@ Both should use bAltFire.
 
 Not fixed yet: the modern build should test and store bAltFire.
 
+### A prop's looping sound name is never freed
+
+Object.lto 0x100fa080 (Prop::~Prop, ObjectShared/Prop.cpp). Tron's props
+keep the name of a looping sound (the BUTE_SOUND_KEY_LOOPING model string)
+as an engine HSTRING (+0x838). The destructor kills the sound but never
+frees the string, so every prop that played a looping sound leaks its name
+when it is removed. KILL_LOOPING_SOUND and a new looping sound free it.
+
+Fixed in the modern build: Prop.cpp (TRON20SRC_MODERN frees m_hstrLoopSound).
+
+### ARMOR_UNLOCK never unlocks a power armor
+
+Object.lto 0x1013b430 (PowerArmor::ObjectMessageFn, ObjectShared/
+PowerArmor.cpp). Tron's power armor can be locked on or off (ARMOR_LOCK_ON,
+ARMOR_LOCK_OFF) and has an ARMOR_UNLOCK command (its string is in the image,
+0x102987b0), but the trigger handler compares the message with an empty
+string instead (0x1013b5b4): ARMOR_UNLOCK falls through and does nothing,
+and only an empty trigger message unlocks the armor. A locked armor stays
+locked.
+
+Fixed in the modern build: PowerArmor.cpp (TRON20SRC_MODERN compares with
+KEY_UNLOCK).
+
 ### A "REMOVE" message does not remove a lite object
 
 Object.lto 0x10153720 (GameBaseLite::OnTrigger, ObjectShared/

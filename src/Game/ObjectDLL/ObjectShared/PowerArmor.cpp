@@ -25,6 +25,8 @@
 #include "Attachments.h"
 #include "ModelButeMgr.h"
 #include "CharacterHitBox.h"
+#include "Projectile.h"
+#include "GameServerShell.h"
 
 // Forward declarations
 
@@ -38,6 +40,23 @@ BEGIN_CLASS(PowerArmor)
 	ADD_DESTRUCTIBLE_MODEL_AGGREGATE(PF_GROUP(1), PF_HIDDEN)
 END_CLASS_DEFAULT_FLAGS(PowerArmor, Prop, NULL, NULL, CF_HIDDEN)
 
+// RETAIL: the damage types the armor stops whole at the two easier
+// difficulties (Object.lto .data 0x102fa9e4). The name is ours
+static DamageType s_aeArmorProofDamageTypes[] =
+{
+	DT_DISC,
+	DT_SEQUENCER,
+	DT_CLUSTER,
+	DT_ENEMYDISC,
+	DT_CLUSTERAUTOBURST,
+};
+
+// RETAIL: the armor's hit points (Object.lto 0x102987f8). The name is ours
+const LTFLOAT c_fPowerArmorHitPoints = 20.0f;
+
+// RETAIL: Prop's attachment fade cvars (Object.lto 0x10378a3c, 0x10378a4c)
+extern CVarTrack s_vtAttachmentFadeDelay;
+extern CVarTrack s_vtAttachmentFadeDuration;
 
 
 //----------------------------------------------------------------------------
@@ -49,8 +68,12 @@ END_CLASS_DEFAULT_FLAGS(PowerArmor, Prop, NULL, NULL, CF_HIDDEN)
 //----------------------------------------------------------------------------
 PowerArmor::PowerArmor()
 {
-	m_eState = kPA_TurningOff;
-	m_bDisabled = LTFALSE;
+	m_eState = kPA_Off;
+	m_eLock = kPA_Unlocked;
+	m_bAttached = true;
+	m_fMaxHitPoints = c_fPowerArmorHitPoints;
+	m_fHitPoints = c_fPowerArmorHitPoints;
+	m_bCanDamage = true;
 }
 
 //----------------------------------------------------------------------------
@@ -83,9 +106,12 @@ PowerArmor::~PowerArmor()
 
 		case MID_PRECREATE:
 		{
-            uint32 dwRet = Prop::EngineMessageFn(messageID, pData, fData);
-			
-			return dwRet;
+			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
+			{
+				ReadProp((ObjectCreateStruct*)pData);
+			}
+
+			return Prop::EngineMessageFn(messageID, pData, fData);
 		}
 		break;
 
@@ -108,6 +134,7 @@ PowerArmor::~PowerArmor()
 		}
 		break;
 	}
+
 	uint32 iResult = Prop::EngineMessageFn(messageID, pData, fData);
 
 	// UGLY!  There are 2 reasons for this code here:
@@ -119,12 +146,23 @@ PowerArmor::~PowerArmor()
 	//
 	// 2. Props flag setting only ADDS flags, it doesn't remove them.  This
 	// will insure that the flags are truely and totally gone.
-
 	if ( messageID == MID_INITIALUPDATE )
 	{
 		if (fData != INITIALUPDATE_SAVEGAME)
 		{
 			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_TOUCH_NOTIFY );
+
+			// RETAIL: Tron's armor starts off: invisible and shrunk
+			// (Object.lto 0x1013b379)
+			if ( m_eState == kPA_Off )
+			{
+				float r, g, b, a;
+				g_pLTServer->GetObjectColor( m_hObject, &r, &g, &b, &a );
+				g_pLTServer->SetObjectColor( m_hObject, r, g, b, 0.0f );
+
+				LTVector vScale( 0.0f, 0.0f, 0.0f );
+				g_pLTServer->ScaleObject( m_hObject, &vScale );
+			}
 		}
 	}
 
@@ -142,38 +180,81 @@ PowerArmor::~PowerArmor()
 {
 	pMsg->SeekTo(0);
 	uint32 messageID = pMsg->Readuint32();
-
 	switch(messageID)
 	{
 		case MID_TRIGGER:
 		{
 			uint32 flags;
 			g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, flags );
-			UBER_ASSERT( !(flags & FLAG_TOUCH_NOTIFY), "Touch Notify Enabled!" );
-			UBER_ASSERT( !(flags & FLAG_RAYHIT), "Ray Hit Enabled!" );
 
 			const char* szMsg = (const char*)pMsg->Readuint32();
 
-			if ( !strcmp(szMsg, KEY_TURNON) )
+			// RETAIL: Tron's commands (Object.lto 0x1013b485)
+			if ( !_stricmp(szMsg, KEY_TURNON) )
 			{
-				m_eState = kPA_TurningOn;
-				SetNextUpdate(0.1f);
+				if ( m_eState != kPA_TurningOn && m_eState != kPA_On && m_eLock != kPA_LockedOff )
+				{
+					m_eState = kPA_TurningOn;
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
 			}
-			if ( !strcmp(szMsg, KEY_TURNOFF) )
+			else if ( !_stricmp(szMsg, KEY_TURNOFF) )
 			{
-				m_eState = kPA_TurningOff;
-				SetNextUpdate(0.1f);
+				if ( m_eState != kPA_TurningOff && m_eState != kPA_Off && m_eLock != kPA_LockedOn )
+				{
+					m_eState = kPA_TurningOff;
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
+			}
+			else if ( !_stricmp(szMsg, KEY_LOCKON) )
+			{
+				m_eLock = kPA_LockedOn;
+				if ( m_eState == kPA_Off || m_eState == kPA_TurningOff )
+				{
+					m_eState = kPA_TurningOn;
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
+			}
+			else if ( !_stricmp(szMsg, KEY_LOCKOFF) )
+			{
+				m_eLock = kPA_LockedOff;
+				if ( m_eState == kPA_On || m_eState == kPA_TurningOn )
+				{
+					m_eState = kPA_TurningOff;
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
+			}
+			// RETAIL: compares with an empty string, not KEY_UNLOCK
+			// (Object.lto 0x1013b5b4; docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+			else if ( !_stricmp(szMsg, KEY_UNLOCK) )
+#else
+			else if ( !_stricmp(szMsg, "") )
+#endif
+			{
+				m_eLock = kPA_Unlocked;
+			}
+			else if ( !_stricmp(szMsg, KEY_REMOVE) )
+			{
+				m_bAttached = false;
+				g_pLTServer->RemoveObject( m_hObject );
+			}
+			else if ( !_stricmp(szMsg, KEY_CANDAMAGE) )
+			{
+				m_bCanDamage = true;
+			}
+			else if ( !_stricmp(szMsg, KEY_CANTDAMAGE) )
+			{
+				m_bCanDamage = false;
 			}
 		}
 		break;
 
 		case MID_DAMAGE:
 		{
-			if ( m_bDisabled != LTTRUE )
-			{
-				m_bDisabled = LTTRUE;
-				HandleTurningOff();
-			}
+			// RETAIL: Tron's armor takes its damage from projectiles only
+			// (HandleProjectileImpact)
+			return LTTRUE;
 		}
 		break;
 
@@ -182,7 +263,6 @@ PowerArmor::~PowerArmor()
 	}
 
 	return Prop::ObjectMessageFn(hSender, pMsg);
-
 }
 
 //----------------------------------------------------------------------------
@@ -194,12 +274,8 @@ PowerArmor::~PowerArmor()
 //----------------------------------------------------------------------------
 void PowerArmor::Update(void)
 {
-	SetNextUpdate(UPDATE_NEVER);
-
 	uint32 flags;
 	g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, flags );
-	UBER_ASSERT( !(flags & FLAG_TOUCH_NOTIFY), "Touch Notify Enabled!" );
-	UBER_ASSERT( !(flags & FLAG_RAYHIT), "Ray Hit Enabled!" );
 
 	switch (m_eState)
 	{
@@ -218,9 +294,6 @@ void PowerArmor::Update(void)
 	case kPA_TurningOff:
 		HandleTurningOff();
 		break;
-	
-	default:
-		UBER_ASSERT( 0, "PowerArmor::Update: Unexpected State" );
 	};
 }
 
@@ -228,22 +301,37 @@ void PowerArmor::Update(void)
 //              
 //	ROUTINE:	PowerArmor::HandleOff()
 //              
-//	PURPOSE:	
+//	PURPOSE:	RETAIL: Tron's armor fades out (Object.lto 0x1013b6e0)
 //              
 //----------------------------------------------------------------------------
 void PowerArmor::HandleOff()
 {
+	UpdateFade();
+
+	if ( !m_bFading )
+	{
+		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_VISIBLE );
+		SetNextUpdate(UPDATE_NEVER);
+	}
 }
 
 //----------------------------------------------------------------------------
 //              
 //	ROUTINE:	PowerArmor::HandleOn()
 //              
-//	PURPOSE:	
+//	PURPOSE:	RETAIL: Tron's armor fades in (Object.lto 0x1013b720)
 //              
 //----------------------------------------------------------------------------
 void PowerArmor::HandleOn()
 {
+	UpdateFade();
+
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
+
+	if ( !m_bFading )
+	{
+		SetNextUpdate(UPDATE_NEVER);
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -255,14 +343,14 @@ void PowerArmor::HandleOn()
 //----------------------------------------------------------------------------
 void PowerArmor::HandleTurningOn()
 {
-	if ( m_bDisabled == LTTRUE )
-	{
-		m_eState = kPA_Off;
-		return;
-	}
-
-	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
 	m_eState = kPA_On;
+
+	LTFLOAT fDuration = s_vtAttachmentFadeDuration.GetFloat();
+	LTFLOAT fDelay = s_vtAttachmentFadeDelay.GetFloat();
+	StartFade( fDuration, fDelay, 1.0f, false );
+
+	m_fStartAlpha = 0.0f;
+	m_fEndAlpha = 1.0f;
 }
 
 //----------------------------------------------------------------------------
@@ -274,8 +362,11 @@ void PowerArmor::HandleTurningOn()
 //----------------------------------------------------------------------------
 void PowerArmor::HandleTurningOff()
 {
-	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_VISIBLE );
 	m_eState = kPA_Off;
+
+	LTFLOAT fDuration = s_vtAttachmentFadeDuration.GetFloat();
+	LTFLOAT fDelay = s_vtAttachmentFadeDelay.GetFloat();
+	StartFade( fDuration, fDelay, 0.0f, false );
 }
 
 //----------------------------------------------------------------------------
@@ -287,9 +378,13 @@ void PowerArmor::HandleTurningOff()
 //----------------------------------------------------------------------------
 /*virtual*/ void PowerArmor::Save(ILTMessage_Write *pMsg)
 {
-	UBER_ASSERT( pMsg, "PowerArmor::Save: NULL pMsg" );
 	SAVE_DWORD(m_eState);
-	SAVE_BOOL(m_bDisabled);
+	SAVE_DWORD(m_eLock);
+	SAVE_bool(m_bAttached);
+	SAVE_CHARSTRING(m_sOnDestroyFX.c_str());
+	SAVE_FLOAT(m_fHitPoints);
+	SAVE_FLOAT(m_fMaxHitPoints);
+	SAVE_bool(m_bCanDamage);
 }
 
 //----------------------------------------------------------------------------
@@ -301,11 +396,118 @@ void PowerArmor::HandleTurningOff()
 //----------------------------------------------------------------------------
 /*virtual*/ void PowerArmor::Load(ILTMessage_Read *pMsg)
 {
-	UBER_ASSERT( pMsg, "PowerArmor::Load: NULL pMsg" );
 	LOAD_DWORD_CAST(m_eState, ePA_State);
-	LOAD_BOOL(m_bDisabled);
+	LOAD_DWORD_CAST(m_eLock, ePA_Lock);
+	LOAD_bool(m_bAttached);
+
+	char szString[80];
+	LOAD_CHARSTRING(szString, ARRAY_LEN(szString));
+	m_sOnDestroyFX = szString;
+
+	LOAD_FLOAT(m_fHitPoints);
+	LOAD_FLOAT(m_fMaxHitPoints);
+	LOAD_bool(m_bCanDamage);
 }
 
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	PowerArmor::ReadProp()
+//              
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1013ba20)
+//              
+//----------------------------------------------------------------------------
+void PowerArmor::ReadProp(ObjectCreateStruct *pStruct)
+{
+	if ( !pStruct ) return;
+
+	GenericProp genProp;
+
+	if ( g_pLTServer->GetPropGeneric( "OnDestroyFX", &genProp ) == LT_OK )
+	{
+		m_sOnDestroyFX = genProp.m_String;
+	}
+
+	if ( g_pLTServer->GetPropGeneric( "HitPoints", &genProp ) == LT_OK )
+	{
+		m_fHitPoints = m_fMaxHitPoints = genProp.m_Float;
+	}
+}
+
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	PowerArmor::HandleProjectileImpact()
+//              
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1013bb40)
+//              
+//----------------------------------------------------------------------------
+bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPosition* pAttachPos )
+{
+	if ( !pProjectile || !pAttachPos ) return false;
+
+	if ( m_eState != kPA_On ) return false;
+
+	GameDifficulty eDifficulty = g_pGameServerShell->GetDifficulty();
+	if ( eDifficulty == GD_EASY || eDifficulty == GD_NORMAL )
+	{
+		for ( int i = 0; i < ARRAY_LEN(s_aeArmorProofDamageTypes); i++ )
+		{
+			if ( pProjectile->m_eInstDamageType == s_aeArmorProofDamageTypes[i] )
+			{
+				if ( m_bCanDamage )
+				{
+					PlayClientFX( (char*)m_sOnDestroyFX.c_str(), m_hObject );
+					CAttachment::Destroy( pAttachPos->GetAttachment() );
+					pAttachPos->SetAttachment( LTNULL );
+				}
+
+				return true;
+			}
+		}
+	}
+
+	LTFLOAT fDamage = pProjectile->m_fInstDamage;
+	pProjectile->ScaleTronDamage( &fDamage );
+	pProjectile->ScaleTronDamage101( &fDamage );
+	pProjectile->ScaleTronDamage105( &fDamage );
+
+	// RETAIL: a second damage the projectile has when its 0x7c flag is set:
+	// 0x84 times 0x80 (as our header names them; the names may be wrong)
+	LTFLOAT fExtraDamage = 0.0f;
+	if ( pProjectile->m_bCanTouchFiredFromObj )
+	{
+		fExtraDamage = pProjectile->m_fRadius * *(LTFLOAT*)&pProjectile->m_xTronUnknown80;
+	}
+
+	LTFLOAT fHitPoints = m_fHitPoints;
+	fHitPoints -= fDamage + fExtraDamage;
+	if ( fHitPoints <= 0.0f )
+	{
+		fHitPoints = 0.0f;
+	}
+
+	fDamage = fDamage - m_fHitPoints;
+
+	if ( m_bCanDamage )
+	{
+		m_fHitPoints = fHitPoints;
+	}
+
+	if ( m_fHitPoints <= 0.0f )
+	{
+		PlayClientFX( (char*)m_sOnDestroyFX.c_str(), m_hObject );
+		CAttachment::Destroy( pAttachPos->GetAttachment() );
+		pAttachPos->SetAttachment( LTNULL );
+	}
+
+	if ( fDamage < 0.0f )
+	{
+		fDamage = 0.0f;
+	}
+
+	pProjectile->m_fInstDamage = fDamage;
+
+	return true;
+}
 
 BEGIN_CLASS(ShellArmor)
 END_CLASS_DEFAULT_FLAGS(ShellArmor, Prop, NULL, NULL, CF_HIDDEN)

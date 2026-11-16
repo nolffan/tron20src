@@ -93,7 +93,7 @@ LTRESULT CDoomsDayPiecePlugin::PreHook_Dims(
 // ----------------------------------------------------------------------- //
 
 DoomsDayPiece::DoomsDayPiece( )
-:	PropType		( ),
+:	NOLF2PropType	( ),
 	m_hDevice		( LTNULL ),
 	m_vOriginalPos	( 0.0f, 0.0f, 0.0f ),
 	m_bCanBeCarried	( true )
@@ -149,7 +149,7 @@ uint32 DoomsDayPiece::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fDa
 		
 		case MID_UPDATE:
 		{
-			uint32 dwRet = PropType::EngineMessageFn(messageID, pData, fData);
+			uint32 dwRet = NOLF2PropType::EngineMessageFn(messageID, pData, fData);
 			
 			Update( );
 
@@ -172,7 +172,7 @@ uint32 DoomsDayPiece::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fDa
 		default : break;
 	}
 
-	return PropType::EngineMessageFn(messageID, pData, fData);
+	return NOLF2PropType::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -236,7 +236,7 @@ bool DoomsDayPiece::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 		m_bCanBeCarried = true;
 	}
 	
-	return PropType::OnTrigger( hSender, cMsg );
+	return NOLF2PropType::OnTrigger( hSender, cMsg );
 }
 
 // ----------------------------------------------------------------------- //

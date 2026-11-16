@@ -40,6 +40,10 @@ class RelationData;
 // place is not proven it is put at the most likely free one (PORT: noted).
 class CProjectile : public GameBase
 {
+	// RETAIL: PowerArmor::HandleProjectileImpact reads and sets its damage
+	// (Object.lto 0x1013bb99). Ours
+	friend class PowerArmor;
+
 	public :
 
 		CProjectile();
@@ -49,6 +53,13 @@ class CProjectile : public GameBase
         void			SetLifeTime(LTFLOAT fTime) { m_fLifeTime = fTime; }
 
 		void			AdjustDamage(LTFLOAT fModifier);
+
+		// RETAIL: Tron's damage scales by the projectile's modifier flags
+		// (0x10121df0, 0x10121ea0, 0x10121ec0; PowerArmor's damage check
+		// calls them). The names are ours
+		void			ScaleTronDamage(LTFLOAT* pfDamage);
+		void			ScaleTronDamage101(LTFLOAT* pfDamage);
+		void			ScaleTronDamage105(LTFLOAT* pfDamage);
 
 		HOBJECT          GetFiredFrom() const   { return m_hFiredFrom; }
 		const LTVector&  GetFirePos() const     { return m_vFirePos; }
@@ -195,15 +206,44 @@ class CProjectile : public GameBase
 		// keep track if we've requested messages or not
 		// (to cut down no message traffic)
 		bool			m_bReceivingMessages;	// 0xf0 RETAIL: Tron moved it here from CDisc
-		// RETAIL: 0xc4 bytes the constructor does not set
-		uint32			m_xTronUnknownF4;
+		// RETAIL: 0xc4 bytes the constructor does not set: eleven pairs of
+		// flags (0xf1..0x106; the first of each pair enables a modifier the
+		// damage scales read: 0x10121df0, 0x10121ea0, 0x10121ec0) and their
+		// values (0x108..0x1b4)
+		bool			m_bTronUnknownF1;
+		bool			m_bTronUnknownF2;
+		bool			m_bTronUnknownF3;
+		bool			m_bTronUnknownF4;
+		bool			m_bTronUnknownF5;
+		bool			m_bTronUnknownF6;
+		bool			m_bTronUnknownF7;
 		bool			m_bTronUnknownF8;
 		bool			m_bTronUnknownF9;		// RETAIL: CProjectileBallLauncher::Setup 0x10035594
 		bool			m_bTronUnknownFA;
 		bool			m_bTronUnknownFB;		// RETAIL: CProjectileDrunkenDims::Setup 0x1003d914
-		uint32			m_xTronUnknownFC[3];
+		bool			m_bTronUnknownFC;
+		bool			m_bTronUnknownFD;
+		bool			m_bTronUnknownFE;
+		bool			m_bTronUnknownFF;
+		bool			m_bTronUnknown100;
+		bool			m_bTronUnknown101;
+		bool			m_bTronUnknown102;
+		bool			m_bTronUnknown103;		// RETAIL: tested in Setup (0x1011ec90)
+		bool			m_bTronUnknown104;
+		bool			m_bTronUnknown105;
+		bool			m_bTronUnknown106;
 		LTFLOAT			m_fTronUnknown108;		// RETAIL: a scale when 0xf9 is set (0x1003559e)
-		uint32			m_xTronUnknown10C[0x2b];
+		LTFLOAT			m_fTronUnknown10C;
+		LTFLOAT			m_fTronUnknown110;
+		LTFLOAT			m_fTronUnknown114;
+		LTFLOAT			m_fTronUnknown118[0x1d];
+		LTFLOAT			m_fTronUnknown18C;
+		LTFLOAT			m_fTronUnknown190;
+		LTFLOAT			m_fTronUnknown194[2];
+		LTFLOAT			m_fTronUnknown19C;
+		LTFLOAT			m_fTronUnknown1A0[4];
+		LTFLOAT			m_fTronUnknown1B0;
+		LTFLOAT			m_fTronUnknown1B4;
 		uint32			m_xTronUnknown1B8;		// RETAIL: an STL list (node 0x1c)
 		uint32			m_xTronUnknown1BC;		// RETAIL: an STL list (node 0x8c)
 		bool			m_xTronUnknown1C0;		// RETAIL: tested on touch (0x1011e82c)

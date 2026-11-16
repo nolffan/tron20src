@@ -114,7 +114,7 @@ LTRESULT CDoomsDayDevicePlugin::PreHook_Dims(
 // ----------------------------------------------------------------------- //
 
 DoomsDayDevice::DoomsDayDevice( )
-:	PropType				( ),
+:	NOLF2PropType			( ),
 	m_eDoomsDayDeviceState	( kDoomsDayDeviceState_Idle ),
 	m_nOwningTeamID			( INVALID_TEAM ),
 	m_fDropZoneRadius		( 64.0f )
@@ -176,7 +176,7 @@ uint32 DoomsDayDevice::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fD
 	{
 		case MID_PRECREATE:
 		{
-            uint32 dwRet = PropType::EngineMessageFn(messageID, pData, fData);
+            uint32 dwRet = NOLF2PropType::EngineMessageFn(messageID, pData, fData);
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
@@ -193,7 +193,7 @@ uint32 DoomsDayDevice::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fD
 
 		case MID_INITIALUPDATE:
 		{
-            uint32 dwRet = PropType::EngineMessageFn(messageID, pData, fData);
+            uint32 dwRet = NOLF2PropType::EngineMessageFn(messageID, pData, fData);
 
 			if (fData != INITIALUPDATE_SAVEGAME)
 			{
@@ -225,7 +225,7 @@ uint32 DoomsDayDevice::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fD
 		default : break;
 	}
 
-	return PropType::EngineMessageFn(messageID, pData, fData);
+	return NOLF2PropType::EngineMessageFn(messageID, pData, fData);
 }
 
 // ----------------------------------------------------------------------- //
@@ -270,7 +270,7 @@ bool DoomsDayDevice::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 	}
 
 	
-	return PropType::OnTrigger( hSender, cMsg );
+	return NOLF2PropType::OnTrigger( hSender, cMsg );
 }
 
 // ----------------------------------------------------------------------- //
