@@ -31,6 +31,15 @@
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleLives
+#include "TRON/SubroutineDataMgr.h"
+#include "VarTrack.h"
+
+// CPlayerMgr's sway console variables (PlayerMgr.cpp)
+extern VarTrack g_vtCameraSwayXFreq;
+extern VarTrack g_vtCameraSwayYFreq;
+extern VarTrack g_vtCameraSwayXSpeed;
+extern VarTrack g_vtCameraSwayYSpeed;
+extern VarTrack g_vtCameraSwayDuckMult;
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
@@ -468,6 +477,47 @@ void CTronPlayerMgr::OnExitWorld()
 	}
 
 	CPlayerMgr::OnExitWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::UpdateCameraSway()
+//
+//	PURPOSE:	RETAIL: 0x100a52a0: CPlayerMgr's sway, scaled by the
+//				triangulate subroutine while it zooms
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerMgr::UpdateCameraSway()
+{
+	// Apply...
+	float swayAmount = g_pGameClientShell->GetFrameTime() / 1000.0f;
+
+	float tm  = g_pLTClient->GetTime()/10.0f;
+
+	// Adjust if ducking...
+	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
+
+	//Adjust for skills
+	// PORT: retail reads the player stats' virtual at +0x13c (a pointer to
+	// a float at +4) as CPlayerMgr does; not yet in ours
+	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
+
+	if (m_bTronUnknown211 && g_pSubroutineMgr->IsUtilitySubroutineActive("Triangulate"))
+	{
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt("Triangulate");
+		SubVersion eVersion = g_pSubroutineMgr->GetActiveSubroutineVersion("Triangulate");
+		const TriangulateData& data = g_pSubroutineDataMgr->GetTriangulateData(SubroutineDataKey((uint8)eVersion, bCorrupt,
+			g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : 0));
+		fMult *= data.fSwayAmountMultiplier;
+		tm *= data.fSwaySpeedMultiplier;
+	}
+
+	float faddP = fMult * g_vtCameraSwayYSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayYFreq.GetFloat()) * swayAmount;
+	float faddY = fMult * g_vtCameraSwayXSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayXFreq.GetFloat()) * swayAmount;
+
+	m_fPitch += faddP;
+	m_fYaw	 += faddY;
 }
 
 // ----------------------------------------------------------------------- //

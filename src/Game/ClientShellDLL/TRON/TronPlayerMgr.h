@@ -126,9 +126,12 @@ public:
 	}
 
 	// PORT: Tron overrides UpdateCameraZoom (retail 0x100a4da0, slot 0xac:
-	// the LOL's and the triangulate subroutine's FOVs, +0x214..+0x220) and
-	// UpdateCameraSway (0x100a52a0, slot 0xb0); not yet written, CPlayerMgr's
-	// stand in
+	// the LOL's and the triangulate subroutine's FOVs, +0x214..+0x220); not
+	// yet written, CPlayerMgr's stands in
+
+	// RETAIL: 0x100a52a0 (slot 0xb0): the triangulate subroutine scales
+	// the sway
+	virtual void	UpdateCameraSway();
 
 	// RETAIL: inlined in CHUDProfiler::Render (retail 0x100328b0): true
 	// while the player is being profiled (the name is ours)
