@@ -164,6 +164,12 @@
 		LTVector							m_vPos;
 		LTRotation							m_rRot;
 
+		// RETAIL: Tron's (CClientFXMgr::CreateFX, 0x10117890, reads the
+		// members after the rotation 0x10 bytes later): the bool and vector
+		// of CLIENTFX_CREATESTRUCT's 0xa0/0xa4. The names are ours.
+		bool								m_bTronUnknown2C;
+		LTVector							m_vTronUnknown30;
+
 		bool								m_bUseTargetData;
 		LTVector							m_vTargetPos;
 		LTVector							m_vTargetNorm;
@@ -408,6 +414,13 @@
 
 			uint32							m_nCurrColorKey;			
 			uint32							m_nCurrScaleKey;
+
+			// RETAIL: Tron's CBaseFX has 0xc more bytes before m_pProps
+			// (CShell reads m_pProps at 0x78: CLIENTFX_INSTANCE::IsFinished,
+			// 0x101175a0). Probably the vector of FX_BASEDATA's
+			// m_vTronUnknown30; where it is in the class is not known.
+			// The name is ours.
+			LTVector						m_vTronUnknown;
 
 			const CBaseFXProps				*m_pProps;
 
