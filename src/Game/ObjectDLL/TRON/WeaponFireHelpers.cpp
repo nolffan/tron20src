@@ -5,7 +5,7 @@
 // PURPOSE : Tron's two continuous fire helpers that CCharacter owns
 //           (CPRodFireHelper, CEnergyClawFireHelper; declared in
 //           ContinuousFireHelper.h). Retail only (Object.lto
-//           0x10194160..0x10194335), written from the retail code. The
+//           0x10194150..0x10194335), written from the retail code. The
 //           file name and the names of the non-virtual functions are ours.
 //
 // ----------------------------------------------------------------------- //
@@ -20,6 +20,13 @@
 static inline float FireDataFloat(const ContinuousFireBlob20b &Blob, int nIndex)
 {
 	return ((const float*)Blob.m_aData)[nIndex];
+}
+
+// ----------------------------------------------------------------------- //
+
+CEnergyClawFireHelper::~CEnergyClawFireHelper()
+{
+	// RETAIL: 0x10194150
 }
 
 // ----------------------------------------------------------------------- //

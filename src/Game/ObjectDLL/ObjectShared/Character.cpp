@@ -448,8 +448,8 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 
 	// RETAIL: Tron's tail (Character.h)
 	m_hTronUnknownCF0			= LTNULL;
-	m_pPRodFireHelper			= LTNULL;	// PORT: not yet written (Character.h)
-	m_pEnergyClawFireHelper		= LTNULL;
+	m_pPRodFireHelper			= debug_new( CPRodFireHelper );			// RETAIL: 0x10089fd0
+	m_pEnergyClawFireHelper		= debug_new( CEnergyClawFireHelper );
 	m_nCarrying					= CFX_CARRY_NONE;
 	m_bRadarVisible				= false;
 	m_bTracking					= false;
@@ -541,6 +541,19 @@ CCharacter::~CCharacter()
 	{
 		debug_delete(m_pcs);
 		m_pcs = NULL;
+	}
+
+	// RETAIL: 0x1008a3fd, the fire helpers
+	if ( m_pPRodFireHelper )
+	{
+		debug_delete( m_pPRodFireHelper );
+		m_pPRodFireHelper = LTNULL;
+	}
+
+	if ( m_pEnergyClawFireHelper )
+	{
+		debug_delete( m_pEnergyClawFireHelper );
+		m_pEnergyClawFireHelper = LTNULL;
 	}
 
 	RemoveAggregate(m_pSearch);

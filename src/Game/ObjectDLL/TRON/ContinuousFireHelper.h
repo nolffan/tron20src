@@ -129,7 +129,7 @@ protected:
 };
 
 // RETAIL: the two helpers CCharacter owns (CCharacter +0xc64, +0xc68).
-// Their code is outside this file (Object.lto 0x10194160..0x10194320):
+// Their code is outside this file (Object.lto 0x10194150..0x10194335):
 // declared here for CCharacter.
 
 // RETAIL: RTTI .?AVCPRodFireHelper@@, vtable 0x1029a980 (constructor
@@ -153,6 +153,7 @@ class CEnergyClawFireHelper : public CContinuousFireHelper
 {
 public:
 	CEnergyClawFireHelper();
+	~CEnergyClawFireHelper();					// RETAIL: 0x10194150
 
 	virtual void	Update();
 
