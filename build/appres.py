@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""The launcher's and the dedicated server's art, from the retail game.
+"""The launcher's, the dedicated server's and CRes.dll's art, from the retail game.
 
   build/appres.py <retail game directory> <output directory>
 
-Tron 2.0's launcher (Tron.exe) and dedicated server (TRONSrv.exe) carry
-their art in their resources: the launcher's backgrounds and buttons
-(bitmaps), its sounds (8 waves), its icon and cursor; the server's splash
-screen and two icons. None of it was ever released (Build 69's
-Launcher/TRON/RES has only its .rc2), so, as the game's data, it is taken
-from the retail game when the game is built, never kept in this
-repository: this writes each one back out of the retail image as the file
-the resource compiler reads -- a bitmap with its BITMAPFILEHEADER, a wave as
-it is, an icon or cursor group as an .ico or .cur file -- into
-<output>/Launcher/ and <output>/ServerApp/, where the projects' resource
+Tron 2.0's launcher (Tron.exe), dedicated server (TRONSrv.exe) and client
+resources (CRes.dll) carry art in their resources: the launcher's
+backgrounds and buttons (bitmaps), its sounds (8 waves), its icon and
+cursor; the server's splash screen and two icons; the client resources'
+one cursor. None of it was ever released (Build 69's Launcher/TRON/RES has
+only its .rc2), so, as the game's data, it is taken from the retail game
+when the game is built, never kept in this repository: this writes each
+one back out of the retail image as the file the resource compiler reads
+-- a bitmap with its BITMAPFILEHEADER, a wave as it is, an icon or cursor
+group as an .ico or .cur file -- into <output>/Launcher/,
+<output>/ServerApp/ and <output>/ClientRes/, where the projects' resource
 scripts find them (their /i paths). Compiled again, each resource is the
 retail one byte for byte. (cjacksrc's build/appres.py, for Contract
 J.A.C.K.'s, is the model.)
@@ -52,6 +53,11 @@ IMAGES = {
         (RT_GROUP_ICON, 128): "Launcher.ico",
         (RT_GROUP_CURSOR, 308): "WebHand.cur",
     }),
+    # CRES.dll is not installed as a file: Update 2 ships it in Gamep3.rez
+    # (build/retail.py), whence it is read.
+    "Gamep3.rez:CRES.dll": ("ClientRes", {
+        (RT_GROUP_CURSOR, 125): "arrow.cur",
+    }),
     "TRONSrv.exe": ("ServerApp", {
         (RT_BITMAP, 535): "splash.bmp",
         (RT_GROUP_ICON, 524): "ServerApp.ico",
@@ -60,10 +66,35 @@ IMAGES = {
 }
 
 
-def resources(path):
-    """{(type, name): data} for the first language of every resource; a
-    type or name is an int or an upper-case string, as the image has it."""
-    d = open(path, "rb").read()
+def image_bytes(game, image):
+    """The image's bytes: a file of the game directory, or, for
+    "<archive>:<file>", a file at the root of one of its .rez archives."""
+    if ":" not in image:
+        path = os.path.join(game, image)
+        if not os.path.isfile(path):
+            sys.exit(f"appres: {path} not found (the retail game, build/retail.sh)")
+        return open(path, "rb").read()
+    archive, name = image.split(":", 1)
+    hits = [f for f in os.listdir(game) if f.lower() == archive.lower()]
+    if not hits:
+        sys.exit(f"appres: {os.path.join(game, archive)} not found (the retail game, build/retail.sh)")
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ext", "tools"))
+    from rezextract import Rez
+    rez = Rez(os.path.join(game, hits[0]))
+    try:
+        for path, pos, size in rez.walk():
+            if path.lower() == name.lower():
+                rez.f.seek(pos)
+                return rez.f.read(size)
+    finally:
+        rez.f.close()
+    sys.exit(f"appres: no {name} in {os.path.join(game, hits[0])}")
+
+
+def resources(d):
+    """{(type, name): data} for the first language of every resource of the
+    image d (its bytes); a type or name is an int or an upper-case string,
+    as the image has it."""
     pe = struct.unpack_from("<I", d, 0x3C)[0]
     nsec = struct.unpack_from("<H", d, pe + 6)[0]
     optsz = struct.unpack_from("<H", d, pe + 20)[0]
@@ -73,7 +104,7 @@ def resources(path):
             va, rp = struct.unpack_from("<II", d, s + 12)[0], struct.unpack_from("<I", d, s + 20)[0]
             break
     else:
-        sys.exit(f"appres: {path} has no resources")
+        sys.exit("appres: an image has no resources")
 
     def entries(off):
         nn, ni = struct.unpack_from("<HH", d, rp + off + 12)
@@ -131,10 +162,7 @@ def main():
     game, outdir = sys.argv[1:]
     written = 0
     for image, (sub, names) in IMAGES.items():
-        path = os.path.join(game, image)
-        if not os.path.isfile(path):
-            sys.exit(f"appres: {path} not found (the retail game, build/retail.sh)")
-        res = resources(path)
+        res = resources(image_bytes(game, image))
         files = {}
         for (t, n), data in res.items():
             if t == RT_BITMAP:
@@ -156,7 +184,7 @@ def main():
                 f.write(data)
             written += 1
     if written:
-        print(f"   appres: {written} file(s) of the launcher's and the server's art from {game}")
+        print(f"   appres: {written} file(s) of the launcher's, the server's and the client resources' art from {game}")
 
 
 if __name__ == "__main__":
