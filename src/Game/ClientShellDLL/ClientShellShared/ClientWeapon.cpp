@@ -4773,9 +4773,9 @@ void CClientWeapon::Fire( bool bFire )
 		eSoundId = PSI_ALT_FIRE;
 	}
 
-	LTVector vPos( 0, 0, 0 );
 	// RETAIL: 0x101343ad
-	::PlayWeaponSound( m_pWeapon, vPos, eSoundId, 1.0f, TronUnknownVirtual160( 6 ), LTTRUE );
+	bool bTronUnknown = TronUnknownVirtual160( 6 );
+	::PlayWeaponSound( m_pWeapon, LTVector( 0, 0, 0 ), eSoundId, 1.0f, bTronUnknown, LTTRUE );
 
 	// send a fire message to the server
 	SendFireMessage( bFire, fPerturb, vFirePos, vF, vObjectImpactPos, hObjectImpact );
@@ -4845,12 +4845,15 @@ void CClientWeapon::SendFireMessage( bool bFire,
 	// perturb (random range from true center that bullet can travel)
 	cMsg.Writeuint8( static_cast< uint8 >( fPerturb * 255.0f ) );
 
-	// time the weapon fired, in microseconds
-	cMsg.Writeint32( static_cast< int >( g_pLTClient->GetTime() * 1000.0f ) );
+	// RETAIL: Tron's sends the time the weapon fired as is (0x10134552)
+	cMsg.Writefloat( g_pLTClient->GetTime() );
 
 	// add any extra info needed for the fire message
 	// (this function primarily for derived classes)
 	AddExtraFireMessageInfo( bFire, cMsg );
+
+	// RETAIL: then Tron's slot 0x110 (0x10134591)
+	TronUnknownVirtual110( cMsg );
 
 	// Object that was hit (optional)
 	bool bWriteObject = ( hObject != INVALID_HOBJECT );

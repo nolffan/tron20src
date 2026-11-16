@@ -92,8 +92,7 @@ void CTronClientWeapon::Load( ILTMessage_Read *pMsg )
 	CClientWeapon::Load( pMsg );
 }
 
-// RETAIL: 0x100971a0.  Slot 68 (ours TronUnknownVirtual110, an int there)
-// takes the message.
+// RETAIL: 0x100971a0
 void CTronClientWeapon::Save( ILTMessage_Write *pMsg )
 {
 	if ( !pMsg )
@@ -101,7 +100,7 @@ void CTronClientWeapon::Save( ILTMessage_Write *pMsg )
 		return;
 	}
 
-	TronUnknownVirtual110( (int)pMsg );
+	TronUnknownVirtual110( pMsg );
 	pMsg->Writefloat( m_fTronUnknown204 );
 
 	CClientWeapon::Save( pMsg );

@@ -318,9 +318,11 @@ protected:
 	// add any extra firing information (primarily for derived classes)
 	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );
 
-	// RETAIL: Tron's slots 0x110, 0x114: one argument, empty here (the discs
-	// override the first). Not yet named
-	virtual void  TronUnknownVirtual110( int nArg ) {}
+	// RETAIL: Tron's slots 0x110, 0x114: one argument, empty here. 0x110
+	// takes the message: SendFireMessage (0x10134591) and CTronClientWeapon's
+	// Save have it write the shot's subroutine data (CTronClientWeapon
+	// 0x10097ab0). Not yet named
+	virtual void  TronUnknownVirtual110( ILTMessage_Write *pMsg ) {}
 	virtual void  TronUnknownVirtual114( int nArg ) {}
 
 	// return the "type" identifier (1st part of a fire message)
