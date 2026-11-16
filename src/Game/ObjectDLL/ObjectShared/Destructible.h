@@ -82,10 +82,9 @@ struct DamageStruct : public ILTObjRefReceiver
 
 	DamageStruct()
 	{
+		// RETAIL: Tron's Clear also sets nAmmoId and bTronUnknown44
+		// (retail 0x1001fe20; constructor 0x100e6c60)
 		Clear();
-		// RETAIL: Tron's constructor sets these two (retail 0x100e6c60)
-		nAmmoId			= 0xFF;	// WMGR_INVALID_ID
-		bTronUnknown44	= LTFALSE;
 		hDamager.SetReceiver( *this );
 	}
 
@@ -124,6 +123,8 @@ struct DamageStruct : public ILTObjRefReceiver
 		eType		= DT_UNSPECIFIED;
         hDamager    = LTNULL;
         hContainer  = LTNULL;
+		nAmmoId		= 0xFF;	// WMGR_INVALID_ID
+		bTronUnknown44	= LTFALSE;
 	}
 
     void Save(ILTMessage_Write *pMsg)

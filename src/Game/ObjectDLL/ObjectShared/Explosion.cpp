@@ -86,10 +86,18 @@ Explosion::Explosion() : GameBase()
 	m_hFiredFrom			= LTNULL;
 
     m_bRemoveWhenDone       = LTTRUE;
+	m_bAreaDamageIgnoreOwner = false;
 
 	m_vPos.Init();
 
 	m_nImpactFXId			= FXBMGR_INVALID_ID;
+
+	// RETAIL: Tron's (0x100eeec6)
+	m_bDamageForever		= false;
+	m_bStartOn				= false;
+	m_pWeaponData			= LTNULL;
+
+	ClearFireData();
 }
 
 // ----------------------------------------------------------------------- //
@@ -102,12 +110,31 @@ Explosion::Explosion() : GameBase()
 
 void Explosion::Setup(HOBJECT hFiredFrom, uint8 nAmmoId)
 {
+	// RETAIL: 0x100eef10
 	if (!hFiredFrom) return;
 
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(nAmmoId);
 	if (!pAmmo) return;
 
     m_bRemoveWhenDone = LTTRUE;
+
+	SetupFromAmmo(pAmmo);
+
+	Start(hFiredFrom);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::SetupFromAmmo()
+//
+//	PURPOSE:	RETAIL: 0x100eef50 (Setup and ReadProp call it). The name
+//				is ours
+//
+// ----------------------------------------------------------------------- //
+
+void Explosion::SetupFromAmmo(AMMO const *pAmmo)
+{
+	if (!pAmmo) return;
 
     m_fDamageRadius = (LTFLOAT) pAmmo->fAreaDamageRadius;
     m_fMaxDamage    = (LTFLOAT) pAmmo->fAreaDamage;
@@ -119,7 +146,12 @@ void Explosion::Setup(HOBJECT hFiredFrom, uint8 nAmmoId)
 	m_fProgDamageDuration	= pAmmo->fProgDamageDuration;
 	m_eProgDamageType		= pAmmo->eProgDamageType;
 
-	Start(hFiredFrom);
+	m_bAreaDamageIgnoreOwner = pAmmo->bAreaDamageIgnoreOwner;
+
+	if (pAmmo->pImpactFX)
+	{
+		m_nImpactFXId = pAmmo->pImpactFX->nId;
+	}
 }
 
 
@@ -330,6 +362,35 @@ void Explosion::ReadProp()
 		if (genProp.m_String[0])
 		{
 			m_eDamageType = StringToDamageType((const char*)genProp.m_String);
+		}
+	}
+
+	// RETAIL: Tron's (0x100efa53)
+
+    if (g_pLTServer->GetPropGeneric("StartOn", &genProp) == LT_OK)
+	{
+		m_bStartOn = genProp.m_Bool;
+	}
+
+    if (g_pLTServer->GetPropGeneric("DamageForever", &genProp) == LT_OK)
+	{
+		m_bDamageForever = genProp.m_Bool;
+	}
+
+    if (g_pLTServer->GetPropGeneric("Ammo", &genProp) == LT_OK)
+	{
+		if (genProp.m_String[0] && _stricmp(genProp.m_String, "<none>") != 0)
+		{
+			AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(genProp.m_String);
+			if (pAmmo)
+			{
+				SetupFromAmmo(pAmmo);
+			}
+			else
+			{
+				// RETAIL: the first character, not the name (docs/RETAIL_BUGS.md)
+				g_pLTServer->CPrint("Explosion::ReadProp - No such ammo type %s", genProp.m_String[0]);
+			}
 		}
 	}
 }
@@ -573,6 +634,11 @@ void Explosion::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
     SAVE_BYTE(m_nImpactFXId);
 
 	m_ProgDamageTimer.Save(pMsg);
+
+	// RETAIL: Tron's (0x100f09c2)
+	SAVE_BOOL(m_bAreaDamageIgnoreOwner);
+	SAVE_BOOL(m_bDamageForever);
+	SAVE_BOOL(m_bStartOn);
 }
 
 
@@ -603,6 +669,11 @@ void Explosion::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
     LOAD_BYTE(m_nImpactFXId);
 
 	m_ProgDamageTimer.Load(pMsg);
+
+	// RETAIL: Tron's (0x100f0b82)
+	LOAD_BOOL(m_bAreaDamageIgnoreOwner);
+	LOAD_BOOL(m_bDamageForever);
+	LOAD_BOOL(m_bStartOn);
 }
 
 
@@ -671,10 +742,170 @@ LTRESULT CExplosionPlugin::PreHook_EditStringList(const char* szRezPath,
 //
 // ----------------------------------------------------------------------- //
 
-uint32 Explosion::TronUnknownVirtual68(void* pArg)
+LTRESULT Explosion::TronUnknownVirtual68(LTVector* pvPos)
 {
-	if (!pArg) return 1;
+	// RETAIL: 0x100ef230. Start calls it with &m_vPos; it reads into
+	// m_vPos, not into its argument
+	if (!pvPos) return LT_ERROR;
 
-	g_pLTServer->GetObjectPos(m_hObject, &m_vPos);
-	return 1;
+	return g_pLTServer->GetObjectPos(m_hObject, &m_vPos);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::ClearFireData()
+//
+//	PURPOSE:	RETAIL: 0x100ef210. Clear the flags of the fire data
+//
+// ----------------------------------------------------------------------- //
+
+void Explosion::ClearFireData()
+{
+	for( int i = 0; i < ContinuousFireData::kNumFields; ++i )
+	{
+		ContinuousFireData::FieldFlags &Flags = m_FireData.m_aFlags[i];
+		Flags.m_bSet = false;
+		Flags.m_bTronUnknown1 = false;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::ReadFireData()
+//
+//	PURPOSE:	RETAIL: 0x100ef260. As CContinuousFireHelper::ReadFireData,
+//				but field 0 is not read
+//
+// ----------------------------------------------------------------------- //
+
+void Explosion::ReadFireData(ILTMessage_Read *pMsg)
+{
+	for( int i = 0; i < ContinuousFireData::kNumFields; ++i )
+	{
+		ContinuousFireData::FieldFlags &Flags = m_FireData.m_aFlags[i];
+		Flags.m_bSet = pMsg->Readbool();
+		Flags.m_bTronUnknown1 = pMsg->Readbool();
+	}
+
+	if( m_FireData.m_aFlags[1].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field1 );
+	if( m_FireData.m_aFlags[2].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field2 );
+	if( m_FireData.m_aFlags[3].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field3 );
+	if( m_FireData.m_aFlags[4].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field4 );
+	if( m_FireData.m_aFlags[5].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field5 );
+	if( m_FireData.m_aFlags[6].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field6 );
+	if( m_FireData.m_aFlags[7].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field7 );
+	if( m_FireData.m_aFlags[8].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field8 );
+	if( m_FireData.m_aFlags[9].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field9 );
+	if( m_FireData.m_aFlags[10].m_bSet )
+		pMsg->ReadType( &m_FireData.m_Field10 );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::ScaleDamage*()
+//
+//	PURPOSE:	RETAIL: 0x100ef3b0, 0x100ef3d0, 0x100ef400. Scale a damage
+//				by the fire data. The fields hold floats at these places
+//
+// ----------------------------------------------------------------------- //
+
+void Explosion::ScaleDamageField8(LTFLOAT *pfDamage)
+{
+	if( m_FireData.m_aFlags[8].m_bSet )
+		*pfDamage *= *(LTFLOAT*)&m_FireData.m_Field8;
+}
+
+void Explosion::ScaleDamageField10(LTFLOAT *pfDamage)
+{
+	if( m_FireData.m_aFlags[10].m_bSet && m_pWeaponData->bIsPlayerPrimitive )
+		*pfDamage *= *(LTFLOAT*)&m_FireData.m_Field10;
+}
+
+void Explosion::ScaleDamage(LTFLOAT *pfDamage)
+{
+	if( m_FireData.m_aFlags[1].m_bSet )
+		*pfDamage *= *(LTFLOAT*)&m_FireData.m_Field1.m_aData[0x8c];
+
+	if( m_FireData.m_aFlags[4].m_bSet )
+		*pfDamage *= *(LTFLOAT*)&m_FireData.m_Field4.m_aData[0xc];
+
+	if( m_FireData.m_aFlags[5].m_bSet )
+		*pfDamage *= *(LTFLOAT*)&m_FireData.m_Field5.m_aData[0xc];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::DoFireDataDamage()
+//
+//	PURPOSE:	RETAIL: 0x100ef450. Field 9 of the fire data adds corrode
+//				damage (x: duration, y: damage)
+//
+// ----------------------------------------------------------------------- //
+
+void Explosion::DoFireDataDamage(HOBJECT hDamager, HOBJECT hObj, LTVector const& vDir)
+{
+	if (!hObj) return;
+
+	DamageStruct damage;
+
+	if( m_FireData.m_aFlags[9].m_bSet )
+	{
+		damage.Clear();
+		damage.hDamager		= hDamager;
+		damage.vDir			= vDir;
+		damage.nAmmoId		= m_pAmmoData->nId;
+		damage.eType		= DT_CORRODE;
+		damage.fDamage		= m_FireData.m_Field9.y;
+		damage.fDuration	= m_FireData.m_Field9.x;
+
+		damage.DoDamage(this, hObj, m_hObject);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Explosion::ObjectMessageFn()
+//
+//	PURPOSE:	RETAIL: 0x100ef790. Message 0x3f3 sets the explosion up
+//				from a weapon's fire (the name of the ID is not known)
+//
+// ----------------------------------------------------------------------- //
+
+uint32 Explosion::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
+{
+	pMsg->SeekTo(0);
+	uint32 messageID = pMsg->Readuint32();
+
+	if (messageID == 0x3f3)
+	{
+		HOBJECT hFiredFrom = pMsg->ReadObject();
+		uint32 nAmmoId = pMsg->Readuint32();
+
+		if (pMsg->Readbool())
+		{
+			m_pWeaponData = g_pWeaponMgr->GetWeapon(pMsg->Readuint32());
+			m_pAmmoData = g_pWeaponMgr->GetAmmo(nAmmoId);
+
+			if (m_pWeaponData && m_pAmmoData)
+			{
+				ReadFireData(pMsg);
+				Setup(hFiredFrom, nAmmoId);
+			}
+		}
+		else
+		{
+			Setup(hFiredFrom, nAmmoId);
+		}
+	}
+
+	return GameBase::ObjectMessageFn(hSender, pMsg);
 }

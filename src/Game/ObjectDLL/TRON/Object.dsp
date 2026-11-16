@@ -200,6 +200,10 @@ SOURCE=.\ArenaStartPoint.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AttachedExplosion.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\BossButeMgr.cpp
 # End Source File
 # Begin Source File
@@ -434,6 +438,10 @@ SOURCE=.\ArchiveBin.h
 # Begin Source File
 
 SOURCE=.\ArenaStartPoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AttachedExplosion.h
 # End Source File
 # Begin Source File
 

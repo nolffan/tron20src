@@ -950,6 +950,16 @@ the later in the level it is reset.
 Not fixed yet: the modern build should start the timer with the lifetime
 only.
 
+### An explosion's bad ammo name is reported as a single character
+
+Object.lto 0x100efb07 (Explosion::ReadProp, ObjectShared/Explosion.cpp).
+When the Ammo property names an ammo type that the weapon manager does not
+know, ReadProp prints "Explosion::ReadProp - No such ammo type %s". It gives
+the first character of the name as the argument, not the name. The %s then
+reads a pointer from that small number, and the print can crash the server.
+
+Not fixed yet: the modern build should give the name.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
