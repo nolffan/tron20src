@@ -144,7 +144,7 @@ bool CServerSaveLoadMgr::LoadNewLevel( char const* pszNewLevel )
 //
 // ----------------------------------------------------------------------- //
 
-bool CServerSaveLoadMgr::SwitchLevels( char const* pszNewLevel, bool bDoKeepAliveSave )
+bool CServerSaveLoadMgr::SwitchLevels( char const* pszNewLevel )
 {
 	TRACE( "CServerSaveLoadMgr::SwitchLevels\n" );
 
@@ -154,6 +154,11 @@ bool CServerSaveLoadMgr::SwitchLevels( char const* pszNewLevel, bool bDoKeepAliv
 		return false;
 	}
 
+	// RETAIL: 0x101c9823: Tron loads the level directly in multiplayer light
+	// cycles and when there are no players to keep alive
+	if( GetGameType( ) == eGameTypeMultiplayerLightcycles || CPlayerObj::GetPlayerObjList( ).empty( ))
+		return LoadNewLevel( pszNewLevel );
+
 	// Make sure all the folders are setup.
 	if( !BuildProfileSaveDir( ))
 		return false;
@@ -161,28 +166,9 @@ bool CServerSaveLoadMgr::SwitchLevels( char const* pszNewLevel, bool bDoKeepAliv
 	// Remember our new level to go to.
 	m_sSaveDataNewLevel = pszNewLevel;
 
-	// If we do saves, we need to ask the client.
-	if( bDoKeepAliveSave )
-	{
-		// Ask the client for the save data and wait for ack.
-		if( !AskClientsForSaveData( eSaveDataStateSwitchLevels ))
-			return false;
-
-		return true;
-	}
-
-	// Load the level with objects.
-	if( !LoadLevel( m_sSaveDataNewLevel, true ))
+	// Ask the client for the save data and wait for ack.
+	if( !AskClientsForSaveData( eSaveDataStateSwitchLevels ))
 		return false;
-
-	// Make sure mission mgr has the right settings for this level.
-	g_pServerMissionMgr->SetMissionBasedOnLevel( m_sSaveDataNewLevel );
-
-	if( !RunWorld( ))
-		return false;
-
-	// Don't need newlevel name anymore.
-	m_sSaveDataNewLevel.Empty( );
 
 	return true;
 }
@@ -253,14 +239,15 @@ bool CServerSaveLoadMgr::LoadSaveFile( char const* pszSaveIniKey, char const* ps
 
 	g_pGameServerShell->SetLGFlags( LOAD_RESTORE_GAME );
 
-	// Make sure mission mgr has the right settings for this level.
-	g_pServerMissionMgr->ExitLevelToSavedGame( szWorldName );
-
 	if( !LoadLevel( szWorldName, false ))
 		return false;
 
 	if( !RestoreObjectsFromSaveFile( pszSaveFile, false ))
 		return false;
+
+	// RETAIL: 0x101c997d: Tron sets the mission from the level after the
+	// objects are restored (NOLF2 1.3 exits to the saved game first)
+	g_pServerMissionMgr->SetMissionBasedOnLevel( szWorldName );
 
 	if( !RunWorld( ))
 		return false;
@@ -584,6 +571,11 @@ bool CServerSaveLoadMgr::CanSaveGame()	const
 	// Handle single player.
 	if( !IsMultiplayerGame( ))
 	{
+		// RETAIL: 0x101ca2fb: Tron saves no single player light cycle game
+		uint8 nGameType = g_pGameServerShell->GetServerGameOptions( ).m_eGameType;
+		if( nGameType == eGameTypeSingleLightCycleCircuit || nGameType == eGameTypeSingleLightCycleCustom )
+			return false;
+
 		// Get the first and only player and check if he's still alive.
 		CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
 		if( iter != CPlayerObj::GetPlayerObjList( ).end( ))
@@ -635,14 +627,21 @@ bool CServerSaveLoadMgr::LoadLevel( char const* pszFilename, bool bLoadWorldObje
 		return false;
 	}
 
+	// RETAIL: 0x101ca35f: Tron sets the level before it loads it, and the
+	// previous one back when the load fails
+	char const* pszOldLevel = g_pGameServerShell->GetCurLevel( );
+	g_pGameServerShell->SetCurLevel( pszFilename );
+
 	// Load the new level.
 	int flags = bLoadWorldObjects ? LOADWORLD_LOADWORLDOBJECTS : 0;
 	flags |= LOADWORLD_NORELOADGEOMETRY;
     LTRESULT dResult = g_pLTServer->LoadWorld(( char* )pszFilename, flags);
 	if( dResult != LT_OK )
+	{
+		g_pGameServerShell->SetCurLevel( pszOldLevel );
 		return false;
+	}
 
-	g_pGameServerShell->SetCurLevel( pszFilename );
 	return true;
 }
 

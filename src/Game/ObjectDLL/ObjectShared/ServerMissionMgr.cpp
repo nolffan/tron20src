@@ -948,7 +948,8 @@ bool CServerMissionMgr::FinishExitLevel( )
 	// Do switch.
 	else
 	{
-		bRet = g_pServerSaveLoadMgr->SwitchLevels( m_sCurrentWorldName, bSaveKeepAlives );
+		// PORT: Tron's SwitchLevels decides on the keep alive save itself
+		bRet = g_pServerSaveLoadMgr->SwitchLevels( m_sCurrentWorldName );
 	}
 
 	// Unpause the server now that we're done switching levels.
