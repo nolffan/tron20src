@@ -38,6 +38,7 @@
 #include "CharacterAlignment.h"
 #include "AIUtils.h"
 #include "RelationChangeObserver.h"
+#include "Timer.h"
 
 // Forward declarations
 class CRelationButeMgr;
@@ -301,7 +302,8 @@ public:
 	int Load(ILTMessage_Read *pMsg);
 	
 	void AddMomento( _listMomentos& listAddTo );
-	void ResetExpiration( float flTime ) { m_flExpiration = flTime; }
+	// RETAIL: Tron restarts a timer (inline in ResetRelationTime 0x10168260)
+	void ResetExpiration( float flTime ) { m_Timer.Start( flTime ); }
 	const RelationDescription& GetDescription( void ) const	{ return m_RD; }
 	IMomentoUser* GetOwner() { return m_pMomentoUser; }
 
@@ -327,7 +329,9 @@ private:
 	// Data:
 	eRelationMomentoType m_eRelationMomentoType;
 	IMomentoUser*		m_pMomentoUser;	// Backpointer to the owner Maintainer
-	float				m_flExpiration;	// Time the RelationDescription becomes becomes invalid
+	// RETAIL: Tron keeps a CTimer here (constructors 0x10168510/0x10168540,
+	// Save 0x101685a0) where NOLF2 keeps the expiration time.
+	CTimer				m_Timer;
 	RelationDescription	m_RD;			// Description of the actual Relation
 };
 

@@ -19,7 +19,8 @@
 
 
 // TODO: May want to convert CharacterAlignment to Jeffs macro expansion?
-enum CharacterAlignment { LIKE=0, TOLERATE, HATE, UNDETERMINED, INVALID };
+// RETAIL: Tron adds PERMISSION_DEPENDANT (ConvertAlignmentNameToEnum 0x1013cb70)
+enum CharacterAlignment { LIKE=0, TOLERATE, HATE, UNDETERMINED, PERMISSION_DEPENDANT, INVALID };
 enum CharacterSide { CS_ENEMY = 0, CS_FRIEND, CS_NEUTRAL };
 enum CharacterClass   	{ UNKNOWN=0, GOOD, BAD, NEUTRAL };
 
