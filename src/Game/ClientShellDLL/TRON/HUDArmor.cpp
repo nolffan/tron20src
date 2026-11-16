@@ -14,21 +14,6 @@
 #include "TRONPlayerStats.h"
 #include "TronInterfaceMgr.h"
 
-namespace
-{
-	// PORT: build 69's textures: retail takes each piece's two from its
-	// subroutine (CSubroutineMgr 0x10095210; TronSubroutine +0x195, +0x1d5),
-	// which this tree's SubroutineMgr does not read
-	char * szPieceTex[] =
-	{
-		"Interface\\hud\\protection_submask.dtx",
-		"Interface\\hud\\protection_truncate_plate.dtx",
-		"Interface\\hud\\protection_peripheral_seal.dtx",
-		"Interface\\hud\\protection_support_safeguard.dtx",
-		"Interface\\hud\\protection_base_damping.dtx",
-		"Interface\\hud\\protection_viral_shield.dtx",
-	};
-}
 
 //******************************************************************************************
 //**
@@ -124,6 +109,8 @@ void CHUDArmor::Update()
 	}
 }
 
+// RETAIL: 0x100221b0. NEAR: register allocation only (retail keeps 0 in
+// ebp and the subroutine on the stack)
 void CHUDArmor::UpdateLayout()
 {
 	int nCurrentLayout = GetConsoleInt("HUDLayout",0);
@@ -131,13 +118,15 @@ void CHUDArmor::UpdateLayout()
 	float xs = g_pInterfaceResMgr->GetXRatio();
 	float ys = g_pInterfaceResMgr->GetYRatio();
 
-	LTIntPt offset = g_pLayoutMgr->GetArmorIconOffset(nCurrentLayout);
+	// RETAIL: 0x100221e9: the compass position's layout entry
+	LTIntPt offset = g_pLayoutMgr->GetCompassPos(nCurrentLayout);
 
+	// each piece's two textures are its armor subroutine's
 	for (int i = 0; i < 6; i++)
 	{
-		// PORT: see szPieceTex
-		m_hArmorPieceTex[i] = g_pInterfaceResMgr->GetTexture(szPieceTex[i]);
-		m_hCorruptPieceTex[i] = m_hArmorPieceTex[i];
+		TronSubroutine* pSub = g_pSubroutineMgr->GetArmorSubroutine(i);
+		m_hArmorPieceTex[i] = g_pInterfaceResMgr->GetTexture(pSub->szArmorTex);
+		m_hCorruptPieceTex[i] = g_pInterfaceResMgr->GetTexture(pSub->szCorruptTex);
 	}
 
 	// from the bottom right corner
