@@ -137,7 +137,8 @@ class Body : public Prop, public IHitBoxUser
 		LTFLOAT GetBodyResetTime() { return m_fBodyResetTime; } 
 
 		// General inventory accessor
-		GEN_INVENTORY_LIST&	GetInventory() { return m_lstInventory; }
+		// RETAIL: Tron's Body has no general inventory (no list in the
+		// constructor 0x10158d00; m_fEnergy follows m_bDimsUpdated)
 		float GetEnergy() { return m_fEnergy; }
 
 		// Implementing classes will have this function called
@@ -231,6 +232,7 @@ class Body : public Prop, public IHitBoxUser
 		LTVector			m_vDeathDir;
 		DamageType			m_eDamageType;
 		LTObjRef			m_hHitBox;
+		LTObjRef			m_hTronUnknown894;	// RETAIL: Tron's (constructor 0x10158db4; not saved)
 
 		uint32				m_cWeapons;
 		LTObjRefNotifier	m_ahWeapons[kMaxWeapons];
@@ -258,7 +260,6 @@ class Body : public Prop, public IHitBoxUser
 		bool				m_bUpdateHitBox;
 		bool				m_bDimsUpdated;
 
-		GEN_INVENTORY_LIST	m_lstInventory;					// General inventory items (see GeneralInventory.h)
 		float				m_fEnergy;	
 		
 		LTObjRef			m_hCharacter;	// The character our body spawned from
@@ -268,11 +269,21 @@ class Body : public Prop, public IHitBoxUser
 
 		static BodyList		m_lstBodies;
 
+		// RETAIL: Tron's tail (constructor 0x10158d00, Save 0x1015c380:
+		// 0x10b8 bytes). The carrier is a plain HOBJECT at 0x109c (taken
+		// to be NOLF2's m_hCarrier); the two floats and the vector after
+		// the carry flags are Tron's, not yet identified.
+		HOBJECT				m_hCarrier;
 		bool				m_bCanCarry;
 		bool				m_bBeingCarried;
-		LTObjRef			m_hCarrier;
+		float				m_fTronUnknown10A4;
+		float				m_fTronUnknown10A8;
+		LTVector			m_vTronUnknown10AC;
+		bool				m_bTronUnknown10B8;	// set true by the constructor
+
+		// PORT: NOLF2's; retail's Body has neither (its special FX data is
+		// not a member).
 		bool				m_bCanRevive;
-		
 		BODYCREATESTRUCT	m_BCS;
 };
 

@@ -153,13 +153,20 @@ Body::Body() : Prop()
 
 	m_bCanCarry = false;
 	m_bBeingCarried = false;
-	m_bCanRevive = false;
+	m_fTronUnknown10A4 = 0.0f;
+	m_fTronUnknown10A8 = 0.0f;
+	m_vTronUnknown10AC.Init();
+	m_bCanRevive = false;	// PORT: NOLF2's (not in retail)
 
 	// Give ourselves touchnotify so we get put into containers.
 	m_dwFlags |= FLAG_TOUCH_NOTIFY;
 
 	// Add this instance to a list of all bodies.
 	m_lstBodies.push_back( this );
+
+	// RETAIL: 0x1015909a
+	m_hCarrier = LTNULL;
+	m_bTronUnknown10B8 = true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1541,10 +1548,8 @@ void Body::AddToObjectList( ObjectList *pObjList, eObjListControl eControl )
 void Body::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
-	
-	// Save the create struct for use with the specialFX message...
-	
-	m_BCS.Write( pMsg );
+
+	// RETAIL: Tron saves no create struct (Save 0x1015c380)
 
 	ANIMTRACKERID nTracker;
 	if ( LT_OK == g_pModelLT->GetMainTracker(m_hObject, nTracker) )
@@ -1608,11 +1613,12 @@ void Body::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_HOBJECT( m_hCharacter );
 	SAVE_bool( m_bPermanentBody );
 
+	SAVE_HOBJECT( m_hCarrier );
 	SAVE_bool( m_bCanCarry );
 	SAVE_bool( m_bBeingCarried );
-	SAVE_HOBJECT( m_hCarrier );
-
-	SAVE_bool( m_bCanRevive );
+	SAVE_FLOAT( m_fTronUnknown10A4 );
+	SAVE_FLOAT( m_fTronUnknown10A8 );
+	SAVE_VECTOR( m_vTronUnknown10AC );
 
 }
 
@@ -1628,7 +1634,7 @@ void Body::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
-	m_BCS.Read( pMsg );
+	// RETAIL: Tron loads no create struct
 
 	uint32 dwTime;
 	LOAD_DWORD(dwTime);
@@ -1705,18 +1711,12 @@ void Body::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_HOBJECT( m_hCharacter );
 	LOAD_bool( m_bPermanentBody );
 
+	LOAD_HOBJECT( m_hCarrier );
 	LOAD_bool( m_bCanCarry );
 	LOAD_bool( m_bBeingCarried );
-	LOAD_HOBJECT( m_hCarrier );
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-	{
-		m_bCanRevive = false;
-	}
-	else
-	{
-		LOAD_bool( m_bCanRevive );
-	}
+	LOAD_FLOAT( m_fTronUnknown10A4 );
+	LOAD_FLOAT( m_fTronUnknown10A8 );
+	LOAD_VECTOR( m_vTronUnknown10AC );
 
 	g_pCharacterMgr->AddDeathScene(&m_DeathScene);
 
