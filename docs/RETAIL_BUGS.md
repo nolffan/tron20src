@@ -970,6 +970,25 @@ write past the buffer on the stack.
 
 Not fixed yet: the modern build should give the size of the buffer.
 
+### The circuit intro destroys two strings twice and two never
+
+CShell.dll 0x1002ce50 (CHUDLightCycleCircuitIntro::TermStrings,
+TRON/HUDLightCycleCircuitIntro.cpp). The function destroys the trail
+label and the trail value twice. It does not destroy the lives label and
+the lives value. Each Init and Term leaks the two lives strings.
+
+Not fixed yet: the modern build should destroy the lives strings in place
+of the second trail strings.
+
+### The circuit intro can format an unset string ID
+
+CShell.dll 0x1002cf00 (CHUDLightCycleCircuitIntro::UpdateText). The
+speed and trail length switches set the string ID only for the indices
+0 to 3. For a different index, FormatString gets an unset value from the
+stack.
+
+Not fixed yet: the modern build should give the ID a default value.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

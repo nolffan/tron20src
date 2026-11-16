@@ -155,6 +155,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_SecurityCamera, eGameType);
 	AddItem(&m_TronDecision, eGameType);
 	AddItem(&m_LightCycleSpeedometer, eGameType);
+	AddItem(&m_LightCycleCircuitIntro, eGameType);
 
 	m_Crosshair.Init();
 	m_MatchStats.Init();
@@ -181,6 +182,7 @@ bool CTronHUDMgr::AddItems()
 	m_SecurityCamera.Init();
 	m_TronDecision.Init();
 	m_LightCycleSpeedometer.Init();
+	m_LightCycleCircuitIntro.Init();
 	m_pScores->Init();
 	m_pDiscScores->Init();
 	m_pDiscMatches->Init();

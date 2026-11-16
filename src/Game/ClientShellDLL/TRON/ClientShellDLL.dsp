@@ -338,6 +338,10 @@ SOURCE=.\HUDIOCamera.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleCircuitIntro.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDLightCycleLives.cpp
 # End Source File
 # Begin Source File
@@ -827,6 +831,10 @@ SOURCE=.\HUDHealthEnergy.h
 # Begin Source File
 
 SOURCE=.\HUDIOCamera.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleCircuitIntro.h
 # End Source File
 # Begin Source File
 

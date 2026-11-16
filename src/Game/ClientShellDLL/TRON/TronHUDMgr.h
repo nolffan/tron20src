@@ -47,6 +47,7 @@
 #include "HUDSecurityCamera.h"
 #include "HUDTronDecision.h"
 #include "HUDLightCycleSpeedometer.h"
+#include "HUDLightCycleCircuitIntro.h"
 #include "HUDScores.h"
 #include "HUDDiscMatches.h"
 #include "HUDDiscScores.h"
@@ -114,6 +115,7 @@ protected:
 	// retail's
 	CHUDTronDecision			m_TronDecision;
 	CHUDLightCycleSpeedometer	m_LightCycleSpeedometer;
+	CHUDLightCycleCircuitIntro	m_LightCycleCircuitIntro;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 
