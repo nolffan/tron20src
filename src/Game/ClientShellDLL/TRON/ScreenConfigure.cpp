@@ -229,41 +229,35 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 // Adds the columns to the controls
 void CScreenConfigure::InitControlList()
 {
-
-	LTIntPt pos(m_ListRect.left,m_ListRect.top);
-
+	// RETAIL: 0x10056740.  Tron's lists every command, in wide strings.
+	std::wstring sText;
+	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(m_nListFontSize);
 
 	for (int i=0; i < g_kNumCommands; i++)
 	{
 		const CommandData *pData = GetCommandData(i);
 
-		//check to see that this is a TO2 command
-		if (pData->nCommandID < FIRST_TRON_COMMAND)
-		{
-			// The initial column (contains the action)
-			CLTGUIColumnCtrl *pCtrl=CreateColumnCtrl(CMD_CHANGE_CONTROL, IDS_HELP_SETCONTROL);
-			pCtrl->SetFont(LTNULL,m_nListFontSize);
+		// The initial column (contains the action)
+		CLTGUIColumnCtrl *pCtrl=CreateColumnCtrl(CMD_CHANGE_CONTROL, IDS_HELP_SETCONTROL);
+		pCtrl->SetFont(pFont,m_nListFontSize);
 
-			// The "action" column
-			char szTmp[64];
-			FormatString(pData->nStringID,szTmp,sizeof(szTmp));
-			pCtrl->AddColumn(szTmp, m_nActionWidth);
+		// The "action" column
+		char szTmp[64];
+		FormatString(pData->nStringID,szTmp,sizeof(szTmp));
+		LTGUIWiden(sText,szTmp);
+		pCtrl->AddColumn(sText, m_nActionWidth);
 
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| // The equals column.  Changes from "" to "=" when the user is binding the key
-		//| pCtrl->AddColumn(" ", m_nEqualsWidth);
-		// The equals column.  Changes from "" to "=" when the user is binding the key
-		pCtrl->AddColumn("", m_nEqualsWidth);
+		// The equals column.  Changes from " " to "=" when the user is binding the key
+		pCtrl->AddColumn(std::wstring(L" "), m_nEqualsWidth);
 
-			// The column that contains the key which is assigned to the control!
-			FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
-			pCtrl->AddColumn(szTmp, m_nCommandWidth);
+		// The column that contains the key which is assigned to the control!
+		FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
+		LTGUIWiden(sText,szTmp);
+		pCtrl->AddColumn(sText, m_nCommandWidth);
 
-			pCtrl->SetParam1(i);
+		pCtrl->SetParam1(i);
 
-			m_pList[pData->nCommandType]->AddControl(pCtrl);
-		}
-
+		m_pList[pData->nCommandType]->AddControl(pCtrl);
 	}
 }
 
