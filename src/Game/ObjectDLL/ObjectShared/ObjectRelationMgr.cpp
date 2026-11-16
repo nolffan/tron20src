@@ -131,6 +131,8 @@ int CObjectRelationMgr::Save(ILTMessage_Write *pMsg)
 	SAVE_CHARSTRING( m_szCollectiveName );
 	SAVE_CHARSTRING( m_szDataSet );
 	SAVE_CHARSTRING( m_szRelationSet );
+	SAVE_CHARSTRING( m_szKey );		// RETAIL: Tron saves the key and owner (0x1010b27c)
+	SAVE_HOBJECT( m_hOwner );
 	return 0;
 }
 
@@ -153,12 +155,20 @@ int CObjectRelationMgr::Load(ILTMessage_Read *pMsg)
 	LOAD_CHARSTRING( m_szCollectiveName, sizeof(m_szCollectiveName)  );
 	LOAD_CHARSTRING( m_szDataSet, sizeof(m_szDataSet) );
 	LOAD_CHARSTRING( m_szRelationSet, sizeof(m_szRelationSet) );
+	LOAD_CHARSTRING( m_szKey, sizeof(m_szKey) );	// RETAIL: Tron loads the key and owner (0x1010b315)
+	LOAD_HOBJECT( m_hOwner );
 
 	if ( HasCollectiveName() )
 	{
 		// If we have a collective string, then set the pointer to the
 		// collective by setting the pointer to the looked up name
 		SetCollective( CRelationMgr::GetGlobalRelationMgr()->FindCollective( GetCollectiveName() ) );
+	}
+
+	// RETAIL: Tron registers the owner again (0x1010b388)
+	if ( m_hOwner )
+	{
+		CRelationMgr::GetGlobalRelationMgr()->AddObjectRelationMgr( this, m_hOwner );
 	}
 
 	return 0;
@@ -233,6 +243,7 @@ void CObjectRelationMgr::ClearRelationSystem(void)
 
 	m_pRelationUser->ClearRelationUser();
 	m_pDataUser->ClearDataUser();
+	m_pCollective = NULL;	// RETAIL: Tron's (0x1010b529)
 }
 
 //----------------------------------------------------------------------------

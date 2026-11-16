@@ -1943,5 +1943,5 @@ void Prop::PlayLoopSound()
 	}
 
 	m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, g_pLTServer->GetStringData(m_hstrLoopSound), -1.0f,
-		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
+		SOUNDPRIORITY_MISC_HIGH, PLAYSOUND_ATTACHED | PLAYSOUND_GETHANDLE);	// RETAIL: 0x18 (0x100fd381)
 }
