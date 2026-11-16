@@ -13,6 +13,7 @@
 #define __AIGOAL_ATTACK_PRONE_H__
 
 #include "AIGoalAbstractStimulated.h"
+#include "AITarget.h"
 
 
 class CAIGoalAttackProne : public CAIGoalAbstractStimulated
@@ -59,6 +60,10 @@ class CAIGoalAttackProne : public CAIGoalAbstractStimulated
 
 		LTFLOAT		m_fProneTimeLimit;
 		LTFLOAT		m_fMinDistSqr;
+
+		// RETAIL: Tron's goal keeps its own target at +0xa8 (InitGoal
+		// 0x10212a30, Save 0x10212a80, Load 0x10212af0), as CAIGoalAttack.
+		CGenericTarget<CAIGoalAbstract>	m_Target;
 };
 
 
