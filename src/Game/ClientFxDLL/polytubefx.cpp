@@ -155,8 +155,6 @@ CPolyTubeFX::~CPolyTubeFX()
 
 bool CPolyTubeFX::Init(ILTClient *pClientDE, FX_BASEDATA *pBaseData, const CBaseFXProps *pProps)
 {
-	LTVector vSave = pBaseData->m_vPos;
-
 	// Perform base class initialisation
 
 	if (!CBaseFX::Init(pClientDE, pBaseData, pProps)) 
@@ -181,29 +179,7 @@ bool CPolyTubeFX::Init(ILTClient *pClientDE, FX_BASEDATA *pBaseData, const CBase
 
 	m_bReallyClose = !!(pBaseData->m_dwObjectFlags & FLAG_REALLYCLOSE);
 
-	// Make sure we don't exceed the total length of the polytrail....
-
-	LTVector vStart, vEnd;
-
-	vStart = vSave;
-	m_pLTClient->GetObjectPos(m_hParent, &vEnd);
-
-	float fLen = (vStart - vEnd).Mag();
-
-	if (fLen > 256.0f)
-	{
-		// This is too big of a distance, start polytrail at the right spot...
-
-		vSave = m_vPos;
-	}
-	
-	// Add an initial point
-
-	PT_TRAIL_SECTION ts;
-	ts.m_vPos		= vSave;
-	ts.m_tmElapsed	= 0.0f;
-	ts.m_uVal		= 0.0f;
-	m_collPathPts.AddTail(ts);
+	// RETAIL: Tron adds no initial point here (0x1001d04f)
 
 	// Success !!
 

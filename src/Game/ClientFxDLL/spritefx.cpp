@@ -278,11 +278,8 @@ bool CSpriteFX::Update(float tmFrameTime)
 {
 	// Shutdown....
 
-	if( IsShuttingDown() )
-	{
-		m_pLTClient->Common()->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAGMASK_ALL);
-	}
-	else if( IsInitialFrame() )
+	// RETAIL: Tron does not hide the sprite when it shuts down (0x1001f1c0)
+	if( !IsShuttingDown() && IsInitialFrame() )
 	{
 		//we are on the initial frame of another play, so we need to reset
 		//our sprite's current position in the animation to the beginning

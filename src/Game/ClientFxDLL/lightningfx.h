@@ -180,7 +180,9 @@
 			
 			bool			m_bReallyClose;
 
-			HOBJECT			m_hTarget;
+			// RETAIL: Tron's is an LTObjRef: the destructor (0x1000bbd5) unlinks
+			// it, and the members after it are 0x10 bytes later.
+			LTObjRef		m_hTarget;
 			LTVector		m_vTargetPos;
 			float			m_fDelay;
 			
