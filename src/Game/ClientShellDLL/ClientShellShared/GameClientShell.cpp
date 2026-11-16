@@ -1210,7 +1210,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 
 			// Start the server..
 
-			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( (*g_pServerOptionMgr->GetCurrent()).m_nPort , (*g_pServerOptionMgr->GetCurrent()).m_bLANOnly );
+			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( (*g_pServerOptionMgr->GetCurrent()).m_nPort );
 			bOk = bOk && g_pMissionMgr->StartGameNew();
 			
 			if( !bOk )

@@ -614,7 +614,7 @@ void CDiscMatchMgr::HandleMsgTeamChange(ILTMessage_Read *pMsg)
 		pProfile->m_nPlayerColor = pTeamMgr->GetTeam(nTeam, false)->GetTronUnknownIndex();
 	}
 
-	g_pClientMultiplayerMgr->UpdateNetClientData();
+	g_pClientMultiplayerMgr->UpdateMultiPlayer();
 
 	m_nState = 0;
 	g_pGameClientShell->m_bTronUnknown833A = false;

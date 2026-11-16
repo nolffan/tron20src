@@ -562,7 +562,7 @@ void CLightCycleMatchMgr::HandleMsgTeamChange(ILTMessage_Read *pMsg)
 	// has not) in the team's shade (CTronTeamMgr 0x100fba70) through the
 	// light cycle bute manager and the player manager's slot 0x90
 
-	g_pClientMultiplayerMgr->UpdateNetClientData();
+	g_pClientMultiplayerMgr->UpdateMultiPlayer();
 }
 
 // ----------------------------------------------------------------------- //

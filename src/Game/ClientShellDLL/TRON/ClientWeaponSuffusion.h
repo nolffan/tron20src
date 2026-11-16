@@ -26,7 +26,7 @@ public:
 protected:
 	// RETAIL: slot 56 (0x1001c3d0): is it a fire animation (the extra one
 	// counts unless only the normal ones are asked for)
-	virtual bool  TronUnknownVirtualE0( int nArg1, int nArg2 );
+	virtual bool  IsFireAni( uint32 dwAni, bool bCheckNormalOnly = false ) const;
 
 	virtual void  SendFireMessage( bool bFire,
 	                               LTFLOAT fPerturb,

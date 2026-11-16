@@ -46,19 +46,19 @@ CClientWeaponSuffusion::~CClientWeaponSuffusion()
 }
 
 // RETAIL: 0x1001c3d0
-bool CClientWeaponSuffusion::TronUnknownVirtualE0( int nArg1, int nArg2 )
+bool CClientWeaponSuffusion::IsFireAni( uint32 dwAni, bool bCheckNormalOnly ) const
 {
-	if ( nArg2 )
+	if ( bCheckNormalOnly )
 	{
-		return CTronClientWeapon::TronUnknownVirtualE0( nArg1, nArg2 );
+		return CTronClientWeapon::IsFireAni( dwAni, bCheckNormalOnly );
 	}
 
-	if ( m_nExtraFireAni == (HMODELANIM)nArg1 )
+	if ( m_nExtraFireAni == (HMODELANIM)dwAni )
 	{
 		return true;
 	}
 
-	return CTronClientWeapon::TronUnknownVirtualE0( nArg1, 0 );
+	return CTronClientWeapon::IsFireAni( dwAni, false );
 }
 
 // RETAIL: 0x1001c410

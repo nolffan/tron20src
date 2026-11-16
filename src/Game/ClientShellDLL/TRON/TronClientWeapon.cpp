@@ -185,7 +185,7 @@ void CTronClientWeapon::UpdateFiring()
 
 	if ( GetState() == W_DESELECT )
 	{
-		if ( !TronUnknownVirtual170() )
+		if ( !PlayDeselectAnimation() )
 		{
 			SetState( W_FIRING );
 		}
@@ -241,7 +241,7 @@ void CTronClientWeapon::UpdateNonFiring()
 
 	if ( GetState() == W_DESELECT )
 	{
-		if ( !TronUnknownVirtual170() )
+		if ( !PlayDeselectAnimation() )
 		{
 			m_bWeaponDeselected = true;
 			SetState( W_IDLE );
@@ -255,10 +255,10 @@ void CTronClientWeapon::UpdateNonFiring()
 }
 
 // RETAIL: 0x100976c0
-bool CTronClientWeapon::TronUnknownVirtual170()
+bool CTronClientWeapon::PlayDeselectAnimation()
 {
 	TronUnknown98B20();
-	return PlayDeselectAnimation();
+	return CClientWeapon::PlayDeselectAnimation();
 }
 
 // RETAIL: 0x100978f0 (296 bytes) not yet written

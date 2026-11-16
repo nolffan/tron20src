@@ -5956,11 +5956,6 @@ void CClientWeapon::ClearFiring()
 //
 // ----------------------------------------------------------------------- //
 
-bool CClientWeapon::TronUnknownVirtualE0( int nArg1, int nArg2 )
-{
-	return false;
-}
-
 // RETAIL: 0x1001a1f0 (folded with CClientWeaponDisc's slot 0x19c): does
 // the player have any of this weapon's ammo?
 bool CClientWeapon::TronUnknownVirtual164()

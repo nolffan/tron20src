@@ -40,20 +40,21 @@ public:
 
 	bool		InitMultiPlayer();
 	bool		UpdateMultiPlayer();
-	bool		UpdateNetClientData( );
 	bool		InitSinglePlayer();
 
 	// Disconnect on the next update
 	void		ForceDisconnect() {	m_bForceDisconnect = true;}	
 
 
-	bool		SetupClient(char const* pszIpAddress, char const* pszHostName, char const* pszPassword);
+	// RETAIL: Tron's takes no host name (0x100e87b0)
+	bool		SetupClient(char const* pszIpAddress, char const* pszPassword);
 
 	// Setup the server for singleplayer.
 	bool		SetupServerSinglePlayer( );
 
 	// Setup the server to host a multiplayer game.
-	bool		SetupServerHost( int nPort, bool bLanOnly );
+	// RETAIL: Tron's takes the port only (0x100e8a00)
+	bool		SetupServerHost( int nPort );
 
 	// Handles engine event.
 	void		OnEvent(uint32 dwEventID, uint32 dwParam);
@@ -62,7 +63,6 @@ public:
 	bool		OnMessage(uint8 messageID, ILTMessage_Read *pMsg);
 
 
-	void		DoTaunt(uint32 nClientID,uint32 nTaunt);
 
 
 	// Sets the networking service.
@@ -83,7 +83,6 @@ public:
 	bool		IsConnectedToRemoteServer( ) { return ( g_pLTClient->IsConnected() && m_StartGameRequest.m_Type == STARTGAME_CLIENTTCP ); }
 
 	//returns true if the passed in address matches the current server address
-	bool		CheckServerAddress(char const*pszTestAddress, int nPort);
 	// Called when the engine wants to tell the game a disconnection code (a.k.a. hack)
 	virtual void SetDisconnectCode(uint32 nCode, const char *pMsg);
 	// Internal game-side support for the disconnection code
@@ -96,23 +95,18 @@ public:
 
 	// Server directory access
 	// Note : The server directory is owned by this object once you pass it in.
-	IServerDirectory* GetServerDir() { return m_pServerDir; }
-	IServerDirectory* CreateServerDir( );
-	void		DeleteServerDir( );
 
 	// Get/Set the source address of the message which is currently being processed
 	void		SetCurMessageSource(const uint8 aAddr[4], uint16 nPort);
-	void		GetCurMessageSource(uint8 aAddr[4], uint16 *pPort);
 
 	LTRESULT	GetLastConnectionResult() {return m_nLastConnectionResult;}
 
-	void		SelectTeam(uint8 nTeam, bool bPlayerSelected);
-	bool		HasSelectedTeam() { return m_bHasSelectedTeam; }
 
 	void		SetModName( const char *pszModName ) { m_sModName = pszModName; }
 	const char*	GetModName( ) const { return m_sModName.c_str(); }
 	
 protected :
+
 
 	// RETAIL: virtual in Tron (retail ClientMultiplayerMgr's vtable, slot 1:
 	// 0x100e8dd0 reads the handshake's sub-message and switches on it)
@@ -151,16 +145,11 @@ private:
 	// Connection handling
 	bool			m_bForceDisconnect;	// Set this flag to disconnect on the next update
 
-		// Server directory interface
-	IServerDirectory*	m_pServerDir;
 
 	// Current message source
 	uint8		m_aCurMessageSourceAddr[4];
 	uint16		m_nCurMessageSourcePort;
 
-
-	uint8	m_nTeam;
-	bool	m_bHasSelectedTeam;
 	
 	// The name of our selected mod...
 	std::string		m_sModName;

@@ -220,9 +220,9 @@ protected:
 	bool          PlayReloadAnimation();
 	bool          PlayIdleAnimation();
 	virtual bool  PlayFireAnimation( bool bResetAni );
-	// RETAIL: Tron's slot 0xe0, two arguments (the first compared with -1;
-	// retail 0x10133890). Not yet named
-	virtual bool  TronUnknownVirtualE0( int nArg1, int nArg2 );
+	// RETAIL: virtual in Tron (slot 0xe0, 0x10133890; PlayIdleAnimation,
+	// PlayFireAnimation and the Suffusion call it through the vtable)
+	virtual bool  IsFireAni( uint32 dwAni , bool bCheckNormalOnly = false) const;
 
 	// selet animation
 	bool          IsSelectAni( uint32 dwAni ) const;
@@ -247,7 +247,6 @@ protected:
 	uint32        GetPreFireAni() const;
 
 	// fire animation
-	bool          IsFireAni( uint32 dwAni , bool bCheckNormalOnly = false) const;
 	uint32        GetFireAni( FireType eFireType=FT_NORMAL_FIRE ) const;
 
 	// post fire
@@ -522,7 +521,8 @@ protected:
 	bool			m_abTronUnknown13C[11][2];
 	// RETAIL: +0x154, the union of the weapons' subroutine data (0x10097ab0
 	// writes 0x10..0x94 bytes from here by the active subroutine).
-	char			m_xTronUnknown152[6];
+	char			m_xTronUnknown152[2];
+	float			m_fTronUnknown154;		// RETAIL: +0x154 (LOL, 0x1001b090)
 	union
 	{
 		float		m_fTronUnknown158;		// RETAIL: +0x158 (BallLauncher's fire rate)

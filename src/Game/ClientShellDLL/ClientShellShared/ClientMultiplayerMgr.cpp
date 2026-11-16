@@ -17,7 +17,6 @@
 #include "MsgIds.h"
 #include "CharacterFx.h"
 #include "CMoveMgr.h"
-#include "iserverdir.h"
 #include "MissionMgr.h"
 #include "MissionButeMgr.h"
 #include "InterfaceMgr.h"
@@ -42,7 +41,6 @@ ClientMultiplayerMgr::ClientMultiplayerMgr( )
 	m_nServerKey = 0;
 	m_nDisconnectCode = 0;
 	m_bForceDisconnect = false;
-	m_pServerDir = 0;
 	m_aCurMessageSourceAddr[0] = 0;
 	m_aCurMessageSourceAddr[1] = 0;
 	m_aCurMessageSourceAddr[2] = 0;
@@ -57,9 +55,6 @@ ClientMultiplayerMgr::ClientMultiplayerMgr( )
 
 	g_pClientMultiplayerMgr = this;
 
-	m_nTeam = INVALID_TEAM;
-	m_bHasSelectedTeam = false;
-
 }
 
 // --------------------------------------------------------------------------- //
@@ -72,8 +67,6 @@ ClientMultiplayerMgr::ClientMultiplayerMgr( )
 
 ClientMultiplayerMgr::~ClientMultiplayerMgr( )
 {
-	delete GetServerDir();
-
 	g_pClientMultiplayerMgr = NULL;
 }
 
@@ -116,58 +109,27 @@ bool ClientMultiplayerMgr::InitMultiPlayer()
 {
 	if (!IsMultiplayerGame())
 		return false;
+
+	// RETAIL: Tron's (0x100e84f0) sends the profile's model, colour and
+	// colour choice, and has no team
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	ModelId modelId = eModelIdInvalid;	
-
-	switch (g_pGameClientShell->GetGameType())
-	{
-	case eGameTypeCooperative:
-		if (pProfile->m_nCPPlayerModel >= g_pModelButeMgr->GetNumCPModels())
-			pProfile->m_nCPPlayerModel = 0;
-
-		modelId = g_pModelButeMgr->GetCPModel(pProfile->m_nCPPlayerModel);
-		break;
-	case eGameTypeDeathmatch:
-		if (pProfile->m_nDMPlayerModel >= g_pModelButeMgr->GetNumDMModels())
-			pProfile->m_nDMPlayerModel = 0;
-
-		modelId = g_pModelButeMgr->GetDMModel(pProfile->m_nDMPlayerModel);
-		break;
-//		if (pProfile->m_nDMPlayerModel >= g_pModelButeMgr->GetNumDMModels())
-//			pProfile->m_nDMPlayerModel = 0;
-//
-//		modelId = g_pModelButeMgr->GetDMModel(pProfile->m_nDMPlayerModel);
-		break;
-	};
+	if (pProfile->m_nCPPlayerModel >= g_pModelButeMgr->GetNumMPModels())
+		pProfile->m_nCPPlayerModel = 0;
 
 	CAutoMessage cMsg;
   
 	cMsg.Writeuint8( MID_PLAYER_MULTIPLAYER_INIT );
-
-	ASSERT(( uint8 )modelId == modelId );
-    cMsg.Writeuint8(( uint8 )modelId );
-	cMsg.Writeuint8( m_nTeam );
-
-	// PORT: Tron's profile has no skills; retail InitMultiPlayer (0x100e84f0)
-	// writes the profile's +0x68, +0x6a and +0x69 here
-	cMsg.Writeuint8(pProfile->m_nPlayerColor);
-
+	cMsg.Writeuint8( pProfile->m_nCPPlayerModel );
+	cMsg.Writeuint8( pProfile->m_nPlayerColor );
+	cMsg.Writeuint8( pProfile->m_nDMPlayerModel );
 
     g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 	//force server to update difficulty
-
-	GameDifficulty eDiff = GD_NORMAL;
-	if (g_pGameClientShell->GetGameType() == eGameTypeCooperative)
-	{
-		eDiff = (GameDifficulty)(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nDifficulty;
-	}
-	g_pGameClientShell->SetDifficulty(eDiff);
+	g_pGameClientShell->SetDifficulty(GD_NORMAL);
 
 	//force server to update performance settings
 	pProfile->SendPerformanceMsg();
-
-
 
 	return true;
 }
@@ -186,92 +148,34 @@ bool ClientMultiplayerMgr::UpdateMultiPlayer()
 	if (!IsMultiplayerGame())
 		return false;
 
+	// RETAIL: Tron's (0x100e8650)
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	ModelId modelId = eModelIdInvalid;	
-	
-	switch (g_pGameClientShell->GetGameType())
+	if (pProfile)
 	{
-	case eGameTypeCooperative:
-		if (pProfile->m_nCPPlayerModel >= g_pModelButeMgr->GetNumCPModels())
+		if (pProfile->m_nCPPlayerModel >= g_pModelButeMgr->GetNumMPModels())
 			pProfile->m_nCPPlayerModel = 0;
 
-		modelId = g_pModelButeMgr->GetCPModel(pProfile->m_nCPPlayerModel);
-		break;
-	case eGameTypeDeathmatch:
-//	case eGameTypeTeamDeathmatch:
-//	case eGameTypeDoomsDay:
-		if (pProfile->m_nDMPlayerModel >= g_pModelButeMgr->GetNumDMModels())
-			pProfile->m_nDMPlayerModel = 0;
-
-		modelId = g_pModelButeMgr->GetDMModel(pProfile->m_nDMPlayerModel);
-		break;
-	};
-
-	if( !UpdateNetClientData( ))
-		return false;
-
-	CAutoMessage cMsg;
+		CAutoMessage cMsg;
   
-	cMsg.Writeuint8( MID_PLAYER_INFOCHANGE );
+		cMsg.Writeuint8( MID_PLAYER_INFOCHANGE );
+		cMsg.WriteString( pProfile->m_sPlayerName.c_str() );
+		cMsg.Writeuint8( pProfile->m_nCPPlayerModel );
+		cMsg.Writeuint8( pProfile->m_nPlayerColor );
+		cMsg.Writeuint8( pProfile->m_nDMPlayerModel );
 
-	cMsg.WriteString(pProfile->m_sPlayerName.c_str());
-
-	ASSERT(( uint8 )modelId == modelId );
-    cMsg.Writeuint8(( uint8 )modelId );
-	cMsg.Writeuint8( m_nTeam );
-
-
-    g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+	}
 
 	return true;
 }
 
 // returns true if the passed in address matches the current server address
-bool ClientMultiplayerMgr::CheckServerAddress(char const*pszTestAddress, int nPort)
-{
-	if (!pszTestAddress) return false;
-	if (nPort != m_nServerPort) return false;
-	return (stricmp(pszTestAddress,m_sServerAddress) == 0);
-}
-
-
-void ClientMultiplayerMgr::DoTaunt(uint32 nClientID, uint32 nTauntID)
-{
-	//if you're not listening to taunts, you're not allowed to send them
-	if (GetConsoleInt("IgnoreTaunts",0) > 0) return;
-
-	CClientInfoMgr *pCIMgr = g_pGameClientShell->GetInterfaceMgr( )->GetClientInfoMgr();
-	if (!pCIMgr) return;
-
-//	char szVar[16] = "";
-//	sprintf(szVar,"TauntDM%d",nTaunt);
-
-//	uint32 nTauntID = (uint32)GetConsoleInt(szVar,0);
-
-	if (!nTauntID) return;
-
-	// Don't allow the client to flood the server with taunts...
-
-	CCharacterFX *pFX = g_pGameClientShell->GetPlayerMgr( )->GetMoveMgr()->GetCharacterFX();
-	if (pFX && !pFX->IsPlayingTaunt())
-	{
-		pFX->PlayTaunt(nTauntID);
-
-		// create the message
-		char strMessage[256];
-		SAFE_STRCPY(strMessage, LoadTempString(nTauntID));
-
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_PLAYER_TAUNT);
-		cMsg.Writeuint32(nTauntID);
-	    cMsg.WriteString(strMessage);
-	    g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
-	}
-}
 
 
 
-bool ClientMultiplayerMgr::SetupClient(char const* pszIpAddress, char const* pszHostName, char const* pszPassword)
+
+
+bool ClientMultiplayerMgr::SetupClient(char const* pszIpAddress, char const* pszPassword)
 {
 	// Check inputs.
 	if( !pszIpAddress || !pszIpAddress[0] )
@@ -283,18 +187,32 @@ bool ClientMultiplayerMgr::SetupClient(char const* pszIpAddress, char const* psz
 	// Start the game...
 
 	memset( &m_StartGameRequest, 0, sizeof( m_StartGameRequest ));
-	m_ServerGameOptions.Clear( );
 	memset( &m_NetClientData, 0, sizeof( m_NetClientData ));
+	m_ServerGameOptions.Clear( );
 
-	if( !UpdateNetClientData( ))
-		return false;
+	// RETAIL: Tron has no UpdateNetClientData: SetupClient and
+	// SetupServerHost fill the client data themselves
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+
+	// Check if the user overrode the player name on the command line.
+	char szPlayerNameOverride[MAX_PLAYER_NAME] = "";
+	LTStrCpy( szPlayerNameOverride, GetConsoleTempString( "playername", "" ), ARRAY_LEN( szPlayerNameOverride ));
+	if( szPlayerNameOverride[0] )
+	{
+		pProfile->m_sPlayerName = szPlayerNameOverride;
+	}
+
+	LTStrCpy( m_NetClientData.m_szName, pProfile->m_sPlayerName.c_str(), ARRAY_LEN( m_NetClientData.m_szName ));
+	LTStrCpy( m_NetClientData.m_szPlayerGuid, pProfile->m_sPlayerGuid.c_str(), ARRAY_LEN( m_NetClientData.m_szPlayerGuid ));
+
+	// RETAIL: Tron's model is the profile's multiplayer model; the colour
+	// follows the profile's colour choice
+	m_NetClientData.m_ePlayerModelId = g_pModelButeMgr->GetMPModel( pProfile->m_nCPPlayerModel )->m_eModelId;
+	pProfile->m_nPlayerColor = pProfile->m_nDMPlayerModel;
+	m_NetClientData.m_nPlayerColor = pProfile->m_nPlayerColor;
 
 	m_StartGameRequest.m_Type = STARTGAME_CLIENTTCP;
 	strncpy( m_StartGameRequest.m_TCPAddress, pszIpAddress, MAX_SGR_STRINGLEN);
-	if( pszHostName && pszHostName[0] )
-	{
-		SAFE_STRCPY(m_StartGameRequest.m_HostInfo.m_sName ,pszHostName);
-	}
 
 	if (pszPassword)
 	{
@@ -317,6 +235,7 @@ bool ClientMultiplayerMgr::SetupClient(char const* pszIpAddress, char const* psz
 // ----------------------------------------------------------------------- //
 bool ClientMultiplayerMgr::SetupServerSinglePlayer( )
 {
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	memset(&m_StartGameRequest, 0, sizeof(StartGameRequest));
 	m_ServerGameOptions.Clear( );
 	memset( &m_NetClientData, 0, sizeof( m_NetClientData ));
@@ -324,7 +243,6 @@ bool ClientMultiplayerMgr::SetupServerSinglePlayer( )
 	// Set the game type to normal (single player).
 	m_StartGameRequest.m_Type = STARTGAME_NORMAL;
 
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	m_ServerGameOptions = (*g_pServerOptionMgr->GetCurrent());
 	m_ServerGameOptions.m_bPreCacheAssets = (pProfile->m_sPerformance.nSettings[kPerform_PreCacheAssets] > 0);
 	m_ServerGameOptions.m_bPerformanceTest = g_pGameClientShell->IsRunningPerformanceTest();
@@ -341,63 +259,61 @@ bool ClientMultiplayerMgr::SetupServerSinglePlayer( )
 //
 // --------------------------------------------------------------------------- //
 
-bool ClientMultiplayerMgr::SetupServerHost( int nPort, bool bLANOnly )
+bool ClientMultiplayerMgr::SetupServerHost( int nPort )
 {
 	memset( &m_StartGameRequest, 0, sizeof( m_StartGameRequest ));
 	m_ServerGameOptions.Clear( );
 	memset( &m_NetClientData, 0, sizeof( m_NetClientData ));
 	
+	ServerGameOptions *pOptions = g_pServerOptionMgr->GetCurrent();
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	m_ServerGameOptions = (*g_pServerOptionMgr->GetCurrent());
-	m_ServerGameOptions.m_bLANOnly = (*g_pServerOptionMgr->GetCurrent()).m_bLANOnly = bLANOnly;
+	m_ServerGameOptions = *pOptions;
 	m_ServerGameOptions.m_bPreCacheAssets = (pProfile->m_sPerformance.nSettings[kPerform_PreCacheAssets] > 0);
 
-	if( !UpdateNetClientData( ))
-		return false;
+	// Check if the user overrode the player name on the command line.
+	char szPlayerNameOverride[MAX_PLAYER_NAME] = "";
+	LTStrCpy( szPlayerNameOverride, GetConsoleTempString( "playername", "" ), ARRAY_LEN( szPlayerNameOverride ));
+	if( szPlayerNameOverride[0] )
+	{
+		pProfile->m_sPlayerName = szPlayerNameOverride;
+	}
+
+	LTStrCpy( m_NetClientData.m_szName, pProfile->m_sPlayerName.c_str(), ARRAY_LEN( m_NetClientData.m_szName ));
+	LTStrCpy( m_NetClientData.m_szPlayerGuid, pProfile->m_sPlayerGuid.c_str(), ARRAY_LEN( m_NetClientData.m_szPlayerGuid ));
+
+	// RETAIL: Tron's model is the profile's multiplayer model; the colour
+	// follows the profile's colour choice
+	m_NetClientData.m_ePlayerModelId = g_pModelButeMgr->GetMPModel( pProfile->m_nCPPlayerModel )->m_eModelId;
+	pProfile->m_nPlayerColor = pProfile->m_nDMPlayerModel;
+	m_NetClientData.m_nPlayerColor = pProfile->m_nPlayerColor;
 
 	m_StartGameRequest.m_Type = STARTGAME_HOST;
 	m_StartGameRequest.m_HostInfo.m_Port = nPort;
 
-	switch (g_pGameClientShell->GetGameType())
+	// RETAIL: Tron's game types (0x100e8a00)
+	switch (pOptions->m_eGameType)
 	{
-	case eGameTypeCooperative:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetCoop().m_sSessionName.c_str( ),
-					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
+	default:
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = 1;
 		break;
-	case eGameTypeDeathmatch:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_sSessionName.c_str( ),
-					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
+	case eGameTypeMultiplayerLightcycles:
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pOptions->m_nLCMaxPlayers-1;
 		break;
-	case eGameTypeTeamDeathmatch:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_sSessionName.c_str( ),
-					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
+	case eGameTypeDiscTournament:
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pOptions->m_nTournMaxPlayers-1;
 		break;
-	case eGameTypeDoomsDay:
-	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = (*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nMaxPlayers-1;
-		LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, (*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_sSessionName.c_str( ),
-					sizeof(m_StartGameRequest.m_HostInfo.m_sName));
+	case eGameTypeDiscArena:
+	    m_StartGameRequest.m_HostInfo.m_dwMaxConnections = pOptions->m_nArenaMaxPlayers-1;
 		break;
 	};
 
+	LTStrCpy( m_StartGameRequest.m_HostInfo.m_sName, pOptions->m_sSessionName.c_str( ),
+				sizeof(m_StartGameRequest.m_HostInfo.m_sName));
 
-	m_StartGameRequest.m_HostInfo.m_bHasPassword = (*g_pServerOptionMgr->GetCurrent()).m_bUsePassword;
-	m_StartGameRequest.m_HostInfo.m_nGameType = (uint8)(*g_pServerOptionMgr->GetCurrent()).m_eGameType;
+	m_StartGameRequest.m_HostInfo.m_bHasPassword = pOptions->m_bUsePassword;
 	
 	// Set the name of the mod we are using...
-	
 	m_ServerGameOptions.m_sModName = GetModName();
-	
-
-	// Make sure that the multiplayer mgr doesn't have a server directory in use
-	// This must be done because there can only be one IServerDirectory object
-	// created at a time for proper shutdown.  (Internal Titan implementation BS...)
-	// NYI - Note : This shouldn't be necessary, and if it is, it will cause problems
-	// elsewhere.  (Host/Join sequence = 2 objects) Figure out a way to get around this 
-	// restriction.
-	DeleteServerDir( );
 
     return true;
 }
@@ -437,67 +353,9 @@ void ClientMultiplayerMgr::ClearDisconnectCode()
 {
 	m_nDisconnectCode = 0;
 	m_sDisconnectMsg.Empty( );
-	m_StartGameRequest.m_Type = GAMEMODE_NONE;
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	ClientMultiplayerMgr::CreateServerDir
-//
-//	PURPOSE:	Creates the client's serverdir for joining a remote game.
-//
-// --------------------------------------------------------------------------- //
 
-IServerDirectory* ClientMultiplayerMgr::CreateServerDir( )
-{
-	// Make sure we don't already have one.
-	DeleteServerDir( );
-
-	// Get the resource module so we can give it to the serverdir for
-	// error messages.
-	void* pModule = NULL;
-	g_pLTClient->GetEngineHook("cres_hinstance",&pModule);
-	HMODULE hModule = (HINSTANCE)pModule;
-
-	m_pServerDir = Factory_Create_IServerDirectory_Titan( true, *g_pLTClient, hModule );
-	if( !m_pServerDir )
-		return NULL;
-
-	// Set the game's name
-	// RETAIL: Tron's version manager has no GetNetGameName; its GameSpy game name
-	// is "tron20" (in retail CShell.dll). (This is NOLF2's WON code, standing in.)
-	m_pServerDir->SetGameName("tron20");
-	// Set the version
-	m_pServerDir->SetVersion(g_pVersionMgr->GetNetVersion());
-	// PORT: Tron's CVersionMgr reads no NetRegionCode (VersionMgr.h): NOLF2's
-	// default region stands in
-	m_pServerDir->SetRegion("EN");
-	// Set up the packet header
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(11); // CMSG_MESSAGE
-	cMsg.Writeuint8(MID_MULTIPLAYER_SERVERDIR);
-	m_pServerDir->SetNetHeader(*cMsg.Read());
-
-	return m_pServerDir;
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	ClientMultiplayerMgr::DeleteServerDir
-//
-//	PURPOSE:	Remove the server dir.
-//
-// --------------------------------------------------------------------------- //
-
-void ClientMultiplayerMgr::DeleteServerDir( )
-{ 
-	if( m_pServerDir )
-	{
-		// No leaking, please...
-		delete m_pServerDir; 
-		m_pServerDir = NULL; 
-	}
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -516,22 +374,6 @@ void ClientMultiplayerMgr::SetCurMessageSource(const uint8 aAddr[4], uint16 nPor
 	m_nCurMessageSourcePort = nPort;
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	ClientMultiplayerMgr::GetCurMessageSource
-//
-//	PURPOSE:	Get the source address of the message which is currently being processed
-//
-// --------------------------------------------------------------------------- //
-
-void ClientMultiplayerMgr::GetCurMessageSource(uint8 aAddr[4], uint16 *pPort)
-{
-	aAddr[0] = m_aCurMessageSourceAddr[0];
-	aAddr[1] = m_aCurMessageSourceAddr[1];
-	aAddr[2] = m_aCurMessageSourceAddr[2];
-	aAddr[3] = m_aCurMessageSourceAddr[3];
-	*pPort = m_nCurMessageSourcePort;
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -903,10 +745,14 @@ bool ClientMultiplayerMgr::StartClient( )
 
 bool ClientMultiplayerMgr::StartServerAsHost( )
 {
+	// RETAIL: Tron's tells the server the profile's name (0x100e9370)
+	m_ServerGameOptions.m_sProfileName = g_pProfileMgr->GetCurrentProfileName( );
+
 	// If they want a dedicated server, then launch the serverapp.
 	if( m_ServerGameOptions.m_bDedicated )
 	{
-		if( !g_pGameClientShell->LauncherServerApp( m_ServerGameOptions.m_sProfileName.c_str( )))
+		// RETAIL: the name of the option set, not of the profile
+		if( !g_pGameClientShell->LauncherServerApp( m_ServerGameOptions.m_sOptionsName.c_str( )))
 			return false;
 
 		return true;
@@ -969,6 +815,8 @@ bool ClientMultiplayerMgr::StartServerAsSinglePlayer( )
 
 	// Make sure the profile is set.
 	m_ServerGameOptions.m_eGameType = g_pGameClientShell->GetGameType( );
+	// RETAIL: Tron's tells the server the profile's name (0x100e94c0)
+	m_ServerGameOptions.m_sProfileName = g_pProfileMgr->GetCurrentProfileName( );
 	ServerGameOptions* pServerGameOptions = &m_ServerGameOptions;
 	m_StartGameRequest.m_pGameInfo = &pServerGameOptions;
 	m_StartGameRequest.m_GameInfoLen = sizeof( pServerGameOptions );
@@ -1008,67 +856,4 @@ bool ClientMultiplayerMgr::StartClientServer( )
 			return false;
 			break;
 	}
-}
-
-
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ClientMultiplayerMgr::SelectTeam()
-//
-//	PURPOSE:	choose a team.
-//
-// ----------------------------------------------------------------------- //
-
-void ClientMultiplayerMgr::SelectTeam(uint8 nTeam, bool bPlayerSelected )
-{
-	if (bPlayerSelected)
-		m_bHasSelectedTeam = true;
-	m_nTeam = nTeam;
-}
-
-// --------------------------------------------------------------------------- //
-//
-//  ROUTINE:    ClientMultiplayerMgr::UpdateNetClientData
-//
-//  PURPOSE:    Updates the NetClientData to reflect current settings.
-//
-// --------------------------------------------------------------------------- //
-
-bool ClientMultiplayerMgr::UpdateNetClientData( )
-{
-	// Setup our client...
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	if( !pProfile )
-	{
-		ASSERT( !"ClientMultiplayerMgr::UpdateNetClientData: Invalid profile." );
-		return false;
-	}
-
-	// Check if the user overrode the player name on the command line.
-	char szPlayerNameOverride[MAX_PLAYER_NAME] = "";
-	LTStrCpy( szPlayerNameOverride, GetConsoleTempString( "playername", "" ), ARRAY_LEN( szPlayerNameOverride ));
-	if( szPlayerNameOverride[0] )
-	{
-		pProfile->m_sPlayerName = szPlayerNameOverride;
-	}
-
-	LTStrCpy(m_NetClientData.m_szName,pProfile->m_sPlayerName.c_str(), ARRAY_LEN( m_NetClientData.m_szName ));
-
-	// Setup the name guid.
-	SAFE_STRCPY(m_NetClientData.m_szPlayerGuid,pProfile->m_sPlayerGuid.c_str( ));
-
-	// Setup the model.
-	switch (g_pGameClientShell->GetGameType())
-	{
-		case eGameTypeCooperative:
-			m_NetClientData.m_ePlayerModelId = g_pModelButeMgr->GetCPModel( pProfile->m_nCPPlayerModel );
-			break;
-		case eGameTypeDeathmatch:
-			m_NetClientData.m_ePlayerModelId = g_pModelButeMgr->GetDMModel( pProfile->m_nDMPlayerModel );
-			break;
-	};
-
-	return true;	
 }

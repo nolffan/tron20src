@@ -462,9 +462,8 @@ LTBOOL CBaseScreenHost::StartServer()
 	uint16 nPort = (uint16)pOptions->m_nPort;
 	g_pGameClientShell->SetGameType((GameType)pOptions->m_eGameType);
 
-	// PORT: Tron's SetupServerHost takes the port only (retail 0x100e8a00,
-	// ret 4); ours still takes NOLF2's LAN flag
-	if (!g_pClientMultiplayerMgr->SetupServerHost(nPort,pOptions->m_bLANOnly))
+	// RETAIL: Tron's SetupServerHost takes the port only (0x100e8a00)
+	if (!g_pClientMultiplayerMgr->SetupServerHost(nPort))
 		return LTFALSE;
 
 	// RETAIL: asked twice

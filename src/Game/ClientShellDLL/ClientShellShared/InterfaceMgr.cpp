@@ -1467,7 +1467,7 @@ void CInterfaceMgr::EndSplashScreen()
 	GameType eGameType = GameStringTypeToGameType( szGameType );
 	g_pGameClientShell->SetGameType( eGameType );
 
-	if( !szIP[0] || !g_pClientMultiplayerMgr->SetupClient( szIP, NULL, szPassword ) || !g_pMissionMgr->StartGameAsClient( ))
+	if( !szIP[0] || !g_pClientMultiplayerMgr->SetupClient( szIP, szPassword ) || !g_pMissionMgr->StartGameAsClient( ))
 	{
 		// drop them into the join menu
 		LoadFailed( SCREEN_ID_MAIN );
