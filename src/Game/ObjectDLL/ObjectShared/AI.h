@@ -638,6 +638,7 @@ class CAI : public CCharacter, public IAISensing
 		virtual void HandleTeleport(const LTVector& vPos);
 		virtual void HandleTeleport(TeleportPoint* pTeleportPoint);
 		virtual void HandleDamage(const DamageStruct& damage);
+		virtual void HandleDead(LTBOOL bRemoveObj);	// RETAIL: 0x1012d930 (Tron's)
 		virtual void HandleTouch(HOBJECT hObj);
 		virtual void HandleModelString(ArgList* pArgList);
 		virtual void HandleTargetDied() {}
