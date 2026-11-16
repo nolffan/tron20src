@@ -99,6 +99,7 @@ class CAIMovement
 		LTBOOL				m_bFaceDest;
 		LTFLOAT				m_fSetSpeed;
 		LTBOOL				m_bIgnoreVolumes;
+		LTBOOL				m_xTronUnknown38;	// RETAIL: Tron's (+0x38): set to 0 last in the ctor (0x101dc934), saved and loaded last
 		EnumAnimMovement	m_eLastMovementType;
 		LTFLOAT				m_fAnimRate;
 		LTBOOL				m_bMovementLocked;
