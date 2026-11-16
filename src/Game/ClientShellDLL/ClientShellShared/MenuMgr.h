@@ -52,6 +52,7 @@ public:
 	bool	IsSlidingOut() {return m_bSlidingOut;}
 
 	LTIntPt GetCurrentPos();
+	float	GetPercent();	// RETAIL: Tron's (0x10171f50)
 
 private:
 	LTIntPt	m_startPos;

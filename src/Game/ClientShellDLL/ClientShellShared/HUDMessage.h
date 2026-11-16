@@ -107,8 +107,15 @@ protected:
 	void	JustifyPoly();
 	float	GetLifetime();
 
+	// RETAIL: Tron's split text: a second copy of the text that comes in
+	// over the delay, its letters scrambled (0x10188870), and moves apart
+	// from the first as the message fades (0x10188980). The names are ours
+	void	ScrambleSplitText();
+	void	UpdateSplitText();
+
 protected:
-	LTPoly_GT4	m_Poly;
+	// RETAIL: an LT_POLYGT4 (cleared once, constructor 0x10188065)
+	LT_POLYGT4	m_Poly;
 	HTEXTURE	m_hImage;
 
     uint16		m_nFixedWidth;         // The width of the control
@@ -119,6 +126,9 @@ protected:
 	uint8		m_nBaseImageSize;
 
 	CUIFormattedPolyString* m_pText;
+	// RETAIL: Tron's (+0xc0): the split text (CHUDMessage::Create makes it
+	// when MsgCreate's split delay is above 0, 0x101880f0)
+	CUIFormattedPolyString* m_pSplitText;
 
 	CUIFont*	m_pFont;				// The font for this control
 	uint8		m_nFontSize;			// The scaled font size to use.
@@ -128,14 +138,24 @@ protected:
 	float 		m_fInitTime;
 	float 		m_fDuration;
 	float 		m_fFadeDur;
+	// RETAIL: Tron's (+0xdc, +0xe0): the split text's delay, and when its
+	// letters were last scrambled. The names are ours
+	float		m_fSplitDelay;
+	float		m_fScrambleTime;
 
 	float 		m_fImageGap;
 
 	float		m_fAlpha;
 
-	bool		m_bDropShadow;
+	// RETAIL: Tron's has no drop shadow flag (it always sets the text's
+	// drop shadow, 0x10188206)
 
 	MsgJustification	m_eJustify;
+
+	// RETAIL: Tron's (+0xf0): where SetScale puts the text (0x10188d1b;
+	// the constructor leaves it unset). The names are ours
+	int			m_nTextX;
+	int			m_nTextY;
 };
 
 

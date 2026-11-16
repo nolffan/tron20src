@@ -977,23 +977,31 @@ void CMenuSlide::Start(LTIntPt startPos,LTIntPt endPos,float fDuration, bool bSl
 	m_bSlidingOut = bSlidingOut;
 }
 
+// RETAIL: Tron's (0x10171f10) takes the progress from GetPercent
 LTIntPt CMenuSlide::GetCurrentPos()
 {
 	LTIntPt curPos;
+	float fPercent = GetPercent();
+
+	curPos.x = m_startPos.x + (int)((float)m_offset.x * fPercent);
+	curPos.y = m_startPos.y + (int)((float)m_offset.y * fPercent);
+
+	return curPos;
+}
+
+// RETAIL: Tron's (0x10171f50; the name is ours)
+float CMenuSlide::GetPercent()
+{
 	float fPercent = 1.0f;
 	
 	if (m_fDuration > 0.0f)
 	{
 		float fElapsed = g_pLTClient->GetTime() - m_fStartTime;
 		if (fElapsed < m_fDuration)
-			fPercent = fElapsed / m_fDuration;
+			return fElapsed / m_fDuration;
 	}
 
-	
-	curPos.x = m_startPos.x + (int)(fPercent * (float)m_offset.x);
-	curPos.y = m_startPos.y + (int)(fPercent * (float)m_offset.y);
-
-	return curPos;
+	return fPercent;
 }
 
 bool CMenuSlide::IsDone()
