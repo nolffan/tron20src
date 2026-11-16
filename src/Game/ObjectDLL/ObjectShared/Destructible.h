@@ -363,6 +363,7 @@ class CDestructible : public IAggregate
         void DoActualHealing(LTFLOAT fAmount);
 
 		void DoDamage(DamageStruct & damage);
+		void DoDamage(DamageStruct & damage, bool bSendTriggers);
 		void UpdateProgressiveDamage();
 		void AddProgressiveDamage(DamageStruct & damage);
 

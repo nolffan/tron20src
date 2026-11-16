@@ -587,7 +587,7 @@ void CDestructible::UpdateProgressiveDamage()
 
 			damage = m_ProgressiveDamage[i];
 			damage.fDamage = damage.fDamage * fFrameTime;
-			DoDamage(damage);
+			DoDamage(damage, true);
 
 			// Add this to the active damageflags.
 			nActiveDamageFlags |= DamageTypeToFlag( damage.eType );
@@ -1000,12 +1000,31 @@ void CDestructible::HandleDamage(LPBASECLASS pObject, HOBJECT hSender, ILTMessag
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Object.lto 0x100e7f10.  Tron applies the hit's flags to a
+// character after the damage.
 void CDestructible::DoDamage(DamageStruct & damage)
+{
+	DoDamage(damage, true);
+
+	if (IsCharacter(m_hObject))
+	{
+		CCharacter *pChar = (CCharacter*)g_pLTServer->HandleToObject(m_hObject);
+		if (pChar)
+		{
+			pChar->AddDamageFlags(DamageTypeToFlag(damage.eType));
+		}
+	}
+}
+
+// RETAIL: Object.lto 0x100e85c0.  The bool is ours: when it is false, the
+// damage triggers are not sent.
+void CDestructible::DoDamage(DamageStruct & damage, bool bSendTriggers)
 {
     LTVector vDir		= damage.vDir;
     LTFLOAT fDamage		= damage.fDamage;
 	DamageType eType	= damage.eType;
 	HOBJECT hDamager	= damage.hDamager;
+	LTBOOL bTronUnknown	= damage.bTronUnknown44;
 
     LPBASECLASS pObject = g_pLTServer->HandleToObject(m_hObject);
 
@@ -1022,7 +1041,66 @@ void CDestructible::DoDamage(DamageStruct & damage)
 		if (m_nCantDamageFlags & DamageTypeToFlag(eType)) 
 			return;
 	}
+
+	if (!IsPlayer(m_hObject) && eType == DT_PLAYERONLY)
+		return;
+
+	if (m_bTronUnknown6D0 && !IsPlayer(damage.hDamager))
+	{
+		if (!bSendTriggers)
+			return;
+
+	// If this is supposed to send a damage trigger, send it now...
+
+		if (m_nDamageTriggerCounter <= 0)
+		{
+			if (m_nDamageTriggerNumSends != 0)
+			{
+				m_nDamageTriggerNumSends--;
+
+				if(m_sDamageCommand.length() )
+				{
+					const char *pCmd = m_sDamageCommand.c_str();
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
+				}
+
+				if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
+				{
+					const char *pCmd = m_sPlayerDamageCommand.c_str( );
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
+				}
+			}
+		}
+
+		// If we ought to send a percentage based damage command, do it now.
+
+		if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
+		{
+			const char *pCmd = m_sDamagePercentCommand.c_str();
+
+			if( g_pCmdMgr->IsValidCmd( pCmd ) )
+			{
+				g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+			}
+		}
+		
+		// Send message to object that damaged us...
+
+		if (hDamager && m_sDamagerMessage.length())
+		{
+			SendTriggerMsgToObject(pObject, hDamager, LTTRUE, m_sDamagerMessage.c_str());
+		}
 	
+		return;
+	}
 
 	// If the damage is only for worldmodels make sure we are a world model...
 
@@ -1032,13 +1110,13 @@ void CDestructible::DoDamage(DamageStruct & damage)
 
 	// Adjust the damage based on difficulty, who I am and who I damaged...
 
+	fDamage *= m_fTronUnknown78;
 	fDamage = AdjustDamage(fDamage, hDamager);
 	
 
 	// Process damage through any gear items...
 
 	fDamage = ProcessGear(fDamage, eType, hDamager, &vDir);
-
 
     LTFLOAT fAbsorb = 0.0f;
 
@@ -1108,7 +1186,8 @@ void CDestructible::DoDamage(DamageStruct & damage)
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(m_hObject);
 		if (pPlayer)
 		{
-			fDamage *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eDamage);
+			// RETAIL: Tron reads the stamina table directly (0x100e8ac4).
+			fDamage *= g_pSkillsButeMgr->GetStamina(pPlayer->GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eDamage];
 		}
 	}
 
@@ -1118,6 +1197,7 @@ void CDestructible::DoDamage(DamageStruct & damage)
 	m_fLastArmorAbsorb	= fAbsorb;
 	m_fLastDamage		= fDamage;
 	m_eLastDamageType	= eType;
+	m_bTronUnknown30	= bTronUnknown;
 	m_vLastDamageDir	= vDir;
 	SetLastDamager(hDamager);
 
@@ -1128,73 +1208,84 @@ void CDestructible::DoDamage(DamageStruct & damage)
 	{
 		return;
 	}
+
+	m_fArmorPoints -= fAbsorb;
+
+	if (m_fArmorPoints < 0.0f)
+	{
+		m_fArmorPoints = 0.0f;
+	}
+
+	// RETAIL: the test is made before the subtraction (0x100e8b55).
+	if (m_fTronUnknown7C != 0.0f)
+	{
+		m_fHitPoints -= fDamage;
+		LTFLOAT fMax = GetMaxHitPoints();
+		m_fHitPoints = LTMIN(fMax, LTMAX(m_fHitPoints, m_fTronUnknown7C));
+	}
 	else
 	{
-		m_fArmorPoints -= fAbsorb;
-
-		if (m_fArmorPoints < 0.0f)
-		{
-			m_fArmorPoints = 0.0f;
-		}
-
 		m_fHitPoints -= fDamage;
+	}
 
+	if (bSendTriggers)
+	{
 		if ( m_nDamageTriggerCounter > 0 )
 		{
 			m_nDamageTriggerCounter--;
 		}
-	}
-
 
 	// If this is supposed to send a damage trigger, send it now...
 
-	if (m_nDamageTriggerCounter <= 0)
-	{
-		if (m_nDamageTriggerNumSends != 0)
+		if (m_nDamageTriggerCounter <= 0)
 		{
-			m_nDamageTriggerNumSends--;
-
-			if(m_sDamageCommand.length() )
+			if (m_nDamageTriggerNumSends != 0)
 			{
-				const char *pCmd = m_sDamageCommand.c_str();
+				m_nDamageTriggerNumSends--;
 
-				if( g_pCmdMgr->IsValidCmd( pCmd ) )
+				if(m_sDamageCommand.length() )
 				{
-					g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					const char *pCmd = m_sDamageCommand.c_str();
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
 				}
-			}
 
-			if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
-			{
-				const char *pCmd = m_sPlayerDamageCommand.c_str( );
-
-				if( g_pCmdMgr->IsValidCmd( pCmd ) )
+				if( m_sPlayerDamageCommand.size( ) != 0 && IsPlayer( hDamager ))
 				{
-					g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					const char *pCmd = m_sPlayerDamageCommand.c_str( );
+
+					if( g_pCmdMgr->IsValidCmd( pCmd ) )
+					{
+						g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+					}
 				}
 			}
 		}
-	}
 
-	// If we ought to send a percentage based damage command, do it now.
+		// If we ought to send a percentage based damage command, do it now.
 
-	if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
-	{
-		const char *pCmd = m_sDamagePercentCommand.c_str();
-
-		if( g_pCmdMgr->IsValidCmd( pCmd ) )
+		if ( m_sDamagePercentCommand.length() && (m_fHitPoints < m_fMaxHitPoints * m_fDamagePercentCommand) )
 		{
-			g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
-		}
-	}
-	
-	// Send message to object that damaged us...
+			const char *pCmd = m_sDamagePercentCommand.c_str();
 
-	if (hDamager && m_sDamagerMessage.length())
-	{
-		SendTriggerMsgToObject(pObject, hDamager, LTFALSE, m_sDamagerMessage.c_str());
-	}
+			if( g_pCmdMgr->IsValidCmd( pCmd ) )
+			{
+				g_pCmdMgr->Process( pCmd, m_hObject, m_hObject );
+			}
+		}
+		
+		// Send message to object that damaged us...
+
+		if (hDamager && m_sDamagerMessage.length())
+		{
+			SendTriggerMsgToObject(pObject, hDamager, LTTRUE, m_sDamagerMessage.c_str());
+		}
 	
+	}
+
 	// Send instant damage flags for characters...
 
 	if( IsCharacter( m_hObject ) && !(damage.fDuration > 0.0f) )
@@ -1202,7 +1293,6 @@ void CDestructible::DoDamage(DamageStruct & damage)
 		CCharacter *pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( m_hObject ));
 		if( pChar )
 		{
-			// RETAIL: Tron adds the hit's flags (Object.lto 0x100e7f58)
 			pChar->AddDamageFlags( DamageTypeToFlag( eType ));
 		}
 	}
@@ -1212,7 +1302,7 @@ void CDestructible::DoDamage(DamageStruct & damage)
 
 	if (m_fHitPoints <= 1.0f && !m_bNeverDestroy && ( fDamage > 0.f ) )
 	{
-//		m_fHitPoints	= 0.0f;
+		m_fHitPoints	= 0.0f;
 		m_fDeathDamage	= fDamage;
 		m_eDeathType	= eType;
 		m_vDeathDir		= vDir;
