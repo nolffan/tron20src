@@ -250,22 +250,20 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
 }
 
 
+// RETAIL: 0x1007c740: Tron's closes either dialog the same way
 void CScreenSingle::Escape()
 {
 	if (m_pDiff->IsVisible())
 	{
 		m_pDiff->Show(LTFALSE);
-		ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
-
-		SetSelection(0);
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		SetSelection(kNoSelection);
+		PlayInterfaceSound(IS_SELECT);
 	}
 	else if (m_pCustom->IsVisible())
 	{
 		m_pCustom->Show(LTFALSE);
-		ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-		SetSelection(3);
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		SetSelection(kNoSelection);
+		PlayInterfaceSound(IS_SELECT);
 	}
 	else
 	{
@@ -404,31 +402,10 @@ LTBOOL CScreenSingle::OnMouseMove(int x, int y)
 }
 
 /******************************************************************/
+// RETAIL: Tron's only passes the key on (0x1007cca0)
 LTBOOL CScreenSingle::HandleKeyDown(int key, int rep)
 {
-	uint16 oldSelect = kNoSelection;
-
-	if (GetSelectedControl() == m_pCustom)
-	{
-		oldSelect = m_pCustom->GetSelectedIndex();
-	}
-
-	LTBOOL bHandled = CBaseScreen::HandleKeyDown(key,rep);
-
-	if (bHandled && GetSelectedControl() == m_pCustom && oldSelect != kNoSelection && oldSelect != m_pCustom->GetSelectedIndex())
-	{
-		m_pCustom->GetWidth();
-		CLTGUICtrl *pSelCtrl = m_pCustom->GetSelectedControl();
-		LTIntPt pos = pSelCtrl->GetPos();
-		if (m_bSelectFXCenter)
-			pos.x += (pSelCtrl->GetWidth() / 2);
-		pos.y += (pSelCtrl->GetHeight() / 2);
-
-		g_pInterfaceMgr->ShowSelectFX(pos);
-	}
-
-	return bHandled;
-
+	return CBaseScreen::HandleKeyDown(key,rep);
 }
 void CScreenSingle::ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha)
 {
