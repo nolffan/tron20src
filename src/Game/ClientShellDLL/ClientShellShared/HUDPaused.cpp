@@ -26,7 +26,8 @@ LTBOOL CHUDPaused::Init()
 
 	UpdateLayout();
 
-	m_MsgFormat.sString = LoadTempString(IDS_PAUSED);
+	// RETAIL: Tron's string 650 (0x10187476), not NOLF2's IDS_PAUSED
+	m_MsgFormat.sString = LoadTempString(650);
 	m_MsgFormat.fDuration = 0.0f;
 	m_Msg.Create(m_MsgFormat);
 
@@ -40,6 +41,8 @@ void CHUDPaused::Term()
 
 void CHUDPaused::Render()
 {
+	// RETAIL: Tron's (0x10187510)
+	if (!IsEnabled()) return;
 	if (!m_Msg.IsVisible()) return;
 	m_Msg.Render();
 }
@@ -51,8 +54,13 @@ void CHUDPaused::Show(LTBOOL bShow)
 	if (!bShow)
 		return;
 
+	// RETAIL: Tron's (0x10187530) takes the message's base size from the
+	// interface ratios; the width is not used
+	uint16 nBaseWidth = (uint16)((float)m_Msg.GetWidth() / g_pInterfaceResMgr->GetXRatio());
+	uint16 nBaseHeight = (uint16)((float)m_Msg.GetHeight() / g_pInterfaceResMgr->GetYRatio());
+
 	LTIntPt pos = m_BasePos;
-	pos.y -= m_Msg.GetBaseHeight()/2;
+	pos.y -= nBaseHeight/2;
 
 	m_Msg.SetBasePos(pos);
 }

@@ -40,7 +40,7 @@ CRadarObjectFX::CRadarObjectFX( )
 
 CRadarObjectFX::~CRadarObjectFX( )
 {
-	g_pRadar->RemoveObject( m_hServerObject );
+	if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
 }
 
 // ----------------------------------------------------------------------- //
@@ -66,7 +66,7 @@ LTBOOL CRadarObjectFX::Init( HLOCALOBJ hServObj, ILTMessage_Read *pMsg )
 
 	if( m_cs.bOn )
 	{
-		g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
+		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
 	}
 
 	return LTTRUE;
@@ -91,12 +91,12 @@ LTBOOL CRadarObjectFX::OnServerMessage( ILTMessage_Read *pMsg )
 	
 	if( m_cs.bOn )
 	{
-		g_pRadar->RemoveObject( m_hServerObject );
-		g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
+		if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
+		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
 	}
 	else
 	{
-		g_pRadar->RemoveObject( m_hServerObject );
+		if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
 	}
 
 	return LTTRUE;

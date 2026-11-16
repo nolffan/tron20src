@@ -83,6 +83,7 @@ class CProjectileFX : public CSpecialFX
         void CreateProjectile(const LTVector & vPos, const LTRotation & rRot);
         void CreateFlyingSound(const LTVector & vPos, const LTRotation & rRot);
         void CreateSmokeTrail(const LTVector & vPos, const LTRotation & rRot);
+		void CreateTronUnknownFX(const char* szFXName);
 
 		void RemoveFX();
 
@@ -109,6 +110,10 @@ class CProjectileFX : public CSpecialFX
 
         LTVector         m_vFirePos;
         LTVector         m_vPath;
+
+		// RETAIL: Tron's (+0x78): the projectile's looping client FX
+		// (CreateTronUnknownFX, 0x101a1600). The names are ours
+		CLIENTFX_LINK	m_TronUnknownFXLink;
 
 };
 

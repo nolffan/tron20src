@@ -1892,6 +1892,12 @@ float CTronPlayerStats::GetSkillModifier(eSkill skl, uint8 nMod)
 	return g_pSkillsButeMgr->GetModifier(skl, (eSkillLevel)m_nSkills[skl], nMod);
 }
 
+// PORT: not virtual in Tron's CPlayerStats (see PlayerStats.h)
+float CPlayerStats::GetSkillModifier(eSkill skl, uint8 nMod)
+{
+	return ((CTronPlayerStats*)this)->CTronPlayerStats::GetSkillModifier(skl, nMod);
+}
+
 void CTronPlayerStats::ClearMissionInfo()
 {
 	ResetMissionStats();

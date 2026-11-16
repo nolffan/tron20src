@@ -1560,7 +1560,8 @@ void CKitty::UpdateKitty( )
 			uint32 nIgnoreFlags = (CC_ALL_FLAG & ~ ::GetLiquidFlags());
 			int nVolume = IsLiquid( ::GetContainerCode(vPos, nIgnoreFlags) ) ? 50 : 100;
 
-			uint32 dwFlags = m_pClassData->bLoopArmSound ? PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE : 0;
+			// PORT: Tron's KITTYCLASSDATA has no loop flag (retail 0x10153b60)
+			uint32 dwFlags = 0;
 
 			m_hArmSound = g_pServerSoundMgr->PlaySoundFromObject( m_hObject, m_pClassData->pArmSound,
 							(LTFLOAT)m_pClassData->nSoundRadius, SOUNDPRIORITY_MISC_MEDIUM,

@@ -80,7 +80,6 @@ public:
 
 	void	UpdateMissionInfo();
 
-	void	SetRenderScreen( CBaseScreen* pScreen ) { m_pRenderScreen = (m_eCurState == STATE_NONE ? pScreen : LTNULL); }
 
 
 // Internal functions
@@ -125,10 +124,9 @@ private:
 	std::string		m_briefing;
 	std::string		m_help;
 	std::string		m_layout;
-	std::string		m_photo;
 
-	HTEXTURE		m_hFrame;
-	LTPoly_GT4		m_photoPoly;
+	// RETAIL: Tron's has no mission photo (constructor 0x10161760: the
+	// SFX array is at +0xc4)
 
 
 
@@ -152,7 +150,6 @@ private:
 	uint8	m_nDefaultHelpFont;
 	uint8	m_nDefaultHelpFontSize;
 	uint32	m_nDefaultHelpColor;
-	LTRect	m_DefaultPhotoRect;
 
 	// Array of SFX owned by the loading screen
 	CMoArray<CSpecialFX *> m_SFXArray;
@@ -174,8 +171,8 @@ private:
 	uint32 m_nFrameCounter; // Frame tracking
 	float m_fLastFrameTime, m_fCurFrameDelta;
 	
-	// If this is set the loading screen will render this rather than draw its self...
-	CBaseScreen		*m_pRenderScreen;
+	// RETAIL: Tron's has no render screen (NOLF2 1.x's; UpdateInterfaceSFX
+	// 0x10161f50)
 
 };
 

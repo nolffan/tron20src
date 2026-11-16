@@ -72,7 +72,7 @@ LTBOOL CDoomsdayPieceFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 		break;
 
 	}
-	g_pRadar->AddObject(m_hServerObject,radarType.c_str(), INVALID_TEAM);
+	if (g_pRadar) g_pRadar->AddObject(m_hServerObject,radarType.c_str(), INVALID_TEAM);
 	
     return LTTRUE;
 }
@@ -155,7 +155,7 @@ LTBOOL CDoomsdayPieceFX::OnServerMessage(ILTMessage_Read *pMsg)
 		break;
 
 	}
-	g_pRadar->ChangeRadarType(m_hServerObject,radarType.c_str());
+	if (g_pRadar) g_pRadar->ChangeRadarType(m_hServerObject,radarType.c_str());
 
 	g_pHUDMgr->QueueUpdate(kHUDDoomsday);
 

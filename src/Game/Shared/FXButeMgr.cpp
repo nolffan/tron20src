@@ -77,6 +77,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_FIREFX_SHELLMODEL		"ShellModel"
 #define FXBMGR_FIREFX_SHELLSKIN			"ShellSkin"
 #define FXBMGR_FIREFX_SHELLSCALE		"ShellScale"
+#define FXBMGR_FIREFX_OLDSTYLEBEAMNAME	"OldStyleBeamName"	// RETAIL: Tron's
 #define FXBMGR_FIREFX_BEAMFXNAME		"BeamFXName"
 
 #define FXBMGR_PROJECTILEFX_TAG                   "ProjectileFX"
@@ -2436,6 +2437,26 @@ LTBOOL FIREFX::Init(CButeMgr & buteMgr, char* aTagName)
 		nFlags |= WFX_EXITDEBRIS;
 	}
 
+	// RETAIL: Tron's (0x101533be): up to three beam FX by name
+	CString str;
+	nNumOldStyleBeams = 0;
+	sprintf(s_aAttName, "%s%d", FXBMGR_FIREFX_OLDSTYLEBEAMNAME, nNumOldStyleBeams);
+	while (buteMgr.Exist(aTagName, s_aAttName) && nNumOldStyleBeams < FXBMGR_MAX_OLDSTYLE_BEAMS)
+	{
+		str = buteMgr.GetString(aTagName, s_aAttName);
+		if (!str.IsEmpty())
+		{
+			BEAMFX* pBeamFX = g_pFXButeMgr->GetBeamFX(str.GetBuffer());
+			if (pBeamFX)
+			{
+				apOldStyleBeams[nNumOldStyleBeams] = pBeamFX;
+			}
+		}
+
+		nNumOldStyleBeams++;
+		sprintf(s_aAttName, "%s%d", FXBMGR_FIREFX_OLDSTYLEBEAMNAME, nNumOldStyleBeams);
+	}
+
 	return LTTRUE;
 }
 
@@ -2802,11 +2823,6 @@ KITTYCLASSDATA::KITTYCLASSDATA( )
 :	PROJECTILECLASSDATA	( ),
 	pArmSound			( LTNULL ),
 	pActivateSound		( LTNULL ),
-	pArmedFX			( LTNULL ),
-	pArmedFXRed			( LTNULL ),
-	pArmedFXBlue		( LTNULL ),
-	bLoopArmSound		( false ),
-	bLoopArmedFX		( false ),
 	nActivateRadius		( 0 ),
 	nDetonateRadius		( 0 ),
 	nSoundRadius		( 0 ),
@@ -2829,9 +2845,6 @@ KITTYCLASSDATA::~KITTYCLASSDATA( )
 {
 	debug_deletea( pArmSound );
 	debug_deletea( pActivateSound );
-	debug_deletea( pArmedFX );
-	debug_deletea( pArmedFXRed );
-	debug_deletea( pArmedFXBlue );
 }
 
 // ----------------------------------------------------------------------- //
@@ -2849,12 +2862,6 @@ LTBOOL KITTYCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 
 	pArmSound		= GetString( buteMgr, aTagName, FXBMGR_KITTYCLASS_ARMSND, FXBMGR_MAX_FILE_PATH );
 	pActivateSound	= GetString( buteMgr, aTagName, FXBMGR_KITTYCLASS_ACTSND, FXBMGR_MAX_FILE_PATH );
-	pArmedFX		= GetString( buteMgr, aTagName, FXBMGR_KITTYCLASS_ARMEDFX, FXBMGR_MAX_NAME_LENGTH );
-	pArmedFXRed		= GetString( buteMgr, aTagName, FXBMGR_KITTYCLASS_ARMEDFX_RED, FXBMGR_MAX_NAME_LENGTH );
-	pArmedFXBlue	= GetString( buteMgr, aTagName, FXBMGR_KITTYCLASS_ARMEDFX_BLUE, FXBMGR_MAX_NAME_LENGTH );
-
-	bLoopArmSound	= !!buteMgr.GetInt( aTagName, FXBMGR_KITTYCLASS_LOOPARMSND, 0 );
-	bLoopArmedFX	= !!buteMgr.GetInt( aTagName, FXBMGR_KITTYCLASS_LOOPARMEDFX, 0 );
 
 	nSoundRadius	= buteMgr.GetInt( aTagName, FXBMGR_KITTYCLASS_SNDRADIUS );
 	nActivateRadius	= buteMgr.GetInt( aTagName, FXBMGR_KITTYCLASS_ACTRADIUS );
@@ -3437,16 +3444,17 @@ LTBOOL CORRUPTICDIMSCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	return LTTRUE;
 }
 
+// RETAIL: the members are initialized before the vtable is set (0x10154480)
 BALLCLASSDATA::BALLCLASSDATA()
+:	fMinThrowTime( 0.0f ),
+	fMaxThrowTime( 0.0f ),
+	fMinThrowVelocity( 0.0f ),
+	fMaxThrowVelocity( 0.0f ),
+	fProximityThreshold( 0.0f ),
+	fProximitySecondsToArm( 0.0f ),
+	fProximityDistance( 0.0f ),
+	fRandomAngleAdjust( 0.0f )
 {
-	fMinThrowTime = 0.0f;
-	fMaxThrowTime = 0.0f;
-	fMinThrowVelocity = 0.0f;
-	fMaxThrowVelocity = 0.0f;
-	fProximityThreshold = 0.0f;
-	fProximitySecondsToArm = 0.0f;
-	fProximityDistance = 0.0f;
-	fRandomAngleAdjust = 0.0f;
 	szProximityBombEffectName[0] = '\0';
 }
 
@@ -3468,17 +3476,18 @@ LTBOOL BALLCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	return LTTRUE;
 }
 
+// RETAIL: the members are initialized before the vtable is set (0x10154590)
 PRANKSTERCLASSDATA::PRANKSTERCLASSDATA()
+:	fTimeToAcquireTargets( 0.0f ),
+	fTimeVictimStasis( 0.0f ),
+	fTimeVictimStasisRange( 0.0f ),
+	fMaxDistance( 0.0f ),
+	nMaxTargets( 0 ),
+	fBaseVelocity( 0.0f ),
+	fVelocityRange( 0.0f ),
+	fDeathRadius( 0.0f )
 {
 	szEliminateTargetsFX[0] = '\0';
-	fTimeToAcquireTargets = 0.0f;
-	fTimeVictimStasis = 0.0f;
-	fTimeVictimStasisRange = 0.0f;
-	fMaxDistance = 0.0f;
-	nMaxTargets = 0;
-	fBaseVelocity = 0.0f;
-	fVelocityRange = 0.0f;
-	fDeathRadius = 0.0f;
 }
 
 LTBOOL PRANKSTERCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )

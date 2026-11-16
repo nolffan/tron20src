@@ -74,7 +74,7 @@ uint32 CMenuIntel::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 
 			if (pItem)
 			{
-				m_PopupText.Show(pItem->nTextId, pItem->nPopupId);
+				m_PopupText.Show(pItem->nTextId, pItem->nPopupId, pItem->szName);	// RETAIL: with its image (0x1007f630)
 
 				// Disable menu now that popup is visible.
 

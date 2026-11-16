@@ -89,9 +89,7 @@ void CMenuHelp::ShowItem(uint16 nCtrlIndex, uint16 nItemIndex)
 		}
 	}
 
-	// PORT: retail shows the file with its name too (Tron's three-argument
-	// CPopupText::Show, 0x1007f630)
-	m_PopupText.Show(pItem->nTextId, pItem->nPopupId);
+	m_PopupText.Show(pItem->nTextId, pItem->nPopupId, pItem->szName);	// RETAIL: with its image (0x1007f630)
 
 	// Disable menu now that popup is visible.
 

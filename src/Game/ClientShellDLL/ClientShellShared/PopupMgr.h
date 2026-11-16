@@ -35,6 +35,10 @@ struct POPUP
 	uint8	nFontSize;
 	LTIntPt	sSize;
 	LTIntPt	sTextOffset;
+	// RETAIL: Tron's (CPopupMgr::Init 0x101c5070 reads "ImageOffset" and
+	// "ImageSize"; POPUP is 0x6c bytes, 0x101c5770)
+	LTIntPt	sImageOffset;	// +0x54
+	LTIntPt	sImageSize;		// +0x5c
 	uint16	nTextWidth;
 	uint32	argbTextColor;
 

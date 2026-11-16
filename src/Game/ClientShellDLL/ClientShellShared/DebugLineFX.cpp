@@ -239,7 +239,7 @@ LTBOOL CDebugLineFX::Update()
 
 			if (h != m_pStr->GetCharScreenHeight())
 			{
-				m_pStr->SetCharScreenHeight(h);
+				m_pStr->SetCharScreenSize(h);	// RETAIL: slot 9 (0x101ba06a)
 			}
 			
 			m_pStr->SetPosition( pos.x, pos.y);

@@ -190,12 +190,12 @@ LTBOOL CCharacterFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 		{
 			if( IsMultiplayerGame( ))
 			{
-				g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
+				if (g_pRadar) g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
 			}
 		}
 		else
 		{
-			g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
+			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
 		}
 	}
 
@@ -203,11 +203,11 @@ LTBOOL CCharacterFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	{
 		if( m_cs.bIsPlayer )
 		{
-			g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
+			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
 		}
 		else
 		{
-			g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
+			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
 		}
 	}
 
@@ -2216,7 +2216,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
             m_cs.nClientID = pMsg->Readuint8();
 			if( g_pGameClientShell->ShouldUseRadar() )
 			{
-				g_pRadar->UpdatePlayerID( m_hServerObject, m_cs.nClientID );
+				if (g_pRadar) g_pRadar->UpdatePlayerID( m_hServerObject, m_cs.nClientID );
 			}
 
 
@@ -2378,11 +2378,11 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 				m_bPlayerDead = true;
 				if (m_cs.bRadarVisible)
 				{
-					g_pRadar->SetPlayerDead(m_hServerObject,true);
+					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,true);
 				}
 				else if (m_cs.bTracking)
 				{
-					g_pRadar->RemoveObject(m_hServerObject);
+					if (g_pRadar) g_pRadar->RemoveObject(m_hServerObject);
 				}
 			}
 
@@ -2397,7 +2397,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 				m_bPlayerDead = false;
 				if (m_cs.bRadarVisible)
 				{
-					g_pRadar->SetPlayerDead(m_hServerObject,false);
+					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,false);
 				}
 			}
 		}
@@ -2410,7 +2410,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 				m_bPlayerDead = false;
 				if (m_cs.bRadarVisible)
 				{
-					g_pRadar->SetPlayerDead(m_hServerObject,false);
+					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,false);
 				}
 			}
 		}
@@ -2423,13 +2423,13 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			if( m_cs.bRadarVisible )
 			{
 				if( m_cs.bIsPlayer )
-					g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
+					if (g_pRadar) g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
 				else
-					g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
+					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
 			}
 			else
 			{
-				g_pRadar->RemoveObject( m_hServerObject );
+				if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
 			}
 		}
 		break;
@@ -2442,11 +2442,11 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			{
 				if( m_cs.bIsPlayer )
 				{
-					g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
+					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
 				}
 				else
 				{
-					g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
+					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
 				}
 			}
 			else
@@ -2454,13 +2454,13 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 				// If we're not intended to be visible, then remove us.
 				if( !m_cs.bRadarVisible)
 				{
-					g_pRadar->RemoveObject( m_hServerObject );
+					if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
 				}
 				// We need to re-add ourselves to get our tracking/team color right.
 				else
 				{
-					g_pRadar->RemoveObject( GetServerObj( ));
-					g_pRadar->AddPlayer( GetServerObj(), m_cs.nClientID );
+					if (g_pRadar) g_pRadar->RemoveObject( GetServerObj( ));
+					if (g_pRadar) g_pRadar->AddPlayer( GetServerObj(), m_cs.nClientID );
 				}
 			}
 		}

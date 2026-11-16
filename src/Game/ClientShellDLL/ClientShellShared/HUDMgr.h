@@ -49,7 +49,7 @@ enum eHUDUpdateFlag
 	kHUDProcedurals = 0x00008000,	//TRON
 	kHUDDistance	= 0x00010000,
 	kHUDProgressBar	= 0x00020000,	//TO2
-	kHUDDisplayMeter= 0x00040000,
+	kHUDDisplayMeter= 0x00400000,	// RETAIL: Tron's value (CHUDDisplayMeter ctor, 0x10187250)
 	kHUDRespawn     = 0x00080000,
 	kHUDScores		= 0x00100000,
 	kHUDDoomsday	= 0x00200000,
@@ -111,19 +111,20 @@ protected:
 	uint32			m_UpdateFlags;
 	eHUDRenderLevel m_eLevel;
 
-	CHUDDamage			m_Damage;
-	CHUDChatMsgQueue	m_ChatMsgs;
-	CHUDPickupMsgQueue	m_PickupMsgs;
-	CHUDTransmission	m_Transmission;
-	CHUDChatInput		m_ChatInput;
-	CHUDMissionText		m_MissionText;
-	CHUDSubtitles		m_Subtitles;
-	CHUDDecision		m_Decision;
-	CHUDPopup			m_Popup;
-	CHUDRadar			m_Radar;
-	CHUDRewardMsgQueue	m_RewardMsgs;
-	CHUDPaused			m_Paused;
-	CHUDDisplayMeter	m_DisplayMeter;
+	// RETAIL: Tron's layout (constructor 0x100f34f0, destructor 0x100f3910):
+	// the three message queues are made on the heap, and there is no radar.
+	CHUDDamage			m_Damage;				// +0x14
+	CHUDChatMsgQueue*	m_pChatMsgs;			// +0x3c
+	CHUDPickupMsgQueue*	m_pPickupMsgs;			// +0x40
+	CHUDTransmission	m_Transmission;			// +0x44
+	CHUDChatInput		m_ChatInput;			// +0x188
+	CHUDMissionText		m_MissionText;			// +0x9b8
+	CHUDSubtitles		m_Subtitles;			// +0xb84
+	CHUDDecision		m_Decision;				// +0xc14
+	CHUDPopup			m_Popup;				// +0x2b80
+	CHUDRewardMsgQueue*	m_pRewardMsgs;			// +0x312c
+	CHUDPaused			m_Paused;				// +0x3130
+	CHUDDisplayMeter	m_DisplayMeter;			// +0x3278
 
 	//items
 	typedef std::vector<CHUDItem *> ItemArray;

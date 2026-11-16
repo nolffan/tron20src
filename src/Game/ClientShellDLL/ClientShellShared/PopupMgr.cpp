@@ -20,6 +20,8 @@
 #define POPUP_FONTSIZE			"FontSize"
 #define POPUP_SIZE				"Size"
 #define POPUP_TEXTPOS			"TextOffset"
+#define POPUP_IMAGEOFFSET		"ImageOffset"	// RETAIL: Tron's
+#define POPUP_IMAGESIZE			"ImageSize"		// RETAIL: Tron's
 #define POPUP_TEXTWIDTH			"TextWidth"
 #define POPUP_TEXTCOLOR			"TextColor"
 
@@ -92,6 +94,15 @@ LTBOOL CPopupMgr::Init(const char* szAttributeFile)
 		tmp = m_buteMgr.GetPoint(s_aTagName,POPUP_TEXTPOS,zero);
 		pNew->sTextOffset.x = tmp.x;
 		pNew->sTextOffset.y = tmp.y;
+
+		// RETAIL: Tron's
+		tmp = m_buteMgr.GetPoint(s_aTagName,POPUP_IMAGEOFFSET,zero);
+		pNew->sImageOffset.x = tmp.x;
+		pNew->sImageOffset.y = tmp.y;
+
+		tmp = m_buteMgr.GetPoint(s_aTagName,POPUP_IMAGESIZE,zero);
+		pNew->sImageSize.x = tmp.x;
+		pNew->sImageSize.y = tmp.y;
 
 		pNew->nTextWidth = (uint16)m_buteMgr.GetInt(s_aTagName,POPUP_TEXTWIDTH,0);
 

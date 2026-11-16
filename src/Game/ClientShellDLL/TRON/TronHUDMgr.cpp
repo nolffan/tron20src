@@ -121,41 +121,67 @@ bool CTronHUDMgr::AddItems()
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
 	//crosshair should be first so that it is rendered first (potential overlap)
-	AddItem(&m_Crosshair, eGameType);
+	if (m_Crosshair.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Crosshair);
 
-	AddItem(&m_MatchStats, eGameType);
-	AddItem(&m_Version, eGameType);
+	if (m_MatchStats.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_MatchStats);
+	if (m_Version.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Version);
 
 	// Tron-specific items
-	AddItem(&m_Permissions, eGameType);
-	AddItem(&m_HealthEnergy, eGameType);
+	if (m_Permissions.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Permissions);
+	if (m_HealthEnergy.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_HealthEnergy);
 
-	AddItem(&m_Armor, eGameType);
-	AddItem(&m_EnergyTrans, eGameType);
-	AddItem(&m_Progress, eGameType);
+	if (m_Armor.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Armor);
+	if (m_EnergyTrans.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_EnergyTrans);
+	if (m_Progress.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Progress);
 
-	AddItem(&m_Weapon, eGameType);
-	AddItem(&m_WpnChooser, eGameType);
-	AddItem(&m_AmmoChooser, eGameType);
+	if (m_Weapon.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Weapon);
+	if (m_WpnChooser.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_WpnChooser);
+	if (m_AmmoChooser.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_AmmoChooser);
 
 	// RETAIL: Tron's retail-only items (PORT: retail's order is by their
 	// place in the class, which is not yet retail's: the weapon, the
 	// pings, ..., the subroutine chooser, the profiler, Tron's decision)
-	AddItem(&m_Pings, eGameType);
-	AddItem(&m_DamageDir, eGameType);
-	AddItem(&m_BuildNoteCount, eGameType);
-	AddItem(&m_IOCamera, eGameType);
-	AddItem(&m_SingleString, eGameType);
-	AddItem(&m_LightCycleLives, eGameType);
-	AddItem(&m_LightCyclePowerupIcon, eGameType);
-	AddItem(&m_LightCycleRoster, eGameType);
-	AddItem(&m_Procedurals, eGameType);
-	AddItem(&m_SubChooser, eGameType);
-	AddItem(&m_Profiler, eGameType);
-	AddItem(&m_SecurityCamera, eGameType);
-	AddItem(&m_TronDecision, eGameType);
-	AddItem(&m_LightCycleSpeedometer, eGameType);
-	AddItem(&m_LightCycleCircuitIntro, eGameType);
+	if (m_Pings.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Pings);
+	if (m_DamageDir.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_DamageDir);
+	if (m_BuildNoteCount.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_BuildNoteCount);
+	if (m_IOCamera.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_IOCamera);
+	if (m_SingleString.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_SingleString);
+	if (m_LightCycleLives.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_LightCycleLives);
+	if (m_LightCyclePowerupIcon.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_LightCyclePowerupIcon);
+	if (m_LightCycleRoster.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_LightCycleRoster);
+	if (m_Procedurals.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Procedurals);
+	if (m_SubChooser.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_SubChooser);
+	if (m_Profiler.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Profiler);
+	if (m_SecurityCamera.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_SecurityCamera);
+	if (m_TronDecision.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_TronDecision);
+	if (m_LightCycleSpeedometer.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_LightCycleSpeedometer);
+	if (m_LightCycleCircuitIntro.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_LightCycleCircuitIntro);
 
 	m_Crosshair.Init();
 	m_MatchStats.Init();

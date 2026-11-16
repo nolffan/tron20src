@@ -93,18 +93,15 @@ struct KITTYCLASSDATA : public PROJECTILECLASSDATA
 	LTBOOL	Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
 
-	char	*pArmSound;
-	char	*pActivateSound;
-	char	*pArmedFX;
-	char	*pArmedFXRed;
-	char	*pArmedFXBlue;
+	// RETAIL: Tron's (KITTYCLASSDATA::Init 0x10153b60, constructor
+	// 0x10153ae0): no armed FX names and no loop flags; the radii are in
+	// the order activate, detonate, sound.
+	char	*pArmSound;			// +0x34
+	char	*pActivateSound;	// +0x38
 
-	bool	bLoopArmSound;
-	bool	bLoopArmedFX;
-	
-	int		nActivateRadius;
-	int		nDetonateRadius;
-	int		nSoundRadius;
+	int		nActivateRadius;	// +0x3c
+	int		nDetonateRadius;	// +0x40
+	int		nSoundRadius;		// +0x44
 
 	LTFLOAT	fArmDelay;
 	LTFLOAT	fDetonateTime;
@@ -493,6 +490,7 @@ struct IFXCS
 };
 
 struct BEAMFX;
+#define FXBMGR_MAX_OLDSTYLE_BEAMS	3	// RETAIL: 0x101533fe; the name is ours
 struct FIREFX
 {
 	FIREFX();
@@ -508,6 +506,14 @@ struct FIREFX
 	char		*szShellSkin;
 	char		*szFXName;
 	char		*szBeamFXName;
+
+	// RETAIL: Tron's (FIREFX::Init 0x101530d0 reads "OldStyleBeamName%d"
+	// while the count is below 3; FIREFX is 0x40 bytes, debug_new_fn 0x10156920).
+	// The names are ours.
+	int			nNumOldStyleBeams;					// +0x18
+	BEAMFX		*apOldStyleBeams[FXBMGR_MAX_OLDSTYLE_BEAMS];	// +0x1c
+	uint32		m_xTronUnknown28;					// +0x28
+	uint32		m_xTronUnknown2C;					// +0x2c
 
 	int			nFlags;
     LTVector    vShellScale;

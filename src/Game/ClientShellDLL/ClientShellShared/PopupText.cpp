@@ -115,49 +115,115 @@ void CPopupText::Draw()
 }
 
 
-void CPopupText::DisplayPopup(uint8 nPopupId, char *pText, uint32 nTextId)
+void CPopupText::DisplayPopup(uint8 nPopupId, std::wstring sText, uint32 nTextId, const char* szImage)
 {
 	POPUP* pPopup = g_pPopupMgr->GetPopup(nPopupId);
 	if (!pPopup) return;
 
-	CUIFont *pFont = g_pInterfaceResMgr->GetFont(pPopup->nFont);
 	LTIntPt pos( (640 - pPopup->sSize.x) / 2, (480 - pPopup->sSize.y) / 2 );
+	float fScale = g_pInterfaceResMgr->GetXRatio();
 
-	m_Frame.SetFrame(g_pInterfaceResMgr->GetTexture(pPopup->szFrame));
+	// RETAIL: Tron's keeps its own reference to the frame's texture
+	const char* szFrame = pPopup->szFrame;
+	if (szFrame && szFrame[0])
+	{
+		if (m_hFrameTex)
+		{
+			g_pTexInterface->ReleaseTextureHandle(m_hFrameTex);
+			m_hFrameTex = LTNULL;
+		}
+		if (g_pTexInterface->FindTextureFromName(m_hFrameTex, szFrame) != LT_OK)
+		{
+			g_pTexInterface->CreateTextureFromName(m_hFrameTex, szFrame);
+		}
+		g_pTexInterface->AddRefTextureHandle(m_hFrameTex);
+		if (m_hFrameTex)
+		{
+			m_Frame.SetFrame(m_hFrameTex);
+		}
+	}
+
 	m_Frame.SetSize(pPopup->sSize.x,pPopup->sSize.y);
 	m_Frame.SetBasePos(pos);
-	m_Frame.SetScale(g_pInterfaceResMgr->GetXRatio());
+	m_Frame.SetScale(fScale);
 
+	// RETAIL: Tron's image, in the second frame
+	if (m_hTronUnknownFrame2Tex)
+	{
+		g_pTexInterface->ReleaseTextureHandle(m_hTronUnknownFrame2Tex);
+		m_hTronUnknownFrame2Tex = LTNULL;
+		m_TronUnknownFrame2.SetFrame(LTNULL);
+	}
+	m_bTronUnknownDrawFrame2 = false;
+
+	if (szImage && szImage[0])
+	{
+		if (g_pTexInterface->FindTextureFromName(m_hTronUnknownFrame2Tex, szImage) != LT_OK)
+		{
+			g_pTexInterface->CreateTextureFromName(m_hTronUnknownFrame2Tex, szImage);
+		}
+		g_pTexInterface->AddRefTextureHandle(m_hTronUnknownFrame2Tex);
+		if (m_hTronUnknownFrame2Tex)
+		{
+			m_TronUnknownFrame2.SetFrame(m_hTronUnknownFrame2Tex);
+
+			pos.x += pPopup->sImageOffset.x;
+			pos.y += pPopup->sImageOffset.y;
+			m_TronUnknownFrame2.SetBasePos(pos);
+			pos.x -= pPopup->sImageOffset.x;
+			pos.y -= pPopup->sImageOffset.y;
+
+			if (pPopup->sImageSize.x > 0 && pPopup->sImageSize.y > 0)
+			{
+				m_TronUnknownFrame2.SetSize(pPopup->sImageSize.x, pPopup->sImageSize.y);
+			}
+			else
+			{
+				uint32 nWidth, nHeight;
+				g_pTexInterface->GetTextureDims(m_hTronUnknownFrame2Tex, nWidth, nHeight);
+				m_TronUnknownFrame2.SetSize(nWidth, nHeight);
+			}
+			m_TronUnknownFrame2.SetScale(fScale);
+			m_bTronUnknownDrawFrame2 = true;
+		}
+	}
 
 	pos.x += pPopup->sTextOffset.x;
 	pos.y += pPopup->sTextOffset.y;
 
 	m_Text.SetScale(1.0f);
 
-	// If we were given a string use it, otherwise get the string from the ID...
-
-	if( pText )
-	{
-		m_Text.SetString( pText );
-	}
-	else
+	// If we were given a string id use it, otherwise use the string...
+	if( nTextId )
 	{
 		char szString[1024] = "";
+		std::wstring sString;
 		LoadString(nTextId,szString,sizeof(szString));
-
 		char *pBody = strchr(szString,'@');
 		if (pBody)
 		{
 			++pBody;
-			m_Text.SetString(pBody);
+			sString.erase(sString.begin(), sString.end());
+			uint32 nLen = strlen(pBody);
+			for (uint32 i = 0; i < nLen; i++)
+				sString.push_back((wchar_t)(uint8)pBody[i]);
+			m_Text.SetString(sString);
 		}
 		else
 		{
-			m_Text.SetString(szString);
+			sString.erase(sString.begin(), sString.end());
+			uint32 nLen = strlen(szString);
+			for (uint32 i = 0; i < nLen; i++)
+				sString.push_back((wchar_t)(uint8)szString[i]);
+			m_Text.SetString(sString);
 		}
 	}
+	else
+	{
+		m_Text.SetString(sText);
+	}
 
-	m_Text.SetFont(pFont,pPopup->nFontSize);
+	m_Text.SetFont(g_pInterfaceResMgr->GetFontForHeight(pPopup->nFontSize),pPopup->nFontSize);
 	m_Text.SetColors(pPopup->argbTextColor,pPopup->argbTextColor,pPopup->argbTextColor);
 	m_Text.SetFixedWidth(pPopup->nTextWidth);
 	m_Text.SetBasePos(pos);
@@ -165,15 +231,17 @@ void CPopupText::DisplayPopup(uint8 nPopupId, char *pText, uint32 nTextId)
 
 	m_bVisible = LTTRUE;
 
-	//remember whether our weapons were out
-	m_bWeaponsEnabled = g_pPlayerMgr->GetClientWeaponMgr()->WeaponsEnabled();
-
 	if (m_bUsePopupState)
 	{
 		g_pInterfaceMgr->ChangeState(GS_POPUP);
 	}
-}
 
+	// RETAIL: Tron's (retail 0x1014f3dc)
+	g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\showpopup.wav");
+
+	//remember whether our weapons were out
+	m_bWeaponsEnabled = g_pPlayerMgr->GetClientWeaponMgr()->WeaponsEnabled();
+}
 
 void CPopupText::Update()
 {
