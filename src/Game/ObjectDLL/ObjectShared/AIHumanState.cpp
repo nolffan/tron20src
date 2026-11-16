@@ -874,6 +874,7 @@ CAIHumanStateGoto::CAIHumanStateGoto()
 	m_eMovement = kAP_Walk;
 	m_fCloseEnoughDistSqr = 0.f;
 	m_bTurnOffLights = LTFALSE;
+	m_xTronUnknownF0 = LTFALSE;
 }
 
 CAIHumanStateGoto::~CAIHumanStateGoto()
@@ -1171,6 +1172,7 @@ void CAIHumanStateGoto::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD(m_cNodes);
 	LOAD_DWORD(m_iNextNode);
 	LOAD_BOOL(m_bLoop);
+	LOAD_BOOL(m_xTronUnknownF0);
 
     int iNode;
     for ( iNode = 0 ; iNode < m_cNodes ; iNode++ )
@@ -1203,6 +1205,7 @@ void CAIHumanStateGoto::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD(m_cNodes);
 	SAVE_DWORD(m_iNextNode);
 	SAVE_BOOL(m_bLoop);
+	SAVE_BOOL(m_xTronUnknownF0);
 
 	for ( int iNode = 0 ; iNode < m_cNodes ; iNode++ )
 	{

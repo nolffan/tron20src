@@ -761,6 +761,7 @@ class CAIHumanStateGoto : public CAIHumanState
 		EnumAISoundType	m_eLoopingAISound;
 		LTFLOAT			m_fCloseEnoughDistSqr;
 		LTBOOL			m_bTurnOffLights;
+		LTBOOL			m_xTronUnknownF0;	// RETAIL: Tron's (+0xf0): set to 0 last in the ctor (0x101e56b3), saved and loaded after m_bLoop (0x101e600e)
 };
 
 class CAIHumanStateFlee : public CAIHumanStateGoto
