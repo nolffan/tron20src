@@ -246,6 +246,28 @@ void CCharacterHitBox::SetCanBeSearched(bool b)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacterHitBox::SetTronUnknown7D
+//
+//	PURPOSE:	RETAIL: Tron's (0x10138f80): the client hit box is updated
+//				only when the flag is set
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterHitBox::SetTronUnknown7D(bool b)
+{
+	if( m_bTronUnknown7D == b )
+		return;
+
+	m_bTronUnknown7D = b;
+
+	if( b )
+	{
+		m_pHitBoxUser->UpdateClientHitBox();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacterHitBox::HandleImpact()
 //
 //	PURPOSE:	Handle a vector impacting on us
@@ -1015,6 +1037,7 @@ void CCharacterHitBox::Save(ILTMessage_Write *pMsg)
 	SAVE_VECTOR(m_vOffset);
 	SAVE_BOOL(m_bCanActivate);
 	SAVE_bool(m_bCanBeSearched);
+	SAVE_bool(m_bTronUnknown7D);
 	SAVE_bool( m_bAnimControlsDims );
 	SAVE_bool( m_bAnimControlsOffset );
 	SAVE_DWORD( m_hControllingAnim );
@@ -1042,6 +1065,7 @@ void CCharacterHitBox::Load(ILTMessage_Read *pMsg)
 	LOAD_VECTOR(m_vOffset);
     LOAD_BOOL(m_bCanActivate);
 	LOAD_bool(m_bCanBeSearched);
+	LOAD_bool(m_bTronUnknown7D);
 	LOAD_bool( m_bAnimControlsDims );
 	LOAD_bool( m_bAnimControlsOffset );
 	LOAD_DWORD_CAST( m_hControllingAnim, HMODELANIM );

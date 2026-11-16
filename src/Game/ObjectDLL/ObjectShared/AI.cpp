@@ -2249,12 +2249,31 @@ void CAI::UpdateUserFlagCanActivate()
 		if ( m_bAlwaysActivate || (m_pState && m_pState->CanActivate()) )
 		{
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+
+			// RETAIL: Tron's (0x1012d28b): tell the hit box too
+			if( m_hHitBox )
+			{
+				CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
+				if( pHitBox )
+				{
+					pHitBox->SetTronUnknown7D(true);
+				}
+			}
 				
 			return;
 		}
 	}
 
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+
+	if( m_hHitBox )
+	{
+		CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
+		if( pHitBox )
+		{
+			pHitBox->SetTronUnknown7D(false);
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
