@@ -55,14 +55,14 @@
 0x0b8,ILTCSBase,GetTime,game calls
 0x0bc,ILTCSBase,GetFrameTime,game calls
 0x0c0,ILTCSBase,TronUnknownVirtual48,Tron's own: no NOLF2 function has its body
-0x0c4,ILTClient,GetTexInterface,identical body
+0x0c4,ILTClient,GetWidgetManager,game calls (GetTexInterface is 0x0e0: CShell and ClientFx call it there before ReleaseTextureHandle)
 0x0c8,ILTClient,GetDirectMusicMgr,game calls
 0x0cc,ILTClient,Cursor,game calls
 0x0d0,ILTClient,GetBenchmarkMgr,identical body
 0x0d4,ILTClient,VideoMgr,game calls
 0x0d8,ILTClient,GetDrawPrim,game calls
 0x0dc,ILTClient,GetFontManager,game calls
-0x0e0,ILTClient,GetWidgetManager,identical body
+0x0e0,ILTClient,GetTexInterface,game calls (CPolyLineFX::Draw 0x10199d04)
 0x0e4,ILTClient,GetPointShade,similar body 0.88
 0x0e8,ILTClient,SetObjectPos,game calls
 0x0ec,ILTClient,SetObjectRenderGroup,identical body
