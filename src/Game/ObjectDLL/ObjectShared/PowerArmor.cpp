@@ -839,28 +839,31 @@ void OccludingArmor::ReadShieldProps(ObjectCreateStruct* pData)
 //----------------------------------------------------------------------------
 void OccludingArmor::Update()
 {
-	CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(m_hHitBox);
-	UBER_ASSERT( pHitBox, "No m_hHitBox found" );
+	// RETAIL: Tron follows the parent object (0x1013c460)
+	SetNextUpdate(0.001f);
+
+	CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
+	if( !pHitBox || !m_hParentObject )
+	{
+		return;
+	}
 
 	LTVector vPos;
-	g_pLTServer->GetObjectPos(m_hObject, &vPos);
-	g_pLTServer->SetObjectPos(m_hHitBox, &vPos);
-
-	LTRotation rRot;
-	g_pLTServer->GetObjectRotation(m_hObject, &rRot);
-	g_pLTServer->SetObjectRotation(m_hHitBox, &rRot);
+	g_pLTServer->GetObjectPos(m_hParentObject, &vPos);
+	g_pLTServer->SetObjectPos(m_hObject, &vPos);
 
 	LTVector vDims;
-	g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
+	g_pPhysicsLT->GetObjectDims(m_hParentObject, &vDims);
+
+	// NOTE: near; retail computes the sum later (register scheduling)
+	LTVector vArmorDims = vDims + LTVector( 16.0f, 16.0f, 16.0f );
+	g_pPhysicsLT->SetObjectDims(m_hObject, &vArmorDims, 0);
 	g_pPhysicsLT->SetObjectDims(m_hHitBox, &vDims, 0);
 
-	pHitBox->Update();
-
 	uint32 dwFlags;
-	LTRESULT ltResult = g_pModelLT->GetPlaybackState(m_hObject, MAIN_TRACKER, dwFlags );
-	AIASSERT( ltResult == LT_OK, m_hObject, "Failed GetPlaybackState");
+	g_pModelLT->GetPlaybackState(m_hObject, MAIN_TRACKER, dwFlags );
 
-	SetNextUpdate(0.1f);
+	pHitBox->Update();
 }
 
 //----------------------------------------------------------------------------
