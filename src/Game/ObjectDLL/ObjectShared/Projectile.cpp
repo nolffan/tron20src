@@ -40,6 +40,8 @@
 #include "Weapon.h"
 #include "AIUtils.h"
 #include "VersionMgr.h"
+#include "PlayerShared.h"	// RETAIL: its constants are initialized here (0x1011dbf0)
+#include "DebugLineSystem.h"	// RETAIL: its colors are initialized here (0x1011dc50..)
 
 LINKFROM_MODULE( Projectile );
 
@@ -58,10 +60,12 @@ static bool CanCharacterHitCharacter( CProjectile* pProjectile, HOBJECT hImpacte
 #define MAX_MODEL_NODES         9999
 #define MAX_VECTOR_LOOP         20
 
+// RETAIL: in this order (their constructors 0x1011df00..0x1011dfc0)
+CVarTrack g_vtNetFriendlyFire;
+static CVarTrack g_vtProjectileNewCollision;		// RETAIL: Tron's
 static CVarTrack g_vtInvisibleMaxThickness;
 static CVarTrack g_vtDeflectAngleRange;
-
-CVarTrack g_vtNetFriendlyFire;
+static CVarTrack g_vtProjectileCollisionDebug;		// RETAIL: Tron's
 
 
 namespace
@@ -79,6 +83,15 @@ namespace
 		if (!g_vtDeflectAngleRange.IsInitted())
 		{
 			g_vtDeflectAngleRange.Init(g_pLTServer, "DeflectAngleRange", LTNULL, 30.0f );
+		}
+		// RETAIL: Tron's (0x1011e14d)
+		if (!g_vtProjectileCollisionDebug.IsInitted())
+		{
+			g_vtProjectileCollisionDebug.Init(g_pLTServer, "ProjectileCollisionDebug", LTNULL, 0.0f );
+		}
+		if (!g_vtProjectileNewCollision.IsInitted())
+		{
+			g_vtProjectileNewCollision.Init(g_pLTServer, "ProjectileNewCollision", LTNULL, 1.0f );
 		}
 	}
 }

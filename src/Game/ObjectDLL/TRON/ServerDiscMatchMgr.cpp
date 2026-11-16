@@ -537,21 +537,21 @@ CDiscArena::CDiscArena(int nIndex) : m_nIndex(nIndex), m_bInUse(false)
 	for (i = 0; i < nNumObjects; i++)
 	{
 		Arena* pArena = (Arena*)g_pLTServer->HandleToObject(objArray.GetObject(i));
-		if (!pArena || pArena->m_nIndex != nIndex)
+		if (!pArena || pArena->m_nArena != nIndex)
 			continue;
 
-		if (pArena->m_hstrRoundStartCmd)
-			m_sRoundStartCmd = g_pLTServer->GetStringData(pArena->m_hstrRoundStartCmd);
-		if (pArena->m_hstrKillCmd)
-			m_sKillCmd = g_pLTServer->GetStringData(pArena->m_hstrKillCmd);
-		if (pArena->m_hstrMatchStartCmd)
-			m_sMatchStartCmd = g_pLTServer->GetStringData(pArena->m_hstrMatchStartCmd);
-		if (pArena->m_hstrMatchEndCmd)
-			m_sMatchEndCmd = g_pLTServer->GetStringData(pArena->m_hstrMatchEndCmd);
-		if (pArena->m_hstrFightCmd)
-			m_sFightCmd = g_pLTServer->GetStringData(pArena->m_hstrFightCmd);
-		if (pArena->m_hstrRoundEndCmd)
-			m_sRoundEndCmd = g_pLTServer->GetStringData(pArena->m_hstrRoundEndCmd);
+		if (pArena->m_hstrOnPlayerSpawnCmd)
+			m_sRoundStartCmd = g_pLTServer->GetStringData(pArena->m_hstrOnPlayerSpawnCmd);
+		if (pArena->m_hstrOnPlayerDeathCmd)
+			m_sKillCmd = g_pLTServer->GetStringData(pArena->m_hstrOnPlayerDeathCmd);
+		if (pArena->m_hstrOnMatchStartCmd)
+			m_sMatchStartCmd = g_pLTServer->GetStringData(pArena->m_hstrOnMatchStartCmd);
+		if (pArena->m_hstrOnMatchEndCmd)
+			m_sMatchEndCmd = g_pLTServer->GetStringData(pArena->m_hstrOnMatchEndCmd);
+		if (pArena->m_hstrOnPointStartCmd)
+			m_sFightCmd = g_pLTServer->GetStringData(pArena->m_hstrOnPointStartCmd);
+		if (pArena->m_hstrOnPointEndCmd)
+			m_sRoundEndCmd = g_pLTServer->GetStringData(pArena->m_hstrOnPointEndCmd);
 
 		m_pArena = pArena;
 		break;
