@@ -9,6 +9,7 @@
 #include "WeaponMgr.h"
 #include "AIVolume.h"
 #include "AIUtils.h"
+#include "AnimationMgr.h"
 #include <time.h>
 
 extern CWeaponMgr* g_pWeaponMgr;
@@ -28,6 +29,80 @@ static char s_aAttName[100];
 // any bute values are missing. 
 
 //#define _AI_DEBUG_BUTES_
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CountButeTags()
+//
+//	PURPOSE:	Count the tags <prefix>0, <prefix>1, ... that exist.
+//
+// ----------------------------------------------------------------------- //
+
+static int CountButeTags(CButeMgr* pButeMgr, const std::string& sPrefix)
+{
+	// RETAIL: 0x1019e670 (name ours)
+	char szTag[32];
+	// RETAIL: the loop is not rotated (one sprintf); ours is.
+	int nCount = 0;
+	for(;;)
+	{
+		sprintf( szTag, "%s%d", sPrefix.c_str(), nCount );
+		if( !pButeMgr->Exist( szTag ))
+			break;
+		nCount++;
+	}
+	return nCount;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	CLASS:		CButeRecordReader
+//
+//	PURPOSE:	Read the tags <prefix>0, <prefix>1, ... into a vector,
+//				one record for each tag, with a member function of the
+//				owner (RETAIL: 0x101a1bc0 for the weapon sets; the name
+//				is ours).
+//
+// ----------------------------------------------------------------------- //
+
+template< class T, class OWNER >
+class CButeRecordReader
+{
+public:
+
+	typedef bool (OWNER::*ReadFn)(T& Record, const CaselessInlineString& sTag);
+
+	CButeRecordReader(CButeMgr* pButeMgr, OWNER* pOwner)
+	{
+		m_pOwner = pOwner;
+		m_pButeMgr = pButeMgr;
+	}
+
+	bool Read(std::string sPrefix, ReadFn pfnRead, std::vector<T>& vecRecords)
+	{
+		int nCount = CountButeTags( m_pButeMgr, sPrefix );
+		vecRecords.reserve( nCount );
+
+		for( int i = 0; i < nCount; ++i )
+		{
+			CaselessInlineString sTag( sPrefix.begin( ), sPrefix.end( ), sPrefix.get_allocator( ));
+
+			char szNum[12];
+			_itoa( i, szNum, 10 );
+			sTag += szNum;
+
+			T Record;
+			(m_pOwner->*pfnRead)( Record, sTag );
+			vecRecords.push_back( Record );
+		}
+
+		return false;
+	}
+
+	CButeMgr*	m_pButeMgr;
+	OWNER*		m_pOwner;
+};
 
 
 // ----------------------------------------------------------------------- //
@@ -90,6 +165,12 @@ LTBOOL CAIButeMgr::Init(const char* szAttributeFile)
 	// Set up global pointer
 
 	g_pAIButeMgr = this;
+
+	// RETAIL: 0x1019eccb: Tron's weapon sets, read before the templates
+	// that point at them.
+
+	CButeRecordReader<AIBM_WeaponSet, CAIButeMgr> WeaponSetReader( &m_buteMgr, this );
+	WeaponSetReader.Read( "WeaponSet", &CAIButeMgr::ReadWeaponSet, m_lstWeaponSets );
 
 	// See how many attribute templates there are
 
@@ -841,6 +922,115 @@ void CAIButeMgr::SetRules()
 void CAIButeMgr::SetAttract()
 {
     m_Attract.fNoTargetTime = CButeTools::GetValidatedDouble(m_buteMgr, "Attract", "NoTargetTime");
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIButeMgr::ReadWeaponSet()
+//
+//	PURPOSE:	Read one weapon set: its name, then a record for each
+//				"Weapon%d" that names a weapon.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIButeMgr::ReadWeaponSet(AIBM_WeaponSet& WeaponSet, const CaselessInlineString& sTag)
+{
+	// RETAIL: 0x101a0d60
+	char szValue[128];
+	CButeTools::GetValidatedString( m_buteMgr, sTag.c_str( ), "Name", szValue, sizeof( szValue ));
+	WeaponSet.sName = CaselessString( szValue ).c_str( );
+
+	char szAttribute[40];
+	char szProp[80];
+
+	for( int i = 0; ; ++i )
+	{
+		sprintf( szAttribute, "Weapon%d", i );
+		if( !m_buteMgr.Exist( sTag.c_str( ), szAttribute ))
+			break;
+
+		CButeTools::GetValidatedString( m_buteMgr, sTag.c_str( ), szAttribute, szValue, sizeof( szValue ));
+		const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon( szValue );
+		if( !pWeapon )
+			break;
+
+		AIBM_WeaponSetRecord Record;
+
+		sprintf( szAttribute, "Prop%d", i );
+		CButeTools::GetValidatedString( m_buteMgr, sTag.c_str( ), szAttribute, szProp, sizeof( szProp ));
+		Record.Locks.eProp = CAnimationMgrList::GetPropFromName( szProp );
+
+		sprintf( szAttribute, "NormalLock%d", i );
+		Record.Locks.bNormalLock = !!CButeTools::GetValidatedBool( m_buteMgr, sTag.c_str( ), szAttribute );
+
+		sprintf( szAttribute, "MovementLock%d", i );
+		Record.Locks.bMovementLock = !!CButeTools::GetValidatedBool( m_buteMgr, sTag.c_str( ), szAttribute );
+
+		sprintf( szAttribute, "UnlockAnimPostFireNormalLock%d", i );
+		Record.Locks.bUnlockAnimPostFireNormalLock = !!CButeTools::GetValidatedBool( m_buteMgr, sTag.c_str( ), szAttribute );
+
+		sprintf( szAttribute, "UnlockAnimPostFireWithMovementLock%d", i );
+		Record.Locks.bUnlockAnimPostFireWithMovementLock = !!CButeTools::GetValidatedBool( m_buteMgr, sTag.c_str( ), szAttribute );
+
+		Record.nWeaponId = pWeapon->nId;
+		WeaponSet.vecRecords.push_back( Record );
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AIBM_WeaponSet::GetWeaponProp() etc.
+//
+//	PURPOSE:	Look up a weapon's record in the set.
+//
+// ----------------------------------------------------------------------- //
+
+EnumAnimProp AIBM_WeaponSet::GetWeaponProp(const WEAPON* pWeapon)
+{
+	// RETAIL: 0x101a10e0
+	AIBM_WeaponLocks* pLocks = FindLocks( pWeapon );
+	if( pLocks )
+		return pLocks->eProp;
+
+	return kAP_Invalid;
+}
+
+bool AIBM_WeaponSet::IsLocked(const WEAPON* pWeapon, bool bMovement)
+{
+	// RETAIL: 0x101a1100
+	AIBM_WeaponLocks* pLocks = FindLocks( pWeapon );
+	if( pLocks )
+		return bMovement ? pLocks->bMovementLock : pLocks->bNormalLock;
+
+	return false;
+}
+
+bool AIBM_WeaponSet::IsUnlockedPostFire(const WEAPON* pWeapon, bool bMovement)
+{
+	// RETAIL: 0x101a1130
+	AIBM_WeaponLocks* pLocks = FindLocks( pWeapon );
+	if( pLocks )
+		return bMovement ? pLocks->bUnlockAnimPostFireWithMovementLock : pLocks->bUnlockAnimPostFireNormalLock;
+
+	return false;
+}
+
+AIBM_WeaponLocks* AIBM_WeaponSet::FindLocks(const WEAPON* pWeapon)
+{
+	// RETAIL: 0x101a1160
+	std::vector<AIBM_WeaponSetRecord>::iterator it;
+	for( it = vecRecords.begin( ); it != vecRecords.end( ); ++it )
+	{
+		if( it->nWeaponId == pWeapon->nId )
+			break;
+	}
+
+	if( it != vecRecords.end( ))
+		return &it->Locks;
+
+	return LTNULL;
 }
 
 void CAIButeMgr::SetDEdit()

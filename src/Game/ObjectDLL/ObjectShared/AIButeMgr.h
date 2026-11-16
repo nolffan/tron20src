@@ -43,19 +43,38 @@ typedef std::map<EnumAISenseType, LTFLOAT> AISenseDistanceMap;
 // RETAIL: Tron's AI weapon sets: a list of 0x18-byte entries in CAIButeMgr
 // (+0x113c), a name then a vector of 12-byte records (the default one's
 // ctor is retail 0x1019f8e0, its dtor 0x1019f950); a template points at
-// its set (SetTemplate 0x1019f7cc). The records are not identified yet;
-// the names are ours
+// its set (SetTemplate 0x1019f7cc). CAIButeMgr::ReadWeaponSet (0x101a0d60)
+// reads a record per "Weapon%d" of a "WeaponSet%d" tag. The names are ours
+// where the bute attributes do not give them.
+struct WEAPON;
+enum EnumAnimProp;
+
+struct AIBM_WeaponLocks
+{
+	EnumAnimProp	eProp;									// "Prop%d"
+	bool			bNormalLock;							// "NormalLock%d"
+	bool			bMovementLock;							// "MovementLock%d"
+	bool			bUnlockAnimPostFireNormalLock;			// "UnlockAnimPostFireNormalLock%d"
+	bool			bUnlockAnimPostFireWithMovementLock;	// "UnlockAnimPostFireWithMovementLock%d"
+};
+
 struct AIBM_WeaponSetRecord
 {
-	uint32	m_xTronUnknown0;
-	uint32	m_xTronUnknown4;
-	uint32	m_xTronUnknown8;
+	uint8				nWeaponId;
+	AIBM_WeaponLocks	Locks;
 };
 
 struct AIBM_WeaponSet
 {
 	CaselessInlineString				sName;	// RETAIL: compared with _memicmp, length inline (0x1019f7f3)
 	std::vector<AIBM_WeaponSetRecord>	vecRecords;
+
+	// RETAIL: 0x101a10e0..0x101a1160 (callers: CAI 0x1012fc10, the shoot
+	// strategy 0x102266b0, 0x10226a1f)
+	EnumAnimProp			GetWeaponProp(const WEAPON* pWeapon);
+	bool					IsLocked(const WEAPON* pWeapon, bool bMovement);
+	bool					IsUnlockedPostFire(const WEAPON* pWeapon, bool bMovement);
+	AIBM_WeaponLocks*		FindLocks(const WEAPON* pWeapon);
 };
 
 typedef std::vector<AIBM_WeaponSet> AIBM_WeaponSetList;
@@ -381,6 +400,7 @@ class CAIButeMgr : public CGameButeMgr
 		void SetTextIDs();
 		void SetSenses();
 		void SetAttract();
+		bool ReadWeaponSet(AIBM_WeaponSet& WeaponSet, const CaselessInlineString& sTag);	// RETAIL: 0x101a0d60 (name ours)
 		void SetRules();
 		void SetDEdit();
 
