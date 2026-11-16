@@ -90,7 +90,7 @@ class GadgetTarget : public Prop
 		LTBOOL		m_bInfiniteDisables;
 		LTBOOL		m_bInfiniteActivates;
 		LTBOOL		m_bOn;
-		LTBOOL		m_bRestoreFlagsOnLoad;
+		// RETAIL: Tron has no m_bRestoreFlagsOnLoad (ctor 0x101bbe50, OnSave 0x101bdfd0)
 
 		LTObjRefNotifier	m_hAttachedModel;
 		LTObjRefNotifier	m_hLight;

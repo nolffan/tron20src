@@ -254,7 +254,6 @@ GadgetTarget::GadgetTarget( )
 	m_bInfiniteDisables		( LTFALSE ),
 	m_bInfiniteActivates	( LTFALSE ),
 	m_bOn					( LTTRUE ),
-	m_bRestoreFlagsOnLoad	( LTFALSE ),
 	m_eLightPos				( eLightPos1 ),
 	m_nGTID					( GTMGR_INVALID_ID ),
 	m_nTeamID				( INVALID_TEAM )
@@ -845,9 +844,6 @@ void GadgetTarget::HandleStoppedMsg( const CParsedMsg &cMsg )
         m_hSound = LTNULL;
 	}
 
-	//when we load, we don't want our flags to be reset
-	m_bRestoreFlagsOnLoad = LTFALSE;
-
 	if( fTime > 0.0f )
 	{
 		// The client stopped disabling us
@@ -1022,7 +1018,6 @@ void GadgetTarget::SetupDisablingState( HOBJECT hSender )
 	
 	// Don't let clients try to disable us if we already are being disabled...
 
-	m_bRestoreFlagsOnLoad = LTTRUE;
 	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, m_dwGadgetUsrFlgs );
 
 	// Play the disabling sound...
@@ -1095,7 +1090,6 @@ void GadgetTarget::SetupDisabledState( LTBOOL bDestroyed  )
 	m_bDisabled = LTTRUE;
 	
 	// We are no longer able to be disabled...
-	m_bRestoreFlagsOnLoad = LTFALSE;
 	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, m_dwGadgetUsrFlgs );
 
 	// Play the disabled sound...
@@ -1406,6 +1400,9 @@ LTBOOL GadgetTarget::OnSave( ILTMessage_Write *pMsg )
 	SAVE_HSTRING( m_hstrDisabledCmd );
 	SAVE_HSTRING( m_hstrPowerOffCmd );
 	SAVE_DWORD	( m_dwGadgetUsrFlgs );
+	// RETAIL: 0x101be0b2: Tron saves if the disabling sound plays, and has
+	// no m_bRestoreFlagsOnLoad nor the activate flag in the save
+	SAVE_BOOL	( m_hSound != LTNULL );
 	SAVE_BOOL	( m_bDisabled );
 	SAVE_BOOL	( m_bDisableRequested );
 	SAVE_DWORD	( m_dwCodeID );
@@ -1413,16 +1410,10 @@ LTBOOL GadgetTarget::OnSave( ILTMessage_Write *pMsg )
 	SAVE_BOOL	( m_bInfiniteDisables );
 	SAVE_BOOL	( m_bInfiniteActivates );
 	SAVE_BOOL	( m_bOn );
-	SAVE_BOOL	( m_bRestoreFlagsOnLoad );
 	SAVE_HOBJECT( m_hAttachedModel );
     SAVE_HOBJECT( m_hLight );
     SAVE_BYTE	((uint8)m_eLightPos);
 	SAVE_DWORD	( m_nGTID );
-
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( m_hObject, OFT_User, dwFlags );
-
-	SAVE_bool( !!(dwFlags & USRFLG_CAN_ACTIVATE) );
 
 	return LTTRUE;
 }
@@ -1454,6 +1445,8 @@ LTBOOL GadgetTarget::OnLoad( ILTMessage_Read *pMsg )
 	LOAD_HSTRING( m_hstrPowerOffCmd );
 	LOAD_DWORD	( m_dwGadgetUsrFlgs );
 	
+	LTBOOL bSoundPlaying;
+	LOAD_BOOL	( bSoundPlaying );
 	LOAD_BOOL	( m_bDisabled );
 	LOAD_BOOL	( m_bDisableRequested );
 	LOAD_DWORD	( m_dwCodeID );
@@ -1461,26 +1454,24 @@ LTBOOL GadgetTarget::OnLoad( ILTMessage_Read *pMsg )
 	LOAD_BOOL	( m_bInfiniteDisables );
 	LOAD_BOOL	( m_bInfiniteActivates );
 	LOAD_BOOL	( m_bOn );
-	LOAD_BOOL	( m_bRestoreFlagsOnLoad );
 	LOAD_HOBJECT( m_hAttachedModel );
 
     LOAD_HOBJECT( m_hLight );
     LOAD_BYTE_CAST(m_eLightPos, LightPosition);
 	LOAD_DWORD	( m_nGTID );
 
-	bool bCanActivate;
-	LOAD_bool( bCanActivate );
-
-	// Set our flags so we can be disabled or activated...
-
-	if( (!m_bDisabled || m_bInfiniteDisables) && m_bRestoreFlagsOnLoad )
+	// RETAIL: 0x101be3b3: Tron starts the disabling sound again
+	if( bSoundPlaying && !m_bDisabled && m_hstrDisablingSnd )
 	{
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, m_dwGadgetUsrFlgs, m_dwGadgetUsrFlgs );
-	}
+		const char *szSound = g_pLTServer->GetStringData( m_hstrDisablingSnd );
+		if( szSound )
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos( m_hObject, &vPos );
 
-	if( bCanActivate )
-	{
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE );
+			uint32 dwFlags = (PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
+			m_hSound = g_pServerSoundMgr->PlaySoundFromPos( vPos, szSound, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW, dwFlags );
+		}
 	}
 
 	// Load the Gadget Target Info 
