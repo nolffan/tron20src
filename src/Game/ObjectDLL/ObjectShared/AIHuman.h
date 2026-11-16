@@ -155,6 +155,8 @@ class CAIHuman : public CAI
 		// Engine methods
 
 		virtual LTBOOL ReadProp(ObjectCreateStruct *pInfo);
+		// RETAIL: Tron's (0x1016c7e0)
+		void ReadReinforcementProp(ObjectCreateStruct *pData);
         virtual void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         virtual void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
