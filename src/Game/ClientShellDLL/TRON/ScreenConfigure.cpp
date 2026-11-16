@@ -560,9 +560,9 @@ uint32 CScreenConfigure::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwP
 
 			CLTGUIColumnCtrl *pCtrl= (CLTGUIColumnCtrl *)m_pList[m_nType]->GetSelectedControl();
 
-			pCtrl->SetString(SCREEN_COLUMN_EQUALS, "=");
+			pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L"="));
 
-			pCtrl->SetString(SCREEN_COLUMN_KEY, " ");
+			pCtrl->SetString(SCREEN_COLUMN_KEY, std::wstring(L" "));
 
 
 
@@ -684,7 +684,7 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 	};
 
 	
-	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L""));
+	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L" "));
 
 	UpdateControlList();
 
