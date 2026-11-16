@@ -868,7 +868,7 @@ LTBOOL CScreenConfigure::CheckMouseWheel (DeviceInput* pInput)
 
 	Bind(nCommand, pInput->m_nObjectId, 0, szCommand, pInput->m_DeviceType);
 
-	pCtrl->SetString(SCREEN_COLUMN_EQUALS, "");
+	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring());
 
 	UpdateControlList();
 
