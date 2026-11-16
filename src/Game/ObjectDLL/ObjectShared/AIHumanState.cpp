@@ -4729,6 +4729,7 @@ void CAIHumanStateChase::Load(ILTMessage_Read *pMsg)
 	LOAD_TIME(m_fSeeEnemyTime);
 	LOAD_TIME(m_fEnduranceTime);
 	LOAD_TIME(m_fVisionBlockedTime);
+	LOAD_DWORD(m_xTronUnknownC0);	// RETAIL: 0x101ed62a
 }
 
 // ----------------------------------------------------------------------- //
@@ -4765,6 +4766,7 @@ void CAIHumanStateChase::Save(ILTMessage_Write *pMsg)
 	SAVE_TIME(m_fSeeEnemyTime);
 	SAVE_TIME(m_fEnduranceTime);
 	SAVE_TIME(m_fVisionBlockedTime);
+	SAVE_DWORD(m_xTronUnknownC0);	// RETAIL: 0x101ed934
 }
 
 // ----------------------------------------------------------------------- //
