@@ -131,6 +131,10 @@
 			void	ReadProps( CLinkList<FX_PROP> *pProps );
 			void	AddParticles( );
 			void	UpdateParticles( LTFLOAT tmCur );
+
+			// RETAIL: Tron's (0x10017d30). Moves vPos/rRot to where the
+			// follow type puts the system. The name is ours.
+			void	GetSpawnTransform( LTVector &vPos, LTRotation &rRot );
 	};
 
 #endif // __PARTICLESYSTEMFX__H_

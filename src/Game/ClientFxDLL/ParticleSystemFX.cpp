@@ -302,6 +302,9 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	if( !CBaseFX::Init( pLTClient, pData, pProps) ) 
 		return false;
 
+	// RETAIL: Tron's (0x10017ab7)
+	GetSpawnTransform( m_vCreatePos, m_rCreateRot );
+
 	ObjectCreateStruct	ocs;
 	
 	// Create Particle System
@@ -381,6 +384,135 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	}
 
 	return LTTRUE;
+}
+
+//------------------------------------------------------------------
+//
+//   FUNCTION : GetSpawnTransform()
+//
+//   PURPOSE  : RETAIL: Tron's (0x10017d30). Puts vPos and rRot where
+//				the follow type of the effect puts the system. The name
+//				is ours.
+//
+//------------------------------------------------------------------
+
+void CParticleSystemFX::GetSpawnTransform(LTVector &vPos, LTRotation &rRot)
+{
+	ILTModel *pModelLT = m_pLTClient->GetModelLT();
+
+	LTVector vOffset = GetProps()->m_vOffset + m_vTronUnknown;
+
+	// RETAIL: the system adds m_vTronUnknown a second time; the bouncy
+	// chunk (0x1000ff20) does not.
+	vOffset = vOffset + m_vTronUnknown;
+	LTVector vAlignedOffset = vOffset;
+
+	switch (GetProps()->m_nFollowType)
+	{
+		case UP_FIXED :
+		{
+			vPos = m_vCreatePos + vOffset;
+		}
+		break;
+
+		case UP_FOLLOW :
+		{
+			if (m_hParent)
+			{
+				// RETAIL: retail reads the parent's position into m_vPos,
+				// not into vPos.
+				m_pLTClient->GetObjectPos(m_hParent, &m_vPos);
+				vPos += vOffset;
+			}
+		}
+		break;
+
+		case UP_PLAYERVIEW :
+		{
+			// Let game code set our position.
+		}
+		break;
+
+		case UP_NODEATTACH :
+		{
+			LTransform lTrans;
+			HMODELNODE hNode;
+
+			if( LT_OK == pModelLT->GetNode( m_hParent, GetProps()->m_szAttach, hNode ) )
+			{
+				if( LT_OK == pModelLT->GetNodeTransform( m_hParent, hNode, lTrans, LTTRUE ) )
+				{
+					vPos	= lTrans.m_Pos + vAlignedOffset;
+					rRot	= lTrans.m_Rot;
+				}
+			}
+		}
+		break;
+
+		case UP_SOCKETATTACH :
+		{
+			LTransform		lTrans;
+			HMODELSOCKET	hSocket;
+
+			if( LT_OK == pModelLT->GetSocket( m_hParent, GetProps()->m_szAttach, hSocket ) )
+			{
+				if( LT_OK == pModelLT->GetSocketTransform( m_hParent, hSocket, lTrans, LTTRUE ) )
+				{
+					vPos	= lTrans.m_Pos + vAlignedOffset;
+					rRot	= lTrans.m_Rot;
+				}
+			}
+			else
+			{
+				if( GetAttachmentSocketTransform( m_hParent, GetProps()->m_szAttach, lTrans.m_Pos, lTrans.m_Rot ))
+				{
+					vPos	= lTrans.m_Pos + vAlignedOffset;
+					rRot	= lTrans.m_Rot;
+				}
+			}
+		}
+		break;
+
+		case UP_PVNODEATTACH :
+		{
+			LTransform lTrans;
+			HMODELNODE hNode;
+
+			if( LT_OK == pModelLT->GetNode( m_hParent, GetProps()->m_szAttach, hNode ) )
+			{
+				if( LT_OK == pModelLT->GetNodeTransform( m_hParent, hNode, lTrans, LTFALSE ) )
+				{
+					//grab the position of the object to compensate for offset
+					LTVector vObjectPos;
+					m_pLTClient->GetObjectPos(m_hParent, &vObjectPos);
+
+					vPos	= lTrans.m_Pos + vAlignedOffset + vObjectPos;
+					rRot	= lTrans.m_Rot;
+				}
+			}
+		}
+		break;
+
+		case UP_PVSOCKETATTACH:
+		{
+			LTransform		lTrans;
+			HMODELSOCKET	hSocket;
+
+			if( LT_OK == pModelLT->GetSocket( m_hParent, GetProps()->m_szAttach, hSocket ) )
+			{
+				if( LT_OK == pModelLT->GetSocketTransform( m_hParent, hSocket, lTrans, LTFALSE ) )
+				{
+					//grab the position of the object to compensate for offset
+					LTVector vObjectPos;
+					m_pLTClient->GetObjectPos(m_hParent, &vObjectPos);
+
+					vPos	= lTrans.m_Pos + vAlignedOffset + vObjectPos;
+					rRot	= lTrans.m_Rot;
+				}
+			}
+		}
+		break;
+	}
 }
 
 // ----------------------------------------------------------------------- //
