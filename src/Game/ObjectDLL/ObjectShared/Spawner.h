@@ -30,6 +30,10 @@ class Spawner : public GameBase
 
 		void	Setup( );
 
+		// RETAIL: Tron's (0x1014e040; also called by 0x1005f7c6): send the
+		// initial command to a spawned object. The name is ours
+		bool	SendInitialCommand( HOBJECT hSpawned );
+
 	protected :
 
         virtual uint32      EngineMessageFn(uint32 messageID, void *pData, LTFLOAT lData);
