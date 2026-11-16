@@ -343,7 +343,8 @@ void CProjectilePrankster::Update()
 void CProjectilePrankster::UpdateFlying()
 {
 	CCharacter *pOwner = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject(m_hFiredFrom));
-	LTVector vForward = pOwner->GetRotationWithPitch().Forward();
+	LTRotation rRot = pOwner->GetRotationWithPitch();
+	LTVector vForward = rRot.Forward();
 
 	LTVector vVel = vForward * (LTFLOAT)m_pAmmoData->pProjectileFX->nVelocity;
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);

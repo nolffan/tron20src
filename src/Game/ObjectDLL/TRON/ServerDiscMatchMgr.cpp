@@ -334,7 +334,8 @@ int CDiscMatch::RemovePlayer(CPlayerObj* pPlayer)
 		return -1;
 
 	int nAlive = 0;
-	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient())), false);
+	int nTeam = g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient()));
+	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(nTeam, false);
 	uint32 nNumClients = pTeam->GetNumClients();
 	for (uint32 i = 0; i < nNumClients; i++)
 	{
@@ -1877,7 +1878,8 @@ void CDiscMatchMgr::SpawnPlayer(CPlayerObj* pPlayer, int nArena)
 		return;
 	}
 
-	pPlayer->Respawn(2, false, (GameStartPoint*)m_Arenas[nArena]->GetSpectatorPoint(pPlayer), LTNULL);
+	GameStartPoint* pPoint = (GameStartPoint*)m_Arenas[nArena]->GetSpectatorPoint(pPlayer);
+	pPlayer->Respawn(2, false, pPoint, LTNULL);
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
