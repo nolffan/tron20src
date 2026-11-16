@@ -138,7 +138,8 @@ LTBOOL CScreenConfigure::Build()
 
 	int nWidth = GetPageRight() - GetPageLeft();
 
-	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_MOVE_CONTROLS,CMD_MOVE_COM,LTNULL);
+	// RETAIL: 0x100563ae: the first is at the layout's MoveControlPos
+	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_MOVE_CONTROLS,CMD_MOVE_COM,LTNULL,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_CONFIGURE,"MoveControlPos"));
 	pCtrl->SetFixedWidth(nWidth);
 
 	pCtrl = AddTextItem(IDS_INV_CONTROLS,CMD_INV_COM,LTNULL);
@@ -167,7 +168,8 @@ LTBOOL CScreenConfigure::Build()
 	for (int nType = 0; nType < kNumCommandTypes; nType++)
 	{
 		m_pList[nType] = AddList(pos,nHt);
-		m_pList[nType]->SetFrameWidth(2);
+		// RETAIL: 0x1005657c: a solid frame texture
+		m_pList[nType]->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pList[nType]->SetIndent(LTIntPt(4,4));
 		m_pList[nType]->Show(LTFALSE);
 
