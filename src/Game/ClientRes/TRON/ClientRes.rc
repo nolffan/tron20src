@@ -2,12 +2,12 @@
 // ext/tools/rsrc2rc.py. Compiled, each resource is the retail one byte for
 // byte.
 //
-// The string IDs are retail's numbers. Build 69's ClientRes.h (and
-// ..\Shared\ClientResShared.h) is older than retail: most of its IDs have
-// other values or name other strings in retail. Thus a string has a name
-// from the header only where the name contains its own number
+// The string IDs are retail's numbers. The IDs that the game code uses
+// have retail's values in ..\Shared\ClientResShared.h and ClientRes.h
+// (found from the strings' text), and these strings have their names here.
+// The other IDs in the headers are Build 69's, older than retail: a string
+// has one of those names only where the name contains its own number
 // (IDS_DIALOGUE_10143 and similar); the other strings keep their numbers.
-// The header is not changed here, as the game code uses its IDs.
 //
 // arrow.cur (cursor 125) is retail art: build/appres.py writes it out of
 // the retail image into src/Game/built/retail/ClientRes at build time.
@@ -28,38 +28,38 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    2                               "SINGLE PLAYER"
+    IDS_TITLE_GAME                  "SINGLE PLAYER"
     3                               "DIFFICULTY"
-    4                               "OPTIONS"
+    IDS_TITLE_OPTIONS               "OPTIONS"
     5                               "NEW GAME"
     6                               "LOAD GAME"
     7                               "SAVE GAME"
     8                               "CUSTOM LEVELS"
-    9                               "DISPLAY OPTIONS"
+    IDS_TITLE_DISPLAYOPTIONS        "DISPLAY OPTIONS"
     10                              "TEXTURE RESOLUTION"
-    11                              "PERFORMANCE"
-    12                              "SOUND"
+    IDS_TITLE_PERFORMANCE           "PERFORMANCE"
+    IDS_TITLE_SOUND                 "SOUND"
     13                              "KEYBOARD"
-    14                              "MOUSE"
+    IDS_TITLE_MOUSE                 "MOUSE"
     15                              "JOYSTICK"
 END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    144                             "Start a new game."
-    145                             "Load a saved game."
+    IDS_HELP_NEW                    "Start a new game."
+    IDS_HELP_LOAD                   "Load a saved game."
     146                             "Save the current game."
-    147                             "Load a custom level."
-    148                             "Create a new profile."
+    IDS_HELP_CUSTOM                 "Load a custom level."
+    IDS_HELP_PROFILE_CREATE         "Create a new profile."
     149                             "Return to the previous screen."
-    150                             "Set the game difficulty, which can be changed at any time."
-    151                             "Set display options."
-    152                             "Set audio options."
-    153                             "Set controller configurations."
+    IDS_HELP_DIFFICULTY             "Set the game difficulty, which can be changed at any time."
+    IDS_HELP_DISPLAY                "Set display options."
+    IDS_HELP_SOUND                  "Set audio options."
+    IDS_HELP_CONTROLS               "Set controller configurations."
     154                             "Choose renderer."
-    155                             "Set screen resolution and bit depth."
+    IDS_HELP_RESOLUTION             "Set screen resolution and bit depth."
     157                             "Set preset texture detail settings."
-    158                             "Set display options that may affect performance."
+    IDS_HELP_ADVDISPLAY             "Set display options that may affect performance."
     159                             "Automatically recenter view."
 END
 
@@ -175,19 +175,19 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    160                             "Toggles run as the default movement."
+    IDS_HELP_RUNLOCK                "Toggles run as the default movement."
     161                             "Toggles use of crosshair."
-    163                             "Sets the level of detail for character shadows."
-    166                             "Detail textures"
-    167                             "Toggles the use of detail textures."
-    168                             "Environment map"
-    169                             "Toggles the use of environment maps."
-    170                             "Dynamic lights"
-    171                             "Toggles the use of dynamic lights."
-    172                             "Triple buffering"
+    IDS_HELP_SHADOWS                "Sets the level of detail for character shadows."
+    IDS_DETAILTEXTURES              "Detail textures"
+    IDS_HELP_DETAILTEXTURES         "Toggles the use of detail textures."
+    IDS_ENVIRONMENT_MAP             "Environment map"
+    IDS_HELP_ENVIRONMENT_MAP        "Toggles the use of environment maps."
+    IDS_DYNAMICLIGHTS               "Dynamic lights"
+    IDS_HELP_DYNAMICLIGHTS          "Toggles the use of dynamic lights."
+    IDS_TRIPLE_BUFF                 "Triple buffering"
     173                             "Toggles the use of triple buffering."
-    174                             "Press Enter or click the left mouse button to set a control for this action."
-    175                             "Assign keyboard, mouse, and game controller actions."
+    IDS_HELP_SETCONTROL             "Press Enter or click the left mouse button to set a control for this action."
+    IDS_HELP_CUSTOMCONTROLS         "Assign keyboard, mouse, and game controller actions."
 END
 
 STRINGTABLE DISCARDABLE
@@ -436,17 +436,17 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    176                             "Set mouse configuration options."
-    177                             "Set joystick or gamepad configuration options."
+    IDS_HELP_MOUSE                  "Set mouse configuration options."
+    IDS_HELP_JOYSTICK               "Set joystick or gamepad configuration options."
     178                             "Set advanced controls options."
-    179                             "Restore controls to default values."
+    IDS_HELP_RESTORE                "Restore controls to default values."
     180                             "Toggle playing of sound effects."
-    181                             "Set volume of sound effects."
-    182                             "Set quality of sound effects. This may affect performance."
+    IDS_HELP_SOUNDVOL               "Set volume of sound effects."
+    IDS_HELP_SOUNDQUAL              "Set quality of sound effects. This may affect performance."
     183                             "Toggle playing of music."
-    184                             "Set volume of music."
-    185                             "Load the highlighted custom level."
-    186                             "Toggle use of joystick or gamepad."
+    IDS_HELP_MUSICVOL               "Set volume of music."
+    IDS_HELP_CUSTOMLEVEL            "Load the highlighted custom level."
+    IDS_HELP_USEJOYSTICK            "Toggle use of joystick or gamepad."
     187                             "Toggle inversion on this axis."
     188                             "Set the dead zone for this axis."
     189                             "Toggle between analog and digital."
@@ -1243,10 +1243,10 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    192                             "Toggle inversion of the mouse."
-    193                             "Toggle use of mouse to look."
-    194                             "Set sensitivity of the mouse."
-    195                             "Sets how much the mouse movement is smoothed."
+    IDS_HELP_INVERTY                "Toggle inversion of the mouse."
+    IDS_HELP_MOUSELOOK              "Toggle use of mouse to look."
+    IDS_HELP_MOUSE_SENSE            "Set sensitivity of the mouse."
+    IDS_HELP_MOUSE_INPUT            "Sets how much the mouse movement is smoothed."
     196                             "Set the action assigned to this button."
     197                             "Set the normal turning speed for keyboard controls."
     198                             "Set the fast turn speed for keyboard controls."
@@ -1746,7 +1746,7 @@ BEGIN
     233                             "< Remove All"
     234                             "Please select the levels to be played in this game."
     235                             "Accept these settings."
-    239                             "Movement"
+    IDS_MOVE_CONTROLS               "Movement"
 END
 
 STRINGTABLE DISCARDABLE
@@ -1830,14 +1830,14 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    240                             "Interaction"
-    241                             "View"
-    242                             "Status"
-    243                             "Set keyboard configuration options."
-    245                             "Game"
-    246                             "Set gameplay and content options."
-    247                             "Subtitles"
-    255                             "Toggle use of subtitles."
+    IDS_INV_CONTROLS                "Interaction"
+    IDS_VIEW_CONTROLS               "View"
+    IDS_MISC_CONTROLS               "Status"
+    IDS_HELP_KEYBOARD               "Set keyboard configuration options."
+    IDS_GAME_OPTIONS                "Game"
+    IDS_HELP_GAME_OPTIONS           "Set gameplay and content options."
+    IDS_DISPLAY_SUBTITLES           "Subtitles"
+    IDS_HELP_SUBTITLES              "Toggle use of subtitles."
 END
 
 STRINGTABLE DISCARDABLE
@@ -1887,19 +1887,19 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     272                             "Current version"
-    273                             "Performance"
-    274                             "Set options related to performance."
-    275                             "Special effects"
-    276                             "Set special effects options."
-    277                             "PolyGrid bumpmapping"
-    278                             "Toggles use of bump mapping on polygrids."
-    279                             "PolyGrid fresnel"
-    280                             "Toggles use of fresnel on polygrids to make reflections more realistic."
-    281                             "Texture resolution"
-    282                             "Sets the resolution of textures used in the game."
+    IDS_PERFORMANCE                 "Performance"
+    IDS_HELP_PERFORMANCE            "Set options related to performance."
+    IDS_SFX                         "Special effects"
+    IDS_HELP_SFX                    "Set special effects options."
+    IDS_POLYGRIDBUMP                "PolyGrid bumpmapping"
+    IDS_HELP_POLYGRIDBUMP           "Toggles use of bump mapping on polygrids."
+    IDS_POLYGRIDFRES                "PolyGrid fresnel"
+    IDS_HELP_POLYGRIDFRES           "Toggles use of fresnel on polygrids to make reflections more realistic."
+    IDS_TEXTURE_RES                 "Texture resolution"
+    IDS_HELP_TEXTURE_RES            "Sets the resolution of textures used in the game."
     285                             "Bilinear filtering"
     286                             "Toggles use of bilinear filtering on textures."
-    287                             "Shadows"
+    IDS_SHADOWS                     "Shadows"
 END
 
 STRINGTABLE DISCARDABLE
@@ -1951,8 +1951,8 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    288                             "High"
-    289                             "Low"
+    IDS_SOUND_HIGH                  "High"
+    IDS_SOUND_LOW                   "Low"
     290                             "Quick load (F9)"
     291                             "Quick save (F5)"
     292                             "Auto-save"
@@ -2008,14 +2008,14 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     16                              "Use number keys to make selection"
-    18                              "PLAYER PROFILE"
+    IDS_TITLE_PROFILE               "PLAYER PROFILE"
     19                              "PLAYER"
     20                              "HELP FILES"
-    21                              "CONTROLS"
-    22                              "CONFIGURE CONTROLS"
+    IDS_TITLE_CONTROLS              "CONTROLS"
+    IDS_TITLE_CONFIGURE             "CONFIGURE CONTROLS"
     23                              "MULTIPLAYER"
     24                              "GAME OPTIONS"
-    27                              "GAME OPTIONS"
+    IDS_TITLE_GAME_OPTIONS          "GAME OPTIONS"
     29                              "ADVANCED DISPLAY OPTIONS"
     30                              "SPECIAL EFFECTS"
     31                              "JOIN GAME"
@@ -2024,10 +2024,10 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     311                             "Return to game."
-    312                             "Trilinear filtering"
-    313                             "Toggles the use of trilinear filtering."
-    314                             "Anisotropic filtering"
-    315                             "Toggles use of anisotropic filtering."
+    IDS_TRILINEAR                   "Trilinear filtering"
+    IDS_HELP_TRILINEAR              "Toggles the use of trilinear filtering."
+    IDS_ANISOTROPIC                 "Anisotropic filtering"
+    IDS_HELP_ANISOTROPIC            "Toggles use of anisotropic filtering."
     316                             "World"
     317                             "Weapons"
     318                             "Characters"
@@ -2188,8 +2188,8 @@ BEGIN
     326                             "Sets the detail level of Special Effects textures."
     327                             "Sets the detail level of Sky textures."
     328                             "Overall"
-    329                             "Tracers"
-    330                             "Toggles tracers effects on weapons."
+    IDS_TRACERS                     "Tracers"
+    IDS_HELP_TRACERS                "Toggles tracers effects on weapons."
     331                             "Display mode"
     332                             "Server not responding."
     333                             "Details are not available because the game server is a different version."
@@ -2353,21 +2353,21 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    336                             "Environmental"
-    337                             "Sets the amount of detail used in the environment."
+    IDS_ENV_DETAIL                  "Environmental"
+    IDS_HELP_ENV_DETAIL             "Sets the amount of detail used in the environment."
     338                             "Displays the names of those that sacrificed their lives for your entertainment."
     339                             "Music"
-    340                             "Music volume"
+    IDS_SOUND_MUSICVOL              "Music volume"
     341                             "Sound effects"
-    342                             "Sound effects volume"
-    343                             "Sound effects quality"
+    IDS_SOUND_FXVOL                 "Sound effects volume"
+    IDS_SOUND_QUALITY               "Sound effects quality"
     344                             "None"
     345                             "Direct music"
-    346                             "Low"
-    347                             "Medium"
-    348                             "High"
+    IDS_LOW                         "Low"
+    IDS_MEDIUM                      "Medium"
+    IDS_HIGH                        "High"
     349                             "Customized"
-    350                             "Always mouse look"
+    IDS_MOUSE_MOUSELOOK             "Always mouse look"
     351                             "Auto-center"
 END
 
@@ -2392,13 +2392,13 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    352                             "Invert y axis"
-    353                             "Mouse sensitivity"
-    354                             "Mouse smoothing"
-    355                             "Left button"
-    356                             "Middle button"
-    357                             "Right button"
-    358                             "Use joystick/gamepad"
+    IDS_MOUSE_INVERTYAXIS           "Invert y axis"
+    IDS_MOUSE_SENSITIVITY           "Mouse sensitivity"
+    IDS_MOUSE_INPUTRATE             "Mouse smoothing"
+    IDS_MOUSE_LEFTBUTTON            "Left button"
+    IDS_MOUSE_MIDDLEBUTTON          "Middle button"
+    IDS_MOUSE_RIGHTBUTTON           "Right button"
+    IDS_JOYSTICK_USE                "Use joystick/gamepad"
     359                             "Turn left/right"
     360                             "Look up/down"
     361                             "Move ahead/back"
@@ -2412,11 +2412,11 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    3800                            "Requires %1!d! energy"
-    3801                            "Transfer energy"
-    3802                            "Transferring energy"
-    3803                            "You do not have enough energy to complete this transfer."
-    3804                            "Energy transfer successful."
+    IDS_REQUIRES_ENERGY             "Requires %1!d! energy"
+    IDS_TRANSFER_ENERGY             "Transfer energy"
+    IDS_TRANSFERRING_ENERGY         "Transferring energy"
+    IDS_INSUFFICIENT_ENERGY         "You do not have enough energy to complete this transfer."
+    IDS_TRANSFER_ENERGY_SUCCESS     "Energy transfer successful."
     3805                            "Download Energy"
     3806                            "Downloading Energy"
     3807                            "Download Health"
@@ -2441,16 +2441,16 @@ BEGIN
     371                             "Set the action associated with this joystick/gamepad axis."
     372                             "Bit depth"
     373                             "Anti-aliasing"
-    374                             "Always run"
-    375                             "Easy"
-    376                             "Normal"
-    377                             "Hard"
-    378                             "Insane"
+    IDS_ADVCONTROLS_RUNLOCK         "Always run"
+    IDS_NEW_EASY                    "Easy"
+    IDS_NEW_MEDIUM                  "Normal"
+    IDS_NEW_HARD                    "Hard"
+    IDS_NEW_INSANE                  "Insane"
     379                             "Crosshair"
     380                             "Renderer"
-    381                             "Resolution"
+    IDS_DISPLAY_RESOLUTION          "Resolution"
     382                             "Difficulty"
-    383                             "Controls"
+    IDS_CONTROLS                    "Controls"
 END
 
 STRINGTABLE DISCARDABLE
@@ -2579,7 +2579,7 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    384                             "Load the selected profile."
+    IDS_HELP_PROFILE_LOAD           "Load the selected profile."
     385                             "Server name"
     386                             "Players"
     387                             "Ping"
@@ -2793,14 +2793,14 @@ BEGIN
     35                              "PLAYER"
     37                              "BUILDNOTES"
     40                              "SYSTEM"
-    46                              "Press F9 to QuickLoad.\nPress any other key to go to the Load Screen"
+    IDS_HELP_FAILURE                "Press F9 to QuickLoad.\nPress any other key to go to the Load Screen"
     47                              "Press any key to continue."
 END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    467                             "Speech volume"
-    468                             "Set volume of speech."
+    IDS_SPEECH_FXVOL                "Speech volume"
+    IDS_HELP_SPEECHVOL              "Set volume of speech."
     475                             "You were derezzed!"
     477                             "%1!s! was derezzed!"
 END
@@ -3098,7 +3098,7 @@ BEGIN
     497                             "CD Key"
     498                             "Invalid bandwidth. Please enter a value between %1!d! and %2!d!."
     500                             "%1!s! - %2!s!"
-    501                             "%1!d!x%2!d!x%3!d!"
+    IDS_DMODE_RESOLUTION            "%1!d!x%2!d!x%3!d!"
     503                             "Join game"
     504                             "Player name"
     505                             "Please wait while TRON"
@@ -3394,8 +3394,8 @@ BEGIN
     535                             "Add all maps to the list of maps."
     536                             "Remove the selected map from the list."
     537                             "Remove all maps from the list."
-    538                             "Synchronization"
-    539                             "Synchronizes the screen flip to the device to prevent shearing."
+    IDS_VSYNC                       "Synchronization"
+    IDS_HELP_VSYNC                  "Synchronizes the screen flip to the device to prevent shearing."
 END
 
 STRINGTABLE DISCARDABLE
@@ -3599,16 +3599,16 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     545                             "Enter a CD Key to unlock internet games."
-    546                             "Music quality"
-    547                             "Sets the fidelity of music. This will affect performance."
-    548                             "Enabling the high quality music may decrease overall game performance. Do you wish to enable high quality music?"
-    549                             "High quality sounds use a large amount of memory and this may affect game performance. Do you wish to enable high quality sounds?"
+    IDS_MUSIC_QUALITY               "Music quality"
+    IDS_HELP_MUSIC_QUALITY          "Sets the fidelity of music. This will affect performance."
+    IDS_CONFIRM_MUSIC               "Enabling the high quality music may decrease overall game performance. Do you wish to enable high quality music?"
+    IDS_CONFIRM_SOUND               "High quality sounds use a large amount of memory and this may affect game performance. Do you wish to enable high quality sounds?"
     550                             "Player model"
     551                             "Run a sample level to test performance options."
     552                             "Available missions"
     553                             "Testing Performance Settings"
-    554                             "(Display resolution will be reset.)"
-    555                             "Precache assets"
+    IDS_RES_DIFFERS                 "(Display resolution will be reset.)"
+    IDS_PRECACHE                    "Precache assets"
     556                             "Saved games"
     558                             "Disconnect from Server"
 END
@@ -3711,19 +3711,19 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     560                             "End game"
-    561                             "Makes the game more smooth, but increases load times and memory usage."
-    562                             "Avg Frame Rate: %1!d!"
-    563                             "Test Complete"
+    IDS_HELP_PRECACHE               "Makes the game more smooth, but increases load times and memory usage."
+    IDS_PERFORMANCE_FPS_AVE         "Avg Frame Rate: %1!d!"
+    IDS_PERFORMANCE_RESULTS         "Test Complete"
     564                             "Performance optimization"
     565                             "Select preset performance options for high, middle, and low-end systems."
     566                             "Low Detail"
     567                             "Medium Detail"
     568                             "High Detail"
     571                             "Starting next level ..."
-    572                             "Min Frame Rate: %1!d!"
-    573                             "Max Frame Rate: %1!d!"
-    574                             "Your joystick or gamepad is not currently configured. Do you want to configure it now?"
-    575                             "Effects"
+    IDS_PERFORMANCE_FPS_MIN         "Min Frame Rate: %1!d!"
+    IDS_PERFORMANCE_FPS_MAX         "Max Frame Rate: %1!d!"
+    IDS_JOYSTICK_UNBOUND            "Your joystick or gamepad is not currently configured. Do you want to configure it now?"
+    IDS_FX_DETAIL                   "Effects"
 END
 
 STRINGTABLE DISCARDABLE
@@ -3808,19 +3808,19 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    576                             "Control the amount of detail in effects such as explosions, debris and weapon impacts."
-    577                             "%1!d!%% below %2!d!% FPS"
-    578                             "%1!d!%% between %2!d!% and %3!d!% FPS"
-    579                             "Restoring the default settings will override all changes you have made to control configurations. Do you want to continue?"
+    IDS_HELP_FX_DETAIL              "Control the amount of detail in effects such as explosions, debris and weapon impacts."
+    IDS_PERFORMANCE_FPS_BELOW_MIN   "%1!d!%% below %2!d!% FPS"
+    IDS_PERFORMANCE_FPS_MINTOMAX    "%1!d!%% between %2!d!% and %3!d!% FPS"
+    IDS_CONFIRM_RESTORE             "Restoring the default settings will override all changes you have made to control configurations. Do you want to continue?"
     580                             "Choose the axis used for turning."
     581                             "Choose the axis used for looking up and down."
     582                             "Choose the axis used for moving forward and backward."
     583                             "Choose the axis used for strafing right and left."
-    584                             "%1!d!%% above %2!d!% FPS"
+    IDS_PERFORMANCE_FPS_ABOVE_MAX   "%1!d!%% above %2!d!% FPS"
     585                             "Performance test aborted."
-    588                             "Hardware cursor"
-    589                             "Toggles use of the hardware cursor."
-    590                             "Enabling the hardware cursor provides smoother cursor movement.  However, some video cards do not support use of a hardware cursor. Do you wish to enable the hardware cursor?"
+    IDS_HARDWARE_CURSOR             "Hardware cursor"
+    IDS_HELP_HARDWARE_CURSOR        "Toggles use of the hardware cursor."
+    IDS_CONFIRM_CURSOR              "Enabling the hardware cursor provides smoother cursor movement.  However, some video cards do not support use of a hardware cursor. Do you wish to enable the hardware cursor?"
 END
 
 STRINGTABLE DISCARDABLE
@@ -4059,10 +4059,10 @@ BEGIN
     609                             "Detecting servers ..."
     610                             "Connecting to server"
     611                             "a player"
-    614                             "Set Difficulty to Easy. Difficulty can be changed at any time."
-    615                             "Set Difficulty to Medium. Difficulty can be changed at any time."
-    616                             "Set Difficulty to Hard. Difficulty can be changed at any time."
-    617                             "Set Difficulty to Insane. Difficulty can be changed at any time."
+    IDS_HELP_EASY                   "Set Difficulty to Easy. Difficulty can be changed at any time."
+    IDS_HELP_MEDIUM                 "Set Difficulty to Medium. Difficulty can be changed at any time."
+    IDS_HELP_HARD                   "Set Difficulty to Hard. Difficulty can be changed at any time."
+    IDS_HELP_INSANE                 "Set Difficulty to Insane. Difficulty can be changed at any time."
     618                             "The level of difficulty may be changed at any time during the mission on the GAME OPTIONS screen."
     623                             "(servers %1!d!-%2!d!)"
 END
@@ -4070,12 +4070,12 @@ END
 STRINGTABLE DISCARDABLE
 BEGIN
     48                              "Normal"
-    49                              "Test settings"
-    50                              "Custom"
-    51                              "On"
-    52                              "Off"
-    53                              "Yes"
-    54                              "No"
+    IDS_PERFORMANCE_TEST            "Test settings"
+    IDS_CUSTOM                      "Custom"
+    IDS_ON                          "On"
+    IDS_OFF                         "Off"
+    IDS_YES                         "Yes"
+    IDS_NO                          "No"
     55                              "None"
     56                              "Few"
     57                              "Some"
@@ -4084,7 +4084,7 @@ BEGIN
     60                              "Close"
     61                              "   -   "
     62                              "Back"
-    63                              "Create"
+    IDS_CREATE                      "Create"
 END
 
 STRINGTABLE DISCARDABLE
@@ -4098,7 +4098,7 @@ BEGIN
     630                             "Status: Idle (%1!d! servers)"
     631                             "Status: Pinging Selected Server ... Done!"
     632                             "Connecting to GameSpy ..."
-    633                             "Found %1!s!!"
+    IDS_KEY_PICKUP                  "Found %1!s!!"
     638                             "Status: %1!s!!"
     639                             "Waiting"
 END
@@ -4121,7 +4121,7 @@ BEGIN
     646                             "DSL (Low)"
     647                             "Light cycle 3rd person camera"
     648                             "Specifies the default camera view while on a light cycle"
-    649                             "We recommend you lower your detail settings before playing the game."
+    IDS_PERFORMANCE_RECOMMEND_LOWER "We recommend you lower your detail settings before playing the game."
     650                             "Game paused"
     651                             "Unused"
     652                             "Connection speed"
@@ -4266,8 +4266,8 @@ STRINGTABLE DISCARDABLE
 BEGIN
     656                             "T1 or faster"
     657                             "Sets connection speed."
-    658                             "We recommend you raise your detail settings before playing the game."
-    659                             "The game should run acceptably with your current detail settings."
+    IDS_PERFORMANCE_RECOMMEND_HIGHER "We recommend you raise your detail settings before playing the game."
+    IDS_PERFORMANCE_RECOMMEND_CURRENT "The game should run acceptably with your current detail settings."
     660                             "Press a key ..."
     661                             "    [ empty ]"
     662                             "Press Enter to continue."
@@ -4334,15 +4334,15 @@ BEGIN
     673                             "Weapon"
     674                             "Key"
     675                             "Toggles whether view angle is set relative to joystick position."
-    676                             "Mouse"
-    677                             "Joystick"
+    IDS_DEVICE_MOUSE                "Mouse"
+    IDS_DEVICE_JOYSTICK             "Joystick"
     680                             "Network port"
     681                             "Enter the network port to be used."
     682                             "Port"
     683                             "Find servers"
     684                             "Search for servers."
-    685                             "Delete the selected profile."
-    686                             "Rename the selected profile."
+    IDS_HELP_PROFILE_DELETE         "Delete the selected profile."
+    IDS_HELP_PROFILE_RENAME         "Rename the selected profile."
     687                             "Are you certain you wish to delete the %1!s! profile?  Deleting the profile will remove all save games and player settings for that profile. "
 END
 
@@ -4353,9 +4353,9 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    688                             "Current Profile: %1!s!"
-    689                             "Enter a name for this profile:"
-    690                             "This will end your current game. Are you sure you want to continue?"
+    IDS_CURRENT_PROFILE             "Current Profile: %1!s!"
+    IDS_ENTER_PROFILE_NAME          "Enter a name for this profile:"
+    IDS_CONFIRM_NEWPROFILE          "This will end your current game. Are you sure you want to continue?"
     691                             "Parameters:"
     692                             "Select"
     693                             "Wins"
@@ -4418,14 +4418,14 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    64                              "Load"
-    65                              "Delete"
-    66                              "OK"
-    67                              "Cancel"
+    IDS_LOAD                        "Load"
+    IDS_DELETE                      "Delete"
+    IDS_OK                          "OK"
+    IDS_CANCEL                      "Cancel"
     69                              "Next"
     70                              "[Empty slot]"
-    71                              "Wheel Up"
-    72                              "Wheel Down"
+    IDS_WHEEL_UP                    "Wheel Up"
+    IDS_WHEEL_DOWN                  "Wheel Down"
     75                              "Single player"
     76                              "Multiplayer"
     77                              "Options"
@@ -4799,7 +4799,7 @@ BEGIN
     907                             "That key cannot be remapped."
     908                             "Sound FX must be enabled to change this value."
     909                             "Music must be enabled to change this value."
-    910                             "This will end your current game.  Proceed?"
+    IDS_ENDCURRENTGAME              "This will end your current game.  Proceed?"
     911                             "Reinitializing renderer"
 END
 
@@ -4807,8 +4807,8 @@ STRINGTABLE DISCARDABLE
 BEGIN
     912                             "Invalid 3D sound provider."
     913                             "Do you want to overwrite this saved game?"
-    914                             "Game saved."
-    915                             "Rebinding textures."
+    IDS_GAMESAVED                   "Game saved."
+    IDS_REBINDING_TEXTURES          "Rebinding textures."
     916                             "Rebinding lightmaps."
     917                             "This will shutdown the server and disconnect all clients.  Continue?"
     918                             "Retry light cycles?"
@@ -4883,17 +4883,17 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    80                              "New game"
-    81                              "Load game"
+    IDS_NEWGAME                     "New game"
+    IDS_LOADGAME                    "Load game"
     82                              "Save game"
-    83                              "Custom level"
-    84                              "Display"
-    85                              "Sound"
-    86                              "Keyboard"
-    87                              "Mouse"
-    88                              "Configure joystick/gamepad"
-    89                              "Restore defaults"
-    90                              "Configure controls"
+    IDS_CUSTOM_LEVEL                "Custom level"
+    IDS_DISPLAY                     "Display"
+    IDS_SOUND                       "Sound"
+    IDS_KEYBOARD                    "Keyboard"
+    IDS_MOUSE                       "Mouse"
+    IDS_JOYSTICK                    "Configure joystick/gamepad"
+    IDS_RESTOREDEFAULTS             "Restore defaults"
+    IDS_CONFIGURE                   "Configure controls"
     93                              "Normal turn speed"
     94                              "Fast turn speed"
     95                              "Up/down look speed"
@@ -6369,7 +6369,7 @@ BEGIN
     1238                            "Weapon 10"
     1239                            "Zoom in"
     1240                            "Zoom out"
-    1241                            "[unassigned]"
+    IDS_CONTROL_UNASSIGNED          "[unassigned]"
     1242                            "Toggle manual light cycle camera"
     1243                            "Browse help files"
     1245                            "Browse emails"
@@ -6510,12 +6510,12 @@ BEGIN
     119                             "Score:"
     120                             "Specifies a custom bandwidth."
     121                             "Bandwidth (custom)"
-    122                             "Profiles:"
+    IDS_PROFILE_LIST                "Profiles:"
     123                             "Resume game"
     124                             "Continue game"
-    125                             "Gamma"
-    126                             "Head bob"
-    127                             "Weapon sway"
+    IDS_GAMMA                       "Gamma"
+    IDS_HEADBOB                     "Head bob"
+    IDS_WEAPONSWAY                  "Weapon sway"
 END
 
 STRINGTABLE DISCARDABLE
@@ -6697,15 +6697,15 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    128                             "Sets the intensity of the simulated head movement while walking."
-    129                             "Sets the intensity of the simulated weapon movement while walking."
-    130                             "Sets the length of time that messages will remain on the screen."
-    131                             "Message duration"
-    136                             "Rename"
+    IDS_HELP_HEADBOB                "Sets the intensity of the simulated head movement while walking."
+    IDS_HELP_WEAPONSWAY             "Sets the intensity of the simulated weapon movement while walking."
+    IDS_HELP_PICKUP_MSG_DUR         "Sets the length of time that messages will remain on the screen."
+    IDS_PICKUP_MSG_DUR              "Message duration"
+    IDS_RENAME                      "Rename"
     137                             "Version:"
     138                             "Main menu"
-    139                             "Adjust the gamma level of the display."
-    140                             "Start, load, or save a single player game."
+    IDS_HELP_GAMMA                  "Adjust the gamma level of the display."
+    IDS_HELP_SINGLEPLAYER           "Start, load, or save a single player game."
     141                             "Start a multiplayer game or set multiplayer options."
     142                             "Set display, sound, control, game, and performance options."
     143                             "Leave the game."
