@@ -85,6 +85,8 @@ class CTronPlayerObj : public CPlayerObj
 		void HandleRatings(ILTMessage_Read *pMsg);
 		void HandleEnergy(ILTMessage_Read *pMsg);
 		void HandleSwat(ILTMessage_Read *pMsg);
+		// RETAIL: MID_TRON_EXIT_REQUEST (retail 0x10068560; the name is ours)
+		void HandleExitRequest(ILTMessage_Read *pMsg);
 
 		// RETAIL: the "mpenergy" cheat (retail 0x10068680; the name is ours)
 		void EnergyCheat();

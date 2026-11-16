@@ -18,6 +18,7 @@
 #include "Weapon.h"
 #include "FXButeMgr.h"
 #include "LightCycleMgr.h"
+#include "ServerMissionMgr.h"
 
 BEGIN_CLASS(CTronPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
@@ -777,6 +778,67 @@ void CTronPlayerObj::HandleSwat(ILTMessage_Read *pMsg)
 	info.vPath = vDir.Unit();
 
 	m_pSwatWeapon->UpdateWeapon( info, LTTRUE );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleExitRequest
+//
+//	PURPOSE:	The client asks to leave the level (RETAIL: retail
+//				0x10068560, called by the server shell's message handler
+//				0x1005ee20; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::HandleExitRequest(ILTMessage_Read *pMsg)
+{
+	if( !pMsg )
+		return;
+
+	if( pMsg->Readbool() )
+	{
+		if( m_szTronUnknown3267[0] )
+		{
+			SendTriggerMsgToObjects( this, m_szTronUnknown3267, "TRIGGER" );
+		}
+
+		return;
+	}
+
+	// RETAIL: two single player levels have their own exits
+	if( GetGameType() == eGameTypeSingle )
+	{
+		switch( g_pServerMissionMgr->GetCurrentMission() )
+		{
+			case 4:
+			{
+				if( g_pServerMissionMgr->GetCurrentLevel() == 2 )
+				{
+					SendTriggerMsgToObjects( this, "Player", "option remove 5115" );
+					SendTriggerMsgToObjects( this, "Player", "option remove 5251" );
+					SendTriggerMsgToObjects( this, "Player", "ENDLIGHTCYCLE" );
+					SendTriggerMsgToObjects( this, "exit", "trigger" );
+					return;
+				}
+			}
+			break;
+
+			case 5:
+			{
+				if( g_pServerMissionMgr->GetCurrentLevel() == 2 )
+				{
+					SendTriggerMsgToObjects( this, "ExitTrigger", "UNLOCK" );
+					SendTriggerMsgToObjects( this, "ExitTrigger", "TRIGGER" );
+					return;
+				}
+			}
+			break;
+		}
+	}
+
+	if( m_szTronUnknown32a7[0] )
+	{
+		SendTriggerMsgToObjects( this, m_szTronUnknown32a7, "TRIGGER" );
+	}
 }
 
 // ----------------------------------------------------------------------- //

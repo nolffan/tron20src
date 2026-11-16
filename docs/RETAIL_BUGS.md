@@ -971,6 +971,17 @@ RelinquishList. The engine therefore loses one object list for each frame
 while a prankster bit catches targets.
 
 Not fixed yet: the modern build should call RelinquishList on the list.
+### A disc game team change can use a null player
+
+Object.lto 0x1004b981 (CDiscMatchMgr::ChangeTeam, TRON/ServerDiscMatchMgr.cpp).
+After the move, the manager finds the player on the new team. To set the
+player's team colour (CPlayerObj 0x31c9), it checks the player only on one
+path: when the player is not found, it reads 0x31ca of a null pointer and
+writes 0x31c9 through it. The server crashes when the client left the team
+list before the move completes.
+
+Not fixed yet: the modern build should skip the colour when the player is
+not found.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

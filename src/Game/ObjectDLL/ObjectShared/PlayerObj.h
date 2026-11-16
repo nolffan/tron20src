@@ -78,6 +78,7 @@ class CPlayerObj : public CCharacter
 	// counters themselves (Object.lto 0x10053b80..0x10057220)
 	friend class CLightCycleMatchMgr;
 	friend class CDiscMatchMgr;
+	friend class CDiscMatch;
 
 	public :
 
@@ -108,6 +109,8 @@ class CPlayerObj : public CCharacter
 
 		// Check if player is allowed to respawn.
 		bool CanRespawn( );
+		// RETAIL: Tron's (retail 0x10086370; the name is ours)
+		void RemoveProjectiles();
 
 		// Check if player is allowed to be revived.
 		bool CanRevive( );
