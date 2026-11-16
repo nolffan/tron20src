@@ -341,9 +341,9 @@ LTBOOL CSearchItemMgr::Init(const char* szAttributeFile)
 			{
 #ifdef _CLIENTBUILD
 				g_pLTClient->CPrint("error in %s: can't find search item \"%s\"",szAttributeFile,pszTok);
-#else
-				g_pLTServer->CPrint("error in %s: can't find search item \"%s\"",szAttributeFile,pszTok);
 #endif
+				// RETAIL: the server prints no error here (the string is in
+				// CShell.dll only, not in Object.lto).
 				return LTFALSE;
 			}
 

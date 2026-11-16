@@ -5730,8 +5730,12 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 
 	// Do not crouch if allies are too close together (inside each other).
 
+	// RETAIL: 0x101ef59f, Tron checks the distance only for an ally whose
+	// relative alignment is UNKNOWN.
+
 	CAI* pAlly = (CAI*)g_pLTServer->HandleToObject( hRequestingAI );
-	if( pAlly->GetPosition().DistSqr( GetAI()->GetPosition() ) < 48.f*48.f )
+	if( ( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) &&
+		( pAlly->GetPosition().DistSqr( GetAI()->GetPosition() ) < 48.f*48.f ) )
 	{
 		return LTFALSE;
 	}
@@ -5742,7 +5746,7 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 	{
 		m_dwAttackFlags |= kAttk_ForceCrouch;
 
-		if( !pAlly->IsPlayingDialogSound() ) 
+		if( !pAlly->IsPlayingDialogue() ) // RETAIL: 0x101ef60f
 		{
 			pAlly->PlaySound( kAIS_OrderCrouch, LTFALSE );
 		}
