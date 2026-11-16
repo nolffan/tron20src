@@ -324,6 +324,8 @@ void BinaryBit::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
 
+	m_ActivateTypeHandler.Save(pMsg);	// RETAIL: Tron's (0x10013e14)
+
 	// Save the important stuff
 	SAVE_BOOL(m_bLocked);
 	SAVE_BOOL(m_bStartOnInSocket);
@@ -335,8 +337,11 @@ void BinaryBit::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_HSTRING(m_hstrTurnOnCommand);
 	SAVE_HSTRING(m_hstrTurnOffCommand);
 	SAVE_BYTE(m_byPSets);
+	SAVE_DWORD(m_nStringOverrideID);
+	SAVE_BOOL(m_bTronUnknown90);
 
 	SAVE_HOBJECT(m_hFX);
+	m_InvalidPSetCommand.Save(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -350,6 +355,8 @@ void BinaryBit::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
+	m_ActivateTypeHandler.Load(pMsg);	// RETAIL: Tron's
+
 	// Load the important stuff
 	LOAD_BOOL(m_bLocked);
 	LOAD_BOOL(m_bStartOnInSocket);
@@ -361,8 +368,11 @@ void BinaryBit::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_HSTRING(m_hstrTurnOnCommand);
 	LOAD_HSTRING(m_hstrTurnOffCommand);
     LOAD_BYTE(m_byPSets);
+	LOAD_DWORD(m_nStringOverrideID);
+	LOAD_BOOL(m_bTronUnknown90);
 
 	LOAD_HOBJECT(m_hFX);
+	m_InvalidPSetCommand.Load(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -497,17 +507,41 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 LTBOOL BinaryBit::InitialUpdate()
 {
 	// Make sure we can activate the object
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY);
+	if(m_bLocked)
+	{
+		m_bTronUnknown90 = false;
+	}
+	else
+	{
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY);
+	}
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
 
 	// Set the permission sets
 	SET_OBJECT_PSETS_USER_FLAGS(m_hObject,m_byPSets)
+
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_BINARYBIT, USRFLG_BINARYBIT);
 
 	// Set the starting anim
 	HMODELANIM hAni;
 	hAni = g_pLTServer->GetAnimIndex(m_hObject, "PoweredDown");
 	g_pLTServer->SetModelAnimation(m_hObject, hAni);
 	g_pLTServer->SetModelLooping(m_hObject, LTFALSE);
+
+	// RETAIL: Tron's (0x10014640): with no energy needed it goes straight
+	// to the socket
+	if(!m_nOriginalEnergyRequired)
+	{
+		m_eState = BBState_GoingToSocket;
+		HandleArriveAtSocket();
+	}
+	else
+	{
+		m_ActivateTypeHandler.SetState(ACTIVATETYPE::eTronUnknown2, false);
+	}
+
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (m_nStringOverrideID > 0) ? USRFLG_INFO_STRING : 0, USRFLG_INFO_STRING);
+	m_ActivateTypeHandler.CreateActivateTypeMsg();
 
 	return LTFALSE;
 }
@@ -565,6 +599,8 @@ LTBOOL BinaryBit::ChangeState(BinaryBitState eNewState)
 				
 				// Temporarily turn off activation for the object
 				g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+				m_bTronUnknown90 = false;
+				m_ActivateTypeHandler.SetState(ACTIVATETYPE::eOn);	// RETAIL: Tron's
 
 				SetNextUpdate(0.001f);
 			}
@@ -596,6 +632,8 @@ LTBOOL BinaryBit::ChangeState(BinaryBitState eNewState)
 
 				// Temporarily turn off activation for the object
 				g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+				m_bTronUnknown90 = false;
+				m_ActivateTypeHandler.SetState(ACTIVATETYPE::eOff);	// RETAIL: Tron's
 
 				SetNextUpdate(0.001f);
 			}
@@ -683,6 +721,7 @@ void BinaryBit::HandleGoingToSocket()
 {
 	// Turn off activation for the object
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY);
+	m_bTronUnknown90 = false;	// RETAIL: 0x100149cc
 
 	// And start the trailFX
 
@@ -735,6 +774,9 @@ void BinaryBit::HandleGoingToSocket()
 // ----------------------------------------------------------------------- //
 void BinaryBit::HandleArriveAtSocket()
 {
+	// RETAIL: Tron's (0x10014bd0): no more energy needed
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_REQUIRES_ENERGY);
+
 	// Don't need updates anymore
 	SetNextUpdate(0.0f);
 
@@ -742,15 +784,22 @@ void BinaryBit::HandleArriveAtSocket()
 	if(m_bStartOnInSocket)
 	{
 		ChangeState(BBState_On);
+		m_ActivateTypeHandler.SetState(ACTIVATETYPE::eOn);
 	}
 	else
 	{
 		ChangeState(BBState_Off);
+		m_ActivateTypeHandler.SetState(ACTIVATETYPE::eOff);
 	}
 
-	// We can now activate this object
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
-	
+	// We can now activate this object, unless locked
+	if(!m_bLocked)
+	{
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+	}
+
+	m_bTronUnknown90 = true;
+
 	// And kill our trailFX
 	if(m_hFX)
 	{
@@ -854,6 +903,9 @@ void BinaryBit::DoPowerUp()
 	hAni = g_pLTServer->GetAnimIndex(m_hObject, "Idle");
 	g_pLTServer->SetModelAnimation(m_hObject, hAni);
 	g_pLTServer->SetModelLooping(m_hObject, LTTRUE);
+
+	// RETAIL: Tron's (0x10014f4c)
+	m_ActivateTypeHandler.SetDisabled(false, true);
 }
 
 // ----------------------------------------------------------------------- //
