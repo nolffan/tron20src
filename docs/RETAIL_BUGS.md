@@ -1075,6 +1075,18 @@ and the random index is taken from 0..-1.
 Not fixed yet: the modern build should test for an empty list and clear
 the buffer with its size.
 
+## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
+
+When the subroutine screen gets focus, it sets the build note count text
+and hides it until the intro is done (CShell.dll 0x1007e898..0x1007e8ad).
+It sets the fade flag of the build note count (+0x2084) to false, but it
+sets the fade time of the version text (+0x20fc) to zero, not the fade
+time of the build note count (+0x2088). The intro sets both fade times
+again before they are used (0x1007f0d8, 0x1007f13f), so there is no
+visible effect.
+
+Not fixed yet: the modern build should reset the build note fade time.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

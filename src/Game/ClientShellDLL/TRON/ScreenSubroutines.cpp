@@ -25,6 +25,7 @@
 #include "CursorMgr.h"
 #include "ProfileMgr.h"
 #include "MissionButeMgr.h"
+#include "ClientUtilities.h"
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -429,7 +430,7 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 			m_pBuildNoteCount->SetString(LTGUIWideString(szTmp));
 			m_bBuildNoteFade = false;
 			m_pBuildNoteCount->Show(LTFALSE);
-			m_fTextFade = 0.0f;
+			m_fTextFade = 0.0f;	// RETAIL: 0x1007e8ad: not m_fBuildNoteFade (docs/RETAIL_BUGS.md)
 
 			int nTextWidth = (int)((float)m_pBuildNoteCount->GetBaseWidth() / g_pInterfaceResMgr->GetXRatio());
 			int nTextHeight = (int)((float)m_pBuildNoteCount->GetBaseHeight() / g_pInterfaceResMgr->GetYRatio());
@@ -539,17 +540,17 @@ void CScreenSubroutines::CreateMenuPieces()
 	char szName[32];
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	int n = 0;
 	bool bSkipIntro = false;
 	if (IsMultiplayerGame() || pProfile->m_bSkipSubIntro)
 		bSkipIntro = true;
 
 	bool bFound;
-	int n = 0;
 	do
 	{
-		sprintf(szName, "Piece%d", n);
 		szPiece[0] = 0;
 		bFound = false;
+		sprintf(szName, "Piece%d", n);
 		if (g_pLayoutMgr->HasCustomValue((eScreenID)m_nScreenID, szName))
 		{
 			bFound = true;
@@ -781,7 +782,7 @@ LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 
 	// the tool tips show while Tab is down
 	bool bOldToolTips = m_bToolTips;
-	m_bToolTips = (m_bShowToolTips || (GetAsyncKeyState(VK_TAB) & 0x8000));
+	m_bToolTips = (m_bShowToolTips || IsKeyDown(VK_TAB));
 	if (bOldToolTips != m_bToolTips)
 	{
 		if (bOldToolTips)
@@ -1269,7 +1270,7 @@ void CScreenSubroutines::OnPickupClick(int x, int y)
 
 	for (i = 0; i < NUM_LIBRARIES; i++)
 	{
-		if (m_Libraries[i].IsCWHot() || m_Libraries[i].IsCCWHot())
+		if (m_Libraries[i].IsRotateHot())
 		{
 			m_Libraries[i].OnClick();
 			return;
@@ -1295,7 +1296,7 @@ void CScreenSubroutines::OnPickupClick(int x, int y)
 				if (m_ProcCtrl[j].GetProc() == m_pHotProc)
 				{
 					m_ProcCtrl[j].RemoveSub();
-					if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+					if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 					{
 						LTIntPt pos = m_ProcCtrl[j].GetCenter();
 						ShowProcInfo(pos.x, pos.y);
@@ -1331,7 +1332,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 			{
 				m_ProcCtrl[i].AddSub(m_pCursorSub);
 				PlayDropIntoProceduralSound();
-				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = m_ProcCtrl[i].GetCenter();
 					ShowProcInfo(pos.x, pos.y);
@@ -1360,7 +1361,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 	{
 		if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
 		{
-			if (m_SystemMemoryCtrl.GetActiveSegment() != m_pCursorSub->nTempSlot)
+			if (m_pCursorSub->nTempSlot != m_SystemMemoryCtrl.GetActiveSegment())
 				return;
 
 			PlayDropIntoSound();
@@ -1439,7 +1440,7 @@ Drop:
 		m_pHotSub = m_pCursorSub;
 		SetCursorMode(CursorPickup);
 
-		if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+		if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 		{
 			LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
 			ShowSubInfo(pos.x, pos.y);
@@ -1515,7 +1516,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 			{
 				m_ProcCtrl[i].RemoveSub();
-				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = m_ProcCtrl[i].GetCenter();
 					ShowProcInfo(pos.x, pos.y);
@@ -1554,7 +1555,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_pHotSub->pTronSubroutine->eFunction == FUNCTION_BADBLOCK)
 		{
 			m_SystemMemoryCtrl.ShowIcon(m_pHotSub->nTempSlot, true);
-			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
@@ -1566,7 +1567,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 		{
 		case FUNCTION_BADBLOCK:
 			m_SystemMemoryCtrl.ShowIcon(m_pHotSub->nTempSlot, true);
-			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
@@ -1575,7 +1576,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 
 		case FUNCTION_COMBAT:
 			m_Libraries[0].ShowSubIcon(m_pHotSub, true);
-			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[0].GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
@@ -1584,7 +1585,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 
 		case FUNCTION_DEFENSE:
 			m_Libraries[1].ShowSubIcon(m_pHotSub, true);
-			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[1].GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
@@ -1593,7 +1594,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 
 		case FUNCTION_UTILITY:
 			m_Libraries[2].ShowSubIcon(m_pHotSub, true);
-			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[2].GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
@@ -1642,7 +1643,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 	m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
 	PlayDropIntoSound();
 
-	if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+	if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 		m_ToolTip.Hide();
 
 	OnMouseMove(m_CursorPos.x, m_CursorPos.y);
@@ -1690,7 +1691,7 @@ void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 			m_pHotSub = pLibrary->GetHotSub();
 			if (m_pHotSub)
 			{
-				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = pLibrary->GetArc()->GetHotPos();
 					ShowSubInfo(pos.x, pos.y);
@@ -1783,7 +1784,7 @@ LTBOOL CScreenSubroutines::OnLButtonDblClick(int x, int y)
 		int i;
 		for (i = 0; i < NUM_LIBRARIES; i++)
 		{
-			if (m_Libraries[i].IsCWHot() || m_Libraries[i].IsCCWHot())
+			if (m_Libraries[i].IsRotateHot())
 			{
 				m_Libraries[i].OnClick();
 				return LTTRUE;
@@ -2021,7 +2022,7 @@ void CScreenSubroutines::ScreenDimsChanged()
 	float fRatio = g_pInterfaceResMgr->GetYRatio();
 	m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
 	m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
-	m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
+	m_ToolTip.m_nWidth = (int)(m_fToolTipWidth * fRatio);
 
 	m_SystemMemoryCtrl.Rescale();
 	m_Libraries[0].Rescale();
@@ -2048,14 +2049,15 @@ void CScreenSubroutines::ScreenDimsChanged()
 // segment of the system memory?
 bool CScreenSubroutines::CanDropHere()
 {
-	if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
-		return (m_pCursorSub->nTempSlot == m_SystemMemoryCtrl.GetActiveSegment());
+	PlayerSubroutine * pCursorSub = m_pCursorSub;
+	if (pCursorSub->eState == SUBSTATE_UNUSABLE)
+		return (m_SystemMemoryCtrl.GetActiveSegment() == pCursorSub->nTempSlot);
 
-	if (m_pCursorSub->eState == SUBSTATE_FOREIGN)
+	if (pCursorSub->eState == SUBSTATE_FOREIGN)
 		return false;
 
 	PlayerSubroutine * pDisplaced = LTNULL;
-	int nSegments = 3 - m_pCursorSub->eVersion;
+	int nSegments = 3 - pCursorSub->eVersion;
 	for (int i = 0; i < nSegments; i++)
 	{
 		PlayerSubroutine * pSub = m_SystemMemoryCtrl.GetSegmentObject((m_SystemMemoryCtrl.GetActiveSegment() + i) % 24);
