@@ -642,7 +642,6 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 {
 	CLTGUIColumnCtrl *pCtrl=(CLTGUIColumnCtrl *)m_pList[m_nType]->GetSelectedControl();
 	int nCommand=pCtrl->GetParam1();
-	int nIndex=m_pList[m_nType]->GetSelectedIndex()-1;
 
 	if (pInput->m_DeviceType == DEVICETYPE_JOYSTICK)
 	{
@@ -673,7 +672,7 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 	};
 
 	
-	pCtrl->SetString(SCREEN_COLUMN_EQUALS, "");
+	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L""));
 
 	UpdateControlList();
 
