@@ -190,7 +190,8 @@ LTBOOL CBaseMenu::Init()
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFontFace);
 	if (!pFont) return LTFALSE;
 
-    if (!m_Title.Create("X", LTNULL, LTNULL, pFont, m_TitleFontSize, this))
+	// RETAIL: Tron's title is a blank, hidden control (0x101c7062)
+    if (!m_Title.Create(std::wstring(L" "), LTNULL, LTNULL, pFont, m_TitleFontSize, this))
 	{
         return LTFALSE;
 	}
@@ -203,12 +204,15 @@ LTBOOL CBaseMenu::Init()
 
 	m_Title.SetScale(1.0f);
 	pos.x = m_Indent.x;
-	pos.y += (m_Title.GetHeight() + 4);
+	pos.y += 8;
 	m_Title.SetScale(g_pInterfaceResMgr->GetXRatio());
+	m_Title.Show(LTFALSE);
 
 	m_List.Create(s_Size.y - pos.y);
 	uint16 nOffset = (s_Size.x-m_Indent.x*2)-16;
-	m_List.UseArrows(nOffset ,1.0f,s_Up,s_UpH,s_Down,s_DownH);
+	// RETAIL: only the menus whose slot 0xc4 says so have arrows
+	if (TronUnknownVirtualC4())
+		m_List.UseArrows(nOffset ,1.0f,s_Up,s_UpH,s_Down,s_DownH);
 	CLTGUIWindow::AddControl(&m_List,pos);
 
 	pos.x = s_Pos;
