@@ -161,7 +161,9 @@
 						eSocket,
 					};
 					
-					HOBJECT			m_hModel;
+					// RETAIL: Tron's is an LTObjRef: CAttractor has 0x18 bytes and
+					// its copy/destroy (0x1000f440..0x1000f640) run LTObjRef's.
+					LTObjRef		m_hModel;
 					HATTRACTOR		m_hAttractor;
 					AttractorType	m_eType;
 			};
