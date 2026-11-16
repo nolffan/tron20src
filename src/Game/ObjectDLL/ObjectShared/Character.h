@@ -320,7 +320,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		virtual void	HideCharacter(LTBOOL bHide);
 
-		inline	DamageFlags	GetDamageFlags( ) const { return m_nDamageFlags; }
+		// RETAIL: every caller in Tron reads +0x420, m_nInstantDamageFlags
+		// (CAI::HandleDamage, CAIGoalWork 0x101f841c, CAIGoalAbstractUseObject
+		// 0x102727f7); the progressive flags at +0x418 are cleared each update.
+		inline	DamageFlags	GetDamageFlags( ) const { return m_nInstantDamageFlags; }
 		void			SetDamageFlags( const DamageFlags nDmgFlags );
 		// RETAIL: Tron collects the damage flags of hits and sends them, and
 		// any change of the instant flags, once a frame (Object.lto

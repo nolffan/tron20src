@@ -52,7 +52,7 @@ BEGIN_CLASS(Intelligence)
     ADD_LONGINTPROP(TextId, 0)
 	ADD_BOOLPROP_FLAG(IsIntel, LTFALSE, 0)
 	ADD_BOOLPROP_FLAG(ShowPopup, LTTRUE, 0)
-	ADD_BOOLPROP_FLAG(AddToList, LTTRUE, 0)
+	// RETAIL: Tron has no AddToList property (no such string in Object.lto).
     ADD_LONGINTPROP(PopupId, -1)
 	ADD_BOOLPROP_FLAG(PhotoOnly, LTFALSE, 0)
 	ADD_STRINGPROP_FLAG(PickedUpCommand, "", PF_NOTIFYCHANGE)
@@ -166,9 +166,9 @@ LTRESULT CIntelPlugin::PreHook_PropChanged( const char *szObjName,
 
 Intelligence::Intelligence() : Prop ()
 {
+	// RETAIL: 0x1025adc0, Tron sets m_bAddToList after m_bStartHidden.
     m_bIsIntel			= LTFALSE;
     m_bShowPopup		= LTTRUE;
-    m_bAddToList		= LTTRUE;
     m_bPhotoOnly        = LTFALSE;
     m_hstrPickedUpCmd   = LTNULL;
 	m_nTextId			= 0;
@@ -176,6 +176,7 @@ Intelligence::Intelligence() : Prop ()
 	m_nPopupId			= INTELMGR_INVALID_ID;
 	m_fRespawnDelay		= 30.0f;
 	m_bStartHidden		= LTFALSE;
+    m_bAddToList		= LTTRUE;
 	m_hstrPickupSnd		= LTNULL;
 	m_hstrRespawnSnd	= LTNULL;
 	m_bSkipUpdate		= LTFALSE;
@@ -297,11 +298,6 @@ void Intelligence::ReadProp(ObjectCreateStruct *pInfo)
 		m_bIsIntel = genProp.m_Bool;
 	}
 
-    if (g_pLTServer->GetPropGeneric("AddToList", &genProp) == LT_OK)
-	{
-		m_bAddToList = genProp.m_Bool;
-	}
-
     if (g_pLTServer->GetPropGeneric("PickedUpCommand", &genProp) == LT_OK)
 	{
 		if (genProp.m_String[0])
@@ -377,6 +373,9 @@ void Intelligence::PostPropRead(ObjectCreateStruct *pStruct)
 
 	// Make sure we don't have gravity set...
 	pStruct->m_Flags &= ~FLAG_GRAVITY;
+
+	// RETAIL: 0x1025b31c, Tron makes intelligence ray hit.
+	pStruct->m_Flags |= FLAG_RAYHIT;
 
 	m_dwUsrFlgs |= (USRFLG_GLOW | USRFLG_IGNORE_PROJECTILES);
 
@@ -529,7 +528,9 @@ void Intelligence::DoActivate(HOBJECT hSender)
 		return;
 
 	// Increment the player's intelligence count...
-	INTEL* pIntel = g_pIntelMgr->GetIntel(m_nIntelId);
+	// RETAIL: 0x1025b6d1, Tron looks up the intel (the result is not used),
+	// sends a different message and gives no intel bonus.
+	g_pIntelMgr->GetIntel(m_nIntelId);
 
 	HCLIENT hClient = pPlayer->GetClient();
 	if (hClient)
@@ -537,17 +538,14 @@ void Intelligence::DoActivate(HOBJECT hSender)
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_INTEL_PICKEDUP);
         cMsg.Writeuint32(m_nTextId);
+        cMsg.Writeuint8(0);
         cMsg.Writeuint8(m_nPopupId);
         cMsg.Writeuint8(m_bIsIntel);
         cMsg.Writeuint8(m_bShowPopup);
-        cMsg.Writeuint8(m_bAddToList);
+		cMsg.Writebool(false);
+		cMsg.WriteString("");
 		g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
 	}
-
-	if (m_bAddToList)
-		pPlayer->GetPlayerSkills()->GainIntelBonus();
-
-
 
 	// If we have a command, process it...
 
@@ -599,12 +597,12 @@ void Intelligence::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bPhotoOnly);
     SAVE_BOOL(m_bIsIntel);
     SAVE_BOOL(m_bShowPopup);
-    SAVE_BOOL(m_bAddToList);
     SAVE_HSTRING(m_hstrPickedUpCmd);
     SAVE_DWORD(m_nTextId);
     SAVE_BYTE(m_nPopupId);
     SAVE_BYTE(m_nIntelId);
     SAVE_BOOL(m_bStartHidden);
+    SAVE_BOOL(m_bAddToList);	// RETAIL: Tron's order
     SAVE_BOOL(m_bSkipUpdate);
     SAVE_FLOAT(m_fRespawnDelay);
 	SAVE_HSTRING(m_hstrRespawnSnd);
@@ -626,12 +624,12 @@ void Intelligence::Load(ILTMessage_Read *pMsg)
     LOAD_BOOL(m_bPhotoOnly);
     LOAD_BOOL(m_bIsIntel);
     LOAD_BOOL(m_bShowPopup);
-    LOAD_BOOL(m_bAddToList);
     LOAD_HSTRING(m_hstrPickedUpCmd);
     LOAD_DWORD(m_nTextId);
     LOAD_BYTE(m_nPopupId);
     LOAD_BYTE(m_nIntelId);
     LOAD_BOOL(m_bStartHidden);
+    LOAD_BOOL(m_bAddToList);	// RETAIL: Tron's order
     LOAD_BOOL(m_bSkipUpdate);
     LOAD_FLOAT(m_fRespawnDelay);
 
@@ -691,18 +689,21 @@ void Intelligence::InitialUpdate()
         g_IntelRespawnScale.Init(GetServerDE(), "IntelRespawnScale", LTNULL, 1.0f);
 	}
 
+	// RETAIL: 0x1025bcc7, Tron asks for an update instead of sending
+	// "Hidden 1".
  	if (m_bStartHidden)
 	{
-		SendTriggerMsgToObject(this, m_hObject, LTFALSE, "Hidden 1");
+		SetNextUpdate(0.001f);
 	}
 
 	m_bSkipUpdate = m_bMoveToFloor;
 
+	// RETAIL: 0x1025bd25, Tron's pickup message (id, rotate, bounce) as
+	// PickupItem writes it; no team.
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(SFX_PICKUPITEM_ID);
-    cMsg.Writebool(0);
-    cMsg.Writebool(0);
-	cMsg.Writeuint8(INVALID_TEAM);
+	cMsg.Writeuint8(0);
+	cMsg.Writeuint8(0);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 }
 
