@@ -74,6 +74,7 @@ CAIPathMgr::CAIPathMgr()
 	m_pAINodeMgr = debug_new( CAINodeMgr );
 	m_pAIVolumeMgr = debug_new( CAIVolumeMgr );
 	m_pAIInformationVolumeMgr = debug_new( CAIInformationVolumeMgr );
+	m_pAIVolumePlayerInfoMgr = debug_new( CAIVolumePlayerInfoMgr );	// RETAIL: Tron's
 	m_pAIRegionMgr = debug_new( CAIRegionMgr );
 }
 
@@ -84,6 +85,7 @@ CAIPathMgr::~CAIPathMgr()
 	debug_delete( m_pAINodeMgr );
 	debug_delete( m_pAIVolumeMgr );
 	debug_delete( m_pAIInformationVolumeMgr );
+	debug_delete( m_pAIVolumePlayerInfoMgr );
 	debug_delete( m_pAIRegionMgr );
 }
 
@@ -94,6 +96,7 @@ void CAIPathMgr::Term()
 	m_pAIRegionMgr->Term();
 	m_pAIVolumeMgr->Term();
 	m_pAIInformationVolumeMgr->Term();
+	m_pAIVolumePlayerInfoMgr->Term();
 	m_pAINodeMgr->Term();
 
     m_bInitialized = LTFALSE;
@@ -108,6 +111,7 @@ void CAIPathMgr::Init()
 	m_pAIVolumeMgr->Init();
 	m_pAINodeMgr->Init();
 	m_pAIInformationVolumeMgr->Init();
+	m_pAIVolumePlayerInfoMgr->Init();
 	m_pAIRegionMgr->Init();
 
 #ifndef _FINAL
@@ -122,6 +126,7 @@ void CAIPathMgr::Load(ILTMessage_Read *pMsg)
 	m_pAIRegionMgr->Load(pMsg);
 	m_pAIVolumeMgr->Load(pMsg);
 	m_pAIInformationVolumeMgr->Load(pMsg);
+	m_pAIVolumePlayerInfoMgr->Load(pMsg);
 	m_pAINodeMgr->Load(pMsg);
 
 	LOAD_FLOAT(m_fMinCurveAngleDelta);
@@ -136,6 +141,7 @@ void CAIPathMgr::Save(ILTMessage_Write *pMsg)
 	m_pAIRegionMgr->Save(pMsg);
 	m_pAIVolumeMgr->Save(pMsg);
 	m_pAIInformationVolumeMgr->Save(pMsg);
+	m_pAIVolumePlayerInfoMgr->Save(pMsg);
 	m_pAINodeMgr->Save(pMsg);
 
 	SAVE_FLOAT(m_fMinCurveAngleDelta);
@@ -170,7 +176,7 @@ LTBOOL CAIPathMgr::RandomPath(CAI* pAI, AIVolume* pVolumeSrcPrev, AIVolume* pVol
 		}
 		else
 		{
-			pVolume->SetShortestEstimate((float)INT_MAX);
+			pVolume->SetShortestEstimate(FLT_MAX);	// RETAIL: 0x101a3995: Tron's FLT_MAX
 		}
 
         pVolume->SetPreviousVolume(LTNULL);

@@ -31,6 +31,7 @@
 // Statics
 
 class AIInformationVolume;
+class AIVolumePlayerInfo;
 
 //----------------------------------------------------------------------------
 //              
@@ -58,6 +59,33 @@ protected:
 	CAIInformationVolumeMgr(const CAIInformationVolumeMgr& rhs) {}
 	CAIInformationVolumeMgr& operator=(const CAIInformationVolumeMgr& rhs ) {}
 };
+
+//----------------------------------------------------------------------------
+//              
+//	CLASS:		CAIVolumePlayerInfoMgr
+//              
+//	PURPOSE:	RETAIL: Tron's mgr of the AIVolumePlayerInfo volumes (vtable
+//				0x1029a9b0, retail 0x10199130..0x101991e0); CAIPathMgr owns it
+//              
+//----------------------------------------------------------------------------
+class CAIVolumePlayerInfoMgr : public CAISpatialRepresentationMgr
+{
+public:
+	// Ctors/Dtors/etc
+
+	CAIVolumePlayerInfoMgr();
+	virtual ~CAIVolumePlayerInfoMgr();
+
+	void Init();
+
+	AIVolumePlayerInfo* FindContainingVolume(HOBJECT hObject, const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold = 0.0f, AISpatialRepresentation* pVolumeStart = LTNULL, LTBOOL bBruteForce = LTTRUE);
+
+protected:
+	CAIVolumePlayerInfoMgr(const CAIVolumePlayerInfoMgr& rhs) {}
+	CAIVolumePlayerInfoMgr& operator=(const CAIVolumePlayerInfoMgr& rhs ) {}
+};
+
+extern CAIVolumePlayerInfoMgr* g_pAIVolumePlayerInfoMgr;
 
 
 #endif // __AIINFORMATIONVOLUMEMGR_H__
