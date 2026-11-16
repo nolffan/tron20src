@@ -1011,8 +1011,12 @@ void CRelationUser::RemoveRelation(const RelationDescription& RD)
 	AIASSERT( itFound != m_Momentos.end(), NULL, "Attempted to remove relation momento which does not exist in list" );
 
 	// Delete the momento, then remove it from the list.
+	// RETAIL: Tron's (0x10168180) deletes it whether or not it has expired
+	// (NOLF2's DeleteMomentoWithCallback keeps an unexpired one, which the
+	// erase then leaks)
 	RelationMomento* pMomento = (*itFound);
-	DeleteMomentoWithCallback()( pMomento );
+	pMomento->DoRemoveRelationCallback();
+	debug_delete( pMomento );
 	m_Momentos.erase( itFound );
 }
 

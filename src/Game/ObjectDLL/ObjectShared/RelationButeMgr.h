@@ -291,6 +291,7 @@ class RelationMomento
 	friend DeleteMomentoWithCallback;
 	friend Momento_RelationData_Equality;
 	friend ostream& operator << (ostream &os, const RelationMomento& Momento);
+	friend class CRelationUser;	// RETAIL: Tron's RemoveRelation calls DoRemoveRelationCallback
 
 public:
 	// Ctors/Dtors/Save/Loadetc
