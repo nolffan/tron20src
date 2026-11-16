@@ -43,7 +43,7 @@ KEY::KEY()
 	nDescriptionId = 0;
 	szImage[0] = 0;
 	szFilename[0] = 0;
-	szSoundName[0] = 0;
+	szSkin[0] = 0;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -90,11 +90,9 @@ LTBOOL CKeyMgr::Init(const char* szAttributeFile)
 		pNew->nDescriptionId = (uint16)m_buteMgr.GetInt(s_aTagName, KEY_DESC, 0);
 		m_buteMgr.GetString(s_aTagName, KEY_IMAGE, "", pNew->szImage, sizeof(pNew->szImage));
 		m_buteMgr.GetString(s_aTagName, KEY_FILENAME, "", pNew->szFilename, sizeof(pNew->szFilename));
+		m_buteMgr.GetString(s_aTagName, KEY_SKIN, "", pNew->szSkin, sizeof(pNew->szSkin));
 		m_buteMgr.GetString(s_aTagName, KEY_FXNAME, "", pNew->szFXName, sizeof(pNew->szFXName));
-		m_buteMgr.GetString(s_aTagName, KEY_SOUNDNAME, "", pNew->szSoundName, sizeof(pNew->szSoundName));
 
-		pNew->blrSkins.Read(&m_buteMgr, s_aTagName, KEY_SKIN, KEY_MAX_FILE_PATH);
-		pNew->blrRenderStyles.Read(&m_buteMgr, s_aTagName, KEY_RENDERSTYLE, KEY_MAX_FILE_PATH);
 		m_KeyArray.push_back(pNew);
 
 		nNumKeys++;
