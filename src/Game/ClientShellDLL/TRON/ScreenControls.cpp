@@ -17,6 +17,9 @@
 #include "GameSettings.h"
 #include "GameClientShell.h"
 
+// RETAIL: Tron's "restore the default controls?" string
+#define IDS_TRON_CONFIRM_RESTORE	0x243
+
 namespace
 {
 	int kGap = 200;
@@ -63,51 +66,40 @@ CScreenControls::~CScreenControls()
 // Build the screen
 LTBOOL CScreenControls::Build()
 {
-	CreateTitle(IDS_TITLE_CONTROLS);
-	
+	// RETAIL: Tron's string IDs (0x10058220)
+	CreateTitle(0x15);
+
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_CONTROLS,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_CONTROLS,"SliderWidth");
 
 	//customize
-	AddTextItem(IDS_CONFIGURE, CMD_CONFIGURE, IDS_HELP_CUSTOMCONTROLS);
+	AddTextItem(0x5a, CMD_CONFIGURE, 0xaf);
 
 	// Mouse
-	AddTextItem(IDS_MOUSE, CMD_MOUSE, IDS_HELP_MOUSE);
+	AddTextItem(0x57, CMD_MOUSE, 0xb0);
 
 	// keyboard
-	AddTextItem(IDS_KEYBOARD, CMD_KEYBOARD, IDS_HELP_KEYBOARD);
+	AddTextItem(0x56, CMD_KEYBOARD, 0xf3);
 
 	// use joystick
-	CLTGUIToggle* pToggle = AddToggle(IDS_JOYSTICK_USE, IDS_HELP_USEJOYSTICK, kGap, &m_bUseJoystick);
+	CLTGUIToggle* pToggle = AddToggle(0x166, 0xba, kGap, &m_bUseJoystick);
 	pToggle->NotifyOnChange(CMD_UPDATE,this);
-	char szYes[16];
-	FormatString(IDS_YES,szYes,sizeof(szYes));
-	char szNo[16];
-	FormatString(IDS_NO,szNo,sizeof(szNo));
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	pToggle->SetOnString(LoadTempWString(0x35));
+	pToggle->SetOffString(LoadTempWString(0x36));
 	pToggle->Enable( bHasJoystick ? LTTRUE : LTFALSE );
-//	pToggle->Enable(LTFALSE);
-
 
 	// joystick
-	m_pJoystickCtrl = AddTextItem(IDS_JOYSTICK, CMD_JOYSTICK, IDS_HELP_JOYSTICK);
+	m_pJoystickCtrl = AddTextItem(0x58, CMD_JOYSTICK, 0xb1);
 	m_pJoystickCtrl->Enable( bHasJoystick );
-//	m_pJoystickCtrl->Enable(LTFALSE);
 
 	//restore
-	AddTextItem(IDS_RESTOREDEFAULTS, CMD_RESET_DEFAULTS, IDS_HELP_RESTORE);
-
+	AddTextItem(0x59, CMD_RESET_DEFAULTS, 0xb3);
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
 
-//	CScreenJoystick *pJoy = (CScreenJoystick *)m_pScreenMgr->GetScreenFromID(SCREEN_ID_JOYSTICK);
-//	pJoy->Build();
-
 	UseBack(LTTRUE,LTTRUE);
 	return LTTRUE;
-
 }
 
 uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
@@ -148,8 +140,8 @@ uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 			mb.eType = LTMB_YESNO;
 			mb.pFn = ConfirmCallBack;
 			mb.pData = this;
-			m_nConfirm = IDS_CONFIRM_RESTORE;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_RESTORE,&mb);
+			m_nConfirm = IDS_TRON_CONFIRM_RESTORE;
+			g_pInterfaceMgr->ShowMessageBox(IDS_TRON_CONFIRM_RESTORE,&mb);
 			break;
 		}
 	default:
@@ -208,7 +200,7 @@ void CScreenControls::ConfirmSetting(LTBOOL bConfirm)
 */
 		break;
 
-	case IDS_CONFIRM_RESTORE:
+	case IDS_TRON_CONFIRM_RESTORE:
 		if (bConfirm)
 		{
 			CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
