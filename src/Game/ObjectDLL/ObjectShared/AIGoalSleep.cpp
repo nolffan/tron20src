@@ -66,6 +66,14 @@ void CAIGoalSleep::ActivateGoal()
 	super::ActivateGoal();
 
 	m_pAI->SetAwareness( kAware_Relaxed );
+
+	// RETAIL: 0x101fbe85, a sleeping AI in Tron does not see, and does not
+	// hear footsteps (mask 0xff83f620).
+	m_pAI->SetCurSenseFlags( ~( kSense_SeeEnemy | kSense_SeeEnemyLean | kSense_SeeEnemyWeaponImpact |
+		kSense_SeeEnemyDanger | kSense_SeeEnemyDisturbance | kSense_SeeEnemyFootprint |
+		kSense_SeeAllyDeath | kSense_SeeAllyDisturbance | kSense_HearEnemyFootstep |
+		kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile | kSense_SeeAllyDistress |
+		kSense_SeeAllySpecialDamage | kSense_SeeInappropriateBehavior ) );
 }
 
 // ----------------------------------------------------------------------- //

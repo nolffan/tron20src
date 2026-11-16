@@ -116,6 +116,7 @@ class CAIBrain : public CAIClassAbstract
 		LTFLOAT GetChaseSearchTime() const { return RAISE_BY_DIFFICULTY(m_pBrain->fChaseSearchTime); }
 
 		LTFLOAT GetDodgeVectorShuffleDist() const { return m_pBrain->fDodgeVectorShuffleDist; }
+		LTFLOAT GetDistressTimeMax() const { return m_pBrain->fDistressTimeMax; }	// RETAIL: Tron's (CAIGoalFlee::ActivateGoal 0x1020811f)
 		LTFLOAT GetDodgeVectorCheckChance() const { return RAISE_BY_DIFFICULTY(m_pBrain->fDodgeVectorCheckChance); }
 
 		LTFLOAT	GetPatrolSoundTime() const { return m_pBrain->fPatrolSoundTime; }
