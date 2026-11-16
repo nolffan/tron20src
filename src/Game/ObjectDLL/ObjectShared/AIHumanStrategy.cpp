@@ -3719,6 +3719,8 @@ CAIHumanStrategyShoot::CAIHumanStrategyShoot()
 	m_bShootBlind = LTFALSE;
 	m_hFiringSocket = INVALID_MODEL_SOCKET;
 	m_iAnimRandomSeed = -1;
+	m_eAttackDirection = kAP_None;
+	m_bTronUnknown3C = LTFALSE;
 }
 
 CAIHumanStrategyShoot::~CAIHumanStrategyShoot()
@@ -3741,16 +3743,30 @@ LTBOOL CAIHumanStrategyShoot::Init(CAIHuman* pAIHuman)
 		return LTFALSE;
 	}
 
-	// Get a random seed to use when playing aim and fire.
-	// Only do this for rifles.
+	// RETAIL: 0x102262c0, Tron aims to the side of its attack.
 
-	if( GetAI()->GetCurrentWeaponProp() == kAP_Weapon1 )
+	switch( GetAI()->GetCurAttackSide() )
+	{
+		case kAIAttack_Left:	m_eAttackDirection = kAP_Left; break;
+		case kAIAttack_Right:	m_eAttackDirection = kAP_Right; break;
+		case kAIAttack_Center:	m_eAttackDirection = kAP_Center; break;
+		default:				m_eAttackDirection = kAP_None; break;
+	}
+
+	// Get a random seed to use when playing aim and fire.
+	// Only do this for rifles, and (Tron) for AIs that cache their attack
+	// animations.
+
+	if( ( GetAI()->GetCurrentWeaponProp() == kAP_Weapon1 ) &&
+		GetAI()->GetBrain()->GetAIDataExist( kAIData_UseCachedAttackAnims ) &&
+		( GetAI()->GetBrain()->GetAIData( kAIData_UseCachedAttackAnims ) != 0.f ) )
 	{
 		CAnimationProps Props;
 		Props.Set(kAPG_Posture, kAP_Stand);
 		Props.Set(kAPG_WeaponPosition, kAP_Up);
 		Props.Set(kAPG_WeaponAction, kAP_Aim);
 		Props.Set(kAPG_Weapon, kAP_Weapon1);
+		Props.Set(kAPG_Direction, m_eAttackDirection);
 		m_iAnimRandomSeed = GetAnimationContext()->ChooseRandomSeed( Props );
 	}
 
@@ -4263,6 +4279,9 @@ void CAIHumanStrategyShoot::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bShootBlind);
 	LOAD_INT(m_hFiringSocket);
 	LOAD_DWORD(m_iAnimRandomSeed);
+	LOAD_VECTOR(m_vTronUnknown2C);
+	LOAD_BYTE_CAST(m_eAttackDirection, EnumAnimProp);
+	LOAD_BOOL(m_bTronUnknown3C);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4286,6 +4305,9 @@ void CAIHumanStrategyShoot::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bShootBlind);
 	SAVE_INT(m_hFiringSocket);
 	SAVE_DWORD(m_iAnimRandomSeed);
+	SAVE_VECTOR(m_vTronUnknown2C);
+	SAVE_BYTE(m_eAttackDirection);
+	SAVE_BOOL(m_bTronUnknown3C);
 }
 
 // ----------------------------------------------------------------------- //

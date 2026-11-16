@@ -819,6 +819,13 @@ class CAIHumanStrategyShoot : public CAIHumanStrategy
 		HMODELSOCKET m_hFiringSocket;	// Socket the shot should come from
 										// (if not INVALID_MODEL_SOCKET)
 		uint32	m_iAnimRandomSeed;	// Randomizing aim/fire animation pairs.
+
+		// RETAIL: Tron's (ctor 0x102261e0, Save 0x10226db0, Load 0x10226cc0).
+		// m_eAttackDirection is the direction prop (kAPG_Direction) of the AI's
+		// attack side, set in Init. The names are ours.
+		LTVector		m_vTronUnknown2C;
+		EnumAnimProp	m_eAttackDirection;
+		LTBOOL			m_bTronUnknown3C;
 };
 
 // ----------------------------------------------------------------------- //

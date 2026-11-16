@@ -87,6 +87,11 @@ struct AIGBM_GoalTemplate
 	LTFLOAT fFrequencyMin;			// Min seconds until can activate again.
 	LTFLOAT fFrequencyMax;			// Max seconds until can activate again.
 	uint32	nDamagePriority;		// Priority of the goal when/if handling damage.
+
+	// RETAIL: Tron's (read at 0x101aba26: "GoalId", "SuppressResetWhenNotCurrent";
+	// the template is 0x44 bytes).
+	uint16	nGoalId;
+	LTBOOL	bSuppressResetWhenNotCurrent;
 };
 
 

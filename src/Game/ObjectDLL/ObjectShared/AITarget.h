@@ -149,7 +149,7 @@ class CGenericTarget : public AbstractTarget
 {
 	public :
 
-		CGenericTarget( ) { m_pOwner = LTNULL; }
+		CGenericTarget( ) : m_pOwner( LTNULL ) { }
 
 		void Init(T* pOwner) { m_pOwner = pOwner; AbstractTarget::Init(); }
 

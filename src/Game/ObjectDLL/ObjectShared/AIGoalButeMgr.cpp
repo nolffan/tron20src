@@ -444,6 +444,8 @@ void CAIGoalButeMgr::ReadGoalTemplate(uint32 iTemplate)
 	Template.fFrequencyMin			= (LTFLOAT)CButeTools::GetValidatedRange(m_buteMgr, s_aTagName, "Frequency", CARange(0.f, 0.f)).GetMin();
 	Template.fFrequencyMax			= (LTFLOAT)CButeTools::GetValidatedRange(m_buteMgr, s_aTagName, "Frequency", CARange(0.f, 0.f)).GetMax();
 	Template.nDamagePriority		= CButeTools::GetValidatedInt(m_buteMgr, s_aTagName, "DamagePriority", 0);
+	Template.nGoalId				= (uint16)CButeTools::GetValidatedInt(m_buteMgr, s_aTagName, "GoalId");
+	Template.bSuppressResetWhenNotCurrent = CButeTools::GetValidatedBool(m_buteMgr, s_aTagName, "SuppressResetWhenNotCurrent", false);
 
 	// Get SenseTriggers. (SenseTypes are bitflags)
 

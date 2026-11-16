@@ -52,6 +52,8 @@ void CAIGoalDisappearReappearEvasive::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
+	m_Target.Save(pMsg);
+
 	SAVE_BOOL( m_bFirstTime );
 	SAVE_BOOL( m_bForceDisappear );
 	SAVE_FLOAT( m_fReappearDistOverride );
@@ -61,6 +63,8 @@ void CAIGoalDisappearReappearEvasive::Save(ILTMessage_Write *pMsg)
 void CAIGoalDisappearReappearEvasive::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
+
+	m_Target.Load(pMsg);
 
 	LOAD_BOOL( m_bFirstTime );
 	LOAD_BOOL( m_bForceDisappear );
@@ -76,8 +80,21 @@ void CAIGoalDisappearReappearEvasive::Load(ILTMessage_Read *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
+void CAIGoalDisappearReappearEvasive::InitGoal(CAI* pAI)
+{
+	// RETAIL: 0x1020a350 (Tron's).
+	super::InitGoal(pAI);
+
+	m_Target.Init(this);
+}
+
+// ----------------------------------------------------------------------- //
+
 void CAIGoalDisappearReappearEvasive::ActivateGoal()
 {
+	// RETAIL: 0x1020a380, Tron targets the stimulus source.
+	m_pAI->Target( m_hStimulusSource );
+
 	if( m_bForceDisappear ||
 		( g_pAICentralKnowledgeMgr->CountMatches( kCK_NextDisappearTime ) == 0 ) ||
 		( g_pAICentralKnowledgeMgr->GetKnowledgeFloat( kCK_NextDisappearTime, LTNULL ) < g_pLTServer->GetTime() ) )
@@ -195,8 +212,10 @@ void CAIGoalDisappearReappearEvasive::RecalcImportance()
 	CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
 	if( ( !m_pAI->GetPrimaryWeapon() ) &&
 		( !pAIHuman->HasHolsterString() ) &&
-		m_pAI->HasBackupHolsterString() )
+		m_pAI->HasBackupHolsterString() &&
+		( !m_pAI->IsFirstUpdate() ) )
 	{
+		// RETAIL: 0x1020a5f0, Tron waits for the AI's first update.
 		m_bForceDisappear = LTTRUE;
 		m_fNextUpdateTime = 0.f;
 		SetCurToBaseImportance();

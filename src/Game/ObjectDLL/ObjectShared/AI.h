@@ -330,6 +330,10 @@ class CAI : public CCharacter, public IAISensing
 
 		virtual CAIBrain* GetBrain() { return m_pBrain; }
 
+		// RETAIL: inline in CAIHumanStrategyShoot::Init (0x102262c0). The
+		// name is ours.
+		EnumAIAttackSide GetCurAttackSide() const { return m_CurWeaponChoice.m_eSide; }
+
 		// Holster
 
 		LTBOOL		HasHolsterString() const { return !!m_hstrHolster; }
