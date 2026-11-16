@@ -284,9 +284,10 @@ bool CTronClientWeapon::TronUnknownVirtual164()
 // (not yet at retail's offset in ours)
 void CTronClientWeapon::TronUnknown97F40()
 {
-	for ( int i = 0; i < 11; ++i )
+	bool (*pFlags)[2] = m_abTronUnknown13C;
+	for ( int i = 0; i < 11; ++i, ++pFlags )
 	{
-		m_abTronUnknown13C[i][0] = false;
-		m_abTronUnknown13C[i][1] = false;
+		(*pFlags)[0] = false;
+		(*pFlags)[1] = false;
 	}
 }
