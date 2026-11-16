@@ -16,6 +16,8 @@
 #include "VarTrack.h"
 #include "VehicleMgr.h"
 #include "CMoveMgr.h"
+#include "ProfileMgr.h"
+#include "InterfaceMgr.h"
 
 VarTrack		g_vtCameraMoveUpTime;
 VarTrack		g_vtCameraMoveUpMinVel;
@@ -101,7 +103,7 @@ CPlayerCamera::CPlayerCamera()
 	m_fTronUnknownF8	= 55.0f;
 	m_fTronUnknownFC	= 94.0f;
 	m_fTronUnknown100	= 1000.0f;
-	m_nTronUnknown104	= 0;
+	m_fTronUnknown104	= 0.0f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -826,6 +828,28 @@ void CPlayerCamera::AttachToObject(HLOCALOBJ hObj)
 
 void CPlayerCamera::GoFirstPerson(bool bInstant)
 {
+	// RETAIL: Tron's (retail 0x1015cfe0): off the light cycle camera
+	if (m_eCameraMode == TRONMODE5)
+	{
+		TronUnknownSaveToProfile();
+		m_eCameraMode = GOINGFIRSTPERSON;
+
+		if (bInstant)
+		{
+			m_fTronUnknown104 = 0.0f;
+		}
+		else
+		{
+			m_fTronUnknown104 = g_pLTClient->GetTime();
+		}
+		return;
+	}
+
+	if (bInstant)
+	{
+		m_fTronUnknown104 = 0.0f;
+	}
+
 	if((m_eCameraMode != GOINGFIRSTPERSON) && (m_eCameraMode != FIRSTPERSON))
 	{
         m_GoingFirstPersonStart = g_pLTClient->GetTime();
@@ -1068,14 +1092,343 @@ void CPlayerCamera::CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & r
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CPlayerCamera::TronUnknownStartOrbit
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015dfe0; the names are ours): an
+//				orbit around the target from one radius and angles to
+//				others in fTime seconds
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownStartOrbit(float fStartRadius, float fEndRadius,
+										  float fStartPhi, float fEndPhi,
+										  float fStartTheta, float fEndTheta, float fTime)
+{
+	m_fTronUnknownStartRadius	= fStartRadius;
+	m_fTronUnknownEndRadius		= fEndRadius;
+	m_fTronUnknownStartPhi		= fStartPhi;
+	m_fTronUnknownEndPhi		= fEndPhi;
+	m_fTronUnknownStartTheta	= fStartTheta;
+	m_fTronUnknownEndTheta		= fEndTheta;
+	m_fTronUnknownOrbitStart	= g_pLTClient->GetTime();
+	m_fTronUnknownOrbitTime		= fTime;
+	m_eCameraMode				= TRONMODE6;
+	m_fTronUnknownOrbitYaw		= TronUnknownGetOrbitYaw();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownGetOrbitYaw
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e060; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+float CPlayerCamera::TronUnknownGetOrbitYaw()
+{
+	return (MATH_PI * 3.0f) - g_pPlayerMgr->GetYaw();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownMoveToTarget
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e070; the name is ours): move
+//				the camera to +0x24 in the time left ("LCCSpeed" seconds
+//				from +0x104); true when it is there
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerCamera::TronUnknownMoveToTarget()
+{
+	if (m_fTronUnknown104 > 0.0f)
+	{
+		LTVector vDir = m_vTronUnknown24 - m_vPos;
+		float fTimeLeft = 1.0f;
+		float fDist = vDir.Mag();
+
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCSpeed");
+		if (hVar)
+		{
+			fTimeLeft = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		vDir.Norm();
+
+		fTimeLeft -= (g_pLTClient->GetTime() - m_fTronUnknown104);
+
+		if (fTimeLeft > 0.0f && g_pGameClientShell->GetFrameTime() < fTimeLeft)
+		{
+			vDir = (vDir * g_pGameClientShell->GetFrameTime()) * (fDist / fTimeLeft);
+			m_vPos += vDir;
+			return false;
+		}
+
+		m_vPos = m_vTronUnknown24;
+		m_fTronUnknown104 = 0.0f;
+		return true;
+	}
+
+	m_vPos = m_vTronUnknown24;
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CPlayerCamera::TronUnknownStartPan
 //
 //	PURPOSE:	RETAIL: Tron's (retail 0x1015e240; the name is ours): the
-//				light cycle camera's pan (CPlayerMgr::SetTronUnknown1D5).
-//				PORT: not yet written from retail
+//				light cycle camera's pan (CPlayerMgr::SetTronUnknown1D5)
 //
 // ----------------------------------------------------------------------- //
 
 void CPlayerCamera::TronUnknownStartPan(float fPhi, float fRadius, float fTime)
 {
+	float fStartRadius;
+
+	if (m_eCameraMode != TRONMODE5)
+	{
+		bool bPan = g_pPlayerMgr->GetTronUnknown1D5();
+		g_pPlayerMgr->SetTronUnknown1D5(false);
+		g_pInterfaceMgr->TronUnknownThirdPersonCamera(false);
+		g_pPlayerMgr->SetTronUnknown1D5(bPan);
+		fStartRadius = 100.0f;
+	}
+	else
+	{
+		fStartRadius = m_fTronUnknown100;
+	}
+
+	float fTheta = m_fTronUnknownFC;
+	TronUnknownStartOrbit(fStartRadius, fRadius, g_pPlayerMgr->GetPitch() + m_fTronUnknownF8,
+		fPhi, fTheta, fTheta, fTime);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownStartLCCOrbit
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e2e0; the name is ours): the
+//				orbit the "LCC*" console variables set (in degrees)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownStartLCCOrbit()
+{
+	float fStartRadius	= 100.0f;
+	float fEndRadius	= 500.0f;
+	float fStartPhi		= 75.0f;
+	float fEndPhi		= 80.0f;
+	float fStartTheta	= 360.0f;
+	float fEndTheta		= 90.0f;
+	float fTime			= 4.0f;
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCStartRadius");
+	if (hVar)
+	{
+		fStartRadius = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCEndRadius");
+	if (hVar)
+	{
+		fEndRadius = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCStartPhi");
+	if (hVar)
+	{
+		fStartPhi = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCEndPhi");
+	if (hVar)
+	{
+		fEndPhi = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCStartTheta");
+	if (hVar)
+	{
+		fStartTheta = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCEndTheta");
+	if (hVar)
+	{
+		fEndTheta = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	hVar = g_pLTClient->GetConsoleVar("LCCTime");
+	if (hVar)
+	{
+		fTime = g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	TronUnknownStartOrbit(fStartRadius, fEndRadius, DEG2RAD(fStartPhi), DEG2RAD(fEndPhi),
+		DEG2RAD(fStartTheta), DEG2RAD(fEndTheta), fTime);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownGoLightCycle
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e4b0; the name is ours): the
+//				light cycle camera (TRONMODE5) at a pitch, yaw (radians) and
+//				zoom
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownGoLightCycle(float fPitch, float fYaw, float fZoom, bool bInstant)
+{
+	if (m_eCameraMode != TRONMODE5)
+	{
+		m_eCameraMode = TRONMODE5;
+		m_fTronUnknownF8 = fPitch;
+		m_fTronUnknownFC = fYaw;
+		m_fTronUnknown100 = fZoom;
+
+		if (bInstant)
+		{
+			m_fTronUnknown104 = 0.0f;
+		}
+		else
+		{
+			m_fTronUnknown104 = g_pLTClient->GetTime();
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownGoLightCycleFromProfile
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e510; the name is ours): the
+//				light cycle camera as the profile keeps it (in degrees)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownGoLightCycleFromProfile(bool bInstant)
+{
+	if (m_eCameraMode == TRONMODE5)
+		return;
+
+	float fZoom = 800.0f;
+	float fPitch = 45.0f;
+	float fYaw = 94.0f;
+
+	if (g_pProfileMgr)
+	{
+		CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
+
+		float fTotalPitch = pProfile->m_fLCCamPitch + RAD2DEG(pProfile->m_fLCPlayerPitch);
+		if (fTotalPitch < 0.0f || fTotalPitch > 90.0f)
+		{
+			pProfile->m_fLCCamPitch = 45.0f;
+			pProfile->m_fLCPlayerPitch = 0.0f;
+		}
+
+		if (pProfile->m_fLCCamYaw < 0.0f || pProfile->m_fLCCamYaw > 360.0f)
+		{
+			pProfile->m_fLCCamYaw = 94.0f;
+			pProfile->m_fLCPlayerPitch = 0.0f;
+		}
+
+		fPitch = pProfile->m_fLCCamPitch;
+		fYaw = pProfile->m_fLCCamYaw;
+		fZoom = pProfile->m_fLCCamZoom;
+		g_pPlayerMgr->SetPitch(pProfile->m_fLCPlayerPitch);
+	}
+
+	TronUnknownGoLightCycle(DEG2RAD(fPitch), DEG2RAD(fYaw), fZoom, bInstant);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TronUnknownCameraFilterFn
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e8a0; the name is ours):
+//				solid objects other than the player and the watched object
+//
+// ----------------------------------------------------------------------- //
+
+static bool TronUnknownCameraFilterFn(HOBJECT hObj, void* pUserData)
+{
+	uint32 dwFlags;
+	g_pCommonLT->GetObjectFlags(hObj, OFT_Flags, dwFlags);
+
+	if ((dwFlags & FLAG_SOLID) && hObj != g_pMoveMgr->GetObject() &&
+		hObj != g_pMoveMgr->GetServerObject() && hObj != g_pPlayerMgr->GetTronUnknownBC())
+	{
+		return true;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownClipToTarget
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e620; the name is ours): keep
+//				the camera on the near side of what is between it and the
+//				target
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownClipToTarget()
+{
+	if (!m_hTarget)
+		return;
+
+	LTVector vTargetPos;
+	g_pLTClient->GetObjectPos(m_hTarget, &vTargetPos);
+
+	LTVector & vCamPos = m_vPos;
+	LTVector vDir = vCamPos - vTargetPos;
+	LTVector vPos = vCamPos;
+
+	ClientIntersectQuery iQuery;
+	ClientIntersectInfo  iInfo;
+
+	iQuery.m_From		= vTargetPos;
+	iQuery.m_To			= vCamPos;
+	iQuery.m_Flags		= INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
+	iQuery.m_FilterFn	= TronUnknownCameraFilterFn;
+
+	if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
+	{
+		LTVector vTemp = iInfo.m_Point - vTargetPos;
+		if (vTemp.Mag() < vDir.Mag())
+		{
+			vDir = iInfo.m_Point + iInfo.m_Plane.m_Normal;
+			vPos = vDir;
+		}
+	}
+
+	VEC_COPY(vCamPos, vPos);
+	m_vLastOptPos = vPos;
+	m_vLastTargetPos = vTargetPos;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerCamera::TronUnknownSaveToProfile
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x1015e8f0; the name is ours): keep
+//				the light cycle camera in the profile (in degrees)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerCamera::TronUnknownSaveToProfile()
+{
+	if (!g_pProfileMgr)
+		return;
+
+	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
+	pProfile->m_fLCCamYaw = RAD2DEG(m_fTronUnknownFC);
+	pProfile->m_fLCCamPitch = RAD2DEG(m_fTronUnknownF8);
+	pProfile->m_fLCCamZoom = m_fTronUnknown100;
+	pProfile->m_fLCPlayerPitch = g_pPlayerMgr->GetPitch();
+	pProfile->Save();
 }

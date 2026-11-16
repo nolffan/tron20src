@@ -96,6 +96,8 @@ public:
 	CCameraOffsetMgr*	GetCameraOffsetMgr()		{ return m_pCameraOffsetMgr; }
 	CPlayerCamera*		GetPlayerCamera()			{ return m_pPlayerCamera; }
 	// RETAIL: read by CUserProfile::SetLightCycleCamera (0x100f18b0)
+	HOBJECT		GetTronUnknownBC() const	{ return m_hTronUnknownBC; }	// RETAIL: inline (0x1015e8da)
+	bool		GetTronUnknown1D5() const	{ return m_bTronUnknown1D5; }	// RETAIL: inline (0x1015e254)
 	bool		GetTronUnknown1D7() const	{ return m_bTronUnknown1D7; }
 	bool		GetTronUnknown1D8() const	{ return m_bTronUnknown1D8; }
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }

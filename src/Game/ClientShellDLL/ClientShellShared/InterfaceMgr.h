@@ -332,7 +332,7 @@ class CInterfaceMgr
 		// RETAIL: slot 0x98 (0x100cfd60, two arguments: called (0, 0) from
 		// 0x100a7e9c and (1, 1) from 0x1011d3e8; looks for the "LCC" object
 		// when the client shell's +0x1d7 is set). The name is ours.
-		virtual void	TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown);
+		virtual void	TronUnknownVirtual98(bool bTronUnknown, bool bInstant);
 
 		// RETAIL: Tron's timed message (0x100cff80: the text, else the
 		// string, else none; the second text is cleared): the light cycle
@@ -341,6 +341,9 @@ class CInterfaceMgr
 		// RETAIL: 0x100cfed0: the normal FOV and the first person camera
 		// (the light cycle match manager, CTronPlayerMgr). The name is ours
 		void	TronUnknownFirstPersonCamera(bool bInstant);
+		// RETAIL: 0x100cfdf0: the light cycle FOV and the light cycle
+		// camera (CPlayerCamera::TronUnknownStartPan). The name is ours
+		void	TronUnknownThirdPersonCamera(bool bInstant);
 		// RETAIL: inline (the light cycle match manager, 0x1001648e)
 		void	ClearTronUnknownMessage() { m_fTronUnknownF98C = -1.0f; }
 		char*	GetTronUnknownMessageText2() { return m_szTronUnknownFA14; }
@@ -471,18 +474,14 @@ class CInterfaceMgr
 
 		CScreenSpriteMgr m_ScreenSpriteMgr;		// +0xe73c Screen sprite mgr (new for Tron/TO2)
 		// (CScreenSpriteMgr is retail's 0x28 bytes: its constructor 0x10164c00)
-		char			m_aTronPadScreenSpriteMgr[0x28 - sizeof(CScreenSpriteMgr)];
 
 		CGameSettings	m_Settings;				// +0xe764
 		// RETAIL: one timer, no team timers (Tron's CInterfaceTimer is 0x18
-		// bytes, no team id or colour: its Draw 0x10170230); ours is 0x1c,
-		// so m_Credits and m_PopupText sit 4 bytes late until it is fixed
-		// (the pad below takes the difference back)
+		// bytes, no team id or colour: its Draw 0x10170230)
 		CInterfaceTimer m_InterfaceTimer;		// +0xe904 Main interface timer
 		CCredits		m_Credits;				// +0xe91c Display credits
 		CPopupText		m_PopupText;			// +0xe93c Display in game text
 		// (CPopupText is retail's 0xad0 bytes: its constructor 0x1014eb00)
-		char			m_aTronPadPopupText[0xad0 - sizeof(CPopupText) - (sizeof(CInterfaceTimer) - 0x18)];
 
 		CFullScreenTint m_FullScreenTint;		// +0xf40c All full screen tinting (used for pause)
 

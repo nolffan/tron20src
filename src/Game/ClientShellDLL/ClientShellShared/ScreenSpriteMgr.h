@@ -110,6 +110,9 @@ private:
 
 	LTBOOL		m_bExpires;			// flag to set if the sprite will die (default = true)
 	float		m_fLifeTime;		// Life expectancy of sprite
+	// RETAIL: Tron's (+0x2c): set, the sprite hides when its life ends
+	// (CScreenSprite::AdvanceTime, retail 0x10164970). Not yet named
+	LTBOOL		m_bTronUnknown2C;
 
 	LTBOOL		m_bShow;			// flag.  Is this sprite supposed to be drawn?
 	LTBOOL		m_bAdditive;		// new bonus flag.  Is this an additive texture?
@@ -137,7 +140,11 @@ public:
 	LTBOOL		Init();
 	void		Term();
 
+	// RETAIL: Tron's Update only draws (retail 0x10165000); the time and
+	// the culling moved to TronUnknownAdvance (retail 0x10164f00, called
+	// from CInterfaceMgr::Update; the name is ours)
 	void		Update();					// Draw all visible sprites
+	void		TronUnknownAdvance();
 
 	CScreenSprite * CreateScreenSprite(char * pFile, bool bExpires = true, ScreenSpriteLayer eLayer = SPRITELAYER_DEFAULT);
 	void		DestroyScreenSprite(CScreenSprite * pSprite);	// public fn for destructor
@@ -152,7 +159,13 @@ private:
 	FrameArray	m_FrameArray;
 	ScreenSpriteArray m_SpriteArray;
 
+	bool		m_bTronUnknownDraw;	// RETAIL: Tron's (+0x1c): a sprite is shown (0x10164f00)
 	float		m_fLastTime;
+	// RETAIL: Tron's (+0x24): a tool tip object that draws itself under
+	// the cursor layers (its class: retail 0x1014e230..0x1014eb00, not yet
+	// in our tree; it sets this pointer to itself, 0x1014ea7d). The name is
+	// ours
+	void*		m_pTronUnknownToolTip;
 	// TODO if a sprite has expired, go ahead and term() it and delete it!
 };
 

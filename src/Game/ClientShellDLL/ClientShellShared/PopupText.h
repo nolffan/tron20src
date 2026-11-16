@@ -42,10 +42,18 @@ private:
 	LTBOOL	m_bVisible;
 	bool	m_bUsePopupState;
 
-	bool	m_bWeaponsEnabled;
+	// RETAIL: Tron's (retail 0x1014eb00, 0xad0 bytes): the frames' own
+	// textures, a second frame and when to draw it (CPopupText::Draw,
+	// 0x1014edb0). The names are ours
+	HTEXTURE			m_hTronUnknownFrame2Tex;	// +0xc
+	HTEXTURE			m_hFrameTex;				// +0x10
 
 	CLTGUIFrame			m_Frame;
 	CLTGUITextCtrl		m_Text;
+	CLTGUIFrame			m_TronUnknownFrame2;		// +0x5a4
+
+	bool				m_bTronUnknownDrawFrame2;	// +0xacc
+	bool				m_bWeaponsEnabled;			// +0xacd
 /*
 	void	ClearSurfaces();
 	void	ShowText(int nStringId);

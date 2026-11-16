@@ -119,6 +119,8 @@ VarTrack	g_vtExitLevelScreenFadeTime;
 extern CMoveMgr* g_pMoveMgr;
 extern VarTrack g_vtFOVXNormal;
 extern VarTrack g_vtFOVYNormal;
+extern VarTrack g_vtFOVXCycle;
+extern VarTrack g_vtFOVYCycle;
 
 extern VarTrack g_vtScreenFadeInTime;
 
@@ -1008,13 +1010,15 @@ LTBOOL CInterfaceMgr::Update()
 			g_pLTClient->Start3D();
 			g_pLTClient->StartOptimized2D();
 			m_MessageBox.Draw();
+			m_ScreenSpriteMgr.Update();	// RETAIL: Tron's draws the sprites here (retail 0x100c8894)
 			g_pLTClient->EndOptimized2D();
 			g_pLTClient->End3D();
 		}
 		m_CursorMgr.Update();
 	}
 
-	m_ScreenSpriteMgr.Update();
+	// RETAIL: Tron's advances the sprites here (retail 0x100c88bc)
+	m_ScreenSpriteMgr.TronUnknownAdvance();
 
 	return bHandled;
 }
@@ -6129,11 +6133,46 @@ void CInterfaceMgr::LoadFailed(eScreenID eScreenToShow /*= SCREEN_ID_NONE*/, uin
 //
 // ----------------------------------------------------------------------- //
 
-void CInterfaceMgr::TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown)
+void CInterfaceMgr::TronUnknownVirtual98(bool bTronUnknown, bool bInstant)
 {
-	// PORT: not yet written (retail checks the client shell's +0x1d7,
-	// looks for the "LCC" object and calls 0x100cfed0 or 0x100cfdf0 with
-	// nTronUnknown)
+	if (!g_pPlayerMgr->GetTronUnknown1D7())
+	{
+		TronUnknownFirstPersonCamera(bInstant);
+		return;
+	}
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCC");
+	if (bInstant && (!hVar || g_pLTClient->GetVarValueFloat(hVar) > 0.0f))
+	{
+		g_pPlayerMgr->GetPlayerCamera()->TronUnknownStartLCCOrbit();
+	}
+	else
+	{
+		TronUnknownThirdPersonCamera(bInstant);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::TronUnknownThirdPersonCamera
+//
+//	PURPOSE:	RETAIL: 0x100cfdf0 (the name is ours): the light cycle FOV
+//				and camera
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::TronUnknownThirdPersonCamera(bool bInstant)
+{
+	if (!g_pPlayerMgr)
+		return;
+
+	if (g_pPlayerMgr->GetTronUnknown1D5() && !g_pPlayerMgr->TronUnknownVirtual3C(true))
+		return;
+
+	float fFovY = g_vtFOVYCycle.GetFloat();
+	float fFovX = g_vtFOVXCycle.GetFloat();
+	g_pPlayerMgr->SetCameraFOV(DEG2RAD(fFovX), DEG2RAD(fFovY));
+	g_pPlayerMgr->GetPlayerCamera()->TronUnknownGoLightCycleFromProfile(bInstant);
 }
 
 // ----------------------------------------------------------------------- //

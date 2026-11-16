@@ -28,6 +28,7 @@
 #include "iltfontmanager.h"
 #include "FXButeMgr.h"
 #include "HitBox.h"
+#include "AttachClientFX.h"
 
 #define MAX_DINGS	5
 
@@ -47,6 +48,10 @@ class CCharacterFX : public CSpecialFX
 			m_fNextHeartTime		= -1.0f;
             m_bLeftFoot             = LTTRUE;
             m_eLastSurface			= ST_UNKNOWN;
+			// RETAIL: Tron's (retail 0x1010d1b5)
+			m_hTronUnknown231C		= LTNULL;
+			m_fTronUnknown2320		= -1.0f;
+			m_nTronUnknown2324		= 0;
 			m_hDialogueSnd			= LTNULL;
 			m_hVehicleSound			= LTNULL;
 			m_bSubtitle				= LTFALSE;
@@ -231,6 +236,13 @@ class CCharacterFX : public CSpecialFX
 		//the amount of time that needs to elapse for another breath to be emitted
 		float				m_fBreathEndTime;
 
+		// RETAIL: Tron's three (+0x231c an object, +0x2320 a time the
+		// constructor sets to -1, +0x2324 an index; retail 0x10179ee0,
+		// 0x10179f10). Not yet named
+		HOBJECT				m_hTronUnknown231C;
+		float				m_fTronUnknown2320;
+		uint32				m_nTronUnknown2324;
+
 		HLTSOUND			m_hDialogueSnd;
 		uint8				m_nUniqueDialogueId;
 		bool				m_bSubtitlePriority;
@@ -242,29 +254,25 @@ class CCharacterFX : public CSpecialFX
 		LTFLOAT				m_fNextDingTime[MAX_DINGS];
 
 		char				m_szInfoString[kMaxInfoStringLength + 1];
-		
+
 		HLTSOUND			m_hWeaponLoopSound;
-		
+
 		HTRACKEDNODE		m_hUpperTorsoNode;
 		HTRACKEDNODE		m_hLowerTorsoNode;
 		HTRACKEDNODE		m_hHeadNode;
 
 		CClientTrackedNodeContext	m_TrackedNodeContext;
 
-		CLIENTFX_LINK_NODE	m_AttachClientFX;
-
 		CLIENTFX_LINK		*m_p3rdPersonDamageFX;
 		uint32				m_nNum3rdPersonDamageFX;
 
 		CLIENTFX_LINK		m_link3rdPersonInstFX;
-		CLIENTFX_LINK		m_linkChatFX;
-		
+
 		CUIFormattedPolyString *m_pStr;
 		LTVector				m_vStrPos;
 
 		DamageFlags			m_nLastDamageFlags;
-		DamageFlags			m_nInstantDamageFlags;
-		
+
 		bool				m_bWasPlayingSpecialDamageAni;
 		bool				m_bDamageFxTrackingOverride;
 
@@ -272,12 +280,24 @@ class CCharacterFX : public CSpecialFX
 
 		bool				m_bUpdateAttachments;
 
-		CTimer				m_PlayerAlphaCycleTimer;
+		CLIENTFX_LINK		m_linkChatFX;
 
 		CHitBox				m_HitBox;
 
+		CTimer				m_PlayerAlphaCycleTimer;
+
+		// RETAIL: Tron's attached client FX (+0x27f0; the constructor and
+		// destructor, retail 0x1010d16a, 0x10174778). The name is ours
+		CAttachClientFX		m_TronAttachClientFX;
+
+		// RETAIL: retail's CCharacterFX ends here (its bank holds 0x2800
+		// bytes per object, retail 0x1010cdeb). PORT: NOLF2's members that
+		// Tron does not have, kept after retail's so that the others are at
+		// retail's offsets, until the code that uses them is Tron's
+		DamageFlags			m_nInstantDamageFlags;
+		CLIENTFX_LINK_NODE	m_AttachClientFX;
 		bool				m_bPitchEnabled;
-		
+
 		typedef std::vector<CCharacterFX*> CharFXList;
 		static CharFXList	m_lstPlayersInGame;
 };
