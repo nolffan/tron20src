@@ -15,6 +15,7 @@
 #include "TRONInterfaceMgr.h"
 #include "SaveLoadMgr.h"
 #include "GameClientShell.h"
+#include "iltfontmanager.h"
 // MERGE: Tron's side (build 69); NOLF2 1.3 had:
 //| #include "ClientSaveLoadMgr.h"
 //| #include "ClientMultiplayerMgr.h"
@@ -23,6 +24,8 @@
 #include "ClientMultiplayerMgr.h"	// MERGE: NOLF2's, which its code here uses
 #include "MissionMgr.h"
 
+
+extern ILTFontManager* g_pFontManager;
 
 namespace
 {
@@ -39,12 +42,10 @@ namespace
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+// RETAIL: 0x1005abd0
 CScreenFailure::CScreenFailure()
 {
 	m_pString = LTNULL;
-	m_pHelp = NULL;
-	m_bSentAutoLoadMessage = false;
-	g_fDuration = 0.0f;
 }
 
 CScreenFailure::~CScreenFailure()
@@ -52,10 +53,11 @@ CScreenFailure::~CScreenFailure()
 
 }
 
-
 // Build the screen
+// RETAIL: 0x1005ac20
 LTBOOL CScreenFailure::Build()
 {
+
 	CreateTitle(NULL);
 
 	if (g_pLayoutMgr->HasCustomValue(SCREEN_ID_FAILURE,"FailStringRect"))
@@ -66,7 +68,6 @@ LTBOOL CScreenFailure::Build()
 	{
 		stringSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_FAILURE,"FailStringSize");
 	}
-
 	if (g_pLayoutMgr->HasCustomValue(SCREEN_ID_FAILURE,"HelpStringPos"))
 	{
 		helpPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_FAILURE,"HelpStringPos");
@@ -76,20 +77,12 @@ LTBOOL CScreenFailure::Build()
 		helpSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_FAILURE,"HelpStringSize");
 	}
 
-	LTIntPt stringPos;
-	stringPos.x = (stringRect.left + stringRect.right) / 2;
-	stringPos.y = stringRect.top;
-	m_pString = AddTextItem("failed",NULL,NULL,stringPos,LTTRUE);
-	if (m_pString)
-	{
-		m_pString->SetFont(NULL,stringSize);
-		m_pString->SetFixedWidth(stringRect.right - stringRect.left);
-		CUIFormattedPolyString *pStr = m_pString->GetString();
-		if (pStr)
-		{
-			pStr->SetAlignmentH(CUI_HALIGN_CENTER);
-		}
-	}
+	// RETAIL: the failure text is a centered polystring
+	int nHeight = (int)(g_pInterfaceResMgr->GetYRatio() * (float)stringSize);
+	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(nHeight);
+	m_pString = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(L" "), 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pString->SetCharScreenHeight(nHeight);
+	m_pString->SetColor(0xFFFFFFFF);
 
 	if (g_pLayoutMgr->HasCustomValue(SCREEN_ID_FAILURE,"Delay"))
 	{
@@ -98,48 +91,41 @@ LTBOOL CScreenFailure::Build()
 
 	if( !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 	{
-		m_pHelp = AddTextItem(IDS_HELP_FAILURE,NULL,NULL,helpPos,LTTRUE);
-		if (m_pHelp)
+		CLTGUITextCtrl *pHelp = AddTextItem(IDS_HELP_FAILURE,NULL,NULL,helpPos,LTTRUE);
+		if (pHelp)
 		{
-			m_pHelp->SetFont(NULL,helpSize);
+			pHelp->SetFont(g_pInterfaceResMgr->GetFontForHeight(helpSize),helpSize);
 		}
 	}
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
 
-	UseBack(LTFALSE);
+	UseBack(LTFALSE,LTFALSE,LTFALSE);
+
 	return LTTRUE;
+
 }
 
-
+// RETAIL: 0x1005af00
 void CScreenFailure::OnFocus(LTBOOL bFocus)
 {
-
 	if (bFocus)
 	{
 		g_fDuration = 0.0f;
-		if (m_pString)
-		{
-			m_pString->SetString(LoadTempString(g_pInterfaceMgr->GetFailStringID()));
-		}
-		if (m_pHelp)
-		{
-			m_pHelp->Show(LTFALSE);
-		}
 
-		m_bSentAutoLoadMessage = false;
-	}
-	else
-	{
-		if (m_pString)
-		{
-			m_pString->SetString(" ");
-		}
+		m_pString->SetText(LoadTempWString(g_pInterfaceMgr->GetFailStringID()));
 
-		//for co-op hide the MB if they are forced to leave the screen before choosing
-		g_pInterfaceMgr->CloseMessageBox(LTFALSE);
+		// RETAIL: both coordinates are scaled by the x ratio
+		float fXRatio = g_pInterfaceResMgr->GetXRatio();
+		int x = (int)((float)((stringRect.left + stringRect.right) / 2) * fXRatio);
+		int y = (int)((float)stringRect.top * fXRatio);
+
+		int32 nWidth, nHeight;
+		m_pString->GetDims(&nWidth, &nHeight);
+		m_pString->SetPosition(x - nWidth / 2, y);
 	}
+
 	CBaseScreen::OnFocus(bFocus);
 }
 
@@ -172,42 +158,36 @@ static void ExitFailureScreenCB(LTBOOL bReturn, void *pData)
 
 void CScreenFailure::Escape()
 {
-	// Only go back to the load screen if local client or single player.
+	// RETAIL: 0x1005b020.  A client of a remote server is asked first.
 	if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 	{
-		// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-		//| MBCreate mb;
-		//| mb.eType = LTMB_YESNO;
-		//| mb.pFn = ExitFailureScreenCB;
-		//| mb.pData = this;
-		//| g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
-		g_pMissionMgr->StartGameFromQuickSave();	// MERGE: in NOLF2's Escape(), which returns nothing
+		MBCreate mb;
+		mb.eType = LTMB_YESNO;
+		mb.pFn = ExitFailureScreenCB;
+		mb.pData = this;
+		g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
+		return;
 	}
+
+	//hack to rebuild our screen history
+	m_pScreenMgr->ClearHistory();
+	PlayInterfaceSound(IS_PAGE);
+	m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
+
+	// Put mp history if mp game.
+	if( IsMultiplayerGame( ))
+	{
+		m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MULTI);
+		m_pScreenMgr->AddScreenToHistory(SCREEN_ID_HOST);
+	}
+	// Put sp history if sp game.
 	else
 	{
-		//hack to rebuild our screen history
-		m_pScreenMgr->ClearHistory();
-
-		g_pInterfaceMgr->RequestInterfaceSound(IS_PAGE);
-
-		m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MAIN);
-
-		// Put mp history if mp game.
-		if( IsMultiplayerGame( ))
-		{
-			m_pScreenMgr->AddScreenToHistory(SCREEN_ID_MULTI);
-			m_pScreenMgr->AddScreenToHistory(SCREEN_ID_HOST);
-		}
-		// Put sp history if sp game.
-		else
-		{
-			m_pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
-		}
-
-		OnFocus(LTFALSE);
-
-		m_pScreenMgr->SetCurrentScreen(SCREEN_ID_LOAD);
+		m_pScreenMgr->AddScreenToHistory(SCREEN_ID_SINGLE);
 	}
+
+	OnFocus(LTFALSE);
+	m_pScreenMgr->SetCurrentScreen(SCREEN_ID_LOAD);
 }
 
 LTBOOL CScreenFailure::HandleKeyDown(int key, int rep)
@@ -242,32 +222,23 @@ LTBOOL CScreenFailure::OnRButtonDown(int x, int y)
 
 LTBOOL CScreenFailure::Render(HSURFACE hDestSurf)
 {
+	// RETAIL: 0x1005b170
 	CBaseScreen::Render(hDestSurf);
-	g_fDuration += g_pGameClientShell->GetFrameTime();
-	
-	// Let the serve know we are ready to begin an automatic load...
 
-	if( g_fDuration > g_fMinDelay && !m_bSentAutoLoadMessage )
+	if (m_pString)
 	{
-		SendEmptyServerMsg( MID_CLIENT_READY_FOR_AUTOLOAD );
-		m_bSentAutoLoadMessage = true;
+		m_pString->Render();
 	}
+
+	g_fDuration += g_pGameClientShell->GetFrameTime();
 
 	// Automatically trigger an escape if we're a local client.
-	if( !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
+	if( !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) && g_fDuration >= g_fDelay )
 	{
-
-		if (g_fDuration > g_fMinDelay && m_pHelp && !m_pHelp->IsVisible())
-		{
-			g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\pressanykey.wav");
-			m_pHelp->Show(LTTRUE);
-		}
-
-		if (g_fDuration >= g_fDelay)
-			Escape();
+		Escape();
 	}
-	return LTTRUE;
 
+	return LTTRUE;
 }
 
 

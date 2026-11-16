@@ -40,11 +40,10 @@ public:
 
 protected:
 
-	CLTGUITextCtrl		*m_pString;
-	CLTGUITextCtrl		*m_pHelp;
-	
-	bool				m_bSentAutoLoadMessage;
-
+	// RETAIL: Tron's failure text is a polystring of its own (+0x790, ctor
+	// 0x1005abd0); the help text is an ordinary control and the screen
+	// sends no autoload message
+	CUIFormattedPolyString	*m_pString;
 
 };
 
