@@ -303,11 +303,13 @@ class CAttachments : public IAggregate
 		void AddRequirements(ModelId eModelId);
 
 		virtual void Attach(const char* szAttachmentPosition, const char* szAttachment);
-		// RETAIL: Tron's (slot 0x24, one argument; retail 0x10187d50). Not yet
-		// named
-		virtual void TronUnknownVirtual24(const char* szArg) {}
+		// RETAIL: Tron's Detach(CAttachmentPosition*) is slot 0x24 (0x10187d50):
+		// VC6 puts virtual overloads in reverse order
 		virtual void Detach(const char* szAttachmentPosition);
+		virtual void Detach(CAttachmentPosition* pDetachPosition);
 		CAttachment* GetAttachment(const char* szAttachmentPosition);
+		// RETAIL: Tron's (0x1018a2d0)
+		CAttachmentPosition* GetAttachment(uint32 iAttachmentPosition);
 
 		void AddToObjectList( ObjectList *pObjList, eObjListControl eControl = eObjListNODuplicates );
 
