@@ -40,6 +40,11 @@
 //				show up soon enough.
 //              
 //----------------------------------------------------------------------------
+// RETAIL: Tron's CAIHumanStateCatch (0xa4 bytes, ctor 0x1022b180, vtable
+// 0x1029eb0c) holds a catch until it touches its object; it has no
+// three-phase animation sequence, no max catch duration and no catch speed
+// (NOLF2's). It plays the AI's posture and, while holding, the direction
+// it picked.
 class CAIHumanStateCatch : public CAIHumanState
 {
 	public :
@@ -67,22 +72,16 @@ class CAIHumanStateCatch : public CAIHumanState
 		// Simple acccessors
 
 		CMusicMgr::Mood GetMusicMood(void) { return CMusicMgr::eMoodAggressive; }
-		
-		void SetAnimationSequence(EnumAnimProp eAnimProp1, EnumAnimProp eAnimProp2, EnumAnimProp eAnimProp3) { m_eAnimProp1 = eAnimProp1; m_eAnimProp2 = eAnimProp2; m_eAnimProp3 = eAnimProp3; } 
+
 		void SetObjectToCatch( HOBJECT hObject);
 
 	protected:
-		void HandleSetupCatch();
 		void HandleStartCatch();
 		void HandleHoldCatch();
-		void HandleDropCatch();
 
 		LTBOOL ShouldDropCatch(void);
 
 	protected:
-
-		// Max time to keep the Catch up
-		LTFLOAT			m_fMaxCatchDuration;
 
 		// Direction to the object we mean to Catch, NULL
 		// if no direction is set or to be used.
@@ -93,20 +92,12 @@ class CAIHumanStateCatch : public CAIHumanState
 		LTObjRef		m_hObjectToCatch;
 
 		// if we Catch the object we have a handle to, then set this to true
-		LTBOOL			m_bCaughtNamedObject;
+		bool			m_bCaughtNamedObject;
 
-		// Animation sequence to play for the Caught
-		EnumAnimProp	m_eAnimProp1;
-		EnumAnimProp	m_eAnimProp2;
-		EnumAnimProp	m_eAnimProp3;
-
-		// Random seed is used to insure that events are replicatable
-		// for debugging reasons.
-		uint32			m_iAnimRandomSeed;
-		
-		// How long are we going to be Catching? This is used
-		// to determine the animation rate.
-		LTFLOAT			m_fCatchSpeed;
+		// RETAIL: Tron's posture and direction props (+0x9c, +0xa0). The
+		// names are ours.
+		EnumAnimProp	m_ePosture;
+		EnumAnimProp	m_eDirection;
 };
 
 #endif // __AIHUMANSTATECATCH_H__

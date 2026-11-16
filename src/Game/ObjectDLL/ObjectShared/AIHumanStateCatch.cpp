@@ -31,6 +31,8 @@
 #include "AITarget.h"
 #endif
 
+#include "TrackedNodeContext.h"
+
 // Forward declarations
 
 // Globals
@@ -51,15 +53,10 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateCatch, kState_HumanCatch);
 //----------------------------------------------------------------------------
 CAIHumanStateCatch::CAIHumanStateCatch()
 {
-	// AnimProp1 starts the Catch
-	// AnimProp2 can be stretched to cover a variable Catch time.
-	// AnimProp3 completes the Catch.
-	m_eAnimProp1 = kAP_None;
-	m_eAnimProp2 = kAP_None;
-	m_eAnimProp3 = kAP_None;
+	// RETAIL: 0x1022b180.
 
 	// Reset the state tracking 
-	m_bCaughtNamedObject = LTFALSE;
+	m_bCaughtNamedObject = false;
 
 	m_hObjectToCatch = NULL;
 }
@@ -73,7 +70,14 @@ CAIHumanStateCatch::CAIHumanStateCatch()
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::Load(ILTMessage_Read *pMsg)
 {
+	// RETAIL: 0x1022b2b0.
 	CAIHumanState::Load(pMsg);
+
+	LOAD_VECTOR( m_vIncomingPosition );
+	LOAD_HOBJECT( m_hObjectToCatch );
+	LOAD_bool( m_bCaughtNamedObject );
+	LOAD_BYTE_CAST( m_ePosture, EnumAnimProp );
+	LOAD_BYTE_CAST( m_eDirection, EnumAnimProp );
 }
 
 //----------------------------------------------------------------------------
@@ -85,21 +89,28 @@ void CAIHumanStateCatch::Load(ILTMessage_Read *pMsg)
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::Save(ILTMessage_Write *pMsg)
 {
+	// RETAIL: 0x1022b360.
 	CAIHumanState::Save(pMsg);
+
+	SAVE_VECTOR( m_vIncomingPosition );
+	SAVE_HOBJECT( m_hObjectToCatch );
+	SAVE_bool( m_bCaughtNamedObject );
+	SAVE_BYTE( m_ePosture );
+	SAVE_BYTE( m_eDirection );
 }
 
 //----------------------------------------------------------------------------
 //              
 //	ROUTINE:	CAIHumanStateCatch::HandleTouch()
 //              
-//	PURPOSE:	Registers a catch when the object touches the catcher.
+//	PURPOSE:	Note when the AI touches the object it means to catch.
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::HandleTouch(HOBJECT hObject)
 {
 	if ( hObject == m_hObjectToCatch )
 	{
-		m_bCaughtNamedObject = LTTRUE;
+		m_bCaughtNamedObject = true;
 	}
 }
 
@@ -107,22 +118,13 @@ void CAIHumanStateCatch::HandleTouch(HOBJECT hObject)
 //              
 //	ROUTINE:	CAIHumanStateCatch::Init()
 //              
-//	PURPOSE:	Handles initialization of the CAIHumanStateCatch class,
-//				Retreive initialization information from the AI, and change
-//				the AI state to reflect entry to this state
+//	PURPOSE:	Setup the catch.
 //              
 //----------------------------------------------------------------------------
 LTBOOL CAIHumanStateCatch::Init(CAIHuman* pAIHuman)
 {
-	LTBOOL bParentInitializationSuccess = CAIHumanState::Init(pAIHuman);
-	UBER_ASSERT( bParentInitializationSuccess, "CAIHumanStateCatch::Init Failed parent class initialization"	);
-
-	// Retrieve the max hold time from the bute file, failing if it is not
-	// defined for this AI
-	m_fMaxCatchDuration = pAIHuman->GetBrain()->GetAIData(kAIData_MaxCatchDuration);
-
-	// Be sure that we retrieved a MaxCatch value..
-	UBER_ASSERT( m_fMaxCatchDuration > 0.0000001, "SetupCatch: MaxCatchDuration not set" );
+	// RETAIL: 0x1022b3f0.
+	CAIHumanState::Init(pAIHuman);
 
 	// Set the incoming position to a position 48 units in front of the AI.
 	m_vIncomingPosition =  GetAI()->GetPosition() + GetAI()->GetEyeForward() * 48;
@@ -133,6 +135,8 @@ LTBOOL CAIHumanStateCatch::Init(CAIHuman* pAIHuman)
 	// Set the Catching AI to an alert state/combat type
 	m_pAIHuman->SetAwareness( kAware_Alert );
 
+	m_ePosture = kAP_None;
+
 	return LTTRUE;
 }
 
@@ -140,47 +144,33 @@ LTBOOL CAIHumanStateCatch::Init(CAIHuman* pAIHuman)
 //              
 //	ROUTINE:	CAIHumanStateCatch::Update()
 //              
-//	PURPOSE:	
+//	PURPOSE:	Update the catch.
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::Update(void)
 {
+	// RETAIL: 0x1022b4a0.
 	CAIHumanState::Update();
 
-	// Remember the entry status so we can see if the status changed
-	// over the course of this run.
-	EnumAIStateStatus eEntryStatus = m_eStateStatus;
+	// Look at the object until it is caught.
+	if ( !m_bCaughtNamedObject )
+	{
+		m_pAIHuman->EnableNodeTracking( kTrack_AimAt, m_hObjectToCatch );
+	}
+	else
+	{
+		m_pAIHuman->DisableNodeTracking();
+	}
 
 	switch( m_eStateStatus )
 	{
 		case kSStat_Initialized:
-		{
-			HandleSetupCatch();
-			break;
-		}
-		case kSStat_TriplePhaseOne:
-		{
 			HandleStartCatch();
 			break;
-		}
-		case kSStat_TriplePhaseTwo:
-		{
+
+		case kSStat_TronUnknown39:
 			HandleHoldCatch();
 			break;
-		}
-		case kSStat_TriplePhaseThree:
-		{
-			HandleDropCatch();
-			break;
-		}
-	}
-
-	// If we changed states, force an animation recalculation by locking,
-	// and then clearing the lock
-	if ( m_eStateStatus != eEntryStatus )
-	{
-		GetAnimationContext()->Lock();
-		GetAnimationContext()->ClearLock();
 	}
 }
 
@@ -188,54 +178,46 @@ void CAIHumanStateCatch::Update(void)
 //              
 //	ROUTINE:	CAIHumanStateCatch::UpdateAnimation()
 //              
-//	PURPOSE:	Sets animation flags depending on state, then locks the 
-//				animation in place.  Here and only here do we handle setting
-//				the props.
+//	PURPOSE:	Set the catch animation.
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::UpdateAnimation(void)
 {
+	// RETAIL: 0x1022b4f0.
 	CAIHumanState::UpdateAnimation();
 
-	// Set the common flags..
-	GetAnimationContext()->SetProp( kAPG_Posture, kAP_Stand );
+	if ( m_ePosture == kAP_None )
+	{
+		m_ePosture = m_pAIHuman->GetAnimationContext()->GetCurrentProp( kAPG_Posture );
+		if ( ( m_ePosture == kAP_None ) || ( m_ePosture == kAP_Any ) )
+		{
+			m_ePosture = kAP_Stand;
+		}
+
+		GetAnimationContext()->SetProp( kAPG_Posture, m_ePosture );
+	}
+	else
+	{
+		GetAnimationContext()->SetProp( kAPG_Posture, m_ePosture );
+	}
 	GetAnimationContext()->SetProp( kAPG_WeaponPosition, kAP_Up );
 
-	switch( m_eStateStatus )
+	if ( m_eStateStatus != kSStat_TronUnknown39 )
 	{
-		case kSStat_TriplePhaseOne:
-		{
-			GetAnimationContext()->SetProp( kAPG_WeaponAction, m_eAnimProp1 );
-			break;
-		}
-		case kSStat_TriplePhaseTwo:
-		{
-			GetAnimationContext()->SetProp( kAPG_WeaponAction, m_eAnimProp2 );
-			break;
-		}
-		case kSStat_TriplePhaseThree:
-		{
-			GetAnimationContext()->SetProp( kAPG_WeaponAction, m_eAnimProp3 );
-			break;
-		}
-		case kSStat_StateComplete:
-		{
-			break;
-		}
+		GetAnimationContext()->SetProp( kAPG_WeaponAction, kAP_Aim );
 	}
-
-	// Always lock the animation.  Let the caller handle unlocking later
-	// if the animation ends.
-	GetAnimationContext()->Lock();
+	else
+	{
+		GetAnimationContext()->SetProp( kAPG_WeaponAction, kAP_HoldCatch );
+		GetAnimationContext()->SetProp( kAPG_Direction, m_eDirection );
+	}
 }
 
 //----------------------------------------------------------------------------
 //              
 //	ROUTINE:	CAIHumanStateCatch::ShouldDropCatch()
 //              
-//	PURPOSE:	Tests to see if the AI ought to stop the catch for a reason 
-//				other than termination of the animation.  This would include
-//				events such as catching an object.
+//	PURPOSE:	Returns true if the catch should end.
 //              
 //----------------------------------------------------------------------------
 LTBOOL CAIHumanStateCatch::ShouldDropCatch(void)
@@ -249,41 +231,19 @@ LTBOOL CAIHumanStateCatch::ShouldDropCatch(void)
 
 	// If the named object no longer exists, then we obviously don't want to
 	// wait around for it to show up.  Stop trying to catch it now.
-	if ( m_hObjectToCatch == LTNULL )
-	{
-		return LTTRUE;
-	}
-
-	return LTFALSE;
+	return ( m_hObjectToCatch == LTNULL );
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	CAIHumanStateCatch::HandleSetupCatch()
+//	ROUTINE:	CAIHumanStateCatch::HandleStartCatch()
 //              
-//	PURPOSE:	
+//	PURPOSE:	Start the catch: pick the posture and direction.
 //              
 //----------------------------------------------------------------------------
-void CAIHumanStateCatch::HandleSetupCatch()
+void CAIHumanStateCatch::HandleStartCatch()
 {
-	// All of the sequence animations MUST be set by the time we start
-	// the initialization process
-	UBER_ASSERT( m_eAnimProp1 != kAP_None,
-		"CAIHumanStateCatch::UpdateAnimation Goal failed to set m_eAnimProp1");
-	UBER_ASSERT( m_eAnimProp2 != kAP_None,
-		"CAIHumanStateCatch::UpdateAnimation Goal failed to set m_eAnimProp2");
-	UBER_ASSERT( m_eAnimProp3 != kAP_None,
-		"CAIHumanStateCatch::UpdateAnimation Goal failed to set m_eAnimProp3");
-	// Be sure that we retrieved a MaxCatch value..
-	UBER_ASSERT( m_fMaxCatchDuration > 0.0000001,
-		"SetupCatch: MaxCatchDuration not set" );
-
-	CAnimationProps Props;
-	Props.Set(kAPG_Posture, kAP_Stand);
-	Props.Set(kAPG_WeaponPosition, kAP_Up);
-	Props.Set(kAPG_Weapon, GetAI()->GetCurrentWeaponProp());
-	Props.Set(kAPG_WeaponAction, m_eAnimProp2); 
-
+	// RETAIL: 0x1022b5c0.
 	if ( GetAI()->HasTarget() )
 	{
 		// Setting a target push speed allows the AI to knock the 
@@ -291,57 +251,20 @@ void CAIHumanStateCatch::HandleSetupCatch()
 		GetAI()->GetTarget()->SetPushSpeed( GetAI()->GetSpeed() * 2.f );
 	}
 
-	// Advance to the first phase..
-	m_eStateStatus = kSStat_TriplePhaseOne;
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	CAIHumanStateCatch::HandleStartCatch()
-//              
-//	PURPOSE:	
-//              
-//----------------------------------------------------------------------------
-void CAIHumanStateCatch::HandleStartCatch()
-{
-	// Set up the direction and duration of the Catch
-	if ( m_hObjectToCatch != LTNULL )
+	m_ePosture = m_pAIHuman->GetAnimationContext()->GetCurrentProp( kAPG_Posture );
+	m_eDirection = m_pAIHuman->GetAnimationContext()->GetCurrentProp( kAPG_Direction );
+	if ( ( m_eDirection == kAP_None ) || ( m_eDirection == kAP_Any ) )
 	{
-		// Reset the facing direction
-		GetAI()->FacePos( m_vIncomingPosition );
+		m_eDirection = ( GetRandom( 0.f, 1.f ) > 0.5 ) ? kAP_Left : kAP_Right;
 	}
 
-	// If we are done with the previous animation (locking is off)
-	// then we can enter the next phase
-	if( !GetAnimationContext()->IsLocked() )
-	{
-		LTVector vOrigin = GetAI()->GetPosition();
-
-		// Set up the direction and duration of the Catch
-		if ( m_hObjectToCatch != LTNULL )
-		{
-			// If we have a specific object, then orient ourselves to face it
-			g_pLTServer->GetObjectPos( m_hObjectToCatch, &m_vIncomingPosition );	
-		}
-
-		// Find the length of the fly animation.
-
-		CAnimationProps Props;
-		Props.Set(kAPG_Posture, kAP_Stand);
-		Props.Set(kAPG_WeaponPosition, kAP_Up);
-		Props.Set(kAPG_Weapon, GetAI()->GetCurrentWeaponProp());
-		Props.Set(kAPG_WeaponAction, m_eAnimProp2);
-
-		// Advance to the next phase..
-		m_eStateStatus = kSStat_TriplePhaseTwo;
-	}
-
-	// Decide if we ought to abort this phase -- we might not want 
-	// to hold the catch for the animations duration
 	if( ShouldDropCatch() )
 	{
-		// Advance to the last phase..
-		m_eStateStatus = kSStat_TriplePhaseThree;
+		m_eStateStatus = kSStat_StateComplete;
+	}
+	else
+	{
+		m_eStateStatus = kSStat_TronUnknown39;
 	}
 }
 
@@ -349,39 +272,14 @@ void CAIHumanStateCatch::HandleStartCatch()
 //              
 //	ROUTINE:	CAIHumanStateCatch::HandleHoldCatch()
 //              
-//	PURPOSE:	
+//	PURPOSE:	Hold the catch until it is done.
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::HandleHoldCatch()
 {
-	// Decide if we ought to abort this phase -- we might not want 
-	// to hold the catch for the animations duration
+	// RETAIL: 0x1022b680.
 	if( ShouldDropCatch() )
 	{
-		// Advance to the last phase..
-		m_eStateStatus = kSStat_TriplePhaseThree;
-	}
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	CAIHumanStateCatch::HandleDropCatch()
-//              
-//	PURPOSE:	
-//              
-//----------------------------------------------------------------------------
-void CAIHumanStateCatch::HandleDropCatch()
-{
-	// If we are done with the previous animation (locking is off)
-	// then we can enter the next phase
-	if( !GetAnimationContext()->IsLocked() )
-	{
-		// If we have a target, turn to face it now.
-		if ( GetAI()->HasTarget() )
-		{
-			GetAI()->FaceTarget();
-		}
-		
 		m_eStateStatus = kSStat_StateComplete;
 	}
 }
@@ -390,11 +288,11 @@ void CAIHumanStateCatch::HandleDropCatch()
 //              
 //	ROUTINE:	CAIHumanStateCatch::SetObjectToCatch()
 //              
-//	PURPOSE:	
+//	PURPOSE:	Set the object to catch.
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateCatch::SetObjectToCatch(HOBJECT hObject)
 {
-	UBER_ASSERT( hObject != LTNULL, "CAIHumanStateCatch::SetObjectToCatch: Bad target handle" );
-	m_hObjectToCatch = hObject; 
+	// RETAIL: 0x1022b6a0.
+	m_hObjectToCatch = hObject;
 }

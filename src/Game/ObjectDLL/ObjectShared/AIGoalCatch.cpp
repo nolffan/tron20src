@@ -107,14 +107,9 @@ void CAIGoalCatch::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 // ----------------------------------------------------------------------- //
 void CAIGoalCatch::ActivateGoal(void)
 {
+	// RETAIL: 0x10210ac0, Tron's state picks its own animations and does not
+	// check the stimulus target.
 	super::ActivateGoal();
-
-	if (m_hStimulusTarget==LTNULL)
-	{
-		SetCurImportance(0);
-		AITRACE(AIShowGoals, ( m_pAI->m_hObject, "Aborting Goal %s\n", s_aszGoalTypes[GetGoalType()] ) );
-		return;
-	}
 
 	// Ignore senses other than see enemy.
 	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
@@ -128,9 +123,22 @@ void CAIGoalCatch::ActivateGoal(void)
 
 	// Save the object we intend to catch
 	pCatchInstance->SetObjectToCatch( m_hStimulusTarget );
+}
 
-	// Set the animations to use
-	pCatchInstance->SetAnimationSequence( kAP_StartCatch, kAP_HoldCatch, kAP_EndCatch );
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalCatch::DeactivateGoal
+//
+//	PURPOSE:	Deactivate goal.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalCatch::DeactivateGoal()
+{
+	// RETAIL: 0x10210b10 (Tron's).
+	super::DeactivateGoal();
+
+	m_fCurImportance = 0.f;
 }
 
 // ----------------------------------------------------------------------- //
@@ -140,6 +148,7 @@ void CAIGoalCatch::ActivateGoal(void)
 //	PURPOSE:	Update goal.
 //
 // ----------------------------------------------------------------------- //
+
 void CAIGoalCatch::UpdateGoal(void)
 {
 	CAIState* pState = m_pAI->GetState();
@@ -151,8 +160,10 @@ void CAIGoalCatch::UpdateGoal(void)
 			HandleStateCatch();
 			break;
 
-		// Unexpected State.
-		default: UBER_ASSERT(0, "CAIGoalCatch::UpdateGoal: Unexpected State.");
+		// RETAIL: 0x10210b30, Tron hands other states to the base class.
+		default:
+			super::UpdateGoal();
+			break;
 	}
 }
 
@@ -166,26 +177,13 @@ void CAIGoalCatch::UpdateGoal(void)
 
 void CAIGoalCatch::HandleStateCatch()
 {
+	// RETAIL: 0x10210b60, Tron raises the goal's importance to 2 when the
+	// catch is complete.
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
-		case kSStat_Initialized:
-			break;
-
-		case kSStat_TriplePhaseOne:
-			break;
-
-		case kSStat_TriplePhaseTwo:
-			break;
-
-		case kSStat_TriplePhaseThree:
-			break;
-
 		case kSStat_StateComplete:
-			m_fCurImportance = 0.f;
+			m_fCurImportance = 2.f;
 			break;
-
-		// Unexpected StateStatus.
-		default: UBER_ASSERT(0, "CAIGoalCatch::HandleStateCatch: Unexpected State Status.");
 	}
 }
 
