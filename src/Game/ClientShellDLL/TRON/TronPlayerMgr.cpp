@@ -838,8 +838,8 @@ void CTronPlayerMgr::UpdateHealthGain(float fDeltaTime)
 	// PORT: see UpdateEnergyTransfer
 	float fPerSecond = g_pRatingMgr->IsSurgeRating(Rating_Stealth) ? 100.0f : (m_fTronUnknown1F4 * 30.0f + 20.0f);
 
-	bool bDone = false;
 	m_fEnergyTransferred += fPerSecond * fDeltaTime;
+	bool bDone = false;
 	if (m_fEnergyTransferred > m_fEnergyRequired)
 	{
 		bDone = true;
@@ -903,8 +903,8 @@ void CTronPlayerMgr::UpdateEnergyGain(float fDeltaTime)
 	// PORT: see UpdateEnergyTransfer
 	float fPerSecond = g_pRatingMgr->IsSurgeRating(Rating_Stealth) ? 100.0f : (m_fTronUnknown1F4 * 30.0f + 20.0f);
 
-	bool bDone = false;
 	m_fEnergyTransferred += fPerSecond * fDeltaTime;
+	bool bDone = false;
 	if (m_fEnergyTransferred > m_fEnergyRequired)
 	{
 		bDone = true;
@@ -1208,18 +1208,22 @@ void CTronPlayerMgr::HandleMsgTronUnknown200(ILTMessage_Read *pMsg)
 {
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
-	if (pMsg->Peekuint8() == 100)
+	if (pMsg->Peekuint8() != 100)
+	{
+		// RETAIL: 0x100a6e71 asks IsDiscGameType
+		if (IsDiscGameType())
+		{
+			g_pDiscMatchMgr->OnMessage(pMsg);
+		}
+		else if (eGameType == eGameTypeMultiplayerLightcycles)
+		{
+			g_pLightCycleMatchMgr->OnMessage(pMsg);
+		}
+	}
+	else
 	{
 		pMsg->Readuint8();
 		ShowTronUnknownMessageBox(pMsg);
-	}
-	else if (IsRevivePlayerGameType())
-	{
-		g_pDiscMatchMgr->OnMessage(pMsg);
-	}
-	else if (eGameType == eGameTypeMultiplayerLightcycles)
-	{
-		g_pLightCycleMatchMgr->OnMessage(pMsg);
 	}
 }
 

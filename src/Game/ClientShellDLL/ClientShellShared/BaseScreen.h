@@ -152,6 +152,8 @@ public:
 
     CLTGUIToggle*     AddToggle(int stringID, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
     CLTGUIToggle*     AddToggle(char *pString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// TRON: (RETAIL: out of line in ScreenSubroutines.cpp, 0x1007dfb0)
+    CLTGUIToggle*     AddToggle(std::wstring sString, int helpID, int nHeaderWidth, LTBOOL *pbValue=LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
 
     CLTGUISlider*     AddSlider(int stringID,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
 								int *pnValue = LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
@@ -399,6 +401,17 @@ inline  CLTGUIToggle* CBaseScreen::AddToggle(int stringID, int helpID, int nHead
 	{
 		AddControl(pCtrl);
 		// TRON: shows the value at once (RETAIL: e.g. 0x10055238)
+		if (pbValue)
+			pCtrl->SetOn(*pbValue);
+	}
+	return pCtrl;
+}
+inline  CLTGUIToggle* CBaseScreen::AddToggle(std::wstring sString, int helpID, int nHeaderWidth, LTBOOL *pbValue, LTIntPt pos, LTBOOL bFixed, int nFont)
+{
+	CLTGUIToggle* pCtrl = CreateToggle(sString, helpID, nHeaderWidth, pbValue, pos, bFixed, nFont);
+	if (pCtrl)
+	{
+		AddControl(pCtrl);
 		if (pbValue)
 			pCtrl->SetOn(*pbValue);
 	}

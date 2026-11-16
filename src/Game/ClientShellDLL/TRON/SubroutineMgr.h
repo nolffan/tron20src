@@ -221,6 +221,7 @@ public:
 	void				ResetPrimitives();		// RETAIL: 0x100948d0 (the name is ours)
 	void				ResetProcedurals();		// RETAIL: 0x10094920 (the name is ours)
 	PlayerSubroutine*	GetPlayerSubroutineByNameId(uint32 nNameId);	// RETAIL: 0x10094810 (the name is ours)
+	void				RemovePlayerSubroutine(PlayerSubroutine *pSub);	// RETAIL: 0x10094c90
 	void				AddPlayerSubroutine(PlayerSubroutine *pSub);
 	void				GivePlayerSubroutine(char * name, char * version, char * state, bool bNotify);	// RETAIL: 0x10094950
 	void				PopulateSubroutineScreen();

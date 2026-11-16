@@ -48,6 +48,9 @@ public:
 	void		UseBackgroundSprite(char * pFile);
 
 	void		KillSprite();
+	// TRON: (RETAIL: 0x10143630, folded with CHUDItem::SetEnabled; the
+	// name is ours)
+	void		ShowCursorLines(bool bShow);
 
 	// RETAIL: Tron's (0x10143610, called by CInterfaceMgr's render
 	// 0x100c8a8a): draws the two lines through the cursor when they are

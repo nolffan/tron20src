@@ -35,6 +35,10 @@ public:
 	bool	IsVisible() const { return m_bVisible; }
 
 private:
+	// RETAIL: the subroutine screen sets the sizes itself (CShell
+	// 0x1007e3d6, 0x10081c36)
+	friend class CScreenSubroutines;
+
 	bool					m_bVisible;		// +0x0
 	float					m_fDelay;		// +0x4 the time before it shows
 	float					m_fFadeTime;	// +0x8 the time it fades in

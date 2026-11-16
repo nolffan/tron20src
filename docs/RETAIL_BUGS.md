@@ -1099,6 +1099,17 @@ does not exist, the error message gets the character 0 as its "%s"
 argument.
 
 Not fixed yet: the modern build should look up the name.
+## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
+
+When the subroutine screen gets focus, it sets the build note count text
+and hides it until the intro is done (CShell.dll 0x1007e898..0x1007e8ad).
+It sets the fade flag of the build note count (+0x2084) to false, but it
+sets the fade time of the version text (+0x20fc) to zero, not the fade
+time of the build note count (+0x2088). The intro sets both fade times
+again before they are used (0x1007f0d8, 0x1007f13f), so there is no
+visible effect.
+
+Not fixed yet: the modern build should reset the build note fade time.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

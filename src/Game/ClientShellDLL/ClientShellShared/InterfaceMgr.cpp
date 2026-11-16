@@ -6004,7 +6004,7 @@ void CInterfaceMgr::ShowMouseFX()
 
 	if (!m_MouseFX.IsValid())
 	{
-		CLIENTFX_CREATESTRUCT	fxInit(m_szMouseFXName , FXFLAG_LOOP, vPos ); 
+		CLIENTFX_CREATESTRUCT	fxInit(m_szMouseFXName , FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, vPos ); // RETAIL: 0x100cfb2e 
 		m_InterfaceFXMgr.CreateClientFX(&m_MouseFX, fxInit, LTTRUE );
 	}
 

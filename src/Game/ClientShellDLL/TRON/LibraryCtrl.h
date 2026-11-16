@@ -65,6 +65,14 @@ public:
 	bool		IsRotateHot()		{return m_bCWHot || m_bCCWHot;}
 	PlayerSubroutine * GetHotSub()	{return m_pHotSub;}
 	void		SetFlash(bool bFlash) {m_bFlash = bFlash;}
+	// RETAIL: used by the subroutine screen (CScreenSubroutines, retail
+	// 0x1007f6a0..0x10081550; the names are ours). Retail keeps GetHotPos
+	// out of line in that file (0x1007ff80)
+	bool		WasHot()			{return m_bWasHot;}
+	bool		IsCWHot()			{return m_bCWHot;}
+	bool		IsCCWHot()			{return m_bCCWHot;}
+	void		SetStayOpen(bool bStayOpen) {m_bStayOpen = bStayOpen;}
+	LTIntPt		GetHotPos()			{return m_Arc.GetHotPos();}
 
 protected:
 	bool		m_bVisible;				// +0x00

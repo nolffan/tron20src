@@ -42,6 +42,7 @@ public:
 
 	void			SetVisible(bool bVisible)	{m_bVisible = bVisible;}
 	bool			IsVisible()		{return m_bVisible;}
+	// RETAIL: the subroutine screen sets it before Init (0x100800c9)
 	bool			IsHot()			{return m_bHot;}
 	int				GetPoints()		{return m_nPoints;}
 
@@ -94,6 +95,9 @@ public:
 	void			SetBuildPoints(CBuildPointsCtrl * pPoints) {m_pBuildPoints = pPoints;}
 	bool			IsHot()			{return m_bHot;}
 	int				GetValue()		{return m_nValue;}
+	// RETAIL: read by the subroutine screen (0x1007f96c; the names are ours)
+	bool			IsOverLeft()	{return m_bOverLeft;}
+	bool			IsOverRight()	{return m_bOverRight;}
 
 private:
 	void			SetBarValue(float fValue, bool bFixed);	// RETAIL: 0x100510c0
