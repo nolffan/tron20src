@@ -180,6 +180,10 @@ SOURCE=.\AIGoalLead.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIGoalRezIn.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AILightCycle.cpp
 # End Source File
 # Begin Source File
@@ -402,6 +406,10 @@ SOURCE=.\AIGoalGlitch.h
 # Begin Source File
 
 SOURCE=.\AIGoalLead.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\AIGoalRezIn.h
 # End Source File
 # Begin Source File
 
