@@ -73,7 +73,7 @@ struct SEARCH_SET
 			uint32				nAmount;
 		};
 
-		bool	GetRandomSearchObjectInfo(SearchObjectResult & soResult, float fJunkModifier);
+		bool	GetRandomSearchObjectInfo(SearchObjectResult & soResult);
 
 		// All of the following percents must add up to 100!
 		uint8	nItemPercent;
@@ -96,7 +96,8 @@ struct SEARCH_SET
 
 	private :
 
-		SearchObjectType GetRandomSearchObjectType(float fJunkModifier = 1.0f);
+		// RETAIL: no junk modifier in Tron (0x1022d800, 0x1022d870).
+		SearchObjectType GetRandomSearchObjectType();
 };
 
 
