@@ -228,6 +228,10 @@ SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\DiscArenaMissionMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\DiscArenaQueue.cpp
 # End Source File
 # Begin Source File
@@ -274,6 +278,10 @@ SOURCE=..\..\Shared\TRON\LightCycleMgr.cpp
 # Begin Source File
 
 SOURCE=.\LightCycleMissile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMultiplayerMissionMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -501,6 +509,10 @@ SOURCE=.\CoreDump.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\DiscArenaMissionMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\DiscArenaQueue.h
 # End Source File
 # Begin Source File
@@ -538,6 +550,10 @@ SOURCE=..\..\Shared\TRON\LightCycleMgr.h
 # Begin Source File
 
 SOURCE=.\LightCycleMissile.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleMultiplayerMissionMgr.h
 # End Source File
 # Begin Source File
 

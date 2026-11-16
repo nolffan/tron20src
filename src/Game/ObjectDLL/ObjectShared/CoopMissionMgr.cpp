@@ -30,24 +30,26 @@ extern CVarTrack g_vtDifficultyFactorPlayerIncrease;
 
 bool CCoopMissionMgr::StartGame(ILTMessage_Read& msg )
 {
-	if( !g_pMissionButeMgr->Init( MISSION_COOP_FILE ))
-		return false;
-
+	// RETAIL: 0x101cc240: Tron's mission bute file comes with
+	// MID_START_GAME, and the coop settings follow it in the message.
 	if( !CServerMissionMgr::StartGame( msg ))
 		return false;
 
-	ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-	ServerMissionSettings sms = GetServerSettings();
+	if( !g_vtNetFriendlyFire.IsInitted( ))
+		g_vtNetFriendlyFire.Init( g_pLTServer, "NetFriendlyFire", LTNULL, 0.0f );
+	if( !g_vtDifficultyFactorPlayerIncrease.IsInitted( ))
+		g_vtDifficultyFactorPlayerIncrease.Init( g_pLTServer, "DifficultyFactorPlayerIncrease", LTNULL, 0.1f );
 
-	sms.m_bUseSkills = sgo.GetCoop().m_bUseSkills;
-	sms.m_bFriendlyFire = sgo.GetCoop().m_bFriendlyFire;
-	sms.m_nMPDifficulty = sgo.GetCoop().m_nDifficulty;
-	sms.m_fPlayerDiffFactor = sgo.GetCoop().m_fPlayerDiffFactor;
-	sms.m_nRunSpeed = 100;
-	sms.m_nScoreLimit = 0;
-	sms.m_nTimeLimit = 0;
+	m_bUseSkills = msg.Readbool( );
+	m_bFriendlyFire = msg.Readbool( );
+	g_vtNetFriendlyFire.SetFloat( m_bFriendlyFire ? 1.0f : 0.0f );
 
-	SetServerSettings(sms);
+	m_nMPDifficulty = msg.Readuint8( );
+	g_pGameServerShell->SetDifficulty(( GameDifficulty )m_nMPDifficulty );
+	g_pLTServer->CPrint( "CCoopMissionMgr::StartGame() setting difficulty to %d", m_nMPDifficulty );
+
+	m_fPlayerDiffFactor = msg.Readfloat( );
+	g_vtDifficultyFactorPlayerIncrease.SetFloat( m_fPlayerDiffFactor );
 
 	g_pMusicMgr->Enable( );
 	return true;
@@ -64,9 +66,7 @@ bool CCoopMissionMgr::StartGame(ILTMessage_Read& msg )
 
 bool CCoopMissionMgr::EndGame( )
 {
-	// Call base.
-	if( !CServerMissionMgr::EndGame( ))
-		return false;
+	// RETAIL: 0x101cc480: Tron does not call the base EndGame here.
 
 	// Can't have custom level or no campaign in coop.
 	if( m_bCustomLevel || m_Campaign.size( ) == 0 )
@@ -110,27 +110,5 @@ bool CCoopMissionMgr::EndGame( )
 	if( !ExitLevel( pszFilename, false ))
 		return false;
 
-	return true;
-}
-
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerMissionMgr::HandleMultiplayerOptions
-//
-//	PURPOSE:	Handle updating the host options
-//
-// --------------------------------------------------------------------------- //
-
-bool CCoopMissionMgr::HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg )
-{
-	ServerMissionSettings sms = GetServerSettings();
-
-	sms.m_bFriendlyFire = msg.Readbool( );
-	sms.m_nMPDifficulty = msg.Readuint8( );
-	sms.m_fPlayerDiffFactor = msg.Readfloat();
-
-	SetServerSettings(sms);
-	
 	return true;
 }

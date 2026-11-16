@@ -245,10 +245,12 @@ void CAIGoalAbstract::InitGoal(CAI* pAI, LTFLOAT fImportance, LTFLOAT fTime)
 	// Goals with SenseTriggers and/or Attractors and/or DamageHandlers start inactive.
 	// Goals that are not triggered start with their base importance.
 
+	// RETAIL: 0x101e14bf: not when Tron's flag at +0x58 is set.
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
-	if( pTemplate->aAttractors || 
+	if( !m_bTronUnknown58 &&
+		( pTemplate->aAttractors || 
 		pTemplate->flagSenseTriggers || 
-		pTemplate->nDamagePriority)
+		pTemplate->nDamagePriority ))
 	{
 		m_fCurImportance = 0.f;
 	}

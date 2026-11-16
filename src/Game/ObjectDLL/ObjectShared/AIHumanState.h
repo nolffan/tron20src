@@ -761,6 +761,7 @@ class CAIHumanStateGoto : public CAIHumanState
 		EnumAISoundType	m_eLoopingAISound;
 		LTFLOAT			m_fCloseEnoughDistSqr;
 		LTBOOL			m_bTurnOffLights;
+		LTBOOL			m_xTronUnknownF0;	// RETAIL: Tron's (+0xf0): set to 0 last in the ctor (0x101e56b3), saved and loaded after m_bLoop (0x101e600e)
 };
 
 class CAIHumanStateFlee : public CAIHumanStateGoto
@@ -951,6 +952,12 @@ class CAIHumanStateUseObject : public CAIHumanState
 		LTBOOL				m_bPlayedFirstSound;
 		LTBOOL				m_bAlertFirst;
 		EnumTrackedNodeGroup m_eTrackingGroup;
+		// RETAIL: Tron's (ctor 0x101e7e64, HandleNameValuePair 0x101e8eea,
+		// Load 0x101e97f5): the ALLOWROTATION and INSUREANIMOBJECTCLOSED
+		// commands and one more saved flag (name ours).
+		LTBOOL				m_bAllowRotation;			// +0xec
+		LTBOOL				m_bInsureAnimObjectClosed;	// +0xf0
+		LTBOOL				m_bTronUnknownF4;			// +0xf4
 };
 
 class CAIHumanStateTail : public CAIHumanState

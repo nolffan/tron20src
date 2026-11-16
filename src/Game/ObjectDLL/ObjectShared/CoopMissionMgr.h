@@ -26,7 +26,6 @@ class CCoopMissionMgr : public CServerMissionMgr
 
 		//handle updating multiplayer options while in game
 		// RETAIL: not virtual in Tron (CServerMissionMgr's vtable)
-		bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg );
 };
 
 #endif // __COOPMISSIONMGR_H__

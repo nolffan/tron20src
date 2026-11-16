@@ -15,7 +15,6 @@
 #include "ServerSaveLoadMgr.h"
 #include "MissionButeMgr.h"
 
-extern CVarTrack g_vtNetFriendlyFire;
 
 // --------------------------------------------------------------------------- //
 // Constructor & Destructor
@@ -99,24 +98,7 @@ bool CDeathMatchMissionMgr::Load( ILTMessage_Read& msg, uint32 dwSaveFlags )
 
 void CDeathMatchMissionMgr::Update( )
 {
-	//check for end of level...
-
-	//check score limit
-	if ( m_ServerSettings.m_nScoreLimit > 0 && m_fStartTime >= 0.0f )
-	{
-		CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
-		while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
-		{
-			CPlayerObj* pPlayerObj = *iter;
-			if (pPlayerObj->GetPlayerScore()->GetScore() >= m_ServerSettings.m_nScoreLimit)
-			{
-				g_pLTServer->CPrint("ScoreLimit reached.");
-				NextRound();
-			}
-			iter++;
-		}
-	}
-
+	// RETAIL: 0x101cc680: Tron has no score limit check here.
 	CServerMissionMgr::Update( );
 }
 
@@ -148,12 +130,9 @@ bool CDeathMatchMissionMgr::FinishExitLevel( )
 	}
 
 	// Load new level with no restoring of keepalives or save games.
+	// RETAIL: 0x101cc690: Tron does not unpause the server here.
 	if( !g_pServerSaveLoadMgr->LoadNewLevel( m_sCurrentWorldName ))
 		return false;
-
-	// Unpause the server now that we're done switching levels.
-	g_pGameServerShell->PauseGame( LTFALSE );	
-
 
 	return true;
 }
@@ -169,24 +148,8 @@ bool CDeathMatchMissionMgr::FinishExitLevel( )
 
 bool CDeathMatchMissionMgr::StartGame(ILTMessage_Read& msg )
 {
-
-	ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-	ServerMissionSettings sms = GetServerSettings();
-
-	sms.m_bUseSkills = false;
-	sms.m_bFriendlyFire = true;
-	sms.m_nRunSpeed = sgo.GetDeathmatch().m_nRunSpeed;
-	sms.m_nScoreLimit = sgo.GetDeathmatch().m_nScoreLimit;
-	sms.m_nTimeLimit = sgo.GetDeathmatch().m_nTimeLimit;
-	sms.m_nRounds = sgo.GetDeathmatch().m_nRounds;
-	sms.m_nFragScore = sgo.GetDeathmatch().m_nFragScore;
-	sms.m_nTagScore = sgo.GetDeathmatch().m_nTagScore;
-
-	SetServerSettings(sms);
-
-	if( !g_pMissionButeMgr->Init( MISSION_DM_FILE ))
-		return false;
-
+	// RETAIL: 0x101cc6e0: Tron has no deathmatch settings here and its
+	// mission bute file comes with MID_START_GAME.
 	if( !CServerMissionMgr::StartGame( msg ))
 		return false;
 
@@ -203,9 +166,7 @@ bool CDeathMatchMissionMgr::StartGame(ILTMessage_Read& msg )
 
 bool CDeathMatchMissionMgr::EndGame( )
 {
-	// Call base.
-	if( !CServerMissionMgr::EndGame( ))
-		return false;
+	// RETAIL: 0x101cc700: Tron does not call the base EndGame here.
 
 	// Can't have custom level or no campaign in deathmatch.
 	if( m_bCustomLevel || m_Campaign.size( ) == 0 )
@@ -230,35 +191,4 @@ bool CDeathMatchMissionMgr::EndGame( )
 		return false;
 
 	return true;
-}
-
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerMissionMgr::HandleMultiplayerOptions
-//
-//	PURPOSE:	Handle updating the host options
-//
-// --------------------------------------------------------------------------- //
-
-bool CDeathMatchMissionMgr::HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg )
-{
-	ServerGameOptions& sgo = g_pGameServerShell->GetServerGameOptions( );
-	sgo.GetDeathmatch().Read(&msg);
-
-	ServerMissionSettings sms = GetServerSettings();
-
-	sms.m_bUseSkills = false;
-	sms.m_bFriendlyFire = true;
-	sms.m_nRunSpeed = sgo.GetDeathmatch().m_nRunSpeed;
-	sms.m_nScoreLimit = sgo.GetDeathmatch().m_nScoreLimit;
-	sms.m_nTimeLimit = sgo.GetDeathmatch().m_nTimeLimit;
-	sms.m_nRounds = sgo.GetDeathmatch().m_nRounds;
-	sms.m_nFragScore = sgo.GetDeathmatch().m_nFragScore;
-	sms.m_nTagScore = sgo.GetDeathmatch().m_nTagScore;
-
-	SetServerSettings(sms);
-
-	return true;
-
 }

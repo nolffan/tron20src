@@ -288,8 +288,9 @@ void Door::ReadProps( ObjectCreateStruct *pOCS )
 	}
 
 	// Get the activate type...
+	// RETAIL: 0x1019ca2b: Tron reads it whether or not the player can
+	// activate the door.
 	
-	if( m_dwPropFlags & AWM_PROP_PLAYERACTIVATE )
 	{
 		if( g_pLTServer->GetPropGeneric( "ActivateType", &GenProp ) == LT_OK )
 		{

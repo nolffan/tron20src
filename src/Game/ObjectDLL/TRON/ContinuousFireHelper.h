@@ -46,6 +46,14 @@ struct ContinuousFireData
 
 	struct FieldFlags
 	{
+		// RETAIL: an inline helper (Read 0x10161400 inlines one call less
+		// of ReadType than the same code without it).
+		void	Read(ILTMessage_Read *pMsg)
+		{
+			m_bSet = pMsg->Readbool();
+			m_bTronUnknown1 = pMsg->Readbool();
+		}
+
 		bool	m_bSet;
 		bool	m_bTronUnknown1;
 	};
