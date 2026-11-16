@@ -354,6 +354,9 @@ void CLiteObjectMgr::Update()
 	// Clean up, if we need to
 	CleanObjectLists();
 
+	// RETAIL: 0x10196994: Tron handles the deletes again here.
+	HandlePendingDeletes();
+
 	uint32 nUpdateTime = g_pLTServer->EndCounter(&cUpdateTime);
 
 	if (g_ShowLiteObjectInfoTrack.GetFloat())
