@@ -34,8 +34,6 @@ class PickupItem : public GameBase
 
 		bool			WasPickedUp()	const { return m_bWasPickedUp; }
 
-		void			SetClientFX( const char *pszFX );
-		void			SetTeamId( uint8 nTeamId );
 
 
 	protected :
@@ -43,19 +41,15 @@ class PickupItem : public GameBase
         uint32          EngineMessageFn (uint32 messageID, void *pData, LTFLOAT lData);
         uint32          ObjectMessageFn (HOBJECT hSender, ILTMessage_Read *pMsg);
 		bool			OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg);
+	// RETAIL: Tron has no Respawn, CreateSpecialFX, SetClientFX or SetTeamId
+	// (retail 0x101d3410..0x101d5050; Update "respawns")
 
 		virtual void	PickedUp(ILTMessage_Read *pMsg);
-	// RETAIL: not virtual in Tron (its vtables; build 51 has no Respawn: NOLF2's
-	// later code, standing in)
-		void	Respawn( );
 
 		virtual void	PlayPickedupSound();
 
 		virtual void	CheckForOverrideModel(ObjectCreateStruct *pStruct);
 		
-	// RETAIL: not virtual in Tron (its vtables; build 51 has no CreateSpecialFX: NOLF2's
-	// later code, standing in)
-		void	CreateSpecialFX( bool bUpdateClients = false );
 
 	protected:
 
@@ -78,13 +72,11 @@ class PickupItem : public GameBase
 		HSTRING		m_hstrModelOverride;		// Name of the prop type override model
 		
 		std::string	m_sWorldAniName;			// Name of the animation to use
-		std::string m_sClientFX;				// Name of a clientfx to play when the pickup item is spwned.
 
 		bool		m_bWasPickedUp;				// Set after item is picked up
 
 		LTVector	m_vScale;
 
-		uint8		m_nTeamId;					// Team the pickup item belongs to.
 
 		void SetPlayerObj(HOBJECT hObj);
 

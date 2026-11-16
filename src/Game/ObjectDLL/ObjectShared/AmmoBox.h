@@ -26,10 +26,8 @@ class AmmoBox : public PickupItem
 
 		AmmoBox();
 
-		virtual void	PickedUp(ILTMessage_Read *pMsg);
-	// RETAIL: not virtual in Tron (its vtables; build 51 has no Respawn: NOLF2's
-	// later code, standing in)
-		void	Respawn( );
+	// RETAIL: Tron's AmmoBox is build 51's: no PickedUp, Respawn or
+	// respawn-wait look (retail 0x101d2c70..0x101d3370)
 
 	protected :
 
@@ -43,19 +41,10 @@ class AmmoBox : public PickupItem
 
         uint8           m_nOriginalAmmoId[AB_MAX_TYPES];
 		int				m_nOriginalAmmoCount[AB_MAX_TYPES];
-		
-		std::string		m_sPowerupFX;
-		std::string		m_sRespawnWaitFX;
-
-		CButeListReader	m_blrRespawnWaitSkins;
-		CButeListReader	m_blrRespawnWaitRenderStyles;
-
-		bool			m_bRespawnWaitVisible;
-		bool			m_bRespawnWaitTranslucent;
 
 	private :
 
-		bool ReadProp(ObjectCreateStruct *pStruct);
+		void ReadProp(ObjectCreateStruct *pStruct);
         void InitialUpdate(ILTServer *pServer);
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);

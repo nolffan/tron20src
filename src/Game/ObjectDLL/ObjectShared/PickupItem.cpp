@@ -74,7 +74,6 @@ BEGIN_CLASS(PickupItem)
     ADD_BOOLPROP(MoveToFloor, LTTRUE)
 	ADD_BOOLPROP_FLAG(TouchPickup, LTFALSE, PF_HIDDEN ) // Hidden for TO2 (we want all pickups to be activated only)
 	ADD_BOOLPROP_FLAG(ActivatePickup, LTTRUE, PF_HIDDEN ) // Hidden for TO2 (we want all pickups to be activated only) 
-	ADD_BOOLPROP_FLAG(DMTouchPickup, LTTRUE, PF_HIDDEN ) // Hidden for TO2 (we want pickups to be touchable in DM)
 
 	// The Model override specifies a prop type model to use instead of the normal pick up
 	// model.  NOTE: it would be nice to get the dims from the model override if specified
@@ -84,7 +83,7 @@ BEGIN_CLASS(PickupItem)
 	ADD_STRINGPROP_FLAG(ModelOverride, "", PF_STATICLIST /*| PF_DIMS | PF_LOCALDIMS*/)
 	
 	ADD_STRINGPROP_FLAG( WorldAnimation, "World", PF_DYNAMICLIST )
-	ADD_STRINGPROP_FLAG(Team, "NoTeam", PF_STATICLIST)
+	// RETAIL: Tron has no DMTouchPickup and no Team (0x101d3410)
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN(PickupItem, GameBase, NULL, NULL, CF_HIDDEN, CPickupItemPlugin)
 #pragma force_active off
@@ -148,23 +147,6 @@ LTRESULT CPickupItemPlugin::PreHook_EditStringList(const char* szRezPath,
 
 		return LT_OK;
 	}
-	else if( _stricmp( "Team", szPropName ) == 0 )
-	{
-		char szTeam[32] = {0};
-
-		_ASSERT(cMaxStrings > (*pcStrings) + 1);
-		strcpy( aszStrings[(*pcStrings)++], "NoTeam" );
-		
-		for( int i = 0; i < MAX_TEAMS; ++i )
-		{
-			_ASSERT(cMaxStrings > (*pcStrings) + 1);
-
-			sprintf( szTeam, "Team%i", i );
-			strcpy( aszStrings[(*pcStrings)++], szTeam );
-		}
-
-		return LT_OK;
-	}
 
 
 	return LT_UNSUPPORTED;
@@ -207,7 +189,6 @@ PickupItem::PickupItem() : GameBase(OT_MODEL)
 
 	m_vScale.Init(1.0f, 1.0f, 1.0f);
 
-	m_nTeamId = INVALID_TEAM;
 }
 
 // ----------------------------------------------------------------------- //
@@ -312,6 +293,18 @@ uint32 PickupItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 
+		// RETAIL: 0x101d4158: Tron moves the item to the floor once all
+		// objects exist (not in InitialUpdate)
+		case MID_ALLOBJECTSCREATED:
+		{
+			if( m_bMoveToFloor )
+			{
+				MoveObjectToFloor( m_hObject );
+				m_bMoveToFloor = LTFALSE;
+			}
+		}
+		break;
+
 		case MID_SAVEOBJECT:
 		{
             Save((ILTMessage_Write*)pData, (uint32)fData);
@@ -321,17 +314,9 @@ uint32 PickupItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		case MID_LOADOBJECT:
 		{
             Load((ILTMessage_Read*)pData, (uint32)fData);
-			
-			uint32 dwRet = GameBase::EngineMessageFn(messageID, pData, fData);
-			
-			// We need to reset our sfx message since values
-			// could have changed across save versions.
-
-			CreateSpecialFX( );
-
-			return dwRet;
 		}
 		break;
+
 
 		default : break;
 	}
@@ -377,7 +362,6 @@ uint32 PickupItem::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 bool PickupItem::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
 	static CParsedMsg::CToken s_cTok_Activate("ACTIVATE");
-	static CParsedMsg::CToken s_cTok_Team( "TEAM" );
 
 	if( cMsg.GetArg(0) == s_cTok_Activate )
 	{
@@ -400,23 +384,6 @@ bool PickupItem::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		else
 		{
 			SetPlayerObj(LTNULL);
-			return true;
-		}
-	}
-	else if (cMsg.GetArg(0) == s_cTok_Team)
-	{
-		if( cMsg.GetArgCount( ) > 1 )
-		{
-			uint32 nTeamId = atoi( cMsg.GetArg( 1 ));
-			if( nTeamId < MAX_TEAMS )
-			{
-				SetTeamId( nTeamId );
-			}
-			else
-			{
-				SetTeamId( INVALID_TEAM );
-			}
-
 			return true;
 		}
 	}
@@ -495,20 +462,10 @@ LTBOOL PickupItem::ReadProp(ObjectCreateStruct *pInfo)
 		 m_bMoveToFloor = genProp.m_Bool;
 	}
 
+	// RETAIL: 0x101d451f: Tron reads TouchPickup in every game type
 	if( g_pLTServer->GetPropGeneric( "TouchPickup", &genProp ) == LT_OK )
 	{
-		if( IsCoopMultiplayerGameType() )
-		{
-			m_bTouchPickup = genProp.m_Bool;
-		}
-	}
-
-	if( g_pLTServer->GetPropGeneric( "DMTouchPickup", &genProp ) == LT_OK )
-	{
-		if( !IsCoopMultiplayerGameType() )
-		{
-			m_bTouchPickup = genProp.m_Bool;
-		}
+		m_bTouchPickup = genProp.m_Bool;
 	}
 
 
@@ -548,19 +505,6 @@ LTBOOL PickupItem::ReadProp(ObjectCreateStruct *pInfo)
 		{
 			m_sWorldAniName = genProp.m_String;
 		}
-	}
-
-	// Get the team this object belongs to.
-	if( IsTeamGameType() )
-	{
-		if( g_pLTServer->GetPropGeneric( "Team", &genProp ) == LT_OK )
-		{
-			m_nTeamId = TeamStringToTeamId( genProp.m_String );
-		}
-	}
-	else
-	{
-		m_nTeamId = INVALID_TEAM;
 	}
 
 	return LTTRUE;
@@ -662,10 +606,30 @@ LTBOOL PickupItem::InitialUpdate()
 
 	// set a special fx message so that the client knows about the pickup item...
 	// (so it can handle bouncing, rotating, and displaying the proper targeting text...)
+	// RETAIL: 0x101d4876: Tron's message is the id, rotate and bounce
 
-	CreateSpecialFX();
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(SFX_PICKUPITEM_ID);
+	cMsg.Writeuint8((uint8)m_bRotate);
+	cMsg.Writeuint8((uint8)m_bBounce);
+	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, m_dwFlags, m_dwFlags);
+
+	// Set the dims based on the current animation...
+
+    LTVector vDims;
+    g_pCommonLT->GetModelAnimUserDims(m_hObject, &vDims, g_pLTServer->GetModelAnimation(m_hObject));
+
+	// Set object dims based on scale value...
+
+    LTVector vNewDims;
+	vNewDims.x = m_vScale.x * vDims.x;
+	vNewDims.y = m_vScale.y * vDims.y;
+	vNewDims.z = m_vScale.z * vDims.z;
+
+    g_pLTServer->ScaleObject(m_hObject, &m_vScale);
+	g_pPhysicsLT->SetObjectDims(m_hObject, &vNewDims, 0);
 
 	// Look for an animation specified in DEdit...
 
@@ -690,28 +654,6 @@ LTBOOL PickupItem::InitialUpdate()
 		}
 	}
 
-	// Set the dims based on the current animation...
-
-    LTVector vDims;
-    g_pCommonLT->GetModelAnimUserDims(m_hObject, &vDims, g_pLTServer->GetModelAnimation(m_hObject));
-
-	// Set object dims based on scale value...
-
-    LTVector vNewDims;
-	vNewDims.x = m_vScale.x * vDims.x;
-	vNewDims.y = m_vScale.y * vDims.y;
-	vNewDims.z = m_vScale.z * vDims.z;
-
-    g_pLTServer->ScaleObject(m_hObject, &m_vScale);
-	g_pPhysicsLT->SetObjectDims(m_hObject, &vNewDims, 0);
-
-	// Make sure object starts on floor if the gravity flag is set...
-
-	if(m_bMoveToFloor)
-	{
-		MoveObjectToFloor(m_hObject);
-	}
-
     return LTTRUE;
 }
 
@@ -729,10 +671,32 @@ LTBOOL PickupItem::Update()
 
 	// If we aren't visible it must be time to respawn...
 
+	// RETAIL: 0x101d4a40: Tron "respawns" here (no FLAG2_FORCETRANSLUCENT)
 	if( m_bWasPickedUp )
 	{
-		Respawn( );
-		
+		// Make us visible...
+
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_TOUCH_NOTIFY, FLAG_TOUCH_NOTIFY);
+
+		// If we're activateable, turn on the relative flags...
+
+		if (m_bActivatePickup)
+		{
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+		}
+
+ 		// Let the world know what happened...
+
+		if (m_hstrRespawnSoundFile)
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos(m_hObject, &vPos);
+			g_pServerSoundMgr->PlaySoundFromPos(vPos, g_pLTServer->GetStringData(m_hstrRespawnSoundFile),
+							 600.0f, SOUNDPRIORITY_MISC_HIGH);
+		}
+
 		m_bWasPickedUp = false;
 	}
 
@@ -845,116 +809,6 @@ void PickupItem::SetPlayerObj(HOBJECT hObj)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	PickupItem::CreateSpecialFX
-//
-//	PURPOSE:	Send the special fx message for this object
-//
-// ----------------------------------------------------------------------- //
-
-void PickupItem::CreateSpecialFX( bool bUpdateClients /* = false  */ )
-{
-	{
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(SFX_PICKUPITEM_ID);
-		cMsg.Writebool(!!m_bRotate);
-		cMsg.Writebool(!!m_bBounce);
-		cMsg.WriteString( m_sClientFX.c_str() );
-		cMsg.Writeuint8(m_nTeamId);
-		g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	PickupItem::SetClientFX
-//
-//	PURPOSE:	Set the clientfx for this pickupitem...
-//
-// ----------------------------------------------------------------------- //
-
-void PickupItem::SetClientFX( const char *pszFX )
-{
-	m_sClientFX = pszFX;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_SFX_MESSAGE );
-	cMsg.Writeuint8( SFX_PICKUPITEM_ID );
-	cMsg.WriteObject( m_hObject );
-	cMsg.Writeuint8( PUFX_CLIENTFX );
-	cMsg.WriteString( m_sClientFX.c_str() );
-	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
-
-	CreateSpecialFX( );
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	PickupItem::SetTeamId
-//
-//	PURPOSE:	Set the teamid for this pickupitem...
-//
-// ----------------------------------------------------------------------- //
-
-void PickupItem::SetTeamId( uint8 nTeamId )
-{
-	m_nTeamId = nTeamId;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_SFX_MESSAGE );
-	cMsg.Writeuint8( SFX_PICKUPITEM_ID );
-	cMsg.WriteObject( m_hObject );
-	cMsg.Writeuint8( PUFX_TEAMID );
-	cMsg.Writeuint8( m_nTeamId );
-	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
-
-	CreateSpecialFX( );
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	PickupItem::Respawn
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void PickupItem::Respawn( )
-{
-	// Make us visible...
-
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
-	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, 0, FLAG2_FORCETRANSLUCENT );
-
-	// If we're touch activateable, make us touchable...
-
-	// [RP] 8/31/02 We need this flag to transition...
-
-	//if (m_bTouchPickup)
-	{
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_TOUCH_NOTIFY, FLAG_TOUCH_NOTIFY);
-	}
-
-	// If we're activateable, turn on the relative flags...
-
-	if (m_bActivatePickup)
-	{
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
-	}
-
- 	// Let the world know what happened...
-
-	if (m_hstrRespawnSoundFile)
-	{
-        LTVector vPos;
-		g_pLTServer->GetObjectPos(m_hObject, &vPos);
-        g_pServerSoundMgr->PlaySoundFromPos(vPos, g_pLTServer->GetStringData(m_hstrRespawnSoundFile),
-						 600.0f, SOUNDPRIORITY_MISC_HIGH);
-    }
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	PickupItem::Save
 //
 //	PURPOSE:	Save the object
@@ -982,7 +836,6 @@ void PickupItem::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_BOOL(m_bActivatePickup);
 	SAVE_bool(m_bWasPickedUp);
 	SAVE_CHARSTRING(m_sWorldAniName.c_str());
-	SAVE_BYTE(m_nTeamId);
 }
 
 
@@ -1017,10 +870,5 @@ void PickupItem::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	char szString[1024] = {0};
 	LOAD_CHARSTRING( szString, ARRAY_LEN( szString ));
 	m_sWorldAniName = szString;
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) > CVersionMgr::kSaveVersion__1_2 )
-	{
-		LOAD_BYTE(m_nTeamId);
-	}
 }
 

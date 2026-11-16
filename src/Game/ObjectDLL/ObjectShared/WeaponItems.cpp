@@ -334,41 +334,6 @@ void WeaponItem::PickedUp( ILTMessage_Read *pMsg )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	WeaponItem::Respawn
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void WeaponItem::Respawn( )
-{
-	PickupItem::Respawn();
-
-	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( m_nWeaponId );
-	if( !pWeapon )
-		return;
-	
-	// Change the skins and renderstyles back to the normal powerup files...
-
-	ObjectCreateStruct ocs;
-
-	pWeapon->blrHHSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-	pWeapon->blrHHRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-	if( pWeapon->blrHHRenderStyles.GetNumItems() < 1 )
-		LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-	
-	// See if we are using a different model...
-
-	CheckForOverrideModel( &ocs );
-
-	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-	// RETAIL: Tron's WEAPON has no PowerupFX
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	WeaponItem::Save
 //
 //	PURPOSE:	Save the object

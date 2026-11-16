@@ -22,16 +22,6 @@
 #define AMMOBOX_PICKUP_SOUND	"AmmoBoxPickup"
 #define AMMOBOX_RESPAWN_SOUND	"AmmoBoxRespawn"
 
-#define SBMGR_AMMOBOX_POWERUPFX					"PowerupFX"
-#define SBMGR_AMMOBOX_RESPAWNWAITFX				"RespawnWaitFX"
-#define SBMGR_AMMOBOX_RESPAWNWAITSKIN			"RespawnWaitSkin"
-#define SBMGR_AMMOBOX_RESPAWNWAITRENDERSTYLE	"RespawnWaitRenderStyle"
-#define SBMGR_AMMOBOX_RESPAWNWAITVISIBLE		"RespawnWaitVisible"
-#define SBMGR_AMMOBOX_RESPAWNWAITTRANSLUCENT	"RespawnWaitTranslucent"
-
-static const char s_szDefaultRS[]		= "RS\\Default.ltb";
-static const char s_szDefaultModel[]	= "Props\\Models\\PuAmmoBox.ltb";
-static const char s_szDefaultSkin[]		= "Props\\Skins\\PuAmmoBox.dtx";
 		
  
 #define ADD_AMMO_PROP(num) \
@@ -80,9 +70,6 @@ AmmoBox::AmmoBox() : PickupItem()
 		m_nAmmoId[i] = m_nOriginalAmmoId[i] = WMGR_INVALID_ID;
 		m_nAmmoCount[i]	= m_nOriginalAmmoCount[i] = 0;
 	}
-
-	m_bRespawnWaitVisible		= false;
-	m_bRespawnWaitTranslucent	= false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -103,8 +90,7 @@ uint32 AmmoBox::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
-				if( !ReadProp((ObjectCreateStruct*)pData))
-					return 0;
+				ReadProp((ObjectCreateStruct*)pData);
 			}
 
 			return dwRet;
@@ -137,52 +123,44 @@ uint32 AmmoBox::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 //
 // ----------------------------------------------------------------------- //
 
-bool AmmoBox::ReadProp(ObjectCreateStruct *pStruct)
+void AmmoBox::ReadProp(ObjectCreateStruct *pStruct)
 {
+	// RETAIL: 0x101d2d70: Tron's is build 51's, with the ammo's spawned
+	// amount when the count is 0
 	GenericProp genProp;
-
-	// Counts the number of ammo types we put in our box.
-	int nNumAmmoTypes = 0;
 
 	for (int i=0; i < AB_MAX_TYPES; i++)
 	{
 		char key[40];
-
-		AMMO const* pAmmo = NULL;
 
 		sprintf(key, "AmmoType%d", i+1);
         if (g_pLTServer->GetPropGeneric(key, &genProp) == LT_OK)
 		{
 			if (_stricmp(genProp.m_String, UNUSED_STRING) != 0)
 			{
-				pAmmo = g_pWeaponMgr->GetAmmo(genProp.m_String);
-				// RETAIL: Tron's AMMO cannot be server restricted (no such member)
-				if( pAmmo )
+				AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(genProp.m_String);
+				if (pAmmo)
 				{
-					m_nAmmoId[nNumAmmoTypes] = m_nOriginalAmmoId[nNumAmmoTypes] = pAmmo->nId;
+					m_nAmmoId[i] = m_nOriginalAmmoId[i] = pAmmo->nId;
 				}
 			}
 		}
 
-		if( pAmmo )
+		sprintf(key, "AmmoCount%d", i+1);
+        if (g_pLTServer->GetPropGeneric(key, &genProp) == LT_OK)
 		{
-			sprintf(key, "AmmoCount%d", i+1);
-			if (g_pLTServer->GetPropGeneric(key, &genProp) == LT_OK)
+			m_nAmmoCount[i] = m_nOriginalAmmoCount[i] = genProp.m_Long;
+			if (m_nAmmoCount[i] == 0)
 			{
-				m_nAmmoCount[nNumAmmoTypes] = m_nOriginalAmmoCount[nNumAmmoTypes] = genProp.m_Long;
-				if (m_nAmmoCount[nNumAmmoTypes] == 0)
+				AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(m_nAmmoId[i]);
+				if (pAmmo)
 				{
-					 m_nAmmoCount[nNumAmmoTypes] = m_nOriginalAmmoCount[nNumAmmoTypes] = pAmmo->nSpawnedAmount;
+					m_nAmmoCount[i] = m_nOriginalAmmoCount[i] = pAmmo->nSpawnedAmount;
 				}
 			}
-
-			nNumAmmoTypes++;
 		}
 	}
 
-	// See if there were no ammotypes that made it.  If so, then don't create this box.
-	if( nNumAmmoTypes == 0 )
-		return false;
 
 	// Set up the appropriate pick up and respawn sounds...
 
@@ -191,24 +169,6 @@ bool AmmoBox::ReadProp(ObjectCreateStruct *pStruct)
 
 	FREE_HSTRING(m_hstrRespawnSoundFile);
 	m_hstrRespawnSoundFile = g_pLTServer->CreateString( AMMOBOX_RESPAWN_SOUND );
- 
-	char szTemp[32] = {0};
-
-	g_pServerButeMgr->GetAmmoBoxAttributeString( SBMGR_AMMOBOX_POWERUPFX, szTemp, ARRAY_LEN( szTemp ));
-	m_sPowerupFX = szTemp;
-
-	g_pServerButeMgr->GetAmmoBoxAttributeString( SBMGR_AMMOBOX_RESPAWNWAITFX, szTemp, ARRAY_LEN( szTemp ));
-	m_sRespawnWaitFX = szTemp;
-
-	g_pServerButeMgr->GetAmmoBoxAttributeListReader( &m_blrRespawnWaitSkins, SBMGR_AMMOBOX_RESPAWNWAITSKIN, MAX_CS_FILENAME_LEN );
-	g_pServerButeMgr->GetAmmoBoxAttributeListReader( &m_blrRespawnWaitRenderStyles, SBMGR_AMMOBOX_RESPAWNWAITRENDERSTYLE, MAX_CS_FILENAME_LEN );
-
-	m_bRespawnWaitVisible		= !!(g_pServerButeMgr->GetAmmoBoxAttributeInt( SBMGR_AMMOBOX_RESPAWNWAITVISIBLE, false ));
-	m_bRespawnWaitTranslucent	= !!(g_pServerButeMgr->GetAmmoBoxAttributeInt( SBMGR_AMMOBOX_RESPAWNWAITTRANSLUCENT, false ));
-
-	m_sClientFX = m_sPowerupFX;
-
-	return true;
 }
 
 
@@ -276,9 +236,6 @@ void AmmoBox::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	{
 		pMsg->Writeuint8(m_nAmmoId[i]);
 		pMsg->Writeint32(m_nAmmoCount[i]);
-		pMsg->Writeuint8(m_nOriginalAmmoId[i]);
-		pMsg->Writeint32(m_nOriginalAmmoCount[i]);
-
 	}
 }
 
@@ -299,8 +256,6 @@ void AmmoBox::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	{
         m_nAmmoId[i] = pMsg->Readuint8();
         m_nAmmoCount[i] = (int)pMsg->Readint32();
-        m_nOriginalAmmoId[i] = pMsg->Readuint8();
-        m_nOriginalAmmoCount[i] = (int)pMsg->Readint32();
 	}
 }
 
@@ -374,78 +329,6 @@ void AmmoBox::Leftovers(ILTMessage_Read *pMsg)
 	}
 }
 
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	AmmoBox::PickedUp
-//
-//	PURPOSE:	Restock in preparation for respawn...
-//
-// ----------------------------------------------------------------------- //
-
-void AmmoBox::PickedUp(ILTMessage_Read *pMsg)
-{
-
-	for (int i=0; i < AB_MAX_TYPES; i++)
-	{
-		m_nAmmoId[i] = m_nOriginalAmmoId[i];
-		m_nAmmoCount[i] = m_nOriginalAmmoCount[i];
-	}
-
-
-	PickupItem::PickedUp(pMsg);
-	
-	if( m_bRespawn )
-	{
-		// Change the skins and renderstyles to the waiting to respawn files...
-
-		ObjectCreateStruct ocs;
-
-		m_blrRespawnWaitSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-		m_blrRespawnWaitRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-		if( m_blrRespawnWaitRenderStyles.GetNumItems() < 1 )
-			LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-		
-		g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-		// Stop playing PowerupFX and play RespawnWaitFX...
-	
-		SetClientFX( m_sRespawnWaitFX.c_str() );
-
-		// Set our visibility...
-
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, m_bRespawnWaitVisible ? FLAG_VISIBLE : 0, FLAG_VISIBLE );
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, m_bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	AmmoBox::Respawn
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void AmmoBox::Respawn( )
-{
-	PickupItem::Respawn();
-
-	// Change the skins and renderstyles back to the normal powerup files...
-
-	ObjectCreateStruct ocs;
-
-	LTStrCpy( ocs.m_Filename, s_szDefaultModel, ARRAY_LEN( s_szDefaultModel ));
-	LTStrCpy( ocs.m_SkinName, s_szDefaultSkin, ARRAY_LEN( s_szDefaultSkin ));	
-	LTStrCpy( ocs.m_RenderStyleName, s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-
-	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-	// Stop playing RespawnWaitFX and play PowerupFX...
-	
-	SetClientFX( m_sPowerupFX.c_str() );
-}
 
 // ----------------------------------------------------------------------- //
 //
