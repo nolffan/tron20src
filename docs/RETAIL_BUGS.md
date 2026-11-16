@@ -917,6 +917,17 @@ the sky fog and never the model shadows.
 
 Not fixed yet: the modern build should write szDrawAllModelShadows.
 
+### A failed level load restores the level name from freed memory
+
+Object.lto 0x101ca350 (CServerSaveLoadMgr::LoadLevel,
+ObjectShared/ServerSaveLoadMgr.cpp). Tron keeps the pointer that
+CGameServerShell::GetCurLevel returns (the buffer of the shell's level
+CString), sets the new level name, and gives the kept pointer back to
+SetCurLevel when the load fails. The assignment can free or reuse that
+buffer, so the restored name can be garbage.
+
+Not fixed yet: the modern build should copy the old name first.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
