@@ -263,7 +263,9 @@ enum DDPieceType
 
 // Is this object a hitbox?  (Used for client-side hit detection)
 
-#define USRFLG_HITBOX					(1<<24)
+// RETAIL: Tron's is bit 19 (CShell's CHitBox::Init sets 0x81000 with
+// USRFLG_CHARACTER, 0x101ab7ec; the weapon's filter tests 0x80000)
+#define USRFLG_HITBOX					(1<<19)
 
 // ALL USRFLG's available!!!!
 

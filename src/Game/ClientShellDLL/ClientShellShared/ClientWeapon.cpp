@@ -1391,7 +1391,7 @@ void CClientWeapon::ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce /*=false
 			if (strlen(m_pAmmo->szName))
 			{
 				char szMsg[128];
-				FormatString(IDS_CHANGING_AMMO, szMsg, sizeof(szMsg), m_pAmmo->szName);
+				FormatString(524 /* RETAIL: 0x101309fe, Tron's IDS_CHANGING_AMMO */, szMsg, sizeof(szMsg), m_pAmmo->szName);
 				std::string icon = m_pAmmo->GetNormalIcon();
 				g_pPickupMsgs->AddMessage(szMsg, icon.c_str());
 			}
@@ -4049,7 +4049,8 @@ uint32 CClientWeapon::GetSubtleIdleAni() const
 
 LTFLOAT CClientWeapon::GetNextIdleTime() const
 {
-	return g_pLTClient->GetTime() + GetRandom( WEAPON_MIN_IDLE_TIME, WEAPON_MAX_IDLE_TIME );
+	// RETAIL: Tron's idle times are 7.5 to 17.5 seconds (0x10133830)
+	return g_pLTClient->GetTime() + GetRandom( 7.5f, 17.5f );
 }
 
 
