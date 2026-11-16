@@ -5411,22 +5411,7 @@ void CClientWeapon::HandleGadgetImpact( HOBJECT hObj, LTVector vImpactPoint )
 		return;
 	}
 
-	// Check the team identifier on the gadget to see if it matches our team...
-
-	CGadgetTargetFX *pGadget = dynamic_cast<CGadgetTargetFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_GADGETTARGET_ID, hObj ));
-	if( !pGadget )
-		return;
-
-	if( IsTeamGameType() && pGadget->GetTeamID() != INVALID_TEAM )
-	{
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return;
-
-		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pGadget->GetTeamID() )
-			return;
-	}
+	// RETAIL: Tron's (0x10135260) has no gadget target or team test
 
 	// Test the damage type if necessary...
 	if ( bTestDamageType )
