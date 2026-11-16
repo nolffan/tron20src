@@ -711,6 +711,10 @@ bool CClientWeapon::HandleDeflectKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
+	// RETAIL: Tron's (0x10130180) says whether all the keys had their
+	// arguments
+	bool bResult = true;
+
 		// start the index at the first argument
 		int i = 0;
 		int nRS;
@@ -731,6 +735,7 @@ bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 				{
 					// Not enough params
 					g_pLTClient->CPrint("CClientWeapon::OnModelKey - ERROR - Not enough RS arguments! Syntax: RS <RSNum> <RSName>\n");
+					bResult = false;
 				}
 
 				// Move past all arguments of this key
@@ -743,7 +748,7 @@ bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 			}
 		}
 
-	return true;
+	return bResult;
 }
 
 // ----------------------------------------------------------------------- //
@@ -782,7 +787,8 @@ bool CClientWeapon::HandleShellCasingKey( HLOCALOBJ hObj, ArgList* pArgList )
 			g_pGameClientShell->GetSFXMgr()->CreateSFX(SFX_SHELLCASING_ID, &sc);
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here (0x10130332)
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2807,6 +2813,12 @@ HOBJECT CClientWeapon::CreateModelObject( HOBJECT hOldObj, ObjectCreateStruct *c
 		createStruct->m_Flags     |= /*FLAG_VISIBLE |*/ FLAG_REALLYCLOSE;
 		createStruct->m_Flags2    |= FLAG2_DYNAMICDIRLIGHT;
 
+		// RETAIL: Tron's translucent weapons (0x10132885)
+		if ( m_pWeapon->bTranslucent )
+		{
+			createStruct->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
+		}
+
 		hObj = g_pLTClient->CreateObject( createStruct );
 		if ( !hObj ) return static_cast< HOBJECT >( 0 );
 	}
@@ -4003,9 +4015,16 @@ uint32 CClientWeapon::GetIdleAni() const
 			}
 		}
 
+		// RETAIL: Tron's (0x10133770) plays the first idle eight times in
+		// eleven, else the second
 		if ( 0 < nNumValid )
 		{
-			return dwValidIdleAnis[ GetRandom( 0, ( nNumValid - 1 ) ) ];
+			if ( GetRandom( 0, 10 ) < 8 )
+			{
+				return dwValidIdleAnis[ 0 ];
+			}
+
+			return dwValidIdleAnis[ 1 ];
 		}
 	}
 
@@ -5706,6 +5725,47 @@ void CClientWeapon::AddImpact( HLOCALOBJ hObj, LTVector const &vImpactPoint,
 }
 
 
+// RETAIL: Tron's player view skins by the player's colour (the team
+// colours: PopulateCreateStruct 0x10135730 reads them; the names are ours)
+static const char* s_aszPVHandsLeftSkins[] =
+{
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_red.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_green.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_orange.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_purple.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_white.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_cyan.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_yellow.dtx",
+};
+
+static const char* const s_aszPVHandsSkins[] =
+{
+	"Weapons\\Hands\\skins_pv\\PV_Hands.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_red.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_green.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_orange.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_purple.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_white.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_cyan.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_yellow.dtx",
+};
+
+static const char* const s_aszPVDiscSkins[] =
+{
+	"Weapons\\Disc\\skins_pv\\PV_Disc.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_red.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_green.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_orange.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_purple.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_white.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_cyan.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_yellow.dtx",
+};
+
+const int kNumPVColorSkins = sizeof( s_aszPVDiscSkins ) / sizeof( s_aszPVDiscSkins[0] );
+
+
 // ----------------------------------------------------------------------- //
 //
 //	FUNCTION:	CClientWeapon::PopulateCreateStruct()
@@ -5719,12 +5779,6 @@ void CClientWeapon::PopulateCreateStruct( ObjectCreateStruct *pOCS ) const
 	// sanity check parameters
 	ASSERT( 0 != pOCS );
 
-	// sanity check globals
-	ASSERT( 0 != g_pModelButeMgr );
-	ASSERT( 0 != g_pCommonLT );
-	ASSERT( 0 != g_pLTClient );
-	ASSERT( 0 != g_pPlayerMgr );
-
 	// sanity check this object
 	ASSERT( 0 != m_pWeapon );
 
@@ -5737,18 +5791,27 @@ void CClientWeapon::PopulateCreateStruct( ObjectCreateStruct *pOCS ) const
 	// add the render styles
 	m_pWeapon->blrPVRenderStyles.CopyList( 0, pOCS->m_RenderStyleNames[ 0 ], ( MAX_CS_FILENAME_LEN + 1 ) );
 
-	// Figure out what hand skin to use...
-	ASSERT( g_pPlayerMgr->GetMoveMgr() );
-	CCharacterFX* pCharFX = g_pPlayerMgr->GetMoveMgr()->GetCharacterFX();
-
-	if ( ( m_pWeapon->blrPVSkins.GetNumItems() ) &&
-	     ( 0 == strcmp( m_pWeapon->blrPVSkins.GetItem( 0 ), "Hands" ) ) )
+	// RETAIL: in multiplayer Tron's hands and disc take the player's colour
+	// (0x1013578b); NOLF2's "Hands" skin from the model bute is not in Tron
+	if ( IsMultiplayerGame( ))
 	{
-		// This looks for the special case where "Hands" is specified as the first
-		// player view skin.  If it is, then we take the skin from the model bute
-		// instead of the weapon bute.
-		ModelId nModelID = ( pCharFX ) ? pCharFX->GetModelId() : static_cast< ModelId >( 0 );
-		SAFE_STRCPY( pOCS->m_SkinNames[ 0 ], g_pModelButeMgr->GetHandsSkinFilename( nModelID ) );
+		CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+		if ( pProfile )
+		{
+			int nColor = pProfile->m_nPlayerColor;
+			if ( nColor >= 0 && nColor < kNumPVColorSkins )
+			{
+				SAFE_STRCPY( pOCS->m_SkinNames[ 0 ], s_aszPVHandsLeftSkins[ nColor ] );
+				SAFE_STRCPY( pOCS->m_SkinNames[ 1 ], s_aszPVHandsSkins[ nColor ] );
+				SAFE_STRCPY( pOCS->m_SkinNames[ 2 ], s_aszPVDiscSkins[ nColor ] );
+			}
+		}
+	}
+
+	// RETAIL: Tron's translucent weapons (0x101357fe)
+	if ( m_pWeapon->bTranslucent )
+	{
+		pOCS->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
 	}
 
 	// Create the weapon at it's actual position...
