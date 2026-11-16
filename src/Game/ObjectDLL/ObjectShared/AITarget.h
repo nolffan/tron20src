@@ -15,7 +15,7 @@ class CCharacter;
 // 0x101df0e0, vtable 0x1029b3b0: OnRelationChange, a pure virtual dtor and
 // a pure GetAI) holds the target tracking, CAITarget (0x101e03b0, 0xd4
 // bytes) adds its CAI and the push. CGenericTarget<CAIGoalAbstract> is
-// another AbstractTarget in retail (not written yet).
+// another AbstractTarget in retail (below).
 
 class AbstractTarget : public IRelationChangeObserver
 {
@@ -137,6 +137,32 @@ class CAITarget : public CAIClassAbstract, public AbstractTarget
 		LTFLOAT		m_fPushMinDist;
 		LTFLOAT		m_fPushMinDistSqr;
 		LTFLOAT		m_fPushThreshold;
+};
+
+// RETAIL: CGenericTarget<CAIGoalAbstract> (RTTI; vtable 0x1029d678:
+// OnRelationChange, dtor 0x1020ab60, GetAI 0x1020ab50) is the target a goal
+// keeps itself (CAIGoalAttack +0xdc). The owner pointer is at +0xbc; the
+// goal sets it in InitGoal before it calls AbstractTarget::Init. The class
+// name is retail's; Init's name is ours (it is inline in retail).
+template<class T>
+class CGenericTarget : public AbstractTarget
+{
+	public :
+
+		CGenericTarget( ) { m_pOwner = LTNULL; }
+
+		void Init(T* pOwner) { m_pOwner = pOwner; AbstractTarget::Init(); }
+
+		void Save(ILTMessage_Write *pMsg) { AbstractTarget::Save(pMsg); }
+		void Load(ILTMessage_Read *pMsg) { AbstractTarget::Load(pMsg); }
+
+	protected :
+
+		virtual CAI* GetAI() { return m_pOwner->GetAI(); }
+
+	protected :
+
+		T*			m_pOwner;
 };
 
 #endif
