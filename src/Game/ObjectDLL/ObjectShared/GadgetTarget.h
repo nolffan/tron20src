@@ -66,7 +66,6 @@ class GadgetTarget : public Prop
 		virtual void	TurnLightOn(bool bOn=true);
 		virtual void	SetLightPosition(LightPosition eLightPos);
 
-		void			CreateSpecialFX( bool bUpdateClients /* = false  */ );
 
 	protected : // Members...
 
@@ -98,7 +97,7 @@ class GadgetTarget : public Prop
 
 		uint32				m_nGTID;
 
-		uint8		m_nTeamID;
+		// RETAIL: Tron has no team id (no "TEAM" string in Object.lto)
 
 	private :
 

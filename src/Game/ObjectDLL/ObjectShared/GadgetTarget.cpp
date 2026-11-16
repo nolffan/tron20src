@@ -71,7 +71,7 @@ BEGIN_CLASS( GadgetTarget )
     ADD_BOOLPROP_FLAG(RayHit, LTTRUE, PF_HIDDEN)
 	ADD_STRINGPROP_FLAG(DetailLevel, "HIGH", PF_STATICLIST | PF_HIDDEN)
 	
-	ADD_BOOLPROP_FLAG(CanTransition, LTFALSE, PF_HIDDEN)
+	// RETAIL: Tron's has no CanTransition (0x101ba890)
 
 
 	// New Props...
@@ -83,7 +83,6 @@ BEGIN_CLASS( GadgetTarget )
 	ADD_STRINGPROP_FLAG( Command, "", PF_NOTIFYCHANGE )
 	ADD_STRINGPROP_FLAG( PowerOffCommand, "", PF_NOTIFYCHANGE )
     ADD_BOOLPROP_FLAG( StartOn, LTTRUE, 0, )
-	ADD_STRINGPROP_FLAG( Team, "NoTeam", PF_STATICLIST )
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN( GadgetTarget, Prop, NULL, NULL, 0, CGadgetTargetPlugin )
 
@@ -135,23 +134,6 @@ LTRESULT CGadgetTargetPlugin::PreHook_EditStringList(
 		{
 			return LT_OK;
 		}
-	}
-	else if( !_stricmp( "Team", szPropName ) )
-	{
-		char szTeam[32] = {0};
-
-		_ASSERT(cMaxStrings > (*pcStrings) + 1);
-		strcpy( aszStrings[(*pcStrings)++], "NoTeam" );
-		
-		for( int i = 0; i < MAX_TEAMS; ++i )
-		{
-			_ASSERT(cMaxStrings > (*pcStrings) + 1);
-
-			sprintf( szTeam, "Team%i", i );
-			strcpy( aszStrings[(*pcStrings)++], szTeam );
-		}
-
-		return LT_OK;
 	}
 
 	return LT_UNSUPPORTED;
@@ -255,8 +237,7 @@ GadgetTarget::GadgetTarget( )
 	m_bInfiniteActivates	( LTFALSE ),
 	m_bOn					( LTTRUE ),
 	m_eLightPos				( eLightPos1 ),
-	m_nGTID					( GTMGR_INVALID_ID ),
-	m_nTeamID				( INVALID_TEAM )
+	m_nGTID					( GTMGR_INVALID_ID )
 {
 	m_hAttachedModel.SetReceiver( *this );
     m_hLight.SetReceiver( *this );
@@ -541,31 +522,6 @@ LTBOOL GadgetTarget::ReadProp( ObjectCreateStruct *pStruct )
 		}
 	}
 
-	// Get the team the GadgetTarget belongs to, but only when in a team game...
-	
-	if( IsTeamGameType() )
-	{
-		if( g_pLTServer->GetPropGeneric( "Team", &gProp ) == LT_OK )
-		{
-			if( gProp.m_String[0] )
-			{
-				char szTeam[32] = {0};
-				for( int i = 0; i < MAX_TEAMS; ++i )
-				{
-					sprintf( szTeam, "Team%i", i );
-					if( !_stricmp( gProp.m_String, szTeam ))
-					{
-						m_nTeamID = i;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		m_nTeamID = INVALID_TEAM;
-	}
-
 	return LTTRUE;
 }
 
@@ -625,7 +581,7 @@ LTBOOL GadgetTarget::OnObjectCreated( )
 	}
 	else if( m_pGTInfo->m_eTargetType == eBombable )
 	{
-		m_dwGadgetUsrFlgs |= (USRFLG_GADGET_BOMBABLE | USRFLG_GLOW);
+		m_dwGadgetUsrFlgs |= USRFLG_GADGET_BOMBABLE;	// RETAIL: 0x101bc7d7: Tron's has no USRFLG_GLOW
 	}
 	else if( m_pGTInfo->m_eTargetType == eInvisibleInk )
 	{
@@ -645,7 +601,12 @@ LTBOOL GadgetTarget::OnObjectCreated( )
 
 	m_fTotalTime = m_fDisableTime = (m_dwGadgetUsrFlgs & USRFLG_GADGET_CAMERA ? 0.0f : GetRandom( m_fMinTime, m_fMaxTime ));
 
-	CreateSpecialFX( false );
+	// RETAIL: 0x101bc85f: Tron sends only the target type (no on state or
+	// team; there is no CreateSpecialFX)
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(SFX_GADGETTARGET_ID);
+	cMsg.Writeuint8(m_pGTInfo->m_eTargetType);
+	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 
 	// See if we want to create the light...
 
@@ -722,7 +683,6 @@ bool GadgetTarget::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_On(c_szON);
 	static CParsedMsg::CToken s_cTok_Off(c_szOFF);
 	static CParsedMsg::CToken s_cTok_Disable(c_szDisable);
-	static CParsedMsg::CToken s_cTok_Team( "TEAM" );
 	
 	if( cMsg.GetArg(0) == s_cTok_Gadget )
 	{
@@ -751,24 +711,6 @@ bool GadgetTarget::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if( cMsg.GetArg(0) == s_cTok_Disable )
 	{
 		SetupDisabledState();
-	}
-	else if (cMsg.GetArg(0) == s_cTok_Team)
-	{
-		if( cMsg.GetArgCount( ) > 1 )
-		{
-			uint32 nTeamId = atoi( cMsg.GetArg( 1 ));
-			if( nTeamId < MAX_TEAMS )
-			{
-				m_nTeamID = nTeamId;
-			}
-			else
-			{
-				m_nTeamID = INVALID_TEAM;
-			}
-
-			CreateSpecialFX( true );
-			return true;
-		}
 	}
 	else
 		return Prop::OnTrigger(hSender, cMsg);
@@ -840,7 +782,8 @@ void GadgetTarget::HandleStoppedMsg( const CParsedMsg &cMsg )
 	
 	if( m_hSound )
 	{
-		g_pLTServer->SoundMgr()->KillSound( m_hSound );
+		// RETAIL: 0x101bd040: Tron stops the loop (KillSoundLoop)
+		g_pLTServer->SoundMgr()->KillSoundLoop( m_hSound );
         m_hSound = LTNULL;
 	}
 
@@ -892,6 +835,10 @@ void GadgetTarget::HandleActivateMsg( HOBJECT hSender )
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags( m_hObject, OFT_User, dwFlags );
 
+	// RETAIL: 0x101bd0ec: Tron tests the activate flag first
+	if( !(dwFlags & USRFLG_CAN_ACTIVATE) )
+		return;
+
 	// If we're turned off, send our "power off" command...
 	
 	if (!m_bOn)
@@ -909,26 +856,23 @@ void GadgetTarget::HandleActivateMsg( HOBJECT hSender )
 	}
 
 
-	if( dwFlags & USRFLG_CAN_ACTIVATE )
+	// Become disabled...
+
+	SetupDisabledState();
+
+	if( m_bInfiniteActivates )
 	{
-		// Become disabled...
-
-		SetupDisabledState();
-
-		if( m_bInfiniteActivates )
-		{
-			// Reset the gadget target so it can be disabled again...
-			
-			m_bDisabled = LTFALSE;
-			m_bDisableRequested = LTFALSE;
-		}
-		else
-		{
-			// We should no longer be activateble
-			
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE );
-		}
-	}	
+		// Reset the gadget target so it can be disabled again...
+		
+		m_bDisabled = LTFALSE;
+		m_bDisableRequested = LTFALSE;
+	}
+	else
+	{
+		// We should no longer be activateble
+		
+		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE );
+	}
 }
 
 
@@ -962,43 +906,8 @@ void GadgetTarget::TurnOn(bool bOn)
 {
 	m_bOn = bOn;
 
-	CreateSpecialFX( true );
-
+	// RETAIL: 0x101bd1f0: Tron sends no special fx here
 	TurnLightOn(bOn);
-}
-
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	GadgetTarget::CreateSpecialFX
-//
-//	PURPOSE:	Add client-side special fx
-//
-// ----------------------------------------------------------------------- //
-
-void GadgetTarget::CreateSpecialFX( bool bUpdateClients )
-{
-	{
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(SFX_GADGETTARGET_ID);
-		cMsg.Writeuint8(m_pGTInfo->m_eTargetType);
-		cMsg.Writebool(!!m_bOn);
-		cMsg.Writebool(!!m_bOn);
-		cMsg.Writeuint8( m_nTeamID );
-		g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
-	}
-
-	if( bUpdateClients )
-	{
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_SFX_MESSAGE);
-		cMsg.Writeuint8(SFX_GADGETTARGET_ID);
-		cMsg.WriteObject(m_hObject);
-		cMsg.Writeuint8(m_pGTInfo->m_eTargetType);
-		cMsg.Writebool(!!m_bOn);
-		cMsg.Writebool(!!m_bOn);
-		cMsg.Writeuint8( m_nTeamID );
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-	}
 }
 
 // ----------------------------------------------------------------------- //
