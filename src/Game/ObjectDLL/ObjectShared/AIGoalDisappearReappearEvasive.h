@@ -13,6 +13,7 @@
 #define __AIGOAL_DISAPPEAR_REAPPEAR_EVASIVE_H__
 
 #include "AIGoalDisappearReappear.h"
+#include "AITarget.h"
 
 
 class CAIGoalDisappearReappearEvasive : public CAIGoalDisappearReappear
@@ -24,6 +25,9 @@ class CAIGoalDisappearReappearEvasive : public CAIGoalDisappearReappear
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalDisappearReappearEvasive, kGoal_DisappearReappearEvasive);
 
 		CAIGoalDisappearReappearEvasive();
+
+		// RETAIL: Tron's (0x1020a350): sets up the goal's own target.
+		virtual void	InitGoal(CAI* pAI);
 
 		// Save / Load
 
@@ -63,6 +67,10 @@ class CAIGoalDisappearReappearEvasive : public CAIGoalDisappearReappear
 		LTBOOL	m_bForceDisappear;
 		LTFLOAT m_fReappearDistOverride;
 		LTFLOAT m_fReappearDelay;
+
+		// RETAIL: Tron's (ctor 0x1020a070, Save 0x1020a250): the goal's own
+		// target. The name is ours.
+		CGenericTarget<CAIGoalAbstract>	m_Target;
 };
 
 

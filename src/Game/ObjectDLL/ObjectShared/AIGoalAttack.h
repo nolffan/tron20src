@@ -15,6 +15,7 @@
 #include "AIGoalAbstractStimulated.h"
 #include "AnimationProp.h"
 #include "AINode.h"
+#include "AITarget.h"
 
 // Forward Declarations.
 
@@ -30,6 +31,9 @@ class CAIGoalAttack : public CAIGoalAbstractStimulated
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttack, kGoal_Attack);
 
 		CAIGoalAttack( );
+
+		// RETAIL: Tron's (0x10215e70): sets up the goal's own target.
+		virtual void	InitGoal(CAI* pAI);
 
 		// Save / Load
 
@@ -101,6 +105,12 @@ class CAIGoalAttack : public CAIGoalAbstractStimulated
 		// Remember if we checked for a weapon change yet.
 
 		LTBOOL				m_bCheckForWeaponChange;
+
+		// RETAIL: Tron's (ctor 0x10215c60, InitGoal 0x10215e70): the goal's
+		// own target (+0xdc) and whether the AI's RangeAttackIsRecessive
+		// data is set (+0x19c). Both names are ours.
+		CGenericTarget<CAIGoalAbstract>	m_Target;
+		LTBOOL				m_bRangeAttackIsRecessive;
 };
 
 

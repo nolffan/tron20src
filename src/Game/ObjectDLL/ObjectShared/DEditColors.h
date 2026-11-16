@@ -34,7 +34,6 @@ DEFINE_DEDIT_COLOR( AIVolume, 0, 128, 0 );
 DEFINE_DEDIT_COLOR( AIVolumeJunction, 0, 255, 0 );
 DEFINE_DEDIT_COLOR( AIVolumeHiding, 0, 64, 0 );
 DEFINE_DEDIT_COLOR( AIVolumePlayerInfo, 0, 64, 0 );
-DEFINE_DEDIT_COLOR( AINodeObstruct, 0, 255, 255 );
 
 DEFINE_DEDIT_COLOR( VolumeEffect, 0, 0, 255 );
 DEFINE_DEDIT_COLOR( SnowVolume, 0, 192, 192 );

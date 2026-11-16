@@ -59,6 +59,7 @@ class CAIGoalCatch : public CAIGoalAbstractStimulated
 		// Activation.
 
 		virtual void ActivateGoal();
+		virtual void DeactivateGoal();
 
 		// Updating.
 

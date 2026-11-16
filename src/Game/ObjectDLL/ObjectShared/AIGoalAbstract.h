@@ -152,6 +152,10 @@ class CAIGoalAbstract : public CAIClassAbstract
 		bool		IsPathToNodeValid(AINode* pNode);
 		void		UpdateInvalidNodeList();
 
+		// RETAIL: inline in CGenericTarget<CAIGoalAbstract>::GetAI (0x1020ab50).
+		// The name is ours.
+		CAI*		GetAI() const { return m_pAI; }
+
 
 	protected:
 

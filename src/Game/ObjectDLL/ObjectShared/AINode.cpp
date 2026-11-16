@@ -716,6 +716,34 @@ void AINodeCover::Verify()
 	}
 }
 
+int AINodeCover::DrawSelf()
+{
+	// RETAIL: 0x100a1860 (Tron's): a 2-way corner shows its other side.
+	DebugLineSystem& system = LineSystem::GetSystem(this,"ShowNodeCover");
+	system.Clear();
+
+	LTVector vNodePos;
+	LTRotation rRot;
+	g_pLTServer->GetObjectPos(m_hObject, &vNodePos);
+	g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+
+	if( m_dwFlags & kFlag2WayCorner )
+	{
+		system << LineSystem::Arrow( vNodePos, vNodePos - rRot.Right() * 16.0f, Color::Red );
+	}
+
+	return AINode::DrawSelf();
+}
+
+int AINodeCover::HideSelf()
+{
+	// RETAIL: 0x100a1a50 (Tron's).
+	DebugLineSystem& system = LineSystem::GetSystem(this,"ShowNodeCover");
+	system.Clear();
+
+	return AINode::HideSelf();
+}
+
 EnumNodeStatus AINodeCover::GetStatus(const LTVector& vPos, HOBJECT hThreat) const
 {
 	LTVector vThreatPos;
@@ -1105,77 +1133,6 @@ void AINodePanic::Load(ILTMessage_Read *pMsg)
 
 	LOAD_DWORD(m_dwFlags);
 	LOAD_HSTRING(m_hstrObject);
-}
-
-// ----------------------------------------------------------------------- //
-
-BEGIN_CLASS(AINodeAssassinate)
-
-	ADD_REALPROP_FLAG(Radius,					512.0f,			0|PF_RADIUS)
-	ADD_STRINGPROP_FLAG(Movement,				"Walk", 		0|PF_STATICLIST)
-	ADD_BOOLPROP_FLAG(IgnoreVisibility,			LTTRUE,			0)
-
-END_CLASS_DEFAULT_FLAGS_PLUGIN(AINodeAssassinate, AINode, NULL, NULL, 0, AINodeAssassinatePlugin)
-
-CMDMGR_BEGIN_REGISTER_CLASS(AINodeAssassinate)
-CMDMGR_END_REGISTER_CLASS(AINodeAssassinate, AINode)
-
-
-AINodeAssassinate::AINodeAssassinate()
-{
-	m_fRadiusSqr		= 0.0f;
-	m_eMovement			= kAP_Walk;
-	m_bIgnoreVisibility	= LTTRUE;
-}
-
-AINodeAssassinate::~AINodeAssassinate()
-{
-}
-
-void AINodeAssassinate::ReadProp(ObjectCreateStruct* pocs)
-{
-	super::ReadProp(pocs);
-
-	// Read movement to use to get to the object.
-	if ( g_pLTServer->GetPropGeneric( "Movement", &g_gp ) == LT_OK )
-	{
-		if ( g_gp.m_String[0] )
-		{
-			m_eMovement = CAnimationMgrList::GetPropFromName( g_gp.m_String );
-		}
-	}
-	
-	// Read ignoreVisibility flag.
-	READPROP_BOOL("IgnoreVisibility", m_bIgnoreVisibility);
-}
-
-void AINodeAssassinate::Save(ILTMessage_Write *pMsg)
-{
-	super::Save(pMsg);
-
-	SAVE_DWORD(m_eMovement);
-	SAVE_BOOL(m_bIgnoreVisibility);
-}
-
-void AINodeAssassinate::Load(ILTMessage_Read *pMsg)
-{
-	super::Load(pMsg);
-
-	LOAD_DWORD_CAST(m_eMovement, EnumAnimProp);
-	LOAD_BOOL(m_bIgnoreVisibility);
-}
-
-LTRESULT AINodeAssassinatePlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
-{
-	if ( !_strcmpi("Movement", szPropName) )
-	{
-		strcpy(aszStrings[(*pcStrings)++], "Walk");
-		strcpy(aszStrings[(*pcStrings)++], "Run");
-
-		return LT_OK;
-	}
-
-	return LT_UNSUPPORTED;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1790,84 +1747,6 @@ LTRESULT AINodeBackupPlugin::PreHook_EditStringList(const char* szRezPath, const
 
 // ----------------------------------------------------------------------- //
 
-BEGIN_CLASS(AINodeTraining)
-	
-ADD_STRINGPROP_FLAG(Cmd,						"",				0|PF_OBJECTLINK)
-ADD_REALPROP_FLAG(Radius,						512.0f,			0|PF_RADIUS)
-
-END_CLASS_DEFAULT(AINodeTraining, AINode, NULL, NULL)
-
-CMDMGR_BEGIN_REGISTER_CLASS(AINodeTraining)
-CMDMGR_END_REGISTER_CLASS(AINodeTraining, AINode)
-
-AINodeTraining::AINodeTraining()
-{
-	m_hstrCmd = LTNULL;
-	m_fRadiusSqr = 0.0f;
-}
-
-AINodeTraining::~AINodeTraining()
-{
-	FREE_HSTRING(m_hstrCmd);
-}
-
-void AINodeTraining::ReadProp(ObjectCreateStruct* pocs)
-{
-	super::ReadProp(pocs);
-
-    if ( g_pLTServer->GetPropGeneric( "Cmd", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-            m_hstrCmd = g_pLTServer->CreateString( g_gp.m_String );
-}
-
-void AINodeTraining::Save(ILTMessage_Write *pMsg)
-{
-	super::Save(pMsg);
-
-	SAVE_HSTRING(m_hstrCmd);
-}
-
-void AINodeTraining::Load(ILTMessage_Read *pMsg)
-{
-	super::Load(pMsg);
-
-	LOAD_HSTRING(m_hstrCmd);
-}
-
-// ----------------------------------------------------------------------- //
-
-BEGIN_CLASS(AINodeTrainingFailure)
-END_CLASS_DEFAULT(AINodeTrainingFailure, AINodeTraining, NULL, NULL)
-
-CMDMGR_BEGIN_REGISTER_CLASS(AINodeTrainingFailure)
-CMDMGR_END_REGISTER_CLASS(AINodeTrainingFailure, AINodeTraining)
-
-AINodeTrainingFailure::AINodeTrainingFailure()
-{
-}
-
-AINodeTrainingFailure::~AINodeTrainingFailure()
-{
-}
-
-// ----------------------------------------------------------------------- //
-
-BEGIN_CLASS(AINodeTrainingSuccess)
-END_CLASS_DEFAULT(AINodeTrainingSuccess, AINodeTraining, NULL, NULL)
-
-CMDMGR_BEGIN_REGISTER_CLASS(AINodeTrainingSuccess)
-CMDMGR_END_REGISTER_CLASS(AINodeTrainingSuccess, AINodeTraining)
-
-AINodeTrainingSuccess::AINodeTrainingSuccess()
-{
-}
-
-AINodeTrainingSuccess::~AINodeTrainingSuccess()
-{
-}
-
-// ----------------------------------------------------------------------- //
-
 BEGIN_CLASS(AINodeTail)
 END_CLASS_DEFAULT(AINodeTail, AINode, NULL, NULL)
 
@@ -2015,177 +1894,12 @@ void AINodePatrol::Load(ILTMessage_Read *pMsg)
 	LOAD_HSTRING(m_hstrPatrolCommand);
 }
 
-
-//----------------------------------------------------------------------------
-//              
-//	CLASS:		AINodeObstruct
-//              
-//	PURPOSE:	Obstruction nodes are to be placed in positions where, if an 
-//				AI moved to this location, they will .. Obstruct something.
-//				Typically, this may mean that the AI is obstruction either 
-//				another AI, or player progress.  This is primarily for
-//				defensive movements.
-//
-//				Currently, this is a copy of the vantage node.  This is because
-//				at the moment it is unspecialized.  It will be in the future
-//				when the requirements for this node are better known.
-//              
-//----------------------------------------------------------------------------
-BEGIN_CLASS(AINodeObstruct)
-
-	ADD_DEDIT_COLOR( AINodeObstruct )
-
-	ADD_BOOLPROP_FLAG(IgnoreDir,				LTFALSE,		0)
-	ADD_REALPROP_FLAG(Fov,						90.0f,			0|PF_FIELDOFVIEW)
-	ADD_REALPROP_FLAG(Radius,					512.0f,			0|PF_RADIUS)
-	ADD_REALPROP_FLAG(ThreatRadius,				256.0f,			0|PF_RADIUS)
-	ADD_STRINGPROP_FLAG(ThreatRadiusReaction,	"ATTACK",		0)
-	ADD_STRINGPROP_FLAG(DamageCmd,				"REEVALUATE",	0)
-
-END_CLASS_DEFAULT(AINodeObstruct, AINode, NULL, NULL)
-
-CMDMGR_BEGIN_REGISTER_CLASS(AINodeObstruct)
-CMDMGR_END_REGISTER_CLASS(AINodeObstruct, AINode)
-
-
-AINodeObstruct::AINodeObstruct()
-{
-	m_bIgnoreDir = LTFALSE;
-	m_fFovDp = 0.0f;
-	m_fRadiusSqr = 0.0f;
-	m_fThreatRadiusSqr = 0.0f;
-	m_hstrThreatRadiusReaction = LTNULL;
-	m_hstrDamageCmd = LTNULL;
-	m_eMovement	= kAP_Run;
-}
-
-AINodeObstruct::~AINodeObstruct()
-{
-	FREE_HSTRING(m_hstrThreatRadiusReaction);
-	FREE_HSTRING(m_hstrDamageCmd);
-}
-
-void AINodeObstruct::ReadProp(ObjectCreateStruct *pocs)
-{
-	super::ReadProp(pocs);
-
-	if ( g_pLTServer->GetPropGeneric( "IgnoreDir", &g_gp ) == LT_OK )
-		m_bIgnoreDir = g_gp.m_Bool;
-
-    if ( g_pLTServer->GetPropGeneric( "Fov", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-			m_fFovDp = FOV2DP(g_gp.m_Float);
-
-    if ( g_pLTServer->GetPropGeneric( "Radius", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-			m_fRadiusSqr = g_gp.m_Float*g_gp.m_Float;
-
-    if ( g_pLTServer->GetPropGeneric( "ThreatRadius", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-			m_fThreatRadiusSqr = g_gp.m_Float*g_gp.m_Float;
-
-    if ( g_pLTServer->GetPropGeneric( "ThreatRadiusReaction", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-            m_hstrThreatRadiusReaction = g_pLTServer->CreateString( g_gp.m_String );
-
-    if ( g_pLTServer->GetPropGeneric( "DamageCmd", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-            m_hstrDamageCmd = g_pLTServer->CreateString( g_gp.m_String );
-
-	// Read movement to use to get to the object.
-	if ( g_pLTServer->GetPropGeneric( "Movement", &g_gp ) == LT_OK )
-		if ( g_gp.m_String[0] )
-			m_eMovement = CAnimationMgrList::GetPropFromName( g_gp.m_String );
-}
-
-void AINodeObstruct::Load(ILTMessage_Read *pMsg)
-{
-	super::Load(pMsg);
-
-	LOAD_BOOL(m_bIgnoreDir);
-	LOAD_FLOAT(m_fFovDp);
-	LOAD_FLOAT(m_fThreatRadiusSqr);
-	LOAD_HSTRING(m_hstrThreatRadiusReaction);
-	LOAD_HSTRING(m_hstrDamageCmd);
-	LOAD_DWORD_CAST(m_eMovement, EnumAnimProp);
-}
-
-void AINodeObstruct::Save(ILTMessage_Write *pMsg)
-{
-	super::Save(pMsg);
-
-	SAVE_BOOL(m_bIgnoreDir);
-	SAVE_FLOAT(m_fFovDp);
-	SAVE_FLOAT(m_fThreatRadiusSqr);
-	SAVE_HSTRING(m_hstrThreatRadiusReaction);
-	SAVE_HSTRING(m_hstrDamageCmd);
-	SAVE_DWORD(m_eMovement);
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	AINodeObstruct::GetStatus()
-//              
-//	PURPOSE:	
-//              
-//----------------------------------------------------------------------------
-EnumNodeStatus AINodeObstruct::GetStatus(const LTVector& vPos, HOBJECT hThreat) const
-{
-	LTVector vOrigin;
-    g_pLTServer->GetObjectPos(hThreat, &vOrigin);
-
-	if ( IsThreatInRadius(vOrigin) )
-		return kStatus_ThreatInsideRadius;
-
-	if ( IsIgnoreDir() )
-		return kStatus_Ok;
-
-	if ( IsThreatInFOV(vOrigin) )
-		return kStatus_Ok;
-
-	return kStatus_ThreatOutsideFOV;
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	AINodeObstruct::IsThreatInRadius()
-//              
-//	PURPOSE:	Returns true if the passed point is in the radius, false if it
-//				is not.
-//              
-//----------------------------------------------------------------------------
-bool AINodeObstruct::IsThreatInRadius( const LTVector& vThreatPos ) const
-{
-	if ( VEC_DISTSQR(m_vPos, vThreatPos) < m_fThreatRadiusSqr )
-		return true;
-	return false;
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	AINodeObstruct::IsThreatInFOV()
-//              
-//	PURPOSE:	Returns true if the passed in point is inside the FOV, false
-//				if it is not.
-//              
-//----------------------------------------------------------------------------
-bool AINodeObstruct::IsThreatInFOV( const LTVector& vThreatPos ) const
-{
-	LTVector vThreatDir = vThreatPos - m_vPos;
-	vThreatDir.Normalize();
-
-	if ( vThreatDir.Dot(m_vForward) > m_fFovDp )
-		return true;
-	return false;
-}
-
-//----------------------------------------------------------------------------
-
-
-class AINodeObstructPlugin : public IObjectPlugin
+// RETAIL: Tron names NOLF2's AINodeObstructPlugin AINodeChangeWeaponsPlugin
+// (RTTI); it serves AINodeChangeWeapons only.
+class AINodeChangeWeaponsPlugin : public IObjectPlugin
 {
 	public:
-		AINodeObstructPlugin()
+		AINodeChangeWeaponsPlugin()
 		{
 			sm_bInitted = LTFALSE;
 		}
@@ -2231,8 +1945,8 @@ class AINodeObstructPlugin : public IObjectPlugin
 		static CWeaponMgrPlugin		sm_WeaponMgrPlugin;
 };
 
-LTBOOL AINodeObstructPlugin::sm_bInitted;
-CWeaponMgrPlugin AINodeObstructPlugin::sm_WeaponMgrPlugin;
+LTBOOL AINodeChangeWeaponsPlugin::sm_bInitted;
+CWeaponMgrPlugin AINodeChangeWeaponsPlugin::sm_WeaponMgrPlugin;
 
 BEGIN_CLASS(AINodeChangeWeapons)
 
@@ -2244,7 +1958,7 @@ BEGIN_CLASS(AINodeChangeWeapons)
 		ADD_STRINGPROP_FLAG(Requirement2,	NO_ATTACHMENT,		PF_GROUP(6)|PF_STATICLIST) \
 		ADD_STRINGPROP_FLAG(Weapon2,		NO_ATTACHMENT,		PF_GROUP(6)|PF_STATICLIST) \
 
-END_CLASS_DEFAULT_FLAGS_PLUGIN(AINodeChangeWeapons, AINode, NULL, NULL, CF_HIDDEN, AINodeObstructPlugin)
+END_CLASS_DEFAULT_FLAGS_PLUGIN(AINodeChangeWeapons, AINode, NULL, NULL, CF_HIDDEN, AINodeChangeWeaponsPlugin)
 
 CMDMGR_BEGIN_REGISTER_CLASS(AINodeChangeWeapons)
 CMDMGR_END_REGISTER_CLASS(AINodeChangeWeapons, AINode)

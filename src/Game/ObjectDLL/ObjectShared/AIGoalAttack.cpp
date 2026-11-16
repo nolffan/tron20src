@@ -20,6 +20,7 @@
 #include "AnimatorPlayer.h"
 #include "AIGoalButeMgr.h"
 #include "AIUtils.h"
+#include "AIBrain.h"
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttack, kGoal_Attack);
 
@@ -45,7 +46,30 @@ CAIGoalAttack::CAIGoalAttack()
 	m_hNode	= NULL;
 	m_hFailedNode = NULL;
 
+	m_bRangeAttackIsRecessive = LTFALSE;
+
 	m_bCheckForWeaponChange = LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAttack::InitGoal
+//
+//	PURPOSE:	Initialize goal.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalAttack::InitGoal(CAI* pAI)
+{
+	// RETAIL: 0x10215e70 (Tron's).
+	super::InitGoal(pAI);
+
+	m_Target.Init(this);
+
+	if( pAI && pAI->GetBrain() && pAI->GetBrain()->GetAIDataExist( kAIData_RangeAttackIsRecessive ) )
+	{
+		m_bRangeAttackIsRecessive = ( pAI->GetBrain()->GetAIData( kAIData_RangeAttackIsRecessive ) != 0.f );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -60,6 +84,8 @@ void CAIGoalAttack::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
+	m_Target.Save(pMsg);
+
 	SAVE_DWORD( m_eWeaponType );
 	SAVE_FLOAT(	m_fChaseDelay );
 	SAVE_DWORD( m_ePosture );
@@ -70,11 +96,14 @@ void CAIGoalAttack::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL( m_bForceSearch );
 	SAVE_HOBJECT( m_hFailedNode );
 	SAVE_HOBJECT( m_hNode );
+	SAVE_BOOL( m_bRangeAttackIsRecessive );
 }
 
 void CAIGoalAttack::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
+
+	m_Target.Load(pMsg);
 
 	LOAD_DWORD_CAST( m_eWeaponType, EnumAIWeaponType );
 	LOAD_FLOAT(	m_fChaseDelay );
@@ -86,6 +115,7 @@ void CAIGoalAttack::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL( m_bForceSearch );
 	LOAD_HOBJECT( m_hFailedNode );
 	LOAD_HOBJECT( m_hNode );
+	LOAD_BOOL( m_bRangeAttackIsRecessive );
 }
 
 // ----------------------------------------------------------------------- //
@@ -103,9 +133,16 @@ void CAIGoalAttack::ActivateGoal()
 	// Ignore senses other than SeeEnemy.
 	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 
+	// RETAIL: 0x10216100, Tron targets the goal's own target and does not
+	// attack while it flees.
+	m_pAI->Target( m_Target.GetObject() );
+
 	// Attack.
 
-	SetStateAttack();
+	if( m_pAI->GetState()->GetStateType() != kState_HumanFlee )
+	{
+		SetStateAttack();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -132,7 +169,19 @@ void CAIGoalAttack::DeactivateGoal()
 
 void CAIGoalAttack::SetStateAttack()
 {
-	m_pAI->SetCurrentWeapon( m_eWeaponType );
+	// RETAIL: 0x10216180, an AI with an FconMonster goal keeps its weapon
+	// while its animation is locked.
+	if( m_pAI->GetGoalMgr()->FindGoalByType( kGoal_FconMonster ) )
+	{
+		if( !m_pAI->GetAnimationContext()->IsLocked() )
+		{
+			m_pAI->SetCurrentWeapon( m_eWeaponType );
+		}
+	}
+	else
+	{
+		m_pAI->SetCurrentWeapon( m_eWeaponType );
+	}
 
 	if(m_pAI->GetState()->GetStateType() != kState_HumanAttack)
 	{
@@ -235,6 +284,11 @@ void CAIGoalAttack::HandleStateAttack()
 					CAIHumanStateFlee* pStateFlee = (CAIHumanStateFlee*)m_pAI->GetState();
 					pStateFlee->SetDest(vScatterPos);
 					pStateFlee->SetDanger(hDanger);
+				}
+				else
+				{
+					// RETAIL: 0x102162d0, Tron goes aware when the danger is gone.
+					m_pAI->SetState( kState_HumanAware );
 				}
 			}
 			break;

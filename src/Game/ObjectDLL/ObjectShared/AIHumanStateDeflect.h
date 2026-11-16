@@ -40,25 +40,21 @@
 //				or on being hit by an object.
 //              
 //----------------------------------------------------------------------------
+// RETAIL: Tron's CAIHumanStateDeflect (0xa0 bytes, ctor 0x1022b990, vtable
+// 0x1029eb90) holds a deflection (the AI's defense) for its
+// MaxDeflectDuration or until it touches its object; a DEFLECT model
+// string turns the defense on or off. No stop conditions or three-phase
+// animation sequence (NOLF2's).
 class CAIHumanStateDeflect : public CAIHumanState
 {
 	typedef CAIHumanState super;
 
 	public :
 
-		// Time is a default stop condition as the animation, as 
-		// animations are streched to a particular length, and at the 
-		// termination of the animation we need to stop blocking anyway
-		enum SPECIAL_STOP_CONDITIONS
-		{
-			DEFLECT_NONE,
-			DEFLECT_OBJECT,
-			DEFLECT_NAMED_OBJECT,
-		};
-
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateDeflect, kState_HumanDeflect);
 
 		CAIHumanStateDeflect( );
+		virtual ~CAIHumanStateDeflect( );
 
 		// Ctors/dtors/etc
 
@@ -69,6 +65,7 @@ class CAIHumanStateDeflect : public CAIHumanState
 
 		// Handlers
 
+		virtual void HandleModelString(ArgList* pArgList);
 		virtual void HandleTouch(HOBJECT hObject);
 
 		// Update
@@ -79,51 +76,32 @@ class CAIHumanStateDeflect : public CAIHumanState
 		// Simple acccessors
 
 		CMusicMgr::Mood GetMusicMood(void) { return CMusicMgr::eMoodAggressive; }
-		
-		void SetAnimationSequence(EnumAnimProp eAnimProp1, EnumAnimProp eAnimProp2, EnumAnimProp eAnimProp3) { m_eAnimProp1 = eAnimProp1; m_eAnimProp2 = eAnimProp2; m_eAnimProp3 = eAnimProp3; } 
-		void SetStopCondition( SPECIAL_STOP_CONDITIONS eCondition );
-		void SetObjectToDeflect( HOBJECT );
+
+		// RETAIL: inline in CAIGoalDeflect::ActivateGoal (0x1020b900).
+		void SetObjectToDeflect( HOBJECT hObject ) { m_hObjectToDeflect = hObject; }
 
 	protected:
 
 		void SetupDeflection();
-		LTBOOL ShouldDropDeflection(void);
-		LTBOOL FailureConditionsMet(void);
+		void ShouldDropDeflection(void);
 
 	protected:
 
-		// Stop deflecting once an object is deflected.
-		SPECIAL_STOP_CONDITIONS 	m_eStopCondition;
-		
-		// Max time to keep the deflector up
-		LTFLOAT			m_fMaxDeflectorDuration;
+		// RETAIL: +0x7c, +0x80 (names ours): when the deflection may end
+		// early, and the time before which the defense stays on.
+		LTFLOAT			m_fDeflectEndTime;
+		LTFLOAT			m_fDefendTime;
 
-		// Direction to the object we mean to deflect, NULL
-		// if no direction is set or to be used.
-		LTVector		m_vIncomingPosition;
+		// if we Deflected the object we have a handle to, then set this to true
+		bool			m_bDeflectedNamedObject;
 
 		// If we have a specific object we mean to deflect, keep a link to it
-		// BUT be sure that we are handling it if it fails
 		LTObjRef		m_hObjectToDeflect;
 
-		// if we deflect the object we have a handle to, then set this to true
-		LTBOOL			m_bDeflectedNamedObject;
-
-		// If we deflect any object, then set this to true.
-		LTBOOL			m_bDeflectedAnObject;
-
-		// Animation sequence to play for the deflection
-		EnumAnimProp	m_eAnimProp1;
-		EnumAnimProp	m_eAnimProp2;
-		EnumAnimProp	m_eAnimProp3;
-
-		// Random seed is used to insure that events are replicatable
-		// for debugging reasons.
-		uint32			m_iAnimRandomSeed;
-		
-		// How long are we going to be deflecting? This is used
-		// to determine the animation rate.
-		LTFLOAT			m_fDeflectSpeed;
+		// RETAIL: Tron's posture and direction props (+0x98, +0x9c). The
+		// names are ours.
+		EnumAnimProp	m_ePosture;
+		EnumAnimProp	m_eDirection;
 };
 
 #endif // __AIHUMANSTATEDEFLECT_H__

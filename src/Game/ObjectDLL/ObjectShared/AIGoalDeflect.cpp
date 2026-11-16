@@ -116,10 +116,13 @@ void CAIGoalDeflect::ActivateGoal(void)
 {
 	CAIGoalAbstractStimulated::ActivateGoal();
 
+	// RETAIL: 0x1020b900, Tron's failures leave the goal an importance of 1
+	// and its state picks its own animations.
+
 	// If we have no stimulus target, then fail out of the goal and exit
 	if (m_hStimulusTarget==LTNULL)
 	{
-		SetCurImportance(0);
+		SetCurImportance(1.f);
 		return;
 	}
 
@@ -127,13 +130,13 @@ void CAIGoalDeflect::ActivateGoal(void)
 	// clip, then fail out of the goal and exit
 	if ( !m_pAI->GetPrimaryWeapon() )
 	{
-		SetCurImportance(0);
+		SetCurImportance(1.f);
 		return;
 	}
 
 	if ( m_pAI->GetPrimaryWeapon()->GetAmmoInClip() < 1 )
 	{
-		SetCurImportance(0);
+		SetCurImportance(1.f);
 		return;
 	}
 
@@ -150,13 +153,6 @@ void CAIGoalDeflect::ActivateGoal(void)
 
 	// Save the object we intend to deflect
 	pDeflectInstance->SetObjectToDeflect( m_hStimulusTarget );
-
-	// Stop blocking early if we block the object that caused us to 
-	// enter the goal
-	pDeflectInstance->SetStopCondition( CAIHumanStateDeflect::SPECIAL_STOP_CONDITIONS::DEFLECT_NAMED_OBJECT );
-
-	// Set the animations to use
-	pDeflectInstance->SetAnimationSequence( kAP_StartDeflect, kAP_HoldDeflect, kAP_EndDeflect );
 }
 
 // ----------------------------------------------------------------------- //
@@ -210,9 +206,11 @@ void CAIGoalDeflect::HandleStateDeflect()
 
 		case kSStat_StateComplete:
 		case kSStat_FailedComplete:
+			// RETAIL: 0x1020ba00, Tron keeps an importance of 1 and goes idle.
 			m_fDeflectTimeNext = g_pLTServer->GetTime() + GetRandom(1, 2);
-			m_fCurImportance = 0.f;
+			m_fCurImportance = 1.f;
 			m_pAI->ResetBaseSenseFlags();
+			m_pAI->SetState( kState_HumanIdle );
 
 			if ( m_pGoalMgr->IsGoalLocked( this ) )
 			{

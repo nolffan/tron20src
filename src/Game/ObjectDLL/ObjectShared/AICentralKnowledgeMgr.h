@@ -34,6 +34,10 @@ enum EnumAICentralKnowledgeType
 	kCK_NextDisappearTime,
 	kCK_Attacking,
 	kCK_AttackFromRoof,
+	// RETAIL: Tron has one more type here (8): kCK_LastCombatSoundTime is 9
+	// in CAI::PlayCombatSound, kCK_CheckingBody 10, kCK_AttackLunge 12,
+	// kCK_NextAlarmTime 13. No caller in Object.lto names 8 (the name is ours).
+	kCK_TronUnknown8,
 	kCK_LastCombatSoundTime,
 	kCK_CheckingBody,
 	kCK_NextProneTime,

@@ -108,4 +108,4 @@ ADD_GOAL_TYPE(Glitch)							// kGoal_Glitch
 ADD_GOAL_TYPE(Lead)								// kGoal_Lead
 ADD_GOAL_TYPE_UNWRITTEN(SeekerHitchDown)		// kGoal_SeekerHitchDown
 ADD_GOAL_TYPE(DramaDeath)						// kGoal_DramaDeath
-ADD_GOAL_TYPE_UNWRITTEN(RezIn)					// kGoal_RezIn
+ADD_GOAL_TYPE(RezIn)					// kGoal_RezIn
