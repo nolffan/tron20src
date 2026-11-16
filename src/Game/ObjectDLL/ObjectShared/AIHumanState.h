@@ -624,16 +624,19 @@ class CAIHumanStateDistress : public CAIHumanState
 
 		// Misc
 
-		LTBOOL CanActivate() { return m_bCanActivate; }
-		void SetCanActivate(LTBOOL bCanActivate) { m_bCanActivate = bCanActivate; }
+		// RETAIL: Tron keeps m_bCanActivate as a bool (0x101f2810,
+		// CAIGoalDistress::ActivateGoal 0x10209ac3).
+		LTBOOL CanActivate() { return m_bCanActivate == true; }
+		void SetCanActivate(LTBOOL bCanActivate) { m_bCanActivate = ( bCanActivate != LTFALSE ); }
 
 		// Simple acccessors
 
 	protected :
 
-		int		m_nDistressLevel;
+		// RETAIL: Tron has no distress level (ctor 0x101f27e0, Load
+		// 0x101f2b70); size 0x84.
 		LTFLOAT	m_fDistress;
-		LTBOOL	m_bCanActivate;
+		bool	m_bCanActivate;
 };
 
 class CAIHumanStatePatrol : public CAIHumanState

@@ -173,7 +173,7 @@ void CAIGoalTalk::ResetDialogue()
 		m_pGoalMgr->UnlockGoal( this );
 	}
 
-	m_fCurImportance = 0.f;
+	// RETAIL: 0x101fa690, Tron leaves m_fCurImportance as it is.
 }
 
 // ----------------------------------------------------------------------- //
@@ -380,11 +380,10 @@ void CAIGoalTalk::StartDialogue()
 
 	if( !m_bStartedDialog )
 	{
+		// RETAIL: 0x101fa86d, Tron goes to the node without the
+		// current goal test.
 		SetCurToBaseImportance();
-		if( m_pGoalMgr->IsCurGoal( this ) )
-		{
-			GotoNode();
-		}
+		GotoNode();
 
 		m_bStartedDialog = LTTRUE;
 		m_bInTalkPosition = LTFALSE;

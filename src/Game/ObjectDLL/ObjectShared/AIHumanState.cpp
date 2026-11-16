@@ -7921,10 +7921,9 @@ void CAIHumanStatePanic::Save(ILTMessage_Write *pMsg)
 
 CAIHumanStateDistress::CAIHumanStateDistress()
 {
-	m_nDistressLevel = 0;
 	m_fDistress = 0.0f;
 
-	m_bCanActivate = LTTRUE;
+	m_bCanActivate = false;	// RETAIL: 0x101f27f3
 }
 
 // ------------------------------------------------------------------------ //
@@ -7998,49 +7997,29 @@ void CAIHumanStateDistress::Update()
 		}
 	}
 
-	// TODO: bute stimulation rates
+	// RETAIL: 0x101f2a6c. Tron's distress rises and falls at the brain's
+	// rates, is held between zero and a maximum, and ends at zero.
 
+	LTFLOAT fRate;
 	if ( bDistress )
 	{
-		// Only increase distress when enemy aims a dangerous weapon at you.
-
-		LTFLOAT fIncreaseRate = GetAI()->GetBrain()->GetDistressIncreaseRate();
-        m_fDistress += g_pLTServer->GetFrameTime()*fIncreaseRate;
+		fRate = GetAI()->GetBrain()->GetDistressIncreaseRate();
 	}
-	else {
-		LTFLOAT fDecreaseRate = GetAI()->GetBrain()->GetDistressDecreaseRate();
-        m_fDistress = Max<LTFLOAT>(-3.0f, m_fDistress-g_pLTServer->GetFrameTime()*fDecreaseRate);
-	}
-
-	// See if we need to go to the next level
-
-	if ( m_fDistress > 1.0f )
+	else
 	{
-		m_fDistress = 0.0f;
-		m_nDistressLevel++;
-
-		// Play sound
-
-		// $SOUND GetAI()->PlaySound(aisPanic);
+		fRate = -GetAI()->GetBrain()->GetDistressDecreaseRate();
 	}
-	else if ( m_fDistress < -1.0f )
+
+	m_fDistress += g_pLTServer->GetFrameTime()*fRate;
+
+	LTFLOAT fMax = GetAI()->GetBrain()->GetDistressDecreaseRate();
+	fMax = GetAI()->GetBrain()->GetDistressTimeMax() * fMax;
+
+	m_fDistress = LTCLAMP( m_fDistress, 0.0f, fMax );
+	if ( m_fDistress == 0.0f )
 	{
 		m_eStateStatus = kSStat_StateComplete;
-		return;
 	}
-
-	// Craig says distressed AIs should not run away and panic, because it
-	// can ruin the experience for the player -- can't talk to AI anymore.
-/**
-	// If distress level is max, panic
-
-	const static int32 nLevels = GetAI()->GetBrain()->GetDistressLevels();
-	if ( m_nDistressLevel == nLevels )
-	{
-		m_eStateStatus = kSStat_Panic;
-		return;
-	}
-**/
 }
 
 // ----------------------------------------------------------------------- //
@@ -8059,9 +8038,8 @@ void CAIHumanStateDistress::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
 
-	LOAD_INT(m_nDistressLevel);
 	LOAD_FLOAT(m_fDistress);
-	LOAD_BOOL(m_bCanActivate);
+	LOAD_bool(m_bCanActivate);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8070,9 +8048,8 @@ void CAIHumanStateDistress::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
-	SAVE_INT(m_nDistressLevel);
 	SAVE_FLOAT(m_fDistress);
-	SAVE_BOOL(m_bCanActivate);
+	SAVE_bool(m_bCanActivate);
 }
 
 // ----------------------------------------------------------------------- //
