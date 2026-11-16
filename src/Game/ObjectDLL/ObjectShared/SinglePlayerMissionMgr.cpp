@@ -47,9 +47,7 @@ bool CSinglePlayerMissionMgr::StartGame( ILTMessage_Read& msg )
 
 bool CSinglePlayerMissionMgr::EndGame( )
 {
-	// Call base.
-	if( !CServerMissionMgr::EndGame( ))
-		return false;
+	// RETAIL: 0x101cc1a0: Tron does not call the base EndGame here
 
 	// Tell the players to prepare to exit a level.
 	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
