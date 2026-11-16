@@ -401,9 +401,7 @@ void CContinuousFireHelper::ReadFireData(ILTMessage_Read *pMsg)
 	// RETAIL: 0x10161400
 	for( int i = 0; i < ContinuousFireData::kNumFields; ++i )
 	{
-		ContinuousFireData::FieldFlags &Flags = m_FireData.m_aFlags[i];
-		Flags.m_bSet = pMsg->Readbool();
-		Flags.m_bTronUnknown1 = pMsg->Readbool();
+		m_FireData.m_aFlags[i].Read( pMsg );
 	}
 
 	if( m_FireData.m_aFlags[0].m_bSet )
