@@ -810,7 +810,8 @@ bool ScmdServer_Impl::HandleAddBan( HCLIENT hClient, ILTMessage_Read& msg )
 	char szBanIP[16];
 	msg.ReadString( szBanIP, ARRAY_LEN( szBanIP ));
 
-	bool bSuccess = BanIPMgr::Instance( ).AddBan( szBanIP );
+	// RETAIL: 0x101c6871: no name (the IP string stands for it)
+	bool bSuccess = BanIPMgr::Instance( ).AddBan( szBanIP, NULL );
 
 	// Tell the client if it worked or not.
 	if( !SendStatusMessage( hClient, kScmdCommandAddBan, ( bSuccess ) ? kScmdCommandStatusOk : 
@@ -887,17 +888,15 @@ bool ScmdServer_Impl::HandleListBans( HCLIENT hClient, ILTMessage_Read& msg )
 	cMsg.Writeuint8( kScmdCommandListBans );
 	cMsg.Writeuint8( kScmdCommandStatusOk );
 
-	char szBannedIP[16] = "";
-
 	// Tell client about all the bans.
+	// RETAIL: 0x101c69cf: Tron sends the ban names
 	BanIPMgr::BanList const& banList = BanIPMgr::Instance( ).GetBanList( );
 	cMsg.Writeuint16( banList.size( ));
 	for( BanIPMgr::BanList::const_iterator iter = banList.begin( ); iter != banList.end( ); iter++ )
 	{
 		BanIPMgr::ClientIP const& clientIP = *iter;
 
-		BanIPMgr::Instance( ).ConvertClientIPToString( clientIP, szBannedIP, ARRAY_LEN( szBannedIP ));
-		cMsg.WriteString( szBannedIP );
+		cMsg.WriteString( clientIP.m_sName.c_str( ));
 	}
 
 	SendMessage( hClient, *cMsg );
@@ -933,7 +932,16 @@ bool ScmdServer_Impl::HandleBanClient( HCLIENT hClient, ILTMessage_Read& msg )
 		uint16 nPort;
 		g_pLTServer->GetClientAddr( hBanClient, aClientIP, &nPort );
 
-		BanIPMgr::ClientIP clientIP = { aClientIP[0], aClientIP[1], aClientIP[2], aClientIP[3] };
+		// RETAIL: 0x101c6ae4: Tron's ban carries the player's name ("---"
+		// without one)
+		BanIPMgr::ClientIP clientIP;
+		clientIP.m_nPart[0] = aClientIP[0];
+		clientIP.m_nPart[1] = aClientIP[1];
+		clientIP.m_nPart[2] = aClientIP[2];
+		clientIP.m_nPart[3] = aClientIP[3];
+		clientIP.m_sName = g_pGameServerShell->GetClientName( hBanClient );
+		if( clientIP.m_sName.empty( ))
+			clientIP.m_sName = "---";
 
 		// Ban the client.
 		bOk = BanIPMgr::Instance( ).AddBan( clientIP );

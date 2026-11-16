@@ -1567,30 +1567,8 @@ void CKitty::UpdateKitty( )
 							dwFlags, nVolume );
 		}
 		
-		// Play armed ClientFX...
-
-		if( m_hSpawnedKitty )
-		{
-			WeaponItem *pSpawnedKitty = dynamic_cast<WeaponItem*>(g_pLTServer->HandleToObject( m_hSpawnedKitty ));
-			if( pSpawnedKitty )
-			{
-				if( IsTeamGameType() && m_pClassData->pArmedFXBlue[0] && m_pClassData->pArmedFXRed[0] )
-				{
-					if( m_nTeamId == 0 )
-					{
-						pSpawnedKitty->SetClientFX( m_pClassData->pArmedFXBlue );
-					}
-					else
-					{
-						pSpawnedKitty->SetClientFX( m_pClassData->pArmedFXRed );
-					}
-				}
-				else if( m_pClassData->pArmedFX[0] )
-				{
-					pSpawnedKitty->SetClientFX( m_pClassData->pArmedFX );
-				}
-			}
-		}
+		// PORT: Tron's PickupItem has no client fx (no SetClientFX), so the
+		// armed ClientFX of NOLF2's spawned kitty is not played
 	}
 
 	if( !m_hSpawnedKitty )
