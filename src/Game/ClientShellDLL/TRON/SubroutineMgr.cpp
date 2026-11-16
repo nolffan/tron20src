@@ -247,8 +247,11 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 	m_afCorruptionSpreadTime[2] = (float)rcSpread.right;
 	m_afCorruptionSpreadTime[3] = (float)rcSpread.bottom;
 
-	// PORT: here retail makes its IGuestDataMgr (0x10095df0, +0x11a8; it
-	// fails Init without one) and has it read the attributes; not written yet
+	m_pSubroutineDataMgr = debug_new(CSubroutineDataMgr);
+	if (!m_pSubroutineDataMgr)
+		return LTFALSE;
+
+	m_pSubroutineDataMgr->Init(&m_buteMgr);
 
 	LoadSubroutines();
 	LoadProcedurals();
@@ -414,6 +417,13 @@ void CSubroutineMgr::Term()
 {
     g_pSubroutineMgr = LTNULL;
 	CleanArrays();
+
+	// RETAIL: 0x10092ac0
+	if (m_pSubroutineDataMgr)
+	{
+		debug_delete(m_pSubroutineDataMgr);
+		m_pSubroutineDataMgr = LTNULL;
+	}
 }
 
 // ----------------------------------------------------------------------- //

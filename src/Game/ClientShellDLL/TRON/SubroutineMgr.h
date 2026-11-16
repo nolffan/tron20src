@@ -25,6 +25,7 @@
 #include "GameButeMgr.h"
 #include "ltbasetypes.h"
 #include "ScreenSpriteMgr.h"
+#include "SubroutineDataMgr.h"
 
 #define SUBROUTINE_DEFAULT_FILE		"Attributes\\Subroutines.txt"
 #define SUBROUTINE_MAX_NAME			32
@@ -293,7 +294,7 @@ protected:
 	uint8				m_aTronUnknown119C[4];	// RETAIL: +0x119c
 	float				m_fTronUnknown11A0;	// RETAIL: +0x11a0 (0 in the ctor and Init; Save/Load keep it)
 	float				m_fTronUnknown11A4;		// RETAIL: +0x11a4 (0x10095390 sums into it)
-	void*				m_pTronUnknown11A8;		// RETAIL: +0x11a8 (made by 0x10095df0, Init(&m_buteMgr))
+	CSubroutineDataMgr*	m_pSubroutineDataMgr;	// RETAIL: +0x11a8 (made by Init: 0x10095df0, deleted by Term)
 };
 
 #endif // !defined(_SUBROUTINE_MGR_H_)

@@ -290,14 +290,21 @@ protected:
 typedef std::vector<int> SubDataAxis;
 typedef std::map<CaselessString, uint16> SubNameIdMap;
 
-class CSubroutineDataMgr
+// RETAIL: the interface CSubroutineDataMgr derives from (RTTI
+// .?AUIGuestDataMgr@@, vtable CShell 0x101e8850 / Object 0x10294f80: one
+// pure virtual).  The name of its method is ours.
+struct IGuestDataMgr
+{
+	virtual bool Init(CButeMgr* pButeMgr) = 0;
+};
+
+class CSubroutineDataMgr : public IGuestDataMgr
 {
 public:
 
-	CSubroutineDataMgr()
-	{
-		m_pButeMgr = LTNULL;
-	}
+	// RETAIL: the constructor sets only the vtables and the members'
+	// constructors (CShell 0x10095df0, Object 0x1005c037); m_pButeMgr is
+	// set by Init.
 
 	virtual bool Init(CButeMgr* pButeMgr);
 
