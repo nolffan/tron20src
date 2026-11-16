@@ -15,6 +15,8 @@
 
 #include "GlobalMgr.h"
 
+class CServerSubroutineMgr;
+
 class CServerSoundMgr;
 class CAIButeMgr;
 class CAIGoalButeMgr;
@@ -61,6 +63,7 @@ class CGlobalServerMgr : public CGlobalMgr
 		CServerButeMgr*		m_pServerButeMgr;		// Same as g_pServerButeMgr
 		CInventoryButeMgr*	m_pInventoryButeMgr;	// Same as g_pInventoryButeMgr
 		CTransitionMgr*		m_pTransitionMgr;		// Same as g_pTransMgr.
+		CServerSubroutineMgr*	m_pServerSubroutineMgr;	// RETAIL: Tron's (+0x6a28, Init 0x101cb804)
 };
 
 

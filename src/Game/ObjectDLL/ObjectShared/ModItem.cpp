@@ -172,7 +172,7 @@ bool ModItem::PostPropRead(ObjectCreateStruct *pStruct)
 
 		m_vScale.Init(pMod->fPowerupScale, pMod->fPowerupScale, pMod->fPowerupScale);
 		
-		m_sClientFX = pMod->szPowerupFX;
+		// PORT: Tron's PickupItem has no client fx (m_sClientFX)
 
         m_bRotate = LTFALSE;
 	}
@@ -304,9 +304,7 @@ void ModItem::PickedUp(ILTMessage_Read *pMsg)
 			
 			g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
 
-			// Stop playing PowerupFX and play RespawnWaitFX...
-		
-			SetClientFX( pMod->szRespawnWaitFX );
+			// PORT: Tron's PickupItem has no client fx (no SetClientFX)
 
 			// Set our visibility...
 
@@ -314,43 +312,6 @@ void ModItem::PickedUp(ILTMessage_Read *pMsg)
 			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, pMod->bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
 		}
 	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	ModItem::PickedUp
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void ModItem::Respawn( )
-{
-	PickupItem::Respawn();
-
-	MOD const *pMod = g_pWeaponMgr->GetMod( m_nModId );
-	if( !pMod )
-		return;
-	
-	// Change the skins and renderstyles back to the normal powerup files...
-
-	ObjectCreateStruct ocs;
-
-	pMod->blrPowerupSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-	pMod->blrPowerupRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-	if( pMod->blrPowerupRenderStyles.GetNumItems() < 1 )
-		LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-	
-	// See if we are using a different model...
-
-	CheckForOverrideModel( &ocs );
-
-	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-	// Stop playing RespawnWaitFX and play PowerupFX...
-	
-	SetClientFX( pMod->szPowerupFX );
 }
 
 // ----------------------------------------------------------------------- //

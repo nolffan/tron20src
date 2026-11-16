@@ -45,7 +45,7 @@ class BanIPMgr_Impl : public BanIPMgr
 		virtual bool OnAddClient( HCLIENT hClient );
 
 		// Call to add a ban.
-		virtual bool AddBan( char const* pszBanIP );
+		virtual bool AddBan( char const* pszBanIP, char const* pszName );
 		virtual bool AddBan( ClientIP const& bannedIP );
 
 		// Call to remove a ban.
@@ -291,11 +291,17 @@ bool BanIPMgr_Impl::OnAddClient( HCLIENT hClient )
 //
 // ----------------------------------------------------------------------- //
 
-bool BanIPMgr_Impl::AddBan( char const* pszBanIP )
+bool BanIPMgr_Impl::AddBan( char const* pszBanIP, char const* pszName )
 {
 	ClientIP bannedIP;
 	if( !ConvertClientIPFromString( pszBanIP, bannedIP ))
 		return false;
+
+	// RETAIL: 0x101c4c4e: Tron's ban name, the IP string without one
+	if( pszName )
+		bannedIP.m_sName = pszName;
+	else
+		bannedIP.m_sName = pszBanIP;
 
 	if( !AddBan( bannedIP ))
 		return false;
@@ -438,10 +444,12 @@ bool BanIPMgr_Impl::IsClientBanned( HCLIENT hClient )
 
 bool BanIPMgr_Impl::ReadBans( )
 {
+	// RETAIL: 0x101c50f0: Tron's file is "bl.dat", with a name per ban
 	CButeMgr banBute;
-	banBute.Parse( "BanList.txt" );
+	banBute.Parse( "bl.dat" );
 
 	char szBanKey[128] = "";
+	char szBanName[128] = "";
 	char szClientIP[16] = "";
 	int nBanIndex = 0;
 
@@ -452,12 +460,15 @@ bool BanIPMgr_Impl::ReadBans( )
 		sprintf( szBanKey, "Ban%d", nBanIndex );
 		banBute.GetString( "Bans", szBanKey, "", szClientIP, ARRAY_LEN( szClientIP ));
 
+		sprintf( szBanKey, "BanName%d", nBanIndex );
+		banBute.GetString( "Bans", szBanKey, "", szBanName, ARRAY_LEN( szBanName ));
+
 		// If we didn't find one, the stop looking.
 		if( !banBute.Success( ))
 			break;
 
 		// Add the ban.
-		AddBan( szClientIP );
+		AddBan( szClientIP, szBanName );
 		nBanIndex++;
 	}	
 
@@ -500,11 +511,15 @@ bool BanIPMgr_Impl::WriteBans( )
 		sprintf( szBanKey, "Ban%d", nBanIndex );
 		banBute.SetString( "Bans", szBanKey, szClientIP );
 
+		// RETAIL: 0x101c533f: Tron's
+		sprintf( szBanKey, "BanName%d", nBanIndex );
+		banBute.SetString( "Bans", szBanKey, bannedIP.m_sName.c_str( ));
+
 		nBanIndex++;
 	}
 
 	// Save the list.
-	banBute.Save( "BanList.txt" );
+	banBute.Save( "bl.dat" );
 
 	return true;
 }

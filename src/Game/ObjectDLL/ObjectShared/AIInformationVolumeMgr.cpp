@@ -31,6 +31,7 @@
 // Statics
 						 
 CAIInformationVolumeMgr* g_pAIInformationVolumeMgr = LTNULL;
+CAIVolumePlayerInfoMgr* g_pAIVolumePlayerInfoMgr = LTNULL;	// RETAIL: Tron's (0x1038ca98)
 
 //----------------------------------------------------------------------------
 //              
@@ -81,8 +82,6 @@ AIInformationVolume* CAIInformationVolumeMgr::FindContainingVolume(HOBJECT hObje
 //				(Object.lto 0x10199130..0x101991da)
 //              
 //----------------------------------------------------------------------------
-
-CAIVolumePlayerInfoMgr* g_pAIVolumePlayerInfoMgr = LTNULL;
 
 CAIVolumePlayerInfoMgr::CAIVolumePlayerInfoMgr()
 {

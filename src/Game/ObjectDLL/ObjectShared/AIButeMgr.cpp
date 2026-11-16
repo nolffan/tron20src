@@ -452,7 +452,6 @@ void CAIButeMgr::SetBrain(int iBrain)
 	m_aBrains[iBrain].fDodgeProjectileCheckTime 		= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DodgeProjectileCheckTime");
 	m_aBrains[iBrain].fDodgeProjectileCheckChance		= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DodgeProjectileCheckChance");
 	m_aBrains[iBrain].fDodgeProjectileDelayTime 		= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DodgeProjectileDelayTime");
-	m_aBrains[iBrain].fDodgeProjectileFleeChance		= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DodgeProjectileFleeChance");
 
 	m_aBrains[iBrain].fAttackRangedRangeMin 			= (LTFLOAT)CButeTools::GetValidatedRange (m_buteMgr, s_aTagName,"AttackRangedRange").GetMin();
 	m_aBrains[iBrain].fAttackRangedRangeMax 			= (LTFLOAT)CButeTools::GetValidatedRange (m_buteMgr, s_aTagName,"AttackRangedRange").GetMax();
@@ -467,8 +466,6 @@ void CAIButeMgr::SetBrain(int iBrain)
 	m_aBrains[iBrain].fAttackPoseCrouchTime				= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackPoseCrouchTime");
 	m_aBrains[iBrain].fAttackGrenadeThrowTime			= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackGrenadeThrowTime");
 	m_aBrains[iBrain].fAttackGrenadeThrowChance 		= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackGrenadeThrowChance");
-	m_aBrains[iBrain].fAttackCoverCheckTime 			= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackCoverCheckTime");
-	m_aBrains[iBrain].fAttackCoverCheckChance			= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackCoverCheckChance");
 	m_aBrains[iBrain].fAttackSoundTimeMin				= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"AttackSoundTimeMin");
 	m_aBrains[iBrain].bAttackWhileMoving				= CButeTools::GetValidatedBool (m_buteMgr, s_aTagName,"AttackWhileMoving");
 
@@ -498,6 +495,8 @@ void CAIButeMgr::SetBrain(int iBrain)
 	m_aBrains[iBrain].fDistressIncreaseRate 			= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DistressIncreaseRate");
 	m_aBrains[iBrain].fDistressDecreaseRate 			= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DistressDecreaseRate");
 	m_aBrains[iBrain].nDistressLevels					= CButeTools::GetValidatedInt (m_buteMgr, s_aTagName,"DistressLevels");
+	// RETAIL: 0x101a0037: Tron's
+	m_aBrains[iBrain].fDistressTimeMax					= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"DistressTimeMax");
 
 	m_aBrains[iBrain].nMajorAlarmThreshold				= CButeTools::GetValidatedInt (m_buteMgr, s_aTagName,"MajorAlarmThreshold");
 	m_aBrains[iBrain].nImmediateAlarmThreshold			= CButeTools::GetValidatedInt (m_buteMgr, s_aTagName,"ImmediateAlarmThreshold");
@@ -506,10 +505,14 @@ void CAIButeMgr::SetBrain(int iBrain)
 	m_aBrains[iBrain].fTauntChance						= CButeTools::GetValidatedDouble (m_buteMgr, s_aTagName,"TauntChance");
 
 	m_aBrains[iBrain].bCanLipSync						= CButeTools::GetValidatedBool (m_buteMgr, s_aTagName,"CanLipSync");
+	// RETAIL: 0x101a00ea: Tron's
+	m_aBrains[iBrain].bDoFiringTrails					= CButeTools::GetValidatedBool (m_buteMgr, s_aTagName,"DoFiringTrails", false);
 
 	char szTemp[64];
 	CButeTools::GetValidatedString(m_buteMgr, s_aTagName, "DamageMask", szTemp, sizeof(szTemp) );
 	m_aBrains[iBrain].nDamageMaskID = GetDamageMaskIDByName( szTemp );
+	// RETAIL: 0x101a013f: Tron's
+	m_aBrains[iBrain].bOnlyDamagedByPlayer				= CButeTools::GetValidatedBool (m_buteMgr, s_aTagName,"OnlyDamagedByPlayer", false);
 
 
 	// Handle ammo generation limitations by setting flags corresponding to 

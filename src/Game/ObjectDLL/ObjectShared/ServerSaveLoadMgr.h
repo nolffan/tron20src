@@ -40,7 +40,8 @@ class CServerSaveLoadMgr : public CSaveLoadMgr, public IPlayerTrackerReceiver
 		bool			LoadNewLevel( char const* pszNewLevel );
 
 		// Switch levels with/without keepalives.
-		bool			SwitchLevels( char const* pszNewLevel, bool bDoKeepAliveSave );
+		// RETAIL: Tron's takes no keep alive flag (0x101c9810)
+		bool			SwitchLevels( char const* pszNewLevel );
 
 		// Transition between levels with transition volumes.
 		bool			TransitionLevels( char const* pszNewLevel );

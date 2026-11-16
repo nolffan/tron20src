@@ -4696,6 +4696,26 @@ uint32 CGameServerShell::GetPlayerPing(CPlayerObj* pPlayer)
 
 // --------------------------------------------------------------------------- //
 //
+//	ROUTINE:	CGameServerShell::GetClientName
+//
+//	PURPOSE:	The net unique name of the client's player.
+//
+//	RETAIL:		0x100e3670: Tron's; the name is ours.
+//
+// --------------------------------------------------------------------------- //
+
+char const* CGameServerShell::GetClientName( HCLIENT hClient )
+{
+	CPlayerObj* pPlayer = GetPlayerFromClientList( hClient );
+	if( !pPlayer )
+		return "";
+
+	return pPlayer->GetNetUniqueName( );
+}
+
+
+// --------------------------------------------------------------------------- //
+//
 //	ROUTINE:	CGameServerShell::ClientConnectionInTrouble
 //
 //	PURPOSE:	Checks if client connection is in trouble.

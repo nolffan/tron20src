@@ -31,7 +31,7 @@ extern CAIGoalButeMgr* g_pAIGoalButeMgr;
 //
 // MACROS:
 //
-#define MAX_GOAL_NAME_LEN	32
+#define MAX_GOAL_NAME_LEN	64	// RETAIL: Tron's (AIGBM_SmartObjectTemplate ctor 0x101acf70)
 #define GOAL_FILE			"Attributes\\AIGoals.txt"
 
 
@@ -87,6 +87,8 @@ struct AIGBM_GoalTemplate
 	LTFLOAT fFrequencyMin;			// Min seconds until can activate again.
 	LTFLOAT fFrequencyMax;			// Max seconds until can activate again.
 	uint32	nDamagePriority;		// Priority of the goal when/if handling damage.
+	uint16	nGoalId;				// RETAIL: Tron's "GoalId" (+0x3c, ReadGoalTemplate 0x101aba46)
+	LTBOOL	bSuppressResetWhenNotCurrent;	// RETAIL: Tron's (+0x40)
 };
 
 
@@ -101,10 +103,13 @@ struct AIChildModelInfo
 {
 	HMODELDB hmodeldb ;
 	std::string  sFilename ;
+	// RETAIL: Tron's skeleton of "AddAnimsLTB" ("<skel>;<file>"), 0xff when
+	// none is given (ReadSmartObjectTemplate 0x101abe21); the name is ours
+	int		nSkel;
 	
 	// ctor/dtor
-	AIChildModelInfo( HMODELDB mdb , char const* pszFilename ):hmodeldb(mdb), sFilename(pszFilename) {}
-	AIChildModelInfo(  ):hmodeldb(0) {}
+	AIChildModelInfo( HMODELDB mdb , char const* pszFilename ):hmodeldb(mdb), sFilename(pszFilename), nSkel(0xff) {}
+	AIChildModelInfo(  ):hmodeldb(0), nSkel(0xff) {}
 };
 
 
@@ -113,6 +118,7 @@ struct AIGBM_SmartObjectTemplate
 	char					szName[MAX_GOAL_NAME_LEN];
 	uint32					nID;
 	SMART_OBJECT_CMD_MAP	mapCmds;
+	bool					bHidden;	// RETAIL: Tron's "Hidden" (+0x50, 0x101abb8e)
 
 	SMART_OBJECT_ACTIVE_CMD_MAP	mapActiveCmds;
 

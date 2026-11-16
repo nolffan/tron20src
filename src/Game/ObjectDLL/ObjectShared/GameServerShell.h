@@ -162,6 +162,10 @@ class CGameServerShell : public IServerShellStub
 		uint32		GetPlayerPing(CPlayerObj* pPlayer);
 		bool		ClientConnectionInTrouble( HCLIENT hClient );
 
+		// RETAIL: Tron's (0x100e3670): the net unique name of the client's
+		// player, "" without one; the name is ours
+		char const*	GetClientName( HCLIENT hClient );
+
 		void		SetActivePlayer( HOBJECT hActivePlayer ) { m_hActivePlayer = hActivePlayer; }
 		HOBJECT		GetActivePlayer( ) { return m_hActivePlayer; }
 

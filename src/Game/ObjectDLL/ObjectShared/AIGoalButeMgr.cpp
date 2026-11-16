@@ -345,12 +345,12 @@ EnumAIGoalType CAIGoalButeMgr::ConvertToGoalTypeEnum(char* szGoalType)
 	{
 		if(0 == stricmp(szGoalType, s_aszGoalTypes[iGoalType]) )
 		{
-			break;
+			return (EnumAIGoalType)iGoalType;
 		}
 	}
-//	ASSERT((iGoalType != kGoal_InvalidType) && (iGoalType != kGoal_Count));
 
-	return (EnumAIGoalType)iGoalType;
+	// RETAIL: 0x101ab811: Tron returns kGoal_InvalidType for an unknown name
+	return kGoal_InvalidType;
 }
 
 // ----------------------------------------------------------------------- //
@@ -444,6 +444,9 @@ void CAIGoalButeMgr::ReadGoalTemplate(uint32 iTemplate)
 	Template.fFrequencyMin			= (LTFLOAT)CButeTools::GetValidatedRange(m_buteMgr, s_aTagName, "Frequency", CARange(0.f, 0.f)).GetMin();
 	Template.fFrequencyMax			= (LTFLOAT)CButeTools::GetValidatedRange(m_buteMgr, s_aTagName, "Frequency", CARange(0.f, 0.f)).GetMax();
 	Template.nDamagePriority		= CButeTools::GetValidatedInt(m_buteMgr, s_aTagName, "DamagePriority", 0);
+	// RETAIL: 0x101aba26: Tron's
+	Template.nGoalId				= (uint16)CButeTools::GetValidatedInt(m_buteMgr, s_aTagName, "GoalId");
+	Template.bSuppressResetWhenNotCurrent = CButeTools::GetValidatedBool(m_buteMgr, s_aTagName, "SuppressResetWhenNotCurrent", LTFALSE);
 
 	// Get SenseTriggers. (SenseTypes are bitflags)
 
@@ -484,6 +487,9 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 
 	// Set ID.
 	pSmartObject->nID = nID;
+
+	// RETAIL: 0x101abb6f: Tron's
+	pSmartObject->bHidden = !!CButeTools::GetValidatedBool(m_buteMgr, s_aTagName, "Hidden", false);
 
 	if( g_pLTServer != LTNULL )
 	{
@@ -559,7 +565,6 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 		// Add childmodel names here.
 		uint32 cm_cnt = 0;
 		char   szCMFilename[256];
-		HMODELDB hmodeldb = LTNULL;
 
 		while( true )
 		{
@@ -568,9 +573,33 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 			if( !m_buteMgr.Success( ))
 				break;
 
-			// load it here.
+			// RETAIL: 0x101abde8: Tron's "<skel>;<file>" form
 			{
-				AIChildModelInfo info(hmodeldb, szCMFilename);			
+				char* pSemi = strchr( szCMFilename, ';' );
+				AIChildModelInfo info;
+				if( pSemi )
+				{
+					int nLen = pSemi - szCMFilename;
+					if( nLen == 0 )
+					{
+						g_pLTServer->CPrint( "WARNING: Invalid skel specification for AddAnimsLTB%d for smart goal %s", cm_cnt, pSmartObject->szName );
+						info.nSkel = 0xff;
+						info.sFilename = szCMFilename;
+					}
+					else
+					{
+						char szSkel[16];
+						strncpy( szSkel, szCMFilename, nLen );
+						szSkel[nLen] = '\0';
+						info.nSkel = atoi( szSkel );
+						info.sFilename = pSemi + 1;
+					}
+				}
+				else
+				{
+					info.nSkel = 0xff;
+					info.sFilename = szCMFilename;
+				}
 				pSmartObject->addchildmodels.push_back(info);
 			}
 

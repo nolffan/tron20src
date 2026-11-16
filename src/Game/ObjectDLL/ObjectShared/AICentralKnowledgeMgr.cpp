@@ -333,8 +333,10 @@ void CAICentralKnowledgeMgr::RemoveKnowledge(EnumAICentralKnowledgeType eKnowled
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 
@@ -361,8 +363,10 @@ void CAICentralKnowledgeMgr::RemoveKnowledge(EnumAICentralKnowledgeType eKnowled
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 
@@ -406,8 +410,10 @@ void CAICentralKnowledgeMgr::RemoveAllKnowledge(EnumAICentralKnowledgeType eKnow
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 		AI_FACTORY_DELETE( pAICentralKnowledgeRecord );
@@ -436,8 +442,10 @@ uint32 CAICentralKnowledgeMgr::CountTargetMatches(EnumAICentralKnowledgeType eKn
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 
@@ -470,8 +478,10 @@ uint32 CAICentralKnowledgeMgr::CountMatches(EnumAICentralKnowledgeType eKnowledg
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 
@@ -499,8 +509,10 @@ uint32 CAICentralKnowledgeMgr::CountMatches(EnumAICentralKnowledgeType eKnowledg
 
 	// Iterate over matching knowledge types.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		pAICentralKnowledgeRecord = it->second;
 
@@ -535,8 +547,10 @@ LTFLOAT	CAICentralKnowledgeMgr::GetKnowledgeFloat(EnumAICentralKnowledgeType eKn
 {
 	// Return the first match found.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		CAICentralKnowledgeRecord* pAICentralKnowledgeRecord = it->second;
 		if( !pAI )
@@ -564,8 +578,10 @@ ILTBaseClass *CAICentralKnowledgeMgr::GetKnowledgeTarget(EnumAICentralKnowledgeT
 {
 	// Return the first match found.
 
+	// RETAIL: Tron finds the end of the range once (0x101c9210)
+	AICENTRAL_KNOWLEDGE_MAP::iterator itEnd = m_mapCentralKnowledge.upper_bound( eKnowledgeType );
 	AICENTRAL_KNOWLEDGE_MAP::iterator it;
-	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != m_mapCentralKnowledge.upper_bound( eKnowledgeType ); ++it )
+	for( it = m_mapCentralKnowledge.lower_bound( eKnowledgeType ); it != itEnd; ++it )
 	{
 		CAICentralKnowledgeRecord* pAICentralKnowledgeRecord = it->second;
 		if( !pAI )

@@ -37,11 +37,11 @@ struct KEY
 	char	szImage[KEY_MAX_FILE_PATH];
 	char	szFilename[KEY_MAX_FILE_PATH];
 
-	CButeListReader blrSkins;
-	CButeListReader blrRenderStyles;
+	// RETAIL: Tron's KEY is build 51's (one skin, no render styles or sound)
+	// with the FX name: 0x106 bytes (KEY ctor Object.lto 0x10199230)
+	char	szSkin[KEY_MAX_FILE_PATH];
 
 	char	szFXName[KEY_MAX_NAME];
-	char	szSoundName[KEY_MAX_FILE_PATH];
 };
 
 class CKeyMgr : public CGameButeMgr, public ILTObjRefReceiver

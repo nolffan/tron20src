@@ -750,8 +750,8 @@ bool CServerMissionMgr::ExitLevel( char const* pszNewLevel, bool bTransitionToLe
 		return false;
 	}
 	
-	// Tell worldproperties to send its level end command.
-	g_pWorldProperties->SendLevelEndCmd( );
+	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
+	// it here)
 
 	// Record that we are transitioning.
 	m_bTransitionLevels = bTransitionToLevel;
@@ -948,7 +948,8 @@ bool CServerMissionMgr::FinishExitLevel( )
 	// Do switch.
 	else
 	{
-		bRet = g_pServerSaveLoadMgr->SwitchLevels( m_sCurrentWorldName, bSaveKeepAlives );
+		// PORT: Tron's SwitchLevels decides on the keep alive save itself
+		bRet = g_pServerSaveLoadMgr->SwitchLevels( m_sCurrentWorldName );
 	}
 
 	// Unpause the server now that we're done switching levels.
@@ -1014,8 +1015,8 @@ bool CServerMissionMgr::EndGame( )
 		return false;
 	}
 	
-	// Tell worldproperties to send its level end command.
-	g_pWorldProperties->SendLevelEndCmd( );
+	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
+	// it here)
 
 	return true;
 }

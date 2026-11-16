@@ -174,7 +174,7 @@ bool GearItem::PostPropRead(ObjectCreateStruct *pStruct)
 			m_hstrRespawnSoundFile = g_pLTServer->CreateString(pGear->szRespawnSound);
 		}
 
-		m_sClientFX = pGear->szPowerupFX;
+		// PORT: Tron's PickupItem has no client fx (m_sClientFX)
 
         m_bRotate = LTFALSE;
 	}
@@ -303,9 +303,7 @@ void GearItem::PickedUp(ILTMessage_Read *pMsg)
 			
 			g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
 
-			// Stop playing PowerupFX and play RespawnWaitFX...
-		
-			SetClientFX( pGear->szRespawnWaitFX );
+			// PORT: Tron's PickupItem has no client fx (no SetClientFX)
 
 			// Set our visibility...
 
@@ -313,43 +311,6 @@ void GearItem::PickedUp(ILTMessage_Read *pMsg)
 			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, pGear->bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
 		}
 	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	GearItem::PickedUp
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void GearItem::Respawn( )
-{
-	PickupItem::Respawn();
-
-	GEAR const *pGear = g_pWeaponMgr->GetGear( m_nGearId );
-	if( !pGear )
-		return;
-	
-	// Change the skins and renderstyles back to the normal powerup files...
-
-	ObjectCreateStruct ocs;
-
-	pGear->blrSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-	pGear->blrRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-	if( pGear->blrRenderStyles.GetNumItems() < 1 )
-		LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-	
-	// See if we are using a different model...
-
-	CheckForOverrideModel( &ocs );
-
-	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-	// Stop playing RespawnWaitFX and play PowerupFX...
-	
-	SetClientFX( pGear->szPowerupFX );
 }
 
 // ----------------------------------------------------------------------- //

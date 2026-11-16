@@ -104,10 +104,13 @@ void CreateClientWeaponFX(CLIENTWEAPONFX & theStruct)
     cMsg.Writeuint8(theStruct.nSurfaceType);
     cMsg.Writeuint16(theStruct.wIgnoreFX);
     cMsg.Writeuint8(theStruct.nShooterId);
+    cMsg.Writeuint8(theStruct.m_xTronUnknownF);	// RETAIL: Tron's
     cMsg.WriteLTVector(theStruct.vFirePos);
     cMsg.WriteLTVector(theStruct.vPos);
     cMsg.WriteLTVector(theStruct.vSurfaceNormal);
     cMsg.Writeuint8(theStruct.eImpactType);
+    cMsg.Writefloat(theStruct.m_xTronUnknown38);	// RETAIL: Tron's
+    cMsg.Writefloat((LTFLOAT)theStruct.m_xTronUnknown3C);
 	g_pLTServer->SendSFXMessage(cMsg.Read(), theStruct.vPos, 0);
 }
 

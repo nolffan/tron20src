@@ -916,6 +916,26 @@ toggle gets the default position and the screen's column width, as the
 other controls do.
 
 Not fixed yet: the modern build can give the toggle these values.
+### The DRAWALLMODELSHADOWS command sets the sky fog near Z
+
+Object.lto 0x101c0c60 (WorldProperties::OnTrigger,
+ObjectShared/WorldProperties.cpp). The DrawAllModelShadows message writes
+its argument to the SkyFogNearZ console variable, not to
+DrawAllModelShadows. NOLF2 has the same bug. A level that sends it changes
+the sky fog and never the model shadows.
+
+Not fixed yet: the modern build should write szDrawAllModelShadows.
+
+### A failed level load restores the level name from freed memory
+
+Object.lto 0x101ca350 (CServerSaveLoadMgr::LoadLevel,
+ObjectShared/ServerSaveLoadMgr.cpp). Tron keeps the pointer that
+CGameServerShell::GetCurLevel returns (the buffer of the shell's level
+CString), sets the new level name, and gives the kept pointer back to
+SetCurLevel when the load fails. The assignment can free or reuse that
+buffer, so the restored name can be garbage.
+
+Not fixed yet: the modern build should copy the old name first.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

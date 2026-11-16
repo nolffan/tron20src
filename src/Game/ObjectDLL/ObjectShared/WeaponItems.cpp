@@ -100,14 +100,12 @@ uint32 WeaponItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
-				if( !ReadProp((ObjectCreateStruct*)pData))
-					return 0;
+				ReadProp((ObjectCreateStruct*)pData);
 			}
 
 			if (fData != PRECREATE_SAVEGAME)
 			{
-				if( !PostPropRead((ObjectCreateStruct*)pData))
-					return 0;
+				PostPropRead((ObjectCreateStruct*)pData);
 			}
 
 			return dwRet;
@@ -152,16 +150,15 @@ uint32 WeaponItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 //
 // ----------------------------------------------------------------------- //
 
-bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
+void WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 {
+	// RETAIL: 0x101d1b20: Tron's is build 51's
 	GenericProp genProp;
 
  	g_pWeaponMgr->ReadWeaponProp("WeaponType", m_nWeaponId, m_nAmmoId);
 
 	// If the WeaponType is invalid, see if the WeaponTypeId property
 	// was set correctly...
-
-	WEAPON const *pWeapon = NULL;
 
 	if (m_nWeaponId == WMGR_INVALID_ID)
 	{
@@ -171,7 +168,7 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 
 			// Set ammo type to default (could be changed by AmmoType
 			// property...
-			pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
+			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
 			if (pWeapon)
 			{
 				m_nAmmoId = pWeapon->nDefaultAmmoId;
@@ -179,11 +176,8 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 		}
 	}
 
-	pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
-	if( !pWeapon )
-		return false;
-
-	if( pWeapon->bInfiniteAmmo )
+	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
+	if (pWeapon && pWeapon->bInfiniteAmmo)
 	{
 		m_nAmmo = 1000;
 	}
@@ -194,8 +188,6 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 			m_nAmmo = genProp.m_Long;
 		}
 	}
-
-	// RETAIL: Tron's WEAPON cannot be server restricted (no such member)
 
 	// This allows ammo type to be specified without appending it
 	// to the WeaponType attribute (e.g., a spawned weapon)...
@@ -208,15 +200,6 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 			m_nAmmoId = pAmmo->nId;
 		}
 	}
-
-	AMMO const* pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
-	if( !pAmmo )
-		return false;
-	
-	// RETAIL: Tron's AMMO cannot be server restricted (no such member):
-	// NOLF2 fell back to the default ammo here
-
-	return true;
 }
 
 
@@ -228,39 +211,41 @@ bool WeaponItem::ReadProp(ObjectCreateStruct *pStruct)
 //
 // ----------------------------------------------------------------------- //
 
-bool WeaponItem::PostPropRead(ObjectCreateStruct *pStruct)
+void WeaponItem::PostPropRead(ObjectCreateStruct *pStruct)
 {
+	// RETAIL: 0x101d1c60: Tron's is build 51's with the override model and
+	// the hand held scale
 	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
-	if( !pWeapon )
-		return false;
+	if (!pWeapon) return;
 
-	if( !pStruct )
-		return false;
+	if (pStruct)
+	{
+		SAFE_STRCPY(pStruct->m_Filename, pWeapon->szHHModel);
 
-	SAFE_STRCPY(pStruct->m_Filename, pWeapon->szHHModel);
+		pWeapon->blrHHSkins.CopyList(0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+		pWeapon->blrHHRenderStyles.CopyList(0, pStruct->m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
 
-	pWeapon->blrHHSkins.CopyList(0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
-	pWeapon->blrHHRenderStyles.CopyList(0, pStruct->m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
+		// See if our default model was changed...
 
-	// See if our default model was changed...
+		CheckForOverrideModel(pStruct);
 
-	CheckForOverrideModel(pStruct);
+		// Set up the appropriate pick up and respawn sounds...
 
-	// Set up the appropriate pick up and respawn sounds...
+		FREE_HSTRING(m_hstrSoundFile);
+		m_hstrSoundFile = g_pLTServer->CreateString( WEAPONITEM_PICKUP_SOUND );
 
-	FREE_HSTRING(m_hstrSoundFile);
-    m_hstrSoundFile = g_pLTServer->CreateString( WEAPONITEM_PICKUP_SOUND );
+		FREE_HSTRING( m_hstrRespawnSoundFile );
+		m_hstrRespawnSoundFile = g_pLTServer->CreateString( WEAPONITEM_RESPAWN_SOUND );
 
-	FREE_HSTRING( m_hstrRespawnSoundFile );
-	m_hstrRespawnSoundFile = g_pLTServer->CreateString( WEAPONITEM_RESPAWN_SOUND );
+		WEAPON const *pScaleWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
+		if (pScaleWeapon)
+		{
+			m_vScale = pScaleWeapon->vHHScale;
+		}
 
-	m_vScale = pWeapon->vHHScale;
-	// RETAIL: Tron's WEAPON has no PowerupFX
-
-    m_bBounce = LTFALSE;
-    m_bRotate = LTFALSE;
-
-	return true;
+		m_bBounce = LTFALSE;
+		m_bRotate = LTFALSE;
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -330,41 +315,6 @@ void WeaponItem::PickedUp( ILTMessage_Read *pMsg )
 
 	// RETAIL: Tron's WEAPON has no respawn-wait skins, render styles or FX
 	// (PORT: NOLF2 switched to them here while the item waited to respawn)
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	WeaponItem::Respawn
-//
-//	PURPOSE:	Handle "respawning" the model (make it visible, switch skins, etc.)...
-//
-// ----------------------------------------------------------------------- //
-
-void WeaponItem::Respawn( )
-{
-	PickupItem::Respawn();
-
-	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( m_nWeaponId );
-	if( !pWeapon )
-		return;
-	
-	// Change the skins and renderstyles back to the normal powerup files...
-
-	ObjectCreateStruct ocs;
-
-	pWeapon->blrHHSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-	pWeapon->blrHHRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-	if( pWeapon->blrHHRenderStyles.GetNumItems() < 1 )
-		LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-	
-	// See if we are using a different model...
-
-	CheckForOverrideModel( &ocs );
-
-	g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-	// RETAIL: Tron's WEAPON has no PowerupFX
 }
 
 // ----------------------------------------------------------------------- //

@@ -47,6 +47,7 @@ CAIMovement::CAIMovement()
 	m_fParabolaPeakHeight = 0.f;
 	m_fParabola_a = 0.f;
 	m_bParabolaPeaked = LTFALSE;
+	m_xTronUnknown38 = LTFALSE;
 }
 
 CAIMovement::~CAIMovement()
@@ -824,7 +825,8 @@ LTBOOL CAIMovement::UpdateMovementEncoding( EnumAnimMovement eMovementType, LTVe
 		// Turn off gravity
 		m_pAI->SetCheapMovement(LTFALSE);
 
-		m_bIgnoreVolumes = LTTRUE;
+		if( !m_xTronUnknown38 )	// RETAIL: Tron's (0x101ddde6)
+			m_bIgnoreVolumes = LTTRUE;
 	}
 
 	LTVector vHintPosDelta;
@@ -1016,6 +1018,7 @@ void CAIMovement::Load(ILTMessage_Read *pMsg)
 	LOAD_FLOAT(m_fParabolaPeakHeight);
 	LOAD_FLOAT(m_fParabola_a);
 	LOAD_BOOL(m_bParabolaPeaked);
+	LOAD_BOOL(m_xTronUnknown38);	// RETAIL: Tron's (0x101de69a)
 
 	// If we're loading from a transition, then our positional information is invalid.
 	if( g_pGameServerShell->GetLGFlags( ) == LOAD_TRANSITION )
@@ -1076,6 +1079,7 @@ void CAIMovement::Save(ILTMessage_Write *pMsg)
 	SAVE_FLOAT(m_fParabolaPeakHeight);
 	SAVE_FLOAT(m_fParabola_a);
 	SAVE_BOOL(m_bParabolaPeaked);
+	SAVE_BOOL(m_xTronUnknown38);	// RETAIL: Tron's (0x101de94e)
 }
 
 // ----------------------------------------------------------------------- //
@@ -1092,7 +1096,9 @@ void CAIMovement::SetMovementDest(const LTVector& vDest)
 	m_eState = eStateSet;
 	m_fSetSpeed = 0.f;
 	m_bFaceDest = LTTRUE;
-	m_bIgnoreVolumes = LTFALSE;
+	// RETAIL: Tron keeps m_bIgnoreVolumes while m_xTronUnknown38 is set
+	if( !m_xTronUnknown38 )
+		m_bIgnoreVolumes = LTFALSE;
 	m_bDoParabola = LTFALSE;
 
 	m_bNewPathSet = LTTRUE;
@@ -1113,7 +1119,8 @@ void CAIMovement::Clear()
 	m_eState = eStateUnset; 
 	m_fSetSpeed = 0.f;
 	m_bFaceDest = LTTRUE;
-	m_bIgnoreVolumes = LTFALSE;
+	if( !m_xTronUnknown38 )	// RETAIL: Tron's
+		m_bIgnoreVolumes = LTFALSE;
 	m_pDestVolume = LTNULL;
 
 	if( m_bDoParabola )
@@ -1232,7 +1239,8 @@ void CAIMovement::SetupJump( EnumAnimMovement eMovementType )
 	m_fAnimRate = fAnimLength / fJumpTime;
 	m_pAI->GetAnimationContext()->SetAnimRate( m_fAnimRate );
 
-	m_bIgnoreVolumes = LTTRUE;
+	if( !m_xTronUnknown38 )	// RETAIL: Tron's
+		m_bIgnoreVolumes = LTTRUE;
 }
  
 // ----------------------------------------------------------------------- //

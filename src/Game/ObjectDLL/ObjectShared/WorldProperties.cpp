@@ -41,7 +41,7 @@ BEGIN_CLASS(WorldProperties)
     ADD_BOOLPROP(AllSkyPortals, LTFALSE)
 	ADD_VECTORPROP_VAL(Wind, 0.0f, 0.0f, 0.0f)
 	ADD_STRINGPROP(EnvironmentMap, CHROME_TEXTURE)
-	ADD_STRINGPROP_FLAG( LevelEndCmd, "", PF_NOTIFYCHANGE )
+	// RETAIL: Tron has no LevelEndCmd (0x101be4f0)
 
  	ADD_STRINGPROP_FLAG(GlobalSoundFilter, "UnFiltered", PF_STATICLIST)
 
@@ -76,13 +76,18 @@ BEGIN_CLASS(WorldProperties)
 		ADD_REALPROP_FLAG(ShadowMaxProjDist, 200.0f, PF_GROUP(4))
 		ADD_REALPROP_FLAG(ShadowAlpha, 1.0f, PF_GROUP(4))
 
+	// RETAIL: Tron's screen glow fog (0x101bf0fb)
+	PROP_DEFINEGROUP(ScreenGlow, PF_GROUP(5))
+		ADD_BOOLPROP_FLAG(GlowFogEnable, LTFALSE, PF_GROUP(5))
+		ADD_REALPROP_FLAG(GlowFogNearZ, 1.0f, PF_GROUP(5))
+		ADD_REALPROP_FLAG(GlowFogFarZ, 2000.0f, PF_GROUP(5))
+
 	//PROP_DEFINEGROUP(Music, PF_GROUP(5))
 		ADD_STRINGPROP_FLAG(MusicControlFile, "Music\\NOLFOrch\\NOLFOrch.txt", /*PF_GROUP(5) |*/ PF_FILENAME)
 	ADD_STRINGPROP_FLAG(MinMusicMood, "Routine", PF_STATICLIST)
 
     ADD_BOOLPROP(LMAnimStatic, LTFALSE)
 	ADD_LONGINTPROP( AIMaxNumber, 30 )
-	ADD_LONGINTPROP( VehicleMaxNumber, 12 )
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN(WorldProperties, BaseClass, NULL, NULL, 0, CWorldPropertiesPlugin)
 
@@ -109,8 +114,10 @@ CMDMGR_BEGIN_REGISTER_CLASS( WorldProperties )
 	CMDMGR_ADD_MSG( SHADOWMINCOLORCOMPONENT, 2, NULL, "SHADOWMINCOLORCOMPONENT <0-to-255>" )
 	CMDMGR_ADD_MSG( SHADOWMAXPROJDIST, 2, NULL, "SHADOWMAXPROJDIST <projection distance>" )
 	CMDMGR_ADD_MSG( SHADOWALPHA, 2, NULL, "SHADOWALPHA <0-to-1>" )
-	CMDMGR_ADD_MSG( NEXTROUND, 1, NULL, "NEXTROUND" )
-	CMDMGR_ADD_MSG( ROUNDWON, 2, NULL, "ROUNDWON <0 or 1>" )
+	// RETAIL: Tron has no NEXTROUND or ROUNDWON, and its screen glow fog
+	CMDMGR_ADD_MSG( SCREENGLOWFOGENABLE, 2, NULL, "SCREENGLOWFOGENABLE <1-or-0>" )
+	CMDMGR_ADD_MSG( SCREENGLOWFOGNEARZ, 2, NULL, "SCREENGLOWFOGNEARZ <near z>" )
+	CMDMGR_ADD_MSG( SCREENGLOWFOGFARZ, 2, NULL, "SCREENGLOWFOGFARZ <far z>" )
 
 CMDMGR_END_REGISTER_CLASS( WorldProperties, BaseClass )
 
@@ -146,7 +153,10 @@ static char szShadowMaxProjDist[] = "ModelShadow_Proj_MaxProjDist";
 static char szShadowMinColorComponent[] = "ModelShadow_Proj_MinColorComponent";
 static char szShadowAlpha[] = "ModelShadow_Proj_Alpha";
 static char szAIMaxNumber[] = "AIMaxNumber";
-static char szVehicleMaxNumber[] = "VehicleMaxNumber";
+// RETAIL: Tron's
+static char szScreenGlowFogEnable[] = "ScreenGlowFogEnable";
+static char szScreenGlowFogNearZ[] = "ScreenGlowFogNearZ";
+static char szScreenGlowFogFarZ[] = "ScreenGlowFogFarZ";
 
 // ----------------------------------------------------------------------- //
 //
@@ -226,6 +236,10 @@ WorldProperties::WorldProperties()
 
 	g_pWorldProperties = this;
 	m_fWorldTimeSpeed = 600.0f;
+
+	// PORT: build 51's (Tron saves these; its constructor is not placed yet)
+	m_nSaveVersion		= g_pVersionMgr->GetSaveVersion();
+	m_hstrSave			= LTNULL;
 }
 
 
@@ -272,6 +286,11 @@ WorldProperties::~WorldProperties( )
 	g_pLTServer->SetGameConVar( szShadowAlpha, "" );
 	g_pLTServer->SetGameConVar( szShadowMinColorComponent, "" );
 	g_pLTServer->SetGameConVar( szShadowMaxProjDist, "" );
+	g_pLTServer->SetGameConVar( szScreenGlowFogEnable, "" );	// RETAIL: Tron's
+	g_pLTServer->SetGameConVar( szScreenGlowFogNearZ, "" );
+	g_pLTServer->SetGameConVar( szScreenGlowFogFarZ, "" );
+
+	FREE_HSTRING( m_hstrSave );
 }
 
 // --------------------------------------------------------------------------- //
@@ -499,6 +518,17 @@ void WorldProperties::ReadProps()
 		}
 	}
 
+	// RETAIL: 0x101c045f: Tron prints the world's dims
+	{
+		LTVector vWorldMin, vWorldMax;
+		g_pLTServer->GetWorldBox(vWorldMin, vWorldMax);
+
+		char szWorldDims[50];
+		LTSNPrintF( szWorldDims, ARRAY_LEN( szWorldDims ), "World Dims: %.0f, %.0f, %.0f",
+			vWorldMax.x - vWorldMin.x, vWorldMax.y - vWorldMin.y, vWorldMax.z - vWorldMin.z );
+		g_pLTServer->CPrint( szWorldDims );
+	}
+
 	buf[0] = '\0';
     if (g_pLTServer->GetPropString(szEnvironmentMap, buf, 500) == LT_OK)
 	{
@@ -654,17 +684,23 @@ void WorldProperties::ReadProps()
         g_pLTServer->SetGameConVar( szAIMaxNumber, genProp.m_String );
 	}
 
-    if (g_pLTServer->GetPropGeneric( szVehicleMaxNumber, &genProp) == LT_OK)
+	// RETAIL: 0x101c0b6e: Tron's screen glow fog
+	if (g_pLTServer->GetPropBool("GlowFogEnable", &bVal) == LT_OK)
 	{
-        g_pLTServer->SetGameConVar( szVehicleMaxNumber, genProp.m_String );
+		sprintf(buf, "%d", bVal ? 1 : 0);
+        g_pLTServer->SetGameConVar(szScreenGlowFogEnable, buf);
 	}
 
-	if( g_pLTServer->GetPropGeneric( "LevelEndCmd", &genProp ) == LT_OK )
+    if (g_pLTServer->GetPropReal("GlowFogNearZ", &fVal) == LT_OK)
 	{
-		if( genProp.m_String[0] )
-		{
-			m_sLevelEndCmd = genProp.m_String;
-		}
+		sprintf(buf, "%f", fVal);
+        g_pLTServer->SetGameConVar(szScreenGlowFogNearZ, buf);
+	}
+
+    if (g_pLTServer->GetPropReal("GlowFogFarZ", &fVal) == LT_OK)
+	{
+		sprintf(buf, "%f", fVal);
+        g_pLTServer->SetGameConVar(szScreenGlowFogFarZ, buf);
 	}
 }
 
@@ -694,8 +730,9 @@ bool WorldProperties::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_ShadowMaxProjDist("ShadowMaxProjDist");
 	static CParsedMsg::CToken s_cTok_ShadowMinColorComponent("ShadowMinColorComponent");
 	static CParsedMsg::CToken s_cTok_ShadowAlpha("ShadowAlpha");
-	static CParsedMsg::CToken s_cTok_NextRound("NextRound");
-	static CParsedMsg::CToken s_cTok_RoundWon("RoundWon");
+	static CParsedMsg::CToken s_cTok_ScreenGlowFogEnable("ScreenGlowFogEnable");	// RETAIL: Tron's
+	static CParsedMsg::CToken s_cTok_ScreenGlowFogFarZ("ScreenGlowFogFarZ");
+	static CParsedMsg::CToken s_cTok_ScreenGlowFogNearZ("ScreenGlowFogNearZ");
 
 	//Flag indicating whether or not a message should be sent down to the client
 	//indicating that we have changed the settings and that they need to update
@@ -822,23 +859,28 @@ bool WorldProperties::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			bNotifyClient = LTTRUE;
 		}
 	}
-	else if(cMsg.GetArg(0) == s_cTok_NextRound)
+	else if(cMsg.GetArg(0) == s_cTok_ScreenGlowFogEnable)
 	{
-		if( !IsCoopMultiplayerGameType( ))
-			g_pServerMissionMgr->NextRound( );
-	}
-	else if(cMsg.GetArg(0) == s_cTok_RoundWon)
-	{
-		if( !IsCoopMultiplayerGameType( ))
+		if (cMsg.GetArgCount() > 1)
 		{
-			if( cMsg.GetArgCount() > 1 )
-			{
-				uint8 nTeamId = atoi( cMsg.GetArg( 1 ));
-				if( nTeamId < MAX_TEAMS )
-				{
-					CTeamMgr::Instance( ).WonRound( nTeamId );
-				}
-			}
+			g_pLTServer->SetGameConVar(szScreenGlowFogEnable, const_cast<char *>(cMsg.GetArg(1).c_str()));
+			bNotifyClient = LTTRUE;
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_ScreenGlowFogFarZ)
+	{
+		if (cMsg.GetArgCount() > 1)
+		{
+			g_pLTServer->SetGameConVar(szScreenGlowFogFarZ, const_cast<char *>(cMsg.GetArg(1).c_str()));
+			bNotifyClient = LTTRUE;
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_ScreenGlowFogNearZ)
+	{
+		if (cMsg.GetArgCount() > 1)
+		{
+			g_pLTServer->SetGameConVar(szScreenGlowFogNearZ, const_cast<char *>(cMsg.GetArg(1).c_str()));
+			bNotifyClient = LTTRUE;
 		}
 	}
 	else
@@ -880,15 +922,15 @@ void WorldProperties::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
 
-	SAVE_DWORD(g_pVersionMgr->GetSaveVersion());
-
 	// First save global game server shell stuff...(this only works because the
 	// GameServerShell saves the WorldProperties object first)
 
 	g_pGameServerShell->Save(pMsg, dwSaveFlags);
 
+	// RETAIL: 0x101c17f0: Tron's is build 51's
     SAVE_FLOAT(m_fWorldTimeSpeed);
-	SAVE_CHARSTRING( m_sLevelEndCmd.c_str( ));
+	SAVE_DWORD(m_nSaveVersion);
+	SAVE_HSTRING(m_hstrSave);
 }
 
 // ----------------------------------------------------------------------- //
@@ -903,49 +945,15 @@ void WorldProperties::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
-	// This old version didn't save the version number at the top.  We need
-	// to use an engine value to determine the version.  This is equivalent to 
-	// checking for version 1.0.
-	uint32 nSaveFileVersion = 0;
-	g_pLTServer->GetSaveFileVersion( nSaveFileVersion );
-	if( nSaveFileVersion == 2001 )
-	{
-		// First load global game server shell stuff...(this only works because the
-		// GameServerShell saves the WorldProperties object first)
-		g_pGameServerShell->Load(pMsg, dwLoadFlags);
+	// First load global game server shell stuff...(this only works because the
+	// GameServerShell saves the WorldProperties object first)
 
-		LOAD_FLOAT(m_fWorldTimeSpeed);
+	g_pGameServerShell->Load(pMsg, dwLoadFlags);
 
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
-		HSTRING hDummy = NULL;
-		LOAD_HSTRING(hDummy);
-		g_pLTServer->FreeString( hDummy );
-		hDummy = NULL;
-	}
-	else
-	{
-		uint32 nSaveVersion;
-		LOAD_DWORD(nSaveVersion);
-		// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
-
-		// First load global game server shell stuff...(this only works because the
-		// GameServerShell saves the WorldProperties object first)
-		g_pGameServerShell->Load(pMsg, dwLoadFlags);
-
-		LOAD_FLOAT(m_fWorldTimeSpeed);
-
-		if( g_pVersionMgr->GetCurrentSaveVersion( ) < CVersionMgr::kSaveVersion__1_3 )
-		{
-		}
-		else
-		{
-			char szTemp[256];
-			LOAD_CHARSTRING( szTemp, ARRAY_LEN( szTemp ));
-			m_sLevelEndCmd = szTemp;
-		}
-	}
+	// RETAIL: 0x101c1840: Tron's is build 51's
+    LOAD_FLOAT(m_fWorldTimeSpeed);
+	LOAD_DWORD(m_nSaveVersion);
+	LOAD_HSTRING(m_hstrSave);
 }
 
 
@@ -980,25 +988,4 @@ void WorldProperties::HandleTransmissionMsg(const CParsedMsg &cMsg)
 		g_pLTServer->SendToClient(cClientMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	}
-}
-
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	WorldProperties::SendLevelEndCmd
-//
-//	PURPOSE:	Sends the level end command.
-//
-// ----------------------------------------------------------------------- //
-
-void WorldProperties::SendLevelEndCmd( )
-{
-	if( !g_pCmdMgr->IsValidCmd( m_sLevelEndCmd.c_str( )))
-		return;
-
-	g_pCmdMgr->Process( m_sLevelEndCmd.c_str( ), m_hObject, m_hObject );
-
-	// Forget level end command, now that we've sent it.
-	m_sLevelEndCmd.erase( );
 }

@@ -102,7 +102,7 @@ class CAIPathMgr
 		LTBOOL RandomPath(CAI* pAI, AIVolume* pVolumeSrcPrev, AIVolume* pVolumeSrc, AIVolume* pVolumeSrcNext, LTFLOAT fLength, CAIPath* pPath);
 
 		LTBOOL FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVector& vStartPos, const LTFLOAT fMinDist, LTVector* pfRandomPos);
-		LTBOOL FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVector& vStartPos, const LTVector& vEntryPoint, const LTFLOAT fMinDistSqr, const uint8 nMaxDepth, uint8 nCurDepth, LTVector* pfRandomPos);
+		LTBOOL FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVector& vStartPos, const LTVector& vEntryPoint, const LTFLOAT fMinDistSqr, const int8 nMaxDepth, int8 nCurDepth, LTVector* pfRandomPos);
 
 		// Determine if there is a path 
 

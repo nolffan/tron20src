@@ -16,6 +16,7 @@
 #include "iltmessage.h"
 #include "ltbasedefs.h"
 #include <set>
+#include <string>
 
 class BanIPMgr
 {
@@ -53,6 +54,10 @@ class BanIPMgr
 			}
 
 			uint8	m_nPart[4];
+
+			// RETAIL: Tron's name of the banned client (its "BanName%d", the
+			// node is 0x20 bytes: BanIPMgr_Impl ctor 0x101c4916)
+			std::string	m_sName;
 		};
 
 		// Type for list of banned ip's.
@@ -73,7 +78,8 @@ class BanIPMgr
 		virtual bool OnAddClient( HCLIENT hClient ) = 0;
 
 		// Call to add a ban.
-		virtual bool AddBan( char const* pszBanIP ) = 0;
+		// RETAIL: Tron's takes the name too (0x101c4be0; NULL: the IP string)
+		virtual bool AddBan( char const* pszBanIP, char const* pszName ) = 0;
 		virtual bool AddBan( ClientIP const& bannedIP ) = 0;
 
 		// Call to remove a ban.

@@ -318,8 +318,23 @@ void KeyItem::ReadProp(ObjectCreateStruct *pInfo)
 		if (!pKey || !pKey->szFilename[0]) return;
 
 		SAFE_STRCPY(pInfo->m_Filename, pKey->szFilename);
-		pKey->blrSkins.CopyList(0, pInfo->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
-		pKey->blrRenderStyles.CopyList(0, pInfo->m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
+
+		// RETAIL: 0x101d7cd1: Tron's (build 51's) skin list in one string
+		uint32 iSkin = 0;
+		ConParse conParse;
+		conParse.Init(pKey->szSkin);
+		while (g_pCommonLT->Parse(&conParse) == LT_OK)
+		{
+			if (conParse.m_nArgs > 0)
+			{
+				SAFE_STRCPY(pInfo->m_SkinNames[iSkin], conParse.m_Args[0]);
+				iSkin++;
+			}
+
+			if (iSkin >= MAX_MODEL_TEXTURES)
+				break;
+		}
+		pInfo->m_SkinName[MAX_CS_FILENAME_LEN] = '\0';
 
 		m_nKeyId = pKey->nId;
 	}
@@ -441,16 +456,7 @@ void KeyItem::DoActivate(HOBJECT hSender)
 		}
 
 
-		// Play a sound of picking up the key item..
-
-		KEY *pKey = g_pKeyMgr->GetKey( m_nKeyId );
-		if( pKey && pKey->szSoundName[0])
-		{
-			LTVector vPos;
-			g_pLTServer->GetObjectPos(m_hObject, &vPos);
-			g_pServerSoundMgr->PlaySoundFromPos(vPos, pKey->szSoundName, 
-				KEY_DEFAULT_SND_RADIUS, SOUNDPRIORITY_MISC_HIGH);
-		}
+		// RETAIL: Tron's KEY has no pick up sound (DoActivate 0x101d7f00)
 
 
 		// If we have a command, process it...
@@ -582,10 +588,10 @@ void KeyItem::InitialUpdate()
 	}
 
 	CAutoMessage cMsg;
+	// RETAIL: 0x101d83e2: Tron's pickup message is the id, rotate and bounce
 	cMsg.Writeuint8(SFX_PICKUPITEM_ID);
-    cMsg.Writebool(0);
-    cMsg.Writebool(0);
-	cMsg.Writeuint8(INVALID_TEAM);
+	cMsg.Writeuint8(0);
+	cMsg.Writeuint8(0);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 }
 

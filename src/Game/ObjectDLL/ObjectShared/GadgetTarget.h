@@ -66,7 +66,6 @@ class GadgetTarget : public Prop
 		virtual void	TurnLightOn(bool bOn=true);
 		virtual void	SetLightPosition(LightPosition eLightPos);
 
-		void			CreateSpecialFX( bool bUpdateClients /* = false  */ );
 
 	protected : // Members...
 
@@ -90,7 +89,7 @@ class GadgetTarget : public Prop
 		LTBOOL		m_bInfiniteDisables;
 		LTBOOL		m_bInfiniteActivates;
 		LTBOOL		m_bOn;
-		LTBOOL		m_bRestoreFlagsOnLoad;
+		// RETAIL: Tron has no m_bRestoreFlagsOnLoad (ctor 0x101bbe50, OnSave 0x101bdfd0)
 
 		LTObjRefNotifier	m_hAttachedModel;
 		LTObjRefNotifier	m_hLight;
@@ -98,7 +97,7 @@ class GadgetTarget : public Prop
 
 		uint32				m_nGTID;
 
-		uint8		m_nTeamID;
+		// RETAIL: Tron has no team id (no "TEAM" string in Object.lto)
 
 	private :
 
