@@ -989,6 +989,9 @@ void CNodeController::HandleNodeControlHeadFollowObjMessage(ILTMessage_Read *pMs
 
 void CNodeController::KillLipSyncSound( bool bSendNotification )
 {
+	// RETAIL: Tron's clears the subtitle of this sound (0x101869a5)
+	HLTSOUND hSound = m_hSound;
+
 	if( m_hSound )
 	{
 		g_pLTClient->SoundMgr()->KillSound( m_hSound );
@@ -997,7 +1000,7 @@ void CNodeController::KillLipSyncSound( bool bSendNotification )
 
 	if( m_bShowingSubtitles )
 	{
- 		g_pSubtitles->Clear();
+ 		g_pSubtitles->Clear(hSound);
 		m_bShowingSubtitles = false;
 	}
 

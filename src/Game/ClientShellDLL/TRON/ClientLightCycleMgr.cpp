@@ -78,7 +78,7 @@ static void PlayCycleDialogue(int nStringId)
 	float fDuration = -1.0f;
 	g_pLTClient->SoundMgr()->GetSoundDuration(hSnd, fDuration);
 
-	g_pSubtitles->Show(nStringId, LTVector(0.0f, 0.0f, 0.0f), 0.0f, fDuration);
+	g_pSubtitles->Show(nStringId, LTVector(0.0f, 0.0f, 0.0f), hSnd, 0.0f, fDuration);
 }
 
 // ----------------------------------------------------------------------- //

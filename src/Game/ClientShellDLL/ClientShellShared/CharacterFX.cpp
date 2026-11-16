@@ -2583,7 +2583,8 @@ HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL &
 	{
 		LTFLOAT fDuration = -1.0f;
 		g_pLTClient->SoundMgr()->GetSoundDuration(hSound, fDuration);
-		bSubtitle = g_pSubtitles->Show(nStringId, vPos, fRadius, fDuration, bSubtitlePriority);
+		// RETAIL: Tron's Show (0x101793d6) takes the sound and gives nothing back
+		g_pSubtitles->Show(nStringId, vPos, hSound, fRadius, fDuration);
 	}
 
 	return hSound;
@@ -3266,6 +3267,9 @@ void CCharacterFX::RemovePlayerAlphaCycle( )
 
 void CCharacterFX::KillLipSyncSound( bool bSendNotification )
 {
+	// RETAIL: Tron's clears the subtitle of this sound (0x1017abd5)
+	HLTSOUND hSound = m_hDialogueSnd;
+
 	if( m_hDialogueSnd )
 	{
 		g_pLTClient->SoundMgr()->KillSound(m_hDialogueSnd);
@@ -3274,7 +3278,7 @@ void CCharacterFX::KillLipSyncSound( bool bSendNotification )
 
 	if (m_bSubtitle)
 	{
-		g_pSubtitles->Clear();
+		g_pSubtitles->Clear(hSound);
 	}
 
 	if( bSendNotification )

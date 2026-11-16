@@ -178,7 +178,7 @@ void CTronInterfaceMgr::OnExitWorld()
 {
 	g_pMissionText->Clear();
 	g_pChatInput->OnExitWorld();
-	g_pSubtitles->Clear();
+	g_pSubtitles->Clear(LTNULL);	// RETAIL: 0x1009d222
 
 	m_bTronUnknown28AE8 = false;
 	m_nTronUnknown28AF0 = 0;
