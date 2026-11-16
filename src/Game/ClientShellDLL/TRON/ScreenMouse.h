@@ -29,18 +29,17 @@ public:
     void OnFocus(LTBOOL bFocus);
 
 protected:
-	void	ClearBindings();
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
 
+	// RETAIL: Tron's (0x7ac bytes; constructor 0x1006f5e0)
+    LTBOOL	m_bInvertY;							// +0x790
+    LTBOOL	m_bMouseLook;						// +0x794
+	LTBOOL	m_bInvertLCMouse;					// +0x798 the light cycle's mouse
+	int		m_nInputRate;						// +0x79c
+	int		m_nSensitivity;						// +0x7a0
 
-    LTBOOL	m_bInvertY;
-    LTBOOL	m_bMouseLook;
-	int		m_nInputRate;
-	int		m_nSensitivity;
-	int	  	m_nVehicleTurn;
-
-	CLTGUISlider			*m_pInputCtrl;
-	CLTGUISlider			*m_pSensitivityCtrl;
+	CLTGUISlider			*m_pInputCtrl;		// +0x7a4
+	CLTGUISlider			*m_pSensitivityCtrl;	// +0x7a8
 
 };
 

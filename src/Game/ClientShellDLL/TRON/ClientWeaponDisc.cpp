@@ -1660,7 +1660,8 @@ void CClientWeaponDisc::IncrementAmmo( int nAmount /*=1*/ )
 	int nNewAmmoAmount = g_pPlayerStats->GetAmmoCount( m_nAmmoId );
 
 	// if we have more ammo than before and the clip is not full
-	if ( ( nAmmo < nNewAmmoAmount ) &&
+	// RETAIL: Tron's test is <= (0x10019fc6)
+	if ( ( nAmmo <= nNewAmmoAmount ) &&
 	     ( m_nAmmoInClip < m_pWeapon->nShotsPerClip ) )
 	{
 		// add ammo to the clip

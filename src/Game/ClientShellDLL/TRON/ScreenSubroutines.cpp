@@ -34,6 +34,41 @@ namespace
 {
 	const int CMD_COMPILE = CMD_CUSTOM + 1;
 
+	// PORT: Tron's CArcCtrl (ArcCtrl.h, retail 0x10001ec0) keeps only the
+	// name of the piece its sectors attach to; Build 69's code here still
+	// needs the library models' objects. Ours, until this screen is written
+	// from retail.
+	struct ArcObject
+	{
+		CArcCtrl *	pCtrl;
+		HOBJECT		hObj;
+	};
+	ArcObject s_ArcObjects[4];
+
+	void SetArcObject(CArcCtrl & ctrl, HOBJECT hObj, char * szPiece)
+	{
+		ctrl.AssociateModel(szPiece);
+		for (int i = 0; i < 4; i++)
+		{
+			if (!s_ArcObjects[i].pCtrl || s_ArcObjects[i].pCtrl == &ctrl)
+			{
+				s_ArcObjects[i].pCtrl = &ctrl;
+				s_ArcObjects[i].hObj = hObj;
+				return;
+			}
+		}
+	}
+
+	HOBJECT GetArcObject(CArcCtrl & ctrl)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			if (s_ArcObjects[i].pCtrl == &ctrl)
+				return s_ArcObjects[i].hObj;
+		}
+		return LTNULL;
+	}
+
 	const float MEMORY_INNER_RADIUS = 118;
 	const float MEMORY_OUTER_RADIUS = 166;
 
@@ -1462,13 +1497,8 @@ void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 			// open all the libraries
 			m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
 
-			// clear all "inactive" from libraries
-			for (i = 0; i < 6; i++)
-			{
-				m_CombatCtrl.IgnoreSegment(i,false);
-				m_DefenseCtrl.IgnoreSegment(i, false);
-				m_UtilityCtrl.IgnoreSegment(i, false);
-			}
+			// PORT: Build 69 cleared all "inactive" from the libraries here;
+			// Tron's CArcSector has no "ignore" flag (ArcCtrl.h).
 		}
 		break;
 
@@ -1557,7 +1587,7 @@ void CScreenSubroutines::UpdateLibraries()
 
 	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
 	{
-		hObj = m_CombatCtrl.GetHObject();
+		hObj = GetArcObject(m_CombatCtrl);
 		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
 		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
 		if (dwState & MS_PLAYDONE)
@@ -1579,7 +1609,7 @@ void CScreenSubroutines::UpdateLibraries()
 	eState = (LibraryState)m_DefenseCtrl.GetLibraryState();
 	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
 	{
-		hObj = m_DefenseCtrl.GetHObject();
+		hObj = GetArcObject(m_DefenseCtrl);
 		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
 		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
 		if (dwState & MS_PLAYDONE)
@@ -1601,7 +1631,7 @@ void CScreenSubroutines::UpdateLibraries()
 	eState = (LibraryState)m_UtilityCtrl.GetLibraryState();
 	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
 	{
-		hObj = m_UtilityCtrl.GetHObject();
+		hObj = GetArcObject(m_UtilityCtrl);
 		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
 		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
 		if (dwState & MS_PLAYDONE)
@@ -1647,7 +1677,7 @@ void CScreenSubroutines::OpenLibrary(CArcCtrl * pCtrl)
 		return;
 	}
 
-	hObj = pCtrl->GetHObject();
+	hObj = GetArcObject(*pCtrl);
 
 	if (!hObj)
 	{
@@ -1703,7 +1733,7 @@ void CScreenSubroutines::CloseLibrary(CArcCtrl * pCtrl)
 
 	pCtrl->ShowSprites(false);
 
-	hObj = pCtrl->GetHObject();
+	hObj = GetArcObject(*pCtrl);
 
 	if (!hObj)
 		return;
@@ -1946,21 +1976,21 @@ void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
 			{
 				if (!strcmpi(pSubModel->szName, "hub"))
 				{
-					m_SystemMemoryCtrl.AssociateHObject(hObj, "skt_hub");
+					SetArcObject(m_SystemMemoryCtrl, hObj, pSubModel->szName);
 					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
 					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
 				}
 				else if (!strcmpi(pSubModel->szName, "browser_top"))
 				{
-					m_CombatCtrl.AssociateHObject(hObj, LTNULL);
+					SetArcObject(m_CombatCtrl, hObj, pSubModel->szName);
 				}
 				else if (!strcmpi(pSubModel->szName, "browser_left"))
 				{
-					m_DefenseCtrl.AssociateHObject(hObj, LTNULL);
+					SetArcObject(m_DefenseCtrl, hObj, pSubModel->szName);
 				}
 				else if (!strcmpi(pSubModel->szName, "browser_right"))
 				{
-					m_UtilityCtrl.AssociateHObject(hObj, LTNULL);
+					SetArcObject(m_UtilityCtrl, hObj, pSubModel->szName);
 				}
 				else if (!strcmpi(pSubModel->szName, "proc_dock"))
 				{

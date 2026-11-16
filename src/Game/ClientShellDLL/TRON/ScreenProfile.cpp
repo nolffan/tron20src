@@ -306,7 +306,7 @@ void CScreenProfile::Escape()
 	{
 		m_pDlg->Show(LTFALSE);
 		SetCapture(LTNULL);
-		g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+		PlayInterfaceSound(IS_SELECT);
 	}
 	else
 		CBaseScreen::Escape();

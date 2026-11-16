@@ -9,6 +9,9 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+
+// RETAIL: CScreenGame is 0x1005b1f0..0x1005b9b3 in Tron's CShell.dll,
+// written from the retail code; the string IDs are Tron's.
 #include "ScreenGame.h"
 #include "ScreenMgr.h"
 #include "ScreenCommands.h"
@@ -35,15 +38,15 @@ CScreenGame::CScreenGame()
 {
 	m_nDifficulty = 2;
     m_nSubtitles  = 0;
-    m_bGore = LTFALSE;
 	m_bAlwaysRun = LTTRUE;
 	m_nLayout = 0;
 	m_nHeadBob = 0;
 	m_nWeaponSway = 0;
 	m_nMsgDur = 0;
-	m_bAutoWeaponSwitch = LTTRUE;
-	m_bLoadScreenTips = LTTRUE;
-	m_bVehicleContour = LTTRUE;
+	m_bLCThirdPersonCam = LTTRUE;
+	m_bDiscAutoAim = LTFALSE;
+	m_nLCCamSpeed = 5;
+	m_nLCCamLag = 5;
 }
 
 CScreenGame::~CScreenGame()
@@ -54,101 +57,59 @@ CScreenGame::~CScreenGame()
 // Build the screen
 LTBOOL CScreenGame::Build()
 {
-
-	CreateTitle(IDS_TITLE_GAME_OPTIONS);
+	CreateTitle(0x1b);
 
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_GAME,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_GAME,"SliderWidth");
 
-	//background frame
-	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_GAME,"FrameRect");
-	LTIntPt pos(frameRect.left,frameRect.top);
-	int nHt = frameRect.bottom - frameRect.top;
-	int nWd = frameRect.right - frameRect.left;
-
-	char szFrame[128];
-	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_GAME,"FrameTexture",szFrame,sizeof(szFrame));
-	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
-	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
-	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
-	pFrame->SetBasePos(pos);
-	pFrame->SetBorder(2,m_SelectedColor);
-	AddControl(pFrame);
-
-	//crosshair menu
-	AddTextItem(IDS_CONTROLS_CROSSHAIR, CMD_CROSSHAIR, IDS_HELP_CROSSHAIRMENU);
-
-	CLTGUICycleCtrl* pCycle = AddCycle(IDS_DISPLAY_SUBTITLES,IDS_HELP_SUBTITLES,kGap,&m_nSubtitles);
-	char szTmp[64];
-    FormatString(IDS_OFF,szTmp,sizeof(szTmp));
-	pCycle->AddString(szTmp);
-
-    FormatString(IDS_ON,szTmp,sizeof(szTmp));
-	pCycle->AddString(szTmp);
-
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	if (pProfile && !g_pVersionMgr->IsLowViolence())
-	{
-		CLTGUIToggle *pGore = AddToggle(IDS_DISPLAY_GORE,IDS_HELP_GORE,kGap,&m_bGore);
-	}
-
-	char szYes[16];
-	char szNo[16];
-	FormatString(IDS_YES,szYes,sizeof(szYes));
-	FormatString(IDS_NO,szNo,sizeof(szNo));
+	CLTGUICycleCtrl* pCycle = AddCycle(0xf7,0xff,kGap,&m_nSubtitles);
+	pCycle->AddString(LoadTempWString(0x34));
+	pCycle->AddString(LoadTempWString(0x33));
 
 	//always run
-	CLTGUIToggle* pToggle = AddToggle(IDS_ADVCONTROLS_RUNLOCK, IDS_HELP_RUNLOCK, kGap, &m_bAlwaysRun );
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	CLTGUIToggle* pToggle = AddToggle(0x176, 0xa0, kGap, &m_bAlwaysRun );
+	pToggle->SetOnString(LoadTempWString(0x35));
+	pToggle->SetOffString(LoadTempWString(0x36));
 
 	// Add the Difficulty option
-	m_pDifficultyCtrl = AddCycle(IDS_DIFFICULTY,IDS_HELP_DIFFICULTY,kGap,&m_nDifficulty);
+	m_pDifficultyCtrl = AddCycle(0x17e,0x96,kGap,&m_nDifficulty);
+	m_pDifficultyCtrl->AddString(LoadTempWString(0x177));
+	m_pDifficultyCtrl->AddString(LoadTempWString(0x178));
+	m_pDifficultyCtrl->AddString(LoadTempWString(0x179));
+	m_pDifficultyCtrl->AddString(LoadTempWString(0x17a));
 
-    FormatString(IDS_NEW_EASY,szTmp,sizeof(szTmp));
-	m_pDifficultyCtrl->AddString(szTmp);
-	
-	FormatString(IDS_NEW_MEDIUM,szTmp,sizeof(szTmp));
-	m_pDifficultyCtrl->AddString(szTmp);
-	
-	FormatString(IDS_NEW_HARD,szTmp,sizeof(szTmp));
-	m_pDifficultyCtrl->AddString(szTmp);
-
-	FormatString(IDS_NEW_INSANE,szTmp,sizeof(szTmp));
-	m_pDifficultyCtrl->AddString(szTmp);
-/*
-	pCycle = AddCycle(IDS_HUDLAYOUT,IDS_HELP_HUDLAYOUT,kGap,&m_nLayout);
-	for (int hl = 0; hl < g_pLayoutMgr->GetNumHUDLayouts(); hl++)
-	{
-		char szTmpBuffer[128];
-		FormatString(g_pLayoutMgr->GetLayoutName(hl),szTmpBuffer,sizeof(szTmpBuffer));
-		pCycle->AddString(szTmpBuffer);
-	}
-*/
-
-	CLTGUISlider *pSlider=AddSlider(IDS_HEADBOB, IDS_HELP_HEADBOB, kGap, kWidth, -1, &m_nHeadBob);
+	CLTGUISlider *pSlider=AddSlider(0x7e, 0x80, kGap, kWidth, -1, &m_nHeadBob);
 	pSlider->SetSliderRange(0, 10);
 	pSlider->SetSliderIncrement(1);
 
-	pSlider=AddSlider(IDS_WEAPONSWAY, IDS_HELP_WEAPONSWAY, kGap, kWidth, -1, &m_nWeaponSway);
+	pSlider=AddSlider(0x7f, 0x81, kGap, kWidth, -1, &m_nWeaponSway);
 	pSlider->SetSliderRange(0, 10);
 	pSlider->SetSliderIncrement(1);
 
-	pSlider=AddSlider(IDS_PICKUP_MSG_DUR, IDS_HELP_PICKUP_MSG_DUR, kGap, kWidth, -1, &m_nMsgDur);
-	pSlider->SetSliderRange(1, 10);
+	pSlider=AddSlider(0x83, 0x82, kGap, kWidth, -1, &m_nMsgDur);
+	pSlider->SetSliderRange(0, 10);
 	pSlider->SetSliderIncrement(1);
 
-	pToggle = AddToggle(IDS_AUTOSWITCH_WEAPONS, IDS_HELP_AUTOSWITCH_WEAPONS, kGap, &m_bAutoWeaponSwitch );
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	// RETAIL: Tron's disc and light cycle options
+	pToggle = AddToggle(0xcad, 0xcae, kGap, &m_bDiscAutoAim );
+	pToggle->SetOnString(LoadTempWString(0x35));
+	pToggle->SetOffString(LoadTempWString(0x36));
 
-	pToggle = AddToggle(IDS_LOAD_TIPS, IDS_HELP_LOAD_TIPS, kGap, &m_bLoadScreenTips );
-	pToggle->SetOnString(LoadTempString(IDS_ON));
-	pToggle->SetOffString(LoadTempString(IDS_OFF));
+	pToggle = AddToggle(0x287, 0x288, kGap, &m_bLCThirdPersonCam );
+	pToggle->SetOnString(LoadTempWString(0x35));
+	pToggle->SetOffString(LoadTempWString(0x36));
 
-	pToggle = AddToggle(IDS_CONTOUR, IDS_HELP_CONTOUR, kGap, &m_bVehicleContour );
-	pToggle->SetOnString(LoadTempString(IDS_ON));
-	pToggle->SetOffString(LoadTempString(IDS_OFF));
+	pSlider=AddSlider(0xc77, 0xc78, kGap, kWidth, -1, &m_nLCCamSpeed);
+	pSlider->SetSliderRange(0, 40);
+	pSlider->SetSliderIncrement(1);
+
+	pSlider=AddSlider(0xc79, 0xc7a, kGap, kWidth, -1, &m_nLCCamLag);
+	pSlider->SetSliderRange(0, 11);
+	pSlider->SetSliderIncrement(1);
+
+	pToggle = AddToggle(0xcc3, 0xcc4, kGap, &m_bLCDialog );
+	pToggle->SetOnString(LoadTempWString(0x35));
+	pToggle->SetOffString(LoadTempWString(0x36));
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
@@ -174,17 +135,16 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 	
 		m_nDifficulty = pProfile->m_nDifficulty;
 		m_nSubtitles  = pProfile->m_nSubtitles;
-		m_bGore = pProfile->m_bGore;
 		m_bAlwaysRun = pProfile->m_bAlwaysRun;
 		m_nLayout = pProfile->m_nLayout;
 		m_nHeadBob = pProfile->m_nHeadBob;
 		m_nWeaponSway = pProfile->m_nWeaponSway;
 		m_nMsgDur = pProfile->m_nMsgDur;
-		// PORT: Tron's profile has no AutoWeaponSwitch or VehicleContour (retail
-		// OnFocus 0x1005b850 shows the light cycle options instead)
-		m_bLoadScreenTips = pProfile->m_bLoadScreenTips;
-
-		m_pDifficultyCtrl->Enable( !(g_pLTClient->IsConnected() && IsMultiplayerGame())	);
+		m_bLCThirdPersonCam = pProfile->m_bLCThirdPersonCam;
+		m_bDiscAutoAim = pProfile->m_bDiscAutoAim;
+		m_nLCCamSpeed = pProfile->m_nLCCamSpeed;
+		m_nLCCamLag = pProfile->m_nLCCamLag;
+		m_bLCDialog = pProfile->m_bLCDialog;
 
         UpdateData(LTFALSE);
 	}
@@ -194,13 +154,16 @@ void CScreenGame::OnFocus(LTBOOL bFocus)
 
 		pProfile->m_nDifficulty = m_nDifficulty;
 		pProfile->m_nSubtitles  = m_nSubtitles;
-		pProfile->m_bGore = !!m_bGore;
 		pProfile->m_bAlwaysRun = m_bAlwaysRun;
 		pProfile->m_nLayout = m_nLayout;
 		pProfile->m_nHeadBob = m_nHeadBob;
 		pProfile->m_nWeaponSway = m_nWeaponSway;
 		pProfile->m_nMsgDur = m_nMsgDur;
-		pProfile->m_bLoadScreenTips = m_bLoadScreenTips;
+		pProfile->m_bLCThirdPersonCam = !!m_bLCThirdPersonCam;
+		pProfile->m_bDiscAutoAim = m_bDiscAutoAim;
+		pProfile->m_nLCCamSpeed = m_nLCCamSpeed;
+		pProfile->m_nLCCamLag = m_nLCCamLag;
+		pProfile->m_bLCDialog = m_bLCDialog;
 
 		pProfile->ApplyGameOptions();
 		pProfile->Save();

@@ -75,7 +75,8 @@ LTBOOL CScreenLightCycleVictory::Build()
 		helpSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(kScreenID,"HelpStringSize");
 	}
 
-	int nFontSize = (int)(g_pInterfaceResMgr->GetXRatio() * (float)stringSize);
+	// RETAIL: the font scales with the screen height (0x1006e12c)
+	int nFontSize = (int)(g_pInterfaceResMgr->GetYRatio() * (float)stringSize);
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 
 	if (!m_pString)

@@ -14,12 +14,10 @@
 #include "ScreenCommands.h"
 #include "GameSettings.h"
 #include "InterfaceMgr.h"
-#include "VarTrack.h"
 
-extern VarTrack	g_vtMouseMinSensitivity;
-extern VarTrack	g_vtMouseMaxSensitivity;
-extern VarTrack	g_vtMouseMinInputRate;
-extern VarTrack	g_vtMouseMaxInputRate;
+// RETAIL: this TU is 0x1006f5c0..0x1006fb8e in Tron's CShell.dll, written
+// from the retail code. Tron's string IDs are not in our ClientRes headers:
+// the numbers are retail's.
 
 namespace
 {
@@ -37,10 +35,10 @@ CScreenMouse::CScreenMouse()
 {
 
     m_bInvertY = LTFALSE;
+	m_bInvertLCMouse = LTFALSE;
     m_bMouseLook = LTFALSE;
 	m_nInputRate = 0;
 	m_nSensitivity = 0;
-	m_nVehicleTurn	= 100;
 
     m_pSensitivityCtrl = LTNULL;
     m_pInputCtrl = LTNULL;
@@ -56,59 +54,39 @@ CScreenMouse::~CScreenMouse()
 // Build the screen
 LTBOOL CScreenMouse::Build()
 {
-	CreateTitle(IDS_TITLE_MOUSE);
-	
+	CreateTitle(0xe);
+
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MOUSE,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_MOUSE,"SliderWidth");
 
-	//background frame
-	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_MOUSE,"FrameRect");
-	LTIntPt pos(frameRect.left,frameRect.top);
-	int nHt = frameRect.bottom - frameRect.top;
-	int nWd = frameRect.right - frameRect.left;
-
-	char szFrame[128];
-	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_MOUSE,"FrameTexture",szFrame,sizeof(szFrame));
-	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
-	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
-	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
-	pFrame->SetBasePos(pos);
-	pFrame->SetBorder(2,m_NonSelectedColor);
-	AddControl(pFrame);
-
+	std::wstring sYes = LoadTempWString(0x35);
+	std::wstring sNo = LoadTempWString(0x36);
 
 	//Always mouse look
-	char szYes[16];
-	char szNo[16];
-	FormatString(IDS_YES,szYes,sizeof(szYes));
-	FormatString(IDS_NO,szNo,sizeof(szNo));
-	CLTGUIToggle* pToggle = AddToggle(IDS_MOUSE_MOUSELOOK, IDS_HELP_MOUSELOOK, kGap, &m_bMouseLook );
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	CLTGUIToggle* pToggle = AddToggle(0x15e, 0xc1, kGap, &m_bMouseLook );
+	pToggle->SetOnString(sYes);
+	pToggle->SetOffString(sNo);
 
 	//mouse sensitivity
-	int nMin = int(g_vtMouseMinSensitivity.GetFloat());
-	int nMax = int(g_vtMouseMaxSensitivity.GetFloat());
-	m_pSensitivityCtrl= AddSlider(IDS_MOUSE_SENSITIVITY, IDS_HELP_MOUSE_SENSE, kGap, kWidth, -1, &m_nSensitivity);
-	m_pSensitivityCtrl->SetSliderRange(nMin, nMax);
+	// RETAIL: Tron's ranges are constants (Build 69 read console variables)
+	m_pSensitivityCtrl= AddSlider(0x161, 0xc2, kGap, kWidth, -1, &m_nSensitivity);
+	m_pSensitivityCtrl->SetSliderRange(0, 10);
 	m_pSensitivityCtrl->SetSliderIncrement(1);
 
 	//mouse responsiveness
-	nMin = int(g_vtMouseMinInputRate.GetFloat());
-	nMax = int(g_vtMouseMaxInputRate.GetFloat());
-	m_pInputCtrl=AddSlider(IDS_MOUSE_INPUTRATE, IDS_HELP_MOUSE_INPUT, kGap, kWidth, -1,  &m_nInputRate);
-	m_pInputCtrl->SetSliderRange(nMin, nMax);
+	m_pInputCtrl=AddSlider(0x162, 0xc3, kGap, kWidth, -1,  &m_nInputRate);
+	m_pInputCtrl->SetSliderRange(0, 40);
 	m_pInputCtrl->SetSliderIncrement(2);
 
 	//invert mouse
-	pToggle = AddToggle(IDS_MOUSE_INVERTYAXIS, IDS_HELP_INVERTY, kGap, &m_bInvertY );
-	pToggle->SetOnString(szYes);
-	pToggle->SetOffString(szNo);
+	pToggle = AddToggle(0x160, 0xc0, kGap, &m_bInvertY );
+	pToggle->SetOnString(sYes);
+	pToggle->SetOffString(sNo);
 
-	CLTGUISlider *pSlider = AddSlider(IDS_VEHICLETURN, IDS_HELP_VEHICLETURN, kGap, kWidth, -1, &m_nVehicleTurn);
-	pSlider->SetSliderRange(50, 150);
-	pSlider->SetSliderIncrement(10);
-
+	// RETAIL: Tron's: invert the light cycle's mouse
+	pToggle = AddToggle(0xce8, 0xce9, kGap, &m_bInvertLCMouse );
+	pToggle->SetOnString(sYes);
+	pToggle->SetOffString(sNo);
 
 	// Make sure to call the base class
 	if (! CBaseScreen::Build()) return LTFALSE;
@@ -134,12 +112,11 @@ void CScreenMouse::OnFocus(LTBOOL bFocus)
 		pProfile->SetMouse();
 		m_bMouseLook = pProfile->m_bMouseLook;
 		m_bInvertY = pProfile->m_bInvertY;
+		m_bInvertLCMouse = pProfile->m_bInvertLCMouse;
 
 		m_nInputRate = pProfile->m_nInputRate;
 
 		m_nSensitivity = pProfile->m_nSensitivity;
-
-		m_nVehicleTurn = pProfile->m_nVehicleTurn;
 
         UpdateData(LTFALSE);
 	}
@@ -149,9 +126,9 @@ void CScreenMouse::OnFocus(LTBOOL bFocus)
 
 		pProfile->m_bMouseLook = m_bMouseLook;
 		pProfile->m_bInvertY = m_bInvertY;
+		pProfile->m_bInvertLCMouse = m_bInvertLCMouse;
 		pProfile->m_nInputRate = m_nInputRate;
 		pProfile->m_nSensitivity = m_nSensitivity;
-		pProfile->m_nVehicleTurn = m_nVehicleTurn;
 
 		pProfile->ApplyMouse();
 		pProfile->Save();
