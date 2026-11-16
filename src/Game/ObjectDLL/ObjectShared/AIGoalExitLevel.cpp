@@ -145,6 +145,6 @@ void CAIGoalExitLevel::HandleStateGoto()
 	}
 	else
 	{
-		super::HandleStateGoto();
+		CAIGoalGuard::HandleStateGoto();
 	}
 }
