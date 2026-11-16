@@ -259,9 +259,7 @@ void CAIGoalCheckBody::HandleStateCheckBody()
 			}
 			break;
 
-		case kSStat_FailedComplete:
-			SearchOrAware();
-			break;
+		// RETAIL: 0x1020d420, Tron has no FailedComplete case.
 
 		case kSStat_StateComplete:
 			DisposeOfBody();
