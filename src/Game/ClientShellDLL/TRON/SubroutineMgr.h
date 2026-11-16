@@ -198,6 +198,7 @@ public:
 	void		Pause(LTBOOL bPause); // pause and unpause the game
 	void		Update();	// advance all timers
 	PlayerSubroutine*	GetSubroutineInSector(int iSector);	// RETAIL: 0x100938f0 (the name is ours)
+	std::wstring		GetSubroutineInfo(PlayerSubroutine * pSub);	// RETAIL: 0x10093970 (the name is ours)
 
 	uint16		GetNumSubroutines() {return m_SubroutineArray.size();}
 	// RETAIL: inlined in CHUDSubChooser::Init (retail 0x1003b5a6); the name is ours

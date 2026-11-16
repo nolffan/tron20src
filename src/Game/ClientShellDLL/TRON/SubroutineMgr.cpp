@@ -91,6 +91,17 @@ CSubroutineMgr* g_pSubroutineMgr = LTNULL;
 #define IDS_TRON_SUB_CORRUPTED			3298
 #define IDS_TRON_SUB_CORRUPT_SPREAD		3299
 
+// RETAIL: GetSubroutineInfo's (0x10093970) strings in CRes.dll (names ours)
+#define IDS_TRON_SUB_PROCEDURAL			3404
+#define IDS_TRON_SUB_PROGRESS			3431
+#define IDS_TRON_SUB_FOREIGN_DESC		3407
+#define IDS_TRON_SUB_ALPHA				3412
+#define IDS_TRON_SUB_VERSION			3415
+#define IDS_TRON_SUB_CORRUPTION			3416
+#define IDS_TRON_SUB_FOREIGN_NAME		3417
+#define IDS_TRON_SUB_FOREIGN			3422
+#define IDS_TRON_SUB_ENERGY_DRAIN		3435
+
 // RETAIL: CRes.dll's strings (the names are ours)
 #define IDS_SUBROUTINE_ACQUIRED			3247	// "Acquired subroutine: <color 165 233 255>%1!s!"
 #define IDS_SUBROUTINE_ACQUIRED_UNKNOWN	3249	// "Acquired unknown subroutine"
@@ -946,6 +957,138 @@ PlayerSubroutine* CSubroutineMgr::GetSubroutineInSector(int iSector)
 	}
 
 	return LTNULL;
+}
+
+// RETAIL: this file's LTStrCat keeps the destination's length, as Build
+// 69's (ltbasedefs.h) does without its truncation check; the compiler
+// calls it out of line at 0x10094100. The name is ours.
+static inline void InfoStrCat(char *pDest, const char *pSrc, uint32 destBytes)
+{
+	if (destBytes == 0)
+		return;
+
+	uint32 destLen = strlen(pDest);
+	uint32 catLen = destBytes - destLen - 1;
+
+	strncat(pDest, pSrc, catLen);
+	pDest[destLen + catLen] = '\0';
+}
+
+// RETAIL: 0x10094140 (the name is ours): the text as a wide string
+static bool CopyToWString(std::wstring & sDest, const char * szSrc)
+{
+	sDest.erase(sDest.begin(), sDest.end());
+
+	uint32 nLen = strlen(szSrc);
+	for (uint32 i = 0; i < nLen; i++)
+	{
+		sDest.push_back((wchar_t)(uint8)szSrc[i]);
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSubroutineMgr::GetSubroutineInfo
+//
+//	PURPOSE:	RETAIL: 0x10093970 (the name is ours): the subroutine
+//				screen's information text of a subroutine
+//
+// ----------------------------------------------------------------------- //
+
+std::wstring CSubroutineMgr::GetSubroutineInfo(PlayerSubroutine * pSub)
+{
+	if (!pSub)
+		return LTNULL;
+
+	TronSubroutine * pTronSub = pSub->pTronSubroutine;
+	bool bForeign = (pSub->eState == SUBSTATE_FOREIGN);
+
+	char szInfo[1024];
+	char szTemp[1024];
+	char szName[128];
+
+	szInfo[0] = 0;
+
+	InfoStrCat(szInfo, "<color 165 233 255>", sizeof(szInfo));
+	if (bForeign)
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN_NAME), sizeof(szInfo));
+	else
+		InfoStrCat(szInfo, LoadTempString(pTronSub->nNameId), sizeof(szInfo));
+	InfoStrCat(szInfo, "\n", sizeof(szInfo));
+
+	if (pSub->eState != SUBSTATE_UNUSABLE)
+	{
+		if (bForeign)
+		{
+			InfoStrCat(szInfo, "<color 255 0 0>", sizeof(szInfo));
+			InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN), sizeof(szInfo));
+			InfoStrCat(szInfo, "\n", sizeof(szInfo));
+		}
+		else if (pSub->eState == SUBSTATE_CORRUPT)
+		{
+			InfoStrCat(szInfo, "<color 191 255 0>", sizeof(szInfo));
+			FormatString(IDS_TRON_SUB_CORRUPTION, szTemp, sizeof(szTemp), (int)(GetSubroutineCorruption(pSub) * 100.0f));
+			InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+			InfoStrCat(szInfo, "\n", sizeof(szInfo));
+		}
+
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_VERSION), sizeof(szInfo));
+		InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_ALPHA + pSub->eVersion), sizeof(szInfo));
+
+		int nDrain = (int)(&pTronSub->vEnergyDrain.x)[pSub->eVersion];
+		if (nDrain > 0)
+		{
+			FormatString(IDS_TRON_SUB_ENERGY_DRAIN, szTemp, sizeof(szTemp), nDrain);
+			InfoStrCat(szInfo, " ", sizeof(szInfo));
+			InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+		}
+		InfoStrCat(szInfo, "\n", sizeof(szInfo));
+	}
+
+	if (pSub->pProcedural)
+	{
+		strncpy(szName, LoadTempString(pSub->pProcedural->nNameId), sizeof(szName) - 1);
+		szName[sizeof(szName) - 1] = 0;
+		FormatString(IDS_TRON_SUB_PROCEDURAL, szTemp, sizeof(szTemp), szName);
+		InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+		InfoStrCat(szInfo, "\n", sizeof(szInfo));
+		FormatString(IDS_TRON_SUB_PROGRESS, szTemp, sizeof(szTemp), (int)(pSub->fPercentDone * 100.0f));
+		InfoStrCat(szInfo, szTemp, sizeof(szInfo));
+	}
+
+	if (!pSub->pProcedural)
+	{
+		InfoStrCat(szInfo, "<color 255 255 255>", sizeof(szInfo));
+		if (bForeign)
+		{
+			InfoStrCat(szInfo, LoadTempString(IDS_TRON_SUB_FOREIGN_DESC), sizeof(szInfo));
+		}
+		else
+		{
+			InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionId), sizeof(szInfo));
+			if (pSub->eVersion == VERSION_ALPHA && pTronSub->nDescriptionAlphaId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionAlphaId), sizeof(szInfo));
+			}
+			if (pSub->eVersion != VERSION_GOLD && pTronSub->nDescriptionBetaId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionBetaId), sizeof(szInfo));
+			}
+			if (pTronSub->nDescriptionGoldId)
+			{
+				InfoStrCat(szInfo, "\n", sizeof(szInfo));
+				InfoStrCat(szInfo, LoadTempString(pTronSub->nDescriptionGoldId), sizeof(szInfo));
+			}
+		}
+	}
+
+	std::wstring sInfo;
+	CopyToWString(sInfo, szInfo);
+	return sInfo;
 }
 
 void CSubroutineMgr::CleanArrays()
