@@ -1350,9 +1350,11 @@ LTFLOAT CDestructible::ProcessGear(LTFLOAT fDamage, DamageType eDamageType, HOBJ
 //
 // ----------------------------------------------------------------------- //
 
-void CDestructible::HandleDestruction(HOBJECT hDamager, DamageType eDamageType)
+// RETAIL: Object.lto 0x100e9150 takes a third argument and stores it at +0x30.
+void CDestructible::HandleDestruction(HOBJECT hDamager, DamageType eDamageType, LTBOOL bTronUnknown30)
 {
 	m_eLastDamageType = eDamageType;
+	m_bTronUnknown30 = bTronUnknown30;
 	HandleDestruction( hDamager );
 }
 
@@ -1649,6 +1651,7 @@ void CDestructible::Reset(LTFLOAT fHitPts, LTFLOAT fArmorPts, LTFLOAT fEnergy)
     m_bDead         = LTFALSE;
 
 	m_eLastDamageType = DT_UNSPECIFIED;
+	m_bTronUnknown30 = LTFALSE;	// RETAIL: Object.lto 0x100e9930
 }
 
 

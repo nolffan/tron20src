@@ -8119,7 +8119,7 @@ END HACK - for DM testing */
 
 	for( int i = 0; i < pMission->nNumDefaultWeapons; ++i )
 	{
-		int nWeaponId = pMission->aDefaultWeapons[i];
+		int nWeaponId = pMission->aDefaultWeapons[i].nId;
 	
 		// Check if we already have this weapon.
 		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
@@ -8156,7 +8156,7 @@ END HACK - for DM testing */
 
 	for( i = 0; i < pLevel->nNumDefaultWeapons; ++i )
 	{
-		int nWeaponId = pLevel->aDefaultWeapons[i];
+		int nWeaponId = pLevel->aDefaultWeapons[i].nId;
 
 		// Check if we already have this weapon.
 		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );

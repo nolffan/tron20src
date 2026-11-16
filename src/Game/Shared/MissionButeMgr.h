@@ -38,6 +38,45 @@
 #define MMGR_GENERAL_TAG				"General"
 
 
+// RETAIL: Tron's lists of named weapons, subroutines and procedurals.  The
+// record layouts come from the constructors at CShell 0x1013d9d0, 0x1013d9e0,
+// 0x1013d9f0 and the list builders at 0x1013d3e0, 0x1013d630, 0x1013d840.
+// The names of the structs and their members are ours.
+#define MMGR_MAX_ITEM_NAME			64
+#define MMGR_MAX_MISSION_WEAPONS	16
+#define MMGR_MAX_SUBROUTINES		18
+#define MMGR_MAX_PROCEDURALS		3
+
+// 0x4c bytes.
+struct MISSIONWEAPON
+{
+	MISSIONWEAPON();
+
+	char	szName[MMGR_MAX_ITEM_NAME];
+	int		nId;			// +0x40
+	int		nVersion;		// +0x44 "alpha" 0, "beta" 1, "gold" 2
+	int		nCondition;		// +0x48 "normal" 0, "infected"/"corrupted" 1
+};
+
+// 0x48 bytes.
+struct MISSIONSUBROUTINE
+{
+	MISSIONSUBROUTINE();
+
+	char	szName[MMGR_MAX_ITEM_NAME];
+	int		nVersion;		// +0x40
+	int		nCondition;		// +0x44
+};
+
+// 0x40 bytes.
+struct MISSIONPROCEDURAL
+{
+	MISSIONPROCEDURAL();
+
+	char	szName[MMGR_MAX_ITEM_NAME];
+};
+
+// RETAIL: 0x100c bytes (LEVEL::LEVEL, CShell 0x1013d920).
 struct LEVEL
 {
 	LEVEL();
@@ -47,18 +86,30 @@ struct LEVEL
 	int		nBriefingId;
 	int		nHelpId;
 
-	char	szLevel[MMGR_MAX_LEVEL_FILE_PATH];
-	
-	int		nNumDefaultWeapons;
-	int		aDefaultWeapons[MMGR_MAX_WEAPONS];
+	char	szLevel[MMGR_MAX_LEVEL_FILE_PATH];		// +0xc
 
-	int		nNumDefaultAmmo;
+	int					nNumDefaultWeapons;			// +0x4c
+	MISSIONWEAPON		aDefaultWeapons[MMGR_MAX_MISSION_WEAPONS];
+
+	int					nNumIdealWeapons;			// +0x510
+	MISSIONWEAPON		aIdealWeapons[MMGR_MAX_MISSION_WEAPONS];
+
+	int					nNumIdealSubroutines;		// +0x9d4
+	MISSIONSUBROUTINE	aIdealSubroutines[MMGR_MAX_SUBROUTINES];
+
+	int					nNumIdealProcedurals;		// +0xee8
+	MISSIONPROCEDURAL	aIdealProcedurals[MMGR_MAX_PROCEDURALS];
+
+	int		nNumDefaultAmmo;						// +0xfac
 	int		aDefaultAmmo[MMGR_MAX_AMMO];
 
-	int		nNumDefaultMods;
+	int		nNumDefaultMods;						// +0xfd8
 	int		aDefaultMods[MMGR_MAX_MODS];
 
+	int		nBuildNotes;							// +0x1004 "BuildNotes<n>"
+	int		nIdealBuildPoints;						// +0x1008
 };
+
 struct REWARD
 {
 	REWARD() { szName[0] = '\0'; nVal = 0; nDescriptionId = 0; }
@@ -69,6 +120,8 @@ struct REWARD
 };
 
 
+// RETAIL: 0xb674 bytes (MISSION::MISSION, CShell 0x1013c850; the size
+// from debug_new_fn at 0x1013dab0).  Tron has no DescId, NameStr or Photo.
 struct MISSION
 {
 	MISSION();
@@ -77,38 +130,46 @@ struct MISSION
 
 	int		nId;
 	int		nNameId;
-	int		nDescId;
 
-	char	szLayout[MMGR_MAX_FILE_PATH];
-	char	szBriefLayout[MMGR_MAX_FILE_PATH];
+	char	szLayout[MMGR_MAX_FILE_PATH];			// +0xc
+	char	szBriefLayout[MMGR_MAX_FILE_PATH];		// +0x4c
 
-	int		nNumDefaultWeapons;
-	int		aDefaultWeapons[MMGR_MAX_WEAPONS];
+	int					nNumDefaultWeapons;			// +0x8c
+	MISSIONWEAPON		aDefaultWeapons[MMGR_MAX_MISSION_WEAPONS];
 
-	int		nSelectedWeapon;
+	int					nNumIdealWeapons;			// +0x550
+	MISSIONWEAPON		aIdealWeapons[MMGR_MAX_MISSION_WEAPONS];
 
-	int		nNumDefaultAmmo;
+	int					nNumIdealSubroutines;		// +0xa14
+	MISSIONSUBROUTINE	aIdealSubroutines[MMGR_MAX_SUBROUTINES];
+
+	int					nNumIdealProcedurals;		// +0xf28
+	MISSIONPROCEDURAL	aIdealProcedurals[MMGR_MAX_PROCEDURALS];
+
+	int		nSelectedWeapon;						// +0xfec
+
+	int		nNumDefaultAmmo;						// +0xff0
 	int		aDefaultAmmo[MMGR_MAX_AMMO];
 
-	int		nNumDefaultMods;
+	int		nNumDefaultMods;						// +0x101c
 	int		aDefaultMods[MMGR_MAX_MODS];
 
-	int		nNumLevels;
-	LEVEL	aLevels[MMGR_MAX_MISSION_LEVELS];
+	int		nNumLevels;								// +0x1048
+	LEVEL	aLevels[MMGR_MAX_MISSION_LEVELS];		// +0x104c
 
-	int		nNumRewards;
-	REWARD	aRewards[MMGR_MAX_MISSION_REWARDS];
+	int		nNumRewards;							// +0xb0c4
+	REWARD	aRewards[MMGR_MAX_MISSION_REWARDS];		// +0xb0c8
 
-	bool	bResetPlayer;
-
-	std::string sName;
-	std::string sPhoto;
+	int		nIdealBuildPoints;						// +0xb668
+	bool	bResetPlayer;							// +0xb66c
+	int		nNameSeed;								// +0xb670
 
 protected :
-	int		BuildWeaponsList(char *pszStr, int* pArray, int nArrayLen);
-	int		BuildGadgetsList(char *pszStr, int* pArray, int nArrayLen);
 	int		BuildAmmoList(char *pszStr, int* pArray, int nArrayLen);
 	int		BuildModsList(char *pszStr, int* pArray, int nArrayLen);
+	int		BuildWeaponsList(char *pszStr, MISSIONWEAPON* pArray, int nArrayLen);
+	int		BuildSubroutinesList(char *pszStr, MISSIONSUBROUTINE* pArray, int nArrayLen);
+	int		BuildProceduralsList(char *pszStr, MISSIONPROCEDURAL* pArray, int nArrayLen);
 };
 
 

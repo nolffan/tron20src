@@ -207,10 +207,9 @@ LTBOOL CLoadingScreen::Init()
 
 		if( pMission )
 		{
+			// PORT: Tron's MISSION has no NameStr (MissionButeMgr.h).
 			if (pMission->nNameId > 0)
 				m_missionname = LoadTempString(pMission->nNameId);
-			else
-				m_missionname = pMission->sName;
 
 			int nCurLevel = g_pMissionMgr->GetCurrentLevel( );
 			m_levelname = LoadTempString( pMission->aLevels[nCurLevel].nNameId );
@@ -253,10 +252,7 @@ LTBOOL CLoadingScreen::Init()
 			else
 				m_help = "";
 
-			if( !IsCoopMultiplayerGameType( ))
-			{
-				m_photo = pMission->sPhoto;
-			}
+			// PORT: Tron's MISSION has no Photo (MissionButeMgr.h).
 
 
 			bGotMission = true;
@@ -962,10 +958,9 @@ void CLoadingScreen::UpdateMissionInfo()
 
 		if( pMission )
 		{
+			// PORT: Tron's MISSION has no NameStr (MissionButeMgr.h).
 			if (pMission->nNameId > 0)
 				m_missionname = LoadTempString(pMission->nNameId);
-			else
-				m_missionname = pMission->sName;
 
 			int nCurLevel = g_pMissionMgr->GetCurrentLevel( );
 			
@@ -986,10 +981,7 @@ void CLoadingScreen::UpdateMissionInfo()
 			else
 				m_help = "";
 
-			if( !IsCoopMultiplayerGameType( ))
-			{
-				m_photo = pMission->sPhoto;
-			}
+			// PORT: Tron's MISSION has no Photo (MissionButeMgr.h).
 
 		}
 

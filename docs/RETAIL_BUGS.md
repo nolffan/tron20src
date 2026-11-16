@@ -1075,6 +1075,18 @@ and the random index is taken from 0..-1.
 Not fixed yet: the modern build should test for an empty list and clear
 the buffer with its size.
 
+### A mission's weapon list looks up the wrong weapon
+
+CShell.dll 0x1013d3e0, Object.lto 0x1015ec10 (MISSION::BuildWeaponsList,
+Shared/MissionButeMgr.cpp). The function copies each weapon name from the
+list and writes its terminator. Then it gives that terminator character
+(always 0) to CWeaponMgr::GetWeapon, not the name. Thus each weapon in
+"DefaultWeapons" and "IdealWeapons" gets the ID of weapon 0. If weapon 0
+does not exist, the error message gets the character 0 as its "%s"
+argument.
+
+Not fixed yet: the modern build should look up the name.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

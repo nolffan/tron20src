@@ -204,7 +204,7 @@ class CDestructible : public IAggregate
 		void ClearProgressiveDamage( DamageFlags nDamageFlags );
 		LTBOOL IsTakingProgressiveDamage( DamageType DT );
 
-		virtual void HandleDestruction(HOBJECT hDamager, DamageType eDamageType);
+		virtual void HandleDestruction(HOBJECT hDamager, DamageType eDamageType, LTBOOL bTronUnknown30 = LTFALSE);
 		virtual void HandleDestruction(HOBJECT hDamager);
 
         void SetMass(LTFLOAT fMass);

@@ -16,7 +16,6 @@
 
 
 #define MMGR_MISSION_NAMEID				"NameId"
-#define MMGR_MISSION_DESCID				"DescId"
 #define MMGR_MISSION_BRIEFINGID			"BriefingId"
 #define MMGR_MISSION_HELPID				"HelpId"
 #define MMGR_MISSION_RESETPLAYER		"ResetPlayer"
@@ -27,8 +26,12 @@
 #define MMGR_MISSION_AMMO_DEFAULT		"DefaultAmmo"
 #define MMGR_MISSION_MODS_DEFAULT		"DefaultMods"
 #define MMGR_MISSION_SELECTED_WEAPON	"SelectedWeapon"
-#define MMGR_MISSION_NAME_STR			"NameStr"
-#define MMGR_MISSION_PHOTO				"Photo"
+#define MMGR_MISSION_WEAPONS_IDEAL		"IdealWeapons"
+#define MMGR_MISSION_SUBROUTINES_IDEAL	"IdealSubroutines"
+#define MMGR_MISSION_PROCEDURALS_IDEAL	"IdealProcedurals"
+#define MMGR_MISSION_IDEAL_BUILDPOINTS	"IdealBuildPoints"
+#define MMGR_MISSION_NAMESEED			"NameSeed"
+#define MMGR_MISSION_BUILDNOTES			"BuildNotes"
 
 #define MMGR_MISSION_LEVEL				"Level"
 #define MMGR_MISSION_REWARD				"Reward"
@@ -198,27 +201,29 @@ bool CMissionButeMgr::IsMissionLevel(char const* pWorldFile, int & nMissionId, i
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: CShell 0x1013c850.
 MISSION::MISSION()
 {
 	nId					= -1;
 
 	nNameId				= -1;
-	nDescId				= 0;
 	bResetPlayer		= true;
 
 	szLayout[0]			= '\0';
-	szBriefLayout[0]			= '\0';
+	szBriefLayout[0]	= '\0';
 
-	nNumDefaultWeapons	= 0;
-	nNumDefaultAmmo		= 0;
-	nNumDefaultMods		= 0;
+	nNumDefaultWeapons		= 0;
+	nNumIdealWeapons		= 0;
+	nNumIdealSubroutines	= 0;
+	nNumIdealProcedurals	= 0;
+	nNumDefaultAmmo			= 0;
+	nNumDefaultMods			= 0;
+	nIdealBuildPoints		= 0;
 
 	nSelectedWeapon		= -1;
 
-	aDefaultWeapons[0]	= WMGR_INVALID_ID;
 	aDefaultAmmo[0]		= WMGR_INVALID_ID;
 	aDefaultMods[0]		= WMGR_INVALID_ID;
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -229,15 +234,17 @@ MISSION::MISSION()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: CShell 0x1013c950.
 LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 {
     if (!aTagName) return LTFALSE;
 
 	char aAttName[100];
 
-	nNameId			= buteMgr.GetInt(aTagName, MMGR_MISSION_NAMEID);
-	nDescId			= buteMgr.GetInt(aTagName, MMGR_MISSION_DESCID);
-	bResetPlayer	= !!buteMgr.GetInt(aTagName, MMGR_MISSION_RESETPLAYER, 1 );
+	nNameId				= buteMgr.GetInt(aTagName, MMGR_MISSION_NAMEID);
+	nIdealBuildPoints	= buteMgr.GetInt(aTagName, MMGR_MISSION_IDEAL_BUILDPOINTS);
+	bResetPlayer		= !!buteMgr.GetInt(aTagName, MMGR_MISSION_RESETPLAYER, 1 );
+	nNameSeed			= buteMgr.GetInt(aTagName, MMGR_MISSION_NAMESEED, 0 );
 
 	char szStr[512] ="";
 	buteMgr.GetString(aTagName, MMGR_MISSION_OBJECTIVEIDS,szStr,sizeof(szStr));
@@ -247,6 +254,15 @@ LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 
 	buteMgr.GetString(aTagName, MMGR_MISSION_WEAPONS_DEFAULT,szStr,sizeof(szStr));
 	nNumDefaultWeapons = BuildWeaponsList(szStr, aDefaultWeapons, ARRAY_LEN(aDefaultWeapons));
+
+	buteMgr.GetString(aTagName, MMGR_MISSION_WEAPONS_IDEAL,szStr,sizeof(szStr));
+	nNumIdealWeapons = BuildWeaponsList(szStr, aIdealWeapons, ARRAY_LEN(aIdealWeapons));
+
+	buteMgr.GetString(aTagName, MMGR_MISSION_SUBROUTINES_IDEAL,szStr,sizeof(szStr));
+	nNumIdealSubroutines = BuildSubroutinesList(szStr, aIdealSubroutines, ARRAY_LEN(aIdealSubroutines));
+
+	buteMgr.GetString(aTagName, MMGR_MISSION_PROCEDURALS_IDEAL,szStr,sizeof(szStr));
+	nNumIdealProcedurals = BuildProceduralsList(szStr, aIdealProcedurals, ARRAY_LEN(aIdealProcedurals));
 
 	buteMgr.GetString(aTagName, MMGR_MISSION_AMMO_DEFAULT,szStr,sizeof(szStr));
 	nNumDefaultAmmo = BuildAmmoList(szStr, aDefaultAmmo, ARRAY_LEN(aDefaultAmmo));
@@ -264,14 +280,6 @@ LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 			nSelectedWeapon = pWeapon->nId;
 		}
 	}
-
-	//these values are only used for multiplayer games:
-	buteMgr.GetString(aTagName, MMGR_MISSION_NAME_STR,szStr,sizeof(szStr));
-	sName = szStr;
-
-	buteMgr.GetString(aTagName, MMGR_MISSION_PHOTO,szStr,sizeof(szStr));
-	sPhoto = szStr;
-
 
 	nNumLevels = 0;
 
@@ -299,6 +307,27 @@ LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 		aLevels[nNumLevels].nNumDefaultWeapons = BuildWeaponsList( szStr, aLevels[nNumLevels].aDefaultWeapons,
 																   ARRAY_LEN(aLevels[nNumLevels].aDefaultWeapons) );
 
+		// Level ideal weapons...
+
+		sprintf( aAttName, "%s%d%s", MMGR_MISSION_LEVEL, nNumLevels, MMGR_MISSION_WEAPONS_IDEAL );
+		buteMgr.GetString( aTagName, aAttName, " ", szStr, sizeof(szStr) );
+		aLevels[nNumLevels].nNumIdealWeapons = BuildWeaponsList( szStr, aLevels[nNumLevels].aIdealWeapons,
+																 ARRAY_LEN(aLevels[nNumLevels].aIdealWeapons) );
+
+		// Level ideal subroutines...
+
+		sprintf( aAttName, "%s%d%s", MMGR_MISSION_LEVEL, nNumLevels, MMGR_MISSION_SUBROUTINES_IDEAL );
+		buteMgr.GetString( aTagName, aAttName, " ", szStr, sizeof(szStr) );
+		aLevels[nNumLevels].nNumIdealSubroutines = BuildSubroutinesList( szStr, aLevels[nNumLevels].aIdealSubroutines,
+																		 ARRAY_LEN(aLevels[nNumLevels].aIdealSubroutines) );
+
+		// Level ideal procedurals...
+
+		sprintf( aAttName, "%s%d%s", MMGR_MISSION_LEVEL, nNumLevels, MMGR_MISSION_PROCEDURALS_IDEAL );
+		buteMgr.GetString( aTagName, aAttName, " ", szStr, sizeof(szStr) );
+		aLevels[nNumLevels].nNumIdealProcedurals = BuildProceduralsList( szStr, aLevels[nNumLevels].aIdealProcedurals,
+																		 ARRAY_LEN(aLevels[nNumLevels].aIdealProcedurals) );
+
 		// Level default ammo...
 
 		sprintf( aAttName, "%s%d%s", MMGR_MISSION_LEVEL, nNumLevels, MMGR_MISSION_AMMO_DEFAULT );
@@ -312,6 +341,13 @@ LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 		buteMgr.GetString( aTagName, aAttName, " ", szStr, sizeof(szStr) );
 		aLevels[nNumLevels].nNumDefaultMods = BuildModsList( szStr, aLevels[nNumLevels].aDefaultMods,
 															 ARRAY_LEN(aLevels[nNumLevels].aDefaultMods) );
+
+		// RETAIL: the key is "BuildNotes<n>", not "Level<n>BuildNotes".
+		sprintf( aAttName, "%s%d", MMGR_MISSION_BUILDNOTES, nNumLevels );
+		aLevels[nNumLevels].nBuildNotes = buteMgr.GetInt( aTagName, aAttName, 0 );
+
+		sprintf( aAttName, "%s%d%s", MMGR_MISSION_LEVEL, nNumLevels, MMGR_MISSION_IDEAL_BUILDPOINTS );
+		aLevels[nNumLevels].nIdealBuildPoints = buteMgr.GetInt( aTagName, aAttName, 0 );
 
 		nNumLevels++;
 	}
@@ -335,9 +371,6 @@ LTBOOL MISSION::Init(CButeMgr & buteMgr, char* aTagName)
 
 		nNumRewards++;
 	}
-
-
-
 
     return LTTRUE;
 }
@@ -367,55 +400,6 @@ LTBOOL MISSION::Save(CButeMgr & buteMgr, char* aTagName)
 		buteMgr.SetString(aTagName, aAttName,aLevels[n].szLevel);
 	}
     return LTTRUE;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	MISSION::BuildWeaponsList()
-//
-//	PURPOSE:	Builds an array of ints from the string associated with
-//					the given string;
-//
-//	RETURNS:	Number of weapons added to list
-//
-// ----------------------------------------------------------------------- //
-
-int MISSION::BuildWeaponsList(char* pszStr, int* pArray, int nArrayLen)
-{
-	if (!pArray || !pszStr) return 0;
-
-	int  nNumWeapons = 0;
-	char buf[512] = "";
-
-	while (*pszStr == ' ' || *pszStr == '\t')
-		pszStr++;
-
-	if (strlen(pszStr))
-	{
-		SAFE_STRCPY(buf, pszStr);
-		char *pWpnName = strtok(buf,",");
-		while (pWpnName && nNumWeapons < nArrayLen)
-		{
-			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(pWpnName);
-			if (pWeapon)
-			{
-				pArray[nNumWeapons] = pWeapon->nId;
-				nNumWeapons++;
-			}
-			else
-			{
-#ifdef _CLIENTBUILD
-                g_pLTClient->CPrint("Error in %s: Unknown weapon: %s", g_pMissionButeMgr->GetAttributeFile( ),pWpnName);
-#else
-                g_pLTServer->CPrint("Error in %s: Unknown weapon: %s", g_pMissionButeMgr->GetAttributeFile( ),pWpnName);
-#endif
-            }
-			pWpnName = strtok(NULL,",");
-		}
-	}
-
-	return nNumWeapons;
 }
 
 // ----------------------------------------------------------------------- //
@@ -519,12 +503,195 @@ int MISSION::BuildModsList(char *pszStr, int* pArray, int nArrayLen)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	MISSION::BuildWeaponsList()
+//
+//	PURPOSE:	Builds a list of weapons from a string of the form
+//				"Name alpha normal, Name beta infected, ..."
+//
+//	RETURNS:	Number of weapons added to list
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: CShell 0x1013d3e0.  The name of the function is ours.
+int MISSION::BuildWeaponsList(char* pszStr, MISSIONWEAPON* pArray, int nArrayLen)
+{
+	if (!pArray || !pszStr) return 0;
+
+	int  nNumWeapons = 0;
+	char buf[512] = "";
+
+	while (*pszStr == ' ' || *pszStr == '\t')
+		pszStr++;
+
+	if (strlen(pszStr))
+	{
+		SAFE_STRCPY(buf, pszStr);
+		char *pTok = strtok(buf,",");
+		while (pTok && nNumWeapons < nArrayLen)
+		{
+			int i = 0;
+			char *p = pTok;
+			while (isalnum(*p) || *p == '_')
+			{
+				pArray[nNumWeapons].szName[i] = *p++;
+				i++;
+			}
+			pArray[nNumWeapons].szName[i] = '\0';
+
+			// RETAIL: the lookup and the error message use the terminating
+			// character of the name, not the name (docs/RETAIL_BUGS.md).
+			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(pArray[nNumWeapons].szName[i]);
+			if (pWeapon)
+			{
+				pArray[nNumWeapons].nId = pWeapon->nId;
+			}
+			else
+			{
+#ifdef _CLIENTBUILD
+                g_pLTClient->CPrint("Error in %s: Unknown weapon: %s", g_pMissionButeMgr->GetAttributeFile( ),pArray[nNumWeapons].szName[i]);
+#else
+                g_pLTServer->CPrint("Error in %s: Unknown weapon: %s", g_pMissionButeMgr->GetAttributeFile( ),pArray[nNumWeapons].szName[i]);
+#endif
+            }
+
+			while (*p)
+			{
+				while (!isalpha(*p))
+					p++;
+
+				if (!strnicmp(p, "alpha", 5))
+					pArray[nNumWeapons].nVersion = 0;
+				if (!strnicmp(p, "beta", 4))
+					pArray[nNumWeapons].nVersion = 1;
+				if (!strnicmp(p, "gold", 4))
+					pArray[nNumWeapons].nVersion = 2;
+				if (!strnicmp(p, "normal", 6))
+					pArray[nNumWeapons].nCondition = 0;
+				if (!strnicmp(p, "infected", 8) || !strnicmp(p, "corrupted", 9))
+					pArray[nNumWeapons].nCondition = 1;
+
+				while (isalnum(*p) || *p == '_')
+					p++;
+			}
+
+			nNumWeapons++;
+			pTok = strtok(NULL,",");
+		}
+	}
+
+	return nNumWeapons;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	MISSION::BuildSubroutinesList()
+//
+//	PURPOSE:	Builds a list of subroutines from a string of the form
+//				"Name alpha normal, Name beta infected, ..."
+//
+//	RETURNS:	Number of subroutines added to list
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: CShell 0x1013d630.  The name of the function is ours.
+int MISSION::BuildSubroutinesList(char* pszStr, MISSIONSUBROUTINE* pArray, int nArrayLen)
+{
+	if (!pArray || !pszStr) return 0;
+
+	int  nNumSubroutines = 0;
+	char buf[512] = "";
+
+	while (*pszStr == ' ' || *pszStr == '\t')
+		pszStr++;
+
+	if (strlen(pszStr))
+	{
+		SAFE_STRCPY(buf, pszStr);
+		char *pTok = strtok(buf,",");
+		while (pTok && nNumSubroutines < nArrayLen)
+		{
+			int i = 0;
+			char *p = pTok;
+			while (isalnum(*p) || *p == '_')
+			{
+				pArray[nNumSubroutines].szName[i] = *p++;
+				i++;
+			}
+			pArray[nNumSubroutines].szName[i] = '\0';
+
+			while (*p)
+			{
+				while (!isalpha(*p))
+					p++;
+
+				if (!strnicmp(p, "alpha", 5))
+					pArray[nNumSubroutines].nVersion = 0;
+				if (!strnicmp(p, "beta", 4))
+					pArray[nNumSubroutines].nVersion = 1;
+				if (!strnicmp(p, "gold", 4))
+					pArray[nNumSubroutines].nVersion = 2;
+				if (!strnicmp(p, "normal", 6))
+					pArray[nNumSubroutines].nCondition = 0;
+				if (!strnicmp(p, "infected", 8) || !strnicmp(p, "corrupted", 9))
+					pArray[nNumSubroutines].nCondition = 1;
+
+				while (isalnum(*p) || *p == '_')
+					p++;
+			}
+
+			nNumSubroutines++;
+			pTok = strtok(NULL,",");
+		}
+	}
+
+	return nNumSubroutines;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	MISSION::BuildProceduralsList()
+//
+//	PURPOSE:	Builds a list of procedural names from a string
+//
+//	RETURNS:	Number of procedurals added to list
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: CShell 0x1013d840.  The name of the function is ours.
+int MISSION::BuildProceduralsList(char* pszStr, MISSIONPROCEDURAL* pArray, int nArrayLen)
+{
+	if (!pArray || !pszStr) return 0;
+
+	int  nNumProcedurals = 0;
+	char buf[512] = "";
+
+	while (*pszStr == ' ' || *pszStr == '\t')
+		pszStr++;
+
+	if (strlen(pszStr))
+	{
+		SAFE_STRCPY(buf, pszStr);
+		char *pTok = strtok(buf,",");
+		while (pTok && nNumProcedurals < nArrayLen)
+		{
+			SAFE_STRCPY(pArray[nNumProcedurals].szName, pTok);
+			nNumProcedurals++;
+			pTok = strtok(NULL,",");
+		}
+	}
+
+	return nNumProcedurals;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	LEVEL::LEVEL
 //
 //	PURPOSE:	Constructor
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: CShell 0x1013d920.
 LEVEL::LEVEL()
 { 
 	nNameId			= -1;
@@ -533,11 +700,44 @@ LEVEL::LEVEL()
 
 	szLevel[0] = '\0';
 
-	nNumDefaultWeapons	= 0;
-	nNumDefaultAmmo		= 0;
-	nNumDefaultMods		= 0;
+	nNumDefaultWeapons		= 0;
+	nNumIdealWeapons		= 0;
+	nNumIdealSubroutines	= 0;
+	// RETAIL: nNumIdealProcedurals is not set here.
+	nNumDefaultAmmo			= 0;
+	nNumDefaultMods			= 0;
+	nBuildNotes				= 0;
+	nIdealBuildPoints		= 0;
 
-	aDefaultWeapons[0]	= WMGR_INVALID_ID;
 	aDefaultAmmo[0]		= WMGR_INVALID_ID;
 	aDefaultMods[0]		= WMGR_INVALID_ID;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	MISSIONWEAPON::MISSIONWEAPON etc.
+//
+//	PURPOSE:	Constructors
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: CShell 0x1013d9d0, 0x1013d9e0, 0x1013d9f0 (out of line, at the end
+// of the module).
+MISSIONWEAPON::MISSIONWEAPON()
+{
+	szName[0] = '\0';
+	nVersion = 0;
+	nCondition = 0;
+}
+
+MISSIONSUBROUTINE::MISSIONSUBROUTINE()
+{
+	szName[0] = '\0';
+	nVersion = 0;
+	nCondition = 0;
+}
+
+MISSIONPROCEDURAL::MISSIONPROCEDURAL()
+{
+	szName[0] = '\0';
 }
