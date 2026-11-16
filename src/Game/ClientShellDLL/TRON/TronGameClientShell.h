@@ -53,6 +53,9 @@ class CTronGameClientShell : public CGameClientShell
 		// RETAIL: slot 0x90 (0x1009a670): with the console's fx detail level
 		virtual void UpdateInterfaceFX();
 
+		// RETAIL: slot 0x28 (0x10099fa0)
+		virtual void OnEnterWorld();
+
 		// RETAIL: slot 0x8 (0x10099ff0): resets the match managers
 		virtual void OnExitWorld();
 
@@ -78,5 +81,7 @@ class CTronGameClientShell : public CGameClientShell
 		// allocator for client weapons
 		CTronClientWeaponAllocator	m_ClientWeaponAllocator;
 };
+
+extern CTronGameClientShell* g_pTronGameClientShell;
 
 #endif  // __TRON_GAME_CLIENT_SHELL_H__

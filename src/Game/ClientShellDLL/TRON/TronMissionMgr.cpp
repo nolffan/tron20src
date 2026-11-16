@@ -11,7 +11,7 @@
 
 #include "stdafx.h"
 #include "TronMissionMgr.h"
-#include "GameClientShell.h"
+#include "TronGameClientShell.h"
 #include "InterfaceMgr.h"
 #include "ScreenMgr.h"
 #include "ProfileMgr.h"
@@ -85,7 +85,7 @@ inline void TronStrCat(char *pDest, const char *pSrc, uint32 destBytes)
 
 bool CTronMissionMgr::TronUnknownVirtual4( ILTMessage_Read& msg )
 {
-	CircuitButeMgr *pCircuitMgr = g_pGameClientShell->GetCircuitButeMgr();
+	CircuitButeMgr *pCircuitMgr = g_pTronGameClientShell->GetCircuitButeMgr();
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 	CLightCycleGameData *pGameData = g_pLightCycleGameDataMgr->GetCurrent();
 	StringArray &aUnlockedPowerups = pProfile->m_UnlockedPowerups;

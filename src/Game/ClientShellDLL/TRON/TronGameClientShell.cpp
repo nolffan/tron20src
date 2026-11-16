@@ -28,6 +28,11 @@
 // Sample rate
 int g_nSampleRate = 44100;
 
+// RETAIL: 0x1026eda0, set by the constructor and cleared by the destructor
+// (0x10099b12, 0x10099e34); the base shell's g_pGameClientShell is another
+// global. The name is ours.
+CTronGameClientShell* g_pTronGameClientShell = NULL;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	LCFn
@@ -141,7 +146,7 @@ CTronGameClientShell::CTronGameClientShell() : CGameClientShell()
 {
 	// RETAIL: 0x10099b12: the mission manager is a member (Tron's base
 	// shell does not make one)
-	g_pGameClientShell = this;
+	g_pTronGameClientShell = this;
 	m_MissionMgr.Init();
 }
 
@@ -155,6 +160,29 @@ CTronGameClientShell::CTronGameClientShell() : CGameClientShell()
 
 CTronGameClientShell::~CTronGameClientShell()
 {
+	g_pTronGameClientShell = NULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameClientShell::OnEnterWorld
+//
+//	PURPOSE:	RETAIL: 0x10099fa0: no light cycles are left from the last
+//				world, the player's cycle colour is sent again
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::OnEnterWorld()
+{
+	m_LightCycleMgr.RemoveAllCyclists();
+	g_pPlayerMgr->TronUnknownVirtual90(LTNULL, true, true);
+
+	if (IsMultiplayerGame() && GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		g_pGameClientShell->m_bTronUnknown833A = true;
+	}
+
+	CGameClientShell::OnEnterWorld();
 }
 
 // ----------------------------------------------------------------------- //

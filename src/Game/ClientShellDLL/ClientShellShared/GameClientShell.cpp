@@ -1500,9 +1500,7 @@ void CGameClientShell::OnEnterWorld()
 
 	m_vLastReverbPos.Init();
 
-	MirrorSConVar( "RespawnWaitTime", "RespawnWaitTime" );
-	MirrorSConVar( "RespawnMultiWaitTime", "RespawnMultiWaitTime" );
-	MirrorSConVar( "RespawnDoomsdayWaitTime", "RespawnDoomsdayWaitTime" );
+	// RETAIL: Tron mirrors no respawn times here (0x100e3930)
 }
 
 
