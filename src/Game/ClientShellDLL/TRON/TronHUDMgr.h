@@ -45,6 +45,7 @@
 #include "HUDProfiler.h"
 #include "HUDSubChooser.h"
 #include "HUDSecurityCamera.h"
+#include "HUDTronDecision.h"
 #include "HUDScores.h"
 #include "HUDDiscMatches.h"
 #include "HUDDiscScores.h"
@@ -106,6 +107,11 @@ protected:
 	CHUDScores*					m_pScores;
 	CHUDDiscScores*				m_pDiscScores;
 	CHUDDiscMatches*			m_pDiscMatches;
+
+	// RETAIL: Tron's decision window (retail +0xce64, after the profiler;
+	// g_pTronDecision points at it). PORT: at the end until the class is
+	// retail's
+	CHUDTronDecision			m_TronDecision;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 

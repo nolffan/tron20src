@@ -950,6 +950,26 @@ the later in the level it is reset.
 Not fixed yet: the modern build should start the timer with the lifetime
 only.
 
+### The energy claw's range data uses a wrong subroutine name
+
+CShell.dll 0x1001aa70 (CClientWeaponEnergyClaw::GetClawData,
+TRON/ClientWeaponEnergyClaw.cpp). The claw looks for the utility
+subroutine "EnergyClaw" to select the version and state of its range data.
+The subroutine has the name "Energy_claw" (its energy use, 0x1001a680,
+uses that name). The look-up always fails, so the claw always uses the
+alpha, non-corrupt range and in-range FX.
+
+Not fixed yet: the modern build should use "Energy_claw".
+
+### A permission set bin gives a wrong buffer size
+
+CShell.dll 0x1003c000 (CHUDDecisionBin::Init, TRON/HUDTronDecision.cpp).
+For a permission set, Init formats the bin's text into a 128-byte buffer,
+but it gives FormatString a size of 1024. A long translated string can
+write past the buffer on the stack.
+
+Not fixed yet: the modern build should give the size of the buffer.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space

@@ -14,6 +14,7 @@
 #define  _ClientWeaponEnergyClaw_h_INCLUDED_
 
 #include "ClientWeaponContinuousFireBase.h"
+#include "SubroutineDataMgr.h"
 
 class CClientWeaponEnergyClaw : public CClientWeaponContinuousFireBase
 {
@@ -30,6 +31,16 @@ protected:
 
 	virtual float GetEnergyUse();
 	virtual void  TronUnknownVirtual180();
+
+	// RETAIL: 0x1001a7a0..0x1001abd0 (the names are ours)
+	void           UpdateTarget();
+	EnergyClawData GetClawData();
+	float          GetClawRange();
+	void           ShowInRangeFX();
+	void           HideInRangeFX();
+
+	// RETAIL: the subroutine's name read from memory (retail 0x101e6318)
+	static const char* const s_szClawName;
 
 	bool          m_bInRange;		// RETAIL: +0x20c
 };

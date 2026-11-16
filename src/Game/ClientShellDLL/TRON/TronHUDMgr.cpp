@@ -39,6 +39,7 @@ CHUDScores*			g_pScores = LTNULL;	// RETAIL: 0x1026ee04
 // clears it)
 CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
 CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
+CHUDTronDecision*		g_pTronDecision = LTNULL;	// RETAIL: 0x1026edec
 
 // ----------------------------------------------------------------------- //
 //
@@ -101,6 +102,7 @@ LTBOOL CTronHUDMgr::Init()
 	g_pDiscMatches = m_pDiscMatches;
 	g_pLightCycleLives = &m_LightCycleLives;
 	g_pLightCycleRoster = &m_LightCycleRoster;
+	g_pTronDecision = &m_TronDecision;
 
     return CHUDMgr::Init();
 }
@@ -151,6 +153,7 @@ bool CTronHUDMgr::AddItems()
 	AddItem(&m_SubChooser, eGameType);
 	AddItem(&m_Profiler, eGameType);
 	AddItem(&m_SecurityCamera, eGameType);
+	AddItem(&m_TronDecision, eGameType);
 
 	m_Crosshair.Init();
 	m_MatchStats.Init();
@@ -175,6 +178,7 @@ bool CTronHUDMgr::AddItems()
 	m_SubChooser.Init();
 	m_Profiler.Init();
 	m_SecurityCamera.Init();
+	m_TronDecision.Init();
 	m_pScores->Init();
 	m_pDiscScores->Init();
 	m_pDiscMatches->Init();

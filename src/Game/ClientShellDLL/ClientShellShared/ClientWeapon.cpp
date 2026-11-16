@@ -953,6 +953,39 @@ bool CClientWeapon::HandleShowPVAttachmentKey( HLOCALOBJ hObj, ArgList* pArgList
 	return true;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeapon::ShowPVAttachClientFX / HidePVAttachClientFX
+//
+//	PURPOSE:	Show or hide one of the attached FX (RETAIL: Tron's,
+//				0x10130530 and 0x10130560)
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeapon::ShowPVAttachClientFX( int nIndex )
+{
+	if( nIndex >= 0 && nIndex < WM_MAX_PV_ATTACH_CLIENTFX )
+	{
+		if( m_PVAttachClientFX[ nIndex ].IsValid() )
+		{
+			m_bPVAttachClientFXHidden[ nIndex ] = false;
+			m_PVAttachClientFX[ nIndex ].GetInstance()->Show();
+		}
+	}
+}
+
+void CClientWeapon::HidePVAttachClientFX( int nIndex )
+{
+	if( nIndex >= 0 && nIndex < WM_MAX_PV_ATTACH_CLIENTFX )
+	{
+		if( m_PVAttachClientFX[ nIndex ].IsValid() )
+		{
+			m_bPVAttachClientFXHidden[ nIndex ] = true;
+			m_PVAttachClientFX[ nIndex ].GetInstance()->Hide();
+		}
+	}
+}
+
 
 // ----------------------------------------------------------------------- //
 //

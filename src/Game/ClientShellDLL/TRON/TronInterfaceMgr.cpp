@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "MsgIDs.h"
+#include "HUDTronDecision.h"
 #include "TronInterfaceMgr.h"
 #include "TronPlayerMgr.h"
 #include "TronTargetMgr.h"
@@ -255,8 +256,12 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 {
     if (g_pChatInput->IsVisible()) return LTTRUE;
 
-	// PORT: retail lets its CHUDTronDecision (retail global 0x1026edec, not
-	// yet written) take COMMAND_ID_CHOOSE_1..6 here
+	// RETAIL: its CHUDTronDecision takes COMMAND_ID_CHOOSE_1..6 first
+	if (g_pTronDecision->IsVisible() && command >= COMMAND_ID_CHOOSE_1 && command <= COMMAND_ID_CHOOSE_6)
+	{
+		g_pTronDecision->Choose(command - COMMAND_ID_CHOOSE_1);
+		return LTTRUE;
+	}
 
 	// Take appropriate action
 
@@ -497,6 +502,13 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				QueueSubroutinePickup(pName, pState, pCondition);
 			}
             return LTTRUE;
+		}
+
+		// RETAIL: Tron's decision window (0x1009dacc)
+		case MID_DECISION:
+		{
+			g_pTronDecision->Show(pMsg);
+			return LTTRUE;
 		}
 
 		case MID_ADDITIVE_OBTAINED:
