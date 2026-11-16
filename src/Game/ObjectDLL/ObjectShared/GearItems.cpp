@@ -22,7 +22,6 @@ LINKFROM_MODULE( GearItems );
 #define GEARITEM_PICKUP_SOUND	"GearItemPickup"
 #define GEARITEM_RESPAWN_SOUND	"GearItemRespawn"
 
-static const char s_szDefaultRS[] = "RS\\Default.ltb";
  
 #pragma force_active on
 BEGIN_CLASS(GearItem)
@@ -74,15 +73,12 @@ uint32 GearItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
-				if( !ReadProp((ObjectCreateStruct*)pData))
-					return 0;
+				ReadProp((ObjectCreateStruct*)pData);
 			}
 
-			if( fData != PRECREATE_SAVEGAME )
-			{
-				if( !PostPropRead((ObjectCreateStruct*)pData) )
-					return 0;
-			}
+			// RETAIL: Tron's reads the post properties for a save game too and
+			// cannot fail the create (no server restriction; 0x10253147)
+			PostPropRead((ObjectCreateStruct*)pData);
 
 			return dwRet;
 		}
@@ -115,7 +111,7 @@ uint32 GearItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 //
 // ----------------------------------------------------------------------- //
 
-bool GearItem::ReadProp(ObjectCreateStruct *pStruct)
+void GearItem::ReadProp(ObjectCreateStruct *pStruct)
 {
 	GenericProp genProp;
 
@@ -124,14 +120,9 @@ bool GearItem::ReadProp(ObjectCreateStruct *pStruct)
 		GEAR const *pGear = g_pWeaponMgr->GetGear(genProp.m_String);
 		if (pGear)
 		{
-			if( pGear->bServerRestricted )
-				return false;
-
 			m_nGearId = pGear->nId;
 		}
 	}
-
-	return true;
 }
 
 
@@ -143,11 +134,10 @@ bool GearItem::ReadProp(ObjectCreateStruct *pStruct)
 //
 // ----------------------------------------------------------------------- //
 
-bool GearItem::PostPropRead(ObjectCreateStruct *pStruct)
+void GearItem::PostPropRead(ObjectCreateStruct *pStruct)
 {
 	GEAR const *pGear = g_pWeaponMgr->GetGear(m_nGearId);
-	if( !pGear || pGear->bServerRestricted )
-		return false;
+	if (!pGear) return;
 
 	if (pStruct)
 	{
@@ -179,7 +169,6 @@ bool GearItem::PostPropRead(ObjectCreateStruct *pStruct)
         m_bRotate = LTFALSE;
 	}
 
-	return true;
 }
 
 
@@ -281,35 +270,12 @@ void GearItem::PickedUp(ILTMessage_Read *pMsg)
 		}
 	}
 
+	// RETAIL: Tron's MOD and GEAR have no respawn wait skins, render
+	// styles or flags: the pickup does not change its look while it waits
+	// to respawn (NOLF2 1.x does).
 	if (bPickedUp)
 	{
 		PickupItem::PickedUp(pMsg);
-		
-		if( m_bRespawn )
-		{
-			GEAR const *pGear = g_pWeaponMgr->GetGear( m_nGearId );
-			if( !pGear )
-				return;
-
-			// Change the skins and renderstyles to the waiting to respawn files...
-
-			ObjectCreateStruct ocs;
-
-			pGear->blrRespawnWaitSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-			pGear->blrRespawnWaitRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-			if( pGear->blrRespawnWaitRenderStyles.GetNumItems() < 1 )
-				LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-			
-			g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-			// PORT: Tron's PickupItem has no client fx (no SetClientFX)
-
-			// Set our visibility...
-
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, pGear->bRespawnWaitVisible ? FLAG_VISIBLE : 0, FLAG_VISIBLE );
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, pGear->bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
-		}
 	}
 }
 

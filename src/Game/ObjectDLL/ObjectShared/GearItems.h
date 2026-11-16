@@ -36,8 +36,8 @@ class GearItem : public PickupItem
 
 	private :
 
-		bool ReadProp(ObjectCreateStruct *pStruct);
-		bool PostPropRead(ObjectCreateStruct *pStruct);
+		void ReadProp(ObjectCreateStruct *pStruct);
+		void PostPropRead(ObjectCreateStruct *pStruct);
         void InitialUpdate(ILTServer *pServer);
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);

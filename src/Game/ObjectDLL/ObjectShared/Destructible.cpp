@@ -1483,7 +1483,7 @@ LTBOOL CDestructible::AddGear(uint8 nGearId)
 		if (!m_bGearOwned[nGearId])
 		{
 			GEAR const *pGear = g_pWeaponMgr->GetGear(nGearId);
-			if( pGear && !pGear->bServerRestricted )
+			if( pGear )	// RETAIL: Tron's GEAR has no server restriction
 			{
 				if ( pGear->bExclusive)
 				{

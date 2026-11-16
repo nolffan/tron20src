@@ -22,7 +22,6 @@ LINKFROM_MODULE( ModItem );
 #define MODITEM_PICKUP_SOUND	"ModItemPickupSound"
 #define MODITME_RESPAWN_SOUND	"ModItemRespawnSound"
 
-static const char s_szDefaultRS[] = "RS\\Default.ltb";
  
 #pragma force_active on
 BEGIN_CLASS(ModItem)
@@ -73,15 +72,12 @@ uint32 ModItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
 			{
-				if( !ReadProp((ObjectCreateStruct*)pData))
-					return 0;
+				ReadProp((ObjectCreateStruct*)pData);
 			}
 
-			if( fData != PRECREATE_SAVEGAME )
-			{
-				if( !PostPropRead((ObjectCreateStruct*)pData))
-					return 0;
-			}
+			// RETAIL: Tron's reads the post properties for a save game too and
+			// cannot fail the create (no server restriction; 0x10253147)
+			PostPropRead((ObjectCreateStruct*)pData);
 
 			return dwRet;
 		}
@@ -114,20 +110,18 @@ uint32 ModItem::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 //
 // ----------------------------------------------------------------------- //
 
-bool ModItem::ReadProp(ObjectCreateStruct *pStruct)
+void ModItem::ReadProp(ObjectCreateStruct *pStruct)
 {
 	GenericProp genProp;
 
     if (g_pLTServer->GetPropGeneric("ModType", &genProp) == LT_OK)
 	{
 		MOD const *pMod = g_pWeaponMgr->GetMod(genProp.m_String);
-		if( !pMod )
-			return false;
-
-		m_nModId = pMod->nId;
+		if (pMod)
+		{
+			m_nModId = pMod->nId;
+		}
 	}
-
-	return true;
 }
 
 
@@ -139,11 +133,10 @@ bool ModItem::ReadProp(ObjectCreateStruct *pStruct)
 //
 // ----------------------------------------------------------------------- //
 
-bool ModItem::PostPropRead(ObjectCreateStruct *pStruct)
+void ModItem::PostPropRead(ObjectCreateStruct *pStruct)
 {
 	MOD const *pMod = g_pWeaponMgr->GetMod(m_nModId);
-	if( !pMod )
-		return false;
+	if (!pMod) return;
 
 	if (pStruct)
 	{
@@ -177,7 +170,6 @@ bool ModItem::PostPropRead(ObjectCreateStruct *pStruct)
         m_bRotate = LTFALSE;
 	}
 
-	return true;
 }
 
 
@@ -282,35 +274,12 @@ void ModItem::PickedUp(ILTMessage_Read *pMsg)
 		}
 	}
 
+	// RETAIL: Tron's MOD and GEAR have no respawn wait skins, render
+	// styles or flags: the pickup does not change its look while it waits
+	// to respawn (NOLF2 1.x does).
 	if (bPickedUp)
 	{
 		PickupItem::PickedUp(pMsg);
-		
-		if( m_bRespawn )
-		{
-			MOD const *pMod = g_pWeaponMgr->GetMod( m_nModId );
-			if( !pMod )
-				return;
-
-			// Change the skins and renderstyles to the waiting to respawn files...
-
-			ObjectCreateStruct ocs;
-
-			pMod->blrRespawnWaitSkins.CopyList( 0, ocs.m_SkinNames[0], MAX_CS_FILENAME_LEN + 1 );
-			pMod->blrRespawnWaitRenderStyles.CopyList( 0, ocs.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN + 1 );
-
-			if( pMod->blrRespawnWaitRenderStyles.GetNumItems() < 1 )
-				LTStrCpy( ocs.m_RenderStyleNames[0], s_szDefaultRS, ARRAY_LEN( s_szDefaultRS ));
-			
-			g_pCommonLT->SetObjectFilenames( m_hObject, &ocs );
-
-			// PORT: Tron's PickupItem has no client fx (no SetClientFX)
-
-			// Set our visibility...
-
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, pMod->bRespawnWaitVisible ? FLAG_VISIBLE : 0, FLAG_VISIBLE );
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags2, pMod->bRespawnWaitTranslucent ? FLAG2_FORCETRANSLUCENT : 0, FLAG2_FORCETRANSLUCENT );
-		}
 	}
 }
 

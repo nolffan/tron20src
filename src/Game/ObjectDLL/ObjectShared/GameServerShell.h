@@ -382,8 +382,6 @@ class CGameServerShell : public IServerShellStub
 		// Autosave the world
 		void AutoSaveWorld( );
 
-		// Sets up weaponmgr with weapon restrictions.
-		void ApplyWeaponRestrictions( );
 
 
 	protected:
