@@ -37,13 +37,15 @@ typedef struct MBCreate_t
 {
 	MBCreate_t() 
 	{
-		eType = LTMB_OK;
 		pFn  = LTNULL;
 		pData = LTNULL;
 
 		pString = LTNULL;
 		nMaxChars = CLTGUIEditCtrl::kMaxLength; 
 		eInput = CLTGUIEditCtrl::kInputAll;
+
+		// RETAIL: Tron sets the type last (CShell 0x1007bc8d)
+		eType = LTMB_OK;
 	};
 
 	eMBType						eType;
