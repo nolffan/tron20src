@@ -46,8 +46,8 @@ class WeaponItem : public PickupItem
 
 	private :
 
-		bool ReadProp(ObjectCreateStruct *pStruct);
-		bool PostPropRead(ObjectCreateStruct *pStruct);
+		void ReadProp(ObjectCreateStruct *pStruct);
+		void PostPropRead(ObjectCreateStruct *pStruct);
 		void InitialUpdate();
 
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
