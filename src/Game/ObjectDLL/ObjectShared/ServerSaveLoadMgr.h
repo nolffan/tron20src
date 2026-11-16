@@ -82,8 +82,6 @@ class CServerSaveLoadMgr : public CSaveLoadMgr, public IPlayerTrackerReceiver
 		// Get the current state the saveloadmgr is in.
 		SaveDataState	GetSaveDataState( ) { return m_eSaveDataState; }
 
-		// Set if we are waiting to hear back from the clients to begin an autoload.
-		void			WaitForAutoLoadResponses( );
 
 	private:
 
@@ -108,8 +106,6 @@ class CServerSaveLoadMgr : public CSaveLoadMgr, public IPlayerTrackerReceiver
 		// Handle savedata messages in response to AskClientsForSaveData.
 		bool			HandleSaveData( HCLIENT hSender, ILTMessage_Read& msg );
 		
-		// Handle a client being ready to begin an AutoLoad.
-		bool			HandleClientReadyForAutoLoad( HCLIENT hSender, ILTMessage_Read& msg );
 
 		// Clears the client save data from all the players.
 		void			ClearClientSaveData( );
@@ -126,15 +122,11 @@ class CServerSaveLoadMgr : public CSaveLoadMgr, public IPlayerTrackerReceiver
 		// Called by HandleSaveData when all clients have reported savedata.
 		bool			FinishSaveGame( );
 
-		// Called by HandleClientReadyForAutoLoad when all clients have responded.
-		bool			FinishAutoLoad( );
 
 		// Loads a save file.
 		bool			LoadSaveFile( char const* pszSaveIniKey, char const* pszSaveDir, 
 										  char const* pszSaveFile );
 
-		// One of the clients couldn't save
-		void			HandleSaveFailed();
 
 
 
@@ -159,11 +151,8 @@ class CServerSaveLoadMgr : public CSaveLoadMgr, public IPlayerTrackerReceiver
 		// Set in OnPlayerTrackerAbort.  Update polls for it.  Tells us to continue with save.
 		bool			m_bPlayerTrackerAborted;
 
-		bool			m_bWaitingForAutoLoadResponses;
-
-		// Used when waiting for autoload responses from clients.
-		PlayerTracker	m_AutoLoadResponsePlayerTracker;
-
+		// RETAIL: Tron has no autoload response tracker (ctor 0x101c9600:
+		// size 0x38).
 };
 
 #endif // __SERVERSAVELOADMGR_H__

@@ -46,7 +46,6 @@ CServerSaveLoadMgr::CServerSaveLoadMgr( )
 	m_eSaveDataState = eSaveDataStateNone;
 	g_pServerSaveLoadMgr = this;
 	m_bPlayerTrackerAborted = false;
-	m_bWaitingForAutoLoadResponses = false;
 }
 
 
@@ -494,7 +493,6 @@ bool CServerSaveLoadMgr::OnMessage( HCLIENT hSender, ILTMessage_Read& msg )
 	{
 		case MID_LOAD_GAME:					HandleLoadGame					( hSender, msg );	return true; break;
 		case MID_SAVE_DATA:					HandleSaveData					( hSender, msg );	return true; break;
-		case MID_CLIENT_READY_FOR_AUTOLOAD:	HandleClientReadyForAutoLoad	( hSender, msg );	return true; break;	
 		default:
 			break;
 	}
@@ -529,10 +527,11 @@ void CServerSaveLoadMgr::OnPlayerTrackerAbort( )
 
 void CServerSaveLoadMgr::Update( )
 {
+	// RETAIL: 0x101ca2c0: Tron has one player tracker (no autoload
+	// responses).
+
 	// Update the playertracker.
 	m_SaveDataPlayerTracker.Update( );
-
-	m_AutoLoadResponsePlayerTracker.Update();
 
 	// Since all the players dropped out, we can just finish what we
 	// were doing.
@@ -540,16 +539,7 @@ void CServerSaveLoadMgr::Update( )
 	{
 		// Clear the abort signal.
 		m_bPlayerTrackerAborted = false;
-		
-		if( m_SaveDataPlayerTracker.Aborted() )
-		{
-			FinishSaveData( );
-		}
-		
-		if( m_AutoLoadResponsePlayerTracker.Aborted() )
-		{
-			FinishAutoLoad( );
-		}
+		FinishSaveData( );
 	}
 }
 
@@ -905,13 +895,8 @@ bool CServerSaveLoadMgr::HandleSaveData( HCLIENT hSender, ILTMessage_Read& msg )
 {
 	TRACE( "CServerSaveLoadMgr::HandleSaveData: hSender(0x%X)\n", hSender );
 
-	// ignore this if we're not waiting for data
-	if( m_eSaveDataState == eSaveDataStateNone )
-	{
-//		ASSERT( !"CServerSaveLoadMgr::AskClientsForSaveData:  Already in a save state." );
-		return false;
-	}
-
+	// RETAIL: 0x101ca7d0: Tron does not check the save state and has no
+	// "can the client save" flag in the message.
 
 	// Get the playerobj for this client.
     void *pData = g_pLTServer->GetClientUserData(hSender);
@@ -919,13 +904,6 @@ bool CServerSaveLoadMgr::HandleSaveData( HCLIENT hSender, ILTMessage_Read& msg )
 	if( !pPlayerObjSender )
 	{
 		ASSERT( !"CServerSaveLoadMgr::HandleSaveData: Invalid playerobj sender." );
-		return false;
-	}
-
-	//can the client save now?
-	if (!msg.Readbool())
-	{
-		HandleSaveFailed();
 		return false;
 	}
 
@@ -947,26 +925,7 @@ bool CServerSaveLoadMgr::HandleSaveData( HCLIENT hSender, ILTMessage_Read& msg )
 	return FinishSaveData( );
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerSaveLoadMgr::HandleClientReadyForAutoLoad
-//
-//	PURPOSE:	Handle ready for auto load message.
-//
-// --------------------------------------------------------------------------- //
 
-bool CServerSaveLoadMgr::HandleClientReadyForAutoLoad( HCLIENT hSender, ILTMessage_Read& msg )
-{
-	if( !m_bWaitingForAutoLoadResponses )
-		return false;
-	
-	m_AutoLoadResponsePlayerTracker.RemoveClient( hSender );
-
-	if( m_AutoLoadResponsePlayerTracker.IsEmpty() )
-		FinishAutoLoad();
-	
-	return true;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -1250,65 +1209,4 @@ bool CServerSaveLoadMgr::FinishSaveGame( )
 	ClearClientSaveData( );
 
 	return bRet;
-}
-
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerSaveLoadMgr::HandleSaveFailed
-//
-//	PURPOSE:	Handle the case that a client couldn't save
-//
-// --------------------------------------------------------------------------- //
-
-void CServerSaveLoadMgr::HandleSaveFailed()
-{
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_SAVE_GAME );
-	cMsg.Writebool(false);
-	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
-
-	// the save failed so return to a normal state so the game can continue
-	m_bPlayerTrackerAborted = false;
-	m_SaveDataPlayerTracker.Term();
-
-	m_eSaveDataState = eSaveDataStateNone;
-	g_pGameServerShell->PauseGame( false );
-
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerSaveLoadMgr::WaitForAutoLoadResponses
-//
-//	PURPOSE:	Let the 
-//
-// --------------------------------------------------------------------------- //
-
-void CServerSaveLoadMgr::WaitForAutoLoadResponses( )
-{
-	if( m_bWaitingForAutoLoadResponses )
-		return;
-
-	m_bWaitingForAutoLoadResponses = true;
-
-	// Build the list of current clients for the tracker...
-
-	m_AutoLoadResponsePlayerTracker.Init( *this );
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerSaveLoadMgr::HandleSaveFailed
-//
-//	PURPOSE:	Handle the case that a client couldn't save
-//
-// --------------------------------------------------------------------------- //
-
-bool CServerSaveLoadMgr::FinishAutoLoad()
-{
-	m_bWaitingForAutoLoadResponses = false;
-	m_AutoLoadResponsePlayerTracker.Term();
-
-	return ContinueGame();
 }
