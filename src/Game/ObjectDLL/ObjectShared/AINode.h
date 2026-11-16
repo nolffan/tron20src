@@ -375,6 +375,10 @@ class AINodeCover : public AINodeChangeWeapons
 
 		virtual EnumNodeStatus	GetStatus(const LTVector& vPos, HOBJECT hThreat) const;
 
+		// RETAIL: Tron's debug drawing (0x100a1860, 0x100a1a50).
+		virtual int DrawSelf();
+		virtual int HideSelf();
+
 		// Object
 
 		virtual LTBOOL	HasObject() { return !!m_hstrObject; }

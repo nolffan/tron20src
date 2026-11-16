@@ -716,6 +716,34 @@ void AINodeCover::Verify()
 	}
 }
 
+int AINodeCover::DrawSelf()
+{
+	// RETAIL: 0x100a1860 (Tron's): a 2-way corner shows its other side.
+	DebugLineSystem& system = LineSystem::GetSystem(this,"ShowNodeCover");
+	system.Clear();
+
+	LTVector vNodePos;
+	LTRotation rRot;
+	g_pLTServer->GetObjectPos(m_hObject, &vNodePos);
+	g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+
+	if( m_dwFlags & kFlag2WayCorner )
+	{
+		system << LineSystem::Arrow( vNodePos, vNodePos - rRot.Right() * 16.0f, Color::Red );
+	}
+
+	return AINode::DrawSelf();
+}
+
+int AINodeCover::HideSelf()
+{
+	// RETAIL: 0x100a1a50 (Tron's).
+	DebugLineSystem& system = LineSystem::GetSystem(this,"ShowNodeCover");
+	system.Clear();
+
+	return AINode::HideSelf();
+}
+
 EnumNodeStatus AINodeCover::GetStatus(const LTVector& vPos, HOBJECT hThreat) const
 {
 	LTVector vThreatPos;
