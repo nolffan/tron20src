@@ -1176,8 +1176,9 @@ float AILightCycle::GetDistSinceTurn()
 	LIGHT_CYCLE_TRAIL* pTrail = m_pCyclist->pCurTrail;
 	if (!pTrail) return 0.0f;
 
+	if (pTrail->collTrailPoints.size() == 0) return 0.0f;
+
 	uint32 nNumPoints = pTrail->collTrailPoints.size();
-	if (!nNumPoints) return 0.0f;
 	if (nNumPoints < 2) return 0.0f;
 
 	LTVector vPoint = pTrail->collTrailPoints.at(nNumPoints - 2).vPoint;
@@ -2083,7 +2084,12 @@ bool AILightCycle::IsTrailTight()
 				float fPrevLen = (pTrail->collTrailPoints[nNumPoints - 4].vPoint - pTrail->collTrailPoints[nNumPoints - 3].vPoint).Mag();
 				LTVector vLast = pTrail->collTrailPoints[nNumPoints - 2].vPoint - pTrail->collTrailPoints[nNumPoints - 1].vPoint;
 
-				if (fPrevLen <= 15000.0f && vLast.Mag() < fPrevLen)
+				if (fPrevLen > 15000.0f)
+				{
+					return false;
+				}
+
+				if (vLast.Mag() < fPrevLen)
 				{
 					return true;
 				}
@@ -2198,10 +2204,13 @@ static int IsBetween(LTVector p, LTVector a, LTVector b)
 	if (a.x != b.x)
 	{
 		if ((a.x <= p.x && p.x <= b.x) || (a.x >= p.x && p.x >= b.x)) return 1;
-		return 0;
+	}
+	else
+	{
+		if (a.z <= p.z && p.z <= b.z) return 1;
+		if (a.z >= p.z && p.z >= b.z) return 1;
 	}
 
-	if ((a.z <= p.z && p.z <= b.z) || (a.z >= p.z && p.z >= b.z)) return 1;
 	return 0;
 }
 

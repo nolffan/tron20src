@@ -168,6 +168,9 @@ enum ModType
 };
 
 
+// RETAIL: Tron's MOD (0x88 bytes; ctor 0x10108780, InitMembers
+// 0x10108920) has no powerup FX, respawn wait FX, respawn wait skins or
+// render styles and no respawn wait flags (those are NOLF2 1.x additions).
 struct MOD
 {
 	MOD();
@@ -193,17 +196,12 @@ struct MOD
 	char	*szPowerupModel;
 	char	*szPickUpSound;
 	char	*szRespawnSound;
-	char	*szPowerupFX;
-	char	*szRespawnWaitFX;
 	
 	CButeListReader blrAttachSkins;
 	CButeListReader blrPowerupSkins;
 
 	CButeListReader blrAttachRenderStyles;
 	CButeListReader blrPowerupRenderStyles;
-	
-	CButeListReader	blrRespawnWaitSkins;
-	CButeListReader	blrRespawnWaitRenderStyles;
 
 	LTVector vAttachScale;
 
@@ -219,9 +217,6 @@ struct MOD
 	LTBOOL   bIntegrated;
 	LTFLOAT	 fPowerupScale;
 
-	bool	bRespawnWaitVisible;
-	bool	bRespawnWaitTranslucent;
-
 private:
 
 	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
@@ -230,6 +225,9 @@ private:
 typedef CTList<MOD*> ModList;
 
 
+// RETAIL: Tron's GEAR (0x60 bytes; ctor 0x10108ca0, InitMembers
+// 0x10108dc0) has no powerup FX, respawn wait data or server restriction
+// (those are NOLF2 1.x additions).
 struct GEAR
 {
 	GEAR();
@@ -250,14 +248,9 @@ struct GEAR
 	char		*szModel;
 	char		*szPickUpSound;
 	char		*szRespawnSound;
-	char		*szPowerupFX;
-	char		*szRespawnWaitFX;
 
 	CButeListReader blrSkins;
 	CButeListReader blrRenderStyles;
-
-	CButeListReader	blrRespawnWaitSkins;
-	CButeListReader	blrRespawnWaitRenderStyles;
 
 	DamageType	eProtectionType;
     LTFLOAT     fProtection;
@@ -269,19 +262,50 @@ struct GEAR
     LTVector    vScreenTintColor;
     LTFLOAT     fScreenTintTime;
 
-	bool	bRespawnWaitVisible;
-	bool	bRespawnWaitTranslucent;
-
-	// Indicates server option has set restriction.
-	bool	bServerRestricted;
-	bool	bCanServerRestrict;
-
 private:
 
 	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
 };
 
 typedef CTList<GEAR*> GearList;
+
+
+// RETAIL: Tron's: the "DefenseClassData<n>" records of weapons.txt (0x34
+// bytes; ctor 0x10108520, dtor 0x10108550, Init 0x10108590, Override
+// 0x10108630, InitMembers 0x10108660). A WEAPON names one with its
+// "DefenseClassData" attribute. The struct and member names are ours
+// (from the attribute names).
+struct DEFENSECLASSDATA
+{
+	DEFENSECLASSDATA();
+	~DEFENSECLASSDATA();
+
+	LTBOOL		Init(CButeMgr & buteMgr, char* aTagName);
+	LTBOOL		Override(CButeMgr &buteMgr, char *aTagName);
+
+	LTBOOL		bInited;
+
+	int			nId;
+
+	char		*szName;
+
+	LTFLOAT		fStartDefendPercentage;
+	LTFLOAT		fEndDefendPercentage;
+	LTFLOAT		fMaxDefendPercentage;
+	LTFLOAT		fRampUpTimePercent;
+	LTFLOAT		fRampDownTimePercent;
+	LTFLOAT		fOrientationMinDefense;
+	LTFLOAT		fOrientationMaxDefense;
+	LTFLOAT		fOrientationDeadZone;		// radians
+	LTFLOAT		fOrientationMaxZone;		// radians
+
+	char		*szDefendPVFXName;
+
+private:
+
+	void	InitMembers( CButeMgr &buteMgr, char *aTagName );
+};
+
 
 // This struct is used to contain all the animation overrides for a particular
 // ammo type...
@@ -474,9 +498,9 @@ struct WEAPON
 	int		*aAmmoIds;
 	int		nDefaultAmmoId;
 
-	// RETAIL: Tron's: the id of the MOD named by "DefenseClassData" (the
-	// name is ours)
-	int		nDefenseClassModId;
+	// RETAIL: Tron's: the id of the DEFENSECLASSDATA named by
+	// "DefenseClassData" (the name is ours)
+	int		nDefenseClassId;
 
 	int		nNumModIds;
 	int		*aModIds;
@@ -593,6 +617,7 @@ class CWeaponMgr : public CGameButeMgr
 		LTBOOL      IsValidAmmoId(int nAmmoId) const;
 		LTBOOL      IsValidModId(int nModId) const ;
 		LTBOOL      IsValidGearId(int nGearId) const;
+		LTBOOL      IsValidDefenseClassId(int nId) const;	// RETAIL: Tron's
 
 		LTBOOL		IsPlayerWeapon(int nWeaponId) const;
 
@@ -609,6 +634,10 @@ class CWeaponMgr : public CGameButeMgr
 
 		AMMO const   *GetAmmo(int nAmmoId) const;
 		AMMO const   *GetAmmo(char const* pAmmoName) const;
+
+		// RETAIL: Tron's (0x10106720, 0x10106750)
+		DEFENSECLASSDATA const *GetDefenseClass(int nId) const;
+		DEFENSECLASSDATA const *GetDefenseClass(char const* pName) const;
 
 		MOD const    *GetMod(int nModId) const;
 		MOD const    *GetMod(char const* pModName) const;
@@ -645,17 +674,16 @@ class CWeaponMgr : public CGameButeMgr
 		AMMO**				m_pAmmoList;		// All ammo data
 		int32				m_nNumAmmos;
 
+		// RETAIL: Tron's: the defense classes come before the mods (+0x112c,
+		// +0x1130; Init 0x101045b0 fills them)
+		DEFENSECLASSDATA**	m_pDefenseClassList;
+		int32				m_nNumDefenseClasses;
+
 		MOD**				m_pModList;			// All mod data
 		int32				m_nNumMods;
 
 		GEAR**				m_pGearList;		// All gear data
 		int32				m_nNumGear;
-
-		// RETAIL: Tron's: a list and its count between the gear and the weapon
-		// anis (+0x113c, +0x1140; ctor 0x10135e60, lookup by name
-		// 0x101383c0). Not yet identified
-		void**				m_pTronUnknown113C;
-		int32				m_nTronUnknown1140;
 	
 		WEAPONANIS**		m_pWeaponAnisList;	// Weapon Ani overrides
 		int32				m_nNumWeaponAnis;
@@ -801,6 +829,11 @@ inline LTBOOL CWeaponMgr::IsValidModId(int nModId) const
 inline LTBOOL CWeaponMgr::IsValidGearId(int nGearId) const
 {
 	return (LTBOOL) (0 <= nGearId && nGearId < m_nNumGear);
+}
+
+inline LTBOOL CWeaponMgr::IsValidDefenseClassId(int nId) const
+{
+	return (LTBOOL) (0 <= nId && nId < m_nNumDefenseClasses);
 }
 
 inline LTBOOL FiredWeapon(WeaponState eState)

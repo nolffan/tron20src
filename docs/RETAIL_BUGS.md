@@ -1121,6 +1121,16 @@ is the lowest bit of the float's representation, which is 0 for 0.0 and
 1.0. Thus the client always gets false for the flag.
 
 Not fixed yet: the modern build should write the flag as a bool.
+### A defense class override converts its zones to radians again
+
+Object.lto 0x10108660 (DEFENSECLASSDATA::InitMembers, Shared/WeaponMgr.cpp).
+The function reads "OrientationDeadZone" and "OrientationMaxZone" in
+degrees and keeps them in radians. The default value of each read is the
+current member, which is in radians. When an override file
+(LoadOverrideButes) does not give a zone, the function converts the radian
+value again, and the zone becomes approximately 57 times too small.
+
+Not fixed yet: the modern build should give the default in degrees.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

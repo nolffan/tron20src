@@ -39,7 +39,9 @@ static const uint32 s_nSaveVersion  = 0;
 // in the shared code's save and load: with all at Tron's save version, 0,
 // every save takes the newest path.
 char const GAME_NAME[] = "TRON 2.0";
-int const GAME_HANDSHAKE_VER = 0;
+int const GAME_HANDSHAKE_VER_MAJOR = 1;
+int const GAME_HANDSHAKE_VER_MINOR = 18;
+int const GAME_HANDSHAKE_VER = ((GAME_HANDSHAKE_VER_MAJOR << 8) + GAME_HANDSHAKE_VER_MINOR);
 const CVersionMgr::TSaveVersion CVersionMgr::kSaveVersion__1_1 = 0;
 const CVersionMgr::TSaveVersion CVersionMgr::kSaveVersion__1_2 = 0;
 const CVersionMgr::TSaveVersion CVersionMgr::kSaveVersion__1_3 = 0;

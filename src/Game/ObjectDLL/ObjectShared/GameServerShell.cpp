@@ -5437,33 +5437,8 @@ void CGameServerShell::LoadObjectives( ILTMessage_Read *pMsg, uint32 dwLoadFlags
 	m_CompletedObjectives.Load( pMsg );
 	m_Parameters.Load( pMsg );
 }
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameServerShell::ApplyWeaponRestrictions
-//
-//	PURPOSE:	Apply the server game option weapon restrictions.
-//
-// ----------------------------------------------------------------------- //
-
-void CGameServerShell::ApplyWeaponRestrictions( )
-{
-	// RETAIL: Tron's WEAPON and AMMO cannot be server restricted (no such
-	// members)
-
-	StringSet::iterator iter = m_ServerGameOptions.m_setRestrictedGear.begin( );
-	while( iter != m_ServerGameOptions.m_setRestrictedGear.end( ))
-	{
-		std::string const& sValue = *iter;
-		iter++;
-
-		GEAR* pGear = ( GEAR* )g_pWeaponMgr->GetGear( sValue.c_str( ));
-		if( !pGear )
-			continue;
-
-		if( pGear->bCanServerRestrict )
-			pGear->bServerRestricted = true;
-	}
-}
+// RETAIL: Tron's has no CGameServerShell::ApplyWeaponRestrictions: its
+// WEAPON, AMMO and GEAR cannot be server restricted (no such members).
 
 // ----------------------------------------------------------------------- //
 //

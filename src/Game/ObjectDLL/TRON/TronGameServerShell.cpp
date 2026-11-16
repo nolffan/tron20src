@@ -25,11 +25,6 @@
 #define GAMESPY_GAME_NAME		"tron20"
 #define GAMESPY_CDKEY_PRODUCT	670
 
-// RETAIL: the version GameSpy reports (retail 0x1005c245 formats two .data
-// ints, 1 and 18, the second less one); not yet traced to their source
-#define GAMESPY_VERSION_MAJOR	1
-#define GAMESPY_VERSION_MINOR	18
-
 // RETAIL: Tron's message ids for a GameSpy error (retail 0x1005da80); not in
 // MsgIDs.h/NetDefs.h yet (the names are ours)
 #define SERVERAPP_GAMESPYERROR	7	// to the server app
@@ -48,7 +43,8 @@
 // ----------------------------------------------------------------------- //
 CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 {
-	sprintf( m_szGameSpyVersion, "%d.%.3d", GAMESPY_VERSION_MAJOR, GAMESPY_VERSION_MINOR - 1 );
+	// RETAIL: the GameSpy version is the handshake version's (0x1005c231)
+	sprintf( m_szGameSpyVersion, "%d.%.3d", GAME_HANDSHAKE_VER_MAJOR, GAME_HANDSHAKE_VER_MINOR - 1 );
 
 	m_bGameSpyInitialized = false;
 	m_pDiscMatchMgr = LTNULL;
@@ -177,7 +173,16 @@ bool CTronGameServerShell::TronUnknownVirtual4C()
 	if( g_pLTServer->GetUDPSocket( ( uint32* )&hSocket ) != LT_OK )
 		return false;
 
-	char szSecretKey[] = { 't', '9', 'D', '3', 'v', 'B', '\0' };
+	// RETAIL: a 9 byte buffer filled one byte at a time (0x1005d458), as
+	// NOLF2 does
+	char szSecretKey[9];
+	szSecretKey[0] = 't';
+	szSecretKey[1] = '9';
+	szSecretKey[2] = 'D';
+	szSecretKey[3] = '3';
+	szSecretKey[4] = 'v';
+	szSecretKey[5] = 'B';
+	szSecretKey[6] = '\0';
 
 	m_ServerGameOptions.RegisterGameSpyKeys( );
 
@@ -530,6 +535,9 @@ CPlayerObj* CTronGameServerShell::CreatePlayer(HCLIENT hClient, ModelId ePlayerM
 	CTronPlayerObj* pPlayer = NULL;
 	if (hClass)
 	{
+		// RETAIL: the model id goes to the player in the user data
+		// (0x1005ddef), as in NOLF2
+		theStruct.m_UserData = ePlayerModelId;
         pPlayer = (CTronPlayerObj*) g_pLTServer->CreateObject(hClass, &theStruct);
 	}
 
@@ -632,7 +640,7 @@ void CTronGameServerShell::PostStartWorld()
 		m_pDiscMatchMgr->Term();
 		m_pDiscMatchMgr->Reset(m_MultiplayerLevelInfoMgr.GetMaxTeamSize());
 	}
-	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	else if (GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->OnStartWorld();
 	}

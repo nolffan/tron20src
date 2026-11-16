@@ -92,6 +92,11 @@ BinaryBit::BinaryBit() : GameBase(OT_MODEL)
 	m_byPSets = 0;
 	m_bPlayingTransitionAnim = LTFALSE;
 	m_hFX = NULL;
+	m_bTronUnknown90 = true;	// RETAIL: Tron's (0x1001357d)
+
+	// RETAIL: Tron's (0x10013584): the activate type messages use the
+	// special fx id 0x39, as CoreDump's and ArchiveBin's do
+	m_ActivateTypeHandler.Init(this, 0x39);
 }
 
 
@@ -109,10 +114,8 @@ BinaryBit::~BinaryBit()
 	TERMSTRING(m_hstrTurnOnCommand);
 	TERMSTRING(m_hstrTurnOffCommand);
 
-	// Note: We don't remove the FX here because that's done explicitly
-	// before this object is removed. The only other way for this object
-	// to be removed is by the engine when it removes ALL objects
-	// so we don't need to remove our FX in that case.
+	// RETAIL: Tron's removes the FX here, with no test (0x10013643)
+	g_pLTServer->RemoveObject(m_hFX);
 }
 
 // ----------------------------------------------------------------------- //

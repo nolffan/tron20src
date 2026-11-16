@@ -245,7 +245,9 @@ uint32 Finder::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 			uint32 dwPos = pMsg->Tell();
 			uint32 dwRet = CScanner::ObjectMessageFn(hSender, pMsg);
-			pMsg->SeekTo(dwPos);
+			// RETAIL: a relative Seek, not SeekTo (0x1001bdc3); the position
+			// is 0 here, so the result is the same
+			pMsg->Seek(dwPos);
 
 			DamageStruct damage;
 			damage.InitFromMessage(pMsg);
@@ -1559,11 +1561,12 @@ LTBOOL Finder::UpdateTargets()
 
 LTBOOL Finder::AddTarget(HOBJECT hObj, LTFLOAT fTime)
 {
-	CTimer timer;
-
 	// RETAIL bug: a time, not a duration: the timer's countdown is the
-	// game time + 2 * fTime - now, which UpdateTargets compares with now
-	timer.Start(g_pLTServer->GetTime() + fTime);
+	// game time + 2 * fTime - now, which UpdateTargets compares with now.
+	// RETAIL: the time is computed before the timer is made (0x1001f7d3)
+	LTFLOAT fEndTime = g_pLTServer->GetTime() + fTime;
+	CTimer timer;
+	timer.Start(fEndTime);
 
 	m_lstTargets.push_back(FinderTarget(timer, hObj));
 

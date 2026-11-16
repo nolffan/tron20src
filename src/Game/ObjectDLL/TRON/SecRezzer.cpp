@@ -119,9 +119,8 @@ SecRezzer::SecRezzer() : Spawner(),
 
 	AddAggregate(&m_damage);
 	m_damage.SetCanDamage(LTFALSE);
-	// RETAIL: also clears a member of m_damage (retail 0x10044b58, +0x70c
-	// of retail's CDestructibleModel: the one its constructor sets to 1,
-	// its m_bRemoveOnDeath); not done until CDestructibleModel is retail's
+	// RETAIL: also clears m_damage's m_bRemoveOnDeath (0x10044b58)
+	m_damage.m_bRemoveOnDeath = LTFALSE;
 
 	m_hHook = LTNULL;
 

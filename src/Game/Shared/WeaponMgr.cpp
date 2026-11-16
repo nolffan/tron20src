@@ -221,6 +221,21 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_GEAR_RESPAWNWAITVISIBLE		"RespawnWaitVisible"
 #define WMGR_GEAR_RESPAWNWAITTRANSLUCENT	"RespawnWaitTranslucent"
 
+// RETAIL: Tron's: the defense class records (names of the attributes from
+// retail's strings; the macro names are ours)
+#define WMGR_DEFENSECLASS_TAG				"DefenseClassData"
+#define WMGR_DEFENSECLASS_NAME				"Name"
+#define WMGR_DEFENSECLASS_STARTDEFEND		"StartDefendPercentage"
+#define WMGR_DEFENSECLASS_ENDDEFEND			"EndDefendPercentage"
+#define WMGR_DEFENSECLASS_MAXDEFEND			"MaxDefendPercentage"
+#define WMGR_DEFENSECLASS_RAMPUPTIME		"RampUpTimePercent"
+#define WMGR_DEFENSECLASS_RAMPDOWNTIME		"RampDownTimePercent"
+#define WMGR_DEFENSECLASS_ORIENTMINDEFENSE	"OrientationMinDefense"
+#define WMGR_DEFENSECLASS_ORIENTMAXDEFENSE	"OrientationMaxDefense"
+#define WMGR_DEFENSECLASS_ORIENTDEADZONE	"OrientationDeadZone"
+#define WMGR_DEFENSECLASS_ORIENTMAXZONE		"OrientationMaxZone"
+#define WMGR_DEFENSECLASS_DEFENDPVFXNAME	"DefendPVFXName"
+
 #define WMGR_WEAPONANI_TAG			"WeaponAnis"
 
 #define WMGR_WEAPONANI_NAME			"Name"
@@ -233,6 +248,11 @@ extern CGameClientShell* g_pGameClientShell;
 #define WMGR_MULTI_TAG			"Multiplayer"
 #define WMGR_MULTI_DEFAULTS		"DefaultWeapons"
 
+
+// RETAIL: the defense class list type is local to this file: in the header
+// it changes the stack layout VC6 gives CGameClientShell::InitSound (CShell
+// 0x100e2270)
+typedef CTList<DEFENSECLASSDATA*> DefenseClassDataList;
 
 static char s_aTagName[30];
 static char s_aAttName[100];
@@ -296,14 +316,14 @@ CWeaponMgr::CWeaponMgr()
 	m_pAmmoList = LTNULL;
 	m_nNumAmmos = 0;
 
+	m_pDefenseClassList = LTNULL;	// RETAIL: Tron's
+	m_nNumDefenseClasses = 0;
+
 	m_pModList = LTNULL;
 	m_nNumMods = 0;
 
 	m_pGearList = LTNULL;
 	m_nNumGear = 0;
-
-	m_pTronUnknown113C = LTNULL;	// RETAIL: Tron's
-	m_nTronUnknown1140 = 0;
 
 	m_pWeaponAnisList = LTNULL;
 	m_nNumWeaponAnis = 0;
@@ -529,6 +549,56 @@ LTBOOL CWeaponMgr::Init(const char* szAttributeFile)
 				i++;
 			}
 			pCurWeaponAni = tempWeaponAniList.GetItem(TLIT_NEXT);
+		}
+	}
+
+
+	// RETAIL: Tron's: read in the properties for each defense class...
+
+	DefenseClassDataList tempDefenseClassList;
+	tempDefenseClassList.Init(LTFALSE);
+
+	m_nNumDefenseClasses = 0;
+	sprintf(s_aTagName, "%s%d", WMGR_DEFENSECLASS_TAG, m_nNumDefenseClasses);
+
+	while (m_buteMgr.Exist(s_aTagName))
+	{
+		DEFENSECLASSDATA* pDefenseClass = debug_new(DEFENSECLASSDATA);
+
+		if (pDefenseClass && pDefenseClass->Init(m_buteMgr, s_aTagName))
+		{
+			pDefenseClass->nId = m_nNumDefenseClasses;
+			tempDefenseClassList.AddTail(pDefenseClass);
+		}
+		else
+		{
+			debug_delete(pDefenseClass);
+			return LTFALSE;
+		}
+
+		m_nNumDefenseClasses++;
+		sprintf(s_aTagName, "%s%d", WMGR_DEFENSECLASS_TAG, m_nNumDefenseClasses);
+	}
+
+	// Build our defense class array...
+
+	if (m_nNumDefenseClasses > 0)
+	{
+		m_pDefenseClassList = debug_newa(DEFENSECLASSDATA*, m_nNumDefenseClasses);
+		if (!m_pDefenseClassList) return LTFALSE;
+
+		DEFENSECLASSDATA **pCurDefenseClass  = LTNULL;
+		pCurDefenseClass = tempDefenseClassList.GetItem(TLIT_FIRST);
+
+		int i=0;
+		while (pCurDefenseClass)
+		{	
+			if (*pCurDefenseClass)
+			{
+				m_pDefenseClassList[i] = (*pCurDefenseClass);
+				i++;
+			}
+			pCurDefenseClass = tempDefenseClassList.GetItem(TLIT_NEXT);
 		}
 	}
 
@@ -786,121 +856,104 @@ LTBOOL CWeaponMgr::LoadOverrideButes( const char *szAttributeFile /*=WEAPON_DEFA
 
 	char szName[WMGR_MAX_NAME_LENGTH] = {0};
 
+	// RETAIL: Tron's loops over the records it has already (0x10105eaf), in
+	// the order Init reads them.
 
 	// Read in the properties for each mod...
-	
-	MOD *pMod = LTNULL;
-	int nNum = 0;
 
-	while( true )
+	for( int nMod = 0; nMod < m_nNumMods; ++nMod )
 	{
-		sprintf( s_aTagName, "%s%d", WMGR_MOD_TAG, nNum );
+		sprintf( s_aTagName, "%s%d", WMGR_MOD_TAG, nMod );
 		m_buteMgr.GetString( s_aTagName, WMGR_MOD_NAME, "", szName, sizeof( szName ));
-		if( !m_buteMgr.Success( ))
-			break;
 
-		if( szName[0] )
+		if( m_buteMgr.Success( ) && szName[0] )
 		{
-			pMod = const_cast<MOD*>(GetMod( szName ));
+			MOD *pMod = const_cast<MOD*>(GetMod( szName ));
 			if( pMod )
 				pMod->Override( m_buteMgr, s_aTagName );
 		}
-
-		++nNum;
 	}
 
 
 	// Read in the properties for each gear...
 
-	GEAR *pGear = LTNULL;
-	nNum = 0;
-
-	while( true )
+	for( int nGear = 0; nGear < m_nNumGear; ++nGear )
 	{
-		sprintf( s_aTagName, "%s%d", WMGR_GEAR_TAG, nNum );
+		sprintf( s_aTagName, "%s%d", WMGR_GEAR_TAG, nGear );
 		m_buteMgr.GetString( s_aTagName, WMGR_GEAR_NAME, "", szName, sizeof( szName ));
-		if( !m_buteMgr.Success( ))
-			break;
 
-		if( szName[0] )
+		if( m_buteMgr.Success( ) && szName[0] )
 		{
-			pGear = const_cast<GEAR*>(GetGear( szName ));
+			GEAR *pGear = const_cast<GEAR*>(GetGear( szName ));
 			if( pGear )
 				pGear->Override( m_buteMgr, s_aTagName );
 		}
-
-		++nNum;
 	}
 
 
 	// Read in the properties for each weaponanis...
-	
-	WEAPONANIS *pWeaponAnis = LTNULL;
-	nNum = 0;
 
-	while( true )
+	for( int nWeaponAnis = 0; nWeaponAnis < m_nNumWeaponAnis; ++nWeaponAnis )
 	{
-		sprintf( s_aTagName, "%s%d", WMGR_WEAPONANI_TAG, nNum );
+		sprintf( s_aTagName, "%s%d", WMGR_WEAPONANI_TAG, nWeaponAnis );
 		m_buteMgr.GetString( s_aTagName, WMGR_WEAPONANI_NAME, "", szName, sizeof( szName ));
-		if( !m_buteMgr.Success( ))
-			break;
 
-		if( szName[0] )
+		if( m_buteMgr.Success( ) && szName[0] )
 		{
-			pWeaponAnis = const_cast<WEAPONANIS*>(GetWeaponAnis( szName ));
+			WEAPONANIS *pWeaponAnis = const_cast<WEAPONANIS*>(GetWeaponAnis( szName ));
 			if( pWeaponAnis )
 				pWeaponAnis->Override( m_buteMgr, s_aTagName );
 		}
+	}
 
-		++nNum;
+
+	// RETAIL: Tron's: read in the properties for each defense class...
+
+	for( int nDefenseClass = 0; nDefenseClass < m_nNumDefenseClasses; ++nDefenseClass )
+	{
+		sprintf( s_aTagName, "%s%d", WMGR_DEFENSECLASS_TAG, nDefenseClass );
+		m_buteMgr.GetString( s_aTagName, WMGR_DEFENSECLASS_NAME, "", szName, sizeof( szName ));
+
+		if( m_buteMgr.Success( ) && szName[0] )
+		{
+			DEFENSECLASSDATA *pDefenseClass = const_cast<DEFENSECLASSDATA*>(GetDefenseClass( szName ));
+			if( pDefenseClass )
+				pDefenseClass->Override( m_buteMgr, s_aTagName );
+		}
 	}
 
 
 	// Read in the properties for each ammo...
 
-	AMMO *pAmmo = LTNULL;
-	nNum = 0;
-	
-	while( true )
+	for( int nAmmo = 0; nAmmo < m_nNumAmmos; ++nAmmo )
 	{
-		sprintf( s_aTagName, "%s%d", WMGR_AMMO_TAG, nNum );
+		sprintf( s_aTagName, "%s%d", WMGR_AMMO_TAG, nAmmo );
 		m_buteMgr.GetString( s_aTagName, WMGR_AMMO_NAME, "", szName, sizeof( szName ));
-		if( !m_buteMgr.Success( ))
-			break;
 
-		if( szName[0] )
+		if( m_buteMgr.Success( ) && szName[0] )
 		{
-			pAmmo = const_cast<AMMO*>(GetAmmo( szName ));
+			AMMO *pAmmo = const_cast<AMMO*>(GetAmmo( szName ));
 			if( pAmmo )
 				pAmmo->Override( m_buteMgr, s_aTagName );
 		}
-		
-		++nNum;
 	}
 
-	
+
 	// Read in the properties for each weapon...
 
-	WEAPON	*pWeapon = LTNULL;
-	nNum = 0;
-
-	while( true )
+	for( int nWeapon = 0; nWeapon < m_nNumWeapons; ++nWeapon )
 	{
-		sprintf(s_aTagName, "%s%d", WMGR_WEAPON_TAG, nNum);
+		sprintf( s_aTagName, "%s%d", WMGR_WEAPON_TAG, nWeapon );
 		m_buteMgr.GetString( s_aTagName, WMGR_WEAPON_NAME, "", szName, sizeof( szName ));
-		if( !m_buteMgr.Success( ))
-			break;
 
-		if( szName[0] )
+		if( m_buteMgr.Success( ) && szName[0] )
 		{
-			pWeapon = const_cast<WEAPON*>(GetWeapon( szName ));
+			WEAPON *pWeapon = const_cast<WEAPON*>(GetWeapon( szName ));
 			if( pWeapon )
 				pWeapon->Override( m_buteMgr, s_aTagName );
 		}
-
-		++nNum;
-		sprintf(s_aTagName, "%s%d", WMGR_WEAPON_TAG, nNum);
 	}
+
 
 	// Free up the bute mgr's memory...
 
@@ -947,6 +1000,19 @@ void CWeaponMgr::ClearLists()
 		debug_deletea(m_pAmmoList);
 		m_pAmmoList = LTNULL;
 		m_nNumAmmos = 0;
+	}
+
+	// RETAIL: Tron's
+	if (m_pDefenseClassList)
+	{
+		for (int i=0; i < m_nNumDefenseClasses; i++)
+		{
+			debug_delete(m_pDefenseClassList[i]);
+		}
+
+		debug_deletea(m_pDefenseClassList);
+		m_pDefenseClassList = LTNULL;
+		m_nNumDefenseClasses = 0;
 	}
 
 	if (m_pModList)
@@ -1226,6 +1292,46 @@ AMMO const *CWeaponMgr::GetAmmo(char const* pAmmoName) const
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CWeaponMgr::GetDefenseClass
+//
+//	PURPOSE:	Get the specified defense class struct (RETAIL: Tron's,
+//				0x10106720)
+//
+// ----------------------------------------------------------------------- //
+
+DEFENSECLASSDATA const *CWeaponMgr::GetDefenseClass(int nId) const
+{
+	if (IsValidDefenseClassId(nId)) return m_pDefenseClassList[nId];
+
+	return LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeaponMgr::GetDefenseClass
+//
+//	PURPOSE:	Get the specified defense class struct (RETAIL: Tron's,
+//				0x10106750)
+//
+// ----------------------------------------------------------------------- //
+
+DEFENSECLASSDATA const *CWeaponMgr::GetDefenseClass(char const* pName) const
+{
+	if (!pName) return LTNULL;
+
+	for (int i=0; i < m_nNumDefenseClasses; i++)
+	{
+		if (m_pDefenseClassList[i] && m_pDefenseClassList[i]->szName[0] && (_stricmp(m_pDefenseClassList[i]->szName, pName) == 0))
+		{
+			return m_pDefenseClassList[i];
+		}
+	}
+
+	return LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CWeaponMgr::GetMod
 //
 //	PURPOSE:	Get the specified mod struct
@@ -1435,7 +1541,7 @@ WEAPON::WEAPON()
 	nNumAmmoIds		= 0;
 	aAmmoIds			= LTNULL;
 	
-	nDefenseClassModId	= WMGR_INVALID_ID;	// RETAIL: Tron's
+	nDefenseClassId		= WMGR_INVALID_ID;	// RETAIL: Tron's
 
 	nDefaultAmmoId		= 0;
 
@@ -1614,16 +1720,17 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	bHideWeaponWhileClipEmpty = (LTBOOL) buteMgr.GetInt(aTagName, WMGR_WEAPON_HIDEWHILECLIPEMPTY, bHideWeaponWhileClipEmpty);
 	bTranslucent		= buteMgr.GetBool(aTagName, WMGR_WEAPON_TRANSLUCENT, bTranslucent);
 
-	// RETAIL: Tron's: the MOD named by "DefenseClassData"
+	// RETAIL: Tron's: the DEFENSECLASSDATA named by "DefenseClassData"
+	// (0x101072c9 calls GetDefenseClass by name)
 	{
 		char szDefenseClass[256];
 		buteMgr.GetString(aTagName, WMGR_WEAPON_DEFENSECLASSDATA, "", szDefenseClass, sizeof(szDefenseClass));
 		if( buteMgr.Success( ))
 		{
-			MOD const *pMod = g_pWeaponMgr->GetMod(szDefenseClass);
-			if( pMod )
+			DEFENSECLASSDATA const *pDefenseClass = g_pWeaponMgr->GetDefenseClass(szDefenseClass);
+			if( pDefenseClass )
 			{
-				nDefenseClassModId = pMod->nId;
+				nDefenseClassId = pDefenseClass->nId;
 			}
 		}
 	}
@@ -2434,6 +2541,132 @@ std::string	AMMO::GetUnselectedIcon() const
 
 /////////////////////////////////////////////////////////////////////////////
 //
+//	D E F E N S E  C L A S S  Related functions...
+//
+//	RETAIL: Tron's (0x10108520-0x1010877a); the names are ours.
+//
+/////////////////////////////////////////////////////////////////////////////
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DEFENSECLASSDATA::DEFENSECLASSDATA
+//
+//	PURPOSE:	Constructor
+//
+// ----------------------------------------------------------------------- //
+
+DEFENSECLASSDATA::DEFENSECLASSDATA()
+{
+	bInited = LTFALSE;
+
+	nId		= WMGR_INVALID_ID;
+
+	szName	= LTNULL;
+
+	fStartDefendPercentage	= 0.0f;
+	fEndDefendPercentage	= 0.0f;
+	fMaxDefendPercentage	= 0.0f;
+	fRampUpTimePercent		= 0.0f;
+	fRampDownTimePercent	= 0.0f;
+	fOrientationMinDefense	= 0.0f;
+	fOrientationMaxDefense	= 0.0f;
+	fOrientationDeadZone	= 0.0f;
+	fOrientationMaxZone		= 0.0f;
+
+	szDefendPVFXName = LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DEFENSECLASSDATA::~DEFENSECLASSDATA
+//
+//	PURPOSE:	Destructor
+//
+// ----------------------------------------------------------------------- //
+
+DEFENSECLASSDATA::~DEFENSECLASSDATA()
+{
+	if( szName )
+	{
+		debug_deletea( szName );
+		szName = LTNULL;
+	}
+
+	if( szDefendPVFXName )
+	{
+		debug_deletea( szDefendPVFXName );
+		szDefendPVFXName = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DEFENSECLASSDATA::InitMembers
+//
+//	PURPOSE:	Set the member vars (also for an override)
+//
+// ----------------------------------------------------------------------- //
+
+void DEFENSECLASSDATA::InitMembers( CButeMgr &buteMgr, char *aTagName )
+{
+	fStartDefendPercentage	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_STARTDEFEND, fStartDefendPercentage );
+	fEndDefendPercentage	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ENDDEFEND, fEndDefendPercentage );
+	fMaxDefendPercentage	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_MAXDEFEND, fMaxDefendPercentage );
+	fRampUpTimePercent		= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_RAMPUPTIME, fRampUpTimePercent );
+	fRampDownTimePercent	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_RAMPDOWNTIME, fRampDownTimePercent );
+	fOrientationMinDefense	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTMINDEFENSE, fOrientationMinDefense );
+	fOrientationMaxDefense	= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTMAXDEFENSE, fOrientationMaxDefense );
+
+	// RETAIL: the file gives the zones in degrees. The default is the
+	// current value, which is in radians already (docs/RETAIL_BUGS.md)
+	fOrientationDeadZone	= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTDEADZONE, fOrientationDeadZone ) ) );
+	fOrientationMaxZone		= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTMAXZONE, fOrientationMaxZone ) ) );
+
+	GetStringIfExist( buteMgr, aTagName, WMGR_DEFENSECLASS_DEFENDPVFXNAME, &szDefendPVFXName, WMGR_MAX_NAME_LENGTH );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DEFENSECLASSDATA::Init
+//
+//	PURPOSE:	Build the defense class struct
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL DEFENSECLASSDATA::Init(CButeMgr & buteMgr, char* aTagName)
+{
+    if (!aTagName) return LTFALSE;
+	if( bInited ) return LTFALSE;
+
+    bInited = LTTRUE;
+
+	szName = GetString( buteMgr, aTagName, WMGR_DEFENSECLASS_NAME, WMGR_MAX_NAME_LENGTH );
+
+	InitMembers( buteMgr, aTagName );
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	DEFENSECLASSDATA::Override
+//
+//	PURPOSE:	Allow the defense class to override its data
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL DEFENSECLASSDATA::Override( CButeMgr &buteMgr, char *aTagName )
+{
+	if( !aTagName || !bInited ) return LTFALSE;
+
+	InitMembers( buteMgr, aTagName );
+
+    return LTTRUE;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 //	M O D Related functions...
 //
 /////////////////////////////////////////////////////////////////////////////
@@ -2463,8 +2696,6 @@ MOD::MOD()
 	szPowerupModel		= LTNULL;
 	szPickUpSound		= LTNULL;
 	szRespawnSound		= LTNULL;
-	szPowerupFX			= LTNULL;
-	szRespawnWaitFX		= LTNULL;
 
     fPowerupScale		=	1.0f;
 	vAttachScale.Init(1, 1, 1);
@@ -2479,9 +2710,6 @@ MOD::MOD()
 
 	fScreenTintTime	= 0.0f;
  	vScreenTintColor.Init();
-
-	bRespawnWaitVisible		= false;
-	bRespawnWaitTranslucent	= false;
 }
 
 
@@ -2506,8 +2734,6 @@ MOD::~MOD()
 	debug_deletea( szPowerupModel );
 	debug_deletea( szPickUpSound );
 	debug_deletea( szRespawnSound );
-	debug_deletea( szPowerupFX );
-	debug_deletea( szRespawnWaitFX );
 }
 
 
@@ -2548,8 +2774,6 @@ void MOD::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	GetStringIfExist( buteMgr, aTagName, WMGR_MOD_POWERUPMODEL, &szPowerupModel, WMGR_MAX_FILE_PATH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_MOD_PICKUPSND, &szPickUpSound, WMGR_MAX_FILE_PATH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_MOD_RESPAWNSND, &szRespawnSound, WMGR_MAX_FILE_PATH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_MOD_POWERUPFX, &szPowerupFX, WMGR_MAX_NAME_LENGTH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_MOD_RESPAWNWAITFX, &szRespawnWaitFX, WMGR_MAX_NAME_LENGTH );
 	
 		
 	// The bute list reader will delete the list if one already exists
@@ -2562,12 +2786,6 @@ void MOD::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	blrPowerupSkins.Read(&buteMgr, aTagName, WMGR_MOD_POWERUPSKIN, WMGR_MAX_FILE_PATH);
 	blrPowerupRenderStyles.Read(&buteMgr, aTagName, WMGR_MOD_POWERUPRENDERSTYLE, WMGR_MAX_FILE_PATH);
-
-	blrRespawnWaitSkins.Read( &buteMgr, aTagName, WMGR_MOD_RESPAWNWAITSKIN, WMGR_MAX_FILE_PATH );
-	blrRespawnWaitRenderStyles.Read( &buteMgr, aTagName, WMGR_MOD_RESPAWNWAITRENDERSTYLE, WMGR_MAX_FILE_PATH );
-
-	bRespawnWaitVisible		= !!(buteMgr.GetInt( aTagName, WMGR_MOD_RESPAWNWAITVISIBLE, bRespawnWaitVisible ));
-	bRespawnWaitTranslucent	= !!(buteMgr.GetInt( aTagName, WMGR_MOD_RESPAWNWAITTRANSLUCENT, bRespawnWaitTranslucent ));
 }
 
 // ----------------------------------------------------------------------- //
@@ -2678,8 +2896,6 @@ GEAR::GEAR()
 	szModel				= LTNULL;
 	szPickUpSound		= LTNULL;
 	szRespawnSound		= LTNULL;
-	szPowerupFX			= LTNULL;
-	szRespawnWaitFX		= LTNULL;
 
 	eProtectionType	= DT_INVALID;
 	fProtection		= 0.0f;
@@ -2691,12 +2907,6 @@ GEAR::GEAR()
     bExclusive      = LTFALSE;
 
 	vScreenTintColor.Init();
-
-	bRespawnWaitVisible		= false;
-	bRespawnWaitTranslucent	= false;
-
-	bServerRestricted = false;
-	bCanServerRestrict = true;
 }
 
 
@@ -2717,8 +2927,6 @@ GEAR::~GEAR()
 	debug_deletea( szModel );
 	debug_deletea( szPickUpSound );
 	debug_deletea( szRespawnSound );
-	debug_deletea( szPowerupFX );
-	debug_deletea( szRespawnWaitFX );
 }
 
 
@@ -2736,13 +2944,11 @@ void GEAR::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	ASSERT( aTagName != LTNULL );
 
 	// Use the members as the default value incase the attribute doesn't exist...
-	char const* pszValue = "";
 
 	nNameId				= buteMgr.GetInt( aTagName, WMGR_GEAR_NAMEID, nNameId );
 	nDescriptionId		= buteMgr.GetInt( aTagName, WMGR_GEAR_DESCRIPTIONID, nDescriptionId );
-	pszValue = buteMgr.GetString( aTagName, WMGR_GEAR_PROTECTTYPE, "" );
-	if( pszValue[0] )
-		eProtectionType       = StringToDamageType( pszValue );
+	// RETAIL: Tron's reads the protection type as a number (0x10108e08)
+	eProtectionType		= (DamageType) buteMgr.GetInt( aTagName, WMGR_GEAR_PROTECTTYPE, eProtectionType );
     bSelectable			= (LTBOOL) buteMgr.GetInt( aTagName, WMGR_GEAR_SELECTABLE, bSelectable );
     bExclusive			= (LTBOOL) buteMgr.GetInt( aTagName, WMGR_GEAR_EXCLUSIVE, bExclusive );
     fProtection			= (LTFLOAT) buteMgr.GetDouble( aTagName, WMGR_GEAR_PROTECTION, fProtection );
@@ -2764,8 +2970,6 @@ void GEAR::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	GetStringIfExist( buteMgr, aTagName, WMGR_GEAR_MODEL, &szModel, WMGR_MAX_FILE_PATH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_GEAR_PICKUPSND, &szPickUpSound, WMGR_MAX_FILE_PATH );
 	GetStringIfExist( buteMgr, aTagName, WMGR_GEAR_RESPAWNSND, &szRespawnSound, WMGR_MAX_FILE_PATH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_GEAR_POWERUPFX, &szPowerupFX, WMGR_MAX_NAME_LENGTH );
-	GetStringIfExist( buteMgr, aTagName, WMGR_GEAR_RESPAWNWAITFX, &szRespawnWaitFX, WMGR_MAX_NAME_LENGTH );
 
 
 	// The bute list reader will delete the list if one already exists
@@ -2773,14 +2977,6 @@ void GEAR::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	blrSkins.Read(&buteMgr, aTagName, WMGR_GEAR_SKIN, WMGR_MAX_FILE_PATH);
 	blrRenderStyles.Read(&buteMgr, aTagName, WMGR_GEAR_RENDERSTYLE, WMGR_MAX_FILE_PATH);
-
-	blrRespawnWaitSkins.Read( &buteMgr, aTagName, WMGR_GEAR_RESPAWNWAITSKIN, WMGR_MAX_FILE_PATH );
-	blrRespawnWaitRenderStyles.Read( &buteMgr, aTagName, WMGR_GEAR_RESPAWNWAITRENDERSTYLE, WMGR_MAX_FILE_PATH );
-
-	bRespawnWaitVisible		=!!(buteMgr.GetInt( aTagName, WMGR_MOD_RESPAWNWAITVISIBLE, bRespawnWaitVisible ));
-	bRespawnWaitTranslucent	= !!(buteMgr.GetInt( aTagName, WMGR_GEAR_RESPAWNWAITTRANSLUCENT, bRespawnWaitTranslucent ));
-
-	bCanServerRestrict = !!( buteMgr.GetInt( aTagName, WMGR_ALL_CANSERVERRESTRICT, bCanServerRestrict ));
 }
 
 // ----------------------------------------------------------------------- //
