@@ -6,6 +6,8 @@
 #include "AITarget.h"
 #include "AICentralKnowledgeMgr.h"
 #include "TrackedNodeContext.h"
+#include "AIMovement.h"
+#include "AIBrain.h"
 
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAttackMove, kState_HumanAttackMove);
@@ -19,7 +21,7 @@ CAIHumanStateAttackMove::CAIHumanStateAttackMove()
 
 	m_eAttackMove = kAP_None;
 	m_bTurnedAround = LTFALSE;
-	m_xTronUnknown90 = 0;
+	m_bTronUnknown90 = LTFALSE;
 
 	m_bAllowGhosting = LTFALSE;
 }
@@ -50,6 +52,7 @@ void CAIHumanStateAttackMove::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD_CAST( m_eAttackMove, EnumAnimProp );
 	LOAD_VECTOR( m_vAttackMoveDest );
 	LOAD_BOOL( m_bTurnedAround );
+	LOAD_BOOL( m_bTronUnknown90 );
 }
 
 // ----------------------------------------------------------------------- //
@@ -64,6 +67,7 @@ void CAIHumanStateAttackMove::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD( m_eAttackMove );
 	SAVE_VECTOR( m_vAttackMoveDest );
 	SAVE_BOOL( m_bTurnedAround );
+	SAVE_BOOL( m_bTronUnknown90 );
 }
 
 // ----------------------------------------------------------------------- //
@@ -267,6 +271,20 @@ void CAIHumanStateAttackMove::UpdateAnimation()
 	GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
 	GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
 
+	// RETAIL: 0x1022986c. Tron clears its flag once the movement and the
+	// animation are free; a shuffle then stops.
+	if( m_bTronUnknown90 &&
+		( !GetAI()->GetAIMovement()->IsMovementLocked() ) &&
+		( !GetAnimationContext()->IsLocked() ) &&
+		( !GetAnimationContext()->IsTransitioning() ) )
+	{
+		m_bTronUnknown90 = LTFALSE;
+		if( ( m_eAttackMove == kAP_ShuffleRight ) || ( m_eAttackMove == kAP_ShuffleLeft ) )
+		{
+			return;
+		}
+	}
+
 	switch( m_eAttackMove )
 	{
 		// Step.
@@ -282,7 +300,12 @@ void CAIHumanStateAttackMove::UpdateAnimation()
 		case kAP_BackUp:
 		case kAP_FlankLeft:
 		case kAP_FlankRight:
-			m_pStrategyShoot->UpdateAnimation();
+			// RETAIL: 0x102298f6, Tron shoots only if the brain attacks
+			// while it moves.
+			if( GetAI()->GetBrain()->AttacksWhileMoving() )
+			{
+				m_pStrategyShoot->UpdateAnimation();
+			}
 			m_pStrategyFollowPath->UpdateAnimation();
 			break;
 
