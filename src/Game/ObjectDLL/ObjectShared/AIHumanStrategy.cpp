@@ -2027,6 +2027,8 @@ CAIHumanStrategyDodge::CAIHumanStrategyDodge()
 	m_pNode = LTNULL;
 
 	m_bForceDodge = LTFALSE;
+	m_bTronUnknown38 = false;
+	m_bTronUnknown39 = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2068,8 +2070,18 @@ LTBOOL CAIHumanStrategyDodge::UpdateAnimation()
 
 	// Dodge animation is in progress.
 
-	if( GetAnimationContext()->IsLocked() )
+	// RETAIL: 0x10224530, Tron also waits for transitions and stands up
+	// once after a dodge.
+
+	if( GetAnimationContext()->IsLocked() || GetAnimationContext()->IsTransitioning() )
 	{
+		return LTTRUE;
+	}
+
+	if( m_bTronUnknown38 == true )
+	{
+		GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
+		m_bTronUnknown38 = false;
 		return LTTRUE;
 	}
 
@@ -2095,6 +2107,7 @@ LTBOOL CAIHumanStrategyDodge::UpdateAnimation()
 
 				GetAnimationContext()->ClearLock();
 				GetAnimationContext()->Lock();
+				m_bTronUnknown39 = true;
 			}
 			break;
 
@@ -2124,6 +2137,7 @@ LTBOOL CAIHumanStrategyDodge::UpdateAnimation()
 
 				GetAnimationContext()->ClearLock();
 				GetAnimationContext()->Lock();
+				m_bTronUnknown39 = true;
 			}
 			break;
 
@@ -2136,6 +2150,7 @@ LTBOOL CAIHumanStrategyDodge::UpdateAnimation()
 
 				GetAnimationContext()->ClearLock();
 				GetAnimationContext()->Lock();
+				m_bTronUnknown39 = true;
 			}
 			break;
 
@@ -2157,6 +2172,13 @@ LTBOOL CAIHumanStrategyDodge::UpdateAnimation()
 	}
 
 	return LTTRUE;
+}
+
+// RETAIL: inline in CAIHumanStrategyDodge::UpdateCheck (0x10224670): the
+// node, if the object is one. The name is ours.
+static inline AINode* GetNodeOfClass(HOBJECT hNode)
+{
+	return IsKindOf( hNode, "AINode" ) ? (AINode*)g_pLTServer->HandleToObject( hNode ) : LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2201,7 +2223,8 @@ void CAIHumanStrategyDodge::UpdateCheck()
 		}
 		else if ( eDodgeActionCover == m_eDodgeAction )
 		{
-			m_pNode = AINode::HandleToObject(hNode);
+			// RETAIL: 0x10224670, Tron checks the node's class.
+			m_pNode = GetNodeOfClass( hNode );
 		}
 	}
 	else if ( eDodgeStatusProjectile == m_eDodgeStatus )
@@ -2225,8 +2248,10 @@ void CAIHumanStrategyDodge::UpdateDodge()
 		case eDodgeActionShuffle:
 		case eDodgeActionRoll:
 		case eDodgeActionBlock:
-			if ( !GetAnimationContext()->IsLocked() )
+			// RETAIL: 0x10224720, Tron checks again only once per flag.
+			if ( !GetAnimationContext()->IsLocked() && ( m_bTronUnknown39 == true ) )
 			{
+				m_bTronUnknown39 = false;
 				Check();
 			}
 			break;
@@ -2339,6 +2364,7 @@ void CAIHumanStrategyDodge::Dodge()
 
 		g_pMusicMgr->DoEvent(CMusicMgr::eEventAIDodge);
 		m_eState = eStateDodging;
+		m_bTronUnknown38 = true;	// RETAIL: 0x10224830
 	}
 }
 
@@ -2362,6 +2388,8 @@ void CAIHumanStrategyDodge::Load(ILTMessage_Read *pMsg)
 	LOAD_DIRECTION(m_eDirection);
 	LOAD_VECTOR(m_vDir);
 	LOAD_BOOL(m_bForceDodge);
+	LOAD_bool(m_bTronUnknown39);
+	LOAD_bool(m_bTronUnknown38);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2384,6 +2412,8 @@ void CAIHumanStrategyDodge::Save(ILTMessage_Write *pMsg)
 	SAVE_DIRECTION(m_eDirection);
 	SAVE_VECTOR(m_vDir);
 	SAVE_BOOL(m_bForceDodge);
+	SAVE_bool(m_bTronUnknown39);
+	SAVE_bool(m_bTronUnknown38);
 }
 
 // ----------------------------------------------------------------------- //

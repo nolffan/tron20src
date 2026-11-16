@@ -347,6 +347,11 @@ class CAIHumanStrategyDodge : public CAIHumanStrategy
 		LTVector	m_vDir;
 
 		LTBOOL		m_bForceDodge;
+
+		// RETAIL: Tron's two flags (ctor 0x102244c0; Load 0x10224880 and
+		// Save 0x10224990 take +0x39 before +0x38). The names are ours.
+		bool		m_bTronUnknown38;
+		bool		m_bTronUnknown39;
 };
 
 // ----------------------------------------------------------------------- //
