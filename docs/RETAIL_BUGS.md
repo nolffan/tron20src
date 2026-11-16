@@ -907,6 +907,16 @@ the first control point the result divides a zero vector by zero.
 
 Not fixed yet: the modern build should return after the two-point case.
 
+### The DRAWALLMODELSHADOWS command sets the sky fog near Z
+
+Object.lto 0x101c0c60 (WorldProperties::OnTrigger,
+ObjectShared/WorldProperties.cpp). The DrawAllModelShadows message writes
+its argument to the SkyFogNearZ console variable, not to
+DrawAllModelShadows. NOLF2 has the same bug. A level that sends it changes
+the sky fog and never the model shadows.
+
+Not fixed yet: the modern build should write szDrawAllModelShadows.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
