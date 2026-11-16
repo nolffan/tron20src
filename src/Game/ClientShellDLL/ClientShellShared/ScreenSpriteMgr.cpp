@@ -32,6 +32,21 @@ CScreenSpriteMgr *g_pScreenSpriteMgr = LTNULL;
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's copies the names with new, and deletes them (retail
+// 0x101652de, 0x101648fb); the name is ours
+static inline char* TronUnknownStrDup(const char* pStr)
+{
+	if (!pStr)
+		return LTNULL;
+
+	char* pCopy = debug_newa(char, strlen(pStr) + 1);
+	if (pCopy)
+	{
+		strcpy(pCopy, pStr);
+	}
+	return pCopy;
+}
+
 CScreenSprite::CScreenSprite()
 {
 	m_Center.x = 0;	// default is sprite coord is top-left
@@ -42,6 +57,7 @@ CScreenSprite::CScreenSprite()
 	m_fOneFrameTime = 1.0f;
 	m_bShow = LTFALSE;
 	m_bAdditive = LTFALSE;
+	m_bTronUnknown2C = LTFALSE;	// RETAIL: Tron's (retail 0x1016470f)
 
 	// Set up the drawprim in the Init() function
 	// Set up the FrameArray in the Init() function
@@ -135,7 +151,7 @@ void CScreenSprite::Term()
 {
 	if (m_pName)
 	{
-		free(m_pName);
+		delete [] m_pName;
 		m_pName = LTNULL;
 	}
 	m_FrameArray.clear();
@@ -157,7 +173,8 @@ void CScreenSprite::Show(LTBOOL bShow, LTBOOL bRestartAnimation)
 	if (m_bShow && bRestartAnimation)
 	{
 		m_iCurrentFrame = 0;
-		m_fCurrentTime = g_pLTClient->GetTime();
+		// RETAIL: Tron's restarts the frame clock at 0 (retail 0x10164959)
+		m_fCurrentTime = 0.0f;
 	}
 }
 
@@ -191,6 +208,13 @@ void CScreenSprite::AdvanceTime(float fDelta)
 		m_fCurrentTime -= (float)nAdvanceFrames * m_fOneFrameTime;
 		// Advance the frame counter (and modulus it!)
 		m_iCurrentFrame = (m_iCurrentFrame + nAdvanceFrames) % m_nFrames;
+	}
+
+	// RETAIL: Tron's (retail 0x101649e2): hide the sprite when its life ends
+	if (m_bExpires && m_fLifeTime < 0.0f && m_bTronUnknown2C)
+	{
+		m_bExpires = LTFALSE;
+		m_bShow = LTFALSE;
 	}
 }
 
@@ -343,6 +367,7 @@ CScreenSpriteMgr::CScreenSpriteMgr()
 {
 	g_pScreenSpriteMgr = this;
 	m_bInitialized = LTFALSE;
+	m_pTronUnknownToolTip = LTNULL;	// RETAIL: Tron's (retail 0x10164c1d)
 }
 
 CScreenSpriteMgr::~CScreenSpriteMgr()
@@ -401,7 +426,7 @@ void CScreenSpriteMgr::Term()
 	while (fIter != m_FrameArray.end())
 	{
 		if ((*fIter)->pName)
-			free((*fIter)->pName);
+			delete [] (*fIter)->pName;
 
 		if ((*fIter)->hTex)
 			g_pTexInterface->ReleaseTextureHandle((*fIter)->hTex);
@@ -444,19 +469,20 @@ void CScreenSpriteMgr::DestroyScreenSprite(CScreenSprite * pSprite)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CScreenSpriteMgr::Update
+//	ROUTINE:	CScreenSpriteMgr::TronUnknownAdvance
 //
 //	PURPOSE:	Iterate through the array of sprites and render all that are visible
 //
 // ----------------------------------------------------------------------- //
 
-void CScreenSpriteMgr::Update()
+void CScreenSpriteMgr::TronUnknownAdvance()
 {
 	if (!m_bInitialized)
 		return;
 
+	m_bTronUnknownDraw = false;
+
 	LTBOOL bKillingSprites = LTFALSE;
-	LTBOOL bDraw = LTFALSE;
 
 	// Note the elapsed time
 	float fCurrentTime = g_pLTClient->GetTime();
@@ -468,7 +494,7 @@ void CScreenSpriteMgr::Update()
 	{
 		if ((*iter)->m_bShow)
 		{
-			bDraw = LTTRUE;
+			m_bTronUnknownDraw = true;
 
 			(*iter)->AdvanceTime(fDeltaTime);
 			if ((*iter)->KillMe())
@@ -489,7 +515,6 @@ void CScreenSpriteMgr::Update()
 			{
 				delete (*iter);
 				m_SpriteArray.erase(iter);
-//				iter = m_SpriteArray.begin();
 			}
 			else
 			{
@@ -497,33 +522,63 @@ void CScreenSpriteMgr::Update()
 			}
 		}
 	}
+}
 
-	if(bDraw)
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CScreenSpriteMgr::Update
+//
+//	PURPOSE:	Draw the shown sprites (RETAIL: Tron's, retail 0x10165000)
+//
+// ----------------------------------------------------------------------- //
+
+void CScreenSpriteMgr::Update()
+{
+	bool bToolTipDone = false;
+
+	if (!m_bTronUnknownDraw)
 	{
-		g_pLTClient->Start3D();
-		g_pLTClient->StartOptimized2D();
+		// PORT: retail draws the tool tip here (its 0x1014e3e0)
+		return;
+	}
 
-		// Set up the rendering
-		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ); 
-		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
-		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
-		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
-		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+	g_pLTClient->StartOptimized2D();
 
-		iter = m_SpriteArray.begin();
-		while (iter != m_SpriteArray.end())
+	// Set up the rendering
+	g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+	g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+	g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+	g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+	g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+	g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+
+	ScreenSpriteArray::iterator iter = m_SpriteArray.begin();
+	while (iter != m_SpriteArray.end())
+	{
+		// RETAIL: the tool tip goes under the cursor's layers
+		if (!bToolTipDone && (*iter)->m_eLayer >= SPRITELAYER_CURSOR_ADDITIVE)
 		{
-			if ((*iter)->m_bShow)
+			bToolTipDone = true;
+			if (m_pTronUnknownToolTip)
 			{
-				(*iter)->Render();
+				// PORT: retail draws the tool tip here (its 0x1014e3e0)
+				g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+				g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+				g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+				g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+				g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+				g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
 			}
-			iter++;
 		}
 
-		g_pLTClient->EndOptimized2D();
-		g_pLTClient->End3D();
+		if ((*iter)->m_bShow)
+		{
+			(*iter)->Render();
+		}
+		iter++;
 	}
+
+	g_pLTClient->EndOptimized2D();
 }
 
 CScreenSprite * CScreenSpriteMgr::CreateScreenSprite(char * pFile, bool bExpires, ScreenSpriteLayer eLayer)
@@ -595,7 +650,7 @@ bool CScreenSpriteMgr::GiveSpriteResources(CScreenSprite * pSprite, char * pFile
 			return (LTFALSE);
 
 		pSprite->m_FrameArray.push_back(m_FrameArray[iFrameID]);
-		pSprite->m_pName = strdup(pFile);
+		pSprite->m_pName = TronUnknownStrDup(pFile);
 
 //		m_SpriteArray.push_back(pSprite);
 		return LTTRUE;
@@ -630,7 +685,7 @@ LTBOOL CScreenSpriteMgr::CacheSprite(CScreenSprite * pSprite, char * pFile)
 	ILTStream * pStream;
 	char buf[1024];
 
-	pSprite->m_pName = strdup(pFile);
+	pSprite->m_pName = TronUnknownStrDup(pFile);
 
 	g_pLTClient->OpenFile(pFile, &pStream);
 	if (pStream)
@@ -674,7 +729,16 @@ LTBOOL CScreenSpriteMgr::CacheSprite(CScreenSprite * pSprite, char * pFile)
 			pStream->Read(&buf, iLen);
 
 			int iFrameID = CacheTexture(buf);
-			pSprite->m_FrameArray.push_back(m_FrameArray[iFrameID]);
+			// RETAIL: Tron's checks the frame (retail 0x101654cb)
+			if (iFrameID != -1)
+			{
+				pSprite->m_FrameArray.push_back(m_FrameArray[iFrameID]);
+			}
+			else
+			{
+				g_pLTClient->CPrint("CScreenSpriteMgr::CacheSprite() - Cannot find file:");
+				g_pLTClient->CPrint("     \"%s\"", buf);
+			}
 		}
 		pStream->Release();
 
@@ -726,7 +790,7 @@ int CScreenSpriteMgr::CacheTexture(char * pFile)
 		_ASSERT(pFrame != LTNULL);
 
 		pFrame->iFrameID = m_FrameArray.size();
-		pFrame->pName = strdup(pFile);
+		pFrame->pName = TronUnknownStrDup(pFile);
 		pFrame->hTex = hTex;
 		g_pTexInterface->GetTextureDims(hTex,pFrame->iWidth,pFrame->iHeight);
 

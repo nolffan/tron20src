@@ -474,7 +474,6 @@ class CInterfaceMgr
 
 		CScreenSpriteMgr m_ScreenSpriteMgr;		// +0xe73c Screen sprite mgr (new for Tron/TO2)
 		// (CScreenSpriteMgr is retail's 0x28 bytes: its constructor 0x10164c00)
-		char			m_aTronPadScreenSpriteMgr[0x28 - sizeof(CScreenSpriteMgr)];
 
 		CGameSettings	m_Settings;				// +0xe764
 		// RETAIL: one timer, no team timers (Tron's CInterfaceTimer is 0x18

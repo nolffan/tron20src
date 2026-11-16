@@ -1010,13 +1010,15 @@ LTBOOL CInterfaceMgr::Update()
 			g_pLTClient->Start3D();
 			g_pLTClient->StartOptimized2D();
 			m_MessageBox.Draw();
+			m_ScreenSpriteMgr.Update();	// RETAIL: Tron's draws the sprites here (retail 0x100c8894)
 			g_pLTClient->EndOptimized2D();
 			g_pLTClient->End3D();
 		}
 		m_CursorMgr.Update();
 	}
 
-	m_ScreenSpriteMgr.Update();
+	// RETAIL: Tron's advances the sprites here (retail 0x100c88bc)
+	m_ScreenSpriteMgr.TronUnknownAdvance();
 
 	return bHandled;
 }
