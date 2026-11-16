@@ -26,10 +26,13 @@ struct CLIENTWEAPONFX
     uint8        nSurfaceType;
     uint16       wIgnoreFX;
     uint8        nShooterId;
+	uint8        m_xTronUnknownF;		// RETAIL: Tron's (+0xf, sent after nShooterId: 0x101d6918)
     LTVector     vFirePos;
     LTVector     vPos;
     LTVector     vSurfaceNormal;
     IMPACT_TYPE  eImpactType;
+	LTFLOAT      m_xTronUnknown38;		// RETAIL: Tron's (+0x38, a float: 0x101d697b)
+	uint8        m_xTronUnknown3C;		// RETAIL: Tron's (+0x3c, sent as a float: 0x101d6992)
 };
 
 inline CLIENTWEAPONFX::CLIENTWEAPONFX()
