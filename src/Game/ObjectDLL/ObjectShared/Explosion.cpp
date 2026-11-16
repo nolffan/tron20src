@@ -235,7 +235,8 @@ void Explosion::Update()
 
 	ProgDamageObjectsInSphere();
 
-	if (m_ProgDamageTimer.Stopped())
+	// RETAIL: Tron keeps updating while m_bDamageForever is set (0x100ef659).
+	if (m_ProgDamageTimer.Stopped() && !m_bDamageForever)
 	{
 		if (m_bRemoveWhenDone)
 		{

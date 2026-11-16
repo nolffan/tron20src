@@ -87,7 +87,7 @@ extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
 LTBOOL s_bCharacterPluginInitted = LTFALSE;
 CInventoryButeMgr s_InventoryButeMgr;
 
-uint8 CCharacter::m_nUniqueDialogueId = 0;	// PORT: (Character.h)
+bool CCharacter::m_bRadarVisible = false;	// PORT: (Character.h)
 
 const float kDialogueTimeFudgeFactor = 5.0f;
 
@@ -482,14 +482,14 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_eTeleportTriggerState = eTeleporTriggerStateNone;
 
 	m_eDeathDamageType			= DT_INVALID;
-	m_fBodyLifetime				= -1.0f;
 
 	// RETAIL: Tron's tail (Character.h)
 	m_hTronUnknownCF0			= LTNULL;
 	m_pPRodFireHelper			= debug_new( CPRodFireHelper );			// RETAIL: 0x10089fd0
 	m_pEnergyClawFireHelper		= debug_new( CEnergyClawFireHelper );
+	m_fBodyLifetime				= -1.0f;	// RETAIL: here (0x1008a028)
 	m_nCarrying					= CFX_CARRY_NONE;
-	m_bRadarVisible				= false;
+	m_nUniqueDialogueId			= 0;
 	m_bTracking					= false;
 }
 
@@ -2261,12 +2261,7 @@ void CCharacter::RemovePersistentStimuli(void)
 		m_eEnemyVisibleStimID = kStimID_Unset;
 	}
 
-	if( m_eUndeterminedVisibleStimID != kStimID_Unset )
-	{
-		AITRACE( AIShowCharacters, ( m_hObject, "Removing persistent stimulus UndeterminedVisible" ) );
-		g_pAIStimulusMgr->RemoveStimulus( m_eUndeterminedVisibleStimID );
-		m_eUndeterminedVisibleStimID = kStimID_Unset;
-	}
+	// RETAIL: Tron has no undetermined visible stimulus here (0x1008ebf0).
 }
 
 //----------------------------------------------------------------------------

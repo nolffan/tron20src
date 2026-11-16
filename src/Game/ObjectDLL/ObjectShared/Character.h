@@ -706,7 +706,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		HOBJECT				m_hTronUnknownCF0;		// saved with WriteObject
 		uint32				m_nCarrying;			// saved as a byte (NOLF2's)
 		uint32				m_nTronUnknownCF8;		// saved, not initialized
-		bool				m_bRadarVisible;		// taken to be NOLF2's (not saved)
+		// RETAIL: +0xcfc is the dialogue id (HandleSfxMessage 0x1008abca,
+		// the dialogue code 0x10090a61). Not saved.
+		uint8				m_nUniqueDialogueId;
 
 		// Tracks the players that were told about dialogue.  We have
 		// to wait until everyone says they're done.
@@ -738,9 +740,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// clients don't kill valid dialogues.  It's ok that it wraps,
 		// since we won't have that many going within a short period of time.
 		// Not saved.
-		// PORT: not a member in Tron (no room in retail's layout); NOLF2's
-		// dialogue code stands in with one id for all characters
-		static uint8	m_nUniqueDialogueId;
+		// PORT: NOLF2's radar flag has no room in Tron's layout (Tron keeps
+		// it in a flag byte at +0xac): static, it stands in for NOLF2's code
+		static bool		m_bRadarVisible;
 };
 
 class CCharacterPlugin : public IObjectPlugin
