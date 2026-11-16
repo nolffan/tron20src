@@ -174,10 +174,6 @@ SOURCE=.\AIGoalApprehend.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalAssassinate.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalAttack.cpp
 # End Source File
 # Begin Source File
@@ -246,6 +242,10 @@ SOURCE=.\AIGoalCover.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIGoalDash.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIGoalDeflect.cpp
 # End Source File
 # Begin Source File
@@ -306,10 +306,6 @@ SOURCE=.\AIGoalInvestigate.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalLoveKitty.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalLunge.cpp
 # End Source File
 # Begin Source File
@@ -319,14 +315,6 @@ SOURCE=.\AIGoalMenace.cpp
 # Begin Source File
 
 SOURCE=.\AIGoalMgr.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalMountedFlashlight.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalObstruct.cpp
 # End Source File
 # Begin Source File
 
@@ -354,23 +342,11 @@ SOURCE=.\AIGoalRespondToBackup.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalResurrecting.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalRetreat.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\AIGoalSearch.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalSentryChallenge.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalSentryMark.cpp
 # End Source File
 # Begin Source File
 
@@ -426,6 +402,10 @@ SOURCE=.\AIHumanStateCatch.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIHumanStateDash.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIHumanStateDeflect.cpp
 # End Source File
 # Begin Source File
@@ -438,27 +418,11 @@ SOURCE=.\AIHumanStateLaunch.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIHumanStateObstruct.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStateResurrecting.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStateSentryChallenge.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIHumanStateSniper.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\AIHumanStrategy.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStrategyShootStream.cpp
 # End Source File
 # Begin Source File
 
@@ -1607,10 +1571,6 @@ SOURCE=.\AIGoalApprehend.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalAssassinate.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalAttack.h
 # End Source File
 # Begin Source File
@@ -1679,6 +1639,10 @@ SOURCE=.\AIGoalCover.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIGoalDash.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIGoalDeflect.h
 # End Source File
 # Begin Source File
@@ -1739,10 +1703,6 @@ SOURCE=.\AIGoalInvestigate.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalLoveKitty.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalLunge.h
 # End Source File
 # Begin Source File
@@ -1752,14 +1712,6 @@ SOURCE=.\AIGoalMenace.h
 # Begin Source File
 
 SOURCE=.\AIGoalMgr.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalMountedFlashlight.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalObstruct.h
 # End Source File
 # Begin Source File
 
@@ -1787,23 +1739,11 @@ SOURCE=.\AIGoalRespondToBackup.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIGoalResurrecting.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIGoalRetreat.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\AIGoalSearch.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalSentryChallenge.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIGoalSentryMark.h
 # End Source File
 # Begin Source File
 
@@ -1863,6 +1803,10 @@ SOURCE=.\AIHumanStateCatch.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\AIHumanStateDash.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\AIHumanStateDeflect.h
 # End Source File
 # Begin Source File
@@ -1875,27 +1819,11 @@ SOURCE=.\AIHumanStateLaunch.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AIHumanStateObstruct.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStateResurrecting.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStateSentryChallenge.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\AIHumanStateSniper.h
 # End Source File
 # Begin Source File
 
 SOURCE=.\AIHumanStrategy.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\AIHumanStrategyShootStream.h
 # End Source File
 # Begin Source File
 

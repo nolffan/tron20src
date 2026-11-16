@@ -50,7 +50,7 @@ void CAIGoalHolsterWeapon::ActivateGoal()
 	super::ActivateGoal();
 
 	// Ignore all senses.
-	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeUndetermined | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
+	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 
 	m_pGoalMgr->LockGoal( this );
 

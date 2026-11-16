@@ -27,15 +27,19 @@ struct JunctionRecord
 typedef std::vector<JunctionRecord> JunctionStack;
 
 
-class CAIGoalChase : public CAIGoalAbstractSearch
+// RETAIL: Tron moves NOLF2's CAIGoalChase into CAIGoalChaseAbstract (RTTI;
+// vtable 0x1029d928), the base of CAIGoalChase, CAIGoalPsychoChase and
+// CAIGoalRezIn. It does not override ActivateGoal: the goals call its
+// ActivateChase (0x1020e6a0; name ours) themselves.
+class CAIGoalChaseAbstract : public CAIGoalAbstractSearch
 {
 	typedef CAIGoalAbstractSearch super;
 
 	public:
 
-		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalChase, kGoal_Chase);
+		DECLARE_AI_FACTORY_CLASS_ABSTRACT_SPECIFIC(Goal);
 
-		CAIGoalChase( );
+		CAIGoalChaseAbstract( );
 
 		// Save / Load
 
@@ -44,7 +48,6 @@ class CAIGoalChase : public CAIGoalAbstractSearch
 
 		// Activation.
 
-		virtual void ActivateGoal();
 		virtual void DeactivateGoal();
 
 		// Updating.
@@ -65,6 +68,8 @@ class CAIGoalChase : public CAIGoalAbstractSearch
 		virtual LTBOOL HandleGoalSenseTrigger(AISenseRecord* pSenseRecord);
 
 	protected:
+
+		void			ActivateChase();
 
 		// State Handling.
 
@@ -99,6 +104,21 @@ class CAIGoalChase : public CAIGoalAbstractSearch
 		LTBOOL				m_bNeverGiveUp;
 		LTBOOL				m_bKeepDistance;
 		LTBOOL				m_bContinueLost;
+};
+
+// RETAIL: Tron's thin chase goal (CreateAIClassInstance 0x1020dde0,
+// ActivateGoal 0x1020deb0).
+class CAIGoalChase : public CAIGoalChaseAbstract
+{
+	typedef CAIGoalChaseAbstract super;
+
+	public:
+
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalChase, kGoal_Chase);
+
+		// Activation.
+
+		virtual void ActivateGoal();
 };
 
 #endif

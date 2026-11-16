@@ -423,7 +423,6 @@ LTBOOL CAISenseRecorderGame::HandleSpecificStimuli(CAIStimulusRecord* pStimulusR
 		case kStim_AllyDisturbanceVisible:		return HandleAllyDisturbanceVisible(pStimulusRecord);
 		case kStim_AllySpecialDamageVisible:	return HandleAllySpecialDamageVisible(pStimulusRecord);
 		case kStim_AllyDeathVisible:			return HandleAllyDeathVisible(pStimulusRecord);
-		case kStim_UndeterminedVisible:			return HandleUndeterminedVisible(pStimulusRecord, pfRateModifier);
 	}
 
 	return LTTRUE;
@@ -863,60 +862,3 @@ LTBOOL CAISenseRecorderGame::HandleEnemyVisible(CAIStimulusRecord* pStimulusReco
 	return LTFALSE;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAISenseRecorderGame::HandleUndeterminedVisible()
-//
-//	PURPOSE:	Do visibility check.
-//
-// ----------------------------------------------------------------------- //
-LTBOOL CAISenseRecorderGame::HandleUndeterminedVisible(CAIStimulusRecord* pStimulusRecord,
-													   LTFLOAT* pfRateModifier)
-{
-	ASSERT(pStimulusRecord);
-
-	if( !IsAI( m_pSensing->GetSensingObject() ) )
-	{
-		return LTFALSE;
-	}
-
-	CAI* pAI = (CAI*)m_pSensing;
-
-	if ( IsCharacter(pStimulusRecord->m_hStimulusSource) )
-	{
-
-		// If we are neutral with respect to the other character...
-		HOBJECT hObject = pStimulusRecord->m_hStimulusSource;
-		CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(hObject);
-		UBER_ASSERT( pCharacter != NULL, "HandleEnemyVisible: Unable to convert m_hStimulusSource to pChar" );
-
-		if ( NEUTRAL == GetRelativeAlignment( pAI->GetRelationSet(), pCharacter->GetRelationData()) )
-		{
-			// If we are neutral with respect to the other character, and if the 
-			// character we are neutral to does NOT has a dangerous looking weapon
-			// the fail the check
-			if ( !pCharacter->HasDangerousWeapon() )
-			{
-				return LTFALSE;
-			}
-		}
-	}
-
-	AISenseRecord* pSelectedSenseRecord;
-
-	CAISenseRecorderTools::GetValidatedRecord( 
-		m_mapSenseRecords,
-		pStimulusRecord,
-		&pSelectedSenseRecord );
-
-	// Return the result of the ComplexVisibilityCheck
-	return CAISenseRecorderTools::ComplexVisibilityCheck(
-		pSelectedSenseRecord,
-		pStimulusRecord->m_vStimulusPos,
-		LTTRUE,
-		LTTRUE,
-		pAI,
-		pStimulusRecord->m_hStimulusSource,
-		&(*pfRateModifier)
-		);
-}

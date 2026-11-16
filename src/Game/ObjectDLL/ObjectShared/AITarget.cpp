@@ -22,45 +22,50 @@ DEFINE_AI_FACTORY_CLASS(CAITarget);
 //
 // ----------------------------------------------------------------------- //
 
-CAITarget::CAITarget()
+AbstractTarget::AbstractTarget() :
+	m_hObject( LTNULL ),
+	m_bCanUpdateVisibility( LTTRUE ),
+	m_bVisibleFromEye( LTFALSE ),
+	m_bVisibleFromWeapon( LTFALSE ),
+	m_hVisionBlocker( LTNULL ),
+	m_iHit( 0 ),
+	m_iMiss( 0 ),
+	m_cHits( 0 ),
+	m_cMisses( 0 ),
+	m_fCurMovementInaccuracy( 0.f ),
+	m_fTargetTime( 0.f ),
+	m_fTargetDistSqr( 0.f ),
+	m_bAttacking( LTFALSE ),
+	m_nPhase( 2 ),
+	m_nResetPhase( 2 ),
+	m_fPhaseStep( 0.f ),
+	m_fTronUnknown98( 0.f ),
+	m_pTronUnknownB0( LTNULL ),
+	m_pTronUnknownB4( LTNULL ),
+	m_pTronUnknownB8( LTNULL )
 {
-    m_bVisibleFromEye = LTFALSE;
-    m_bVisibleFromWeapon = LTFALSE;
-
-	m_hRelationNotifier.SetObserver( this );
-	m_hVisionBlocker = LTNULL;
-
-	m_fTargetTime = 0.f;
-	m_fCurMovementInaccuracy = 0.f;
-
-	m_iHit = 0;
-	m_iMiss = 0;
-	m_cHits = 0;
-	m_cMisses = 0;
-
 	VEC_INIT(m_vTargetVelocity);
 	VEC_INIT(m_vTargetPosition);
 	VEC_INIT(m_vVisiblePosition);
 
-	m_fTargetDistSqr = 0.f;
-
-	m_bCanUpdateVisibility = LTTRUE;
-
-	m_fPushSpeed = 0.f;
-	m_fPushMinDist = 0.f;
-	m_fPushMinDistSqr = 0.f;
-	m_fPushThreshold = 64.f;
-
-    m_bAttacking = LTFALSE;
-
-	m_nPhase = 2;
-	m_nResetPhase = 2;
-	m_fPhaseStep = 0.f;
-
-	m_hObject = NULL;
-
-	m_bPrimaryOnLeft = LTFALSE;
+	m_hRelationNotifier.SetObserver( this );
 }
+
+// RETAIL: 0x101df1e0 also takes m_pTronUnknownB0.. out of its registry's
+// list (that member is a Tron notifier class we have not written).
+AbstractTarget::~AbstractTarget()
+{
+}
+
+CAITarget::CAITarget() :
+	m_pAI( LTNULL ),
+	m_fPushSpeed( 0.f ),
+	m_fPushMinDist( 0.f ),
+	m_fPushMinDistSqr( 0.f ),
+	m_fPushThreshold( 0.f )
+{
+}
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -70,9 +75,8 @@ CAITarget::CAITarget()
 //
 // ----------------------------------------------------------------------- //
 
-void CAITarget::Save(ILTMessage_Write *pMsg)
+void AbstractTarget::Save(ILTMessage_Write *pMsg)
 {
-    if ( !g_pLTServer || !pMsg ) return;
 
 	SAVE_BOOL(m_bCanUpdateVisibility);
 	SAVE_BOOL(m_bVisibleFromEye);
@@ -92,18 +96,25 @@ void CAITarget::Save(ILTMessage_Write *pMsg)
 	SAVE_VECTOR(m_vVisiblePosition);
 	SAVE_VECTOR(m_vPosition);
 	SAVE_FLOAT(m_fTargetDistSqr);
-	SAVE_VECTOR(m_vTargetDims);
+	// RETAIL: written inline as data (0x101df4fc), unlike the vectors above.
+	pMsg->WriteType(m_vTargetDims);
 	SAVE_BOOL(m_bAttacking);
 	SAVE_INT(m_nPhase);
 	SAVE_INT(m_nResetPhase);
 	SAVE_FLOAT(m_fPhaseStep);
+	SAVE_FLOAT(m_fTronUnknown98);
+	pMsg->WriteType(m_vTronUnknown9C);
+}
+
+// RETAIL: 0x101e04c0.
+void CAITarget::Save(ILTMessage_Write *pMsg)
+{
+	AbstractTarget::Save(pMsg);
 
 	SAVE_FLOAT(m_fPushSpeed);
 	SAVE_FLOAT(m_fPushMinDist);
 	SAVE_FLOAT(m_fPushMinDistSqr);
 	SAVE_FLOAT(m_fPushThreshold);
-
-	SAVE_BOOL(m_bPrimaryOnLeft);
 }
 
 // ----------------------------------------------------------------------- //
@@ -114,9 +125,8 @@ void CAITarget::Save(ILTMessage_Write *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-void CAITarget::Load(ILTMessage_Read *pMsg)
+void AbstractTarget::Load(ILTMessage_Read *pMsg)
 {
-    if ( !g_pLTServer || !pMsg ) return;
 
 	LOAD_BOOL(m_bCanUpdateVisibility);
 	LOAD_BOOL(m_bVisibleFromEye);
@@ -141,13 +151,19 @@ void CAITarget::Load(ILTMessage_Read *pMsg)
 	LOAD_INT(m_nPhase);
 	LOAD_INT(m_nResetPhase);
 	LOAD_FLOAT(m_fPhaseStep);
+	LOAD_FLOAT(m_fTronUnknown98);
+	LOAD_VECTOR(m_vTronUnknown9C);
+}
+
+// RETAIL: 0x101e0530.
+void CAITarget::Load(ILTMessage_Read *pMsg)
+{
+	AbstractTarget::Load(pMsg);
 
 	LOAD_FLOAT(m_fPushSpeed);
 	LOAD_FLOAT(m_fPushMinDist);
 	LOAD_FLOAT(m_fPushMinDistSqr);
 	LOAD_FLOAT(m_fPushThreshold);
-
-	LOAD_BOOL(m_bPrimaryOnLeft);
 }
 
 // ----------------------------------------------------------------------- //
@@ -158,16 +174,20 @@ void CAITarget::Load(ILTMessage_Read *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
+void AbstractTarget::Init()
+{
+	m_hRelationNotifier.SetSubject( GetAI()->GetRelationMgr() );
+
+	// PORT: retail (0x101df2e0) also registers m_pTronUnknownB0.. with
+	// GetAI()'s +0x1010 object, which we have not written.
+}
+
+// RETAIL: 0x101e05a0.
 void CAITarget::Init(CAI* pAI)
 {
 	m_pAI = pAI;
-	
-	m_hRelationNotifier.SetSubject( pAI->GetRelationMgr() );
 
-	if( pAI->GetBrain() && pAI->GetBrain()->GetAIDataExist( kAIData_PrimaryWeaponOnLeft ) )
-	{
-		m_bPrimaryOnLeft = ( GetAI()->GetBrain()->GetAIData( kAIData_PrimaryWeaponOnLeft ) > 0.f );
-	}
+	AbstractTarget::Init();
 }
 
 // ----------------------------------------------------------------------- //
@@ -178,7 +198,7 @@ void CAITarget::Init(CAI* pAI)
 //
 // ----------------------------------------------------------------------- //
 
-void CAITarget::SetObject(HOBJECT hObject)
+void AbstractTarget::SetObject(HOBJECT hObject)
 {
 	// HACK:  for TO2 to make AI shutup after killing someone one co-op.
 
@@ -209,7 +229,7 @@ void CAITarget::SetObject(HOBJECT hObject)
 
 		m_fTargetTime = g_pLTServer->GetTime();
 		g_pLTServer->GetObjectPos( m_hObject, &m_vTargetPosition );
-		m_fCurMovementInaccuracy = m_pAI->GetMaxMovementAccuracyPerturb();
+		m_fCurMovementInaccuracy = GetAI()->GetMaxMovementAccuracyPerturb();
 		m_vTargetVelocity = LTVector( 0.f, 0.f, 0.f );
 
 		g_pPhysicsLT->GetObjectDims( m_hObject, &m_vTargetDims );
@@ -226,7 +246,7 @@ void CAITarget::SetObject(HOBJECT hObject)
 //
 // ----------------------------------------------------------------------- //
 
-void CAITarget::GetShootPosition(LTVector* pvShootPos)
+void AbstractTarget::GetShootPosition(LTVector* pvShootPos)
 {
 	if( !pvShootPos )
 	{
@@ -239,7 +259,7 @@ void CAITarget::GetShootPosition(LTVector* pvShootPos)
 
 	// If Target is within the FullAccuracy radius, we are done.
 
-	if( m_fTargetDistSqr < m_pAI->GetFullAccuracyRadiusSqr() )
+	if( m_fTargetDistSqr < GetAI()->GetFullAccuracyRadiusSqr() )
 	{
 		return;
 	}
@@ -258,7 +278,7 @@ void CAITarget::GetShootPosition(LTVector* pvShootPos)
 	// accuracy.  This needs to be recalculated for every shot, 
 	// because accuracy may change at any time.
 
-	LTFLOAT fAccuracy = m_pAI->GetAccuracy();
+	LTFLOAT fAccuracy = GetAI()->GetAccuracy();
 	if( fAccuracy <= 0.f )
 	{
 		m_cMisses = 1;
@@ -320,17 +340,17 @@ void CAITarget::GetShootPosition(LTVector* pvShootPos)
 
 		// Calculate a position to the right or left of the target.
 
-		LTVector vDir = m_vVisiblePosition - m_pAI->GetPosition();
+		LTVector vDir = m_vVisiblePosition - GetAI()->GetPosition();
 		vDir.Normalize();
 
 		LTVector vRight = vDir.Cross( LTVector( 0.f, 1.f, 0.f ) );
 
 		if( GetRandom( -1.f, 1.f ) > 0.f )
 		{
-			vRight *= m_pAI->GetAccuracyMissPerturb();
+			vRight *= GetAI()->GetAccuracyMissPerturb();
 		}
 		else {
-			vRight *= -m_pAI->GetAccuracyMissPerturb();
+			vRight *= -GetAI()->GetAccuracyMissPerturb();
 		}
 		vRight.y = GetRandom( -5.f, 15.f );
 
@@ -348,7 +368,7 @@ void CAITarget::GetShootPosition(LTVector* pvShootPos)
 //
 // ----------------------------------------------------------------------- //
 
-void CAITarget::UpdateVisibility()
+void AbstractTarget::UpdateVisibility()
 {
 	_ASSERT(IsValid());
 
@@ -405,8 +425,8 @@ void CAITarget::UpdateVisibility()
 		LTVector vPredictedPos = m_vTargetPosition + ( m_vTargetVelocity * fTimeDelta);
 		LTVector vDiff = vPosition - vPredictedPos;
 		
-		LTFLOAT fInaccuracyDist = Min( vDiff.Mag(), m_pAI->GetMaxMovementAccuracyPerturb() );
-		m_fCurMovementInaccuracy = Max( fInaccuracyDist, m_fCurMovementInaccuracy - ( m_pAI->GetMovementAccuracyPerturbDecay() * fTimeDelta ) );
+		LTFLOAT fInaccuracyDist = Min( vDiff.Mag(), GetAI()->GetMaxMovementAccuracyPerturb() );
+		m_fCurMovementInaccuracy = Max( fInaccuracyDist, m_fCurMovementInaccuracy - ( GetAI()->GetMovementAccuracyPerturbDecay() * fTimeDelta ) );
 
 		m_vTargetVelocity = ( vPosition - m_vTargetPosition ) / fTimeDelta;
 	}
@@ -415,7 +435,7 @@ void CAITarget::UpdateVisibility()
 
 	// Keep track of the distance to the target.
 
-	m_fTargetDistSqr = m_pAI->GetPosition().DistSqr( m_vTargetPosition );
+	m_fTargetDistSqr = GetAI()->GetPosition().DistSqr( m_vTargetPosition );
 
 	// Incrementally scan the target vertically until he can be seen.
 
@@ -442,8 +462,9 @@ void CAITarget::UpdateVisibility()
 		LTVector vCheckPos;
 		if( GetAI()->GetCurrentWeapon() )
 		{
-			if( ( GetAI()->GetCurrentWeapon() == GetAI()->GetPrimaryWeapon() ) &&
-				( !m_bPrimaryOnLeft ) )
+			// PORT: Tron has no PrimaryWeaponOnLeft AIData (nor NOLF2's
+			// m_bPrimaryOnLeft).
+			if( GetAI()->GetCurrentWeapon() == GetAI()->GetPrimaryWeapon() )
 			{
 				vCheckPos = GetAI()->GetPosition() + ( GetAI()->GetTorsoRight() * GetAI()->GetRadius() );
 				vCheckPos.y += GetAI()->GetDims().y * 0.5f;
@@ -546,10 +567,23 @@ void CAITarget::UpdatePush( CCharacter* pChar )
 }
 
 
-/*virtual*/ int CAITarget::OnRelationChange(HOBJECT hObj)
+/*virtual*/ int AbstractTarget::OnRelationChange(HOBJECT hObj)
 {
 	if( hObj == m_hObject.operator HOBJECT() )
 		m_hObject = LTNULL;
 
 	return 0;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AbstractTarget::GetCharacter
+//
+//	PURPOSE:	RETAIL: 0x101e02c0 (inline in NOLF2).
+//
+// ----------------------------------------------------------------------- //
+
+CCharacter* AbstractTarget::GetCharacter() const
+{
+	return dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hObject ) );
 }

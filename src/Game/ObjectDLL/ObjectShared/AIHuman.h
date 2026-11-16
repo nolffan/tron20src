@@ -101,6 +101,11 @@ class CAIHuman : public CAI
 
 		void SetSleeping(LTBOOL bSleeping);
 */
+		// RETAIL: 0x10170fd0 / 0x10170ff0 (called by the human states).
+		// Names ours.
+		void StartGhosting();
+		void StopGhosting();
+
 		// Death stuff
 
 		virtual void PlayDeathSound();

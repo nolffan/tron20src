@@ -45,4 +45,5 @@ ADD_STRATEGY_TYPE(Human, ShootBurst)		// kStrat_HumanShootBurst
 ADD_STRATEGY_TYPE(Human, Flashlight)		// kStrat_HumanFlashlight
 ADD_STRATEGY_TYPE(Human, Taunt)				// kStrat_HumanTaunt
 ADD_STRATEGY_TYPE(Human, ToggleLights)		// kStrat_HumanToggleLights
-ADD_STRATEGY_TYPE(Human, ShootStream)		// kStrat_HumanShootStream
+// RETAIL: Tron 2.0 has no ShootStream strategy (no class in retail; the
+// strategies' GetStrategyType return 0..11 in this order).

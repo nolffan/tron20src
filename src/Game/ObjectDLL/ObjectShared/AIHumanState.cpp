@@ -33,7 +33,6 @@ extern CAIStimulusMgr* g_pAIStimulusMgr;
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAnimate, kState_HumanAnimate);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAware, kState_HumanAware);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateLookAt, kState_HumanLookAt);
-DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAssassinate, kState_HumanAssassinate);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateDraw, kState_HumanDraw);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateHolster, kState_HumanHolster);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateAttack, kState_HumanAttack);
@@ -78,6 +77,7 @@ CAIHumanState::CAIHumanState()
 	m_pStrategyTaunt		= LTNULL;
 	m_pStrategyToggleLights	= LTNULL;
 
+	m_bAllowGhosting = LTTRUE;
 	m_bInterrupt = LTTRUE;
 
 	m_ePose = kAP_Any;
@@ -97,6 +97,12 @@ LTBOOL CAIHumanState::Init(CAIHuman* pAIHuman)
 	}
 
 	m_pAIHuman = pAIHuman;
+
+	// RETAIL: 0x101e4437.
+	if( !m_bAllowGhosting )
+	{
+		pAIHuman->StopGhosting();
+	}
 
 	return LTTRUE;
 }
@@ -212,6 +218,7 @@ void CAIHumanState::Save(ILTMessage_Write *pMsg)
 
 	SAVE_DWORD(m_ePose);
 	SAVE_BOOL(m_bInterrupt);
+	SAVE_BOOL(m_bAllowGhosting);
 }
 
 // ----------------------------------------------------------------------- //
@@ -222,6 +229,7 @@ void CAIHumanState::Load(ILTMessage_Read *pMsg)
 
 	LOAD_DWORD_CAST(m_ePose, EnumAnimProp);
 	LOAD_BOOL(m_bInterrupt);
+	LOAD_BOOL(m_bAllowGhosting);
 }
 
 // ----------------------------------------------------------------------- //
@@ -266,6 +274,8 @@ CAIHumanStateAware::CAIHumanStateAware()
 	m_eAISound		= kAIS_None;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -481,6 +491,9 @@ CAIHumanStatePatrol::CAIHumanStatePatrol()
 
 	m_pNode = LTNULL;
 	m_pLastNode = LTNULL;
+
+	m_bAllowGhosting = LTFALSE;
+	m_xTronUnknown94 = 0;
 }
 
 CAIHumanStatePatrol::~CAIHumanStatePatrol()
@@ -1311,6 +1324,8 @@ CAIHumanStateSearch::CAIHumanStateSearch()
 
 	m_pLastVolume		= LTNULL;
 	m_pJunctionVolume	= LTNULL;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -3106,6 +3121,8 @@ CAIHumanStateFollowFootprint::CAIHumanStateFollowFootprint()
 	m_fLastTimestamp = 0.f;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateFollowFootprint::~CAIHumanStateFollowFootprint()
@@ -3263,6 +3280,8 @@ CAIHumanStateInvestigate::CAIHumanStateInvestigate()
 
 	m_eAISound = kAIS_None;
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateInvestigate::~CAIHumanStateInvestigate()
@@ -3895,6 +3914,9 @@ CAIHumanStateChase::CAIHumanStateChase()
 	m_fSeeEnemyTime = 0.f;
 	m_fEnduranceTime = 0.f;
 	m_fVisionBlockedTime = 0.f;
+
+	m_bAllowGhosting = LTFALSE;
+	m_xTronUnknownC0 = 0;
 }
 
 CAIHumanStateChase::~CAIHumanStateChase()
@@ -4736,9 +4758,12 @@ CAIHumanStateDraw::CAIHumanStateDraw()
 	m_bPlayFirstSound = LTTRUE;
 	m_bFired = LTFALSE;
 
-	m_bFaceTarget = LTFALSE;
+	// RETAIL: TRUE in Tron (ctor 0x101ed950).
+	m_bFaceTarget = LTTRUE;
 
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateDraw::~CAIHumanStateDraw()
@@ -5213,6 +5238,8 @@ CAIHumanStateAttack::CAIHumanStateAttack()
 	m_dwAttackFlags = kAttk_None;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttack::~CAIHumanStateAttack()
@@ -5823,6 +5850,8 @@ CAIHumanStateAttackProp::CAIHumanStateAttackProp()
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
 
 	m_hProp = NULL;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackProp::~CAIHumanStateAttackProp()
@@ -5944,208 +5973,7 @@ void CAIHumanStateAttackProp::Save(ILTMessage_Write *pMsg)
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-CAIHumanStateAssassinate::CAIHumanStateAssassinate()
-{
-	m_pStrategyFollowPath = AI_FACTORY_NEW(CAIHumanStrategyFollowPath);
-	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
-
-	m_bIgnoreVisibility = LTTRUE;
-}
-
-CAIHumanStateAssassinate::~CAIHumanStateAssassinate()
-{
-	AI_FACTORY_DELETE(m_pStrategyFollowPath);
-	AI_FACTORY_DELETE(m_pStrategyShoot);
-
-	// Decrement counters.
-
-	if( GetAI() )
-	{
-		g_pAICentralKnowledgeMgr->RemoveKnowledge( kCK_Attacking, GetAI() );
-		AIASSERT( !g_pAICentralKnowledgeMgr->CountMatches( kCK_Attacking, GetAI() ), GetAI()->m_hObject, "~CAIHumanStateAssassinate: Too many attackers registered!" );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-
-LTBOOL CAIHumanStateAssassinate::Init(CAIHuman* pAIHuman)
-{
-	if ( !super::Init(pAIHuman) )
-	{
-		return LTFALSE;
-	}
-
-	if ( !m_pStrategyFollowPath->Init(pAIHuman, m_pStrategyShoot) )
-	{
-		return LTFALSE;
-	}
-
-	if ( !m_pStrategyShoot->Init(pAIHuman) )
-	{
-		return LTFALSE;
-	}
-
-	m_pStrategyFollowPath->SetMovement(kAP_Walk);
-
-	// Keep track of how many AI are attacking the same target.
-
-	if( m_pAIHuman->HasTarget() )
-	{
-		if( g_pAICentralKnowledgeMgr->CountMatches( kCK_Attacking, m_pAIHuman, g_pLTServer->HandleToObject(m_pAIHuman->GetTarget()->GetObject()) ) )
-		{
-			AIASSERT( 0, m_pAIHuman->m_hObject, "CAIHumanStateAssassinate::Init: Already registered attacking count!" );
-		}
-		else {
-			g_pAICentralKnowledgeMgr->RegisterKnowledge( kCK_Attacking, m_pAIHuman, g_pLTServer->HandleToObject(m_pAIHuman->GetTarget()->GetObject()), LTTRUE );
-		}
-	}
-
-	m_pAIHuman->SetAwareness( kAware_Alert );
-
-	return LTTRUE;
-}
-
-// ----------------------------------------------------------------------- //
-
-void CAIHumanStateAssassinate::SetNode(AINodeAssassinate* pNode)
-{
-	if ( !m_pStrategyFollowPath->Set(pNode, LTFALSE) )
-	{
-		m_eStateStatus = kSStat_StateComplete;
-		g_pLTServer->CPrint("ASSASSINATE DEST=%s FollowPath failed", g_pLTServer->GetStringData(pNode->GetName()) );
-	}
-
-	m_pStrategyFollowPath->SetMovement( pNode->GetMovement() );
-
-	m_bIgnoreVisibility = pNode->IgnoreVisibility();
-}
-
-// ----------------------------------------------------------------------- //
-
-void CAIHumanStateAssassinate::Update()
-{
-	super::Update();
-
-	// Make sure we have a target
-
-	if ( !GetAI()->HasTarget())
-	{
-		m_eStateStatus = kSStat_StateComplete;
-		return;
-	}
-
-	// Head and Torso tracking.
-
-	if( m_bFirstUpdate )
-	{
-		GetAI()->SetNodeTrackingTarget( kTrack_AimAt, GetAI()->GetTarget()->GetObject(), "Head" );
-	}
-
-	// Shoot blind while running.
-
-	m_pStrategyShoot->SetShootBlind( m_pStrategyFollowPath->IsSet() );
-
-	if ( m_pStrategyShoot->IsReloading() )
-	{
-		GetAI()->FaceTarget();
-
-		m_pStrategyShoot->Update();
-
-		return;
-	}
-
-	if ( m_pStrategyFollowPath->IsSet() )
-	{
-		// We haven't arrived at our "assassinate" dest yet, move there.
-
-		m_pStrategyFollowPath->Update();
-
-		// Head and Torso tracking.
-
-		GetAI()->EnableNodeTracking( kTrack_AimAt, LTNULL );
-	}
-
-	if ( m_pStrategyFollowPath->IsDone() )
-	{
-		// Our gun is drawn, start capping
-
-		// Head and Torso tracking.
-		// Face target if hit tracking limit.
-
-		GetAI()->EnableNodeTracking( kTrack_AimAt, GetAI()->GetTarget()->GetObject() );
-
-		if ( m_pStrategyShoot->IsFiring() )
-		{
-			// Be sure to update the strategy if we are in the middle of
-			// firing as this means that we recieved a firing key this frame
-			// which has not yet been processed
-			m_pStrategyShoot->Update();
-		}
-		else if ( m_pStrategyShoot->ShouldReload() )
-		{
-			m_pStrategyShoot->Reload();
-			return;
-		}
-		else if ( m_bIgnoreVisibility || GetAI()->GetTarget()->IsVisibleFromWeapon() )
-		{
-		// Only fire we if we can see our target or we're told to ignore visibility
-
-			// TODO: check for strategy failure
-			m_pStrategyShoot->Update();
-		}
-		else
-		{
-			// KEEP AIMING
-		}
-	}
-}
-
-// ----------------------------------------------------------------------- //
-
-void CAIHumanStateAssassinate::UpdateAnimation()
-{
-	super::UpdateAnimation();
-
-	GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
-
-	if ( m_pStrategyFollowPath->IsDone() )
-	{
-		GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
-		m_pStrategyShoot->UpdateAnimation();
-	}
-	else
-	{
-		GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Down);
-		m_pStrategyFollowPath->UpdateAnimation();
-	}
-}
-
-// ----------------------------------------------------------------------- //
-
-void CAIHumanStateAssassinate::Load(ILTMessage_Read *pMsg)
-{
-	super::Load(pMsg);
-
-	m_pStrategyFollowPath->Load(pMsg);
-	m_pStrategyShoot->Load(pMsg);
-
-	LOAD_BOOL(m_bIgnoreVisibility);
-}
-
-// ----------------------------------------------------------------------- //
-
-void CAIHumanStateAssassinate::Save(ILTMessage_Write *pMsg)
-{
-	super::Save(pMsg);
-
-	m_pStrategyFollowPath->Save(pMsg);
-	m_pStrategyShoot->Save(pMsg);
-
-	SAVE_BOOL(m_bIgnoreVisibility);
-}
-
-// ----------------------------------------------------------------------- //
-// ----------------------------------------------------------------------- //
+// RETAIL: Tron has no Assassinate state (no class or name in retail).
 
 CAIHumanStateAttackFromCover::CAIHumanStateAttackFromCover()
 {
@@ -6161,6 +5989,8 @@ CAIHumanStateAttackFromCover::CAIHumanStateAttackFromCover()
 	m_bCovered = LTFALSE;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromCover::~CAIHumanStateAttackFromCover()
@@ -6822,6 +6652,10 @@ CAIHumanStateAttackFromVantage::CAIHumanStateAttackFromVantage()
 
 	m_bPlayFirstSound = LTTRUE;
 	m_bIgnoreVisibility = LTFALSE;
+	m_bTronUnknown8C = false;
+	m_bTronUnknown8D = false;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromVantage::~CAIHumanStateAttackFromVantage()
@@ -7262,6 +7096,8 @@ CAIHumanStateAttackFromView::CAIHumanStateAttackFromView()
 
 	m_pViewNode = LTNULL;
 	m_fChaseTimer = 0.0f;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackFromView::~CAIHumanStateAttackFromView()
@@ -8212,6 +8048,8 @@ CAIHumanStateGetBackup::CAIHumanStateGetBackup()
 	m_pBackupNode = LTNULL;
 
 	m_bPlayFirstSound = LTTRUE;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -8534,8 +8372,11 @@ CAIHumanStateCharge::CAIHumanStateCharge()
 	m_bYelled = LTFALSE;
 	m_fYellDistanceSqr = 900.f * 900.f;
 	m_fStopDistanceSqr = 200.f * 200.f;
+	m_fTronUnknown94 = FLT_MAX;
 
 	m_pStrategyFollowPath = AI_FACTORY_NEW(CAIHumanStrategyFollowPath);
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateCharge::~CAIHumanStateCharge()
@@ -9349,6 +9190,8 @@ CAIHumanStateLongJump::CAIHumanStateLongJump()
 	// Are we jumping to a target, or away.
 	m_bJumpToTarget = LTTRUE;
 	m_fLongJumpStopDist = 128.f;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //

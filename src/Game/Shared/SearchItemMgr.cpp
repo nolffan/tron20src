@@ -73,42 +73,27 @@ SEARCH_SET::SEARCH_SET()
 //
 // ----------------------------------------------------------------------- //
 
-SEARCH_SET::SearchObjectType SEARCH_SET::GetRandomSearchObjectType(float fJunkModifier)
+SEARCH_SET::SearchObjectType SEARCH_SET::GetRandomSearchObjectType()
 {
-	if (fJunkModifier < 0.0f || fJunkModifier > 1.0f)
-	{
-		ASSERT(!"SEARCH_SET::GetRandomSearchObjectType(): bad skill modifier");
-		fJunkModifier = 1.0f;
-	}
-
-	//reduce the chance of random junk
-	uint8 nJunkChance = (uint8)( (float)nItemPercent * fJunkModifier );
-
-	//figure out a new total
-	uint8 nTotal = 100 - (nItemPercent - nJunkChance);
+	// RETAIL: 0x1022d800: Tron has no junk modifier.
 
 	//roll the die...
-	uint8 nRandVal = GetRandom(1, nTotal);
+	uint8 nRandVal = GetRandom(1, 100);
 
-	SearchObjectType eType = eUnknownObjectType;
-	if (nRandVal <= nJunkChance)
+	if (nRandVal <= nItemPercent)
 	{
-		eType = eItemObjectType;
+		return eItemObjectType;
 	}
-	else if (nRandVal <= nJunkChance + nAmmoPercent)
+	else if (nRandVal <= nItemPercent + nAmmoPercent)
 	{
-		eType = eAmmoObjectType;
+		return eAmmoObjectType;
 	}
-	else if (nRandVal <= nJunkChance + nAmmoPercent + nWeaponPercent)
+	else if (nRandVal <= nItemPercent + nAmmoPercent + nWeaponPercent)
 	{
-		eType = eWeaponObjectType;
-	}
-	else
-	{
-		eType = eGearObjectType;
+		return eWeaponObjectType;
 	}
 
-	return eType;
+	return eGearObjectType;
 }
 
 // ----------------------------------------------------------------------- //
@@ -119,9 +104,9 @@ SEARCH_SET::SearchObjectType SEARCH_SET::GetRandomSearchObjectType(float fJunkMo
 //
 // ----------------------------------------------------------------------- //
 
-bool SEARCH_SET::GetRandomSearchObjectInfo(SearchObjectResult & soResult, float fJunkModifier)
+bool SEARCH_SET::GetRandomSearchObjectInfo(SearchObjectResult & soResult)
 {
-	soResult.eType	= GetRandomSearchObjectType(fJunkModifier);
+	soResult.eType	= GetRandomSearchObjectType();
 	soResult.nId	= SI_INVALID_ID;
 
 	switch (soResult.eType)

@@ -19,6 +19,9 @@ CAIHumanStateAttackMove::CAIHumanStateAttackMove()
 
 	m_eAttackMove = kAP_None;
 	m_bTurnedAround = LTFALSE;
+	m_xTronUnknown90 = 0;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackMove::~CAIHumanStateAttackMove()

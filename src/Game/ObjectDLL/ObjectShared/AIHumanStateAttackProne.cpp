@@ -17,6 +17,8 @@ CAIHumanStateAttackProne::CAIHumanStateAttackProne()
 	m_fStayProneTime = 0.f;
 	m_fLastFiredTime = 0.f;
 	m_fHalfMinDistSqr = 0.f;
+
+	m_bAllowGhosting = LTFALSE;
 }
 
 CAIHumanStateAttackProne::~CAIHumanStateAttackProne()

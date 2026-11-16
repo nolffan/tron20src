@@ -425,14 +425,11 @@ bool CSearchable::GiveLastSearchItem(HOBJECT hSender)
 	else	// RETAIL: 0x10194c69: no random item after a specific one
 	{
 		// RETAIL: Tron's search skill has no junk modifier (CSkillsButeMgr):
-		// its call (Object.lto 0x10194c83) passes only the result. PORT:
-		// NOLF2's SEARCH_SET still takes one; it gets 1, no change
-		float fJunkMod = 1.0f;
-
+		// its call (Object.lto 0x10194c83) passes only the result.
 
 		// Determine what type of item to give...
 		SEARCH_SET::SearchObjectResult soResult;
-		bool bFound = m_pRandomItemSet->GetRandomSearchObjectInfo(soResult,fJunkMod);
+		bool bFound = m_pRandomItemSet->GetRandomSearchObjectInfo(soResult);
 
 		char szSpawn[512] = {0};
 		if (bFound && SI_INVALID_ID != soResult.nId)

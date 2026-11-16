@@ -70,6 +70,12 @@ enum EnumAIStateStatus
 	kSStat_Reappearing,
 	kSStat_RegainingConsciousness,
 	kSStat_Resurrecting,
+	// RETAIL: Tron has one more status before Retry (Retry is 29 and
+	// StateComplete 30: CAIGoalChase::HandleStateChase's switch at
+	// 0x1020e8f0; Reappearing is still 25: CAIHumanStateDisappearReappear
+	// 0x1022c5d0). Nothing we have names 26..28, so where among them it
+	// goes is a guess.
+	kSStat_TronUnknown28,
 	kSStat_Retry,
 	kSStat_StateComplete,
 	kSStat_TakingOff,
@@ -80,6 +86,12 @@ enum EnumAIStateStatus
 	kSStat_Uninitialized,
 	kSStat_UseCover,
 	kSStat_Waiting,
+	// RETAIL: Tron's three more (39 in CAIHumanStateCatch at 0x1022b557,
+	// 40 in CAIHumanStateDeflect at 0x1022be8a, 41 in CAIHumanStateChase
+	// at 0x101ec435, which CAIGoalChase handles like Pursue). Names ours.
+	kSStat_TronUnknown39,
+	kSStat_TronUnknown40,
+	kSStat_TronUnknown41,
 };
 
 
