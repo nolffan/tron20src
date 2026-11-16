@@ -957,10 +957,19 @@ void CCharacterHitBox::SetDimsToModel()
 	if( !m_hModel || !m_hObject )
 		return;
 
+	// RETAIL: Tron takes the model's own dims and enlarges them here
+	// (0x10139f20)
 	LTVector vModelDims;
-	GetDefaultModelDims( vModelDims );
-	
-	EnlargeAndSetDims( vModelDims );
+	g_pPhysicsLT->GetObjectDims( m_hModel, &vModelDims );
+
+	vModelDims *= HB_DIMS_ENLARGE_PERCENT;
+
+	g_pPhysicsLT->SetObjectDims( m_hObject, &vModelDims, 0 );
+
+	if( m_pHitBoxUser )
+	{
+		m_pHitBoxUser->UpdateClientHitBox();
+	}
 }
 
 // ----------------------------------------------------------------------- //
