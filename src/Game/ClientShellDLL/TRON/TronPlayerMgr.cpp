@@ -462,8 +462,7 @@ void CTronPlayerMgr::OnExitWorld()
 {
 	if (m_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE || TronUnknownVirtual3C(true))
 	{
-		// PORT: retail restores the player camera here (its 0x1015e8f0,
-		// not yet in our tree)
+		m_pPlayerCamera->TronUnknownSaveToProfile();
 	}
 
 	CPlayerMgr::OnExitWorld();
@@ -1158,8 +1157,7 @@ void CTronPlayerMgr::TronUnknownVirtual54()
 	m_bTronUnknownB8 = false;
 	m_nTronUnknown230 = 0;
 
-	// PORT: retail restores the player camera here (its 0x1015e8f0, not
-	// yet in our tree)
+	m_pPlayerCamera->TronUnknownSaveToProfile();
 
 	TronUnknownVirtualA8(false);
 }

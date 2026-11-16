@@ -332,7 +332,7 @@ class CInterfaceMgr
 		// RETAIL: slot 0x98 (0x100cfd60, two arguments: called (0, 0) from
 		// 0x100a7e9c and (1, 1) from 0x1011d3e8; looks for the "LCC" object
 		// when the client shell's +0x1d7 is set). The name is ours.
-		virtual void	TronUnknownVirtual98(bool bTronUnknown, uint32 nTronUnknown);
+		virtual void	TronUnknownVirtual98(bool bTronUnknown, bool bInstant);
 
 		// RETAIL: Tron's timed message (0x100cff80: the text, else the
 		// string, else none; the second text is cleared): the light cycle
@@ -341,6 +341,9 @@ class CInterfaceMgr
 		// RETAIL: 0x100cfed0: the normal FOV and the first person camera
 		// (the light cycle match manager, CTronPlayerMgr). The name is ours
 		void	TronUnknownFirstPersonCamera(bool bInstant);
+		// RETAIL: 0x100cfdf0: the light cycle FOV and the light cycle
+		// camera (CPlayerCamera::TronUnknownStartPan). The name is ours
+		void	TronUnknownThirdPersonCamera(bool bInstant);
 		// RETAIL: inline (the light cycle match manager, 0x1001648e)
 		void	ClearTronUnknownMessage() { m_fTronUnknownF98C = -1.0f; }
 		char*	GetTronUnknownMessageText2() { return m_szTronUnknownFA14; }

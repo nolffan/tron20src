@@ -71,9 +71,8 @@ class CPlayerCamera
 			m_eCameraMode = CHASE;
 		}
 
-		// RETAIL: Tron's takes a flag (retail 0x1015cfe0: true sets a time it
-		// keeps to 0; and it leaves TRONMODE5 its own way). PORT: the flag is
-		// not yet used
+		// RETAIL: Tron's takes a flag (retail 0x1015cfe0: true clears the
+		// start time at +0x104; it leaves TRONMODE5 its own way)
 		void GoFirstPerson(bool bInstant = false);
 
         LTBOOL IsChaseView()     const { return (m_eCameraMode == CHASE); }
@@ -101,10 +100,21 @@ class CPlayerCamera
 		float GetTronUnknownFC() const { return m_fTronUnknownFC; }
 		void SetTronUnknownFC(float f) { m_fTronUnknownFC = f; }
 		// RETAIL: cleared when the server moves the player (CMoveMgr::OnServerForcePos 0x100f9730)
-		void SetTronUnknown104(uint32 n) { m_nTronUnknown104 = n; }
+		void SetTronUnknown104(float f) { m_fTronUnknown104 = f; }
 
-		// RETAIL: Tron's (retail 0x1015e240; the name is ours)
-		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);
+		// RETAIL: Tron's light cycle camera (retail 0x1015dfe0..0x1015e950,
+		// in this order; all the names are ours)
+		void TronUnknownStartOrbit(float fStartRadius, float fEndRadius,
+								   float fStartPhi, float fEndPhi,
+								   float fStartTheta, float fEndTheta, float fTime);	// 0x1015dfe0
+		float TronUnknownGetOrbitYaw();						// 0x1015e060
+		bool TronUnknownMoveToTarget();						// 0x1015e070
+		void TronUnknownStartPan(float fPhi, float fRadius, float fTime);	// 0x1015e240
+		void TronUnknownStartLCCOrbit();					// 0x1015e2e0 (the "LCC*" console variables)
+		void TronUnknownGoLightCycle(float fPitch, float fYaw, float fZoom, bool bInstant);	// 0x1015e4b0
+		void TronUnknownGoLightCycleFromProfile(bool bInstant);	// 0x1015e510
+		void TronUnknownClipToTarget();						// 0x1015e620
+		void TronUnknownSaveToProfile();					// 0x1015e8f0
 
 		// RETAIL: Tron's takes a third argument (retail 0x1015d240: callers
 		// pass 0, 2 or a variable). PORT: not yet used
@@ -175,12 +185,21 @@ class CPlayerCamera
 
 		// RETAIL: Tron's (+0xd4..+0x104, to retail's size 0x108: the
 		// constructor, retail 0x1015b130, sets the last four and leaves the
-		// rest). Not yet named
-		uint8			m_aTronUnknownD4[0x24];
+		// rest). +0xd4..+0xf4: the orbit (TronUnknownStartOrbit, 0x1015dfe0;
+		// the names are ours)
+		float			m_fTronUnknownStartRadius;
+		float			m_fTronUnknownEndRadius;
+		float			m_fTronUnknownStartPhi;
+		float			m_fTronUnknownEndPhi;
+		float			m_fTronUnknownStartTheta;
+		float			m_fTronUnknownEndTheta;
+		float			m_fTronUnknownOrbitStart;
+		float			m_fTronUnknownOrbitTime;
+		float			m_fTronUnknownOrbitYaw;
 		float			m_fTronUnknownF8;
 		float			m_fTronUnknownFC;
 		float			m_fTronUnknown100;	// RETAIL: CPlayerMgr keeps it within its +0x1dc (retail 0x1012cb10)
-		uint32			m_nTronUnknown104;
+		float			m_fTronUnknown104;	// RETAIL: a start time (0x1015e4b0)
 
 	// Internal functions..
 	private:
