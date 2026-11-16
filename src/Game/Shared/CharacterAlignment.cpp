@@ -55,17 +55,19 @@ CharacterClass GetRelativeAlignment(const RelationSet& r1, const RelationData& c
 	{
 		switch( CA )
 		{
+		// RETAIL: Tron's order (0x1013caf0), with PERMISSION_DEPENDANT
 		case LIKE:
 			CC = GOOD;
-			break;
-		case TOLERATE:
-			CC = NEUTRAL;
 			break;
 		case HATE:
 			CC = BAD;
 			break;
 		case UNDETERMINED:
 			CC = UNKNOWN;
+			break;
+		case TOLERATE:
+		case PERMISSION_DEPENDANT:
+			CC = NEUTRAL;
 			break;
 		default:
 			UBER_ASSERT( 0, "Unknown relation" );
@@ -134,6 +136,10 @@ CharacterAlignment ConvertAlignmentNameToEnum(const char* const szName)
 		else if ( 0 == strcmp(szName, "UNDETERMINED") )
 		{
 			return UNDETERMINED;
+		}
+		else if ( 0 == strcmp(szName, "PERMISSION_DEPENDANT") )	// RETAIL: Tron's
+		{
+			return PERMISSION_DEPENDANT;
 		}
 		else
 		{

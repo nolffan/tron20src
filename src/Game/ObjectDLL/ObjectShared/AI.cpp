@@ -50,6 +50,7 @@
 #include "CharacterHitBox.h"
 #include "RelationMgr.h"
 #include "AICentralKnowledgeMgr.h"
+#include "MusicMgr.h"
 #include "Searchable.h"
 #include "AIGoalSpecialDamage.h"
 #include "SharedFXStructs.h"
@@ -2481,6 +2482,43 @@ void CAI::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::HandleDead()
+//
+//	PURPOSE:	Tron's: the AI died. RETAIL: 0x1012d930 (Tron's override;
+//				NOLF2's CAI has none). It traces, fires the music manager's
+//				AI-death event, removes its armor, forgets its weapons and
+//				objects and stops its dialogue before CCharacter's.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::HandleDead(LTBOOL bRemoveObj)
+{
+	AITRACE( AIShowStates, ( m_hObject, "AI is Dead" ) );
+
+	g_pMusicMgr->DoEvent( CMusicMgr::eEventAIDie );
+
+	DestroyArmor();
+
+	m_cWeapons = 0;
+	memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
+	memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
+
+	m_cObjects = 0;
+	memset(m_apObjects, LTNULL, sizeof(BaseClass*)*AI_MAX_OBJECTS);
+	memset(m_apObjectPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_OBJECTS);
+
+	// RETAIL: StopDialogue with LTTRUE as the "bogus" argument.
+	if( m_hDialogueObject )
+	{
+		SendTriggerMsgToObject(this, g_pLTServer->HandleToObject(m_hDialogueObject), LTTRUE, "OFF");
+		m_hDialogueObject = LTNULL;
+	}
+
+	super::HandleDead(bRemoveObj);
+}
 
 // ----------------------------------------------------------------------- //
 //

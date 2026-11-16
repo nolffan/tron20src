@@ -2710,15 +2710,8 @@ void CVehicleMgr::HandleCollision()
 
 		vPos += (rRot.Forward() * 32.0f);
 
-		// Play an fx based on the surface we hit...
-
-		if( pSurface && pSurface->szSnowmobileImpactFXName[0] )
-		{
-			CLIENTFX_CREATESTRUCT fxCS(pSurface->szSnowmobileImpactFXName, 0, vPos);
-			fxCS.m_vTargetNorm = m_cLastTouchInfo.m_Plane.m_Normal;
-			
-			g_pClientFXMgr->CreateClientFX(NULL, fxCS, LTTRUE);
-		}
+		// RETAIL: Tron's SURFACE has no snowmobile impact FX, so no FX is
+		// played here (NOLF2 played the surface's SnowmobileImpactFXName).
 
 
 		// Push us away from the impact...(keep y value the same so we

@@ -363,8 +363,9 @@ struct PROJECTILEFX
 	char        szSkin[FXBMGR_MAX_FILE_PATH];
 
 	// ClientFX effect to spawn when the projectile launches
+	// RETAIL: Tron has no FX flags (no FXLoop/FXSmoothShutdown attributes;
+	// the struct is 0x238 bytes, constructor 0x10144e10, Init 0x10144f00).
 	char        szFXName[FXBMGR_MAX_NAME_LENGTH];
-	int         dwFXFlags;
 
 	// effects to play when the disc ricochets off world geometry
 	char        szRicochetFXName[ FXBMGR_MAX_NAME_LENGTH ];
@@ -393,6 +394,7 @@ struct PROJECTILEFX
 	LTFLOAT     fFireOffset;
 	LTFLOAT     fLifeTime;
 	LTFLOAT     fGravityOverride;
+	LTFLOAT     fElasticity;		// RETAIL: Tron's (attribute Elasticity, +0x1f0)
 	int         nFlags;
 	LTVector    vLightColor;
 	int         nLightRadius;
@@ -402,19 +404,17 @@ struct PROJECTILEFX
 	LTVector    vModelScale;
 	int         nSmokeTrailType;
 
+	// RETAIL: Tron's energy drain of a projectile (attributes
+	// EnergyDrainMin/Max/Surge, +0x224..+0x22c).
+	LTFLOAT		fEnergyDrainMin;
+	LTFLOAT		fEnergyDrainMax;
+	LTFLOAT		fEnergyDrainSurge;
+
 	// (boolean) true if the projectile can hit projecitle of the same kind
 	int         nCanImpactSameKind;
 
 	// Data specific to our class (i.e., szClass)...
 	PROJECTILECLASSDATA* pClassData;
-
-	// RETAIL: Tron's energy drain of a projectile (attributes
-	// EnergyDrainMin/Max/Surge; retail Object.lto's CTronProjectile reads
-	// them at 0x224..0x22c).  Retail's place in the struct is not known:
-	// they are added at the end.
-	LTFLOAT		fEnergyDrainMin;
-	LTFLOAT		fEnergyDrainMax;
-	LTFLOAT		fEnergyDrainSurge;
 };
 
 typedef CTList<PROJECTILEFX*> ProjectileFXList;

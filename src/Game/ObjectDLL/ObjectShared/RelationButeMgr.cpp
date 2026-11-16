@@ -128,6 +128,7 @@ CRelationTools* CRelationTools::GetInstance()
 		}
 
 		sm_mapRelationAlignmentToName.insert( make_pair( LIKE, std::string("LIKE") ) );
+		sm_mapRelationAlignmentToName.insert( make_pair( PERMISSION_DEPENDANT, std::string("PERMISSION_DEPENDANT") ) );	// RETAIL: Tron's, second (0x1016607f)
 		sm_mapRelationAlignmentToName.insert( make_pair( TOLERATE, std::string("TOLERATE") ) );
 		sm_mapRelationAlignmentToName.insert( make_pair( HATE, std::string("HATE") ) );
 		sm_mapRelationAlignmentToName.insert( make_pair( UNDETERMINED, std::string("UNDETERMINED") ) );
@@ -1193,7 +1194,6 @@ ostream& operator << (ostream& os, const CRelationUser& User)
 //----------------------------------------------------------------------------
 RelationMomento::RelationMomento(IMomentoUser* pUser) :
 	m_pMomentoUser( pUser ),
-	m_flExpiration( 0 ),
 	m_eRelationMomentoType(eTemporary)
 {
 }
@@ -1207,10 +1207,10 @@ RelationMomento::RelationMomento(IMomentoUser* pUser) :
 //----------------------------------------------------------------------------
 RelationMomento::RelationMomento(IMomentoUser* pUser, float time, const RelationDescription& RD ) :
 	m_pMomentoUser( pUser ),
-	m_flExpiration( time ),
 	m_eRelationMomentoType(eTemporary),
 	m_RD( RD )
 {
+	m_Timer.Start( time );
 }
 
 // Save/Load:
@@ -1219,7 +1219,7 @@ int RelationMomento::Save(ILTMessage_Write *pMsg)
 	SAVE_CHARSTRING( m_RD.szValue );
 	SAVE_DWORD( m_RD.eTrait );
 	SAVE_DWORD( m_RD.eAlignment );
-	SAVE_TIME( m_flExpiration );
+	m_Timer.Save( pMsg );
 	SAVE_BYTE( m_eRelationMomentoType);
 
 	return 0;
@@ -1230,7 +1230,7 @@ int RelationMomento::Load(ILTMessage_Read *pMsg)
 	LOAD_CHARSTRING( m_RD.szValue, sizeof(m_RD.szValue) );
 	LOAD_DWORD_CAST( m_RD.eTrait, RelationTraits::eRelationTraits );
 	LOAD_DWORD_CAST( m_RD.eAlignment, CharacterAlignment );
-	LOAD_TIME( m_flExpiration );
+	m_Timer.Load( pMsg );
 	LOAD_BYTE_CAST(m_eRelationMomentoType, eRelationMomentoType);
 
 	return 0;
@@ -1256,11 +1256,9 @@ bool RelationMomento::IsExpired(float flCurrentTime) const
 	{
 		return false;
 	}
-	if (m_flExpiration >  flCurrentTime)
-	{
-		return false;
-	}
-	return true;
+	// PORT: retail has no out-of-line IsExpired; the timer is taken to
+	// say when the relation expires
+	return m_Timer.Stopped();
 }
 
 //----------------------------------------------------------------------------

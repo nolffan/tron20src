@@ -1687,8 +1687,6 @@ CShell.dll	retail	voice\\21010.wav
 CShell.dll	ours	.?AVCHUDAmmoChooser@@
 Object.lto	ours	.?AVCClusterAutoBurstDisc@@
 
-# Not written yet (2026-11-13): retail's Tron CAI::HandleDead (Object.lto 0x1012d930) prints "AI is Dead" through ObjectCPrint and fires the music manager's AI-death event (CMusicMgr::DoEvent(eEventAIDie)); ours is NOLF2's, which does neither.
-Object.lto	retail	AI is Dead
 # Not written yet (2026-11-13): retail Object.lto imports FindWindowA, ShowWindow and MessageBoxA from USER32 for Tron server code not written yet; our link keeps only USER32's name.
 Object.lto	ours	USER32.dll
 # Not written yet (2026-11-13): CSubroutineMgr::AddBadBlock and AddBaseCodeBlock (CShell 0x100955f0, 0x10095680) are written, but their callers (e.g. 0x10093650) are not, so the link drops them and their strings.

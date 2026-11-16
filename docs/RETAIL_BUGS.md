@@ -936,6 +936,19 @@ SetCurLevel when the load fails. The assignment can free or reuse that
 buffer, so the restored name can be garbage.
 
 Not fixed yet: the modern build should copy the old name first.
+### A relation's timer takes an end time as its duration
+
+Object.lto 0x10168260 (CRelationUser::ResetRelationTime,
+ObjectShared/RelationButeMgr.cpp). Tron keeps a CTimer in each relation
+momento where NOLF2 keeps the expiration time. ResetRelationTime still
+computes the expiration as NOLF2 does, the relation's lifetime plus the
+current game time, and starts the timer with that value as its duration.
+The timer therefore stops at twice the current time plus the lifetime, not
+at the current time plus the lifetime: a temporary relation lasts longer
+the later in the level it is reset.
+
+Not fixed yet: the modern build should start the timer with the lifetime
+only.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

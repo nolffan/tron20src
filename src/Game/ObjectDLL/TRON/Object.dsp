@@ -204,6 +204,10 @@ SOURCE=.\BuildNote.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ContinuousFireHelper.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
@@ -434,6 +438,10 @@ SOURCE=.\BossButeMgr.h
 # Begin Source File
 
 SOURCE=.\BuildNote.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ContinuousFireHelper.h
 # End Source File
 # Begin Source File
 

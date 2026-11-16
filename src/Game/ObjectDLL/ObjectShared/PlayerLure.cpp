@@ -41,8 +41,8 @@ BEGIN_CLASS( PlayerLure )
 	ADD_GRAVITY_FLAG(0, PF_HIDDEN)
 	ADD_SHADOW_FLAG(0, PF_HIDDEN)
 	ADD_STRINGPROP_FLAG( PlayerLureCameraFreedom, "", PF_STATICLIST)
-	ADD_STRINGPROP( LimitedYawLeftRight, "-360 360" )
-	ADD_STRINGPROP( LimitedPitchDownUp, "-25 180" )
+	ADD_STRINGPROP( LimitedYawLeftRight, "-140 140" )	// RETAIL: Tron's defaults
+	ADD_STRINGPROP( LimitedPitchDownUp, "-25 45" )
 	ADD_BOOLPROP( AllowWeapon, 0 )
 	ADD_BOOLPROP( RetainOffsets, 0 )
 	ADD_BOOLPROP( Bicycle, 0 )
@@ -104,10 +104,11 @@ PlayerLure::PlayerLure( )
 	m_nPlayerLureId = s_nNextPlayerLureId;
 	s_nNextPlayerLureId++;
 
-	m_fLimitedYawLeft = -360;
-	m_fLimitedYawRight = 360;
+	// RETAIL: Tron's limits (0x10172300)
+	m_fLimitedYawLeft = -140;
+	m_fLimitedYawRight = 140;
 	m_fLimitedPitchDown = -25;
-	m_fLimitedPitchUp = 180;
+	m_fLimitedPitchUp = 45;
 }
 
 // ----------------------------------------------------------------------- //
