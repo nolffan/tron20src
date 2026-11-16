@@ -58,25 +58,18 @@ class Bombable : public GadgetTarget
 		// when HOBJECT ref points to gets deleted.
 		virtual void OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj );
 
-
-		void	UpdateSFXMsg(uint8 nTargetType, bool bSwitch);
-
 	protected : // Members...
 
 		float		m_fDefuseTime;
 		float		m_fDetonateTime;
 		HSTRING		m_hstrDetonateCmd;
 		HSTRING		m_hstrDefusedCmd;
-		HSTRING		m_hstrDefusingSnd;
-		HSTRING		m_hstrDefusedSnd;
 		LTObjRefNotifier	m_hTimeBombModel;
-		LTObjRefNotifier	m_hBombPickup;
 
 		CTimer		m_Timer;
 		
 		bool		m_bStartPlanted;
 		bool		m_bCanDefuse;
-		bool		m_bDefuseOnce;
 };
 
 

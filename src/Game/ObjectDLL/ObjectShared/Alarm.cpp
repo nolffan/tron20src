@@ -66,7 +66,7 @@ BEGIN_CLASS(Alarm)
 	ADD_STRINGPROP_FLAG(RespondRegions, "", 0)
 	ADD_STRINGPROP_FLAG(SearchRegions, "", 0)
 
-	ADD_BOOLPROP_FLAG(CanTransition, LTFALSE, PF_HIDDEN)
+	// RETAIL: no CanTransition here (ClassDef initializer 0x10269d50)
 	
 END_CLASS_DEFAULT_FLAGS_PLUGIN(Alarm, Prop, NULL, NULL, 0, CAlarmPlugin)
 #pragma force_active off

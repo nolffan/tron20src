@@ -80,8 +80,6 @@ class SecurityCamera : public CScanner
 		void	StartFocusingSound();
 		void	StopFocusingSound();
 		void	PlayDetectedSound();
-		void	StartDisabledSound();
-		void	StopDisabledSound();
 		void	KillAllSounds();
 
 		void	SetState(State eNewState);
@@ -115,7 +113,6 @@ class SecurityCamera : public CScanner
 
         HLTSOUND	m_hFocusingSound;
         HLTSOUND	m_hLoopSound;
-		HLTSOUND	m_hDisabledSound;
 
 		LTObjRef	m_hDisablerModel;
 		LTObjRefNotifier	m_hLight;

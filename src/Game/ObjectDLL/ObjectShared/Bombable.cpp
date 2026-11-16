@@ -47,7 +47,6 @@ BEGIN_CLASS( Bombable )
 	ADD_STRINGPROP_FLAG( DefusedCommand, "", PF_NOTIFYCHANGE )
 	ADD_BOOLPROP_FLAG( StartPlanted, LTFALSE, 0 )
 	ADD_BOOLPROP_FLAG( CanDefuse, LTFALSE, 0 )
-	ADD_BOOLPROP_FLAG( DefuseOnce, LTTRUE, 0 )
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN( Bombable, GadgetTarget, NULL, NULL, 0, CBombablePlugin )
 
@@ -56,8 +55,10 @@ CMDMGR_BEGIN_REGISTER_CLASS( Bombable )
 
 	CMDMGR_ADD_MSG( DETONATE, 1, NULL, "DETONATE" )
 	CMDMGR_ADD_MSG( PLANTBOMB, 1, NULL, "PLANTBOMB" )
-	CMDMGR_ADD_MSG( VISIBLE, 2, NULL, "VISIBLE <1 or 0>" )
-	CMDMGR_ADD_MSG( HIDDEN, 2, NULL, "HIDDEN <1 or 0>" )
+	// RETAIL: Tron's (0x10268400): VISIBLE, SOLID and HIDDEN without arguments
+	CMDMGR_ADD_MSG( VISIBLE, 1, NULL, "VISIBLE" )
+	CMDMGR_ADD_MSG( SOLID, 1, NULL, "SOLID" )
+	CMDMGR_ADD_MSG( HIDDEN, 1, NULL, "HIDDEN" )
 	
 CMDMGR_END_REGISTER_CLASS( Bombable, GadgetTarget )
 
@@ -121,14 +122,12 @@ Bombable::Bombable( )
 	m_fDetonateTime		( -1.0f ),
 	m_hstrDetonateCmd	( LTNULL ),
 	m_hstrDefusedCmd	( LTNULL ),
-	m_hstrDefusingSnd	( LTNULL ),
-	m_hstrDefusedSnd	( LTNULL ),
 	m_bStartPlanted		( false ),
-	m_bCanDefuse		( false ),
-	m_bDefuseOnce		( true )
+	m_bCanDefuse		( false )
 {
+	// RETAIL: 0x102685f0, Tron has no defusing sounds, bomb pickup or
+	// DefuseOnce (build 51's members and NOLF2's StartPlanted/CanDefuse)
 	m_hTimeBombModel.SetReceiver( *this );
-	m_hBombPickup.SetReceiver( *this );
 }
 
 
@@ -144,8 +143,6 @@ Bombable::~Bombable( )
 {
 	FREE_HSTRING( m_hstrDetonateCmd );
 	FREE_HSTRING( m_hstrDefusedCmd );
-	FREE_HSTRING( m_hstrDefusingSnd );
-	FREE_HSTRING( m_hstrDefusedSnd );
 
 	if( m_hTimeBombModel )
 	{
@@ -250,23 +247,6 @@ LTBOOL Bombable::ReadProp( ObjectCreateStruct *pStruct )
 	if( g_pLTServer->GetPropGeneric( "CanDefuse", &gProp ) == LT_OK )
 	{
 		m_bCanDefuse = gProp.m_Bool;
-	}
-
-	if( g_pLTServer->GetPropGeneric( "DefuseOnce", &gProp ) == LT_OK )
-	{
-		m_bDefuseOnce = gProp.m_Bool;
-	}
-
-	if( m_hstrDisablingSnd )
-	{
-		m_hstrDefusingSnd = m_hstrDisablingSnd;
-		m_hstrDisablingSnd = LTNULL;
-	}
-
-	if( m_hstrDisabledSnd )
-	{
-		m_hstrDefusedSnd = m_hstrDisabledSnd;
-		m_hstrDisabledSnd = LTNULL;
 	}
 
 
@@ -375,8 +355,6 @@ void Bombable::SetupDisabledState( LTBOOL bDestroyed )
 	if (!pModel) return;
 
 	m_hTimeBombModel = pModel->m_hObject;
-	//hide target while attachment is visible
-	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_FORCECLIENTUPDATE, FLAG_VISIBLE | FLAG_FORCECLIENTUPDATE );
 
 	// Attach the model to the the camera...
 
@@ -411,8 +389,6 @@ void Bombable::SetupDisabledState( LTBOOL bDestroyed )
 	if( m_bCanDefuse )
 	{
 		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, m_dwGadgetUsrFlgs | USRFLG_CAN_ACTIVATE );
-
-		UpdateSFXMsg(m_pGTInfo->m_eTargetType, false);
 	}
 
 	// Start the countdown...
@@ -421,10 +397,6 @@ void Bombable::SetupDisabledState( LTBOOL bDestroyed )
 	{
 		m_Timer.Start( m_fDetonateTime );
 		SetNextUpdate( UPDATE_NEXT_FRAME );
-		
-		// Don't let this object deactivate within Prop::Update()
-
-		m_bCanDeactivate = false;
 	}
 
 	// Play the projectiles ClientFX on the time bomb model...
@@ -444,43 +416,20 @@ void Bombable::SetupDisabledState( LTBOOL bDestroyed )
 
 void Bombable::HandleActivateMsg( HOBJECT hSender )
 {
+	// RETAIL: 0x102690c0, build 51's (no team check, no defusing sound)
+
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags( m_hObject, OFT_User, dwFlags );
 
-	if( !IsPlayer( hSender ) ) return;
-
-	CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
-	if( !pPlayer ) return;
-
-	if( IsTeamGameType() )
-	{
-		// Don't let players on our own team defuse the bomb...
-		
-		if( pPlayer->GetTeamID() == m_nTeamID )
-			return;
-	}
-
 	if( (dwFlags & USRFLG_CAN_ACTIVATE) && m_bDisabled )
 	{
-		// Play the disabling sound...
-
-		if( m_hstrDefusingSnd )
-		{
-			const char *szSound = g_pLTServer->GetStringData( m_hstrDefusingSnd );
-			if( szSound )
-			{
-				LTVector vPos;
-				g_pLTServer->GetObjectPos( m_hObject, &vPos );
-
-				uint32 dwFlags = (PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
-				m_hSound = g_pServerSoundMgr->PlaySoundFromPos( vPos, szSound, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW, dwFlags );
-
-			}
-		}
-
-
 		// Send a message to the client letting it know how long it should take
 		// and whether or not it should show the bar...
+
+		if( !IsPlayer( hSender ) ) return;
+
+		CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
+		if( !pPlayer ) return;
 
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_GADGETTARGET );
@@ -503,20 +452,13 @@ void Bombable::HandleActivateMsg( HOBJECT hSender )
 
 void Bombable::HandleStoppedMsg( const CParsedMsg &cMsg )
 {
+	// RETAIL: 0x10269250, build 51's
+
 	if( !m_bDisabled )
 	{
 		GadgetTarget::HandleStoppedMsg( cMsg );
 		return;
 	}
-
-	// Stop the disabling sound if one was playing
-	
-	if( m_hSound )
-	{
-		g_pLTServer->SoundMgr()->KillSound( m_hSound );
-        m_hSound = LTNULL;
-	}
-
 
 	// We already planted the bomb...
 	// The second stopped message is for stopping the defusing of the bomb...
@@ -528,9 +470,6 @@ void Bombable::HandleStoppedMsg( const CParsedMsg &cMsg )
 		// Make sure we can try and defuse it again...
 
 		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE );
-
-		// RETAIL: reconstructed from the retail 1.3 Object.lto (0x101d4640)
-		m_bCanDeactivate = true;
 	}
 	else
 	{
@@ -551,28 +490,11 @@ void Bombable::HandleStoppedMsg( const CParsedMsg &cMsg )
 
 void Bombable::SetupDefusedState( )
 {
+	// RETAIL: 0x102692c0, build 51's with the TimeBomb weapon pickup
+
 	// The Bomb is no longer planted...
 
 	m_bDisabled = LTFALSE;
-	m_bDisableRequested = LTFALSE;
-
-	UpdateSFXMsg(m_pGTInfo->m_eTargetType, true);
-
-	// Play the disabled sound...
-
-	if( m_hstrDefusedSnd )
-	{
-		const char *szSound = g_pLTServer->GetStringData( m_hstrDefusedSnd );
-		if( szSound )
-		{
-			LTVector vPos;
-			g_pLTServer->GetObjectPos( m_hObject, &vPos );
-
-			uint32 dwFlags = (PLAYSOUND_GETHANDLE);
-			m_hSound = g_pServerSoundMgr->PlaySoundFromPos( vPos, szSound, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW, dwFlags );
-
-		}
-	}
 
 	// Send the defused command...
 	
@@ -597,7 +519,7 @@ void Bombable::SetupDefusedState( )
 		return;
 
 	char szSpawn[512];
-	sprintf(szSpawn, "WeaponItem MPRespawn 0;WeaponType TimeBomb;AmmoCount 1;MoveToFloor 0" );
+	sprintf(szSpawn, "WeaponItem WeaponType TimeBomb;AmmoCount 1;MoveToFloor 0" );
 
 	LTVector vScale = pAmmo->pProjectileFX->vModelScale;
 
@@ -622,8 +544,6 @@ void Bombable::SetupDefusedState( )
 		vDims.z *= vScale.z;
 
 		g_pPhysicsLT->SetObjectDims(pClass->m_hObject, &vDims, 0);
-
-		m_hBombPickup = pClass->m_hObject;
 	}
 
 
@@ -638,30 +558,9 @@ void Bombable::SetupDefusedState( )
 	g_pLTServer->RemoveObject( m_hTimeBombModel );
 	m_hTimeBombModel = LTNULL;
 
-	if (m_hBombPickup)
-	{
-		// Clients can't try to plant another bomb until the pickup goes away
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, 0, m_dwGadgetUsrFlgs | USRFLG_CAN_ACTIVATE );
-		UpdateSFXMsg(0, false);
+	// Clients can try to plant another bomb...
 
-		//hide target while pickup is visible
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_FORCECLIENTUPDATE, FLAG_VISIBLE | FLAG_FORCECLIENTUPDATE );
-	}
-	else
-	{
-		//show target 'cause there is no pick up and no attachment
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE | FLAG_FORCECLIENTUPDATE );
-	}
-
-	// Allow this object to deactivate within Prop::Update()
-
-	m_bCanDeactivate = true;
-
-	if( m_bDefuseOnce )
-	{
-		g_pLTServer->RemoveObject( m_hObject );
-	}
-
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, m_dwGadgetUsrFlgs, m_dwGadgetUsrFlgs );
 }
 
 // ----------------------------------------------------------------------- //
@@ -683,10 +582,8 @@ LTBOOL Bombable::OnSave( ILTMessage_Write *pMsg )
 	SAVE_HSTRING( m_hstrDetonateCmd );
 	SAVE_HSTRING( m_hstrDefusedCmd );
 	SAVE_HOBJECT( m_hTimeBombModel );
-	SAVE_HOBJECT( m_hBombPickup );
 	SAVE_bool( m_bStartPlanted );
 	SAVE_bool( m_bCanDefuse );
-	SAVE_bool( m_bDefuseOnce );
 
 	return GadgetTarget::OnSave( pMsg );
 }
@@ -711,10 +608,8 @@ LTBOOL Bombable::OnLoad( ILTMessage_Read *pMsg )
 	LOAD_HSTRING( m_hstrDetonateCmd );
 	LOAD_HSTRING( m_hstrDefusedCmd );
 	LOAD_HOBJECT( m_hTimeBombModel );
-	LOAD_HOBJECT( m_hBombPickup );
 	LOAD_bool( m_bStartPlanted );
 	LOAD_bool( m_bCanDefuse );
-	LOAD_bool( m_bDefuseOnce );
 
 	return GadgetTarget::OnLoad( pMsg );
 }
@@ -737,17 +632,6 @@ void Bombable::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 			g_pLTServer->RemoveAttachment(hAttachment);
 		}
 	}
-	if( pRef == &m_hBombPickup )
-	{
-		// pickup is gone player can now plant a new bomb
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, m_dwGadgetUsrFlgs, m_dwGadgetUsrFlgs  | USRFLG_CAN_ACTIVATE );
-		UpdateSFXMsg(m_pGTInfo->m_eTargetType, true);
-
-		//show target 'cause there is no pick up and no attachment
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE | FLAG_FORCECLIENTUPDATE );
-	}
-
-
 	GadgetTarget::OnLinkBroken( pRef, hObj );
 }
 
@@ -761,22 +645,14 @@ void Bombable::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 
 bool Bombable::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 {
-	static CParsedMsg::CToken s_cTok_1("1");
-	static CParsedMsg::CToken s_cTok_True("TRUE");
-	static CParsedMsg::CToken s_cTok_0("0");
-	static CParsedMsg::CToken s_cTok_False("FALSE");
+	// RETAIL: 0x102697e0, Tron's: VISIBLE, SOLID and HIDDEN are relayed to
+	// the planted bomb model and then handled as usual
 	static CParsedMsg::CToken s_cTok_Detonate( "DETONATE" );
 	static CParsedMsg::CToken s_cTok_PlantBomb( "PLANTBOMB" );
 	static CParsedMsg::CToken s_cTok_Visible( "VISIBLE" );
+	static CParsedMsg::CToken s_cTok_Solid( "SOLID" );
 	static CParsedMsg::CToken s_cTok_Hidden( "HIDDEN" );
 	
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
-	if (!m_dwOriginalFlags)
-	{
-		m_dwOriginalFlags = dwFlags;
-	}
-		
 	if( cMsg.GetArg(0) == s_cTok_Detonate )
 	{
 		SetupDetonatedState();
@@ -788,6 +664,7 @@ bool Bombable::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 		return true;
 	}
 	else if( (cMsg.GetArg(0) == s_cTok_Visible) ||
+			 (cMsg.GetArg(0) == s_cTok_Solid) ||
 			 (cMsg.GetArg(0) == s_cTok_Hidden) )
 	{
 		// Relay the message to the bomb model if one is planted...
@@ -796,65 +673,13 @@ bool Bombable::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 		{
 			char szMsg[128] = {0};
 			cMsg.ReCreateMsg( szMsg, ARRAY_LEN( szMsg ), 0 );
-			SendTriggerMsgToObject( this, m_hTimeBombModel, LTFALSE, szMsg );
-		
+			SendTriggerMsgToObject( this, m_hTimeBombModel, LTTRUE, szMsg );
 
-			// Do not let GameBase process this message if the bomb is planted...
-			// Instead toggle solid and rayhit but not vsible.
-
-			uint32 dwFlags;
-			g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags );
-			
-			if ((cMsg.GetArg(1) == s_cTok_1) ||
-				(cMsg.GetArg(1) == s_cTok_True))
-			{
-				dwFlags &= ~FLAG_SOLID;
-				dwFlags &= ~FLAG_RAYHIT;
-			}
-			else
-			{
-				if ((cMsg.GetArg(1) == s_cTok_0) ||
-					(cMsg.GetArg(1) == s_cTok_False))
-				{
-					if( m_dwOriginalFlags & FLAG_SOLID )
-					{
-						dwFlags |= FLAG_SOLID;
-					}
-
-					if (m_dwOriginalFlags & FLAG_RAYHIT)
-					{
-						dwFlags |= FLAG_RAYHIT;
-					}
-				}
-			}
-
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, dwFlags, FLAGMASK_ALL );
-		
-			return true;
+			return GadgetTarget::OnTrigger( hSender, cMsg );
 		}
+
+		return true;
 	}
 	
 	return GadgetTarget::OnTrigger( hSender, cMsg );
-}
-
-
-void Bombable::UpdateSFXMsg(uint8 nTargetType, bool bSwitch)
-{
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(SFX_GADGETTARGET_ID);
-    cMsg.Writeuint8(nTargetType);
-	cMsg.Writebool(bSwitch);
-	cMsg.Writebool(!!m_bOn);
-	cMsg.Writeuint8( m_nTeamID );
-	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
-
-	cMsg.Writeuint8(MID_SFX_MESSAGE);
-	cMsg.Writeuint8(SFX_GADGETTARGET_ID);
-	cMsg.WriteObject(m_hObject);
-    cMsg.Writeuint8(nTargetType);
-	cMsg.Writebool(bSwitch);
-	cMsg.Writebool(!!m_bOn);
-	cMsg.Writeuint8( m_nTeamID );
-	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
 }

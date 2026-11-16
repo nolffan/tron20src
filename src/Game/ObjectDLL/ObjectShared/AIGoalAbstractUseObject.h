@@ -54,6 +54,11 @@ class CAIGoalAbstractUseObject : public CAIGoalAbstractSearch
 		virtual AINode*	HandleGoalAttractors();
 		virtual AINode* FindNearestAttractorNode();
 
+		// Command Handling.
+
+		// RETAIL: Tron's (0x10272a40), the IGNOREDIALOGUE parameter
+		virtual LTBOOL HandleNameValuePair(const char *szName, const char *szValue);
+
 		// Sense Handling.
 
 		virtual LTBOOL HandleGoalSenseTrigger(AISenseRecord* pSenseRecord);
@@ -88,8 +93,9 @@ class CAIGoalAbstractUseObject : public CAIGoalAbstractSearch
 		LTBOOL				m_bLockedNode;
 		LTBOOL				m_bPlayedSpecialDeathAnim;
 		// RETAIL: Tron adds a BOOL at 0x100 (ctor 0x10271d30 clears it, Save
-		// 0x10271f80 / Load write and read it last). Users not yet identified.
-		LTBOOL				m_bTronUnknown100;
+		// 0x10271f80 / Load write and read it last), set by the goal's
+		// IGNOREDIALOGUE parameter (HandleNameValuePair 0x10272a40; our name).
+		LTBOOL				m_bIgnoreDialogue;
 };
 
 

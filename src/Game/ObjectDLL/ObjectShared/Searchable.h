@@ -28,6 +28,8 @@
 //  ...
 //
 
+// RETAIL: Tron keeps build 51's search times (the ClassDef initializers of
+// SearchProp 0x10244a50, Body, AIHuman and Character all name them)
 #define ADD_SEARCHABLE_AGGREGATE(group, flags) \
 	PROP_DEFINEGROUP(SearchProperties, (group) | (flags)) \
 		ADD_REALPROP_FLAG(MinSearchTime, -1.0f, (group) | (flags)) \

@@ -518,7 +518,9 @@ void SoundFX::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 	bool bSoundPlaying;
 	LOAD_bool(bSoundPlaying);
-    if (bSoundPlaying && m_bLooping)
+	// RETAIL: 0x102422d0, Tron restarts any sound that was playing (NOLF2 1.x
+	// only a looping one)
+    if (bSoundPlaying)
 	{
 		PlaySound();
 	}

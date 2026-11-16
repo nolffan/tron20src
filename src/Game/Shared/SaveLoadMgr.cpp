@@ -21,6 +21,9 @@
 #include "SaveLoadMgr.h"
 #include "VersionMgr.h"
 
+// Both DLLs define it (ServerUtilities, ClientUtilities).
+bool IsMultiplayerGame();
+
 
 // ----------------------------------------------------------------------- //
 //
@@ -61,7 +64,9 @@ CSaveLoadMgr::~CSaveLoadMgr( )
 bool CSaveLoadMgr::Init( char const* pszProfileName, bool bUseMultiplayerFolders )
 {
 	// Verify inputs.
-	if( !pszProfileName || !pszProfileName[0] )
+	// RETAIL: Tron accepts no profile name in a multiplayer game (server
+	// 0x10236200, client 0x10143e30)
+	if( !IsMultiplayerGame( ) && ( !pszProfileName || !pszProfileName[0] ))
 	{
 		ASSERT( !"CSaveLoadMgr::Init:  Invalid profile name." );
 		return false;
@@ -187,8 +192,7 @@ void CSaveLoadMgr::WriteContinueINI( char const* pszSaveKey, char const* pszSave
 
 	CWinUtil::WinWritePrivateProfileString( GAME_NAME, CONTINUE_INIKEY, sIniString, GetSaveINIFile( ));
 
-	// Flush the file.
-	CWinUtil::WinWritePrivateProfileString( NULL, NULL, NULL, GetSaveINIFile( ));
+	// RETAIL: Tron's does not flush the file (0x10236540, 0x10236790)
 
 	return;
 }
@@ -264,8 +268,7 @@ void CSaveLoadMgr::WriteSaveINI( const char *pKey, const char* pszSaveTitle, con
 
 	CWinUtil::WinWritePrivateProfileString( GAME_NAME, pKey, sIniString, GetSaveINIFile( ));
 
-	// Flush the file.
-	CWinUtil::WinWritePrivateProfileString( NULL, NULL, NULL, GetSaveINIFile( ));
+	// RETAIL: Tron's does not flush the file (0x10236540, 0x10236790)
 
 	return;
 }

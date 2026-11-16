@@ -15,6 +15,7 @@
 #include "AIUtils.h"
 #include "AITypes.h"
 #include "AIAssert.h"
+#include "AIGoalButeMgr.h"
 
 LINKFROM_MODULE( AINodeGuard );
 
@@ -56,6 +57,7 @@ CMDMGR_BEGIN_REGISTER_CLASS(AINodeTalk)
 CMDMGR_END_REGISTER_CLASS(AINodeTalk, AINode)
 
 BEGIN_CLASS(AINodeExitLevel)
+	ADD_STRINGPROP_FLAG(OnUseCmd,				"",				0)	// RETAIL: Tron's (0x1026d460)
 END_CLASS_DEFAULT(AINodeExitLevel, AINode, NULL, NULL)
 
 CMDMGR_BEGIN_REGISTER_CLASS(AINodeExitLevel)
@@ -195,3 +197,45 @@ void AINodeGuard::Load(ILTMessage_Read *pMsg)
 	}
 }
 
+// ----------------------------------------------------------------------- //
+
+void AINodeExitLevel::ReadProp(ObjectCreateStruct* pocs)
+{
+	// RETAIL: 0x1026de40; a SmartObject name is not taken as a command
+	if ( g_pLTServer->GetPropGeneric( "OnUseCmd", &g_gp ) == LT_OK )
+	{
+		if ( !g_gp.m_String[0] || !g_pAIGoalButeMgr->GetSmartObjectTemplate( g_gp.m_String ) )
+		{
+			m_sOnUseCmd = g_gp.m_String;
+		}
+	}
+
+	AINode::ReadProp(pocs);
+}
+
+void AINodeExitLevel::Load(ILTMessage_Read *pMsg)
+{
+	// RETAIL: 0x1026df30
+	char szString[1024];
+	LOAD_CHARSTRING( szString, ARRAY_LEN( szString ));
+	m_sOnUseCmd = szString;
+
+	AINode::Load(pMsg);
+}
+
+void AINodeExitLevel::Save(ILTMessage_Write *pMsg)
+{
+	// RETAIL: 0x1026dff0
+	SAVE_CHARSTRING( m_sOnUseCmd.c_str( ));
+
+	AINode::Save(pMsg);
+}
+
+void AINodeExitLevel::ProcessOnUseCmd(HOBJECT hUser)
+{
+	// RETAIL: 0x1026e020
+	if( g_pCmdMgr->IsValidCmd( m_sOnUseCmd.c_str( )))
+	{
+		g_pCmdMgr->Process( m_sOnUseCmd.c_str( ), m_hObject, hUser );
+	}
+}

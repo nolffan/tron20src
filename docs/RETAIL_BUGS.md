@@ -880,6 +880,32 @@ sound files themselves loop, a level designer's loop sound is heard only
 when the object starts or loads.
 
 Not fixed yet: the modern build should add PLAYSOUND_LOOP.
+### An EventCounter's REPORT message is registered as a second RESET
+
+Object.lto 0x10260d30 (EventCounter's command manager table,
+ObjectShared/EventCounter.cpp). Tron added RESET and REPORT messages to the
+event counter (OnTrigger 0x102611e0 handles both), but the table entry for
+REPORT is named "RESET" with the syntax "REPORT" (a copy of the line above):
+the command manager knows RESET twice and REPORT not at all, so the
+editor-time command check (CCommandMgrPlugin::PreCheckMsg) rejects a
+command sending REPORT to an event counter as an unknown message, although
+the game itself handles it.
+
+Fixed in the modern build: EventCounter.cpp (TRON20SRC_MODERN registers
+REPORT).
+
+### An AI path's initial direction ignores its second control point
+
+Object.lto 0x10231970 (CAIPath::GetInitialDir, ObjectShared/AIPath.cpp).
+Tron's version finds the first two control-point waypoints and stores the
+unit direction from the first to the second in the result, then breaks out
+of the loop into the code meant for a path with a single control point,
+which overwrites the result with the unit direction from the first control
+point to the AI's position (0x10231aff jumps back to 0x102319da). The
+direction to the second point is never returned, and for an AI standing on
+the first control point the result divides a zero vector by zero.
+
+Not fixed yet: the modern build should return after the two-point case.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

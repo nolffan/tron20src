@@ -132,7 +132,6 @@ SecurityCamera::SecurityCamera() : CScanner()
 
     m_hFocusingSound    = LTNULL;
     m_hLoopSound        = LTNULL;
-	m_hDisabledSound	= LTNULL;
     m_hDisablerModel    = LTNULL;
     m_hLight.SetReceiver( *this );
 
@@ -520,9 +519,13 @@ LTBOOL SecurityCamera::Update()
 
 	// Only update the rotation and detection if the camera is not disabled...
 
+	// RETAIL: 0x102436ef, Tron rotates even when disabled; only the
+	// detection is skipped
+
+	UpdateRotation();
+
 	if (!m_bDisabled)
 	{
-		UpdateRotation();
 		UpdateDetect();
 	}
 
@@ -581,6 +584,7 @@ void SecurityCamera::UpdateFlashingLight()
 
 void SecurityCamera::UpdateSounds(State eStatePrevious)
 {
+	// RETAIL: 0x10243860, build 51's (Tron has no disabled sound)
 	if ((m_eState == eStateDetected) &&
 		(eStatePrevious != eStateDetected))
 	{
@@ -597,10 +601,6 @@ void SecurityCamera::UpdateSounds(State eStatePrevious)
 			 (eStatePrevious == eStatePausingAt2))
 	{
 		StartLoopSound();
-	}
-	else if( eStatePrevious == eStateDisabled )
-	{
-		StartDisabledSound();
 	}
 }
 
@@ -699,44 +699,6 @@ void SecurityCamera::StopFocusingSound()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	SecurityCamera::StartDisabledSound()
-//
-//	PURPOSE:	Start the disabled sound
-//
-// ----------------------------------------------------------------------- //
-
-void SecurityCamera::StartDisabledSound()
-{
-	if( m_hDisabledSound )
-		return;
-	
-	KillAllSounds();
-
-	uint32 dwFlags = (PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE);
-
-	m_hDisabledSound = g_pServerSoundMgr->PlaySoundFromPos( m_vPos,
-		DISABLED_SOUND, m_fSoundRadius, SOUNDPRIORITY_MISC_LOW, dwFlags );
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	SecurityCamera::StopDisabledSound()
-//
-//	PURPOSE:	Stop the disabled sound
-//
-// ----------------------------------------------------------------------- //
-
-void SecurityCamera::StopDisabledSound()
-{
-	if( m_hDisabledSound )
-	{
-		g_pLTServer->SoundMgr()->KillSound( m_hDisabledSound );
-		m_hDisabledSound = LTNULL;
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	SecurityCamera::KillAllSounds()
 //
 //	PURPOSE:	Kill all sounds
@@ -747,7 +709,6 @@ void SecurityCamera::KillAllSounds()
 {
 	StopFocusingSound();
 	StopLoopSound();
-	StopDisabledSound();
 }
 
 // ----------------------------------------------------------------------- //

@@ -232,6 +232,17 @@ void CAIPath::GetInitialDir(LTVector* pvDir)
 		return;
 	}
 
+	// RETAIL: 0x10231970, Tron's: an empty path or one without control
+	// points faces the AI's forward; otherwise the result is the direction
+	// from the first control point to the AI (the direction to the second
+	// control point is computed and then overwritten; see docs/RETAIL_BUGS.md).
+
+	if( m_lstWaypoints.empty() )
+	{
+		*pvDir = m_pAI->GetForwardVector();
+		return;
+	}
+
 	LTVector vPosFirst;
 	LTBOOL bFirst = LTTRUE;
 
@@ -248,12 +259,21 @@ void CAIPath::GetInitialDir(LTVector* pvDir)
 				bFirst = LTFALSE;
 			}
 			else {
-				*pvDir = pWaypt->GetArgumentVector1() - vPosFirst;
-				pvDir->Normalize();
+				LTVector vDir = pWaypt->GetArgumentVector1() - vPosFirst;
+				*pvDir = vDir.Unit();
 				break;
 			}
 		}
 	}
+
+	if( bFirst )
+	{
+		*pvDir = m_pAI->GetForwardVector();
+		return;
+	}
+
+	LTVector vDir = m_pAI->GetPosition() - vPosFirst;
+	*pvDir = vDir.Unit();
 }
 
 void CAIPath::GetFinalDir(LTVector* pvDir)
@@ -264,8 +284,18 @@ void CAIPath::GetFinalDir(LTVector* pvDir)
 		return;
 	}
 
+	// RETAIL: 0x10231b30, Tron's: an empty path faces the AI's forward; with
+	// one waypoint the direction runs from the AI; the result is normalized.
+
+	if( m_lstWaypoints.empty() )
+	{
+		*pvDir = m_pAI->GetForwardVector();
+		return;
+	}
+
 	LTBOOL bFirst = LTTRUE;
-	LTVector v0, v1;
+	LTVector v0 = m_pAI->GetPosition();
+	LTVector v1;
 
 	CAIPathWaypoint* pWaypt;
 	AI_WAYPOINT_LIST::reverse_iterator rit;
@@ -296,6 +326,7 @@ void CAIPath::GetFinalDir(LTVector* pvDir)
 	}
 
 	*pvDir = v1 - v0;
+	pvDir->Normalize();
 }
 
 AIVolume* CAIPath::GetNextVolume(AIVolume* pVolume, AIVolume::EnumVolumeType eVolumeType)

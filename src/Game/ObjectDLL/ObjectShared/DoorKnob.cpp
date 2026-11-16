@@ -38,7 +38,7 @@ BEGIN_CLASS(DoorKnob)
     ADD_BOOLPROP_FLAG(Additive, LTFALSE, PF_HIDDEN)
     ADD_BOOLPROP_FLAG(Multiply, LTFALSE, PF_HIDDEN)
 	
-	ADD_BOOLPROP_FLAG(CanTransition, LTFALSE, PF_HIDDEN)
+	// RETAIL: no CanTransition here (ClassDef initializer 0x10230000)
 
 END_CLASS_DEFAULT(DoorKnob, Prop, NULL, NULL)
 #pragma force_active off

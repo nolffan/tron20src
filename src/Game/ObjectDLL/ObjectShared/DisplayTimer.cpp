@@ -17,7 +17,6 @@
 #include "ParsedMsg.h"
 #include "CommandMgr.h"
 #include "MsgIDs.h"
-#include "VersionMgr.h"
 
 LINKFROM_MODULE( DisplayTimer );
 
@@ -26,7 +25,6 @@ BEGIN_CLASS(DisplayTimer)
 	ADD_STRINGPROP_FLAG(StartCommand, "", PF_NOTIFYCHANGE)
 	ADD_STRINGPROP_FLAG(EndCommand, "", PF_NOTIFYCHANGE)
     ADD_BOOLPROP(RemoveWhenDone, LTTRUE)
-	ADD_STRINGPROP_FLAG(Team, "NoTeam", PF_STATICLIST)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(DisplayTimer, GameBase, NULL, NULL, 0, CDisplayTimerPlugin)
 #pragma force_active off
 
@@ -40,42 +38,10 @@ CMDMGR_BEGIN_REGISTER_CLASS( DisplayTimer )
 	CMDMGR_ADD_MSG( KILL,	1,	NULL,	"KILL" )
 	CMDMGR_ADD_MSG( PAUSE,	1,	NULL,	"PAUSE" )
 	CMDMGR_ADD_MSG( RESUME,	1,	NULL,	"RESUME" )
-	CMDMGR_ADD_MSG( TEAM,	2,	NULL,	"TEAM <0, 1, -1>" )
 
-CMDMGR_END_REGISTER_CLASS( DisplayTimer, GameBase )
+// RETAIL: Tron registers BaseClass as the parent (0x10263040), as build 51
+CMDMGR_END_REGISTER_CLASS( DisplayTimer, BaseClass )
 
-LTRESULT CDisplayTimerPlugin::PreHook_EditStringList(
-	const char* szRezPath,
-	const char* szPropName,
-	char** aszStrings,
-    uint32* pcStrings,
-    const uint32 cMaxStrings,
-    const uint32 cMaxStringLength)
-{
-	// See if we can handle the property...
-
-	// Handle team...
-
-	if( _stricmp( "Team", szPropName ) == 0 )
-	{
-		char szTeam[32] = {0};
-
-		_ASSERT(cMaxStrings > (*pcStrings) + 1);
-		strcpy( aszStrings[(*pcStrings)++], "NoTeam" );
-		
-		for( int i = 0; i < MAX_TEAMS; ++i )
-		{
-			_ASSERT(cMaxStrings > (*pcStrings) + 1);
-
-			sprintf( szTeam, "Team%i", i );
-			strcpy( aszStrings[(*pcStrings)++], szTeam );
-		}
-
-		return LT_OK;
-	}
-
-	return LT_UNSUPPORTED;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -121,7 +87,6 @@ DisplayTimer::DisplayTimer() : GameBase(OT_NORMAL)
     m_hstrStartCmd      = LTNULL;
     m_hstrEndCmd        = LTNULL;
     m_bRemoveWhenDone   = LTTRUE;
-	m_nTeamId			= INVALID_TEAM;
 }
 
 // ----------------------------------------------------------------------- //
@@ -183,16 +148,8 @@ uint32 DisplayTimer::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fDat
 
 		case MID_LOADOBJECT:
 		{
+			// RETAIL: 0x1026320e, build 51's (Load updates the clients itself)
 			Load((ILTMessage_Read*)pData);
-
-			uint32 dwRet = BaseClass::EngineMessageFn(messageID, pData, fData);
-
-			// We need to reset our sfx message since values
-			// could have changed across save versions.
-			
-			UpdateClients( );
-			
-			return dwRet;
 		}
 		break;
 
@@ -233,32 +190,6 @@ void DisplayTimer::ReadProp(ObjectCreateStruct *)
     if (g_pLTServer->GetPropGeneric("RemoveWhenDone", &genProp) == LT_OK)
 	{
 		m_bRemoveWhenDone = genProp.m_Bool;
-	}
-
-	// Get the team this object belongs to.
-	if( IsTeamGameType() )
-	{
-		if( g_pLTServer->GetPropGeneric( "Team", &genProp ) == LT_OK )
-		{
-			if( genProp.m_String[0] )
-			{
-				// The team string should be TeamN, when N is the team id.
-				char const szTeam[] = "Team";
-				int nLen = strlen( szTeam );
-				if( !_strnicmp( genProp.m_String, szTeam, nLen ))
-				{
-					uint32 nTeamId = atoi( &genProp.m_String[ nLen ] );
-					if( nTeamId < MAX_TEAMS )
-					{
-						m_nTeamId = nTeamId;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		m_nTeamId = INVALID_TEAM;
 	}
 }
 
@@ -321,7 +252,6 @@ bool DisplayTimer::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Kill("KILL");
 	static CParsedMsg::CToken s_cTok_Pause("PAUSE");
 	static CParsedMsg::CToken s_cTok_Resume("RESUME");
-	static CParsedMsg::CToken s_cTok_Team("TEAM");
 
 	if ((cMsg.GetArg(0) == s_cTok_Start) ||
 		(cMsg.GetArg(0) == s_cTok_On))
@@ -354,23 +284,6 @@ bool DisplayTimer::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if (cMsg.GetArg(0) == s_cTok_Resume)
 	{
 		HandleResume();
-	}
-	else if (cMsg.GetArg(0) == s_cTok_Team)
-	{
-		if( cMsg.GetArgCount( ) > 1 )
-		{
-			uint32 nTeamId = atoi( cMsg.GetArg( 1 ));
-			if( nTeamId < MAX_TEAMS )
-			{
-				m_nTeamId = nTeamId;
-			}
-			else
-			{
-				m_nTeamId = INVALID_TEAM;
-			}
-
-			UpdateClients( );
-		}
 	}
 	else
 		return GameBase::OnTrigger(hSender, cMsg);
@@ -540,7 +453,6 @@ void DisplayTimer::UpdateClients()
 		cMsg.WriteObject(m_hObject);
 		cMsg.Writefloat(fGameTimeEnd);
 		cMsg.Writeuint8((uint8)m_Timer.Paused());
-		cMsg.Writeuint8( m_nTeamId );
 
 		// Send the message to all connected clients
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
@@ -551,7 +463,6 @@ void DisplayTimer::UpdateClients()
 		cMsg.Writeuint8(SFX_DISPLAYTIMER_ID);
 		cMsg.Writefloat( fGameTimeEnd );
 		cMsg.Writeuint8((uint8)m_Timer.Paused());
-		cMsg.Writeuint8( m_nTeamId );
 
 		// Make sure new clients will get the message
 		g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
@@ -602,8 +513,6 @@ void DisplayTimer::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bRemoveWhenDone);
 
 	m_Timer.Save(pMsg);
-
-	SAVE_BYTE( m_nTeamId );
 }
 
 
@@ -625,26 +534,8 @@ void DisplayTimer::Load(ILTMessage_Read *pMsg)
 
 	m_Timer.Load(pMsg);
 
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) > CVersionMgr::kSaveVersion__1_2 )
-	{
-		LOAD_BYTE( m_nTeamId );
-	}
-
 	if (m_Timer.GetDuration() > 0.0f)
 	{
 		UpdateClients();
 	}
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	DisplayTimer::Start
-//
-//	PURPOSE:	Starts the timer.
-//
-// --------------------------------------------------------------------------- //
-
-void DisplayTimer::Start( float fTime )
-{
-	HandleStart( fTime );
 }

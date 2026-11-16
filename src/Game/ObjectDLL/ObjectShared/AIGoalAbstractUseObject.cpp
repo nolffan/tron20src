@@ -40,7 +40,7 @@ CAIGoalAbstractUseObject::CAIGoalAbstractUseObject()
 	m_bHolstered = LTFALSE;
 	m_bLockedNode = LTFALSE;
 	m_bPlayedSpecialDeathAnim = LTFALSE;
-	m_bTronUnknown100 = LTFALSE;
+	m_bIgnoreDialogue = LTFALSE;
 
 	m_eWeaponPosition = kAP_Down;
 }
@@ -88,7 +88,7 @@ void CAIGoalAbstractUseObject::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bHolstered);
 	SAVE_BOOL(m_bLockedNode);
 	SAVE_BOOL(m_bPlayedSpecialDeathAnim);
-	SAVE_BOOL(m_bTronUnknown100);
+	SAVE_BOOL(m_bIgnoreDialogue);
 }
 
 void CAIGoalAbstractUseObject::Load(ILTMessage_Read *pMsg)
@@ -106,7 +106,7 @@ void CAIGoalAbstractUseObject::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bHolstered);
 	LOAD_BOOL(m_bLockedNode);
 	LOAD_BOOL(m_bPlayedSpecialDeathAnim);
-	LOAD_BOOL(m_bTronUnknown100);
+	LOAD_BOOL(m_bIgnoreDialogue);
 }
 
 // ----------------------------------------------------------------------- //
@@ -585,6 +585,25 @@ AINode* CAIGoalAbstractUseObject::FindNearestAttractorNode()
 	// Find an unowned node.
 
 	return FindGoalAttractors( LTFALSE, LTNULL );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAbstractUseObject::HandleNameValuePair
+//
+//	PURPOSE:	Handles getting a name/value pair.
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CAIGoalAbstractUseObject::HandleNameValuePair(const char *szName, const char *szValue)
+{
+	// RETAIL: 0x10272a40, Tron's
+	if ( !_stricmp(szName, "IGNOREDIALOGUE") )
+	{
+		m_bIgnoreDialogue = IsTrueChar(*szValue);
+	}
+
+	return super::HandleNameValuePair(szName, szValue);
 }
 
 // ----------------------------------------------------------------------- //
