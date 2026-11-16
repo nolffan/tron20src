@@ -125,9 +125,9 @@ public:
 		m_nTronUnknown230 = 0;
 	}
 
-	// PORT: Tron overrides UpdateCameraZoom (retail 0x100a4da0, slot 0xac:
-	// the LOL's and the triangulate subroutine's FOVs, +0x214..+0x220); not
-	// yet written, CPlayerMgr's stands in
+	// RETAIL: 0x100a4da0 (slot 0xac): the LOL's and the triangulate
+	// subroutine's FOVs (+0x214..+0x220) and their overlays
+	virtual void	UpdateCameraZoom();
 
 	// RETAIL: 0x100a52a0 (slot 0xb0): the triangulate subroutine scales
 	// the sway

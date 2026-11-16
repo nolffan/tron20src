@@ -40,6 +40,7 @@ extern VarTrack g_vtCameraSwayYFreq;
 extern VarTrack g_vtCameraSwayXSpeed;
 extern VarTrack g_vtCameraSwayYSpeed;
 extern VarTrack g_vtCameraSwayDuckMult;
+extern VarTrack g_vtFOVXNormal;
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
@@ -477,6 +478,165 @@ void CTronPlayerMgr::OnExitWorld()
 	}
 
 	CPlayerMgr::OnExitWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::UpdateCameraZoom()
+//
+//	PURPOSE:	RETAIL: 0x100a4da0: CPlayerMgr's zoom with the LOL's and
+//				the triangulate subroutine's FOVs; the vertical FOV keeps
+//				the screen's aspect, and the zoom overlays come back when
+//				the zoom ends
+//
+// ----------------------------------------------------------------------- //
+
+#define TRON_ZOOM_TIME			0.5f
+#define TRON_LOD_ZOOMADJUST		-5.0f
+
+void CTronPlayerMgr::UpdateCameraZoom()
+{
+	char strConsole[30];
+
+	uint32 dwWidth = 640, dwHeight = 480;
+	g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &dwWidth, &dwHeight);
+
+	float fovX, fovY;
+	g_pLTClient->GetCameraFOV(m_hCamera, &fovX, &fovY);
+
+	float fOldFovX = fovX;
+
+	if (!fovX)
+	{
+		fovX = DEG2RAD(g_vtFOVXNormal.GetFloat());
+	}
+
+	m_bZooming = LTTRUE;
+
+	float fFovXZoomed, fZoomDist;
+
+	if (m_bZoomingIn)
+	{
+		if (m_nZoomView == 1)
+		{
+			fFovXZoomed	= DEG2RAD(m_bTronUnknown210 ? m_fFOVZoomLOL : m_fFOVZoomTriangulate1);
+			fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - fFovXZoomed;
+		}
+		else if (m_nZoomView == 2)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate2);
+			fZoomDist	= DEG2RAD(m_bTronUnknown210 ? m_fFOVZoomLOL : m_fFOVZoomTriangulate1) - fFovXZoomed;
+		}
+		else if (m_nZoomView == 3)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate3);
+			fZoomDist	= DEG2RAD(m_fFOVZoomTriangulate2) - fFovXZoomed;
+		}
+	}
+	else
+	{
+		if (m_nZoomView == 0)
+		{
+			fFovXZoomed	= DEG2RAD(g_vtFOVXNormal.GetFloat());
+			if (m_bTronUnknown210)
+			{
+				fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomLOL);
+			}
+			else
+			{
+				fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomTriangulate1);
+			}
+		}
+		else if (m_nZoomView == 1)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate1);
+			fZoomDist	= fFovXZoomed - DEG2RAD(m_fFOVZoomTriangulate2);
+		}
+		else if (m_nZoomView == 2)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate2);
+			fZoomDist	= fFovXZoomed - DEG2RAD(m_fFOVZoomTriangulate3);
+		}
+	}
+
+	float fZoomVel = fZoomDist / TRON_ZOOM_TIME;
+	float fZoomAmount = fZoomVel * g_pGameClientShell->GetFrameTime();
+
+	// Zoom camera in or out...
+
+	if (m_bZoomingIn)
+	{
+		if (fovX > fFovXZoomed)
+		{
+			// Zoom camera in...
+
+			fovX -= fZoomAmount;
+		}
+
+		if (fovX <= fFovXZoomed)
+		{
+			fovX = fFovXZoomed;
+			m_bZooming = LTFALSE;
+			g_pInterfaceMgr->EndZoom();
+
+			if (m_bTronUnknown210)
+			{
+				g_pInterfaceMgr->CreateOverlay((eOverlayMask)8);
+			}
+			if (m_bTronUnknown211)
+			{
+				g_pInterfaceMgr->CreateOverlay((eOverlayMask)(m_bTronUnknown212 ? 14 : 11));
+			}
+		}
+	}
+	else  // Zoom camera out...
+	{
+		if (fovX < fFovXZoomed)
+		{
+			// Zoom camera out...
+
+			fovX += fZoomAmount;
+		}
+
+		if (fovX >= fFovXZoomed)
+		{
+			fovX = fFovXZoomed;
+			m_bZooming = LTFALSE;
+			g_pInterfaceMgr->EndZoom();
+			if (m_nZoomView == 0)
+			{
+				EndZoom();
+			}
+			else
+			{
+				if (m_bTronUnknown211)
+				{
+					g_pInterfaceMgr->CreateOverlay((eOverlayMask)(m_bTronUnknown212 ? 14 : 11));
+				}
+				if (m_bTronUnknown210)
+				{
+					g_pInterfaceMgr->CreateOverlay((eOverlayMask)8);
+				}
+			}
+		}
+	}
+
+	if (fOldFovX != fovX)
+	{
+		// RETAIL: the vertical FOV keeps the screen's aspect
+		float fHalfHeight = (float)dwHeight * 0.5f;
+		float fHalfWidth = (float)dwWidth * 0.5f;
+		fovY = (float)(2.0 * atan(fHalfHeight / (fHalfWidth / tan(fovX * 0.5f))));
+
+		SetCameraFOV(fovX, fovY);
+
+		// Update the lod adjustment for models...
+		float fZoomAmount = (DEG2RAD(g_vtFOVXNormal.GetFloat()) - fovX) / (DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomTriangulate3));
+		float fNewLODOffset = m_fSaveLODScale + (TRON_LOD_ZOOMADJUST * fZoomAmount);
+
+		sprintf(strConsole, "+ModelLODOffset %f", fNewLODOffset);
+		g_pLTClient->RunConsoleString(strConsole);
+	}
 }
 
 // ----------------------------------------------------------------------- //
