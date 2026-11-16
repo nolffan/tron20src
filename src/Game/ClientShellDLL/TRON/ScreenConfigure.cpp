@@ -81,7 +81,7 @@ void CScreenConfigure::Escape()
 		if (GetSelection() == GetIndex(m_pList[n]))
 		{
 			SetCurrentType(kNumCommandTypes);
-			g_pInterfaceMgr->RequestInterfaceSound(IS_SELECT);
+			PlayInterfaceSound(IS_SELECT);
 			return;
 		}
 	}
