@@ -21,19 +21,17 @@
 #include "WorldProperties.h"
 
 CServerMissionMgr* g_pServerMissionMgr = LTNULL;
-CVarTrack g_vtRunSpeed;
 extern CVarTrack g_vtNetFriendlyFire;
-extern CVarTrack g_vtDifficultyFactorPlayerIncrease;
 
 // --------------------------------------------------------------------------- //
 // Constructor & Destructor
 // --------------------------------------------------------------------------- //
 CServerMissionMgr::CServerMissionMgr()
 {
+	// RETAIL: 0x10161890
 	m_bCustomLevel = false;
     m_nCurrentMission = -1;
     m_nCurrentLevel = -1;
-	m_nCurrentRound	= 0;
 	m_nCurCampaignIndex = -1;
 
 	m_bTransitionLevels = false;
@@ -41,12 +39,13 @@ CServerMissionMgr::CServerMissionMgr()
 	m_bExitingLevel = false;
 	m_bPlayerTrackerAborted = false;
 
+	m_bUseSkills = false;
+	m_bFriendlyFire = false;
+	m_nMPDifficulty = 0;
+	m_fPlayerDiffFactor = 0.0f;
 
+	m_bTronUnknown4 = true;
 	m_bMissionFailed = false;
-	m_bLoopCampaign = false;
-
-	m_fStartTime = -1.0f;
-
 }
 
 CServerMissionMgr::~CServerMissionMgr()
@@ -70,7 +69,6 @@ bool CServerMissionMgr::Init()
 	m_nCurrentMission = -1;
 	m_nCurCampaignIndex = -1;
 	m_nCurrentLevel = -1;
-	m_nCurrentRound = 0;
 	m_sCurrentWorldName.Empty( );
 	m_sCampaignFile.Empty( );
 	m_bNewMission = false;
@@ -197,6 +195,8 @@ int CServerMissionMgr::FindNextCampaignIndex( int nStartingCampaignIndex, int nM
 
 bool CServerMissionMgr::Save( ILTMessage_Write& msg, uint32 dwSaveFlags )
 {
+	// RETAIL: 0x10161ba0
+	msg.Writebool( m_bTronUnknown4 );
 	msg.WriteString( m_sCampaignFile );
 
 	msg.Writeuint8( m_Campaign.size( ));
@@ -206,11 +206,10 @@ bool CServerMissionMgr::Save( ILTMessage_Write& msg, uint32 dwSaveFlags )
 	}
 	msg.Writeuint8( m_nCurCampaignIndex );
 
-	msg.Writebool(m_ServerSettings.m_bUseSkills);
-	msg.Writebool(m_ServerSettings.m_bFriendlyFire);
-	msg.Writeuint8(m_ServerSettings.m_nMPDifficulty);
-	msg.Writefloat(m_ServerSettings.m_fPlayerDiffFactor);
-
+	msg.Writebool( m_bUseSkills );
+	msg.Writebool( m_bFriendlyFire );
+	msg.Writeuint8( m_nMPDifficulty );
+	msg.Writefloat( m_fPlayerDiffFactor );
 
 	return true;
 }
@@ -226,6 +225,8 @@ bool CServerMissionMgr::Save( ILTMessage_Write& msg, uint32 dwSaveFlags )
 
 bool CServerMissionMgr::Load( ILTMessage_Read& msg, uint32 dwSaveFlags )
 {
+	// RETAIL: 0x10161c70
+	m_bTronUnknown4 = msg.Readbool( );
 	msg.ReadString( m_sCampaignFile.GetBuffer( MAX_PATH ), MAX_PATH );
 	m_sCampaignFile.ReleaseBuffer( );
 
@@ -237,14 +238,12 @@ bool CServerMissionMgr::Load( ILTMessage_Read& msg, uint32 dwSaveFlags )
 	}
 	m_nCurCampaignIndex = msg.Readuint8( );
 
-	ServerMissionSettings ss = m_ServerSettings;
-	ss.m_bUseSkills = msg.Readbool();
-	ss.m_bFriendlyFire = msg.Readbool();
-	ss.m_nMPDifficulty = msg.Readuint8();
-	ss.m_fPlayerDiffFactor = msg.Readfloat();
-	SetServerSettings(ss);
+	m_bUseSkills = msg.Readbool( );
+	m_bFriendlyFire = msg.Readbool( );
+	m_nMPDifficulty = msg.Readuint8( );
+	m_fPlayerDiffFactor = msg.Readfloat( );
 
-	
+	g_vtNetFriendlyFire.SetFloat( m_bFriendlyFire ? 1.0f : 0.0f );
 
 	return true;
 }
@@ -268,7 +267,6 @@ bool CServerMissionMgr::OnMessage( HCLIENT hSender, ILTMessage_Read& msg )
 		case MID_START_GAME:			HandleStartGame			( hSender, msg );	return true;
 		case MID_START_LEVEL:			HandleStartLevel		( hSender, msg );	return true;
 		case MID_EXIT_LEVEL:			HandleExitLevel			( hSender, msg );	return true;
-		case MID_MULTIPLAYER_OPTIONS:	HandleMultiplayerOptions( hSender, msg );	return true;
 
 		default:
 			break;
@@ -287,13 +285,16 @@ bool CServerMissionMgr::OnMessage( HCLIENT hSender, ILTMessage_Read& msg )
 
 bool CServerMissionMgr::HandleStartGame( HCLIENT hSender, ILTMessage_Read& msg )
 {
-	// Initialize the bute file the client wants.
-	ServerGameOptions const& serverGameOptions = g_pGameServerShell->GetServerGameOptions( );
-	m_sCampaignFile = serverGameOptions.GetCampaignName();
+	// RETAIL: 0x10161e70
+	m_bTronUnknown4 = msg.Readbool( );
 
-	ServerMissionSettings ss = m_ServerSettings;
-	ss.m_nMPDifficulty = (uint8)g_pGameServerShell->GetDifficulty();
-	SetServerSettings(ss);
+	// Initialize the bute file the client wants.
+	char szMissionFile[MAX_PATH];
+	msg.ReadString( szMissionFile, ARRAY_LEN( szMissionFile ));
+	if( !g_pMissionButeMgr->Init( szMissionFile ))
+		return false;
+
+	m_nMPDifficulty = (uint8)g_pGameServerShell->GetDifficulty();
 
 	// Start the game.
 	if( !StartGame( msg ))
@@ -337,21 +338,6 @@ bool CServerMissionMgr::HandleStartLevel( HCLIENT hSender, ILTMessage_Read& msg 
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerMissionMgr::LevelStarted()
-//
-//	PURPOSE:	Called when the clients have finished loading and have started
-//				playing a level
-//
-// ----------------------------------------------------------------------- //
-
-void CServerMissionMgr::LevelStarted()
-{
-	m_fStartTime = g_pLTServer->GetTime();
-}
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CServerMissionMgr::ExitLevelSwitch()
 //
 //	PURPOSE:	Called when it's time to go to the next level in the mission.
@@ -386,7 +372,6 @@ bool CServerMissionMgr::ExitLevelSwitch( )
 
 	// Go to the next level.
 	m_nCurrentLevel++;
-	m_nCurrentRound = 0;
 
 	// Default to not a new mission.
 	m_bNewMission = false;
@@ -463,7 +448,6 @@ bool CServerMissionMgr::NextMission( )
 
 	// Start level index over and advance the mission index.
 	m_nCurrentLevel = 0;
-	m_nCurrentRound = 0;
 	m_nCurCampaignIndex++;
 
 	// See if we reached the end of our campaign.
@@ -493,74 +477,6 @@ bool CServerMissionMgr::NextMission( )
 
 	return true;
 }
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerMissionMgr::NextRound()
-//
-//	PURPOSE:	Called to force switch to next round, if on last round will call NextMission()...
-//
-// ----------------------------------------------------------------------- //
-
-bool CServerMissionMgr::NextRound( )
-{
-	TRACE( "CServerMissionMgr::NextRound\n" );	
-
-	// Check if we're already exiting a level.
-	
-	if( m_bExitingLevel )
-		return true;
-
-	// Get the mission...
-
-	MISSION* pMission = g_pMissionButeMgr->GetMission(m_nCurrentMission);
-	if( !pMission )
-	{
-        ASSERT( !"CServerMissionMgr::NextMission:  Invalid mission." );
-		return false;
-	}
-
-	// Advance to the next round...
-	
-	++m_nCurrentRound;
-
-	// Default to not a new mission.
-	m_bNewMission = false;
-
-	// See if we finished the rounds for this level...
-	
- 	if( m_nCurrentRound >= m_ServerSettings.m_nRounds )
-	{
-		// Just go to the next mission...
-
-		if( !NextMission() )
-			return false;
-
-		return true;
-	}
-
-	if( !ExitLevel( m_sCurrentWorldName, false ))
-		return false;
-
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerMissionMgr::SwitchToCampaignIndex
-//
-//	PURPOSE:	Called to force transition to the specific mission within campaign.
-//
-// ----------------------------------------------------------------------- //
-
-bool CServerMissionMgr::SwitchToCampaignIndex( int nCampaignIndex )
-{
-	TRACE( "CServerMissionMgr::SwitchToCampaignIndex\n" );
-
-	m_nCurCampaignIndex = nCampaignIndex - 1;
-	return NextMission( );
-}
-
 
 
 // ----------------------------------------------------------------------- //
@@ -623,72 +539,6 @@ bool CServerMissionMgr::ExitLevelToLevel( char const* pszNewLevel )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CServerMissionMgr::ExitLevelToSavedGame()
-//
-//	PURPOSE:	Called before you load a game to notify clients
-//
-// ----------------------------------------------------------------------- //
-
-bool CServerMissionMgr::ExitLevelToSavedGame( char const* pszNewLevel )
-{
-	TRACE( "CServerMissionMgr::ExitLevelToSavedGame\n" );
-
-	// Check if we're already exiting a level.
-	if( m_bExitingLevel )
-		return true;
-
-	// Verify inputs.
-	if( !pszNewLevel )
-	{
-		ASSERT( !"CServerMissionMgr::ExitLevelToSavedGame: Invalid inputs." );
-		return false;
-	}
-
-	// Default to this not being a mission change.
-	m_bNewMission = false;
-
-	// Check if the new level is a new mission.
-	int nCurMission = m_nCurrentMission;
-	if( !SetMissionBasedOnLevel( pszNewLevel ))
-		return false;
-
-	// If we switch to a custom level, then consider it a new mission.
-	if( m_bCustomLevel )
-	{
-		m_bNewMission = true;
-		m_nCurCampaignIndex = -1;
-	}
-	// If it's not a custom world, check if our mission changed.
-	else
-	{
-		m_bNewMission = ( nCurMission != m_nCurrentMission );
-
-		// If we had a mission switch, advance our campaign index.
-		if( m_bNewMission )
-		{
-			// See if we can find the campaign index from our previous position.
-			m_nCurCampaignIndex = FindNextCampaignIndex( m_nCurCampaignIndex, m_nCurrentMission );
-		}
-	}
-
-	if (IsMultiplayerGame())
-	{
-		// Tell clients we're exiting. Don't wait for their response.
-		CAutoMessage cMsg;
-		cMsg.Writeuint8( MID_EXIT_LEVEL );
-		cMsg.WriteString( m_sCurrentWorldName );
-		cMsg.Writebool( m_bNewMission );
-		cMsg.Writebool( false );
-		cMsg.Writebool( false );
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-	}
-
-	return true;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CServerMissionMgr::ExitLevelTransition()
 //
 //	PURPOSE:	Called when level transition is needed.
@@ -719,7 +569,6 @@ bool CServerMissionMgr::ExitLevelTransition( int nNewLevel )
 }
 
 
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CServerMissionMgr::ExitLevel()
@@ -730,7 +579,8 @@ bool CServerMissionMgr::ExitLevelTransition( int nNewLevel )
 
 bool CServerMissionMgr::ExitLevel( char const* pszNewLevel, bool bTransitionToLevel )
 {
-	TRACE( "CServerMissionMgr::ExitLevel\n" );
+	// RETAIL: 0x101621b0: Tron does not look for the worldproperties
+	// object and has no start time.
 
 	// Verify inputs.
 	if( !pszNewLevel )
@@ -742,16 +592,6 @@ bool CServerMissionMgr::ExitLevel( char const* pszNewLevel, bool bTransitionToLe
 	// Check if we're already exiting a level.
 	if( m_bExitingLevel )
 		return true;
-
-	// Make sure there is a worldproperties object.
-	if (!g_pWorldProperties)
-	{
-		ASSERT( !"CServerMissionMgr::ExitLevel:  Could not find worldproperties." );
-		return false;
-	}
-	
-	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
-	// it here)
 
 	// Record that we are transitioning.
 	m_bTransitionLevels = bTransitionToLevel;
@@ -779,12 +619,8 @@ bool CServerMissionMgr::ExitLevel( char const* pszNewLevel, bool bTransitionToLe
 	// We're now waiting for exitlevel messages back from client.
 	m_bExitingLevel = true;
 
-	//clear out the start time
-	m_fStartTime = -1.0f;
-
 	return true;
 }
-
 
 
 // --------------------------------------------------------------------------- //
@@ -819,7 +655,6 @@ bool CServerMissionMgr::HandleExitLevel( HCLIENT hSender, ILTMessage_Read& msg )
 }
 
 
-
 // --------------------------------------------------------------------------- //
 //
 //	ROUTINE:	CServerMissionMgr::OnPlayerTrackerAbort
@@ -847,6 +682,8 @@ void CServerMissionMgr::OnPlayerTrackerAbort( )
 
 void CServerMissionMgr::Update( )
 {
+	// RETAIL: 0x101622a0: Tron has no time limit here.
+
 	// Update the playertracker.
 	m_PlayerTracker.Update( );
 
@@ -857,34 +694,6 @@ void CServerMissionMgr::Update( )
 		// Clear the abort signal.
 		m_bPlayerTrackerAborted = false;
 		FinishExitLevel( );
-	}
-
-	// Check to see if the time limit was reached...
-	if( m_ServerSettings.m_nTimeLimit > 0 && m_fStartTime >= 0.0f )
-	{
-		float fElapsedTime = g_pLTServer->GetTime() - m_fStartTime;
-
-		// Convert timelimit to seconds and see how much we have left.
-		float fTimeLeft = ((float)m_ServerSettings.m_nTimeLimit * 60.0f ) - fElapsedTime;
-
-		// If we ran out of time, then go to the next round.
-		if( fTimeLeft <= 0 )
-		{
-			g_pLTServer->CPrint( "TimeLimit reached." );
-			NextRound();
-		}
-		// Check if we should show a countdown timer.
-		else if( fTimeLeft < 30.0f && m_hDisplayTimer == NULL )
-		{
-			LTVector vPos;
-			LTRotation rRot;
-			DisplayTimer* pDisplayTimer = ( DisplayTimer* )SpawnObject( "DisplayTimer", vPos, rRot );
-			if( pDisplayTimer )
-			{
-				m_hDisplayTimer = pDisplayTimer->m_hObject;
-				pDisplayTimer->Start( fTimeLeft );
-			}
-		}
 	}
 }
 
@@ -898,7 +707,7 @@ void CServerMissionMgr::Update( )
 
 bool CServerMissionMgr::FinishExitLevel( )
 {
-	TRACE( "CServerMissionMgr::FinishExitLevel:\n" );
+	// RETAIL: 0x101622c0
 
 	// No longer waiting for exitlevel messages back from client.
 	m_bExitingLevel = false;
@@ -915,26 +724,13 @@ bool CServerMissionMgr::FinishExitLevel( )
 		iter++;
 	}
 
-	// Save the keepalives between levels.
-	bool bSaveKeepAlives = true;
-	
 	if( m_bNewMission )
 	{
 		// Clear out our objectives...
 		g_pGameServerShell->ResetObjectives();
-
-		// Clear working save dir since we're starting fresh.
-		g_pServerSaveLoadMgr->ClearWorkingDir( );
-
-		// If this is mp, then consider this to be a new game.  Saves between
-		// missions is only available in sp which allows skills to be saved.
-		if( IsMultiplayerGame( ))
-		{
-			// Tell the gameservershell it's a new game.
-			g_pGameServerShell->SetLGFlags( LOAD_NEW_GAME );
-			bSaveKeepAlives = false;
-		}
 	}
+
+	m_bNewMission = false;
 
 	// Default to failure.
 	bool bRet = false;
@@ -969,17 +765,16 @@ bool CServerMissionMgr::FinishExitLevel( )
 
 bool CServerMissionMgr::SendExitLevelMessage( )
 {
+	// RETAIL: 0x10162350
+
 	// Tell the players to prepare to exit a level.
 	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
 	while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
 	{
 		CPlayerObj* pPlayerObj = *iter;
 		pPlayerObj->HandlePreExit();
-		g_pGameServerShell->SendPlayerInfoMsgToClients(NULL,pPlayerObj,MID_PI_UPDATE);
 		iter++;
 	}
-
-	CTeamMgr::Instance().UpdateClient();
 
 	// See if we have already visited the level we are going to.
 	CString sLoadGameFile = g_pServerSaveLoadMgr->GetWorldSaveFile( m_sCurrentWorldName );
@@ -991,7 +786,6 @@ bool CServerMissionMgr::SendExitLevelMessage( )
 	cMsg.WriteString( m_sCurrentWorldName );
 	cMsg.Writebool( m_bNewMission );
 	cMsg.Writebool( bRestoringLevel );
-	cMsg.Writebool( true );
 	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	return true;
@@ -1008,16 +802,8 @@ bool CServerMissionMgr::SendExitLevelMessage( )
 
 bool CServerMissionMgr::EndGame( )
 {
-	// Make sure there is a worldproperties object.
-	if (!g_pWorldProperties)
-	{
-		ASSERT( !"CServerMissionMgr::EndGame:  Could not find worldproperties." );
-		return false;
-	}
-	
-	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
-	// it here)
-
+	// RETAIL: 0x1000a4d0 (a shared "return true" body): Tron does not look
+	// for the worldproperties object.
 	return true;
 }
 
@@ -1052,8 +838,8 @@ bool CServerMissionMgr::SetupCampaign( char const* pszCampaignName )
 	// Clear all missions from our campaign.
 	m_Campaign.clear( );
 
-	ServerGameOptions const& serverGameOptions = g_pGameServerShell->GetServerGameOptions( );
-	char const* pszCampaignFile = GetCampaignFile( serverGameOptions );
+	// RETAIL: 0x10162590: Tron reads the campaign from the given file.
+	char const* pszCampaignFile = pszCampaignName;
 
 	// If the campaignfile is blank, then just use all missions.
 	if( !pszCampaignFile || !pszCampaignFile[0] )
@@ -1106,8 +892,6 @@ bool CServerMissionMgr::SetupCampaign( char const* pszCampaignName )
 }
 
 
-
-
 // --------------------------------------------------------------------------- //
 //
 //	ROUTINE:	CServerMissionMgr::SetMissionFailed()
@@ -1118,67 +902,10 @@ bool CServerMissionMgr::SetupCampaign( char const* pszCampaignName )
 
 void CServerMissionMgr::SetMissionFailed(bool bFail)
 { 
+	// RETAIL: 0x10162730: Tron sends no message to the server app.
 	if (bFail != m_bMissionFailed)
 	{
 		g_pGameServerShell->PauseGame(bFail);
-		
-		if( bFail )
-		{
-			// Send a message to the serverapp letting it know the mission failed.
-			// If a ServerApp doesn't exist then nothing happens, otherwise GameServerShell::ServerAppMessageFn()
-			// will recieve a message and handle it.
-
-			CAutoMessage cMsg;
-			cMsg.Writeuint8( SERVERAPP_MISSIONFAILED );
-
-			CLTMsgRef_Read cMsgRef = cMsg.Read(); 
-			g_pLTServer->SendToServerApp( *cMsgRef );
-		}
 	}
 	m_bMissionFailed = bFail; 
-};
-
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CServerMissionMgr::SetServerSettings
-//
-//	PURPOSE:	Sets friendly fire info.
-//
-// --------------------------------------------------------------------------- //
-
-void CServerMissionMgr::SetServerSettings(ServerMissionSettings& ServerSettings)
-{
-	if (!g_vtNetFriendlyFire.IsInitted())
-	{
-		g_vtNetFriendlyFire.Init(g_pLTServer, "NetFriendlyFire", LTNULL, 1.0f);
-	}
-	if (!g_vtDifficultyFactorPlayerIncrease.IsInitted())
-	{
-		g_vtDifficultyFactorPlayerIncrease.Init( g_pLTServer, "DifficultyFactorPlayerIncrease", LTNULL, 0.1f );
-	}
-	if( !g_vtRunSpeed.IsInitted( ))
-	{
-		g_vtRunSpeed.Init( g_pLTServer, "RunSpeed", NULL, 1.0f );
-	}
-
-	m_ServerSettings = ServerSettings;
-
-	g_vtNetFriendlyFire.SetFloat( ( ServerSettings.m_bFriendlyFire ? 1.0f : 0.0f) );
-
-	if (IsDifficultyGameType())
-	{
-		g_pGameServerShell->SetDifficulty((GameDifficulty)ServerSettings.m_nMPDifficulty);
-		g_pLTServer->CPrint("CServerMissionMgr::StartGame() setting difficulty to %d",ServerSettings.m_nMPDifficulty);
-	}
-	else
-		g_pGameServerShell->SetDifficulty(GD_NORMAL);
-	
-
-	g_vtDifficultyFactorPlayerIncrease.SetFloat(ServerSettings.m_fPlayerDiffFactor);
-
-	// Only adjust the runspeed if this is a gametype that allows it.
-	if( !IsCoopMultiplayerGameType( ))
-		g_vtRunSpeed.SetFloat(  (float)ServerSettings.m_nRunSpeed / 100.0f );
 }
-

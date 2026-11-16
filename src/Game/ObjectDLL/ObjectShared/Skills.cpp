@@ -111,7 +111,7 @@ void CSkills::MultiplayerInit(ILTMessage_Read *pMsg)
 	}
 
 	m_nTotalPoints = 0;
-	if (g_pServerMissionMgr->GetServerSettings().m_bUseSkills)
+	if (g_pServerMissionMgr->UseSkills( ))
 	{
 		m_nTotalPoints = g_pSkillsButeMgr->GetMultiplayerPool();
 	}

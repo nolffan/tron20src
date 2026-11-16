@@ -13,7 +13,6 @@
 
 #include "ClientServerShared.h"
 #include "PlayerTracker.h"
-#include "ServerMissionSettings.h"
 
 typedef std::vector< int > Campaign;
 
@@ -31,17 +30,18 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		// Called to force switch to next mission
 		bool			NextMission( );
 		
-		// Called to force switch to next round, if on last round will call NextMission().
-		bool			NextRound( );
-
 		// Called to force switch to specific mission within a campaign.
-		bool			SwitchToCampaignIndex( int nCampaignIndex );
+		// RETAIL: Tron has no NextRound or out-of-line SwitchToCampaignIndex
+		// (no function between NextMission 0x10162030 and ExitLevelToLevel
+		// 0x101620d0); NOLF2's body is kept inline for the server commands.
+		bool			SwitchToCampaignIndex( int nCampaignIndex )
+		{
+			m_nCurCampaignIndex = nCampaignIndex - 1;
+			return NextMission( );
+		}
 
 		// Called when level switch is needed.
 		bool			ExitLevelToLevel( char const* pszNewLevel );
-
-		// Called when loading a game
-		bool			ExitLevelToSavedGame( char const* pszNewLevel );
 
 		// Called when level transition is needed.
 		bool			ExitLevelTransition( int nNewLevel );
@@ -59,16 +59,18 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		LTBOOL			IsCustomLevel()   const {return m_bCustomLevel;}
 		int				GetCurrentMission() const {return m_nCurrentMission;}
 		int				GetCurrentLevel()	const {return m_nCurrentLevel;}
-		int				GetCurrentRound( ) const { return m_nCurrentRound; }
 		int				GetCurrentCampaignIndex( ) const { return m_nCurCampaignIndex; }
 
 		char const*		GetLevelFromMission( int nMission, int nLevel );
 		bool			SetMissionBasedOnLevel( char const* pszFilename );
 		int				FindNextCampaignIndex( int nStartingCampaignIndex, int nMissionIndex );
 
-		//access server options
-		ServerMissionSettings	GetServerSettings() const {return m_ServerSettings; }
-		void			SetServerSettings(ServerMissionSettings& ServerSettings);
+		// RETAIL: Tron keeps the server settings as loose members (+0x1d..
+		// +0x20, Save 0x10161ba0) and has no ServerMissionSettings struct.
+		bool			UseSkills( ) const { return m_bUseSkills; }
+		bool			FriendlyFire( ) const { return m_bFriendlyFire; }
+		uint8			GetMPDifficulty( ) const { return m_nMPDifficulty; }
+		float			GetPlayerDiffFactor( ) const { return m_fPlayerDiffFactor; }
 
 		Campaign&		GetCampaign( ) { return m_Campaign; }
 
@@ -94,7 +96,8 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		bool	CanRespawn( CPlayerObj const& player ) const { return true; }
 
 		// Called when the clients enter the world
-		void	LevelStarted();
+		// RETAIL: Tron has no out-of-line LevelStarted (no start time member)
+		void	LevelStarted() {}
 
 	// Game type overrides.
 	protected:
@@ -119,9 +122,6 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		// Handle client's exitlevel.
 		bool			HandleExitLevel( HCLIENT hSender, ILTMessage_Read& msg );
 
-		//handle updating multiplayer options while in game
-		// RETAIL: not virtual in Tron (its vtable)
-		bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg ) {return false;}
 
 		// Call to send client exit level message with current level and mission.
 		// RETAIL: virtual in Tron (its last slot, retail 0x10162350)
@@ -134,51 +134,55 @@ class CServerMissionMgr : public IPlayerTrackerReceiver
 		// Called by exitlevelXXX routines to go to a new level.
 		bool			ExitLevel( char const* pszNewLevel, bool bTransitionToLevel );
 
-	// Saved data.
+	// RETAIL: Tron's layout (ctor 0x10161890, Save 0x10161ba0, Load
+	// 0x10161c70): size 0x48. NOLF2's round counter, start time, display
+	// timer and settings struct are absent.
 	protected:
 
+		// +0x4: saved and loaded first; MID_START_GAME sends it first (the
+		// client sends the profile's byte at +0x73).  Name is ours.
+		bool			m_bTronUnknown4;
+
 		// Campaign file specified at MID_STARTGAME.
-		CString			m_sCampaignFile;
+		CString			m_sCampaignFile;		// +0x8
 
 		// List of missions to play.
-		Campaign		m_Campaign;
-		int				m_nCurCampaignIndex;
+		Campaign		m_Campaign;				// +0xc
+		int				m_nCurCampaignIndex;	// +0x18
 
 		// Loop when we reach the last level of the last mission.
-		bool			m_bLoopCampaign;
+		bool			m_bLoopCampaign;		// +0x1c
+
+		bool			m_bUseSkills;			// +0x1d
+		bool			m_bFriendlyFire;		// +0x1e
+		uint8			m_nMPDifficulty;		// +0x1f
+		float			m_fPlayerDiffFactor;	// +0x20
 
 		// has the player (or players) failed the mission
-		bool			m_bMissionFailed;
-
-		ServerMissionSettings	m_ServerSettings;
+		bool			m_bMissionFailed;		// +0x24
 
 	// Unsaved data.
 	protected:
 
 		// Used when we are tracking players we sent messages to.
-		PlayerTracker	m_PlayerTracker;
+		PlayerTracker	m_PlayerTracker;		// +0x28
 
 		// Controls whether we switch levels or transition levels.
-		bool			m_bTransitionLevels;
+		bool			m_bTransitionLevels;	// +0x34
 
 		// Set when we're switching missions.
-		bool			m_bNewMission;
+		bool			m_bNewMission;			// +0x35
 
 		// Set while we're waiting for exitlevel back from clients.
-		bool			m_bExitingLevel;
+		bool			m_bExitingLevel;		// +0x36
 
 		// Set in OnPlayerTrackerAbort.  Update polls for it.  Tells us to continue with save.
-		bool			m_bPlayerTrackerAborted;
+		bool			m_bPlayerTrackerAborted;	// +0x37
 
-		bool			m_bCustomLevel;
-		int				m_nCurrentMission;
-		int				m_nCurrentLevel;
-		int				m_nCurrentRound;
-		CString			m_sCurrentWorldName;
-
-		float			m_fStartTime;
-
-		LTObjRef		m_hDisplayTimer;
+		bool			m_bCustomLevel;			// +0x38
+		int				m_nCurrentMission;		// +0x3c
+		int				m_nCurrentLevel;		// +0x40
+		CString			m_sCurrentWorldName;	// +0x44
 
 };
 

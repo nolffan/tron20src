@@ -47,7 +47,6 @@ class CTeamDeathMatchMissionMgr : public CDeathMatchMissionMgr
 		virtual void	LevelStarted();
 
 		//handle updating multiplayer options while in game
-		virtual bool	HandleMultiplayerOptions( HCLIENT hSender, ILTMessage_Read& msg );
 
 };
 
