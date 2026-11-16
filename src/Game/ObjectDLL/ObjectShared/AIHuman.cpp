@@ -1430,22 +1430,7 @@ void CAIHuman::PreUpdate()
 
 	if ( m_bFirstUpdate )
 	{
-		// If this character resurrects, then validate the required data 
-		// and configure them for this added ability.
-
-		if ( GetBrain()->GetAIDataExist(kAIData_Resurrecting) )
-		{
-			// Make sure that the AIData is within the ranges of use now,
-			// instead of waiting for use to validate it.
-			float flPercent = GetBrain()->GetAIData(kAIData_Resurrecting);
-			if ( flPercent > 1.0f || flPercent < 0.0f )
-			{
-				AIASSERT2( 0, m_hObject, "kAIData_Resurrecting (%f) out of range (0,1) for brain %s", flPercent, GetBrain()->GetName() );
-			}
-
-			// Resurrecting characters are not normally destroyable
-			m_damage.SetNeverDestroy(LTTRUE);
-		}
+		// RETAIL: 0x1016ece0: Tron has no resurrecting AI data check here.
 
 		if ( !m_bMoveToFloor )
 		{
