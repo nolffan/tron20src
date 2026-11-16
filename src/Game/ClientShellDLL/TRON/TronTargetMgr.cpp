@@ -37,20 +37,7 @@ const float kActivationDist = 100.0f;
 
 CTronTargetMgr::CTronTargetMgr() : CTargetMgr()
 {
-	// PORT: retail's (0x100ae410) sets other members; until the target
-	// properties set the permission (+0x874), none is required
-	m_bPermissionRequired = false;
-	m_nPermissionRequired = 0;
-	for (int i = 0; i < 8; i++)
-	{
-		m_anTronUnknown878[i] = 0;
-	}
-	m_anTronUnknown888[0] = 0;
-	m_anTronUnknown888[1] = 0;
-	m_anTronUnknown888[2] = 0;
-	m_bTronUnknown895 = false;
-	// PORT: ours (retail's +0x876 is not yet known to be set anywhere)
-	m_bTronUnknown876 = false;
+	// RETAIL: 0x100ae410: only m_Props's constructor
 }
 
 // ----------------------------------------------------------------------- //
@@ -392,20 +379,18 @@ let the crosshair know when a a transfer starts
 
 void CTronTargetMgr::ClearTargetProperties()
 {
-	if (m_bTronUnknown895)
+	if (m_Props.szText[0])
 	{
-		m_anTronUnknown878[0] = 0;
-		m_anTronUnknown878[1] = 0;
-		m_anTronUnknown878[2] = 0;
-		m_anTronUnknown878[3] = 0;
-		m_anTronUnknown878[4] = 0;
-		m_anTronUnknown878[5] = 0;
-		m_anTronUnknown878[6] = 0;
-		m_anTronUnknown878[7] = 0;
-		m_anTronUnknown888[0] = 0;
-		m_anTronUnknown888[1] = 0;
-		m_anTronUnknown888[2] = 0;
-		m_bTronUnknown895 = false;
+		m_Props.anTronUnknown0[0] = 0;
+		m_Props.anTronUnknown0[1] = 0;
+		m_Props.anTronUnknown0[2] = 0;
+		m_Props.anTronUnknown0[3] = 0;
+		m_Props.anTronUnknown0[4] = 0;
+		m_Props.anTronUnknown0[5] = 0;
+		m_Props.anTronUnknown0[6] = 0;
+		m_Props.anTronUnknown0[7] = 0;
+		m_Props.vTronUnknown10.Init();
+		m_Props.szText[0] = 0;
 
 		g_pHUDMgr->QueueUpdate(kHUDScores);	// RETAIL: 0x100000
 	}

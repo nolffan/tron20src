@@ -15,7 +15,9 @@
 #include "DamageTypes.h"
 
 
-const uint8	kMaxTargetStringLen = 64;
+// RETAIL: Tron's target string is 1024 bytes (CTargetMgr's m_hLockedTarget
+// is at +0x410, its m_hTarget at +0xc: ctor 0x1016d5f0)
+const uint16	kMaxTargetStringLen = 1024;
 const uint16 kMaxDebugStringLen = 1024;
 
 class CTargetMgr 
@@ -39,7 +41,8 @@ public:
 	virtual	bool	IsSearchTarget()				{return m_bSearchTarget;}
 	virtual	bool	IsMoveTarget()					{return m_bMoveTarget;}
 	virtual bool	CanActivateTarget()				{return m_bCanActivate;}
-	virtual bool	IsTargetInRange();
+	// RETAIL: inline in Tron (slot 11, 0x100ae580)
+	virtual bool	IsTargetInRange()	{return (m_hTarget && m_fTargetRange <= m_fActivationDistance);}
 
 	
 
@@ -55,7 +58,13 @@ public:
 	virtual HOBJECT GetLockedTarget()	const	{return m_hLockedTarget;}
 
 protected:
-	
+
+	// RETAIL: Tron's: Update (0x1016d700) keeps the "ActivationDistance"
+	// and "TargetDistance" console values here (+0x4, +0x8); the
+	// constructor (0x1016d5f0) leaves them alone. The names are ours
+	float		m_fActivationDistance;
+	float		m_fTargetDistance;
+
 	HOBJECT		m_hTarget;
 	char		m_szString[kMaxTargetStringLen];
 
@@ -68,18 +77,19 @@ protected:
 	HOBJECT		m_hLockedTarget;
 	float		m_fTargetRange;
 
-	uint8		m_nTargetTeam;
-
 	char		m_szDebugString[kMaxDebugStringLen];
 	uint16		m_nString;
 
 	bool		m_bSearchTarget;
 	bool		m_bMoveTarget;
 	bool		m_bCanActivate;
+	// PORT: NOLF2's; Tron's constructor (build 51's) sets neither. Retail
+	// has room for them in the padding at +0x81d..+0x81f
 	bool		m_bFirstUpdate;
+	uint8		m_nTargetTeam;
 
 	//intersect info
-	CActivationData m_ActivationData;
+	CActivationData m_ActivationData;	// RETAIL: +0x820
 
 	//check for character FX within an are around a point
 	bool CheckForCharacters(LTVector vObjPos,LTVector vDims, uint8 nId);
