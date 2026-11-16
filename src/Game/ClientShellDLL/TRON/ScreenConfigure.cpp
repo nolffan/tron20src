@@ -686,13 +686,9 @@ LTBOOL CScreenConfigure::KeyRemappable (DeviceInput* pInput)
 	if (pInput->m_DeviceType != DEVICETYPE_KEYBOARD) return LTTRUE;
 
 	uint16 nDIK = pInput->m_ControlCode;
-	if (nDIK == DIK_ESCAPE)
-        return LTFALSE;
-	if (nDIK == DIK_PAUSE)
-        return LTFALSE;
-	if (nDIK >= DIK_F1 && nDIK <= DIK_F10)
-        return LTFALSE;
-	if (nDIK >= DIK_F11 && nDIK <= DIK_F15)
+	// RETAIL: 0x10057ac7: one test, and Tron keeps the Windows keys too
+	if (nDIK == DIK_ESCAPE || nDIK == DIK_PAUSE || nDIK == DIK_LWIN || nDIK == DIK_RWIN ||
+		(nDIK >= DIK_F1 && nDIK <= DIK_F10) || (nDIK >= DIK_F11 && nDIK <= DIK_F15))
         return LTFALSE;
 
 
