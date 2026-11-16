@@ -330,6 +330,10 @@ SOURCE=.\ProjectileEnergyClaw.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectilePrankster.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Libs\GameSpy\GameSpySDK\qr2\qr2.c
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -558,6 +562,10 @@ SOURCE=.\ProjectileDrunkenDims.h
 # Begin Source File
 
 SOURCE=.\ProjectileEnergyClaw.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectilePrankster.h
 # End Source File
 # Begin Source File
 
