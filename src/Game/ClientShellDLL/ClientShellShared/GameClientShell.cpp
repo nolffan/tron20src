@@ -1062,14 +1062,8 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		return false;
 	}
 
-	// Mission stuff...
-	m_pMissionMgr = debug_new(CMissionMgr);
-	if (!m_pMissionMgr || !m_pMissionMgr->Init())
-	{
-		// Don't call ShutdownWithMessage since MissionMgr will have called
-		// that, so calling it here will overwrite the message...
- 		return LT_ERROR;
-	}
+	// RETAIL: Tron makes no mission manager here (0x100e3124): it is
+	// CTronGameClientShell's member, initialised by its constructor
 
 	m_pClientSaveLoadMgr = debug_new( CClientSaveLoadMgr );
 	if( !m_pClientSaveLoadMgr )

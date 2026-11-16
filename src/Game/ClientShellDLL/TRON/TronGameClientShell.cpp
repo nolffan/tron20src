@@ -133,6 +133,10 @@ static void FrameUVFn(int argc, char **argv)
 
 CTronGameClientShell::CTronGameClientShell() : CGameClientShell()
 {
+	// RETAIL: 0x10099b12: the mission manager is a member (Tron's base
+	// shell does not make one)
+	g_pGameClientShell = this;
+	m_MissionMgr.Init();
 }
 
 // ----------------------------------------------------------------------- //

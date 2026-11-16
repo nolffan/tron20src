@@ -23,6 +23,7 @@
 #include "DiscMatchMgr.h"
 #include "TronCDKey.h"
 #include "LightCycleMatchMgr.h"
+#include "TronMissionMgr.h"
 
 class CTronGameClientShell : public CGameClientShell
 {
@@ -36,6 +37,8 @@ class CTronGameClientShell : public CGameClientShell
 		virtual CPlayerMgr*		GetPlayerMgr() { return &m_PlayerMgr; }
 		virtual CClientWeaponAllocator const *GetClientWeaponAllocator() const
 				{ return &m_ClientWeaponAllocator; }
+		// RETAIL: slot 0x7c (0x10099d30)
+		virtual CMissionMgr*	GetMissionMgr() { return &m_MissionMgr; }
 
 		virtual uint32 OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid);
 	    virtual LTRESULT ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort);
@@ -56,6 +59,7 @@ class CTronGameClientShell : public CGameClientShell
 
 	private:
 		CTronInterfaceMgr			m_InterfaceMgr;		// Interface manager
+		CTronMissionMgr				m_MissionMgr;		// Same as g_pMissionMgr (RETAIL: +0x317d4)
 		CTronVersionMgr				m_VersionMgr;		// Same as g_pVersionMgr
 		CTronCDKey					m_CDKey;			// RETAIL: +0x31a74
 		CTronPlayerMgr				m_PlayerMgr;		// Player manager
