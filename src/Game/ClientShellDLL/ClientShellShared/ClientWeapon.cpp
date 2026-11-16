@@ -413,6 +413,11 @@ bool CClientWeapon::HandleSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 				// write the flash position (presumably this is where the sound comes from)
 				cMsg.WriteLTVector( m_vFlashPos );
 
+				// RETAIL: Tron's message adds the volume scale and a flag
+				// (0x1012f971; the flag's meaning is not known)
+				cMsg.Writefloat( 1.0f );
+				cMsg.Writebool( false );
+
 				// send the message
 				ltResult = g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 				ASSERT( LT_OK == ltResult );
@@ -450,14 +455,21 @@ bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 				cMsg.Writeuint8( MID_WEAPON_SOUND_LOOP );
 				cMsg.Writeuint8( PSI_INVALID );
 				cMsg.Writeuint8( m_nWeaponId );
+				// RETAIL: Tron's message adds the volume scale (none to stop)
+				// and a flag (0x1012facc)
+				cMsg.Writefloat( 0.0f );
+				cMsg.Writebool( false );
 				g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
-			
-				return true;
+
+				// RETAIL: Tron's goes on (atoi gives PSI_INVALID)
 			}
 
 			char* pBuf = 0;
 
 			PlayerSoundId nId = static_cast< PlayerSoundId >( atoi( pArgList->argv[ 1 ] ) );
+
+			// RETAIL: Tron's slot 0x160 hears of the sound first (0x1012fb50)
+			TronUnknownVirtual160( nId );
 			switch( nId )
 			{
 				case PSI_RELOAD:														// 1
@@ -514,6 +526,8 @@ bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 					cMsg.Writeuint8( MID_WEAPON_SOUND_LOOP );
 					cMsg.Writeuint8( nId );
 					cMsg.Writeuint8( m_nWeaponId );
+					cMsg.Writefloat( 1.0f );
+					cMsg.Writebool( false );
 					g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 				}
 				
