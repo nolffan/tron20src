@@ -91,7 +91,6 @@ bool BloodSplatFilterFn(HOBJECT hTest, void *pUserData)
 LTBOOL CWeaponFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
 {
     if (!CSpecialFX::Init(hServObj, pMsg)) return LTFALSE;
-    if (!pMsg) return LTFALSE;
 
 	WCREATESTRUCT w;
 
@@ -103,13 +102,17 @@ LTBOOL CWeaponFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
     w.nSurfaceType  = pMsg->Readuint8();
     w.wIgnoreFX     = pMsg->Readuint16();
     w.nShooterId    = pMsg->Readuint8();
+	w.nTronUnknown3D = pMsg->Readuint8();	// RETAIL: Tron's (0x1018e17c)
     w.vFirePos		= pMsg->ReadLTVector();
     w.vPos			= pMsg->ReadLTVector();
     w.vSurfaceNormal	= pMsg->ReadLTVector();
     w.eImpactType	= static_cast< IMPACT_TYPE >( pMsg->Readuint8() );
 
-    // make sure the impact type is valid
-    ASSERT( ( 0 <= w.eImpactType ) && ( IMPACT_TYPE_COUNT > w.eImpactType ) );
+	// RETAIL: Tron's (0x1018e207). The server writes the flag as a float
+	// (ClientWeaponSFX.cpp), so this reads only its first bit: see
+	// docs/RETAIL_BUGS.md
+	w.fTronUnknown48 = pMsg->Readfloat();
+	w.bTronUnknown4C = pMsg->Readbool();
 
 	return Init(&w);
 }

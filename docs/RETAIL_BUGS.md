@@ -1075,6 +1075,18 @@ and the random index is taken from 0..-1.
 Not fixed yet: the modern build should test for an empty list and clear
 the buffer with its size.
 
+### The weapon FX message sends a flag as a float, and the client reads one bit
+
+Object.lto 0x101d6750 (CreateClientWeaponFX, ObjectShared/
+ClientWeaponSFX.cpp) and CShell.dll 0x1018e060 (CWeaponFX::Init,
+ClientShellShared/WeaponFX.cpp). After the impact type, the server writes
+two values of 32 bits: a float, then a flag converted to a float. The
+client reads the float, then reads the flag as a bool of one bit. The bool
+is the lowest bit of the float's representation, which is 0 for 0.0 and
+1.0. Thus the client always gets false for the flag.
+
+Not fixed yet: the modern build should write the flag as a bool.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
