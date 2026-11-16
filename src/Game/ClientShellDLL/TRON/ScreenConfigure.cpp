@@ -477,6 +477,18 @@ LTBOOL CScreenConfigure::HandleKeyDown(int key, int rep)
 
 	switch (key)
 	{
+	// RETAIL: 0x10057496: Tron's tab key steps through the command types
+	case VK_TAB:
+		{
+			if (!m_bWaitingForKey && !m_fInputPauseTimeLeft)
+			{
+				int nType = (m_nType + 1) % kNumCommandTypes;
+				SetCurrentType(nType);
+				SetSelection(nType);
+				handled = LTTRUE;
+			}
+			break;
+		}
 	case VK_DELETE:
 		{
 			// Unassign the key
