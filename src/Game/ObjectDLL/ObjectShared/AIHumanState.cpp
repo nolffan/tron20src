@@ -8646,6 +8646,8 @@ void CAIHumanStateCharge::Load(ILTMessage_Read *pMsg)
 	LOAD_FLOAT(m_fYellDistanceSqr);
 	LOAD_BOOL(m_bStopped);
 	LOAD_FLOAT(m_fStopDistanceSqr);
+	LOAD_FLOAT(m_fTronUnknown94);
+	LOAD_VECTOR(m_vTronUnknown98);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8667,6 +8669,8 @@ void CAIHumanStateCharge::Save(ILTMessage_Write *pMsg)
 	SAVE_FLOAT(m_fYellDistanceSqr);
 	SAVE_BOOL(m_bStopped);
 	SAVE_FLOAT(m_fStopDistanceSqr);
+	SAVE_FLOAT(m_fTronUnknown94);
+	SAVE_VECTOR(m_vTronUnknown98);
 }
 
 // ----------------------------------------------------------------------- //

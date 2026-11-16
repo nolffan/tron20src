@@ -386,6 +386,11 @@ LTBOOL CAIGoalFlee::HandleNameValuePair(const char *szName, const char *szValue)
 	{
 		AINode* pNode = g_pAINodeMgr->GetNode(szValue);
 		AIASSERT(pNode != LTNULL, m_pAI->m_hObject, "CAIGoalFlee::HandleNameValuePair: Dest node is NULL.");
+		// RETAIL: Tron enables a disabled node that a command names.
+		if( pNode && pNode->IsDisabled() )
+		{
+			pNode->Enable();
+		}
 		m_hDestNode = pNode ? pNode->m_hObject : NULL;
 		return LTTRUE;
 	}

@@ -1330,6 +1330,9 @@ class CAIHumanStateCharge : public CAIHumanState
 		LTFLOAT		m_fStopDistanceSqr;
 		// RETAIL: Tron's (ctor 0x101f36d0 sets +0x94 to FLT_MAX).
 		LTFLOAT		m_fTronUnknown94;
+		// RETAIL: Tron's (Save 0x101f4050, Load 0x101f3f60, read by
+		// Update 0x101f39b8 with +0x94). Name is ours.
+		LTVector	m_vTronUnknown98;
 };
 
 class CAIHumanStateAnimate : public CAIHumanState
