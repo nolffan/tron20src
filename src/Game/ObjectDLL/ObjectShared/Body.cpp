@@ -1886,6 +1886,32 @@ bool  Body::CanBeSearched() {return m_pSearch->IsEnabled();}
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	Body::ShowCarrier
+//
+//	PURPOSE:	Send SHOW to the object given at init and forget it
+//				RETAIL: Tron's (0x1015cd90; called by DEATHFX, CBodyStateGib
+//				and CBodyStatePranksterImplode). The name is ours.
+//
+// ----------------------------------------------------------------------- //
+
+void Body::ShowCarrier()
+{
+	if( m_hCarrier )
+	{
+		char szMsg[32];
+		sprintf( szMsg, "SHOW" );
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint32(MID_TRIGGER);
+		cMsg.Writeuint32((uint32)szMsg);
+		g_pLTServer->SendToObject(cMsg.Read(), m_hObject, m_hCarrier, MESSAGE_GUARANTEED);
+
+		m_hCarrier = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	Body::OnLinkBroken
 //
 //	PURPOSE:	Handle case where other object referred to gets deleted.

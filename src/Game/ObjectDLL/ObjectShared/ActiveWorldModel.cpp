@@ -26,6 +26,8 @@
 	#include "AIUtils.h"
 	#include "..\TRON\PSets.h"
 	#include "Character.h"
+	#include "PlayerObj.h"
+	#include "MsgIDs.h"
 
 // RETAIL: the user flag Tron's permission set objects set on themselves (as
 // IONode.h's USRFLG_IONODE, ArchiveBin's); not yet identified on the client.
@@ -2632,4 +2634,70 @@ void ActiveWorldModel::OnLoad( ILTMessage_Read *pMsg, uint32 dwSaveFlags )
 			break;
 		}
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	ActiveWorldModel::ObjectMessageFn
+//
+//  PURPOSE:	Handle object messages
+//				RETAIL: Tron's (0x10179000): tell the client our info
+//				string when we have one
+//
+// ----------------------------------------------------------------------- //
+
+uint32 ActiveWorldModel::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
+{
+	pMsg->SeekTo(0);
+	uint32 messageID = pMsg->Readuint32();
+
+	switch(messageID)
+	{
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			uint8 nNumProps = pMsg->Readuint8();
+			uint8 nNumPropsProcessed = 0;
+
+			// See what we need to send down
+			if(nNumProps > 0)
+			{
+				// Start the message
+				CAutoMessage cTempMsg;
+
+				// Loop through the props
+				for(int i=0;i<nNumProps;i++)
+				{
+					// Get the prop
+					uint8 iProp = pMsg->Readuint8();
+					if( iProp == TARGET_PROP_INFO_STRING && m_nStringOverrideID > 0 )
+					{
+						// Write the ID, the value, and inc the number of props processed
+						cTempMsg.Writeuint8(iProp);
+						cTempMsg.Writeuint32(m_nStringOverrideID);
+						nNumPropsProcessed++;
+					}
+				}
+
+				// Build the actual message to send back down to the client
+				if(nNumPropsProcessed > 0)
+				{
+					// Get the player
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
+					if(pPlayer)
+					{
+						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8(MID_QUERY_TARGET_PROPERTIES);
+						cPropMsg.WriteObject(m_hObject);
+						cPropMsg.Writeuint8(nNumPropsProcessed);
+						cPropMsg.WriteMessage(cTempMsg.Read());
+						g_pLTServer->SendToClient(cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+					}
+				}
+			}
+
+			return LT_OK;
+		}
+	}
+
+	return WorldModel::ObjectMessageFn(hSender, pMsg);
 }

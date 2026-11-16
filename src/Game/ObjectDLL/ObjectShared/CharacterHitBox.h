@@ -65,6 +65,8 @@ class CCharacterHitBox : public GameBase
 
 		LTBOOL CanActivate() const { return m_bCanActivate; }
 		void SetCanActivate(LTBOOL b) { m_bCanActivate = b; }
+		// RETAIL: Tron's (0x10138f80). The name is ours
+		void SetTronUnknown7D(bool b);
 
 		bool CanBeSearched() const { return m_bCanBeSearched; }
 		void SetCanBeSearched(bool b);
@@ -110,6 +112,9 @@ class CCharacterHitBox : public GameBase
 
 		LTBOOL	m_bCanActivate;
 		bool	m_bCanBeSearched;
+		// RETAIL: Tron's (+0x7d; saved after m_bCanBeSearched). Set by
+		// CAI::UpdateUserFlagCanActivate and Body::Init. Not yet identified
+		bool	m_bTronUnknown7D;
 		
 		void CreateNodeRadiusModels();
 		void RemoveNodeRadiusModels();

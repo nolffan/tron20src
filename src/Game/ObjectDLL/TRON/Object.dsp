@@ -376,6 +376,10 @@ SOURCE=.\ServerSubroutineMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\SpectatorObject.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -618,6 +622,10 @@ SOURCE=.\ServerLightCycleMgr.h
 # Begin Source File
 
 SOURCE=.\ServerSubroutineMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObject.h
 # End Source File
 # Begin Source File
 

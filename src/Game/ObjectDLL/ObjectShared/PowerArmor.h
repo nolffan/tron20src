@@ -71,6 +71,11 @@ class PowerArmor : public Prop
 		// handled the hit. The name is ours
 		bool HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPosition* pAttachPos );
 
+		// RETAIL: Tron's (inline: CCharacter 0x100942b4, CAI::InitAttachments
+		// 0x1012f9a8)
+		LTFLOAT GetHitPoints() const { return m_fHitPoints; }
+		LTFLOAT GetMaxHitPoints() const { return m_fMaxHitPoints; }
+
 	protected:
 		// Protected members
 
@@ -129,21 +134,26 @@ class PowerArmor : public Prop
 
 //----------------------------------------------------------------------------
 //              
-//	CLASS:		ShellArmor
+//	CLASS:		OccludingArmor
+//
+//	RETAIL: Tron's base of ShellArmor and ThorneBall (retail vtables
+//	0x102988bc..., its class def 0x102fa9f8). The code NOLF2 has as
+//	ShellArmor is OccludingArmor's in Tron; ShellArmor only overrides
+//	HandleDeath.
 //              
 //	PURPOSE:	Special Armor which DOES take damage.  Using it results in a 
 //				big performance hit, because it collides with the owner 
-//				constantly.  ShellArmor has a hitbox, just like a normal
+//				constantly.  OccludingArmor has a hitbox, just like a normal
 //				character and done in depth hit detection on its own, unlike
 //				the standard PowerArmor which relies on the user notifiying it
 //				when it should turn off.
 //              
 //----------------------------------------------------------------------------
-class ShellArmor : public Prop, public IHitBoxUser
+class OccludingArmor : public Prop, public IHitBoxUser
 {
 	public:
-		ShellArmor();
-		virtual ~ShellArmor();
+		OccludingArmor();
+		virtual ~OccludingArmor();
 
 		// Engine Interaction:
 		virtual uint32  EngineMessageFn(uint32 messageID, void *pData, LTFLOAT lData);
@@ -160,7 +170,7 @@ class ShellArmor : public Prop, public IHitBoxUser
 		virtual LTFLOAT ComputeDamageModifier(ModelNode eModelNode);
 		virtual float GetNodeRadius( ModelSkeleton eModelSkeleton, ModelNode eModelNode );
 		virtual void UpdateClientHitBox() {};
-		// RETAIL: IHitBoxUser's last two: Tron's ShellArmor has its own slot 0x24
+		// RETAIL: IHitBoxUser's last two: Tron's OccludingArmor has its own slot 0x24
 		// (retail 0x1013c3e0, not yet written) and returns its object (0x1013c450)
 		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 
@@ -176,7 +186,8 @@ class ShellArmor : public Prop, public IHitBoxUser
 
 		void	Update();
 		void	CreateHitBox();
-		void	HandleDeath();
+		// RETAIL: virtual in Tron (OccludingArmor's slot 28 is empty)
+		virtual void	HandleDeath() {}
 		void	HandleModelString(ArgList* pArgList);
 
 		void	SetState(eShieldState eNewState);
@@ -203,8 +214,26 @@ class ShellArmor : public Prop, public IHitBoxUser
 
 		// Copy Constructor and Asignment Operator private to prevent 
 		// automatic generation and inappropriate, unintentional use
-		ShellArmor(const PowerArmor& rhs) {}
-		ShellArmor& operator=(const PowerArmor& rhs ) {}
+		OccludingArmor(const PowerArmor& rhs) {}
+		OccludingArmor& operator=(const PowerArmor& rhs ) {}
 };
+
+//----------------------------------------------------------------------------
+//              
+//	CLASS:		ShellArmor
+//              
+//	PURPOSE:	Special Armor which DOES take damage (see OccludingArmor).
+//				RETAIL: Tron's (vtables 0x1029896c..., class def 0x102faa28)
+//              
+//----------------------------------------------------------------------------
+class ShellArmor : public OccludingArmor
+{
+	public:
+		ShellArmor() {}
+
+	protected:
+		virtual void	HandleDeath();
+};
+
 #endif // __POWERARMOR_H__
 

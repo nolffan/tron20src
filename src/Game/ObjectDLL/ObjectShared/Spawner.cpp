@@ -527,14 +527,7 @@ bool Spawner::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	if( pBaseClass )
 	{
 		// Send the initial command if specified.
-		if( m_sInitialCommand.length( ))
-		{
-			char const* pszCmd = m_sInitialCommand.c_str( );
-			if( g_pCmdMgr->IsValidCmd( pszCmd ))
-			{
-				g_pCmdMgr->Process( pszCmd, m_hObject, pBaseClass->m_hObject );
-			}
-		}
+		SendInitialCommand( pBaseClass->m_hObject );
 	}
 
 	return true;
@@ -583,6 +576,30 @@ void Spawner::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	m_sTarget = szString;
 	LOAD_CHARSTRING(szString, ARRAY_LEN(szString));
 	m_sInitialCommand = szString;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Spawner::SendInitialCommand
+//
+//	PURPOSE:	Send the initial command, if specified, to a spawned object
+//				RETAIL: Tron's (0x1014e040)
+//
+// ----------------------------------------------------------------------- //
+
+bool Spawner::SendInitialCommand( HOBJECT hSpawned )
+{
+	if( m_sInitialCommand.length( ))
+	{
+		char const* pszCmd = m_sInitialCommand.c_str( );
+		if( g_pCmdMgr->IsValidCmd( pszCmd ))
+		{
+			g_pCmdMgr->Process( pszCmd, m_hObject, hSpawned );
+			return true;
+		}
+	}
+
+	return false;
 }
 
 

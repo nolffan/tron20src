@@ -509,19 +509,23 @@ bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPo
 	return true;
 }
 
+BEGIN_CLASS(OccludingArmor)
+END_CLASS_DEFAULT_FLAGS(OccludingArmor, Prop, NULL, NULL, CF_HIDDEN)
+
+// RETAIL: 0x102faa28, its default constructor 0x1013ca10
 BEGIN_CLASS(ShellArmor)
-END_CLASS_DEFAULT_FLAGS(ShellArmor, Prop, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(ShellArmor, OccludingArmor, NULL, NULL, CF_HIDDEN)
 
 
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::ShellArmor()
+//	ROUTINE:	OccludingArmor::OccludingArmor()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-ShellArmor::ShellArmor()
+OccludingArmor::OccludingArmor()
 {
 	// Construct
 	m_hHitBox = NULL;
@@ -532,12 +536,12 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::~ShellArmor()
+//	ROUTINE:	OccludingArmor::~OccludingArmor()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ ShellArmor::~ShellArmor()
+/*virtual*/ OccludingArmor::~OccludingArmor()
 {
 	// Destruct
 
@@ -549,12 +553,12 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::EngineMessageFn()
+//	ROUTINE:	OccludingArmor::EngineMessageFn()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ uint32 ShellArmor::EngineMessageFn(uint32 messageID,void *pData, LTFLOAT lData)
+/*virtual*/ uint32 OccludingArmor::EngineMessageFn(uint32 messageID,void *pData, LTFLOAT lData)
 {
 	switch(messageID)
 	{
@@ -578,6 +582,11 @@ ShellArmor::ShellArmor()
 			// handle that manually on our level.  Attachments which delete
 			// themselves don't clean up references properly.
 			m_damage.m_bRemoveOnDeath = LTFALSE;
+
+			// RETAIL: Tron's (0x1013bfb7): update from the next frame on and
+			// never deactivate
+			SetNextUpdate(0.001f);
+			m_bCanDeactivate = false;
 		}
 		break;
 
@@ -611,12 +620,12 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::ObjectMessageFn()
+//	ROUTINE:	OccludingArmor::ObjectMessageFn()
 //              
 //	PURPOSE:	handles the damage itself -- does 
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ uint32 ShellArmor::ObjectMessageFn(HOBJECT hSender,ILTMessage_Read *pMsg)
+/*virtual*/ uint32 OccludingArmor::ObjectMessageFn(HOBJECT hSender,ILTMessage_Read *pMsg)
 {
 	static const char cKeyDerezz[] = "REMOVE";
 
@@ -676,12 +685,12 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::Save()
+//	ROUTINE:	OccludingArmor::Save()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ void ShellArmor::Save(ILTMessage_Write *pMsg)
+/*virtual*/ void OccludingArmor::Save(ILTMessage_Write *pMsg)
 {
 	// 
 	SAVE_HOBJECT(m_hHitBox);
@@ -694,12 +703,12 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::Load()
+//	ROUTINE:	OccludingArmor::Load()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ void ShellArmor::Load(ILTMessage_Read *pMsg)
+/*virtual*/ void OccludingArmor::Load(ILTMessage_Read *pMsg)
 {
 	// 
 	LOAD_HOBJECT(m_hHitBox);
@@ -712,17 +721,17 @@ ShellArmor::ShellArmor()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::ReadShieldProps()
+//	ROUTINE:	OccludingArmor::ReadShieldProps()
 //              
-//	PURPOSE:	Read the additional fields the ShellArmor cares about.
+//	PURPOSE:	Read the additional fields the OccludingArmor cares about.
 //              
 //----------------------------------------------------------------------------
-void ShellArmor::ReadShieldProps(ObjectCreateStruct* pData)
+void OccludingArmor::ReadShieldProps(ObjectCreateStruct* pData)
 {
 	GenericProp genProp;
     if (g_pLTServer->GetPropGeneric("ModelId", &genProp) == LT_OK)
 	{
-		AIASSERT( genProp.m_String[0], m_hObject, "ShellArmor requires a ModelId to set a skeleton"  );
+		AIASSERT( genProp.m_String[0], m_hObject, "OccludingArmor requires a ModelId to set a skeleton"  );
 		if(genProp.m_String[0])
 		{
 			m_eModelId = g_pModelButeMgr->GetModelId(genProp.m_String);
@@ -732,61 +741,61 @@ void ShellArmor::ReadShieldProps(ObjectCreateStruct* pData)
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::GetAttachments()
+//	ROUTINE:	OccludingArmor::GetAttachments()
 //              
-//	PURPOSE:	ShellArmor does not have attachments, so return NULL when
+//	PURPOSE:	OccludingArmor does not have attachments, so return NULL when
 //				queried for them.
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ CAttachments* ShellArmor::GetAttachments()
+/*virtual*/ CAttachments* OccludingArmor::GetAttachments()
 {
 	return ( NULL );
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::GetModelSkeleton()
+//	ROUTINE:	OccludingArmor::GetModelSkeleton()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ ModelSkeleton ShellArmor::GetModelSkeleton() const
+/*virtual*/ ModelSkeleton OccludingArmor::GetModelSkeleton() const
 {
 	return ( g_pModelButeMgr->GetModelSkeleton(m_eModelId) );
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::SetModelNodeLastHit()
+//	ROUTINE:	OccludingArmor::SetModelNodeLastHit()
 //              
 //	PURPOSE:	Ignore the the LastNodeHit currently(?)
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ void ShellArmor::SetModelNodeLastHit(ModelNode eModelNode)
+/*virtual*/ void OccludingArmor::SetModelNodeLastHit(ModelNode eModelNode)
 {
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::UsingHitDetection()
+//	ROUTINE:	OccludingArmor::UsingHitDetection()
 //              
 //	PURPOSE:	This object ALWAYS uses HitDetection.	
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ LTBOOL ShellArmor::UsingHitDetection() const
+/*virtual*/ LTBOOL OccludingArmor::UsingHitDetection() const
 {
 	return ( LTTRUE );
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::GetParentTransform()
+//	ROUTINE:	OccludingArmor::GetParentTransform()
 //              
 //	PURPOSE:	If now parent was specified, return a cleared LTransform.  If 
 //				a parent was specified, then return the 'correct' transform
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ HATTACHMENT ShellArmor::GetAttachment( ) const
+/*virtual*/ HATTACHMENT OccludingArmor::GetAttachment( ) const
 {
 	HATTACHMENT hAttachment;
 	LTRESULT  ltResult = g_pLTServer->FindAttachment( m_hParentObject, m_hObject, &hAttachment );
@@ -796,12 +805,12 @@ void ShellArmor::ReadShieldProps(ObjectCreateStruct* pData)
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::ComputeDamageModifier()
+//	ROUTINE:	OccludingArmor::ComputeDamageModifier()
 //              
 //	PURPOSE:	Returns the modifier for the node hit.
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ LTFLOAT ShellArmor::ComputeDamageModifier(ModelNode eModelNode)
+/*virtual*/ LTFLOAT OccludingArmor::ComputeDamageModifier(ModelNode eModelNode)
 {
 	// 
 	return ( 1.0f ); 
@@ -809,26 +818,26 @@ void ShellArmor::ReadShieldProps(ObjectCreateStruct* pData)
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::GetNodeRadius()
+//	ROUTINE:	OccludingArmor::GetNodeRadius()
 //              
 //	PURPOSE:	Hack the node radii depending on the state of the AI.  When
 //				the armor is up, the root node needs to have a huge radius, 
 //				and the other nodes need to have none(?)
 //              
 //----------------------------------------------------------------------------
-/*virtual*/ float ShellArmor::GetNodeRadius(ModelSkeleton eModelSkeleton,ModelNode eModelNode)
+/*virtual*/ float OccludingArmor::GetNodeRadius(ModelSkeleton eModelSkeleton,ModelNode eModelNode)
 {
 	return ( g_pModelButeMgr->GetSkeletonNodeHitRadius(eModelSkeleton, eModelNode) );
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::Update()
+//	ROUTINE:	OccludingArmor::Update()
 //              
 //	PURPOSE:	
 //              
 //----------------------------------------------------------------------------
-void ShellArmor::Update()
+void OccludingArmor::Update()
 {
 	CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(m_hHitBox);
 	UBER_ASSERT( pHitBox, "No m_hHitBox found" );
@@ -856,12 +865,12 @@ void ShellArmor::Update()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::CreateHitBox()
+//	ROUTINE:	OccludingArmor::CreateHitBox()
 //              
 //	PURPOSE:	Created a new hitbox for this object
 //              
 //----------------------------------------------------------------------------
-void ShellArmor::CreateHitBox()
+void OccludingArmor::CreateHitBox()
 {
 	UBER_ASSERT(m_hHitBox==NULL, "Expected HitBox to be NULL" );
 
@@ -898,7 +907,7 @@ void ShellArmor::CreateHitBox()
 //	ROUTINE:	ShellArmor::HandleDeath()
 //              
 //	PURPOSE:	Handles all of the trigger message dispatching which goes off
-//				when the ShellArmor dies.
+//				when the OccludingArmor dies.
 //              
 //----------------------------------------------------------------------------
 void ShellArmor::HandleDeath()
@@ -910,12 +919,12 @@ void ShellArmor::HandleDeath()
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::HandleModelString()
+//	ROUTINE:	OccludingArmor::HandleModelString()
 //              
 //	PURPOSE:	Handles strings passed in through the animation.
 //              
 //----------------------------------------------------------------------------
-void ShellArmor::HandleModelString(ArgList* pArgList)
+void OccludingArmor::HandleModelString(ArgList* pArgList)
 {
 	AIASSERT( pArgList, m_hObject, ""  );
 	AIASSERT( pArgList->argc > 0, m_hObject, ""  );
@@ -945,20 +954,20 @@ void ShellArmor::HandleModelString(ArgList* pArgList)
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::SetState()
+//	ROUTINE:	OccludingArmor::SetState()
 //              
 //	PURPOSE:	Unified location where the armors state can be changed for 
 //				making debugging a bit easier.
 //              
 //----------------------------------------------------------------------------
-void ShellArmor::SetState( eShieldState eNewState )
+void OccludingArmor::SetState( eShieldState eNewState )
 {
 	m_eShieldState = eNewState;
 }
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::SetAnimation()
+//	ROUTINE:	OccludingArmor::SetAnimation()
 //              
 //	PURPOSE:	Sets an animation (or resets the animation) based on the name 
 //				of an animation string passed in.  Keeps a reference to the 
@@ -966,7 +975,7 @@ void ShellArmor::SetState( eShieldState eNewState )
 //				animation is also the current animation, then reset it.
 //
 //----------------------------------------------------------------------------
-void ShellArmor::SetAnimation(const char* const szAnimationName)
+void OccludingArmor::SetAnimation(const char* const szAnimationName)
 {
 	LTRESULT ltResult;
 
@@ -996,13 +1005,13 @@ void ShellArmor::SetAnimation(const char* const szAnimationName)
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	ShellArmor::CanDamage()
+//	ROUTINE:	OccludingArmor::CanDamage()
 //              
 //	PURPOSE:	Returns true if the armor can currently be damaged, false if 
 //				it cannot.
 //              
 //----------------------------------------------------------------------------
-LTBOOL ShellArmor::CanDamage() const
+LTBOOL OccludingArmor::CanDamage() const
 {
 	if ( m_eShieldState != eShieldAttack )
 	{

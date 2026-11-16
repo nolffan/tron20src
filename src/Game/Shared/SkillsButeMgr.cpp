@@ -11,6 +11,13 @@
 #include "stdafx.h"
 #include "SkillsButeMgr.h"
 
+#ifndef _CLIENTBUILD
+// RETAIL: Object.lto has PlayerShared.h's two camera offsets' initializers
+// after CSkillsButeMgr::Term (0x10186800, 0x10186830); CShell.dll has none.
+// The header that brings them in is not known
+#include "PlayerShared.h"
+#endif
+
 
 #ifdef _CLIENTBUILD
 

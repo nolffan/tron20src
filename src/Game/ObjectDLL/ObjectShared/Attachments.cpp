@@ -36,15 +36,18 @@ static CBankedList<CAttachmentProp> s_bankCAttachmentProp;
 static CBankedList<CAttachmentObject> s_bankCAttachmentObject;
 static CBankedList<CAttachmentWeapon> s_bankCAttachmentWeapon;
 */
+// RETAIL: 0x10187310 and 0x10187380 call debug_new_fn<> copies
+// (0x1018d960, 0x1018d9c0, 0x1018da20, 0x1018da80, 0x1018dad0).
+
 CAttachments* CAttachments::Create(uint32 nAttachmentsType)
 {
 	switch ( nAttachmentsType )
 	{
 		case ATTACHMENTS_TYPE_HUMAN:
-			return new CHumanAttachments; //s_bankCHumanAttachments.New();
+			return debug_new(CHumanAttachments); //s_bankCHumanAttachments.New();
 			break;
 		case ATTACHMENTS_TYPE_PLAYER:
-			return new CPlayerAttachments; //s_bankCPlayerAttachments.New();
+			return debug_new(CPlayerAttachments); //s_bankCPlayerAttachments.New();
 			break;
 	}
 
@@ -72,13 +75,13 @@ CAttachment* CAttachment::Create(uint32 nAttachmentType)
 	switch ( nAttachmentType )
 	{
 		case ATTACHMENT_TYPE_WEAPON:
-			return new CAttachmentWeapon; //s_bankCAttachmentWeapon.New();
+			return debug_new(CAttachmentWeapon); //s_bankCAttachmentWeapon.New();
 			break;
 		case ATTACHMENT_TYPE_OBJECT:
-			return new CAttachmentObject; //s_bankCAttachmentObject.New();
+			return debug_new(CAttachmentObject); //s_bankCAttachmentObject.New();
 			break;
 		case ATTACHMENT_TYPE_PROP:
-			return new CAttachmentProp; //s_bankCAttachmentProp.New();
+			return debug_new(CAttachmentProp); //s_bankCAttachmentProp.New();
 			break;
 	}
 
@@ -342,6 +345,55 @@ void CAttachments::Detach(const char* szAttachmentPosition)
 				{
                     if (LT_OK != g_pLTServer->RemoveAttachment(hAttachment))
 						ASSERT(!"failed to remove attachment");
+				}
+
+                g_pLTServer->RemoveObject(pAttachment->GetModel());
+				CAttachment::Destroy(pAttachment);
+
+				pAttachmentPosition->SetAttachment(NULL);
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAttachments::Detach
+//
+//	PURPOSE:	Detach the attachment of one position
+//				RETAIL: Tron's (0x10187d50)
+//
+// ----------------------------------------------------------------------- //
+
+void CAttachments::Detach(CAttachmentPosition* pDetachPosition)
+{
+	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < m_cAttachmentPositions ; iAttachmentPosition++ )
+	{
+		CAttachmentPosition* pAttachmentPosition = m_apAttachmentPositions[iAttachmentPosition];
+
+		if ( pDetachPosition == pAttachmentPosition )
+		{
+			CAttachment* pAttachment = pAttachmentPosition->GetAttachment();
+			if ( pAttachment )
+			{
+				switch ( pAttachment->GetType() )
+				{
+					case ATTACHMENT_TYPE_WEAPON:
+						m_cWeapons--;
+						break;
+
+					case ATTACHMENT_TYPE_PROP:
+						m_cProps--;
+						break;
+
+					case ATTACHMENT_TYPE_OBJECT:
+						m_cObjects--;
+						break;
+				}
+				HATTACHMENT hAttachment;
+                if (LT_OK == g_pLTServer->FindAttachment(m_hObject, pAttachment->GetModel(), &hAttachment))
+				{
+                    g_pLTServer->RemoveAttachment(hAttachment);
 				}
 
                 g_pLTServer->RemoveObject(pAttachment->GetModel());
@@ -1190,6 +1242,28 @@ void CAttachments::Load(ILTMessage_Read *pMsg, uint8 nType)
 	}}
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAttachments::GetAttachment
+//
+//	PURPOSE:	Get an attachment position by its index
+//				RETAIL: Tron's (0x1018a2d0). The name is from retail's
+//				error string; it gives the position, not the attachment.
+//
+// ----------------------------------------------------------------------- //
+
+CAttachmentPosition* CAttachments::GetAttachment(uint32 iAttachmentPosition)
+{
+	uint32 cAttachmentPositions = m_cAttachmentPositions;
+	if ( iAttachmentPosition >= 0 && iAttachmentPosition < cAttachmentPositions )
+	{
+		return m_apAttachmentPositions[iAttachmentPosition];
+	}
+
+	g_pLTServer->CPrint("ERROR: CAttachments::GetAttachment called with invalid index or index to no attachment");
+	return LTNULL;
+}
 
 // ----------------------------------------------------------------------- //
 //

@@ -215,6 +215,28 @@ CAIHuman::~CAIHuman()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIHuman::ReadReinforcementProp
+//
+//	PURPOSE:	RETAIL: Tron's (0x1016c7e0): an AI with a reinforcement
+//				goal set starts hidden and not solid. The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHuman::ReadReinforcementProp(ObjectCreateStruct *pData)
+{
+	GenericProp genProp;
+
+	if ( g_pLTServer->GetPropGeneric("GoalSet", &genProp ) == LT_OK )
+	{
+		if ( genProp.m_String[0] && strstr( genProp.m_String, "Reinforcement" ) )
+		{
+			m_dwFlags &= ~(FLAG_VISIBLE | FLAG_RAYHIT | FLAG_SOLID);
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIHuman::ReadProp
 //
 //	PURPOSE:	Set property value
@@ -230,6 +252,8 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 	{
 		return LTFALSE;
 	}
+
+	ReadReinforcementProp(pData);
 
 	// RETAIL: no sentry distances in Tron's CAI
 

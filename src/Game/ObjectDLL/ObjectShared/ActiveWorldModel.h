@@ -187,6 +187,8 @@ class ActiveWorldModel : public WorldModel
 		virtual	void	OnEveryObjectCreated( );
 		virtual	void	OnUpdate( const LTFLOAT &fCurTime );
 		virtual	bool	OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg );
+		// RETAIL: Tron's (0x10179000): answers the client's info string query
+		virtual uint32	ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg );
 		virtual void	HandleTriggerMsg( );
 		virtual void	HandlePause( );
 		virtual void	HandleResume( );
