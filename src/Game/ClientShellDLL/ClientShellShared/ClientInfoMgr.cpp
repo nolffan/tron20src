@@ -45,114 +45,49 @@ CClientInfoMgr::~CClientInfoMgr()
 void CClientInfoMgr::Init()
 {
 
-	LoadString(IDS_UNKNOWN_PLAYER,szUnknownPlayer,sizeof(szUnknownPlayer) );
+	// RETAIL: 0x100fc9d0 loads string 611 (0x263); Tron's CRes number of
+	// IDS_UNKNOWN_PLAYER differs from NOLF2's
+	LoadString(611,szUnknownPlayer,sizeof(szUnknownPlayer) );
 
 	m_nLocalID = 0;
 }
 
-void CClientInfoMgr::UpdateClient ( char const* pszName, bool bIsAdmin, uint32 nID, uint8 nTeamID )
+// RETAIL: 0x100fc9f0. Tron's keeps no admin flag or team here and does
+// not tell the radar.
+void CClientInfoMgr::UpdateClient ( char const* pszName, uint32 nID )
 {
 	// if we have this client in the list, update their info
 	CLIENT_INFO* pClient = GetClientByID(nID, false);
 	if (pClient)
 	{
 		pClient->sName = pszName;
-		pClient->bIsAdmin = bIsAdmin;
-		pClient->nTeamID = nTeamID;
-		
-		UpdateClientSort(pClient);
 
-		if( g_pGameClientShell->ShouldUseRadar() )
-		{
-			g_pRadar->UpdatePlayerName(nID, pszName, nTeamID );
-		}
+		UpdateClientSort(pClient);
 	}
 	else
 	{
 		//hmmm... we should have found them...
 		g_pLTClient->CPrint("CClientInfoMgr::UpdateClient () : Unknown Client %d (%s)", nID, pszName);
 	}
-
-
 }
 
-void CClientInfoMgr::PlayerConnected( char const* pszName, uint32 nID )
+// RETAIL: 0x100fcac0. Tron's replaces a duplicate client instead of
+// updating it; NOLF2's PlayerConnected is not in Tron.
+void CClientInfoMgr::AddClient ( char const* pszName, uint32 nID)
 {
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown08000000);
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown01000000);
+
 	m_nLocalID = 0;
 	g_pLTClient->GetLocalClientID (&m_nLocalID);
 
-	// if we already have this client in the list, just return
-
+	// if we already have this client in the list, take the old one away
 	CLIENT_INFO* pDup = GetClientByID(nID, false);
 	if (pDup)
 	{
-		pDup->sName = pszName;
+		g_pLTClient->CPrint("CClientInfoMgr::AddClient () : Duplicate Client %d (%s)", nID, pszName);
+		RemoveClient(nID);
 	}
-	else
-	{
-		// create the new object
-
-		CLIENT_INFO* pNew = debug_new(CLIENT_INFO);
-		if (!pNew) return;
-
-		pNew->nID = nID;
-		pNew->sName = pszName;
-		pNew->bIsAdmin = false;
-		pNew->nTeamID = INVALID_TEAM;
-		pNew->sScore.Init(nID);
-
-		// if we don't have a list yet, set the list pointer to the new object
-		if (!m_pClients)
-		{
-			m_pClients = pNew;
-			return;
-		}
-
-		// we do have a list - insert the object
-		CLIENT_INFO* ptr = m_pClients;
-
-		//insert at head?
-		if (ptr->sScore.GetScore() < pNew->sScore.GetScore())
-		{
-			pNew->pNext = m_pClients;
-			m_pClients = pNew;
-			return;
-		}
-
-		CLIENT_INFO* pNext = ptr->pNext;
-		while (pNext && pNext->sScore.GetScore() >= pNew->sScore.GetScore())
-		{
-			ptr = pNext;
-			pNext = ptr->pNext;
-		}
-		if (pNext)
-		{
-			pNext->pPrev = pNew;
-		}
-		ptr->pNext = pNew;
-		pNew->pNext = pNext;
-		pNew->pPrev = ptr;
-	}
-}
-
-void CClientInfoMgr::AddClient ( char const* pszName, bool bIsAdmin, uint32 nID, uint8 nTeamID)
-{
-	m_nLocalID = 0;
-	g_pLTClient->GetLocalClientID (&m_nLocalID);
-
-	// if we already have this client in the list, then it's an update, not an add.
-	CLIENT_INFO* pDup = GetClientByID(nID, false);
-	if (pDup)
-	{
-		UpdateClient( pszName, bIsAdmin, nID, nTeamID );
-		return;
-	}
-
-	if( g_pGameClientShell->ShouldUseRadar() )
-	{
-		g_pRadar->UpdatePlayerName(nID, pszName, nTeamID );
-	}
-
 
 	// create the new object
 
@@ -161,8 +96,6 @@ void CClientInfoMgr::AddClient ( char const* pszName, bool bIsAdmin, uint32 nID,
 
 	pNew->nID = nID;
 	pNew->sName = pszName;
-	pNew->bIsAdmin = bIsAdmin;
-	pNew->nTeamID = nTeamID;
 
 	pNew->sScore.Init(nID);
 
@@ -200,6 +133,7 @@ void CClientInfoMgr::AddClient ( char const* pszName, bool bIsAdmin, uint32 nID,
 
 }
 
+// RETAIL: 0x100fcc20 (no radar update in Tron)
 void CClientInfoMgr::RemoveClient (uint32 nID)
 {
 	if (!m_pClients) return;
@@ -212,10 +146,6 @@ void CClientInfoMgr::RemoveClient (uint32 nID)
 	CLIENT_INFO* ptr = GetClientByID(nID, false);
 	if (!ptr) return;
 
-	if( g_pGameClientShell->ShouldUseRadar() )
-	{
-		g_pRadar->UpdatePlayerName( nID, "", 0);
-	}
 	// remove the client from the list
 
 	if (ptr->pNext) 
@@ -227,8 +157,11 @@ void CClientInfoMgr::RemoveClient (uint32 nID)
 
 	debug_delete(ptr);
 
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown08000000);
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown01000000);
 }
 
+// RETAIL: 0x100fccb0
 void CClientInfoMgr::RemoveAllClients()
 {
 
@@ -240,14 +173,17 @@ void CClientInfoMgr::RemoveAllClients()
 		m_pClients = ptr;
 	}
 
-	g_pHUDMgr->QueueUpdate(kHUDScores);	
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown08000000);
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown01000000);
 }
 
 void CClientInfoMgr::UpdateClientSort(CLIENT_INFO* pCur)
 {
 	if (!pCur) return;
 
-	g_pHUDMgr->QueueUpdate(kHUDScores);
+	// RETAIL: 0x100fcd00
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown08000000);
+	g_pHUDMgr->QueueUpdate(kHUDTronUnknown01000000);
 
 	// put this client in the correct position in the list (most frags to least frags)
 	CLIENT_INFO* pTmp = pCur;
@@ -316,11 +252,14 @@ uint32 CClientInfoMgr::GetNumClients()
 
 char const* CClientInfoMgr::GetPlayerName (uint32 nID)
 {
-    if (!m_pClients) return LTNULL;
-
-	CLIENT_INFO* ptr = GetClientByID(nID);
-	if (ptr)
-		return ptr->sName.c_str( );
+	// RETAIL: 0x100fcde0 gives the unknown player's name when there are
+	// no clients
+    if (m_pClients)
+	{
+		CLIENT_INFO* ptr = GetClientByID(nID);
+		if (ptr)
+			return ptr->sName.c_str( );
+	}
 
 	return szUnknownPlayer;
 }
@@ -344,28 +283,4 @@ CLIENT_INFO* CClientInfoMgr::GetClientByID(uint32 nID, bool bUpdateOnFailure)
 	if (bUpdateOnFailure)
 		g_pInterfaceMgr->UpdateClientList();
     return LTNULL;
-}
-
-uint8 CClientInfoMgr::GetNumPlayersOnTeam(uint8 nTeam)
-{
-	if (nTeam > kNumTeams)
-	{
-		CLIENT_INFO* pLocal = GetLocalClient();
-		if (pLocal)
-			nTeam = pLocal->nTeamID;
-	}
-
-	uint8 nCount = 0;
-
-	CLIENT_INFO* ptr = m_pClients;
-	while (ptr)
-	{
-		if (ptr->nTeamID == nTeam)
-			nCount++;
-
-		ptr = ptr->pNext;
-	}
-
-	return nCount;
-
 }

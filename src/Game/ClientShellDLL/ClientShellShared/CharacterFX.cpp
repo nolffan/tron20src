@@ -809,7 +809,8 @@ void CCharacterFX::HandleTauntMsg(ILTMessage_Read *pMsg)
 		if( !pLocalCI )
 			return;
 
-		if( pLocalCI->nTeamID != nTeam )
+		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
 			return;
 	}
 	PlayTaunt(nTauntID, LTFALSE);

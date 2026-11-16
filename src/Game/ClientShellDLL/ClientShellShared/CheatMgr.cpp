@@ -422,11 +422,11 @@ void CCheatMgr::SetGodMode(LTBOOL bMode)
 
 	if (bMode)
 	{
-		g_pChatMsgs->AddMessage("God Mode: ON",kMsgCheatConfirm);
+		g_pChatMsgs->AddMessage(1600,kMsgCheatConfirm);	// RETAIL: string id 0x640 (Tron loads the text from CRes)
 	}
 	else
 	{
- 		g_pChatMsgs->AddMessage("God Mode: OFF",kMsgCheatConfirm);
+ 		g_pChatMsgs->AddMessage(1601,kMsgCheatConfirm);	// RETAIL: string id 0x641 (Tron loads the text from CRes)
 	}
 }
 
@@ -446,7 +446,7 @@ void CCheatMgr::SetAmmo()
 	// Tell the server
     SendCheatMessage(CHEAT_AMMO, LTTRUE);
 
-	g_pChatMsgs->AddMessage("You can never have too many bullets...",kMsgCheatConfirm);
+	g_pChatMsgs->AddMessage(1602,kMsgCheatConfirm);	// RETAIL: string id 0x642 (Tron loads the text from CRes)
 }
 
 
@@ -465,7 +465,7 @@ void CCheatMgr::SetArmor()
 	// Tell the server
     SendCheatMessage(CHEAT_ARMOR, LTTRUE);
 
-	g_pChatMsgs->AddMessage("We got def star, we got def star!",kMsgCheatConfirm);
+	g_pChatMsgs->AddMessage(1603,kMsgCheatConfirm);	// RETAIL: string id 0x643 (Tron loads the text from CRes)
 }
 
 // ----------------------------------------------------------------------- //
@@ -483,12 +483,9 @@ void CCheatMgr::SetHealth(LTBOOL bPlaySound)
 	// Tell the server
     SendCheatMessage(CHEAT_HEALTH, LTTRUE);
 
-	g_pChatMsgs->AddMessage("Doctor Dentz!",kMsgCheatConfirm);
+	g_pChatMsgs->AddMessage(1604,kMsgCheatConfirm);	// RETAIL: string id 0x644 (Tron loads the text from CRes)
 
-	if (bPlaySound)
-	{
-		g_pClientSoundMgr->PlayInterfaceSound("voice\\1025.wav");
-	}
+	// RETAIL: 0x100f2480 plays no sound; bPlaySound is not used.
 }
 
 
@@ -640,7 +637,7 @@ void CCheatMgr::GetSkills()
     SendCheatMessage(CHEAT_SKILLZ, 0);
 
 
-    g_pChatMsgs->AddMessage("You got mad skillz, d00d...",kMsgCheatConfirm);
+    g_pChatMsgs->AddMessage(1612,kMsgCheatConfirm);	// RETAIL: string id 0x64c (Tron loads the text from CRes)
 }
 
 // ----------------------------------------------------------------------- //
@@ -724,7 +721,7 @@ void CCheatMgr::ModSquad()
 {
     s_CheatInfo[CHEAT_MODSQUAD].bActive = LTTRUE;
 
-	g_pChatMsgs->AddMessage("Groovy",kMsgCheatConfirm);
+	g_pChatMsgs->AddMessage(1613,kMsgCheatConfirm);	// RETAIL: string id 0x64d (Tron loads the text from CRes)
 
 	// Tell the server
     SendCheatMessage(CHEAT_MODSQUAD, LTTRUE);
@@ -745,7 +742,7 @@ void CCheatMgr::FullGear()
 	// Tell the server
     SendCheatMessage(CHEAT_FULL_GEAR, LTTRUE);
 
-    g_pChatMsgs->AddMessage("Gear! (as in 'Boy the Beatles sure are Gear!')",kMsgCheatConfirm);
+    g_pChatMsgs->AddMessage(1614,kMsgCheatConfirm);	// RETAIL: string id 0x64e (Tron loads the text from CRes)
 }
 
 // ----------------------------------------------------------------------- //
@@ -767,11 +764,11 @@ void CCheatMgr::SetPos(LTBOOL bMode)
 
 	if (bMode)
 	{
-        g_pChatMsgs->AddMessage("Show position enabled.",kMsgCheatConfirm);
+        g_pChatMsgs->AddMessage(1615,kMsgCheatConfirm);	// RETAIL: string id 0x64f (Tron loads the text from CRes)
 	}
 	else
 	{
-        g_pChatMsgs->AddMessage("Show position disabled.",kMsgCheatConfirm);
+        g_pChatMsgs->AddMessage(1616,kMsgCheatConfirm);	// RETAIL: string id 0x650 (Tron loads the text from CRes)
 	}
 }
 

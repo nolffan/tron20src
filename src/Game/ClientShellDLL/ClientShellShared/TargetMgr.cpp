@@ -257,7 +257,8 @@ void CTargetMgr::Update()
 					// the teamid will be set to the same invalid value anyway.
 					if( pCI && pLocalCI )
 					{
-						if (pCI->nTeamID == pLocalCI->nTeamID)
+						// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+						if ((uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID) == (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID))
 						{
 							m_nString = 0;
 							FormatString(IDS_TARGET_REVIVE, m_szString, ARRAY_LEN(m_szString), pCI->sName.c_str());
@@ -394,7 +395,8 @@ void CTargetMgr::Update()
 
 				if (IsTeamGameType())
 				{
-					m_nTargetTeam = pCI->nTeamID;
+					// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+					m_nTargetTeam = (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID);
 				}
 			}
 			return;
@@ -506,7 +508,8 @@ void CTargetMgr::Update()
 
 					if( pGTFX->GetTeamID() != INVALID_TEAM )
 					{
-						if( pLocalCI->nTeamID == pGTFX->GetTeamID() )
+						// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+						if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pGTFX->GetTeamID() )
 						{
 							m_bCanActivate = false;
 						}
@@ -736,7 +739,8 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 			if( !pLocalCI )
 				return false;
 
-			if( pLocalCI->nTeamID == pDDPiece->GetTeam() )
+			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+			if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pDDPiece->GetTeam() )
 			{
 				return false;
 			}
@@ -923,7 +927,8 @@ void CTargetMgr::SetGadgetTarget( bool bDisabling )
 		if( !pLocalCI )
 			return;
 
-		if( (pFX->GetTeamID() != INVALID_TEAM) && (pLocalCI->nTeamID != pFX->GetTeamID()) )
+		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+		if( (pFX->GetTeamID() != INVALID_TEAM) && ((uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pFX->GetTeamID()) )
 		{
 			// The bombable can only be defused by the other team...
 
@@ -1059,7 +1064,8 @@ DamageType CTargetMgr::RequiredGadgetDamageType()
 
 		if( pFX->GetTeamID() != INVALID_TEAM )
 		{
-			if( pLocalCI->nTeamID != pFX->GetTeamID() )
+			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+			if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pFX->GetTeamID() )
 			{
 				eDamageType = DT_INVALID;
 			}

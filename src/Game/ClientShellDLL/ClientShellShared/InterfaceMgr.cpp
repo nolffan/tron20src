@@ -1774,7 +1774,8 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
             pMsg->ReadString( szName, ARRAY_LEN( szName ));
             uint32 nID = (uint32) pMsg->Readuint32();
 			g_pLTClient->CPrint("MID_PLAYER_CONNECTED : Client  %d (%s)", nID, szName);
-			m_ClientInfo.PlayerConnected( szName, nID );
+			// RETAIL: Tron adds the client here (0x100c9bf2)
+			m_ClientInfo.AddClient( szName, nID );
             return LTTRUE;
 		}
 		break;
@@ -1799,76 +1800,32 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			g_pLTClient->GetLocalClientID (&nLocalID);
 
 
-			bool bChangedTeams = false;
-			uint8 nOldTeam = INVALID_TEAM;
-			if (IsTeamGameType())
-			{
-				CLIENT_INFO* pOldCI = m_ClientInfo.GetClientByID(nID,false);
-				if (pOldCI && pOldCI->nTeamID != nTeamId)
-				{
-					bChangedTeams = true;
-					nOldTeam = pOldCI->nTeamID;
-				}
-			}
-
+			// RETAIL: Tron's (0x100c9c01) has no team change handling here: the
+			// client info keeps no team, and a join of the local client is
+			// not added.
 			switch (nInfoType)
 			{
 			case MID_PI_JOIN:
 				{
 					//new player entering
-					g_pLTClient->CPrint("MID_PLAYER_INFO:MID_PI_JOIN - Adding client %d (%s)", nID, szName);
-					m_ClientInfo.AddClient(szName, bIsAdmin, nID, nTeamId);
 					if( nLocalID != nID )
-						g_pGameClientShell->CSPrint(FormatTempString(IDS_JOINEDGAME, szName));		
+					{
+						g_pLTClient->CPrint("MID_PLAYER_INFO:MID_PI_JOIN - Adding client %d (%s)", nID, szName);
+						m_ClientInfo.AddClient(szName, nID);
+						g_pGameClientShell->CSPrint(FormatTempString(IDS_JOINEDGAME, szName));
+					}
 				} break;
 			case MID_PI_EXIST:
 				{
 					//we are joining and this is info about a player already in the game
 					g_pLTClient->CPrint("MID_PLAYER_INFO:MID_PI_EXIST - Adding client %d (%s)", nID, szName);
-					m_ClientInfo.AddClient(szName, bIsAdmin, nID, nTeamId);
+					m_ClientInfo.AddClient(szName, nID);
 				} break;
 			case MID_PI_UPDATE:
 				{
 					//this is an update about a player already in the game
 					g_pLTClient->CPrint("MID_PLAYER_INFO:MID_PI_UPDATE - Updating client %d (%s)", nID, szName);
-					m_ClientInfo.UpdateClient(szName, bIsAdmin, nID, nTeamId);
-
-					//if this is a team game, and this is our player's update, update our team info
-					if (IsTeamGameType() )
-					{
-						if(nLocalID == nID)
-						{
-							g_pClientMultiplayerMgr->SelectTeam(nTeamId,false);
-						}
-
-						//if we changed teams, we have to clean up our radar
-						if (bChangedTeams)
-						{
-							HandlePlayerTeamChange();
-							
-							if (nTeamId != INVALID_TEAM && nOldTeam != INVALID_TEAM)
-							{
-								char szTmp[128] = "";
-								char szTeam[32] = "";
-								static uint32 dwTeamID[] = { IDS_TEAM_1, IDS_TEAM_2, };
-								LoadString( dwTeamID[nTeamId], szTeam, ARRAY_LEN(szTeam) );
-
-								if(nLocalID == nID)
-								{
-									FormatString(IDS_ICHANGED, szTmp,sizeof(szTmp), szTeam);
-								}
-								else
-								{
-									FormatString(IDS_HECHANGED, szTmp,sizeof(szTmp), szName, szTeam);
-								}
-
-								g_pChatMsgs->AddMessage(szTmp);
-
-							}
-
-						}
-					}
-
+					m_ClientInfo.UpdateClient(szName, nID);
 				} break;
 			};
 
@@ -1880,10 +1837,11 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				{
 					pCFX->ChangeModel(eModelId);
 					
+					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
+					// here that are not yet identified; NOLF2's radar update
+					// stands in.
 					if( pCFX->m_cs.bRadarVisible )
 					{
-						if (bChangedTeams)
-							g_pRadar->RemovePlayer(pCFX->GetServerObj());
 						g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
 					}
 				}
@@ -2046,7 +2004,8 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				if( !pLocalCI )
 					return LTFALSE;
 
-				if( pLocalCI->nTeamID != nTeam )
+				// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+				if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
 					return LTFALSE;
 			}
 
@@ -2120,7 +2079,8 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				if( !pLocalCI )
 					return LTFALSE;
 
-				if( pLocalCI->nTeamID != nTeam )
+				// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+				if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
 					return LTFALSE;
 			}
 

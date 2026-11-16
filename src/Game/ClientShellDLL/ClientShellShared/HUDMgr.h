@@ -53,6 +53,10 @@ enum eHUDUpdateFlag
 	kHUDRespawn     = 0x00080000,
 	kHUDScores		= 0x00100000,
 	kHUDDoomsday	= 0x00200000,
+	// RETAIL: Tron's; the client info manager (0x100fcd00) queues both
+	// when the score list changes. The names are ours.
+	kHUDTronUnknown01000000	= 0x01000000,
+	kHUDTronUnknown08000000	= 0x08000000,
 	kHUDAll			= 0xFFFFFFFF,
 };
 

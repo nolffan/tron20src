@@ -5397,7 +5397,8 @@ void CClientWeapon::HandleGadgetImpact( HOBJECT hObj, LTVector vImpactPoint )
 		if( !pLocalCI )
 			return;
 
-		if( pLocalCI->nTeamID != pGadget->GetTeamID() )
+		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pGadget->GetTeamID() )
 			return;
 	}
 
@@ -5650,7 +5651,8 @@ bool CClientWeapon::SpecialOverrideFire()
 
 						if( pGadget->GetTeamID() != INVALID_TEAM )
 						{
-							if( pLocalCI->nTeamID == pGadget->GetTeamID() )
+							// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+							if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pGadget->GetTeamID() )
 								return true;
 						}
 					}
