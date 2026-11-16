@@ -219,6 +219,14 @@ class CDestructible : public IAggregate
         void SetCanDamage(LTBOOL bCanDamage)		{ m_bCanDamage = bCanDamage; }
 		// RETAIL: Thorne sets it on his ball (retail 0x100594f3)
 		void SetTronUnknown6D0(bool b)				{ m_bTronUnknown6D0 = b; }
+		// RETAIL: CProjectilePrankster::UpdateVictims sets these before the
+		// implode damage (0x10040ead). The name is ours
+		void SetTronImplode(LTFLOAT fRadius, LTFLOAT fVelocity, const LTVector &vDir)
+		{
+			m_fTronUnknown6D4 = fRadius;
+			m_fTronUnknown6D8 = fVelocity;
+			m_vTronUnknown6DC = vDir;
+		}
         void SetNeverDestroy(LTBOOL bNeverDestroy)	{ m_bNeverDestroy = bNeverDestroy; }
         void SetApplyDamagePhysics(LTBOOL b)		{ m_bApplyDamagePhysics = b; }
         void	SetCantDamageFlags(DamageFlags nFlags)	{ m_nCantDamageFlags = nFlags; }

@@ -950,6 +950,16 @@ the later in the level it is reset.
 Not fixed yet: the modern build should start the timer with the lifetime
 only.
 
+### The prankster bit does not release its object lists
+
+Object.lto 0x10040950 (CProjectilePrankster::AcquireTargets,
+TRON/ProjectilePrankster.cpp). Each update in the acquire state calls
+FindObjectsTouchingSphere. The function does not give the list back with
+RelinquishList. The engine therefore loses one object list for each frame
+while a prankster bit catches targets.
+
+Not fixed yet: the modern build should call RelinquishList on the list.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
