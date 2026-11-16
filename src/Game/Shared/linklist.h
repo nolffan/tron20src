@@ -136,11 +136,14 @@
 	//
 	//----------------------------------------------------------
 
+	// RETAIL: Tron's AddHead and AddTail make their nodes with debug_new
+	// (CShell's debug_new_fn<CLinkListNode<...> > at 0x101193f0 and
+	// 0x10119410)
 	template <class T> inline bool CLinkList<T>::AddHead(T data)
 	{
 		if (!m_pHead)
 		{		
-			m_pHead = new CLinkListNode<T>;
+			m_pHead = debug_new(CLinkListNode<T>);
 			if (!m_pHead) return false;
 
 			m_pHead->m_Data = data;
@@ -149,7 +152,7 @@
 		}
 		else
 		{
-			CLinkListNode<T> *pNewNode = new CLinkListNode<T>;
+			CLinkListNode<T> *pNewNode = debug_new(CLinkListNode<T>);
 			if (!pNewNode) return false;
 			
 			m_pHead->m_pPrev  = pNewNode;
@@ -178,7 +181,7 @@
 	{
 		if (!m_pTail)
 		{
-			m_pTail = new CLinkListNode<T>;
+			m_pTail = debug_new(CLinkListNode<T>);
 			if (!m_pTail) return false;
 
 			m_pTail->m_Data = data;
@@ -187,7 +190,7 @@
 		}
 		else
 		{
-			CLinkListNode<T> *pNewNode = new CLinkListNode<T>;
+			CLinkListNode<T> *pNewNode = debug_new(CLinkListNode<T>);
 			if (!pNewNode) return false;
 
 			m_pTail->m_pNext  = pNewNode;

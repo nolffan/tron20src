@@ -1563,7 +1563,9 @@ void CGameClientShell::PreUpdate()
 void CGameClientShell::Update()
 {
 	// Allow multiplayermgr to update.
-	g_pClientMultiplayerMgr->Update( );
+	// RETAIL: Tron's tests the manager first (0x100e3aa9)
+	if (g_pClientMultiplayerMgr)
+		g_pClientMultiplayerMgr->Update( );
 
 	// Set up the time for this frame...
     m_fFrameTime = g_pLTClient->GetFrameTime();

@@ -33,8 +33,10 @@ public:
 
 	virtual void        UpdateLayout();
 
-	LTBOOL	Show(int nStringId, LTVector vSpeakerPos, LTFLOAT fRadius=0.0f, LTFLOAT fDuration=-1.0f, bool bSubtitlePriority = false);
-	void	Clear();
+	// RETAIL: Tron's (0x100fd570, 0x100fd820) know the sound that a subtitle
+	// goes with: Clear takes away only that sound's subtitle
+	void	Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound = LTNULL, LTFLOAT fRadius=0.0f, LTFLOAT fDuration=-1.0f);
+	void	Clear(HLTSOUND hSound);
 
 	void	SetScale(float fScale);
 
@@ -68,7 +70,6 @@ protected:
 	uint8			m_nMaxLines;
 
 	LTVector		m_vSpeakerPos;
-	bool			m_bSubtitlePriority;
 
 	int				m_nCursorPos;
 	LTBOOL			m_bOverflow;
@@ -81,6 +82,9 @@ protected:
 	LTFLOAT			m_fMaxOffset;
 
 	LTFLOAT			m_fEndTime;
+
+	// RETAIL: Tron's: the sound of the subtitle shown (the name is ours)
+	HLTSOUND		m_hSound;
 
 
 };

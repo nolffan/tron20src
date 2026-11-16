@@ -81,7 +81,9 @@ CLIENTFX_INSTANCE::CLIENTFX_INSTANCE()
 	m_bLoop( LTFALSE ),
 	m_bSmoothShutdown( true ),
 	m_bShutdown( false ),
+	m_bTronUnknown4F( false ),
 	m_bUseTargetData( LTFALSE ),
+	m_bTronUnknown5D( false ),
 	m_vTargetPos( 0.0f, 0.0f, 0.0f ),
 	m_vTargetNorm( 0.0f, 0.0f, 0.0f ),
 	m_hAlternateParent( NULL ),
@@ -1275,6 +1277,14 @@ CLIENTFX_INSTANCE* CClientFXMgr::CreateClientFX(const CLIENTFX_CREATESTRUCT &fxI
 		pNewInst->m_vPos = fxInit.m_vPos;
 		pNewInst->m_rRot = fxInit.m_rRot;
 	}
+
+	// RETAIL: Tron's (0x10118a90)
+	if (fxInit.m_bTronUnknownA0)
+	{
+		pNewInst->m_bTronUnknown4F = true;
+		pNewInst->m_vTronUnknown50 = fxInit.m_vTronUnknownA4;
+	}
+
 	pNewInst->m_tmElapsed = 0.0f;
 
 	//now go through and actually create all of our keys
@@ -1338,6 +1348,9 @@ bool CClientFXMgr::CreateFXKey( CLIENTFX_INSTANCE* pInst, FX_KEY* pKey )
 	fxData.m_vTargetPos			= pInst->m_vTargetPos;
 	fxData.m_vTargetNorm		= pInst->m_vTargetNorm;
 	fxData.m_hCamera			= m_hCamera;
+	// RETAIL: Tron's (0x10118c04)
+	fxData.m_vTronUnknown30		= pInst->m_vTronUnknown50;
+	fxData.m_bTronUnknown2C		= pInst->m_bTronUnknown4F;
 
 	// Save the parent
 	fxData.m_hParent = pInst->m_hParent;

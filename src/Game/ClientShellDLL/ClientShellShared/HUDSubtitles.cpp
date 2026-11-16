@@ -43,7 +43,7 @@ CHUDSubtitles::CHUDSubtitles()
 	m_vSpeakerPos.Init();
 	m_fRadius = 0.0;
 	m_fDuration = -1.0f;
-	m_bSubtitlePriority = false;
+	m_hSound = LTNULL;
 }
 	
 
@@ -79,6 +79,12 @@ void CHUDSubtitles::Draw()
 	// Sanity checks...
 	if (!m_bVisible) return;
 	if (GetConsoleInt("Subtitles",0) == 0) return;
+
+	// RETAIL: Tron's Draw (0x100fd113) makes the console variable
+	if (!g_vtAdjustedRadius.IsInitted())
+	{
+        g_vtAdjustedRadius.Init(g_pLTClient, "SubtitleSoundRadiusPercent", LTNULL, 0.77f);
+	}
 
 	// Only show subtitles if conversations in range...
 	LTVector vListenerPos;
@@ -133,7 +139,7 @@ void CHUDSubtitles::Update()
 
 	if (m_fEndTime < m_fElapsedTime)
 	{
-		Clear();
+		Clear(m_hSound);
 		return;
 	}
 
@@ -160,78 +166,32 @@ void CHUDSubtitles::Update()
 
 }
 
-LTBOOL CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, LTFLOAT fRadius, LTFLOAT fDuration, bool bSubtitlePriority)
+void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, LTFLOAT fRadius, LTFLOAT fDuration)
 {
-
-	if (!g_vtAdjustedRadius.IsInitted())
+	// RETAIL: Tron's (0x100fd570) has no distance or priority test: while
+	// a subtitle shows, a dialogue string (20000..22999) other than
+	// 20836..21012 does not take its place.
+	if (m_bVisible && nStringId >= 20000 && nStringId < 23000 &&
+		(nStringId < 20836 || nStringId >= 21013))
 	{
-        g_vtAdjustedRadius.Init(g_pLTClient, "SubtitleSoundRadiusPercent", LTNULL, 0.77f);
+		return;
 	}
 
-	//if it's too far away, don't play it...
-	LTVector vListenerPos;
-	bool bListenerInClient;
-	LTRotation rRot;
-	g_pLTClient->GetListener(&bListenerInClient, &vListenerPos, &rRot);
-
-	bool bForceDraw = (bool)(vSpeakerPos == LTVector(0, 0, 0));
-	bForceDraw = g_pPlayerMgr->IsUsingExternalCamera() ? LTTRUE : bForceDraw;
-
-	LTVector vPos = vSpeakerPos - vListenerPos;
-	float fAdjustedRadius = fRadius * g_vtAdjustedRadius.GetFloat();
-	float fDist = vPos.Mag();
-	if (!bForceDraw && fDist > fAdjustedRadius)
-	{
-		return LTFALSE;
-	}
-
-	//should we override what ever is already playing?
-	if (m_bVisible)
-	{
-
-		//if the old one has priority, and the new doesn't, don't play the new
-		if (m_bSubtitlePriority && !bSubtitlePriority)
-		{
-			return LTFALSE;
-		}
-
-		//if they have the same priority, check distances
-		if (m_bSubtitlePriority == bSubtitlePriority)
-		{
-			LTVector vOldPos = m_vSpeakerPos - vListenerPos;
-			float fOldDist = vOldPos.Mag();
-
-			
-			if (fOldDist < fDist)
-			{
-				return LTFALSE;
-			}
-		}
-
-	}
-	
-
-	ASSERT(m_pText);
 	const char *pStr = LoadTempString(nStringId);
-	
-	
-	if (!strlen(pStr))
+	if (!pStr || !pStr[0])
 	{
-		g_pLTClient->CPrint("CHUDSubtitles::Show(%d) : No Text",nStringId);
-		return LTFALSE;
+		g_pLTClient->CPrint("Warning!  String ID '%d' is not in CRES!",nStringId);
+		return;
 	}
-	
-	
-	
-	
+
 	m_pText->SetText(pStr);
 
 	m_bVisible = LTTRUE;
-	m_bSubtitlePriority = bSubtitlePriority;
 
 	m_vSpeakerPos = vSpeakerPos;
 	m_fRadius = fRadius;
 	m_fDuration = fDuration;
+	m_hSound = hSound;
 
 	if (m_fDuration < 0.0f)
 		m_fDuration = 0.04f * (float)m_pText->GetLength();
@@ -294,21 +254,20 @@ LTBOOL CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, LTFLOAT fRadius,
 
 	m_pText->SetPosition(textX,textY);
 
-	return LTTRUE;
-
 }
 
-void CHUDSubtitles::Clear()
+void CHUDSubtitles::Clear(HLTSOUND hSound)
 {
+	// RETAIL: 0x100fd820
+	if (hSound != m_hSound)
+		return;
+
 	m_bVisible = LTFALSE;
 	if (m_pText)
 		m_pText->SetText(" ");
 
 	//reset our elapsed time as well, just to be safe
 	m_fElapsedTime = 0.0f;
-
-	m_bSubtitlePriority = false;
-
 }
 
 

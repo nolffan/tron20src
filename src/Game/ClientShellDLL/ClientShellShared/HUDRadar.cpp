@@ -149,7 +149,8 @@ void CHUDRadar::Render()
 
 			// Check if the radar is for an opposing player, show them on radar.
 			if( pRadarObj->m_nVisibleTeamId != INVALID_TEAM &&
-				pLocalCI->nTeamID != pRadarObj->m_nVisibleTeamId )
+				// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+				(uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pRadarObj->m_nVisibleTeamId )
 				continue;
 		}
 
@@ -489,10 +490,12 @@ void CHUDRadar::AddPlayer(HOBJECT hObj, uint32 nId)
 		if( !pLocalCI || !pCI )
 			return;
 	
-		if( pLocalCI->nTeamID != pCI->nTeamID )
+		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID) )
 			return;
 
-		nTeamID = pCI->nTeamID;
+		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+		nTeamID = (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID);
 
 	}
 	
@@ -687,7 +690,8 @@ void CHUDRadar::UpdateNamePositions()
 		uint8 nTeam = 0;
 		if( pLocalCI)
 		{
-			nTeam = pLocalCI->nTeamID;
+			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
+			nTeam = (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID);
 		}
 
 		g_pDrawPrim->SetRGBA4( &teamPoly, nTeamColors[nTeam][1], nTeamColors[nTeam][0], nTeamColors[nTeam][1], nTeamColors[nTeam][2] );

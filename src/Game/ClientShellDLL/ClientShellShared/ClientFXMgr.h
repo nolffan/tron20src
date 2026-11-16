@@ -275,7 +275,16 @@
 		bool								m_bSmoothShutdown;
 		bool								m_bShutdown;
 
+		// RETAIL: Tron's (CLIENTFX_INSTANCE is 0x8c bytes; constructor at
+		// 0x10117370): CreateClientFX (0x10118860) sets the flag and copies
+		// the vector from CLIENTFX_CREATESTRUCT's m_bTronUnknownA0 and
+		// m_vTronUnknownA4; the constructor leaves the vector alone. The
+		// names are ours.
+		bool								m_bTronUnknown4F;
+		LTVector							m_vTronUnknown50;
+
 		bool								m_bUseTargetData;
+		bool								m_bTronUnknown5D;	// RETAIL: Tron's; the name is ours
 		LTVector							m_vTargetPos;
 		LTVector							m_vTargetNorm;
 
