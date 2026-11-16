@@ -341,6 +341,8 @@ class CGameServerShell : public IServerShellStub
 		void		CheatGimmeAmmo			(CPlayerObj*, uint32);
 		void        CheatSkillz				(CPlayerObj*, uint32);
 		void        CheatBodyGolfing		(CPlayerObj*, uint32);
+		void        CheatPSet				(CPlayerObj*, uint32);	// RETAIL: Tron's
+		void        CheatClearPSet			(CPlayerObj*, uint32);	// RETAIL: Tron's
 		void        CheatDefault			(CPlayerObj*, uint32);
 
         void HandleCheatRemoveAI(uint32 nData);

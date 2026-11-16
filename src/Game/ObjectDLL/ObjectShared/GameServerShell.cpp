@@ -1907,7 +1907,9 @@ void CGameServerShell::ProcessCheat( CPlayerObj* pPlayer, CheatCode nCheatCode, 
 		case CHEAT_GIMMEGEAR:		CheatGimmeGear	(pPlayer, nData);	break;
 		case CHEAT_GIMMEAMMO:		CheatGimmeAmmo	(pPlayer, nData);	break;
 		case CHEAT_SKILLZ:			CheatSkillz		(pPlayer, nData);	break;
-		case CHEAT_BODYGOLFING:		CheatBodyGolfing(pPlayer, nData);	break;
+		// RETAIL: Tron's (0x100e0a46); Tron has no body golfing cheat here
+		case CHEAT_TRON_PSET:		CheatPSet		(pPlayer, nData);	break;
+		case CHEAT_TRON_CLEARPSET:	CheatClearPSet	(pPlayer, nData);	break;
 		default:					CheatDefault	(pPlayer, nData);	break; // good way to catch bugs, we hate those default cheaters
 	}
 }
@@ -2586,6 +2588,30 @@ void CGameServerShell::CheatFullGear (CPlayerObj* pPlayer, uint32 nData)
 	if (!pPlayer) return;
 
 	pPlayer->FullGearCheat();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGameServerShell::CheatPSet ()/CheatClearPSet ()
+//
+//	PURPOSE:	RETAIL: Tron's mppset and mpclearpset (0x100e0c10,
+//				0x100e0c30). They switch CTronPlayerObj's
+//				TronUnknownVirtual105 on and off. The names are ours
+//
+// ----------------------------------------------------------------------- //
+
+void CGameServerShell::CheatPSet (CPlayerObj* pPlayer, uint32 nData)
+{
+	if (!pPlayer) return;
+
+	pPlayer->TronUnknownVirtual105(LTTRUE);
+}
+
+void CGameServerShell::CheatClearPSet (CPlayerObj* pPlayer, uint32 nData)
+{
+	if (!pPlayer) return;
+
+	pPlayer->TronUnknownVirtual105(LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
