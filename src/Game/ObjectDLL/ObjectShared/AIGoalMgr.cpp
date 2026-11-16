@@ -460,6 +460,12 @@ void CAIGoalMgr::SetGoalSet(uint32 iGoalSet, LTBOOL bClearGoals)
 			pGoalTemplate = g_pAIGoalButeMgr->GetTemplate(it->first);
 			pGoal = AddGoal(it->first, pGoalTemplate->fImportance, fTime, LTFALSE);
 
+			// RETAIL: Tron tests the new goal (0x10148b51)
+			if( !pGoal )
+			{
+				continue;
+			}
+
 			pGoal->SetPermanentGoal( bPermanent );
 
 			// Process any additional name value pairs for this goal.
