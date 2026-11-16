@@ -366,6 +366,10 @@ class CInterfaceMgr
 	    void		ShowMessageBox(int nStringID, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
 	    void		ShowMessageBox(const char *pString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
 	    void		CloseMessageBox(LTBOOL bReturn);
+		// TRON: (RETAIL: inlined in CScreenSubroutines::Render, 0x1007f60c)
+		LTBOOL		IsMessageBoxVisible() {return m_MessageBox.IsVisible();}
+		// TRON: (RETAIL: inlined in CScreenSubroutines::OnFocus, 0x1007eaf6)
+		CCursorMgr*	GetCursorMgr() {return &m_CursorMgr;}
 		// RETAIL: Tron's (inline; out of line at 0x1000fa80, its
 		// CMessageBox::Show taking the wide text, 0x100de920)
 	    void		ShowMessageBox(std::wstring sString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);

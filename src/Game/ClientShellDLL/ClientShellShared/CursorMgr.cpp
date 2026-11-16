@@ -564,3 +564,9 @@ void CCursorMgr::KillSprite()
 
 	// RETAIL: Tron's KillSprite (0x101439c0) leaves the cursor mode alone
 }
+
+// TRON: (RETAIL: 0x10143630; the subroutine screen hides the lines)
+void CCursorMgr::ShowCursorLines(bool bShow)
+{
+	m_bShowCursorLines = bShow;
+}

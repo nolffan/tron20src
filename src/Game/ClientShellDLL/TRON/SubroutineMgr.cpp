@@ -1313,6 +1313,24 @@ PlayerSubroutine* CSubroutineMgr::GetPlayerSubroutineByNameId(uint32 nNameId)
 	return LTNULL;
 }
 
+// RETAIL: 0x10094c90 (the name is ours): the subroutine screen drops one
+// of two copies of a subroutine (CScreenSubroutines, 0x100811d3)
+void CSubroutineMgr::RemovePlayerSubroutine(PlayerSubroutine * pSub)
+{
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_PlayerSubroutineArray.begin(); iter != m_PlayerSubroutineArray.end(); iter++)
+	{
+		if (*iter == pSub)
+		{
+			if ((*iter)->pProcedural)
+				(*iter)->pProcedural->pSub = LTNULL;
+			m_PlayerSubroutineArray.erase(iter);
+			g_pHUDMgr->QueueUpdate(kHUDRespawn);
+			return;
+		}
+	}
+}
+
 // PORT: build 69's (retail has no such function; its CScreenSubroutines
 // code may have it inlined)
 void CSubroutineMgr::AddPlayerSubroutine(PlayerSubroutine * pSub)

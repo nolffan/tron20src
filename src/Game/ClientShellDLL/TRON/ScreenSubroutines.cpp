@@ -6,15 +6,11 @@
 //
 // (c) 2001-2002 Monolith Productions, Inc.  All Rights Reserved
 //
+// RETAIL: Tron 2.0 1.030's, written from retail CShell.dll
+// (0x1007d090..0x10081e25), in retail's order. The names of the functions
+// that have no counterpart in Build 69 are ours.
+//
 // ----------------------------------------------------------------------- //
-
-// todo 3/13
-
-// Add the "Progress" meter to any subroutine with a procedural
-// Build a popup window class that we can add information to
-// Rotate libraries
-// remove combat, defense, utility specifics and replace with array[3]
-// change the Escape() in Compile() to change back to gameplay state
 
 #include "stdafx.h"
 #include "ScreenSubroutines.h"
@@ -23,71 +19,26 @@
 #include "ScreenCommands.h"
 #include "WinUtil.h"
 #include "GameClientShell.h"
-#include "ModelButeMgr.h"
 #include "SubroutineMgr.h"
 #include "TRONPlayerStats.h"
 #include "TransitionFXMgr.h"
+#include "CursorMgr.h"
+#include "ProfileMgr.h"
+#include "MissionButeMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
 
 namespace
 {
-	const int CMD_COMPILE = CMD_CUSTOM + 1;
-
-	// PORT: Tron's CArcCtrl (ArcCtrl.h, retail 0x10001ec0) keeps only the
-	// name of the piece its sectors attach to; Build 69's code here still
-	// needs the library models' objects. Ours, until this screen is written
-	// from retail.
-	struct ArcObject
-	{
-		CArcCtrl *	pCtrl;
-		HOBJECT		hObj;
-	};
-	ArcObject s_ArcObjects[4];
-
-	void SetArcObject(CArcCtrl & ctrl, HOBJECT hObj, char * szPiece)
-	{
-		ctrl.AssociateModel(szPiece);
-		for (int i = 0; i < 4; i++)
-		{
-			if (!s_ArcObjects[i].pCtrl || s_ArcObjects[i].pCtrl == &ctrl)
-			{
-				s_ArcObjects[i].pCtrl = &ctrl;
-				s_ArcObjects[i].hObj = hObj;
-				return;
-			}
-		}
-	}
-
-	HOBJECT GetArcObject(CArcCtrl & ctrl)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			if (s_ArcObjects[i].pCtrl == &ctrl)
-				return s_ArcObjects[i].hObj;
-		}
-		return LTNULL;
-	}
+	// RETAIL: the screen's commands (0x1007ef90)
+	const uint32 CMD_DONE			= 0x434;
+	const uint32 CMD_CLEAR			= 0x435;
+	const uint32 CMD_TOOLTIPS		= 0x436;
 
 	const float MEMORY_INNER_RADIUS = 118;
 	const float MEMORY_OUTER_RADIUS = 166;
 
-	const float LIBRARY_INNER_RADIUS = 178;
-	const float LIBRARY_OUTER_RADIUS = 226;
-
-    LTVector g_vPos, g_vU, g_vR, g_vF;
-
-	LTIntPt CompilePos;
-
-	typedef enum {
-		LIB_STATE_NONE = 0,
-		LIB_STATE_CLOSED,
-		LIB_STATE_OPEN,
-		LIB_STATE_OPENING,
-		LIB_STATE_CLOSING
-	} LibraryState;
-
-	// RETAIL: the screen's sounds, 0x1007d090..0x1007d3a2 (names ours).
+	// RETAIL: the screen's sounds, 0x1007d090..0x1007d3d2 (names ours).
 	void PlaySubroutineStartSound()
 	{
 		g_pClientSoundMgr->PlaySoundLocal("subroutinestart", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
@@ -153,6 +104,16 @@ namespace
 		}
 	}
 
+	void PlayClearMemSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("clearmem", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayToggleToolTipsSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("toggletooltips", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
 	void PlayDropIntoSound()
 	{
 		g_pClientSoundMgr->PlaySoundLocal("dropinto", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
@@ -172,8 +133,17 @@ namespace
 	{
 		g_pClientSoundMgr->PlaySoundLocal("cantdrop", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
 	}
-}
 
+	void PlayActiveMemoryYesSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("mouseover_activememory_yes", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+
+	void PlayActiveMemoryNoSound()
+	{
+		g_pClientSoundMgr->PlaySoundLocal("mouseover_activememory_no", SOUNDPRIORITY_MISC_LOW, 0, 100, 1.0f, 0);
+	}
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -182,13 +152,39 @@ namespace
 
 CScreenSubroutines::CScreenSubroutines()
 {
-	m_bHideNewRatings = LTFALSE;
+	m_pSysName = LTNULL;
+	m_pVersion = LTNULL;
+	m_bShowToolTips = LTTRUE;
+	m_nToolTipFontSize = 14;
+	m_pBuildNoteCount = LTNULL;
+	m_nBuildNoteCountStringId = 0;
+	m_nPopupTextId = 0;
+	m_nPopupId = 0;
+	m_szPopupText[0] = 0;
+	m_dwInterfaceSoundMask = 0;
+	m_hAnimSound = LTNULL;
+	m_pLastCtrl = LTNULL;
+	m_bRatingLeftHot = false;
+	m_bRatingRightHot = false;
+	m_bLibraryCCWHot = false;
+	m_bLibraryCWHot = false;
 }
 
 CScreenSubroutines::~CScreenSubroutines()
 {
 }
 
+// RETAIL: 0x1007d800
+void CScreenSubroutines::Term()
+{
+	if (m_hAnimSound)
+	{
+		g_pLTClient->SoundMgr()->KillSound(m_hAnimSound);
+		m_hAnimSound = LTNULL;
+	}
+
+	m_PopupText.Term();
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -200,52 +196,50 @@ CScreenSubroutines::~CScreenSubroutines()
 
 LTBOOL CScreenSubroutines::Build()
 {
-	CreateTitle(IDS_TITLE_SUBROUTINES);
+	LTIntPt clearPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "ClearPos");
+	LTIntPt sysNamePos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "SysNamePos");
+	LTIntPt titlePos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "ToolTipTitlePos");
+	LTIntPt togglePos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "ToolTipTogglePos");
+	m_nToolTipFontSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "ToolTipFontSize");
 
-	// Add a "Compile" button
-	CompilePos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES,"CompilePos");
-	AddTextItem(IDS_COMPILE, CMD_COMPILE, IDS_HELP_COMPILE, CompilePos);
+	LTVector vColor = g_pLayoutMgr->GetVector("ScreenSubroutines", "ToolTipColor");
+	m_ToolTip.SetTextColor(SET_ARGB(0xFF, (uint8)vColor.x, (uint8)vColor.y, (uint8)vColor.z));
+
+	vColor = g_pLayoutMgr->GetVector("ScreenSubroutines", "ToolTipFrameColor");
+	uint8 nRed = (uint8)vColor.x;
+	uint8 nGreen = (uint8)vColor.y;
+	uint8 nBlue = (uint8)vColor.z;
+	uint8 nAlpha = LTCLAMP((uint8)(g_pLayoutMgr->GetFloat("ScreenSubroutines", "ToolTipAlpha", 0.0f) * 255.0f), 0, 255);
+	m_ToolTip.SetBackColor(SET_ARGB(nAlpha, nRed, nGreen, nBlue));
+
+	m_pClear = AddTextItem(0xcb2, CMD_CLEAR, 0, clearPos);
+
+	if (g_pProfileMgr)
+		m_bShowToolTips = g_pProfileMgr->GetCurrentProfile()->m_bAlwaysShowToolTip;
+
+	m_pToolTipTitle = AddTextItem(0xc9e, 0, 0, titlePos);
+	m_pToolTipTitle->Enable(LTFALSE);
+
+	m_pToolTipToggle = AddToggle(L"", 0, 0, &m_bShowToolTips, togglePos);
+	m_pToolTipToggle->NotifyOnChange(CMD_TOOLTIPS, this);
+	m_pToolTipToggle->SetOffString(LoadTempWString(0xca0));
+	m_pToolTipToggle->SetOnString(LoadTempWString(0xc9f));
+
+	m_pSysName = AddTextItem(std::wstring(), 0, 0, sysNamePos);
+	m_pSysName->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+
+	m_fToolTipWidth = g_pLayoutMgr->GetScreenCustomFloat(SCREEN_ID_SUBROUTINES, "ToolTipWidth");
 
 	// Make sure to call the base class
 	if (!CBaseScreen::Build()) return LTFALSE;
 
-	UseBack(LTTRUE);
+	UseBack(LTFALSE);
 
-	LTIntPt center;
-	center.x = 320;
-	center.y = 240;
-
-	m_SystemMemoryCtrl.Init(center, MEMORY_INNER_RADIUS, MEMORY_OUTER_RADIUS, 24);
+	m_SystemMemoryCtrl.Init(LTIntPt(320, 240), MEMORY_INNER_RADIUS, MEMORY_OUTER_RADIUS, 24);
 	m_SystemMemoryCtrl.ShowOutlines(LTFALSE);
 	m_SystemMemoryCtrl.SetArcType(ARC_TYPE_SYSTEM_MEMORY);
 
-	m_CombatCtrl.Init(center, LIBRARY_INNER_RADIUS, LIBRARY_OUTER_RADIUS, 6);
-	m_CombatCtrl.SetArcType(ARC_TYPE_LIBRARY);
-	m_CombatCtrl.SetArc(45.0f, 135.0f);
-	m_CombatCtrl.SetNumHighlightSegments(1);
-	m_CombatCtrl.ShowOutlines(LTFALSE);
-
-	m_DefenseCtrl.Init(center, LIBRARY_INNER_RADIUS, LIBRARY_OUTER_RADIUS, 6);
-	m_DefenseCtrl.SetArcType(ARC_TYPE_LIBRARY);
-	m_DefenseCtrl.SetArc(165.0f, 255.0f);
-	m_DefenseCtrl.SetNumHighlightSegments(1);
-	m_DefenseCtrl.ShowOutlines(LTFALSE);
-
-	m_UtilityCtrl.Init(center, LIBRARY_INNER_RADIUS, LIBRARY_OUTER_RADIUS, 6);
-	m_UtilityCtrl.SetArcType(ARC_TYPE_LIBRARY);
-	m_UtilityCtrl.SetArc(285.0f, 15.0f);
-	m_UtilityCtrl.SetNumHighlightSegments(1);
-	m_UtilityCtrl.ShowOutlines(LTFALSE);
-
-	m_nCombatSubs		= 0;
-	m_nDefenseSubs		= 0;
-	m_nUtilitySubs		= 0;
-
-	m_nCombatLibSize	= 0;
-	m_nDefenseLibSize	= 0;
-	m_nUtilityLibSize	= 0;
-
-	// RETAIL: as retail's Build (0x1007dc01): each rating's buttons
+	// RETAIL: each rating's buttons
 	for (int i = 0; i < NUM_RATINGS; i++)
 	{
 		char szName[32];
@@ -257,147 +251,372 @@ LTBOOL CScreenSubroutines::Build()
 		m_RatingBars[i].SetBuildPoints(&m_BuildPoints);
 	}
 
+	m_ModelMgr.Activate();
+	m_pScreenModel = LTNULL;
+	m_hOptimizer = LTNULL;
+	m_bOptimizerHot = false;
+	m_fLButtonDownTime = 0.0f;
+	m_pDuplicateSecond = LTNULL;
+	m_pDuplicateFirst = LTNULL;
+
+	int nVersionSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "VersionSize");
+	m_VersionPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "VersionPos");
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nVersionSize);
+	m_pVersion = AddTextItem(L"", 0, 0, m_VersionPos);
+	m_pVersion->SetFont(pFont, nVersionSize);
+
+	int nCountSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteCountSize");
+	LTVector vCountColor = g_pLayoutMgr->GetScreenCustomVector(SCREEN_ID_SUBROUTINES, "BuildNoteCountColor");
+	m_BuildNoteCountPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "BuildNoteCountPos");
+	m_nBuildNoteCountStringId = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteCountStringId");
+	m_nBuildNoteIconSpacer = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteIconSpacer");
+	m_fBuildNoteIconScalar = g_pLayoutMgr->GetScreenCustomFloat(SCREEN_ID_SUBROUTINES, "BuildNoteIconScalar");
+	pFont = g_pInterfaceResMgr->GetFontForHeight(nCountSize);
+	m_pBuildNoteCount = AddTextItem(L"", 0, 0, m_BuildNoteCountPos);
+	m_pBuildNoteCount->SetFont(pFont, nCountSize);
+	uint32 nCountColor = SET_ARGB(0xFF, (uint8)vCountColor.x, (uint8)vCountColor.y, (uint8)vCountColor.z);
+	m_pBuildNoteCount->SetColors(nCountColor, nCountColor, nCountColor);
+
+	char szTexture[1024];
+	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_SUBROUTINES, "BuildNoteIconTexture", szTexture, sizeof(szTexture));
+	m_hBuildNoteIcon = g_pInterfaceResMgr->GetTexture(szTexture);
+	g_pDrawPrim->SetRGBA(&m_BuildNoteIconPoly, 0xFFFFFFFF);
+	g_pDrawPrim->SetUVWH(&m_BuildNoteIconPoly, 0.0f, 0.0f, 1.0f, 1.0f);
+
+	m_PopupText.Init(false);
+
 	return LTTRUE;
+}
+
+// RETAIL: 0x1007e0a0
+void CScreenSubroutines::SetSystemName(int nStringID)
+{
+	if (!m_pSysName) return;
+
+	if (nStringID)
+		m_pSysName->SetString(LoadTempWString(nStringID));
+	else
+		m_pSysName->SetString(L"");
+}
+
+// RETAIL: 0x1007e1c0
+void CScreenSubroutines::SetPopupText(uint32 nTextId, uint8 nPopupId, char * pText)
+{
+	m_nPopupTextId = nTextId;
+	m_nPopupId = nPopupId;
+	if (pText)
+	{
+		strncpy(m_szPopupText, pText, 127);
+		m_szPopupText[127] = 0;
+	}
+	else
+		m_szPopupText[0] = 0;
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CScreenSubroutines::OnFocus
+//	ROUTINE:	CScreenSubroutines::OnFocus()
 //
-//	PURPOSE:	Handle setup/cleanup as player enters and exits screen
+//	PURPOSE:	This is called when the screen gets or loses focus
 //
 // ----------------------------------------------------------------------- //
 
 void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 {
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+
+	if (g_pInterfaceResMgr->GetXRatio() != m_fLastScale)
+		ScreenDimsChanged();
+
 	if (bFocus)
 	{
-		PlaySubroutineStartSound();	// RETAIL: as retail's OnFocus (0x1007e286)
 		m_bDoneIntro = false;
+		m_pLastCtrl = LTNULL;
+		m_bRatingLeftHot = false;
+		m_bRatingRightHot = false;
+		m_bLibraryCCWHot = false;
+		m_bLibraryCWHot = false;
 
-		// Set the cursor mode to "pickup"
+		PlaySubroutineStartSound();
+
+		// the screen glow is off while the screen is up
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("screenglowenable");
+		m_nOldScreenGlow = 0;
+		if (hVar)
+			m_nOldScreenGlow = (int)g_pLTClient->GetVarValueFloat(hVar);
+		g_pLTClient->RunConsoleString("screenglowenable 0");
+
 		m_eCursorMode = CursorPickup;
 		m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
-		m_pHotSub	= LTNULL;
-		m_pHotProc	= LTNULL;
-		m_pHotStr	= LTNULL;
-		m_pHotArc	= LTNULL;
+		m_SystemMemoryCtrl.ShowSprites(true);
+
+		m_bRatingLeftHot = false;
+		m_pHotSub = LTNULL;
+		m_pHotProc = LTNULL;
 		m_pCursorSub = LTNULL;
-		BuildMenuPieces();
+		m_bBuildPointsHot = false;
+		m_bRatingRightHot = false;
+		m_bLibraryCCWHot = false;
+		m_bLibraryCWHot = false;
+
+		m_Libraries[0].Init(0, 45.0f, 135.0f);
+		m_Libraries[1].Init(1, 165.0f, 255.0f);
+		m_Libraries[2].Init(2, 285.0f, 15.0f);
+
+		CreateMenuPieces();
+
 		m_pScreenMgr->GetTransitionFXMgr()->ClearScreenHistory();
 		m_pScreenMgr->GetTransitionFXMgr()->SetLooping(false);
 
 		g_pCursorMgr->UseSprite("Interface\\cursor.dtx");
 		g_pCursorMgr->UseGlowSprite("Interface\\cursor_glow.dtx");
-		g_pCursorMgr->SetCenter(32,32);
+		g_pCursorMgr->SetCenter(32, 32);
+
+		m_bShowToolTips = pProfile->m_bAlwaysShowToolTip;
+
+		float fRatio = g_pInterfaceResMgr->GetXRatio();
+		m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
+		m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
+		m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
+		m_ToolTip.m_fDelay = 0.0f;
+		m_ToolTip.m_fFadeTime = 0.0f;
+
+		m_DuplicateDlg.Init();
+
+		// the jet version
+		uint16 nVersion;
+		((CTronPlayerStats*)g_pPlayerStats)->GetJetVersion(nVersion);
+		int nMajor = nVersion / 100;
+		nVersion -= nMajor * 100;
+		int nMinor = nVersion / 10;
+		nVersion -= nMinor * 10;
+
+		char szTmp[80];
+		FormatString(0xeec, szTmp, sizeof(szTmp), nMajor, nMinor, nVersion);
+		m_pVersion->SetString(LTGUIWideString(szTmp));
+		m_bTextFade = false;
+		m_pVersion->Show(LTFALSE);
+		m_fTextFade = 0.0f;
+		m_pSysName->Show(LTFALSE);
+		m_pClear->Show(LTFALSE);
+		m_pToolTipTitle->Show(LTFALSE);
+		m_pToolTipToggle->Show(LTFALSE);
+
+		float fXRatio = g_pInterfaceResMgr->GetXRatio();
+		int nWidth = (int)((float)m_pVersion->GetBaseWidth() / fXRatio);
+		m_pVersion->GetBaseHeight();
+		m_pVersion->SetBasePos(LTIntPt(m_VersionPos.x - nWidth / 2, m_VersionPos.y));
+
+		// the build notes found
+		int nFound = 0;
+		CIntelItemList* pList = g_pPlayerStats->GetIntelList();
+		int nCount = pList->GetCount();
+		for (int i = 0; i < nCount; i++)
+		{
+			INTEL_ITEM* pItem = g_pPlayerStats->GetIntelList()->Get(i);
+			if (pItem && pItem->nType == 1)
+				nFound++;
+		}
+
+		// PORT: retail adds up the build notes of each level of each
+		// mission (Tron's LEVEL +0x1004, 0x1007e706), which our LEVEL
+		// does not have yet
+		int nTotal = 0;
+
+		if (m_pBuildNoteCount)
+		{
+			FormatString(m_nBuildNoteCountStringId, szTmp, sizeof(szTmp), nFound, nTotal);
+			m_pBuildNoteCount->SetString(LTGUIWideString(szTmp));
+			m_bBuildNoteFade = false;
+			m_pBuildNoteCount->Show(LTFALSE);
+			m_fTextFade = 0.0f;
+
+			int nTextWidth = (int)((float)m_pBuildNoteCount->GetBaseWidth() / g_pInterfaceResMgr->GetXRatio());
+			int nTextHeight = (int)((float)m_pBuildNoteCount->GetBaseHeight() / g_pInterfaceResMgr->GetYRatio());
+
+			uint32 nTexW, nTexH;
+			g_pTexInterface->GetTextureDims(m_hBuildNoteIcon, nTexW, nTexH);
+			int nIconW = (int)((float)nTexW * m_fBuildNoteIconScalar);
+			int nIconH = (int)((float)nTexH * m_fBuildNoteIconScalar);
+
+			float fTextH = (float)nTextHeight;
+			float fIconH = (float)nIconH;
+			float fMaxH = (fIconH < fTextH) ? fTextH : fIconH;
+
+			int nLeft = (int)((float)m_BuildNoteCountPos.x - (float)(m_nBuildNoteIconSpacer + nIconW + nTextWidth) * 0.5f);
+			float fTop = (float)m_BuildNoteCountPos.y;
+
+			g_pDrawPrim->SetXYWH(&m_BuildNoteIconPoly,
+				(float)nLeft * g_pInterfaceResMgr->GetXRatio(),
+				((fMaxH - fIconH) * 0.5f + fTop) * g_pInterfaceResMgr->GetYRatio(),
+				(float)nIconW * g_pInterfaceResMgr->GetXRatio(),
+				fIconH * g_pInterfaceResMgr->GetYRatio());
+
+			m_pBuildNoteCount->SetBasePos(LTIntPt(
+				(int)((float)(m_nBuildNoteIconSpacer + nIconW) + (float)nLeft),
+				(int)((fMaxH - fTextH) * 0.5f + fTop)));
+		}
+
+		SetSelection(kNoSelection);
+		UpdateData(LTTRUE);
+		g_pInterfaceMgr->GetCursorMgr()->ShowCursorLines(false);
 	}
 	else
 	{
-		DestroyMenuPieces();
-		m_pScreenMgr->GetTransitionFXMgr()->SetLooping(true);
+		char szCmd[32];
+		sprintf(szCmd, "screenglowenable %d", m_nOldScreenGlow);
+		g_pLTClient->RunConsoleString(szCmd);
 
-		// RETAIL: as retail's OnFocus (0x1007edbd)
-		m_BuildPoints.Term();
-		for (int i = 0; i < NUM_RATINGS; i++)
+		pProfile->m_bAlwaysShowToolTip = (m_bShowToolTips != LTFALSE);
+
+		if (m_hOptimizer)
 		{
-			m_RatingBars[i].Term();
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_OBJECT_MESSAGE);
+			cMsg.WriteObject(m_hOptimizer);
+			cMsg.Writeuint32(MID_OPTIMIZER_RESULT);
+			cMsg.Writebool(m_Optimizer.IsDone() || m_Optimizer.IsBusy());
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+			m_hOptimizer = LTNULL;
 		}
 
-		// Force arcs to wipe all their contents
+		for (int i = 0; i < NUM_LIBRARIES; i++)
+			m_Libraries[i].Term();
+
+		TermControls();
+
+		m_pScreenMgr->GetTransitionFXMgr()->SetLooping(true);
+
 		ClearScreen();
-		g_pCursorMgr->UseSprite((CScreenSprite *)LTNULL);
-		g_pCursorMgr->SetCenter(16,16);
+
+		g_pCursorMgr->UseSprite((CScreenSprite*)LTNULL);
+		g_pCursorMgr->SetCenter(16, 16);
+
+		m_ToolTip.Hide();
+		if (m_PopupText.IsVisible())
+			m_PopupText.Close();
+		m_DuplicateDlg.Term();
+
+		if (m_hAnimSound)
+		{
+			g_pLTClient->SoundMgr()->KillSound(m_hAnimSound);
+			m_hAnimSound = LTNULL;
+		}
 	}
 
 	CBaseScreen::OnFocus(bFocus);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::DestroyMenuPieces
-//
-//	PURPOSE:	Iterate through the array of models, and clean them up
-//
-// ----------------------------------------------------------------------- //
-
-void CScreenSubroutines::DestroyMenuPieces()
+// RETAIL: 0x1007ed10
+void CScreenSubroutines::TermControls()
 {
-	// iterate through m_ModelPieceArray and remove them, reset them and term them
-	ModelPieceArray::iterator iter = m_ModelPieceArray.begin();
-	while (iter != m_ModelPieceArray.end())
+	ModelPieceArray::iterator iter;
+	for (iter = m_ModelPieceArray.begin(); iter != m_ModelPieceArray.end(); iter++)
 	{
-		g_pInterfaceMgr->RemoveInterfaceSFX(*iter);
-		(*iter)->Reset();
 		(*iter)->Term();
 		debug_delete(*iter);
-		iter++;
 	}
 	m_ModelPieceArray.clear();
-}
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::BuildMenuPieces
-//
-//	PURPOSE:	Request all of the BaseScaleFX used for this interface and
-//				create them.
-//
-// ----------------------------------------------------------------------- //
+	m_pScreenModel = LTNULL;
+	m_Optimizer.Term();
 
-void CScreenSubroutines::BuildMenuPieces()
-{
-	// Iterate through ScreenSubroutine and request all the pieces
-	int iPieceNum = 0;
-
-	char szAttName[30];
-	char szPieceName[128] = "";
-
-	// First step: spawn a series of clientfx for any procedurals that the player has
-	ProceduralArray::iterator iter = m_ProcArray.begin();
-	while (iter != m_ProcArray.end())
+	for (int i = 0; i < NUM_LIBRARIES; i++)
 	{
-		Procedural * pProc = *iter;
-		if (pProc->szIntroFX[0])
-		{
-			// attempt to launch this introFX.  It's a fire-and-forget
-			CLIENTFX_LINK IntroFX;
-			INT_FX* pFX = g_pLayoutMgr->GetFX(pProc->szIntroFX);
-			if (pFX)
-			{
-				g_pInterfaceMgr->AddInterfaceFX(&IntroFX, pFX->szFXName,pFX->vPos,false);
-			}
-		}
-		++iter;
+		m_Libraries[i].Term();
+		m_ProcCtrl[i].Term();
 	}
 
-	bool bFound = false;
-	do
-	{
-		szPieceName[0] = 0;
-		bFound = false;
-
-		sprintf(szAttName,"Piece%d",iPieceNum);
-		if (g_pLayoutMgr->HasCustomValue((eScreenID)m_nScreenID,szAttName))
-		{
-			bFound = true;
-			g_pLayoutMgr->GetScreenCustomString((eScreenID)m_nScreenID,szAttName,szPieceName,128);
-
-			INT_MENUPIECE * pPiece = ((CTronLayoutMgr *)(g_pLayoutMgr))->GetMenuPiece(szPieceName);
-			if (pPiece)
-				CreateMenuPiece(pPiece);
-
-		}
-		iPieceNum++;
-	} while (bFound);
+	m_BuildPoints.Term();
+	for (int j = 0; j < NUM_RATINGS; j++)
+		m_RatingBars[j].Term();
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::OnCommand
-//
-//	PURPOSE:	Handle incoming commands from controls
-//
-// ----------------------------------------------------------------------- //
+// RETAIL: 0x1007edf0, the screen's models ("Piece%d")
+void CScreenSubroutines::CreateMenuPieces()
+{
+	char szPiece[128] = "";
+	char szName[32];
+
+	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	bool bSkipIntro = false;
+	if (IsMultiplayerGame() || pProfile->m_bSkipSubIntro)
+		bSkipIntro = true;
+
+	bool bFound;
+	int n = 0;
+	do
+	{
+		sprintf(szName, "Piece%d", n);
+		szPiece[0] = 0;
+		bFound = false;
+		if (g_pLayoutMgr->HasCustomValue((eScreenID)m_nScreenID, szName))
+		{
+			bFound = true;
+			g_pLayoutMgr->GetScreenCustomString((eScreenID)m_nScreenID, szName, szPiece, sizeof(szPiece));
+
+			CMenuPieceModel * pPiece = debug_new(CMenuPieceModel);
+			pPiece->Create(szPiece);
+			pPiece->Show(true);
+			m_ModelPieceArray.push_back(pPiece);
+
+			if (!_stricmp(szPiece, "sub_hub"))
+			{
+				pPiece->PlayAnim("show", false, false);
+				m_pScreenModel = pPiece;
+				m_SystemMemoryCtrl.AssociateModel("sub_hub");
+			}
+
+			if (bSkipIntro)
+				pPiece->PlayAnim("shown", false, false);
+		}
+		n++;
+	}
+	while (bFound);
+
+	m_Libraries[0].AssociateModel("browser_top");
+	m_Libraries[1].AssociateModel("browser_left");
+	m_Libraries[2].AssociateModel("browser_right");
+}
+
+// RETAIL: 0x1007ef90
+uint32 CScreenSubroutines::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
+{
+	switch(dwCommand)
+	{
+	case CMD_DONE:
+		Escape();
+		return 1;
+
+	case CMD_CLEAR:
+		ClearMemory();
+		return 1;
+
+	case CMD_TOOLTIPS:
+		PlayToggleToolTipsSound();
+		UpdateData(LTTRUE);
+		return 1;
+	}
+	return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
+}
+
+// RETAIL: 0x1007f000
+LTBOOL CScreenSubroutines::HandleKeyDown(int key, int rep)
+{
+	if (m_PopupText.IsVisible())
+	{
+		m_PopupText.Close();
+		return LTTRUE;
+	}
+
+	if (key == VK_F1 || key == VK_ESCAPE)
+	{
+		Escape();
+		return LTTRUE;
+	}
+
+	return CBaseScreen::HandleKeyDown(key, rep);
+}
 
 // RETAIL: 0x1007f050, leaving compiles the screen into the player's
 // subroutines
@@ -408,598 +627,696 @@ void CScreenSubroutines::Escape()
 	CBaseScreen::Escape();
 }
 
-uint32 CScreenSubroutines::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
+// RETAIL: 0x1007f070: once the hub's "show" is done, the screen shows its
+// controls
+void CScreenSubroutines::UpdateIntro()
 {
-	switch(dwCommand)
-	{
+	if (m_bDoneIntro || !m_pScreenModel)
+		return;
 
-	// RETAIL: as retail's (0x1007ef90): Escape compiles
-	case CMD_COMPILE:
+	if (!m_pScreenModel->IsAnimDone() && !IsMultiplayerGame() &&
+		!g_pProfileMgr->GetCurrentProfile()->m_bSkipSubIntro)
+		return;
+
+	m_bDoneIntro = true;
+
+	if (!IsMultiplayerGame())
+	{
+		m_bTextFade = true;
+		m_fTextFade = 1.0f;
+		m_pVersion->Show(LTTRUE);
+		m_pSysName->Show(LTTRUE);
+		m_pClear->Show(LTTRUE);
+		m_pToolTipTitle->Show(LTTRUE);
+		m_pToolTipToggle->Show(LTTRUE);
+
+		if (!m_hOptimizer)
 		{
-			Escape();
-			break;
+			m_bBuildNoteFade = true;
+			m_fBuildNoteFade = 1.0f;
+			m_pBuildNoteCount->Show(LTTRUE);
 		}
-
-	default:
-		return CBaseScreen::OnCommand(dwCommand,dwParam1,dwParam2);
 	}
-	return 1;
-};
 
+	m_pScreenModel->PlayAnim("shown", true, false);
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::UpdateMenuPieces
-//
-//	PURPOSE:	Handle switching from clientfx to internally handled models
-//
-// ----------------------------------------------------------------------- //
+	m_Libraries[0].Show();
+	m_Libraries[1].Show();
+	m_Libraries[2].Show();
 
-void CScreenSubroutines::UpdateMenuPieces()
-{
-	if (m_bDoneIntro)
-		return;
-
-	CTransitionFXMgr * pMgr = m_pScreenMgr->GetTransitionFXMgr();
-
-	// Check for the transitionFXmgr.  If there are no FX, or the FX are done,
-	// then term the TransitionFX.
-	if (!pMgr->HasTransitionFX())
+	if (!m_hOptimizer && !IsMultiplayerGame())
 	{
-		m_bDoneIntro = true;
-	}
-	else if (pMgr->IsTransitionComplete())
-	{
-		pMgr->EndTransition();
-		m_bDoneIntro = true;
+		for (int i = 0; i < NUM_RATINGS; i++)
+			m_RatingBars[i].SetTextVisible(true);
 	}
 
-	// Only continue if no transition or transition is done
-	if (!m_bDoneIntro)
-		return;
-	
-	//	If there are FX ready, set them all to visible.
-	ModelPieceArray::iterator iter = m_ModelPieceArray.begin();
-	while (iter != m_ModelPieceArray.end())
-	{
-		g_pInterfaceMgr->AddInterfaceSFX(*iter, IFX_WORLD);
-		iter++;
-	}
-
-	m_SystemMemoryCtrl.ShowSprites(true);
-	m_SystemMemoryCtrl.SetLibraryState(LIB_STATE_CLOSED);
-
-	m_CombatCtrl.SetLibraryState(LIB_STATE_CLOSED);
-
-	m_DefenseCtrl.SetLibraryState(LIB_STATE_CLOSED);
-
-	m_UtilityCtrl.SetLibraryState(LIB_STATE_CLOSED);
-
-/* This is an old block of code from when we ran the intros ourselves instead of using
-   clientfx
-	uint32 dwState = 0;
-	ANIMTRACKERID nTracker;
-	HOBJECT hObj = m_SubModelFX.GetObject();
-	g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
-	g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
-	if (dwState & MS_PLAYDONE)
-	{
-		m_bDoneIntro = true;
-		g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "loop"));
-	}
-*/
+	if (m_pDuplicateFirst)
+		m_DuplicateDlg.Show(m_pDuplicateFirst, m_pDuplicateSecond);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::Render
-//
-//	PURPOSE:	Render any ClientFX, GUI controls, and the arc controls
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: 0x1007f1e0
 LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 {
-	m_SystemMemoryCtrl.Render();
+	LTBOOL bResult = CBaseScreen::Render(hDestSurf);
 
-	// RETAIL: as retail's Render (0x1007f53e)
-	m_BuildPoints.Update();
-	for (int i = 0; i < NUM_RATINGS; i++)
+	if (m_nPopupTextId)
 	{
-		m_RatingBars[i].Update();
+		m_PopupText.Show(m_nPopupTextId, m_nPopupId, m_szPopupText);
+		m_nPopupTextId = 0;
 	}
 
-	// PORT: retail's procedural controls are menu piece models, which
-	// the interface draws (no Render of their own)
+	if (m_PopupText.IsVisible())
+		m_PopupText.Draw();
+	else if (m_DuplicateDlg.IsVisible())
+		m_DuplicateDlg.Draw();
 
-	if (!m_bDoneIntro)	
-		UpdateMenuPieces(); // See if any models need to be made visible
-	else
-		UpdateLibraries(); // set any animations on the three browsers
+	m_ModelMgr.Update();
+	m_SystemMemoryCtrl.Render();
+	m_Optimizer.Update();
+	UpdateIntro();
 
-	LTBOOL lResult = CBaseScreen::Render(hDestSurf);
+	if (m_DuplicateDlg.IsVisible())
+		return bResult;
 
-	if (!m_bDoneIntro)
-		return lResult;
+	if (m_PopupText.IsVisible())
+		return bResult;
 
-	m_CombatCtrl.Render();
-	m_DefenseCtrl.Render();
-	m_UtilityCtrl.Render();
+	if (m_bDoneIntro)
+	{
+		for (int i = 0; i < NUM_LIBRARIES; i++)
+		{
+			m_Libraries[i].Update();
+			m_Libraries[i].Render();
+		}
+	}
 
-	// TODO render additive libraries
+	if (m_bTextFade)
+	{
+		if (m_fTextFade > 0.0f)
+		{
+			m_fTextFade -= g_pLTClient->GetFrameTime();
+			if (m_fTextFade > 0.0f)
+			{
+				uint32 nColor = ((uint32)(uint8)((1.0f - m_fTextFade) * 255.0f) << 24) | 0x00FFFFFF;
+				m_pVersion->SetColors(nColor, nColor, nColor);
+				m_pSysName->SetColors(nColor, nColor, nColor);
+				m_pClear->SetColors(nColor, nColor, nColor);
+				m_pToolTipTitle->SetColors(nColor, nColor, nColor);
+				m_pToolTipToggle->SetColors(nColor, nColor, nColor);
+			}
+			else
+			{
+				m_pVersion->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+				m_pSysName->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+				m_pClear->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+				m_pToolTipTitle->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+				m_pToolTipToggle->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+			}
+		}
+		m_pVersion->Render();
+	}
 
-	ShowHotInfo();
+	if (m_bBuildNoteFade)
+	{
+		if (m_fBuildNoteFade > 0.0f)
+		{
+			m_fBuildNoteFade -= g_pLTClient->GetFrameTime();
+			if (m_fBuildNoteFade > 0.0f)
+			{
+				uint32 nColor = ((uint32)(uint8)((1.0f - m_fBuildNoteFade) * 255.0f) << 24) | 0x00FFFFFF;
+				m_pBuildNoteCount->SetColors(nColor, nColor, nColor);
+			}
+			else
+			{
+				m_pBuildNoteCount->SetColors(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF);
+			}
+		}
 
-    return lResult;
+		if (m_hBuildNoteIcon)
+		{
+			g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+			g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+			g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+			g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+			g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+			g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+			g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+			g_pDrawPrim->SetTexture(m_hBuildNoteIcon);
+			g_pDrawPrim->DrawPrim(&m_BuildNoteIconPoly, 1);
+		}
+		m_pBuildNoteCount->Render();
+	}
+
+	if (!m_hOptimizer && !IsMultiplayerGame())
+	{
+		m_BuildPoints.Update();
+		for (int i = 0; i < NUM_RATINGS; i++)
+			m_RatingBars[i].Update();
+	}
+
+	// the tool tips show while Tab is down
+	bool bOldToolTips = m_bToolTips;
+	m_bToolTips = (m_bShowToolTips || (GetAsyncKeyState(VK_TAB) & 0x8000));
+	if (bOldToolTips != m_bToolTips)
+	{
+		if (bOldToolTips)
+			m_ToolTip.Hide();
+		else
+		{
+			m_pHotSub = LTNULL;
+			m_pHotProc = LTNULL;
+			m_pHotRating = LTNULL;
+			m_pLastCtrl = LTNULL;
+			m_bBuildPointsHot = false;
+			m_bRatingLeftHot = false;
+			m_bRatingRightHot = false;
+			m_bLibraryCCWHot = false;
+			m_bLibraryCWHot = false;
+			m_bOptimizerHot = false;
+			OnMouseMove(m_CursorPos.x, m_CursorPos.y);
+		}
+	}
+
+	if (g_pInterfaceMgr->IsMessageBoxVisible())
+		m_ToolTip.Hide();
+
+	return bResult;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::OnMouseMove
-//
-//	PURPOSE:	Pass on any mouse updates to the relevant controls
-//
-// ----------------------------------------------------------------------- //
+// RETAIL: 0x1007f6a0, the wheel turns the library the cursor is over
+LTBOOL CScreenSubroutines::OnWheelUp()
+{
+	for (int i = 0; i < NUM_LIBRARIES; i++)
+	{
+		if (m_Libraries[i].IsHot())
+		{
+			g_pClientSoundMgr->PlayInterfaceSound("interface\\subroutines\\snd\\clickon.wav");
+			m_Libraries[i].RotateCCW();
+			OnMouseMove(m_CursorPos.x, m_CursorPos.y);
+			return LTTRUE;
+		}
+	}
+	return LTTRUE;
+}
 
+// RETAIL: 0x1007f710
+LTBOOL CScreenSubroutines::OnWheelDown()
+{
+	for (int i = 0; i < NUM_LIBRARIES; i++)
+	{
+		if (m_Libraries[i].IsHot())
+		{
+			g_pClientSoundMgr->PlayInterfaceSound("interface\\subroutines\\snd\\clickon.wav");
+			m_Libraries[i].RotateCW();
+			OnMouseMove(m_CursorPos.x, m_CursorPos.y);
+			return LTTRUE;
+		}
+	}
+	return LTTRUE;
+}
+
+// RETAIL: 0x1007f780
 LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 {
-	PlayerSubroutine * pOldSub	= m_pHotSub;
-	CArcCtrl * pOldArc			= m_pHotArc;
-	Procedural * pOldProc		= m_pHotProc;
-	int iActiveSegment = 0;
+	PlayerSubroutine * pOldHotSub = m_pHotSub;
+	bool bOldBuildPointsHot = m_bBuildPointsHot;
+	CLTGUICtrl * pOldLastCtrl = m_pLastCtrl;
+	Procedural * pOldHotProc = m_pHotProc;
+	bool bOldRatingLeftHot = m_bRatingLeftHot;
+	CRatingBarCtrl * pOldHotRating = m_pHotRating;
+	bool bOldRatingRightHot = m_bRatingRightHot;
+	bool bOldLibraryCCWHot = m_bLibraryCCWHot;
+	bool bOldLibraryCWHot = m_bLibraryCWHot;
+	int nHotLibrary = -1;
+	LTIntPt hotPos;
 
-	// RETAIL: as retail's OnMouseMove (0x1007f92b)
-	for (int iRating = 0; iRating < NUM_RATINGS; iRating++)
-	{
-		m_RatingBars[iRating].OnMouseMove(x, y);
-	}
-	m_BuildPoints.OnMouseMove(x, y);
-
-	m_pHotArc = LTNULL;
+	m_CursorPos.x = x;
+	m_CursorPos.y = y;
 	m_pHotSub = LTNULL;
 	m_pHotProc = LTNULL;
+	m_pHotRating = LTNULL;
+	m_bBuildPointsHot = false;
+	m_bRatingLeftHot = false;
+	m_bRatingRightHot = false;
+	m_bLibraryCCWHot = false;
+	m_bLibraryCWHot = false;
+
+	if (!m_bDoneIntro)
+		return LTTRUE;
+
+	if (m_PopupText.IsVisible())
+		return LTTRUE;
+
+	if (m_DuplicateDlg.IsVisible())
+	{
+		m_DuplicateDlg.OnMouseMove(x, y);
+		m_ToolTip.Hide();
+		return LTTRUE;
+	}
+
+	CLTGUICtrl * pOldCtrl = GetControl(m_nSelection);
+	m_pLastCtrl = pOldCtrl;
+	LTBOOL bResult = CBaseScreen::OnMouseMove(x, y);
+
+	uint16 nControlUnderPoint = 0;
+	if (GetControlUnderPoint(x, y, &nControlUnderPoint))
+		SetSelection(nControlUnderPoint);
+	else
+		SetSelection(kNoSelection);
+
+	CLTGUICtrl * pCtrl = GetControl(m_nSelection);
+
+	if (!m_hOptimizer && !IsMultiplayerGame())
+	{
+		for (int i = 0; i < NUM_RATINGS; i++)
+		{
+			m_RatingBars[i].OnMouseMove(x, y);
+			if (m_RatingBars[i].IsHot())
+			{
+				m_pHotRating = &m_RatingBars[i];
+				hotPos = m_RatingBars[i].GetCenter();
+				m_bRatingLeftHot = m_RatingBars[i].IsOverLeft();
+				m_bRatingRightHot = m_RatingBars[i].IsOverRight();
+			}
+		}
+
+		m_BuildPoints.OnMouseMove(x, y);
+		m_bBuildPointsHot = m_BuildPoints.IsHot();
+		if (m_bBuildPointsHot)
+			hotPos = m_BuildPoints.GetHelpPos();
+	}
 
 	for (int i = 0; i < NUM_PROC_CTRLS; i++)
 	{
-		m_ProcCtrl[i].OnMouseMove(x,y, m_pCursorSub);
-		if (!m_pHotProc)
+		m_ProcCtrl[i].OnMouseMove(x, y, m_pCursorSub);
+		if (!m_pHotProc && m_ProcCtrl[i].IsHot())
 		{
-			if (m_ProcCtrl[i].IsHot())
-			{
-				m_pHotProc = m_ProcCtrl[i].GetProc();
-			}
+			SetSelection(kNoSelection);
+			m_pHotProc = m_ProcCtrl[i].GetProc();
+			hotPos = m_ProcCtrl[i].GetCenter();
 		}
 	}
-	// 1.  Send the mouse move to the system memory and any open libraries
-	//     Note which arc the mouse is over
 
-	m_SystemMemoryCtrl.OnMouseMove(x,y);
+	bool bOldOptimizerHot = m_bOptimizerHot;
+	if (m_hOptimizer)
+	{
+		m_Optimizer.OnMouseMove(x, y, m_pCursorSub);
+		m_bOptimizerHot = m_Optimizer.IsHot();
+	}
+
+	m_SystemMemoryCtrl.OnMouseMove(x, y);
 	if (m_SystemMemoryCtrl.IsHot())
 	{
-		m_pHotArc = &m_SystemMemoryCtrl;
-	}
+		SetSelection(kNoSelection);
+		m_pHotSub = m_SystemMemoryCtrl.GetHotSub();
+		if (m_pHotSub)
+			hotPos = m_SystemMemoryCtrl.GetHotPos();
 
-	// Optional update to CombatCtrl
-	if (m_CombatCtrl.GetLibraryState() == LIB_STATE_OPEN || m_eCursorMode == CursorPickup)
-	{
-		m_CombatCtrl.OnMouseMove(x,y);
-		if (m_CombatCtrl.IsHot())
+		if (m_pCursorSub && m_eCursorMode == CursorSubroutineDrop &&
+			m_nLastSegment != m_SystemMemoryCtrl.GetActiveSegment())
 		{
-			m_pHotArc = &m_CombatCtrl;
-		}
-	}
-
-	// Optional update to DefenseCtrl
-	if (m_DefenseCtrl.GetLibraryState() == LIB_STATE_OPEN || m_eCursorMode == CursorPickup)
-	{
-		m_DefenseCtrl.OnMouseMove(x,y);
-		if (m_DefenseCtrl.IsHot())
-		{
-			m_pHotArc = &m_DefenseCtrl;
-		}
-	}
-
-	// Optional update to UtilityCtrl
-	if (m_UtilityCtrl.GetLibraryState() == LIB_STATE_OPEN || m_eCursorMode == CursorPickup)
-	{
-		m_UtilityCtrl.OnMouseMove(x,y);
-		if (m_UtilityCtrl.IsHot())
-		{
-			m_pHotArc = &m_UtilityCtrl;
-		}
-	}
-
-	// 2. If the mouse cursor is over an arc, then also note which subroutine
-	//	  (if any) that the cursor is over.
-	if (m_pHotArc)
-	{
-		iActiveSegment = m_pHotArc->GetActiveSegment();
-		m_pHotSub = m_pHotArc->GetHotSub();
-	}
-
-	// 3. Update the browser libraries.  If one was open and needs to be closed
-	//    then close it.  If a new one needs to be opened, then open it.
-
-	if (pOldArc != m_pHotArc)
-	{
-		// There has been a change in "hotness".  See if a library needs to be closed
-		if (pOldArc && pOldArc != &m_SystemMemoryCtrl)
-		{
-			// it's one of the three browsers.  If we're in "pickup mode" then close
-			// the browser.  If we're carrying a subroutine, then the only browser open
-			// is the one that needs to stay open anyhow.
-			if (m_eCursorMode == CursorPickup)
+			if (CanDropHere())
 			{
-				// Close the library.  Determine which one it is.
-				CloseLibrary(pOldArc);
+				PlayActiveMemoryYesSound();
+				m_nLastSegment = m_SystemMemoryCtrl.GetActiveSegment();
+			}
+			else
+			{
+				PlayActiveMemoryNoSound();
+				m_nLastSegment = m_SystemMemoryCtrl.GetActiveSegment();
 			}
 		}
+		else
+			m_nLastSegment = m_SystemMemoryCtrl.GetActiveSegment();
+	}
+	else
+		m_nLastSegment = -1;
 
-		if (m_pHotArc && m_pHotArc != &m_SystemMemoryCtrl)
+	for (int j = 0; j < NUM_LIBRARIES; j++)
+	{
+		m_Libraries[j].OnMouseMove(x, y, m_pCursorSub);
+		if (m_Libraries[j].IsHot())
 		{
-			if (m_eCursorMode == CursorPickup)
+			m_bLibraryCCWHot = m_Libraries[j].IsCCWHot();
+			m_bLibraryCWHot = m_Libraries[j].IsCWHot();
+			nHotLibrary = j;
+			SetSelection(kNoSelection);
+
+			LibraryState eState = m_Libraries[j].GetState();
+			if (eState == LIBRARY_STATE_OPENING || eState == LIBRARY_STATE_OPEN)
 			{
-				OpenLibrary(m_pHotArc);
+				m_Libraries[(j + 1) % NUM_LIBRARIES].Close();
+				m_Libraries[(j + 2) % NUM_LIBRARIES].Close();
 			}
+
+			m_pHotSub = m_Libraries[j].GetHotSub();
+			if (m_pHotSub)
+				hotPos = m_Libraries[j].GetArc()->GetHotPos();
 		}
 	}
 
-	if (m_pHotSub != pOldSub || m_pHotProc != pOldProc)
+	if (m_pHotSub != pOldHotSub || m_pHotProc != pOldHotProc ||
+		m_pHotRating != pOldHotRating || m_bRatingRightHot != bOldRatingRightHot ||
+		m_bRatingLeftHot != bOldRatingLeftHot || m_bBuildPointsHot != bOldBuildPointsHot ||
+		m_bOptimizerHot != bOldOptimizerHot || pCtrl != pOldCtrl ||
+		m_pLastCtrl != pOldLastCtrl || m_bLibraryCCWHot != bOldLibraryCCWHot ||
+		m_bLibraryCWHot != bOldLibraryCWHot)
 	{
-		KillHotInfo();
-
-		// The heat has changed.
-		// RETAIL: retail's OnMouseMove plays the hot subroutine's sound
-		// (0x1007fcb1)
-		if (m_pHotSub && m_pHotSub != pOldSub)
+		if (m_pHotSub && m_pHotSub != pOldHotSub)
+		{
 			PlayMouseOverSound(m_pHotSub);
-
-		if (m_pHotSub && !m_pCursorSub)
-		{
-			// rebuild the "hot" window
-			BuildHotSubInfo();
+			if (!m_pCursorSub && m_hAnimSound)
+			{
+				g_pLTClient->SoundMgr()->KillSound(m_hAnimSound);
+				m_hAnimSound = LTNULL;
+			}
 		}
-		else if (m_pHotProc && !pOldProc)
+
+		if (pCtrl != pOldCtrl)
 		{
-			BuildHotProcInfo();
+			if (pCtrl == m_pClear || pCtrl == m_pToolTipTitle ||
+				pCtrl == m_pToolTipToggle || pCtrl == m_pSysName)
+				PlayMouseOverSound();
+		}
+
+		m_ToolTip.Hide();
+
+		if (m_bToolTips)
+		{
+			if (m_pHotSub && !m_pCursorSub)
+				ShowSubInfo(hotPos.x, hotPos.y);
+			else if (m_pHotProc)
+				ShowProcInfo(hotPos.x, hotPos.y);
+			else if (m_pHotRating)
+				ShowRatingInfo(hotPos.x, hotPos.y);
+			else if (m_bBuildPointsHot)
+				ShowBuildPointsInfo(hotPos.x, hotPos.y);
+			else if (m_bLibraryCCWHot && nHotLibrary != -1)
+			{
+				LTIntPt pos = m_Libraries[nHotLibrary].GetHotPos();
+				m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0x9fb), LTNULL);
+			}
+			else if (m_bLibraryCWHot && nHotLibrary != -1)
+			{
+				LTIntPt pos = m_Libraries[nHotLibrary].GetHotPos();
+				m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0x9fc), LTNULL);
+			}
+			else if (m_bOptimizerHot)
+			{
+				if (m_Optimizer.IsDone() || m_Optimizer.IsBusy())
+				{
+					LTIntPt pos = m_Optimizer.GetCenter();
+					m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0xcd7), LTNULL);
+				}
+				else
+				{
+					LTIntPt pos = m_Optimizer.GetCenter();
+					m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0xcb4), LTNULL);
+				}
+			}
+			else if (!pCtrl)
+				m_ToolTip.Hide();
+			else if (pCtrl == pOldCtrl && m_pLastCtrl == pOldLastCtrl)
+				m_ToolTip.Hide();
+			else
+				ShowCtrlInfo(x, y, pCtrl);
 		}
 	}
-	return CBaseScreen::OnMouseMove(x, y);
+
+	UpdateAnimSound();
+
+	return bResult;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::ClearScreen
-//
-//	PURPOSE:	Clear up dynamic allocations, hide sprites, wipe the control
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: 0x1007ffd0
 void CScreenSubroutines::ClearScreen()
 {
-	m_nCombatSubs = 0;
-	m_nDefenseSubs = 0;
-	m_nUtilitySubs = 0;
-
-	m_nCombatLibSize = 0;
-	m_nDefenseLibSize = 0;
-	m_nUtilityLibSize = 0;
-
-	m_nCombatLibIndex = 0;
-	m_nDefenseLibIndex = 0;
-	m_nUtilityLibIndex = 0;
-
-	// clear the arcctrls (call their build() functions)
 	m_SystemMemoryCtrl.Build();
-	m_CombatCtrl.Build();
-	m_DefenseCtrl.Build();
-	m_UtilityCtrl.Build();
+
+	for (int i = 0; i < NUM_LIBRARIES; i++)
+		m_Libraries[i].Clear();
 
 	m_SubArray.clear();
 	m_ProcArray.clear();
+
+	m_pDuplicateSecond = LTNULL;
+	m_pDuplicateFirst = LTNULL;
 }
 
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::AddSubroutine
-//
-//	PURPOSE:	SubroutineMgr callback function.  Called for each subroutine
-//				that needs to be added to system memory or a library when
-//				g_pSubroutineMgr->PopulateSubroutineScreen() is called.
-//
-// ----------------------------------------------------------------------- //
-
-void CScreenSubroutines::AddSubroutine(PlayerSubroutine * pSubroutine)
+// RETAIL: 0x10080070
+void CScreenSubroutines::SetRating(int nRating, int nValue)
 {
-	m_SubArray.push_back(pSubroutine);
-	pSubroutine->nTempSlot = pSubroutine->nSlot;
+	if (nRating < 0 || nRating >= NUM_RATINGS)
+		return;
 
-	// note if a procedural is working on the subroutine.  Procedurals will have
-	// already arrived at this stage, so if we find a procedural that is working
-	// on this subroutine, hide the icon.
+	m_RatingBars[nRating].Init(nRating, nValue);
+	if (m_hOptimizer)
+		m_RatingBars[nRating].Show(false);
+}
 
-	TronSubroutine * pTsub = pSubroutine->pTronSubroutine;
+// RETAIL: 0x100800c0
+void CScreenSubroutines::SetRatingPoints(int nPoints)
+{
+	m_BuildPoints.SetVisible(nPoints > 0);
+	m_BuildPoints.Init(nPoints);
+}
 
-	if (pSubroutine->eState == SUBSTATE_DELETED) // this subroutine has been "shredded".  Do not add it to the interface
+// RETAIL: 0x100800e0: the optimizer object's screen: the optimizer
+// replaces the ratings
+void CScreenSubroutines::SetOptimizer(HOBJECT hOptimizer)
+{
+	m_hOptimizer = hOptimizer;
+	if (!hOptimizer)
+		return;
+
+	m_Optimizer.Init();
+	for (int i = 0; i < NUM_RATINGS; i++)
+		m_RatingBars[i].Show(false);
+
+	if (m_pBuildNoteCount)
 	{
-		pSubroutine->nTempSlot = 400;
+		m_pBuildNoteCount->Show(LTFALSE);
+		m_bBuildNoteFade = false;
+	}
+}
+
+// RETAIL: 0x10080140
+void CScreenSubroutines::AddSubroutine(PlayerSubroutine * pSub)
+{
+	// two copies of one subroutine ask the player which to keep
+	if (!m_pDuplicateFirst)
+	{
+		TronSubroutine * pTronSub = pSub->pTronSubroutine;
+		if (pTronSub->eFunction != FUNCTION_BASECODE && pTronSub->eFunction != FUNCTION_BADBLOCK)
+		{
+			PlayerSubroutineArray::iterator iter;
+			for (iter = m_SubArray.begin(); iter != m_SubArray.end(); iter++)
+			{
+				if (pTronSub == (*iter)->pTronSubroutine &&
+					pSub->eState != SUBSTATE_FOREIGN && (*iter)->eState != SUBSTATE_FOREIGN)
+				{
+					m_pDuplicateSecond = pSub;
+					m_pDuplicateFirst = *iter;
+					break;
+				}
+			}
+		}
+	}
+
+	m_SubArray.push_back(pSub);
+	pSub->nTempSlot = pSub->nSlot;
+
+	int nFunction = -1;
+	if (pSub->pTronSubroutine->eFunction >= FUNCTION_COMBAT && pSub->pTronSubroutine->eFunction <= FUNCTION_UTILITY)
+		nFunction = pSub->pTronSubroutine->eFunction;
+
+	if (pSub->nTempSlot >= 0 && pSub->nTempSlot < 100)
+	{
+		m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
+		m_SystemMemoryCtrl.OccupySegment(pSub->nTempSlot, pSub);
+		m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
 		return;
 	}
-	// If it's in a library, determine where it should go
-	else if (pSubroutine->nTempSlot < 0 || pSubroutine->nTempSlot >= 100)
-	{
-		if (pTsub->eFunction == FUNCTION_COMBAT)
-		{
-			pSubroutine->nTempSlot = 100 + m_nCombatSubs;
-			// add to screen if visible
-			if (m_nCombatSubs < 6)
-			{
-				m_CombatCtrl.OccupySegment(m_nCombatSubs, pSubroutine);
-			}
-			m_nCombatSubs++;
-			m_nCombatLibSize++;
-		}
-		else if (pTsub->eFunction == FUNCTION_DEFENSE)
-		{
-			pSubroutine->nTempSlot = 200 + m_nDefenseSubs;
-			// add to screen if visible
-			if (m_nDefenseSubs < 6)
-			{
-				m_DefenseCtrl.OccupySegment(m_nDefenseSubs, pSubroutine);
-			}
-			m_nDefenseSubs++;
-			m_nDefenseLibSize++;
-		}
-		else if (pTsub->eFunction == FUNCTION_UTILITY)
-		{
-			pSubroutine->nTempSlot = 300 + m_nUtilitySubs;
-			// add to screen if visible
-			if (m_nUtilitySubs < 6)
-			{
-				m_UtilityCtrl.OccupySegment(m_nUtilitySubs, pSubroutine);
-			}
-			m_nUtilitySubs++;
-			m_nUtilityLibSize++;
-		}
-	}
-	else
-	{
-		// it's in system memory.  Place it, and add a blank spot to the library
-		if (pTsub->eFunction == FUNCTION_COMBAT)
-		{
-			m_nCombatLibSize++;
-		}
-		else if (pTsub->eFunction == FUNCTION_DEFENSE)
-		{
-			m_nDefenseLibSize++;
-		}
-		else if (pTsub->eFunction == FUNCTION_UTILITY)
-		{
-			m_nUtilityLibSize++;
-		}
-		m_SystemMemoryCtrl.SetNumHighlightSegments(3 - (int)(pSubroutine->eVersion));
-		m_SystemMemoryCtrl.OccupySegment(pSubroutine->nTempSlot, pSubroutine);
-		m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
-	}
+
+	if (nFunction >= 0 && nFunction <= 2)
+		m_Libraries[nFunction].InsertSub(pSub);
 }
 
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::AddProcedural
-//
-//	PURPOSE:	SubroutineMgr callback function.  Called for each procedural
-//				that needs to be added to the subroutine screen when
-//				g_pSubroutineMgr->PopulateSubroutineScreen() is called.
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: 0x10080260
 void CScreenSubroutines::AddProcedural(Procedural * pProcedural)
 {
-	// This will be an array of 5 items
 	m_ProcArray.push_back(pProcedural);
-
-	int iSlot = pProcedural->iProcSlot;
-
-	ASSERT(iSlot >= 0 && iSlot < NUM_PROC_CTRLS);
-
-	// Hook the control to its procedural
-	// NOTE that we want to hook the procedural to the control only if the player has it.
-	// If the player does not, then we initialize with LTNULL, which attaches the empty model/skin
-	m_ProcCtrl[iSlot].Init(pProcedural);
-
+	m_ProcCtrl[pProcedural->iProcSlot].Init(pProcedural);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::Compile
-//
-//	PURPOSE:	Takes all current information about the system memory and
-//				sends it back to the SubroutineMgr.
-//
-// ----------------------------------------------------------------------- //
-
-void CScreenSubroutines::Compile()
+// RETAIL: 0x100802c0, the "Clear" button: every subroutine of the system
+// memory goes back to its library
+void CScreenSubroutines::ClearMemory()
 {
-	// iterate through and tell g_pSubroutineMgr about what subroutine is
-	// where.
-	g_pSubroutineMgr->ClearPlayerSubroutines();
-	PlayerSubroutineArray::iterator iter = m_SubArray.begin();
-	while (iter != m_SubArray.end())
+	PlayClearMemSound();
+
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_SubArray.begin(); iter != m_SubArray.end(); iter++)
 	{
-		PlayerSubroutine *pSub = *iter;
-		pSub->nSlot = pSub->nTempSlot;
-		if (pSub->nSlot == 400) // this is a shredded sub??
+		PlayerSubroutine * pSub = *iter;
+		if (pSub->nTempSlot >= 0 && pSub->nTempSlot < 100)
 		{
-			if (pSub->eState == SUBSTATE_OKAY) // was it shredded on this session?
+			switch (pSub->pTronSubroutine->eFunction)
 			{
-				pSub->eState = SUBSTATE_DELETED;
-				// TODO send a message to screen that this subroutine was shredded
+			case FUNCTION_COMBAT:
+				m_SystemMemoryCtrl.ClearSegment(pSub->nTempSlot);
+				m_Libraries[0].InsertSub(pSub);
+				break;
+			case FUNCTION_DEFENSE:
+				m_SystemMemoryCtrl.ClearSegment(pSub->nTempSlot);
+				m_Libraries[1].InsertSub(pSub);
+				break;
+			case FUNCTION_UTILITY:
+				m_SystemMemoryCtrl.ClearSegment(pSub->nTempSlot);
+				m_Libraries[2].InsertSub(pSub);
+				break;
 			}
 		}
-		g_pSubroutineMgr->AddPlayerSubroutine(pSub);
-		iter++;
 	}
+}
 
-	// RETAIL: as retail's Compile (0x10080379): the ratings bought
+// RETAIL: 0x10080350
+void CScreenSubroutines::Compile()
+{
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_SubArray.begin(); iter != m_SubArray.end(); iter++)
+		(*iter)->nSlot = (*iter)->nTempSlot;
+
+	// RETAIL: the ratings bought
 	m_BuildPoints.Apply();
 	for (int i = 0; i < NUM_RATINGS; i++)
-	{
 		m_RatingBars[i].Apply();
-	}
 
 	g_pSubroutineMgr->Compile();
 }
 
+// RETAIL: 0x100803b0
 void CScreenSubroutines::PickupSubroutine(PlayerSubroutine * pSub)
 {
-	// Sanity Chex
-	if (!pSub)
+	if (!pSub || !pSub->pTronSubroutine)
 		return;
 
-	if (!pSub->pTronSubroutine)
+	m_Libraries[0].Close();
+	m_Libraries[1].Close();
+	m_Libraries[2].Close();
+
+	PlayPickupSound(pSub);
+
+	switch (pSub->pTronSubroutine->eFunction)
+	{
+	case FUNCTION_BADBLOCK:
+	case FUNCTION_BASECODE:
+		m_SystemMemoryCtrl.ShowIcon(pSub->nTempSlot, false);
+		m_SystemMemoryCtrl.SetNumHighlightSegments(1);
+		m_pCursorSub = pSub;
+		SetCursorMode(CursorSubroutineDrop);
 		return;
 
-	if (pSub->pTronSubroutine->eFunction == FUNCTION_BASECODE)
-		return;
+	case FUNCTION_COMBAT:
+		m_Libraries[0].Open(true);
+		break;
 
-	PlayPickupSound(pSub);	// RETAIL: as retail's (0x100803f1)
+	case FUNCTION_DEFENSE:
+		m_Libraries[1].Open(true);
+		break;
+
+	case FUNCTION_UTILITY:
+		m_Libraries[2].Open(true);
+		break;
+	}
 
 	m_pCursorSub = pSub;
 	SetCursorMode(CursorSubroutineDrop);
 
-	// Pickup from sysmem?
 	if (pSub->nTempSlot >= 0 && pSub->nTempSlot < 100)
-	{
-		// Special case for Bad Blocks.  Just hide the icon on the subroutine
-		// instead of clearing memory.
-		if (pSub->pTronSubroutine->eFunction == FUNCTION_BADBLOCK)
-		{
-			m_SystemMemoryCtrl.ShowIcon(pSub->nTempSlot, false);
-		}
-		else
-		{
-			m_SystemMemoryCtrl.ClearSegment(m_pHotSub->nTempSlot);
-		}
-
-		// Pickup triggers opening and closing of libraries.
-		CloseLibrary(&m_CombatCtrl);
-		CloseLibrary(&m_DefenseCtrl);
-		CloseLibrary(&m_UtilityCtrl);
-		
-		switch (m_pHotSub->pTronSubroutine->eFunction)
-		{
-		case FUNCTION_COMBAT:
-			OpenLibrary(&m_CombatCtrl);
-			break;
-
-		case FUNCTION_DEFENSE:
-			OpenLibrary(&m_DefenseCtrl);
-			break;
-
-		case FUNCTION_UTILITY:
-			OpenLibrary(&m_UtilityCtrl);
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	// Pickup was from a library.  No change to open/close states
-	// Pickup from combatlib?
+		m_SystemMemoryCtrl.ClearSegment(pSub->nTempSlot);
 	else if (pSub->nTempSlot >= 100 && pSub->nTempSlot < 200)
-	{
-		m_CombatCtrl.ClearSegment(pSub->nTempSlot - 100);
-	}
-	// Pickup from defenselib?
+		m_Libraries[0].RemoveSub(pSub);
 	else if (pSub->nTempSlot >= 200 && pSub->nTempSlot < 300)
-	{
-		m_DefenseCtrl.ClearSegment(pSub->nTempSlot - 200);
-	}
-	// Pickup from utilitylib?
+		m_Libraries[1].RemoveSub(pSub);
 	else if (pSub->nTempSlot >= 300 && pSub->nTempSlot < 400)
-	{
-		m_UtilityCtrl.ClearSegment(pSub->nTempSlot - 300);
-	}
+		m_Libraries[2].RemoveSub(pSub);
 
-	// Set the drop cursor size, and change state
-	m_SystemMemoryCtrl.SetNumHighlightSegments(3 - int(m_pHotSub->eVersion));
+	if (pSub->eState == SUBSTATE_FOREIGN)
+		m_SystemMemoryCtrl.SetNumHighlightSegments(1);
+	else
+		m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::OnPickupClick
-//									OnAdditiveClick
-//									OnSubroutineClick
-//									OnPickupRClick
-//									OnAdditiveRClick
-//									OnSubroutineRClick
-//
-//	PURPOSE:	Handlers for clicking left and right mouse buttons in each
-//				of the three cursor states
-//
-// ----------------------------------------------------------------------- //
-
-// left-click in pickup mode
+// RETAIL: 0x10080510, a click while nothing is on the cursor
 void CScreenSubroutines::OnPickupClick(int x, int y)
 {
-	// Clicked on a subroutine in a browser or system memory
+	int i;
+	for (i = 0; i < NUM_RATINGS; i++)
+	{
+		if (m_RatingBars[i].IsHot())
+		{
+			m_RatingBars[i].OnLButtonDown(x, y);
+			return;
+		}
+	}
+
+	for (i = 0; i < NUM_LIBRARIES; i++)
+	{
+		if (m_Libraries[i].IsCWHot() || m_Libraries[i].IsCCWHot())
+		{
+			m_Libraries[i].OnClick();
+			return;
+		}
+	}
+
 	if (m_pHotSub)
 	{
-		if (m_pHotSub->pTronSubroutine->eFunction != FUNCTION_BASECODE)
+		if (!m_pHotSub->pProcedural && m_pHotSub->pTronSubroutine->eFunction != FUNCTION_BASECODE)
 		{
 			PickupSubroutine(m_pHotSub);
-
-			if (m_pHotArc)
-				m_pHotArc->OnMouseMove(x, y);
-
-			// The spot that the mouse was over is now empty, so update hot text to reflect this change
-			KillHotInfo();
+			m_ToolTip.Hide();
 			m_pHotSub = LTNULL;
-
-			return;
 		}
 	}
-
-	// Clicked on a procedural
 	else if (m_pHotProc)
 	{
-		// Procedural was working on a subroutine?
-		if (m_pHotProc->pSub)
+		PlayerSubroutine * pSub = m_pHotProc->pSub;
+		if (pSub)
 		{
-			// pick up sub
-			// disconnect from proc
-			// update hot text
+			for (int j = 0; j < NUM_PROC_CTRLS; j++)
+			{
+				if (m_ProcCtrl[j].GetProc() == m_pHotProc)
+				{
+					m_ProcCtrl[j].RemoveSub();
+					if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+					{
+						LTIntPt pos = m_ProcCtrl[j].GetCenter();
+						ShowProcInfo(pos.x, pos.y);
+					}
+				}
+			}
+			PickupSubroutine(pSub);
 		}
 	}
-
-	// TODO clicked on an additive
-	// TODO clicked on an arrow for a performance rating
 	else
-	{
-		//  anywhere else, drop to base class
-		CBaseScreen::OnLButtonDown(x,y);
-	}
+		CBaseScreen::OnLButtonDown(x, y);
 }
 
-// left click in additive dragging mode
-void CScreenSubroutines::OnAdditiveClick(int x, int y)
-{
-}
-
-// left click in subroutine dragging mode
+// RETAIL: 0x10080670, a click with a subroutine on the cursor
 void CScreenSubroutines::OnSubroutineClick(int x, int y)
 {
-	// Dropping on a procedural?
 	if (m_pHotProc)
 	{
-		// Dismiss if this procedural won't work on the current cursor/subroutine
 		if (!g_pSubroutineMgr->CanProcHookSub(m_pHotProc, m_pCursorSub))
-		{
-			PlayCantDropSound();
 			return;
+
+		PlayerSubroutine * pOldSub = m_pHotProc->pSub;
+		if (pOldSub)
+		{
+			PlayerSubroutine * pCursorSub = m_pCursorSub;
+			OnPickupRClick(x, y);
+			m_pCursorSub = pCursorSub;
 		}
 
 		for (int i = 0; i < NUM_PROC_CTRLS; i++)
@@ -1008,1021 +1325,761 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 			{
 				m_ProcCtrl[i].AddSub(m_pCursorSub);
 				PlayDropIntoProceduralSound();
+				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+				{
+					LTIntPt pos = m_ProcCtrl[i].GetCenter();
+					ShowProcInfo(pos.x, pos.y);
+				}
 			}
 		}
 
-		g_pSubroutineMgr->HookProcToSub(m_pHotProc, m_pCursorSub);
-
-		// drop the subroutine back where it came from, unless it was a bad block.
-		// If it was a bad block, then we technically never picked it up.
 		if (m_pCursorSub->eState != SUBSTATE_UNUSABLE)
-		{
 			PutSubroutineBack(false);
+
+		if (pOldSub)
+		{
+			PickupSubroutine(pOldSub);
+			m_ToolTip.Hide();
+			m_pHotSub = LTNULL;
 		}
-
-		SetCursorMode(CursorPickup);
-		
-		// close the library associated with this subroutine
-		CloseLibrary(&m_CombatCtrl);
-		CloseLibrary(&m_DefenseCtrl);
-		CloseLibrary(&m_UtilityCtrl);
-
+		else
+			SetCursorMode(CursorPickup);
 		return;
 	}
 
-	if (m_SystemMemoryCtrl.IsOnMe(x,y))
+	if (m_pHotSub && m_pHotSub->pProcedural)
+		return;
+
+	if (m_SystemMemoryCtrl.IsHot())
 	{
-		// Easy exit case first.  If the player is holding a bad block, then the only
-		// place that they can drop it is back on itself.
 		if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
 		{
-			if (m_SystemMemoryCtrl.GetActiveSegment() == m_pCursorSub->nTempSlot)
-			{
-				PutSubroutineBack();
-				SetCursorMode(CursorPickup);
-			}
+			if (m_SystemMemoryCtrl.GetActiveSegment() != m_pCursorSub->nTempSlot)
+				return;
+
+			PlayDropIntoSound();
+			m_SystemMemoryCtrl.ShowIcon(m_pCursorSub->nTempSlot, true);
+			SetCursorMode(CursorPickup);
 			return;
 		}
 
-		PlayerSubroutine * pOccupied = LTNULL;
-		int numSegs = 3 - int(m_pCursorSub->eVersion);
-		for (int i = 0; i < numSegs; i++)
+		if (m_pCursorSub->eState == SUBSTATE_FOREIGN)
 		{
-			int curSeg = (m_SystemMemoryCtrl.GetActiveSegment() + i) % 24;
-			PlayerSubroutine * pObj = (PlayerSubroutine *)m_SystemMemoryCtrl.GetSegmentObject(curSeg);
-			if (pObj)
+			PlayCantDropSound();
+			return;
+		}
+
+		PlayerSubroutine * pDisplaced = LTNULL;
+		int nSegments = 3 - m_pCursorSub->eVersion;
+		for (int i = 0; i < nSegments; i++)
+		{
+			PlayerSubroutine * pSub = m_SystemMemoryCtrl.GetSegmentObject((m_SystemMemoryCtrl.GetActiveSegment() + i) % 24);
+			if (pSub)
 			{
-				if (pObj->eState == SUBSTATE_UNUSABLE)
+				if (pSub->eState == SUBSTATE_UNUSABLE)
 				{
-					// instant exit case.  Play an error sound
-					return;
-				}
-				if (pObj != pOccupied)
-				{
-					if (!pOccupied)
+					int nSlot = FindFreeSegment(m_pCursorSub);
+					if (nSlot == -1)
 					{
-						pOccupied = pObj;
-					}
-					else
-					{
-						// exit case.  Play an error sound
+						PlayCantDropSound();
 						return;
 					}
+					m_pCursorSub->nTempSlot = nSlot;
+					goto Drop;
 				}
-			} // if pObj
-		} // for
-
-		// Note where the new sub should drop.  Do this here because clearing a segment
-		// will also set ActiveSegment to -1
+				if (pSub != pDisplaced)
+				{
+					if (pDisplaced)
+					{
+						int nSlot = FindFreeSegment(m_pCursorSub);
+						if (nSlot == -1)
+						{
+							PlayCantDropSound();
+							return;
+						}
+						pDisplaced = LTNULL;
+						m_pCursorSub->nTempSlot = nSlot;
+						goto Drop;
+					}
+					pDisplaced = pSub;
+				}
+			}
+		}
 		m_pCursorSub->nTempSlot = m_SystemMemoryCtrl.GetActiveSegment();
 
-		// if there was a single occupancy, remove it from system memory
-		if (pOccupied)
+Drop:
+		if (pDisplaced)
 		{
-			m_SystemMemoryCtrl.ClearSegment(pOccupied->nTempSlot);
+			m_SystemMemoryCtrl.ClearSegment(pDisplaced->nTempSlot);
+			if (pDisplaced->pTronSubroutine->eFunction != m_pCursorSub->pTronSubroutine->eFunction)
+			{
+				m_Libraries[0].Close();
+				m_Libraries[1].Close();
+				m_Libraries[2].Close();
+			}
+		}
+		else
+		{
+			switch (m_pCursorSub->pTronSubroutine->eFunction)
+			{
+			case FUNCTION_COMBAT:	m_Libraries[0].Open(false);	break;
+			case FUNCTION_DEFENSE:	m_Libraries[1].Open(false);	break;
+			case FUNCTION_UTILITY:	m_Libraries[2].Open(false);	break;
+			}
 		}
 
 		m_SystemMemoryCtrl.OccupySegment(m_pCursorSub->nTempSlot, m_pCursorSub);
 		PlayDropIntoSound();
+		m_pHotSub = m_pCursorSub;
 		SetCursorMode(CursorPickup);
-		CloseLibrary(&m_CombatCtrl);
-		CloseLibrary(&m_DefenseCtrl);
-		CloseLibrary(&m_UtilityCtrl);
 
-		// Was a swap? Set cursor back to "sub drop" mode
-		if (pOccupied)
+		if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
 		{
-			m_pCursorSub = pOccupied;
-			m_pCursorSub->nTempSlot = -1;
-			SetCursorMode(CursorSubroutineDrop);
-			m_SystemMemoryCtrl.SetNumHighlightSegments(3 - m_pCursorSub->eVersion);
+			LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
+			ShowSubInfo(pos.x, pos.y);
+		}
 
-			if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_COMBAT)
-				OpenLibrary(&m_CombatCtrl);
-			else if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_DEFENSE)
-				OpenLibrary(&m_DefenseCtrl);
-			else if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_UTILITY)
-				OpenLibrary(&m_UtilityCtrl);
+		if (!pDisplaced)
+			return;
+
+		m_pCursorSub = pDisplaced;
+		pDisplaced->nTempSlot = -1;
+		SetCursorMode(CursorSubroutineDrop);
+		m_SystemMemoryCtrl.SetNumHighlightSegments(3 - m_pCursorSub->eVersion);
+
+		switch (m_pCursorSub->pTronSubroutine->eFunction)
+		{
+		case FUNCTION_COMBAT:	m_Libraries[0].Open(true);	break;
+		case FUNCTION_DEFENSE:	m_Libraries[1].Open(true);	break;
+		case FUNCTION_UTILITY:	m_Libraries[2].Open(true);	break;
 		}
 		return;
 	}
 
-	//  on the optimizer
-	//    ????????????????????/
-	// PutSubroutineBack()?
-	//    Drop the subroutine back where it was, with the optimizer pointing to it...
-
-	if (m_CombatCtrl.IsOnMe(x,y) && m_CombatCtrl.GetLibraryState() == LIB_STATE_OPEN)
+	if (m_hOptimizer && m_Optimizer.IsHot())
 	{
-		int iSlot = m_CombatCtrl.GetActiveSegment();
-		PlayerSubroutine * pSub = m_CombatCtrl.GetHotSub();
+		if (!m_Optimizer.CanAccept(m_pCursorSub))
+			return;
 
-		// If over another subroutine, swap it
-		if (pSub)
-		{
-			m_CombatCtrl.ClearSegment(iSlot);
-		}
-		// drop the subroutine in this slot
-		m_pCursorSub->nTempSlot = 100 + iSlot;
-
-		m_CombatCtrl.OccupySegment(iSlot, m_pCursorSub);
-		PlayDropIntoLibrarySound();
-		SetCursorMode(CursorPickup);
-		if (pSub)
-		{
-			m_pCursorSub = pSub;
-			pSub->nTempSlot = -1;
-			SetCursorMode(CursorSubroutineDrop);
-			m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
-		}
+		PlayDropIntoSound();
+		m_Optimizer.Optimize(m_pCursorSub);
+		OnSubroutineRClick(x, y);
 		return;
 	}
 
-	if (m_DefenseCtrl.IsOnMe(x,y) && m_DefenseCtrl.GetLibraryState() == LIB_STATE_OPEN)
+	for (int i = 0; i < NUM_LIBRARIES; i++)
 	{
-		int iSlot = m_DefenseCtrl.GetActiveSegment();
-		PlayerSubroutine * pSub = m_DefenseCtrl.GetHotSub();
-
-		// If over another subroutine, swap it
-		if (pSub)
+		if (m_Libraries[i].WasHot())
 		{
-			m_DefenseCtrl.ClearSegment(iSlot);
+			PlayerSubroutine * pSub = m_Libraries[i].GetHotSub();
+			if (pSub)
+			{
+				m_Libraries[i].RemoveSub(pSub);
+				m_Libraries[i].AddSub(m_pCursorSub);
+				SetCursorMode(CursorPickup);
+				m_pCursorSub = pSub;
+				pSub->nTempSlot = -1;
+				SetCursorMode(CursorSubroutineDrop);
+				m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
+				PlayDropIntoLibrarySound();
+			}
+			else
+			{
+				m_Libraries[i].AddSub(m_pCursorSub);
+				SetCursorMode(CursorPickup);
+				PlayDropIntoLibrarySound();
+			}
+			return;
 		}
-		// drop the subroutine in this slot
-		m_pCursorSub->nTempSlot = 200 + iSlot;
-
-		m_DefenseCtrl.OccupySegment(iSlot, m_pCursorSub);
-		PlayDropIntoLibrarySound();
-		SetCursorMode(CursorPickup);
-		if (pSub)
-		{
-			m_pCursorSub = pSub;
-			pSub->nTempSlot = -1;
-			SetCursorMode(CursorSubroutineDrop);
-			m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
-		}
-		return;
 	}
-
-	if (m_UtilityCtrl.IsOnMe(x,y) && m_UtilityCtrl.GetLibraryState() == LIB_STATE_OPEN)
-	{
-		int iSlot = m_UtilityCtrl.GetActiveSegment();
-		PlayerSubroutine * pSub = m_UtilityCtrl.GetHotSub();
-
-		// If over another subroutine, swap it
-		if (pSub)
-		{
-			m_UtilityCtrl.ClearSegment(iSlot);
-		}
-		// drop the subroutine in this slot
-		m_pCursorSub->nTempSlot = 300 + iSlot;
-
-		m_UtilityCtrl.OccupySegment(iSlot, m_pCursorSub);
-		PlayDropIntoLibrarySound();
-		SetCursorMode(CursorPickup);
-		if (pSub)
-		{
-			m_pCursorSub = pSub;
-			pSub->nTempSlot = -1;
-			SetCursorMode(CursorSubroutineDrop);
-			m_SystemMemoryCtrl.SetNumHighlightSegments(3 - pSub->eVersion);
-		}
-		return;
-	}
-	//  anywhere else
-	//    cancel
 }
 
-// right click in pickup mode
+// RETAIL: 0x10080b70, a right click while nothing is on the cursor: the
+// subroutine goes to its library, or out of it into the system memory
 void CScreenSubroutines::OnPickupRClick(int x, int y)
 {
-	// over an active procedural, cancel procedural
 	if (m_pHotProc)
 	{
 		PlayerSubroutine * pSub = m_pHotProc->pSub;
+		if (!pSub)
+			return;
 
-		if (pSub)
+		for (int i = 0; i < NUM_PROC_CTRLS; i++)
 		{
-			for (int i = 0; i < NUM_PROC_CTRLS; i++)
+			if (m_ProcCtrl[i].GetProc() == m_pHotProc)
 			{
-				if (m_ProcCtrl[i].GetProc() == m_pHotProc)
+				m_ProcCtrl[i].RemoveSub();
+				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
 				{
-					m_ProcCtrl[i].RemoveSub();
+					LTIntPt pos = m_ProcCtrl[i].GetCenter();
+					ShowProcInfo(pos.x, pos.y);
 				}
 			}
-			g_pSubroutineMgr->HookProcToSub(m_pHotProc, LTNULL);
-			m_pCursorSub = pSub;
-			PutSubroutineBack();
+		}
+
+		if ((pSub->nTempSlot >= 0 && pSub->nTempSlot < 24) || pSub->eState == SUBSTATE_UNUSABLE)
+		{
+			m_SystemMemoryCtrl.ShowIcon(pSub->nTempSlot, true);
+			return;
+		}
+
+		switch (pSub->pTronSubroutine->eFunction)
+		{
+		case FUNCTION_COMBAT:	m_Libraries[0].ShowSubIcon(pSub, true);	return;
+		case FUNCTION_DEFENSE:	m_Libraries[1].ShowSubIcon(pSub, true);	return;
+		case FUNCTION_UTILITY:	m_Libraries[2].ShowSubIcon(pSub, true);	return;
 		}
 		return;
 	}
 
-	// over a subroutine, if a procedural is working on it, disconnect the procedural	
-	if (m_pHotSub)
+	if (!m_pHotSub)
+		return;
+
+	Procedural * pProc = m_pHotSub->pProcedural;
+	if (pProc)
 	{
-		Procedural * pProc = g_pSubroutineMgr->WhoHookedToSub(m_pHotSub);
-		if (pProc)
+		for (int i = 0; i < NUM_PROC_CTRLS; i++)
 		{
-			g_pSubroutineMgr->HookProcToSub(pProc, LTNULL);
+			if (m_ProcCtrl[i].GetProc() == pProc)
+				m_ProcCtrl[i].RemoveSub();
+		}
+
+		if ((m_pHotSub->nTempSlot >= 0 && m_pHotSub->nTempSlot < 24) ||
+			m_pHotSub->pTronSubroutine->eFunction == FUNCTION_BADBLOCK)
+		{
+			m_SystemMemoryCtrl.ShowIcon(m_pHotSub->nTempSlot, true);
+			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			{
+				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
+				ShowSubInfo(pos.x, pos.y);
+			}
+			return;
+		}
+
+		switch (m_pHotSub->pTronSubroutine->eFunction)
+		{
+		case FUNCTION_BADBLOCK:
+			m_SystemMemoryCtrl.ShowIcon(m_pHotSub->nTempSlot, true);
+			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			{
+				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
+				ShowSubInfo(pos.x, pos.y);
+			}
+			break;
+
+		case FUNCTION_COMBAT:
+			m_Libraries[0].ShowSubIcon(m_pHotSub, true);
+			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			{
+				LTIntPt pos = m_Libraries[0].GetHotPos();
+				ShowSubInfo(pos.x, pos.y);
+			}
+			break;
+
+		case FUNCTION_DEFENSE:
+			m_Libraries[1].ShowSubIcon(m_pHotSub, true);
+			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			{
+				LTIntPt pos = m_Libraries[1].GetHotPos();
+				ShowSubInfo(pos.x, pos.y);
+			}
+			break;
+
+		case FUNCTION_UTILITY:
+			m_Libraries[2].ShowSubIcon(m_pHotSub, true);
+			if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+			{
+				LTIntPt pos = m_Libraries[2].GetHotPos();
+				ShowSubInfo(pos.x, pos.y);
+			}
+			break;
 		}
 	}
-	//  anywhere else
-	//    cancel
+
+	PlayerSubroutine * pHotSub = m_pHotSub;
+	if (pHotSub == m_SystemMemoryCtrl.GetHotSub())
+	{
+		if (pHotSub->pTronSubroutine->eFunction == FUNCTION_BADBLOCK)
+			return;
+
+		if (pHotSub->eState != SUBSTATE_UNUSABLE)
+		{
+			OnPickupClick(x, y);
+			m_pCursorSub->nTempSlot = -1;
+			OnSubroutineRClick(x, y);
+		}
+	}
+
+	if (!m_pHotSub)
+		return;
+
+	if (m_pHotSub->eState == SUBSTATE_UNUSABLE || m_pHotSub->eState == SUBSTATE_FOREIGN)
+	{
+		PlayCantDropSound();
+		return;
+	}
+
+	int nSlot = FindFreeSegment(m_pHotSub);
+	if (nSlot == -1)
+	{
+		PlayCantDropSound();
+		return;
+	}
+
+	int nSegments = 3 - m_pHotSub->eVersion;
+	m_Libraries[0].RemoveSub(m_pHotSub);
+	m_Libraries[1].RemoveSub(m_pHotSub);
+	m_Libraries[2].RemoveSub(m_pHotSub);
+	m_SystemMemoryCtrl.SetNumHighlightSegments(nSegments);
+	m_pHotSub->nTempSlot = nSlot;
+	m_SystemMemoryCtrl.OccupySegment(nSlot, m_pHotSub);
+	m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
+	PlayDropIntoSound();
+
+	if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+		m_ToolTip.Hide();
+
+	OnMouseMove(m_CursorPos.x, m_CursorPos.y);
 }
 
-// right click in additive dragging mode
-void CScreenSubroutines::OnAdditiveRClick(int x, int y)
+// RETAIL: 0x10080fb0, the first run of free segments the subroutine fits in
+int CScreenSubroutines::FindFreeSegment(PlayerSubroutine * pSub)
 {
+	int nSegments = 3 - pSub->eVersion;
+	int nSeg = 0;
+	int nFree = 0;
+
+	for (int nTries = 28; nTries > 0; nTries--)
+	{
+		if (m_SystemMemoryCtrl.GetSegmentObject(nSeg))
+			nFree = 0;
+		else
+		{
+			nFree++;
+			if (nFree >= nSegments)
+				return (nSeg - nSegments + 25) % 24;
+		}
+
+		nSeg++;
+		if (nSeg == 24)
+			nSeg = 0;
+	}
+
+	return -1;
 }
 
-// right click in subroutine dragging mode
+// RETAIL: 0x10081020, a right click with a subroutine on the cursor puts it
+// back into its library
 void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 {
-	if (m_pHotArc)
+	PutSubroutineBack(true);
+
+	int nFunction = m_pCursorSub->pTronSubroutine->eFunction;
+	if (nFunction >= FUNCTION_COMBAT && nFunction <= FUNCTION_UTILITY)
 	{
-		m_pHotArc->OnMouseMove(-1,-1);
+		CLibraryCtrl * pLibrary = &m_Libraries[nFunction];
+		pLibrary->OnMouseMove(x, y, LTNULL);
+		if (pLibrary->IsHot())
+		{
+			m_pHotSub = pLibrary->GetHotSub();
+			if (m_pHotSub)
+			{
+				if ((GetAsyncKeyState(VK_TAB) & 0x8000) || m_bShowToolTips)
+				{
+					LTIntPt pos = pLibrary->GetArc()->GetHotPos();
+					ShowSubInfo(pos.x, pos.y);
+					SetCursorMode(CursorPickup);
+					return;
+				}
+			}
+		}
+		else
+			pLibrary->Close();
 	}
-	PutSubroutineBack();
-	CloseLibrary(&m_CombatCtrl);
-	CloseLibrary(&m_DefenseCtrl);
-	CloseLibrary(&m_UtilityCtrl);
+
 	SetCursorMode(CursorPickup);
-	if (m_pHotArc)
-	{
-		m_pHotArc->OnMouseMove(x, y);
-	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::OnLButtonDown
-//
-//	PURPOSE:	Handle presses of left mouse button
-//
-// ----------------------------------------------------------------------- //
+// RETAIL: 0x10081100, a click on the duplicate subroutine dialog
+void CScreenSubroutines::OnDuplicateClick(int x, int y)
+{
+	PlayerSubroutine * pKept = m_DuplicateDlg.GetKeptSubroutine(x, y);
+	if (!pKept)
+		return;
 
+	m_DuplicateDlg.Hide();
+
+	PlayerSubroutine * pRemoved = m_pDuplicateFirst;
+	if (pRemoved == pKept)
+		pRemoved = m_pDuplicateSecond;
+
+	m_pDuplicateSecond = LTNULL;
+	m_pDuplicateFirst = LTNULL;
+
+	if (pRemoved->nTempSlot >= 0 && pRemoved->nTempSlot < 100)
+		m_SystemMemoryCtrl.ClearSegment(pRemoved->nTempSlot);
+	else if (pRemoved->nTempSlot >= 100 && pRemoved->nTempSlot < 200)
+		m_Libraries[0].RemoveSub(pRemoved);
+	else if (pRemoved->nTempSlot >= 200 && pRemoved->nTempSlot < 300)
+		m_Libraries[1].RemoveSub(pRemoved);
+	else if (pRemoved->nTempSlot >= 300 && pRemoved->nTempSlot < 400)
+		m_Libraries[2].RemoveSub(pRemoved);
+
+	PlayerSubroutineArray::iterator iter;
+	for (iter = m_SubArray.begin(); iter != m_SubArray.end(); iter++)
+	{
+		if (*iter == pRemoved)
+		{
+			m_SubArray.erase(iter);
+			break;
+		}
+	}
+
+	g_pSubroutineMgr->RemovePlayerSubroutine(pRemoved);
+}
+
+// RETAIL: 0x10081220
 LTBOOL CScreenSubroutines::OnLButtonDown(int x, int y)
 {
-	// RETAIL: as retail's click handlers (0x10080569, 0x10081365)
-	for (int iRating = 0; iRating < NUM_RATINGS; iRating++)
+	m_fLButtonDownTime = g_pLTClient->GetTime();
+
+	if (m_PopupText.IsVisible())
 	{
-		m_RatingBars[iRating].OnLButtonDown(x, y);
+		m_PopupText.Close();
+		return LTTRUE;
 	}
 
-	// Precedence goes to the library rotation buttons
+	if (m_DuplicateDlg.IsVisible())
+	{
+		OnDuplicateClick(x, y);
+		return LTTRUE;
+	}
+
 	switch (m_eCursorMode)
 	{
 	case CursorPickup:
-		{
-			OnPickupClick(x,y);
-			return LTTRUE;
-		}
-		break;
-
-	case CursorAdditiveDrop:
-		{
-			OnAdditiveClick(x,y);
-			return LTTRUE;
-		}
+		OnPickupClick(x, y);
+		return LTTRUE;
 
 	case CursorSubroutineDrop:
-		{
-			OnSubroutineClick(x,y);
-			return LTTRUE;
-		}
-		break;
+		OnSubroutineClick(x, y);
+		return LTTRUE;
 	}
 
-	// Should never reach this line
-	ASSERT(0);
-	return CBaseScreen::OnLButtonDown(x,y);
+	return CBaseScreen::OnLButtonDown(x, y);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::OnRButtonDown
-//
-//	PURPOSE:	Handle presses of right mouse button
-//
-// ----------------------------------------------------------------------- //
+// RETAIL: 0x100812d0
+LTBOOL CScreenSubroutines::OnLButtonDblClick(int x, int y)
+{
+	if (m_eCursorMode == CursorPickup)
+	{
+		int i;
+		for (i = 0; i < NUM_LIBRARIES; i++)
+		{
+			if (m_Libraries[i].IsCWHot() || m_Libraries[i].IsCCWHot())
+			{
+				m_Libraries[i].OnClick();
+				return LTTRUE;
+			}
+		}
 
+		for (i = 0; i < NUM_RATINGS; i++)
+		{
+			if (m_RatingBars[i].IsHot())
+			{
+				m_RatingBars[i].OnLButtonDown(x, y);
+				return LTTRUE;
+			}
+		}
+	}
+
+	return CBaseScreen::OnLButtonDblClick(x, y);
+}
+
+// RETAIL: 0x10081380, a drag ends where the button comes up
+LTBOOL CScreenSubroutines::OnLButtonUp(int x, int y)
+{
+	if (!m_pCursorSub || g_pLTClient->GetTime() - m_fLButtonDownTime < 0.5f)
+		return CBaseScreen::OnLButtonUp(x, y);
+
+	switch (m_eCursorMode)
+	{
+	case CursorPickup:
+		OnPickupClick(x, y);
+		break;
+
+	case CursorSubroutineDrop:
+		OnSubroutineClick(x, y);
+		UpdateAnimSound();
+		return LTTRUE;
+	}
+
+	UpdateAnimSound();
+	return LTTRUE;
+}
+
+// RETAIL: 0x10081420
 LTBOOL CScreenSubroutines::OnRButtonDown(int x, int y)
 {
+	if (m_PopupText.IsVisible())
+	{
+		m_PopupText.Close();
+		return LTTRUE;
+	}
+
 	switch (m_eCursorMode)
 	{
 	case CursorPickup:
-		{
-			OnPickupRClick(x,y);
-			return LTTRUE;
-		}
-		break;
-
-	case CursorAdditiveDrop:
-		{
-			OnAdditiveRClick(x,y);
-			return LTTRUE;
-		}
+		OnPickupRClick(x, y);
 		break;
 
 	case CursorSubroutineDrop:
-		{
-			OnSubroutineRClick(x,y);
-			return LTTRUE;
-		}
+		OnSubroutineRClick(x, y);
 		break;
 	}
 
-	// Impossible case
-	ASSERT(0);
-	return CBaseScreen::OnRButtonDown(x,y);
+	UpdateAnimSound();
+	return CBaseScreen::OnRButtonDown(x, y);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::PutSubroutineBack
-//
-//	PURPOSE:	Find the appropriate place to put the subroutine attached
-//				to the cursor
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: 0x10081490, the subroutine on the cursor goes back where it was
 void CScreenSubroutines::PutSubroutineBack(bool bKeepIcon)
 {
-	int i;
-
 	if (!m_pCursorSub)
 		return;
 
 	if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
 	{
-		m_SystemMemoryCtrl.ShowIcon(m_pCursorSub->nTempSlot,true);
+		m_SystemMemoryCtrl.ShowIcon(m_pCursorSub->nTempSlot, true);
 		return;
 	}
 
-	// first check the nSlot.  If it's 0-100, then our job is easy
 	if (m_pCursorSub->nTempSlot >= 0 && m_pCursorSub->nTempSlot < 24)
 	{
+		m_SystemMemoryCtrl.SetNumHighlightSegments(3 - m_pCursorSub->eVersion);
 		m_SystemMemoryCtrl.OccupySegment(m_pCursorSub->nTempSlot, m_pCursorSub);
-		if (bKeepIcon == false)
-		{
+		if (!bKeepIcon)
 			m_SystemMemoryCtrl.ShowIcon(m_pCursorSub->nTempSlot, false);
-		}
+		PlayDropIntoSound();
 		return;
 	}
 
-	// if not, then note the type
-	bool bFilled[100];
-	for (i = 0; i < 100; i++)
-		bFilled[i] = false;
-
-	int iOffset = 1000;
-	if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_COMBAT)
-		iOffset = 100;
-	else if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_DEFENSE)
-		iOffset = 200;
-	else if (m_pCursorSub->pTronSubroutine->eFunction == FUNCTION_UTILITY)
-		iOffset = 300;
-
-	// iterate through all the subroutines of that type and mark their spots
-	// as filled.
-	PlayerSubroutineArray::iterator iter = m_SubArray.begin();
-	while (iter != m_SubArray.end())
+	switch (m_pCursorSub->pTronSubroutine->eFunction)
 	{
-		if (m_pCursorSub != *iter)
-		{
-			if (m_pCursorSub->pTronSubroutine->eFunction == (*iter)->pTronSubroutine->eFunction)
-			{
-				int nSlot = (*iter)->nTempSlot - iOffset;
-				if (nSlot >= 0 && nSlot < 100)
-					bFilled[nSlot] = true;
-			}
-		}
-		iter++;
+	case FUNCTION_COMBAT:
+		m_Libraries[0].InsertSub(m_pCursorSub);
+		m_Libraries[0].ShowSubIcon(m_pCursorSub, bKeepIcon);
+		m_Libraries[0].SetStayOpen(false);
+		break;
+
+	case FUNCTION_DEFENSE:
+		m_Libraries[1].InsertSub(m_pCursorSub);
+		m_Libraries[1].ShowSubIcon(m_pCursorSub, bKeepIcon);
+		m_Libraries[1].SetStayOpen(false);
+		break;
+
+	case FUNCTION_UTILITY:
+		m_Libraries[2].InsertSub(m_pCursorSub);
+		m_Libraries[2].ShowSubIcon(m_pCursorSub, bKeepIcon);
+		m_Libraries[2].SetStayOpen(false);
+		break;
 	}
 
-
-	i = 0;
-	// then go through the list bFilled until we find an open spot.
-	// add the subroutine to the library in that spot.
-	while (i < 100)
-	{
-		if (!bFilled[i])
-		{
-			m_pCursorSub->nTempSlot = i+iOffset;
-			// We found a spot.  Add the subroutine to the correct library
-			switch(m_pCursorSub->pTronSubroutine->eFunction)
-			{
-			case FUNCTION_COMBAT:
-				{
-					m_CombatCtrl.OccupySegment(i, m_pCursorSub);
-					if (bKeepIcon == false)
-					{
-						m_CombatCtrl.ShowIcon(i, false);
-					}
-				}
-				break;
-
-			case FUNCTION_DEFENSE:
-				{
-					m_DefenseCtrl.OccupySegment(i, m_pCursorSub);
-					if (bKeepIcon == false)
-					{
-						m_DefenseCtrl.ShowIcon(i, false);
-					}
-				}
-				break;
-
-			case FUNCTION_UTILITY:
-				{
-					m_UtilityCtrl.OccupySegment(i, m_pCursorSub);
-					if (bKeepIcon == false)
-					{
-						m_UtilityCtrl.ShowIcon(i, false);
-					}
-				}
-				break;
-
-			default:
-				{
-					// Impossible case.
-					ASSERT(0);
-				}
-				break;
-			}
-			return;
-		}
-		i++;
-	}
-	m_pCursorSub->nTempSlot = -1;
+	PlayDropIntoLibrarySound();
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::SetCursorMode
-//
-//	PURPOSE:	Handle state-change for the cursor
-//
-// ----------------------------------------------------------------------- //
-
+// RETAIL: 0x100815d0
 void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 {
-	int i;
-
-	// if old and new mode match, exit.
 	if (m_eCursorMode == mode)
 		return;
 
-	// Do cleanup on the old mode
-	switch (m_eCursorMode)
+	if (m_eCursorMode == CursorSubroutineDrop)
 	{
-	case CursorPickup:
-		{
-		// nothing to do here
-		}
-		break;
+		g_pCursorMgr->UseSprite("Interface\\cursor.dtx");
+		g_pCursorMgr->UseGlowSprite("Interface\\cursor_glow.dtx");
+		g_pCursorMgr->SetCenter(32, 32);
 
-	case CursorAdditiveDrop:
-		{
-		}
-		break;
+		char szFX[128];
+		szFX[0] = 0;
+		g_pLayoutMgr->GetScreenSelectFX((eScreenID)m_nScreenID, szFX, sizeof(szFX));
+		g_pInterfaceMgr->SetMouseFX(szFX);
 
-	case CursorSubroutineDrop:
-		{
-			// restore the cursor
-			g_pCursorMgr->UseSprite("Interface\\cursor.dtx");
-			g_pCursorMgr->UseGlowSprite("Interface\\cursor_glow.dtx");
-			g_pCursorMgr->SetCenter(32,32);
+		m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
+		OnMouseMove(m_CursorPos.x, m_CursorPos.y);
 
-			// reactivate all procedurals
-			// open all the libraries
-			m_SystemMemoryCtrl.SetNumHighlightSegments(-1);
-
-			// PORT: Build 69 cleared all "inactive" from the libraries here;
-			// Tron's CArcSector has no "ignore" flag (ArcCtrl.h).
-		}
-		break;
-
-	default:
-		{
-		ASSERT(0);
-		}
-		break;
+		for (int i = 0; i < NUM_PROC_CTRLS; i++)
+			m_ProcCtrl[i].SetHighlight(false);
 	}
-
-	// Set up the new mode
 
 	switch (mode)
 	{
 	case CursorPickup:
-		{
-			m_pCursorSub = LTNULL;
-			// TODO set cursor to the default sprite
-		}
-		break;
-
-	case CursorAdditiveDrop:
-		{
-		}
+		m_pCursorSub = LTNULL;
 		break;
 
 	case CursorSubroutineDrop:
 		{
-			if (m_pCursorSub->eState != SUBSTATE_UNUSABLE) // no halo for bad blocks
-			{
-				g_pCursorMgr->UseSprite(szRingTex[m_pCursorSub->eVersion]);
-				g_pCursorMgr->UseBackgroundSprite(m_pCursorSub->pTronSubroutine->szSprite);
-			}
-			else // bad block
-			{
-				g_pCursorMgr->UseSprite(m_pCursorSub->pTronSubroutine->szSprite);
-			}
-			g_pCursorMgr->UseGlowSprite("Interface\\cursor_subglow.dtx");
-			// TODO close the irrelevant libraries
-		}
-		break;
+			g_pCursorMgr->UseSprite((CScreenSprite*)LTNULL);
+			if (m_pCursorSub->eState == SUBSTATE_FOREIGN)
+				g_pInterfaceMgr->SetMouseFX("SUBICON_foreign", true);
+			else
+				g_pInterfaceMgr->SetMouseFX(m_pCursorSub->pTronSubroutine->szCursorFX, true);
 
-	default:
-		{
-		ASSERT(0);
+			for (int i = 0; i < NUM_PROC_CTRLS; i++)
+			{
+				Procedural * pProc = m_ProcCtrl[i].GetProc();
+				if (pProc && pProc->eAffectState == m_pCursorSub->eState && !pProc->pSub)
+					m_ProcCtrl[i].SetHighlight(true);
+			}
 		}
 		break;
 	}
+
 	m_eCursorMode = mode;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CScreenSubroutines::RotateLibrary
-//
-//	PURPOSE:	Handle rotation of one of the three libraries
-//
-// ----------------------------------------------------------------------- //
-
-void CScreenSubroutines::RotateLibrary(SubFunction lib, bool bClockwise)
+// RETAIL: 0x10081750, the tool tip of the hot subroutine
+void CScreenSubroutines::ShowSubInfo(int x, int y)
 {
-	CArcCtrl * pCtrl;
+	if (!m_pHotSub || !m_pHotSub->pTronSubroutine)
+		return;
 
-	// Which library?
-	if (lib == FUNCTION_COMBAT)
-		pCtrl = &m_CombatCtrl;
-	else if (lib == FUNCTION_DEFENSE)
-		pCtrl = &m_DefenseCtrl;
-	else if (lib == FUNCTION_UTILITY)
-		pCtrl = &m_UtilityCtrl;
+	std::wstring sInfo = g_pSubroutineMgr->GetSubroutineInfo(m_pHotSub);
+
+	char szIcon[128];
+	if (m_pHotSub->eState == SUBSTATE_FOREIGN)
+		sprintf(szIcon, "%s", "Interface\\Subroutines\\Sprtex\\foreign_0.dtx");
 	else
-	{
-		ASSERT(0); // impossible situation
-		return;
-	}
-	// TODO code the animation or non-animation of rotating the appropriate library
+		sprintf(szIcon, "%s", m_pHotSub->pTronSubroutine->szSprite);
+
+	m_ToolTip.Show(x, y, sInfo, g_pInterfaceResMgr->GetTexture(szIcon));
 }
 
-void CScreenSubroutines::UpdateLibraries()
-{
-	uint32 dwState = 0;
-	ANIMTRACKERID nTracker;
-	HOBJECT hObj = LTNULL;
-
-	LibraryState eState = (LibraryState)m_CombatCtrl.GetLibraryState();
-
-	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
-	{
-		hObj = GetArcObject(m_CombatCtrl);
-		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
-		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
-		if (dwState & MS_PLAYDONE)
-		{
-			if (eState == LIB_STATE_OPENING)
-			{
-				m_CombatCtrl.SetLibraryState(LIB_STATE_OPEN);
-				m_CombatCtrl.ShowSprites(true);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "open_top"));
-			}
-			else if (eState == LIB_STATE_CLOSING)
-			{
-				m_CombatCtrl.SetLibraryState(LIB_STATE_CLOSED);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "closed_top"));
-			}
-		}
-	}
-
-	eState = (LibraryState)m_DefenseCtrl.GetLibraryState();
-	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
-	{
-		hObj = GetArcObject(m_DefenseCtrl);
-		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
-		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
-		if (dwState & MS_PLAYDONE)
-		{
-			if (eState == LIB_STATE_OPENING)
-			{
-				m_DefenseCtrl.SetLibraryState(LIB_STATE_OPEN);
-				m_DefenseCtrl.ShowSprites(true);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "open_left"));
-			}
-			else if (eState == LIB_STATE_CLOSING)
-			{
-				m_DefenseCtrl.SetLibraryState(LIB_STATE_CLOSED);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "closed_left"));
-			}
-		}
-	}
-
-	eState = (LibraryState)m_UtilityCtrl.GetLibraryState();
-	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_CLOSING)
-	{
-		hObj = GetArcObject(m_UtilityCtrl);
-		g_pLTClient->GetModelLT()->GetMainTracker( hObj, nTracker);
-		g_pLTClient->GetModelLT()->GetPlaybackState(hObj, nTracker, dwState);
-		if (dwState & MS_PLAYDONE)
-		{
-			if (eState == LIB_STATE_OPENING)
-			{
-				m_UtilityCtrl.SetLibraryState(LIB_STATE_OPEN);
-				m_UtilityCtrl.ShowSprites(true);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "open_right"));
-			}
-			else if (eState == LIB_STATE_CLOSING)
-			{
-				m_UtilityCtrl.SetLibraryState(LIB_STATE_CLOSED);
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "closed_right"));
-			}
-		}
-	}
-}
-
-void CScreenSubroutines::OpenLibrary(CArcCtrl * pCtrl)
-{
-	HOBJECT hObj = LTNULL;
-	char * szOpen;
-
-	if (!pCtrl)
-		return;
-
-	if (pCtrl == &m_CombatCtrl)
-	{
-		szOpen = "expand_top";
-	}
-	else if (pCtrl == &m_DefenseCtrl)
-	{
-		szOpen = "expand_left";
-	}
-	else if (pCtrl == &m_UtilityCtrl)
-	{
-		szOpen = "expand_right";
-	}
-	else
-	{
-		// invalid library!
-		return;
-	}
-
-	hObj = GetArcObject(*pCtrl);
-
-	if (!hObj)
-	{
-		g_pLTClient->CPrint("ERROR OpenLibrary: no hObject\n");
-		return;
-	}
-
-	LibraryState eState = (LibraryState)pCtrl->GetLibraryState();
-
-	if (eState == LIB_STATE_OPENING || eState == LIB_STATE_OPEN)
-	{
-		return;
-	}
-
-	g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, szOpen));
-	pCtrl->SetLibraryState(LIB_STATE_OPENING);
-}
-
-
-void CScreenSubroutines::CloseLibrary(CArcCtrl * pCtrl)
-{
-	HOBJECT hObj = LTNULL;
-	char * szClose;
-	char * szClosed;
-
-	if (!pCtrl)
-		return;
-
-	if (m_pHotArc == pCtrl)
-		return;
-
-	// Which library?
-	if (pCtrl == &m_CombatCtrl)
-	{
-		szClose = "collapse_top";
-		szClosed = "closed_top";
-	}
-	else if (pCtrl == &m_DefenseCtrl)
-	{
-		szClose = "collapse_left";
-		szClosed = "closed_left";
-	}
-	else if (pCtrl == &m_UtilityCtrl)
-	{
-		szClose = "collapse_right";
-		szClosed = "closed_right";
-	}
-	else
-	{
-		// invalid library!
-		return;
-	}
-
-	pCtrl->ShowSprites(false);
-
-	hObj = GetArcObject(*pCtrl);
-
-	if (!hObj)
-		return;
-
-	LibraryState eState = (LibraryState)pCtrl->GetLibraryState();
-
-	if (eState == LIB_STATE_CLOSING || eState == LIB_STATE_CLOSED)
-		return;
-
-	if (eState == LIB_STATE_OPENING)
-	{
-		g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, szClosed));
-		pCtrl->SetLibraryState(LIB_STATE_CLOSED);
-	}
-	else if (eState == LIB_STATE_OPEN)
-	{
-		g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, szClose));
-		pCtrl->SetLibraryState(LIB_STATE_CLOSING);
-	}
-}
-
-
-void CScreenSubroutines::BuildHotSubInfo()
-{
-	if (!m_pHotSub)
-		return;
-
-	if (!m_pHotSub->pTronSubroutine)
-		return;
-
-	CUIFont * pFont = g_pInterfaceResMgr->GetFont(1);
-
-	char buf[1024];
-
-	TronSubroutine * pSub = m_pHotSub->pTronSubroutine;
-
-	Procedural * pProc = LTNULL;
-	for (int i = 0; i < NUM_PROC_CTRLS; i++)
-	{
-		if (m_ProcCtrl[i].GetProc())
-		{
-			if (m_ProcCtrl[i].GetProc()->pSub == m_pHotSub)
-			{
-				pProc = m_ProcCtrl[i].GetProc();
-			}
-		}
-	}
-
-    HSTRING hNameStr = g_pLTClient->FormatString(pSub->nNameId);
-	HSTRING hDescriptionStr = g_pLTClient->FormatString(pSub->nDescriptionId);
-
-	if (pProc)
-	{
-		HSTRING hProcNameStr = g_pLTClient->FormatString(pProc->nNameId);
-		sprintf(buf, "%s\n\n%s\n\nWorked on by %s (%d%%)",
-					g_pLTClient->GetStringData(hNameStr),
-					g_pLTClient->GetStringData(hDescriptionStr),
-					g_pLTClient->GetStringData(hProcNameStr),
-					(int)(m_pHotSub->fPercentDone * 100.0f));
-		g_pLTClient->FreeString(hProcNameStr);
-	}
-	else
-	{
-		sprintf(buf, "%s\n\n%s", g_pLTClient->GetStringData(hNameStr), g_pLTClient->GetStringData(hDescriptionStr));
-	}
-	g_pLTClient->FreeString(hNameStr);
-	g_pLTClient->FreeString(hDescriptionStr);
-
-	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(buf));
-	m_pHotStr->SetColor(0xFFFFFFFF);
-	m_pHotStr->SetAlignmentH(CUI_HALIGN_CENTER);
-	m_pHotStr->SetWrapWidth(250);
-
-	// Center the string vertically
-	int32 fWidth, fHeight;
-	m_pHotStr->GetDims(&fWidth, &fHeight);
-
-	float x = (float)g_pInterfaceResMgr->GetScreenWidth() * 0.5f;
-	float y = (float)g_pInterfaceResMgr->GetScreenHeight() * 0.5f;
-
-	y-= (fHeight * 0.5f);
-
-	m_pHotStr->SetPosition(x, y);
-}
-
-void CScreenSubroutines::BuildHotProcInfo()
+// RETAIL: 0x10081890, the tool tip of the hot procedural
+void CScreenSubroutines::ShowProcInfo(int x, int y)
 {
 	if (!m_pHotProc)
 		return;
 
-	CUIFont * pFont = g_pInterfaceResMgr->GetFont(1);
-
-	char buf[1024];
-
-	Procedural * pProc = m_pHotProc;
-
-    HSTRING hNameStr = g_pLTClient->FormatString(pProc->nNameId);
-	HSTRING hDescriptionStr = g_pLTClient->FormatString(pProc->nDescriptionId);
-
-	if (pProc->pSub)
-	{
-		HSTRING hSubNameStr = g_pLTClient->FormatString(pProc->pSub->pTronSubroutine->nNameId);
-		sprintf(buf,"%s\n\n%s\n\nWorking on %s (%d%%)",
-				g_pLTClient->GetStringData(hNameStr),
-				g_pLTClient->GetStringData(hDescriptionStr),
-				g_pLTClient->GetStringData(hSubNameStr),
-				(int)(pProc->pSub->fPercentDone * 100.0f));
-		g_pLTClient->FreeString(hSubNameStr);
-	}
-	else
-	{
-		sprintf(buf, "%s\n\n%s", g_pLTClient->GetStringData(hNameStr), g_pLTClient->GetStringData(hDescriptionStr));
-	}
-
-	g_pLTClient->FreeString(hNameStr);
-	g_pLTClient->FreeString(hDescriptionStr);
-
-	m_pHotStr = g_pLTClient->GetFontManager()->CreateFormattedPolyString(pFont, LTGUIWideString(buf));
-	m_pHotStr->SetColor(0xFFFFFFFF);
-	m_pHotStr->SetAlignmentH(CUI_HALIGN_CENTER);
-	m_pHotStr->SetWrapWidth(250);
-
-	// Center the string vertically
-	int32 fWidth, fHeight;
-	m_pHotStr->GetDims(&fWidth, &fHeight);
-
-	float x = (float)g_pInterfaceResMgr->GetScreenWidth() * 0.5f;
-	float y = (float)g_pInterfaceResMgr->GetScreenHeight() * 0.5f;
-
-	y-= (fHeight * 0.5f);
-
-	m_pHotStr->SetPosition(x, y);
+	HTEXTURE hIcon = g_pInterfaceResMgr->GetTexture(m_pHotProc->szToolTipIcon);
+	std::wstring sInfo = g_pSubroutineMgr->GetProceduralInfo(m_pHotProc);
+	m_ToolTip.Show(x, y, sInfo, hIcon);
 }
 
-void CScreenSubroutines::ShowHotInfo()
+// RETAIL: 0x10081990
+void CScreenSubroutines::ShowRatingInfo(int x, int y)
 {
-	if (m_pHotStr)
-		m_pHotStr->Render();
-}
-
-void CScreenSubroutines::KillHotInfo()
-{
-	if (m_pHotStr)
-	{
-		g_pLTClient->GetFontManager()->DestroyPolyString(m_pHotStr);
-		m_pHotStr = LTNULL;
-	}
-}
-
-
-void CScreenSubroutines::CreateMenuPiece(INT_MENUPIECE * pSubModel)
-{
-	if (!pSubModel)
+	if (!m_pHotRating)
 		return;
 
-	// Get some vars
-	HOBJECT hCamera = g_pInterfaceMgr->GetInterfaceCamera();
-	if (!hCamera) return;
+	std::wstring sInfo = m_pHotRating->GetHelpText();
+	m_ToolTip.Show(x, y, sInfo, LTNULL);
+}
 
-    g_pLTClient->GetObjectPos(hCamera, &g_vPos);
+// RETAIL: 0x10081a70
+void CScreenSubroutines::ShowBuildPointsInfo(int x, int y)
+{
+	if (!m_bBuildPointsHot)
+		return;
 
-	LTRotation rRot;
-    g_pLTClient->GetObjectRotation(hCamera, &rRot);
-	g_vU = rRot.Up();
-	g_vR = rRot.Right();
-	g_vF = rRot.Forward();
+	std::wstring sInfo = m_BuildPoints.GetHelpText();
+	m_ToolTip.Show(x, y, sInfo, LTNULL);
+}
 
-	BSCREATESTRUCT bcs;
-	LTVector vPos, vTemp, vScale(1.0f,1.0f,1.0f);
+// RETAIL: 0x10081b60, the tool tips of the screen's own controls
+void CScreenSubroutines::ShowCtrlInfo(int x, int y, CLTGUICtrl * pCtrl)
+{
+	if (!pCtrl)
+		return;
 
-	char modName[128];
+	if (pCtrl == m_pClear)
+		m_ToolTip.Show(x, y, LoadTempWString(0xcee), LTNULL);
+	else if (pCtrl == m_pToolTipTitle || pCtrl == m_pToolTipToggle)
+		m_ToolTip.Show(x, y, LoadTempWString(0xcef), LTNULL);
+	else if (pCtrl == m_pVersion)
+		m_ToolTip.Show(x, y, LoadTempWString(0xcf3), LTNULL);
+	else if (pCtrl == m_pBuildNoteCount)
+		m_ToolTip.Show(x, y, LoadTempWString(0xcf4), LTNULL);
+	else if (pCtrl == m_pSysName)
+		m_ToolTip.Show(x, y, LoadTempWString(0xcf0), LTNULL);
+}
 
-	SAFE_STRCPY(modName, pSubModel->szModel);
+// RETAIL: 0x10081c20
+void CScreenSubroutines::ScreenDimsChanged()
+{
+	float fRatio = g_pInterfaceResMgr->GetYRatio();
+	m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
+	m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
+	m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
 
-	VEC_COPY(vPos,g_vPos);
-	VEC_SET(vScale,1.0f,1.0f,1.0f);
+	m_SystemMemoryCtrl.Rescale();
+	m_Libraries[0].Rescale();
+	m_Libraries[1].Rescale();
+	m_Libraries[2].Rescale();
 
-	LTVector vModPos = pSubModel->vPos;
+	int i;
+	for (i = 0; i < NUM_RATINGS; i++)
+		m_RatingBars[i].ScreenDimsChanged();
+	m_BuildPoints.ScreenDimsChanged();
 
-	LTFLOAT fRot = 0.0f;
-	fRot  = MATH_PI + DEG2RAD(fRot);
-	rRot.Rotate(g_vU, fRot);
-
-	VEC_MULSCALAR(vTemp, g_vF, vModPos.z);
-	VEC_ADD(vPos, vPos, vTemp);
-
-	VEC_MULSCALAR(vTemp, g_vR, vModPos.x);
-	VEC_ADD(vPos, vPos, vTemp);
-
-	VEC_MULSCALAR(vTemp, g_vU, vModPos.y);
-	VEC_ADD(vPos, vPos, vTemp);
-
-	VEC_COPY(bcs.vPos, vPos);
-	bcs.rRot = rRot;
-	VEC_COPY(bcs.vInitialScale, vScale);
-	VEC_COPY(bcs.vFinalScale, vScale);
-	VEC_SET(bcs.vInitialColor, 1.0f, 1.0f, 1.0f);
-	VEC_SET(bcs.vFinalColor, 1.0f, 1.0f, 1.0f);
-	bcs.bUseUserColors = LTTRUE;
-
-	bcs.pFilename = modName;
-	bcs.pSkinReader = &(pSubModel->blrSkins);
-	bcs.pRenderStyleReader = &(pSubModel->blrRenderStyles);
-	bcs.dwFlags = FLAG_VISIBLE | FLAG_FOGDISABLE;// | FLAG_NOLIGHT;
-
-	bcs.nType = OT_MODEL;
-	bcs.fInitialAlpha = 0.99f;
-	bcs.fFinalAlpha = 0.99f;
-	bcs.fLifeTime = 1000000.0f;
-	bcs.bLoop = LTFALSE;			// all models start out as non-looping
-
-	bcs.fMinRotateVel = 1.0f;
-	bcs.fMaxRotateVel = 1.0f;
-
-	CBaseScaleFX * pPiece = debug_new(CBaseScaleFX);
-	ASSERT(pPiece != LTNULL);
-
-	if (pPiece->Init(&bcs))
+	for (i = 0; i < NUM_PROC_CTRLS; i++)
 	{
-		pPiece->CreateObject(g_pLTClient);
-		HOBJECT hObj = pPiece->GetObject();
-		if (hObj)
-		{
-			if (pSubModel->szLoopAnim)
-			{
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, pSubModel->szLoopAnim));
-			}
-			else
-			{
-				g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "loop"));
-			}
-			m_ModelPieceArray.push_back(pPiece);
+		m_Libraries[i].Rescale();
+		m_ProcCtrl[i].ScreenDimsChanged();
+	}
 
-			// Note the extra functionality of this piece, if any, and assign it to a library
-			// PORT: Tron's INT_MENUPIECE has no "Function" (retail layout, see
-			// TronLayoutMgr.h); retail (0x1007ee80) matches the pieces' names
-			// ("sub_hub", "browser_top", ...) instead. Build 69's checks kept,
-			// on the name, until this function is written from retail.
-			if (pSubModel->szName[0])
+	m_Optimizer.ScreenDimsChanged();
+
+	CBaseScreen::ScreenDimsChanged();
+}
+
+// RETAIL: 0x10081d00, can the subroutine on the cursor go into the hot
+// segment of the system memory?
+bool CScreenSubroutines::CanDropHere()
+{
+	if (m_pCursorSub->eState == SUBSTATE_UNUSABLE)
+		return (m_SystemMemoryCtrl.GetActiveSegment() == m_pCursorSub->nTempSlot);
+
+	if (m_pCursorSub->eState == SUBSTATE_FOREIGN)
+		return false;
+
+	PlayerSubroutine * pDisplaced = LTNULL;
+	int nSegments = 3 - m_pCursorSub->eVersion;
+	for (int i = 0; i < nSegments; i++)
+	{
+		PlayerSubroutine * pSub = m_SystemMemoryCtrl.GetSegmentObject((m_SystemMemoryCtrl.GetActiveSegment() + i) % 24);
+		if (pSub)
+		{
+			if (pSub->eState == SUBSTATE_UNUSABLE)
+				return false;
+			if (pSub != pDisplaced)
 			{
-				if (!strcmpi(pSubModel->szName, "hub"))
-				{
-					SetArcObject(m_SystemMemoryCtrl, hObj, pSubModel->szName);
-					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
-					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
-				}
-				else if (!strcmpi(pSubModel->szName, "browser_top"))
-				{
-					SetArcObject(m_CombatCtrl, hObj, pSubModel->szName);
-				}
-				else if (!strcmpi(pSubModel->szName, "browser_left"))
-				{
-					SetArcObject(m_DefenseCtrl, hObj, pSubModel->szName);
-				}
-				else if (!strcmpi(pSubModel->szName, "browser_right"))
-				{
-					SetArcObject(m_UtilityCtrl, hObj, pSubModel->szName);
-				}
-				else if (!strcmpi(pSubModel->szName, "proc_dock"))
-				{
-					// PORT: retail's procedural controls attach their own
-					// models (no AssociateHObject)
-					g_pInterfaceMgr->AddInterfaceSFX(pPiece, IFX_WORLD);
-					g_pLTClient->SetModelAnimation(hObj, g_pLTClient->GetAnimIndex(hObj, "intro"));
-				}
+				if (pDisplaced)
+					return false;
+				pDisplaced = pSub;
 			}
-			return;
 		}
 	}
-	// Fail case.  Should only be reached if no object was created
-	debug_delete(pPiece);
+
+	return true;
 }
 
-
-// RETAIL: 0x10080070
-void CScreenSubroutines::SetRating(int nRating, int nValue)
+// RETAIL: 0x10081d90, a loop sounds while a subroutine is hot or on the
+// cursor
+void CScreenSubroutines::UpdateAnimSound()
 {
-	if (nRating < 0 || nRating >= NUM_RATINGS)
+	bool bAnimating = ((m_pHotSub && m_pHotSub->pTronSubroutine->eFunction != FUNCTION_BASECODE) ||
+		(m_pCursorSub && m_pCursorSub->pTronSubroutine->eFunction != FUNCTION_BASECODE));
+
+	if (m_hAnimSound && !bAnimating)
+	{
+		g_pLTClient->SoundMgr()->KillSound(m_hAnimSound);
+		m_hAnimSound = LTNULL;
 		return;
+	}
 
-	CRatingBarCtrl * pBar = &m_RatingBars[nRating];
-	pBar->Init(nRating, nValue);
-	if (m_bHideNewRatings)
-		pBar->Show(false);
-}
-
-// RETAIL: 0x100800c0
-void CScreenSubroutines::SetRatingPoints(int nPoints)
-{
-	m_BuildPoints.SetVisible(nPoints > 0);
-	m_BuildPoints.Init(nPoints);
+	if (!m_hAnimSound && bAnimating)
+		m_hAnimSound = g_pClientSoundMgr->PlaySoundLocal("animatingsubroutine", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
 }
