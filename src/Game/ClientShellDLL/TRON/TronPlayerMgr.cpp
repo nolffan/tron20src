@@ -25,6 +25,8 @@
 #include "PlayerCamera.h"
 #include "DiscMatchMgr.h"
 #include "LightCycleMatchMgr.h"
+#include "TRON/LightCycleMgr.h"
+#include "TRON/LightCycleButeMgr.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
@@ -1239,15 +1241,18 @@ void CTronPlayerMgr::UpdatePlaying()
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual60
 //
-//	PURPOSE:	RETAIL: retail 0x100a7360 (slot 0x60). PORT: retail asks the
-//				client light cycle manager (0x10236d98) for the player's
-//				cycle (0x100ff280) and, if any, calls its slot 0x14 with it
-//				(0, true); not yet in our tree
+//	PURPOSE:	RETAIL: retail 0x100a7360 (slot 0x60): the player's light
+//				cycle is derezzed
 //
 // ----------------------------------------------------------------------- //
 
 void CTronPlayerMgr::TronUnknownVirtual60()
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+	if (pCyclist)
+	{
+		g_pLightCycleMgr->DerezCyclist(pCyclist, LTNULL, true);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1574,30 +1579,91 @@ void CTronPlayerMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
 //
 //	PURPOSE:	RETAIL: retail 0x100a7c60, 0x100a7cd0, 0x100a7d50, 0x100a7e10
 //				(slots 0x70, 0x7c, 0x74, 0x78): a light cycle's model, skin,
-//				sounds and names from Tron's model attributes. PORT: the
-//				client light cycle manager (0x10236d98) and Tron's model
-//				attributes (CModelButeMgr's 0x10044f40, 0x10044f20) are not
-//				yet in our tree
+//				sounds and fx from the light cycle attributes
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::TronUnknownVirtual70(HOBJECT hObj, char* pszModel, char* pszSkin)
 {
-	return false;
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (!pCyclist)
+		return false;
+
+	// RETAIL: the colour is read before it is tested (docs/RETAIL_BUGS.md)
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pColor || !pType)
+		return false;
+
+	sprintf(pszModel, pColor->szIntroFX);
+	sprintf(pszSkin, pType->szIntroSound);
+	return true;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual7C(HOBJECT hObj, char* psz1, char* psz2, char* psz3)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pCyclist->nCycleType);
+		if (pType)
+		{
+			sprintf(psz1, pType->szCruiseSound);
+			sprintf(psz2, pType->szTurnSound);
+			if (psz3)
+			{
+				sprintf(psz3, pType->szAltCruiseSound);
+			}
+
+			return true;
+		}
+
+		return true;
+	}
+
 	return false;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual74(HOBJECT hObj, char* pszBuf, int nBufLen)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+		if (pColor)
+		{
+			int nNumFX = pColor->aDeathFX.size();
+			if (nNumFX < 0)
+			{
+				// RETAIL: SAFE_STRCPY of a pointer: four bytes
+				// (docs/RETAIL_BUGS.md)
+				strncpy(pszBuf, "", sizeof(pszBuf) - 1);
+				pszBuf[sizeof(pszBuf) - 1] = '\0';
+				return true;
+			}
+
+			const char* pszFX = pColor->aDeathFX[GetRandom(0, nNumFX - 1)].c_str();
+			LTStrCpy(pszBuf, pszFX, nBufLen);
+			return true;
+		}
+	}
+
 	return false;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual78(HOBJECT hObj, char* pszBuf)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+		if (pColor)
+		{
+			sprintf(pszBuf, pColor->szRiderFX);
+			return true;
+		}
+	}
+
 	return false;
 }
 
