@@ -153,6 +153,11 @@ protected:
 	void			ShowChatInput(uint8 nChatType);	// 0x1009d2e0
 	void			UpdateIOCamera();				// 0x1009e240
 	void			CreateIOCamera();				// 0x1009e390
+public:
+	// RETAIL: 0x1009e530: CTronGameClientShell::RenderCamera draws the I/O
+	// node camera's view over the world's (the name is ours)
+	void			RenderIOCamera(float fFrameTime);
+protected:
 	void			ClearTronRecords();				// 0x1009f050
 	void			QueueSubroutinePickup(const char* szName, const char* szVersion, const char* szState);	// 0x1009f0c0
 	void			HandleSubroutinePickup(char* szName, char* szVersion, char* szState);	// 0x1009f200

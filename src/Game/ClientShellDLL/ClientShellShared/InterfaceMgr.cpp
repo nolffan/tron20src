@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "InterfaceMgr.h"
+#include "ltquaduvutils.h"
 #include "GameClientShell.h"
 #include "MsgIDs.h"
 #include "WeaponStringDefs.h"
@@ -475,7 +476,7 @@ CInterfaceMgr::CInterfaceMgr()
 	m_szTronUnknownF994[0] = '\0';
 	m_szTronUnknownFA14[0] = '\0';
 	m_bTronUnknownFA54 = true;
-	m_nTronUnknown100F8 = 0;
+	m_pSpectatorText = LTNULL;
 }
 
 
@@ -1063,21 +1064,55 @@ void CInterfaceMgr::UpdateScreenState()
 	// to whatever it was before the screen state was entered.
 	WriteConsoleInt("FogEnable", 0);
 
-
+	// RETAIL: 0x100c89c0: Tron draws the light cycle match's countdown, the
+	// credits and the cursor lines here, and the sprites unless a message
+	// box is up
 	if (!GetScreenMgr( )->UpdateInterfaceSFX())
+	{
 		m_bSuppressNextFlip = true;
+		return;
+	}
+
+	g_pLTClient->Start3D();
+
+	DrawSFX();
+
+	g_pLTClient->StartOptimized2D();
+
+	if (GetGameType() == eGameTypeMultiplayerLightcycles && g_pLTClient->IsConnected())
+	{
+		g_pTransmission->Update();
+		DrawTronUnknownMessage();
+		g_pTransmission->Render();
+	}
+
+	if (m_Credits.IsInited())
+	{
+		if (m_Credits.IsDone())
+		{
+			m_Credits.Term();
+		}
+		else
+		{
+			m_Credits.Update();
+		}
+	}
 	else
 	{
-		g_pLTClient->Start3D();
-
-		DrawSFX();
-
-		g_pLTClient->StartOptimized2D();
 		m_InterfaceResMgr.DrawScreen();
-		UpdateScreenFade();
-		g_pLTClient->EndOptimized2D();
-		g_pLTClient->End3D();
 	}
+
+	m_CursorMgr.RenderCursorLines();
+
+	UpdateScreenFade();
+
+	if (!m_MessageBox.IsVisible())
+	{
+		m_ScreenSpriteMgr.Update();
+	}
+
+	g_pLTClient->EndOptimized2D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -3037,20 +3072,18 @@ LTBOOL CInterfaceMgr::Draw()
 
 	// Check for interface drawing override...
 
+	// RETAIL: 0x100cb320: Tron draws the light cycle countdown and the
+	// spectator's text with the HUD, the letter box after them, the paused
+	// item in a multiplayer game too and the subtitles last; its message
+	// box needs no 3D block, and the sprites update here
 	if (g_vtDrawInterface.GetFloat())
 	{
-		// Update letter box...
-
-		UpdateLetterBox();
-
-		// Find out if we're in multiplayer...
-
-		PlayerState ePlayerState = g_pPlayerMgr->GetPlayerState();
-
 		if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP)
 		{
 			// Draw the player stats (health,armor,ammo) if appropriate...
 			GetHUDMgr()->Render();
+
+			DrawTronUnknownMessage();
 
 			if (m_Credits.IsInited())
 			{
@@ -3069,7 +3102,12 @@ LTBOOL CInterfaceMgr::Draw()
 				m_InterfaceTimer.Draw();
 			}
 
+			DrawSpectatorText();
 		}
+
+		// Update letter box...
+
+		UpdateLetterBox();
 
 		if( g_pDamageFXMgr->IsDamageActive( DamageTypeToFlag(DT_SLEEPING) ))
 		{
@@ -3084,21 +3122,18 @@ LTBOOL CInterfaceMgr::Draw()
 			}
 		}
 
-
-		if (!IsMultiplayerGame())
+		if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP || GetGameState() == GS_MENU)
 		{
-			if (GetGameState() == GS_PLAYING || GetGameState() == GS_POPUP || GetGameState() == GS_MENU)
-			{
-				g_pPaused->Render();
-			}
+			g_pPaused->Render();
 		}
-
 
 		// Update the screen fade alpha only if we are in the playing state and not paused...
 
 		bool bUpdateAlpha = (GetGameState() == GS_PLAYING ? !g_pGameClientShell->IsGamePaused() : false);
 
 		UpdateScreenFade(bUpdateAlpha);
+
+		g_pSubtitles->Draw();
 	}
 
 	if (GetGameState() == GS_MENU)
@@ -3113,14 +3148,13 @@ LTBOOL CInterfaceMgr::Draw()
 	//this should be last so it is always on top.
 	if (m_MessageBox.IsVisible())
 	{
-		g_pLTClient->Start3D();
         g_pLTClient->StartOptimized2D();
         m_MessageBox.Draw();
         g_pLTClient->EndOptimized2D();
-        g_pLTClient->End3D();
 	}
 
 	m_CursorMgr.Update();
+	m_ScreenSpriteMgr.Update();
 
     return LTTRUE;
 }
@@ -6222,6 +6256,156 @@ void CInterfaceMgr::SetTronUnknownMessage(float fDuration, int nStringId, const 
 	else
 	{
 		m_szTronUnknownF994[0] = '\0';
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::DrawTronUnknownMessage
+//
+//	PURPOSE:	RETAIL: 0x100d0020 (the name is ours): in the light cycle
+//				game types, the timed message counts down its seconds;
+//				without a text a 3, 2, 1, 0 fades through its quarters
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::DrawTronUnknownMessage()
+{
+	if (GetGameType() != eGameTypeMultiplayerLightcycles &&
+		GetGameType() != eGameTypeSingleLightCycleCircuit &&
+		GetGameType() != eGameTypeSingleLightCycleCustom)
+	{
+		return;
+	}
+
+	if (!(m_fTronUnknownF98C < 0.0f))
+	{
+	float fElapsed = g_pLTClient->TronUnknownVirtual44() - m_fTronUnknownF98C;
+	if (fElapsed > m_fTronUnknownF990)
+	{
+		m_fTronUnknownF98C = -1.0f;
+		return;
+	}
+
+	char szTex[64];
+
+	if (m_szTronUnknownF994[0])
+	{
+		uint16 nSeconds = (uint16)(m_fTronUnknownF990 - fElapsed);
+
+		char szMsg[128];
+		if (m_bTronUnknownFA54)
+		{
+			sprintf(szMsg, "%s %s: %d", m_szTronUnknownF994, m_szTronUnknownFA14, nSeconds);
+		}
+		else
+		{
+			sprintf(szMsg, "%s %s %d", m_szTronUnknownF994, m_szTronUnknownFA14, nSeconds);
+		}
+
+		g_pTransmission->Show(szMsg);
+	}
+	else
+	{
+		float fQuarter = m_fTronUnknownF990 * 0.25f;
+		float fStart;
+
+		if (fElapsed < fQuarter)
+		{
+			fStart = m_fTronUnknownF98C;
+			sprintf(szTex, "interface\\hud\\tronnumber_3.dtx");
+		}
+		else
+		{
+			float fHalf = fQuarter + fQuarter;
+			if (fElapsed < fHalf)
+			{
+				fStart = fQuarter + m_fTronUnknownF98C;
+				sprintf(szTex, "interface\\hud\\tronnumber_2.dtx");
+			}
+			else
+			{
+				float fThreeQuarters = fQuarter * 3.0f;
+				if (fElapsed < fThreeQuarters)
+				{
+					fStart = fHalf + m_fTronUnknownF98C;
+					sprintf(szTex, "interface\\hud\\tronnumber_1.dtx");
+				}
+				else
+				{
+					fStart = fThreeQuarters + m_fTronUnknownF98C;
+					sprintf(szTex, "interface\\hud\\tronnumber_0.dtx");
+				}
+			}
+		}
+
+		float fAlpha = 1.0f - (g_pLTClient->TronUnknownVirtual44() - fStart) / fQuarter;
+		HTEXTURE hTex = g_pInterfaceResMgr->GetTexture(szTex);
+
+		LT_POLYFT4 poly;
+
+		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+
+		g_pDrawPrim->SetXYWH(&poly, g_pInterfaceResMgr->GetXRatio() * 256.0f, g_pInterfaceResMgr->GetYRatio() * 20.0f,
+			g_pInterfaceResMgr->GetXRatio() * 128.0f, g_pInterfaceResMgr->GetYRatio() * 128.0f);
+		SetupQuadUVs(poly, hTex, 0.0f, 0.0f, 1.0f, 1.0f);
+		g_pDrawPrim->SetRGB(&poly, 0xffffff);
+		g_pDrawPrim->SetALPHA(&poly, (uint8)(fAlpha * 255.0f));
+		g_pDrawPrim->SetTexture(hTex);
+		g_pDrawPrim->DrawPrim(&poly, 1);
+	}
+}
+	else
+	{
+		g_pTransmission->Term();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::DrawSpectatorText
+//
+//	PURPOSE:	RETAIL: 0x100d03d0 (the name is ours): a light cycle
+//				game's spectator sees "SPECTATOR MODE" at the screen's
+//				bottom left
+//
+// ----------------------------------------------------------------------- //
+
+void CInterfaceMgr::DrawSpectatorText()
+{
+	if (g_pPlayerMgr->TronUnknownVirtual3C(false) && GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		uint8 nSize = (uint8)((float)g_pLayoutMgr->GetHelpSize() * g_pInterfaceResMgr->GetXRatio());
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+
+		if (!m_pSpectatorText)
+		{
+			m_pSpectatorText = g_pFontManager->CreatePolyString(pFont, std::wstring(L""), 0.0f, 0.0f);
+		}
+
+		if (m_pSpectatorText)
+		{
+			m_pSpectatorText->SetColor(0xffffffff);
+			m_pSpectatorText->SetCharScreenHeight(nSize);
+			m_pSpectatorText->SetText("SPECTATOR MODE");
+
+			uint32 nWidth, nHeight;
+			g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &nWidth, &nHeight);
+			float fHeight = (float)nHeight;
+
+			m_pSpectatorText->SetPosition(0, (int)(fHeight - m_pSpectatorText->GetHeight()));
+			m_pSpectatorText->Render(0, -1);
+		}
+	}
+	else if (m_pSpectatorText)
+	{
+		m_pSpectatorText->SetText("");
 	}
 }
 

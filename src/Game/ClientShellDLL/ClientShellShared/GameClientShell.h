@@ -128,8 +128,12 @@ public:
 	virtual CPlayerMgr*			GetPlayerMgr() = 0;
 	virtual CClientWeaponAllocator const *GetClientWeaponAllocator() const = 0;
 	// RETAIL: Tron's slot 0x7c: NULL here (0x100c04e0); CTronGameClientShell
-	// returns one of its members (+0x317d4, 0x10099d30)
-	virtual void*				TronUnknownVirtual7C() { return NULL; }
+	// returns its mission manager (+0x317d4, 0x10099d30). The name is ours.
+	virtual CMissionMgr*		GetMissionMgr() { return NULL; }
+
+	// RETAIL: Tron's shell's RenderCamera and UpdateInterfaceFX
+	// (0x1009a1e0, 0x1009a670) use the base's members
+	friend class CTronGameClientShell;
 
     LTBOOL      IsWorldLoaded()	const			{ return m_bInWorld; }
     void        SetWorldNotLoaded()				{ m_bInWorld = LTFALSE; }

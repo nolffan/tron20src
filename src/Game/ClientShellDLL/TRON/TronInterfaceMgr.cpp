@@ -640,6 +640,36 @@ void CTronInterfaceMgr::CreateIOCamera()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronInterfaceMgr::RenderIOCamera()
+//
+//	PURPOSE:	Render the I/O node camera (RETAIL: 0x1009e530; the name is
+//				ours), without the player's weapon
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::RenderIOCamera(float fFrameTime)
+{
+	if (m_eGameState != GS_PLAYING || !m_hIOCamera || !m_nTronUnknown28AF0)
+		return;
+
+	int nDrawGuns = 1;
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("DrawGuns");
+	if (hVar)
+	{
+		nDrawGuns = (int)g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	g_pLTClient->RunConsoleString("DrawGuns 0");
+	g_pLTClient->ClearScreen(&m_rcIOCameraScaled, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+	g_pLTClient->RenderCamera(m_hIOCamera, fFrameTime);
+
+	char szTmp[32];
+	sprintf(szTmp, "DrawGuns %d", nDrawGuns);
+	g_pLTClient->RunConsoleString(szTmp);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronInterfaceMgr::UpdatePlayingState()
 //
 //	PURPOSE:	Update playing state (RETAIL: 0x1009e6f0)
@@ -736,7 +766,50 @@ void CTronInterfaceMgr::UpdateCursorState()
 
 void CTronInterfaceMgr::UpdateLoadingLevelState()
 {
-	// PORT: retail's own version (0x1009e600) is not yet written
+	if (g_pPlayerMgr->IsPlayerInWorld())
+	{
+		// Make sure the loading screen isn't busy
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Pause();
+		// Let the game client shell do stuff that's time consuming so we're not stuck on a black screen
+		g_pGameClientShell->PostLevelLoadFirstUpdate();
+		// Turn off the loading screen
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Hide();
+
+		if (!IsMultiplayerGame())
+		{
+			// RETAIL: a new mission's system memory configuration, then
+			// the subroutines compile
+			TRONMISSION *pMission = (TRONMISSION*)g_pMissionButeMgr->GetMission(g_pMissionMgr->GetCurrentMission());
+			int nSystemNameId = 0;
+			if (m_bTronUnknown28B1C && g_pMissionMgr->IsNewMission())
+			{
+				const char *pszSystemMemory;
+				if (pMission)
+				{
+					nSystemNameId = pMission->nSystemNameId;
+					pszSystemMemory = pMission->szSystemMemory;
+				}
+				else
+				{
+					pszSystemMemory = LTNULL;
+				}
+				g_pSubroutineMgr->SetSystemMemoryConfiguration(pszSystemMemory, nSystemNameId);
+			}
+			g_pSubroutineMgr->Compile();
+
+			if (m_pLoadingScreen && GetConsoleInt("LoadScreenWait",1))
+			{
+				SwitchToScreen(SCREEN_ID_POSTLOAD);
+				CInterfaceMgr::UpdateLoadingLevelState();
+				return;
+			}
+
+			ChangeState(GS_PLAYING);
+		}
+	}
+
 	CInterfaceMgr::UpdateLoadingLevelState();
 }
 

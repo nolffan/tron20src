@@ -23,6 +23,7 @@
 #include "DiscMatchMgr.h"
 #include "TronCDKey.h"
 #include "LightCycleMatchMgr.h"
+#include "TronMissionMgr.h"
 
 class CTronGameClientShell : public CGameClientShell
 {
@@ -36,12 +37,24 @@ class CTronGameClientShell : public CGameClientShell
 		virtual CPlayerMgr*		GetPlayerMgr() { return &m_PlayerMgr; }
 		virtual CClientWeaponAllocator const *GetClientWeaponAllocator() const
 				{ return &m_ClientWeaponAllocator; }
+		// RETAIL: slot 0x7c (0x10099d30)
+		virtual CMissionMgr*	GetMissionMgr() { return &m_MissionMgr; }
 
 		virtual uint32 OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid);
 	    virtual LTRESULT ProcessPacket(ILTMessage_Read *pMsg, uint8 senderAddr[4], uint16 senderPort);
 		virtual void OnMessage(ILTMessage_Read *pMsg);
 
 		virtual void PauseGame(bool bPause, bool bPauseSound = false);
+
+		// RETAIL: slot 0x8c (0x1009a1e0): the light cycle's look back, and
+		// the I/O node camera's view over the world's
+		virtual void RenderCamera(bool bDrawInterface = true);
+
+		// RETAIL: slot 0x90 (0x1009a670): with the console's fx detail level
+		virtual void UpdateInterfaceFX();
+
+		// RETAIL: slot 0x28 (0x10099fa0)
+		virtual void OnEnterWorld();
 
 		// RETAIL: slot 0x8 (0x10099ff0): resets the match managers
 		virtual void OnExitWorld();
@@ -56,6 +69,7 @@ class CTronGameClientShell : public CGameClientShell
 
 	private:
 		CTronInterfaceMgr			m_InterfaceMgr;		// Interface manager
+		CTronMissionMgr				m_MissionMgr;		// Same as g_pMissionMgr (RETAIL: +0x317d4)
 		CTronVersionMgr				m_VersionMgr;		// Same as g_pVersionMgr
 		CTronCDKey					m_CDKey;			// RETAIL: +0x31a74
 		CTronPlayerMgr				m_PlayerMgr;		// Player manager
@@ -67,5 +81,7 @@ class CTronGameClientShell : public CGameClientShell
 		// allocator for client weapons
 		CTronClientWeaponAllocator	m_ClientWeaponAllocator;
 };
+
+extern CTronGameClientShell* g_pTronGameClientShell;
 
 #endif  // __TRON_GAME_CLIENT_SHELL_H__

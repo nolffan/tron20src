@@ -690,6 +690,10 @@ SOURCE=.\TronLayoutMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronMissionMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\TronMissionButeMgr.cpp
 # End Source File
 # Begin Source File
@@ -1127,6 +1131,10 @@ SOURCE=.\TronGameClientShell.h
 # Begin Source File
 
 SOURCE=.\TronLayoutMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronMissionMgr.h
 # End Source File
 # Begin Source File
 

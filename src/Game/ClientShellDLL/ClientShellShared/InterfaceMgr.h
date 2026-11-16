@@ -338,6 +338,10 @@ class CInterfaceMgr
 		// string, else none; the second text is cleared): the light cycle
 		// match manager's. The names are ours
 		void	SetTronUnknownMessage(float fDuration, int nStringId, const char* pszText, bool bTronUnknown);
+		// RETAIL: 0x100d0020: the timed message's countdown (the name is ours)
+		void	DrawTronUnknownMessage();
+		// RETAIL: 0x100d03d0: a light cycle spectator's text (the name is ours)
+		void	DrawSpectatorText();
 		// RETAIL: 0x100cfed0: the normal FOV and the first person camera
 		// (the light cycle match manager, CTronPlayerMgr). The name is ours
 		void	TronUnknownFirstPersonCamera(bool bInstant);
@@ -677,7 +681,9 @@ private:
 		char	m_szTronUnknownFA14[64];		// +0xfa14 a second text (the light cycle match manager's, 0x10016ba0)
 		bool	m_bTronUnknownFA54;				// +0xfa54, true: "%s %s: %d" (else "%s %s %d")
 		char	m_aTronUnknownFA55[0x100f8 - 0xfa55];
-		uint32	m_nTronUnknown100F8;			// +0x100f8
+		// RETAIL: +0x100f8: the light cycle spectator's "SPECTATOR MODE"
+		// text (made by 0x100d03d0; the name is ours)
+		CUIPolyString*	m_pSpectatorText;
 		// +0x100fc: the intel items picked up, saved by Save (0x100cc550)
 		// and loaded by Load (0x100cc5d0)
 		std::vector<TronIntelRecord>	m_IntelRecords;

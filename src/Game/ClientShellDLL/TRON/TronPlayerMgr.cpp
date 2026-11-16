@@ -26,10 +26,22 @@
 #include "PlayerCamera.h"
 #include "DiscMatchMgr.h"
 #include "LightCycleMatchMgr.h"
+#include "TRON/LightCycleMgr.h"
+#include "TRON/LightCycleButeMgr.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleLives
+#include "TRON/SubroutineDataMgr.h"
+#include "VarTrack.h"
+
+// CPlayerMgr's sway console variables (PlayerMgr.cpp)
+extern VarTrack g_vtCameraSwayXFreq;
+extern VarTrack g_vtCameraSwayYFreq;
+extern VarTrack g_vtCameraSwayXSpeed;
+extern VarTrack g_vtCameraSwayYSpeed;
+extern VarTrack g_vtCameraSwayDuckMult;
+extern VarTrack g_vtFOVXNormal;
 
 CTronPlayerMgr* g_pTronPlayerMgr = NULL;
 
@@ -467,6 +479,206 @@ void CTronPlayerMgr::OnExitWorld()
 	}
 
 	CPlayerMgr::OnExitWorld();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::UpdateCameraZoom()
+//
+//	PURPOSE:	RETAIL: 0x100a4da0: CPlayerMgr's zoom with the LOL's and
+//				the triangulate subroutine's FOVs; the vertical FOV keeps
+//				the screen's aspect, and the zoom overlays come back when
+//				the zoom ends
+//
+// ----------------------------------------------------------------------- //
+
+#define TRON_ZOOM_TIME			0.5f
+#define TRON_LOD_ZOOMADJUST		-5.0f
+
+void CTronPlayerMgr::UpdateCameraZoom()
+{
+	char strConsole[30];
+
+	uint32 dwWidth = 640, dwHeight = 480;
+	g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &dwWidth, &dwHeight);
+
+	float fovX, fovY;
+	g_pLTClient->GetCameraFOV(m_hCamera, &fovX, &fovY);
+
+	float fOldFovX = fovX;
+
+	if (!fovX)
+	{
+		fovX = DEG2RAD(g_vtFOVXNormal.GetFloat());
+	}
+
+	m_bZooming = LTTRUE;
+
+	float fFovXZoomed, fZoomDist;
+
+	if (m_bZoomingIn)
+	{
+		if (m_nZoomView == 1)
+		{
+			fFovXZoomed	= DEG2RAD(m_bTronUnknown210 ? m_fFOVZoomLOL : m_fFOVZoomTriangulate1);
+			fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - fFovXZoomed;
+		}
+		else if (m_nZoomView == 2)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate2);
+			fZoomDist	= DEG2RAD(m_bTronUnknown210 ? m_fFOVZoomLOL : m_fFOVZoomTriangulate1) - fFovXZoomed;
+		}
+		else if (m_nZoomView == 3)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate3);
+			fZoomDist	= DEG2RAD(m_fFOVZoomTriangulate2) - fFovXZoomed;
+		}
+	}
+	else
+	{
+		if (m_nZoomView == 0)
+		{
+			fFovXZoomed	= DEG2RAD(g_vtFOVXNormal.GetFloat());
+			if (m_bTronUnknown210)
+			{
+				fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomLOL);
+			}
+			else
+			{
+				fZoomDist	= DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomTriangulate1);
+			}
+		}
+		else if (m_nZoomView == 1)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate1);
+			fZoomDist	= fFovXZoomed - DEG2RAD(m_fFOVZoomTriangulate2);
+		}
+		else if (m_nZoomView == 2)
+		{
+			fFovXZoomed	= DEG2RAD(m_fFOVZoomTriangulate2);
+			fZoomDist	= fFovXZoomed - DEG2RAD(m_fFOVZoomTriangulate3);
+		}
+	}
+
+	float fZoomVel = fZoomDist / TRON_ZOOM_TIME;
+	float fZoomAmount = fZoomVel * g_pGameClientShell->GetFrameTime();
+
+	// Zoom camera in or out...
+
+	if (m_bZoomingIn)
+	{
+		if (fovX > fFovXZoomed)
+		{
+			// Zoom camera in...
+
+			fovX -= fZoomAmount;
+		}
+
+		if (fovX <= fFovXZoomed)
+		{
+			fovX = fFovXZoomed;
+			m_bZooming = LTFALSE;
+			g_pInterfaceMgr->EndZoom();
+
+			if (m_bTronUnknown210)
+			{
+				g_pInterfaceMgr->CreateOverlay((eOverlayMask)8);
+			}
+			if (m_bTronUnknown211)
+			{
+				g_pInterfaceMgr->CreateOverlay((eOverlayMask)(m_bTronUnknown212 ? 14 : 11));
+			}
+		}
+	}
+	else  // Zoom camera out...
+	{
+		if (fovX < fFovXZoomed)
+		{
+			// Zoom camera out...
+
+			fovX += fZoomAmount;
+		}
+
+		if (fovX >= fFovXZoomed)
+		{
+			fovX = fFovXZoomed;
+			m_bZooming = LTFALSE;
+			g_pInterfaceMgr->EndZoom();
+			if (m_nZoomView == 0)
+			{
+				EndZoom();
+			}
+			else
+			{
+				if (m_bTronUnknown211)
+				{
+					g_pInterfaceMgr->CreateOverlay((eOverlayMask)(m_bTronUnknown212 ? 14 : 11));
+				}
+				if (m_bTronUnknown210)
+				{
+					g_pInterfaceMgr->CreateOverlay((eOverlayMask)8);
+				}
+			}
+		}
+	}
+
+	if (fOldFovX != fovX)
+	{
+		// RETAIL: the vertical FOV keeps the screen's aspect
+		float fHalfHeight = (float)dwHeight * 0.5f;
+		float fHalfWidth = (float)dwWidth * 0.5f;
+		fovY = (float)(2.0 * atan(fHalfHeight / (fHalfWidth / tan(fovX * 0.5f))));
+
+		SetCameraFOV(fovX, fovY);
+
+		// Update the lod adjustment for models...
+		float fZoomAmount = (DEG2RAD(g_vtFOVXNormal.GetFloat()) - fovX) / (DEG2RAD(g_vtFOVXNormal.GetFloat()) - DEG2RAD(m_fFOVZoomTriangulate3));
+		float fNewLODOffset = m_fSaveLODScale + (TRON_LOD_ZOOMADJUST * fZoomAmount);
+
+		sprintf(strConsole, "+ModelLODOffset %f", fNewLODOffset);
+		g_pLTClient->RunConsoleString(strConsole);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerMgr::UpdateCameraSway()
+//
+//	PURPOSE:	RETAIL: 0x100a52a0: CPlayerMgr's sway, scaled by the
+//				triangulate subroutine while it zooms
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerMgr::UpdateCameraSway()
+{
+	// Apply...
+	float swayAmount = g_pGameClientShell->GetFrameTime() / 1000.0f;
+
+	float tm  = g_pLTClient->GetTime()/10.0f;
+
+	// Adjust if ducking...
+	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
+
+	//Adjust for skills
+	// PORT: retail reads the player stats' virtual at +0x13c (a pointer to
+	// a float at +4) as CPlayerMgr does; not yet in ours
+	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
+
+	if (m_bTronUnknown211 && g_pSubroutineMgr->IsUtilitySubroutineActive("Triangulate"))
+	{
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt("Triangulate");
+		SubVersion eVersion = g_pSubroutineMgr->GetActiveSubroutineVersion("Triangulate");
+		const TriangulateData& data = g_pSubroutineDataMgr->GetTriangulateData(SubroutineDataKey((uint8)eVersion, bCorrupt,
+			g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : 0));
+		fMult *= data.fSwayAmountMultiplier;
+		tm *= data.fSwaySpeedMultiplier;
+	}
+
+	float faddP = fMult * g_vtCameraSwayYSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayYFreq.GetFloat()) * swayAmount;
+	float faddY = fMult * g_vtCameraSwayXSpeed.GetFloat() * (float)sin(tm*g_vtCameraSwayXFreq.GetFloat()) * swayAmount;
+
+	m_fPitch += faddP;
+	m_fYaw	 += faddY;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1241,15 +1453,18 @@ void CTronPlayerMgr::UpdatePlaying()
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual60
 //
-//	PURPOSE:	RETAIL: retail 0x100a7360 (slot 0x60). PORT: retail asks the
-//				client light cycle manager (0x10236d98) for the player's
-//				cycle (0x100ff280) and, if any, calls its slot 0x14 with it
-//				(0, true); not yet in our tree
+//	PURPOSE:	RETAIL: retail 0x100a7360 (slot 0x60): the player's light
+//				cycle is derezzed
 //
 // ----------------------------------------------------------------------- //
 
 void CTronPlayerMgr::TronUnknownVirtual60()
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+	if (pCyclist)
+	{
+		g_pLightCycleMgr->DerezCyclist(pCyclist, LTNULL, true);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1576,30 +1791,91 @@ void CTronPlayerMgr::Load(ILTMessage_Read *pMsg, SaveDataState eLoadDataState)
 //
 //	PURPOSE:	RETAIL: retail 0x100a7c60, 0x100a7cd0, 0x100a7d50, 0x100a7e10
 //				(slots 0x70, 0x7c, 0x74, 0x78): a light cycle's model, skin,
-//				sounds and names from Tron's model attributes. PORT: the
-//				client light cycle manager (0x10236d98) and Tron's model
-//				attributes (CModelButeMgr's 0x10044f40, 0x10044f20) are not
-//				yet in our tree
+//				sounds and fx from the light cycle attributes
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::TronUnknownVirtual70(HOBJECT hObj, char* pszModel, char* pszSkin)
 {
-	return false;
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (!pCyclist)
+		return false;
+
+	// RETAIL: the colour is read before it is tested (docs/RETAIL_BUGS.md)
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pColor || !pType)
+		return false;
+
+	sprintf(pszModel, pColor->szIntroFX);
+	sprintf(pszSkin, pType->szIntroSound);
+	return true;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual7C(HOBJECT hObj, char* psz1, char* psz2, char* psz3)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pCyclist->nCycleType);
+		if (pType)
+		{
+			sprintf(psz1, pType->szCruiseSound);
+			sprintf(psz2, pType->szTurnSound);
+			if (psz3)
+			{
+				sprintf(psz3, pType->szAltCruiseSound);
+			}
+
+			return true;
+		}
+
+		return true;
+	}
+
 	return false;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual74(HOBJECT hObj, char* pszBuf, int nBufLen)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+		if (pColor)
+		{
+			int nNumFX = pColor->aDeathFX.size();
+			if (nNumFX < 0)
+			{
+				// RETAIL: SAFE_STRCPY of a pointer: four bytes
+				// (docs/RETAIL_BUGS.md)
+				strncpy(pszBuf, "", sizeof(pszBuf) - 1);
+				pszBuf[sizeof(pszBuf) - 1] = '\0';
+				return true;
+			}
+
+			const char* pszFX = pColor->aDeathFX[GetRandom(0, nNumFX - 1)].c_str();
+			LTStrCpy(pszBuf, pszFX, nBufLen);
+			return true;
+		}
+	}
+
 	return false;
 }
 
 bool CTronPlayerMgr::TronUnknownVirtual78(HOBJECT hObj, char* pszBuf)
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(hObj);
+	if (pCyclist)
+	{
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+		if (pColor)
+		{
+			sprintf(pszBuf, pColor->szRiderFX);
+			return true;
+		}
+	}
+
 	return false;
 }
 

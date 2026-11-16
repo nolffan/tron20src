@@ -330,6 +330,8 @@ public:
 	MegaHurtzData		GetMegaHurtzData( SubroutineDataKey key ) const		{ return m_vecMegaHurtz.at( GetIndex( key ) ); }
 	CorrodeData			GetCorrodeData( SubroutineDataKey key ) const		{ return m_vecCorrode.at( GetIndex( key ) ); }
 	PrimitiveChargeData	GetPrimitiveChargeData( SubroutineDataKey key ) const	{ return m_vecPrimitiveCharge.at( GetIndex( key ) ); }
+	// RETAIL: the triangulate subroutine's (inlined in CShell 0x100a52a0)
+	const TriangulateData&	GetTriangulateData( SubroutineDataKey key ) const	{ return m_vecTriangulate.at( GetIndex( key ) ); }
 
 protected:
 

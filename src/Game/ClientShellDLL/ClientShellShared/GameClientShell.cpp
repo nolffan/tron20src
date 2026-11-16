@@ -1062,14 +1062,8 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		return false;
 	}
 
-	// Mission stuff...
-	m_pMissionMgr = debug_new(CMissionMgr);
-	if (!m_pMissionMgr || !m_pMissionMgr->Init())
-	{
-		// Don't call ShutdownWithMessage since MissionMgr will have called
-		// that, so calling it here will overwrite the message...
- 		return LT_ERROR;
-	}
+	// RETAIL: Tron makes no mission manager here (0x100e3124): it is
+	// CTronGameClientShell's member, initialised by its constructor
 
 	m_pClientSaveLoadMgr = debug_new( CClientSaveLoadMgr );
 	if( !m_pClientSaveLoadMgr )
@@ -1506,9 +1500,7 @@ void CGameClientShell::OnEnterWorld()
 
 	m_vLastReverbPos.Init();
 
-	MirrorSConVar( "RespawnWaitTime", "RespawnWaitTime" );
-	MirrorSConVar( "RespawnMultiWaitTime", "RespawnMultiWaitTime" );
-	MirrorSConVar( "RespawnDoomsdayWaitTime", "RespawnDoomsdayWaitTime" );
+	// RETAIL: Tron mirrors no respawn times here (0x100e3930)
 }
 
 
@@ -4145,7 +4137,9 @@ void CGameClientShell::RenderCamera(bool bDrawInterface)
 
     g_pLTClient->Start3D();
 
-    g_pLTClient->RenderCamera(hCamera, m_bServerPaused ? 0.0f : m_fFrameTime);
+	// RETAIL: 0x100e6618: the frame time goes through the FPU (a float
+	// 0.0f there: ours loads a double, the only byte that differs)
+    g_pLTClient->RenderCamera(hCamera, m_bServerPaused ? 0.0 : m_fFrameTime);
 
 	// Render the the dynamic FX.
 	m_sfxMgr.RenderFX(hCamera);

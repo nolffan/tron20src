@@ -1052,6 +1052,28 @@ first in the list, so the menu tests a different item. The menu can show a
 file that the player read, or not show a new file.
 
 Not fixed yet: the modern build should get the item at the item index.
+### A light cycle's intro lookup reads the colour before it tests it
+
+CShell.dll 0x100a7c60 (CTronPlayerMgr::TronUnknownVirtual70,
+TRON/TronPlayerMgr.cpp). The function gets the cyclist's colour from the
+light cycle attributes and reads the colour's cycle type before it tests
+the colour for NULL. An unknown colour name makes the client read through
+a NULL pointer.
+
+Not fixed yet: the modern build should test the colour first.
+
+### A light cycle's death fx lookup clears four bytes, not the buffer
+
+CShell.dll 0x100a7d50 (CTronPlayerMgr::TronUnknownVirtual74,
+TRON/TronPlayerMgr.cpp). When the colour has no death fx, the function
+clears the caller's buffer with SAFE_STRCPY. The buffer is a pointer
+argument, so the macro's sizeof gives 4: it copies three bytes and writes
+the terminator at offset 3, whatever the buffer's size. The branch also
+runs only when the count is negative, so an empty list does not reach it
+and the random index is taken from 0..-1.
+
+Not fixed yet: the modern build should test for an empty list and clear
+the buffer with its size.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
