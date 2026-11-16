@@ -219,6 +219,11 @@ SOURCE=..\..\Engine\sdk\inc\ltmodule.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Engine\sdk\inc\ltobjref.cpp
+# SUBTRACT CPP /YX /Yc /Yu
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Engine\sdk\inc\ltquatbase.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
