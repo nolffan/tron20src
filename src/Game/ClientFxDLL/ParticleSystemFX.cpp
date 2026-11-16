@@ -302,9 +302,6 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	if( !CBaseFX::Init( pLTClient, pData, pProps) ) 
 		return false;
 
-	// RETAIL: Tron's (0x10017ab7)
-	GetSpawnTransform( m_vCreatePos, m_rCreateRot );
-
 	ObjectCreateStruct	ocs;
 	
 	// Create Particle System
@@ -314,26 +311,14 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	ocs.m_Pos			= m_vCreatePos;
 	ocs.m_Rotation		= m_rCreateRot;
 
-	// Develop the Right and Up vectors based off the Forward...
+	// RETAIL: Tron's (0x10017ab7): the system gets its spawn transform
+	// after the create struct takes the create position, and then sets
+	// the create struct again. Tron has no right and up vectors from the
+	// target normal here.
+	GetSpawnTransform( m_vCreatePos, m_rCreateRot );
 
-	if( pData->m_vTargetNorm.LengthSquared() > MATH_EPSILON )
-	{
-		LTVector vR, vU;
-
-		pData->m_vTargetNorm.Normalize();
-
-		if( (1.0f == pData->m_vTargetNorm.y) || (-1.0f == pData->m_vTargetNorm.y) )
-		{
-			vR = LTVector( 1.0f, 0.0f, 0.0f ).Cross( pData->m_vTargetNorm );
-		}
-		else
-		{
-			vR = LTVector( 0.0f, 1.0f, 0.0f ).Cross( pData->m_vTargetNorm );
-		}
-
-		vU = pData->m_vTargetNorm.Cross( vR );
-		ocs.m_Rotation = LTRotation( pData->m_vTargetNorm, vU );
-	}
+	ocs.m_Pos			= m_vCreatePos;
+	ocs.m_Rotation		= m_rCreateRot;
 
 	m_hObject = m_pLTClient->CreateObject( &ocs );
 	if( !m_hObject )
@@ -934,13 +919,8 @@ void CParticleSystemFX::AddParticles( )
 
 void CParticleSystemFX::RemoveParticle(LTParticle* pParticle)
 {
-	// Disable this particle
- 	m_pLTClient->RemoveParticle( m_hObject, pParticle );
-
-	//update our counts
-	assert(m_nNumParticles > 0);
-	m_nNumParticles--;
-	
+	// RETAIL: ClientFx.fxd 0x100198f0 updates the bounce and splat counts
+	// first, then removes the particle and updates the total count
 	if(pParticle->m_nUserData & BOUNCE_FLAG)
 	{
 		m_nNumBounceParticles--;
@@ -949,6 +929,13 @@ void CParticleSystemFX::RemoveParticle(LTParticle* pParticle)
 	{
 		m_nNumSplatParticles--;
 	}
+
+	// Disable this particle
+ 	m_pLTClient->RemoveParticle( m_hObject, pParticle );
+
+	//update our counts
+	assert(m_nNumParticles > 0);
+	m_nNumParticles--;
 }
 
 
