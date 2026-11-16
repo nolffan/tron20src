@@ -98,6 +98,13 @@ class WorldModel : public GameBase
 
 		bool					m_bCanActivate;			// Can we be activated
 
+		// RETAIL: Tron's (ctor 0x1017a87b..0x1017a88c, OnSave 0x1017c53f):
+		// the "AllowParentActivateOwnership" property (+0x7e9, default
+		// true) and a flag OnEveryObjectCreated sets on its first call
+		// (+0x7ea; name ours).
+		bool					m_bAllowParentActivateOwnership;
+		bool					m_bTronEveryObjectCreated;
+
 
 	protected: // Methods...
 

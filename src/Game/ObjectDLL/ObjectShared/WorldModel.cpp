@@ -231,7 +231,9 @@ WorldModel::WorldModel( )
 	m_fStimRadius			( 0.0f ),
 	m_nDestroyAlarmLevel	( 0 ),
 	m_hActivateParent		( LTNULL ),
-	m_bCanActivate			( false )
+	m_bCanActivate			( false ),
+	m_bAllowParentActivateOwnership	( true ),
+	m_bTronEveryObjectCreated	( false )
 {
 	AddAggregate( &m_DamageModel );
 
@@ -398,6 +400,11 @@ void WorldModel::ReadProps( ObjectCreateStruct *pOCS )
 		m_bStartHidden = genProp.m_Bool;
 	}
 
+	if( g_pLTServer->GetPropGeneric( "AllowParentActivateOwnership", &genProp ) == LT_OK )
+	{
+		m_bAllowParentActivateOwnership = genProp.m_Bool;
+	}
+
 	if( g_pLTServer->GetPropGeneric( "Attachments", &genProp ) == LT_OK )
 	{
 		if( genProp.m_String[0] )
@@ -508,11 +515,16 @@ void WorldModel::OnObjectCreated( )
 
 void WorldModel::OnEveryObjectCreated( )
 {
+	// RETAIL: 0x1017afc0: Tron does this only once.
+	if( m_bTronEveryObjectCreated )
+		return;
+
 	// Save if we are currently set up to be activated...
 
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags( m_hObject, OFT_User, dwFlags );
 
+	m_bTronEveryObjectCreated = true;
 	m_bCanActivate = !!(dwFlags & USRFLG_CAN_ACTIVATE);
 
 	// Check for any objects to attach 
@@ -600,7 +612,7 @@ HOBJECT WorldModel::AttachObject( HOBJECT hObj )
 	if( IsWorldModel( hObj ))
 	{
 		WorldModel *pWorldModel = dynamic_cast<WorldModel*>(g_pLTServer->HandleToObject( hObj ));
-		if( pWorldModel )
+		if( pWorldModel && pWorldModel->m_bAllowParentActivateOwnership )
 		{
 			// Send any activate messages the WorldModel recevies to us...
 
@@ -651,7 +663,7 @@ void WorldModel::DetachObject( HOBJECT hObj )
 	if( IsWorldModel( hObj ))
 	{
 		WorldModel *pWorldModel = dynamic_cast<WorldModel*>(g_pLTServer->HandleToObject( hObj ));
-		if( pWorldModel )
+		if( pWorldModel && pWorldModel->m_bAllowParentActivateOwnership )
 		{
 			// No longer send any activate messages the WorldModel recevies to us...
 
@@ -1043,6 +1055,8 @@ void WorldModel::OnSave( ILTMessage_Write *pMsg, uint32 dwSaveFlags )
 	SAVE_FLOAT( m_fStimRadius );
 	SAVE_HOBJECT( m_hActivateParent );
 	SAVE_bool( m_bCanActivate );
+	SAVE_bool( m_bAllowParentActivateOwnership );
+	SAVE_bool( m_bTronEveryObjectCreated );
 
 	// Save the object lists last...
 	ObjRefNotifierList::iterator iter;
@@ -1093,6 +1107,8 @@ void WorldModel::OnLoad( ILTMessage_Read *pMsg, uint32 dwSaveFlags )
 	LOAD_FLOAT( m_fStimRadius );
 	LOAD_HOBJECT( m_hActivateParent );
 	LOAD_bool( m_bCanActivate );
+	LOAD_bool( m_bAllowParentActivateOwnership );
+	LOAD_bool( m_bTronEveryObjectCreated );
 
 	// Load the object lists last...
 	uint8	nObjsInList = 0;
