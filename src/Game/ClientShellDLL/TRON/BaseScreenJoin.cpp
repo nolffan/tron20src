@@ -393,9 +393,9 @@ LTBOOL CBaseScreenJoin::ConnectToServer()
 	char szAddress[48];
 	sprintf(szAddress,"%s:%d",pszIP,nPort);
 
-	// PORT: retail's SetupClient takes the address and the password only
+	// RETAIL: Tron's SetupClient takes the address and the password only
 	// (0x100e87b0)
-	if (!g_pClientMultiplayerMgr->SetupClient(szAddress,LTNULL,m_sPassword.c_str()))
+	if (!g_pClientMultiplayerMgr->SetupClient(szAddress,m_sPassword.c_str()))
 		return LTFALSE;
 
 	if (!g_pMissionMgr->StartGameAsClient())

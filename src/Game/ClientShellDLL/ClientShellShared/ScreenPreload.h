@@ -33,20 +33,9 @@ protected:
 
 	virtual void	CreateInterfaceSFX();
 
-	void			FirstUpdate( );
-	bool			UpdateCDKeyValidation( );
 
 	std::string		m_layout;
 	bool			m_bWaitingToExit;
-	bool			m_bFirstUpdate;
-
-	enum ValidatingCDKeyState
-	{
-		kValidatingCDKeyState_None,
-		kValidatingCDKeyState_Start,
-		kValidatingCDKeyState_Waiting,
-	};
-	ValidatingCDKeyState m_eValidatingCDKeyState;
 
 };
 

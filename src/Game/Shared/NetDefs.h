@@ -74,7 +74,9 @@ struct NetClientData
 	char	m_szName[MAX_PLAYER_NAME];
 	char	m_szPlayerGuid[64];
 	uint8	m_ePlayerModelId;
-
+	// RETAIL: Tron's, the profile's colour (ClientMultiplayerMgr::SetupClient
+	// 0x100e87b0 writes it at +0x51; the struct is 0x52 bytes)
+	uint8	m_nPlayerColor;
 };
 
 // Messages sent from servershell to the serverapp.

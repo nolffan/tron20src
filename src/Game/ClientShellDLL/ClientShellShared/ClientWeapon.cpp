@@ -74,14 +74,10 @@ namespace
 	static float nsfOverrideRate = -1.0f;
 
 	bool        ns_bInited = false;
+	// RETAIL: Tron's three (InitNamespaceVars 0x1012ea50)
 	VarTrack    ns_vtFastTurnRate;
-	VarTrack    ns_vtPerturbRotationEffect;
-	VarTrack    ns_vtPerturbIncreaseSpeed;
-	VarTrack    ns_vtPerturbDecreaseSpeed;
-	VarTrack    ns_vtPerturbWalkPercent;
 	VarTrack    ns_vtCameraShutterSpeed;
-	VarTrack	ns_vtFiringPerturbIncreaseSpeed;
-	VarTrack	ns_vtFiringPerturbDecreaseSpeed;
+	VarTrack    ns_vtEnableClientFX;	// "ClientWeaponEnableClientFX" (the name is ours)
 
 	bool InitNamespaceVars( void )
 	{
@@ -91,38 +87,16 @@ namespace
 			return true;
 		}
 
-		ASSERT( 0 != g_pLayoutMgr );
-
 		LTBOOL   bResult;
-		LTFLOAT  fTemp;
 
 		ns_bInited = true;
 
 		ns_vtFastTurnRate.Init( g_pLTClient, "FastTurnRate", 0, 2.3f );
 
-		fTemp = g_pLayoutMgr->GetPerturbRotationEffect();
-		bResult = ns_vtPerturbRotationEffect.Init( g_pLTClient, "PerturbRotationEffect", 0, fTemp );
-		ASSERT( LTTRUE == bResult );
-
-		fTemp = g_pLayoutMgr->GetPerturbIncreaseSpeed();
-		bResult = ns_vtPerturbIncreaseSpeed.Init( g_pLTClient, "PerturbIncreaseSpeed", 0, fTemp );
-		ASSERT( LTTRUE == bResult );
-
-		fTemp = g_pLayoutMgr->GetPerturbDecreaseSpeed();
-		bResult = ns_vtPerturbDecreaseSpeed.Init( g_pLTClient, "PerturbDecreaseSpeed", 0, fTemp );
-		ASSERT( LTTRUE == bResult );
-
-		fTemp = g_pLayoutMgr->GetPerturbWalkPercent();
-		bResult = ns_vtPerturbWalkPercent.Init( g_pLTClient, "PerturbWalkPercent", 0, fTemp );
-		ASSERT( LTTRUE == bResult );
-
 		bResult = ns_vtCameraShutterSpeed.Init( g_pLTClient, "CameraShutterSpeed", 0, 0.3f );
 		ASSERT( LTTRUE == bResult );
 
-		bResult = ns_vtFiringPerturbIncreaseSpeed.Init( g_pLTClient, "PerturbFiringIncreaseSpeed", 0, 4.0 );
-		ASSERT( LTTRUE == bResult );
-
-		bResult = ns_vtFiringPerturbDecreaseSpeed.Init( g_pLTClient, "PerturbFiringDecreaseSpeed", 0, 1.0 );
+		bResult = ns_vtEnableClientFX.Init( g_pLTClient, "ClientWeaponEnableClientFX", 0, 1.0f );
 		ASSERT( LTTRUE == bResult );
 
 		return true;
@@ -247,7 +221,6 @@ CClientWeapon::~CClientWeapon()
 
 bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
-	static CParsedMsg::CToken s_cTok_WeaponKeySound(WEAPON_KEY_SOUND);
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FIRE( WEAPON_KEY_FIRE );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_SOUND( WEAPON_KEY_SOUND );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_LOOPSOUND( WEAPON_KEY_LOOPSOUND );
@@ -269,9 +242,9 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	     ( hObj != m_hObject ) ||
 	     !pArgList || 
 	     !pArgList->argv ||
-	     ( pArgList->argc == 0 ) ||
-		 m_bDisabled )
+	     ( pArgList->argc == 0 ) )
 	{
+		// RETAIL: Tron's (0x1012efd0) handles keys while disabled too
 		return false;
 	}
 
@@ -314,7 +287,9 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	}
 	else if( tok == s_cTok_WEAPON_KEY_SHOW_MODEL_PIECE )
 	{
-		return HandleShowPieceKey( hObj, pArgList );
+		// RETAIL: true whatever the handler says (0x1012f4d9)
+		HandleShowPieceKey( hObj, pArgList );
+		return true;
 	}
 	else if( tok == s_cTok_WEAPON_KEY_FLASHLIGHT )
 	{
@@ -349,7 +324,8 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 		return HandleShowPVAttachmentKey( hObj, pArgList );
 	}
 
-	return true;
+	// RETAIL: Tron's returns false for a key it does not know (0x1012f6ae)
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -439,6 +415,11 @@ bool CClientWeapon::HandleSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 				// write the flash position (presumably this is where the sound comes from)
 				cMsg.WriteLTVector( m_vFlashPos );
 
+				// RETAIL: Tron's message adds the volume scale and a flag
+				// (0x1012f971; the flag's meaning is not known)
+				cMsg.Writefloat( 1.0f );
+				cMsg.Writebool( false );
+
 				// send the message
 				ltResult = g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 				ASSERT( LT_OK == ltResult );
@@ -476,14 +457,21 @@ bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 				cMsg.Writeuint8( MID_WEAPON_SOUND_LOOP );
 				cMsg.Writeuint8( PSI_INVALID );
 				cMsg.Writeuint8( m_nWeaponId );
+				// RETAIL: Tron's message adds the volume scale (none to stop)
+				// and a flag (0x1012facc)
+				cMsg.Writefloat( 0.0f );
+				cMsg.Writebool( false );
 				g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
-			
-				return true;
+
+				// RETAIL: Tron's goes on (atoi gives PSI_INVALID)
 			}
 
 			char* pBuf = 0;
 
 			PlayerSoundId nId = static_cast< PlayerSoundId >( atoi( pArgList->argv[ 1 ] ) );
+
+			// RETAIL: Tron's slot 0x160 hears of the sound first (0x1012fb50)
+			TronUnknownVirtual160( nId );
 			switch( nId )
 			{
 				case PSI_RELOAD:														// 1
@@ -540,6 +528,8 @@ bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 					cMsg.Writeuint8( MID_WEAPON_SOUND_LOOP );
 					cMsg.Writeuint8( nId );
 					cMsg.Writeuint8( m_nWeaponId );
+					cMsg.Writefloat( 1.0f );
+					cMsg.Writebool( false );
 					g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 				}
 				
@@ -561,23 +551,13 @@ bool CClientWeapon::HandleLoopSoundKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleFireFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
-		//
-		// Fire weapon & spawn special effects
-		//
-
-		ASSERT( 0 != m_hObject );
-
-		// Only allow fire keys if it is a fire animation...
-		uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
-		if ( IsFireAni( dwAni ) && GetState() == W_FIRING )
-		{
-			m_bFire = true;
-		}
-
-		// handle the fx key
+	// RETAIL: Tron's (0x1012fea0): the fx only with a fire key
+	if ( HandleFireKey( hObj, pArgList ))
+	{
 		return HandleFXKey( hObj, pArgList );
+	}
 
-	return true;
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -628,7 +608,8 @@ bool CClientWeapon::HandleHidePieceKey( HLOCALOBJ hObj, ArgList* pArgList )
 			++i;
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -679,7 +660,8 @@ bool CClientWeapon::HandleShowPieceKey( HLOCALOBJ hObj, ArgList* pArgList )
 			++i;
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -747,6 +729,10 @@ bool CClientWeapon::HandleDeflectKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
+	// RETAIL: Tron's (0x10130180) says whether all the keys had their
+	// arguments
+	bool bResult = true;
+
 		// start the index at the first argument
 		int i = 0;
 		int nRS;
@@ -767,6 +753,7 @@ bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 				{
 					// Not enough params
 					g_pLTClient->CPrint("CClientWeapon::OnModelKey - ERROR - Not enough RS arguments! Syntax: RS <RSNum> <RSName>\n");
+					bResult = false;
 				}
 
 				// Move past all arguments of this key
@@ -779,7 +766,7 @@ bool CClientWeapon::HandleRenderStyleKey( HLOCALOBJ hObj, ArgList* pArgList )
 			}
 		}
 
-	return true;
+	return bResult;
 }
 
 // ----------------------------------------------------------------------- //
@@ -818,7 +805,8 @@ bool CClientWeapon::HandleShellCasingKey( HLOCALOBJ hObj, ArgList* pArgList )
 			g_pGameClientShell->GetSFXMgr()->CreateSFX(SFX_SHELLCASING_ID, &sc);
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here (0x10130332)
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -832,27 +820,21 @@ bool CClientWeapon::HandleShellCasingKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleHidePVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
-		if (!m_bVisible) return false;
+	if (!m_bVisible) return false;
 
-		// start the index at the first argument
-		int i = 1;
-		int nPVFX = 0;
+	// RETAIL: Tron's (0x10130350) does nothing while the weapon's
+	// client fx are off, and lets HidePVAttachClientFX( int ) do the work
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return false;
 
-		// while there are arguments
-		while((i < pArgList->argc) && ('\0' != pArgList->argv[i][0]))
-		{
-			nPVFX = atoi( pArgList->argv[ i ] );
-			if( nPVFX >= 0 && nPVFX < WM_MAX_PV_ATTACH_CLIENTFX )
-			{
-				if( m_PVAttachClientFX[ nPVFX ].IsValid() )
-				{
-					m_bPVAttachClientFXHidden[ nPVFX ] = true;
-					m_PVAttachClientFX[ nPVFX ].GetInstance()->Hide();
-				}
-			}
+	// start the index at the first argument
+	int i = 1;
 
-			++i;
-		}
+	// while there are arguments
+	while((i < pArgList->argc) && ('\0' != pArgList->argv[i][0]))
+	{
+		HidePVAttachClientFX( atoi( pArgList->argv[ i ] ));
+		++i;
+	}
 
 	return true;
 }
@@ -868,27 +850,21 @@ bool CClientWeapon::HandleHidePVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleShowPVAttachFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
-		if (!m_bVisible) return false;
+	if (!m_bVisible) return false;
 
-		// start the index at the first argument
-		int i = 1;
-		int nPVFX = 0;
+	// RETAIL: Tron's (0x101303e0) does nothing while the weapon's
+	// client fx are off, and lets ShowPVAttachClientFX( int ) do the work
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return false;
 
-		// while there are arguments
-		while((i < pArgList->argc) && ('\0' != pArgList->argv[i][0]))
-		{
-			nPVFX = atoi( pArgList->argv[ i ] );
-			if( nPVFX >= 0 && nPVFX < WM_MAX_PV_ATTACH_CLIENTFX )
-			{
-				if( m_PVAttachClientFX[ nPVFX ].IsValid() )
-				{
-					m_bPVAttachClientFXHidden[ nPVFX ] = false;
-					m_PVAttachClientFX[ nPVFX ].GetInstance()->Show();
-				}
-			}
+	// start the index at the first argument
+	int i = 1;
 
-			++i;
-		}
+	// while there are arguments
+	while((i < pArgList->argc) && ('\0' != pArgList->argv[i][0]))
+	{
+		ShowPVAttachClientFX( atoi( pArgList->argv[ i ] ));
+		++i;
+	}
 
 	return true;
 }
@@ -1042,6 +1018,9 @@ bool CClientWeapon::HandleFireKey( HLOCALOBJ hObj, ArgList* pArgList )
 
 bool CClientWeapon::HandleFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
+	// RETAIL: not while the weapon is hidden (0x1012fd60)
+	if (!m_bVisible) return false;
+
 	// assume success
 	bool bOverallResult = true;
 
@@ -1610,7 +1589,8 @@ void CClientWeapon::DecrementAmmo()
 
 	int nShotsPerClip = m_pWeapon->nShotsPerClip;
 
-	if ( 0 < m_nAmmoInClip )
+	// RETAIL: Tron's (0x10130d30) leaves the clip alone with infinite ammo
+	if ( 0 < m_nAmmoInClip && !bInfiniteAmmo )
 	{
 		if ( 0 < nShotsPerClip )
 		{
@@ -1619,15 +1599,12 @@ void CClientWeapon::DecrementAmmo()
 			--m_nAmmoInClip;
 		}
 
-		if ( !bInfiniteAmmo )
-		{
-			// we are not using infinite ammo, update the current amount
-			--nAmmo;
+		// we are not using infinite ammo, update the current amount
+		--nAmmo;
 
-			// Update our stats.  This will ensure that our stats are always
-			// accurate (even in multiplayer)...
-			g_pPlayerStats->UpdateAmmo( m_nWeaponId, m_nAmmoId, nAmmo, LTFALSE, LTFALSE );
-		}
+		// Update our stats.  This will ensure that our stats are always
+		// accurate (even in multiplayer)...
+		g_pPlayerStats->UpdateAmmo( m_nWeaponId, m_nAmmoId, nAmmo, LTFALSE, LTFALSE );
 	}
 
 	// Check to see if we need to reload...
@@ -1689,7 +1666,7 @@ void CClientWeapon::ResetWeaponFilenames()
 
 	// Always put the weapon in the correct position after we reset the model...
 
-	UpdateWeaponPosition( LTVector() );
+	UpdateWeaponPosition( LTVector( 0.0f, 0.0f, 0.0f ) );
 
 	// Create Player-View attachments..
 	// We do this here since the attachments rely on the model that the character is using
@@ -1760,10 +1737,12 @@ void CClientWeapon::SetVisible( bool bVis /*=true*/ )
 	if ( bVis )
 	{
 		ShowPVAttachClientFX();
+		ShowKeyframedClientFX();
 	}
 	else
 	{
 		HidePVAttachClientFX();
+		HideKeyframedClientFX();
 	}
 
 	// Make sure flashlight is on/off as appropriate if we're hiding/showing
@@ -2122,16 +2101,11 @@ void CClientWeapon::SetDisable( bool bDisable /*=true*/)
 		// Set the visibility back to whatever it was...
 		SetVisible( m_bVisible );
 
-		if (HasAmmo())
+		// RETAIL: Tron's (0x101318f0) reloads an empty clip and shows no
+		// hidden pieces here
+		if (m_nAmmoInClip == 0 && HasAmmo())
 		{
-			if (m_nAmmoInClip == 0)
-			{
-				ReloadClip(false);
-			}
-
-			// Unhide any hidden pieces...
-			SpecialShowPieces(true,true);
-
+			ReloadClip(false);
 		}
 
 		SetPaused( false );
@@ -2177,26 +2151,18 @@ void CClientWeapon::Select()
 			LTFLOAT fRate = 1.0f;
 			if ( GADGET == m_pAmmo->eType )
 			{
-				fRate *= g_pPlayerStats->GetSkillModifier(SKL_GADGET,GadgetModifiers::eSelect);
+				fRate = ((const GadgetModifiers*)g_pPlayerStats->TronUnknownVirtual14C())->fModifier[GadgetModifiers::eSelect];
 			}
 			else
 			{
-				fRate *= g_pPlayerStats->GetSkillModifier(SKL_WEAPON,WeaponModifiers::eReload);
+				fRate = ((const WeaponModifiers*)g_pPlayerStats->TronUnknownVirtual148())->fModifier[WeaponModifiers::eReload];
 			}
 
 			// play select animation
 			PlayAnimation( dwSelectAni, true, fRate );
-			
-			// [RP] 11/11/02 - Since we may need the camera position and/or the flash position
-			//		after the selection ani starts but before the next update of this weapon, update
-			//		the positions here.  They will get reset during the update to their accurate position.
 
-			HOBJECT hCam = g_pPlayerMgr->GetCamera();
-			if( hCam )
-			{
-				g_pLTClient->GetObjectPos( hCam, &m_vCamPos );
-				UpdateMuzzleFlash( W_SELECT, LTVector(0,0,0) );
-			}
+			// RETAIL: Tron (0x10131990) predates NOLF2's camera and flash
+			// position update here
 		}
 
 		// Tell the server we're playing the select animation...
@@ -2385,7 +2351,7 @@ bool CClientWeapon::Activate()
 
 	// do one update of the weapon model position to put
 	// it in the right place
-	UpdateWeaponPosition( LTVector() );
+	UpdateWeaponPosition( LTVector( 0.0f, 0.0f, 0.0f ) );
 
 	// initialize the animations for this model
 	InitAnimations();
@@ -2450,14 +2416,7 @@ void CClientWeapon::Deactivate()
 	SetDisable( true );
 
 	// turn off all keyframed ClientFX
-	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode != NULL; pNode = pNode->m_pNext )
-	{
-		// turn off the effect
-		g_pClientFXMgr->ShutdownClientFX( &pNode->m_Link );
-	}
-
-	// destroy the list of keyframed ClientFX
-	m_KeyframedClientFX.DeleteList();
+	RemoveKeyframedClientFX();
 
 	// remove the mods
 	RemoveMods();
@@ -2760,6 +2719,20 @@ void CClientWeapon::Load( ILTMessage_Read *pMsg )
 	m_bFirstSelection = pMsg->Readbool();
 	m_nAmmoId	  =	pMsg->Readuint8();
 	m_nAmmoInClip = pMsg->Readint32();
+
+	// RETAIL: Tron's keeps the weapon's state too (0x101324b0)
+	m_eState					= (WeaponState)pMsg->Readint8();
+	m_vFlashPos					= pMsg->ReadLTVector();
+	m_fFlashStartTime			= pMsg->Readfloat();
+	m_fNextIdleTime				= pMsg->Readfloat();
+	m_nNewAmmoInClip			= pMsg->Readint32();
+	m_bFireKeyDownLastUpdate	= pMsg->Readbool();
+	m_bAltFireKeyDownLastUpdate	= pMsg->Readbool();
+	m_wIgnoreFX					= pMsg->Readuint16();
+	m_rCamRot					= pMsg->ReadLTRotation();
+
+	HidePVAttachClientFX();
+	memset( m_bPVAttachClientFXHidden, true, sizeof( m_bPVAttachClientFXHidden ));
 }
 
 
@@ -2778,6 +2751,17 @@ void CClientWeapon::Save( ILTMessage_Write *pMsg )
 	pMsg->Writebool( m_bFirstSelection );
 	pMsg->Writeuint8( m_nAmmoId );
 	pMsg->Writeint32( m_nAmmoInClip );
+
+	// RETAIL: Tron's keeps the weapon's state too (0x10132610)
+	pMsg->Writeint8( (int8)m_eState );
+	pMsg->WriteLTVector( m_vFlashPos );
+	pMsg->Writefloat( m_fFlashStartTime );
+	pMsg->Writefloat( m_fNextIdleTime );
+	pMsg->Writeint32( m_nNewAmmoInClip );
+	pMsg->Writebool( m_bFireKeyDownLastUpdate );
+	pMsg->Writebool( m_bAltFireKeyDownLastUpdate );
+	pMsg->Writeuint16( m_wIgnoreFX );
+	pMsg->WriteLTRotation( m_rCamRot );
 }
 
 
@@ -2846,6 +2830,12 @@ HOBJECT CClientWeapon::CreateModelObject( HOBJECT hOldObj, ObjectCreateStruct *c
 		createStruct->m_ObjectType = OT_MODEL;
 		createStruct->m_Flags     |= /*FLAG_VISIBLE |*/ FLAG_REALLYCLOSE;
 		createStruct->m_Flags2    |= FLAG2_DYNAMICDIRLIGHT;
+
+		// RETAIL: Tron's translucent weapons (0x10132885)
+		if ( m_pWeapon->bTranslucent )
+		{
+			createStruct->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
+		}
 
 		hObj = g_pLTClient->CreateObject( createStruct );
 		if ( !hObj ) return static_cast< HOBJECT >( 0 );
@@ -3387,11 +3377,11 @@ bool CClientWeapon::PlaySelectAnimation()
 		if ( m_pAmmo->eType == GADGET )
 		{
 			// gadgets...always the special case
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_GADGET,GadgetModifiers::eSelect);
+			fRate = ((const GadgetModifiers*)g_pPlayerStats->TronUnknownVirtual14C())->fModifier[GadgetModifiers::eSelect];
 		}
 		else
 		{
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_WEAPON,WeaponModifiers::eReload);
+			fRate = ((const WeaponModifiers*)g_pPlayerStats->TronUnknownVirtual148())->fModifier[WeaponModifiers::eReload];
 		}
 
 		PlayAnimation( dwSelectAni, false, fRate );
@@ -3444,11 +3434,11 @@ bool CClientWeapon::PlayDeselectAnimation()
 		if ( m_pAmmo->eType == GADGET )
 		{
 			// gadgets...always the special case
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_GADGET,GadgetModifiers::eSelect);
+			fRate = ((const GadgetModifiers*)g_pPlayerStats->TronUnknownVirtual14C())->fModifier[GadgetModifiers::eSelect];
 		}
 		else
 		{
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_WEAPON,WeaponModifiers::eReload);
+			fRate = ((const WeaponModifiers*)g_pPlayerStats->TronUnknownVirtual148())->fModifier[WeaponModifiers::eReload];
 		}
 
 		PlayAnimation( dwDeselectAni, false, fRate );
@@ -3532,11 +3522,11 @@ bool CClientWeapon::PlayReloadAnimation()
 		
 		if ( m_pAmmo->eType == GADGET )
 		{
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_GADGET,GadgetModifiers::eSelect);
+			fRate = ((const GadgetModifiers*)g_pPlayerStats->TronUnknownVirtual14C())->fModifier[GadgetModifiers::eSelect];
 		}
 		else
 		{
-			fRate *= g_pPlayerStats->GetSkillModifier(SKL_WEAPON,WeaponModifiers::eReload);
+			fRate = ((const WeaponModifiers*)g_pPlayerStats->TronUnknownVirtual148())->fModifier[WeaponModifiers::eReload];
 		}
 
 		PlayAnimation( dwReloadAni, false, fRate );
@@ -3573,9 +3563,9 @@ bool CClientWeapon::PlayIdleAnimation()
 	ASSERT( 0 != g_pGameClientShell );
 	ASSERT( 0 != g_pLTClient );
 
-	if ( !m_hObject || g_pPlayerMgr->IsZoomed() )
+	// RETAIL: Tron's (0x10133320) plays the idle while zoomed too
+	if ( !m_hObject )
 	{
-		// would be better to move the second check somewhere else
 		return false;
 	}
 
@@ -4043,9 +4033,16 @@ uint32 CClientWeapon::GetIdleAni() const
 			}
 		}
 
+		// RETAIL: Tron's (0x10133770) plays the first idle eight times in
+		// eleven, else the second
 		if ( 0 < nNumValid )
 		{
-			return dwValidIdleAnis[ GetRandom( 0, ( nNumValid - 1 ) ) ];
+			if ( GetRandom( 0, 10 ) < 8 )
+			{
+				return dwValidIdleAnis[ 0 ];
+			}
+
+			return dwValidIdleAnis[ 1 ];
 		}
 	}
 
@@ -4390,27 +4387,11 @@ void CClientWeapon::GetModelRot( LTRotation *rRot ) const
 
 void CClientWeapon::CreateMuzzleFlash()
 {
-	ASSERT( 0 != g_pModelLT );
-	ASSERT( 0 != g_pClientFXMgr );
-	ASSERT( 0 != m_pWeapon );
-
-	// Remove the old FX Instance
-	RemoveMuzzleFlash();
-
-	// If our FX Instance is not created do so now...
-	if( !m_MuzzleFlashFX.IsValid() )
+	// RETAIL: Tron's (0x10133b00) only removes the old flash, and only
+	// while the weapon's client fx are on
+	if ( ns_vtEnableClientFX.GetFloat() != 0.0 )
 	{
-		if ( '\0' != m_pWeapon->szPVMuzzleFxName[ 0 ] )
-		{ 
-			// This is always the player view FX
-			CLIENTFX_CREATESTRUCT fxInit( m_pWeapon->szPVMuzzleFxName, FXFLAG_LOOP | FXFLAG_REALLYCLOSE, m_hObject ); 
-			g_pClientFXMgr->CreateClientFX( &m_MuzzleFlashFX, fxInit, false );
-			if( m_MuzzleFlashFX.IsValid() ) 
-			{
-				m_MuzzleFlashFX.GetInstance()->Hide();
-				m_MuzzleFlashFX.GetInstance()->SetPos( LTVector(0.0f,0.0f,0.0f), LTVector(0.0f,0.0f,0.0f) );
-			}
-		}
+		RemoveMuzzleFlash();
 	}
 }
 
@@ -4425,7 +4406,8 @@ void CClientWeapon::CreateMuzzleFlash()
 
 void CClientWeapon::RemoveMuzzleFlash()
 {
-	if ( m_MuzzleFlashFX.IsValid() )
+	// RETAIL: only while the weapon's client fx are on (0x10133b40)
+	if ( ns_vtEnableClientFX.GetFloat() != 0.0 && m_MuzzleFlashFX.IsValid() )
 	{
 		// The FX will run itself out and get deleted in the mgr but we should still null our ptr
 		ASSERT( 0 != g_pClientFXMgr );
@@ -4548,6 +4530,9 @@ void CClientWeapon::CreatePVAttachClientFX()
 
 	RemovePVAttachClientFX();
 
+	// RETAIL: none while the weapon's client fx are off (0x10133fe0)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
+
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
 		if ( '\0' != m_pWeapon->szPVAttachClientFX[ i ][ 0 ] )
@@ -4577,6 +4562,9 @@ void CClientWeapon::ShowPVAttachClientFX()
 	ASSERT( 0 != g_pClientFXMgr );
 	ASSERT( 0 != m_pWeapon );
 
+	// RETAIL: not while the weapon's client fx are off (0x10134100)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
+
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
 		// Only show those FX that were visible before we hid them...
@@ -4601,6 +4589,9 @@ void CClientWeapon::HidePVAttachClientFX()
 {
 	ASSERT( 0 != g_pClientFXMgr );
 	ASSERT( 0 != m_pWeapon );
+
+	// RETAIL: not while the weapon's client fx are off (0x10134170)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
 
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
@@ -4786,9 +4777,9 @@ void CClientWeapon::Fire( bool bFire )
 		eSoundId = PSI_ALT_FIRE;
 	}
 
-	LTVector vPos( 0, 0, 0 );
 	// RETAIL: 0x101343ad
-	::PlayWeaponSound( m_pWeapon, vPos, eSoundId, 1.0f, TronUnknownVirtual160( 6 ), LTTRUE );
+	bool bTronUnknown = TronUnknownVirtual160( 6 );
+	::PlayWeaponSound( m_pWeapon, LTVector( 0, 0, 0 ), eSoundId, 1.0f, bTronUnknown, LTTRUE );
 
 	// send a fire message to the server
 	SendFireMessage( bFire, fPerturb, vFirePos, vF, vObjectImpactPos, hObjectImpact );
@@ -4858,12 +4849,15 @@ void CClientWeapon::SendFireMessage( bool bFire,
 	// perturb (random range from true center that bullet can travel)
 	cMsg.Writeuint8( static_cast< uint8 >( fPerturb * 255.0f ) );
 
-	// time the weapon fired, in microseconds
-	cMsg.Writeint32( static_cast< int >( g_pLTClient->GetTime() * 1000.0f ) );
+	// RETAIL: Tron's sends the time the weapon fired as is (0x10134552)
+	cMsg.Writefloat( g_pLTClient->GetTime() );
 
 	// add any extra info needed for the fire message
 	// (this function primarily for derived classes)
 	AddExtraFireMessageInfo( bFire, cMsg );
+
+	// RETAIL: then Tron's slot 0x110 (0x10134591)
+	TronUnknownVirtual110( cMsg );
 
 	// Object that was hit (optional)
 	bool bWriteObject = ( hObject != INVALID_HOBJECT );
@@ -5421,22 +5415,7 @@ void CClientWeapon::HandleGadgetImpact( HOBJECT hObj, LTVector vImpactPoint )
 		return;
 	}
 
-	// Check the team identifier on the gadget to see if it matches our team...
-
-	CGadgetTargetFX *pGadget = dynamic_cast<CGadgetTargetFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_GADGETTARGET_ID, hObj ));
-	if( !pGadget )
-		return;
-
-	if( IsTeamGameType() && pGadget->GetTeamID() != INVALID_TEAM )
-	{
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return;
-
-		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pGadget->GetTeamID() )
-			return;
-	}
+	// RETAIL: Tron's (0x10135260) has no gadget target or team test
 
 	// Test the damage type if necessary...
 	if ( bTestDamageType )
@@ -5752,6 +5731,47 @@ void CClientWeapon::AddImpact( HLOCALOBJ hObj, LTVector const &vImpactPoint,
 }
 
 
+// RETAIL: Tron's player view skins by the player's colour (the team
+// colours: PopulateCreateStruct 0x10135730 reads them; the names are ours)
+static const char* s_aszPVHandsLeftSkins[] =
+{
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_red.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_green.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_orange.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_purple.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_white.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_cyan.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_HandsLeft_yellow.dtx",
+};
+
+static const char* const s_aszPVHandsSkins[] =
+{
+	"Weapons\\Hands\\skins_pv\\PV_Hands.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_red.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_green.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_orange.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_purple.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_white.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_cyan.dtx",
+	"Weapons\\Hands\\skins_pv\\PV_Hands_yellow.dtx",
+};
+
+static const char* const s_aszPVDiscSkins[] =
+{
+	"Weapons\\Disc\\skins_pv\\PV_Disc.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_red.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_green.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_orange.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_purple.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_white.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_cyan.dtx",
+	"Weapons\\Disc\\skins_pv\\PV_Disc_yellow.dtx",
+};
+
+const int kNumPVColorSkins = sizeof( s_aszPVDiscSkins ) / sizeof( s_aszPVDiscSkins[0] );
+
+
 // ----------------------------------------------------------------------- //
 //
 //	FUNCTION:	CClientWeapon::PopulateCreateStruct()
@@ -5765,12 +5785,6 @@ void CClientWeapon::PopulateCreateStruct( ObjectCreateStruct *pOCS ) const
 	// sanity check parameters
 	ASSERT( 0 != pOCS );
 
-	// sanity check globals
-	ASSERT( 0 != g_pModelButeMgr );
-	ASSERT( 0 != g_pCommonLT );
-	ASSERT( 0 != g_pLTClient );
-	ASSERT( 0 != g_pPlayerMgr );
-
 	// sanity check this object
 	ASSERT( 0 != m_pWeapon );
 
@@ -5783,18 +5797,27 @@ void CClientWeapon::PopulateCreateStruct( ObjectCreateStruct *pOCS ) const
 	// add the render styles
 	m_pWeapon->blrPVRenderStyles.CopyList( 0, pOCS->m_RenderStyleNames[ 0 ], ( MAX_CS_FILENAME_LEN + 1 ) );
 
-	// Figure out what hand skin to use...
-	ASSERT( g_pPlayerMgr->GetMoveMgr() );
-	CCharacterFX* pCharFX = g_pPlayerMgr->GetMoveMgr()->GetCharacterFX();
-
-	if ( ( m_pWeapon->blrPVSkins.GetNumItems() ) &&
-	     ( 0 == strcmp( m_pWeapon->blrPVSkins.GetItem( 0 ), "Hands" ) ) )
+	// RETAIL: in multiplayer Tron's hands and disc take the player's colour
+	// (0x1013578b); NOLF2's "Hands" skin from the model bute is not in Tron
+	if ( IsMultiplayerGame( ))
 	{
-		// This looks for the special case where "Hands" is specified as the first
-		// player view skin.  If it is, then we take the skin from the model bute
-		// instead of the weapon bute.
-		ModelId nModelID = ( pCharFX ) ? pCharFX->GetModelId() : static_cast< ModelId >( 0 );
-		SAFE_STRCPY( pOCS->m_SkinNames[ 0 ], g_pModelButeMgr->GetHandsSkinFilename( nModelID ) );
+		CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+		if ( pProfile )
+		{
+			int nColor = pProfile->m_nPlayerColor;
+			if ( nColor >= 0 && nColor < kNumPVColorSkins )
+			{
+				SAFE_STRCPY( pOCS->m_SkinNames[ 0 ], s_aszPVHandsLeftSkins[ nColor ] );
+				SAFE_STRCPY( pOCS->m_SkinNames[ 1 ], s_aszPVHandsSkins[ nColor ] );
+				SAFE_STRCPY( pOCS->m_SkinNames[ 2 ], s_aszPVDiscSkins[ nColor ] );
+			}
+		}
+	}
+
+	// RETAIL: Tron's translucent weapons (0x101357fe)
+	if ( m_pWeapon->bTranslucent )
+	{
+		pOCS->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
 	}
 
 	// Create the weapon at it's actual position...
@@ -5867,6 +5890,49 @@ bool CClientWeapon::RemoveFinishedKeyframedFX()
 
 // ----------------------------------------------------------------------- //
 //
+//	RETAIL: Tron's keyframed ClientFX helpers (0x10135910, 0x10135930,
+//	0x10135950; the names are ours): SetVisible shows and hides the
+//	keyframed effects with the weapon, Deactivate removes them
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeapon::ShowKeyframedClientFX()
+{
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode; pNode = pNode->m_pNext )
+	{
+		if ( pNode->m_Link.IsValid() )
+		{
+			pNode->m_Link.GetInstance()->Show();
+		}
+	}
+}
+
+void CClientWeapon::HideKeyframedClientFX()
+{
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode; pNode = pNode->m_pNext )
+	{
+		if ( pNode->m_Link.IsValid() )
+		{
+			pNode->m_Link.GetInstance()->Hide();
+		}
+	}
+}
+
+void CClientWeapon::RemoveKeyframedClientFX()
+{
+	// turn off all keyframed ClientFX
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode != NULL; pNode = pNode->m_pNext )
+	{
+		// turn off the effect
+		g_pClientFXMgr->ShutdownClientFX( &pNode->m_Link );
+	}
+
+	// destroy the list of keyframed ClientFX
+	m_KeyframedClientFX.DeleteList();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //  ROUTINE:	CClientWeapon::ResetWeapon()
 //
 //  PURPOSE:	Reset the weapon data and empty the clip...
@@ -5930,23 +5996,30 @@ void CClientWeapon::SetPaused( bool bPaused )
 
 void CClientWeapon::ClearFiring()
 {
-	// Clear any current fire flag we previously set...
+	// RETAIL: Tron's (0x10135af0) goes back to idle only from a fire
+	// animation
+	uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
+	bool bFireAni = IsFireAni( dwAni );
 
+	// Clear any current fire flag we previously set...
 	m_bFire = false;
 
-	uint32 nAni = GetIdleAni();
-
-	// Make sure it's a valid ani
-
-	if( nAni == INVALID_ANI )
+	if ( bFireAni )
 	{
-		nAni = DEFAULT_ANI;
+		uint32 nAni = GetIdleAni();
+
+		// Make sure it's a valid ani
+
+		if( nAni == INVALID_ANI )
+		{
+			nAni = DEFAULT_ANI;
+		}
+
+		// Play it and reset the model animation...
+
+		PlayAnimation( nAni, true );
+		SetState( W_IDLE );
 	}
-
-	// Play it and reset the model animation...
-
-	PlayAnimation( nAni, true );
-	SetState( W_IDLE );
 }
 
 // ----------------------------------------------------------------------- //
@@ -5955,11 +6028,6 @@ void CClientWeapon::ClearFiring()
 //	stand-ins so the vtable has Tron's shape
 //
 // ----------------------------------------------------------------------- //
-
-bool CClientWeapon::TronUnknownVirtualE0( int nArg1, int nArg2 )
-{
-	return false;
-}
 
 // RETAIL: 0x1001a1f0 (folded with CClientWeaponDisc's slot 0x19c): does
 // the player have any of this weapon's ammo?

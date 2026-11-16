@@ -492,6 +492,9 @@ void CClientFXMgr::SetGoreEnabled(bool bEnabled)
 bool CClientFXMgr::UpdateInstanceSuspended(const LTVector& vCameraPos, CLIENTFX_INSTANCE* pInst)
 {
 	bool bSuspendInstance = false;
+
+	// RETAIL: Tron's (0x10117a40) measures from the parent's position
+	LTVector vPos = pInst->m_vPos;
 		
 	// Check our parent to see if we are turned off or on
 	bool bIsParentOn = false;
@@ -500,10 +503,11 @@ bool CClientFXMgr::UpdateInstanceSuspended(const LTVector& vCameraPos, CLIENTFX_
 		uint32 dwUsrFlags = 0;
 		g_pCommonLT->GetObjectFlags( pInst->m_hParent, OFT_User, dwUsrFlags );
 		bIsParentOn = (dwUsrFlags & USRFLG_SFX_ON) != 0;
+		g_pLTClient->GetObjectPos( pInst->m_hParent, &vPos );
 	}
 
 	//first off see if we should be suspended based upon our flags and our parents flags
-	if( !bIsParentOn && !pInst->m_bShow )
+	if( !bIsParentOn && !pInst->m_bShow && !pInst->m_bTronUnknown5D )
 	{
 		//neither us or our parent is turned on, so suspend us
 		bSuspendInstance = true;
@@ -517,7 +521,7 @@ bool CClientFXMgr::UpdateInstanceSuspended(const LTVector& vCameraPos, CLIENTFX_
 		//a distance
 		if( pInst->m_collActiveFX.GetSize() && !pInst->m_bPlayerView )
 		{
-			float fDistToEffectSqr = pInst->m_vPos.DistSqr( vCameraPos );
+			float fDistToEffectSqr = vPos.DistSqr( vCameraPos );
 
 			//see if they are outside or inside the range.
 			// Really close FX should always be in range...
@@ -541,6 +545,9 @@ bool CClientFXMgr::UpdateInstanceSuspended(const LTVector& vCameraPos, CLIENTFX_
 					pActiveNode = pActiveNode->m_pNext;
 				}
 			}
+
+			// RETAIL: Tron keeps the result while the effect is out of range
+			pInst->m_bTronUnknown5D = bSuspendInstance;
 		}
 	}
 
@@ -1506,7 +1513,10 @@ void CClientFXMgr::OnSpecialEffectNotify(HOBJECT hObject, ILTMessage_Read *pMsg)
 
 	CLIENTFX_INSTANCE *pNewInst = CreateClientFX(fxcs, bStartInst);
 	if (!pNewInst) 
-		return;
+	{
+		// RETAIL: Tron says so (0x10119046)
+		g_pLTClient->CPrint("ERROR in OnSpecialEffectNotify: Could Not Create Client FX  = %s ", sName);
+	}
 }
 
 //------------------------------------------------------------------

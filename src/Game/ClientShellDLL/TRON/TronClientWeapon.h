@@ -79,8 +79,9 @@ protected:
 	virtual float GetEnergyUse();
 	// slot 91 (0x101c8210, shared "return false")
 	virtual bool  TronUnknownVirtual16C() { return false; }
-	// slot 92 (0x100976c0)
-	virtual bool  TronUnknownVirtual170();
+	// slot 92 (0x100976c0): Tron makes PlayDeselectAnimation virtual here
+	// (CClientWeapon's own is not; the derived weapons call this slot)
+	virtual bool  PlayDeselectAnimation();
 	// slot 93 (0x100978f0): OnMessage hands it MID_PROJECTILE
 	virtual bool  HandleMessageProjectile( uint8 messageID, ILTMessage_Read *pMsg );
 	// slot 94 (0x10097c30): Load's helper
