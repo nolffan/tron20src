@@ -170,7 +170,7 @@ typedef struct
 	LTFLOAT fDodgeProjectileCheckTime;
 	LTFLOAT fDodgeProjectileCheckChance;
 	LTFLOAT fDodgeProjectileDelayTime;
-	LTFLOAT fDodgeProjectileFleeChance;
+	// RETAIL: Tron has no DodgeProjectileFleeChance (SetBrain 0x1019fa60)
 
 	LTFLOAT fAttackRangedRangeMin;
 	LTFLOAT fAttackRangedRangeMax;
@@ -185,8 +185,7 @@ typedef struct
 	LTFLOAT	fAttackPoseCrouchTime;
 	LTFLOAT fAttackGrenadeThrowTime;
 	LTFLOAT fAttackGrenadeThrowChance;
-	LTFLOAT fAttackCoverCheckTime;
-	LTFLOAT fAttackCoverCheckChance;
+	// RETAIL: Tron has no AttackCoverCheckTime/Chance (SetBrain 0x1019fa60)
 	LTFLOAT fAttackSoundTimeMin;
 	LTBOOL	bAttackWhileMoving;
 
@@ -215,6 +214,7 @@ typedef struct
 	LTFLOAT fDistressFacingThreshhold;
 	LTFLOAT fDistressIncreaseRate;
 	LTFLOAT fDistressDecreaseRate;
+	LTFLOAT fDistressTimeMax;		// RETAIL: Tron's (+0x138)
 	uint32	nDistressLevels;
 
 	uint32	nMajorAlarmThreshold;
@@ -226,12 +226,15 @@ typedef struct
 	LTBOOL	bCanLipSync;
 
 	int     nDamageMaskID;
+	LTBOOL	bOnlyDamagedByPlayer;	// RETAIL: Tron's (+0x158)
 
 	// Mask of ammo IDs which this AI should not regenerate.  256 was an 
 	// arbitrarily high number.  If a higher count is needed, an assert will
 	// be triggered, and this value can be made suitably high.  It would be
 	// dynamic if a bitset supported dynamic.
 	std::bitset<256>	AmmoGenerationRestrictionMask;
+
+	LTBOOL	bDoFiringTrails;		// RETAIL: Tron's (+0x17c), read before DamageMask
 
 	AIDATA_MAP	mapAIData;
 }
