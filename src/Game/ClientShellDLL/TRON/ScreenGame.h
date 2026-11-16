@@ -34,20 +34,20 @@ protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
 
 protected:
-    uint8	            m_nSubtitles;
-    LTBOOL				m_bGore;
-	uint8				m_nDifficulty;
-	LTBOOL				m_bAlwaysRun;
-	uint8				m_nLayout;
-	int					m_nHeadBob;
-	int					m_nWeaponSway;
-	int					m_nMsgDur;
-	LTBOOL				m_bAutoWeaponSwitch;
-	LTBOOL				m_bLoadScreenTips;
-	LTBOOL				m_bVehicleContour;
-
-	CLTGUICycleCtrl		*m_pDifficultyCtrl;			// The difficulty control
-
+	// RETAIL: Tron's (0x7c0 bytes; constructor 0x1005b240)
+    uint8	            m_nSubtitles;				// +0x790
+	uint8				m_nDifficulty;				// +0x791
+	LTBOOL				m_bAlwaysRun;				// +0x794
+	uint8				m_nLayout;					// +0x798
+	int					m_nHeadBob;					// +0x79c
+	int					m_nWeaponSway;				// +0x7a0
+	int					m_nMsgDur;					// +0x7a4
+	LTBOOL				m_bLCThirdPersonCam;		// +0x7a8
+	LTBOOL				m_bDiscAutoAim;				// +0x7ac
+	int					m_nLCCamSpeed;				// +0x7b0
+	int					m_nLCCamLag;				// +0x7b4
+	LTBOOL				m_bLCDialog;				// +0x7b8
+	CLTGUICycleCtrl		*m_pDifficultyCtrl;			// +0x7bc The difficulty control
 };
 
 #endif // _SCREEN_GAME_H_
