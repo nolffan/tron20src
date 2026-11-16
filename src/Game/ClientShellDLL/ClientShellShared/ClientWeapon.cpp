@@ -2155,7 +2155,9 @@ void CClientWeapon::Select()
 		SetDisable( false );
 
 		// [KLS 3/22/02] Only show the weapon in first-person
-		SetVisible((g_pPlayerMgr->IsFirstPerson() ? true : false));
+		// RETAIL: Tron's shows it going into first person too (0x101319c8)
+		bool bVisible = (g_pPlayerMgr->IsFirstPerson() == LTTRUE || g_pPlayerMgr->IsGoingFirstPerson() == LTTRUE);
+		SetVisible(bVisible);
 	}
 
 	SetState( W_SELECT );

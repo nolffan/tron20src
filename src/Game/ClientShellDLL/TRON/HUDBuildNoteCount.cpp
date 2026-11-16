@@ -107,10 +107,9 @@ void CHUDBuildNoteCount::Update()
 	for (int i = 0; i < nCount; i++)
 	{
 		INTEL_ITEM* pItem = g_pPlayerStats->GetIntelList()->Get(i);
-		// PORT: retail (0x10022737) tests Tron's INTEL_ITEM: a byte at +0x4
-		// (1 for a build note), the mission at +0x8 and the level at +0x9;
-		// NOLF2's item has no level, so its intel flag and mission stand in
-		if (pItem && pItem->bIsIntel && pItem->nMissionNum == nMission)
+		// RETAIL: 0x10022737 tests Tron's INTEL_ITEM: a build note (type 1)
+		// of this mission and level
+		if (pItem && pItem->nType == 1 && pItem->nMissionNum == nMission && pItem->nLevelNum == nLevel)
 		{
 			nFound++;
 		}

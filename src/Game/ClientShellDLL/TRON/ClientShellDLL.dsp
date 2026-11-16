@@ -447,6 +447,10 @@ SOURCE=.\LTGUIListItemCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\MenuHelp.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\MenuPieceModel.cpp
 # End Source File
 # Begin Source File

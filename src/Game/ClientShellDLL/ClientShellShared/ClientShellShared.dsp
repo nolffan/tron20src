@@ -555,27 +555,15 @@ SOURCE=.\MarkSFX.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\MenuBuildNotes.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\MenuIntel.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MenuInventory.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuKeys.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\MenuMgr.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuMission.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuPlayer.cpp
 # End Source File
 # Begin Source File
 
@@ -913,6 +901,10 @@ SOURCE=.\TextureFXMgr.cpp
 # Begin Source File
 
 SOURCE=.\TimedText.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ToolTip.cpp
 # End Source File
 # Begin Source File
 
@@ -1408,7 +1400,15 @@ SOURCE=.\MarkSFX.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\MenuBuildNotes.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\MenuEnum.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\MenuHelp.h
 # End Source File
 # Begin Source File
 
@@ -1416,23 +1416,7 @@ SOURCE=.\MenuIntel.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\MenuInventory.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuKeys.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\MenuMgr.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuMission.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\MenuPlayer.h
 # End Source File
 # Begin Source File
 
@@ -1773,6 +1757,10 @@ SOURCE=.\TextureFXMgr.h
 # Begin Source File
 
 SOURCE=.\TimedText.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ToolTip.h
 # End Source File
 # Begin Source File
 

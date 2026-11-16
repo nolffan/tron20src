@@ -24,15 +24,17 @@ namespace
 
 
 
+// RETAIL: Tron's e-mails menu, CMenuEmails (0x101c5fa0)
 LTBOOL CMenuIntel::Init()
 {
-	m_MenuID = MENU_ID_INTEL;
+	m_MenuID = MENU_ID_EMAILS;
 
 	if (!CBaseMenu::Init()) return LTFALSE;
 
-	SetTitle(IDS_TITLE_INTEL);
+	// RETAIL: string 109 (0x6d)
+	SetTitle(109);
 
-	g_pInterfaceMgr->GetMenuMgr()->RegisterCommand(COMMAND_ID_INTEL,MENU_ID_INTEL);
+	g_pInterfaceMgr->GetMenuMgr()->RegisterCommand(COMMAND_ID_VIEW_EMAIL,MENU_ID_EMAILS);
 
 	m_PopupText.Init(false);
 
@@ -58,6 +60,14 @@ uint32 CMenuIntel::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 	{
 		case MC_INTEL:
 		{
+			// RETAIL: Tron's deselects the list's control while the popup
+			// shows (0x101c601a)
+			CLTGUICtrl* pSel = m_List.GetControl(m_List.GetSelectedIndex());
+			if (pSel)
+			{
+				pSel->Select(LTFALSE);
+			}
+
 			uint16 nID = (uint16) nParam1;
 			CIntelItemList *pList = g_pPlayerStats->GetIntelList();
 			INTEL_ITEM* pItem = pList->Get(nID);
@@ -185,12 +195,20 @@ void CMenuIntel::GetIntelName(uint32 nTextId, char *pBuf, int nBufSize)
 void CMenuIntel::ClosePopup()
 {
 	m_PopupText.Close();
-	g_pInterfaceMgr->UseCursor(LTTRUE);
+	// RETAIL: Tron's (0x101c64c0)
+	g_pInterfaceMgr->UpdateCursorState();
 	g_pLTClient->ClearInput();
 
 	// Re-enable the menu since the popup is now closed
 
 	g_pInterfaceMgr->GetMenuMgr()->EnableMenuBar(true);
+
+	// RETAIL: and selects the list's control again
+	CLTGUICtrl* pSel = m_List.GetControl(m_List.GetSelectedIndex());
+	if (pSel)
+	{
+		pSel->Select(LTTRUE);
+	}
 }
 
 void CMenuIntel::Render ( )

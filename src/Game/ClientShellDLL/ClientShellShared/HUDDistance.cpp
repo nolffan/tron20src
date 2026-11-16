@@ -39,6 +39,7 @@ CHUDDistance::CHUDDistance()
 	m_bFadeOut			( false ),
 	m_fFadeOutSpeed		( 0.0f ),
 	m_fMaxAlpha			( 0.0f ),
+	m_bReset			( true ),
 	m_hIcon				( LTNULL )
 {
 	m_UpdateFlags = kHUDDistance;
@@ -74,6 +75,26 @@ LTBOOL CHUDDistance::Init()
 
 // ----------------------------------------------------------------------- //
 //
+//  ROUTINE:	CHUDDistance::Term
+//
+//  PURPOSE:	Reset the icon (RETAIL: Tron's, 0x101613b0)
+//
+// ----------------------------------------------------------------------- //
+
+void CHUDDistance::Term()
+{
+	m_fAlpha			= 0.0f;
+	m_bDraw				= false;
+	m_bBlink			= false;
+	m_fFadeIncrement	= 0.0f;
+	m_nFadeDir			= 1;
+	m_bFadeOut			= false;
+	m_hIcon				= LTNULL;
+	m_bReset			= true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //  ROUTINE:	CHUDDistance::Render
 //
 //  PURPOSE:	Draw the Icon...
@@ -82,7 +103,8 @@ LTBOOL CHUDDistance::Init()
 
 void CHUDDistance::Render()
 {
-	if (!m_bDraw) return;
+	// RETAIL: Tron's tests IsEnabled and the reset flag too (0x101613d0)
+	if (!IsEnabled() || !m_bDraw || m_bReset) return;
 
 	if( m_bFadeOut )
 	{
@@ -137,9 +159,16 @@ void CHUDDistance::Render()
 
 void CHUDDistance::Update()
 {
+	// RETAIL: Tron's (0x101614f0): after a reset, only queue a fresh update
+	if (m_bReset)
+	{
+		m_bReset = false;
+		g_pHUDMgr->QueueUpdate(kHUDDistance);
+		return;
+	}
+
 	m_fDistPercent = g_pPlayerMgr->GetDistanceIndicatorPercent();
-	m_hIcon = g_pPlayerMgr->GetDistanceIndicatorIcon();
-	m_bDraw = (m_fDistPercent > 0.0f && m_hIcon);
+	m_bDraw = (m_fDistPercent > 0.0f);
 
 	if( !m_bDraw )
 	{
@@ -159,6 +188,9 @@ void CHUDDistance::Update()
 			return;
 		}	
 	}
+
+	// RETAIL: Tron's gets the icon here, and draws without one too
+	m_hIcon = g_pPlayerMgr->GetDistanceIndicatorIcon();
 
 	// Setup the poly and get the texture...
 	

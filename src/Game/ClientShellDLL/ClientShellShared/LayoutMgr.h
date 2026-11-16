@@ -18,6 +18,7 @@
 #include "GameButeMgr.h"
 #include "ltbasetypes.h"
 #include "ScreenMgr.h"
+#include "ButeListReader.h"
 #include "MenuMgr.h"
 #include "Overlays.h"
 

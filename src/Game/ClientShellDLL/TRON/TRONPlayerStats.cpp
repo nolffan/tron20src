@@ -904,7 +904,9 @@ void CTronPlayerStats::UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsInt
 		INTEL_ITEM* pItem = debug_new(INTEL_ITEM);
 		pItem->nTextId = nTextId;
 		pItem->nPopupId = nPopupId;
-		pItem->bIsIntel = bIsIntel;
+		// PORT: retail (0x100aaac0) also takes the item's type, name and
+		// level; NOLF2's message has none of them
+		pItem->bIsIntel = (bIsIntel != LTFALSE);
 		pItem->nMissionNum = (uint8)g_pMissionMgr->GetCurrentMission();
 		m_IntelList.Add(pItem);
 	}
@@ -1755,6 +1757,12 @@ void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 bool CTronPlayerStats::AddPing(const char* szName)
 {
 	return m_IONodeMgr.AddPing(szName);
+}
+
+// RETAIL: 0x100ac180
+bool CTronPlayerStats::RemovePing(const char* szName)
+{
+	return m_IONodeMgr.RemovePing(szName);
 }
 
 

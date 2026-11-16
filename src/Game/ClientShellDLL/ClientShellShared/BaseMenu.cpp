@@ -190,7 +190,8 @@ LTBOOL CBaseMenu::Init()
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFontFace);
 	if (!pFont) return LTFALSE;
 
-    if (!m_Title.Create("X", LTNULL, LTNULL, pFont, m_TitleFontSize, this))
+	// RETAIL: Tron's title is a blank, hidden control (0x101c7062)
+    if (!m_Title.Create(std::wstring(L" "), LTNULL, LTNULL, pFont, m_TitleFontSize, this))
 	{
         return LTFALSE;
 	}
@@ -203,12 +204,15 @@ LTBOOL CBaseMenu::Init()
 
 	m_Title.SetScale(1.0f);
 	pos.x = m_Indent.x;
-	pos.y += (m_Title.GetHeight() + 4);
+	pos.y += 8;
 	m_Title.SetScale(g_pInterfaceResMgr->GetXRatio());
+	m_Title.Show(LTFALSE);
 
 	m_List.Create(s_Size.y - pos.y);
 	uint16 nOffset = (s_Size.x-m_Indent.x*2)-16;
-	m_List.UseArrows(nOffset ,1.0f,s_Up,s_UpH,s_Down,s_DownH);
+	// RETAIL: only the menus whose slot 0xc4 says so have arrows
+	if (TronUnknownVirtualC4())
+		m_List.UseArrows(nOffset ,1.0f,s_Up,s_UpH,s_Down,s_DownH);
 	CLTGUIWindow::AddControl(&m_List,pos);
 
 	pos.x = s_Pos;
@@ -273,23 +277,25 @@ LTBOOL CBaseMenu::OnMouseMove(int x, int y)
 	return LTFALSE;
 }
 
+// RETAIL: Tron's titles and controls take wide strings (retail 0x101c72c0,
+// 0x101c7300, 0x101c7330)
 void CBaseMenu::SetTitle (int stringID)
 {
-	m_Title.SetString(LoadTempString(stringID));
+	m_Title.SetString(LoadTempWString(stringID));
 }
 
 uint16 CBaseMenu::AddControl (int stringID, uint32 commandID, LTBOOL bStatic)
 {
-	return AddControl(LoadTempString(stringID),commandID,bStatic);
+	return AddControl(LoadTempWString(stringID),commandID,bStatic);
 }
 
-uint16 CBaseMenu::AddControl (char *pString, uint32 commandID, LTBOOL bStatic)
+uint16 CBaseMenu::AddControl (std::wstring sString, uint32 commandID, LTBOOL bStatic)
 {
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_FontFace);
 	if (!pFont) return -1;
 
 	CLTGUITextCtrl* pCtrl=debug_new(CLTGUITextCtrl);
-    if (!pCtrl->Create(pString, commandID, LTNULL, pFont, m_FontSize, this))
+    if (!pCtrl->Create(sString, commandID, LTNULL, pFont, m_FontSize, this))
 	{
 		debug_delete(pCtrl);
         return -1;

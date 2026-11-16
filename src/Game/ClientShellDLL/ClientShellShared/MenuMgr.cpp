@@ -43,6 +43,7 @@ CMenuMgr::CMenuMgr()
 	m_fSlideInTime = 0.5f;
 	m_fSlideOutTime = 0.5f;
 
+	m_bTronUnknown5CE4 = false;
 }
 
 CMenuMgr::~CMenuMgr()
@@ -57,10 +58,10 @@ LTBOOL CMenuMgr::Init()
 	m_MenuArray.reserve(MENU_ID_UNASSIGNED);
 
 	//add menus here
-	// PORT: Tron's four menus (see MenuMgr.h)
+	// RETAIL: Tron's four menus (see MenuMgr.h)
 	m_MenuArray.push_back(&m_MenuSystem);
-	m_MenuArray.push_back(&m_MenuMission);
-	m_MenuArray.push_back(&m_MenuKeys);
+	m_MenuArray.push_back(&m_MenuBuildNotes);
+	m_MenuArray.push_back(&m_MenuHelp);
 	m_MenuArray.push_back(&m_MenuIntel);
 
 	//init menus
@@ -96,7 +97,7 @@ LTBOOL CMenuMgr::Init()
 	LTIntPt size = g_pLayoutMgr->GetPoint(pTag,"BarSize");
 	uint8 fontFace = (uint8)g_pLayoutMgr->GetInt(pTag,"BarFont");
 	uint8 fontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"BarFontSize");
-	m_nBarPos = g_pLayoutMgr->GetInt(pTag,"BarPosition");
+	m_BarPos = g_pLayoutMgr->GetPoint(pTag,"BarPosition");
 	int nBarSpacing = g_pLayoutMgr->GetInt(pTag,"BarSpacing");
 	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"BarSelectColor");
 	uint8 nR = (uint8)vCol.x;
@@ -106,7 +107,7 @@ LTBOOL CMenuMgr::Init()
 
 
 	m_MenuBar.Init(hBar,hBarTip,size);
-	m_MenuBar.SetBasePos(LTIntPt(0,m_nBarPos));
+	m_MenuBar.SetBasePos(m_BarPos);
 	
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(fontFace);
 	
@@ -461,15 +462,17 @@ void CMenuMgr::Render()
 }
 
 
+// RETAIL: Tron's (0x101715d0): the menu comes in from the middle of the
+// screen, the bar from the middle across
 void CMenuMgr::SlideIn()
 {
 	if (m_MenuSlide.IsStarted()) return;
 	ASSERT(m_pCurrentMenu);
 	if (!m_pCurrentMenu) return;
-	
+
 	LTIntPt startPos, endPos;
 	startPos.x = m_nMenuPos;
-	startPos.y = -((3 * m_pCurrentMenu->GetHeight()) / 2 + m_pCurrentMenu->GetWidth()) / 2 ;
+	startPos.y = g_pInterfaceResMgr->GetScreenHeight() / 2;
 
 	endPos.x = m_nMenuPos;
 	endPos.y = 0;
@@ -477,17 +480,15 @@ void CMenuMgr::SlideIn()
 	g_pClientSoundMgr->PlayInterfaceSound(m_sSlideInSound.c_str());
 	m_MenuSlide.Start(startPos,endPos,m_fSlideInTime, false);
 
-	startPos.x = -((3 * m_MenuBar.GetHeight()) / 2 + m_MenuBar.GetWidth()) / 2 ;
-	startPos.y = m_nBarPos;
+	startPos.x = g_pInterfaceResMgr->GetScreenWidth() / 2;
+	startPos.y = m_BarPos.y;
 
-	endPos.x = 0;
-	endPos.y = m_nBarPos;
+	endPos = m_BarPos;
 
 	m_BarSlide.Start(startPos,endPos,m_fSlideInTime, false);
-
-
 }
 
+// RETAIL: Tron's (0x10171660)
 void CMenuMgr::SlideOut()
 {
 	if (m_MenuSlide.IsStarted()) return;
@@ -498,7 +499,7 @@ void CMenuMgr::SlideOut()
 
 	LTIntPt startPos, endPos;
 	endPos.x = m_nMenuPos;
-	endPos.y = -((3 * m_pCurrentMenu->GetHeight()) / 2 + m_pCurrentMenu->GetWidth()) / 2;
+	endPos.y = g_pInterfaceResMgr->GetScreenHeight() / 2;
 
 	startPos.x = m_nMenuPos;
 	startPos.y = 0;
@@ -506,14 +507,12 @@ void CMenuMgr::SlideOut()
 	g_pClientSoundMgr->PlayInterfaceSound(m_sSlideOutSound.c_str());
 	m_MenuSlide.Start(startPos,endPos,m_fSlideInTime,true);
 
-	startPos.x = 0;
-	startPos.y = m_nBarPos;
+	startPos = m_BarPos;
 
-	endPos.x = -((3 * m_MenuBar.GetHeight()) / 2 + m_MenuBar.GetWidth()) / 2 ;
-	endPos.y = m_nBarPos;
+	endPos.x = g_pInterfaceResMgr->GetScreenWidth() / 2;
+	endPos.y = m_BarPos.y;
 
 	m_BarSlide.Start(startPos,endPos,m_fSlideInTime,true);
-
 }
 
 
@@ -941,8 +940,8 @@ void CMenuMgr::EnableMenus()
 {
 	bool bSPMenus = IsCoopMultiplayerGameType();
 
-	m_MenuMission.Enable(bSPMenus);
-	m_MenuKeys.Enable(bSPMenus);
+	m_MenuBuildNotes.Enable(bSPMenus);
+	m_MenuHelp.Enable(bSPMenus);
 	m_MenuIntel.Enable(bSPMenus);
 
 }
@@ -976,9 +975,21 @@ void CMenuSlide::Start(LTIntPt startPos,LTIntPt endPos,float fDuration, bool bSl
 	m_bSlidingOut = bSlidingOut;
 }
 
+// RETAIL: Tron's (0x10171f10) takes the progress from GetPercent
 LTIntPt CMenuSlide::GetCurrentPos()
 {
 	LTIntPt curPos;
+	float fPercent = GetPercent();
+
+	curPos.x = m_startPos.x + (int)((float)m_offset.x * fPercent);
+	curPos.y = m_startPos.y + (int)((float)m_offset.y * fPercent);
+
+	return curPos;
+}
+
+// RETAIL: Tron's (0x10171f50; the name is ours)
+float CMenuSlide::GetPercent()
+{
 	float fPercent = 1.0f;
 	
 	if (m_fDuration > 0.0f)
@@ -988,11 +999,7 @@ LTIntPt CMenuSlide::GetCurrentPos()
 			fPercent = fElapsed / m_fDuration;
 	}
 
-	
-	curPos.x = m_startPos.x + (int)(fPercent * (float)m_offset.x);
-	curPos.y = m_startPos.y + (int)(fPercent * (float)m_offset.y);
-
-	return curPos;
+	return fPercent;
 }
 
 bool CMenuSlide::IsDone()

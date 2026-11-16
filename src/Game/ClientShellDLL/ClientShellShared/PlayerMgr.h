@@ -127,6 +127,7 @@ public:
     LTBOOL      UsingCamera()		const       { return m_bCamera; }
 
     LTBOOL      IsFirstPerson();
+    LTBOOL      IsGoingFirstPerson();	// RETAIL: Tron's (0x1012ad90; the name is ours)
     LTBOOL      IsPlayerInWorld();
 
 	bool		IsSearching();

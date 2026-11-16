@@ -1041,6 +1041,17 @@ be equal to all six). In the editor, the Arena property can be reported as a
 bad command.
 
 Not fixed yet: the tools are written again later; the test should use "!".
+### The help menu tests the wrong item before it shows the first file
+
+CShell.dll 0x101c7bb6 (CMenuHelp::OnFocus,
+ClientShellShared/MenuHelp.cpp). The menu keeps the control index and the
+item index of the first help file. Before it shows that file at once, it
+gets the item at the control index from the intel list and tests if the
+item is read. The control index is not an item index: build notes come
+first in the list, so the menu tests a different item. The menu can show a
+file that the player read, or not show a new file.
+
+Not fixed yet: the modern build should get the item at the item index.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

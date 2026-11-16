@@ -17,6 +17,7 @@
 #include "LTPoly.h"	// PORT: LTPoly_GT4, which Tron's headers do not include first
 
 class CScreenSpriteMgr;
+class CToolTip;
 extern CScreenSpriteMgr *g_pScreenSpriteMgr;
 
 typedef enum
@@ -161,11 +162,11 @@ private:
 
 	bool		m_bTronUnknownDraw;	// RETAIL: Tron's (+0x1c): a sprite is shown (0x10164f00)
 	float		m_fLastTime;
-	// RETAIL: Tron's (+0x24): a tool tip object that draws itself under
-	// the cursor layers (its class: retail 0x1014e230..0x1014eb00, not yet
-	// in our tree; it sets this pointer to itself, 0x1014ea7d). The name is
-	// ours
-	void*		m_pTronUnknownToolTip;
+	// RETAIL: Tron's (+0x24): the tool tip that draws itself under the
+	// cursor layers (CToolTip, ToolTip.h: it sets this pointer to itself,
+	// 0x1014ea7d). The name is ours
+	friend class CToolTip;
+	CToolTip*	m_pTronUnknownToolTip;
 	// TODO if a sprite has expired, go ahead and term() it and delete it!
 };
 

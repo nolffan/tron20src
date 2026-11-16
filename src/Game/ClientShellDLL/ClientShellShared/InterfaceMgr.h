@@ -461,8 +461,7 @@ class CInterfaceMgr
 		// (CMessageBox is retail's 0x5a8 bytes with LTGUIMgr's controls at retail's sizes)
 		CInterfaceResMgr	m_InterfaceResMgr;		// +0x624 manages shared resources
 		// (CInterfaceResMgr is retail's 0x898 bytes with LTGUIMgr's controls at retail's sizes)
-		CMenuMgr			m_MenuMgr;				// +0xebc
-		char			m_aTronPadMenuMgr[0x5ce8 - sizeof(CMenuMgr)];
+		CMenuMgr			m_MenuMgr;				// +0xebc (retail's 0x5ce8 bytes)
 //		CLayoutMgr			m_LayoutMgr;			// bute mgr for layout info
 		CPerformanceMgr		m_PerformanceMgr;		// manages performance settings
 		CProfileMgr			m_ProfileMgr;			// manages player profiles

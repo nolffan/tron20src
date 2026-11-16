@@ -32,6 +32,7 @@ class CHUDDistance : public CHUDItem
 		~CHUDDistance();
 
 		LTBOOL      Init();
+		void        Term();		// RETAIL: Tron's (0x101613b0)
 		void        Render();
 		void        Update();
 		void        UpdateLayout();
@@ -50,10 +51,15 @@ class CHUDDistance : public CHUDItem
 		bool		m_bFadeOut;
 		float		m_fFadeOutSpeed;
 		float		m_fMaxAlpha;
-		
+
+		// RETAIL: Tron's (+0x38): true after Term, until the next Update
+		// queues a fresh update (0x101614f0). The name is ours
+		bool		m_bReset;
+
 		float		m_fDistPercent;
 
-		LTPoly_GT4	m_Poly;
+		// RETAIL: an LT_POLYGT4 (cleared once, 0x1016135c)
+		LT_POLYGT4	m_Poly;
 		HTEXTURE	m_hIcon;			//  icon
 };
 
