@@ -208,6 +208,10 @@ SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\DiscArenaQueue.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\EnergyZone.cpp
 # End Source File
 # Begin Source File
@@ -353,6 +357,10 @@ SOURCE=.\Thorne.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TournamentBracket.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -434,6 +442,10 @@ SOURCE=..\..\Shared\TRON\CaselessString.h
 # Begin Source File
 
 SOURCE=.\CoreDump.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\DiscArenaQueue.h
 # End Source File
 # Begin Source File
 
@@ -554,6 +566,10 @@ SOURCE=.\Stdafx.h
 # Begin Source File
 
 SOURCE=.\Thorne.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TournamentBracket.h
 # End Source File
 # Begin Source File
 

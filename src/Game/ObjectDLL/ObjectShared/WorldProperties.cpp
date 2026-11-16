@@ -918,7 +918,7 @@ void WorldProperties::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 
 		uint32 nSaveVersion;
 		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
+		// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
 		HSTRING hDummy = NULL;
 		LOAD_HSTRING(hDummy);
 		g_pLTServer->FreeString( hDummy );
@@ -928,7 +928,7 @@ void WorldProperties::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	{
 		uint32 nSaveVersion;
 		LOAD_DWORD(nSaveVersion);
-		g_pVersionMgr->SetCurrentSaveVersion( nSaveVersion );
+		// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
 
 		// First load global game server shell stuff...(this only works because the
 		// GameServerShell saves the WorldProperties object first)

@@ -60,6 +60,7 @@ GameStartPoint::StartPointList GameStartPoint::m_lstStartPoints;
 
 GameStartPoint::GameStartPoint() : GameBase()
 {
+	m_eGameType				= eGameTypeSingle;	// RETAIL: Tron's (0x1014f9a9)
 	m_eModelId				= eModelIdInvalid;
 	m_ePPhysicsModel		= PPM_NORMAL;
     m_hstrName              = LTNULL;

@@ -2345,7 +2345,8 @@ void CGameClientShell::HandleMsgMusic (ILTMessage_Read *pMsg)
 
 void CGameClientShell::HandleMsgPlayerLoadClient (ILTMessage_Read *pMsg)
 {
-	g_pVersionMgr->SetCurrentSaveVersion( pMsg->Readuint32( ));
+	// PORT: Tron's CVersionMgr keeps no save version (VersionMgr.h)
+	pMsg->Readuint32( );
 	CLTMsgRef_Read pSaveMessage = pMsg->ReadMessage();
 	UnpackClientSaveMsg(pSaveMessage);
 }

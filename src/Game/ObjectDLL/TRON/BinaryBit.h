@@ -15,6 +15,12 @@
 
 #include "GameBase.h"
 #include "CommandMgr.h"
+#include "ActivateTypeMgr.h"
+#include "AutoCommand.h"
+
+// RETAIL: the user flag InitialUpdate sets (0x10014610); the same bit as
+// USRFLG_IONODE (IONode.h). The name is ours
+#define USRFLG_BINARYBIT		(1<<1)
 
 enum BinaryBitState
 {
@@ -54,6 +60,11 @@ class BinaryBit : public GameBase
 		void	DoPowerUp();
 
 		// Member variablez, yo
+		// RETAIL: the members at retail's offsets (ReadProp 0x10013960, Save
+		// 0x10013e00): Tron's BinaryBit has the activate type, the invalid
+		// permission set command, a string override and one more flag that
+		// Build 69's has not. Their code is not yet written
+		CActivateTypeHandler	m_ActivateTypeHandler;		// +0x38 "ActivateType"
 		LTBOOL			m_bLocked;					// Is the binary bit locked
 		LTBOOL			m_bStartOnInSocket;			// Are we on or off when we first reach the socket?
 		BinaryBitState	m_eState;					// What's the state
@@ -64,11 +75,16 @@ class BinaryBit : public GameBase
 		// Commands
 		HSTRING			m_hstrPowerUpCommand;
 		HSTRING			m_hstrTurnOnCommand;
-		HSTRING			m_hstrTurnOffCommand;
+		HSTRING			m_hstrTurnOffCommand;		// +0x70
 
-		uint8			m_byPSets;
+		AutoCommand<MultiDispatch>	m_InvalidPSetCommand;	// +0x74 "InvalidPSetCommand"
 
-		HOBJECT			m_hFX;
+		uint8			m_byPSets;					// +0x84
+
+		HOBJECT			m_hFX;						// +0x88
+
+		int32			m_nStringOverrideID;		// +0x8c "StringOverrideID"
+		bool			m_bTronUnknown90;			// +0x90 saved last but one
 };
 
 class CBinaryBitPlugin : public IObjectPlugin

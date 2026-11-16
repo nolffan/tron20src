@@ -66,15 +66,21 @@ class GameStartPoint : public GameBase
 		
 	private :
 
-		ModelId		m_eModelId;				// Template model
-        HSTRING     m_hstrName;             // Name of start point
-        LTVector    m_vPitchYawRoll;        // Pitch, yaw, and roll of start point
-		bool		m_bLocked;				// If locked the player should not use this start point.
-		bool		m_bSendCommandOnRespawn;// Should the command be sent every respawn?
+		// RETAIL: Tron's members at retail's offsets (its constructor,
+		// 0x1014f990, and destructor, 0x1014fa00; Build 51's order)
+		GameType	m_eGameType;			// +0x38 Single/Multiplayer modes
+		ModelId		m_eModelId;				// +0x3c Template model
+        HSTRING     m_hstrName;             // +0x40 Name of start point
+        LTVector    m_vPitchYawRoll;        // +0x44 Pitch, yaw, and roll of start point
+		bool		m_bLocked;				// +0x50 If locked the player should not use this start point.
+		bool		m_bSendCommandOnRespawn;// +0x51 Should the command be sent every respawn?
 
-		PlayerPhysicsModel	m_ePPhysicsModel;	// Starting player physics model
+		PlayerPhysicsModel	m_ePPhysicsModel;	// +0x54 Starting player physics model
 
-		HSTRING		m_hstrCommand;	// Command to process
+		HSTRING		m_hstrCommand;	// +0x58 Command to process
+
+		// RETAIL: Tron's: a player respawned at it (+0x5c)
+		bool		m_bInUse;
 
         static uint32 m_dwCounter;  // Counts gamestartpoints created for the level.
 
@@ -82,17 +88,15 @@ class GameStartPoint : public GameBase
 
 		static StartPointList m_lstStartPoints;
 
+		// PORT: NOLF2's, which Tron's GameStartPoint has not (retail's ends
+		// at +0x60): kept after Tron's members for the NOLF2 code still
+		// standing in
 		float		m_fLastUse;
 		
 		uint8		m_nTeamID;		// When in a team game this specifies which team can spawn at this start point.
 		
 		bool		m_bStartPoint;	// Can this start point be used as an initial start point?
 		bool		m_bSpawnPoint;	// Can this start point be used as a respawn point?
-
-		// RETAIL: at +0x5c in Tron's GameStartPoint (its constructor,
-		// 0x1014f990, clears it last); ours is at the end until the class has
-		// Tron's layout (+0x38..+0x58 differ from NOLF2's too)
-		bool		m_bInUse;
 };
 
 

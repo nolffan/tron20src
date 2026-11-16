@@ -469,7 +469,9 @@ IServerDirectory* ClientMultiplayerMgr::CreateServerDir( )
 	m_pServerDir->SetGameName("tron20");
 	// Set the version
 	m_pServerDir->SetVersion(g_pVersionMgr->GetNetVersion());
-	m_pServerDir->SetRegion(g_pVersionMgr->GetNetRegion());
+	// PORT: Tron's CVersionMgr reads no NetRegionCode (VersionMgr.h): NOLF2's
+	// default region stands in
+	m_pServerDir->SetRegion("EN");
 	// Set up the packet header
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(11); // CMSG_MESSAGE
