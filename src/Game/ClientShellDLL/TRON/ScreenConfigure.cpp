@@ -406,14 +406,22 @@ void CScreenConfigure::UnBind( uint32 nObjectId, char const* pszControlName, uin
 		return;
 	}
 
-	int dev = 0;
-	while (dev < 3 && devices[dev] != deviceType)
-		++dev;
+	int dev;
+	for (dev = 0; dev < 3; dev++)
+	{
+		if (devices[dev] == deviceType)
+			break;
+	}
 
-	char szTmp[16] ="";
 	for (int i = 0; i < g_kNumCommands; i++)
 	{
 		CBindingData *pData = m_pProfile->FindBinding(i);
+		// RETAIL: 0x1005721e: Tron checks the binding
+		if (!pData)
+		{
+			g_pLTClient->CPrint("No binding found for %d", i);
+			continue;
+		}
 		if( nObjectId )
 		{
 			if( pData->nDeviceObjectId[dev] != nObjectId )
