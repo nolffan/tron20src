@@ -907,6 +907,16 @@ the first control point the result divides a zero vector by zero.
 
 Not fixed yet: the modern build should return after the two-point case.
 
+### The sound screen ignores the EAX toggle's layout
+
+CShell.dll 0x10055442..0x1005546a (CScreenAudio::Build,
+ClientShellDLL/TRON/ScreenAudio.cpp). Build reads "EAXTogglePos" and
+"EAXToggleHeaderWidth" from the layout but does not use them: the EAX
+toggle gets the default position and the screen's column width, as the
+other controls do.
+
+Not fixed yet: the modern build can give the toggle these values.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
