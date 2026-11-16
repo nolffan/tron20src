@@ -80,33 +80,10 @@ LTBOOL CProjectileFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_nFX = m_pProjectileFX->nFlags;
 
 	ASSERT( 0 != m_pProjectileFX );
-	// the fx associated with this projectile fx
+	// RETAIL: Tron's (0x101a0dbc) creates the FX in its own function
 	if ( '\0' != m_pProjectileFX->szFXName[ 0 ] )
 	{
-		// get the flags for this ClientFX
-		// PORT: Tron's PROJECTILEFX has no FX flags; retail CShell creates
-		// this FX looping (FXFLAG_LOOP, in its own function 0x101a1600).
-		uint32 dwFlags = FXFLAG_LOOP;
-
-		// prepare the create struct
-		CLIENTFX_CREATESTRUCT fxInit
-			(
-				m_pProjectileFX->szFXName,
-				dwFlags,
-				pCS->hServerObj
-			);
-
-		// get in initial position for the effect
-		g_pLTClient->GetObjectPos( pCS->hServerObj, &fxInit.m_vPos );
-
-		// create the client fx
-		CLIENTFX_LINK tmpClientFXLink;
-		g_pClientFXMgr->CreateClientFX
-			(
-				&tmpClientFXLink,
-				fxInit,
-				true
-			);
+		CreateTronUnknownFX( m_pProjectileFX->szFXName );
 	}
 
     return LTTRUE;
@@ -388,6 +365,30 @@ void CProjectileFX::CreateSmokeTrail(const LTVector & vPos, const LTRotation & r
 	m_pSmokeTrail->CreateObject(m_pClientDE);
  }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CProjectileFX::CreateTronUnknownFX
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x101a1600; the name is ours): start
+//				the projectile's looping client FX, stopping the last one
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectileFX::CreateTronUnknownFX(const char* szFXName)
+{
+	if (!szFXName) return;
+
+	if (m_TronUnknownFXLink.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFXLink);
+	}
+
+	CLIENTFX_CREATESTRUCT fxInit(szFXName, FXFLAG_LOOP, m_hServerObject);
+	g_pLTClient->GetObjectPos(m_hServerObject, &fxInit.m_vPos);
+
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFXLink, fxInit, LTTRUE);
+}
 
 // ----------------------------------------------------------------------- //
 //
