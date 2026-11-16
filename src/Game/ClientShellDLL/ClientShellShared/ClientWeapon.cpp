@@ -221,7 +221,6 @@ CClientWeapon::~CClientWeapon()
 
 bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 {
-	static CParsedMsg::CToken s_cTok_WeaponKeySound(WEAPON_KEY_SOUND);
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FIRE( WEAPON_KEY_FIRE );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_SOUND( WEAPON_KEY_SOUND );
 	static CParsedMsg::CToken s_cTok_WEAPON_KEY_LOOPSOUND( WEAPON_KEY_LOOPSOUND );
@@ -243,9 +242,9 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	     ( hObj != m_hObject ) ||
 	     !pArgList || 
 	     !pArgList->argv ||
-	     ( pArgList->argc == 0 ) ||
-		 m_bDisabled )
+	     ( pArgList->argc == 0 ) )
 	{
+		// RETAIL: Tron's (0x1012efd0) handles keys while disabled too
 		return false;
 	}
 
@@ -288,7 +287,9 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 	}
 	else if( tok == s_cTok_WEAPON_KEY_SHOW_MODEL_PIECE )
 	{
-		return HandleShowPieceKey( hObj, pArgList );
+		// RETAIL: true whatever the handler says (0x1012f4d9)
+		HandleShowPieceKey( hObj, pArgList );
+		return true;
 	}
 	else if( tok == s_cTok_WEAPON_KEY_FLASHLIGHT )
 	{
@@ -323,7 +324,8 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 		return HandleShowPVAttachmentKey( hObj, pArgList );
 	}
 
-	return true;
+	// RETAIL: Tron's returns false for a key it does not know (0x1012f6ae)
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
