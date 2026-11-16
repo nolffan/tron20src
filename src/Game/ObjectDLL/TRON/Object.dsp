@@ -369,6 +369,10 @@ SOURCE=.\TournamentBracket.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\WeaponFireHelpers.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\Shared\TRON\SubroutineDataMgr.cpp
 # End Source File
 # Begin Source File

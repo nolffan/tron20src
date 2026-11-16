@@ -138,6 +138,9 @@ class CPRodFireHelper : public CContinuousFireHelper
 {
 public:
 	CPRodFireHelper();
+	~CPRodFireHelper();							// RETAIL: 0x101942e0
+
+	float	GetRange();							// RETAIL: 0x10194320 (name ours)
 
 protected:
 	virtual uint8	GetMessageID();
@@ -156,6 +159,9 @@ public:
 protected:
 	virtual void	WriteExtra(ILTMessage_Write *pMsg);
 	virtual uint8	GetMessageID();
+
+	float	GetRange();							// RETAIL: 0x10194280 (name ours)
+	float	GetEnergyRate();					// RETAIL: 0x101942a0 (name ours)
 };
 
 #endif //_ContinuousFireHelper_h_INCLUDED_
