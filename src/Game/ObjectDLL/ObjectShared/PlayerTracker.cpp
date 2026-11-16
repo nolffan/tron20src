@@ -243,18 +243,15 @@ void PlayerTracker::Update( )
 			continue;
 		}
 
-		// Make sure it has a client still.
-		if( !pPlayerObj->GetClient( ))
-		{
-			iter = m_PlayerList.erase( iter );
-			continue;
-		}
-
 		// Check the client's connection.
-		if( g_pGameServerShell->ClientConnectionInTrouble( pPlayerObj->GetClient( )))
+		// RETAIL: 0x101935a0: Tron checks the client once and prints the
+		// kick.
+		HCLIENT hClient = pPlayerObj->GetClient( );
+		if( g_pGameServerShell->ClientConnectionInTrouble( hClient ))
 		{
 			iter = m_PlayerList.erase( iter );
-			g_pLTServer->KickClient( pPlayerObj->GetClient( ));
+			g_pLTServer->CPrint( "Kicking Client %d: Player Tracker", g_pLTServer->GetClientID( hClient ));
+			g_pLTServer->KickClient( hClient );
 			continue;
 		}
 
