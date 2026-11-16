@@ -1253,9 +1253,7 @@ LTBOOL CAIGoalInvestigate::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			m_mapInvestMemory.insert( AI_INVESTIGATION_MEMORY_MAP::value_type( eTargetMatchID, pSenseRecord->eSenseType ) );
 		}
 
-		// Immediately kill any dialogue.
-
-		m_pGoalMgr->KillDialogue();
+		// RETAIL: Tron does not kill the dialogue here (0x10203fd0)
 
 		return LTTRUE;
 	}

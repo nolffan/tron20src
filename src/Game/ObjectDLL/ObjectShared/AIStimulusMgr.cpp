@@ -499,11 +499,7 @@ EnumAIStimulusID CAIStimulusMgr::_RegisterStimulus(CAIStimulusRecord* pAIStimulu
 {
 	AIASSERT( pAIStimulusRecord, LTNULL, "CAIStimulusMgr::_RegisterStimulus: NULL record." );
 
-	if( m_bStimulusCriticalSection )
-	{
-		AIASSERT( m_bStimulusCriticalSection == LTFALSE, LTNULL, "CAIStimulusMgr::_RegisterStimulus: In critical section." );
-		return kStimID_Invalid;
-	}
+	// RETAIL: no critical section test in Tron (0x10100130)
 
 	AIBM_Stimulus* pStimulus = g_pAIButeMgr->GetStimulus(pAIStimulusRecord->m_eStimulusType);
 
@@ -903,11 +899,7 @@ void CAIStimulusMgr::RemoveStimulus(EnumAIStimulusID eStimulusID)
 {
 	ASSERT(eStimulusID != kStimID_Unset);
 
-	if( m_bStimulusCriticalSection )
-	{
-		ASSERT(m_bStimulusCriticalSection == LTFALSE);
-		return;
-	}
+	// RETAIL: no critical section test in Tron (0x10101210)
 
 	AISTIMULUS_MAP::iterator it = m_stmStimuliMap.begin();
 	while( it != m_stmStimuliMap.end() )
@@ -1034,11 +1026,7 @@ void CAIStimulusMgr::IgnoreStimulusByTarget(HOBJECT hAI, EnumAIStimulusType eSti
 
 void CAIStimulusMgr::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 {
-	if( m_bStimulusCriticalSection )
-	{
-		ASSERT(m_bStimulusCriticalSection == LTFALSE);
-		return;
-	}
+	// RETAIL: no critical section test in Tron (0x101014e0)
 
 	// Look for stimulus records with matching handles.
 	// It is OK for the StimulusTarget to go away.

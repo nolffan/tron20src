@@ -123,8 +123,10 @@ class CWeapons
 		void CreateAllWeapons();
         void CreateWeapon(uint8 nWeaponId, uint8 nAmmoId=AMMO_DEFAULT_ID);
 
+		// RETAIL: Tron passes a fifth argument (always 0 at 0x100f659e) that
+		// the function does not use (ret 0x14 at 0x100f764d)
 		void HandlePotentialWeaponChange(CPlayerObj* pPlayer, uint8 nWeaponId, 
-			uint8 nAmmoId, LTBOOL bHaveIt);
+			uint8 nAmmoId, LTBOOL bHaveIt, LTBOOL bTronUnknown = LTFALSE);
 
 		LTBOOL IsBetterWeapon(CPlayerObj* pPlayer, uint8 nWeaponId);
 

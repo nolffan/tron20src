@@ -2557,7 +2557,7 @@ void CAI::HandleDamage(const DamageStruct& damage)
 		// Do not play pain sounds if affected by special damage.
 
 		if( ( damage.fDamage > 0.0f ) &&
-			( !GetDamageFlags() ) )
+			( !m_nInstantDamageFlags ) )	// RETAIL: the instant flags (0x1012db0c)
 		{
 			// TODO: all the time?
 			PlaySound( kAIS_Pain, LTTRUE );
@@ -4168,6 +4168,12 @@ void CAI::SetNodeTrackingTarget(EnumTrackedNodeGroup eGroup, const LTVector& vPo
 
 void CAI::SetNodeTrackingTarget(EnumTrackedNodeGroup eGroup, HOBJECT hModel, const char* pszNodeName)
 {
+	// RETAIL: Tron keeps the talk look-at target (0x10131650)
+	if( m_bTalkLookAt )
+	{
+		return;
+	}
+
 	if( hModel == m_hObject )
 	{
 		AIASSERT( 0, m_hObject, "AI told to track self." );
@@ -4179,6 +4185,12 @@ void CAI::SetNodeTrackingTarget(EnumTrackedNodeGroup eGroup, HOBJECT hModel, con
 
 void CAI::SetNodeTrackingTarget(EnumTrackedNodeGroup eGroup, HOBJECT hModel)
 {
+	// RETAIL: Tron keeps the talk look-at target (0x101316b0)
+	if( m_bTalkLookAt )
+	{
+		return;
+	}
+
 	if( hModel == m_hObject )
 	{
 		AIASSERT( 0, m_hObject, "AI told to track self." );
@@ -4199,6 +4211,12 @@ void CAI::SetNodeTrackingTarget(EnumTrackedNodeGroup eGroup, HOBJECT hModel)
 
 LTBOOL CAI::EnableNodeTracking(EnumTrackedNodeGroup eGroup, HOBJECT hFace)
 {
+	// RETAIL: Tron keeps the talk look-at target (0x10131700)
+	if( m_bTalkLookAt )
+	{
+		return LTFALSE;
+	}
+
 	// Do not use tracking nodes if movement is locked (e.g. jumping, climbing ladder)
 
 	if( m_pAIMovement->IsMovementLocked() )
@@ -4207,13 +4225,7 @@ LTBOOL CAI::EnableNodeTracking(EnumTrackedNodeGroup eGroup, HOBJECT hFace)
 		return LTFALSE;
 	}
 
-	// Do not use tracking of the target is too close.
-
-	if( hFace && HasTarget() && ( m_vPos.DistSqr( m_pTarget->GetVisiblePosition() ) < 128.f*128.f ) )
-	{
-		m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
-		return FaceObject( hFace );
-	}
+	// RETAIL: Tron has no "target too close" test here (0x10131700)
 
 	// Set the active tracking group, if not already set.
 
@@ -4265,6 +4277,12 @@ LTBOOL CAI::EnableNodeTracking(EnumTrackedNodeGroup eGroup, HOBJECT hFace)
 
 void CAI::DisableNodeTracking()
 {
+	// RETAIL: Tron keeps the talk look-at target (0x10131850)
+	if( m_bTalkLookAt )
+	{
+		return;
+	}
+
 	m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
 	m_bRotating = LTFALSE;
 }
@@ -4435,7 +4453,7 @@ LTBOOL CAI::IsObjectPositionVisible(ObjectFilterFn ofn, PolyFilterFn pfn, const 
 		{
 			// FOV is 120' if we're not alert
 
-            if (fDp >= c_fFOV120-m_fFOVBias) return LTFALSE;
+            if (fDp >= c_fFOV120) return LTFALSE;	// RETAIL: no bias in Tron (0x101321c6)
 		}
 	}
 
@@ -4561,7 +4579,7 @@ LTBOOL CAI::IsPositionVisible(ObjectFilterFn ofn, PolyFilterFn pfn, const LTVect
 		{
 			// FOV is 120' if we're not alert
 
-            if (fDp >= c_fFOV120-m_fFOVBias) return LTFALSE;
+            if (fDp >= c_fFOV120) return LTFALSE;	// RETAIL: no bias in Tron (0x101321c6)
 		}
 	}
 
@@ -5484,7 +5502,10 @@ EnumAIWeaponType CAI::GetHolsterWeaponType()
 		}
 
 		const WEAPON* pWeaponData = g_pWeaponMgr->GetWeapon( szHolsterRight );
-		return (EnumAIWeaponType)pWeaponData->nAIWeaponType;
+		if( pWeaponData )	// RETAIL: Tron tests it (0x10134998)
+		{
+			return (EnumAIWeaponType)pWeaponData->nAIWeaponType;
+		}
 	}
 
 	return kAIWeap_Invalid;
@@ -5633,7 +5654,8 @@ void CAI::PlaySound(EnumAISoundType eSound, LTBOOL bInterrupt)
 
 	// Do not interrupt currently playing AISound, unless instructed.
 
-	if( ( !bInterrupt ) && IsPlayingDialogSound() )
+	// RETAIL: Tron's talk lock also holds the sound back (0x10134c31)
+	if( ( !bInterrupt ) && ( m_bTalkLock || IsPlayingDialogSound() ) )
 	{
 		return;
 	}
@@ -6258,9 +6280,17 @@ void CAI::SetAITemplate(const char* pszName )
 	int nTemplate = g_pAIButeMgr->GetTemplateIDByName( pszName ); 
 	AIASSERT( nTemplate >= 0 && nTemplate < g_pAIButeMgr->GetNumTemplates(), m_hObject, "Template out of bounds" );
 
-	AIBM_Template* pTemplate = g_pAIButeMgr->GetTemplate( nTemplate );
+	// RETAIL: Tron falls back to the first template (0x10135ab0)
+	AIBM_Template* pTemplate = NULL;
+	if( nTemplate >= 0 && nTemplate < g_pAIButeMgr->GetNumTemplates() )
+	{
+		pTemplate = g_pAIButeMgr->GetTemplate( nTemplate );
+	}
 
-	AIASSERT( pTemplate != NULL, m_hObject, "pTemplate is NULL" );
+	if( !pTemplate )
+	{
+		pTemplate = ( g_pAIButeMgr->GetNumTemplates() > 0 ) ? g_pAIButeMgr->GetTemplate( 0 ) : NULL;
+	}
 
 	m_pAITemplate = pTemplate;
 }
@@ -6359,7 +6389,7 @@ void CAI::SetCanCarry( bool bCarry )
 		cMsg.Writeuint8(m_bCanCarry);
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
-		CreateSpecialFX();
+		// RETAIL: no CreateSpecialFX here in Tron (0x10135c50)
 	}
 }
 

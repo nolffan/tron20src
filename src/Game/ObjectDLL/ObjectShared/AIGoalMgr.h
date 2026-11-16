@@ -105,9 +105,8 @@ class CAIGoalMgr : public CAIClassAbstract
 
 		EnumAIGoalType GetGoalTypeEnumFromName(const char* szGoalType);
 
-		// Dialogue.
-
-		void KillDialogue() { m_bKillDialogue = LTTRUE; }
+		// RETAIL: Tron has no KillDialogue (no m_bKillDialogue in Save
+		// 0x10148090, Load 0x10148380 or Init 0x10148690)
 
 		// Debugging.
 
@@ -163,8 +162,6 @@ class CAIGoalMgr : public CAIClassAbstract
 		uint32				m_iGoalSet;
 		LTFLOAT				m_fGoalSetTime;
 		uint32				m_iQueuedGoalSet;
-
-		LTBOOL				m_bKillDialogue;
 };
 
 

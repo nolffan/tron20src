@@ -74,6 +74,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_FIREFX_FIRESOUND			"FireSound"
 #define FXBMGR_FIREFX_EXITMARK			"ExitMark"
 #define FXBMGR_FIREFX_EXITDEBRIS		"ExitDebris"
+#define FXBMGR_FIREFX_OLDSTYLEBEAMNAME	"OldStyleBeamName"	// RETAIL: Tron's
 #define FXBMGR_FIREFX_SHELLMODEL		"ShellModel"
 #define FXBMGR_FIREFX_SHELLSKIN			"ShellSkin"
 #define FXBMGR_FIREFX_SHELLSCALE		"ShellScale"

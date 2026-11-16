@@ -249,6 +249,9 @@ CMDMGR_BEGIN_REGISTER_CLASS( KeyFramer )
 	CMDMGR_ADD_MSG( BACKWARD,	1,			NULL,					"BACKWARD" )
 	CMDMGR_ADD_MSG( REVERSE,	1,			NULL,					"REVERSE" )
 	CMDMGR_ADD_MSG( TOGGLEDIR,	1,			NULL,					"TOGGLEDIR" )
+	// RETAIL: Tron's (0x10115e95); OnTrigger sends it to 0x1011aa90, which
+	// goes to the first key through the unwritten 0x10119c40
+	CMDMGR_ADD_MSG( RESETPATH,	1,			NULL,					"RESETPATH" )
 	CMDMGR_ADD_MSG( GOTO,		2,			ValidateGotoMsg,		"GOTO <key>" )
 	CMDMGR_ADD_MSG( MOVETO,		-1,			ValidateMoveToMsg,		"MOVETO <key> [destination cmd]" )
 	CMDMGR_ADD_MSG( TARGET,		2,			ValidateTargetMsg,		"TARGET <object>" )

@@ -1867,6 +1867,7 @@ LTBOOL Body::CanCheckPulse()
 			case kState_BodyNormal:
 			case kState_BodyLadder:
 			case kState_BodyExplode:
+			case kState_BodyPranksterImplode:	// RETAIL: Tron's (0x1015cd10)
 			case kState_BodyCrush:
 				return LTTRUE;
 
