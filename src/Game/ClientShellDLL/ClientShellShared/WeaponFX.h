@@ -38,8 +38,18 @@ struct WCREATESTRUCT : public SFXCREATESTRUCT
     LTVector	vPos;
     LTVector	vSurfaceNormal;
     uint8		nShooterId;
+	// RETAIL: Tron's (+0x3d: the SFX message's byte after the shooter's
+	// id; CWeaponFX::Init 0x1018e17f, 0x1018e373). Not yet named
+	uint8		nTronUnknown3D;
     LTBOOL		bLocal;
     IMPACT_TYPE	eImpactType;
+	// RETAIL: Tron's (+0x48, +0x4c: PlayWeaponSound's volume scale and
+	// flag, CWeaponFX::PlayFireSound 0x10191e5f). PORT: Tron's SFX message
+	// sends them after the impact type (0x1018e1f5..0x1018e227); our server
+	// does not send them yet (ObjectShared/ClientWeaponSFX.cpp), so
+	// CWeaponFX::Init(msg) leaves the defaults
+	float		fTronUnknown48;
+	bool		bTronUnknown4C;
 };
 
 inline WCREATESTRUCT::WCREATESTRUCT()
@@ -55,6 +65,9 @@ inline WCREATESTRUCT::WCREATESTRUCT()
 	wIgnoreFX		= 0;
     bLocal          = LTFALSE;
 	nShooterId		= -1;
+	nTronUnknown3D	= -1;	// RETAIL: 0x1018e101
+	fTronUnknown48	= 1.0f;
+	bTronUnknown4C	= false;
 }
 
 
@@ -136,6 +149,7 @@ class CWeaponFX : public CSpecialFX
         LTRotation	m_rDirRot;          // Rotation based on m_vDir
 
         uint8            m_nShooterId;       // Client id of the shooter
+		uint8			 m_nTronUnknownDD;	 // RETAIL: Tron's (+0xdd, from the create struct's +0x3d)
         uint8            m_nLocalId;         // Local client id
         LTBOOL           m_bLocal;           // Is this a local fx (only done on this client?)
 
@@ -148,6 +162,11 @@ class CWeaponFX : public CSpecialFX
 		                                    // NOTE: this can be overridden
 		                                    // by other effects, such as 
 		                                    // "underwater"
+		// RETAIL: Tron's (+0xfc, +0x100: from the create struct's +0x48,
+		// +0x4c; PlayWeaponSound's volume scale and flag, 0x10191e5f). Not
+		// yet named
+		float			m_fTronUnknownFC;
+		bool			m_bTronUnknown100;
 
 		void	SetupExitInfo();
 

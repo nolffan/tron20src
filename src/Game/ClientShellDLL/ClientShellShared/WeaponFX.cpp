@@ -153,10 +153,13 @@ LTBOOL CWeaponFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
     m_fAreaDamage   = (LTFLOAT) m_pAmmo->fAreaDamage;
 
 	m_nShooterId	= pCS->nShooterId;
+	m_nTronUnknownDD = pCS->nTronUnknown3D;	// RETAIL: Tron's (0x1018e373)
 	m_bLocal		= pCS->bLocal;
 
 	// type of impact FX to play
 	m_eImpactType	= pCS->eImpactType;
+	m_fTronUnknownFC = pCS->fTronUnknown48;	// RETAIL: Tron's (0x1018e38e)
+	m_bTronUnknown100 = pCS->bTronUnknown4C;
 
 	if (!g_cvarShowFirePath.IsInitted())
 	{
@@ -1366,10 +1369,8 @@ void CWeaponFX::PlayFireSound()
 		eSoundId = PSI_ALT_FIRE;
 	}
 
-	// PORT: retail passes two members of Tron's CWeaponFX (+0xfc, a volume
-	// scale, and the byte at +0x100) as PlayWeaponSound's new arguments
-	// (0x10191e5f); ours has neither, so the defaults stand in.
-	::PlayWeaponSound(m_pWeapon, m_vFirePos, eSoundId);
+	// RETAIL: Tron's passes the volume scale and the flag (0x10191e5f)
+	::PlayWeaponSound(m_pWeapon, m_vFirePos, eSoundId, m_fTronUnknownFC, m_bTronUnknown100);
 }
 
 
