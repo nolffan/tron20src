@@ -58,7 +58,6 @@ public:
 	void	Escape();
     void    OnFocus(LTBOOL bFocus);
 
-	void	ConfirmHardwareCursor(LTBOOL bReturn);
 
 protected:
     uint32  OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
@@ -84,17 +83,19 @@ protected:
 
 
 private:
-	LTBOOL							m_bEscape;
-	LTBOOL							m_bHardwareCursor;
-	LTBOOL							m_bVSync;
-	int								m_nGamma;
+	// RETAIL: Tron's layout (Escape 0x10058c70 +0x794, OnFocus 0x10059440,
+	// OnLeft 0x10059780): it has no hardware cursor control, and the vsync
+	// flag comes last. +0x790 is not touched by the code written so far.
+	LTBOOL							m_bHardwareCursor;		// +0x790
+	LTBOOL							m_bEscape;				// +0x794
+	int								m_nGamma;				// +0x798
 
-	CLTGUICycleCtrl					*m_pResolutionCtrl;		// The resolution control
+	CLTGUICycleCtrl					*m_pResolutionCtrl;		// +0x79c The resolution control
 
-	ScreenDisplayRenderer			m_rendererData;
+	ScreenDisplayRenderer			m_rendererData;			// +0x7a0
 
-	CLTGUISlider					*m_pGamma;
-	CLTGUICycleCtrl					*m_pHardwareCursor;
+	CLTGUISlider					*m_pGamma;				// +0xa10
+	LTBOOL							m_bVSync;				// +0xa14
 
 
 
