@@ -40,7 +40,6 @@ class CVersionMgr
 		virtual const char* GetBuild() = 0;
 		virtual const uint32 GetSaveVersion() = 0;
 		virtual const char* GetNetVersion() = 0;
-		const char* GetNetRegion() { return m_szNetRegion; }	// RETAIL: not virtual (above)
 
 
 		const char* GetLanguage()	const { return m_szLanguage; }
@@ -65,22 +64,15 @@ class CVersionMgr
 		static const TSaveVersion	kSaveVersion__CurrentBuild;
 	public:
 
-		void			SetCurrentSaveVersion( TSaveVersion nCurrentSaveVersion ) { m_nCurrentSaveVersion = nCurrentSaveVersion; }
-		TSaveVersion	GetCurrentSaveVersion( ) const;
-
-		void			SetLGFlags( uint8 nLGFlags ) { m_nLastLGFlags = nLGFlags; }
+		// RETAIL: Tron's CVersionMgr has no save version of the game being
+		// loaded (0x264 bytes, constructor 0x10171d50). PORT: NOLF2's 1.x
+		// save-version checks stand in; they always see the current build
+		TSaveVersion	GetCurrentSaveVersion( ) const { return kSaveVersion__CurrentBuild; }
 
 	protected :
 		CRegMgr	m_regMgr;
 		char	m_szLanguage[64];
-		char	m_szNetRegion[64];
-		bool	m_bLowViolence;
-
-		// This is the save version of the currently loading save game.
-		// This number is only valid during a ILTServer::RestoreObjects call.
-		TSaveVersion	m_nCurrentSaveVersion;
-
-		uint8			m_nLastLGFlags;
+		bool	m_bLowViolence;		// RETAIL: +0x260
 };
 
 extern CVersionMgr* g_pVersionMgr;
