@@ -45,9 +45,8 @@ class CVersionMgr
 		const char* GetLanguage()	const { return m_szLanguage; }
 
 		//low violence needs to be implemented on clientside only
-#ifdef _CLIENTBUILD
+		// RETAIL: both DLLs ask (Object.lto's CPlayerObj damage and death sounds)
 		inline bool	IsLowViolence() const { return m_bLowViolence; }
-#endif
 
 		CRegMgr*	GetRegMgr()		{ return &m_regMgr; }
 

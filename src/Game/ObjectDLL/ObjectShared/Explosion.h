@@ -50,7 +50,8 @@ class Explosion : public GameBase
 		DamageType		m_eDamageType;
 		LTObjRef		m_hFiredFrom;
         LTVector        m_vPos;
-        LTBOOL          m_bRemoveWhenDone;
+        // RETAIL: a bool in Tron (+0x60; Explosion::Explosion, Object.lto 0x100eeec6)
+        bool            m_bRemoveWhenDone;
         uint8           m_nImpactFXId;
 
         LTFLOAT         m_fProgDamage;

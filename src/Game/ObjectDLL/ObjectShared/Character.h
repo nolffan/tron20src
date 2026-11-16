@@ -270,6 +270,11 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
         LTBOOL					HasCurrentInformationVolume() { return !!GetCurrentInformationVolume(); }
 		void					UpdateCurrentInformationVolume(bool bForce = false);
 
+		// RETAIL: Tron's player info volumes (Object.lto 0x100939b0, 0x10093aa0;
+		// the names are ours)
+		AIVolumePlayerInfo*		GetCurrentPlayerInfoVolume();
+		void					UpdateCurrentPlayerInfoVolume(bool bForce = false);
+
         LTBOOL           HitFromFront(const LTVector& vDir);
         LTBOOL           HitFromBack(const LTVector& vDir) { return !HitFromFront(vDir); }
 
@@ -317,7 +322,15 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		inline	DamageFlags	GetDamageFlags( ) const { return m_nDamageFlags; }
 		void			SetDamageFlags( const DamageFlags nDmgFlags );
+		// RETAIL: Tron collects the damage flags of hits and sends them, and
+		// any change of the instant flags, once a frame (Object.lto
+		// 0x1008d590, 0x1008d5c0, 0x1008e890; the names are ours).
+		void			AddDamageFlags( const DamageFlags nDmgFlags );
 		void			SetInstantDamageFlags( const DamageFlags nDmgFlags );
+		void			SendInstantDamageFlagsToClients();
+		void			UpdateDamageFlagsToClients();
+		void			UpdateDamageFlags();
+		void			UpdateInstantDamageFlags();
 
 		virtual void	PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fStartDelay, LTFLOAT fDuration, LTFLOAT fStrength);
 
@@ -495,7 +508,8 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		enum Constants
 		{
 			kMaxSpears = 16,
-			kMaxWeapons = 2,
+			// RETAIL: 4 in Tron (CCharacter::RemoveWeapons, Object.lto 0x10094091)
+			kMaxWeapons = 4,
 			kMaxProps = 32,
 		};
 
@@ -604,9 +618,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		DamageFlags			m_nDamageFlags;					// What types of damage (progressive) are cureently affecting us
 		DamageFlags			m_nInstantDamageFlags;			// What types of damage (instant) are curently affecting us...
-		// RETAIL: Tron's third set of damage flags (its constructor zeroes all
-		// three, retail 0x10089e8d); not yet named
-		DamageFlags		m_nTronUnknownDamageFlags;
+		// RETAIL: Tron's: the instant flags last sent (Object.lto 0x1008e8e0;
+		// the name is ours)
+		DamageFlags		m_nLastInstantDamageFlags;
 
 		// List of key items the player currently has
 		IDList				m_Keys;

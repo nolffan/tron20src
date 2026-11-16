@@ -53,7 +53,6 @@
 #include "AIGoalMgr.h"
 #include "AIGoalSpecialDamage.h"
 #include "PickupItem.h"
-#include "DoomsDayPiece.h"
 
 #include <stdio.h>
 
@@ -707,7 +706,8 @@ CMDMGR_BEGIN_REGISTER_CLASS( CPlayerObj )
 	CMDMGR_ADD_MSG( OPTION,			-1,		ValidateObjectiveMsg,	"OPTION <action> <objective id>" )
 	CMDMGR_ADD_MSG( PARAMETER,		-1,		ValidateObjectiveMsg,	"PARAMETER <action> <objective id>" )
 	CMDMGR_ADD_MSG( KEY,			-1,		ValidateKeyMsg,			"KEY <action> <key id>" )
-	CMDMGR_ADD_MSG( TRANSMISSION,	-1,		ValidateTransmissionMsg,"TRANSMISSION <transmission id> [ActivePlayerComm] [TeamNumber]" )
+	// RETAIL: Tron's syntax (Object.lto 0x10075930)
+	CMDMGR_ADD_MSG( TRANSMISSION,	-1,		ValidateTransmissionMsg,"TRANSMISSION <transmission id> [ActivePlayerComm]" )
 	CMDMGR_ADD_MSG( CREDITS,		2,		ValidateCreditsMsg,		"CREDITS <action>" )
 	CMDMGR_ADD_MSG( INTEL,			-1,		ValidateIntelMsg,		"INTEL <text id> <popup id> [intel] [show]" )
 	CMDMGR_ADD_MSG( FADEIN,			2,		NULL,					"FADEIN <time>" )
@@ -739,8 +739,7 @@ CMDMGR_BEGIN_REGISTER_CLASS( CPlayerObj )
 	CMDMGR_ADD_MSG( CANCELLURE,		1,		NULL,					"CANCELLURE" )	
 	CMDMGR_ADD_MSG( OVERLAY,		3,		NULL,					"OVERLAY <overlay id> <ON | OFF>" )
 	CMDMGR_ADD_MSG( WAKEUP,			1,		NULL,					"WAKEUP" )
-	CMDMGR_ADD_MSG( DROPBODY,		1,		NULL,					"DROPBODY" )
-	CMDMGR_ADD_MSG( SCORE,			2,		NULL,					"SCORE <+/-amount>" )
+	// RETAIL: Tron registers no DROPBODY or SCORE (Object.lto 0x10075930)
 
 CMDMGR_END_REGISTER_CLASS( CPlayerObj, CCharacter )
 
@@ -3915,10 +3914,6 @@ void CPlayerObj::Revive()
 
 	switch (g_pGameServerShell->GetGameType() )
 	{
-	case eGameTypeDoomsDay:
-		ResetHealth( LTFALSE, g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_DOOMREVIVEHEALTH ),
-						  g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_DOOMREVIVEARMOR ));
-		break;
 	case eGameTypeCooperative:
 	default:
 		ResetHealth( LTFALSE, g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_COOPREVIVEHEALTH ),
@@ -4800,6 +4795,12 @@ void CPlayerObj::UpdateInterface(bool bForceUpdate)
 
 char* CPlayerObj::GetDamageSound(DamageType eType)
 {
+	// RETAIL: Tron checks this first (Object.lto 0x10080290)
+	if (g_pVersionMgr->IsLowViolence())
+	{
+		return LTNULL;
+	}
+
 	const char* pDir = g_pModelButeMgr->GetModelPlayerPainSndDir( m_eModelId );
 	if( !pDir )
 	{
@@ -4845,14 +4846,11 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 
 char* CPlayerObj::GetDeathSound()
 {
-	// RETAIL: Tron checks this first (retail 0x100803e0), but our
-	// VersionMgr.h has IsLowViolence on the client only
-/*
+	// RETAIL: Tron checks this first (retail 0x100803e0)
 	if (g_pVersionMgr->IsLowViolence())
 	{
 		return LTNULL;
 	}
-*/
 
 	DamageType eType = m_damage.GetDeathType();
 
@@ -5209,10 +5207,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 					{
 						return LTFALSE;
 					}
-				}
-				else if( IsKindOf( pData->m_hTarget, "DoomsDayPiece" ) )
-				{
-					// Is there anything we need to check on the object??
 				}
 				else
 				{
@@ -8011,13 +8005,6 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, 0, FLAG_RAYHIT);
 			}
 		}
-	}
-	else if( IsKindOf( hObject, "DoomsDayPiece" ))
-	{
-		// Send message to the object letting it know the player wants to pick it up.
-		// The object can then decide if it is ok to be picked up or not.
-
-		SendTriggerMsgToObject( this, hObject, 0, "CARRY" );
 	}
 	else
 		return false;

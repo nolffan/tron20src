@@ -15,6 +15,7 @@
 #include "CommonUtilities.h"
 #include "UberAssert.h"
 #include "SurfaceMgr.h"
+#include "ButeStrings.h"
 
 // Globals/statics
 
@@ -50,7 +51,14 @@ static char s_szBuffer[1024];
 	#define MODELBMGR_MODEL_ATTACHMENT							"DefaultAttachment"
 	#define MODELBMGR_MODEL_PVATTACHMENT						"PlayerViewAttachment"
 	#define MODELBMGR_MODEL_CANBECARRIED						"CanBeCarried"
-	#define MODELBMGR_MODEL_AIIGNOREBODY						"AIIgnoreBody"
+	#define MODELBMGR_MODEL_SUPPORTSDAMAGEFX					"SupportsDamageFX"
+	#define MODELBMGR_MODEL_MIN_SEARCH_TIME						"MinSearchTime"
+	#define MODELBMGR_MODEL_MAX_SEARCH_TIME						"MaxSearchTime"
+	#define MODELBMGR_MODEL_REZINFX								"RezInFX"
+	#define MODELBMGR_MODEL_GIBFX								"GibFX"
+	#define MODELBMGR_MODEL_HITPOINTSDROPPED					"HitpointsDropped"
+	#define MODELBMGR_MODEL_ATTACHMENTSUBSTITUTION				"AttachmentSubstitution"
+	#define MODELBMGR_MODEL_HIDDENPIECES						"HiddenPieces"
 	#define MODELBMGR_MODEL_UNALERTDAMAGEMOD					"UnalertDamageFactor"	
 	#define MODELBMGR_MODEL_LOUDMOVEMENTSOUNDBUTE				"LoudMovementSoundBute"
 	#define MODELBMGR_MODEL_QUIETMOVEMENTSOUNDBUTE				"QuietMovementSoundBute"
@@ -68,7 +76,7 @@ static char s_szBuffer[1024];
 	#define	MODELBMGR_MODEL_DEFAULT_AINAME						CString("Hero")
 	#define	MODELBMGR_MODEL_DEFAULT_AIONLY						LTTRUE
 	#define MODELBMGR_MODEL_DEFAULT_CANBECARRIED				LTTRUE
-	#define MODELBMGR_MODEL_DEFAULT_AIIGNOREBODY				LTFALSE
+	#define MODELBMGR_MODEL_DEFAULT_SUPPORTSDAMAGEFX			LTTRUE
 	#define MODELBMGR_MODEL_DEFAULT_UNALERTDAMAGEMOD			1.0f
 	#define	MODELBMGR_MODEL_DEFAULT_TRANSLUCENT					0
 	#define MODELBMGR_MODEL_DEFAULT_NAMEID						0
@@ -103,7 +111,6 @@ static char s_szBuffer[1024];
 	#define MODELBMGR_SKELETON_NODE_LOCATION					"Node%dLocation"
 	#define MODELBMGR_SKELETON_NODE_RADIUS						"Node%dRadius"
 	#define MODELBMGR_SKELETON_NODE_PRIORITY					"Node%dPriority"
-	#define MODELBMGR_SKELETON_NODE_ATTACHSPEARS				"Node%dAttachSpears"
 
 #define MODELBMGR_TRACKINGNODES			"TrackingNodes"
 
@@ -116,6 +123,7 @@ static char s_szBuffer[1024];
 	#define MODELBMGR_TRACKING_NODE_MAX_X						"Node%dMaxX"
 	#define MODELBMGR_TRACKING_NODE_MAX_Y						"Node%dMaxY"
 	#define MODELBMGR_TRACKING_NODE_MAX_VEL						"Node%dMaxVel"
+	#define MODELBMGR_TRACKING_NODE_IGNORE_PARENT				"Node%dIgnoreParent"
 
 #define MODELBMGR_NODE_SCRIPT			"NodeScript"
 
@@ -127,13 +135,24 @@ static char s_szBuffer[1024];
 	#define MODELBMGR_NSCRIPT_NODE_ROTATION_OFFSET				"Pt%dRotOffset"
 
 
-#define	MODELBMGR_CP_MODEL				"MultiplayerModels"
-#define	MODELBMGR_DM_MODEL				"DeathmatchModels"
-#define	MODELBMGR_TEAM_MODEL			"TeamModels"
-#define	MODELBMGR_TEAM_DEFAULT			"TeamDefaults"
+#define	MODELBMGR_MP_MODEL				"MultiplayerModels"
 
-	#define	MODELBMGR_MP_MODEL_NAME								"Name"
-	#define	MODELBMGR_MP_MODEL_TEAM								"Team"
+	#define	MODELBMGR_MP_COLOR_NAMEID							"ColorNameId%d"
+	#define	MODELBMGR_MP_MODEL_NAME								"Model%dName"
+	#define	MODELBMGR_MP_MODEL_NAMEID							"Model%dNameId"
+	#define	MODELBMGR_MP_MODEL_COLOR_SKIN						"Model%dColor%dSkin%d"
+	#define	MODELBMGR_MP_MODEL_COLOR_REZIN						"Model%dColor%dRezIn"
+	#define	MODELBMGR_MP_MODEL_COLOR_HHDISC						"Model%dColor%dHHDisc"
+
+// RETAIL: Tron's name id ranges (the names are ours; Object.lto 0x10373db8)
+struct NameIdRange
+{
+	uint16	nMin;
+	uint16	nMax;
+	uint16	nCount;
+};
+typedef std::map<uint32, NameIdRange> NameIdRangeMap;
+static NameIdRangeMap s_mapNameIdRanges;
 
 #ifndef _CLIENTBUILD
 
@@ -170,15 +189,8 @@ CModelButeMgr::CModelButeMgr()
 	m_cNScripts = 0;
     m_aNScripts = LTNULL;
 
-	m_cCPModels = 0;
-	m_aCPModels = LTNULL;
-
-	m_cDMModels = 0;
-	m_aDMModels = LTNULL;
-
-	m_cTeamModels = 0;
-	m_aTeamModels = LTNULL;
-
+	m_cMPModels = 0;
+	m_aMPModels = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -251,11 +263,11 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 
 		// Get the skeleton's default death/long recoil anis
 
-		
-		m_buteMgr.GetString(s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_DEATH_ANI,m_aSkeletons[iSkeleton].m_szDefaultFrontDeathAni,MAX_MODELBMGR_NAME_LEN);
-		m_buteMgr.GetString(s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_DEATH_ANI,m_aSkeletons[iSkeleton].m_szDefaultBackDeathAni, MAX_MODELBMGR_NAME_LEN);
-		m_buteMgr.GetString(s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_SHORTRECOIL_ANI,m_aSkeletons[iSkeleton].m_szDefaultFrontShortRecoilAni,MAX_MODELBMGR_NAME_LEN);
-		m_buteMgr.GetString(s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_SHORTRECOIL_ANI,m_aSkeletons[iSkeleton].m_szDefaultBackShortRecoilAni,MAX_MODELBMGR_NAME_LEN);
+		// RETAIL: Tron reads lists of animations (Object.lto 0x100c2b92)
+		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_DEATH_ANI, m_aSkeletons[iSkeleton].m_lstDefaultFrontDeathAni);
+		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_DEATH_ANI, m_aSkeletons[iSkeleton].m_lstDefaultBackDeathAni);
+		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_SHORTRECOIL_ANI, m_aSkeletons[iSkeleton].m_lstDefaultFrontShortRecoilAni);
+		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_SHORTRECOIL_ANI, m_aSkeletons[iSkeleton].m_lstDefaultBackShortRecoilAni);
 
 		// Get the skeleton's default hit node
 
@@ -296,17 +308,27 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 
 			// Get the node's death/long recoil animations
 
+			// RETAIL: Tron reads lists of animations; a node without its
+			// own takes the skeleton's (Object.lto 0x100c2e4f)
 			sprintf(s_aAttName, MODELBMGR_SKELETON_NODE_FRONT_DEATH_ANI, iNode);
-			m_buteMgr.GetString(s_aTagName, s_aAttName,m_aSkeletons[iSkeleton].m_aNodes[iNode].m_szFrontDeathAni,MAX_MODELBMGR_NAME_LEN);
+			GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontDeathAni);
+			if( m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontDeathAni.size() == 0 )
+				m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontDeathAni = m_aSkeletons[iSkeleton].m_lstDefaultFrontDeathAni;
 
 			sprintf(s_aAttName, MODELBMGR_SKELETON_NODE_BACK_DEATH_ANI, iNode);
-			m_buteMgr.GetString(s_aTagName, s_aAttName,m_aSkeletons[iSkeleton].m_aNodes[iNode].m_szBackDeathAni,MAX_MODELBMGR_NAME_LEN);
+			GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackDeathAni);
+			if( m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackDeathAni.size() == 0 )
+				m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackDeathAni = m_aSkeletons[iSkeleton].m_lstDefaultBackDeathAni;
 
 			sprintf(s_aAttName, MODELBMGR_SKELETON_NODE_FRONT_SHORTRECOIL_ANI, iNode);
-			m_buteMgr.GetString(s_aTagName, s_aAttName,m_aSkeletons[iSkeleton].m_aNodes[iNode].m_szFrontShortRecoilAni, MAX_MODELBMGR_NAME_LEN);
+			GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontShortRecoilAni);
+			if( m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontShortRecoilAni.size() == 0 )
+				m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstFrontShortRecoilAni = m_aSkeletons[iSkeleton].m_lstDefaultFrontShortRecoilAni;
 
 			sprintf(s_aAttName, MODELBMGR_SKELETON_NODE_BACK_SHORTRECOIL_ANI, iNode);
-			m_buteMgr.GetString(s_aTagName, s_aAttName,m_aSkeletons[iSkeleton].m_aNodes[iNode].m_szBackShortRecoilAni, MAX_MODELBMGR_NAME_LEN);
+			GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackShortRecoilAni);
+			if( m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackShortRecoilAni.size() == 0 )
+				m_aSkeletons[iSkeleton].m_aNodes[iNode].m_lstBackShortRecoilAni = m_aSkeletons[iSkeleton].m_lstDefaultBackShortRecoilAni;
 
 			// Get the node's damage factor
 
@@ -332,11 +354,6 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 
 			sprintf(s_aAttName, MODELBMGR_SKELETON_NODE_PRIORITY, iNode);
             m_aSkeletons[iSkeleton].m_aNodes[iNode].m_fHitPriority = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, s_aAttName);
-
-			// Get the node's attach spear flag
-
-			sprintf( s_aAttName, MODELBMGR_SKELETON_NODE_ATTACHSPEARS, iNode );
-			m_aSkeletons[iSkeleton].m_aNodes[iNode].m_bAttachSpears = !!m_buteMgr.GetInt( s_aTagName, s_aAttName, 1 );
 		}
 	}
 
@@ -406,6 +423,10 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 
 			sprintf(s_aAttName, MODELBMGR_TRACKING_NODE_MAX_VEL, iNode);
             m_aTrackingNodeGroups[iGroup].m_aTrackingNodes[iNode].m_fMaxVelocity = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, s_aAttName);
+
+			// RETAIL: Tron's (Object.lto 0x100c3c91)
+			sprintf(s_aAttName, MODELBMGR_TRACKING_NODE_IGNORE_PARENT, iNode);
+			m_aTrackingNodeGroups[iGroup].m_aTrackingNodes[iNode].m_bIgnoreParent = m_buteMgr.GetByte(s_aTagName, s_aAttName);
 
 			//
 			// The following fields are optional.
@@ -583,6 +604,9 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
         m_aModels[iModel].m_fModelMaxArmor = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, MODELBMGR_MODEL_MAX_ARMOR);
 		m_aModels[iModel].m_fModelEnergy = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, MODELBMGR_MODEL_ENERGY);
         m_aModels[iModel].m_fModelMaxEnergy = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, MODELBMGR_MODEL_MAX_ENERGY);
+		// RETAIL: Tron's (Object.lto 0x100c4623)
+		m_aModels[iModel].m_fMinSearchTime = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, MODELBMGR_MODEL_MIN_SEARCH_TIME);
+		m_aModels[iModel].m_fMaxSearchTime = (LTFLOAT)m_buteMgr.GetDouble(s_aTagName, MODELBMGR_MODEL_MAX_SEARCH_TIME);
 
 		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_ANIMATION, MODELBMGR_MODEL_DEFAULT_ANIMATION, s_szBuffer, ARRAY_LEN(s_szBuffer) );
 		if(s_szBuffer[0] == '\0')
@@ -608,8 +632,9 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 		// Get AI values.
 		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_AINAME, MODELBMGR_MODEL_DEFAULT_AINAME,m_aModels[iModel].m_szAIName,MAX_MODELBMGR_NAME_LEN);
         m_aModels[iModel].m_bAIOnly = (LTBOOL)m_buteMgr.GetBool(s_aTagName, MODELBMGR_MODEL_AIONLY, MODELBMGR_MODEL_DEFAULT_AIONLY);
+		// RETAIL: Tron's (Object.lto 0x100c4930)
+        m_aModels[iModel].m_bSupportsDamageFX = (LTBOOL)m_buteMgr.GetBool(s_aTagName, MODELBMGR_MODEL_SUPPORTSDAMAGEFX, MODELBMGR_MODEL_DEFAULT_SUPPORTSDAMAGEFX);
         m_aModels[iModel].m_bCanBeCarried = (LTBOOL)m_buteMgr.GetBool(s_aTagName, MODELBMGR_MODEL_CANBECARRIED, MODELBMGR_MODEL_DEFAULT_CANBECARRIED);
-        m_aModels[iModel].m_bAIIgnoreBody = (LTBOOL)m_buteMgr.GetBool(s_aTagName, MODELBMGR_MODEL_AIIGNOREBODY, MODELBMGR_MODEL_DEFAULT_AIIGNOREBODY);
 		m_aModels[iModel].m_fUnalertDamageFactor = (LTFLOAT)m_buteMgr.GetDouble( s_aTagName, MODELBMGR_MODEL_UNALERTDAMAGEMOD, MODELBMGR_MODEL_DEFAULT_UNALERTDAMAGEMOD );
 
 		// Get sound butes...
@@ -640,11 +665,26 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 		
 		// Get the optional display name Id...
 
-		m_aModels[iModel].m_nNameId = (uint16)m_buteMgr.GetInt( s_aTagName, MODELBMGR_MODEL_NAMEID, MODELBMGR_MODEL_DEFAULT_NAMEID );
+		// RETAIL: Tron's name ids are a range (Object.lto 0x100c4b02); the
+		// models that share a range share its counter.
+		CARange rngNameId = m_buteMgr.GetRange( s_aTagName, MODELBMGR_MODEL_NAMEID );
+		uint16 nNameIdMin = (uint16)rngNameId.GetMin();
+		NameIdRange& range = s_mapNameIdRanges[nNameIdMin];
+		range.nCount = 0;
+		range.nMin = nNameIdMin;
+		uint16 nNameIdMax = (uint16)rngNameId.GetMax();
+		range.nMax = nNameIdMax;
+		m_aModels[iModel].m_nNameIdMin = nNameIdMin;
+		m_aModels[iModel].m_nNameIdMax = nNameIdMax;
 
 		// Get the directory for the player pain sounds...
 
 		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_PLAYERPAINSNDDIR, MODELBMGR_MODEL_DEFAULT_PLAYERPAINSNDDIR, m_aModels[iModel].m_szPlayerPainSoundDir, ARRAY_LEN(m_aModels[iModel].m_szPlayerPainSoundDir) );
+
+		// RETAIL: Tron's (Object.lto 0x100c4c73)
+		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_REZINFX, "", m_aModels[iModel].m_szRezInFX, ARRAY_LEN(m_aModels[iModel].m_szRezInFX) );
+		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_GIBFX, "", m_aModels[iModel].m_szGibFX, ARRAY_LEN(m_aModels[iModel].m_szGibFX) );
+		m_aModels[iModel].m_nHitpointsDropped = (uint16)m_buteMgr.GetInt(s_aTagName, MODELBMGR_MODEL_HITPOINTSDROPPED, 0);
 				
 			
 		// Get default attachments.
@@ -674,6 +714,34 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 			iAttachment++;
 		}
 
+		// RETAIL: Tron's attachment substitutions (Object.lto 0x100c4e1c)
+
+		AttachmentSubstitutionStruct ass;
+
+		uint32 iSubstitution = 0;
+		while ( true )
+		{
+			sprintf(s_aAttName, "%s%d", MODELBMGR_MODEL_ATTACHMENTSUBSTITUTION, iSubstitution);
+			m_buteMgr.GetString(s_aTagName, s_aAttName, "", szTemp, 64);
+			if( !m_buteMgr.Success( ))
+				break;
+
+			tok = strtok( szTemp, ", ");
+			ass.szAttachment = debug_newa( char, strlen(tok) + 1 );
+			strcpy( ass.szAttachment, tok );
+
+			tok = strtok( LTNULL, ", ");
+			ass.szSubstitute = debug_newa( char, strlen(tok) + 1 );
+			strcpy( ass.szSubstitute, tok );
+
+			m_aModels[iModel].m_lstAttachmentSubstitutions.push_back( ass );
+
+			iSubstitution++;
+		}
+
+		// RETAIL: Tron's (Object.lto 0x100c4f61)
+		m_buteMgr.GetString(s_aTagName, MODELBMGR_MODEL_HIDDENPIECES, "", m_aModels[iModel].m_szHiddenPieces, ARRAY_LEN(m_aModels[iModel].m_szHiddenPieces) );
+
 		// Get the player view attachment...
 
 		PlayerViewAttachmentStruct pas;
@@ -700,78 +768,48 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 		}
 	}
 
-	
-	// Count the co-op models
-	m_cCPModels = 0;
-	sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cCPModels);
+	// RETAIL: Tron's multiplayer models and colors (Object.lto 0x100c50d7)
 
-	while (m_buteMgr.Exist(MODELBMGR_CP_MODEL,s_aAttName))
+	int nColor = 0;
+	sprintf(s_aAttName, MODELBMGR_MP_COLOR_NAMEID, nColor);
+	int nColorNameId = m_buteMgr.GetInt(MODELBMGR_MP_MODEL, s_aAttName);
+	while (m_buteMgr.Success())
 	{
-		m_cCPModels++;
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cCPModels);
+		m_vecColorNameIds.push_back(nColorNameId);
+		nColor++;
+		sprintf(s_aAttName, MODELBMGR_MP_COLOR_NAMEID, nColor);
+		nColorNameId = m_buteMgr.GetInt(MODELBMGR_MP_MODEL, s_aAttName);
 	}
 
-	m_aCPModels = debug_newa(ModelId, m_cCPModels);
-	// Read in the models
-	for ( int iCPModel = 0 ; iCPModel < m_cCPModels ; iCPModel++ )
+	// Count the multiplayer models
+	m_cMPModels = 0;
+	sprintf(s_aAttName, MODELBMGR_MP_MODEL_NAME, m_cMPModels);
+
+	while (m_buteMgr.Exist(MODELBMGR_MP_MODEL,s_aAttName))
 	{
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, iCPModel);
-		m_buteMgr.GetString(MODELBMGR_CP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer) );
-		m_aCPModels[iCPModel] = GetModelId(s_szBuffer);
+		m_cMPModels++;
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_NAME, m_cMPModels);
 	}
 
-
-	// Count the DM models
-	m_cDMModels = 0;
-	sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cDMModels);
-
-	while (m_buteMgr.Exist(MODELBMGR_DM_MODEL,s_aAttName))
-	{
-		m_cDMModels++;
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cDMModels);
-	}
-
-	m_aDMModels = debug_newa(ModelId, m_cDMModels);
+	m_aMPModels = debug_newa(MPModel, m_cMPModels);
 
 	// Read in the models
 
-	for ( int iDMModel = 0 ; iDMModel < m_cDMModels ; iDMModel++ )
+	for ( int iMPModel = 0 ; iMPModel < m_cMPModels ; iMPModel++ )
 	{
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, iDMModel);
-		m_buteMgr.GetString(MODELBMGR_DM_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer) );
-		m_aDMModels[iDMModel] = GetModelId(s_szBuffer);
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_NAME, iMPModel);
+		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer) );
+		m_aMPModels[iMPModel].m_eModelId = GetModelId(s_szBuffer);
+
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_NAMEID, iMPModel);
+		m_aMPModels[iMPModel].m_nNameId = m_buteMgr.GetInt(MODELBMGR_MP_MODEL, s_aAttName);
+
+		int iMPColor = 0;
+		while (ReadMPModelColor(iMPModel, iMPColor))
+		{
+			iMPColor++;
+		}
 	}
-
-	// Count the  team models
-	m_cTeamModels = 0;
-	sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cTeamModels);
-
-	while (m_buteMgr.Exist(MODELBMGR_TEAM_MODEL,s_aAttName))
-	{
-		m_cTeamModels++;
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, m_cTeamModels);
-	}
-
-	m_aTeamModels = debug_newa(ModelId, m_cTeamModels);
-
-	// Read in the models
-
-	for ( int iTModel = 0 ; iTModel < m_cTeamModels ; iTModel++ )
-	{
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_NAME, iTModel);
-	
-		m_buteMgr.GetString(MODELBMGR_TEAM_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer) );
-		m_aTeamModels[iTModel] = GetModelId(s_szBuffer);
-	}
-
-	for ( int iTeam = 0 ; iTeam < 2 ; iTeam++ )
-	{
-		sprintf(s_aAttName, "%s%d", MODELBMGR_MP_MODEL_TEAM, iTeam);
-		
-		m_aTeamDefaults[iTeam] = m_buteMgr.GetInt(MODELBMGR_TEAM_DEFAULT, s_aAttName, 0);
-	}
-
-
 
 	// Free up butemgr's memory and what-not.
 
@@ -794,6 +832,12 @@ void CModelButeMgr::Term()
 	{
 		debug_deletea(m_aModels);
         m_aModels = LTNULL;
+	}
+
+	if (m_aMPModels)
+	{
+		debug_deletea(m_aMPModels);
+        m_aMPModels = LTNULL;
 	}
 
 	if (m_aStyles)
@@ -835,24 +879,6 @@ void CModelButeMgr::Term()
         m_aNScripts = LTNULL;
 	}
 
-	if (m_aCPModels)
-	{
-		debug_deletea(m_aCPModels);
-        m_aCPModels = LTNULL;
-	}
-
-	if (m_aDMModels)
-	{
-		debug_deletea(m_aDMModels);
-        m_aDMModels = LTNULL;
-	}
-
-	if (m_aTeamModels)
-	{
-		debug_deletea(m_aTeamModels);
-        m_aTeamModels = LTNULL;
-	}
-
     g_pModelButeMgr = LTNULL;
 
 	CGameButeMgr::Term( );
@@ -884,7 +910,8 @@ ModelId CModelButeMgr::GetModelId(const char *szName)
 // !!!    g_pLTBase->CPrint("CModelButeMgr::GetModel - Could not find Model \"%s\"", szName);
     _ASSERT(LTFALSE);
 
-	return (ModelId)iModel;
+	// RETAIL: Tron returns eModelIdInvalid (Object.lto 0x100c5a75)
+	return eModelIdInvalid;
 }
 
 const char* CModelButeMgr::GetModelName(ModelId eModelId)
@@ -931,6 +958,18 @@ const char* CModelButeMgr::GetModelAIName(ModelId eModelId)
 	return LTNULL;
 }
 
+// RETAIL: Object.lto 0x100c5b80
+const char* CModelButeMgr::GetModelHiddenPieces(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_szHiddenPieces;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelHiddenPieces: Invalid ModelId" );
+	return LTNULL;
+}
+
 ModelType CModelButeMgr::GetModelType(ModelId eModelId)
 {
 	if(eModelId >= 0 && eModelId < m_cModels)
@@ -951,6 +990,18 @@ ModelSkeleton CModelButeMgr::GetModelSkeleton(ModelId eModelId)
 
 	_ASSERT( !"CModelButeMgr::GetModelSkeleton: Invalid ModelId" );
 	return eModelSkeletonInvalid;
+}
+
+// RETAIL: Object.lto 0x100c5c40
+bool CModelButeMgr::GetModelSupportsDamageFX(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_bSupportsDamageFX != LTFALSE;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelSupportsDamageFX: Invalid ModelId" );
+	return false;
 }
 
 LTFLOAT CModelButeMgr::GetModelMass(ModelId eModelId)
@@ -1030,6 +1081,30 @@ LTFLOAT CModelButeMgr::GetModelMaxArmor(ModelId eModelId)
 	return 0.f;
 }
 
+// RETAIL: Object.lto 0x100c5e40
+LTFLOAT CModelButeMgr::GetModelMinSearchTime(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_fMinSearchTime;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelMinSearchTime: Invalid ModelId" );
+	return 0.f;
+}
+
+// RETAIL: Object.lto 0x100c5e80
+LTFLOAT CModelButeMgr::GetModelMaxSearchTime(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_fMaxSearchTime;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelMaxSearchTime: Invalid ModelId" );
+	return 0.f;
+}
+
 const char* CModelButeMgr::GetModelLoudMovementSnd( ModelId eModelId )
 {
 	if( eModelId >= 0 && eModelId < m_cModels )
@@ -1052,15 +1127,42 @@ const char* CModelButeMgr::GetModelQuietMovementSnd( ModelId eModelId )
 	return LTNULL;
 }
 
+// RETAIL: Object.lto 0x100c5ec0: the next id of the model's range.
 uint16 CModelButeMgr::GetModelNameId( ModelId eModelId )
 {
 	if( eModelId >= 0 && eModelId < m_cModels )
 	{
-		return m_aModels[eModelId].m_nNameId;
+		uint32 nMin = m_aModels[eModelId].m_nNameIdMin;
+		uint16 nMax = m_aModels[eModelId].m_nNameIdMax;
+
+		uint16 nNameId = s_mapNameIdRanges[nMin].nCount + (uint16)nMin;
+		if( nNameId <= nMax )
+		{
+			s_mapNameIdRanges[nMin].nCount++;
+			return nNameId;
+		}
+
+		s_mapNameIdRanges[nMin].nCount = 1;
+		return (uint16)nMin;
 	}
 
 	_ASSERT( !"CModelButeMgr::GetModelNameId: Invalid ModelId" );
 	return 0;
+}
+
+// RETAIL: Object.lto 0x100c60c0: start every range at an offset from the
+// seed.
+void CModelButeMgr::ResetModelNameIds( uint32 nSeed )
+{
+	NameIdRangeMap::iterator it;
+	for( it = s_mapNameIdRanges.begin(); it != s_mapNameIdRanges.end(); ++it )
+	{
+		uint32 nRange = it->second.nMax - it->second.nMin;
+		uint32 nOffset = 0;
+		if( nRange )
+			nOffset = nSeed % nRange;
+		it->second.nCount = (uint16)nOffset;
+	}
 }
 
 const char* CModelButeMgr::GetModelPlayerPainSndDir( ModelId eModelId )
@@ -1072,6 +1174,42 @@ const char* CModelButeMgr::GetModelPlayerPainSndDir( ModelId eModelId )
 
 	_ASSERT( !"CModelButeMgr::GetModelLoudMovementSnd: Invalid ModelId" );
 	return LTNULL;
+}
+
+// RETAIL: Object.lto 0x100c6160
+const char* CModelButeMgr::GetModelRezInFX(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_szRezInFX;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelRezInFX: Invalid ModelId" );
+	return LTNULL;
+}
+
+// RETAIL: Object.lto 0x100c61a0
+const char* CModelButeMgr::GetModelGibFX(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_szGibFX;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelGibFX: Invalid ModelId" );
+	return LTNULL;
+}
+
+// RETAIL: Object.lto 0x100c61e0
+uint16 CModelButeMgr::GetModelHitpointsDropped(ModelId eModelId)
+{
+	if(eModelId >= 0 && eModelId < m_cModels)
+	{
+		return m_aModels[eModelId].m_nHitpointsDropped;
+	}
+
+	_ASSERT( !"CModelButeMgr::GetModelHitpointsDropped: Invalid ModelId" );
+	return 0;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1111,7 +1249,8 @@ const char* CModelButeMgr::GetSkeletonDefaultFrontDeathAni(ModelSkeleton eModelS
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_szDefaultFrontDeathAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c62d4)
+	return m_aSkeletons[eModelSkeleton].m_lstDefaultFrontDeathAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_lstDefaultFrontDeathAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonDefaultBackDeathAni(ModelSkeleton eModelSkeleton)
@@ -1119,7 +1258,8 @@ const char* CModelButeMgr::GetSkeletonDefaultBackDeathAni(ModelSkeleton eModelSk
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_szDefaultBackDeathAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c62d4)
+	return m_aSkeletons[eModelSkeleton].m_lstDefaultBackDeathAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_lstDefaultBackDeathAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonDefaultFrontShortRecoilAni(ModelSkeleton eModelSkeleton)
@@ -1127,7 +1267,8 @@ const char* CModelButeMgr::GetSkeletonDefaultFrontShortRecoilAni(ModelSkeleton e
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_szDefaultFrontShortRecoilAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c62d4)
+	return m_aSkeletons[eModelSkeleton].m_lstDefaultFrontShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_lstDefaultFrontShortRecoilAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonDefaultBackShortRecoilAni(ModelSkeleton eModelSkeleton)
@@ -1135,7 +1276,8 @@ const char* CModelButeMgr::GetSkeletonDefaultBackShortRecoilAni(ModelSkeleton eM
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_szDefaultBackShortRecoilAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c62d4)
+	return m_aSkeletons[eModelSkeleton].m_lstDefaultBackShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_lstDefaultBackShortRecoilAni.size() - 1)].c_str();
 }
 
 ModelNode CModelButeMgr::GetSkeletonDefaultHitNode(ModelSkeleton eModelSkeleton)
@@ -1170,7 +1312,8 @@ const char* CModelButeMgr::GetSkeletonNodeFrontDeathAni(ModelSkeleton eModelSkel
 	_ASSERT(eModelNode >= 0 && eModelNode < m_aSkeletons[eModelSkeleton].m_cNodes);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_szFrontDeathAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c6454)
+	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontDeathAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontDeathAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonNodeBackDeathAni(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1178,7 +1321,8 @@ const char* CModelButeMgr::GetSkeletonNodeBackDeathAni(ModelSkeleton eModelSkele
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_szBackDeathAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c6454)
+	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackDeathAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackDeathAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonNodeFrontShortRecoilAni(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1187,7 +1331,8 @@ const char* CModelButeMgr::GetSkeletonNodeFrontShortRecoilAni(ModelSkeleton eMod
 	_ASSERT(eModelNode >= 0 && eModelNode < m_aSkeletons[eModelSkeleton].m_cNodes);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_szFrontShortRecoilAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c6454)
+	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontShortRecoilAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonNodeBackShortRecoilAni(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1195,7 +1340,8 @@ const char* CModelButeMgr::GetSkeletonNodeBackShortRecoilAni(ModelSkeleton eMode
 	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_szBackShortRecoilAni;
+	// RETAIL: one of the list at random (Object.lto 0x100c6454)
+	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackShortRecoilAni.size() - 1)].c_str();
 }
 
 LTFLOAT CModelButeMgr::GetSkeletonNodeDamageFactor(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1241,15 +1387,6 @@ LTFLOAT CModelButeMgr::GetSkeletonNodeHitPriority(ModelSkeleton eModelSkeleton, 
 	if (eModelSkeletonInvalid == eModelSkeleton) return 0.0f;
 
 	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_fHitPriority;
-}
-
-bool CModelButeMgr::GetSkeletonNodeAttachSpears( ModelSkeleton eModelSkeleton, ModelNode eModelNode )
-{
-	_ASSERT(eModelSkeleton >= 0 && eModelSkeleton < m_cSkeletons);
-	_ASSERT(eModelNode >= 0 && eModelNode < m_aSkeletons[eModelSkeleton].m_cNodes);
-	if (eModelSkeletonInvalid == eModelSkeleton) return 0.0f;
-
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_bAttachSpears;
 }
 
 ModelTrackingNodeGroup CModelButeMgr::GetSkeletonTrackingNodesLookAt(ModelSkeleton eModelSkeleton)
@@ -1396,6 +1533,16 @@ const LTFLOAT CModelButeMgr::GetTrackingNodeMaxVelocity(ModelTrackingNodeGroup e
 		return m_aTrackingNodeGroups[eModelTrackingNodeGroup].m_aTrackingNodes[eModelTrackingNode].m_fMaxVelocity;
 	}
 	return 0.f;
+}
+
+// RETAIL: Tron's
+const LTBOOL CModelButeMgr::GetTrackingNodeIgnoreParent(ModelTrackingNodeGroup eModelTrackingNodeGroup, ModelTrackingNode eModelTrackingNode)
+{
+	if( IsTrackingNodeGroupValid( eModelTrackingNodeGroup ) && IsTrackingNodeValid( eModelTrackingNodeGroup, eModelTrackingNode ) )
+	{
+		return m_aTrackingNodeGroups[eModelTrackingNodeGroup].m_aTrackingNodes[eModelTrackingNode].m_bIgnoreParent;
+	}
+	return LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1686,25 +1833,6 @@ LTBOOL CModelButeMgr::CanModelBeCarried(ModelId eModelId)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CModelButeMgr::AIIgnoreBody
-//
-//	PURPOSE:	Flags if the body associated with this model should not register a stimulus.
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL CModelButeMgr::AIIgnoreBody(ModelId eModelId)
-{
-	_ASSERT(eModelId >= 0 && eModelId < m_cModels);
-	if(eModelId >= 0 && eModelId < m_cModels)
-	{
-		return m_aModels[eModelId].m_bAIIgnoreBody;
-	}
-
-	return LTTRUE;
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CModelButeMgr::IsModelTranslucent
 //
 //	PURPOSE:	determines if the specified model is translucent or not
@@ -1818,6 +1946,22 @@ void CModelButeMgr::GetPlayerViewAttachment( ModelId eModelId, uint8 iPVAttachme
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Object.lto 0x100c7020
+const char* CModelButeMgr::GetAttachmentSubstitution( ModelId eModelId, const char* const& pszAttachment )
+{
+	if( eModelId >= 0 && eModelId < m_cModels && pszAttachment )
+	{
+		ATTACHMENT_SUBSTITUTION_LIST::iterator it;
+		for( it = m_aModels[eModelId].m_lstAttachmentSubstitutions.begin(); it != m_aModels[eModelId].m_lstAttachmentSubstitutions.end(); ++it )
+		{
+			if( !_stricmp( it->szAttachment, pszAttachment ))
+				return it->szSubstitute;
+		}
+	}
+
+	return pszAttachment;
+}
+
 LTFLOAT CModelButeMgr::GetUnalertDamageFactor( ModelId eModelId )
 {
 	_ASSERT( eModelId >= 0 && eModelId < m_cModels );
@@ -1833,78 +1977,116 @@ LTFLOAT CModelButeMgr::GetUnalertDamageFactor( ModelId eModelId )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CModelButeMgr::GetCPModel
+//	ROUTINE:	CModelButeMgr::GetMPModel
 //
-//	PURPOSE:	Co-op model id lookup
+//	PURPOSE:	Multiplayer model lookup (RETAIL: Object.lto 0x100c70f0)
+//
+// ----------------------------------------------------------------------- //
+
+const CModelButeMgr::MPModel* CModelButeMgr::GetMPModel(int num)
+{
+	ASSERT(m_aMPModels);
+	if (!m_aMPModels) return LTNULL;
+
+	if (num >= m_cMPModels)
+	{
+		ASSERT("Error in CModelButeMgr::GetMPModel() : Invalid MPModel index");
+		num = 0;
+	}
+	return &m_aMPModels[num];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CModelButeMgr::GetCPModel/GetDMModel/GetTeamModel
+//
+//	PURPOSE:	PORT: NOLF2's model id lookups for its callers; Tron has
+//				one list of multiplayer models.
 //
 // ----------------------------------------------------------------------- //
 
 ModelId CModelButeMgr::GetCPModel(int num)
 {
-	ASSERT(m_aCPModels);
-	if (!m_aCPModels) return eModelIdInvalid;
-
-	if (num >= m_cCPModels)
-	{
-		ASSERT("Error in CModelButeMgr::GetCPModel() : Invalid CPModel index");
-		num = 0;
-	}
-	return m_aCPModels[num];
+	const MPModel* pModel = GetMPModel(num);
+	return pModel ? pModel->m_eModelId : eModelIdInvalid;
 }
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CModelButeMgr::GetDMModel
-//
-//	PURPOSE:	Deathmatch model id lookup
-//
-// ----------------------------------------------------------------------- //
 
 ModelId CModelButeMgr::GetDMModel(int num)
 {
-	ASSERT(m_aDMModels);
-	if (!m_aDMModels) return eModelIdInvalid;
-
-	if (num >= m_cDMModels)
-	{
-		ASSERT("Error in CModelButeMgr::GetDMModel() : Invalid DMModel index");
-		num = 0;
-	}
-	return m_aDMModels[num];
+	const MPModel* pModel = GetMPModel(num);
+	return pModel ? pModel->m_eModelId : eModelIdInvalid;
 }
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CModelButeMgr::GetTeamModel
-//
-//	PURPOSE:	Team model id lookup
-//
-// ----------------------------------------------------------------------- //
 
 ModelId CModelButeMgr::GetTeamModel(int num)
 {
-	ASSERT(m_aTeamModels);
-	if (!m_aTeamModels) return eModelIdInvalid;
-
-	if (num >= m_cTeamModels)
-	{
-		ASSERT("Error in CModelButeMgr::GetTeamModel() : Invalid TeamModel index");
-		num = 0;
-	}
-	return m_aTeamModels[num];
+	const MPModel* pModel = GetMPModel(num);
+	return pModel ? pModel->m_eModelId : eModelIdInvalid;
 }
 
+// PORT: Tron has no team default models: a team takes the multiplayer
+// model of its index.
 int CModelButeMgr::GetTeamDefaultModel(int nTeam)
 {
-	if (nTeam >= 2)
+	if (nTeam >= m_cMPModels)
 	{
-		ASSERT("Error in CModelButeMgr::GetDefaultTeamDMModel() : Invalid team index");
 		nTeam = 0;
 	}
-	return m_aTeamDefaults[nTeam];
+	return nTeam;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CModelButeMgr::ReadMPModelColor
+//
+//	PURPOSE:	Read the skins and FX of one color of a multiplayer model
+//				(RETAIL: Object.lto 0x100c5350; the name is ours)
+//
+// ----------------------------------------------------------------------- //
 
+bool CModelButeMgr::ReadMPModelColor(int iModel, int iColor)
+{
+	std::vector<std::string> lstSkins;
+
+	int iSkin = 0;
+	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_SKIN, iModel, iColor, iSkin);
+	while (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+	{
+		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+		lstSkins.push_back(std::string(s_szBuffer));
+
+		iSkin++;
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_SKIN, iModel, iColor, iSkin);
+	}
+
+	if (iSkin <= 0)
+		return false;
+
+	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_REZIN, iModel, iColor);
+	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+	{
+		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(s_szBuffer));
+	}
+	else
+	{
+		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(""));
+	}
+
+	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_HHDISC, iModel, iColor);
+	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+	{
+		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(s_szBuffer));
+	}
+	else
+	{
+		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(""));
+	}
+
+	m_aMPModels[iModel].m_vecColorSkins.push_back(lstSkins);
+
+	return true;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 //

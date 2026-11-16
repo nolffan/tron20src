@@ -419,7 +419,7 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 
 	m_nDamageFlags				= 0;
 	m_nInstantDamageFlags		= 0;
-	m_nTronUnknownDamageFlags	= 0;	// RETAIL: Tron's (Character.h)
+	m_nLastInstantDamageFlags	= 0;	// RETAIL: Tron's (Character.h)
 
 	m_iPermissionSet			= 255; // Full permission set (uint8)
 
@@ -637,6 +637,7 @@ uint32 CCharacter::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		{
 			//force update of info vols here so that stimuli may be registered properly.
 			UpdateCurrentInformationVolume(true);
+			UpdateCurrentPlayerInfoVolume(true);	// RETAIL: Object.lto 0x1008a714
 
 			// The player will register when it is done spawning in.
 			if( !IsPlayer( m_hObject ))
@@ -1536,10 +1537,24 @@ void CCharacter::SetDamageFlags( const DamageFlags nDmgFlags )
 	SendDamageFlagsToClients();
 }
 
+// RETAIL: Object.lto 0x1008d590 (the name is ours)
+void CCharacter::AddDamageFlags( const DamageFlags nDmgFlags )
+{
+	m_nDamageFlags |= nDmgFlags;
+}
+
+// RETAIL: Object.lto 0x1008d5c0; the flags are sent by
+// UpdateInstantDamageFlags.
 void CCharacter::SetInstantDamageFlags( const DamageFlags nDmgFlags )
 {
-	m_nInstantDamageFlags = nDmgFlags;
+	if( nDmgFlags == m_nInstantDamageFlags ) return;
 
+	m_nInstantDamageFlags = nDmgFlags;
+}
+
+// RETAIL: Object.lto 0x1008d470 (the name is ours)
+void CCharacter::SendInstantDamageFlagsToClients( )
+{
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_SFX_MESSAGE );
 	cMsg.Writeuint8( SFX_CHARACTER_ID );
@@ -1547,6 +1562,45 @@ void CCharacter::SetInstantDamageFlags( const DamageFlags nDmgFlags )
 	cMsg.Writeuint8( CFX_INSTANTDMGFLAGS_MSG );
 	cMsg.Writeuint64( m_nInstantDamageFlags );
 	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
+
+	// Update our special fx message so new clients will get the updated
+	// info as well...
+
+	CreateSpecialFX();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CCharacter::UpdateDamageFlagsToClients
+//
+//  PURPOSE:	RETAIL: Object.lto 0x1008e890 (the names are ours): send the
+//				damage flags of this frame's hits and any change of the
+//				instant flags.
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::UpdateDamageFlagsToClients( )
+{
+	UpdateDamageFlags();
+	UpdateInstantDamageFlags();
+}
+
+void CCharacter::UpdateDamageFlags( )
+{
+	if( m_nDamageFlags )
+	{
+		SendDamageFlagsToClients();
+		m_nDamageFlags = 0;
+	}
+}
+
+void CCharacter::UpdateInstantDamageFlags( )
+{
+	if( m_nInstantDamageFlags != m_nLastInstantDamageFlags )
+	{
+		m_nLastInstantDamageFlags = m_nInstantDamageFlags;
+		SendInstantDamageFlagsToClients();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1962,6 +2016,7 @@ void CCharacter::Update()
 
 	// Update our Information Volume position
 	UpdateCurrentInformationVolume();
+	UpdateCurrentPlayerInfoVolume();	// RETAIL: Object.lto 0x1008e676
 	
 
 	// Update our last volume position
@@ -2035,6 +2090,9 @@ void CCharacter::Update()
 	// Update our animation
 
 	UpdateAnimation();
+
+	// RETAIL: Object.lto 0x1008e86c
+	UpdateDamageFlagsToClients();
 
 	// Update our playertracker for dialogue.
 	m_PlayerTrackerDialogue.Update( );
@@ -4349,7 +4407,9 @@ AIInformationVolume* CCharacter::GetCurrentInformationVolume()
 
 void CCharacter::UpdateCurrentInformationVolume(bool bForce /* = false */)
 {
-	if ( g_pAIInformationVolumeMgr->IsInitialized() && (bForce || IsVisible()) )
+	// RETAIL: Tron updates the information volume whether or not the
+	// character is visible (Object.lto 0x100939d0); bForce is unused.
+	if ( g_pAIInformationVolumeMgr->IsInitialized() )
 	{
         LTVector vPos;
 		g_pLTServer->GetObjectPos(m_hObject, &vPos);
@@ -4370,23 +4430,70 @@ void CCharacter::UpdateCurrentInformationVolume(bool bForce /* = false */)
 			m_pCurrentInformationVolume = pInformationVolume;
 			m_pLastInformationVolume = m_pCurrentInformationVolume;
 			m_vLastInformationVolumePos = vPos;
-
-#ifndef _FINAL
-			if ( IsPlayer(m_hObject) && g_VolumeDebugTrack.GetFloat(0.0f) == 1.0f )
-			{
-				g_pLTServer->CPrint("Player in InformationVolume \"%s\"", pInformationVolume->GetName());
-			}
-#endif
 		}
 		else
 		{
 			m_pCurrentInformationVolume = LTNULL;
-#ifndef _FINAL
-			if ( IsPlayer(m_hObject) && g_VolumeDebugTrack.GetFloat(0.0f) == 1.0f )
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::GetCurrentPlayerInfoVolume
+//
+//	PURPOSE:	RETAIL: Object.lto 0x100939b0
+//
+// ----------------------------------------------------------------------- //
+
+AIVolumePlayerInfo* CCharacter::GetCurrentPlayerInfoVolume()
+{
+	if ( g_pAIVolumePlayerInfoMgr->IsInitialized() && m_pCurrentPlayerInfoVolume != LTNULL )
+	{
+		return m_pCurrentPlayerInfoVolume;
+	}
+	else
+	{
+        return LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::UpdateCurrentPlayerInfoVolume
+//
+//	PURPOSE:	RETAIL: Object.lto 0x10093aa0: sets the player info volume
+//				we are currently standing in
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::UpdateCurrentPlayerInfoVolume(bool bForce /* = false */)
+{
+	if ( g_pAIVolumePlayerInfoMgr->IsInitialized() && (bForce || IsVisible()) )
+	{
+        LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
+		AIVolumePlayerInfo* pPlayerInfoVolume = g_pAIVolumePlayerInfoMgr->FindContainingVolume(m_hObject, vPos, eAxisAll, GetInfoVerticalThreshold(), m_pLastPlayerInfoVolume);
+
+		if ( pPlayerInfoVolume )
+		{
+			if ( m_pLastPlayerInfoVolume && m_pLastPlayerInfoVolume != pPlayerInfoVolume )
 			{
-				g_pLTServer->CPrint("Player not in an InformationVolume");
+				HandleVolumeExit(m_pLastPlayerInfoVolume);
 			}
-#endif
+
+			if ( m_pLastPlayerInfoVolume != pPlayerInfoVolume )
+			{
+				HandleVolumeEnter(pPlayerInfoVolume);
+			}
+
+			m_pCurrentPlayerInfoVolume = pPlayerInfoVolume;
+			m_pLastPlayerInfoVolume = m_pCurrentPlayerInfoVolume;
+			m_vLastPlayerInfoVolumePos = vPos;
+		}
+		else
+		{
+			m_pCurrentPlayerInfoVolume = LTNULL;
 		}
 	}
 }
@@ -4434,19 +4541,8 @@ bool CCharacter::AddSpear(HOBJECT hSpear, ModelNode eModelNode, const LTRotation
 {
 	if ( m_cSpears < kMaxSpears )
 	{
-		// Check the node to see if it can attach a spear
-		// If we are dead the spear should always attach.
-		
-		if( !m_damage.IsDead() )
-		{
-			if( !g_pModelButeMgr->GetSkeletonNodeAttachSpears( m_eModelSkeleton, eModelNode ))
-			{
-				// We can't attach a spear to the node so remove the spear and fail...
-
-				g_pLTServer->RemoveObject(hSpear);
-				return false;
-			}
-		}
+		// RETAIL: Tron's model nodes have no AttachSpears attribute (its
+		// CModelButeMgr::Init, Object.lto 0x100c2a10, reads none).
 
 		char* szNode = (char *)g_pModelButeMgr->GetSkeletonNodeName(m_eModelSkeleton, eModelNode);
 

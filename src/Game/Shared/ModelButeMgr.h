@@ -18,6 +18,8 @@
 #include "SurfaceDefs.h"
 #include "..\shared\ButeListReader.h"
 #include "DebugNew.h"
+#include <string>
+#include <vector>
 
 // Defines
 
@@ -32,7 +34,9 @@
 
 #define MBMGR_DEFAULT_FILE "Attributes\\ModelButes.txt"
 
-#define MAX_MODELBMGR_NAME_LEN	32
+// RETAIL: Tron's names are 48 characters (Object.lto 0x100c44f5 reads them
+// with a length of 0x30).
+#define MAX_MODELBMGR_NAME_LEN	48
 #define	MAX_MODELBMGR_MAX_PATH	64
 
 // Enums
@@ -118,8 +122,12 @@ class CModelButeMgr : public CGameButeMgr
 		const char*		GetModelSoundTemplate(ModelId eModelId);
 		const char*		GetModelAnimationMgr(ModelId eModelId);
 		const char*		GetModelAIName(ModelId eModelId);
+		// RETAIL: Tron's (the name is ours; Object.lto 0x100c5b80)
+		const char*		GetModelHiddenPieces(ModelId eModelId);
 		ModelType		GetModelType(ModelId eModelId);
 		ModelSkeleton	GetModelSkeleton(ModelId eModelId);
+		// RETAIL: Tron's (the name is ours; Object.lto 0x100c5c40)
+		bool			GetModelSupportsDamageFX(ModelId eModelId);
         LTFLOAT         GetModelMass(ModelId eModelId);
         LTFLOAT         GetModelHitPoints(ModelId eModelId);
         LTFLOAT         GetModelMaxHitPoints(ModelId eModelId);
@@ -127,10 +135,21 @@ class CModelButeMgr : public CGameButeMgr
         LTFLOAT         GetModelMaxEnergy(ModelId eModelId);
         LTFLOAT         GetModelArmor(ModelId eModelId);
         LTFLOAT         GetModelMaxArmor(ModelId eModelId);
+		// RETAIL: Tron's (the names are ours; Object.lto 0x100c5e40, 0x100c5e80)
+		LTFLOAT			GetModelMinSearchTime(ModelId eModelId);
+		LTFLOAT			GetModelMaxSearchTime(ModelId eModelId);
 		const char*		GetModelLoudMovementSnd(ModelId eModelId);
 		const char*		GetModelQuietMovementSnd(ModelId eModelId);
+		// RETAIL: Tron's models have a range of name ids; each call gives
+		// the next id of the range (Object.lto 0x100c5ec0).
 		uint16			GetModelNameId(ModelId eModelId);
+		// RETAIL: Tron's (the name is ours; Object.lto 0x100c60c0)
+		void			ResetModelNameIds(uint32 nSeed);
 		const char*		GetModelPlayerPainSndDir(ModelId eModelId);
+		// RETAIL: Tron's (the names are ours; Object.lto 0x100c6160..0x100c61e0)
+		const char*		GetModelRezInFX(ModelId eModelId);
+		const char*		GetModelGibFX(ModelId eModelId);
+		uint16			GetModelHitpointsDropped(ModelId eModelId);
 
 		// Styles
 
@@ -157,7 +176,6 @@ class CModelButeMgr : public CGameButeMgr
 		HitLocation		GetSkeletonNodeLocation(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
         LTFLOAT         GetSkeletonNodeHitRadius(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
         LTFLOAT         GetSkeletonNodeHitPriority(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
-		bool			GetSkeletonNodeAttachSpears(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
         ModelTrackingNodeGroup GetSkeletonTrackingNodesLookAt(ModelSkeleton eModelSkeleton);
         ModelTrackingNodeGroup GetSkeletonTrackingNodesAimAt(ModelSkeleton eModelSkeleton);
 
@@ -177,6 +195,8 @@ class CModelButeMgr : public CGameButeMgr
 		const LTFLOAT	GetTrackingNodeMaxAngleX(ModelTrackingNodeGroup eModelTrackingNodeGroup, ModelTrackingNode eModelTrackingNode);
 		const LTFLOAT	GetTrackingNodeMaxAngleY(ModelTrackingNodeGroup eModelTrackingNodeGroup, ModelTrackingNode eModelTrackingNode);
 		const LTFLOAT	GetTrackingNodeMaxVelocity(ModelTrackingNodeGroup eModelTrackingNodeGroup, ModelTrackingNode eModelTrackingNode);
+		// RETAIL: Tron's (the name is ours)
+		const LTBOOL	GetTrackingNodeIgnoreParent(ModelTrackingNodeGroup eModelTrackingNodeGroup, ModelTrackingNode eModelTrackingNode);
 
 		// Node Scripts
 
@@ -214,7 +234,6 @@ class CModelButeMgr : public CGameButeMgr
 
 		LTBOOL			CanModelBeCarried(ModelId eModelId);
 
-		LTBOOL			AIIgnoreBody(ModelId eModelId);
 
 		LTBOOL			IsModelTranslucent(ModelId eModelId);
 
@@ -227,6 +246,11 @@ class CModelButeMgr : public CGameButeMgr
 		uint8			GetNumDefaultAttachments(ModelId eModelId);
 		void			GetDefaultAttachment(ModelId eModelId, uint8 iAttachment, const char*& pszAttachmentPosition, const char*& pszAttachment);
 
+		// RETAIL: Tron's attachment substitutions (the name is ours;
+		// Object.lto 0x100c7020): the substitute of an attachment, or the
+		// attachment itself.
+		const char*		GetAttachmentSubstitution(ModelId eModelId, const char* const& pszAttachment);
+
 		// PlayerView Attachment
 		
 		uint8			GetNumPlayerViewAttachments( ModelId eModelId );
@@ -238,15 +262,32 @@ class CModelButeMgr : public CGameButeMgr
 
 		// Multiplayer models
 
-		int				GetNumCPModels() { return m_cCPModels; }
+		// RETAIL: Tron's multiplayer models (the names are ours): a model,
+		// its name id, and per color its skins, rez-in FX and disc FX.
+		struct MPModel
+		{
+			ModelId		m_eModelId;
+			int			m_nNameId;
+			std::vector< std::vector<std::string> >	m_vecColorSkins;
+			std::vector<std::string>	m_vecColorRezInFX;
+			std::vector<std::string>	m_vecColorHHDiscFX;
+		};
+
+		int				GetNumMPModels() { return m_cMPModels; }
+		// RETAIL: Object.lto 0x100c70f0
+		const MPModel*	GetMPModel(int num);
+
+		int				GetNumColorNameIds() { return m_vecColorNameIds.size(); }
+		int				GetColorNameId(int nColor) { return m_vecColorNameIds[nColor]; }
+
+		// PORT: NOLF2's callers of its cooperative, deathmatch and team
+		// models; Tron has one list of multiplayer models.
+		int				GetNumCPModels() { return m_cMPModels; }
 		ModelId			GetCPModel(int num);
-
-		int				GetNumDMModels() { return m_cDMModels; }
+		int				GetNumDMModels() { return m_cMPModels; }
 		ModelId			GetDMModel(int num);
-
-		int				GetNumTeamModels() { return m_cTeamModels; }
+		int				GetNumTeamModels() { return m_cMPModels; }
 		ModelId			GetTeamModel(int num);
-
 		int				GetTeamDefaultModel(int nTeam);
 
 
@@ -278,16 +319,16 @@ class CModelButeMgr : public CGameButeMgr
 		int				m_cNScripts;
 		CNScript*		m_aNScripts;
 
-		int				m_cCPModels;
-		ModelId*		m_aCPModels;
+		// RETAIL: Tron's (CModelButeMgr is 0x1158 bytes, Object.lto 0x100c27e0)
+		int				m_cMPModels;
+		MPModel*		m_aMPModels;
 
-		int				m_cDMModels;
-		ModelId*		m_aDMModels;
+		std::vector<int>	m_vecColorNameIds;
 
-		int				m_cTeamModels;
-		ModelId*		m_aTeamModels;
+	protected :
 
-		int				m_aTeamDefaults[2];
+		// RETAIL: Object.lto 0x100c5350 (the name is ours)
+		bool			ReadMPModelColor(int iModel, int iColor);
 
 };
 
@@ -318,33 +359,29 @@ class CModelButeMgr::CNode
 		CNode()
 		{
 			m_szName[0] = 0;
-			m_szFrontDeathAni[0] = 0;
-			m_szBackDeathAni[0] = 0;
-			m_szFrontShortRecoilAni[0] = 0;
-			m_szBackShortRecoilAni[0] = 0;
 			m_dwFlags = 0x0;
 			m_fDamageFactor = 0.0f;
 			m_eModelNodeParent = eModelNodeInvalid;
 			m_eHitLocation = HL_UNKNOWN;
 			m_fHitRadius = 10.0f;
 			m_fHitPriority = 0.0f;
-			m_bAttachSpears = true;
 		}
 
 	public :
 
+		// RETAIL: Tron's nodes are 0x78 bytes (Object.lto 0x100c2d64); their
+		// animations are lists, one of which is chosen at random.
 		char			m_szName[MAX_MODELBMGR_NAME_LEN];
-		char			m_szFrontDeathAni[MAX_MODELBMGR_NAME_LEN];
-		char			m_szBackDeathAni[MAX_MODELBMGR_NAME_LEN];
-		char			m_szFrontShortRecoilAni[MAX_MODELBMGR_NAME_LEN];
-		char			m_szBackShortRecoilAni[MAX_MODELBMGR_NAME_LEN];
+		std::vector<std::string>	m_lstFrontDeathAni;
+		std::vector<std::string>	m_lstBackDeathAni;
+		std::vector<std::string>	m_lstFrontShortRecoilAni;
+		std::vector<std::string>	m_lstBackShortRecoilAni;
         uint32          m_dwFlags;
         LTFLOAT         m_fDamageFactor;
 		ModelNode		m_eModelNodeParent;
 		HitLocation		m_eHitLocation;
         LTFLOAT         m_fHitRadius;
         LTFLOAT         m_fHitPriority;
-		bool			m_bAttachSpears;
 };
 
 class CModelButeMgr::CSkeleton
@@ -355,10 +392,6 @@ class CModelButeMgr::CSkeleton
 		{
 			m_cNodes = 0;
             m_aNodes = LTNULL;
-			m_szDefaultFrontDeathAni[0] = 0;
-			m_szDefaultBackDeathAni[0] = 0;
-			m_szDefaultFrontShortRecoilAni[0] = 0;
-			m_szDefaultBackShortRecoilAni[0] = 0;
 			m_eModelNodeDefaultHit = eModelNodeInvalid;
 			m_eModelTrackingNodesLookAt = eModelTrackingNodeGroupInvalid;
 			m_eModelTrackingNodesAimAt = eModelTrackingNodeGroupInvalid;
@@ -366,13 +399,14 @@ class CModelButeMgr::CSkeleton
 
 	public :
 
+		// RETAIL: Tron's skeletons are 0x44 bytes (Object.lto 0x100c5962)
 		CNode*		m_aNodes;
 		int			m_cNodes;
-		char		m_szDefaultFrontDeathAni[MAX_MODELBMGR_NAME_LEN];
-		char		m_szDefaultBackDeathAni[MAX_MODELBMGR_NAME_LEN];
-		char		m_szDefaultFrontShortRecoilAni[MAX_MODELBMGR_NAME_LEN];
-		char		m_szDefaultBackShortRecoilAni[MAX_MODELBMGR_NAME_LEN];
+		std::vector<std::string>	m_lstDefaultFrontDeathAni;
+		std::vector<std::string>	m_lstDefaultBackDeathAni;
 		ModelNode	m_eModelNodeDefaultHit;
+		std::vector<std::string>	m_lstDefaultFrontShortRecoilAni;
+		std::vector<std::string>	m_lstDefaultBackShortRecoilAni;
 
 		ModelTrackingNodeGroup	m_eModelTrackingNodesLookAt;
 		ModelTrackingNodeGroup	m_eModelTrackingNodesAimAt;
@@ -395,6 +429,7 @@ class CModelButeMgr::CTrackingNode
 			m_fMaxAngleX = 0.f;
 			m_fMaxAngleY = 0.f;
 			m_fMaxVelocity = 0.f;
+			m_bIgnoreParent = LTFALSE;
 		}
 
 public:
@@ -409,6 +444,8 @@ public:
 	LTFLOAT			m_fMaxAngleX;
 	LTFLOAT			m_fMaxAngleY;
 	LTFLOAT			m_fMaxVelocity;
+	// RETAIL: Tron's (0x90; Object.lto 0x100c3ca8)
+	LTBOOL			m_bIgnoreParent;
 };
 
 class CModelButeMgr::CTrackingNodeGroup
@@ -494,7 +531,21 @@ struct PlayerViewAttachmentStruct
 	char *szPVAttachment;
 };
 
+// RETAIL: Tron's attachment substitutions (the name is ours)
+struct AttachmentSubstitutionStruct
+{
+	AttachmentSubstitutionStruct()
+	:	szAttachment	( LTNULL ),
+		szSubstitute	( LTNULL )
+	{
+	}
+
+	char* szAttachment;
+	char* szSubstitute;
+};
+
 typedef std::vector<DefaultAttachmentStruct> DEFAULT_ATTACHMENT_LIST;
+typedef std::vector<AttachmentSubstitutionStruct> ATTACHMENT_SUBSTITUTION_LIST;
 typedef std::vector<PlayerViewAttachmentStruct> PLAYERVIEW_ATTACHMENT_LIST;
 
 class CModelButeMgr::CModel
@@ -514,19 +565,26 @@ class CModelButeMgr::CModel
 			m_fModelMaxEnergy = 0.0f;
 			m_fModelArmor = 0.0f;
 			m_fModelMaxArmor = 0.0f;
+			m_fMinSearchTime = 0.0f;
+			m_fMaxSearchTime = 0.0f;
 			m_szModelFile[0] = 0;
 			m_szHandsSkin[0] = 0;
 			m_szAIName[0] = 0;
 			m_bAIOnly = LTTRUE;
+			m_bSupportsDamageFX = LTFALSE;
 			m_bCanBeCarried = LTTRUE;
-			m_bAIIgnoreBody = LTFALSE;
 			m_bTranslucent = LTFALSE;
 			m_szAnimationMgr = LTNULL;
 			m_fUnalertDamageFactor;
 			m_szLoudMovementSnd[0] = 0;
 			m_szQuietMovementSnd[0] = 0;
-			m_nNameId = 0;
+			m_szHiddenPieces[0] = 0;
+			m_nNameIdMin = 0;
+			m_nNameIdMax = 0;
 			m_szPlayerPainSoundDir[0] = 0;
+			m_szRezInFX[0] = 0;
+			m_szGibFX[0] = 0;
+			m_nHitpointsDropped = 0;
 			m_eFleshSurfaceType = ST_FLESH;
 			m_eArmorSurfaceType = ST_ARMOR;
 		}
@@ -542,6 +600,13 @@ class CModelButeMgr::CModel
 				debug_deletea( it->szAttachment );
 			}
 
+			ATTACHMENT_SUBSTITUTION_LIST::iterator iSub;
+			for( iSub = m_lstAttachmentSubstitutions.begin(); iSub != m_lstAttachmentSubstitutions.end(); ++iSub )
+			{
+				debug_deletea( iSub->szAttachment );
+				debug_deletea( iSub->szSubstitute );
+			}
+
 			PLAYERVIEW_ATTACHMENT_LIST::iterator iter;
 			for( iter = m_lstPVAttachments.begin(); iter != m_lstPVAttachments.end(); ++iter )
 			{
@@ -552,6 +617,8 @@ class CModelButeMgr::CModel
 
 	public :
 
+		// RETAIL: Tron's models are 0x3a0 bytes (Object.lto 0x100c50bd);
+		// the offsets are from its Init.
 		char			m_szName[MAX_MODELBMGR_NAME_LEN];
 		char			m_szSoundTemplate[MAX_MODELBMGR_NAME_LEN];
 		ModelSkeleton	m_eModelSkeleton;
@@ -563,12 +630,14 @@ class CModelButeMgr::CModel
         LTFLOAT         m_fModelMaxEnergy;
         LTFLOAT         m_fModelArmor;
         LTFLOAT         m_fModelMaxArmor;
+		LTFLOAT			m_fMinSearchTime;
+		LTFLOAT			m_fMaxSearchTime;
 		char			m_szModelFile[MAX_MODELBMGR_MAX_PATH];
 		char			m_szHandsSkin[MAX_MODELBMGR_MAX_PATH];
 		char			m_szAIName[MAX_MODELBMGR_NAME_LEN];
 		LTBOOL			m_bAIOnly;
+		LTBOOL			m_bSupportsDamageFX;
 		LTBOOL			m_bCanBeCarried;
-		LTBOOL			m_bAIIgnoreBody;
 		LTBOOL			m_bTranslucent;
 		CButeListReader m_blrSkinReader;
 		CButeListReader m_blrRenderStyleReader;
@@ -579,12 +648,18 @@ class CModelButeMgr::CModel
 		char			m_szQuietMovementSnd[MAX_MODELBMGR_NAME_LEN];
 		CButeListReader	m_blrAltHeadSkin;
 		CButeListReader	m_blrAltBodySkin;
-		uint16			m_nNameId;
+		char			m_szHiddenPieces[256];
+		uint16			m_nNameIdMin;
+		uint16			m_nNameIdMax;
 		char			m_szPlayerPainSoundDir[MAX_MODELBMGR_NAME_LEN];
+		char			m_szRezInFX[MAX_MODELBMGR_NAME_LEN];
+		char			m_szGibFX[MAX_MODELBMGR_NAME_LEN];
+		uint16			m_nHitpointsDropped;
 		SurfaceType		m_eFleshSurfaceType;
 		SurfaceType		m_eArmorSurfaceType;
 		
 		DEFAULT_ATTACHMENT_LIST	m_lstDefaultAttachments;
+		ATTACHMENT_SUBSTITUTION_LIST m_lstAttachmentSubstitutions;
 		PLAYERVIEW_ATTACHMENT_LIST m_lstPVAttachments;
 };
 

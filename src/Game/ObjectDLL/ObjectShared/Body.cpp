@@ -1229,7 +1229,9 @@ void Body::Update()
 
 		//if we are in an active hiding volume, do not create the stimulus.
 		//if body is going to go away on its own, do not create the stimulus.
-		if ( !pPlayerInfoVol || !pPlayerInfoVol->IsHiding() || !pPlayerInfoVol->IsOn() && ( m_fLifetime == -1.f ) && !g_pModelButeMgr->AIIgnoreBody(m_eModelId) )
+		// RETAIL: Tron's models have no AIIgnoreBody attribute (its
+		// CModelButeMgr::Init, Object.lto 0x100c2a10, reads none).
+		if ( !pPlayerInfoVol || !pPlayerInfoVol->IsHiding() || !pPlayerInfoVol->IsOn() && ( m_fLifetime == -1.f ) )
 		{
 			m_eDeathStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDeathVisible, 1, m_hObject, LTNULL, m_DeathScene.GetRelationData(), vPos, 1.f, 1.f );
 		}

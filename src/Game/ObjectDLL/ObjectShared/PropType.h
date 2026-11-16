@@ -32,33 +32,6 @@ class PropType : public Prop
 		void ReadProp(ObjectCreateStruct *pData);
 };
 
-// PORT: NOLF2's runtime prop types for NOLF2's DoomsDay objects (not in
-// Tron; PropType.cpp). Ours
-class NOLF2PropType : public PropType
-{
-	public :
-
-		const char* GetPropTypeName( ) { return m_sPropType.c_str(); }
-
-	protected :
-
-        uint32  EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
-
-		bool	SetPropType( char const* pszPropType );
-
-		bool	Setup( );
-
-	protected:
-
-		std::string m_sPropType;
-
-	private :
-
-		bool ReadProp(ObjectCreateStruct *pData);
-        void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
-        void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
-};
-
 #ifndef __PSX2
 class CPropTypePlugin : public CPropPlugin
 {

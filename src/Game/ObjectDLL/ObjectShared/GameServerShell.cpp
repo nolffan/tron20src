@@ -51,7 +51,6 @@
 #include "CoopMissionMgr.h"
 #include "DeathMatchMissionMgr.h"
 #include "TeamDeathMatchMissionMgr.h"
-#include "DoomsDayMissionMgr.h"
 #include "ServerSaveLoadMgr.h"
 #include "CharacterMgr.h"
 #include "ServerAssetMgr.h"
@@ -2872,7 +2871,6 @@ GameStartPoint* CGameServerShell::FindStartPoint(CPlayerObj* pPlayer)
 			break;
 
 			case eGameTypeTeamDeathmatch:
-			case eGameTypeDoomsDay:
 			{
 				// Try and get an available team start point...
 				
@@ -3880,9 +3878,6 @@ bool CGameServerShell::InitGameType()
 			break;
 		case eGameTypeTeamDeathmatch:
 			m_pServerMissionMgr = debug_new( CTeamDeathMatchMissionMgr );
-			break;
-		case eGameTypeDoomsDay:
-			m_pServerMissionMgr = debug_new( CDoomsDayMissionMgr );
 			break;
 		default:
 			ASSERT( !"CGameServerShell::InitGameType: Invalid game type." );
@@ -5217,7 +5212,8 @@ bool CGameServerShell::ProcessObjectiveMessage( const CParsedMsg &cMsg, Objectiv
 	static CParsedMsg::CToken s_cTok_RemoveAll("RemoveAll");
 	static CParsedMsg::CToken s_cTok_Completed("Completed");
 
-	if (cMsg.GetArgCount() < 2)
+	// RETAIL: Tron needs three arguments (Object.lto 0x100e40ea)
+	if (cMsg.GetArgCount() < 3)
 		return false;
 
 	uint8 nType = 0;

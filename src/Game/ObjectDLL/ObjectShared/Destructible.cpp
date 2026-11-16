@@ -27,7 +27,6 @@
 #include "PlayerButes.h"
 #include "AI.h"
 #include "ServerMissionMgr.h"
-#include "DoomsDayDevice.h"
 
 #define TRIGGER_MSG_DESTROY	"DESTROY"
 #define TRIGGER_MSG_RESET	"RESET"
@@ -637,7 +636,8 @@ void CDestructible::UpdateProgressiveDamage()
 		CPlayerObj *pPlayer = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject( m_hObject ));
 		if( !pPlayer ) return;
 
-        pPlayer->SetDamageFlags( nActiveDamageFlags );
+        // RETAIL: Tron sets the instant flags (Object.lto 0x100e7e5e)
+        pPlayer->SetInstantDamageFlags( nActiveDamageFlags );
 	}
 }
 
@@ -1202,7 +1202,8 @@ void CDestructible::DoDamage(DamageStruct & damage)
 		CCharacter *pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( m_hObject ));
 		if( pChar )
 		{
-			pChar->SetInstantDamageFlags( DamageTypeToFlag( eType ));
+			// RETAIL: Tron adds the hit's flags (Object.lto 0x100e7f58)
+			pChar->AddDamageFlags( DamageTypeToFlag( eType ));
 		}
 	}
 
