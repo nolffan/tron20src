@@ -64,6 +64,10 @@ public:
 	// constructor sets, 0x10024153). The name is ours
 	void	Enable(bool bEnable) {m_bEnabled = bEnable;}
 
+	// RETAIL: the energy the target needs (+0x74; CHUDHealthEnergy::Render
+	// reads it, 0x1002a1ef). The name is ours
+	int		GetEnergyRequired() {return m_nEnergyRequired;}
+
 protected:
 
 	// RETAIL: 0x10024e50: sizes the string for the scale and places it by its
