@@ -365,10 +365,8 @@ LTBOOL CWeapons::AddWeapon(LPBASECLASS pObject, HOBJECT hSender, uint8 nWeaponId
 	if (bPickedUp || bForcePickup)
 	{
 		// Tell weapon powerup it was picked up...
-		if (pObject)
-		{
-			SendEmptyObjectMsg(MID_PICKEDUP, pObject->m_hObject, hSender);
-		}
+		// RETAIL: no pObject test in Tron (0x100f637c)
+		SendEmptyObjectMsg(MID_PICKEDUP, pObject->m_hObject, hSender);
 
 		// Send the appropriate message to the client...
 
@@ -504,18 +502,14 @@ LTBOOL CWeapons::AddAmmoBox(LPBASECLASS pObject, HOBJECT hSender, ILTMessage_Rea
 			{
 				if (IsValidAmmoId(nAmmoId[i]))
 				{
-					if (!AddIsAmmoWeapon(nAmmoId[i]))
-					{
-						// Normal method of picking up ammo...
-
-						CAutoMessage cMsg;
-						cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
-						cMsg.Writeuint8(IC_WEAPON_PICKUP_ID);
-						cMsg.Writeuint8(WMGR_INVALID_ID);
-						cMsg.Writeuint8(nAmmoId[i]);
-						cMsg.Writefloat((LTFLOAT)GetAmmoCount(nAmmoId[i]));
-						g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
-					}
+					// RETAIL: no AddIsAmmoWeapon test in Tron (0x100f6879)
+					CAutoMessage cMsg;
+					cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
+					cMsg.Writeuint8(IC_WEAPON_PICKUP_ID);
+					cMsg.Writeuint8(WMGR_INVALID_ID);
+					cMsg.Writeuint8(nAmmoId[i]);
+					cMsg.Writefloat((LTFLOAT)GetAmmoCount(nAmmoId[i]));
+					g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
 				}
 			}
 		}
@@ -1108,7 +1102,7 @@ void CWeapons::Reset()
 // ----------------------------------------------------------------------- //
 
 void CWeapons::HandlePotentialWeaponChange(CPlayerObj* pPlayer, uint8 nWeaponId, 
-										   uint8 nAmmoId, LTBOOL bHaveIt)
+										   uint8 nAmmoId, LTBOOL bHaveIt, LTBOOL /*bTronUnknown*/)
 {
 	if (!pPlayer) return;
 
@@ -1142,7 +1136,11 @@ void CWeapons::HandlePotentialWeaponChange(CPlayerObj* pPlayer, uint8 nWeaponId,
 
 LTBOOL CWeapons::IsBetterWeapon(CPlayerObj* pPlayer, uint8 nWeaponId)
 {
-	return g_pWeaponMgr->IsBetterWeapon( nWeaponId, m_nCurWeapon );
+	// RETAIL: Tron compares the command ids (0x100f7660)
+	int nCurCommandId = g_pWeaponMgr->GetCommandId(m_nCurWeapon);
+	int nNewCommandId = g_pWeaponMgr->GetCommandId(nWeaponId);
+
+	return (nCurCommandId < nNewCommandId);
 }
 
 // ----------------------------------------------------------------------- //

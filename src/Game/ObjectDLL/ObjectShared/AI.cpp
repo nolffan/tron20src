@@ -5654,7 +5654,8 @@ void CAI::PlaySound(EnumAISoundType eSound, LTBOOL bInterrupt)
 
 	// Do not interrupt currently playing AISound, unless instructed.
 
-	if( ( !bInterrupt ) && IsPlayingDialogSound() )
+	// RETAIL: Tron's talk lock also holds the sound back (0x10134c31)
+	if( ( !bInterrupt ) && ( m_bTalkLock || IsPlayingDialogSound() ) )
 	{
 		return;
 	}
@@ -6388,7 +6389,7 @@ void CAI::SetCanCarry( bool bCarry )
 		cMsg.Writeuint8(m_bCanCarry);
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
-		CreateSpecialFX();
+		// RETAIL: no CreateSpecialFX here in Tron (0x10135c50)
 	}
 }
 
