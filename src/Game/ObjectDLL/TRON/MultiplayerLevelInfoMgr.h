@@ -35,12 +35,16 @@ typedef std::vector<std::string> MPLevelStringList;
 
 class CMultiplayerLevelInfoMgr : public CGameButeMgr
 {
+	friend class CTronGameServerShell;	// RETAIL: MID_SYSTEM_MEMORY (retail 0x1005d0c0)
+
 	public :
 
 		CMultiplayerLevelInfoMgr();
 		~CMultiplayerLevelInfoMgr() {}
 
 		LTBOOL	Init(const char* szAttributeFile);
+		// RETAIL: inline: the disc game types read it (retail 0x1005cf1c)
+		int		GetMaxTeamSize() const { return m_nMaxTeamSize; }
 		void	Term();
 
 	protected :

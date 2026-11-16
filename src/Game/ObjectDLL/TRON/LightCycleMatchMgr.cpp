@@ -1546,3 +1546,15 @@ void CLightCycleMatchMgr::AddClient(HCLIENT hClient)
 {
 	g_pTronTeamMgr->MoveClient(g_pLTServer->GetClientID(hClient), TRON_UNASSIGNED_TEAM);
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLightCycleMatchMgr::OnPlayerRespawn
+//
+//	PURPOSE:	RETAIL: nothing to do (retail 0x1026abb0)
+//
+// ----------------------------------------------------------------------- //
+
+void CLightCycleMatchMgr::OnPlayerRespawn(CPlayerObj* pPlayer)
+{
+}

@@ -26,6 +26,7 @@
 class Body;
 class CCharacter;
 class CLightCycleMatchMgr;
+class CDiscMatchMgr;
 
 class CTronGameServerShell : public CGameServerShell
 {
@@ -65,20 +66,34 @@ class CTronGameServerShell : public CGameServerShell
 
 		// RETAIL: the player events the game type's manager gets (slots 29..33,
 		// retail 0x1005dec0, 0x1005df10, 0x1005dfe0, 0x1005e040, 0x1005e090)
+		// RETAIL: a player was killed, a player respawns (slots 27, 28,
+		// retail 0x1005de40, 0x1005de70)
+		virtual void	TronUnknownVirtual6C( uint32 nArg1, uint32 nArg2 );
+		virtual void	TronUnknownVirtual70( uint32 nArg );
 		virtual void	TronUnknownVirtual74( HCLIENT hClient );
 		virtual void	TronUnknownVirtual78( HCLIENT hClient );
 		virtual void	TronUnknownVirtual7C( CPlayerObj* pPlayer );
 		virtual void	TronUnknownVirtual80( CPlayerObj* pPlayer );
 		virtual void	TronUnknownVirtual84( uint32 nLevel );
 
+		// RETAIL: retail 0x1005cef0 (slot 8)
+		virtual void	PostStartWorld();
+
+		// RETAIL: retail 0x1005d050, 0x1005d0c0 (the names are ours)
+		void	LoadLevelInfo();
+		void	SendSystemMemory( HCLIENT hClient );
+
 		// Tron specific MID_ messages
-		void HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read *pMsg);
-		// RETAIL: retail 0x1005ed50: MID_TRON_SERVERMESSAGE goes to the game
-		// type's manager (the name is ours)
-		void HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg);
-		// RETAIL: retail 0x1005eda0: MID_LIGHT_CYCLE_INFO goes to the light
-		// cycle manager (the name is ours)
-		void HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg);
+		// RETAIL: retail 0x1005ed20..0x1005ee50, in this order; each hands
+		// the message to the game type's manager or to the sender's
+		// CTronPlayerObj. The names are ours except HandlePlayerCompile's
+		void HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read *pMsg);		// MID_COMPILE
+		void HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg);	// MID_TRON_SERVERMESSAGE
+		void HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg);		// MID_LIGHT_CYCLE_INFO
+		void HandleUseEnergy(HCLIENT hSender, ILTMessage_Read *pMsg);			// MID_USE_ENERGY
+		void HandleDiscHoldDefense(HCLIENT hSender, ILTMessage_Read *pMsg);		// MID_DISC_HOLD_DEFENSE
+		void HandleExitRequest(HCLIENT hSender, ILTMessage_Read *pMsg);			// MID_TRON_EXIT_REQUEST
+		void HandleDiscFired(HCLIENT hSender, ILTMessage_Read *pMsg);			// MID_TRON_DISC_FIRED
 
 	private:
 
@@ -135,7 +150,7 @@ class CTronGameServerShell : public CGameServerShell
 		CTronVersionMgr		m_VersionMgr;		// +0x17494 Same as g_pVersionMgr
 		CTronMissionButeMgr	m_MissionButeMgr;	// +0x176f8 Same as g_pMissionButeMgr
 		CServerLightCycleMgr	m_LightCycleMgr;	// +0x18840 Same as g_pLightCycleMgr, g_pServerLightCycleMgr (0x137c bytes in retail)
-		void*				m_pTronUnknown19BBC;	// +0x19bbc RETAIL: the revive game types' manager; not yet known
+		CDiscMatchMgr*		m_pDiscMatchMgr;		// +0x19bbc RETAIL: the disc game types' manager
 		CLightCycleMatchMgr*	m_pLightCycleMatchMgr;	// +0x19bc0 the light cycle game type's (Same as g_pLightCycleMatchMgr)
 		CPingButeMgr		m_PingButeMgr;		// +0x19bc4
 		CBossButeMgr		m_BossButeMgr;		// +0x1ace8

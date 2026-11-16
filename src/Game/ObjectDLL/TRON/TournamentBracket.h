@@ -53,6 +53,8 @@ typedef std::vector<TournamentTeam>		TournamentTeamArray;
 
 class CTournamentBracket
 {
+	friend class CDiscMatchMgr;	// RETAIL: GetRound (retail 0x1004a87a)
+
 	public :
 
 		CTournamentBracket();				// RETAIL: 0x1005a2e0

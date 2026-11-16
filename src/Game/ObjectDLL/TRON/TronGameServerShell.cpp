@@ -17,6 +17,7 @@
 #include "CoreDump.h"
 #include "Body.h"
 #include "LightCycleMatchMgr.h"
+#include "ServerDiscMatchMgr.h"
 #include "GameSpy/GameSpySDK/gcdkey/gcdkeys.h"
 
 // RETAIL: Tron's GameSpy product: the game name, its secret key (built on
@@ -50,7 +51,7 @@ CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 	sprintf( m_szGameSpyVersion, "%d.%.3d", GAMESPY_VERSION_MAJOR, GAMESPY_VERSION_MINOR - 1 );
 
 	m_bGameSpyInitialized = false;
-	m_pTronUnknown19BBC = LTNULL;
+	m_pDiscMatchMgr = LTNULL;
 	m_pLightCycleMatchMgr = LTNULL;
 	m_bTronUnknown1D0E4 = false;
 	m_nLevelSwitchArg = 0;
@@ -67,7 +68,8 @@ CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 // ----------------------------------------------------------------------- //
 CTronGameServerShell::~CTronGameServerShell()
 {
-	// RETAIL: retail 0x1005c6ba
+	// RETAIL: retail 0x1005c698
+	delete m_pDiscMatchMgr;
 	delete m_pLightCycleMatchMgr;
 }
 
@@ -94,6 +96,17 @@ LTRESULT CTronGameServerShell::OnServerInitialized()
 		delete m_pLightCycleMatchMgr;
 		m_pLightCycleMatchMgr = new CLightCycleMatchMgr;
 		m_pLightCycleMatchMgr->Init();
+	}
+
+	m_PingButeMgr.Init("Attributes/pings.txt");
+	m_BossButeMgr.Init("Attributes\\bosses.txt");
+
+	// RETAIL: retail 0x1005cc16: the disc game types' manager
+	if (IsDiscGameType())
+	{
+		delete m_pDiscMatchMgr;
+		m_pDiscMatchMgr = new CDiscMatchMgr;
+		m_pDiscMatchMgr->Init();
 	}
 
 	return res;
@@ -535,22 +548,16 @@ void CTronGameServerShell::OnMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
 	pMsg->SeekTo(0);
 	uint8 messageID = pMsg->Readuint8();
 
-	// RETAIL: retail 0x1005e0b0 has seven cases, in this order:
-	// MID_COMPILE (its handler 0x1005ed20 hands CTronPlayerObj 0x10063b50
-	// the ratings), MID_TRON_SERVERMESSAGE (0x1005ed50, to the disc or light
-	// cycle match manager), MID_LIGHT_CYCLE_INFO, MID_USE_ENERGY
-	// (CTronPlayerObj 0x10063cb0), MID_DISC_HOLD_DEFENSE (0x10063d60),
-	// MID_TRON_EXIT_REQUEST (0x10068560) and MID_TRON_DISC_FIRED (0x1005ee50,
-	// CTronPlayerObj 0x10068660). PORT: the ones whose handlers are not yet
-	// in our tree are left out, MID_COMPILE's among them: our
-	// HandlePlayerCompile and CTronPlayerObj::HandleCompile are retail's
-	// 148 handlers (0x1005ee50, 0x10068660; the names are older than the
-	// numbering), so they take MID_TRON_DISC_FIRED
+	// RETAIL: retail 0x1005e0c0
 	switch (messageID)
 	{
+		case MID_COMPILE:				HandlePlayerCompile		(hSender, pMsg);	break;
 		case MID_TRON_SERVERMESSAGE:	HandleTronServerMessage	(hSender, pMsg);	break;
 		case MID_LIGHT_CYCLE_INFO:		HandleLightCycleInfo	(hSender, pMsg);	break;
-		case MID_TRON_DISC_FIRED:		HandlePlayerCompile		(hSender, pMsg);	break;
+		case MID_USE_ENERGY:			HandleUseEnergy			(hSender, pMsg);	break;
+		case MID_DISC_HOLD_DEFENSE:		HandleDiscHoldDefense	(hSender, pMsg);	break;
+		case MID_TRON_EXIT_REQUEST:		HandleExitRequest		(hSender, pMsg);	break;
+		case MID_TRON_DISC_FIRED:		HandleDiscFired			(hSender, pMsg);	break;
 		default: CGameServerShell::OnMessage(hSender,pMsg);
 	}
 }
@@ -563,8 +570,12 @@ void CTronGameServerShell::Update(LTFLOAT timeElapsed)
 	// Now update the light cycle manager
 	m_LightCycleMgr.Update();
 
-	// RETAIL: retail 0x1005e223: the game type's manager
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	// RETAIL: retail 0x1005e20d: the game type's manager
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->Update();
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->Update();
 	}
@@ -588,10 +599,135 @@ void CTronGameServerShell::Update(LTFLOAT timeElapsed)
 
 		g_pLTServer->CPrint("All clients connected, performing level switch...");
 
-		if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+		if (IsDiscGameType())
+		{
+			m_pDiscMatchMgr->SetNextLevel(nLevel);
+		}
+		else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 		{
 			m_pLightCycleMatchMgr->SetNextLevel(nLevel);
 		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::PostStartWorld
+//
+//	PURPOSE:	RETAIL: retail 0x1005cef0: the game type's manager starts
+//				the level
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::PostStartWorld()
+{
+	CGameServerShell::PostStartWorld();
+
+	if (!IsMultiplayerGame())
+		return;
+
+	if (IsDiscGameType())
+	{
+		LoadLevelInfo();
+		m_pDiscMatchMgr->Term();
+		m_pDiscMatchMgr->Reset(m_MultiplayerLevelInfoMgr.GetMaxTeamSize());
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->OnStartWorld();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::LoadLevelInfo
+//
+//	PURPOSE:	RETAIL: retail 0x1005d050: the level's "info.txt"
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::LoadLevelInfo()
+{
+	if (!IsMultiplayerGame())
+		return;
+
+	char szFile[128];
+	sprintf(szFile, "%s%s", (const char*)m_sWorld, "info.txt");
+	if (!m_MultiplayerLevelInfoMgr.Init(szFile))
+	{
+		g_pLTServer->CPrint("ERROR - Could not initialize multiplayer level info file: %s!", szFile);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::SendSystemMemory
+//
+//	PURPOSE:	RETAIL: retail 0x1005d0c0: the level's subroutines to a
+//				client of the disc game types
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::SendSystemMemory( HCLIENT hClient )
+{
+	if (!hClient || !IsDiscGameType())
+		return;
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SYSTEM_MEMORY);
+	cMsg.WriteString(m_MultiplayerLevelInfoMgr.m_sSystemMemory.c_str());
+
+	cMsg.Writeuint8(m_MultiplayerLevelInfoMgr.m_lstDefaultSubs.size());
+	MPLevelSubroutineList::iterator iter;
+	for (iter = m_MultiplayerLevelInfoMgr.m_lstDefaultSubs.begin(); iter != m_MultiplayerLevelInfoMgr.m_lstDefaultSubs.end(); iter++)
+	{
+		cMsg.Writeuint32(iter->nNameId);
+		cMsg.Writeint8(iter->nVersion);
+	}
+
+	cMsg.Writeuint8(m_MultiplayerLevelInfoMgr.m_lstAvailableSubs.size());
+	for (iter = m_MultiplayerLevelInfoMgr.m_lstAvailableSubs.begin(); iter != m_MultiplayerLevelInfoMgr.m_lstAvailableSubs.end(); iter++)
+	{
+		cMsg.Writeuint32(iter->nNameId);
+		cMsg.Writeint8(iter->nVersion);
+	}
+
+	g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual6C
+//
+//	PURPOSE:	RETAIL: retail 0x1005de40: a player was killed
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual6C( uint32 nArg1, uint32 nArg2 )
+{
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->OnPlayerKilled((CPlayerObj*)nArg1, (CPlayerObj*)nArg2);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::TronUnknownVirtual70
+//
+//	PURPOSE:	RETAIL: retail 0x1005de70: a player respawns
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::TronUnknownVirtual70( uint32 nArg )
+{
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->OnPlayerRespawn((CPlayerObj*)nArg);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->OnPlayerRespawn((CPlayerObj*)nArg);
 	}
 }
 
@@ -606,7 +742,11 @@ void CTronGameServerShell::Update(LTFLOAT timeElapsed)
 
 void CTronGameServerShell::TronUnknownVirtual74( HCLIENT hClient )
 {
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->MakeSpectator(hClient);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->AddClient(hClient);
 	}
@@ -625,7 +765,11 @@ void CTronGameServerShell::TronUnknownVirtual78( HCLIENT hClient )
 {
 	bool bLocal = !!(g_pLTServer->GetClientInfoFlags(hClient) & CIF_LOCAL);
 
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->OnClientRemoved(hClient);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->RemoveClient(hClient);
 	}
@@ -648,7 +792,12 @@ void CTronGameServerShell::TronUnknownVirtual78( HCLIENT hClient )
 
 void CTronGameServerShell::TronUnknownVirtual7C( CPlayerObj* pPlayer )
 {
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	if (IsDiscGameType())
+	{
+		SendSystemMemory(pPlayer->GetClient());
+		m_pDiscMatchMgr->OnPlayerAdded(pPlayer);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->AddPlayer(pPlayer);
 	}
@@ -664,7 +813,11 @@ void CTronGameServerShell::TronUnknownVirtual7C( CPlayerObj* pPlayer )
 
 void CTronGameServerShell::TronUnknownVirtual80( CPlayerObj* pPlayer )
 {
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->OnPlayerRemoved(pPlayer);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		m_pLightCycleMatchMgr->RemovePlayer(pPlayer);
 	}
@@ -690,23 +843,45 @@ void CTronGameServerShell::TronUnknownVirtual84( uint32 nLevel )
 //
 //	ROUTINE:	CTronGameServerShell::HandlePlayerCompile
 //
-//	PURPOSE:	Message from the client
+//	PURPOSE:	MID_COMPILE: the client's ratings (RETAIL: retail 0x1005ed20)
 //
 // ----------------------------------------------------------------------- //
 void CTronGameServerShell::HandlePlayerCompile(HCLIENT hSender, ILTMessage_Read *pMsg)
 {
-	// Handle the compile message
 	CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->GetClientUserData(hSender);
 
 	if (pPlayer)
 	{
-		pPlayer->HandleCompile(pMsg);
+		pPlayer->HandleRatings(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleTronServerMessage
+//
+//	PURPOSE:	MID_TRON_SERVERMESSAGE: the game type's manager's (RETAIL:
+//				retail 0x1005ed50)
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	if (IsDiscGameType())
+	{
+		m_pDiscMatchMgr->OnMessage(pMsg, hSender);
+	}
+	else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		m_pLightCycleMatchMgr->OnMessage(pMsg, hSender);
 	}
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronGameServerShell::HandleLightCycleInfo
+//
+//	PURPOSE:	MID_LIGHT_CYCLE_INFO: the light cycle manager's (RETAIL:
+//				retail 0x1005eda0)
 //
 // ----------------------------------------------------------------------- //
 void CTronGameServerShell::HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read *pMsg)
@@ -716,16 +891,69 @@ void CTronGameServerShell::HandleLightCycleInfo(HCLIENT hSender, ILTMessage_Read
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CTronGameServerShell::HandleTronServerMessage
+//	ROUTINE:	CTronGameServerShell::HandleUseEnergy
 //
-//	PURPOSE:	MID_TRON_SERVERMESSAGE: the game type's manager's
+//	PURPOSE:	MID_USE_ENERGY (RETAIL: retail 0x1005edc0)
 //
 // ----------------------------------------------------------------------- //
-void CTronGameServerShell::HandleTronServerMessage(HCLIENT hSender, ILTMessage_Read *pMsg)
+void CTronGameServerShell::HandleUseEnergy(HCLIENT hSender, ILTMessage_Read *pMsg)
 {
-	if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+
+	if (pPlayer)
 	{
-		m_pLightCycleMatchMgr->OnMessage(pMsg, hSender);
+		pPlayer->HandleEnergy(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleDiscHoldDefense
+//
+//	PURPOSE:	MID_DISC_HOLD_DEFENSE (RETAIL: retail 0x1005edf0)
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleDiscHoldDefense(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+
+	if (pPlayer)
+	{
+		pPlayer->HandleSwat(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleExitRequest
+//
+//	PURPOSE:	MID_TRON_EXIT_REQUEST (RETAIL: retail 0x1005ee20)
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleExitRequest(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+
+	if (pPlayer)
+	{
+		pPlayer->HandleExitRequest(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::HandleDiscFired
+//
+//	PURPOSE:	MID_TRON_DISC_FIRED (RETAIL: retail 0x1005ee50)
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::HandleDiscFired(HCLIENT hSender, ILTMessage_Read *pMsg)
+{
+	CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->GetClientUserData(hSender);
+
+	if (pPlayer)
+	{
+		pPlayer->HandleCompile(pMsg);
 	}
 }
 

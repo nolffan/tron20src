@@ -98,6 +98,9 @@ class CLightCycleMatchMgr
 		// RETAIL: 0x100566d0: a new world started (the server shell's
 		// PostStartWorld, 0x1005cf3f)
 		void	OnStartWorld();
+		// RETAIL: empty (retail 0x1026abb0, folded with other empty
+		// one-argument functions; CTronGameServerShell 0x1005dea9). The name is ours
+		void	OnPlayerRespawn(CPlayerObj* pPlayer);
 
 		// RETAIL: 0x10056700: end the game to switch to a level (the server
 		// shell, 0x1005e2c9)

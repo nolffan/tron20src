@@ -35,6 +35,11 @@ class ArenaStartPoint : public GameBase
 			kNumTypes,
 		};
 
+		// RETAIL: inline: the disc game types' arenas read them (retail
+		// 0x1004dd4a). The names are ours
+		ArenaStartType	GetType() const { return m_eType; }
+		int				GetArena() const { return m_nArena; }
+
 	protected :
 
 		virtual uint32	EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);

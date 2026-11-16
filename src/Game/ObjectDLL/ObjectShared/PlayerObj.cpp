@@ -53,6 +53,7 @@
 #include "AIGoalMgr.h"
 #include "AIGoalSpecialDamage.h"
 #include "PickupItem.h"
+#include "../TRON/TronProjectile.h"	// RETAIL: Tron's
 
 #include <stdio.h>
 
@@ -8945,3 +8946,34 @@ void CPlayerObj::CancelRevive( )
 }
 
 // RETAIL: CPlayerObj::SetClient is inline in Tron (PlayerObj.h)
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CPlayerObj::RemoveProjectiles
+//
+//  PURPOSE:	RETAIL: Tron's (retail 0x10086370; the name is ours): the
+//				disc game types' match manager tells each of the player's
+//				projectiles to go away when a round ends (MID_PROJECTILE,
+//				Tron's sub-id 150)
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::RemoveProjectiles()
+{
+	ObjArray<HOBJECT, 50> objArray;
+	g_pLTServer->FindNamedObjects("TronProjectile", objArray);
+
+	for (uint32 i = 0; i < objArray.NumObjects(); i++)
+	{
+		HOBJECT hProjectile = objArray.GetObject(i);
+		CTronProjectile* pProjectile = dynamic_cast<CTronProjectile*>(g_pLTServer->HandleToObject(hProjectile));
+
+		if (pProjectile->GetFiredFrom() == m_hObject)
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint32(MID_PROJECTILE);
+			cMsg.Writeuint8(150);
+			g_pLTServer->SendToObject(cMsg.Read(), m_hObject, hProjectile, MESSAGE_GUARANTEED);
+		}
+	}
+}

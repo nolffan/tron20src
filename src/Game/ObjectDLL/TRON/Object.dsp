@@ -348,6 +348,10 @@ SOURCE=.\SecRezzerPoint.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ServerDiscMatchMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ServerLightCycleMgr.cpp
 # End Source File
 # Begin Source File
@@ -566,6 +570,10 @@ SOURCE=.\SecRezzer.h
 # Begin Source File
 
 SOURCE=.\SecRezzerPoint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ServerDiscMatchMgr.h
 # End Source File
 # Begin Source File
 
