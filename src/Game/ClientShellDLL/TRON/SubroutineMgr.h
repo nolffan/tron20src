@@ -191,6 +191,9 @@ public:
     LTBOOL      Init(const char* szAttributeFile=SUBROUTINE_DEFAULT_FILE);
 	void		Term();
 
+	void		Save(ILTMessage_Write *pMsg);	// RETAIL: 0x10092b00 (no caller)
+	void		Load(ILTMessage_Read *pMsg);	// RETAIL: 0x10092d00 (no caller)
+
 	void		Pause(LTBOOL bPause); // pause and unpause the game
 	void		Update();	// advance all timers
 	PlayerSubroutine*	GetSubroutineInSector(int iSector);	// RETAIL: 0x100938f0 (the name is ours)
@@ -263,6 +266,8 @@ protected:
 	void				LoadProcedurals();	// RETAIL: 0x100927d0 (Init's; the name is ours)
 
 	void				ProceduralFinished(Procedural * pProc); // clean up a procedural operation
+	void				InfectRandomSector();	// RETAIL: 0x10093580 (the name is ours)
+	void				CorruptSector(int iSector, int nSpread, PlayerSubroutine * pSource);	// RETAIL: 0x10093650 (the name is ours)
 
 	// RETAIL: the layout follows retail's (ctor 0x10091f90, Init 0x10092200);
 	// the names of the members build 69 lacks are ours
@@ -286,7 +291,7 @@ protected:
 	void*				m_pTronUnknown1180;		// RETAIL: +0x1180
 	uint8				m_aTronUnknown1184[24];	// RETAIL: +0x1184 (one per system memory sector)
 	uint8				m_aTronUnknown119C[4];	// RETAIL: +0x119c
-	char				* m_SystemMemoryArray;	// RETAIL: +0x11a0 (0 in the ctor and Init)
+	float				m_fTronUnknown11A0;	// RETAIL: +0x11a0 (0 in the ctor and Init; Save/Load keep it)
 	float				m_fTronUnknown11A4;		// RETAIL: +0x11a4 (0x10095390 sums into it)
 	void*				m_pTronUnknown11A8;		// RETAIL: +0x11a8 (made by 0x10095df0, Init(&m_buteMgr))
 };
