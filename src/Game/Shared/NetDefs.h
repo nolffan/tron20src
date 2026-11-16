@@ -74,6 +74,10 @@ struct NetClientData
 	char	m_szName[MAX_PLAYER_NAME];
 	char	m_szPlayerGuid[64];
 	uint8	m_ePlayerModelId;
+	// RETAIL: Tron's is 0x52 bytes (CGameServerShell::OnClientEnterWorld's
+	// memset, Object.lto 0x100ddbf9; CPlayerObj::MultiplayerUpdate). The
+	// byte is not yet known.
+	uint8	m_nTronUnknown51;
 
 };
 

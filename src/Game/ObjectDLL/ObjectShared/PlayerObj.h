@@ -377,7 +377,9 @@ class CPlayerObj : public CCharacter
 
         void ResetPlayer( ); // Reset the player
 		void ResetHealth(LTBOOL bMaxOnly = LTFALSE, float fHealthPercent = 1.0f, float fArmorPercent = 1.0f);
-		void ResetInventory(LTBOOL bRemoveGear=LTTRUE);
+		// RETAIL: Tron sends a second flag to the client (0x1007f390); the
+		// name is ours
+		void ResetInventory(LTBOOL bRemoveGear=LTTRUE, LTBOOL bTronUnknown=LTFALSE);
 		void ResetModel();
 
 		void TweakCameraOffset();
@@ -692,12 +694,13 @@ class CPlayerObj : public CCharacter
 		// Client-side control flags
 		uint32		m_nControlFlags;
 
-		// RETAIL: three Tron flags (retail CPlayerObj's constructor clears
+		// RETAIL: three Tron bytes (retail CPlayerObj's constructor clears
 		// them after the model; retail 0x10080f8c and 0x1008110b read them
-		// from a client message). The names are ours
-		bool		m_bTronUnknown31c8;
-		bool		m_bTronUnknown31c9;
-		bool		m_bTronUnknown31ca;
+		// from a client message: the first is the multiplayer model index,
+		// MultiplayerInit). The names are ours
+		uint8		m_bTronUnknown31c8;
+		uint8		m_bTronUnknown31c9;
+		uint8		m_bTronUnknown31ca;
 
 		// RETAIL: Tron has no last good drop position nor activation data
 		// member here: retail ClientUpdate stores the time of the client's

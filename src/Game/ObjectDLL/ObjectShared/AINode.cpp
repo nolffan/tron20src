@@ -1307,6 +1307,13 @@ void AINodeUseObject::ReadProp(ObjectCreateStruct* pocs)
 	}
 }
 
+// RETAIL: Object.lto 0x100a4350, out of line before Init.  The name is
+// ours: true when the child model could not be cached.
+static bool FailedToCacheChildModel( AIChildModelInfo& aiChildModelInfo )
+{
+	return g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK;
+}
+
 void AINodeUseObject::Init()
 {
 	super::Init();
@@ -1330,7 +1337,7 @@ void AINodeUseObject::Init()
 		hold_itr = itr ;
 		itr++;
 		AIChildModelInfo& aiChildModelInfo = *hold_itr;
-		if(g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK )
+		if( FailedToCacheChildModel( aiChildModelInfo ))
 		{
 			pSmartObject->addchildmodels.erase(hold_itr);
 			AIASSERT2(0, m_hObject, "SmartObject %s Could not load file %s ", pSmartObject->szName, aiChildModelInfo.sFilename.c_str( ));

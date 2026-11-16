@@ -1503,48 +1503,43 @@ void CPlayerObj::ResetObjectRelationMgr(const char* const pszNewRelation /*=NULL
 
 bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 {
+	// RETAIL: Tron's friendly fire test is for the disc games' team mates
+	// only (0x10079d20).
+	bool bTeamMate = false;
+
 	//Stamina skill reduces duration of progressive damage in a single player game
-	pDamageStruct->fDuration *= GetPlayerSkills()->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eResistance);
+	pDamageStruct->fDuration *= g_pSkillsButeMgr->GetStamina(GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eResistance];
+
+	if( IsDiscGameType( ) && IsPlayer( pDamageStruct->hDamager ) && ( 1.0f > g_vtNetFriendlyFire.GetFloat( )))
+	{
+		CPlayerObj* pDamager = (CPlayerObj*)g_pLTServer->HandleToObject( pDamageStruct->hDamager );
+		uint32 nDamagerID = g_pLTServer->GetClientID( pDamager->GetClient( ));
+		uint32 nOurID = g_pLTServer->GetClientID( GetClient( ));
+
+		if( nDamagerID != nOurID )
+		{
+			int nDamagerTeam = g_pTronTeamMgr->GetTeamOfClient( nDamagerID );
+			if( nDamagerTeam == g_pTronTeamMgr->GetTeamOfClient( nOurID ) && nDamagerTeam < TRON_UNASSIGNED_TEAM )
+			{
+				bTeamMate = true;
+			}
+		}
+	}
 
 	if ( 0.0f < pDamageStruct->fDuration )
 	{
-		// Check friendly fire.
-		if( IsMultiplayerGame() && IsPlayer( pDamageStruct->hDamager) && pDamageStruct->hDamager != m_hObject && ( 1.0f > g_vtNetFriendlyFire.GetFloat() ))
-		{
-			if (IsCoopMultiplayerGameType( ))
-			{
-				return false;
-			}
-			if (IsTeamGameType( ) && AreSameTeam(pDamageStruct->hDamager, m_hObject) )
-			{
-				return false;
-			}
-
-		}
+		if( bTeamMate )
+			return false;
 	}
 	else
 	{
-		if ( IsPlayer( pDamageStruct->hDamager ) )
+		if( bTeamMate )
 		{
-			// Check friendly fire.
-			if( IsMultiplayerGame() && ( 1.0f > g_vtNetFriendlyFire.GetFloat() ))
-			{
-				if (IsCoopMultiplayerGameType( ))
-				{
-					//pDamageStruct->fDamage = 0.0f;
-					return false;
-				}
-				if (IsTeamGameType( ) && AreSameTeam(pDamageStruct->hDamager, m_hObject) && (pDamageStruct->hDamager != m_hObject))
-				{
-					//pDamageStruct->fDamage = 0.0f;
-					return false;
-				}
-
-			}
-			else
-			{
-				pDamageStruct->fDamage *= GetPlayerSkills()->GetSkillModifier(SKL_WEAPON,WeaponModifiers::eDamage);
-			}
+			pDamageStruct->fDamage = 0.0f;
+		}
+		else
+		{
+			pDamageStruct->fDamage *= g_pSkillsButeMgr->GetWeapon(GetPlayerSkills()->GetLevel(SKL_WEAPON))->fModifier[WeaponModifiers::eDamage];
 		}
 	}
 	
@@ -1561,11 +1556,9 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 		vPlayerDir.y = 0.0f;
 		vPlayerDir.Normalize();
 
-		float fDot = vPlayerDir.Dot( vDamageDir );
-
 		// Take less damage if coming from the front...
 		
-		if( fDot <= -0.75f )
+		if( -0.75f >= vPlayerDir.Dot( vDamageDir ))
 		{
 			pDamageStruct->fDamage *= 0.5f;
 		}
@@ -4075,14 +4068,17 @@ void CPlayerObj::ResetAfterDeath()
     LTFLOAT fHealthX = 1.0f;
     LTFLOAT fArmorX  = 1.0f;
 
-	fHealthX = m_Skills.GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMaxHealth);
-	fArmorX = m_Skills.GetSkillModifier(SKL_ARMOR,ArmorModifiers::eMaxArmor);
+	// RETAIL: Tron reads the skill tables directly, and scales the energy
+	// too (0x1007e553).
+	fHealthX = g_pSkillsButeMgr->GetStamina(m_Skills.GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eMaxHealth];
+	fArmorX = g_pSkillsButeMgr->GetArmor(m_Skills.GetLevel(SKL_ARMOR))->fModifier[ArmorModifiers::eMaxArmor];
+	LTFLOAT fEnergyX = g_pSkillsButeMgr->GetEnergy(m_Skills.GetLevel(SKL_ENERGY))->fModifier[EnergyModifiers::eMaxEnergy];
 
 	// make sure progressive damage is reset
 	m_damage.ClearProgressiveDamage();
 
 	m_damage.Reset(fHealthX * g_pModelButeMgr->GetModelHitPoints(m_eModelId),
-		fArmorX * g_pModelButeMgr->GetModelArmor(m_eModelId), g_pModelButeMgr->GetModelEnergy(m_eModelId));
+		fArmorX * g_pModelButeMgr->GetModelArmor(m_eModelId), fEnergyX * g_pModelButeMgr->GetModelEnergy(m_eModelId));
 
 	m_fAirLevel	= MAX_AIR_LEVEL;
 
@@ -4136,7 +4132,13 @@ bool CPlayerObj::SetupForNewMission( )
 		{
 			ResetHealth();
 			ResetInventory();
-			RemoveCarriedObject();
+
+			// RETAIL: RemoveCarriedObject's body, inline (0x1007e6d7).
+			if ( m_hCarriedObject )
+			{
+				g_pLTServer->RemoveObject( m_hCarriedObject );
+				m_hCarriedObject = NULL;
+			}
 
 			if( m_hVehicleModel )
 			{
@@ -4452,12 +4454,11 @@ void CPlayerObj::ResetPlayer()
 void CPlayerObj::ResetHealth(LTBOOL bMaxOnly, float fHealthPercent, float fArmorPercent )
 {
 
-    LTFLOAT fHealthX = 1.0f;
-    LTFLOAT fArmorX = 1.0f;
-	LTFLOAT fEnergyX = 1.0f;
-
-	fHealthX = m_Skills.GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMaxHealth);
-	fArmorX = m_Skills.GetSkillModifier(SKL_ARMOR,ArmorModifiers::eMaxArmor);
+	// RETAIL: Tron reads the skill tables directly, the energy too
+	// (0x1007f0a1).
+	LTFLOAT fHealthX = g_pSkillsButeMgr->GetStamina(m_Skills.GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eMaxHealth];
+	LTFLOAT fArmorX = g_pSkillsButeMgr->GetArmor(m_Skills.GetLevel(SKL_ARMOR))->fModifier[ArmorModifiers::eMaxArmor];
+	LTFLOAT fEnergyX = g_pSkillsButeMgr->GetEnergy(m_Skills.GetLevel(SKL_ENERGY))->fModifier[EnergyModifiers::eMaxEnergy];
 
 	m_damage.SetMaxHitPoints(fHealthX * g_pModelButeMgr->GetModelMaxHitPoints(m_eModelId));
 	m_damage.SetMaxArmorPoints(fArmorX * g_pModelButeMgr->GetModelMaxArmor(m_eModelId));
@@ -4504,7 +4505,7 @@ void CPlayerObj::ResetHealth(LTBOOL bMaxOnly, float fHealthPercent, float fArmor
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerObj::ResetInventory(LTBOOL bRemoveGear)
+void CPlayerObj::ResetInventory(LTBOOL bRemoveGear, LTBOOL bTronUnknown)
 {
 	if (!m_pPlayerAttachments) return;
 
@@ -4527,7 +4528,7 @@ void CPlayerObj::ResetInventory(LTBOOL bRemoveGear)
 		cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 		cMsg.Writeuint8(IC_RESET_INVENTORY_ID);
 		cMsg.Writeuint8(bRemoveGear);
-		cMsg.Writeuint8(0);
+		cMsg.Writeuint8(bTronUnknown);
 		cMsg.Writefloat(0.0f);
 		g_pLTServer->SendToClient(cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
 	}
@@ -4998,7 +4999,7 @@ void CPlayerObj::UpdateHiding()
 		if ( !m_bHiding )
 		{
 			StartHiding();
-			m_fHideDuration = GetConsoleFloat("HideTime", 3.0f) * m_Skills.GetSkillModifier(SKL_STEALTH,StealthModifiers::eHideTime);
+			m_fHideDuration = GetConsoleFloat("HideTime", 3.0f) * g_pSkillsButeMgr->GetStealth(m_Skills.GetLevel(SKL_STEALTH))->fModifier[StealthModifiers::eHideTime];	// RETAIL: the table, read directly
 		}
 
 		LTFLOAT fLast = m_fHiddenTimer;
@@ -5421,26 +5422,19 @@ LTBOOL CPlayerObj::MultiplayerInit(ILTMessage_Read *pMsg)
     if (!g_pGameServerShell || !GetClient( ))
 		return LTFALSE;
 
-	m_eModelId = ( ModelId )pMsg->Readuint8( );
+	// RETAIL: Tron's message has the multiplayer model and two more bytes
+	// (0x10080f60).
+	m_bTronUnknown31c8 = pMsg->Readuint8( );
+	m_bTronUnknown31c9 = pMsg->Readuint8( );
+	m_bTronUnknown31ca = pMsg->Readuint8( );
+
+	const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+	if( pModel )
+		m_eModelId = pModel->m_eModelId;
+
 	m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
 
-	uint8 nTeam = pMsg->Readuint8( );
-
-	// If this is a team game, then we take our model info from the team.
-	if( IsTeamGameType( ))
-	{
-		CTeamMgr::Instance().AddPlayer( g_pLTServer->GetClientID(GetClient( )), nTeam );
-
-		CTeamMgr::Instance().UpdateClient();
-
-		// Don't reset the model yet, since that will happen agian when we respawn.
-		if( !SetupTeamModel( false ))
-		{
-			return LTFALSE;
-		}
-	}
-
-	m_Skills.MultiplayerInit(pMsg);
+	m_Skills.Init();
 
 	g_pGameServerShell->SetUpdateGameServ();
 
@@ -5450,8 +5444,6 @@ LTBOOL CPlayerObj::MultiplayerInit(ILTMessage_Read *pMsg)
 
     return LTTRUE;
 }
-
-
 
 // ----------------------------------------------------------------------- //
 //
@@ -5478,83 +5470,32 @@ LTBOOL CPlayerObj::MultiplayerUpdate(ILTMessage_Read *pMsg)
 	char szUniqueName[MAX_PLAYER_NAME];
 	GenerateUniqueName(ncd.m_szName, szUniqueName, ARRAY_LEN( szUniqueName ));
 	m_sNetNameUnique = szUniqueName;
-	ModelId eModelId = ( ModelId )pMsg->Readuint8( );
 
-	uint8 nTeam = pMsg->Readuint8( );
+	// RETAIL: Tron's message has the multiplayer model and two more bytes,
+	// as MultiplayerInit's (0x10081030). No teams here.
+	m_bTronUnknown31c8 = pMsg->Readuint8( );
+	m_bTronUnknown31c9 = pMsg->Readuint8( );
+	m_bTronUnknown31ca = pMsg->Readuint8( );
 
-	
-	// Don't allow model changes in team games.
-	if( IsTeamGameType( ))
+	const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+	if( pModel )
 	{
-		if (nTeam == INVALID_TEAM)
-		{
-			if (GetTeamID() == INVALID_TEAM)
-			{
-				CTeam* pTeam = CTeamMgr::Instance().GetTeamWithLeastPlayers();
-				if (pTeam)
-					nTeam = pTeam->GetID();
-			}
-			else
-				nTeam = GetTeamID();
-		}
-
-		//don't allow team switches if you can't respawn
-		if (nTeam != GetTeamID() && g_pServerMissionMgr->CanRespawn( *this ))
-		{
-
-			// PORT: no team change requests in Tron (no member for one)
-
-			//we have to be dead to respawn on new team properly
-			if (GetState() == PS_ALIVE)
-			{
-				// if we're not loaded, temporarily turn off invulnerability
-				if (!m_bClientLoaded)
-					m_damage.SetCanDamage( true );
-
-				DamageStruct damage;
-
-				damage.eType	= DT_UNSPECIFIED;
-				damage.fDamage	= damage.kInfiniteDamage;
-				damage.hDamager = NULL;
-				damage.vDir.Init(0, 1, 0);
-
-				damage.DoDamage(this, m_hObject);
-
-				// if we're not loaded turn invulnerability back on
-				if (!m_bClientLoaded)
-					m_damage.SetCanDamage( false );
-
-			}
-			else if (GetState() == PS_DEAD)
-			{
-				// tell the client they'll switch when they respawn
-				uint8 nClientID = (uint8) g_pLTServer->GetClientID(GetClient( ));
-				CAutoMessage cMsg;
-				cMsg.Writeuint8(MID_PLAYER_TEAM);
-//				cMsg.Writeuint8(nClientID);
-//				cMsg.Writeuint8(m_nRequestedTeam);
-//				cMsg.Writebool(true);
-				g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
-
-				CancelRevive();
-			}
-	
-			
-		}
-	}
-	else
-	{
-		m_eModelId = eModelId;
+		m_eModelId = pModel->m_eModelId;
 		m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
+		ncd.m_ePlayerModelId = m_eModelId;
+
+		// RETAIL: the light cycle game keeps its model.
+		if( GetGameType( ) != eGameTypeMultiplayerLightcycles )
+		{
+			SetPhysicsModel(PPM_NORMAL);
+			ResetModel();
+		}
 	}
 
 	// Tell the server about the changes we made.
-	ncd.m_ePlayerModelId = m_eModelId;
 	g_pLTServer->SetClientData( GetClient( ), ( uint8* )&ncd, sizeof( ncd ));
 
 	g_pGameServerShell->SetUpdateGameServ();
-
-	ResetModel();
 
     return LTTRUE;
 }
@@ -8117,39 +8058,27 @@ bool CPlayerObj::AcquireLevelDefaultWeapons( int nMissionId, int nLevelId )
 	}
 END HACK - for DM testing */
 
+	// RETAIL: Tron gives each weapon without checking what we have
+	// (0x10085320).
 	for( int i = 0; i < pMission->nNumDefaultWeapons; ++i )
 	{
 		int nWeaponId = pMission->aDefaultWeapons[i].nId;
-	
-		// Check if we already have this weapon.
-		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
-		if (pWeapon)
-		{
-			continue;
-		}
 
 		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
 		if( !pWeaponData )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid weapon data" );
 			continue;
-		}
 
 		AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo(pWeaponData->nDefaultAmmoId);
 		if( !pAmmoData )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid ammoid" );
 			continue;
-		}
+
+		TronUnknownVirtual128( pWeaponData );
 
 		m_pPlayerAttachments->ObtainWeapon( nWeaponId, pWeaponData->nDefaultAmmoId, 
 			pAmmoData->nSelectionAmount, TRUE );
-		pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
 		if( !pWeapon )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Could not obtain weapon." );
 			continue;
-		}
 	}
 
 	// Add the level specific defaults...
@@ -8158,35 +8087,21 @@ END HACK - for DM testing */
 	{
 		int nWeaponId = pLevel->aDefaultWeapons[i].nId;
 
-		// Check if we already have this weapon.
-		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
-		if (pWeapon)
-		{
-			continue;
-		}
-
 		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
 		if( !pWeaponData )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid weapon data" );
 			continue;
-		}
 
 		AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo( pWeaponData->nDefaultAmmoId );
 		if( !pAmmoData )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Invalid ammoid" );
 			continue;
-		}
+
+		TronUnknownVirtual128( pWeaponData );
 
 		m_pPlayerAttachments->ObtainWeapon( nWeaponId, pWeaponData->nDefaultAmmoId, 
 			pAmmoData->nSelectionAmount, TRUE );
-		pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
 		if( !pWeapon )
-		{
-			ASSERT( !"CPlayerObj::AcquireLevelDefaultWeapons: Could not obtain weapon." );
 			continue;
-		}
 	}
 
 
@@ -8373,6 +8288,10 @@ bool CPlayerObj::AcquireLevelDefaultAmmo( int nMissionId, int nLevelId )
 
 bool CPlayerObj::AcquireCurrentLevelDefaults()
 {
+	// RETAIL: no defaults in multiplayer games (0x10085e90).
+	if( IsMultiplayerGame( ))
+		return true;
+
 	// Get the mission and lefel defaults...
 
 	int nMissionId	= g_pServerMissionMgr->GetCurrentMission();
@@ -8664,8 +8583,9 @@ void CPlayerObj::HideCharacter(LTBOOL bHide)
 void CPlayerObj::ResetMultiplayerSkills()
 {
 
-    float fHealthX = m_Skills.GetSkillModifier(SKL_STAMINA,StaminaModifiers::eMaxHealth);
-    float fArmorX  = m_Skills.GetSkillModifier(SKL_ARMOR,ArmorModifiers::eMaxArmor);
+	// RETAIL: Tron reads the skill tables directly (as ResetHealth).
+    float fHealthX = g_pSkillsButeMgr->GetStamina(m_Skills.GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eMaxHealth];
+    float fArmorX  = g_pSkillsButeMgr->GetArmor(m_Skills.GetLevel(SKL_ARMOR))->fModifier[ArmorModifiers::eMaxArmor];
 
 	float fHealthMax = fHealthX * g_pModelButeMgr->GetModelMaxHitPoints(m_eModelId);
 	float fArmorMax = fArmorX * g_pModelButeMgr->GetModelMaxArmor(m_eModelId);
