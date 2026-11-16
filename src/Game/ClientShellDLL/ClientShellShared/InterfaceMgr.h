@@ -477,14 +477,11 @@ class CInterfaceMgr
 
 		CGameSettings	m_Settings;				// +0xe764
 		// RETAIL: one timer, no team timers (Tron's CInterfaceTimer is 0x18
-		// bytes, no team id or colour: its Draw 0x10170230); ours is 0x1c,
-		// so m_Credits and m_PopupText sit 4 bytes late until it is fixed
-		// (the pad below takes the difference back)
+		// bytes, no team id or colour: its Draw 0x10170230)
 		CInterfaceTimer m_InterfaceTimer;		// +0xe904 Main interface timer
 		CCredits		m_Credits;				// +0xe91c Display credits
 		CPopupText		m_PopupText;			// +0xe93c Display in game text
 		// (CPopupText is retail's 0xad0 bytes: its constructor 0x1014eb00)
-		char			m_aTronPadPopupText[0xad0 - sizeof(CPopupText) - (sizeof(CInterfaceTimer) - 0x18)];
 
 		CFullScreenTint m_FullScreenTint;		// +0xf40c All full screen tinting (used for pause)
 

@@ -26,8 +26,6 @@ class CInterfaceTimer
 		CInterfaceTimer();
 		~CInterfaceTimer();
 
-		void		SetTeamId( uint8 nTeamId ) { m_nTeamId = nTeamId; }
-		uint8		GetTeamId( ) const { return m_nTeamId; }
 
 		void		Draw();
 
@@ -42,13 +40,13 @@ class CInterfaceTimer
 		// Server game time when timer runs out.
 		float					m_fTime;
 		bool					m_bPause;
-		uint8					m_nTeamId;
+		// RETAIL: Tron's has no team id and no colour (0x18 bytes: its Draw,
+		// retail 0x10170230)
 
 		CUIFormattedPolyString	*m_pTimeStr;
 
 		LTIntPt			m_BasePos;
 		uint8			m_nBaseSize;
-		uint32			m_nColor;
 };
 
 #endif  // __INTERFACE_TIMER_H__

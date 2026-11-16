@@ -25,8 +25,6 @@ CInterfaceTimer::CInterfaceTimer()
 	m_bPause	= LTFALSE;
 	m_pTimeStr	= LTNULL;
 	m_nBaseSize = 0;
-	m_nTeamId	= INVALID_TEAM;
-	m_nColor	= argbWhite;
 }
 
 CInterfaceTimer::~CInterfaceTimer() 
@@ -46,9 +44,8 @@ CInterfaceTimer::~CInterfaceTimer()
 
 void CInterfaceTimer::Draw()
 {
-
-	// RETAIL: reconstructed from the retail 1.3 CShell.dll (0x100eb260): the
-	// time left is counted from the game time on every draw, paused or not.
+	// RETAIL: Tron's (retail 0x10170230): the time left is counted from the
+	// game time on every draw, paused or not.
 	float fTimeLeft = m_fTime - g_pLTClient->TronUnknownVirtual44( );	// TRON: the game clock (iltclient.h)
 
 	// Update/Draw the timer if there is anytime left...
@@ -56,7 +53,6 @@ void CInterfaceTimer::Draw()
 		return;
 
 	// Draw the string to the surface...
-
 	int nMinutes = int(fTimeLeft) / 60;
 	int nSeconds = fTimeLeft > 60.0 ? int(fTimeLeft) % 60 : int(fTimeLeft);
 
@@ -65,68 +61,46 @@ void CInterfaceTimer::Draw()
 	char aSeconds[8];
 	BuildTimeString(aMinutes, nMinutes);
 	BuildTimeString(aSeconds, nSeconds);
-	uint8 nFont = 0;
-	LTVector vColor;
-
 	sprintf(aBuffer, "%s:%s", aMinutes, aSeconds);
-	
+
+	uint8 nSize = (uint8)((LTFLOAT)m_nBaseSize * g_pInterfaceResMgr->GetXRatio());
+	std::wstring sText;
+	LTGUIWiden(sText, aBuffer);
+
  	if (!m_pTimeStr)
  	{
-		switch( m_nTeamId )
-		{
-			// Team1.
-			case 0:
-				nFont = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","Team1TimerFont");
-				m_nBaseSize = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","Team1TimerSize");
-				m_BasePos = g_pLayoutMgr->GetPoint("Miscellaneous","Team1TimerPos");
-				vColor = g_pLayoutMgr->GetVector("Miscellaneous","Team1TimerColor");
-				break;
-			// Team2.
-			case 1:
-				nFont = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","Team2TimerFont");
-				m_nBaseSize = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","Team2TimerSize");
-				m_BasePos = g_pLayoutMgr->GetPoint("Miscellaneous","Team2TimerPos");
-				vColor = g_pLayoutMgr->GetVector("Miscellaneous","Team2TimerColor");
-				break;
-			// Unspecified.
-			default:
-				nFont = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","TimerFont");
-				m_nBaseSize = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","TimerSize");
-				m_BasePos = g_pLayoutMgr->GetPoint("Miscellaneous","TimerPos");
-				vColor = g_pLayoutMgr->GetVector("Miscellaneous","TimerColor");
-				break;
-		}
-
-		if (m_nBaseSize == 0) 
+		// RETAIL: the font is read but not used (the font is the one for
+		// the height)
+		g_pLayoutMgr->GetInt("Miscellaneous","TimerFont");
+		m_nBaseSize = (uint8)g_pLayoutMgr->GetInt("Miscellaneous","TimerSize");
+		if (m_nBaseSize == 0)
 			m_nBaseSize = 24;
 
+		m_BasePos = g_pLayoutMgr->GetPoint("Miscellaneous","TimerPos");
 		if (m_BasePos.x == 0)
 			m_BasePos = LTIntPt(320,40);
 
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-		m_pTimeStr = g_pFontManager->CreateFormattedPolyString(pFont, LTGUIWideString(aBuffer));
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+		m_pTimeStr = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_LEFT);
 		m_pTimeStr->SetAlignmentH(CUI_HALIGN_CENTER);
-
-		m_nColor = SET_ARGB( 0xFF, ( uint8 )vColor.x, ( uint8 )vColor.y, ( uint8 )vColor.z );
  	}
  	else
  	{
-		m_pTimeStr->SetText(aBuffer);
+		m_pTimeStr->SetText(sText);
  	}
 
-	uint8 nSize = (uint8)((LTFLOAT)m_nBaseSize * g_pInterfaceResMgr->GetXRatio());
 	m_pTimeStr->SetCharScreenHeight(nSize);
 
 	// Position the text
-	float x = (float)m_BasePos.x * g_pInterfaceResMgr->GetXRatio();
-	float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
+	int x = (int)(g_pInterfaceResMgr->GetXRatio() * m_BasePos.x);
+	int y = (int)(g_pInterfaceResMgr->GetYRatio() * m_BasePos.y);
 
-	m_pTimeStr->SetPosition( x+2.0f, y+2.0f);
+	m_pTimeStr->SetPosition( x+2, y+2);
 	m_pTimeStr->SetColor(argbBlack);
 	m_pTimeStr->Render();
-	
+
 	m_pTimeStr->SetPosition( x, y );
-	m_pTimeStr->SetColor(m_nColor);
+	m_pTimeStr->SetColor(argbWhite);
 	m_pTimeStr->Render();
 }
 

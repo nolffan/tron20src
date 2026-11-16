@@ -23,7 +23,11 @@ CPopupText::CPopupText()
 {
 	m_bVisible			= LTFALSE;
 	m_bUsePopupState	= true;
-	m_bWeaponsEnabled	= true;
+	// RETAIL: Tron's (retail 0x1014eb00)
+	m_bTronUnknownDrawFrame2 = false;
+	m_hFrameTex			= LTNULL;
+	m_hTronUnknownFrame2Tex = LTNULL;
+	m_bWeaponsEnabled	= false;
 }
 
 
@@ -38,10 +42,18 @@ void CPopupText::Init(bool bUsePopupState/*=true*/)
 {
 	m_bVisible		= LTFALSE;
 	m_bUsePopupState = bUsePopupState;
+	m_Text.Create(L" ",0,0,g_pInterfaceResMgr->GetFont(0),8,LTNULL);
 
-	m_Text.Create(" ",0,0,g_pInterfaceResMgr->GetFont(0),8,LTNULL);
-	m_Frame.Create(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame.dtx"),200,320,LTTRUE);
+	// RETAIL: Tron's keeps its own reference to the frame's texture
+	// (retail 0x1014ec76), for both frames
+	if (g_pTexInterface->FindTextureFromName(m_hFrameTex, "interface\\menu\\sprtex\\frame.dtx") != LT_OK)
+	{
+		g_pTexInterface->CreateTextureFromName(m_hFrameTex, "interface\\menu\\sprtex\\frame.dtx");
+	}
+	g_pTexInterface->AddRefTextureHandle(m_hFrameTex);
 
+	m_Frame.Create(m_hFrameTex,200,320,LTTRUE);
+	m_TronUnknownFrame2.Create(m_hFrameTex,200,320,LTTRUE);
 }
 
 void CPopupText::Term()
@@ -56,15 +68,36 @@ void CPopupText::Term()
 
 void CPopupText::Close()
 {
-
 	m_bVisible = LTFALSE;
 
+	// RETAIL: Tron's (retail 0x1014ed10)
+	g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\hidepopup.wav");
 
 	//if we had our weapons out before, show them again now
-	if (g_pInterfaceMgr && g_pPlayerMgr && m_bWeaponsEnabled)
+	if (g_pInterfaceMgr && g_pPlayerMgr)
 	{
-		g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();
-		g_pInterfaceMgr->EnableCrosshair(LTTRUE);
+		if (m_bWeaponsEnabled)
+		{
+			g_pPlayerMgr->GetClientWeaponMgr()->EnableWeapons();
+		}
+		else
+		{
+			g_pPlayerMgr->GetClientWeaponMgr()->DisableWeapons();
+		}
+	}
+
+	if (m_hFrameTex)
+	{
+		g_pTexInterface->ReleaseTextureHandle(m_hFrameTex);
+		m_hFrameTex = LTNULL;
+		m_Frame.SetFrame(LTNULL);
+	}
+
+	if (m_hTronUnknownFrame2Tex)
+	{
+		g_pTexInterface->ReleaseTextureHandle(m_hTronUnknownFrame2Tex);
+		m_hTronUnknownFrame2Tex = LTNULL;
+		m_TronUnknownFrame2.SetFrame(LTNULL);
 	}
 }
 
@@ -73,8 +106,12 @@ void CPopupText::Draw()
 	if (!m_bVisible) return;
 
 	m_Frame.Render();
+	// RETAIL: Tron's second frame (retail 0x1014edc3)
+	if (m_bTronUnknownDrawFrame2)
+	{
+		m_TronUnknownFrame2.Render();
+	}
 	m_Text.Render();
-
 }
 
 
