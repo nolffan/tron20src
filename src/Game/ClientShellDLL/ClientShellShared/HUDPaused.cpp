@@ -26,7 +26,8 @@ LTBOOL CHUDPaused::Init()
 
 	UpdateLayout();
 
-	m_MsgFormat.sString = LoadTempString(IDS_PAUSED);
+	// RETAIL: Tron's string 650 (0x10187476), not NOLF2's IDS_PAUSED
+	m_MsgFormat.sString = LoadTempString(650);
 	m_MsgFormat.fDuration = 0.0f;
 	m_Msg.Create(m_MsgFormat);
 

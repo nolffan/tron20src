@@ -49,7 +49,8 @@ bool ScmdConsoleDriver_CShell::WriteMessage( char const* pszMessage )
 		return false;
 	}
 
-	g_pChatMsgs->AddMessage( pszMessage, kMsgScmd );
+	// RETAIL: Tron's passes 7 (0x1017e683), not NOLF2's kMsgScmd
+	g_pChatMsgs->AddMessage( pszMessage, kMsgTransmission2 );
 	
 	return true;
 }

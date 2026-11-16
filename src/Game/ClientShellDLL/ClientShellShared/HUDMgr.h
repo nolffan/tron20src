@@ -49,7 +49,7 @@ enum eHUDUpdateFlag
 	kHUDProcedurals = 0x00008000,	//TRON
 	kHUDDistance	= 0x00010000,
 	kHUDProgressBar	= 0x00020000,	//TO2
-	kHUDDisplayMeter= 0x00040000,
+	kHUDDisplayMeter= 0x00400000,	// RETAIL: Tron's value (CHUDDisplayMeter ctor, 0x10187250)
 	kHUDRespawn     = 0x00080000,
 	kHUDScores		= 0x00100000,
 	kHUDDoomsday	= 0x00200000,
