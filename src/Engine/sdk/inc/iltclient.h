@@ -2975,7 +2975,12 @@ Access to the ILTTexInterface interface.
 
 Used for: Client Management.
 */
-    virtual ILTTexInterface *GetTexInterface() = 0;
+    // TRON: GetWidgetManager is slot 0xc4 and GetTexInterface slot 0xe0.
+    // Both bodies only return a global, so the body does not identify them.
+    // The game code identifies GetTexInterface: retail CShell.dll's
+    // CPolyLineFX::Draw (0x10199d04) and ClientFx.fxd's CLightningFX::Term
+    // (0x1000c41a) call slot 0xe0 and then ReleaseTextureHandle on its result.
+    virtual ILTWidgetManager *GetWidgetManager() = 0;
 
 /*!
 \return Pointer to the \b ILTDirectMusicMgr interface.
@@ -3039,7 +3044,8 @@ Access to the ILTWidgetManager interface.
 
 Used for: Text and UI.
 */
-    virtual ILTWidgetManager *GetWidgetManager() = 0;
+    // TRON: slot 0xe0 (see GetWidgetManager).
+    virtual ILTTexInterface *GetTexInterface() = 0;
 
 /*!
 \param  pPoint      The point in world coordinates.

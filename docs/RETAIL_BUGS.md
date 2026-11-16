@@ -962,6 +962,19 @@ system's function also adds m_vTronUnknown to the offset two times.
 
 Not fixed yet: the modern build should read the parent's position into
 the returned position.
+
+### A cylinder particle system emits on a line, not in a cylinder
+
+ClientFx.fxd 0x10018660 (CParticleSystemFX::AddParticles,
+ClientFxDLL/ParticleSystemFX.cpp). For the emission type PS_eCylinder, the
+function turns the two plane vectors m_vPerp1 and m_vPerp2 by the spawn
+rotation. It writes both results into the same vector (0x10019253 and
+0x100192c9), and then uses that vector for the two terms of the point.
+The point is thus on the line of the turned m_vPerp2, not on a circle.
+The circle and cone types use two vectors and are correct.
+
+Not fixed yet: the modern build should write the turned m_vPerp2 into a
+second vector and use it for the second term.
 ### The prankster bit does not release its object lists
 
 Object.lto 0x10040950 (CProjectilePrankster::AcquireTargets,

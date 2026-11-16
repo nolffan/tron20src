@@ -302,9 +302,6 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	if( !CBaseFX::Init( pLTClient, pData, pProps) ) 
 		return false;
 
-	// RETAIL: Tron's (0x10017ab7)
-	GetSpawnTransform( m_vCreatePos, m_rCreateRot );
-
 	ObjectCreateStruct	ocs;
 	
 	// Create Particle System
@@ -314,26 +311,14 @@ bool CParticleSystemFX::Init( ILTClient *pLTClient, FX_BASEDATA *pData, const CB
 	ocs.m_Pos			= m_vCreatePos;
 	ocs.m_Rotation		= m_rCreateRot;
 
-	// Develop the Right and Up vectors based off the Forward...
+	// RETAIL: Tron's (0x10017ab7): the system gets its spawn transform
+	// after the create struct takes the create position, and then sets
+	// the create struct again. Tron has no right and up vectors from the
+	// target normal here.
+	GetSpawnTransform( m_vCreatePos, m_rCreateRot );
 
-	if( pData->m_vTargetNorm.LengthSquared() > MATH_EPSILON )
-	{
-		LTVector vR, vU;
-
-		pData->m_vTargetNorm.Normalize();
-
-		if( (1.0f == pData->m_vTargetNorm.y) || (-1.0f == pData->m_vTargetNorm.y) )
-		{
-			vR = LTVector( 1.0f, 0.0f, 0.0f ).Cross( pData->m_vTargetNorm );
-		}
-		else
-		{
-			vR = LTVector( 0.0f, 1.0f, 0.0f ).Cross( pData->m_vTargetNorm );
-		}
-
-		vU = pData->m_vTargetNorm.Cross( vR );
-		ocs.m_Rotation = LTRotation( pData->m_vTargetNorm, vU );
-	}
+	ocs.m_Pos			= m_vCreatePos;
+	ocs.m_Rotation		= m_rCreateRot;
 
 	m_hObject = m_pLTClient->CreateObject( &ocs );
 	if( !m_hObject )
@@ -725,12 +710,22 @@ void CParticleSystemFX::AddParticles( )
 	LTRotation	rRot;
 	LTMatrix	mMat;
 
-	
+	// RETAIL: Tron (0x10018660) takes the rotation from the spawn transform
+	// (the create rotation for a system the game code places), not from
+	// the object. The spawn position is not used.
+	LTVector	vSpawnPos( 0.0f, 0.0f, 0.0f );
+	GetSpawnTransform( vSpawnPos, rRot );
+
+	if( GetProps()->m_nFollowType == UP_PLAYERVIEW )
+	{
+		rRot		= m_rCreateRot;
+		vSpawnPos	= m_vCreatePos;
+	}
+
 	if( !GetProps()->m_bObjectSpace )
 	{
 		// Get the rotation of the system so we can apply it to the velocity of each particle...
 
-		m_pLTClient->GetObjectRotation( m_hObject, &rRot );
 		rRot.ConvertToMatrix( mMat );
 	}
 
@@ -763,8 +758,13 @@ void CParticleSystemFX::AddParticles( )
 
 			case PS_eCircle:
 				{
-					vPos =  (GetProps()->m_vPerp1 * GetRandom( -1.0f, 1.0f )) +
-							(GetProps()->m_vPerp2 * GetRandom( -1.0f, 1.0f ));
+					// RETAIL: Tron turns the plane by the spawn rotation
+					LTVector vPerp1, vPerp2;
+					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp1 );
+					quat_RotVec( (float*)&vPerp2, rRot.m_Quat, (const float*)&GetProps()->m_vPerp2 );
+
+					vPos =  (vPerp1 * GetRandom( -1.0f, 1.0f )) +
+							(vPerp2 * GetRandom( -1.0f, 1.0f ));
 
 					// Normalize it
 					vPos.Norm();
@@ -785,15 +785,20 @@ void CParticleSystemFX::AddParticles( )
 					float fRandom = GetRandom(0.0f, (float)sqrt(GetProps()->m_fMaxRadius));
 					float fOffset = GetProps()->m_fMaxRadius - fRandom * fRandom;
 
+					// RETAIL: Tron turns the plane by the spawn rotation
+					LTVector vPerp1, vPerp2;
+					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp1 );
+					quat_RotVec( (float*)&vPerp2, rRot.m_Quat, (const float*)&GetProps()->m_vPerp2 );
+
 					//generate a point on that circle
-					vPos =  (GetProps()->m_vPerp1 * GetRandom( -1.0f, 1.0f )) +
-							(GetProps()->m_vPerp2 * GetRandom( -1.0f, 1.0f ));
+					vPos =  (vPerp1 * GetRandom( -1.0f, 1.0f )) +
+							(vPerp2 * GetRandom( -1.0f, 1.0f ));
 
 					// Normalize it
 					vPos.Norm();
 
 					//find the radius of the cone at that point
-					float fRadius = GetProps()->m_fMinRadius * fOffset / GetProps()->m_fMaxRadius;
+					float fRadius = fOffset * GetProps()->m_fMinRadius / GetProps()->m_fMaxRadius;
 
 					// Now scale it into our desired range
 					vPos *= GetRandom(0.0f, fRadius);
@@ -805,9 +810,16 @@ void CParticleSystemFX::AddParticles( )
 
 			case PS_eCylinder:
 				{
+					// RETAIL: Tron turns the plane by the spawn rotation. Both
+					// turned vectors go into vPerp1 (0x10019253, 0x100192c9),
+					// so the point is on a line, not on the circle (RETAIL_BUGS.md)
+					LTVector vPerp1, vPerp2;
+					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp1 );
+					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp2 );
+
 					//position it on a circle
-					vPos =  (GetProps()->m_vPerp1 * GetRandom( -1.0f, 1.0f )) +
-							(GetProps()->m_vPerp2 * GetRandom( -1.0f, 1.0f ));
+					vPos =  (vPerp1 * GetRandom( -1.0f, 1.0f )) +
+							(vPerp1 * GetRandom( -1.0f, 1.0f ));
 
 					// Normalize it
 					vPos.Norm();
@@ -934,13 +946,8 @@ void CParticleSystemFX::AddParticles( )
 
 void CParticleSystemFX::RemoveParticle(LTParticle* pParticle)
 {
-	// Disable this particle
- 	m_pLTClient->RemoveParticle( m_hObject, pParticle );
-
-	//update our counts
-	assert(m_nNumParticles > 0);
-	m_nNumParticles--;
-	
+	// RETAIL: ClientFx.fxd 0x100198f0 updates the bounce and splat counts
+	// first, then removes the particle and updates the total count
 	if(pParticle->m_nUserData & BOUNCE_FLAG)
 	{
 		m_nNumBounceParticles--;
@@ -949,6 +956,13 @@ void CParticleSystemFX::RemoveParticle(LTParticle* pParticle)
 	{
 		m_nNumSplatParticles--;
 	}
+
+	// Disable this particle
+ 	m_pLTClient->RemoveParticle( m_hObject, pParticle );
+
+	//update our counts
+	assert(m_nNumParticles > 0);
+	m_nNumParticles--;
 }
 
 

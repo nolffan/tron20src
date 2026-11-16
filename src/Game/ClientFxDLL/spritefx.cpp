@@ -225,14 +225,15 @@ bool CSpriteFX::Init(ILTClient *pClientDE, FX_BASEDATA *pBaseData, const CBaseFX
 
 	ocs.m_ObjectType		= OT_SPRITE;
 	ocs.m_Flags				|= GetProps()->m_dwObjectFlags | pBaseData->m_dwObjectFlags | (GetProps()->m_nFacing || GetProps()->m_bRotate ? FLAG_ROTATABLESPRITE : 0);
-	ocs.m_Flags2			|= pBaseData->m_dwObjectFlags2 | GetProps()->m_dwObjectFlags2;
+	ocs.m_Flags2			|= GetProps()->m_dwObjectFlags2 | pBaseData->m_dwObjectFlags2;
 	
 	// Calculate the position with the offset in 'local' coordinate space...
 
 	LTMatrix mMat;
 	ocs.m_Rotation.ConvertToMatrix( mMat );
 
-	m_vPos = ocs.m_Pos = m_vCreatePos + (mMat * GetProps()->m_vOffset);
+	// RETAIL: Tron adds m_vTronUnknown to the offset (0x1001f0c5)
+	m_vPos = ocs.m_Pos = m_vCreatePos + (mMat * (GetProps()->m_vOffset + m_vTronUnknown));
 
 	// When camera facing we want the Normal rotation at the identity...
 
@@ -277,11 +278,8 @@ bool CSpriteFX::Update(float tmFrameTime)
 {
 	// Shutdown....
 
-	if( IsShuttingDown() )
-	{
-		m_pLTClient->Common()->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAGMASK_ALL);
-	}
-	else if( IsInitialFrame() )
+	// RETAIL: Tron does not hide the sprite when it shuts down (0x1001f1c0)
+	if( !IsShuttingDown() && IsInitialFrame() )
 	{
 		//we are on the initial frame of another play, so we need to reset
 		//our sprite's current position in the animation to the beginning

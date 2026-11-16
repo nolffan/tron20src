@@ -229,7 +229,8 @@ bool CBaseFX::SuspendedUpdate(float tmFrameTime)
 
 bool CBaseFX::Update(float tmFrameTime)
 {
-	if (IsSuspended() || !IsActive())
+	// RETAIL: Tron also returns when the effect has no object (0x10001574)
+	if (IsSuspended() || !IsActive() || !m_hObject)
 	{
 		return false;
 	}
@@ -253,9 +254,10 @@ bool CBaseFX::Update(float tmFrameTime)
 				
 		ILTModel *pModelLT = m_pLTClient->GetModelLT();
 
-		vAlignedOffset =	(rRot.Right() * GetProps()->m_vOffset.x) + 
-							(rRot.Up() * GetProps()->m_vOffset.y) + 
-							(rRot.Forward() * GetProps()->m_vOffset.z);
+		// RETAIL: Tron adds m_vTronUnknown to the offset (0x10001636)
+		vAlignedOffset =	(rRot.Right() * (GetProps()->m_vOffset.x + m_vTronUnknown.x)) + 
+							(rRot.Up() * (GetProps()->m_vOffset.y + m_vTronUnknown.y)) + 
+							(rRot.Forward() * (GetProps()->m_vOffset.z + m_vTronUnknown.z));
 
 		// Depending on the Update type find the position we should be at...
 
