@@ -19,6 +19,7 @@
 #include "ScreenCommands.h"
 #include "ClientMultiplayerMgr.h"
 #include "ModelButeMgr.h"
+#include "LightCycleButeMgr.h"
 
 #include "GameClientShell.h"
 extern CGameClientShell* g_pGameClientShell;
@@ -494,8 +495,8 @@ LTBOOL CScreenPlayer::OnMouseMove(int x, int y)
 	return bHandled;
 }
 
-// RETAIL: 0x10074130. PORT: Tron's light cycle colors come from its light
-// cycle bute manager (0x1026dd10); NOLF2's DM model count stands in
+// RETAIL: 0x10074130: the cycle color steps through the light cycle bute
+// manager's shades (g_pLightCycleButeMgr, CShell 0x1026dd10)
 void CScreenPlayer::NextColor(bool bSound)
 {
 	if (!m_nGameType)
@@ -506,7 +507,7 @@ void CScreenPlayer::NextColor(bool bSound)
 	else
 	{
 		m_nCycleColor++;
-		if (m_nCycleColor == g_pModelButeMgr->GetNumDMModels())
+		if (m_nCycleColor == g_pLightCycleButeMgr->GetNumShades())
 			m_nCycleColor = 0;
 	}
 	UpdateChar();
@@ -514,7 +515,7 @@ void CScreenPlayer::NextColor(bool bSound)
 		PlayInterfaceSound(kSndChange);
 }
 
-// RETAIL: 0x100741b0 (PORT as NextColor)
+// RETAIL: 0x100741b0
 void CScreenPlayer::PrevColor(bool bSound)
 {
 	if (!m_nGameType)
@@ -527,7 +528,7 @@ void CScreenPlayer::PrevColor(bool bSound)
 	else
 	{
 		if (!m_nCycleColor)
-			m_nCycleColor = g_pModelButeMgr->GetNumDMModels();
+			m_nCycleColor = g_pLightCycleButeMgr->GetNumShades();
 		m_nCycleColor--;
 	}
 	UpdateChar();
