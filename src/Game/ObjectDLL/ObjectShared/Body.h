@@ -150,6 +150,8 @@ class Body : public Prop, public IHitBoxUser
 		virtual void SetCanCarry( bool bCarry );
 		virtual void SetBeingCarried( bool bBeingCarried, HOBJECT hCarrier );
 		virtual bool BeingCarried() { return m_bBeingCarried; }
+		// RETAIL: Tron's (0x1015cd90)
+		void ShowCarrier();
 
 		void SetCanRevive( bool bCanRevive );
 		bool GetCanRevive( ) const { return m_bCanRevive; }

@@ -37,12 +37,10 @@ typedef std::list<IHitBoxUser*> HitBoxUserList;
 //	RETAIL: ThorneBall : OccludingArmor (Prop, IHitBoxUser), 0x870 bytes, its
 //	class registered in Thorne's TU (ClassDef 0x102dda50), its vtables
 //	(0x10294ca8...) with OccludingArmor's code (retail 0x1013be80...).
-//	PORT: OccludingArmor is not yet written; ShellArmor, its sibling of the
-//	same shape, stands in.
 //
 // ----------------------------------------------------------------------- //
 
-class ThorneBall : public ShellArmor
+class ThorneBall : public OccludingArmor
 {
 	public :
 

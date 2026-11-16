@@ -39,7 +39,7 @@ static const char s_szWeapon[]			= "Weapon";
 // ----------------------------------------------------------------------- //
 
 BEGIN_CLASS(ThorneBall)
-END_CLASS_DEFAULT_FLAGS(ThorneBall, ShellArmor, NULL, NULL, CF_HIDDEN)
+END_CLASS_DEFAULT_FLAGS(ThorneBall, OccludingArmor, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
