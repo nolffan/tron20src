@@ -101,6 +101,7 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_PROJECTILEFX_LIGHTRADIUS           "LightRadius"
 #define FXBMGR_PROJECTILEFX_GRAVITY               "Gravity"
 #define FXBMGR_PROJECTILEFX_GRAVITYOVERRIDE       "GravityOverride"
+#define FXBMGR_PROJECTILEFX_ELASTICITY            "Elasticity"	// RETAIL: Tron's
 #define FXBMGR_PROJECTILEFX_LIFETIME              "Lifetime"
 #define FXBMGR_PROJECTILEFX_VELOCITY              "Velocity"
 #define FXBMGR_PROJECTILEFX_ALTVELOCITY           "AltVelocity"
@@ -2514,7 +2515,6 @@ PROJECTILEFX::PROJECTILEFX()
 
 	// ClientFX effects
 	szFXName[ 0 ] = '\0';
-	dwFXFlags = 0;
 
 	fMaxRicochetAngle = 0.0f;
 	nMaxRicochets = 0;
@@ -2525,6 +2525,7 @@ PROJECTILEFX::PROJECTILEFX()
 	fFireOffset            = 0.0f;
 	fLifeTime              = 0.0f;
 	fGravityOverride       = 0.0f;
+	fElasticity            = 0.0f;
 	nFlags                 = 0;
 	vLightColor.Init();
 	nLightRadius           = 0;
@@ -2533,12 +2534,12 @@ PROJECTILEFX::PROJECTILEFX()
 	dwObjectFlags          = 0;
 	vModelScale.Init();
 	nSmokeTrailType        = 0;
-	nCanImpactSameKind     = 0;
-
-	pClassData             = LTNULL;
 	fEnergyDrainMin        = 0.0f;
 	fEnergyDrainMax        = 0.0f;
 	fEnergyDrainSurge      = 0.0f;
+	nCanImpactSameKind     = 0;
+
+	pClassData             = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -2575,19 +2576,7 @@ LTBOOL PROJECTILEFX::Init(CButeMgr & buteMgr, char* aTagName)
 	// get the ClientFX effect to play when the projectile is created
 	buteMgr.GetString(aTagName, FXBMGR_PROJECTILEFX_FXNAME, szFXName, ARRAY_LEN(szFXName));
 
-	int fxFlag = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_FXLOOP, 0);
-	if( fxFlag > 0 )
-	{
-		// determine if the ClientFX effect should loop
-		dwFXFlags |= FXFLAG_LOOP;
-	}
-
-	fxFlag = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_FXSMOOTHSHUTDOWN, 0);
-	if( fxFlag == 0 )
-	{
-		// determine if the ClientFX effect should shutdown smoothly
-		dwFXFlags |= FXFLAG_NOSMOOTHSHUTDOWN;
-	}
+	// RETAIL: Tron reads no FXLoop/FXSmoothShutdown flags.
 
 	// get the ClientFX effect to play when the projectile is created
 	buteMgr.GetString(aTagName, FXBMGR_PROJECTILEFX_RICOCHETFXNAME, "", szRicochetFXName, ARRAY_LEN(szRicochetFXName));
@@ -2595,18 +2584,18 @@ LTBOOL PROJECTILEFX::Init(CButeMgr & buteMgr, char* aTagName)
 	nMaxRicochets        = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_MAXRICOCHETS, 0 );
 
 	nSmokeTrailType      = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SMOKETRAILTYPE);
+	// RETAIL: Tron reads its energy drain here (0x1014506b)
+	fEnergyDrainMin      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMIN) );
+	fEnergyDrainMax      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMAX) );
+	fEnergyDrainSurge    = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE) );
 	nVelocity            = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_VELOCITY);
 	nAltVelocity         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_ALTVELOCITY);
-	// PORT: Tron reads these here (its strings follow AltVelocity's); the
-	// exact code is not checked
-	fEnergyDrainMin      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMIN, 0.0) );
-	fEnergyDrainMax      = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINMAX, 0.0) );
-	fEnergyDrainSurge    = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ENERGYDRAINSURGE, 0.0) );
 	fFireOffset          = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_FIRE_OFFSET) );
 	nLightRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_LIGHTRADIUS);
 	nSoundRadius         = buteMgr.GetInt(aTagName, FXBMGR_PROJECTILEFX_SOUNDRADIUS);
 	fLifeTime            = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_LIFETIME) );
 	fGravityOverride     = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_GRAVITYOVERRIDE) );
+	fElasticity          = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_ELASTICITY) );
 	fFlareScale          = static_cast< LTFLOAT >( buteMgr.GetDouble(aTagName, FXBMGR_PROJECTILEFX_FLARESCALE) );
 
 	vLightColor      = buteMgr.GetVector(aTagName, FXBMGR_PROJECTILEFX_LIGHTCOLOR);

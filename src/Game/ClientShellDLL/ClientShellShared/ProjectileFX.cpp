@@ -84,7 +84,9 @@ LTBOOL CProjectileFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	if ( '\0' != m_pProjectileFX->szFXName[ 0 ] )
 	{
 		// get the flags for this ClientFX
-		uint32 dwFlags = m_pProjectileFX->dwFXFlags;
+		// PORT: Tron's PROJECTILEFX has no FX flags; retail CShell creates
+		// this FX looping (FXFLAG_LOOP, in its own function 0x101a1600).
+		uint32 dwFlags = FXFLAG_LOOP;
 
 		// prepare the create struct
 		CLIENTFX_CREATESTRUCT fxInit

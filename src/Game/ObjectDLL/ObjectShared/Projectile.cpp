@@ -383,18 +383,9 @@ LTBOOL CProjectile::Setup(CWeapon const* pWeapon, WeaponFireInfo const & info)
 	m_eProgDamageType	= m_pAmmoData->eProgDamageType;
 
 	// determine the velocity
-	if (info.bOverrideVelocity)
-	{
-		m_fVelocity = info.fOverrideVelocity;
-	}
-	else if (info.bAltFire)  
-	{
-		m_fVelocity = (LTFLOAT) (m_pAmmoData->pProjectileFX ? m_pAmmoData->pProjectileFX->nAltVelocity : 0);
-	}
-	else
-	{
-		m_fVelocity = (LTFLOAT) (m_pAmmoData->pProjectileFX ? m_pAmmoData->pProjectileFX->nVelocity : 0);
-	}
+	// RETAIL: Tron does it in a virtual (slot 28, 0x1011e970; Setup calls
+	// it at 0x1011ebc5)
+	TronUnknownVirtual28( info );
 
 	// determine the projectile's range
 	m_fRange            = (LTFLOAT) m_pWeaponData->nRange;
@@ -943,8 +934,19 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 
 void CProjectile::TronUnknownVirtual28(WeaponFireInfo const& info)
 {
-	// RETAIL: 0x1011e970 sets m_fVelocity (from the fire info's override,
-	// or the ammo's projectile FX velocity / alt velocity).
+	// RETAIL: 0x1011e970 (NOLF2's code, moved out of Setup)
+	if (info.bOverrideVelocity)
+	{
+		m_fVelocity = info.fOverrideVelocity;
+	}
+	else if (info.bAltFire)  
+	{
+		m_fVelocity = (LTFLOAT) (m_pAmmoData->pProjectileFX ? m_pAmmoData->pProjectileFX->nAltVelocity : 0);
+	}
+	else
+	{
+		m_fVelocity = (LTFLOAT) (m_pAmmoData->pProjectileFX ? m_pAmmoData->pProjectileFX->nVelocity : 0);
+	}
 }
 
 void CProjectile::TronUnknownVirtual30(HOBJECT hObj)
