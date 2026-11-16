@@ -165,7 +165,13 @@ public:
 	virtual bool	TronUnknownVirtual15C() = 0;
 	virtual void	TronUnknownVirtual160(bool bValue) = 0;
 
-	virtual float		GetSkillModifier(eSkill skl, uint8 nMod) = 0; 
+	// RETAIL: Tron's last slot (0x164) removes an I/O node ping (retail
+	// 0x100ac180). The name is ours
+	virtual bool		RemovePing(const char* szName) = 0;
+
+	// PORT: Tron's CPlayerStats has no GetSkillModifier slot; NOLF2's callers
+	// reach CTronPlayerStats' (TRONPlayerStats.cpp)
+	float				GetSkillModifier(eSkill skl, uint8 nMod);
 };
 
 extern CPlayerStats* g_pPlayerStats;

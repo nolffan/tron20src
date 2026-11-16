@@ -21,8 +21,12 @@ public:
 	void	Term();
 
 
-	void	Show(uint32 nTextId, uint8 nPopupId) { DisplayPopup( nPopupId, LTNULL, nTextId ); }
-	void	Show(char* pText, uint8 nPopupId) { DisplayPopup( nPopupId, pText, (uint32)-1 ); }
+	// RETAIL: Tron's (retail 0x1007f630, emitted out of line): a popup
+	// with a string by id and an image, the text empty
+	void	Show(uint32 nTextId, uint8 nPopupId, const char* szImage) { DisplayPopup( nPopupId, L"", nTextId, szImage ); }
+	// PORT: NOLF2's forms, for NOLF2's callers (CInterfaceMgr::ShowPopup)
+	void	Show(uint32 nTextId, uint8 nPopupId) { DisplayPopup( nPopupId, L"", nTextId, LTNULL ); }
+	void	Show(char* pText, uint8 nPopupId) { DisplayPopup( nPopupId, LTGUIWideString(pText), 0, LTNULL ); }
 	void	Update();
 	void	Close();
 
@@ -38,7 +42,9 @@ public:
 
 private:
 
-	void	DisplayPopup( uint8 nPopupId, char *pText, uint32 nTextId );
+	// RETAIL: Tron's (retail 0x1014edf0): the text is wide, used when there
+	// is no string id; the image is shown in a second frame
+	void	DisplayPopup( uint8 nPopupId, std::wstring sText, uint32 nTextId, const char* szImage );
 	LTBOOL	m_bVisible;
 	bool	m_bUsePopupState;
 

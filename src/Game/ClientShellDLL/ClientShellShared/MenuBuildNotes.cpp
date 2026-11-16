@@ -67,9 +67,7 @@ uint32 CMenuBuildNotes::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam
 
 			if (pItem)
 			{
-				// PORT: retail shows the note with its name too (Tron's
-				// three-argument CPopupText::Show, 0x1007f630)
-				m_PopupText.Show(pItem->nTextId, pItem->nPopupId);
+				m_PopupText.Show(pItem->nTextId, pItem->nPopupId, pItem->szName);	// RETAIL: with its image (0x1007f630)
 
 				// Disable menu now that popup is visible.
 
