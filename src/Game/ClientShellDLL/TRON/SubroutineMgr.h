@@ -259,6 +259,10 @@ public:
 
 	void				Compile();
 
+	// RETAIL: +0x11a4, read by CHUDHealthEnergy::Update (0x1002a35e). The
+	// name is ours.
+	float				GetTronUnknown11A4() { return m_fTronUnknown11A4; }
+
 	// To set the system memory configuration (bad blocks, base code, etc...)
 	bool				SetSystemMemoryConfiguration(const char* pSystemMemoryConfig, int nTronUnknown = -1);	// RETAIL: 0x100954b0
 	void				AddBadBlock(int iSectorNumber);	// create a subroutine that's unusable

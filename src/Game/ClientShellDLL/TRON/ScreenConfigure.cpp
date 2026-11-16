@@ -138,7 +138,8 @@ LTBOOL CScreenConfigure::Build()
 
 	int nWidth = GetPageRight() - GetPageLeft();
 
-	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_MOVE_CONTROLS,CMD_MOVE_COM,LTNULL);
+	// RETAIL: 0x100563ae: the first is at the layout's MoveControlPos
+	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_MOVE_CONTROLS,CMD_MOVE_COM,LTNULL,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_CONFIGURE,"MoveControlPos"));
 	pCtrl->SetFixedWidth(nWidth);
 
 	pCtrl = AddTextItem(IDS_INV_CONTROLS,CMD_INV_COM,LTNULL);
@@ -167,7 +168,8 @@ LTBOOL CScreenConfigure::Build()
 	for (int nType = 0; nType < kNumCommandTypes; nType++)
 	{
 		m_pList[nType] = AddList(pos,nHt);
-		m_pList[nType]->SetFrameWidth(2);
+		// RETAIL: 0x1005657c: a solid frame texture
+		m_pList[nType]->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pList[nType]->SetIndent(LTIntPt(4,4));
 		m_pList[nType]->Show(LTFALSE);
 
@@ -209,7 +211,6 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 		m_pProfile = g_pProfileMgr->GetCurrentProfile();
 		m_pProfile->SetBindings();
 		UpdateControlList();
-		SetCurrentType(COM_MOVE);
 	}
 	else
 	{
@@ -220,9 +221,9 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 			m_pList[nType]->Show(LTFALSE);
 	}
 	CBaseScreen::OnFocus(bFocus);
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| if (bFocus)
-//| SetCurrentType(COM_MOVE);
+	// RETAIL: 0x10056720: the type is set after the base class's OnFocus
+	if (bFocus)
+		SetCurrentType(COM_MOVE);
 }
 
 
@@ -371,17 +372,23 @@ void CScreenConfigure::SetControlText(CLTGUICtrl *pCtrl)
 	}
 
 
+	// RETAIL: 0x10056ed0: Tron widens the text into one string of its own.
+	// NEAR: retail frees it through the STLport allocator proxy (out of line)
+	std::wstring sText;
+
 	// If the key is unassigned, then just set the text to the unassigned message
 	if (strlen(strControls) == 0 )
 	{
 		char szTmp[64];
 		FormatString(IDS_CONTROL_UNASSIGNED,szTmp,sizeof(szTmp));
-		pCol->SetString(SCREEN_COLUMN_KEY, szTmp);
+		LTGUIWiden(sText, szTmp);
+		pCol->SetString(SCREEN_COLUMN_KEY, sText);
 	}
 	else
 	{
 		// Set the text in the control
-		pCol->SetString(SCREEN_COLUMN_KEY, strControls);
+		LTGUIWiden(sText, strControls);
+		pCol->SetString(SCREEN_COLUMN_KEY, sText);
 	}
 }
 
@@ -407,14 +414,22 @@ void CScreenConfigure::UnBind( uint32 nObjectId, char const* pszControlName, uin
 		return;
 	}
 
-	int dev = 0;
-	while (dev < 3 && devices[dev] != deviceType)
-		++dev;
+	int dev;
+	for (dev = 0; dev < 3; dev++)
+	{
+		if (devices[dev] == deviceType)
+			break;
+	}
 
-	char szTmp[16] ="";
 	for (int i = 0; i < g_kNumCommands; i++)
 	{
 		CBindingData *pData = m_pProfile->FindBinding(i);
+		// RETAIL: 0x1005721e: Tron checks the binding
+		if (!pData)
+		{
+			g_pLTClient->CPrint("No binding found for %d", i);
+			continue;
+		}
 		if( nObjectId )
 		{
 			if( pData->nDeviceObjectId[dev] != nObjectId )
@@ -470,6 +485,18 @@ LTBOOL CScreenConfigure::HandleKeyDown(int key, int rep)
 
 	switch (key)
 	{
+	// RETAIL: 0x10057496: Tron's tab key steps through the command types
+	case VK_TAB:
+		{
+			if (!m_bWaitingForKey && !m_fInputPauseTimeLeft)
+			{
+				int nType = (m_nType + 1) % kNumCommandTypes;
+				SetCurrentType(nType);
+				SetSelection(nType);
+				handled = LTTRUE;
+			}
+			break;
+		}
 	case VK_DELETE:
 		{
 			// Unassign the key
@@ -541,9 +568,9 @@ uint32 CScreenConfigure::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwP
 
 			CLTGUIColumnCtrl *pCtrl= (CLTGUIColumnCtrl *)m_pList[m_nType]->GetSelectedControl();
 
-			pCtrl->SetString(SCREEN_COLUMN_EQUALS, "=");
+			pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L"="));
 
-			pCtrl->SetString(SCREEN_COLUMN_KEY, " ");
+			pCtrl->SetString(SCREEN_COLUMN_KEY, std::wstring(L" "));
 
 
 
@@ -591,7 +618,8 @@ LTBOOL CScreenConfigure::Render(HSURFACE hDestSurf)
 			// find the first key down event
             for (uint32 i = 0; i < nArraySize; i++)
 			{
-				if (m_pInputArray[i].m_InputValue)
+				// RETAIL: 0x100577e6: Tron prints every input and takes it
+				g_pLTClient->CPrint("Input Value is %d", m_pInputArray[i].m_InputValue);
 				{
 					if (SetCurrentSelection (&m_pInputArray[i]))
 					{
@@ -610,15 +638,21 @@ LTBOOL CScreenConfigure::Render(HSURFACE hDestSurf)
 }
 
 
+// RETAIL: 0x10057860: Tron clamps the type and selects its list
 void CScreenConfigure::SetCurrentType(int nType)
 {
 	if (nType < 0 || nType > kNumCommandTypes)
-		return;
+		nType = kNumCommandTypes;
 	for (int n = 0; n < kNumCommandTypes; n++)
 	{
 		m_pList[n]->Show( (n==nType) );
 	}
 	m_nType = nType;
+
+	if (nType < kNumCommandTypes)
+		SetSelection(GetIndex(m_pList[nType]));
+	else
+		SetSelection(0);
 
 	AdjustControlFrame();
 
@@ -628,7 +662,6 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 {
 	CLTGUIColumnCtrl *pCtrl=(CLTGUIColumnCtrl *)m_pList[m_nType]->GetSelectedControl();
 	int nCommand=pCtrl->GetParam1();
-	int nIndex=m_pList[m_nType]->GetSelectedIndex()-1;
 
 	if (pInput->m_DeviceType == DEVICETYPE_JOYSTICK)
 	{
@@ -659,7 +692,7 @@ LTBOOL CScreenConfigure::SetCurrentSelection (DeviceInput* pInput)
 	};
 
 	
-	pCtrl->SetString(SCREEN_COLUMN_EQUALS, "");
+	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring(L" "));
 
 	UpdateControlList();
 
@@ -672,13 +705,9 @@ LTBOOL CScreenConfigure::KeyRemappable (DeviceInput* pInput)
 	if (pInput->m_DeviceType != DEVICETYPE_KEYBOARD) return LTTRUE;
 
 	uint16 nDIK = pInput->m_ControlCode;
-	if (nDIK == DIK_ESCAPE)
-        return LTFALSE;
-	if (nDIK == DIK_PAUSE)
-        return LTFALSE;
-	if (nDIK >= DIK_F1 && nDIK <= DIK_F10)
-        return LTFALSE;
-	if (nDIK >= DIK_F11 && nDIK <= DIK_F15)
+	// RETAIL: 0x10057ac7: one test, and Tron keeps the Windows keys too
+	if (nDIK == DIK_ESCAPE || nDIK == DIK_PAUSE || nDIK == DIK_LWIN || nDIK == DIK_RWIN ||
+		(nDIK >= DIK_F1 && nDIK <= DIK_F10) || (nDIK >= DIK_F11 && nDIK <= DIK_F15))
         return LTFALSE;
 
 
@@ -858,7 +887,7 @@ LTBOOL CScreenConfigure::CheckMouseWheel (DeviceInput* pInput)
 
 	Bind(nCommand, pInput->m_nObjectId, 0, szCommand, pInput->m_DeviceType);
 
-	pCtrl->SetString(SCREEN_COLUMN_EQUALS, "");
+	pCtrl->SetString(SCREEN_COLUMN_EQUALS, std::wstring());
 
 	UpdateControlList();
 

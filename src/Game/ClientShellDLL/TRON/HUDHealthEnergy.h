@@ -33,38 +33,50 @@ public:
     void        UpdateLayout();
 
 private:
-	float		m_fScale;
+	// RETAIL: 0x1002b390 (folded with CHUDProgress's): the texture rect of
+	// a 256x256 texture
+	void		SetUVWH(LT_POLYFT4 * pPrim, LTRect rect);
 
-	// Local copies only maintained to see if something has changed
-	uint32		m_iHealth;
-	uint32		m_iHealthMax;
-	uint32		m_iEnergy;
-	uint32		m_iEnergyMax;
+	// RETAIL: Tron's layout (constructor 0x10029980, 0x460 bytes). The names
+	// are ours.
+	float		m_fScale;				// +0x10
 
-	// FIXME add rects (XYWH) for healthBG, energyBG, healthbar, energybar
-	uint32		m_iHealthWidth;		// width of the bar at full health
-	uint32		m_iEnergyWidth;		// width of the bar at full energy
+	// local copies, to see if something has changed
+	uint32		m_nHealth;				// +0x14
+	uint32		m_nMaxHealth;			// +0x18
+	float		m_fEnergy;				// +0x1c
+	float		m_fMaxEnergy;			// +0x20
+	float		m_fReservedEnergy;		// +0x24 (the subroutines' energy)
 
-	bool		m_bHealthBlink;
-	float		m_fHealthBlinkTime;
-	float		m_fLayoutHealthBlinkTime;
+	uint32		m_nHealthWidth;			// +0x28: the bars at full
+	uint32		m_nEnergyWidth;			// +0x2c
+	uint32		m_nBarHeight;			// +0x30
 
-	HTEXTURE	m_hHUDTex;
-	HTEXTURE	m_hHUDHubTex;
+	bool		m_bHealthBlink;			// +0x34
+	float		m_fHealthBlinkTime;		// +0x38
+	float		m_fLayoutHealthBlinkTime;	// +0x3c
 
-	LT_POLYFT4	m_HUDHub;
-	LT_POLYFT4	m_HealthBG;
-	LT_POLYFT4	m_EnergyBG;
-	LT_POLYFT4	m_HealthBar;
-	LT_POLYFT4	m_EnergyBar;
-	LT_POLYFT4	m_HealthBlinkBar;
+	HTEXTURE	m_hHUDTex;				// +0x40
+	HTEXTURE	m_hEnergyTex;			// +0x44
+	HTEXTURE	m_hPlasmaTex;			// +0x48
 
-	LT_POLYF4	m_EnergyTransfer;
+	LT_POLYFT4	m_Energy;				// +0x4c
+	LT_POLYFT4	m_HealthBG;				// +0xa0
+	LT_POLYFT4	m_HealthBar;			// +0xf4
+	LT_POLYFT4	m_ReservedBar;			// +0x148
+	LT_POLYFT4	m_EnergyBar;			// +0x19c
+	LT_POLYFT4	m_HealthBlinkBar;		// +0x1f0
+	LT_POLYFT4	m_EnergyCap;			// +0x244
+	LT_POLYFT4	m_EnergyTransfer;		// +0x298
+	LT_POLYFT4	m_Plasma[4];			// +0x2ec
 
-	int			m_iFontNum;
-
-	CUIPolyString * m_pHealthStr;
-	CUIPolyString * m_pEnergyStr;
+	float		m_fPlasmaTime;			// +0x43c
+	CUIPolyString * m_pHealthStr;		// +0x440
+	CUIPolyString * m_pEnergyStr;		// +0x444
+	LTFloatPt	m_HealthTextPos;		// +0x448
+	LTFloatPt	m_EnergyTextPos;		// +0x450
+	float		m_fFlickerTime;			// +0x458
+	bool		m_bFlicker;				// +0x45c
 };
 
 #endif

@@ -90,6 +90,10 @@ public:
 	int		GetEnergyRequired() {return (int)m_fEnergyRequired;}
 	float	GetPercentEnergyTransferred();
 
+	// RETAIL: the first transfer only (CHUDHealthEnergy reads +0x1e8:
+	// 0x1002a27c, 0x1002a7ac). The name is ours.
+	bool	IsTransferringEnergy1()	{return m_bTransferringEnergy;}
+
 	// RETAIL: any of the four transfers
 	bool	IsTransferringEnergy() {return (m_bTransferringEnergy || m_bTronUnknown1E9 || m_bTronUnknown1EA || m_bTronUnknown1EB);}
 
