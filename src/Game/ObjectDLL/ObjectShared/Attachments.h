@@ -287,6 +287,8 @@ class CAttachments : public IAggregate
 		LTBOOL HasWeapons() { return m_cWeapons > 0; }
 		LTBOOL HasProps() { return m_cProps > 0; }
 		LTBOOL HasObjects() { return m_cObjects > 0; }
+		// RETAIL: Tron's (inline: CAI::InitAttachments 0x1012f916)
+		int GetNumAttachmentPositions() { return m_cAttachmentPositions; }
 
 		void GetInfiniteAmmo();
 

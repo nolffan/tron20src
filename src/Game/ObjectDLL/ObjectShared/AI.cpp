@@ -39,6 +39,7 @@
 #include "RelationButeMgr.h"
 #include "Weapon.h"
 #include "Attachments.h"
+#include "PowerArmor.h"
 #include "ServerTrackedNodeMgr.h"
 #include "ServerTrackedNodeContext.h"
 #include "ObjectRelationMgr.h"
@@ -3201,6 +3202,11 @@ void CAI::PreUpdate()
 
 void CAI::InitAttachments()
 {
+	// RETAIL: Tron's (0x1012f760): the attachments follow our visibility
+	uint32 dwFlags;
+	g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+	HideAttachments(!(dwFlags & FLAG_VISIBLE));
+
 	if ( m_pAttachments->HasWeapons() || (m_cWeapons > 0 && !m_pAttachments->HasWeapons()) )
 	{
 		// Give the AI lots of ammo.
@@ -3251,7 +3257,37 @@ void CAI::InitAttachments()
 		m_cObjects = m_pAttachments->EnumerateObjects(m_apObjects, m_apObjectPositions, AI_MAX_OBJECTS);
 	}
 
-	m_bInitializedAttachments = LTTRUE;
+	// RETAIL: Tron's (0x1012f8c5): the first time, our maximum armor is
+	// the total of our power armor attachments (the caller sets
+	// m_bInitializedAttachments)
+	if ( !m_bInitializedAttachments )
+	{
+		static HCLASS hPowerArmor = g_pLTServer->GetClass("PowerArmor");
+
+		LTFLOAT fMaxArmor = 0.0f;
+		int cAttachmentPositions = GetAttachments() ? GetAttachments()->GetNumAttachmentPositions() : 0;
+		for ( int iAttachmentPosition = 0 ; iAttachmentPosition < cAttachmentPositions ; iAttachmentPosition++ )
+		{
+			CAttachmentPosition* pAttachmentPosition = GetAttachments()->GetAttachment((uint32)iAttachmentPosition);
+			if ( pAttachmentPosition->GetAttachment() && pAttachmentPosition->GetAttachment()->GetType() == ATTACHMENT_TYPE_OBJECT )
+			{
+				CAttachment* pAttachment = pAttachmentPosition->GetAttachment();
+
+				// RETAIL: the classes are given in reverse order (also in
+				// CCharacter, 0x1009427c)
+				if ( g_pLTServer->IsKindOf(hPowerArmor, g_pLTServer->GetObjectClass(pAttachment->GetModel())) )
+				{
+					PowerArmor* pPowerArmor = dynamic_cast<PowerArmor*>(g_pLTServer->HandleToObject(pAttachment->GetModel()));
+					if ( pPowerArmor )
+					{
+						fMaxArmor += pPowerArmor->GetMaxHitPoints();
+					}
+				}
+			}
+		}
+
+		m_damage.SetMaxArmorPoints(fMaxArmor);
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -3513,6 +3549,7 @@ void CAI::Update()
 	if ( !m_bInitializedAttachments )
 	{
 		InitAttachments();
+		m_bInitializedAttachments = LTTRUE;
 	}
 
 	// Record if we had a target before we update.

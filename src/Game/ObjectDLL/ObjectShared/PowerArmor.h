@@ -71,6 +71,11 @@ class PowerArmor : public Prop
 		// handled the hit. The name is ours
 		bool HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPosition* pAttachPos );
 
+		// RETAIL: Tron's (inline: CCharacter 0x100942b4, CAI::InitAttachments
+		// 0x1012f9a8)
+		LTFLOAT GetHitPoints() const { return m_fHitPoints; }
+		LTFLOAT GetMaxHitPoints() const { return m_fMaxHitPoints; }
+
 	protected:
 		// Protected members
 
