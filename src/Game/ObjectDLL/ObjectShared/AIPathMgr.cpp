@@ -311,7 +311,7 @@ LTBOOL CAIPathMgr::FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVecto
 	return FindRandomPosition( pAI, pVolume, vStartPos, vStartPos, fMinDist*fMinDist, 25, 0, pvRandomPos );
 }
 
-LTBOOL CAIPathMgr::FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVector& vStartPos, const LTVector& vEntryPoint, const LTFLOAT fMinDistSqr, const uint8 nMaxDepth, uint8 nCurDepth, LTVector* pvRandomPos)
+LTBOOL CAIPathMgr::FindRandomPosition(CAI* pAI, AIVolume* pVolume, const LTVector& vStartPos, const LTVector& vEntryPoint, const LTFLOAT fMinDistSqr, const int8 nMaxDepth, int8 nCurDepth, LTVector* pvRandomPos)	// RETAIL: signed depths in Tron (0x101a3d7a)
 {
 	if( !pvRandomPos )
 	{

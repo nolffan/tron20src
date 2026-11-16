@@ -267,7 +267,7 @@ GadgetTarget::~GadgetTarget( )
 
 	if( m_hSound )
 	{
-		g_pLTServer->SoundMgr()->KillSound( m_hSound );
+		g_pLTServer->SoundMgr()->KillSoundLoop( m_hSound );	// RETAIL: 0x101bc082: Tron stops the loop
 	}
 
 	if( m_hAttachedModel )
