@@ -801,10 +801,7 @@ void CWeapons::ObtainMod(uint8 nWeaponId, uint8 nModId, bool bNotifyClient,
 
 	if (!m_pWeapons[nWeaponId]) return;
 
-	MOD const *pModData = g_pWeaponMgr->GetMod(nModId);
-	if( !pModData )
-		return;
-
+	// RETAIL: no GetMod test in Tron (0x100f6f63)
 	m_pWeapons[nWeaponId]->AddMod(nModId);
 
 

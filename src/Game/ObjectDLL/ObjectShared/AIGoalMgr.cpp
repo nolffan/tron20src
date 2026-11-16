@@ -145,8 +145,6 @@ void CAIGoalMgr::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD(m_iGoalSet);
 	SAVE_TIME(m_fGoalSetTime);
 	SAVE_DWORD(m_iQueuedGoalSet);
-
-	SAVE_BOOL(m_bKillDialogue);
 }
 
 void CAIGoalMgr::Load(ILTMessage_Read *pMsg)
@@ -247,8 +245,6 @@ void CAIGoalMgr::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD(m_iGoalSet);
 	LOAD_TIME(m_fGoalSetTime);
 	LOAD_DWORD(m_iQueuedGoalSet);
-
-	LOAD_BOOL(m_bKillDialogue);
 }
 
 // ----------------------------------------------------------------------- //
@@ -275,8 +271,6 @@ void CAIGoalMgr::Init(CAI* pAI)
 	m_iGoalSet			= 0;
 	m_fGoalSetTime		= 0.f;
 	m_iQueuedGoalSet	= -1;
-
-	m_bKillDialogue		= LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -841,19 +835,6 @@ void CAIGoalMgr::UpdateGoals()
 	if( m_pAI->IsDead() )
 	{
 		return;
-	}
-
-	// Immediately kill any dialogue.
-
-	if( m_bKillDialogue )
-	{
-		if( m_pAI->IsControlledByDialogue() )
-		{
-			m_pAI->StopDialogue();
-			m_pAI->KillDialogueSound();
-		}
-
-		m_bKillDialogue = LTFALSE;
 	}
 
 	// Change to queued goalset.
