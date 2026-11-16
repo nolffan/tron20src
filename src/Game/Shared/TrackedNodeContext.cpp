@@ -83,7 +83,7 @@ void CTrackedNodeContext::Init(HOBJECT hModel, ModelSkeleton eSkeleton, CTracked
 	_Init( kTrack_LookAt, false );
 
 	m_eTrackingNodes[kTrack_AimAt] = g_pModelButeMgr->GetSkeletonTrackingNodesAimAt( eSkeleton );
-	_Init( kTrack_AimAt, true );
+	_Init( kTrack_AimAt, false );	// RETAIL: 0x101e1f1c: Tron starts aiming off
 }
 
 // ----------------------------------------------------------------------- //
