@@ -29,6 +29,7 @@
 #include "RadarTypeMgr.h"
 #include "ActivateTypeMgr.h"
 #include "TriggerTypeMgr.h"
+#include "../TRON/ServerSubroutineMgr.h"	// RETAIL: Tron's
 
 // These includes necessary to establish correct linkage.  They rely on the header
 // using a LINKTO_MODULE macro, which places a global variable into the cpp file.  This
@@ -172,6 +173,7 @@ CGlobalServerMgr::CGlobalServerMgr()
 	m_pServerButeMgr = NULL;
 	m_pInventoryButeMgr = NULL;
 	m_pTransitionMgr = NULL;
+	m_pServerSubroutineMgr = NULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -184,74 +186,63 @@ CGlobalServerMgr::CGlobalServerMgr()
 
 LTBOOL CGlobalServerMgr::Init()
 {
+	// RETAIL: 0x101cb6b0: Tron makes every manager with debug_new (one
+	// debug_new_fn<T> per class, 0x101cba50..0x101cbf90), has no radar
+	// type manager and adds the server subroutine manager.
 	if( !g_pGameServerShell )
 		return LTFALSE;
 
-	m_pServerSoundMgr = new CServerSoundMgr;
+	m_pServerSoundMgr = debug_new( CServerSoundMgr );
 	m_pServerSoundMgr->Init();
 
-    // Since Client & Server are the same on PS2, we only need to do this once (when called by the client)
     if (!CGlobalMgr::Init()) 
 		return LTFALSE;
 
-    m_pAIButeMgr = new CAIButeMgr;
-	m_pAIButeMgr->Init();
-
-    m_pAIGoalButeMgr = new CAIGoalButeMgr;
-	m_pAIGoalButeMgr->Init();
-
-    m_pAttachButeMgr = new CAttachButeMgr;
-	m_pAttachButeMgr->Init();
-
-    m_pServerButeMgr = new CServerButeMgr;
-	m_pServerButeMgr->Init();
-
-    m_pAnimationMgrList = new CAnimationMgrList;
+	m_pAnimationMgrList = debug_new( CAnimationMgrList );
 	m_pAnimationMgrList->Init();
 
-	m_pPropTypeMgr = new CPropTypeMgr;
+	m_pAIButeMgr = debug_new( CAIButeMgr );
+	m_pAIButeMgr->Init();
+
+	m_pAIGoalButeMgr = debug_new( CAIGoalButeMgr );
+	m_pAIGoalButeMgr->Init();
+
+	m_pAttachButeMgr = debug_new( CAttachButeMgr );
+	m_pAttachButeMgr->Init();
+
+	m_pServerButeMgr = debug_new( CServerButeMgr );
+	m_pServerButeMgr->Init();
+
+	m_pPropTypeMgr = debug_new( CPropTypeMgr );
 	m_pPropTypeMgr->Init();
 
-	m_pIntelMgr = new CIntelMgr;
+	m_pIntelMgr = debug_new( CIntelMgr );
 	m_pIntelMgr->Init();
 
-	m_pKeyMgr = new CKeyMgr;
+	m_pKeyMgr = debug_new( CKeyMgr );
 	m_pKeyMgr->Init();
-    	
-	m_pSearchItemMgr = new CSearchItemMgr;
+
+	m_pSearchItemMgr = debug_new( CSearchItemMgr );
 	m_pSearchItemMgr->Init();
-    	
 
-        CRelationMgr::GetGlobalRelationMgr()->Init();
+	CRelationMgr::GetGlobalRelationMgr()->Init();
 
-	m_pGadgetTargetMgr = new CGadgetTargetMgr;
+	m_pGadgetTargetMgr = debug_new( CGadgetTargetMgr );
 	m_pGadgetTargetMgr->Init();
 
-	m_pCommandButeMgr = new CCommandButeMgr;
+	m_pCommandButeMgr = debug_new( CCommandButeMgr );
 	m_pCommandButeMgr->Init();
 
-	m_pInventoryButeMgr = new CInventoryButeMgr;
+	m_pInventoryButeMgr = debug_new( CInventoryButeMgr );
 	m_pInventoryButeMgr->Init();
 
 	m_pTransitionMgr = debug_new( CTransitionMgr );
 	if( !m_pTransitionMgr )
 		return LTFALSE;
 
-	
-	if( g_pGameServerShell->ShouldUseRadar() )
-	{
-		// Get the singleton instance of the radar type mgr and initialize it...
-		if( !g_pRadarTypeMgr )
-		{
-			CRadarTypeMgr &RadarTypeMgr = CRadarTypeMgr::Instance();
-			if( !RadarTypeMgr.Init() )
-			{
-				ShutdownWithError( "RadarTypeMgr", RTMGR_DEFAULT_FILE );
-				return LTFALSE;
-			}
-		}
-	}
-	
+	m_pServerSubroutineMgr = debug_new( CServerSubroutineMgr );
+	m_pServerSubroutineMgr->Init();
+
 	if( !g_pActivateTypeMgr )
 	{
 		CActivateTypeMgr &ActivateTypeMgr = CActivateTypeMgr::Instance();
@@ -364,9 +355,11 @@ void CGlobalServerMgr::Term()
 		m_pTransitionMgr = NULL;
 	}
 
-	if( g_pRadarTypeMgr )
+	// RETAIL: 0x101cb9c1: Tron's
+	if( m_pServerSubroutineMgr )
 	{
-		g_pRadarTypeMgr->Term();
+		debug_delete( m_pServerSubroutineMgr );
+		m_pServerSubroutineMgr = NULL;
 	}
 
 	if( g_pActivateTypeMgr )
