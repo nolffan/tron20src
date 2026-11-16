@@ -209,7 +209,6 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 		m_pProfile = g_pProfileMgr->GetCurrentProfile();
 		m_pProfile->SetBindings();
 		UpdateControlList();
-		SetCurrentType(COM_MOVE);
 	}
 	else
 	{
@@ -220,9 +219,9 @@ void CScreenConfigure::OnFocus(LTBOOL bFocus)
 			m_pList[nType]->Show(LTFALSE);
 	}
 	CBaseScreen::OnFocus(bFocus);
-// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-//| if (bFocus)
-//| SetCurrentType(COM_MOVE);
+	// RETAIL: 0x10056720: the type is set after the base class's OnFocus
+	if (bFocus)
+		SetCurrentType(COM_MOVE);
 }
 
 
@@ -591,7 +590,8 @@ LTBOOL CScreenConfigure::Render(HSURFACE hDestSurf)
 			// find the first key down event
             for (uint32 i = 0; i < nArraySize; i++)
 			{
-				if (m_pInputArray[i].m_InputValue)
+				// RETAIL: 0x100577e6: Tron prints every input and takes it
+				g_pLTClient->CPrint("Input Value is %d", m_pInputArray[i].m_InputValue);
 				{
 					if (SetCurrentSelection (&m_pInputArray[i]))
 					{
@@ -610,15 +610,21 @@ LTBOOL CScreenConfigure::Render(HSURFACE hDestSurf)
 }
 
 
+// RETAIL: 0x10057860: Tron clamps the type and selects its list
 void CScreenConfigure::SetCurrentType(int nType)
 {
 	if (nType < 0 || nType > kNumCommandTypes)
-		return;
+		nType = kNumCommandTypes;
 	for (int n = 0; n < kNumCommandTypes; n++)
 	{
 		m_pList[n]->Show( (n==nType) );
 	}
 	m_nType = nType;
+
+	if (nType < kNumCommandTypes)
+		SetSelection(GetIndex(m_pList[nType]));
+	else
+		SetSelection(0);
 
 	AdjustControlFrame();
 
