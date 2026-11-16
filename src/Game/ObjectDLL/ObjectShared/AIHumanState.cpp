@@ -5890,6 +5890,7 @@ CAIHumanStateAttackProp::CAIHumanStateAttackProp()
 	m_hProp = NULL;
 
 	m_bAllowGhosting = LTFALSE;
+	m_bIgnoreFOV = false;
 }
 
 CAIHumanStateAttackProp::~CAIHumanStateAttackProp()
@@ -5949,6 +5950,9 @@ void CAIHumanStateAttackProp::Update()
 		return;
 	}
 
+	// RETAIL: 0x101efc24, Tron's.
+	m_pStrategyShoot->SetIgnoreFOV( m_bIgnoreFOV );
+
 	// Head and Torso tracking.
 	
 	if( m_bFirstUpdate )
@@ -5995,6 +5999,7 @@ void CAIHumanStateAttackProp::Load(ILTMessage_Read *pMsg)
 	m_pStrategyShoot->Load(pMsg);
 
 	LOAD_HOBJECT(m_hProp);
+	LOAD_bool(m_bIgnoreFOV);
 }
 
 // ----------------------------------------------------------------------- //
@@ -6006,6 +6011,7 @@ void CAIHumanStateAttackProp::Save(ILTMessage_Write *pMsg)
 	m_pStrategyShoot->Save(pMsg);
 
 	SAVE_HOBJECT(m_hProp);
+	SAVE_bool(m_bIgnoreFOV);
 }
 
 // ----------------------------------------------------------------------- //

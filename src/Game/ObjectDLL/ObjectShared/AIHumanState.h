@@ -368,10 +368,15 @@ class CAIHumanStateAttackProp : public CAIHumanState
 		CMusicMgr::Mood GetMusicMood() { return CMusicMgr::eMoodAggressive; }
 
 		void SetProp(HOBJECT hProp);
+		// RETAIL: Tron's (CAIGoalAttackProp::SetStateAttack 0x102122dc).
+		void SetIgnoreFOV(bool bIgnoreFOV) { m_bIgnoreFOV = bIgnoreFOV; }
 
 	protected :
 
 		LTObjRef		m_hProp;
+		// RETAIL: Tron's (ctor 0x101efa20, Load 0x101efce0, Update
+		// 0x101efc29 passes it to the shoot strategy).
+		bool			m_bIgnoreFOV;
 };
 
 #pragma warning( pop )

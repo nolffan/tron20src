@@ -23,6 +23,9 @@ class CAIGoalAttackProp : public CAIGoalAttack
 
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackProp, kGoal_AttackProp);
 
+		// RETAIL: Tron's (ctor 0x10212030).
+		CAIGoalAttackProp();
+
 		// Save / Load
 
 		virtual void	Save(ILTMessage_Write *pMsg);
@@ -40,6 +43,9 @@ class CAIGoalAttackProp : public CAIGoalAttack
 
 		virtual AINode*	HandleGoalAttractors();
 
+		// RETAIL: Tron's (0x102125a0).
+		virtual LTBOOL	HandleNameValuePair(const char *szName, const char *szValue);
+
 	protected:
 
 		// State Setting.
@@ -52,6 +58,9 @@ class CAIGoalAttackProp : public CAIGoalAttack
 		void HandleStateDraw();
 
 	protected:
+
+		// RETAIL: Tron's "IGNOREFOV" (+0x1a0). Name is ours.
+		bool		m_bIgnoreFOV;
 
 };
 
