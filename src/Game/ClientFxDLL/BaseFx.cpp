@@ -161,6 +161,12 @@ bool CBaseFX::Init(ILTClient *pLTClient, FX_BASEDATA *pData, const CBaseFXProps 
 	m_hParent			 = pData->m_hParent;
 	m_hCamera			 = pData->m_hCamera;
 
+	// RETAIL: Tron's (0x10001400)
+	if (pData->m_bTronUnknown2C)
+		m_vTronUnknown = pData->m_vTronUnknown30;
+	else
+		m_vTronUnknown.Init();
+
 	if (m_hParent)
 	{
 		m_pLTClient->GetObjectPos(m_hParent, &m_vCreatePos);
@@ -174,7 +180,7 @@ bool CBaseFX::Init(ILTClient *pLTClient, FX_BASEDATA *pData, const CBaseFXProps 
 
 	m_nCurrScaleKey					= 0;
 	m_nCurrColorKey					= 0;
-	m_vPos							= m_vCreatePos + GetProps()->m_vOffset;
+	m_vPos							= m_vCreatePos + GetProps()->m_vOffset + m_vTronUnknown;
 
 	// Success !!
 

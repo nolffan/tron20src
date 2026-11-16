@@ -408,19 +408,17 @@
 			LTVector						m_vCreatePos;
 			LTRotation						m_rCreateRot;
 			LTVector						m_vPos;
+			// RETAIL: Tron's; CBaseFX::Init (0x10001400 in ClientFx.fxd)
+			// sets it from FX_BASEDATA::m_vTronUnknown30 when
+			// m_bTronUnknown2C is set (else zero) and adds it to m_vPos.
+			// The name is ours.
+			LTVector						m_vTronUnknown;
 
 			bool							m_bUpdateColour;
 			bool							m_bUpdateScale;
 
 			uint32							m_nCurrColorKey;			
 			uint32							m_nCurrScaleKey;
-
-			// RETAIL: Tron's CBaseFX has 0xc more bytes before m_pProps
-			// (CShell reads m_pProps at 0x78: CLIENTFX_INSTANCE::IsFinished,
-			// 0x101175a0). Probably the vector of FX_BASEDATA's
-			// m_vTronUnknown30; where it is in the class is not known.
-			// The name is ours.
-			LTVector						m_vTronUnknown;
 
 			const CBaseFXProps				*m_pProps;
 
