@@ -960,6 +960,18 @@ reads a pointer from that small number, and the print can crash the server.
 
 Not fixed yet: the modern build should give the name.
 
+### An arena's plugin checks the wrong properties as commands
+
+Object.lto 0x10110b70 (CArenaPlugin::PreHook_PropChanged, TRON/Arena.cpp).
+The plugin must give only the six event properties (OnPlayerSpawn to
+OnPointEnd) to the command manager plugin. The tests use the result of
+_stricmp without "!". Thus every property that is not one of the six names
+goes to the command manager plugin, and so do the six names (a name can not
+be equal to all six). In the editor, the Arena property can be reported as a
+bad command.
+
+Not fixed yet: the tools are written again later; the test should use "!".
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
