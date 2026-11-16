@@ -294,7 +294,7 @@ LTBOOL CAIGoalCover::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		m_pAI->IncrementAlarmLevel( pSenseRecord->nLastStimulusAlarmLevel );
 
 		HandleGoalAttractors();
-		if( m_hNodeCover )
+		if( m_hNodeCover && m_hStimulusSource )	// RETAIL: 0x1020cacc, Tron's
 		{
 			return LTTRUE;
 		}

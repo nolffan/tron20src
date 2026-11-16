@@ -404,6 +404,12 @@ LTBOOL CAIGoalPatrol::HandleNameValuePair(const char *szName, const char *szValu
 		AIASSERT1( pNode && (pNode->GetType() == kNode_Patrol), m_pAI->m_hObject, "CAIGoalPatrol::HandleNameValuePair: Could not find patrol node: %s", szValue );
 		if( pNode )
 		{
+			// RETAIL: Tron enables a disabled node that a command names.
+			if( pNode->IsDisabled() )
+			{
+				pNode->Enable();
+			}
+
 			SetPatrolNode( (AINodePatrol*)pNode );
 		}
 		return LTTRUE;

@@ -148,6 +148,12 @@ LTBOOL CAIGoalGoto::HandleNameValuePair(const char *szName, const char *szValue)
 		AINode* pNode = g_pAINodeMgr->GetNode( szValue );
 		if( pNode )
 		{
+			// RETAIL: Tron enables a disabled node that a command names.
+			if( pNode->IsDisabled() )
+			{
+				pNode->Enable();
+			}
+
 			m_hDestNode = pNode->m_hObject;
 
 			// If Goal was already active (walking to previous goto node)

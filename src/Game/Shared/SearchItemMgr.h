@@ -23,7 +23,7 @@
 #define SI_MAX_NAME			32
 #define SI_MAX_FILE_PATH	64
 #define SI_MAX_ITEMS		64
-#define SI_MAX_OBJECTS		30
+#define SI_MAX_OBJECTS		10	// RETAIL: Tron's SEARCH_SET is 0xb4 bytes (Object 0x1022eb10, 0x1022d870)
 
 #define SI_INVALID_ID		(0xFF)  // Key ID which is guaranteed to be invalid
 

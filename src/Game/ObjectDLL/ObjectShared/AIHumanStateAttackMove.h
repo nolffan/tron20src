@@ -45,7 +45,7 @@ class CAIHumanStateAttackMove : public CAIHumanState
 		LTVector		m_vAttackMoveDest;
 		LTBOOL			m_bTurnedAround;
 		// RETAIL: Tron's (ctor 0x102290d0 zeroes +0x90).
-		uint32			m_xTronUnknown90;
+		LTBOOL			m_bTronUnknown90;	// RETAIL: saved as a BOOL (Save 0x10229314)
 };
 
 #endif

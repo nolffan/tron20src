@@ -5246,6 +5246,11 @@ void CAIHumanStateHolster::Save(ILTMessage_Write *pMsg)
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1029b45c/0x1029b460 hold 3.0 and 5.0, read from memory (not
+// pushed as constants). The names are ours.
+static LTFLOAT s_fDodgeTimerMin = 3.0f;
+static LTFLOAT s_fDodgeTimerMax = 5.0f;
+
 CAIHumanStateAttack::CAIHumanStateAttack()
 {
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
@@ -5339,6 +5344,9 @@ LTBOOL CAIHumanStateAttack::Init(CAIHuman* pAIHuman)
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
 
+	// RETAIL: 0x101eea0c, Tron starts the dodge timer.
+	m_DodgeTimer.Start( GetRandom( s_fDodgeTimerMin, s_fDodgeTimerMax ) );
+
 	return LTTRUE;
 }
 
@@ -5346,13 +5354,15 @@ LTBOOL CAIHumanStateAttack::Init(CAIHuman* pAIHuman)
 
 void CAIHumanStateAttack::HandleDamage(const DamageStruct& damage)
 {
-	super::HandleDamage(damage);
-
-	// Dodge if we're getting pegged.
+	// RETAIL: 0x101eea50. Tron dodges only when the dodge timer has run out,
+	// and does not call the base class.
 
 	if( GetAI()->GetBrain()->GetDodgeVectorCheckChance() > 0.f )
 	{
-		m_dwAttackFlags |= kAttk_ForceDodge;
+		if( 0.f == m_DodgeTimer.GetCountdownTime() )
+		{
+			m_dwAttackFlags |= kAttk_ForceDodge;
+		}
 	}
 
 	// Reset our timers if we're getting pegged so we don't just stand there
@@ -5721,8 +5731,12 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 
 	// Do not crouch if allies are too close together (inside each other).
 
+	// RETAIL: 0x101ef59f, Tron checks the distance only for an ally whose
+	// relative alignment is UNKNOWN.
+
 	CAI* pAlly = (CAI*)g_pLTServer->HandleToObject( hRequestingAI );
-	if( pAlly->GetPosition().DistSqr( GetAI()->GetPosition() ) < 48.f*48.f )
+	if( ( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) &&
+		( pAlly->GetPosition().DistSqr( GetAI()->GetPosition() ) < 48.f*48.f ) )
 	{
 		return LTFALSE;
 	}
@@ -5733,7 +5747,7 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 	{
 		m_dwAttackFlags |= kAttk_ForceCrouch;
 
-		if( !pAlly->IsPlayingDialogSound() ) 
+		if( !pAlly->IsPlayingDialogue() ) // RETAIL: 0x101ef60f
 		{
 			pAlly->PlaySound( kAIS_OrderCrouch, LTFALSE );
 		}
@@ -5834,6 +5848,7 @@ void CAIHumanStateAttack::Load(ILTMessage_Read *pMsg)
 
 	LOAD_FLOAT(m_fCrouchTimer);
 	LOAD_DWORD(m_dwAttackFlags);
+	m_DodgeTimer.Load(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -5863,6 +5878,7 @@ void CAIHumanStateAttack::Save(ILTMessage_Write *pMsg)
 
 	SAVE_FLOAT(m_fCrouchTimer);
 	SAVE_DWORD(m_dwAttackFlags);
+	m_DodgeTimer.Save(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -5875,6 +5891,7 @@ CAIHumanStateAttackProp::CAIHumanStateAttackProp()
 	m_hProp = NULL;
 
 	m_bAllowGhosting = LTFALSE;
+	m_bIgnoreFOV = false;
 }
 
 CAIHumanStateAttackProp::~CAIHumanStateAttackProp()
@@ -5934,6 +5951,9 @@ void CAIHumanStateAttackProp::Update()
 		return;
 	}
 
+	// RETAIL: 0x101efc24, Tron's.
+	m_pStrategyShoot->SetIgnoreFOV( m_bIgnoreFOV );
+
 	// Head and Torso tracking.
 	
 	if( m_bFirstUpdate )
@@ -5980,6 +6000,7 @@ void CAIHumanStateAttackProp::Load(ILTMessage_Read *pMsg)
 	m_pStrategyShoot->Load(pMsg);
 
 	LOAD_HOBJECT(m_hProp);
+	LOAD_bool(m_bIgnoreFOV);
 }
 
 // ----------------------------------------------------------------------- //
@@ -5991,6 +6012,7 @@ void CAIHumanStateAttackProp::Save(ILTMessage_Write *pMsg)
 	m_pStrategyShoot->Save(pMsg);
 
 	SAVE_HOBJECT(m_hProp);
+	SAVE_bool(m_bIgnoreFOV);
 }
 
 // ----------------------------------------------------------------------- //
@@ -7906,10 +7928,9 @@ void CAIHumanStatePanic::Save(ILTMessage_Write *pMsg)
 
 CAIHumanStateDistress::CAIHumanStateDistress()
 {
-	m_nDistressLevel = 0;
 	m_fDistress = 0.0f;
 
-	m_bCanActivate = LTTRUE;
+	m_bCanActivate = false;	// RETAIL: 0x101f27f3
 }
 
 // ------------------------------------------------------------------------ //
@@ -7983,49 +8004,29 @@ void CAIHumanStateDistress::Update()
 		}
 	}
 
-	// TODO: bute stimulation rates
+	// RETAIL: 0x101f2a6c. Tron's distress rises and falls at the brain's
+	// rates, is held between zero and a maximum, and ends at zero.
 
+	LTFLOAT fRate;
 	if ( bDistress )
 	{
-		// Only increase distress when enemy aims a dangerous weapon at you.
-
-		LTFLOAT fIncreaseRate = GetAI()->GetBrain()->GetDistressIncreaseRate();
-        m_fDistress += g_pLTServer->GetFrameTime()*fIncreaseRate;
+		fRate = GetAI()->GetBrain()->GetDistressIncreaseRate();
 	}
-	else {
-		LTFLOAT fDecreaseRate = GetAI()->GetBrain()->GetDistressDecreaseRate();
-        m_fDistress = Max<LTFLOAT>(-3.0f, m_fDistress-g_pLTServer->GetFrameTime()*fDecreaseRate);
-	}
-
-	// See if we need to go to the next level
-
-	if ( m_fDistress > 1.0f )
+	else
 	{
-		m_fDistress = 0.0f;
-		m_nDistressLevel++;
-
-		// Play sound
-
-		// $SOUND GetAI()->PlaySound(aisPanic);
+		fRate = -GetAI()->GetBrain()->GetDistressDecreaseRate();
 	}
-	else if ( m_fDistress < -1.0f )
+
+	m_fDistress += g_pLTServer->GetFrameTime()*fRate;
+
+	LTFLOAT fMax = GetAI()->GetBrain()->GetDistressDecreaseRate();
+	fMax = GetAI()->GetBrain()->GetDistressTimeMax() * fMax;
+
+	m_fDistress = LTCLAMP( m_fDistress, 0.0f, fMax );
+	if ( m_fDistress == 0.0f )
 	{
 		m_eStateStatus = kSStat_StateComplete;
-		return;
 	}
-
-	// Craig says distressed AIs should not run away and panic, because it
-	// can ruin the experience for the player -- can't talk to AI anymore.
-/**
-	// If distress level is max, panic
-
-	const static int32 nLevels = GetAI()->GetBrain()->GetDistressLevels();
-	if ( m_nDistressLevel == nLevels )
-	{
-		m_eStateStatus = kSStat_Panic;
-		return;
-	}
-**/
 }
 
 // ----------------------------------------------------------------------- //
@@ -8044,9 +8045,8 @@ void CAIHumanStateDistress::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
 
-	LOAD_INT(m_nDistressLevel);
 	LOAD_FLOAT(m_fDistress);
-	LOAD_BOOL(m_bCanActivate);
+	LOAD_bool(m_bCanActivate);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8055,9 +8055,8 @@ void CAIHumanStateDistress::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
-	SAVE_INT(m_nDistressLevel);
 	SAVE_FLOAT(m_fDistress);
-	SAVE_BOOL(m_bCanActivate);
+	SAVE_bool(m_bCanActivate);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8631,6 +8630,8 @@ void CAIHumanStateCharge::Load(ILTMessage_Read *pMsg)
 	LOAD_FLOAT(m_fYellDistanceSqr);
 	LOAD_BOOL(m_bStopped);
 	LOAD_FLOAT(m_fStopDistanceSqr);
+	LOAD_FLOAT(m_fTronUnknown94);
+	LOAD_VECTOR(m_vTronUnknown98);
 }
 
 // ----------------------------------------------------------------------- //
@@ -8652,6 +8653,8 @@ void CAIHumanStateCharge::Save(ILTMessage_Write *pMsg)
 	SAVE_FLOAT(m_fYellDistanceSqr);
 	SAVE_BOOL(m_bStopped);
 	SAVE_FLOAT(m_fStopDistanceSqr);
+	SAVE_FLOAT(m_fTronUnknown94);
+	SAVE_VECTOR(m_vTronUnknown98);
 }
 
 // ----------------------------------------------------------------------- //

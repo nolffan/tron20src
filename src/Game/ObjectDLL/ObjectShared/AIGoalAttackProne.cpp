@@ -51,6 +51,8 @@ void CAIGoalAttackProne::InitGoal(CAI* pAI)
 {
 	super::InitGoal( pAI );
 
+	m_Target.Init(this);
+
 	// Ensure all needed data is present.
 
 	AIASSERT( m_pAI->GetBrain()->GetAIDataExist( kAIData_ProneTime ), m_pAI->m_hObject, "CAIGoalAttackProne::InitGoal: Brain missing AIData ProneTime" );
@@ -75,6 +77,8 @@ void CAIGoalAttackProne::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
+	m_Target.Save(pMsg);
+
 	SAVE_TIME( m_fProneTimeLimit );
 	SAVE_FLOAT( m_fMinDistSqr );
 }
@@ -82,6 +86,8 @@ void CAIGoalAttackProne::Save(ILTMessage_Write *pMsg)
 void CAIGoalAttackProne::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
+
+	m_Target.Load(pMsg);
 
 	LOAD_TIME( m_fProneTimeLimit );
 	LOAD_FLOAT( m_fMinDistSqr );
@@ -102,7 +108,7 @@ void CAIGoalAttackProne::ActivateGoal()
 	// Ignore senses other than SeeEnemy.
 	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 
-	m_pAI->SetCurrentWeapon( kAIWeap_Ranged );
+	// RETAIL: 0x10212b6e, Tron does not change the weapon here.
 
 	// Start attacking.
 

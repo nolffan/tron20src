@@ -6,6 +6,7 @@
 #include "AIState.h"
 #include "AIHumanStrategy.h"
 #include "AITypes.h"
+#include "Timer.h"
 
 // Forward declarations.
 class CAI;
@@ -330,6 +331,10 @@ class CAIHumanStateAttack : public CAIHumanState
 		CAnimationProp	m_aniPosture;
 		uint32			m_dwAttackFlags;
 		LTFLOAT			m_fCrouchTimer;
+
+		// RETAIL: Tron adds a CTimer at 0x94 (0x101ee720 ctor, 0x101ee910 Init,
+		// 0x101eea50 HandleDamage, 0x101ef790 Load); size 0xa4. Name is ours.
+		CTimer			m_DodgeTimer;
 };
 
 // For constructor.  warning C4355: 'this' : used in base member initializer list
@@ -363,10 +368,15 @@ class CAIHumanStateAttackProp : public CAIHumanState
 		CMusicMgr::Mood GetMusicMood() { return CMusicMgr::eMoodAggressive; }
 
 		void SetProp(HOBJECT hProp);
+		// RETAIL: Tron's (CAIGoalAttackProp::SetStateAttack 0x102122dc).
+		void SetIgnoreFOV(bool bIgnoreFOV) { m_bIgnoreFOV = bIgnoreFOV; }
 
 	protected :
 
 		LTObjRef		m_hProp;
+		// RETAIL: Tron's (ctor 0x101efa20, Load 0x101efce0, Update
+		// 0x101efc29 passes it to the shoot strategy).
+		bool			m_bIgnoreFOV;
 };
 
 #pragma warning( pop )
@@ -619,16 +629,19 @@ class CAIHumanStateDistress : public CAIHumanState
 
 		// Misc
 
-		LTBOOL CanActivate() { return m_bCanActivate; }
-		void SetCanActivate(LTBOOL bCanActivate) { m_bCanActivate = bCanActivate; }
+		// RETAIL: Tron keeps m_bCanActivate as a bool (0x101f2810,
+		// CAIGoalDistress::ActivateGoal 0x10209ac3).
+		LTBOOL CanActivate() { return m_bCanActivate == true; }
+		void SetCanActivate(LTBOOL bCanActivate) { m_bCanActivate = ( bCanActivate != LTFALSE ); }
 
 		// Simple acccessors
 
 	protected :
 
-		int		m_nDistressLevel;
+		// RETAIL: Tron has no distress level (ctor 0x101f27e0, Load
+		// 0x101f2b70); size 0x84.
 		LTFLOAT	m_fDistress;
-		LTBOOL	m_bCanActivate;
+		bool	m_bCanActivate;
 };
 
 class CAIHumanStatePatrol : public CAIHumanState
@@ -1321,6 +1334,9 @@ class CAIHumanStateCharge : public CAIHumanState
 		LTFLOAT		m_fStopDistanceSqr;
 		// RETAIL: Tron's (ctor 0x101f36d0 sets +0x94 to FLT_MAX).
 		LTFLOAT		m_fTronUnknown94;
+		// RETAIL: Tron's (Save 0x101f4050, Load 0x101f3f60, read by
+		// Update 0x101f39b8 with +0x94). Name is ours.
+		LTVector	m_vTronUnknown98;
 };
 
 class CAIHumanStateAnimate : public CAIHumanState

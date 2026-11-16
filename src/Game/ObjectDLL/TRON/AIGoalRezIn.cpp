@@ -94,7 +94,8 @@ void CAIGoalRezIn::SetStateRezIn()
 			return;
 		}
 
-		if( INVALID == GetAlignment( m_pAI->GetRelationMgr()->CObjectRelationMgr::GetRelationUser()->GetRelations(), pORM->GetData() ) )
+		// RETAIL: 0x101f6d66 compares with 4, PERMISSION_DEPENDANT in Tron's enum.
+		if( PERMISSION_DEPENDANT == GetAlignment( m_pAI->GetRelationMgr()->CObjectRelationMgr::GetRelationUser()->GetRelations(), pORM->GetData() ) )
 		{
 			RelationDescription RD;
 			RD.eTrait = RelationTraits::kTrait_Name;

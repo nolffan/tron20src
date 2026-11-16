@@ -394,7 +394,7 @@ void AINodeSensing::HandleSenseTrigger(AISenseRecord* pSenseRecord)
 
 	if( ( ( m_fTimer[kHigh] > 0.f ) && ( m_fTimer[kHigh] < fCurTime ) ) ||
 		( ( m_fTimer[kMedium] > 0.f ) && ( m_fTimer[kMedium] < fCurTime ) ) || 
-		( ( m_fTimer[kMedium] > 0.f ) && ( m_fTimer[kLow] < fCurTime ) ) )
+		( ( m_fTimer[kLow] > 0.f ) && ( m_fTimer[kLow] < fCurTime ) ) )	// RETAIL: 0x1021eef2, Tron tests kLow (NOLF2 tests kMedium)
 	{
 		ResetSensingNode();
 	}

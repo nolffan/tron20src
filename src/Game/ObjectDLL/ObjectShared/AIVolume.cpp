@@ -2529,16 +2529,11 @@ LTBOOL AIVolumeJunction::GetAction(CAI* pAI, uint8* pmskActionVolumes, AIVolume*
 }
 
 
-BEGIN_CLASS(AIVolumeTeleport)
-
-	ADD_DEDIT_COLOR( AIVolume )
-
-	ADD_STRINGPROP_FLAG(DestinationVolume,	"",			0|PF_OBJECTLINK)
-
-END_CLASS_DEFAULT_FLAGS(AIVolumeTeleport, AIVolume, NULL, NULL, CF_CLASSONLY)
-
-CMDMGR_BEGIN_REGISTER_CLASS( AIVolumeTeleport )
-CMDMGR_END_REGISTER_CLASS( AIVolumeTeleport, AIVolume )
+// RETAIL: Tron has no AIVolumeTeleport ClassDef, class name or RTTI: only
+// the non-virtual DoTeleportObject (0x1009da50), ReceiveTeleport
+// (0x1009db10) and ObjectIsInside (0x1009db80) are linked, as the path
+// following code calls them. Nothing creates the class, so the linker
+// drops its constructor and virtuals.
 
 const LTFLOAT AIVolumeTeleport::kTeleportWidth = 64.f;
 const LTFLOAT AIVolumeTeleport::kTeleportDepth = 128.f;

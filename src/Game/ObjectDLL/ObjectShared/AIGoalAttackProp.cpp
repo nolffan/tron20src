@@ -29,14 +29,24 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackProp, kGoal_AttackProp);
 //
 // ----------------------------------------------------------------------- //
 
+CAIGoalAttackProp::CAIGoalAttackProp() : m_bIgnoreFOV( false )
+{
+}
+
+// ----------------------------------------------------------------------- //
+
 void CAIGoalAttackProp::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
+
+	SAVE_bool(m_bIgnoreFOV);
 }
 
 void CAIGoalAttackProp::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);
+
+	LOAD_bool(m_bIgnoreFOV);
 }
 
 // ----------------------------------------------------------------------- //
@@ -87,6 +97,7 @@ void CAIGoalAttackProp::SetStateAttack()
 		if ( LT_OK == FindNamedObject(pNode->GetObject(), hObject) )
 		{
 			pStateAttackProp->SetProp(hObject);
+			pStateAttackProp->SetIgnoreFOV(m_bIgnoreFOV);	// RETAIL: 0x102122dc
 		}
 	}
 }
@@ -236,3 +247,28 @@ AINode* CAIGoalAttackProp::HandleGoalAttractors()
 	return LTNULL;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAttackProp::HandleNameValuePair
+//
+//	PURPOSE:	Handles a name value pair. (RETAIL: Tron's, 0x102125a0.)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CAIGoalAttackProp::HandleNameValuePair(const char *szName, const char *szValue)
+{
+	ASSERT(szName && szValue);
+
+	if ( super::HandleNameValuePair(szName, szValue) )
+	{
+		return LTTRUE;
+	}
+
+	if ( !_stricmp(szName, "IGNOREFOV") )
+	{
+		m_bIgnoreFOV = ( IsTrueChar(szValue[0]) != LTFALSE );
+		return LTTRUE;
+	}
+
+	return LTFALSE;
+}

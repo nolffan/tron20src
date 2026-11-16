@@ -117,6 +117,9 @@ void CAIGoalFlee::ActivateGoal()
 {
 	super::ActivateGoal();
 
+	// RETAIL: 0x1020802c, Tron targets the stimulus source.
+	m_pAI->Target( m_hStimulusSource );
+
 	if(m_hDestNode != LTNULL)
 	{
 		// Ignore senses.
@@ -141,7 +144,8 @@ void CAIGoalFlee::ActivateGoal()
 		AINodePanic* pPanicNode = (AINodePanic*)g_pAINodeMgr->FindNearestNodeFromThreat( m_pAI, kNode_Panic, m_pAI->GetPosition(), m_pAI->GetTarget()->GetObject(), 1.f );
 		if( pPanicNode )
 		{
-			m_fRelaxTime = g_pLTServer->GetTime() + PANIC_RESET_TIME;
+			// RETAIL: 0x1020811f, Tron takes the time from the brain.
+			m_fRelaxTime = g_pLTServer->GetTime() + m_pAI->GetBrain()->GetDistressTimeMax();
 
 			m_pAI->SetState( kState_HumanPanic );
 			CAIHumanStatePanic* pStatePanic = (CAIHumanStatePanic*)m_pAI->GetState();
@@ -251,7 +255,7 @@ void CAIGoalFlee::HandleStatePanic()
 			{
 				if( m_pAI->GetSenseRecorder()->HasAnyStimulation( kSense_All ) )
 				{
-					m_fRelaxTime = g_pLTServer->GetTime() + PANIC_RESET_TIME;
+					m_fRelaxTime = g_pLTServer->GetTime() + m_pAI->GetBrain()->GetDistressTimeMax();	// RETAIL: Tron's (0x10208340)
 				}
 				else if( g_pLTServer->GetTime() > m_fRelaxTime )
 				{
@@ -271,7 +275,7 @@ void CAIGoalFlee::HandleStatePanic()
 				AINodePanic* pPanicNode = (AINodePanic*)g_pAINodeMgr->FindNearestNodeFromThreat( m_pAI, kNode_Panic, m_pAI->GetPosition(), m_pAI->GetTarget()->GetObject(), 1.f );
 				if( pPanicNode )
 				{
-					m_fRelaxTime = g_pLTServer->GetTime() + PANIC_RESET_TIME;
+					m_fRelaxTime = g_pLTServer->GetTime() + m_pAI->GetBrain()->GetDistressTimeMax();	// RETAIL: Tron's (0x10208340)
 	
 					CAIHumanStatePanic* pStatePanic = (CAIHumanStatePanic*)m_pAI->GetState();
 					pStatePanic->SetPanicNode( pPanicNode );
@@ -301,18 +305,13 @@ void CAIGoalFlee::HandleStatePanic()
 
 void CAIGoalFlee::HandleStateGoto()
 {
-	switch( m_pAI->GetState()->GetStateStatus() )
+	// RETAIL: 0x10208480. At the end of the goto, Tron panics without a
+	// panic node.
+	if( m_pAI->GetState()->GetStateStatus() == kSStat_StateComplete )
 	{
-		case kSStat_Initialized:
-			break;
-
-		case kSStat_StateComplete:
-			m_pAI->SetState( kState_HumanAware );
-			m_pGoalMgr->UnlockGoal(this);
-			break;
-
-		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalFlee::HandleStateGoto: Unexpected State Status.");
+		m_pAI->SetState( kState_HumanPanic );
+		((CAIHumanStatePanic*)m_pAI->GetState())->SetPanicNode( LTNULL );
+		m_pGoalMgr->UnlockGoal(this);
 	}
 }
 
@@ -386,6 +385,11 @@ LTBOOL CAIGoalFlee::HandleNameValuePair(const char *szName, const char *szValue)
 	{
 		AINode* pNode = g_pAINodeMgr->GetNode(szValue);
 		AIASSERT(pNode != LTNULL, m_pAI->m_hObject, "CAIGoalFlee::HandleNameValuePair: Dest node is NULL.");
+		// RETAIL: Tron enables a disabled node that a command names.
+		if( pNode && pNode->IsDisabled() )
+		{
+			pNode->Enable();
+		}
 		m_hDestNode = pNode ? pNode->m_hObject : NULL;
 		return LTTRUE;
 	}

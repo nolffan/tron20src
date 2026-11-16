@@ -51,9 +51,11 @@ class Intelligence : public Prop
 		uint8		m_nPopupId;
 
 		LTBOOL		m_bIsIntel;
-		LTBOOL		m_bAddToList;
 
+		// RETAIL: m_bStartHidden is at 0x85c and m_bAddToList at 0x860
+		// (ReadProp 0x1025b0d8, ctor 0x1025adc0).
 		LTBOOL		m_bStartHidden;
+		LTBOOL		m_bAddToList;
         LTFLOAT		m_fRespawnDelay;    // How quickly we respawn
 		HSTRING		m_hstrRespawnSnd;	// Sound to play when item respawns
 		HSTRING		m_hstrPickupSnd;	// Sound to play when item is pickedup

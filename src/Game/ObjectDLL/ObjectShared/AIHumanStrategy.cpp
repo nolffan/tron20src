@@ -3282,7 +3282,8 @@ void CAIHumanStrategyCover2WayCorner::Update()
 			LTVector vDir = vTargetPos - m_pCoverNode->GetPos();
 			vDir.Normalize();
 
-			if ( vDir.Dot(m_pCoverNode->GetRight()) < 0.0f )
+			// RETAIL: 0x1022587b, Tron steps right when the target is on the right (NOLF2 tests < 0).
+			if ( vDir.Dot(m_pCoverNode->GetRight()) > 0.0f )
 			{
 				// Target is right of forward vector, so Step right
 
