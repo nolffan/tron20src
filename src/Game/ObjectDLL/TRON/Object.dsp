@@ -208,6 +208,10 @@ SOURCE=.\CoreDump.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\DiscArenaQueue.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\EnergyZone.cpp
 # End Source File
 # Begin Source File
@@ -438,6 +442,10 @@ SOURCE=..\..\Shared\TRON\CaselessString.h
 # Begin Source File
 
 SOURCE=.\CoreDump.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\DiscArenaQueue.h
 # End Source File
 # Begin Source File
 
