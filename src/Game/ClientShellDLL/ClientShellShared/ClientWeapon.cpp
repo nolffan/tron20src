@@ -608,7 +608,8 @@ bool CClientWeapon::HandleHidePieceKey( HLOCALOBJ hObj, ArgList* pArgList )
 			++i;
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -659,7 +660,8 @@ bool CClientWeapon::HandleShowPieceKey( HLOCALOBJ hObj, ArgList* pArgList )
 			++i;
 		}
 
-	return true;
+	// RETAIL: Tron's returns false here
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
