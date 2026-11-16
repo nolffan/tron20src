@@ -724,7 +724,50 @@ void CTronInterfaceMgr::UpdateCursorState()
 
 void CTronInterfaceMgr::UpdateLoadingLevelState()
 {
-	// PORT: retail's own version (0x1009e600) is not yet written
+	if (g_pPlayerMgr->IsPlayerInWorld())
+	{
+		// Make sure the loading screen isn't busy
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Pause();
+		// Let the game client shell do stuff that's time consuming so we're not stuck on a black screen
+		g_pGameClientShell->PostLevelLoadFirstUpdate();
+		// Turn off the loading screen
+		if (m_pLoadingScreen)
+			m_pLoadingScreen->Hide();
+
+		if (!IsMultiplayerGame())
+		{
+			// RETAIL: a new mission's system memory configuration, then
+			// the subroutines compile
+			TRONMISSION *pMission = (TRONMISSION*)g_pMissionButeMgr->GetMission(g_pMissionMgr->GetCurrentMission());
+			int nSystemNameId = 0;
+			if (m_bTronUnknown28B1C && g_pMissionMgr->IsNewMission())
+			{
+				const char *pszSystemMemory;
+				if (pMission)
+				{
+					nSystemNameId = pMission->nSystemNameId;
+					pszSystemMemory = pMission->szSystemMemory;
+				}
+				else
+				{
+					pszSystemMemory = LTNULL;
+				}
+				g_pSubroutineMgr->SetSystemMemoryConfiguration(pszSystemMemory, nSystemNameId);
+			}
+			g_pSubroutineMgr->Compile();
+
+			if (m_pLoadingScreen && GetConsoleInt("LoadScreenWait",1))
+			{
+				SwitchToScreen(SCREEN_ID_POSTLOAD);
+				CInterfaceMgr::UpdateLoadingLevelState();
+				return;
+			}
+
+			ChangeState(GS_PLAYING);
+		}
+	}
+
 	CInterfaceMgr::UpdateLoadingLevelState();
 }
 

@@ -22,7 +22,9 @@ struct TRONMISSION : public MISSION
 	TRONMISSION();
 	virtual LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 
-	char	szSystemMemory[MAX_SYSTEM_MEMORY_SLOTS+1];
+	char	szSystemMemory[MAX_SYSTEM_MEMORY_SLOTS+1];	// RETAIL: +0xb674
+	int		nSystemNameId;		// RETAIL: +0xb690 "SystemNameId" (0x100a2de2)
+	bool	bSubroutineConfig;	// RETAIL: +0xb694 "SubroutineConfig" (0x100a2df1)
 };
 
 class CTronMissionButeMgr : public CMissionButeMgr

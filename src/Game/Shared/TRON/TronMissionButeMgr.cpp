@@ -29,6 +29,10 @@ TRONMISSION::TRONMISSION() : MISSION()
 {
 	// Clear our our system memory
 	memset(szSystemMemory,0,(MAX_SYSTEM_MEMORY_SLOTS+1)*sizeof(char));
+
+	// RETAIL: 0x100a2d40
+	nSystemNameId = 0;
+	bSubroutineConfig = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -45,7 +49,8 @@ LTBOOL TRONMISSION::Init(CButeMgr & buteMgr, char* aTagName)
 
 	szSystemMemory[0] = 0;
 
-	buteMgr.GetString(aTagName, MMGR_MISSION_SYSTEM_MEMORY, szSystemMemory, MAX_SYSTEM_MEMORY_SLOTS);
+	// RETAIL: the whole buffer (0x19, 0x100a2da5)
+	buteMgr.GetString(aTagName, MMGR_MISSION_SYSTEM_MEMORY, szSystemMemory, MAX_SYSTEM_MEMORY_SLOTS+1);
 	
 	// Validation
 	if(!szSystemMemory[0] || (strlen(szSystemMemory) < MAX_SYSTEM_MEMORY_SLOTS))
@@ -56,6 +61,10 @@ LTBOOL TRONMISSION::Init(CButeMgr & buteMgr, char* aTagName)
 		// Let's allow us to continue at least
 		memset(szSystemMemory,'.',MAX_SYSTEM_MEMORY_SLOTS*sizeof(char));
 	}
+
+	// RETAIL: 0x100a2de2
+	nSystemNameId = buteMgr.GetInt(aTagName, "SystemNameId", 0);
+	bSubroutineConfig = (buteMgr.GetInt(aTagName, "SubroutineConfig", 0) != 0);
 
     return LTTRUE;
 }
