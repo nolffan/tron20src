@@ -622,48 +622,9 @@ class AINodeVantageRoof : public AINodeVantage
 		EnumAINodeType GetType() { return kNode_VantageRoof; }
 };
 
-//---------------------------------------------------------------------------
-
-class AINodeAssassinate : public AINode
-{
-	typedef AINode super;
-
-	public :
-
-		// Ctors/Dtors/etc
-
-		AINodeAssassinate();
-		virtual ~AINodeAssassinate();
-
-		// Engine 
-
-		virtual void ReadProp(ObjectCreateStruct *pocs);
-
-		// Save/Load
-
-		virtual void Load(ILTMessage_Read *pMsg);
-		virtual void Save(ILTMessage_Write *pMsg);
-
-		// Type
-
-		EnumAINodeType GetType() { return kNode_Assassinate; }
-
-		// Methods.
-
-		EnumAnimProp	GetMovement() const { return m_eMovement; }
-		LTBOOL			IgnoreVisibility() const { return m_bIgnoreVisibility; }
-
-	protected :
-
-		EnumAnimProp		m_eMovement;
-		LTBOOL				m_bIgnoreVisibility;
-};
-
-class AINodeAssassinatePlugin : public IObjectPlugin
-{
-public:
-	virtual LTRESULT PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
-};
+// RETAIL: Tron has no AINodeAssassinate, AINodeTraining(Failure/Success)
+// or AINodeObstruct (no RTTI and no ClassDef in Object.lto); NOLF2's
+// classes are removed.
 
 //---------------------------------------------------------------------------
 
@@ -813,78 +774,6 @@ public:
 
 //---------------------------------------------------------------------------
 
-class AINodeTraining : public AINode
-{
-	typedef AINode super;
-
-	public :
-
-		// Ctors/Dtors/etc
-
-		AINodeTraining();
-		virtual ~AINodeTraining();
-
-		// Engine 
-
-		virtual void ReadProp(ObjectCreateStruct *pocs);
-
-		// Save/Load
-
-		virtual void Load(ILTMessage_Read *pMsg);
-		virtual void Save(ILTMessage_Write *pMsg);
-
-		// Command
-
-		virtual LTBOOL	HasCmd() { return !!m_hstrCmd; }
-		virtual HSTRING	GetCmd() { return m_hstrCmd; }
-
-		// Type
-
-		EnumAINodeType GetType() { return kNode_Training; }
-
-	protected :
-
-		HSTRING	m_hstrCmd;
-};
-
-//---------------------------------------------------------------------------
-
-class AINodeTrainingFailure : public AINodeTraining
-{
-	typedef AINodeTraining super;
-
-	public :
-
-		// Ctors/Dtors/etc
-
-		AINodeTrainingFailure();
-		virtual ~AINodeTrainingFailure();
-
-		// Type
-
-		EnumAINodeType GetType() { return kNode_TrainingFailure; }
-};
-
-//---------------------------------------------------------------------------
-
-class AINodeTrainingSuccess : public AINodeTraining
-{
-	typedef AINodeTraining super;
-
-	public :
-
-		// Ctors/Dtors/etc
-
-		AINodeTrainingSuccess();
-		virtual ~AINodeTrainingSuccess();
-
-		// Type
-
-		EnumAINodeType GetType() { return kNode_TrainingSuccess; }
-};
-
-//---------------------------------------------------------------------------
-
 class AINodeTail : public AINode
 {
 	typedef AINode super;
@@ -974,82 +863,5 @@ private: // Members...
 	AINodePlugin	m_AINodePlugin;
 };
 
-//----------------------------------------------------------------------------
-//              
-//	CLASS:		AINodeObstruct
-//              
-//	PURPOSE:	Obstruction nodes are to be placed in positions where, if an 
-//				AI moved to this location, they will .. Obstruct something.
-//				Typically, this may mean that the AI is obstruction either 
-//				another AI, or player progress.  This is primarily for defensive
-//				movements.
-//              
-//----------------------------------------------------------------------------
-class AINodeObstruct : public AINode
-{
-	typedef AINode super;
-
-	public :
-		// Public members
-
-		enum Flags
-		{
-			kFlagVantage			= 0x01,
-			kFlagAny				= 0x01,
-			kNumFlags				= 1,
-		};
-
-	public :
-
-		// Ctors/Dtors/etc
-
-		AINodeObstruct();
-		virtual ~AINodeObstruct();
-
-		// Engine 
-
-		virtual void ReadProp(ObjectCreateStruct *pocs);
-
-		// Save/Load
-
-		virtual void Load(ILTMessage_Read *pMsg);
-		virtual void Save(ILTMessage_Write *pMsg);
-
-		// Status
-		virtual EnumNodeStatus	GetStatus(const LTVector& vPos, HOBJECT hThreat) const;
-		EnumAnimProp		GetMovement() const { return m_eMovement; }
-
-		// Methods
-
-		uint32	GetFlags() { return m_dwFlags; }
-		LTFLOAT	GetThreatRadiusSqr() const { return m_fThreatRadiusSqr; }
-		HSTRING	GetThreatRadiusReaction() const { return m_hstrThreatRadiusReaction; }
-		LTBOOL	IsIgnoreDir() const { return m_bIgnoreDir; }
-		HSTRING	GetDamageCmd() const { return m_hstrDamageCmd; }
-
-		// Type
-
-		EnumAINodeType GetType() { return kNode_Obstruct; }
-
-	protected:
-		// Protected members
-
-		uint32		m_dwFlags;
-		LTFLOAT		m_fThreatRadiusSqr;
-		LTBOOL		m_bIgnoreDir;
-		LTFLOAT		m_fFovDp;
-		HSTRING		m_hstrThreatRadiusReaction;
-		HSTRING		m_hstrDamageCmd;
-		EnumAnimProp m_eMovement;
-
-	private:
-		bool		 IsThreatInRadius(const LTVector& vThreatPos) const;
-		bool		 IsThreatInFOV(const LTVector& vThreatPos) const;
-
-		// Copy Constructor and Asignment Operator private to prevent 
-		// automatic generation and inappropriate, unintentional use
-		AINodeObstruct(const AINodeObstruct& rhs) {}
-		AINodeObstruct& operator=(const AINodeObstruct& rhs ) {}
-};
 
 #endif // _AI_NODE_H_

@@ -25,7 +25,6 @@ class AINodePickupObject;
 class AINodeUseObject;
 class AINodeTail;
 class AINodePatrol;
-class AINodeAssassinate;
 class CAIHumanStrategyToggleLights;
 enum  EnumAISoundType;
 enum  EnumAIStimulusID;
