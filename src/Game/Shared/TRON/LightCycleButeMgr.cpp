@@ -905,14 +905,13 @@ LTFLOAT CLightCycleButeMgr::GetTrailLengthValue(int nIndex)
 
 int CLightCycleButeMgr::GetRandomTextId(int eTextId)
 {
-	LCIntArray & aIds = m_aTextIds[eTextId];
-	int nIds = aIds.size();
+	int nIds = m_aTextIds[eTextId].size();
 	if (!nIds)
 	{
 		return 0;
 	}
 
-	return aIds[GetRandom(0, nIds - 1)];
+	return m_aTextIds[eTextId][GetRandom(0, nIds - 1)];
 }
 
 // ----------------------------------------------------------------------- //
