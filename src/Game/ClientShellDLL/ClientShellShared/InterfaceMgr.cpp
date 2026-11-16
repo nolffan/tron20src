@@ -1881,7 +1881,7 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 					// stands in.
 					if( pCFX->m_cs.bRadarVisible )
 					{
-						g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
+						if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
 					}
 				}
 			}
@@ -2049,7 +2049,7 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			}
 
             g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\chat.wav");
-			g_pRadar->SetPlayerTalk(clientID);
+			if (g_pRadar) g_pRadar->SetPlayerTalk(clientID);
 			
 			if (IsMultiplayerGame())
 			{
@@ -2155,7 +2155,7 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				
 				g_pTransmission->Show( sTransmission );
 				g_pChatMsgs->AddMessage(sTransmission,kMsgTransmission);
-				g_pRadar->SetPlayerTalk(nActivePlayerClientId);
+				if (g_pRadar) g_pRadar->SetPlayerTalk(nActivePlayerClientId);
 
 			}
 
@@ -2244,7 +2244,7 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 		{
 			if( g_pGameClientShell->ShouldUseRadar() )
 			{
-				g_pRadar->Reset();
+				if (g_pRadar) g_pRadar->Reset();
 			}
 
 			// Clean up our clientinfo's if we're in mp.
@@ -6517,8 +6517,8 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 				CCharacterFX* pCFX = (CCharacterFX*)(*pList)[i];
 				if( pCFX->m_cs.bRadarVisible)
 				{
-					g_pRadar->RemoveObject(pCFX->GetServerObj());
-					g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
+					if (g_pRadar) g_pRadar->RemoveObject(pCFX->GetServerObj());
+					if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
 				}
 			}
 		}

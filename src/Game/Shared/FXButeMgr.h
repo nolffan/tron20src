@@ -93,18 +93,15 @@ struct KITTYCLASSDATA : public PROJECTILECLASSDATA
 	LTBOOL	Init(CButeMgr & buteMgr, char* aTagName);
 	void	Cache(CFXButeMgr* pFXButeMgr);
 
-	char	*pArmSound;
-	char	*pActivateSound;
-	char	*pArmedFX;
-	char	*pArmedFXRed;
-	char	*pArmedFXBlue;
+	// RETAIL: Tron's (KITTYCLASSDATA::Init 0x10153b60, constructor
+	// 0x10153ae0): no armed FX names and no loop flags; the radii are in
+	// the order activate, detonate, sound.
+	char	*pArmSound;			// +0x34
+	char	*pActivateSound;	// +0x38
 
-	bool	bLoopArmSound;
-	bool	bLoopArmedFX;
-	
-	int		nActivateRadius;
-	int		nDetonateRadius;
-	int		nSoundRadius;
+	int		nActivateRadius;	// +0x3c
+	int		nDetonateRadius;	// +0x40
+	int		nSoundRadius;		// +0x44
 
 	LTFLOAT	fArmDelay;
 	LTFLOAT	fDetonateTime;

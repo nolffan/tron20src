@@ -61,7 +61,7 @@ LTBOOL CPlayerVehicleFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	if( IsMultiplayerGame( ) && IsCoopMultiplayerGameType( ) && g_pGameClientShell->ShouldUseRadar() )
 	{
-		g_pRadar->AddObject( m_hServerObject, RADAR_SNOWMOBILE_TYPE, INVALID_TEAM );
+		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_SNOWMOBILE_TYPE, INVALID_TEAM );
 	}
 
      return LTTRUE;

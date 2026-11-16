@@ -24,6 +24,8 @@ CHUDMissionText*	g_pMissionText = LTNULL;
 CHUDSubtitles*		g_pSubtitles = LTNULL;
 CHUDDecision*		g_pDecision = LTNULL;
 CHUDPopup*			g_pPopup = LTNULL;
+// PORT: Tron's HUD has no radar (retail CHUDMgr::Init 0x100f3b10); NOLF2's
+// callers check for none
 CHUDRadar*			g_pRadar = LTNULL;
 CHUDRewardMsgQueue*	g_pRewardMsgs = LTNULL;
 CHUDPaused*			g_pPaused = LTNULL;
@@ -39,8 +41,13 @@ CHUDDisplayMeter*	g_pDisplayMeter = LTNULL;
 
 CHUDMgr::CHUDMgr()
 {
-	m_itemArray.reserve(12);
+	m_itemArray.reserve(30);
 	m_eLevel = kHUDRenderNone;
+
+	// RETAIL: Tron's (0x100f361d)
+	m_pChatMsgs = debug_new(CHUDChatMsgQueue);
+	m_pPickupMsgs = debug_new(CHUDPickupMsgQueue);
+	m_pRewardMsgs = debug_new(CHUDRewardMsgQueue);
 }
 
 // ----------------------------------------------------------------------- //
@@ -54,6 +61,23 @@ CHUDMgr::CHUDMgr()
 CHUDMgr::~CHUDMgr()
 {
 	Term();
+
+	// RETAIL: Tron's (0x100f3944)
+	if (m_pChatMsgs)
+	{
+		debug_delete(m_pChatMsgs);
+		m_pChatMsgs = LTNULL;
+	}
+	if (m_pPickupMsgs)
+	{
+		debug_delete(m_pPickupMsgs);
+		m_pPickupMsgs = LTNULL;
+	}
+	if (m_pRewardMsgs)
+	{
+		debug_delete(m_pRewardMsgs);
+		m_pRewardMsgs = LTNULL;
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -66,30 +90,25 @@ CHUDMgr::~CHUDMgr()
 
 LTBOOL CHUDMgr::Init()
 {
+	// RETAIL: Tron's (0x100f3b10): no radar, and the items are added by
+	// AddItems when a game starts (CInterfaceMgr)
 	g_pPopup = &m_Popup;
 	g_pDecision = &m_Decision;
 	g_pSubtitles = &m_Subtitles;
-	g_pChatMsgs = &m_ChatMsgs;
+	g_pChatMsgs = m_pChatMsgs;
 	g_pChatInput = &m_ChatInput;
 	g_pMissionText = &m_MissionText;
 	g_pTransmission = &m_Transmission;
-	g_pPickupMsgs = &m_PickupMsgs;
-	g_pRadar = &m_Radar;
-	g_pRewardMsgs = &m_RewardMsgs;
+	g_pPickupMsgs = m_pPickupMsgs;
+	g_pRewardMsgs = m_pRewardMsgs;
 	g_pPaused = &m_Paused;
 	g_pDisplayMeter = &m_DisplayMeter;
 
 	m_nCurrentLayout = GetConsoleInt("HUDLayout",0);
 
-	m_UpdateFlags = kHUDAll;
-
 	g_pHUDMgr = this;
 
 	m_bVisible = LTTRUE;
-
-	// PORT: retail's Init adds no items (AddItems does, for the game type);
-	// until AddItems' callers are in, Init calls it as NOLF2's added them
-	AddItems();
 
     return LTTRUE;
 }
@@ -107,31 +126,46 @@ bool CHUDMgr::AddItems()
 {
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
-	AddItem(&m_RewardMsgs, eGameType);
-	AddItem(&m_Popup, eGameType);
-	AddItem(&m_Decision, eGameType);
-	AddItem(&m_Subtitles, eGameType);
-	AddItem(&m_ChatMsgs, eGameType);
-	AddItem(&m_ChatInput, eGameType);
-	AddItem(&m_MissionText, eGameType);
-	AddItem(&m_Transmission, eGameType);
-	AddItem(&m_PickupMsgs, eGameType);
-	AddItem(&m_Damage, eGameType);
-	AddItem(&m_Radar, eGameType);
-	AddItem(&m_DisplayMeter, eGameType);
+	if (m_pRewardMsgs->IsUsedInGameType(eGameType))
+		m_itemArray.push_back(m_pRewardMsgs);
+	if (m_Popup.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Popup);
+	if (m_Decision.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Decision);
+	if (m_Subtitles.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Subtitles);
+	if (m_pChatMsgs->IsUsedInGameType(eGameType))
+		m_itemArray.push_back(m_pChatMsgs);
+	if (m_ChatInput.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_ChatInput);
+	if (m_MissionText.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_MissionText);
+	if (m_Transmission.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Transmission);
+	if (m_pPickupMsgs->IsUsedInGameType(eGameType))
+		m_itemArray.push_back(m_pPickupMsgs);
+	if (m_Damage.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_Damage);
+	if (m_DisplayMeter.IsUsedInGameType(eGameType))
+		m_itemArray.push_back(&m_DisplayMeter);
 
-	m_RewardMsgs.Init();
-	m_Popup.Init();
-	m_Decision.Init();
-	m_Subtitles.Init();
-	m_ChatMsgs.Init();
+	// RETAIL: Tron's (0x100f3f53): the derived HUD adds its own items
+	TronUnknownVirtual40();
+
+	m_Damage.Init();
+	m_pChatMsgs->Init();
+	m_pPickupMsgs->Init();
+	m_Transmission.Init();
 	m_ChatInput.Init();
 	m_MissionText.Init();
-	m_Transmission.Init();
-	m_PickupMsgs.Init();
-	m_Damage.Init();
-	m_Radar.Init();
+	m_Subtitles.Init();
+	m_Decision.Init();
+	m_Popup.Init();
+	m_pRewardMsgs->Init();
+	m_Paused.Init();
 	m_DisplayMeter.Init();
+
+	m_UpdateFlags = kHUDAll;
 
 	return true;
 }
