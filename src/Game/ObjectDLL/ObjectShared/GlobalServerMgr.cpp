@@ -65,8 +65,6 @@
 #include "Dialogue.h"
 #include "DisplayMeter.h"
 #include "DisplayTimer.h"
-#include "DoomsdayDevice.h"
-#include "DoomsdayPiece.h"
 #include "Door.h"
 #include "DoorKnob.h"
 #include "DynamicOccluderVolume.h"

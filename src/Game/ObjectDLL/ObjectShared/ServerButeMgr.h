@@ -53,14 +53,6 @@ class CServerButeMgr : public CGameButeMgr
 		void		GetAmmoBoxAttributeString( const char* pAttribute, char* pBuf, int nBufLen );
 		void		GetAmmoBoxAttributeListReader( CButeListReader *pList, const char* pszAttName, const uint32 nStrLen );
 
-		// Doomsday values.
-		bool		GetDoomsDayDeviceFxName( char* pszFxName, int nLen );
-		float		GetDoomsDayDeviceDamageDelay( );
-		float		GetDoomsDayDeviceDamageInterval( );
-		float		GetDoomsDayDeviceEndTime( );
-		bool		GetDoomsDayDeviceDamageType( char* pszDamageType, int nLen );
-		float		GetDoomsDayDeviceDamageAmount( );
-		float		GetDoomsDayDeviceRespawnTime( );
 
 	private:
 		int			m_nNumWONServers;

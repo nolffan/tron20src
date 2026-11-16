@@ -47,9 +47,6 @@ Object.lto	ours	.?AVCBanana@@
 Object.lto	ours	.?AVCBearTrap@@
 Object.lto	ours	.?AVCCameraDisabler@@
 Object.lto	ours	.?AVCCoin@@
-Object.lto	ours	.?AVCDoomsDayDevicePlugin@@
-Object.lto	ours	.?AVCDoomsDayMissionMgr@@
-Object.lto	ours	.?AVCDoomsDayPiecePlugin@@
 Object.lto	ours	.?AVCGrenadeImpact@@
 Object.lto	ours	.?AVCKitty@@
 Object.lto	ours	.?AVCLipstickProx@@
@@ -59,8 +56,6 @@ Object.lto	ours	.?AVCRadarTypeMgr@@
 Object.lto	ours	.?AVCRadarTypeMgrPlugin@@
 Object.lto	ours	.?AVCSpear@@
 Object.lto	ours	.?AVCTeamDeathMatchMissionMgr@@
-Object.lto	ours	.?AVDoomsDayDevice@@
-Object.lto	ours	.?AVDoomsDayPiece@@
 Object.lto	ours	.?AVRadarObject@@
 Object.lto	ours	.\\Attachments.cpp
 Object.lto	ours	.default
@@ -142,19 +137,9 @@ Object.lto	ours	DamageDelay
 Object.lto	ours	DamageInterval
 Object.lto	ours	DeathmatchModels
 Object.lto	ours	DestinationVolume
-Object.lto	ours	Device completed.
 Object.lto	ours	Direction: %i LastDirection: %i
 Object.lto	ours	DodgeProjectileFleeChance
-Object.lto	ours	DoomReviveArmorPercent
-Object.lto	ours	DoomReviveHealthPercent
 Object.lto	ours	DoomsDay
-Object.lto	ours	DoomsDayDevice
-Object.lto	ours	DoomsDayPiece
-Object.lto	ours	Doomsday
-Object.lto	ours	Doomsday_Core
-Object.lto	ours	Doomsday_base
-Object.lto	ours	Doomsday_batteries
-Object.lto	ours	Doomsday_transmitter
 Object.lto	ours	DrawOrder
 Object.lto	ours	DropBody
 Object.lto	ours	DropZoneRadius
@@ -3536,5 +3521,3 @@ Lithtech.exe	retail	__search_marker_holder__
 CShell.dll	ours	TRON 2.0
 # Not written yet (2026-11-14): a layout attribute retail's HUD reads (0x1021b5d8) in code not written yet.
 CShell.dll	retail	PlayerTextColor
-# Not Tron's (2026-11-16): NOLF2's DoomsDayDevice, which Tron has none of, still builds on a renamed copy of NOLF2's PropType (Tron's PropType differs); both go when DoomsDayDevice leaves the project.
-Object.lto	ours	.?AVNOLF2PropType@@

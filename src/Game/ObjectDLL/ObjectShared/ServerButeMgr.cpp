@@ -18,7 +18,6 @@
 #define SBMGR_WON_PORT					"ServerPort"
 #define	SBMGR_MISC_TAG					"Misc"
 #define SBMGR_AMOBOX_TAG				"AmmoBox"
-#define SBMGR_DOOMSDAYDEVICE_TAG		"DoomsDayDevice"
 
 static char s_aTagName[30];
 static char s_aAttName[100];
@@ -238,60 +237,6 @@ LTFLOAT CServerButeMgr::GetSummaryDelay()
 }
 
 
-bool CServerButeMgr::GetDoomsDayDeviceFxName( char* pszFxName, int nLen )
-{
-	// Check inputs.
-	if( !pszFxName )
-	{
-		ASSERT( !"CServerButeMgr::GetDoomsDayDeviceFxName: Invalid inputs." );
-		return false;
-	}
-
-	strncpy( pszFxName, m_buteMgr.GetString( SBMGR_DOOMSDAYDEVICE_TAG, "FxName" ), nLen );
-	pszFxName[nLen-1] = 0;
-
-	return true;
-}
-
-bool CServerButeMgr::GetDoomsDayDeviceDamageType( char* pszDamageType, int nLen )
-{
-	// Check inputs.
-	if( !pszDamageType )
-	{
-		ASSERT( !"CServerButeMgr::GetDoomsDayDeviceFxName: Invalid inputs." );
-		return false;
-	}
-
-	strncpy( pszDamageType, m_buteMgr.GetString( SBMGR_DOOMSDAYDEVICE_TAG, "DamageType" ), nLen );
-	pszDamageType[nLen-1] = 0;
-
-	return true;
-}
-
-float CServerButeMgr::GetDoomsDayDeviceDamageDelay( )
-{
-	return ( float )m_buteMgr.GetDouble( SBMGR_DOOMSDAYDEVICE_TAG, "DamageDelay", 1.5f );
-}
-
-float CServerButeMgr::GetDoomsDayDeviceDamageAmount( )
-{
-	return ( float )m_buteMgr.GetDouble( SBMGR_DOOMSDAYDEVICE_TAG, "DamageAmount", 5.0f );
-}
-
-float CServerButeMgr::GetDoomsDayDeviceDamageInterval( )
-{
-	return ( float )m_buteMgr.GetDouble( SBMGR_DOOMSDAYDEVICE_TAG, "DamageInterval", 3.0f );
-}
-
-float CServerButeMgr::GetDoomsDayDeviceEndTime( )
-{
-	return ( float )m_buteMgr.GetDouble( SBMGR_DOOMSDAYDEVICE_TAG, "EndTime", 5.0f );
-}
-
-float CServerButeMgr::GetDoomsDayDeviceRespawnTime( )
-{
-	return (float)m_buteMgr.GetDouble( SBMGR_DOOMSDAYDEVICE_TAG, "RespawnTime", 30.0f );
-}
 
 
 /////////////////////////////////////////////////////////////////////////////

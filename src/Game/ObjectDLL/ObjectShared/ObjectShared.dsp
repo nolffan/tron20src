@@ -841,18 +841,6 @@ SOURCE=.\DisplayTimer.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\DoomsDayDevice.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\DoomsDayMissionMgr.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\DoomsDayPiece.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Door.cpp
 # End Source File
 # Begin Source File
@@ -2244,18 +2232,6 @@ SOURCE=.\DisplayMeter.h
 # Begin Source File
 
 SOURCE=.\DisplayTimer.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DoomsDayDevice.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DoomsDayMissionMgr.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\DoomsDayPiece.h
 # End Source File
 # Begin Source File
 

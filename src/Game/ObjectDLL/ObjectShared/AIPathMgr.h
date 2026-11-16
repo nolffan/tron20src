@@ -11,6 +11,7 @@ class CAINodeMgr;
 class CAIVolumeMgr;
 class CAIRegionMgr;
 class CAIInformationVolumeMgr;
+class CAIVolumePlayerInfoMgr;
 struct PATH_INFO;
 
 // Externs
@@ -183,6 +184,8 @@ class CAIPathMgr
 
 		CAINodeMgr*				m_pAINodeMgr;
 		CAIInformationVolumeMgr* m_pAIInformationVolumeMgr;
+		// RETAIL: Tron's (+0x1c; CAIPathMgr::CAIPathMgr, Object.lto 0x101a3429)
+		CAIVolumePlayerInfoMgr* m_pAIVolumePlayerInfoMgr;
 		CAIVolumeMgr*			m_pAIVolumeMgr;
 		CAIRegionMgr*			m_pAIRegionMgr;
 };

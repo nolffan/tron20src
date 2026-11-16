@@ -53,7 +53,6 @@
 #include "AIGoalMgr.h"
 #include "AIGoalSpecialDamage.h"
 #include "PickupItem.h"
-#include "DoomsDayPiece.h"
 
 #include <stdio.h>
 
@@ -3915,10 +3914,6 @@ void CPlayerObj::Revive()
 
 	switch (g_pGameServerShell->GetGameType() )
 	{
-	case eGameTypeDoomsDay:
-		ResetHealth( LTFALSE, g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_DOOMREVIVEHEALTH ),
-						  g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_DOOMREVIVEARMOR ));
-		break;
 	case eGameTypeCooperative:
 	default:
 		ResetHealth( LTFALSE, g_pServerButeMgr->GetPlayerAttributeFloat( PLAYER_BUTE_COOPREVIVEHEALTH ),
@@ -5209,10 +5204,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 					{
 						return LTFALSE;
 					}
-				}
-				else if( IsKindOf( pData->m_hTarget, "DoomsDayPiece" ) )
-				{
-					// Is there anything we need to check on the object??
 				}
 				else
 				{
@@ -8011,13 +8002,6 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, 0, FLAG_RAYHIT);
 			}
 		}
-	}
-	else if( IsKindOf( hObject, "DoomsDayPiece" ))
-	{
-		// Send message to the object letting it know the player wants to pick it up.
-		// The object can then decide if it is ok to be picked up or not.
-
-		SendTriggerMsgToObject( this, hObject, 0, "CARRY" );
 	}
 	else
 		return false;

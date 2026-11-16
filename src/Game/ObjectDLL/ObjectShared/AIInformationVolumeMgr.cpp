@@ -72,3 +72,35 @@ AIInformationVolume* CAIInformationVolumeMgr::FindContainingVolume(HOBJECT hObje
 {
 	return (AIInformationVolume*)CAISpatialRepresentationMgr::FindContainingVolume( hObject, vPos, iAxisMask, fVerticalThreshhold, pVolumeStart, bBruteForce);
 }
+
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	CAIVolumePlayerInfoMgr
+//              
+//	PURPOSE:	RETAIL: Tron's mgr of the AIVolumePlayerInfo volumes
+//				(Object.lto 0x10199130..0x101991da)
+//              
+//----------------------------------------------------------------------------
+
+CAIVolumePlayerInfoMgr* g_pAIVolumePlayerInfoMgr = LTNULL;
+
+CAIVolumePlayerInfoMgr::CAIVolumePlayerInfoMgr()
+{
+	g_pAIVolumePlayerInfoMgr = this;
+}
+
+CAIVolumePlayerInfoMgr::~CAIVolumePlayerInfoMgr()
+{
+	g_pAIVolumePlayerInfoMgr = NULL;
+}
+
+void CAIVolumePlayerInfoMgr::Init()
+{
+	CAISpatialRepresentationMgr::Init( "AIVolumePlayerInfo" );
+}
+
+AIVolumePlayerInfo* CAIVolumePlayerInfoMgr::FindContainingVolume(HOBJECT hObject, const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold, AISpatialRepresentation* pVolumeStart, LTBOOL bBruteForce)
+{
+	// RETAIL: a dynamic_cast (Object.lto 0x101991d2)
+	return dynamic_cast<AIVolumePlayerInfo*>( CAISpatialRepresentationMgr::FindContainingVolume( hObject, vPos, iAxisMask, fVerticalThreshhold, pVolumeStart, bBruteForce) );
+}

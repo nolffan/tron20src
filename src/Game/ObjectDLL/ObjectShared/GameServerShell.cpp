@@ -51,7 +51,6 @@
 #include "CoopMissionMgr.h"
 #include "DeathMatchMissionMgr.h"
 #include "TeamDeathMatchMissionMgr.h"
-#include "DoomsDayMissionMgr.h"
 #include "ServerSaveLoadMgr.h"
 #include "CharacterMgr.h"
 #include "ServerAssetMgr.h"
@@ -2872,7 +2871,6 @@ GameStartPoint* CGameServerShell::FindStartPoint(CPlayerObj* pPlayer)
 			break;
 
 			case eGameTypeTeamDeathmatch:
-			case eGameTypeDoomsDay:
 			{
 				// Try and get an available team start point...
 				
@@ -3880,9 +3878,6 @@ bool CGameServerShell::InitGameType()
 			break;
 		case eGameTypeTeamDeathmatch:
 			m_pServerMissionMgr = debug_new( CTeamDeathMatchMissionMgr );
-			break;
-		case eGameTypeDoomsDay:
-			m_pServerMissionMgr = debug_new( CDoomsDayMissionMgr );
 			break;
 		default:
 			ASSERT( !"CGameServerShell::InitGameType: Invalid game type." );
