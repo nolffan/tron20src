@@ -1642,7 +1642,7 @@ void CClientWeapon::ResetWeaponFilenames()
 
 	// Always put the weapon in the correct position after we reset the model...
 
-	UpdateWeaponPosition( LTVector() );
+	UpdateWeaponPosition( LTVector( 0.0f, 0.0f, 0.0f ) );
 
 	// Create Player-View attachments..
 	// We do this here since the attachments rely on the model that the character is using
@@ -1713,10 +1713,12 @@ void CClientWeapon::SetVisible( bool bVis /*=true*/ )
 	if ( bVis )
 	{
 		ShowPVAttachClientFX();
+		ShowKeyframedClientFX();
 	}
 	else
 	{
 		HidePVAttachClientFX();
+		HideKeyframedClientFX();
 	}
 
 	// Make sure flashlight is on/off as appropriate if we're hiding/showing
@@ -2075,16 +2077,11 @@ void CClientWeapon::SetDisable( bool bDisable /*=true*/)
 		// Set the visibility back to whatever it was...
 		SetVisible( m_bVisible );
 
-		if (HasAmmo())
+		// RETAIL: Tron's (0x101318f0) reloads an empty clip and shows no
+		// hidden pieces here
+		if (m_nAmmoInClip == 0 && HasAmmo())
 		{
-			if (m_nAmmoInClip == 0)
-			{
-				ReloadClip(false);
-			}
-
-			// Unhide any hidden pieces...
-			SpecialShowPieces(true,true);
-
+			ReloadClip(false);
 		}
 
 		SetPaused( false );
@@ -2330,7 +2327,7 @@ bool CClientWeapon::Activate()
 
 	// do one update of the weapon model position to put
 	// it in the right place
-	UpdateWeaponPosition( LTVector() );
+	UpdateWeaponPosition( LTVector( 0.0f, 0.0f, 0.0f ) );
 
 	// initialize the animations for this model
 	InitAnimations();
@@ -2395,14 +2392,7 @@ void CClientWeapon::Deactivate()
 	SetDisable( true );
 
 	// turn off all keyframed ClientFX
-	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode != NULL; pNode = pNode->m_pNext )
-	{
-		// turn off the effect
-		g_pClientFXMgr->ShutdownClientFX( &pNode->m_Link );
-	}
-
-	// destroy the list of keyframed ClientFX
-	m_KeyframedClientFX.DeleteList();
+	RemoveKeyframedClientFX();
 
 	// remove the mods
 	RemoveMods();
@@ -2705,6 +2695,20 @@ void CClientWeapon::Load( ILTMessage_Read *pMsg )
 	m_bFirstSelection = pMsg->Readbool();
 	m_nAmmoId	  =	pMsg->Readuint8();
 	m_nAmmoInClip = pMsg->Readint32();
+
+	// RETAIL: Tron's keeps the weapon's state too (0x101324b0)
+	m_eState					= (WeaponState)pMsg->Readint8();
+	m_vFlashPos					= pMsg->ReadLTVector();
+	m_fFlashStartTime			= pMsg->Readfloat();
+	m_fNextIdleTime				= pMsg->Readfloat();
+	m_nNewAmmoInClip			= pMsg->Readint32();
+	m_bFireKeyDownLastUpdate	= pMsg->Readbool();
+	m_bAltFireKeyDownLastUpdate	= pMsg->Readbool();
+	m_wIgnoreFX					= pMsg->Readuint16();
+	m_rCamRot					= pMsg->ReadLTRotation();
+
+	HidePVAttachClientFX();
+	memset( m_bPVAttachClientFXHidden, true, sizeof( m_bPVAttachClientFXHidden ));
 }
 
 
@@ -2723,6 +2727,17 @@ void CClientWeapon::Save( ILTMessage_Write *pMsg )
 	pMsg->Writebool( m_bFirstSelection );
 	pMsg->Writeuint8( m_nAmmoId );
 	pMsg->Writeint32( m_nAmmoInClip );
+
+	// RETAIL: Tron's keeps the weapon's state too (0x10132610)
+	pMsg->Writeint8( (int8)m_eState );
+	pMsg->WriteLTVector( m_vFlashPos );
+	pMsg->Writefloat( m_fFlashStartTime );
+	pMsg->Writefloat( m_fNextIdleTime );
+	pMsg->Writeint32( m_nNewAmmoInClip );
+	pMsg->Writebool( m_bFireKeyDownLastUpdate );
+	pMsg->Writebool( m_bAltFireKeyDownLastUpdate );
+	pMsg->Writeuint16( m_wIgnoreFX );
+	pMsg->WriteLTRotation( m_rCamRot );
 }
 
 
@@ -4478,6 +4493,9 @@ void CClientWeapon::CreatePVAttachClientFX()
 
 	RemovePVAttachClientFX();
 
+	// RETAIL: none while the weapon's client fx are off (0x10133fe0)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
+
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
 		if ( '\0' != m_pWeapon->szPVAttachClientFX[ i ][ 0 ] )
@@ -4507,6 +4525,9 @@ void CClientWeapon::ShowPVAttachClientFX()
 	ASSERT( 0 != g_pClientFXMgr );
 	ASSERT( 0 != m_pWeapon );
 
+	// RETAIL: not while the weapon's client fx are off (0x10134100)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
+
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
 		// Only show those FX that were visible before we hid them...
@@ -4531,6 +4552,9 @@ void CClientWeapon::HidePVAttachClientFX()
 {
 	ASSERT( 0 != g_pClientFXMgr );
 	ASSERT( 0 != m_pWeapon );
+
+	// RETAIL: not while the weapon's client fx are off (0x10134170)
+	if ( ns_vtEnableClientFX.GetFloat() == 0.0 ) return;
 
 	for ( int i = 0; i < WM_MAX_PV_ATTACH_CLIENTFX; ++i )
 	{
@@ -5793,6 +5817,49 @@ bool CClientWeapon::RemoveFinishedKeyframedFX()
 	}
 
 	return bAtLeastOneFXRemoved;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	RETAIL: Tron's keyframed ClientFX helpers (0x10135910, 0x10135930,
+//	0x10135950; the names are ours): SetVisible shows and hides the
+//	keyframed effects with the weapon, Deactivate removes them
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeapon::ShowKeyframedClientFX()
+{
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode; pNode = pNode->m_pNext )
+	{
+		if ( pNode->m_Link.IsValid() )
+		{
+			pNode->m_Link.GetInstance()->Show();
+		}
+	}
+}
+
+void CClientWeapon::HideKeyframedClientFX()
+{
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode; pNode = pNode->m_pNext )
+	{
+		if ( pNode->m_Link.IsValid() )
+		{
+			pNode->m_Link.GetInstance()->Hide();
+		}
+	}
+}
+
+void CClientWeapon::RemoveKeyframedClientFX()
+{
+	// turn off all keyframed ClientFX
+	for ( CLIENTFX_LINK_NODE* pNode = m_KeyframedClientFX.m_pNext; pNode != NULL; pNode = pNode->m_pNext )
+	{
+		// turn off the effect
+		g_pClientFXMgr->ShutdownClientFX( &pNode->m_Link );
+	}
+
+	// destroy the list of keyframed ClientFX
+	m_KeyframedClientFX.DeleteList();
 }
 
 // ----------------------------------------------------------------------- //

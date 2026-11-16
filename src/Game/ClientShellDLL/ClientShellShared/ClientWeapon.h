@@ -397,6 +397,10 @@ protected:
 
 	// remove all keyframed FXEd effects that have expired
 	bool          RemoveFinishedKeyframedFX();
+	// RETAIL: Tron's (0x10135910..; the names are ours)
+	void          ShowKeyframedClientFX();
+	void          HideKeyframedClientFX();
+	void          RemoveKeyframedClientFX();
 
 	//
 	//
