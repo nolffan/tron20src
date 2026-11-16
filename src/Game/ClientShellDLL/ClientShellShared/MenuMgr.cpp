@@ -97,7 +97,7 @@ LTBOOL CMenuMgr::Init()
 	LTIntPt size = g_pLayoutMgr->GetPoint(pTag,"BarSize");
 	uint8 fontFace = (uint8)g_pLayoutMgr->GetInt(pTag,"BarFont");
 	uint8 fontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"BarFontSize");
-	m_nBarPos = g_pLayoutMgr->GetInt(pTag,"BarPosition");
+	m_BarPos = g_pLayoutMgr->GetPoint(pTag,"BarPosition");
 	int nBarSpacing = g_pLayoutMgr->GetInt(pTag,"BarSpacing");
 	LTVector vCol = g_pLayoutMgr->GetVector(pTag,"BarSelectColor");
 	uint8 nR = (uint8)vCol.x;
@@ -107,7 +107,7 @@ LTBOOL CMenuMgr::Init()
 
 
 	m_MenuBar.Init(hBar,hBarTip,size);
-	m_MenuBar.SetBasePos(LTIntPt(0,m_nBarPos));
+	m_MenuBar.SetBasePos(m_BarPos);
 	
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(fontFace);
 	
@@ -462,15 +462,17 @@ void CMenuMgr::Render()
 }
 
 
+// RETAIL: Tron's (0x101715d0): the menu comes in from the middle of the
+// screen, the bar from the middle across
 void CMenuMgr::SlideIn()
 {
 	if (m_MenuSlide.IsStarted()) return;
 	ASSERT(m_pCurrentMenu);
 	if (!m_pCurrentMenu) return;
-	
+
 	LTIntPt startPos, endPos;
 	startPos.x = m_nMenuPos;
-	startPos.y = -((3 * m_pCurrentMenu->GetHeight()) / 2 + m_pCurrentMenu->GetWidth()) / 2 ;
+	startPos.y = g_pInterfaceResMgr->GetScreenHeight() / 2;
 
 	endPos.x = m_nMenuPos;
 	endPos.y = 0;
@@ -478,17 +480,15 @@ void CMenuMgr::SlideIn()
 	g_pClientSoundMgr->PlayInterfaceSound(m_sSlideInSound.c_str());
 	m_MenuSlide.Start(startPos,endPos,m_fSlideInTime, false);
 
-	startPos.x = -((3 * m_MenuBar.GetHeight()) / 2 + m_MenuBar.GetWidth()) / 2 ;
-	startPos.y = m_nBarPos;
+	startPos.x = g_pInterfaceResMgr->GetScreenWidth() / 2;
+	startPos.y = m_BarPos.y;
 
-	endPos.x = 0;
-	endPos.y = m_nBarPos;
+	endPos = m_BarPos;
 
 	m_BarSlide.Start(startPos,endPos,m_fSlideInTime, false);
-
-
 }
 
+// RETAIL: Tron's (0x10171660)
 void CMenuMgr::SlideOut()
 {
 	if (m_MenuSlide.IsStarted()) return;
@@ -499,7 +499,7 @@ void CMenuMgr::SlideOut()
 
 	LTIntPt startPos, endPos;
 	endPos.x = m_nMenuPos;
-	endPos.y = -((3 * m_pCurrentMenu->GetHeight()) / 2 + m_pCurrentMenu->GetWidth()) / 2;
+	endPos.y = g_pInterfaceResMgr->GetScreenHeight() / 2;
 
 	startPos.x = m_nMenuPos;
 	startPos.y = 0;
@@ -507,14 +507,12 @@ void CMenuMgr::SlideOut()
 	g_pClientSoundMgr->PlayInterfaceSound(m_sSlideOutSound.c_str());
 	m_MenuSlide.Start(startPos,endPos,m_fSlideInTime,true);
 
-	startPos.x = 0;
-	startPos.y = m_nBarPos;
+	startPos = m_BarPos;
 
-	endPos.x = -((3 * m_MenuBar.GetHeight()) / 2 + m_MenuBar.GetWidth()) / 2 ;
-	endPos.y = m_nBarPos;
+	endPos.x = g_pInterfaceResMgr->GetScreenWidth() / 2;
+	endPos.y = m_BarPos.y;
 
 	m_BarSlide.Start(startPos,endPos,m_fSlideInTime,true);
-
 }
 
 
@@ -998,7 +996,7 @@ float CMenuSlide::GetPercent()
 	{
 		float fElapsed = g_pLTClient->GetTime() - m_fStartTime;
 		if (fElapsed < m_fDuration)
-			return fElapsed / m_fDuration;
+			fPercent = fElapsed / m_fDuration;
 	}
 
 	return fPercent;

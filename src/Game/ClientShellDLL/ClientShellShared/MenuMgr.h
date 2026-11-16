@@ -164,10 +164,10 @@ private:
 
 	float			m_fSlideInTime;
 	float			m_fSlideOutTime;
-	// RETAIL: Tron's (+0x5cc0, set in Init 0x10170c14; the name is ours)
-	int				m_nTronUnknown5CC0;
 	int				m_nMenuPos;
-	int				m_nBarPos;
+	// RETAIL: Tron's bar has a position, not a height (+0x5cc4: Init reads
+	// "BarPosition" as a point, 0x10170db9)
+	LTIntPt			m_BarPos;
 	std::string		m_sSlideInSound;
 	std::string		m_sSlideOutSound;
 
