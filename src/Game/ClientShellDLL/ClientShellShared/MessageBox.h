@@ -37,6 +37,8 @@ typedef struct MBCreate_t
 {
 	MBCreate_t() 
 	{
+		// RETAIL: the type first (CShell 0x10067af4, 0x1006e5bd)
+		eType = LTMB_OK;
 		pFn  = LTNULL;
 		pData = LTNULL;
 
@@ -44,8 +46,6 @@ typedef struct MBCreate_t
 		nMaxChars = CLTGUIEditCtrl::kMaxLength; 
 		eInput = CLTGUIEditCtrl::kInputAll;
 
-		// RETAIL: Tron sets the type last (CShell 0x1007bc8d)
-		eType = LTMB_OK;
 	};
 
 	eMBType						eType;

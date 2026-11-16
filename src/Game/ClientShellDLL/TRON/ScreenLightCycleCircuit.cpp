@@ -11,6 +11,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#include "TronMissionMgr.h"
 #include "ScreenLightCycleCircuit.h"
 #include "ScreenSubroutines.h"
 #include "ScreenMgr.h"
@@ -512,9 +513,23 @@ void CScreenLightCycleCircuit::ShowCycleNotAllowed()
 // message Tron's mission manager keeps for the circuit screen
 // (dynamic_cast<CTronMissionMgr*>(g_pMissionMgr), 0x100a3fd0, 0x100a3fe0):
 // left out, CTronMissionMgr is not written yet
+// RETAIL: 0x10067a20: on focus, the message of the circuit just completed
+// (its unlocks)
 void CScreenLightCycleCircuit::OnFocus(LTBOOL bFocus)
 {
 	CBaseScreenLightCycle::OnFocus(bFocus);
+	if (!bFocus) return;
+
+	CTronMissionMgr* pMissionMgr = dynamic_cast<CTronMissionMgr*>(g_pMissionMgr);
+	if (!pMissionMgr) return;
+
+	std::wstring& sMsg = pMissionMgr->GetCircuitMessage();
+	if (sMsg != L"")
+	{
+		MBCreate mb;
+		g_pInterfaceMgr->ShowMessageBox(sMsg, &mb);
+	}
+	pMissionMgr->ClearCircuitMessage();
 }
 
 // RETAIL: 0x1006d860 (folded with the other light cycle screens')

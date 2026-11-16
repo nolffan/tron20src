@@ -454,6 +454,8 @@ void CScreenServerInfo::Refresh()
 	if (m_fRefreshTimer > 0.0f)
 	{
 		MBCreate mb;
+		// RETAIL: 0x1007bc8d: the type is set again (the last store)
+		mb.eType = LTMB_OK;
 		g_pInterfaceMgr->ShowMessageBox(0xCA4,&mb);
 		return;
 	}
