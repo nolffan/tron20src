@@ -69,6 +69,7 @@ LTBOOL CIntelItemList::Remove(uint32 id)
     return LTFALSE;
 }
 
+// RETAIL: Tron's (retail 0x1013dc60)
 void CIntelItemList::Save(ILTMessage_Write *pMsg)
 {
 	if (!pMsg) return;
@@ -78,14 +79,19 @@ void CIntelItemList::Save(ILTMessage_Write *pMsg)
 	while (iter != m_IntelArray.end())
 	{
 		pMsg->Writeuint32( (*iter)->nTextId );
+		pMsg->Writeuint8( (*iter)->nType );
 		pMsg->Writeuint8( (*iter)->nPopupId );
-		pMsg->Writebool( (*iter)->bIsIntel != LTFALSE );
+		pMsg->Writebool( (*iter)->bIsIntel );
+		pMsg->Writebool( (*iter)->bRead );
 		pMsg->Writeuint8( (*iter)->nMissionNum );
+		pMsg->Writeuint8( (*iter)->nLevelNum );
+		pMsg->WriteString( (*iter)->szName );
 		iter++;
 	}
 
 }
 
+// RETAIL: Tron's (retail 0x1013dd40)
 void CIntelItemList::Load(ILTMessage_Read *pMsg)
 {
 	if (!pMsg) return;
@@ -106,9 +112,13 @@ void CIntelItemList::Load(ILTMessage_Read *pMsg)
 			m_IntelArray.push_back(pItem);
 		}
 		pItem->nTextId = pMsg->Readuint32();
+		pItem->nType = pMsg->Readuint8();
 		pItem->nPopupId = pMsg->Readuint8();
-		pItem->bIsIntel = pMsg->Readbool() ? LTTRUE : LTFALSE;
+		pItem->bIsIntel = pMsg->Readbool() ? true : false;
+		pItem->bRead = pMsg->Readbool() ? true : false;
 		pItem->nMissionNum = pMsg->Readuint8();
+		pItem->nLevelNum = pMsg->Readuint8();
+		pMsg->ReadString(pItem->szName, sizeof(pItem->szName));
 
 	}
 }

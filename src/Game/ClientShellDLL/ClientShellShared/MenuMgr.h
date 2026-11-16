@@ -14,11 +14,9 @@
 
 #include "InterfaceResMgr.h"
 #include "MenuSystem.h"
-#include "MenuMission.h"
-#include "MenuInventory.h"
-#include "MenuKeys.h"
+#include "MenuBuildNotes.h"
+#include "MenuHelp.h"
 #include "MenuIntel.h"
-#include "MenuPlayer.h"
 
 
 // These flags are used in CMenuMgr::EnableMenuBar and need to correspond to each
@@ -152,13 +150,11 @@ private:
 	// RETAIL: Tron has four menus (constructor 0x101705a0): CMenuSystem
 	// (+0x674), CMenuBuildNotes (+0x13e0), CMenuHelp (+0x2c0c) and
 	// CMenuEmails (+0x4438; their RTTI), and CMenuMgr is 0x5ce8 bytes (the
-	// pad after CInterfaceMgr::m_MenuMgr). PORT: until Tron's three are
-	// written NOLF2's mission, keys and intel menus stand in for them;
-	// NOLF2's inventory and player menus are left out so that CMenuMgr
-	// fits retail's size (with LTGUIMgr's controls at retail's sizes).
+	// pad after CInterfaceMgr::m_MenuMgr). Our CMenuIntel is retail's
+	// CMenuEmails.
 	CMenuSystem		m_MenuSystem;
-	CMenuMission	m_MenuMission;
-	CMenuKeys		m_MenuKeys;
+	CMenuBuildNotes	m_MenuBuildNotes;
+	CMenuHelp		m_MenuHelp;
 	CMenuIntel		m_MenuIntel;
 
 	CMenuSlide		m_MenuSlide;
@@ -167,10 +163,20 @@ private:
 
 	float			m_fSlideInTime;
 	float			m_fSlideOutTime;
+	// RETAIL: Tron's (+0x5cc0, set in Init 0x10170c14; the name is ours)
+	int				m_nTronUnknown5CC0;
 	int				m_nMenuPos;
 	int				m_nBarPos;
 	std::string		m_sSlideInSound;
 	std::string		m_sSlideOutSound;
+
+	// RETAIL: Tron's (+0x5ce4: false in the constructor 0x10170773, set at
+	// 0x101710f1 and 0x10171c5d; CMenuHelp::OnFocus tests it, 0x101c7ba9).
+	// The name is ours
+	bool			m_bTronUnknown5CE4;
+
+public:
+	bool			GetTronUnknown5CE4() const { return m_bTronUnknown5CE4; }
 
 };
 

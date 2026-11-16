@@ -37,8 +37,9 @@ private:
 	CLTGUITextCtrl*	m_pLoadCtrl;
 	CLTGUITextCtrl*	m_pPlayerCtrl;
 	CLTGUITextCtrl*	m_pTeamCtrl;
-	CLTGUITextCtrl*	m_pHostCtrl;	// RETAIL: unused in Tron (no host options control); layout unverified
-	CLTGUITextCtrl*	m_pServerCtrl;
+	// RETAIL: Tron's has no host options and no server controls (retail's
+	// constructor 0x101c7d90 and Init 0x101c7df0: four controls; CMenuSystem
+	// is 0xd6c bytes)
 };
 
 #endif //!defined(_MENU_SYSTEM_H_)

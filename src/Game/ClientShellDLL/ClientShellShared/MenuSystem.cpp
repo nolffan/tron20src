@@ -55,8 +55,6 @@ CMenuSystem::CMenuSystem( )
 	m_pLoadCtrl = NULL;
 	m_pPlayerCtrl = NULL;
 	m_pTeamCtrl = NULL;
-	m_pHostCtrl = NULL;
-	m_pServerCtrl = NULL;
 }
 
 LTBOOL CMenuSystem::Init()
@@ -84,9 +82,6 @@ LTBOOL CMenuSystem::Init()
 	AddControl(IDS_ABORT,MC_ABORT);
 	AddControl(IDS_EXIT,MC_QUIT);
 
-	AddControl(" ",0,LTTRUE);
-	uint16 nServerCtrlId = AddControl("",0,LTTRUE);
-	m_pServerCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nServerCtrlId );
 
 
 	g_pInterfaceMgr->GetMenuMgr()->RegisterHotKey(VK_ESCAPE,MENU_ID_SYSTEM);
@@ -197,23 +192,12 @@ void CMenuSystem::OnFocus(LTBOOL bFocus)
 		{
 			m_pPlayerCtrl->Show( LTTRUE );
 			m_pTeamCtrl->Show( IsTeamGameType() );
-			m_pServerCtrl->Show(g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ));
-
-			if (g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
-			{
-				std::string str = g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName;
-				str += " : ";
-				str += g_pClientMultiplayerMgr->GetStartGameRequest( ).m_TCPAddress;
-				m_pServerCtrl->SetString(str.c_str());
-			}
-
 
 		}
 		else
 		{
 			m_pPlayerCtrl->Show( LTFALSE );
 			m_pTeamCtrl->Show( LTFALSE );
-			m_pServerCtrl->Show( LTFALSE  );
 		}
 
 		if (m_fScale != g_pInterfaceResMgr->GetXRatio())

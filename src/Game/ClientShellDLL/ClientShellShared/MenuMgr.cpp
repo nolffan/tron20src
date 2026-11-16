@@ -43,6 +43,7 @@ CMenuMgr::CMenuMgr()
 	m_fSlideInTime = 0.5f;
 	m_fSlideOutTime = 0.5f;
 
+	m_bTronUnknown5CE4 = false;
 }
 
 CMenuMgr::~CMenuMgr()
@@ -57,10 +58,10 @@ LTBOOL CMenuMgr::Init()
 	m_MenuArray.reserve(MENU_ID_UNASSIGNED);
 
 	//add menus here
-	// PORT: Tron's four menus (see MenuMgr.h)
+	// RETAIL: Tron's four menus (see MenuMgr.h)
 	m_MenuArray.push_back(&m_MenuSystem);
-	m_MenuArray.push_back(&m_MenuMission);
-	m_MenuArray.push_back(&m_MenuKeys);
+	m_MenuArray.push_back(&m_MenuBuildNotes);
+	m_MenuArray.push_back(&m_MenuHelp);
 	m_MenuArray.push_back(&m_MenuIntel);
 
 	//init menus
@@ -941,8 +942,8 @@ void CMenuMgr::EnableMenus()
 {
 	bool bSPMenus = IsCoopMultiplayerGameType();
 
-	m_MenuMission.Enable(bSPMenus);
-	m_MenuKeys.Enable(bSPMenus);
+	m_MenuBuildNotes.Enable(bSPMenus);
+	m_MenuHelp.Enable(bSPMenus);
 	m_MenuIntel.Enable(bSPMenus);
 
 }

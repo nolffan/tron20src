@@ -118,6 +118,13 @@
 #define COMMAND_ID_NEXT_UTILITY			161
 #define COMMAND_ID_TOGGLE_LC_CAMERA		192
 
+// RETAIL: the e-mails and help menus' actions (retail autoexec.cfg:
+// AddAction ViewEmail 160, AddAction ViewHelp 161; CMenuIntel::Init,
+// CShell.dll 0x101c5fa0, and CMenuHelp::Init, 0x101c7750). They share
+// their numbers with UtilityChooser and NextUtility
+#define COMMAND_ID_VIEW_EMAIL			160
+#define COMMAND_ID_VIEW_HELP			161
+
 // Special command ids...
 
 #define COMMAND_ID_UNASSIGNED		201	// always leave this unassigned - used in input code

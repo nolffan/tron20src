@@ -238,6 +238,9 @@ public:
 
 	// RETAIL: the I/O node pings (the name is ours)
 	bool	AddPing(const char* szName);
+	// RETAIL: 0x100ac180 (retail's CPlayerStats slot 0x164; ours is not
+	// virtual: our CPlayerStats has GetSkillModifier in that slot)
+	bool	RemovePing(const char* szName);
 
 	// Performance Ratings
 	int8	GetRating(PerformanceRating p) {return m_RatingMgr.GetRating(p);}

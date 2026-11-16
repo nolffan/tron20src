@@ -273,23 +273,25 @@ LTBOOL CBaseMenu::OnMouseMove(int x, int y)
 	return LTFALSE;
 }
 
+// RETAIL: Tron's titles and controls take wide strings (retail 0x101c72c0,
+// 0x101c7300, 0x101c7330)
 void CBaseMenu::SetTitle (int stringID)
 {
-	m_Title.SetString(LoadTempString(stringID));
+	m_Title.SetString(LoadTempWString(stringID));
 }
 
 uint16 CBaseMenu::AddControl (int stringID, uint32 commandID, LTBOOL bStatic)
 {
-	return AddControl(LoadTempString(stringID),commandID,bStatic);
+	return AddControl(LoadTempWString(stringID),commandID,bStatic);
 }
 
-uint16 CBaseMenu::AddControl (char *pString, uint32 commandID, LTBOOL bStatic)
+uint16 CBaseMenu::AddControl (std::wstring sString, uint32 commandID, LTBOOL bStatic)
 {
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_FontFace);
 	if (!pFont) return -1;
 
 	CLTGUITextCtrl* pCtrl=debug_new(CLTGUITextCtrl);
-    if (!pCtrl->Create(pString, commandID, LTNULL, pFont, m_FontSize, this))
+    if (!pCtrl->Create(sString, commandID, LTNULL, pFont, m_FontSize, this))
 	{
 		debug_delete(pCtrl);
         return -1;

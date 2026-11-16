@@ -22,6 +22,7 @@
 #include "RatingBarCtrl.h"
 #include "Ratings.h"
 #include "SubroutineMgr.h"
+#include "ToolTip.h"
 
 const int NUM_SECTORS = 24;
 const int PRIMS_PER_SECTOR = 3;
@@ -137,6 +138,11 @@ protected:
 	Procedural * m_pHotProc;
 
 	CUIFormattedPolyString * m_pHotStr;
+
+	// RETAIL: the tool tip (retail's +0x1a94, constructed at 0x1007d4ba;
+	// retail shows the hot subroutine's and procedural's text in it,
+	// 0x1007fe20.., where ours still makes m_pHotStr)
+	CToolTip	m_ToolTip;
 
 	// RETAIL: the ratings and the upgrade points to raise them with
 	// (retail's +0x2100, +0x2214; the hidden flag is its +0x3ccc)

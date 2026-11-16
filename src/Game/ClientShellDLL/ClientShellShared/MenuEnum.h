@@ -24,13 +24,13 @@
 #endif
 
 
+// RETAIL: Tron's menus (the names in retail CShell.dll at 0x10232a54; the
+// IDs the menus' Init functions set: 0x101c59f0, 0x101c7750, 0x101c5fa0)
 ADD_MENU(NONE,GenericMenu)
 ADD_MENU(SYSTEM,MenuSystem)
-ADD_MENU(MISSION,MenuMission)
-ADD_MENU(INVENTORY,MenuInventory)
-ADD_MENU(KEYS,MenuKeys)
-ADD_MENU(INTEL,MenuIntel)
-ADD_MENU(PLAYER,MenuPlayer)
+ADD_MENU(BUILDNOTES,MenuBuildNotes)
+ADD_MENU(HELP,MenuHelp)
+ADD_MENU(EMAILS,MenuEmails)
 
 //this must be the last id
 ADD_MENU(UNASSIGNED,GenericMenu)

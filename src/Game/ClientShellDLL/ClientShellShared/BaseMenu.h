@@ -94,7 +94,9 @@ protected:
 	void		SetTitle(int stringID);
 
 	uint16		AddControl (int stringID, uint32 commandID, LTBOOL bStatic = LTFALSE);
-	uint16		AddControl (char *pString, uint32 commandID, LTBOOL bStatic = LTFALSE);
+	uint16		AddControl (std::wstring sString, uint32 commandID, LTBOOL bStatic = LTFALSE);
+	// PORT: ours, for NOLF2's menus that still make their text narrow
+	uint16		AddControl (char *pString, uint32 commandID, LTBOOL bStatic = LTFALSE) { return AddControl(LTGUIWideString(pString),commandID,bStatic); }
 
 	void UpdateFrame();
 

@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include "InterfaceMgr.h"
 #include "ScreenSpriteMgr.h"
+#include "ToolTip.h"
 
 CScreenSpriteMgr *g_pScreenSpriteMgr = LTNULL;
 
@@ -536,49 +537,51 @@ void CScreenSpriteMgr::Update()
 {
 	bool bToolTipDone = false;
 
-	if (!m_bTronUnknownDraw)
+	if (m_bTronUnknownDraw)
 	{
-		// PORT: retail draws the tool tip here (its 0x1014e3e0)
-		return;
-	}
+		g_pLTClient->StartOptimized2D();
 
-	g_pLTClient->StartOptimized2D();
+		// Set up the rendering
+		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
 
-	// Set up the rendering
-	g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-	g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
-	g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
-	g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
-	g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
-	g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
-
-	ScreenSpriteArray::iterator iter = m_SpriteArray.begin();
-	while (iter != m_SpriteArray.end())
-	{
-		// RETAIL: the tool tip goes under the cursor's layers
-		if (!bToolTipDone && (*iter)->m_eLayer >= SPRITELAYER_CURSOR_ADDITIVE)
+		ScreenSpriteArray::iterator iter = m_SpriteArray.begin();
+		while (iter != m_SpriteArray.end())
 		{
-			bToolTipDone = true;
-			if (m_pTronUnknownToolTip)
+			// RETAIL: the tool tip goes under the cursor's layers
+			if (!bToolTipDone && (*iter)->m_eLayer >= SPRITELAYER_CURSOR_ADDITIVE)
 			{
-				// PORT: retail draws the tool tip here (its 0x1014e3e0)
-				g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-				g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
-				g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
-				g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
-				g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
-				g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+				bToolTipDone = true;
+				if (m_pTronUnknownToolTip)
+				{
+					m_pTronUnknownToolTip->Draw();
+					g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+					g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+					g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+					g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+					g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+					g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+				}
 			}
+
+			if ((*iter)->m_bShow)
+			{
+				(*iter)->Render();
+			}
+			iter++;
 		}
 
-		if ((*iter)->m_bShow)
-		{
-			(*iter)->Render();
-		}
-		iter++;
+		g_pLTClient->EndOptimized2D();
 	}
-
-	g_pLTClient->EndOptimized2D();
+	else if (m_pTronUnknownToolTip)
+	{
+		// RETAIL: the tool tip is drawn even with no sprites (0x101650fe)
+		m_pTronUnknownToolTip->Draw();
+	}
 }
 
 CScreenSprite * CScreenSpriteMgr::CreateScreenSprite(char * pFile, bool bExpires, ScreenSpriteLayer eLayer)
