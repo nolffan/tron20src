@@ -98,12 +98,11 @@ class CTronPlayerObj : public CPlayerObj
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
 
-		// RETAIL: virtual in retail (CPlayerObj's slots 107 and 108, empty
-		// there). Not virtual here until CPlayerObj's vtable has those
-		// slots: the IDs are the fire helpers' message IDs (GetMessageID).
+		// RETAIL: CPlayerObj's slots 107 and 108. The IDs are the fire
+		// helpers' message IDs (GetMessageID).
 		enum { kContinuousFire_PRod = 6, kContinuousFire_EnergyClaw = 13 };
-		void	StartContinuousFire(ILTMessage_Read *pMsg);
-		void	StopContinuousFire(ILTMessage_Read *pMsg);
+		virtual void	StartContinuousFire(ILTMessage_Read *pMsg);
+		virtual void	StopContinuousFire(ILTMessage_Read *pMsg);
 
 		// RETAIL: CCharacter's Tron virtual (slot 0xdc, retail 0x100629a0)
 		virtual bool	IsContinuousFiring() { return m_bTronUnknown325c; }

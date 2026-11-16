@@ -185,9 +185,10 @@ class CPlayerObj : public CCharacter
 		virtual void  HandleDamage(const DamageStruct& damage);
 		// RETAIL: two empty virtuals of Tron's taking a client message (the
 		// server shell hands them its player's messages, retail 0x100def81 and
-		// 0x100defb1; CTronPlayerObj's set and clear its flag at 0x325c)
-		virtual void TronUnknownVirtual107( ILTMessage_Read* /*pMsg*/ ) {}
-		virtual void TronUnknownVirtual108( ILTMessage_Read* /*pMsg*/ ) {}
+		// 0x100defb1; CTronPlayerObj's start and stop the fire helpers).
+		// The names are ours
+		virtual void StartContinuousFire( ILTMessage_Read* /*pMsg*/ ) {}
+		virtual void StopContinuousFire( ILTMessage_Read* /*pMsg*/ ) {}
 		void HandleActivateMessage(ILTMessage_Read *pMsg);
 		void HandlePlayerPositionMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);

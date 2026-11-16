@@ -13,6 +13,7 @@
 #include "stdafx.h"
 #include <stdio.h>
 #include "Destructible.h"
+#include "ParsedMsg.h"
 #include "iltserver.h"
 #include "MsgIds.h"
 #include "Projectile.h"
@@ -347,7 +348,8 @@ LTBOOL CDestructible::ReadProp(LPBASECLASS pObject, ObjectCreateStruct *pStruct)
 
     if (g_pLTServer->GetPropGeneric("DamagePercentForCommand", &genProp) == LT_OK)
 	{
-		SetDamagePercentCommand(genProp.m_Float);
+		// RETAIL: Tron takes a percentage (0x100e720e).
+		SetDamagePercentCommand(genProp.m_Float * 0.01f);
 	}
    
     if (g_pLTServer->GetPropGeneric("DamageCommand", &genProp) == LT_OK)
@@ -657,10 +659,7 @@ void CDestructible::AddProgressiveDamage(DamageStruct & damage)
 	HOBJECT hDamager	= damage.hDamager;
     LPBASECLASS pObject = g_pLTServer->HandleToObject(m_hObject);
 
-	// No since adding progressive damage if we are already dead...
-
-	if( m_bDead )
-		return;
+	// RETAIL: Tron has no test of m_bDead here (0x100e7f70).
 
 	// If the new damage is from a container, see if this container
 	// is already damaging us...
@@ -673,6 +672,24 @@ void CDestructible::AddProgressiveDamage(DamageStruct & damage)
 			if (m_ProgressiveDamage[i].hContainer == damage.hContainer)
 			{
 				m_ProgressiveDamage[i] = damage;
+				return;
+			}
+		}
+	}
+
+	// RETAIL: Tron keeps one PRod, EnergyClaw or Corrode damage at a time:
+	// the longer one stays (0x100e7fb4).
+
+	if (damage.eType == DT_PROD || damage.eType == DT_ENERGYCLAW || damage.eType == DT_CORRODE)
+	{
+		for (i=0; i < MAX_PROGRESSIVE_DAMAGE; i++)
+		{
+			if (m_ProgressiveDamage[i].eType == damage.eType)
+			{
+				if (m_ProgressiveDamage[i].fDuration < damage.fDuration)
+				{
+					m_ProgressiveDamage[i] = damage;
+				}
 				return;
 			}
 		}
@@ -896,7 +913,8 @@ LTFLOAT CDestructible::GetStealthModifier()
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(m_hObject);
 		if (pPlayer)
 		{
-			fMult *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STEALTH,StealthModifiers::eRadius);
+			// RETAIL: Tron reads the stealth table directly (0x100e83cb).
+			fMult *= g_pSkillsButeMgr->GetStealth(pPlayer->GetPlayerSkills()->GetLevel(SKL_STEALTH))->fModifier[StealthModifiers::eRadius];
 		}
 	}
 
@@ -1453,7 +1471,7 @@ void CDestructible::HandleDestruction(HOBJECT hDamager)
 	if (m_bDead) return;
 
     m_bDead      = LTTRUE;
-//	m_fHitPoints = 0.0;
+	m_fHitPoints = 0.0f;	// RETAIL: Tron sets it (0x100e9187)
 
     LPBASECLASS pD = g_pLTServer->HandleToObject(m_hObject);
 
@@ -1560,52 +1578,47 @@ LTBOOL CDestructible::AddGear(uint8 nGearId)
     LTFLOAT fOldStealth = GetStealthModifier();
 
     LTBOOL bGearAdded = LTFALSE;
-	if( !m_bIsPlayer )
-		return LTFALSE;
-	
-	if( nGearId == WMGR_INVALID_ID)
-		return LTFALSE;
-
-	CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(m_hObject);
-	if( !pPlayer )
-		return LTFALSE;
-
-	if (nGearId >= 0 && nGearId < MAX_GEAR_ITEMS)
+	// RETAIL: Tron's tests fall through to the stealth test (0x100e9550).
+	CPlayerObj* pPlayer;
+	if( m_bIsPlayer && nGearId != WMGR_INVALID_ID &&
+		(pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(m_hObject)) != LTNULL )
 	{
-		if (!m_bGearOwned[nGearId])
-		{
-			GEAR const *pGear = g_pWeaponMgr->GetGear(nGearId);
-			if( pGear && !pGear->bServerRestricted )
+			if (nGearId >= 0 && nGearId < MAX_GEAR_ITEMS)
 			{
-				if ( pGear->bExclusive)
+				if (!m_bGearOwned[nGearId])
 				{
-					m_bGearOwned[nGearId] = LTTRUE;
-				}
+					GEAR const *pGear = g_pWeaponMgr->GetGear(nGearId);
+					// RETAIL: Tron has no bServerRestricted test, and it tests
+					// pGear only for bExclusive (0x100e95c2; docs/RETAIL_BUGS.md).
+					if ( pGear && pGear->bExclusive)
+					{
+						m_bGearOwned[nGearId] = LTTRUE;
+					}
 
-				if (pGear->fArmor)
-				{
-					LTFLOAT fRepair = pGear->fArmor;
-					fRepair *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_ARMOR,ArmorModifiers::eArmorPickup);
-					bGearAdded = Repair(fRepair);
-				}
-				else if (pGear->fHealth)
-				{
-					LTFLOAT fHealth = pGear->fHealth;
-					fHealth *= pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STAMINA,StaminaModifiers::eHealthPickup);
-					bGearAdded = Heal(fHealth);
-				}
-				else
-				{
-					bGearAdded = LTTRUE;
+					if (pGear->fArmor)
+					{
+						LTFLOAT fRepair = pGear->fArmor;
+						// RETAIL: Tron reads the skill tables directly (0x100e95fc).
+						fRepair *= g_pSkillsButeMgr->GetArmor(pPlayer->GetPlayerSkills()->GetLevel(SKL_ARMOR))->fModifier[ArmorModifiers::eArmorPickup];
+						bGearAdded = Repair(fRepair);
+					}
+					else if (pGear->fHealth)
+					{
+						LTFLOAT fHealth = pGear->fHealth;
+						fHealth *= g_pSkillsButeMgr->GetStamina(pPlayer->GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eHealthPickup];
+						bGearAdded = Heal(fHealth);
+					}
+					else
+					{
+						bGearAdded = LTTRUE;
+					}
 				}
 			}
-		}
+			else
+			{
+				g_pLTServer->CPrint("Gear id out of range! : %d", nGearId);
+			}
 	}
-	else
-	{
-		g_pLTServer->CPrint("Gear id out of range! : %d", nGearId);
-	}
-
 
 	// If our stealth modifier has changed, notify the clients...
 
@@ -1753,20 +1766,32 @@ void CDestructible::Reset(LTFLOAT fHitPts, LTFLOAT fArmorPts, LTFLOAT fEnergy)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Object.lto 0x100e9940.  Tron parses the message and adds
+// "DAMAGESCALAR <float>" and "MINHITPOINTS <float>".
 void CDestructible::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, ILTMessage_Read *pMsg)
 {
 	if (m_bDead) return;
 
 	const char* szMsg = (const char*)pMsg->Readuint32();
 	if( !szMsg )
-	{
-		ASSERT( !"CDestructible::HandleTrigger:  Empty trigger message received." );
 		return;
-	}
+
+	ConParse parse;
+	parse.Init( szMsg );
+
+	if( g_pCommonLT->Parse( &parse ) != LT_OK )
+		return;
+
+	CParsedMsg cMsg( parse.m_nArgs, parse.m_Args );
+
+	static CParsedMsg::CToken s_cTok_Destroy( "DESTROY" );
+	static CParsedMsg::CToken s_cTok_Reset( "RESET" );
+	static CParsedMsg::CToken s_cTok_DamageScalar( "DAMAGESCALAR" );
+	static CParsedMsg::CToken s_cTok_MinHitPoints( "MINHITPOINTS" );
 
 	// See if we should destroy ourself...
 
-    if (_stricmp(TRIGGER_MSG_DESTROY, szMsg) == 0)
+	if( cMsg.GetArg(0) == s_cTok_Destroy )
 	{
 		DamageStruct damage;
 
@@ -1778,9 +1803,30 @@ void CDestructible::HandleTrigger(LPBASECLASS pObject, HOBJECT hSender, ILTMessa
 
 	// See if we should reset ourself...
 
-    if (_stricmp(TRIGGER_MSG_RESET, szMsg) == 0)
+	if( cMsg.GetArg(0) == s_cTok_Reset )
 	{
 		Reset(GetMaxHitPoints(), GetMaxArmorPoints(), GetMaxEnergy());
+	}
+
+	if( cMsg.GetArg(0) == s_cTok_DamageScalar )
+	{
+		if( cMsg.GetArgCount() < 2 )
+		{
+			g_pLTServer->CPrint( "DamageScalar: DamageScalar <float>" );
+		}
+		else
+		{
+			m_fTronUnknown78 = (LTFLOAT)atof( cMsg.GetArg(1) );
+		}
+	}
+
+	if( cMsg.GetArg(0) == s_cTok_MinHitPoints )
+	{
+		m_fTronUnknown7C = (LTFLOAT)atof( cMsg.GetArg(1) );
+		if( m_fTronUnknown7C < 0.01f )
+		{
+			m_fTronUnknown7C = 0.0f;
+		}
 	}
 }
 
