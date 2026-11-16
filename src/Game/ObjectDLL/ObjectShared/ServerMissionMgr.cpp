@@ -750,8 +750,8 @@ bool CServerMissionMgr::ExitLevel( char const* pszNewLevel, bool bTransitionToLe
 		return false;
 	}
 	
-	// Tell worldproperties to send its level end command.
-	g_pWorldProperties->SendLevelEndCmd( );
+	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
+	// it here)
 
 	// Record that we are transitioning.
 	m_bTransitionLevels = bTransitionToLevel;
@@ -1014,8 +1014,8 @@ bool CServerMissionMgr::EndGame( )
 		return false;
 	}
 	
-	// Tell worldproperties to send its level end command.
-	g_pWorldProperties->SendLevelEndCmd( );
+	// PORT: Tron's WorldProperties has no level end command (NOLF2 1.3 sent
+	// it here)
 
 	return true;
 }

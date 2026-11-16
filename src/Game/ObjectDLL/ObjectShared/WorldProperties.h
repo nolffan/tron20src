@@ -29,8 +29,7 @@ class WorldProperties : public GameBase
 		WorldProperties();
 		~WorldProperties();
 
-		// Sends the level end command.
-		void SendLevelEndCmd( );
+		// RETAIL: Tron has no level end command (NOLF2 1.3's SendLevelEndCmd)
 
 	protected :
 
@@ -50,7 +49,9 @@ class WorldProperties : public GameBase
 
         LTFLOAT  m_fWorldTimeSpeed;
 
-		std::string	m_sLevelEndCmd;
+		// RETAIL: Tron's (build 51's): +0x3c, +0x40 (Save 0x101c17f0)
+		uint32		m_nSaveVersion;
+		HSTRING		m_hstrSave;
 };
 
 class CWorldPropertiesPlugin : public IObjectPlugin
