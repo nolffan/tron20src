@@ -71,7 +71,6 @@ class PlayerVehicle : public Prop
 		LTVector    m_vOriginalDims;
         LTVector    m_vOriginalPos;
         LTRotation  m_rOriginalRot;
-		bool		m_bRidden;
 		
 		bool		m_bLocked;
 		HSTRING		m_hstrLockedCommand;
@@ -84,6 +83,9 @@ class PlayerVehicle : public Prop
 
 		float		m_fLastRideTime;
 		bool		m_bVirgin;
+		// PORT: NOLF2's; retail has no member at 0x87d (m_bLocked is at 0x87c,
+		// ReadProp 0x1017e410), so it is kept after retail's members.
+		bool		m_bRidden;
 
 		static PlayerVehicleList		m_lstPlayerVehicles;
 };

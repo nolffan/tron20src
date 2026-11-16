@@ -128,10 +128,10 @@ CRelationTools* CRelationTools::GetInstance()
 		}
 
 		sm_mapRelationAlignmentToName.insert( make_pair( LIKE, std::string("LIKE") ) );
+		sm_mapRelationAlignmentToName.insert( make_pair( PERMISSION_DEPENDANT, std::string("PERMISSION_DEPENDANT") ) );	// RETAIL: Tron's, second (0x1016607f)
 		sm_mapRelationAlignmentToName.insert( make_pair( TOLERATE, std::string("TOLERATE") ) );
 		sm_mapRelationAlignmentToName.insert( make_pair( HATE, std::string("HATE") ) );
 		sm_mapRelationAlignmentToName.insert( make_pair( UNDETERMINED, std::string("UNDETERMINED") ) );
-		sm_mapRelationAlignmentToName.insert( make_pair( PERMISSION_DEPENDANT, std::string("PERMISSION_DEPENDANT") ) );	// RETAIL: Tron's (0x1016607f)
 		sm_mapRelationAlignmentToName.insert( make_pair( INVALID, std::string("INVALID") ) );
 	}
 

@@ -687,28 +687,9 @@ LTBOOL CFXButeMgr::Init(const char* szAttributeFile)
 		sprintf( s_aTagName, "%s%d", FXBMGR_PRANKSTERCLASS_TAG, nNum );
 	}
 
-	// Read in the properties for the Auto Burst Disc
-
-	nNum = 0;
-	sprintf( s_aTagName, "%s%d", FXBMGR_CLUSTERAUTOBURSTDISCCLASS_TAG, nNum );
-
-	while( m_buteMgr.Exist( s_aTagName ))
-	{
-		PROJECTILECLASSDATA *pPCD = debug_new( CLUSTERAUTOBURSTDISCCLASSDATA );
-
-		if( pPCD && pPCD->Init( m_buteMgr, s_aTagName ))
-		{
-			m_ProjClassDataList.AddTail( pPCD );
-		}
-		else
-		{
-			debug_delete( pPCD );
-			return LTFALSE;
-		}
-
-		++nNum;
-		sprintf( s_aTagName, "%s%d", FXBMGR_CLUSTERAUTOBURSTDISCCLASS_TAG, nNum );
-	}	
+	// RETAIL: Tron reads no auto burst disc class data (no
+	// ClusterAutoBurstDiscClassData attribute in retail; CFXButeMgr::Init
+	// 0x10142020).
 
 	// Read in the properties for each projectile fx type...
 
