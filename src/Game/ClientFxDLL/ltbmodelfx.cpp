@@ -263,7 +263,8 @@ bool CLTBModelFX::Init(ILTClient *pClientDE, FX_BASEDATA *pBaseData, const CBase
 	LTMatrix mMat;
 	ocs.m_Rotation.ConvertToMatrix( mMat );
 
-	m_vPos = ocs.m_Pos = m_vCreatePos + (mMat * GetProps()->m_vOffset);
+	// RETAIL: Tron adds m_vTronUnknown to the offset (0x10012758)
+	m_vPos = ocs.m_Pos = m_vCreatePos + (mMat * (GetProps()->m_vOffset + m_vTronUnknown));
 
 	
 	SAFE_STRCPY( ocs.m_Filename, GetProps()->m_szModelName );
