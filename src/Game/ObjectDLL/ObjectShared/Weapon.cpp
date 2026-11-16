@@ -152,7 +152,7 @@ void CWeapon::ReloadClip(LTBOOL bPlayReload, int nNewAmmo /*=-1*/, uint8 nAmmoId
 	if( nAmmoId	!= WMGR_INVALID_ID && nAmmoId != m_nAmmoId )
 	{
 		SetAmmoId( nAmmoId );
-		m_nAmmoInClip = 0;
+		SetAmmoInClip( 0 );	// RETAIL: 0x101573eb
 	}
 
 	int nAmmo = nNewAmmo >= 0 ? nNewAmmo : m_pParent->GetAmmoCount(m_nAmmoId);
@@ -167,7 +167,7 @@ void CWeapon::ReloadClip(LTBOOL bPlayReload, int nNewAmmo /*=-1*/, uint8 nAmmoId
 
 	if (nAmmo > 0 && nShotsPerClip > 0)
 	{
-		m_nAmmoInClip = nAmmo < nShotsPerClip ? nAmmo : nShotsPerClip;
+		SetAmmoInClip( nAmmo < nShotsPerClip ? nAmmo : nShotsPerClip );	// RETAIL: 0x1015744c
 	}
 
 
@@ -355,7 +355,7 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 
 			if (nShotsPerClip > 0 && !bInfiniteAmmo)
 			{
-				m_nAmmoInClip--;
+				SetAmmoInClip( m_nAmmoInClip - 1 );	// RETAIL: 0x101578ce
 			}
 
 			if (!bInfiniteAmmo)
@@ -529,7 +529,7 @@ void CWeapon::Select()
 
 		if (nAmmo > 0 && nShotsPerClip > 0)
 		{
-			m_nAmmoInClip = nAmmo < nShotsPerClip ? nAmmo : nShotsPerClip;
+			SetAmmoInClip( nAmmo < nShotsPerClip ? nAmmo : nShotsPerClip );	// RETAIL: 0x10157fa7
 		}
 	}
 }
@@ -578,7 +578,7 @@ void CWeapon::Save(ILTMessage_Write *pMsg, uint8 nType)
 	SAVE_DWORD( m_nPostFireAni );
 
 	SAVE_TIME( m_fLastFireTime );
-	SAVE_DWORD( m_nLastTimestamp );
+	// RETAIL: Tron does not save m_nLastTimestamp (0x10157fb0)
 
 	for (int i=0; i < W_MAX_MODS; i++)
 	{
@@ -607,7 +607,7 @@ void CWeapon::Load(ILTMessage_Read *pMsg, uint8 nType)
     LOAD_FLOAT( m_fLifeTime );
     LOAD_INT( m_nCurTracer );
     LOAD_BOOL( m_bHave );
-    LOAD_INT( m_nAmmoInClip );
+    SetAmmoInClip( pMsg->Readint32() );	// RETAIL: 0x101581ae
     LOAD_BYTE_CAST( m_eState, WeaponState );
     LOAD_FLOAT( m_fDamageFactor );
     LOAD_FLOAT( m_fRangeAdjust );
@@ -620,7 +620,7 @@ void CWeapon::Load(ILTMessage_Read *pMsg, uint8 nType)
 	LOAD_DWORD_CAST( m_nPostFireAni, HMODELANIM );
 	
 	LOAD_TIME( m_fLastFireTime );
-	LOAD_DWORD( m_nLastTimestamp );
+	// RETAIL: Tron does not load m_nLastTimestamp (0x10158120)
 
 	for (int i=0; i < W_MAX_MODS; i++)
 	{
@@ -672,6 +672,27 @@ LTFLOAT CWeapon::GetProgDamage() const
 	fDamage *= m_fDamageFactor;
 
 	return fDamage;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeapon::SetAmmoInClip()
+//
+//	PURPOSE:	Set the ammo in the clip; hide the weapon model while the
+//				clip is empty if the weapon asks for it.
+//
+//	RETAIL: Tron's (0x10158330)
+//
+// ----------------------------------------------------------------------- //
+
+void CWeapon::SetAmmoInClip( int nAmmo )
+{
+	m_nAmmoInClip = nAmmo;
+
+	if( m_pWeaponData && m_pWeaponData->bHideWeaponWhileClipEmpty )
+	{
+		g_pCommonLT->SetObjectFlags( m_hModelObject, OFT_Flags, ( nAmmo > 0 ) ? FLAG_VISIBLE : 0, FLAG_VISIBLE );
+	}
 }
 
 // ----------------------------------------------------------------------- //

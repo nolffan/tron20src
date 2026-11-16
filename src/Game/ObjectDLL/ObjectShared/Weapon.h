@@ -46,6 +46,7 @@ class CWeapon
 		int 	GetId() 				const { return m_nWeaponId; }
 		int 	GetAmmoId() 			const { return m_nAmmoId; }
 		int 	GetAmmoInClip() 		const { return m_nAmmoInClip; }
+		void	SetAmmoInClip( int nAmmo );	// RETAIL: Tron's (0x10158330)
 		WEAPON const*GetWeaponData() 	const { return m_pWeaponData; }
 		AMMO const *GetAmmoData()		const { return m_pAmmoData; }
 
