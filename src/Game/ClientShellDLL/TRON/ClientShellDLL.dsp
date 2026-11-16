@@ -350,6 +350,10 @@ SOURCE=.\HUDLightCycleRoster.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\HUDLightCycleSpeedometer.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\HUDMatchStats.cpp
 # End Source File
 # Begin Source File
@@ -835,6 +839,10 @@ SOURCE=.\HUDLightCyclePowerupIcon.h
 # Begin Source File
 
 SOURCE=.\HUDLightCycleRoster.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\HUDLightCycleSpeedometer.h
 # End Source File
 # Begin Source File
 

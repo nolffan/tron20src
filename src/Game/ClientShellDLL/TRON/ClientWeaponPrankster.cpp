@@ -95,6 +95,62 @@ float CClientWeaponPrankster::GetEnergyUse()
 	return fEnergy;
 }
 
+// RETAIL: 0x1001b460: the bit keeps the firing animations while it is
+// out; its fire puts it out (and the weapon away)
+WeaponState CClientWeaponPrankster::UpdateModelState( bool bFire, bool bAltFire )
+{
+	WeaponState eRet = W_IDLE;
+
+	if ( bFire || kPrankster_KeyDown == m_nState || kPrankster_Out == m_nState || kPrankster_Sent == m_nState )
+	{
+		UpdateFiring();
+	}
+	else
+	{
+		UpdateNonFiring();
+	}
+
+	if ( m_bFire )
+	{
+		if ( kPrankster_KeyDown == m_nState )
+		{
+			bool bGadgetSpecialCase = m_pAmmo->eType != GADGET;
+			eRet = UpdateAmmoFromFire( bGadgetSpecialCase );
+			SetState( kPrankster_Out );
+			SetVisible( false );
+		}
+
+		m_bFire = false;
+	}
+
+	// See if we just finished deselecting the weapon...
+	if ( m_bWeaponDeselected )
+	{
+		m_bWeaponDeselected = false;
+
+		if ( m_cbDeselect )
+		{
+			// call the deselect callback
+			m_cbDeselect( m_nWeaponId, m_pcbData );
+
+			// clear out the callback data
+			m_cbDeselect = 0;
+			m_pcbData = 0;
+		}
+
+		// deactivate the current weapon, its not used anymore
+		Deactivate();
+	}
+
+	return eRet;
+}
+
+// RETAIL: 0x1001b760
+void CClientWeaponPrankster::Fire( bool bFire )
+{
+	CTronClientWeapon::Fire( bFire );
+}
+
 // RETAIL: 0x1001b770
 void CClientWeaponPrankster::HandleFireKeyDownTransition()
 {

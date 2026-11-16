@@ -46,6 +46,7 @@
 #include "HUDSubChooser.h"
 #include "HUDSecurityCamera.h"
 #include "HUDTronDecision.h"
+#include "HUDLightCycleSpeedometer.h"
 #include "HUDScores.h"
 #include "HUDDiscMatches.h"
 #include "HUDDiscScores.h"
@@ -112,6 +113,7 @@ protected:
 	// g_pTronDecision points at it). PORT: at the end until the class is
 	// retail's
 	CHUDTronDecision			m_TronDecision;
+	CHUDLightCycleSpeedometer	m_LightCycleSpeedometer;
 };
 extern CHUDCrosshair*		g_pCrosshair;
 

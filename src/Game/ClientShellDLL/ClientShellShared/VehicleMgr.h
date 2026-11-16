@@ -117,6 +117,9 @@ class CVehicleMgr
 
 	bool		CanSave() const { return m_bHaveJumpVolumeVel == LTFALSE; }
 
+	// RETAIL: read by CHUDLightCycleSpeedometer (0x1002fc30; the name is ours)
+	bool		GetTronUnknown2158() const { return m_bTronUnknown2158; }
+
   protected:
 
 	void		UpdateVehicleMotion();

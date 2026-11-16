@@ -38,6 +38,9 @@ protected:
 	// RETAIL: 0x1001bd20
 	virtual uint8 GetFireMessageType() const { return kTronFire_Suffusion; }
 
+	virtual float GetEnergyUse();			// RETAIL: 0x1001c5a0
+	virtual bool  TronUnknownVirtual164();	// RETAIL: 0x1001c6d0
+
 	// RETAIL: 0x1001c410
 	bool          IsExtraFireAni( uint32 dwAni );
 

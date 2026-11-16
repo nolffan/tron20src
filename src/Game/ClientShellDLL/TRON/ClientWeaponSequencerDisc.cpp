@@ -14,6 +14,9 @@
 #include "stdafx.h"
 #include "ClientWeaponSequencerDisc.h"
 #include "SubroutineMgr.h"
+#include "GameClientShell.h"
+
+extern CGameClientShell* g_pGameClientShell;
 
 // RETAIL: 0x1001b9e0
 CClientWeaponSequencerDisc::CClientWeaponSequencerDisc()
@@ -46,6 +49,32 @@ float CClientWeaponSequencerDisc::GetEnergyUse()
 	}
 
 	return fEnergy;
+}
+
+// RETAIL: 0x1001bb00: no alternate fire while the discs are full
+WeaponState CClientWeaponSequencerDisc::UpdateModelState( bool bFire, bool bAltFire )
+{
+	if ( bAltFire && TronUnknownVirtual1A0() )
+	{
+		bAltFire = false;
+	}
+
+	return CClientWeaponDisc::UpdateModelState( bFire, bAltFire );
+}
+
+// RETAIL: 0x1001bb40: more discs than the subroutine's ammo override
+// allows below the maximum
+bool CClientWeaponSequencerDisc::TronUnknownVirtual19C()
+{
+	char *szName = m_pWeapon->szSubroutineNeeded;
+	bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( szName );
+	SubVersion eVersion = g_pSubroutineMgr->GetActiveSubroutineVersion( szName );
+
+	int nOverride = g_pSubroutineDataMgr->GetSequencerData( SubroutineDataKey( (uint8)eVersion, (uint8)bCorrupt,
+		g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy ) ).nMaxAmmoOverride;
+
+	int nMax = m_pAmmo->GetMaxAmount( LTNULL ) - nOverride;
+	return (int)g_pPlayerStats->GetAmmoCount( m_nAmmoId ) > nMax;
 }
 
 // RETAIL: 0x1001bc00 (CClientWeaponClusterDisc's slot 99 too)

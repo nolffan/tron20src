@@ -21,6 +21,8 @@ public:
 
 protected:
 	virtual float GetEnergyUse();
+	virtual WeaponState   UpdateModelState( bool bFire, bool bAltFire );	// RETAIL: 0x1001bb00
+	virtual bool  TronUnknownVirtual19C();	// RETAIL: 0x1001bb40
 	virtual bool  TronUnknownVirtual18C();
 };
 
