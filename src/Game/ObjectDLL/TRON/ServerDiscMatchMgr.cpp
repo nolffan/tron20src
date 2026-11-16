@@ -456,7 +456,7 @@ bool CDiscMatch::HasPlayer(CPlayerObj* pPlayer)
 	if (IsOnTeam(m_nTeam[0], pPlayer))
 		return true;
 
-	return IsOnTeam(m_nTeam[1], pPlayer);
+	return IsOnTeam(m_nTeam[1], pPlayer) ? true : false;
 }
 
 void CDiscMatch::DecideWinner()
@@ -533,10 +533,12 @@ CDiscArena::CDiscArena(int nIndex) : m_nIndex(nIndex), m_bInUse(false)
 	g_pLTServer->FindNamedObjects("Arena", objArray);
 
 	uint32 i;
+	Arena* pArena;
+	ArenaStartPoint* pPoint;
 	uint32 nNumObjects = objArray.NumObjects();
 	for (i = 0; i < nNumObjects; i++)
 	{
-		Arena* pArena = (Arena*)g_pLTServer->HandleToObject(objArray.GetObject(i));
+		pArena = (Arena*)g_pLTServer->HandleToObject(objArray.GetObject(i));
 		if (!pArena || pArena->m_nArena != nIndex)
 			continue;
 
@@ -562,7 +564,7 @@ CDiscArena::CDiscArena(int nIndex) : m_nIndex(nIndex), m_bInUse(false)
 	nNumObjects = objArray.NumObjects();
 	for (i = 0; i < nNumObjects; i++)
 	{
-		ArenaStartPoint* pPoint = (ArenaStartPoint*)g_pLTServer->HandleToObject(objArray.GetObject(i));
+		pPoint = (ArenaStartPoint*)g_pLTServer->HandleToObject(objArray.GetObject(i));
 		if (!pPoint || pPoint->GetArena() != nIndex)
 			continue;
 
@@ -588,12 +590,12 @@ CDiscArena::CDiscArena(int nIndex) : m_nIndex(nIndex), m_bInUse(false)
 		nTeamPoints = m_aTeamPoints[1].size();
 	uint32 nNumPoints = m_SpectatorPoints.size();
 
-	uint32 nPoint = (uint32)((float)rand() * (1.0f / 32768.0f) * (float)nNumPoints);
+	uint32 nPoint = (uint32)(((float)rand() / 32768.0f) * (float)nNumPoints);
 	if (nPoint >= nNumPoints)
 		nPoint = nNumPoints - 1;
 	m_nSpectatorPoint = nPoint;
 
-	nPoint = (uint32)((float)rand() * (1.0f / 32768.0f) * (float)nTeamPoints);
+	nPoint = (uint32)(((float)rand() / 32768.0f) * (float)nTeamPoints);
 	if (nPoint >= nTeamPoints)
 		nPoint = nTeamPoints - 1;
 	m_nTeamPoint = nPoint;
@@ -1725,9 +1727,10 @@ void CDiscMatchMgr::UpdateTeamStates()
 int CDiscMatchMgr::GetNumFreeArenas()
 {
 	int nFree = 0;
-	for (DiscArenaArray::iterator iter = m_Arenas.begin(); iter != m_Arenas.end(); iter++)
+	uint32 nNumArenas = m_Arenas.size();
+	for (uint32 i = 0; i < nNumArenas; i++)
 	{
-		if (!(*iter)->m_bInUse)
+		if (!m_Arenas[i]->m_bInUse)
 		{
 			nFree++;
 		}

@@ -54,6 +54,11 @@ enum DISC_STATE
 	// the disc has been deflected, it isn't obeying properly
 	DISC_STATE_DEFLECTING,
 
+	// RETAIL: Tron's has one more state before the return (0x10039c5e sets
+	// it; UpdateDisc's jump table, 0x1003904c, updates it as a deflection).
+	// The name is ours
+	DISC_STATE_TRONUNKNOWN3,
+
 	// the disc is returning to the owner
 	DISC_STATE_RETURNING,
 
@@ -721,6 +726,7 @@ bool CDisc::UpdateDisc()
 		break;
 
 		case DISC_STATE_DEFLECTING:
+		case DISC_STATE_TRONUNKNOWN3:	// RETAIL: 0x1003904c
 		{
 			return UpdateStateDeflecting();
 		}
