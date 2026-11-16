@@ -46,6 +46,13 @@ class CTronGameClientShell : public CGameClientShell
 
 		virtual void PauseGame(bool bPause, bool bPauseSound = false);
 
+		// RETAIL: slot 0x8c (0x1009a1e0): the light cycle's look back, and
+		// the I/O node camera's view over the world's
+		virtual void RenderCamera(bool bDrawInterface = true);
+
+		// RETAIL: slot 0x90 (0x1009a670): with the console's fx detail level
+		virtual void UpdateInterfaceFX();
+
 		// RETAIL: slot 0x8 (0x10099ff0): resets the match managers
 		virtual void OnExitWorld();
 

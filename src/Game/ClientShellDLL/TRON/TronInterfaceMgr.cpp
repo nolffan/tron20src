@@ -628,6 +628,36 @@ void CTronInterfaceMgr::CreateIOCamera()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronInterfaceMgr::RenderIOCamera()
+//
+//	PURPOSE:	Render the I/O node camera (RETAIL: 0x1009e530; the name is
+//				ours), without the player's weapon
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::RenderIOCamera(float fFrameTime)
+{
+	if (m_eGameState != GS_PLAYING || !m_hIOCamera || !m_nTronUnknown28AF0)
+		return;
+
+	int nDrawGuns = 1;
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("DrawGuns");
+	if (hVar)
+	{
+		nDrawGuns = (int)g_pLTClient->GetVarValueFloat(hVar);
+	}
+
+	g_pLTClient->RunConsoleString("DrawGuns 0");
+	g_pLTClient->ClearScreen(&m_rcIOCameraScaled, CLEARSCREEN_SCREEN | CLEARSCREEN_RENDER);
+	g_pLTClient->RenderCamera(m_hIOCamera, fFrameTime);
+
+	char szTmp[32];
+	sprintf(szTmp, "DrawGuns %d", nDrawGuns);
+	g_pLTClient->RunConsoleString(szTmp);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronInterfaceMgr::UpdatePlayingState()
 //
 //	PURPOSE:	Update playing state (RETAIL: 0x1009e6f0)

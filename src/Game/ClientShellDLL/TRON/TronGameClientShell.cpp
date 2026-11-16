@@ -18,6 +18,12 @@
 #include "clientmultiplayermgr.h"
 #include "iserverdir.h"
 #include "TexturedFrame.h"
+#include "CMoveMgr.h"
+#include "VehicleMgr.h"
+#include "PlayerCamera.h"
+#include "HUDMgr.h"
+#include "HUDChatInput.h"
+#include "CommandIDs.h"
 
 // Sample rate
 int g_nSampleRate = 44100;
@@ -274,4 +280,150 @@ void CTronGameClientShell::PauseGame(bool bPause, bool bPauseSound)
 
 	g_pSubroutineMgr->Pause(bPause);	
 	g_pTronPlayerMgr->Pause(bPause);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameClientShell::RenderCamera()
+//
+//	PURPOSE:	RETAIL: 0x1009a1e0: sets up the client and renders the
+//				camera: on a light cycle, the turn around command looks
+//				back at the cycle from the console's radius and angles;
+//				the I/O node camera's view goes over the world's
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::RenderCamera(bool bDrawInterface)
+{
+	if (!m_bMainWindowFocus)
+	{
+		if (IsMultiplayerGame())
+		{
+			UpdateInterfaceFX();
+		}
+		return;
+	}
+
+	if (!GetPlayerMgr()->PreRender()) return;
+
+	m_sfxMgr.UpdateSpecialFX();
+	m_DamageFXMgr.Update();
+
+	HLOCALOBJ hCamera = GetPlayerMgr()->GetCamera();
+
+	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE &&
+		g_pLTClient->IsCommandOn(COMMAND_ID_TURNAROUND) &&
+		!g_pPlayerMgr->TronUnknownVirtual3C(false) &&
+		!g_pChatInput->IsVisible())
+	{
+		float fTheta = 266.0f;
+		float fPhi = 45.0f;
+		float fRadius = 800.0f;
+
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCReverseRadius");
+		if (hVar)
+		{
+			fRadius = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		hVar = g_pLTClient->GetConsoleVar("LCReverseTheta");
+		if (hVar)
+		{
+			fTheta = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		hVar = g_pLTClient->GetConsoleVar("LCReversePhi");
+		if (hVar)
+		{
+			fPhi = g_pLTClient->GetVarValueFloat(hVar);
+		}
+
+		fPhi = fPhi * MATH_PI / 180.0f;
+
+		LTVector vPos;
+		g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &vPos);
+
+		fTheta = fTheta * MATH_PI / 180.0f + g_pPlayerMgr->GetPlayerCamera()->TronUnknownGetOrbitYaw();
+
+		vPos.x += (float)sin(fPhi) * (float)cos(fTheta) * fRadius;
+		vPos.y += (float)cos(fPhi) * fRadius;
+		vPos.z += (float)sin(fPhi) * (float)sin(fTheta) * fRadius;
+
+		g_pLTClient->SetObjectPos(hCamera, &vPos, true);
+
+		LTRotation rRot(MATH_HALFPI - fPhi, -fTheta - MATH_HALFPI, 0.0f);
+		g_pLTClient->SetObjectRotation(hCamera, &rRot);
+	}
+
+	//handle updating the paused status
+	m_ClientFXMgr.Pause(m_bServerPaused);
+
+	HCONSOLEVAR hDetail = g_pLTClient->GetConsoleVar("ClientFXDetailLevel");
+	if (hDetail)
+	{
+		m_ClientFXMgr.SetDetailLevel((int)g_pLTClient->GetVarValueFloat(hDetail));
+	}
+
+	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
+
+	float fFrameTime = m_bServerPaused ? 0.0 : m_fFrameTime;
+
+	g_pLTClient->Start3D();
+
+	if (!GetPlayerMgr()->IsDeathFXDone())
+	{
+		g_pLTClient->RenderCamera(hCamera, fFrameTime);
+	}
+
+	// Render the the dynamic FX.
+	m_sfxMgr.RenderFX(hCamera);
+
+	if (m_InterfaceMgr.GetTronUnknown28AE8())
+	{
+		g_pDrawPrim->SaveViewport();
+		m_InterfaceMgr.RenderIOCamera(fFrameTime);
+		g_pDrawPrim->SetCamera(hCamera);
+		g_pDrawPrim->RestoreViewport();
+	}
+
+	// Render the effects
+	m_ClientFXMgr.RenderAllActiveFX(m_bMainWindowFocus);
+
+	g_pPlayerMgr->TronUnknownVirtual5C();
+
+	g_pLTClient->StartOptimized2D();
+
+	GetInterfaceMgr()->Draw();
+
+	// Display any necessary debugging info...
+	RenderDebugStrings();
+
+	g_pLTClient->EndOptimized2D();
+	g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameClientShell::UpdateInterfaceFX()
+//
+//	PURPOSE:	RETAIL: 0x1009a670: keep the fx running while the interface
+//				draws instead of the world
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::UpdateInterfaceFX()
+{
+	GetPlayerMgr()->PreRender();
+
+	m_sfxMgr.UpdateSpecialFX();
+
+	m_ClientFXMgr.Pause(m_bServerPaused);
+
+	HCONSOLEVAR hDetail = g_pLTClient->GetConsoleVar("ClientFXDetailLevel");
+	if (hDetail)
+	{
+		m_ClientFXMgr.SetDetailLevel((int)g_pLTClient->GetVarValueFloat(hDetail));
+	}
+
+	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
 }

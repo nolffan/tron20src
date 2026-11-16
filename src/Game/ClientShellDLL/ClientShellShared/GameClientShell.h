@@ -131,6 +131,10 @@ public:
 	// returns its mission manager (+0x317d4, 0x10099d30). The name is ours.
 	virtual CMissionMgr*		GetMissionMgr() { return NULL; }
 
+	// RETAIL: Tron's shell's RenderCamera and UpdateInterfaceFX
+	// (0x1009a1e0, 0x1009a670) use the base's members
+	friend class CTronGameClientShell;
+
     LTBOOL      IsWorldLoaded()	const			{ return m_bInWorld; }
     void        SetWorldNotLoaded()				{ m_bInWorld = LTFALSE; }
 	

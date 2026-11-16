@@ -4139,7 +4139,9 @@ void CGameClientShell::RenderCamera(bool bDrawInterface)
 
     g_pLTClient->Start3D();
 
-    g_pLTClient->RenderCamera(hCamera, m_bServerPaused ? 0.0f : m_fFrameTime);
+	// RETAIL: 0x100e6618: the frame time goes through the FPU (a float
+	// 0.0f there: ours loads a double, the only byte that differs)
+    g_pLTClient->RenderCamera(hCamera, m_bServerPaused ? 0.0 : m_fFrameTime);
 
 	// Render the the dynamic FX.
 	m_sfxMgr.RenderFX(hCamera);
