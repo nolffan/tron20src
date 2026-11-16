@@ -395,8 +395,6 @@ SURFACE::SURFACE()
 
 	szExitFXName[0]			= '\0';
 	szUWExitFXName[0]		= '\0';
-	
-	szSnowmobileImpactFXName[0]	= '\0';
 }
 
 // ----------------------------------------------------------------------- //
@@ -508,7 +506,6 @@ LTBOOL SURFACE::Init(CButeMgr & buteMgr, char* aTagName)
 
 	buteMgr.GetString( aTagName, SRFMGR_SURFACE_UWEXITFXNAME, szUWExitFXName, ARRAY_LEN( szUWExitFXName ));
 
-	buteMgr.GetString( aTagName, SRFMGR_SURFACE_SNOWMOBILEIMPACTFXNAME, szSnowmobileImpactFXName, ARRAY_LEN( szSnowmobileImpactFXName ));
 
     return LTTRUE;
 }

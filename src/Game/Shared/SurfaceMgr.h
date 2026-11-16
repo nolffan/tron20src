@@ -131,10 +131,9 @@ struct SURFACE
 
 	// Underwater Exit FX
 	char	szUWExitFXName[SRF_MAX_NAME_LENGTH];
-	
-	// Snowmobile Impact FX
-	char	szSnowmobileImpactFXName[SRF_MAX_NAME_LENGTH];
 
+	// RETAIL: Tron has no snowmobile impact FX (SURFACE is 0x608 bytes;
+	// constructor 0x1015fae0).
 };
 
 typedef CTList<SURFACE*> SurfaceList;
