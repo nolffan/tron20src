@@ -853,6 +853,7 @@ void CAIHumanStatePatrol::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD_CAST(m_eAwareness, EnumAnimProp);
 	LOAD_COBJECT(m_pNode, AINodePatrol);
 	LOAD_COBJECT(m_pLastNode, AINodePatrol);
+	LOAD_BOOL(m_xTronUnknown94);	// RETAIL: 0x101e5455
 }
 
 
@@ -872,6 +873,7 @@ void CAIHumanStatePatrol::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD(m_eAwareness);
 	SAVE_COBJECT(m_pNode);
 	SAVE_COBJECT(m_pLastNode);
+	SAVE_BOOL(m_xTronUnknown94);	// RETAIL: 0x101e55a5
 }
 
 // ----------------------------------------------------------------------- //
@@ -1929,7 +1931,8 @@ void CAIHumanStateSearch::UpdateAnimation()
 	{
 		if( !GetAnimationContext()->IsTransitioning() )
 		{
-			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Down);
+			// RETAIL: 0x101e74a7 keeps the weapon up (NOLF2 lowers it).
+			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
 			GetAnimationContext()->SetProp(kAPG_Action, kAP_Alert);
 			GetAnimationContext()->Lock();
 
@@ -4063,18 +4066,17 @@ void CAIHumanStateCheckBody::UpdateAnimation()
 	if ( m_pStrategyFollowPath )
 	{
 		GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
-		if ( m_pStrategyFollowPath->IsSet() )
+
+		// RETAIL: 0x101eb661, Tron's one shot animation plays once the
+		// path is done.
+		if ( !m_pStrategyFollowPath->IsDone() )
 		{
 			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Down);
 			m_pStrategyFollowPath->UpdateAnimation();
 		}
-		else if( m_pStrategyOneShotAni->IsSet() )
+		else
 		{
 			m_pStrategyOneShotAni->UpdateAnimation();
-		}
-		else {
-			GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
-			GetAnimationContext()->SetProp(kAPG_Action, kAP_Alert);
 		}
 	}
 }
@@ -4202,6 +4204,11 @@ LTBOOL CAIHumanStateChase::Init(CAIHuman* pAIHuman)
 	m_eStateStatus = kSStat_Pursue;
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
+
+	// RETAIL: 0x101eb9bf, Tron's chase starts ghosting and picks
+	// m_xTronUnknownC0 at random.
+	m_pAIHuman->StartGhosting();
+	m_xTronUnknownC0 = GetRandom( 0, 3 );
 
 	return LTTRUE;
 }
@@ -5954,7 +5961,7 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 	{
 		m_dwAttackFlags |= kAttk_ForceCrouch;
 
-		if( !pAlly->IsPlayingDialogue() ) // RETAIL: 0x101ef60f
+		if( !( pAlly->IsTalkLocked() || pAlly->IsPlayingDialogSound() ) ) // RETAIL: 0x101ef60f
 		{
 			pAlly->PlaySound( kAIS_OrderCrouch, LTFALSE );
 		}
@@ -6233,7 +6240,7 @@ CAIHumanStateAttackFromCover::CAIHumanStateAttackFromCover()
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
 	m_pStrategyCover = LTNULL;
 
-	m_nRetries = 0;
+	// RETAIL: 0x101efd90, Tron's constructor leaves m_nRetries unset.
 	m_pCoverNode = LTNULL;
 
 	m_bBoostedHitpoints = LTFALSE;
@@ -7100,8 +7107,10 @@ void CAIHumanStateAttackFromVantage::UpdateMoving()
 	if( m_pVantageNode )
 	{
 		EnumNodeStatus eVantageStatus = m_pVantageNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
+		// RETAIL: 0x101f0e07 tests m_bTronUnknown8D too.
 		if( ( kStatus_ThreatBlockingPath == eVantageStatus ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
+			( !GetAI()->GetAIMovement()->IsMovementLocked() ) &&
+			( !m_bTronUnknown8D ) )
 		{
 			m_eStateStatus = kSStat_FailedComplete;
 			return;
@@ -7277,7 +7286,8 @@ void CAIHumanStateAttackFromVantage::HandleDamage(const DamageStruct& damage)
 
 	if ( m_eStateStatus == kSStat_Attacking  )
 	{
-		if( m_pVantageNode && ( !GetAI()->GetAnimationContext()->IsLocked() ) )
+		// RETAIL: 0x101f1189 tests m_bTronUnknown8C first.
+		if( !m_bTronUnknown8C && m_pVantageNode && ( !GetAI()->GetAnimationContext()->IsLocked() ) )
 		{
 			// Find another vantage node or exit state.
 			CleanupState();
@@ -7852,7 +7862,8 @@ CAIHumanStatePanic::CAIHumanStatePanic()
 
 	m_aniPanic.Set(kAPG_Posture, kAP_Crouch);
 
-	m_bCanActivate = LTTRUE;
+	// RETAIL: 0x101f1f90, Tron's panicking AI cannot be activated.
+	m_bCanActivate = LTFALSE;
 }
 
 CAIHumanStatePanic::~CAIHumanStatePanic()
@@ -7999,7 +8010,8 @@ void CAIHumanStatePanic::Update()
 
 		// Play a sound if our target is threatening us
 
-		if ( !GetAI()->IsPlayingDialogSound() && GetAI()->GetTarget()->IsAttacking() )
+		// RETAIL: 0x101f228d, the talk lock too.
+		if ( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) && GetAI()->GetTarget()->IsAttacking() )
 		{
 			// $SOUND GetAI()->PlaySound(aisPanic);
 		}
@@ -8647,6 +8659,9 @@ LTBOOL CAIHumanStateCharge::Init(CAIHuman* pAIHuman)
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
 
+	// RETAIL: 0x101f38a2, Tron's charge keeps where it started.
+	m_vTronUnknown98 = m_pAIHuman->GetPosition();
+
 	return LTTRUE;
 }
 
@@ -8999,6 +9014,9 @@ CAIHumanStateFollow::CAIHumanStateFollow()
 	m_pStrategyFollowPath = AI_FACTORY_NEW(CAIHumanStrategyFollowPath);
 
 	m_eStateStatus = kSStat_Following;
+
+	// RETAIL: 0x101f44af, Tron's follow state allows cinematics.
+	m_bNoCinematics = LTFALSE;
 
 	m_fRangeTime = .25f;
 
