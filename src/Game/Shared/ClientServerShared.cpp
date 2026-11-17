@@ -211,6 +211,8 @@ bool IsDifficultyGameType()
 	}
 }
 
+// RETAIL: not in CShell.dll (its HUD asks IsDiscGameType); Object.lto's
+#ifndef _CLIENTBUILD
 // ----------------------------------------------------------------------- //
 //
 //  ROUTINE:	IsRevivePlayerGameType
@@ -232,6 +234,7 @@ bool IsRevivePlayerGameType()
 		break;
 	}
 }
+#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //

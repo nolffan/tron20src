@@ -17,7 +17,6 @@
 #include "SFXMsgIds.h"
 #include "GameClientShell.h"
 
-#define RADAR_SNOWMOBILE_TYPE	"Snowmobile"
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -56,13 +55,9 @@ LTBOOL CPlayerVehicleFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	PVCREATESTRUCT* pFX = (PVCREATESTRUCT*)psfxCreateStruct;
 	m_cs = *pFX;
-	
-	// Add the snowmobile object to the radar list in coop games only...
 
-	if( IsMultiplayerGame( ) && IsCoopMultiplayerGameType( ) && g_pGameClientShell->ShouldUseRadar() )
-	{
-		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_SNOWMOBILE_TYPE, INVALID_TEAM );
-	}
+	// RETAIL: 0x101b94a0 (one body with CClientFXAndActivateTypeFX::Init):
+	// Tron has no radar for NOLF2's coop snowmobiles.
 
      return LTTRUE;
 }

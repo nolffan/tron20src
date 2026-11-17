@@ -24,9 +24,8 @@ CHUDMissionText*	g_pMissionText = LTNULL;
 CHUDSubtitles*		g_pSubtitles = LTNULL;
 CHUDDecision*		g_pDecision = LTNULL;
 CHUDPopup*			g_pPopup = LTNULL;
-// PORT: Tron's HUD has no radar (retail CHUDMgr::Init 0x100f3b10); NOLF2's
-// callers check for none
-CHUDRadar*			g_pRadar = LTNULL;
+// RETAIL: Tron's HUD has no radar (retail CHUDMgr::Init 0x100f3b10, no
+// CHUDRadar RTTI in CShell.dll): NOLF2's g_pRadar and its callers are gone
 CHUDRewardMsgQueue*	g_pRewardMsgs = LTNULL;
 CHUDPaused*			g_pPaused = LTNULL;
 CHUDDisplayMeter*	g_pDisplayMeter = LTNULL;

@@ -81,7 +81,8 @@ void CHUDSingleString::UpdateLayout()
 	float ys = g_pInterfaceResMgr->GetYRatio();
 
 	LTIntPt pos;
-	if (IsRevivePlayerGameType())
+	// RETAIL: the disc games (0x1003aff1)
+	if (IsDiscGameType())
 		pos = g_pLayoutMgr->GetPoint("SingleString", "DiscMPPosition");
 	else
 		pos = g_pLayoutMgr->GetPoint("SingleString", "Position");

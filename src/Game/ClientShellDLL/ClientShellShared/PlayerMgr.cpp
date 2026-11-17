@@ -19,7 +19,6 @@
 #include "ClientUtilities.h"
 #include "ClientWeaponMgr.h"
 #include "FlashLight.h"
-#include "GadgetDisabler.h"
 #include "GameClientShell.h"	
 #include "HeadBobMgr.h"
 #include "LeanMgr.h"
@@ -191,9 +190,9 @@ CPlayerMgr::CPlayerMgr()
 	m_pHeadBobMgr = new CHeadBobMgr;            ASSERT( 0 != m_pHeadBobMgr );
 	m_pCameraOffsetMgr = new CCameraOffsetMgr;  ASSERT( 0 != m_pCameraOffsetMgr );
 	m_pFlashLight = new CFlashLightPlayer;      ASSERT( 0 != m_pFlashLight );
-	m_pGadgetDisabler = new CGadgetDisabler;    ASSERT( 0 != m_pGadgetDisabler );
-	// RETAIL: Tron has no searcher (retail 0x10123400 allocates none; no
-	// search sounds or strings)
+	// RETAIL: Tron has a searcher (0x18 bytes, retail 0x101234dd) and no
+	// gadget disabler
+	m_pSearcher = new CSearcher;                ASSERT( 0 != m_pSearcher );
 	m_pMoveMgr = new CMoveMgr;                  ASSERT( 0 != m_pMoveMgr );
 	m_pVisionModeMgr = new CVisionModeMgr;      ASSERT( 0 != m_pVisionModeMgr );
 	m_pAttachButeMgr = new CAttachButeMgr;      ASSERT( 0 != m_pAttachButeMgr );
@@ -329,10 +328,10 @@ CPlayerMgr::~CPlayerMgr()
 		m_pFlashLight = 0;
 	}
 
-	if ( m_pGadgetDisabler )
+	if ( m_pSearcher )
 	{
-		delete m_pGadgetDisabler;
-		m_pGadgetDisabler = 0;
+		delete m_pSearcher;
+		m_pSearcher = 0;
 	}
 
 	if ( m_pMoveMgr )
@@ -485,8 +484,7 @@ LTBOOL CPlayerMgr::Init()
 	m_pHeadBobMgr->Init();
 	m_pCameraOffsetMgr->Init();
 	//m_pFlashLight no init
-	//m_pGadgetDisabler no init
-	//m_pSearcher
+	//m_pSearcher no init
 	m_pMoveMgr->Init();
 	//m_pVisionModeMgr no init
 	m_pAttachButeMgr->Init();
@@ -797,7 +795,7 @@ LTBOOL CPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		// no MID_GADGETTARGET: the object it hands the message to
 		// (+0x10, retail 0x101c3be0, reading CSearchItemMgr's items) is
 		// NOLF2's searcher, which ours takes for the gadget disabler
-		case MID_SEARCH:					HandleMsgGadgetTarget			(pMsg); break;
+		case MID_SEARCH:					HandleMsgSearch					(pMsg); break;
 		case MID_ADD_PUSHER:				HandleMsgAddPusher				(pMsg); break;
 		case MID_OBJECTIVES_DATA:			HandleMsgObjectivesData			(pMsg); break;
 		default:							return LTFALSE;	break;
@@ -1166,9 +1164,9 @@ void CPlayerMgr::UpdatePlaying()
 	// Update the targetting info...
 	m_pTargetMgr->Update();
 
-	// Update the Gadget Disabler...
+	// Update the searcher...
 
-	m_pGadgetDisabler->Update();
+	m_pSearcher->Update();
 
 	// Update the vision modes...
 
@@ -1556,18 +1554,6 @@ void CPlayerMgr::HandleMsgPlayerOrientation (ILTMessage_Read *pMsg)
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CPlayerMgr::HandleMsgGadgetTarget
-//
-//  PURPOSE:	Just pass the message on the the disabler object
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerMgr::HandleMsgGadgetTarget( ILTMessage_Read *pMsg )
-{
-	m_pGadgetDisabler->OnGadgetTargetMessage( pMsg );
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -1579,7 +1565,8 @@ void CPlayerMgr::HandleMsgGadgetTarget( ILTMessage_Read *pMsg )
 
 void CPlayerMgr::HandleMsgSearch( ILTMessage_Read *pMsg )
 {
-	// RETAIL: no searcher in Tron (PORT: NOLF2's message handler kept, inert)
+	// RETAIL: 0x10126430
+	m_pSearcher->OnSearchMessage( pMsg );
 }
 
 
@@ -1820,10 +1807,10 @@ void CPlayerMgr::UpdateCameraSway()
 	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
 
 	//Adjust for skills
-	// PORT: Tron's player stats give the zoom sway through their virtual at
-	// +0x13c (a pointer to a float at +4, as build 51's GetAimModifiers()->
-	// fZoomSway; retail 0x10126980), which ours have not yet
-	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
+	// RETAIL: the player stats' aim modifiers (their virtual at +0x13c): the
+	// zoom sway is the float at +4, as build 51's AimModifiers::fZoomSway
+	// (retail 0x10126980)
+	fMult *= ((const float*)g_pPlayerStats->TronUnknownVirtual13C())[1];
 
 	// RETAIL: no damage FX adjustment in Tron
 
@@ -2510,18 +2497,6 @@ void CPlayerMgr::ToggleHolster( bool bPlayDeselect )
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::LastWeapon()
-//
-//	PURPOSE:	Swap to our previously used weapon.
-//
-// ----------------------------------------------------------------------- //
-void CPlayerMgr::LastWeapon()
-{
-	// toggle the last weapon
-	m_pClientWeaponMgr->LastWeapon();
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -3139,7 +3114,7 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			ClearPlayerModes();
 
-			m_pClientWeaponMgr->OnPlayerDead();
+			// RETAIL: no CClientWeaponMgr::OnPlayerDead in Tron
 
 			g_pInterfaceMgr->AddToClearScreenCount();
 
@@ -5194,21 +5169,10 @@ void SVModelHook(ModelHookData *pData, void *pUser)
 
 bool CPlayerMgr::IsSearching()
 { 
-	return false;	// RETAIL: no searcher in Tron
+	// RETAIL: 0x1012c7b0
+	return m_pSearcher->IsSearching();
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::IsDisabling()
-//
-//	PURPOSE:	Return whether or not the player is currently disabling a gadget target
-//
-// ----------------------------------------------------------------------- //
-
-bool CPlayerMgr::IsDisabling()
-{ 
-	return !!(m_pGadgetDisabler->IsDisabling());
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -5323,74 +5287,8 @@ void CPlayerMgr::UpdateDistanceIndicator()
 
 
 
-uint8 CPlayerMgr::GetGadgetFromDamageType(DamageType eDamageType)
-{
-	IClientWeaponBase *pClientWeapon = m_pClientWeaponMgr->GetCurrentClientWeapon();
-	uint8 nCurWeapon = WMGR_INVALID_ID;
-	if ( pClientWeapon )
-	{
-		// Check if we have ammo, we may have just run out...
-		if (pClientWeapon->HasAmmo())
-		{
-			nCurWeapon = pClientWeapon->GetWeaponId();
-		}
-		else
-		{
-			// Start with our next weapon that has ammo...
-
-			nCurWeapon = m_pClientWeaponMgr->GetNextWeaponId(nCurWeapon, 0);
-		}
-	}
-
-	uint8 nTestWeapon = nCurWeapon;
-
-	do
-	{
-		const WEAPON* pWpnData = g_pWeaponMgr->GetWeapon(nTestWeapon);
-		if (pWpnData)
-		{
-			const AMMO* pAmmoData = g_pWeaponMgr->GetAmmo(pWpnData->nDefaultAmmoId);
-			if (pAmmoData->eInstDamageType == eDamageType)
-			{
-				return nTestWeapon;
-			}
-		}
-
-		nTestWeapon = m_pClientWeaponMgr->GetNextWeaponId(nTestWeapon, 0);
-
-	} while (nTestWeapon != nCurWeapon && nTestWeapon != WMGR_INVALID_ID);
 
 
-
-	return WMGR_INVALID_ID;
-
-}
-
-
-bool CPlayerMgr::FireOnActivate()
-{
-	if (!GetTargetMgr()->IsTargetGadgetActivatable()) return false;
-	if (GetGadgetDisabler()->DisableOnActivate()) return false;
-
-	DamageType eDT = GetTargetMgr()->RequiredGadgetDamageType();
-
-	IClientWeaponBase *pClientWeapon = m_pClientWeaponMgr->GetCurrentClientWeapon();
-	uint8 nCurWeapon = WMGR_INVALID_ID;
-	if ( pClientWeapon )
-		nCurWeapon = pClientWeapon->GetWeaponId();
-
-	const WEAPON* pWpnData = g_pWeaponMgr->GetWeapon(nCurWeapon);
-	if (pWpnData)
-	{
-		const AMMO* pAmmoData = g_pWeaponMgr->GetAmmo(pWpnData->nDefaultAmmoId);
-		if (pAmmoData->eInstDamageType == eDT)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
 
 
 // ----------------------------------------------------------------------- //

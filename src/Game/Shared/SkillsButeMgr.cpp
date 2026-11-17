@@ -340,9 +340,11 @@ const RANK* CSkillsButeMgr::GetRank(uint32 nScore)
 	return &m_Ranks[n];
 }
 
-// PORT: NOLF2's; Tron's CSkillsButeMgr TU has none of GetModifiers,
-// GetModifier and GetNumModifiers (retail 0x10169110..0x101697c0), but our
-// NOLF2 callers (MenuPlayer, CSkills) still use them.
+// RETAIL: Tron's CShell.dll has none of GetModifiers, GetModifier,
+// GetNumModifiers or the modifier names (its CSkillsButeMgr TU is
+// 0x10168ee0..0x101697c0: no caller reads the modifiers by number). PORT:
+// Object.lto's NOLF2 CSkills (ObjectShared/Skills.cpp) still uses them.
+#ifndef _CLIENTBUILD
 const float* CSkillsButeMgr::GetModifiers(eSkill skl, eSkillLevel lvl)
 {
 	switch (skl)
@@ -386,35 +388,6 @@ float CSkillsButeMgr::GetModifier(eSkill skl, eSkillLevel lvl, uint8 nMod)
 	return pMods[nMod];
 }
 
-#ifdef _CLIENTBUILD
-uint16 CSkillsButeMgr::GetModifierNameId(eSkill skl, uint8 nMod)
-{
-	uint8 nMax = GetNumModifiers(skl);
-
-	if (nMod > nMax)
-	{
-		ASSERT(!"Invalid modifier specified.");
-		return 0;
-	}
-
-
-	return nModNames[skl][nMod];
-}
-
-uint16 CSkillsButeMgr::GetModifierDescriptionId(eSkill skl, uint8 nMod)
-{
-	uint8 nMax = GetNumModifiers(skl);
-
-	if (nMod > nMax)
-	{
-		ASSERT(!"Invalid modifier specified.");
-		return 0;
-	}
-
-	return nModDesc[skl][nMod];
-}
-#endif
-
 uint8 CSkillsButeMgr::GetNumModifiers(eSkill skl)
 {
 	switch (skl)
@@ -442,5 +415,6 @@ uint8 CSkillsButeMgr::GetNumModifiers(eSkill skl)
 	ASSERT(!"Invalid Skill specified.");
 	return 0;
 }
+#endif // _CLIENTBUILD
 
 

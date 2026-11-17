@@ -185,16 +185,13 @@ class CVehicleMgr
 
 	LTFLOAT		GetSurfaceVelMult(SurfaceType eType) const;
 
-	void		CalculateBankingVehicleRotation(LTVector & vPlayerPYR, LTVector & vPYR, LTFLOAT fYawDelta);
-	void		CalculateLureVehicleRotation(LTVector & vPlayerPYR, LTVector & vPYR);
-	void		CalculateVehicleContourRotation( LTVector &vPlayerPYR, LTVector &vPYR );
-	void		CalculateLightCycleRotation(LTVector & vPlayerPYR, LTVector & vPYR);
+	// RETAIL: NOLF2's banking, lure and contour rotations are gone: Tron's
+	// CalculateVehicleRotation (0x101219b0) only turns the light cycle
 		
 	bool		MoveToLure( );
 	bool		MoveLightCycle();
 
 	bool		HandleJumpVolumeTouch( HOBJECT hJumpVolume );
-	bool		HandleCharacterTouch( HOBJECT hCharacter );
 
 	void		UpdateInJumpVolume();
 	void		EnableWeapon( bool bEnable );

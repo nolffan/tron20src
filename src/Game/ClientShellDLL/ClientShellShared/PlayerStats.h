@@ -170,9 +170,8 @@ public:
 	// 0x100ac180). The name is ours
 	virtual bool		RemovePing(const char* szName) = 0;
 
-	// PORT: Tron's CPlayerStats has no GetSkillModifier slot; NOLF2's callers
-	// reach CTronPlayerStats' (TRONPlayerStats.cpp)
-	float				GetSkillModifier(eSkill skl, uint8 nMod);
+	// RETAIL: no GetSkillModifier in Tron: callers read the modifier
+	// structures that the virtuals at +0x134..+0x150 return
 };
 
 extern CPlayerStats* g_pPlayerStats;

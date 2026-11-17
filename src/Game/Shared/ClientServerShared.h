@@ -413,7 +413,9 @@ GameType GetGameType( );
 bool IsDeathmatchGameType();
 bool IsCoopMultiplayerGameType();
 bool IsTeamGameType();
-bool IsRevivePlayerGameType( );
+#ifndef _CLIENTBUILD
+bool IsRevivePlayerGameType( );	// RETAIL: not in CShell.dll
+#endif
 // RETAIL: Tron's, the disc games (CShell.dll 0x100fa3d0, after GetGameType;
 // the name is ours)
 bool IsDiscGameType( );

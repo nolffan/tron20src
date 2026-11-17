@@ -149,7 +149,8 @@ void CHUDSubChooser::Render()
 		g_pDrawPrim->SetTexture(m_hIconTex[i]);
 		g_pDrawPrim->DrawPrim(&m_Icon[i], 1);
 
-		if (!IsRevivePlayerGameType() && g_pLTClient->IsCommandOn(COMMAND_ID_TOGGLE_PROGRESS) && m_pText[i])
+		// RETAIL: the disc games (0x1003ba76)
+		if (!IsDiscGameType() && g_pLTClient->IsCommandOn(COMMAND_ID_TOGGLE_PROGRESS) && m_pText[i])
 		{
 			m_pText[i]->Render();
 		}

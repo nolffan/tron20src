@@ -119,13 +119,5 @@ std::wstring LoadTempWString(int messageCode);
 
 bool IsMultiplayerGame();
 
-// Helper for finding the normal and point of intersection beneath a given point
-bool GetIntersectionUnderPoint( LTVector &vInPt, HOBJECT *pFilterList, LTVector &vOutNormal, LTVector &vOutPt );
-
-// Find the normal of the plane we would like to contour to given a position and dims of an object.
-LTVector GetContouringNormal( LTVector &vPos, LTVector &vDims, LTVector &vForward, LTVector &vRight, HOBJECT *pFilterList );
-
-// Get the pitch amount and percents to apply for pitch and roll based on the forward direction and plane normal.
-void GetContouringInfo( LTVector &vForward, LTVector &vNormal, float &fOutAmount, float &fOutPitchPercent, float &fOutRollPercent );
 
 #endif // __CLIENT_UTILITIES_H__

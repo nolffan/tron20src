@@ -43,9 +43,9 @@ private:
 	CLIENTFX_LINK*	GetLink(const char* szIndex);
 	CLIENTFX_LINK*	GetLink(int nIndex)
 	{
-		if (nIndex == -1) return &m_Link;
-		if (!m_pAttachFX) return LTNULL;
-		return m_pAttachFX->GetElement(nIndex);
+		if (nIndex == -1) return &m_AttachFX.m_Link;
+		if (!m_AttachFX.m_pNext) return LTNULL;
+		return m_AttachFX.m_pNext->GetElement(nIndex);
 	}
 
 	void	HandleMsg(const CParsedMsg &cMsg);
@@ -54,8 +54,10 @@ private:
 	void	CreateFX(int nIndex, CLIENTFX_LINK* pLink);
 	void	ShutdownAll();
 
-	CLIENTFX_LINK		m_Link;			// +0x0
-	CLIENTFX_LINK_NODE*	m_pAttachFX;	// +0x4
+	// RETAIL: a CLIENTFX_LINK_NODE (as NOLF2's CCharacterFX::m_AttachClientFX):
+	// its link (+0x0) is the spare link, its m_pNext (+0x4) the list. The
+	// destructor (0x101ad0f0) runs the node's destructor inline after ours.
+	CLIENTFX_LINK_NODE	m_AttachFX;		// +0x0
 	HOBJECT				m_hObject;		// +0x8
 	ModelId				m_eModelId;		// +0xc: eModelIdInvalid when none
 };

@@ -29,6 +29,7 @@
 #include "SurfaceFunctions.h"
 #include "PlayerViewAttachmentMgr.h"
 #include "MissionMgr.h"
+#include "PlayerCamera.h"
 
 #define ROUNDFLOAT(f) ((int)((f) + ((f) > 0 ? 0.5 : -0.5)))
 
@@ -2617,6 +2618,11 @@ void CVehicleMgr::KillAllVehicleSounds(HLTSOUND hException)
 
 void CVehicleMgr::OnTouchNotify(CollisionInfo *pInfo, float forceMag)
 {
+	// RETAIL: Tron's (0x1011ec20): NOLF2's snowmobile collision response
+	// (the surface, the impact checks, the characters it ran over and the
+	// touch saved for HandleCollision) is gone; the light cycle tells the
+	// player manager it hit something.
+
 	if (!pInfo->m_hObject) return;
 
 	// Cancel out the engine's velocity adjustment on touch.  We'll handle that, thank you.
@@ -2649,80 +2655,16 @@ void CVehicleMgr::OnTouchNotify(CollisionInfo *pInfo, float forceMag)
 		return;
 	}
 
-	LTPlane cPolyPlane;
-	if (pInfo->m_hPoly != INVALID_HPOLY)
-		g_pLTClient->Common()->GetPolyPlane(pInfo->m_hPoly, &cPolyPlane);
-	else
+	if (IsMainWorld(pInfo->m_hObject)) return;
+
+	uint32 dwType;
+	g_pCommonLT->GetObjectType(pInfo->m_hObject, &dwType);
+	if (dwType == OT_WORLDMODEL) return;
+
+	if (pInfo->m_hObject != g_pPlayerMgr->GetPlayerCamera()->GetCollisionObject())
 	{
-		cPolyPlane.m_Normal.Init();
+		g_pPlayerMgr->TronUnknownVirtual60();
 	}
-
-	LTVector vNormal = pInfo->m_Plane.m_Normal;
-
-	// If flat enough, we can drive on it...
-
-	if ((vNormal.y > 0.76f) || (cPolyPlane.m_Normal.y > 0.76f)) return;
-
-	// Check initial stuff so we handle object collisions properly
-
-	SurfaceType eType = ::GetSurfaceType(*pInfo);
-	SURFACE* pSurface = g_pSurfaceMgr->GetSurface(eType);
-
-	LTBOOL bIsWorld = IsMainWorld(pInfo->m_hObject);
-
-	if (g_vtVehicleCollisionInfo.GetFloat() > 0.0f)
-	{
-        g_pLTClient->CPrint("***********************************");
-        g_pLTClient->CPrint("MoveMgr Object Touch:");
-        g_pLTClient->CPrint("  Stop Vel: %.2f, %.2f, %.2f", VEC_EXPAND(pInfo->m_vStopVel));
-        g_pLTClient->CPrint("  (%s)", bIsWorld ? "WORLD" : "OBJECT");
-        g_pLTClient->CPrint("  Normal: %.2f, %.2f, %.2f", VEC_EXPAND(vNormal));
-        g_pLTClient->CPrint("  Object Type: %d", GetObjectType(pInfo->m_hObject));
-		g_pLTClient->CPrint("  Surface Type: %s", pSurface ? pSurface->szName : "No surface");
-	}
-
-	vNormal.y = 0.0f; // Don't care about this anymore...
-
-
-	// Determine the current percentage of our max velocity we are
-	// currently moving...
-
-	LTVector vVel = g_pMoveMgr->GetVelocity();
-	vVel.y = 0.0f;
-
-	LTFLOAT fVelPercent = GetVehicleMovementPercent();
-
-	if (g_vtVehicleCollisionInfo.GetFloat() > 0.0f)
-	{
-		g_pLTClient->CPrint("Calculated Velocity Percent: %.2f", fVelPercent);
-	}
-
-
-	// Hit objects
-
-	if (!bIsWorld && pInfo->m_hObject)
-	{
-		uint32 dwUserFlags = 0;
-		g_pCommonLT->GetObjectFlags(pInfo->m_hObject, OFT_User, dwUserFlags);
-
-		if (dwUserFlags & USRFLG_CHARACTER)
-		{
-			if (fVelPercent > g_vtVehicleImpactAIDamageVelPercent.GetFloat())
-			{
-				// Make sure we're pointing at the correct surface type...
-
-				pSurface = g_pSurfaceMgr->GetSurface(ST_FLESH);
-
-				if ( HandleCharacterTouch( pInfo->m_hObject ) )
-				{
-					return;
-				}
-			}
-		}
-	}
-
-	m_bWasTouched = true;
-	m_cLastTouchInfo = *pInfo;
 }
 	
 // ----------------------------------------------------------------------- //
@@ -3038,424 +2980,9 @@ void CVehicleMgr::HandleNodeControl(HOBJECT hObj, HMODELNODE hNode, LTMatrix *pG
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CVehicleMgr::CalculateBankingVehicleRotation()
-//
-//	PURPOSE:	Calculate the new player/camera rotation values for 
-//				banking vehicles.
-//
-// ----------------------------------------------------------------------- //
 
-void CVehicleMgr::CalculateBankingVehicleRotation(LTVector & vPlayerPYR,
-										   LTVector & vPYR, LTFLOAT fYawDelta)
-{
-	if (g_vtSnowmobileInfoTrack.GetFloat() >= SNOW_TRACK_VERBOSE)
-	{
-		g_pLTClient->CPrint("SNOWMOBILE VERBOSE INFO:");
-		g_pLTClient->CPrint("Initial vPlayerPYR.y	= %.2f", vPlayerPYR.y);
-		g_pLTClient->CPrint("Initial vPYR.y			= %.2f", vPYR.y);
-		g_pLTClient->CPrint("Initial fYawDelta		= %.2f", fYawDelta);
-		g_pLTClient->CPrint("Initial m_fYawDiff		= %.2f", m_fYawDiff);
-	}
 
-	// Don't allow pitch in camera angle.
-	vPYR.x = 0.0f;
 
-	vPlayerPYR.x = 0.0f;
-	vPlayerPYR.z = vPYR.z;
-
-	LTFLOAT fOffset		= DEG2RAD(g_vtVehicleMouseMinYawBuffer.GetFloat());
-	LTFLOAT fMaxOffset	= DEG2RAD(g_vtVehicleMouseMaxYawBuffer.GetFloat());
-
-	LTFLOAT fAdjustedYawDelta = g_vtVehicleInitialTurnRate.GetFloat() * g_pGameClientShell->GetFrameTime();;
-
-
-	// If we're playing the select or deselect anis, don't allow us to turn...
-
-	LTBOOL bIsDone = LTFALSE;
-	if (IsCurVehicleAni("Deselect", bIsDone) || IsCurVehicleAni("Select", bIsDone))
-	{
-		fYawDelta = 0.0f;
-		m_bKeyboardTurning = LTFALSE;
-		m_dwControlFlags &= ~BC_CFLG_STRAFE_LEFT;
-		m_dwControlFlags &= ~BC_CFLG_LEFT;
-		m_dwControlFlags &= ~BC_CFLG_STRAFE_RIGHT;
-		m_dwControlFlags &= ~BC_CFLG_RIGHT;
-	}
-
-	if (fYawDelta)
-	{
-		m_bKeyboardTurning = LTFALSE;
-	}
-
-	// See if we are turning (using the keyboard)...
-
-	if ((m_dwControlFlags & BC_CFLG_STRAFE_LEFT) || (m_dwControlFlags & BC_CFLG_LEFT))
-	{
-		m_bKeyboardTurning = LTTRUE;
-		fYawDelta = -fAdjustedYawDelta;
-	}
-	else if ((m_dwControlFlags & BC_CFLG_STRAFE_RIGHT) || (m_dwControlFlags & BC_CFLG_RIGHT))
-	{
- 		m_bKeyboardTurning = LTTRUE;
-		fYawDelta = fAdjustedYawDelta;
-	}
-	else
-	{
-		// If we were turning with the keyboard automatically adjust back to
-		// center...
-
-		if (m_bKeyboardTurning)
-		{
-			switch (m_eMouseTurnDirection)
-			{
-				case TD_LEFT :
-				{
- 					fYawDelta = fAdjustedYawDelta;
-				}
-				break;
-
-				case TD_RIGHT :
-				{
-					fYawDelta = -fAdjustedYawDelta;
-				}
-				break;
-
-				default :
-				case TD_CENTER :
-				{
-					if (m_fYawDiff > 0.0f)
-					{
-						fYawDelta = -fAdjustedYawDelta;
-					}
-					else if (m_fYawDiff < -fOffset)
-					{
-						fYawDelta = fAdjustedYawDelta;
-					}
-				}
-				break;
-			}
-		}
-	}
-
-
-	// Use our last calculated yaw delta for the amount to turn
-	// (if it is greater than our min turn rate)...
-
-	if (fYawDelta)
-	{
-		// [KLS 6/29/02] - If we're not turning with the keyboard, use the passed in
-		// yaw delta if it is less than the calcuated fAdjustedYawDelta...
-
-		if (!m_bKeyboardTurning)
-		{
-			float fPosYawDelta = (float)fabs(fYawDelta);
-			fAdjustedYawDelta = ((fPosYawDelta < fAdjustedYawDelta) ? fPosYawDelta : fAdjustedYawDelta);
-		}
-		else if (m_fYawDelta > fAdjustedYawDelta)
-		{
-			fAdjustedYawDelta = m_fYawDelta;
-		}
-
-		fAdjustedYawDelta = (fYawDelta > 0.0f ? fAdjustedYawDelta : -fAdjustedYawDelta);
-
-		if (g_vtSnowmobileInfoTrack.GetFloat() >= SNOW_TRACK_VERBOSE)
-		{
-			g_pLTClient->CPrint("fAdjustedYawDelta		= %.2f", fAdjustedYawDelta);
-		}
-		
-		m_fYawDiff += fAdjustedYawDelta;
-	}
-
-	// Depending on the direction we are turning, cap our yaw difference (from center)
-	// and determine if the direciton we're turning changed...
-
-	switch (m_eMouseTurnDirection)
-	{
-		case TD_LEFT :
-		{
-			if (m_fYawDiff < -fMaxOffset)
-			{
-				m_fYawDiff = -fMaxOffset;
-			}
-			else if (m_fYawDiff > -fOffset)
-			{
-				m_eMouseTurnDirection = TD_CENTER;
-			}
-		}
-		break;
-
-		case TD_RIGHT :
-		{
-			if (m_fYawDiff > fMaxOffset)
-			{
-				m_fYawDiff = fMaxOffset;
-			}
-			else if (m_fYawDiff < fOffset)
-			{
-				m_eMouseTurnDirection = TD_CENTER;
-			}
-		}
-		break;
-
-		default :
-		case TD_CENTER :
-		{
-			if (m_fYawDiff > fOffset)
-			{
-				m_eMouseTurnDirection = TD_RIGHT;
-			}
-			else if (m_fYawDiff < -fOffset)
-			{
-				m_eMouseTurnDirection = TD_LEFT;
-			}
-		}
-		break;
-	}
-
-	// For now assume we aren't turning...
-
-	m_nVehicleTurnDirection = 0;
-    m_bVehicleTurning = LTFALSE;
-
-
-	if (fYawDelta != 0.0f || m_eMouseTurnDirection != TD_CENTER)
-	{
-		m_bVehicleTurning = LTTRUE;
-
-		if (m_eMouseTurnDirection != TD_CENTER)
-		{
-			m_nVehicleTurnDirection = (m_eMouseTurnDirection == TD_LEFT ? -1 : 1);
-		}
-		else if (fYawDelta != 0.0f)
-		{
-			m_nVehicleTurnDirection = (fYawDelta < 0.0f ? -1 : 1);
-		}
-	}
-
-
-	// Calculate the player's yaw...
-
-	if (m_bVehicleTurning)
-	{
-        LTFLOAT fTurnRate = g_vtVehicleTurnRate.GetFloat();
-
-	    m_fYawDelta = fTurnRate * g_pGameClientShell->GetFrameTime();
-
-		// Scale how fast we turn based on how close to center the
-		// "steering wheel" is...
-		float fSteeringOffset = ( fMaxOffset == 0.0f ) ? 1.0f : fMaxOffset;
-		LTFLOAT fScale = (LTFLOAT)fabs(m_fYawDiff) / fSteeringOffset;
-		fScale = WaveFn_SlowOn(fScale);
-
-		m_fYawDelta *= fScale;
-
-		// Scale the rate based on use input...
-
-		m_fYawDelta *= g_vtVehicleTurnRateScale.GetFloat();
-
-		if (g_vtSnowmobileInfoTrack.GetFloat() >= SNOW_TRACK_VERBOSE)
-		{
-			g_pLTClient->CPrint("Final m_fYawDelta		= %.2f", m_fYawDelta);
-		}
-
-		// Set the player's new yaw...
-
-		if (!m_bVehicleStopped)
-		{
-			vPlayerPYR.y += (m_fYawDelta * m_nVehicleTurnDirection);
-		}
-	}
-
-	// Keep the camera and player pitch/yaw/roll in sync...
-
-	vPYR.y = vPlayerPYR.y;
-
-	if (g_vtSnowmobileInfoTrack.GetFloat() >= SNOW_TRACK_VERBOSE)
-	{
-		g_pLTClient->CPrint("Final vPlayerPYR.y		= %.2f", vPlayerPYR.y);
-		g_pLTClient->CPrint("Final vPYR.y			= %.2f", vPYR.y);
-	}
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CVehicleMgr::CalculateLureVehicleRotation()
-//
-//	PURPOSE:	Calculate the new player/camera rotation for lure.
-//
-// ----------------------------------------------------------------------- //
-
-// Limits the angle to a -PI to PI range.
-static inline float LimitToPosNegPi( float fAngle )
-{
-	// Copy the angle and make sure it's under 2 pi.
-	float fNewAngle = ( float )fmod( fAngle, MATH_CIRCLE );
-
-	if( fNewAngle > MATH_PI )
-		fNewAngle = fNewAngle - MATH_CIRCLE;
-	else if( fNewAngle < -MATH_PI )
-		fNewAngle = fNewAngle + MATH_CIRCLE;
-	
-	return fNewAngle;
-}
-
-
-void CVehicleMgr::CalculateLureVehicleRotation(LTVector & vPlayerPYR,
-										   LTVector & vPYR )
-{
-	// Get the playerlurefx.  It has all of the data about the lure.
-	PlayerLureFX* pPlayerLureFX = PlayerLureFX::GetPlayerLureFX( m_nPlayerLureId );
-	if( !pPlayerLureFX )
-	{
-		ASSERT( !"CVehicleMgr::CalculateLureVehicleRotation: Missing PlayerLureFX." );
-		return;
-	}
-/*
-	// Check if the camera has unlimited freedom.
-	if( pPlayerLureFX->GetCameraFreedom( ) == kPlayerLureCameraFreedomUnlimited )
-	{
-		// Use the camera's euler angles as the object's euler angles.
-		vPlayerPYR = vPYR;
-
-		// Don't allow pitch, though.
-		vPlayerPYR.x = 0.0f;
-
-		return;
-	}
-
-*/	// Get the client player object.
-	HOBJECT hObj = g_pMoveMgr->GetObject( );
-	if( !hObj )
-	{
-		ASSERT( !"CVehicleMgr::CalculateLureVehicleRotation:  Missing client-side player object." );
-		return;
-	}
-
-	// Get the rotation of the client object, which has been set by MoveToLure.
-	// We need to rotation to calculate the euler angles for the restricted camera.
-    LTRotation rRot;
-	g_pLTClient->GetObjectRotation( hObj, &rRot );
-
-	// Get the yaw for the restricted rotation.
-	LTVector vForward = rRot.Forward( );
-	vForward.Normalize( );
-	float fYaw = ( float )atan2( vForward.x, vForward.z );
-
-	// Figure out the length of the foward vector projected on the xz plane.  This
-	// is needed because Euler angles are calculated cummulatively, not just based
-	// on the global coordinate axis.
-	float fXZLen = ( float )sqrt( 1.0f - vForward.y * vForward.y );
-
-	// Use xzlen to find out the pitch.
-	float fPitch = -( float )atan2( vForward.y, fXZLen );
-
-	// Set the player's euler angles.  Don't allow roll.
-	vPlayerPYR.x = fPitch;
-	vPlayerPYR.y = fYaw;
-	vPlayerPYR.z = 0.0f;
-
-	// Check if the camera has unlimited freedom.
-	if( pPlayerLureFX->GetCameraFreedom( ) != kPlayerLureCameraFreedomUnlimited )
-	{
-		// Get the max pitch and yaw allowed for this lure.
-		float fPitchMax = 0.0f;
-		float fPitchMin = 0.0f;
-		float fYawMax = 0.0f;
-		float fYawMin = 0.0f;
-		switch( pPlayerLureFX->GetCameraFreedom( ))
-		{
-			case kPlayerLureCameraFreedomLimited:
-				// Convert the left/right/up/down angles to min/max's in radians.
-				pPlayerLureFX->GetLimitedRanges( fYawMin, fYawMax, fPitchMax, fPitchMin );
-
-				// Convert over to radians.  Have to negate the values for pitch since it 
-				// works opposite intuitive values.
-				fYawMin = ( fYawMin * MATH_PI ) / 180.0f;
-				fYawMax = ( fYawMax * MATH_PI ) / 180.0f;
-				fPitchMax = ( -fPitchMax * MATH_PI ) / 180.0f;
-				fPitchMin = ( -fPitchMin * MATH_PI ) / 180.0f;
-				break;
-			case kPlayerLureCameraFreedomNone:
-				fPitchMax = 0.0f;
-				fPitchMin = 0.0f;
-				fYawMax = 0.0f;
-				fYawMin = 0.0f;
-				break;
-			default:
-				ASSERT( !"CVehicleMgr::CalculateLureVehicleRotation: Invalid camera freedom enum." );
-				break;
-		}
-
-		// Clamp the pitch and yaw.  Don't allow roll, since the camera can't roll anyway.
-		// Make sure the differences are between -PI and PI so they are usable.  Otherwise
-		// we could think we have a large difference with say -PI and PI, which looks
-		// like a difference of 2PI, when it's actually zero.
-		LTVector vDiff = vPYR - vPlayerPYR;
-		vDiff.x = LimitToPosNegPi( vDiff.x );
-		vDiff.y = LimitToPosNegPi( vDiff.y );
-		vDiff.x = Clamp( vDiff.x, fPitchMin, fPitchMax );
-		vDiff.y = Clamp( vDiff.y, fYawMin, fYawMax );
-		vDiff.z = 0.0f;
-
-		// Set the new camera euler angles.
-		vPYR = vPlayerPYR + vDiff;
-	}
-
-	// Set the camera roll to lure's roll.
-	LTRotation	rPlayerRot( vPlayerPYR.x, vPlayerPYR.y, vPlayerPYR.z );
-	LTVector	vPlayerF = rPlayerRot.Forward();
-	vPlayerF.y = 0.0f;
-	vPlayerF.Normalize();
-
-	float fAmount;
-	float fPitchPercent;
-	float fRollPercent;
-	GetContouringInfo( vPlayerF, rRot.Up( ), fAmount, fPitchPercent, fRollPercent );
-
-	vPYR.z = fAmount * fRollPercent;
-
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CVehicleMgr::CalculateVehicleRotation()
-//
-//	PURPOSE:	Calculate the new player/camera rotation.
-//
-// ----------------------------------------------------------------------- //
-
-void CVehicleMgr::CalculateVehicleRotation(LTVector & vPlayerPYR,
-										   LTVector & vPYR, LTFLOAT fYawDelta)
-{
-	// Do movement based on physics model.
-	switch( m_ePPhysicsModel )
-	{
-		// These guys don't handle movement.
-		case PPM_SNOWMOBILE:
-			CalculateBankingVehicleRotation( vPlayerPYR, vPYR, fYawDelta );
-			CalculateVehicleContourRotation( vPlayerPYR, vPYR );
-			break;
-
-		case PPM_LURE:
-			CalculateLureVehicleRotation( vPlayerPYR, vPYR );
-			break;
-
-		case PPM_LIGHTCYCLE:
-			CalculateLightCycleRotation( vPlayerPYR, vPYR );
-			break;
-
-		case PPM_NORMAL:
-			return;
-			break;
-
-		default:
-			ASSERT( !"CVehicleMgr::MoveLocalSolidObject: Invalid physics model." );
-			break;
-	}
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -3579,162 +3106,6 @@ void CVehicleMgr::CalculateVehicleCameraDisplacment( LTVector& vDisplacement )
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CVehicleMgr::CalculateVehicleContourRotation
-//
-//  PURPOSE:	Calculate the rotation of the vehicle so it conforms to the ground normal
-//
-// ----------------------------------------------------------------------- //
-
-void CVehicleMgr::CalculateVehicleContourRotation( LTVector &vPlayerPYR, LTVector &vPYR )
-{
-	if ( g_vtVehicleContour.GetFloat() < 1.0f ) 
-	{
-		// Don't do vehicle contouring...Rest our roll values...
-
-		vPlayerPYR.z   = 0.0f;
-		m_fContourRoll = 0.0f;
-		return;
-	}
-
-	// Just use the previous rotation if we are in the air from a jumpvolume...
-	
-	if( m_bHaveJumpVolumeVel && !g_pMoveMgr->IsOnGround() )
-	{
-		vPlayerPYR	= m_vLastPlayerAngles;
-		vPYR		= m_vLastCameraAngles;
-
-		return;
-	}
-
-
-	// We are assuming that while on a vehicle the only roll will come from the vehicle,
-	// so set the player roll to nothing.
-
-	vPlayerPYR.z = 0.0f;
-
-	// Get the new forward and right of the player...
-
-	LTRotation	rPlayerRot( vPlayerPYR.x, vPlayerPYR.y, vPlayerPYR.z );
-	LTVector	vPlayerF = rPlayerRot.Forward();
-			
-	vPlayerF.y = 0.0f;
-	vPlayerF.Normalize();
-
-	LTVector vPlayerR = vPlayerF.Cross( LTVector( 0, 1, 0 ));
-	vPlayerR.Normalize();
-
-	
-	LTVector vNormal, vModelNormal;
-
-
-	// Depending on how many points we want get the appropriate values...
-
-	if( g_vtVehicleContourPoints.GetFloat() < 2.0f )
-	{
-		// Get the normal directly under us and use that to calculate our pitch and roll
-		// NOTE: Works well when the vehicle is covering a single normal but "snaps" to the
-		//		 new pitch and roll when moving from one normal to another.
-	
-		vNormal = g_pMoveMgr->GetGroundNormal();
-	}
-	else
-	{
-		// Get the normals under the 4 corners of the vehicle and average them toghether 
-		// to get the normal we should use.  This helps smooth out the transition between 
-		// two or more planes.
-
-		HOBJECT		hObj = g_pMoveMgr->GetObject();
-		LTVector	vDims, vPos;
-		
-		HOBJECT		hFilter[] = { g_pLTClient->GetClientObject(), hObj, LTNULL };
-		
-		g_pLTClient->GetObjectPos( hObj, &vPos );
-		g_pPhysicsLT->GetObjectDims( hObj , &vDims );
-
-		LTVector	vForward = vPlayerF * (vDims.z + g_vtVehicleContourExtraDimsZ.GetFloat());
-		LTVector	vRight = vPlayerR * (vDims.x + g_vtVehicleContourExtraDimsX.GetFloat());
-		vModelNormal = GetContouringNormal( vPos, vDims, vForward, vRight, hFilter );
-
-		vForward = vPlayerF * (vDims.z + g_vtVehicleCamContourExtraDimsZ.GetFloat());
-		vRight	= vPlayerR * (vDims.x + g_vtVehicleCamContourExtraDimsX.GetFloat());
-		vNormal = GetContouringNormal( vPos, vDims, vForward, vRight, hFilter );
-	}
-
-
-	// Calculate how much pitch and roll we should apply...
-
-	float fPitchPercent, fModelPitchPercent;
-	float fRollPercent, fModelRollPercent;
-	float fAmount, fModelAmount;
-
-	GetContouringInfo( vPlayerF, vNormal, fAmount, fPitchPercent, fRollPercent );
-	GetContouringInfo( vPlayerF, vModelNormal, fModelAmount, fModelPitchPercent, fModelRollPercent );
-
-	// Save the roll we are applying so the canting can use it...
-	m_fContourRoll = fAmount * fRollPercent;
-
-	vPlayerPYR.x += fAmount * fPitchPercent;
-	vPlayerPYR.z += m_fContourRoll;
-
-	vPYR.x += vPlayerPYR.x;
-	vPYR.z += vPlayerPYR.z;
-
-	if (g_vtVehicleContourPlayerViewModel.GetFloat())
-	{
-		m_vVehiclePYR.x = (fModelAmount * fModelPitchPercent) - (fAmount * fPitchPercent);
-		m_vVehiclePYR.z	= (fModelAmount * fModelRollPercent) - (fAmount * fRollPercent);
-	}
-
-	// [KLS 6/29/02] - Interpolate our position over time (don't just snap there)...
-
-	if (m_bSetLastAngles)
-	{
-		float fInterpolationTime = g_vtVehicleContourRate.GetFloat();
-		float fCameraYSave = vPYR.y;
-		float fPlayerYSave = vPlayerPYR.y;
-		float fVehicleYSave = m_vVehiclePYR.y;
-
-		LTVector vInterpolated;
-		VEC_LERP(vInterpolated, m_vLastCameraAngles, vPYR, fInterpolationTime);
-		vPYR = vInterpolated;
-		vPYR.y = fCameraYSave;
-
-		VEC_LERP(vInterpolated, m_vLastPlayerAngles, vPlayerPYR, fInterpolationTime);
-		vPlayerPYR = vInterpolated;
-		vPlayerPYR.y = fPlayerYSave;
-
-		VEC_LERP(vInterpolated, m_vLastVehiclePYR, m_vVehiclePYR, fInterpolationTime);
-		m_vVehiclePYR = vInterpolated;
-		m_vVehiclePYR.y = fVehicleYSave;
-	}
-
-
-	// Clamp all the values 
-	
-	float fClamp = g_vtVehicleContourMaxRotation.GetFloat();
-
-	vPlayerPYR.x = Clamp( vPlayerPYR.x, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-	vPlayerPYR.z = Clamp( vPlayerPYR.z, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-	vPYR.x = Clamp( vPYR.x, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-	vPYR.z = Clamp( vPYR.z, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-
-	// These are relative to the camera so keep them small...
-
-	fClamp = g_vtVehicleCamContourMaxRotation.GetFloat();
-
-	if (g_vtVehicleContourPlayerViewModel.GetFloat())
-	{
-		m_vVehiclePYR.x = Clamp( m_vVehiclePYR.x, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-		m_vVehiclePYR.z = Clamp( m_vVehiclePYR.z, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-	}
-
-	m_vLastPlayerAngles = vPlayerPYR;
-	m_vLastCameraAngles = vPYR;
-	m_vLastVehiclePYR	= m_vVehiclePYR;
-	m_bSetLastAngles	= true;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -4204,67 +3575,6 @@ void CVehicleMgr::UpdateInJumpVolume()
 		m_hCurJumpVolume = LTNULL;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CVehicleMgr::HandleCharacterTouch
-//
-//  PURPOSE:	Handle hitting a characer...
-//
-// ----------------------------------------------------------------------- //
-
-bool CVehicleMgr::HandleCharacterTouch( HOBJECT hCharacter )
-{
-	if( !hCharacter ) return false;
-
-	LTFLOAT fVelPercent = GetVehicleMovementPercent();
-	LTFLOAT fDamage		= g_vtVehicleImpactAIMinDamage.GetFloat();
-	LTFLOAT fMaxDamage	= g_vtVehicleImpactAIMaxDamage.GetFloat();
-	LTFLOAT fDamRange	= fMaxDamage - fDamage;
-
-	fDamage += (fDamRange * fVelPercent);
-
-	LTVector vPos;
-	g_pLTClient->GetObjectPos(hCharacter, &vPos);
-
-	// Get our forward vector...
-
-	HOBJECT hObj = g_pMoveMgr->GetObject();
-	LTRotation rRot;
-	g_pLTClient->GetObjectRotation(hObj, &rRot);
-	
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_PLAYER_CLIENTMSG);
-	cMsg.Writeuint8(CP_DAMAGE_VEHICLE_IMPACT);
-	cMsg.Writeuint8(DT_EXPLODE);
-	cMsg.Writefloat(fDamage);
-	cMsg.WriteLTVector(rRot.Forward());
-	cMsg.WriteLTVector(vPos);
-	cMsg.Writeuint8(0);
-	cMsg.WriteObject(hCharacter);
-	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
-
-	if (fDamage > (g_vtVehicleImpactAIMaxDamage.GetFloat() * 0.75f))
-	{
-		// Pop a little wheely...
-
-		CameraDelta delta;
-		delta.Pitch.fVar	= -DEG2RAD(5.0f);
-		delta.Pitch.fTime1	= 0.1f;
-		delta.Pitch.fTime2	= 0.3f;
-		delta.Pitch.eWave1	= Wave_SlowOff;
-		delta.Pitch.eWave2	= Wave_SlowOff;
-		g_pPlayerMgr->GetCameraOffsetMgr()->AddDelta(delta);
-	}
-
-	// Should we continue processing the collision?
-
-	if (!g_vtVehicleImpactAIDoNormalCollision.GetFloat())
-	{
-		return true;
-	}
-	
-	return false;
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -4278,6 +3588,7 @@ bool CVehicleMgr::HandleCharacterTouch( HOBJECT hCharacter )
 // (+0x2134), not the control flags.
 void CVehicleMgr::UpdateLightCycleControlFlags()
 {
+	// RETAIL: 0x10121920. Turning only: the cycle always moves forward.
 	m_bTurned = false;
 
 	if (g_pLTClient->IsCommandOn(COMMAND_ID_LEFT))
@@ -4339,14 +3650,78 @@ void CVehicleMgr::UpdateLightCycleMotion()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CVehicleMgr::CalculateLightCycleRotation
+//	ROUTINE:	CVehicleMgr::CalculateVehicleRotation()
 //
-//	PURPOSE:	Handles the rotation of the light cycle
+//	PURPOSE:	Calculate the new player/camera rotation.
+//
+//	RETAIL: Tron's (0x101219b0) is the light cycle's: the player faces the
+//	cycle's direction and the camera yaw follows it, after a lag once the
+//	player turns. NOLF2's banking, lure and contouring rotations are gone.
 //
 // ----------------------------------------------------------------------- //
-void CVehicleMgr::CalculateLightCycleRotation(LTVector & vPlayerPYR,
-										   LTVector & vPYR )
+
+void CVehicleMgr::CalculateVehicleRotation(LTVector & vPlayerPYR,
+										   LTVector & vPYR, LTFLOAT fYawDelta)
 {
+	if (fYawDelta != 0.0f && m_fLightCycleCamLag > 0.0f)
+	{
+		m_TronUnknownTimer2160.Start(m_fLightCycleCamLag);
+	}
+
+	// RETAIL: retail passes the vector's address in the int argument
+	g_pPlayerMgr->TronUnknownVirtual6C((int)&m_vTronUnknown2128);
+	vPlayerPYR = m_vTronUnknown2128;
+
+	LTRotation rRot(vPlayerPYR.x, vPlayerPYR.y, vPlayerPYR.z);
+	g_pLTClient->SetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+
+	float fYaw = vPYR.y;
+	WrapAngleToCircle(fYaw);
+
+	bool bSnap = false;
+	if (m_fLightCycleCamLag == 0.0f && g_pPlayerMgr->IsFirstPerson() &&
+		(m_dwControlFlags & (BC_CFLG_RIGHT | BC_CFLG_LEFT)))
+	{
+		if (!m_bTronUnknown2170)
+		{
+			bSnap = true;
+		}
+	}
+	else
+	{
+		m_bTronUnknown2170 = false;
+	}
+
+	if (g_pPlayerMgr->IsFirstPerson())
+	{
+		float fTarget = m_vTronUnknown2128.y;
+		float fDiff = (float)fabs(fTarget - fYaw);
+		if (fDiff > MATH_PI)
+		{
+			fDiff = MATH_CIRCLE - fDiff;
+		}
+
+		if (fDiff > MATH_HALFPI)
+		{
+			TurnAngleTowards(fYaw, fTarget, fDiff - MATH_HALFPI);
+			if (bSnap)
+			{
+				vPYR.y = fYaw;
+				return;
+			}
+		}
+	}
+
+	if (bSnap) return;
+
+	if (m_TronUnknownTimer2160.Stopped() && m_fLightCycleCamLag >= 0.0f)
+	{
+		TurnAngleTowards(fYaw, m_vTronUnknown2128.y, g_pLTClient->GetFrameTime() * m_fLightCycleCamSpeed);
+		if (!g_pPlayerMgr->GetTronUnknown1D8())
+		{
+			vPYR.y = fYaw;
+		}
+	}
 }
 
 LTBOOL CVehicleMgr::OnCommandOn(int command)

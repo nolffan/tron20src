@@ -69,18 +69,6 @@ void CHUDPopup::Term()
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CHUDPopup::Hide
-//
-//  PURPOSE:	NONE
-//
-// ----------------------------------------------------------------------- //
-
-void CHUDPopup::Hide( )
-{
-	m_bVisible = LTFALSE;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -133,45 +121,3 @@ void CHUDPopup::SetScale(float fScale)
 	m_fScale = fScale;
 }
 
-
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CHUDPopup::Show
-//
-//  PURPOSE:	Display the popup with the passed in text...
-//
-// ----------------------------------------------------------------------- //
-
-void CHUDPopup::Show( uint8 nPopupID, const char *pText )
-{
-	POPUP* pPopup = g_pPopupMgr->GetPopup(nPopupID);
-	if (!pPopup) return;
-
-	CUIFont *pFont = g_pInterfaceResMgr->GetFont(pPopup->nFont);
-	LTIntPt pos( (640 - pPopup->sSize.x) / 2, (480 - pPopup->sSize.y) / 2 );
-
-	m_Frame.SetFrame(g_pInterfaceResMgr->GetTexture(pPopup->szFrame));
-	m_Frame.SetSize(pPopup->sSize.x,pPopup->sSize.y);
-	m_Frame.SetBasePos(pos);
-	m_Frame.SetScale(g_pInterfaceResMgr->GetXRatio());
-
-	pos.x += pPopup->sTextOffset.x;
-	pos.y += pPopup->sTextOffset.y;
-
-	m_Text.SetScale(1.0f);
-
-	m_Text.SetString( (pText ? pText : "") );
-
-	m_Text.SetFont(pFont,pPopup->nFontSize);
-
-	if( !m_bColorOverride )
-		m_Text.SetColors(pPopup->argbTextColor,pPopup->argbTextColor,pPopup->argbTextColor);
-
-	m_bColorOverride = LTFALSE;
-	
-	m_Text.SetFixedWidth(pPopup->nTextWidth);
-	m_Text.SetBasePos(pos);
-	m_Text.SetScale(g_pInterfaceResMgr->GetXRatio());
-
-	m_bVisible = LTTRUE;
-}

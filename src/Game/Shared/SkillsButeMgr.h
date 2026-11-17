@@ -218,13 +218,11 @@ public :
 
 	bool		IsAvailable(eSkill skl) {return (m_nCosts[skl][SKL_AMATEUR] > 0);}
 
+	// RETAIL: not in CShell.dll (SkillsButeMgr.cpp); Object.lto's CSkills
+#ifndef _CLIENTBUILD
 	const float*			GetModifiers(eSkill skl, eSkillLevel lvl);
 	float					GetModifier(eSkill skl, eSkillLevel lvl, uint8 nMod);
 	uint8					GetNumModifiers(eSkill skl);
-
-#ifdef _CLIENTBUILD
-	uint16					GetModifierNameId(eSkill skl, uint8 nMod);
-	uint16					GetModifierDescriptionId(eSkill skl, uint8 nMod);
 #endif
 
 	// RETAIL: build 51's per-skill accessors, which Tron's CTronPlayerStats

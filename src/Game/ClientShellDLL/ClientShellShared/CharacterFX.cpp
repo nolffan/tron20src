@@ -183,33 +183,8 @@ LTBOOL CCharacterFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	m_HitBox.Init( m_hServerObject, m_cs.vHitBoxDims, m_cs.vHitBoxOffset );
 
-	// Add to radar if tracking...
-	if( m_cs.bRadarVisible )
-	{
-		if( m_cs.bIsPlayer )
-		{
-			if( IsMultiplayerGame( ))
-			{
-				if (g_pRadar) g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
-			}
-		}
-		else
-		{
-			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
-		}
-	}
-
-	if( m_cs.bTracking )
-	{
-		if( m_cs.bIsPlayer )
-		{
-			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
-		}
-		else
-		{
-			if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
-		}
-	}
+	// RETAIL: Tron has no radar (no CHUDRadar in CShell.dll): NOLF2 added
+	// radar and tracked characters to it here.
 
 	UpdateAttachments();
 
@@ -2141,65 +2116,6 @@ void CCharacterFX::UpdateMultiVehicleSounds()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CCharacterFX::UpdateVehicleContour
-//
-//	PURPOSE:	Update the contouring to terain on the vehicle...
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::UpdateVehicleContour( LTRotation &rCharacterRot )
-{
-	if( !m_bOnVehicle || !m_cs.bIsPlayer )
-		return;
-
-	// Get the normals under the 4 corners of the vehicle and average them toghether 
-	// to get the normal we should use.  This helps smooth out the transition between 
-	// two or more planes.
-
-	LTVector	vNormal, vModelPYR;
-	LTVector	vDims, vPos;
-
-	LTRotation	rRot = rCharacterRot;
-
-	LTVector	vPlayerF = rRot.Forward();
-	LTVector	vPlayerR = rRot.Right();
-	
-	// Keep the yaw from the original rotation...
-
-	float		fYaw = (float)atan2( vPlayerF.x, vPlayerF.z );
-	
-	HOBJECT		hFilter[] = { m_hServerObject, LTNULL };
-	
-	g_pLTClient->GetObjectPos( m_hServerObject, &vPos );
-	g_pPhysicsLT->GetObjectDims( m_hServerObject, &vDims );
-
-	LTVector	vForward = vPlayerF * (vDims.z + g_vtVehicleContourExtraDimsZ.GetFloat());
-	LTVector	vRight = vPlayerR * (vDims.x + g_vtVehicleContourExtraDimsX.GetFloat());
-	vNormal = GetContouringNormal( vPos, vDims, vForward, vRight, hFilter );
-
-	// Calculate how much pitch and roll we should apply...
-
-	float fPitchPercent, fRollPercent, fAmount;
-	GetContouringInfo( vPlayerF, vNormal, fAmount, fPitchPercent, fRollPercent );
-
-	float fClamp = g_vtVehicleContourMaxRotation.GetFloat();
-
-	vModelPYR.x = fAmount * fPitchPercent;
-	vModelPYR.z	= fAmount * fRollPercent;
-
-	vModelPYR.x = Clamp( vModelPYR.x, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-	vModelPYR.y	= fYaw;
-	vModelPYR.z	= Clamp( vModelPYR.z, MATH_DEGREES_TO_RADIANS( -fClamp ), MATH_DEGREES_TO_RADIANS( fClamp ));
-
-	LTRotation rModelRot( vModelPYR.x, vModelPYR.y, vModelPYR.z );
-
-	// Set the new modified contour rotation...
-	
-	rCharacterRot = rModelRot;
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CCharacterFX::OnServerMessage
 //
 //	PURPOSE:	Handle any messages from our server object...
@@ -2290,12 +2206,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		case CFX_CLIENTID_MSG:
 		{
             m_cs.nClientID = pMsg->Readuint8();
-			if( g_pGameClientShell->ShouldUseRadar() )
-			{
-				if (g_pRadar) g_pRadar->UpdatePlayerID( m_hServerObject, m_cs.nClientID );
-			}
-
-
+			// RETAIL: no radar to update (NOLF2's CHUDRadar::UpdatePlayerID)
 		}
 		break;
 
@@ -2452,14 +2363,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			if( m_cs.bIsPlayer && IsMultiplayerGame() && g_pGameClientShell->ShouldUseRadar() )
 			{
 				m_bPlayerDead = true;
-				if (m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,true);
-				}
-				else if (m_cs.bTracking)
-				{
-					if (g_pRadar) g_pRadar->RemoveObject(m_hServerObject);
-				}
+				// PORT: NOLF2 told its radar here; Tron has none
 			}
 
 			ShutdownDamageFX();
@@ -2471,10 +2375,6 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			if( m_cs.bIsPlayer && IsMultiplayerGame() && g_pGameClientShell->ShouldUseRadar() )
 			{
 				m_bPlayerDead = false;
-				if (m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,false);
-				}
 			}
 		}
 		break;
@@ -2484,10 +2384,6 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			if( m_cs.bIsPlayer && IsMultiplayerGame() && g_pGameClientShell->ShouldUseRadar())
 			{
 				m_bPlayerDead = false;
-				if (m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->SetPlayerDead(m_hServerObject,false);
-				}
 			}
 		}
 		break;
@@ -2495,50 +2391,14 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		case CFX_CHARACTER_RADAR:
 		{
 			m_cs.bRadarVisible = pMsg->Readbool();
-
-			if( m_cs.bRadarVisible )
-			{
-				if( m_cs.bIsPlayer )
-					if (g_pRadar) g_pRadar->AddPlayer( m_hServerObject, m_cs.nClientID );
-				else
-					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
-			}
-			else
-			{
-				if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
-			}
+			// PORT: NOLF2 added or removed the character on its radar here
 		}
 		break;
 
 		case CFX_CHARACTER_TRACKING:
 		{
 			m_cs.bTracking = pMsg->Readbool();
-
-			if( m_cs.bTracking )
-			{
-				if( m_cs.bIsPlayer )
-				{
-					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_PLAYER_TRACKING, INVALID_TEAM );
-				}
-				else
-				{
-					if (g_pRadar) g_pRadar->AddObject( m_hServerObject, RADAR_AI_TRACKING, INVALID_TEAM );
-				}
-			}
-			else
-			{
-				// If we're not intended to be visible, then remove us.
-				if( !m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
-				}
-				// We need to re-add ourselves to get our tracking/team color right.
-				else
-				{
-					if (g_pRadar) g_pRadar->RemoveObject( GetServerObj( ));
-					if (g_pRadar) g_pRadar->AddPlayer( GetServerObj(), m_cs.nClientID );
-				}
-			}
+			// PORT: NOLF2 added or removed the character on its radar here
 		}
 		break;
 

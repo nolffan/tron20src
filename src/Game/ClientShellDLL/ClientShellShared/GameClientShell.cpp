@@ -2442,59 +2442,6 @@ void CGameClientShell::HandleMsgSwitchingWorldState( ILTMessage_Read* pMsg )
 	m_eSwitchingWorldsState = ( SwitchingWorldsState )pMsg->Readuint8( );
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CGameClientShell::HandleMsgMultiplayerOptions()
-//
-//	PURPOSE:	Handle server telling us the game options.
-//
-// ----------------------------------------------------------------------- //
-
-void CGameClientShell::HandleMsgMultiplayerOptions( ILTMessage_Read* pMsg )
-{
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
-	if( !pProfile )
-		return;
-
-	
-
-	uint8 nRunSpeed = pMsg->Readuint8( );
-	uint8 nScoreLimit = pMsg->Readuint8( );
-	uint8 nTimeLimit = pMsg->Readuint8( );
-	uint8 nRounds = pMsg->Readuint8();
-	bool bFriendlyFire = pMsg->Readbool( );
-	uint8 nDifficulty = pMsg->Readuint8( );
-	float fPlayerDiffFactor = pMsg->Readfloat( );
-
-	switch (m_eGameType)
-	{
-	case eGameTypeCooperative:
-		(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_bFriendlyFire = bFriendlyFire;
-		(*g_pServerOptionMgr->GetCurrent()).GetCoop().m_nDifficulty = nDifficulty;
-		break;
-	case eGameTypeDeathmatch:
-		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nRunSpeed = nRunSpeed;
-		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nScoreLimit = nScoreLimit;
-		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nTimeLimit = nTimeLimit;
-		(*g_pServerOptionMgr->GetCurrent()).GetDeathmatch().m_nRounds = nRounds;
-		break;
-	case eGameTypeTeamDeathmatch:
-		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nRunSpeed = nRunSpeed;
-		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nScoreLimit = nScoreLimit;
-		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nTimeLimit = nTimeLimit;
-		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_nRounds = nRounds;
-		(*g_pServerOptionMgr->GetCurrent()).GetTeamDeathmatch().m_bFriendlyFire = bFriendlyFire;
-		break;
-	case eGameTypeDoomsDay:
-		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nRunSpeed = nRunSpeed;
-		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nTimeLimit = nTimeLimit;
-		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_nRounds = nRounds;
-		(*g_pServerOptionMgr->GetCurrent()).GetDoomsday().m_bFriendlyFire = bFriendlyFire;
-		break;
-	}
-
-	pProfile->Save( );
-}
 
 // ----------------------------------------------------------------------- //
 //

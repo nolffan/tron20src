@@ -34,11 +34,12 @@ public:
     virtual void        Render();
     virtual void        Update();
 
+	// RETAIL: no Show or Hide in Tron (CHUDPopup is 0x10187720..0x101878f7;
+	// nothing pops it up)
+
 	//hide or show 
-	void	Show( uint8 nPopupID, const char *pText );
 
 	//close window and tell server
-	void	Hide();
 
 	void	SetScale(float fScale);
 	void	SetTextColor( uint8 nR, uint8 nG, uint8 nB, uint8 nA )

@@ -342,10 +342,6 @@ SOURCE=..\..\Shared\FXStructs.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\GadgetDisabler.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\GadgetTargetFX.cpp
 # End Source File
 # Begin Source File
@@ -435,10 +431,6 @@ SOURCE=.\HUDPaused.cpp
 # Begin Source File
 
 SOURCE=.\HUDPopup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\HUDRadar.cpp
 # End Source File
 # Begin Source File
 
@@ -724,10 +716,6 @@ SOURCE=.\PVFXMgr.cpp
 # Begin Source File
 
 SOURCE=.\RadarObjectFX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -1200,10 +1188,6 @@ SOURCE=.\FullScreenTint.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\GadgetDisabler.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\GadgetTargetFX.h
 # End Source File
 # Begin Source File
@@ -1289,10 +1273,6 @@ SOURCE=.\HUDPaused.h
 # Begin Source File
 
 SOURCE=.\HUDPopup.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\HUDRadar.h
 # End Source File
 # Begin Source File
 
@@ -1577,10 +1557,6 @@ SOURCE=.\PVFXMgr.h
 # Begin Source File
 
 SOURCE=.\RadarObjectFX.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.h
 # End Source File
 # Begin Source File
 

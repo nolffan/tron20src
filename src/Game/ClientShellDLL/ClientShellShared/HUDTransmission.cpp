@@ -38,6 +38,8 @@ void CHUDTransmission::Term()
 
 void CHUDTransmission::Render()
 {
+	// RETAIL: Tron's (0x10187510, one body with CHUDPaused::Render)
+	if (!IsEnabled()) return;
 	if (!m_Msg.IsVisible()) return;
 	m_Msg.Render();
 }
