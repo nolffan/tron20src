@@ -72,6 +72,7 @@
 #include "TriggerFX.h"
 #include "RadarObjectFX.h"
 #include "ActivateObjectFX.h"
+#include "TRON/ClientFxUserFX.h"
 
 // NOTE:  These indexes should map EXACTLY to the SFX ids defined
 // in SFXMsgIds.h...
@@ -198,6 +199,7 @@ CBankedList<CScatterFX> g_SFXBank_Scatter;
 CBankedList<CTriggerFX> g_SFXBank_Trigger;
 CBankedList<CRadarObjectFX> g_SFXBank_RadarObject;
 CBankedList<CActivateObjectFX> g_SFXBank_ActivateObject;
+CBankedList<CClientFxUserFX> g_SFXBank_ClientFxUser;	// RETAIL: Tron's (0x102710f0)
 CBankedList<CDoomsdayPieceFX> g_SFXBank_DoomsdayPiece;
 
 
@@ -708,6 +710,17 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read *pMsg)
 		}
 		break;
 
+		// RETAIL: Tron's (0x10105084..)
+		case SFX_LIGHTCYCLE_ID:
+		case SFX_PRANKSTERPROJECTILE_ID:
+		case SFX_CLIENTFXUSER_ID:
+		case SFX_CLIENTFXANDACTIVATETYPE_ID:
+		case SFX_SPECTATOROBJECT_ID:
+		{
+			CreateSFX( nId, LTNULL, pMsg, hObj );
+		}
+		break;
+
 		default : break;
 	}
 }
@@ -1027,6 +1040,13 @@ void CSFXMgr::DeleteSFX(CSpecialFX* pFX)
 		case SFX_ACTIVATEOBJECT_ID :
 		{
 			g_SFXBank_ActivateObject.Delete((CActivateObjectFX*)pFX);
+		}
+		break;
+
+		// RETAIL: Tron's
+		case SFX_CLIENTFXUSER_ID :
+		{
+			g_SFXBank_ClientFxUser.Delete((CClientFxUserFX*)pFX);
 		}
 		break;
 
@@ -1391,6 +1411,13 @@ CSpecialFX* CSFXMgr::CreateSFX(uint8 nId, SFXCREATESTRUCT *psfxCreateStruct,
 		case SFX_ACTIVATEOBJECT_ID:
 		{
 			pSFX = g_SFXBank_ActivateObject.New();
+		}
+		break;
+
+		// RETAIL: Tron's
+		case SFX_CLIENTFXUSER_ID:
+		{
+			pSFX = g_SFXBank_ClientFxUser.New();
 		}
 		break;
 

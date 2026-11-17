@@ -746,6 +746,10 @@ SOURCE=.\CheatMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientFxUserFX.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientLightCycleMgr.h
 # End Source File
 # Begin Source File
