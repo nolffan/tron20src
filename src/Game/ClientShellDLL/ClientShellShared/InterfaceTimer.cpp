@@ -61,7 +61,9 @@ void CInterfaceTimer::Draw()
 	// RETAIL: Tron's (0x10170230): the size comes first, and the font is
 	// the one for that size ("TimerFont" is read but not used)
 	uint8 nSize = (uint8)((LTFLOAT)m_nBaseSize * g_pInterfaceResMgr->GetXRatio());
-	std::wstring sText = LTGUIWideString(aBuffer);
+	// RETAIL: Tron's widens the text inline (0x101702fc)
+	std::wstring sText;
+	LTGUIWiden(sText, aBuffer);
 
  	if (!m_pTimeStr)
  	{
