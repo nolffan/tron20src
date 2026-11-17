@@ -6344,6 +6344,20 @@ void CAIHumanStateAttackFromCover::Update()
 		return;
 	}
 
+	// RETAIL: 0x101f0077, Tron leaves a disabled or a bad cover node
+	// when nothing holds the AI.
+
+	if( !GetAI()->GetAnimationContext()->IsLocked() &&
+		!GetAI()->GetAIMovement()->IsMovementLocked() )
+	{
+		if( m_pCoverNode->IsDisabled() ||
+			( kStatus_Ok != m_pCoverNode->GetStatus( GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject() ) ) )
+		{
+			m_eStateStatus = kSStat_FailedComplete;
+			return;
+		}
+	}
+
 	// Make sure we have a weapon
 
 	if ( !GetAI()->GetCurrentWeapon() )
@@ -6366,14 +6380,7 @@ void CAIHumanStateAttackFromCover::Update()
 		GetAI()->PlayCombatSound(kAIS_Cover);
 	}
 
-	// If we've had too many retries just attack
-
-	if ( m_nRetries == (int32)GetAI()->GetBrain()->GetAttackFromCoverMaxRetries() )
-	{
-		// TOO MANY RETRIES
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
+	// RETAIL: 0x101f0118, Tron has no limit on the retries.
 
 	// Update accordingly with our state
 
@@ -6459,18 +6466,7 @@ void CAIHumanStateAttackFromCover::UpdateAnimation()
 
 void CAIHumanStateAttackFromCover::UpdateGotoCover()
 {
-	// Abandon the state if target is blocking the path to the node.
-
-	if( m_pCoverNode )
-	{
-		EnumNodeStatus eCoverStatus = m_pCoverNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
-		if( ( kStatus_ThreatBlockingPath == eCoverStatus ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-	}
+	// RETAIL: 0x101f02a5, Tron checks the node's status in Update.
 
 	// TODO: check for strategy failure
 	
@@ -6589,27 +6585,8 @@ void CAIHumanStateAttackFromCover::UpdateUseCover()
 			return;
 		}
 
-		EnumNodeStatus eCoverStatus = m_pCoverNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
-
-		if( ( kStatus_ThreatInsideRadius == eCoverStatus ) && 
-			( !bAnimLocked ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-
-		if ( m_nRetries != -1 && (kStatus_Ok != eCoverStatus) && !bAnimLocked )
-		{
-			// TRY USING NEW COVER
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-
-		if ( m_pStrategyShoot->ShouldReload() )
-		{
-			m_pStrategyShoot->Reload();
-		}
+		// RETAIL: 0x101f04a7, Tron checks the node's status in Update and
+		// does not reload here.
 
 		// If just finished attacking from cover, using one animation,
 		// ensure that the shooting strategy is cleared to prevent shooting
@@ -6835,7 +6812,7 @@ void CAIHumanStateAttackFromCover::Load(ILTMessage_Read *pMsg)
 	m_pStrategyShoot->Load(pMsg);
 	m_pStrategyFollowPath->Load(pMsg);
 
-	LOAD_INT(m_nRetries);
+	// RETAIL: 0x101f08a2, Tron does not keep m_nRetries.
 	LOAD_BOOL(m_bBoostedHitpoints);
 	LOAD_COBJECT(m_pCoverNode, AINodeCover);
 	LOAD_BOOL(m_bCovered);
@@ -6876,7 +6853,7 @@ void CAIHumanStateAttackFromCover::Save(ILTMessage_Write *pMsg)
 	m_pStrategyShoot->Save(pMsg);
 	m_pStrategyFollowPath->Save(pMsg);
 
-	SAVE_INT(m_nRetries);
+	// RETAIL: 0x101f0990, Tron does not keep m_nRetries.
 	SAVE_BOOL(m_bBoostedHitpoints);
 	SAVE_COBJECT(m_pCoverNode);
 	SAVE_BOOL(m_bCovered);
