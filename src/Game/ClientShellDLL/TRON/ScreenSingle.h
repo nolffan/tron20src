@@ -30,7 +30,6 @@ public:
     void	Escape();
 
     virtual LTBOOL   HandleKeyDown(int key, int rep);
-    virtual LTBOOL   OnMouseMove(int x, int y);
 
 
     void    OnFocus(LTBOOL bFocus);
@@ -41,7 +40,6 @@ protected:
 	void	AddFilesToFilenames(FileEntry* pFiles, char* pPath);
 	void	BuildCustomLevelsList(int nWidth);
 
-	void	ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha);
 	
 	// Sets up the server for local singleplayer game.
 	bool	SetupServer( );

@@ -112,6 +112,8 @@ public:
 	CHUDMgr*		GetHUDMgr()			{return &m_HUD;}
 	CScreenMgr*		GetScreenMgr()			{return &m_ScreenMgr;}
 	CPlayerStats*	GetPlayerStats()	{ return &m_stats; }
+	// RETAIL: CScreenSingle::OnCommand reaches the stats by offset (0x1007c398); the name is ours
+	CTronPlayerStats*	GetTronPlayerStats()	{ return &m_stats; }
 	CWeaponChooser*	GetWeaponChooser()	{ return &m_WeaponChooser; }
 
 	// RETAIL: slots 0x50 and 0x54 (see CInterfaceMgr)

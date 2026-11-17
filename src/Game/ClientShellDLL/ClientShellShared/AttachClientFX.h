@@ -45,7 +45,7 @@ private:
 	{
 		if (nIndex == -1) return &m_AttachFX.m_Link;
 		if (!m_AttachFX.m_pNext) return LTNULL;
-		return m_AttachFX.m_pNext->GetElement(nIndex);
+		return m_AttachFX.m_pNext->GetElement(nIndex - 1);	// RETAIL: Tron's fx are numbered from 1 (0x101ad2cf)
 	}
 
 	void	HandleMsg(const CParsedMsg &cMsg);

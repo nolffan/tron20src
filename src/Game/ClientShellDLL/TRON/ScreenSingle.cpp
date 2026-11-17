@@ -19,6 +19,18 @@
 #include "ClientSaveLoadMgr.h"
 #include "ClientButeMgr.h"
 #include "ClientMultiplayerMgr.h"
+#include "TronInterfaceMgr.h"
+
+namespace
+{
+	// RETAIL: Tron's single player commands (CScreenSingle::Build 0x1007bff0,
+	// OnCommand 0x1007c320): one more before the new game's, no chapter's;
+	// the names are ours where NOLF2 has none
+	const uint32 kCmdLightCycleCircuit	= 18;
+	const uint32 kCmdNewGame			= 19;
+	const uint32 kCmdLoadGame			= 20;
+	const uint32 kCmdCustomLevel		= 22;
+}
 
 
 //////////////////////////////////////////////////////////////////////
@@ -49,19 +61,24 @@ LTBOOL CScreenSingle::Build()
 
 	CreateTitle(IDS_TITLE_GAME);
 
-	AddTextItem(IDS_NEWGAME, CMD_NEW_GAME, IDS_HELP_NEW);
+	AddTextItem(IDS_NEWGAME, kCmdNewGame, IDS_HELP_NEW);
 
-	m_pLoadCtrl = AddTextItem(IDS_LOADGAME,	CMD_LOAD_GAME, IDS_HELP_LOAD);
+	m_pLoadCtrl = AddTextItem(IDS_LOADGAME,	kCmdLoadGame, IDS_HELP_LOAD);
 
-	CLTGUITextCtrl *pCustom = AddTextItem(IDS_CUSTOM_LEVEL, CMD_CUSTOM_LEVEL, IDS_HELP_CUSTOM);
+	// RETAIL: Tron's light cycle circuit (strings 3900, 3901)
+	AddTextItem(3900, kCmdLightCycleCircuit, 3901);
 
+	CLTGUITextCtrl *pCustom = AddTextItem(IDS_CUSTOM_LEVEL, kCmdCustomLevel, IDS_HELP_CUSTOM);
+
+	// RETAIL: Tron's lists have a solid frame texture and the difficulty
+	// list has no arrows
 	LTRect diffRect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"DiffRect");
 	int nWidth = (diffRect.right - diffRect.left) - 32;
-	m_pDiff = AddList(LTIntPt(diffRect.left,diffRect.top),diffRect.bottom - diffRect.top, LTTRUE, nWidth);
+	m_pDiff = AddList(LTIntPt(diffRect.left,diffRect.top),diffRect.bottom - diffRect.top, LTFALSE, nWidth);
 	if (m_pDiff)
 	{
 		m_pDiff->SetIndent(LTIntPt(8,8));
-		m_pDiff->SetFrameWidth(2);
+		m_pDiff->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pDiff->Show(LTFALSE);
 
 
@@ -84,7 +101,7 @@ LTBOOL CScreenSingle::Build()
 	if (m_pCustom)
 	{
 		m_pCustom->SetIndent(LTIntPt(8,8));
-		m_pCustom->SetFrameWidth(2);
+		m_pCustom->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pCustom->Show(LTFALSE);
 
 		BuildCustomLevelsList(nWidth-16);
@@ -96,6 +113,9 @@ LTBOOL CScreenSingle::Build()
 	if (pCustom && !m_pCustom || m_pCustom->GetNumControls() < 1)
 	{
 		RemoveControl(pCustom);
+		// RETAIL: Tron's also disables and hides the list
+		m_pCustom->Enable(LTFALSE);
+		m_pCustom->Show(LTFALSE);
 	}
 
 
@@ -120,8 +140,10 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 		}
 		if (iter != m_Filenames.end())
 		{
-			if( g_pClientMultiplayerMgr->SetupServerSinglePlayer( ))
-				g_pMissionMgr->StartGameFromLevel(iter->c_str());
+			// RETAIL: Tron's (0x1007c38d) starts the level at once and
+			// resets the player's ratings
+			g_pMissionMgr->StartGameFromLevel(iter->c_str());
+			((CTronInterfaceMgr*)g_pInterfaceMgr)->GetTronPlayerStats()->GetRatingMgr()->ResetRatings();
 		}
 		return 1;
 	}
@@ -131,61 +153,61 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 		{
 			m_pDiff->Show(LTFALSE);
 			m_pCustom->Show(LTFALSE);
-			ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
 
 			m_pDiff->SetSelection(kNoSelection);
 			m_pCustom->SetSelection(kNoSelection);
 			m_pScreenMgr->EscapeCurrentScreen();
 			break;
 		}
-	case CMD_NEW_GAME:
+	case kCmdLightCycleCircuit:
+		{
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LIGHTCYCLE_CIRCUIT, false);
+			break;
+		}
+	case kCmdNewGame:
 		{
 			m_pCustom->Show(LTFALSE);
 			m_pDiff->Show(LTTRUE);
-			ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTTRUE,m_pDiffSFX,m_fDiffAlpha);
 
 			SetSelection(GetIndex(m_pDiff));
 			m_pDiff->SetSelection(g_pGameClientShell->GetDifficulty());
-
-			if( g_pClientMultiplayerMgr->SetupServerSinglePlayer( ))
-				g_pMissionMgr->StartGameNew( );
-
 			break;
 		}
+	// RETAIL: Tron's starts the new game once the difficulty is chosen
 	case CMD_EASY:
 		{
 			g_pGameClientShell->SetDifficulty(GD_EASY);
+			g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_MEDIUM:
 		{
 			g_pGameClientShell->SetDifficulty(GD_NORMAL);
+			g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_HARD:
 		{
 			g_pGameClientShell->SetDifficulty(GD_HARD);
+			g_pMissionMgr->StartGameNew( );
 			break;
 		}
 	case CMD_INSANE:
 		{
 			g_pGameClientShell->SetDifficulty(GD_VERYHARD);
+			g_pMissionMgr->StartGameNew( );
 			break;
 		}
 
-	case CMD_LOAD_GAME:
+	case kCmdLoadGame:
 		{
 			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LOAD);
 			break;
 		}
-	case CMD_CUSTOM_LEVEL:
+	case kCmdCustomLevel:
 		{
 			m_pDiff->Show(LTFALSE);
 			m_pCustom->Show(LTTRUE);
-			ShowSFX(LTTRUE,m_pCustomSFX,m_fCustomAlpha);
-			ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
 			SetSelection(GetIndex(m_pCustom));
 			break;
 		}
@@ -200,6 +222,12 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
 {
 	if (bFocus)
 	{
+		// RETAIL: Tron's (0x1007c560) leaves any server first
+		if (g_pLTClient->IsConnected())
+		{
+			g_pLTClient->Disconnect();
+		}
+
 		m_pLoadCtrl->Enable( g_pClientSaveLoadMgr->ReloadSaveExists() );
 
 		m_pDiff->Show(LTFALSE);
@@ -213,12 +241,6 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
   		}
   
 		g_pGameClientShell->SetGameType( eGameTypeSingle );
-
-		if( !g_pClientMultiplayerMgr->SetupServerSinglePlayer( ))
-		{
-			g_pLTClient->ShutdownWithMessage("Could not setup server." );
-			return;
-  		}
 	}
 
 	CBaseScreen::OnFocus(bFocus);
@@ -238,9 +260,6 @@ void CScreenSingle::OnFocus(LTBOOL bFocus)
 			g_pLTClient->GetObjectColor(m_pCustomSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &m_fCustomAlpha);
 		if (m_pDiffSFX)
 			g_pLTClient->GetObjectColor(m_pDiffSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &m_fDiffAlpha);
-
-		ShowSFX(LTFALSE,m_pCustomSFX,m_fCustomAlpha);
-		ShowSFX(LTFALSE,m_pDiffSFX,m_fDiffAlpha);
 	}
 	else
 	{
@@ -377,57 +396,14 @@ void CScreenSingle::AddFilesToFilenames(FileEntry* pFiles, char* pPath)
 
 
 
-/******************************************************************/
-LTBOOL CScreenSingle::OnMouseMove(int x, int y)
-{
-	uint16 oldSelect = kNoSelection;
-
-	if (GetSelectedControl() == m_pCustom)
-	{
-		oldSelect = m_pCustom->GetSelectedIndex();
-	}
-
-	LTBOOL bHandled = CBaseScreen::OnMouseMove(x,y);
-
-	if (bHandled && GetSelectedControl() == m_pCustom && oldSelect != kNoSelection && oldSelect != m_pCustom->GetSelectedIndex())
-	{
-		CLTGUICtrl *pSelCtrl = m_pCustom->GetSelectedControl();
-		LTIntPt pos = pSelCtrl->GetPos();
-		if (m_bSelectFXCenter)
-			pos.x += (pSelCtrl->GetWidth() / 2);
-		pos.y += (pSelCtrl->GetHeight() / 2);
-
-		g_pInterfaceMgr->RequestInterfaceSound(IS_CHANGE);
-
-		g_pInterfaceMgr->ShowSelectFX(pos);
-	}
-
-	return bHandled;
-
-}
+// RETAIL: Tron's CScreenSingle has no OnMouseMove and no ShowSFX (its
+// frames are not faded; neither function is in the retail image)
 
 /******************************************************************/
 // RETAIL: Tron's only passes the key on (0x1007cca0)
 LTBOOL CScreenSingle::HandleKeyDown(int key, int rep)
 {
 	return CBaseScreen::HandleKeyDown(key,rep);
-}
-void CScreenSingle::ShowSFX(LTBOOL bShow, CBaseScaleFX *pSFX, float fBaseAlpha)
-{
-	if (!pSFX || !pSFX->GetObject())
-		return;
-    LTFLOAT a = 0.0f;
-	LTVector vColor;
-
-	g_pLTClient->GetObjectColor(pSFX->GetObject(), &(vColor.x), &(vColor.y), &(vColor.z), &a);
-
-
-	if (bShow)
-		a = fBaseAlpha;
-	else
-		a = 0.0f;
-	
-	g_pLTClient->SetObjectColor(pSFX->GetObject(), vColor.x, vColor.y, vColor.z, a);
 }
 
 
