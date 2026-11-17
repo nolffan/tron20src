@@ -251,8 +251,9 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
                                               ILTMessage_Read *pMsg )
 {
-	// to check the results of engine functions
-	LTRESULT ltResult;
+	// RETAIL: 0x10062ca0.  Tron's handles the hold block only (its swat
+	// and arm blocks go on to the weapon) and tells the client of a
+	// blocked disc
 
 	// get the projectile message's subtype
 	uint8 nProjectileMessageSubType = pMsg->Readuint8();
@@ -262,10 +263,7 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 		//case MPROJ_RETURNED:
 		// the place where the ammo gets incremented is in CWeapons
 
-
-		case MPROJ_START_SWAT_BLOCK:
 		case MPROJ_START_HOLD_BLOCK:
-		case MPROJ_START_ARM_BLOCK:
 		{
 			// get the rest of the info
 
@@ -273,22 +271,17 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			uint8 cAmmoId = pMsg->Readuint8();
 
 			// get the timestamp
-			uint32 nDefendTimestamp = pMsg->Readuint8();
+			uint32 nDefendTimestamp = pMsg->Readuint32();
 
 			// get the animation length
-			uint32 nDefendDuration = pMsg->Readuint8();
+			uint32 nDefendDuration = pMsg->Readuint32();
 
 			// make sure the current weapon is the weapon
 			// being blocked with
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( pWeapon->GetAmmoId() != cAmmoId )
+			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
-				//
-				// The weapon the user is trying to block with is
-				// different from the current weapon.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -300,13 +293,6 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 					 static_cast< int >( nDefendTimestamp ) )
 				{
 					// Tut, tut, no cheating!
-					//
-					// The timestamp passed by the client is faster
-					// than is allowed.  If this assert is hit check,
-					// to make sure a defensive animation isn't getting
-					// nixed prematurely.
-					ASSERT( 0 );
-
 					return true;
 				}
 			}
@@ -333,22 +319,17 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			uint8 cAmmoId = pMsg->Readuint8();
 
 			// get the timestamp
-			uint32 nDefendTimestamp = pMsg->Readuint8();
+			uint32 nDefendTimestamp = pMsg->Readuint32();
 
 			// get the animation length
-			uint32 nDefendDuration = pMsg->Readuint8();
+			uint32 nDefendDuration = pMsg->Readuint32();
 
 			// make sure the current weapon is the weapon
 			// being blocked with
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( pWeapon->GetAmmoId() != cAmmoId )
+			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
-				//
-				// The weapon the user is trying to block with is
-				// different from the current weapon.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -357,22 +338,6 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 				// Woa!  We can't end the hold block until
 				// after it starts!  Something is out of
 				// order, or there's some cheating going on!
-				ASSERT( 0 );
-
-				return true;
-			}
-
-			if ( ( m_nDefendClientTimeStarted + m_nDefendDuration ) >
-				 static_cast< int >( nDefendTimestamp ) )
-			{
-				// Tut, tut, no cheating!
-				//
-				// The timestamp passed by the client is faster
-				// than is allowed.  If this assert is hit check,
-				// to make sure a defensive animation isn't getting
-				// nixed prematurely.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -385,6 +350,19 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 				);
 			m_nDefendDuration = nDefendDuration;
 			m_cDefendAmmoId = cAmmoId;
+
+			return true;
+		}
+		break;
+
+		case MPROJ_BLOCKED:
+		{
+			// tell the client that it blocked the disc
+			CAutoMessage cMsg;
+			cMsg.Writeuint8( MID_PROJECTILE );
+			cMsg.Writeuint8( MPROJ_BLOCKED );
+			cMsg.Writeuint8( pMsg->Readuint8() );
+			g_pLTServer->SendToClient( cMsg.Read(), GetClient(), MESSAGE_GUARANTEED );
 
 			return true;
 		}
