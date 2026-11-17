@@ -311,6 +311,12 @@ void CMusicMgr::DoEvent(Event eEvent)
 
 bool CMusicMgr::SetMood( Mood eMood )
 {
+	// RETAIL: 0x10185c7d, Tron does not send the same mood again.
+	if( m_eLastMood == eMood )
+	{
+		return false;
+	}
+
 	char szMusic[128];
 	uint32 iLevel = GetRandom(0, m_acMoods[eMood]-1);
 	sprintf(szMusic, "MUSIC I %d measure", m_aanMoods[eMood][iLevel]);
