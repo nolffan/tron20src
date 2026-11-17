@@ -23,7 +23,7 @@ public:
 
 	// RETAIL: Tron's (retail 0x1007f630, emitted out of line): a popup
 	// with a string by id and an image, the text empty
-	void	Show(uint32 nTextId, uint8 nPopupId, const char* szImage) { DisplayPopup( nPopupId, L"", nTextId, szImage ); }
+	void	Show(uint32 nTextId, uint8 nPopupId, const char* szImage) { DisplayPopup( nPopupId, L"-", nTextId, szImage ); }	// RETAIL: L"-" (0x102137e4)
 	// PORT: NOLF2's forms, for NOLF2's callers (CInterfaceMgr::ShowPopup)
 	void	Show(uint32 nTextId, uint8 nPopupId) { DisplayPopup( nPopupId, L"", nTextId, LTNULL ); }
 	void	Show(char* pText, uint8 nPopupId) { DisplayPopup( nPopupId, LTGUIWideString(pText), 0, LTNULL ); }

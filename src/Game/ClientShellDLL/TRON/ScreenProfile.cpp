@@ -85,7 +85,7 @@ LTBOOL CScreenProfile::Build()
 
 	// Get edit controls position and create it.
 	LTIntPt pos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"ProfileNamePos");
-	m_pCurrent = AddTextItem(" ", LTNULL, LTNULL, pos, LTTRUE);
+	m_pCurrent = AddTextItem(L"-", LTNULL, LTNULL, pos, LTTRUE);	// TRON: wide (RETAIL: 0x1007599a)
 
 	AddTextItem(IDS_CREATE, CMD_CREATE, IDS_HELP_PROFILE_CREATE);
 

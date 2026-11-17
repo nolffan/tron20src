@@ -221,7 +221,7 @@ LTBOOL CScreenSubroutines::Build()
 	m_pToolTipTitle = AddTextItem(0xc9e, 0, 0, titlePos);
 	m_pToolTipTitle->Enable(LTFALSE);
 
-	m_pToolTipToggle = AddToggle(L"", 0, 0, &m_bShowToolTips, togglePos);
+	m_pToolTipToggle = AddToggle(L" ", 0, 0, &m_bShowToolTips, togglePos);
 	m_pToolTipToggle->NotifyOnChange(CMD_TOOLTIPS, this);
 	m_pToolTipToggle->SetOffString(LoadTempWString(0xca0));
 	m_pToolTipToggle->SetOnString(LoadTempWString(0xc9f));
@@ -263,7 +263,7 @@ LTBOOL CScreenSubroutines::Build()
 	int nVersionSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "VersionSize");
 	m_VersionPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "VersionPos");
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nVersionSize);
-	m_pVersion = AddTextItem(L"", 0, 0, m_VersionPos);
+	m_pVersion = AddTextItem(L" ", 0, 0, m_VersionPos);
 	m_pVersion->SetFont(pFont, nVersionSize);
 
 	int nCountSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteCountSize");
@@ -273,7 +273,7 @@ LTBOOL CScreenSubroutines::Build()
 	m_nBuildNoteIconSpacer = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteIconSpacer");
 	m_fBuildNoteIconScalar = g_pLayoutMgr->GetScreenCustomFloat(SCREEN_ID_SUBROUTINES, "BuildNoteIconScalar");
 	pFont = g_pInterfaceResMgr->GetFontForHeight(nCountSize);
-	m_pBuildNoteCount = AddTextItem(L"", 0, 0, m_BuildNoteCountPos);
+	m_pBuildNoteCount = AddTextItem(L" ", 0, 0, m_BuildNoteCountPos);
 	m_pBuildNoteCount->SetFont(pFont, nCountSize);
 	uint32 nCountColor = SET_ARGB(0xFF, (uint8)vCountColor.x, (uint8)vCountColor.y, (uint8)vCountColor.z);
 	m_pBuildNoteCount->SetColors(nCountColor, nCountColor, nCountColor);
