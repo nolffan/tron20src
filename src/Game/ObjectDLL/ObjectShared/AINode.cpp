@@ -1699,6 +1699,12 @@ void AINodeBackup::ReadProp(ObjectCreateStruct* pocs)
 
 EnumNodeStatus AINodeBackup::GetStatus(const LTVector& vPos, HOBJECT hThreat) const
 {
+	// RETAIL: Tron's (Object.lto 0x100a541c)
+	if( !hThreat )
+	{
+		return kStatus_Ok;
+	}
+
 	LTVector vThreatPos;
     g_pLTServer->GetObjectPos(hThreat, &vThreatPos);
 
