@@ -308,8 +308,11 @@ void CTronGameClientShell::PauseGame(bool bPause, bool bPauseSound)
 	// start with the base "pause" function
 	CGameClientShell::PauseGame(bPause, bPauseSound);
 
-	g_pSubroutineMgr->Pause(bPause);	
-	g_pTronPlayerMgr->Pause(bPause);
+	// RETAIL: Tron's (0x1009a1a0) checks for the managers first
+	if (g_pSubroutineMgr)
+		g_pSubroutineMgr->Pause(bPause);
+	if (g_pTronPlayerMgr)
+		g_pTronPlayerMgr->Pause(bPause);
 }
 
 // ----------------------------------------------------------------------- //
