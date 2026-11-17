@@ -101,7 +101,7 @@ LTBOOL CInterfaceResMgr::Init()
 	uint8 nFontSize = g_pLayoutMgr->GetDialogFontSize();
 
 	m_pMsgText = debug_new(CLTGUITextCtrl);
-    if (!m_pMsgText->Create("", LTNULL, LTNULL, pFont, nFontSize, LTNULL))
+    if (!m_pMsgText->Create(std::wstring(), LTNULL, LTNULL, pFont, nFontSize, LTNULL))	// TRON: wide (RETAIL: 0x100c4e96)
 	{
 		debug_delete(m_pMsgText);
 		m_pMsgText = LTNULL;
@@ -215,13 +215,16 @@ void CInterfaceResMgr::DrawScreen()
 
 void CInterfaceResMgr::DrawMessage(int nMessageId, uint8 nFontSize)
 {
-	DrawMessage(LoadTempString(nMessageId),nFontSize);
+	DrawMessage(LoadTempWString(nMessageId),nFontSize);	// TRON: wide (RETAIL: 0x100c5120)
 }
 
-void CInterfaceResMgr::DrawMessage(const char *pString, uint8 nFontSize)
+// TRON: the text is wide, by value (RETAIL: 0x100c5150); the font is the
+// one for the size
+void CInterfaceResMgr::DrawMessage(std::wstring sString, uint8 nFontSize)
 {
     _ASSERT(g_pLTClient);
-    if (!g_pLTClient || !pString) return;
+    if (!g_pLTClient) return;
+	if (!sString.length()) return;
 
 
 	uint8 nSize;
@@ -233,8 +236,9 @@ void CInterfaceResMgr::DrawMessage(const char *pString, uint8 nFontSize)
 	m_MsgDlg.SetScale(1.0f);
 
 	m_pMsgText->SetFixedWidth(kBaseWidth-2*kIndent);
-	m_pMsgText->SetString(pString);
-	m_pMsgText->SetFont(LTNULL,nSize);
+	m_pMsgText->SetString(sString);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+	m_pMsgText->SetFont(pFont,nSize);
 
 
 	int32 fw,fh;

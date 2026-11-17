@@ -81,7 +81,8 @@ public:
     uint32              GetScreenHeight();
 
 	void				DrawMessage(int nMessageId, uint8 nFontSize = 0);
-	void				DrawMessage(const char *pString, uint8 nFontSize = 0);
+	// TRON: the text is a wide string, by value (RETAIL: 0x100c5150)
+	void				DrawMessage(std::wstring sString, uint8 nFontSize = 0);
 
 
 	//call Setup() before entering a 2-d state (screen)
