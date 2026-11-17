@@ -558,7 +558,8 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 
 	if ( !pch )
 	{
-		// g_pLTClient->CPrint("CNodeController::HandleNodeControlLipSync() invalid pszSoundFile: '%s'", pszSoundFile ? pszSoundFile : "NULL");
+		// RETAIL: 0x10185bab: Tron prints this
+		g_pLTClient->CPrint("CNodeController::HandleNodeControlLipSync() invalid pszSoundFile: '%s'", pszSoundFile ? pszSoundFile : "NULL");
 		return;
 	}
 
@@ -570,7 +571,8 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 
     if (dr != LT_OK || !pStream)
 	{
-		// g_pLTClient->CPrint("Playing sound '%s' as a lip FLAP sound...Couldn't find .lip file!!!", pszSoundFile);
+		// RETAIL: Tron prints this
+		g_pLTClient->CPrint("Playing sound '%s' as a lip FLAP sound...Couldn't find .lip file!!!", pszSoundFile);
 
 		// If the lipsync file doesn't exist just use the old-school lipflap
 		HandleNodeControlLipFlap( szSound, fRadius );
