@@ -92,6 +92,8 @@ public:
 
 	int			GetPoints() { return m_nPoints; }
 	void		SetPoints(int nPoints) { m_nPoints = nPoints; }
+	// RETAIL: read by CTronPlayerStats::SetJetVersion (0x100abfe7); the name is ours
+	int			GetPointsPerLevel() { return m_nPointsPerLevel; }
 
 protected:
 

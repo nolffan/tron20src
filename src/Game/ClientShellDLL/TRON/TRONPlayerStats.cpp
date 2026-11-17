@@ -310,14 +310,8 @@ void CTronPlayerStats::OnEnterWorld(LTBOOL bRestoringGame)
 
 	// find out what mode we are in and make sure that mode is set
 
-	ResetStats();
-
-	if (!bRestoringGame)
-	{
-		// clear the values
-
-		Clear();
-	}
+	// RETAIL: Tron's (0x100a9aa0) clears the values, restored game or not
+	Clear();
 }
 
 // ----------------------------------------------------------------------- //
@@ -1713,27 +1707,29 @@ void CTronPlayerStats::SetJetVersion(uint16 iVersion)
 {
 	// RETAIL: Tron's (retail 0x100abf90): a major version up gives rating
 	// goo for each, a minor one says how many points came
-	int iMajor = iVersion / 100;
-	int iPreviousMajor = m_nVersion / 100;
+	int nPrevious = m_nVersion;
+	int nVersion = iVersion;
+	int iMajor = nVersion / 100;
+	int iPreviousMajor = nPrevious / 100;
 
 	if (iMajor > iPreviousMajor)
 	{
 		int nUpgrades = iMajor - iPreviousMajor;
-		while (nUpgrades--)
+		while (nUpgrades)
 		{
-			// PORT: retail adds Tron's rating manager's goo per version
-			// (+0x1130) to its goo (+0x112c); ours keeps neither yet
+			g_pRatingMgr->SetPoints(g_pRatingMgr->GetPoints() + g_pRatingMgr->GetPointsPerLevel());
+			nUpgrades--;
 		}
 
-		// PORT: retail shows string 3821 on a Tron HUD item (0x1026edf0,
-		// its slot 0x54) and the "ratings" tip (+0x1290's 0x1003f9d0);
-		// neither is in our tree yet
-		LoadTempString(3821);
+		// RETAIL: the announcement (Tron's message type 4) and the
+		// "ratings" tip
+		g_pAnnouncementMsgs->AddMessage(LoadTempString(3821), (eChatMsgType)4);
+		m_IONodeMgr.AddPing("ratings");
 	}
-	else if (iVersion > m_nVersion)
+	else if (nVersion > nPrevious)
 	{
 		char szMsg[1024];
-		FormatString(3822, szMsg, sizeof(szMsg), iVersion - m_nVersion);
+		FormatString(3822, szMsg, sizeof(szMsg), nVersion - nPrevious);
 		g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
 	}
 
@@ -1937,11 +1933,19 @@ bool CTronPlayerStats::IsWeaponCompiled(uint8 nWeaponId)
 	if (!IsMultiplayerGame() && m_bTronUnknown2404)
 		return true;
 
-	// PORT: retail asks the subroutine manager whether the player has the
-	// weapon's subroutine (Tron's WEAPON +0xa4, its 0x100952e0) and, if
-	// it names one, its primitive (+0xa8, 0x10095340); neither is in our
-	// tree yet, so having the weapon stands in
-	return !!HaveWeapon(nWeaponId);
+	// RETAIL: the player needs the weapon's primitive and, if it names
+	// one, the subroutine it needs (0x100ac30c)
+	const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
+	if (g_pSubroutineMgr->DoesPlayerHavePrimitive(pWeapon->szPrimitiveType))
+	{
+		if (!pWeapon->szSubroutineNeeded[0])
+			return true;
+
+		if (g_pSubroutineMgr->IsSubroutineInstalled(pWeapon->szSubroutineNeeded))
+			return true;
+	}
+
+	return false;
 }
 
 bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
