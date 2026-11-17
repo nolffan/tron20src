@@ -44,6 +44,9 @@ public:
 	CPlayerScore();
 
 	void	Init(uint32 nClientID);
+	// RETAIL: inline: CTronPlayerObj sets it alone (retail 0x10067305). The
+	// name is ours
+	void	SetClientID(uint32 nClientID) { m_nClientID = nClientID; }
 	void	WriteData(ILTMessage_Write *pMsg);
 	void	ReadData(ILTMessage_Read *pMsg);
 

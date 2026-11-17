@@ -18,7 +18,7 @@
 #include "CharacterMgr.h"
 #include "TronPlayerObj.h"
 #include "PSets.h"
-#include <algorithm>
+#include "SortedStringList.h"
 
 // RETAIL: Tron's special fx id of our message (as Optimizer's, retail
 // 0x100454bd); the name is ours
@@ -66,33 +66,22 @@ LTRESULT SecrezzerPlugin::PreHook_EditStringList(const char* szRezPath, const ch
 		s_bInitted = true;
 	}
 
-	if (!_stricmp("ModelTemplate", szPropName))
+	if (!_strcmpi("ModelTemplate", szPropName))
 	{
-		// PORT: retail builds a sorted list of the names of the models of
-		// type 3 (retail 0x10044570, with STL helpers); a plain list here
-		std::vector<std::string> lstNames;
+		// RETAIL: the names of the models of type 3, sorted (retail
+		// 0x10044570)
+		CSortedStringList lstNames(cMaxStrings, cMaxStringLength);
 
 		uint32 nNumModels = g_pModelButeMgr->GetNumModels();
 		for (uint32 i = 0; i < nNumModels; i++)
 		{
-			if (g_pModelButeMgr->GetModelType((ModelId)i) != 3) continue;
-
-			const char* pszName = g_pModelButeMgr->GetModelName((ModelId)i);
-			if (!pszName || !pszName[0]) continue;
-
-			std::string sName(pszName);
-			if (std::find(lstNames.begin(), lstNames.end(), sName) == lstNames.end())
+			if (g_pModelButeMgr->GetModelType((ModelId)i) == 3)
 			{
-				lstNames.push_back(sName);
+				lstNames.AddString(g_pModelButeMgr->GetModelName((ModelId)i));
 			}
 		}
 
-		std::sort(lstNames.begin(), lstNames.end());
-
-		for (std::vector<std::string>::iterator it = lstNames.begin(); it != lstNames.end() && *pcStrings < cMaxStrings; ++it)
-		{
-			strncpy(aszStrings[(*pcStrings)++], it->c_str(), cMaxStringLength - 1);
-		}
+		lstNames.PopulateStringList(aszStrings, pcStrings);
 
 		return LT_OK;
 	}

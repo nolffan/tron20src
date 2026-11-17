@@ -125,6 +125,26 @@ void CTronGameServerShell::PreStartWorld(bool bSwitchingWorlds)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronGameServerShell::OnClientExitWorld
+//
+//	PURPOSE:	RETAIL: retail 0x1005d370: in multiplayer the player leaves
+//				the game type's manager and the light cycles first
+//
+// ----------------------------------------------------------------------- //
+void CTronGameServerShell::OnClientExitWorld(HCLIENT hClient)
+{
+	if( IsMultiplayerGame( ))
+	{
+		CPlayerObj* pPlayer = GetPlayerFromClientList( hClient );
+		TronUnknownVirtual80( pPlayer );
+		g_pLightCycleMgr->RemoveCyclist( pPlayer->m_hObject );
+	}
+
+	CGameServerShell::OnClientExitWorld( hClient );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronGameServerShell::OnRemoveClient
 //
 //	PURPOSE:	A client is gone: RETAIL: retail 0x1005d3c0, only the base's
@@ -962,6 +982,104 @@ void CTronGameServerShell::HandleDiscFired(HCLIENT hSender, ILTMessage_Read *pMs
 	if (pPlayer)
 	{
 		pPlayer->HandleCompile(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::ProcessCheat
+//
+//	PURPOSE:	RETAIL: retail 0x1005ee80: Tron's player cheats. The
+//				procedurals and points cheats go on to the base's as well
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::ProcessCheat( CPlayerObj* pPlayer, CheatCode nCheatCode, uint32 nData )
+{
+	CTronPlayerObj* pTronPlayer = dynamic_cast< CTronPlayerObj* >( pPlayer );
+	if( pTronPlayer )
+	{
+		switch( nCheatCode )
+		{
+			case CHEAT_TRON_ENERGY:
+				CheatEnergy( pTronPlayer, nData );
+				return;
+
+			case CHEAT_TRON_IDEALWEAPONS:
+				CheatIdealWeapons( pTronPlayer, nData );
+				return;
+
+			case CHEAT_TRON_IDEALSUBROUTINES:
+				CheatIdealSubroutines( pTronPlayer, nData );
+				return;
+
+			case CHEAT_TRON_IDEALPROCEDURALS:
+				CheatIdealProcedurals( pTronPlayer, nData );
+				break;
+
+			case CHEAT_TRON_IDEALPOINTS:
+				CheatIdealPoints( pTronPlayer, nData );
+				break;
+
+			case CHEAT_TRON_IDEAL:
+				CheatIdealWeapons( pTronPlayer, nData );
+				CheatIdealSubroutines( pTronPlayer, nData );
+				CheatIdealProcedurals( pTronPlayer, nData );
+				CheatIdealPoints( pTronPlayer, nData );
+				return;
+		}
+	}
+
+	CGameServerShell::ProcessCheat( pPlayer, nCheatCode, nData );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::Cheat*
+//
+//	PURPOSE:	RETAIL: retail 0x1005ef90 to 0x1005efd0 (the names are
+//				ours): "mpenergy", "mpidealweapons", "mpidealsubroutines",
+//				"mpidealprocedurals" and "mpidealpoints"
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::CheatEnergy( CTronPlayerObj* pPlayer, uint32 nData )
+{
+	if( pPlayer )
+	{
+		pPlayer->EnergyCheat( );
+	}
+}
+
+void CTronGameServerShell::CheatIdealWeapons( CTronPlayerObj* pPlayer, uint32 nData )
+{
+	if( pPlayer )
+	{
+		pPlayer->IdealWeaponsCheat( );
+	}
+}
+
+void CTronGameServerShell::CheatIdealSubroutines( CTronPlayerObj* pPlayer, uint32 nData )
+{
+	if( pPlayer )
+	{
+		pPlayer->IdealSubroutinesCheat( );
+	}
+}
+
+void CTronGameServerShell::CheatIdealProcedurals( CTronPlayerObj* pPlayer, uint32 nData )
+{
+	if( pPlayer )
+	{
+		pPlayer->IdealProceduralsCheat( );
+	}
+}
+
+void CTronGameServerShell::CheatIdealPoints( CTronPlayerObj* pPlayer, uint32 nData )
+{
+	if( pPlayer )
+	{
+		pPlayer->IdealPointsCheat( );
 	}
 }
 

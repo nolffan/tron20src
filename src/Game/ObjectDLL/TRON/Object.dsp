@@ -641,6 +641,10 @@ SOURCE=.\ServerSubroutineMgr.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\SortedStringList.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\SpectatorObject.h
 # End Source File
 # Begin Source File

@@ -21,6 +21,10 @@
 #include "FXButeMgr.h"
 #include "LightCycleMgr.h"
 #include "ServerMissionMgr.h"
+#include "ArenaStartPoint.h"
+#include "MultiplayerLevelInfoMgr.h"
+#include "PingButeMgr.h"
+#include "AIUtils.h"
 
 BEGIN_CLASS(CTronPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
@@ -33,13 +37,23 @@ END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
 #define TRIGGER_START_LIGHTCYCLE				"STARTLIGHTCYCLE"
 #define TRIGGER_END_LIGHTCYCLE					"ENDLIGHTCYCLE"
 
+// RETAIL: Tron's messages (retail 0x100623a0)
 CMDMGR_BEGIN_REGISTER_CLASS( CTronPlayerObj )
 	CMDMGR_ADD_MSG( ACQUIRESUB,		-1,		NULL,			"ACQUIRESUB <Subroutine Name> [state] [condition]")
-	CMDMGR_ADD_MSG( ACQUIREADD,		-1,		NULL,			"ACQUIREADD <Additive Name>")
-	CMDMGR_ADD_MSG( ACQUIREPROC,	-1,		NULL,			"ACQUIREPROC <Procedural Name>")
-	CMDMGR_ADD_MSG( ACQUIREPRIM,	-1,		NULL,			"ACQUIREPRIM <Primitive Name>")
-	CMDMGR_ADD_MSG( ACQUIREPRIM,	-1,		NULL,			"STARTLIGHTCYCLE")
-	CMDMGR_ADD_MSG( ACQUIREPRIM,	-1,		NULL,			"ENDLIGHTCYCLE")
+	CMDMGR_ADD_MSG( ACQUIREPROC,	2,		NULL,			"ACQUIREPROC <Procedural Name>")
+	CMDMGR_ADD_MSG( ACQUIREPRIM,	2,		NULL,			"ACQUIREPRIM <Primitive Name>")
+	CMDMGR_ADD_MSG( ACQUIREPSET,	2,		NULL,			"ACQUIREPSET <permission set number | all>")
+	CMDMGR_ADD_MSG( ACQUIRENOTE,	2,		NULL,			"ACQUIRENOTE <Note Name>")
+	CMDMGR_ADD_MSG( ACQUIREPOWERUP,	2,		NULL,			"ACQUIREPOWERUP")
+	CMDMGR_ADD_MSG_ARG_RANGE( ADDPING,	2,	3,	NULL,		"ADDPING <Ping Name> <1/0 (Play sound or not, defaults to 1>")
+	CMDMGR_ADD_MSG( REMOVEPING,		2,		NULL,			"REMOVEPING <Ping Name>")
+	CMDMGR_ADD_MSG( IOCAM,			-1,		NULL,			"IOCAM <on/off> [Location] [Target]")
+	CMDMGR_ADD_MSG( TURN,			2,		NULL,			"TURN <left/right>")
+	CMDMGR_ADD_MSG( SINCONSOLEVAR,	-1,		NULL,			"SINCONSOLEVAR <cvar> {off | <min> <max> <period>}")
+	CMDMGR_ADD_MSG( RAMPCONSOLEVAR,	-1,		NULL,			"RAMPCONSOLEVAR <cvar> [start] <end> <period>")
+	CMDMGR_ADD_MSG( ADDBUILDPOINTS,	2,		NULL,			"ADDBUILDPOINTS <number to add>")
+	CMDMGR_ADD_MSG( LOCKWEAPON,		1,		NULL,			"LOCKWEAPON")
+	CMDMGR_ADD_MSG( UNLOCKWEAPON,	1,		NULL,			"UNLOCKWEAPON")
 CMDMGR_END_REGISTER_CLASS( CTronPlayerObj, CPlayerObj )
 
 // Subroutine states
@@ -497,12 +511,245 @@ void CTronPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 //	PURPOSE:	Add a ping (RETAIL: retail 0x100675a0; the name is ours)
 //
 // ----------------------------------------------------------------------- //
-void CTronPlayerObj::AddPing(char const* pszPing, bool /*bTronUnknown*/)
+void CTronPlayerObj::AddPing(char const* pszPing, bool bPlaySound)
 {
-	// PORT: retail looks it up in pingbutes.txt and tells the client
-	// ("AddPing", 0x100675c5); this only keeps it
-	if( !pszPing ) return;
+	// RETAIL: retail 0x100675a0: a ping of pingbutes.txt; the client is
+	// told the ping's character
+	if( bPlaySound )
+	{
+		PlaySound( "AddPing", m_fSoundRadius, LTTRUE );
+	}
+
+	char szTag[30];
+	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
+	if( !szTag[0] )
+	{
+		AIError( "%s not found in pingbutes.txt", pszPing );
+		return;
+	}
+
 	m_lstPings.push_front( std::string( pszPing ));
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_TRON_PING );
+	char szCharacter[128];
+	g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
+	cMsg.WriteString( szCharacter );
+	cMsg.Writeuint8( 1 );
+
+	if( GetClient( ))
+	{
+		g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::RemovePing
+//
+//	PURPOSE:	RETAIL: retail 0x10067770 (the name is ours): "REMOVEPING"
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::RemovePing(char const* pszPing)
+{
+	char szTag[30];
+	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
+
+	PingList::iterator iter;
+	for( iter = m_lstPings.begin( ); iter != m_lstPings.end( ); iter++ )
+	{
+		if( !_stricmp( iter->c_str( ), pszPing ))
+			break;
+	}
+
+	if( iter == m_lstPings.end( ))
+	{
+		AIError( "%s not found in pingbutes.txt", pszPing );
+		return;
+	}
+
+	m_lstPings.erase( iter );
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_TRON_PING );
+	char szCharacter[128];
+	g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
+	cMsg.WriteString( szCharacter );
+	cMsg.Writeuint8( 0 );
+
+	if( GetClient( ))
+	{
+		g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleSinConsoleVarMsg/HandleRampConsoleVarMsg
+//
+//	PURPOSE:	RETAIL: retail 0x10067ce0, 0x10067f60 (the names are ours):
+//				"SINCONSOLEVAR" and "RAMPCONSOLEVAR" tell the client to
+//				move a console variable (MID_TRON_UNKNOWN_104: 0 ramp, 1
+//				sine, 2 stop, 3 revert)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::HandleSinConsoleVarMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) != 3 && cMsg.GetArgCount( ) != 5 )
+		return false;
+
+	uint8 nType = 1;
+	float fMin = 0.0f;
+	float fMax = 0.0f;
+	float fPeriod = 1.0f;
+	char szVar[64];
+
+	strncpy( szVar, cMsg.GetArg( 1 ), ARRAY_LEN( szVar ) - 1 );
+	szVar[ARRAY_LEN( szVar ) - 1] = 0;
+
+	if( cMsg.GetArgCount( ) == 3 )
+	{
+		if( !_strcmpi( cMsg.GetArg( 2 ), "off" ) || !_strcmpi( cMsg.GetArg( 2 ), "stop" ))
+		{
+			nType = 2;
+		}
+		else if( !_strcmpi( cMsg.GetArg( 2 ), "revert" ) || !_strcmpi( cMsg.GetArg( 2 ), "restore" ))
+		{
+			nType = 3;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if( cMsg.GetArgCount( ) == 5 )
+	{
+		fMin = (float)atof( cMsg.GetArg( 2 ));
+		fMax = (float)atof( cMsg.GetArg( 3 ));
+		fPeriod = (float)atof( cMsg.GetArg( 4 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
+	cClientMsg.Writeuint8( nType );
+	cClientMsg.WriteString( szVar );
+	cClientMsg.Writefloat( fMin );
+	cClientMsg.Writefloat( fMax );
+	cClientMsg.Writefloat( fPeriod );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+bool CTronPlayerObj::HandleRampConsoleVarMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 4 || cMsg.GetArgCount( ) > 5 )
+		return false;
+
+	char szVar[64];
+	strncpy( szVar, cMsg.GetArg( 1 ), ARRAY_LEN( szVar ) - 1 );
+	szVar[ARRAY_LEN( szVar ) - 1] = 0;
+
+	float fStart = 0.0f;
+	float fEnd;
+	float fPeriod;
+	bool bStart = false;
+
+	if( cMsg.GetArgCount( ) == 5 )
+	{
+		bStart = true;
+		fStart = (float)atof( cMsg.GetArg( 2 ));
+		fEnd = (float)atof( cMsg.GetArg( 3 ));
+		fPeriod = (float)atof( cMsg.GetArg( 4 ));
+	}
+	else
+	{
+		fEnd = (float)atof( cMsg.GetArg( 2 ));
+		fPeriod = (float)atof( cMsg.GetArg( 3 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
+	cClientMsg.Writeuint8( 0 );
+	cClientMsg.WriteString( szVar );
+	cClientMsg.Writebool( bStart );
+	cClientMsg.Writefloat( fStart );
+	cClientMsg.Writefloat( fEnd );
+	cClientMsg.Writefloat( fPeriod );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleAnnouncementMsg/HandleRatingMsg
+//
+//	PURPOSE:	RETAIL: retail 0x10068250, 0x100683a0 (the names are ours):
+//				"ANNOUNCEMENT <string id> [string id]" and "RATING <rating>
+//				<0..100>"
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::HandleAnnouncementMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 2 )
+		return false;
+
+	uint32 nStringId = atol( cMsg.GetArg( 1 ));
+	uint32 nStringId2 = 0;
+	if( cMsg.GetArgCount( ) > 2 )
+	{
+		nStringId2 = atol( cMsg.GetArg( 2 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_HUD_TEXT );
+	cClientMsg.Writeuint32( nStringId );
+	cClientMsg.Writeuint32( nStringId2 );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+bool CTronPlayerObj::HandleRatingMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 3 )
+		return false;
+
+	const char* aszRatings[NUM_RATINGS] =
+	{
+		"health", "energy", "efficiency", "transfer", "processor"
+	};
+
+	const char* pszRating = cMsg.GetArg( 1 );
+
+	int nRating = -1;
+	for( int i = 0; i < NUM_RATINGS; i++ )
+	{
+		if( !_stricmp( pszRating, aszRatings[i] ))
+		{
+			nRating = i;
+			break;
+		}
+	}
+
+	if( nRating == -1 )
+		return true;
+
+	int nValue = atoi( cMsg.GetArg( 2 ));
+	if( nValue < 0 || nValue > 100 )
+		return true;
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_SET_PERFORMANCE_RATING );
+	cClientMsg.Writeuint8( nRating );
+	cClientMsg.Writeuint8( nValue );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -922,6 +1169,35 @@ void CTronPlayerObj::HandleCompile(ILTMessage_Read *pMsg)
 void CTronPlayerObj::EnergyCheat()
 {
 	m_damage.SetEnergy( m_damage.GetMaxEnergy() );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::Ideal*Cheat
+//
+//	PURPOSE:	The current level's ideal inventory (RETAIL: retail
+//				0x100686a0 to 0x100686d0, the server shell's cheats
+//				0x1005efa0 to 0x1005efd0; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::IdealWeaponsCheat()
+{
+	AcquireCurrentLevelIdealWeapons();
+}
+
+void CTronPlayerObj::IdealSubroutinesCheat()
+{
+	AcquireCurrentLevelIdealSubroutines();
+}
+
+void CTronPlayerObj::IdealProceduralsCheat()
+{
+	AcquireCurrentLevelIdealProcedurals();
+}
+
+void CTronPlayerObj::IdealPointsCheat()
+{
+	AcquireCurrentLevelIdealBuildPoints();
 }
 
 // ----------------------------------------------------------------------- //
@@ -1393,19 +1669,83 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 
 bool CTronPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 {
-	// DANO: for testing
-	float fOrigDamage = pDamageStruct->fDamage;
+	// RETAIL: retail 0x10064300: no damage in god mode or on a light cycle;
+	// infected ammo may corrupt the player, a block takes only the disc
+	// weapons' damage, and the player's own crushing is not scaled
+	if( m_bGodMode )
+		return false;
 
-	if ( IsDefending() )
+	if( m_hLightCycle )
+		return false;
+
+	if( IsInfectingDamage( pDamageStruct->eType ))
+	{
+		float fChance = m_afChanceToBeCorruptedByInfectedAmmo[g_pGameServerShell->GetDifficulty()];
+		if( GetRandom( 0.0f, 1.0f ) < fChance )
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8( MID_TRON_UNKNOWN_151 );
+			g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+		}
+	}
+
+	if( IsDefending( ) && IsDefendableDamage( pDamageStruct->eType ))
 	{
 		// player is defending, attenuate the damage to take
-		float fDefenseModifier = GetDefensePercentage( &pDamageStruct->vDir );
+		pDamageStruct->fDamage *= ( 1.0f - GetDefensePercentage( &pDamageStruct->vDir ));
+		if( MATH_EPSILON > pDamageStruct->fDamage )
+			return false;
+	}
 
-		pDamageStruct->fDamage *= ( 1.0f - fDefenseModifier );
+	if( pDamageStruct->eType != DT_CRUSH || pDamageStruct->hDamager != GetUserObject( ))
+	{
+		pDamageStruct->fDamage -= pDamageStruct->fDamage * m_fTronUnknown31f8;
 	}
 
 	// pass the filter up the hierarchy
 	return CPlayerObj::FilterDamage( pDamageStruct );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::IsDefendableDamage/IsInfectingDamage
+//
+//	PURPOSE:	RETAIL: retail 0x100644c0, 0x100644f0 (the names are ours):
+//				the damage types a block stops, and those of the infected
+//				ammo
+//
+// ----------------------------------------------------------------------- //
+
+static const DamageType s_aeDefendableDamage[] =
+{
+	DT_DISC, DT_SEQUENCER, DT_CLUSTER, DT_ENEMYDISC, DT_CLUSTERAUTOBURST
+};
+
+static const DamageType s_aeInfectingDamage[] =
+{
+	DT_DRUNKENDIMS, DT_BALL, DT_CORRUPTICDIMS, DT_BALLLAUNCHER
+};
+
+bool CTronPlayerObj::IsDefendableDamage( DamageType eType )
+{
+	for( int i = 0; i < ARRAY_LEN( s_aeDefendableDamage ); i++ )
+	{
+		if( eType == s_aeDefendableDamage[i] )
+			return true;
+	}
+
+	return false;
+}
+
+bool CTronPlayerObj::IsInfectingDamage( DamageType eType )
+{
+	for( int i = 0; i < ARRAY_LEN( s_aeInfectingDamage ); i++ )
+	{
+		if( eType == s_aeInfectingDamage[i] )
+			return true;
+	}
+
+	return false;
 }
 
 
@@ -1430,6 +1770,13 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Add_Build_Points(TRIGGER_ADD_BUILD_POINTS);
 	static CParsedMsg::CToken s_cTok_Start_LightCycle(TRIGGER_START_LIGHTCYCLE);
 	static CParsedMsg::CToken s_cTok_End_LightCycle(TRIGGER_END_LIGHTCYCLE);
+	// RETAIL: Tron's (retail 0x10064520; PORT: not all of retail's yet)
+	static CParsedMsg::CToken s_cTok_Add_Ping("ADDPING");
+	static CParsedMsg::CToken s_cTok_Remove_Ping("REMOVEPING");
+	static CParsedMsg::CToken s_cTok_Sin_Console_Var("SINCONSOLEVAR");
+	static CParsedMsg::CToken s_cTok_Ramp_Console_Var("RAMPCONSOLEVAR");
+	static CParsedMsg::CToken s_cTok_Announcement("ANNOUNCEMENT");
+	static CParsedMsg::CToken s_cTok_Rating("RATING");
 
 	if(cMsg.GetArg(0) == s_cTok_Acquire_Subroutine)
 	{
@@ -1502,6 +1849,43 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		}
 
 		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Add_Ping)
+	{
+		// RETAIL: retail 0x10065113
+		if(cMsg.GetArgCount() > 1)
+		{
+			bool bPlaySound = true;
+			if(cMsg.GetArgCount() >= 2 && IsFalseChar(*cMsg.GetArg(2)))
+			{
+				bPlaySound = false;
+			}
+
+			AddPing(cMsg.GetArg(1), bPlaySound);
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Remove_Ping)
+	{
+		if(cMsg.GetArgCount() > 1)
+		{
+			RemovePing(cMsg.GetArg(1));
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Sin_Console_Var)
+	{
+		return HandleSinConsoleVarMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Ramp_Console_Var)
+	{
+		return HandleRampConsoleVarMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Announcement)
+	{
+		return HandleAnnouncementMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Rating)
+	{
+		return HandleRatingMsg(cMsg);
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
 	{
@@ -2171,6 +2555,95 @@ bool CTronPlayerObj::TronUnknownVirtual127( char const* pszRecord )
 	}
 
 	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::FullWeaponCheat
+//
+//	PURPOSE:	RETAIL: retail 0x10066fa0: what each player weapon needs,
+//				all the mods and the level's ideal weapons
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::FullWeaponCheat()
+{
+	if( m_damage.IsDead( ))
+		return;
+
+	for( int i = g_pWeaponMgr->GetFirstWeaponCommandId( ); i <= g_pWeaponMgr->GetLastWeaponCommandId( ); i++ )
+	{
+		WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( g_pWeaponMgr->GetWeaponId( i ));
+		if( !pWeapon )
+			continue;
+
+		if( g_pWeaponMgr->IsPlayerWeapon( pWeapon->nId ))
+		{
+			TronUnknownVirtual128( pWeapon );
+		}
+	}
+
+	FullModsCheat( );
+	AcquireCurrentLevelIdealWeapons( );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual130
+//
+//	PURPOSE:	RETAIL: retail 0x100672a0: a disc game respawn. A spectator
+//				gets no weapons unless the game type's "DiscsInSpectator"
+//				is set; the others get the level's default primitives and
+//				weapons and change back to the weapon they had
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::TronUnknownVirtual130( GameStartPoint* pStartPoint, bool bTronUnknown )
+{
+	RemoveProjectiles( );
+
+	bool bSpectator = ( ((ArenaStartPoint*)pStartPoint)->GetType( ) == ArenaStartPoint::kType_Spectator );
+
+	bool bDiscsInSpectator;
+	ServerGameOptions& opts = g_pGameServerShell->GetServerGameOptions( );
+	if( opts.m_eGameType == eGameTypeDiscArena )
+		bDiscsInSpectator = opts.m_bArenaDiscsInSpectator;
+	else
+		bDiscsInSpectator = opts.m_bTournDiscsInSpectator;
+
+	if( !bTronUnknown )
+	{
+		m_Stats.Init( );
+		m_Score.SetClientID( g_pLTServer->GetClientID( GetClient( )));
+		ResetPlayer( );
+	}
+
+	ResetHealth( LTFALSE, 1.0f, 1.0f );
+	ResetInventory( LTTRUE, LTTRUE );
+
+	if( bSpectator && !bDiscsInSpectator )
+		return;
+
+	MPLevelStringList& lstPrims = g_pMultiplayerLevelInfoMgr->m_lstDefaultPrims;
+	MPLevelStringList::iterator iter;
+	for( iter = lstPrims.begin( ); iter != lstPrims.end( ); iter++ )
+	{
+		AcquirePrimitive( iter->c_str( ));
+	}
+
+	MPLevelStringList& lstWeaps = g_pMultiplayerLevelInfoMgr->m_lstDefaultWeaps;
+	for( iter = lstWeaps.begin( ); iter != lstWeaps.end( ); iter++ )
+	{
+		AcquireWeapon( (char*)iter->c_str( ));
+	}
+
+	if( m_nLastWeaponId != WMGR_INVALID_ID && m_nLastAmmoId != WMGR_INVALID_ID )
+	{
+		ChangeWeapon( g_pWeaponMgr->GetCommandId( m_nLastWeaponId ), LTTRUE, m_nLastAmmoId );
+	}
+
+	m_nLastWeaponId = WMGR_INVALID_ID;
+	m_nLastAmmoId = WMGR_INVALID_ID;
 }
 
 // ----------------------------------------------------------------------- //

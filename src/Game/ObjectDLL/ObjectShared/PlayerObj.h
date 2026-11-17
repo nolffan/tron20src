@@ -386,6 +386,7 @@ class CPlayerObj : public CCharacter
 		// name is ours
 		void ResetInventory(LTBOOL bRemoveGear=LTTRUE, LTBOOL bTronUnknown=LTFALSE);
 		void ResetModel();
+		void ResetDiscSkin();	// RETAIL: retail 0x1007f820 (the name is ours)
 
 		void TweakCameraOffset();
 
@@ -441,9 +442,22 @@ class CPlayerObj : public CCharacter
 
 		void	AcquireDefaultWeapon();
 		bool	AcquireLevelDefaultWeapons( int nMissionId, int nLevelId );
+		// RETAIL: Tron's ideal inventory (retail 0x100855a0 to 0x10085a70;
+		// the names are ours)
+		bool	AcquireLevelIdealWeapons( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealSubroutines( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealProcedurals( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealBuildPoints( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultMods( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultAmmo( int nMissionId, int nLevelId );
 		bool	AcquireCurrentLevelDefaults();
+	public:
+		// RETAIL: retail 0x10085ef0 to 0x10085f50 (the names are ours)
+		bool	AcquireCurrentLevelIdealWeapons();
+		bool	AcquireCurrentLevelIdealSubroutines();
+		bool	AcquireCurrentLevelIdealProcedurals();
+		bool	AcquireCurrentLevelIdealBuildPoints();
+	protected:
 		// RETAIL: virtual in Tron, with a flag (retail 0x1007e9d0, ret 8;
 		// CTronPlayerObj's, 0x100686e0, hands the weapon's data to
 		// TronUnknownVirtual128 when it is set). The flag's name is ours
@@ -469,9 +483,10 @@ class CPlayerObj : public CCharacter
 		virtual bool	TronUnknownVirtual127( char const* /*pWeaponName*/ ) { return true; }
 		virtual bool	TronUnknownVirtual128( WEAPON const* /*pWeapon*/ ) { return true; }
 		virtual bool	TronUnknownVirtual129( uint8 /*nWeaponId*/ ) { return true; }
-		// RETAIL: an empty virtual of Tron's with two arguments (Respawn calls
-		// it, retail 0x1007def8; CTronPlayerObj's is 0x100672a0)
-		virtual void	TronUnknownVirtual130( uint32 /*nUnknown1*/, uint32 /*nUnknown2*/ ) {}
+		// RETAIL: an empty virtual of Tron's (Respawn calls it in the disc
+		// game types with its start point, retail 0x1007def8; CTronPlayerObj's
+		// is 0x100672a0)
+		virtual void	TronUnknownVirtual130( GameStartPoint* /*pStartPoint*/, bool /*bTronUnknown*/ ) {}
 
         virtual LTBOOL DoActivate(CActivationData* pData);
 
