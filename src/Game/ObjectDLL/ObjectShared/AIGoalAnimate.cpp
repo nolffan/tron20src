@@ -182,6 +182,14 @@ LTBOOL CAIGoalAnimate::HandleNameValuePair(const char *szName, const char *szVal
 
 	if ( !_stricmp(szName, "ANIM") )
 	{
+		// RETAIL: Tron's (0x1021817e): an animation gives the goal its
+		// importance.
+		if( m_fCurImportance < 0.00001f )
+		{
+			SetCurToBaseImportance();
+			ObjectCPrint( m_pAI->GetUserObject(), "!!! Received ANIM with 0 importance. !!!" );
+		}
+
 		FREE_HSTRING(m_hstrAnim);
 		m_hstrAnim = g_pLTServer->CreateString((char*)szValue);
 		m_bResetAnim = LTTRUE;
