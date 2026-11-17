@@ -330,7 +330,9 @@ void CAIGoalTalk::HandleInRadius()
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CAIGoalTalk::RequestDialogue(HOBJECT hDialogue)
+// RETAIL: Tron's (0x101fa800): only the AI state's check, and only when
+// the dialogue asks for it; NOLF2's position safeguard is gone.
+LTBOOL CAIGoalTalk::RequestDialogue(HOBJECT hDialogue, bool bUseAIState)
 {
 	// Record which dialogue object requested to start.
 
@@ -338,26 +340,9 @@ LTBOOL CAIGoalTalk::RequestDialogue(HOBJECT hDialogue)
 
 	// Do not start if the AI is not relaxed.
 
-	if( m_pAI->GetAwareness() != kAware_Relaxed )
+	if( bUseAIState && ( m_pAI->GetAwareness() != kAware_Relaxed ) )
 	{
 		return LTFALSE;
-	}
-
-	// Safeguard to ensure AI knows it is at the Talk node if they are at 
-	// the same position but different Y elevations.
-
-	AINodeGuard* pGuardNode = (AINodeGuard*)g_pLTServer->HandleToObject(m_hGuardNode);
-	if( ( !m_bInRadius ) &&
-		( pGuardNode ) &&
-		( pGuardNode->GetRadiusSqr() == 0.f ) )
-	{
-		if( ( m_pAI->GetPosition().x == pGuardNode->GetPos().x ) &&
-			( m_pAI->GetPosition().z == pGuardNode->GetPos().z ) &&
-			( pGuardNode->GetPos().y >= m_pAI->GetPosition().y - m_pAI->GetDims().y ) &&
-			( pGuardNode->GetPos().y <= m_pAI->GetPosition().y + m_pAI->GetDims().y ) )
-		{
-			m_bInRadius = LTTRUE;
-		}
 	}
 
 	// Do not start if AI is not in radius.

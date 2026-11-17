@@ -468,6 +468,10 @@ class CAIHumanStateAttackFromVantage : public CAIHumanState
 		void SetVantageNode(HOBJECT hVantageNode);
 		HOBJECT GetVantageNode();
 		void IgnoreVisibility(LTBOOL bIgnoreVisibility) { m_bIgnoreVisibility = bIgnoreVisibility; }
+		// RETAIL: Tron's (CAIGoalAttackFromRandomVantage::SetStateAttack,
+		// 0x10214dd0). Names ours.
+		void SetTronUnknown8C(bool b) { m_bTronUnknown8C = b; }
+		void SetTronUnknown8D(bool b) { m_bTronUnknown8D = b; }
 
 	protected :
 
