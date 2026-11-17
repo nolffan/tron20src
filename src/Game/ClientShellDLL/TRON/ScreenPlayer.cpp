@@ -682,8 +682,11 @@ void CScreenPlayer::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 			}
 			else
 			{
+				// TRON: the message widened (RETAIL: 0x10074f09)
 				MBCreate mb;
-				g_pInterfaceMgr->ShowMessageBox(FormatTempString(0x7A,GetMinimumBandwidth(),GetMaximumBandwidth()),&mb);
+				std::wstring sMsg;
+				LTGUIWiden(sMsg, FormatTempString(0x7A,GetMinimumBandwidth(),GetMaximumBandwidth()));
+				g_pInterfaceMgr->ShowMessageBox(sMsg,&mb);
 			}
 		}
 		break;
