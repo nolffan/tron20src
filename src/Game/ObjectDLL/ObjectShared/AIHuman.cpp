@@ -64,6 +64,11 @@ LTFLOAT s_fSenseUpdateBasis = 0.0f;
 static LTFLOAT s_fTronUnknownMin = 2.5f;
 static LTFLOAT s_fTronUnknownMax = 3.5f;
 
+// RETAIL: Tron's bounds for the ghost fade's alpha (retail 0x10300500,
+// 0x10300504; names ours)
+static LTFLOAT s_fMinGhostAlpha = 0.1f;
+static LTFLOAT s_fMaxGhostAlpha = 1.0f;
+
 #define FIND_FLOOR_THRESH_SQR 4.f
 
 
@@ -1688,15 +1693,84 @@ void CAIHuman::UpdateCharacterFx()
 //		CreateSpecialFX();
 //	}
 
-	// Should we armor up?
-	if ( !IsArmored() && IsAlert() && !IsDead())
+	// RETAIL: Tron's changes the armor only after the attachments are set up
+	// (0x1016f726)
+
+	if ( m_bInitializedAttachments )
 	{
-		CreateArmor();
+		// Should we armor up?
+		if ( !IsArmored() && IsAlert() && !IsDead())
+		{
+			CreateArmor();
+		}
+		if ( IsArmored() && !IsAlert() && !IsDead())
+		{
+			DestroyArmor();
+		}
 	}
-	if ( IsArmored() && !IsAlert() && !IsDead())
+
+	// RETAIL: Tron's fades the AI in or out (0x1016f790): out when
+	// m_bTronUnknown1231 is set, over m_fGhostFadeTime
+
+	LTVector vColor;
+	LTFLOAT fAlpha;
+	g_pLTServer->GetObjectColor( GetUserObject(), &vColor.x, &vColor.y, &vColor.z, &fAlpha );
+
+	if ( !m_bTronUnknown1231 )
 	{
-		DestroyArmor();
+		fAlpha = fAlpha + g_pLTServer->GetFrameTime() / m_fGhostFadeTime;
 	}
+	else
+	{
+		fAlpha = fAlpha - g_pLTServer->GetFrameTime() / m_fGhostFadeTime;
+	}
+
+	LTFLOAT fNewAlpha = Clamp( fAlpha, s_fMinGhostAlpha, s_fMaxGhostAlpha );
+
+	// RETAIL: the !bChanged tests give retail's branches (0x1016f840); they
+	// do not change the result
+
+	bool bChanged = false;
+
+	if ( m_fTronUnknown1238 - fNewAlpha > 0.01 || m_fTronUnknown1238 - fNewAlpha < -0.01 )
+	{
+		bChanged = true;
+	}
+	if ( (!bChanged && vColor.x - m_vTronUnknown123C.x > 0.01) || vColor.x - m_vTronUnknown123C.x < -0.01 )
+	{
+		bChanged = true;
+	}
+	if ( (!bChanged && vColor.y - m_vTronUnknown123C.y > 0.01) || vColor.y - m_vTronUnknown123C.y < -0.01 )
+	{
+		bChanged = true;
+	}
+	if ( (!bChanged && vColor.z - m_vTronUnknown123C.z > 0.01) || vColor.z - m_vTronUnknown123C.z < -0.01 )
+	{
+		bChanged = true;
+	}
+
+	if ( bChanged )
+	{
+		SetObjectColor( vColor.x, vColor.y, vColor.z, fNewAlpha );
+		m_fTronUnknown1238 = fNewAlpha;
+		m_vTronUnknown123C = vColor;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHuman::SetObjectColor
+//
+//	PURPOSE:	Color the AI and its attachments
+//
+//	RETAIL: Tron's (0x1016f950; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHuman::SetObjectColor(LTFLOAT r, LTFLOAT g, LTFLOAT b, LTFLOAT a)
+{
+	m_pAttachments->SetObjectColor( r, g, b, a );
+	g_pLTServer->SetObjectColor( GetUserObject(), r, g, b, a );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1731,6 +1805,13 @@ void CAIHuman::UpdateAnimation()
 	else if ( IsHovering() )
 	{
 		GetAnimationContext()->SetProp(kAPG_Movement, kAP_Hover);
+	}
+
+	// RETAIL: Tron's clears the direction while an evasive move plays (0x1016fa0e)
+
+	if ( GetAnimationContext()->GetProp( kAPG_Evasive ) != kAP_None )
+	{
+		GetAnimationContext()->SetProp( kAPG_Direction, kAP_None );
 	}
 
 	if ( 0 ) // !stricmp(GetName(), "a") )

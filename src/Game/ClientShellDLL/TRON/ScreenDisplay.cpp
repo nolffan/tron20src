@@ -245,6 +245,9 @@ void CScreenDisplay::SetupResolutionCtrl()
 	}
 
 
+	// RETAIL: the text of each resolution is widened in one string
+	std::wstring sText;
+
 	// Add each resolution
 	unsigned int i;
 	for (i=0; i < nResolutions; i++)
@@ -264,7 +267,8 @@ void CScreenDisplay::SetupResolutionCtrl()
 			dwCurBitDepth = dwBitDepth;
 		}
 		// Load the resolution format string.  This is "Resolution: [%dx%dx%d]" in English
-		m_pResolutionCtrl->AddString(FormatTempString(IDS_DMODE_RESOLUTION, dwWidth, dwHeight, dwBitDepth));
+		LTGUIWiden(sText, FormatTempString(IDS_DMODE_RESOLUTION, dwWidth, dwHeight, dwBitDepth));
+		m_pResolutionCtrl->AddString(sText);
 	}
 
 	m_pResolutionCtrl->SetSelIndex(nNewRes);
@@ -278,14 +282,6 @@ void CScreenDisplay::GetRendererData()
 
 	// Build the list of render modes
     RMode *pRenderModes=g_pLTClient->GetRenderModes();
-
-	bool bHWTnL = true;
-
-	RMode currentMode;
-	if (g_pGameClientShell->IsRendererInitted() && g_pLTClient->GetRenderMode(&currentMode) == LT_OK)
-	{
-		bHWTnL = currentMode.m_bHWTnL;
-	}
 
 
 	// Iterate through the list of render modes adding each one to the array
@@ -305,36 +301,34 @@ void CScreenDisplay::GetRendererData()
 			}
 
 			//disallow any that aren't hardware TnL
-			if(bHWTnL && !pCurrentMode->m_bHWTnL)
+			// RETAIL: Tron tests each mode alone (not against the current one)
+			if(pCurrentMode->m_bHWTnL)
 			{
-				pCurrentMode=pCurrentMode->m_pNext;
-				continue;
+				// Check to see if we need to add this renderer
+				if (!m_rendererData.m_description[0])
+				{
+					m_rendererData.m_bHWTnL = pCurrentMode->m_bHWTnL;
+					SAFE_STRCPY(m_rendererData.m_description, pCurrentMode->m_Description);
+					SAFE_STRCPY(m_rendererData.m_internalName, pCurrentMode->m_InternalName);
+
+				}
+
+				// Add the display resolutions for this renderer
+				ScreenDisplayResolution resolution;
+				resolution.m_dwWidth=pCurrentMode->m_Width;
+				resolution.m_dwHeight=pCurrentMode->m_Height;
+				resolution.m_dwBitDepth=pCurrentMode->m_BitDepth;
+
+				LTBOOL bFound = LTFALSE;
+				uint32 i = 0;
+				while (!bFound && i < m_rendererData.m_resolutionArray.GetSize())
+				{
+					bFound = (ScreenDisplayCompare(&(m_rendererData.m_resolutionArray[i]), &resolution) == 0);
+					++i;
+				}
+				if (!bFound)
+					m_rendererData.m_resolutionArray.Add(resolution);
 			}
-
-			// Check to see if we need to add this renderer
-			if (!m_rendererData.m_description[0])
-			{
-				m_rendererData.m_bHWTnL = pCurrentMode->m_bHWTnL;
-				SAFE_STRCPY(m_rendererData.m_description, pCurrentMode->m_Description);
-				SAFE_STRCPY(m_rendererData.m_internalName, pCurrentMode->m_InternalName);
-
-			}
-
-			// Add the display resolutions for this renderer
-			ScreenDisplayResolution resolution;
-			resolution.m_dwWidth=pCurrentMode->m_Width;
-			resolution.m_dwHeight=pCurrentMode->m_Height;
-			resolution.m_dwBitDepth=pCurrentMode->m_BitDepth;
-
-			LTBOOL bFound = LTFALSE;
-			uint32 i = 0;
-			while (!bFound && i < m_rendererData.m_resolutionArray.GetSize())
-			{
-				bFound = (ScreenDisplayCompare(&(m_rendererData.m_resolutionArray[i]), &resolution) == 0);
-				++i;
-			}
-			if (!bFound)
-				m_rendererData.m_resolutionArray.Add(resolution);
 		}
 
 		// Go to the next render mode

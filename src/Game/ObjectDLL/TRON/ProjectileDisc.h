@@ -52,6 +52,22 @@ protected:
 	// RETAIL: slot 28 (0x100374a0)
 	virtual void		TronUnknownVirtual28( WeaponFireInfo const& info );
 
+	// RETAIL: slot 31 (0x10038f60): a disc in state 3 takes any touch
+	virtual bool		TronUnknownVirtual31( HOBJECT hAttacker, HOBJECT hVictim );
+
+	// RETAIL: slot 32 (0x1003ae60)
+	virtual void		TronUnknownVirtual32();
+
+	// RETAIL: slot 34 (0x10038010): no impact on an object the disc has
+	// damaged already
+	virtual void		AddImpact( HOBJECT hObj,
+	                               const LTVector &vFirePos,
+	                               const LTVector &vImpactPos,
+	                               const LTVector &vNormal,
+	                               SurfaceType eSurfaceType = ST_UNKNOWN,
+	                               IMPACT_TYPE eImpactType = IMPACT_TYPE_IMPACT,
+	                               bool bDeflected = false );
+
 	virtual void        HandleImpact( HOBJECT );
 	virtual void        HandleTouch( HOBJECT );
 
@@ -60,7 +76,7 @@ protected:
 	virtual void RemoveObject();
 
 	// RETAIL: slot 45 (0x100e0e10) is an empty function
-	virtual void        Detonate( HOBJECT, bool bTronUnknown = false ) {}
+	virtual void        Detonate( HOBJECT, CollisionInfo* pCollInfo = LTNULL ) {}
 
 	// RETAIL: slot 48 (0x10039060)
 	virtual void		HandleOwnerDeath();

@@ -1099,6 +1099,17 @@ does not exist, the error message gets the character 0 as its "%s"
 argument.
 
 Not fixed yet: the modern build should look up the name.
+### The RESETPATH message of a keyframer does not use the rotation of the first key
+
+Object.lto 0x10119c40 (KeyFramer::ResetToKey, our name,
+ObjectShared/KeyFramer.cpp). The function copies the rotation of the first
+key into a local value. It does not use this value. For each object, it
+starts from the identity rotation, and then adds the offset of the object.
+Thus, when the keyframer has no target and does not align to the path, the
+objects go to the position of the first key with a wrong rotation.
+
+Not fixed yet: the modern build should start from the rotation of the key.
+
 ## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
 
 When the subroutine screen gets focus, it sets the build note count text
@@ -1153,6 +1164,74 @@ controllable is controllable. Our Init is not yet byte-identical (Build
 shows the bug.
 
 Not fixed yet: the modern build should keep the value that GetByte returns.
+
+### The team selection screen reads one row team past its list
+
+CShell.dll 0x10083050 (CScreenTeamSelect::OnCommand, TRON/
+ScreenTeamSelect.cpp). The screen has 16 team rows, with the commands
+0x433 to 0x442. The command test accepts 0x433 to 0x443. For the command
+0x443, the screen reads the team of row 16, which is not in the list of
+row teams (+0x7f0): it reads the next member (the spectator header
+pointer, +0x830) and moves the local player to that "team". No control
+sends 0x443, so there is no visible effect.
+
+Not fixed yet: the modern build should accept 0x433 to 0x442 only.
+### Two core dump help files of a character are in the wrong group
+
+Object.lto 0x10087500 (CCharacter's property list, ObjectShared/
+Character.cpp). A character has three groups of core dump item properties
+(CoreDumpItem1 to CoreDumpItem3). HelpFile2 and HelpFile3 have the flags of
+the first group (PF_GROUP(8)), not of their own groups (PF_GROUP(9) and
+PF_GROUP(10)). DEdit shows these two properties in the first item's group.
+The game reads them by name, thus play is not affected.
+
+Not fixed yet: the modern build should give each HelpFile the group of its
+item.
+### A console variable oscillation has a wrong center
+
+CShell.dll 0x1009ec40 (CTronInterfaceMgr::HandleConsoleVarOscillate,
+TRON/TronInterfaceMgr.cpp). The message gives a minimum and a maximum. The
+function sets the center of the sine to minimum + maximum * 0.5 and the
+amplitude to (maximum - minimum) * 0.5. The center must be
+(minimum + maximum) * 0.5. Thus the value goes from 1.5 * minimum to the
+maximum, not from the minimum to the maximum.
+
+Not fixed yet: the modern build should use (minimum + maximum) * 0.5.
+
+### A console variable restore formats a float as an integer
+
+CShell.dll 0x1009edb0 (CTronInterfaceMgr::HandleConsoleVarStop,
+TRON/TronInterfaceMgr.cpp). To set the value that a console variable had
+before an oscillation, the function makes the console string with
+"%s %4.2d" and gives a double. The "d" conversion reads an integer, so the
+string gets the low half of the double, not the value.
+
+Not fixed yet: the modern build should use "%s %4.2f".
+
+### An interface object render can write past its object array
+
+CShell.dll 0x100cea40 (CInterfaceMgr::RenderInterfaceObject,
+ClientShellShared/InterfaceMgr.cpp). The function puts the object and the
+interface lights in a local array of six handles (one object and
+MAX_INTERFACE_LIGHTS lights). The loop that adds the lights stops at
+kMaxFX (107), the limit of the interface fx list, not at the size of the
+array. With more than five interface lights, the function writes past the
+array on the stack.
+
+Not fixed yet: the modern build should stop the loop at the size of the
+array.
+### A loaded projectile does not get its object flags back
+
+Object.lto 0x101246c0 (CProjectile::Load, ObjectShared/Projectile.cpp).
+CProjectile::Save (0x10124320) writes the object flags of the projectile
+last. Load gets the current flags of the object, then reads the saved flags
+into the same variable and does not use them. NOLF2's Load sets the saved
+flags on the object. Thus, after a saved game loads, a projectile has the
+flags that the engine gave it, not the flags that it had when the game was
+saved (for example, the visible flag that DoProjectile sets).
+
+Not fixed yet: the modern build should set the saved flags with
+SetObjectFlags (OFT_Flags, FLAGMASK_ALL).
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

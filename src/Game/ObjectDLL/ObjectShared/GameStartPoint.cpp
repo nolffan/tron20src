@@ -27,15 +27,15 @@ extern CGameServerShell* g_pGameServerShell;
 uint32 GameStartPoint::m_dwCounter = 0;
 
 #pragma force_active on
+// RETAIL: Tron's properties (Object.lto 0x1014f570): a game type, and no
+// team, start point or spawn point
 BEGIN_CLASS(GameStartPoint)
+	ADD_STRINGPROP_FLAG(GameType, "", PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(ModelTemplate, "", PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(PhysicsModel, "", PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(Command, "", PF_NOTIFYCHANGE)
 	ADD_BOOLPROP_FLAG(Locked, LTFALSE, 0)
 	ADD_BOOLPROP_FLAG(SendCommandOnRespawn, LTFALSE, 0)
-	ADD_STRINGPROP_FLAG(Team, "NoTeam", PF_STATICLIST)
-	ADD_BOOLPROP_FLAG( StartPoint, true, 0 )
-	ADD_BOOLPROP_FLAG( SpawnPoint, true, 0 )
 END_CLASS_DEFAULT_FLAGS_PLUGIN(GameStartPoint, GameBase, NULL, NULL, CF_ALWAYSLOAD, CGameStartPointPlugin)
 #pragma force_active off
 
@@ -44,7 +44,6 @@ CMDMGR_BEGIN_REGISTER_CLASS( GameStartPoint )
 
 	CMDMGR_ADD_MSG( LOCK, 1, NULL, "LOCK" )
 	CMDMGR_ADD_MSG( UNLOCK, 1, NULL, "UNLOCK" )
-	CMDMGR_ADD_MSG( TEAM, 2, NULL, "TEAM <0, 1, -1>" )
 
 CMDMGR_END_REGISTER_CLASS( GameStartPoint, GameBase )
 
@@ -68,9 +67,6 @@ GameStartPoint::GameStartPoint() : GameBase()
 	m_vPitchYawRoll.Init();
 	m_bLocked				= false;
 	m_bSendCommandOnRespawn	= false;
-	m_nTeamID				= INVALID_TEAM;
-	m_bStartPoint			= true;
-	m_bSpawnPoint			= true;
 	m_bInUse				= false;	// RETAIL: Tron's (0x1014f9cb)
 }
 
@@ -151,9 +147,6 @@ uint32 GameStartPoint::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fD
 			// Once created add this start point to the global list.
 
 			m_lstStartPoints.push_back( this );
-
-			//choose a negative last use time to randomize the order of use
-			m_fLastUse = GetRandom(-1000.0f,-10.0f);
 		}
 		break;
 
@@ -175,6 +168,23 @@ uint32 GameStartPoint::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fD
 LTBOOL GameStartPoint::ReadProp(ObjectCreateStruct *pData)
 {
 	GenericProp genProp;
+
+	// RETAIL: Tron's (Object.lto 0x1014fbb6)
+
+	if (g_pLTServer->GetPropGeneric("GameType", &genProp) == LT_OK)
+	{
+		if (genProp.m_String[0])
+		{
+			for (int i = 0; i < g_knNumGameTypes; i++)
+			{
+				if (!_stricmp(genProp.m_String, GameTypeToString((GameType)i)))
+				{
+					m_eGameType = (GameType)i;
+					break;
+				}
+			}
+		}
+	}
 
    	// Determine which template to use...
 
@@ -217,41 +227,6 @@ LTBOOL GameStartPoint::ReadProp(ObjectCreateStruct *pData)
 		m_bSendCommandOnRespawn = genProp.m_Bool;
 	}
 
-	// Get the team the startpoint belongs to, but only when in a team game...
-	
-	if( IsTeamGameType() )
-	{
-		if( g_pLTServer->GetPropGeneric( "Team", &genProp ) == LT_OK )
-		{
-			if( genProp.m_String[0] )
-			{
-				char szTeam[32] = {0};
-				for( int i = 0; i < MAX_TEAMS; ++i )
-				{
-					sprintf( szTeam, "Team%i", i );
-					if( !_stricmp( genProp.m_String, szTeam ))
-					{
-						m_nTeamID = i;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		m_nTeamID = INVALID_TEAM;
-	}
-
-	if( g_pLTServer->GetPropGeneric( "StartPoint", &genProp ) == LT_OK )
-	{
-		m_bStartPoint = genProp.m_Bool;
-	}
-
-	if( g_pLTServer->GetPropGeneric( "SpawnPoint", &genProp ) == LT_OK )
-	{
-		m_bSpawnPoint = genProp.m_Bool;
-	}
-
     return LTTRUE;
 }
 
@@ -267,7 +242,6 @@ bool GameStartPoint::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 {
 	static CParsedMsg::CToken s_cTok_Lock( "LOCK" );
 	static CParsedMsg::CToken s_cTok_UnLock( "UNLOCK" );
-	static CParsedMsg::CToken s_cTok_Team( "TEAM" );
 
 	if( cMsg.GetArg(0) == s_cTok_Lock )
 	{
@@ -276,23 +250,6 @@ bool GameStartPoint::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 	else if( cMsg.GetArg(0) == s_cTok_UnLock )
 	{
 		m_bLocked = false;
-	}
-	else if (cMsg.GetArg(0) == s_cTok_Team)
-	{
-		if( cMsg.GetArgCount( ) > 1 )
-		{
-			uint32 nTeamId = atoi( cMsg.GetArg( 1 ));
-			if( nTeamId < MAX_TEAMS )
-			{
-				m_nTeamID = nTeamId;
-			}
-			else
-			{
-				m_nTeamID = INVALID_TEAM;
-			}
-
-			return true;
-		}
 	}
 	else
 	{
@@ -313,6 +270,21 @@ LTRESULT CGameStartPointPlugin::PreHook_EditStringList(
     const uint32 cMaxStringLength)
 {
 	// See if we can handle the property...
+
+	// RETAIL: Tron's (Object.lto 0x1014fe9e)
+
+	if (_stricmp("GameType", szPropName) == 0)
+	{
+		for (int i = 0; i < g_knNumGameTypes; i++)
+		{
+			if (cMaxStrings > (*pcStrings) + 1)
+			{
+				strcpy(aszStrings[(*pcStrings)++], GameTypeToString((GameType)i));
+			}
+		}
+
+		return LT_OK;
+	}
 
     // Handle Template...
 
@@ -347,26 +319,6 @@ LTRESULT CGameStartPointPlugin::PreHook_EditStringList(
 			{
 				strcpy(aszStrings[(*pcStrings)++], GetPropertyNameFromPlayerPhysicsModel((PlayerPhysicsModel)i));
 			}
-		}
-
-		return LT_OK;
-	}
-
-	// Handle team...
-
-	if( _stricmp( "Team", szPropName ) == 0 )
-	{
-		char szTeam[32] = {0};
-
-		_ASSERT(cMaxStrings > (*pcStrings) + 1);
-		strcpy( aszStrings[(*pcStrings)++], "NoTeam" );
-		
-		for( int i = 0; i < MAX_TEAMS; ++i )
-		{
-			_ASSERT(cMaxStrings > (*pcStrings) + 1);
-
-			sprintf( szTeam, "Team%i", i );
-			strcpy( aszStrings[(*pcStrings)++], szTeam );
 		}
 
 		return LT_OK;

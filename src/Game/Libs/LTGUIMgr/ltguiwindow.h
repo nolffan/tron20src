@@ -30,6 +30,9 @@ public:
 	// Destroy the control
 	void		Destroy ( );
 
+	// RETAIL: Tron's (0x100c2bf0): the controls take the alpha
+	virtual void SetAlpha(uint8 nAlpha);
+
 	// Render the control
 	virtual void Render ();
 

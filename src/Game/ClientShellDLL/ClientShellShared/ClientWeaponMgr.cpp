@@ -1358,3 +1358,21 @@ void CClientWeaponMgr::OnPlayerAlive()
 {
 	EnableWeapons();
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	FUNCTION:	CClientWeaponMgr::CurrentWeaponTronUnknownVirtualC8()
+//
+//	PURPOSE:	RETAIL: Tron's (retail 0x10168c90; the name is ours): the
+//				current weapon's slot 0xc8, true without a weapon
+//				(CTronPlayerMgr::IsHolsterLocked, retail 0x100a7b84)
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeaponMgr::CurrentWeaponTronUnknownVirtualC8()
+{
+	if (!m_pCurrentWeapon)
+		return true;
+
+	return m_pCurrentWeapon->TronUnknownVirtualC8();
+}

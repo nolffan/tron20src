@@ -1165,6 +1165,32 @@ void CAttachments::RemoveAndRecreateAttachments()
 
 // ----------------------------------------------------------------------- //
 //
+//  ROUTINE:	CAttachments::SetObjectColor
+//
+//  PURPOSE:	Color every attachment's model
+//
+//	RETAIL: Tron's (0x10187fa0; the name is ours). CAIHuman's ghost fade
+//	calls it (0x1016f970).
+//
+// ----------------------------------------------------------------------- //
+
+void CAttachments::SetObjectColor( float r, float g, float b, float a )
+{
+	for( int i = 0; i < m_cAttachmentPositions; ++i )
+	{
+		CAttachment *pAttachment = m_apAttachmentPositions[i]->GetAttachment();
+		if( pAttachment )
+		{
+			if( pAttachment->GetModel() )
+			{
+				bool bResult = g_pLTServer->SetObjectColor( pAttachment->GetModel(), r, g, b, a );
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //  ROUTINE:	CAttachments::DetachAttachmentsOfType
 //
 //  PURPOSE:	Detach all attachments of specified type.
@@ -1868,6 +1894,27 @@ void CAttachmentObject::CreateSpawnString(char* szSpawn)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAttachmentObject::ObjectMessageFn
+//
+//	PURPOSE:	Send object-to-object messages on to the attached object
+//
+//	RETAIL: Tron's (0x1018c700)
+//
+// ----------------------------------------------------------------------- //
+
+uint32 CAttachmentObject::ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, ILTMessage_Read *pMsg)
+{
+	LPBASECLASS pModel = g_pLTServer->HandleToObject(m_hModel);
+	if ( pModel )
+	{
+		return pModel->ObjectMessageFn(hSender, pMsg);
+	}
+
+	return 0;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAttachmentWeapon::Init
 //
 //	PURPOSE:	Init
@@ -2192,7 +2239,8 @@ void CAttachmentsPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings
 			strcpy(aszStrings[(*pcStrings)++], szBuffer);
 		}
 	}
-	sm_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
+	// RETAIL: Tron lists the weapons the AIs can use (Object.lto 0x1018d0a6)
+	sm_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength, WeaponUsableByAIs);
 }
 
 // ----------------------------------------------------------------------- //

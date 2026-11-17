@@ -90,6 +90,12 @@ class CTronPlayerObj : public CPlayerObj
 
 		// RETAIL: the "mpenergy" cheat (retail 0x10068680; the name is ours)
 		void EnergyCheat();
+		// RETAIL: the ideal inventory cheats (retail 0x100686a0 to
+		// 0x100686d0; the names are ours)
+		void IdealWeaponsCheat();
+		void IdealSubroutinesCheat();
+		void IdealProceduralsCheat();
+		void IdealPointsCheat();
 
 		// Defense
 		virtual bool	IsDefending() const;
@@ -97,6 +103,9 @@ class CTronPlayerObj : public CPlayerObj
 
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
+		// RETAIL: retail 0x100644c0, 0x100644f0 (the names are ours)
+		bool	IsDefendableDamage( DamageType eType );
+		bool	IsInfectingDamage( DamageType eType );
 
 		// RETAIL: CPlayerObj's slots 107 and 108. The IDs are the fire
 		// helpers' message IDs (GetMessageID).
@@ -115,6 +124,8 @@ class CTronPlayerObj : public CPlayerObj
 			GameStartPoint* pStartPoint=LTNULL, GameBase* pSpawnAt=LTNULL);
 		virtual void	RemoveVehicleModel();
 		virtual void	GimmeGunCheat( uint8 nId );
+		virtual void	FullWeaponCheat();
+		virtual void	TronUnknownVirtual130( GameStartPoint* pStartPoint, bool bTronUnknown );
 		virtual void	TronUnknownVirtual105( LTBOOL bOn );
 		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
 		// RETAIL: slot 127 (retail 0x10066f20) is given a subroutine record
@@ -180,7 +191,14 @@ class CTronPlayerObj : public CPlayerObj
 		virtual LTBOOL InitialUpdate(int nInfo);
 
 		// RETAIL: retail 0x100675a0 (Load calls it with false). The names are ours
-		void AddPing(char const* pszPing, bool bTronUnknown);
+		void AddPing(char const* pszPing, bool bPlaySound);
+		// RETAIL: retail 0x10067770, 0x10067ce0, 0x10067f60, 0x10068250,
+		// 0x100683a0 (OnTrigger's; the names are ours)
+		void RemovePing(char const* pszPing);
+		bool HandleSinConsoleVarMsg(const CParsedMsg &cMsg);
+		bool HandleRampConsoleVarMsg(const CParsedMsg &cMsg);
+		bool HandleAnnouncementMsg(const CParsedMsg &cMsg);
+		bool HandleRatingMsg(const CParsedMsg &cMsg);
 
 		// Member vars
 		// RETAIL: laid out from retail CTronPlayerObj's constructor (0x100626d0),

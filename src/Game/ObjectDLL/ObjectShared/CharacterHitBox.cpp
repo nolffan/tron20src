@@ -21,6 +21,7 @@
 #include "ObjectMsgs.h"
 #include "Attachments.h"
 #include "GameServerShell.h"
+#include "DebugLineSystem.h"	// RETAIL: Tron's (its colours, Object.lto 0x10137c60)
 
 LINKFROM_MODULE( CharacterHitBox );
 
@@ -32,6 +33,7 @@ static CVarTrack g_vtTorsoNodeRadius;
 static CVarTrack g_vtArmNodeRadius;
 static CVarTrack g_vtLegNodeRadius;
 static CVarTrack g_HitDebugTrack;
+static CVarTrack g_vtDistHitBoxMethod;	// RETAIL: Tron's (Object.lto 0x10138e21)
 
 #define HB_DEFAULT_NODE_RADIUS	12.5f
 #define HB_DIMS_ENLARGE_PERCENT 1.2f
@@ -63,11 +65,16 @@ CCharacterHitBox::CCharacterHitBox() : GameBase(OT_NORMAL)
 	m_vOffset.Init();
 	m_bCanActivate = LTTRUE;
 	m_bCanBeSearched = false;
+	m_bTronUnknown7D = false;	// RETAIL: Tron's (Object.lto 0x10138858)
 	m_bAnimControlsDims = false;
 	m_bAnimControlsOffset = false;
 	m_hControllingAnim = INVALID_ANI;
 
     m_NodeRadiusList.Init(LTTRUE);
+
+	// RETAIL: Tron's (Object.lto 0x10138881)
+	m_nNumOBBs = 0;
+	m_pOBBs = LTNULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -80,6 +87,43 @@ CCharacterHitBox::CCharacterHitBox() : GameBase(OT_NORMAL)
 
 CCharacterHitBox::~CCharacterHitBox()
 {
+	// RETAIL: Tron's (Object.lto 0x101388ed)
+	if( m_nNumOBBs )
+	{
+		debug_deletea( m_pOBBs );
+		debug_deletea( m_pOBBNodes );
+		m_nNumOBBs = 0;
+		m_pOBBs = LTNULL;
+		m_pOBBNodes = LTNULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::InitOBBs()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10138a40; the name is ours):
+//				copy the OBBs of the model, and find the skeleton node of
+//				each
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterHitBox::InitOBBs()
+{
+	g_pModelLT->GetNumModelOBBs( m_hModel, m_nNumOBBs );
+	if( m_nNumOBBs && !m_pOBBs )
+	{
+		m_pOBBs = debug_newa( ModelOBB, m_nNumOBBs );
+		m_pOBBNodes = debug_newa( ModelNode, m_nNumOBBs );
+		g_pModelLT->GetModelOBBCopy( m_hModel, m_pOBBs );
+
+		for( uint32 iOBB = 0; iOBB < m_nNumOBBs; iOBB++ )
+		{
+			char szNodeName[256];
+			g_pModelLT->GetNodeName( m_hModel, m_pOBBs[iOBB].m_iNode, szNodeName, sizeof( szNodeName ));
+			m_pOBBNodes[iOBB] = g_pModelButeMgr->GetSkeletonNode( m_pHitBoxUser->GetModelSkeleton(), szNodeName );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -102,14 +146,13 @@ LTBOOL CCharacterHitBox::Init(HOBJECT hModel, IHitBoxUser* pUser)
 	m_hModel = hModel;
 	m_pHitBoxUser = pUser;
 
+	// RETAIL: Tron's (Object.lto 0x10138b55)
+	InitOBBs();
+
 	// Set my flags...
 
+	// RETAIL: Tron sets no USRFLG_CHARACTER here (Object.lto 0x10138b6f)
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_RAYHIT | FLAG_TOUCHABLE, FLAGMASK_ALL);
-
-	// Set our user flags to USRFLG_CHARACTER, so the client will process
-	// us like a character (for intersect segments)...
-	
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CHARACTER, USRFLG_CHARACTER);
 
 	if (!g_vtShowNodeRadii.IsInitted())
 	{
@@ -151,6 +194,12 @@ LTBOOL CCharacterHitBox::Init(HOBJECT hModel, IHitBoxUser* pUser)
         g_vtShowPlayerNodeRadii.Init(g_pLTServer, "HitBoxShowPlayerNodeRadii", LTNULL, 0.0f);
 	}
 
+	// RETAIL: Tron's (Object.lto 0x10138e21)
+	if (!g_vtDistHitBoxMethod.IsInitted())
+	{
+        g_vtDistHitBoxMethod.Init(g_pLTServer, "DistHitBoxMethod", LTNULL, 0.0f);
+	}
+
 	SetNextUpdate(UPDATE_NEVER);
 
     return LTTRUE;
@@ -177,6 +226,16 @@ uint32 CCharacterHitBox::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT 
 		case MID_LOADOBJECT:
 		{
 			Load((ILTMessage_Read*)pData);
+		}
+		break;
+
+		// RETAIL: Tron's (Object.lto 0x10138e7c)
+		case MID_ALLOBJECTSCREATED:
+		{
+			if( m_hModel )
+			{
+				InitOBBs();
+			}
 		}
 		break;
 

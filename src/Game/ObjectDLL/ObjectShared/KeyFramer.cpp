@@ -997,6 +997,8 @@ bool KeyFramer::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Backward("BACKWARD");
 	static CParsedMsg::CToken s_cTok_Reverse("REVERSE");
 	static CParsedMsg::CToken s_cTok_ToggleDir("TOGGLEDIR");
+	// RETAIL: Tron's (Object.lto 0x101177b4)
+	static CParsedMsg::CToken s_cTok_ResetPath("RESETPATH");
 	static CParsedMsg::CToken s_cTok_Goto("GOTO");
 	static CParsedMsg::CToken s_cTok_MoveTo("MOVETO");
 	static CParsedMsg::CToken s_cTok_Target("TARGET");
@@ -1038,6 +1040,10 @@ bool KeyFramer::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if (cMsg.GetArg(0) == s_cTok_ToggleDir)
 	{
 		ToggleDir();
+	}
+	else if (cMsg.GetArg(0) == s_cTok_ResetPath)
+	{
+		ResetPath();
 	}
 	else if (cMsg.GetArg(0) == s_cTok_Goto)
 	{
@@ -1901,6 +1907,181 @@ void KeyFramer::GoToKey(const char* pKeyName)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	KeyFramer::ResetToKey
+//
+//	PURPOSE:	Put the objects at the specified key, with their rotations
+//				at that key (the name is ours)
+//
+//	RETAIL:		Tron's (Object.lto 0x10119c40). GoToKey without Resume,
+//				then UpdateObjects at the key's position, without the
+//				position calculation; align to path looks a little along
+//				the path from the key.
+//
+// ----------------------------------------------------------------------- //
+
+void KeyFramer::ResetToKey(const char* pKeyName)
+{
+	if (!pKeyName) return;
+
+	// Find the specified key...
+
+	KEYNODE* pCurKey = FindKey(pKeyName);
+
+	// Couldn't find the key...
+
+	if (!pCurKey)
+	{
+        g_pLTServer->CPrint("ERROR in KeyFramer::GoToKey() - Couldn't find key '%s'", pKeyName);
+		return;
+	}
+
+
+	// Set the current key and current time...
+
+	m_pCurKey  = pCurKey;
+	m_fCurTime = pCurKey->keyData.m_fRealTime;
+	m_vCurPos  = pCurKey->keyData.m_vPos;
+
+
+	// Set up m_pPosition1 and m_pPosition2...
+
+	ProcessCurrentKey();
+
+
+	// Make sure that m_pPosition1 and m_pPosition2 are valid...
+
+	if (!m_pPosition1)
+	{
+		m_pPosition1 = m_pPosition2;
+	}
+	else if (!m_pPosition2)
+	{
+		m_pPosition2 = m_pPosition1;
+	}
+
+	if (!m_pPosition1)
+	{
+        g_pLTServer->CPrint("ERROR in KeyFramer::GoToKey() - m_pPosition1 and m_pPosition2 are both LTNULL!!!!");
+	}
+
+	m_fKeyPercent = 0.0f;
+
+	LTRotation rRotNew;
+	rRotNew = m_pPosition1->keyData.m_rRot;
+
+	// Now add the relative position and rotation to every object in
+	// the list...
+
+	long i = 0;
+	if (!m_pObjectList) return;
+	ObjectLink* pLink = m_pObjectList->m_pFirstLink;
+	while (pLink)
+	{
+		LTVector vOldPos;
+		g_pLTServer->GetObjectPos(pLink->m_hObject, &vOldPos);
+
+		// Set object's new position...
+
+		LTVector vPos = m_vCurPos;
+
+		if (!m_bIgnoreOffsets)
+		{
+			vPos += m_pOffsets[i];
+		}
+
+		g_pLTServer->SetObjectPos(pLink->m_hObject, &vPos);
+
+		// RETAIL: Tron starts from no rotation here, not from the key's
+		// (rRotNew is not used)
+		LTRotation rRot1;
+
+
+		// If we have a target object, align the object to face it...
+
+		if (m_hTargetObject)
+		{
+			LTVector vTargetPos;
+			g_pLTServer->GetObjectPos(m_hTargetObject, &vTargetPos);
+
+			vTargetPos += m_vTargetOffset;
+
+			LTVector vDir = vTargetPos - vPos;
+			vDir.Normalize();
+
+			rRot1 = LTRotation(vDir, LTVector(0.0f, 1.0f, 0.0f));
+		}
+		else if (m_bAlignToPath)
+		{
+			// Align the object to the path, if necessary...
+
+			LTVector vDir;
+			LTVector vKeyDir = m_pPosition2->keyData.m_vPos - m_pPosition1->keyData.m_vPos;
+			if (vKeyDir.Dot(vKeyDir) <= 0.0f)
+			{
+				vDir = LTVector(vPos.x - vOldPos.x, vPos.y - vOldPos.y, vPos.z - vOldPos.z);
+			}
+			else
+			{
+				// Look at a point a little along the path...
+
+				LTVector vNext;
+				if ( (m_pPosition1->keyData.m_nKeyFlags & BEZNEXT_KEY) && (m_pPosition2->keyData.m_nKeyFlags & BEZPREV_KEY) )
+				{
+					Bezier_Evaluate(vNext, CURVE_PTS(m_pPosition1->keyData, m_pPosition2->keyData), 0.01f);
+				}
+				else
+				{
+					VEC_LERP(vNext, m_pPosition1->keyData.m_vPos, m_pPosition2->keyData.m_vPos, 0.01f);
+				}
+
+				vDir = LTVector(vNext.x - vPos.x, vNext.y - vPos.y, vNext.z - vPos.z);
+			}
+
+			vDir.Normalize();
+
+			rRot1 = LTRotation(vDir, LTVector(0.0f, 1.0f, 0.0f));
+
+			// Now adjust the rotation to account for the pitch and roll of
+			// the key...
+
+			LTVector vNewPYR;
+			LTVector vPYR1 = m_pPosition1->keyData.m_vPitchYawRoll;
+			LTVector vPYR2 = m_pPosition2->keyData.m_vPitchYawRoll;
+			VEC_LERP(vNewPYR, vPYR1, vPYR2, m_fKeyPercent);
+
+			LTVector vU, vR, vF;
+			vU = rRot1.Up();
+			vR = rRot1.Right();
+			vF = rRot1.Forward();
+
+			// Adjust pitch...
+
+			rRot1.Rotate(vR, vNewPYR.x);
+
+			// Adjust roll...
+
+			rRot1.Rotate(vF, vNewPYR.z);
+		}
+
+
+		if (!m_bIgnoreOffsets && !m_hTargetObject)
+		{
+			AddRotationValues(
+				&rRot1,
+				&rRot1,
+				&m_pRotations[i]);
+		}
+
+		g_pLTServer->SetObjectRotation(pLink->m_hObject, &rRot1);
+
+		i++;
+		pLink = pLink->m_pNext;
+	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	KeyFramer::MoveToKey
 //
 //	PURPOSE:	Set the destination key to the specified key
@@ -2202,6 +2383,24 @@ void KeyFramer::ToggleDir()
 		Forward();
 	}
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	KeyFramer::ResetPath
+//
+//	PURPOSE:	Put the objects back at the first key (the name is ours)
+//
+//	RETAIL:		Tron's (Object.lto 0x1011aa90)
+//
+// ----------------------------------------------------------------------- //
+
+void KeyFramer::ResetPath()
+{
+	char szKey[256];
+	sprintf(szKey, "%s%d", g_pLTServer->GetStringData(m_hstrBaseKeyName), 0);
+	ResetToKey(szKey);
+}
+
 
 
 // ----------------------------------------------------------------------- //

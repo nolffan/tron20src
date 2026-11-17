@@ -73,7 +73,8 @@ public:
 
 	// Relation Handling:
 
-	void CommunicateMessage(CCharacter* pSender, const RelationDescription&, uint32 dRestrictionFlags);
+	// RETAIL: Tron's: the sender is the owner (Object.lto 0x1010b560)
+	void CommunicateMessage(const RelationDescription&, uint32 dRestrictionFlags);
 	// RETAIL: not virtual in Tron (its vtables; build 51 has no ResetRelationTime: NOLF2's
 	// later code, standing in)
 	void ResetRelationTime(CObjectRelationMgr* pORM);
@@ -118,7 +119,8 @@ private:
 	bool HasCollectiveName() const						{ return ( strcmp( GetCollectiveName(), "" ) != 0 ); }
 
 	// Modifying Methods:
-	bool RecipientMeetsRestrictions(CCharacter* pSender, CCharacter* pReceiver, uint32 iRestrictionFlags);
+	// RETAIL: Tron's takes the relation users (Object.lto 0x1010b640)
+	bool RecipientMeetsRestrictions(IObjectRelationMgrUser* pSender, IObjectRelationMgrUser* pReceiver, uint32 iRestrictionFlags);
 
 	// Save:
 	int				m_nTemplateID;

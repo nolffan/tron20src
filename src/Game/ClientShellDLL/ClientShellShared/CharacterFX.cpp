@@ -543,6 +543,16 @@ LTBOOL CCharacterFX::Update()
 		RemoveFlashLightFX();
 	}
 
+	// RETAIL: Tron's (0x10175245)
+	if ( m_cs.byFXFlags & CHARCREATESTRUCT::eTronTalkIcon )
+	{
+		ShowTalkIconFX();
+	}
+	else
+	{
+		HideTalkIconFX();
+	}
+
 	// Update node controller...
 
 	m_NodeController.Update();
@@ -1303,6 +1313,72 @@ void CCharacterFX::UpdateFlashLightFX()
 void CCharacterFX::RemoveFlashLightFX()
 {
 	m_3rdPersonFlashlight.TurnOff();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::CreateTalkIconFX
+//
+//	PURPOSE:	RETAIL: Tron's (0x10176c10; the name is ours): create the
+//				talk icon above the character's head, hidden
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::CreateTalkIconFX()
+{
+	if (m_linkChatFX.IsValid()) return;
+
+	LTVector vDims(0.0f, 0.0f, 0.0f);
+	g_pPhysicsLT->GetObjectDims(m_hServerObject, &vDims);
+	vDims.y += 10.0f;
+	vDims.z = 0.0f;
+	vDims.x = 0.0f;
+
+	CLIENTFX_CREATESTRUCT fxInit("AI_TALKICON", FXFLAG_LOOP, m_hServerObject);
+	fxInit.m_bTronUnknownA0 = true;
+	fxInit.m_vTronUnknownA4 = vDims;
+	g_pClientFXMgr->CreateClientFX(&m_linkChatFX, fxInit, LTTRUE);
+
+	if (m_linkChatFX.GetInstance())
+	{
+		m_linkChatFX.GetInstance()->Hide();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::ShowTalkIconFX
+//
+//	PURPOSE:	RETAIL: Tron's (0x10176d40; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::ShowTalkIconFX()
+{
+	if (!m_linkChatFX.GetInstance())
+	{
+		CreateTalkIconFX();
+	}
+	else
+	{
+		m_linkChatFX.GetInstance()->Show();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::HideTalkIconFX
+//
+//	PURPOSE:	RETAIL: Tron's (0x10176d60; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::HideTalkIconFX()
+{
+	if (m_linkChatFX.GetInstance())
+	{
+		m_linkChatFX.GetInstance()->Hide();
+	}
 }
 
 

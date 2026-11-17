@@ -49,6 +49,7 @@ public:
 
 protected:
 	virtual WeaponState   UpdateModelState( bool bFire, bool bAltFire );	// RETAIL: 0x1001b460
+	virtual bool  PlayFireAnimation( bool bResetAni );	// RETAIL: 0x1001b510
 	virtual void  Fire( bool bFire );	// RETAIL: 0x1001b760
 	virtual void  HandleFireKeyDownTransition();
 	virtual void  HandleFireKeyUpTransition();

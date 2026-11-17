@@ -471,11 +471,11 @@ bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPo
 	pProjectile->ScaleTronDamage105( &fDamage );
 
 	// RETAIL: a second damage the projectile has when its 0x7c flag is set:
-	// 0x84 times 0x80 (as our header names them; the names may be wrong)
+	// its modifier 9 damage times its duration (0x84 times 0x80)
 	LTFLOAT fExtraDamage = 0.0f;
-	if ( pProjectile->m_bCanTouchFiredFromObj )
+	if ( pProjectile->m_bTronUnknown7C )
 	{
-		fExtraDamage = pProjectile->m_fRadius * *(LTFLOAT*)&pProjectile->m_xTronUnknown80;
+		fExtraDamage = pProjectile->m_fTronUnknown84 * pProjectile->m_fTronUnknown80;
 	}
 
 	LTFLOAT fHitPoints = m_fHitPoints;

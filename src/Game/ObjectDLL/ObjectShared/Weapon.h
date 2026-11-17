@@ -95,6 +95,12 @@ class CWeapon
 		float	GetLastFireTime( ) const { return m_fLastFireTime; }
 
 		void	HideWeapon( bool bHidden );
+
+		// RETAIL: Tron's (0x10158540; the names are ours): CPlayerObj calls it
+		// in place of Fire when a client fires faster than the weapon's fire
+		// delay (0x10082ba1); it only spends the ammo. Retail ignores the second
+		// argument
+		void	SpendAmmo( HOBJECT hFiredFrom, bool bTronUnknown );
 		bool	IsHidden() const { return m_bHidden; }
 	
 	protected :
@@ -126,7 +132,7 @@ class CWeapon
 
 		int          m_nCurTracer;			// Current tracer count
 
-		uint32       m_nLastTimestamp;		// The previous time of firing
+		LTFLOAT      m_fLastTimestamp;		// The previous time of firing (RETAIL: a float in Tron, 0x101575b8)
 		
 		LTBOOL		 m_bFirstSelection;	// Is this the first time we are selecting this weapon?
 

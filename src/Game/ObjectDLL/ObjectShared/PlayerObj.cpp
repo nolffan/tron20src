@@ -2346,10 +2346,9 @@ void CPlayerObj::UpdateCommands()
 
 		if (!IsCarryingHeavyObject() && WS_NONE == m_nWeaponStatus )
 		{
+			// RETAIL: Tron's checks all five fire postures (0x1007be2c)
 			if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire ) ||
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire2 ) ||
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire3 ))
+				m_Animator.IsAnimatingFire() )
 			{
 				ClearHiding();
 				CAnimatorPlayer::Posture ePosture = m_Animator.GetLastPosture();
@@ -2655,13 +2654,8 @@ bool CPlayerObj::UpdateDamageAnimations()
 			return true;
 		}
 	
-		// The rest just use a generic hurt animation while at rest...
-		static DamageFlags nHurtDamageFlags = GetDamageFlagsWithHurtAnim( );
-		if( m_nDamageFlags & nHurtDamageFlags )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Hurt );
-			return true;
-		}
+		// PORT: NOLF2 1.3's generic hurt animation needs the damage types'
+		// hurt animation flag; Tron's DTINFO has none (Shared/DamageTypes.h)
 	}
 
 	return false;
@@ -4549,13 +4543,32 @@ void CPlayerObj::ResetInventory(LTBOOL bRemoveGear, LTBOOL bTronUnknown)
 
 void CPlayerObj::ResetModel()
 {
+	// RETAIL: retail 0x1007f500: the multiplayer model's color skins,
+	// and the attachments only recreated
 	ObjectCreateStruct createstruct;
 	createstruct.Clear();
 
 	const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
 	SAFE_STRCPY(createstruct.m_Filename, pFilename);
 
-	g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, createstruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+	if( IsMultiplayerGame( ))
+	{
+		const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+		if( pModel )
+		{
+			const std::vector<std::string>& vecSkins = pModel->m_vecColorSkins[m_bTronUnknown31c9];
+			int nSkins = vecSkins.size( );
+			for( int i = 0; i < nSkins; i++ )
+			{
+				SAFE_STRCPY( createstruct.m_SkinNames[i], vecSkins[i].c_str( ));
+			}
+		}
+	}
+	else
+	{
+		g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, createstruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+	}
+
 	g_pModelButeMgr->CopyRenderStyleFilenames(m_eModelId, &createstruct);
 
     g_pCommonLT->SetObjectFilenames(m_hObject, &createstruct);
@@ -4569,10 +4582,6 @@ void CPlayerObj::ResetModel()
 	// Reset the animations...
 
 	m_Animator.Reset(m_hObject);
-	
-	// Reset the main tracker to make sure we lose any special animations we were playing when we died...
-
-	m_Animator.SetMainToBase();
 
 	m_bInitializedAnimation = LTFALSE;
 
@@ -4591,43 +4600,40 @@ void CPlayerObj::ResetModel()
 		// Reattach all of our attachments in case we have changed models.
 
 		m_pPlayerAttachments->RemoveAndRecreateAttachments();
-
-		// Detach any prop or object attachments...
-		
-		m_pPlayerAttachments->DetachAttachmentsOfType( ATTACHMENT_TYPE_PROP );
-		m_pPlayerAttachments->DetachAttachmentsOfType( ATTACHMENT_TYPE_OBJECT );
-	}
-	
-	// Run throught the list of default attachments for the model and attach them...
-
-	const char* pszAttachmentPos;
-	const char* pszAttachment;
-	char szTrigger[128];
-
-	uint32 cAttachments = g_pModelButeMgr->GetNumDefaultAttachments( m_eModelId );
-	for( uint32 iAttachment = 0; iAttachment < cAttachments; ++iAttachment )
-	{
-		g_pModelButeMgr->GetDefaultAttachment( m_eModelId, iAttachment, pszAttachmentPos, pszAttachment );
-
-		sprintf( szTrigger, "%s %s %s", KEY_ATTACH, pszAttachmentPos, pszAttachment );
-		SendTriggerMsgToObject( this, m_hObject, LTFALSE, szTrigger );
 	}
 
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags );
+	ResetDiscSkin();
+}
 
-	HideAttachments( !(dwFlags & FLAG_VISIBLE) );
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CPlayerObj::ResetDiscSkin
+//
+//	PURPOSE:	RETAIL: retail 0x1007f820 (the name is ours): in the disc
+//				game types the held weapon's model takes the multiplayer
+//				model's color disc skin (ModelButes "HHDisc")
+//
+// ----------------------------------------------------------------------- //
 
-	/*
-	if (IsMultiplayerGame( ))
+void CPlayerObj::ResetDiscSkin()
+{
+	if( IsDiscGameType( ))
 	{
-		if ( m_pPlayerAttachments )
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( );
+		if( pWeapon )
 		{
-			m_pPlayerAttachments->ResetRequirements();
-			m_pPlayerAttachments->AddRequirements(m_eModelId);
+			const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+			if( pModel )
+			{
+				ObjectCreateStruct createstruct;
+				createstruct.Clear();
+
+				SAFE_STRCPY( createstruct.m_SkinNames[0], pModel->m_vecColorHHDiscFX[m_bTronUnknown31c9].c_str( ));
+
+				g_pCommonLT->SetObjectFilenames( pWeapon->GetModelObject( ), &createstruct );
+			}
 		}
 	}
-	*/
 }
 
 
@@ -4672,6 +4678,8 @@ void CPlayerObj::DoWeaponChange(uint8 nWeaponId,uint8 nAmmoId)
 		pWeapon->SetAmmoId( nAmmoId );
 	}
 
+	// RETAIL: retail 0x1007fbdb
+	ResetDiscSkin();
 }
 
 
@@ -4821,18 +4829,13 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 	if( !pInfo )
 		return NULL;
 
-	if( pInfo->saPlayerDamageSounds.size( ) == 0 )
+	// PORT: Tron's DTINFO has no damage sounds (Shared/DamageTypes.h): the
+	// pain sounds are NOLF2's default ones
 	{
 		char const* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
 
 		int nSize = ARRAY_LEN(PainSounds) - 1;
 		strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
-	}
-	else
-	{
-		uint32 nRandSelection = GetRandom( 0, pInfo->saPlayerDamageSounds.size( ) - 1 );
-		char const* pszDamageSound = pInfo->saPlayerDamageSounds[nRandSelection].c_str( );
-		strcat( s_FileBuffer, pszDamageSound );
 	}
 
 	return s_FileBuffer;
@@ -6438,7 +6441,9 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	weaponFireInfo.fPerturbU       = static_cast< LTFLOAT >( cTemp ) / 255.0f;
 
 	// get the timestamp when the shot was fired
-	weaponFireInfo.nFireTimestamp = pMsg->Readuint32();
+	// PORT: Tron's fire time is a float (WeaponFireInfo +0x4c); the type on
+	// the wire is not yet checked against retail
+	weaponFireInfo.fFireTime = pMsg->Readfloat();
 
 	// extract the extra (weapon specific) data from the message
 	GetExtraFireMessageInfo( nWeaponType, pMsg, &weaponFireInfo );
@@ -6495,7 +6500,17 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 
-	pWeapon->Fire(weaponFireInfo);
+	// RETAIL: Tron's only spends the ammo when the weapon's fire delay has
+	// not passed since its last shot (0x10082b6b..0x10082ba1). PORT: the
+	// time is the server's (retail's comes from a local not yet identified)
+	if (g_pLTServer->GetTime() - pWeapon->GetLastFireTime() <= pWeapon->GetWeaponData()->m_fFireDelay)
+	{
+		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
+	}
+	else
+	{
+		pWeapon->Fire(weaponFireInfo);
+	}
 
  	// [KLS 8/13/02] Change ammo type back to correct ammo type...
  
@@ -6821,12 +6836,8 @@ void CPlayerObj::RideVehicle(PlayerVehicle* pVehicle)
 		return;
 	}
 
-	if (IsCarryingHeavyObject())
-	{
-		g_pLTServer->CPrint("Can't ride vehicles while carrying a something heavy");
-		return;
-	}
-
+	// RETAIL: retail 0x10083900: no heavy objects, and the vehicle is not
+	// told it is ridden
 
 	PlayerPhysicsModel eModel = pVehicle->GetPhysicsModel();
 
@@ -6839,12 +6850,6 @@ void CPlayerObj::RideVehicle(PlayerVehicle* pVehicle)
 	}
 
 	SetPhysicsModel(eModel);
-
-
-	if (m_hVehicleModel)
-	{
-		pVehicle->SetRidden(true);
-	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -8117,6 +8122,193 @@ END HACK - for DM testing */
 
 // ----------------------------------------------------------------------- //
 //
+//  ROUTINE:	CPlayerObj::AcquireLevelIdealWeapons
+//
+//  PURPOSE:	RETAIL: retail 0x100855a0 (the name is ours): obtain the
+//				mission and level ideal weapons (MISSION, LEVEL
+//				"IdealWeapon"), each with what its record says it needs
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerObj::AcquireLevelIdealWeapons( int nMissionId, int nLevelId )
+{
+	if( g_pServerMissionMgr->IsCustomLevel( ))
+		return false;
+
+	MISSION* pMission = g_pMissionButeMgr->GetMission( nMissionId );
+	if( !pMission )
+		return false;
+
+	LEVEL *pLevel = g_pMissionButeMgr->GetLevel( nMissionId, nLevelId );
+	if( !pLevel )
+		return false;
+
+	if( !m_pPlayerAttachments )
+		return false;
+
+	for( int i = 0; i < pMission->nNumIdealWeapons; ++i )
+	{
+		int nWeaponId = pMission->aIdealWeapons[i].nId;
+
+		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
+		if( !pWeaponData )
+			continue;
+
+		TronUnknownVirtual127( pMission->aIdealWeapons[i].szName );
+
+		m_pPlayerAttachments->ObtainWeapon( nWeaponId, AMMO_DEFAULT_ID, 10000, LTTRUE );
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
+		if( !pWeapon )
+			continue;
+	}
+
+	for( i = 0; i < pLevel->nNumIdealWeapons; ++i )
+	{
+		int nWeaponId = pLevel->aIdealWeapons[i].nId;
+
+		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( nWeaponId );
+		if( !pWeaponData )
+			continue;
+
+		TronUnknownVirtual127( pLevel->aIdealWeapons[i].szName );
+
+		m_pPlayerAttachments->ObtainWeapon( nWeaponId, AMMO_DEFAULT_ID, 10000, LTTRUE );
+		CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon( nWeaponId );
+		if( !pWeapon )
+			continue;
+	}
+
+	return true;
+}
+
+// RETAIL: the subroutine states and conditions (retail 0x102e95f8,
+// 0x102e9628; this file's copy). The names are ours
+static char const s_aszIdealStates[][15] = { "alpha", "beta", "gold" };
+static char const s_aszIdealConditions[][15] = { "normal", "infected" };
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CPlayerObj::AcquireLevelIdealSubroutines
+//
+//  PURPOSE:	RETAIL: retail 0x10085790 (the name is ours): the mission
+//				and level ideal subroutines, through "acquiresub"
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerObj::AcquireLevelIdealSubroutines( int nMissionId, int nLevelId )
+{
+	if( g_pServerMissionMgr->IsCustomLevel( ))
+		return false;
+
+	MISSION* pMission = g_pMissionButeMgr->GetMission( nMissionId );
+	if( !pMission )
+		return false;
+
+	LEVEL *pLevel = g_pMissionButeMgr->GetLevel( nMissionId, nLevelId );
+	if( !pLevel )
+		return false;
+
+	if( !m_pPlayerAttachments )
+		return false;
+
+	char szMsg[512];
+
+	for( int i = 0; i < pMission->nNumIdealSubroutines; ++i )
+	{
+		MISSIONSUBROUTINE* pSub = &pMission->aIdealSubroutines[i];
+		sprintf( szMsg, "acquiresub %s %s %s", pSub->szName,
+			s_aszIdealStates[pSub->nVersion], s_aszIdealConditions[pSub->nCondition] );
+		SendTriggerMsgToObject( this, m_hObject, LTTRUE, szMsg );
+	}
+
+	for( i = 0; i < pLevel->nNumIdealSubroutines; ++i )
+	{
+		MISSIONSUBROUTINE* pSub = &pLevel->aIdealSubroutines[i];
+		sprintf( szMsg, "acquiresub %s %s %s", pSub->szName,
+			s_aszIdealStates[pSub->nVersion], s_aszIdealConditions[pSub->nCondition] );
+		SendTriggerMsgToObject( this, m_hObject, LTTRUE, szMsg );
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CPlayerObj::AcquireLevelIdealProcedurals
+//
+//  PURPOSE:	RETAIL: retail 0x10085930 (the name is ours): the mission
+//				and level ideal procedurals, through "acquireproc"
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerObj::AcquireLevelIdealProcedurals( int nMissionId, int nLevelId )
+{
+	if( g_pServerMissionMgr->IsCustomLevel( ))
+		return false;
+
+	MISSION* pMission = g_pMissionButeMgr->GetMission( nMissionId );
+	if( !pMission )
+		return false;
+
+	LEVEL *pLevel = g_pMissionButeMgr->GetLevel( nMissionId, nLevelId );
+	if( !pLevel )
+		return false;
+
+	char szMsg[512];
+
+	for( int i = 0; i < pMission->nNumIdealProcedurals; ++i )
+	{
+		sprintf( szMsg, "acquireproc %s", pMission->aIdealProcedurals[i].szName );
+		SendTriggerMsgToObject( this, m_hObject, LTTRUE, szMsg );
+	}
+
+	for( i = 0; i < pLevel->nNumIdealProcedurals; ++i )
+	{
+		sprintf( szMsg, "acquireproc %s", pLevel->aIdealProcedurals[i].szName );
+		SendTriggerMsgToObject( this, m_hObject, LTTRUE, szMsg );
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CPlayerObj::AcquireLevelIdealBuildPoints
+//
+//  PURPOSE:	RETAIL: retail 0x10085a70 (the name is ours): the level's
+//				ideal build points, else the mission's
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerObj::AcquireLevelIdealBuildPoints( int nMissionId, int nLevelId )
+{
+	if( g_pServerMissionMgr->IsCustomLevel( ))
+		return false;
+
+	MISSION* pMission = g_pMissionButeMgr->GetMission( nMissionId );
+	if( !pMission )
+		return false;
+
+	LEVEL *pLevel = g_pMissionButeMgr->GetLevel( nMissionId, nLevelId );
+	if( !pLevel )
+		return false;
+
+	int nBuildPoints = pLevel->nIdealBuildPoints;
+	if( nBuildPoints <= 0 )
+		nBuildPoints = pMission->nIdealBuildPoints;
+
+	if( nBuildPoints > 0 )
+	{
+		char szMsg[512];
+		sprintf( szMsg, "setbuildpoints %d", nBuildPoints );
+		SendTriggerMsgToObject( this, m_hObject, LTTRUE, szMsg );
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //  ROUTINE:	CPlayerObj::AcquireLevelDefaultMods
 //
 //  PURPOSE:	Obtaian the mission and level default mods...
@@ -8304,6 +8496,60 @@ bool CPlayerObj::AcquireCurrentLevelDefaults()
 		return false;
 
 	if( !AcquireLevelDefaultAmmo( nMissionId, nLevelId ))
+		return false;
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//  ROUTINE:	CPlayerObj::AcquireCurrentLevelIdeal*
+//
+//  PURPOSE:	RETAIL: retail 0x10085ef0, 0x10085f10, 0x10085f30,
+//				0x10085f50 (the names are ours): the current level's ideal
+//				inventory (the cheats and FullWeaponCheat)
+//
+// ----------------------------------------------------------------------- //
+
+bool CPlayerObj::AcquireCurrentLevelIdealWeapons()
+{
+	int nMissionId	= g_pServerMissionMgr->GetCurrentMission();
+	int nLevelId	= g_pServerMissionMgr->GetCurrentLevel();
+
+	if( !AcquireLevelIdealWeapons( nMissionId, nLevelId ))
+		return false;
+
+	return true;
+}
+
+bool CPlayerObj::AcquireCurrentLevelIdealSubroutines()
+{
+	int nMissionId	= g_pServerMissionMgr->GetCurrentMission();
+	int nLevelId	= g_pServerMissionMgr->GetCurrentLevel();
+
+	if( !AcquireLevelIdealSubroutines( nMissionId, nLevelId ))
+		return false;
+
+	return true;
+}
+
+bool CPlayerObj::AcquireCurrentLevelIdealProcedurals()
+{
+	int nMissionId	= g_pServerMissionMgr->GetCurrentMission();
+	int nLevelId	= g_pServerMissionMgr->GetCurrentLevel();
+
+	if( !AcquireLevelIdealProcedurals( nMissionId, nLevelId ))
+		return false;
+
+	return true;
+}
+
+bool CPlayerObj::AcquireCurrentLevelIdealBuildPoints()
+{
+	int nMissionId	= g_pServerMissionMgr->GetCurrentMission();
+	int nLevelId	= g_pServerMissionMgr->GetCurrentLevel();
+
+	if( !AcquireLevelIdealBuildPoints( nMissionId, nLevelId ))
 		return false;
 
 	return true;

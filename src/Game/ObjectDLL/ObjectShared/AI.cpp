@@ -1485,23 +1485,39 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAI::InitTronWeapons()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1012f9e0; name ours): the
+//				ram weapon of the template.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::InitTronWeapons()
+{
+	// RETAIL: Tron's (Object.lto 0x1012f9e0): a CWeapons with the ram weapon
+	// of the template, its current weapon and the ammo of that weapon
+
+	const WEAPON* pRamWeapon = GetAITemplate()->pRamWeapon;
+	if( !pRamWeapon )
+		return;
+
+	m_pTronWeapons = debug_new( CWeapons );
+	m_pTronWeapons->Init( m_hObject );
+	m_pTronWeapons->ObtainWeapon( pRamWeapon->nId );
+	m_pTronWeapons->ChangeWeapon( pRamWeapon->nId );
+
+	m_pTronWeapon = m_pTronWeapons->GetCurWeapon();
+	m_pTronWeapons->SetAmmo( m_pTronWeapon->GetAmmoId() );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAI::InitWeaponChoices()
 //
 //	PURPOSE:	RETAIL: Tron's (inlined in InitialUpdate and Load, retail
 //				0x1012b987, 0x1013467f; name ours): the attack sides the
 //				brain's AIData offers.
 //
-// ----------------------------------------------------------------------- //
-
-void CAI::InitTronWeapons()
-{
-	// PORT: retail 0x1012f9e0 gives the AI a CWeapons (m_pTronWeapons) with
-	// the weapon its template names (AIBM_Template+0x11c, a WEAPON
-	// record; not in our AIButeMgr yet), obtains and changes to it, keeps
-	// the current CWeapon (m_pTronWeapon) and sets its ammo. Not written
-	// until the template has the field.
-}
-
 // ----------------------------------------------------------------------- //
 
 inline void CAI::InitWeaponChoices()
@@ -3387,6 +3403,14 @@ EnumAnimProp CAI::GetWeaponProp(WEAPON const* pWeaponData)
 {
 	if (pWeaponData)
 	{
+		// RETAIL: Tron's (Object.lto 0x1012fc1c): the template's weapon set
+		// gives the prop first
+		EnumAnimProp eProp = GetAITemplate()->pWeaponSet->GetWeaponProp( pWeaponData );
+		if( eProp != kAP_Invalid )
+		{
+			return eProp;
+		}
+
 		return GetWeaponProp( (EnumAIWeaponType)pWeaponData->nAIWeaponType ); 
 	}
 

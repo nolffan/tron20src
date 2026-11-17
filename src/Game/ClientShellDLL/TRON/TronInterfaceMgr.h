@@ -78,6 +78,19 @@ struct TronInterfaceRecord
 // subroutine box was up. The names are ours
 struct TronPendingSubroutine
 {
+	TronPendingSubroutine() {}
+
+	// RETAIL: the vector's copies (_Construct 0x1009ff20,
+	// uninitialized_copy 0x1009ff80, uninitialized_fill_n 0x100a0010 and
+	// _M_insert_overflow 0x1009fbc0, which calls two of the copies out of
+	// line)
+	TronPendingSubroutine(const TronPendingSubroutine& other)
+	{
+		LTStrCpy(szName, other.szName, sizeof(szName));
+		LTStrCpy(szVersion, other.szVersion, sizeof(szVersion));
+		LTStrCpy(szState, other.szState, sizeof(szState));
+	}
+
 	char	szName[128];
 	char	szVersion[128];
 	char	szState[128];
@@ -102,7 +115,9 @@ public:
 	virtual bool	TronUnknownVirtual50();
 	virtual bool	TronUnknownVirtual54() { return !m_DuplicateDlg.IsVisible(); }
 
-	virtual void	TronUnknownVirtual7C(void* pTronUnknown);
+	// RETAIL: slot 0x7c (0x1009d7a0): the local client's score changed
+	// (CInterfaceMgr::OnMessage, 0x100c9a04)
+	virtual void	TronUnknownVirtual7C(CPlayerScore* pScore);
 
     LTBOOL			OnCommandOn(int command);
     LTBOOL			OnCommandOff(int command);
@@ -142,6 +157,12 @@ public:
 	// from server messages, 0x1009d805..; the name is ours)
 	int				GetTronUnknown28B18() {return m_nTronUnknown28B18;}
 
+	// RETAIL: 0x1009e850: shows the light cycle's left (0) or right (1)
+	// turn arrow for two loops (CLightCycleFX, retail 0x10011fcb; the
+	// names are ours)
+	void			ShowTurnArrow(int nDirection);
+	void			HideTurnArrows();				// 0x1009e910
+
 protected:
 	// Message function
 	virtual LTBOOL OnMessage(uint8 messageID, ILTMessage_Read *pMsg);
@@ -162,6 +183,13 @@ protected:
 	void			QueueSubroutinePickup(const char* szName, const char* szVersion, const char* szState);	// 0x1009f0c0
 	void			HandleSubroutinePickup(char* szName, char* szVersion, char* szState);	// 0x1009f200
 	void			OnDuplicateDlgClick(int x, int y);	// 0x1009f510
+
+	// RETAIL: the console variable records (m_TronRecords) that
+	// MID_TRON_UNKNOWN_104 starts and stops (the names are ours)
+	void			UpdateConsoleVarRecords();		// 0x1009e940
+	LTBOOL			HandleConsoleVarFade(ILTMessage_Read *pMsg);		// 0x1009eae0
+	LTBOOL			HandleConsoleVarOscillate(ILTMessage_Read *pMsg);	// 0x1009ec40
+	LTBOOL			HandleConsoleVarStop(ILTMessage_Read *pMsg, bool bRestore);	// 0x1009edb0
 
 private:
 	// RETAIL: layout from the constructor (0x1009ca20) and destructor

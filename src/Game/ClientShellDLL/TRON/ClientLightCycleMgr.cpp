@@ -8,16 +8,6 @@
 // 0x100106c0..0x100160a0 (see ClientLightCycleMgr.h). The functions are in
 // retail's order.
 //
-// RETAIL: not written yet (they need classes our build has not):
-//   0x10011c80  the MID_LIGHT_CYCLE_INFO handler (4276 bytes, 34 kinds;
-//               CTronPlayerMgr::OnMessage passes message 136 to it);
-//   0x10013100  plays a cycle dialog sound with Tron's subtitles;
-//   0x10013e40  the cycle's sounds and FX (Tron's CVehicleMgr members and
-//               CLightCycleFX, neither in our build);
-//   0x10014360  a speed-to-pitch helper of 0x10013e40;
-//   0x10014990  ActivatePowerup (slot 16: HUD and FX);
-//   0x10015050, 0x10015090, 0x100155f0 (the handler's helpers).
-//
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
@@ -37,6 +27,8 @@
 #include "MsgIDs.h"
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x10010650..0x100106b2)
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleRoster
+#include "TronPlayerMgr.h"
+#include "VehicleMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
 extern bool GroundFilterFn(HOBJECT hObj, void *pUserData);	// BodyFX.cpp
@@ -537,6 +529,545 @@ void CClientLightCycleMgr::DrawTrails()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CClientLightCycleMgr::OnMessage
+//
+//	PURPOSE:	A MID_LIGHT_CYCLE_INFO message from the server. RETAIL:
+//				0x10011c80 (the name is ours). PORT: three kinds of retail
+//				call code our build has not:
+//				- Tron's CLightCycleFX (the special FX of the other
+//				  players' cycles; RTTI .?AVCLightCycleFX@@, vtable
+//				  0x101eb140), found by the SFX manager's 0x10108650:
+//				  LCI_POSITION turns its object to the new forward, and
+//				  LCI_TURBO hands its engine sound (+0x44) to
+//				  UpdateCycleEffects;
+//				- CTronInterfaceMgr's turn arrows (0x1009e850: kinds 4
+//				  and 5 show the left or the right one).
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
+{
+	uint8 nType = pMsg->Readuint8();
+
+	switch (nType)
+	{
+		case LCI_POSITION:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				return true;
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				float fX = pMsg->Readfloat();
+				float fZ = pMsg->Readfloat();
+				int8 nForwardX = pMsg->Readint8();
+				int8 nForwardZ = pMsg->Readint8();
+
+				LTVector vPos;
+				g_pLTClient->GetObjectPos(pCyclist->hObject, &vPos);
+
+				LTVector vForward((float)nForwardX, 0.0f, (float)nForwardZ);
+
+				// The players' cycles count the distance they moved
+				if (pCyclist->bIsPlayer && pCyclist->pCurTrail)
+				{
+					pCyclist->pCurTrail->fLength += (float)fabs(pCyclist->m_vTronUnknownE4.z - fZ) +
+						(float)fabs(pCyclist->m_vTronUnknownE4.x - fX);
+				}
+
+				pCyclist->m_vTronUnknownE4 = LTVector(fX, vPos.y, fZ);
+
+				// Still going the same way: just the position
+				if (pCyclist->fTrailCheckTime != 0.0f && pCyclist->vForward == vForward)
+				{
+					if (!pCyclist->bIsPlayer)
+					{
+						pCyclist->vLastPos = LTVector(fX, vPos.y, fZ);
+					}
+
+					pCyclist->fTrailCheckTime = g_pLTClient->GetTime();
+					return true;
+				}
+
+				pCyclist->vLastPos = LTVector(fX, vPos.y, fZ);
+				pCyclist->m_bTronUnknown130 = true;
+
+				// PORT: retail turns the cycle's CLightCycleFX object to
+				// vForward here (LTRotation(vForward, LTVector(0, 1, 0)),
+				// SetObjectRotation): see above
+
+				pCyclist->fTrailCheckTime = g_pLTClient->GetTime();
+				UpdateLightCycleTrail(pCyclist, false, &vForward, false);
+			}
+
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_4:
+		{
+			// PORT: retail shows the left turn arrow
+			// (g_pInterfaceMgr's 0x1009e850, 0): see above
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_5:
+		{
+			// PORT: retail shows the right turn arrow
+			// (g_pInterfaceMgr's 0x1009e850, 1): see above
+			return true;
+		}
+
+		case LCI_ADD_CYCLIST:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (!hObj)
+			{
+				return true;
+			}
+
+			char szCycleColor[32];
+			pMsg->ReadString(szCycleColor, sizeof(szCycleColor));
+			bool bUpdate = pMsg->Readbool();
+			float fForwardX = (float)pMsg->Readint8();
+			float fForwardZ = (float)pMsg->Readint8();
+			bool bRoster = pMsg->Readbool();
+			uint32 nClientID = pMsg->Readuint32();
+			uint32 nNameId = pMsg->Readuint32();
+
+			LTVector vDims;
+			LTVector* pvDims;
+			if (pMsg->Readbool())
+			{
+				vDims = pMsg->ReadLTVector();
+				pvDims = &vDims;
+			}
+			else
+			{
+				pvDims = LTNULL;
+			}
+
+			bool bLocal = IsLocalCyclist(hObj);
+			if (bLocal)
+			{
+				hObj = g_pMoveMgr->GetObject();
+				g_pPlayerMgr->TronUnknownVirtual90(szCycleColor, false, false);
+
+				if (FindCyclist(hObj))
+				{
+					g_pMoveMgr->GetVehicleMgr()->ResetLightCyclePhysics();
+				}
+
+				if (m_hDialogSnd)
+				{
+					g_pLTClient->SoundMgr()->KillSound(m_hDialogSnd);
+					m_hDialogSnd = LTNULL;
+				}
+
+				m_fLastPredictTime = 0.0f;
+			}
+
+			LIGHT_CYCLIST* pCyclist = AddCyclist(hObj, szCycleColor, bUpdate, pvDims, 0, true);
+			pCyclist->nClientID = nClientID;
+			pCyclist->nNameId = nNameId;
+			pCyclist->vForward = LTVector(fForwardX, 0.0f, fForwardZ);
+			UpdateCyclistDims(pCyclist, vDims, true);
+
+			if (bRoster && g_pLightCycleRoster)
+			{
+				g_pLightCycleRoster->AddCyclist(pCyclist);
+			}
+
+			g_pHUDMgr->QueueUpdate(kHUDAll);
+
+			if (bLocal)
+			{
+				// The player faces the cycle's way
+				float fYaw;
+				if (pCyclist->vForward.x == 1.0f)
+				{
+					fYaw = MATH_HALFPI;
+				}
+				else if (pCyclist->vForward.x == -1.0f)
+				{
+					fYaw = MATH_PI + MATH_HALFPI;
+				}
+				else if (pCyclist->vForward.z == 1.0f)
+				{
+					fYaw = 0.0f;
+				}
+				else if (pCyclist->vForward.z == -1.0f)
+				{
+					fYaw = MATH_PI;
+				}
+				else
+				{
+					fYaw = 0.0f;
+				}
+
+				g_pPlayerMgr->SetPlayerYaw(fYaw);
+
+				LTVector vPYR;
+				g_pPlayerMgr->GetPlayerPitchYawRoll(vPYR);
+				g_pPlayerMgr->SetPlayerPitch(vPYR.x);
+				g_pPlayerMgr->SetPlayerYaw(vPYR.y);
+				g_pPlayerMgr->SetPlayerRoll(vPYR.z);
+				g_pPlayerMgr->SetPitch(vPYR.x);
+				g_pPlayerMgr->SetYaw(vPYR.y);
+				g_pPlayerMgr->SetRoll(vPYR.z);
+				g_pMoveMgr->GetVehicleMgr()->SetTronUnknown2128(vPYR);
+
+				LTRotation rRot(vPYR.x, vPYR.y, vPYR.z);
+				g_pLTClient->SetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+			}
+
+			return true;
+		}
+
+		case LCI_REMOVE_CYCLIST:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+				g_pMoveMgr->GetVehicleMgr()->ShutdownLightCycleFX();
+			}
+			else
+			{
+				((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownLightCycleRemoved(hObj);
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist && g_pLightCycleRoster)
+			{
+				g_pLightCycleRoster->DerezCyclist(pCyclist);
+			}
+
+			RemoveCyclist(hObj);
+		}
+		break;
+
+		case LCI_DEREZ_CYCLIST:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				DerezCyclist(pCyclist, FindCyclist(pMsg->ReadObject()), false);
+			}
+
+			g_pHUDMgr->QueueUpdate(kHUDAll);
+			return true;
+		}
+
+		case LCI_TURBO:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				float fAccelRate = pMsg->Readfloat();
+				float fSpeed = pMsg->Readfloat();
+				bool bTurned = pMsg->Readbool();
+				float fAccel = pMsg->Readfloat();
+				float fWallAccel = pMsg->Readfloat();
+				uint32 nFlags = pMsg->Readuint32();
+
+				pCyclist->fAccelRate = fAccelRate;
+				pCyclist->fSpeed = fSpeed;
+
+				// PORT: for the others' cycles retail hands the cycle's
+				// CLightCycleFX and its engine sound to UpdateCycleEffects
+				// (bTurned, fAccel, fWallAccel, nFlags): see above
+			}
+
+			return true;
+		}
+
+		case LCI_SET_POWERUP:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				SetCyclistPowerup(pCyclist, pMsg->Readuint8());
+			}
+
+			return true;
+		}
+
+		case LCI_ACTIVATE_POWERUP:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+				((CTronPlayerMgr*)g_pPlayerMgr)->SetTronUnknown235(false);
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				LTVector vPos = pMsg->ReadLTVector();
+				ActivatePowerup(pCyclist, &vPos);
+			}
+
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_13:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist && pCyclist->bShield)
+			{
+				DeactivateShield(pCyclist, false);
+			}
+		}
+		break;
+
+		case LCI_TRIM_TRAIL:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				int nTrail = pMsg->Readuint32();
+				int nPoint = pMsg->Readuint32();
+				TrimTrail(pCyclist, nTrail, nPoint, false);
+			}
+
+			return true;
+		}
+
+		case LCI_UPDATING_STARTED:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+			if (pCyclist)
+			{
+				pCyclist->bUpdating = (pMsg->Readuint8() != 0);
+			}
+
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_18:
+		{
+			g_pPlayerMgr->TronUnknownVirtual24(false, true);
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_19:
+		{
+			g_pPlayerMgr->TronUnknownVirtual24(true, false);
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_20:
+		{
+			g_pPlayerMgr->SetTronUnknown1DC(pMsg->Readfloat());
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_21:
+		{
+			g_pPlayerMgr->TronUnknownVirtual84(pMsg->Readbool());
+			return true;
+		}
+
+		case LCI_DIALOG:
+		{
+			LTVector vPos = pMsg->ReadLTVector();
+			char szSound[256];
+			pMsg->ReadString(szSound, sizeof(szSound) - 1);
+			PlayDialogSound(vPos, szSound);
+			return true;
+		}
+
+		case LCI_COLLISION:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+
+			LightCycleCollisionInfo info;
+			info.nSegment = pMsg->Readuint32();
+			info.nTrail = pMsg->Readuint32();
+
+			HOBJECT hOther = pMsg->ReadObject();
+			if (IsLocalCyclist(hOther))
+			{
+				hOther = g_pMoveMgr->GetObject();
+			}
+
+			LIGHT_CYCLIST* pOther = FindCyclist(hOther);
+			if (pOther)
+			{
+				info.pCyclist = pOther;
+				info.vCollisionPoint.x = pMsg->Readfloat();
+				info.vCollisionPoint.y = pOther->vLastPos.y;
+				info.vCollisionPoint.z = pMsg->Readfloat();
+				bool bNotify = pMsg->Readbool();
+				bool bCurrentTrail = pMsg->Readbool();
+				HandleShieldCollision(pCyclist, &info, bNotify, bCurrentTrail);
+			}
+
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_26:
+		{
+			DerezOldTrails();
+			return true;
+		}
+
+		case LCI_TRAIL_LENGTH:
+		{
+			m_fTrailLength = pMsg->Readfloat();
+			return true;
+		}
+
+		case LCI_GAME_SPEED:
+		{
+			m_fGameSpeedScalar = pMsg->Readfloat();
+			return true;
+		}
+
+		case LCI_TRONUNKNOWN_33:
+		{
+			m_nTronUnknown1338 = pMsg->Readint8();
+		}
+		break;
+
+		case LCI_POWERUP_GRABBED:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			HOBJECT hVictim = pMsg->ReadObject();
+
+			if (IsLocalCyclist(hVictim))
+			{
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_AnnouncePowerupGrab));
+				ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateGrabFromSelf),
+					GetCyclistName(hObj).c_str()));
+			}
+			else if (IsLocalCyclist(hObj))
+			{
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_AnnouncePowerupGrab));
+				ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateGrabFromCyclist),
+					GetCyclistName(hVictim).c_str()));
+			}
+		}
+		break;
+
+		case LCI_POWERUP_TAKEN:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+			}
+
+			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_AnnouncePowerupGrab));
+			ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateGrabFromFloor),
+				GetCyclistName(hObj).c_str()));
+		}
+		break;
+
+		case LCI_TRONUNKNOWN_7:
+		{
+			HOBJECT hObj = pMsg->ReadObject();
+			char szCycleColor[32];
+			pMsg->ReadString(szCycleColor, sizeof(szCycleColor));
+
+			if (IsLocalCyclist(hObj))
+			{
+				hObj = g_pMoveMgr->GetObject();
+				g_pPlayerMgr->TronUnknownVirtual90(szCycleColor, false, false);
+
+				LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+				if (!pCyclist)
+				{
+					return true;
+				}
+
+				LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(szCycleColor);
+				pCyclist->nRed = pColor->nRed;
+				pCyclist->nGreen = pColor->nGreen;
+				pCyclist->nBlue = pColor->nBlue;
+				return true;
+			}
+
+			return true;
+		}
+
+		case LCI_CYCLISTS:
+		{
+			ReadCyclists(pMsg);
+			return true;
+		}
+
+		case LCI_GRAB_FAILED:
+		{
+			if (IsLocalCyclist(pMsg->ReadObject()))
+			{
+				((CTronPlayerMgr*)g_pPlayerMgr)->SetTronUnknown235(false);
+
+				LIGHT_CYCLIST* pCyclist = FindCyclist(g_pMoveMgr->GetObject());
+				if (pCyclist && pCyclist->nPowerup == kLCPowerup_Grab)
+				{
+					char szMsg[128];
+					FormatString(0x2204, szMsg, sizeof(szMsg));
+					g_pChatMsgs->AddMessage(szMsg, kMsgDefault);
+					g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nosave.wav");
+				}
+			}
+		}
+		break;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CClientLightCycleMgr::ShowMessage
 //
 //	PURPOSE:	RETAIL: 0x10012db0
@@ -602,6 +1133,57 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 	char szName[80] = "";
 	FormatString(pCyclist->nNameId, szName, sizeof(szName));
 	return std::string(szName);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsCycleDialogOn
+//
+//	PURPOSE:	Does the profile want the riders' lines ("LCDialog").
+//				RETAIL: 0x100130e0 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+static bool IsCycleDialogOn()
+{
+	if (!g_pProfileMgr)
+	{
+		return true;
+	}
+
+	return (g_pProfileMgr->GetCurrentProfile()->m_bLCDialog != LTFALSE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::PlayDialogSound
+//
+//	PURPOSE:	RETAIL: 0x10013100
+//
+// ----------------------------------------------------------------------- //
+
+void CClientLightCycleMgr::PlayDialogSound(LTVector vPos, const char* szSound)
+{
+	if (!IsCycleDialogOn())
+	{
+		return;
+	}
+
+	// RETAIL: function statics (0x10236d78..0x10236d84); the names are
+	// ours. The sound debug flag is read but not used.
+	static uint32 s_dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_ONCE;
+	static float s_fRadius = g_pLightCycleButeMgr->GetDialogSoundRadius();
+	static bool s_bSoundDebug = g_pLightCycleButeMgr->GetEnableSoundDebugInfo();
+
+	m_hDialogSnd = g_pClientSoundMgr->PlaySoundFromPos(vPos, szSound, s_fRadius, SOUNDPRIORITY_PLAYER_LOW,
+		s_dwFlags, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, 2, 1.0f);
+
+	int nStringId = g_pClientSoundMgr->GetSoundIdFromFilename(szSound);
+
+	float fDuration = -1.0f;
+	g_pLTClient->SoundMgr()->GetSoundDuration(m_hDialogSnd, fDuration);
+
+	g_pSubtitles->Show(nStringId, vPos, m_hDialogSnd, s_fRadius, fDuration);
 }
 
 // ----------------------------------------------------------------------- //
@@ -978,14 +1560,14 @@ void CClientLightCycleMgr::AddStartPoly(LIGHT_CYCLE_TRAIL_POINT* pvStart, LIGHT_
 //	ROUTINE:	CClientLightCycleMgr::CyclistMovementChanged
 //
 //	PURPOSE:	Sends the local cycle's turn or speed change. RETAIL:
-//				0x10013c90. PORT: first retail updates the cycle's sounds
-//				and FX (0x10013e40, with a member of Tron's CVehicleMgr,
-//				+0x28): not in our build.
+//				0x10013c90
 //
 // ----------------------------------------------------------------------- //
 
 void CClientLightCycleMgr::CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool bTurned, float fAccel, float fWallAccel, uint32 nFlags)
 {
+	UpdateCycleEffects(pCyclist, g_pMoveMgr->GetVehicleMgr()->GetVehicleCruiseSnd(), bTurned, fAccel, fWallAccel, nFlags, LTNULL);
+
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
 	cMsg.Writeuint8(LCI_TURBO);
@@ -997,6 +1579,203 @@ void CClientLightCycleMgr::CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool 
 	cMsg.Writefloat(fWallAccel);
 	cMsg.Writeuint32(nFlags);
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::UpdateCycleEffects
+//
+//	PURPOSE:	The sparks of a cycle near a wall and the pitch of its
+//				engine sound. RETAIL: 0x10013e40. PORT: for the others'
+//				cycles (pFX) retail works on their CLightCycleFX (its
+//				sparks FX link at +0x58 and its 0x1012d8c0, which starts
+//				them), and for the local cycle it starts the sparks with
+//				the vehicle manager's 0x101224f0: neither is in our build.
+//
+// ----------------------------------------------------------------------- //
+
+void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND hSound, bool bTurned,
+	float fAccel, float fWallAccel, uint32 nFlags, CSpecialFX* pFX)
+{
+	// The sparks along the wall the cycle accelerates on
+	if (fWallAccel > 0.0f && pCyclist->nWallDist < 20)
+	{
+		if (bTurned)
+		{
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				CLIENTFX_LINK* pLink = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2148();
+				if (pLink->IsValid())
+				{
+					g_pClientFXMgr->ShutdownClientFX(pLink);
+					pLink->ClearLink();
+				}
+			}
+		}
+
+		if (pCyclist->nWallDist > 0)
+		{
+			LTVector vOffset = pCyclist->vForward.Cross(LTVector(0.0f, 1.0f, 0.0f));
+			if (pCyclist->m_bTronUnknownAC)
+			{
+				vOffset = -vOffset;
+			}
+
+			vOffset *= (float)(pCyclist->nWallDist - 1);
+
+			// PORT: retail starts "LC_sparks" at vOffset (see above)
+		}
+	}
+	else
+	{
+		if (pCyclist->hObject == g_pMoveMgr->GetObject())
+		{
+			CLIENTFX_LINK* pLink = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2148();
+			if (pLink->IsValid())
+			{
+				g_pClientFXMgr->ShutdownClientFX(pLink);
+				pLink->ClearLink();
+			}
+		}
+	}
+
+	if (!hSound)
+	{
+		return;
+	}
+
+	float fTurnPitch;
+	if (bTurned)
+	{
+		fTurnPitch = GetSpeedPitch(pCyclist, pCyclist->fSpeed);
+
+		// The others' cycles play their turn sound
+		HOBJECT hObj = pCyclist->hObject;
+		if (hObj != g_pMoveMgr->GetObject())
+		{
+			char szModel[128];
+			char szSound[128];
+			g_pPlayerMgr->TronUnknownVirtual7C(hObj, szModel, szSound, LTNULL);
+			g_pClientSoundMgr->PlaySoundFromObject(hObj, szSound, -1.0f, SOUNDPRIORITY_PLAYER_HIGH,
+				PLAYSOUND_3D | PLAYSOUND_ATTACHED, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, 0, 1.0f);
+		}
+	}
+
+	float fPitch;
+	int nTime;
+
+	if (pCyclist->fAccelRate > 0.0f)
+	{
+		float fTargetSpeed = pCyclist->fBaseSpeed;
+		if (nFlags & LCMF_SPEEDZONE)
+		{
+			fTargetSpeed = m_ButeMgr.GetMaxSpeedZoneSpeed() * m_fGameSpeedScalar;
+		}
+		else if (pCyclist->bTurboCursed)
+		{
+			fTargetSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
+		}
+		else if (pCyclist->bTurbo)
+		{
+			fTargetSpeed = pCyclist->fMaxTurboSpeed;
+		}
+		else
+		{
+			if (fAccel > 0.0f)
+			{
+				fTargetSpeed += pCyclist->fMaxManualSpeedAdd;
+			}
+
+			if (fWallAccel > 0.0f)
+			{
+				fTargetSpeed += pCyclist->fMaxExternalSpeedAdd;
+			}
+		}
+
+		nTime = (int)((fTargetSpeed - pCyclist->fSpeed) / pCyclist->fAccelRate * 1000.0f);
+		fPitch = GetSpeedPitch(pCyclist, fTargetSpeed);
+	}
+	else if (pCyclist->fAccelRate < 0.0f)
+	{
+		float fTargetSpeed;
+		if (nFlags & LCMF_SLOWZONE)
+		{
+			fTargetSpeed = m_ButeMgr.GetMinSlowZoneSpeed() * m_fGameSpeedScalar;
+		}
+		else
+		{
+			fTargetSpeed = pCyclist->fMinSpeed;
+		}
+
+		nTime = (int)((pCyclist->fSpeed - fTargetSpeed) / pCyclist->fAccelRate * -1000.0f);
+		fPitch = GetSpeedPitch(pCyclist, pCyclist->fMinSpeed);
+	}
+	else
+	{
+		if (bTurned)
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSound, 0, *(uint32*)&fTurnPitch, 0);
+		}
+		else
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual22(hSound, 0);
+		}
+
+		return;
+	}
+
+	((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual22(hSound, 1);
+
+	if (bTurned)
+	{
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSound, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+
+		if (pCyclist->hObject == g_pMoveMgr->GetObject())
+		{
+			HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSnd2c, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+		}
+	}
+	else
+	{
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSound, 0, *(uint32*)&fPitch, nTime);
+
+		if (pCyclist->hObject == g_pMoveMgr->GetObject())
+		{
+			HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSnd2c, 0, *(uint32*)&fPitch, nTime);
+		}
+	}
+}
+
+// RETAIL: an inline linear interpolation (its use in 0x10014360 keeps both
+// ends in memory); the name is ours
+template<class T>
+inline T LCLerp(const T& tMin, const T& tMax, float fT)
+{
+	return tMin + (tMax - tMin) * fT;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::GetSpeedPitch
+//
+//	PURPOSE:	0.8 at the min speed to 1.0 at the base speed, then up to
+//				1.4 at the most speed the rider and the walls add.
+//				RETAIL: 0x10014360
+//
+// ----------------------------------------------------------------------- //
+
+float CClientLightCycleMgr::GetSpeedPitch(LIGHT_CYCLIST* pCyclist, float fSpeed)
+{
+	if (fSpeed < pCyclist->fBaseSpeed)
+	{
+		float fT = (fSpeed - pCyclist->fMinSpeed) / (pCyclist->fBaseSpeed - pCyclist->fMinSpeed);
+		return LCLerp(0.8f, 1.0f, fT);
+	}
+
+	float fT = (fSpeed - pCyclist->fBaseSpeed) / (pCyclist->fMaxExternalSpeedAdd + pCyclist->fMaxManualSpeedAdd);
+	return LCLerp(1.0f, 1.4f, fT);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1174,6 +1953,329 @@ bool CClientLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPower
 	g_pHUDMgr->QueueUpdate(kHUDAll);
 
 	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::ActivatePowerup
+//
+//	PURPOSE:	RETAIL: 0x10014990. PORT: the shield, the turbo and the
+//				turbo curse start their FX with the vehicle manager's
+//				0x10122280, 0x10122350 and 0x10122420 for the local cycle
+//				and with the cycle's CLightCycleFX (0x1012d650, 0x1012d720,
+//				0x1012d7f0) for the others: none of them is in our build.
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
+{
+	if (!pCyclist)
+	{
+		return false;
+	}
+
+	int nPowerup = pCyclist->nPowerup;
+	if (!CLightCycleMgr::ActivatePowerup(pCyclist, pvPos))
+	{
+		return false;
+	}
+
+	bool bCreateFX = true;
+
+	char szFX[512];
+	sprintf(szFX, "%s%s%s", LCPOWERUP_SOUND_PREFIX, g_aszLCPowerupNames[nPowerup], LCPOWERUP_SOUND_ACTIVE);
+
+	switch (nPowerup)
+	{
+		case kLCPowerup_Shield:
+		{
+			if (pCyclist->hObject != g_pMoveMgr->GetObject())
+			{
+				// PORT: the cycle's CLightCycleFX (see above)
+				bCreateFX = false;
+				break;
+			}
+
+			// PORT: the vehicle manager's shield FX (see above)
+			ShowMessage(LoadTempString(0x460));
+			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateShieldBreak));
+			bCreateFX = false;
+		}
+		break;
+
+		case kLCPowerup_Turbo:
+		{
+			if (pCyclist->hObject != g_pMoveMgr->GetObject())
+			{
+				// PORT: the cycle's CLightCycleFX (see above)
+				bCreateFX = false;
+				break;
+			}
+
+			// PORT: the vehicle manager's turbo FX (see above)
+			ShowMessage(LoadTempString(0x461));
+			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateTurboBoost));
+			bCreateFX = false;
+		}
+		break;
+
+		case kLCPowerup_TurboCurse:
+		{
+			LIGHT_CYCLIST* pFirst = GetNextCyclist(LTNULL, true);
+			LIGHT_CYCLIST* pOther = pFirst;
+			while (pOther)
+			{
+				// PORT: the cursed cycle's FX (see above)
+				pOther = GetNextCyclist(pOther->hObject, true);
+				if (pOther == pFirst)
+				{
+					break;
+				}
+			}
+
+			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_AnnounceTurboCurse));
+			ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateTurboCurse),
+				GetCyclistName(pCyclist->hObject).c_str()));
+		}
+		break;
+
+		case kLCPowerup_Missile:
+		{
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				ShowMessage(LoadTempString(0x463));
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateMissileBlaster));
+			}
+
+			bCreateFX = false;
+		}
+		break;
+
+		case kLCPowerup_TrailSpike:
+		{
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				ShowMessage(LoadTempString(0x462));
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateWallSpike));
+			}
+		}
+		break;
+
+		case kLCPowerup_WallExtender:
+		{
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				ShowMessage(LoadTempString(0x464));
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateWallExtender));
+			}
+		}
+		break;
+
+		case kLCPowerup_TrailReset:
+		{
+			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_AnnounceWallReset));
+			ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateTrailReset),
+				GetCyclistName(pCyclist->hObject).c_str()));
+		}
+		break;
+
+		case kLCPowerup_ForceUse:
+		{
+			ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateForceUse),
+				GetCyclistName(pCyclist->hObject).c_str()));
+		}
+		break;
+
+		case kLCPowerup_Grab:
+		case kNumLCPowerupTypes:
+		break;
+
+		case kLCPowerup_Random:
+		default:
+			return false;
+	}
+
+	char szSound[512];
+	sprintf(szSound, "lcpu_%s", g_aszLCPowerupNames[nPowerup]);
+	g_pClientSoundMgr->PlaySoundFromObject(pCyclist->hObject, szSound, -1.0f, SOUNDPRIORITY_PLAYER_HIGH,
+		PLAYSOUND_3D | PLAYSOUND_ATTACHED, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, 0, 1.0f);
+
+	if (bCreateFX)
+	{
+		CLIENTFX_CREATESTRUCT fxInit(szFX, 0, pCyclist->hObject);
+		g_pLTClient->GetObjectPos(pCyclist->hObject, &fxInit.m_vPos);
+		g_pClientFXMgr->CreateClientFX(LTNULL, fxInit, LTTRUE);
+	}
+
+	g_pHUDMgr->QueueUpdate(kHUDAll);
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::SendActivatePowerup
+//
+//	PURPOSE:	RETAIL: 0x10014f30
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientLightCycleMgr::SendActivatePowerup(LIGHT_CYCLIST* pCyclist)
+{
+	if (!pCyclist)
+	{
+		return false;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+	cMsg.Writeuint8(LCI_ACTIVATE_POWERUP);
+	cMsg.WriteObject(g_pMoveMgr->GetServerObject());
+	cMsg.WriteLTVector(pCyclist->vLastPos);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::ReadCyclists
+//
+//	PURPOSE:	RETAIL: 0x10015050
+//
+// ----------------------------------------------------------------------- //
+
+void CClientLightCycleMgr::ReadCyclists(ILTMessage_Read* pMsg)
+{
+	uint8 nCyclists = pMsg->Readuint8();
+	for (int i = 0; i < nCyclists; i++)
+	{
+		ReadCyclist(pMsg);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::ReadCyclist
+//
+//	PURPOSE:	A cyclist the client does not know yet (the server's
+//				WriteCyclist). RETAIL: 0x10015090
+//
+// ----------------------------------------------------------------------- //
+
+void CClientLightCycleMgr::ReadCyclist(ILTMessage_Read* pMsg)
+{
+	HOBJECT hObj = pMsg->ReadObject();
+	if (hObj == g_pMoveMgr->GetServerObject())
+	{
+		hObj = g_pMoveMgr->GetObject();
+	}
+
+	LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
+	if (pCyclist)
+	{
+		return;
+	}
+
+	pCyclist = debug_new(LIGHT_CYCLIST);
+	m_collCyclists.push_back(pCyclist);
+
+	pCyclist->hObject = hObj;
+	pCyclist->fStartDerezTime = pMsg->Readfloat();
+	pCyclist->bUpdating = pMsg->Readbool();
+	pCyclist->bRemove = pMsg->Readbool();
+	pCyclist->vForward = pMsg->ReadLTVector();
+	pCyclist->fMaxTrailLength = pMsg->Readfloat();
+	pCyclist->nCycleType = pMsg->Readuint8();
+	pMsg->ReadString(pCyclist->szCycleColor, sizeof(pCyclist->szCycleColor));
+	pCyclist->nRed = pMsg->Readuint8();
+	pCyclist->nGreen = pMsg->Readuint8();
+	pCyclist->nBlue = pMsg->Readuint8();
+	pCyclist->fAccelRate = pMsg->Readfloat();
+	pCyclist->fBaseSpeed = pMsg->Readfloat();
+	pCyclist->fSpeed = pMsg->Readfloat();
+	pCyclist->fMaxSpeed = pMsg->Readfloat();
+	pCyclist->fTurboAccelRate = pMsg->Readfloat();
+	pCyclist->fBrakeDecelRate = pMsg->Readfloat();
+	pCyclist->fMaxManualSpeedAdd = pMsg->Readfloat();
+	pCyclist->fMaxExternalSpeedAdd = pMsg->Readfloat();
+	pCyclist->fMaxTurboSpeed = pMsg->Readfloat();
+	pCyclist->fMinSpeed = pMsg->Readfloat();
+	pCyclist->fNormalAccelRate = pMsg->Readfloat();
+	pCyclist->fNormalDecelRate = pMsg->Readfloat();
+	pCyclist->fMaxWallAccelRate = pMsg->Readfloat();
+	pCyclist->fTurnSpeedLossPercent = pMsg->Readfloat();
+	pCyclist->nMaxWallDist = pMsg->Readuint32();
+	pCyclist->fHeight = pMsg->Readfloat();
+	pCyclist->fWidth = pMsg->Readfloat();
+	pCyclist->fLength = pMsg->Readfloat();
+	pCyclist->bIsPlayer = pMsg->Readbool();
+	pCyclist->nCycleDialog = pMsg->Readuint32();
+	pCyclist->nPowerup = pMsg->Readuint8();
+	pCyclist->nFlags = pMsg->Readuint32();
+	pCyclist->fPowerupStartTime = pMsg->Readfloat();
+	pCyclist->fPowerupDuration = pMsg->Readfloat();
+	pCyclist->nClientID = pMsg->Readuint32();
+	pCyclist->m_bTronUnknownAC = pMsg->Readbool();
+
+	if (pMsg->Readbool())
+	{
+		pCyclist->vSpikeDir = pMsg->ReadLTVector();
+		pCyclist->vSpikeDir2 = pMsg->ReadLTVector();
+		pCyclist->vSpikePos = pMsg->ReadLTVector();
+		pCyclist->fSpikeFullTime = pMsg->Readfloat();
+	}
+
+	uint8 nTrails = pMsg->Readuint8();
+	for (int i = 0; i < nTrails; i++)
+	{
+		ReadTrail(pCyclist, pMsg);
+	}
+
+	if (g_pLightCycleRoster)
+	{
+		g_pLightCycleRoster->AddCyclist(pCyclist);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientLightCycleMgr::ReadTrail
+//
+//	PURPOSE:	One trail of the cyclist (the server's WriteTrail, after
+//				the trail's kind: 0 the current trail, 1 and 2 the trail
+//				spike's). RETAIL: 0x100155f0
+//
+// ----------------------------------------------------------------------- //
+
+void CClientLightCycleMgr::ReadTrail(LIGHT_CYCLIST* pCyclist, ILTMessage_Read* pMsg)
+{
+	LIGHT_CYCLE_TRAIL* pTrail = debug_new(LIGHT_CYCLE_TRAIL);
+	pCyclist->collTrails.push_back(pTrail);
+
+	uint8 nKind = pMsg->Readuint8();
+	if (nKind == 0)
+	{
+		pCyclist->pCurTrail = pTrail;
+	}
+	else if (nKind == 1)
+	{
+		pCyclist->pSpikeTrail = pTrail;
+	}
+	else if (nKind == 2)
+	{
+		pCyclist->pSpikeTrail2 = pTrail;
+	}
+
+	pTrail->m_bTronUnknownC = pMsg->Readbool();
+	pTrail->fDerezStartTime = pMsg->Readfloat();
+
+	uint32 nPoints = pMsg->Readuint32();
+	for (uint32 i = 0; i < nPoints; i++)
+	{
+		LTVector vPoint = pMsg->ReadLTVector();
+		AddLightCycleTrailPoint(pCyclist, pTrail, vPoint);
+	}
 }
 
 // ----------------------------------------------------------------------- //

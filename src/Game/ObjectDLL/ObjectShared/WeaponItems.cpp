@@ -375,7 +375,8 @@ LTRESULT CWeaponItemPlugin::PreHook_EditStringList(const char* szRezPath,
 		m_WeaponMgrPlugin.PreHook_EditStringList(szRezPath, szPropName,
 			aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
 
-		m_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
+		// RETAIL: Tron lists the weapons with a primitive type (Object.lto 0x101d20aa)
+		m_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength, WeaponHasPrimitiveType);
 
 		return LT_OK;
 	}

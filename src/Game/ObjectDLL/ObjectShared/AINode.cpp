@@ -12,6 +12,7 @@
 #include "AINodeMgr.h"
 #include "ObjectMsgs.h"
 #include "DEditColors.h"
+#include "..\TRON\SortedStringList.h"	// RETAIL: Tron's sorted plugin lists
 #include "AnimationPropStrings.h"
 #include "AIGoalButeMgr.h"
 #include "ParsedMsg.h"
@@ -1376,6 +1377,17 @@ void AINodeUseObject::PreActivate()
 	}
 }
 
+// RETAIL: retail 0x100a4590: the use object is told to hook us
+uint32 AINodeUseObject::OnAllObjectsCreated()
+{
+	if( GetHObject() )
+	{
+		SendTriggerMsgToObject( this, GetHObject(), LTTRUE, "HOOKSENDER" );
+	}
+
+	return LT_OK;
+}
+
 void AINodeUseObject::PostActivate()
 {
 	// Run the node's post-activate command.
@@ -1575,11 +1587,21 @@ LTRESULT AINodeUseObjectPlugin::PreHook_EditStringList(const char* szRezPath, co
 
 	if ( !_strcmpi("SmartObject", szPropName) )
 	{
+		// RETAIL: "<none>" and the smart objects not hidden, sorted
+		// (retail 0x100a4a8e)
+		CSortedStringList lstNames( cMaxStrings, cMaxStringLength );
+		lstNames.AddString( "<none>" );
+
 		uint32 cSmartObjects = s_AIGoalButeMgr.GetNumSmartObjectTemplates();
 		for(uint32 iSmartObject=0; iSmartObject < cSmartObjects; ++iSmartObject)
 		{
-			strcpy(aszStrings[(*pcStrings)++], s_AIGoalButeMgr.GetSmartObjectTemplate(iSmartObject)->szName);
+			if( !s_AIGoalButeMgr.GetSmartObjectTemplate(iSmartObject)->bHidden )
+			{
+				lstNames.AddString( s_AIGoalButeMgr.GetSmartObjectTemplate(iSmartObject)->szName );
+			}
 		}
+
+		lstNames.PopulateStringList( aszStrings, pcStrings );
 
 		return LT_OK;
 	}
@@ -1917,7 +1939,7 @@ class AINodeChangeWeaponsPlugin : public IObjectPlugin
 				sprintf(szRequirement, "Requirement%d", x);
 				if (!strcmp(szPropName,szRequirement))
 				{
-					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength);
+					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength, WeaponUsableByAIs);	// RETAIL: Tron's filter (Object.lto 0x100a6939)
 					return LT_OK;
 				}
 
@@ -1925,7 +1947,7 @@ class AINodeChangeWeaponsPlugin : public IObjectPlugin
 				sprintf(szChangeTo, "Weapon%d", x);
 				if (!strcmp(szPropName,szChangeTo))
 				{
-					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength);
+					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength, WeaponUsableByAIs);	// RETAIL: Tron's filter (Object.lto 0x100a6939)
 					return LT_OK;
 				}
 			}

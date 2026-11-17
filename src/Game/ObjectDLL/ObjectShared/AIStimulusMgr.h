@@ -200,6 +200,9 @@ class CAIStimulusMgr : public ILTObjRefReceiver
 								HOBJECT hStimulusTarget, CAIStimulusRecord::kDynamicPos_Flag DynamicPosFlag, LTFLOAT fRadiusFactor);
 		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,
 								HOBJECT hStimulusTarget, CAIStimulusRecord::kDynamicPos_Flag DynamicPosFlag, const LTVector &vOffset, LTFLOAT fRadiusFactor);
+		// RETAIL: Tron's (0x10100d70)
+		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,
+								const RelationData& RelationData, const LTVector& vPos, LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor);
 
 		void	RemoveStimulus(EnumAIStimulusID eStimulusID);
 

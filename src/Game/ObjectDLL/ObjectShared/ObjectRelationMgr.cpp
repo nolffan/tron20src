@@ -272,10 +272,18 @@ void CObjectRelationMgr::SetCollective(CCollectiveRelationMgr* pCollective)
 //				using CRelationTools
 //              
 //----------------------------------------------------------------------------
-void CObjectRelationMgr::CommunicateMessage(CCharacter* pSender,
-											const RelationDescription& RD,
+void CObjectRelationMgr::CommunicateMessage(const RelationDescription& RD,
 											uint32 dRestrictionFlags)
 {
+	// RETAIL: Tron's (Object.lto 0x1010b560): the owner sends the message to
+	// the users of all the relation managers
+
+	IObjectRelationMgrUser* pSender = dynamic_cast<IObjectRelationMgrUser*>( g_pLTServer->HandleToObject( m_hOwner ));
+	if( !pSender )
+	{
+		return;
+	}
+
 	// Send the message to the collective (if you have one)
 	if ( dRestrictionFlags & CommReqs::kCommReqs_Collective )
 	{
@@ -285,32 +293,18 @@ void CObjectRelationMgr::CommunicateMessage(CCharacter* pSender,
 		}
 		else
 		{
-			Warn( "AI: ORM attempted to add a relation when none existed." );
+			Warn( "AI: ObjectRelationMgr attempted to add a relation when none existed." );
 		}
 	}
 
-	CTList<CCharacter*>* lstChars	= LTNULL;
-    CCharacter** pCur				= LTNULL;
-    CCharacter** pSelected			= LTNULL;
-
-	// For each character, see if we like them.
-
-	// Loop thru character lists.
-	
-	int cCharLists = g_pCharacterMgr->GetNumCharacterLists();
-	for ( int iList = 0 ; iList < cCharLists ; ++iList )
+	CRelationMgr::_listpObjectRelationMgr::iterator it;
+	for( it = CRelationMgr::GetGlobalRelationMgr()->m_listpObjectRelationMgrs.begin();
+		it != CRelationMgr::GetGlobalRelationMgr()->m_listpObjectRelationMgrs.end(); ++it )
 	{
-		// Loop thru characters.
-		lstChars = g_pCharacterMgr->GetCharacterList(iList);
-		pCur = lstChars->GetItem(TLIT_FIRST);
-		while (pCur)
+		IObjectRelationMgrUser* pReceiver = dynamic_cast<IObjectRelationMgrUser*>( g_pLTServer->HandleToObject( (*it)->m_hOwner ));
+		if( pReceiver && RecipientMeetsRestrictions( pSender, pReceiver, dRestrictionFlags ))
 		{
-			if ( RecipientMeetsRestrictions( pSender, *pCur, dRestrictionFlags ) )
-			{
-				(*pCur)->GetRelationMgr()->AddRelation(RD);
-			}
-
-			pCur = lstChars->GetItem(TLIT_NEXT);
+			(*it)->AddRelation(RD);
 		}
 	}
 }
@@ -319,11 +313,12 @@ void CObjectRelationMgr::CommunicateMessage(CCharacter* pSender,
 //              
 //	ROUTINE:	CObjectRelationMgr::RecipientMeetsRestrictions()
 //              
-//	PURPOSE:	
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1010b640): with the relation
+//				users
 //              
 //----------------------------------------------------------------------------
-bool CObjectRelationMgr::RecipientMeetsRestrictions(CCharacter* pSender,
-													CCharacter* pReceiver,
+bool CObjectRelationMgr::RecipientMeetsRestrictions(IObjectRelationMgrUser* pSender,
+													IObjectRelationMgrUser* pReceiver,
 													uint32 iRestrictionFlags)
 {
 	// Just plain skip sending a message to anyone who is dead
@@ -347,22 +342,22 @@ bool CObjectRelationMgr::RecipientMeetsRestrictions(CCharacter* pSender,
 	// if they are not
 	if ( iRestrictionFlags & CommReqs::kCommReqs_SameRegion )
 	{
-		AIVolume* pSenderVolume = pSender->GetLastVolume();
-		AIVolume* pRecipientVolume = pReceiver->GetLastVolume();
-		if ( pSenderVolume == NULL || pRecipientVolume == NULL )
+		HOBJECT hSenderRegion = pSender->GetRegionObject();
+		HOBJECT hRecipientRegion = pReceiver->GetRegionObject();
+		if ( !hSenderRegion || !hRecipientRegion )
 		{
 			return false;
 		}
 
-		AIRegion* pSenderRegion = pSenderVolume->GetRegion();
-		AIRegion* pRecipientRegion = pRecipientVolume->GetRegion();
-		if ( pSenderRegion == NULL || pRecipientRegion == NULL )
+		if ( hSenderRegion != hRecipientRegion )
 		{
 			return false;
 		}
+	}
 
-		if (pSenderVolume->GetRegion()->GetHOBJECT() != 
-			pRecipientVolume->GetRegion()->GetHOBJECT())
+	if ( iRestrictionFlags & CommReqs::kCommReqs_SelfOnly )
+	{
+		if ( pSender != pReceiver )
 		{
 			return false;
 		}

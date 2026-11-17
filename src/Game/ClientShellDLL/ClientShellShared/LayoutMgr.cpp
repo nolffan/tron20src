@@ -211,6 +211,8 @@
 #define	LO_MASK_SKIN					"Skin"
 #define	LO_MASK_SCALE					"Scale"
 #define	LO_MASK_ALPHA					"Alpha"
+#define	LO_MASK_RENDERSTYLE				"RenderStyle"	// RETAIL: Tron's
+#define	LO_MASK_ANIM					"Anim"			// RETAIL: Tron's
 
 #define	LO_CHAR_NAME					"Name"
 #define	LO_CHAR_MOD						"Model"
@@ -2217,6 +2219,32 @@ void CLayoutMgr::GetMaskSprite(eOverlayMask eMask, char *pBuf, int nBufLen)
 		return;
 	}
 	sprintf(s_aAttName,"%s%d",LO_MASK_SPRITE,(uint8)eMask);
+
+	GetString(LO_MASK_TAG, s_aAttName, pBuf, nBufLen);
+}
+
+// RETAIL: Tron's (0x100dbee0): the mask sprite's render style
+void CLayoutMgr::GetMaskRenderStyle(eOverlayMask eMask, char *pBuf, int nBufLen)
+{
+	if (eMask == OVM_NONE)
+	{
+		pBuf[0] = LTNULL;
+		return;
+	}
+	sprintf(s_aAttName,"%s%d",LO_MASK_RENDERSTYLE,(uint8)eMask);
+
+	GetString(LO_MASK_TAG, s_aAttName, pBuf, nBufLen);
+}
+
+// RETAIL: Tron's (0x100dbf40): the mask sprite's animation
+void CLayoutMgr::GetMaskAnim(eOverlayMask eMask, char *pBuf, int nBufLen)
+{
+	if (eMask == OVM_NONE)
+	{
+		pBuf[0] = LTNULL;
+		return;
+	}
+	sprintf(s_aAttName,"%s%d",LO_MASK_ANIM,(uint8)eMask);
 
 	GetString(LO_MASK_TAG, s_aAttName, pBuf, nBufLen);
 }

@@ -166,11 +166,11 @@ void CClusterDisc::Burst()
 
 void CClusterDisc::CreateExplosion()
 {
-	// RETAIL: the cluster modifier (CProjectile 0xf3) has the explosion's
-	// ammo at 0x188
-	if ( !m_bTronUnknownF3 ) return;
+	// RETAIL: the cluster modifier (CProjectile 0xf3, modifier 1) has the
+	// explosion's ammo at 0x188
+	if ( !m_aModifiers[ 1 ].bEnabled ) return;
 
-	int nExplosionAmmoId = *reinterpret_cast< int* >( &m_fTronUnknown118[ 0x1c ] );
+	int nExplosionAmmoId = *reinterpret_cast< int* >( &m_ModifierData.m1.fTronUnknown[ 32 ] );
 	if ( WMGR_INVALID_ID == nExplosionAmmoId ) return;
 
 	HCLASS hClass = g_pLTServer->GetClass( "Explosion" );
@@ -200,8 +200,7 @@ void CClusterDisc::CreateExplosion()
 	cMsg.Writeuint32( nAmmoId );
 	cMsg.Writebool( true );
 	cMsg.Writeuint32( m_nWeaponId );
-	// PORT: Tron writes the projectile's fire data here (CProjectile
-	// 0x10121c70, not yet written)
+	SaveModifiers( cMsg );
 	g_pLTServer->SendToObject( cMsg.Read(), m_hObject, pExplosion->m_hObject, MESSAGE_GUARANTEED );
 }
 
@@ -217,8 +216,8 @@ void CClusterDisc::CreateExplosion()
 void CClusterDisc::PlayBurstFX()
 {
 	// RETAIL: the cluster modifier's FX name is at 0x108
-	char *szFX = reinterpret_cast< char* >( &m_fTronUnknown108 );
-	if ( m_bTronUnknownF3 && szFX )
+	char *szFX = reinterpret_cast< char* >( m_ModifierData.m1.fTronUnknown );
+	if ( m_aModifiers[ 1 ].bEnabled && szFX )
 	{
 		LTVector vPos;
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );

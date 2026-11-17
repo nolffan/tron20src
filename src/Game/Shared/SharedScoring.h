@@ -44,6 +44,9 @@ public:
 	CPlayerScore();
 
 	void	Init(uint32 nClientID);
+	// RETAIL: inline: CTronPlayerObj sets it alone (retail 0x10067305). The
+	// name is ours
+	void	SetClientID(uint32 nClientID) { m_nClientID = nClientID; }
 	void	WriteData(ILTMessage_Write *pMsg);
 	void	ReadData(ILTMessage_Read *pMsg);
 
@@ -87,6 +90,7 @@ private:
 	// is formed: CShell.dll 0x1000e912, 0x1000fc99)
 	friend class CDiscMatchMgr;
 	friend class CLightCycleMatchMgr;
+	friend class CTronInterfaceMgr;	// RETAIL: TronUnknownVirtual7C (0x1009d7a0)
 
 	int16	m_nTronUnknown0;	// +0x00
 	int16	m_nTronUnknown2;	// +0x02

@@ -58,14 +58,18 @@ LTBOOL CBasePolyDrawFX::CreateObject(ILTClient *pClientDE)
 		INIT_OBJECTCREATESTRUCT(createStruct);
 
 		createStruct.m_ObjectType = OT_CANVAS;
-        createStruct.m_Flags = FLAG_VISIBLE | FLAG_FOGDISABLE;
+		// RETAIL: Tron's canvas doesn't disable fog (0x1019284a)
+        createStruct.m_Flags = FLAG_VISIBLE;
 		createStruct.m_Pos = vPos;
 
 		s_hCanvasObj = m_pClientDE->CreateObject(&createStruct);
         if (!s_hCanvasObj) return LTFALSE;
 
 		m_pClientDE->SetCanvasFn(s_hCanvasObj, BasePolyDrawFn, this);
-		m_pClientDE->SetCanvasRadius(s_hCanvasObj, 10000.0f);
+		m_pClientDE->SetCanvasRadius(s_hCanvasObj, 100000.0f);
+
+		// RETAIL: Tron's (0x101928b5)
+		m_pClientDE->Common()->SetObjectFlags(s_hCanvasObj, OFT_Client, CF_SOLIDCANVAS, CF_SOLIDCANVAS);
 	}
 
 	m_Flags = FLAG_VISIBLE;

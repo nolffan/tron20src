@@ -29,14 +29,10 @@ CVarTrack	g_vtDimsAlpha;
 LINKFROM_MODULE( GameBase );
 
 
+// RETAIL: Tron's GameBase has the Template property only (Object.lto
+// 0x100b0cd0): no game type group
 BEGIN_CLASS(GameBase)
 	ADD_BOOLPROP(Template, LTFALSE)
-	PROP_DEFINEGROUP(GameType, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(SinglePlayer, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(Cooperative, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(Deathmatch, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(TeamDeathmatch, 1, PF_GROUP(16))
-		ADD_BOOLPROP_FLAG(DoomsDay, 1, PF_GROUP(16))
 END_CLASS_DEFAULT_FLAGS(GameBase, BaseClass, NULL, NULL, CF_HIDDEN)
 
 
@@ -476,6 +472,37 @@ void GameBase::RemoveBoundingBox()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	GameBase::ReadProp
+//
+//	PURPOSE:	Set property value
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: inline in Tron's EngineMessageFn (Object.lto 0x100b20ab)
+inline bool GameBase::ReadProp( ObjectCreateStruct* pStruct )
+{
+	// Check for a template object
+	if( pStruct->m_cProperties.GetPropBool("Template", false))
+	{
+		// Save the template
+		g_pGameServerShell->GetObjectTemplates()->AddTemplate( pStruct );
+
+		// Don't actually create the object
+		return false;
+	}
+	if ( !( pStruct->m_Name[0] ))
+	{
+        static int s_nUniqueId = 0;
+		sprintf( pStruct->m_Name, "noname%d", s_nUniqueId++);
+	}
+
+	// RETAIL: Tron reads no game type properties (Object.lto 0x100b20ea)
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	GameBase::EngineMessageFn
 //
 //	PURPOSE:	Handle engine messages
@@ -735,68 +762,3 @@ void GameBase::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	GameBase::ReadProp
-//
-//	PURPOSE:	Set property value
-//
-// ----------------------------------------------------------------------- //
-
-bool GameBase::ReadProp( ObjectCreateStruct* pStruct )
-{
-	if( !pStruct )
-		return false;
-
-	// Check for a template object
-	if( pStruct->m_cProperties.GetPropBool("Template", false))
-	{
-		// Save the template
-		g_pGameServerShell->GetObjectTemplates()->AddTemplate( pStruct );
-
-		// Don't actually create the object
-		return false;
-	}
-	if ( !( pStruct->m_Name[0] ))
-	{
-        static int s_nUniqueId = 0;
-		sprintf( pStruct->m_Name, "noname%d", s_nUniqueId++);
-	}
-
-	// Read properties based on gametype.
-	switch( g_pGameServerShell->GetGameType( ))
-	{
-		case eGameTypeSingle:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "SinglePlayer", true ))
-				return false;
-		}
-		break;
-		case eGameTypeCooperative:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "Cooperative", true ))
-				return false;
-		}
-		break;
-		case eGameTypeDeathmatch:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "Deathmatch", true ))
-				return false;
-		}
-		break;
-		case eGameTypeTeamDeathmatch:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "TeamDeathmatch", true ))
-				return false;
-		}
-		break;
-		case eGameTypeDoomsDay:
-		{
-			if( !pStruct->m_cProperties.GetPropBool( "DoomsDay", true ))
-				return false;
-		}
-		break;
-	}
-
-	return true;
-}

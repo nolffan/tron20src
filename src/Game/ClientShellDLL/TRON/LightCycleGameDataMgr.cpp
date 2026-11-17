@@ -157,14 +157,15 @@ void CLightCycleGameDataMgr::SetCurrent(uint16 nIndex)
 
 	m_nCurrent = nIndex;
 
-	// PORT: retail keeps the set's name in a string of the current profile
-	// (retail CUserProfile +0x1f4, 0x10047379; not yet in our profile's
-	// layout) before saving the profile
+	// RETAIL: the profile keeps the current set's name ("LightCycleConfig",
+	// CUserProfile +0x1f4)
 	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
+	pProfile->m_sLightCycleConfig = GetCurrent()->m_sName;
 	pProfile->Save();
 
 	// RETAIL: the current host options keep the current set (0x100473d4)
-	g_pServerOptionMgr->GetCurrent()->SetTronUnknownCC((uint32)GetCurrent());
+	ServerGameOptions* pOptions = g_pServerOptionMgr->GetCurrent();
+	pOptions->SetTronUnknownCC((uint32)GetCurrent());
 }
 
 // ----------------------------------------------------------------------- //

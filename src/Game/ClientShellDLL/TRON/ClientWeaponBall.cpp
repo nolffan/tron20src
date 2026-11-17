@@ -9,6 +9,8 @@
 
 #include "stdafx.h"
 #include "ClientWeaponBall.h"
+#include "FXButeMgr.h"
+#include "WeaponMgr.h"
 
 // RETAIL: 0x10017870
 CClientWeaponBall::CClientWeaponBall()
@@ -42,3 +44,31 @@ void CClientWeaponBall::HandleFireKeyDownTransition()
 	m_fFireKeyDownTime = g_pLTClient->GetTime();
 }
 
+// RETAIL: 0x10017b90.  The throw's velocity: the min one before the min
+// throw time, the max one after the max throw time, else the hold time
+// times the slope between them (retail adds no offsets: probably a retail
+// bug, to list in docs/RETAIL_BUGS.md when this function matches; now it
+// differs only in its registers).
+void CClientWeaponBall::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg )
+{
+	BALLCLASSDATA *pBallData = dynamic_cast< BALLCLASSDATA* >( m_pAmmo->pProjectileFX->pClassData );
+
+	float fHoldTime = g_pLTClient->GetTime() - m_fFireKeyDownTime;
+
+	float fVelocity;
+	if ( pBallData->fMinThrowTime > fHoldTime )
+	{
+		fVelocity = pBallData->fMinThrowVelocity;
+	}
+	else if ( pBallData->fMaxThrowTime < fHoldTime )
+	{
+		fVelocity = pBallData->fMaxThrowVelocity;
+	}
+	else
+	{
+		fVelocity = ( pBallData->fMaxThrowVelocity - pBallData->fMinThrowVelocity ) /
+			( pBallData->fMaxThrowTime - pBallData->fMinThrowTime ) * fHoldTime;
+	}
+
+	pMsg->Writefloat( fVelocity );
+}

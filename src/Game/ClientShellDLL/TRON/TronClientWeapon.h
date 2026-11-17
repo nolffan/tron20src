@@ -64,8 +64,21 @@ protected:
 	virtual void  UpdateFiring();
 	virtual void  UpdateNonFiring();
 
+	// RETAIL: slot 55 (0x100976e0): NOLF2's, which keeps the shot's
+	// subroutine data (SaveShotSubroutines) as a fire animation starts
+	virtual bool  PlayFireAnimation( bool bResetAni );
+
 	// RETAIL: slot 57 (0x10097a20): firing spends the shot's energy
 	virtual void  Fire( bool bFire );
+
+	// RETAIL: slot 68 (0x10097ab0): Save's helper, the shot's subroutine data
+	virtual void  TronUnknownVirtual110( ILTMessage_Write *pMsg );
+
+	// RETAIL: slot 72 (0x10097a70)
+	virtual bool  SpecialOverrideFire();
+
+	// RETAIL: slot 88 (0x10097f10)
+	virtual bool  TronUnknownVirtual160( int nArg );
 
 	// RETAIL: slot 89 (0x10098ba0): whether the player's energy covers a shot
 	virtual bool  TronUnknownVirtual164();
@@ -107,8 +120,21 @@ protected:
 	float         GetBaseEnergyUse();
 	// 0x10098b20
 	void          TronUnknown98B20();
+	// 0x10098b10: the continuous energy drain per second (the weapons
+	// set it from their slot 0x168, e.g. 0x1001869c; the name is ours)
+	void          SetTronUnknown204( float fTronUnknown204 );
 	// 0x10097f40 (the constructor and Load call it)
 	void          TronUnknown97F40();
+
+	// 0x10097f20: keeps the data of the subroutines active as the shot
+	// starts (m_abTronUnknown13C, the union at +0x154, +0x1e8..+0x200)
+	void          SaveShotSubroutines();
+	// 0x10097f60: the weapon's own subroutine (the eight weapon names)
+	void          SaveShotWeaponSubroutine();
+	// 0x10098840, 0x10098920, 0x10098a20: the utility subroutines
+	void          SaveShotMegaHurtz();
+	void          SaveShotCorrode();
+	void          SaveShotPrimitiveCharge();
 
 	float         m_fTronUnknown204;	// RETAIL: +0x204 (0 in the ctor)
 };

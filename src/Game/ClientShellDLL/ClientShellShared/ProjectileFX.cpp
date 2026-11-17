@@ -580,6 +580,34 @@ void CProjectileFX::HandleTouch(CollisionInfo *pInfo)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CProjectileFX::OnServerMessage
+//
+//	PURPOSE:	RETAIL: Tron's (0x101a1ee0): message 1 starts the
+//				projectile's looping client fx by name
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CProjectileFX::OnServerMessage(ILTMessage_Read *pMsg)
+{
+	if (!CSpecialFX::OnServerMessage(pMsg)) return LTFALSE;
+
+	uint8 nMsgId = pMsg->Readuint8();
+	switch (nMsgId)
+	{
+		case 1:
+		{
+			char szFXName[80];
+			pMsg->ReadString(szFXName, sizeof(szFXName));
+			CreateTronUnknownFX(szFXName);
+		}
+		break;
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CProjectileFX::Detonate()
 //
 //	PURPOSE:	Handle blowing up the projectile

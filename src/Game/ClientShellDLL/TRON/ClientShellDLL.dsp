@@ -188,6 +188,10 @@ SOURCE=.\BaseScreenLightCycle.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientFXAndActivateTypeFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -426,6 +430,10 @@ SOURCE=.\LibraryCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -452,6 +460,10 @@ SOURCE=.\MenuHelp.cpp
 # Begin Source File
 
 SOURCE=.\MenuPieceModel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\PranksterProjectileFX.cpp
 # End Source File
 # Begin Source File
 
@@ -596,6 +608,10 @@ SOURCE=.\ScreenLightCycleGame.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenLightCyclePlayerConfig.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenLightCycleVictory.cpp
 # End Source File
 # Begin Source File
@@ -645,6 +661,14 @@ SOURCE=.\ScreenSingle.cpp
 # Begin Source File
 
 SOURCE=.\ScreenSubroutines.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenTeamSelect.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObjectFX.cpp
 # End Source File
 # Begin Source File
 
@@ -743,6 +767,14 @@ SOURCE=.\BaseScreenLightCycle.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientFxUserFX.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientFXAndActivateTypeFX.h
 # End Source File
 # Begin Source File
 
@@ -930,6 +962,10 @@ SOURCE=.\LibraryCtrl.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleFX.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.h
 # End Source File
 # Begin Source File
@@ -947,6 +983,10 @@ SOURCE=.\LTGUIListItemCtrl.h
 # Begin Source File
 
 SOURCE=.\MenuPieceModel.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\PranksterProjectileFX.h
 # End Source File
 # Begin Source File
 
@@ -1046,6 +1086,10 @@ SOURCE=.\ScreenLightCycleGame.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenLightCyclePlayerConfig.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenLightCycleVictory.h
 # End Source File
 # Begin Source File
@@ -1094,7 +1138,15 @@ SOURCE=.\ScreenSingle.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenTeamSelect.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenWeaponControls.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObjectFX.h
 # End Source File
 # Begin Source File
 

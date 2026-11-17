@@ -68,6 +68,9 @@ class CSFXMgr
 		CBodyFX* GetBodyFX(HOBJECT hObject);
 		CBodyFX* GetBodyFromHitBox(HOBJECT hHitBox);
 		CSpecialFX* GetSpectatorFX(HOBJECT hObject);	// TRON (RETAIL: 0x101086a0)
+		// TRON (RETAIL: 0x101086f0; the name is ours): the spectator object
+		// after hObject (the first with LTNULL), wrapping to the first one
+		CSpecialFX* GetNextSpectatorFX(HOBJECT hObject, bool bWrap, bool bTronUnknown38);
 
 #ifdef __PSX2
 		// Get nearby characters

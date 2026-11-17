@@ -49,10 +49,12 @@
 #include "ScreenLightCycleCircuit.h"
 #include "ScreenLightCycleCustomMaps.h"
 #include "ScreenLightCycleGame.h"
+#include "ScreenLightCyclePlayerConfig.h"
 #include "ScreenConfigure.h"
 
 //Player management screens
 #include "ScreenSubroutines.h"
+#include "ScreenTeamSelect.h"
 
 #include "ScreenFailure.h"
 #include "ScreenEndMission.h"
@@ -142,10 +144,7 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// RETAIL: the cases in retail's order (0x100ad240: its case bodies and
 	// the debug_new_fn<> instances they call, 0x100ad520.., are laid out in
 	// this order). Retail has no case for HOST, HOST_OPTIONS, HOST_MISSION,
-	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
-	// for screens whose class we have not written yet are missing here:
-	// LIGHTCYCLE_PLAYERCONFIG after _CUSTOMGAME;
-	// TEAMSELECT (CScreenTeamSelect) after SUBROUTINES.
+	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE.
 	switch (screenID)
 	{
 	case SCREEN_ID_MAIN:
@@ -180,6 +179,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_LIGHTCYCLE_CUSTOMGAME:
 		pScreen = debug_new(CScreenLightCycleGame);
+		break;
+	case SCREEN_ID_LIGHTCYCLE_PLAYERCONFIG:
+		pScreen = debug_new(CScreenLightCyclePlayerConfig);
 		break;
 	case SCREEN_ID_LIGHTCYCLE_VICTORY:
 		pScreen = debug_new(CScreenLightCycleVictory);
@@ -228,6 +230,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_SUBROUTINES:
 		pScreen = debug_new(CScreenSubroutines);
+		break;
+	case SCREEN_ID_TEAMSELECT:
+		pScreen = debug_new(CScreenTeamSelect);
 		break;
 	case SCREEN_ID_FAILURE:
 		pScreen = debug_new(CScreenFailure);
@@ -288,5 +293,27 @@ void CTronScreenMgr::KillMenuMusic()
 	{
 		g_pLTClient->SoundMgr()->KillSound(m_hMenuSnd);
 		m_hMenuSnd = NULL;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronScreenMgr::HandleKeyDown
+//
+//	PURPOSE:	RETAIL: 0x100ad4e0: as CScreenMgr's, but the escape key
+//				goes to the subroutine screen as a key
+//
+// ----------------------------------------------------------------------- //
+
+void CTronScreenMgr::HandleKeyDown (int vkey, int rep)
+{
+	if (m_pCurrentScreen)
+	{
+		if (vkey == VK_ESCAPE && m_eCurrentScreenID != SCREEN_ID_SUBROUTINES)
+		{
+			m_pCurrentScreen->Escape();
+		}
+		else
+			m_pCurrentScreen->HandleKeyDown(vkey,rep);
 	}
 }

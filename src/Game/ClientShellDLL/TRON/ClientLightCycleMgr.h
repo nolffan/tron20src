@@ -20,6 +20,8 @@
 #include "LightCycleMgr.h"
 #include "iltdrawprim.h"
 
+class CSpecialFX;
+
 // The trail quads are kept in blocks of this many (RETAIL: 0x400)
 #define LCM_TRAIL_POLYS_PER_BUFFER	1024
 // The most blocks (RETAIL: the array at +0x133c, 0xfa0 bytes)
@@ -44,6 +46,8 @@ class CClientLightCycleMgr : public CLightCycleMgr
 		virtual void UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector & vDims, bool bTronUnknown);	// RETAIL: 0x100143d0
 		virtual void RemoveAllCyclists();		// RETAIL: 0x100145f0
 		virtual bool SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup);	// RETAIL: 0x100148c0
+		// The power-up's messages, sound and FX. RETAIL: 0x10014990
+		virtual bool ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pvPos);
 		virtual void DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify);	// RETAIL: 0x10014770
 
 		virtual std::string GetCyclistName(HOBJECT hObj);	// RETAIL: 0x10012dd0
@@ -53,10 +57,23 @@ class CClientLightCycleMgr : public CLightCycleMgr
 		// Draws all the trails (the canvas' function). RETAIL: 0x10011ac0
 		void DrawTrails();
 
+		// A MID_LIGHT_CYCLE_INFO message from the server (CTronPlayerMgr::
+		// OnMessage). RETAIL: 0x10011c80 (the name is ours)
+		bool OnMessage(ILTMessage_Read* pMsg);
+
+		// Asks the server to use the local cycle's power-up at its
+		// position (CTronPlayerMgr::OnCommandOn). RETAIL: 0x10014f30 (the
+		// name is ours)
+		bool SendActivatePowerup(LIGHT_CYCLIST* pCyclist);
+
 	protected:
 
 		// Shows a line in the chat messages. RETAIL: 0x10012db0
 		void ShowMessage(const char* szMsg);
+
+		// Plays a rider's line at vPos with its subtitle (LCI_DIALOG).
+		// RETAIL: 0x10013100 (the name is ours)
+		void PlayDialogSound(LTVector vPos, const char* szSound);
 
 		// Fills the trail quads of the cyclist's trails. RETAIL: 0x10013210
 		void BuildCyclistPolys(LIGHT_CYCLIST* pCyclist);
@@ -69,6 +86,22 @@ class CClientLightCycleMgr : public CLightCycleMgr
 		// Adds the quad at the head of a trail. RETAIL: 0x10013b80
 		void AddStartPoly(LIGHT_CYCLE_TRAIL_POINT* pvStart, LIGHT_CYCLE_TRAIL_POINT* pvEnd, uint8 nRed, uint8 nGreen, uint8 nBlue,
 			float fHeight, float fBase, float fDerez);
+		// The engine sound's pitch and sparks of the cycle's movement
+		// (pFX: the cycle's CLightCycleFX, for the others' cycles).
+		// RETAIL: 0x10013e40 (the names are ours)
+		void UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND hSound, bool bTurned,
+			float fAccel, float fWallAccel, uint32 nFlags, CSpecialFX* pFX);
+		// The engine sound's pitch at fSpeed. RETAIL: 0x10014360 (the name
+		// is ours)
+		float GetSpeedPitch(LIGHT_CYCLIST* pCyclist, float fSpeed);
+
+		// LCI_CYCLISTS: all the cyclists the server has (its
+		// SendCyclistsToClient). RETAIL: 0x10015050, 0x10015090, 0x100155f0
+		// (the names are ours)
+		void ReadCyclists(ILTMessage_Read* pMsg);
+		void ReadCyclist(ILTMessage_Read* pMsg);
+		void ReadTrail(LIGHT_CYCLIST* pCyclist, ILTMessage_Read* pMsg);
+
 		// Adds a block of trail quads. RETAIL: 0x100156f0
 		bool AllocTrailBuffer();
 

@@ -671,6 +671,9 @@ class AINodeUseObject : public AINode
 		EnumAINodeType GetType() { return kNode_UseObject; }
 		virtual LTBOOL NodeTypeIsActive(EnumAINodeType eNodeType);
 
+		// RETAIL: Tron's (retail 0x100a4590)
+		virtual uint32 OnAllObjectsCreated();
+
 		// Status
 
 		virtual EnumNodeStatus	GetStatus(const LTVector& vPos, HOBJECT hThreat) const;

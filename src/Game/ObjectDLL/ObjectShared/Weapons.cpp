@@ -1040,6 +1040,39 @@ void CWeapons::Load(ILTMessage_Read *pMsg, uint8 nType)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CWeapons::NotifyProjectilesTronUnknown
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x100f73b0; the name is ours):
+//				send MID_TRONUNKNOWN1010 to the projectiles that want
+//				messages
+//
+// ----------------------------------------------------------------------- //
+
+void CWeapons::NotifyProjectilesTronUnknown()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint32( MID_TRONUNKNOWN1010 );
+
+	RemoveDeadProjectiles();
+
+	// make a copy of the list in its current state to
+	// avoid multiple access problems
+	ProjectileMsgList lProjectilesNeedingMessages = m_lProjectilesNeedingMessages;
+
+	ProjectileMsgList::iterator iter;
+	for ( iter = lProjectilesNeedingMessages.begin();
+	      iter != lProjectilesNeedingMessages.end();
+	      ++iter )
+	{
+		if ( *iter )
+		{
+			g_pLTServer->SendToObject( cMsg.Read(), LTNULL, *iter, MESSAGE_GUARANTEED );
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CWeapons::IsValidWeapon()
 //
 //	PURPOSE:	Check if the current id is valid and we have it2
@@ -1169,6 +1202,9 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 			// because we read the subtype
 			pMsg->SeekTo( 0 );
 
+			// RETAIL: Tron's (Object.lto 0x100f775d)
+			RemoveDeadProjectiles();
+
 			//
 			// pass the message to all the dependancies
 			//
@@ -1183,12 +1219,16 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 			      iter != lProjectilesNeedingMessages.end();
 			      ++iter )
 			{
-				ltResult = g_pLTServer->SendToObject( pMsg, 
-							hSender,
-							*iter,
-							MESSAGE_GUARANTEED
-							);
-				ASSERT( LT_OK == ltResult );
+				// RETAIL: Tron's skips the broken links (Object.lto 0x100f77e0)
+				if ( *iter )
+				{
+					ltResult = g_pLTServer->SendToObject( pMsg, 
+								hSender,
+								*iter,
+								MESSAGE_GUARANTEED
+								);
+					ASSERT( LT_OK == ltResult );
+				}
 			}
 		}
 		break;
@@ -1205,6 +1245,13 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 			uint8 nAmmoAmount = pMsg->Readuint8();
 			
 			AddAmmo( nAmmoId, nAmmoAmount );
+
+			// RETAIL: Tron's (Object.lto 0x100f785e): the weapon's clip is
+			// filled
+			if ( IsValidWeapon( nWeaponId ) && m_pWeapons[nWeaponId] )
+			{
+				GetWeapon( nWeaponId )->ReloadClip( LTFALSE );
+			}
 		}
 		break;
 
@@ -1213,6 +1260,9 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 			// This message contains a list of projectiles that need
 			//  message updates.
 			
+			// RETAIL: Tron's (Object.lto 0x100f78b6)
+			RemoveDeadProjectiles();
+
 			// get the number of projectiles that need updates
 			uint8 nNumProjectiles = pMsg->Readuint8();
 
@@ -1252,6 +1302,9 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 				// list.
 				//
 
+				// RETAIL: Tron's (Object.lto 0x100f7963)
+				RemoveDeadProjectiles();
+
 				for ( int i = 0; i < nNumProjectiles; ++i )
 				{
 					HOBJECT hBrokenLink = pMsg->ReadObject();
@@ -1276,5 +1329,31 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 			}
 		}
 		break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeapons::RemoveDeadProjectiles
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x100f7bf0; the name is ours):
+//				remove the broken links from the projectiles that want
+//				messages
+//
+// ----------------------------------------------------------------------- //
+
+void CWeapons::RemoveDeadProjectiles()
+{
+	ProjectileMsgList::iterator iter = m_lProjectilesNeedingMessages.begin();
+	while ( iter != m_lProjectilesNeedingMessages.end() )
+	{
+		if ( !*iter )
+		{
+			iter = m_lProjectilesNeedingMessages.erase( iter );
+		}
+		else
+		{
+			++iter;
+		}
 	}
 }

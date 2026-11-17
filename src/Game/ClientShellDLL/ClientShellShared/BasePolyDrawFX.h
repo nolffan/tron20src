@@ -78,7 +78,8 @@ class CBasePolyDrawFX : public CSpecialFX
 			// Create a static list of polydrawfx.
 			if( !s_pPolyDrawFXList )
 			{
-				s_pPolyDrawFXList = new PolyDrawFXList;
+				// RETAIL: Tron's news it through debug_new (0x1019bf60)
+				s_pPolyDrawFXList = debug_new(PolyDrawFXList);
                 s_pPolyDrawFXList->Init(LTFALSE);
 			}
 

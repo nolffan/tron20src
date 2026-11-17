@@ -60,6 +60,16 @@ void CLTGUIWindow::Destroy ( )
     m_bCreated=LTFALSE;
 }
 
+// RETAIL: Tron's (0x100c2bf0): the controls take the alpha
+void CLTGUIWindow::SetAlpha(uint8 nAlpha)
+{
+	for (uint16 i = 0; i < m_controlArray.size(); i++)
+	{
+		if (m_controlArray[i])
+			m_controlArray[i]->SetAlpha(nAlpha);
+	}
+}
+
 // Render the control
 void CLTGUIWindow::Render ( )
 {

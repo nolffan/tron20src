@@ -30,6 +30,8 @@
 #include "FXButeMgr.h"
 #include "CVarTrack.h"
 #include "PowerArmor.h"
+#include "CharacterHitBox.h"
+#include "IHitBoxUser.h"
 
 //
 // LithTech Macros
@@ -544,17 +546,17 @@ LTBOOL CDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 	};
 
 	// RETAIL: the weapon's modifiers scale the turn rates
-	if ( !_stricmp( "Sequencer", m_pWeaponData->szName ) && m_bTronUnknownF1 )
+	if ( !_stricmp( "Sequencer", m_pWeaponData->szName ) && m_aModifiers[ 0 ].bEnabled )
 	{
-		m_fTurnRate *= m_fTronUnknown108;
-		m_fIncidentAngleToControlLine *= m_fTronUnknown108;
-		m_fIncidentAngleToControlLineDecay *= m_fTronUnknown108;
+		m_fTurnRate *= m_ModifierData.m0.fTronUnknown[ 0 ];
+		m_fIncidentAngleToControlLine *= m_ModifierData.m0.fTronUnknown[ 0 ];
+		m_fIncidentAngleToControlLineDecay *= m_ModifierData.m0.fTronUnknown[ 0 ];
 	}
-	else if ( !_stricmp( "Cluster", m_pWeaponData->szName ) && m_bTronUnknownF3 )
+	else if ( !_stricmp( "Cluster", m_pWeaponData->szName ) && m_aModifiers[ 1 ].bEnabled )
 	{
-		m_fTurnRate *= m_fTronUnknown18C;
-		m_fIncidentAngleToControlLine *= m_fTronUnknown18C;
-		m_fIncidentAngleToControlLineDecay *= m_fTronUnknown18C;
+		m_fTurnRate *= m_ModifierData.m1.fTronUnknown[ 33 ];
+		m_fIncidentAngleToControlLine *= m_ModifierData.m1.fTronUnknown[ 33 ];
+		m_fIncidentAngleToControlLineDecay *= m_ModifierData.m1.fTronUnknown[ 33 ];
 	}
 
 	// the deflection
@@ -862,6 +864,87 @@ void CDisc::Load( ILTMessage_Read *pMsg, uint32 dwLoadFlags )
 }
 
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::TronUnknownVirtual31()
+//
+//	PURPOSE:	RETAIL: 0x10038f60
+//
+// ----------------------------------------------------------------------- //
+
+bool CDisc::TronUnknownVirtual31( HOBJECT hAttacker, HOBJECT hVictim )
+{
+	if ( DISC_STATE_TRONUNKNOWN3 == m_eDiscState )
+	{
+		return true;
+	}
+
+	return CTronProjectile::TronUnknownVirtual31( hAttacker, hVictim );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::TronUnknownVirtual32()
+//
+//	PURPOSE:	RETAIL: 0x1003ae60.  With no touch kept, a disc whose
+//				touch was not taken goes back
+//
+// ----------------------------------------------------------------------- //
+
+void CDisc::TronUnknownVirtual32()
+{
+	if ( !GetNearestPendingTouch( LTNULL ) )
+	{
+		if ( m_bTronUnknown1C2 )
+		{
+			return;
+		}
+
+		if ( m_bTronUnknown1C1 )
+		{
+			EnterReturnMode( LTNULL );
+			return;
+		}
+	}
+
+	CTronProjectile::TronUnknownVirtual32();
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::AddImpact()
+//
+//	PURPOSE:	RETAIL: 0x10038010
+//
+// ----------------------------------------------------------------------- //
+
+void CDisc::AddImpact( HOBJECT hObj, const LTVector &vFirePos,
+                       const LTVector &vImpactPos, const LTVector &vNormal,
+                       SurfaceType eSurfaceType, IMPACT_TYPE eImpactType,
+                       bool bDeflected )
+{
+	if ( !m_bSetup ) return;
+
+	if ( IsDamagedObject( hObj ) ) return;
+
+	if ( IsCharacter( hObj ) )
+	{
+		IHitBoxUser *pHitBoxUser = dynamic_cast< IHitBoxUser* >( g_pLTServer->HandleToObject( hObj ) );
+		if ( pHitBoxUser && IsDamagedObject( pHitBoxUser->GetHitBoxObject() ) ) return;
+	}
+
+	if ( IsCharacterHitBox( hObj ) )
+	{
+		CCharacterHitBox *pHitBox = dynamic_cast< CCharacterHitBox* >( g_pLTServer->HandleToObject( hObj ) );
+		if ( pHitBox && IsDamagedObject( pHitBox->GetModelObject() ) ) return;
+	}
+
+	CTronProjectile::AddImpact( hObj, vFirePos, vImpactPos, vNormal, eSurfaceType, eImpactType, bDeflected );
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CDisc::UpdateDisc()
@@ -975,7 +1058,7 @@ void CDisc::EnterReturnMode( HOBJECT hObj )
 	}
 
 	// The disc can be caught when it returns
-	if ( m_pTronUnknownRelationData && ( m_eDiscCatchableStimID == kStimID_Unset ) )
+	if ( m_pRelationData && ( m_eDiscCatchableStimID == kStimID_Unset ) )
 	{
 		// PORT: Tron's overload also takes the projectile's relation data
 		// (0x10100e30, not yet written)
@@ -1083,9 +1166,10 @@ void CDisc::HandleDeflect()
 	m_eDiscState = DISC_STATE_DEFLECTING;
 	m_nDeflectUpdateNum = m_nUpdateNum;
 
-	// RETAIL: CProjectile's 0xdc and 0xe0
-	*reinterpret_cast< LTFLOAT* >( &m_xTronUnknownDC ) = MATH_PI;
-	m_xTronUnknownE0 = 0x7fffffff;
+	// RETAIL: the deflected disc may ricochet at any angle, any number of
+	// times
+	m_fMaxRicochetAngle = MATH_PI;
+	m_nMaxRicochets = 0x7fffffff;
 
 	if ( szFX[ 0 ] )
 	{
@@ -1225,7 +1309,7 @@ void CDisc::StartBlockable()
 {
 	m_bBlockable = true;
 
-	if ( m_pTronUnknownRelationData )
+	if ( m_pRelationData )
 	{
 		// PORT: Tron's overload also takes the projectile's relation data
 		// (0x10100e30, not yet written)

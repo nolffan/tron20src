@@ -20,7 +20,7 @@
 #elif defined(INCLUDE_AS_STRING)
 	#define ADD_DT(id,bute,altname) #bute,
 #elif defined(INCLUDE_AS_STRUCT)
-	#define ADD_DT(id,bute,altname) DTINFO(DT_##id,#bute,#altname),
+	#define ADD_DT(id,bute,altname) DTINFO(DT_##id,#altname),	// RETAIL: Tron keeps the alternate name only
 #else
 	#error	To use this include file, first define INCLUDE_AS_ENUM, INCLUDE_AS_STRING or INCLUDE_AS_STRUCT, to include the goals as enums, bute string constants, or struct constructors.
 #endif

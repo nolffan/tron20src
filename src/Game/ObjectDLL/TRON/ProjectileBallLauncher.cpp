@@ -86,11 +86,11 @@ LTBOOL CProjectileBallLauncher::Setup(CWeapon const* pWeapon, WeaponFireInfo con
 {
 	LTBOOL bRet = CCorrupticDims::Setup(pWeapon, info);
 
-	if (m_bTronUnknownF9)
+	if (m_aModifiers[4].bEnabled)
 	{
-		m_fRandomness *= m_fTronUnknown108;
-		m_fHorizontalFactor *= m_fTronUnknown108;
-		m_fVerticalFactor *= m_fTronUnknown108;
+		m_fRandomness *= m_ModifierData.m4.fScale;
+		m_fHorizontalFactor *= m_ModifierData.m4.fScale;
+		m_fVerticalFactor *= m_ModifierData.m4.fScale;
 	}
 
 	return bRet;

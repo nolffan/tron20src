@@ -1772,21 +1772,18 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			// [KLS 6/20/02] - Removed due to Craig request
 			// g_pChatMsgs->AddMessage(LoadTempString(IDS_INTELLIGENCE));
 
+			// RETAIL: Tron's message (0x100c9ab5): the type, a byte that
+			// is not used, a flag and the item's name; no popup
 			uint32 nTextId = pMsg->Readuint32();
+			uint8 nType = pMsg->Readuint8();
 			uint8 nPopupId = pMsg->Readuint8();
-			LTBOOL bIsIntel = (LTBOOL)pMsg->Readuint8();
-			LTBOOL bShow = (LTBOOL)pMsg->Readuint8();
-			LTBOOL bAdd = (LTBOOL)pMsg->Readuint8();
+			uint8 nIsIntel = pMsg->Readuint8();
+			pMsg->Readuint8();
+			bool bNoHelpPing = pMsg->Readbool();
+			char szName[128];
+			pMsg->ReadString(szName, sizeof(szName));
 
-			if (bShow)
-			{
-				ShowPopup(nTextId, nPopupId, true);
-			}
-
-			if (bAdd)
-			{
-				GetPlayerStats( )->UpdateIntel(nTextId,nPopupId,bIsIntel);
-			}
+			GetPlayerStats( )->UpdateIntel(nTextId,nPopupId,nIsIntel,nType,szName,bNoHelpPing);
 		}
 		break;
 
@@ -5559,6 +5556,33 @@ void CInterfaceMgr::UpdateInterfaceSFX()
 	m_InterfaceFXMgr.UpdateAllActiveFX( true );
 
 	renderList.clear();	
+}
+
+
+// RETAIL: Tron's (0x100cea40; the name is ours): one object drawn by
+// the interface camera with the interface lights. The array has room for
+// the lights, but the test is the fx list's (see docs/RETAIL_BUGS.md)
+void CInterfaceMgr::RenderInterfaceObject(HOBJECT hObj)
+{
+	if (!g_pInterfaceMgr->GetInterfaceCamera() || !hObj)
+		return;
+
+	HLOCALOBJ objs[MAX_INTERFACE_LIGHTS + 1];
+	objs[0] = hObj;
+	int next = 1;
+
+	for ( ObjectArray::iterator iter = m_InterfaceLights.begin( ); iter !=  m_InterfaceLights.end() && 
+		next < kMaxFX; iter++ )
+	{
+		HOBJECT hLight = *iter;
+		if ( hLight )
+		{
+			objs[next] = hLight;
+			next++;
+		}
+	}
+
+	g_pLTClient->RenderObjects(g_pInterfaceMgr->GetInterfaceCamera(), objs, next, g_pLTClient->GetFrameTime());
 }
 
 

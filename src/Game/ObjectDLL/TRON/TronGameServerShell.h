@@ -27,6 +27,7 @@ class Body;
 class CCharacter;
 class CLightCycleMatchMgr;
 class CDiscMatchMgr;
+class CTronPlayerObj;
 
 class CTronGameServerShell : public CGameServerShell
 {
@@ -57,6 +58,9 @@ class CTronGameServerShell : public CGameServerShell
 
 		// RETAIL: retail 0x1005cea0
 		void			PreStartWorld(bool bSwitchingWorlds);
+
+		// RETAIL: retail 0x1005d370
+		void			OnClientExitWorld(HCLIENT hClient);
 
 		// RETAIL: retail 0x1005d3c0, only the base's
 		void			OnRemoveClient(HCLIENT hClient);
@@ -94,6 +98,16 @@ class CTronGameServerShell : public CGameServerShell
 		void HandleDiscHoldDefense(HCLIENT hSender, ILTMessage_Read *pMsg);		// MID_DISC_HOLD_DEFENSE
 		void HandleExitRequest(HCLIENT hSender, ILTMessage_Read *pMsg);			// MID_TRON_EXIT_REQUEST
 		void HandleDiscFired(HCLIENT hSender, ILTMessage_Read *pMsg);			// MID_TRON_DISC_FIRED
+
+		// RETAIL: retail 0x1005ee80: Tron's cheats first
+		virtual void	ProcessCheat( CPlayerObj* pPlayer, CheatCode nCheatCode, uint32 nData );
+
+		// RETAIL: retail 0x1005ef90 to 0x1005efd0 (the names are ours)
+		void	CheatEnergy( CTronPlayerObj* pPlayer, uint32 nData );
+		void	CheatIdealWeapons( CTronPlayerObj* pPlayer, uint32 nData );
+		void	CheatIdealSubroutines( CTronPlayerObj* pPlayer, uint32 nData );
+		void	CheatIdealProcedurals( CTronPlayerObj* pPlayer, uint32 nData );
+		void	CheatIdealPoints( CTronPlayerObj* pPlayer, uint32 nData );
 
 	private:
 

@@ -63,6 +63,9 @@ class CVehicleMgr
 	int			GetTurnDirection()		const { return m_nVehicleTurnDirection; }
 
 	PlayerPhysicsModel GetPhysicsModel()	const { return m_ePPhysicsModel; }
+	// RETAIL: Tron's, inline (CTronPlayerMgr::TronUnknownLightCycleSpectate,
+	// 0x100a7fb6; the name is ours)
+	void		ResetPhysicsModel() { m_ePPhysicsModel = PPM_NORMAL; SetNormalPhysicsModel(); }
 
 	void		CalculateVehicleRotation(LTVector & vPlayerPYR, LTVector & vPYR, LTFLOAT fYawDelta);
 
@@ -94,6 +97,13 @@ class CVehicleMgr
 	void		KillLightCycleSounds();
 	void		ShutdownLightCycleFX();
 	void		ResetLightCyclePhysics();
+	// RETAIL: Tron's light cycle FX (0x10122280, 0x10122350, 0x10122420,
+	// 0x101224f0, 0x101225d0; names ours)
+	void		CreateTronUnknownFX213c(const char* pszFX);
+	void		CreateTronUnknownFX2140(const char* pszFX);
+	void		CreateTronUnknownFX2144(const char* pszFX);
+	void		CreateTronUnknownFX2148(const char* pszFX, const LTVector &vOffset);
+	void		ShowTronUnknownFX2138(HOBJECT hObj, bool bShow);
 	uint32		GetPlayerLureId( ) { return m_nPlayerLureId; }
 
 	float		GetVehicleContourRoll() const { return m_ePPhysicsModel == PPM_SNOWMOBILE ? m_fContourRoll : 0.0f; }
@@ -119,6 +129,13 @@ class CVehicleMgr
 
 	// RETAIL: read by CHUDLightCycleSpeedometer (0x1002fc30; the name is ours)
 	bool		GetTronUnknown2158() const { return m_bTronUnknown2158; }
+
+	// RETAIL: read by CClientLightCycleMgr (0x10013cbf, 0x100141aa,
+	// 0x1001227c, 0x10013e94); the names are ours
+	HLTSOUND	GetVehicleCruiseSnd() const { return m_hVehicleCruiseSnd; }
+	HLTSOUND	GetTronUnknownSnd2c() const { return m_hTronUnknownSnd2c; }
+	void		SetTronUnknown2128(const LTVector & v) { m_vTronUnknown2128 = v; }
+	CLIENTFX_LINK* GetTronUnknownFX2148() { return &m_TronUnknownFX2148; }
 
   protected:
 

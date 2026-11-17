@@ -25,7 +25,9 @@
 //
 DEFINE_DEDIT_COLOR( CAIHuman, 255, 255, 0 );
 DEFINE_DEDIT_COLOR( AINodeDeath, 255, 0, 0 );
-DEFINE_DEDIT_COLOR( AINodeCover, 0, 0, 255 );
+// RETAIL: Tron's cover nodes are red (retail Object.lto 0x100a0fa0, which
+// AINodeCover's and AINodeDeath's properties call)
+DEFINE_DEDIT_COLOR( AINodeCover, 255, 0, 0 );
 DEFINE_DEDIT_COLOR( AINodeVantage, 0, 0, 128 );
 DEFINE_DEDIT_COLOR( AINodeView, 0, 0, 128 );
 DEFINE_DEDIT_COLOR( AINodePatrol, 255, 255, 0 );
