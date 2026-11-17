@@ -15,6 +15,7 @@
 #define __LIGHTCYCLEMULTIPLAYERMISSIONMGR_H__
 
 #include "ServerMissionMgr.h"
+#include "ProfileUtils.h"
 
 class CLightCycleMultiplayerMissionMgr : public CServerMissionMgr
 {
@@ -22,6 +23,11 @@ class CLightCycleMultiplayerMissionMgr : public CServerMissionMgr
 
 		virtual bool	StartGame( ILTMessage_Read& msg );	// RETAIL: 0x101cc860
 		virtual bool	EndGame( );							// RETAIL: 0x101ccac0
+
+		// RETAIL: Tron's (+0x48: the class is 0xec bytes; its inline
+		// constructor and destructor, Object.lto 0x100e5140, 0x100e5250).
+		// Not yet identified
+		DMGameOptions	m_xTronUnknown48;
 };
 
 #endif // __LIGHTCYCLEMULTIPLAYERMISSIONMGR_H__

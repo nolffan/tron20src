@@ -895,6 +895,72 @@ EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusTy
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIStimulusMgr::RegisterStimulus()
+//
+//	PURPOSE:	Register a stimulus in the world.
+//				Overload for looking up source position every frame with an
+//				offset from the source position, with the caller's
+//				alignment (RETAIL: Tron's, 0x10100e30; CDisc::EnterReturnMode
+//				and StartBlockable give the disc's relation data).
+//
+// ----------------------------------------------------------------------- //
+
+EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusType,
+												  HOBJECT hStimulusSource,
+												  HOBJECT hStimulusTarget,
+												  const RelationData& RelationData,
+												  CAIStimulusRecord::kDynamicPos_Flag dwDynamicPosFlags,
+												  const LTVector &vOffset,
+												  LTFLOAT fRadiusFactor)
+{
+	// Create a stimulus record and fill it in...
+	CAIStimulusRecord *pAIStimulusRecord	= AI_FACTORY_NEW( CAIStimulusRecord );
+	pAIStimulusRecord->m_eStimulusType		= eStimulusType;
+	pAIStimulusRecord->m_hStimulusSource	= hStimulusSource;
+	pAIStimulusRecord->m_hStimulusTarget	= hStimulusTarget;
+	pAIStimulusRecord->m_RelationData		= RelationData;
+	pAIStimulusRecord->m_dwDynamicPosFlags	|= dwDynamicPosFlags;
+
+	// If this there is a dynamic hobject in the mix, be sure to update its 
+	// position correctly
+	if( pAIStimulusRecord->m_dwDynamicPosFlags & CAIStimulusRecord::kDynamicPos_TrackSource )
+	{
+		g_pLTServer->GetObjectPos( hStimulusSource, &(pAIStimulusRecord->m_vStimulusPos) );
+	}
+	else if (pAIStimulusRecord->m_dwDynamicPosFlags & CAIStimulusRecord::kDynamicPos_TrackTarget)
+	{
+		g_pLTServer->GetObjectPos( hStimulusTarget, &(pAIStimulusRecord->m_vStimulusPos) );
+	}
+
+	// If we had an offset add it in...
+
+	if( vOffset.MagSqr() > 0.1f )
+	{
+		pAIStimulusRecord->m_dwDynamicPosFlags |= CAIStimulusRecord::kDynamicPos_HasOffset;
+
+		LTRotation	rRot;
+		LTMatrix	mMat;
+
+		g_pLTServer->GetObjectRotation( hStimulusSource, &rRot );
+		rRot.ConvertToMatrix( mMat );
+		
+		pAIStimulusRecord->m_vDynamicSourceOffset = ~mMat * vOffset;
+		pAIStimulusRecord->m_vStimulusPos += mMat * pAIStimulusRecord->m_vDynamicSourceOffset;
+	}
+
+	EnumAIStimulusID eAIStimulusID = _RegisterStimulus(pAIStimulusRecord, 1, fRadiusFactor, 1.0f);	
+
+	// Check if it registered ok.
+	if( eAIStimulusID == kStimID_Invalid )
+	{
+		AI_FACTORY_DELETE( pAIStimulusRecord );
+	}	
+
+	return eAIStimulusID;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIStimulusMgr::GetTargetMatchID
 //
 //	PURPOSE:	Find the TargetMatchID for an HOBJECT.

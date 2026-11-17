@@ -16,10 +16,56 @@
 #include "GameBase.h"
 #include "ModelButeMgr.h"
 #include "TemplateList.h"
+#include <float.h>
 
 class CProjectile;
 class CAttachments;
 struct IHitBoxUser;
+struct DamageStruct;
+
+// RETAIL: Tron's best hit of a hit box test (0x10 bytes; initialized
+// inline, Object.lto 0x101397f9 and AIGoalSpecialDamage 0x10191e3e).
+// Names ours
+struct HitBoxHit
+{
+	HitBoxHit()
+		: m_hObject( LTNULL ),
+		m_eModelNode( eModelNodeInvalid ),
+		m_fPriority( FLT_MIN ),
+		m_fDist( FLT_MAX )
+	{
+	}
+
+	HOBJECT		m_hObject;		// the hit box user that was hit
+	ModelNode	m_eModelNode;
+	LTFLOAT		m_fPriority;
+	LTFLOAT		m_fDist;		// along the ray
+};
+
+// RETAIL: Tron's node test of one hit box user (0x4c bytes; built in
+// CCharacterHitBox::FindHitNodeSphere, Object.lto 0x10139240). The test
+// function is called for each node that has a transform. Names ours
+struct HitBoxNodeTest;
+typedef bool (*HitBoxNodeTestFn)( HitBoxNodeTest* pTest, HitBoxHit* pHit );
+
+struct HitBoxNodeTest
+{
+	HitBoxNodeTest( HitBoxNodeTestFn pfnTest, IHitBoxUser* pHitBoxUser, const LTVector& vDir, const LTVector& vFrom )
+		: m_pfnTest( pfnTest ),
+		m_pHitBoxUser( pHitBoxUser ),
+		m_vDir( vDir ),
+		m_vFrom( vFrom ),
+		m_eModelNode( eModelNodeInvalid )
+	{
+	}
+
+	HitBoxNodeTestFn	m_pfnTest;
+	IHitBoxUser*		m_pHitBoxUser;
+	LTVector			m_vDir;
+	LTVector			m_vFrom;
+	ModelNode			m_eModelNode;	// the node being tested
+	LTransform			m_tfNode;		// its transform
+};
 
 LINKTO_MODULE( CharacterHitBox );
 
@@ -58,8 +104,21 @@ class CCharacterHitBox : public GameBase
 
         LTBOOL HandleImpact(CProjectile* pProj, IntersectInfo & iInfo,
             LTVector vDir, LTVector & vFrom);
+		// RETAIL: Tron's (0x10138fe0; CProjectile::GetHitBoxImpact): the
+		// test starts at vFrom, not at the hit point. The name is ours
+        LTBOOL HandleImpactFromPos(CProjectile* pProj, IntersectInfo & iInfo,
+            LTVector vDir, LTVector & vFrom);
 
         LTBOOL DidProjectileImpact(CProjectile* pProjectile);
+
+		// RETAIL: Tron's (0x10139240; AIGoalSpecialDamage calls it): test
+		// the ray against the node spheres of the user and of the users it
+		// adds (CThorne's ball). The name is ours
+		void	FindHitNodeSphere( const LTVector& vDir, const LTVector& vFrom, HitBoxHit* pHit );
+
+		// RETAIL: Tron's (0x101395d0): the power armor attached to the user
+		// takes damage before the user. The name is ours
+		void	AbsorbDamage( DamageStruct* pDamage );
 
 		HOBJECT	GetModelObject() const { return m_hModel; }
 
@@ -86,13 +145,23 @@ class CCharacterHitBox : public GameBase
 
 	protected :
 
-		LTBOOL	GetNodeTransform(const char* const pszNodeName,LTransform &NodeTransform);
         virtual	LTVector GetBoundingBoxColor();
 
-		ModelNode FindHitNode( LTVector const& vDir, LTVector const& vFrom );
+		// RETAIL: Tron's (0x10139020): HandleImpact and HandleImpactFromPos
+		LTBOOL	HandleImpact(CProjectile* pProj, IntersectInfo & iInfo,
+			LTVector vDir, LTVector & vFrom, LTBOOL bFromPos);
 
-        LTBOOL  HandleVectorImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector& vDir,
-            LTVector& vFrom, ModelNode& eModelNode);
+		// RETAIL: Tron's (0x10139460): test the ray against the model's
+		// OBBs. The name is ours
+		void	FindHitNodeOBB( const LTVector& vDir, const LTVector& vFrom, HitBoxHit* pHit );
+
+		// RETAIL: Tron's (0x10139540): call the test for each node of the
+		// test's user. The name is ours
+		void	TestNodes( HitBoxNodeTest* pTest, HitBoxHit* pHit );
+
+		// RETAIL: Tron's (0x101397d0)
+        LTBOOL  HandleVectorImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector vDir,
+            LTVector vFrom, ModelNode& eModelNode, LTBOOL bFromPos);
 
         LTFLOAT			GetNodeRadius(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
 

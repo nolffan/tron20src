@@ -39,8 +39,6 @@ class PlayerVehicle : public Prop
 		bool	IsVirgin( ) { return m_bVirgin; }
 
 		// Get the complete list of all bodies.
-		typedef std::vector< PlayerVehicle* > PlayerVehicleList;
-		static PlayerVehicleList const& GetPlayerVehicleList( ) { return m_lstPlayerVehicles; }
 
 	protected :
 
@@ -51,7 +49,6 @@ class PlayerVehicle : public Prop
 		void	PostPropRead(ObjectCreateStruct* pData);
 
 		// Limits number of vehicles allowed in level.
-		void	CapNumberOfVehicles( );
 
 	private :
 
@@ -87,7 +84,6 @@ class PlayerVehicle : public Prop
 		// ReadProp 0x1017e410), so it is kept after retail's members.
 		bool		m_bRidden;
 
-		static PlayerVehicleList		m_lstPlayerVehicles;
 };
 
 

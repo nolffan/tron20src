@@ -936,6 +936,16 @@ void CGameServerShell::SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *
 
 }
 
+// RETAIL: Tron's handshake keeps Build 51's name key (Object.lto 0x100de650)
+// with NOLF2's CRC and password checks. The key is from Build 51
+#define KEY_MESSER_UPPER 0xDEADFACE
+inline uint32 MessUp32BitValue(uint32 nValue, uint32 nRot)
+{
+	// "Encrypt" the value (Yes, it's a very simple encryption...)
+	uint32 nXORShift = nRot & 0xF;
+	return ((KEY_MESSER_UPPER << nXORShift) + (KEY_MESSER_UPPER >> (32 - nXORShift))) ^ nValue;
+}
+
 void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 {
 	// Get the player
@@ -949,22 +959,11 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 	//host doesn't need to provide user password 
 	bool bIsHost = g_pLTServer->GetClientInfoFlags(hClient) & CIF_LOCAL;
 
-	// Get the player's GUID.
-	char szClientName[MAX_CLIENT_NAME_LENGTH] = "";
-	g_pLTServer->GetClientName( hClient, szClientName, ARRAY_LEN( szClientName ));
-	if( !szClientName[0] )
-	{
-		g_pLTServer->KickClient( hClient );
-		return;
-	}
-
 	int nHandshakeSub = (int)pMsg->Readuint8();
 	switch (nHandshakeSub)
 	{
 		case MID_HANDSHAKE_HELLO :
 		{
-
-
 			// Check the client's version
 			int nHandshakeVer = (int)pMsg->Readuint16();
 			if (nHandshakeVer != GAME_HANDSHAKE_VER)
@@ -986,7 +985,7 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 			CAutoMessage cResponse;
 			cResponse.Writeuint8(MID_HANDSHAKE);
 			cResponse.Writeuint8(MID_HANDSHAKE_PASSWORD);
-			cResponse.Writeuint32( GAME_HANDSHAKE_PASSWORD );
+			cResponse.Writeuint32((uint32)this ^ MessUp32BitValue(nClientKey, (uint32)(pPlayer->GetNetUniqueName()[0])));
 			cResponse.Writebool((!bIsHost && m_ServerGameOptions.m_bUsePassword));
 			g_pLTServer->SendToClient(cResponse.Read(), hClient, MESSAGE_GUARANTEED);
 		}
@@ -995,10 +994,18 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 		{
 			// Get the client's password
 			uint32 nClientPassword = pMsg->Readuint32();
-
-			uint32 nXORMask = GAME_HANDSHAKE_MASK;
-			nClientPassword ^= nXORMask;
-			uint32 nClientName = GAME_HANDSHAKE_PASSWORD;
+			// Encrypt the first 4 bytes of the client name
+			uint32 nClientName = *((uint32*)pPlayer->GetNetUniqueName());
+			// Handle short client names...
+			// RETAIL: Build 51's tests use && (docs/RETAIL_BUGS.md)
+			if ((nClientName && 0xFF) == 0)
+				nClientName = 0;
+			else if ((nClientName && 0xFF00) == 0)
+				nClientName &= 0xFF;
+			else if ((nClientName && 0xFF0000) == 0)
+				nClientName &= 0xFFFF;
+			uint32 nXORMask = MessUp32BitValue((uint32)this, (uint32)(pPlayer->GetNetUniqueName()[0]));
+			nClientName ^= nXORMask;
 
 			// Validate
 			if (nClientName != nClientPassword)
@@ -1011,70 +1018,22 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 			// Read in their weapons file CRC
 			uint32 nWeaponCRC = g_pWeaponMgr->GetFileCRC();
 			nWeaponCRC ^= nXORMask;
-			uint32 nClientCRC = pMsg->Readuint32();
-			
-#ifndef _DEBUG
-			if (nWeaponCRC != nClientCRC)
+			if (nWeaponCRC != pMsg->Readuint32())
 			{
 				// They're cheating!!
 				g_pLTServer->KickClient(hClient);
-
 				return;
 			}
-#endif
 
 			// Read in their client file CRC
 			uint32 nCShellCRC = m_nCShellCRC;
 			nCShellCRC ^= nXORMask;
-			nClientCRC = pMsg->Readuint32();
-#ifndef _DEBUG
-			if (nCShellCRC != nClientCRC)
-			{
-				// They're cheating!!
-				g_pLTServer->KickClient(hClient);
-
-				return;
-			}
-#endif
-
-			// CRC the modelbutes.txt
-			static uint32 nModelButesCRC = CRC32::CalcRezFileCRC( g_pModelButeMgr->GetAttributeFile( ));
-			uint32 nModelButesMaskedCRC = nModelButesCRC ^ nXORMask;
-			uint32 nClientModelButesCRC = pMsg->Readuint32();
-#ifndef _DEBUG
-			if( nClientModelButesCRC !=  nModelButesMaskedCRC )
+			if (nCShellCRC != pMsg->Readuint32())
 			{
 				// They're cheating!!
 				g_pLTServer->KickClient(hClient);
 				return;
 			}
-#endif
-
-			// CRC the surface.txt
-			static uint32 nSurfaceCRC = CRC32::CalcRezFileCRC( g_pSurfaceMgr->GetAttributeFile( ));
-			uint32 nSurfaceMaskedCRC = nSurfaceCRC ^ nXORMask;
-			uint32 nClientSurfaceCRC = pMsg->Readuint32();
-#ifndef _DEBUG
-			if( nClientSurfaceCRC !=  nSurfaceMaskedCRC )
-			{
-				// They're cheating!!
-				g_pLTServer->KickClient(hClient);
-				return;
-			}
-#endif
-
-			// CRC the damagefx.txt
-			static uint32 nDamageFxCRC = CRC32::CalcRezFileCRC( "attributes\\damagefx.txt" );
-			uint32 nDamageFxMaskedCRC = nDamageFxCRC ^ nXORMask;
-			uint32 nClientDamageFxCRC = pMsg->Readuint32();
-#ifndef _DEBUG
-			if( nClientDamageFxCRC !=  nDamageFxMaskedCRC )
-			{
-				// They're cheating!!
-				g_pLTServer->KickClient(hClient);
-				return;
-			}
-#endif
 
 			uint32 nHashedPassword = pMsg->Readuint32();
 			uint32 nServerHashedPassword = str_Hash(m_ServerGameOptions.m_sPassword.c_str( ));
@@ -1087,21 +1046,14 @@ void CGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
 				cMsg.Writeuint8(MID_HANDSHAKE);
 				cMsg.Writeuint8((uint8)MID_HANDSHAKE_WRONGPASS);
 				g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
-
-				//and boot 'em
-				//jrg - 9/4/02 in this particular case we let the client disconnect itself so that it can handle
-				//		an incorrect password a little more smoothly
-//				g_pLTServer->KickClient(hClient);
 				return;
 			}
-
 
 			// Tell the client they passed the test...
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_HANDSHAKE);
 			cMsg.Writeuint8((uint8)MID_HANDSHAKE_DONE);
 			g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
-
 
 			// Unlock the player
 			pPlayer->FinishHandshake();

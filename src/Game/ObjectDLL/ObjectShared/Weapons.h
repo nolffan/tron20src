@@ -97,7 +97,8 @@ class CWeapons
 		void HandleProjectileMessage( HOBJECT, ILTMessage_Read* );
 
 		// RETAIL: Tron's (Object.lto 0x100f73b0, 0x100f7bf0); the names are
-		// ours
+		// ours. CAttachmentWeapon's slot 0x14 (0x1018c800) calls the first
+		friend class CAttachmentWeapon;
 		void NotifyProjectilesTronUnknown();
 		void RemoveDeadProjectiles();
 

@@ -46,6 +46,10 @@ class CAIGoalFconMonster : public CAIGoalAbstract
 
 	protected:
 
+		// RETAIL: CAI::GetWeaponCheckPosition (0x101311f0) reads
+		// m_abDestroyed
+		friend class CAI;
+
 		// RETAIL: [0] is the left arm, [1] the right.
 		LTFLOAT			m_afHitPoints[2];			// RETAIL: 0x5c
 		// RETAIL: near; retail's assignments check the source for NULL inline.

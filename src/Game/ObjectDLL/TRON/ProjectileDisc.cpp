@@ -1060,10 +1060,8 @@ void CDisc::EnterReturnMode( HOBJECT hObj )
 	// The disc can be caught when it returns
 	if ( m_pRelationData && ( m_eDiscCatchableStimID == kStimID_Unset ) )
 	{
-		// PORT: Tron's overload also takes the projectile's relation data
-		// (0x10100e30, not yet written)
 		m_eDiscCatchableStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_CatchableProjectileVisible,
-			m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector( 0.0f, 0.0f, 0.0f ), 1.0f );
+			m_hFiredFrom, m_hObject, *m_pRelationData, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector( 0.0f, 0.0f, 0.0f ), 1.0f );
 	}
 
 	if ( !hObj )
@@ -1311,10 +1309,8 @@ void CDisc::StartBlockable()
 
 	if ( m_pRelationData )
 	{
-		// PORT: Tron's overload also takes the projectile's relation data
-		// (0x10100e30, not yet written)
 		m_eDiscBlockableStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_ProjectileVisible,
-			m_hFiredFrom, m_hObject, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector( 0.0f, 0.0f, 0.0f ), 1.0f );
+			m_hFiredFrom, m_hObject, *m_pRelationData, CAIStimulusRecord::kDynamicPos_TrackTarget, LTVector( 0.0f, 0.0f, 0.0f ), 1.0f );
 	}
 }
 

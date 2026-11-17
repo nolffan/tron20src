@@ -199,6 +199,13 @@ struct AIWeaponChoice
 		m_bEnabled = pMsg->Readbool();
 	}
 
+	// RETAIL: out of line (0x101314e0, CAI::GetWeaponCheckPosition's
+	// find)
+	LTBOOL operator==(const AIWeaponChoice& other) const
+	{
+		return ( other.m_eSide == m_eSide ) && ( other.m_fMaxDist == m_fMaxDist );
+	}
+
 	EnumAIAttackSide	m_eSide;
 	float				m_fMaxDist;
 	bool				m_bEnabled;
@@ -270,6 +277,9 @@ class CAI : public CCharacter, public IAISensing
 		virtual float GetInfoVerticalThreshold() const;
         
         virtual LTVector GetWeaponPosition(CWeapon *pWeapon);
+		// RETAIL: Tron's (0x101311f0): AbstractTarget::UpdateVisibility's
+		// check position. The name is ours
+		LTVector GetWeaponCheckPosition(LTBOOL bKeepChoice);
 		HMODELSOCKET	GetWeaponSocket(CWeapon* pWeapon);
 
         const LTVector& GetEyePosition();

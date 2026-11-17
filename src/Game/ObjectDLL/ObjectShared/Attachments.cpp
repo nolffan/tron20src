@@ -1935,6 +1935,19 @@ void CAttachmentWeapon::Init(HOBJECT hObj, HOBJECT hWeaponModel, int nAttachment
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAttachmentWeapon::TronUnknownVirtual14
+//
+//	PURPOSE:	RETAIL: Tron's (0x1018c800): tell the weapons' projectiles
+//
+// ----------------------------------------------------------------------- //
+
+void CAttachmentWeapon::TronUnknownVirtual14()
+{
+	m_Weapons.NotifyProjectilesTronUnknown();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAttachmentWeapon::HandleProjectileImpact
 //
 //	PURPOSE:	Tests being hit by a projectile
