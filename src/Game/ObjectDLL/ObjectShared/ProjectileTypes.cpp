@@ -40,11 +40,43 @@
 LINKFROM_MODULE( ProjectileTypes );
 
 
-#define DEFAULT_GRENADE_DAMPEN_PERCENT	0.35f
+// RETAIL: Tron's default is 1.0 (0x1011bf4e)
+#define DEFAULT_GRENADE_DAMPEN_PERCENT	1.0f
 #define DEFAULT_GRENADE_MIN_VELOCITY	10.0f
 
 static CVarTrack g_vtGrenadeDampenPercent;
 static CVarTrack g_vtGrenadeMinVelMag;
+
+extern CVarTrack g_vtProjectileNewCollision;
+
+// RETAIL: 0x1037c258.  The name is ours
+static bool s_bGrenadeVarsInitted;
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	InitGrenadeConsoleVariables()
+//
+//	PURPOSE:	RETAIL: 0x1011bf20 (the constructor calls it): set up the
+//				grenade's console variables once.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+static void InitGrenadeConsoleVariables()
+{
+	if (s_bGrenadeVarsInitted) return;
+
+	if (!g_vtGrenadeDampenPercent.IsInitted())
+	{
+        g_vtGrenadeDampenPercent.Init(g_pLTServer, "GrenadeDampenPercent", LTNULL, DEFAULT_GRENADE_DAMPEN_PERCENT);
+	}
+
+	if (!g_vtGrenadeMinVelMag.IsInitted())
+	{
+        g_vtGrenadeMinVelMag.Init(g_pLTServer, "GrenadeMinVelMag", LTNULL, DEFAULT_GRENADE_MIN_VELOCITY);
+	}
+
+	s_bGrenadeVarsInitted = true;
+}
 
 // RETAIL: Tron's ProjectileTypes has CGrenade only (no RTTI, ClassDef or
 // strings of NOLF2's gadget projectiles CLipstickProx, CGrenadeImpact, CSpear,
@@ -93,6 +125,8 @@ CGrenade::CGrenade() : CProjectile()
 	// possible).
 	//m_dwFlags &= ~FLAG_POINTCOLLIDE;
 	//m_dwFlags |= FLAG_SOLID | FLAG_CLIENTNONSOLID;
+
+	InitGrenadeConsoleVariables();
 
 	m_vDims.Init(5.0f, 5.0f, 5.0f);
 
@@ -152,7 +186,7 @@ void CGrenade::Detonate(HOBJECT hObj, CollisionInfo* pCollInfo)
 	if( m_bAddToGrenadeList )
 		g_lstGrenades.Remove(this);
 
-	CProjectile::Detonate(hObj);
+	CProjectile::Detonate(hObj, pCollInfo);
 }
 
 // ----------------------------------------------------------------------- //
@@ -165,19 +199,14 @@ void CGrenade::Detonate(HOBJECT hObj, CollisionInfo* pCollInfo)
 
 void CGrenade::HandleImpact(HOBJECT hObj)
 {
-	if (!g_vtGrenadeDampenPercent.IsInitted())
+	// RETAIL: 0x1011c760: the constructor sets up the console variables;
+	// characters, their hit boxes and bodies set the grenade off (no team
+	// test)
+	if (IsCharacter(hObj) || IsCharacterHitBox(hObj) || IsBody(hObj))
 	{
-        g_vtGrenadeDampenPercent.Init(g_pLTServer, "GrenadeDampenPercent", LTNULL, DEFAULT_GRENADE_DAMPEN_PERCENT);
+		Detonate(hObj);
+		return;
 	}
-
-	if (!g_vtGrenadeMinVelMag.IsInitted())
-	{
-        g_vtGrenadeMinVelMag.Init(g_pLTServer, "GrenadeMinVelMag", LTNULL, DEFAULT_GRENADE_MIN_VELOCITY);
-	}
-
-
-	// RETAIL: 0x1011c760 has no NOLF2 1.3 "detonate on characters" test
-	// (and so no team test).
 
 
     LTVector vVel;
@@ -278,7 +307,8 @@ void CGrenade::HandleImpact(HOBJECT hObj)
 
 	fDampenPercent = fDampenPercent > 1.0f ? 1.0f : (fDampenPercent < 0.0f ? 0.0f : fDampenPercent);
 
-	vVel *= (1.0f - fDampenPercent);
+	// RETAIL: the projectile FX's Elasticity scales the dampening
+	vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
 
 
 	// See if we should come to a rest...
@@ -355,6 +385,15 @@ const char* CGrenade::GetBounceSound(SURFACE* pSurface)
 
 void CGrenade::UpdateGrenade()
 {
+	// RETAIL: Tron's new collision code handles the kept touches first
+	// (0x1011cd40)
+	if (g_vtProjectileNewCollision.GetFloat() != 0.0f)
+	{
+		m_bTronUnknown1C0 = true;
+		TronUnknownVirtual32();
+		m_bTronUnknown1C0 = false;
+	}
+
 	// Update my container code...
 
     LTVector vPos;
@@ -362,6 +401,8 @@ void CGrenade::UpdateGrenade()
 
 	// Get our container code, but ignore everything except for liquid containers...
 
+	// RETAIL: 0x1011cdc0 calls GetPointContainers (out of line) with the
+	// liquid flags; ours inlines it (the function stays near)
 	uint32 nIgnoreFlags = (CC_ALL_FLAG & ~ ::GetLiquidFlags());
     m_eContainerCode = ::GetContainerCode(vPos, nIgnoreFlags);
 
@@ -477,10 +518,178 @@ uint32 CGrenade::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 
+		// RETAIL: Tron's Save and Load are not virtual: 0x1011d320 calls
+		// them before CProjectile's
+		case MID_SAVEOBJECT:
+		{
+			Save((ILTMessage_Write*)pData, (uint32)fData);
+		}
+		break;
+
+		case MID_LOADOBJECT:
+		{
+			Load((ILTMessage_Read*)pData, (uint32)fData);
+		}
+		break;
+
 		default : break;
 	}
 
 	return CProjectile::EngineMessageFn(messageID, pData, fData);
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGrenade::TronUnknownVirtual33
+//
+//	PURPOSE:	RETAIL: slot 33 (0x1011d3b0): the new collision code's
+//				bounce off a kept touch.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+bool CGrenade::TronUnknownVirtual33(ProjectilePendingTouch *pTouch)
+{
+	if (!pTouch) return false;
+
+	SurfaceType eType = GetSurfaceType(pTouch->collInfo);
+	if (eType == ST_SKY)
+	{
+		// we hit the sky
+		HandleTouchSky(pTouch->hObject);
+		return true;
+	}
+	else if (eType == ST_INVISIBLE)
+	{
+		if (m_bProcessInvImpact)
+		{
+			m_bProcessInvImpact = false;
+
+			LTVector vNewPos = m_vLastPos + (m_vLastVel * g_pLTServer->GetFrameTime());
+			g_pPhysicsLT->SetVelocity(m_hObject, &m_vLastVel);
+			g_pLTServer->SetObjectPos(m_hObject, &vNewPos);
+		}
+
+		return false;
+	}
+
+	// RETAIL: characters and their hit boxes set the grenade off
+	if (IsCharacter(pTouch->hObject) || IsCharacterHitBox(pTouch->hObject) || IsBody(pTouch->hObject))
+	{
+		Detonate(pTouch->hObject);
+		return true;
+	}
+
+	LTVector vVel;
+	g_pPhysicsLT->GetVelocity(m_hObject, &vVel);
+
+	// See if we are impacting on liquid...
+
+	LTBOOL bEnteringLiquid = LTFALSE;
+	uint16 code;
+	if (g_pLTServer->GetContainerCode(pTouch->hObject, &code))
+	{
+		if (IsLiquid((ContainerCode)code))
+		{
+			bEnteringLiquid = LTTRUE;
+		}
+	}
+
+	// Move back out of the touched surface by half our height...
+
+	LTVector vDir = pTouch->vLastVel;
+	vDir = -vDir;
+	vDir.Normalize();
+	vDir *= m_vDims.y * 0.5f;
+
+	LTVector vPos = vDir + pTouch->iInfo.m_Point;
+	g_pLTServer->SetObjectPos(m_hObject, &vPos);
+
+	// Do the bounce, if the object we hit isn't liquid...
+
+	if (!bEnteringLiquid)
+	{
+		vVel = pTouch->vLastVel - 2.0f * pTouch->iInfo.m_Plane.m_Normal * pTouch->vLastVel.Dot(pTouch->iInfo.m_Plane.m_Normal);
+	}
+
+	// Dampen the grenade's new velocity based on the surface type...
+
+	LTFLOAT fDampenPercent = g_vtGrenadeDampenPercent.GetFloat();
+
+	m_eLastHitSurface = GetSurfaceType(pTouch->iInfo);
+	SURFACE* pSurf = g_pSurfaceMgr->GetSurface(m_eLastHitSurface);
+	if (pSurf)
+	{
+		// Play a bounce sound (based on the surface type) if one isn't
+		// already playing...
+
+		if ( ShouldPlayBounceSound(pSurf) )
+		{
+			uint32 dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_TIME;
+
+			int nVolume	= IsLiquid(m_eContainerCode) ? 50 : 100;
+
+			LTVector vSndPos;
+			g_pLTServer->GetObjectPos(m_hObject, &vSndPos);
+
+			// Only play one sound at a time...
+
+			if (m_hBounceSnd)
+			{
+				g_pLTServer->SoundMgr()->KillSound(m_hBounceSnd);
+				m_hBounceSnd = LTNULL;
+			}
+			else
+			{
+				// Register a stimulus for the bounce sound, if this is a new bounce sound.
+
+				g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyDisturbanceSound, 1, m_hFiredFrom, m_hObject, vSndPos, pSurf->fGrenadeSndRadius );
+			}
+
+			m_hBounceSnd = g_pServerSoundMgr->PlaySoundFromPos(vSndPos, (char*)GetBounceSound(pSurf),
+				pSurf->fGrenadeSndRadius, SOUNDPRIORITY_MISC_MEDIUM, dwFlags, nVolume);
+		}
+
+		fDampenPercent = (1.0f - pSurf->fHardness);
+	}
+
+	fDampenPercent = fDampenPercent < 0.0f ? 0.0f : (fDampenPercent > 1.0f ? 1.0f : fDampenPercent);
+
+	// RETAIL: the projectile FX's Elasticity scales the dampening
+	vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
+
+	// See if we should come to a rest...
+
+	LTVector vTest = vVel;
+	vTest.y = 0.0f;
+
+	if (vTest.Mag() < g_vtGrenadeMinVelMag.GetFloat())
+	{
+		// Don't stop on walls...
+
+		if (pTouch->iInfo.m_Plane.m_Normal.y > 0.75f)
+		{
+			vVel.Init();
+
+			// Turn off gravity, solid, and touch notify....
+
+			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_GRAVITY | FLAG_TOUCH_NOTIFY | FLAG_SOLID );
+
+			// Rotate to rest...
+
+			RotateToRest();
+		}
+	}
+
+	// Reset rotation velocities due to the bounce...
+
+	ResetRotationVel(&vVel, pSurf);
+
+	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
+
+	m_cBounces++;
+
+	return true;
 }
 
 
@@ -496,7 +705,8 @@ void CGrenade::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 {
 	if (!pMsg) return;
 
-	CProjectile::Save(pMsg, dwSaveFlags);
+	// RETAIL: CProjectile's EngineMessageFn saves the base class itself
+	// (0x1011d950)
 
 	SAVE_BOOL(m_bSpinGrenade);
     SAVE_BOOL(m_bUpdating);
@@ -528,7 +738,8 @@ void CGrenade::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 {
 	if (!pMsg) return;
 
-	CProjectile::Load(pMsg, dwLoadFlags);
+	// RETAIL: CProjectile's EngineMessageFn loads the base class itself
+	// (0x1011da80)
 
     LOAD_BOOL(m_bSpinGrenade);
     LOAD_BOOL(m_bUpdating);
