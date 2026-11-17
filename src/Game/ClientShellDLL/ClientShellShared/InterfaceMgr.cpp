@@ -190,9 +190,6 @@ namespace
 	FXRenderList renderList;
 
 
-	typedef std::vector<int> KeystrokeList;
-	KeystrokeList g_keys;
-
 	bool g_bLockPopup = true;
 
 	CTimer g_SplashScreenTimer;
@@ -345,6 +342,12 @@ TronIntelRecord::TronIntelRecord(const TronIntelRecord& other)
 
 TronIntelRecord::~TronIntelRecord()
 {
+}
+
+void TronIntelRecord::Show(bool& bHideHUD, CPopupText& popup)
+{
+	bHideHUD = m_bIsIntel;
+	popup.Show(m_nTextId, m_nPopupId, m_szName);
 }
 
 void TronIntelRecord::Save(ILTMessage_Write *pMsg)
@@ -811,12 +814,17 @@ void CInterfaceMgr::OnExitWorld()
 	if( !IsInitialized( ))
 		return;
 
+	// RETAIL: 0x100c85a2: Tron takes the HUD items away, and empties the
+	// client list and the teams
+	GetHUDMgr()->RemoveItems();
 	GetPlayerStats( )->OnExitWorld();
 /*
 	g_pMissionText->Clear();
 	g_pChatInput->Show(LTFALSE, LTFALSE);
 	g_pSubtitles->Clear();
 */
+	GetClientInfoMgr()->RemoveAllClients();
+	GetTeamMgr()->Init();
 	m_Credits.Term();
 	m_PopupText.Close();
 	m_InterfaceTimer.SetTime(0.0f,false);
@@ -841,6 +849,9 @@ void CInterfaceMgr::OnExitWorld()
 
         m_hOverlays[i] = LTNULL;
 	}
+
+	// RETAIL: 0x100c865c
+	g_pTransmission->Term();
 
     m_bFadeInitialized = LTFALSE;
 
@@ -1134,6 +1145,14 @@ void CInterfaceMgr::UpdatePlayingState()
 	// Update the player stats...
 	GetHUDMgr()->Update();
 	g_pPaused->Update();
+
+	// RETAIL: 0x100c8b11: show the intel picked up, the last first, when
+	// no popup shows
+	if (!m_PopupText.IsVisible() && !m_IntelRecords.empty())
+	{
+		m_IntelRecords.back().Show(m_bHideHUDInPopup, m_PopupText);
+		m_IntelRecords.pop_back();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2785,7 +2804,18 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 	{
 		case GS_SCREEN :
 		{
-			GetScreenMgr( )->HandleKeyDown(key,rep);
+			// RETAIL: 0x100caf39: escape stops the credits
+			if (m_Credits.IsInited())
+			{
+				if (key == VK_ESCAPE)
+				{
+					m_Credits.Term();
+				}
+			}
+			else
+			{
+				GetScreenMgr( )->HandleKeyDown(key,rep);
+			}
             return LTTRUE;
 		}
 		break;
@@ -2832,15 +2862,11 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 
 		case GS_POPUP :
 		{
-			if(m_PopupText.IsVisible())
+			// RETAIL: 0x100caffe: only escape closes the popup
+			if(m_PopupText.IsVisible() && key == VK_ESCAPE)
 			{
-				KeystrokeList::iterator iter = g_keys.begin();
-				while (iter != g_keys.end() && (*iter) != key)
-					iter++;
-				if (iter == g_keys.end())
-					m_PopupText.Close();
-
-				
+				m_PopupText.Close();
+				return LTTRUE;
 			}
 		}
 		break;
@@ -2901,7 +2927,8 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 					if (g_pDecision->IsVisible())
 					{
 						g_pDecision->Choose(MAX_DECISION_CHOICES);
-						bHandled = true;
+						// RETAIL: 0x100cb0f2
+						return LTTRUE;
 					}
 
 					if (bHandled)
@@ -2967,7 +2994,9 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 	{
 	case GS_SCREEN:
 		{
-			GetScreenMgr( )->HandleKeyUp(key);
+			// RETAIL: 0x100cb24a: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->HandleKeyUp(key);
 			return LTTRUE;
 		}
 		break;
@@ -2986,16 +3015,9 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 		break;
 	case GS_POPUP:
 		{
-			KeystrokeList::iterator iter = g_keys.begin();
-			while (iter != g_keys.end() && (*iter) != key)
-				iter++;
-			bool bKeepLocked = false;
-			if (iter != g_keys.end() && (*iter) == key)
-			{
-				g_keys.erase(iter);
-				bKeepLocked = !g_keys.empty();
-			}
-			g_bLockPopup &= bKeepLocked;
+			// RETAIL: 0x100cb283: any key up unlocks the popup (Tron keeps
+			// no list of the keys held down)
+			g_bLockPopup = false;
 		} break;
 
 	}
@@ -3013,7 +3035,8 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 
 void CInterfaceMgr::OnChar(unsigned char c)
 {
-	if (c < ' ') return;
+	// RETAIL: 0x100cb2bb compares signed
+	if ((char)c < ' ') return;
 
 
 	if (m_MessageBox.IsVisible())
@@ -3027,7 +3050,8 @@ void CInterfaceMgr::OnChar(unsigned char c)
 		g_pChatInput->HandleChar(c);
 		return;
 	}
-	if (m_eGameState == GS_SCREEN)
+	// RETAIL: 0x100cb2fb: not while the credits run
+	if (m_eGameState == GS_SCREEN && !m_Credits.IsInited())
 	{
 		GetScreenMgr( )->HandleChar(c);
 	}
@@ -3251,16 +3275,8 @@ LTBOOL CInterfaceMgr::PostScreenState(GameState eNewState)
 
 	RemoveAllInterfaceSFX();
 
-	//see what state we need to restore the HUD into (in case we go into the menus
-	//while we are dead)
-	if(g_pPlayerMgr->IsPlayerDead())
-	{
-		SetHUDRenderLevel(kHUDRenderDead);
-	}
-	else
-	{
-		SetHUDRenderLevel(kHUDRenderFull);
-	}
+	// RETAIL: 0x100cb73d: Tron restores the full HUD, dead or not
+	SetHUDRenderLevel(kHUDRenderFull);
 
 	// m_InterfaceResMgr.Clean();
 
@@ -3273,9 +3289,26 @@ LTBOOL CInterfaceMgr::PostScreenState(GameState eNewState)
 
 	m_bSuppressNextFlip = true;
 
-	// Match the pause from PreScreeState...
-
-    g_pGameClientShell->PauseGame( LTFALSE );
+	// RETAIL: 0x100cb76c: no unpause; Tron holds the music stopped while a
+	// level loads, and plays it again after
+	if (eNewState == GS_LOADINGLEVEL)
+	{
+		CMusic* pMusic = g_pGameClientShell->GetMusic();
+		if (pMusic)
+		{
+			pMusic->Stop();
+			pMusic->m_bSuspended = true;
+		}
+	}
+	else
+	{
+		CMusic* pMusic = g_pGameClientShell->GetMusic();
+		if (pMusic && pMusic->m_bSuspended)
+		{
+			pMusic->m_bSuspended = false;
+			pMusic->Play();
+		}
+	}
 
     return LTTRUE;
 }
@@ -3418,7 +3451,8 @@ LTBOOL CInterfaceMgr::PreMenuState(GameState eCurState)
 	// If we're currently viewing a cinematic disable all the menu bar menus
 	// except the system menu...
 
-	if (g_pPlayerMgr->IsUsingExternalCamera())
+	// RETAIL: 0x100cb9b5: and in multiplayer games
+	if (g_pPlayerMgr->IsUsingExternalCamera() || IsMultiplayerGame())
 	{
 		m_MenuMgr.EnableMenuBar(false, (MB_ALL & ~MB_SYSTEM));
 	}
@@ -3484,14 +3518,9 @@ LTBOOL CInterfaceMgr::PrePopupState(GameState eCurState)
 		SetHUDRenderLevel(kHUDRenderNone);
 	}
 
-	g_keys.clear();
-	for (int k = 0; k < 256; k++)
-	{
-		if (IsKeyDown(k))
-			g_keys.push_back(k);
-	}
-
-	g_bLockPopup = !g_keys.empty();
+	// RETAIL: 0x100cbabc: Tron locks the popup until a key comes up (no
+	// list of the keys held down)
+	g_bLockPopup = true;
 
     return LTTRUE;
 }
@@ -3595,12 +3624,12 @@ LTBOOL CInterfaceMgr::PreExitingLevelState(GameState eCurState)
 {
     if (eCurState == GS_EXITINGLEVEL) return LTFALSE;
 
-	if (eCurState == GS_SCREEN && GetScreenMgr( )->GetCurrentScreenID() == SCREEN_ID_MAIN )
+	// RETAIL: 0x100cbc12: Tron fades out in single player only, from any
+	// state
+	if (!IsMultiplayerGame())
 	{
-		return LTFALSE;
+		StartScreenFadeOut( g_vtExitLevelScreenFadeTime.GetFloat() );
 	}
-
-	StartScreenFadeOut( g_vtExitLevelScreenFadeTime.GetFloat() );
 
     return LTTRUE;
 }
@@ -3644,7 +3673,7 @@ LTBOOL CInterfaceMgr::PreSplashScreenState(GameState eCurState)
 	// Play splash screen sound...
 
     uint32 dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT;
-	m_hSplashSound = g_pClientSoundMgr->PlayInterfaceSound(IM_SPLASH_SOUND);
+	m_hSplashSound = g_pClientSoundMgr->PlayInterfaceSound(IM_SPLASH_SOUND, PLAYSOUND_CLIENT | PLAYSOUND_GETHANDLE);	// RETAIL: 0x100cbc93 (0x210)
 
 	if (m_hSplashSound)
 	{
@@ -4298,6 +4327,8 @@ void CInterfaceMgr::ScreenDimsChanged()
 	GetScreenMgr( )->ScreenDimsChanged();
 	m_MenuMgr.ScreenDimsChanged();
 	GetHUDMgr()->ScreenDimsChanged();
+	// RETAIL: 0x100cc819
+	m_CursorMgr.ScheduleReinit(5.0f);
 
 	// Update the camera rect...
     uint32 dwWidth = 640, dwHeight = 480;
@@ -4324,6 +4355,8 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 
 	if (m_MessageBox.IsVisible())
 	{
+		// RETAIL: 0x100cc8e0: Tron clears the input first
+		g_pLTClient->ClearInput();
 		m_MessageBox.OnLButtonUp(x,y);
 		return;
 	}
@@ -4335,7 +4368,9 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 		} break;
 	case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnLButtonUp(x,y);
+			// RETAIL: 0x100cc90a: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnLButtonUp(x,y);
 		} break;
 	case GS_MENU:
 		{
@@ -4343,11 +4378,11 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 		} break;
 	case GS_POPUP:
 		{
-			if(m_PopupText.IsVisible() && !g_bLockPopup)
+			// RETAIL: 0x100cc930: no popup lock in Tron
+			if(m_PopupText.IsVisible())
 			{
 				m_PopupText.Close();
 			}
-			g_bLockPopup = false;
 		} break;
 	}
 }
@@ -4367,7 +4402,9 @@ void CInterfaceMgr::OnLButtonDown(int x, int y)
 	{
 		case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnLButtonDown(x,y);
+			// RETAIL: 0x100cc9af: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnLButtonDown(x,y);
 		}	
 		break;
 
@@ -4446,15 +4483,16 @@ void CInterfaceMgr::OnRButtonUp(int x, int y)
 		case GS_MENU:
 		{
 			m_MenuMgr.OnRButtonUp(x,y);
-		} break;
+		}
+		// RETAIL: 0x100ccac5: Tron falls through to the popup case
+		// (no break, no popup lock)
 
 		case GS_POPUP:
 		{
-			if(m_PopupText.IsVisible() && !g_bLockPopup)
+			if(m_PopupText.IsVisible())
 			{
 				m_PopupText.Close();
 			}
-			g_bLockPopup = false;
 		} break;
 	}
 
@@ -4562,7 +4600,9 @@ void CInterfaceMgr::OnMouseMove(int x, int y)
 	{
 		case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnMouseMove(x,y);
+			// RETAIL: 0x100ccc75: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnMouseMove(x,y);
 		}
 		break;
 		

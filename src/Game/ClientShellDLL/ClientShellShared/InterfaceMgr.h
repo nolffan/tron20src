@@ -128,6 +128,8 @@ struct TronIntelRecord
 	// RETAIL: empty, and called (0x100cc683)
 	~TronIntelRecord();
 
+	// RETAIL: 0x100c66f0 (the name is ours): show the record in the popup
+	void	Show(bool& bHideHUD, CPopupText& popup);
 	void	Save(ILTMessage_Write *pMsg);
 	void	Load(ILTMessage_Read *pMsg);
 
