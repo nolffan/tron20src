@@ -1944,8 +1944,7 @@ void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 
 			for (int i = 0; i < NUM_PROC_CTRLS; i++)
 			{
-				Procedural * pProc = m_ProcCtrl[i].GetProc();
-				if (pProc && pProc->eAffectState == m_pCursorSub->eState && !pProc->pSub)
+				if (m_ProcCtrl[i].GetProc() && m_ProcCtrl[i].GetProc()->eAffectState == m_pCursorSub->eState && !m_ProcCtrl[i].GetProc()->pSub)
 					m_ProcCtrl[i].SetHighlight(true);
 			}
 		}

@@ -307,7 +307,7 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		{
 			// Initialize the GoalMgr.
 			m_pGoalMgr->Init(this);		
-			m_pGoalMgr->SetGoalSet( genProp.m_String, LTFALSE );
+			m_pGoalMgr->SetGoalSetNextUpdate( genProp.m_String );	// RETAIL: 0x1016ca6d
 		}
 	}
 
@@ -316,6 +316,12 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		if ( genProp.m_String[0] )
 		{
 			m_eModelId = g_pModelButeMgr->GetModelId(genProp.m_String);
+
+			// RETAIL: 0x1016ca9c, Tron falls back on the first model.
+			if( m_eModelId == eModelIdInvalid )
+			{
+				m_eModelId = (ModelId)0;
+			}
 		}
 	}
 	else {
@@ -357,7 +363,14 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		// Create a backup copy of the holster string, for use if 
 		// the AIs weapon is stolen (while he is knocked out).
 
-		if( szHolster[0] )
+		// RETAIL: 0x1016cc19, Tron drops a holster string with only a
+		// left-handed weapon.
+
+		if( szHolster[0] == ';' )
+		{
+			szHolster[0] = 0;
+		}
+		else if( szHolster[0] )
 		{
 			m_hstrHolsterBackup = g_pLTServer->CreateString( szHolster );
 		}
@@ -539,13 +552,60 @@ HMODELANIM CAIHuman::GetDeathAni(LTBOOL bFront)
 
 	if ( GetAnimationContext()->IsPropSet(kAPG_Movement, kAP_Run) )
 	{
-		char* aszDeathRunsFront[] = { "DRun", "DRun2" };
-		char* aszDeathRunsBack[]  = { "DRunBack", "DRunBack2" };
+		// RETAIL: 0x1016cfc9, Tron's run deaths.
+		char* aszDeathRunsFront[] = { "DRun", "DRun2", "DRun3" };
+		char* aszDeathRunsBack[]  = { "DRunBack", "DRunBack", "DRunBack" };
 
 		int cDeathRuns = sizeof(aszDeathRunsBack)/sizeof(const char*);
 		char** pDeathRuns = (bFront ? aszDeathRunsFront : aszDeathRunsBack);
 
         if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)pDeathRuns[GetRandom(0, cDeathRuns-1)])) )
+		{
+			return hAni;
+		}
+	}
+
+	// RETAIL: 0x1016d02c, Tron's deaths for the prod and the energy claw.
+
+	if ( m_eDeathDamageType == DT_PROD )
+	{
+		if ( GetAnimationContext()->IsPropSet(kAPG_Posture, kAP_Crouch) )
+		{
+			char* aszDeaths[] = { "CrouchPDeath" };
+			int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+			char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+			if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+			{
+				return hAni;
+			}
+		}
+
+		char* aszDeaths[] = { "PDeath", "PDeath2", "PDeath3" };
+		int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+		char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+		if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+		{
+			return hAni;
+		}
+	}
+
+	if ( m_eDeathDamageType == DT_ENERGYCLAW )
+	{
+		if ( GetAnimationContext()->IsPropSet(kAPG_Posture, kAP_Crouch) )
+		{
+			char* aszDeaths[] = { "CrouchCDeath" };
+			int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+			char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+			if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+			{
+				return hAni;
+			}
+		}
+
+		char* aszDeaths[] = { "CDeath", "CDeath2", "CDeath3" };
+		int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+		char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+		if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
 		{
 			return hAni;
 		}
@@ -567,7 +627,25 @@ HMODELANIM CAIHuman::GetDeathAni(LTBOOL bFront)
 		}
 	}
 
-	return CAI::GetDeathAni(bFront);
+	// RETAIL: 0x1016d1c1, Tron's head shots: a critical hit by DT_LOL.
+
+	if ( ( g_pModelButeMgr->GetSkeletonNodeFlags(GetModelSkeleton(), m_eModelNodeLastHit) & NODEFLAG_CRITICALHIT ) &&
+		( m_eDeathDamageType == DT_LOL ) )
+	{
+		char* aszHeadShotsFront[] = { "HeadShot", "HeadShot2", "HeadShot3" };
+		char* aszHeadShotsBack[]  = { "HeadShotBack", "HeadShotBack2", "HeadShotBack3" };
+
+		int cHeadShots = sizeof(aszHeadShotsBack)/sizeof(const char*);
+		char** pHeadShots = (bFront ? aszHeadShotsFront : aszHeadShotsBack);
+
+        if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, pHeadShots[GetRandom(0, cHeadShots-1)])) )
+		{
+			return hAni;
+		}
+	}
+
+	// RETAIL: 0x1016d252, CCharacter's.
+	return CCharacter::GetDeathAni(bFront);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1067,16 +1145,8 @@ void CAIHuman::OpenDoors(HOBJECT hDoor1, HOBJECT hDoor2)
 	{
 		if( m_hLastDoor[iDoor] )
 		{
-			// Do not activate a door that is already open.
-
-			if( IsKindOf( m_hLastDoor[iDoor], "RotatingDoor") )
-			{
-				RotatingDoor* pDoor = (RotatingDoor*)g_pLTServer->HandleToObject( m_hLastDoor[iDoor] );
-				if( pDoor && ( ( pDoor->GetState() == DOORSTATE_OPEN ) || ( pDoor->GetState() == DOORSTATE_OPENING ) ) )
-				{
-					continue;
-				}
-			}
+			// RETAIL: 0x1016e5e8, Tron activates the door also when it is
+			// open already.
 
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "ACTIVATE");
 
@@ -1104,16 +1174,8 @@ void CAIHuman::KickDoors(HOBJECT hDoor1, HOBJECT hDoor2)
 	{
 		if( m_hLastDoor[iDoor] )
 		{
-			// Do not activate a door that is already open.
-
-			if( IsKindOf( m_hLastDoor[iDoor], "RotatingDoor") )
-			{
-				RotatingDoor* pDoor = (RotatingDoor*)g_pLTServer->HandleToObject( m_hLastDoor[iDoor] );
-				if( pDoor && ( ( pDoor->GetState() == DOORSTATE_OPEN ) || ( pDoor->GetState() == DOORSTATE_OPENING ) ) )
-				{
-					continue;
-				}
-			}
+			// RETAIL: 0x1016e654, Tron kicks the door also when it is open
+			// already.
 
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "SETPOWERONMULTIPLIER 0.1");
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "ACTIVATE");
@@ -1304,45 +1366,16 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 			return;
 		}
 	}
-	if ( DT_WORLDONLY == damage.eType || m_damage.IsCantDamageType(damage.eType) || !m_damage.GetCanDamage() )
+
+	// RETAIL: 0x1016eaff, Tron has none of NOLF2's special damage types
+	// here (world only, sleeping, tracker, camera disabler), and no
+	// resurrection test.
+
+	if ( m_damage.IsCantDamageType(damage.eType) || !m_damage.GetCanDamage() )
 	{
-		m_fLastPainVolume = 0.0f;
 		return;
 	}
 
-	if ( DT_SLEEPING == damage.eType )
-	{
-		m_fLastPainVolume = 0.1f;
-	}
-
-	// If hit by a tracking device just be completely oblivious to the actual damage and begin tracking... 
-
-	if( damage.eType == DT_GADGET_TRACKER )
-	{
-		// Send message to begin tracking...
-
-		// PORT: Tron's CAI has no tracking dart member
-		SetTracking( true );
-		m_fLastPainVolume = 0.0f;
-		return;
-	}
-
-	// Ignore shots from camera disabler.
-
-	if( damage.eType == DT_CAMERA_DISABLER )
-	{
-		m_fLastPainVolume = 0.0f;
-		return;
-	}
-
-	if ( HandleResurrectingGoalConditions(damage) )
-	{
-		// See if this goal meets the criteria for adding the Resurrecting Goal
-		// Note: This call needs to be before the DamageType checks, as we
-		// return from them.  This has priority over them.
-		return;
-	}
-	
 	// Give goals an opportunity to handle damage.  GoalMgr returns TRUE
 	// if a goal does not want processing of damage to continue.
 
@@ -1354,15 +1387,40 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 
 	CAI::HandleDamage(damage);
 
-	if ( !m_damage.IsDead() )
-	{
-		// Do not recoil if affected by special damage.
+	// RETAIL: 0x1016eb4d, Tron's recoil: not for these damage types, and
+	// blaster damage recoils only after a random delay (m_fTronUnknown11E4)
+	// from the last recoil (m_fTronUnknown11E0).
 
-		if( ( m_bCanShortRecoil ) &&
-			( !GetDamageFlags() ) )
+	DamageFlags dfNoRecoil = DamageTypeToFlag( DT_PLAYERONLY ) | DamageTypeToFlag( DT_ENERGYCLAW ) | DamageTypeToFlag( DT_PROD );
+	DamageFlags dfLast = DamageTypeToFlag( m_damage.GetLastDamageType() );
+
+	if ( !m_damage.IsDead() && ( ~dfNoRecoil & dfLast ) )
+	{
+		if( DamageTypeToFlag( DT_BLASTER ) & dfLast )
 		{
-			HandleShortRecoil();
+			if( !( ( m_fTronUnknown11E8 > 0.0f ) ?
+					( m_fTronUnknown11E8 - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) :
+					( g_pLTServer->GetTime() - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) ) &&
+				( ( ( m_fTronUnknown11E8 > 0.0f ) ?
+					( ( m_fTronUnknown11E4 + m_fTronUnknown11E0 ) - m_fTronUnknown11E8 ) :
+					( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - g_pLTServer->GetTime() ) ) != 0.0f ) )
+			{
+				return;
+			}
+
+			// Do not recoil if affected by special damage.
+
+			if( GetDamageFlags() )
+			{
+				return;
+			}
 		}
+
+		m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
+		m_fTronUnknown11E0 = g_pLTServer->GetTime();
+		m_bTronUnknown11EC = true;
+
+		HandleShortRecoil();
 	}
 	else
 	{
@@ -2010,15 +2068,20 @@ bool CAIHuman::SetBrain( char const* pszBrain )
 
 	// Set DamageMask.
 
-	if( m_pBrain->GetDamageMaskID() != -1 )
+	// RETAIL: 0x1016ffb6, Tron checks the destructible first, and passes on
+	// the brain's OnlyDamagedByPlayer.
+
+	CDestructible* pDestructable = GetDestructible();
+	AIASSERT( pDestructable, m_hObject, "CAIHuman::SetBrain: No destructable." );
+	if( pDestructable )
 	{
-		CDestructible* pDestructable = GetDestructible();
-		AIASSERT( pDestructable, m_hObject, "CAIHuman::SetBrain: No destructable." );
-		if( pDestructable )
+		if( m_pBrain->GetDamageMaskID() != -1 )
 		{
 			int nDamageMaskID = m_pBrain->GetDamageMaskID();
 			pDestructable->SetCantDamageFlags( ~( g_pAIButeMgr->GetDamageMask( nDamageMaskID )->dfDamageTypes ) );
 		}
+
+		pDestructable->SetTronUnknown6D0( !!m_pBrain->GetOnlyDamagedByPlayer() );
 	}
 
 	// Set music mood boundaries.
