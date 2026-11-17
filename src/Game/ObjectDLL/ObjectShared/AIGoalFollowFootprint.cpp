@@ -82,6 +82,10 @@ void CAIGoalFollowFootprint::ActivateGoal()
 
 	m_pAI->ResetBaseSenseFlags();
 
+	// RETAIL: Tron targets the stimulus here (0x1020701a), not when the
+	// sense triggers
+	m_pAI->Target(m_hStimulusSource);
+
 	// Record the latest footstep seen.
 	CAIHumanStateFollowFootprint* pState = (CAIHumanStateFollowFootprint*)m_pAI->GetState();
 	pState->ResetFootprint(m_fStimulationTime, m_vStimulusPos);
@@ -187,7 +191,6 @@ LTBOOL CAIGoalFollowFootprint::HandleGoalSenseTrigger(AISenseRecord* pSenseRecor
 		// Record whatever triggered this goal.
 		m_vStimulusPos		= pSenseRecord->vLastStimulusPos;
 		m_fStimulationTime	= pSenseRecord->fLastStimulationTime;
-		m_pAI->Target(m_hStimulusSource);
 
 		// Update the alarm level with this investigation.
 
