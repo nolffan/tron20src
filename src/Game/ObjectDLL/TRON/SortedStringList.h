@@ -8,7 +8,7 @@
 //         class, its members and its functions are ours). Written from the
 //         plugins that build one on the stack: SecrezzerPlugin's (retail
 //         Object.lto 0x10044570) and AINodeExitLevelByRezOutPlugin's
-//         (0x1026e190). Its out-of-line STL code is retail's 0x10047230
+//         (0x1026e190) and AINodeUseObjectPlugin's (0x100a49b0). Its out-of-line STL code is retail's 0x10047230
 //         (push_back), 0x10047760 (for_each), 0x100478f0 (Sort) and
 //         0x10047980 (find).
 //
@@ -34,15 +34,19 @@ class CSortedStringList
 		{
 		}
 
-		// Add a string, cut to the longest string DEdit takes. The strings
+		// Add a string (not an empty one), cut to the longest string DEdit
+		// takes. The strings
 		// in m_FirstNames go first, in the order they are added.
 		void AddString( const char* pszString )
 		{
+			if( !pszString || !pszString[0] )
+				return;
+
 			std::string sString;
 			if( strlen( pszString ) >= m_cMaxStringLength )
-				sString.assign( pszString, m_cMaxStringLength - 1 );
+				sString.assign( pszString, pszString + m_cMaxStringLength - 1 );
 			else
-				sString.assign( pszString, strlen( pszString ));
+				sString.assign( pszString, pszString + strlen( pszString ));
 
 			if( m_FirstNames.end( ) != std::find( m_FirstNames.begin( ), m_FirstNames.end( ), sString ))
 			{

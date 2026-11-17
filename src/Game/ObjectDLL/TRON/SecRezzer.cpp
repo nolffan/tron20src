@@ -77,11 +77,7 @@ LTRESULT SecrezzerPlugin::PreHook_EditStringList(const char* szRezPath, const ch
 		{
 			if (g_pModelButeMgr->GetModelType((ModelId)i) == 3)
 			{
-				const char* pszName = g_pModelButeMgr->GetModelName((ModelId)i);
-				if (pszName && pszName[0])
-				{
-					lstNames.AddString(pszName);
-				}
+				lstNames.AddString(g_pModelButeMgr->GetModelName((ModelId)i));
 			}
 		}
 
