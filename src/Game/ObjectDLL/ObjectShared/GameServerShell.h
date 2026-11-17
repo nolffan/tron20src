@@ -117,6 +117,7 @@ class CGameServerShell : public IServerShellStub
 		ServerGameOptions& GetServerGameOptions( ) { return m_ServerGameOptions; }
 
 		GameType		GetGameType()	const { return ( GameType )m_ServerGameOptions.m_eGameType; }
+		int				GetCurLevelIndex() const { return m_nCurLevel; }	// RETAIL: ScmdServer's next level (0x101c64eb); the name is ours
 		GameDifficulty	GetDifficulty() const { return m_eDifficulty; }
 		void			SetDifficulty(GameDifficulty eDiff)  { m_eDifficulty = eDiff; }
 
