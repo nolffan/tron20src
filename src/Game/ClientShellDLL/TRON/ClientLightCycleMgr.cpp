@@ -1932,17 +1932,14 @@ void CClientLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotif
 //
 //	ROUTINE:	CClientLightCycleMgr::TrailCut
 //
-//	PURPOSE:	RETAIL: 0x100147f0. PORT: Tron's CLIENTFX_CREATESTRUCT has
+//	PURPOSE:	RETAIL: 0x100147f0. Tron's CLIENTFX_CREATESTRUCT has
 //				a 128 character name (NOLF2's: 32)
 //
 // ----------------------------------------------------------------------- //
 
 void CClientLightCycleMgr::TrailCut(LightCycleCollisionInfo* pInfo)
 {
-	CLIENTFX_CREATESTRUCT fxInit;
-	strncpy(fxInit.m_sName, "LC_DEREZ_BLUE", sizeof(fxInit.m_sName) - 1);
-	fxInit.m_vPos = pInfo->vCollisionPoint;
-
+	CLIENTFX_CREATESTRUCT fxInit("LC_DEREZ_BLUE", 0, pInfo->vCollisionPoint);
 	g_pClientFXMgr->CreateClientFX(LTNULL, fxInit, LTTRUE);
 }
 
@@ -1950,37 +1947,39 @@ void CClientLightCycleMgr::TrailCut(LightCycleCollisionInfo* pInfo)
 //
 //	ROUTINE:	CClientLightCycleMgr::SetCyclistPowerup
 //
-//	PURPOSE:	RETAIL: 0x100148c0. PORT: retail also shows the power-up's
-//				name (string 0x44c + nPowerup, or 0x47f for none) on a HUD
-//				item of Tron's (0x1026edf0, its slot 0x54): not in our
-//				build.
+//	PURPOSE:	RETAIL: 0x100148c0. The local player also sees the
+//				power-up's name on the announcement queue.
 //
 // ----------------------------------------------------------------------- //
 
 bool CClientLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPowerup)
 {
-	if (!CLightCycleMgr::SetCyclistPowerup(pCyclist, nPowerup))
+	if (CLightCycleMgr::SetCyclistPowerup(pCyclist, nPowerup) &&
+		pCyclist->hObject == g_pMoveMgr->GetObject())
 	{
-		return false;
-	}
-
-	if (pCyclist->hObject != g_pMoveMgr->GetObject())
-	{
-		return false;
-	}
-
-	if (nPowerup != LC_NO_POWERUP)
-	{
-		LCPOWERUPDATA* pData = g_pLightCycleButeMgr->GetPowerupData(nPowerup);
-		if (pData->nActivateTextId != kNumLCTextIds)
+		// RETAIL: 0x100148eb: the power-up's name (Tron's strings 0x44c + n,
+		// 0x47f for none) on the announcement queue
+		if (nPowerup != LC_NO_POWERUP)
 		{
-			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(pData->nActivateTextId));
+			g_pAnnouncementMsgs->AddMessage(LoadTempString(0x44c + nPowerup), kMsgScmd);
+
+			LCPOWERUPDATA* pData = g_pLightCycleButeMgr->GetPowerupData(nPowerup);
+			if (pData->nActivateTextId != kNumLCTextIds)
+			{
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(pData->nActivateTextId));
+			}
 		}
+		else
+		{
+			g_pAnnouncementMsgs->AddMessage(LoadTempString(0x47f), kMsgScmd);
+		}
+
+		g_pHUDMgr->QueueUpdate(kHUDAll);
+
+		return true;
 	}
 
-	g_pHUDMgr->QueueUpdate(kHUDAll);
-
-	return true;
+	return false;
 }
 
 // ----------------------------------------------------------------------- //
