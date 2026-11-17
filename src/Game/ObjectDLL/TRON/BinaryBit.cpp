@@ -59,6 +59,36 @@ CMDMGR_END_REGISTER_CLASS(BinaryBit, GameBase)
 
 // ----------------------------------------------------------------------- //
 //
+//  ROUTINE:	CBinaryBitPlugin::PreHook_EditStringList
+//
+//  PURPOSE:	The activate types (RETAIL: 0x10013470)
+//
+// ----------------------------------------------------------------------- //
+LTRESULT CBinaryBitPlugin::PreHook_EditStringList( const char* szRezPath,
+												   const char* szPropName,
+												   char** aszStrings,
+												   uint32* pcStrings,
+												   const uint32 cMaxStrings,
+												   const uint32 cMaxStringLength )
+{
+	if( !_stricmp( szPropName, "ActivateType" ))
+	{
+		if( m_ActivateTypeMgrPlugin.PreHook_EditStringList( szRezPath,
+															szPropName,
+															aszStrings,
+															pcStrings,
+															cMaxStrings,
+															cMaxStringLength ) == LT_OK )
+		{
+			return LT_OK;
+		}
+	}
+
+	return LT_UNSUPPORTED;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //  ROUTINE:	CBinaryBitPlugin::PreHook_PropChanged
 //
 //  PURPOSE:	Make sure the Command is valid
