@@ -37,6 +37,7 @@
 #include "Searchable.h"
 #include "ServerMissionMgr.h"
 #include "VersionMgr.h"
+#include "Explosion.h"
 
 #include <queue>
 #include <vector>
@@ -667,6 +668,66 @@ bool Body::HandleModelString(ArgList* pArgList)
 		{
 			// Don't let prop have it.  This sound will be played on client.
 			return true;
+		}
+	}
+
+	// RETAIL: Tron's bodies explode and play their death fx on model keys
+	// (0x10159f70). Still near: retail calls the vector helpers here out of
+	// line, and its RegisterStimulus above takes the death scene's relation
+	// data by reference (ours copies it)
+
+	if( !_stricmp( pArgList->argv[0], "EXPLODE" ))
+	{
+		if( pArgList->argc < 3 )
+			return false;
+
+		HCLASS hClass = g_pLTServer->GetClass( "Explosion" );
+		if( !hClass )
+			return false;
+
+		ObjectCreateStruct theStruct;
+		INIT_OBJECTCREATESTRUCT( theStruct );
+
+		g_pLTServer->GetObjectPos( m_hObject, &theStruct.m_Pos );
+
+		LTVector vUp( 0.0f, 1.0f, 0.0f );
+		LTVector vDir = LTVector( 0.0f, 0.0f, 1.0f );
+		vDir /= vDir.Length();
+		LTVector vRight = vDir.Cross( vUp );
+
+		LTMatrix mRot;
+		mRot.SetBasisVectors( &vDir, &vRight, &vUp );
+
+		LTRotation rRot;
+		quat_ConvertFromMatrix( rRot.m_Quat, mRot.m );
+		theStruct.m_Rotation = rRot;
+
+		GenericProp genProp;
+		strncpy( genProp.m_String, pArgList->argv[1], MAX_GP_STRING_LEN );
+		genProp.m_String[MAX_GP_STRING_LEN] = '\0';
+		theStruct.m_cProperties.AddProp( "ImpactFXName", genProp );
+
+		Explosion* pExplosion = (Explosion*)g_pLTServer->CreateObjectProps( hClass, &theStruct, "" );
+		if( pExplosion )
+		{
+			AMMO const* pAmmo = g_pWeaponMgr->GetAmmo( pArgList->argv[2] );
+			if( !pAmmo )
+				return false;
+
+			pExplosion->Setup( m_hObject, pAmmo->nId );
+		}
+	}
+	else if( !_stricmp( pArgList->argv[0], "DEATHFX" ))
+	{
+		ReleasePowerups( false );
+		ShowCarrier();
+
+		g_pLTServer->Common()->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_VISIBLE | FLAG_SOLID | FLAG_RAYHIT );
+		g_pLTServer->Common()->SetObjectFlags( m_hObject, OFT_Flags, FLAG_FORCECLIENTUPDATE, FLAG_FORCECLIENTUPDATE );
+
+		if( m_hHitBox )
+		{
+			g_pLTServer->RemoveObject( m_hHitBox );
 		}
 	}
 
