@@ -394,19 +394,24 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 
 		char szTmp[80];
 		FormatString(0xeec, szTmp, sizeof(szTmp), nMajor, nMinor, nVersion);
-		m_pVersion->SetString(LTGUIWideString(szTmp));
-		m_bTextFade = false;
-		m_pVersion->Show(LTFALSE);
-		m_fTextFade = 0.0f;
-		m_pSysName->Show(LTFALSE);
-		m_pClear->Show(LTFALSE);
-		m_pToolTipTitle->Show(LTFALSE);
-		m_pToolTipToggle->Show(LTFALSE);
+		{
+			// TRON: widened into a string of its own (RETAIL: 0x1007e4be)
+			std::wstring sText;
+			LTGUIWiden(sText, szTmp);
+			m_pVersion->SetString(sText);
+			m_bTextFade = false;
+			m_pVersion->Show(LTFALSE);
+			m_fTextFade = 0.0f;
+			m_pSysName->Show(LTFALSE);
+			m_pClear->Show(LTFALSE);
+			m_pToolTipTitle->Show(LTFALSE);
+			m_pToolTipToggle->Show(LTFALSE);
 
-		float fXRatio = g_pInterfaceResMgr->GetXRatio();
-		int nWidth = (int)((float)m_pVersion->GetBaseWidth() / fXRatio);
-		m_pVersion->GetBaseHeight();
-		m_pVersion->SetBasePos(LTIntPt(m_VersionPos.x - nWidth / 2, m_VersionPos.y));
+			float fXRatio = g_pInterfaceResMgr->GetXRatio();
+			int nWidth = (int)((float)m_pVersion->GetBaseWidth() / fXRatio);
+			m_pVersion->GetBaseHeight();
+			m_pVersion->SetBasePos(LTIntPt(m_VersionPos.x - nWidth / 2, m_VersionPos.y));
+		}
 
 		// the build notes found
 		int nFound = 0;
@@ -427,7 +432,10 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 		if (m_pBuildNoteCount)
 		{
 			FormatString(m_nBuildNoteCountStringId, szTmp, sizeof(szTmp), nFound, nTotal);
-			m_pBuildNoteCount->SetString(LTGUIWideString(szTmp));
+			// TRON: widened into a string of its own (RETAIL: 0x1007e7b3)
+			std::wstring sText;
+			LTGUIWiden(sText, szTmp);
+			m_pBuildNoteCount->SetString(sText);
 			m_bBuildNoteFade = false;
 			m_pBuildNoteCount->Show(LTFALSE);
 			m_fTextFade = 0.0f;	// RETAIL: 0x1007e8ad: not m_fBuildNoteFade (docs/RETAIL_BUGS.md)
@@ -682,12 +690,9 @@ LTBOOL CScreenSubroutines::Render(HSURFACE hDestSurf)
 
 	if (m_nPopupTextId)
 	{
-		// PORT: retail's CPopupText takes the text id and the text together
-		// (its inline at 0x1007f630 builds a wide string for 0x1014edf0)
-		if (m_szPopupText[0])
-			m_PopupText.Show(m_szPopupText, m_nPopupId);
-		else
-			m_PopupText.Show(m_nPopupTextId, m_nPopupId);
+		// RETAIL: the text by id, with the image named by m_szPopupText
+		// (0x1007f213; CPopupText::Show at 0x1007f630)
+		m_PopupText.Show(m_nPopupTextId, m_nPopupId, m_szPopupText);
 		m_nPopupTextId = 0;
 	}
 
