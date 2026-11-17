@@ -52,6 +52,18 @@ class CAIGoalAttackFromView : public CAIGoalAttack
 
 	protected:
 
+		// RETAIL: Tron's (0x10213850): only while the goal is not
+		// important.
+		virtual bool ShouldClearNode()
+		{
+			if( m_fCurImportance != 0.f )
+			{
+				return false;
+			}
+
+			return super::ShouldClearNode();
+		}
+
 		void SetStateAttack();
 
 		// State Handling.

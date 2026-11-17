@@ -112,7 +112,7 @@ ADD_STATE_HUMAN(Launch)						// kState_HumanLaunch
 ADD_STATE_HUMAN(Sniper)						// kState_HumanSniper
 ADD_STATE_HUMAN(AttackMove)					// kState_HumanAttackMove
 ADD_STATE_HUMAN(AttackProne)				// kState_HumanAttackProne
-ADD_STATE_HUMAN_UNWRITTEN(SeekerHitchDown)	// kState_HumanSeekerHitchDown
+ADD_STATE_HUMAN(SeekerHitchDown)	// kState_HumanSeekerHitchDown
 
 ADD_STATE_BODY(Normal)						// kState_BodyNormal
 ADD_STATE_BODY(Explode)						// kState_BodyExplode

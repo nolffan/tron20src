@@ -1275,6 +1275,18 @@ compiler removes the tests. Build 51 has the same code.
 
 Not fixed yet: the modern build should use & (the client must make the
 same change).
+### A random node search without an AI can return a bad pointer
+
+Object.lto 0x101a8c30 (CAINodeMgr::FindRandomNodeFromThreat,
+ObjectShared/AINodeMgr.cpp). When the fifth argument is false and the AI
+is NULL, the function returns its node variable without a path check.
+That variable holds the last node that the search loop examined, not a
+selected node. If no node of the type exists, the loop does not set the
+variable, and the function returns an uninitialized pointer. The only
+caller (CAIGoalAttackFromRandomVantage::FindNearestAttractorNode) always
+gives an AI, so the game does not hit this.
+
+Not fixed yet: the modern build should return NULL when there is no AI.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

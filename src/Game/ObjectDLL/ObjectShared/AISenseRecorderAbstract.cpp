@@ -17,6 +17,17 @@
 #include "AIStimulusMgr.h"
 #include "AIUtils.h"
 #include "PlayerObj.h"
+#include "AIInformationVolumeMgr.h"
+#include "AIVolume.h"
+#include "AIRegion.h"
+#include "ObjectRelationMgr.h"
+#include "RelationMgr.h"
+
+extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
+
+// RETAIL: Tron's IAISensing slot 19 returns the sensing object's relation
+// manager, typed here as NOLF2's GetSenseRelationSet (see
+// TronTurret::GetSenseRelationSet): the casts below are for that.
 
 // ----------------------------------------------------------------------- //
 //
@@ -679,6 +690,19 @@ void CAISenseRecorderAbstract::HandleSenses(uint32 nCycle)
 		// Check if we're fully stimulated.
 		if(pSenseRecord->fCurStimulation >= pAIBM_Stimulus->rngStimulationThreshhold.GetMax())
 		{
+			// RETAIL: Tron's (0x101db24f): the permission check, then the
+			// relation time of the stimulus source is reset.
+			if( !HandlePermissionSense( pSenseRecord ) )
+			{
+				return;
+			}
+
+			CObjectRelationMgr* pORM = CRelationMgr::GetGlobalRelationMgr()->GetObjectRelationMgr( pSenseRecord->hLastStimulusSource );
+			if( pORM )
+			{
+				((CObjectRelationMgr*)&m_pSensing->GetSenseRelationSet())->ResetRelationTime( pORM );
+			}
+
 			// Wait for, or increment, ReactionDelay.
 			if(pSenseRecord->fReactionDelayTimer >= pSenseRecord->fReactionDelayTime)
 			{
@@ -692,6 +716,70 @@ void CAISenseRecorderAbstract::HandleSenses(uint32 nCycle)
 }
 
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAISenseRecorderAbstract::HandlePermissionSense()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x101db2e0; the name is ours).
+//				A character with a permission dependant alignment is hated
+//				when it is in a region it has no permission for, or when it
+//				is seen with a dangerous weapon; else it is tolerated.
+//				Returns false when the relation changed.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAISenseRecorderAbstract::HandlePermissionSense(AISenseRecord* pSenseRecord)
+{
+	if( pSenseRecord )
+	{
+		CCharacter* pChar = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( pSenseRecord->hLastStimulusSource ) );
+		if( pChar &&
+			( PERMISSION_DEPENDANT == GetAlignment( ((CObjectRelationMgr*)&m_pSensing->GetSenseRelationSet())->CObjectRelationMgr::GetRelationUser()->GetRelations(), pChar->GetRelationData() ) ) )
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos( pChar->m_hObject, &vPos );
+
+			AIInformationVolume* pVolume = g_pAIInformationVolumeMgr->FindContainingVolume( LTNULL, vPos, eAxisHorizontal, 0.0f, LTNULL, LTTRUE );
+			if( pVolume && pVolume->HasRegion() )
+			{
+				uint8 nPset = pVolume->GetRegion()->GetPsetByte();
+				if( ( pChar->GetPermissionSet() & nPset ) != nPset )
+				{
+					RelationDescription RD;
+					RD.eTrait = RelationTraits::kTrait_Name;
+					RD.eAlignment = HATE;
+					pChar->GetRelationData().GetTraitValue( RelationTraits::kTrait_Name, RD.szValue, RELATION_VALUE_LENGTH );
+					((CObjectRelationMgr*)&m_pSensing->GetSenseRelationSet())->CommunicateMessage( RD, 3 );
+					return false;
+				}
+			}
+
+			// RETAIL: the offset position is not used (0x101db3b4).
+			LTVector vOffsetPos = vPos;
+			g_pLTServer->GetSourceWorldOffset( vOffsetPos );
+
+			if( ( pSenseRecord->eSenseType == kSense_SeeEnemy ) && pChar->HasDangerousWeapon() )
+			{
+				RelationDescription RD;
+				RD.eTrait = RelationTraits::kTrait_Name;
+				RD.eAlignment = HATE;
+				pChar->GetRelationData().GetTraitValue( RelationTraits::kTrait_Name, RD.szValue, RELATION_VALUE_LENGTH );
+				((CObjectRelationMgr*)&m_pSensing->GetSenseRelationSet())->CommunicateMessage( RD, 3 );
+				return false;
+			}
+
+			RelationDescription RD;
+			RD.eTrait = RelationTraits::kTrait_Name;
+			RD.eAlignment = TOLERATE;
+			pChar->GetRelationData().GetTraitValue( RelationTraits::kTrait_Name, RD.szValue, RELATION_VALUE_LENGTH );
+			((CObjectRelationMgr*)&m_pSensing->GetSenseRelationSet())->CommunicateMessage( RD, 3 );
+			return false;
+		}
+	}
+
+	return true;
+}
 
 // ----------------------------------------------------------------------- //
 //

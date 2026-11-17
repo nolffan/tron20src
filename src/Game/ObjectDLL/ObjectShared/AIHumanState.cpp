@@ -59,6 +59,7 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateTail, kState_HumanTail);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateTalk, kState_HumanTalk);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateUseObject, kState_HumanUseObject);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateLongJump, kState_HumanLongJump);
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateSeekerHitchDown, kState_HumanSeekerHitchDown);	// RETAIL: Tron's
 
 
 // ----------------------------------------------------------------------- //
@@ -2145,6 +2146,12 @@ CAIHumanStateUseObject::~CAIHumanStateUseObject()
 	AI_FACTORY_DELETE(m_pStrategyFollowPath);
 	AI_FACTORY_DELETE(m_pStrategyToggleLights);
 	AI_FACTORY_DELETE(m_pStrategyShoot);
+
+	// RETAIL: Tron's (0x101e7f75): close the animation object.
+	if( GetAI() && GetAI()->GetAnimObject() && m_bInsureAnimObjectClosed )
+	{
+		SendTriggerMsgToObject( GetAI(), GetAI()->GetAnimObject(), LTTRUE, "OFF" );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2262,6 +2269,33 @@ void CAIHumanStateUseObject::Update()
 
 		if( m_pUseNode->IsDisabled() )
 		{
+			// RETAIL: Tron's (0x101e8271): an AI that talks stays and
+			// faces its target.
+
+			if( !m_bTronUnknownF4 &&
+				( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
+			{
+				switch( m_eStateStatus )
+				{
+					case kSStat_PathComplete:
+						if( m_pUseNode->ShouldFaceNodeForward() )
+						{
+							GetAI()->FaceDir( m_pUseNode->GetForward() );
+							return;
+						}
+						// Fall through.
+
+					case kSStat_Initialized:
+					case kSStat_Moving:
+						if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
+						{
+							GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+						}
+						break;
+				}
+				return;
+			}
+
 			m_eStateStatus = kSStat_StateComplete;
 			return;
 		}
@@ -2321,6 +2355,7 @@ void CAIHumanStateUseObject::Update()
 		}
 	}
 
+	// RETAIL: Tron moves each status to its own function (0x101e83b9).
 
 	switch( m_eStateStatus )
 	{
@@ -2339,254 +2374,16 @@ void CAIHumanStateUseObject::Update()
 		//
 
 		case kSStat_Moving:
-		{
-			// Head and torso tracking.
-
-			GetAI()->DisableNodeTracking();
-
-			// Path may be unset if AI stopped to turn on a light.
-			
-			if( m_pStrategyFollowPath->IsUnset() )
-			{
-				if( !m_pStrategyFollowPath->Set( m_pUseNode, LTFALSE ) )
-				{
-					// CANNOT FIND PATH.
-
-					if( m_pUseNode )
-					{
-						AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT OBJECT=%s -- unable to find path!", m_pUseNode->GetName().c_str() ) );
-					}
-					m_eStateStatus = kSStat_StateComplete;
-					return;
-				}
-			}
-			
-			if( m_pStrategyFollowPath->IsSet() )
-			{
-				// TODO: check for strategy failure
-				m_pStrategyFollowPath->Update();
-			}
-
-			if ( m_pStrategyFollowPath->IsDone() )
-			{
-				// Just arrived at the object.
-
-				// Attach childmodels.
-				m_pUseNode->ApplyChildModels( GetAI()->m_hObject );
-				GetAI()->GetAnimationContext()->Reset( GetAI()->m_hObject );
-				//g_pLTServer->CPrint("resetting anims for %s", GetAI()->GetName());
-				//g_pLTServer->CPrint("done");
-
-				// Check if bare hands are required.
-
-				if( m_bRequireBareHands && GetAI()->GetPrimaryWeapon() )
-				{
-					// HACK: for TO2 AI with grenades.
-
-					if( m_pAI->GetPrimaryWeaponType() == kAIWeap_Thrown )
-					{
-					}
-
-					// END HACK
-
-					else {
-						m_eStateStatus = kSStat_HolsterWeapon;
-						return;
-					}
-				}
-				
-				// Pre-activate the node.
-
-				m_pUseNode->PreActivate();
-
-				// Do not play a transition in if the node is disturbed.
-				// (e.g. do not open an open file cabinet).
-
-				if( m_pUseNode->GetSmartObjectState() == kState_SmartObjectDisturbed )
-				{
-					GetAI()->GetAnimationContext()->PlayTransition( LTFALSE );
-				}
-
-				// start using object.
-	
-				StartAnimation();
-			}
-		}
-		break;
+			UpdateMoving();
+			break;
 
 		//
 		// Using object.
 		//
 
 		case kSStat_PathComplete:
-		{
-			// Play first sound
-
-			if( m_pUseNode &&
-				( !m_bPlayedFirstSound ) && 
-				( m_pUseNode->GetFirstSound() != kAIS_None ) &&
-				( !m_pAI->GetAnimationContext()->IsTransitioning() ) )
-			{
-				GetAI()->PlaySound( m_pUseNode->GetFirstSound(), LTFALSE );
-				m_bPlayedFirstSound = LTTRUE;
-			}
-
-			// Head and torso tracking.
-
-			LTBOOL bEnableNodeTracking = LTTRUE;
-
-			// Update non-looping animation.
-
-			if( ( m_eActivity == kAP_None ) 
-				&& ( ( m_eAction != kAP_None ) || ( m_eWeaponAction != kAP_None ) ) )
-			{
-				// TODO: check for strategy failure
-				m_pStrategyOneShotAni->Update();
-
-				// Check for completion.
-
-				if(  m_pStrategyOneShotAni->IsDone() )
-				{
-					// Activate the node.
-
-					if( m_pUseNode )
-					{
-						m_pUseNode->PostActivate();
-					}
-
-					m_eStateStatus = kSStat_StateComplete;
-					return;
-				}
-			}
-
-
-			// Update looping animation.
-
-			else {
-
-				if( m_fNextFidgetTime > 0.f )
-				{
-					// TODO: check for strategy failure
-					m_pStrategyOneShotAni->Update();
-
-					// Head and torso tracking.
-
-					if( m_pStrategyOneShotAni->IsAnimating() )
-					{
-						bEnableNodeTracking = LTFALSE;
-					}
-
-					else if( m_pStrategyOneShotAni->IsDone() )
-					{
-						// Reset action timer.
-						m_fNextFidgetTime = m_fAnimTimer + GetRandom( m_fMinFidgetTime, m_fMaxFidgetTime );
-						m_pStrategyOneShotAni->Reset();
-					}
-					else if( m_pStrategyOneShotAni->IsUnset() && ( m_fNextFidgetTime <= m_fAnimTimer ) )
-					{
-						// Set an intermittent action.
-						m_pStrategyOneShotAni->Set(kAPG_Action, kAP_Fidget);
-
-						// Play a fidget sound.
-
-						if( m_pUseNode && ( m_pUseNode->GetFidgetSound() != kAIS_None ) )
-						{
-							GetAI()->PlaySound( m_pUseNode->GetFidgetSound(), LTFALSE );
-						}
-					}
-				}
-
-				// Play looping sound.
-
-				if( ( m_eLoopingAISound != kAIS_None ) &&
-					( !GetAI()->IsPlayingDialogSound() ) &&
-					( !GetAnimationContext()->IsPropSet( kAPG_Action, kAP_Fidget ) ) )
-				{
-					GetAI()->PlaySound( m_eLoopingAISound, LTTRUE );
-				}
-
-				// Check for completion.
-				// AnimTime == 0 means anim loops infinitely.
-
-				if( ( m_fAnimTime != 0.f ) && 
-					( m_fAnimTimer >= m_fAnimTime ) &&
-					( !m_pStrategyOneShotAni->IsSet() ) &&
-					( !GetAnimationContext()->IsLocked() ) )			
-				{
-					// Activate the node.
-
-					if( m_pUseNode )
-					{
-						m_pUseNode->PostActivate();
-					}
-
-					// Head and torso tracking.
-
-					GetAI()->DisableNodeTracking();
-
-					m_eStateStatus = kSStat_StateComplete;
-					return;
-				}
-
-				if( !GetAnimationContext()->IsTransitioning() )
-				{
-					// Decrement looping timer.
-					m_fAnimTimer += g_pLTServer->GetFrameTime();
-				}
-				else {
-					bEnableNodeTracking = LTFALSE;
-				}
-
-				// Head and torso tracking.
-
-				if( m_pUseNode &&
-					bEnableNodeTracking &&
-					( GetAI()->GetTriggerNodeTrackingGroup() == kTrack_LookAt ) &&
-					( GetAI()->GetActiveNodeTrackingGroup() != kTrack_LookAt ) )
-				{
-					SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, "TrackLookAt" );
-				}
-				else if( !bEnableNodeTracking )
-				{
-					GetAI()->DisableNodeTracking();
-				}
-			}
-
-			// Continue using object.
-
-			if( m_hObject )
-			{
-				// Set object to interact with.
-
-				GetAI()->SetAnimObject( m_hObject );
-
-				if( m_pUseNode && m_pUseNode->ShouldFaceNodeForward() )
-				{
-					GetAI()->FaceDir( m_pUseNode->GetForward() );
-				}
-				else {
-					GetAI()->FaceObject(m_hObject);
-				}
-
-				// We got the pickup key, so pickup the object
-				// if it still exists.
-				if ( m_bPickedUp )
-				{
-					DoPickupObject();
-	
-					// Remove it
-					g_pLTServer->RemoveObject(m_hObject);
-				}
-			}
-
-			// There is no actual object, just a node.
-
-			else if( m_pUseNode && m_pUseNode->ShouldFaceNodeForward() )
-			{
-				GetAI()->FaceDir( m_pUseNode->GetForward() );
-			}
-		}
-		break;
+			UpdateUsing();
+			break;
 	}
 }
 
@@ -2595,8 +2392,13 @@ void CAIHumanStateUseObject::Update()
 void CAIHumanStateUseObject::StartAnimation()
 {
 	// start smartobject animation.
-	
-	SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTFALSE, g_pLTServer->GetStringData(m_hstrSmartObjectCmd));
+	// RETAIL: Tron sends only a command that is not empty (0x101e83f0).
+
+	const char* szCmd = g_pLTServer->GetStringData( m_hstrSmartObjectCmd );
+	if( szCmd && strcmp( szCmd, "" ) )
+	{
+		SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTFALSE, szCmd);
+	}
 
 	m_eStateStatus = kSStat_PathComplete;
 
@@ -2620,6 +2422,332 @@ void CAIHumanStateUseObject::StartAnimation()
 	else if( (m_fMinFidgetTime > 0.f) && (m_fMaxFidgetTime > 0.f) )
 	{
 		m_fNextFidgetTime = GetRandom( m_fMinFidgetTime, m_fMaxFidgetTime );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::UpdateMoving
+//
+//	PURPOSE:	RETAIL: Tron's (0x101e8520; the name is ours): move to the
+//				node, then start to use it.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateUseObject::UpdateMoving()
+{
+	// Head and torso tracking.
+
+	GetAI()->DisableNodeTracking();
+
+	// Path may be unset if AI stopped to turn on a light.
+	
+	if( m_pStrategyFollowPath->IsUnset() )
+	{
+		if( !m_pStrategyFollowPath->Set( m_pUseNode, LTFALSE ) )
+		{
+			// CANNOT FIND PATH.
+
+			if( m_pUseNode )
+			{
+				AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT OBJECT=%s -- unable to find path!", m_pUseNode->GetName().c_str() ) );
+			}
+			m_eStateStatus = kSStat_StateComplete;
+			return;
+		}
+	}
+
+	// RETAIL: Tron's: an AI that talks to the player stops to face him.
+
+	if( ShouldFacePlayer() )
+	{
+		if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
+		{
+			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+		}
+	}
+	else if( m_pStrategyFollowPath->IsSet() )
+	{
+		// TODO: check for strategy failure
+		m_pStrategyFollowPath->Update();
+	}
+
+	if ( m_pStrategyFollowPath->IsDone() )
+	{
+		// RETAIL: Tron's: first turn to the node.
+
+		if( m_pUseNode && m_pUseNode->ShouldFaceNodeForward() )
+		{
+			// RETAIL: retail makes a bool of FaceDir's result (0x101e86b6).
+			if( ShouldFacePlayer() || !GetAI()->FaceDir( m_pUseNode->GetForward() ) )
+			{
+				return;
+			}
+		}
+
+		// Just arrived at the object.
+
+		// Attach childmodels.
+		// RETAIL: Tron's AINodeUseObject::ApplyChildModels takes the AI
+		// itself (0x101e86c3; 0x100a4930 reads its m_hObject).
+		m_pUseNode->ApplyChildModels( GetAI()->m_hObject );
+		GetAI()->GetAnimationContext()->Reset( GetAI()->m_hObject );
+
+		// Check if bare hands are required.
+
+		if( m_bRequireBareHands && GetAI()->GetPrimaryWeapon() )
+		{
+			// HACK: for TO2 AI with grenades.
+
+			if( m_pAI->GetPrimaryWeaponType() == kAIWeap_Thrown )
+			{
+			}
+
+			// END HACK
+
+			else {
+				m_eStateStatus = kSStat_HolsterWeapon;
+				return;
+			}
+		}
+		
+		// Pre-activate the node.
+
+		m_pUseNode->PreActivate();
+
+		// Do not play a transition in if the node is disturbed.
+		// (e.g. do not open an open file cabinet).
+
+		if( m_pUseNode->GetSmartObjectState() == kState_SmartObjectDisturbed )
+		{
+			GetAI()->GetAnimationContext()->PlayTransition( LTFALSE );
+		}
+
+		// start using object.
+
+		StartAnimation();
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::IsOneShotAnimation
+//
+//	PURPOSE:	RETAIL: Tron's (0x101e8770; the name is ours): the
+//				animation does not loop.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStateUseObject::IsOneShotAnimation()
+{
+	return ( m_eActivity == kAP_None ) 
+		&& ( ( m_eAction != kAP_None ) || ( m_eWeaponAction != kAP_None ) );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::UpdateUsing
+//
+//	PURPOSE:	RETAIL: Tron's (0x101e87a0; the name is ours): use the
+//				object.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateUseObject::UpdateUsing()
+{
+	// Play first sound
+
+	if( m_pUseNode &&
+		( !m_bPlayedFirstSound ) && 
+		( m_pUseNode->GetFirstSound() != kAIS_None ) &&
+		( !m_pAI->GetAnimationContext()->IsTransitioning() ) )
+	{
+		GetAI()->PlaySound( m_pUseNode->GetFirstSound(), LTFALSE );
+		m_bPlayedFirstSound = LTTRUE;
+	}
+
+	UpdateFacing();
+
+	// Head and torso tracking.
+
+	LTBOOL bEnableNodeTracking = LTTRUE;
+
+	// Update non-looping animation.
+
+	if( IsOneShotAnimation() )
+	{
+		// TODO: check for strategy failure
+		m_pStrategyOneShotAni->Update();
+
+		// Check for completion.
+		// RETAIL: Tron's: not while the AI talks.
+
+		if( !( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) && !m_bTronUnknownF4 ) &&
+			m_pStrategyOneShotAni->IsDone() )
+		{
+			// Activate the node.
+
+			if( m_pUseNode )
+			{
+				m_pUseNode->PostActivate();
+			}
+
+			m_eStateStatus = kSStat_StateComplete;
+			return;
+		}
+	}
+
+
+	// Update looping animation.
+
+	else {
+
+		if( m_fNextFidgetTime > 0.f )
+		{
+			// TODO: check for strategy failure
+			m_pStrategyOneShotAni->Update();
+
+			// Head and torso tracking.
+
+			if( m_pStrategyOneShotAni->IsAnimating() )
+			{
+				bEnableNodeTracking = LTFALSE;
+			}
+
+			else if( m_pStrategyOneShotAni->IsDone() )
+			{
+				// Reset action timer.
+				m_fNextFidgetTime = m_fAnimTimer + GetRandom( m_fMinFidgetTime, m_fMaxFidgetTime );
+				m_pStrategyOneShotAni->Reset();
+			}
+			else if( m_pStrategyOneShotAni->IsUnset() && ( m_fNextFidgetTime <= m_fAnimTimer ) )
+			{
+				// Set an intermittent action.
+				m_pStrategyOneShotAni->Set(kAPG_Action, kAP_Fidget);
+
+				// Play a fidget sound.
+
+				if( m_pUseNode && ( m_pUseNode->GetFidgetSound() != kAIS_None ) )
+				{
+					GetAI()->PlaySound( m_pUseNode->GetFidgetSound(), LTFALSE );
+				}
+			}
+		}
+
+		// Play looping sound.
+		// RETAIL: Tron's: not while the AI talks, and then not the
+		// completion check (0x101e8900).
+
+		if( ( m_eLoopingAISound != kAIS_None ) &&
+			!( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) &&
+			( !GetAnimationContext()->IsPropSet( kAPG_Action, kAP_Fidget ) ) )
+		{
+			GetAI()->PlaySound( m_eLoopingAISound, LTTRUE );
+		}
+
+		// Check for completion.
+		// AnimTime == 0 means anim loops infinitely.
+
+		else if( ( m_fAnimTime != 0.f ) && 
+			( m_fAnimTimer >= m_fAnimTime ) &&
+			( !m_pStrategyOneShotAni->IsSet() ) &&
+			( !GetAnimationContext()->IsLocked() ) )			
+		{
+			// Activate the node.
+
+			if( m_pUseNode )
+			{
+				m_pUseNode->PostActivate();
+			}
+
+			// Head and torso tracking.
+
+			GetAI()->DisableNodeTracking();
+
+			m_eStateStatus = kSStat_StateComplete;
+			return;
+		}
+
+		if( !GetAnimationContext()->IsTransitioning() )
+		{
+			// Decrement looping timer.
+			m_fAnimTimer += g_pLTServer->GetFrameTime();
+		}
+		else {
+			bEnableNodeTracking = LTFALSE;
+		}
+
+		// Head and torso tracking.
+
+		if( m_pUseNode &&
+			bEnableNodeTracking &&
+			( GetAI()->GetTriggerNodeTrackingGroup() == kTrack_LookAt ) &&
+			( GetAI()->GetActiveNodeTrackingGroup() != kTrack_LookAt ) )
+		{
+			SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, "TrackLookAt" );
+		}
+		else if( !bEnableNodeTracking )
+		{
+			GetAI()->DisableNodeTracking();
+		}
+	}
+
+	// Continue using object.
+
+	if( m_hObject )
+	{
+		// Set object to interact with.
+
+		GetAI()->SetAnimObject( m_hObject );
+
+		// We got the pickup key, so pickup the object
+		// if it still exists.
+		if ( m_bPickedUp )
+		{
+			DoPickupObject();
+
+			// Remove it
+			g_pLTServer->RemoveObject(m_hObject);
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::UpdateFacing
+//
+//	PURPOSE:	RETAIL: Tron's (0x101e8a80; the name is ours): face the
+//				player while talking, else the node or the object.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateUseObject::UpdateFacing()
+{
+	if( !m_bTronUnknownF4 &&
+		( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
+	{
+		if( ShouldFacePlayer() &&
+			m_bAllowRotation &&
+			GetAI()->IsNodeTrackingAtLimit() &&
+			GetAI()->GetNodeTrackingTarget() )
+		{
+			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+		}
+		return;
+	}
+
+	if( IsOneShotAnimation() && m_pStrategyOneShotAni->IsDone() )
+	{
+		return;
+	}
+
+	if( m_pUseNode && m_pUseNode->ShouldFaceNodeForward() )
+	{
+		GetAI()->FaceDir( m_pUseNode->GetForward() );
+	}
+	else if( m_hObject )
+	{
+		GetAI()->FaceObject( m_hObject );
 	}
 }
 
@@ -9610,4 +9738,19 @@ void CAIHumanStateLongJump::UpdateAnimation()
 			}
 			break;
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateSeekerHitchDown::UpdateAnimation
+//
+//	PURPOSE:	RETAIL: Tron's (0x101f56e0): stand stunned. It does not
+//				call super::UpdateAnimation.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateSeekerHitchDown::UpdateAnimation()
+{
+	GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
+	GetAnimationContext()->SetProp(kAPG_Action, kAP_Stunned);
 }

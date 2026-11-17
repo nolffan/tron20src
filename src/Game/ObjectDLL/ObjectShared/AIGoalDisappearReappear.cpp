@@ -115,6 +115,9 @@ void CAIGoalDisappearReappear::DeactivateGoal()
 {
 	super::DeactivateGoal();
 
+	// RETAIL: Tron's (0x1020b2b8).
+	m_pAI->GetAnimationContext()->SetAnimRate( 1.f );
+
 	// Goals DisappearReappear and DisappearReappearEvasive should share timing info.
 
 	if( GetGoalType() != kGoal_DisappearReappearEvasive )
@@ -209,7 +212,8 @@ LTBOOL CAIGoalDisappearReappear::HandleDamage(const DamageStruct& damage)
 		g_pLTServer->SetObjectColor( m_pAI->m_hObject, 1.f, 1.f, 1.f, 1.f );
 	}
 
-	return LTFALSE;
+	// RETAIL: Tron passes the damage on (0x1020b37c).
+	return super::HandleDamage( damage );
 }
 
 // ----------------------------------------------------------------------- //

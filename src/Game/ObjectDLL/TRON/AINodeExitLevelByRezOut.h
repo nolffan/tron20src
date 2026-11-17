@@ -53,4 +53,15 @@ class AINodeExitLevelByRezOut : public AINodeGuard
 		std::string		m_sOnUseCmd;		// +0xd8, "OnUseCmd"
 };
 
+// RETAIL: AINodeExitLevelByRezOutPlugin (RTTI; vtable 0x102a1014, 4 bytes):
+// the SmartObject list.
+
+class AINodeExitLevelByRezOutPlugin : public IObjectPlugin
+{
+	public :
+
+		// RETAIL: 0x1026e190
+		virtual LTRESULT PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
+};
+
 #endif // __AINODE_EXIT_LEVEL_BY_REZ_OUT_H__

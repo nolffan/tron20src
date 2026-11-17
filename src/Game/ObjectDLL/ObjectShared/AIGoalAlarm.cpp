@@ -113,7 +113,10 @@ void CAIGoalAlarm::UpdateGoal()
 
 	switch(pState->GetStateType())
 	{
+		// RETAIL: Tron's alarm goal also handles a charge as a goto
+		// (0x102186e0: state 25).
 		case kState_HumanGoto:
+		case kState_HumanCharge:
 			HandleStateGoto();
 			break;
 
@@ -180,15 +183,16 @@ void CAIGoalAlarm::HandleStateUseObject()
 
 				// Ignore senses other than SeeEnemy.
 
-				m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile  );
+				m_pAI->SetCurSenseFlags( kSense_SeeEnemy );
 
-				// Run back to where enemy was last seen.
-			
-				m_pAI->SetState( kState_HumanGoto );
-				CAIHumanStateGoto* pStateGoto = (CAIHumanStateGoto*)(m_pAI->GetState());
-				pStateGoto->SetDest( m_vEnemySeenPos );
-				pStateGoto->SetMovement( kAP_Run );
-				pStateGoto->SetWeaponPosition( kAP_Up );
+				// RETAIL: Tron's AI charges (0x10218790).
+
+				m_pAI->SetState( kState_HumanCharge );
+				if( m_pAI->GetState() && ( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) )
+				{
+					((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+					m_fCurImportance = 28.f;
+				}
 			}
 			break;
 
@@ -208,24 +212,21 @@ void CAIGoalAlarm::HandleStateUseObject()
 
 void CAIGoalAlarm::HandleStateGoto()
 {
-	switch( m_pAI->GetState()->GetStateStatus() )
+	// RETAIL: Tron's (0x10218880): only the completion matters.
+
+	if( m_pAI->GetState()->GetStateStatus() == kSStat_StateComplete )
 	{
-		case kSStat_Initialized:
-			break;
+		m_fCurImportance = 0.f;
 
-		case kSStat_StateComplete:
-			if(m_pAI->CanSearch())
-			{
-				SetStateSearch();
-			}
-			else {
-				m_pGoalMgr->UnlockGoal(this);
-				m_pAI->SetState( kState_HumanAware );
-			}		
-			break;
-
-		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalAlarm::HandleStateGoto: Unexpected State Status.");
+		if(m_pAI->CanSearch())
+		{
+			SetStateSearch();
+			m_pGoalMgr->UnlockGoal(this);
+		}
+		else {
+			m_pGoalMgr->UnlockGoal(this);
+			m_pAI->SetState( kState_HumanAware );
+		}		
 	}
 }
 
@@ -271,7 +272,8 @@ AINode* CAIGoalAlarm::FindNearestAttractorNode()
 
 LTBOOL CAIGoalAlarm::SelectTriggeredAISound(EnumAISoundType* peAISoundType)
 {
-	if( !m_pAI->IsPlayingDialogSound() )
+	// RETAIL: Tron's AI is also quiet while talk locked (0x10218960).
+	if( !( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
 	{
 		*peAISoundType = kAIS_Alarm;
 	}
@@ -319,8 +321,8 @@ LTBOOL CAIGoalAlarm::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		else if( m_pGoalMgr->IsCurGoal( this ) && 
 				( m_pAI->GetState()->GetStateType() != kState_HumanUseObject ) )
 		{
+			// RETAIL: Tron keeps the importance (0x10218a10).
 			m_hStimulusSource = LTNULL;
-			m_fCurImportance = 0.f;
 		}
 	}
 

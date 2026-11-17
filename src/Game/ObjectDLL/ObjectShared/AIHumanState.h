@@ -957,6 +957,13 @@ class CAIHumanStateUseObject : public CAIHumanState
 		// RETAIL: Tron's (name ours).
 		bool ShouldFacePlayer();
 
+		// RETAIL: Tron's Update hands each status to these (0x101e8520,
+		// 0x101e8770, 0x101e87a0, 0x101e8a80; the names are ours).
+		void UpdateMoving();
+		bool IsOneShotAnimation();
+		void UpdateUsing();
+		void UpdateFacing();
+
 	protected :
 
 		LTObjRef			m_hObject;
@@ -1342,6 +1349,9 @@ class CAIHumanStateCharge : public CAIHumanState
 		void SetAttackDistSqr(LTFLOAT fDist) { m_fAttackDistanceSqr = fDist; }
 		void SetYellDistSqr(LTFLOAT fDist) { m_fYellDistanceSqr = fDist; }
 		void SetStopDistSqr(LTFLOAT fDist) { m_fStopDistanceSqr = fDist; }
+		// RETAIL: Tron's (inline in CAIGoalAttackFromCover::CoverOrCharge
+		// 0x102158c7). Name ours.
+		void SetTronUnknown94(LTFLOAT f) { m_fTronUnknown94 = f; }
 
 	protected :
 
@@ -1505,6 +1515,21 @@ class CAIHumanStateLongJump : public CAIHumanState
 		LTBOOL			m_bFaceDest;
 		LTFLOAT			m_fJumpSpeed;
 		LTBOOL			m_bCountAttackers;
+};
+
+// RETAIL: Tron's (RTTI; vtable 0x1029b468): the state of a Seeker that
+// goes down at a hitch node.
+
+class CAIHumanStateSeekerHitchDown : public CAIHumanState
+{
+	typedef CAIHumanState super;
+
+	public :
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateSeekerHitchDown, kState_HumanSeekerHitchDown);
+
+		// Update
+
+		void UpdateAnimation();
 };
 
 #endif

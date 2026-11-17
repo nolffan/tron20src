@@ -3633,6 +3633,8 @@ void CAIHumanStrategyGrenadeThrow::Update()
 		weaponFireInfo.hTestObj	= hTarget;
 		weaponFireInfo.fPerturbR	= 1.0f*(1.0f - GetAI()->GetAccuracy());
 		weaponFireInfo.fPerturbU	= 1.0f*(1.0f - GetAI()->GetAccuracy());
+		// RETAIL: Tron's (0x1022602e): the thrower's relation data.
+		weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetAI()->GetRelationData() );
 
 		pWeapon->ReloadClip(LTFALSE);
 

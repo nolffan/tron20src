@@ -643,7 +643,7 @@ AINode* CAINodeMgr::FindNearestNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType
 //
 // ----------------------------------------------------------------------- //
 
-AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat)
+AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat, bool bCheckOneNode)
 {
 	s_lstTempNodes.clear();
 
@@ -659,7 +659,8 @@ AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType,
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -700,28 +701,57 @@ AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType,
 		}
 	}
 
-	// Randomly select one of the valid nodes.
-
-	if( !s_lstTempNodes.empty() )
+	if( bCheckOneNode )
 	{
-		pNode = s_lstTempNodes[ GetRandom( 0, s_lstTempNodes.size() - 1 ) ];
-		s_lstTempNodes.clear();
-	}
-	else {
-		pNode = LTNULL;
+		// Randomly select one of the valid nodes.
+
+		if( !s_lstTempNodes.empty() )
+		{
+			pNode = s_lstTempNodes[ GetRandom( 0, s_lstTempNodes.size() - 1 ) ];
+			s_lstTempNodes.clear();
+		}
+		else {
+			pNode = LTNULL;
+		}
+
+		// Ensure that AI can pathfind to the destination node.
+		// Ideally, we would like to do this check for each node as we iterate,
+		// but that could result in multiple runs of BuildVolumePath() which
+		// is expensive.  So instead we just check the final returned node.
+		// The calling code can call this function again later, and will not get
+		// this node again.
+
+		if( pAI && pNode )
+		{
+			AIVolume* pVolumeDest = pNode->GetNodeContainingVolume();
+			if( !g_pAIPathMgr->HasPath( pAI, pVolumeDest ) )
+			{
+				return LTNULL;
+			}
+		}
+
+		return pNode;
 	}
 
-	// Ensure that AI can pathfind to the destination node.
-	// Ideally, we would like to do this check for each node as we iterate,
-	// but that could result in multiple runs of BuildVolumePath() which
-	// is expensive.  So instead we just check the final returned node.
-	// The calling code can call this function again later, and will not get
-	// this node again.
+	// RETAIL: Tron's: try the nodes in a random order. Without an AI, the
+	// last node of the search comes back, and pNode is not set when there
+	// is no node of the type (0x101a8e2b; docs/RETAIL_BUGS.md).
 
-	if( pAI && pNode )
+	if( pAI )
 	{
-		AIVolume* pVolumeDest = pNode->GetNodeContainingVolume();
-		if( !g_pAIPathMgr->HasPath( pAI, pVolumeDest ) )
+		std::random_shuffle( s_lstTempNodes.begin(), s_lstTempNodes.end() );
+
+		AINODE_LIST::iterator itNode;
+		for( itNode = s_lstTempNodes.begin(); itNode != s_lstTempNodes.end(); ++itNode )
+		{
+			pNode = *itNode;
+			if( g_pAIPathMgr->HasPath( pAI, pNode->GetNodeContainingVolume() ) )
+			{
+				break;
+			}
+		}
+
+		if( itNode == s_lstTempNodes.end() )
 		{
 			return LTNULL;
 		}
@@ -729,7 +759,6 @@ AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType,
 
 	return pNode;
 }
-
 
 // ---------------------------------------------------------------------------
 //

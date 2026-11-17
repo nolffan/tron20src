@@ -34,6 +34,8 @@ class CAIGoalAnimate : public CAIGoalAbstract
 		// Activation.
 
 		virtual void ActivateGoal();
+		// RETAIL: Tron's (0x10218070).
+		virtual void DeactivateGoal();
 
 		// Updating.
 
