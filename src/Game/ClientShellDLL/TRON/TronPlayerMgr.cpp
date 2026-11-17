@@ -1446,18 +1446,20 @@ void CTronPlayerMgr::TronUnknownVirtual50()
 	LTVector vPos;
 	g_pLTClient->GetObjectPos(hObj, &vPos);
 
-	// PORT: retail has the client light cycle manager (0x10236d98, its
-	// 0x100ffec0) place the position on the grid
+	// RETAIL: 0x100a70b8: onto the light cycle grid
 	LTVector vNewPos = vPos;
+	g_pLightCycleMgr->SnapToGrid(vNewPos);
 	g_pPhysicsLT->MoveObject(hObj, &vNewPos, MOVEOBJECT_TELEPORT);
-	g_pLTClient->GetObjectPos(hObj, &vPos);
+	LTVector vFinalPos;
+	g_pLTClient->GetObjectPos(hObj, &vFinalPos);
 
 	m_bTronUnknown1D9 = false;
 	m_hTronUnknownBC = LTNULL;
 	m_bTronUnknownB8 = false;
 	m_nTronUnknown230 = 0;
 
-	// PORT: retail clears a flag of the game client shell (+0x833a) here
+	// RETAIL: 0x100a70ff
+	g_pGameClientShell->m_bTronUnknown833A = false;
 
 	// RETAIL: starts the circuit intro (0x1026ee28, its 0x1002cdf0)
 	g_pLightCycleCircuitIntro->Start();
@@ -1536,7 +1538,7 @@ void CTronPlayerMgr::UpdatePlaying()
 			fMax = g_pLTClient->GetVarValueFloat(hVar);
 		}
 
-		uint8 nVolume;
+		int nVolume;
 		if (fHeight <= fMin)
 		{
 			nVolume = 100;
@@ -1550,14 +1552,15 @@ void CTronPlayerMgr::UpdatePlaying()
 			nVolume = 100 - (int)((fHeight - fMin) / (fMax - fMin) * 100.0f);
 		}
 
-		// PORT: retail sets the volume (the sound manager's slot 0x84, not
-		// in our SDK) of a sound of Tron's vehicle manager (+0x2c)
-		nVolume;
+		// RETAIL: 0x100a730f: the grid sound of the vehicle manager (+0x2c)
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundVolume(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c(), nVolume);
 	}
 
-	// PORT: unless a flag of the game client shell (+0x7e49) is set,
-	// retail updates the client light cycle manager (0x10236d98, its slot
-	// 0x1c), not yet in our tree
+	// RETAIL: 0x100a7316
+	if (!g_pGameClientShell->IsServerPaused())
+	{
+		g_pLightCycleMgr->Update();
+	}
 
 	if (GetGameType() == eGameTypeMultiplayerLightcycles && g_pPlayerMgr->TronUnknownVirtual3C(true))
 	{
