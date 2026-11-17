@@ -54,6 +54,7 @@
 
 //Player management screens
 #include "ScreenSubroutines.h"
+#include "ScreenTeamSelect.h"
 
 #include "ScreenFailure.h"
 #include "ScreenEndMission.h"
@@ -143,9 +144,7 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// RETAIL: the cases in retail's order (0x100ad240: its case bodies and
 	// the debug_new_fn<> instances they call, 0x100ad520.., are laid out in
 	// this order). Retail has no case for HOST, HOST_OPTIONS, HOST_MISSION,
-	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
-	// for screens whose class we have not written yet are missing here:
-	// TEAMSELECT (CScreenTeamSelect) after SUBROUTINES.
+	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE.
 	switch (screenID)
 	{
 	case SCREEN_ID_MAIN:
@@ -231,6 +230,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_SUBROUTINES:
 		pScreen = debug_new(CScreenSubroutines);
+		break;
+	case SCREEN_ID_TEAMSELECT:
+		pScreen = debug_new(CScreenTeamSelect);
 		break;
 	case SCREEN_ID_FAILURE:
 		pScreen = debug_new(CScreenFailure);

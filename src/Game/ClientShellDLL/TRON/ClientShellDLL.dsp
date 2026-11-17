@@ -652,6 +652,10 @@ SOURCE=.\ScreenSubroutines.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenTeamSelect.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -1099,6 +1103,10 @@ SOURCE=.\ScreenServerInfo.h
 # Begin Source File
 
 SOURCE=.\ScreenSingle.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenTeamSelect.h
 # End Source File
 # Begin Source File
 

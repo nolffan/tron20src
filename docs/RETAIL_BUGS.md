@@ -1142,6 +1142,18 @@ has no GEAR record causes a null pointer read.
 
 Not fixed yet: the modern build should return when the pointer is null.
 
+### The team selection screen reads one row team past its list
+
+CShell.dll 0x10083050 (CScreenTeamSelect::OnCommand, TRON/
+ScreenTeamSelect.cpp). The screen has 16 team rows, with the commands
+0x433 to 0x442. The command test accepts 0x433 to 0x443. For the command
+0x443, the screen reads the team of row 16, which is not in the list of
+row teams (+0x7f0): it reads the next member (the spectator header
+pointer, +0x830) and moves the local player to that "team". No control
+sends 0x443, so there is no visible effect.
+
+Not fixed yet: the modern build should accept 0x433 to 0x442 only.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
