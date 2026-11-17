@@ -783,9 +783,9 @@ void Explosion::ReadFireData(ILTMessage_Read *pMsg)
 {
 	for( int i = 0; i < ContinuousFireData::kNumFields; ++i )
 	{
-		ContinuousFireData::FieldFlags &Flags = m_FireData.m_aFlags[i];
-		Flags.m_bSet = pMsg->Readbool();
-		Flags.m_bTronUnknown1 = pMsg->Readbool();
+		// RETAIL: 0x100ef260, the inline helper (one more ReadType call
+		// stays out of line, as retail).
+		m_FireData.m_aFlags[i].Read( pMsg );
 	}
 
 	if( m_FireData.m_aFlags[1].m_bSet )

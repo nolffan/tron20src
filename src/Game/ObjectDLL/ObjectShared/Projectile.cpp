@@ -844,7 +844,7 @@ bool CProjectile::IsIgnoringProjectiles(HOBJECT hObj)
 
     uint32 dwUsrFlags;
 	g_pCommonLT->GetObjectFlags(hObj, OFT_User, dwUsrFlags);
-	return (dwUsrFlags & USRFLG_IGNORE_PROJECTILES) != 0;
+	return (dwUsrFlags & USRFLG_IGNORE_PROJECTILES) ? true : false;
 }
 
 
@@ -884,8 +884,7 @@ bool CProjectile::IsFiredFromHitBox(HOBJECT hObj)
 
 	if (!hObj) return false;
 
-	HOBJECT hFiredFrom = m_hFiredFrom;
-	return (hObj == hFiredFrom);
+	return (hObj == m_hFiredFrom) ? true : false;
 }
 
 
@@ -2299,7 +2298,7 @@ void CProjectile::LoadDamagedObjects(ILTMessage_Read *pMsg)
 {
 	m_lstDamagedObjects.clear();
 
-	uint8 nCount = pMsg->Readuint8();
+	int nCount = pMsg->Readuint8();
 	for (int i = 0; i < nCount; ++i)
 	{
 		ProjectileDamagedObject damaged( LTNULL, 0.0f );
@@ -2834,12 +2833,14 @@ LTBOOL CProjectile::HandleVectorImpact(IntersectInfo & iInfo, LTVector & vFrom,
 
     LTBOOL bHitWorld = IsMainWorld(iInfo.m_hObject);
 
+	// RETAIL: 0x10123063, Tron adds the impact before the damage.
+
+	AddImpact(iInfo.m_hObject, vFirePos, iInfo.m_Point, iInfo.m_Plane.m_Normal, eSurfType);
+
 	if (!bHitWorld && eSurfType != ST_LIQUID)
 	{
 		ImpactDamageObject(m_hFiredFrom, iInfo.m_hObject);
 	}
-
-	AddImpact(iInfo.m_hObject, vFirePos, iInfo.m_Point, iInfo.m_Plane.m_Normal, eSurfType);
 
 
 	// See if we can shoot through the surface...
@@ -2890,7 +2891,7 @@ LTBOOL CProjectile::HandleVectorImpact(IntersectInfo & iInfo, LTVector & vFrom,
         qTestInfo.m_From = iInfo.m_Point + (m_vDir * (LTFLOAT)(nMaxThickness + 1));
 		qTestInfo.m_To   = iInfo.m_Point - m_vDir;
 
-		qTestInfo.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
+		qTestInfo.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY | CHECK_FROM_POINT_INSIDE_OBJECTS;	// RETAIL: 0x10123352
 
 		qTestInfo.m_FilterFn  = DoVectorFilterFn;
 		qTestInfo.m_pUserData = hFilterList;

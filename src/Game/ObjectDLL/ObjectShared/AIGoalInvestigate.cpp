@@ -363,7 +363,10 @@ void CAIGoalInvestigate::SetStateInvestigate()
 		pAlly = (CAI*)g_pLTServer->HandleToObject( m_hStimulusSource );
 	}
 
-	if( pAlly )
+	// RETAIL: 0x1020335b, Tron follows only an ally with no relative
+	// alignment (UNKNOWN).
+
+	if( pAlly && ( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) )
 	{
 		// Investigate what alerted an ally.
 
@@ -1016,14 +1019,7 @@ LTBOOL CAIGoalInvestigate::HandleDamage(const DamageStruct& damage)
 		}
 	}
 
-	// Do not investigate without a weapon.
-
-	CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
-	if( !( m_pAI->GetPrimaryWeapon() || pAIHuman->HasHolsterString() ) )
-	{
-		m_pAI->IncrementAlarmLevel( m_nStimulusAlarmLevel );
-		return LTFALSE;
-	}
+	// RETAIL: 0x10203f89, Tron investigates also without a weapon.
 
 	// Activate the goal.
 
