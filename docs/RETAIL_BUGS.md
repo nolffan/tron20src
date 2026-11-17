@@ -1326,6 +1326,19 @@ into the first character of the first chat history line.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 writes at most the maximum length, with the terminator.
 
+### An AI reads the ray count as its "done processing stimuli" flag
+
+Object.lto 0x1012c1d0 (CAI::GetDoneProcessingStimuli, ObjectShared/
+AI.cpp). The function jumps to 0x101dac80, which returns the sense
+recorder's ray count (+0x24, CAISenseRecorderAbstract::
+GetIntersectSegmentCount). The correct function is at 0x101daab0 and
+returns the flag (+0x14); AINodeSensing::GetDoneProcessingStimuli
+(0x1021edd0) calls it. Thus an AI is "done" when it has cast one or more
+sense rays in this update, and is not "done" when the recorder set the
+flag.
+
+Not fixed yet: the modern build should return the flag (AI.cpp).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
