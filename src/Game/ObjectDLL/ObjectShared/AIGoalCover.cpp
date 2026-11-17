@@ -76,12 +76,16 @@ void CAIGoalCover::ActivateGoal()
 	// Ignore senses other than SeeEnemy.
 	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 
+	// RETAIL: Tron's (0x1020c6f0) targets the stimulus and attacks from
+	// the cover node as from a vantage node
+	m_pAI->Target( m_hStimulusSource );
+
 	m_pGoalMgr->LockGoal(this);
 
-	m_pAI->SetState( kState_HumanCover );
+	m_pAI->SetState( kState_HumanAttackFromVantage );
 
-	CAIHumanStateCover* pState = (CAIHumanStateCover*)m_pAI->GetState();
-	pState->SetCoverNode( m_hNodeCover );
+	CAIHumanStateAttackFromVantage* pState = (CAIHumanStateAttackFromVantage*)m_pAI->GetState();
+	pState->SetVantageNode( m_hNodeCover );
 }
 
 // ----------------------------------------------------------------------- //
@@ -154,6 +158,9 @@ void CAIGoalCover::HandleStateCover()
 
 		case kSStat_StateComplete:
 			{
+				// RETAIL: Tron's senses all again (0x1020c80e)
+				m_pAI->SetCurSenseFlags( kSense_All );
+
 				CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
 
 				// Search.
@@ -171,6 +178,7 @@ void CAIGoalCover::HandleStateCover()
 			break;
 
 		case kSStat_FailedComplete:
+			m_pAI->SetCurSenseFlags( kSense_All );
 			m_pGoalMgr->UnlockGoal(this);
 			m_fCurImportance = 0.f;
 			break;
@@ -229,7 +237,8 @@ AINode* CAIGoalCover::HandleGoalAttractors()
 				{
 					m_hNodeCover = pNode->m_hObject;
 					SetCurToBaseImportance();
-					m_pAI->Target(m_hStimulusSource);
+					// RETAIL: ActivateGoal targets the stimulus (0x1020c8a0
+					// does not)
 					m_hStimulusSource = LTNULL;
 				}
 				else {
@@ -259,6 +268,10 @@ LTBOOL CAIGoalCover::HandleDamage(const DamageStruct& damage)
 	super::HandleDamage( damage );
 
 	HandleGoalAttractors();
+
+	// RETAIL: Tron's takes cover from the damager (0x1020ca46)
+	m_hStimulusSource = damage.hDamager;
+
 	if( m_hNodeCover )
 	{
 		// Activate the goal.

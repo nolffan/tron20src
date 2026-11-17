@@ -243,6 +243,7 @@ LTBOOL CAIGoalSerumDeath::HandleDamage(const DamageStruct& damage)
 
 	// Allow other goals to respond, most importantly Investigate to turn
 	// the SuperSoldier toward the shooter.
+	// RETAIL: Tron's returns true here (0x101fc643)
 
-	return LTFALSE;
+	return LTTRUE;
 }

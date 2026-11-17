@@ -231,7 +231,7 @@ void CTournamentBracket::AdvanceByes(bool bFirst)
 	{
 		for (i = 0; i < m_nNumLoseMatches; i++)
 		{
-			TournamentMatch* pMatch = &m_LoseMatches[i];
+			TournamentMatch* pMatch = m_LoseMatches.begin() + i;
 			if (pMatch->nWinner == BRACKET_EMPTY && pMatch->nTeam[0] != BRACKET_EMPTY && pMatch->nTeam[1] != BRACKET_EMPTY)
 			{
 				if (pMatch->nTeam[0] == BRACKET_BYE)
@@ -270,18 +270,8 @@ int CTournamentBracket::GetNextMatchIndex(int nIndex, bool bWinners)
 	if (nIndex >= nMatches - 1)
 		return -1;
 
-	const int* pRoundMatches;
-	const int* pRoundStart;
-	if (bWinners)
-	{
-		pRoundMatches = s_aWinRoundMatches;
-		pRoundStart = m_aWinRoundStart;
-	}
-	else
-	{
-		pRoundMatches = s_aLoseRoundMatches;
-		pRoundStart = m_aLoseRoundStart;
-	}
+	const int* pRoundMatches = bWinners ? s_aWinRoundMatches : s_aLoseRoundMatches;
+	const int* pRoundStart = bWinners ? m_aWinRoundStart : m_aLoseRoundStart;
 
 	int nRound = GetRound(nIndex, bWinners);
 	int nPerMatch = pRoundMatches[nRound] / pRoundMatches[nRound + 1];

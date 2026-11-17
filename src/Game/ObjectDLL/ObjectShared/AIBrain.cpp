@@ -15,6 +15,8 @@
 #include "Weapon.h"
 #include "AIUtils.h"
 #include "AnimationMgr.h"
+#include "MsgIDs.h"
+#include "SFXMsgIds.h"
 
 DEFINE_AI_FACTORY_CLASS(CAIBrain);
 
@@ -128,7 +130,11 @@ void CAIBrain::GetDodgeStatus(DodgeStatus* peDodgeStatus, Direction* peDirection
 		{
 			// Dodge if we are being aimed at.
 
-			if ( bForceDodge || TargetIsAimingAtMe() )
+			// RETAIL: Tron has no TargetIsAimingAtMe: the test is here
+			// (0x1018e456)
+
+			if ( bForceDodge || ( GetAI()->GetTarget()->IsVisiblePartially() &&
+				 CharacterIsAimingAtMe( GetAI()->GetTarget()->GetCharacter() ) ) )
 			{
 				// Randomly choose dodge action (roll, shuffle, block).
 
@@ -263,7 +269,8 @@ void CAIBrain::GetDodgeStatus(DodgeStatus* peDodgeStatus, Direction* peDirection
 	{
 		m_fDodgeStatusCheckTimeProjectile = g_pLTServer->GetTime() + RAISE_BY_DIFFICULTY(m_pBrain->fDodgeProjectileCheckTime);
 
-		if ( GetRandom(0.0f, 1.0f) <= RAISE_BY_DIFFICULTY(m_pBrain->fDodgeProjectileCheckChance) )
+		// RETAIL: a strict test (0x1018e52f)
+		if ( GetRandom(0.0f, 1.0f) < RAISE_BY_DIFFICULTY(m_pBrain->fDodgeProjectileCheckChance) )
 		{
 			CGrenade* pGrenade;
 			if ( FindGrenadeDangerPosition(GetAI()->GetPosition(), 40000.0f, &m_vDodgeProjectilePosition, &pGrenade) )
@@ -284,17 +291,6 @@ void CAIBrain::GetDodgeStatus(DodgeStatus* peDodgeStatus, Direction* peDirection
 
 	*peDodgeStatus = m_eDodgeStatusLast = eDodgeStatusOk;
 	return;
-}
-
-LTBOOL CAIBrain::TargetIsAimingAtMe()
-{
-	if ( GetAI()->HasTarget() && GetAI()->GetTarget()->IsVisiblePartially() )
-	{
-		CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(GetAI()->GetTarget()->GetObject());
-		return CharacterIsAimingAtMe( pCharacter );
-	}
-
-	return LTFALSE;
 }
 
 LTBOOL CAIBrain::CharacterIsAimingAtMe(CCharacter* pCharacter)
@@ -327,7 +323,9 @@ LTBOOL CAIBrain::CharacterIsAimingAtMe(CCharacter* pCharacter)
 	return LTFALSE;
 }
 
-GrenadeStatus CAIBrain::GetGrenadeStatus()
+// RETAIL: Tron's takes the target's position (0x1018ec60; its strategy
+// passes it, 0x10226144)
+GrenadeStatus CAIBrain::GetGrenadeStatus(const LTVector& vTargetPos)
 {
 	if ( g_pLTServer->GetTime() >= m_fGrenadeStatusCheckTime )
 	{
@@ -337,7 +335,7 @@ GrenadeStatus CAIBrain::GetGrenadeStatus()
 		{
 			LTFLOAT fRangeMinSqr = m_pBrain->fAttackThrownRangeMin*m_pBrain->fAttackThrownRangeMin;
 			LTFLOAT fRangeMaxSqr = m_pBrain->fAttackThrownRangeMax*m_pBrain->fAttackThrownRangeMax;
-			LTFLOAT fDistanceSqr = GetAI()->GetPosition().DistSqr(GetAI()->GetTarget()->GetVisiblePosition());
+			LTFLOAT fDistanceSqr = GetAI()->GetPosition().DistSqr(vTargetPos);
 			if ( (fDistanceSqr > fRangeMinSqr) && (fDistanceSqr < fRangeMaxSqr) )
 			{
 				return eGrenadeStatusThrow;
@@ -346,6 +344,13 @@ GrenadeStatus CAIBrain::GetGrenadeStatus()
 	}
 	
 	return eGrenadeStatusDontThrow;
+}
+
+// PORT: retail has no such function: CAIHumanStrategyGrenadeThrow::ShouldThrow
+// passes the target's position itself (0x10226144)
+GrenadeStatus CAIBrain::GetGrenadeStatus()
+{
+	return GetGrenadeStatus( GetAI()->GetTarget()->GetVisiblePosition() );
 }
 
 RangeStatus CAIBrain::GetRangeStatus()
@@ -496,4 +501,71 @@ LTFLOAT	CAIBrain::GetAttackFromVantageAttackTime() const
 LTFLOAT	CAIBrain::GetAttackFromVantageAttackTimeRandom() const
 {
 	return RAISE_BY_DIFFICULTY(m_pBrain->fAttackFromVantageAttackTimeRandom);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIBrain::ResetFiringTrails()
+//
+//	PURPOSE:	RETAIL: 0x1018f560 (CAIHumanStrategyShoot calls it): an AI
+//				whose brain does firing trails restarts its attached FX
+//				on the clients.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: the character FX message (35) and its attach FX command (2)
+// that Tron's clients read.  The names are ours
+#define CFX_TRON_ATTACHFX_MSG		35
+#define CFX_TRON_ATTACHFX_COMMAND	2
+
+void CAIBrain::ResetFiringTrails()
+{
+	if ( !m_pBrain->bDoFiringTrails )
+	{
+		return;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_SFX_MESSAGE );
+	cMsg.Writeuint8( SFX_CHARACTER_ID );
+	cMsg.WriteObject( m_pAIHuman->GetUserObject() );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_MSG );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_COMMAND );
+	cMsg.WriteString( "RESET_ATTACHFX 0" );
+	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
+
+	CAutoMessage cShowMsg;
+	cShowMsg.Writeuint8( MID_SFX_MESSAGE );
+	cShowMsg.Writeuint8( SFX_CHARACTER_ID );
+	cShowMsg.WriteObject( m_pAIHuman->GetUserObject() );
+	cShowMsg.Writeuint8( CFX_TRON_ATTACHFX_MSG );
+	cShowMsg.Writeuint8( CFX_TRON_ATTACHFX_COMMAND );
+	cShowMsg.WriteString( "SHOW_ATTACHFX 0" );
+	g_pLTServer->SendToClient( cShowMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIBrain::HideFiringTrails()
+//
+//	PURPOSE:	RETAIL: 0x1018f720: an AI whose brain does firing trails
+//				hides its attached FX on the clients.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CAIBrain::HideFiringTrails()
+{
+	if ( !m_pBrain->bDoFiringTrails )
+	{
+		return;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_SFX_MESSAGE );
+	cMsg.Writeuint8( SFX_CHARACTER_ID );
+	cMsg.WriteObject( m_pAIHuman->GetUserObject() );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_MSG );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_COMMAND );
+	cMsg.WriteString( "HIDE_ATTACHFX 0" );
+	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
 }

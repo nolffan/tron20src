@@ -40,6 +40,9 @@ class CGrenade : public CProjectile
 		virtual void RotateToRest();
 		virtual void Detonate(HOBJECT hObj, CollisionInfo* pCollInfo = LTNULL);
 
+		// RETAIL: slot 33 (0x1011d3b0): a bounce off a kept touch
+		virtual bool TronUnknownVirtual33(ProjectilePendingTouch *pTouch);
+
 		// RETAIL: not virtual in Tron (CGrenade's vtable 0x102981b8 has 51
 		// slots, ShouldPlayBounceSound/GetBounceSound the last two)
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);

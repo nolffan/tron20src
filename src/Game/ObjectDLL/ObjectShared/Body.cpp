@@ -453,16 +453,11 @@ uint32 Body::OnDeactivate()
 
 bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
+	// RETAIL: Tron's (0x101596f0) has only the SPLASH and REVIVE tokens:
+	// no REMOVE, no SEARCH, and its bodies cannot be carried (no CARRY or
+	// DROPATPOS, and no Carried/Dropped body states)
 	static CParsedMsg::CToken s_cTok_Splash("SPLASH");
 	static CParsedMsg::CToken s_cTok_Revive( "REVIVE" );
-	static CParsedMsg::CToken s_cTok_Search( "SEARCH" );
-	static CParsedMsg::CToken s_cTok_Remove( "REMOVE" );
-
-	// Handle Remove explicitly to avoid attachments getting left around
-	if ( cMsg.GetArg(0) == s_cTok_Remove )
-	{
-		RemovePowerupObjects();
-	}
 
 	if (Prop::OnTrigger(hSender, cMsg))
 		return true;
@@ -475,9 +470,6 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		g_pLTServer->SetModelAnimation(m_hObject, g_pLTServer->GetAnimIndex(m_hObject, "DSharkSplash"));
 		g_pLTServer->SetModelLooping(m_hObject, LTTRUE);
 	}
-	// RETAIL: Tron's bodies cannot be carried: no CARRY or DROPATPOS
-	// tokens (Body::OnTrigger at 0x10159760 and its tokens' _$E172 at
-	// 0x101596f0) and no Carried/Dropped body states.
 	else if( cMsg.GetArg( 0 ) == s_cTok_Revive && IsPlayer( hSender ))
 	{
 		// RETAIL: 0x1015983a tests for a multiplayer game, not NOLF2's revive
@@ -485,7 +477,9 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		if( IsMultiplayerGame( ) && m_hCharacter && IsPlayer( m_hCharacter ))
 		{
 			CPlayerObj *pDeadPlayer = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( m_hCharacter ));
-			if( pDeadPlayer && pDeadPlayer->CanRevive( ))
+
+			// RETAIL: the player only needs to be dead (0x1015988b)
+			if( pDeadPlayer && ( pDeadPlayer->GetState() == PS_DEAD ))
 			{
 				// Bring the player back from the dead and get rid of the body...
 
@@ -503,36 +497,6 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			}
 		}
 	}
-	else if( cMsg.GetArg( 0 ) == s_cTok_Search && IsPlayer( hSender ))
-	{
-		// In the case when we're stuck to a wall, if the player searches us, slump to
-		// the ground...
-
-		HMODELANIM hAni = g_pLTServer->GetModelAnimation(m_hObject);
-		HMODELANIM hArrowFrontDeathAni = g_pLTServer->GetAnimIndex(m_hObject, g_szArrowFrontDeath);
-		HMODELANIM hArrowBackDeathAni = g_pLTServer->GetAnimIndex(m_hObject, g_szArrowBackDeath);
-
-		if (hAni == hArrowFrontDeathAni || hAni == hArrowBackDeathAni)
-		{
-
-			HMODELANIM hArrowSlumpAni = ( (hAni == hArrowFrontDeathAni) ? 
-				g_pLTServer->GetAnimIndex(m_hObject, s_szArrowFrontSlump) : 
-				g_pLTServer->GetAnimIndex(m_hObject, s_szArrowBackSlump) );
-
-			if (hArrowSlumpAni != INVALID_ANI)
-			{
-				g_pLTServer->SetModelAnimation(m_hObject, hArrowSlumpAni);
-				g_pLTServer->SetModelLooping(m_hObject, LTFALSE);
-			}
-		}
-	}
-#ifndef _FINAL
-	//check for messages handled by search aggregate
-	else if ( (cMsg.GetArg(0) != "UPDATE") && (cMsg.GetArg(0) != s_cTok_Search) )
-	{
-        g_pLTServer->CPrint("Unrecognized command (\"%s\")", cMsg.GetArg(0).c_str());
-	}
-#endif
 	else
 	{
 		bResult = false;
@@ -1424,7 +1388,9 @@ void Body::UpdateClientHitBox()
 
 void Body::HandleDamage(const DamageStruct& damage)
 {
-	if ( damage.eType == DT_GADGET_DECAYPOWDER )
+	// RETAIL: Tron's (0x1015bb10) decays the body for electrocution too,
+	// and twitches it for any damage (container damage as well)
+	if ( damage.eType == DT_GADGET_DECAYPOWDER || damage.eType == DT_ELECTROCUTE )
 	{
 		if ( m_eBodyState == kState_BodyNormal )
 		{
@@ -1432,7 +1398,7 @@ void Body::HandleDamage(const DamageStruct& damage)
 			SetNextUpdate(s_fUpdateDelta);
 		}
 	}
-	else if ( damage.fDamage > 0.0f && !damage.hContainer )
+	else if ( damage.fDamage > 0.0f )
 	{
 		if ( m_eBodyState != kState_BodyLaser )
 		{

@@ -14,6 +14,10 @@ const uint32 animodDislocates = 0x01;
 
 #define Output Debug
 
+// RETAIL: Tron's string before the parser (0x10398508; Parse empties it).
+// The name is ours
+static std::string s_sTronUnknown;
+
 CAnimationParser* g_pParser = NULL;
 static LTBOOL s_btError = LTFALSE;
 
@@ -33,6 +37,18 @@ inline void ParserError(const char* szFormat, ...)
 	va_end(val);
 	// RETAIL: Tron prints the error (0x102324d0)
 	g_pLTServer->CPrint(szBuffer);
+}
+
+// RETAIL: Tron keeps Build 51's ParserError as well (0x102327b0, its
+// own buffer): the property sets report through it.  The name is ours
+inline void ParserSetError(const char* szFormat, ...)
+{
+	static char szBuffer[1024];
+	va_list val;
+	va_start(val, szFormat);
+	vsprintf(szBuffer, szFormat, val);
+	va_end(val);
+	yyanimationerror(szBuffer);
 }
 
 extern "C" int yyanimationwrap(void)
@@ -84,14 +100,19 @@ CAnimationParser::~CAnimationParser()
 
 LTBOOL CAnimationParser::Parse(const std::string& sFile, CAnimationMgr* pAnimMgr)
 {
+	// RETAIL: Tron's (0x10232370) resets the lexer and the string, and
+	// keeps the errors that the parse reports
+	g_Lex = CAnimationLex();
+
 	s_btError = LTFALSE;
+	s_sTronUnknown = "";
 
 	g_pParser = this;
 
 	m_pAnimMgr = pAnimMgr;
 	m_pAnimMgr->GetPropertyMap()->clear();
 
-	s_btError = !g_Lex.Lex(sFile.c_str());
+	g_Lex.Lex(sFile.c_str());
 /*
 	#ifdef _REZFILE
 	{
@@ -140,7 +161,7 @@ void CAnimationParser::AddPropertyGroup(const std::string& sName)
 		ParserError(szBuffer);
 		UBER_ASSERT( 0, szBuffer );
 
-		ParserError("Unrecognized property group: \"%s\"", sName.c_str());
+		// RETAIL: Tron's (0x10232480) reports it once
 		return;
 	}
 }
@@ -188,7 +209,7 @@ void CAnimationParser::AddPropertyToCurrentAnimation(const std::string& sPropert
 {
 	if ( !m_pAnimationCurrent )
 	{
-		ParserError("No animation specified before property set was declared");
+		ParserSetError("No animation specified before property set was declared");
 		return;
 	}
 
@@ -206,14 +227,8 @@ void CAnimationParser::AddPropertyToCurrentAnimation(const std::string& sPropert
 		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
 		UBER_ASSERT( 0, szBuffer);
 	}
-	else if( m_pAnimationCurrent->eAnimProp[eGroup] != kAP_None )
-	{
-		char szBuffer[256];
-		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Animation '%s' already has prop '%s' set for group '%s'. Cannot set to '%s'\n", 
-			m_pAnimationCurrent->sName.c_str(), s_aszAnimProp[m_pAnimationCurrent->eAnimProp[eGroup]],
-			s_aszAnimPropGroup[eGroup], s_aszAnimProp[eProp] );
-		UBER_ASSERT( 0, szBuffer);
-	}
+	// RETAIL: Tron's (0x10232710) does not test for a prop the group has
+	// already
 	else {
 		m_pAnimationCurrent->eAnimProp[eGroup] = eProp;
 	}
@@ -239,6 +254,10 @@ void CAnimationParser::GetPropertyAndGroupEnums(const std::string& sProperty,
 		sprintf(szBuffer, "CAnimationParser::GetPropertyAndGroupEnums: Unrecognized property: \"%s\"", (const char*)sProperty.c_str() );
 		ParserError(szBuffer);
 		UBER_ASSERT( 0, szBuffer );
+
+		// RETAIL: Tron's (0x102328d8) returns invalid values
+		*peGroup = kAPG_Invalid;
+		*peProp = kAP_Invalid;
 		return;
 	}
 	else 
@@ -291,69 +310,124 @@ void CAnimationParser::AddPropertyToCurrentTransitionInitialSet(const std::strin
 {
 	if ( !m_pTransitionCurrent )
 	{
-		ParserError("No transition specified before property set was declared");
+		ParserSetError("No transition specified before property set was declared");
 		return;
 	}
 
 	EnumAnimProp eProp;
 	EnumAnimPropGroup eGroup;
 	GetPropertyAndGroupEnums(sProperty, &eGroup, &eProp);
-	m_pTransitionCurrent->eAnimPropInitialSet[eGroup] = eProp;
+
+	// RETAIL: Tron's tests the values (with the animation's message:
+	// 0x102329b0 and the next ones)
+	if ( eProp == kAP_Invalid || eGroup == kAPG_Invalid )
+	{
+		char szBuffer[256];
+		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
+		UBER_ASSERT( 0, szBuffer);
+	}
+	else {
+		m_pTransitionCurrent->eAnimPropInitialSet[eGroup] = eProp;
+	}
 }
 
 void CAnimationParser::AddPropertyToCurrentTransitionAddSet(const std::string& sProperty)
 {
 	if ( !m_pTransitionCurrent )
 	{
-		ParserError("No transition specified before property set was declared");
+		ParserSetError("No transition specified before property set was declared");
 		return;
 	}
 
 	EnumAnimProp eProp;
 	EnumAnimPropGroup eGroup;
 	GetPropertyAndGroupEnums(sProperty, &eGroup, &eProp);
-	m_pTransitionCurrent->eAnimPropAddSet[eGroup] = eProp;
+
+	// RETAIL: Tron's tests the values (with the animation's message:
+	// 0x102329b0 and the next ones)
+	if ( eProp == kAP_Invalid || eGroup == kAPG_Invalid )
+	{
+		char szBuffer[256];
+		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
+		UBER_ASSERT( 0, szBuffer);
+	}
+	else {
+		m_pTransitionCurrent->eAnimPropAddSet[eGroup] = eProp;
+	}
 }
 
 void CAnimationParser::AddPropertyToCurrentTransitionRemoveSet(const std::string& sProperty)
 {
 	if ( !m_pTransitionCurrent )
 	{
-		ParserError("No transition specified before property set was declared");
+		ParserSetError("No transition specified before property set was declared");
 		return;
 	}
 
 	EnumAnimProp eProp;
 	EnumAnimPropGroup eGroup;
 	GetPropertyAndGroupEnums(sProperty, &eGroup, &eProp);
-	m_pTransitionCurrent->eAnimPropRemoveSet[eGroup] = eProp;
+
+	// RETAIL: Tron's tests the values (with the animation's message:
+	// 0x102329b0 and the next ones)
+	if ( eProp == kAP_Invalid || eGroup == kAPG_Invalid )
+	{
+		char szBuffer[256];
+		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
+		UBER_ASSERT( 0, szBuffer);
+	}
+	else {
+		m_pTransitionCurrent->eAnimPropRemoveSet[eGroup] = eProp;
+	}
 }
 
 void CAnimationParser::AddPropertyToCurrentTransitionConstantSet(const std::string& sProperty)
 {
 	if ( !m_pTransitionCurrent )
 	{
-		ParserError("No transition specified before property set was declared");
+		ParserSetError("No transition specified before property set was declared");
 		return;
 	}
 
 	EnumAnimProp eProp;
 	EnumAnimPropGroup eGroup;
 	GetPropertyAndGroupEnums(sProperty, &eGroup, &eProp);
-	m_pTransitionCurrent->eAnimPropConstantSet[eGroup] = eProp;
+
+	// RETAIL: Tron's tests the values (with the animation's message:
+	// 0x102329b0 and the next ones)
+	if ( eProp == kAP_Invalid || eGroup == kAPG_Invalid )
+	{
+		char szBuffer[256];
+		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
+		UBER_ASSERT( 0, szBuffer);
+	}
+	else {
+		m_pTransitionCurrent->eAnimPropConstantSet[eGroup] = eProp;
+	}
 }
 
 void CAnimationParser::AddPropertyToCurrentTransitionNotSet(const std::string& sProperty)
 {
 	if ( !m_pTransitionCurrent )
 	{
-		ParserError("No transition specified before property set was declared");
+		ParserSetError("No transition specified before property set was declared");
 		return;
 	}
 
 	EnumAnimProp eProp;
 	EnumAnimPropGroup eGroup;
 	GetPropertyAndGroupEnums(sProperty, &eGroup, &eProp);
-	m_pTransitionCurrent->eAnimPropNotSet[eGroup] = eProp;
+
+	// RETAIL: Tron's tests the values (with the animation's message:
+	// 0x102329b0 and the next ones)
+	if ( eProp == kAP_Invalid || eGroup == kAPG_Invalid )
+	{
+		char szBuffer[256];
+		sprintf(szBuffer, "CAnimationParser::AddPropertyToCurrentAnimation: Could not find animation in map: %s\n", (const char*)sProperty.c_str() );
+		UBER_ASSERT( 0, szBuffer);
+	}
+	else {
+		m_pTransitionCurrent->eAnimPropNotSet[eGroup] = eProp;
+	}
 }
 

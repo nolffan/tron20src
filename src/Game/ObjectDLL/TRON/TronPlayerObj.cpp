@@ -20,6 +20,8 @@
 #include "Weapon.h"
 #include "FXButeMgr.h"
 #include "LightCycleMgr.h"
+#include "LightCycle.h"
+#include "LightCycleButeMgr.h"
 #include "ServerMissionMgr.h"
 #include "ArenaStartPoint.h"
 #include "MultiplayerLevelInfoMgr.h"
@@ -177,6 +179,12 @@ CTronPlayerObj::~CTronPlayerObj()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's object messages that the player reads (0x10062b60; the
+// names are ours)
+#define MID_UPDATE_UTILITY_SUBROUTINE		137
+#define MID_RESET_HIT_POINTS_AND_ENERGY		141
+#define MID_TRONUNKNOWN_143					143
+
 uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
                                         ILTMessage_Read *pMsg )
 {
@@ -192,10 +200,41 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 					HandleMessageProjectile( hSender, pMsg );
 			if ( bMessageHandled )
 			{
-				return 1;
+				return 0;
 			}
 		}
 		break;
+
+		case MID_UPDATE_UTILITY_SUBROUTINE:
+		{
+			// a utility subroutine's state and condition
+			char szName[64];
+			pMsg->ReadString( szName, ARRAY_LEN( szName ));
+
+			PlayerSubroutineSlot* pSlot = FindSubroutine( szName );
+			if( pSlot )
+			{
+				pSlot->nTronUnknown40 = ( pMsg->Readbool() );
+				pSlot->nTronUnknown41 = ( pMsg->Readbool() );
+				pSlot->nTronUnknown42 = pMsg->Readuint8();
+				return 0;
+			}
+
+			g_pLTServer->CPrint( "ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!", szName );
+			return 0;
+		}
+		break;
+
+		case MID_RESET_HIT_POINTS_AND_ENERGY:
+		{
+			m_damage.SetHitPoints( m_damage.GetMaxHitPoints() );
+			m_damage.SetEnergy( m_damage.GetMaxEnergy() );
+			return 0;
+		}
+		break;
+
+		// PORT: Tron's message 143 calls a CCharacter function that is not
+		// written yet (retail 0x10090160, with true)
 	}
 
 	return CPlayerObj::ObjectMessageFn(hSender, pMsg);
@@ -212,8 +251,9 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
                                               ILTMessage_Read *pMsg )
 {
-	// to check the results of engine functions
-	LTRESULT ltResult;
+	// RETAIL: 0x10062ca0.  Tron's handles the hold block only (its swat
+	// and arm blocks go on to the weapon) and tells the client of a
+	// blocked disc
 
 	// get the projectile message's subtype
 	uint8 nProjectileMessageSubType = pMsg->Readuint8();
@@ -223,10 +263,7 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 		//case MPROJ_RETURNED:
 		// the place where the ammo gets incremented is in CWeapons
 
-
-		case MPROJ_START_SWAT_BLOCK:
 		case MPROJ_START_HOLD_BLOCK:
-		case MPROJ_START_ARM_BLOCK:
 		{
 			// get the rest of the info
 
@@ -234,22 +271,17 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			uint8 cAmmoId = pMsg->Readuint8();
 
 			// get the timestamp
-			uint32 nDefendTimestamp = pMsg->Readuint8();
+			uint32 nDefendTimestamp = pMsg->Readuint32();
 
 			// get the animation length
-			uint32 nDefendDuration = pMsg->Readuint8();
+			uint32 nDefendDuration = pMsg->Readuint32();
 
 			// make sure the current weapon is the weapon
 			// being blocked with
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( pWeapon->GetAmmoId() != cAmmoId )
+			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
-				//
-				// The weapon the user is trying to block with is
-				// different from the current weapon.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -261,13 +293,6 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 					 static_cast< int >( nDefendTimestamp ) )
 				{
 					// Tut, tut, no cheating!
-					//
-					// The timestamp passed by the client is faster
-					// than is allowed.  If this assert is hit check,
-					// to make sure a defensive animation isn't getting
-					// nixed prematurely.
-					ASSERT( 0 );
-
 					return true;
 				}
 			}
@@ -294,22 +319,17 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			uint8 cAmmoId = pMsg->Readuint8();
 
 			// get the timestamp
-			uint32 nDefendTimestamp = pMsg->Readuint8();
+			uint32 nDefendTimestamp = pMsg->Readuint32();
 
 			// get the animation length
-			uint32 nDefendDuration = pMsg->Readuint8();
+			uint32 nDefendDuration = pMsg->Readuint32();
 
 			// make sure the current weapon is the weapon
 			// being blocked with
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( pWeapon->GetAmmoId() != cAmmoId )
+			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
-				//
-				// The weapon the user is trying to block with is
-				// different from the current weapon.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -318,22 +338,6 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 				// Woa!  We can't end the hold block until
 				// after it starts!  Something is out of
 				// order, or there's some cheating going on!
-				ASSERT( 0 );
-
-				return true;
-			}
-
-			if ( ( m_nDefendClientTimeStarted + m_nDefendDuration ) >
-				 static_cast< int >( nDefendTimestamp ) )
-			{
-				// Tut, tut, no cheating!
-				//
-				// The timestamp passed by the client is faster
-				// than is allowed.  If this assert is hit check,
-				// to make sure a defensive animation isn't getting
-				// nixed prematurely.
-				ASSERT( 0 );
-
 				return true;
 			}
 
@@ -346,6 +350,19 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 				);
 			m_nDefendDuration = nDefendDuration;
 			m_cDefendAmmoId = cAmmoId;
+
+			return true;
+		}
+		break;
+
+		case MPROJ_BLOCKED:
+		{
+			// tell the client that it blocked the disc
+			CAutoMessage cMsg;
+			cMsg.Writeuint8( MID_PROJECTILE );
+			cMsg.Writeuint8( MPROJ_BLOCKED );
+			cMsg.Writeuint8( pMsg->Readuint8() );
+			g_pLTServer->SendToClient( cMsg.Read(), GetClient(), MESSAGE_GUARANTEED );
 
 			return true;
 		}
@@ -524,7 +541,7 @@ void CTronPlayerObj::AddPing(char const* pszPing, bool bPlaySound)
 	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
 	if( !szTag[0] )
 	{
-		AIError( "%s not found in pingbutes.txt", pszPing );
+		Warn( "%s not found in pingbutes.txt", pszPing );
 		return;
 	}
 
@@ -556,32 +573,32 @@ void CTronPlayerObj::RemovePing(char const* pszPing)
 	char szTag[30];
 	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
 
+	// RETAIL: 0x10067770 warns where the loop ends (its epilogue follows
+	// the found ping's code; ours follows the warning)
 	PingList::iterator iter;
 	for( iter = m_lstPings.begin( ); iter != m_lstPings.end( ); iter++ )
 	{
 		if( !_stricmp( iter->c_str( ), pszPing ))
-			break;
+		{
+			m_lstPings.erase( iter );
+
+			CAutoMessage cMsg;
+			cMsg.Writeuint8( MID_TRON_PING );
+			char szCharacter[128];
+			g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
+			cMsg.WriteString( szCharacter );
+			cMsg.Writeuint8( 0 );
+
+			if( GetClient( ))
+			{
+				g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+			}
+
+			return;
+		}
 	}
 
-	if( iter == m_lstPings.end( ))
-	{
-		AIError( "%s not found in pingbutes.txt", pszPing );
-		return;
-	}
-
-	m_lstPings.erase( iter );
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_TRON_PING );
-	char szCharacter[128];
-	g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
-	cMsg.WriteString( szCharacter );
-	cMsg.Writeuint8( 0 );
-
-	if( GetClient( ))
-	{
-		g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
-	}
+	Warn( "%s not found in pingbutes.txt", pszPing );
 }
 
 // ----------------------------------------------------------------------- //
@@ -674,7 +691,7 @@ bool CTronPlayerObj::HandleRampConsoleVarMsg(const CParsedMsg &cMsg)
 	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
 	cClientMsg.Writeuint8( 0 );
 	cClientMsg.WriteString( szVar );
-	cClientMsg.Writebool( bStart );
+	cClientMsg.Writeuint8( bStart ? 1 : 0 );
 	cClientMsg.Writefloat( fStart );
 	cClientMsg.Writefloat( fEnd );
 	cClientMsg.Writefloat( fPeriod );
@@ -2242,20 +2259,46 @@ void CTronPlayerObj::ResetDefend()
 bool CTronPlayerObj::StartLightCycle( bool bSuper, bool bTronUnknown )
 {
 	// RETAIL: Tron's takes which cycle and a flag (retail 0x10067420): it
-	// clears the start flags, picks the cycle's model ("LightCycleBlue" or
-	// "LightCycleBlueSuper", or the singleplayer level's), goes to the light
-	// cycle physics model and adds the cyclist to retail's light cycle
-	// manager. PORT: the parts that need Tron's managers are not written
+	// clears the start flags, picks the cycle's model (the light cycle
+	// game's shade, or "LightCycleBlue" / "LightCycleBlueSuper"), goes to
+	// the light cycle physics model and adds the cyclist to the light
+	// cycle manager
 	m_bTronUnknown32f8 = false;
 	m_bTronUnknown32f9 = false;
 
-	if( bTronUnknown )
+	GameType eGameType = g_pGameServerShell->GetGameType();
+	if( ( eGameType == eGameTypeSingleLightCycleCircuit ) || ( eGameType == eGameTypeSingleLightCycleCustom ) )
 	{
-		strcpy( m_szLightCycleModel, bSuper ? "LightCycleBlueSuper" : "LightCycleBlue" );
+		// RETAIL: the game options keep the light cycle game's data (its
+		// style and shade at 0xa0 and 0xa1)
+		uint8 const* pCycleData = ( uint8 const* )g_pGameServerShell->GetServerGameOptions().GetTronUnknownCC();
+		if( !pCycleData )
+			return false;
+
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetShadeCycleColor( pCycleData[0xa0], pCycleData[0xa1] );
+		if( !pColor )
+			return false;
+
+		SAFE_STRCPY( m_szLightCycleModel, pColor->szName );
+	}
+	else if( ( eGameType != eGameTypeMultiplayerLightcycles ) && bTronUnknown )
+	{
+		if( bSuper )
+		{
+			strcpy( m_szLightCycleModel, "LightCycleBlueSuper" );
+		}
+		else
+		{
+			strcpy( m_szLightCycleModel, "LightCycleBlue" );
+		}
 	}
 
 	SetPhysicsModel( PPM_LIGHTCYCLE );
-	return true;
+
+	LTVector vDims;
+	g_pPhysicsLT->GetObjectDims( m_hLightCycle, &vDims );
+
+	return ( g_pLightCycleMgr->AddCyclist( m_hObject, m_szLightCycleModel, false, &vDims, 0, true ) != LTNULL );
 }
 
 // ----------------------------------------------------------------------- //
@@ -2281,15 +2324,36 @@ bool CTronPlayerObj::EndLightCycle()
 
 void CTronPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 {
+	// RETAIL: 0x10067940: the light cycle is an object of its own (class
+	// LightCycle) that the player rides
 	if(eModel == PPM_LIGHTCYCLE)
 	{
-		// Add ourselves to the light cycle manager and start it up
-		// PORT: build 69's call, with the arguments of retail's virtual
-		// AddCyclist (ServerLightCycleMgr.h) defaulted
-		g_pLightCycleMgr->AddCyclist(m_hObject, "", true, NULL, 0, false);
-	}
+		ObjectCreateStruct theStruct;
+		INIT_OBJECTCREATESTRUCT( theStruct );
 
-	CPlayerObj::SetVehiclePhysicsModel(eModel);
+		g_pLTServer->GetObjectPos( m_hObject, &theStruct.m_Pos );
+		g_pLTServer->GetObjectRotation( m_hObject, &theStruct.m_Rotation );
+
+		HCLASS hClass = g_pLTServer->GetClass( "LightCycle" );
+
+		char szProps[512];
+		sprintf( szProps, "CycleColor %s", m_szLightCycleModel );
+
+		LightCycle* pCycle = ( LightCycle* )g_pLTServer->CreateObjectProps( hClass, &theStruct, szProps );
+		if( pCycle )
+		{
+			m_hLightCycle = pCycle->m_hObject;
+			pCycle->Init( this );
+		}
+		else
+		{
+			g_pLTServer->CPrint( "ERROR - Could not create the light cycle object!\n" );
+		}
+	}
+	else
+	{
+		CPlayerObj::SetVehiclePhysicsModel(eModel);
+	}
 }
 
 // RETAIL: retail CTronPlayerObj does not override SetNormalPhysicsModel

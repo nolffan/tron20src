@@ -58,6 +58,9 @@ protected:
 	// RETAIL: slot 32 (0x1003ae60)
 	virtual void		TronUnknownVirtual32();
 
+	// RETAIL: slot 33 (0x1003b010): the disc's handling of a kept touch
+	virtual bool		TronUnknownVirtual33( ProjectilePendingTouch *pTouch );
+
 	// RETAIL: slot 34 (0x10038010): no impact on an object the disc has
 	// damaged already
 	virtual void		AddImpact( HOBJECT hObj,
@@ -111,6 +114,27 @@ protected:
 	// RETAIL: 0x1003a3f0 (from UpdateStateFlying 0x1003c2a3)
 	bool				UpdateMagneticHoming( LTVector *pvDir, LTVector const *pvTronUnknown );
 
+	// RETAIL: 0x1003a780 (from UpdateStateFlying 0x1003bd99): a player's
+	// disc homes in on the nearest target in the auto aim radius.  The
+	// name is ours
+	bool				AcquireAutoAimTarget();
+
+	// RETAIL: 0x1003aea0 (from slot 33): a kept touch of a deadly
+	// deflected disc.  The name is ours
+	bool				HandleDeadlyDeflectTouch( ProjectilePendingTouch *pTouch );
+
+	// RETAIL: 0x1003c570 (from UpdateStateFlying): the object's position
+	// up by a part of its height.  The name is ours
+	LTVector			GetControlPosition( HOBJECT hObj );
+
+	// RETAIL: 0x1003c5f0 (from UpdateStateFlying): the point of the target
+	// the disc flies at.  The name is ours
+	LTVector			GetTargetPosition();
+
+	// RETAIL: 0x1003d1b0: a deadly deflected disc hits an object.  The
+	// name is ours
+	void				SmiteObject( HOBJECT hObj );
+
 	// RETAIL: 0x1003d460: the disc is destroyed where it is (it does not
 	// return)
 	void				DestroyInFlight();
@@ -131,6 +155,14 @@ protected:
 										  float fAngularSpeed,
 										  float fTime,
 										  float fTotalTime );
+
+	// RETAIL: inline (0x1003c790 computes it twice): the time since the
+	// deflection started, up to its end time when it has one.  The name
+	// is ours
+	LTFLOAT				GetDeflectElapsedTime()
+	{
+		return ( ( m_fDeflectEndTime > 0.0f ) ? m_fDeflectEndTime : g_pLTServer->GetTime() ) - m_fDeflectStartTime;
+	}
 
 	// specific update routines
 	bool                UpdateStateFlying();

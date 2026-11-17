@@ -43,14 +43,18 @@ static int CountButeTags(CButeMgr* pButeMgr, const std::string& sPrefix)
 {
 	// RETAIL: 0x1019e670 (name ours)
 	char szTag[32];
-	// RETAIL: the loop is not rotated (one sprintf); ours is.
+	// RETAIL: the loop is not rotated (one sprintf): the found case goes
+	// back to the top
 	int nCount = 0;
-	for(;;)
+	while( true )
 	{
 		sprintf( szTag, "%s%d", sPrefix.c_str(), nCount );
-		if( !pButeMgr->Exist( szTag ))
-			break;
-		nCount++;
+		if( pButeMgr->Exist( szTag ))
+		{
+			nCount++;
+			continue;
+		}
+		break;
 	}
 	return nCount;
 }
@@ -318,9 +322,17 @@ void CAIButeMgr::Term()
 
 int CAIButeMgr::GetTemplateIDByName(const char *szName)
 {
+	// RETAIL: Tron's (0x1019f230) tests the name first
+	if ( !szName )
+	{
+		return -1;
+	}
+
 	for ( int iTemplateID = 0 ; iTemplateID < m_cTemplateID ; iTemplateID++ )
 	{
-		if ( !strcmp(szName, GetTemplate(iTemplateID)->szName) )
+		// RETAIL: Tron checks the template's id (0x1019f255)
+		AIBM_Template* pTemplate = ( iTemplateID >= 0 && iTemplateID < m_cTemplateID ) ? GetTemplate( iTemplateID ) : LTNULL;
+		if ( !strcmp(szName, pTemplate->szName) )
 		{
 			return iTemplateID;
 		}

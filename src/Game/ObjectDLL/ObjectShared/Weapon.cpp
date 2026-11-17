@@ -181,10 +181,14 @@ void CWeapon::ReloadClip(LTBOOL bPlayReload, int nNewAmmo /*=-1*/, uint8 nAmmoId
 	}
 	
 	// Add a sound stimulus for the reloading sound.
+	// RETAIL: only for a character's weapon (0x10157499)
 
-	LTVector vPos;
-	g_pLTServer->GetObjectPos(m_hModelObject, &vPos);
-	g_pAIStimulusMgr->RegisterStimulus(kStim_EnemyWeaponReloadSound, m_hObject, m_hModelObject, vPos, fRadiusMult, 1.f);
+	if (IsCharacter(m_hObject))
+	{
+		LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hModelObject, &vPos);
+		g_pAIStimulusMgr->RegisterStimulus(kStim_EnemyWeaponReloadSound, m_hObject, m_hModelObject, vPos, fRadiusMult, 1.f);
+	}
 }
 
 
@@ -369,8 +373,9 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 		eRet = W_FIRED;
 
 		// Check to see if we need to reload...
+		// RETAIL: never in a disc game (0x101578ea)
 
-		if (nShotsPerClip > 0)
+		if (!IsDiscGameType() && nShotsPerClip > 0)
 		{
 			if (m_nAmmoInClip <= 0)
 			{
