@@ -3446,6 +3446,34 @@ EnumAnimProp CAI::GetWeaponProp(EnumAIWeaponType eWeaponType)
 
 LTBOOL CAI::SetCurrentWeapon( EnumAIWeaponType eWeaponType )
 {
+	// RETAIL: Tron's AI that picks its weapon by visibility takes the
+	// weapon of its attack side; melee uses the third choice (0x1012fc86)
+	if( m_bSelectWeaponBasedOnVisibility )
+	{
+		if( eWeaponType == kAIWeap_Melee )
+		{
+			m_CurWeaponChoice = m_lstWeaponChoices[2];
+		}
+
+		switch( m_CurWeaponChoice.m_eSide )
+		{
+			case kAIAttack_Left:	m_iCurrentWeapon = 1; break;
+			case kAIAttack_Right:	m_iCurrentWeapon = 0; break;
+			case kAIAttack_Center:
+				if( eWeaponType == kAIWeap_Melee )
+				{
+					m_iCurrentWeapon = 3;
+				}
+				else
+				{
+					m_iCurrentWeapon = 2;
+				}
+				break;
+		}
+
+		return LTTRUE;
+	}
+
 	WEAPON const *pWeaponData;
 	for( int32 iWeapon=0; iWeapon < m_cWeapons; ++iWeapon )
 	{
