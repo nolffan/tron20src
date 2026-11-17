@@ -487,18 +487,19 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 
 #else
 
+				// TRON: the strings are loaded wide (RETAIL: 0x10071e8f)
 				int nChange = pTest->GetRecommendedDetailChange();
 				if (nChange < 0)
 				{
-					m_pRecommendation->SetString(FormatTempString(IDS_PERFORMANCE_RECOMMEND_LOWER));
+					m_pRecommendation->SetString(LoadTempWString(IDS_PERFORMANCE_RECOMMEND_LOWER));
 				}
 				else if (nChange > 0)
 				{
-					m_pRecommendation->SetString(FormatTempString(IDS_PERFORMANCE_RECOMMEND_HIGHER));
+					m_pRecommendation->SetString(LoadTempWString(IDS_PERFORMANCE_RECOMMEND_HIGHER));
 				}
 				else
 				{
-					m_pRecommendation->SetString(FormatTempString(IDS_PERFORMANCE_RECOMMEND_CURRENT));
+					m_pRecommendation->SetString(LoadTempWString(IDS_PERFORMANCE_RECOMMEND_CURRENT));
 				}
 
 #endif // _SHOW_PERFORMACE_FRAMERATE_
