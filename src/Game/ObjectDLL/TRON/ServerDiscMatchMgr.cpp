@@ -472,44 +472,49 @@ void CDiscMatch::DecideWinner()
 	if (m_eState != 5 && m_eState != 4)
 		return;
 
-	if (m_nWins[0] < m_nWins[1])
+	if (m_nWins[1] > m_nWins[0])
 	{
 		m_nWinner = 1;
 		return;
 	}
 
-	if (m_nWins[0] > m_nWins[1])
+	// RETAIL: 0x1004d88c, the more wins and the draw lost by team 1 share
+	// the last store.
+	if (m_nWins[1] >= m_nWins[0])
 	{
-		m_nWinner = 0;
-		return;
-	}
-
-	// RETAIL: a draw goes to the team that lost less (the damage of its
-	// living players, and 100 for each death)
-	float afLost[2];
-	afLost[1] = 0.0f;
-	afLost[0] = 0.0f;
-	for (int i = 0; i < 2; i++)
-	{
-		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(m_nTeam[i], false);
-		uint32 nNumClients = pTeam->GetNumClients();
-		for (uint32 j = 0; j < nNumClients; j++)
+		// RETAIL: a draw goes to the team that lost less (the damage of its
+		// living players, and 100 for each death)
+		float afLost[2];
+		afLost[1] = 0.0f;
+		afLost[0] = 0.0f;
+		for (int i = 0; i < 2; i++)
 		{
-			CPlayerObj* pPlayer = pTeam->GetPlayer(j);
-			if (pPlayer && pPlayer->GetPlayerScore()->GetTronUnknown18() == 0)
+			CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(m_nTeam[i], false);
+			uint32 nNumClients = pTeam->GetNumClients();
+			for (uint32 j = 0; j < nNumClients; j++)
 			{
-				CDestructible* pDamage = pPlayer->GetDestructible();
-				if (pDamage)
+				CPlayerObj* pPlayer = pTeam->GetPlayer(j);
+				if (pPlayer && pPlayer->GetPlayerScore()->GetTronUnknown18() == 0)
 				{
-					afLost[i] += 100.0f - pDamage->GetHitPoints();
+					CDestructible* pDamage = pPlayer->GetDestructible();
+					if (pDamage)
+					{
+						afLost[i] += 100.0f - pDamage->GetHitPoints();
+					}
 				}
 			}
+
+			afLost[i] += (float)m_nKills[i] * 100.0f;
 		}
 
-		afLost[i] += (float)m_nKills[i] * 100.0f;
+		if (afLost[0] > afLost[1])
+		{
+			m_nWinner = 1;
+			return;
+		}
 	}
 
-	m_nWinner = (afLost[0] > afLost[1]) ? 1 : 0;
+	m_nWinner = 0;
 }
 
 int CDiscMatch::GetWinner()
@@ -1703,7 +1708,8 @@ void CDiscMatchMgr::AwardWin(int nTeam)
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
 	cMsg.Writeuint8(kDiscMsg_TeamWin);
-	g_pTronTeamMgr->SendToTeam(cMsg.Read(), nTeam, MESSAGE_GUARANTEED, false);
+	CLTMsgRef_Read cRead = cMsg.Read();
+	g_pTronTeamMgr->SendToTeam(cRead, nTeam, MESSAGE_GUARANTEED, false);
 }
 
 int CDiscMatchMgr::GetNumActiveTeams()
