@@ -145,6 +145,7 @@ class CCharacterFX : public CSpecialFX
 		uint8	GetCarrying() { return m_cs.nCarrying; }
 		
 		void EnablePitch( bool bEnable );	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
+		void RecreateAttachClientFX();	// RETAIL: 0x10179fc0 (the name is ours)
 			
 		enum Constants
 		{

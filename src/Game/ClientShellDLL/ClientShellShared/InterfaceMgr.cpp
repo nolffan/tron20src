@@ -1871,15 +1871,11 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				CCharacterFX* pCFX = (CCharacterFX*)psfxMgr->FindSpecialFX(SFX_CHARACTER_ID, hObj);
 				if (pCFX)
 				{
+					// RETAIL: Tron's (0x100c9d6a) makes the attach fx again,
+					// then changes the model. PORT: retail's ChangeModel (slot
+					// 13) takes three arguments; ours takes the model only.
+					pCFX->RecreateAttachClientFX();
 					pCFX->ChangeModel(eModelId);
-					
-					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
-					// here that are not yet identified; NOLF2's radar update
-					// stands in.
-					if( pCFX->m_cs.bRadarVisible )
-					{
-						if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
-					}
 				}
 			}
 

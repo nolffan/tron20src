@@ -31,10 +31,12 @@ class CLTGUIAutoSoundTextCtrl : public CLTGUITextCtrl
 
 namespace
 {
-	char szOK[8] = "";
-	char szCancel[16] = "";
-	char szYes[8] = "";
-	char szNo[8] = "";
+	// RETAIL: Tron's are wide (0x10270508, 0x102704f8, 0x102704e8,
+	// 0x102704d8), filled by Init
+	std::wstring szOK;
+	std::wstring szCancel;
+	std::wstring szYes;
+	std::wstring szNo;
 	const uint8 kIndent = 8;
 	const uint16 kBaseWidth = 320;
 	const uint16 kBaseHeight = 200;
@@ -66,23 +68,23 @@ CMessageBox::~CMessageBox()
 	Term();
 }
 
+// RETAIL: 0x100ddf20. Tron's reads the dialog's fonts and colors from the
+// layout's DialogBox tag.
 LTBOOL CMessageBox::Init()
 {
-
-	uint8 nFont = g_pLayoutMgr->GetDialogFontFace();
+	uint8 nFont = (uint8)g_pLayoutMgr->GetInt("DialogBox", "DialogFontNum");
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-	uint8 nFontSize = g_pLayoutMgr->GetDialogFontSize();
+	uint8 nFontSize = (uint8)g_pLayoutMgr->GetInt("DialogBox", "DialogFontSize");
 
-	uint32 selColor = g_pLayoutMgr->GetScreenSelectedColor(SCREEN_ID_MAIN);
-	uint32 nonColor = g_pLayoutMgr->GetScreenNonSelectedColor(SCREEN_ID_MAIN);
-	uint32 disColor = g_pLayoutMgr->GetScreenDisabledColor(SCREEN_ID_MAIN);
-
-	LoadString(IDS_OK,szOK,sizeof(szOK));
-	LoadString(IDS_CANCEL,szCancel,sizeof(szCancel));
-	LoadString(IDS_YES,szYes,sizeof(szYes));
-	LoadString(IDS_NO,szNo,sizeof(szNo));
-
-	
+	char szTmp[128];
+	LoadString(IDS_OK, szTmp, sizeof(szTmp));
+	LTGUIWiden(szOK, szTmp);
+	LoadString(IDS_CANCEL, szTmp, sizeof(szTmp));
+	LTGUIWiden(szCancel, szTmp);
+	LoadString(IDS_YES, szTmp, sizeof(szTmp));
+	LTGUIWiden(szYes, szTmp);
+	LoadString(IDS_NO, szTmp, sizeof(szTmp));
+	LTGUIWiden(szNo, szTmp);
 
 	m_pOK = debug_new(CLTGUIAutoSoundTextCtrl);
     if (!m_pOK->Create(szOK, CMD_OK, LTNULL, pFont, nFontSize, this))
@@ -91,6 +93,13 @@ LTBOOL CMessageBox::Init()
 		m_pOK = LTNULL;
         return LTFALSE;
 	}
+
+	LTVector vSel = g_pLayoutMgr->GetVector("DialogBox", "OKSelected");
+	LTVector vNon = g_pLayoutMgr->GetVector("DialogBox", "OKNormal");
+	LTVector vDis = g_pLayoutMgr->GetVector("DialogBox", "OKDisabled");
+	uint32 selColor = SET_ARGB(0xFF, vSel.x, vSel.y, vSel.z);
+	uint32 nonColor = SET_ARGB(0xFF, vNon.x, vNon.y, vNon.z);
+	uint32 disColor = SET_ARGB(0xFF, vDis.x, vDis.y, vDis.z);
 	m_pOK->SetColors(selColor, nonColor, disColor);
 
 	m_pCancel = debug_new(CLTGUIAutoSoundTextCtrl);
@@ -100,16 +109,30 @@ LTBOOL CMessageBox::Init()
 		m_pCancel = LTNULL;
         return LTFALSE;
 	}
+
+	vSel = g_pLayoutMgr->GetVector("DialogBox", "CancelSelected");
+	vNon = g_pLayoutMgr->GetVector("DialogBox", "CancelNormal");
+	vDis = g_pLayoutMgr->GetVector("DialogBox", "CancelDisabled");
+	selColor = SET_ARGB(0xFF, vSel.x, vSel.y, vSel.z);
+	nonColor = SET_ARGB(0xFF, vNon.x, vNon.y, vNon.z);
+	disColor = SET_ARGB(0xFF, vDis.x, vDis.y, vDis.z);
 	m_pCancel->SetColors(selColor, nonColor, disColor);
 
 	m_pText = debug_new(CLTGUITextCtrl);
-    if (!m_pText->Create("", LTNULL, LTNULL, pFont, nFontSize, this))
+    if (!m_pText->Create(std::wstring(), LTNULL, LTNULL, pFont, nFontSize, this))
 	{
 		debug_delete(m_pText);
 		m_pText = LTNULL;
         return LTFALSE;
 	}
-	m_pText->SetColors(nonColor, nonColor, nonColor);
+
+	vSel = g_pLayoutMgr->GetVector("DialogBox", "TextSelected");
+	vNon = g_pLayoutMgr->GetVector("DialogBox", "TextNormal");
+	vDis = g_pLayoutMgr->GetVector("DialogBox", "TextDisabled");
+	selColor = SET_ARGB(0xFF, vSel.x, vSel.y, vSel.z);
+	nonColor = SET_ARGB(0xFF, vNon.x, vNon.y, vNon.z);
+	disColor = SET_ARGB(0xFF, vDis.x, vDis.y, vDis.z);
+	m_pText->SetColors(selColor, nonColor, disColor);
 	m_pText->SetFixedWidth(kBaseWidth-2*kIndent);
 	m_pText->Enable(LTFALSE);
 
@@ -120,14 +143,18 @@ LTBOOL CMessageBox::Init()
 		m_pEdit = LTNULL;
         return LTFALSE;
 	}
+
+	vSel = g_pLayoutMgr->GetVector("DialogBox", "EditSelected");
+	vNon = g_pLayoutMgr->GetVector("DialogBox", "EditNormal");
+	vDis = g_pLayoutMgr->GetVector("DialogBox", "EditDisabled");
+	m_pEdit->SetColors(SET_ARGB(0xFF, vSel.x, vSel.y, vSel.z),
+					   SET_ARGB(0xFF, vNon.x, vNon.y, vNon.z),
+					   SET_ARGB(0xFF, vDis.x, vDis.y, vDis.z));
 	m_pEdit->EnableCaret(LTTRUE);
 	m_pEdit->SetFixedWidth(kBaseWidth-2*kIndent,LTTRUE);
-	m_pEdit->SetColors(nonColor, nonColor, nonColor);
-	
-
 
 	char szBack[128] = "";
-	g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
+	g_pLayoutMgr->GetString("DialogBox", "DialogFrame", szBack, sizeof(szBack));
 
 	m_Dlg.Create(g_pInterfaceResMgr->GetTexture(szBack),kBaseWidth,kBaseHeight);
 	LTIntPt tmp(0,0);

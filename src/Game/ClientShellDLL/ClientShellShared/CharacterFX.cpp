@@ -2912,6 +2912,24 @@ void CCharacterFX::RemoveAttachClientFX()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacterFX::RecreateAttachClientFX
+//
+//	PURPOSE:	RETAIL: 0x10179fc0 (the name is ours): clears Tron's time
+//				(+0x2320) and makes the attach client fx again, for a
+//				changed model (CInterfaceMgr's MID_PLAYER_INFO, 0x100c9d6c)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::RecreateAttachClientFX()
+{
+	m_fTronUnknown2320 = 0.0f;
+	CreateAttachClientFX();
+}
+
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacterFX::PlayDingSound
 //
 //	PURPOSE:	Play an impact ding sound
