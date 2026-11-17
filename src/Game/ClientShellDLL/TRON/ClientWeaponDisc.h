@@ -109,6 +109,8 @@ protected:
 	virtual void  Fire( bool bFire );
 	virtual void  HandleFireKeyDownTransition();  // up to down transition
 	virtual void  HandleFireKeyUpTransition();    // down to up transition
+	// RETAIL: slot 62 (0x10019f50): the disc returns
+	virtual void  TronUnknownVirtualF8();
 	virtual void  HandleFireKeyDown();            // fire held continuously down
 	virtual void  HandleFireKeyUp();              // fire key not pressed
 
@@ -125,6 +127,10 @@ protected:
 	void          ShowDisc();
 	// RETAIL: 0x1001a370: MID_TRON_DISC_FIRED (the name is ours)
 	void          SendDiscFired();
+	// RETAIL: 0x10019ff0, 0x1001a0f0: MPROJ_RETURN and Tron's message 14
+	// (the fire key is up) to our player (the names are ours)
+	void          SendDiscReturn();
+	void          SendDiscRelease();
 
 private:
 	// swat defense animations

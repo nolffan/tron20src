@@ -13,6 +13,7 @@
 
 #include "stdafx.h"
 #include "ClientWeaponDisc.h"
+
 #include "MsgIDs.h"
 #include "PlayerMgr.h"
 #include "CMoveMgr.h"
@@ -20,6 +21,11 @@
 #include "RatingMgr.h"
 #include "FXButeMgr.h"
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x100189d0..0x10018a00)
+
+// RETAIL: Tron's projectile message 14, what the release of the fire key
+// sends (0x1001a181; Object.lto's disc reads it, ProjectileDisc.cpp has the
+// same name). PORT: MsgIDs.h's MPROJ_RETURN (3) is NOLF2's. The name is ours
+#define MPROJ_DISC_TRONUNKNOWN14		14
 
 
 //
@@ -42,7 +48,28 @@ namespace
 	char *ns_szPostHoldDefenseAnimationName = "PostBlock";
 
 	float const CLIENTWEAPONDISC_PROBE_LENGTH = 100000.0f;
+
+	// RETAIL: Tron's console variable (0x10236e30; its constructor
+	// 0x10018a40): the time between two control line updates of the disc
+	// in a multiplayer game (CClientWeaponDisc::Update). The names are ours
+	VarTrack g_vtDiscControlRate;
+	bool g_bDiscVarsInit = false;
 };
+
+// RETAIL: 0x10018a60 (the name is ours): the disc's constructor calls it
+// with g_pLTClient, but it uses the global
+static void InitDiscVars( ILTClient * )
+{
+	if ( !g_bDiscVarsInit )
+	{
+		if ( !g_vtDiscControlRate.IsInitted() )
+		{
+			g_vtDiscControlRate.Init( g_pLTClient, "DiscControlRate", NULL, 0.1f );
+		}
+
+		g_bDiscVarsInit = true;
+	}
+}
 
 
 
@@ -69,10 +96,12 @@ CClientWeaponDisc::CClientWeaponDisc() :
 	, m_bFireMessageSent( false )
 	, m_bDiscNeedsUpdates( false )
 	, m_bIgnoreFireKeyframe( false )
-	, m_fTimeDiscActive( -1.0f )
+	, m_fTimeDiscActive( 0.0f )
 {
 	// base class redefines
 	m_bAutoSwitchEnabled = false;
+
+	InitDiscVars( g_pLTClient );
 }
 
 
@@ -139,17 +168,20 @@ WeaponState CClientWeaponDisc::UpdateModelState( bool bFire, bool bAltFire )
 	// Determine what we should be doing...
 	// (mostly updates animations, also
 	// updates a couple supporting variables)
+	// RETAIL: 0x10018c00: the fire key with the modifier swats, the alt
+	// fire key holds
 	if ( bFire )
 	{
-		UpdateFiring();
+		if ( g_pLTClient->IsCommandOn( COMMAND_ID_DEFEND_MODIFIER ) )
+		{
+			UpdateSwatDefense();
+		}
+		else
+		{
+			UpdateFiring();
+		}
 	}
-	else if ( g_pLTClient->IsCommandOn( COMMAND_ID_DEFEND ) &&
-	          g_pLTClient->IsCommandOn( COMMAND_ID_DEFEND_MODIFIER ) )
-	{
-		UpdateSwatDefense();
-	}
-	else if ( g_pLTClient->IsCommandOn( COMMAND_ID_DEFEND ) &&
-	          !g_pLTClient->IsCommandOn( COMMAND_ID_DEFEND_MODIFIER ) )
+	else if ( bAltFire )
 	{
 		UpdateHoldDefense();
 	}
@@ -173,6 +205,13 @@ WeaponState CClientWeaponDisc::UpdateModelState( bool bFire, bool bAltFire )
 
 		// clear the fire flag
 		m_bFire = false;
+	}
+	else if ( m_bIgnoreFireKeyframe )
+	{
+		// RETAIL: the bool at +0x225 asks for slot 102's message (which
+		// retail bool is which of ours is a guess, see the header)
+		TronUnknownVirtual198();
+		m_bIgnoreFireKeyframe = false;
 	}
 
 	// See if we just finished deselecting the weapon...
@@ -805,35 +844,7 @@ bool g_bDisplayClientWeaponTarget = false;
 WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
                                        FireType eFireType /*=FT_NORMAL_FIRE*/ )
 {
-/// DEBUG CODE
-	if ( g_bDisplayClientWeaponTarget )
-	{
-		// find the point we're aiming at
-		LTVector vTargetPoint;
-		CalculatePointGuidedTarget( &vTargetPoint );
-		static CLIENTFX_LINK s_pTargetPoint;
-		if ( s_pTargetPoint.GetInstance() ) 
-		{
-			// back it off just a little
-			LTVector vBackOff;
-			CalculateControlDirection( &vBackOff );
-			vBackOff *= -5.0f;
-			vTargetPoint += vBackOff;
-			s_pTargetPoint.GetInstance()->SetPos( vTargetPoint, vTargetPoint );
-		}
-		else
-		{
-			// create the target point
-			CLIENTFX_CREATESTRUCT fxInit( "DISC_target", FXFLAG_LOOP , vTargetPoint ); 
-
-			g_pClientFXMgr->CreateClientFX( &s_pTargetPoint, fxInit, LTTRUE );
-			if ( s_pTargetPoint.GetInstance() ) 
-			{
-				s_pTargetPoint.GetInstance()->m_bPlayerView = LTFALSE;
-			}
-		}
-	}
-/// DEBUG CODE
+	// RETAIL: no debug target point (NOLF2's g_bDisplayClientWeaponTarget)
 
 	// 
 	// See if we are disabled...If so don't allow any weapon stuff...
@@ -842,45 +853,53 @@ WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
 		return W_IDLE;
 	}
 
-	if ( m_bDiscNeedsUpdates )
+	// RETAIL: 0x100194a0: while the fire key is held, and in a multiplayer
+	// game no more often than DiscControlRate seconds
+	if ( m_bFireMessageSent && bFire )
 	{
-		CAutoMessage cMsg;
-		LTRESULT ltResult;
+		bool bSend = true;
+		if ( IsMultiplayerGame() )
+		{
+			float fRate = g_vtDiscControlRate.GetFloat( 0.1f );
+			if ( g_pLTClient->GetTime() < fRate + m_fTimeDiscActive )
+			{
+				bSend = false;
+			}
+		}
 
-		// RETAIL: Tron's projectile messages are object messages to our
-		// player (retail 0x100194a0; CTronPlayerObj::HandleMessageProjectile)
-		cMsg.Writeuint8( MID_OBJECT_MESSAGE );
-		cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
-		cMsg.Writeuint32( MID_PROJECTILE );
+		if ( bSend )
+		{
+			CAutoMessage cMsg;
 
-		// write the projectile message subtype
-		cMsg.Writeuint8( MPROJ_UPDATE_CONTROL_LINE );
+			m_fTimeDiscActive = g_pLTClient->GetTime();
 
-		// pass a control vector, which is a vector pointing
-		// straight out in front of the player
-		LTVector vControlDirection;
-		CalculateControlDirection( &vControlDirection );
+			// RETAIL: Tron's projectile messages are object messages to our
+			// player (CTronPlayerObj::HandleMessageProjectile)
+			cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+			cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+			cMsg.Writeuint32( MID_PROJECTILE );
 
-		// get the control position (in this case, the camera position)
-		// get the camera
-		HOBJECT hCamera = g_pPlayerMgr->GetCamera();
-		ASSERT( 0 != hCamera );
-		LTVector vControlPosition;
-		ltResult = g_pLTClient->GetObjectPos( hCamera, &vControlPosition );
-		ASSERT( LT_OK == ltResult );
+			// write the projectile message subtype
+			cMsg.Writeuint8( MPROJ_UPDATE_CONTROL_LINE );
 
-		// write the control vector
-		cMsg.WriteLTVector( vControlDirection );
+			// pass a control vector, which is a vector pointing
+			// straight out in front of the player
+			LTVector vControlDirection;
+			CalculateControlDirection( &vControlDirection );
 
-		// write the control position
-		cMsg.WriteLTVector( vControlPosition );
+			// get the control position (in this case, the camera position)
+			LTVector vControlPosition;
+			g_pLTClient->GetObjectPos( g_pPlayerMgr->GetCamera(), &vControlPosition );
 
-		// send the message
-		ltResult = g_pLTClient->SendToServer(
-				cMsg.Read(),
-				MESSAGE_GUARANTEED
-			);
-		ASSERT( LT_OK == ltResult );
+			// write the control vector
+			cMsg.WriteLTVector( vControlDirection );
+
+			// write the control position
+			cMsg.WriteLTVector( vControlPosition );
+
+			// send the message
+			g_pLTClient->SendToServer( cMsg.Read(), IsMultiplayerGame() ? 0 : MESSAGE_GUARANTEED );
+		}
 	}
 
 	return CTronClientWeapon::Update( bFire, bAltFire, eFireType );
@@ -1028,24 +1047,50 @@ bool CClientWeaponDisc::PlayFireAnimation( bool bResetAni )
 
 bool CClientWeaponDisc::PlayHoldDefenseAnimation( bool bResetAni )
 {
+	// RETAIL: 0x10019990 (slot 101). Tron's tests the four hold animations
+	// first; bResetAni is not used.
+
 	// get thde current animation and the current animation state
 	uint32 dwAni    = g_pLTClient->GetModelAnimation( m_hObject );
 	uint32 dwState  = g_pLTClient->GetModelPlaybackState( m_hObject );
 
-	if ( GetPreHoldDefenseAni() == dwAni )
+	bool bPreHold	= ( GetPreHoldDefenseAni() == dwAni );
+	bool bHold		= ( GetHoldDefenseAni() == dwAni );
+	bool bImpact	= ( GetImpactHoldDefenseAni() == dwAni );
+	bool bPostHold	= ( GetPostHoldDefenseAni() == dwAni );
+
+	if ( ( bPreHold || bHold ) && m_bPlayImpactHoldAnimation )
+	{
+		// play the impact hold animation
+		PlayAnimation( GetImpactHoldDefenseAni(), true, 1.0f, false );
+		return true;
+	}
+
+	if ( bPreHold )
 	{
 		if ( dwState & MS_PLAYDONE )
 		{
-			PlayAnimation( GetHoldDefenseAni(), false, 1.0f, true );
-			return true;
+			PlayAnimation( GetHoldDefenseAni(), false, 1.0f, false );
+
+			if ( !IsMultiplayerGame() )
+			{
+				// let the server know
+				SendDefendMessage( MPROJ_START_HOLD_BLOCK, GetPreHoldDefenseAni() );
+
+				// turn on accurate rotations on the server
+				g_pPlayerMgr->StartServerAccurateRotation();
+
+				// start sending the camera offset to the server
+				g_pPlayerMgr->StartSendingCameraOffsetToServer();
+			}
 		}
 	}
-	else if ( GetHoldDefenseAni() == dwAni )
+	else if ( bHold )
 	{
-		if ( !bResetAni )
+		if ( dwState & MS_PLAYDONE )
 		{
 			// play the hold "release" aniamtion
-			PlayAnimation( GetPostHoldDefenseAni(), true );
+			PlayAnimation( GetPostHoldDefenseAni(), true, 1.0f, false );
 
 			// let the server know
 			SendDefendMessage( MPROJ_END_HOLD_BLOCK, GetPostHoldDefenseAni() );
@@ -1056,86 +1101,48 @@ bool CClientWeaponDisc::PlayHoldDefenseAnimation( bool bResetAni )
 			// stop sending the camera offset to the server
 			g_pPlayerMgr->EndSendingCameraOffsetToServer();
 		}
-		else if ( m_bPlayImpactHoldAnimation )
-		{
-			// play the impact hold animation
-			PlayAnimation( GetImpactHoldDefenseAni() );
-		}
-
-		return true;
 	}
-	else if ( GetImpactHoldDefenseAni() == dwAni )
+	else if ( bImpact )
 	{
 		if ( dwState & MS_PLAYDONE )
 		{
-			if ( bResetAni )
-			{
-				// keep playing the hold animation
-				PlayAnimation( GetHoldDefenseAni(), false, 1.0f, true );
-			}
-			else
-			{
-				// play the hold "release" aniamtion
-				PlayAnimation( GetPostHoldDefenseAni(), true );
+			// play the hold "release" aniamtion
+			PlayAnimation( GetPostHoldDefenseAni(), true, 1.0f, false );
 
-				// let the server know
-				SendDefendMessage( MPROJ_END_HOLD_BLOCK, GetPostHoldDefenseAni() );
+			// let the server know
+			SendDefendMessage( MPROJ_END_HOLD_BLOCK, GetPostHoldDefenseAni() );
 
-				// turn off accurate rotations on the server
-				g_pPlayerMgr->EndServerAccurateRotation();
+			// turn off accurate rotations on the server
+			g_pPlayerMgr->EndServerAccurateRotation();
 
-				// stop sending the camera offset to the server
-				g_pPlayerMgr->EndSendingCameraOffsetToServer();
-			}
+			// stop sending the camera offset to the server
+			g_pPlayerMgr->EndSendingCameraOffsetToServer();
 		}
 	}
-	else if ( GetPostHoldDefenseAni() == dwAni )
+	else if ( bPostHold )
 	{
 		if ( dwState & MS_PLAYDONE )
 		{
 			// all done!
-			if ( bResetAni )
-			{
-				// button held down, play again
-				PlayAnimation( GetPreHoldDefenseAni(), false );
-
-				// let the server know
-				SendDefendMessage(
-						MPROJ_START_HOLD_BLOCK,
-						GetPreHoldDefenseAni()
-					);
-
-				// keep on accurate rotations on the server
-				g_pPlayerMgr->StartServerAccurateRotation();
-
-				// keep on the camera offset being sent to the server
-				g_pPlayerMgr->StartSendingCameraOffsetToServer();
-
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return false;
 		}
 	}
 	else
 	{
-		ASSERT( !IsHoldDefenseAni( dwAni ) );
-
 		// no hold animation playing, start the hold
-		PlayAnimation( GetPreHoldDefenseAni(), false );
+		PlayAnimation( GetPreHoldDefenseAni(), false, 1.0f, false );
 
-		// let the server know
-		SendDefendMessage( MPROJ_START_HOLD_BLOCK, GetPreHoldDefenseAni() );
+		if ( IsMultiplayerGame() )
+		{
+			// let the server know
+			SendDefendMessage( MPROJ_START_HOLD_BLOCK, GetPreHoldDefenseAni() );
 
-		// turn on accurate rotations on the server
-		g_pPlayerMgr->StartServerAccurateRotation();
+			// turn on accurate rotations on the server
+			g_pPlayerMgr->StartServerAccurateRotation();
 
-		// start sending the camera offset to the server
-		g_pPlayerMgr->StartSendingCameraOffsetToServer();
-
-		return true;
+			// start sending the camera offset to the server
+			g_pPlayerMgr->StartSendingCameraOffsetToServer();
+		}
 	}
 
 	return true;
@@ -1502,33 +1509,31 @@ void CClientWeaponDisc::HandleFireKeyUpTransition()
 	// not, it is considered click-to-fire.
 	//
 
-	if ( m_bDiscNeedsUpdates )
+	// RETAIL: 0x10019f30 tests and clears the bools at +0x21e and +0x21d
+	// (which retail bool is which of ours is a guess, see the header), and
+	// leaves the message to SendDiscReturn
+	if ( m_bFireMessageSent )
 	{
-		//
-		// tell the disc to return
-		//
-
-		// reset the fire message sent flag
+		m_bIsDiscActive = false;
 		m_bFireMessageSent = false;
 
-		// stop sending updates
-		m_bDiscNeedsUpdates = false;
-
-		CAutoMessage cMsg;
-		LTRESULT ltResult;
-
-		// RETAIL: an object message to our player (retail 0x10019ff0)
-		cMsg.Writeuint8( MID_OBJECT_MESSAGE );
-		cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
-		cMsg.Writeuint32( MID_PROJECTILE );
-
-		// tell the disc to return 
-		cMsg.Writeuint8( MPROJ_RETURN );
-
-		// send the message
-		ltResult = g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
-		ASSERT( LT_OK == ltResult );
+		// tell the disc the fire key is up
+		SendDiscRelease();
 	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::TronUnknownVirtualF8()
+//
+//	PURPOSE:	RETAIL: 0x10019f50 (slot 62): the disc returns
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponDisc::TronUnknownVirtualF8()
+{
+	SendDiscReturn();
 }
 
 
@@ -1623,6 +1628,46 @@ void CClientWeaponDisc::IncrementAmmo( int nAmount /*=1*/ )
 			m_nAmmoInClip = m_pWeapon->nShotsPerClip;
 		}
 	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::SendDiscReturn()
+//
+//	PURPOSE:	RETAIL: 0x10019ff0 (the name is ours): tell the disc to
+//				return, through an object message to our player
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponDisc::SendDiscReturn()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+	cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+	cMsg.Writeuint32( MID_PROJECTILE );
+	cMsg.Writeuint8( MPROJ_RETURN );
+	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::SendDiscRelease()
+//
+//	PURPOSE:	RETAIL: 0x1001a0f0 (the name is ours): tell the disc that
+//				the fire key is up, through an object message to our player
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponDisc::SendDiscRelease()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_OBJECT_MESSAGE );
+	cMsg.WriteObject( g_pMoveMgr->GetServerObject() );
+	cMsg.Writeuint32( MID_PROJECTILE );
+	cMsg.Writeuint8( MPROJ_DISC_TRONUNKNOWN14 );
+	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 }
 
 
