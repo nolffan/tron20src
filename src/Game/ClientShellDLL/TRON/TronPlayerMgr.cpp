@@ -1838,7 +1838,7 @@ void CTronPlayerMgr::DoActivate()
 	if (g_pTronPlayerMgr->GetTronTargetMgr()->IsEnergyRequired())
 	{
 		float fEnergyRequired = (float)g_pTronPlayerMgr->GetTronTargetMgr()->GetEnergyRequired();
-		if (g_pTronPlayerStats->GetEnergy() < fEnergyRequired)
+		if (fEnergyRequired > g_pTronPlayerStats->GetEnergy())
 		{
 			g_pPickupMsgs->AddMessage(IDS_INSUFFICIENT_ENERGY, (const char*)LTNULL);
 			// PORT: Tron's PlaySoundLocal has a seventh argument (1.0f)
