@@ -1952,13 +1952,10 @@ LTBOOL CAIHumanStrategyOneShotAni::UpdateAnimation()
 
 	switch ( m_eState )
 	{
-		case eUnset:
-/////		case eDone:
-		{
-		}
-		break;
-
 		case eSet:
+			// RETAIL: Tron clears the old lock first (0x1022441f)
+			GetAnimationContext()->ClearLock();
+			// fall through
 		case eAnimating:
 		case eDone:
 		{

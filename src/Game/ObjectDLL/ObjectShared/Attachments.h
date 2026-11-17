@@ -436,6 +436,9 @@ class CHumanAttachments : public CAttachments
 		CAttachmentPosition		m_RightLowerArm2;
 		CAttachmentPosition		m_RightLowerLeg2;
 		CAttachmentPosition		m_UpperTorso2;
+		// RETAIL: Tron's (retail constructor 0x1018a8f9: +0x258, +0x264)
+		CAttachmentPosition		m_RightRod;
+		CAttachmentPosition		m_LeftRod;
 
 	private:
 		void AddPosition(const char* szName,CAttachmentPosition* pAttachPosition);

@@ -507,6 +507,14 @@ bool CAI::DefaultFilterFn(HOBJECT hObj, void *pUserData)
         return false;
 	}
 
+    // RETAIL: Tron's AI also ignores an InfoString (0x101283dd)
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
+	{
+        return false;
+	}
+
 	return LiquidFilterFn(hObj, pUserData);
 }
 
@@ -545,6 +553,14 @@ bool CAI::ShootThroughFilterFn(HOBJECT hObj, void *pUserData)
     static HCLASS hHitbox = g_pLTServer->GetClass("CCharacterHitBox");
 
     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hHitbox))
+	{
+        return false;
+	}
+
+    // RETAIL: Tron's AI can not shoot through an InfoString (0x101285a1)
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
 	{
         return false;
 	}
@@ -595,8 +611,14 @@ bool CAI::SeeThroughFilterFn(HOBJECT hObj, void *pUserData)
         return false;
 	}
 
-    // RETAIL: Tron's AI can not see through an InfoString (0x101285a1);
-    // it can see through other characters
+    static HCLASS hCharacter = g_pLTServer->GetClass("CCharacter");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hCharacter))
+	{
+        return false;
+	}
+
+    // RETAIL: Tron's AI can not see through an InfoString (0x10128780)
     static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
 
     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
@@ -1750,6 +1772,17 @@ void CAI::InitialUpdate()
 
 void CAI::HandleTouch(HOBJECT hObj)
 {
+	// RETAIL: a Seeker kills the player it touches (0x1012bcae)
+	if ( m_bSeeker && IsPlayer(hObj) )
+	{
+		DamageStruct damage;
+		damage.hDamager = GetUserObject();
+		damage.eType = DT_ELECTROCUTE;
+		damage.fDamage = 1000000.0f;
+		damage.bTronUnknown44 = LTFALSE;
+		damage.DoDamage(this, hObj, GetUserObject());
+	}
+
 	if ( m_pState )
 	{
 		m_pState->HandleTouch(hObj);
@@ -1983,13 +2016,16 @@ LTFLOAT CAI::GetSenseDistance(EnumAISenseType eSenseType)
 
 const RelationSet& CAI::GetSenseRelationSet() const
 {
+	// RETAIL: Tron's IAISensing slot returns the relation manager itself
+	// (0x1012c2a0), as TronTurret's does: a static CObjectRelationMgr when
+	// there is none.
 	if( m_pRelationMgr )
 	{
-		return m_pRelationMgr->GetRelationUser()->GetRelations();
+		return *(const RelationSet*)m_pRelationMgr;
 	}
 
-	static RelationSet rs;
-	return rs;
+	static CObjectRelationMgr s_ObjectRelationMgr;
+	return *(const RelationSet*)&s_ObjectRelationMgr;
 }
 
 
@@ -3466,8 +3502,9 @@ void CAI::UpdateSensingMembers()
 	m_bUpdateNodes = LTTRUE;
 
 	// It is OK to update the target's visibility if new sense info has come in.
+	// RETAIL: Tron posts the command to all its targets (0x1012fe32)
 
-	m_pTarget->SetCanUpdateVisibility( LTTRUE );
+	m_pTronUnknown1010->PostCommand( SetAllowUpdate( true ) );
 }
 
 // ----------------------------------------------------------------------- //
@@ -3744,10 +3781,45 @@ void CAI::UpdateOnGround()
 
 void CAI::UpdateState()
 {
-	// PORT: Tron's UpdateState (retail 0x10130330) first, while look-at
-	// tracking is on, finds the nearest player and tracks it ("TrackLookAt")
-	// within a distance kept by CAIButeMgr (its +0x1184, not yet in ours),
-	// else stops unless talking (SetTalkLock(false) or "TrackNone").
+	// RETAIL: Tron's (0x10130336): while the AI looks at the player it talks
+	// to, it keeps looking while a player is near, else stops (and lets go of
+	// the talk lock when it does not talk).
+
+	if ( m_bTalkLock )
+	{
+		LTFLOAT fMinDist = FLT_MAX;
+		int iPlayer = 0;
+		CPlayerObj* pPlayer;
+		while ( (pPlayer = g_pCharacterMgr->FindPlayer( iPlayer )) != LTNULL )
+		{
+			++iPlayer;
+
+			LTVector vPlayerPos;
+			g_pLTServer->GetObjectPos( pPlayer->GetUserObject(), &vPlayerPos );
+
+			LTVector vDiff = vPlayerPos - GetPosition();
+			LTFLOAT fDist = vDiff.Length();
+			if ( fDist < fMinDist )
+			{
+				fMinDist = fDist;
+			}
+		}
+
+		if ( fMinDist <= g_pAIButeMgr->GetRules()->fTalkToPlayerCleanupDist )
+		{
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
+			m_bTalkLookAt = true;
+		}
+		else if ( !IsPlayingDialogSound() && !m_hDialogueObject )
+		{
+			SetTalkLock( false );
+		}
+		else
+		{
+			m_bTalkLookAt = false;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+		}
+	}
 
     if ( m_hstrNextStateMessage && g_pLTServer->GetTime() >= m_fNextStateTime )
 	{
@@ -4174,10 +4246,24 @@ HMODELSOCKET CAI::GetWeaponSocket(CWeapon* pWeapon)
 
 	AIASSERT( pSelectedAttachment, m_hObject, "GetWeaponSocket: Position not found" );
 
+	// RETAIL: Tron returns no socket when the weapon has no position
+	// (0x1013155e)
+	if ( !pSelectedAttachment )
+	{
+		return INVALID_MODEL_SOCKET;
+	}
+
 	// Retreive the socket based on the attachment name
 	HMODELSOCKET hSocket;
 	LTRESULT SocketResult = g_pModelLT->GetSocket(m_hObject, const_cast<char*>(pSelectedAttachment->GetName()), hSocket);
-	AIASSERT( SocketResult == LT_OK, m_hObject, "GetWeaponSocket: Unable to get socket for transform" );
+	if ( SocketResult != LT_OK )
+	{
+		// RETAIL: Tron gets the model's name here (0x101315b2), for a
+		// message its final build does not show
+		char szModel[128] = { 0 };
+		g_pModelLT->GetModelDBFilename( m_hObject, szModel, sizeof(szModel) );
+		AIASSERT( SocketResult == LT_OK, m_hObject, "GetWeaponSocket: Unable to get socket for transform" );
+	}
 	
 	return hSocket;
 }
@@ -5675,6 +5761,10 @@ char* CAI::GetDeathSound()
 		case kState_BodyExplode:
 			return ::GetSound(this, kAIS_Explode);
 
+		// RETAIL: 0x10134aae
+		case kState_BodyPranksterImplode:
+			return ::GetSound(this, kAIS_PranksterBit);
+
 		default:
 			return ::GetSound(this, kAIS_Death);
 	}
@@ -5847,7 +5937,7 @@ void CAI::UpdateTarget()
 		return;
 	}
 
-	m_pTarget->UpdateVisibility();
+	// RETAIL: no visibility update here (0x10134ee8)
 
 	m_pTarget->UpdatePush( pCharacter );
 

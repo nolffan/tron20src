@@ -186,7 +186,8 @@ void AINodeSensing::ReadProp(ObjectCreateStruct* pocs)
 
 	if( m_nTemplateID >= 0 )
 	{
-		AIBM_Template* pTemplate = g_pAIButeMgr->GetTemplate( m_nTemplateID );
+		// RETAIL: Tron checks the template's id
+		AIBM_Template* pTemplate = ( m_nTemplateID >= 0 && m_nTemplateID < g_pAIButeMgr->GetNumTemplates() ) ? g_pAIButeMgr->GetTemplate( m_nTemplateID ) : LTNULL;
 		if( pTemplate )
 		{
 			// Set flags for stimuli that this node responds to.
@@ -547,7 +548,8 @@ uint32 AINodeSensing::EngineMessageFn(uint32 messageID, void *pv, LTFLOAT fData)
 
 void AINodeSensing::InitialUpdate()
 {
-	AIBM_Template* pTemplate = g_pAIButeMgr->GetTemplate( m_nTemplateID );
+	// RETAIL: Tron checks the template's id (0x1021f2b9)
+	AIBM_Template* pTemplate = ( m_nTemplateID >= 0 && m_nTemplateID < g_pAIButeMgr->GetNumTemplates() ) ? g_pAIButeMgr->GetTemplate( m_nTemplateID ) : LTNULL;
 	if( pTemplate )
 	{
 		const char* const pszAlignment = pTemplate->szAlignment;
@@ -607,13 +609,16 @@ void AINodeSensing::CopySense(CAI* pAI)
 
 const RelationSet& AINodeSensing::GetSenseRelationSet() const
 {
+	// RETAIL: Tron's IAISensing slot returns the relation manager itself
+	// (0x1021f410), as TronTurret's does: a static CObjectRelationMgr when
+	// there is none.
 	if( m_pRelationMgr )
 	{
-		return m_pRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
+		return *(const RelationSet*)m_pRelationMgr;
 	}
 
-	static RelationSet rs;
-	return rs;
+	static CObjectRelationMgr s_ObjectRelationMgr;
+	return *(const RelationSet*)&s_ObjectRelationMgr;
 }
 
 // ----------------------------------------------------------------------- //
