@@ -39,6 +39,7 @@ struct CHARCREATESTRUCT : public SFXCREATESTRUCT
 		eZzz			= 0x04,
 		eCigarette		= 0x08,
 		eCigaretteSmoke	= 0x10,
+		eTronTalkIcon	= 0x20,	// RETAIL: Tron's (CCharacterFX::Update, 0x10175248); the name is ours
 	};
 
 	CHARCREATESTRUCT() { Clear(); }

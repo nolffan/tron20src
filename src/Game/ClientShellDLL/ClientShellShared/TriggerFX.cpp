@@ -24,16 +24,8 @@
 #define	TRIGFX_DIMS_MODEL	"Models\\1x1_square.ltb"
 #define TRIGFX_DIMS_SKIN	"Models\\1x1_square.dtx"
 
-static bool TriggerDimsFilterFn( HOBJECT hTest, void *pUserData )
-{
-	if( hTest == (HOBJECT)pUserData )
-		return true;
-
-	if( IsMainWorld( hTest ) || (GetObjectType( hTest ) == OT_WORLDMODEL) )
-		return true;
-
-	return false;
-}
+// RETAIL: Tron's (0x101bf700) comes after CalcLocalClientDistance
+static bool TriggerDimsFilterFn( HOBJECT hTest, void *pUserData );
 
 // ----------------------------------------------------------------------- //
 //
@@ -261,7 +253,10 @@ void CTriggerFX::CalcLocalClientDistance()
 
 		IQuery.m_From		= vPlayerPos + (vDir * fMinDist);
 		IQuery.m_To			= IQuery.m_From + (vDir * fMaxDist);
-		IQuery.m_Flags		= INTERSECT_OBJECTS | INTERSECT_HPOLY | IGNORE_NONSOLID;
+		// RETAIL: Tron's (0x101bf640) intersects the dims object only
+		IQuery.m_Flags		= INTERSECT_OBJECTS;
+		IQuery.m_FilterFn	= TriggerDimsFilterFn;
+		IQuery.m_pUserData	= m_hDimsObject;
 				
 		// We need to recieve rayhits for this intersect call...
 
@@ -281,6 +276,24 @@ void CTriggerFX::CalcLocalClientDistance()
 		
 		g_pCommonLT->SetObjectFlags( m_hDimsObject, OFT_Flags, 0, FLAG_RAYHIT );
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TriggerDimsFilterFn
+//
+//	PURPOSE:	Only the trigger's dims object blocks the segment.
+//				RETAIL: Tron's (0x101bf700); NOLF2's also lets the world
+//				models through
+//
+// ----------------------------------------------------------------------- //
+
+static bool TriggerDimsFilterFn( HOBJECT hTest, void *pUserData )
+{
+	if( hTest == (HOBJECT)pUserData )
+		return true;
+
+	return false;
 }
 
 // ----------------------------------------------------------------------- //

@@ -40,7 +40,7 @@ CRadarObjectFX::CRadarObjectFX( )
 
 CRadarObjectFX::~CRadarObjectFX( )
 {
-	if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
+	// RETAIL: Tron's (0x101bfd80) has no radar to remove the object from
 }
 
 // ----------------------------------------------------------------------- //
@@ -62,12 +62,8 @@ LTBOOL CRadarObjectFX::Init( HLOCALOBJ hServObj, ILTMessage_Read *pMsg )
 	m_cs.hServerObj = hServObj;
 	m_cs.Read( pMsg );
 
-	// If the object is supposed to start on add it to the radar immediately...
-
-	if( m_cs.bOn )
-	{
-		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
-	}
+	// RETAIL: Tron's (0x101bfdb0) only reads the create struct: it has no
+	// radar to add the object to
 
 	return LTTRUE;
 }
@@ -87,17 +83,8 @@ LTBOOL CRadarObjectFX::OnServerMessage( ILTMessage_Read *pMsg )
 
 	m_cs.Read( pMsg );
 
-	// See if we should add the object to the radar or remove it...
-	
-	if( m_cs.bOn )
-	{
-		if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
-		if (g_pRadar) g_pRadar->AddObject( m_hServerObject, m_cs.nRadarTypeId, m_cs.nTeamId );
-	}
-	else
-	{
-		if (g_pRadar) g_pRadar->RemoveObject( m_hServerObject );
-	}
+	// RETAIL: Tron's (0x101bfe10) only reads the create struct: it has no
+	// radar to update
 
 	return LTTRUE;
 }

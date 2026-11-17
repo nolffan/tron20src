@@ -188,6 +188,10 @@ SOURCE=.\BaseScreenLightCycle.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientFXAndActivateTypeFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -426,6 +430,10 @@ SOURCE=.\LibraryCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -452,6 +460,10 @@ SOURCE=.\MenuHelp.cpp
 # Begin Source File
 
 SOURCE=.\MenuPieceModel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\PranksterProjectileFX.cpp
 # End Source File
 # Begin Source File
 
@@ -762,6 +774,10 @@ SOURCE=.\ClientFxUserFX.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientFXAndActivateTypeFX.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientLightCycleMgr.h
 # End Source File
 # Begin Source File
@@ -946,6 +962,10 @@ SOURCE=.\LibraryCtrl.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleFX.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.h
 # End Source File
 # Begin Source File
@@ -963,6 +983,10 @@ SOURCE=.\LTGUIListItemCtrl.h
 # Begin Source File
 
 SOURCE=.\MenuPieceModel.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\PranksterProjectileFX.h
 # End Source File
 # Begin Source File
 

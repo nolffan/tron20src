@@ -239,8 +239,9 @@ void CTronInterfaceMgr::ShowChatInput(uint8 nChatType)
 			pWeaponChooser->Close();
 		}
 
-		// PORT: retail passes nChatType to the chat input (0x101660b0)
-		g_pChatInput->Show(true, nChatType == 2);
+		// RETAIL: the chat type goes to the chat input first (0x1009d32d)
+		g_pChatInput->SetChatType(nChatType);
+		g_pChatInput->Show(true);
 	}
 }
 

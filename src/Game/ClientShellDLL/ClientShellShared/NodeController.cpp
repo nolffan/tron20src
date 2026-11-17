@@ -31,6 +31,7 @@
 
 VarTrack	g_vtLipFlapMaxRot;
 VarTrack	g_vtLipFlapFreq;
+VarTrack	g_vtDebugLipFlap;	// RETAIL: Tron's ("DebugLipFlap", 0x10184a20)
 VarTrack	g_vtDisableLipFlap;
 
 // ----------------------------------------------------------------------- //
@@ -78,6 +79,11 @@ LTBOOL CNodeController::Init(CCharacterFX* pCharacterFX)
 	if (!g_vtLipFlapFreq.IsInitted())
 	{
         g_vtLipFlapFreq.Init(g_pLTClient, "LipFlapFreq", NULL, 20.0f);
+	}
+
+	if (!g_vtDebugLipFlap.IsInitted())
+	{
+        g_vtDebugLipFlap.Init(g_pLTClient, "DebugLipFlap", NULL, 0.0f);
 	}
 
 	if (!g_vtDisableLipFlap.IsInitted())
@@ -438,7 +444,17 @@ void CNodeController::HandleNodeControlLipFlap( char const* pszSoundFile, LTFLOA
 	if (g_vtDisableLipFlap.GetFloat())
 		return;
 
+	// RETAIL: Tron's (0x10185790) reports its steps while DebugLipFlap is set
+	if (g_vtDebugLipFlap.GetFloat())
+		g_pLTClient->CPrint("Debug LipFlap: Entering CNodeController::HandleNodeControlLipFlap(pszSoundFile = %s, fRadius = %2.2f)", pszSoundFile, fRadius);
+
+	if (g_vtDebugLipFlap.GetFloat())
+		g_pLTClient->CPrint("Debug LipFlap: calling: 'g_pModelButeMgr->GetSkeletonNode()'");
+
  	ModelNode eModelNode = g_pModelButeMgr->GetSkeletonNode(m_pCharacterFX->GetModelSkeleton(), "Face_Jaw");
+
+	if (g_vtDebugLipFlap.GetFloat())
+		g_pLTClient->CPrint("Debug LipFlap: made it past call to 'g_pModelButeMgr->GetSkeletonNode()'");
 
 	// See if we are already controlling the jaw node
 
@@ -456,6 +472,9 @@ void CNodeController::HandleNodeControlLipFlap( char const* pszSoundFile, LTFLOA
 		{
 			if ( m_hSound )
 			{
+				if (g_vtDebugLipFlap.GetFloat())
+					g_pLTClient->CPrint("Debug LipFlap: calling first 'KillLipSyncSound( false )'");
+
 				KillLipSyncSound( false );
 			}
 
@@ -477,10 +496,17 @@ void CNodeController::HandleNodeControlLipFlap( char const* pszSoundFile, LTFLOA
 
 	if ( m_hSound )
 	{
+		if (g_vtDebugLipFlap.GetFloat())
+			g_pLTClient->CPrint("Debug LipFlap: calling second 'KillLipSyncSound( false )'");
+
 		KillLipSyncSound( false );
 	}
 
 	NCSTRUCT* pNodeControl = &m_aNodeControls[iNodeControl];
+
+	if (g_vtDebugLipFlap.GetFloat())
+		g_pLTClient->CPrint("Debug LipFlap: setting pNodeControl = %d", pNodeControl);
+
 	pNodeControl->eControl = eControlLipFlap;
 	pNodeControl->eModelNode = eModelNode;
 
@@ -488,10 +514,17 @@ void CNodeController::HandleNodeControlLipFlap( char const* pszSoundFile, LTFLOA
 
 	ResetSoundBufferData();
 
+	if (g_vtDebugLipFlap.GetFloat())
+		g_pLTClient->CPrint("Debug LipFlap: calling 'm_pCharacterFX->PlayLipSyncSound()'");
+
 	// Start the sound.
+	// PORT: Tron's PlayLipSyncSound takes three arguments (0x10185a31)
 	m_hSound = m_pCharacterFX->PlayLipSyncSound(szSound, fRadius, bSubtitles, m_bSubtitlePriority);
 	if( m_hSound == NULL )
 	{
+		if (g_vtDebugLipFlap.GetFloat())
+			g_pLTClient->CPrint("Debug LipFlap: calling third 'KillLipSyncSound( false )'");
+
 		KillLipSyncSound( true );
 		return;
 	}

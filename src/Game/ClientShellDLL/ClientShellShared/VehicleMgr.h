@@ -97,6 +97,13 @@ class CVehicleMgr
 	void		KillLightCycleSounds();
 	void		ShutdownLightCycleFX();
 	void		ResetLightCyclePhysics();
+	// RETAIL: Tron's light cycle FX (0x10122280, 0x10122350, 0x10122420,
+	// 0x101224f0, 0x101225d0; names ours)
+	void		CreateTronUnknownFX213c(const char* pszFX);
+	void		CreateTronUnknownFX2140(const char* pszFX);
+	void		CreateTronUnknownFX2144(const char* pszFX);
+	void		CreateTronUnknownFX2148(const char* pszFX, const LTVector &vOffset);
+	void		ShowTronUnknownFX2138(HOBJECT hObj, bool bShow);
 	uint32		GetPlayerLureId( ) { return m_nPlayerLureId; }
 
 	float		GetVehicleContourRoll() const { return m_ePPhysicsModel == PPM_SNOWMOBILE ? m_fContourRoll : 0.0f; }

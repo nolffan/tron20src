@@ -83,6 +83,24 @@ bool BloodSplatFilterFn(HOBJECT hTest, void *pUserData)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	GetRicochetFX
+//
+//	PURPOSE:	The impact fx of the ammo's projectile's ricochet.
+//				RETAIL: Tron's (0x1018e030; the name is ours): CreateObject,
+//				CreateMark and CreateWeaponSpecificFX call it
+//
+// ----------------------------------------------------------------------- //
+
+IMPACTFX* GetRicochetFX(AMMO const* pAmmo)
+{
+	if (!pAmmo) return LTNULL;
+	if (!pAmmo->pProjectileFX) return LTNULL;
+
+	return g_pFXButeMgr->GetImpactFX(pAmmo->pProjectileFX->szRicochetFXName);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CWeaponFX::Init
 //
 //	PURPOSE:	Init the weapon fx
@@ -943,11 +961,8 @@ void CWeaponFX::CreateWeaponSpecificFX()
 		else if ( IMPACT_TYPE_RICOCHET == m_eImpactType )
 		{
 			// Create a ricochet weapon fx...
-			ASSERT( 0 != m_pAmmo->pProjectileFX );
-			IMPACTFX *pRicochetFX =
-				g_pFXButeMgr->GetImpactFX(
-					m_pAmmo->pProjectileFX->szRicochetFXName
-				);
+			// RETAIL: Tron's asks its helper (0x10190961)
+			IMPACTFX *pRicochetFX = GetRicochetFX( m_pAmmo );
 			g_pFXButeMgr->CreateImpactFX(pRicochetFX, cs);
 		}
 		else if ( IMPACT_TYPE_BLOCKED == m_eImpactType )

@@ -60,6 +60,11 @@ class CProjectileFX : public CSpecialFX
             m_bAltFire      = LTFALSE;
 
             m_pProjectileFX = LTNULL;
+
+			// RETAIL: Tron's clears the vectors too (CSFXMgr's bank,
+			// 0x10109e4b; CPranksterProjectileFX's, 0x101bff3c)
+			m_vFirePos.Init();
+			m_vPath.Init();
 		}
 
 		~CProjectileFX()
@@ -71,6 +76,7 @@ class CProjectileFX : public CSpecialFX
         virtual LTBOOL Init(SFXCREATESTRUCT* psfxCreateStruct);
         virtual LTBOOL CreateObject(ILTClient* pClientDE);
         virtual LTBOOL Update();
+		virtual LTBOOL OnServerMessage(ILTMessage_Read *pMsg);	// RETAIL: Tron's (0x101a1ee0)
 
 		void HandleTouch(CollisionInfo *pInfo);
 

@@ -425,6 +425,7 @@ bool CClientFXDB::ReadFXProp( bool bText, ILTStream* pFxFile, FX_PROP& fxProp )
 		// Read in the name
 
 		pFxFile->Read(&fxProp.m_sName, nameLen);
+		fxProp.m_sName[nameLen] = 0;	// RETAIL: Tron's (0x10181e97)
 
 		// Read the type
 
