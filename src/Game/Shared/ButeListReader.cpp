@@ -174,10 +174,12 @@ void CButeListReader::SetItem(uint8 iItem, const char* szItem, const uint32 nStr
 		ASSERT( 0 == m_szItems );
 		m_cItems = 1;
 		m_szItems = debug_newa(char*, 1);
-		m_szItems[0] = debug_newa(char, strlen(szItem) + 1);
+		// RETAIL: Tron's (CShell 0x100c49d0) sizes the item by the length
+		// given and copies within it
+		m_szItems[0] = debug_newa(char, nStrLen + 1);
+		m_szItems[0][0] = 0;
 	}
 
 	ASSERT(iItem < m_cItems);
-	ASSERT(strlen(szItem) < nStrLen);
-	strcpy(m_szItems[iItem], szItem);
+	LTStrCpy(m_szItems[iItem], szItem, nStrLen);
 }
