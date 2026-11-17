@@ -3748,7 +3748,8 @@ bool CClientWeapon::PlayFireAnimation( bool bResetAni )
 			// is true and we have ammo (i.e., they are holding down the fire key).  
 			// Else, if we have a post-fire ani, play it...
 		
-			if ( bResetAni && g_pPlayerStats->GetAmmoCount(m_nAmmoId) > 0 )
+			// RETAIL: Tron's asks a virtual (0x164) whether there's ammo
+			if ( bResetAni && TronUnknownVirtual164() )
 			{
 				PlayAnimation( dwFireAni, true, fRate );
 				return true;
@@ -3759,26 +3760,8 @@ bool CClientWeapon::PlayFireAnimation( bool bResetAni )
 				return true;
 			}
 		}
-		else if( bIsPostFireAni )
-		{
-			// We just finished playing the post-fire ani, start the cycle again if bResetAni
-			// is true and we have ammo (i.e., they are holding down the fire key).  
-			
-			if( bResetAni && g_pPlayerStats->GetAmmoCount(m_nAmmoId) > 0  )
-			{
-				if( bHasPreFireAni )
-				{
-					PlayAnimation( dwPreFireAni, true, fRate );
-					return true;
-				}
-				else if( bHasFireAni )
-				{
-					PlayAnimation( dwFireAni, true, fRate );
-					return true;
-				}
-			}
-
-		}
+		// RETAIL: Tron's (0x10133460) has no post-fire case: it still asks
+		// IsPostFireAni but doesn't use the answer
 	}
 
 	// If we got here, it means we're done firing...
@@ -5648,33 +5631,10 @@ bool CClientWeapon::SpecialOverrideFire()
 				g_pCommonLT->GetObjectFlags( iInfo.m_hObject, OFT_User, dwUsrFlgs );
 
 				// Check to see if the object we hit can have a bomb placed on it...
+				// RETAIL: Tron's (0x10135450) doesn't check the team
 				if( dwUsrFlgs & USRFLG_GADGET_BOMBABLE )
 				{
-					// We can only place the bomb here if it belongs to our team...
-
-					if( IsTeamGameType() )
-					{
-						// Check the team identifier on the gadget to see if it matches our team...
-
-						CGadgetTargetFX *pGadget = dynamic_cast<CGadgetTargetFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_GADGETTARGET_ID, iInfo.m_hObject ));
-						if( !pGadget )
-							return false;
-
-						CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-						if( !pLocalCI )
-							return false;
-
-						if( pGadget->GetTeamID() != INVALID_TEAM )
-						{
-							// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-							if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pGadget->GetTeamID() )
-								return true;
-						}
-					}
-					else
-					{
-						return true;
-					}
+					return true;
 				}
 			}
 		}
@@ -5682,7 +5642,8 @@ bool CClientWeapon::SpecialOverrideFire()
 		return false;
 	}
 
-	return true;
+	// RETAIL: Tron's asks a virtual (0x164) whether it can fire
+	return TronUnknownVirtual164() ? true : false;
 }
 
 
