@@ -76,6 +76,9 @@ CTronPlayerStats::CTronPlayerStats()
 	m_fVirusArmor		= 0.0f;
 
 	memset(m_nSkills,0,sizeof(m_nSkills));
+
+	// RETAIL: Tron's (0x100a91cf)
+	m_bTronUnknown2404 = false;
 }
 
 // ----------------------------------------------------------------------- //
