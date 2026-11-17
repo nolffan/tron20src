@@ -23,6 +23,8 @@ class CAIGoalAttackFromRandomVantage : public CAIGoalAttackFromVantage
 
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackFromRandomVantage, kGoal_AttackFromRandomVantage);
 
+		CAIGoalAttackFromRandomVantage( );
+
 		// Attractor Handling.
 
 		virtual AINode* FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr);
