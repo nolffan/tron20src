@@ -427,17 +427,9 @@ void CNodeController::HandleNodeControlLipSyncMessage(ILTMessage_Read *pMsg)
     HSTRING hSoundFile = pMsg->ReadHString();
     LTFLOAT fRadius = pMsg->Readfloat();
 	m_nUniqueDialogueId = pMsg->Readuint8( );
-	CharacterSoundType cst = (CharacterSoundType)pMsg->Readuint8( );
 
-	m_bSubtitlePriority = (cst == CST_DIALOG);
-	bool bCensor = (cst == CST_DEATH) || (cst == CST_DAMAGE);
-
-	if (bCensor && g_pVersionMgr->IsLowViolence())
-	{
-		//don't play the sound, but do notify the server that we're done with it
-		KillLipSyncSound( true );
-		return;
-	}
+	// RETAIL: 0x10185720: Tron's message has no sound type, and there is
+	// no low violence test
 
 	char const* pszSoundFile = g_pLTClient->GetStringData(hSoundFile);
 
