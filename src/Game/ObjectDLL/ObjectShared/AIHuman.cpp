@@ -1333,8 +1333,12 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	{
 		if( DamageTypeToFlag( DT_BLASTER ) & dfLast )
 		{
-			if( ( ( ( m_fTronUnknown11E8 > 0.0f ) ? m_fTronUnknown11E8 : g_pLTServer->GetTime() ) - m_fTronUnknown11E0 < m_fTronUnknown11E4 ) &&
-				( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - ( ( m_fTronUnknown11E8 > 0.0f ) ? m_fTronUnknown11E8 : g_pLTServer->GetTime() ) != 0.0f ) )
+			if( !( ( m_fTronUnknown11E8 > 0.0f ) ?
+					( m_fTronUnknown11E8 - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) :
+					( g_pLTServer->GetTime() - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) ) &&
+				( ( ( m_fTronUnknown11E8 > 0.0f ) ?
+					( ( m_fTronUnknown11E4 + m_fTronUnknown11E0 ) - m_fTronUnknown11E8 ) :
+					( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - g_pLTServer->GetTime() ) ) != 0.0f ) )
 			{
 				return;
 			}
