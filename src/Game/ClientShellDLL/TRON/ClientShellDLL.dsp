@@ -188,6 +188,10 @@ SOURCE=.\BaseScreenLightCycle.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ClientFXAndActivateTypeFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ClientWeaponBall.cpp
 # End Source File
 # Begin Source File
@@ -455,6 +459,10 @@ SOURCE=.\MenuPieceModel.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\PranksterProjectileFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.cpp
 # SUBTRACT CPP /YX /Yc /Yu
 # End Source File
@@ -648,6 +656,10 @@ SOURCE=.\ScreenSubroutines.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\SpectatorObjectFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -743,6 +755,10 @@ SOURCE=.\BaseScreenLightCycle.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientFXAndActivateTypeFX.h
 # End Source File
 # Begin Source File
 
@@ -950,6 +966,10 @@ SOURCE=.\MenuPieceModel.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\PranksterProjectileFX.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\..\Engine\sdk\inc\iltbaseclass.h
 # End Source File
 # Begin Source File
@@ -1095,6 +1115,10 @@ SOURCE=.\ScreenSingle.h
 # Begin Source File
 
 SOURCE=.\ScreenWeaponControls.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObjectFX.h
 # End Source File
 # Begin Source File
 
