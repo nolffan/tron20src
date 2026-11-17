@@ -323,21 +323,12 @@ LTBOOL CAIGoalAttackFromView::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord
 		// Need a weapon to activate an attack goal.
 		// AI is not already in this attack goal.
 
-		m_pAI->Target(pSenseRecord->hLastStimulusSource);
+		// RETAIL: 0x10213e02, Tron does not target the source here and has
+		// no relaxed time test.
+
 		CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
-		if( pAIHuman->HasTarget() && pAIHuman->HasWeapon( m_eWeaponType ) )
+		if( pSenseRecord->hLastStimulusSource && pAIHuman->HasWeapon( m_eWeaponType ) )
 		{
-			// If stimulus has no duration (meaning it lasts forever, i.e. visibile 
-			// stimuli like an open drawer), ignore if it occured before I 
-			// returned to a relaxed state.
-
-			if( pSenseRecord->pAIBM_Last_Stimulus && 
-				( pSenseRecord->pAIBM_Last_Stimulus->fDuration == 0.f ) &&
-				( m_pAI->GetLastRelaxedTime() > pSenseRecord->fLastStimulationTime ) )
-			{
-					return LTFALSE;
-			}
-
 			// Record whatever triggered this goal.
 			m_hStimulusSource = pSenseRecord->hLastStimulusSource;
 
