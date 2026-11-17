@@ -1008,7 +1008,8 @@ EnumAnimMovement CAnimationMgrList::GetAnimMovementFromName(const char* szName)
 	// Find group name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	ANIM_MOVEMENT_HASH::iterator it;
-	for(it = s_hashAnimMovement.lower_bound(ulHashKey); it != s_hashAnimMovement.upper_bound(ulHashKey); ++it)
+	ANIM_MOVEMENT_HASH::iterator itEnd = s_hashAnimMovement.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashAnimMovement.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimMovement[it->second]) == 0)
 		{
@@ -1036,7 +1037,8 @@ EnumAnimPropGroup CAnimationMgrList::GetPropGroupFromName(const char* szName)
 	// Find group name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	PROP_GROUP_HASH::iterator it;
-	for(it = s_hashPropGroup.lower_bound(ulHashKey); it != s_hashPropGroup.upper_bound(ulHashKey); ++it)
+	PROP_GROUP_HASH::iterator itEnd = s_hashPropGroup.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashPropGroup.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimPropGroup[it->second]) == 0)
 		{
@@ -1065,7 +1067,8 @@ EnumAnimProp CAnimationMgrList::GetPropFromName(const char* szName)
 	// Find prop name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	PROP_HASH::iterator it;
-	for(it = s_hashProp.lower_bound(ulHashKey); it != s_hashProp.upper_bound(ulHashKey); ++it)
+	PROP_HASH::iterator itEnd = s_hashProp.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashProp.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimProp[it->second]) == 0)
 		{
