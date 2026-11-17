@@ -22,6 +22,8 @@ class CTronWeaponChooser : public CWeaponChooser
 {
 public:
 
+	CTronWeaponChooser();	// RETAIL: 0x100afc50, out of line
+
 	virtual void	Init();
 
 	virtual bool	Open(uint8 nClass);

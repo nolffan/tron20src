@@ -98,6 +98,9 @@ public:
 	virtual bool	IsVisible() {return m_bVisible && m_bEnabled;}
 
 	HOBJECT GetObject() { return m_hObject; }
+	// the name is ours: escape hides the window only when it is set
+	// (CTronInterfaceMgr::OnKeyDown, retail 0x1009d2a7)
+	bool	GetTronUnknown4d() { return m_bTronUnknown4d; }
 	float	GetRadius() { return m_fRadius; }
 
 protected:

@@ -892,6 +892,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	m_pCircuitButeMgr = debug_new(CircuitButeMgr);
 	if (!m_pCircuitButeMgr || !m_pCircuitButeMgr->Init("Attributes\\Circuits.txt"))
 	{
+		g_pLTClient->ShutdownWithMessage("Could not init CircuitButeMgr!");
 		return LT_ERROR;
 	}
 
@@ -1005,47 +1006,14 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 
         if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
 		{
-			//alright, both of the above failed, so now we need to inform the user that we are unable
-			//to create a HWTnL device. This can be caused by them not having a TnL device, or by
-			//them not having DX8.1. We will let them choose if they want to exit or attempt to 
-			//create a SWTnL device
-			char pszNoTnLWarningBuff[512];
-			FormatString(IDS_APP_UNABLE_TO_CREATE_HW_TNL_DEVICE, pszNoTnLWarningBuff, sizeof(pszNoTnLWarningBuff), GAME_NAME);
+			// RETAIL: 0x100e304c: Tron offers no software TnL device: it
+			// shuts down (string 0x898)
+			char pszErrorBuffer[256];
+			FormatString(0x898, pszErrorBuffer, sizeof(pszErrorBuffer), GAME_NAME);
 
-			if(MessageBox(g_hMainWnd, pszNoTnLWarningBuff, GAME_NAME, MB_OKCANCEL) == IDCANCEL)
-			{
-				//alright, they canceled, so we need to just exit
-				g_pLTClient->DebugOut("User chose to not create software TnL device. Exiting.");
-				g_pLTClient->Shutdown();
-				return LT_ERROR;
-			}
-
-			g_pLTClient->DebugOut("Attempting to create software TnL device.");
-
-			//they want to continue, so create a software version
-			rMode.m_Width	= pMode->m_Width;
-			rMode.m_Height	= pMode->m_Height;
-			rMode.m_bHWTnL	= false;
-
-			if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
-			{
-				g_pLTClient->DebugOut("Failed to create default resoltution software TnL, falling back to 640x480");
-
-				rMode.m_Width	= 640;
-				rMode.m_Height	= 480;
-
-				if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
-				{
-					char pszErrorBuffer[256];
-					FormatString(IDS_APP_SHUTDOWN_1, pszErrorBuffer, sizeof(pszErrorBuffer), GAME_NAME);
-
-					// Okay, that didn't work, looks like we're stuck with software...
-					g_pLTClient->DebugOut(pszErrorBuffer);
-					g_pLTClient->ShutdownWithMessage(pszErrorBuffer);
-					return LT_ERROR;
-				}
-			}
-			WriteConsoleInt("HWTnLDisabled",1);
+			g_pLTClient->DebugOut(pszErrorBuffer);
+			g_pLTClient->ShutdownWithMessage(pszErrorBuffer);
+			return LT_ERROR;
 		}
 	}
 
@@ -1098,6 +1066,12 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		return LT_ERROR;
 	}
 
+	// RETAIL: 0x100e317e: the profile's game options apply here
+	if (g_pProfileMgr)
+	{
+		g_pProfileMgr->GetCurrentProfile()->ApplyGameOptions();
+	}
+
 	//We need to make sure to setup the camera for the FX Mgr
 	m_ClientFXMgr.SetCamera(GetPlayerMgr()->GetCamera());
 
@@ -1127,14 +1101,8 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	g_waterPhysicsState.m_fVelocityDampen = 0.25f;
 
 
-	// PORT: retail's ClientMultiplayerMgr is CTronGameClientShell's member
-	// (+0x35644, which sets g_pClientMultiplayerMgr); until it is there,
-	// NOLF2's allocation stands in (never freed, as the shell lives as
-	// long as the DLL)
-	if (!g_pClientMultiplayerMgr)
-	{
-		debug_new( ClientMultiplayerMgr );
-	}
+	// RETAIL: the ClientMultiplayerMgr is CTronGameClientShell's member
+	// (+0x35644, which sets g_pClientMultiplayerMgr): none is made here
 
 	// Init the special fx mgr...
 	if (!m_sfxMgr.Init(g_pLTClient))
@@ -1155,11 +1123,15 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	}
 	else
 	{
-		g_pClientMultiplayerMgr->SetModName( LoadTempString( IDS_RETAIL ) );
+		// RETAIL: the name itself, not a string resource (0x100e32f0)
+		g_pClientMultiplayerMgr->SetModName( "Retail" );
 	}	
 
 	// Process command line.
 
+	// RETAIL: 0x100e333a..: Tron's command line.  Its host and runworld
+	// start the given world through the mission manager; no mission file
+	// is chosen by game type
 	if (hVar = g_pLTClient->GetConsoleVar("join")) // looking for join [ip] format
 	{
 		g_pInterfaceMgr->SetCommandLineJoin( true );
@@ -1167,76 +1139,22 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		// Change to the splash screen.  We'll start the game after that.
 		GetInterfaceMgr( )->ChangeState(GS_SPLASHSCREEN);
 	}
-	else if (hVar = g_pLTClient->GetConsoleVar("host")) // looking for host [1] format
+	else if (hVar = g_pLTClient->GetConsoleVar("host")) // looking for host [world] format
 	{
-		int nHost = atoi(g_pLTClient->GetVarValueString( hVar ));
-		
-		// Use the settings from the current profile to determine what the game will be...
+		const char* pWorld = g_pLTClient->GetVarValueString( hVar );
 
-		CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile( );
-		if( nHost && pProfile )
+		if (g_pClientMultiplayerMgr->SetupServerHost(0) && GetMissionMgr()->StartGameFromLevel(pWorld))
 		{
-			bool bOk = true;
-
-			// Initialize the mission mgr with the appropriate file based on game type...
-
-			std::string sMissionFile;
-			switch( (*g_pServerOptionMgr->GetCurrent()).m_eGameType )
-			{
-				case eGameTypeCooperative:
-				{
-					sMissionFile = MISSION_COOP_FILE;
-				}
-				break;
-
-				case eGameTypeDeathmatch:
-				case eGameTypeTeamDeathmatch:
-				{
-					sMissionFile = MISSION_DM_FILE;
-				}
-				break;
-
-				case eGameTypeDoomsDay:
-				{
-					sMissionFile = MISSION_DD_FILE;
-				}
-				break;
-
-				case eGameTypeSingle:
-				default:
-				{
-					sMissionFile = MISSION_DEFAULT_FILE;
-					bOk = false;
-				}
-				break;
-			}
-
-			if( !g_pMissionButeMgr->Init( sMissionFile.c_str() ))
-			{
-				g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", sMissionFile.c_str() );
-				return LT_ERROR;
-			}
-
-			// Start the server..
-
-			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( (*g_pServerOptionMgr->GetCurrent()).m_nPort );
-			bOk = bOk && g_pMissionMgr->StartGameNew();
-			
-			if( !bOk )
-			{
-				// drop them into the host menu
-				GetInterfaceMgr( )->LoadFailed();
-				GetInterfaceMgr( )->SwitchToScreen(SCREEN_ID_HOST);
-
-				MBCreate mb;
-				GetInterfaceMgr( )->ShowMessageBox(IDS_NOLOADLEVEL,&mb);
-			}
+			GetInterfaceMgr( )->ChangeState(GS_LOADINGLEVEL);
 		}
 		else
 		{
-			// Just treat like normal game...
-			
-			GetInterfaceMgr( )->ChangeState(GS_SPLASHSCREEN);
+			// drop them into the host menu
+			GetInterfaceMgr( )->LoadFailed();
+			GetInterfaceMgr( )->SwitchToScreen(SCREEN_ID_HOST);
+
+			MBCreate mb;
+			GetInterfaceMgr( )->ShowMessageBox(0x388,&mb);	// RETAIL: Tron's string
 		}
 	}
 	else if (hVar = g_pLTClient->GetConsoleVar("runworld"))
@@ -1256,11 +1174,9 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
   		}
 
 		g_pClientSaveLoadMgr->SetUseMultiplayerFolders( false );
-		bool bOk = g_pClientMultiplayerMgr->SetupServerSinglePlayer( );
-		bOk = bOk && g_pMissionMgr->StartGameFromLevel(pMap);
-		if( !bOk )
+		if( !g_pClientMultiplayerMgr->SetupServerSinglePlayer( ) || !GetMissionMgr()->StartGameFromLevel(pMap) )
 		{
-			g_pLTClient->ShutdownWithMessage(LoadTempString(IDS_NOLOADLEVEL));
+			g_pLTClient->ShutdownWithMessage(LoadTempString(0x388));
 			return LT_ERROR;
 		}
 	}
@@ -1336,6 +1252,9 @@ void CGameClientShell::OnEngineTerm()
 		debug_delete( m_pCircuitButeMgr );
 		m_pCircuitButeMgr = NULL;
 	}
+
+	// RETAIL: 0x100e3692: InitClientShell's counterpart
+	TermClientShell();
 }
 
 // ----------------------------------------------------------------------- //
@@ -2067,9 +1986,8 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 	if( key >= 0xFF )
 		return;
 
-	// The engine handles the VK_F8 key for screenshots.
-	if( key == VK_F8 )
-		return;
+	// RETAIL: 0x100e3f90: Tron's has no VK_F8 test, and its quick save is
+	// F5
 
 	//if we are performance testing...
 	if (IsRunningPerformanceTest())
@@ -2082,75 +2000,9 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 		return;
 	}
 
-	if (key == VK_TOGGLE_SCREENSHOTMODE)
+	// The developer keys do nothing in the final build
+	if (key == VK_TOGGLE_SCREENSHOTMODE || key == VK_WRITE_CAM_POS || key == VK_MAKE_CUBIC_ENVMAP)
 	{
-#ifndef _FINAL
-		g_bScreenShotMode = !g_bScreenShotMode;
-
-		bool bDrawHUD = !g_bScreenShotMode; // && GetPlayerMgr()->IsSpectatorMode());
-		if (bDrawHUD)
-		{
-			GetInterfaceMgr( )->SetHUDRenderLevel(kHUDRenderFull);
-		}
-		else
-		{
-			GetInterfaceMgr( )->SetHUDRenderLevel(kHUDRenderNone);
-		}
-
-        g_pLTClient->CPrint("Screen shot mode: %s", g_bScreenShotMode ? "ON" : "OFF");
-#endif
-		return;
-	}
-
-	if (key == VK_TOGGLE_SPECTATOR_MODE)
-	{
-#ifndef _FINAL
-		char *pCheat = "mpclip";
-		g_pCheatMgr->Check(CParsedMsg( 1, &pCheat ));
-#endif
-		return;
-	}
-
-	if (key == VK_TOGGLE_GHOST_MODE)
-	{
-#ifndef _FINAL
-		char *pCheat = "mppoltergeist";
-		g_pCheatMgr->Check(CParsedMsg( 1, &pCheat ));
-#endif
-		return;
-	}
-
-#ifndef _DEMO
-#ifndef _FINAL
-	if (key == VK_MULTIPLY)
-	{
-		static bool g_bCycleOn = false;
-		g_bCycleOn = !g_bCycleOn;
-		if(g_bCycleOn)
-		{
-			g_pLTClient->RunConsoleString("cmd msg player StartLightCycle");
-		}
-		else
-		{
-			g_pLTClient->RunConsoleString("cmd msg player EndLightCycle");
-		}
-	}
-#endif
-#endif
-
-	if (key == VK_WRITE_CAM_POS)
-	{
-#ifndef _FINAL
-		DebugWriteCameraPosition();
-#endif
-		return;
-	}
-
-	if (key == VK_MAKE_CUBIC_ENVMAP)
-	{
-#ifndef _FINAL
-		g_pLTClient->MakeCubicEnvMap(GetPlayerMgr()->GetCamera(), (uint32)(g_vtMakeCubicEnvMapSize.GetFloat(256.0f) + 0.5f), g_vtMakeCubicEnvMapName.GetStr("CubicEnvMap"));
-#endif
 		return;
 	}
 
@@ -2169,6 +2021,9 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 		if (GS_SCREEN == eGameState && SCREEN_ID_POSTLOAD == g_pInterfaceMgr->GetScreenMgr()->GetCurrentScreenID() )
 			return;
 
+		// RETAIL: and not while the interface says no (its slot 0x54)
+		if (!GetInterfaceMgr()->TronUnknownVirtual54())
+			return;
 
 		// Check if we can do a load.
 		if( g_pClientSaveLoadMgr->CanLoadGame( ) && g_pClientSaveLoadMgr->QuickSaveExists( ))
@@ -2180,12 +2035,13 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 				mb.eType = LTMB_YESNO;
 				mb.pFn = QuickLoadCallBack;
 				mb.pData = this;
-				g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
+				g_pInterfaceMgr->ShowMessageBox(0x38e,&mb);	// RETAIL: Tron's string
 			}
 			else
 			{
-				//if mission bute mgr is not initialized
-				if (!g_pMissionButeMgr->GetAttributeFile( ) || !strlen(g_pMissionButeMgr->GetAttributeFile( )))
+				// RETAIL: the single player missions unless they are loaded
+				char const* pszFile = g_pMissionButeMgr->GetAttributeFile( );
+				if (!pszFile || !strlen(pszFile) || (strlen(pszFile) && stricmp(pszFile, MISSION_DEFAULT_FILE)))
 				{
 					// Initialize to the sp mission bute.
 					if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
@@ -2195,28 +2051,35 @@ void CGameClientShell::OnKeyDown(int key, int rep)
   					}
 				}
 
-				g_pMissionMgr->StartGameFromQuickSave( );
+				GetMissionMgr()->StartGameFromQuickSave( );
 			}
 		}
 		return;
 	}
-	else if( key == VK_F6 )
+	else if( key == VK_F5 )
 	{
 		// Only allow quicksave if we're in a world and not a remote client.
 		if( GetPlayerMgr()->IsPlayerInWorld() && !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 		{
 			if( g_pClientSaveLoadMgr->CanSaveGame() && eGameState == GS_PLAYING )
 			{
-				m_bQuickSave = true;
+				// RETAIL: and while the interface lets it (its slot 0x50)
+				if (GetInterfaceMgr()->TronUnknownVirtual50())
+				{
+					m_bQuickSave = true;
+				}
 			}
 			else
 			{
-				// Can't quicksave now...
-				g_pGameClientShell->CSPrint(LoadTempString(IDS_CANTQUICKSAVE));
+				// Can't quicksave now... (RETAIL: Tron's strings, one for
+				// the light cycle games)
+				GameType eGameType = m_eGameType;
+				const char* pszMsg = LoadTempString((eGameType > eGameTypeSingle && eGameType <= eGameTypeSingleLightCycleCustom) ? 0x455 : 0x3fa);
+				g_pChatMsgs->AddMessage(pszMsg);
 				g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nosave.wav");
 			}
+			return;
 		}
-		return;
 	}
 
 	// Let the interface mgr have a go at it...
@@ -2224,10 +2087,7 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 	{
 		return;
 	}
-	if (GetPlayerMgr()->OnKeyDown(key, rep))
-	{
-		return;
-	}
+	GetPlayerMgr()->OnKeyDown(key, rep);
 }
 
 
@@ -3553,8 +3413,8 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 	// Set the size each time since the screen resolution may have changed...
 
 	uint8 nSize = (uint8)((float)g_pLayoutMgr->GetHelpSize() * g_pInterfaceResMgr->GetXRatio());
-	uint8 nFont = g_pLayoutMgr->GetHelpFont();
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+	// RETAIL: 0x100e5b47: the font for that height
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 	
 	CUIPolyString* pPolyString = NULL;
 
@@ -3564,7 +3424,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pLeftDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, L"", 0.0f, 0.0f);
 				m_pLeftDebugString[nLine] = pPolyString;
 			}
 			else
@@ -3579,7 +3439,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pRightDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, L"", 0.0f, 0.0f);
 				m_pRightDebugString[nLine] = pPolyString;
 			}
 			else
@@ -3734,7 +3594,9 @@ void CGameClientShell::ToggleDebugCheat(CheatCode eCheat)
 		}
 		break;
 
-		case CHEAT_POS1STCAM :
+		// RETAIL: 0x100e5f52: Tron's camera adjustment is CHEAT_TRON_CAM's
+		// (0x13); CHEAT_POS1STCAM has no case here
+		case CHEAT_TRON_CAM :
 		{
 			if (!g_pPlayerMgr->IsSpectatorMode())
 			{
@@ -4718,23 +4580,22 @@ void CGameClientShell::HandleGearPickup(uint8 nGearId, bool bSuccess /* = true *
 	LoadString(nNameId,szName,sizeof(szName));
 	if (!strlen(szName)) return;
 
-	char szMsg[128] = "";
+	// RETAIL: Tron's strings (0x25a "%1!s!", 0x20a "Can't pick up any more %1!s!!"); the failure
+	// is reported in every game type, and the message always goes out
+	char szMsg[128];
 	if (bSuccess)
 	{
-		FormatString(IDS_GEARPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x25a,szMsg,sizeof(szMsg),szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
-		FormatString(IDS_GEAR_NOPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x20a,szMsg,sizeof(szMsg),szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
 	}
 
-	if (szMsg[0])
-	{
-		g_pPickupMsgs->AddMessage(szMsg,pGear->szIcon);
-	}
+	g_pPickupMsgs->AddMessage(szMsg,pGear->szIcon);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4757,23 +4618,22 @@ void CGameClientShell::HandleModPickup(uint8 nModId, bool bSuccess /* = true */)
 	LoadString(nNameId,szName,sizeof(szName));
 	if (!strlen(szName)) return;
     
-	char szMsg[128] = "";
+	// RETAIL: Tron's strings (0x25c, 0x209 "You already have the %1!s!!"); the failure
+	// is reported in every game type, and the message always goes out
+	char szMsg[128];
 	if (bSuccess)
 	{
-		FormatString(IDS_MODPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x25c,szMsg,sizeof(szMsg),szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
-		FormatString(IDS_MOD_NOPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x209,szMsg,sizeof(szMsg),szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
 	}
 
-	if (szMsg[0])
-	{
-		g_pPickupMsgs->AddMessage(szMsg,pMod->szIcon);
-	}
+	g_pPickupMsgs->AddMessage(szMsg,pMod->szIcon);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4913,23 +4773,21 @@ bool CGameClientShell::LauncherServerApp( char const* pszProfileFile )
 	g_pLTClient->GetRenderMode( &rMode );
 
 	// Shutdown the renderer, minimize it, and hide it...
-	g_pLTClient->ShutdownRender( 0 ); // RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW );
+	// RETAIL: 0x100e7b80: Tron minimizes and hides the window
+	g_pLTClient->ShutdownRender( RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW );
 
 	// Initialize the startup info.
 	memset( &startInfo, 0, sizeof( STARTUPINFO ));
 	startInfo.cb = sizeof( STARTUPINFO );
 
-	// Setup the command line.
-	std::string sCmdLine = "NOLF2Srv.exe -profile ";
-	
-	// Enclose the profile name in quotes since we allow spaces in the name...
-
-	sCmdLine += "\"";
+	// Setup the command line.  RETAIL: Tron's server app takes the
+	// configuration file, quoted since we allow spaces in the name
+	std::string sCmdLine = "TRONSrv.exe -config \"";
 	sCmdLine += pszProfileFile;
 	sCmdLine += "\"";
 
 	// Start the server app.
-	if( !CreateProcess( "NOLF2Srv.exe", ( char * )sCmdLine.c_str( ), NULL, NULL, FALSE, 0, NULL, NULL, 
+	if( !CreateProcess( "TRONSrv.exe", ( char * )sCmdLine.c_str( ), NULL, NULL, FALSE, 0, NULL, NULL, 
 		&startInfo, &procInfo ))
 	{
 		// Serverapp failed.  Restore the render mode.

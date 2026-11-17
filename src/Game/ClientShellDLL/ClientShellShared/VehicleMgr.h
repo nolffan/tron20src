@@ -163,7 +163,6 @@ class CVehicleMgr
 	void		UpdateLureMotion();
 	
 	void		UpdateLightCycleControlFlags();
-	void		UpdateLightCycleMotion();
 
 
 	void        KillAllVehicleSounds(HLTSOUND hException=LTNULL);
@@ -175,6 +174,7 @@ class CVehicleMgr
 
 	void		SetSnowmobilePhysicsModel();
 	void		SetPlayerLurePhysicsModel( );
+	void		SetLightCyclePhysicsModel();	// RETAIL: 0x1011d2a0 (the name is ours)
 	void		SetNormalPhysicsModel();
 
 	void		CreateVehicleModel();
