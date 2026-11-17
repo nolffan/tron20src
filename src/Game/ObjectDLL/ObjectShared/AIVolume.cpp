@@ -333,21 +333,6 @@ bool AIGeometry::BoxInside( const LTVector& vCenter, const LTVector& vDims ) con
 		Inside3D(vCenter+LTVector(vDims.x/2,		-vDims.y/2,	vDims.z/2) ) );
 }
 
-LTBOOL AIGeometry::InsideMasked(const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold /* = 0.0f*/) const
-{
-	// More likely to early out on X or Z than Y, so do in that order.
-
-	// if mask requires the test, and if it is true, then continue.
-	// if mask requires test and fails, then return LTFALSE
-	// if mask does NOT require the test, doesn't matter
-
-	return (
-		((eAxisX & ~iAxisMask ) || ((vPos.x <= m_vFrontTopRight.x) && (vPos.x >= m_vFrontTopLeft.x)))	&&
-		((eAxisZ & ~iAxisMask ) || ((vPos.z <= m_vFrontTopLeft.z) && (vPos.z >= m_vBackTopLeft.z)))	&&
-		((eAxisY & ~iAxisMask ) || ((vPos.y <= (m_vFrontTopLeft.y+fVerticalThreshhold)) && (vPos.y >= (m_vFrontBottomLeft.y-fVerticalThreshhold))))
-	);
-}
-
 LTBOOL AIGeometry::Inside(const LTVector& vPos, LTFLOAT fRadius2D, LTFLOAT fVerticalThreshhold) const
 {
 	// More likely to early out on X or Z than Y, so do in that order.

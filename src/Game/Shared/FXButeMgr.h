@@ -319,6 +319,22 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 #endif // _CLIENTBUILD
 };
 
+// PORT: NOLF2's auto burst disc class data is not in Tron (no RTTI in either
+// DLL, no "ClusterAutoBurstDiscClassData" attribute): only its declaration
+// stays, with no definitions, as removing it changes VC6's register choice
+// in CGameClientShell::InitSound (CShell.dll 0x100e2270) even though nothing
+// uses it.
+struct CLUSTERAUTOBURSTDISCCLASSDATA : public CLUSTERDISCCLASSDATA
+{
+	CLUSTERAUTOBURSTDISCCLASSDATA();
+	virtual ~CLUSTERAUTOBURSTDISCCLASSDATA();
+	
+	LTBOOL			Init(CButeMgr &buteMgr,char *aTagName);
+	
+	float			fMinBurstDistance;
+	float			fMaxBurstDistance;
+};
+
 // RETAIL: Tron's class data of its retail-only projectiles (RTTI
 // CORRUPTICDIMSCLASSDATA, BALLCLASSDATA, PRANKSTERCLASSDATA; their Init
 // 0x10145df0, 0x10145ed0, 0x10145ff0 and attribute names are retail's, the

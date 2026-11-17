@@ -60,8 +60,8 @@ BEGIN_CLASS(CScanner)
 	ADD_REALPROP_FLAG(VisualRange, 1000.0, PF_RADIUS)
 
 	ADD_STRINGPROP_FLAG(SpotCommand, "", PF_NOTIFYCHANGE)
-	
-	ADD_BOOLPROP_FLAG(CanTransition, LTFALSE, PF_HIDDEN)
+
+	// RETAIL: no CanTransition (17 props; Object.lto 0x100ec510)
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN(CScanner, PropType, NULL, NULL, CF_HIDDEN, CScannerPlugin)
 #pragma force_active off

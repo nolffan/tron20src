@@ -119,6 +119,23 @@ private:
 	LTVector	m_vForward;
 };
 
+// RETAIL: inline in Tron (no call to it in, e.g., CAISpatialRepresentationMgr::
+// FindContainingVolume, 0x101b7400)
+inline LTBOOL AIGeometry::InsideMasked(const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold /* = 0.0f*/) const
+{
+	// More likely to early out on X or Z than Y, so do in that order.
+
+	// if mask requires the test, and if it is true, then continue.
+	// if mask requires test and fails, then return LTFALSE
+	// if mask does NOT require the test, doesn't matter
+
+	return (
+		((eAxisX & ~iAxisMask ) || ((vPos.x <= m_vFrontTopRight.x) && (vPos.x >= m_vFrontTopLeft.x)))	&&
+		((eAxisZ & ~iAxisMask ) || ((vPos.z <= m_vFrontTopLeft.z) && (vPos.z >= m_vBackTopLeft.z)))	&&
+		((eAxisY & ~iAxisMask ) || ((vPos.y <= (m_vFrontTopLeft.y+fVerticalThreshhold)) && (vPos.y >= (m_vFrontBottomLeft.y-fVerticalThreshhold))))
+	);
+}
+
 
 //----------------------------------------------------------------------------
 //              

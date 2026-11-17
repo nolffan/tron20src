@@ -97,7 +97,7 @@ CMDMGR_BEGIN_REGISTER_CLASS( GadgetTarget )
 	CMDMGR_ADD_MSG( ON, 1, NULL, "ON" )
 	CMDMGR_ADD_MSG( OFF, 1, NULL, "OFF" )
 	CMDMGR_ADD_MSG( DISABLE, 1, NULL, "DISABLE" )
-	CMDMGR_ADD_MSG( TEAM, 2, NULL, "TEAM <0, 1, -1>" )
+	// RETAIL: no TEAM message in Tron (0x101bbc00 registers five)
 
 CMDMGR_END_REGISTER_CLASS( GadgetTarget, Prop )
 
