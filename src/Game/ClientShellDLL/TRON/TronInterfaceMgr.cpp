@@ -431,13 +431,83 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 //
 // ----------------------------------------------------------------------- //
 
-void CTronInterfaceMgr::TronUnknownVirtual7C(void* pTronUnknown)
+void CTronInterfaceMgr::TronUnknownVirtual7C(CPlayerScore* pScore)
 {
-	// PORT: retail reads the record's +0x10 (a client id: the local
-	// client's?) and +0x18 (a state, 0..3) and its team (m_ClientInfo,
-	// 0x100fba30); for some game types it sets m_nTronUnknown28B18 to the
-	// strings 0xd87..0xd8b and 0xd9b, then updates the HUD (0x4000000).
-	// Not yet written.
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		uint32 nLocalID = 0;
+		g_pLTClient->GetLocalClientID(&nLocalID);
+		int nTeam = m_TeamMgr.GetTeamOfClient(nLocalID);
+
+		switch (pScore->m_nTronUnknown18)
+		{
+			default:
+				m_nTronUnknown28B18 = 0;
+				g_pHUDMgr->QueueUpdate(0x4000000);
+				return;
+
+			case 2:
+				if (nTeam == 0x10)
+				{
+					m_nTronUnknown28B18 = 0xd8b;
+					g_pHUDMgr->QueueUpdate(0x4000000);
+					return;
+				}
+				m_nTronUnknown28B18 = 0;
+				g_pHUDMgr->QueueUpdate(0x4000000);
+				return;
+		}
+	}
+
+	if (IsDiscGameType())
+	{
+		uint32 nLocalID = 0;
+		g_pLTClient->GetLocalClientID(&nLocalID);
+
+		if (IsDiscGameType() && nLocalID == pScore->m_nClientID)
+		{
+			int nTeam = m_TeamMgr.GetTeamOfClient(nLocalID);
+
+			switch (pScore->m_nTronUnknown18)
+			{
+				case 0:
+					m_nTronUnknown28B18 = 0;
+					break;
+
+				case 1:
+					m_nTronUnknown28B18 = 0xd89;
+					break;
+
+				case 2:
+					m_nTronUnknown28B18 = 0xd8a;
+					break;
+
+				case 3:
+					if (nTeam == 0x10)
+					{
+						m_nTronUnknown28B18 = 0xd8b;
+					}
+					else if (GetGameType() == eGameTypeDiscTournament)
+					{
+						if (nTeam >= 0 && m_TeamMgr.GetTeam(nTeam, false)->GetState() == CTronTeam::kTronTeamState_Timed)
+						{
+							m_nTronUnknown28B18 = 0xd9b;
+						}
+						else
+						{
+							m_nTronUnknown28B18 = 0xd87;
+						}
+					}
+					else
+					{
+						m_nTronUnknown28B18 = 0xd88;
+					}
+					break;
+			}
+
+			g_pHUDMgr->QueueUpdate(0x4000000);
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -450,7 +520,8 @@ void CTronInterfaceMgr::TronUnknownVirtual7C(void* pTronUnknown)
 
 LTBOOL CTronInterfaceMgr::Update()
 {
-	// PORT: retail first calls 0x1009e940 (not yet written)
+	// RETAIL: 0x1009d933
+	UpdateConsoleVarRecords();
 
 	m_bTronUnknown28B14 = true;
 
@@ -533,6 +604,33 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			pMsg->ReadString(buf,1024);
 			m_SubroutineMgr.GivePlayerPrimitive(buf);
 			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009de00: the console variable records
+		case MID_TRON_UNKNOWN_104:
+		{
+			uint8 nType = pMsg->Readuint8();
+			if (nType == 0)
+			{
+				HandleConsoleVarFade(pMsg);
+				return LTTRUE;
+			}
+			if (nType == 1)
+			{
+				HandleConsoleVarOscillate(pMsg);
+				return LTTRUE;
+			}
+			if (nType == 2)
+			{
+				HandleConsoleVarStop(pMsg, false);
+				return LTTRUE;
+			}
+			if (nType == 3)
+			{
+				HandleConsoleVarStop(pMsg, true);
+				return LTTRUE;
+			}
+			return LTFALSE;
 		}
 
 		case MID_QUERY_TARGET_PROPERTIES:
@@ -811,6 +909,287 @@ void CTronInterfaceMgr::UpdateLoadingLevelState()
 	}
 
 	CInterfaceMgr::UpdateLoadingLevelState();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::ShowTurnArrow
+//
+//	PURPOSE:	RETAIL: 0x1009e850 (the name is ours): shows the left (0)
+//				or the right (1) turn arrow above the screen's center
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::ShowTurnArrow(int nDirection)
+{
+	HideTurnArrows();
+
+	LTIntPt pos;
+
+	switch (nDirection)
+	{
+		case 0:
+		{
+			if (m_pTurnArrowLeft)
+			{
+				pos.x = g_pInterfaceResMgr->GetScreenWidth() / 2 - 256;
+				pos.y = (g_pInterfaceResMgr->GetScreenHeight() - 128) / 2;
+				m_pTurnArrowLeft->SetPosition(pos);
+				m_pTurnArrowLeft->SetLifeTime(2);
+				m_pTurnArrowLeft->Show(LTTRUE, LTTRUE);
+			}
+		}
+		break;
+
+		case 1:
+		{
+			if (m_pTurnArrowRight)
+			{
+				pos.x = g_pInterfaceResMgr->GetScreenWidth() / 2;
+				pos.y = (g_pInterfaceResMgr->GetScreenHeight() - 128) / 2;
+				m_pTurnArrowRight->SetPosition(pos);
+				m_pTurnArrowRight->SetLifeTime(2);
+				m_pTurnArrowRight->Show(LTTRUE, LTTRUE);
+			}
+		}
+		break;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::HideTurnArrows
+//
+//	PURPOSE:	RETAIL: 0x1009e910 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::HideTurnArrows()
+{
+	if (m_pTurnArrowLeft)
+	{
+		m_pTurnArrowLeft->Show(LTFALSE, LTTRUE);
+	}
+
+	if (m_pTurnArrowRight)
+	{
+		m_pTurnArrowRight->Show(LTFALSE, LTTRUE);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::UpdateConsoleVarRecords
+//
+//	PURPOSE:	RETAIL: 0x1009e940 (the name is ours): moves each console
+//				variable record's value on by the frame time, and removes
+//				one finished fade a frame
+//
+// ----------------------------------------------------------------------- //
+
+void CTronInterfaceMgr::UpdateConsoleVarRecords()
+{
+	if (!m_TronRecords.size() || g_pGameClientShell->IsGamePaused())
+		return;
+
+	std::list<TronInterfaceRecord*>::iterator iter;
+	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
+	{
+		TronInterfaceRecord* pRecord = *iter;
+
+		pRecord->m_fTronUnknown4C += g_pGameClientShell->GetFrameTime();
+		if (pRecord->m_fTronUnknown4C >= pRecord->m_fTronUnknown44)
+		{
+			if (pRecord->m_bTronUnknown40)
+			{
+				do
+				{
+					pRecord->m_fTronUnknown4C -= pRecord->m_fTronUnknown44;
+				}
+				while (pRecord->m_fTronUnknown4C >= pRecord->m_fTronUnknown44);
+			}
+			else
+			{
+				pRecord->m_bTronUnknown64 = true;
+			}
+		}
+
+		float fT = pRecord->m_fTronUnknown4C / pRecord->m_fTronUnknown44;
+		float fValue;
+		if (pRecord->m_bTronUnknown40)
+		{
+			fValue = (float)sin(fT * MATH_CIRCLE) * pRecord->m_fTronUnknown5C + pRecord->m_fTronUnknown58;
+		}
+		else if (pRecord->m_bTronUnknown64)
+		{
+			fValue = pRecord->m_fTronUnknown6C;
+		}
+		else
+		{
+			fValue = (pRecord->m_fTronUnknown6C - pRecord->m_fTronUnknown68) * fT + pRecord->m_fTronUnknown68;
+		}
+
+		if (g_pLTClient->GetConsoleVar(pRecord->m_szName))
+		{
+			char szCmd[64];
+			sprintf(szCmd, "%s %4.2f", pRecord->m_szName, fValue);
+			g_pLTClient->RunConsoleString(szCmd);
+		}
+	}
+
+	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
+	{
+		if (!(*iter)->m_bTronUnknown40 && (*iter)->m_bTronUnknown64)
+		{
+			debug_delete(*iter);
+			m_TronRecords.erase(iter);
+			return;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::HandleConsoleVarFade
+//
+//	PURPOSE:	RETAIL: 0x1009eae0 (the name is ours): MID_TRON_UNKNOWN_104
+//				sub-id 0, a console variable moves from a start value (or
+//				its current one) to an end value in a time
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CTronInterfaceMgr::HandleConsoleVarFade(ILTMessage_Read *pMsg)
+{
+	char szName[64];
+	pMsg->ReadString(szName, sizeof(szName));
+	uint8 nUseStart = pMsg->Readuint8();
+	float fStart = pMsg->Readfloat();
+	float fEnd = pMsg->Readfloat();
+	float fTime = pMsg->Readfloat();
+
+	std::list<TronInterfaceRecord*>::iterator iter;
+	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
+	{
+		if (!stricmp(szName, (*iter)->m_szName))
+		{
+			debug_delete(*iter);
+			m_TronRecords.erase(iter);
+			break;
+		}
+	}
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar(szName);
+	if (hVar)
+	{
+		TronInterfaceRecord* pRecord = debug_new(TronInterfaceRecord);
+		SAFE_STRCPY(pRecord->m_szName, szName);
+		pRecord->m_bTronUnknown40 = false;
+		pRecord->m_bTronUnknown64 = false;
+		pRecord->m_fTronUnknown44 = fTime;
+		pRecord->m_fTronUnknown4C = 0;
+		if (nUseStart)
+			pRecord->m_fTronUnknown68 = fStart;
+		else
+			pRecord->m_fTronUnknown68 = g_pLTClient->GetVarValueFloat(hVar);
+		pRecord->m_fTronUnknown6C = fEnd;
+		m_TronRecords.push_back(pRecord);
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::HandleConsoleVarOscillate
+//
+//	PURPOSE:	RETAIL: 0x1009ec40 (the name is ours): MID_TRON_UNKNOWN_104
+//				sub-id 1, a console variable moves on a sine between two
+//				values with a period
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CTronInterfaceMgr::HandleConsoleVarOscillate(ILTMessage_Read *pMsg)
+{
+	char szName[64];
+	pMsg->ReadString(szName, sizeof(szName));
+	float fMin = pMsg->Readfloat();
+	float fMax = pMsg->Readfloat();
+	float fPeriod = pMsg->Readfloat();
+
+	std::list<TronInterfaceRecord*>::iterator iter;
+	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
+	{
+		if (!stricmp(szName, (*iter)->m_szName))
+		{
+			debug_delete(*iter);
+			m_TronRecords.erase(iter);
+			break;
+		}
+	}
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar(szName);
+	if (hVar)
+	{
+		TronInterfaceRecord* pRecord = debug_new(TronInterfaceRecord);
+		SAFE_STRCPY(pRecord->m_szName, szName);
+		pRecord->m_bTronUnknown40 = true;
+		pRecord->m_fTronUnknown44 = fPeriod;
+		pRecord->m_fTronUnknown4C = 0;
+		pRecord->m_fTronUnknown50 = fMin;
+		pRecord->m_fTronUnknown54 = fMax;
+		// RETAIL: the center is fMin + fMax / 2, not ( fMin + fMax ) / 2
+		// (see docs/RETAIL_BUGS.md)
+		pRecord->m_fTronUnknown58 = fMin + fMax * 0.5f;
+		pRecord->m_fTronUnknown5C = (fMax - fMin) * 0.5f;
+		pRecord->m_fTronUnknown60 = g_pLTClient->GetVarValueFloat(hVar);
+		m_TronRecords.push_back(pRecord);
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronInterfaceMgr::HandleConsoleVarStop
+//
+//	PURPOSE:	RETAIL: 0x1009edb0 (the name is ours): MID_TRON_UNKNOWN_104
+//				sub-ids 2 and 3, a console variable's record stops (3 sets
+//				the value it had before an oscillation again)
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CTronInterfaceMgr::HandleConsoleVarStop(ILTMessage_Read *pMsg, bool bRestore)
+{
+	if (!m_TronRecords.size())
+		return LTFALSE;
+
+	char szName[64];
+	pMsg->ReadString(szName, sizeof(szName));
+	pMsg->Readfloat();
+	pMsg->Readfloat();
+	pMsg->Readfloat();
+
+	std::list<TronInterfaceRecord*>::iterator iter;
+	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
+	{
+		TronInterfaceRecord* pRecord = *iter;
+		if (!stricmp(pRecord->m_szName, szName))
+		{
+			if (bRestore)
+			{
+				// RETAIL: "%4.2d" with a double (see docs/RETAIL_BUGS.md)
+				char szCmd[64];
+				sprintf(szCmd, "%s %4.2d", pRecord->m_szName, pRecord->m_fTronUnknown60);
+				g_pLTClient->RunConsoleString(szCmd);
+			}
+
+			debug_delete(*iter);
+			m_TronRecords.erase(iter);
+			return LTTRUE;
+		}
+	}
+
+	return LTTRUE;
 }
 
 // ----------------------------------------------------------------------- //

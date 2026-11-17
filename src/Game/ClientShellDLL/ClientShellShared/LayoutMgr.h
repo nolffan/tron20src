@@ -309,6 +309,8 @@ public:
 
 	LTBOOL		IsMaskSprite(eOverlayMask eMask);
 	void		GetMaskSprite(eOverlayMask eMask, char *pBuf, int nBufLen);
+	void		GetMaskRenderStyle(eOverlayMask eMask, char *pBuf, int nBufLen);	// RETAIL: Tron's (0x100dbee0)
+	void		GetMaskAnim(eOverlayMask eMask, char *pBuf, int nBufLen);		// RETAIL: Tron's (0x100dbf40)
 	void		GetMaskModel(eOverlayMask eMask, char *pBuf, int nBufLen);
 	void		GetMaskSkin(eOverlayMask eMask, char *pBuf, int nBufLen);
     LTFLOAT     GetMaskScale(eOverlayMask eMask);

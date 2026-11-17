@@ -53,6 +53,9 @@ class CTronGameClientShell : public CGameClientShell
 		// RETAIL: slot 0x90 (0x1009a670): with the console's fx detail level
 		virtual void UpdateInterfaceFX();
 
+		// RETAIL: slot 0x94 (0x1009a700): Tron's own cheats
+		virtual void TronUnknownVirtual94(int nCheat);
+
 		// RETAIL: slot 0x28 (0x10099fa0)
 		virtual void OnEnterWorld();
 

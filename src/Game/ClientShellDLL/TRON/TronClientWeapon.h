@@ -120,6 +120,9 @@ protected:
 	float         GetBaseEnergyUse();
 	// 0x10098b20
 	void          TronUnknown98B20();
+	// 0x10098b10: the continuous energy drain per second (the weapons
+	// set it from their slot 0x168, e.g. 0x1001869c; the name is ours)
+	void          SetTronUnknown204( float fTronUnknown204 );
 	// 0x10097f40 (the constructor and Load call it)
 	void          TronUnknown97F40();
 

@@ -656,6 +656,10 @@ SOURCE=.\ScreenTeamSelect.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\SpectatorObjectFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -751,6 +755,10 @@ SOURCE=.\BaseScreenLightCycle.h
 # Begin Source File
 
 SOURCE=.\CheatMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ClientFxUserFX.h
 # End Source File
 # Begin Source File
 
@@ -1111,6 +1119,10 @@ SOURCE=.\ScreenTeamSelect.h
 # Begin Source File
 
 SOURCE=.\ScreenWeaponControls.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObjectFX.h
 # End Source File
 # Begin Source File
 

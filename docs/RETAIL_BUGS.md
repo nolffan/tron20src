@@ -1175,6 +1175,39 @@ The game reads them by name, thus play is not affected.
 
 Not fixed yet: the modern build should give each HelpFile the group of its
 item.
+### A console variable oscillation has a wrong center
+
+CShell.dll 0x1009ec40 (CTronInterfaceMgr::HandleConsoleVarOscillate,
+TRON/TronInterfaceMgr.cpp). The message gives a minimum and a maximum. The
+function sets the center of the sine to minimum + maximum * 0.5 and the
+amplitude to (maximum - minimum) * 0.5. The center must be
+(minimum + maximum) * 0.5. Thus the value goes from 1.5 * minimum to the
+maximum, not from the minimum to the maximum.
+
+Not fixed yet: the modern build should use (minimum + maximum) * 0.5.
+
+### A console variable restore formats a float as an integer
+
+CShell.dll 0x1009edb0 (CTronInterfaceMgr::HandleConsoleVarStop,
+TRON/TronInterfaceMgr.cpp). To set the value that a console variable had
+before an oscillation, the function makes the console string with
+"%s %4.2d" and gives a double. The "d" conversion reads an integer, so the
+string gets the low half of the double, not the value.
+
+Not fixed yet: the modern build should use "%s %4.2f".
+
+### An interface object render can write past its object array
+
+CShell.dll 0x100cea40 (CInterfaceMgr::RenderInterfaceObject,
+ClientShellShared/InterfaceMgr.cpp). The function puts the object and the
+interface lights in a local array of six handles (one object and
+MAX_INTERFACE_LIGHTS lights). The loop that adds the lights stops at
+kMaxFX (107), the limit of the interface fx list, not at the size of the
+array. With more than five interface lights, the function writes past the
+array on the stack.
+
+Not fixed yet: the modern build should stop the loop at the size of the
+array.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

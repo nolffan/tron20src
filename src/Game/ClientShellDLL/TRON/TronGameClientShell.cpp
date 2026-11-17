@@ -24,6 +24,8 @@
 #include "HUDMgr.h"
 #include "HUDChatInput.h"
 #include "CommandIDs.h"
+#include "SubroutineMgr.h"
+#include "TRONPlayerStats.h"
 
 // Sample rate
 int g_nSampleRate = 44100;
@@ -454,4 +456,139 @@ void CTronGameClientShell::UpdateInterfaceFX()
 	}
 
 	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameClientShell::TronUnknownVirtual94
+//
+//	PURPOSE:	RETAIL: 0x1009a700 (slot 0x94): Tron's own cheats
+//				(CCheatMgr gives them here, retail 0x100f2541)
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameClientShell::TronUnknownVirtual94(int nCheat)
+{
+	switch (nCheat)
+	{
+		case CHEAT_TRON_ENERGY:
+		{
+			g_pChatMsgs->AddMessage(0xa00, kMsgCheatConfirm);
+
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_PLAYER_CHEAT);
+			cMsg.Writeuint8((uint8)nCheat);
+			cMsg.Writeuint32(1);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+		}
+		break;
+
+		case CHEAT_TRON_PSET:
+		case CHEAT_TRON_CLEARPSET:
+		break;
+
+		case CHEAT_TRON_PROCEDURALS:
+		{
+			g_pSubroutineMgr->GivePlayerProcedural("port");
+			g_pSubroutineMgr->GivePlayerProcedural("defrag");
+			g_pSubroutineMgr->GivePlayerProcedural("disinfect");
+			g_pLTClient->CPrint("All procedurals acquired!");
+		}
+		break;
+
+		case CHEAT_TRON_SUBALPHA:
+		{
+			g_pLTClient->CPrint("All ALPHA Subroutines acquired!");
+			g_pSubroutineMgr->GivePlayerProcedural("port");
+			g_pSubroutineMgr->GivePlayerProcedural("defrag");
+			g_pSubroutineMgr->GivePlayerProcedural("disinfect");
+
+			uint16 nNumSubroutines = g_pSubroutineMgr->GetNumSubroutines();
+			for (int i = 0; i < nNumSubroutines; i++)
+			{
+				g_pSubroutineMgr->GivePlayerSubroutine(g_pSubroutineMgr->GetSubroutineByIndex(i)->szName, "alpha", "okay", true);
+			}
+		}
+		break;
+
+		case CHEAT_TRON_SUBBETA:
+		{
+			g_pLTClient->CPrint("All BETA Subroutines acquired!");
+			g_pSubroutineMgr->GivePlayerProcedural("port");
+			g_pSubroutineMgr->GivePlayerProcedural("defrag");
+			g_pSubroutineMgr->GivePlayerProcedural("disinfect");
+
+			uint16 nNumSubroutines = g_pSubroutineMgr->GetNumSubroutines();
+			for (int i = 0; i < nNumSubroutines; i++)
+			{
+				g_pSubroutineMgr->GivePlayerSubroutine(g_pSubroutineMgr->GetSubroutineByIndex(i)->szName, "beta", "okay", true);
+			}
+		}
+		break;
+
+		case CHEAT_TRON_SUBGOLD:
+		{
+			g_pLTClient->CPrint("All GOLD Subroutines acquired!");
+			g_pSubroutineMgr->GivePlayerProcedural("port");
+			g_pSubroutineMgr->GivePlayerProcedural("defrag");
+			g_pSubroutineMgr->GivePlayerProcedural("disinfect");
+
+			uint16 nNumSubroutines = g_pSubroutineMgr->GetNumSubroutines();
+			for (int i = 0; i < nNumSubroutines; i++)
+			{
+				g_pSubroutineMgr->GivePlayerSubroutine(g_pSubroutineMgr->GetSubroutineByIndex(i)->szName, "gold", "okay", true);
+			}
+		}
+		break;
+
+		case CHEAT_TRON_CLEARMEMORY:
+		{
+			g_pSubroutineMgr->Reset();
+			g_pLTClient->CPrint("All subroutines removed!");
+		}
+		break;
+
+		case CHEAT_TRON_CORRUPTION:
+		{
+			for (int i = 0; i < 200; i++)
+			{
+				g_pSubroutineMgr->Update();
+			}
+			g_pLTClient->CPrint("Corruption!");
+		}
+		break;
+
+		case CHEAT_TRON_MAXPERFORMANCE:
+		{
+			for (int i = 0; i < 5; i++)
+			{
+				g_pTronPlayerStats->SetPerformanceRating((PerformanceRating)i, 100);
+			}
+			g_pLTClient->CPrint("Maxed performance ratings!");
+		}
+		break;
+
+		case CHEAT_TRON_CLEARPERFORMANCE:
+		{
+			for (int i = 0; i < 5; i++)
+			{
+				g_pTronPlayerStats->SetPerformanceRating((PerformanceRating)i, 0);
+			}
+			g_pLTClient->CPrint("Cleared performance ratings!");
+		}
+		break;
+
+		case CHEAT_TRON_IDEALWEAPONS:
+		case CHEAT_TRON_IDEALSUBROUTINES:
+		case CHEAT_TRON_IDEALPROCEDURALS:
+		case CHEAT_TRON_IDEALPOINTS:
+		case CHEAT_TRON_IDEAL:
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_PLAYER_CHEAT);
+			cMsg.Writeuint8((uint8)nCheat);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+		}
+		break;
+	}
 }

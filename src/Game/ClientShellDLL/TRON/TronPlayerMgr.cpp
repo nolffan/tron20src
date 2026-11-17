@@ -1738,28 +1738,31 @@ bool CTronPlayerMgr::ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId, int dwAmmo)
 
 void CTronPlayerMgr::ToggleHolster(bool bPlayDeselect)
 {
-	if (IsHolsterLocked())
+	if (!IsHolsterLocked())
 	{
-		// PORT: retail calls Tron's interface manager's slot 0x88 here
+		CPlayerMgr::ToggleHolster(bPlayDeselect);
 		return;
 	}
 
-	CPlayerMgr::ToggleHolster(bPlayDeselect);
+	// RETAIL: 0x100a7b64
+	g_pInterfaceMgr->TronUnknownVirtual88();
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronPlayerMgr::IsHolsterLocked
 //
-//	PURPOSE:	RETAIL: retail 0x100a7b70. PORT: retail asks the weapon
-//				manager (its 0x10168c90) whether a weapon is out; our
-//				LastWeapon has no answer
+//	PURPOSE:	RETAIL: retail 0x100a7b70: locked by +0x234, or while
+//				the current weapon's slot 0xc8 is false
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::IsHolsterLocked()
 {
 	if (m_bTronUnknown234)
+		return true;
+
+	if (m_pClientWeaponMgr && !m_pClientWeaponMgr->CurrentWeaponTronUnknownVirtualC8())
 		return true;
 
 	return false;
@@ -1912,10 +1915,9 @@ void CTronPlayerMgr::TronUnknownVirtual24(bool b1D7, bool b1D9)
 //	ROUTINE:	CTronPlayerMgr::TronUnknownLightCycleSpectate
 //
 //	PURPOSE:	RETAIL: retail 0x100a7eb0 (called by the client light cycle
-//				manager): in a light cycle game, a watched cycle is chosen.
-//				PORT: the SFX manager's and the client light cycle
-//				manager's lookups (0x101086f0, 0x100ff280, 0x100ff2b0) are
-//				not yet in our tree
+//				manager): in a light cycle game, the player watches the
+//				next spectator object, else the next light cycle (third
+//				person), else the first spectator object
 //
 // ----------------------------------------------------------------------- //
 
@@ -1923,9 +1925,65 @@ bool CTronPlayerMgr::TronUnknownLightCycleSpectate()
 {
 	if (IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
+		HOBJECT hWatch = LTNULL;
+		LIGHT_CYCLIST* pCyclist = LTNULL;
+
+		if (m_hTronUnknownBC)
+		{
+			CSpecialFX* pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(m_hTronUnknownBC, false, false);
+			if (pFX)
+			{
+				hWatch = pFX->GetServerObj();
+			}
+		}
+
+		if (!hWatch)
+		{
+			HOBJECT hCurrent = LTNULL;
+			if (g_pLightCycleMgr->FindCyclist(m_hTronUnknownBC))
+			{
+				hCurrent = m_hTronUnknownBC;
+			}
+
+			LIGHT_CYCLIST* pNext = g_pLightCycleMgr->GetNextCyclist(hCurrent, false);
+			if (pNext && pNext->hObject != g_pMoveMgr->GetObject())
+			{
+				hWatch = pNext->hObject;
+				pCyclist = pNext;
+			}
+
+			if (!hWatch)
+			{
+				CSpecialFX* pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(LTNULL, true, true);
+				if (!pFX)
+				{
+					pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(LTNULL, true, false);
+				}
+
+				if (pFX)
+				{
+					hWatch = pFX->GetServerObj();
+				}
+			}
+		}
+
+		m_hTronUnknownBC = hWatch;
+		m_nTronUnknown230 = (uint32)pCyclist;
 		m_bTronUnknownB8 = true;
 
 		g_pCommonLT->SetObjectFlags(g_pMoveMgr->GetObject(), OFT_Flags, 0, FLAG_GRAVITY);
+
+		g_pGameClientShell->m_bTronUnknown833A = false;
+		g_pMoveMgr->GetVehicleMgr()->ResetPhysicsModel();
+
+		if (pCyclist)
+		{
+			g_pInterfaceMgr->TronUnknownThirdPersonCamera(true);
+		}
+		else
+		{
+			g_pInterfaceMgr->TronUnknownFirstPersonCamera(true);
+		}
 
 		TronUnknownVirtual40();
 	}
@@ -2068,19 +2126,26 @@ void CTronPlayerMgr::TronUnknownVirtualA8(bool bHide)
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual94 / 98
 //
-//	PURPOSE:	RETAIL: retail 0x100a8810, 0x100a8860 (slots 0x94, 0x98).
-//				PORT: both ask the client light cycle manager (0x10236d98),
-//				not yet in our tree
+//	PURPOSE:	RETAIL: retail 0x100a8810, 0x100a8860 (slots 0x94, 0x98):
+//				whether the player's light cycle trail has two points or
+//				more; all the cyclists go
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::TronUnknownVirtual94()
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+	if (pCyclist && pCyclist->pCurTrail && pCyclist->pCurTrail->collTrailPoints.size() > 1)
+	{
+		return true;
+	}
+
 	return false;
 }
 
 void CTronPlayerMgr::TronUnknownVirtual98(int nArg)
 {
+	g_pLightCycleMgr->RemoveAllCyclists();
 }
 
 // ----------------------------------------------------------------------- //
