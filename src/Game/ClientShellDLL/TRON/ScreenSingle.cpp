@@ -324,13 +324,18 @@ void CScreenSingle::BuildCustomLevelsList(int nWidth)
 
 	CLTGUITextCtrl* pItem;
 
+	// TRON: the names widened into one string; the font for the list's size
+	// (RETAIL: 0x1007c790)
+	std::wstring sName;
 	uint8 nListFontSize = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontSize");
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nListFontSize);
 	int index = 0;
 	StringSet::iterator iter = m_Filenames.begin();
 	while (iter != m_Filenames.end())
 	{
-		pItem = CreateTextItem((char *)iter->c_str(), CMD_CUSTOM+index, IDS_HELP_CUSTOMLEVEL);
-		pItem->SetFont(LTNULL, nListFontSize);
+		LTGUIWiden(sName, iter->c_str());
+		pItem = CreateTextItem(sName, CMD_CUSTOM+index, IDS_HELP_CUSTOMLEVEL);
+		pItem->SetFont(pFont, nListFontSize);
 		pItem->SetFixedWidth(nWidth,LTTRUE);
 
 		m_pCustom->AddControl(pItem);
