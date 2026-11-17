@@ -26,11 +26,12 @@ class CButeMgr;
 #define MAX_PROFILE_NAME	16
 
 // PORT: ours. NOLF2's per game type options, restriction sets and campaign
-// files are only for the NOLF2 code in Object.lto and CShell.dll still standing
-// in for Tron's; Tron's dedicated server (which defines neither build) has
-// none of them (TRONSrv.exe has no static options to construct, and no
-// campaign directories).
-#if defined( _CLIENTBUILD ) || defined( _SERVERBUILD )
+// files are only for the NOLF2 code in CShell.dll still standing in for
+// Tron's.  RETAIL: Object.lto has none of them (no "CampaignName" string,
+// no static options to construct; NOLF2's team deathmatch mission manager,
+// their last server user, is not in Tron) and neither has Tron's dedicated
+// server (TRONSrv.exe has no campaign directories).
+#if defined( _CLIENTBUILD )
 #define PROFILEUTILS_NOLF2_OPTIONS
 #endif
 

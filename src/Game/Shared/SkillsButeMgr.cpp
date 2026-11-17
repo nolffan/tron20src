@@ -341,8 +341,10 @@ const RANK* CSkillsButeMgr::GetRank(uint32 nScore)
 }
 
 // PORT: NOLF2's; Tron's CSkillsButeMgr TU has none of GetModifiers,
-// GetModifier and GetNumModifiers (retail 0x10169110..0x101697c0), but our
-// NOLF2 callers (MenuPlayer, CSkills) still use them.
+// GetModifier and GetNumModifiers (CShell.dll 0x10169110..0x101697c0;
+// Object.lto's server code reads the tables inline, e.g. 0x1009d5a1), but
+// our NOLF2 client callers still use them.  The server has none.
+#ifdef _CLIENTBUILD
 const float* CSkillsButeMgr::GetModifiers(eSkill skl, eSkillLevel lvl)
 {
 	switch (skl)
@@ -442,5 +444,6 @@ uint8 CSkillsButeMgr::GetNumModifiers(eSkill skl)
 	ASSERT(!"Invalid Skill specified.");
 	return 0;
 }
+#endif // _CLIENTBUILD
 
 

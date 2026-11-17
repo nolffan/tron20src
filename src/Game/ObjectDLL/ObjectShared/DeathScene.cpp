@@ -35,8 +35,7 @@
 CDeathScene::CDeathScene()
 {
 	m_eCharacterDeath = CD_NORMAL;
-	m_pObjectRelationMgr = debug_new(CObjectRelationMgr);
-	m_pObjectRelationMgr->ClearRelationSystem();
+	m_pRelationData = debug_new(RelationData);
 
     m_hSceneObject = LTNULL;
 
@@ -51,10 +50,10 @@ CDeathScene::CDeathScene()
 
 CDeathScene::~CDeathScene()
 {
-	if ( m_pObjectRelationMgr != NULL )
+	if ( m_pRelationData != NULL )
 	{
-		debug_delete( m_pObjectRelationMgr );
-		m_pObjectRelationMgr = NULL;
+		debug_delete( m_pRelationData );
+		m_pRelationData = NULL;
 	}
 }
 
@@ -95,11 +94,16 @@ LTBOOL CDeathScene::WasPlayer()
 	return m_bWasPlayer;
 }
 
-CObjectRelationMgr& GetObjectRelationMgr();
-
 const RelationData& CDeathScene::GetRelationData()
 {
-	return m_pObjectRelationMgr->GetData();
+	// RETAIL: 0x10218db0: an empty relation data when there is none
+	if( !m_pRelationData )
+	{
+		static RelationData s_EmptyRelationData;	// The name is ours
+		return s_EmptyRelationData;
+	}
+
+	return *m_pRelationData;
 }
 
 CharacterDeath CDeathScene::GetCharacterDeath()
@@ -119,7 +123,7 @@ void CDeathScene::Save(ILTMessage_Write *pMsg)
     SAVE_FLOAT(m_fLastPainVolume);
 	SAVE_BOOL(m_bWasPlayer);
 	
-	m_pObjectRelationMgr->Save(pMsg);
+	m_pRelationData->Save(pMsg);
 }
 
 void CDeathScene::Load(ILTMessage_Read *pMsg)
@@ -134,7 +138,7 @@ void CDeathScene::Load(ILTMessage_Read *pMsg)
     LOAD_FLOAT(m_fLastPainVolume);
 	LOAD_BOOL(m_bWasPlayer);
 
-	m_pObjectRelationMgr->Load(pMsg);
+	m_pRelationData->Load(pMsg);
 }
 
 void CDeathScene::Set(CCharacter *pCharacter, Body *pBody)
@@ -152,7 +156,7 @@ void CDeathScene::Set(CCharacter *pCharacter, Body *pBody)
 	// Copy the data describing the Character to the Body.
 	UBER_ASSERT( pCharacter->GetRelationMgr() != NULL,
 		"CDeathScene::Set Characters relation is NULL" );
-	m_pObjectRelationMgr->SetData() = pCharacter->GetRelationMgr()->GetData();
+	*m_pRelationData = pCharacter->GetRelationMgr()->GetData();
 
 	m_hSceneObject = pBody->m_hObject;
 }

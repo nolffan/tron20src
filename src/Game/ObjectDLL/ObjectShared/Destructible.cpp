@@ -1359,7 +1359,7 @@ void CDestructible::SetLastDamager(HOBJECT hDamager)
 void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
 {
 	// RETAIL: Tron's (retail 0x100e8e70): only a player killed by another
-	// player in a revive game type scores, a frag to the killer (one off for
+	// player in a disc game type scores, a frag to the killer (one off for
 	// a team mate), and the message has the death type, not NOLF2's flag
 
 	if (!m_bIsPlayer) return;
@@ -1377,7 +1377,7 @@ void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
 
 	// If another player killed us, give them the score.
     CPlayerObj* pPlayerKiller = IsPlayer( hDamager ) ? (CPlayerObj*)g_pLTServer->HandleToObject( hDamager ) : LTNULL;
-	if( IsRevivePlayerGameType( ) && pPlayerKiller && pVictim != pPlayerKiller )
+	if( IsDiscGameType( ) && pPlayerKiller && pVictim != pPlayerKiller )
 	{
 		bool bTeamKill = false;
 

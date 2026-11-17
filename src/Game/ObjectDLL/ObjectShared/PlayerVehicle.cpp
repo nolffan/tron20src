@@ -21,13 +21,10 @@
 #include "PlayerObj.h"
 #include "KeyMgr.h"
 
-#include <queue>
 
 
 LINKFROM_MODULE( PlayerVehicle );
 
-
-PlayerVehicle::PlayerVehicleList PlayerVehicle::m_lstPlayerVehicles;
 
 
 // ----------------------------------------------------------------------- //
@@ -79,44 +76,23 @@ PlayerVehicle::PlayerVehicle() : Prop ()
 	m_vOriginalDims.Init(10, 10, 10);
     m_rOriginalRot.Init();
 
-	m_pDebrisOverride = "Machinerysmall";
-
 	m_bLocked = false;
-	m_bRidden = false;
 	m_hstrLockedCommand	= LTNULL;
 
-	m_dwSavedFlags = 0;
-
-	m_fLastRideTime = 0;
-	m_bVirgin = true;
-
-	// Add this instance to a list of all bodies.
-	m_lstPlayerVehicles.push_back( this );
+	// RETAIL: Build 51's debris (0x1017e299)
+	m_pDebrisOverride = "Metal small";
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	PlayerVehicle::~PlayerVehicle()
 //
-//	PURPOSE:	Deallocate object
+//	PURPOSE:	Destructor
 //
 // ----------------------------------------------------------------------- //
 
 PlayerVehicle::~PlayerVehicle()
 {
-	// Erase this instance from the list of all playervehicles.
-	PlayerVehicleList::iterator it = m_lstPlayerVehicles.begin( );
-	while( it != m_lstPlayerVehicles.end( ))
-	{
-		if( *it == this )
-		{
-			m_lstPlayerVehicles.erase( it );
-			break;
-		}
-
-		it++;
-	}
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -244,8 +220,6 @@ void PlayerVehicle::PostPropRead(ObjectCreateStruct *pStruct)
 	m_dwFlags |= (FLAG_RAYHIT | FLAG_CLIENTNONSOLID | FLAG_TOUCH_NOTIFY);
 	m_dwFlags &= ~( FLAG_SOLID | FLAG_GRAVITY );
 
-	m_dwSavedFlags = m_dwFlags;
-
 
     char* pModelAttribute	= LTNULL;
     char* pSkin1Attribute	= LTNULL;
@@ -347,10 +321,6 @@ bool PlayerVehicle::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 	if (cMsg.GetArg(0) == s_cTok_Activate)
 	{
-		// Vehicle already being ridden.
-		if( m_bRidden )
-			return true;
-
 		DoActivate(hSender);
 
 		// Let Prop have a shot at it so activate commands are processed...
@@ -398,8 +368,6 @@ void PlayerVehicle::InitialUpdate()
 	g_pPhysicsLT->GetObjectDims(m_hObject, &m_vOriginalDims);
 
 	CreateSFXMsg();
-
-	CapNumberOfVehicles( );
 }
 
 // ----------------------------------------------------------------------- //
@@ -478,10 +446,6 @@ void PlayerVehicle::Update()
 
 void PlayerVehicle::DoActivate(HOBJECT hSender)
 {
-	// Check if vehicle already being ridden.
-	if( m_bRidden )
-		return;
-
 	// Make sure we're visible (i.e., spawned in)...
 
     uint32 dwFlags;
@@ -523,42 +487,6 @@ void PlayerVehicle::DoActivate(HOBJECT hSender)
 }
 
 
-void PlayerVehicle::SetRidden(bool bRidden)
-{
-
-	if (bRidden)
-	{
-		g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, m_dwSavedFlags);
-
-		bool bRH = !!(m_dwSavedFlags & FLAG_RAYHIT);
-
-		// Remove flags that cause the vehicle to go through extensive moveobjects.  It will
-		// reset its own flags under the respawn.
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_FORCEOPTIMIZEOBJECT, FLAG_GRAVITY | FLAG_SOLID | FLAG_RAYHIT | FLAG_TOUCH_NOTIFY | FLAG_FORCEOPTIMIZEOBJECT);
-
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
-
-		// We have now been ridden.
-		m_bVirgin = false;
-	}
-	else
-	{
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_ATTACH_HIDE1SHOW3);
-		g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, m_dwSavedFlags, FLAGMASK_ALL);
-
-		uint32 dwFlags;
-		g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
-		bool bRH = !!(dwFlags & FLAG_RAYHIT);
-
-		// Record the last time this vehicle has been ridden.
-		m_fLastRideTime = g_pLTServer->GetTime( );
-
-		Respawn();
-	}
-
-	m_bRidden = bRidden;
-}
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	PlayerVehicle::Save
@@ -577,11 +505,7 @@ void PlayerVehicle::Save(ILTMessage_Write *pMsg)
  	SAVE_FLOAT(m_fRespawnTime);
 	SAVE_BYTE((uint8)m_ePPhysicsModel);
 	SAVE_bool( m_bLocked );
-	SAVE_bool( m_bRidden );
 	SAVE_HSTRING( m_hstrLockedCommand );
-	SAVE_DWORD(m_dwSavedFlags);
-	SAVE_TIME( m_fLastRideTime );
-	SAVE_bool( m_bVirgin );
 
 	m_RespawnTimer.Save(pMsg);
 }
@@ -605,11 +529,7 @@ void PlayerVehicle::Load(ILTMessage_Read *pMsg)
  	LOAD_FLOAT(m_fRespawnTime);
 	LOAD_BYTE_CAST(m_ePPhysicsModel, PlayerPhysicsModel);
 	LOAD_bool( m_bLocked );
-	LOAD_bool( m_bRidden );
 	LOAD_HSTRING( m_hstrLockedCommand );
-	LOAD_DWORD(m_dwSavedFlags);
-	LOAD_TIME( m_fLastRideTime );
-	LOAD_bool( m_bVirgin );
 
 	m_RespawnTimer.Load(pMsg);
 }
@@ -630,96 +550,6 @@ void PlayerVehicle::CreateSFXMsg()
     m_PlayerVehicleStruct.Write(cMsg);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 }
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	PlayerVehicle::CapNumberOfVehicles
-//
-//	PURPOSE:	Limit number of vehicles allows in level by
-//				removing the vehicle with the longest time since
-//				it was last ridden.
-//
-// ----------------------------------------------------------------------- //
-
-struct PlayerVehicleQueueEntry
-{
-	PlayerVehicle*	m_pVehicle;
-
-	bool operator()( PlayerVehicleQueueEntry const& a, PlayerVehicleQueueEntry const& b) const
-	{
-		// a should be considered "larger" than b if its age
-		// is less than b so it goes higher on the queue.
-		return a.m_pVehicle->GetLastRideTime( ) > b.m_pVehicle->GetLastRideTime( );
-	}
-};
-
-void PlayerVehicle::CapNumberOfVehicles( )
-{
-	std::priority_queue< PlayerVehicleQueueEntry, std::vector< PlayerVehicleQueueEntry >, PlayerVehicleQueueEntry > queueAge;
-
-	// Maximum number of vehicles allowed in level.  When we
-	// go above this number we try to remove old ones.
-	int nVehicleMaxNumber = GetConsoleInt( "VehicleMaxNumber", 12 );
-	nVehicleMaxNumber = Max( 0, nVehicleMaxNumber );
-
-	// Vehicle must not have been riden for this time before it gets zapped.
-	float fVehicleMinTimeout = GetConsoleFloat( "VehicleMinTimeout", 30.0f );
-	fVehicleMinTimeout = Max( 0.0f, fVehicleMinTimeout );
-
-	float fTime = g_pLTServer->GetTime( );
-
-	PlayerVehicleQueueEntry queueEntry;
-
-	// Iterate through the list of vehicles and put them into a
-	// priority queue.  Sorted by oldest at top of queue.
-	for( PlayerVehicleList::iterator iter = m_lstPlayerVehicles.begin( ); iter != m_lstPlayerVehicles.end( ); iter++ )
-	{
-		queueEntry.m_pVehicle = *iter;
-		if( !queueEntry.m_pVehicle )
-			continue;
-
-		// Don't remove playervehicles that have never been ridden.
-		if( queueEntry.m_pVehicle->m_bVirgin )
-			continue;
-
-		// Don't remove vehicles being ridden.
-		if( queueEntry.m_pVehicle->m_bRidden )
-			continue;
-
-		// Don't take a snowmobile too quickly.
-		if( fTime - queueEntry.m_pVehicle->GetLastRideTime( ) < fVehicleMinTimeout )
-			continue;
-
-		queueAge.push( queueEntry );
-	}
-
-	// Count how many we should remove from the world.
-	int nRemoveCount = ( int )m_lstPlayerVehicles.size( ) - nVehicleMaxNumber;
-	if( nRemoveCount <= 0 )
-		return;
-
-	// Don't remove more than we have.
-	nRemoveCount = Min(( int )queueAge.size( ), nRemoveCount );
-
-	// Check if we have any to remove.
-	if( !nRemoveCount )
-		return;
-
-	// Remove all the oldest vehicles until the count is good.
-	while( nRemoveCount-- )
-	{
-		// Get the oldest vehicle.
-		PlayerVehicleQueueEntry const& queueEntry = queueAge.top( );
-
-		// Remove vehicle.
-		g_pLTServer->RemoveObject( queueEntry.m_pVehicle->m_hObject );
-
-		// Go to the next farthest body.
-		queueAge.pop( );
-	}
-}
-
 
 
 LTRESULT CPlayerVehiclePlugin::PreHook_EditStringList(

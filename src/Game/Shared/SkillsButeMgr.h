@@ -218,11 +218,12 @@ public :
 
 	bool		IsAvailable(eSkill skl) {return (m_nCosts[skl][SKL_AMATEUR] > 0);}
 
+#ifdef _CLIENTBUILD
+	// PORT: client only (see SkillsButeMgr.cpp)
 	const float*			GetModifiers(eSkill skl, eSkillLevel lvl);
 	float					GetModifier(eSkill skl, eSkillLevel lvl, uint8 nMod);
 	uint8					GetNumModifiers(eSkill skl);
 
-#ifdef _CLIENTBUILD
 	uint16					GetModifierNameId(eSkill skl, uint8 nMod);
 	uint16					GetModifierDescriptionId(eSkill skl, uint8 nMod);
 #endif

@@ -961,108 +961,9 @@ LTBOOL IsKindOf( HOBJECT hObject, HOBJECT hObject2 )
 }
 
 
-//-------------------------------------------------------------------------------------------
-// GetPlayerTeamId
-//
-// Gets the teamid from an HOBJECT that represents a player.
-//		Returns INVALID_TEAM if the object isn't a player or
-//		if it's not a team gametype.
-// Arguments:
-//		hPlayer  - handle to a player
-// Return:
-//      uint8 - teamid.
-//-------------------------------------------------------------------------------------------
-
-uint8 GetPlayerTeamId( HOBJECT hPlayer )
-{
-	if (!IsTeamGameType())
-		return INVALID_TEAM;
-
-	CPlayerObj *pPlayer = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject( hPlayer ));
-	if( !pPlayer )
-		return INVALID_TEAM;
-
-	return pPlayer->GetTeamID();
-}
-	
-
-
-//-------------------------------------------------------------------------------------------
-// AreSameTeam()
-//
-// Checks if hPlayer1 and hPlayer2 are on the same team
-//		returns false if either object is not a player
-//		returns true only if the players are on the same team
-// Arguments:
-//		hPlayer1  - handle to first player
-//		hPlayer2 - handle to second player
-// Return:
-//      bool
-//-------------------------------------------------------------------------------------------
-
-bool AreSameTeam( HOBJECT hPlayer1, HOBJECT hPlayer2 )
-{
-	if (!IsTeamGameType())
-		return false;
-
-	return ( GetPlayerTeamId( hPlayer1 ) == GetPlayerTeamId( hPlayer2 ));
-}
-	
-//-------------------------------------------------------------------------------------------
-// TeamIdToString
-//
-// Returns a string representation of the teamid.
-// Arguments:
-//		nTeamId - The teamid to convert..
-// Return:
-//      char const* - "NoTeam", "Team0", "Team1"
-//-------------------------------------------------------------------------------------------
-
-char const* TeamIdToString( uint8 nTeamId )
-{
-	switch( nTeamId )
-	{
-		case 0:
-			return "Team0";
-			break;
-		case 1:
-			return "Team1";
-			break;
-		default:
-			return "NoTeam";
-			break;
-	}
-}
-	
-//-------------------------------------------------------------------------------------------
-// TeamStringToTeamId
-//
-// Returns a teamid based on a string.
-// Arguments:
-//		pszTeamString - team string to convert.
-// Return:
-//      uint8 - team id.
-//-------------------------------------------------------------------------------------------
-
-uint8 TeamStringToTeamId( char const* pszTeamString )
-{
-	if( !pszTeamString )
-		return INVALID_TEAM;
-
-	static char const szTeam[] = "Team";
-	static int nLen = strlen( szTeam );
-	uint32 nTeamId = INVALID_TEAM;
-	if( !_strnicmp( pszTeamString, szTeam, nLen ))
-	{
-		nTeamId = atoi( &pszTeamString[ nLen ] );
-		if( nTeamId >= MAX_TEAMS )
-		{
-			nTeamId = INVALID_TEAM;
-		}
-	}
-
-	return nTeamId;
-}
+// RETAIL: Tron's server has none of NOLF2's GetPlayerTeamId, AreSameTeam,
+// TeamIdToString and TeamStringToTeamId (no "Team0", "Team1", "NoTeam" or
+// "Team" strings in Object.lto): its teams are CTronTeamMgr's.
 
 
 //-------------------------------------------------------------------------------------------
@@ -1255,20 +1156,8 @@ void GetConsoleString(char* sKey, char* sDest, char* sDefault)
 	strcpy(sDest, sDefault);
 }
 
-int GetConsoleInt(char* sKey, int nDefault)
-{
-    if (g_pLTServer)
-	{
-        HCONVAR hVar = g_pLTServer->GetGameConVar(sKey);
-		if (hVar)
-		{
-            float fValue = g_pLTServer->GetVarValueFloat(hVar);
-			return((int)fValue);
-		}
-	}
-
-	return(nDefault);
-}
+// RETAIL: no GetConsoleInt: nothing in Tron's server calls it (NOLF2's
+// only caller, PlayerVehicle::CapNumberOfVehicles, is not in Tron).
 
 LTFLOAT GetConsoleFloat(char* sKey, LTFLOAT fDefault)
 {

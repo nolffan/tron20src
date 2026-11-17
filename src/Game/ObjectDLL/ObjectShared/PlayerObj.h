@@ -122,7 +122,6 @@ class CPlayerObj : public CCharacter
         virtual void Respawn(uint8 nServerLoadGameFlags=LOAD_NEW_LEVEL, bool bGetStartPt=true,
 			GameStartPoint* pStartPoint=LTNULL, GameBase* pSpawnAt=LTNULL);
 		void Revive();
-        void CancelRevive( );
 		void ResetAfterDeath();
 		void ResetMultiplayerSkills();
         void SetSpectatorMode(LTBOOL bOn);
@@ -245,7 +244,9 @@ class CPlayerObj : public CCharacter
 
 		void TeleportClientToServerPos();
 
-        virtual LTFLOAT ComputeDamageModifier(ModelNode eModelNode);
+		// RETAIL: returns 1 (the hit box user slot 5 of CPlayerObj, 0x100846a0,
+		// folded with CThorne's); NOLF2's MaxDamageModifier cap is not in Tron
+        virtual LTFLOAT ComputeDamageModifier(ModelNode eModelNode) { return 1.0f; }
 
 		void SendIDToClients();
 
@@ -297,7 +298,6 @@ class CPlayerObj : public CCharacter
 		bool	UsedStartPoint( ) const { return false; }
 
 		// Creates body after respawn.
-		void	CreateRespawnBody( );
 
 		// Setup our team model.
 		bool	SetupTeamModel( bool bResetModel );
@@ -499,7 +499,6 @@ class CPlayerObj : public CCharacter
 
 		// Pickup an object.
 		bool PickupObject( HOBJECT hObject );
-		bool CanDropObject( );
 
 		// Generates a unique name for all players from a given name.
 		void GenerateUniqueName( char const* pszNameBase, char* pszUniqueName, int nUniqueNameSize );
@@ -514,7 +513,6 @@ class CPlayerObj : public CCharacter
 		CPPlayerLeanTypes GetLean( ) { return m_ePlayerLean; }
 
 		//handle request to switch teams
-		void SwitchToTeam(uint8 nTeam );
 
 	protected :  // Data members
 

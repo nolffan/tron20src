@@ -51,7 +51,10 @@ class CDeathScene
 
 	private : // Private member variables
 
-		CObjectRelationMgr* m_pObjectRelationMgr;
+		// RETAIL: Tron keeps the dead character's relation data itself, not
+		// NOLF2's relation manager (constructor 0x10218c20, debug_new of 0x30
+		// bytes)
+		RelationData*	m_pRelationData;
 		CharacterDeath	 m_eCharacterDeath;
 		LTBOOL		m_bWasPlayer;
 

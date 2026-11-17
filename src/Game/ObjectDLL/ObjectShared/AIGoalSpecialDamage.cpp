@@ -856,7 +856,6 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 	if( !m_bIncapacitated )
 	{
 		LTBOOL bRequiresMovement = LTFALSE;
-		LTBOOL bRequiresStanding = LTFALSE;
 
 		switch( damage.eType )
 		{
@@ -870,10 +869,9 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 			case DT_POISON:
 			case DT_ASSS:
 			case DT_GLUE:
-				break;
-
+			// PORT: NOLF2's slippery damage needed a standing AI; Tron has no
+			// such test (0x1019112e tests the movement only, no CAI::IsStanding)
 			case DT_SLIPPERY:
-				bRequiresStanding = LTTRUE;
 				break;
 
 			case DT_BEAR_TRAP:
@@ -891,11 +889,6 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 		// is not walking or running.
 
 		if( bRequiresMovement && !m_pAI->IsWalkingOrRunning() )
-		{
-			return LTTRUE;
-		}
-
-		if( bRequiresStanding && !m_pAI->IsStanding() )
 		{
 			return LTTRUE;
 		}

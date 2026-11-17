@@ -319,17 +319,6 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 #endif // _CLIENTBUILD
 };
 
-struct CLUSTERAUTOBURSTDISCCLASSDATA : public CLUSTERDISCCLASSDATA
-{
-	CLUSTERAUTOBURSTDISCCLASSDATA();
-	virtual ~CLUSTERAUTOBURSTDISCCLASSDATA();
-	
-	LTBOOL			Init(CButeMgr &buteMgr,char *aTagName);
-	
-	float			fMinBurstDistance;
-	float			fMaxBurstDistance;
-};
-
 // RETAIL: Tron's class data of its retail-only projectiles (RTTI
 // CORRUPTICDIMSCLASSDATA, BALLCLASSDATA, PRANKSTERCLASSDATA; their Init
 // 0x10145df0, 0x10145ed0, 0x10145ff0 and attribute names are retail's, the

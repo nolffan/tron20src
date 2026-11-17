@@ -562,7 +562,6 @@ class CAI : public CCharacter, public IAISensing
 		HMODELANIM GetLastHintAnim() const { return m_hHintAnim; }
 
 		LTBOOL IsWalkingOrRunning();
-		LTBOOL IsStanding();
 
 		// Path knowledge
 

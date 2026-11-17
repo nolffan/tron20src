@@ -192,10 +192,6 @@ LTBOOL IsGameBase( HOBJECT hObject );
 LTBOOL IsWorldModel( HOBJECT hObject );
 LTBOOL IsKindOf( HOBJECT hObject, const char* szClass );
 LTBOOL IsKindOf( HOBJECT hObject, HOBJECT hObject2 );
-bool AreSameTeam( HOBJECT hPlayer1, HOBJECT hPlayer2 );
-uint8 GetPlayerTeamId( HOBJECT hPlayer );
-char const* TeamIdToString( uint8 nTeamId );
-uint8 TeamStringToTeamId( char const* pszTeamString );
 
 LTBOOL IsVector(const char* szString);
 
@@ -316,7 +312,6 @@ extern GenericProp g_gp;
 
 LTBOOL DoesSegmentIntersectAABB(const LTVector& Point1, const LTVector& Point2, const LTVector& MinBox, const LTVector& MaxBox, LTVector *pIntersectPt = NULL, LTPlane *pIntersectPlane = NULL);
 
-int		GetConsoleInt(char* sKey, int nDefault);
 void	GetConsoleString(char* sKey, char* sDest, char* sDefault);
 void	WriteConsoleString(char* sKey, char* sValue);
 void	WriteConsoleInt(char* sKey, int nValue);

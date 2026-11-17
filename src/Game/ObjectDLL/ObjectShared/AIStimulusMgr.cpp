@@ -745,7 +745,7 @@ EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusTy
 
 EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusType, uint32 nAlarmLevelFactor,
 													HOBJECT hStimulusSource, HOBJECT hStimulusTarget,
-													RelationData RelationData, const LTVector& vPos, 
+													const RelationData& RelationData, const LTVector& vPos, 
 													LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor)
 {
 	ASSERT( eStimulusType > kStim_InvalidType );

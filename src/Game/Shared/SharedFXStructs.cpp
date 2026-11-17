@@ -159,13 +159,10 @@ void BODYCREATESTRUCT::Write(ILTMessage_Write *pMsg)
 	pMsg->Writebool(bCanBeCarried);
 	pMsg->Writebool(bCanBeRevived);
 	pMsg->Writeuint8(eDeathDamageType);
-	pMsg->Writebool(bPermanentBody);
-	pMsg->Writebool(bHitBoxUpdated);
-	pMsg->Writebool(bCanBeSearched);
-	
-	// Send the hitbox info
-	pMsg->WriteCompLTVector( vHitBoxDims );
-	pMsg->WriteCompLTVector( vHitBoxOffset );
+
+	// RETAIL: Tron's message ends here (Object.lto 0x101133e0, CShell.dll
+	// 0x101aaa60): no permanent body, hit box or search data.  PORT: the
+	// members stay for the NOLF2 code that still sets or reads them.
 }
 
 // ----------------------------------------------------------------------- //
@@ -188,13 +185,9 @@ void BODYCREATESTRUCT::Read(ILTMessage_Read *pMsg)
 	bCanBeCarried		= pMsg->Readbool();
 	bCanBeRevived		= pMsg->Readbool();
 	eDeathDamageType	= (DamageType)pMsg->Readuint8();
-	bPermanentBody		= pMsg->Readbool();
-	bHitBoxUpdated		= pMsg->Readbool();
-	bCanBeSearched		= pMsg->Readbool();
 
-		// Update the hitbox dims
-	vHitBoxDims		= pMsg->ReadCompLTVector();
-	vHitBoxOffset	= pMsg->ReadCompLTVector();
+	// RETAIL: Tron's message ends here (Object.lto 0x10113460, CShell.dll
+	// 0x101aaae0).
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -868,6 +861,10 @@ void TRIGGERCREATESTRUCT::Read( ILTMessage_Read *pMsg )
 }
 
 
+#ifdef _CLIENTBUILD
+// RETAIL: Object.lto has no radar (no RADAROBJCREATESTRUCT RTTI and no
+// RadarObject class); only the client keeps the radar object create struct.
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // RADAROBJCREATESTRUCT class Definition
@@ -915,3 +912,4 @@ void RADAROBJCREATESTRUCT::Read( ILTMessage_Read *pMsg )
 	if( nTeamId > MAX_TEAMS )
 		nTeamId = INVALID_TEAM;
 }
+#endif // _CLIENTBUILD

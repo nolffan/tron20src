@@ -374,23 +374,26 @@ LTRESULT CModPlugin::PreHook_Dims(
 												int	  nModelFilenameBufLen,
 												LTVector & vDims )
 {
+	// RETAIL: 0x10253710: Tron gives a mod without a model 16 unit dims
 
 	if (!szModelFilenameBuf || nModelFilenameBufLen < 1 || !g_pWeaponMgr ) return LT_UNSUPPORTED;
 
 	szModelFilenameBuf[0] = '\0';
 
 	MOD const* pMod = g_pWeaponMgr->GetMod(( char* )szPropValue );
-	if( !pMod || !pMod->szPowerupModel[0] )
+	if( pMod && pMod->szPowerupModel[0] )
 	{
-		return LT_UNSUPPORTED;
+		strcpy( szModelFilenameBuf, pMod->szPowerupModel );
+
+		// Need to convert the .ltb filename to one that DEdit understands...
+
+		ConvertLTBFilename( szModelFilenameBuf );
+
+		return LT_OK;
 	}
 
-	strcpy( szModelFilenameBuf, pMod->szPowerupModel );
+	vDims.Init(16.0f, 16.0f, 16.0f);
 
-	// Need to convert the .ltb filename to one that DEdit understands...
-	
-	ConvertLTBFilename( szModelFilenameBuf );
-
-	return LT_OK;
+	return LT_UNSUPPORTED;
 }
 

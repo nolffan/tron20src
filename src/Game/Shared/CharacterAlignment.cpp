@@ -666,17 +666,9 @@ RelationData::RelationData()
 
 RelationData::~RelationData(){}
 
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	RelationData::RelationData()
-//              
-//	PURPOSE:	Copy constructor to handle.. copying a RelationData
-//              
-//----------------------------------------------------------------------------
-RelationData::RelationData(const RelationData& rhs)
-{
-	*this = rhs;
-}
+// RETAIL: Tron's RelationData has no copy constructor of its own: nothing
+// passes or copies one by value (CAIStimulusMgr::RegisterStimulus takes it
+// by reference).
 
 //----------------------------------------------------------------------------
 //              

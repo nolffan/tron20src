@@ -200,7 +200,6 @@ public:
 	bool			IsInitialized() const { return m_bInitialized; }
 	_mapNameToID*	GetMapObjectRelationMgrNameToID() { return &m_mapObjectRelationMgrNameToID; }
 	int				GetObjectRelationMgrTemplateIDByName( const char* const pszName ) const { return GetTemplateIDByName( pszName, (CObjectRelationMgr*)NULL ); }
-	const char*		GetObjectRelationMgrTemplateName(int nTemplateID);
 
 	// Get Relationset independent of a character object.
 	void FillRelationSet(const char* const szName, RelationSet* pOut);

@@ -111,7 +111,6 @@ class Body : public Prop, public IHitBoxUser
 		void			SetPermanentBody( bool bPerm );
 
 		// for game types where a players body may sit aound indefinitely while waiting to respawn
-		void			ResetLifetime(float fLifetime);
 
 		virtual LTBOOL UsingHitDetection() const { return LTTRUE; }
 

@@ -175,7 +175,9 @@ void CWeapon::ReloadClip(LTBOOL bPlayReload, int nNewAmmo /*=-1*/, uint8 nAmmoId
 	if (IsPlayer(m_hObject))
 	{
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(m_hObject);
-        fRadiusMult = pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STEALTH,StealthModifiers::eRadius);
+		// RETAIL: 0x10157469 reads the stealth table inline (Tron has no
+		// CSkills::GetSkillModifier)
+        fRadiusMult = g_pSkillsButeMgr->GetStealth(pPlayer->GetPlayerSkills()->GetLevel(SKL_STEALTH))->fModifier[StealthModifiers::eRadius];
 	}
 	
 	// Add a sound stimulus for the reloading sound.

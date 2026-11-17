@@ -91,26 +91,9 @@ void CDTButeMgr::Term()
 
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	DamageFlagToType()
-//
-//	PURPOSE:	Convert the damage flag to its type equivillent
-//
-// ----------------------------------------------------------------------- //
-
-DamageType DamageFlagToType(DamageFlags nDamageFlag)
-{
-	for (int i=0; i < kNumDamageTypes; i++)
-	{
-		if (DTInfoArray[i].nDamageFlag == nDamageFlag)
-		{
-			return DTInfoArray[i].eType;
-		}
-	}
-
-	return DT_INVALID;
-}
+// RETAIL: no DamageFlagToType in Tron (NOLF2's only caller,
+// CAIGoalWork::HandleSpecialDamageDeactivation, switches on the flags
+// directly in Tron: Object.lto 0x101f841c).
 
 // ----------------------------------------------------------------------- //
 //

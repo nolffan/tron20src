@@ -100,6 +100,7 @@ GameType GetGameType( )
 #endif // _CLIENTBUILD
 }
 
+#ifdef _CLIENTBUILD	// RETAIL: not in Object.lto (see ClientServerShared.h)
 // ----------------------------------------------------------------------- //
 //
 //  ROUTINE:	IsCoopMultiplayerGameType
@@ -122,6 +123,7 @@ bool IsCoopMultiplayerGameType()
 		break;
 	}
 }
+#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //
@@ -152,6 +154,7 @@ bool IsDeathmatchGameType()
 	}
 }
 
+#ifdef _CLIENTBUILD	// RETAIL: not in Object.lto (see ClientServerShared.h)
 // ----------------------------------------------------------------------- //
 //
 //  ROUTINE:	IsTeamGameType
@@ -180,6 +183,7 @@ bool IsTeamGameType()
 		break;
 	}
 }
+#endif // _CLIENTBUILD
 
 
 // ----------------------------------------------------------------------- //
@@ -211,6 +215,7 @@ bool IsDifficultyGameType()
 	}
 }
 
+#ifdef _CLIENTBUILD	// RETAIL: not in Object.lto (see ClientServerShared.h)
 // ----------------------------------------------------------------------- //
 //
 //  ROUTINE:	IsRevivePlayerGameType
@@ -232,6 +237,7 @@ bool IsRevivePlayerGameType()
 		break;
 	}
 }
+#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //

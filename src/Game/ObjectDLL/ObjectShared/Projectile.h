@@ -99,11 +99,6 @@ class CProjectile : public GameBase
 
 		HOBJECT          GetFiredFrom() const   { return m_hFiredFrom; }
 
-		// PORT: Tron's CProjectile keeps no team id; NOLF2's projectile types
-		// (ProjectileTypes.cpp, where these are) still use one, so these
-		// take it from the shooter
-		uint8			GetTeamId() const;
-		bool			IsMyTeam( HOBJECT hPlayer ) const;
 		const LTVector&  GetFirePos() const     { return m_vFirePos; }
 		const LTVector&  GetFireDir() const     { return m_vDir; }
 

@@ -60,6 +60,24 @@ BEGIN_CLASS(Body)
 END_CLASS_DEFAULT_FLAGS(Body, Prop, NULL, NULL, CF_HIDDEN)
 #pragma force_active off
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	Body::CreateSpecialFX
+//
+//	PURPOSE:	Sets the specialfx message ofr this body...
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: inline in Tron (Body::Init, 0x1015ae4b, has it in its body)
+inline void Body::CreateSpecialFX()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(SFX_BODY_ID);
+	m_BCS.Write(cMsg);
+	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
+}
+
+
 CMDMGR_BEGIN_REGISTER_CLASS( Body )
 CMDMGR_END_REGISTER_CLASS( Body, Prop )
 
@@ -335,14 +353,8 @@ uint32 Body::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		{
 			Load((ILTMessage_Read*)pData, (uint32)fData);
 
-			uint32 dwRet = Prop::EngineMessageFn(messageID, pData, fData);
-
-			// We need to reset our sfx message since values
-			// could have changed across save versions.
-			
-			CreateSpecialFX( );
-			
-			return dwRet;
+			// RETAIL: 0x1015956b: Tron does not reset the sfx message here
+			return Prop::EngineMessageFn(messageID, pData, fData);
 		}
 		break;
 
@@ -461,7 +473,9 @@ bool Body::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	// 0x101596f0) and no Carried/Dropped body states.
 	else if( cMsg.GetArg( 0 ) == s_cTok_Revive && IsPlayer( hSender ))
 	{
-		if( IsRevivePlayerGameType( ) && m_hCharacter && IsPlayer( m_hCharacter ) && GetCanRevive( ))
+		// RETAIL: 0x1015983a tests for a multiplayer game, not NOLF2's revive
+		// game types, and not the body's revive flag
+		if( IsMultiplayerGame( ) && m_hCharacter && IsPlayer( m_hCharacter ))
 		{
 			CPlayerObj *pDeadPlayer = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( m_hCharacter ));
 			if( pDeadPlayer && pDeadPlayer->CanRevive( ))
@@ -1304,16 +1318,8 @@ void Body::Update()
 			m_eDeathStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDeathVisible, 1, m_hObject, LTNULL, m_DeathScene.GetRelationData(), vPos, 1.f, 1.f );
 		}
 
-		//set body lifetime here for deathmatch because CanDeactivate() will return false if the lifetime is
-		// set prior to this point, and therefore we will never make it into this section
-		if( !IsCoopMultiplayerGameType( ) && !GetCanRevive( ))
-		{
-			if (m_pSearch->HasItem())
-				m_fLifetime = kfDMPlayerBodyLifetime;
-			else
-				m_fLifetime = 0.1f;
-		}
-
+		// RETAIL: 0x1015b8a5 sets no deathmatch body lifetime here (NOLF2's
+		// coop and revive tests).
 
 		SetNextUpdate(UPDATE_NEVER);
 
@@ -2211,21 +2217,6 @@ void Body::SetPermanentBody( bool bPermanent )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	Body::ResetLifetime
-//
-//	PURPOSE:	Restarts the body's lifetime
-//
-// ----------------------------------------------------------------------- //
-
-void Body::ResetLifetime(float fLifetime)
-{
-	m_fStartTime = g_pLTServer->GetTime();
-	m_fLifetime = fLifetime;
-	SetNextUpdate(s_fUpdateDelta);
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	Body::SetCanRevive
 //
 //	PURPOSE:	Sets the body to be revivable
@@ -2250,23 +2241,6 @@ void Body::SetCanRevive( bool bCanRevive )
 
 	CreateSpecialFX();
 }
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	Body::CreateSpecialFX
-//
-//	PURPOSE:	Sets the specialfx message ofr this body...
-//
-// ----------------------------------------------------------------------- //
-
-void Body::CreateSpecialFX()
-{
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(SFX_BODY_ID);
-	m_BCS.Write(cMsg);
-	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
-}
-
 
 // ----------------------------------------------------------------------- //
 //

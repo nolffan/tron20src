@@ -195,7 +195,7 @@ class CAIStimulusMgr : public ILTObjRefReceiver
 		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,  
 								const LTVector& vPos, LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor);
 		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, uint32 nAlarmLevelFactor, HOBJECT hStimulusSource, 
-								HOBJECT hStimulusTarget, RelationData cc, const LTVector& vPos, LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor);
+								HOBJECT hStimulusTarget, const RelationData& cc, const LTVector& vPos, LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor);	// RETAIL: by reference (Body::Update pushes its address, 0x1015b88d)
 		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,
 								HOBJECT hStimulusTarget, CAIStimulusRecord::kDynamicPos_Flag DynamicPosFlag, LTFLOAT fRadiusFactor);
 		EnumAIStimulusID	RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,

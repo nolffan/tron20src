@@ -236,7 +236,6 @@ class RelationData
 		RelationData();
 		~RelationData();
 		
-		RelationData(const RelationData& rhs);
 		RelationData& operator=(const RelationData& rhs );
 		
 		void Save(ILTMessage_Write *pMsg);

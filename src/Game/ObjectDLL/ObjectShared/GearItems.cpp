@@ -371,24 +371,27 @@ LTRESULT CGearPlugin::PreHook_Dims(
 												int	  nModelFilenameBufLen,
 												LTVector & vDims )
 {
+	// RETAIL: 0x1025ddb0: Tron gives a gear item without a model 16 unit dims
 
 	if (!szModelFilenameBuf || nModelFilenameBufLen < 1 || !g_pWeaponMgr ) return LT_UNSUPPORTED;
 
 	szModelFilenameBuf[0] = '\0';
 
 	GEAR const* pGear = g_pWeaponMgr->GetGear(( char* )szPropValue );
-	if( !pGear || !pGear->szModel[0] )
+	if( pGear && pGear->szModel[0] )
 	{
-		return LT_UNSUPPORTED;
+		strcpy( szModelFilenameBuf, pGear->szModel );
+
+		// Need to convert the .ltb filename to one that DEdit understands...
+
+		ConvertLTBFilename( szModelFilenameBuf );
+
+		return LT_OK;
 	}
 
-	strcpy( szModelFilenameBuf, pGear->szModel );
+	vDims.Init(16.0f, 16.0f, 16.0f);
 
-	// Need to convert the .ltb filename to one that DEdit understands...
-	
-	ConvertLTBFilename( szModelFilenameBuf );
-
-	return LT_OK;
+	return LT_UNSUPPORTED;
 }
 
 #endif

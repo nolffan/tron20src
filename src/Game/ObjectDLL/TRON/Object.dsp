@@ -330,10 +330,6 @@ SOURCE=.\ProjectileBallLauncher.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ProjectileClusterAutoBurstDisc.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\ProjectileClusterDisc.cpp
 # End Source File
 # Begin Source File
@@ -598,10 +594,6 @@ SOURCE=.\PingButeMgr.h
 # Begin Source File
 
 SOURCE=.\ProjectileBallLauncher.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\ProjectileClusterAutoBurstDisc.h
 # End Source File
 # Begin Source File
 

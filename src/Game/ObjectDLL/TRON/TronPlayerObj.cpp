@@ -2267,7 +2267,8 @@ void CTronPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 void CTronPlayerObj::Respawn(uint8 nServerLoadGameFlags, bool bGetStartPt,
 							 GameStartPoint* pStartPoint, GameBase* pSpawnAt)
 {
-	if( IsRevivePlayerGameType( ))
+	// RETAIL: 0x10067213 tests for a disc game type
+	if( IsDiscGameType( ))
 	{
 		// Remember the weapon we had...
 

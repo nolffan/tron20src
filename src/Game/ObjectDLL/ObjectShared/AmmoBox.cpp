@@ -320,13 +320,7 @@ void AmmoBox::Leftovers(ILTMessage_Read *pMsg)
 
 	PlayPickedupSound();
 	
-	// If in a deathmatch game we should act like the ammobox was empty and pick it up
-	// if anything from the box was taken.
-	
-	if( !IsCoopMultiplayerGameType() )
-	{
-		PickedUp( LTNULL );
-	}
+	// RETAIL: 0x101d3223 ends here (no NOLF2 deathmatch pick up).
 }
 
 

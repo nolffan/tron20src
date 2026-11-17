@@ -208,7 +208,11 @@ LTBOOL CAIGoalWork::HandleSpecialDamageDeactivation()
 	// Get the anim prop for the damage type.
 
 	EnumAnimProp eDamage = kAP_None;
-	switch( DamageFlagToType( m_pAI->GetDamageFlags() ) )
+	// RETAIL: 0x101f841c switches on the damage flags themselves, not on
+	// the damage type they map to: a retail bug (no flag value is one of
+	// these types'), to list in docs/RETAIL_BUGS.md once this function is
+	// identical (its state enums are Tron's)
+	switch( m_pAI->GetDamageFlags() )
 	{
 		case DT_SLEEPING:
 			eDamage = kAP_DamageSleeping;

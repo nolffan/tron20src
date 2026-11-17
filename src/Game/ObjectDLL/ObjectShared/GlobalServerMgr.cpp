@@ -26,7 +26,6 @@
 #include "RelationMgr.h"
 #include "InventoryButeMgr.h"
 #include "TransitionMgr.h"
-#include "RadarTypeMgr.h"
 #include "ActivateTypeMgr.h"
 #include "TriggerTypeMgr.h"
 #include "../TRON/ServerSubroutineMgr.h"	// RETAIL: Tron's
@@ -107,7 +106,6 @@
 #include "ProjectileTypes.h"
 #include "Prop.h"
 #include "PropType.h"
-#include "RadarObject.h"
 #include "RandomSpawner.h"
 #include "RotatingDoor.h"
 #include "RotatingSwitch.h"

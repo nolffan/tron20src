@@ -2502,7 +2502,9 @@ int AMMO::GetMaxAmount(HOBJECT hCharacter) const
 	if (IsPlayer(hCharacter))
 	{
         CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(hCharacter);
-        LTFLOAT fMult = pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_CARRY,CarryModifiers::eMaxAmmo);
+		// RETAIL: Object.lto 0x101084de reads the carry table inline (Tron
+		// has no CSkills::GetSkillModifier)
+        LTFLOAT fMult = g_pSkillsButeMgr->GetCarry(pPlayer->GetPlayerSkills()->GetLevel(SKL_CARRY))->fModifier[CarryModifiers::eMaxAmmo];
         nMaxAmmo =  (int) ( fMult * (LTFLOAT)nMaxAmmo );
 	};
 

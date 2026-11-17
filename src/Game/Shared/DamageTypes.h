@@ -149,16 +149,6 @@ LTFLOAT SlowMovementDuration(DamageType eType);
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	DamageFlagToType()
-//
-//	PURPOSE:	Convert the damage flag to its type equivillent
-//
-// ----------------------------------------------------------------------- //
-
-DamageType DamageFlagToType(DamageFlags nDamageFlag);
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	DamageTypeToFlag()
 //
 //	PURPOSE:	Convert the damage type to its flag equivillent

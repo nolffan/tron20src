@@ -50,7 +50,6 @@
 #include "SinglePlayerMissionMgr.h"
 #include "CoopMissionMgr.h"
 #include "DeathMatchMissionMgr.h"
-#include "TeamDeathMatchMissionMgr.h"
 #include "../TRON/DiscArenaMissionMgr.h"	// RETAIL: Tron's
 #include "../TRON/LightCycleMultiplayerMissionMgr.h"	// RETAIL: Tron's
 #include "../TRON/LightCycleSinglePlayerMissionMgr.h"	// RETAIL: Tron's
@@ -310,7 +309,7 @@ LTRESULT CGameServerShell::OnServerInitialized()
 	// Do any game specific initialization.
 	// RETAIL: the disc games load the multiplayer weapons (retail 0x100dd280);
 	// Tron has no weapon restrictions
-	if( IsRevivePlayerGameType( ))
+	if( IsDiscGameType( ))
 		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_MULTI_FILE );
 	else
 		g_pWeaponMgr->LoadOverrideButes( WEAPON_DEFAULT_FILE );
@@ -1489,28 +1488,6 @@ void CGameServerShell::HandlePlayerRespawn (HCLIENT hSender, ILTMessage_Read *pM
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CGameServerShell::HandlePlayerCancelRevive
-//
-//	PURPOSE:	In certain gametypes, the player can be revived while
-//				waiting to respawn.  If they don't wish to be revived,
-//				they can cancel revive by hitting the fire or activate
-//				while the timer is counting down.
-//
-// ----------------------------------------------------------------------- //
-
-void CGameServerShell::HandlePlayerCancelRevive( HCLIENT hSender, ILTMessage_Read *pMsg )
-{
-    CPlayerObj* pPlayer = GET_PLAYER(hSender);
-	
-	// don't respawn player if he is alive (may cause problems for end of match spawns) 
-	if (pPlayer && pPlayer->CanRespawn( ))
-	{
-		pPlayer->CancelRevive( );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CGameServerShell::HandleClientLoaded()
 //
 //	PURPOSE:	Sent from the client in response to a server message of
@@ -1632,11 +1609,7 @@ void CGameServerShell::HandleMultiplayerInit (HCLIENT hSender, ILTMessage_Read *
 	if( !pNewPlayer->MultiplayerInit( pMsg ))
 		return;
 
-	// Tell our client about us so that it knows what team we're on
-	if( IsTeamGameType( ))
-	{
-		SendPlayerInfoMsgToClients( hSender, pNewPlayer, MID_PI_UPDATE );
-	}
+	// RETAIL: 0x100df6a6 sends no NOLF2 team update here.
 
 	// Don't just broadcast the list.  That would send messages to clients that aren't fully connected yet.
 	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
@@ -1733,40 +1706,57 @@ void CGameServerShell::HandleHandshake (HCLIENT hSender, ILTMessage_Read *pMsg)
 
 void CGameServerShell::HandlePlayerMessage (HCLIENT hSender, ILTMessage_Read *pMsg)
 {
+	// RETAIL: 0x100df800: Tron's message has a chat type (HUDChatInput's
+	// m_nChatType): 1 goes to all clients, 2 to the sender's team in a
+	// multiplayer game.  No NOLF2 team game type test.  The constants' names
+	// are ours.
+	enum { kChatType_All = 1, kChatType_Team = 2 };
+
 	// retrieve the string they sent
 
 	char szString[256];
 	szString[0] = 0;
 	pMsg->ReadString(szString, sizeof(szString));
-	bool bTeamMsg = pMsg->Readbool();
-
-	uint8 nTeam = INVALID_TEAM;
-	CPlayerObj* pPlayer = GET_PLAYER(hSender);
-	if (IsTeamGameType() && bTeamMsg && pPlayer)
-		nTeam = pPlayer->GetTeamID();
+	uint8 nChatType = pMsg->Readuint8();
 
 	// So it shows up in GameSrv..
     if(szString[0] && !(g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL))
 	{
+		CPlayerObj* pPlayer = GET_PLAYER(hSender);
 
-		if( !pPlayer )
-			return;
-        
 		char szMsg[256] = {0};
-		sprintf( szMsg, "%s: %s", pPlayer->GetNetUniqueName(), szString );
+		sprintf( szMsg, "%s: %s", pPlayer ? pPlayer->GetNetUniqueName() : "NULL", szString );
     
 		g_pLTServer->CPrint( szMsg );
 	}
 	uint32 clientID = g_pLTServer->GetClientID(hSender);
 
-	// now send the string to all clients
+	// now send the string to the clients
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_PLAYER_MESSAGE);
 	cMsg.WriteString(szString);
 	cMsg.Writeuint32(clientID);
-	cMsg.Writeuint8(nTeam);
-	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+	cMsg.Writeuint8(nChatType);
+
+	switch( nChatType )
+	{
+		case kChatType_All:
+			g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+			break;
+
+		case kChatType_Team:
+			if( IsMultiplayerGame( ))
+			{
+				int nTeam = g_pTronTeamMgr->GetTeamOfClient( g_pLTServer->GetClientID( hSender ));
+				g_pTronTeamMgr->SendToTeam( cMsg.Read(), nTeam, MESSAGE_GUARANTEED, false );
+			}
+			else
+			{
+				g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+			}
+			break;
+	}
 }
 
 // ----------------------------------------------------------------------- //

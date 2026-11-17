@@ -1138,14 +1138,6 @@ SOURCE=.\PropTypeMgr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\RadarObject.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\RandomSpawner.cpp
 # End Source File
 # Begin Source File
@@ -1368,10 +1360,6 @@ SOURCE=..\..\Shared\SurfaceMgr.cpp
 # Begin Source File
 
 SOURCE=.\Switch.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\TeamDeathMatchMissionMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -2547,14 +2535,6 @@ SOURCE=.\PropTypeMgr.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\RadarObject.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\RandomSpawner.h
 # End Source File
 # Begin Source File
@@ -2800,10 +2780,6 @@ SOURCE=..\..\Shared\SurfaceMgr.h
 # Begin Source File
 
 SOURCE=.\Switch.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\TeamDeathMatchMissionMgr.h
 # End Source File
 # Begin Source File
 

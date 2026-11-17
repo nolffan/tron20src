@@ -3120,32 +3120,6 @@ LTBOOL CAI::IsWalkingOrRunning()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAI::IsStanding()
-//
-//	PURPOSE:	Query to determine if an AI is standing.
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL CAI::IsStanding()
-{
-	if( !m_pAnimationContext )
-	{
-		return LTFALSE;
-	}
-
-	// Look at anim props to determine if AI is standing...
-
-	if( m_pAnimationContext->IsPropSet( kAPG_Posture, kAP_Stand ))
-	{
-		return LTTRUE;
-	}
-
-	return LTFALSE;
-
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CAI::PreUpdate
 //
 //	PURPOSE:	Does our Preupdate
@@ -3868,15 +3842,12 @@ void CAI::UpdateInfo()
 
 			if( m_bSensesOn )
 			{
-				info += "Senses : 1\n";
+				info += "Senses: 1\n";	// RETAIL: Tron's text (0x1013073c)
 			} else {
-				info += "Senses : 0\n";
+				info += "Senses: 0\n";
 			}
 
-			// Show alignment.
-			info += "Algnmnt : ";
-			info += CRelationMgr::GetGlobalRelationMgr()->GetButeMgr()->GetObjectRelationMgrTemplateName( GetRelationMgr()->GetTemplateID() );
-			info += "\n";
+			// RETAIL: 0x1013074e: no alignment line in Tron.
 
 			// Show goalset, goal and state.
 			info += "GS : ";

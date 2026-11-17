@@ -282,7 +282,6 @@ class CGameServerShell : public IServerShellStub
 		void		HandlePlayerClientMsg			(HCLIENT, ILTMessage_Read*);
 		void		HandleFragSelf					(HCLIENT, ILTMessage_Read*);
         void        HandlePlayerRespawn				(HCLIENT, ILTMessage_Read*);
-        void        HandlePlayerCancelRevive		(HCLIENT, ILTMessage_Read*);
         void        HandleClientLoaded				(HCLIENT, ILTMessage_Read*);
 		void		HandlePlayerTaunt				(HCLIENT, ILTMessage_Read*);
 		void		HandlePlayerTeleport			(HCLIENT, ILTMessage_Read*);

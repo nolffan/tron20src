@@ -2447,7 +2447,8 @@ LTBOOL AIVolumeJunction::GetAction(CAI* pAI, uint8* pmskActionVolumes, AIVolume*
 			CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(hTarget);
 			if( pPlayer )
 			{
-				fStealth = pPlayer->GetPlayerSkills()->GetSkillModifier(SKL_STEALTH,StealthModifiers::eEvasion);
+				// RETAIL: 0x1009d5a1 reads the stealth table inline
+				fStealth = g_pSkillsButeMgr->GetStealth(pPlayer->GetPlayerSkills()->GetLevel(SKL_STEALTH))->fModifier[StealthModifiers::eEvasion];
 			}
 		}
 		

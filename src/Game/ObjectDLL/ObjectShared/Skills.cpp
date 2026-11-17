@@ -186,32 +186,6 @@ bool CSkills::HandleRewardMessage(const CParsedMsg &cMsg)
 
 // --------------------------------------------------------------------------- //
 //
-//	ROUTINE:	Skills::GainIntelBonus()
-//
-//	PURPOSE:	Handle receiving an intel bonus
-//
-// --------------------------------------------------------------------------- //
-
-void CSkills::GainIntelBonus()
-{
-
-	if (IsMultiplayerGame()) return;
-
-	uint32 nBonus = g_pSkillsButeMgr->GetIntelSkillBonus();
-	m_nTotalPoints += nBonus;
-	m_nAvailPoints += nBonus;
-
-	CAutoMessage cClientMsg;
-	cClientMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
-	cClientMsg.Writeuint8(IC_SKILLS_ID);
-	cClientMsg.Writeuint8(-1);
-    cClientMsg.Writeuint8(1);
-    cClientMsg.Writefloat((float)nBonus);
-	g_pLTServer->SendToClient(cClientMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-}
-
-// --------------------------------------------------------------------------- //
-//
 //	ROUTINE:	Skills::UpdateClient()
 //
 //	PURPOSE:	Give the client our current values
@@ -273,51 +247,30 @@ void CSkills::HandleSkillUpdate(ILTMessage_Read *pMsg)
 }
 
 
+// RETAIL: 0x101852b0 (CPlayerObj::SkillsCheat, 0x1007d8d0, jumps to it):
+// Tron's cheat gives the current mission's rewards, one message each, not
+// NOLF2's rewards of every mission before it.
 void CSkills::SkillsCheat()
 {
 	int nCurrentMission = g_pServerMissionMgr->GetCurrentMission( );
 
-	if (nCurrentMission < 0 || nCurrentMission >= g_pMissionButeMgr->GetNumMissions())
+	if (nCurrentMission < 0 || nCurrentMission >= g_pMissionButeMgr->GetNumMissions()) return;
+
+	MISSION *pMission = g_pMissionButeMgr->GetMission(nCurrentMission);
+
+	for (int n = 0; n < pMission->nNumRewards; ++n)
 	{
+		m_nTotalPoints += pMission->aRewards[n].nVal;
+		m_nAvailPoints += pMission->aRewards[n].nVal;
+
 		CAutoMessage cClientMsg;
 		cClientMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 		cClientMsg.Writeuint8(IC_SKILLS_ID);
-		cClientMsg.Writeuint8(-1);
+		cClientMsg.Writeuint8(n);
 		cClientMsg.Writeuint8(0);
-		cClientMsg.Writefloat(10000.0f); // (LTFLOAT)pMission->aRewards[n].nVal);
+		cClientMsg.Writefloat(0.0f);
 		g_pLTServer->SendToClient(cClientMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		m_nTotalPoints += 10000;
-		m_nAvailPoints += 10000;
-
-		return;
 	}
-
-	uint32 nGain = 0;
-	for (int m = 0; m < nCurrentMission; ++m)
-	{
-		MISSION *pMission = g_pMissionButeMgr->GetMission(m);
-
-		for (int n = 0; n < pMission->nNumRewards; ++n)
-		{
-			nGain += pMission->aRewards[n].nVal;
-		}
-	}
-	m_nTotalPoints += nGain;
-	m_nAvailPoints += nGain;
-
-	CAutoMessage cClientMsg;
-	cClientMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
-	cClientMsg.Writeuint8(IC_SKILLS_ID);
-	cClientMsg.Writeuint8(-1);
-	cClientMsg.Writeuint8(0);
-	cClientMsg.Writefloat((float)nGain); // (LTFLOAT)pMission->aRewards[n].nVal);
-	g_pLTServer->SendToClient(cClientMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
 }
 
 
-float CSkills::GetSkillModifier(eSkill skl, uint8 nMod)
-{
-	return g_pSkillsButeMgr->GetModifier(skl, (eSkillLevel)m_nLevel[skl], nMod);
-}

@@ -548,7 +548,10 @@ void CButeMgr::ConsumeChar()
 
 
 
-short CButeMgr::CharClass(unsigned char currentChar)
+// RETAIL: CharClass, Action, NextState and LookupCodes are inline in Tron's
+// ButeMgr (ScanTok, Object.lto 0x1006e340, has them in its body and calls
+// only the reserved word lookup, 0x10071270).
+inline short CButeMgr::CharClass(unsigned char currentChar)
 {
     //if (ClassMap[(unsigned int)currentChar] == 0)
 		//DisplayMessage("ButeMgr (%d):  Illegal character encountered in attribute file.", m_lineNumber);
@@ -557,14 +560,14 @@ short CButeMgr::CharClass(unsigned char currentChar)
 
 
 
-short CButeMgr::Action(short State, unsigned char currentChar)
+inline short CButeMgr::Action(short State, unsigned char currentChar)
 {
     return TransTable[State][CharClass(currentChar)].ActionType;
 }
 
 
 
-short CButeMgr::NextState(short State, unsigned char currentChar)
+inline short CButeMgr::NextState(short State, unsigned char currentChar)
 {
     return TransTable[State][CharClass(currentChar)].A;
 }
@@ -573,7 +576,7 @@ short CButeMgr::NextState(short State, unsigned char currentChar)
 
 
 
-void CButeMgr::LookupCodes(short State, unsigned char currentChar)
+inline void CButeMgr::LookupCodes(short State, unsigned char currentChar)
 {
     m_token = TransTable[State][CharClass(currentChar)].A;
     m_tokenMinor = TransTable[State][CharClass(currentChar)].B;

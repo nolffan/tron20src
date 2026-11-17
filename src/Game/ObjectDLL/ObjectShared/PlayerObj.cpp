@@ -1072,24 +1072,8 @@ uint32 CPlayerObj::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 void CPlayerObj::HandleDamage(const DamageStruct& damage)
 {
-	// Check for FriendlyFire...
-	
-	if( IsMultiplayerGame( ) && (1.0f > g_vtNetFriendlyFire.GetFloat( )) && IsPlayer( damage.hDamager ) && (damage.hDamager != m_hObject) )
-	{
-		if( IsCoopMultiplayerGameType( ) || (IsTeamGameType( ) && AreSameTeam( damage.hDamager, m_hObject )) ) 
-		{
-			return;
-		}
-	}
-
-	// If hit by a tracking device just be completely oblivious to the actual damage and begin tracking... 
-
-	if( damage.eType == DT_GADGET_TRACKER )
-	{
-		// Send message to begin tracking...
-		SetTracking( true );
-		return;
-	}
+	// RETAIL: 0x10077b90 has neither NOLF2's friendly fire test nor its
+	// tracking device damage.
 
 	if ( !m_damage.IsCantDamageType(damage.eType) )
 	{
@@ -1876,8 +1860,7 @@ bool CPlayerObj::HandleIntelMessage(const CParsedMsg &cMsg)
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
 
 
-	if (bAdd)
-		m_Skills.GainIntelBonus();
+	// RETAIL: 0x1007ad66: no skill points for intel in Tron
 
 
 
@@ -3677,10 +3660,7 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	bool bRespawningAfterDeath = ( m_dwLastLoadFlags == 0 );
 	if( bRespawningAfterDeath )
 	{
-		// Switch to non-revivable body if we have a revivable one in tow.
-		if( IsRevivePlayerGameType( ) && m_hDeadBody )
-			CreateRespawnBody( );
-
+		// RETAIL: 0x1007dba0 has no NOLF2 revivable body here.
 		if( m_pPlayerAttachments )
 			m_pPlayerAttachments->DeselectWeapon();
 		
@@ -5157,7 +5137,8 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 
 	// If we're carrying an object, drop it...
 
-	if( m_hCarriedObject && CanDropObject( ) && pData->m_nType == MID_ACTIVATE_MOVE )
+	// RETAIL: 0x100809aa tests the drop flag only (no NOLF2 CanDropObject)
+	if( m_hCarriedObject && m_bCanDropBody && pData->m_nType == MID_ACTIVATE_MOVE )
 	{
 		if( !DropCarriedObject( ) )
 		{
@@ -5368,18 +5349,7 @@ void CPlayerObj::ProcessDamageMsg(ILTMessage_Read *pMsg)
 {
 	if (!pMsg || !GetClient( )) return;
 
-	DamageStruct damage;
-	damage.InitFromMessage(pMsg);
-
-	// Check for FriendlyFire...
-	
-	if( IsMultiplayerGame( ) && (1.0f > g_vtNetFriendlyFire.GetFloat( )) && IsPlayer( damage.hDamager ) && (damage.hDamager != m_hObject) )
-	{
-		if( IsCoopMultiplayerGameType( ) || (IsTeamGameType( ) && AreSameTeam( damage.hDamager, m_hObject )) ) 
-		{
-			return;
-		}
-	}
+	// RETAIL: 0x10080d40 has no NOLF2 friendly fire test.
 
 	CCharacter::ProcessDamageMsg(pMsg);
 
@@ -7018,13 +6988,6 @@ CAttachments* CPlayerObj::TransferAttachments( bool bRemove )
 
 void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 {
-	// Check if we are transferring weapons to a revivable body.
-	if( IsRevivePlayerGameType( ) && false )	// PORT: no revive member in Tron
-	{
-		CCharacter::TransferWeapons(pBody, bRemove );
-		return;
-	}
-
 	// Get rid of powerups we already had on the body.
 	pBody->RemovePowerupObjects( );
 
@@ -7284,6 +7247,9 @@ void CPlayerObj::RemoveVehicleModel()
 
 	// Respawn the vehicle...
 
+	// RETAIL: 0x10084174 (Build 51's); Tron's PlayerVehicle has no SetRidden
+    g_pCommonLT->SetObjectFlags(m_hVehicleModel, OFT_User, 0, USRFLG_ATTACH_HIDE1SHOW3);
+
     PlayerVehicle* pVehicle = (PlayerVehicle*)g_pLTServer->HandleToObject(m_hVehicleModel);
 	if (pVehicle)
 	{
@@ -7305,7 +7271,7 @@ void CPlayerObj::RemoveVehicleModel()
 		g_pPhysicsLT->GetObjectDims(m_hObject, &vVec);
 		g_pPhysicsLT->SetObjectDims(m_hVehicleModel, &vVec, 0);
 
-		pVehicle->SetRidden(false);
+		pVehicle->Respawn();
         
 	}
 
@@ -7464,30 +7430,6 @@ void CPlayerObj::SetChatting(LTBOOL bChatting)
 	CreateSpecialFX();
 }
 
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacter::ComputeDamageModifier
-//
-//	PURPOSE:	Adjust the amount of damage based on the node hit...
-//
-// ----------------------------------------------------------------------- //
-
-
-LTFLOAT CPlayerObj::ComputeDamageModifier(ModelNode eModelNode)
-{
-
-	if( IsCoopMultiplayerGameType() )
-		return 1.0f;
-
-    LTFLOAT fModifier = CCharacter::ComputeDamageModifier(eModelNode);
-
-	float fMaxModifier = GetConsoleFloat( "MaxDamageModifier", 3.0f );
-	fModifier = Min<LTFLOAT>(fMaxModifier, fModifier);
-
-	return fModifier;
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -7957,28 +7899,6 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 		return false;
 
 	m_PStateChangeFlags |= PSTATE_INTERFACE;
-
-	return true;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CPlayerObj::CanDropObject
-//
-//  PURPOSE:	Are we allowed to drop our carried object or not...
-//
-// ----------------------------------------------------------------------- //
-
-bool CPlayerObj::CanDropObject( )
-{
-	// If we are carrying a dead body or knocked out AI make sure we are in an appropriate volume...
-
-	if( !m_hCarriedObject || IsKindOf( m_hCarriedObject, "Body") || IsKindOf( m_hCarriedObject, "CAIHuman" ))
-	{
-		return m_bCanDropBody;
-	}
-
-	// All other objects don't care where they are droped...
 
 	return true;
 }
@@ -8706,40 +8626,6 @@ void CPlayerObj::RemoveBody()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CPlayerObj::CreateRespawnBody
-//
-//	PURPOSE:	Change body to represent we have respawned.
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerObj::CreateRespawnBody( )
-{
-	// PORT: no revive member in Tron
-	m_PStateChangeFlags |= PSTATE_INTERFACE;
-
-	Body* pBody = dynamic_cast< Body* >( g_pLTServer->HandleToObject( m_hDeadBody ));
-	if( !pBody )
-		return;
-
-	// Tell body it's now a body of someone that has respawned.
-	pBody->SetPermanentBody( false );
-	pBody->SetCanRevive( false );
-	pBody->ResetLifetime( GetConsoleFloat("BodyLifetime",30.0f) );
-	TransferWeapons( pBody, false );
-
-// Don't allow killing of revivable body.
-/*
-	CDestructible* pDestructible = pBody->GetDestructible( );
-	pDestructible->SetCanDamage( LTFALSE );
-*/
-
-	// Forget about our body.  It will remove itself.
-	m_hDeadBody = NULL;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CPlayerObj::RemoveCarriedObject
 //
 //	PURPOSE:	Get rid of the object we are carrying...
@@ -9075,41 +8961,6 @@ bool CPlayerObj::CanRevive( )
 
 
 
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerObj::SwitchToTeam
-//
-//	PURPOSE:	handle player's request to change teams
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerObj::SwitchToTeam(uint8 nTeam )
-{
-	if( !IsTeamGameType( )) return;
-	if (nTeam == GetTeamID() || nTeam > CTeamMgr::Instance().GetNumTeams() ) return;
-
-	CTeamMgr::Instance().AddPlayer( g_pLTServer->GetClientID(GetClient( )), nTeam );
-	CTeamMgr::Instance().UpdateClient();
-	SetupTeamModel(false);
-
-	g_pGameServerShell->SendPlayerInfoMsgToClients(NULL, this, MID_PI_UPDATE);
-
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerObj::CancelRevive
-//
-//	PURPOSE:	Cancels ability to revive body by removing the revivable body.
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerObj::CancelRevive( )
-{
-	if( IsRevivePlayerGameType( ) && m_hDeadBody )
-		CreateRespawnBody( );
-}
 
 // RETAIL: CPlayerObj::SetClient is inline in Tron (PlayerObj.h)
 

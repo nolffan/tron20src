@@ -225,9 +225,6 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX			"ShardsTotalPerturbMax"
 #define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE			"ShardsTotalPerturbSurge"
 
-const char FXBMGR_CLUSTERAUTOBURSTDISCCLASS_TAG[] = 			"ClusterAutoBurstDiscClassData";
-const char FXBMGR_CLUSTERAUTOBURSTCLASS_MINBURSTDIST[] =		"AutoBurstMinDist";
-const char FXBMGR_CLUSTERAUTOBURSTCLASS_MAXBURSTDIST[] =		"AutoBurstMaxDist";
 
 #define FXBMGR_SCALEFX_TAG				"ScaleFX"
 #define FXBMGR_PSHOWERFX_TAG			"PShowerFX"
@@ -3452,35 +3449,6 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	// RETAIL: Tron's only attribute (0x10145d80)
 	fInitialExplosionSuppressTime = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialExplosionSuppressTime" ) );
 #endif // _CLIENTBUILD
-
-	return LTTRUE;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	CLUSTER AUTO BURST  Related functions...
-//
-// ----------------------------------------------------------------------- //
-CLUSTERAUTOBURSTDISCCLASSDATA::CLUSTERAUTOBURSTDISCCLASSDATA()
-{
-	// 
-	fMinBurstDistance = 256.0f;
-	fMaxBurstDistance = 512.0f;
-}
-
-/*virtual*/ CLUSTERAUTOBURSTDISCCLASSDATA::~CLUSTERAUTOBURSTDISCCLASSDATA()
-{
-	// Destruct
-}
-
-LTBOOL CLUSTERAUTOBURSTDISCCLASSDATA::Init(CButeMgr &buteMgr,char *aTagName)
-{
-	if ( !aTagName ) return LTFALSE;
-	if ( !CLUSTERDISCCLASSDATA::Init( buteMgr, aTagName ) ) return LTFALSE;
-
-	fMinBurstDistance = static_cast<LTFLOAT>(buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERAUTOBURSTCLASS_MINBURSTDIST ));
-	fMaxBurstDistance = static_cast<LTFLOAT>(buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERAUTOBURSTCLASS_MAXBURSTDIST ));
 
 	return LTTRUE;
 }

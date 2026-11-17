@@ -23,24 +23,18 @@ LINKTO_MODULE( PlayerVehicle );
 
 class PlayerVehicle : public Prop
 {
+	// RETAIL: Tron's PlayerVehicle is Build 51's with NOLF2's lock (ClassDef
+	// size 0x898; constructor 0x1017e1e0, destructor 0x1017e2d0): no list of
+	// vehicles, no cap on their number and no ridden state.
+
 	public :
 
 		PlayerVehicle();
 		~PlayerVehicle();
 
-		void	SetRidden(bool bRidden);
+		void	Respawn();
 
 		PlayerPhysicsModel GetPhysicsModel() const { return m_ePPhysicsModel; }
-
-		// Returns last time someone rode this vehicle.
-		float	GetLastRideTime( ) { return m_fLastRideTime; }
-
-		// Indicates if this vehicle has ever been ridden.
-		bool	IsVirgin( ) { return m_bVirgin; }
-
-		// Get the complete list of all bodies.
-		typedef std::vector< PlayerVehicle* > PlayerVehicleList;
-		static PlayerVehicleList const& GetPlayerVehicleList( ) { return m_lstPlayerVehicles; }
 
 	protected :
 
@@ -50,9 +44,6 @@ class PlayerVehicle : public Prop
 		void	ReadProp(ObjectCreateStruct *pData);
 		void	PostPropRead(ObjectCreateStruct* pData);
 
-		// Limits number of vehicles allowed in level.
-		void	CapNumberOfVehicles( );
-
 	private :
 
 		void	InitialUpdate();
@@ -61,7 +52,6 @@ class PlayerVehicle : public Prop
 		void	Load(ILTMessage_Read *pMsg);
 		void	DoActivate(HOBJECT hSender);
 		void	CreateSFXMsg();
-		void	Respawn();
 
 	private :
 
@@ -79,15 +69,8 @@ class PlayerVehicle : public Prop
 
 		PVCREATESTRUCT	m_PlayerVehicleStruct;
 
-		uint32		m_dwSavedFlags;
-
-		float		m_fLastRideTime;
-		bool		m_bVirgin;
-		// PORT: NOLF2's; retail has no member at 0x87d (m_bLocked is at 0x87c,
-		// ReadProp 0x1017e410), so it is kept after retail's members.
-		bool		m_bRidden;
-
-		static PlayerVehicleList		m_lstPlayerVehicles;
+		// RETAIL: 4 bytes at 0x894 that this file does not use
+		uint32		m_xTronUnknown894;
 };
 
 

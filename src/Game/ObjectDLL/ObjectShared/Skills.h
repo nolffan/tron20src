@@ -42,9 +42,7 @@ public:
 	void MultiplayerInit(ILTMessage_Read *pMsg);
 
 
-	float	GetSkillModifier(eSkill skl, uint8 nMod); 
 
-	void	GainIntelBonus();
 
 
 private:

@@ -377,29 +377,8 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
     return LTTRUE;
 }
 
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	CRelationButeMgr::GetObjectRelationMgrTemplateName()
-//              
-//	PURPOSE:	Returns the name of the template, or "" if none exists.
-//              
-//----------------------------------------------------------------------------
-
-const char*	CRelationButeMgr::GetObjectRelationMgrTemplateName(int nTemplateID)
-{
-	ObjectRelationMgr_Template* pTemplate;
-	_listObjectRelationMgrTemplates::iterator it;
-	for( it = m_listpObjectRelationMgrTemplates.begin(); it != m_listpObjectRelationMgrTemplates.end(); ++it )
-	{
-		pTemplate = *it;
-		if( pTemplate->m_nTemplateID == nTemplateID )
-		{
-			return pTemplate->m_szKey;
-		}
-	}
-
-	return "";
-}
+// RETAIL: no GetObjectRelationMgrTemplateName: its only caller, NOLF2's
+// "Algnmnt" line of CAI::UpdateInfo, is not in Tron (0x1013074e).
 
 //----------------------------------------------------------------------------
 //              
