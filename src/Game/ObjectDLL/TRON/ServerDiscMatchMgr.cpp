@@ -20,12 +20,17 @@
 #include "Arena.h"
 #include "CVarTrack.h"
 
+// RETAIL: the delays before a round (retail 0x10294b38, 0x10294b3c: named
+// constants, not literals). The names are ours.
+static const float s_fRoundDelay = 5.0f;
+static const float s_fLongRoundDelay = 7.0f;
+
 // RETAIL: the time of the last whole step of fStep before fTime that is
 // still in the future and after fLast (retail 0x10049970)
-static float GetNextTime(float fTime, float fStep, float fLast)
+static float GetNextTime(float fNext, float fStep, float fLast)
 {
 	float fNow = g_pLTServer->GetTime();
-	float fNext = fTime;
+	float fTime = fNext;
 
 	while (fNext > fNow && fNext > fLast)
 	{
@@ -114,7 +119,7 @@ void CDiscMatch::Update()
 	{
 		if (fTime > m_fRoundOverTime)
 		{
-			StartRound(5.0f);
+			StartRound(s_fRoundDelay);
 		}
 	}
 	else if (m_eState == 4)
@@ -140,7 +145,7 @@ void CDiscMatch::Init(int nTeamA, int nTeamB, CDiscArena* pArena, float fDuratio
 {
 	for (int i = 0; i < 2; i++)
 	{
-		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(i ? nTeamB : nTeamA, false);
+		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(!i ? nTeamA : nTeamB, false);
 		uint32 nNumClients = pTeam->GetNumClients();
 		for (uint32 j = 0; j < nNumClients; j++)
 		{
@@ -169,7 +174,7 @@ void CDiscMatch::Init(int nTeamA, int nTeamB, CDiscArena* pArena, float fDuratio
 
 	m_pArena->SendCommand(m_pArena->m_sMatchStartCmd.c_str());
 
-	StartRound(bLongDelay ? 7.0f : 5.0f);
+	StartRound(bLongDelay ? s_fLongRoundDelay : s_fRoundDelay);
 	SendState(LTNULL, false, false);
 }
 
@@ -780,13 +785,15 @@ void CDiscMatchMgr::Reset(int nMaxTeamSize)
 
 void CDiscMatchMgr::SetNextLevel(int nLevel)
 {
-	if (m_bStarted)
+	// RETAIL: 0x100499c5, the switch comes first.
+	if (!m_bStarted)
+	{
+		g_pGameServerShell->SwitchToLevel(nLevel);
+	}
+	else
 	{
 		m_nTronUnknown28 = nLevel;
-		return;
 	}
-
-	g_pGameServerShell->SwitchToLevel(nLevel);
 }
 
 void CDiscMatchMgr::StartTournament()
@@ -818,8 +825,8 @@ void CDiscMatchMgr::StartGame()
 	if (m_fTimeLimit > 0.0f)
 	{
 		m_fEndTime = g_pLTServer->GetTime() + m_fTimeLimit;
-		m_nWarning = 0;
 		m_fWarningTime = m_fEndTime - s_afWarningTimes[0];
+		m_nWarning = 0;
 	}
 	else
 	{
