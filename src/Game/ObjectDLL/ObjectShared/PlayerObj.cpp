@@ -1476,7 +1476,7 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 	//Stamina skill reduces duration of progressive damage in a single player game
 	pDamageStruct->fDuration *= g_pSkillsButeMgr->GetStamina(GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eResistance];
 
-	if( IsDiscGameType( ) && IsPlayer( pDamageStruct->hDamager ) && ( 1.0f > g_vtNetFriendlyFire.GetFloat( )))
+	if( IsDiscGameType( ) && IsPlayer( pDamageStruct->hDamager ) && ( g_vtNetFriendlyFire.GetFloat( ) < 1.0f ))
 	{
 		CPlayerObj* pDamager = (CPlayerObj*)g_pLTServer->HandleToObject( pDamageStruct->hDamager );
 		uint32 nDamagerID = g_pLTServer->GetClientID( pDamager->GetClient( ));
@@ -1524,7 +1524,7 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 
 		// Take less damage if coming from the front...
 		
-		if( -0.75f >= vPlayerDir.Dot( vDamageDir ))
+		if( vPlayerDir.Dot( vDamageDir ) <= -0.75f )
 		{
 			pDamageStruct->fDamage *= 0.5f;
 		}
