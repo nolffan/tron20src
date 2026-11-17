@@ -1133,7 +1133,12 @@ void CTronPlayerStats::Save(ILTMessage_Write *pMsg)
     pMsg->Writebool(m_bHiding != LTFALSE);
     pMsg->Writebool(m_bHidden != LTFALSE);
 
-
+	// RETAIL: Tron's (0x100ab435): the permissions, the jet version and the
+	// subroutines
+	pMsg->Writeuint8(m_nPermissions);
+	pMsg->Writeuint8(m_nRequiredPermissions);
+	pMsg->Writeuint16(m_nVersion);
+	g_pSubroutineMgr->Save(pMsg);
 }
 
 
@@ -1205,7 +1210,15 @@ void CTronPlayerStats::Load(ILTMessage_Read *pMsg)
     m_bHiding			= pMsg->Readbool() ? LTTRUE : LTFALSE;
     m_bHidden			= pMsg->Readbool() ? LTTRUE : LTFALSE;
 
+	// RETAIL: Tron's (0x100ab8a7): the permissions, the jet version and the
+	// subroutines; then every HUD item updates
+	m_nPermissions			= pMsg->Readuint8();
+	m_nRequiredPermissions	= pMsg->Readuint8();
+	m_nVersion				= pMsg->Readuint16();
+	g_pSubroutineMgr->Load(pMsg);
+
     UpdatePlayerWeapon(m_nCurrentWeapon, m_nCurrentAmmo, LTTRUE);
+	g_pHUDMgr->QueueUpdate(kHUDAll);
 }
 // --------------------------------------------------------------------------- //
 //
