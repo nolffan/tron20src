@@ -2795,7 +2795,8 @@ void CAIHumanStateUseObject::UpdateAnimation()
 
 		case kSStat_Moving:
 		{
-			if( !m_pStrategyFollowPath->IsDone() )
+			// RETAIL: 0x101e8c1d, not while facing the player.
+			if( !m_pStrategyFollowPath->IsDone() && !ShouldFacePlayer() )
 			{
 				m_pStrategyFollowPath->UpdateAnimation();
 			}
@@ -2819,7 +2820,8 @@ void CAIHumanStateUseObject::UpdateAnimation()
 			{
 				GetAnimationContext()->SetProp(kAPG_Awareness, m_eActivity);
 
-				if( m_pStrategyOneShotAni->IsSet() && !m_pStrategyOneShotAni->IsDone())
+				// RETAIL: 0x101e8cb5 tests IsSet only.
+				if( m_pStrategyOneShotAni->IsSet() )
 				{
 					m_pStrategyOneShotAni->UpdateAnimation();
 				}
