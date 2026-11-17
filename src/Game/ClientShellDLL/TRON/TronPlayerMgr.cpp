@@ -28,6 +28,7 @@
 #include "LightCycleMatchMgr.h"
 #include "TRON/LightCycleMgr.h"
 #include "TRON/LightCycleButeMgr.h"
+#include "ClientLightCycleMgr.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
@@ -190,11 +191,18 @@ LTBOOL CTronPlayerMgr::OnCommandOn(int command)
 			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE &&
 				!m_bTronUnknown235)
 			{
-				// PORT: retail asks the client light cycle manager (retail
-				// 0x10236d98, CClientLightCycleMgr, not yet in our tree) for
-				// the player's cycle (0x100ff280); unless the cycle's state
-				// (+0xf0) is 12 it starts it (0x10014f30), sets +0x235 when
-				// that worked and returns LTTRUE
+				// RETAIL: the press uses the cycle's power-up (retail
+				// 0x100a48c2)
+				LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+				if (pCyclist && pCyclist->nPowerup != LC_NO_POWERUP)
+				{
+					if (((CClientLightCycleMgr*)g_pLightCycleMgr)->SendActivatePowerup(pCyclist))
+					{
+						m_bTronUnknown235 = true;
+					}
+
+					return LTTRUE;
+				}
 			}
 		}
 		break;
@@ -402,10 +410,7 @@ LTBOOL CTronPlayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_STOP_ENERGY_TRANSFER:	HandleMsgStopEnergyTransfer(pMsg);		break;
 
 		case MID_LIGHT_CYCLE_INFO:
-		{
-			// PORT: retail hands it to the client light cycle manager
-			// (0x10236d98, its 0x10011c80), not yet in our tree
-		}
+			((CClientLightCycleMgr*)g_pLightCycleMgr)->OnMessage(pMsg);
 		break;
 
 		case MID_SYSTEM_MEMORY:			HandleMsgSystemMemory(pMsg);			break;
