@@ -957,6 +957,13 @@ class CAIHumanStateUseObject : public CAIHumanState
 		// RETAIL: Tron's (name ours).
 		bool ShouldFacePlayer();
 
+		// RETAIL: Tron's Update hands each status to these (0x101e8520,
+		// 0x101e8770, 0x101e87a0, 0x101e8a80; the names are ours).
+		void UpdateMoving();
+		bool IsOneShotAnimation();
+		void UpdateUsing();
+		void UpdateFacing();
+
 	protected :
 
 		LTObjRef			m_hObject;
