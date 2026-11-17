@@ -85,6 +85,25 @@ void CAIGoalAnimate::ActivateGoal()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIGoalAnimate::DeactivateGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x10218070): warns about an animation that
+//				was never set.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalAnimate::DeactivateGoal()
+{
+	if( m_bResetAnim )
+	{
+		ObjectCPrint( m_pAI->GetUserObject(), "!!! AI deactivating with reset true. !!!" );
+	}
+
+	super::DeactivateGoal();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIGoalAnimate::UpdateGoal
 //
 //	PURPOSE:	Update goal.
@@ -128,8 +147,20 @@ void CAIGoalAnimate::HandleStateAnimate()
 			break;
 
 		case kSStat_StateComplete:
-			m_pGoalMgr->UnlockGoal(this);
-			m_fCurImportance = 0.f;
+			// RETAIL: Tron's (0x102180d9): an animation set after the
+			// state completed starts the state again.
+			if( m_bResetAnim )
+			{
+				ObjectCPrint( m_pAI->GetUserObject(), "!!! AI resetting animation after goal is completed. !!!" );
+				m_pAI->ClearAndSetState( kState_HumanAnimate );
+				CAIHumanStateAnimate* pStateAnimate = (CAIHumanStateAnimate*)(m_pAI->GetState());
+				pStateAnimate->SetAnimation(m_hstrAnim, m_bLoop);
+				m_bResetAnim = LTFALSE;
+			}
+			else {
+				m_pGoalMgr->UnlockGoal(this);
+				m_fCurImportance = 0.f;
+			}
 			break;
 
 		// Unexpected StateStatus.
