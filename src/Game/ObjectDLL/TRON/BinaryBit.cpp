@@ -27,11 +27,9 @@
 #define BB_RS_NO		"props\\rs\\BinaryBit_No.ltb"
 #define	KEY_BUTE_SOUND	"BUTE_SOUND_KEY"
 
+// RETAIL: no hidden Filename and Skin properties (Build 69 had them; the
+// class def's constructor, 0x10012b90, starts with the permission sets)
 BEGIN_CLASS(BinaryBit)
-	// Hide the model & skin since we're doing this ourselves
-	ADD_STRINGPROP_FLAG(Filename, "", PF_HIDDEN | PF_MODEL)
-	ADD_STRINGPROP_FLAG(Skin, "", PF_HIDDEN)
-
 	ADD_PSETS_PROP(PF_GROUP(1))
 	ADD_LONGINTPROP(EnergyRequired, 0)
 	ADD_BOOLPROP(Locked, 0)
@@ -40,9 +38,23 @@ BEGIN_CLASS(BinaryBit)
 		ADD_STRINGPROP_FLAG(PowerUpCommand, "", PF_GROUP(2) | PF_NOTIFYCHANGE)
 		ADD_STRINGPROP_FLAG(TurnOnCommand, "", PF_GROUP(2) | PF_NOTIFYCHANGE)
 		ADD_STRINGPROP_FLAG(TurnOffCommand, "", PF_GROUP(2) | PF_NOTIFYCHANGE)
+		// RETAIL: Tron's (the class def's constructor, 0x10012b90)
+		ADD_STRINGPROP_FLAG(InvalidPSetCommand, "", PF_GROUP(2) | PF_NOTIFYCHANGE)
+	ADD_LONGINTPROP(StringOverrideID, 0)
+	ADD_STRINGPROP_FLAG(ActivateType, "<none>", PF_STATICLIST)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(BinaryBit, GameBase, NULL, NULL, 0, CBinaryBitPlugin)
 
+// RETAIL: Tron's messages (their table's constructor, 0x100132c0)
 CMDMGR_BEGIN_REGISTER_CLASS(BinaryBit)
+
+	CMDMGR_ADD_MSG( LOCK, 1, NULL, "LOCK" )
+	CMDMGR_ADD_MSG( ACTIVATE, 1, NULL, "ACTIVATE" )
+	CMDMGR_ADD_MSG( UNLOCK, 1, NULL, "UNLOCK" )
+	CMDMGR_ADD_MSG( ATSOCKET, 1, NULL, "ATSOCKET" )
+	CMDMGR_ADD_MSG( INFOSTRING, 1, NULL, "INFOSTRING" )
+	CMDMGR_ADD_MSG( ADDPSET, 1, NULL, "ADDPSET" )
+	CMDMGR_ADD_MSG( REMOVEPSET, 1, NULL, "REMOVEPSET" )
+
 CMDMGR_END_REGISTER_CLASS(BinaryBit, GameBase)
 
 // ----------------------------------------------------------------------- //
