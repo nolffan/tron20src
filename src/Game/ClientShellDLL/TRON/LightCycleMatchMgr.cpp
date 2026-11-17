@@ -222,7 +222,7 @@ void CLightCycleMatchMgr::HandleMsgRoundOver(ILTMessage_Read *pMsg)
 		m_nState = 3;
 	}
 
-	uint32 nTime = pMsg->Readuint16();
+	uint16 nTime = pMsg->Readuint16();
 	m_nTronUnknown19 = pMsg->Readuint8();
 	int8 nWinner = pMsg->Readuint8();
 	uint8 nNoChat = pMsg->Readuint8();
@@ -292,7 +292,7 @@ void CLightCycleMatchMgr::HandleMsgGameOver(ILTMessage_Read *pMsg)
 	char szMsg[256];
 	szMsg[0] = '\0';
 
-	uint32 nTime = pMsg->Readuint16();
+	uint16 nTime = pMsg->Readuint16();
 	pMsg->Readuint8();
 	int8 nWinner = pMsg->Readuint8();
 	uint8 nTied = pMsg->Readuint8();
@@ -311,14 +311,14 @@ void CLightCycleMatchMgr::HandleMsgGameOver(ILTMessage_Read *pMsg)
 			int nBest = 0x80000000;
 			for (uint32 i = 0; i < (uint32)pTeamMgr->GetNumTeams(); i++)
 			{
-				int16 nScore = pTeamMgr->GetTeam(i, false)->GetTronUnknown12();
-				if (nScore > nBest)
+				CTronTeam* pTeam = pTeamMgr->GetTeam(i, false);
+				if (pTeam->GetTronUnknown12() > nBest)
 				{
-					nBest = nScore;
+					nBest = pTeam->GetTronUnknown12();
 					nTied = 0;
 					nWinner = i;
 				}
-				else if (nScore == nBest)
+				else if (pTeam->GetTronUnknown12() == nBest)
 				{
 					nTied++;
 				}
