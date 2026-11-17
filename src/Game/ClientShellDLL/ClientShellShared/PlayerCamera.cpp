@@ -171,6 +171,10 @@ void CPlayerCamera::CameraUpdate(float deltaTime)
 {
 	if (!m_pClientDE || !m_hTarget) return;
 
+	// RETAIL: Tron's (0x1015b5e0) checks the hold before it reads the target
+	if (m_eOrientation == HOLD)
+		return;
+
     LTRotation rRot;
     LTVector vOpt, vPos;
 
@@ -179,90 +183,132 @@ void CPlayerCamera::CameraUpdate(float deltaTime)
 
     LTVector vF = rRot.Forward();
 
-	if (m_hTarget)
+	switch(m_eCameraMode)
 	{
-		if (m_eOrientation == HOLD)
-			return;
+		case CHASE:
+		break;
 
-		switch(m_eCameraMode)
+		case GOINGFIRSTPERSON:
 		{
-			case CHASE:
-			break;
-
-			case GOINGFIRSTPERSON:
+			// RETAIL: while Tron's move to the target runs (its start
+			// time, +0x104), the first person update does it
+			if (m_fTronUnknown104 > 0.0f)
 			{
-				vF.y = 0.0f;
-				vPos += (vF * m_TargetFirstPersonOffset.x);
-				vPos.y += m_TargetFirstPersonOffset.y;
-
-				vOpt = vPos;
-			}
-			break;
-
-			case CIRCLING:
-			{
-				CircleAroundTarget();
-				return;
-			}
-			break;
-
-			case FIRSTPERSON:
-			{
-				// RETAIL: Tron's points the camera itself (0x1015bd40).
-				// PORT: retail's CameraUpdate (0x1015b5e0) does this only
-				// while its +0x104 time is zero
 				UpdateFirstPerson(vF, vPos, rRot, deltaTime);
 				return;
 			}
-			break;
 
-			case SCRIPT:
-				return;
-			break;
+			vF.y = 0.0f;
+			vPos += (vF * m_TargetFirstPersonOffset.x);
+			vPos.y += m_TargetFirstPersonOffset.y;
 
-			default:
-				return;
+			vOpt = vPos;
 		}
+		break;
 
-		// Find the optimal position for the camera
-		if (m_eCameraMode == GOINGFIRSTPERSON)
+		case CIRCLING:
 		{
-			MoveCameraToPosition(vOpt, deltaTime);
-			PointAtPosition(vOpt, rRot, m_vPos);
+			CircleAroundTarget();
 			return;
 		}
-		else
-		{
-			vOpt = FindOptimalCameraPosition();
-		}
+		break;
 
-		// Move the camera to the optimal position
-		// (it will slide or not depending on the m_bSlide param)
-		MoveCameraToPosition(vOpt, deltaTime);
-
-		// Either point the camera at the player or MLOOK
-		if(m_eOrientation == MLOOK)
+		case FIRSTPERSON:
 		{
-            m_rRotation = rRot;
+			// RETAIL: Tron's points the camera itself (0x1015bd40)
+			UpdateFirstPerson(vF, vPos, rRot, deltaTime);
+			return;
 		}
-		else
+		break;
+
+		case SCRIPT:
+			return;
+		break;
+
+		case TRONMODE5:
 		{
-			switch(m_ePointType)
+			// RETAIL: the light cycle camera: on a sphere round the target
+			// at the player's pitch and the orbit's yaw
+			float fYaw = TronUnknownGetOrbitYaw() + m_fTronUnknownFC;
+			float fPitch = g_pPlayerMgr->GetPitch() + m_fTronUnknownF8;
+
+			m_vTronUnknown24.x = (float)(sin(fPitch) * cos(fYaw)) * m_fTronUnknown100 + vPos.x;
+			m_vTronUnknown24.y = (float)cos(fPitch) * m_fTronUnknown100 + vPos.y;
+			m_vTronUnknown24.z = (float)(sin(fYaw) * sin(fPitch)) * m_fTronUnknown100 + vPos.z;
+
+			TronUnknownMoveToTarget();
+
+			m_rRotation = LTRotation(MATH_HALFPI - fPitch, -fYaw - MATH_HALFPI, 0.0f);
+			TronUnknownClipToTarget();
+			return;
+		}
+		break;
+
+		case TRONMODE6:
+		{
+			// RETAIL: the orbit (TronUnknownStartOrbit, 0x1015dfe0)
+			float fT = (g_pLTClient->GetTime() - m_fTronUnknownOrbitStart) / m_fTronUnknownOrbitTime;
+			if (fT > 1.0f)
 			{
-				case IN_DIRECTION:
-					PointInDirection(rRot);
-				break;
-
-				case AT_POSITION:
-				default:
-				{
-                    LTVector vTemp;
-					vTemp = vPos + m_TargetPointAtOffset;
-					PointAtPosition(vTemp, rRot, vOpt);
-					// g_pLTClient->CPrint("Camera orientation : %0.4f, %0.4f, %0.4f", VEC_EXPAND(m_rRotation.Forward()));
-				}
-				break;
+				g_pInterfaceMgr->TronUnknownThirdPersonCamera(false);
+				fT = 1.0f;
 			}
+
+			float fPhi = (m_fTronUnknownEndPhi - m_fTronUnknownStartPhi) * fT + m_fTronUnknownStartPhi;
+			float fTheta = (m_fTronUnknownEndTheta - m_fTronUnknownStartTheta) * fT + m_fTronUnknownOrbitYaw + m_fTronUnknownStartTheta;
+			float fRadius = (m_fTronUnknownEndRadius - m_fTronUnknownStartRadius) * fT + m_fTronUnknownStartRadius;
+
+			m_vPos.x = (float)(sin(fPhi) * cos(fTheta)) * fRadius + vPos.x;
+			m_vPos.z = (float)(sin(fTheta) * sin(fPhi)) * fRadius + vPos.z;
+			m_vPos.y = (float)cos(fPhi) * fRadius + vPos.y;
+
+			m_rRotation = LTRotation(MATH_HALFPI - fPhi, -fTheta - MATH_HALFPI, 0.0f);
+			TronUnknownClipToTarget();
+			return;
+		}
+		break;
+
+		default:
+			return;
+	}
+
+	// Find the optimal position for the camera
+	if (m_eCameraMode == GOINGFIRSTPERSON)
+	{
+		MoveCameraToPosition(vOpt, deltaTime);
+		PointAtPosition(vOpt, rRot, m_vPos);
+		return;
+	}
+	else
+	{
+		vOpt = FindOptimalCameraPosition();
+	}
+
+	// Move the camera to the optimal position
+	// (it will slide or not depending on the m_bSlide param)
+	MoveCameraToPosition(vOpt, deltaTime);
+
+	// Either point the camera at the player or MLOOK
+	if(m_eOrientation == MLOOK)
+	{
+		m_rRotation = rRot;
+	}
+	else
+	{
+		switch(m_ePointType)
+		{
+			case IN_DIRECTION:
+				PointInDirection(rRot);
+			break;
+
+			case AT_POSITION:
+			default:
+			{
+				LTVector vTemp;
+				vTemp = vPos + m_TargetPointAtOffset;
+				PointAtPosition(vTemp, rRot, vOpt);
+			}
+			break;
 		}
 	}
 }
