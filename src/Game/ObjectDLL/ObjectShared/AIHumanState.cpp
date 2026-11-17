@@ -233,6 +233,14 @@ void CAIHumanState::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bAllowGhosting);
 }
 
+
+// RETAIL: the AI turns to its node tracking target with the pointer held
+// once (0x101e4f80, 0x101e5a0e, 0x101e82e3...). The name is ours.
+static inline void FaceNodeTrackingTarget( CAI* pAI )
+{
+	pAI->FaceObject( pAI->GetNodeTrackingTarget() );
+}
+
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
@@ -253,6 +261,21 @@ LTBOOL CAIHumanStateIdle::Init(CAIHuman* pAIHuman)
 	// DO NOT SET AWARENESS HERE.
 
 	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateIdle::Update()
+{
+	// RETAIL: 0x101e4660, Tron's idle AI only turns to the one it talks
+	// to (no super::Update).
+
+	if( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		m_pAIHuman->IsNodeTrackingAtLimit() &&
+		m_pAIHuman->GetNodeTrackingTarget() )
+	{
+		FaceNodeTrackingTarget( m_pAIHuman );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -544,6 +567,7 @@ void CAIHumanStatePatrol::SetAwareness(EnumAnimProp eAwareness)
 	}
 }
 
+
 // ----------------------------------------------------------------------- //
 
 void CAIHumanStatePatrol::SetNode(AINodePatrol* pNode)
@@ -623,6 +647,19 @@ void CAIHumanStatePatrol::Update()
 
 	if ( m_pStrategyFollowPath->IsDone() )
 	{
+		// RETAIL: 0x101e4ede, Tron's patrolling AI waits while talking.
+
+		if( !m_xTronUnknown94 && ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
+		{
+			if ( m_pNode->ShouldFaceNodeForward() )
+			{
+				GetAI()->FaceDir(m_pNode->GetForward());
+				return;
+			}
+
+			goto FacePlayer;
+		}
+
 		if ( m_pNode->ShouldFaceNodeForward() )
 		{
 			GetAI()->FaceDir(m_pNode->GetForward());
@@ -651,6 +688,18 @@ void CAIHumanStatePatrol::Update()
 			m_eStateStatus = kSStat_FailedSetPath;
 			return;
 		}
+	}
+
+	// RETAIL: 0x101e4f55, Tron's face the player while talking.
+
+	if( ShouldFacePlayer() )
+	{
+FacePlayer:
+		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
+		{
+			FaceNodeTrackingTarget( m_pAIHuman );
+		}
+		return;
 	}
 
 	if ( bGotoNextNode )
@@ -712,11 +761,12 @@ void CAIHumanStatePatrol::Update()
 
 		if ( !m_pStrategyFollowPath->Set(m_pNode, LTFALSE) )
 		{
+			// RETAIL: 0x101e50b0, the names as they are (no ToString).
 			AIError("AI \"%s\" - Cannot path from node \"%s\" (%s) to node \"%s\" (%s)", 
 				GetAI()->GetName(), 
-				::ToString((m_pLastNode)?m_pLastNode->GetName():LTNULL),
+				(m_pLastNode)?m_pLastNode->GetName().c_str():LTNULL,
 				(m_pLastNode && m_pLastNode->GetNodeContainingVolume())?m_pLastNode->GetNodeContainingVolume()->GetName():"",
-				::ToString((m_pNode)?m_pNode->GetName():LTNULL),
+				(m_pNode)?m_pNode->GetName().c_str():LTNULL,
 				(m_pNode && m_pNode->GetNodeContainingVolume())?m_pNode->GetNodeContainingVolume()->GetName():"");
 
 			// WE COULDN'T SET A PATH
@@ -853,6 +903,7 @@ void CAIHumanStatePatrol::Load(ILTMessage_Read *pMsg)
 	LOAD_DWORD_CAST(m_eAwareness, EnumAnimProp);
 	LOAD_COBJECT(m_pNode, AINodePatrol);
 	LOAD_COBJECT(m_pLastNode, AINodePatrol);
+	LOAD_BOOL(m_xTronUnknown94);	// RETAIL: 0x101e5455
 }
 
 
@@ -872,6 +923,7 @@ void CAIHumanStatePatrol::Save(ILTMessage_Write *pMsg)
 	SAVE_DWORD(m_eAwareness);
 	SAVE_COBJECT(m_pNode);
 	SAVE_COBJECT(m_pLastNode);
+	SAVE_BOOL(m_xTronUnknown94);	// RETAIL: 0x101e55a5
 }
 
 // ----------------------------------------------------------------------- //
@@ -1013,11 +1065,8 @@ void CAIHumanStateGoto::Update()
 	{
 		if( m_pStrategyToggleLights->IsUnset() )
 		{
+			// RETAIL: 0x101e59c0, no trace.
 			m_pStrategyToggleLights->Set( LTTRUE, LTFALSE, m_vDest );
-			if( m_pStrategyToggleLights->IsSet() )
-			{
-				AITRACE( AIShowStates, ( GetAI()->m_hObject, "HumanStateGoto: Set StrategyToggleLights." ) );
-			}
 		}
 
 		if( m_pStrategyToggleLights->IsSet() )
@@ -1033,7 +1082,7 @@ void CAIHumanStateGoto::Update()
 	{
 		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
 		{
-			m_pAIHuman->FaceObject( m_pAIHuman->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( m_pAIHuman );
 		}
 		return;
 	}
@@ -1041,7 +1090,7 @@ void CAIHumanStateGoto::Update()
 	// Play looping sound.
 
 	if( ( m_eLoopingAISound != kAIS_None ) && 
-		( !GetAI()->IsPlayingDialogSound() ) )
+		( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) ) )	// RETAIL: 0x101e5a37
 	{
 		GetAI()->PlaySound( m_eLoopingAISound, LTFALSE );
 	}
@@ -1277,6 +1326,9 @@ void CAIHumanStateGoto::Save(ILTMessage_Write *pMsg)
 CAIHumanStateFlee::CAIHumanStateFlee()
 {
 	m_hDanger = NULL;
+
+	// RETAIL: 0x101e6276, Tron's fleeing AI does not ghost.
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1545,27 +1597,38 @@ void CAIHumanStateSearch::Update()
 		return;
 	}
 
+	// RETAIL: 0x101e696c, Tron's search ends when the AI sees its target
+	// during a locked animation.
+
+	if( GetAI()->GetAnimationContext()->IsLocked() &&
+		GetAI()->HasTarget() &&
+		GetAI()->GetTarget()->IsVisibleFromEye() )
+	{
+		m_bPause = LTFALSE;
+		m_bDone = LTTRUE;
+
+		if( m_pStrategyToggleLights )
+		{
+			m_pStrategyToggleLights->Reset();
+		}
+
+		if( m_pStrategyFollowPath )
+		{
+			m_pStrategyFollowPath->Reset();
+		}
+
+		GetAI()->GetAnimationContext()->Unlock();
+
+		m_eStateStatus = kSStat_StateComplete;
+		return;
+	}
+
+	// RETAIL: 0x101e69df, no TO2 lantern hack.
+
 	if( m_bFirstUpdate )
 	{
 		GetAI()->PlaySearchSound(kAIS_Search);
 	}
-
-	// HACK: for TO2 ninjas with lanterns. transition animation method is not reliable.
-
-	else if( !m_bCheckedLantern )
-	{
-		m_bCheckedLantern = LTTRUE;
-		if( ( !GetAI()->GetAnimationContext()->IsTransitioning() ) &&
-		    ( GetAI()->GetCurrentVolume() && !GetAI()->GetCurrentVolume()->IsLit() ) &&
-			( GetAI()->GetBrain()->GetAIDataExist( kAIData_DisposeLantern ) ) )
-		{
-			char szAttachment[128];
-			sprintf(szAttachment, "%s LIGHT Lantern", KEY_ATTACH);
-			SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, szAttachment);
-		}
-	}
-
-	// END HACK.
 
 	// Handle our pause if we had to do one
 
@@ -1929,7 +1992,8 @@ void CAIHumanStateSearch::UpdateAnimation()
 	{
 		if( !GetAnimationContext()->IsTransitioning() )
 		{
-			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Down);
+			// RETAIL: 0x101e74a7 keeps the weapon up (NOLF2 lowers it).
+			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
 			GetAnimationContext()->SetProp(kAPG_Action, kAP_Alert);
 			GetAnimationContext()->Lock();
 
@@ -2289,7 +2353,7 @@ void CAIHumanStateUseObject::Update()
 					case kSStat_Moving:
 						if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
 						{
-							GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+							FaceNodeTrackingTarget( GetAI() );
 						}
 						break;
 				}
@@ -2463,7 +2527,7 @@ void CAIHumanStateUseObject::UpdateMoving()
 	{
 		if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
 		{
-			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( GetAI() );
 		}
 	}
 	else if( m_pStrategyFollowPath->IsSet() )
@@ -2489,8 +2553,8 @@ void CAIHumanStateUseObject::UpdateMoving()
 
 		// Attach childmodels.
 		// RETAIL: Tron's AINodeUseObject::ApplyChildModels takes the AI
-		// itself (0x101e86c3; 0x100a4930 reads its m_hObject).
-		m_pUseNode->ApplyChildModels( GetAI()->m_hObject );
+		// itself (0x101e86c3; 0x100a4930 reads its m_hObject and skeleton).
+		m_pUseNode->ApplyChildModels( GetAI() );
 		GetAI()->GetAnimationContext()->Reset( GetAI()->m_hObject );
 
 		// Check if bare hands are required.
@@ -2731,7 +2795,7 @@ void CAIHumanStateUseObject::UpdateFacing()
 			GetAI()->IsNodeTrackingAtLimit() &&
 			GetAI()->GetNodeTrackingTarget() )
 		{
-			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( GetAI() );
 		}
 		return;
 	}
@@ -2789,7 +2853,8 @@ void CAIHumanStateUseObject::UpdateAnimation()
 
 		case kSStat_Moving:
 		{
-			if( !m_pStrategyFollowPath->IsDone() )
+			// RETAIL: 0x101e8c1d, not while facing the player.
+			if( !m_pStrategyFollowPath->IsDone() && !ShouldFacePlayer() )
 			{
 				m_pStrategyFollowPath->UpdateAnimation();
 			}
@@ -2813,7 +2878,8 @@ void CAIHumanStateUseObject::UpdateAnimation()
 			{
 				GetAnimationContext()->SetProp(kAPG_Awareness, m_eActivity);
 
-				if( m_pStrategyOneShotAni->IsSet() && !m_pStrategyOneShotAni->IsDone())
+				// RETAIL: 0x101e8cb5 tests IsSet only.
+				if( m_pStrategyOneShotAni->IsSet() )
 				{
 					m_pStrategyOneShotAni->UpdateAnimation();
 				}
@@ -2979,7 +3045,21 @@ LTBOOL CAIHumanStateUseObject::SetNode(AINodeUseObject* pUseNode)
 	else
 	{
 		m_hObject = LTNULL;
-		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", pUseNode->GetName().c_str() ) );
+
+		// RETAIL: 0x101e9282, Tron's trace names the old node, under an if
+		// with no braces: the if holds only the first statement of AITRACE
+		// (the console variable's Init), not the print.
+#ifdef TRON20SRC_MODERN
+		// Retail bug (docs/RETAIL_BUGS.md): the braces keep the print under
+		// the test.
+		if( m_pUseNode )
+		{
+			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", m_pUseNode->GetName().c_str() ) );
+		}
+#else
+		if( m_pUseNode )
+			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", m_pUseNode->GetName().c_str() ) );
+#endif
 
 		// FINISHED USING OBJECT
 		m_eStateStatus = kSStat_StateComplete;
@@ -3013,6 +3093,16 @@ void CAIHumanStateUseObject::HandleModelString(ArgList* pArgList)
 			m_pStrategyShoot->ForceFire( m_hObject );
 		}
 	}
+
+	// RETAIL: 0x101e93fa, Tron's model string plays a client FX on the AI.
+
+	else if ( !_stricmp(szKey, "CLIENTFX") )
+	{
+		if( pArgList->argc == 2 )
+		{
+			PlayClientFX( pArgList->argv[1], GetAI()->GetUserObject() );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -3023,6 +3113,15 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 
 	if( m_bVulnerable )
 	{
+		// RETAIL: 0x101e944b, Tron's damage flag destroys the object
+		// whatever the damage type.
+
+		if( damage.bTronUnknown44 )
+		{
+			SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
+			return;
+		}
+
 		switch ( damage.eType )
 		{
 			case DT_UNSPECIFIED:
@@ -3035,7 +3134,7 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 			case DT_EXPLODE:
 			case DT_FREEZE:
 			case DT_POISON:
-				SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, "DESTROY");
+				SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
 				break;
 		}
 	}
@@ -3573,22 +3672,7 @@ void CAIHumanStateInvestigate::Update()
 {
 	super::Update();
 
-	// HACK: for TO2 ninjas with lanterns. transition animation method is not reliable.
-
-	if( ( !m_bFirstUpdate ) && ( !m_bCheckedLantern ) )
-	{
-		m_bCheckedLantern = LTTRUE;
-		if( ( !GetAI()->GetAnimationContext()->IsTransitioning() ) &&
-		    ( GetAI()->GetCurrentVolume() && !GetAI()->GetCurrentVolume()->IsLit() ) &&
-			( GetAI()->GetBrain()->GetAIDataExist( kAIData_DisposeLantern ) ) )
-		{
-			char szAttachment[128];
-			sprintf(szAttachment, "%s LIGHT Lantern", KEY_ATTACH);
-			SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, szAttachment);
-		}
-	}
-
-	// END HACK.
+	// RETAIL: 0x101ea706, Tron has no TO2 lantern hack here.
 
 	// Make sure everything we need at this point is there
 
@@ -3836,7 +3920,7 @@ void CAIHumanStateCheckBody::Update()
 {
 	super::Update();
 
-	LTBOOL bSuccess = LTFALSE;
+	// RETAIL: 0x101eb4d3, Tron's check always completes (no bSuccess).
 
 	// m_hBody may be a Body or a knocked out AI.
 
@@ -3972,7 +4056,6 @@ void CAIHumanStateCheckBody::Update()
 		{
 			// We finished checking the Body
 
-			bSuccess = LTTRUE;
 			goto Done;
 		}
 		else
@@ -4028,7 +4111,7 @@ void CAIHumanStateCheckBody::Update()
 
 			// Play our sound
 
-			if( !GetAI()->IsPlayingDialogSound() )
+			if( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) )	// RETAIL: 0x101eb611
 			{
 				GetAI()->PlaySound( kAIS_SeeBody, LTFALSE );
 			}
@@ -4045,13 +4128,7 @@ Done:
 		pBody->SetBodyResetTime( g_pLTServer->GetTime() + g_pAIButeMgr->GetResetTimers()->fBodyResetTimer );
 	}
 
-	if( bSuccess )
-	{
-		m_eStateStatus = kSStat_StateComplete;
-	}
-	else {
-		m_eStateStatus = kSStat_FailedComplete;
-	}
+	m_eStateStatus = kSStat_StateComplete;
 }
 
 // ----------------------------------------------------------------------- //
@@ -4063,18 +4140,17 @@ void CAIHumanStateCheckBody::UpdateAnimation()
 	if ( m_pStrategyFollowPath )
 	{
 		GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
-		if ( m_pStrategyFollowPath->IsSet() )
+
+		// RETAIL: 0x101eb661, Tron's one shot animation plays once the
+		// path is done.
+		if ( !m_pStrategyFollowPath->IsDone() )
 		{
 			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Down);
 			m_pStrategyFollowPath->UpdateAnimation();
 		}
-		else if( m_pStrategyOneShotAni->IsSet() )
+		else
 		{
 			m_pStrategyOneShotAni->UpdateAnimation();
-		}
-		else {
-			GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
-			GetAnimationContext()->SetProp(kAPG_Action, kAP_Alert);
 		}
 	}
 }
@@ -4202,6 +4278,11 @@ LTBOOL CAIHumanStateChase::Init(CAIHuman* pAIHuman)
 	m_eStateStatus = kSStat_Pursue;
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
+
+	// RETAIL: 0x101eb9bf, Tron's chase starts ghosting and picks
+	// m_xTronUnknownC0 at random.
+	m_pAIHuman->StartGhosting();
+	m_xTronUnknownC0 = GetRandom( 0, 3 );
 
 	return LTTRUE;
 }
@@ -4571,9 +4652,10 @@ LTBOOL CAIHumanStateChase::CalculatePath()
 	// This keeps AIs from crowding each other when attacking, especially melee.
 	// Static variable is shared between all callers to CalculatePath.
 
-	static int iOffset = 0;
+	// RETAIL: 0x101ec48a, Tron's offset is the one Init picked at random
+	// (m_xTronUnknownC0), not a static that cycles.
 	LTVector vOffset(0.f, 0.f, 0.f);
-	switch( iOffset )
+	switch( m_xTronUnknownC0 )
 	{
 		case 0:	vOffset.x -= 96.f;
 				break;
@@ -4587,7 +4669,6 @@ LTBOOL CAIHumanStateChase::CalculatePath()
 		case 3:	vOffset.z += 96.f;
 				break;
 	}
-	iOffset = ( iOffset + 1 ) % 4;
 
 
 	m_pJunctionCorrectVolume = LTNULL;
@@ -5954,7 +6035,7 @@ LTBOOL CAIHumanStateAttack::RequestCrouch(HOBJECT hRequestingAI)
 	{
 		m_dwAttackFlags |= kAttk_ForceCrouch;
 
-		if( !pAlly->IsPlayingDialogue() ) // RETAIL: 0x101ef60f
+		if( !( pAlly->IsTalkLocked() || pAlly->IsPlayingDialogSound() ) ) // RETAIL: 0x101ef60f
 		{
 			pAlly->PlaySound( kAIS_OrderCrouch, LTFALSE );
 		}
@@ -6233,7 +6314,7 @@ CAIHumanStateAttackFromCover::CAIHumanStateAttackFromCover()
 	m_pStrategyShoot = AI_FACTORY_NEW(CAIHumanStrategyShootBurst);
 	m_pStrategyCover = LTNULL;
 
-	m_nRetries = 0;
+	// RETAIL: 0x101efd90, Tron's constructor leaves m_nRetries unset.
 	m_pCoverNode = LTNULL;
 
 	m_bBoostedHitpoints = LTFALSE;
@@ -6321,25 +6402,17 @@ void CAIHumanStateAttackFromCover::Update()
 {
 	super::Update();
 
-	// Make sure we have a target
+	// Make sure we have a target, a cover node and a weapon.
+	// RETAIL: 0x101f0077, Tron leaves a disabled or a bad cover node
+	// when nothing holds the AI. The failures share one block (0x101f020e).
 
-	if ( !GetAI()->HasTarget() )
-	{
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
-
-	// Make sure we have a cover node.
-
-	if ( !m_pCoverNode )
-	{
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
-
-	// Make sure we have a weapon
-
-	if ( !GetAI()->GetCurrentWeapon() )
+	if ( !GetAI()->HasTarget() ||
+		 !m_pCoverNode ||
+		 ( !GetAI()->GetAnimationContext()->IsLocked() &&
+		   !GetAI()->GetAIMovement()->IsMovementLocked() &&
+		   ( m_pCoverNode->IsDisabled() ||
+		     ( kStatus_Ok != m_pCoverNode->GetStatus( GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject() ) ) ) ) ||
+		 !GetAI()->GetCurrentWeapon() )
 	{
 		m_eStateStatus = kSStat_FailedComplete;
 		return;
@@ -6359,14 +6432,7 @@ void CAIHumanStateAttackFromCover::Update()
 		GetAI()->PlayCombatSound(kAIS_Cover);
 	}
 
-	// If we've had too many retries just attack
-
-	if ( m_nRetries == (int32)GetAI()->GetBrain()->GetAttackFromCoverMaxRetries() )
-	{
-		// TOO MANY RETRIES
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
+	// RETAIL: 0x101f0118, Tron has no limit on the retries.
 
 	// Update accordingly with our state
 
@@ -6452,18 +6518,7 @@ void CAIHumanStateAttackFromCover::UpdateAnimation()
 
 void CAIHumanStateAttackFromCover::UpdateGotoCover()
 {
-	// Abandon the state if target is blocking the path to the node.
-
-	if( m_pCoverNode )
-	{
-		EnumNodeStatus eCoverStatus = m_pCoverNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
-		if( ( kStatus_ThreatBlockingPath == eCoverStatus ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-	}
+	// RETAIL: 0x101f02a5, Tron checks the node's status in Update.
 
 	// TODO: check for strategy failure
 	
@@ -6582,27 +6637,8 @@ void CAIHumanStateAttackFromCover::UpdateUseCover()
 			return;
 		}
 
-		EnumNodeStatus eCoverStatus = m_pCoverNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
-
-		if( ( kStatus_ThreatInsideRadius == eCoverStatus ) && 
-			( !bAnimLocked ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-
-		if ( m_nRetries != -1 && (kStatus_Ok != eCoverStatus) && !bAnimLocked )
-		{
-			// TRY USING NEW COVER
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-
-		if ( m_pStrategyShoot->ShouldReload() )
-		{
-			m_pStrategyShoot->Reload();
-		}
+		// RETAIL: 0x101f04a7, Tron checks the node's status in Update and
+		// does not reload here.
 
 		// If just finished attacking from cover, using one animation,
 		// ensure that the shooting strategy is cleared to prevent shooting
@@ -6828,7 +6864,7 @@ void CAIHumanStateAttackFromCover::Load(ILTMessage_Read *pMsg)
 	m_pStrategyShoot->Load(pMsg);
 	m_pStrategyFollowPath->Load(pMsg);
 
-	LOAD_INT(m_nRetries);
+	// RETAIL: 0x101f08a2, Tron does not keep m_nRetries.
 	LOAD_BOOL(m_bBoostedHitpoints);
 	LOAD_COBJECT(m_pCoverNode, AINodeCover);
 	LOAD_BOOL(m_bCovered);
@@ -6869,7 +6905,7 @@ void CAIHumanStateAttackFromCover::Save(ILTMessage_Write *pMsg)
 	m_pStrategyShoot->Save(pMsg);
 	m_pStrategyFollowPath->Save(pMsg);
 
-	SAVE_INT(m_nRetries);
+	// RETAIL: 0x101f0990, Tron does not keep m_nRetries.
 	SAVE_BOOL(m_bBoostedHitpoints);
 	SAVE_COBJECT(m_pCoverNode);
 	SAVE_BOOL(m_bCovered);
@@ -7100,8 +7136,10 @@ void CAIHumanStateAttackFromVantage::UpdateMoving()
 	if( m_pVantageNode )
 	{
 		EnumNodeStatus eVantageStatus = m_pVantageNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
+		// RETAIL: 0x101f0e07 tests m_bTronUnknown8D too.
 		if( ( kStatus_ThreatBlockingPath == eVantageStatus ) &&
-			( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
+			( !GetAI()->GetAIMovement()->IsMovementLocked() ) &&
+			( !m_bTronUnknown8D ) )
 		{
 			m_eStateStatus = kSStat_FailedComplete;
 			return;
@@ -7147,7 +7185,8 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 {
 	// Never exit the state if an attack animation is in progress. 
 
-	LTBOOL bAnimLocked = GetAI()->GetAnimationContext()->IsLocked();
+	// RETAIL: 0x101f0f24, a transition counts as locked too.
+	LTBOOL bAnimLocked = GetAI()->GetAnimationContext()->IsLocked() || GetAI()->GetAnimationContext()->IsTransitioning();
 
 	// Check to see if our vantage is still valid
 
@@ -7161,7 +7200,8 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 
 	EnumNodeStatus eVantageStatus = m_pVantageNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
 
-	if( ( kStatus_ThreatInsideRadius == eVantageStatus ) && 
+	// RETAIL: 0x101f0f7a, a threat outside the FOV too.
+	if( ( ( kStatus_ThreatInsideRadius == eVantageStatus ) || ( kStatus_ThreatOutsideFOV == eVantageStatus ) ) && 
 		( !bAnimLocked ) &&
 		( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
 	{
@@ -7174,6 +7214,12 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 	// Face target if hit tracking limit.
 
 	LTBOOL bFacingTarget = GetAI()->EnableNodeTracking( kTrack_AimAt, GetAI()->GetTarget()->GetObject() );
+
+	// RETAIL: 0x101f0fc5
+	if( GetAI()->IsNodeTrackingAtLimit() )
+	{
+		GetAI()->FaceTarget();
+	}
 
 	if ( m_pStrategyShoot->IsReloading() )
 	{
@@ -7277,7 +7323,8 @@ void CAIHumanStateAttackFromVantage::HandleDamage(const DamageStruct& damage)
 
 	if ( m_eStateStatus == kSStat_Attacking  )
 	{
-		if( m_pVantageNode && ( !GetAI()->GetAnimationContext()->IsLocked() ) )
+		// RETAIL: 0x101f1189 tests m_bTronUnknown8C first.
+		if( !m_bTronUnknown8C && m_pVantageNode && ( !GetAI()->GetAnimationContext()->IsLocked() ) )
 		{
 			// Find another vantage node or exit state.
 			CleanupState();
@@ -7547,8 +7594,23 @@ void CAIHumanStateAttackFromView::UpdateAttacking()
 			}
 		}
 
-		// TODO: check for strategy failure
-		m_pStrategyShoot->Update();
+		// RETAIL: 0x101f1868, Tron fires only at a target in full view, or
+		// past an AI that blocks the view while it crouches.
+
+		CAITarget* pTarget = GetAI()->GetTarget();
+		CAI* pBlockingAI = LTNULL;
+		if( IsKindOf( pTarget->GetVisionBlocker(), "CAI" ) )
+		{
+			pBlockingAI = (CAI*)g_pLTServer->HandleToObject( pTarget->GetVisionBlocker() );
+		}
+
+		if( pTarget->IsVisibleCompletely() ||
+			( pBlockingAI && pBlockingAI->GetAnimationContext() &&
+			  pBlockingAI->GetAnimationContext()->IsPropSet( kAPG_Posture, kAP_Crouch ) ) )
+		{
+			// TODO: check for strategy failure
+			m_pStrategyShoot->Update();
+		}
 	}
 	else
 	{
@@ -7852,7 +7914,8 @@ CAIHumanStatePanic::CAIHumanStatePanic()
 
 	m_aniPanic.Set(kAPG_Posture, kAP_Crouch);
 
-	m_bCanActivate = LTTRUE;
+	// RETAIL: 0x101f1f90, Tron's panicking AI cannot be activated.
+	m_bCanActivate = LTFALSE;
 }
 
 CAIHumanStatePanic::~CAIHumanStatePanic()
@@ -7999,7 +8062,8 @@ void CAIHumanStatePanic::Update()
 
 		// Play a sound if our target is threatening us
 
-		if ( !GetAI()->IsPlayingDialogSound() && GetAI()->GetTarget()->IsAttacking() )
+		// RETAIL: 0x101f228d, the talk lock too.
+		if ( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) && GetAI()->GetTarget()->IsAttacking() )
 		{
 			// $SOUND GetAI()->PlaySound(aisPanic);
 		}
@@ -8194,6 +8258,7 @@ void CAIHumanStateDistress::Update()
 			LTVector vForward;
             g_pLTServer->GetObjectRotation(GetAI()->GetTarget()->GetObject(), &rRot);
 			vForward = rRot.Forward();
+			vForward.y = 0.f;	// RETAIL: 0x101f2a4d, a flat facing test
 
 			LTVector vDir;
 			vDir = GetAI()->GetPosition() - GetAI()->GetTarget()->GetVisiblePosition();
@@ -8229,7 +8294,7 @@ void CAIHumanStateDistress::Update()
 	LTFLOAT fMax = GetAI()->GetBrain()->GetDistressDecreaseRate();
 	fMax = GetAI()->GetBrain()->GetDistressTimeMax() * fMax;
 
-	m_fDistress = LTCLAMP( m_fDistress, 0.0f, fMax );
+	m_fDistress = LTMIN( fMax, LTMAX( m_fDistress, 0.0f ) );
 	if ( m_fDistress == 0.0f )
 	{
 		m_eStateStatus = kSStat_StateComplete;
@@ -8482,7 +8547,7 @@ void CAIHumanStateTalk::Update()
 {
 	if ( m_hFace )
 	{
-		if ( GetAI()->IsPlayingDialogSound() )
+		if ( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() )	// RETAIL: 0x101f33e4
 		{
 			m_fFaceTimer = g_pLTServer->GetTime() + m_fFaceTime;
 		}
@@ -8646,6 +8711,9 @@ LTBOOL CAIHumanStateCharge::Init(CAIHuman* pAIHuman)
 	m_pStrategyFollowPath->SetMovement(kAP_Run);
 
 	m_pAIHuman->SetAwareness( kAware_Alert );
+
+	// RETAIL: 0x101f38a2, Tron's charge keeps where it started.
+	m_vTronUnknown98 = m_pAIHuman->GetPosition();
 
 	return LTTRUE;
 }
@@ -8999,6 +9067,9 @@ CAIHumanStateFollow::CAIHumanStateFollow()
 	m_pStrategyFollowPath = AI_FACTORY_NEW(CAIHumanStrategyFollowPath);
 
 	m_eStateStatus = kSStat_Following;
+
+	// RETAIL: 0x101f44af, Tron's follow state allows cinematics.
+	m_bNoCinematics = LTFALSE;
 
 	m_fRangeTime = .25f;
 
@@ -9681,7 +9752,11 @@ void CAIHumanStateLongJump::SetupLongJumpMovement()
 	GetAI()->GetAIMovement()->FaceDest( m_bFaceDest );
 	GetAI()->GetAIMovement()->SetSpeed( m_fJumpSpeed );
 	GetAI()->GetAIMovement()->SetParabola( fJumpHeight );
-	GetAI()->GetAIMovement()->IgnoreVolumes( LTTRUE );
+	// RETAIL: 0x101f559a, only when m_xTronUnknown38 is not set.
+	if( !GetAI()->GetAIMovement()->GetTronUnknown38() )
+	{
+		GetAI()->GetAIMovement()->IgnoreVolumes( LTTRUE );
+	}
 	GetAI()->GetAIMovement()->LockMovement();
 
 	GetAnimationContext()->SetAnimRate( fAnimRate );

@@ -65,14 +65,15 @@ LTBOOL CInventoryButeMgr::Init(const char* szAttributeFile)
 	g_pInventoryButeMgr = this;
 
 	// Read Goal Sets.
+	// RETAIL: Tron's tags are "Note<n>" (0x100c1c74).
 	uint32 iItem = 0;
-	sprintf(s_aTagName, "%s%d", "Item", iItem);
+	sprintf(s_aTagName, "%s%d", "Note", iItem);
 	
 	while(m_buteMgr.Exist(s_aTagName))
 	{
 		ReadItem();
 		iItem++;
-		sprintf(s_aTagName, "%s%d", "Item", iItem);
+		sprintf(s_aTagName, "%s%d", "Note", iItem);
 	}
 
 	m_buteMgr.Term();

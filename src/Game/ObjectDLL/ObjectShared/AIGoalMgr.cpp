@@ -1317,8 +1317,10 @@ void CAIGoalMgr::HandleGoalSenseTriggers(AISenseRecord* pSenseRecord)
 
 		// Console output.
 
-		AITRACE(AIShowGoals, ( m_pAI->m_hObject, "Goal %s triggered by sense %s (%.2f)\n", 
+		// RETAIL: Tron's names the stimulus source (0x1014a0ab)
+		AITRACE(AIShowGoals, ( m_pAI->m_hObject, "Goal %s triggered by %s; sense %s (%.2f) ()\n", 
 			s_aszGoalTypes[m_pTriggeredGoal->GetGoalType()],
+			GetObjectName(m_pTriggeredGoal->GetStimulusSource()),
 			CAISenseRecorderAbstract::SenseToString(pSenseRecord->eSenseType),
 			m_pTriggeredGoal->GetCurImportance() ) );
 	}

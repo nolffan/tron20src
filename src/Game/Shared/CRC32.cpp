@@ -109,11 +109,29 @@ uint32 CRC32::CalcRezFileCRC(const char *pFilename)
 
 	uint32 nAccumulator = 0xFFFFFFFF;
 
-	for (uint32 nFileSize = pFileStream->GetLen(); nFileSize; --nFileSize)
+	// RETAIL: CShell 0x1015aeb0: Tron reads the file 1024 bytes at a time
+	uint8 aBuffer[1024];
+	int nFileSize = pFileStream->GetLen();
+	while (nFileSize)
 	{
-		uint8 nNextChar;
-		(*pFileStream) >> nNextChar;
-		g_CRCTable.Calc(nAccumulator, nNextChar);
+		int nRead;
+		if (nFileSize > (int)sizeof(aBuffer))
+		{
+			pFileStream->Read(aBuffer, sizeof(aBuffer));
+			nRead = sizeof(aBuffer);
+		}
+		else
+		{
+			pFileStream->Read(aBuffer, nFileSize);
+			nRead = nFileSize;
+		}
+
+		for (int i = 0; i < nRead; i++)
+		{
+			g_CRCTable.Calc(nAccumulator, aBuffer[i]);
+		}
+
+		nFileSize -= nRead;
 	}
 
 	pFileStream->Release();

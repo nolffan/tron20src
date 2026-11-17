@@ -98,14 +98,13 @@ void CBodyStateNormal::Init(Body* pBody)
 	}
 
 	//activate hit box (might have been deactivated by previous state)
-	if (m_pBody->GetHitBox())
+	// RETAIL: 0x1021a835, through the hit box user's virtual.
+	if (m_pBody->GetHitBoxObject())
 	{
-		g_pCommonLT->SetObjectFlags(m_pBody->GetHitBox(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
+		g_pCommonLT->SetObjectFlags(m_pBody->GetHitBoxObject(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
 	}
-	
-	// Make sure it's on the ground...
-	
-	MoveObjectToFloor( m_pBody->m_hObject );
+
+	// RETAIL: 0x1021a86e, Tron does not move the body to the floor here.
 }
 
 void CBodyStateNormal::InitLoad(Body* pBody)
@@ -158,6 +157,15 @@ LTBOOL CBodyStateNormal::CanDeactivate()
 	// loop, we need to check the pointer here.
 	if(!m_pBody)
 		return LTTRUE;
+
+	// RETAIL: 0x1021a997, a body stays active in a game that is not single
+	// player or cooperative.
+
+	GameType eGameType = g_pGameServerShell->GetGameType();
+	if( eGameType != eGameTypeSingle && eGameType != eGameTypeCooperative )
+	{
+		return LTFALSE;
+	}
 
 	// If we have > 0 lifetime, see if we should remove ourselves
 
@@ -520,12 +528,7 @@ CBodyStateFade::CBodyStateFade()
 
 void CBodyStateFade::Init(Body* pBody)
 {
-	// Can't fade out permanent bodies...
-	if (pBody->IsPermanentBody())
-	{
-		pBody->SetState(kState_BodyNormal);
-		return;
-	}
+	// RETAIL: 0x1021b3e0, Tron fades permanent bodies too.
 
 	CBodyState::Init(pBody);
 

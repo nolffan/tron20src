@@ -88,7 +88,8 @@ LTBOOL CHUDMeter::Init()
 
 void CHUDMeter::Render()
 {
-	if( !m_bDraw )
+	// RETAIL: 0x101899b5: Tron's HUD item enable flag first
+	if( !IsEnabled() || !m_bDraw )
 		return;
 
 	SetRenderState();

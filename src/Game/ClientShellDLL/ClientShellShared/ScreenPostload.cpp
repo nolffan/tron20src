@@ -563,7 +563,8 @@ void CScreenPostload::Escape()
 			g_pGameClientShell->SendClientLoadedMessage( );
 
 			// Change to waiting for other players.
-			m_pContinueStr->SetText(LoadTempWString(IDS_WAITINGFOROTHERPLAYERS));
+			// RETAIL: 0x1016cbe1: Tron's string 0x484 (NOLF2's IDS_WAITINGFOROTHERPLAYERS is 1214)
+			m_pContinueStr->SetText(LoadTempWString(0x484));
 			m_pContinueStr->SetColor(m_nContinueColor);
 		}
 		else
@@ -585,6 +586,8 @@ bool CScreenPostload::UpdateInterfaceSFX()
 			if (s_bFlash)
 			{
 				m_pContinueStr->SetColor(s_nFlashColor);
+				// RETAIL: 0x1016cd09: Tron sounds each flash
+				g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\pressanykey.wav");
 			}
 			else
 			{
@@ -674,6 +677,9 @@ void CScreenPostload::CreateInterfaceSFX()
 		sprintf(szAttName,"PostFX%d",n);
 
 	}
+
+	// RETAIL: 0x1016d12f: Tron clears the layout name
+	m_layout = "";
 }
 
 // ----------------------------------------------------------------------- //

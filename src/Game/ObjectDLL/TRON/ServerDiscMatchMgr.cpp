@@ -20,12 +20,17 @@
 #include "Arena.h"
 #include "CVarTrack.h"
 
+// RETAIL: the delays before a round (retail 0x10294b38, 0x10294b3c: named
+// constants, not literals). The names are ours.
+static const float s_fRoundDelay = 5.0f;
+static const float s_fLongRoundDelay = 7.0f;
+
 // RETAIL: the time of the last whole step of fStep before fTime that is
 // still in the future and after fLast (retail 0x10049970)
-static float GetNextTime(float fTime, float fStep, float fLast)
+static float GetNextTime(float fNext, float fStep, float fLast)
 {
 	float fNow = g_pLTServer->GetTime();
-	float fNext = fTime;
+	float fTime = fNext;
 
 	while (fNext > fNow && fNext > fLast)
 	{
@@ -114,7 +119,7 @@ void CDiscMatch::Update()
 	{
 		if (fTime > m_fRoundOverTime)
 		{
-			StartRound(5.0f);
+			StartRound(s_fRoundDelay);
 		}
 	}
 	else if (m_eState == 4)
@@ -140,7 +145,7 @@ void CDiscMatch::Init(int nTeamA, int nTeamB, CDiscArena* pArena, float fDuratio
 {
 	for (int i = 0; i < 2; i++)
 	{
-		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(i ? nTeamB : nTeamA, false);
+		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(!i ? nTeamA : nTeamB, false);
 		uint32 nNumClients = pTeam->GetNumClients();
 		for (uint32 j = 0; j < nNumClients; j++)
 		{
@@ -162,14 +167,14 @@ void CDiscMatch::Init(int nTeamA, int nTeamB, CDiscArena* pArena, float fDuratio
 	m_fEndTime = g_pLTServer->GetTime() + fDuration;
 	m_nRounds = nRounds;
 	m_nWinsNeeded = (nRounds + 1) / 2;
-	m_nTeam[1] = nTeamB;
 	m_nTeam[0] = nTeamA;
+	m_nTeam[1] = nTeamB;
 	m_nWins[0] = 0;
 	m_nWins[1] = 0;
 
 	m_pArena->SendCommand(m_pArena->m_sMatchStartCmd.c_str());
 
-	StartRound(bLongDelay ? 7.0f : 5.0f);
+	StartRound(bLongDelay ? s_fLongRoundDelay : s_fRoundDelay);
 	SendState(LTNULL, false, false);
 }
 
@@ -247,7 +252,8 @@ void CDiscMatch::StartRound(float fDelay)
 				cMsg.Writebool(true);
 				g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
 
-				pPlayer->Respawn(2, false, (GameStartPoint*)m_pArena->GetTeamPoint(i, pPlayer), LTNULL);
+				GameStartPoint* pStartPoint = (GameStartPoint*)m_pArena->GetTeamPoint(i, pPlayer);
+				pPlayer->Respawn(2, false, pStartPoint, LTNULL);
 				m_pArena->SendCommand(m_pArena->m_sRoundStartCmd.c_str());
 			}
 		}
@@ -403,7 +409,8 @@ void CDiscMatch::OnPlayerKilled(CPlayerObj* pPlayer, CPlayerObj* pKiller)
 	bool bTeamDead = true;
 	m_nKills[nSlot]++;
 
-	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient())), false);
+	int nTeam = g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient()));
+	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(nTeam, false);
 	uint32 nNumClients = pTeam->GetNumClients();
 	for (uint32 i = 0; i < nNumClients; i++)
 	{
@@ -465,44 +472,49 @@ void CDiscMatch::DecideWinner()
 	if (m_eState != 5 && m_eState != 4)
 		return;
 
-	if (m_nWins[0] < m_nWins[1])
+	if (m_nWins[1] > m_nWins[0])
 	{
 		m_nWinner = 1;
 		return;
 	}
 
-	if (m_nWins[0] > m_nWins[1])
+	// RETAIL: 0x1004d88c, the more wins and the draw lost by team 1 share
+	// the last store.
+	if (m_nWins[1] >= m_nWins[0])
 	{
-		m_nWinner = 0;
-		return;
-	}
-
-	// RETAIL: a draw goes to the team that lost less (the damage of its
-	// living players, and 100 for each death)
-	float afLost[2];
-	afLost[1] = 0.0f;
-	afLost[0] = 0.0f;
-	for (int i = 0; i < 2; i++)
-	{
-		CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(m_nTeam[i], false);
-		uint32 nNumClients = pTeam->GetNumClients();
-		for (uint32 j = 0; j < nNumClients; j++)
+		// RETAIL: a draw goes to the team that lost less (the damage of its
+		// living players, and 100 for each death)
+		float afLost[2];
+		afLost[1] = 0.0f;
+		afLost[0] = 0.0f;
+		for (int i = 0; i < 2; i++)
 		{
-			CPlayerObj* pPlayer = pTeam->GetPlayer(j);
-			if (pPlayer && pPlayer->GetPlayerScore()->GetTronUnknown18() == 0)
+			CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(m_nTeam[i], false);
+			uint32 nNumClients = pTeam->GetNumClients();
+			for (uint32 j = 0; j < nNumClients; j++)
 			{
-				CDestructible* pDamage = pPlayer->GetDestructible();
-				if (pDamage)
+				CPlayerObj* pPlayer = pTeam->GetPlayer(j);
+				if (pPlayer && pPlayer->GetPlayerScore()->GetTronUnknown18() == 0)
 				{
-					afLost[i] += 100.0f - pDamage->GetHitPoints();
+					CDestructible* pDamage = pPlayer->GetDestructible();
+					if (pDamage)
+					{
+						afLost[i] += 100.0f - pDamage->GetHitPoints();
+					}
 				}
 			}
+
+			afLost[i] += (float)m_nKills[i] * 100.0f;
 		}
 
-		afLost[i] += (float)m_nKills[i] * 100.0f;
+		if (afLost[0] > afLost[1])
+		{
+			m_nWinner = 1;
+			return;
+		}
 	}
 
-	m_nWinner = (afLost[0] > afLost[1]) ? 1 : 0;
+	m_nWinner = 0;
 }
 
 int CDiscMatch::GetWinner()
@@ -780,13 +792,15 @@ void CDiscMatchMgr::Reset(int nMaxTeamSize)
 
 void CDiscMatchMgr::SetNextLevel(int nLevel)
 {
-	if (m_bStarted)
+	// RETAIL: 0x100499c5, the switch comes first.
+	if (!m_bStarted)
+	{
+		g_pGameServerShell->SwitchToLevel(nLevel);
+	}
+	else
 	{
 		m_nTronUnknown28 = nLevel;
-		return;
 	}
-
-	g_pGameServerShell->SwitchToLevel(nLevel);
 }
 
 void CDiscMatchMgr::StartTournament()
@@ -818,8 +832,8 @@ void CDiscMatchMgr::StartGame()
 	if (m_fTimeLimit > 0.0f)
 	{
 		m_fEndTime = g_pLTServer->GetTime() + m_fTimeLimit;
-		m_nWarning = 0;
 		m_fWarningTime = m_fEndTime - s_afWarningTimes[0];
+		m_nWarning = 0;
 	}
 	else
 	{
@@ -1496,7 +1510,8 @@ void CDiscMatchMgr::HandleTeamChange(ILTMessage_Read* pMsg)
 	uint32 nClientID = pMsg->Readuint32();
 	uint8 nTeam = pMsg->Readuint8();
 
-	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(g_pTronTeamMgr->GetTeamOfClient(nClientID), false);
+	int nOldTeam = g_pTronTeamMgr->GetTeamOfClient(nClientID);
+	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(nOldTeam, false);
 	CPlayerObj* pPlayer = pTeam->GetPlayer(pTeam->FindClient(nClientID));
 	if (!pPlayer)
 		return;
@@ -1693,7 +1708,8 @@ void CDiscMatchMgr::AwardWin(int nTeam)
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
 	cMsg.Writeuint8(kDiscMsg_TeamWin);
-	g_pTronTeamMgr->SendToTeam(cMsg.Read(), nTeam, MESSAGE_GUARANTEED, false);
+	CLTMsgRef_Read cRead = cMsg.Read();
+	g_pTronTeamMgr->SendToTeam(cRead, nTeam, MESSAGE_GUARANTEED, false);
 }
 
 int CDiscMatchMgr::GetNumActiveTeams()

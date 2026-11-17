@@ -246,7 +246,8 @@ public:
 	int8	GetRating(PerformanceRating p) {return m_RatingMgr.GetRating(p);}
 	void	SetPerformanceRating(PerformanceRating p, int i) {m_RatingMgr.SetPerformanceRating(p,i);}
 	void	GivePlayerAdditive(char * pName) {m_RatingMgr.GivePlayerAdditive(pName);}
-	CRatingMgr*	GetRatingMgr() { return &m_RatingMgr; }	// the name is ours
+	// the name is ours (CTronInterfaceMgr::OnEnterWorld, retail 0x1009e203)
+	CRatingMgr*	GetRatingMgr() {return &m_RatingMgr;}
 
 	// Subroutine Armor
     void    UpdateSubroutineArmor(float fArmor, float fVirus);	// RETAIL: 0x100ac0b0

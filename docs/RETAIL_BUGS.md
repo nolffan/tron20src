@@ -1337,6 +1337,60 @@ load control until the game starts again.
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
 MenuSystem.cpp shows the load control too.
 
+### The trigger's key list reports the wrong result
+
+Object.lto 0x101c2840 (CTriggerPlugin::PreHook_EditStringList,
+ObjectShared/Trigger.cpp). For the "PlayerKey" property, the function gives
+the list to the key manager plugin's PreHook_EditStringList. It keeps the
+LTRESULT in a boolean and returns LT_OK when the result is not zero. Thus a
+list that the key plugin fills correctly (LT_OK, zero) gives LT_ERROR to
+DEdit, and a failure gives LT_OK.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Trigger.cpp
+returns the key plugin's result.
+
+### An AI sees a far target instantly
+
+Object.lto 0x101d8810 (CAISenseRecorderTools::ComplexVisibilityCheck,
+ObjectShared/AISenseRecorderGame.cpp). When the AI uses the instant see
+distance, a target outside of that distance must get a rate from its
+distance and the darkness. The code calculates this rate. Then, because an
+"else" is missing, it also runs the code for a target inside of the
+distance: it sets the rate to 99999999 (seen instantly). Thus only a hidden
+target outside of the personal bubble is not seen instantly.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
+AISenseRecorderGame.cpp has the "else".
+
+### An AI reads the ray count as its "done processing stimuli" flag
+
+Object.lto 0x1012c1d0 (CAI::GetDoneProcessingStimuli, ObjectShared/
+AI.cpp). The function jumps to 0x101dac80, which returns the sense
+recorder's ray count (+0x24, CAISenseRecorderAbstract::
+GetIntersectSegmentCount). The correct function is at 0x101daab0 and
+returns the flag (+0x14); AINodeSensing::GetDoneProcessingStimuli
+(0x1021edd0) calls it. Thus an AI is "done" when it has cast one or more
+sense rays in this update, and is not "done" when the recorder set the
+flag.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/AI.cpp
+returns the flag.
+
+### A failed use object path trace can read a null node
+
+Object.lto 0x101e8f50 (CAIHumanStateUseObject::SetNode,
+ObjectShared/AIHumanState.cpp). When the AI cannot find a path to the new
+node, the function traces the name of its old node. The trace is under
+`if( m_pUseNode )` without braces, but AITRACE expands to two statements.
+Thus the test holds only the first statement (the console variable's
+Init), and the print always runs. If the AIShowStates console variable is
+on and the AI has no old node, the print reads the name through a null
+pointer and the server stops. The trace is off in a normal game, so the
+game does not hit this.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
+AIHumanState.cpp puts braces around the trace.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

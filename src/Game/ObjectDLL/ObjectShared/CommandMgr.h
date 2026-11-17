@@ -344,7 +344,7 @@ class CCommandMgr
 		LTBOOL	ProcessWhen(ConParse & parse, int nCmdIndex);
 		LTBOOL	ProcessShowVar(ConParse & parse, int nCmdIndex);
 
-		VAR_STRUCT *GetVar( const char *pName, bool bSilent, uint16 *nId = LTNULL );
+		VAR_STRUCT *GetVar( const char *pName, bool bSilent );	// RETAIL: no id out-parameter (0x100b6740)
 
 	private :
 

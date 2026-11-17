@@ -149,15 +149,28 @@ void CAIGoalAttackFromView::UpdateGoal()
 
 void CAIGoalAttackFromView::HandleStateAttackFromView()
 {
+	// RETAIL: 0x10213a40, Tron's AI charges when its target leaves the
+	// player info volume of the view node, or when the view fails; the
+	// charge is long for an AI that does not attack while it moves.
+
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
-		case kSStat_Initialized:
-			break;
-
-		case kSStat_Moving:
-			break;
-
 		case kSStat_Attacking:
+			if( m_pAI->GetTarget() && m_pAI->GetTarget()->GetCharacter() )
+			{
+				AIVolumePlayerInfo* pPlayerInfoVolume = m_pAI->GetTarget()->GetCharacter()->GetCurrentPlayerInfoVolume();
+				if( !pPlayerInfoVolume || !pPlayerInfoVolume->IsViewNode( m_hNode ) )
+				{
+					m_pAI->SetState( kState_HumanCharge );
+					if( m_pAI->GetState() &&
+						( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+						!m_pAI->GetBrain()->AttacksWhileMoving() )
+					{
+						((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+					}
+				}
+			}
+
 			if(m_pGoalMgr->IsGoalLocked(this))
 			{
 				m_pGoalMgr->UnlockGoal(this);
@@ -173,10 +186,13 @@ void CAIGoalAttackFromView::HandleStateAttackFromView()
 			// a goal will re-activate instead of charging.
 
 			m_pAI->SetState( kState_HumanCharge );
+			if( m_pAI->GetState() &&
+				( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+				!m_pAI->GetBrain()->AttacksWhileMoving() )
+			{
+				((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+			}
 			break;
-
-		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalAttackFromView::HandleStateAttackFromView: Unexpected State Status.");
 	}
 }
 
@@ -218,16 +234,16 @@ void CAIGoalAttackFromView::HandleStateCharge()
 
 AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr)
 {
-	// Only look for View nodes if the AI has already been alerted to the 
-	// enemy's presence.
+	// RETAIL: 0x10213bd0, Tron looks from the stimulus source (set by
+	// HandleGoalSenseTrigger), not from the AI's target, and does not drop
+	// the importance when it sees the target.
 
-	if( !m_pAI->HasTarget() )
+	if( !IsCharacter( m_hStimulusSource ) )
 	{
 		return LTNULL;
 	}
 
-	m_hStimulusSource = m_pAI->GetTarget()->GetObject();
-	CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(m_hStimulusSource);
+	CCharacter* pCharacter = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject(m_hStimulusSource));
 	
 	// Do not attack from view if target is hidden.
 
@@ -238,15 +254,14 @@ AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType
 
 	// Find target's current PlayerInfoVolume volume.
 
-	AIInformationVolume *pInfoVolume = pCharacter->GetCurrentInformationVolume();
-	if( ( !pInfoVolume ) || ( pInfoVolume->GetVolumeType() != AIInformationVolume::eTypePlayerInfo ) )
+	AIVolumePlayerInfo* pPlayerInfoVolume = pCharacter->GetCurrentPlayerInfoVolume();
+	if( !pPlayerInfoVolume )
 	{
 		return LTNULL;
 	}
 
 	// Find view node corresponding to this playerinfo volume.
 
-	AIVolumePlayerInfo* pPlayerInfoVolume = (AIVolumePlayerInfo*)pInfoVolume;
 	AINode* pViewNode = pPlayerInfoVolume->FindViewNode(m_pAI, eNodeType, vPos, LTFALSE);
 	if( !pViewNode )
 	{
@@ -255,19 +270,10 @@ AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType
 
 	// Only use a view node if there is no path to the target.
 
-	if( pCharacter->HasCurrentVolume() )
+	if( pCharacter->HasCurrentVolume() &&
+		g_pAIPathMgr->HasPath( m_pAI, pCharacter->GetCurrentVolume() ) )
 	{
-		if( g_pAIPathMgr->HasPath( m_pAI, pCharacter->GetCurrentVolume() ) )
-		{
-			// Bail if AI can see and path to enemy.
-
-			if( m_pAI->GetTarget()->IsVisibleFromEye() )
-			{
-				m_fCurImportance = 0.f;
-			}
-
-			return LTNULL;
-		}
+		return LTNULL;
 	}
 
 	return pViewNode;
@@ -294,8 +300,8 @@ LTBOOL CAIGoalAttackFromView::HandleNameValuePair(const char *szName, const char
 			CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
 			if ( pPlayer )
 			{
+				// RETAIL: 0x10213dab, Tron does not target the player here.
 				m_hStimulusSource = pPlayer->m_hObject;
-				m_pAI->Target( pPlayer->m_hObject );
 			}
 		}
 
@@ -323,21 +329,12 @@ LTBOOL CAIGoalAttackFromView::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord
 		// Need a weapon to activate an attack goal.
 		// AI is not already in this attack goal.
 
-		m_pAI->Target(pSenseRecord->hLastStimulusSource);
+		// RETAIL: 0x10213e02, Tron does not target the source here and has
+		// no relaxed time test.
+
 		CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
-		if( pAIHuman->HasTarget() && pAIHuman->HasWeapon( m_eWeaponType ) )
+		if( pSenseRecord->hLastStimulusSource && pAIHuman->HasWeapon( m_eWeaponType ) )
 		{
-			// If stimulus has no duration (meaning it lasts forever, i.e. visibile 
-			// stimuli like an open drawer), ignore if it occured before I 
-			// returned to a relaxed state.
-
-			if( pSenseRecord->pAIBM_Last_Stimulus && 
-				( pSenseRecord->pAIBM_Last_Stimulus->fDuration == 0.f ) &&
-				( m_pAI->GetLastRelaxedTime() > pSenseRecord->fLastStimulationTime ) )
-			{
-					return LTFALSE;
-			}
-
 			// Record whatever triggered this goal.
 			m_hStimulusSource = pSenseRecord->hLastStimulusSource;
 

@@ -53,6 +53,9 @@ class CLightCycleFX : public CSpecialFX
 		// RETAIL: inline (CSFXMgr::GetLightCycleFX, 0x10108685); the name is
 		// ours
 		HOBJECT	GetRider() const { return m_hTronUnknown70; }
+		// RETAIL: inline (CClientLightCycleMgr::DeactivateShield, 0x100147cb);
+		// the name is ours
+		CLIENTFX_LINK*	GetTronUnknownFX4C() { return &m_TronUnknownFX4C; }
 
 	protected :
 

@@ -33,6 +33,11 @@ namespace
 	VarTrack	g_vtChooserAutoSwitchFreq;
 }
 
+// RETAIL: 0x100afc50: the constructor is out of line
+CTronWeaponChooser::CTronWeaponChooser()
+{
+}
+
 // RETAIL: 0x100afca0
 void CTronWeaponChooser::Init()
 {

@@ -57,7 +57,7 @@ void CChainedFX::Update()
 {
 	if (m_IntroFX.IsValid() && m_IntroFX.GetInstance()->IsDone())
 	{
-//		g_pLTClient->CPrint("intro fx done");
+		g_pLTClient->CPrint("intro fx done");	// RETAIL: Tron prints it (0x1017c4cd)
 		g_pInterfaceMgr->RemoveInterfaceFX(&m_IntroFX);
 		m_IntroFX.ClearLink();
 		m_bIntroDone = true;

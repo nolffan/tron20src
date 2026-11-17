@@ -310,35 +310,37 @@ void CHUDHealthEnergy::Update()
 // with STLport helpers out of line, and some float scheduling differs
 void CHUDHealthEnergy::UpdateLayout()
 {
+	// RETAIL: 0x1002a830: CTronLayoutMgr's getters (0x100a0600..), in this
+	// order; the bar height is CLayoutMgr's (0x100dae00)
 	float xs = g_pInterfaceResMgr->GetXRatio();
 	float ys = g_pInterfaceResMgr->GetYRatio();
 
 	int nCurrentLayout = GetConsoleInt("HUDLayout",0);
 
-	((CTronLayoutMgr*)g_pLayoutMgr)->GetProfilerTextSize(nCurrentLayout);
+	((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthEnergyFont(nCurrentLayout);
 	int nFontSize = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthEnergyFontSize(nCurrentLayout);
 
-	LTIntPt pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetDebugTextPos(nCurrentLayout);
+	LTIntPt pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthTextOffset(nCurrentLayout);
 	float fCenterX = 320.0f * xs;
 	m_HealthTextPos.x = (float)pos.x + fCenterX;
 	float fBottom = 480.0f * ys;
 	m_HealthTextPos.y = (float)pos.y + fBottom;
-	pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetDamageBasePos(nCurrentLayout);
+	pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyTextOffset(nCurrentLayout);
 	m_EnergyTextPos.x = (float)pos.x + fCenterX;
 	m_EnergyTextPos.y = (float)pos.y + fBottom;
 
-	m_nBarHeight = ((CTronLayoutMgr*)g_pLayoutMgr)->GetActivationTextJustify(nCurrentLayout);
-	m_nHealthWidth = ((CTronLayoutMgr*)g_pLayoutMgr)->GetPingSpacing(nCurrentLayout);
-	m_nEnergyWidth = ((CTronLayoutMgr*)g_pLayoutMgr)->GetPsetHeight(nCurrentLayout);
-	m_fLayoutHealthBlinkTime = (float)(int)((CTronLayoutMgr*)g_pLayoutMgr)->GetPsetWidth(nCurrentLayout);
+	m_nBarHeight = ((CTronLayoutMgr*)g_pLayoutMgr)->GetBarHeight(nCurrentLayout);
+	m_nHealthWidth = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBarWidth(nCurrentLayout);
+	m_nEnergyWidth = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyBarWidth(nCurrentLayout);
+	m_fLayoutHealthBlinkTime = (float)(int)((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBlinkTime(nCurrentLayout);
 
-	LTIntPt base = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBasePos(nCurrentLayout);
-	LTRect rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyTex(nCurrentLayout);
+	LTIntPt base = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBGOffset(nCurrentLayout);
+	LTRect rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBGTex(nCurrentLayout);
 	g_pDrawPrim->SetXYWH(&m_Energy, (float)base.x + fCenterX, (float)base.y + fBottom, (float)(rc.right - rc.left), (float)(rc.bottom - rc.top));
 	SetUVWH(&m_Energy, rc);
 
-	rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBlinkTex(nCurrentLayout);
-	LTIntPt off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetDistanceIconPos(nCurrentLayout);
+	rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthTex(nCurrentLayout);
+	LTIntPt off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthFGOffset(nCurrentLayout);
 	SetUVWH(&m_HealthBar, rc);
 	SetUVWH(&m_EnergyTransfer, rc);
 
@@ -348,25 +350,27 @@ void CHUDHealthEnergy::UpdateLayout()
 	g_pDrawPrim->SetXYWH(&m_HealthBlinkBar, x, y, (float)m_nHealthWidth, (float)m_nBarHeight);
 	g_pDrawPrim->SetXYWH(&m_Plasma[2], x, y, (float)m_nHealthWidth, (float)m_nBarHeight);
 	g_pDrawPrim->SetXYWH(&m_Plasma[3], x, y, (float)m_nHealthWidth, (float)m_nBarHeight);
-	SetUVWH(&m_HealthBlinkBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthTex(nCurrentLayout));
+	SetUVWH(&m_HealthBlinkBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBlinkTex(nCurrentLayout));
 
-	off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBarOffset(nCurrentLayout);
-	rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetHealthBGTex(nCurrentLayout);
+	off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyBGOffset(nCurrentLayout);
+	rc = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyBGTex(nCurrentLayout);
 	float fBGWidth = (float)(rc.right - rc.left);
 	g_pDrawPrim->SetXYWH(&m_HealthBG, fCenterX - fBGWidth + off.x, (float)off.y + fBottom, fBGWidth, (float)(rc.bottom - rc.top));
 	SetUVWH(&m_HealthBG, rc);
 
-	off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetDisplayMeterOffset(nCurrentLayout);
-	float fEnergyX = fCenterX - (float)m_nEnergyWidth + off.x;
-	y = (float)off.y + fBottom;
-	g_pDrawPrim->SetXYWH(&m_EnergyBar, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_Plasma[0], fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_Plasma[1], fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_EnergyTransfer, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_EnergyCap, 0.0f, (float)m_nBarHeight * 0.5f + y - 16.0f, 32.0f, 32.0f);
-	SetUVWH(&m_EnergyBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyDeficitTex(nCurrentLayout));
-	g_pDrawPrim->SetXYWH(&m_ReservedBar, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	SetUVWH(&m_ReservedBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyBGTex(nCurrentLayout));
+	off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyFGOffset(nCurrentLayout);
+	// RETAIL: 0x1002ad04: each bar's x and width are worked out again
+	float fOffY = (float)off.y;
+	y = fOffY + fBottom;
+	float fOffX = (float)off.x;
+	g_pDrawPrim->SetXYWH(&m_EnergyBar, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_Plasma[0], fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_Plasma[1], fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_EnergyTransfer, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_EnergyCap, 0.0f, (float)m_nBarHeight + fOffY + fBottom - 32.0f, 32.0f, 32.0f);
+	SetUVWH(&m_EnergyBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyTex(nCurrentLayout));
+	g_pDrawPrim->SetXYWH(&m_ReservedBar, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	SetUVWH(&m_ReservedBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyDeficitTex(nCurrentLayout));
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 

@@ -61,6 +61,9 @@ public:
 
 	// RETAIL: CTronPlayerMgr's overrides (retail vtable 0x101e9104)
 	virtual void	TronUnknownVirtual24(bool b1D7, bool b1D9);		// RETAIL: 0x100a7e60
+	// RETAIL: inline (CTronInterfaceMgr::OnCommandOn, 0x1009d40b). Here, not
+	// in CPlayerMgr, which keeps CGameClientShell::InitSound identical
+	bool	GetTronUnknown1D9() const { return m_bTronUnknown1D9; }
 	virtual bool	TronUnknownVirtual3C(bool b);					// RETAIL: 0x100a8870
 	virtual void	TronUnknownVirtual40();							// RETAIL: 0x100a8270
 	virtual bool	ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);	// RETAIL: 0x100a7b00

@@ -1428,12 +1428,9 @@ bool Finder::SetWeapon(int nWeaponId)
 	m_pWeapons->ObtainWeapon(pWeaponData->nId);
 	m_pWeapons->ChangeWeapon(pWeaponData->nId);
 
-	CWeapon* pWeapon = m_pWeapons->GetCurWeapon();
-	if (pWeapon)
-	{
-		m_pWeapon = pWeapon;
-		m_pWeapons->SetAmmo(pWeapon->GetAmmoId());
-	}
+	// RETAIL: 0x1001f311, no test of the current weapon.
+	m_pWeapon = m_pWeapons->GetCurWeapon();
+	m_pWeapons->SetAmmo(m_pWeapon->GetAmmoId());
 
 	return true;
 }

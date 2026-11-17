@@ -101,6 +101,12 @@ CCreator< IClientWeaponBase > *aWeaponClasses[] =
 };
 
 
+// RETAIL: an allocator of this TU's own (CShell 0x1026ed58, set up by
+// 0x10098fd0) that nothing uses: CTronGameClientShell's member is the one
+// the weapons come from.  The name is ours.
+static CTronClientWeaponAllocator s_TronClientWeaponAllocator;
+
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronClientWeaponAllocator::New

@@ -962,8 +962,8 @@ void CClientWeaponMgr::EnableWeapons()
 {
 	// Don't allow the enabling of weapons while dead or carrying a body...
 
-	if( g_pPlayerMgr->IsCarryingHeavyObject() || g_pPlayerMgr->IsPlayerDead() || 
-		!g_pDamageFXMgr->AllowWeapons( ))
+	// RETAIL: 0x10168b00: Tron asks only whether the player is dead
+	if( g_pPlayerMgr->IsPlayerDead() )
 		return;
 
 	// I'd rather not have to check the consistancy of these two variables,
@@ -982,12 +982,6 @@ void CClientWeaponMgr::EnableWeapons()
 	}
 
 	m_bWeaponsEnabled = true;
-
-	if (m_pCurrentWeapon && !m_pCurrentWeapon->HasAmmo())
-	{
-		AutoSelectWeapon();
-	}
-
 }
 
 
@@ -1202,6 +1196,12 @@ void CClientWeaponMgr::ResetWeapons()
 {
 	ASSERT( 0 != m_apClientWeapon );
 
+	// RETAIL: 0x10168d65: Tron shuts the current weapon down first
+	if( m_pCurrentWeapon )
+	{
+		m_pCurrentWeapon->Deactivate();
+	}
+
 	m_nRequestedWeaponId = WMGR_INVALID_ID;
 	m_nRequestedAmmoId = WMGR_INVALID_ID;
 
@@ -1219,6 +1219,8 @@ void CClientWeaponMgr::ResetWeapons()
 	m_pCurrentWeapon = 0;
 	m_iCurrentWeapon = CWM_NO_WEAPON;
 	m_nLastWeaponId = WMGR_INVALID_ID;
+	// RETAIL: 0x10168daf
+	m_nHolsterWeaponId = WMGR_INVALID_ID;
 }
 
 // ----------------------------------------------------------------------- //

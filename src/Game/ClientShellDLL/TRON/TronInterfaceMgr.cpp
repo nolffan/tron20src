@@ -23,6 +23,9 @@
 // RETAIL: retail's TU runs ScreenSubroutines.h's constant initializers
 #include "ScreenSubroutines.h"
 #include "VarTrack.h"
+#include "CMoveMgr.h"
+#include "VehicleMgr.h"
+#include "PlayerLureFX.h"
 
 // RETAIL: 0x1026ee38, set up by Init (the name is ours; nothing reads it)
 static VarTrack s_vtIOScene;
@@ -60,12 +63,8 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	m_szDuplicateState[0] = 0;
 	m_eDuplicateRenderLevel = kHUDRenderFull;
 
-	// PORT: retail leaves these to the members' constructors (not yet
-	// written); ours clears them
-	m_bTronUnknown28AE8 = false;
-	m_bTronUnknown28B14 = false;
-	m_bDisplayProgress = false;
-	m_nTronUnknown28AF0 = 0;
+	// RETAIL: 0x1009cb9d..: +0x28ae8, +0x28b14, +0x28b1d and +0x28af0 are
+	// left alone here (OnEnterWorld and Update set them)
 }
 
 
@@ -103,9 +102,11 @@ LTBOOL CTronInterfaceMgr::Init()
 	m_LightCycleGameDataMgr.Init();
 
 	m_pTurnArrowLeft = g_pScreenSpriteMgr->CreateScreenSprite("Interface\\Spr\\TurnArrowLeft.spr", false, SPRITELAYER_DEFAULT);
-	m_pTurnArrowLeft->m_bShow = LTTRUE;
+	// RETAIL: 0x1009d075: the flag at +0x2c (the sprite hides when its
+	// life ends), not m_bShow
+	m_pTurnArrowLeft->m_bTronUnknown2C = LTTRUE;
 	m_pTurnArrowRight = g_pScreenSpriteMgr->CreateScreenSprite("Interface\\Spr\\TurnArrowRight.spr", false, SPRITELAYER_DEFAULT);
-	m_pTurnArrowRight->m_bShow = LTTRUE;
+	m_pTurnArrowRight->m_bTronUnknown2C = LTTRUE;
 
 	m_DuplicateDlg.Init();
 
@@ -204,8 +205,19 @@ LTBOOL CTronInterfaceMgr::OnKeyDown(int key, int rep)
 		return LTTRUE;
 	}
 
-	// PORT: in the playing state retail lets escape close its
-	// CHUDTronDecision (retail global 0x1026edec, not yet written) here
+	// RETAIL: 0x1009d278: in the playing state escape belongs to an open
+	// decision window (and closes it when it may) unless the chat input
+	// is open. RETAIL: Tron's CHUDChatInput::IsVisible returns bool (the
+	// caller tests al; a bool "a && b" compiles to the same body as ours,
+	// 0x10166490); the cast stands in until the header says bool
+	if (m_eGameState == GS_PLAYING && key == VK_ESCAPE && g_pDecision->IsVisible() && !(uint8)g_pChatInput->IsVisible())
+	{
+		if (g_pDecision->GetTronUnknown4d())
+		{
+			g_pDecision->Hide(0xff);
+		}
+		return LTTRUE;
+	}
 
 	return CInterfaceMgr::OnKeyDown(key, rep);
 }
@@ -218,7 +230,7 @@ LTBOOL CTronInterfaceMgr::OnKeyDown(int key, int rep)
 //
 // ----------------------------------------------------------------------- //
 
-void CTronInterfaceMgr::ShowChatInput(uint8 nChatType)
+void CTronInterfaceMgr::ShowChatInput(uint32 nChatType)
 {
 	if (m_eGameState == GS_PLAYING && !g_pPlayerMgr->IsSpectatorMode())
 	{
@@ -228,10 +240,9 @@ void CTronInterfaceMgr::ShowChatInput(uint8 nChatType)
 		}
 		// RETAIL: through the chooser's vtable (CTronWeaponChooser's Close
 		// takes an argument, 1 here)
-		CWeaponChooser* pWeaponChooser = &m_WeaponChooser;
-		if (pWeaponChooser->IsOpen())
+		if (m_WeaponChooser.IsOpen())
 		{
-			pWeaponChooser->Close();
+			static_cast<CWeaponChooser*>(&m_WeaponChooser)->Close();
 		}
 
 		// RETAIL: the chat type goes to the chat input first (0x1009d32d)
@@ -250,7 +261,8 @@ void CTronInterfaceMgr::ShowChatInput(uint8 nChatType)
 
 LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 {
-    if (g_pChatInput->IsVisible()) return LTTRUE;
+	// RETAIL: the chat input's IsVisible is a bool in Tron (see OnKeyDown)
+    if ((uint8)g_pChatInput->IsVisible()) return LTTRUE;
 
 	// RETAIL: its CHUDTronDecision takes COMMAND_ID_CHOOSE_1..6 first
 	if (g_pTronDecision->IsVisible() && command >= COMMAND_ID_CHOOSE_1 && command <= COMMAND_ID_CHOOSE_6)
@@ -261,19 +273,20 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 
 	// Take appropriate action
 
+	// RETAIL: the cases' code in this order (0x1009d3be..0x1009d43a)
 	switch (command)
 	{
-		case COMMAND_ID_MESSAGE :
+		// RETAIL: 93 opens the team chat
+		case COMMAND_ID_SEND_TEAM_MESSAGE :
 		{
-			ShowChatInput(1);
+			ShowChatInput(2);
             return LTTRUE;
 		}
 		break;
 
-		// RETAIL: 93 opens the team chat
-		case COMMAND_ID_LASTWEAPON :
+		case COMMAND_ID_MESSAGE :
 		{
-			ShowChatInput(2);
+			ShowChatInput(1);
             return LTTRUE;
 		}
 		break;
@@ -285,14 +298,34 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 		case COMMAND_ID_NEXT_WEAPON_5 :
 		case COMMAND_ID_NEXT_WEAPON_6 :
 		{
-			// PORT: retail asks its CHUDTronDecision first
-			NextWeapon(command);
+			// RETAIL: not while the decision window shows
+			if (!g_pDecision->IsVisible())
+			{
+				NextWeapon(command);
+			}
             return LTTRUE;
 		}
 		break;
 
-		// PORT: retail's 70 and 192 toggle two of the client shell's flags
-		// (+0x1d8, +0x1d7) through its virtuals, not yet identified
+		// RETAIL: 0x1009d405: the light cycle camera toggles (the player
+		// manager's slot 0x24), and the profile keeps it
+		case COMMAND_ID_TOGGLE_LC_CAMERA :
+		{
+			if (!static_cast<CTronPlayerMgr*>(g_pPlayerMgr)->GetTronUnknown1D9())
+			{
+				g_pPlayerMgr->TronUnknownVirtual24(!g_pPlayerMgr->GetTronUnknown1D7(), false);
+				g_pProfileMgr->GetCurrentProfile()->SetLightCycleCamera();
+			}
+		}
+		break;
+
+		// RETAIL: 0x1009d43a: the manual light cycle camera (slot 0x28)
+		case COMMAND_ID_MANUAL_LC_CAM :
+		{
+			g_pPlayerMgr->TronUnknownVirtual28(!g_pPlayerMgr->GetTronUnknown1D8());
+			g_pProfileMgr->GetCurrentProfile()->SetLightCycleCamera();
+		}
+		break;
 
 		default :
 		{
@@ -315,33 +348,46 @@ LTBOOL CTronInterfaceMgr::OnCommandOff(int command)
 {
 	if (command == COMMAND_ID_SUBROUTINE_MENU)
 	{
-		// PORT: retail does not open the screen while its CHUDTronDecision
-		// shows (unless its +0x4d is set), nor in some of the player's
-		// states (the player manager's +0x330, +0x18 == 3) and the client
-		// shell's (+0x3c == 2 or 3)
-		if (m_eGameState == GS_PLAYING && !IsMultiplayerGame())
+		// RETAIL: 0x1009d522: an open decision window keeps the screen shut
+		// unless its +0x4d is set
+		bool bAllow = true;
+		if (g_pDecision && g_pDecision->IsVisible() && !g_pDecision->GetTronUnknown4d())
+		{
+			bAllow = false;
+		}
+
+		// RETAIL: nor on a light cycle, in a multiplayer game, or while the
+		// player dies
+		if (m_eGameState == GS_PLAYING && g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE &&
+			!IsMultiplayerGame() && !g_pPlayerMgr->IsPlayerDead() && bAllow)
 		{
 			if (m_AmmoChooser.IsOpen())
 			{
 				m_AmmoChooser.Close();
 			}
-			CWeaponChooser* pWeaponChooser = &m_WeaponChooser;
-			if (pWeaponChooser->IsOpen())
+			if (m_WeaponChooser.IsOpen())
 			{
-				pWeaponChooser->Close();
+				static_cast<CWeaponChooser*>(&m_WeaponChooser)->Close();
 			}
 
 			SwitchToScreen(SCREEN_ID_SUBROUTINES);
 			g_pSubroutineMgr->PopulateSubroutineScreen();
 
-			// PORT: retail then asks its global 0x1026ef70 (vtable +0x164)
-			// for "subroutines" and "ratings"
+			// RETAIL: the screen clears the HUD's pings for it
+			g_pPlayerStats->RemovePing("subroutines");
+			g_pPlayerStats->RemovePing("ratings");
 
 			return LTTRUE;
 		}
 
-		// PORT: retail switches to its screen 0x28 in game types 5..7 while
-		// playing
+		// RETAIL: 0x1009d5fb: the team selection in the disc and light
+		// cycle games
+		GameType eGameType = g_pGameClientShell->GetGameType();
+		if ((eGameType == eGameTypeDiscArena || eGameType == eGameTypeDiscTournament ||
+			 eGameType == eGameTypeMultiplayerLightcycles) && m_eGameState == GS_PLAYING)
+		{
+			SwitchToScreen(SCREEN_ID_TEAMSELECT);
+		}
 		return LTTRUE;
 	}
 
@@ -388,13 +434,13 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 		// RETAIL: Tron's energy (retail passes fAmount as it is)
 		case IC_MAX_ENERGY_ID :
 		{
-			m_stats.UpdateMaxEnergy((uint32)fAmount);
+			m_stats.UpdateMaxEnergy(fAmount);
 		}
 		break;
 
 		case IC_ENERGY_ID :
 		{
-			m_stats.UpdateEnergy((uint32)fAmount);
+			m_stats.UpdateEnergy(fAmount);
 		}
 		break;
 
@@ -404,7 +450,7 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 			// +0x88 with nType1, then the base class
 			if (nType2)
 			{
-				g_pSubroutineMgr->ClearPlayerSubroutines();
+				g_pSubroutineMgr->ResetPrimitives();
 			}
 			GetPlayerStats()->DropInventory((LTBOOL)nType1);
 			CInterfaceMgr::UpdatePlayerStats(nThing, nType1, nType2, fAmount);
@@ -521,9 +567,13 @@ LTBOOL CTronInterfaceMgr::Update()
 
 	m_bTronUnknown28B14 = true;
 
-	// PORT: retail clears m_bTronUnknown28B14 while the player's lure
-	// (PlayerLureFX::GetPlayerLureFX of the player manager's +0x330,
-	// +0x2080) is not active
+	// RETAIL: 0x1009d93f: cleared while the player follows a lure that
+	// allows no weapon
+	PlayerLureFX* pPlayerLureFX = PlayerLureFX::GetPlayerLureFX(g_pMoveMgr->GetVehicleMgr()->GetPlayerLureId());
+	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LURE && pPlayerLureFX && !pPlayerLureFX->GetAllowWeapon())
+	{
+		m_bTronUnknown28B14 = false;
+	}
 
 	if (IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
@@ -660,8 +710,11 @@ void CTronInterfaceMgr::OnEnterWorld(LTBOOL bRestoringGame)
 	m_nTronUnknown28AF0 = 0;
 	m_bDisplayProgress = false;
 
-	// PORT: retail calls the stats' rating manager (0x10051640) when
-	// g_pMissionMgr's +0x4 is set; unidentified
+	// RETAIL: 0x1009e1f8: a custom level starts with the ratings reset
+	if (g_pMissionMgr->IsCustomLevel())
+	{
+		m_stats.GetRatingMgr()->ResetRatings();
+	}
 
 	ClearTronRecords();
 }
@@ -795,8 +848,12 @@ void CTronInterfaceMgr::UpdatePlayingState()
 
 LTBOOL CTronInterfaceMgr::PostPlayingState(GameState eNewState)
 {
-	// PORT: retail closes its CHUDTronDecision (retail global 0x1026edec,
-	// Choose(0xff)) unless the new state is GS_POPUP
+	// RETAIL: the decision window closes (Hide(0xff), slot 12) unless the
+	// new state is GS_POPUP
+	if (g_pDecision->IsVisible() && eNewState != GS_POPUP)
+	{
+		g_pDecision->Hide(0xff);
+	}
 
 	return CInterfaceMgr::PostPlayingState(eNewState);
 }
@@ -813,18 +870,7 @@ void CTronInterfaceMgr::UpdateCursorState()
 {
 	switch (m_eGameState)
 	{
-		case GS_LOADINGLEVEL:
-		case GS_SPLASHSCREEN:
-		case GS_POPUP:
-		case GS_PAUSED:
-		case GS_DEMOSCREEN:
-		case GS_MOVIE:
-		case GS_UNDEFINED:
-		{
-			m_CursorMgr.UseCursor(FALSE, FALSE);
-		}
-		break;
-
+		// RETAIL: 0x1009e7ab: the playing case's code comes first
 		case GS_EXITINGLEVEL:
 		case GS_PLAYING:
 		{
@@ -835,6 +881,18 @@ void CTronInterfaceMgr::UpdateCursorState()
 				m_CursorMgr.UseGlowSprite("Interface\\cursor_glow.dtx");
 				m_CursorMgr.SetCenter(32, 32);
 			}
+		}
+		break;
+
+		case GS_LOADINGLEVEL:
+		case GS_SPLASHSCREEN:
+		case GS_POPUP:
+		case GS_PAUSED:
+		case GS_DEMOSCREEN:
+		case GS_MOVIE:
+		case GS_UNDEFINED:
+		{
+			m_CursorMgr.UseCursor(FALSE, FALSE);
 		}
 		break;
 
@@ -1399,7 +1457,9 @@ void CTronInterfaceMgr::OnDuplicateDlgClick(int x, int y)
 	m_DuplicateDlg.Hide();
 
 	m_CursorMgr.UseCursor(LTFALSE, LTTRUE);
-	GetHUDMgr()->SetRenderLevel(m_eDuplicateRenderLevel);
+	// RETAIL: 0x1009f54b: the level is read before the HUD manager
+	eHUDRenderLevel eLevel = m_eDuplicateRenderLevel;
+	GetHUDMgr()->SetRenderLevel(eLevel);
 	g_pHUDMgr->QueueUpdate(kHUDAll);
 
 	if (pKept == m_pDuplicateNew)
@@ -1501,11 +1561,8 @@ LTBOOL CTronInterfaceMgr::Draw()
 
 bool CTronInterfaceMgr::TronUnknownVirtual50()
 {
-	if (g_pDecision->IsVisible() || m_DuplicateDlg.IsVisible())
-	{
-		return LTFALSE;
-	}
-	return LTTRUE;
+	// RETAIL: a computed bool (mov eax,1 / xor eax,eax)
+	return !g_pDecision->IsVisible() && !m_DuplicateDlg.IsVisible();
 }
 
 // ----------------------------------------------------------------------- //

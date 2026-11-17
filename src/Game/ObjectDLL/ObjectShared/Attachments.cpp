@@ -471,6 +471,14 @@ void CAttachments::CreateAttachment(CAttachmentPosition *pAttachmentPosition)
 
     if ( !_stricmp(c_szNoAttachment, szAttachmentName) ) return;
 
+	// RETAIL: Tron lets the character's model substitute the attachment
+	// (0x101880d7)
+	if ( IsCharacter(m_hObject) )
+	{
+		CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(m_hObject);
+		szAttachmentName = g_pModelButeMgr->GetAttachmentSubstitution(pCharacter->GetModelId(), szAttachmentName);
+	}
+
     uint8 nWeaponID = WMGR_INVALID_ID;
     uint8 nAmmoID = WMGR_INVALID_ID;
 	char szAttachmentNameCopy[128];
@@ -487,7 +495,8 @@ void CAttachments::CreateAttachment(CAttachmentPosition *pAttachmentPosition)
 
 	if ( -1 == nAttachmentID )
 	{
-        g_pLTServer->CPrint("Unmatched attable name %s (Line %d of %s)", szAttachmentName, __LINE__, __FILE__);
+		// RETAIL: the line and file of retail's build (0x101881ee)
+        g_pLTServer->CPrint("Unmatched attable name %s (Line %d of %s)", szAttachmentName, 516, "C:\\proj\\Tron\\Source\\Game\\ObjectDLL\\ObjectShared\\Attachments.cpp");
 		return;
 	}
 
@@ -887,7 +896,8 @@ int CAttachments::EnumerateObjects(BaseClass** apObjects, CAttachmentPosition** 
 	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < m_cAttachmentPositions ; iAttachmentPosition++ )
 	{
 		CAttachment* pAttachment = m_apAttachmentPositions[iAttachmentPosition]->GetAttachment();
-		if ( pAttachment && (pAttachment->GetType() == ATTACHMENT_TYPE_OBJECT) )
+		// RETAIL: Tron skips an attachment that has no model (0x101899d4)
+		if ( pAttachment && pAttachment->GetModel() && (pAttachment->GetType() == ATTACHMENT_TYPE_OBJECT) )
 		{
 			CAttachmentObject* pAttachmentObject = (CAttachmentObject*)pAttachment;
             BaseClass* pObject = ( BaseClass* )g_pLTServer->HandleToObject(pAttachmentObject->GetModel());
@@ -1337,6 +1347,8 @@ CHumanAttachments::CHumanAttachments() : CAttachments()
 	AddPosition( "RightLowerArm2",&m_RightLowerArm2 );
 	AddPosition( "RightLowerLeg2",&m_RightLowerLeg2 );
 	AddPosition( "UpperTorso2",	&m_UpperTorso2);
+	AddPosition( "RightRod",		&m_RightRod );	// RETAIL: Tron's
+	AddPosition( "LeftRod",			&m_LeftRod );
 }
 
 //----------------------------------------------------------------------------
@@ -2196,6 +2208,26 @@ void CAttachmentPosition::RemoveWeapon()
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAttachments::TronUnknownVirtual10
+//
+//	PURPOSE:	RETAIL: Tron's: CAttachment's slot 0x14 on every attachment
+//				(retail 0x10189df0 loops over the positions)
+//
+// ----------------------------------------------------------------------- //
+
+void CAttachments::TronUnknownVirtual10()
+{
+	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < m_cAttachmentPositions ; iAttachmentPosition++ )
+	{
+		CAttachment* pAttachment = m_apAttachmentPositions[iAttachmentPosition]->GetAttachment();
+		if ( !pAttachment ) continue;
+
+		pAttachment->TronUnknownVirtual14();
+	}
+}
+
 #ifndef __PSX2
 // Plugin statics
 
@@ -2304,6 +2336,8 @@ LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, 
          !_stricmp("RightUpperLeg2",	szPropName) ||
          !_stricmp("RightLowerArm2",	szPropName) ||
          !_stricmp("RightLowerLeg2",	szPropName) ||
+         !_stricmp("RightRod",		szPropName) ||	// RETAIL: Tron's (0x1018d431)
+         !_stricmp("LeftRod",		szPropName) ||
          !_stricmp("UpperTorso2",		szPropName) 
 		 )
 	{
@@ -2318,24 +2352,3 @@ LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, 
 
 #pragma optimize ("",on)
 #endif // __PSX2
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAttachments::TronUnknownVirtual10
-//
-//	PURPOSE:	RETAIL: Tron's: CAttachment's slot 0x14 on every attachment
-//				(retail 0x10189df0 loops over the positions)
-//
-// ----------------------------------------------------------------------- //
-
-void CAttachments::TronUnknownVirtual10()
-{
-	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < m_cAttachmentPositions ; iAttachmentPosition++ )
-	{
-		CAttachment* pAttachment = m_apAttachmentPositions[iAttachmentPosition]->GetAttachment();
-		if ( pAttachment )
-		{
-			pAttachment->TronUnknownVirtual14();
-		}
-	}
-}

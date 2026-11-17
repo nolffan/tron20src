@@ -47,7 +47,8 @@ CNodeController::CNodeController()
 
     m_hSound = LTNULL;
 	m_nUniqueDialogueId = 0;
-	m_bSubtitlePriority = false;
+	// RETAIL: Tron's constructor leaves m_bSubtitlePriority alone
+	// (0x10184869..0x10184881)
 
     m_pSixteenBitBuffer = LTNULL;
     m_pEightBitBuffer = LTNULL;
@@ -343,6 +344,15 @@ void CNodeController::UpdateLipSyncControl(NCSTRUCT *pNodeControl)
 		return;
 	}
 
+	// RETAIL: 0x1018548f: Tron's lip sync sound follows the speaker
+	HOBJECT hServerObj = m_pCharacterFX->GetServerObj();
+	if (hServerObj)
+	{
+		LTVector vPos;
+		g_pLTClient->GetObjectPos(hServerObj, &vPos);
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundPosition(m_hSound, &vPos);
+	}
+
 	pNodeControl->fTimer += g_pLTClient->GetFrameTime();
 	if ( pNodeControl->fTimer < 0.0f ) 
 		return;
@@ -417,17 +427,9 @@ void CNodeController::HandleNodeControlLipSyncMessage(ILTMessage_Read *pMsg)
     HSTRING hSoundFile = pMsg->ReadHString();
     LTFLOAT fRadius = pMsg->Readfloat();
 	m_nUniqueDialogueId = pMsg->Readuint8( );
-	CharacterSoundType cst = (CharacterSoundType)pMsg->Readuint8( );
 
-	m_bSubtitlePriority = (cst == CST_DIALOG);
-	bool bCensor = (cst == CST_DEATH) || (cst == CST_DAMAGE);
-
-	if (bCensor && g_pVersionMgr->IsLowViolence())
-	{
-		//don't play the sound, but do notify the server that we're done with it
-		KillLipSyncSound( true );
-		return;
-	}
+	// RETAIL: 0x10185720: Tron's message has no sound type, and there is
+	// no low violence test
 
 	char const* pszSoundFile = g_pLTClient->GetStringData(hSoundFile);
 
@@ -556,7 +558,8 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 
 	if ( !pch )
 	{
-		// g_pLTClient->CPrint("CNodeController::HandleNodeControlLipSync() invalid pszSoundFile: '%s'", pszSoundFile ? pszSoundFile : "NULL");
+		// RETAIL: 0x10185bab: Tron prints this
+		g_pLTClient->CPrint("CNodeController::HandleNodeControlLipSync() invalid pszSoundFile: '%s'", pszSoundFile ? pszSoundFile : "NULL");
 		return;
 	}
 
@@ -568,7 +571,8 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 
     if (dr != LT_OK || !pStream)
 	{
-		// g_pLTClient->CPrint("Playing sound '%s' as a lip FLAP sound...Couldn't find .lip file!!!", pszSoundFile);
+		// RETAIL: Tron prints this
+		g_pLTClient->CPrint("Playing sound '%s' as a lip FLAP sound...Couldn't find .lip file!!!", pszSoundFile);
 
 		// If the lipsync file doesn't exist just use the old-school lipflap
 		HandleNodeControlLipFlap( szSound, fRadius );

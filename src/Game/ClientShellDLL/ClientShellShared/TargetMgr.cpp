@@ -595,7 +595,9 @@ static bool DoVectorPolyFilterFn(HPOLY hPoly, void *pUserData)
 
 	SurfaceType eSurfType = GetSurfaceType(hPoly);
 
-	if (eSurfType == ST_INVISIBLE)
+	// RETAIL: 0x1016e470: Tron skips its surfaces 7 and 8 (their names are
+	// not known; Tron's attributes number them), not ST_INVISIBLE
+	if (eSurfType == (SurfaceType)7 || eSurfType == (SurfaceType)8)
 	{
         return false;
 	}

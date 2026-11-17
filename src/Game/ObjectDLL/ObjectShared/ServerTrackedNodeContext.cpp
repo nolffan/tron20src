@@ -58,7 +58,9 @@ CServerTrackedNodeContext::~CServerTrackedNodeContext()
 
 void CServerTrackedNodeContext::SetActiveTrackingGroup(EnumTrackedNodeGroup eGroup)
 {
-	if( eGroup != m_eActiveTrackingGroup )
+	// RETAIL: Tron also sends the group when the client needs a refresh
+	// (0x101dc153)
+	if( eGroup != m_eActiveTrackingGroup || m_bRefreshClient )
 	{
 		super::SetActiveTrackingGroup( eGroup );
 
