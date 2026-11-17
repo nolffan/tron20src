@@ -274,7 +274,16 @@ uint32 Explosion::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		{
 			if (fData != INITIALUPDATE_SAVEGAME)
 			{
-				SetNextUpdate(UPDATE_NEVER);
+				// RETAIL: 0x100ef6d3, an explosion that starts on updates
+				// at once.
+				if (m_bStartOn == true)
+				{
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
+				else
+				{
+					SetNextUpdate(UPDATE_NEVER);
+				}
 			}
 		}
 		break;
