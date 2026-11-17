@@ -1142,6 +1142,18 @@ has no GEAR record causes a null pointer read.
 
 Not fixed yet: the modern build should return when the pointer is null.
 
+### The disc class data does not keep its "Controlable" value
+
+Object.lto 0x10145ab0 and CShell.dll 0x10154090 (DISCCLASSDATA::Init,
+Shared/FXButeMgr.cpp). The function reads the "Controlable" attribute with
+CButeMgr::GetByte, but it does not use the result. It sets bControlable
+(0x1d4) to LTTRUE for each disc. Thus a disc that the attributes make not
+controllable is controllable. Our Init is not yet byte-identical (Build
+69's members are still in the struct); the retail code at the two addresses
+shows the bug.
+
+Not fixed yet: the modern build should keep the value that GetByte returns.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

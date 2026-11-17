@@ -33,6 +33,7 @@ struct WeaponFireInfo
 		, fHorizontalPerturb( 0.0f )
 		, fVerticalSpread( 0.0f )
 		, nNumberOfShards( 0 )
+		, bTronUnknown164( false )
 	{
 	}
 
@@ -96,6 +97,11 @@ struct WeaponFireInfo
 
 	// the number of shards
 	uint8 nNumberOfShards;
+
+	// RETAIL: Tron's fire info has a bool at 0x164 (after fDiscReleaseAngle;
+	// CTronPlayerObj 0x100633f7 sets it, CDisc::Setup 0x100375eb reads it).
+	// PORT: added at the end; the name is ours
+	bool bTronUnknown164;
 };
 
 

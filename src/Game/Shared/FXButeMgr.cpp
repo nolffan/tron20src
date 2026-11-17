@@ -3181,8 +3181,33 @@ DISCCLASSDATA::DISCCLASSDATA( )
 	fHoldDefendOrientationMaxDefendPercentage( 0.0f ),
 	fHoldDefendOrientationDeadZone( 0.0f ),
 	fHoldDefendOrientationMaxZone( 0.0f ),
-	bClusterDiscInfo( false )
+	bClusterDiscInfo( false ),
+	bReturnToOwner( LTTRUE ),
+	fInitialAngle( 0.0f ),
+	fTurnRate( 0.0f ),
+	fIncidentAngleToControlLine( 0.0f ),
+	fIncidentAngleToControlLineDecay( 0.0f ),
+	fTargetAngleTrackThreshold( 0.0f ),
+	fLostTargetFlightTime( 0.0f ),
+	fDeflectTotalTime( 0.0f ),
+	fMPDeflectTotalTime( 0.0f ),
+	fDeflectVelocity( 0.0f ),
+	fDeflectDistance( 0.0f ),
+	fDeflectInitialRadius( 0.0f ),
+	fDeflectFinalRadius( 0.0f ),
+	fMagneticRadius( 0.0f ),
+	fMagneticMiddleInfluence( 0.0f ),
+	fMagneticEdgeInfluence( 0.0f ),
+	fMagneticAngleMax( 0.0f ),
+	fMultiplayerLeashLength( 0.0f ),
+	bControlable( LTTRUE )
 {
+	szDestroyedInFlightFXName[ 0 ] = '\0';
+	szBlockedPVFXName[ 0 ] = '\0';
+	szDeadlyBlockedPVFXName[ 0 ] = '\0';
+	szDeflectAttachedFXName[ 0 ] = '\0';
+	szDeadlyDeflectAttachedFXName[ 0 ] = '\0';
+	szDeadlyDeflectSmiteFXName[ 0 ] = '\0';
 	szReturnFXName[ 0 ] = '\0';
 	szSwatDefendPVFXName[ 0 ] = '\0';
 	szSwatCriticalDefendPVFXName[ 0 ] = '\0';
@@ -3285,8 +3310,40 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	// check for overlapping angles
 	ASSERT( fHoldDefendOrientationMaxZone < ( MATH_HALFPI - fHoldDefendOrientationDeadZone ) );
 
+	// RETAIL: Tron's attributes, in retail's order (0x10145ab0)
+	bReturnToOwner                   = buteMgr.GetByte( aTagName, "ReturnToOwner" );
+	fInitialAngle                    = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialAngle" ) ) );
+	buteMgr.GetString( aTagName, "DestroyedInFlightFXName", szDestroyedInFlightFXName, ARRAY_LEN( szDestroyedInFlightFXName ) );
+	buteMgr.GetString( aTagName, "BlockedPVFXName", szBlockedPVFXName, ARRAY_LEN( szBlockedPVFXName ) );
+	buteMgr.GetString( aTagName, "DeadlyBlockedPVFXName", szDeadlyBlockedPVFXName, ARRAY_LEN( szDeadlyBlockedPVFXName ) );
+	buteMgr.GetString( aTagName, "DeflectAttachedFXName", szDeflectAttachedFXName, ARRAY_LEN( szDeflectAttachedFXName ) );
+	buteMgr.GetString( aTagName, "DeadlyDeflectAttachedFXName", szDeadlyDeflectAttachedFXName, ARRAY_LEN( szDeadlyDeflectAttachedFXName ) );
+	buteMgr.GetString( aTagName, "DeadlyDeflectSmiteFXName", szDeadlyDeflectSmiteFXName, ARRAY_LEN( szDeadlyDeflectSmiteFXName ) );
+	fTurnRate                        = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TurnRate" ) ) );
+	fIncidentAngleToControlLine      = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "IncidentAngleToControlLine" ) ) );
+	fIncidentAngleToControlLineDecay = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "IncidentAngleToControlLineDecay" ) ) );
+	fTargetAngleTrackThreshold       = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "TargetAngleTrackThreshold" ) ) );
+	fLostTargetFlightTime            = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "LostTargetFlightTime" ) );
+	fDeflectTotalTime                = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeflectTotalTime" ) );
+	fMPDeflectTotalTime              = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MPDeflectTotalTime" ) );
+	fDeflectVelocity                 = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeflectVelocity" ) );
+	fDeflectDistance                 = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeflectDistance" ) );
+	fDeflectInitialRadius            = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeflectInitialRadius" ) );
+	fDeflectFinalRadius              = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "DeflectFinalRadius" ) );
+	fMagneticRadius                  = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MagneticRadius" ) );
+	fMagneticMiddleInfluence         = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MagneticMiddleInfluence" ) );
+	fMagneticEdgeInfluence           = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MagneticEdgeInfluence" ) );
+	fMagneticAngleMax                = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MagneticAngleMax" ) ) );
+	fMultiplayerLeashLength          = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "MultiplayerLeashLength" ) );
+
+	// RETAIL: Tron reads "Controlable" but does not keep its value: the
+	// member is always LTTRUE (see docs/RETAIL_BUGS.md)
+	buteMgr.GetByte( aTagName, "Controlable" );
+	bControlable                     = LTTRUE;
+
 	return LTTRUE;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3322,6 +3379,8 @@ CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
 	, nShardsTotalPerturbSurge( 0 )
 {
 	szShardWeaponName[ 0 ] = '\0';
+
+	fInitialExplosionSuppressTime = 0.0f;
 
 	// reinit this to show there is extra info
 	bClusterDiscInfo = true;
@@ -3379,6 +3438,9 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	nShardsTotalPerturbMin        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMIN );
 	nShardsTotalPerturbMax        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX );
 	nShardsTotalPerturbSurge      = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE );
+
+	// RETAIL: Tron's only attribute (0x10145d80)
+	fInitialExplosionSuppressTime = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialExplosionSuppressTime" ) );
 
 	return LTTRUE;
 }

@@ -179,6 +179,11 @@ class FinderPlugin : public CScannerPlugin
 {
 	public :
 
+		// RETAIL: the constructor (0x1001f9a0) and the destructor
+		// (0x1001fa20) are out of line; the destructor sets the vtable
+		FinderPlugin() {}
+		virtual ~FinderPlugin() {}
+
 		// RETAIL: 0x1001fa80
 		virtual LTRESULT PreHook_EditStringList(
 			const char* szRezPath,

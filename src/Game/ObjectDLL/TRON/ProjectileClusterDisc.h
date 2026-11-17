@@ -9,10 +9,16 @@
 // (c) 1997-2002 Monolith Productions, Inc.  All Rights Reserved
 //
 // ----------------------------------------------------------------------- //
+//
+// RETAIL: Tron's CClusterDisc (vtable 0x10294520, 0xa38 bytes; constructor
+// 0x10035700) does not emit shards: it explodes when it goes back to its
+// owner, after a time that the class data's InitialExplosionSuppressTime
+// gives.  The names of the members are ours.
+//
+// ----------------------------------------------------------------------- //
 
-
-#include <vector>
-
+#ifndef  _ProjectileClusterDisc_INCLUDED_
+#define  _ProjectileClusterDisc_INCLUDED_
 
 #include "ProjectileDisc.h"
 
@@ -30,32 +36,29 @@ protected:
 	// setup the disc (called externally)
 	virtual LTBOOL      Setup( CWeapon const*, WeaponFireInfo const& );
 
-	// handles any time a projectile touches something
-	virtual void        HandleTouch( HOBJECT hObj );
+	virtual uint32      EngineMessageFn( uint32, void*, LTFLOAT );
 
 	// code to handle state changing information on ReturnMode
-	virtual void        EnterReturnMode( bool bImpact );
+	virtual void        EnterReturnMode( HOBJECT hObj );
 
-	// helper function to create a vector given yaw and pitch
-	void                DetermineShardForwardVector( LTVector *pvForward,
-	                                                 float fYaw,
-	                                                 float fPitch,
-	                                                 float fMagnitude = 1.0f );
+	// RETAIL: 0x100358c0
+	void				Burst();
 
-	// launch a shard
-	void                LaunchShard( LTVector const &vForward );
+	// RETAIL: 0x100358e0: the explosion of the weapon's cluster modifier
+	void				CreateExplosion();
 
-	struct ClusterDiscAngle
-	{
-		float fYaw;
-		float fPitch;
-	};
+	// RETAIL: 0x10035dc0: the client FX of the weapon's cluster modifier
+	void				PlayBurstFX();
 
-	typedef std::vector< ClusterDiscAngle > ClusterAngleList;
+private:
+	void				Save( ILTMessage_Write *pMsg, uint32 dwSaveFlags );
+	void				Load( ILTMessage_Read *pMsg, uint32 dwLoadFlags );
 
-	ClusterAngleList m_lShardReleaseAngle;
-
-	// number of shards to emit
-	int                 nShardsTotal;
-
+protected:
+	LTFLOAT				m_fFireTime;				// 0xa28 (a time)
+	LTFLOAT				m_fExplosionSuppressTime;	// 0xa2c
+	LTFLOAT				m_fTronUnknownA30;			// 0xa30 (a time)
+	bool				m_bTronUnknownA34;			// 0xa34
 };
+
+#endif // _ProjectileClusterDisc_INCLUDED_

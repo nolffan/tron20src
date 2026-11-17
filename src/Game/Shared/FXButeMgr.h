@@ -237,6 +237,39 @@ struct DISCCLASSDATA : public PROJECTILECLASSDATA
 	// so that the code doesn't have to special case specific
 	// weapons.  Luckily, this is set automatically.
 	bool			bClusterDiscInfo;
+
+	// RETAIL: Tron's members (DISCCLASSDATA::Init: Object.lto 0x10145ab0,
+	// CShell.dll 0x10154090; constructor 0x10145a00, 0x10153fe0).  Tron's
+	// struct is 0x1d8 bytes and has only these and the return values above
+	// (0x34 ReturnToOwner, 0x38 InitialAngle, 0x3c ReturnVelocity, 0x40
+	// ReturnHeightOffset, 0x44 ReturnFXName, then the names and values in
+	// this order).  PORT: they are added after Build 69's members until no
+	// code reads those any more.
+	LTBOOL			bReturnToOwner;
+	LTFLOAT			fInitialAngle;
+	char			szDestroyedInFlightFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	char			szBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	char			szDeadlyBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	char			szDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	char			szDeadlyDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	char			szDeadlyDeflectSmiteFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	LTFLOAT			fTurnRate;
+	LTFLOAT			fIncidentAngleToControlLine;
+	LTFLOAT			fIncidentAngleToControlLineDecay;
+	LTFLOAT			fTargetAngleTrackThreshold;
+	LTFLOAT			fLostTargetFlightTime;
+	LTFLOAT			fDeflectTotalTime;
+	LTFLOAT			fMPDeflectTotalTime;
+	LTFLOAT			fDeflectVelocity;
+	LTFLOAT			fDeflectDistance;
+	LTFLOAT			fDeflectInitialRadius;
+	LTFLOAT			fDeflectFinalRadius;
+	LTFLOAT			fMagneticRadius;
+	LTFLOAT			fMagneticMiddleInfluence;
+	LTFLOAT			fMagneticEdgeInfluence;
+	LTFLOAT			fMagneticAngleMax;
+	LTFLOAT			fMultiplayerLeashLength;
+	LTBOOL			bControlable;
 };
 
 struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
@@ -273,6 +306,10 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 	int				nShardsTotalPerturbMin;
 	int				nShardsTotalPerturbMax;
 	int				nShardsTotalPerturbSurge;
+
+	// RETAIL: Tron's only member (0x1d8; CLUSTERDISCCLASSDATA::Init
+	// 0x10145d80).  PORT: added after Build 69's members
+	LTFLOAT			fInitialExplosionSuppressTime;
 };
 
 struct CLUSTERAUTOBURSTDISCCLASSDATA : public CLUSTERDISCCLASSDATA
