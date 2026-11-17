@@ -324,6 +324,9 @@ class CAnimationContext
 
 		friend class CAnimationMgr;
 
+		// RETAIL: Tron's debug dump (Object.lto 0x101adbf0; CAI's, 0x10130d6d)
+		friend ostream& operator << (ostream& os, const CAnimationContext& Context);
+
 		LTObjRef				m_hObject;
 
 		HMODELANIM				m_haniSpecial;
@@ -412,6 +415,8 @@ class CTransition
 
 class CAnimationMgr
 {
+		friend ostream& operator << (ostream& os, const CAnimationContext& Context);	// RETAIL: Tron's
+
 	public :
 
 		// Ctors/Dtors/etc
@@ -508,5 +513,8 @@ protected:
 	static PROP_GROUP_HASH		s_hashPropGroup;
 	static PROP_HASH			s_hashProp;
 };
+
+// RETAIL: Tron's debug dump of an animation context (Object.lto 0x101adbf0)
+ostream& operator << (ostream& os, const CAnimationContext& Context);
 
 #endif
