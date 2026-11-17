@@ -72,7 +72,11 @@ class CCharacterFX : public CSpecialFX
 
 			m_pStr					= NULL;
 			m_nLastDamageFlags		= 0;
-			m_nInstantDamageFlags	= 0;
+			m_bCanCarry				= false;
+			m_bCanWake				= true;
+			m_bTracking				= false;
+			m_bRadarVisible			= false;
+			m_nCarrying				= CFX_CARRY_NONE;
 			
 			m_bWasPlayingSpecialDamageAni = false;
 
@@ -125,8 +129,8 @@ class CCharacterFX : public CSpecialFX
 
 		HOBJECT	GetHitBox() const { return m_HitBox.GetObject(); }
 				
-		bool	CanBeCarried() { return m_cs.bCanCarry; }
-		bool	CanWake() { return m_cs.bCanWake; }
+		bool	CanBeCarried() { return m_bCanCarry; }
+		bool	CanWake() { return m_bCanWake; }
 
 		const char * GetInfoString() const { return m_szInfoString; }
 
@@ -142,7 +146,7 @@ class CCharacterFX : public CSpecialFX
 
 		static uint32 GetNumPlayersInGame() { return m_lstPlayersInGame.size(); }
 
-		uint8	GetCarrying() { return m_cs.nCarrying; }
+		uint8	GetCarrying() { return m_nCarrying; }
 		
 		void EnablePitch( bool bEnable );	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 		void RecreateAttachClientFX();	// RETAIL: 0x10179fc0 (the name is ours)
@@ -301,7 +305,13 @@ class CCharacterFX : public CSpecialFX
 		// bytes per object, retail 0x1010cdeb). PORT: NOLF2's members that
 		// Tron does not have, kept after retail's so that the others are at
 		// retail's offsets, until the code that uses them is Tron's
-		DamageFlags			m_nInstantDamageFlags;
+		// PORT: NOLF2's CHARCREATESTRUCT members that Tron's does not have
+		// (SharedFXStructs.h); its messages still set them
+		bool				m_bCanCarry;
+		bool				m_bCanWake;
+		bool				m_bTracking;
+		bool				m_bRadarVisible;
+		uint8				m_nCarrying;
 		CLIENTFX_LINK_NODE	m_AttachClientFX;
 		bool				m_bPitchEnabled;
 

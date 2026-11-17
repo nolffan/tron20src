@@ -100,6 +100,10 @@ CCharacterFX::CharFXList CCharacterFX::m_lstPlayersInGame;
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: Tron's (0x10276ae8; the name is ours): ClientButes'
+// MarkerCycleTime, read by the first character
+static LTFLOAT s_fMarkerCycleTime = 0.0f;
+
 LTBOOL CCharacterFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
 {
     if (!CSpecialFX::Init(hServObj, pMsg)) return LTFALSE;
@@ -109,6 +113,15 @@ LTBOOL CCharacterFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
 
 	ch.hServerObj = hServObj;
     ch.Read(pMsg);
+
+	if (s_fMarkerCycleTime < 0.1f)
+	{
+		s_fMarkerCycleTime = g_pClientButeMgr->GetSpecialFXAttributeFloat("MarkerCycleTime");
+		if (s_fMarkerCycleTime < 0.1f)
+		{
+			s_fMarkerCycleTime = 1.0f;
+		}
+	}
 
 	return Init(&ch);
 }
@@ -138,30 +151,9 @@ LTBOOL CCharacterFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	m_3rdPersonFlashlight.Init(m_hServerObject);
 
+	// RETAIL: Tron asks for the client object and does not use it, and has
+	// no chat FX here (0x101743d0)
 	HOBJECT hLocalObj = g_pLTClient->GetClientObject();
-	
-	// Only do pitch node tracking if it's a non-local player in a multiplayer game...
-   
-	if( m_cs.bIsPlayer && IsMultiplayerGame() )
-   	{
-		if (m_hServerObject != hLocalObj)
-		{
-
-			// create the chat icon
-			static char szChatFX[128] = "";
-			if (!szChatFX[0])
-				g_pClientButeMgr->GetSpecialFXAttributeString("ChatFX",szChatFX,sizeof(szChatFX));
-
-			CLIENTFX_CREATESTRUCT fxInit( szChatFX, FXFLAG_LOOP, m_hServerObject );
-
-			g_pClientFXMgr->CreateClientFX( &m_linkChatFX, fxInit, true );
-			if ( m_linkChatFX.IsValid() ) 
-			{
-				// start out hidden
-				m_linkChatFX.GetInstance()->Hide();
-			}
-		}
-	}
 
 	ResetPitchTracking();
 
@@ -184,21 +176,16 @@ LTBOOL CCharacterFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_HitBox.Init( m_hServerObject, m_cs.vHitBoxDims, m_cs.vHitBoxOffset );
 
 	// RETAIL: Tron has no radar (no CHUDRadar in CShell.dll): NOLF2 added
-	// radar and tracked characters to it here.
-
-	UpdateAttachments();
+	// radar and tracked characters to it here. Tron does not update the
+	// attachments or the carried object here either.
 
 	m_nUniqueDialogueId = 0;
-	m_bSubtitlePriority	= false;
 
 	if( m_cs.bIsPlayer )
 	{
 		// Add this player to the list of players in game...
 		m_lstPlayersInGame.push_back( this );
 	}
-
-	UpdateCarrying();
-
 
 	return LTTRUE;
 }
@@ -593,7 +580,7 @@ void CCharacterFX::UpdateDamageFX()
 
 	//hack to make instant choke damage act like progressive damage
 	static DamageFlags chokeFlag = DamageTypeToFlag(DT_CHOKE);
-	if (m_nInstantDamageFlags & chokeFlag)
+	if (m_cs.nInstantDamageFlags & chokeFlag)
 	{
 		m_cs.nDamageFlags |= chokeFlag;
 	}
@@ -644,7 +631,7 @@ void CCharacterFX::UpdateDamageFX()
 
 	// No need to go further if our damageflags haven't changed...
 
-	if( (m_nLastDamageFlags == m_cs.nDamageFlags) && (m_nInstantDamageFlags == 0) && !m_bWasPlayingSpecialDamageAni )
+	if( (m_nLastDamageFlags == m_cs.nDamageFlags) && (m_cs.nInstantDamageFlags == 0) && !m_bWasPlayingSpecialDamageAni )
 	{
 		return;
 	}
@@ -701,7 +688,7 @@ void CCharacterFX::UpdateDamageFX()
 
 		// Check if we are taking any instant damage...
 
-		if( m_nInstantDamageFlags & pDamageFX->m_nDamageFlag )
+		if( m_cs.nInstantDamageFlags & pDamageFX->m_nDamageFlag )
 		{
 			if( pDamageFX->m_sz3rdPersonInstFXName[0] && !m_link3rdPersonInstFX.IsValid() )
 			{
@@ -715,7 +702,7 @@ void CCharacterFX::UpdateDamageFX()
 
 	// Clear the instant damage...
 	
-	m_nInstantDamageFlags = 0;
+	m_cs.nInstantDamageFlags = 0;
 	m_bWasPlayingSpecialDamageAni = bPlayingAni;
 }
 
@@ -2138,7 +2125,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 
 		case CFX_CARRY:
 		{
-			m_cs.nCarrying = pMsg->Readuint8();
+			m_nCarrying = pMsg->Readuint8();
 			UpdateCarrying();
 		}
 		break;
@@ -2193,7 +2180,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 
 		case CFX_INSTANTDMGFLAGS_MSG:
 		{
-			m_nInstantDamageFlags = pMsg->Readuint64();
+			m_cs.nInstantDamageFlags = pMsg->Readuint64();
    		}
    		break;
 
@@ -2348,13 +2335,13 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 
 		case CFX_CAN_CARRY:
 		{
-			m_cs.bCanCarry = !!(pMsg->Readuint8());
+			m_bCanCarry = !!(pMsg->Readuint8());
 		}
 		break;
 
 		case CFX_CAN_WAKE:
 		{
-			m_cs.bCanWake = !!(pMsg->Readuint8());
+			m_bCanWake = !!(pMsg->Readuint8());
 		}
 		break;
 
@@ -2390,14 +2377,14 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		
 		case CFX_CHARACTER_RADAR:
 		{
-			m_cs.bRadarVisible = pMsg->Readbool();
+			m_bRadarVisible = pMsg->Readbool();
 			// PORT: NOLF2 added or removed the character on its radar here
 		}
 		break;
 
 		case CFX_CHARACTER_TRACKING:
 		{
-			m_cs.bTracking = pMsg->Readbool();
+			m_bTracking = pMsg->Readbool();
 			// PORT: NOLF2 added or removed the character on its radar here
 		}
 		break;
