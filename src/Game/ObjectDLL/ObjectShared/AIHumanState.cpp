@@ -233,6 +233,14 @@ void CAIHumanState::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bAllowGhosting);
 }
 
+
+// RETAIL: the AI turns to its node tracking target with the pointer held
+// once (0x101e4f80, 0x101e5a0e, 0x101e82e3...). The name is ours.
+static inline void FaceNodeTrackingTarget( CAI* pAI )
+{
+	pAI->FaceObject( pAI->GetNodeTrackingTarget() );
+}
+
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
@@ -253,6 +261,21 @@ LTBOOL CAIHumanStateIdle::Init(CAIHuman* pAIHuman)
 	// DO NOT SET AWARENESS HERE.
 
 	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateIdle::Update()
+{
+	// RETAIL: 0x101e4660, Tron's idle AI only turns to the one it talks
+	// to (no super::Update).
+
+	if( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		m_pAIHuman->IsNodeTrackingAtLimit() &&
+		m_pAIHuman->GetNodeTrackingTarget() )
+	{
+		FaceNodeTrackingTarget( m_pAIHuman );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -544,6 +567,7 @@ void CAIHumanStatePatrol::SetAwareness(EnumAnimProp eAwareness)
 	}
 }
 
+
 // ----------------------------------------------------------------------- //
 
 void CAIHumanStatePatrol::SetNode(AINodePatrol* pNode)
@@ -623,6 +647,19 @@ void CAIHumanStatePatrol::Update()
 
 	if ( m_pStrategyFollowPath->IsDone() )
 	{
+		// RETAIL: 0x101e4ede, Tron's patrolling AI waits while talking.
+
+		if( !m_xTronUnknown94 && ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
+		{
+			if ( m_pNode->ShouldFaceNodeForward() )
+			{
+				GetAI()->FaceDir(m_pNode->GetForward());
+				return;
+			}
+
+			goto FacePlayer;
+		}
+
 		if ( m_pNode->ShouldFaceNodeForward() )
 		{
 			GetAI()->FaceDir(m_pNode->GetForward());
@@ -651,6 +688,18 @@ void CAIHumanStatePatrol::Update()
 			m_eStateStatus = kSStat_FailedSetPath;
 			return;
 		}
+	}
+
+	// RETAIL: 0x101e4f55, Tron's face the player while talking.
+
+	if( ShouldFacePlayer() )
+	{
+FacePlayer:
+		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
+		{
+			FaceNodeTrackingTarget( m_pAIHuman );
+		}
+		return;
 	}
 
 	if ( bGotoNextNode )
@@ -712,11 +761,12 @@ void CAIHumanStatePatrol::Update()
 
 		if ( !m_pStrategyFollowPath->Set(m_pNode, LTFALSE) )
 		{
+			// RETAIL: 0x101e50b0, the names as they are (no ToString).
 			AIError("AI \"%s\" - Cannot path from node \"%s\" (%s) to node \"%s\" (%s)", 
 				GetAI()->GetName(), 
-				::ToString((m_pLastNode)?m_pLastNode->GetName():LTNULL),
+				(m_pLastNode)?m_pLastNode->GetName().c_str():LTNULL,
 				(m_pLastNode && m_pLastNode->GetNodeContainingVolume())?m_pLastNode->GetNodeContainingVolume()->GetName():"",
-				::ToString((m_pNode)?m_pNode->GetName():LTNULL),
+				(m_pNode)?m_pNode->GetName().c_str():LTNULL,
 				(m_pNode && m_pNode->GetNodeContainingVolume())?m_pNode->GetNodeContainingVolume()->GetName():"");
 
 			// WE COULDN'T SET A PATH
@@ -1015,11 +1065,8 @@ void CAIHumanStateGoto::Update()
 	{
 		if( m_pStrategyToggleLights->IsUnset() )
 		{
+			// RETAIL: 0x101e59c0, no trace.
 			m_pStrategyToggleLights->Set( LTTRUE, LTFALSE, m_vDest );
-			if( m_pStrategyToggleLights->IsSet() )
-			{
-				AITRACE( AIShowStates, ( GetAI()->m_hObject, "HumanStateGoto: Set StrategyToggleLights." ) );
-			}
 		}
 
 		if( m_pStrategyToggleLights->IsSet() )
@@ -1035,7 +1082,7 @@ void CAIHumanStateGoto::Update()
 	{
 		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
 		{
-			m_pAIHuman->FaceObject( m_pAIHuman->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( m_pAIHuman );
 		}
 		return;
 	}
@@ -1043,7 +1090,7 @@ void CAIHumanStateGoto::Update()
 	// Play looping sound.
 
 	if( ( m_eLoopingAISound != kAIS_None ) && 
-		( !GetAI()->IsPlayingDialogSound() ) )
+		( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) ) )	// RETAIL: 0x101e5a37
 	{
 		GetAI()->PlaySound( m_eLoopingAISound, LTFALSE );
 	}
@@ -2295,7 +2342,7 @@ void CAIHumanStateUseObject::Update()
 					case kSStat_Moving:
 						if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
 						{
-							GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+							FaceNodeTrackingTarget( GetAI() );
 						}
 						break;
 				}
@@ -2469,7 +2516,7 @@ void CAIHumanStateUseObject::UpdateMoving()
 	{
 		if( GetAI()->IsNodeTrackingAtLimit() && GetAI()->GetNodeTrackingTarget() )
 		{
-			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( GetAI() );
 		}
 	}
 	else if( m_pStrategyFollowPath->IsSet() )
@@ -2737,7 +2784,7 @@ void CAIHumanStateUseObject::UpdateFacing()
 			GetAI()->IsNodeTrackingAtLimit() &&
 			GetAI()->GetNodeTrackingTarget() )
 		{
-			GetAI()->FaceObject( GetAI()->GetNodeTrackingTarget() );
+			FaceNodeTrackingTarget( GetAI() );
 		}
 		return;
 	}
@@ -3600,22 +3647,7 @@ void CAIHumanStateInvestigate::Update()
 {
 	super::Update();
 
-	// HACK: for TO2 ninjas with lanterns. transition animation method is not reliable.
-
-	if( ( !m_bFirstUpdate ) && ( !m_bCheckedLantern ) )
-	{
-		m_bCheckedLantern = LTTRUE;
-		if( ( !GetAI()->GetAnimationContext()->IsTransitioning() ) &&
-		    ( GetAI()->GetCurrentVolume() && !GetAI()->GetCurrentVolume()->IsLit() ) &&
-			( GetAI()->GetBrain()->GetAIDataExist( kAIData_DisposeLantern ) ) )
-		{
-			char szAttachment[128];
-			sprintf(szAttachment, "%s LIGHT Lantern", KEY_ATTACH);
-			SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, szAttachment);
-		}
-	}
-
-	// END HACK.
+	// RETAIL: 0x101ea706, Tron has no TO2 lantern hack here.
 
 	// Make sure everything we need at this point is there
 
