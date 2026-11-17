@@ -12,6 +12,7 @@
 #include "stdafx.h"
 #include "MenuMgr.h"
 #include "GameClientShell.h"
+#include "../TRON/HUDTronDecision.h"
 extern CGameClientShell* g_pGameClientShell;
 
 
@@ -58,9 +59,9 @@ LTBOOL CMenuMgr::Init()
 	m_MenuArray.reserve(MENU_ID_UNASSIGNED);
 
 	//add menus here
-	// RETAIL: Tron's four menus (see MenuMgr.h)
+	// RETAIL: of Tron's four menus (see MenuMgr.h) the build notes are not
+	// in the array (0x10170b29..0x10170bad)
 	m_MenuArray.push_back(&m_MenuSystem);
-	m_MenuArray.push_back(&m_MenuBuildNotes);
 	m_MenuArray.push_back(&m_MenuHelp);
 	m_MenuArray.push_back(&m_MenuIntel);
 
@@ -155,12 +156,9 @@ void CMenuMgr::Term()
 
 LTBOOL CMenuMgr::HandleKeyDown (int vkey, int rep)
 {
-
-	//check for hot keys
-
-	//if the key is escape, switch to the system menu, only if there is no open menu
-	//otherwise (i.e. either not Escape or there is no open menu) see if we hit a hot key and switch to the menu
-	if (vkey != VK_ESCAPE || !m_pCurrentMenu)
+	// RETAIL: Tron's (0x101710b0) looks for a hot key only while no menu is
+	// open
+	if (!m_pCurrentMenu)
 	{
 		LTBOOL found = LTFALSE;
 		KeyArray::iterator iter = m_HotKeys.begin();
@@ -170,18 +168,13 @@ LTBOOL CMenuMgr::HandleKeyDown (int vkey, int rep)
 			if (!found)
 				iter++;
 		}
-		if (found && (!m_pCurrentMenu || (*iter)->m_id != m_pCurrentMenu->GetMenuID()) )
+		if (found)
 		{
+			m_bTronUnknown5CE4 = true;
 			g_pInterfaceMgr->SwitchToMenu((*iter)->m_id);
-			bHK = true;
 			return LTTRUE;
 		}
-	}
 
-
-	//if we're here, we didn't hit a hot key, so if we don't have a menu, we don't want the key
-	if (!m_pCurrentMenu)
-	{
 		return LTFALSE;
 	}
 
@@ -282,11 +275,10 @@ void CMenuMgr::HandleKeyUp (int vkey)
 			if (!found)
 				iter++;
 		}
+		// RETAIL: Tron's (0x10171250) has no hot key latch
 		if (found && (*iter)->m_id == m_pCurrentMenu->GetMenuID())
 		{
-			if (!bHK)
-				SlideOut();
-			bHK = false;
+			SlideOut();
 			return;
 		}
 
@@ -322,7 +314,8 @@ LTBOOL CMenuMgr::SetCurrentMenu(eMenuID menuID)
 		iter++;
 	}
 
-	if (iter != m_MenuArray.end() && (*iter)->IsEnabled())
+	// RETAIL: Tron's menus have no enabled state (0x101712e0)
+	if (iter != m_MenuArray.end())
 	{
 		m_nMenuIndex = index;
 		SwitchToMenu(*iter);
@@ -333,7 +326,8 @@ LTBOOL CMenuMgr::SetCurrentMenu(eMenuID menuID)
 
 LTBOOL CMenuMgr::SetCurrentMenu(uint8 index)
 {
-	if (index < m_MenuArray.size() && m_MenuArray[index]->IsEnabled() )
+	// RETAIL: Tron's menus have no enabled state (0x10171330)
+	if (index < m_MenuArray.size())
 	{
 		m_nMenuIndex = index;
 		SwitchToMenu(m_MenuArray[index]);
@@ -346,47 +340,25 @@ LTBOOL CMenuMgr::NextMenu()
 {
 	if (m_MenuArray.size() == 0) return LTFALSE;
 
+	// RETAIL: Tron's (0x10171380) has no disabled menus to skip
 	uint8 index = m_nMenuIndex + 1;
 	if (index >= m_MenuArray.size())
 				index = 0;		
 
-	while (index != m_nMenuIndex)
-	{
-		if (SetCurrentMenu(index))
-			return LTTRUE;
-		else
-		{
-			index++;
-			if (index >= m_MenuArray.size())
-				index = 0;
-		}
-	}
-
-
-	return LTFALSE;
+	return SetCurrentMenu(index);
 }
 
 LTBOOL CMenuMgr::PreviousMenu()
 {
 	if (m_MenuArray.size() == 0) return LTFALSE;
 
+	// RETAIL: Tron's (0x101713e0) has no disabled menus to skip
 	uint8 index = m_nMenuIndex;
 	if (index == 0)
 		index = m_MenuArray.size();
 	index--;
 
-	while (index != m_nMenuIndex)
-	{
-		if (SetCurrentMenu(index))
-			return LTTRUE;
-		else
-		{
-			if (index == 0)
-				index = m_MenuArray.size();
-			index--;
-		}
-	}
-	return LTFALSE;
+	return SetCurrentMenu(index);
 }
 
 void CMenuMgr::ExitMenus()
@@ -408,6 +380,8 @@ void CMenuMgr::Update()
 	if (m_MenuSlide.IsStarted())
 	{
 		m_pCurrentMenu->SetBasePos(m_MenuSlide.GetCurrentPos());
+		// RETAIL: Tron's asks for the progress and leaves it (0x101714ac)
+		float fPercent = m_MenuSlide.GetPercent();
 		if (m_MenuSlide.IsDone())
 		{
 			m_MenuSlide.Stop();
@@ -532,9 +506,8 @@ void CMenuMgr::ScreenDimsChanged()
 
 void CMenuMgr::SwitchToMenu(CBaseMenu *pNewMenu)
 {
-	if (!pNewMenu || !pNewMenu->IsEnabled())
-		return;
-
+	// RETAIL: Tron's menus have no enabled state, and a null menu still
+	// becomes the current one (0x10171750)
 	if (m_pSubMenu)
 	{
 		HideSubMenu(true);
@@ -763,12 +736,19 @@ LTBOOL CMenuMgr::OnCommandOn(int command)
 
 LTBOOL CMenuMgr::OnCommandOff(int command)
 {
-	if (m_pSubMenu || !m_pCurrentMenu ) return LTFALSE;
+	// RETAIL: Tron's (0x10171bb0) opens a menu from the game too (single
+	// player only, and not while a decision window waits) and closes the
+	// current one from the menus
+	if (m_pSubMenu) return LTFALSE;
 
+	GameState eState = g_pInterfaceMgr->GetGameState();
+	if (GS_PLAYING != eState && GS_MENU != eState) return LTFALSE;
 
-	if (GS_MENU != g_pInterfaceMgr->GetGameState()) return LTFALSE;
+	if (IsMultiplayerGame()) return LTFALSE;
+	if (GetGameType() == eGameTypeSingleLightCycleCustom) return LTFALSE;
+	if (GetGameType() == eGameTypeSingleLightCycleCircuit) return LTFALSE;
 
-	
+	if (g_pTronDecision && g_pTronDecision->IsVisible() && !g_pTronDecision->GetTronUnknown4D()) return LTFALSE;
 
 	LTBOOL found = LTFALSE;
 	KeyArray::iterator iter = m_HotKeys.begin();
@@ -779,30 +759,26 @@ LTBOOL CMenuMgr::OnCommandOff(int command)
 			iter++;
 	}
 
-
 	//if we found a menu that uses the command as a hotkey...
 	if (found)
 	{
-		//close the current menu if the hotkey belongs to it..
-		if ((*iter)->m_id == m_pCurrentMenu->GetMenuID())
-		{
-			if (!bHK)
-				SlideOut();
-			bHK = false;
-			return LTTRUE;
-		}
-		else
+		if (GS_PLAYING == eState)
 		{
 			//switch to the appropriate menu
+			m_bTronUnknown5CE4 = true;
 			g_pInterfaceMgr->SwitchToMenu((*iter)->m_id);
-			bHK = false;
 			return LTTRUE;
+		}
 
+		//close the current menu if the hotkey belongs to it..
+		if (GS_MENU == eState && m_pCurrentMenu && (*iter)->m_id == m_pCurrentMenu->GetMenuID())
+		{
+			SlideOut();
+			return LTTRUE;
 		}
 	}
 
 	return LTFALSE;
-
 }
 
 
@@ -877,22 +853,17 @@ void CMenuMgr::EnableMenuBar(bool bEnable/*=true*/, uint32 nMenuFlags/*=MB_ALL*/
 {
 	// Determine the state of each control based on the flags passed...
 
-	uint32 MBCtrlFlags[MB_NUM_CTRLS] =
+	// RETAIL: Tron's bar has four controls, the last with no flag, and no
+	// co-op case (0x10171dc0)
+	uint32 MBCtrlFlags[4] =
 	{
 		MB_SYSTEM,
-		MB_MISSION,
 		MB_INVENTORY,
 		MB_KEYS,
-		MB_INTEL,
-		MB_PLAYER
+		0
 	};
 
-	if (!IsCoopMultiplayerGameType())
-	{
-		nMenuFlags &= ~(MB_MISSION & MB_KEYS & MB_INTEL & MB_PLAYER);
-	}
-
-	for (int i=0; i < MB_NUM_CTRLS; i++)
+	for (int i=0; i < 4; i++)
 	{
 		CLTGUICtrl* pCtrl = m_MenuBar.GetControl(i);
 		if (pCtrl)

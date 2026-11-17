@@ -46,7 +46,8 @@ void CHUDMissionText::Term()
 
 void CHUDMissionText::Render()
 {
-	if (!m_bVisible) return;
+	// RETAIL: Tron's asks the item too (0x101665b0)
+	if (!IsVisible() || !m_bVisible) return;
 	m_Text.Render();
 }
 
@@ -75,7 +76,7 @@ void CHUDMissionText::Start(char *pszString)
 	m_bVisible = LTTRUE;
 	m_bPause = LTFALSE;
 
-	SetScale(g_pInterfaceResMgr->GetXRatio());
+	// RETAIL: Tron's leaves the scale to Update (0x10166640)
 
 	// Set up the timed text and start it off
 	m_Text.Init( m_Format );

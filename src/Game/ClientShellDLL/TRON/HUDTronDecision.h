@@ -113,6 +113,9 @@ public:
 	void	Show(ILTMessage_Read *pMsg);
 	void	Choose(uint8 nChoice);
 
+	// RETAIL: read by CMenuMgr::OnCommandOff (0x10171c18); the name is ours
+	bool	GetTronUnknown4D() { return m_bTronUnknown4d; }
+
 protected:
 	void	ShowBins(ILTMessage_Read *pMsg, bool bFree);
 	void	UpdateBins();
