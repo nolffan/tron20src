@@ -4289,6 +4289,25 @@ void CAI::DisableNodeTracking()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAI::GetNodeTrackingTarget()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10131880): the object the active
+//				tracking group tracks. Name ours.
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT CAI::GetNodeTrackingTarget()
+{
+	if( !IsNodeTrackingEnabled() )
+	{
+		return LTNULL;
+	}
+
+	return m_pTrackedNodeContext->GetTrackedTarget( GetActiveNodeTrackingGroup() );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAI::DisableNodeTracking()
 //
 //	PURPOSE:	Turn off Head and Torso tracking.

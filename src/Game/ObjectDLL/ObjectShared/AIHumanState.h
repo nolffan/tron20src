@@ -685,6 +685,11 @@ class CAIHumanStatePatrol : public CAIHumanState
 
 	protected :
 
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
+
+	protected :
+
 		LTBOOL UpdateTaskWait();
 		LTBOOL UpdateTaskAnimate();
 
@@ -747,6 +752,11 @@ class CAIHumanStateGoto : public CAIHumanState
 		void SetCloseEnoughDist(LTFLOAT fDist) { m_fCloseEnoughDistSqr = fDist;	m_fCloseEnoughDistSqr *= m_fCloseEnoughDistSqr; }
 		void SetCloseEnoughDistSqr(LTFLOAT fDistSqr) { m_fCloseEnoughDistSqr = fDistSqr; }
 		void TurnOffLights(LTBOOL bTurnOffLights) { m_bTurnOffLights = bTurnOffLights; }
+
+	protected :
+
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
 
 	protected :
 	
@@ -937,6 +947,11 @@ class CAIHumanStateUseObject : public CAIHumanState
 		LTFLOAT GetAnimTimeRemaining() { return m_fAnimTime - m_fAnimTimer; }
 		void AddAnimTime(LTFLOAT fTime) { m_fAnimTimer -= fTime; }
 		void StartAnimation();
+
+	protected :
+
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
 
 	protected :
 

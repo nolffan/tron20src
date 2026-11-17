@@ -732,6 +732,28 @@ void CAIHumanStatePatrol::Update()
 }
 
 // ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStatePatrol::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStatePatrol::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_xTronUnknown94 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
+}
+
+// ----------------------------------------------------------------------- //
 
 void CAIHumanStatePatrol::UpdateAnimation()
 {
@@ -763,7 +785,8 @@ void CAIHumanStatePatrol::UpdateAnimation()
 		GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Lower);
 		GetAnimationContext()->Lock();
 	}
-	else if( m_pStrategyFollowPath->IsSet() )
+	// RETAIL: Tron's: not while facing the player (0x101e52d8).
+	else if( m_pStrategyFollowPath->IsSet() && !ShouldFacePlayer() )
 	{
 		m_pStrategyFollowPath->UpdateAnimation();
 	}
@@ -956,6 +979,28 @@ AINode* CAIHumanStateGoto::SafeGetGotoNode(int32 iGotoNode)
 }
 
 // ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateGoto::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStateGoto::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_xTronUnknownF0 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
+}
+
+// ----------------------------------------------------------------------- //
 
 void CAIHumanStateGoto::Update()
 {
@@ -979,6 +1024,17 @@ void CAIHumanStateGoto::Update()
 			m_pStrategyToggleLights->Update();
 			return;
 		}
+	}
+
+	// RETAIL: Tron's (0x101e59e3): face the player while talking.
+
+	if( ShouldFacePlayer() )
+	{
+		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
+		{
+			m_pAIHuman->FaceObject( m_pAIHuman->GetNodeTrackingTarget() );
+		}
+		return;
 	}
 
 	// Play looping sound.
@@ -1135,7 +1191,8 @@ void CAIHumanStateGoto::UpdateAnimation()
 		return;
 	}
 
-	if ( m_pStrategyFollowPath )
+	// RETAIL: Tron's: not while facing the player (0x101e5ef4).
+	if ( m_pStrategyFollowPath && !ShouldFacePlayer() )
 	{
 		m_pStrategyFollowPath->UpdateAnimation();
 	}
@@ -2151,6 +2208,28 @@ void CAIHumanStateUseObject::Pause(LTBOOL bPause)
 
 		m_fAnimTimer -= 10.f;
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStateUseObject::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_bTronUnknownF4 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
 }
 
 // ----------------------------------------------------------------------- //

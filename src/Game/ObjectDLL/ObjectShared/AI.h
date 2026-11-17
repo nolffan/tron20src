@@ -492,12 +492,14 @@ class CAI : public CCharacter, public IAISensing
 		EnumTrackedNodeGroup GetActiveNodeTrackingGroup() const;
 		LTBOOL	IsNodeTrackingEnabled() const;
 		LTBOOL	IsNodeTrackingAtLimit() const;
+		HOBJECT	GetNodeTrackingTarget();	// RETAIL: Tron's (0x10131880); name ours
 		EnumTrackedNodeGroup GetTriggerNodeTrackingGroup() const { return m_eTriggerNodeTrackingGroup; }
 
 		// RETAIL: Tron's "TALKLOCK": look at the nearest player, told to
 		// ourselves as the "TrackLookAt"/"TrackNone" commands (retail
 		// 0x101304f0; name ours)
 		void	SetTalkLock(bool bTalkLock);
+		bool	IsTalkLocked() const { return m_bTalkLock; }	// name ours
 
 		// RETAIL: Tron's: add (unless there) and remove an entry of the list
 		// at +0x10a0 (retail 0x1012ce40, 0x1012cee0; names ours)
