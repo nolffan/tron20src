@@ -44,6 +44,10 @@ public:
 		return false;
 	}
 
+	// RETAIL: the weapon chooser hides it while it is open (0x100afe90,
+	// 0x100afdf1); the name is ours
+	void		Show(bool bShow) { m_bShow = bShow; }
+
 	void		Render();
 	void		Update();
 
@@ -80,5 +84,8 @@ private:
 	LT_POLYFT4				m_EmptyBar[HUDPROC_MAX];	// +0x284
 	LT_POLYFT4				m_FullBar[HUDPROC_MAX];		// +0x380
 };
+
+// RETAIL: 0x1026ee10 (CTronHUDMgr::Init points it at its item); the name is ours
+extern CHUDProcedurals* g_pHUDProcedurals;
 
 #endif

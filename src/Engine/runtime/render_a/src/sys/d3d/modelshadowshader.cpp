@@ -357,18 +357,10 @@ bool CModelShadowShader::RenderSection(	D3DPRIMITIVETYPE nPrimType,		//primitive
 #endif
 }
 
-//determines if this device supports perspective shadows
-bool CModelShadowShader::CanSupportPerspective()
-{
-	//see if we have already validated
-	if(m_bValidatedPerspective)
-	{
-		return !m_bFailedValidation;
-	}
-
-	//alright, we haven't tested, so just say that we can
-	return true;
-}
+// RETAIL: Tron has no CanSupportPerspective (its one caller is NOLF2's
+// CRenderShadowList::QueueShadows, which Tron does not have): in
+// Lithtech.exe RenderSection (0x531a80, 907 bytes) is followed directly by
+// SetRenderStates (0x531e10).
 
 //sets up all render states
 bool CModelShadowShader::SetRenderStates()

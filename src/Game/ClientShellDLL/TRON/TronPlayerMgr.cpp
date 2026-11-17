@@ -29,6 +29,7 @@
 #include "TRON/LightCycleMgr.h"
 #include "TRON/LightCycleButeMgr.h"
 #include "ClientLightCycleMgr.h"
+#include "LightCycleFX.h"
 // RETAIL: its SLICE_SIZE and PRIM_SIZE are set up in this TU too (retail
 // 0x100a4310, 0x100a4330: 0x1026ef4c, 0x1026ef48)
 #include "ScreenSubroutines.h"
@@ -743,15 +744,22 @@ void CTronPlayerMgr::Update()
 	// RETAIL: retail 0x100a5550
 	CPlayerMgr::Update();
 
+	// RETAIL: the cycle's fx show when the camera is out of first person:
+	// the player's own cycle, or the watched one (0x100a5559..0x100a55d0)
 	if (m_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE)
 	{
-		// PORT: retail updates the player's light cycle model here (its
-		// 0x101225d0, with whether the camera is out of first person)
+		m_pMoveMgr->GetVehicleMgr()->ShowTronUnknownFX2138(g_pMoveMgr->GetObject(),
+			m_pPlayerCamera->GetCameraMode() != CPlayerCamera::FIRSTPERSON);
 	}
 	else if (m_nTronUnknown230 && m_bTronUnknownB8)
 	{
-		// PORT: retail updates the watched light cycle's FX (the SFX
-		// manager's 0x10108650, then 0x1012d990), not yet in our tree
+		CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+		if (psfxMgr)
+		{
+			CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(((LIGHT_CYCLIST*)m_nTronUnknown230)->hObject);
+			pFX->ShowTronUnknownFX48(((LIGHT_CYCLIST*)m_nTronUnknown230)->hObject,
+				m_pPlayerCamera->GetCameraMode() != CPlayerCamera::FIRSTPERSON);
+		}
 	}
 
 	if (m_bTronUnknown1D5 || m_bTronUnknown1D6 || m_bPause)

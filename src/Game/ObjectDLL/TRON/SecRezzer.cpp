@@ -24,14 +24,6 @@
 // 0x100454bd); the name is ours
 #define SFX_SECREZZER_ID		61
 
-// PORT: retail calls a ServerUtilities function (retail 0x100cdc10, not yet
-// written) that asks the player's own (shared, in coop) permission sets;
-// the player's are asked here (as IONode's)
-static bool HasPSets(CTronPlayerObj* pPlayer, uint8 nPSets)
-{
-	return (pPlayer->GetPSets() & nPSets) == nPSets;
-}
-
 BEGIN_CLASS(SecRezzer)
 	ADD_DESTRUCTIBLE_MODEL_AGGREGATE(PF_GROUP(1), 0)
 	ADD_BOOLPROP_FLAG(CanDamage, LTFALSE, PF_GROUP(1) | PF_HIDDEN)

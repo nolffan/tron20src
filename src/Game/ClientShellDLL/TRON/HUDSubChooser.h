@@ -45,6 +45,10 @@ public:
 		return false;
 	}
 
+	// RETAIL: the weapon chooser hides it while it is open (0x100afe90,
+	// 0x100afdf1); the name is ours
+	void		Show(bool bShow) { m_bShow = bShow; }
+
 	void		Render();
 	void		Update();
 
@@ -72,5 +76,8 @@ private:
 	LTIntPt					m_CursorSize;						// +0xec8
 	int						m_nSpacing;							// +0xed0
 };
+
+// RETAIL: 0x1026ede4 (CTronHUDMgr::Init points it at its item); the name is ours
+extern CHUDSubChooser* g_pHUDSubChooser;
 
 #endif

@@ -14,22 +14,18 @@
 #include "SpecialFX.h"
 #include "GadgetTargetTypes.h"
 
+// RETAIL: Tron's keeps the type only (CSFXMgr::HandleSFXMsg reads one byte,
+// 0x101061f1; CGadgetTargetFX::Init 0x101b7d20; the fx is 0x3c bytes)
 struct GADGETTARGETCREATESTRUCT : public SFXCREATESTRUCT
 {
     GADGETTARGETCREATESTRUCT();
 
     GadgetTargetType	eType;
-	bool				bSwitchWeapons;
-	bool				bPowerOn;
-	uint8				nTeamID;
 };
 
 inline GADGETTARGETCREATESTRUCT::GADGETTARGETCREATESTRUCT()
 {
 	eType = eINVALID;
-	bSwitchWeapons = true;
-	bPowerOn = true;
-	nTeamID = INVALID_TEAM;
 }
 
 class CGadgetTargetFX : public CSpecialFX
@@ -41,20 +37,10 @@ class CGadgetTargetFX : public CSpecialFX
 		virtual uint32 GetSFXID() { return SFX_GADGETTARGET_ID; }
 
 		virtual GadgetTargetType	GetType() const {return m_eType;}
-		// RETAIL: not virtual in Tron (its vtable; build 51 has none of them)
-		bool				SwitchWeapons() const {return  m_bSwitchWeapons;}
-		bool				IsPowerOn() const {return  m_bPowerOn;}
-		uint8				GetTeamID() const { return m_nTeamID; }
-		
-		virtual LTBOOL OnServerMessage(ILTMessage_Read *pMsg);
-
 
 	private :
 
-	    GadgetTargetType	m_eType;
-		bool				m_bSwitchWeapons;
-		bool				m_bPowerOn;
-		uint8				m_nTeamID;
+	    GadgetTargetType	m_eType;		// +0x38
 };
 
 #endif // __GADGETTARGET_FX_H__

@@ -26,7 +26,7 @@ namespace
 	const int kLastAmmo = 1;
 	const int kCurrWeapon = 1;
 	const int kCurrAmmo = 0;
-	const float kfDelayTime	= 15.0f;
+	const float kfDelayTime	= 333.0f;	// RETAIL: Tron's (0x101eb9ec)
 	VarTrack	g_vtChooserAutoSwitchTime;
 	VarTrack	g_vtChooserAutoSwitchFreq;
 }
@@ -65,6 +65,10 @@ bool CWeaponChooser::Open(uint8 nClass)
 		return true;
 
 	CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
+	// RETAIL: Tron's asks first (0x10166da7)
+	if (!pClientWeaponMgr->WeaponsEnabled())
+		return false;
+
 	IClientWeaponBase const *pClientWeapon = pClientWeaponMgr->GetCurrentClientWeapon();
 	if( !pClientWeapon )
 		return false;
@@ -88,7 +92,7 @@ bool CWeaponChooser::Open(uint8 nClass)
     return true;
 }
 
-void CWeaponChooser::Close()
+void CWeaponChooser::Close(bool bShowSelection)
 {
 	if (!m_bIsOpen)
 		return;

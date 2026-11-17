@@ -892,25 +892,26 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 // ----------------------------------------------------------------------- //
 void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 {
+	// RETAIL: 0x100635c0
 	if ( !m_pPlayerAttachments ) return;
 	if (!m_hClient || !g_pWeaponMgr) return;
 
 	// See if the psets have changed...
-	if(m_iPermissionSet != m_byOldPSets)
+	if(m_iPermissionSet != m_byOldPSets || bForceUpdate)
 	{
 		m_byOldPSets = m_iPermissionSet;
 
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 		cMsg.Writeuint8(IC_PSETS_ID);
+		cMsg.Writeuint8(m_iPermissionSet);
 		cMsg.Writeuint8(0);
-		cMsg.Writeuint8(0);
-		cMsg.Writefloat(m_iPermissionSet);
+		cMsg.Writefloat(0.0f);
 		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
 	}
 
 	// See if the build points have changed
-	if(m_nBuildPoints != m_nOldBuildPoints)
+	if(m_nBuildPoints != m_nOldBuildPoints || bForceUpdate)
 	{
 		m_nOldBuildPoints = m_nBuildPoints;
 
@@ -920,6 +921,45 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 		cMsg.Writeuint8(0);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat((LTFLOAT)m_nBuildPoints);
+		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
+	}
+
+	// RETAIL: the light cycle follows the player
+	if (m_hLightCycle)
+	{
+		LTVector vPos;
+		LTRotation rRot;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
+		g_pLTServer->GetObjectRotation(m_hObject, &rRot);
+		g_pLTServer->SetObjectPos(m_hLightCycle, &vPos);
+		g_pLTServer->SetObjectRotation(m_hLightCycle, &rRot);
+	}
+
+	// See if the maximum health has changed
+	if (m_damage.GetMaxHitPoints() != m_fOldMaxHitPoints || bForceUpdate)
+	{
+		m_fOldMaxHitPoints = m_damage.GetMaxHitPoints();
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
+		cMsg.Writeuint8(IC_MAX_HEALTH_ID);
+		cMsg.Writeuint8(0);
+		cMsg.Writeuint8(0);
+		cMsg.Writefloat(m_fOldMaxHitPoints);
+		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
+	}
+
+	// See if the maximum energy has changed
+	if (m_damage.GetMaxEnergy() != m_fOldMaxEnergy || bForceUpdate)
+	{
+		m_fOldMaxEnergy = m_damage.GetMaxEnergy();
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
+		cMsg.Writeuint8(IC_MAX_ENERGY_ID);
+		cMsg.Writeuint8(0);
+		cMsg.Writeuint8(0);
+		cMsg.Writefloat(m_fOldMaxEnergy);
 		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
 	}
 

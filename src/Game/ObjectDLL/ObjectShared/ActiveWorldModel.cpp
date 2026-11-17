@@ -207,14 +207,6 @@ LTRESULT CActiveWorldModelPlugin::PreHook_EditStringList( const char *szRezPath,
 	return LT_UNSUPPORTED;
 }
 
-// PORT: retail calls a ServerUtilities function (retail 0x100cdc10, not yet
-// written) that asks the character's (in coop, every player's) permission
-// sets (retail 0x10090720); the character's own are asked here
-static bool HasPSets(CCharacter* pChar, uint8 nPSets)
-{
-	return (pChar->GetPermissionSet() & nPSets) == nPSets;
-}
-
 // RETAIL: 0x10174660: can this character activate an AWM needing these
 // permission sets? The name is ours
 static bool CanActivatePSets(HOBJECT hObj, uint8 nPSets)

@@ -13,9 +13,7 @@ public:
 	//singleton access
 	static CRenderShadowList& GetSingleton();
 
-	//given a model instance and it's light list, this will add all appropriate shadows to the list
-	//of shadows to be rendered
-	void	QueueShadows(ModelInstance* pInstance, const CRelevantLightList& LightList);
+	// RETAIL: Tron has no QueueShadows (see rendershadowlist.cpp).
 
 	//this will render all shadows in the queue to the world and flush it
 	void	RenderQueuedShadows(const ViewParams& Params);
@@ -49,9 +47,6 @@ private:
 
 	//blurs the specified texture to the other texture, assumes that the blur shader is valid
 	bool	BlurShadowTexture(uint32 nSrcTex, uint32 nDestTex);
-
-	//handles inserting a shadow into the list
-	void	QueueShadow(ModelInstance* pInstance, const LTVector& vModelPos, const LTVector& vPos, const LTVector& vColor, bool bOrtho);
 
 	//we don't want any instances other than the singleton
 	CRenderShadowList();

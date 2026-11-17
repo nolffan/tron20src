@@ -42,7 +42,16 @@ LTBOOL CSearchLightFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
     sl.bBeamAdditive        = (LTBOOL) pMsg->Readuint8();
     sl.vLightColor			= pMsg->ReadLTVector();
 
-	sl.lens.InitFromMessage(sl.lens, pMsg);
+	// RETAIL: Tron's: a socket of the object (0x101ae403)
+	if (pMsg->Readbool())
+	{
+		char szSocket[128];
+		pMsg->ReadString(szSocket, sizeof(szSocket));
+		sl.hSocket = 0;
+		g_pModelLT->GetSocket(m_hServerObject, szSocket, sl.hSocket);
+	}
+
+	sl.lens.InitFromMessage(hServObj, sl.lens, pMsg);
 
 	// Should be between 0.0 and 1.0f...
 
@@ -85,7 +94,7 @@ LTBOOL CSearchLightFX::CreateObject(ILTClient* pClientDE)
 
 	// Create the beam model...
 
-	g_pLTClient->GetObjectPos(m_hServerObject, &(createStruct.m_Pos));
+	GetBeamPos(&(createStruct.m_Pos));	// RETAIL: at the socket (0x101ae74f)
 	createStruct.m_ObjectType = OT_MODEL;
 
 	g_pClientButeMgr->GetSpecialFXAttributeString("SearchBeam",createStruct.m_Filename,sizeof(createStruct.m_Filename));
@@ -196,7 +205,7 @@ LTBOOL CSearchLightFX::Update()
 	// Update the position/rotation of the beam...
 
     LTVector vPos;
-	g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
+	GetBeamPos(&vPos);	// RETAIL: at the socket (0x101aeb52)
 
     LTRotation rRot;
 	g_pLTClient->GetObjectRotation(m_hServerObject, &rRot);
@@ -250,4 +259,31 @@ LTBOOL CSearchLightFX::Update()
 	}
 
     return LTTRUE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CSearchLightFX::GetBeamPos
+//
+//	PURPOSE:	RETAIL: 0x101af160 (the name is ours): the position of the
+//				beam: its socket's when it has one, else its object's
+//
+// ----------------------------------------------------------------------- //
+
+void CSearchLightFX::GetBeamPos(LTVector* pvPos)
+{
+	if (!pvPos) return;
+
+	if (m_cs.hSocket != INVALID_MODEL_SOCKET)
+	{
+		LTransform transform;
+		if (g_pModelLT->GetSocketTransform(m_hServerObject, m_cs.hSocket, transform, LTTRUE) == LT_OK)
+		{
+			*pvPos = transform.m_Pos;
+			return;
+		}
+	}
+
+	g_pLTClient->GetObjectPos(m_hServerObject, pvPos);
 }

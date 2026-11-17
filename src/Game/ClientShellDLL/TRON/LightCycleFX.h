@@ -50,6 +50,10 @@ class CLightCycleFX : public CSpecialFX
 		void	CreateTronUnknownFX58(const char* pszFX, const LTVector &vOffset);
 		void	ShowTronUnknownFX48(HOBJECT hObj, bool bShow);
 
+		// RETAIL: inline (CSFXMgr::GetLightCycleFX, 0x10108685); the name is
+		// ours
+		HOBJECT	GetRider() const { return m_hTronUnknown70; }
+
 	protected :
 
 		bool	FindCyclist();		// RETAIL: 0x1012da00

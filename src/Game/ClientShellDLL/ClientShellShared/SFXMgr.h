@@ -25,6 +25,7 @@
 
 class CCharacterFX;
 class CBodyFX;
+class CLightCycleFX;
 
 class CSFXMgr
 {
@@ -67,6 +68,9 @@ class CSFXMgr
 		CCharacterFX* GetCharacterFromHitBox(HOBJECT hHitBox);
 		CBodyFX* GetBodyFX(HOBJECT hObject);
 		CBodyFX* GetBodyFromHitBox(HOBJECT hHitBox);
+		// TRON (RETAIL: 0x10108650; the name is ours): the light cycle fx of
+		// a cycle or of its rider
+		CLightCycleFX* GetLightCycleFX(HOBJECT hObject);
 		CSpecialFX* GetSpectatorFX(HOBJECT hObject);	// TRON (RETAIL: 0x101086a0)
 		// TRON (RETAIL: 0x101086f0; the name is ours): the spectator object
 		// after hObject (the first with LTNULL), wrapping to the first one

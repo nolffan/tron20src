@@ -480,6 +480,7 @@ LTBOOL SearchLight::InitialUpdate()
     cMsg.Writefloat(m_fLightRadius);
     cMsg.Writeuint8(m_bBeamAdditive);
     cMsg.WriteLTVector(m_vLightColor);
+	cMsg.Writebool(false);	// RETAIL: Tron's: no socket (0x10247c7e; the client's CSearchLightFX reads it)
 	::AddLensFlareInfoToMessage(m_LensInfo, cMsg);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 

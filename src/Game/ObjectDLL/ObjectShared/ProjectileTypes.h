@@ -40,8 +40,10 @@ class CGrenade : public CProjectile
 		virtual void RotateToRest();
 		virtual void Detonate(HOBJECT hObj, CollisionInfo* pCollInfo = LTNULL);
 
-        virtual void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
-        virtual void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
+		// RETAIL: not virtual in Tron (CGrenade's vtable 0x102981b8 has 51
+		// slots, ShouldPlayBounceSound/GetBounceSound the last two)
+        void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
+        void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
 		virtual LTBOOL ShouldPlayBounceSound(SURFACE* pSurface);
 		virtual const char* GetBounceSound(SURFACE* pSurface);

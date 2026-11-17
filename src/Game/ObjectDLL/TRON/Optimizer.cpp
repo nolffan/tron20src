@@ -37,14 +37,6 @@
 #define USRFLG_OPTIMIZER		(1<<4)
 #define USRFLG_OPTIMIZER2		(1<<1)
 
-// PORT: retail calls a ServerUtilities function (retail 0x100cdc10, not yet
-// written) that asks the player's own (shared, in coop) permission sets;
-// the player's are asked here (as IONode's)
-static bool HasPSets(CTronPlayerObj* pPlayer, uint8 nPSets)
-{
-	return (pPlayer->GetPSets() & nPSets) == nPSets;
-}
-
 BEGIN_CLASS(Optimizer)
 	ADD_STRINGPROP_FLAG(KeyFramer, "", PF_OBJECTLINK)
 	ADD_STRINGPROP(OnActivate, "")

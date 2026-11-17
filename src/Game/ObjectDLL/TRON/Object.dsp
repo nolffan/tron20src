@@ -326,6 +326,10 @@ SOURCE=.\PingButeMgr.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ProjectileBall.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ProjectileBallLauncher.cpp
 # End Source File
 # Begin Source File
@@ -590,6 +594,10 @@ SOURCE=.\PatchRoutine.h
 # Begin Source File
 
 SOURCE=.\PingButeMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ProjectileBall.h
 # End Source File
 # Begin Source File
 

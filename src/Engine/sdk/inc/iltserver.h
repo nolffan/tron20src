@@ -154,8 +154,8 @@ functionality.
 // retail Object.lto calls them at and retail server.dll sets them at
 // (progress/engine/ILTServer-offsets.csv); ILTServer's own virtuals are NOLF2's in the order of retail
 // server.dll's CLTServer vtable (progress/engine/ILTServer-vtable.csv);
-// GetSaveFileVersion, which NOLF2's 1.x updates added and Tron's engine
-// does not have, is kept past its end.
+// GetSaveFileVersion, which NOLF2's 1.x updates added, is not in Tron's
+// engine.
 class ILTServer : public ILTCSBase {
 public:
     interface_version_derived(ILTServer, ILTCSBase, 0);	// TRON: 600 (iltcsbase.h)
@@ -1923,19 +1923,11 @@ Used for: Object.
     // TRON: CJ's SetObjectUnguaranteedData (RETAIL: Lithtech.exe 0x475020, the local CLTServer's slot 75)
     virtual LTRESULT SetObjectUnguaranteedData(HOBJECT hObj, uint32 nData) = 0;
 
-    // TRON: NOLF2's virtuals that Tron's engine does not have (past the end of
-    // its vtable): kept for the shared code, which must not call them
+    // TRON: no GetSaveFileVersion (NOLF2's 1.x updates added it): retail
+    // server.dll's CLTServer vtable ends at SetObjectUnguaranteedData, and
+    // neither server.dll nor Lithtech.exe has its code
+    // (g_dwSaveFileVersion is read only by game_serialize.cpp).
 
-/*!
-\param nSaveFileVersion - The save file version number.
-
-\return \b LT_OK on success.
-
-Access the engine's save file version.
-
-Used for: Misc.
-*/
-    virtual LTRESULT GetSaveFileVersion( uint32& nSaveFileVersion ) = 0;
 		virtual LTRESULT GetObjectPos(HLOCALOBJ hObj, LTVector *pPos) = 0;
 		virtual LTRESULT GetObjectRotation(HLOCALOBJ hObj, LTRotation *pRotation) = 0;
 

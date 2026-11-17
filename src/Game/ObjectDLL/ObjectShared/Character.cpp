@@ -2935,6 +2935,34 @@ void CCharacter::PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fS
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacter::GetPSets
+//
+//	PURPOSE:	Our permission sets; with m_bTracking set, the sum of all of
+//				the players' sets (RETAIL: Tron's, retail 0x10090720; the
+//				name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+uint8 CCharacter::GetPSets()
+{
+	if (m_bTracking)
+	{
+		int i = 0;
+		uint8 nPSets = 0;
+
+		for (CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer(0); pPlayer; pPlayer = g_pCharacterMgr->FindPlayer(++i))
+		{
+			nPSets |= pPlayer->GetPSets();
+		}
+
+		return nPSets;
+	}
+
+	return m_iPermissionSet;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacter::UpdateOnLadder
 //
 //	PURPOSE:	Update if we're on a ladder
@@ -5035,6 +5063,19 @@ void CCharacter::SetArmorPointsMod( float fMod )
 bool CCharacter::IsDeflecting( )
 {
 	return !m_tmrDeflecting.Stopped( );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::GetMaxArmorPoints
+//
+//	PURPOSE:	Our maximum armor (RETAIL: Tron's, retail 0x100942e0)
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT CCharacter::GetMaxArmorPoints()
+{
+	return m_damage.GetMaxArmorPoints();
 }
 
 // ----------------------------------------------------------------------- //

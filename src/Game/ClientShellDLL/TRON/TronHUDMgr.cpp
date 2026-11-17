@@ -40,6 +40,8 @@ CHUDScores*			g_pScores = LTNULL;	// RETAIL: 0x1026ee04
 CHUDLightCycleLives*	g_pLightCycleLives = LTNULL;
 CHUDLightCycleRoster*	g_pLightCycleRoster = LTNULL;	// RETAIL: 0x1026ee18
 CHUDTronDecision*		g_pTronDecision = LTNULL;	// RETAIL: 0x1026edec
+CHUDSubChooser*			g_pHUDSubChooser = LTNULL;	// RETAIL: 0x1026ede4
+CHUDProcedurals*		g_pHUDProcedurals = LTNULL;	// RETAIL: 0x1026ee10
 
 // ----------------------------------------------------------------------- //
 //
@@ -103,6 +105,8 @@ LTBOOL CTronHUDMgr::Init()
 	g_pLightCycleLives = &m_LightCycleLives;
 	g_pLightCycleRoster = &m_LightCycleRoster;
 	g_pTronDecision = &m_TronDecision;
+	g_pHUDSubChooser = &m_SubChooser;
+	g_pHUDProcedurals = &m_Procedurals;
 
     return CHUDMgr::Init();
 }
