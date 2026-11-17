@@ -210,11 +210,19 @@ void CAIGoalAbstract::DeactivateGoal()
 
 	// Goals with SenseTriggers and/or Attractors deactivate back to zero importance.
 
+	// RETAIL: 0x101e142e, not while the goal's own flag (+0x58) is set.
+
 	if( ( pTemplate->aAttractors || pTemplate->flagSenseTriggers ) &&
-		( m_fDecayRate > 0.f ) )
+		( m_fDecayRate > 0.f ) &&
+		( !m_bTronUnknown58 ) )
 	{
 		m_fCurImportance = 0.f;
 	}
+
+	// RETAIL: 0x101e143c, Tron's AI goes back to its primary weapon.
+
+	CAI* pAI = m_pAI;
+	pAI->SetCurrentWeapon( pAI->GetPrimaryWeaponType() );
 }
 
 // ----------------------------------------------------------------------- //
@@ -337,13 +345,21 @@ LTFLOAT CAIGoalAbstract::UpdateGoalTimer(LTFLOAT fTime)
 
 		if( !m_bRequiresImmediateResponse )
 		{
-			if( ( pTemplate->flagSenseTriggers != kSense_None ) &&
+			// RETAIL: 0x101e165c, Tron's template can keep a goal that is not
+			// current, and the goal's own flag (+0x58) stops the decay.
+
+			if( ( !pTemplate->bSuppressResetWhenNotCurrent ) &&
+				( pTemplate->flagSenseTriggers != kSense_None ) &&
 				( !m_pGoalMgr->IsCurGoal( this ) ) )
 			{
 				AITRACE(AIShowGoalsVerbose, ( m_pAI->m_hObject, "Setting stimulated Goal %s to 0.00\n", s_aszGoalTypes[GetGoalType()] ) );
-				m_fCurImportance = 0.f;
+				if( !m_bTronUnknown58 )
+				{
+					m_fCurImportance = 0.f;
+				}
 			}
-			else {
+			else if( !m_bTronUnknown58 )
+			{
 				// Decay CurImportance by DecayRate.
 				m_fCurImportance -= m_fDecayRate * fDeltaTime;
 			}
@@ -704,15 +720,10 @@ bool CAIGoalAbstract::IsPathToNodeValid( AINode* pNode )
 //				(CAI sends it with its info, 0x1012a184). Name ours.
 //              
 //----------------------------------------------------------------------------
-uint16 CAIGoalAbstract::GetGoalId()
+uint32 CAIGoalAbstract::GetGoalId()
 {
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
-	if( pTemplate )
-	{
-		return pTemplate->nGoalId;
-	}
-
-	return 0;
+	return pTemplate ? pTemplate->nGoalId : 0;
 }
 
 

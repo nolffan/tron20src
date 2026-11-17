@@ -70,6 +70,17 @@ CCollectiveRelationMgr::CCollectiveRelationMgr()
 //----------------------------------------------------------------------------
 CCollectiveRelationMgr::~CCollectiveRelationMgr()
 {
+	// RETAIL: 0x101d5147, Tron tells the members to clear their relation
+	// systems first.
+
+	for( _listMembers::iterator it = m_listMembers.begin(); it != m_listMembers.end(); ++it )
+	{
+		if( *it )
+		{
+			(*it)->ClearRelationSystem();
+		}
+	}
+
 	// Destruct
 	debug_delete( m_pRelationUser );
 }

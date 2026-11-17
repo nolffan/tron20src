@@ -1351,6 +1351,20 @@ target outside of the personal bubble is not seen instantly.
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
 AISenseRecorderGame.cpp has the "else".
 
+### An AI reads the ray count as its "done processing stimuli" flag
+
+Object.lto 0x1012c1d0 (CAI::GetDoneProcessingStimuli, ObjectShared/
+AI.cpp). The function jumps to 0x101dac80, which returns the sense
+recorder's ray count (+0x24, CAISenseRecorderAbstract::
+GetIntersectSegmentCount). The correct function is at 0x101daab0 and
+returns the flag (+0x14); AINodeSensing::GetDoneProcessingStimuli
+(0x1021edd0) calls it. Thus an AI is "done" when it has cast one or more
+sense rays in this update, and is not "done" when the recorder set the
+flag.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/AI.cpp
+returns the flag.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
