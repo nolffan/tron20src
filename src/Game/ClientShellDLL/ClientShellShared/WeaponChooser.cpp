@@ -88,7 +88,7 @@ bool CWeaponChooser::Open(uint8 nClass)
     return true;
 }
 
-void CWeaponChooser::Close()
+void CWeaponChooser::Close(bool bSelect)
 {
 	if (!m_bIsOpen)
 		return;

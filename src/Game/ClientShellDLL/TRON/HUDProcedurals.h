@@ -50,6 +50,8 @@ public:
 	void		UpdateLayout();
 
 private:
+	friend class CTronWeaponChooser;	// RETAIL: it hides the item while it is open
+	friend class CHUDSubChooser;		// RETAIL: its Arrange reads the item's place
 	LTFLOAT					m_fScale;					// +0x10
 	bool					m_bShow;					// +0x14
 	int						m_nNumActive;				// +0x18

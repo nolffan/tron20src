@@ -49,6 +49,7 @@ public:
 	void		Update();
 
 private:
+	friend class CTronWeaponChooser;	// RETAIL: it hides the item while it is open
 	void		Arrange();
 
 	bool					m_bShow;							// +0x10

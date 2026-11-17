@@ -18,23 +18,28 @@ public:
 	CWeaponChooser();
 	virtual ~CWeaponChooser();
 
-	void	Init();
-	void	Term();
+	// RETAIL: Tron's are virtual (vtable 0x101eb9f4, nine slots), for
+	// CTronWeaponChooser (vtable 0x101e95b0)
+	virtual void	Init();
+	virtual void	Term();
 
-    bool	Open(uint8 nClass);
-	void	Close();
+    virtual bool	Open(uint8 nClass);
+	// RETAIL: Tron's takes a flag (0x10166f10 ret 4) that only
+	// CTronWeaponChooser reads (0x100afe08: the HUD weapon shows the
+	// selection). The name is ours.
+	virtual void	Close(bool bSelect = true);
     bool	IsOpen()    {return m_bIsOpen;}
 
-	void	NextWeapon(uint8 nClass);
-	void	PrevWeapon();
-	void	EndAutoSwitch(bool bNextWeaponKey = true);
+	virtual void	NextWeapon(uint8 nClass);
+	virtual void	PrevWeapon();
+	virtual void	EndAutoSwitch(bool bNextWeaponKey = true);
 
-	void	Update();
+	virtual void	Update();
 
     uint8   GetCurrentSelection() {return m_nWeapon;}
     uint8   GetCurrentClass() {return m_nClass;}
 
-private:
+protected:
 
 	uint8			m_nWeapon;
 	uint8			m_nClass;

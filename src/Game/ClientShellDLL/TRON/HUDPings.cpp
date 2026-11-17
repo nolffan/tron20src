@@ -20,6 +20,7 @@
 #include "VehicleMgr.h"
 #include "GameClientShell.h"
 #include "CommandIDs.h"
+#include "TRONPlayerStats.h"
 
 // RETAIL: the layout manager as a CTronLayoutMgr, without the dynamic cast
 #define g_pTronLayoutMgrStatic ((CTronLayoutMgr*)g_pLayoutMgr)
@@ -78,8 +79,7 @@ void CHUDPings::Render()
 	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE) return;
 	if (g_pLTClient->IsCommandOn(COMMAND_ID_TOGGLE_PROGRESS)) return;
 	if (g_pDecision && g_pDecision->IsVisible()) return;
-	// PORT: retail also hides the list while Tron's decision HUD (its
-	// global at 0x1026edec, not in the tree yet) is up
+	if (g_pTronDecision && g_pTronDecision->IsVisible()) return;
 	if (!IsEnabled()) return;
 
 	LTFLOAT fFrameTime = g_pGameClientShell->GetFrameTime();
@@ -95,9 +95,8 @@ void CHUDPings::Render()
 			if (m_Pings[i].fLifeTime < 0.0f)
 			{
 				m_Pings[i].hIcon = LTNULL;
-				// PORT: retail lets the player stats' ping manager know
-				// (CTronPlayerStats' virtual at +0x164, by name: that slot is
-				// not yet retail's here)
+				// RETAIL: the player stats' ping manager forgets it too
+				g_pTronPlayerStats->RemovePing(m_Pings[i].szName);
 				bChanged = true;
 			}
 		}
@@ -134,7 +133,7 @@ void CHUDPings::Render()
 		g_pDrawPrim->SetTexture(pPing->hIcon);
 		g_pDrawPrim->DrawPrim(&pPing->Poly, 1);
 
-		CUIFormattedPolyString* pName = pPing->pName;
+		CUIPolyString* pName = pPing->pName;
 		if (pName)
 		{
 			pName->SetColor(SET_ARGB(nAlpha, 0xFF, 0xFF, 0xFF));
@@ -143,18 +142,101 @@ void CHUDPings::Render()
 	}
 }
 
-// RETAIL: 0x10031490
+// RETAIL: 0x10031490: the list again from the player stats' pings (the
+// I/O node manager's): a ping already shown keeps its blink and life times,
+// a new one blinks
 void CHUDPings::Update()
 {
-	// PORT: stand-in. Retail rebuilds the list from the player stats' ping
-	// (I/O node) manager, keeping the blink and life times of the pings
-	// already shown, the new ones blinking (m_nBlinkCount, m_fBlinkTime),
-	// each with its name as a wide string, then arranges it
 	if (g_pInterfaceResMgr->GetXRatio() != m_fScale)
 	{
 		UpdateLayout();
 		m_fScale = g_pInterfaceResMgr->GetXRatio();
 	}
+
+	// the pings shown now
+	HTEXTURE	ahOldIcon[10];
+	LTFLOAT		afOldLifeTime[10];
+	int			anOldBlinkCount[10];
+	LTFLOAT		afOldBlinkTime[10];
+	int nOld = m_nNumPings;
+	if (nOld >= 10)
+		nOld = 10;
+	int i;
+	if (nOld)
+	{
+		for (i = 0; i < nOld; i++)
+		{
+			afOldLifeTime[i] = m_Pings[i].fLifeTime;
+			ahOldIcon[i] = m_Pings[i].hIcon;
+			afOldBlinkTime[i] = m_Pings[i].fBlinkTime;
+			anOldBlinkCount[i] = m_Pings[i].nBlinkCount;
+			if (m_Pings[i].pName)
+			{
+				g_pLTClient->GetFontManager()->DestroyPolyString(m_Pings[i].pName);
+				m_Pings[i].pName = LTNULL;
+			}
+		}
+	}
+
+	m_nNumPings = 0;
+	int nFontSize = m_nFontSize;
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
+
+	// RETAIL: the four pings the I/O node manager keeps
+	for (i = 0; i < 4; i++)
+	{
+		IONODEPING* pIOPing = g_pTronPlayerStats->GetPing(i);
+		if (!pIOPing) continue;
+
+		m_nNumPings++;
+
+		HUDPING* pPing = &m_Pings[i];
+
+		bool bNew = true;
+		int nOldIndex = 0;
+		if (nOld)
+		{
+			for (int j = 0; j < nOld; j++)
+			{
+				if (ahOldIcon[j] == pIOPing->hPortrait)
+				{
+					nOldIndex = j;
+					bNew = false;
+					break;
+				}
+			}
+		}
+
+		pPing->hIcon = pIOPing->hPortrait;
+		strncpy(pPing->szName, pIOPing->szName, 15);
+		pPing->szName[15] = 0;
+
+		std::wstring sName;
+		sName.assign(pIOPing->szDisplayName, pIOPing->szDisplayName + strlen(pIOPing->szDisplayName));
+
+		pPing->pName = g_pLTClient->GetFontManager()->CreatePolyString(pFont, sName);
+		pPing->pName->SetColor(argbWhite);
+		pPing->pName->SetCharScreenHeight(nFontSize);
+
+		pPing->bExpires = (pIOPing->fStayTime >= 1.0f);
+
+		if (!bNew && !pIOPing->bNew)
+		{
+			pPing->nBlinkCount = anOldBlinkCount[nOldIndex];
+			pPing->fLifeTime = afOldLifeTime[nOldIndex];
+			pPing->fBlinkTime = afOldBlinkTime[nOldIndex];
+		}
+		else
+		{
+			if (pIOPing->fStayTime >= 1.0f)
+				pPing->fLifeTime = pIOPing->fStayTime;
+			pPing->nBlinkCount = m_nBlinkCount;
+			pPing->fBlinkTime = m_fBlinkTime;
+			pIOPing->bNew = false;
+		}
+	}
+
+	Arrange();
 }
 
 // RETAIL: 0x10031840: the icons down from the start point, each name
@@ -172,7 +254,7 @@ void CHUDPings::Arrange()
 		g_pDrawPrim->SetXYWH(&m_Pings[i].Poly, fX, fY, (LTFLOAT)m_IconSize.x, (LTFLOAT)m_IconSize.y);
 		fY += (LTFLOAT)m_IconSize.y;
 
-		CUIFormattedPolyString* pName = m_Pings[i].pName;
+		CUIPolyString* pName = m_Pings[i].pName;
 		if (pName)
 		{
 			int32 nWidth, nHeight;

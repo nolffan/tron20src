@@ -163,6 +163,7 @@ private:
 	void	ShowTronUnknownMessageBox(ILTMessage_Read *pMsg);
 
 	bool	IsHolsterLocked();	// RETAIL: 0x100a7b70 (the name is ours)
+	friend class CTronWeaponChooser;	// RETAIL: it asks IsHolsterLocked
 
 	// RETAIL: the offsets are retail's; names ours where not build 69's
 	bool	m_bTransferringEnergy;		// +0x1e8 (with m_hTronUnknownSound22C)

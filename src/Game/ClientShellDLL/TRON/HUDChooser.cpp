@@ -15,6 +15,9 @@
 #include "InterfaceMgr.h"
 #include "PlayerMgr.h"
 #include "ClientWeaponMgr.h"
+#include "TronLayoutMgr.h"
+#include "TRONPlayerStats.h"
+#include "HUDWeapon.h"
 
 /*
 current weapon =		(  1, 365, 47, 404 ) show this when the chooser is closed
@@ -33,12 +36,22 @@ CHUDWpnChooser::CHUDWpnChooser()
 {
 	m_UpdateFlags = kHUDChooser;
 	m_bDraw = LTFALSE;
-	m_fTexScale = 0.0f;
 	m_fScale = 0.0f;
 	m_nScreenWidth = 0;
 	m_pStr = LTNULL;
+	m_nSelWeapon = 0;
+	m_fLastTime = 0.0f;
+	m_fFadeTime = 0.0f;
+	m_fFadeDuration = 0.25f;
+	m_hEmptyTexHi = LTNULL;
+	m_hCorruptTexHi = LTNULL;
+	m_hChooserTexHi = LTNULL;
+	m_hEmptyTex = LTNULL;
+	m_hCorruptTex = LTNULL;
+	m_hChooserTex = LTNULL;
 }
 
+// RETAIL: 0x10022be0
 CHUDWpnChooser::~CHUDWpnChooser()
 {
  	if (m_pStr)
@@ -49,13 +62,35 @@ CHUDWpnChooser::~CHUDWpnChooser()
 
 }
 
+// RETAIL: the UVs of a quad, half a texel in from each edge (inlined twice
+// in Init). The name is ours.
+static inline void SetHalfTexelUVs(LT_POLYFT4* pPoly, HTEXTURE hTex)
+{
+	uint32 nWidth, nHeight;
+	float fU = 0.0f;
+	float fV = 0.0f;
+	if (g_pTexInterface->GetTextureDims(hTex, nWidth, nHeight) == LT_OK)
+	{
+		fU = 0.5f / (float)nWidth;
+		fV = 0.5f / (float)nHeight;
+	}
+	pPoly->verts[0].u = fU;
+	pPoly->verts[0].v = fV;
+	pPoly->verts[1].u = 1.0f - fU;
+	pPoly->verts[1].v = fV;
+	pPoly->verts[2].u = 1.0f - fU;
+	pPoly->verts[2].v = 1.0f - fV;
+	pPoly->verts[3].u = fU;
+	pPoly->verts[3].v = 1.0f - fV;
+}
+
+// RETAIL: 0x10022c50
 LTBOOL CHUDWpnChooser::Init()
 {
 	// get first and last weapon indices
 	uint8 nFirstWeaponCommandId = g_pWeaponMgr->GetFirstWeaponCommandId();
 	uint8 nLastWeaponCommandId = g_pWeaponMgr->GetLastWeaponCommandId();
-	uint8 nWeaponCount[kMaxClasses];
-	memset(nWeaponCount,0,sizeof(nWeaponCount));
+	memset(m_nWeaponCount,0,sizeof(m_nWeaponCount));
 	for (uint8 nWpnCommandId = nFirstWeaponCommandId; nWpnCommandId <= nLastWeaponCommandId; nWpnCommandId++)
 	{
 		uint8 nWpn = g_pWeaponMgr->GetWeaponId( nWpnCommandId );
@@ -64,10 +99,21 @@ LTBOOL CHUDWpnChooser::Init()
 		{
 			// get the weapon data struct
 			uint8 nClass = g_pWeaponMgr->GetWeaponClass( nWpn ) - 1;
-			if (nClass < kMaxClasses && nWeaponCount[nClass] < kMaxItemsPerClass)
+			if (nClass < kMaxClasses && m_nWeaponCount[nClass] < kMaxItemsPerClass)
 			{
-				m_nWeaponID[nClass][nWeaponCount[nClass]] = nWpn;
-				nWeaponCount[nClass]++;
+				m_nWeaponID[nClass][m_nWeaponCount[nClass]] = nWpn;
+
+				WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( nWpn );
+				if (pWeapon)
+				{
+					std::string icon;
+					icon = pWeapon->GetDisabledIcon();
+					m_hDisabledIcon[nClass][m_nWeaponCount[nClass]] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
+					icon = pWeapon->GetNormalIcon();
+					m_hNormalIcon[nClass][m_nWeaponCount[nClass]] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
+				}
+
+				m_nWeaponCount[nClass]++;
 			}
 
 		}
@@ -75,63 +121,200 @@ LTBOOL CHUDWpnChooser::Init()
 
 	UpdateLayout();
 
-
 	for( uint8 i = 0; i < kMaxClasses; ++i )
 	{
-		g_pDrawPrim->SetRGBA( &m_ClassPoly[i], argbWhite );
-		g_pDrawPrim->SetUVWH( &m_ClassPoly[i], 0.0f, 0.0f, m_fTexScale, m_fTexScale );
+		for (uint8 n = 0; n < m_nWeaponCount[i]; n++)
+		{
+			g_pDrawPrim->SetRGBA( &m_BoxPoly[i][n], argbWhite );
+			SetHalfTexelUVs( &m_BoxPoly[i][n], m_hChooserTex );
 
-		
-		for (uint8 n = nWeaponCount[i]; n < kMaxItemsPerClass; n++)
+			g_pDrawPrim->SetRGBA( &m_IconPoly[i][n], argbWhite );
+			// RETAIL: the first weapon's icon sizes every icon
+			SetHalfTexelUVs( &m_IconPoly[i][n], m_hNormalIcon[0][0] );
+		}
+
+		for (n = m_nWeaponCount[i]; n < kMaxItemsPerClass; n++)
 		{
 			m_nWeaponID[i][n] = WMGR_INVALID_ID;
+			m_hNormalIcon[i][n] = LTNULL;
 		}
-	}
-	for( i = 0; i < kMaxItemsPerClass; ++i )
-	{
-		g_pDrawPrim->SetRGBA( &m_ItemPoly[i], argbWhite );
-		g_pDrawPrim->SetUVWH( &m_ItemPoly[i], 0.0f, 0.0f, m_fTexScale, m_fTexScale );
-
-		m_hItemIcon[i] = NULL;
-
 	}
 
 	uint8 nFont = g_pLayoutMgr->GetHUDFont();
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 
-	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
+	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(L" "),0.0f, 0.0f);
 	m_pStr->SetColor(m_TextColor);
-
 
 	return LTTRUE;
 }
 
+// RETAIL: 0x100232c0
+void CHUDWpnChooser::UpdateFade()
+{
+	float fTime = g_pLTClient->GetTime();
+	float fDelta = fTime - m_fLastTime;
+	m_fLastTime = fTime;
 
+	m_bDraw = !!g_pInterfaceMgr->IsChoosingWeapon();
+
+	switch (m_eFadeState)
+	{
+		case 0:
+			if (!m_bDraw)
+			{
+				m_eFadeState = 2;
+				m_fFadeTime = m_fFadeDuration - m_fFadeTime;
+			}
+			else
+			{
+				m_fFadeTime += fDelta;
+				if (m_fFadeTime >= m_fFadeDuration)
+					m_eFadeState = 1;
+			}
+			break;
+		case 1:
+			if (!m_bDraw)
+			{
+				m_eFadeState = 2;
+				m_fFadeTime = 0.0f;
+			}
+			break;
+		case 2:
+			if (m_bDraw)
+			{
+				m_eFadeState = 0;
+				m_fFadeTime = m_fFadeDuration - m_fFadeTime;
+				m_pWeaponPrim = &g_pHUDWeapon->m_WeaponPrim;
+				m_nCurWeapon = g_pTronPlayerStats->GetCurWeapon();
+			}
+			else
+			{
+				m_fFadeTime += fDelta;
+				if (m_fFadeTime >= m_fFadeDuration)
+					m_eFadeState = 3;
+			}
+			break;
+		case 3:
+			if (m_bDraw)
+			{
+				m_eFadeState = 0;
+				m_fFadeTime = 0.0f;
+				m_pWeaponPrim = &g_pHUDWeapon->m_WeaponPrim;
+				m_nCurWeapon = g_pTronPlayerStats->GetCurWeapon();
+			}
+			break;
+	}
+}
+
+// RETAIL: 0x10023460
 void CHUDWpnChooser::Render()
 {
-	if (!m_bDraw) return;
+	UpdateFade();
+	if (!IsEnabled() || m_eFadeState == 3) return;
 
 	SetRenderState();
 
-	for (uint8 n = 0; n < kMaxClasses; n++)
+	float fAlpha = 1.0f;
+	if (m_eFadeState != 1)
 	{
-//		if (n != m_nClass)
-//		{
-			g_pDrawPrim->SetTexture( m_hClassIcon[n] );
-			g_pDrawPrim->DrawPrim( &m_ClassPoly[n], 1 );
-//		}
+		fAlpha = m_fFadeTime / m_fFadeDuration;
+		if (m_eFadeState == 2)
+			fAlpha = 1.0f - fAlpha;
 	}
+	uint8 nAlpha = (uint8)(fAlpha * 255.0f);
 
-	for (n = 0; n < kMaxItemsPerClass && m_hItemIcon[n]; n++)
+	// RETAIL: class 0 has no row
+	int nRow = 0;
+	for (int i = 1; i < kMaxClasses; i++)
 	{
-		g_pDrawPrim->SetTexture( m_hItemIcon[n] );
-		g_pDrawPrim->DrawPrim( &m_ItemPoly[n], 1 );
+		if (m_nWeaponCount[i] > 0)
+		{
+			bool abUnlocked[kMaxItemsPerClass];
+			bool abCorrupt[kMaxItemsPerClass];
+			bool abCompiled[kMaxItemsPerClass];
+			int nShots;
+			float fX = (float)(m_nScreenWidth - m_Margin.x + m_Spacing.x);
+			float fY = (float)(m_Size.y + m_Margin.y) + (m_Spacing.y + m_BoxSize.y) * nRow;
+			bool bAny = false;
+			for (int n = 0; n < m_nWeaponCount[i]; n++)
+			{
+				g_pTronPlayerStats->GetWeaponStatus(m_nWeaponID[i][n], &abUnlocked[n], &abCorrupt[n], &abCompiled[n], &nShots);
+				if (abUnlocked[n])
+				{
+					bAny = true;
+					fX -= (float)(m_BoxSize.x + m_Spacing.x);
+				}
+			}
+			int nX = (int)fX;
+			float fOffset = 0.0f;
+			bool bSelected = false;
+			for (n = 0; n < m_nWeaponCount[i]; n++)
+			{
+				g_pDrawPrim->SetXYWH(&m_BoxPoly[i][n], fOffset + fX, fY, 64.0f, 64.0f);
+				if ((m_nWeaponID[i][n] == m_nCurWeapon && m_eFadeState == 0) ||
+					(m_nWeaponID[i][n] == m_nSelWeapon && m_eFadeState == 2))
+				{
+					// the icon flies between the HUD weapon and its box
+					float x0 = m_pWeaponPrim->verts[0].x;
+					float y0 = m_pWeaponPrim->verts[0].y;
+					g_pDrawPrim->SetXYWH(&m_IconPoly[i][n],
+						(m_IconOffset.x + fOffset + fX - x0) * fAlpha + x0,
+						(m_IconOffset.y + fY - y0) * fAlpha + y0,
+						64.0f, 64.0f);
+					g_pDrawPrim->SetRGBA(&m_IconPoly[i][n], argbWhite);
+				}
+				else
+				{
+					g_pDrawPrim->SetRGBA(&m_IconPoly[i][n], SET_ARGB(nAlpha, 0xFF, 0xFF, 0xFF));
+					g_pDrawPrim->SetXYWH(&m_IconPoly[i][n], m_IconOffset.x + fOffset + fX, m_IconOffset.y + fY, 64.0f, 64.0f);
+				}
+				if (m_nWeaponID[i][n] == m_nSelWeapon)
+				{
+					int nWidth, nHeight;
+					m_pStr->GetDims(&nWidth, &nHeight);
+					m_pStr->SetPosition(nX - 10 - nWidth, (int)fY - nHeight + m_BoxSize.y);
+					bSelected = true;
+				}
+				if (abUnlocked[n])
+					fOffset += (float)(m_BoxSize.x + m_Spacing.x);
+			}
+			if (bAny)
+			{
+				HTEXTURE hTex = bSelected ? m_hClassNumberHi[i] : m_hClassNumber[i];
+				if (hTex)
+				{
+					g_pDrawPrim->SetTexture(hTex);
+					g_pDrawPrim->SetXYWH(&m_ClassPoly[i], fX - 32.0f, fY, 32.0f, 64.0f);
+					g_pDrawPrim->SetRGBA(&m_ClassPoly[i], SET_ARGB(nAlpha, 0xFF, 0xFF, 0xFF));
+					g_pDrawPrim->DrawPrim(&m_ClassPoly[i], 1);
+				}
+			}
+			for (n = 0; n < m_nWeaponCount[i]; n++)
+			{
+				bool bSel = (m_nWeaponID[i][n] == m_nSelWeapon);
+				if (abUnlocked[n])
+				{
+					g_pDrawPrim->SetRGBA(&m_BoxPoly[i][n], SET_ARGB(nAlpha, 0xFF, 0xFF, 0xFF));
+					HTEXTURE hTex = bSel ? m_hChooserTexHi : m_hChooserTex;
+					if (abCorrupt[n])
+						hTex = bSel ? m_hCorruptTexHi : m_hCorruptTex;
+					if (!abCompiled[n])
+						hTex = bSel ? m_hEmptyTexHi : m_hEmptyTex;
+					g_pDrawPrim->SetTexture(hTex);
+					g_pDrawPrim->DrawPrim(&m_BoxPoly[i][n], 1);
+					g_pDrawPrim->SetTexture(bSel ? m_hDisabledIcon[i][n] : m_hNormalIcon[i][n]);
+					g_pDrawPrim->DrawPrim(&m_IconPoly[i][n], 1);
+				}
+			}
+			m_pStr->SetColor((m_TextColor & 0x00FFFFFF) | (nAlpha << 24));
+			nRow++;
+		}
 	}
-
 	m_pStr->Render();
 }
 
-
+// RETAIL: 0x10023a00
 void CHUDWpnChooser::Update()
 {
 	m_bDraw = !!g_pInterfaceMgr->IsChoosingWeapon();
@@ -145,162 +328,81 @@ void CHUDWpnChooser::Update()
 		else
 			m_fScale = 1.0f;
 		uint8 h = (uint8)(m_fTextHeight * m_fScale);
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(h);
+		m_pStr->SetFont(pFont);
 		m_pStr->SetCharScreenHeight(h);
-
-		uint16 w = ((uint16)(m_nScreenWidth) / 2) - 20;
-		m_pStr->SetWrapWidth(w);
-
-
-		float cw = m_fScale * m_fIconHt;
-		float x = ((float)m_nScreenWidth - ((float)kMaxClasses * cw)) / 2.0f;
-		x += cw / 2.0f;
-		
-
-		for( uint8 i = 0; i < kMaxClasses; ++i )
-			m_fColumnXPos[i] = x + (float)i * cw;
-
 	}
 
 	uint8 nClass = g_pInterfaceMgr->GetWeaponChooser()->GetCurrentClass();
-	uint8 nWpn = g_pInterfaceMgr->GetWeaponChooser()->GetCurrentSelection();
+	m_nSelWeapon = g_pInterfaceMgr->GetWeaponChooser()->GetCurrentSelection();
 
 	if (nClass > 0)
 		m_nClass = nClass - 1;
 	else
 	{
-		m_nClass = g_pWeaponMgr->GetWeaponClass( nWpn ) - 1;
+		m_nClass = g_pWeaponMgr->GetWeaponClass( m_nSelWeapon ) - 1;
 	}
 
 	if (m_nClass >= kMaxClasses)
 	{
 		m_bDraw = LTFALSE;
-		g_pInterfaceMgr->GetWeaponChooser()->Close();
+		g_pInterfaceMgr->GetWeaponChooser()->Close(true);
 		return;
 	}
 
-	char szTmp[64] = "";
-	float fHeight = m_fIconHt * m_fScale;
-	sprintf(szTmp,"interface\\hud\\WpnClass%d.dtx",(m_nClass+1));
-	m_hClassIcon[m_nClass] = g_pInterfaceResMgr->GetTexture( szTmp );
-
-	uint32 tw,th;
-	g_pTexInterface->GetTextureDims(m_hClassIcon[m_nClass],tw,th);
-
-	float fBaseWidth = (float)tw * ( fHeight / (float)th );
-	float fBaseX = (float)m_fColumnXPos[m_nClass] - (fBaseWidth / 2.0f);
-
-	g_pDrawPrim->SetXYWH( &m_ClassPoly[m_nClass], fBaseX, 0.0f, fBaseWidth, fHeight );
-
-	float x = fBaseX;
-	for (uint8 n = m_nClass; n > 0; n--)
-	{
-		x -= fHeight;
-		g_pDrawPrim->SetXYWH( &m_ClassPoly[n-1], x, 0.0f, fHeight, fHeight );
-	}
-	x = fBaseX + fBaseWidth;
-	for (n = m_nClass+1; n < kMaxClasses; n++)
-	{
-		g_pDrawPrim->SetXYWH( &m_ClassPoly[n], x, 0.0f, fHeight, fHeight );
-		x += fHeight;
-	}
-
-	for (n = 0; n < kMaxClasses; n++)
-	{
-		if (n == m_nClass) continue;
-
-		bool bHasOne = false;
-		for (uint8 i = 0; i < kMaxItemsPerClass && !bHasOne; i++)
-		{
-			bHasOne = (g_pPlayerStats->HaveWeapon( m_nWeaponID[n][i] ) && g_pPlayerMgr->GetClientWeaponMgr()->CanChangeToWeapon(m_nWeaponID[n][i]));
-		}
-
-		if (bHasOne)
-			sprintf(szTmp,"interface\\hud\\WpnClass%dU.dtx",(n+1));
-		else
-			sprintf(szTmp,"interface\\hud\\WpnClass%dD.dtx",(n+1));
-		m_hClassIcon[n] = g_pInterfaceResMgr->GetTexture( szTmp );
-				
-	}
-
-
-
-	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( nWpn );
+	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( m_nSelWeapon );
 	if (pWeapon)
-		m_pStr->SetText(LoadTempString(pWeapon->nNameId));
+		m_pStr->SetText(LoadTempWString(pWeapon->nNameId));
 	else
-		m_pStr->SetText("");
-	
-
-	uint8 nSlot = 0;
-	float y = fHeight;
-	for (uint8 i = 0; i < kMaxItemsPerClass; i++)
-	{
-		m_hItemIcon[nSlot] = LTNULL;
-		if (g_pPlayerStats->HaveWeapon( m_nWeaponID[m_nClass][i] ))
-		{
-			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( m_nWeaponID[m_nClass][i] );
-			if (pWeapon)
-			{
-				std::string icon;
-
-				if (!g_pPlayerMgr->GetClientWeaponMgr()->CanChangeToWeapon(m_nWeaponID[m_nClass][i]))
-				{
-					icon = pWeapon->GetDisabledIcon();
-				}
-				else if (m_nWeaponID[m_nClass][i] == nWpn)
-				{
-					icon = pWeapon->GetNormalIcon();
-				}
-				else
-				{
-					icon = pWeapon->GetUnselectedIcon();
-				}
-				m_hItemIcon[nSlot] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
-
-				uint32 tw,th;
-				g_pTexInterface->GetTextureDims(m_hItemIcon[nSlot],tw,th);
-
-				float fWidth = (float)tw * ( fHeight / (float)th );
-				float x = (float)m_fColumnXPos[m_nClass] - (fWidth / 2.0f);
-
-				g_pDrawPrim->SetXYWH( &m_ItemPoly[nSlot], x, y, fWidth, fHeight );
-
-				if (m_nWeaponID[m_nClass][i] == nWpn)
-				{
-					if (m_nClass >= kMaxClasses / 2)
-					{
-						m_pStr->SetPosition(x-2.0f,y+2.0f);
-						m_pStr->SetAlignmentH(CUI_HALIGN_RIGHT);
-					}
-					else
-					{
-						m_pStr->SetPosition(x+fWidth+2.0f,y+2.0f);
-						m_pStr->SetAlignmentH(CUI_HALIGN_LEFT);
-					}
-				}
-
-
-				nSlot++;
-				y += fHeight;
-
-			}
-		}
-		
-	}
-		
+		m_pStr->SetText(std::wstring(L" "));
 }
 
+// RETAIL: 0x10023cc0
 void CHUDWpnChooser::UpdateLayout()
 {
 	int nCurrentLayout = GetConsoleInt("HUDLayout",0);
 
+	// RETAIL: the textures are read from HUDLayout0 whatever the layout
+	char szTex[256];
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserTex", szTex, sizeof(szTex));
+	m_hChooserTex = g_pInterfaceResMgr->GetTexture(szTex);
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserTexHi", szTex, sizeof(szTex));
+	m_hChooserTexHi = g_pInterfaceResMgr->GetTexture(szTex);
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserCorruptTex", szTex, sizeof(szTex));
+	m_hCorruptTex = g_pInterfaceResMgr->GetTexture(szTex);
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserCorruptTexHi", szTex, sizeof(szTex));
+	m_hCorruptTexHi = g_pInterfaceResMgr->GetTexture(szTex);
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserEmptyTex", szTex, sizeof(szTex));
+	m_hEmptyTex = g_pInterfaceResMgr->GetTexture(szTex);
+	g_pLayoutMgr->GetString("Hudlayout0", "ChooserEmptyTexHi", szTex, sizeof(szTex));
+	m_hEmptyTexHi = g_pInterfaceResMgr->GetTexture(szTex);
 
-	m_fIconHt = (float)g_pLayoutMgr->GetChooserIconHeight(nCurrentLayout,48);
 	m_TextColor = g_pLayoutMgr->GetChooserTextColor(nCurrentLayout,argbWhite);
 	m_fTextHeight = (float)g_pLayoutMgr->GetChooserTextSize(nCurrentLayout,20);
-	m_fTexScale = g_pLayoutMgr->GetChooserTextureScale(nCurrentLayout,0.75f);
 
+	for (int i = 0; i < kMaxClasses; i++)
+	{
+		char szAttr[128];
+		char szName[256];
+		sprintf(szAttr, "%s%d", "ClassNumber", i);
+		g_pLayoutMgr->GetString("Hudlayout0", szAttr, szName, sizeof(szName));
+		m_hClassNumber[i] = g_pInterfaceResMgr->GetTexture(szName);
+		sprintf(szAttr, "%s%d", "ClassNumberHi", i);
+		g_pLayoutMgr->GetString("Hudlayout0", szAttr, szName, sizeof(szName));
+		m_hClassNumberHi[i] = g_pInterfaceResMgr->GetTexture(szName);
 
+		g_pDrawPrim->SetRGBA(&m_ClassPoly[i], argbWhite);
+		g_pDrawPrim->SetUVWH(&m_ClassPoly[i], 0.0f, 0.0f, 1.0f, 1.0f);
+	}
+
+	m_BoxSize = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserBoxSize(nCurrentLayout);
+	m_Spacing = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserSpacing(nCurrentLayout);
+	m_IconOffset = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserIconOffset(nCurrentLayout);
+	m_Margin = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserMargin(nCurrentLayout);
+	m_Size.y = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserTitleHeight(nCurrentLayout);
+	m_Size.x = 3 * m_BoxSize.x + 2 * m_Spacing.x;
+	m_fIntroTime = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserIntroTime(nCurrentLayout);
+	m_fOutroTime = ((CTronLayoutMgr*)g_pLayoutMgr)->GetChooserOutroTime(nCurrentLayout);
 }
 
 

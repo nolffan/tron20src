@@ -51,6 +51,7 @@ public:
     void        UpdateLayout();
 
 private:
+	friend class CHUDSubChooser;	// RETAIL: its Arrange reads the item's place
 	float		m_fScale;				// +0x10
 	float		m_fLayoutScale;			// +0x14
 	bool		m_bHavePiece[8];		// +0x18

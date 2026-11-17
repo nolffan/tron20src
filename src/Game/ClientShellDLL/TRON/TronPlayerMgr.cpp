@@ -19,6 +19,7 @@
 #include "CMoveMgr.h"
 #include "ClientWeaponMgr.h"
 #include "InterfaceMgr.h"
+#include "TronInterfaceMgr.h"
 #include "RatingMgr.h"
 #include "ClientRes.h"
 #include "GameClientShell.h"
@@ -1572,15 +1573,14 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtualA0
 //
-//	PURPOSE:	RETAIL: retail 0x100a7650 (slot 0xa0). PORT: retail returns a
-//				member of Tron's interface manager (+0x28af0), not yet in
-//				ours
+//	PURPOSE:	RETAIL: retail 0x100a7650 (slot 0xa0): a member of Tron's
+//				interface manager (+0x28af0)
 //
 // ----------------------------------------------------------------------- //
 
 int CTronPlayerMgr::TronUnknownVirtualA0()
 {
-	return 0;
+	return ((CTronInterfaceMgr*)g_pInterfaceMgr)->GetTronUnknown28AF0();
 }
 
 // ----------------------------------------------------------------------- //

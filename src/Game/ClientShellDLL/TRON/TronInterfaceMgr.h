@@ -17,6 +17,7 @@
 #include "LightCycleGameDataMgr.h"
 #include "InterfaceMgr.h"
 #include "TRONHUDMgr.h"
+#include "TronWeaponChooser.h"
 #include "TRONScreenMgr.h"
 #include "TRONPlayerStats.h"
 #include "SubroutineMgr.h"
@@ -152,6 +153,8 @@ public:
 	// (CHUDArmor::Render, 0x10022098)
 	bool			GetTronUnknown28AE8() {return m_bTronUnknown28AE8;}
 	bool			GetTronUnknown28B14() {return m_bTronUnknown28B14;}
+	// RETAIL: CTronPlayerMgr slot 0xa0 (0x100a7650) returns it
+	uint32			GetTronUnknown28AF0() {return m_nTronUnknown28AF0;}
 
 	// RETAIL: +0x28b18, the id of the string CHUDSingleString shows (set
 	// from server messages, 0x1009d805..; the name is ours)
@@ -196,16 +199,12 @@ private:
 	// (0x1009ce40). The pads stand in for the difference between retail's
 	// sizes of our member classes and ours (checked in the constructor);
 	// they go when those classes are fixed.
-	CTronHUDMgr			m_HUD;					// +0x10108 Heads-Up Display
-	char				m_aTronPadHUD[0x11eec - sizeof(CTronHUDMgr)];
+	CTronHUDMgr			m_HUD;					// +0x10108 Heads-Up Display (0x11eec bytes)
 	CTronScreenMgr		m_ScreenMgr;			// +0x21ff4
 	CTronPlayerStats	m_stats;				// +0x2206c Player statistics (health, ammo, armor, etc.)
 	CSubroutineMgr		m_SubroutineMgr;		// +0x24474
 	CTronLayoutMgr		m_TronLayoutMgr;		// +0x25620, same as g_pLayoutMgr
-	// PORT: retail's is a CTronWeaponChooser (0x118 bytes, vtable
-	// 0x101e95b0; not yet written)
-	CWeaponChooser		m_WeaponChooser;		// +0x26790
-	char				m_aTronPadWeaponChooser[0x118 - sizeof(CWeaponChooser)];
+	CTronWeaponChooser	m_WeaponChooser;		// +0x26790 (0x118 bytes)
 	CServerOptionMgr	m_ServerOptionMgr;		// +0x268a8 same as g_pServerOptionMgr
 	CLightCycleGameDataMgr	m_LightCycleGameDataMgr;	// +0x279c4 same as g_pLightCycleGameDataMgr
 	CScreenSprite*		m_pTurnArrowLeft;		// +0x28ae0 "Interface\Spr\TurnArrowLeft.spr"
