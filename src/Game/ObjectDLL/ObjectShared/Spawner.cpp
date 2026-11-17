@@ -12,6 +12,7 @@
 
 #include "stdafx.h"
 #include "Spawner.h"
+#include "GameServerShell.h"
 #include "iltserver.h"
 #include "MsgIds.h"
 #include "SoundMgr.h"
@@ -317,6 +318,13 @@ uint32 Spawner::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 	{
 		case MID_PRECREATE:
 		{
+			// RETAIL: no spawners in a multiplayer light cycle game
+			// (0x1014d53d)
+			if (IsMultiplayerGame() && g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+			{
+				return 0;
+			}
+
 			if (fData == PRECREATE_WORLDFILE)
 			{
 				ReadProp((ObjectCreateStruct*)pData);
@@ -424,6 +432,12 @@ LTBOOL Spawner::PostPropRead( ObjectCreateStruct *pStruct )
 
 bool Spawner::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
+	// RETAIL: no spawning in a multiplayer light cycle game (0x1014d8c9)
+	if (IsMultiplayerGame() && g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		return false;
+	}
+
 	static CParsedMsg::CToken s_cTok_Spawn("spawn");
 	static CParsedMsg::CToken s_cTok_SpawnFrom("spawnfrom");
 	static CParsedMsg::CToken s_cTok_Default("default");
