@@ -26,8 +26,8 @@ struct ChoiceData
     ChoiceData()
 	{
 		nStringID	= 0;
-		hstrString	= LTNULL;
         hstrCmd     = LTNULL;
+		hstrString	= LTNULL;	// RETAIL: set last (0x100c0ae0)
 	}
 
     virtual ~ChoiceData()

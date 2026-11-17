@@ -215,10 +215,12 @@ void CClusterDisc::CreateExplosion()
 
 void CClusterDisc::PlayBurstFX()
 {
-	// RETAIL: the cluster modifier's FX name is at 0x108
-	char *szFX = reinterpret_cast< char* >( m_ModifierData.m1.fTronUnknown );
-	if ( m_aModifiers[ 1 ].bEnabled && szFX )
+	// RETAIL: the cluster modifier's FX name is at 0x108; its address is
+	// taken after the enabled test (0x10035dd1)
+	if ( m_aModifiers[ 1 ].bEnabled && reinterpret_cast< char* >( m_ModifierData.m1.fTronUnknown ) )
 	{
+		char *szFX = reinterpret_cast< char* >( m_ModifierData.m1.fTronUnknown );
+
 		LTVector vPos;
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );
 

@@ -1521,26 +1521,11 @@ void AINodeUseObject::Load(ILTMessage_Read *pMsg)
 */
 
 	// Cache all the models used by this smartobject.
+	// RETAIL: Tron removes the child models that cannot be cached with
+	// remove_if, as in Init (0x100a48f3), without NOLF2's null check and
+	// assert.
 	AIGBM_SmartObjectTemplate *pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(m_nSmartObjectID);
-	if( pSmartObject )
-	{
-		AIGBM_SmartObjectTemplate::AIChldMdlInfoItr itr, hold_itr ;
-
-		// go through the requested childmodels. If some of them cannot be loaded
-		// then remove them from the list.
-		for( itr = pSmartObject->addchildmodels.begin() ;
-			 itr != pSmartObject->addchildmodels.end() ;)
-		{
-			hold_itr = itr ;
-			itr++;
-			AIChildModelInfo& aiChildModelInfo = *hold_itr;
-			if(g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK )
-			{
-				pSmartObject->addchildmodels.erase(hold_itr);
-				AIASSERT2(0, m_hObject, "SmartObject %s Could not load file %s ", pSmartObject->szName, aiChildModelInfo.sFilename.c_str( ));
-			}
-		}
-	}
+	pSmartObject->addchildmodels.remove_if( FailedToCacheChildModel );
 }
 
 // ------------------------------------------------------------------------
