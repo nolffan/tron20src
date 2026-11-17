@@ -71,7 +71,7 @@ END_CLASS_DEFAULT_FLAGS_PLUGIN(CScanner, PropType, NULL, NULL, CF_HIDDEN, CScann
 //
 
 CMDMGR_BEGIN_REGISTER_CLASS( CScanner )
-CMDMGR_END_REGISTER_CLASS( CScanner, Prop )
+CMDMGR_END_REGISTER_CLASS( CScanner, PropType )	// RETAIL: PropType (0x100eccd9)
 
 // ----------------------------------------------------------------------- //
 //
@@ -303,6 +303,8 @@ const RelationSet& CScanner::GetRelationSet() const
 
 uint32 CScanner::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 {
+	// RETAIL: 0x100ed3e0 sets up the relations only when it is not a
+	// saved game
 	switch (messageID)
 	{
 		case MID_PRECREATE:
@@ -323,9 +325,8 @@ uint32 CScanner::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		{
 			if (fData != INITIALUPDATE_SAVEGAME)
 			{
+				InitRelationInformation();
 			}
-
-			InitRelationInformation();
 		}
 		break;
 
