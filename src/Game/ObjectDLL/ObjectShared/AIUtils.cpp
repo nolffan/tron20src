@@ -1,6 +1,9 @@
 // (c) 1997-2000 Monolith Productions, Inc.  All Rights Reserved
 
 #include "StdAfx.h"
+// RETAIL: Tron's TU sets up PlayerShared.h's camera offsets first (its
+// static initializers at 0x10186800, 0x10186830)
+#include "PlayerShared.h"
 #include "AIUtils.h"
 #include "AI.h"
 #include "ServerUtilities.h"

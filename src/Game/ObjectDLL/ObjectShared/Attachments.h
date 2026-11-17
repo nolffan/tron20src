@@ -186,6 +186,11 @@ class CAttachmentObject : public CAttachment
 		LTBOOL HandleProjectileImpact(CProjectile* pProjectile, CAttachmentPosition* pAttachmentPosition, IntersectInfo& iInfo, 
 									  const LTVector& vDir, const LTVector& vFrom, ModelSkeleton eModelSkeleton, ModelNode eModelNode);
 
+		// Engine stuff
+
+		// RETAIL: Tron's (0x1018c700, its vtable's slot 0x1c)
+		uint32 ObjectMessageFn(LPBASECLASS pObject, HOBJECT hSender, ILTMessage_Read *pMsg);
+
 		// Simple accessors
 
 		AttachmentType GetType() { return ATTACHMENT_TYPE_OBJECT; }
@@ -320,6 +325,10 @@ class CAttachments : public IAggregate
 		// This will remove all attachments associated with the model and reattach them.  Useful when switching filenames on a character.
 		virtual void RemoveAndRecreateAttachments();
 		
+		// RETAIL: Tron's (0x10187fa0; the name is ours): colors every
+		// attachment's model
+		void SetObjectColor( float r, float g, float b, float a );
+
 		// Detach all the attachments of specified type...
 	// RETAIL: not virtual in Tron (its vtables; build 51 has no DetachAttachmentsOfType: NOLF2's
 	// later code, standing in)
