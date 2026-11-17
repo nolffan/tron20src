@@ -14,6 +14,8 @@ static char s_aAttName[100];
 // Defines
 
 #define	ABM_ATTACHMENT						"Attachment"
+// RETAIL: Tron's (Object.lto 0x1015711f; the name of the define is ours)
+#define	ABM_ATTACHMENT_HIDDEN_IN_DEDIT_TO_AI_WEAPON_LIST	"HiddenInDEditToAIWeaponList"
 #define	ABM_ATTACHMENT_NAME					"Name"
 #define	ABM_ATTACHMENT_PROPERTIES			"Properties"
 #define	ABM_ATTACHMENT_TYPE					"Type"
@@ -152,7 +154,8 @@ int CAttachButeMgr::GetAttachmentIDByName(const char *szName)
 	{
 		char szTestName[128];
 		GetAttachmentName(iAttachmentID,szTestName,sizeof(szTestName));
-		if ( strcmp(szName,szTestName) == 0 )
+		// RETAIL: Tron's compares without case (_strcmpi: CShell 0x1017c92d)
+		if ( stricmp(szName,szTestName) == 0 )
 		{
 			return iAttachmentID;
 		}
@@ -383,6 +386,17 @@ void CAttachButeMgr::GetAttachmentDebrisType( int nAttachmentID, char *pBuf, uin
 	m_buteMgr.GetString(s_aTagName, ABM_ATTACHMENT_DEBRIS_TYPE, "", pBuf, nBufLen);	
 }
 
+#ifndef _CLIENTBUILD
+// RETAIL: Tron's (Object.lto 0x101570f0; the name is ours): whether DEdit's
+// list of AI weapons leaves the attachment out
+uint8 CAttachButeMgr::GetAttachmentHiddenInDEditToAIWeaponList( int nAttachmentID )
+{
+	if (nAttachmentID < 0 || nAttachmentID > m_cAttachmentID) return false;
+	sprintf(s_aTagName, "%s%d", ABM_ATTACHMENT, nAttachmentID);
+	return m_buteMgr.GetByte( s_aTagName, ABM_ATTACHMENT_HIDDEN_IN_DEDIT_TO_AI_WEAPON_LIST );
+}
+#endif // _CLIENTBUILD
+
 
 ////////////////////////////////////////////////////
 // PlayerView Attachments
@@ -395,7 +409,7 @@ int CAttachButeMgr::GetPVAttachmentIDByName( const char *szName )
 		char szTestName[128] = {0};
 		GetPVAttachmentName( i, szTestName, ARRAY_LEN( szTestName ));
 		
-		if( strcmp( szName, szTestName ) == 0 )
+		if( stricmp( szName, szTestName ) == 0 )
 		{
 			return i;
 		}

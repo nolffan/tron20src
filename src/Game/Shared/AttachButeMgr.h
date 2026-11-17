@@ -37,6 +37,9 @@ class CAttachButeMgr : public CGameButeMgr
 		bool		GetAttachmentTranslcuent(int nAttachmentID);
 		bool		GetAttachmentDetachWhenShot( int nAttachmentID );
 		void		GetAttachmentDebrisType( int nAttachmentID, char *pBuf, uint32 nBufLen );
+#ifndef _CLIENTBUILD
+		uint8		GetAttachmentHiddenInDEditToAIWeaponList( int nAttachmentID );	// RETAIL: Tron's (Object.lto 0x101570f0)
+#endif
 
 		void		GetAttachmentSkins(int nAttachmentID, CButeListReader* pSkinReader);
 		void		CopyAttachmentSkins(int nAttachmentID, char* paszDest, int strLen);

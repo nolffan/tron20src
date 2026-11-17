@@ -115,6 +115,19 @@ LTBOOL CGameButeMgr::Parse(const char* sButeFile)
 			bRet = m_buteMgr.Parse(m_strAttributeFile);
 		}
 
+		// RETAIL: Tron's tells the user (CShell 0x100f3178, Object.lto
+		// 0x100e5b56)
+		if (!bRet)
+		{
+			std::string sMsg;
+			sMsg = "Failed to parse file: ";
+			sMsg += sButeFile;
+
+			HWND hWnd = FindWindow(NULL, "LithTech");
+			ShowWindow(hWnd, SW_MINIMIZE);
+			MessageBox(hWnd, sMsg.c_str(), "Bute Error", MB_OK);
+		}
+
 		return bRet;
 	}
 
