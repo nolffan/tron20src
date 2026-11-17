@@ -83,7 +83,7 @@ class ArchiveBin : public GameBase
 		bool						m_bFirstUpdate;
 		float						m_fRadius;				// The decision window's radius
 		bool						m_bStartCompressed;
-		bool						m_bTronUnknown171;		// From the model's bute (ReadProp, retail 0x1000e04d)
+		uint8						m_bTronUnknown171;		// The model template's render group (ReadProp, retail 0x1000e04d)
 		BerryRef					m_aBerries[AB_MAX_BERRIES];
 		LTObjRef					m_hTronUnknown3a4;
 		HSTRING						m_hstrLoopSound;		// A looping sound from the model's keys

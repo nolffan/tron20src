@@ -33,6 +33,7 @@
 #include "MusicMgr.h"
 #include "PlayerTracker.h"
 #include "IObjectRelationMgrUser.h"
+#include "../TRON/ArchiveItem.h"
 
 LINKTO_MODULE( Character );
 
@@ -129,20 +130,6 @@ enum CharacterDeath { CD_NORMAL=0, CD_GIB, CD_FREEZE, CD_VAPORIZE, CD_BURST };
 class CPRodFireHelper;
 class CEnergyClawFireHelper;
 
-// RETAIL: Tron's: three of these in CCharacter at +0xc6c, 0x2c bytes each
-// (its element constructor retail 0x1000d6c0; saved in CCharacter::Save as a
-// char, a string, two chars, a string, a byte and a float). Not yet named.
-struct TronCharacterUnknownC6C
-{
-	char		m_c00;
-	std::string	m_s04;
-	char		m_c10;
-	uint8		m_aPad11[3];	// (retail's next char is at +0x14)
-	char		m_c14;
-	std::string	m_s18;
-	uint8		m_n24;
-	LTFLOAT		m_f28;
-};
 
 // RETAIL: IObjectRelationMgrUser is Tron's third interface (IObjectRelationMgrUser.h)
 class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerReceiver, public IObjectRelationMgrUser
@@ -180,6 +167,11 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		bool HasZzz() const;
 		void CreateZzz();
 		void DestroyZzz();
+
+		// RETAIL: Tron's listen icon (0x1008dba0..0x1008ddc0; the names are ours)
+		void CreateListenIcon();
+		void DestroyListenIcon();
+		bool HasListenIcon() const;
 
 		LTBOOL IsArmored() { return m_bArmored; }
 		virtual void CreateArmor();
@@ -543,7 +535,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		CHARCREATESTRUCT*	m_pcs;							// Our character specialfx struct
 
 		SurfaceType			m_eStandingOnSurface;			// What surface we're currently standing on.
-		bool				m_bTronUnknown4C;				// RETAIL: Tron's (true at first; saved after the next two)
+		bool				m_bTronUnknown4C;				// RETAIL: Tron's "CreateCoreDump" property (true at first; saved after the next two)
         bool				m_bMakeBody;					// Make body when dead.
 		bool				m_bPermanentBody;				// Dead body is permanent.
         LTBOOL				m_bMoveToFloor;					// Move character to floor
@@ -714,7 +706,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// left null here. Names ours where not said otherwise.
 		CPRodFireHelper*		m_pPRodFireHelper;
 		CEnergyClawFireHelper*	m_pEnergyClawFireHelper;
-		TronCharacterUnknownC6C	m_aTronUnknownC6C[3];
+		ArchiveItem			m_aCoreDumpItems[3];	// RETAIL: the core dump's items (ReadProp, 0x1008ac40)
 		HOBJECT				m_hTronUnknownCF0;		// saved with WriteObject
 		uint32				m_nCarrying;			// saved as a byte (NOLF2's)
 		uint32				m_nTronUnknownCF8;		// saved, not initialized

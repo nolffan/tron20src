@@ -649,19 +649,231 @@ void ArchiveBin::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	}
 }
 
-// PORT: not written yet from retail; it stands in so the class links
-
 // RETAIL: 0x1000de10 (with 0x1000ed46): reads the model template, the
-// permission sets, the flags and the six items' properties
+// permission sets, the flags and the six items' properties, one property
+// at a time
 LTBOOL ArchiveBin::ReadProp(ObjectCreateStruct *pStruct)
 {
+	ArchiveItem itemUnused;		// RETAIL: an item that the function does not use
+	GenericProp genProp;
+
 	if (!pStruct) return LTFALSE;
+	if (!g_pModelButeMgr) return LTFALSE;
+
+	if (g_pLTServer->GetPropGeneric(s_szModelTemplateProp, &genProp) == LT_OK && genProp.m_String[0])
+	{
+		ModelId eModelId = g_pModelButeMgr->GetModelId(genProp.m_String);
+		if (eModelId < g_pModelButeMgr->GetNumModels())
+		{
+			SAFE_STRCPY(pStruct->m_Filename, g_pModelButeMgr->GetMultiModelFilename(eModelId));
+			g_pModelButeMgr->CopySkinFilenames(eModelId, 0, pStruct->m_SkinNames[0], ARRAY_LEN(pStruct->m_SkinNames[0]));
+			g_pModelButeMgr->CopyRenderStyleFilenames(eModelId, pStruct);
+
+			m_bTronUnknown171 = pStruct->m_nRenderGroup;
+
+			if (g_pModelButeMgr->IsModelTranslucent(eModelId))
+			{
+				pStruct->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
+			}
+		}
+	}
+
+	pStruct->m_Flags |= FLAG_MODELKEYS | FLAG_SOLID | FLAG_RAYHIT;
 
 	HANDLE_READ_PSETS_PROPS(m_nPSets);
 
+	if (g_pLTServer->GetPropGeneric("MoveToFloor", &genProp) == LT_OK)
+	{
+		m_bMoveToFloor = genProp.m_Bool;
+	}
+
+	if (g_pLTServer->GetPropGeneric("Radius", &genProp) == LT_OK)
+	{
+		m_fRadius = genProp.m_Float;
+	}
+
+	if (g_pLTServer->GetPropGeneric("StartCompressed", &genProp) == LT_OK)
+	{
+		m_bStartCompressed = genProp.m_Bool;
+	}
+
+	// RETAIL BUG: the buffer is 32 bytes, but the calls below let _snprintf
+	// write up to 100 (docs/RETAIL_BUGS.md, as CCharacter::ReadProp)
+#ifdef TRON20SRC_MODERN
+	char szProp[100];
+#else
+	char szProp[32];
+#endif
+	int i;
+	uint32 nNoneLen = strlen("<none>");
+	uint8 j;
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		_snprintf(szProp, 100, "%s%d", "Type", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0])
+		{
+			for (j = 0; j < s_nNumArchiveItemTypes; j++)
+			{
+				if (!strcmp(genProp.m_String, s_aszArchiveItemTypes[j]))
+					m_aItems[i].m_eType = j;
+			}
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Subroutine) continue;
+
+		_snprintf(szProp, 100, "%s%d", "SubroutineName", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Subroutine) continue;
+
+		_snprintf(szProp, 100, "%s%d", "SubroutineBuild", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			for (j = 0; j < s_nNumArchiveItemBuilds; j++)
+			{
+				if (!strcmp(genProp.m_String, s_aszArchiveItemBuilds[j]))
+					m_aItems[i].m_eBuild = j;
+			}
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Subroutine) continue;
+
+		_snprintf(szProp, 100, "%s%d", "SubroutineCondition", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			for (j = 0; j < s_nNumArchiveItemConditions; j++)
+			{
+				if (!strcmp(genProp.m_String, s_aszArchiveItemConditions[j]))
+					m_aItems[i].m_eCondition = j;
+			}
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Procedural) continue;
+
+		_snprintf(szProp, 100, "%s%d", "ProceduralName", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Primitive) continue;
+
+		_snprintf(szProp, 100, "%s%d", "PrimitiveName", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_PermissionSet) continue;
+
+		_snprintf(szProp, 100, "%s%d", "PSetNumber", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK)
+		{
+			m_aItems[i].m_nPSet = (uint8)genProp.m_Long;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Email) continue;
+
+		_snprintf(szProp, 100, "%s%d", "EmailName", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_HelpFile) continue;
+
+		_snprintf(szProp, 100, "%s%d", "HelpFile", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Custom) continue;
+
+		_snprintf(szProp, 100, "%s%d", "CustomCmdName", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0] &&
+			strncmp(genProp.m_String, "<none>", nNoneLen))
+		{
+			m_aItems[i].m_sName = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (m_aItems[i].m_eType != kAIT_Custom) continue;
+
+		_snprintf(szProp, 100, "%s%d", "CustomCmd", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK && genProp.m_String[0])
+		{
+			m_aItems[i].m_sCommand = genProp.m_String;
+		}
+	}
+
+	for (i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		_snprintf(szProp, 100, "%s%d", "Cost", i + 1);
+		if (g_pLTServer->GetPropGeneric(szProp, &genProp) == LT_OK)
+		{
+			m_aItems[i].m_fCost = genProp.m_Float;
+		}
+	}
+
 	m_lstOnWithdraw.resize(AB_MAX_ITEMS);
+
+	for (uint8 iCmd = 0; iCmd < AB_MAX_ITEMS; iCmd++)
+	{
+		_snprintf(szProp, 100, "%s%d", "OnWithdraw", iCmd + 1);
+		m_lstOnWithdraw.at(iCmd).ReadProp(pStruct, szProp);
+	}
+
+	if (!GetNumItems())
+	{
+		g_pLTServer->CPrint("%s : Archive bin is empty on initial update.", pStruct->m_Name);
+	}
+
 	m_OnUseCommand.ReadProp(pStruct, "OnUseCmd");
 	m_InvalidPSetCommand.ReadProp(pStruct, "InvalidPSetCommand");
+
+	m_ActivateTypeHandler.SetActivateType("Open Archivebin");
+	m_ActivateTypeHandler.SetState(ACTIVATETYPE::eOn, true, LTNULL);
 
 	return LTTRUE;
 }

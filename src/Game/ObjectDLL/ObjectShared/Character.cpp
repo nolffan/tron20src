@@ -350,11 +350,15 @@ int32 CCharacter::sm_cAISnds = 0;
 
 static bool DamageFilterHook( GameBase *pObject, DamageStruct *pDamageStruct )
 {
-	// cast to a game base object
-	CCharacter *pMyObj = dynamic_cast< CCharacter* >( pObject );
+	// RETAIL: 0x1008a150 has no dynamic_cast; a null object lets the damage through.
+	CCharacter *pMyObj = static_cast< CCharacter* >( pObject );
+	if( pMyObj )
+	{
+		// call the most derived class
+		return pMyObj->FilterDamage( pDamageStruct );
+	}
 
-	// call the most derived class
-	return pMyObj->FilterDamage( pDamageStruct );
+	return true;
 }
 
 
@@ -887,6 +891,10 @@ LTBOOL CCharacter::ReadProp(ObjectCreateStruct *pStruct)
 	{
 		m_bPermanentBody = genProp.m_Bool;
 	}
+	if ( g_pLTServer->GetPropGeneric( "CreateCoreDump", &genProp ) == LT_OK )
+	{
+		m_bTronUnknown4C = genProp.m_Bool;	// RETAIL: Tron's
+	}
 	if ( g_pLTServer->GetPropGeneric( "BodyLifetime", &genProp ) == LT_OK )
 	{
 		m_fBodyLifetime = genProp.m_Float;
@@ -952,7 +960,118 @@ LTBOOL CCharacter::ReadProp(ObjectCreateStruct *pStruct)
 		}
 	}
 
-	// RETAIL: no general inventory in Tron (above)
+	// RETAIL: no general inventory in Tron (above); the core dump's three
+	// items instead (0x1008aef7..), one property at a time
+	// RETAIL BUG: the buffer is 32 bytes, but the calls below let _snprintf
+	// write up to 100 (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	char szProp[100];
+#else
+	char szProp[32];
+#endif
+	int iItem;
+	uint32 nNoneLen = strlen( "<none>" );
+	uint8 j;
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "Type", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] )
+		{
+			for( j = 0; j < s_nNumArchiveItemTypes; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemTypes[j] ))
+					m_aCoreDumpItems[iItem].m_eType = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineBuild", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			for( j = 0; j < s_nNumArchiveItemBuilds; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemBuilds[j] ))
+					m_aCoreDumpItems[iItem].m_eBuild = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineCondition", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			for( j = 0; j < s_nNumArchiveItemConditions; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemConditions[j] ))
+					m_aCoreDumpItems[iItem].m_eCondition = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "ProceduralName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "PSetNumber", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK )
+		{
+			m_aCoreDumpItems[iItem].m_nPSet = (uint8)genProp.m_Long;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "PrimitiveName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "EmailName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "HelpFile", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
 
     return LTTRUE;
 }
@@ -1809,6 +1928,54 @@ void CCharacter::DestroyZzz()
 bool CCharacter::HasZzz() const
 {
 	return !!(m_byFXFlags & CHARCREATESTRUCT::eZzz);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::*ListenIcon()
+//
+//	PURPOSE:	Creates/Destroys the listen icon sfx on client
+//
+//	RETAIL: Tron's (0x1008dba0, 0x1008dcb0, 0x1008ddc0; the names are ours,
+//	from CAIHuman's "LISTENICON" command, 0x1016e1f2). Tron's CharacterFX
+//	message numbers for the icon are 33 and 34.
+//
+// ----------------------------------------------------------------------- //
+
+#define CFX_TRON_LISTENICON_CREATE_MSG	33	// RETAIL: 0x1008dc29; the name is ours
+#define CFX_TRON_LISTENICON_DESTROY_MSG	34	// RETAIL: 0x1008dd39; the name is ours
+
+void CCharacter::CreateListenIcon()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SFX_MESSAGE);
+	cMsg.Writeuint8(SFX_CHARACTER_ID);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writeuint8(CFX_TRON_LISTENICON_CREATE_MSG);
+	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+
+	m_byFXFlags |= CHARCREATESTRUCT::eTronTalkIcon;
+
+	CreateSpecialFX();
+}
+
+void CCharacter::DestroyListenIcon()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SFX_MESSAGE);
+	cMsg.Writeuint8(SFX_CHARACTER_ID);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writeuint8(CFX_TRON_LISTENICON_DESTROY_MSG);
+	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+
+	m_byFXFlags &= ~CHARCREATESTRUCT::eTronTalkIcon;
+
+	CreateSpecialFX();
+}
+
+bool CCharacter::HasListenIcon() const
+{
+	return !!(m_byFXFlags & CHARCREATESTRUCT::eTronTalkIcon);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4103,14 +4270,14 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
-		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
-		pMsg->Writeint8( u.m_c00 );
-		SAVE_CHARSTRING( u.m_s04.c_str() );
-		pMsg->Writeint8( u.m_c10 );
-		pMsg->Writeint8( u.m_c14 );
-		SAVE_CHARSTRING( u.m_s18.c_str() );
-		SAVE_BYTE( u.m_n24 );
-		SAVE_FLOAT( u.m_f28 );
+		ArchiveItem& u = m_aCoreDumpItems[iUnknown];
+		pMsg->Writeint8( u.m_eType );
+		SAVE_CHARSTRING( u.m_sName.c_str() );
+		pMsg->Writeint8( u.m_eBuild );
+		pMsg->Writeint8( u.m_eCondition );
+		SAVE_CHARSTRING( u.m_sCommand.c_str() );
+		SAVE_BYTE( u.m_nPSet );
+		SAVE_FLOAT( u.m_fCost );
 	}
 
 	SAVE_bool( m_bTracking );
@@ -4242,16 +4409,16 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	char szUnknown[256];
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
-		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
-		u.m_c00 = pMsg->Readint8();
+		ArchiveItem& u = m_aCoreDumpItems[iUnknown];
+		u.m_eType = pMsg->Readint8();
 		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
-		u.m_s04 = szUnknown;
-		u.m_c10 = pMsg->Readint8();
-		u.m_c14 = pMsg->Readint8();
+		u.m_sName = szUnknown;
+		u.m_eBuild = pMsg->Readint8();
+		u.m_eCondition = pMsg->Readint8();
 		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
-		u.m_s18 = szUnknown;
-		LOAD_BYTE( u.m_n24 );
-		LOAD_FLOAT( u.m_f28 );
+		u.m_sCommand = szUnknown;
+		LOAD_BYTE( u.m_nPSet );
+		LOAD_FLOAT( u.m_fCost );
 	}
 
 	LOAD_bool( m_bTracking );

@@ -714,7 +714,7 @@ void CTronGameServerShell::LoadLevelInfo()
 	sprintf(szFile, "%s%s", (const char*)m_sWorld, "info.txt");
 	if (!m_MultiplayerLevelInfoMgr.Init(szFile))
 	{
-		g_pLTServer->CPrint("ERROR - Could not initialize multiplayer level info file: %s!", szFile);
+		g_pLTServer->CPrint("ERROR - Could not initialize multiplayer level info file: %s!\n", szFile);
 	}
 }
 
@@ -1130,7 +1130,7 @@ bool CTronGameServerShell::DropInventoryObject(CCharacter* pCharacter)
 
 	// RETAIL: CCharacter's three items at +0xc6c are ArchiveItems (their type
 	// first, -1 for none; CoreDump::SetItems takes them)
-	ArchiveItem* aItems = (ArchiveItem*)pCharacter->m_aTronUnknownC6C;
+	ArchiveItem* aItems = pCharacter->m_aCoreDumpItems;
 
 	int nItems = 0;
 	for (int i = 0; i < 3; i++)
