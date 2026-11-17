@@ -1940,6 +1940,22 @@ Done:
 	m_bTronUnknown70 = bPlayerAhead;
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AILightCycle::AddTurn
+//
+//	PURPOSE:	Remembers a turn (the last four). RETAIL: 0x10006e40
+//
+// ----------------------------------------------------------------------- //
+void AILightCycle::AddTurn(uint32 nTurn)
+{
+	m_anTurns[3] = m_anTurns[2];
+	m_anTurns[2] = m_anTurns[1];
+	m_anTurns[1] = m_anTurns[0];
+	m_anTurns[0] = nTurn;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	AILightCycle::Update

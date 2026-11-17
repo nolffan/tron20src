@@ -243,7 +243,7 @@ void CClusterDisc::Save( ILTMessage_Write *pMsg, uint32 dwSaveFlags )
 {
 	if ( !pMsg ) return;
 
-	SAVE_TIME( m_fFireTime );
+	SAVE_FLOAT( m_fFireTime - g_pLTServer->GetTime() );
 	SAVE_TIME( m_fTronUnknownA30 );
 	SAVE_FLOAT( m_fExplosionSuppressTime );
 	SAVE_bool( m_bTronUnknownA34 );

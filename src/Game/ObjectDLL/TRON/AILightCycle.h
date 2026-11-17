@@ -267,14 +267,9 @@ class AILightCycle : public LightCycle
 		// The rotation of m_nDirection (AILightCycle.cpp's table)
 		inline const LTRotation & GetDirectionRotation();
 
-		// Remembers a turn (the last four). RETAIL: 0x10006e40
-		void	AddTurn(uint32 nTurn)
-		{
-			m_anTurns[3] = m_anTurns[2];
-			m_anTurns[2] = m_anTurns[1];
-			m_anTurns[1] = m_anTurns[0];
-			m_anTurns[0] = nTurn;
-		}
+		// Remembers a turn (the last four). RETAIL: 0x10006e40 (out of
+		// line, after UpdateAI)
+		void	AddTurn(uint32 nTurn);
 
 		// RETAIL: 0x10003cf0
 		bool	IsToLeft(LTVector vPos);

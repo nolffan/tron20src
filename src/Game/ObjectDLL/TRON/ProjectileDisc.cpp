@@ -765,7 +765,7 @@ void CDisc::Save( ILTMessage_Write *pMsg, uint32 dwSaveFlags )
 	SAVE_FLOAT( m_fLostTargetFlightTime );
 	SAVE_bool( m_bSentReturnedMsg );
 	SAVE_bool( m_bBlockable );
-	SAVE_TIME( m_fDeflectStartTime );
+	SAVE_FLOAT( m_fDeflectStartTime - g_pLTServer->GetTime() );
 	SAVE_TIME( m_fDeflectEndTime );
 	SAVE_FLOAT( m_fTronUnknown990 );
 	SAVE_bool( m_bTronUnknown998 );
@@ -852,11 +852,11 @@ void CDisc::Load( ILTMessage_Read *pMsg, uint32 dwLoadFlags )
 	LOAD_FLOAT( m_fMagneticAngleMax );
 	LOAD_BYTE( m_nDiscAmmoId );
 	LOAD_bool( m_bTronUnknown9F9 );
-	pMsg->ReadType( &m_vTronUnknown9FC );
+	LOAD_VECTOR( m_vTronUnknown9FC );
 	LOAD_HOBJECT( m_hLastTouched );
 	LOAD_FLOAT( m_fTronUnknownA0C );
 	LOAD_FLOAT( m_fMultiplayerLeashLength );
-	pMsg->ReadType( &m_vTronUnknownA14 );
+	LOAD_VECTOR( m_vTronUnknownA14 );
 	LOAD_DWORD( m_dwFlagsAtStart );
 	LOAD_TIME( m_fLastUpdateTime );
 }
