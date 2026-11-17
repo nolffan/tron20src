@@ -3179,7 +3179,19 @@ void CCharacter::SetDeathAnimation()
 
 	if( hAni == INVALID_ANI )
 	{
-		hAni = GetDeathAni(bFront);
+		// RETAIL: Tron's (0x10090434): a big explosion, or a prankster bit's
+		// implosion, plays the "DBnF" death
+
+		if( (( m_eDeathDamageType == DT_EXPLODE || m_damage.GetTronUnknown30() ) && fMaxHitPts * 0.5f < fDeathDamage ) ||
+			m_eDeathDamageType == DT_PRANKSTERBITIMPLODE )
+		{
+			hAni = g_pLTServer->GetAnimIndex( m_hObject, "DBnF" );
+		}
+
+		if( hAni == INVALID_ANI )
+		{
+			hAni = GetDeathAni(bFront);
+		}
 	}
 
 	// Set the death animation
@@ -3220,6 +3232,8 @@ void CCharacter::SetDeathAnimation()
 
 HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 {
+	// RETAIL: Tron's messages (0x10090510)
+
 	HMODELANIM hAni = INVALID_ANI;
 	const char* szDeathAni = NULL;
 
@@ -3233,6 +3247,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
+
+				// RETAIL: Tron tests for 0 here, not INVALID_ANI (0x10090561)
+				if ( !hAni )
+				{
+					ObjectCPrint( GetUserObject(), "Character missing death animation: %s.", szDeathAni );
+					return hAni;
+				}
+			}
+			else
+			{
+				ObjectCPrint( GetUserObject(), "Character has no death anim for node: %s.", g_pModelButeMgr->GetSkeletonNodeName(m_eModelSkeleton, m_eModelNodeLastHit) );
 			}
 		}
 
@@ -3240,21 +3265,12 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 
 		if ( hAni == INVALID_ANI )
 		{
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-
 			szDeathAni = g_pModelButeMgr->GetSkeletonDefaultFrontDeathAni(m_eModelSkeleton);
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
 			}
 		}
-
-		if( hAni == INVALID_ANI )
-		{
-			AIASSERT( 0, m_hObject, "No death animation found." );	
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-		}
-
 	}
 	else
 	{
@@ -3266,6 +3282,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
+
+				// RETAIL: Tron tests for 0 here, not INVALID_ANI (0x10090561)
+				if ( !hAni )
+				{
+					ObjectCPrint( GetUserObject(), "Character missing death animation: %s.", szDeathAni );
+					return hAni;
+				}
+			}
+			else
+			{
+				ObjectCPrint( GetUserObject(), "Character has no death anim for node: %s.", g_pModelButeMgr->GetSkeletonNodeName(m_eModelSkeleton, m_eModelNodeLastHit) );
 			}
 		}
 
@@ -3273,20 +3300,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 
 		if ( hAni == INVALID_ANI )
 		{
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-
 			szDeathAni = g_pModelButeMgr->GetSkeletonDefaultBackDeathAni(m_eModelSkeleton);
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
 			}
 		}
+	}
 
-		if( hAni == INVALID_ANI )
-		{
-			AIASSERT( 0, m_hObject, "No death animation found." );	
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-		}
+	if( hAni == INVALID_ANI )
+	{
+		g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
 	}
 
 	return hAni;
