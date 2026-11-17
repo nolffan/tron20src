@@ -28,6 +28,7 @@
 #include "FXButeMgr.h"
 #include "SurfaceFunctions.h"
 #include "PlayerViewAttachmentMgr.h"
+#include "MissionMgr.h"
 
 #define ROUNDFLOAT(f) ((int)((f) + ((f) > 0 ? 0.5 : -0.5)))
 
@@ -132,6 +133,72 @@ VarTrack	g_vtVehicleContourMaxRotation;
 VarTrack	g_vtVehicleCamContourMaxRotation;
 VarTrack	g_vtVehicleContourRate;
 VarTrack	g_vtVehicleContour;
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	WrapAngleToCircle
+//
+//	PURPOSE:	Put an angle in the 0 to 2pi range.  RETAIL: 0x1011a190
+//				(Tron's; the name is ours. Retail calls it from
+//				AlignAngleToAxis and 0x101219b0)
+//
+// ----------------------------------------------------------------------- //
+
+void WrapAngleToCircle(float &fAngle)
+{
+	if (fAngle < 0.0f)
+	{
+		fAngle += (1 - (int)(fAngle * (1.0f / MATH_CIRCLE))) * MATH_CIRCLE;
+	}
+	else if (fAngle > MATH_CIRCLE)
+	{
+		fAngle -= (int)(fAngle * (1.0f / MATH_CIRCLE)) * MATH_CIRCLE;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TurnAngleTowards
+//
+//	PURPOSE:	Turn an angle towards a target angle by a step, the short
+//				way round the circle.  RETAIL: 0x1011a200 (Tron's; the
+//				name is ours. Retail calls it from 0x101219b0)
+//
+// ----------------------------------------------------------------------- //
+
+void TurnAngleTowards(float &fAngle, float fTarget, float fStep)
+{
+	float fDiff = fTarget - fAngle;
+	if (fDiff > MATH_EPSILON || fDiff < -MATH_EPSILON)
+	{
+		if ((float)fabs(fDiff) < fStep)
+		{
+			fAngle = fTarget;
+		}
+		else if (fTarget > fAngle)
+		{
+			if (fDiff > MATH_PI)
+			{
+				fAngle -= fStep;
+			}
+			else
+			{
+				fAngle += fStep;
+			}
+		}
+		else
+		{
+			if (fAngle - fTarget > MATH_PI)
+			{
+				fAngle += fStep;
+			}
+			else
+			{
+				fAngle -= fStep;
+			}
+		}
+	}
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -1854,6 +1921,59 @@ void CVehicleMgr::UpdateModels()
 	{
 		UpdateVehicleModel();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ExitLightCycleCallBack
+//
+//	PURPOSE:	The light cycle exit message box's callback: ask the
+//				server to end the light cycle, or, when the player can't
+//				stay, fail the mission.  RETAIL: 0x1011dee0 (Tron's; the
+//				name is ours. Retail's 0x1011da30 shows the box)
+//
+// ----------------------------------------------------------------------- //
+
+void ExitLightCycleCallBack(LTBOOL bReturn, void *pData)
+{
+	if (bReturn)
+	{
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_TRON_EXIT_REQUEST);
+		cMsg.Writebool(true);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+	}
+	else
+	{
+		bool bCanStay = false;
+		if (GetGameType() == eGameTypeSingle)
+		{
+			switch (g_pMissionMgr->GetCurrentMission())
+			{
+				case 4:
+					if (g_pMissionMgr->GetCurrentLevel() == 2) bCanStay = true;
+					break;
+				case 5:
+					if (g_pMissionMgr->GetCurrentLevel() == 2) bCanStay = true;
+					break;
+			}
+		}
+
+		if (!g_pPlayerMgr->TronUnknownVirtual80() && !bCanStay)
+		{
+			g_pGameClientShell->CSPrint(LoadTempString(1011));
+			g_pPlayerMgr->StartDeathFX();
+		}
+		else
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_TRON_EXIT_REQUEST);
+			cMsg.Writebool(false);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+		}
+	}
+
+	g_pPlayerMgr->TronUnknownVirtual98(bReturn);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4320,35 +4440,35 @@ void CVehicleMgr::SnapLightCycleToXZGrid(LTVector &vNewPos, LTVector &vOldPos, u
 void CVehicleMgr::AlignAngleToAxis(float &fAngle)
 {
 	// First make sure the yaw is in the 0 - 2pi range
-	if(fAngle < 0)
-	{
-		fAngle = fAngle + (((float)((int)(fAngle/MATH_CIRCLE))+1)*MATH_CIRCLE);
-	}
-	else if(fAngle > MATH_CIRCLE)
-	{
-		fAngle = fAngle - (((float)((int)(fAngle/MATH_CIRCLE))+1)*MATH_CIRCLE);
-	}
+	// RETAIL: Tron's (0x10121e40) calls its helper, 0x1011a190
+	WrapAngleToCircle(fAngle);
 
 	// Now axis align it
+	// RETAIL: Tron also keeps the axis as a vector (+0x211c)
 	if(fAngle <= (MATH_PI/4.0f)) // PI/4
 	{
 		fAngle = 0;
+		m_vTronUnknown211c.Init(0.0f, 0.0f, 1.0f);
 	}
 	else if(fAngle <= (MATH_PI*0.75f)) // 3PI/4
 	{
 		fAngle = MATH_HALFPI;
+		m_vTronUnknown211c.Init(1.0f, 0.0f, 0.0f);
 	}
 	else if(fAngle <= (MATH_PI*1.25)) // 5PI/4
 	{
 		fAngle = MATH_PI;
+		m_vTronUnknown211c.Init(0.0f, 0.0f, -1.0f);
 	}
 	else if(fAngle <= (MATH_PI*1.75)) // 7PI/4
 	{
 		fAngle = MATH_HALFPI*3.0f;
+		m_vTronUnknown211c.Init(-1.0f, 0.0f, 0.0f);
 	}
 	else
 	{
 		fAngle = 0;
+		m_vTronUnknown211c.Init(0.0f, 0.0f, 1.0f);
 	}
 
 	/***********************
@@ -4597,6 +4717,91 @@ void CVehicleMgr::ResetLightCyclePhysics()
 {
 	SetPhysicsModel(PPM_NORMAL);
 	SetPhysicsModel(PPM_LIGHTCYCLE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::CreateTronUnknownFX213c/2140/2144
+//
+//	PURPOSE:	Start a looping client FX on the vehicle model, at the
+//				player's position, unless one is already running.
+//				RETAIL: 0x10122280, 0x10122350, 0x10122420 (Tron's; called
+//				by CClientLightCycleMgr, 0x10014a73.. ; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::CreateTronUnknownFX213c(const char* pszFX)
+{
+	if (m_TronUnknownFX213c.IsValid()) return;
+
+	CLIENTFX_CREATESTRUCT fxInit(pszFX, FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, m_hVehicleModel);
+	g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX213c, fxInit, LTTRUE);
+}
+
+void CVehicleMgr::CreateTronUnknownFX2140(const char* pszFX)
+{
+	if (m_TronUnknownFX2140.IsValid()) return;
+
+	CLIENTFX_CREATESTRUCT fxInit(pszFX, FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, m_hVehicleModel);
+	g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2140, fxInit, LTTRUE);
+}
+
+void CVehicleMgr::CreateTronUnknownFX2144(const char* pszFX)
+{
+	if (m_TronUnknownFX2144.IsValid()) return;
+
+	CLIENTFX_CREATESTRUCT fxInit(pszFX, FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, m_hVehicleModel);
+	g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2144, fxInit, LTTRUE);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::CreateTronUnknownFX2148
+//
+//	PURPOSE:	Start a looping client FX on the vehicle model and keep
+//				its offset.  RETAIL: 0x101224f0 (Tron's; called by
+//				CClientLightCycleMgr, 0x10013f8f; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::CreateTronUnknownFX2148(const char* pszFX, const LTVector &vOffset)
+{
+	if (m_TronUnknownFX2148.IsValid() || !m_hVehicleModel) return;
+
+	CLIENTFX_CREATESTRUCT fxInit(pszFX, FXFLAG_LOOP, m_hVehicleModel);
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2148, fxInit, LTTRUE);
+
+	m_vTronUnknownFXOffset = vOffset;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CVehicleMgr::ShowTronUnknownFX2138
+//
+//	PURPOSE:	Show or hide the light cycle model's FX.  RETAIL:
+//				0x101225d0 (Tron's; called by CTronPlayerMgr::Update,
+//				0x100a5581; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::ShowTronUnknownFX2138(HOBJECT hObj, bool bShow)
+{
+	char szBuf[512];
+	if (!g_pPlayerMgr->TronUnknownVirtual78(hObj, szBuf)) return;
+	if (m_bTronUnknown2158) return;
+	if (!m_TronUnknownFX2138.GetInstance()) return;
+
+	if (bShow)
+	{
+		m_TronUnknownFX2138.GetInstance()->Show();
+	}
+	else
+	{
+		m_TronUnknownFX2138.GetInstance()->Hide();
+	}
 }
 
 // RETAIL: Tron's CVehicleMgr has no Save/Load (CMoveMgr::Save 0x100f9d30
