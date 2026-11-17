@@ -26,12 +26,6 @@ class CServerMark : public BaseClass
 	protected :
 
         uint32 EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
-
-		void OnSave( ILTMessage_Write *pMsg, uint32 dwSaveFlags );
-		void OnLoad( ILTMessage_Read *pMsg, uint32 dwSaveFlags );
-
-		//the amount of time that this mark has been alive for
-		float	m_fElapsedTime;
 };
 
 #endif // __SERVER_MARK_H__
