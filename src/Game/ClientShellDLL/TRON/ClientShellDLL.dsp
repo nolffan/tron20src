@@ -596,6 +596,10 @@ SOURCE=.\ScreenLightCycleGame.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ScreenLightCyclePlayerConfig.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ScreenLightCycleVictory.cpp
 # End Source File
 # Begin Source File
@@ -1043,6 +1047,10 @@ SOURCE=.\ScreenLightCycleCustomMaps.h
 # Begin Source File
 
 SOURCE=.\ScreenLightCycleGame.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ScreenLightCyclePlayerConfig.h
 # End Source File
 # Begin Source File
 

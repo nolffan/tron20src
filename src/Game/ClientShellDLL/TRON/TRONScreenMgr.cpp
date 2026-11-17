@@ -49,6 +49,7 @@
 #include "ScreenLightCycleCircuit.h"
 #include "ScreenLightCycleCustomMaps.h"
 #include "ScreenLightCycleGame.h"
+#include "ScreenLightCyclePlayerConfig.h"
 #include "ScreenConfigure.h"
 
 //Player management screens
@@ -144,7 +145,6 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 	// this order). Retail has no case for HOST, HOST_OPTIONS, HOST_MISSION,
 	// HOST_LEVELS, END_COOP_MISSION, BASE_HOST or BASE_LIGHTCYCLE. The cases
 	// for screens whose class we have not written yet are missing here:
-	// LIGHTCYCLE_PLAYERCONFIG after _CUSTOMGAME;
 	// TEAMSELECT (CScreenTeamSelect) after SUBROUTINES.
 	switch (screenID)
 	{
@@ -180,6 +180,9 @@ void CTronScreenMgr::AddScreen(eScreenID screenID)
 		break;
 	case SCREEN_ID_LIGHTCYCLE_CUSTOMGAME:
 		pScreen = debug_new(CScreenLightCycleGame);
+		break;
+	case SCREEN_ID_LIGHTCYCLE_PLAYERCONFIG:
+		pScreen = debug_new(CScreenLightCyclePlayerConfig);
 		break;
 	case SCREEN_ID_LIGHTCYCLE_VICTORY:
 		pScreen = debug_new(CScreenLightCycleVictory);
