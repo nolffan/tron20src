@@ -255,14 +255,16 @@ class CBodyStateExplode : public CBodyState
 
 	protected :
 
-		void SetRestingState();
+		// RETAIL: Tron's body flies for a random time with one looping
+		// animation (Init 0x1021bcd0, Save 0x1021c4b0); it has no start
+		// and stop animations and no SetRestingState. m_fFlyTime's name is
+		// ours.
 
 		LTBOOL		m_bLand;
 		LTVector	m_vLandPos;
+		LTFLOAT		m_fFlyTime;
 
-		HMODELANIM	m_hAniStart;
 		HMODELANIM	m_hAniLoop;
-		HMODELANIM	m_hAniStop;
 };
 
 // RETAIL: Tron's (RTTI; vtable 0x1029e334, constructor 0x1021c550, 0x3c
