@@ -237,7 +237,8 @@ AINode* CAIGoalCover::HandleGoalAttractors()
 				{
 					m_hNodeCover = pNode->m_hObject;
 					SetCurToBaseImportance();
-					m_pAI->Target(m_hStimulusSource);
+					// RETAIL: ActivateGoal targets the stimulus (0x1020c8a0
+					// does not)
 					m_hStimulusSource = LTNULL;
 				}
 				else {
