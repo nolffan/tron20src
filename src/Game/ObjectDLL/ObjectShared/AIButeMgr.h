@@ -357,7 +357,8 @@ class CAIButeMgr : public CGameButeMgr
 
 		int GetTemplateIDByName(const char *szName);
 		int GetNumTemplates() { return m_cTemplateID; }
-		AIBM_Template* GetTemplate(int iTemplate) { return &m_aTemplates[iTemplate]; }
+		// RETAIL: Tron's tests the id (GetTemplateIDByName 0x1019f255)
+		AIBM_Template* GetTemplate(int iTemplate) { return ( iTemplate >= 0 && iTemplate < m_cTemplateID ) ? &m_aTemplates[iTemplate] : LTNULL; }
 
 		// Brains
 

@@ -43,14 +43,18 @@ static int CountButeTags(CButeMgr* pButeMgr, const std::string& sPrefix)
 {
 	// RETAIL: 0x1019e670 (name ours)
 	char szTag[32];
-	// RETAIL: the loop is not rotated (one sprintf); ours is.
+	// RETAIL: the loop is not rotated (one sprintf): the found case goes
+	// back to the top
 	int nCount = 0;
-	for(;;)
+	while( true )
 	{
 		sprintf( szTag, "%s%d", sPrefix.c_str(), nCount );
-		if( !pButeMgr->Exist( szTag ))
-			break;
-		nCount++;
+		if( pButeMgr->Exist( szTag ))
+		{
+			nCount++;
+			continue;
+		}
+		break;
 	}
 	return nCount;
 }
