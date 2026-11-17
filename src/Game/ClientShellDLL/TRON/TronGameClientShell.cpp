@@ -350,8 +350,8 @@ void CTronGameClientShell::RenderCamera(bool bDrawInterface)
 		!g_pChatInput->IsVisible())
 	{
 		float fTheta = 266.0f;
-		float fPhi = 45.0f;
 		float fRadius = 800.0f;
+		float fPhi = 45.0f;
 
 		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCReverseRadius");
 		if (hVar)
@@ -371,12 +371,12 @@ void CTronGameClientShell::RenderCamera(bool bDrawInterface)
 			fPhi = g_pLTClient->GetVarValueFloat(hVar);
 		}
 
-		fPhi = fPhi * MATH_PI / 180.0f;
+		fPhi = (fPhi * MATH_PI) / 180.0f;
 
 		LTVector vPos;
 		g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &vPos);
 
-		fTheta = fTheta * MATH_PI / 180.0f + g_pPlayerMgr->GetPlayerCamera()->TronUnknownGetOrbitYaw();
+		fTheta = (fTheta * MATH_PI) / 180.0f + g_pPlayerMgr->GetPlayerCamera()->TronUnknownGetOrbitYaw();
 
 		vPos.x += (float)sin(fPhi) * (float)cos(fTheta) * fRadius;
 		vPos.y += (float)cos(fPhi) * fRadius;
@@ -399,7 +399,7 @@ void CTronGameClientShell::RenderCamera(bool bDrawInterface)
 
 	m_ClientFXMgr.UpdateAllActiveFX( IsMultiplayerGame() ? true : m_bMainWindowFocus );
 
-	float fFrameTime = m_bServerPaused ? 0.0 : m_fFrameTime;
+	float fFrameTime = m_bServerPaused ? 0.0f : GetFrameTime();
 
 	g_pLTClient->Start3D();
 
