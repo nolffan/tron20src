@@ -950,13 +950,13 @@ LTBOOL CMoveMgr::CanDoFootstep()
 	// only happen in really special case levels)...
 
 	// RETAIL: 0x100f61e0 -- never in multiplayer light cycle games, and the
-	// sky and invisible surfaces only count where players are revived.
+	// sky and invisible surfaces only count in the disc games.
 	if (GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
 		return LTFALSE;
 	}
 
-	if ((m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY) && !IsRevivePlayerGameType())
+	if ((m_eStandingOnSurface == ST_INVISIBLE || m_eStandingOnSurface == ST_SKY) && !IsDiscGameType())
 	{
         return LTFALSE;
 	}

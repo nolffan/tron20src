@@ -36,7 +36,7 @@ class CCheatMgr
 		// RETAIL: Tron's (0x100f1e30; the name is ours)
 		LTBOOL	IsCheatActive(int nCheatCode);
 
-		bool	Process( CheatCode nCheatCode, CParsedMsg &cMsg );
+		void	Process( CheatCode nCheatCode, CParsedMsg &cMsg );	// RETAIL: void
 
 	private:
 
@@ -58,7 +58,6 @@ class CCheatMgr
 		void	SetAmmo();
 		void	SetArmor();
 		void	SetHealth(LTBOOL bPlaySound=LTTRUE);
-		void    SetInvisible(LTBOOL bMode);
         void    SetPos(LTBOOL bMode);
 		void	SetKFA();
 		void	SetFullWeapons();
@@ -70,15 +69,14 @@ class CCheatMgr
 		void	NextMission();
 		void	BootPlayer( CParsedMsg &cMsg );
 		void	Version();
-		void	BuildGuid();
 		void	GimmeGun( CParsedMsg &cMsg );
 		void	GimmeMod( CParsedMsg &cMsg	);
 		void	GimmeGear( CParsedMsg &cMsg );
 		void	GimmeAmmo( CParsedMsg &cMsg );
-        void    SetConsole( LTBOOL bMode );
 		void	GetSkills();
-		void	ToggleEndgameFlag();
-		void	BodyGolfing(LTBOOL bMode);
+		// RETAIL: Tron's; the names are ours
+		void	ExorbitantAmounts(LTBOOL bMode);
+		void	GimmePrim( CParsedMsg &cMsg );
 
 		// Development only cheats...
         void    SetClipMode(LTBOOL bMode);
