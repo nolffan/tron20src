@@ -1080,16 +1080,8 @@ void CAIHuman::OpenDoors(HOBJECT hDoor1, HOBJECT hDoor2)
 	{
 		if( m_hLastDoor[iDoor] )
 		{
-			// Do not activate a door that is already open.
-
-			if( IsKindOf( m_hLastDoor[iDoor], "RotatingDoor") )
-			{
-				RotatingDoor* pDoor = (RotatingDoor*)g_pLTServer->HandleToObject( m_hLastDoor[iDoor] );
-				if( pDoor && ( ( pDoor->GetState() == DOORSTATE_OPEN ) || ( pDoor->GetState() == DOORSTATE_OPENING ) ) )
-				{
-					continue;
-				}
-			}
+			// RETAIL: 0x1016e5e8, Tron activates the door also when it is
+			// open already.
 
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "ACTIVATE");
 
@@ -1117,16 +1109,8 @@ void CAIHuman::KickDoors(HOBJECT hDoor1, HOBJECT hDoor2)
 	{
 		if( m_hLastDoor[iDoor] )
 		{
-			// Do not activate a door that is already open.
-
-			if( IsKindOf( m_hLastDoor[iDoor], "RotatingDoor") )
-			{
-				RotatingDoor* pDoor = (RotatingDoor*)g_pLTServer->HandleToObject( m_hLastDoor[iDoor] );
-				if( pDoor && ( ( pDoor->GetState() == DOORSTATE_OPEN ) || ( pDoor->GetState() == DOORSTATE_OPENING ) ) )
-				{
-					continue;
-				}
-			}
+			// RETAIL: 0x1016e654, Tron kicks the door also when it is open
+			// already.
 
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "SETPOWERONMULTIPLIER 0.1");
 			SendTriggerMsgToObject(this, m_hLastDoor[iDoor], LTFALSE, "ACTIVATE");
