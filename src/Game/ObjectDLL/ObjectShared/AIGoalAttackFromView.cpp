@@ -149,15 +149,28 @@ void CAIGoalAttackFromView::UpdateGoal()
 
 void CAIGoalAttackFromView::HandleStateAttackFromView()
 {
+	// RETAIL: 0x10213a40, Tron's AI charges when its target leaves the
+	// player info volume of the view node, or when the view fails; the
+	// charge is long for an AI that does not attack while it moves.
+
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
-		case kSStat_Initialized:
-			break;
-
-		case kSStat_Moving:
-			break;
-
 		case kSStat_Attacking:
+			if( m_pAI->GetTarget() && m_pAI->GetTarget()->GetCharacter() )
+			{
+				AIVolumePlayerInfo* pPlayerInfoVolume = m_pAI->GetTarget()->GetCharacter()->GetCurrentPlayerInfoVolume();
+				if( !pPlayerInfoVolume || !pPlayerInfoVolume->IsViewNode( m_hNode ) )
+				{
+					m_pAI->SetState( kState_HumanCharge );
+					if( m_pAI->GetState() &&
+						( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+						!m_pAI->GetBrain()->AttacksWhileMoving() )
+					{
+						((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+					}
+				}
+			}
+
 			if(m_pGoalMgr->IsGoalLocked(this))
 			{
 				m_pGoalMgr->UnlockGoal(this);
@@ -173,10 +186,13 @@ void CAIGoalAttackFromView::HandleStateAttackFromView()
 			// a goal will re-activate instead of charging.
 
 			m_pAI->SetState( kState_HumanCharge );
+			if( m_pAI->GetState() &&
+				( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+				!m_pAI->GetBrain()->AttacksWhileMoving() )
+			{
+				((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+			}
 			break;
-
-		// Unexpected StateStatus.
-		default: AIASSERT(0, m_pAI->m_hObject, "CAIGoalAttackFromView::HandleStateAttackFromView: Unexpected State Status.");
 	}
 }
 
@@ -284,8 +300,8 @@ LTBOOL CAIGoalAttackFromView::HandleNameValuePair(const char *szName, const char
 			CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
 			if ( pPlayer )
 			{
+				// RETAIL: 0x10213dab, Tron does not target the player here.
 				m_hStimulusSource = pPlayer->m_hObject;
-				m_pAI->Target( pPlayer->m_hObject );
 			}
 		}
 
