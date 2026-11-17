@@ -275,22 +275,19 @@ LTBOOL CAIGoalDisappearReappearEvasive::HandleGoalSenseTrigger(AISenseRecord* pS
 
 	if( CAIGoalAbstractStimulated::HandleGoalSenseTrigger(pSenseRecord) )
 	{
-		// Do not disappear while jumping.
-
-		if( m_pAI->GetAIMovement()->IsMovementLocked() )
-		{
-			return LTFALSE;
-		}
-
 		// Check the distance.
+		// RETAIL: Tron has no jump check here (0x1020a96b).
 
-		LTFLOAT fDistSqr = m_pAI->GetPosition().DistSqr( pSenseRecord->vLastStimulusPos );
+		LTVector vDiff = m_pAI->GetPosition() - pSenseRecord->vLastStimulusPos;
+		LTFLOAT fDistSqr = vDiff.MagSqr();
 		if(	( fDistSqr >= m_fDisappearDistMinSqr ) && ( fDistSqr <= m_fDisappearDistMaxSqr ) )
 		{
 			// Check if we're being aimed at.
+			// RETAIL: Tron's goal keeps its own target (0x1020a9ee).
 
-			m_pAI->Target( m_hStimulusSource );
-			if( m_pAI->GetBrain()->TargetIsAimingAtMe() )
+			m_Target.Target( pSenseRecord->hLastStimulusSource );
+			if( m_Target.IsVisiblePartially() &&
+				m_pAI->GetBrain()->CharacterIsAimingAtMe( m_Target.GetCharacter() ) )
 			{
 				// Do not disappear the very first time we're aimed at.
 

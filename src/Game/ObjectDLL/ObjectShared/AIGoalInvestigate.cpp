@@ -808,7 +808,8 @@ void CAIGoalInvestigate::SearchOrAware(LTBOOL bOnlyAware)
 		// Turn away from whatever was being investigated.
 		// (e.g. so that AI won't be standing there facing file cabinet.)
 
-		if( m_pAI->GetState()->GetStateType() == kState_HumanUseObject )
+		// RETAIL: Tron checks for a state first (0x10203b3e).
+		if( m_pAI->GetState() && ( m_pAI->GetState()->GetStateType() == kState_HumanUseObject ) )
 		{
 			m_pAI->FaceDir( -m_pAI->GetForwardVector() );
 		}
