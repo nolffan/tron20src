@@ -97,6 +97,11 @@ class CAIGoalSpecialDamage : public CAIGoalAbstractSearch
 
 		void RestoreAwareness();
 
+		// RETAIL: Tron's (0x101927d0, 0x10192850; the names are ours): the
+		// PRod's and the energy claw's attacker lets go of us
+		void ReleasePRodAttacker();
+		void ReleaseEnergyClawAttacker();
+
 	protected:
 
 		DamageType			m_eDamageType;

@@ -171,6 +171,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// RETAIL: Tron's (0x10091370; the name is ours)
 		bool ShouldGib();
 
+		// RETAIL: Tron's fire helpers (CAIGoalSpecialDamage, 0x10192812)
+		CPRodFireHelper*		GetPRodFireHelper() { return m_pPRodFireHelper; }
+		CEnergyClawFireHelper*	GetEnergyClawFireHelper() { return m_pEnergyClawFireHelper; }
+
 		// RETAIL: Tron's footstep (0x10090160; the name is ours)
 		void HandleFootstep( bool bAlternateVolume );
 

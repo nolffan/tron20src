@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "AIGoalSpecialDamage.h"
+#include "../TRON/ContinuousFireHelper.h"	// RETAIL: Tron's fire helpers
 #include "AIGoalMgr.h"
 #include "AIHuman.h"
 #include "AIHumanState.h"
@@ -380,17 +381,14 @@ void CAIGoalSpecialDamage::DeactivateGoal()
 		m_eSpecialDamageStimID = kStimID_Unset;
 	}
 
-	RestoreAwareness();
+	// RETAIL: Tron lets go of the PRod and energy claw attackers, and
+	// detaches nothing (0x10190518)
+	ReleasePRodAttacker();
+	ReleaseEnergyClawAttacker();
 
 	m_pAI->ResetBaseValidVolumeMask();
 
-	// Remove anything attached (e.g. BearTrap).
-	// The animation takes care of this usually, but we may 
-	// have gone from BearTrapped to KnockedOut.
-
-	char szTrigger[128];
-	sprintf( szTrigger, "%s LeftFoot", KEY_DETACH );
-	SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTFALSE, szTrigger );
+	RestoreAwareness();
 }
 
 // ----------------------------------------------------------------------- //
@@ -1335,5 +1333,55 @@ LTBOOL CAIGoalSpecialDamage::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 	}
 
 	return LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::ReleasePRodAttacker
+//
+//	PURPOSE:	RETAIL: Tron's (the name is ours): take us off the
+//				attacker's fire helper's targets
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSpecialDamage::ReleasePRodAttacker()
+{
+	m_fTronUnknown108 = 0.f;
+
+	if( m_hTronUnknownE0 )
+	{
+		CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownE0 ));
+		if( pAttacker )
+		{
+			pAttacker->GetPRodFireHelper()->RemoveTarget( m_pAI->GetUserObject() );
+		}
+	}
+
+	m_hTronUnknownE0 = LTNULL;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::ReleaseEnergyClawAttacker
+//
+//	PURPOSE:	RETAIL: Tron's (the name is ours): take us off the
+//				attacker's fire helper's targets
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSpecialDamage::ReleaseEnergyClawAttacker()
+{
+	m_fTronUnknown108 = 0.f;
+
+	if( m_hTronUnknownF0 )
+	{
+		CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownF0 ));
+		if( pAttacker )
+		{
+			pAttacker->GetEnergyClawFireHelper()->RemoveTarget( m_pAI->GetUserObject() );
+		}
+	}
+
+	m_hTronUnknownF0 = LTNULL;
 }
 
