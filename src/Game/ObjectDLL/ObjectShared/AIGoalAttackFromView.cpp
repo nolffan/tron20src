@@ -218,16 +218,16 @@ void CAIGoalAttackFromView::HandleStateCharge()
 
 AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr)
 {
-	// Only look for View nodes if the AI has already been alerted to the 
-	// enemy's presence.
+	// RETAIL: 0x10213bd0, Tron looks from the stimulus source (set by
+	// HandleGoalSenseTrigger), not from the AI's target, and does not drop
+	// the importance when it sees the target.
 
-	if( !m_pAI->HasTarget() )
+	if( !IsCharacter( m_hStimulusSource ) )
 	{
 		return LTNULL;
 	}
 
-	m_hStimulusSource = m_pAI->GetTarget()->GetObject();
-	CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(m_hStimulusSource);
+	CCharacter* pCharacter = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject(m_hStimulusSource));
 	
 	// Do not attack from view if target is hidden.
 
@@ -238,15 +238,14 @@ AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType
 
 	// Find target's current PlayerInfoVolume volume.
 
-	AIInformationVolume *pInfoVolume = pCharacter->GetCurrentInformationVolume();
-	if( ( !pInfoVolume ) || ( pInfoVolume->GetVolumeType() != AIInformationVolume::eTypePlayerInfo ) )
+	AIVolumePlayerInfo* pPlayerInfoVolume = pCharacter->GetCurrentPlayerInfoVolume();
+	if( !pPlayerInfoVolume )
 	{
 		return LTNULL;
 	}
 
 	// Find view node corresponding to this playerinfo volume.
 
-	AIVolumePlayerInfo* pPlayerInfoVolume = (AIVolumePlayerInfo*)pInfoVolume;
 	AINode* pViewNode = pPlayerInfoVolume->FindViewNode(m_pAI, eNodeType, vPos, LTFALSE);
 	if( !pViewNode )
 	{
@@ -255,19 +254,10 @@ AINode* CAIGoalAttackFromView::FindNearestAttractorNode(EnumAINodeType eNodeType
 
 	// Only use a view node if there is no path to the target.
 
-	if( pCharacter->HasCurrentVolume() )
+	if( pCharacter->HasCurrentVolume() &&
+		g_pAIPathMgr->HasPath( m_pAI, pCharacter->GetCurrentVolume() ) )
 	{
-		if( g_pAIPathMgr->HasPath( m_pAI, pCharacter->GetCurrentVolume() ) )
-		{
-			// Bail if AI can see and path to enemy.
-
-			if( m_pAI->GetTarget()->IsVisibleFromEye() )
-			{
-				m_fCurImportance = 0.f;
-			}
-
-			return LTNULL;
-		}
+		return LTNULL;
 	}
 
 	return pViewNode;
