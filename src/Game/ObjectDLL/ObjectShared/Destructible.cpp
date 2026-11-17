@@ -28,6 +28,7 @@
 #include "PlayerButes.h"
 #include "AI.h"
 #include "ServerMissionMgr.h"
+#include "CharacterHitBox.h"
 
 #define TRIGGER_MSG_DESTROY	"DESTROY"
 #define TRIGGER_MSG_RESET	"RESET"
@@ -577,6 +578,18 @@ void CDestructible::UpdateProgressiveDamage()
 	DamageFlags nActiveDamageFlags = 0;
 	bool bBleeding = false;
 
+	// RETAIL: Tron's character's hit box lets the power armor take the
+	// damage first (Object.lto 0x100e7976)
+	CCharacterHitBox* pHitBox = LTNULL;
+	if ( IsCharacter( m_hObject ))
+	{
+		CCharacter* pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( m_hObject ));
+		if ( pChar )
+		{
+			pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject( pChar->GetHitBoxObject() ));
+		}
+	}
+
 	// Loop over all the progressive damage done to us...
 
 	for (int i=0; i < MAX_PROGRESSIVE_DAMAGE; i++)
@@ -589,6 +602,12 @@ void CDestructible::UpdateProgressiveDamage()
 
 			damage = m_ProgressiveDamage[i];
 			damage.fDamage = damage.fDamage * fFrameTime;
+
+			if ( pHitBox )
+			{
+				pHitBox->AbsorbDamage( &damage );
+			}
+
 			DoDamage(damage, true);
 
 			// Add this to the active damageflags.

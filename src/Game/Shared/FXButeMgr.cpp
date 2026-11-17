@@ -3367,6 +3367,18 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 //
 // ----------------------------------------------------------------------- //
 
+#ifndef _CLIENTBUILD
+
+// RETAIL: Object.lto 0x10145d30 (near while DISCCLASSDATA keeps Build 69's
+// members: retail's is 0x1d8 bytes)
+CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
+	: DISCCLASSDATA()
+	, fInitialExplosionSuppressTime( 0.0f )
+{
+}
+
+#else // _CLIENTBUILD
+
 CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
 	: DISCCLASSDATA()
 	, fShardHorizontalSpreadMin( 0.0f )
@@ -3387,13 +3399,11 @@ CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
 {
 	szShardWeaponName[ 0 ] = '\0';
 
-#ifndef _CLIENTBUILD
-	fInitialExplosionSuppressTime = 0.0f;
-#endif // _CLIENTBUILD
-
 	// reinit this to show there is extra info
 	bClusterDiscInfo = true;
 }
+
+#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //
@@ -3414,6 +3424,21 @@ CLUSTERDISCCLASSDATA::~CLUSTERDISCCLASSDATA()
 //  PURPOSE:	Read the props for the Cluster Disc Class Data...
 //
 // ----------------------------------------------------------------------- //
+
+#ifndef _CLIENTBUILD
+
+// RETAIL: Object.lto 0x10145d80: Tron's server reads only this attribute
+LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
+{
+	if (!aTagName) return LTFALSE;
+	if (!DISCCLASSDATA::Init(buteMgr, aTagName)) return LTFALSE;
+
+	fInitialExplosionSuppressTime = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialExplosionSuppressTime" ) );
+
+	return LTTRUE;
+}
+
+#else // _CLIENTBUILD
 
 LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 {
@@ -3448,13 +3473,10 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	nShardsTotalPerturbMax        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX );
 	nShardsTotalPerturbSurge      = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE );
 
-#ifndef _CLIENTBUILD
-	// RETAIL: Tron's only attribute (0x10145d80)
-	fInitialExplosionSuppressTime = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialExplosionSuppressTime" ) );
-#endif // _CLIENTBUILD
-
 	return LTTRUE;
 }
+
+#endif // _CLIENTBUILD
 
 
 // ----------------------------------------------------------------------- //

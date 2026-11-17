@@ -1233,6 +1233,21 @@ saved (for example, the visible flag that DoProjectile sets).
 Not fixed yet: the modern build should set the saved flags with
 SetObjectFlags (OFT_Flags, FLAGMASK_ALL).
 
+### The OBB hit test does not give the distance of its hit
+
+Object.lto 0x10139460 (CCharacterHitBox::FindHitNodeOBB,
+ObjectShared/CharacterHitBox.cpp). When the model has OBBs, the hit box
+tests the ray against them. The function sets the node of the nearest OBB
+in the hit, but not the distance along the ray, and not the object that was
+hit. The caller (HandleVectorImpact, 0x101397d0) moves the impact point
+along the ray by that distance, which stays at its initial value FLT_MAX.
+Also, when an OBB that has no skeleton node is nearer than the nearest hit
+so far, the function sets eModelNodeInvalid in the hit. Thus a hit on an OBB
+that it tested before is lost.
+
+Not fixed yet: the modern build should keep the distance and the hit box
+user in the hit, and ignore OBBs that have no node.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

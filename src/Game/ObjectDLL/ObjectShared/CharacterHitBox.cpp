@@ -21,6 +21,8 @@
 #include "ObjectMsgs.h"
 #include "Attachments.h"
 #include "GameServerShell.h"
+#include "PowerArmor.h"
+#include <list>
 #include "DebugLineSystem.h"	// RETAIL: Tron's (its colours, Object.lto 0x10137c60)
 
 LINKFROM_MODULE( CharacterHitBox );
@@ -45,6 +47,307 @@ static CVarTrack g_vtDistHitBoxMethod;	// RETAIL: Tron's (Object.lto 0x10138e21)
 BEGIN_CLASS(CCharacterHitBox)
 END_CLASS_DEFAULT_FLAGS(CCharacterHitBox, GameBase, NULL, NULL, CF_HIDDEN)
 #pragma force_active off
+
+// RETAIL: the damage types the power armor does not take (Object.lto .data
+// 0x102fa664; CCharacterHitBox::AbsorbDamage). PowerArmor.cpp has its own
+// copy. The name is ours
+static DamageType s_aeArmorProofDamageTypes[] =
+{
+	DT_DISC,
+	DT_SEQUENCER,
+	DT_CLUSTER,
+	DT_ENEMYDISC,
+	DT_CLUSTERAUTOBURST,
+};
+
+// RETAIL: Tron's users of a hit box add the other users to test with them
+// (IHitBoxUser's slot 9, CThorne: its ball)
+typedef std::list<IHitBoxUser*> HitBoxUserList;
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	RayIntersectSphere()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x101380b0; the name is ours):
+//				does the ray from vOrigin along vDir hit the sphere?
+//				*pfDist is the distance along the ray.
+//
+// ----------------------------------------------------------------------- //
+
+static bool RayIntersectSphere( const LTVector& vOrigin, const LTVector& vDir, const LTVector& vCenter, LTFLOAT fRadius, LTFLOAT* pfDist )
+{
+	LTVector vToCenter = vCenter - vOrigin;
+	LTFLOAT fRayDist = vToCenter.Dot( vDir );
+	LTFLOAT fDistSqr = vToCenter.Dot( vToCenter );
+	LTFLOAT fRadiusSqr = fRadius * fRadius;
+
+	// The sphere is behind the origin, and the origin is outside it.
+	if ( fRayDist < 0.0f && fDistSqr > fRadiusSqr )
+	{
+		*pfDist = 0.0f;
+		return false;
+	}
+
+	// The ray passes outside the sphere.
+	LTFLOAT fMissSqr = fDistSqr - fRayDist * fRayDist;
+	if ( fMissSqr > fRadiusSqr )
+	{
+		*pfDist = 0.0f;
+		return false;
+	}
+
+	LTFLOAT fHalfChord = (LTFLOAT)sqrt( fRadiusSqr - fMissSqr );
+	if ( fDistSqr > fRadiusSqr )
+	{
+		*pfDist = fRayDist - fHalfChord;
+	}
+	else
+	{
+		*pfDist = fRayDist + fHalfChord;
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	RayIntersectOBB()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10138190; the name is ours):
+//				does the ray from vOrigin along vDir hit the OBB (the slab
+//				test)? *pfDist is the distance along the ray.
+//
+// ----------------------------------------------------------------------- //
+
+static bool RayIntersectOBB( const ModelOBB& obb, const LTVector& vOrigin, const LTVector& vDir, LTFLOAT* pfDist )
+{
+	LTFLOAT fMin = -1.0e12f;
+	LTFLOAT fMax = 1.0e12f;
+
+	LTVector vToCenter = obb.m_Pos - vOrigin;
+	LTVector vHalfSize = obb.m_Size * 0.5f;
+
+	LTFLOAT afHalfSize[3] = { vHalfSize.x, vHalfSize.y, vHalfSize.z };
+	LTVector avBasis[3] = { obb.m_Basis[0], obb.m_Basis[1], obb.m_Basis[2] };
+
+	for ( int i = 0; i < 3; i++ )
+	{
+		LTFLOAT e = avBasis[i].Dot( vToCenter );
+		LTFLOAT f = avBasis[i].Dot( vDir );
+
+		if ( fabs( f ) > 0.00015 )
+		{
+			LTFLOAT t1 = ( e + afHalfSize[i] ) / f;
+			LTFLOAT t2 = ( e - afHalfSize[i] ) / f;
+
+			if ( t1 > t2 )
+			{
+				LTFLOAT fTemp = t1;
+				t1 = t2;
+				t2 = fTemp;
+			}
+
+			if ( t1 > fMin )
+			{
+				fMin = t1;
+			}
+
+			if ( t2 < fMax )
+			{
+				fMax = t2;
+			}
+
+			if ( fMin > fMax )
+			{
+				return false;
+			}
+
+			if ( fMax < 0.0f )
+			{
+				return false;
+			}
+		}
+		else if ( -e - afHalfSize[i] > 0.0f || -e + afHalfSize[i] < 0.0f )
+		{
+			*pfDist = 0.0f;
+			return false;
+		}
+	}
+
+	if ( fMin > 0.0f )
+	{
+		*pfDist = fMin;
+		return true;
+	}
+
+	*pfDist = fMax;
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	GetNodeRadius()
+//
+//	PURPOSE:	Get the model node's radius, checking first to see if they
+//				are being overridden.  If they are, then use the manually
+//				set values.  If they are not, then use the hit box user's
+//				value for this node (RETAIL: a file function in Tron,
+//				Object.lto 0x101383b0).
+//
+// ----------------------------------------------------------------------- //
+
+static LTFLOAT GetNodeRadius( IHitBoxUser* pHitBoxUser, ModelSkeleton eModelSkeleton, ModelNode eModelNode )
+{
+	// See if we're overriding the radius...
+
+	if (g_vtNodeRadiusUseOverride.GetFloat())
+	{
+		switch ( g_pModelButeMgr->GetSkeletonNodeLocation(eModelSkeleton, eModelNode) )
+		{
+			case HL_HEAD :
+				return ( g_vtHeadNodeRadius.GetFloat() );
+			break;
+
+			case HL_TORSO :
+				return ( g_vtTorsoNodeRadius.GetFloat() );
+			break;
+
+			case HL_ARM :
+				return ( g_vtArmNodeRadius.GetFloat() );
+			break;
+
+			case HL_LEG :
+				return ( g_vtLegNodeRadius.GetFloat() );
+			break;
+
+			default :
+				return ( HB_DEFAULT_NODE_RADIUS );
+			break;
+		}
+	}
+	else
+	{
+		return ( pHitBoxUser->GetNodeRadius( eModelSkeleton, eModelNode ) );
+	}
+}
+
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	GetNodeTransform()
+//              
+//	PURPOSE:	Returns by parameter the transform for the passed in node.
+//				If the hit box user is an attachment, then use the node of
+//				the attached model (RETAIL: a file function in Tron,
+//				Object.lto 0x10138490).
+//
+//----------------------------------------------------------------------------
+
+static LTBOOL GetNodeTransform( IHitBoxUser* pHitBoxUser, HOBJECT hModel, const char* const pszNodeName, LTransform& NodeTransform )
+{
+	// RETAIL: on each failure Tron reads the model's file name (for a
+	// message the final build does not have)
+
+	if ( pHitBoxUser->GetAttachment() != NULL )
+	{
+		LTRESULT ltResult;
+
+		// Get the Parent through the use of the Attachment Parent/Child retreval
+		HOBJECT hChild;
+		HOBJECT hParent;
+		ltResult = g_pCommonLT->GetAttachmentObjects( pHitBoxUser->GetAttachment(), hParent, hChild);
+		if ( ltResult != LT_OK )
+		{
+			char szModelName[512];
+			g_pLTServer->GetModelLT()->GetModelDBFilename( hModel, szModelName, sizeof( szModelName ));
+			return LTFALSE;
+		}
+
+		// RETAIL: Tron takes the node of the attached model
+		HMODELNODE hNode;
+		ltResult = g_pModelLT->GetNode(hChild, const_cast<char*>(pszNodeName), hNode);
+		if ( ltResult != LT_OK )
+		{
+			char szModelName[512];
+			g_pLTServer->GetModelLT()->GetModelDBFilename( hChild, szModelName, sizeof( szModelName ));
+			return LTFALSE;
+		}
+
+		ltResult = g_pCommonLT->GetAttachedModelNodeTransform( pHitBoxUser->GetAttachment(), hNode, NodeTransform);
+		if ( ltResult != LT_OK )
+		{
+			char szModelName[512];
+			g_pLTServer->GetModelLT()->GetModelDBFilename( hModel, szModelName, sizeof( szModelName ));
+			return LTFALSE;
+		}
+	}
+	else
+	{
+		LTRESULT ltResult;
+		HMODELNODE hNode;
+		ltResult = g_pModelLT->GetNode(hModel, const_cast<char*>(pszNodeName), hNode);
+		if ( ltResult != LT_OK )
+		{
+			char szModelName[512];
+			g_pLTServer->GetModelLT()->GetModelDBFilename( hModel, szModelName, sizeof( szModelName ));
+			return LTFALSE;
+		}
+
+		ltResult = g_pModelLT->GetNodeTransform(hModel, hNode, NodeTransform, LTTRUE);
+		if ( ltResult != LT_OK )
+		{
+			char szModelName[512];
+			g_pLTServer->GetModelLT()->GetModelDBFilename( hModel, szModelName, sizeof( szModelName ));
+			return LTFALSE;
+		}
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	TestNodeSphere()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10138650; the name is ours):
+//				the node test of FindHitNodeSphere. Keeps the nearest hit
+//				of a node that has a hit priority.
+//
+// ----------------------------------------------------------------------- //
+
+static bool TestNodeSphere( HitBoxNodeTest* pTest, HitBoxHit* pHit )
+{
+	LTFLOAT fPriority = g_pModelButeMgr->GetSkeletonNodeHitPriority( pTest->m_pHitBoxUser->GetModelSkeleton(), pTest->m_eModelNode );
+	if ( fPriority == 0.0f )
+	{
+		return false;
+	}
+
+	LTFLOAT fNodeRadius = GetNodeRadius( pTest->m_pHitBoxUser, pTest->m_pHitBoxUser->GetModelSkeleton(), pTest->m_eModelNode );
+
+	LTFLOAT fDist;
+	if ( !RayIntersectSphere( pTest->m_vFrom, pTest->m_vDir, pTest->m_tfNode.m_Pos, fNodeRadius, &fDist ))
+	{
+		return false;
+	}
+
+	if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
+	{
+		g_pLTServer->CPrint("Hit ''%s'' node", g_pModelButeMgr->GetSkeletonNodeName( pTest->m_pHitBoxUser->GetModelSkeleton(), pTest->m_eModelNode ));
+	}
+
+	if ( fDist > pHit->m_fDist )
+	{
+		return false;
+	}
+
+	pHit->m_eModelNode = pTest->m_eModelNode;
+	pHit->m_fPriority = fPriority;
+	pHit->m_fDist = fDist;
+	pHit->m_hObject = pTest->m_pHitBoxUser->TronUnknownVirtual28();
+
+	return true;
+}
+
 
 
 // ----------------------------------------------------------------------- //
@@ -329,16 +632,42 @@ void CCharacterHitBox::SetTronUnknown7D(bool b)
 //
 //	ROUTINE:	CCharacterHitBox::HandleImpact()
 //
-//	PURPOSE:	Handle a vector impacting on us
+//	PURPOSE:	Handle a vector impacting on us (RETAIL: 0x10138fa0)
 //
 // ----------------------------------------------------------------------- //
 
 LTBOOL CCharacterHitBox::HandleImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector vDir, LTVector & vFrom)
 {
-	AIASSERT( m_pHitBoxUser, m_hObject, "Called with NULL HitBoxUser" );
-	AIASSERT( m_hModel, m_hObject, "Called with NULL m_hModel" );
-	AIASSERT( m_hObject, m_hObject, "Called with NULL m_hObject" );
-	AIASSERT( pProj, m_hObject, "Called with NULL projectile" );
+	return HandleImpact( pProj, iInfo, vDir, vFrom, LTFALSE );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::HandleImpactFromPos()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10138fe0): as HandleImpact, but the
+//				test starts at vFrom
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CCharacterHitBox::HandleImpactFromPos(CProjectile* pProj, IntersectInfo& iInfo, LTVector vDir, LTVector & vFrom)
+{
+	return HandleImpact( pProj, iInfo, vDir, vFrom, LTTRUE );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::HandleImpact()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10139020): a projectile does not hit
+//				the hit box of the object that fired it (nor of the users
+//				that this user adds). When nothing is hit, vFrom is moved
+//				past the hit point.
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CCharacterHitBox::HandleImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector vDir, LTVector & vFrom, LTBOOL bFromPos)
+{
     if (!pProj || !m_hModel)
 	{
 		return LTFALSE;
@@ -351,211 +680,348 @@ LTBOOL CCharacterHitBox::HandleImpact(CProjectile* pProj, IntersectInfo& iInfo, 
 		return LTTRUE;
 	}
 
-	StartTimingCounter();
-
-	ModelNode eModelNode = eModelNodeInvalid;
-    LTBOOL bHitSomething = LTTRUE;
-
-	// Only do hit detection with player firing at ai.
-	if( IsPlayer(m_hModel) && !IsPlayer( pProj->GetFiredFrom( )))
+	if ( !pProj->TronUnknownVirtual26() )
 	{
-		bHitSomething = LTTRUE;
-		iInfo.m_hObject = m_hModel;
-		eModelNode = (ModelNode)0;
-	}
-	else
-	{
-		bHitSomething = HandleVectorImpact(pProj, iInfo, vDir, vFrom, eModelNode);
-	}
-
-	EndTimingCounter("CCharacterHitBox::HandleImpact()");
-
-	// Did we hit something?
-
-	if (bHitSomething)
-	{
-		// This is the object that *really* got hit...
-
-		if (eModelNode != eModelNodeInvalid)
+		if ( m_hModel == pProj->GetFiredFrom() || m_pHitBoxUser->TronUnknownVirtual28() == pProj->GetFiredFrom() )
 		{
-			m_pHitBoxUser->SetModelNodeLastHit(eModelNode);
-
-			// Don't adjust damage on players (unless it is
-			// multiplayer?)...
-
-			if( IsCharacter( iInfo.m_hObject ))
-			{
-				pProj->AdjustDamage( m_pHitBoxUser->ComputeDamageModifier( eModelNode ));
-			}
+			return LTFALSE;
 		}
 	}
 
-	return bHitSomething;
+	HitBoxUserList lstHitBoxUsers;
+	m_pHitBoxUser->TronUnknownVirtual24( (int)&lstHitBoxUsers );
+
+	for ( HitBoxUserList::iterator it = lstHitBoxUsers.begin(); it != lstHitBoxUsers.end(); ++it )
+	{
+		if ( (*it)->TronUnknownVirtual28() == pProj->GetFiredFrom() )
+		{
+			return LTFALSE;
+		}
+	}
+
+	ModelNode eModelNode = eModelNodeInvalid;
+	if ( !HandleVectorImpact( pProj, iInfo, vDir, vFrom, eModelNode, bFromPos ))
+	{
+		//
+		// Shot didn't hit box, propagate through box and return that point in
+		// vFrom
+		//
+
+		vFrom = iInfo.m_Point + vDir*5.0f;
+
+		return LTFALSE;
+	}
+
+	return LTTRUE;
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CCharacterHitBox::FindHitNode()
+//	ROUTINE:	CCharacterHitBox::FindHitNodeSphere()
 //
-//	PURPOSE:	Find possible node hit.  If no hit, then eModelNodeInvalid
-//				returned.
+//	PURPOSE:	RETAIL: Tron's (0x10139240)
 //
 // ----------------------------------------------------------------------- //
 
-ModelNode CCharacterHitBox::FindHitNode( LTVector const& vDir, LTVector const& vFrom )
+void CCharacterHitBox::FindHitNodeSphere( const LTVector& vDir, const LTVector& vFrom, HitBoxHit* pHit )
 {
-	UBER_ASSERT( g_pLTServer, "Null LTServer pointer" );
-	UBER_ASSERT( g_pLTServer->GetModelLT(), "Null ModelLT" );
-	UBER_ASSERT( g_pModelButeMgr, "Null Model ButeMgr" );
-
-	ModelNode eModelNode = eModelNodeInvalid;
-	ModelSkeleton eModelSkeleton = m_pHitBoxUser->GetModelSkeleton();
-
-	// This algorithm may need to change since our dims are probably much
-	// bigger than the model's actual dims...
-
-    LTFLOAT fMaxPriority = (LTFLOAT)(-INT_MAX);
-
 	if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
 	{
         g_pLTServer->CPrint("Checking hit nodes..................");
 	}
 
+	HitBoxNodeTest test( TestNodeSphere, m_pHitBoxUser, vDir, vFrom );
+	TestNodes( &test, pHit );
+
+	// Test the users that our user adds; stop when one of them is hit.
+
+	HitBoxUserList lstHitBoxUsers;
+	m_pHitBoxUser->TronUnknownVirtual24( (int)&lstHitBoxUsers );
+
+	for ( HitBoxUserList::iterator it = lstHitBoxUsers.begin(); it != lstHitBoxUsers.end(); ++it )
+	{
+		HitBoxNodeTest userTest( TestNodeSphere, *it, vDir, vFrom );
+		TestNodes( &userTest, pHit );
+
+		if ( m_pHitBoxUser->TronUnknownVirtual28() != pHit->m_hObject )
+		{
+			break;
+		}
+	}
+
+	// A node of another user is not ours.
+
+	if ( m_pHitBoxUser->TronUnknownVirtual28() != pHit->m_hObject )
+	{
+		pHit->m_eModelNode = eModelNodeInvalid;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::FindHitNodeOBB()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10139460)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterHitBox::FindHitNodeOBB( const LTVector& vDir, const LTVector& vFrom, HitBoxHit* pHit )
+{
+	g_pModelLT->UpdateModelOBB( m_hModel, m_pOBBs );
+
+	LTFLOAT fDist;
+	LTFLOAT fNearest = 1.0e12f;
+	pHit->m_eModelNode = eModelNodeInvalid;
+
+	LTVector vRay( vDir.x * 1000.0f, vDir.y * 1000.0f, vDir.z * 1000.0f );
+
+	for ( uint32 iOBB = 0; iOBB < m_nNumOBBs; iOBB++ )
+	{
+		if ( RayIntersectOBB( m_pOBBs[iOBB], vFrom, vRay, &fDist ) && fDist <= fNearest )
+		{
+			// RETAIL: the node is kept even when it is not a skeleton node,
+			// and the hit's distance is not set (docs/RETAIL_BUGS.md)
+			pHit->m_eModelNode = m_pOBBNodes[iOBB];
+			if ( pHit->m_eModelNode != eModelNodeInvalid )
+			{
+				fNearest = fDist;
+			}
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::TestNodes()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10139540)
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterHitBox::TestNodes( HitBoxNodeTest* pTest, HitBoxHit* pHit )
+{
+	ModelSkeleton eModelSkeleton = pTest->m_pHitBoxUser->GetModelSkeleton();
+
 	int cNodes = g_pModelButeMgr->GetSkeletonNumNodes(eModelSkeleton);
 	for (int iNode = 0; iNode < cNodes; iNode++)
 	{
-		ModelNode eCurrentNode = (ModelNode)iNode;
+		pTest->m_eModelNode = (ModelNode)iNode;
 
 		// Don't do transforms if we don't need to...
-		LTFLOAT fNodeRadius = GetNodeRadius(eModelSkeleton, eCurrentNode);
-		if (fNodeRadius <= 0.0f)
-		{
-			continue;
-		}
-		
-		const char* szNodeName = g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, eCurrentNode);
-		if( !szNodeName )
-		{
-			//UBER_ASSERT( 0, "CCharacterHitBox::HandleVectorImpact:  No node name in model skeleton." ); 
-			continue;
-		}
-
-		LTransform transform;
-		if ( GetNodeTransform(szNodeName, transform ) == LTFALSE )
+		if ( GetNodeRadius( eModelSkeleton, (ModelNode)iNode ) <= 0.0f )
 		{
 			continue;
 		}
 
-			// Distance along ray to point of closest approach to node point
-
-        const LTVector vRelativeNodePos = transform.m_Pos - vFrom;
-            const LTFLOAT fRayDist = vDir.Dot(vRelativeNodePos);
-            const LTFLOAT fDistSqr = (vDir*fRayDist - vRelativeNodePos).MagSqr();
-
-
-		// Ignore the node if it wasn't within the radius of the hit spot.
-		if( fDistSqr > fNodeRadius*fNodeRadius )
+		const char* szNodeName = g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, pTest->m_eModelNode);
+		if ( !szNodeName )
 		{
 			continue;
 		}
 
-		if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
-        {
-            g_pLTServer->CPrint("Hit ''%s'' node", g_pModelButeMgr->GetSkeletonNodeName( eModelSkeleton, eCurrentNode ));
-		}
-
-		// Get the hit priority of this node.
-        LTFLOAT fPriority = g_pModelButeMgr->GetSkeletonNodeHitPriority( eModelSkeleton, eCurrentNode );
-
-		// Ignore if not a higher priority node.
-		if ( fPriority < fMaxPriority )
+		if ( !GetNodeTransform( pTest->m_pHitBoxUser, pTest->m_pHitBoxUser->TronUnknownVirtual28(), szNodeName, pTest->m_tfNode ))
 		{
 			continue;
 		}
 
-		// Highest priority hit node so far.
-		eModelNode = eCurrentNode;
-		fMaxPriority = fPriority;
+		pTest->m_pfnTest( pTest, pHit );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterHitBox::AbsorbDamage()
+//
+//	PURPOSE:	RETAIL: Tron's (0x101395d0): each power armor that is on
+//				takes the damage (unless it is of a type the armor does not
+//				take); the damage is less by the mean hit points the armors
+//				had. An armor with no hit points left is detached.
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterHitBox::AbsorbDamage( DamageStruct* pDamage )
+{
+	static HCLASS hPowerArmor = g_pLTServer->GetClass("PowerArmor");
+
+	uint32 nArmors = 0;
+	LTFLOAT fArmorHitPoints = 0.0f;
+
+	int cAttachmentPositions = m_pHitBoxUser->GetAttachments() ? m_pHitBoxUser->GetAttachments()->GetNumAttachmentPositions() : 0;
+	for ( int iAttachmentPosition = 0 ; iAttachmentPosition < cAttachmentPositions ; iAttachmentPosition++ )
+	{
+		CAttachmentPosition* pAttachmentPosition = m_pHitBoxUser->GetAttachments()->GetAttachment((uint32)iAttachmentPosition);
+		if ( pAttachmentPosition->GetAttachment() && pAttachmentPosition->GetAttachment()->GetType() == ATTACHMENT_TYPE_OBJECT )
+		{
+			CAttachment* pAttachment = pAttachmentPosition->GetAttachment();
+
+			// RETAIL: the classes are given in reverse order
+			if ( g_pLTServer->IsKindOf(hPowerArmor, g_pLTServer->GetObjectClass(pAttachment->GetModel())) )
+			{
+				PowerArmor* pPowerArmor = dynamic_cast<PowerArmor*>(g_pLTServer->HandleToObject(pAttachment->GetModel()));
+				if ( pPowerArmor && pPowerArmor->m_eState == PowerArmor::kPA_On )
+				{
+					bool bArmorProof = false;
+					for ( int iType = 0; iType < ARRAY_LEN(s_aeArmorProofDamageTypes); iType++ )
+					{
+						if ( pDamage->eType == s_aeArmorProofDamageTypes[iType] )
+						{
+							bArmorProof = true;
+							break;
+						}
+					}
+
+					if ( !bArmorProof )
+					{
+						fArmorHitPoints = pPowerArmor->m_fHitPoints + fArmorHitPoints;
+						nArmors++;
+
+						LTFLOAT fHitPoints = pPowerArmor->m_fHitPoints - pDamage->fDamage;
+						if ( fHitPoints <= 0.0f )
+						{
+							fHitPoints = 0.0f;
+						}
+
+						if ( pPowerArmor->m_bCanDamage )
+						{
+							pPowerArmor->m_fHitPoints = fHitPoints;
+						}
+
+						if ( pPowerArmor->m_fHitPoints <= 0.0f )
+						{
+							PlayClientFX( (char*)pPowerArmor->m_sOnDestroyFX.c_str(), pPowerArmor->m_hObject );
+							m_pHitBoxUser->GetAttachments()->Detach( pAttachmentPosition );
+						}
+					}
+				}
+			}
+		}
 	}
 
-	return eModelNode;
+	if ( nArmors > 0 )
+	{
+		pDamage->fDamage -= fArmorHitPoints / nArmors;
+		if ( pDamage->fDamage <= 0.0f )
+		{
+			pDamage->fDamage = 0.0f;
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CCharacterHitBox::HandleVectorImpact()
 //
-//	PURPOSE:	Handle being hit by a vector
-//
-// Peter Higley method...
+//	PURPOSE:	Handle being hit by a vector (RETAIL: Tron's, 0x101397d0)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CCharacterHitBox::HandleVectorImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector& vDir, LTVector& vFrom, ModelNode& eModelNode)
+LTBOOL CCharacterHitBox::HandleVectorImpact(CProjectile* pProj, IntersectInfo& iInfo, LTVector vDir, LTVector vFrom, ModelNode& eModelNode, LTBOOL bFromPos)
 {
+	static HCLASS hPowerArmor = g_pLTServer->GetClass("PowerArmor");
+
+	HitBoxHit hit;
+
+	if ( !bFromPos )
+	{
+		vFrom = iInfo.m_Point;
+	}
+	else
+	{
+		iInfo.m_Point = vFrom;
+	}
+
 	// See if we hit any nodes.
-	eModelNode = FindHitNode( vDir, iInfo.m_Point );
+
+	if ( m_nNumOBBs )
+	{
+		FindHitNodeOBB( vDir, vFrom, &hit );
+	}
+	else
+	{
+		FindHitNodeSphere( vDir, vFrom, &hit );
+	}
+
+	eModelNode = hit.m_eModelNode;
 
 	// Did we hit something?
 
-	if (eModelNode != eModelNodeInvalid)
+	if ( eModelNode != eModelNodeInvalid )
 	{
 		ModelSkeleton eModelSkeleton = m_pHitBoxUser->GetModelSkeleton();
-		if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
-		{
-            g_pLTServer->CPrint("...........using ''%s''", g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, eModelNode));
-		}
 
 		// Set the hit object as us ... attachments may change this
 
 		iInfo.m_hObject = m_hModel;
+		iInfo.m_Point = hit.m_fDist * vDir + iInfo.m_Point;
 
-		// Let the character/body prop's attachments handle the impact...
+		HMODELNODE hNode;
+		g_pModelLT->GetNode( m_hModel, const_cast<char*>(g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, eModelNode)), hNode );
 
-		if (m_pHitBoxUser->GetAttachments())
+		// Let the attachments handle the impact. A power armor takes the
+		// impact only on the node it is attached to.
+
+		int cAttachmentPositions = m_pHitBoxUser->GetAttachments() ? m_pHitBoxUser->GetAttachments()->GetNumAttachmentPositions() : 0;
+		for ( int iAttachmentPosition = 0 ; iAttachmentPosition < cAttachmentPositions ; iAttachmentPosition++ )
 		{
-			m_pHitBoxUser->GetAttachments()->HandleProjectileImpact(pProj, iInfo, vDir, vFrom, eModelSkeleton, eModelNode);
+			CAttachmentPosition* pAttachmentPosition = m_pHitBoxUser->GetAttachments()->GetAttachment((uint32)iAttachmentPosition);
+			if ( !pAttachmentPosition->GetAttachment() )
+			{
+				continue;
+			}
+
+			if ( pAttachmentPosition->GetAttachment()->GetType() == ATTACHMENT_TYPE_OBJECT )
+			{
+				CAttachment* pAttachment = pAttachmentPosition->GetAttachment();
+
+				// RETAIL: the classes are given in reverse order
+				if ( g_pLTServer->IsKindOf(hPowerArmor, g_pLTServer->GetObjectClass(pAttachment->GetModel())) )
+				{
+					HMODELSOCKET hSocket;
+					g_pModelLT->GetSocket( m_hModel, pAttachmentPosition->GetName(), hSocket );
+
+					HMODELNODE hSocketNode;
+					g_pModelLT->GetSocketParentNode( m_hModel, hSocket, hSocketNode );
+
+					if ( hSocketNode != hNode )
+					{
+						continue;
+					}
+
+					PowerArmor* pPowerArmor = dynamic_cast<PowerArmor*>(g_pLTServer->HandleToObject(pAttachment->GetModel()));
+					if ( !pPowerArmor || !pPowerArmor->HandleProjectileImpact( pProj, pAttachmentPosition ))
+					{
+						continue;
+					}
+				}
+			}
+
+			if ( pAttachmentPosition->GetAttachment() )
+			{
+				pAttachmentPosition->GetAttachment()->HandleProjectileImpact( pProj, pAttachmentPosition, iInfo, vDir, vFrom, eModelSkeleton, eModelNode );
+			}
 		}
 
-        return LTTRUE;
+		m_pHitBoxUser->SetModelNodeLastHit(eModelNode);
+
+		// Don't adjust damage on players or in multiplayer...
+
+		if ( IsCharacter( iInfo.m_hObject ) && !IsMultiplayerGame() && !IsPlayer( iInfo.m_hObject ))
+		{
+			pProj->AdjustDamage( m_pHitBoxUser->ComputeDamageModifier( eModelNode ));
+		}
+
+		if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
+		{
+			g_pLTServer->CPrint("...........using ''%s''", g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, eModelNode));
+		}
+
+		return LTTRUE;
 	}
 
 	if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
 	{
-        g_pLTServer->CPrint("....................hit nothing");
+		g_pLTServer->CPrint("....................hit nothing");
 	}
-
-	//
-	// Shot didn't hit box, propagate through box and return that point in
-	// vFrom
-	//
-
-	// This projects from intersected box face to the opposing face
-	//  This assumes axis-aligned boxes.  To get a more general technique
-	//	replace every z with a dot product with the forward vector, every
-	//	x with a dot product with the right vector, and every y with a dot
-	//	product with the up vector ("every x/y/z" doesn't include vObjDim)
-/*
-    LTVector vObjDims;
-	g_pPhysicsLT->GetObjectDims(m_hObject, &vObjDims);
-
-    LTVector vProjection(0.0f,0.0f,0.0f);
-    LTVector vAbsDir((float)fabs(vDir.x),(float)fabs(vDir.y),(float)fabs(vDir.z));
-
-	if (vAbsDir.x > vAbsDir.y && vAbsDir.x > vAbsDir.z)
-	{
-		VEC_MULSCALAR(vProjection, vDir, vObjDims.x*2.0f/vAbsDir.x);
-	}
-	else if (vAbsDir.y > vAbsDir.x  && vAbsDir.y > vAbsDir.z)
-	{
-		VEC_MULSCALAR(vProjection, vDir, vObjDims.y*2.0f/vAbsDir.y);
-	}
-	else if (vAbsDir.z > vAbsDir.x  && vAbsDir.z > vAbsDir.y)
-	{
-		VEC_MULSCALAR(vProjection, vDir, vObjDims.z*2.0f/vAbsDir.z);
-	}
-*/
-	vFrom = iInfo.m_Point + vDir*5.0f;
 
     return LTFALSE;
 }
@@ -564,102 +1030,41 @@ LTBOOL CCharacterHitBox::HandleVectorImpact(CProjectile* pProj, IntersectInfo& i
 //
 //	ROUTINE:	CCharacterHitBox::DidProjectileImpact()
 //
-//	PURPOSE:	See if the projectile actually hit us
+//	PURPOSE:	See if the projectile actually hit us (RETAIL: Tron's,
+//				0x10139b80: the hit box test from the fire position)
 //
 // ----------------------------------------------------------------------- //
 
 LTBOOL CCharacterHitBox::DidProjectileImpact(CProjectile* pProjectile)
 {
-	AIASSERT( m_pHitBoxUser, m_hObject, "Called with NULL HitBoxUser" );
-	AIASSERT( m_hModel, m_hObject, "Called with NULL m_hModel" );
-	AIASSERT( m_hObject, m_hObject, "Called with NULL m_hObject" );
-	AIASSERT( pProjectile, m_hObject, "Called with NULL projectile" );
     if (!m_hModel || !pProjectile)
 	{
 		return LTFALSE;
 	}
 
-	// AI can always hit the player in singleplayer.  You don't
-	// need hit detection.
-	if (!IsMultiplayerGame() && IsPlayer(m_hModel))
+	if (!m_pHitBoxUser->UsingHitDetection())
 	{
 		return LTTRUE;
 	}
 
-	// See if we hit a node.
-	ModelNode eModelNode = FindHitNode( pProjectile->GetFireDir(), pProjectile->GetFirePos() );
-
-	// Did we hit something?
-
-	if (eModelNode != eModelNodeInvalid)
-	{
-		if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
-		{
-            g_pLTServer->CPrint("...........using ''%s''", g_pModelButeMgr->GetSkeletonNodeName(m_pHitBoxUser->GetModelSkeleton(), eModelNode));
-		}
-
-		// Set our last hit node
-
-		m_pHitBoxUser->SetModelNodeLastHit(eModelNode);
-
-		// Adjust damage
-		pProjectile->AdjustDamage( m_pHitBoxUser->ComputeDamageModifier(eModelNode) );
-
-        return LTTRUE;
-	}
-
-	if ( g_HitDebugTrack.GetFloat(0.0f) == 1.0f )
-	{
-        g_pLTServer->CPrint("....................hit nothing");
-	}
-
-    return LTFALSE;
+	IntersectInfo iInfo;
+	ModelNode eModelNode;
+	return HandleVectorImpact( pProjectile, iInfo, pProjectile->GetFireDir(), pProjectile->GetFirePos(), eModelNode, LTTRUE );
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CCharacterHitBox::GetNodeRadius()
 //
-//	PURPOSE:	Get the model node's radius, checking first to see if they
-//				are being overridden.  If they are, then use the manually
-//				set values.  If they are not, then use the ModelBute 
-//				systems value for this node.
+//	PURPOSE:	RETAIL: 0x10139c60
 //
 // ----------------------------------------------------------------------- //
+
 LTFLOAT CCharacterHitBox::GetNodeRadius(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
 {
-	// See if we're overriding the radius...
-
-	if (g_vtNodeRadiusUseOverride.GetFloat())
-	{
-		switch ( g_pModelButeMgr->GetSkeletonNodeLocation(eModelSkeleton, eModelNode) )
-		{
-			case HL_HEAD :
-				return ( g_vtHeadNodeRadius.GetFloat() );
-			break;
-
-			case HL_TORSO :
-				return ( g_vtTorsoNodeRadius.GetFloat() );
-			break;
-
-			case HL_ARM :
-				return ( g_vtArmNodeRadius.GetFloat() );
-			break;
-
-			case HL_LEG :
-				return ( g_vtLegNodeRadius.GetFloat() );
-			break;
-
-			default :
-				return ( HB_DEFAULT_NODE_RADIUS );
-			break;
-		}
-	}
-	else
-	{
-		return ( m_pHitBoxUser->GetNodeRadius( eModelSkeleton, eModelNode ) );
-	}
+	return ::GetNodeRadius( m_pHitBoxUser, eModelSkeleton, eModelNode );
 }
+
 
 static LTVector GetNodeModelColor(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
 {
@@ -729,7 +1134,7 @@ void CCharacterHitBox::CreateNodeRadiusModels()
 		}
 
         LTransform transform;
-		if ( GetNodeTransform(szNodeName, transform ) == LTFALSE )
+		if ( GetNodeTransform( m_pHitBoxUser, m_hModel, szNodeName, transform ) == LTFALSE )
 		{
 			continue;
 		}
@@ -821,7 +1226,7 @@ void CCharacterHitBox::UpdateNodeRadiusModels()
 		const char* szNodeName = g_pModelButeMgr->GetSkeletonNodeName(eModelSkeleton, (*pNRS)->eNode);
 
 		LTransform resultTransform;
-		if ( GetNodeTransform( szNodeName, resultTransform ) != LTFALSE )
+		if ( GetNodeTransform( m_pHitBoxUser, m_hModel, szNodeName, resultTransform ) != LTFALSE )
 		{
 			g_pLTServer->SetObjectPos((*pNRS)->hModel, &(resultTransform.m_Pos));
 
@@ -837,75 +1242,6 @@ void CCharacterHitBox::UpdateNodeRadiusModels()
 }
 
 
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	CCharacterHitBox::GetNodeTransform()
-//              
-//	PURPOSE:	Returns True if the function succeeded, false if it failed.
-//
-//				Returns by parameter the transform for the passed in node.  If
-//				the owner is an attachment, then be sure to use the tranform 
-//				information from the parent.
-//              
-//----------------------------------------------------------------------------
-LTBOOL CCharacterHitBox::GetNodeTransform( const char* const pszNodeName, LTransform& NodeTransform )
-{
-	UBER_ASSERT( m_pHitBoxUser, "No registered Hitbox User" );
-	UBER_ASSERT( g_pCommonLT, "No g_pCommonLT" );
-	UBER_ASSERT( g_pModelLT, "No g_pModelLT" );
-
-	if ( m_pHitBoxUser->GetAttachment() != NULL )
-	{
-		LTRESULT ltResult;
-
-		// Get the Parent through the use of the Attachment Parent/Child retreval
-		HOBJECT hChild;
-		HOBJECT hParent;
-		ltResult = g_pCommonLT->GetAttachmentObjects( m_pHitBoxUser->GetAttachment(), hParent, hChild);
-//		UBER_ASSERT( ltResult == LT_OK, "Unable to find Parent");
-		if ( ltResult != LT_OK )
-		{
-			return LTFALSE;
-		}
-
-		// Get the Parents socket where this attachment is attached.
-		HMODELSOCKET hSocket;
-		ltResult = g_pModelLT->GetSocket(hParent, const_cast<char*>(pszNodeName), hSocket);
-//		UBER_ASSERT1( ltResult == LT_OK, "Unable to find Socket %s", pszNodeName );
-		if ( ltResult != LT_OK )
-		{
-			return LTFALSE;
-		}
-
-		ltResult = g_pCommonLT->GetAttachedModelNodeTransform( m_pHitBoxUser->GetAttachment(), hSocket, NodeTransform);
-//		UBER_ASSERT1( ltResult == LT_OK, "Unable to find Socket %s", pszNodeName );
-		if ( ltResult != LT_OK )
-		{
-			return LTFALSE;
-		}
-	}
-	else
-	{
-		LTRESULT ltResult;
-		HMODELNODE hNode;
-		ltResult = g_pModelLT->GetNode(m_hModel, const_cast<char*>(pszNodeName), hNode);
-//		UBER_ASSERT1( ltResult == LT_OK, "Unable to find Socket %s", pszNodeName );
-		if ( ltResult != LT_OK )
-		{
-			return LTFALSE;
-		}
-
-        LTransform transform;
-        ltResult = g_pModelLT->GetNodeTransform(m_hModel, hNode, NodeTransform, LTTRUE);
-//		UBER_ASSERT( ltResult == LT_OK, "" );
-		if ( ltResult != LT_OK )
-		{
-			return LTFALSE;
-		}
-	}
-
-	return LTTRUE;
-}
 
 // ----------------------------------------------------------------------- //
 //

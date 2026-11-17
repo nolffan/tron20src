@@ -966,7 +966,7 @@ bool CProjectile::GetHitBoxImpact(HOBJECT hObj, HOBJECT *phObj, IntersectInfo *p
 	if (pHitBox)
 	{
 		LTVector vFrom = m_vFirePos;
-		if (pHitBox->HandleImpact(this, *pInfo, m_vDir, vFrom))
+		if (pHitBox->HandleImpactFromPos(this, *pInfo, m_vDir, vFrom))
 		{
 			*phObj = pHitBox->GetModelObject();
 			return true;
