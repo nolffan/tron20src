@@ -1902,7 +1902,13 @@ LTBOOL CAI::GetDoneProcessingStimuli() const
 {
 	if( m_pAISenseRecorder )
 	{
+#ifdef TRON20_MODERN
 		return m_pAISenseRecorder->GetDoneProcessingStimuli();
+#else
+		// RETAIL: Tron returns the recorder's ray count (0x1012c1da jumps
+		// to 0x101dac80): a retail bug, docs/RETAIL_BUGS.md
+		return m_pAISenseRecorder->GetIntersectSegmentCount();
+#endif
 	}
 
 	return LTFALSE;
