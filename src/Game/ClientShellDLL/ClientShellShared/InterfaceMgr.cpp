@@ -2901,7 +2901,8 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 					{
 						if (IsChoosingWeapon())
 						{
-							GetWeaponChooser()->Close();
+							// RETAIL: Tron's keeps the HUD weapon (0x100cb0ba)
+							GetWeaponChooser()->Close(false);
 							bHandled = true;
 						}
 						if (IsChoosingAmmo())

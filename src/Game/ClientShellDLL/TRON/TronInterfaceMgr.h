@@ -21,6 +21,7 @@
 #include "TRONPlayerStats.h"
 #include "SubroutineMgr.h"
 #include "TronLayoutMgr.h"
+#include "TronWeaponChooser.h"
 #include "ScreenSpriteMgr.h"
 #include "DuplicateSubroutineDlg.h"
 // RETAIL: every client TU that includes this header runs ScreenSubroutines.h's
@@ -202,10 +203,7 @@ private:
 	CTronPlayerStats	m_stats;				// +0x2206c Player statistics (health, ammo, armor, etc.)
 	CSubroutineMgr		m_SubroutineMgr;		// +0x24474
 	CTronLayoutMgr		m_TronLayoutMgr;		// +0x25620, same as g_pLayoutMgr
-	// PORT: retail's is a CTronWeaponChooser (0x118 bytes, vtable
-	// 0x101e95b0; not yet written)
-	CWeaponChooser		m_WeaponChooser;		// +0x26790
-	char				m_aTronPadWeaponChooser[0x118 - sizeof(CWeaponChooser)];
+	CTronWeaponChooser	m_WeaponChooser;		// +0x26790 (0x118 bytes)
 	CServerOptionMgr	m_ServerOptionMgr;		// +0x268a8 same as g_pServerOptionMgr
 	CLightCycleGameDataMgr	m_LightCycleGameDataMgr;	// +0x279c4 same as g_pLightCycleGameDataMgr
 	CScreenSprite*		m_pTurnArrowLeft;		// +0x28ae0 "Interface\Spr\TurnArrowLeft.spr"

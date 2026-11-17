@@ -740,6 +740,10 @@ SOURCE=.\TronTargetMgr.cpp
 
 SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\TronWeaponChooser.cpp
+# End Source File
 # End Group
 # Begin Group "Headers"
 
@@ -1207,6 +1211,10 @@ SOURCE=.\TRONScreenMgr.h
 # Begin Source File
 
 SOURCE=..\..\Shared\Tron\TronVersionMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronWeaponChooser.h
 # End Source File
 # End Group
 # Begin Group "libs_debug"

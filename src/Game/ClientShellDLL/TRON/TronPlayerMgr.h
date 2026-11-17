@@ -164,6 +164,9 @@ private:
 
 	bool	IsHolsterLocked();	// RETAIL: 0x100a7b70 (the name is ours)
 
+	// RETAIL: the weapon chooser asks it too (0x100afe43, 0x100b0229)
+	friend class CTronWeaponChooser;
+
 	// RETAIL: the offsets are retail's; names ours where not build 69's
 	bool	m_bTransferringEnergy;		// +0x1e8 (with m_hTronUnknownSound22C)
 	bool	m_bTronUnknown1E9;			// +0x1e9 (with m_hTronUnknownSound224)

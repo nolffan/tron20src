@@ -12,38 +12,43 @@
 #include "LTGUIMgr.h"
 #include "Timer.h"
 
+// RETAIL: Tron's chooser is virtual (vtable 0x101eb9f4: the destructor,
+// Init, Term, Open, Close, NextWeapon, PrevWeapon, EndAutoSwitch, Update);
+// CTronWeaponChooser (TRON/TronWeaponChooser.h) overrides most of them.
+// Close takes a flag (unused here; CTronWeaponChooser's shows the closing
+// selection on the HUD weapon when it is set).
 class CWeaponChooser
 {
 public:
 	CWeaponChooser();
 	virtual ~CWeaponChooser();
 
-	void	Init();
-	void	Term();
+	virtual void	Init();
+	virtual void	Term();
 
-    bool	Open(uint8 nClass);
-	void	Close();
+	virtual bool	Open(uint8 nClass);
+	virtual void	Close(bool bShowSelection = true);
     bool	IsOpen()    {return m_bIsOpen;}
 
-	void	NextWeapon(uint8 nClass);
-	void	PrevWeapon();
-	void	EndAutoSwitch(bool bNextWeaponKey = true);
+	virtual void	NextWeapon(uint8 nClass);
+	virtual void	PrevWeapon();
+	virtual void	EndAutoSwitch(bool bNextWeaponKey = true);
 
-	void	Update();
+	virtual void	Update();
 
     uint8   GetCurrentSelection() {return m_nWeapon;}
     uint8   GetCurrentClass() {return m_nClass;}
 
-private:
+protected:
 
-	uint8			m_nWeapon;
-	uint8			m_nClass;
-    bool			m_bIsOpen;
+	uint8			m_nWeapon;		// +0x4
+	uint8			m_nClass;		// +0x5
+    bool			m_bIsOpen;		// +0x6
 
-	CTimer		m_NextWeaponKeyDownTimer;
-	CTimer		m_PrevWeaponKeyDownTimer;
-	CTimer		m_AutoSwitchTimer;
-	CTimer		m_AutoCloseTimer;
+	CTimer		m_NextWeaponKeyDownTimer;	// +0x8
+	CTimer		m_PrevWeaponKeyDownTimer;	// +0x18
+	CTimer		m_AutoSwitchTimer;			// +0x28
+	CTimer		m_AutoCloseTimer;			// +0x38
 };
 
 class CAmmoChooser
