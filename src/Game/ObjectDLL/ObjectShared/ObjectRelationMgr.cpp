@@ -57,10 +57,13 @@ CObjectRelationMgr::CObjectRelationMgr()
 
 	m_szDataSet[0] = '\0';
 	m_szRelationSet[0] = '\0';
+	m_szKey[0] = '\0';	// RETAIL: 0x1010afb1
 
 	m_pRelationUser = debug_new1(CRelationUser, this);
 	m_pDataUser = debug_new(CDataUser);
 
+	// RETAIL: the owner's link notifies this manager (0x1010b021)
+	m_hOwner.SetReceiver( *this );
 	m_hOwner = NULL;
 }
 
@@ -189,10 +192,10 @@ void CObjectRelationMgr::Init(IObjectRelationMgrUser* pUser, const char* const s
 {
 	// RETAIL: what is left of an assert in Tron's (retail 0x1010b3b0 makes
 	// the cast and drops it)
-	dynamic_cast<IObjectRelationMgrUser*>(g_pLTServer->HandleToObject(pUser->GetUserObject()));
+	HOBJECT hUser = pUser->GetUserObject();
+	dynamic_cast<IObjectRelationMgrUser*>(g_pLTServer->HandleToObject(hUser));
 
-	strncpy( m_szKey, szKey, RELATION_VALUE_LENGTH-1 );
-	m_szKey[RELATION_VALUE_LENGTH-1] = '\0';
+	LTStrCpy( m_szKey, szKey, sizeof(m_szKey) );
 
 	CRelationMgr::GetGlobalRelationMgr()->RemoveObjectRelationMgr(this);
 	CRelationMgr::GetGlobalRelationMgr()->AddObjectRelationMgr(this, pUser->GetUserObject());
