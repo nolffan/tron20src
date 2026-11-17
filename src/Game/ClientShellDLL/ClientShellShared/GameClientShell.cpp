@@ -1983,9 +1983,8 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 	if( key >= 0xFF )
 		return;
 
-	// The engine handles the VK_F8 key for screenshots.
-	if( key == VK_F8 )
-		return;
+	// RETAIL: 0x100e3f90: Tron's has no VK_F8 test, and its quick save is
+	// F5
 
 	//if we are performance testing...
 	if (IsRunningPerformanceTest())
@@ -1998,75 +1997,9 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 		return;
 	}
 
-	if (key == VK_TOGGLE_SCREENSHOTMODE)
+	// The developer keys do nothing in the final build
+	if (key == VK_TOGGLE_SCREENSHOTMODE || key == VK_WRITE_CAM_POS || key == VK_MAKE_CUBIC_ENVMAP)
 	{
-#ifndef _FINAL
-		g_bScreenShotMode = !g_bScreenShotMode;
-
-		bool bDrawHUD = !g_bScreenShotMode; // && GetPlayerMgr()->IsSpectatorMode());
-		if (bDrawHUD)
-		{
-			GetInterfaceMgr( )->SetHUDRenderLevel(kHUDRenderFull);
-		}
-		else
-		{
-			GetInterfaceMgr( )->SetHUDRenderLevel(kHUDRenderNone);
-		}
-
-        g_pLTClient->CPrint("Screen shot mode: %s", g_bScreenShotMode ? "ON" : "OFF");
-#endif
-		return;
-	}
-
-	if (key == VK_TOGGLE_SPECTATOR_MODE)
-	{
-#ifndef _FINAL
-		char *pCheat = "mpclip";
-		g_pCheatMgr->Check(CParsedMsg( 1, &pCheat ));
-#endif
-		return;
-	}
-
-	if (key == VK_TOGGLE_GHOST_MODE)
-	{
-#ifndef _FINAL
-		char *pCheat = "mppoltergeist";
-		g_pCheatMgr->Check(CParsedMsg( 1, &pCheat ));
-#endif
-		return;
-	}
-
-#ifndef _DEMO
-#ifndef _FINAL
-	if (key == VK_MULTIPLY)
-	{
-		static bool g_bCycleOn = false;
-		g_bCycleOn = !g_bCycleOn;
-		if(g_bCycleOn)
-		{
-			g_pLTClient->RunConsoleString("cmd msg player StartLightCycle");
-		}
-		else
-		{
-			g_pLTClient->RunConsoleString("cmd msg player EndLightCycle");
-		}
-	}
-#endif
-#endif
-
-	if (key == VK_WRITE_CAM_POS)
-	{
-#ifndef _FINAL
-		DebugWriteCameraPosition();
-#endif
-		return;
-	}
-
-	if (key == VK_MAKE_CUBIC_ENVMAP)
-	{
-#ifndef _FINAL
-		g_pLTClient->MakeCubicEnvMap(GetPlayerMgr()->GetCamera(), (uint32)(g_vtMakeCubicEnvMapSize.GetFloat(256.0f) + 0.5f), g_vtMakeCubicEnvMapName.GetStr("CubicEnvMap"));
-#endif
 		return;
 	}
 
@@ -2085,6 +2018,9 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 		if (GS_SCREEN == eGameState && SCREEN_ID_POSTLOAD == g_pInterfaceMgr->GetScreenMgr()->GetCurrentScreenID() )
 			return;
 
+		// RETAIL: and not while the interface says no (its slot 0x54)
+		if (!GetInterfaceMgr()->TronUnknownVirtual54())
+			return;
 
 		// Check if we can do a load.
 		if( g_pClientSaveLoadMgr->CanLoadGame( ) && g_pClientSaveLoadMgr->QuickSaveExists( ))
@@ -2096,12 +2032,13 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 				mb.eType = LTMB_YESNO;
 				mb.pFn = QuickLoadCallBack;
 				mb.pData = this;
-				g_pInterfaceMgr->ShowMessageBox(IDS_ENDCURRENTGAME,&mb);
+				g_pInterfaceMgr->ShowMessageBox(0x38e,&mb);	// RETAIL: Tron's string
 			}
 			else
 			{
-				//if mission bute mgr is not initialized
-				if (!g_pMissionButeMgr->GetAttributeFile( ) || !strlen(g_pMissionButeMgr->GetAttributeFile( )))
+				// RETAIL: the single player missions unless they are loaded
+				char const* pszFile = g_pMissionButeMgr->GetAttributeFile( );
+				if (!pszFile || !strlen(pszFile) || (strlen(pszFile) && stricmp(pszFile, MISSION_DEFAULT_FILE)))
 				{
 					// Initialize to the sp mission bute.
 					if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
@@ -2111,28 +2048,35 @@ void CGameClientShell::OnKeyDown(int key, int rep)
   					}
 				}
 
-				g_pMissionMgr->StartGameFromQuickSave( );
+				GetMissionMgr()->StartGameFromQuickSave( );
 			}
 		}
 		return;
 	}
-	else if( key == VK_F6 )
+	else if( key == VK_F5 )
 	{
 		// Only allow quicksave if we're in a world and not a remote client.
 		if( GetPlayerMgr()->IsPlayerInWorld() && !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 		{
 			if( g_pClientSaveLoadMgr->CanSaveGame() && eGameState == GS_PLAYING )
 			{
-				m_bQuickSave = true;
+				// RETAIL: and while the interface lets it (its slot 0x50)
+				if (GetInterfaceMgr()->TronUnknownVirtual50())
+				{
+					m_bQuickSave = true;
+				}
 			}
 			else
 			{
-				// Can't quicksave now...
-				g_pGameClientShell->CSPrint(LoadTempString(IDS_CANTQUICKSAVE));
+				// Can't quicksave now... (RETAIL: Tron's strings, one for
+				// the light cycle games)
+				GameType eGameType = m_eGameType;
+				const char* pszMsg = LoadTempString((eGameType > eGameTypeSingle && eGameType <= eGameTypeSingleLightCycleCustom) ? 0x455 : 0x3fa);
+				g_pChatMsgs->AddMessage(pszMsg);
 				g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nosave.wav");
 			}
+			return;
 		}
-		return;
 	}
 
 	// Let the interface mgr have a go at it...
@@ -2140,10 +2084,7 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 	{
 		return;
 	}
-	if (GetPlayerMgr()->OnKeyDown(key, rep))
-	{
-		return;
-	}
+	GetPlayerMgr()->OnKeyDown(key, rep);
 }
 
 
