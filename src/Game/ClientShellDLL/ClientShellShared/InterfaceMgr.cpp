@@ -4671,24 +4671,15 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 
 	createStruct.m_ObjectType = OT_SPRITE;
 
-    LTVector vPos(0,0,0), vU, vR, vF, vTemp;
-    LTRotation rRot;
-
-//    g_pLTClient->GetObjectPos(hCamera, &vPos);
-//    g_pLTClient->GetObjectRotation(hCamera, &rRot);
-	vU = rRot.Up();
-	vR = rRot.Right();
-	vF = rRot.Forward();
-
+	// RETAIL: 0x100ccfda: Tron's overlays sit at a fixed spot in front of
+	// the camera (a sprite at the sprite distance, a model at its layout
+	// position); a model has a render style and an animation too
 	if (g_pLayoutMgr->IsMaskSprite(eMask))
 	{
-
-		VEC_MULSCALAR(vTemp, vF, g_fOverlaySpriteDist);
-		VEC_ADD(vPos, vPos, vTemp);
+		LTVector vPos(0.0f, 0.0f, g_fOverlaySpriteDist);
 		createStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITE_NOZ | FLAG_FOGDISABLE | FLAG_NOLIGHT | FLAG_REALLYCLOSE;
-		VEC_COPY(createStruct.m_Pos, vPos);
-		createStruct.m_Rotation = rRot;
-
+		createStruct.m_Pos = vPos;
+		createStruct.m_Rotation.Init();
 
 		char sprName[128] = "";
 		g_pLayoutMgr->GetMaskSprite(eMask,sprName,sizeof(sprName));
@@ -4699,28 +4690,30 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 			m_hOverlays[eMask] = g_pLTClient->CreateObject(&createStruct);
 			m_nOverlayCount++;
 
-			// [KLS 5/15/02] Change the alpha value of the sprite...
-			// [JRG 9/1/02] Added alpha values to layout butes
 			LTFLOAT r, g, b, a;
 			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &r, &g, &b, &a);
 
 			a = g_pLayoutMgr->GetMaskAlpha(eMask);
-			
+
 			g_pLTClient->SetObjectColor(m_hOverlays[eMask], r, g, b, a);
 		}
 	}
 	else
 	{
-		VEC_MULSCALAR(vTemp, vF, g_fOverlayModelDist);
-		VEC_ADD(vPos, vPos, vTemp);
-		createStruct.m_Flags = FLAG_VISIBLE | FLAG_NOLIGHT;
-		VEC_COPY(createStruct.m_Pos, vPos);
-		createStruct.m_Rotation = rRot;
+		LTVector vPos = g_pLayoutMgr->GetMaskPosition(eMask);
+		createStruct.m_Pos = vPos;
 
 		char modName[128] = "";
 		char skinName[128] = "";
+		char animName[128] = "";
+		char rsName[128] = "";
+		createStruct.m_Flags = FLAG_VISIBLE | FLAG_NOLIGHT | FLAG_REALLYCLOSE;
+		createStruct.m_Rotation.Init();
 		g_pLayoutMgr->GetMaskModel(eMask,modName,sizeof(modName));
 		g_pLayoutMgr->GetMaskSkin(eMask,skinName,sizeof(skinName));
+		g_pLayoutMgr->GetMaskRenderStyle(eMask,rsName,sizeof(rsName));
+		g_pLayoutMgr->GetMaskAnim(eMask,animName,sizeof(animName));
+		LTFLOAT fAlpha = g_pLayoutMgr->GetMaskAlpha(eMask);
 
 		createStruct.m_ObjectType = OT_MODEL;
 
@@ -4728,13 +4721,21 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 		{
 			SAFE_STRCPY(createStruct.m_Filename, modName);
 			SAFE_STRCPY(createStruct.m_SkinName, skinName);
+			if (rsName[0])
+			{
+				SAFE_STRCPY(createStruct.m_RenderStyleName, rsName);
+			}
 			m_hOverlays[eMask] = g_pLTClient->CreateObject(&createStruct);
-/*
-		    LTVector vColor;
-			LTFLOAT a;
-			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &(vColor.x), &(vColor.y), &(vColor.z), &a);
-			g_pLTClient->SetObjectColor(m_hOverlays[eMask], vColor.x, vColor.y, vColor.z, 0.999f);
-*/
+
+			LTFLOAT r, g, b, a;
+			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &r, &g, &b, &a);
+			g_pLTClient->SetObjectColor(m_hOverlays[eMask], r, g, b, fAlpha);
+
+			if (animName[0])
+			{
+				g_pLTClient->SetModelAnimation(m_hOverlays[eMask], g_pLTClient->GetAnimIndex(m_hOverlays[eMask], animName));
+			}
+
 			m_nOverlayCount++;
 		}
 	}
