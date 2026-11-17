@@ -2018,9 +2018,115 @@ void CVehicleMgr::CreateVehicleModel()
 //
 // ----------------------------------------------------------------------- //
 
+void ExitLightCycleCallBack(LTBOOL bReturn, void *pData);
+
 void CVehicleMgr::UpdateModels()
 {
-	if (m_ePPhysicsModel != PPM_NORMAL)
+	// RETAIL: 0x1011da30: Tron's light cycle.  The model shows once its
+	// intro fx is done; then the server is told the cycle can start, and
+	// the cycle's fx and sounds begin (or, at the end of a ride, the exit
+	// box comes up).  While riding, the model follows the player.
+	if (m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	{
+		if (m_bTronUnknown2158)
+		{
+			if (m_TronUnknownFX2138.IsValid() && !m_TronUnknownFX2138.GetInstance()->IsDone())
+			{
+				ShowVehicleModel(LTFALSE);
+				return;
+			}
+
+			if (m_TronUnknownFX2138.IsValid())
+			{
+				g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2138);
+			}
+			m_TronUnknownFX2138.ClearLink();
+			m_bTronUnknown2158 = false;
+
+			if (m_nTronUnknown215c == 0)
+			{
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+				cMsg.Writeuint8(LCI_START_UPDATING);
+				cMsg.WriteObject(g_pMoveMgr->GetServerObject());
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+
+				char szFX[512];
+				if (g_pPlayerMgr->TronUnknownVirtual78(g_pMoveMgr->GetObject(), szFX))
+				{
+					CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, m_hVehicleModel);
+					g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+					g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2138, fxInit, LTTRUE);
+				}
+
+				g_pInterfaceMgr->ClearTronUnknownMessage();
+				g_pMoveMgr->AllowMovement(LTTRUE);
+
+				char szAltCruiseSnd[128];
+				char szCruiseSnd[128];
+				char szTurnSnd[128];
+				g_pPlayerMgr->TronUnknownVirtual7C(g_pMoveMgr->GetObject(), szCruiseSnd, szTurnSnd, szAltCruiseSnd);
+
+				if (!m_hVehicleCruiseSnd)
+				{
+					m_hVehicleCruiseSnd = g_pClientSoundMgr->PlaySoundLocal(szCruiseSnd, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT);
+				}
+				if (!m_hTronUnknownSnd2c)
+				{
+					m_hTronUnknownSnd2c = g_pClientSoundMgr->PlaySoundLocal(szAltCruiseSnd, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT);
+				}
+
+				ShowVehicleModel(LTTRUE);
+			}
+			else if (m_nTronUnknown215c == 1)
+			{
+				if (!IsMultiplayerGame())
+				{
+					if (GetGameType() == eGameTypeSingleLightCycleCircuit)
+					{
+						if (!g_pPlayerMgr->TronUnknownVirtual88())
+						{
+							g_pGameClientShell->CSPrint(LoadTempString(0x3fd));
+							g_pPlayerMgr->StartDeathFX();
+						}
+						else
+						{
+							MBCreate mb;
+							mb.eType = LTMB_YESNO;
+							mb.pFn = ExitLightCycleCallBack;
+							mb.pData = this;
+							g_pInterfaceMgr->ShowMessageBox(0x397, &mb);
+						}
+					}
+					else
+					{
+						MBCreate mb;
+						mb.eType = LTMB_YESNO;
+						mb.pFn = ExitLightCycleCallBack;
+						mb.pData = this;
+						g_pInterfaceMgr->ShowMessageBox(0x396, &mb);
+					}
+				}
+			}
+		}
+		else
+		{
+			LTVector vPos;
+			LTRotation rRot;
+			g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &vPos);
+			g_pLTClient->GetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+			g_pLTClient->SetObjectPosAndRotation(m_hVehicleModel, &vPos, &rRot);
+
+			ShowVehicleModel(!g_pPlayerMgr->GetTronUnknown1D5());
+
+			if (m_TronUnknownFX2148.IsValid())
+			{
+				LTVector vFXPos = vPos + m_vTronUnknownFXOffset;
+				m_TronUnknownFX2148.GetInstance()->SetPos(vFXPos, LTVector(0.0f, 0.0f, 0.0f));
+			}
+		}
+	}
+	else if (m_ePPhysicsModel != PPM_NORMAL)
 	{
 		UpdateVehicleModel();
 	}
