@@ -188,6 +188,16 @@ void CHHWeaponModel::Setup(CWeapon* pParent, WEAPON const *pWeaponData)
 	{
 		SetObjectFilenames(m_hObject, pWeaponData->szHHModel, pWeaponData->blrHHSkins.GetItem(0));
 
+		// RETAIL: Tron shows all of the model's pieces (0x1017f71b)
+		uint32 nNumPieces;
+		if( g_pModelLT->GetNumPieces( m_hObject, nNumPieces ) == LT_OK )
+		{
+			for( HMODELPIECE hPiece = 0; hPiece < nNumPieces; hPiece++ )
+			{
+				g_pModelLT->SetPieceHideStatus( m_hObject, hPiece, false );
+			}
+		}
+
 		if( pParent )
 			pParent->HideWeapon( false );
 	}
