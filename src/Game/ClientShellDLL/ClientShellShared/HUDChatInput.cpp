@@ -28,7 +28,6 @@ CHUDChatInput::CHUDChatInput()
 	m_bVisible = LTFALSE;
 	m_pStr = LTNULL;
 	m_eLevel = kHUDRenderText;
-	m_bTeamMessage = false;
 }
 
 
@@ -113,6 +112,7 @@ void CHUDChatInput::OnExitWorld()
 		m_bVisible = LTFALSE;
 		m_nHistory = -1;
 		g_pChatMsgs->ShowHistory(LTFALSE);
+		SetChatType(0);
 
 		m_EditCtrl.Show(LTFALSE);
 		m_EditCtrl.UpdateData(LTTRUE);
@@ -122,25 +122,30 @@ void CHUDChatInput::OnExitWorld()
 	}
 }
 
-void CHUDChatInput::Show(bool bShow, bool bTeam) 
+void CHUDChatInput::Show(LTBOOL bShow) 
 {
 	m_bVisible = bShow;
 	m_nHistory = -1;
 	g_pChatMsgs->ShowHistory(bShow);
 
-
-	//only set the team flag when showing the ChatInput. We will need to
-	// access the flag after it is hidden.
-	if (bShow)
-		m_bTeamMessage = bTeam;
-
 	m_EditCtrl.Show(bShow);
 	g_pGameClientShell->SetInputState(!bShow);
-	g_pLTClient->ClearInput();
 
 	if (bShow)
 	{
-		m_pStr->SetText(LoadTempString(IDS_SAY));
+		// RETAIL: Tron's strings (1009 "say", 1019 for the team)
+		switch (m_nChatType)
+		{
+			case 1:
+				m_pStr->SetText(LoadTempString(1009));
+				break;
+			case 2:
+				m_pStr->SetText(LoadTempString(1019));
+				break;
+			default:
+				m_pStr->SetText(LoadTempString(1009));
+				break;
+		}
 		m_szChatStr[0] = 0;
 	
 		Update();
@@ -168,13 +173,19 @@ void CHUDChatInput::UpdateLayout()
 
 }
 
+void CHUDChatInput::SetChatType(uint32 nChatType)
+{
+	m_nChatType = nChatType;
+}
+
 LTBOOL CHUDChatInput::HandleKeyDown(int key, int rep)
 {
 	switch (key)
 	{
 	case VK_ESCAPE:
 	{
-		Show(false,false);
+		Show(false);
+		SetChatType(0);	// RETAIL: Tron's (0x101660ed)
 		return LTTRUE;
 	} break;
 
@@ -233,7 +244,7 @@ LTBOOL CHUDChatInput::HandleChar(unsigned char c)
 void CHUDChatInput::Send()
 {
 
-	Show(false,false);
+	Show(false);
 
 	// Ignore empty messages.
 	if( !m_szChatStr[0] )
@@ -268,7 +279,7 @@ void CHUDChatInput::Send()
         nMsgID = MID_PLAYER_MESSAGE;
 	cMsg.Writeuint8(nMsgID);
     cMsg.WriteString(m_szChatStr);
-	cMsg.Writebool(m_bTeamMessage);
+	cMsg.Writeuint8((uint8)m_nChatType);	// RETAIL: Tron's (0x101663a1)
     g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
 
 	// cache this string in the chat history

@@ -43,7 +43,9 @@ public:
     LTBOOL           HandleChar(unsigned char c);
 
 
-	void		Show(bool bShow, bool bTeam);
+	// RETAIL: Tron's takes the chat type from SetChatType (0x10165f10)
+	void		Show(LTBOOL bShow);
+	void		SetChatType(uint32 nChatType);	// RETAIL: 0x101660b0 (the name is ours)
 	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
 	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
 
@@ -62,13 +64,14 @@ private:
 
 	CUIPolyString*	m_pStr;
 
+	// RETAIL: Tron's (+0x1a8; the name is ours): 2 for a team message;
+	// it takes NOLF2's m_bTeamMessage's place
+	uint32			m_nChatType;
 
 	char			m_szChatStr[kMaxChatLength];
 	char			m_szChatHistory[kMaxChatHistory][kMaxChatLength];
 
 	int				m_nHistory;
-
-	bool			m_bTeamMessage;
 
 };
 
