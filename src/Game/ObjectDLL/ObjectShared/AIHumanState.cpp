@@ -4638,9 +4638,10 @@ LTBOOL CAIHumanStateChase::CalculatePath()
 	// This keeps AIs from crowding each other when attacking, especially melee.
 	// Static variable is shared between all callers to CalculatePath.
 
-	static int iOffset = 0;
+	// RETAIL: 0x101ec48a, Tron's offset is the one Init picked at random
+	// (m_xTronUnknownC0), not a static that cycles.
 	LTVector vOffset(0.f, 0.f, 0.f);
-	switch( iOffset )
+	switch( m_xTronUnknownC0 )
 	{
 		case 0:	vOffset.x -= 96.f;
 				break;
@@ -4654,7 +4655,6 @@ LTBOOL CAIHumanStateChase::CalculatePath()
 		case 3:	vOffset.z += 96.f;
 				break;
 	}
-	iOffset = ( iOffset + 1 ) % 4;
 
 
 	m_pJunctionCorrectVolume = LTNULL;
