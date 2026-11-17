@@ -88,6 +88,11 @@ void CTronTargetMgr::Update()
 		}
 	}
 
+	// RETAIL: the old target and whether its properties were kept
+	// (0x100ae66f)
+	bool bOldProps = m_Props.bTronUnknown424;
+	HOBJECT hOldTarget = m_hTarget;
+
 	//clear our targeting info
 	m_hTarget = NULL;
 	m_fTargetRange = 10000.0f;
@@ -107,8 +112,20 @@ void CTronTargetMgr::Update()
 	//see what we've looking at
 	float fDistAway = 10000.0f;
 	CheckForIntersect(fDistAway);
+
+	// RETAIL: the target's properties go when the player manager no
+	// longer wants them (0x100ae97a), when there is no target (but there
+	// was one) and when the target is out of their range
+	if (!g_pTronPlayerMgr->GetTronUnknown204())
+		ClearTargetProperties();
 	if (!m_hTarget) //nothing to see here
+	{
+		if (hOldTarget || bOldProps)
+			ClearTargetProperties();
 		return;
+	}
+	if (g_pTronPlayerMgr->GetTronUnknown20C() < fDistAway)
+		ClearTargetProperties();
 	m_fTargetRange = fDistAway;
 
 
