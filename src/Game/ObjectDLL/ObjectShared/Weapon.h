@@ -95,6 +95,12 @@ class CWeapon
 		float	GetLastFireTime( ) const { return m_fLastFireTime; }
 
 		void	HideWeapon( bool bHidden );
+
+		// RETAIL: Tron's (0x10158540; the names are ours): CPlayerObj calls it
+		// in place of Fire when a client fires faster than the weapon's fire
+		// delay (0x10082ba1); it only spends the ammo. Retail ignores the second
+		// argument
+		void	SpendAmmo( HOBJECT hFiredFrom, bool bTronUnknown );
 		bool	IsHidden() const { return m_bHidden; }
 	
 	protected :

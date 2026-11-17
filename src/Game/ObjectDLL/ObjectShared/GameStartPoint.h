@@ -44,14 +44,17 @@ class GameStartPoint : public GameBase
 		typedef std::vector< GameStartPoint* > StartPointList;
 		static StartPointList const& GetStartPointList() { return m_lstStartPoints; }
 
-		//used to determine the least recently used startpoint
-		float		GetLastUse()		const { return m_fLastUse;}
-		void		SetLastUse(float fLastUse) { m_fLastUse = fLastUse;}
+		// PORT: NOLF2's start point choice (CGameServerShell::FindStartPoint)
+		// stands in and asks these; Tron's GameStartPoint has no last use time,
+		// team or start/spawn flags (retail's object ends at +0x60, its
+		// constructor 0x1014f990), so these give NOLF2's defaults
+		float		GetLastUse()		const { return 0.0f; }
+		void		SetLastUse(float fLastUse) { }
 
-		uint8		GetTeamID()			const { return m_nTeamID; }
+		uint8		GetTeamID()			const { return INVALID_TEAM; }
 
-		bool		IsStartPoint()		const { return m_bStartPoint; }
-		bool		IsSpawnPoint()		const { return m_bSpawnPoint; }
+		bool		IsStartPoint()		const { return true; }
+		bool		IsSpawnPoint()		const { return true; }
 
 		// RETAIL: Tron's: a player respawned at it (retail CPlayerObj::Respawn
 		// sets it, 0x1007dc92; the server shell's ResetStartPoints, 0x100e46f0,
@@ -67,7 +70,8 @@ class GameStartPoint : public GameBase
 	private :
 
 		// RETAIL: Tron's members at retail's offsets (its constructor,
-		// 0x1014f990, and destructor, 0x1014fa00; Build 51's order)
+		// 0x1014f990, and destructor, 0x1014fa00; Build 51's order). The
+		// object is 0x60 bytes
 		GameType	m_eGameType;			// +0x38 Single/Multiplayer modes
 		ModelId		m_eModelId;				// +0x3c Template model
         HSTRING     m_hstrName;             // +0x40 Name of start point
@@ -88,15 +92,6 @@ class GameStartPoint : public GameBase
 
 		static StartPointList m_lstStartPoints;
 
-		// PORT: NOLF2's, which Tron's GameStartPoint has not (retail's ends
-		// at +0x60): kept after Tron's members for the NOLF2 code still
-		// standing in
-		float		m_fLastUse;
-		
-		uint8		m_nTeamID;		// When in a team game this specifies which team can spawn at this start point.
-		
-		bool		m_bStartPoint;	// Can this start point be used as an initial start point?
-		bool		m_bSpawnPoint;	// Can this start point be used as a respawn point?
 };
 
 

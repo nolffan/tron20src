@@ -194,6 +194,11 @@ class CPlayerObj : public CCharacter
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);
 		// RETAIL: read inline by CContinuousFireHelper (0x10160cb0). Name ours.
 		LTVector GetClientCameraOffset() const { return m_vClientCameraOffset; }
+
+		// RETAIL: Tron's multiplayer model and color (Body::AddWeapon reads
+		// them, 0x1015bd79; the names are ours)
+		uint8	GetMPModelIndex() const { return m_bTronUnknown31c8; }
+		uint8	GetMPColorIndex() const { return m_bTronUnknown31c9; }
 		void HandleWeaponSoundMessage(ILTMessage_Read *pMsg);
 		void HandleWeaponSoundLoopMessage(ILTMessage_Read *pMsg);
 		void HandleClientMsg(ILTMessage_Read *pMsg);

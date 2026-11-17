@@ -804,3 +804,50 @@ void CWeapon::HideWeapon( bool bHidden )
 
 
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeapon::SpendAmmo
+//
+//	PURPOSE:	Take the ammo of one shot without firing
+//
+//	RETAIL: Tron's (0x10158540; the name is ours). This is Fire's ammo code
+//	without the shot.
+//
+// ----------------------------------------------------------------------- //
+
+void CWeapon::SpendAmmo( HOBJECT hFiredFrom, bool bTronUnknown )
+{
+	LTBOOL bInfiniteAmmo = (g_bInfiniteAmmo || m_pWeaponData->bInfiniteAmmo);
+	int nAmmo = bInfiniteAmmo ? INFINITE_AMMO_AMOUNT : m_pParent->GetAmmoCount(m_nAmmoId);
+	int nShotsPerClip = m_pWeaponData->nShotsPerClip;
+
+	if (nAmmo > 0)
+	{
+		if (m_nAmmoInClip > 0)
+		{
+			if (nShotsPerClip > 0 && !bInfiniteAmmo)
+			{
+				SetAmmoInClip( m_nAmmoInClip - 1 );
+			}
+
+			if (!bInfiniteAmmo)
+			{
+				m_pParent->DecrementAmmo(m_nAmmoId);
+			}
+		}
+
+		// Check to see if we need to reload...
+
+		if (nShotsPerClip > 0)
+		{
+			if (m_nAmmoInClip <= 0)
+			{
+				if ( IsPlayer(hFiredFrom) )
+				{
+					ReloadClip(LTFALSE, nAmmo);
+				}
+			}
+		}
+	}
+}

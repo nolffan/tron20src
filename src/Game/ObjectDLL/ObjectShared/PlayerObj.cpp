@@ -2346,10 +2346,9 @@ void CPlayerObj::UpdateCommands()
 
 		if (!IsCarryingHeavyObject() && WS_NONE == m_nWeaponStatus )
 		{
+			// RETAIL: Tron's checks all five fire postures (0x1007be2c)
 			if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire ) ||
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire2 ) ||
-				m_Animator.IsAnimatingPosture( CAnimatorPlayer::eFire3 ))
+				m_Animator.IsAnimatingFire() )
 			{
 				ClearHiding();
 				CAnimatorPlayer::Posture ePosture = m_Animator.GetLastPosture();
@@ -6495,7 +6494,17 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 
-	pWeapon->Fire(weaponFireInfo);
+	// RETAIL: Tron's only spends the ammo when the weapon's fire delay has
+	// not passed since its last shot (0x10082b6b..0x10082ba1). PORT: the
+	// time is the server's (retail's comes from a local not yet identified)
+	if (g_pLTServer->GetTime() - pWeapon->GetLastFireTime() <= pWeapon->GetWeaponData()->m_fFireDelay)
+	{
+		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
+	}
+	else
+	{
+		pWeapon->Fire(weaponFireInfo);
+	}
 
  	// [KLS 8/13/02] Change ammo type back to correct ammo type...
  

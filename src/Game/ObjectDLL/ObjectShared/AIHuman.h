@@ -191,6 +191,10 @@ class CAIHuman : public CAI
 		virtual void UpdateNodes();
 		virtual void UpdateCharacterFx();
 
+		// RETAIL: Tron's (0x1016f950; the name is ours): colors the AI and its
+		// attachments
+		void	SetObjectColor(LTFLOAT r, LTFLOAT g, LTFLOAT b, LTFLOAT a);
+
 		// Handle the potential goal additions when shot.
 
 		bool	HandleResurrectingGoalConditions(const DamageStruct& damage);
