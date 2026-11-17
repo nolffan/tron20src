@@ -362,7 +362,7 @@ LTBOOL CVehicleMgr::Init()
 	g_vtVehicleTurnRate.Init(g_pLTClient, "VehicleTurnRate", NULL, 3.5f);
  	g_vtVehicleInitialTurnRate.Init(g_pLTClient, "VehicleInitialTurnRate", NULL, 1.0f);
 
-	g_vtVehicleMouseMinYawBuffer.Init(g_pLTClient, "VehicleMouseMinYawBuffer", NULL, 2.0f);
+	g_vtVehicleMouseMinYawBuffer.Init(g_pLTClient, "VehicleMouseMinYawBuffer", NULL, 5.0f);	// RETAIL: 5 (0x1011b354)
 	g_vtVehicleMouseMaxYawBuffer.Init(g_pLTClient, "VehicleMouseMaxYawBuffer", NULL, 45.0f);	// RETAIL: 45 (0x1011b370)
 
 	g_vtVehicleMaxHeadOffsetX.Init(g_pLTClient, "VehicleHeadMaxOffsetX", NULL, 0.0f);

@@ -315,12 +315,11 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 		// manager's slot 0x24), and the profile keeps it
 		case COMMAND_ID_TOGGLE_LC_CAMERA :
 		{
-			if (!g_pPlayerMgr->GetTronUnknown1D9())
+			if (!static_cast<CTronPlayerMgr*>(g_pPlayerMgr)->GetTronUnknown1D9())
 			{
 				g_pPlayerMgr->TronUnknownVirtual24(!g_pPlayerMgr->GetTronUnknown1D7(), false);
 				g_pProfileMgr->GetCurrentProfile()->SetLightCycleCamera();
 			}
-            return LTFALSE;
 		}
 		break;
 
@@ -329,7 +328,6 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 		{
 			g_pPlayerMgr->TronUnknownVirtual28(!g_pPlayerMgr->GetTronUnknown1D8());
 			g_pProfileMgr->GetCurrentProfile()->SetLightCycleCamera();
-            return LTFALSE;
 		}
 		break;
 

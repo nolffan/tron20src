@@ -1005,47 +1005,14 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 
         if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
 		{
-			//alright, both of the above failed, so now we need to inform the user that we are unable
-			//to create a HWTnL device. This can be caused by them not having a TnL device, or by
-			//them not having DX8.1. We will let them choose if they want to exit or attempt to 
-			//create a SWTnL device
-			char pszNoTnLWarningBuff[512];
-			FormatString(IDS_APP_UNABLE_TO_CREATE_HW_TNL_DEVICE, pszNoTnLWarningBuff, sizeof(pszNoTnLWarningBuff), GAME_NAME);
+			// RETAIL: 0x100e304c: Tron offers no software TnL device: it
+			// shuts down (string 0x898)
+			char pszErrorBuffer[256];
+			FormatString(0x898, pszErrorBuffer, sizeof(pszErrorBuffer), GAME_NAME);
 
-			if(MessageBox(g_hMainWnd, pszNoTnLWarningBuff, GAME_NAME, MB_OKCANCEL) == IDCANCEL)
-			{
-				//alright, they canceled, so we need to just exit
-				g_pLTClient->DebugOut("User chose to not create software TnL device. Exiting.");
-				g_pLTClient->Shutdown();
-				return LT_ERROR;
-			}
-
-			g_pLTClient->DebugOut("Attempting to create software TnL device.");
-
-			//they want to continue, so create a software version
-			rMode.m_Width	= pMode->m_Width;
-			rMode.m_Height	= pMode->m_Height;
-			rMode.m_bHWTnL	= false;
-
-			if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
-			{
-				g_pLTClient->DebugOut("Failed to create default resoltution software TnL, falling back to 640x480");
-
-				rMode.m_Width	= 640;
-				rMode.m_Height	= 480;
-
-				if (g_pLTClient->SetRenderMode(&rMode) != LT_OK)
-				{
-					char pszErrorBuffer[256];
-					FormatString(IDS_APP_SHUTDOWN_1, pszErrorBuffer, sizeof(pszErrorBuffer), GAME_NAME);
-
-					// Okay, that didn't work, looks like we're stuck with software...
-					g_pLTClient->DebugOut(pszErrorBuffer);
-					g_pLTClient->ShutdownWithMessage(pszErrorBuffer);
-					return LT_ERROR;
-				}
-			}
-			WriteConsoleInt("HWTnLDisabled",1);
+			g_pLTClient->DebugOut(pszErrorBuffer);
+			g_pLTClient->ShutdownWithMessage(pszErrorBuffer);
+			return LT_ERROR;
 		}
 	}
 
