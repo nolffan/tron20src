@@ -191,23 +191,7 @@ LTBOOL ExitTrigger::Activate()
 {
     if (!Trigger::Activate()) return LTFALSE;
 
-	// Tell all the players to remove any bodies they are carrying and any vehicles they are riding...
-
-	CPlayerObj::PlayerObjList::const_iterator iter = CPlayerObj::GetPlayerObjList( ).begin( );
-	while( iter != CPlayerObj::GetPlayerObjList( ).end( ))
-	{
-		CPlayerObj* pPlayerObj = *iter;
-
-		// Send the message if this is not the active player.
-		if( pPlayerObj )
-		{
-			pPlayerObj->SetCarriedObject( LTNULL );
-			pPlayerObj->RemoveVehicleModel();
-		}
-
-		iter++;
-	}
-
+	// RETAIL: Tron has no carried bodies or vehicles to drop here (0x1025fc4e)
 
 	if( m_bExitMission )
 	{
