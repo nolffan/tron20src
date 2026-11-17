@@ -350,6 +350,12 @@ float CTronClientWeapon::GetBaseEnergyUse()
 		m_pAmmo->fEnergyRequiredMin, m_pAmmo->fEnergyRequiredMax, m_pAmmo->fEnergyRequiredSurge );
 }
 
+// RETAIL: 0x10098b10
+void CTronClientWeapon::SetTronUnknown204( float fTronUnknown204 )
+{
+	m_fTronUnknown204 = fTronUnknown204;
+}
+
 // RETAIL: 0x10098b20
 void CTronClientWeapon::TronUnknown98B20()
 {
