@@ -311,13 +311,8 @@ bool PlayerVehicle::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 	if (cMsg.GetArg(0) == s_cTok_Activate)
 	{
+		// RETAIL: Prop does not see the activate in Tron (0x1017e736)
 		DoActivate(hSender);
-
-		// Let Prop have a shot at it so activate commands are processed...
-		if (!m_bLocked)
-		{
-			return Prop::OnTrigger(hSender, cMsg);
-		}
 	}
 	else if( cMsg.GetArg(0) == s_cTok_Lock )
 	{
@@ -397,7 +392,8 @@ void PlayerVehicle::Respawn()
  	LTVector vVec(0, 0, 0);
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVec);
 
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
+	// RETAIL: Tron sets all of its flags, without the visible flag (0x1017e975)
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, m_dwFlags & ~FLAG_VISIBLE, FLAGMASK_ALL );
 
 	m_RespawnTimer.Start(fRespawnTime);
     SetNextUpdate(UPDATE_NEXT_FRAME);
