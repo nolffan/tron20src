@@ -1643,7 +1643,9 @@ void CPlayerMgr::UpdateCamera()
 				}
 			}
 
-			if (g_pInterfaceMgr->AllowCameraRotation() )
+			// RETAIL: 0x101265c0 asks AllowCameraMovement (Tron has no
+			// AllowCameraRotation)
+			if (g_pInterfaceMgr->AllowCameraMovement() )
 			{
 				CalculateCameraRotation();
 				UpdateCameraRotation();

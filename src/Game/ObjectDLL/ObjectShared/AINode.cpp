@@ -1521,26 +1521,11 @@ void AINodeUseObject::Load(ILTMessage_Read *pMsg)
 */
 
 	// Cache all the models used by this smartobject.
+	// RETAIL: Tron removes the child models that cannot be cached with
+	// remove_if, as in Init (0x100a48f3), without NOLF2's null check and
+	// assert.
 	AIGBM_SmartObjectTemplate *pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(m_nSmartObjectID);
-	if( pSmartObject )
-	{
-		AIGBM_SmartObjectTemplate::AIChldMdlInfoItr itr, hold_itr ;
-
-		// go through the requested childmodels. If some of them cannot be loaded
-		// then remove them from the list.
-		for( itr = pSmartObject->addchildmodels.begin() ;
-			 itr != pSmartObject->addchildmodels.end() ;)
-		{
-			hold_itr = itr ;
-			itr++;
-			AIChildModelInfo& aiChildModelInfo = *hold_itr;
-			if(g_pModelLT->CacheModelDB(aiChildModelInfo.sFilename.c_str( ), aiChildModelInfo.hmodeldb ) != LT_OK )
-			{
-				pSmartObject->addchildmodels.erase(hold_itr);
-				AIASSERT2(0, m_hObject, "SmartObject %s Could not load file %s ", pSmartObject->szName, aiChildModelInfo.sFilename.c_str( ));
-			}
-		}
-	}
+	pSmartObject->addchildmodels.remove_if( FailedToCacheChildModel );
 }
 
 // ------------------------------------------------------------------------
@@ -1548,11 +1533,16 @@ void AINodeUseObject::Load(ILTMessage_Read *pMsg)
 // start means we 
 // add/remove childmodels 
 // ------------------------------------------------------------------------
-void AINodeUseObject::ApplyChildModels( HOBJECT hObj ) 
+void AINodeUseObject::ApplyChildModels( CCharacter* pChar ) 
 { 
 	AIGBM_SmartObjectTemplate *pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(m_nSmartObjectID);
 
-	
+	// RETAIL: 0x100a495e, Tron adds only the child models for the
+	// character's skeleton (or for any skeleton, 0xff).
+
+	HOBJECT hObj = pChar->m_hObject;
+	ModelSkeleton eSkeleton = pChar->GetModelSkeleton();
+
 	AIGBM_SmartObjectTemplate::AIChldMdlInfoItr itr ;
 		
 	// go through the requested childmodels. If some of them cannot be loaded
@@ -1561,7 +1551,10 @@ void AINodeUseObject::ApplyChildModels( HOBJECT hObj )
 		 itr != pSmartObject->addchildmodels.end() ;
 		 itr++	)
 	{
+		if( ( eSkeleton == (*itr).nSkel ) || ( (*itr).nSkel == 0xff ) )
+		{
 			g_pModelLT->AddChildModelDB( hObj, (*itr).hmodeldb);
+		}
 	}			
 }
 

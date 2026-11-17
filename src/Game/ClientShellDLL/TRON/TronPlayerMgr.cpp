@@ -37,6 +37,8 @@
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleLives
 #include "TRON/SubroutineDataMgr.h"
 #include "VarTrack.h"
+#include "ProfileMgr.h"
+#include "LightCycleGameDataMgr.h"
 
 // CPlayerMgr's sway console variables (PlayerMgr.cpp)
 extern VarTrack g_vtCameraSwayXFreq;
@@ -122,8 +124,8 @@ LTBOOL CTronPlayerMgr::Init()
 	m_fFOVZoomTriangulate2 = g_pLayoutMgr->GetFloat("hudlayout0", "FOVZoomTriangulate2", 7.0f);
 	m_fFOVZoomTriangulate3 = g_pLayoutMgr->GetFloat("hudlayout0", "FOVZoomTriangulate3", 2.0f);
 
-	// PORT: retail copies a string of a global (retail 0x10270864, +0x1d4)
-	// into CPlayerMgr's +0x1b5 here; not yet identified
+	// RETAIL: 0x100a451e: the profile's light cycle color
+	strcpy(m_szTronUnknown1B5, g_pProfileMgr->GetCurrentProfile()->m_szVehicleColor);
 
 	m_bTronUnknown234 = false;
 	m_nTronUnknown236 = 1;
@@ -458,10 +460,15 @@ void CTronPlayerMgr::OnEnterWorld()
 	m_bTronUnknown234 = false;
 	m_bTronUnknown235 = false;
 
-	// PORT: retail takes, in a light cycle circuit, a count (+0x84) of the
-	// current entry of a Tron manager not yet in our tree (0x1026dd34,
-	// retail 0x10047270)
-	m_nTronUnknown236 = 1;
+	// RETAIL: 0x100a4d0d: in a light cycle game, the circuit's initial lives
+	if (GetGameType() == eGameTypeSingleLightCycleCircuit)
+	{
+		m_nTronUnknown236 = g_pLightCycleGameDataMgr->GetCurrent()->m_Circuit.nInitialLives;
+	}
+	else
+	{
+		m_nTronUnknown236 = 1;
+	}
 
 	m_hTronUnknownBC = LTNULL;
 	m_bTronUnknownB8 = false;
@@ -1388,20 +1395,27 @@ float CTronPlayerMgr::GetJumpVelocity(float fJumpVel, float fSuperJumpVel)
 	{
 		float fDelta = fSuperJumpVel - fJumpVel;
 
+		// RETAIL: 0x100a6fbd: a corrupt YAmp gives half
+		PlayerSubroutine* pSub = g_pSubroutineMgr->GetPlayerSubroutine("YAMP", LTNULL);
+		if (pSub && pSub->eState == SUBSTATE_CORRUPT)
+		{
+			fDelta *= 0.5f;
+		}
+
 		// Check the state of it
 		switch(g_pSubroutineMgr->GetActiveSubroutineVersion("YAmp"))
 		{
 			case VERSION_ALPHA:
 			{
-				return(fJumpVel + (fDelta * 0.33f));
+				return(fDelta * 0.33f + fJumpVel);
 			}
 			case VERSION_BETA:
 			{
-				return(fJumpVel + (fDelta * 0.66f));
+				return(fDelta * 0.66f + fJumpVel);
 			}
 			case VERSION_GOLD:
 			{
-				return(fSuperJumpVel);
+				return(fDelta + fJumpVel);
 			}
 			break;
 		}
@@ -1432,18 +1446,20 @@ void CTronPlayerMgr::TronUnknownVirtual50()
 	LTVector vPos;
 	g_pLTClient->GetObjectPos(hObj, &vPos);
 
-	// PORT: retail has the client light cycle manager (0x10236d98, its
-	// 0x100ffec0) place the position on the grid
+	// RETAIL: 0x100a70b8: onto the light cycle grid
 	LTVector vNewPos = vPos;
+	g_pLightCycleMgr->SnapToGrid(vNewPos);
 	g_pPhysicsLT->MoveObject(hObj, &vNewPos, MOVEOBJECT_TELEPORT);
-	g_pLTClient->GetObjectPos(hObj, &vPos);
+	LTVector vFinalPos;
+	g_pLTClient->GetObjectPos(hObj, &vFinalPos);
 
 	m_bTronUnknown1D9 = false;
 	m_hTronUnknownBC = LTNULL;
 	m_bTronUnknownB8 = false;
 	m_nTronUnknown230 = 0;
 
-	// PORT: retail clears a flag of the game client shell (+0x833a) here
+	// RETAIL: 0x100a70ff
+	g_pGameClientShell->m_bTronUnknown833A = false;
 
 	// RETAIL: starts the circuit intro (0x1026ee28, its 0x1002cdf0)
 	g_pLightCycleCircuitIntro->Start();
@@ -1522,7 +1538,7 @@ void CTronPlayerMgr::UpdatePlaying()
 			fMax = g_pLTClient->GetVarValueFloat(hVar);
 		}
 
-		uint8 nVolume;
+		int nVolume;
 		if (fHeight <= fMin)
 		{
 			nVolume = 100;
@@ -1536,14 +1552,15 @@ void CTronPlayerMgr::UpdatePlaying()
 			nVolume = 100 - (int)((fHeight - fMin) / (fMax - fMin) * 100.0f);
 		}
 
-		// PORT: retail sets the volume (the sound manager's slot 0x84, not
-		// in our SDK) of a sound of Tron's vehicle manager (+0x2c)
-		nVolume;
+		// RETAIL: 0x100a730f: the grid sound of the vehicle manager (+0x2c)
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundVolume(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c(), nVolume);
 	}
 
-	// PORT: unless a flag of the game client shell (+0x7e49) is set,
-	// retail updates the client light cycle manager (0x10236d98, its slot
-	// 0x1c), not yet in our tree
+	// RETAIL: 0x100a7316
+	if (!g_pGameClientShell->IsServerPaused())
+	{
+		g_pLightCycleMgr->Update();
+	}
 
 	if (GetGameType() == eGameTypeMultiplayerLightcycles && g_pPlayerMgr->TronUnknownVirtual3C(true))
 	{
@@ -1637,8 +1654,14 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 	LTVector vZeroAccel(0.0f, 0.0f, 0.0f);
 	LTVector vZeroVel(0.0f, 0.0f, 0.0f);
 
-	// PORT: retail tests a member of Tron's CMoveMgr (+0xd0) here, not yet
-	// in our CMoveMgr
+	if (!g_pMoveMgr->GetAllowMovement())
+	{
+		// RETAIL: 0x100a752d: both with the velocity's vector (the same
+		// zeros)
+		g_pPhysicsLT->SetAcceleration(g_pMoveMgr->GetObject(), &vZeroVel);
+		g_pPhysicsLT->SetVelocity(g_pMoveMgr->GetObject(), &vZeroVel);
+		return;
+	}
 
 	if (m_ePlayerState == PS_DEAD || m_ePlayerState == PS_DYING || !m_bAllowPlayerMovement)
 	{
@@ -1653,13 +1676,20 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 		char szUnused[128];
 		TronUnknownVirtual7C(hObj, szUnused, szSound, LTNULL);
 
-		// PORT: Tron's PlaySoundLocal has a seventh argument (1.0f)
 		g_pClientSoundMgr->PlaySoundLocal(szSound, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_CLIENT, 100, 1.0f, 0);
 	}
 
-	// PORT: retail gives the flags (with 0x100000 in a speed zone, 0x1000000
-	// in a slow zone) to the client light cycle manager (0x10236d98, its
-	// slot 0x30)
+	// RETAIL: 0x100a75cd: the speed and slow zones' flags
+	if (m_eCurContainerCode == CC_LIGHTCYCLE_SPEED_ZONE)
+	{
+		g_pLightCycleMgr->UpdateCyclistMovement(hObj, nFlags | 0x100000);
+		return;
+	}
+	if (m_eCurContainerCode == CC_LIGHTCYCLE_SLOW_ZONE)
+	{
+		nFlags |= 0x1000000;
+	}
+	g_pLightCycleMgr->UpdateCyclistMovement(hObj, nFlags);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1682,16 +1712,33 @@ int CTronPlayerMgr::TronUnknownVirtualA0()
 //
 //	PURPOSE:	RETAIL: retail 0x100a7660 (slot 0x9c): fills a light cycle's
 //				data (+0x4c name, +0x104c and +0x204c lists) from the
-//				model attributes of the player's light cycle color (+0x1b5).
-//				PORT: Tron's model attributes (0x10044f40, 0x10044f20) are
-//				not yet in our CModelButeMgr
+//				light cycle color of the player (+0x1b5): an object
+//				create struct's model, skins and render styles.
 //
 // ----------------------------------------------------------------------- //
 
-bool CTronPlayerMgr::TronUnknownVirtual9C(void* pData, int nArg)
+bool CTronPlayerMgr::TronUnknownVirtual9C(void* pTronUnknown, int nData)
 {
-	g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", m_szTronUnknown1B5);
-	return false;
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(m_szTronUnknown1B5);
+	if (!pColor)
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", m_szTronUnknown1B5);
+		return false;
+	}
+
+	if (!g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType))
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Type %d\n", pColor->nCycleType);
+		return false;
+	}
+
+	// RETAIL: 0x100a76cc: the second argument is the object create struct
+	ObjectCreateStruct* pOCS = (ObjectCreateStruct*)nData;
+	SAFE_STRCPY(pOCS->m_Filename, pColor->szModel);
+	pColor->blrRenderStyles.CopyList(0, pOCS->m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
+	pColor->blrSkins.CopyList(0, pOCS->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1791,7 +1838,7 @@ void CTronPlayerMgr::DoActivate()
 	if (g_pTronPlayerMgr->GetTronTargetMgr()->IsEnergyRequired())
 	{
 		float fEnergyRequired = (float)g_pTronPlayerMgr->GetTronTargetMgr()->GetEnergyRequired();
-		if (g_pTronPlayerStats->GetEnergy() < fEnergyRequired)
+		if (fEnergyRequired > g_pTronPlayerStats->GetEnergy())
 		{
 			g_pPickupMsgs->AddMessage(IDS_INSUFFICIENT_ENERGY, (const char*)LTNULL);
 			// PORT: Tron's PlaySoundLocal has a seventh argument (1.0f)
@@ -1998,8 +2045,8 @@ void CTronPlayerMgr::TronUnknownVirtual24(bool b1D7, bool b1D9)
 
 	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE || TronUnknownVirtual3C(true))
 	{
-		// PORT: retail calls Tron's interface manager's slot 0x98 (0, 0)
-		// here
+		// RETAIL: 0x100a7e9c
+		g_pInterfaceMgr->TronUnknownVirtual98(false, false);
 	}
 }
 
@@ -2142,9 +2189,8 @@ void CTronPlayerMgr::TronUnknownVirtual8C()
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual90
 //
 //	PURPOSE:	RETAIL: retail 0x100a8080 (slot 0x90): the player's light
-//				cycle color, told to the server and kept in the profile.
-//				PORT: Tron's model attributes (0x10044f40, 0x10044f20) and
-//				its profile's color (+0x1d4) are not yet in our tree
+//				cycle color, told to the server and kept in the profile
+//				(its vehicle color, +0x1d4)
 //
 // ----------------------------------------------------------------------- //
 
@@ -2152,12 +2198,34 @@ void CTronPlayerMgr::TronUnknownVirtual90(const char* pszColor, bool bSend, bool
 {
 	if (!pszColor)
 	{
-		pszColor = m_szTronUnknown1B5;
+		if (g_pProfileMgr)
+			pszColor = g_pProfileMgr->GetCurrentProfile()->m_szVehicleColor;
+		else
+			pszColor = m_szTronUnknown1B5;
+	}
+
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pszColor);
+	if (!pColor)
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", pszColor);
+		return;
+	}
+
+	if (!g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType))
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Type %d\n", pColor->nCycleType);
+		return;
 	}
 
 	if (_stricmp(pszColor, m_szTronUnknown1B5))
 	{
 		strcpy(m_szTronUnknown1B5, pszColor);
+		if (bSave)
+		{
+			CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
+			strcpy(pProfile->m_szVehicleColor, pszColor);
+			pProfile->Save();
+		}
 	}
 
 	if (bSend)
@@ -2246,9 +2314,7 @@ void CTronPlayerMgr::TronUnknownVirtual40()
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtualA8
 //
 //	PURPOSE:	RETAIL: retail 0x100a86b0 (slot 0xa8): Tron's HUD items for
-//				walking off, the light cycle's on (or back). PORT: Tron's
-//				HUD item globals (0x1026edb8..0x1026ee2c) are not yet in our
-//				tree; the chat messages are
+//				walking off, the light cycle's on (or back)
 //
 // ----------------------------------------------------------------------- //
 
@@ -2256,16 +2322,40 @@ void CTronPlayerMgr::TronUnknownVirtualA8(bool bHide)
 {
 	if (bHide)
 	{
+		g_pCrosshair->Enable(false);
+		g_pVersion->SetEnabled(false);
+		g_pSubChooser->SetEnabled(false);
+		g_pWeaponItem->SetEnabled(false);
+		g_pHealthEnergy->SetEnabled(false);
+		g_pArmor->SetEnabled(false);
+		g_pBuildNoteCount->SetEnabled(false);
+		g_pPermissions->SetEnabled(false);
+		g_pLightCyclePowerupIcon->SetEnabled(true);
+		g_pLightCycleSpeedometer->SetEnabled(true);
+		g_pLightCycleRoster->SetEnabled(true);
 		if (!IsMultiplayerGame())
 		{
-			g_pChatMsgs->SetEnabled(true);
+			// RETAIL: 0x100a8761: the chat in the multiplayer layout
+			g_pChatMsgs->SetMultiplayerLayout(true);
 		}
 	}
 	else
 	{
+		g_pCrosshair->Enable(true);
+		g_pVersion->SetEnabled(true);
+		g_pSubChooser->SetEnabled(true);
+		g_pWeaponItem->SetEnabled(true);
+		g_pHealthEnergy->SetEnabled(true);
+		g_pArmor->SetEnabled(true);
+		g_pBuildNoteCount->SetEnabled(true);
+		g_pPermissions->SetEnabled(true);
+		g_pLightCyclePowerupIcon->SetEnabled(false);
+		g_pLightCycleSpeedometer->SetEnabled(false);
+		g_pLightCycleRoster->SetEnabled(false);
 		if (!IsMultiplayerGame())
 		{
-			g_pChatMsgs->SetEnabled(false);
+			// RETAIL: 0x100a8761: the chat in the multiplayer layout
+			g_pChatMsgs->SetMultiplayerLayout(false);
 		}
 	}
 }

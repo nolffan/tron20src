@@ -167,7 +167,8 @@ void Explosion::Start(HOBJECT hFiredFrom)
 {
 	if (!m_hObject) return;
 
-	g_pLTServer->GetObjectPos(m_hObject, &m_vPos);
+	// RETAIL: 0x100eefc2, Tron gets the position through its virtual.
+	TronUnknownVirtual68(&m_vPos);
 
 	// Do special fx (on the client) if applicable...
 
@@ -274,7 +275,16 @@ uint32 Explosion::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		{
 			if (fData != INITIALUPDATE_SAVEGAME)
 			{
-				SetNextUpdate(UPDATE_NEVER);
+				// RETAIL: 0x100ef6d3, an explosion that starts on updates
+				// at once.
+				if (m_bStartOn == true)
+				{
+					SetNextUpdate(UPDATE_NEXT_FRAME);
+				}
+				else
+				{
+					SetNextUpdate(UPDATE_NEVER);
+				}
 			}
 		}
 		break;
@@ -783,9 +793,9 @@ void Explosion::ReadFireData(ILTMessage_Read *pMsg)
 {
 	for( int i = 0; i < ContinuousFireData::kNumFields; ++i )
 	{
-		ContinuousFireData::FieldFlags &Flags = m_FireData.m_aFlags[i];
-		Flags.m_bSet = pMsg->Readbool();
-		Flags.m_bTronUnknown1 = pMsg->Readbool();
+		// RETAIL: 0x100ef260, the inline helper (one more ReadType call
+		// stays out of line, as retail).
+		m_FireData.m_aFlags[i].Read( pMsg );
 	}
 
 	if( m_FireData.m_aFlags[1].m_bSet )

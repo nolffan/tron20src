@@ -314,6 +314,7 @@ public:
 	void		GetMaskModel(eOverlayMask eMask, char *pBuf, int nBufLen);
 	void		GetMaskSkin(eOverlayMask eMask, char *pBuf, int nBufLen);
     LTFLOAT     GetMaskScale(eOverlayMask eMask);
+	LTVector	GetMaskPosition(eOverlayMask eMask);	// RETAIL: Tron's (0x100dc000; the name is ours)
     LTFLOAT     GetMaskAlpha(eOverlayMask eMask);
 
 	void		GetDialogFrame(char *pBuf, int nBufLen);

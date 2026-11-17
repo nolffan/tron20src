@@ -107,6 +107,9 @@ VarTrack	g_vtVehicleFallDamageMaxHeight;
 VarTrack	g_vtVehicleTurnRateScale;
 VarTrack	g_vtVehicleTurnRate;
 VarTrack	g_vtVehicleInitialTurnRate;
+// RETAIL: Tron's (retail 0x10271808, 0x102717f8)
+VarTrack	g_vtVehicleTurnScaleStart;
+VarTrack	g_vtVehicleTurnScaleEnd;
 
 VarTrack	g_vtVehicleMouseMinYawBuffer;
 VarTrack	g_vtVehicleMouseMaxYawBuffer;
@@ -133,7 +136,7 @@ VarTrack	g_vtVehicleCamContourExtraDimsZ;
 VarTrack	g_vtVehicleContourMaxRotation;
 VarTrack	g_vtVehicleCamContourMaxRotation;
 VarTrack	g_vtVehicleContourRate;
-VarTrack	g_vtVehicleContour;
+// RETAIL: Tron has no "VehicleContour" (retail 0x1011b560 ends with the rate)
 
 // ----------------------------------------------------------------------- //
 //
@@ -298,12 +301,12 @@ LTBOOL CVehicleMgr::Init()
 	g_vtLightCycleVel.Init(g_pLTClient, "LightCycleVel", NULL, 800.0f);
 	g_vtLightCycleGridSize.Init(g_pLTClient, "LightCycleGridSize", NULL, 1.0f);
 
-	g_vtSnowmobileAccel.Init(g_pLTClient, "SnowmobileAccel", NULL, 3000.0f);
+	g_vtSnowmobileAccel.Init(g_pLTClient, "SnowmobileAccel", NULL, 4000.0f);	// RETAIL: Tron's defaults (0x1011a7ec..)
 	g_vtSnowmobileAccelTime.Init(g_pLTClient, "SnowmobileAccelTime", NULL, 3.0f);
-	g_vtSnowmobileMaxDecel.Init(g_pLTClient, "SnowmobileDecelMax", LTNULL, 22.5f);
-	g_vtSnowmobileDecel.Init(g_pLTClient, "SnowmobileDecel", LTNULL, 37.5f);
+	g_vtSnowmobileMaxDecel.Init(g_pLTClient, "SnowmobileDecelMax", LTNULL, 30.0f);
+	g_vtSnowmobileDecel.Init(g_pLTClient, "SnowmobileDecel", LTNULL, 50.0f);
     g_vtSnowmobileDecelTime.Init(g_pLTClient, "SnowmobileDecelTime", LTNULL, 0.5f);
-	g_vtSnowmobileMaxBrake.Init(g_pLTClient, "SnowmobileBrakeMax", LTNULL, 112.5f);
+	g_vtSnowmobileMaxBrake.Init(g_pLTClient, "SnowmobileBrakeMax", LTNULL, 150.0f);
     g_vtSnowmobileBrakeTime.Init(g_pLTClient, "SnowmobileBrakeTime", LTNULL, 1.0f);
 
     g_vtSnowmobileMinTurnAccel.Init(g_pLTClient, "SnowmobileMinTurnAccel", LTNULL, 0.0f);
@@ -353,12 +356,14 @@ LTBOOL CVehicleMgr::Init()
  	g_vtVehicleFallDamageMaxHeight.Init(g_pLTClient, "VehicleFallDamageMaxHeight", LTNULL, 800.0f);
 
     g_vtVehicleTurnRateScale.Init(g_pLTClient, "VehicleTurnRateScale", NULL, 1.0f);
+	g_vtVehicleTurnScaleStart.Init(g_pLTClient, "VehicleTurnScaleStart", NULL, 1.0f);
+	g_vtVehicleTurnScaleEnd.Init(g_pLTClient, "VehicleTurnScaleEnd", NULL, 0.5f);
 
 	g_vtVehicleTurnRate.Init(g_pLTClient, "VehicleTurnRate", NULL, 3.5f);
  	g_vtVehicleInitialTurnRate.Init(g_pLTClient, "VehicleInitialTurnRate", NULL, 1.0f);
 
-	g_vtVehicleMouseMinYawBuffer.Init(g_pLTClient, "VehicleMouseMinYawBuffer", NULL, 2.0f);
-	g_vtVehicleMouseMaxYawBuffer.Init(g_pLTClient, "VehicleMouseMaxYawBuffer", NULL, 35.0f);
+	g_vtVehicleMouseMinYawBuffer.Init(g_pLTClient, "VehicleMouseMinYawBuffer", NULL, 5.0f);	// RETAIL: 5 (0x1011b354)
+	g_vtVehicleMouseMaxYawBuffer.Init(g_pLTClient, "VehicleMouseMaxYawBuffer", NULL, 45.0f);	// RETAIL: 45 (0x1011b370)
 
 	g_vtVehicleMaxHeadOffsetX.Init(g_pLTClient, "VehicleHeadMaxOffsetX", NULL, 0.0f);
 	g_vtVehicleMaxHeadOffsetY.Init(g_pLTClient, "VehicleHeadMaxOffsetY", NULL, 0.0f);
@@ -379,9 +384,8 @@ LTBOOL CVehicleMgr::Init()
 	g_vtVehicleCamContourExtraDimsX.Init( g_pLTClient, "VehicleCamCountourExtraDimsX", LTNULL, 48.0f );
 	g_vtVehicleCamContourExtraDimsZ.Init( g_pLTClient, "VehicleCamCountourExtraDimsZ", LTNULL, 64.0f );
 	g_vtVehicleContourMaxRotation.Init( g_pLTClient, "VehicleContourMaxRotation", LTNULL, 65.0f );
-	g_vtVehicleCamContourMaxRotation.Init( g_pLTClient, "VehicleCamContourMaxRotation", LTNULL, 3.5f );
-	g_vtVehicleContourRate.Init( g_pLTClient, "VehicleContourRate", LTNULL, 0.4f );
-	g_vtVehicleContour.Init( g_pLTClient, "VehicleContour", LTNULL, 1.0f );
+	g_vtVehicleCamContourMaxRotation.Init( g_pLTClient, "VehicleCamContourMaxRotation", LTNULL, 5.0f );	// RETAIL: 5.0f (0x1011b549)
+	g_vtVehicleContourRate.Init( g_pLTClient, "VehicleContourRate", LTNULL, 0.3f );	// RETAIL: 0.3f (0x1011b565)
 
 	m_VehicleModelOffsetMgr.Init();
 
@@ -664,6 +668,12 @@ void CVehicleMgr::UpdateLureControlFlags()
 {
 	// Determine what commands are currently on...
 
+	// RETAIL: 0x1011b99a: Tron's alt-fire key first
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_DEFEND))
+	{
+		m_dwControlFlags |= BC_CFLG_TRON_ALT_FIRE;
+	}
+
 	if (g_pLTClient->IsCommandOn(COMMAND_ID_FIRING))
 	{
 		m_dwControlFlags |= BC_CFLG_FIRING;
@@ -759,8 +769,11 @@ void CVehicleMgr::UpdateMotion()
 			UpdateLureMotion( );
 			break;
 
+		// RETAIL: 0x1011be18: the player manager takes the light cycle's
+		// pending control flags (slot 0x68)
 		case PPM_LIGHTCYCLE:
-			UpdateLightCycleMotion();
+			g_pPlayerMgr->TronUnknownVirtual68(m_nTronUnknown2134);
+			m_nTronUnknown2134 = 0;
 			break;
 
 		case PPM_NORMAL:
@@ -1490,6 +1503,18 @@ LTBOOL CVehicleMgr::PreSetPhysicsModel(PlayerPhysicsModel eModel)
 				EnableWeapon( false );
 			break;
 
+			// RETAIL: 0x1011cd6a: getting on a light cycle
+			case PPM_LIGHTCYCLE :
+			{
+				if (m_ePPhysicsModel != PPM_LIGHTCYCLE)
+				{
+					EnableWeapon( false );
+					g_pPlayerMgr->TronUnknownVirtual50();
+					m_TronUnknownTimer2160.Stop();
+				}
+			}
+			break;
+
 			case PPM_LURE :
 			case PPM_NORMAL :
 			default :
@@ -1512,6 +1537,25 @@ LTBOOL CVehicleMgr::PreSetPhysicsModel(PlayerPhysicsModel eModel)
 
  		switch (m_ePPhysicsModel)
 		{
+			// RETAIL: 0x1011cdef: getting off a light cycle stops it, then
+			// gives the weapon back as the lure does (the cases' code is in
+			// this order)
+			case PPM_LIGHTCYCLE :
+			{
+				g_pPlayerMgr->TronUnknownVirtual54();
+
+				LTVector vZero(0.0f, 0.0f, 0.0f);
+				g_pPhysicsLT->SetVelocity(hObj, &vZero);
+			}
+			// fall through
+
+			case PPM_LURE :
+			{
+				// Enable the weapon.
+				EnableWeapon( true );
+			}
+			break;
+
 			case PPM_SNOWMOBILE :
 			{
 				g_pClientSoundMgr->PlaySoundLocal("Snd\\Vehicle\\Snowmobile\\turnoff.wav", SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_CLIENT);
@@ -1523,13 +1567,6 @@ LTBOOL CVehicleMgr::PreSetPhysicsModel(PlayerPhysicsModel eModel)
 
 				// Wait to change modes...
 				bRet = LTFALSE;
-			}
-			break;
-
-			case PPM_LURE :
-			{
-				// Enable the weapon.
-				EnableWeapon( true );
 			}
 			break;
 
@@ -1555,6 +1592,9 @@ LTBOOL CVehicleMgr::PreSetPhysicsModel(PlayerPhysicsModel eModel)
 
 void CVehicleMgr::SetPhysicsModel(PlayerPhysicsModel eModel, LTBOOL bDoPreSet)
 {
+	// RETAIL: 0x1011ceab: cleared first
+	m_bTronUnknown2170 = false;
+
 	if (m_ePPhysicsModel == eModel) return;
 
 	// Do clean up...
@@ -1562,6 +1602,9 @@ void CVehicleMgr::SetPhysicsModel(PlayerPhysicsModel eModel, LTBOOL bDoPreSet)
 	if (bDoPreSet && !PreSetPhysicsModel(eModel)) return;
 
 	m_ePPhysicsModel = eModel;
+
+	// RETAIL: 0x1011ced3
+	g_pPlayerMgr->SetTronUnknown1D5(false);
 
  	switch (eModel)
 	{
@@ -1578,8 +1621,8 @@ void CVehicleMgr::SetPhysicsModel(PlayerPhysicsModel eModel, LTBOOL bDoPreSet)
 
 		case PPM_LIGHTCYCLE:
 		{
-			SetNormalPhysicsModel();
-			m_bTurned = true;
+			SetLightCyclePhysicsModel();
+			m_nTronUnknown2134 = 0;
 		}
 		break;
 
@@ -1751,6 +1794,57 @@ void CVehicleMgr::SetPlayerLurePhysicsModel()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CVehicleMgr::SetLightCyclePhysicsModel
+//
+//	PURPOSE:	Set the light cycle physics model: the cycle's model, its
+//				intro fx and sound, and the countdown.  RETAIL: 0x1011d2a0
+//				(Tron's; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CVehicleMgr::SetLightCyclePhysicsModel()
+{
+	CreateVehicleModel();
+	ShowVehicleModel(LTTRUE);
+
+	if (m_TronUnknownFX2138.IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2138);
+		m_TronUnknownFX2138.ClearLink();
+	}
+
+	char szFX[512];
+	char szSound[512];
+	g_pPlayerMgr->TronUnknownVirtual70(g_pMoveMgr->GetObject(), szFX, szSound);
+
+	CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_NOSMOOTHSHUTDOWN, g_pMoveMgr->GetObject());
+	g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+	g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2138, fxInit, LTTRUE);
+
+	m_bTronUnknown2158 = true;
+	m_nTronUnknown215c = 0;
+
+	g_pClientSoundMgr->PlaySoundLocal(szSound, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_CLIENT);
+
+	g_pInterfaceMgr->TronUnknownVirtual98(true, true);
+
+	// RETAIL: the countdown message while LCCountdown is 1 (or not set),
+	// except in a light cycle circuit; the player waits for the start
+	// either way
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCCountdown");
+	if (!hVar || g_pLTClient->GetVarValueFloat(hVar) == 1.0f)
+	{
+		if (GetGameType() != eGameTypeSingleLightCycleCircuit)
+		{
+			g_pInterfaceMgr->SetTronUnknownMessage(4.0f, 0, LTNULL, true);
+		}
+	}
+
+	g_pMoveMgr->AllowMovement(LTFALSE);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CVehicleMgr::SetNormalPhysicsModel
 //
 //	PURPOSE:	Set the normal physics model
@@ -1765,6 +1859,9 @@ void CVehicleMgr::SetNormalPhysicsModel()
 		m_hVehicleModel = LTNULL;
 	}
 
+	// RETAIL: 0x1011d4ac: the light cycle's fx go too
+	ShutdownLightCycleFX();
+
 	KillAllVehicleSounds();
 
 	// Clear turning values...
@@ -1774,6 +1871,11 @@ void CVehicleMgr::SetNormalPhysicsModel()
 	m_fHeadYaw = 0.0f;
 	m_fYawDiff = 0.0f;
 	m_fYawDelta	= 0.0f;
+
+	// RETAIL: 0x1011d4e3: the player can move again, and the camera goes
+	// back to first person
+	g_pMoveMgr->AllowMovement(LTTRUE);
+	g_pInterfaceMgr->TronUnknownFirstPersonCamera(true);
 
 	// Remove player-view attachments
 
@@ -1916,9 +2018,115 @@ void CVehicleMgr::CreateVehicleModel()
 //
 // ----------------------------------------------------------------------- //
 
+void ExitLightCycleCallBack(LTBOOL bReturn, void *pData);
+
 void CVehicleMgr::UpdateModels()
 {
-	if (m_ePPhysicsModel != PPM_NORMAL)
+	// RETAIL: 0x1011da30: Tron's light cycle.  The model shows once its
+	// intro fx is done; then the server is told the cycle can start, and
+	// the cycle's fx and sounds begin (or, at the end of a ride, the exit
+	// box comes up).  While riding, the model follows the player.
+	if (m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	{
+		if (m_bTronUnknown2158)
+		{
+			if (m_TronUnknownFX2138.IsValid() && !m_TronUnknownFX2138.GetInstance()->IsDone())
+			{
+				ShowVehicleModel(LTFALSE);
+				return;
+			}
+
+			if (m_TronUnknownFX2138.IsValid())
+			{
+				g_pClientFXMgr->ShutdownClientFX(&m_TronUnknownFX2138);
+			}
+			m_TronUnknownFX2138.ClearLink();
+			m_bTronUnknown2158 = false;
+
+			if (m_nTronUnknown215c == 0)
+			{
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+				cMsg.Writeuint8(LCI_START_UPDATING);
+				cMsg.WriteObject(g_pMoveMgr->GetServerObject());
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+
+				char szFX[512];
+				if (g_pPlayerMgr->TronUnknownVirtual78(g_pMoveMgr->GetObject(), szFX))
+				{
+					CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_LOOP | FXFLAG_NOSMOOTHSHUTDOWN, m_hVehicleModel);
+					g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+					g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2138, fxInit, LTTRUE);
+				}
+
+				g_pInterfaceMgr->ClearTronUnknownMessage();
+				g_pMoveMgr->AllowMovement(LTTRUE);
+
+				char szAltCruiseSnd[128];
+				char szCruiseSnd[128];
+				char szTurnSnd[128];
+				g_pPlayerMgr->TronUnknownVirtual7C(g_pMoveMgr->GetObject(), szCruiseSnd, szTurnSnd, szAltCruiseSnd);
+
+				if (!m_hVehicleCruiseSnd)
+				{
+					m_hVehicleCruiseSnd = g_pClientSoundMgr->PlaySoundLocal(szCruiseSnd, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT);
+				}
+				if (!m_hTronUnknownSnd2c)
+				{
+					m_hTronUnknownSnd2c = g_pClientSoundMgr->PlaySoundLocal(szAltCruiseSnd, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT);
+				}
+
+				ShowVehicleModel(LTTRUE);
+			}
+			else if (m_nTronUnknown215c == 1)
+			{
+				if (!IsMultiplayerGame())
+				{
+					if (GetGameType() == eGameTypeSingleLightCycleCircuit)
+					{
+						if (!g_pPlayerMgr->TronUnknownVirtual88())
+						{
+							g_pGameClientShell->CSPrint(LoadTempString(0x3fd));
+							g_pPlayerMgr->StartDeathFX();
+						}
+						else
+						{
+							MBCreate mb;
+							mb.eType = LTMB_YESNO;
+							mb.pFn = ExitLightCycleCallBack;
+							mb.pData = this;
+							g_pInterfaceMgr->ShowMessageBox(0x397, &mb);
+						}
+					}
+					else
+					{
+						MBCreate mb;
+						mb.eType = LTMB_YESNO;
+						mb.pFn = ExitLightCycleCallBack;
+						mb.pData = this;
+						g_pInterfaceMgr->ShowMessageBox(0x396, &mb);
+					}
+				}
+			}
+		}
+		else
+		{
+			LTVector vPos;
+			LTRotation rRot;
+			g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &vPos);
+			g_pLTClient->GetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+			g_pLTClient->SetObjectPosAndRotation(m_hVehicleModel, &vPos, &rRot);
+
+			ShowVehicleModel(!g_pPlayerMgr->GetTronUnknown1D5());
+
+			if (m_TronUnknownFX2148.IsValid())
+			{
+				LTVector vFXPos = vPos + m_vTronUnknownFXOffset;
+				m_TronUnknownFX2148.GetInstance()->SetPos(vFXPos, LTVector(0.0f, 0.0f, 0.0f));
+			}
+		}
+	}
+	else if (m_ePPhysicsModel != PPM_NORMAL)
 	{
 		UpdateVehicleModel();
 	}
@@ -3614,42 +3822,6 @@ void CVehicleMgr::UpdateLightCycleControlFlags()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CVehicleMgr::UpdateLightCycleMotion
-//
-//	PURPOSE:	Update our light cycle motion
-//
-// ----------------------------------------------------------------------- //
-void CVehicleMgr::UpdateLightCycleMotion()
-{
-	HOBJECT hObj = g_pMoveMgr->GetObject();
-	if(!hObj)
-	{
-		ASSERT(!"CVehicleMgr::UpdateLightCycleMotion:  Invalid client object.");
-		return;
-	}
-
-	LTVector vZero(0.0f, 0.0f, 0.0f);
-	LTVector vMoveVel(0.0f, 0.0f, 0.0f);
-
-	// Make sure the player is axis aligned and on the XZ plane (yaw)
-	float fYaw = g_pPlayerMgr->GetPlayerYaw();
-	AlignAngleToAxis(fYaw);
-	g_pPlayerMgr->SetPlayerYaw(fYaw);
-
-	LTRotation rot(0.0f, fYaw, 0.0f);
-	vMoveVel = rot.Forward();
-
-	LTFLOAT fMaxVel    = GetMaxVelMag();
-
-	// Set our current rotation...
-	vMoveVel *= fMaxVel;
-	
-	g_pPhysicsLT->SetAcceleration(g_pMoveMgr->GetObject(), &vZero);
-	g_pPhysicsLT->SetVelocity(hObj, &vMoveVel);
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CVehicleMgr::CalculateVehicleRotation()
 //
 //	PURPOSE:	Calculate the new player/camera rotation.
@@ -3726,31 +3898,44 @@ void CVehicleMgr::CalculateVehicleRotation(LTVector & vPlayerPYR,
 
 LTBOOL CVehicleMgr::OnCommandOn(int command)
 {
-	switch (m_ePPhysicsModel)
-	{
-		case PPM_LIGHTCYCLE:
-		{
-			if(command == COMMAND_ID_STRAFE_LEFT)
-			{
-				// Rotate the player 90 degrees to the left
-				g_pPlayerMgr->SetPlayerYaw(g_pPlayerMgr->GetPlayerYaw()-MATH_HALFPI);
-				m_bTurned = true;
-			}
-			else if(command == COMMAND_ID_STRAFE_RIGHT)
-			{
-				// Rotate the player 90 degrees to the right
-				g_pPlayerMgr->SetPlayerYaw(g_pPlayerMgr->GetPlayerYaw()+MATH_HALFPI);
-				m_bTurned = true;
-			}
-			return LTTRUE;
-		}
-		break;
+	// RETAIL: 0x10121cf0: Tron's light cycle turns.  One turn per press,
+	// snapped to the grid's axes, and only while the player can move; the
+	// turn is kept for the server (+0x2128, flags +0x2134)
+	if (m_ePPhysicsModel != PPM_LIGHTCYCLE) return LTFALSE;
 
-		default:
-		break;
+	if (m_bTurned) return LTTRUE;
+	if (!g_pPlayerMgr->TronUnknownVirtual94()) return LTTRUE;
+
+	if (command == COMMAND_ID_STRAFE_LEFT)
+	{
+		if (g_pMoveMgr->GetAllowMovement())
+		{
+			// Rotate the player 90 degrees to the left
+			float fYaw = g_pPlayerMgr->GetPlayerYaw() - MATH_HALFPI;
+			AlignAngleToAxis(fYaw);
+			g_pPlayerMgr->SetPlayerYaw(fYaw);
+			g_pPlayerMgr->GetPlayerPitchYawRoll(m_vTronUnknown2128);
+			m_nTronUnknown2134 |= 0x10;
+			m_bTurned = true;
+			m_bTronUnknown2170 = true;
+		}
+	}
+	else if (command == COMMAND_ID_STRAFE_RIGHT)
+	{
+		if (g_pMoveMgr->GetAllowMovement())
+		{
+			// Rotate the player 90 degrees to the right
+			float fYaw = g_pPlayerMgr->GetPlayerYaw() + MATH_HALFPI;
+			AlignAngleToAxis(fYaw);
+			g_pPlayerMgr->SetPlayerYaw(fYaw);
+			g_pPlayerMgr->GetPlayerPitchYawRoll(m_vTronUnknown2128);
+			m_nTronUnknown2134 |= 0x100;
+			m_bTurned = true;
+			m_bTronUnknown2170 = true;
+		}
 	}
 
-	return LTFALSE;
+	return LTTRUE;
 }
 
 LTBOOL CVehicleMgr::OnCommandOff(int command)

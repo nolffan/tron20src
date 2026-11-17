@@ -15,6 +15,7 @@
 #include "AIHumanState.h"
 #include "AISenseRecorderAbstract.h"
 #include "AI.h"
+#include "AIPathMgr.h"
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalCharge, kGoal_Charge);
 
@@ -153,7 +154,8 @@ LTBOOL CAIGoalCharge::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		LTFLOAT fTargetDistanceSqr = VEC_DISTSQR( pSenseRecord->vLastStimulusPos, m_pAI->GetPosition());
 		if( fTargetDistanceSqr > m_fStopDistanceSqr )
 		{
-			return LTTRUE;
+			// RETAIL: Tron charges only when it has a path there (0x10210654)
+			return g_pAIPathMgr->HasPath( m_pAI, pSenseRecord->vLastStimulusPos ) ? LTTRUE : LTFALSE;
 		}
 	}
 

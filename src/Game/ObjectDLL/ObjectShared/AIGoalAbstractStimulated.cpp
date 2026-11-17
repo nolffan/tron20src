@@ -112,10 +112,14 @@ void CAIGoalAbstractStimulated::ActivateGoal()
 
 	// Copy an ally's stimulus time.
 
-	else if( m_hStimulusSource && IsAI( m_hStimulusSource ) ) 
+	// RETAIL: 0x1022f193, Tron accepts any GameBase, and copies the time
+	// only when the AI and the ally have no relative alignment (UNKNOWN).
+
+	else if( m_hStimulusSource && IsGameBase( m_hStimulusSource ) ) 
 	{
 		CAI* pAlly = (CAI*)( g_pLTServer->HandleToObject( m_hStimulusSource ) );
-		if( pAlly )
+		if( pAlly &&
+			( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) )
 		{
 			m_pAI->SetLastStimulusTime( pAlly->GetLastStimulusTime() );
 		}

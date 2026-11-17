@@ -127,7 +127,10 @@ void CAITronUnknown1010::RefreshTargets(AbstractTarget* pTarget)
 
 
 
-#define MAX_PHASE				7
+// RETAIL: Tron's phase limits are variables in the data section
+// (0x1030dd10, 0x1030dd14), not NOLF2's MAX_PHASE. The names are ours.
+static int		s_nMaxPhase = 7;
+static float	s_fPhaseHeightTrim = 0.3f;
 
 // ----------------------------------------------------------------------- //
 //
@@ -320,7 +323,7 @@ void AbstractTarget::SetObject(HOBJECT hObject)
 		m_vTargetVelocity = LTVector( 0.f, 0.f, 0.f );
 
 		g_pPhysicsLT->GetObjectDims( m_hObject, &m_vTargetDims );
-		m_fPhaseStep = ( m_vTargetDims.y * 2.f ) / ( MAX_PHASE + 1 );
+		m_fPhaseStep = ( ( 2.f - s_fPhaseHeightTrim ) * m_vTargetDims.y ) / ( s_nMaxPhase + 1 );
 	}
 }
 
@@ -633,7 +636,7 @@ void AbstractTarget::UpdateVisibility()
 
 		// Only change the phase if target is not visible.
 
-		m_nPhase = (m_nPhase+1) & MAX_PHASE;
+		m_nPhase = (m_nPhase+1) & s_nMaxPhase;
 	}
 }
 

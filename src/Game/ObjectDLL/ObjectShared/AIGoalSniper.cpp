@@ -196,8 +196,9 @@ void CAIGoalSniper::HandleTargetPos()
 	// Find target's current PlayerInfoVolume volume.
 
 	AIInformationVolume *pInfoVolume = pCharacter->GetCurrentInformationVolume();
+	// RETAIL: 0x101fb84b, Tron does not check the type of the volume.
+
 	if( ( !pInfoVolume ) ||
-		( pInfoVolume->GetVolumeType() != AIInformationVolume::eTypePlayerInfo ) ||
 		( (AIVolume*)pInfoVolume == m_pLastTargetInfoVol ) )
 	{
 		return;
@@ -329,6 +330,13 @@ LTBOOL CAIGoalSniper::HandleNameValuePair(const char *szName, const char *szValu
 			{
 				AIASSERT1( 0, m_pAI->m_hObject, "CAIGoalSniper::HandleNameValuePair: Setting a node that is not a Sniper node: %s", szValue );
 				return LTTRUE;
+			}
+
+			// RETAIL: 0x101fbaab, Tron enables a disabled sniper node.
+
+			if( pNewNode->IsDisabled() )
+			{
+				pNewNode->Enable();
 			}
 
 			// If Goal was already active, reset the state's node.

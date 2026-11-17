@@ -45,21 +45,13 @@ void CHARCREATESTRUCT::Write(ILTMessage_Write *pMsg)
     pMsg->Writefloat(fStealthPercent);
     pMsg->Writeuint8(nClientID);
     pMsg->Writeuint8(eCrosshairCharacterClass);
+	pMsg->Writeuint64(nInstantDamageFlags);
 	pMsg->Writeuint64(nDamageFlags);
 	pMsg->Writefloat(fPitch);
 
 	// Send the hitbox info
 	pMsg->WriteCompLTVector( vHitBoxDims );
 	pMsg->WriteCompLTVector( vHitBoxOffset );
-	
-	pMsg->Writebool( bCanCarry );
-	pMsg->Writebool( bCanWake );
-	pMsg->Writebool( bTracking );
-	pMsg->Writebool( bRadarVisible );
-
-	// type of thing player is carrying
-	pMsg->Writeuint8( nCarrying);
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -85,6 +77,7 @@ void CHARCREATESTRUCT::Read(ILTMessage_Read *pMsg)
     fStealthPercent = pMsg->Readfloat();
     nClientID       = pMsg->Readuint8();
     eCrosshairCharacterClass = (CharacterClass)pMsg->Readuint8();
+	nInstantDamageFlags	= pMsg->Readuint64();
 	nDamageFlags	= pMsg->Readuint64();
 	fPitch			= pMsg->Readfloat();
 
@@ -94,40 +87,18 @@ void CHARCREATESTRUCT::Read(ILTMessage_Read *pMsg)
 	{
 		eModelSkeleton	= g_pModelButeMgr->GetModelSkeleton(eModelId);
 		eModelType		= g_pModelButeMgr->GetModelType(eModelId);
+		bSupportsDamageFX = g_pModelButeMgr->GetModelSupportsDamageFX(eModelId);
 	}
 	else
 	{
 		eModelSkeleton	= eModelSkeletonInvalid;
 		eModelType		= eModelTypeInvalid;
+		bSupportsDamageFX = false;
 	}
 
 	// Update the hitbox dims
 	vHitBoxDims		= pMsg->ReadCompLTVector();
 	vHitBoxOffset	= pMsg->ReadCompLTVector();
-
-	bCanCarry		= pMsg->Readbool();
-	bCanWake		= pMsg->Readbool();
-	bTracking		= pMsg->Readbool();
-
-#ifdef _CLIENTBUILD
-	bRadarVisible	= pMsg->Readbool();
-	nCarrying		= pMsg->Readuint8();
-#else  // _CLIENTBUILD
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) > CVersionMgr::kSaveVersion__1_1 )
-	{
-		bRadarVisible	= pMsg->Readbool();
-	}
-	
-
-	if( g_pVersionMgr->GetCurrentSaveVersion( ) > CVersionMgr::kSaveVersion__1_2 )
-	{
-		nCarrying		= pMsg->Readuint8();
-	}
-	
-
-#endif //_CLIENTBUILD
-
-
 }
 
 

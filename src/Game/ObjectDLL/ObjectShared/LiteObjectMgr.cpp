@@ -218,6 +218,10 @@ void CLiteObjectMgr::Clear()
 
 void CLiteObjectMgr::ActivateObject(GameBaseLite *pObject)
 {
+	// RETAIL: Tron's: only registered objects (0x101965cc)
+	if (!pObject->IsRegistered())
+		return;
+
 	// Make sure we're going about this the right way
 	if (!pObject->IsActive())
 	{

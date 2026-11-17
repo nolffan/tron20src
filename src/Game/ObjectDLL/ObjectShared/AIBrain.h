@@ -138,6 +138,7 @@ class CAIBrain : public CAIClassAbstract
 		LTBOOL  CanLipSync() const { return m_pBrain->bCanLipSync; }
 
 		int		GetDamageMaskID() const { return m_pBrain->nDamageMaskID; }
+		LTBOOL	GetOnlyDamagedByPlayer() const { return m_pBrain->bOnlyDamagedByPlayer; }	// RETAIL: Tron's (SetBrain 0x1016ffd6); name ours
 
 		uint32 IsAmmoGenerationRestricted( uint32 nAmmoID ) const;
 

@@ -176,7 +176,7 @@ protected:
 	virtual void	UpdateLoadingLevelState();
 
 	// RETAIL: helpers (the names are ours)
-	void			ShowChatInput(uint8 nChatType);	// 0x1009d2e0
+	void			ShowChatInput(uint32 nChatType);	// 0x1009d2e0 (RETAIL: a full register)
 	void			UpdateIOCamera();				// 0x1009e240
 	void			CreateIOCamera();				// 0x1009e390
 public:
