@@ -44,14 +44,8 @@ class GameStartPoint : public GameBase
 		typedef std::vector< GameStartPoint* > StartPointList;
 		static StartPointList const& GetStartPointList() { return m_lstStartPoints; }
 
-		//used to determine the least recently used startpoint
-		float		GetLastUse()		const { return m_fLastUse;}
-		void		SetLastUse(float fLastUse) { m_fLastUse = fLastUse;}
-
-		uint8		GetTeamID()			const { return m_nTeamID; }
-
-		bool		IsStartPoint()		const { return m_bStartPoint; }
-		bool		IsSpawnPoint()		const { return m_bSpawnPoint; }
+		// RETAIL: Tron's (FindStartPoint, Object.lto 0x100e0f18)
+		GameType	GetGameType()		const { return m_eGameType; }
 
 		// RETAIL: Tron's: a player respawned at it (retail CPlayerObj::Respawn
 		// sets it, 0x1007dc92; the server shell's ResetStartPoints, 0x100e46f0,
@@ -87,27 +81,6 @@ class GameStartPoint : public GameBase
         LTBOOL ReadProp(ObjectCreateStruct *pStruct);
 
 		static StartPointList m_lstStartPoints;
-
-		// PORT: NOLF2's, which Tron's GameStartPoint has not (retail's ends
-		// at +0x60): kept after Tron's members for the NOLF2 code still
-		// standing in
-		float		m_fLastUse;
-		
-		uint8		m_nTeamID;		// When in a team game this specifies which team can spawn at this start point.
-		
-		bool		m_bStartPoint;	// Can this start point be used as an initial start point?
-		bool		m_bSpawnPoint;	// Can this start point be used as a respawn point?
-};
-
-
-class GameStartPointLesser
-{
-public:
-	
-	bool operator()(const GameStartPoint* x, const GameStartPoint* y) const
-	{
-		return (x->GetLastUse() < y->GetLastUse() );
-	}
 };
 
 
