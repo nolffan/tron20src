@@ -1313,6 +1313,19 @@ client stops. The test must come before the call.
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
 HUDMissionText.cpp tests the string first.
 
+### The chat input can write one byte past its buffer
+
+CShell.dll 0x100bab10 (CLTGUIEditCtrl::UpdateData, Libs/LTGUIMgr/
+ltguieditctrl.cpp). The function clears and fills the caller's buffer for
+the length of the text plus one byte. It does not use the size of the
+buffer. The chat input (CHUDChatInput, ClientShellShared/HUDChatInput.cpp)
+gives a buffer of 64 bytes and a maximum length of 64 characters. Thus a
+chat line of 64 characters writes its terminator one byte past the buffer,
+into the first character of the first chat history line.
+
+Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
+writes at most the maximum length, with the terminator.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

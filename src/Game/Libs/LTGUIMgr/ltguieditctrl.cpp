@@ -141,7 +141,22 @@ void CLTGUIEditCtrl::UpdateData(LTBOOL bSaveAndValidate)
 	if (bSaveAndValidate)
 	{
 		if (m_pText)
+		{
+#ifdef TRON20_MODERN
+			// the caller's buffer holds m_nMaxLength characters with the
+			// terminator (docs/RETAIL_BUGS.md)
+			uint32 nSize = m_pText->GetText().length() + 1;
+			if (nSize > m_nMaxLength)
+				nSize = m_nMaxLength;
+			if (nSize)
+			{
+				NarrowInto(m_pStringValue, m_pText->GetText(), nSize);
+				m_pStringValue[nSize-1] = '\0';
+			}
+#else
 			NarrowInto(m_pStringValue, m_pText->GetText(), m_pText->GetText().length() + 1);
+#endif
+		}
 	}
 	else
 	{
