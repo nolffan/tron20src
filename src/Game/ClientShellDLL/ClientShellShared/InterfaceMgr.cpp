@@ -1577,6 +1577,9 @@ LTBOOL CInterfaceMgr::SetupMusic()
 	CMusic* pMusic = g_pGameClientShell->GetMusic();
     if (!pMusic) return LTFALSE;
 
+	// RETAIL: 0x100c949a: Tron sets the music volume first
+	m_ProfileMgr.ImplementMusicVolume();
+
 	// Stop the music if it isn't enabled...
 
 	if (!m_Settings.MusicEnabled() || !GetConsoleInt("MusicActive",0))
@@ -1589,7 +1592,8 @@ LTBOOL CInterfaceMgr::SetupMusic()
 
 	// Use the current level's music if we have a level loaded...
 
-	if ( g_pLTClient->IsConnected() )
+	// RETAIL: 0x100c9505: not after an intentional disconnect
+	if ( g_pLTClient->IsConnected() && !m_bIntentionalDisconnect )
 	{
 		// Re-initialize music if necessary...
 
@@ -1666,8 +1670,6 @@ LTBOOL CInterfaceMgr::SetupMusic()
 	{
 		pMusic->ChangeIntensity(nIntensity);
 	}
-
-	m_ProfileMgr.ImplementMusicVolume();
 
     return LTTRUE;
 }
@@ -2228,7 +2230,8 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 				ClearAllScreenBuffers();
 
 
-				m_InterfaceResMgr.DrawMessage(IDS_REINITIALIZING_RENDERER);
+				// RETAIL: 0x100ca56e: Tron's string 0x38f
+				m_InterfaceResMgr.DrawMessage(0x38f);
 
 				// because of driver bugs, we need to wait a frame after reinitializing the renderer and
 				// reinitialize the cursor
@@ -2242,11 +2245,8 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 
 		case LTEVENT_DISCONNECT :
 		{
-			// PORT: NOLF2 reset its radar here; Tron has none
-			// Clean up our clientinfo's if we're in mp.
-			if( IsMultiplayerGame( ))
-				m_ClientInfo.RemoveAllClients();
-
+			// RETAIL: 0x100ca595: NOLF2 reset its radar and its client list
+			// here; Tron does neither (OnExitWorld empties the list)
 			if ( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 			{
 				Disconnected(dwParam);
@@ -5746,20 +5746,25 @@ const char *FindFilename(const char *pFileName)
 
 void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 {
+	// RETAIL: 0x100ced40: Tron's string ids (CRes.dll) and screens
 	eScreenID destination = SCREEN_ID_MULTI;
 	// Get the disconnect code.
 	uint32 nDisconnectCode = g_pClientMultiplayerMgr->GetDisconnectCode();
-	const char *pDisconnectMsg = g_pClientMultiplayerMgr->GetDisconnectMsg();
 	uint32 nMsgId = 0;
 	switch (nDisconnectCode)
 	{
 		case eDisconnect_NotSameGUID:
-			nMsgId = IDS_NETERR_NOTSAMEGUID;
+			nMsgId = 0x3ef;
 			break;
 		case eDisconnect_WrongPassword:
-			nMsgId = IDS_NETERR_WRONGPASS;
-			// RETAIL: 0x100ced40: Tron has one join screen (and a third
-			// disconnect code, not yet in our tree, that also goes there)
+			nMsgId = 0x3f2;
+			// Tron has one join screen
+			destination = SCREEN_ID_JOIN_SERVERLIST;
+			break;
+		// RETAIL: a third disconnect code of Tron's (not yet in our tree's
+		// eDisconnectCodes), to the join screen too
+		case 3:
+			nMsgId = 0x3fc;
 			destination = SCREEN_ID_JOIN_SERVERLIST;
 			break;
 
@@ -5768,15 +5773,11 @@ void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 		{
 			if( nDisconnectFlag == LT_REJECTED )
 			{
-				nMsgId = IDS_KICKBAN;
-			}
-			else if ( nDisconnectFlag == LT_MISSINGWORLDFILE )
-			{
-				nMsgId = IDS_MISSING_WORLD;
+				nMsgId = 0x2fc;
 			}
 			else
 			{
-				nMsgId = IDS_DISCONNECTED_FROM_SERVER;
+				nMsgId = 0x482;
 			}
 
 			g_pLTClient->CPrint("CInterfaceMgr::Disconnected(%d)", nDisconnectCode);
@@ -5803,16 +5804,19 @@ void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 		if (!m_bIntentionalDisconnect)
 		{
 			MBCreate mb;
-			char szMsg[1024] = "";
-			LoadString( nMsgId, szMsg, sizeof(szMsg));
-			ShowMessageBox(szMsg,&mb);
+			m_MessageBox.Close(LTTRUE);
+			ShowMessageBox(nMsgId,&mb);
 		}
 
 		ClearAllScreenBuffers();
 		SwitchToScreen(destination);
 	}
 
-
+	// RETAIL: 0x100cee5e
+	if (g_pLTClient->IsConnected())
+	{
+		g_pClientMultiplayerMgr->ForceDisconnect();
+	}
 }
 
 void CInterfaceMgr::ConnectionFailed(uint32 nConnectionError)
@@ -6518,17 +6522,3 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 	}						
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::StartingNewGame
-//
-//	PURPOSE:	Called when client is starting its connection to the server.
-//
-// ----------------------------------------------------------------------- //
-
-bool CInterfaceMgr::StartingNewGame( )
-{
-	GetClientInfoMgr()->RemoveAllClients();
-
-	return true;
-}

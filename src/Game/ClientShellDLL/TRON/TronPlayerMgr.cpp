@@ -1682,16 +1682,33 @@ int CTronPlayerMgr::TronUnknownVirtualA0()
 //
 //	PURPOSE:	RETAIL: retail 0x100a7660 (slot 0x9c): fills a light cycle's
 //				data (+0x4c name, +0x104c and +0x204c lists) from the
-//				model attributes of the player's light cycle color (+0x1b5).
-//				PORT: Tron's model attributes (0x10044f40, 0x10044f20) are
-//				not yet in our CModelButeMgr
+//				light cycle color of the player (+0x1b5): an object
+//				create struct's model, skins and render styles.
 //
 // ----------------------------------------------------------------------- //
 
-bool CTronPlayerMgr::TronUnknownVirtual9C(void* pData, int nArg)
+bool CTronPlayerMgr::TronUnknownVirtual9C(void* pTronUnknown, int nData)
 {
-	g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", m_szTronUnknown1B5);
-	return false;
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(m_szTronUnknown1B5);
+	if (!pColor)
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", m_szTronUnknown1B5);
+		return false;
+	}
+
+	if (!g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType))
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Type %d\n", pColor->nCycleType);
+		return false;
+	}
+
+	// RETAIL: 0x100a76cc: the second argument is the object create struct
+	ObjectCreateStruct* pOCS = (ObjectCreateStruct*)nData;
+	SAFE_STRCPY(pOCS->m_Filename, pColor->szModel);
+	pColor->blrRenderStyles.CopyList(0, pOCS->m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
+	pColor->blrSkins.CopyList(0, pOCS->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1998,8 +2015,8 @@ void CTronPlayerMgr::TronUnknownVirtual24(bool b1D7, bool b1D9)
 
 	if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE || TronUnknownVirtual3C(true))
 	{
-		// PORT: retail calls Tron's interface manager's slot 0x98 (0, 0)
-		// here
+		// RETAIL: 0x100a7e9c
+		g_pInterfaceMgr->TronUnknownVirtual98(false, false);
 	}
 }
 
