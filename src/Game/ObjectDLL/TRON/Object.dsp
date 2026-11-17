@@ -289,6 +289,10 @@ SOURCE=.\LightCyclePowerup.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleSinglePlayerMissionMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleVolume.cpp
 # End Source File
 # Begin Source File
@@ -558,6 +562,10 @@ SOURCE=.\LightCycleMultiplayerMissionMgr.h
 # Begin Source File
 
 SOURCE=.\LightCyclePowerup.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleSinglePlayerMissionMgr.h
 # End Source File
 # Begin Source File
 
