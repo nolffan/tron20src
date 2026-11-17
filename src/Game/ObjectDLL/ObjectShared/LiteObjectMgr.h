@@ -30,6 +30,9 @@ public:
 	void AddObject(GameBaseLite *pObject);
 	// Delete an object
 	void RemoveObject(GameBaseLite *pObject);
+	// RETAIL: Tron's (0x101961d0): bRemoveFromEngine false keeps the
+	// object for the delete list. The parameter's name is ours.
+	void RemoveObject(GameBaseLite *pObject, bool bRemoveFromEngine);
 	// Rename an object
 	void RenameObject(GameBaseLite *pObject, const char *pName);
 	// Is the mgr currently tracking this object?

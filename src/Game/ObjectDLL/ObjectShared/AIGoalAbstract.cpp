@@ -696,6 +696,25 @@ bool CAIGoalAbstract::IsPathToNodeValid( AINode* pNode )
 	return true;
 }
 
+//----------------------------------------------------------------------------
+//              
+//	ROUTINE:	CAIGoalAbstract::GetGoalId()
+//              
+//	PURPOSE:	RETAIL: Tron's (0x101e1c40): the template's "GoalId"
+//				(CAI sends it with its info, 0x1012a184). Name ours.
+//              
+//----------------------------------------------------------------------------
+uint16 CAIGoalAbstract::GetGoalId()
+{
+	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
+	if( pTemplate )
+	{
+		return pTemplate->nGoalId;
+	}
+
+	return 0;
+}
+
 
 //----------------------------------------------------------------------------
 

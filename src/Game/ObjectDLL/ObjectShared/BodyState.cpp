@@ -21,6 +21,7 @@
 #include "AIUtils.h"
 #include "ServerMissionMgr.h"
 #include "PlayerObj.h"
+#include "ModelButeMgr.h"
 
 static CVarTrack s_RemovePowerups;
 static CVarTrack s_LifetimeTrack;
@@ -33,6 +34,9 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateNormal, kState_BodyNormal);
 // RETAIL: Tron has no Stairs, Ledge, Carried or Dropped body states (no
 // classes or names in retail).
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateExplode, kState_BodyExplode);
+// RETAIL: Tron's two (factory entries in retail's order).
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStatePranksterImplode, kState_BodyPranksterImplode);
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateGib, kState_BodyGib);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateLadder, kState_BodyLadder);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateUnderwater, kState_BodyUnderwater);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateLaser, kState_BodyLaser);
@@ -956,4 +960,256 @@ void CBodyStateExplode::Load(ILTMessage_Read *pMsg)
 	LOAD_VECTOR(m_vLandPos);
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	CBodyStatePranksterImplode
+//
+//	RETAIL: Tron's (0x1021c550 - 0x1021cb70).
+//
+// ----------------------------------------------------------------------- //
 
+CBodyStatePranksterImplode::CBodyStatePranksterImplode() :
+	m_vTronUnknown8( 0.0f, 0.0f, 0.0f ),
+	m_hAniLoop( INVALID_ANI ),
+	m_hAniStop( INVALID_ANI ),
+	m_vDir( 0.0f, 0.0f, 0.0f ),
+	m_bTouched( false )
+{
+}
+
+void CBodyStatePranksterImplode::Init(Body* pBody)
+{
+	CBodyState::Init(pBody);
+
+	m_vDir = pBody->GetDeathDir();
+	if ( m_vDir.y < 0.0f )
+	{
+		m_vDir.y = 0.01f;
+	}
+
+	m_vDir.Normalize();
+
+	LTRotation rRot;
+	g_pLTServer->GetObjectRotation(m_pBody->m_hObject, &rRot);
+	LTVector vForward = rRot.Forward();
+
+	LTBOOL bForward = LTTRUE;
+
+	if ( vForward.Dot(m_vDir) < 0.0f )
+	{
+		bForward = LTFALSE;
+	}
+
+	m_pBody->FaceDir(bForward ? m_vDir : -m_vDir);
+
+	if ( bForward )
+	{
+		m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPFLoop");
+		m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPFStop");
+	}
+	else
+	{
+		m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPBLoop");
+		m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPBStop");
+	}
+
+	// The plane the body falls into.
+
+	LTVector vPoint = m_pBody->GetTronUnknown10AC() - m_vDir * m_pBody->GetTronUnknown10A4();
+	m_Plane.Init(-m_vDir, vPoint);
+
+	if ( m_hAniLoop == INVALID_ANI )
+	{
+		m_pBody->SetState(kState_BodyNormal);
+		return;
+	}
+
+	g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniLoop);
+	g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
+
+	g_pCommonLT->SetObjectFlags(m_pBody->m_hObject, OFT_Flags, 0, FLAG_GOTHRUWORLD);
+
+	LTVector vVel = m_vDir * pBody->GetTronUnknown10A8();
+	g_pPhysicsLT->SetVelocity(m_pBody->m_hObject, &vVel);
+
+	LTVector vDims;
+	g_pCommonLT->GetModelAnimUserDims(m_pBody->m_hObject, &vDims, m_hAniLoop);
+	g_pPhysicsLT->SetObjectDims(m_pBody->m_hObject, &vDims, 0);
+}
+
+void CBodyStatePranksterImplode::InitLoad(Body* pBody)
+{
+	CBodyState::InitLoad(pBody);
+
+	m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPFLoop");
+	m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DPFStop");
+}
+
+void CBodyStatePranksterImplode::HandleTouch(HOBJECT hObject)
+{
+	if ( !m_bTouched )
+	{
+		HCLASS hClass = g_pLTServer->GetObjectClass(hObject);
+		char szClass[256];
+		g_pLTServer->GetClassName(hClass, szClass, 256);
+
+		uint32 dwFlags;
+		g_pCommonLT->GetObjectFlags(hObject, OFT_Flags, dwFlags);
+
+		if ( IsMainWorld(hObject) || (dwFlags & FLAG_SOLID) )
+		{
+			g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniStop);
+			g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
+
+			m_bTouched = true;
+		}
+	}
+}
+
+void CBodyStatePranksterImplode::Update()
+{
+	LTFLOAT fTime = g_pLTServer->GetTime();
+
+	if ( m_pBody->GetLifetime() > 0.0f &&
+		 fTime > m_pBody->GetStarttime() + m_pBody->GetLifetime() )
+	{
+		g_pLTServer->RemoveObject(m_pBody->m_hObject);
+		m_pBody = LTNULL;
+		return;
+	}
+
+	HMODELANIM hAni = g_pLTServer->GetModelAnimation(m_pBody->m_hObject);
+	if ( hAni == INVALID_ANI || m_hAniLoop == hAni )
+	{
+		LTVector vPos;
+		g_pLTServer->GetObjectPos(m_pBody->m_hObject, &vPos);
+
+		if ( m_Plane.DistTo(vPos) < 0.0f )
+		{
+			g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniStop);
+			g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
+		}
+	}
+}
+
+void CBodyStatePranksterImplode::Save(ILTMessage_Write *pMsg)
+{
+	pMsg->WriteType(m_vTronUnknown8);
+	SAVE_DWORD(m_hAniLoop);
+	SAVE_DWORD(m_hAniStop);
+	pMsg->WriteType(m_vDir);
+	SAVE_bool(m_bTouched);
+}
+
+void CBodyStatePranksterImplode::Load(ILTMessage_Read *pMsg)
+{
+	LOAD_VECTOR(m_vTronUnknown8);
+	LOAD_DWORD(m_hAniLoop);
+	LOAD_DWORD(m_hAniStop);
+	LOAD_VECTOR(m_vDir);
+	LOAD_bool(m_bTouched);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	CBodyStateGib
+//
+//	RETAIL: Tron's (0x1021cbf0 - 0x1021ccf0).
+//
+// ----------------------------------------------------------------------- //
+
+void CBodyStateGib::Init(Body* pBody)
+{
+	CBodyState::Init(pBody);
+
+	PlayGibFX();
+
+	m_pBody->ReleasePowerups(false);
+	m_pBody->ShowCarrier();
+
+	g_pLTServer->RemoveObject(pBody->m_hObject);
+}
+
+void CBodyStateGib::InitLoad(Body* pBody)
+{
+	CBodyState::InitLoad(pBody);
+
+	PlayGibFX();
+
+	m_pBody->ReleasePowerups(false);
+	m_pBody->ShowCarrier();
+
+	g_pLTServer->RemoveObject(pBody->m_hObject);
+}
+
+// RETAIL: 0x1021ccf0: "DEATHFX_<model>_<skin>_Exp" from the file names of
+// the model and its first skin. Name ours.
+static void GetGibDeathFX(HOBJECT hObject, char* szFX)
+{
+	// Get the object's filenames
+	char szFullModelPath[512];
+	char szFullSkinPath[512];
+	char szModelName[512];
+	char szSkinName[512];
+	g_pModelLT->GetModelDBFilename(hObject, szFullModelPath, 512);
+	g_pModelLT->GetSkinFilename(hObject, 0, szFullSkinPath, 512);
+
+	// Remove the .ltb from the model
+	int nIndex = strlen(szFullModelPath)-4;
+	szFullModelPath[nIndex] = '\0'; // 4 characters from end
+
+	// Strip off the directory information
+	int nStart = 0;
+	while((nStart == 0) && (nIndex != 0))
+	{
+		// Search backwards until we find a directory separator
+		if((szFullModelPath[nIndex] == '\\') || (szFullModelPath[nIndex] == '/'))
+		{
+			nStart = nIndex+1;
+		}
+		else
+		{
+			nIndex--;
+		}
+	}
+	strcpy(szModelName,&szFullModelPath[nStart]);
+
+	// The same for the skin
+	nIndex = strlen(szFullSkinPath)-4;
+	szFullSkinPath[nIndex] = '\0';
+
+	nStart = 0;
+	while((nStart == 0) && (nIndex != 0))
+	{
+		if((szFullSkinPath[nIndex] == '\\') || (szFullSkinPath[nIndex] == '/'))
+		{
+			nStart = nIndex+1;
+		}
+		else
+		{
+			nIndex--;
+		}
+	}
+	strcpy(szSkinName,&szFullSkinPath[nStart]);
+
+	sprintf(szFX, "DEATHFX_%s_%s_Exp", szModelName, szSkinName);
+}
+
+void CBodyStateGib::PlayGibFX()
+{
+	if ( m_pBody )
+	{
+		char szFX[128];
+
+		if ( IsDiscGameType() )
+		{
+			GetGibDeathFX(m_pBody->m_hObject, szFX);
+		}
+		else
+		{
+			SAFE_STRCPY(szFX, g_pModelButeMgr->GetModelGibFX(m_pBody->GetModelId()));
+		}
+
+		PlayClientFX(szFX, m_pBody->m_hObject, (LTVector*)LTNULL, (LTRotation*)LTNULL, 0);
+	}
+}

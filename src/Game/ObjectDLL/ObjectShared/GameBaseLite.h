@@ -26,6 +26,10 @@ LINKTO_MODULE( GameBaseLite );
 
 class GameBaseLite : public BaseClass, public ILTObjRefReceiver
 {
+	// RETAIL: Tron's CLiteObjectMgr::RemoveObject clears m_bRegistered
+	// (retail 0x101962dd).
+	friend class CLiteObjectMgr;
+
 public :
     GameBaseLite(bool bStartActive = true);
 	virtual ~GameBaseLite();

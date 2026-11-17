@@ -47,6 +47,9 @@ public:
 	virtual bool SetTrackedTarget(EnumTrackedNodeGroup eGroup, HOBJECT hObject, const LTVector& vOffset);
 	virtual bool SetTrackedTarget(EnumTrackedNodeGroup eGroup, const LTVector& vPosition);
 
+	// RETAIL: Tron's (0x101dc2c0). Name ours.
+	HOBJECT GetTrackedTarget(EnumTrackedNodeGroup eGroup);
+
 	// Server update.
 
 	void Update();

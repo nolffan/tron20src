@@ -110,19 +110,26 @@ struct TronAIInfo
 };
 
 // RETAIL: Tron's 8 byte class at CAI+0x1010: two lists, built and deleted
-// inline by CAI (retail 0x10128a43, 0x1012949e). CAI::Save and
-// CAI::UpdateTarget first call its 0x101dee80, which takes the first list's
-// entries away and, for each, removes it from the second and gives it back
-// to the AI class factory. Names ours; the element types are not known.
+// inline by CAI (retail 0x10128a43, 0x1012949e). The first keeps the
+// target commands posted to the AI's targets (PostCommand 0x101df000), the
+// second the targets' receivers (AITarget.h). Flush (0x101dee80) sends each
+// posted command to every receiver and gives it back to the AI class
+// factory; RefreshTargets (0x101df040) sends a RefreshCacheIfSame. Names
+// ours; the code is in AITarget.cpp (retail's unit).
+class AbstractTarget;
+struct ITargetCommand;
+template<class T> class CTargetCommandReceiver;
+
 class CAITronUnknown1010
 {
 	public :
 
-		// PORT: retail 0x101dee80 is not written yet (AI.cpp)
 		void	Flush();
+		void	PostCommand(const ITargetCommand& Command);
+		void	RefreshTargets(AbstractTarget* pTarget);
 
-		std::list<void*>	m_lstTronUnknown0;
-		std::list<void*>	m_lstTronUnknown4;
+		std::list<ITargetCommand*>							m_lstTronUnknown0;
+		std::list<CTargetCommandReceiver<AbstractTarget>*>	m_lstTronUnknown4;
 };
 
 // Defines
@@ -351,6 +358,11 @@ class CAI : public CCharacter, public IAISensing
         LTBOOL FaceTarget();
 		CAITarget* GetTarget();
         LTBOOL HasTarget();
+		// RETAIL: Tron's: the targets register with this (AITarget.h).
+		// Name ours.
+		CAITronUnknown1010* GetTronUnknown1010() { return m_pTronUnknown1010; }
+		// RETAIL: CAITarget::UpdatePush fires it (0x101e05c0). Name ours.
+		CWeapon* GetTronWeapon() { return m_pTronWeapon; }
 		
 		// Relation Mgr
 
@@ -480,12 +492,14 @@ class CAI : public CCharacter, public IAISensing
 		EnumTrackedNodeGroup GetActiveNodeTrackingGroup() const;
 		LTBOOL	IsNodeTrackingEnabled() const;
 		LTBOOL	IsNodeTrackingAtLimit() const;
+		HOBJECT	GetNodeTrackingTarget();	// RETAIL: Tron's (0x10131880); name ours
 		EnumTrackedNodeGroup GetTriggerNodeTrackingGroup() const { return m_eTriggerNodeTrackingGroup; }
 
 		// RETAIL: Tron's "TALKLOCK": look at the nearest player, told to
 		// ourselves as the "TrackLookAt"/"TrackNone" commands (retail
 		// 0x101304f0; name ours)
 		void	SetTalkLock(bool bTalkLock);
+		bool	IsTalkLocked() const { return m_bTalkLock; }	// name ours
 
 		// RETAIL: Tron's: add (unless there) and remove an entry of the list
 		// at +0x10a0 (retail 0x1012ce40, 0x1012cee0; names ours)

@@ -31,7 +31,8 @@ inline void ParserError(const char* szFormat, ...)
 	va_start(val, szFormat);
 	vsprintf(szBuffer, szFormat, val);
 	va_end(val);
-	yyanimationerror(szBuffer);
+	// RETAIL: Tron prints the error (0x102324d0)
+	g_pLTServer->CPrint(szBuffer);
 }
 
 extern "C" int yyanimationwrap(void)

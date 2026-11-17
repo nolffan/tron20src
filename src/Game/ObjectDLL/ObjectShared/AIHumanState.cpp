@@ -732,6 +732,28 @@ void CAIHumanStatePatrol::Update()
 }
 
 // ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStatePatrol::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStatePatrol::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_xTronUnknown94 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
+}
+
+// ----------------------------------------------------------------------- //
 
 void CAIHumanStatePatrol::UpdateAnimation()
 {
@@ -763,7 +785,8 @@ void CAIHumanStatePatrol::UpdateAnimation()
 		GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Lower);
 		GetAnimationContext()->Lock();
 	}
-	else if( m_pStrategyFollowPath->IsSet() )
+	// RETAIL: Tron's: not while facing the player (0x101e52d8).
+	else if( m_pStrategyFollowPath->IsSet() && !ShouldFacePlayer() )
 	{
 		m_pStrategyFollowPath->UpdateAnimation();
 	}
@@ -956,6 +979,28 @@ AINode* CAIHumanStateGoto::SafeGetGotoNode(int32 iGotoNode)
 }
 
 // ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateGoto::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStateGoto::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_xTronUnknownF0 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
+}
+
+// ----------------------------------------------------------------------- //
 
 void CAIHumanStateGoto::Update()
 {
@@ -979,6 +1024,17 @@ void CAIHumanStateGoto::Update()
 			m_pStrategyToggleLights->Update();
 			return;
 		}
+	}
+
+	// RETAIL: Tron's (0x101e59e3): face the player while talking.
+
+	if( ShouldFacePlayer() )
+	{
+		if( m_pAIHuman->IsNodeTrackingAtLimit() && m_pAIHuman->GetNodeTrackingTarget() )
+		{
+			m_pAIHuman->FaceObject( m_pAIHuman->GetNodeTrackingTarget() );
+		}
+		return;
 	}
 
 	// Play looping sound.
@@ -1135,7 +1191,8 @@ void CAIHumanStateGoto::UpdateAnimation()
 		return;
 	}
 
-	if ( m_pStrategyFollowPath )
+	// RETAIL: Tron's: not while facing the player (0x101e5ef4).
+	if ( m_pStrategyFollowPath && !ShouldFacePlayer() )
 	{
 		m_pStrategyFollowPath->UpdateAnimation();
 	}
@@ -2151,6 +2208,28 @@ void CAIHumanStateUseObject::Pause(LTBOOL bPause)
 
 		m_fAnimTimer -= 10.f;
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateUseObject::ShouldFacePlayer
+//
+//	PURPOSE:	RETAIL: Tron's: the AI faces the player while it talks,
+//				if nothing holds it and the player is not an enemy. Name
+//				ours.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIHumanStateUseObject::ShouldFacePlayer()
+{
+	CPlayerObj* pPlayer = g_pCharacterMgr->FindPlayer();
+
+	return ( ( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) &&
+		!m_pAIHuman->GetAIMovement()->IsMovementLocked() &&
+		!m_pAI->GetAnimationContext()->IsLocked() &&
+		!m_bTronUnknownF4 &&
+		pPlayer &&
+		( GetAlignment( m_pAI->GetRelationSet(), pPlayer->GetRelationData() ) != HATE ) );
 }
 
 // ----------------------------------------------------------------------- //
@@ -8858,100 +8937,22 @@ void CAIHumanStateFollow::Update()
 		return;
 	}
 
+	// RETAIL: Tron's (0x101f4630): the substates' handlers.
 
-	LTVector vTargetPosition;
-    g_pLTServer->GetObjectPos(GetAI()->GetTarget()->GetObject(), &vTargetPosition);
-
-	if ( !IsPlayer(GetAI()->GetTarget()->GetObject()) )
+	switch( m_eStateStatus )
 	{
-		g_pLTServer->CPrint("NOT FOLLOWING PLAYER?!?!?!");
-	}
+		case kSStat_Initialized:
+			m_fBaseAIHoverAcceleration = GetAI()->GetHoverAcceleration();
+			TransitionToFollowing();
+			break;
 
-	if ( m_pStrategyFollowPath->IsUnset() )
-	{
-		// Head and Torso tracking.
-	
-		GetAI()->SetNodeTrackingTarget( kTrack_LookAt, GetAI()->GetTarget()->GetObject(), "Head" );
+		case kSStat_Holding:
+			HandleHolding();
+			break;
 
-		if ( !m_pStrategyFollowPath->Set(vTargetPosition, LTFALSE) )
-		{
-			g_pLTServer->CPrint("Could not set path to target");
-			
-			// Head and Torso tracking.
-			// Face target if at tracking limit.
-
-			GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
-			return;
-		}
-	}
-
-	if ( kSStat_Holding == m_eStateStatus )
-	{
-		if ( vTargetPosition.DistSqr(GetAI()->GetPosition()) > (m_fRangeSqr+1000.0f) )
-		{
-			if ( g_pLTServer->GetTime() > m_fRangeTimer )
-			{
-			}
-			else
-			{
-				// Head and Torso tracking.
-				// Face target if at tracking limit.
-	
-				GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
-				return;
-			}
-		}
-		else
-		{
-			m_fRangeTimer = g_pLTServer->GetTime() + m_fRangeTime;
-
-			// Head and Torso tracking.
-			// Face target if at tracking limit.
-
-			GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
-			return;
-		}
-	}
-	else if ( vTargetPosition.DistSqr(GetAI()->GetPosition()) < m_fRangeSqr )
-	{
-		m_fRangeTimer = g_pLTServer->GetTime() + m_fRangeTime;
-		m_eStateStatus = kSStat_Holding;
-
-		// Head and Torso tracking.
-		// Face target if at tracking limit.
-
-		GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
-		return;
-	}
-
-	if ( m_pStrategyFollowPath->IsSet() )
-	{
-		m_eStateStatus = kSStat_Following;
-
-		// TODO: check for strategy failure
-		m_pStrategyFollowPath->Update();
-
-		// Head and Torso tracking.
-
-		GetAI()->EnableNodeTracking( kTrack_LookAt, LTNULL );
-	}
-
-    m_fTimer += g_pLTServer->GetFrameTime();
-
-	if ( m_pStrategyFollowPath->IsDone() || m_fTimer > 1.0f )
-	{
-		m_fTimer = 0.0f;
-
-		if ( !m_pStrategyFollowPath->Set(vTargetPosition, LTFALSE) )
-		{
-			m_eStateStatus = kSStat_Holding;
-
-			// Head and Torso tracking.
-			// Face target if at tracking limit.
-
-			GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
-			return;
-		}
+		case kSStat_Following:
+			HandleFollowing();
+			break;
 	}
 }
 
@@ -8966,43 +8967,55 @@ void CAIHumanStateFollow::Update()
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateFollow::HandleHolding()
-	{
-	// Get the perfect position of the target
-
-	float f2DDistToTarget = Get2DDistance( GetTargetPosition() );
+{
+	// RETAIL: Tron's (0x101f4690).
 
 	// Check to see if this is a hovering AI.  A hovering AI may be drifting -- 
 	// if it is, and if it has stopped, then clear out the destination it was
 	// going to.
-	if ( GetAI()->IsHovering() )
+	if ( GetAI()->IsHovering() && m_pStrategyFollowPath->IsSet() )
 	{
-		if ( m_pStrategyFollowPath->IsSet() )
+		if ( GetAI()->HoverIsDrifting() )
 		{
-			if ( GetAI()->HoverIsDrifting() )
+			m_pStrategyFollowPath->Reset();
+		}
+		else
+		{
+			m_pStrategyFollowPath->Update();
+		}
+	}
+
+	// Get the perfect position of the target
+
+	float f2DDistToTarget = Get2DDistance( GetTargetPosition() );
+	if ( f2DDistToTarget > m_fRangeSqr + 1000.0f )
+	{
+		// Too far: follow again when a path is found.
+
+		if ( m_pStrategyFollowPath->IsUnset() || m_pStrategyFollowPath->IsDone() )
+		{
+			m_pStrategyFollowPath->Set( GetTargetPosition(), LTFALSE );
+			if ( m_pStrategyFollowPath->IsSet() )
 			{
-				m_pStrategyFollowPath->Reset();
-			}
-			else
-			{
-				GetAI()->FaceTarget();
+				TransitionToFollowing();
 				return;
 			}
 		}
 
-		if ( g_pLTServer->GetTime() < m_fRangeTimer )
+		if ( g_pLTServer->GetTime() > m_fRangeTimer )
 		{
-			m_fRangeTimer = g_pLTServer->GetTime() + m_fRangeTime;
-			GetAI()->FaceTarget();
 			return;
 		}
 	}
 	else
 	{
 		m_fRangeTimer = g_pLTServer->GetTime() + m_fRangeTime;
-		m_eStateStatus = kSStat_Holding;
-		GetAI()->FaceTarget();
-		return;
 	}
+
+	// Head and Torso tracking.
+
+	GetAI()->SetNodeTrackingTarget( kTrack_AimAt, GetAI()->GetTarget()->GetObject(), "Head" );
+	GetAI()->EnableNodeTracking( kTrack_AimAt, GetAI()->GetTarget()->GetObject() );
 }
 
 //----------------------------------------------------------------------------
@@ -9015,14 +9028,17 @@ void CAIHumanStateFollow::HandleHolding()
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateFollow::HandleFollowing()
-	{
-	// If we are close enough, then move to the holding state stat.
+{
+	// RETAIL: Tron's (0x101f47a0).
 
-	float f2DDistToTarget = Get2DDistance( GetTargetPosition() );
+	// Head and Torso tracking.
+
+	GetAI()->SetNodeTrackingTarget( kTrack_AimAt, GetAI()->GetTarget()->GetObject(), "Head" );
+	GetAI()->EnableNodeTracking( kTrack_AimAt, GetAI()->GetTarget()->GetObject() );
 
 	// See if we should start Holding due to 'close enough'
 
-	if ( f2DDistToTarget < m_fRangeSqr)
+	if ( Get2DDistance( GetTargetPosition() ) < m_fRangeSqr )
 	{
 		TransitionToHolding();
 		return;
@@ -9030,12 +9046,12 @@ void CAIHumanStateFollow::HandleFollowing()
 
 	// See if we need to refresh our path.
 
-	if (m_pStrategyFollowPath->IsUnset()	|| 
-		m_pStrategyFollowPath->IsDone()		||
-		m_fTimer > 1.0f)
+	if ( m_pStrategyFollowPath->IsUnset()	|| 
+		 m_pStrategyFollowPath->IsDone()	||
+		 m_fTimer > 1.0f )
 	{
 		m_fTimer = 0.0f;
-		if ( !m_pStrategyFollowPath->Set(GetTargetPosition(), LTFALSE) )
+		if ( !m_pStrategyFollowPath->Set( GetTargetPosition(), LTFALSE ) )
 		{
 			// Unable to path to this point!  Start holding.
 			g_pLTServer->CPrint("Could not set path to target");
@@ -9048,7 +9064,6 @@ void CAIHumanStateFollow::HandleFollowing()
 	if ( m_pStrategyFollowPath->IsSet() )
 	{
 		m_pStrategyFollowPath->Update();
-		GetAI()->FaceTarget();
 	}
 }
 
@@ -9070,6 +9085,9 @@ void CAIHumanStateFollow::TransitionToFollowing()
 	GetAI()->SetHoverAcceleration( m_fBaseAIHoverAcceleration );
 
 	m_eStateStatus = kSStat_Following;
+
+	// RETAIL: Tron's (0x101f48c7)
+	GetAI()->DisableNodeTracking();
 }
 
 //----------------------------------------------------------------------------
@@ -9082,11 +9100,15 @@ void CAIHumanStateFollow::TransitionToFollowing()
 //              
 //----------------------------------------------------------------------------
 void CAIHumanStateFollow::TransitionToHolding()
-		{
-			m_eStateStatus = kSStat_Holding;
-			GetAI()->FaceTarget();
-			return;
-		}
+{
+	// RETAIL: Tron's (0x101f48d0): look at the target, stop moving.
+
+	m_eStateStatus = kSStat_Holding;
+	GetAI()->EnableNodeTracking( kTrack_LookAt, GetAI()->GetTarget()->GetObject() );
+	m_pStrategyFollowPath->Reset();
+	GetAI()->GetAIMovement()->Clear();
+}
+
 
 //----------------------------------------------------------------------------
 //              

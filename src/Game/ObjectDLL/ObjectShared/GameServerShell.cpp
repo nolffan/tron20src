@@ -51,6 +51,9 @@
 #include "CoopMissionMgr.h"
 #include "DeathMatchMissionMgr.h"
 #include "TeamDeathMatchMissionMgr.h"
+#include "../TRON/DiscArenaMissionMgr.h"	// RETAIL: Tron's
+#include "../TRON/LightCycleMultiplayerMissionMgr.h"	// RETAIL: Tron's
+#include "../TRON/LightCycleSinglePlayerMissionMgr.h"	// RETAIL: Tron's
 #include "ServerSaveLoadMgr.h"
 #include "CharacterMgr.h"
 #include "ServerAssetMgr.h"
@@ -3797,12 +3800,21 @@ bool CGameServerShell::InitGameType()
 		m_pServerMissionMgr = NULL;
 	}
 
+	// RETAIL: Tron tosses it twice (retail 0x100e254e, 0x100e2569).
+	if( m_pServerMissionMgr )
+	{
+		debug_delete( m_pServerMissionMgr );
+		m_pServerMissionMgr = NULL;
+	}
+
 	// Reseed random number generator if necessary...
 	if (m_ServerGameOptions.m_bPerformanceTest)
 	{
 		srand(123); // Same as client, doesn't really matter...
 	}
 
+	// RETAIL: Tron's game types (retail 0x100e2599: eight cases, a jump
+	// table; the order of the cases is retail's).
 	switch( m_ServerGameOptions.m_eGameType )
 	{
 		case eGameTypeSingle:
@@ -3814,8 +3826,16 @@ bool CGameServerShell::InitGameType()
 		case eGameTypeDeathmatch:
 			m_pServerMissionMgr = debug_new( CDeathMatchMissionMgr );
 			break;
-		case eGameTypeTeamDeathmatch:
-			m_pServerMissionMgr = debug_new( CTeamDeathMatchMissionMgr );
+		case eGameTypeDiscArena:
+		case eGameTypeDiscTournament:
+			m_pServerMissionMgr = debug_new( CDiscArenaMissionMgr );
+			break;
+		case eGameTypeMultiplayerLightcycles:
+			m_pServerMissionMgr = debug_new( CLightCycleMultiplayerMissionMgr );
+			break;
+		case eGameTypeSingleLightCycleCircuit:
+		case eGameTypeSingleLightCycleCustom:
+			m_pServerMissionMgr = debug_new( CLightCycleSinglePlayerMissionMgr );
 			break;
 		default:
 			ASSERT( !"CGameServerShell::InitGameType: Invalid game type." );
