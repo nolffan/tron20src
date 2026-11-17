@@ -120,6 +120,13 @@ class CVehicleMgr
 	// RETAIL: read by CHUDLightCycleSpeedometer (0x1002fc30; the name is ours)
 	bool		GetTronUnknown2158() const { return m_bTronUnknown2158; }
 
+	// RETAIL: read by CClientLightCycleMgr (0x10013cbf, 0x100141aa,
+	// 0x1001227c, 0x10013e94); the names are ours
+	HLTSOUND	GetVehicleCruiseSnd() const { return m_hVehicleCruiseSnd; }
+	HLTSOUND	GetTronUnknownSnd2c() const { return m_hTronUnknownSnd2c; }
+	void		SetTronUnknown2128(const LTVector & v) { m_vTronUnknown2128 = v; }
+	CLIENTFX_LINK* GetTronUnknownFX2148() { return &m_TronUnknownFX2148; }
+
   protected:
 
 	void		UpdateVehicleMotion();

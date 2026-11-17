@@ -120,6 +120,15 @@
 	#define LCI_CYCLISTS				32	// Server to Client: all the cyclists
 	#define LCI_TRONUNKNOWN_33			33	// Server to Client
 	#define LCI_GRAB_FAILED				34	// Server to Client
+	// RETAIL: the client's handler (CShell 0x10011c80) has these too; the
+	// names are ours.
+	#define LCI_TRONUNKNOWN_4			4	// Server to Client: the left turn arrow
+	#define LCI_TRONUNKNOWN_5			5	// Server to Client: the right turn arrow
+	#define LCI_TRONUNKNOWN_7			7	// Server to Client: a cycle's color
+	#define LCI_TRONUNKNOWN_18			18	// Server to Client
+	#define LCI_TRONUNKNOWN_19			19	// Server to Client
+	#define LCI_TRONUNKNOWN_20			20	// Server to Client: a float for the player manager
+	#define LCI_TRONUNKNOWN_21			21	// Server to Client: a bool for the player manager
 ///////////////////////////////////////////
 
 #define	MID_PERFORMANCE					149	// RETAIL: 149 in Tron (CUserProfile::SendPerformanceMsg, CShell.dll; CGameServerShell::HandlePerformanceMessage's case, Object.lto 0x100ded8a)

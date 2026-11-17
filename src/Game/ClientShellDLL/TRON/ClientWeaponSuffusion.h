@@ -24,6 +24,10 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 protected:
+	// RETAIL: slot 54 (0x1001bdf0)
+	virtual void  InitAnimations( bool bAllowSelectOverride );
+	// RETAIL: slot 55 (0x1001be80)
+	virtual bool  PlayFireAnimation( bool bResetAni );
 	// RETAIL: slot 56 (0x1001c3d0): is it a fire animation (the extra one
 	// counts unless only the normal ones are asked for)
 	virtual bool  IsFireAni( uint32 dwAni, bool bCheckNormalOnly = false ) const;
@@ -42,7 +46,11 @@ protected:
 	virtual bool  TronUnknownVirtual164();	// RETAIL: 0x1001c6d0
 
 	// RETAIL: 0x1001c410
-	bool          IsExtraFireAni( uint32 dwAni );
+	bool          IsExtraFireAni( uint32 dwAni ) const;
+	// RETAIL: 0x10019210 (the name is ours)
+	uint32        GetExtraFireAni() const;
+	// RETAIL: slot 67 (0x1001c430)
+	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );
 
 	HMODELANIM    m_nExtraFireAni;		// RETAIL: +0x208
 	float         m_fTronUnknown20C;	// RETAIL: +0x20c (saved, sent with the fire message)

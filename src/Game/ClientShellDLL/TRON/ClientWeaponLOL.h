@@ -4,8 +4,6 @@
 //
 // PURPOSE : Tron's client-side LOL weapon (retail only: RTTI .?AVCClientWeaponLOL@@, vtable
 //           0x101e64b4; CShell.dll 0x1001acc0..0x1001b09c).  Member names are ours.
-//           Not yet written: PlayFireAnimation (0x1001ae80) and
-//           0x1001b090 (it reads CClientWeapon+0x154, not in ours).
 //
 // ----------------------------------------------------------------------- //
 
@@ -29,6 +27,10 @@ protected:
 	virtual uint8 GetFireMessageType() const { return kTronFire_LOL; }
 
 	virtual float GetEnergyUse();
+	// RETAIL: 0x1001ae80
+	virtual bool  PlayFireAnimation( bool bResetAni );
+	// RETAIL: 0x1001b090 (PlayFireAnimation calls it)
+	void          UpdateFireAnimationRate();
 
 	// RETAIL: +0x208 (1.0f in the ctor; LOLData has a
 	// fFireAnimationRateMultiplier)

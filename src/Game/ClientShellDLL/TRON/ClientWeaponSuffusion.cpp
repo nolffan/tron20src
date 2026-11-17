@@ -6,22 +6,21 @@
 //           written from CShell.dll 0x1001bc80..0x1001c72b; see
 //           ClientWeaponSuffusion.h).
 //
-//           Not yet written: InitAnimations (0x1001bdf0), PlayFireAnimation
-//           (0x1001be80), AddExtraFireMessageInfo (0x1001c430; it reads
-//           CClientWeapon+0x154), GetEnergyUse (0x1001c5a0) and
-//           TronUnknownVirtual164 (0x1001c6d0; CTronPlayerStats' float energy).
-//
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
 #include "ClientWeaponSuffusion.h"
 #include "SubroutineMgr.h"
 #include "TRONPlayerStats.h"
+#include "GameClientShell.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x1001bc80..)
 
 namespace
 {
 	HMODELANIM const INVALID_ANI = ( static_cast< HMODELANIM >( -1 ) );
+
+	// RETAIL: 0x101e6980 (the name is ours; ClientWeapon.cpp's style)
+	char *ns_szExtraFireAnimationName = "PostFullChargeFire";
 }
 
 // RETAIL: 0x1001bd50
@@ -45,6 +44,208 @@ CClientWeaponSuffusion::~CClientWeaponSuffusion()
 	}
 }
 
+// RETAIL: 0x1001bdf0.  The energy a second of the pre-fire (charge)
+// animation uses.
+void CClientWeaponSuffusion::InitAnimations( bool bAllowSelectOverride )
+{
+	m_nExtraFireAni = g_pLTClient->GetAnimIndex( m_hObject, ns_szExtraFireAnimationName );
+
+	CTronClientWeapon::InitAnimations( bAllowSelectOverride );
+
+	uint32 nLength = 0;
+	g_pModelLT->GetAnimLength( m_hObject, m_nPreFireAni, nLength );
+	if ( nLength > 0 )
+	{
+		m_fTronUnknown214 = GetEnergyUse() / ( nLength * 0.001f );
+	}
+}
+
+// RETAIL: 0x1001be80.  The pre-fire animation charges the shot
+// (m_fTronUnknown20C: the part of it played, 1 when it is done) while it
+// uses energy; the extra fire animation follows a full charge.  PORT:
+// before the animations it starts first retail calls CTronClientWeapon's
+// 0x10097f20 (a helper of four more Tron helpers), and it hands
+// m_fTronUnknown214 to CTronClientWeapon's 0x10098b10 (it sets +0x204) when
+// the charge starts: neither is in our build.
+bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
+{
+	uint32 dwAni			= g_pLTClient->GetModelAnimation( m_hObject );
+	uint32 dwState			= g_pLTClient->GetModelPlaybackState( m_hObject );
+
+	uint32 dwPreFireAni		= GetPreFireAni();
+	uint32 dwFireAni		= GetFireAni( m_eLastFireType );
+	uint32 dwPostFireAni	= GetPostFireAni();
+	uint32 dwExtraFireAni	= GetExtraFireAni();
+
+	bool bHasPreFireAni		= !!( INVALID_ANI != dwPreFireAni );
+	bool bHasFireAni		= !!( INVALID_ANI != dwFireAni );
+	bool bHasPostFireAni	= !!( INVALID_ANI != dwPostFireAni );
+	bool bHasExtraFireAni	= !!( INVALID_ANI != dwExtraFireAni );
+
+	bool bIsFireAni			= IsFireAni( dwAni );
+	bool bIsMainFireAni		= IsFireAni( dwAni, true );
+	bool bIsPreFireAni		= IsPreFireAni( dwAni );
+	bool bIsPostFireAni		= IsPostFireAni( dwAni );
+	bool bIsExtraFireAni	= IsExtraFireAni( dwAni );
+
+	bool bIsCurAniDone		= !!( dwState & MS_PLAYDONE );
+
+	if ( !bIsFireAni && bResetAni )
+	{
+		if ( bHasPreFireAni )
+		{
+			m_fTronUnknown20C = 0.0f;
+			m_pTimer->Start();
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			g_pTronPlayerStats->UseEnergy( GetEnergyUse() );
+			// PORT: 0x10098b10( m_fTronUnknown214 ) (see above)
+			return true;
+		}
+
+		if ( bHasFireAni )
+		{
+			m_fTronUnknown20C = 0.0f;
+			m_pTimer->Stop();
+			TronUnknown98B20();
+			PlayAnimation( dwFireAni, true, 1.0f, true );
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			m_fTronUnknown20C = 0.0f;
+			m_pTimer->Stop();
+			TronUnknown98B20();
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+			return true;
+		}
+
+		return false;
+	}
+
+	if ( bIsFireAni )
+	{
+		if ( bIsPreFireAni )
+		{
+			if ( bIsCurAniDone )
+			{
+				// Fully charged
+				if ( bHasFireAni )
+				{
+					m_fTronUnknown20C = 1.0f;
+					m_pTimer->Stop();
+					TronUnknown98B20();
+					PlayAnimation( dwFireAni, true, 1.0f, true );
+					return true;
+				}
+
+				if ( bHasPostFireAni )
+				{
+					uint32 nLength;
+					g_pModelLT->GetCurAnimLength( m_hObject, MAIN_TRACKER, nLength );
+					m_fTronUnknown20C = m_pTimer->GetElapseTime() / ( nLength * 0.001f );
+					m_pTimer->Stop();
+					TronUnknown98B20();
+					PlayAnimation( dwPostFireAni, true, 1.0f, false );
+					return true;
+				}
+
+				return true;
+			}
+
+			if ( !bResetAni )
+			{
+				// Let go while charging
+				if ( bHasPostFireAni )
+				{
+					uint32 nLength;
+					g_pModelLT->GetCurAnimLength( m_hObject, MAIN_TRACKER, nLength );
+					m_fTronUnknown20C = m_pTimer->GetElapseTime() / ( nLength * 0.001f );
+					m_pTimer->Stop();
+					TronUnknown98B20();
+					PlayAnimation( dwPostFireAni, true, 1.0f, false );
+					return true;
+				}
+
+				return true;
+			}
+
+			// Out of energy while charging
+			float fEnergyUse = g_pGameClientShell->GetFrameTime() * m_fTronUnknown214;
+			if ( g_pTronPlayerStats->GetEnergy() - fEnergyUse < 0.0f )
+			{
+				m_pTimer->Stop();
+				TronUnknown98B20();
+				PlayAnimation( dwPostFireAni, true, 1.0f, false );
+				return true;
+			}
+
+			return true;
+		}
+
+		if ( bIsMainFireAni )
+		{
+			if ( bResetAni )
+			{
+				return true;
+			}
+
+			if ( bHasExtraFireAni )
+			{
+				PlayAnimation( dwExtraFireAni, true, 1.0f, false );
+				return true;
+			}
+
+			if ( bHasPostFireAni )
+			{
+				PlayAnimation( dwPostFireAni, true, 1.0f, false );
+				return true;
+			}
+
+			return true;
+		}
+
+		if ( ( bIsPostFireAni || bIsExtraFireAni ) && !bIsCurAniDone )
+		{
+			return true;
+		}
+	}
+
+	// If we got here, it means we're done firing...
+
+	DoSpecialEndFire();
+
+	if ( bResetAni )
+	{
+		if ( bHasPreFireAni )
+		{
+			m_fTronUnknown20C = 0.0f;
+			m_pTimer->Start();
+			// PORT: 0x10098b10( m_fTronUnknown214 ) (see above)
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			g_pTronPlayerStats->UseEnergy( GetEnergyUse() );
+			return true;
+		}
+
+		if ( bHasFireAni )
+		{
+			m_fTronUnknown20C = 0.0f;
+			m_pTimer->Stop();
+			TronUnknown98B20();
+			PlayAnimation( dwFireAni, true, 1.0f, true );
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+			return true;
+		}
+	}
+
+	return false;
+}
+
 // RETAIL: 0x1001c3d0
 bool CClientWeaponSuffusion::IsFireAni( uint32 dwAni, bool bCheckNormalOnly ) const
 {
@@ -62,14 +263,33 @@ bool CClientWeaponSuffusion::IsFireAni( uint32 dwAni, bool bCheckNormalOnly ) co
 }
 
 // RETAIL: 0x1001c410
-bool CClientWeaponSuffusion::IsExtraFireAni( uint32 dwAni )
+bool CClientWeaponSuffusion::IsExtraFireAni( uint32 dwAni ) const
 {
 	if ( INVALID_ANI == dwAni )
 	{
 		return false;
 	}
 
-	return m_nExtraFireAni == dwAni;
+	return ( dwAni == m_nExtraFireAni ? true : false );
+}
+
+// RETAIL: 0x10019210 (folded with the disc weapons' getter of their
+// +0x208)
+uint32 CClientWeaponSuffusion::GetExtraFireAni() const
+{
+	return m_nExtraFireAni;
+}
+
+// RETAIL: 0x1001c430.  The charge, and the vectors of the shot scaled by
+// it (the subroutine's count while subroutine 2 is active: retail reads
+// its +0x154 as an int).
+void CClientWeaponSuffusion::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg )
+{
+	pMsg->Writefloat( m_fTronUnknown20C );
+
+	float fScale = m_fTronUnknown20C + 1.0f;
+	int nVectors = ( m_abTronUnknown13C[2][0] ? *(int*)&m_fTronUnknown154 : m_pWeapon->nVectorsPerRound );
+	pMsg->Writeint8( (int8)( nVectors * fScale ) );
 }
 
 // RETAIL: 0x1001c4a0

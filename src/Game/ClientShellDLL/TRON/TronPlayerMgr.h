@@ -118,6 +118,11 @@ public:
 	bool	TronUnknownLightCycleSpectate();
 	void	TronUnknownLightCycleRemoved(HOBJECT hObj);
 
+	// RETAIL: inline: the client light cycle manager clears it when the
+	// power-up was used or the grab failed (0x100125e6, 0x10012c27); the
+	// name is ours
+	void	SetTronUnknown235(bool b) { m_bTronUnknown235 = b; }
+
 	// RETAIL: inline: stops watching a light cycle (the light cycle match
 	// manager, CShell.dll 0x10016d06, 0x10017190): +0xbc is the watched
 	// object, +0xb8 whether one is watched, +0x230 its LIGHT_CYCLIST (as
