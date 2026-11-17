@@ -167,7 +167,8 @@ void Explosion::Start(HOBJECT hFiredFrom)
 {
 	if (!m_hObject) return;
 
-	g_pLTServer->GetObjectPos(m_hObject, &m_vPos);
+	// RETAIL: 0x100eefc2, Tron gets the position through its virtual.
+	TronUnknownVirtual68(&m_vPos);
 
 	// Do special fx (on the client) if applicable...
 
