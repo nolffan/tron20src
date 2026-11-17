@@ -4508,8 +4508,10 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_COBJECT(m_pLastPlayerInfoVolume);		// RETAIL: Tron's (Character.h)
 	SAVE_COBJECT(m_pCurrentPlayerInfoVolume);
 
-	SAVE_VECTOR(m_vLastVolumePos);
-	SAVE_VECTOR(m_vLastInformationVolumePos);
+	// RETAIL: these two are written inline (0x10092793), the vectors above
+	// with WriteType out of line
+	pMsg->WriteData(&m_vLastVolumePos, sizeof(LTVector) * 8);
+	pMsg->WriteData(&m_vLastInformationVolumePos, sizeof(LTVector) * 8);
 	SAVE_BYTE(m_byFXFlags);
 	SAVE_BOOL(m_bShortRecoiling);
 	SAVE_HSTRING(m_hstrHeadExtension);
@@ -4528,6 +4530,8 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bArmored);
 	SAVE_INT(m_cActive);
 	SAVE_QWORD(m_nDamageFlags);
+	SAVE_QWORD(m_nInstantDamageFlags);		// RETAIL: Tron's (0x100928ad)
+	SAVE_QWORD(m_nLastInstantDamageFlags);
 	SAVE_FLOAT(m_fPitch);
 	SAVE_FLOAT(m_fLastPitch);
 
@@ -4549,8 +4553,9 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	// order from here)
 	SAVE_DWORD( m_eEnemyVisibleStimID );
 
-	// PORT: Tron saves its fire helpers here (m_pPRodFireHelper->Save(pMsg),
-	// m_pEnergyClawFireHelper->Save(pMsg)); not yet written (Character.h)
+	// RETAIL: Tron's fire helpers (0x100929ee)
+	m_pPRodFireHelper->Save(pMsg);
+	m_pEnergyClawFireHelper->Save(pMsg);
 
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
@@ -4641,14 +4646,7 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_COBJECT(m_pLastPlayerInfoVolume, AIVolumePlayerInfo);		// RETAIL: as Save
 	LOAD_COBJECT(m_pCurrentPlayerInfoVolume, AIVolumePlayerInfo);
 
-	// If we're loading from a transition, then our positional information is invalid.
-	if( g_pGameServerShell->GetLGFlags( ) == LOAD_TRANSITION )
-	{
-		m_pLastVolume			= LTNULL;
-		m_pCurrentVolume		= LTNULL;
-		m_pLastInformationVolume = LTNULL;
-		m_pCurrentInformationVolume = LTNULL;
-	}
+	// RETAIL: no reset of the volumes for a transition here (0x1009313e)
 
 	LOAD_VECTOR(m_vLastVolumePos);
 	LOAD_VECTOR(m_vLastInformationVolumePos);
@@ -4669,6 +4667,8 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bArmored);
 	LOAD_INT(m_cActive);
 	LOAD_QWORD(m_nDamageFlags);
+	LOAD_QWORD(m_nInstantDamageFlags);		// RETAIL: as Save
+	LOAD_QWORD(m_nLastInstantDamageFlags);
 	LOAD_FLOAT(m_fPitch);
 	LOAD_FLOAT(m_fLastPitch);
 
@@ -4688,7 +4688,9 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 
 	LOAD_DWORD_CAST( m_eEnemyVisibleStimID, EnumAIStimulusID );
 
-	// PORT: the fire helpers' Load (as Save)
+	// RETAIL: as Save
+	m_pPRodFireHelper->Load(pMsg);
+	m_pEnergyClawFireHelper->Load(pMsg);
 
 	char szUnknown[256];
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
