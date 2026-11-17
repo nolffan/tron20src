@@ -93,6 +93,9 @@ uint32 CMenuIntel::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 
 
 // This is called when the screen gets or loses focus
+// TRON: the list holds the items of type 0 only (not the build notes), in
+// the order found, in one color; a leading "<color...>" tag is skipped and the name is widened
+// into a string of its own (RETAIL: 0x101c6090)
 void CMenuIntel::OnFocus(LTBOOL bFocus)
 {
 	if (!m_PopupText.IsVisible())
@@ -102,19 +105,24 @@ void CMenuIntel::OnFocus(LTBOOL bFocus)
 
 	if (bFocus)
 	{
+		std::wstring sName;
 		uint16 nextItem = 0;
 		CIntelItemList *pList = g_pPlayerStats->GetIntelList();
 		char szTemp[512] = "";
 		for (uint16 i = 0; i < pList->GetCount(); i++)
 		{
-			uint16 nIndex = (pList->GetCount() - i) - 1;
-			INTEL_ITEM* pItem = pList->Get(nIndex);
-			if (!pItem)
+			INTEL_ITEM* pItem = pList->Get(i);
+			if (!pItem || pItem->nType)
 			{
 				continue;
 			}
 
 			GetIntelName(pItem->nTextId,szTemp,sizeof(szTemp));
+
+			char* pName = szTemp;
+			if (!_strnicmp(szTemp,"<color",6))
+				pName = strchr(szTemp,'>') + 1;
+			LTGUIWiden(sName, pName);
 
 			CLTGUITextCtrl* pCtrl = LTNULL;
 			if (nextItem < m_List.GetNumControls())
@@ -122,29 +130,22 @@ void CMenuIntel::OnFocus(LTBOOL bFocus)
 				pCtrl = (CLTGUITextCtrl*)m_List.GetControl(nextItem);
 				if (pCtrl)
 				{
-					pCtrl->SetString(szTemp);
+					pCtrl->SetString(sName);
 					pCtrl->Show(LTTRUE);
 					nextItem++;
 				}
 			}
 			else
 			{
-				uint16 ndx = AddControl(szTemp,MC_INTEL);
+				uint16 ndx = AddControl(sName,MC_INTEL);
 				pCtrl = (CLTGUITextCtrl*)m_List.GetControl(ndx);
 				nextItem++;
 			}
 
 			if (pCtrl)
 			{
-				pCtrl->SetParam1(nIndex);
-				if (pItem->bIsIntel)
-				{
-					pCtrl->SetColors(0xFFFF0000,0xFFA00000,m_DisabledColor);
-				}
-				else
-				{
-					pCtrl->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
-				}
+				pCtrl->SetParam1(i);
+				pCtrl->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 			}
 		}
 
