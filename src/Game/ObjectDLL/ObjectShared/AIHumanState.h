@@ -1349,6 +1349,9 @@ class CAIHumanStateCharge : public CAIHumanState
 		void SetAttackDistSqr(LTFLOAT fDist) { m_fAttackDistanceSqr = fDist; }
 		void SetYellDistSqr(LTFLOAT fDist) { m_fYellDistanceSqr = fDist; }
 		void SetStopDistSqr(LTFLOAT fDist) { m_fStopDistanceSqr = fDist; }
+		// RETAIL: Tron's (inline in CAIGoalAttackFromCover::CoverOrCharge
+		// 0x102158c7). Name ours.
+		void SetTronUnknown94(LTFLOAT f) { m_fTronUnknown94 = f; }
 
 	protected :
 
