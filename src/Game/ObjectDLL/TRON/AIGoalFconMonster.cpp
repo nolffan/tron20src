@@ -207,8 +207,8 @@ LTBOOL CAIGoalFconMonster::HandleNameValuePair(const char *szName, const char *s
 		m_abDestroyed[0] = true;
 		m_pAI->PlaySound( s_aeArmDeathSounds[0], LTTRUE );
 
-		// RETAIL: then calls the AI's 0x101311f0 (an LTVector out, 0): a
-		// Tron CAI method, not yet written.
+		// Take the next weapon choice that is enabled.
+		m_pAI->GetWeaponCheckPosition( LTFALSE );
 	}
 
 	if ( !_stricmp(szName, "RightArmDestroy") && ( atoi(szValue) == 1 ) )
@@ -217,7 +217,8 @@ LTBOOL CAIGoalFconMonster::HandleNameValuePair(const char *szName, const char *s
 		m_abDestroyed[1] = true;
 		m_pAI->PlaySound( s_aeArmDeathSounds[1], LTTRUE );
 
-		// RETAIL: then calls the AI's 0x101311f0, as above.
+		// Take the next weapon choice that is enabled.
+		m_pAI->GetWeaponCheckPosition( LTFALSE );
 	}
 
 	return LTTRUE;
