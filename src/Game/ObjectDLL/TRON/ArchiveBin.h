@@ -49,13 +49,15 @@ class ArchiveBin : public GameBase
 
 	private :
 
-		// A berry on the frame and the item it shows
+		// A berry on the frame and the type of item it shows (RETAIL: the
+		// berries are given the items' types, 0x100102c0; a withdrawal
+		// removes the first berry of that type, 0x1000fcb3)
 		struct BerryRef
 		{
-			BerryRef() : m_hObject(LTNULL), m_nItem(-1) {}
+			BerryRef() : m_hObject(LTNULL), m_eItemType(-1) {}
 
 			LTObjRef	m_hObject;
-			int			m_nItem;
+			int			m_eItemType;
 		};
 
 		typedef std::vector<AutoCommand<SingleDispatch> > OnWithdrawList;
@@ -63,6 +65,7 @@ class ArchiveBin : public GameBase
 		LTBOOL	ReadProp(ObjectCreateStruct *pStruct);
 		LTBOOL	InitialUpdate();
 		void	CreateFrame();
+		void	AssignBerries();
 		void	CreateBerries();
 		void	ShowContents();
 		void	HandleChoice(uint8 nChoice);
@@ -74,7 +77,7 @@ class ArchiveBin : public GameBase
 
 		ArchiveItem					m_aItems[AB_MAX_ITEMS];
 		int							m_aeShownCondition[AB_MAX_ITEMS];	// What a virus scan may show of each condition
-		LTObjRef					m_hFrame;
+		LTObjRef					m_hPlayer;				// The player looking at our contents (RETAIL: set by ACTIVATE, 0x1000f381)
 		uint8						m_nPSets;				// The permission sets a player needs
 		bool						m_bMoveToFloor;
 		bool						m_bFirstUpdate;

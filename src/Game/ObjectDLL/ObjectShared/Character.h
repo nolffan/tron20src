@@ -339,6 +339,14 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 
 		uint8			GetPermissionSet() const {return m_iPermissionSet;}
 
+		// RETAIL: Tron's (retail 0x10090720, out of line; the name is ours):
+		// the permission sets, or with m_bTracking set the sum of all of the
+		// players' sets
+		uint8			GetPSets();
+
+		// RETAIL: Tron's (retail 0x100942e0, out of line)
+		LTFLOAT			GetMaxArmorPoints();
+
 		// General inventory accessor
 
 		// Key item handling

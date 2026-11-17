@@ -20,6 +20,7 @@
 #include "LiteObjectMgr.h"
 
 class CPlayerObj;
+class CCharacter;
 
 // Save/Load Macros
 
@@ -412,6 +413,9 @@ void PlayClientFX(char* szFXName, HOBJECT hParent, HOBJECT hTarget, LTVector *pv
 
 // RETAIL: Tron's: a SpecialFX object with the given properties, at the
 // parent or the position given; its object, or NULL (our name)
+// RETAIL: Tron's (retail 0x100cdc10): all of the permission sets?
+bool HasPSets(CCharacter* pChar, uint8 nPSets);
+
 HOBJECT CreateClientFXObject(char* szProps, HOBJECT hParent, LTVector* pvPos = NULL, LTRotation *prRot = NULL);
 
 // Gets the playerobj from a client id.

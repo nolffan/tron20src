@@ -20,12 +20,24 @@
 #include "ModelButeMgr.h"
 #include "CommandMgr.h"
 #include "ServerSoundMgr.h"
+#include "TronPlayerObj.h"
+#include "GameServerShell.h"
+#include "ServerSubroutineMgr.h"
+#include "SubroutineDataMgr.h"
+#include <algorithm>
 
 extern CInventoryButeMgr s_InventoryButeMgr;
 
 // RETAIL: a user flag the bin sets on itself, as an I/O node does
 // (IONode.h's USRFLG_IONODE); the name is ours
 #define USRFLG_ARCHIVEBIN		(1<<1)
+
+// RETAIL: MID_DECISION's first byte for a bin (CoreDump's is 3); the name is ours
+#define DECISION_TYPE_ARCHIVEBIN		1
+
+// RETAIL: the decision window's choices besides the items (as CoreDump's)
+#define AB_CHOICE_DESTROY				0xfc
+#define AB_CHOICE_CANCEL				0xfd
 
 BEGIN_CLASS(Berry)
 END_CLASS_DEFAULT_FLAGS(Berry, BaseClass, NULL, NULL, CF_HIDDEN)
@@ -135,6 +147,11 @@ CMDMGR_END_REGISTER_CLASS( ArchiveBin, GameBase )
 // RETAIL: in .rdata (const arrays), unlike the other strings
 static const char s_szModelTemplateProp[] = "ModelTemplate";
 static const char s_szArchiveBinModel[] = "ArchiveBin";
+static const char s_szSocket[] = "Socket";
+static const char s_szBerryClass[] = "Berry";
+static const char s_szPSetBerryModel[] = "PSetBerry";
+static const char s_szSubroutineBerryModel[] = "SubroutineBerry";
+static const char s_szDocumentBerryModel[] = "DocumentBerry";
 
 // ----------------------------------------------------------------------- //
 //
@@ -278,7 +295,7 @@ LTRESULT CArchiveBinPlugin::PreHook_Dims(
 
 ArchiveBin::ArchiveBin()
 :	GameBase			( OT_MODEL ),
-	m_hFrame			( LTNULL ),
+	m_hPlayer			( LTNULL ),
 	m_nPSets			( 0 ),
 	m_bMoveToFloor		( true ),
 	m_bFirstUpdate		( true ),
@@ -335,7 +352,7 @@ ArchiveBin::~ArchiveBin()
 				m_aBerries[i].m_hObject = LTNULL;
 			}
 
-			m_aBerries[i].m_nItem = -1;
+			m_aBerries[i].m_eItemType = -1;
 		}
 	}
 
@@ -540,7 +557,7 @@ void ArchiveBin::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 		pMsg->Writeint8(m_aeShownCondition[i]);
 	}
 
-	SAVE_HOBJECT(m_hFrame);
+	SAVE_HOBJECT(m_hPlayer);
 	SAVE_BYTE(m_nPSets);
 	SAVE_bool(m_bMoveToFloor);
 	SAVE_bool(m_bFirstUpdate);
@@ -550,7 +567,7 @@ void ArchiveBin::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	for (i = 0; i < AB_MAX_BERRIES; i++)
 	{
 		SAVE_HOBJECT(m_aBerries[i].m_hObject);
-		SAVE_BYTE(m_aBerries[i].m_nItem);
+		SAVE_BYTE(m_aBerries[i].m_eItemType);
 	}
 
 	SAVE_HOBJECT(m_hTronUnknown3a4);
@@ -597,7 +614,7 @@ void ArchiveBin::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 		LOAD_BYTE(m_aeShownCondition[i]);
 	}
 
-	LOAD_HOBJECT(m_hFrame);
+	LOAD_HOBJECT(m_hPlayer);
 	LOAD_BYTE(m_nPSets);
 	LOAD_bool(m_bMoveToFloor);
 	LOAD_bool(m_bFirstUpdate);
@@ -607,7 +624,7 @@ void ArchiveBin::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	for (i = 0; i < AB_MAX_BERRIES; i++)
 	{
 		LOAD_HOBJECT(m_aBerries[i].m_hObject);
-		LOAD_BYTE(m_aBerries[i].m_nItem);
+		LOAD_BYTE(m_aBerries[i].m_eItemType);
 	}
 
 	LOAD_HOBJECT(m_hTronUnknown3a4);
@@ -632,7 +649,7 @@ void ArchiveBin::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	}
 }
 
-// PORT: not written yet from retail; these stand in so the class links
+// PORT: not written yet from retail; it stands in so the class links
 
 // RETAIL: 0x1000de10 (with 0x1000ed46): reads the model template, the
 // permission sets, the flags and the six items' properties
@@ -649,20 +666,376 @@ LTBOOL ArchiveBin::ReadProp(ObjectCreateStruct *pStruct)
 	return LTTRUE;
 }
 
-// RETAIL: 0x1000f100: SELECT and DECISIONABORTED
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::OnTrigger
+//
+//	PURPOSE:	Handle trigger messages (RETAIL: 0x1000f100)
+//
+// ----------------------------------------------------------------------- //
+
 bool ArchiveBin::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
+	static CParsedMsg::CToken s_cTok_Activate("ACTIVATE");
+	static CParsedMsg::CToken s_cTok_AddPSet("ADDPSET");
+	static CParsedMsg::CToken s_cTok_RemovePSet("REMOVEPSET");
+
+	if (cMsg.GetArg(0) == s_cTok_Activate)
+	{
+		uint32 dwFlags;
+		g_pCommonLT->GetObjectFlags(m_hObject, OFT_User, dwFlags);
+		if (dwFlags & USRFLG_CAN_ACTIVATE)
+		{
+			CTronPlayerObj* pPlayer = dynamic_cast<CTronPlayerObj*>(g_pLTServer->HandleToObject(hSender));
+			if (pPlayer && !pPlayer->IsDead())
+			{
+				if (!HasPSets(pPlayer, m_nPSets))
+				{
+					HOBJECT hObj = m_hObject;
+					m_InvalidPSetCommand.Execute(hObj, pPlayer->GetUserObject());
+
+					g_pServerSoundMgr->PlaySoundFromObject(m_hObject, "ArchiveBinInvalidPSet");
+					return true;
+				}
+
+				HOBJECT hObj = m_hObject;
+				m_OnUseCommand.Execute(hObj, pPlayer->GetUserObject());
+
+				if (pPlayer->GetClient())
+				{
+					m_hPlayer = hSender;
+					g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+					ShowContents();
+				}
+
+				return true;
+			}
+		}
+	}
+	else if (cMsg.GetArg(0) == s_cTok_AddPSet && cMsg.GetArgCount() > 1)
+	{
+		const char* pPSets = cMsg.GetArg(1);
+		int nLen = strlen(pPSets);
+		if (nLen > 8) nLen = 8;
+
+		for (int i = 0; i < nLen; i++)
+		{
+			if (pPSets[i] >= '1' && pPSets[i] <= '8')
+			{
+				m_nPSets |= 1 << (pPSets[i] - '1');
+			}
+		}
+
+		return true;
+	}
+	else if (cMsg.GetArg(0) == s_cTok_RemovePSet && cMsg.GetArgCount() > 1)
+	{
+		const char* pPSets = cMsg.GetArg(1);
+		int nLen = strlen(pPSets);
+		if (nLen > 8) nLen = 8;
+
+		for (int i = 0; i < nLen; i++)
+		{
+			if (pPSets[i] >= '1' && pPSets[i] <= '8')
+			{
+				m_nPSets &= ~(1 << (pPSets[i] - '1'));
+			}
+		}
+
+		return true;
+	}
+
 	return GameBase::OnTrigger(hSender, cMsg);
 }
 
-// RETAIL: 0x1000f520: the decision window
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::ShowContents
+//
+//	PURPOSE:	Open the decision window on the clients with our items, or
+//				tell the player we are empty (RETAIL: 0x1000f520)
+//
+// ----------------------------------------------------------------------- //
+
 void ArchiveBin::ShowContents()
 {
+	CAutoMessage cMsg;
+
+	bool bScanShowsNormal = false;
+	bool bScanShowsGuess = false;
+
+	if (!g_pServerSubroutineMgr)
+	{
+		g_ServerSubroutineMgr.Init(SSMGR_DEFAULT_FILE);
+	}
+
+	cMsg.Writeuint8(MID_DECISION);
+	cMsg.Writeuint8(DECISION_TYPE_ARCHIVEBIN);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writefloat(m_fRadius);
+	cMsg.Writeuint8(1);
+	cMsg.Writeuint8(2);
+
+	// A virus scan may tell what the subroutines' conditions are
+	CTronPlayerObj* pPlayer = dynamic_cast<CTronPlayerObj*>(g_pLTServer->HandleToObject(m_hPlayer));
+	if (pPlayer)
+	{
+		PlayerSubroutineSlot* pSlot = pPlayer->FindSubroutine("virus_scan");
+		if (pSlot && pSlot->nTronUnknown40 && pSlot->nTronUnknown41)
+		{
+			SubroutineDataKey keyA(0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->GetVirusScanData(keyA).fFailureChance)
+			{
+				bScanShowsNormal = true;
+			}
+
+			SubroutineDataKey keyB(1, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+			if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->GetVirusScanData(keyB).fFailureChance)
+			{
+				bScanShowsGuess = true;
+			}
+		}
+	}
+
+	cMsg.Writebool(bScanShowsNormal);
+
+	bool bEmpty = true;
+	uint32 nNameId;
+
+	for (int i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		ArchiveItem& item = m_aItems[i];
+
+		bool bItem = (item.m_eType != kAIT_None);
+		if (bItem)
+		{
+			switch (item.m_eType)
+			{
+				case kAIT_Subroutine:
+				{
+					nNameId = g_pServerSubroutineMgr->GetNameId(item.m_sName.c_str(), kSST_Subroutine);
+					if (!nNameId)
+					{
+						ObjectCPrint(m_hObject, "Item %d has a type but no valid name.  Items must be named to exist.", i);
+						bItem = false;
+					}
+				}
+				break;
+
+				case kAIT_Email:
+				case kAIT_HelpFile:
+					nNameId = g_pInventoryButeMgr->GetItemTextID(g_pInventoryButeMgr->GetItemIndex(item.m_sName.c_str()));
+					break;
+
+				case kAIT_Procedural:
+					nNameId = g_pServerSubroutineMgr->GetNameId(item.m_sName.c_str(), kSST_Procedural);
+					break;
+
+				case kAIT_Primitive:
+					nNameId = g_pServerSubroutineMgr->GetNameId(item.m_sName.c_str(), kSST_Primitive);
+					break;
+
+				default:
+					nNameId = atoi(item.m_sName.c_str());
+					break;
+			}
+		}
+
+		cMsg.Writebool(bItem);
+		if (!bItem) continue;
+
+		bEmpty = false;
+
+		cMsg.Writeuint32(nNameId);
+		cMsg.Writeint8(item.m_eType);
+
+		if (item.m_eType == kAIT_Subroutine)
+		{
+			cMsg.Writeint8(item.m_eBuild);
+
+			if (bScanShowsNormal)
+			{
+				if (item.m_eCondition == kAIC_Infected)
+				{
+					cMsg.Writeint8(kAIC_Normal);
+				}
+				else
+				{
+					cMsg.Writeint8(item.m_eCondition);
+				}
+			}
+			else if (bScanShowsGuess)
+			{
+				cMsg.Writeint8(m_aeShownCondition[i]);
+			}
+			else
+			{
+				cMsg.Writeint8(item.m_eCondition);
+			}
+		}
+		else if (item.m_eType == kAIT_PermissionSet)
+		{
+			cMsg.Writeint8(item.m_nPSet);
+		}
+
+		cMsg.Writefloat(item.m_fCost);
+	}
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+	if (bEmpty)
+	{
+		g_pServerSoundMgr->PlaySoundFromPos(vPos, "Empty_archloop_01", 600.0f, SOUNDPRIORITY_MISC_HIGH);
+	}
+	else
+	{
+		g_pServerSoundMgr->PlaySoundFromPos(vPos, "Interface\\snd\\archive_up.wav", 600.0f, SOUNDPRIORITY_MISC_HIGH);
+		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+	}
 }
 
-// RETAIL: 0x1000fa00: withdraw an item
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::HandleChoice
+//
+//	PURPOSE:	The player withdrew an item or closed the window
+//				(RETAIL: 0x1000fa00)
+//
+// ----------------------------------------------------------------------- //
+
 void ArchiveBin::HandleChoice(uint8 nChoice)
 {
+	char szMsg[256];
+
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+
+	switch (nChoice)
+	{
+		case AB_CHOICE_DESTROY:
+		{
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, GetNumItems() ? USRFLG_CAN_ACTIVATE : 0, USRFLG_CAN_ACTIVATE);
+		}
+		break;
+
+		case AB_CHOICE_CANCEL:
+		case AB_CHOICE_CANCEL + 1:
+		case AB_CHOICE_CANCEL + 2:
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos(m_hObject, &vPos);
+			g_pServerSoundMgr->PlaySoundFromPos(vPos, "Interface\\snd\\archive_dn.wav");
+		}
+		break;
+
+		default:
+		{
+			if (nChoice >= AB_MAX_ITEMS || !m_hPlayer) break;
+
+			CTronPlayerObj* pPlayer = (CTronPlayerObj*)g_pLTServer->HandleToObject(m_hPlayer);
+			if (!pPlayer) break;
+
+			CDestructible* pDest = pPlayer->GetDestructible();
+			if (pDest->GetEnergy() < m_aItems[nChoice].m_fCost) break;
+			pDest->SetEnergy(pDest->GetEnergy() - m_aItems[nChoice].m_fCost);
+
+			// A virus scan may catch an infection
+			bool bScanned = false;
+			PlayerSubroutineSlot* pSlot = pPlayer->FindSubroutine("virus_scan");
+			if (pSlot && pSlot->nTronUnknown40 && pSlot->nTronUnknown41)
+			{
+				SubroutineDataKey key(0, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0);
+				if (GetRandom(0.0f, 1.0f) < g_pSubroutineDataMgr->GetVirusScanData(key).fChanceToCorrupt)
+				{
+					bScanned = true;
+				}
+			}
+
+			// RETAIL: a Custom item sends szMsg as it is, uninitialized (as
+			// CoreDump's; not listed in docs/RETAIL_BUGS.md while this is
+			// near)
+			if (m_aItems[nChoice].m_eType == kAIT_Subroutine)
+			{
+				int eCondition = m_aItems[nChoice].m_eCondition;
+				if (bScanned && eCondition != kAIC_Foreign)
+				{
+					eCondition = kAIC_Infected;
+				}
+
+				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %s %s %s", "ACQUIRESUB", m_aItems[nChoice].m_sName.c_str(),
+					s_aszArchiveItemBuilds[m_aItems[nChoice].m_eBuild], s_aszArchiveItemConditions[eCondition]);
+				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
+			}
+			else if (m_aItems[nChoice].m_eType == kAIT_Procedural)
+			{
+				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %s", "ACQUIREPROC", m_aItems[nChoice].m_sName.c_str());
+				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
+			}
+			else if (m_aItems[nChoice].m_eType == kAIT_Primitive)
+			{
+				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %s", "ACQUIREPRIM", m_aItems[nChoice].m_sName.c_str());
+				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
+			}
+			else if (m_aItems[nChoice].m_eType == kAIT_PermissionSet)
+			{
+				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %d", "ACQUIREPSET", m_aItems[nChoice].m_nPSet);
+				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
+			}
+			else if (m_aItems[nChoice].m_eType == kAIT_Email || m_aItems[nChoice].m_eType == kAIT_HelpFile)
+			{
+				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %s", "ACQUIRENOTE", m_aItems[nChoice].m_sName.c_str());
+				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
+			}
+			else if (m_aItems[nChoice].m_eType == kAIT_Custom)
+			{
+				if (g_pCmdMgr->IsValidCmd(m_aItems[nChoice].m_sCommand.c_str()))
+				{
+					g_pCmdMgr->Process(m_aItems[nChoice].m_sCommand.c_str(), m_hObject, m_hObject);
+				}
+			}
+
+			// Take down the first berry of the item's type
+			uint32 iBerry;
+			for (iBerry = 0; iBerry < AB_MAX_BERRIES; iBerry++)
+			{
+				if (m_aBerries[iBerry].m_hObject && m_aBerries[iBerry].m_eItemType == m_aItems[nChoice].m_eType)
+				{
+					break;
+				}
+			}
+
+			if (iBerry < AB_MAX_BERRIES)
+			{
+				BerryRef& berry = m_aBerries[iBerry];
+
+				HATTACHMENT hAttachment;
+				g_pLTServer->FindAttachment(m_hObject, berry.m_hObject, &hAttachment);
+				g_pLTServer->RemoveAttachment(hAttachment);
+
+				if (berry.m_hObject)
+				{
+					g_pLTServer->RemoveObject(berry.m_hObject);
+					berry.m_hObject = LTNULL;
+				}
+
+				berry.m_eItemType = -1;
+			}
+
+			m_aItems[nChoice].Clear();
+
+			if (!GetNumItems())
+			{
+				g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+				m_ActivateTypeHandler.SetState(ACTIVATETYPE::eTronUnknown2, true, LTNULL);
+			}
+
+			SendTriggerMsgToObject(this, m_hPlayer, LTFALSE, szMsg);
+
+			// The item's command runs on its first withdrawal only
+			m_lstOnWithdraw.at(nChoice).Execute(m_hObject, m_hPlayer);
+		}
+		break;
+	}
 }
 
 // RETAIL: 0x1000fef0 (with 0x10010000): the "ArchiveBin_Frame" model on
@@ -718,9 +1091,117 @@ void ArchiveBin::CreateFrame()
 	}
 }
 
-// RETAIL: 0x10010390 (with 0x100102c0): a Berry on each "Berry%d" socket
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::AssignBerries
+//
+//	PURPOSE:	Give each item a berry socket, at random (RETAIL: 0x100102c0;
+//				the name is ours). The last socket is the frame's.
+//
+// ----------------------------------------------------------------------- //
+
+void ArchiveBin::AssignBerries()
+{
+	uint32 nSockets = 0;
+	g_pModelLT->GetNumSockets(m_hObject, nSockets);
+	nSockets--;
+
+	BerryRef* apBerries[AB_MAX_BERRIES];
+	for (uint32 iBerry = 0; iBerry < AB_MAX_BERRIES; iBerry++)
+	{
+		apBerries[iBerry] = (iBerry < nSockets) ? &m_aBerries[iBerry] : LTNULL;
+	}
+
+	std::random_shuffle(apBerries, apBerries + nSockets);
+
+	for (uint32 i = 0; i < AB_MAX_ITEMS; i++)
+	{
+		if (i < nSockets)
+		{
+			apBerries[i]->m_eItemType = m_aItems[i].m_eType;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	ArchiveBin::CreateBerries
+//
+//	PURPOSE:	Put a berry of its item's type on each assigned socket
+//				(RETAIL: 0x10010390)
+//
+// ----------------------------------------------------------------------- //
+
 void ArchiveBin::CreateBerries()
 {
+	AssignBerries();
+
+	for (uint32 i = 0; i < AB_MAX_BERRIES; i++)
+	{
+		if (m_aBerries[i].m_eItemType == -1) continue;
+
+		ObjectCreateStruct ocs;
+		LTransform tf;
+		INIT_OBJECTCREATESTRUCT(ocs);
+
+		g_pModelLT->GetSocketTransform(m_hObject, i, tf, LTTRUE);
+
+		char szName[256];
+		_snprintf(szName, ARRAY_LEN(szName), "%s%d", s_szBerryClass, i + 1);
+		SAFE_STRCPY(ocs.m_Name, szName);
+
+		ModelId eModelId;
+		switch (m_aBerries[i].m_eItemType)
+		{
+			case kAIT_Subroutine:
+				eModelId = g_pModelButeMgr->GetModelId(s_szSubroutineBerryModel);
+				break;
+
+			case kAIT_PermissionSet:
+				eModelId = g_pModelButeMgr->GetModelId(s_szPSetBerryModel);
+				break;
+
+			default:
+				eModelId = g_pModelButeMgr->GetModelId(s_szDocumentBerryModel);
+				break;
+		}
+		if (eModelId < g_pModelButeMgr->GetNumModels())
+		{
+			SAFE_STRCPY(ocs.m_Filename, g_pModelButeMgr->GetModelFilename(eModelId));
+			g_pModelButeMgr->CopySkinFilenames(eModelId, 0, ocs.m_SkinNames[0], ARRAY_LEN(ocs.m_SkinNames[0]));
+			g_pModelButeMgr->CopyRenderStyleFilenames(eModelId, &ocs);
+		}
+
+		ocs.m_Pos = tf.m_Pos;
+		ocs.m_Flags = FLAG_VISIBLE;
+		ocs.m_ObjectType = OT_MODEL;
+		ocs.m_nRenderGroup = m_bTronUnknown171;
+
+		if (g_pModelButeMgr->IsModelTranslucent(eModelId))
+		{
+			ocs.m_Flags2 = FLAG2_FORCETRANSLUCENT;
+		}
+
+		HCLASS hClass = g_pLTServer->GetClass(s_szBerryClass);
+		LPBASECLASS pBerry = g_pLTServer->CreateObject(hClass, &ocs);
+		if (!pBerry) continue;
+
+		m_aBerries[i].m_hObject = pBerry->m_hObject;
+
+		HOBJECT hBerry = pBerry->m_hObject;
+		if (hBerry)
+		{
+			g_pLTServer->SetNextUpdate(hBerry, 0.0f);
+			g_pLTServer->SetObjectState(hBerry, OBJSTATE_INACTIVE);
+		}
+
+		LTVector vOffset(0.0f, 0.0f, 0.0f);
+		LTRotation rOffset;
+		_snprintf(szName, ARRAY_LEN(szName), "%s%d", s_szSocket, i + 1);
+
+		HATTACHMENT hAttachment;
+		g_pLTServer->CreateAttachment(m_hObject, pBerry->m_hObject, szName, &vOffset, &rOffset, &hAttachment);
+	}
 }
 
 // ----------------------------------------------------------------------- //

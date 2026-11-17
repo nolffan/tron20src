@@ -332,6 +332,8 @@ public:
 	PrimitiveChargeData	GetPrimitiveChargeData( SubroutineDataKey key ) const	{ return m_vecPrimitiveCharge.at( GetIndex( key ) ); }
 	// RETAIL: the triangulate subroutine's (inlined in CShell 0x100a52a0)
 	const TriangulateData&	GetTriangulateData( SubroutineDataKey key ) const	{ return m_vecTriangulate.at( GetIndex( key ) ); }
+	// RETAIL: the virus scan's (Object 0x1000f520: GetIndex out of line)
+	const VirusScanData&	GetVirusScanData( SubroutineDataKey key ) const	{ return m_vecVirusScan.at( GetIndex( key ) ); }
 
 protected:
 

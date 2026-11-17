@@ -1469,6 +1469,20 @@ void PlayClientFX(char* szFXName, HOBJECT hParent, HOBJECT hTarget, LTVector* pv
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	HasPSets
+//
+//	PURPOSE:	Does the character have all of the permission sets? (RETAIL:
+//				Tron's, retail 0x100cdc10; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool HasPSets(CCharacter* pChar, uint8 nPSets)
+{
+	return (pChar->GetPSets() & nPSets) == nPSets;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CreateClientFXObject
 //
 //	PURPOSE:	Create a SpecialFX object with the given properties, at
