@@ -106,8 +106,12 @@ void CLiteObjectMgr::AddObject(GameBaseLite *pObject)
 	SetDirty(eDirty_SerializeIDs);
 }
 
-void CLiteObjectMgr::RemoveObject(GameBaseLite *pObject)
+void CLiteObjectMgr::RemoveObject(GameBaseLite *pObject, bool bRemoveFromEngine)
 {
+	// RETAIL: Tron's: only registered objects
+	if (!pObject->IsRegistered())
+		return;
+
 	// Remove it from our list
 	bool bRemoveResult;
 	if (pObject->IsActive())
@@ -132,19 +136,30 @@ void CLiteObjectMgr::RemoveObject(GameBaseLite *pObject)
 	RemoveObjectFromList(m_aInitialUpdateObjects, pObject);
 	RemoveObjectFromList(m_aInitialUpdateObjectsLoad, pObject);
 
-	// Clean it up in the engine
 	if (bRemoveResult)
 	{
-		g_pLTServer->RemoveObject(pObject->GetClass(), pObject);
-	}
-	else
-	{
-		ASSERT(!"Invalid lite object removal encountered");
-		return;
-	}
+		if (bRemoveFromEngine)
+		{
+			// Clean it up in the engine
+			g_pLTServer->RemoveObject(pObject->GetClass(), pObject);
 
-	// You're dirty...
-	SetDirty(eDirty_ObjectLists);
+			// You're dirty...
+			SetDirty(eDirty_ObjectLists);
+		}
+		else
+		{
+			// RETAIL: Tron's: keep it for the delete list
+			pObject->m_bRegistered = false;
+			m_aDeleteObjects.push_back(pObject);
+
+			SetDirty(eDirty_ObjectLists);
+		}
+	}
+}
+
+void CLiteObjectMgr::RemoveObject(GameBaseLite *pObject)
+{
+	RemoveObject(pObject, true);
 }
 
 void CLiteObjectMgr::RenameObject(GameBaseLite *pObject, const char *pName)
@@ -226,6 +241,10 @@ void CLiteObjectMgr::ActivateObject(GameBaseLite *pObject)
 
 void CLiteObjectMgr::DeactivateObject(GameBaseLite *pObject)
 {
+	// RETAIL: Tron's: only registered objects (0x10196620)
+	if (!pObject->IsRegistered())
+		return;
+
 	// Make sure we're going about this the right way
 	if (pObject->IsActive())
 	{

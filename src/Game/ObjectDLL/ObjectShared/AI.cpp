@@ -4313,6 +4313,25 @@ void CAI::DisableNodeTracking()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAI::GetNodeTrackingTarget()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10131880): the object the active
+//				tracking group tracks. Name ours.
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT CAI::GetNodeTrackingTarget()
+{
+	if( !IsNodeTrackingEnabled() )
+	{
+		return LTNULL;
+	}
+
+	return m_pTrackedNodeContext->GetTrackedTarget( GetActiveNodeTrackingGroup() );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAI::DisableNodeTracking()
 //
 //	PURPOSE:	Turn off Head and Torso tracking.
@@ -6610,17 +6629,3 @@ float CAI::GetSentryMarkDistMax()
 	return GetAITemplate()->flSentryMarkDistMax;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAITronUnknown1010::Flush
-//
-//	PURPOSE:	PORT: stands in for retail 0x101dee80 (another unit's
-//				function, not written yet): empties the first list. Name
-//				ours.
-//
-// ----------------------------------------------------------------------- //
-
-void CAITronUnknown1010::Flush()
-{
-	m_lstTronUnknown0.clear();
-}

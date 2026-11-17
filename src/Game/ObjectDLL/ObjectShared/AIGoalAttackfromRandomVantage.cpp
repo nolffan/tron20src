@@ -44,6 +44,9 @@ void CAIGoalAttackFromRandomVantage::SetStateAttack()
 	}
 
 	CAIHumanStateAttackFromVantage* pAttackState = (CAIHumanStateAttackFromVantage*)m_pAI->GetState();
+	// RETAIL: Tron's two flags first (0x10214dfd)
+	pAttackState->SetTronUnknown8C( true );
+	pAttackState->SetTronUnknown8D( true );
 	pAttackState->IgnoreVisibility( LTTRUE );
 }
 

@@ -468,6 +468,10 @@ class CAIHumanStateAttackFromVantage : public CAIHumanState
 		void SetVantageNode(HOBJECT hVantageNode);
 		HOBJECT GetVantageNode();
 		void IgnoreVisibility(LTBOOL bIgnoreVisibility) { m_bIgnoreVisibility = bIgnoreVisibility; }
+		// RETAIL: Tron's (CAIGoalAttackFromRandomVantage::SetStateAttack,
+		// 0x10214dd0). Names ours.
+		void SetTronUnknown8C(bool b) { m_bTronUnknown8C = b; }
+		void SetTronUnknown8D(bool b) { m_bTronUnknown8D = b; }
 
 	protected :
 
@@ -685,6 +689,11 @@ class CAIHumanStatePatrol : public CAIHumanState
 
 	protected :
 
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
+
+	protected :
+
 		LTBOOL UpdateTaskWait();
 		LTBOOL UpdateTaskAnimate();
 
@@ -747,6 +756,11 @@ class CAIHumanStateGoto : public CAIHumanState
 		void SetCloseEnoughDist(LTFLOAT fDist) { m_fCloseEnoughDistSqr = fDist;	m_fCloseEnoughDistSqr *= m_fCloseEnoughDistSqr; }
 		void SetCloseEnoughDistSqr(LTFLOAT fDistSqr) { m_fCloseEnoughDistSqr = fDistSqr; }
 		void TurnOffLights(LTBOOL bTurnOffLights) { m_bTurnOffLights = bTurnOffLights; }
+
+	protected :
+
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
 
 	protected :
 	
@@ -937,6 +951,11 @@ class CAIHumanStateUseObject : public CAIHumanState
 		LTFLOAT GetAnimTimeRemaining() { return m_fAnimTime - m_fAnimTimer; }
 		void AddAnimTime(LTFLOAT fTime) { m_fAnimTimer -= fTime; }
 		void StartAnimation();
+
+	protected :
+
+		// RETAIL: Tron's (name ours).
+		bool ShouldFacePlayer();
 
 	protected :
 

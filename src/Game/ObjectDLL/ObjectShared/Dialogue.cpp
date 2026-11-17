@@ -408,10 +408,8 @@ LTBOOL Dialogue::NotifySpeakers( )
 						CAIGoalTalk* pGoalTalk = (CAIGoalTalk*)pAI->GetGoalMgr()->FindGoalByType( kGoal_Talk );
 						if( pGoalTalk && pGoalTalk->HasTalkNode() )
 						{
-							// PORT: retail passes m_bUseAIState too (0x10266ff9,
-							// CAIGoalTalk::RequestDialogue 0x101fa800 takes two
-							// arguments in Tron); ours takes one
-							if( !pGoalTalk->RequestDialogue( m_hObject ) )
+							// RETAIL: Tron passes m_bUseAIState too (0x10266ff9)
+							if( !pGoalTalk->RequestDialogue( m_hObject, m_bUseAIState ) )
 							{
 								return LTFALSE;
 							}

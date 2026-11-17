@@ -265,4 +265,52 @@ class CBodyStateExplode : public CBodyState
 		HMODELANIM	m_hAniStop;
 };
 
+// RETAIL: Tron's (RTTI; vtable 0x1029e334, constructor 0x1021c550, 0x3c
+// bytes): the body falls into a plane behind the death direction and is
+// removed at the end of its lifetime. Member names are ours.
+class CBodyStatePranksterImplode : public CBodyState
+{
+	public :
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStatePranksterImplode, kState_BodyPranksterImplode);
+
+		CBodyStatePranksterImplode( );
+
+		void Init(Body* pBody);
+		void InitLoad(Body* pBody);
+
+		void Update();
+
+		void HandleTouch(HOBJECT hObject);
+
+		void Save(ILTMessage_Write *pMsg);
+		void Load(ILTMessage_Read *pMsg);
+
+		LTBOOL CanDeactivate() { return LTFALSE; }
+
+	protected :
+
+		LTVector	m_vTronUnknown8;	// saved, not set
+		HMODELANIM	m_hAniLoop;
+		HMODELANIM	m_hAniStop;
+		LTVector	m_vDir;
+		LTPlane		m_Plane;
+		bool		m_bTouched;
+};
+
+// RETAIL: Tron's (RTTI; vtable 0x1029e0ec): plays the gib FX and removes
+// the body at once.
+class CBodyStateGib : public CBodyState
+{
+	public :
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CBodyStateGib, kState_BodyGib);
+
+		void Init(Body* pBody);
+		void InitLoad(Body* pBody);
+
+	protected :
+
+		// RETAIL: 0x1021cc70. Name ours.
+		void PlayGibFX();
+};
+
 #endif

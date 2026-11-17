@@ -8,8 +8,123 @@
 #include "AIBrain.h"
 #include "ObjectRelationMgr.h" 
 #include "CharacterMgr.h" 
+#include "WeaponFireInfo.h"
+#include "Weapon.h"
 
-DEFINE_AI_FACTORY_CLASS(CAITarget);
+// RETAIL: retail's unit starts with the two target commands' factory
+// entries (0x101dec80, 0x101dee30) and the +0x1010 object's code.
+DEFINE_AI_FACTORY_CLASS(RefreshCacheIfSame);
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AbstractTarget::TakeCache
+//
+//	PURPOSE:	RETAIL: inline in RefreshCacheIfSame::Execute
+//				(0x101dece0). Name ours.
+//
+// ----------------------------------------------------------------------- //
+
+void AbstractTarget::TakeCache(AbstractTarget* pTarget)
+{
+	m_hObject = pTarget->m_hObject;
+	m_bCanUpdateVisibility = pTarget->m_bCanUpdateVisibility;
+	m_hVisionBlocker = pTarget->m_hVisionBlocker;
+	m_bVisibleFromEye = pTarget->m_bVisibleFromEye;
+	m_bVisibleFromWeapon = pTarget->m_bVisibleFromWeapon;
+	m_fTargetTime = pTarget->m_fTargetTime;
+	m_fCurMovementInaccuracy = pTarget->m_fCurMovementInaccuracy;
+	m_vTargetVelocity = pTarget->m_vTargetVelocity;
+	m_vTargetPosition = pTarget->m_vTargetPosition;
+	m_fTargetDistSqr = pTarget->m_fTargetDistSqr;
+	m_vVisiblePosition = pTarget->m_vVisiblePosition;
+	m_hVisionBlocker = pTarget->m_hVisionBlocker;
+	m_bVisibleFromEye = pTarget->m_bVisibleFromEye;
+	m_bVisibleFromWeapon = pTarget->m_bVisibleFromWeapon;
+	m_nPhase = pTarget->m_nPhase;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	RefreshCacheIfSame::Execute
+//
+//	PURPOSE:	RETAIL: 0x101dece0: takes the cache of pTarget.
+//
+// ----------------------------------------------------------------------- //
+
+int RefreshCacheIfSame::Execute(AbstractTarget* pTarget)
+{
+	if( !pTarget->m_bCanUpdateVisibility &&
+		m_pTarget->m_bCanUpdateVisibility &&
+		( m_pTarget->m_hObject == pTarget->m_hObject ) &&
+		( pTarget != m_pTarget ) )
+	{
+		m_pTarget->TakeCache( pTarget );
+	}
+
+	return 0;
+}
+
+DEFINE_AI_FACTORY_CLASS(SetAllowUpdate);
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITronUnknown1010::Flush
+//
+//	PURPOSE:	RETAIL: 0x101dee80: sends each posted command to every
+//				receiver, then gives it back to the factory.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITronUnknown1010::Flush()
+{
+	std::list<ITargetCommand*> lstCommands( m_lstTronUnknown0 );
+	m_lstTronUnknown0.clear();
+
+	while( !lstCommands.empty() )
+	{
+		ITargetCommand* pCommand = lstCommands.front();
+		lstCommands.pop_front();
+
+		std::for_each( m_lstTronUnknown4.begin(), m_lstTronUnknown4.end(),
+			std::bind2nd( std::mem_fun( &CTargetCommandReceiver<AbstractTarget>::Receive ), pCommand ) );
+
+		AI_FACTORY_DELETE( pCommand );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITronUnknown1010::PostCommand
+//
+//	PURPOSE:	RETAIL: 0x101df000: keeps a copy of the command for Flush.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITronUnknown1010::PostCommand(const ITargetCommand& Command)
+{
+	ITargetCommand* pCommand = Command.Clone();
+	m_lstTronUnknown0.push_back( pCommand );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITronUnknown1010::RefreshTargets
+//
+//	PURPOSE:	RETAIL: 0x101df040: a target that must update its
+//				visibility asks the other targets for their cache first.
+//
+// ----------------------------------------------------------------------- //
+
+void CAITronUnknown1010::RefreshTargets(AbstractTarget* pTarget)
+{
+	if( pTarget->m_bCanUpdateVisibility )
+	{
+		RefreshCacheIfSame Command( pTarget );
+		std::for_each( m_lstTronUnknown4.begin(), m_lstTronUnknown4.end(),
+			std::bind2nd( std::mem_fun( &CTargetCommandReceiver<AbstractTarget>::Receive ), &Command ) );
+	}
+}
+
 
 
 #define MAX_PHASE				7
@@ -39,10 +154,7 @@ AbstractTarget::AbstractTarget() :
 	m_nPhase( 2 ),
 	m_nResetPhase( 2 ),
 	m_fPhaseStep( 0.f ),
-	m_fTronUnknown98( 0.f ),
-	m_pTronUnknownB0( LTNULL ),
-	m_pTronUnknownB4( LTNULL ),
-	m_pTronUnknownB8( LTNULL )
+	m_fTronUnknown98( 0.f )
 {
 	VEC_INIT(m_vTargetVelocity);
 	VEC_INIT(m_vTargetPosition);
@@ -51,21 +163,28 @@ AbstractTarget::AbstractTarget() :
 	m_hRelationNotifier.SetObserver( this );
 }
 
-// RETAIL: 0x101df1e0 also takes m_pTronUnknownB0.. out of its registry's
-// list (that member is a Tron notifier class we have not written).
+// RETAIL: 0x101df1e0 (the receiver leaves its registry's list).
 AbstractTarget::~AbstractTarget()
 {
 }
 
-CAITarget::CAITarget() :
-	m_pAI( LTNULL ),
-	m_fPushSpeed( 0.f ),
-	m_fPushMinDist( 0.f ),
-	m_fPushMinDistSqr( 0.f ),
-	m_fPushThreshold( 0.f )
-{
-}
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITarget::Init
+//
+//	PURPOSE:	Intialized targeting for an AI.
+//
+// ----------------------------------------------------------------------- //
 
+void AbstractTarget::Init()
+{
+	m_hRelationNotifier.SetSubject( GetAI()->GetRelationMgr() );
+
+	// RETAIL: Tron's (0x101df2e0).
+	m_Receiver.SetOwner( this );
+	m_Receiver.SetCallback( &AbstractTarget::ReceiveCommand );
+	m_Receiver.SetRegistry( GetAI()->GetTronUnknown1010() );
+}
 
 // ----------------------------------------------------------------------- //
 //
@@ -106,17 +225,6 @@ void AbstractTarget::Save(ILTMessage_Write *pMsg)
 	pMsg->WriteType(m_vTronUnknown9C);
 }
 
-// RETAIL: 0x101e04c0.
-void CAITarget::Save(ILTMessage_Write *pMsg)
-{
-	AbstractTarget::Save(pMsg);
-
-	SAVE_FLOAT(m_fPushSpeed);
-	SAVE_FLOAT(m_fPushMinDist);
-	SAVE_FLOAT(m_fPushMinDistSqr);
-	SAVE_FLOAT(m_fPushThreshold);
-}
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CAITarget::Load
@@ -155,39 +263,18 @@ void AbstractTarget::Load(ILTMessage_Read *pMsg)
 	LOAD_VECTOR(m_vTronUnknown9C);
 }
 
-// RETAIL: 0x101e0530.
-void CAITarget::Load(ILTMessage_Read *pMsg)
-{
-	AbstractTarget::Load(pMsg);
-
-	LOAD_FLOAT(m_fPushSpeed);
-	LOAD_FLOAT(m_fPushMinDist);
-	LOAD_FLOAT(m_fPushMinDistSqr);
-	LOAD_FLOAT(m_fPushThreshold);
-}
-
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAITarget::Init
+//	ROUTINE:	AbstractTarget::ReceiveCommand
 //
-//	PURPOSE:	Intialized targeting for an AI.
+//	PURPOSE:	RETAIL: 0x101df7c0: the receiver's callback.
 //
 // ----------------------------------------------------------------------- //
 
-void AbstractTarget::Init()
+int AbstractTarget::ReceiveCommand(ITargetCommand* pCommand)
 {
-	m_hRelationNotifier.SetSubject( GetAI()->GetRelationMgr() );
-
-	// PORT: retail (0x101df2e0) also registers m_pTronUnknownB0.. with
-	// GetAI()'s +0x1010 object, which we have not written.
-}
-
-// RETAIL: 0x101e05a0.
-void CAITarget::Init(CAI* pAI)
-{
-	m_pAI = pAI;
-
-	AbstractTarget::Init();
+	pCommand->Execute( this );
+	return 0;
 }
 
 // ----------------------------------------------------------------------- //
@@ -357,6 +444,27 @@ void AbstractTarget::GetShootPosition(LTVector* pvShootPos)
 		// Apply the offset to miss the target.
 
 		*pvShootPos += vRight;
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AbstractTarget::Refresh
+//
+//	PURPOSE:	RETAIL: 0x101dfd00 (Tron's; name ours).
+//
+// ----------------------------------------------------------------------- //
+
+void AbstractTarget::Refresh()
+{
+	if( GetAI() && m_hObject )
+	{
+		GetAI()->GetTronUnknown1010()->RefreshTargets( this );
+
+		if( m_bCanUpdateVisibility )
+		{
+			UpdateVisibility();
+		}
 	}
 }
 
@@ -542,31 +650,6 @@ void AbstractTarget::UpdateVisibility()
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAITarget::UpdatePush
-//
-//	PURPOSE:	Push the target back if it is too close.
-//
-// ----------------------------------------------------------------------- //
-
-void CAITarget::UpdatePush( CCharacter* pChar )
-{
-	_ASSERT(IsValid());
-
-	if( m_fPushSpeed > 0.f )
-	{
-		// Handle collisions by pushing the target back.
-
-		LTVector vPos = GetAI()->GetPosition();
-		if( vPos.DistSqr( m_vVisiblePosition ) < m_fPushMinDistSqr )
-		{
-			pChar->PushCharacter(vPos, m_fPushMinDist + m_fPushThreshold, 0.f, GetAI()->GetSenseUpdateRate(), m_fPushSpeed );
-		}
-	}
-}
-
-
 /*virtual*/ int AbstractTarget::OnRelationChange(HOBJECT hObj)
 {
 	if( hObj == m_hObject.operator HOBJECT() )
@@ -587,3 +670,99 @@ CCharacter* AbstractTarget::GetCharacter() const
 {
 	return dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hObject ) );
 }
+
+// RETAIL: CAITarget's part of the unit follows AbstractTarget's (its factory
+// entry 0x101e0300, constructor 0x101e03b0).
+DEFINE_AI_FACTORY_CLASS(CAITarget);
+
+CAITarget::CAITarget() :
+	m_pAI( LTNULL ),
+	m_fPushSpeed( 0.f ),
+	m_fPushMinDist( 0.f ),
+	m_fPushMinDistSqr( 0.f ),
+	m_fPushThreshold( 0.f )
+{
+}
+
+// RETAIL: 0x101e04c0.
+void CAITarget::Save(ILTMessage_Write *pMsg)
+{
+	AbstractTarget::Save(pMsg);
+
+	SAVE_FLOAT(m_fPushSpeed);
+	SAVE_FLOAT(m_fPushMinDist);
+	SAVE_FLOAT(m_fPushMinDistSqr);
+	SAVE_FLOAT(m_fPushThreshold);
+}
+
+// RETAIL: 0x101e0530.
+void CAITarget::Load(ILTMessage_Read *pMsg)
+{
+	AbstractTarget::Load(pMsg);
+
+	LOAD_FLOAT(m_fPushSpeed);
+	LOAD_FLOAT(m_fPushMinDist);
+	LOAD_FLOAT(m_fPushMinDistSqr);
+	LOAD_FLOAT(m_fPushThreshold);
+}
+
+// RETAIL: 0x101e05a0.
+void CAITarget::Init(CAI* pAI)
+{
+	m_pAI = pAI;
+
+	AbstractTarget::Init();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAITarget::UpdatePush
+//
+//	PURPOSE:	Push the target back if it is too close.
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: Tron's (0x101e05c0): the AI pushes only players, and its Tron
+// weapon (CAI+0xd60) fires at the target.
+void CAITarget::UpdatePush( CCharacter* pChar )
+{
+	if( !pChar )
+	{
+		return;
+	}
+
+	Refresh();
+
+	if( m_fPushSpeed > 0.f )
+	{
+		// Handle collisions by pushing the target back.
+
+		LTVector vPos = GetAI()->GetPosition();
+		if( vPos.DistSqr( GetVisiblePosition() ) < m_fPushMinDistSqr )
+		{
+			if( IsPlayer( pChar->GetUserObject() ) )
+			{
+				pChar->PushCharacter(vPos, m_fPushMinDist + m_fPushThreshold, 0.f, GetAI()->GetSenseUpdateRate(), m_fPushSpeed );
+			}
+
+			if( GetAI()->GetTronWeapon() )
+			{
+				WeaponFireInfo weaponFireInfo;
+				weaponFireInfo.hFiredFrom = m_pAI->m_hObject;
+				weaponFireInfo.hTestObj = g_pLTServer->ObjectToHandle( pChar );
+
+				LTVector vTargetPos;
+				g_pLTServer->GetObjectPos( weaponFireInfo.hTestObj, &vTargetPos );
+
+				weaponFireInfo.vPath = vTargetPos - vPos;
+				weaponFireInfo.vPath.Normalize();
+				weaponFireInfo.vFirePos = vPos;
+				weaponFireInfo.vFlashPos = vPos;
+
+				GetAI()->GetTronWeapon()->UpdateWeapon( weaponFireInfo, LTTRUE );
+			}
+		}
+	}
+}
+
+

@@ -61,7 +61,7 @@ class CAIGoalTalk : public CAIGoalGuard
 
 		LTBOOL	HasTalkNode() const { return !!m_hGuardNode; }
 		LTBOOL	IsInTalkPosition() const { return m_bInTalkPosition; }
-		LTBOOL	RequestDialogue(HOBJECT hDialogue);
+		LTBOOL	RequestDialogue(HOBJECT hDialogue, bool bUseAIState);	// RETAIL: Tron's second argument (0x101fa800)
 		void	StartDialogue();
 		void	StartTalking();
 		void	StopTalking();

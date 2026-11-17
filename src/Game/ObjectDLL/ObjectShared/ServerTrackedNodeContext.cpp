@@ -98,8 +98,26 @@ bool CServerTrackedNodeContext::SetTrackedTarget(EnumTrackedNodeGroup eGroup, HO
 	{
 		return true;
 	}
-
 	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CServerTrackedNodeContext::GetTrackedTarget
+//
+//	PURPOSE:	RETAIL: Tron's (0x101dc2c0): the object a group tracks.
+//				Name ours.
+//
+// ----------------------------------------------------------------------- //
+
+HOBJECT CServerTrackedNodeContext::GetTrackedTarget(EnumTrackedNodeGroup eGroup)
+{
+	if( eGroup == kTrack_None )
+	{
+		return LTNULL;
+	}
+
+	return m_TrackedNodeTargets[eGroup].hTarget;
 }
 
 // ----------------------------------------------------------------------- //

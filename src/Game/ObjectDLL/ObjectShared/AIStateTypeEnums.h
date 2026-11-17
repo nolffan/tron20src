@@ -116,8 +116,8 @@ ADD_STATE_HUMAN_UNWRITTEN(SeekerHitchDown)	// kState_HumanSeekerHitchDown
 
 ADD_STATE_BODY(Normal)						// kState_BodyNormal
 ADD_STATE_BODY(Explode)						// kState_BodyExplode
-ADD_STATE_BODY_UNWRITTEN(Gib)				// kState_BodyGib
-ADD_STATE_BODY_UNWRITTEN(PranksterImplode)	// kState_BodyPranksterImplode
+ADD_STATE_BODY(Gib)							// kState_BodyGib
+ADD_STATE_BODY(PranksterImplode)			// kState_BodyPranksterImplode
 ADD_STATE_BODY(Crush)						// kState_BodyCrush
 ADD_STATE_BODY(Laser)						// kState_BodyLaser
 ADD_STATE_BODY(Decay)						// kState_BodyDecay
