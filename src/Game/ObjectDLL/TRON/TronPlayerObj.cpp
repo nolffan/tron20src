@@ -691,7 +691,7 @@ bool CTronPlayerObj::HandleRampConsoleVarMsg(const CParsedMsg &cMsg)
 	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
 	cClientMsg.Writeuint8( 0 );
 	cClientMsg.WriteString( szVar );
-	cClientMsg.Writebool( bStart );
+	cClientMsg.Writeuint8( bStart ? 1 : 0 );
 	cClientMsg.Writefloat( fStart );
 	cClientMsg.Writefloat( fEnd );
 	cClientMsg.Writefloat( fPeriod );
