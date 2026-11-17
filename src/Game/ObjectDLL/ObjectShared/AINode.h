@@ -23,6 +23,7 @@ enum EnumAISoundType;
 enum EnumAINodeType;
 enum EnumAIStateType;
 
+class CCharacter;
 class AIVolume;
 class CAIHuman;
 
@@ -691,7 +692,8 @@ class AINodeUseObject : public AINode
 		void			PreActivate();
 		void			PostActivate();
 
-		void			ApplyChildModels( HOBJECT  );
+		// RETAIL: Tron's takes the character (0x100a4930).
+		void			ApplyChildModels( CCharacter* pChar );
 		
 
 	protected :

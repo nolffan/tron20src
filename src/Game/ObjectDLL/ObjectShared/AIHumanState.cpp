@@ -2492,8 +2492,8 @@ void CAIHumanStateUseObject::UpdateMoving()
 
 		// Attach childmodels.
 		// RETAIL: Tron's AINodeUseObject::ApplyChildModels takes the AI
-		// itself (0x101e86c3; 0x100a4930 reads its m_hObject).
-		m_pUseNode->ApplyChildModels( GetAI()->m_hObject );
+		// itself (0x101e86c3; 0x100a4930 reads its m_hObject and skeleton).
+		m_pUseNode->ApplyChildModels( GetAI() );
 		GetAI()->GetAnimationContext()->Reset( GetAI()->m_hObject );
 
 		// Check if bare hands are required.
@@ -3839,7 +3839,7 @@ void CAIHumanStateCheckBody::Update()
 {
 	super::Update();
 
-	LTBOOL bSuccess = LTFALSE;
+	// RETAIL: 0x101eb4d3, Tron's check always completes (no bSuccess).
 
 	// m_hBody may be a Body or a knocked out AI.
 
@@ -3975,7 +3975,6 @@ void CAIHumanStateCheckBody::Update()
 		{
 			// We finished checking the Body
 
-			bSuccess = LTTRUE;
 			goto Done;
 		}
 		else
@@ -4031,7 +4030,7 @@ void CAIHumanStateCheckBody::Update()
 
 			// Play our sound
 
-			if( !GetAI()->IsPlayingDialogSound() )
+			if( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) )	// RETAIL: 0x101eb611
 			{
 				GetAI()->PlaySound( kAIS_SeeBody, LTFALSE );
 			}
@@ -4048,13 +4047,7 @@ Done:
 		pBody->SetBodyResetTime( g_pLTServer->GetTime() + g_pAIButeMgr->GetResetTimers()->fBodyResetTimer );
 	}
 
-	if( bSuccess )
-	{
-		m_eStateStatus = kSStat_StateComplete;
-	}
-	else {
-		m_eStateStatus = kSStat_FailedComplete;
-	}
+	m_eStateStatus = kSStat_StateComplete;
 }
 
 // ----------------------------------------------------------------------- //
@@ -8183,6 +8176,7 @@ void CAIHumanStateDistress::Update()
 			LTVector vForward;
             g_pLTServer->GetObjectRotation(GetAI()->GetTarget()->GetObject(), &rRot);
 			vForward = rRot.Forward();
+			vForward.y = 0.f;	// RETAIL: 0x101f2a4d, a flat facing test
 
 			LTVector vDir;
 			vDir = GetAI()->GetPosition() - GetAI()->GetTarget()->GetVisiblePosition();
@@ -8218,7 +8212,7 @@ void CAIHumanStateDistress::Update()
 	LTFLOAT fMax = GetAI()->GetBrain()->GetDistressDecreaseRate();
 	fMax = GetAI()->GetBrain()->GetDistressTimeMax() * fMax;
 
-	m_fDistress = LTCLAMP( m_fDistress, 0.0f, fMax );
+	m_fDistress = LTMIN( fMax, LTMAX( m_fDistress, 0.0f ) );
 	if ( m_fDistress == 0.0f )
 	{
 		m_eStateStatus = kSStat_StateComplete;
@@ -8471,7 +8465,7 @@ void CAIHumanStateTalk::Update()
 {
 	if ( m_hFace )
 	{
-		if ( GetAI()->IsPlayingDialogSound() )
+		if ( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() )	// RETAIL: 0x101f33e4
 		{
 			m_fFaceTimer = g_pLTServer->GetTime() + m_fFaceTime;
 		}
@@ -9676,7 +9670,11 @@ void CAIHumanStateLongJump::SetupLongJumpMovement()
 	GetAI()->GetAIMovement()->FaceDest( m_bFaceDest );
 	GetAI()->GetAIMovement()->SetSpeed( m_fJumpSpeed );
 	GetAI()->GetAIMovement()->SetParabola( fJumpHeight );
-	GetAI()->GetAIMovement()->IgnoreVolumes( LTTRUE );
+	// RETAIL: 0x101f559a, only when m_xTronUnknown38 is not set.
+	if( !GetAI()->GetAIMovement()->GetTronUnknown38() )
+	{
+		GetAI()->GetAIMovement()->IgnoreVolumes( LTTRUE );
+	}
 	GetAI()->GetAIMovement()->LockMovement();
 
 	GetAnimationContext()->SetAnimRate( fAnimRate );

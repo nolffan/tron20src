@@ -1548,11 +1548,16 @@ void AINodeUseObject::Load(ILTMessage_Read *pMsg)
 // start means we 
 // add/remove childmodels 
 // ------------------------------------------------------------------------
-void AINodeUseObject::ApplyChildModels( HOBJECT hObj ) 
+void AINodeUseObject::ApplyChildModels( CCharacter* pChar ) 
 { 
 	AIGBM_SmartObjectTemplate *pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(m_nSmartObjectID);
 
-	
+	// RETAIL: 0x100a495e, Tron adds only the child models for the
+	// character's skeleton (or for any skeleton, 0xff).
+
+	HOBJECT hObj = pChar->m_hObject;
+	ModelSkeleton eSkeleton = pChar->GetModelSkeleton();
+
 	AIGBM_SmartObjectTemplate::AIChldMdlInfoItr itr ;
 		
 	// go through the requested childmodels. If some of them cannot be loaded
@@ -1561,7 +1566,10 @@ void AINodeUseObject::ApplyChildModels( HOBJECT hObj )
 		 itr != pSmartObject->addchildmodels.end() ;
 		 itr++	)
 	{
+		if( ( eSkeleton == (*itr).nSkel ) || ( (*itr).nSkel == 0xff ) )
+		{
 			g_pModelLT->AddChildModelDB( hObj, (*itr).hmodeldb);
+		}
 	}			
 }
 
