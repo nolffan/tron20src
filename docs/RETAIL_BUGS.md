@@ -1233,6 +1233,21 @@ saved (for example, the visible flag that DoProjectile sets).
 Not fixed yet: the modern build should set the saved flags with
 SetObjectFlags (OFT_Flags, FLAGMASK_ALL).
 
+### A lens flare message is read one field past its end
+
+CShell.dll 0x101a58f0 (LENSFLARECREATESTRUCT::InitFromMessage,
+ClientShellShared/LensFlareFX.cpp). After the lens flare fields, the
+function reads a flag and, if the flag is set, the name of a socket. The
+server does not write this flag: Object.lto 0x10274300
+(AddLensFlareInfoToMessage, ObjectShared/SFXFuncs.cpp) ends with the last
+blind scale. Thus the client reads past the end of the message. The read
+gives zero, so the flare has no socket and works, but only by chance.
+The search light message has the same lens flare fields at its end, so the
+same read occurs for it.
+
+Not fixed yet: the modern build should write the flag (false) on the
+server, or not read it on the client.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
