@@ -1011,7 +1011,7 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			g_pLTServer->SetNextUpdate(m_hObject, c_fUpdateDelta);
 
-			g_pLTServer->SetNetFlags(m_hObject, NETFLAG_POSUNGUARANTEED|NETFLAG_ROTUNGUARANTEED|NETFLAG_ANIMUNGUARANTEED);
+			// RETAIL: Tron sets no net flags here (0x10129a9e)
 
 			m_pTarget->Init(this);
 
@@ -1047,6 +1047,12 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 				// Update our can activate flags.  Need to do this after the character does the 
 				// initialupdate because character creates our hitbox.
 				UpdateUserFlagCanActivate();
+
+				// RETAIL: Tron's attachments follow our visibility (0x10129b74)
+				uint32 dwFlags;
+				g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+				dwFlags |= m_dwFlags;
+				HideAttachments(!(dwFlags & FLAG_VISIBLE));
 			}
 
 			return dwRet;
@@ -1150,17 +1156,7 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 		
-		case MID_PARENTATTACHMENTREMOVED:
-		{
-			if( m_bBeingCarried )
-			{
-				// If we are being carried don't let CCharacter process this message since it will remove us.
-				// We know our parent attachment is a Player and they will drop us when they get removed.
-
-				return 1;
-			}
-		}
-		break;
+		// RETAIL: Tron's has no MID_PARENTATTACHMENTREMOVED case (0x10129ef4)
 
 		default:
 		{
@@ -3597,10 +3593,10 @@ void CAI::Update()
 	g_cIntersectSegmentCalls = 0;
 */
 
+	// RETAIL: Tron's Update does not set the flag (0x1012ff92)
 	if ( !m_bInitializedAttachments )
 	{
 		InitAttachments();
-		m_bInitializedAttachments = LTTRUE;
 	}
 
 	// Record if we had a target before we update.
