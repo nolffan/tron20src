@@ -25,18 +25,18 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `Lithtech.exe` | the engine | 6,527 / 7,331 | 1,318,087 / 1,375,772 bytes | `███████████████████░` 95.8% | 10 | 35 |
-| `server.dll` | the engine's server | 2,939 / 3,540 | 311,646 / 319,661 bytes | `███████████████████░` 97.4% | 0 | 2 |
+| `Lithtech.exe` | the engine | 6,526 / 7,331 | 1,316,739 / 1,375,772 bytes | `███████████████████░` 95.7% | 10 | 35 |
+| `server.dll` | the engine's server | 2,937 / 3,540 | 311,182 / 319,661 bytes | `███████████████████░` 97.3% | 3 | 2 |
 | `SndDrv.dll` | the sound driver | 232 / 266 | 38,444 / 38,926 bytes | `███████████████████░` 98.7% | 0 | 0 |
 | `Tron.exe` | the launcher | 311 / 348 | 44,730 / 45,159 bytes | `███████████████████░` 99.0% | 0 | 0 |
 | `TRONSrv.exe` | the dedicated server | 477 / 564 | 76,889 / 82,500 bytes | `██████████████████░░` 93.1% | 0 | 4 |
-| `CShell.dll` | the game: client | 6,985 / 9,252 | 1,264,385 / 1,825,492 bytes | `█████████████░░░░░░░` 69.2% | 27 | 65 |
-| `Object.lto` | the game: server objects | 12,543 / 15,136 | 1,853,302 / 2,457,751 bytes | `███████████████░░░░░` 75.4% | 111 | 19 |
-| `ClientFx.fxd` | the game: client effects | 429 / 550 | 114,850 / 135,150 bytes | `████████████████░░░░` 84.9% | 2 | 0 |
+| `CShell.dll` | the game: client | 7,002 / 9,252 | 1,273,819 / 1,825,492 bytes | `█████████████░░░░░░░` 69.7% | 45 | 59 |
+| `Object.lto` | the game: server objects | 12,523 / 15,136 | 1,847,183 / 2,457,751 bytes | `███████████████░░░░░` 75.1% | 115 | 19 |
+| `ClientFx.fxd` | the game: client effects | 428 / 550 | 114,840 / 135,150 bytes | `████████████████░░░░` 84.9% | 2 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 463 / 463 resources | 561,414 / 561,414 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **30,443 / 36,987** | **5,022,333 / 6,280,411 bytes** | `███████████████░░░░░` **79.9%** | **150** | **125** |
+| **All** | | **30,436 / 36,987** | **5,023,826 / 6,280,411 bytes** | `███████████████░░░░░` **79.9%** | **175** | **119** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `identical.txt`, and `make

@@ -433,7 +433,6 @@ CShell.dll	ours	UVProgressFull
 CShell.dll	ours	User chose to not create software TnL device. Exiting.
 CShell.dll	ours	VehicleContour
 CShell.dll	ours	attributes\\damagefx.txt
-CShell.dll	ours	debug
 CShell.dll	ours	import KERNEL32.dll OpenFile
 CShell.dll	ours	import MSVCRT.dll _mbsinc
 CShell.dll	ours	import MSVCRT.dll _mbsnbcnt
