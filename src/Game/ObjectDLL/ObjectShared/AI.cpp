@@ -3061,10 +3061,7 @@ void CAI::HandleTeleport(const LTVector& vPos)
 	m_vMovePos = vPos;
 	SetPosition( vPos, LTTRUE );
 
-	LTVector vDeditPos = vPos;
-	vDeditPos = ConvertToDEditPos( vDeditPos );
-	AITRACE( AIShowVolumes, ( m_hObject, "Teleporting to %.2f %.2f %.2f",
-		vDeditPos.x, vDeditPos.y, vDeditPos.z ) );
+	// RETAIL: no trace here (retail 0x1012f350)
 
 	m_pPathKnowledgeMgr->ClearPathKnowledge();
 }

@@ -573,7 +573,7 @@ void AINodeSensing::SendSenseCommand()
 	const char *szCmd = g_pLTServer->GetStringData( m_hstrCmd[m_eCmdToRun] );
 	if( g_pCmdMgr->IsValidCmd( szCmd ) )
 	{
-		AITRACE( AIShowNodes, ( m_hObject, "Running Sense Command: %s", szCmd ) );
+		// RETAIL: no trace here (retail 0x1021f362)
 		g_pCmdMgr->Process( szCmd, m_hObject, LTNULL );
 	}
 

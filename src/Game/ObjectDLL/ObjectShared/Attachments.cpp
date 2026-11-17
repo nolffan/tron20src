@@ -493,27 +493,10 @@ void CAttachments::CreateAttachment(CAttachmentPosition *pAttachmentPosition)
 
 	int nAttachmentID = g_pAttachButeMgr->GetAttachmentIDByName(szAttachmentName);
 
-	// RETAIL: the message below names line 516 of retail's Attachments.cpp
-	// (0x101881ee); the lines below keep ours at the same line.
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-
 	if ( -1 == nAttachmentID )
 	{
-        g_pLTServer->CPrint("Unmatched attable name %s (Line %d of %s)", szAttachmentName, __LINE__, __FILE__);
+		// RETAIL: the line and file of retail's build (0x101881ee)
+        g_pLTServer->CPrint("Unmatched attable name %s (Line %d of %s)", szAttachmentName, 516, "C:\\proj\\Tron\\Source\\Game\\ObjectDLL\\ObjectShared\\Attachments.cpp");
 		return;
 	}
 
