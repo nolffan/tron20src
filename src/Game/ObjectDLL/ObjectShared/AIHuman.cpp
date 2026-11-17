@@ -307,7 +307,7 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		{
 			// Initialize the GoalMgr.
 			m_pGoalMgr->Init(this);		
-			m_pGoalMgr->SetGoalSet( genProp.m_String, LTFALSE );
+			m_pGoalMgr->SetGoalSetNextUpdate( genProp.m_String );	// RETAIL: 0x1016ca6d
 		}
 	}
 
@@ -316,6 +316,12 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		if ( genProp.m_String[0] )
 		{
 			m_eModelId = g_pModelButeMgr->GetModelId(genProp.m_String);
+
+			// RETAIL: 0x1016ca9c, Tron falls back on the first model.
+			if( m_eModelId == eModelIdInvalid )
+			{
+				m_eModelId = (ModelId)0;
+			}
 		}
 	}
 	else {
@@ -357,7 +363,14 @@ LTBOOL CAIHuman::ReadProp(ObjectCreateStruct *pData)
 		// Create a backup copy of the holster string, for use if 
 		// the AIs weapon is stolen (while he is knocked out).
 
-		if( szHolster[0] )
+		// RETAIL: 0x1016cc19, Tron drops a holster string with only a
+		// left-handed weapon.
+
+		if( szHolster[0] == ';' )
+		{
+			szHolster[0] = 0;
+		}
+		else if( szHolster[0] )
 		{
 			m_hstrHolsterBackup = g_pLTServer->CreateString( szHolster );
 		}
@@ -2010,15 +2023,20 @@ bool CAIHuman::SetBrain( char const* pszBrain )
 
 	// Set DamageMask.
 
-	if( m_pBrain->GetDamageMaskID() != -1 )
+	// RETAIL: 0x1016ffb6, Tron checks the destructible first, and passes on
+	// the brain's OnlyDamagedByPlayer.
+
+	CDestructible* pDestructable = GetDestructible();
+	AIASSERT( pDestructable, m_hObject, "CAIHuman::SetBrain: No destructable." );
+	if( pDestructable )
 	{
-		CDestructible* pDestructable = GetDestructible();
-		AIASSERT( pDestructable, m_hObject, "CAIHuman::SetBrain: No destructable." );
-		if( pDestructable )
+		if( m_pBrain->GetDamageMaskID() != -1 )
 		{
 			int nDamageMaskID = m_pBrain->GetDamageMaskID();
 			pDestructable->SetCantDamageFlags( ~( g_pAIButeMgr->GetDamageMask( nDamageMaskID )->dfDamageTypes ) );
 		}
+
+		pDestructable->SetTronUnknown6D0( !!m_pBrain->GetOnlyDamagedByPlayer() );
 	}
 
 	// Set music mood boundaries.
