@@ -238,6 +238,8 @@ public:
 
 	// RETAIL: the I/O node pings (the name is ours)
 	bool	AddPing(const char* szName);
+	// RETAIL: 0x100ac140 (CHUDPings, retail 0x1003157a; the name is ours)
+	IONODEPING*	GetPing(int nIndex);
 	// RETAIL: 0x100ac180 (retail's CPlayerStats slot 0x164)
 	virtual bool	RemovePing(const char* szName);
 

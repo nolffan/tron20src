@@ -290,3 +290,25 @@ void CTronScreenMgr::KillMenuMusic()
 		m_hMenuSnd = NULL;
 	}
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronScreenMgr::HandleKeyDown
+//
+//	PURPOSE:	RETAIL: 0x100ad4e0: as CScreenMgr's, but the escape key
+//				goes to the subroutine screen as a key
+//
+// ----------------------------------------------------------------------- //
+
+void CTronScreenMgr::HandleKeyDown (int vkey, int rep)
+{
+	if (m_pCurrentScreen)
+	{
+		if (vkey == VK_ESCAPE && m_eCurrentScreenID != SCREEN_ID_SUBROUTINES)
+		{
+			m_pCurrentScreen->Escape();
+		}
+		else
+			m_pCurrentScreen->HandleKeyDown(vkey,rep);
+	}
+}

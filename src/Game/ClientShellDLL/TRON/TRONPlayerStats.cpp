@@ -1779,6 +1779,12 @@ bool CTronPlayerStats::AddPing(const char* szName)
 	return m_IONodeMgr.AddPing(szName);
 }
 
+// RETAIL: 0x100ac140 (the name is ours)
+IONODEPING* CTronPlayerStats::GetPing(int nIndex)
+{
+	return m_IONodeMgr.GetPing(nIndex);
+}
+
 // RETAIL: 0x100ac180
 bool CTronPlayerStats::RemovePing(const char* szName)
 {

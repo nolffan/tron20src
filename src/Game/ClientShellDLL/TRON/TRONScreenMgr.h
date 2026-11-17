@@ -23,6 +23,8 @@ public:
 	virtual const char *	GetScreenName(eScreenID id);
 	virtual uint16		GetScreenIDFromName(char * pName);
 	virtual void		ExitScreens();
+	// RETAIL: 0x100ad4e0: escape does not leave the subroutine screen
+	virtual void		HandleKeyDown (int vkey, int rep);
 	
 	// [kml] 3/11/02
 	// This is a temporary solution until we
