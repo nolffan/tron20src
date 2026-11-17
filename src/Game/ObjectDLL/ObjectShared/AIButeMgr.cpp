@@ -318,6 +318,12 @@ void CAIButeMgr::Term()
 
 int CAIButeMgr::GetTemplateIDByName(const char *szName)
 {
+	// RETAIL: Tron's (0x1019f230) tests the name first
+	if ( !szName )
+	{
+		return -1;
+	}
+
 	for ( int iTemplateID = 0 ; iTemplateID < m_cTemplateID ; iTemplateID++ )
 	{
 		if ( !strcmp(szName, GetTemplate(iTemplateID)->szName) )
