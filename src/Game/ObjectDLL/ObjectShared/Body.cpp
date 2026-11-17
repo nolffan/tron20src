@@ -1406,6 +1406,27 @@ void Body::AddWeapon(HOBJECT hWeapon, char *pszPosition)
 {
 	if ( m_cWeapons < kMaxWeapons )
 	{
+		// RETAIL: Tron's gives a player's disc the skin of the player's
+		// color in disc games (0x1015bd19)
+
+		if ( IsDiscGameType() && m_hCharacter && IsPlayer( m_hCharacter ) )
+		{
+			CPlayerObj* pPlayer = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( m_hCharacter ) );
+			if ( pPlayer )
+			{
+				uint8 nModel = pPlayer->GetMPModelIndex();
+				uint8 nColor = pPlayer->GetMPColorIndex();
+
+				const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( nModel );
+				if ( pModel )
+				{
+					ObjectCreateStruct createStruct;
+					createStruct.Clear();
+					SAFE_STRCPY( createStruct.m_SkinNames[0], pModel->m_vecColorHHDiscFX[nColor].c_str() );
+					g_pCommonLT->SetObjectFilenames( hWeapon, &createStruct );
+				}
+			}
+		}
 
 		HATTACHMENT hAttachment;
 		if ( LT_OK == g_pLTServer->CreateAttachment(m_hObject, hWeapon, pszPosition, &LTVector(0,0,0), &LTRotation(), &hAttachment) )
