@@ -431,13 +431,83 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 //
 // ----------------------------------------------------------------------- //
 
-void CTronInterfaceMgr::TronUnknownVirtual7C(void* pTronUnknown)
+void CTronInterfaceMgr::TronUnknownVirtual7C(CPlayerScore* pScore)
 {
-	// PORT: retail reads the record's +0x10 (a client id: the local
-	// client's?) and +0x18 (a state, 0..3) and its team (m_ClientInfo,
-	// 0x100fba30); for some game types it sets m_nTronUnknown28B18 to the
-	// strings 0xd87..0xd8b and 0xd9b, then updates the HUD (0x4000000).
-	// Not yet written.
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
+	{
+		uint32 nLocalID = 0;
+		g_pLTClient->GetLocalClientID(&nLocalID);
+		int nTeam = m_TeamMgr.GetTeamOfClient(nLocalID);
+
+		switch (pScore->m_nTronUnknown18)
+		{
+			default:
+				m_nTronUnknown28B18 = 0;
+				g_pHUDMgr->QueueUpdate(0x4000000);
+				return;
+
+			case 2:
+				if (nTeam == 0x10)
+				{
+					m_nTronUnknown28B18 = 0xd8b;
+					g_pHUDMgr->QueueUpdate(0x4000000);
+					return;
+				}
+				m_nTronUnknown28B18 = 0;
+				g_pHUDMgr->QueueUpdate(0x4000000);
+				return;
+		}
+	}
+
+	if (IsDiscGameType())
+	{
+		uint32 nLocalID = 0;
+		g_pLTClient->GetLocalClientID(&nLocalID);
+
+		if (IsDiscGameType() && nLocalID == pScore->m_nClientID)
+		{
+			int nTeam = m_TeamMgr.GetTeamOfClient(nLocalID);
+
+			switch (pScore->m_nTronUnknown18)
+			{
+				case 0:
+					m_nTronUnknown28B18 = 0;
+					break;
+
+				case 1:
+					m_nTronUnknown28B18 = 0xd89;
+					break;
+
+				case 2:
+					m_nTronUnknown28B18 = 0xd8a;
+					break;
+
+				case 3:
+					if (nTeam == 0x10)
+					{
+						m_nTronUnknown28B18 = 0xd8b;
+					}
+					else if (GetGameType() == eGameTypeDiscTournament)
+					{
+						if (nTeam >= 0 && m_TeamMgr.GetTeam(nTeam, false)->GetState() == CTronTeam::kTronTeamState_Timed)
+						{
+							m_nTronUnknown28B18 = 0xd9b;
+						}
+						else
+						{
+							m_nTronUnknown28B18 = 0xd87;
+						}
+					}
+					else
+					{
+						m_nTronUnknown28B18 = 0xd88;
+					}
+					break;
+			}
+
+			g_pHUDMgr->QueueUpdate(0x4000000);
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //

@@ -294,7 +294,7 @@ class CInterfaceMgr
 		// RETAIL: slot 0x7c, empty here ("ret 4", 0x100a9310); called with a
 		// client's record from OnMessage (0x100c9a04); CTronInterfaceMgr's
 		// (0x1009d7a0) picks the HUD's status string for it. The name is ours.
-		virtual void	TronUnknownVirtual7C(void* pTronUnknown) {}
+		virtual void	TronUnknownVirtual7C(CPlayerScore* pScore) {}
 
         uint32          GetAdvancedOptions() const { return m_dwAdvancedOptions; }
 

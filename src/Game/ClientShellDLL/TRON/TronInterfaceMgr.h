@@ -115,7 +115,9 @@ public:
 	virtual bool	TronUnknownVirtual50();
 	virtual bool	TronUnknownVirtual54() { return !m_DuplicateDlg.IsVisible(); }
 
-	virtual void	TronUnknownVirtual7C(void* pTronUnknown);
+	// RETAIL: slot 0x7c (0x1009d7a0): the local client's score changed
+	// (CInterfaceMgr::OnMessage, 0x100c9a04)
+	virtual void	TronUnknownVirtual7C(CPlayerScore* pScore);
 
     LTBOOL			OnCommandOn(int command);
     LTBOOL			OnCommandOff(int command);
