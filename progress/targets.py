@@ -129,7 +129,11 @@ TARGETS = [
          # small to match: CUIWindow_Impl's destructor and CUIWidget_Impl's
          # Draw, between their neighbours there). Only the functions with
          # no readable copy: their ICF-folded one-liners (GetType,
-         # GetClassName, SetGutter) are placed in readable code.
+         # GetClassName, SetGutter) are placed in readable code. Also the
+         # UI's std::wstring default constructor: its COMDAT is ours from
+         # cuilist_impl.obj, and the shipped copy is among CUIPolyTex's
+         # (exematch.py: 0x5736a0 in the plaintext), the linker's pick of
+         # a later object's.
          unreadable=r"^Lib_UI\(cuiwindow_impl\.obj\):(\?\?1|\?(Draw|GetTexture|"
                     r"Move|Resize|SetColors|SetTexture)@)CUIWindow_Impl@@"
                     r"|^Lib_UI\(cuiwidget_impl\.obj\):(\?\?0|\?(Draw|GetTexture|"
@@ -140,7 +144,9 @@ TARGETS = [
                     r"|^Lib_UI\(cuiinterval_impl\.obj\):(\?\?0|\?(Draw|GetRange|"
                     r"Increment|IncrementPercent|Move|Resize|SetColors|"
                     r"SetCurrentValue|SetMaxValue|SetMinValue|SetOrientation|"
-                    r"SetRange|SetTexture)@)CUIInterval_Impl@@",
+                    r"SetRange|SetTexture)@)CUIInterval_Impl@@"
+                    r"|^Lib_UI\(cuilist_impl\.obj\):\?\?0\?\$basic_string@G"
+                    r"V\?\$char_traits@G@_STL@@V\?\$allocator@G@2@@_STL@@QAE@XZ$",
          # every redirected call site's import, from the unprotected
          # developer build of 2003-08-05 (tools/demoimports.py, profile
          # tron2): scored as if put back on its IAT slot
