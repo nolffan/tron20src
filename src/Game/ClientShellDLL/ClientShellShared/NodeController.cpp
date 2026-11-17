@@ -47,7 +47,8 @@ CNodeController::CNodeController()
 
     m_hSound = LTNULL;
 	m_nUniqueDialogueId = 0;
-	m_bSubtitlePriority = false;
+	// RETAIL: Tron's constructor leaves m_bSubtitlePriority alone
+	// (0x10184869..0x10184881)
 
     m_pSixteenBitBuffer = LTNULL;
     m_pEightBitBuffer = LTNULL;
@@ -341,6 +342,15 @@ void CNodeController::UpdateLipSyncControl(NCSTRUCT *pNodeControl)
 		pNodeControl->bValid = LTFALSE;
 
 		return;
+	}
+
+	// RETAIL: 0x1018548f: Tron's lip sync sound follows the speaker
+	HOBJECT hServerObj = m_pCharacterFX->GetServerObj();
+	if (hServerObj)
+	{
+		LTVector vPos;
+		g_pLTClient->GetObjectPos(hServerObj, &vPos);
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundPosition(m_hSound, &vPos);
 	}
 
 	pNodeControl->fTimer += g_pLTClient->GetFrameTime();
