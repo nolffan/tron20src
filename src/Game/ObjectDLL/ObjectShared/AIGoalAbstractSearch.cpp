@@ -95,12 +95,12 @@ void CAIGoalAbstractSearch::DeactivateGoal()
 	// Detach search light attachment from Light socket.
 	// (e.g. for ninjas with search lanterns).
 
-	if( m_pAI->GetBrain()->GetAIDataExist( kAIData_DisposeLantern ) )
-	{
-		char szDetach[128];
-		sprintf(szDetach, "%s Light", KEY_DETACH );		
-		SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTFALSE, szDetach);
-	}
+	// RETAIL: Tron's (0x1022f930) always detaches it, and the message
+	// takes its flag as true
+
+	char szDetach[128];
+	sprintf(szDetach, "%s Light", KEY_DETACH );		
+	SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTTRUE, szDetach);
 }
 
 // ----------------------------------------------------------------------- //
