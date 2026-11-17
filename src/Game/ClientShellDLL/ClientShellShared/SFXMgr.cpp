@@ -1737,19 +1737,21 @@ void CSFXMgr::UpdateDynamicSpecialFX()
 	{
 		int nNumSFX  = m_dynSFXLists[j].GetSize();
 
+		// RETAIL: Tron's (0x10107f30) reads each effect once
 		for (int i=0; i < nNumSFX; i++)
 		{
-			if (m_dynSFXLists[j][i])
+			CSpecialFX* pFX = m_dynSFXLists[j][i];
+			if (pFX)
 			{
-				if (fTime >= m_dynSFXLists[j][i]->m_fNextUpdateTime)
+				if (fTime >= pFX->m_fNextUpdateTime)
 				{
-					if (!m_dynSFXLists[j][i]->Update())
+					if (!pFX->Update())
 					{
-						m_dynSFXLists[j].Remove(m_dynSFXLists[j][i]);
+						m_dynSFXLists[j].Remove(pFX);
 					}
 					else
 					{
-						m_dynSFXLists[j][i]->m_fNextUpdateTime = fTime + m_dynSFXLists[j][i]->GetUpdateDelta();
+						pFX->m_fNextUpdateTime = pFX->GetUpdateDelta() + fTime;
 					}
 				}
 			}
@@ -2026,6 +2028,27 @@ void CSFXMgr::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 		if (m_dynSFXLists[SFX_BODY_ID][i] && m_dynSFXLists[SFX_BODY_ID][i]->GetServerObj() == hObj)
 		{
 			m_dynSFXLists[SFX_BODY_ID][i]->OnModelKey(hObj, pArgs);
+		}
+	}
+
+	// RETAIL: Tron's (0x10108428) passes them on to its client fx users too
+	nNumSFX = m_dynSFXLists[SFX_CLIENTFXUSER_ID].GetSize();
+
+	for (i=0; i < nNumSFX; i++)
+	{
+		if (m_dynSFXLists[SFX_CLIENTFXUSER_ID][i] && m_dynSFXLists[SFX_CLIENTFXUSER_ID][i]->GetServerObj() == hObj)
+		{
+			m_dynSFXLists[SFX_CLIENTFXUSER_ID][i]->OnModelKey(hObj, pArgs);
+		}
+	}
+
+	nNumSFX = m_dynSFXLists[SFX_CLIENTFXANDACTIVATETYPE_ID].GetSize();
+
+	for (i=0; i < nNumSFX; i++)
+	{
+		if (m_dynSFXLists[SFX_CLIENTFXANDACTIVATETYPE_ID][i] && m_dynSFXLists[SFX_CLIENTFXANDACTIVATETYPE_ID][i]->GetServerObj() == hObj)
+		{
+			m_dynSFXLists[SFX_CLIENTFXANDACTIVATETYPE_ID][i]->OnModelKey(hObj, pArgs);
 		}
 	}
 }
