@@ -1338,6 +1338,19 @@ DEdit, and a failure gives LT_OK.
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Trigger.cpp
 returns the key plugin's result.
 
+### An AI sees a far target instantly
+
+Object.lto 0x101d8810 (CAISenseRecorderTools::ComplexVisibilityCheck,
+ObjectShared/AISenseRecorderGame.cpp). When the AI uses the instant see
+distance, a target outside of that distance must get a rate from its
+distance and the darkness. The code calculates this rate. Then, because an
+"else" is missing, it also runs the code for a target inside of the
+distance: it sets the rate to 99999999 (seen instantly). Thus only a hidden
+target outside of the personal bubble is not seen instantly.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
+AISenseRecorderGame.cpp has the "else".
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
