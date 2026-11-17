@@ -132,7 +132,9 @@ class AbstractTarget : public IRelationChangeObserver
 		// RETAIL: Tron's accessors first call Refresh (0x101dfd00).
 		HOBJECT GetVisionBlocker() { Refresh(); return m_hVisionBlocker; }
 
-        LTBOOL IsAttacking() const { return m_bAttacking; }
+		// RETAIL: Tron's first calls Refresh (CAIHumanStrategyCover::Update
+		// 0x10224ed7).
+        LTBOOL IsAttacking() { Refresh(); return m_bAttacking; }
 
 		void UpdateVisibility();
 
