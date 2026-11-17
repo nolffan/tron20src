@@ -208,6 +208,8 @@ class CAttachmentWeapon : public CAttachment
 
 		void CreateSpawnString(char* szSpawn);
 		void CreateAttachString(CAttachmentPosition* pAttachmentPosition, char* szAttach);
+		// RETAIL: Tron's (slot 0x14, 0x1018c800)
+		void TronUnknownVirtual14();
 
 		// Handlers
 

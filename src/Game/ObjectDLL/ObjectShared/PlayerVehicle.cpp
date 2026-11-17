@@ -21,13 +21,11 @@
 #include "PlayerObj.h"
 #include "KeyMgr.h"
 
-#include <queue>
 
 
 LINKFROM_MODULE( PlayerVehicle );
 
 
-PlayerVehicle::PlayerVehicleList PlayerVehicle::m_lstPlayerVehicles;
 
 
 // ----------------------------------------------------------------------- //
@@ -90,8 +88,8 @@ PlayerVehicle::PlayerVehicle() : Prop ()
 	m_fLastRideTime = 0;
 	m_bVirgin = true;
 
-	// Add this instance to a list of all bodies.
-	m_lstPlayerVehicles.push_back( this );
+	// PORT: NOLF2's list of all vehicles (and its cap on their number) is
+	// not in Tron (Object.lto 0x1017e1c0; no VehicleMaxNumber in retail)
 }
 
 // ----------------------------------------------------------------------- //
@@ -104,19 +102,7 @@ PlayerVehicle::PlayerVehicle() : Prop ()
 
 PlayerVehicle::~PlayerVehicle()
 {
-	// Erase this instance from the list of all playervehicles.
-	PlayerVehicleList::iterator it = m_lstPlayerVehicles.begin( );
-	while( it != m_lstPlayerVehicles.end( ))
-	{
-		if( *it == this )
-		{
-			m_lstPlayerVehicles.erase( it );
-			break;
-		}
-
-		it++;
-	}
-
+	// RETAIL: empty in Tron (0x1017e2d0)
 }
 
 // ----------------------------------------------------------------------- //
@@ -398,8 +384,6 @@ void PlayerVehicle::InitialUpdate()
 	g_pPhysicsLT->GetObjectDims(m_hObject, &m_vOriginalDims);
 
 	CreateSFXMsg();
-
-	CapNumberOfVehicles( );
 }
 
 // ----------------------------------------------------------------------- //
@@ -630,96 +614,6 @@ void PlayerVehicle::CreateSFXMsg()
     m_PlayerVehicleStruct.Write(cMsg);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 }
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	PlayerVehicle::CapNumberOfVehicles
-//
-//	PURPOSE:	Limit number of vehicles allows in level by
-//				removing the vehicle with the longest time since
-//				it was last ridden.
-//
-// ----------------------------------------------------------------------- //
-
-struct PlayerVehicleQueueEntry
-{
-	PlayerVehicle*	m_pVehicle;
-
-	bool operator()( PlayerVehicleQueueEntry const& a, PlayerVehicleQueueEntry const& b) const
-	{
-		// a should be considered "larger" than b if its age
-		// is less than b so it goes higher on the queue.
-		return a.m_pVehicle->GetLastRideTime( ) > b.m_pVehicle->GetLastRideTime( );
-	}
-};
-
-void PlayerVehicle::CapNumberOfVehicles( )
-{
-	std::priority_queue< PlayerVehicleQueueEntry, std::vector< PlayerVehicleQueueEntry >, PlayerVehicleQueueEntry > queueAge;
-
-	// Maximum number of vehicles allowed in level.  When we
-	// go above this number we try to remove old ones.
-	int nVehicleMaxNumber = GetConsoleInt( "VehicleMaxNumber", 12 );
-	nVehicleMaxNumber = Max( 0, nVehicleMaxNumber );
-
-	// Vehicle must not have been riden for this time before it gets zapped.
-	float fVehicleMinTimeout = GetConsoleFloat( "VehicleMinTimeout", 30.0f );
-	fVehicleMinTimeout = Max( 0.0f, fVehicleMinTimeout );
-
-	float fTime = g_pLTServer->GetTime( );
-
-	PlayerVehicleQueueEntry queueEntry;
-
-	// Iterate through the list of vehicles and put them into a
-	// priority queue.  Sorted by oldest at top of queue.
-	for( PlayerVehicleList::iterator iter = m_lstPlayerVehicles.begin( ); iter != m_lstPlayerVehicles.end( ); iter++ )
-	{
-		queueEntry.m_pVehicle = *iter;
-		if( !queueEntry.m_pVehicle )
-			continue;
-
-		// Don't remove playervehicles that have never been ridden.
-		if( queueEntry.m_pVehicle->m_bVirgin )
-			continue;
-
-		// Don't remove vehicles being ridden.
-		if( queueEntry.m_pVehicle->m_bRidden )
-			continue;
-
-		// Don't take a snowmobile too quickly.
-		if( fTime - queueEntry.m_pVehicle->GetLastRideTime( ) < fVehicleMinTimeout )
-			continue;
-
-		queueAge.push( queueEntry );
-	}
-
-	// Count how many we should remove from the world.
-	int nRemoveCount = ( int )m_lstPlayerVehicles.size( ) - nVehicleMaxNumber;
-	if( nRemoveCount <= 0 )
-		return;
-
-	// Don't remove more than we have.
-	nRemoveCount = Min(( int )queueAge.size( ), nRemoveCount );
-
-	// Check if we have any to remove.
-	if( !nRemoveCount )
-		return;
-
-	// Remove all the oldest vehicles until the count is good.
-	while( nRemoveCount-- )
-	{
-		// Get the oldest vehicle.
-		PlayerVehicleQueueEntry const& queueEntry = queueAge.top( );
-
-		// Remove vehicle.
-		g_pLTServer->RemoveObject( queueEntry.m_pVehicle->m_hObject );
-
-		// Go to the next farthest body.
-		queueAge.pop( );
-	}
-}
-
 
 
 LTRESULT CPlayerVehiclePlugin::PreHook_EditStringList(
