@@ -65,14 +65,7 @@ void CAIGoalSearch::ActivateGoal()
 
 	m_pAI->SetAwareness( kAware_Suspicious );
 
-	// Ensure that AIs alarm level is high enough that he will
-	// decide to search if he is disturbed after the scripted 
-	// search ends.
-
-	if( m_pAI->GetAlarmLevel() < m_pAI->GetBrain()->GetMajorAlarmThreshold() ) 
-	{
-		m_pAI->SetAlarmLevel( m_pAI->GetBrain()->GetMajorAlarmThreshold() + 1 );
-	}
+	// RETAIL: Tron's (0x101fca90) does not raise the alarm level
 
 	SetStateSearch();
 }
