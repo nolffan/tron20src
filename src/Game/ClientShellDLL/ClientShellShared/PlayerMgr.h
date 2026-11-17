@@ -21,7 +21,6 @@
 class CHeadBobMgr;
 class CCameraOffsetMgr;
 class CFlashLightPlayer;
-class CGadgetDisabler;
 class CSearcher;
 class CMoveMgr;
 class CVisionModeMgr;
@@ -102,7 +101,7 @@ public:
 	bool		GetTronUnknown1D8() const	{ return m_bTronUnknown1D8; }
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }
 	CTargetMgr*			GetTargetMgr()				{ return m_pTargetMgr; }
-	CGadgetDisabler*	GetGadgetDisabler()			{ return m_pGadgetDisabler;	}
+	CSearcher*			GetSearcher()				{ return m_pSearcher;	}
 	
 	bool		InSafetyNet()	const				{ return m_bInSafetyNet; }
 
@@ -131,7 +130,6 @@ public:
     LTBOOL      IsPlayerInWorld();
 
 	bool		IsSearching();
-	bool		IsDisabling();
 
 	bool		IsMouseStrafing()	const { return (m_bStrafing ? true : false); }
 
@@ -291,13 +289,8 @@ public:
 	void	StartDeathFX();
 	bool	IsDeathFXDone();
 
-	// PORT: NOLF2's gadget queries (TargetMgr, CMoveMgr use them); Tron's
-	// PlayerMgr has none
-	//returns the id of a gadget that has the specified damagetype
-	uint8	GetGadgetFromDamageType(DamageType eDamageType);
-
-	//returns whether the activate key should be treated as a fire key
-	bool	FireOnActivate();
+	// RETAIL: no NOLF2 gadget queries (GetGadgetFromDamageType,
+	// FireOnActivate): Tron's target manager tests the current ammo
 
 	// returns if the camera duck movement has stopped or not...
 	bool	IsFinishedDucking(bool bUp=true) const 
@@ -321,7 +314,6 @@ protected:
 	void	HandleMsgPlayerDamage			(ILTMessage_Read*);
 	void	HandleMsgPlayerOrientation		(ILTMessage_Read*);
     void    HandleMsgChangeWorldProperties	(ILTMessage_Read*);
-	void	HandleMsgGadgetTarget			(ILTMessage_Read*);
 	void	HandleMsgSearch					(ILTMessage_Read*);
 	void	HandleMsgAddPusher				(ILTMessage_Read*);
     void	HandleMsgObjectivesData			(ILTMessage_Read*);
@@ -388,8 +380,8 @@ protected:
 	CHeadBobMgr            *m_pHeadBobMgr;           // Handle head/weapon bob/cant
 	CCameraOffsetMgr       *m_pCameraOffsetMgr;      // Adjust camera orientation
 	CFlashLightPlayer      *m_pFlashLight;           // flash light for the player
-	CGadgetDisabler        *m_pGadgetDisabler;       // Handles the disabling of a gadget
-	// RETAIL: no searcher in Tron (PlayerMgr.cpp)
+	// RETAIL: Tron has a searcher in this slot and no gadget disabler
+	CSearcher              *m_pSearcher;             // Handles searching
 	CMoveMgr               *m_pMoveMgr;              // Always around...
 	CVisionModeMgr         *m_pVisionModeMgr;        // Controls the vision mode switching and updating
 	CAttachButeMgr         *m_pAttachButeMgr;

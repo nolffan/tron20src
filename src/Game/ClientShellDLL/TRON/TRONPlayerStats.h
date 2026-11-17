@@ -140,7 +140,6 @@ public:
 	// hiding (its file keeps no hide state): it can never hide.
 	LTBOOL		CanHide()			{ return LTFALSE; }
 	float		GetHideDuration()	{ return 0.0f; }
-	float		GetSkillModifier(eSkill skl, uint8 nMod);
 	void		ClearMissionInfo();
 
 	const RANK*	GetRank();

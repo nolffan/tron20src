@@ -72,12 +72,7 @@ void CTronTargetMgr::Update()
 			return;
 		}
 
-		//are we disabling a GadgetTarget?
-		if (g_pPlayerMgr->IsDisabling())
-		{
-			SetGadgetTarget( true );
-			return;
-		}
+		// RETAIL: no gadget disabling in Tron (no CGadgetDisabler)
 
 		//are we searching something?
 		if (g_pPlayerMgr->IsSearching())

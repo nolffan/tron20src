@@ -2551,8 +2551,7 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
 
-			//can't bring up chooser while disabling a gadget target
-			if (g_pPlayerMgr->IsDisabling()) return LTTRUE;
+			// RETAIL: no gadget disabling to wait for in Tron
 
 			if (m_AmmoChooser.IsOpen())
 			{
@@ -2592,8 +2591,7 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
 			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 
-			//can't bring up chooser while disabling a gadget target
-			if (g_pPlayerMgr->IsDisabling()) return LTTRUE;
+			// RETAIL: no gadget disabling to wait for in Tron
 
 			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
 
@@ -6036,8 +6034,7 @@ void CInterfaceMgr::NextWeapon(int nCommand)
 	IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 	if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return;
 
-	//can't bring up chooser while disabling a gadget target
-	if (g_pPlayerMgr->IsDisabling()) return;
+	// RETAIL: no gadget disabling to wait for in Tron
 
 	uint8 nClass = 0;
 	switch (nCommand)

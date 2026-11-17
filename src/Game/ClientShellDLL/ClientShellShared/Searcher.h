@@ -36,7 +36,7 @@ class CSearcher
 
 		bool	IsSearching() {return (m_bSearching &&  m_hTargetObj);}
 		
-		uint8	GetMaxProgress();
+		// RETAIL: no GetMaxProgress: Update has it inline (0x101c3ac6)
 
 	protected : // Members...
 

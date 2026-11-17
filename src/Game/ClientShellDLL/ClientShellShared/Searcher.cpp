@@ -36,6 +36,10 @@ extern VarTrack g_vtProgressBarScaleToSkills;
 
 void CSearcher::Update( )
 {
+	// RETAIL: Tron's (0x101c3900): the search speed is the player stats'
+	// search modifiers (their virtual at +0x150; NOLF2's skill modifier),
+	// GetMaxProgress is inline, and the HUD is not told to update.
+
 	// Are we actually searching something
 	if( !m_bSearching || !m_hTargetObj )
 	{
@@ -45,62 +49,67 @@ void CSearcher::Update( )
 	HOBJECT hTarget = m_hTargetObj;
 	if (m_hTargetHitBox) 
 		hTarget = m_hTargetHitBox;
-	HOBJECT hObj = g_pPlayerMgr->GetTargetMgr()->GetLockedTarget();
 
+	HOBJECT hObj = g_pPlayerMgr->GetTargetMgr()->GetLockedTarget();
 	bool bLookingAtTarget = (hObj == hTarget);
 	bool bInRange = (g_pPlayerMgr->GetTargetMgr()->IsTargetInRange());
 
-	float fSearchSkillEffect = g_pPlayerStats->GetSkillModifier(SKL_SEARCH,SearchModifiers::eSearchSpeed);
+	float fSearchSkillEffect = *(const float*)g_pPlayerStats->TronUnknownVirtual150();
 
 	m_fTimer -= g_pLTClient->GetFrameTime() * fSearchSkillEffect;
 	if (m_fTimer < 0.0f)
 		m_fTimer = 0.0f;
 
-
 	bool bButtonDown = !!g_pLTClient->IsCommandOn( COMMAND_ID_ACTIVATE);
 
 	// Do we still meet the requirements for searching?
+
 	if( m_fTimer <= 0.0f || !bButtonDown || !bLookingAtTarget || !bInRange )
 	{
-
 		// Send message to target with the amount of time left...
 
 		CAutoMessage cMsg;
-
 		cMsg.Writeuint8( MID_SEARCH );
 		cMsg.WriteObject( m_hTargetObj );
 		cMsg.Writefloat( m_fTimer);
 		g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 
 		// Stop searching...
+
 		m_bSearching	= false;
 		m_hTargetObj	= LTNULL;
 		m_hTargetHitBox	= LTNULL;
 		g_pPlayerMgr->GetTargetMgr()->LockTarget(NULL);
 
 		// Let the progress bar hide it's self...
-
+		
 		if( !bButtonDown || !bLookingAtTarget || !bInRange  )
 		{
 			m_bShowTimeBar	= false;
 			g_pPlayerStats->UpdateProgress( 0 );
-			g_pHUDMgr->QueueUpdate( kHUDProgressBar );
 		}
 	}
 
-	// Get the percentage of searching we have done
-	
-	uint8 nMaxProgress = GetMaxProgress();
-	uint8 nVal = uint8( ((m_fRemainingTime+m_fTimer) / m_fTotalTime) * nMaxProgress );
+	// Figure out the max allowable progress for the search bar...
+
+	uint8 nMaxProgress = 100;
+	if( g_vtProgressBarScaleToSkills.GetFloat() > 0.0f )
+	{
+		nMaxProgress = (fSearchSkillEffect > 0.0f ? uint8(100 / fSearchSkillEffect) : 0);
+	}
+
+	// Get the percentage of searching we have done (RETAIL: of 100)
+
+	uint8 nVal = uint8( ((m_fRemainingTime+m_fTimer) / m_fTotalTime) * 100 );
 
 	// Update the meter...
+
 	if( m_bShowTimeBar )
 	{
 		// Show the progress bar...
 
 		g_pPlayerStats->UpdateMaxProgress( g_vtProgressBarScaleToSkills.GetFloat() > 1.0f ? 100 : nMaxProgress );
 		g_pPlayerStats->UpdateProgress( nVal );
-		g_pHUDMgr->QueueUpdate( kHUDProgressBar );
 	}
 
 	if (!nVal)
@@ -182,23 +191,3 @@ void CSearcher::OnSearchMessage( ILTMessage_Read *pMsg )
 
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CSearcher::GetMaxProgress
-//
-//  PURPOSE:	Figure out the max allowable progress for the search bar...
-//
-// ----------------------------------------------------------------------- //
-
-uint8 CSearcher::GetMaxProgress()
-{
-	float fSearchSkillEffect = g_pPlayerStats->GetSkillModifier(SKL_SEARCH,SearchModifiers::eSearchSpeed);
-
-	uint8 nMaxProgress = 100;
-	if( g_vtProgressBarScaleToSkills.GetFloat() > 0.0f )
-	{
-		nMaxProgress = (fSearchSkillEffect > 0.0f ? uint8(100 / fSearchSkillEffect) : 0);
-	}
-	
-	return nMaxProgress;
-}

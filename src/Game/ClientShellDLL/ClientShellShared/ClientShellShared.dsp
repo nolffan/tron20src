@@ -342,10 +342,6 @@ SOURCE=..\..\Shared\FXStructs.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\GadgetDisabler.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\GadgetTargetFX.cpp
 # End Source File
 # Begin Source File
@@ -1189,10 +1185,6 @@ SOURCE=.\FlashLight.h
 # Begin Source File
 
 SOURCE=.\FullScreenTint.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\GadgetDisabler.h
 # End Source File
 # Begin Source File
 

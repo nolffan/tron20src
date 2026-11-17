@@ -665,9 +665,9 @@ void CTronPlayerMgr::UpdateCameraSway()
 	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
 
 	//Adjust for skills
-	// PORT: retail reads the player stats' virtual at +0x13c (a pointer to
-	// a float at +4) as CPlayerMgr does; not yet in ours
-	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
+	// RETAIL: the player stats' aim modifiers (their virtual at +0x13c): the
+	// zoom sway is the float at +4, as build 51's AimModifiers::fZoomSway
+	fMult *= ((const float*)g_pPlayerStats->TronUnknownVirtual13C())[1];
 
 	if (m_bTronUnknown211 && g_pSubroutineMgr->IsUtilitySubroutineActive("Triangulate"))
 	{

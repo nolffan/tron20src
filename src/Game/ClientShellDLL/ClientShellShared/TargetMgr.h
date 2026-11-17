@@ -48,10 +48,9 @@ public:
 
 
 	virtual bool IsGadgetActivatable(HOBJECT hObj);
-	bool IsTargetGadgetActivatable();	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 
-	//returns the damage type of the gadget required to disable the current target
-	DamageType	 RequiredGadgetDamageType();
+	// RETAIL: no NOLF2 gadget queries (IsTargetGadgetActivatable,
+	// RequiredGadgetDamageType): SetGadgetTarget tests the current ammo
 
 	//make sure specified object is considered a valid target regardless of it's current flags
 	virtual void LockTarget(HOBJECT hTarget) { m_hLockedTarget = hTarget; }

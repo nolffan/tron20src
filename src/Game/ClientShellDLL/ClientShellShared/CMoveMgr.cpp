@@ -32,7 +32,6 @@
 #include "ClientMultiplayerMgr.h"
 #include "ProfileMgr.h"
 #include "TargetMgr.h"
-#include "GadgetDisabler.h"
 #include "VolumeBrushFX.h"
 
 #define SPECTATOR_ACCELERATION			100000.0f
