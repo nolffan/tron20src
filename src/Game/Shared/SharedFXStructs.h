@@ -65,15 +65,24 @@ struct CHARCREATESTRUCT : public SFXCREATESTRUCT
     LTFLOAT         fStealthPercent;
 	uint8			nClientID;
 	CharacterClass	eCrosshairCharacterClass;
+	// RETAIL: Tron's struct is 0x60 bytes (CHARCREATESTRUCT::Read, CShell.dll
+	// 0x101aa900, Object.lto 0x10113280): the instant damage flags are here
+	// (+0x30, then the progressive ones), and NOLF2's carry, wake, tracking
+	// and radar members are not
+	DamageFlags		nInstantDamageFlags;
 	DamageFlags		nDamageFlags;				// What types of damage are cureently affecting us
 	float			fPitch;
-	bool			bCanCarry;
-	bool			bCanWake;
-	bool			bTracking;
-	bool			bRadarVisible;
 	LTVector		vHitBoxDims;
 	LTVector		vHitBoxOffset;
+	// RETAIL: +0x5c, the model's SupportsDamageFX (Read; the name is ours)
+	bool			bSupportsDamageFX;
+#ifndef _CLIENTBUILD
+	// PORT: NOLF2's, which the server still sets (Character.cpp,
+	// PlayerObj.cpp) but does not send: kept in retail's padding
+	bool			bTracking;
+	bool			bRadarVisible;
 	uint8			nCarrying;
+#endif
 };
 
 inline void CHARCREATESTRUCT::Clear()
@@ -88,14 +97,10 @@ inline void CHARCREATESTRUCT::Clear()
 	fStealthPercent				= 0.0f;
 	nClientID					= (uint8)-1;
 	eCrosshairCharacterClass	= UNKNOWN;
+	nInstantDamageFlags			= 0;
 	nDamageFlags				= 0;
 	fPitch						= 0.0f;
-	bCanCarry					= false;
-	bCanWake					= true;
-	bTracking					= false;
-	bRadarVisible				= false;
 	bIsCinematicAI				= false;
-	nCarrying					= CFX_CARRY_NONE;
 	
 	vHitBoxDims.Init();
 	vHitBoxOffset.Init();
