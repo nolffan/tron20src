@@ -142,7 +142,10 @@ void CAIHumanStateDisappearReappear::Update()
 				if( !g_pAIPathMgr->FindRandomPosition( GetAI(), GetAI()->GetLastVolume(), GetAI()->GetPosition(), fReappearDist, &m_vDestPos ) )
 				{
 					AITRACE( AIShowStates, ( GetAI()->m_hObject, "HumanStateDisappearReappear: Could not find random position %.2f dist away!.", fReappearDist ) );
-					m_vDestPos = GetAI()->GetPosition();
+
+					// RETAIL: 0x1022c730, Tron gives up the state.
+					m_eStateStatus = kSStat_StateComplete;
+					return;
 				}
 	
 				m_fDisappearTime = g_pLTServer->GetTime();
