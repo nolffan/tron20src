@@ -301,68 +301,77 @@ void CAIGoalPatrol::SetPatrolNode(AINodePatrol* pNode)
 
 void CAIGoalPatrol::LockPatrolPath(AINodePatrol* pNode, LTBOOL bLock)
 {
-	AINodePatrol* pNodeStart = pNode;
-	
-	static std::vector<AINodePatrol*> vVisited;
-	static std::vector<AINodePatrol*>::iterator it;
-	vVisited.clear();
+	// RETAIL: Tron's (0x102009a0): gather the path, then lock or unlock
+	// each node and set its owner.
 
-	LTBOOL bDone = LTFALSE;
-
-	// Lock all next nodes of NodeStart.
-
-	while( pNode && !bDone )
+	HOBJECT hOwner;
+	LTRESULT (AINode::*pfnLock)(HOBJECT);
+	if( bLock )
 	{
-		vVisited.push_back( pNode);
+		hOwner = m_pAI->GetUserObject();
+		pfnLock = &AINode::Lock;
+	}
+	else {
+		hOwner = LTNULL;
+		pfnLock = &AINode::Unlock;
+	}
 
-		if( bLock )
-		{
-			pNode->Lock( m_pAI->m_hObject );
-			pNode->SetNodeOwner( m_pAI->m_hObject );
-		}
-		else {
-			pNode->Unlock( m_pAI->m_hObject );
-			pNode->SetNodeOwner( LTNULL );
-		}
+	static std::vector<AINodePatrol*> vNodes( 30 );
+	vNodes.clear();
 
+	GatherPatrolPath( pNode, vNodes );
+
+	std::for_each( vNodes.begin(), vNodes.end(), std::bind2nd( std::mem_fun( pfnLock ), m_pAI->GetUserObject() ) );
+	std::for_each( vNodes.begin(), vNodes.end(), std::bind2nd( std::mem_fun( &AINode::SetNodeOwner ), hOwner ) );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalPatrol::GatherPatrolPath
+//
+//	PURPOSE:	RETAIL: Tron's (0x10200ab0; the name is ours): put the
+//				nodes of the patrol path in vNodes, the next nodes first,
+//				then the previous nodes. Stop at a loop.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalPatrol::GatherPatrolPath(AINodePatrol* pNodeStart, std::vector<AINodePatrol*>& vNodes)
+{
+	AINodePatrol* pNode = pNodeStart;
+	vNodes.clear();
+
+	std::vector<AINodePatrol*>::iterator it;
+
+	// All next nodes of NodeStart.
+
+	while( pNode )
+	{
+		vNodes.push_back( pNode );
 		pNode = pNode->GetNext();
 
 		// Check for loop.
-		for(it = vVisited.begin(); it != vVisited.end(); ++it)
+		it = std::find( vNodes.begin(), vNodes.end(), pNode );
+
+		if( vNodes.end() != it )
 		{
-			if( *it == pNode )
-			{
-				bDone = LTTRUE;
-				break;
-			}
+			break;
 		}
 	}
 
-	// Lock all previous nodes of NodeStart.
+	// All previous nodes of NodeStart.
+
 	pNode = pNodeStart->GetPrev();
 	while( pNode )
 	{
 		// Check for loop.
-		for(it = vVisited.begin(); it != vVisited.end(); ++it)
+		it = std::find( vNodes.begin(), vNodes.end(), pNode );
+
+		if( vNodes.end() != it )
 		{
-			if( *it == pNode )
-			{
-				return;
-			}
+			return;
 		}
 
-		vVisited.push_back( pNode);
-
-		if( bLock )
-		{
-			pNode->Lock( m_pAI->m_hObject );
-			pNode->SetNodeOwner( m_pAI->m_hObject );
-		}
-		else {
-			pNode->Unlock( m_pAI->m_hObject );
-			pNode->SetNodeOwner( LTNULL );
-		}
-
+		vNodes.push_back( pNode );
 		pNode = pNode->GetPrev();
 	}
 }

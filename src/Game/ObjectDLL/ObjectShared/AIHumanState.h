@@ -1514,4 +1514,19 @@ class CAIHumanStateLongJump : public CAIHumanState
 		LTBOOL			m_bCountAttackers;
 };
 
+// RETAIL: Tron's (RTTI; vtable 0x1029b468): the state of a Seeker that
+// goes down at a hitch node.
+
+class CAIHumanStateSeekerHitchDown : public CAIHumanState
+{
+	typedef CAIHumanState super;
+
+	public :
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateSeekerHitchDown, kState_HumanSeekerHitchDown);
+
+		// Update
+
+		void UpdateAnimation();
+};
+
 #endif

@@ -64,6 +64,9 @@ class CAIGoalPatrol : public CAIGoalAbstract
 		void LockPatrolPath(AINodePatrol* pNode, LTBOOL bLock);
 		void LockPatrolPath(AINodePatrol* pNode) { LockPatrolPath(pNode, LTTRUE); }
 		void UnlockPatrolPath(AINodePatrol* pNode) { LockPatrolPath(pNode, LTFALSE); }
+		// RETAIL: Tron's (0x10200ab0; the name is ours): the nodes of the
+		// patrol path, the next nodes first.
+		void GatherPatrolPath(AINodePatrol* pNode, std::vector<AINodePatrol*>& vNodes);
 
 	protected:
 

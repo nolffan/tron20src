@@ -59,6 +59,7 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateTail, kState_HumanTail);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateTalk, kState_HumanTalk);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateUseObject, kState_HumanUseObject);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateLongJump, kState_HumanLongJump);
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateSeekerHitchDown, kState_HumanSeekerHitchDown);	// RETAIL: Tron's
 
 
 // ----------------------------------------------------------------------- //
@@ -9737,4 +9738,19 @@ void CAIHumanStateLongJump::UpdateAnimation()
 			}
 			break;
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStateSeekerHitchDown::UpdateAnimation
+//
+//	PURPOSE:	RETAIL: Tron's (0x101f56e0): stand stunned. It does not
+//				call super::UpdateAnimation.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIHumanStateSeekerHitchDown::UpdateAnimation()
+{
+	GetAnimationContext()->SetProp(kAPG_Posture, kAP_Stand);
+	GetAnimationContext()->SetProp(kAPG_Action, kAP_Stunned);
 }
