@@ -501,12 +501,10 @@ void ModelDraw::QueueAllModelInfo()
 			//setup our light list
 			LightList.CreateDeviceLightList(InfoList.GetDeviceLightList(pInstance->m_nRenderInfoIndex));
 
-			//since we are also a root object, we should queue up shadows if appropriate
-			if (ShouldDrawShadows(pInstance, HookData))
-			{
-				//we want this model's shadows, queue away
-				CRenderShadowList::GetSingleton().QueueShadows(pInstance, LightList);
-			}
+			// PORT: NOLF2 queues the root model's shadows here
+			// (CRenderShadowList::QueueShadows). RETAIL: Tron does not
+			// (Lithtech.exe 0x552f26: the device light list, then the debug
+			// lights).
 
 			//handle rendering of debug lighting information
 			if (g_CV_ModelDebug_DrawTouchingLights || g_CV_DrawCastShadowLights) 
