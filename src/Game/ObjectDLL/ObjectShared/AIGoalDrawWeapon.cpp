@@ -53,8 +53,9 @@ void CAIGoalDrawWeapon::ActivateGoal()
 
 	// Bail if no holstered weapon, or already have a weapon armed.
 
-	if( ( !m_pAI->HasHolsterString() ) ||
-		( m_pAI->GetPrimaryWeapon() ) )
+	// RETAIL: 0x1020939c, Tron checks only the holster string.
+
+	if( !m_pAI->HasHolsterString() )
 	{
 		m_fCurImportance = 0.f;
 		return;
@@ -71,10 +72,9 @@ void CAIGoalDrawWeapon::ActivateGoal()
 
 	m_pAI->SetState( kState_HumanDraw );
 
-	if( m_pAI->GetAlarmLevel() >= m_pAI->GetBrain()->GetMajorAlarmThreshold() )
-	{
-		m_pAI->SetAwareness( kAware_Alert );
-	}
+	// RETAIL: 0x102093da, Tron's AI is always alert when it draws.
+
+	m_pAI->SetAwareness( kAware_Alert );
 
 	// If stimulated by an AI, target whatever he is targeting.
 
