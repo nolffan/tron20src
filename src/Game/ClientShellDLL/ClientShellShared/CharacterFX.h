@@ -157,6 +157,7 @@ class CCharacterFX : public CSpecialFX
 	protected :
 		// create or destroy all client effects attached to this character model
 		void CreateAttachClientFX();
+		void CreateChatIcon();		// RETAIL: 0x10179bb0 (the name is ours)
 		void RemoveAttachClientFX();
 
         void CreateUnderwaterFX(const LTVector & vPos);
@@ -213,7 +214,7 @@ class CCharacterFX : public CSpecialFX
 
 		void	KillLipSyncSound( bool bSendNotification );
 
-		void	UpdateCarrying();
+		LTBOOL	UpdateCarrying();
 
 
 		CFlashLight3rdPerson	m_3rdPersonFlashlight;	// Only used if fx is seen from 3rd person

@@ -2707,42 +2707,91 @@ void CCharacterFX::HideAttachClientFX()
 
 void CCharacterFX::CreateAttachClientFX()
 {
-	ASSERT( 0 != g_pClientFXMgr );
-	ASSERT( 0 != g_pModelButeMgr );
+	// RETAIL: 0x10179ab0: Tron's character keeps one icon object over its
+	// head (+0x231c), checked once a second (UpdateCarrying); the chat icon
+	// is the only one. PORT: NOLF2's model attached client FX are gone
+	if ( !m_pClientDE || !m_hServerObject ) return;
 
-	RemoveAttachClientFX();
-	
-	ModelId mModelId = GetModelId();
-
-	// Don't do attachments if the modelid is bad.  The Speaker object
-	// can have an invalid modelid.
-	if( mModelId == eModelIdInvalid )
-		return;
-
-	int nNumClientFX = g_pModelButeMgr->GetNumClientFX( mModelId );
-	for ( int i = 0; i < nNumClientFX ; ++i )
+	uint32 dwFlags;
+	g_pCommonLT->GetObjectFlags( m_hServerObject, OFT_Flags, dwFlags );
+	if ( !( dwFlags & FLAG_VISIBLE ) )
 	{
-		char const *pClientFXName = g_pModelButeMgr->GetClientFX( mModelId, i );
-		if ( pClientFXName && ( '\0' != pClientFXName[ 0 ] ) )
+		RemoveAttachClientFX();
+		return;
+	}
+
+	LTFLOAT fTime = m_pClientDE->GetTime();
+	if ( fTime > m_fTronUnknown2320 )
+	{
+		m_fTronUnknown2320 = 1.0f + fTime;
+
+		if ( UpdateCarrying() )
 		{
-			CLIENTFX_CREATESTRUCT fxInit( pClientFXName, FXFLAG_LOOP, m_hServerObject );
-
-			CLIENTFX_LINK_NODE* pNewNode = debug_new(CLIENTFX_LINK_NODE);
-
-			if(pNewNode)
+			switch ( m_nTronUnknown2324 )
 			{
-				g_pClientFXMgr->CreateClientFX( &pNewNode->m_Link, fxInit, true );
-				if ( pNewNode->m_Link.IsValid() ) 
-				{
-					// start out hidden
-					pNewNode->m_Link.GetInstance()->Hide();
-					
-					// add the link to the list
-					m_AttachClientFX.AddToEnd(pNewNode);
-				}
+				case 0:
+					RemoveAttachClientFX();
+					return;
+
+				case 1:
+					CreateChatIcon();
+					break;
 			}
 		}
 	}
+
+	if ( m_hTronUnknown231C )
+	{
+		LTVector vPos;
+		g_pLTClient->GetObjectPos( m_hServerObject, &vPos );
+
+		LTVector vDims;
+		g_pPhysicsLT->GetObjectDims( m_hServerObject, &vDims );
+
+		vPos.y = vDims.y + 20.0f + vPos.y;
+		g_pLTClient->SetObjectPos( m_hTronUnknown231C, &vPos, LTTRUE );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacterFX::CreateChatIcon
+//
+//	PURPOSE:	RETAIL: 0x10179bb0 (the name is ours): create the chat
+//				sprite over the head, or change the one there
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacterFX::CreateChatIcon()
+{
+	if ( !m_pClientDE || !g_pGameClientShell || !m_hServerObject ) return;
+
+	ObjectCreateStruct createStruct;
+	INIT_OBJECTCREATESTRUCT( createStruct );
+
+	char szSprite[128];
+	g_pClientButeMgr->GetSpecialFXAttributeString( "ChatSprite", szSprite, sizeof( szSprite ) );
+	LTFLOAT fScale = g_pClientButeMgr->GetSpecialFXAttributeFloat( "ChatScale" );
+	LTFLOAT fAlpha = g_pClientButeMgr->GetSpecialFXAttributeFloat( "ChatAlpha" );
+
+	SAFE_STRCPY( createStruct.m_Filename, szSprite );
+	createStruct.m_ObjectType = OT_SPRITE;
+	createStruct.m_Flags = FLAG_VISIBLE | FLAG_FOGDISABLE | FLAG_NOLIGHT;
+
+	if ( m_hTronUnknown231C )
+	{
+		g_pCommonLT->SetObjectFilenames( m_hTronUnknown231C, &createStruct );
+		g_pCommonLT->SetObjectFlags( m_hTronUnknown231C, OFT_Flags, createStruct.m_Flags, FLAGMASK_ALL );
+	}
+	else
+	{
+		m_hTronUnknown231C = m_pClientDE->CreateObject( &createStruct );
+		if ( !m_hTronUnknown231C ) return;
+	}
+
+	LTVector vScale( fScale, fScale, fScale );
+	m_pClientDE->SetObjectScale( m_hTronUnknown231C, &vScale );
+	m_pClientDE->SetObjectColor( m_hTronUnknown231C, 1.0f, 1.0f, 1.0f, fAlpha );
 }
 
 
@@ -2757,14 +2806,12 @@ void CCharacterFX::CreateAttachClientFX()
 
 void CCharacterFX::RemoveAttachClientFX()
 {
-	ASSERT( 0 != g_pClientFXMgr );
-
-	for ( CLIENTFX_LINK_NODE* pCurr = m_AttachClientFX.m_pNext; pCurr; pCurr = pCurr->m_pNext )
+	// RETAIL: 0x10179ee0: remove the icon over the head
+	if ( m_hTronUnknown231C )
 	{
-		if ( pCurr->m_Link.IsValid() )
-		{
-			g_pClientFXMgr->ShutdownClientFX( &pCurr->m_Link );
-		}
+		g_pLTClient->RemoveObject( m_hTronUnknown231C );
+		m_hTronUnknown231C = LTNULL;
+		m_nTronUnknown2324 = 0;
 	}
 }
 
@@ -3058,7 +3105,7 @@ void CCharacterFX::ResetPitchTracking()
 			g_pClientTrackedNodeMgr->SetOrientOnAnim( m_hLowerTorsoNode, true );
 		}
 
-		EnablePitch( true );
+		// RETAIL: Tron does not enable the pitch here (0x1017a580)
 	}
 
 	// Don't do tracking if the skeleton is bad.  The Speaker object
@@ -3286,11 +3333,48 @@ void CCharacterFX::ShutdownDamageFX()
 //
 // ----------------------------------------------------------------------- //
 
-void CCharacterFX::UpdateCarrying()
+LTBOOL CCharacterFX::UpdateCarrying()
 {
-	// we only care about the local player, so bail for anything else...
-	if( !m_cs.bIsPlayer) return;
-	if (m_hServerObject != g_pLTClient->GetClientObject()) return;
-	
-	g_pPlayerMgr->SetCarryingObject(m_cs.nCarrying);	// PORT: Tron's takes one argument
+	// RETAIL: 0x10179f10: which icon the head shows (+0x2324: 0 none, 1
+	// chat), for the other players only; true when it changed
+	CClientInfoMgr *pCIMgr = g_pInterfaceMgr->GetClientInfoMgr();
+	if ( !pCIMgr ) return LTFALSE;
+
+	CLIENT_INFO *pLocal = pCIMgr->GetLocalClient();
+	CLIENT_INFO *pInfo = pCIMgr->GetClientByID( m_cs.nClientID );
+
+	uint32 nOld = m_nTronUnknown2324;
+	uint32 nIcon = nOld;
+	if ( !pInfo || !pLocal )
+	{
+		m_nTronUnknown2324 = 0;
+		return ( nOld != 0 );
+	}
+
+	if ( pInfo->nID == pLocal->nID ) return LTFALSE;
+
+	LTBOOL bFound = LTFALSE;
+	uint32 nStart = nIcon;
+	do
+	{
+		switch ( ++nIcon )
+		{
+			case 1:
+				if ( m_cs.byFXFlags & CHARCREATESTRUCT::eChat )
+				{
+					bFound = LTTRUE;
+				}
+				break;
+
+			case 2:
+				nIcon = 0;
+				break;
+		}
+	}
+	while ( nIcon != nStart && !bFound );
+
+	if ( nIcon == nOld ) return LTFALSE;
+
+	m_nTronUnknown2324 = nIcon;
+	return LTTRUE;
 }
