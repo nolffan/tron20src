@@ -73,8 +73,7 @@ Controller::Controller() : GameBaseLite(true)
 
 bool Controller::ReadProp(ObjectCreateStruct *pStruct)
 {
-	if (!GameBaseLite::ReadProp(pStruct))
-		return false;
+	// RETAIL: Tron's does not read GameBaseLite's properties (0x102376d0)
 
 	// Get target object names.
 	for (uint32 i = 0; i < MAX_CONTROLLER_TARGETS; i++)
