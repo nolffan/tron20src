@@ -1277,6 +1277,10 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 {
 	if (g_pPlayerMgr->IsPlayerInWorld())
 	{
+		// RETAIL: 0x100c8d4a: not while the level is being left again
+		if (g_pMissionMgr->IsExitingLevel())
+			return;
+
 		// Make sure the loading screen isn't busy
 		if (m_pLoadingScreen)
 			m_pLoadingScreen->Pause();
@@ -1320,8 +1324,9 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 		}
 
 		MBCreate mb;
+		// RETAIL: 0x100c8e87: Tron's string 0x386
 		if( m_nLoadFailedMsgId == ( uint32 )-1 )
-			m_nLoadFailedMsgId = IDS_LOADGAMEFAILED;
+			m_nLoadFailedMsgId = 0x386;
 
         ShowMessageBox( m_nLoadFailedMsgId, &mb );
 	}
@@ -1431,16 +1436,10 @@ void CInterfaceMgr::UpdateSplashScreenState()
 	{
 		if (!bDidFadeOut && !m_hSplashSound)
 		{
-			// [KLS 7/28/02] See if it is time to start the fade out...
-			if (!g_SplashScreenTimer.On())
-			{
-				g_SplashScreenTimer.Start(g_vtSplashScreenTime.GetFloat());
-			}
-			else if (g_SplashScreenTimer.Stopped())
-			{
-				StartScreenFadeOut(g_vtSplashScreenFadeOut.GetFloat());
-				bDidFadeOut = LTTRUE;
-			}
+			// RETAIL: 0x100c911c: Tron fades out as soon as the sound is
+			// done (no splash screen timer)
+			StartScreenFadeOut(g_vtSplashScreenFadeOut.GetFloat());
+			bDidFadeOut = LTTRUE;
 		}
 	}
 	else if (bDidFadeOut && m_fCurFadeTime <= 0.0f)
@@ -1552,30 +1551,17 @@ void CInterfaceMgr::UpdateDemoScreenState()
 
     g_pLTClient->GetSurfaceDims(hScreen, &nWidth, &nHeight);
 
-    LTRect rcDst;
-	rcDst.Init(0, 0, nWidth, nHeight);
-
+	// RETAIL: 0x100c9406: Tron reads the demo screen's size, then scales
+	// the whole screen to the whole screen
     g_pLTClient->GetSurfaceDims(g_hDemo, &nWidth, &nHeight);
-
-    LTRect rcSrc;
-	rcSrc.Init(0, 0, nWidth, nHeight);
 
     g_pLTClient->Start3D();
     g_pLTClient->StartOptimized2D();
 
-	if (rcSrc.right > rcDst.right)
-	{
-	    g_pLTClient->ScaleSurfaceToSurface(hScreen, g_hDemo, &rcDst, &rcSrc);
-	}
-	else
-	{
-		int xDest = (rcDst.right - (int)nWidth) / 2;
-		int yDest = (rcDst.bottom - (int)nHeight) / 2;
-		g_pLTClient->DrawSurfaceToSurface(hScreen, g_hDemo, &rcSrc, xDest, yDest);
-	}
+    g_pLTClient->ScaleSurfaceToSurface(hScreen, g_hDemo, LTNULL, LTNULL);
 
     g_pLTClient->EndOptimized2D();
-    g_pLTClient->End3D();
+    g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4834,7 +4820,10 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
     uint32 dwWidth = 640, dwHeight = 480;
     g_pLTClient->GetSurfaceDims(hScreen, &dwWidth, &dwHeight);
 
-    HLTCOLOR hTransColor = g_pLTClient->SetupColor1(1.0f, 1.0f, 1.0f, LTTRUE);
+	// RETAIL: 0x100cd586: Tron fades to white when the fade's second
+	// argument was true
+    HLTCOLOR hTransColor = m_bTronUnknownFadeF4A0 ? SETRGB(0,0,0) : SETRGB(255,255,255);
+    HLTCOLOR hFadeColor = m_bTronUnknownFadeF4A0 ? SETRGB(255,255,255) : SETRGB(0,0,0);
 	
 	// Initialize the surface if necessary...
 
@@ -4849,7 +4838,7 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 		if (!m_hFadeSurface) return;
 
         g_pLTClient->SetSurfaceAlpha(m_hFadeSurface, 1.0f);
-        g_pLTClient->FillRect(m_hFadeSurface, &rcSrc, kBlack);
+        g_pLTClient->FillRect(m_hFadeSurface, &rcSrc, hFadeColor);
         g_pLTClient->OptimizeSurface(m_hFadeSurface, hTransColor);
 
 		m_fCurFadeTime = m_fTotalFadeTime;
@@ -4861,6 +4850,9 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 
 	if (m_hFadeSurface)
 	{
+		// RETAIL: 0x100cd665
+		g_pLTClient->StartOptimized2D();
+
 		LTFLOAT fTimeDelta = m_bFadeIn ? m_fCurFadeTime : (m_fTotalFadeTime - m_fCurFadeTime);
 
 		LTFLOAT fLinearAlpha = (fTimeDelta / m_fTotalFadeTime);
@@ -4883,6 +4875,8 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 		{
 			m_fCurFadeTime -= g_pGameClientShell->GetFrameTime();
 		}
+
+		g_pLTClient->EndOptimized2D();
 	}
 
 	// See if we're done...
@@ -6049,11 +6043,8 @@ void CInterfaceMgr::ShowMouseFX()
 
 void CInterfaceMgr::NextWeapon(int nCommand)
 {
-	CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-	IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-	if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return;
-
-	// RETAIL: no gadget disabling to wait for in Tron
+	// RETAIL: 0x100cfb90: Tron asks neither the weapons enabled nor a gadget
+	// disabling to wait for
 
 	uint8 nClass = 0;
 	switch (nCommand)

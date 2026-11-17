@@ -213,7 +213,9 @@ class CInterfaceMgr
 				g_pLTClient->GetSurfaceAlpha(m_hFadeSurface, fAlpha);
 				return (m_bFadeIn ? (fAlpha <= 0.0f) : (fAlpha >= 1.0f));
 			}
-			return LTTRUE;
+			// RETAIL: 0x100c8c32: without a fade surface, done once the
+			// fade has started
+			return m_bFadeInitialized;
 /*
 			int iAlpha = m_FadePoly.rgba.a;
 			return (m_bFadeIn ? (iAlpha <= 0) : (iAlpha >= 255));			
