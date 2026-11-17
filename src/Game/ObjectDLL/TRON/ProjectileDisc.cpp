@@ -32,6 +32,10 @@
 #include "PowerArmor.h"
 #include "CharacterHitBox.h"
 #include "IHitBoxUser.h"
+#include "SharedScoring.h"
+#include "CharacterAlignment.h"
+#include "AIUtils.h"
+#include "ModelButeMgr.h"
 
 //
 // LithTech Macros
@@ -145,6 +149,11 @@ enum DISC_TRACKING_STYLE
 // MPROJ_RETURNING (ObjectMessageFn 0x10037d90).  The names are ours
 #define MPROJ_DISC_TRONUNKNOWN14		14
 #define MPROJ_DISC_TRONUNKNOWN150		150
+
+
+// RETAIL: the impact type of a deadly block (ImpactType.h has no name for
+// it).  The name is ours
+#define DISC_IMPACT_TYPE_DEADLY_BLOCKED		3
 
 
 namespace
@@ -915,6 +924,376 @@ void CDisc::TronUnknownVirtual32()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CDisc::HandleDeadlyDeflectTouch()
+//
+//	PURPOSE:	RETAIL: 0x1003aea0: a deadly deflected disc smites the
+//				characters, their hit boxes and the finders it touches
+//				(once each); other solid objects end the deadly
+//				deflection.  Returns true when it smites.  The name is
+//				ours
+//
+// ----------------------------------------------------------------------- //
+
+bool CDisc::HandleDeadlyDeflectTouch( ProjectilePendingTouch *pTouch )
+{
+	HOBJECT hObj = pTouch->hObject;
+	if ( IsCharacter( hObj ) )
+	{
+		CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( hObj ) );
+		hObj = pCharacter->GetHitBoxObject();
+	}
+
+	HOBJECT hLastHitBox = LTNULL;
+
+	static HCLASS s_hFinderClass = g_pLTServer->GetClass( "Finder" );
+
+	HCLASS hClass = g_pLTServer->GetObjectClass( hObj );
+	if ( IsCharacter( m_hLastTouched ) )
+	{
+		CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( m_hLastTouched ) );
+		hLastHitBox = pCharacter->GetHitBoxObject();
+	}
+
+	if ( ( hObj == m_hLastTouched ) || ( hObj == hLastHitBox ) )
+	{
+		return false;
+	}
+
+	uint32 dwFlags;
+	g_pCommonLT->GetObjectFlags( hObj, OFT_Flags, dwFlags );
+
+	bool bHitBox = ( IsCharacterHitBox( hObj ) > 0 );
+	if ( !( dwFlags & FLAG_SOLID ) )
+	{
+		if ( !bHitBox )
+		{
+			return false;
+		}
+	}
+	else if ( !bHitBox && !IsCharacter( hObj ) && !g_pLTServer->IsKindOf( hClass, s_hFinderClass ) )
+	{
+		m_eDiscState = DISC_STATE_DEFLECTING;
+		return false;
+	}
+
+	SmiteObject( hObj );
+	m_hLastTouched = LTNULL;
+
+	return true;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::TronUnknownVirtual33()
+//
+//	PURPOSE:	RETAIL: slot 33 (0x1003b010): the new collision code's
+//				impact of the disc.  The owner catches a returning disc,
+//				the disc ricochets off the world and is blocked (2) or
+//				deadly blocked (3) by a defending character
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: the radius of the stimuli of a blocked disc (0x102946cc).  The
+// name is ours
+static LTFLOAT s_fDiscBlockedStimulusRadius = 2000.0f;
+
+bool CDisc::TronUnknownVirtual33( ProjectilePendingTouch *pTouch )
+{
+	bool bResult = CTronProjectile::TronUnknownVirtual33( pTouch );
+
+	// Check to see if our creator is still here before doing this -- we
+	// don't want to do anything if they're not
+	if ( !m_hFiredFrom )
+	{
+		return bResult;
+	}
+
+	SurfaceType eSurfaceType = GetSurfaceType( pTouch->collInfo );
+	if ( ST_INVISIBLE == eSurfaceType )
+	{
+		uint32 dwFlags;
+		g_pCommonLT->GetObjectFlags( pTouch->hObject, OFT_Flags, dwFlags );
+		if ( dwFlags & FLAG_SOLID )
+		{
+			return bResult;
+		}
+	}
+
+	bool bTouchTaken = false;
+
+	if ( DISC_STATE_RETURNING == m_eDiscState )
+	{
+		if ( IsMultiplayerGame() )
+		{
+			if ( IsAI( pTouch->hObject ) || IsMainWorld( pTouch->hObject ) )
+			{
+				// go through the world and the AIs on the way back
+				g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags,
+					FLAG_GOTHRUWORLD | FLAG_FULLPOSITIONRES,
+					FLAG_REMOVEIFOUTSIDE | FLAG_GOTHRUWORLD | FLAG_STAIRSTEP | FLAG_GRAVITY | FLAG_SOLID | FLAG_FULLPOSITIONRES );
+			}
+			else if ( pTouch->hObject == m_hFiredFrom )
+			{
+				// the disc is back with its owner
+				SendReturnedMessage();
+				return true;
+			}
+		}
+		else
+		{
+			if ( pTouch->hObject == m_hFiredFrom )
+			{
+				// the disc is back with its owner
+				SendReturnedMessage();
+				return true;
+			}
+
+			if ( IsCharacter( pTouch->hObject ) )
+			{
+				CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( pTouch->hObject ) );
+				if ( pCharacter->IsDefending() )
+				{
+					HandleDeflect();
+
+					// tell the character that it blocked the disc
+					CAutoMessage cMsg;
+					cMsg.Writeuint32( MID_PROJECTILE );
+					cMsg.Writeuint8( MPROJ_BLOCKED );
+					cMsg.Writeuint8( IMPACT_TYPE_BLOCKED );
+					g_pLTServer->SendToObject( cMsg.Read(), m_hObject, pTouch->hObject, MESSAGE_GUARANTEED );
+				}
+			}
+		}
+	}
+	else if ( DISC_STATE_TRONUNKNOWN3 == m_eDiscState )
+	{
+		bTouchTaken = HandleDeadlyDeflectTouch( pTouch );
+	}
+
+	LTVector vPos = pTouch->iInfo.m_Point;
+
+	int nImpactType = IMPACT_TYPE_IMPACT;
+
+	LTVector vNormal( 0.0f, 1.0f, 0.0f );
+
+	if ( pTouch->hObject )
+	{
+		if ( IsCharacter( pTouch->hObject ) )
+		{
+			CCharacter *pCharacter = dynamic_cast< CCharacter * >(
+					g_pLTServer->HandleToObject( pTouch->hObject )
+				);
+
+			if ( pCharacter->IsDefending() && IsBlockable() )
+			{
+				if ( IsPlayer( pTouch->hObject ) )
+				{
+					CTronPlayerObj *pPlayer = dynamic_cast< CTronPlayerObj* >( pCharacter );
+					if ( pPlayer->GetDefensePercentage( &m_vDir ) > 0.95f )
+					{
+						PlayerSubroutineSlot *pSlot = pPlayer->FindSubroutine( "Shield_prism" );
+						if ( ( pSlot && pSlot->nTronUnknown40 ) || IsDiscGameType() )
+						{
+							nImpactType = DISC_IMPACT_TYPE_DEADLY_BLOCKED;
+						}
+						else
+						{
+							nImpactType = IMPACT_TYPE_BLOCKED;
+						}
+					}
+				}
+				else
+				{
+					nImpactType = IMPACT_TYPE_BLOCKED;
+				}
+			}
+		}
+		else if ( dynamic_cast< ShellArmor* >( g_pLTServer->HandleToObject( pTouch->hObject ) ) )
+		{
+			nImpactType = IMPACT_TYPE_BLOCKED;
+		}
+
+		if ( ( IsMainWorld( pTouch->hObject ) || ( GetObjectType( pTouch->hObject ) == OT_WORLDMODEL ) ) &&
+		     ( m_fMaxRicochetAngle > 0.0f ) &&
+		     ( m_nMaxRicochets > m_nTotalRicochets ) )
+		{
+			LTVector vDir( pTouch->vLastVel.x, pTouch->vLastVel.y, pTouch->vLastVel.z );
+			vDir.Normalize();
+
+			vPos = pTouch->iInfo.m_Point - vDir;
+			eSurfaceType = GetSurfaceType( pTouch->iInfo );
+			vNormal = pTouch->iInfo.m_Plane.m_Normal;
+
+			LTFLOAT fAngleFromNormal;
+			LTVector vReversedNormal = -vNormal;
+			fAngleFromNormal = ltacosf( VEC_DOT( vReversedNormal, vDir ) );
+
+			if ( ( MATH_HALFPI - fAngleFromNormal ) < m_fMaxRicochetAngle )
+			{
+				// ricochet the disc
+
+				// increase the ricochet count
+				m_nTotalRicochets += 1;
+
+				// reflect the direction
+				LTVector vReflectedDir;
+				vReflectedDir = vDir - 2 * vNormal * ( VEC_DOT( vDir, vNormal ) );
+
+				AMMO const *pAmmo;
+				if ( IsPlayer( m_hFiredFrom ) && IsDiscGameType() )
+				{
+					pAmmo = g_pWeaponMgr->GetAmmo( "DiscEnergy" );
+				}
+				else
+				{
+					pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
+				}
+
+				if ( !pAmmo )
+				{
+					return bResult;
+				}
+
+				// normalize and scale to velocity
+				LTVector vNewVel = vReflectedDir;
+				vNewVel *= static_cast< LTFLOAT >( pAmmo->pProjectileFX->nVelocity );
+
+				// keep track of the update num to prevent multiple ricochets in the same frame
+				m_nLastRicochetUpdateNum = m_nUpdateNum;
+
+				// set the new speed
+				g_pPhysicsLT->SetVelocity( m_hObject, &vNewVel );
+
+				m_vFirePos = vPos;
+				m_vDir = vReflectedDir;
+
+				// do all the impact work
+				AddImpact( pTouch->hObject, m_vFlashPos, vPos, vNormal, eSurfaceType, IMPACT_TYPE_RICOCHET );
+
+				if ( !bTouchTaken && pTouch->hObject && IsBlockable() )
+				{
+					ImpactDamageObject( m_hFiredFrom, pTouch->hObject );
+				}
+
+				// RETAIL: debug output that the retail build keeps (it is
+				// not printed)
+				LTVector vDims;
+				g_pPhysicsLT->GetObjectDims( m_hObject, &vDims );
+
+				LTFLOAT fDimsXY = ( LTFLOAT )sqrt( vDims.x * vDims.x + vDims.y * vDims.y );
+				LTFLOAT fMaxDim = ( LTFLOAT )sqrt( fDimsXY * fDimsXY + vDims.z * vDims.z );
+
+				uint32 dwFlags;
+				g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags );
+
+				char szDebug[128];
+				sprintf( szDebug, "flags: 0x%08x,max dim: %f,pt: %5.3f %5.3f %5.3f,vDir: %5.3f %5.3f %5.3f",
+					dwFlags, fMaxDim,
+					pTouch->iInfo.m_Point.x, pTouch->iInfo.m_Point.y, pTouch->iInfo.m_Point.z,
+					vDir.x, vDir.y, vDir.z );
+
+				// move back out of the world by the disc's size
+				LTVector vNewPos = -vDir * fMaxDim + pTouch->iInfo.m_Point;
+				g_pLTServer->TeleportObject( m_hObject, &vNewPos );
+
+				LTVector vNewestPos;
+				g_pLTServer->GetObjectPos( m_hObject, &vNewestPos );
+				sprintf( szDebug, "--newest pos: %5.3f %5.3f %5.3f", vNewestPos.x, vNewestPos.y, vNewestPos.z );
+
+				return bResult;
+			}
+		}
+	}
+	else
+	{
+		eSurfaceType = ST_AIR;
+	}
+
+	if ( eSurfaceType == ST_UNKNOWN )
+	{
+		eSurfaceType = GetSurfaceType( pTouch->hObject );
+	}
+
+	AddImpact( pTouch->hObject, m_vFlashPos, vPos, vNormal, eSurfaceType, ( IMPACT_TYPE )nImpactType, false );
+
+	// Do the damage
+	if ( pTouch->hObject && IsBlockable() )
+	{
+		bool bBlocked = ( ( IMPACT_TYPE_BLOCKED == nImpactType ) || ( DISC_IMPACT_TYPE_DEADLY_BLOCKED == nImpactType ) );
+
+		// RETAIL: a blocked disc damages only players
+		if ( !bTouchTaken && ( !bBlocked || IsPlayer( pTouch->hObject ) ) )
+		{
+			HOBJECT hDamager = m_hFiredFrom ? m_hFiredFrom : LTObjRef( m_hObject );
+			ImpactDamageObject( hDamager, pTouch->hObject );
+		}
+	}
+
+	if ( IsDiscReturning() || IsDiscDeflecting() )
+	{
+		return bResult;
+	}
+
+	if ( ( IMPACT_TYPE_BLOCKED != nImpactType ) && ( DISC_IMPACT_TYPE_DEADLY_BLOCKED != nImpactType ) )
+	{
+		if ( m_bReturnToOwner )
+		{
+			EnterReturnMode( pTouch->hObject );
+		}
+		else if ( !pTouch->hObject )
+		{
+			DestroyInFlight();
+		}
+		else
+		{
+			RemoveObject();
+		}
+
+		return bResult;
+	}
+
+	// the AIs hear the block
+	if ( pTouch->hObject && IsCharacter( pTouch->hObject ) )
+	{
+		CCharacter *pCharacter = ( CCharacter* )g_pLTServer->HandleToObject( pTouch->hObject );
+		if ( pCharacter )
+		{
+			g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyWeaponFireSound, pCharacter->GetUserObject(),
+				pCharacter->GetRelationData(), pTouch->vLastPos, s_fDiscBlockedStimulusRadius, 1.0f );
+			g_pAIStimulusMgr->RegisterStimulus( kStim_AllyWeaponFireSound, pCharacter->GetUserObject(),
+				pCharacter->GetRelationData(), pTouch->vLastPos, s_fDiscBlockedStimulusRadius, 1.0f );
+			g_pAIStimulusMgr->RegisterStimulus( kStim_ProhibitedWeaponFireSound, pCharacter->GetUserObject(),
+				pCharacter->GetRelationData(), pTouch->vLastPos, s_fDiscBlockedStimulusRadius, 1.0f );
+		}
+	}
+
+	if ( DISC_IMPACT_TYPE_DEADLY_BLOCKED == nImpactType )
+	{
+		// PORT: Tron sends the disc back at its owner here (0x10039c30,
+		// state 3; it reads the Shield_prism subroutine data, which
+		// CSubroutineDataMgr does not give out yet).  The normal
+		// deflection stands in.
+		HandleDeflect();
+	}
+	else
+	{
+		HandleDeflect();
+	}
+
+	// tell the character that it blocked the disc
+	CAutoMessage cMsg;
+	cMsg.Writeuint32( MID_PROJECTILE );
+	cMsg.Writeuint8( MPROJ_BLOCKED );
+	cMsg.Writeuint8( nImpactType );
+	g_pLTServer->SendToObject( cMsg.Read(), m_hObject, pTouch->hObject, MESSAGE_GUARANTEED );
+
+	return bResult;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CDisc::AddImpact()
 //
 //	PURPOSE:	RETAIL: 0x10038010
@@ -1284,6 +1663,221 @@ bool CDisc::UpdateMagneticHoming( LTVector *pvDir, LTVector const *pvTronUnknown
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	AutoAimFilterFn()
+//
+//	PURPOSE:	RETAIL: 0x1003ac60: the auto aim's line of sight test hits
+//				solid objects that are not in the list (a copy of
+//				ProjectileTypes' MoveToFloorFilterFn).  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+static bool AutoAimFilterFn( HOBJECT hTest, void *pUserData )
+{
+	// First filter out objects in the list...
+
+	if ( ObjListFilterFn( hTest, pUserData ) )
+	{
+		// then the line of sight is blocked by solid objects only
+
+		uint32 dwFlags;
+		g_pCommonLT->GetObjectFlags( hTest, OFT_Flags, dwFlags );
+		if ( dwFlags & FLAG_SOLID )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsAutoAimTarget()
+//
+//	PURPOSE:	RETAIL: 0x1003aca0: a player's disc aims at the players of
+//				other teams in a disc game, at the characters that its
+//				owner hates and at finders.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+static bool IsAutoAimTarget( HOBJECT hFiredFrom, HOBJECT hObj )
+{
+	if ( !hObj || ( hObj == hFiredFrom ) )
+	{
+		return false;
+	}
+
+	if ( !IsPlayer( hFiredFrom ) )
+	{
+		return false;
+	}
+
+	if ( IsDiscGameType() && IsPlayer( hObj ) )
+	{
+		CPlayerObj *pFiredFrom = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( hFiredFrom ) );
+		CPlayerObj *pPlayer = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( hObj ) );
+		if ( !pFiredFrom || !pPlayer )
+		{
+			return false;
+		}
+
+		uint32 nFiredFromID = g_pLTServer->GetClientID( pFiredFrom->GetClient() );
+		uint32 nPlayerID = g_pLTServer->GetClientID( pPlayer->GetClient() );
+
+		int nFiredFromTeam = g_pTronTeamMgr->GetTeamOfClient( nFiredFromID );
+		int nPlayerTeam = g_pTronTeamMgr->GetTeamOfClient( nPlayerID );
+
+		// players with no team are everyone's targets
+		if ( ( TRON_MAX_TEAMS == nFiredFromTeam ) || ( TRON_MAX_TEAMS == nPlayerTeam ) )
+		{
+			return true;
+		}
+
+		return ( nFiredFromTeam != nPlayerTeam );
+	}
+
+	if ( IsCharacter( hObj ) )
+	{
+		CCharacter *pFiredFrom = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( hFiredFrom ) );
+		CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( hObj ) );
+		if ( !pFiredFrom || !pCharacter )
+		{
+			return false;
+		}
+
+		return ( HATE == GetAlignment( pFiredFrom->GetRelationSet(), pCharacter->GetRelationData() ) );
+	}
+
+	return IsKindOf( hObj, "Finder" ) ? true : false;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::AcquireAutoAimTarget()
+//
+//	PURPOSE:	RETAIL: 0x1003a780: when the disc is out of the auto aim
+//				radius of its owner, home in on the nearest target in that
+//				radius that the disc can see.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+bool CDisc::AcquireAutoAimTarget()
+{
+	if ( !m_bTronUnknown9E4 || m_hObjectTarget )
+	{
+		return false;
+	}
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+	LTFLOAT fRadius = g_vtDiscAutoAimRadius.GetFloat();
+
+	LTVector vOwnerPos;
+	g_pLTServer->GetObjectPos( m_hFiredFrom, &vOwnerPos );
+	if ( ( vOwnerPos - vPos ).Mag() <= fRadius )
+	{
+		return false;
+	}
+
+	ObjectList *pList = g_pLTServer->FindObjectsTouchingSphere( &vPos, fRadius );
+	HOBJECT hTarget = LTNULL;
+	if ( pList )
+	{
+		LTFLOAT fNearest = fRadius;
+		for ( ObjectLink *pLink = pList->m_pFirstLink; pLink; pLink = pLink->m_pNext )
+		{
+			if ( !IsAutoAimTarget( m_hFiredFrom, pLink->m_hObject ) )
+			{
+				continue;
+			}
+
+			LTVector vTargetPos;
+			g_pLTServer->GetObjectPos( pLink->m_hObject, &vTargetPos );
+
+			LTFLOAT fDist = ( vTargetPos - vPos ).Mag();
+			if ( fDist >= fNearest )
+			{
+				continue;
+			}
+
+			// can the disc see it?
+			IntersectInfo iInfo;
+			IntersectQuery qInfo;
+
+			CCharacter *pCharacter = IsCharacter( pLink->m_hObject ) ?
+				dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( pLink->m_hObject ) ) : LTNULL;
+			HOBJECT hHitBox = pCharacter ? pCharacter->GetHitBoxObject() : LTNULL;
+
+			HOBJECT ahIgnore[] = { m_hObject, m_hFiredFrom, pLink->m_hObject, hHitBox, LTNULL };
+
+			qInfo.m_From = vPos;
+			qInfo.m_To = vTargetPos;
+			qInfo.m_Flags = INTERSECT_HPOLY | INTERSECT_OBJECTS | IGNORE_NONSOLID;
+			qInfo.m_FilterFn = AutoAimFilterFn;
+			qInfo.m_pUserData = ahIgnore;
+
+			if ( !g_pLTServer->IntersectSegment( &qInfo, &iInfo ) )
+			{
+				fNearest = fDist;
+				hTarget = pLink->m_hObject;
+			}
+		}
+
+		g_pLTServer->RelinquishList( pList );
+	}
+
+	if ( hTarget )
+	{
+		ClearDebugInfo();
+		ShowDebugTarget( hTarget );
+
+		// home in on it
+		m_eDiscState = DISC_STATE_FLYING;
+		m_eTrackingMode = DISC_TRACKING_MODE_HOMING;
+		m_hObjectTarget = hTarget;
+		m_bNewTarget = true;
+		m_eTrackingStyle = DISC_TRACKING_STYLE_STRAIGHT_FOR_TARGET;
+
+		AMMO const *pAmmo;
+		if ( IsPlayer( m_hFiredFrom ) && IsDiscGameType() )
+		{
+			pAmmo = g_pWeaponMgr->GetAmmo( "DiscEnergy" );
+		}
+		else
+		{
+			pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
+		}
+
+		if ( !pAmmo || !pAmmo->pProjectileFX )
+		{
+			return false;
+		}
+
+		DISCCLASSDATA *pDiscClassData = dynamic_cast< DISCCLASSDATA* >( pAmmo->pProjectileFX->pClassData );
+		if ( !pDiscClassData )
+		{
+			return false;
+		}
+
+		m_fTurnRate = g_vtDiscAutoAimTurnMult.GetFloat() * pDiscClassData->fTurnRate;
+		m_fIncidentAngleToControlLine = g_vtDiscAutoAimAngleMult.GetFloat() * pDiscClassData->fIncidentAngleToControlLine;
+		m_fIncidentAngleToControlLineDecay = g_vtDiscAutoAimAngleDecayMult.GetFloat() * pDiscClassData->fIncidentAngleToControlLineDecay;
+		m_fTargetAngleTrackThreshold = ( LTFLOAT )cos( pDiscClassData->fTargetAngleTrackThreshold );
+		m_fLostTargetFlightTime = pDiscClassData->fLostTargetFlightTime;
+
+		return true;
+	}
+
+	ClearDebugInfo();
+	return false;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CDisc::ShowDebugTarget()
 //
 //	PURPOSE:	RETAIL: 0x1026abb0 (folded): the body is empty in the
@@ -1394,6 +1988,71 @@ void CDisc::SendReturnedMessage()
 	}
 
 	RemoveObject();
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::SmiteObject()
+//
+//	PURPOSE:	RETAIL: 0x1003d1b0: a deadly deflected disc hits an
+//				object.  A character that allows the disk spike takes
+//				the power block damage of the one who deflected the disc;
+//				others take the disc's damage.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CDisc::SmiteObject( HOBJECT hObj )
+{
+	CCharacter *pCharacter = LTNULL;
+	if ( IsCharacterHitBox( hObj ) )
+	{
+		CCharacterHitBox *pHitBox = ( CCharacterHitBox* )g_pLTServer->HandleToObject( hObj );
+		HOBJECT hModel = pHitBox->GetModelObject();
+		if ( IsCharacter( hModel ) )
+		{
+			pCharacter = ( CCharacter* )g_pLTServer->HandleToObject( hModel );
+		}
+	}
+	else if ( IsCharacter( hObj ) )
+	{
+		pCharacter = ( CCharacter* )g_pLTServer->HandleToObject( hObj );
+	}
+
+	if ( pCharacter )
+	{
+		if ( !pCharacter->AllowDiskSpike() )
+		{
+			ImpactDamageObject( m_hFiredFrom, hObj );
+		}
+		else
+		{
+			pCharacter->SetModelNodeLastHit( g_pModelButeMgr->GetSkeletonDefaultHitNode( pCharacter->GetModelSkeleton() ) );
+
+			DamageStruct damage;
+			damage.eType = DT_POWERBLOCK;
+			damage.fDamage = m_fTronUnknownA0C;
+			damage.hDamager = m_hLastTouched;
+			damage.DoDamage( this, hObj );
+		}
+	}
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+	LTRotation rRot;
+	g_pLTServer->GetObjectRotation( m_hObject, &rRot );
+
+	DISCCLASSDATA *pDiscClassData;
+	if ( m_pAmmoData )
+	{
+		pDiscClassData = dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
+	}
+
+	PlayClientFX( pDiscClassData->szDeadlyDeflectSmiteFXName, LTNULL, &vPos, &rRot, 0 );
+
+	m_eDiscState = DISC_STATE_DEFLECTING;
+	m_bCanTouchFiredFromObj = true;
 }
 
 
@@ -1532,9 +2191,6 @@ void CDisc::HandleTouch( HOBJECT hObj )
 //
 // ----------------------------------------------------------------------- //
 
-// RETAIL: the impact type of a deadly block (ImpactType.h has no name for
-// it).  The name is ours
-#define DISC_IMPACT_TYPE_DEADLY_BLOCKED		3
 
 void CDisc::HandleImpact( HOBJECT hObj )
 {
@@ -1976,21 +2632,124 @@ bool CDisc::UpdateStateFlying()
 
 bool CDisc::UpdateStateDeflecting()
 {
-	// [kml] 4/2/02 Commenting this out as per DanO's request
-	// get the current time
-	/*int nCurrentServerTime =
-		static_cast< int >( g_pLTServer->GetTime() * 1000.0f );
-
-	// get the length of the deflection
-	int nDeflectDuration = 1000;
-
-	if ( nCurrentServerTime > ( m_nDeflectServerTimeStart + nDeflectDuration ) )
+	// RETAIL: 0x1003c790.  The deflection ends after its time: the disc
+	// returns (or is destroyed when it does not return to its owner)
+	if ( GetDeflectElapsedTime() >= m_fTronUnknown990 )
 	{
-		EnterReturnMode();
+		if ( m_bReturnToOwner )
+		{
+			EnterReturnMode( LTNULL );
+		}
+		else
+		{
+			DestroyInFlight();
+		}
+
 		return true;
-	}*/
+	}
+
+	if ( m_bDeflectAdjust )
+	{
+		// move the disc along the deflection's spiral
+		LTVector vOffset( 0.0f, 0.0f, 0.0f );
+		GetDeflectOffset( &vOffset,
+		                  m_fDeflectInitialRadius,
+		                  m_fDeflectFinalRadius,
+		                  m_fDeflectDistance,
+		                  m_fDeflectAngularSpeed,
+		                  GetDeflectElapsedTime(),
+		                  m_fDeflectTotalTime );
+
+		LTMatrix mRot;
+		m_rDeflectRot.ConvertToMatrix( mRot );
+
+		// RETAIL: 0x1003c8bb calls MatVMul_H out of line; ours inlines it
+		LTVector vPos = mRot * vOffset + m_vDeflectPos;
+		g_pLTServer->MoveObject( m_hObject, &vPos );
+	}
 
 	return true;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::GetControlPosition()
+//
+//	PURPOSE:	RETAIL: 0x1003c570: the object's position, moved up by a
+//				part of its height (console variable
+//				DiscHomingControlYOffsetPercent).  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+LTVector CDisc::GetControlPosition( HOBJECT hObj )
+{
+	LTVector vDims;
+	g_pPhysicsLT->GetObjectDims( hObj, &vDims );
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( hObj, &vPos );
+
+	vPos.y += g_vtDiscHomingControlYOffsetPercent.GetFloat() * vDims.y;
+
+	return vPos;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::GetTargetPosition()
+//
+//	PURPOSE:	RETAIL: 0x1003c5f0: the point of the target that the disc
+//				flies at.  A player's disc keeps its height inside the
+//				target's dims (except for finders); an AI's disc aims at
+//				a part of the target's height.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+LTVector CDisc::GetTargetPosition()
+{
+	if ( !m_hObjectTarget )
+	{
+		return LTVector( 0.0f, 0.0f, 0.0f );
+	}
+
+	LTVector vTargetPos;
+	g_pLTServer->GetObjectPos( m_hObjectTarget, &vTargetPos );
+
+	LTVector vDims;
+	g_pPhysicsLT->GetObjectDims( m_hObjectTarget, &vDims );
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+	if ( IsPlayer( m_hFiredFrom ) )
+	{
+		if ( !IsKindOf( m_hObjectTarget, "Finder" ) )
+		{
+			LTFLOAT fTop = vTargetPos.y + vDims.y;
+			LTFLOAT fBottom = vTargetPos.y - vDims.y;
+
+			if ( vPos.y < fBottom )
+			{
+				vTargetPos.y = g_vtDiscAutoAimTargetFeetOffset.GetFloat() + fBottom;
+			}
+			else if ( vPos.y > fTop )
+			{
+				vTargetPos.y = g_vtDiscAutoAimTargetHeadOffset.GetFloat() + fTop;
+			}
+			else
+			{
+				vTargetPos.y = vPos.y;
+			}
+		}
+	}
+	else
+	{
+		vTargetPos.y += g_vtDiscHomingTargetYOffsetPercent.GetFloat() * vDims.y;
+	}
+
+	return vTargetPos;
 }
 
 
@@ -2005,16 +2764,12 @@ bool CDisc::UpdateStateDeflecting()
 //----------------------------------------------------------------------------
 LTVector CDisc::GetReturnToPosition(const LTVector& vOffset)
 {
-	// pointer check
-	ASSERT( 0 != g_pLTServer );
-	ASSERT( 0 != g_pPhysicsLT );
-	ASSERT( 0 != g_pModelLT );
+	// RETAIL: 0x1003c910.  Tron's has neither the asserts nor the test of
+	// the socket against the owner's dims (it still reads the dims)
 
 	// Get the position of the owner
-	LTRESULT ltResult;
 	LTVector vOwnerOrigin;
-	ltResult = g_pLTServer->GetObjectPos( m_hFiredFrom, &vOwnerOrigin );
-	ASSERT( LT_OK == ltResult );
+	g_pLTServer->GetObjectPos( m_hFiredFrom, &vOwnerOrigin );
 
 	// Get the default position to return to
 	LTVector vDefaultPosition = vOwnerOrigin + vOffset;
@@ -2024,8 +2779,7 @@ LTVector CDisc::GetReturnToPosition(const LTVector& vOffset)
 	{
 		// Get the position of the Socket
 		LTransform transform;
-		LTRESULT SocketTransform = g_pModelLT->GetSocketTransform(m_hFiredFrom, m_hReturnToSocket, transform, LTTRUE);
-		ASSERT( SocketTransform == LT_OK );
+		g_pModelLT->GetSocketTransform(m_hFiredFrom, m_hReturnToSocket, transform, LTTRUE);
 		LTVector vSocketPos = transform.m_Pos;
 
 		// Get the name of the currently playing animation
@@ -2036,41 +2790,7 @@ LTVector CDisc::GetReturnToPosition(const LTVector& vOffset)
 
 		LTVector vDims;
 		g_pCommonLT->GetModelAnimUserDims(m_hFiredFrom, &vDims, hAnim );
-		ASSERT( ltResult == LT_OK );
 
-		// See if the socket position is inside the touch box.
-		// If it is not, then we have a problem as the return may fail, so if
-		// the position is outside the box, then attempt to return to the
-		// default position instead
-		if (vSocketPos.x > vOwnerOrigin.x+vDims.x || 
-			vSocketPos.x < vOwnerOrigin.x-vDims.x ||
-			vSocketPos.y > vOwnerOrigin.y+vDims.y ||
-			vSocketPos.y < vOwnerOrigin.y-vDims.y ||
-			vSocketPos.z > vOwnerOrigin.z+vDims.z ||
-			vSocketPos.z < vOwnerOrigin.z-vDims.z )
-		{
-			// Get the name of the model
-			const int MODEL_LEN = 128;
-			char szFileName[MODEL_LEN];
-			char szSkinName[MODEL_LEN];
-			g_pModelLT->GetFilenames(m_hFiredFrom, szFileName, MODEL_LEN, szSkinName, MODEL_LEN);
-
-			// Get the name of the currently playing animation
-			ANIMTRACKERID nTracker;
-			g_pModelLT->GetMainTracker(m_hFiredFrom, nTracker);
-			HMODELANIM hAnim;
-			g_pModelLT->GetCurAnim(m_hFiredFrom, nTracker, hAnim );
-
-			// Print out an error so that it can be corrected.
-			char szError[1024];
-			sprintf( szError, "Return to node outside dims: Model: %s Anim: %d", szFileName, hAnim );
-			g_pLTServer->CPrint( szError );
-		
-			// Set the position we are going to be returning to back to a 
-			// known safe location -- the owners position if this happens
-			vSocketPos = vDefaultPosition;
-		}
-	
 		// Okay, lets go with the socket position...
 		return vSocketPos;
 	}
