@@ -12,6 +12,12 @@
 #include "FXButeMgr.h"
 #include "WeaponMgr.h"
 
+namespace
+{
+	// also defined in ClientWeapon.cpp;
+	HMODELANIM const INVALID_ANI = ( static_cast< HMODELANIM >( -1 ) );
+}
+
 // RETAIL: 0x10017870
 CClientWeaponBall::CClientWeaponBall()
 	: CTronClientWeapon(),
@@ -36,6 +42,123 @@ void CClientWeaponBall::Save( ILTMessage_Write *pMsg )
 {
 	pMsg->Writefloat( m_fFireKeyDownTime - g_pLTClient->GetTime() );
 	CTronClientWeapon::Save( pMsg );
+}
+
+// RETAIL: 0x10017910: CTronClientWeapon's, but the main fire animation
+// holds while the fire key is down (it loops after the pre-fire one), and
+// a finished post-fire animation starts the next shot
+bool CClientWeaponBall::PlayFireAnimation( bool bResetAni )
+{
+	uint32 dwAni			= g_pLTClient->GetModelAnimation(m_hObject);
+	uint32 dwState			= g_pLTClient->GetModelPlaybackState(m_hObject);
+
+	uint32 dwPreFireAni		= GetPreFireAni();
+	uint32 dwFireAni		= GetFireAni( m_eLastFireType );
+	uint32 dwPostFireAni	= GetPostFireAni();
+
+	bool bHasPreFireAni		= !!(INVALID_ANI != dwPreFireAni);
+	bool bHasFireAni		= !!(INVALID_ANI != dwFireAni);
+	bool bHasPostFireAni	= !!(INVALID_ANI != dwPostFireAni);
+
+	bool bIsFireAni			= IsFireAni( dwAni );
+
+	bool bIsMainFireAni		= IsFireAni( dwAni, true );
+	bool bIsPreFireAni		= IsPreFireAni( dwAni );
+	bool bIsPostFireAni		= IsPostFireAni( dwAni );
+
+	bool bIsCurAniDone		= !!(dwState & MS_PLAYDONE);
+
+	float fRate = 1.0f;
+
+	if ( !bIsFireAni )
+	{
+		if ( bResetAni )
+		{
+			if ( bHasPreFireAni )
+			{
+				SaveShotSubroutines();
+				PlayAnimation( dwPreFireAni, true, fRate );
+				return true;
+			}
+
+			if ( bHasFireAni )
+			{
+				SaveShotSubroutines();
+				PlayAnimation( dwFireAni, true, fRate );
+				return true;
+			}
+
+			if ( bHasPostFireAni )
+			{
+				SaveShotSubroutines();
+				PlayAnimation( dwPostFireAni, true, fRate );
+				return true;
+			}
+
+			return false;
+		}
+	}
+	else if ( bIsPreFireAni && bIsCurAniDone )
+	{
+		if ( bResetAni )
+		{
+			if ( bHasFireAni )
+			{
+				PlayAnimation( dwFireAni, true, fRate, true );
+				return true;
+			}
+		}
+		else if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, fRate );
+			return true;
+		}
+	}
+	else if ( bIsMainFireAni )
+	{
+		if ( bResetAni )
+		{
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, fRate );
+			return true;
+		}
+	}
+	else if ( !bIsCurAniDone )
+	{
+		return true;
+	}
+
+	DoSpecialEndFire();
+
+	if ( bIsPostFireAni && bResetAni && bIsCurAniDone )
+	{
+		if ( bHasPreFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwPreFireAni, true, fRate );
+			return true;
+		}
+
+		if ( bHasFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwFireAni, true, fRate );
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwPostFireAni, true, fRate );
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // RETAIL: 0x10017b70

@@ -52,9 +52,13 @@
 #include "HUDDiscMatches.h"
 #include "HUDDiscScores.h"
 
+#include "HUDDistance.h"
+
 //******************************************************************************************
 //** Tron HUD Manager
 //******************************************************************************************
+// RETAIL: Tron's layout (0x11eec bytes: constructor 0x1009adb0, destructor
+// 0x1009b240). Some items are members, some are newed by the constructor.
 class CTronHUDMgr: public CHUDMgr
 {
 public:
@@ -71,52 +75,55 @@ public:
 
 protected:
 
-	CHUDCrosshair		m_Crosshair;
-	// RETAIL: retail has no CHUDWeapons; its disc match stats stand here
-	// (PORT: their place in the class is not yet retail's)
-	CHUDMatchStats		m_MatchStats;
-
-	// New Tron items
-	CHUDPermissions		m_Permissions;
-	CHUDVersion			m_Version;
-	CHUDHealthEnergy	m_HealthEnergy;
-	CHUDArmor			m_Armor;
-	CHUDEnergyTransfer	m_EnergyTrans;
-	CHUDProgress		m_Progress;
-	CHUDWpnChooser		m_WpnChooser;
-	CHUDAmmoChooser		m_AmmoChooser;
-	CHUDWeapon			m_Weapon;
-
-	// RETAIL: Tron's retail-only items. PORT: their place in the class is
-	// not yet retail's (retail 0x1009b240's constructor and 0x1009ba50's
-	// AddItems: the pings at +0xb418, the profiler at +0xca28)
-	CHUDDamageDir				m_DamageDir;
-	CHUDBuildNoteCount			m_BuildNoteCount;
-	CHUDIOCamera				m_IOCamera;
-	CHUDSingleString			m_SingleString;
-	CHUDLightCycleLives			m_LightCycleLives;
-	CHUDLightCyclePowerupIcon	m_LightCyclePowerupIcon;
-	CHUDLightCycleRoster		m_LightCycleRoster;
-	CHUDPings					m_Pings;
-	CHUDProcedurals				m_Procedurals;
-	CHUDSubChooser				m_SubChooser;
-	CHUDProfiler				m_Profiler;
-	CHUDSecurityCamera			m_SecurityCamera;
-
-	// RETAIL: newed by the constructor (0x1009af48..0x1009afdf: +0x115a8,
-	// +0x115ac, +0x115b0), deleted by the destructor; Init points the
-	// globals at them (0x1009b9b0)
-	CHUDScores*					m_pScores;
-	CHUDDiscScores*				m_pDiscScores;
-	CHUDDiscMatches*			m_pDiscMatches;
-
-	// RETAIL: Tron's decision window (retail +0xce64, after the profiler;
-	// g_pTronDecision points at it). PORT: at the end until the class is
-	// retail's
-	CHUDTronDecision			m_TronDecision;
-	CHUDLightCycleSpeedometer	m_LightCycleSpeedometer;
-	CHUDLightCycleCircuitIntro	m_LightCycleCircuitIntro;
+	CHUDCrosshair*				m_pCrosshair;				// +0x3580
+	CHUDPermissions				m_Permissions;				// +0x3584
+	CHUDVersion*				m_pVersion;					// +0x38b8
+	CHUDHealthEnergy			m_HealthEnergy;				// +0x38bc
+	CHUDArmor					m_Armor;					// +0x3d1c
+	CHUDEnergyTransfer			m_EnergyTrans;				// +0x407c
+	CHUDProgress				m_Progress;					// +0x41bc
+	// PORT: retail's CHUDProgress is 0x2c54 bytes; the pad goes when ours is
+	char						m_aTronPadProgress[0x2c54 - sizeof(CHUDProgress)];
+	CHUDWpnChooser				m_WpnChooser;				// +0x6e10
+	CHUDWeapon					m_Weapon;					// +0xb328
+	CHUDPings					m_Pings;					// +0xb418
+	CHUDIOCamera				m_IOCamera;					// +0xb834
+	CHUDSubChooser				m_SubChooser;				// +0xbb54
+	CHUDProfiler				m_Profiler;					// +0xca28
+	CHUDTronDecision			m_TronDecision;				// +0xce64
+	CHUDAnnouncementMsgQueue*	m_pAnnouncementMsgs;		// +0x111f0
+	CHUDMultiAnnouncementMsgQueue*	m_pMultiAnnouncementMsgs;	// +0x111f4
+	CHUDSecurityCamera			m_SecurityCamera;			// +0x111f8
+	CHUDMatchStats				m_MatchStats;				// +0x11344
+	CHUDSingleString			m_SingleString;				// +0x11578
+	CHUDScores*					m_pScores;					// +0x115a8
+	CHUDDiscScores*				m_pDiscScores;				// +0x115ac
+	CHUDDiscMatches*			m_pDiscMatches;				// +0x115b0
+	CHUDProcedurals				m_Procedurals;				// +0x115b4
+	CHUDDamageDir				m_DamageDir;				// +0x11a30
+	CHUDLightCycleRoster*		m_pLightCycleRoster;		// +0x11ed0
+	CHUDLightCyclePowerupIcon*	m_pLightCyclePowerupIcon;	// +0x11ed4
+	CHUDLightCycleSpeedometer*	m_pLightCycleSpeedometer;	// +0x11ed8
+	CHUDLightCycleLives*		m_pLightCycleLives;			// +0x11edc
+	CHUDLightCycleCircuitIntro*	m_pLightCycleCircuitIntro;	// +0x11ee0
+	CHUDBuildNoteCount*			m_pBuildNoteCount;			// +0x11ee4
+	CHUDDistance*				m_pDistance;				// +0x11ee8
 };
-extern CHUDCrosshair*		g_pCrosshair;
+
+// RETAIL: the HUD manager's globals (0x1026edb8..0x1026ee30): Init points
+// them at the items, the destructor clears them. The names are ours.
+extern CHUDCrosshair*				g_pCrosshair;
+extern CHUDPermissions*				g_pPermissions;
+extern CHUDVersion*					g_pVersion;
+extern CHUDHealthEnergy*			g_pHealthEnergy;
+extern CHUDArmor*					g_pArmor;
+extern CHUDWeapon*					g_pWeaponItem;
+extern CHUDSubChooser*				g_pSubChooser;
+extern CHUDAnnouncementMsgQueue*	g_pAnnouncementMsgs;
+extern CHUDMultiAnnouncementMsgQueue*	g_pMultiAnnouncementMsgs;
+extern CHUDProcedurals*				g_pProcedurals;
+extern CHUDLightCyclePowerupIcon*	g_pLightCyclePowerupIcon;
+extern CHUDLightCycleSpeedometer*	g_pLightCycleSpeedometer;
+extern CHUDBuildNoteCount*			g_pBuildNoteCount;
 
 #endif // __TRONHUDMGR_H

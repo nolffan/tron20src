@@ -5,7 +5,6 @@
 // PURPOSE : Tron's client-side ball weapon (retail only: RTTI
 //           .?AVCClientWeaponBall@@, vtable 0x101e57cc; CShell.dll
 //           0x10017670..0x10017c1f).  Member names are ours.
-//           Not yet written: PlayFireAnimation (0x10017910).
 //
 // ----------------------------------------------------------------------- //
 
@@ -24,6 +23,9 @@ public:
 	virtual void  Save( ILTMessage_Write *pMsg );
 
 protected:
+	// RETAIL: 0x10017910
+	virtual bool  PlayFireAnimation( bool bResetAni );
+
 	virtual void  HandleFireKeyDownTransition();
 	// RETAIL: 0x10017b90
 	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );

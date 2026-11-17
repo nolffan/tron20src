@@ -22,6 +22,7 @@
 #include "ClientLightCycleMgr.h"
 #include "DiscMatchMgr.h"
 #include "TronCDKey.h"
+#include "TronClientMultiplayerMgr.h"
 #include "LightCycleMatchMgr.h"
 #include "TronMissionMgr.h"
 
@@ -78,6 +79,7 @@ class CTronGameClientShell : public CGameClientShell
 		CTronPlayerMgr				m_PlayerMgr;		// Player manager
 		CTronMissionButeMgr			m_MissionButeMgr;	// Same as g_pMissionButeMgr
 		CClientLightCycleMgr		m_LightCycleMgr;	// Same as g_pLightCycleMgr (RETAIL: +0x32e00)
+		TronClientMultiplayerMgr	m_ClientMultiplayerMgr;	// Same as g_pClientMultiplayerMgr (RETAIL: +0x35644)
 		CDiscMatchMgr				m_DiscMatchMgr;		// Same as g_pDiscMatchMgr (RETAIL: +0x3695c)
 		CLightCycleMatchMgr			m_LightCycleMatchMgr;	// Same as g_pLightCycleMatchMgr (RETAIL: +0x3696c)
 

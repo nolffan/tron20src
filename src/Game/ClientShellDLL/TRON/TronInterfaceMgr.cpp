@@ -44,10 +44,9 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	typedef char TronCheckWeaponChooser[offsetof(CTronInterfaceMgr, m_WeaponChooser) == 0x26790 ? 1 : -1];
 	typedef char TronCheckSize[sizeof(CTronInterfaceMgr) == 0x29490 ? 1 : -1];
 
-	// PORT: retail points CInterfaceMgr's loading screen (+0xf8e4) at its
-	// CTronLoadingScreen (+0x28b24, 0x1009cb97), not yet written; ours
-	// allocates NOLF2's (bigger than retail's, it does not fit there)
-	SetLoadingScreen(debug_new(CLoadingScreen));
+	// RETAIL: CInterfaceMgr's loading screen (+0xf8e4) is the member
+	// (0x1009cb97)
+	SetLoadingScreen(&m_LoadingScreen);
 
 	m_pTurnArrowLeft = LTNULL;
 	m_pTurnArrowRight = LTNULL;
@@ -81,10 +80,6 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 CTronInterfaceMgr::~CTronInterfaceMgr()
 {
 	ClearTronRecords();
-
-	// PORT: ours allocates the loading screen (see the constructor)
-	debug_delete(GetLoadingScreen());
-	SetLoadingScreen(LTNULL);
 }
 
 // ----------------------------------------------------------------------- //

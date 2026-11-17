@@ -157,14 +157,50 @@ void CHUDSubChooser::Render()
 	}
 }
 
-// RETAIL: 0x1003bad0
+// RETAIL: 0x1003bad0: the available subroutines in columns at the right
+// of the screen, from the procedurals' top down to the armor's; each name
+// left of its box. When the progress display is on, the next column also
+// leaves room for the names.
 void CHUDSubChooser::Arrange()
 {
-	// PORT: stand-in. Retail lays the available subroutines out in a column
-	// at the right of the screen (its width less 42), from below one HUD
-	// item (the item at retail's 0x1026ee10, its +0x40) down to above
-	// another (0x1026edc8, its +0x14), each name left of its box, starting
-	// a new column when one is full: neither item is in the tree yet
+	float fX = (float)(m_nScreenWidth - 42);
+	float fY = 0.0f;
+	int nMaxWidth = 0;
+	float fTop = (float)g_pProcedurals->m_nTop;
+	float fBottom = g_pArmor->m_fLayoutScale;
+
+	for (int i = 0; i < m_nNumSubs; i++)
+	{
+		if (!m_bAvailable[i]) continue;
+
+		float y = fY + fTop;
+		g_pDrawPrim->SetXYWH(&m_Icon[i], fX, y, (float)m_BoxSize.x, (float)m_BoxSize.y);
+		g_pDrawPrim->SetXYWH(&m_Back[i], fX, y, (float)m_BoxSize.x, (float)m_BoxSize.y);
+		g_pDrawPrim->SetXYWH(&m_BadBack[i], fX, y, (float)m_BoxSize.x, (float)m_BoxSize.y);
+
+		if (m_pText[i])
+		{
+			int nWidth, nHeight;
+			m_pText[i]->GetDims(&nWidth, &nHeight);
+			int nOffset = (int)(((float)m_CursorSize.y - (float)nHeight) * -0.5f);
+			m_pText[i]->SetPosition((int)fX - nWidth - 8, (int)fY - nOffset + (int)fTop);
+			if (nWidth > nMaxWidth)
+				nMaxWidth = nWidth;
+		}
+
+		fY += (float)m_nSpacing;
+		if ((float)m_BoxSize.y + fY + fTop >= fBottom)
+		{
+			// the next column
+			fX -= (float)(m_BoxSize.x + 8);
+			fY = 0.0f;
+			if (g_pLTClient->IsCommandOn(COMMAND_ID_TOGGLE_PROGRESS))
+			{
+				fX -= (float)(nMaxWidth + 8);
+				nMaxWidth = 0;
+			}
+		}
+	}
 }
 
 // RETAIL: 0x1003bd10

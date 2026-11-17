@@ -121,6 +121,10 @@ protected :
 
 private:
 
+	// RETAIL: Tron's handshake (0x10096ac0) uses the key, the password and
+	// the disconnect flag
+	friend class TronClientMultiplayerMgr;
+
 	// Must be filled out before StartLocalGame, StartNetworkGameAsXXX calls.
 	StartGameRequest	m_StartGameRequest;
 	ServerGameOptions	m_ServerGameOptions;

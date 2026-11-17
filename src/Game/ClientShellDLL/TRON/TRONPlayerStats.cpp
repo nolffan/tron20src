@@ -1773,16 +1773,16 @@ void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 	g_pHUDMgr->QueueUpdate(kHUDArmor);
 }
 
-// RETAIL: 0x100ac160 (the name is ours)
-bool CTronPlayerStats::AddPing(const char* szName)
-{
-	return m_IONodeMgr.AddPing(szName);
-}
-
 // RETAIL: 0x100ac140 (the name is ours)
 IONODEPING* CTronPlayerStats::GetPing(int nIndex)
 {
 	return m_IONodeMgr.GetPing(nIndex);
+}
+
+// RETAIL: 0x100ac160 (the name is ours)
+bool CTronPlayerStats::AddPing(const char* szName)
+{
+	return m_IONodeMgr.AddPing(szName);
 }
 
 // RETAIL: 0x100ac180

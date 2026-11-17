@@ -83,6 +83,11 @@ void CTronTargetMgr::Update()
 		}
 	}
 
+	// RETAIL: the old target and whether its properties were kept
+	// (0x100ae66f)
+	bool bOldProps = m_Props.bTronUnknown424;
+	HOBJECT hOldTarget = m_hTarget;
+
 	//clear our targeting info
 	m_hTarget = NULL;
 	m_fTargetRange = 10000.0f;
@@ -102,8 +107,20 @@ void CTronTargetMgr::Update()
 	//see what we've looking at
 	float fDistAway = 10000.0f;
 	CheckForIntersect(fDistAway);
+
+	// RETAIL: the target's properties go when the player manager no
+	// longer wants them (0x100ae97a), when there is no target (but there
+	// was one) and when the target is out of their range
+	if (!g_pTronPlayerMgr->GetTronUnknown204())
+		ClearTargetProperties();
 	if (!m_hTarget) //nothing to see here
+	{
+		if (hOldTarget || bOldProps)
+			ClearTargetProperties();
 		return;
+	}
+	if (g_pTronPlayerMgr->GetTronUnknown20C() < fDistAway)
+		ClearTargetProperties();
 	m_fTargetRange = fDistAway;
 
 
@@ -306,6 +323,21 @@ void CTronTargetMgr::Update()
 //				about an object under the crosshair
 //
 // ----------------------------------------------------------------------- //
+// RETAIL: the target text's concatenation (as the engine's LTStrCat, the
+// destination's length taken first). The name is ours.
+static inline void TronTargetStrCat(char *pDest, const char *pSrc, uint32 destBytes)
+{
+	uint32 destLen = strlen(pDest);
+	uint32 catLen = destBytes - destLen - 1;
+	strncat(pDest, pSrc, catLen);
+	pDest[destLen + catLen] = '\0';
+}
+
+// RETAIL: 0x100af220. Tron's properties: what the target needs (energy,
+// permissions and two others: strings 3801, 3805, 3807, 3809 unless the
+// target set its own string), its info string, a subroutine's or a
+// bin's kind (strings 3259, 3261, 3262) and Tron's subroutine details, the
+// text of which the HUD shows (strings 3288..3310)
 void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 {
 	// discard props if the crosshair is not over anything anymore
@@ -322,9 +354,9 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 		return;
 
 	// if it is, then see what useful information we can grab from it
-	uint8 nProps = pMsg->Readuint8();
+	int nProps = (int)pMsg->Readuint8();
 
-	for (int i = 0; i < nProps; i++)
+	for (int i = nProps; i > 0; i--)
 	{
 		uint16 iThrowaway = pMsg->Readuint16(); // length of submessage was passed.  Ignore.
 
@@ -336,13 +368,186 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 			{
 				m_bEnergyRequired = true;
 				m_nEnergyRequired = pMsg->Readuint32();
-				// Note that we don't need to queue an update to the crosshair because it
-				// automatically updates every frame
+				if (!m_bTronUnknown860)
+					SetTargetStringID(IDS_TRANSFER_ENERGY);
 				break;
 			}
 
 		case TARGET_PROP_HEALTH:
 			{
+				m_bTronUnknown85D = true;
+				m_nTronUnknown868 = pMsg->Readuint32();
+				if (!m_bTronUnknown860)
+					SetTargetStringID(3805);
+				break;
+			}
+
+		case 3:
+			{
+				m_bTronUnknown85E = true;
+				m_nTronUnknown86C = pMsg->Readuint32();
+				if (!m_bTronUnknown860)
+					SetTargetStringID(3807);
+				break;
+			}
+
+		case 4:
+			{
+				m_bTronUnknown85F = true;
+				m_nTronUnknown870 = pMsg->Readuint32();
+				if (!m_bTronUnknown860)
+					SetTargetStringID(3809);
+				break;
+			}
+
+		case 9:
+			{
+				// RETAIL: the properties come in this order (a pair's
+				// second half first)
+				LTVector vEntries(0.0f, 0.0f, 0.0f);
+				uint16* pEntries = (uint16*)&vEntries;
+				uint16 n0 = pMsg->Readuint16();
+				uint16 n4 = pMsg->Readuint16();
+				uint16 n5 = pMsg->Readuint16();
+				uint16 n6 = pMsg->Readuint16();
+				uint16 n7 = pMsg->Readuint16();
+				uint16 n2 = pMsg->Readuint16();
+				uint16 n1 = pMsg->Readuint16();
+				uint16 n3 = pMsg->Readuint16();
+				pEntries[1] = pMsg->Readuint16();
+				pEntries[0] = pMsg->Readuint16();
+				pEntries[3] = pMsg->Readuint16();
+				pEntries[2] = pMsg->Readuint16();
+				pEntries[5] = pMsg->Readuint16();
+				pEntries[4] = pMsg->Readuint16();
+
+				uint16* an = m_Props.anTronUnknown0;
+				if (an[0] == n0 && an[1] == n1 && an[2] == n2 && an[3] == n3 &&
+					an[4] == n4 && an[5] == n5 && an[6] == n6 && an[7] == n7)
+					break;
+
+				an[1] = n1;
+				an[2] = n2;
+				an[5] = n5;
+				an[3] = n3;
+				an[6] = n6;
+				an[7] = n7;
+				an[0] = n0;
+				m_Props.vTronUnknown10 = vEntries;
+				an[4] = n4;
+				g_pHUDMgr->QueueUpdate(kHUDScores);	// RETAIL: 0x100000
+
+				char* pszText = m_Props.szText;
+				pszText[0] = 0;
+
+				char szTmp[128];
+				if (an[0])
+				{
+					const char* pszName = LoadTempString(an[0]);
+					if (!pszName[0])
+						FormatString(3289, szTmp, sizeof(szTmp), an[0]);
+					else
+						FormatString(3288, szTmp, sizeof(szTmp), LoadTempString(an[0]));
+					TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+				}
+
+				if (an[4] && an[5])
+				{
+					if (an[4] == 0xFFFF)
+					{
+						TronTargetStrCat(pszText, LoadTempString(3309), sizeof(m_Props.szText));
+					}
+					else
+					{
+						FormatString(3290, szTmp, sizeof(szTmp), an[4], an[5]);
+						TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+					}
+				}
+
+				if (g_pTronPlayerMgr->m_nTronUnknown208 > 0)
+				{
+					if (an[6] && an[7])
+					{
+						FormatString(3291, szTmp, sizeof(szTmp), an[6], an[7]);
+						TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+					}
+
+					if (an[1])
+					{
+						FormatString(3296, szTmp, sizeof(szTmp), LoadTempString(an[1]));
+						TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+					}
+
+					if (g_pTronPlayerMgr->m_nTronUnknown208 > 1)
+					{
+						uint16* pEntry = (uint16*)&m_Props.vTronUnknown10;
+						for (int j = 3; j > 0; j--, pEntry += 2)
+						{
+							if (pEntry[1] == 0)
+							{
+								FormatString(3293, szTmp, sizeof(szTmp), LoadTempString(pEntry[0]));
+								TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+							}
+							else if (pEntry[1] == 3)
+							{
+								FormatString(3294, szTmp, sizeof(szTmp), pEntry[0]);
+								TronTargetStrCat(pszText, szTmp, sizeof(m_Props.szText));
+							}
+						}
+					}
+				}
+				break;
+			}
+
+		case TARGET_PROP_INFO_STRING:
+			{
+				m_Props.nTronUnknown420 = pMsg->Readuint32();
+				SetTargetStringID((uint16)m_Props.nTronUnknown420);
+				m_bTronUnknown860 = true;
+				break;
+			}
+
+		case 7:
+			{
+				uint8 nKind = pMsg->Readuint8();
+				if (nKind == 1)
+				{
+					m_nString = (uint16)pMsg->Readuint32();
+					if (m_nString)
+					{
+						FormatString(3259, m_szString, sizeof(m_szString));
+						TronTargetStrCat(m_szString, LoadTempString(m_nString), sizeof(m_szString));
+					}
+					else
+						FormatString(3259, m_szString, sizeof(m_szString));
+				}
+				else if (nKind == 2)
+				{
+					m_nString = (uint16)pMsg->Readuint32();
+					if (m_nString)
+					{
+						FormatString(3261, m_szString, sizeof(m_szString));
+						TronTargetStrCat(m_szString, LoadTempString(m_nString), sizeof(m_szString));
+					}
+					else
+						FormatString(3261, m_szString, sizeof(m_szString));
+				}
+				else if (nKind == 3)
+				{
+					m_nString = (uint16)pMsg->Readuint32();
+					if (m_nString)
+					{
+						FormatString(3262, m_szString, sizeof(m_szString));
+						TronTargetStrCat(m_szString, LoadTempString(m_nString), sizeof(m_szString));
+					}
+					else
+						FormatString(3262, m_szString, sizeof(m_szString));
+				}
+				else
+				{
+					m_szString[0] = 0;
+					m_nString = 0;
+				}
 				break;
 			}
 

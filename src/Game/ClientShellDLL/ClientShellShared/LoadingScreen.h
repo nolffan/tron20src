@@ -78,7 +78,9 @@ public:
 	//is loading a new mission?
 	bool	NeedsPostLoadScreen() const;
 
-	void	UpdateMissionInfo();
+	// RETAIL: virtual in Tron (slot 1: 0x10161f70; CTronLoadingScreen's
+	// 0x100a29a0)
+	virtual void	UpdateMissionInfo();
 
 
 
@@ -89,6 +91,9 @@ protected:
 	int RunThread();
 #endif
 private:
+	// RETAIL: Tron's (0x100a25f0, 0x100a29a0) sets the mission strings
+	friend class CTronLoadingScreen;
+
 #ifdef NOPS2
 	// The thread handle
 	HANDLE m_hThreadHandle;

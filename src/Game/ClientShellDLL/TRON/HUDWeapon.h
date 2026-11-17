@@ -37,6 +37,9 @@ public:
 	void		SetWeapon(uint8 nWeaponID);
 
 private:
+	// RETAIL: CHUDWpnChooser reads m_WeaponPrim (0x100233a5)
+	friend class CHUDWpnChooser;
+
 	// RETAIL: 0x1003eae0: the fade state of the indicator (it fades out while
 	// the weapon chooser is open). The name is ours.
 	void		UpdateFade();
