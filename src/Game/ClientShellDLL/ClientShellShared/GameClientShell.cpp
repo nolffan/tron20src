@@ -3734,7 +3734,9 @@ void CGameClientShell::ToggleDebugCheat(CheatCode eCheat)
 		}
 		break;
 
-		case CHEAT_POS1STCAM :
+		// RETAIL: 0x100e5f52: Tron's camera adjustment is CHEAT_TRON_CAM's
+		// (0x13); CHEAT_POS1STCAM has no case here
+		case CHEAT_TRON_CAM :
 		{
 			if (!g_pPlayerMgr->IsSpectatorMode())
 			{
@@ -4718,23 +4720,22 @@ void CGameClientShell::HandleGearPickup(uint8 nGearId, bool bSuccess /* = true *
 	LoadString(nNameId,szName,sizeof(szName));
 	if (!strlen(szName)) return;
 
-	char szMsg[128] = "";
+	// RETAIL: Tron's strings (0x25a "%1!s!", 0x20a "Can't pick up any more %1!s!!"); the failure
+	// is reported in every game type, and the message always goes out
+	char szMsg[128];
 	if (bSuccess)
 	{
-		FormatString(IDS_GEARPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x25a,szMsg,sizeof(szMsg),szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
-		FormatString(IDS_GEAR_NOPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x20a,szMsg,sizeof(szMsg),szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
 	}
 
-	if (szMsg[0])
-	{
-		g_pPickupMsgs->AddMessage(szMsg,pGear->szIcon);
-	}
+	g_pPickupMsgs->AddMessage(szMsg,pGear->szIcon);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4757,23 +4758,22 @@ void CGameClientShell::HandleModPickup(uint8 nModId, bool bSuccess /* = true */)
 	LoadString(nNameId,szName,sizeof(szName));
 	if (!strlen(szName)) return;
     
-	char szMsg[128] = "";
+	// RETAIL: Tron's strings (0x25c, 0x209 "You already have the %1!s!!"); the failure
+	// is reported in every game type, and the message always goes out
+	char szMsg[128];
 	if (bSuccess)
 	{
-		FormatString(IDS_MODPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x25c,szMsg,sizeof(szMsg),szName);
 	}
-	else if( IsCoopMultiplayerGameType( ))
+	else
 	{
-		FormatString(IDS_MOD_NOPICKUP,szMsg,sizeof(szMsg),szName);
+		FormatString(0x209,szMsg,sizeof(szMsg),szName);
 
 		// Play the sound bute NoPickupSound
 		g_pClientSoundMgr->PlaySoundLocal("NoPickupSound", SOUNDPRIORITY_PLAYER_HIGH);
 	}
 
-	if (szMsg[0])
-	{
-		g_pPickupMsgs->AddMessage(szMsg,pMod->szIcon);
-	}
+	g_pPickupMsgs->AddMessage(szMsg,pMod->szIcon);
 }
 
 // ----------------------------------------------------------------------- //

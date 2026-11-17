@@ -440,13 +440,13 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 		// RETAIL: Tron's energy (retail passes fAmount as it is)
 		case IC_MAX_ENERGY_ID :
 		{
-			m_stats.UpdateMaxEnergy((uint32)fAmount);
+			m_stats.UpdateMaxEnergy(fAmount);
 		}
 		break;
 
 		case IC_ENERGY_ID :
 		{
-			m_stats.UpdateEnergy((uint32)fAmount);
+			m_stats.UpdateEnergy(fAmount);
 		}
 		break;
 
@@ -456,7 +456,7 @@ void CTronInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nTyp
 			// +0x88 with nType1, then the base class
 			if (nType2)
 			{
-				g_pSubroutineMgr->ClearPlayerSubroutines();
+				g_pSubroutineMgr->ResetPrimitives();
 			}
 			GetPlayerStats()->DropInventory((LTBOOL)nType1);
 			CInterfaceMgr::UpdatePlayerStats(nThing, nType1, nType2, fAmount);
