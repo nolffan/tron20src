@@ -102,8 +102,6 @@ struct AniPlayerMain
     LTBOOL bLoops;
 };
 
-#define TRON_ANIMATORPLAYER_PAD 0xd8
-
 class CAnimatorPlayer : public CAnimator
 {
 	public :
@@ -268,6 +266,9 @@ class CAnimatorPlayer : public CAnimator
 
 		LTBOOL IsAnimatingLean(Lean eLean) const;
 		LTBOOL IsAnimatingLeanDone(Lean eLean) const;
+
+		// RETAIL: Tron's (0x10184c90; the name is ours)
+		bool IsAnimatingFire() const;
 		inline void SetLean(Lean eLean) { m_eLean = eLean; }
 		inline Lean GetLean() { return m_eLean; }
 		inline Lean GetLastLean() { return m_eLastLean; }
@@ -357,17 +358,26 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerUpper				m_AniCarryBody;
 
 		// eRifle
-		AniPlayerUpper				m_AniRifleUnalert;
-		AniPlayerUpper				m_AniRifleAlert;
-		AniPlayerUpper				m_AniRifleAim;
-		AniPlayerUpper				m_AniRifleFire;
+		// RETAIL: Tron's order and its block/extra fire members (offsets 0x1090
+		// to 0x1240, from CAnimatorPlayer::Init, 0x101801b0)
 		AniPlayerUpper				m_AniRifleReload;
 		AniPlayerUpper				m_AniRifleSelect;
 		AniPlayerUpper				m_AniRifleDeselect;
-		AniPlayerUpper				m_AniRifleAimLeanR;
+		AniPlayerUpper				m_AniRifleAlert;
+		AniPlayerUpper				m_AniRifleUnalert;
+		AniPlayerUpper				m_AniRifleAim;
 		AniPlayerUpper				m_AniRifleAimLeanL;
-		AniPlayerUpper				m_AniRifleFireLeanR;
+		AniPlayerUpper				m_AniRifleAimLeanR;
+		AniPlayerUpper				m_AniRifleFire;
+		AniPlayerUpper				m_AniRifleFire2;	// RETAIL: Tron's
+		AniPlayerUpper				m_AniRifleFire3;	// RETAIL: Tron's
+		AniPlayerUpper				m_AniRifleFire4;	// RETAIL: Tron's
+		AniPlayerUpper				m_AniRifleFire5;	// RETAIL: Tron's
 		AniPlayerUpper				m_AniRifleFireLeanL;
+		AniPlayerUpper				m_AniRifleFireLeanR;
+		AniPlayerUpper				m_AniRifleBlock;	// RETAIL: Tron's
+		AniPlayerUpper				m_AniRifleBlockLeanL;	// RETAIL: Tron's
+		AniPlayerUpper				m_AniRifleBlockLeanR;	// RETAIL: Tron's
 
 		// ePistol
 		AniPlayerUpper				m_AniPistolUnalert;
@@ -415,6 +425,7 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerUpper				m_AniRifle2Alert;
 		AniPlayerUpper				m_AniRifle2Aim;
 		AniPlayerUpper				m_AniRifle2Fire;
+		AniPlayerUpper				m_AniRifle2Block;	// RETAIL: Tron's
 		AniPlayerUpper				m_AniRifle2Reload;
 		AniPlayerUpper				m_AniRifle2Select;
 		AniPlayerUpper				m_AniRifle2Deselect;
@@ -428,6 +439,7 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerUpper				m_AniRifle3Alert;
 		AniPlayerUpper				m_AniRifle3Aim;
 		AniPlayerUpper				m_AniRifle3Fire;
+		AniPlayerUpper				m_AniRifle3Block;	// RETAIL: Tron's
 		AniPlayerUpper				m_AniRifle3Reload;
 		AniPlayerUpper				m_AniRifle3Select;
 		AniPlayerUpper				m_AniRifle3Deselect;
@@ -504,12 +516,6 @@ class CAnimatorPlayer : public CAnimator
 		AniPlayerMain				m_AniDT_Hurt;
 		AniPlayerMain				m_AniDT_HurtWalk;
 
-		// RETAIL: Tron's player animator is taken as 0x1d20 bytes (retail
-		// CPlayerObj has a flag at 0x2a80, after it; nothing reads the
-		// animator's last bytes); its upper-body set (Block, Fire2..5 and their
-		// crouches, for some weapons) is not yet laid out: this fills the
-		// difference
-		uint8						m_aTronUnknownTail[TRON_ANIMATORPLAYER_PAD];
 };
 
 #endif // __ANIMATORPlayer_H__
