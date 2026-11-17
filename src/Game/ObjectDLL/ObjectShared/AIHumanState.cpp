@@ -1597,27 +1597,38 @@ void CAIHumanStateSearch::Update()
 		return;
 	}
 
+	// RETAIL: 0x101e696c, Tron's search ends when the AI sees its target
+	// during a locked animation.
+
+	if( GetAI()->GetAnimationContext()->IsLocked() &&
+		GetAI()->HasTarget() &&
+		GetAI()->GetTarget()->IsVisibleFromEye() )
+	{
+		m_bPause = LTFALSE;
+		m_bDone = LTTRUE;
+
+		if( m_pStrategyToggleLights )
+		{
+			m_pStrategyToggleLights->Reset();
+		}
+
+		if( m_pStrategyFollowPath )
+		{
+			m_pStrategyFollowPath->Reset();
+		}
+
+		GetAI()->GetAnimationContext()->Unlock();
+
+		m_eStateStatus = kSStat_StateComplete;
+		return;
+	}
+
+	// RETAIL: 0x101e69df, no TO2 lantern hack.
+
 	if( m_bFirstUpdate )
 	{
 		GetAI()->PlaySearchSound(kAIS_Search);
 	}
-
-	// HACK: for TO2 ninjas with lanterns. transition animation method is not reliable.
-
-	else if( !m_bCheckedLantern )
-	{
-		m_bCheckedLantern = LTTRUE;
-		if( ( !GetAI()->GetAnimationContext()->IsTransitioning() ) &&
-		    ( GetAI()->GetCurrentVolume() && !GetAI()->GetCurrentVolume()->IsLit() ) &&
-			( GetAI()->GetBrain()->GetAIDataExist( kAIData_DisposeLantern ) ) )
-		{
-			char szAttachment[128];
-			sprintf(szAttachment, "%s LIGHT Lantern", KEY_ATTACH);
-			SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, szAttachment);
-		}
-	}
-
-	// END HACK.
 
 	// Handle our pause if we had to do one
 
