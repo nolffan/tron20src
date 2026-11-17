@@ -2192,7 +2192,8 @@ void CAttachmentsPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings
 			strcpy(aszStrings[(*pcStrings)++], szBuffer);
 		}
 	}
-	sm_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
+	// RETAIL: Tron lists the weapons the AIs can use (Object.lto 0x1018d0a6)
+	sm_WeaponMgrPlugin.PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength, WeaponUsableByAIs);
 }
 
 // ----------------------------------------------------------------------- //

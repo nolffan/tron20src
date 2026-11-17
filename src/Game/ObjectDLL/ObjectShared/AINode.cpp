@@ -1917,7 +1917,7 @@ class AINodeChangeWeaponsPlugin : public IObjectPlugin
 				sprintf(szRequirement, "Requirement%d", x);
 				if (!strcmp(szPropName,szRequirement))
 				{
-					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength);
+					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength, WeaponUsableByAIs);	// RETAIL: Tron's filter (Object.lto 0x100a6939)
 					return LT_OK;
 				}
 
@@ -1925,7 +1925,7 @@ class AINodeChangeWeaponsPlugin : public IObjectPlugin
 				sprintf(szChangeTo, "Weapon%d", x);
 				if (!strcmp(szPropName,szChangeTo))
 				{
-					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength);
+					sm_WeaponMgrPlugin.PopulateStringList(aszStrings+1, pcStrings, cMaxStrings-1, cMaxStringLength, WeaponUsableByAIs);	// RETAIL: Tron's filter (Object.lto 0x100a6939)
 					return LT_OK;
 				}
 			}

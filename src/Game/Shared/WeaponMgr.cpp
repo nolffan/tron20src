@@ -3109,6 +3109,31 @@ void CWeaponMgr::ReadWeapon(char* szString, uint8 & nWeaponId, uint8 & nAmmoId)
 	}
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	WeaponHasPrimitiveType, WeaponUsableByAIs
+//
+//	PURPOSE:	RETAIL: Tron's weapon filters for the string lists
+//				(Object.lto 0x10109220, 0x10109240; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+
+bool WeaponHasPrimitiveType(const WEAPON* pWeapon)
+{
+	if (!pWeapon)
+		return false;
+
+	return pWeapon->szPrimitiveType[0] ? true : false;
+}
+
+bool WeaponUsableByAIs(const WEAPON* pWeapon)
+{
+	if (!pWeapon)
+		return false;
+
+	return pWeapon->bWeaponUsableByAIs ? true : false;
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //
 // CWeaponMgrPlugin is used to help facilitate populating the DEdit object
@@ -3173,66 +3198,96 @@ LTRESULT CWeaponMgrPlugin::PreHook_EditStringList(
 // ----------------------------------------------------------------------- //
 
 void CWeaponMgrPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings,
-    const uint32 cMaxStrings, const uint32 cMaxStringLength)
+    const uint32 cMaxStrings, const uint32 cMaxStringLength, WeaponFilterFn pFilter)
 {
+	// RETAIL: Tron's (Object.lto 0x101093f0): the weapons the filter takes,
+	// with their ammo types, sorted
+
 	if (!aszStrings || !pcStrings || !g_pWeaponMgr)
 	{
 		ASSERT( !"CWeaponMgrPlugin::PopulateStringList: Invalid input parameters" );
 		return;
 	}
 
+	CPluginStringList lstStrings(cMaxStrings, cMaxStringLength);
+
 	// Add an entry for each weapon/ammo combination...
 
-    uint32 dwNumWeapons = g_pWeaponMgr->GetNumWeapons();
-
-    WEAPON const *pWeapon = LTNULL;
-
-    for (uint32 i=0; i < dwNumWeapons; i++)
+	for (int8 nWeapon = (int8)g_pWeaponMgr->GetNumWeapons(); nWeapon >= 0; nWeapon--)
 	{
-		_ASSERT(cMaxStrings > (*pcStrings) + 1);
+		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeapon);
+		if (!pWeapon)
+			continue;
 
-		pWeapon = g_pWeaponMgr->GetWeapon(i);
-        uint32 dwWeaponNameLen = strlen(pWeapon->szName);
-
-		if (pWeapon && pWeapon->szName[0] &&
-			dwWeaponNameLen < cMaxStringLength &&
-			(*pcStrings) + 1 < cMaxStrings)
+		bool bAdd = true;
+		if (pFilter)
 		{
-			// Account for the ';' character
+			bAdd = pFilter(pWeapon);
+		}
 
-			dwWeaponNameLen++;
+		if (!pWeapon->szName[0] || !bAdd)
+			continue;
 
-			// Append the ammo types to the string if there is more
-			// than one ammo type...
+		// Append the ammo types to the string if there is more
+		// than one ammo type...
 
-			if (pWeapon->nNumAmmoIds > 1)
+		if (pWeapon->nNumAmmoIds > 1)
+		{
+			for (int j=0; j < pWeapon->nNumAmmoIds; j++)
 			{
-				for (int j=0; j < pWeapon->nNumAmmoIds; j++)
+				AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(pWeapon->aAmmoIds[j]);
+				if (pAmmo)
 				{
-					_ASSERT(cMaxStrings > (*pcStrings) + 1);
-
-					AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(pWeapon->aAmmoIds[j]);
-					if (pAmmo && (*pcStrings) + 1 < cMaxStrings)
-					{
-						if (dwWeaponNameLen + strlen(pAmmo->szName) < cMaxStringLength)
-						{
-							sprintf(aszStrings[(*pcStrings)++],"%s,%s", pWeapon->szName, pAmmo->szName);
-						}
-						else
-						{
-							// Just use the weapon name, the default ammo will be used...
-
-							strcpy(aszStrings[(*pcStrings)++], pWeapon->szName);
-						}
-					}
+					char szString[256];
+					sprintf(szString, "%s,%s", pWeapon->szName, pAmmo->szName);
+					lstStrings.Add(szString);
 				}
 			}
-			else
-			{
-				// Just use the weapon name, the default ammo will be used...
+		}
+		else
+		{
+			// Just use the weapon name, the default ammo will be used...
 
-				strcpy(aszStrings[(*pcStrings)++], pWeapon->szName);
+			lstStrings.Add(pWeapon->szName);
+		}
+	}
+
+	lstStrings.CopyTo(aszStrings, pcStrings);
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CWeaponMgrPlugin::PopulateStringList
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x10109780): the weapons the
+//				AIs can use, with their ammo types, into a list
+//
+// ----------------------------------------------------------------------- //
+
+void CWeaponMgrPlugin::PopulateStringList(CPluginStringList* pList)
+{
+	for (int8 nWeapon = (int8)g_pWeaponMgr->GetNumWeapons(); nWeapon >= 0; nWeapon--)
+	{
+		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeapon);
+		if (!pWeapon || !pWeapon->szName[0] || !WeaponUsableByAIs(pWeapon))
+			continue;
+
+		if (pWeapon->nNumAmmoIds > 1)
+		{
+			for (int j=0; j < pWeapon->nNumAmmoIds; j++)
+			{
+				AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(pWeapon->aAmmoIds[j]);
+				if (pAmmo)
+				{
+					char szString[256];
+					sprintf(szString, "%s,%s", pWeapon->szName, pAmmo->szName);
+					pList->Add(szString);
+				}
 			}
+		}
+		else
+		{
+			pList->Add(pWeapon->szName);
 		}
 	}
 }
