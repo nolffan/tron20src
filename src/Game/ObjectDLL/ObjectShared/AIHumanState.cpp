@@ -1279,6 +1279,9 @@ void CAIHumanStateGoto::Save(ILTMessage_Write *pMsg)
 CAIHumanStateFlee::CAIHumanStateFlee()
 {
 	m_hDanger = NULL;
+
+	// RETAIL: 0x101e6276, Tron's fleeing AI does not ghost.
+	m_bAllowGhosting = LTFALSE;
 }
 
 // ----------------------------------------------------------------------- //
@@ -3016,6 +3019,16 @@ void CAIHumanStateUseObject::HandleModelString(ArgList* pArgList)
 			m_pStrategyShoot->ForceFire( m_hObject );
 		}
 	}
+
+	// RETAIL: 0x101e93fa, Tron's model string plays a client FX on the AI.
+
+	else if ( !_stricmp(szKey, "CLIENTFX") )
+	{
+		if( pArgList->argc == 2 )
+		{
+			PlayClientFX( pArgList->argv[1], GetAI()->GetUserObject() );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -3026,6 +3039,15 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 
 	if( m_bVulnerable )
 	{
+		// RETAIL: 0x101e944b, Tron's damage flag destroys the object
+		// whatever the damage type.
+
+		if( damage.bTronUnknown44 )
+		{
+			SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
+			return;
+		}
+
 		switch ( damage.eType )
 		{
 			case DT_UNSPECIFIED:
@@ -3038,7 +3060,7 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 			case DT_EXPLODE:
 			case DT_FREEZE:
 			case DT_POISON:
-				SendTriggerMsgToObject(GetAI(), GetAI()->GetObject(), LTFALSE, "DESTROY");
+				SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
 				break;
 		}
 	}
