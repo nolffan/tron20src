@@ -6388,39 +6388,17 @@ void CAIHumanStateAttackFromCover::Update()
 {
 	super::Update();
 
-	// Make sure we have a target
-
-	if ( !GetAI()->HasTarget() )
-	{
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
-
-	// Make sure we have a cover node.
-
-	if ( !m_pCoverNode )
-	{
-		m_eStateStatus = kSStat_FailedComplete;
-		return;
-	}
-
+	// Make sure we have a target, a cover node and a weapon.
 	// RETAIL: 0x101f0077, Tron leaves a disabled or a bad cover node
-	// when nothing holds the AI.
+	// when nothing holds the AI. The failures share one block (0x101f020e).
 
-	if( !GetAI()->GetAnimationContext()->IsLocked() &&
-		!GetAI()->GetAIMovement()->IsMovementLocked() )
-	{
-		if( m_pCoverNode->IsDisabled() ||
-			( kStatus_Ok != m_pCoverNode->GetStatus( GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject() ) ) )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-			return;
-		}
-	}
-
-	// Make sure we have a weapon
-
-	if ( !GetAI()->GetCurrentWeapon() )
+	if ( !GetAI()->HasTarget() ||
+		 !m_pCoverNode ||
+		 ( !GetAI()->GetAnimationContext()->IsLocked() &&
+		   !GetAI()->GetAIMovement()->IsMovementLocked() &&
+		   ( m_pCoverNode->IsDisabled() ||
+		     ( kStatus_Ok != m_pCoverNode->GetStatus( GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject() ) ) ) ) ||
+		 !GetAI()->GetCurrentWeapon() )
 	{
 		m_eStateStatus = kSStat_FailedComplete;
 		return;
