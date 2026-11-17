@@ -205,7 +205,8 @@ AINodeTail* CAINodeMgr::FindTailNode(CAI* pAI, const LTVector& vTargetPos, const
 
 	// Find the node closest to the tailed object and to the tailer.
 
-	for(it = m_mapAINodes.lower_bound(kNode_Tail); it != m_mapAINodes.upper_bound(kNode_Tail); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(kNode_Tail);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(kNode_Tail); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -339,7 +340,8 @@ AINode* CAINodeMgr::FindNodeByIndex(EnumAINodeType eNodeType, uint32 iNode)
 	AINode* pNode;
 	AINODE_MAP::iterator it;
 
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -380,7 +382,8 @@ AINode* CAINodeMgr::FindNearestNode(CAI* pAI, EnumAINodeType eNodeType, const LT
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -466,7 +469,8 @@ AINode* CAINodeMgr::FindNearestNodeInRadius(CAI* pAI, EnumAINodeType eNodeType, 
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -557,7 +561,8 @@ AINode* CAINodeMgr::FindNearestNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -783,7 +788,8 @@ AINode* CAINodeMgr::FindNearestNodeInSameDirectionAsThreat(CAI* pAI, EnumAINodeT
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -896,7 +902,8 @@ AINode* CAINodeMgr::FindNearestObjectNode(CAI* pAI, EnumAINodeType eNodeType, co
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -981,7 +988,8 @@ AINode* CAINodeMgr::FindUseObjectNode(EnumAINodeType eNodeType, HOBJECT hUseObje
 	AINode* pNode;
 	AINodeUseObject* pNodeUseObject;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -1022,7 +1030,8 @@ AINode*	CAINodeMgr::FindOwnedNode(EnumAINodeType eNodeType, HOBJECT hOwner )
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 		if( pNode->GetNodeOwner() == hOwner )
@@ -1064,7 +1073,8 @@ AINode* CAINodeMgr::FindNearestOwnedNode(CAI* pAI, EnumAINodeType eNodeType, con
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -1164,7 +1174,8 @@ AINode* CAINodeMgr::FindRandomOwnedNode(CAI* pAI, EnumAINodeType eNodeType, HOBJ
 
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 
@@ -1342,7 +1353,8 @@ void CAINodeMgr::EnumerateNodesInVolume(EnumAINodeType eNodeType, AIVolume* pVol
 
 	AINode* pNode;
 	AINODE_MAP::const_iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 		if( pVolume->InsideMasked(pNode->GetPos(), eAxisAll, 53.0f) )
@@ -1408,7 +1420,8 @@ void CAINodeMgr::DrawNodes(EnumAINodeType eNodeType)
 {
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 		pNode->DrawSelf();
@@ -1426,7 +1439,8 @@ void CAINodeMgr::HideNodes(EnumAINodeType eNodeType)
 {
 	AINode* pNode;
 	AINODE_MAP::iterator it;
-	for(it = m_mapAINodes.lower_bound(eNodeType); it != m_mapAINodes.upper_bound(eNodeType); ++it)
+	AINODE_MAP::iterator itEnd = m_mapAINodes.upper_bound(eNodeType);	// RETAIL: the end first, once
+	for(it = m_mapAINodes.lower_bound(eNodeType); it != itEnd; ++it)
 	{
 		pNode = it->second;
 		pNode->HideSelf();
