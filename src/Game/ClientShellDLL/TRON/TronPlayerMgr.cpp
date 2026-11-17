@@ -37,6 +37,7 @@
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleLives
 #include "TRON/SubroutineDataMgr.h"
 #include "VarTrack.h"
+#include "ProfileMgr.h"
 
 // CPlayerMgr's sway console variables (PlayerMgr.cpp)
 extern VarTrack g_vtCameraSwayXFreq;
@@ -122,8 +123,8 @@ LTBOOL CTronPlayerMgr::Init()
 	m_fFOVZoomTriangulate2 = g_pLayoutMgr->GetFloat("hudlayout0", "FOVZoomTriangulate2", 7.0f);
 	m_fFOVZoomTriangulate3 = g_pLayoutMgr->GetFloat("hudlayout0", "FOVZoomTriangulate3", 2.0f);
 
-	// PORT: retail copies a string of a global (retail 0x10270864, +0x1d4)
-	// into CPlayerMgr's +0x1b5 here; not yet identified
+	// RETAIL: 0x100a451e: the profile's light cycle color
+	strcpy(m_szTronUnknown1B5, g_pProfileMgr->GetCurrentProfile()->m_szVehicleColor);
 
 	m_bTronUnknown234 = false;
 	m_nTronUnknown236 = 1;
@@ -2172,9 +2173,8 @@ void CTronPlayerMgr::TronUnknownVirtual8C()
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual90
 //
 //	PURPOSE:	RETAIL: retail 0x100a8080 (slot 0x90): the player's light
-//				cycle color, told to the server and kept in the profile.
-//				PORT: Tron's model attributes (0x10044f40, 0x10044f20) and
-//				its profile's color (+0x1d4) are not yet in our tree
+//				cycle color, told to the server and kept in the profile
+//				(its vehicle color, +0x1d4)
 //
 // ----------------------------------------------------------------------- //
 
@@ -2182,12 +2182,34 @@ void CTronPlayerMgr::TronUnknownVirtual90(const char* pszColor, bool bSend, bool
 {
 	if (!pszColor)
 	{
-		pszColor = m_szTronUnknown1B5;
+		if (g_pProfileMgr)
+			pszColor = g_pProfileMgr->GetCurrentProfile()->m_szVehicleColor;
+		else
+			pszColor = m_szTronUnknown1B5;
+	}
+
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pszColor);
+	if (!pColor)
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Color %s\n", pszColor);
+		return;
+	}
+
+	if (!g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType))
+	{
+		g_pLTClient->CPrint("ERROR - Couldn't find Light Cycle Type %d\n", pColor->nCycleType);
+		return;
 	}
 
 	if (_stricmp(pszColor, m_szTronUnknown1B5))
 	{
 		strcpy(m_szTronUnknown1B5, pszColor);
+		if (bSave)
+		{
+			CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
+			strcpy(pProfile->m_szVehicleColor, pszColor);
+			pProfile->Save();
+		}
 	}
 
 	if (bSend)
