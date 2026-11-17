@@ -22,6 +22,8 @@
 #include "ClientMultiplayerMgr.h"
 #include "CMoveMgr.h"
 #include "ClientResShared.h"
+#include "HUDDecision.h"
+#include "VehicleMgr.h"
 
 // 
 // Globals...
@@ -114,11 +116,18 @@ void CClientSaveLoadMgr::Term( )
 
 bool CClientSaveLoadMgr::QuickSave( )
 {
-	// Make sure it's valid to save.
-	if( !CanSaveGame() && g_pInterfaceMgr->GetGameState() == GS_PLAYING )
+	// Make sure it's valid to save.  RETAIL: 0x10144598: Tron says why not
+	// (one string for the light cycle games) with a sound
+	if( !CanSaveGame() )
+	{
+		GameType eGameType = GetGameType();
+		const char* pszMsg = LoadTempString((eGameType > eGameTypeSingle && eGameType <= eGameTypeSingleLightCycleCustom) ? 0x455 : 0x3fa);
+		g_pChatMsgs->AddMessage(pszMsg);
+		g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nosave.wav");
 		return false;
+	}
 
-	g_pGameClientShell->CSPrint( LoadTempString( IDS_QUICKSAVING ));
+	g_pGameClientShell->CSPrint( LoadTempString( 0x3f4 ));	// RETAIL: Tron's string
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_SAVE_GAME );
@@ -172,7 +181,11 @@ bool CClientSaveLoadMgr::SaveGameSlot( uint32 nSlot, char const* pszSaveName )
 
 	// Make sure it's valid to save.
 	if( !CanSaveGame( ))
+	{
+		// RETAIL: 0x1014482d: Tron says no with a sound
+		g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\Nosave.wav");
 		return false;
+	}
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_SAVE_GAME );
@@ -267,26 +280,29 @@ bool CClientSaveLoadMgr::ContinueGame()
 
 bool CClientSaveLoadMgr::CanSaveGame()	const
 { 
-	//can't save while on the mission summary screen, because we're between worlds
-	if (g_pMissionMgr->IsExitingLevel() || g_pMissionMgr->IsGameOver())
+	// RETAIL: 0x10144c70: Tron's tests.  Not between worlds, nor in the
+	// single player light cycle games, nor while an open decision window
+	// keeps the player (unless its +0x4d is set), nor on a vehicle
+	if (g_pMissionMgr->IsExitingLevel())
 		return false;
 
-	//don't save if we're already trying to switch worlds
-	if (g_pGameClientShell->GetSwitchingWorldsState() != eSwitchingWorldsStateFinished &&
-		g_pGameClientShell->GetSwitchingWorldsState() != eSwitchingWorldsStateNone)
+	bool bDecisionAllows = true;
+	if (g_pDecision && g_pDecision->IsVisible() && !g_pDecision->GetTronUnknown4d())
 	{
-		return false;
+		bDecisionAllows = false;
 	}
-
-	if (!g_pMoveMgr->CanSave())
-		return false;
 
 	// Handle single player.
 	if( !IsMultiplayerGame( ))
 	{
+		if (GetGameType() == eGameTypeSingleLightCycleCircuit || GetGameType() == eGameTypeSingleLightCycleCustom)
+			return false;
+
 		return (g_pPlayerMgr->IsPlayerInWorld() && 
 			!g_pPlayerMgr->IsPlayerDead() && 
-			!g_pPlayerMgr->IsUsingExternalCamera());
+			!g_pPlayerMgr->IsUsingExternalCamera() &&
+			!g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() &&
+			bDecisionAllows);
 	}
 	// Handle multiplayer.
 	else
@@ -295,18 +311,7 @@ bool CClientSaveLoadMgr::CanSaveGame()	const
 		if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 			return false;
 
-		bool bCanSave = false;
-
-		switch( g_pGameClientShell->GetGameType( ))
-		{
-			case eGameTypeCooperative:
-				bCanSave = true;
-				break;
-			default:
-				bCanSave = false;
-				break;
-		}
-
+		bool bCanSave = (g_pGameClientShell->GetGameType( ) == eGameTypeCooperative);
 		return bCanSave;
 	}
 }
@@ -321,42 +326,26 @@ bool CClientSaveLoadMgr::CanSaveGame()	const
 
 bool CClientSaveLoadMgr::CanLoadGame( ) const
 { 
-	//can't load while on the mission summary screen
-	if (g_pMissionMgr->IsExitingLevel() || g_pMissionMgr->IsGameOver())
+	// RETAIL: 0x10144d50: Tron's tests
+	if (g_pMissionMgr->IsExitingLevel())
 		return false;
-
-	//don't load if we're already trying to switch worlds
-	if (g_pGameClientShell->GetSwitchingWorldsState() != eSwitchingWorldsStateFinished &&
-		g_pGameClientShell->GetSwitchingWorldsState() != eSwitchingWorldsStateNone)
-	{
-		return false;
-	}
-
 
 	// Handle single player.
 	if( !IsMultiplayerGame( ))
 	{
+		if (GetGameType() == eGameTypeSingleLightCycleCircuit || GetGameType() == eGameTypeSingleLightCycleCustom)
+			return false;
+
 		return true;
 	}
 	// Handle multiplayer.
 	else
 	{
-		// Remote clients can do saves.
+		// Remote clients can't load.
 		if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 			return false;
 
-		bool bCanSave = false;
-
-		switch( g_pGameClientShell->GetGameType( ))
-		{
-			case eGameTypeCooperative:
-				bCanSave = true;
-				break;
-			default:
-				bCanSave = false;
-				break;
-		}
-
+		bool bCanSave = (g_pGameClientShell->GetGameType( ) == eGameTypeCooperative);
 		return bCanSave;
 	}
 }
