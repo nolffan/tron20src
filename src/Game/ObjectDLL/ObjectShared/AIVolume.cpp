@@ -1554,6 +1554,24 @@ int AIVolumePlayerInfo::Init()
 	return 0;
 }
 
+// RETAIL: Tron's (Object.lto 0x1009a5d0): is hNode one of this volume's
+// view nodes? The name is ours
+bool AIVolumePlayerInfo::IsViewNode(HOBJECT hNode) const
+{
+	if ( IsKindOf( hNode, "AINodeView" ) )
+	{
+		for ( uint32 iViewNode = 0 ; iViewNode < kMaxViewNodes ; iViewNode++ )
+		{
+			if ( hNode == m_ahViewNodes[iViewNode] )
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 AINode* AIVolumePlayerInfo::FindViewNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, LTBOOL bMustBeUnowned) const
 {
 	// Get AIs Path Knowledge.
