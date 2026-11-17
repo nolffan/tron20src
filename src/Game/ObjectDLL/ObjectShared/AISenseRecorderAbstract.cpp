@@ -521,7 +521,13 @@ void CAISenseRecorderAbstract::CopySenseRecord(AISenseRecord* pOrigSenseRecord)
 
 	// Find sense record for stimulus.
 	AISENSE_RECORD_MAP::iterator it = m_mapSenseRecords.find( pOrigSenseRecord->eSenseType );
-	ASSERT(it != m_mapSenseRecords.end());
+
+	// RETAIL: 0x101dae5a, Tron reports a sense it does not record.
+	if( it == m_mapSenseRecords.end() )
+	{
+		ObjectCPrint( m_pSensing->GetSensingObject(), "SenseRecorder attempting to copy a sense record it does not support." );
+		return;
+	}
 
 	AISenseRecord* pSenseRecord = it->second;
 
@@ -741,10 +747,18 @@ bool CAISenseRecorderAbstract::HandlePermissionSense(AISenseRecord* pSenseRecord
 			g_pLTServer->GetObjectPos( pChar->m_hObject, &vPos );
 
 			AIInformationVolume* pVolume = g_pAIInformationVolumeMgr->FindContainingVolume( LTNULL, vPos, eAxisHorizontal, 0.0f, LTNULL, LTTRUE );
-			if( pVolume && pVolume->HasRegion() )
+
+			// RETAIL: 0x101db389, Tron takes the source world offset only
+			// when the character is in no volume (and does not use it).
+			if( !pVolume )
+			{
+				LTVector vOffsetPos = vPos;
+				g_pLTServer->GetSourceWorldOffset( vOffsetPos );
+			}
+			else if( pVolume->HasRegion() )
 			{
 				uint8 nPset = pVolume->GetRegion()->GetPsetByte();
-				if( ( pChar->GetPermissionSet() & nPset ) != nPset )
+				if( ( pChar->GetPSets() & nPset ) != nPset )	// RETAIL: 0x101db458
 				{
 					RelationDescription RD;
 					RD.eTrait = RelationTraits::kTrait_Name;
@@ -754,10 +768,6 @@ bool CAISenseRecorderAbstract::HandlePermissionSense(AISenseRecord* pSenseRecord
 					return false;
 				}
 			}
-
-			// RETAIL: the offset position is not used (0x101db3b4).
-			LTVector vOffsetPos = vPos;
-			g_pLTServer->GetSourceWorldOffset( vOffsetPos );
 
 			if( ( pSenseRecord->eSenseType == kSense_SeeEnemy ) && pChar->HasDangerousWeapon() )
 			{

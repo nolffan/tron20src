@@ -202,8 +202,7 @@ void BuildNote::InitialUpdate()
 	IntersectInfo IInfo;
 
 	IQuery.m_From = vPos;
-	IQuery.m_To = vPos;
-	IQuery.m_To.y -= 10000.0f;
+	IQuery.m_To = LTVector(vPos.x, vPos.y - 10000.0f, vPos.z);	// RETAIL: 0x100166ab
 	IQuery.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY;
 
 	if (g_pLTServer->IntersectSegment(&IQuery, &IInfo))

@@ -363,7 +363,10 @@ void CAIGoalInvestigate::SetStateInvestigate()
 		pAlly = (CAI*)g_pLTServer->HandleToObject( m_hStimulusSource );
 	}
 
-	if( pAlly )
+	// RETAIL: 0x1020335b, Tron follows only an ally with no relative
+	// alignment (UNKNOWN).
+
+	if( pAlly && ( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) )
 	{
 		// Investigate what alerted an ally.
 
@@ -844,8 +847,10 @@ LTBOOL CAIGoalInvestigate::SelectTriggeredAISound(EnumAISoundType* peAISoundType
 
 	// Do not play any disturbance sound if AI is already talking.
 
+	// RETAIL: 0x10203bec, Tron also checks the talk lock.
+
 	if( ( m_eDisturbanceSenseType != kSense_SeeAllyDisturbance ) &&
-		( m_pAI->IsPlayingDialogSound() ) )
+		( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
 	{
 		return LTFALSE;
 	}
@@ -928,8 +933,9 @@ LTBOOL CAIGoalInvestigate::SelectTriggeredAISound(EnumAISoundType* peAISoundType
 			if( IsAI( m_hStimulusSource ) )
 			{
 				CAI* pAI = (CAI*)g_pLTServer->HandleToObject( m_hStimulusSource );
-				if( ( !pAI->IsPlayingDialogSound() ) &&
-					( !pAI->GetDamageFlags() ) )
+				// RETAIL: 0x10203d6a, Tron checks the talk lock, and not
+				// the damage flags.
+				if( !( pAI->IsTalkLocked() || pAI->IsPlayingDialogSound() ) )
 				{
 					if( pAI->GetAwareness() == kAware_Alert )
 					{
@@ -1016,14 +1022,7 @@ LTBOOL CAIGoalInvestigate::HandleDamage(const DamageStruct& damage)
 		}
 	}
 
-	// Do not investigate without a weapon.
-
-	CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
-	if( !( m_pAI->GetPrimaryWeapon() || pAIHuman->HasHolsterString() ) )
-	{
-		m_pAI->IncrementAlarmLevel( m_nStimulusAlarmLevel );
-		return LTFALSE;
-	}
+	// RETAIL: 0x10203f89, Tron investigates also without a weapon.
 
 	// Activate the goal.
 
@@ -1150,9 +1149,12 @@ LTBOOL CAIGoalInvestigate::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			// type of sense, pay attention because this is a new instance.
 			// (e.g. someone opened the drawer again).
 
+			// RETAIL: 0x102040ea, Tron finds the end of the range once.
+
 			EnumAISenseType eSenseType;
+			AI_INVESTIGATION_MEMORY_MAP::iterator itEnd = m_mapInvestMemory.upper_bound( eTargetMatchID );
 			AI_INVESTIGATION_MEMORY_MAP::iterator it;
-			for( it = m_mapInvestMemory.lower_bound( eTargetMatchID ); it != m_mapInvestMemory.upper_bound( eTargetMatchID ); ++it )
+			for( it = m_mapInvestMemory.lower_bound( eTargetMatchID ); it != itEnd; ++it )
 			{
 				eSenseType = it->second;
 				if( pSenseRecord->eSenseType == eSenseType )
@@ -1191,8 +1193,10 @@ LTBOOL CAIGoalInvestigate::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		if( ( pSenseRecord->eSenseType == kSense_SeeAllyDisturbance ) || 
 			( pSenseRecord->eSenseType == kSense_HearAllyDisturbance ) )
 		{
+			// RETAIL: 0x10204190, only an ally of no relative alignment.
+
 			CAI* pAlly = (CAI*)g_pLTServer->HandleToObject( m_hStimulusSource );
-			if( pAlly )
+			if( pAlly && ( UNKNOWN == GetRelativeAlignment( m_pAI->GetRelationSet(), pAlly->GetRelationData() ) ) )
 			{
 				m_pAI->SetAlarmLevel( Max( pAlly->GetAlarmLevel(), m_pAI->GetAlarmLevel() ) );
 			

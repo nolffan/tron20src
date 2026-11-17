@@ -153,11 +153,14 @@ void CAIGoalChaseAbstract::ActivateChase()
 		}
 	}
 
+	// RETAIL: 0x1020e6f4, Tron targets the stimulus source.
+	m_pAI->Target( m_hStimulusSource );
+
 	ASSERT(m_hStimulusSource != LTNULL);
 
 	// Draw a weapon if necessary.
 
-	if( !m_pAI->GetPrimaryWeapon() )
+	if( !m_pAI->GetCurrentWeapon() )	// RETAIL: 0x1020e6fe, the current weapon
 	{
 		AIASSERT( m_pAI->HasHolsterString(), m_pAI->m_hObject, "CAIGoalChaseAbstract::ActivateGoal: AI has no current weapon or holster string." );
 		m_pAI->SetState( kState_HumanDraw );
@@ -320,7 +323,8 @@ void CAIGoalChaseAbstract::HandleStateChase()
 	{
 		case kSStat_Pursue:
 			// Ignore senses other than SeeEnemy.
-			m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
+			// RETAIL: 0x1020e91b, Tron also keeps the enemy weapon fire and impact sounds (0xc0601).
+			m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_HearEnemyWeaponFire | kSense_HearEnemyWeaponImpact | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 			break;
 
 		case kSStat_Lost:
@@ -448,7 +452,7 @@ void CAIGoalChaseAbstract::HandleJunctionVolume()
 	if( (pRec == LTNULL) || (pRec->mskActionVolumes == 0) || 
 		( !(pJunctionVolume->GetAction(m_pAI, &(pRec->mskActionVolumes), pLastVolume, pCorrectVolume, &pJunctionActionVolume, &eJunctionAction) ) ) )
 	{
-		AITRACE(AIShowJunctions, ( m_pAI->m_hObject, "Exhuasted junction %s\n", 
+		AITRACE(AIShowJunctions, ( m_pAI->m_hObject, "Exhausted junction %s\n", 
 				 ::ToString(pJunctionVolume->GetName()) ) );
 
 		m_bGiveUpChase = LTTRUE;
@@ -682,6 +686,9 @@ void CAIGoalChaseAbstract::GiveUpChase(LTBOOL bSearch)
 
 void CAIGoalChaseAbstract::HandleStateLookAt()
 {
+	// RETAIL: 0x1020f360, Tron resets the default senses, except for SeeAllyDisturbance.
+	m_pAI->SetCurSenseFlags( 0xffffffff & ~kSense_SeeAllyDisturbance );
+
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
 		case kSStat_Initialized:
@@ -874,7 +881,7 @@ void CAIGoalChaseAbstract::RecalcImportance()
 		( m_fCurImportance > 0.f ) &&
 		( m_pAI->GetAwareness() != kAware_Alert ) )
 	{
-		AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChase: Setting importance to 0.0" ) );
+		AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChaseAbstract: Setting importance to 0.0" ) );
 		m_fCurImportance = 0.f;
 	}
 }
@@ -895,7 +902,7 @@ LTBOOL CAIGoalChaseAbstract::HandleNameValuePair(const char *szName, const char 
 	{
 		if( IsTrueChar( szValue[0] ) )
 		{
-			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChase: SEEKPLAYER=1" ) );
+			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChaseAbstract: SEEKPLAYER=1" ) );
 
 			// Activate this goal, and seek out the target.
 
@@ -919,17 +926,34 @@ LTBOOL CAIGoalChaseAbstract::HandleNameValuePair(const char *szName, const char 
 	{
 		if( IsTrueChar( szValue[0] ) )
 		{
-			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChase: NEVERGIVEUP=1" ) );
+			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChaseAbstract: NEVERGIVEUP=1" ) );
 			m_bNeverGiveUp = LTTRUE;
 		}
+
+		// RETAIL: 0x1020f821, Tron returns false here.
+		return LTFALSE;
 	}
 
 	else if ( !_stricmp(szName, "KEEPDISTANCE") )
 	{
 		m_bKeepDistance = IsTrueChar( szValue[0] );
-		AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChase: KEEPDISTANCE=%d", m_bKeepDistance ? 1 : 0 ) );
+		AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChaseAbstract: KEEPDISTANCE=%d", m_bKeepDistance ? 1 : 0 ) );
 
 		return LTTRUE;
+	}
+
+	// RETAIL: 0x1020f94c, Tron's: chase the named object, and activate this goal.
+	// The name SEEKCHARACTER is retail's.
+	else if ( !_stricmp(szName, "SEEKCHARACTER") )
+	{
+		ObjArray<HOBJECT, MAX_OBJECT_ARRAY_SIZE> objArray;
+		g_pLTServer->FindNamedObjects( szValue, objArray );
+
+		if( objArray.NumObjects() > 0 )
+		{
+			m_hStimulusSource = objArray.GetObject( 0 );
+			SetCurToBaseImportance();
+		}
 	}
 
 	return LTFALSE;
@@ -974,8 +998,10 @@ LTBOOL CAIGoalChaseAbstract::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		if( ( pSenseRecord->eSenseType == kSense_SeeEnemy ) &&
 			( m_pAI->GetPrimaryWeapon() || pAIHuman->HasHolsterString() ) )
 		{
-			m_pAI->Target(m_hStimulusSource);
-			if( m_pAI->HasTarget() && m_pAI->GetTarget()->GetCharacter()->HasLastVolume() )
+			// RETAIL: 0x1020fa53, Tron does not target the stimulus source here: it
+			// checks the last volume of the character that caused the stimulus.
+			CCharacter* pChar = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( pSenseRecord->hLastStimulusSource ) );
+			if( pChar && pChar->HasLastVolume() )
 			{
 				// Handle AIs that only use the preferred paths.
 
@@ -1000,12 +1026,15 @@ LTBOOL CAIGoalChaseAbstract::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		}
 		else if( m_pGoalMgr->IsCurGoal( this ) && 
 				 ( !m_bNeverGiveUp ) &&
-				 ( pSenseRecord->eSenseType != kSense_SeeEnemy ) )
+				 ( pSenseRecord->eSenseType != kSense_SeeEnemy ) &&
+				 // RETAIL: 0x1020fb3a, Tron also ignores the projectile senses.
+				 ( pSenseRecord->eSenseType != kSense_SeeCatchableProjectile ) &&
+				 ( pSenseRecord->eSenseType != kSense_SeeDangerousProjectile ) )
 		{
 			// If the sense is something other than SeeEnemy, stop chasing.
 			// If an investigate goal is present, it will take over.
 
-			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChase: Sensed something, setting importance to 0.0" ) );
+			AITRACE( AIShowGoals, ( m_pAI->m_hObject, "CAIGoalChaseAbstract: Sensed something, setting importance to 0.0" ) );
 			m_fCurImportance = 0.f;
 		}
 	}
