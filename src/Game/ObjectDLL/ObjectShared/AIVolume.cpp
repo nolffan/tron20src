@@ -152,10 +152,7 @@ AIGeometry::AIGeometry() :
 
 bool AIGeometry::ReadProp(ObjectCreateStruct *pocs)
 {
-	if ( !super::ReadProp( pocs ) )
-	{
-		return false;
-	}
+	// RETAIL: 0x10095e10, Tron does not call GameBaseLite::ReadProp here.
 
 	m_vCenter = pocs->m_cProperties.GetPropVector( "Pos", LTVector( 0.0f, 0.0f, 0.0f ) );
 
@@ -949,7 +946,9 @@ void AIVolume::SetLightState(LTBOOL bLit)
 
 	LTFLOAT fStimRadius = Max( GetDims().x, GetDims().z );
 
-	g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyLightDisturbanceVisible, 1, pRandomPlayer->m_hObject, m_hLightSwitchUseObjectNode, du.GetData(), GetCenter(), fStimRadius, 1.f );
+	// RETAIL: 0x10098902, the center goes in a copy.
+	LTVector vCenter = GetCenter();
+	g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyLightDisturbanceVisible, 1, pRandomPlayer->m_hObject, m_hLightSwitchUseObjectNode, du.GetData(), vCenter, fStimRadius, 1.f );
 }
 
 void AIVolume::InitialUpdate(float fUpdateType)
@@ -1462,9 +1461,8 @@ AIVolumePlayerInfo::AIVolumePlayerInfo()
 		m_ahViewNodes[iViewNode] = LTNULL;
 	}
 
-	// Only the player cares about these volumes.
-
-	m_dwUseBy = kUseBy_Player;
+	// RETAIL: 0x1009a2b0, Tron's constructor does not set m_dwUseBy to
+	// kUseBy_Player: it keeps the default.
 }
 
 AIVolumePlayerInfo::~AIVolumePlayerInfo()
@@ -1567,10 +1565,20 @@ AINode* AIVolumePlayerInfo::FindViewNode(CAI* pAI, EnumAINodeType eNodeType, con
 		pPathKnowledgeMgr = pAI->GetPathKnowledgeMgr();
 	}
 
+	// RETAIL: 0x1009a633 / 0x1009a7c3, Tron searches the view nodes in a
+	// random order, and takes only the AINode objects.
+
+	HOBJECT ahViewNodes[kMaxViewNodes];
+	for ( uint32 iCopy = 0 ; iCopy < kMaxViewNodes ; iCopy++ )
+	{
+		ahViewNodes[iCopy] = m_ahViewNodes[iCopy];
+	}
+	std::random_shuffle( ahViewNodes, ahViewNodes + kMaxViewNodes );
+
 	for ( uint32 iViewNode = 0 ; iViewNode < kMaxViewNodes ; iViewNode++ )
 	{
-		HOBJECT hViewNode = m_ahViewNodes[iViewNode];
-		AINode* pNode = (hViewNode == LTNULL ? LTNULL : AINode::HandleToObject(hViewNode));
+		HOBJECT hViewNode = ahViewNodes[iViewNode];
+		AINode* pNode = ( ( hViewNode && IsKindOf( hViewNode, "AINode" ) ) ? AINode::HandleToObject(hViewNode) : LTNULL );
 		if ( pNode && ( ( pNode->GetType() == eNodeType ) || pNode->NodeTypeIsActive( eNodeType ) ) )
 		{
 			if( bMustBeUnowned && pNode->GetNodeOwner() )
@@ -1637,10 +1645,20 @@ AINode* AIVolumePlayerInfo::FindOwnedViewNode(CAI* pAI, EnumAINodeType eNodeType
 		pPathKnowledgeMgr = pAI->GetPathKnowledgeMgr();
 	}
 
+	// RETAIL: 0x1009a633 / 0x1009a7c3, Tron searches the view nodes in a
+	// random order, and takes only the AINode objects.
+
+	HOBJECT ahViewNodes[kMaxViewNodes];
+	for ( uint32 iCopy = 0 ; iCopy < kMaxViewNodes ; iCopy++ )
+	{
+		ahViewNodes[iCopy] = m_ahViewNodes[iCopy];
+	}
+	std::random_shuffle( ahViewNodes, ahViewNodes + kMaxViewNodes );
+
 	for ( uint32 iViewNode = 0 ; iViewNode < kMaxViewNodes ; iViewNode++ )
 	{
-		HOBJECT hViewNode = m_ahViewNodes[iViewNode];
-		AINode* pNode = (hViewNode == LTNULL ? LTNULL : AINode::HandleToObject(hViewNode));
+		HOBJECT hViewNode = ahViewNodes[iViewNode];
+		AINode* pNode = ( ( hViewNode && IsKindOf( hViewNode, "AINode" ) ) ? AINode::HandleToObject(hViewNode) : LTNULL );
 		if ( pNode && ( ( pNode->GetType() == eNodeType ) || pNode->NodeTypeIsActive( eNodeType ) ) )
 		{
 			if( pNode->GetNodeOwner() != hOwner )
@@ -1835,6 +1853,16 @@ LTBOOL AIVolumeJumpUp::CanBuildPathTo( CAI* pAI, AIVolume* pVolumeNext )
 		return LTFALSE;
 	}
 
+
+	// RETAIL: 0x1009ae55, Tron's: only an AI of the required alignment.
+
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
+	{
+		return LTFALSE;
+	}
+
 	return LTTRUE;
 }
 
@@ -1843,6 +1871,15 @@ LTBOOL AIVolumeJumpUp::CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev )
 	// Flag set to only use when AI is alert to the enemy's presence.
 
 	if( m_bOnlyWhenAlert && ( pAI->GetAwareness() < kAware_Alert ) )
+	{
+		return LTFALSE;
+	}
+
+	// RETAIL: 0x1009aeaa, Tron's: only an AI of the required alignment.
+
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
 	{
 		return LTFALSE;
 	}
@@ -1893,6 +1930,15 @@ LTBOOL AIVolumeJumpUp::CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev )
 	// this path is not valid for jumping.
 
 	if( pVolumeNext && ( pVolumeNext->GetBackBottomLeft().y != GetBackBottomLeft().y ) )
+	{
+		return LTFALSE;
+	}
+
+	// RETAIL: 0x1009affe, Tron's: only an AI of the required alignment.
+
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
 	{
 		return LTFALSE;
 	}
@@ -2067,7 +2113,16 @@ LTBOOL AIVolumeJumpOver::CanBuildPathTo( CAI* pAI, AIVolume* pVolumeNext )
 {
 	if( !m_bValidJumpOver )
 	{
-		AIError("INVALID JUMPOVER: JumpUpVolume %s cannot be used for paths because it has more than one connecting volume on the same side of the jump. There may only be one connecting volume on each side of the jump.", GetName() );
+		Warn("INVALID JUMPOVER: JumpUpVolume %s cannot be used for paths because it has more than one connecting volume on the same side of the jump. There may only be one connecting volume on each side of the jump.", GetName() );
+		return LTFALSE;
+	}
+
+	// RETAIL: 0x1009b55a, Tron's: only an AI of the required alignment.
+
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
+	{
 		return LTFALSE;
 	}
 
@@ -2095,13 +2150,22 @@ LTBOOL AIVolumeJumpOver::CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev )
 {
 	if( !m_bValidJumpOver )
 	{
-		AIError("INVALID JUMPOVER: JumpUpVolume %s cannot be used for paths because it has more than one connecting volume on the same side of the jump. There may only be one connecting volume on each side of the jump.", GetName() );
+		Warn("INVALID JUMPOVER: JumpUpVolume %s cannot be used for paths because it has more than one connecting volume on the same side of the jump. There may only be one connecting volume on each side of the jump.", GetName() );
 		return LTFALSE;
 	}
 
 	// Can the AI use this type of volume?
 
 	if ( !( pAI->GetCurValidVolumeMask() & GetVolumeType() ) )
+	{
+		return LTFALSE;
+	}
+
+	// RETAIL: 0x1009b632, Tron's: only an AI of the required alignment.
+
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
 	{
 		return LTFALSE;
 	}
