@@ -30,7 +30,9 @@ class CButeMgr;
 // in for Tron's; Tron's dedicated server (which defines neither build) has
 // none of them (TRONSrv.exe has no static options to construct, and no
 // campaign directories).
-#if defined( _CLIENTBUILD ) || defined( _SERVERBUILD )
+// RETAIL: CShell.dll has none of them either (no DMGameOptions code or
+// static initializers), so only Object.lto's build keeps them.
+#if defined( _SERVERBUILD )
 #define PROFILEUTILS_NOLF2_OPTIONS
 #endif
 

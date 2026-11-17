@@ -349,7 +349,6 @@ private :
 	void    HandleMsgProjectile             (uint8, ILTMessage_Read*);
 	void    HandleMsgPauseGame				(ILTMessage_Read*);
 	void    HandleMsgSwitchingWorldState	(ILTMessage_Read*);
-	void    HandleMsgMultiplayerOptions	(ILTMessage_Read*);
 
 
 	void	InitSinglePlayer();

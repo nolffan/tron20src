@@ -2716,13 +2716,7 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 		}
 		break;
 
-		case COMMAND_ID_LASTWEAPON :
-		{
-			ASSERT( 0 != g_pPlayerMgr );
-			g_pPlayerMgr->LastWeapon( );
-			return LTTRUE;
-		}
-		break;
+		// RETAIL: no last weapon command in Tron (0x100caa10)
 
 		case COMMAND_ID_NEXT_WEAPON :
 		case COMMAND_ID_NEXT_WEAPON_1 :
