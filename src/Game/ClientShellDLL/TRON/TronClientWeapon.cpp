@@ -5,10 +5,8 @@
 // PURPOSE : Tron's common base of its client weapons (retail only, written
 //           from CShell.dll 0x10097060..; see TronClientWeapon.h).
 //
-//           Only what the derived weapons need is here so far: the
-//           constructor, destructor, OnMessage, Update, Load/Save and the
-//           small helpers.  The larger new virtuals are stand-ins marked
-//           "not yet written" (this TU is the 0x10090000 band's).
+//           Each function is written from the retail code (its RETAIL:
+//           note gives the address).
 //
 // ----------------------------------------------------------------------- //
 
@@ -20,6 +18,8 @@
 #include "RatingMgr.h"
 #include "GameClientShell.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x10096ff0..)
+#include "ClientFXMgr.h"
+#include "CheatMgr.h"
 
 #ifndef INVALID_ANI
 #define INVALID_ANI			((HMODELANIM)-1)
@@ -649,15 +649,87 @@ void CTronClientWeapon::SaveShotPrimitiveCharge()
 	}
 }
 
-// RETAIL: 0x100978f0 (296 bytes) not yet written
+// RETAIL: 0x100978f0: a blocked shot shows the weapon's defense class
+// effect on the player view
 bool CTronClientWeapon::HandleMessageProjectile( uint8 messageID, ILTMessage_Read *pMsg )
 {
-	return false;
+	if ( MPROJ_BLOCKED != pMsg->Readuint8() )
+	{
+		return false;
+	}
+
+	DEFENSECLASSDATA const *pDefense = g_pWeaponMgr->GetDefenseClass( m_pWeapon->nDefenseClassId );
+	if ( !pDefense )
+	{
+		return false;
+	}
+
+	CLIENTFX_LINK clientFXLink;
+	CLIENTFX_CREATESTRUCT fxInit( pDefense->szDefendPVFXName, FXFLAG_REALLYCLOSE, m_hObject );
+	g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
+	if ( clientFXLink.GetInstance() )
+	{
+		clientFXLink.GetInstance()->m_bPlayerView = LTTRUE;
+	}
+
+	return true;
 }
 
-// RETAIL: 0x10097c30 (358 bytes) not yet written
+// RETAIL: 0x10097a70: without energy (slot 89) no shot, unless the cheat
+bool CTronClientWeapon::SpecialOverrideFire()
+{
+	if ( g_pCheatMgr && !g_pCheatMgr->IsCheatActive( CHEAT_GOD ) && !TronUnknownVirtual164() )
+	{
+		return false;
+	}
+
+	return CClientWeapon::SpecialOverrideFire();
+}
+
+// RETAIL: 0x10097ab0: Save writes the shot's subroutine data
+void CTronClientWeapon::TronUnknownVirtual110( ILTMessage_Write *pMsg )
+{
+	bool (*pFlags)[2] = m_abTronUnknown13C;
+	for ( int i = 0; i < 11; ++i, ++pFlags )
+	{
+		pMsg->Writebool( (*pFlags)[0] );
+		pMsg->Writebool( (*pFlags)[1] );
+	}
+
+	if ( m_abTronUnknown13C[0][0] ) pMsg->WriteType( *(SequencerData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[1][0] ) pMsg->WriteType( *(ClusterData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[2][0] ) pMsg->WriteType( *(SuffusionData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[3][0] ) pMsg->WriteType( *(LOLData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[4][0] ) pMsg->WriteType( *(BallLauncherData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[5][0] ) pMsg->WriteType( *(DrunkenDimsData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[6][0] ) pMsg->WriteType( *(EnergyClawData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[7][0] ) pMsg->WriteType( *(PranksterBitData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[8][0] ) pMsg->WriteType( *(MegaHurtzData*)&m_fTronMegaHurtzDamage );
+	if ( m_abTronUnknown13C[9][0] ) pMsg->WriteType( *(CorrodeData*)&m_fTronCorrodeDuration );
+	if ( m_abTronUnknown13C[10][0] ) pMsg->WriteType( *(PrimitiveChargeData*)&m_fTronPrimitiveChargeDamage );
+}
+
+// RETAIL: 0x10097c30: Load reads the shot's subroutine data
 void CTronClientWeapon::TronUnknownVirtual178( ILTMessage_Read *pMsg )
 {
+	bool (*pFlags)[2] = m_abTronUnknown13C;
+	for ( int i = 0; i < 11; ++i, ++pFlags )
+	{
+		(*pFlags)[0] = pMsg->Readbool();
+		(*pFlags)[1] = pMsg->Readbool();
+	}
+
+	if ( m_abTronUnknown13C[0][0] ) pMsg->ReadType( (SequencerData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[1][0] ) pMsg->ReadType( (ClusterData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[2][0] ) pMsg->ReadType( (SuffusionData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[3][0] ) pMsg->ReadType( (LOLData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[4][0] ) pMsg->ReadType( (BallLauncherData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[5][0] ) pMsg->ReadType( (DrunkenDimsData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[6][0] ) pMsg->ReadType( (EnergyClawData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[7][0] ) pMsg->ReadType( (PranksterBitData*)&m_fTronUnknown154 );
+	if ( m_abTronUnknown13C[8][0] ) pMsg->ReadType( (MegaHurtzData*)&m_fTronMegaHurtzDamage );
+	if ( m_abTronUnknown13C[9][0] ) pMsg->ReadType( (CorrodeData*)&m_fTronCorrodeDuration );
+	if ( m_abTronUnknown13C[10][0] ) pMsg->ReadType( (PrimitiveChargeData*)&m_fTronPrimitiveChargeDamage );
 }
 
 // RETAIL: 0x10098b30: a continuous drain of m_fTronUnknown204 energy per

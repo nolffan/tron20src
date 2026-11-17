@@ -71,6 +71,12 @@ protected:
 	// RETAIL: slot 57 (0x10097a20): firing spends the shot's energy
 	virtual void  Fire( bool bFire );
 
+	// RETAIL: slot 68 (0x10097ab0): Save's helper, the shot's subroutine data
+	virtual void  TronUnknownVirtual110( ILTMessage_Write *pMsg );
+
+	// RETAIL: slot 72 (0x10097a70)
+	virtual bool  SpecialOverrideFire();
+
 	// RETAIL: slot 88 (0x10097f10)
 	virtual bool  TronUnknownVirtual160( int nArg );
 
