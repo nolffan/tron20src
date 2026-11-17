@@ -564,10 +564,7 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read *pMsg)
 			GADGETTARGETCREATESTRUCT GadgetTarget;
 
 			GadgetTarget.hServerObj = hObj;
-            GadgetTarget.eType = (GadgetTargetType)pMsg->Readuint8();
-			GadgetTarget.bSwitchWeapons = pMsg->Readbool();
-			GadgetTarget.bPowerOn = pMsg->Readbool();
-			GadgetTarget.nTeamID = pMsg->Readuint8();
+            GadgetTarget.eType = (GadgetTargetType)pMsg->Readuint8();	// RETAIL: the type only (0x1010620a)
 			CreateSFX(nId, &GadgetTarget);
 		}
 		break;

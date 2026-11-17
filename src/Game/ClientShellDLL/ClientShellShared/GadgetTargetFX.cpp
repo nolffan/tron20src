@@ -27,6 +27,7 @@ extern CGameClientShell* g_pGameClientShell;
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x101b7d20
 LTBOOL CGadgetTargetFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 {
     if (!CSpecialFX::Init(psfxCreateStruct)) return LTFALSE;
@@ -34,23 +35,6 @@ LTBOOL CGadgetTargetFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	GADGETTARGETCREATESTRUCT* pGTCS = (GADGETTARGETCREATESTRUCT*)psfxCreateStruct;
 
 	m_eType = pGTCS->eType;
-	m_bSwitchWeapons = pGTCS->bSwitchWeapons;
-	m_bPowerOn = pGTCS->bPowerOn;
-	m_nTeamID = pGTCS->nTeamID;
 
     return LTTRUE;
 }
-
-
-LTBOOL CGadgetTargetFX::OnServerMessage(ILTMessage_Read *pMsg)
-{
-	if (!CSpecialFX::OnServerMessage(pMsg)) return LTFALSE;
-	m_eType = (GadgetTargetType)pMsg->Readuint8();
-	m_bSwitchWeapons = pMsg->Readbool();
-	m_bPowerOn = pMsg->Readbool();
-	m_nTeamID = pMsg->Readuint8();
-
-	return LTTRUE;
-};
-
-

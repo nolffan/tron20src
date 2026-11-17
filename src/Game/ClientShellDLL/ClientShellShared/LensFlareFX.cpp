@@ -44,7 +44,7 @@ LTBOOL CLensFlareFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
 
 	LENSFLARECREATESTRUCT lens;
 
-	lens.InitFromMessage(lens, pMsg);
+	lens.InitFromMessage(hServObj, lens, pMsg);
 	lens.hServerObj			= hServObj;
 
 	return Init(&lens);
@@ -59,7 +59,7 @@ LTBOOL CLensFlareFX::Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL LENSFLARECREATESTRUCT::InitFromMessage(LENSFLARECREATESTRUCT & lens,
+LTBOOL LENSFLARECREATESTRUCT::InitFromMessage(HOBJECT hObj, LENSFLARECREATESTRUCT & lens,
 											 ILTMessage_Read *pMsg)
 {
     if (!pMsg) return LTFALSE;
@@ -81,6 +81,14 @@ LTBOOL LENSFLARECREATESTRUCT::InitFromMessage(LENSFLARECREATESTRUCT & lens,
     lens.fBlindCameraAngle  = pMsg->Readfloat();
     lens.fMinBlindScale     = pMsg->Readfloat();
     lens.fMaxBlindScale     = pMsg->Readfloat();
+
+	// RETAIL: Tron's: a socket of the object (0x101a5a22)
+	if (pMsg->Readbool())
+	{
+		char szSocket[128];
+		pMsg->ReadString(szSocket, sizeof(szSocket));
+		g_pModelLT->GetSocket(hObj, szSocket, lens.hSocket);
+	}
 
     return LTTRUE;
 }
@@ -135,7 +143,7 @@ LTBOOL CLensFlareFX::CreateObject(ILTClient* pClientDE)
 	// Create the lens flare sprite...
 
 
-	g_pLTClient->GetObjectPos(m_hServerObject, &(createStruct.m_Pos));
+	GetFlarePos(&(createStruct.m_Pos));	// RETAIL: at the socket (0x101a5f8f)
 	createStruct.m_ObjectType = OT_SPRITE;
 
 	const char* pFilename = m_pClientDE->GetStringData(m_cs.hstrSpriteFile);
@@ -201,7 +209,7 @@ LTBOOL CLensFlareFX::Update()
 
     LTVector vPos, vCamPos;
 	g_pLTClient->GetObjectPos(hCamera, &vCamPos);
-	g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
+	GetFlarePos(&vPos);	// RETAIL: at the socket (0x101a6143)
 
 	// If our server object is in the sky box, convert its position to
 	// real world coordinates...
@@ -370,4 +378,31 @@ LTBOOL CLensFlareFX::Update()
 	}
 
     return LTTRUE;
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLensFlareFX::GetFlarePos
+//
+//	PURPOSE:	RETAIL: 0x101a6ba0 (the name is ours): the position of the
+//				flare: its socket's when it has one, else its object's
+//
+// ----------------------------------------------------------------------- //
+
+void CLensFlareFX::GetFlarePos(LTVector* pvPos)
+{
+	if (!pvPos) return;
+
+	if (m_cs.hSocket != INVALID_MODEL_SOCKET)
+	{
+		LTransform transform;
+		if (g_pModelLT->GetSocketTransform(m_hServerObject, m_cs.hSocket, transform, LTTRUE) == LT_OK)
+		{
+			*pvPos = transform.m_Pos;
+			return;
+		}
+	}
+
+	g_pLTClient->GetObjectPos(m_hServerObject, pvPos);
 }

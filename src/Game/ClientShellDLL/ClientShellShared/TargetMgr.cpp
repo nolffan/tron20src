@@ -503,23 +503,8 @@ void CTargetMgr::Update()
 			GadgetTargetType eGadgetType = pGTFX->GetType();
 			if (eBombable == eGadgetType)
 			{
-				// Can only defuse a bomb that doesn't belong to your team...
-				
-				if( IsTeamGameType() )
-				{
-					CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-					if( !pLocalCI )
-						return;
-
-					if( pGTFX->GetTeamID() != INVALID_TEAM )
-					{
-						// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-						if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pGTFX->GetTeamID() )
-						{
-							m_bCanActivate = false;
-						}
-					}
-				}
+				// RETAIL: Tron's gadget targets have no team (CGadgetTargetFX
+				// keeps the type only: 0x101b7d20)
 
 				SetTargetStringID(IDS_TARGET_DEFUSE);
 				return;
@@ -924,31 +909,9 @@ void CTargetMgr::SetGadgetTarget( bool bDisabling )
 	}
 	
 
-	if( IsTeamGameType() )
-	{
-		// Can only activate a gadget target that belongs to your team...
-		
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return;
-
-		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-		if( (pFX->GetTeamID() != INVALID_TEAM) && ((uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pFX->GetTeamID()) )
-		{
-			// The bombable can only be defused by the other team...
-
-			if( eGadgetType == eBombable && bDisabling )
-			{
-				m_bCanActivate &= true;
-			}
-			else
-			{
-				m_bCanActivate = false;
-			}
-		}
-	}
-
-	m_bCanActivate &= pFX->IsPowerOn();
+	// RETAIL: Tron's gadget targets have no team and no power state
+	// (CGadgetTargetFX keeps the type only: 0x101b7d20; SetGadgetTarget,
+	// 0x1016e6d0, asks neither)
 
 	// Cannot disable a gadget target when carrying a body...
 
@@ -1023,7 +986,9 @@ DamageType CTargetMgr::RequiredGadgetDamageType()
 
 
 	CGadgetTargetFX* const pFX = (CGadgetTargetFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_GADGETTARGET_ID, m_hTarget);
-	if (!pFX || !pFX->SwitchWeapons()) return DT_INVALID;
+	// PORT: Tron's gadget targets keep no switch-weapons flag (CGadgetTargetFX,
+	// 0x101b7d20)
+	if (!pFX) return DT_INVALID;
 
 	DamageType eDamageType = DT_INVALID;
 	GadgetTargetType	eGadgetType = pFX->GetType();
@@ -1059,23 +1024,7 @@ DamageType CTargetMgr::RequiredGadgetDamageType()
 		break;
 	}
 
-	if( IsTeamGameType() )
-	{
-		// Only switch to a gadget if the target belongs to our team...
-
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return DT_INVALID;
-
-		if( pFX->GetTeamID() != INVALID_TEAM )
-		{
-			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-			if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != pFX->GetTeamID() )
-			{
-				eDamageType = DT_INVALID;
-			}
-		}
-	}
+	// PORT: Tron's gadget targets have no team (CGadgetTargetFX, 0x101b7d20)
 
 	return eDamageType;
 

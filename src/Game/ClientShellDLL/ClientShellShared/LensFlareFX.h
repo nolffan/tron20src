@@ -19,7 +19,8 @@ struct LENSFLARECREATESTRUCT : public SFXCREATESTRUCT
 {
 	LENSFLARECREATESTRUCT();
 
-    LTBOOL InitFromMessage(LENSFLARECREATESTRUCT & lens, ILTMessage_Read *pMsg);
+	// RETAIL: Tron's takes the object too, for the socket (0x101a58f0)
+    LTBOOL InitFromMessage(HOBJECT hObj, LENSFLARECREATESTRUCT & lens, ILTMessage_Read *pMsg);
 
     LTBOOL   bInSkyBox;
     LTBOOL   bCreateSprite;
@@ -38,6 +39,10 @@ struct LENSFLARECREATESTRUCT : public SFXCREATESTRUCT
     LTFLOAT  fBlindCameraAngle;
     LTFLOAT  fMinBlindScale;
     LTFLOAT  fMaxBlindScale;
+	// RETAIL: Tron's: the socket of the object the flare is at (+0x4c; its
+	// constructor sets 0, its users test for INVALID_MODEL_SOCKET:
+	// 0x1010ae84, 0x101a6bb5). The name is ours
+	HMODELSOCKET	hSocket;
 };
 
 inline LENSFLARECREATESTRUCT::LENSFLARECREATESTRUCT()
@@ -59,6 +64,7 @@ inline LENSFLARECREATESTRUCT::LENSFLARECREATESTRUCT()
 	fMinBlindScale		= 0.0f;
 	fMaxBlindScale		= 0.0f;
     hstrSpriteFile      = LTNULL;
+	hSocket				= 0;
 }
 
 class CLensFlareFX : public CSpecialFX
@@ -91,6 +97,10 @@ class CLensFlareFX : public CSpecialFX
 		virtual uint32 GetSFXID() { return SFX_LENSFLARE_ID; }
 
 	protected :
+
+		// RETAIL: 0x101a6ba0 (the name is ours): the flare's position, at
+		// its socket when it has one
+		void	GetFlarePos(LTVector* pvPos);
 
 		LENSFLARECREATESTRUCT		m_cs;
 		HOBJECT						m_hFlare;

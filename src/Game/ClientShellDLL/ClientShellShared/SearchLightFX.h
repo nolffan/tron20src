@@ -27,6 +27,10 @@ struct SEARCHLIGHTCREATESTRUCT : public SFXCREATESTRUCT
     LTFLOAT  fLightRadius;
     LTVector vLightColor;
     LTBOOL   bBeamAdditive;
+	// RETAIL: Tron's: the socket of the object the beam is at (+0x2c; the
+	// constructor sets 0, the users test for INVALID_MODEL_SOCKET:
+	// 0x101ae36d, 0x101af172). The name is ours
+	HMODELSOCKET	hSocket;
 
 	LENSFLARECREATESTRUCT lens;
 };
@@ -40,6 +44,7 @@ inline SEARCHLIGHTCREATESTRUCT::SEARCHLIGHTCREATESTRUCT()
 	fLightRadius	= 0.0f;
     bBeamAdditive   = LTTRUE;
 	vLightColor.Init();
+	hSocket			= 0;
 }
 
 
@@ -76,6 +81,10 @@ class CSearchLightFX : public CSpecialFX
 		virtual uint32 GetSFXID() { return SFX_SEARCHLIGHT_ID; }
 
 	protected :
+
+		// RETAIL: 0x101af160 (the name is ours): the beam's position, at its
+		// socket when it has one
+		void	GetBeamPos(LTVector* pvPos);
 
 		SEARCHLIGHTCREATESTRUCT		m_cs;
 		HOBJECT						m_hBeam;
