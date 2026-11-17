@@ -652,36 +652,25 @@ void CScreenJoinServerList::AddServer(SBServer hServer)
 
 	CLTGUIColumnCtrl *pCtrl = CreateColumnCtrl(kCmdSelectServer,0,LTIntPt(0,0));
 
-	// RETAIL: the locked and dedicated icons are texture columns here
-	// (CLTGUIColumnCtrl 0x100bc3e0 with m_hLocked/m_nLockColumn and
-	// m_hDedicated/m_nDedicatedColumn): left out, our LTGUIMgr's column
-	// control has no texture columns yet
-	bPassword;
-	bDedicated;
+	// RETAIL: the locked and dedicated icons are icon columns (0x10064703)
+	if (bPassword)
+		pCtrl->AddIconColumn(m_hLocked,(uint16)m_nLockColumn);
+	if (bDedicated)
+		pCtrl->AddIconColumn(m_hDedicated,(uint16)m_nDedicatedColumn);
 
 	pCtrl->AddColumn(std::wstring(),(uint16)m_nNameColumn);
 
 	char szTemp[1024];
-	uint32 i, nLen;
 
-	sText.erase();
-	nLen = strlen(pszName);
-	for (i = 0; i < nLen; i++)
-		sText.push_back((uint8)pszName[i]);
+	LTGUIWiden(sText, pszName);
 	pCtrl->AddColumn(sText,m_nPingColumn - m_nNameColumn,LTTRUE);
 
 	sprintf(szTemp,"%d",nPing);
-	sText.erase();
-	nLen = strlen(szTemp);
-	for (i = 0; i < nLen; i++)
-		sText.push_back((uint8)szTemp[i]);
+	LTGUIWiden(sText, szTemp);
 	pCtrl->AddColumn(sText,m_nPlayersColumn - m_nPingColumn);
 
 	sprintf(szTemp,"%d/%d",nPlayers,nMaxPlayers);
-	sText.erase();
-	nLen = strlen(szTemp);
-	for (i = 0; i < nLen; i++)
-		sText.push_back((uint8)szTemp[i]);
+	LTGUIWiden(sText, szTemp);
 	pCtrl->AddColumn(sText,m_nTypeColumn - m_nPlayersColumn);
 
 	// PORT: see CBaseScreenJoin::JoinServer (retail tests whether the type
@@ -695,10 +684,7 @@ void CScreenJoinServerList::AddServer(SBServer hServer)
 	}
 	pCtrl->AddColumn(LoadTempWString(nTypeID),m_nMapColumn - m_nTypeColumn,LTTRUE);
 
-	sText.erase();
-	nLen = strlen(pszMap);
-	for (i = 0; i < nLen; i++)
-		sText.push_back((uint8)pszMap[i]);
+	LTGUIWiden(sText, pszMap);
 	pCtrl->AddColumn(sText,0x244 - m_nMapColumn,LTTRUE);
 
 	pCtrl->SetParam1((uint32)hServer);
