@@ -332,7 +332,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		uint8			GetPermissionSet() const {return m_iPermissionSet;}
 
 		// RETAIL: Tron's (retail 0x10090720, out of line; the name is ours):
-		// the permission sets, or with m_bTracking set the sum of all of the
+		// the permission sets, or with m_bPlayerPermissions set the sum of all of the
 		// players' sets
 		uint8			GetPSets();
 
@@ -718,9 +718,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// to wait until everyone says they're done.
 		PlayerTracker	m_PlayerTrackerDialogue;
 
-		// Indicates character is tracked by a tracking dart (taken to be
-		// retail's last, saved bool)
-		bool	m_bTracking;
+		// RETAIL: Tron's: set by PLAYERPERMISSIONS (OnTrigger 0x1008c0a1):
+		// the character has the player's permission sets (GetPSets). The
+		// name is ours
+		bool	m_bPlayerPermissions;
 
 	private :
 
@@ -747,6 +748,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// PORT: NOLF2's radar flag has no room in Tron's layout (Tron keeps
 		// it in a flag byte at +0xac): static, it stands in for NOLF2's code
 		static bool		m_bRadarVisible;
+		// PORT: NOLF2's tracking dart flag has no room in Tron's layout
+		// either: static, as m_bRadarVisible
+		static bool		m_bTracking;
 };
 
 class CCharacterPlugin : public IObjectPlugin

@@ -122,6 +122,17 @@ BEGIN_CLASS(CCharacter)
 		ADD_STRINGPROP_FLAG(CustomCmd3, "<none>", PF_GROUP(10) | PF_HIDDEN)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(CCharacter, GameBase, NULL, NULL, CF_HIDDEN, CCharacterPlugin)
 
+// RETAIL: the properties a character answers MID_QUERY_TARGET_PROPERTIES
+// with (ObjectMessageFn, 0x1008a8e0). The names are ours
+#define TARGET_PROP_CHARACTER_HEALTH	5
+#define TARGET_PROP_CHARACTER_ARMOR		6
+#define TARGET_PROP_CHARACTER_CARRYING	7
+
+// RETAIL: a character's user flag (InitialUpdate, 0x1008ce2c), as an
+// InfoString's USRFLG_INFO_STRING: the client asks it for the properties
+// above. The name is ours
+#define USRFLG_CHAR_TARGET_PROPERTIES	(1<<10)
+
 extern CAIStimulusMgr* g_pAIStimulusMgr;
 extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
 
@@ -129,6 +140,7 @@ LTBOOL s_bCharacterPluginInitted = LTFALSE;
 CInventoryButeMgr s_InventoryButeMgr;
 
 bool CCharacter::m_bRadarVisible = false;	// PORT: (Character.h)
+bool CCharacter::m_bTracking = false;		// PORT: (Character.h)
 
 const float kDialogueTimeFudgeFactor = 5.0f;
 
@@ -535,7 +547,7 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_fBodyLifetime				= -1.0f;	// RETAIL: here (0x1008a028)
 	m_nCarrying					= CFX_CARRY_NONE;
 	m_nUniqueDialogueId			= 0;
-	m_bTracking					= false;
+	m_bPlayerPermissions		= false;	// RETAIL: Tron's (Character.h)
 }
 
 // ----------------------------------------------------------------------- //
@@ -774,10 +786,7 @@ uint32 CCharacter::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			Load((ILTMessage_Read*)pData);
 
-			// We need to reset our sfx message since values
-			// could have changed across save versions.
-			
-			CreateSpecialFX( );
+			// RETAIL: no CreateSpecialFX here (0x1008a7a5)
 
 			return dwRet;
 		}
@@ -821,6 +830,101 @@ uint32 CCharacter::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 			HandleSfxMessage( hSender, pMsg );
 		}
 		break;
+
+		// RETAIL: Tron's (0x1008a889): a client asks for the character's
+		// health, armor and carrying state (as InfoString's)
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			uint8 nNumProps = pMsg->Readuint8();
+			uint8 nNumPropsProcessed = 0;
+
+			// See what we need to send down
+			if(nNumProps > 0)
+			{
+				// Start the message
+				CAutoMessage cTempMsg;
+
+				// Loop through the props
+				uint8 iProp;
+				for(int i=0;i<nNumProps;i++)
+				{
+					// Get the prop
+					iProp = pMsg->Readuint8();
+					switch(iProp)
+					{
+						case TARGET_PROP_CHARACTER_HEALTH:
+						{
+							if( m_damage.GetMaxHitPoints() != 0.0 )
+							{
+								cTempMsg.Writeuint8(iProp);
+								cTempMsg.Writefloat(m_damage.GetHitPoints() / m_damage.GetMaxHitPoints());
+								nNumPropsProcessed++;
+							}
+							break;
+						}
+
+						case TARGET_PROP_CHARACTER_ARMOR:
+						{
+							if( m_damage.GetMaxArmorPoints() != 0.0 )
+							{
+								cTempMsg.Writeuint8(iProp);
+								cTempMsg.Writefloat(m_damage.GetArmorPoints() / m_damage.GetMaxArmorPoints());
+								nNumPropsProcessed++;
+							}
+							break;
+						}
+
+						case TARGET_PROP_CHARACTER_CARRYING:
+						{
+							// RETAIL: the carrying state goes as 0, 3, 1, 2, with
+							// m_nTronUnknownCF8 after all but the first
+							cTempMsg.Writeuint8(iProp);
+							switch( m_nCarrying )
+							{
+								case 0:
+									cTempMsg.Writeuint8(0);
+									break;
+
+								case 2:
+									cTempMsg.Writeuint8(1);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+
+								case 1:
+									cTempMsg.Writeuint8(3);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+
+								case 3:
+									cTempMsg.Writeuint8(2);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+							}
+							nNumPropsProcessed++;
+							break;
+						}
+					}
+				}
+
+				// Build the actual message to send back down to the client
+				if(nNumPropsProcessed > 0)
+				{
+					// Get the player
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
+					if(pPlayer)
+					{
+						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8(MID_QUERY_TARGET_PROPERTIES);
+						cPropMsg.WriteObject(m_hObject);
+						cPropMsg.Writeuint8(nNumPropsProcessed);
+						cPropMsg.WriteMessage(cTempMsg.Read());
+						g_pLTServer->SendToClient(cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+					}
+				}
+			}
+
+			return LT_OK;
+		}
 	}
 
 	return GameBase::ObjectMessageFn(hSender, pMsg);
@@ -1101,6 +1205,7 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Neutral("NEUTRAL");
 	static CParsedMsg::CToken s_cTok_Unknown("UNKNOWN");
 	static CParsedMsg::CToken s_cTok_Find("FIND");
+	static CParsedMsg::CToken s_cTok_PlayerPermissions("PLAYERPERMISSIONS");	// RETAIL: Tron's
 	static CParsedMsg::CToken s_cTok_Remove("REMOVE");
 
 	if ( (cMsg.GetArg(0) == s_cTok_Play_Sound) && (cMsg.GetArgCount() > 1) )
@@ -1141,20 +1246,15 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Attach )
 	{
-		if( m_pAttachments )
-		{
-			m_pAttachments->Attach(cMsg.GetArg(1), cMsg.GetArg(2));
-			HandleAttach();
-		}
+		// RETAIL: no test of m_pAttachments (0x1008bc0c)
+		m_pAttachments->Attach(cMsg.GetArg(1), cMsg.GetArg(2));
+		HandleAttach();
         return true;
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Detach )
 	{
-		if( m_pAttachments )
-		{
-			m_pAttachments->Detach(cMsg.GetArg(1));
-			HandleDetach();
-		}
+		m_pAttachments->Detach(cMsg.GetArg(1));
+		HandleDetach();
         return true;
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Gadget )
@@ -1185,11 +1285,6 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		g_pLTServer->CPrint("FIND: %s is at pos (%.2f %.2f %.2f)", GetObjectName(m_hObject), vPos.x, vPos.y, vPos.z );
 		return true;
 	}
-	else if ( cMsg.GetArg(0) == s_cTok_Remove )
-	{
-		AITRACE( AIShowCharacters, ( m_hObject, "Received Remove command." ) );
-		// Intentionally falling through.
-	}
 	else if ( cMsg.GetArg(0) == s_cTok_Crosshair )
 	{
 		if ( cMsg.GetArg(1) == s_cTok_Good )
@@ -1211,6 +1306,24 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 		ResetCrosshair( );
 		return true;
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions )
+	{
+		// RETAIL: Tron's (0x1008c084)
+		if( cMsg.GetArgCount() > 1 )
+		{
+			m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
+		}
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_Remove )
+	{
+		// RETAIL: no AITRACE; the armor goes first (0x1008c0c2)
+		if( m_pAttachments )
+		{
+			RemoveArmor();
+		}
+
+		// Intentionally falling through.
 	}
 
 	return GameBase::OnTrigger( hSender, cMsg );
@@ -1349,7 +1462,22 @@ void CCharacter::ProcessDamageMsg(ILTMessage_Read *pMsg)
 	DamageStruct damage;
 	damage.InitFromMessage(pMsg);
 
-	if ( !m_damage.IsCantDamageType(damage.eType) && m_damage.GetCanDamage() )
+	// RETAIL: Tron's (0x1008c493): no pain while defending; a player has to
+	// face the damage too
+	bool bDefended = false;
+	if( IsPlayer( m_hObject ))
+	{
+		if( IsDefending() && GetDefensePercentage( &damage.vDir ) > 0.95f )
+		{
+			bDefended = true;
+		}
+	}
+	else
+	{
+		bDefended = IsDefending();
+	}
+
+	if ( !m_damage.IsCantDamageType(damage.eType) && m_damage.GetCanDamage() && !bDefended )
 	{
 		// Set our pain information
 
@@ -1573,7 +1701,7 @@ void CCharacter::InitialUpdate(int nInfo)
 
 	// Set this as an object that can be seen with spy vision...
 
-    uint32 nFlags = USRFLG_MOVEABLE | /*USRFLG_SPY_VISION |*/ USRFLG_CHARACTER | GetUserFlagSurfaceType();
+    uint32 nFlags = USRFLG_MOVEABLE | /*USRFLG_SPY_VISION |*/ USRFLG_CHARACTER | USRFLG_CHAR_TARGET_PROPERTIES | GetUserFlagSurfaceType();
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, nFlags, nFlags);
 
 	// Set our initial dims based on the current animation...
@@ -1599,6 +1727,10 @@ void CCharacter::InitialUpdate(int nInfo)
 
 	// [KLS - 2/28/02] - Update our user flags to reflect changes to our surface type
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, GetUserFlagSurfaceType(), 0XFF000000);
+
+	// RETAIL: Tron's fire helpers (0x1008cecb)
+	m_pPRodFireHelper->Init(m_hObject);
+	m_pEnergyClawFireHelper->Init(m_hObject);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2048,25 +2180,12 @@ void CCharacter::SetPitch( float fPitch )
 		{
 			m_fLastPitch = m_fPitch;
 
-			LTRESULT ltResult;
-			CAutoMessage cMsg;
+			// RETAIL: 0x1008e000 sends the pitch as the object's unguaranteed
+			// data, as Contract J.A.C.K.'s (Object 0x1009eea0).
 
-			cMsg.Writeuint8(MID_SFX_MESSAGE);
+			g_pLTServer->SetObjectUnguaranteedData( m_hObject, CompressAngleToByte( fPitch ));
 
-			cMsg.Writeuint8( SFX_CHARACTER_ID );
-
-			cMsg.WriteObject( m_hObject );
-
-			cMsg.Writeuint8( CFX_PITCH );
-
-			// and write it to the message.
-			cMsg.Writeuint8( CompressAngleToByte( fPitch ) );
-			
-			// then send the message
-			ltResult = g_pLTServer->SendToClient( cMsg.Read(), LTNULL, 0);
-			ASSERT( LT_OK == ltResult );
-
-			CreateSpecialFX();
+			CreateSpecialFX( false );
 		}
 	}
 }
@@ -3104,7 +3223,7 @@ void CCharacter::PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fS
 //
 //	ROUTINE:	CCharacter::GetPSets
 //
-//	PURPOSE:	Our permission sets; with m_bTracking set, the sum of all of
+//	PURPOSE:	Our permission sets; with m_bPlayerPermissions set, the sum of all of
 //				the players' sets (RETAIL: Tron's, retail 0x10090720; the
 //				name is ours)
 //
@@ -3112,7 +3231,7 @@ void CCharacter::PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fS
 
 uint8 CCharacter::GetPSets()
 {
-	if (m_bTracking)
+	if (m_bPlayerPermissions)
 	{
 		int i = 0;
 		uint8 nPSets = 0;
@@ -3438,9 +3557,7 @@ void CCharacter::KillDlgSnd()
 		sm_cAISnds--;
 	}
 
-	if (m_eCurDlgSndType == CST_DEATH)
-		return;
-
+	// RETAIL: no CST_DEATH test here (0x10090d60)
 	m_eCurDlgSndType = CST_NONE;
 
 	// Make sure the client knows to stop lip syncing...
@@ -3547,7 +3664,9 @@ void CCharacter::StopDialogue(LTBOOL bCinematicDone)
 void CCharacter::PlayDeathSound()
 {
 	KillDlgSnd();
-    PlayDialogSound(GetDeathSound(), CST_DEATH);
+
+	// RETAIL: a plain sound (0x10091012), not a dialog sound
+	PlaySound(GetDeathSound(), m_fSoundRadius, LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4280,7 +4399,7 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 		SAVE_FLOAT( u.m_fCost );
 	}
 
-	SAVE_bool( m_bTracking );
+	SAVE_bool( m_bPlayerPermissions );
 	SAVE_DWORD( m_nTronUnknownCF8 );
 	SAVE_BYTE( m_nCarrying );
 	SAVE_HOBJECT( m_hTronUnknownCF0 );
@@ -4421,7 +4540,7 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 		LOAD_FLOAT( u.m_fCost );
 	}
 
-	LOAD_bool( m_bTracking );
+	LOAD_bool( m_bPlayerPermissions );
 	LOAD_DWORD( m_nTronUnknownCF8 );
 	LOAD_BYTE( m_nCarrying );
 	LOAD_HOBJECT( m_hTronUnknownCF0 );
@@ -4479,25 +4598,18 @@ CAttachments* CCharacter::TransferAttachments( bool bRemove )
 		m_pAttachments->HandleDeath();
 	}
 
-	CAttachments* pAtt = LTNULL;
-	if (m_pAttachments && bRemove)
+	CAttachments* pAtt = m_pAttachments;
+	if (pAtt && bRemove)
 	{
-		pAtt = m_pAttachments;
-		RemoveAggregate(m_pAttachments);
+		RemoveAggregate(pAtt);
         m_pAttachments = LTNULL;
-	}
-	else if( m_pAttachments )
-	{
-		// If we are not removing our own attachments then we must create a new one.
-
-		pAtt = CAttachments::Create( m_pAttachments->GetType() );
-	}
-	else
-	{
-		ASSERT( !"Transfering NULL Attachments" );
+		return pAtt;
 	}
 
-	return pAtt;
+	// If we are not removing our own attachments then we must create a new one.
+	// RETAIL: without a test of m_pAttachments (0x100936be)
+
+	return CAttachments::Create( pAtt->GetType() );
 }
 
 // ----------------------------------------------------------------------- //
@@ -4645,7 +4757,9 @@ AIVolume* CCharacter::GetCurrentVolume()
 
 HOBJECT CCharacter::GetRegionObject()
 {
-	if ( GetCurrentVolume() && ( GetCurrentVolume() ? GetCurrentVolume()->GetRegion() : LTNULL ) )
+	// RETAIL: 0x10093938 goes on to the region when the second volume test
+	// fails (it cannot: the first test passed)
+	if ( GetCurrentVolume() && ( !GetCurrentVolume() || GetCurrentVolume()->GetRegion() ) )
 	{
 		return GetCurrentVolume()->GetRegion()->m_hObject;
 	}
