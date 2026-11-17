@@ -48,7 +48,14 @@ protected:
 	virtual void  UpdateFiring();
 	void          UpdateSwatDefense();
 	void          UpdateHoldDefense();
-	virtual void  UpdateIdle();
+	// RETAIL: slot 53 (0x10019000): CTronClientWeapon's with the disc shown
+	// again in the states but firing, and the defenses
+	virtual void  UpdateNonFiring();
+	// RETAIL: slot 100 (0x10019920; the name is ours): starts the swat
+	// defense animation again unless it is still playing (retail's
+	// UpdateNonFiring calls it in W_SWAT_DEFENSE, slot 101 in
+	// W_HOLD_DEFENSE: our names of slots 101 and 102 may be one off)
+	virtual bool  TronUnknownVirtual190( bool bResetAni );
 
 	// initialize all the animations for this model
 	virtual void  InitAnimations( bool bAllowSelectOverride = false );
@@ -108,6 +115,14 @@ protected:
 
 	// we got the disc back, add the ammo
 	void          IncrementAmmo( int nAmount = 1 );
+
+	// RETAIL: 0x1001a240: the player view FX of a block (2 swat, 3
+	// critical swat; the name is ours)
+	void          CreateDefendFX( int nDefendType );
+	// RETAIL: 0x1001a320: shows the disc piece again (the name is ours)
+	void          ShowDisc();
+	// RETAIL: 0x1001a370: MID_TRON_DISC_FIRED (the name is ours)
+	void          SendDiscFired();
 
 private:
 	// swat defense animations

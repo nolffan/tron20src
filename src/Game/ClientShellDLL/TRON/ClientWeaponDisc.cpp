@@ -155,7 +155,7 @@ WeaponState CClientWeaponDisc::UpdateModelState( bool bFire, bool bAltFire )
 	}
 	else
 	{
-		UpdateIdle();
+		UpdateNonFiring();
 	}
 
 	// this is reset here just in case it was set while the hold
@@ -378,13 +378,14 @@ void CClientWeaponDisc::UpdateHoldDefense()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CClientWeaponDisc::UpdateIdle
+//	ROUTINE:	CClientWeaponDisc::UpdateNonFiring
 //
-//	PURPOSE:	Update the non-firing animation state of the model
+//	PURPOSE:	Update the non-firing animation state of the model.
+//				RETAIL: 0x10019000
 //
 // ----------------------------------------------------------------------- //
 
-void CClientWeaponDisc::UpdateIdle()
+void CClientWeaponDisc::UpdateNonFiring()
 {
 	m_bCanSetLastFire = true;
 
@@ -405,6 +406,7 @@ void CClientWeaponDisc::UpdateIdle()
 	}
 	if ( GetState() == W_RELOADING )
 	{
+		ShowDisc();
 		if ( !PlayReloadAnimation() )
 		{
 			SetState( W_IDLE );
@@ -412,6 +414,7 @@ void CClientWeaponDisc::UpdateIdle()
 	}
 	if ( GetState() == W_SELECT )
 	{
+		ShowDisc();
 		if ( !PlaySelectAnimation() )
 		{
 			SetState( W_IDLE );
@@ -419,6 +422,7 @@ void CClientWeaponDisc::UpdateIdle()
 	}
 	if ( GetState() == W_DESELECT )
 	{
+		ShowDisc();
 		if ( !PlayDeselectAnimation() )
 		{
 			m_bWeaponDeselected = true;
@@ -427,22 +431,56 @@ void CClientWeaponDisc::UpdateIdle()
 	}
 	if ( GetState() == W_SWAT_DEFENSE )
 	{
-		if ( !PlaySwatDefenseAnimation( false ) )
+		ShowDisc();
+		if ( !TronUnknownVirtual190( false ) )
 		{
 			SetState( W_IDLE );
 		}
 	}
 	if ( GetState() == W_HOLD_DEFENSE )
 	{
-		if ( !PlayHoldDefenseAnimation( false ) )
+		ShowDisc();
+		if ( !PlaySwatDefenseAnimation( false ) )
 		{
 			SetState( W_IDLE );
 		}
 	}
 	if ( GetState() == W_IDLE )
 	{
+		ShowDisc();
 		PlayIdleAnimation();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::TronUnknownVirtual190
+//
+//	PURPOSE:	RETAIL: 0x10019920
+//
+// ----------------------------------------------------------------------- //
+
+bool CClientWeaponDisc::TronUnknownVirtual190( bool bResetAni )
+{
+	uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
+	uint32 dwState = g_pLTClient->GetModelPlaybackState( m_hObject );
+
+	if ( IsSwatDefenseAni( dwAni ) )
+	{
+		if ( !( dwState & MS_PLAYDONE ) )
+		{
+			return true;
+		}
+
+		if ( !bResetAni )
+		{
+			return false;
+		}
+	}
+
+	PlayAnimation( GetSwatDefenseAni(), false, 1.0f, false );
+	SendDiscFired();
+	return true;
 }
 
 
@@ -674,69 +712,14 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 		case MPROJ_BLOCKED:
 		{
-			// play a clientfx based on the defense type
+			// RETAIL: Tron's (0x10019290): the impact hold animation
+			// plays next, and the FX of the block type
+			m_bPlayImpactHoldAnimation = true;
 
-			// get the type of defense
 			uint8 nDefendType = pMsg->Readuint8( );
+			pMsg->SeekTo( 0 );
 
-			// get the damage percentage
-			float fDefendPercentage = pMsg->Readfloat( );
-
-			DISCCLASSDATA const *pDiscData = dynamic_cast< DISCCLASSDATA const * >( m_pAmmo->pProjectileFX->pClassData );
-
-			// no arm defense using the disc
-			ASSERT( MPROJ_START_ARM_BLOCK != nDefendType );
-
-			CLIENTFX_LINK clientFXLink;
-			// PORT: May 2002's FXFLAG_SMOOTHSHUTDOWN (build 51's) is NOLF2's default:
-			// NOLF2 has FXFLAG_NOSMOOTHSHUTDOWN instead
-			uint32 dwFXFlags = FXFLAG_REALLYCLOSE;
-			if ( MPROJ_START_SWAT_BLOCK == nDefendType )
-			{
-				if ( pDiscData->fSwatCriticalDefendThreshold <= fDefendPercentage )
-				{
-					// create the critical defense effect
-					CLIENTFX_CREATESTRUCT fxInit( pDiscData->szSwatCriticalDefendPVFXName, dwFXFlags, m_hObject );
-
-					// create the client fx
-					g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-					if ( clientFXLink.GetInstance() ) 
-					{
-						// setup the flags
-						clientFXLink.GetInstance()->m_bPlayerView = LTFALSE;
-					}
-				}
-				else
-				{
-					// create the normal defense effect
-					CLIENTFX_CREATESTRUCT fxInit( pDiscData->szSwatDefendPVFXName, dwFXFlags, m_hObject );
-
-					// create the client fx
-					g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-					if ( clientFXLink.GetInstance() ) 
-					{
-						// setup the flags
-						clientFXLink.GetInstance()->m_bPlayerView = LTTRUE;
-					}
-				}
-			}
-			else
-			{
-				// create the hold defense effect
-				CLIENTFX_CREATESTRUCT fxInit( pDiscData->szHoldDefendPVFXName, dwFXFlags, m_hObject );
-
-				// set this flag and during the next animation update the hold impact
-				// animation will play
-				m_bPlayImpactHoldAnimation = true;
-
-				// create the client fx
-				g_pClientFXMgr->CreateClientFX( &clientFXLink, fxInit, LTTRUE );
-				if ( clientFXLink.GetInstance() ) 
-				{
-					// setup the flags
-					clientFXLink.GetInstance()->m_bPlayerView = LTTRUE;
-				}
-			}
+			CreateDefendFX( nDefendType );
 		}
 		break;
 
@@ -998,7 +981,11 @@ bool CClientWeaponDisc::PlayFireAnimation( bool bResetAni )
 				// to start firing again until the user lets the
 				// mouse button up.
 
-				PlayAnimation( dwPreFireAni );
+				// RETAIL: Tron tells the server (0x100198b7). PORT: before
+				// it retail calls CTronClientWeapon's 0x10097f20, not in
+				// our build
+				PlayAnimation( dwPreFireAni, true, 1.0f, false );
+				SendDiscFired();
 				return true;
 			}
 
@@ -1714,4 +1701,61 @@ bool CClientWeaponDisc::TronUnknownVirtual19C()
 bool CClientWeaponDisc::TronUnknownVirtual1A0()
 {
 	return g_pPlayerStats->GetAmmoCount( m_nAmmoId ) != (uint32)m_pAmmo->GetMaxAmount( LTNULL );
+}
+
+// RETAIL: 0x1001a240.  PORT: retail's DISCCLASSDATA has its swat defend FX
+// names 8 bytes further on (+0xa4, +0xd4) than ours.
+void CClientWeaponDisc::CreateDefendFX( int nDefendType )
+{
+	if ( !m_pAmmo->pProjectileFX )
+	{
+		return;
+	}
+
+	DISCCLASSDATA *pDiscData = (DISCCLASSDATA*)m_pAmmo->pProjectileFX->pClassData;
+	if ( !pDiscData )
+	{
+		return;
+	}
+
+	char *szFXName;
+	if ( 3 == nDefendType )
+	{
+		szFXName = pDiscData->szSwatCriticalDefendPVFXName;
+	}
+	else if ( 2 == nDefendType )
+	{
+		szFXName = pDiscData->szSwatDefendPVFXName;
+	}
+	else
+	{
+		return;
+	}
+
+	if ( !szFXName || !szFXName[0] )
+	{
+		return;
+	}
+
+	CLIENTFX_CREATESTRUCT fxInit( szFXName, FXFLAG_REALLYCLOSE, m_hObject );
+	g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
+}
+
+// RETAIL: 0x1001a320
+void CClientWeaponDisc::ShowDisc()
+{
+	HMODELPIECE hPiece = 0;
+	ILTModel *pModelLT = g_pLTClient->GetModelLT();
+	if ( LT_OK == pModelLT->GetPiece( m_hObject, "Disk", hPiece ) )
+	{
+		pModelLT->SetPieceHideStatus( m_hObject, hPiece, LTFALSE );
+	}
+}
+
+// RETAIL: 0x1001a370
+void CClientWeaponDisc::SendDiscFired()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_TRON_DISC_FIRED );
+	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 }
