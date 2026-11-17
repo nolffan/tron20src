@@ -323,7 +323,9 @@ LTBOOL CAIBrain::CharacterIsAimingAtMe(CCharacter* pCharacter)
 	return LTFALSE;
 }
 
-GrenadeStatus CAIBrain::GetGrenadeStatus()
+// RETAIL: Tron's takes the target's position (0x1018ec60; its strategy
+// passes it, 0x10226144)
+GrenadeStatus CAIBrain::GetGrenadeStatus(const LTVector& vTargetPos)
 {
 	if ( g_pLTServer->GetTime() >= m_fGrenadeStatusCheckTime )
 	{
@@ -333,7 +335,7 @@ GrenadeStatus CAIBrain::GetGrenadeStatus()
 		{
 			LTFLOAT fRangeMinSqr = m_pBrain->fAttackThrownRangeMin*m_pBrain->fAttackThrownRangeMin;
 			LTFLOAT fRangeMaxSqr = m_pBrain->fAttackThrownRangeMax*m_pBrain->fAttackThrownRangeMax;
-			LTFLOAT fDistanceSqr = GetAI()->GetPosition().DistSqr(GetAI()->GetTarget()->GetVisiblePosition());
+			LTFLOAT fDistanceSqr = GetAI()->GetPosition().DistSqr(vTargetPos);
 			if ( (fDistanceSqr > fRangeMinSqr) && (fDistanceSqr < fRangeMaxSqr) )
 			{
 				return eGrenadeStatusThrow;
@@ -342,6 +344,13 @@ GrenadeStatus CAIBrain::GetGrenadeStatus()
 	}
 	
 	return eGrenadeStatusDontThrow;
+}
+
+// PORT: retail has no such function: CAIHumanStrategyGrenadeThrow::ShouldThrow
+// passes the target's position itself (0x10226144)
+GrenadeStatus CAIBrain::GetGrenadeStatus()
+{
+	return GetGrenadeStatus( GetAI()->GetTarget()->GetVisiblePosition() );
 }
 
 RangeStatus CAIBrain::GetRangeStatus()
@@ -533,4 +542,30 @@ void CAIBrain::ResetFiringTrails()
 	cShowMsg.Writeuint8( CFX_TRON_ATTACHFX_COMMAND );
 	cShowMsg.WriteString( "SHOW_ATTACHFX 0" );
 	g_pLTServer->SendToClient( cShowMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIBrain::HideFiringTrails()
+//
+//	PURPOSE:	RETAIL: 0x1018f720: an AI whose brain does firing trails
+//				hides its attached FX on the clients.  The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CAIBrain::HideFiringTrails()
+{
+	if ( !m_pBrain->bDoFiringTrails )
+	{
+		return;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_SFX_MESSAGE );
+	cMsg.Writeuint8( SFX_CHARACTER_ID );
+	cMsg.WriteObject( m_pAIHuman->GetUserObject() );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_MSG );
+	cMsg.Writeuint8( CFX_TRON_ATTACHFX_COMMAND );
+	cMsg.WriteString( "HIDE_ATTACHFX 0" );
+	g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
 }
