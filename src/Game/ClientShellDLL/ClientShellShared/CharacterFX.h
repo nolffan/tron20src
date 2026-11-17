@@ -172,6 +172,11 @@ class CCharacterFX : public CSpecialFX
 
 		void UpdateFlashLightFX();
 		void RemoveFlashLightFX();
+		// RETAIL: Tron's talk icon (0x10176c10, 0x10176d40, 0x10176d60;
+		// names ours)
+		void			CreateTalkIconFX();
+		void			ShowTalkIconFX();
+		void			HideTalkIconFX();
 
 		void UpdateBreathFX();
 		
