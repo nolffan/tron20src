@@ -72,7 +72,10 @@
 #include "TriggerFX.h"
 #include "RadarObjectFX.h"
 #include "ActivateObjectFX.h"
+#include "TRON/LightCycleFX.h"
+#include "TRON/PranksterProjectileFX.h"
 #include "TRON/ClientFxUserFX.h"
+#include "TRON/ClientFXAndActivateTypeFX.h"
 #include "TRON/SpectatorObjectFX.h"
 
 // NOTE:  These indexes should map EXACTLY to the SFX ids defined
@@ -200,9 +203,13 @@ CBankedList<CScatterFX> g_SFXBank_Scatter;
 CBankedList<CTriggerFX> g_SFXBank_Trigger;
 CBankedList<CRadarObjectFX> g_SFXBank_RadarObject;
 CBankedList<CActivateObjectFX> g_SFXBank_ActivateObject;
-CBankedList<CClientFxUserFX> g_SFXBank_ClientFxUser;	// RETAIL: Tron's (0x102710f0)
-CBankedList<CSpectatorObjectFX> g_SFXBank_SpectatorObject;	// RETAIL: Tron's (0x102710d0)
-CBankedList<CDoomsdayPieceFX> g_SFXBank_DoomsdayPiece;
+// RETAIL: Tron's banks (0x10271110..0x102710d0). Tron's client has no
+// doomsday piece bank.
+CBankedList<CLightCycleFX> g_SFXBank_LightCycle;
+CBankedList<CPranksterProjectileFX> g_SFXBank_PranksterProjectile;
+CBankedList<CClientFxUserFX> g_SFXBank_ClientFxUser;
+CBankedList<CClientFXAndActivateTypeFX> g_SFXBank_ClientFXAndActivateType;
+CBankedList<CSpectatorObjectFX> g_SFXBank_SpectatorObject;
 
 
 // ----------------------------------------------------------------------- //
@@ -1045,10 +1052,28 @@ void CSFXMgr::DeleteSFX(CSpecialFX* pFX)
 		}
 		break;
 
-		// RETAIL: Tron's
+		// RETAIL: Tron's (0x101074de..)
+		case SFX_LIGHTCYCLE_ID :
+		{
+			g_SFXBank_LightCycle.Delete((CLightCycleFX*)pFX);
+		}
+		break;
+
+		case SFX_PRANKSTERPROJECTILE_ID :
+		{
+			g_SFXBank_PranksterProjectile.Delete((CPranksterProjectileFX*)pFX);
+		}
+		break;
+
 		case SFX_CLIENTFXUSER_ID :
 		{
 			g_SFXBank_ClientFxUser.Delete((CClientFxUserFX*)pFX);
+		}
+		break;
+
+		case SFX_CLIENTFXANDACTIVATETYPE_ID :
+		{
+			g_SFXBank_ClientFXAndActivateType.Delete((CClientFXAndActivateTypeFX*)pFX);
 		}
 		break;
 
@@ -1422,10 +1447,28 @@ CSpecialFX* CSFXMgr::CreateSFX(uint8 nId, SFXCREATESTRUCT *psfxCreateStruct,
 		}
 		break;
 
-		// RETAIL: Tron's
+		// RETAIL: Tron's (0x10107aa5..)
+		case SFX_LIGHTCYCLE_ID:
+		{
+			pSFX = g_SFXBank_LightCycle.New();
+		}
+		break;
+
+		case SFX_PRANKSTERPROJECTILE_ID:
+		{
+			pSFX = g_SFXBank_PranksterProjectile.New();
+		}
+		break;
+
 		case SFX_CLIENTFXUSER_ID:
 		{
 			pSFX = g_SFXBank_ClientFxUser.New();
+		}
+		break;
+
+		case SFX_CLIENTFXANDACTIVATETYPE_ID:
+		{
+			pSFX = g_SFXBank_ClientFXAndActivateType.New();
 		}
 		break;
 
@@ -2080,6 +2123,27 @@ CBodyFX* CSFXMgr::GetBodyFromHitBox(HOBJECT hHitBox)
 			{
 				return pBodyFX;
 			}
+		}
+	}
+
+	return LTNULL;
+}
+
+// TRON: the light cycle fx of a cycle or of its rider (RETAIL: 0x10108650;
+// the name is ours)
+CLightCycleFX* CSFXMgr::GetLightCycleFX(HOBJECT hObject)
+{
+	if (!hObject) return LTNULL;
+
+	CLightCycleFX* pFX = NULL;
+	int cFX  = m_dynSFXLists[SFX_LIGHTCYCLE_ID].GetSize();
+
+	for ( int iFX = 0 ; iFX < cFX ; iFX++ )
+	{
+		pFX = (CLightCycleFX*)m_dynSFXLists[SFX_LIGHTCYCLE_ID][iFX];
+		if (pFX && (pFX->GetServerObj() == hObject || pFX->GetRider() == hObject))
+		{
+			return pFX;
 		}
 	}
 

@@ -4274,8 +4274,31 @@ bool CVehicleMgr::HandleCharacterTouch( HOBJECT hCharacter )
 //	PURPOSE:	Update the Light Cycke control flags
 //
 // ----------------------------------------------------------------------- //
+// RETAIL: 0x10121920. The forward and reverse keys set Tron's own flags
+// (+0x2134), not the control flags.
 void CVehicleMgr::UpdateLightCycleControlFlags()
 {
+	m_bTurned = false;
+
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_LEFT))
+	{
+		m_dwControlFlags |= BC_CFLG_LEFT;
+	}
+
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_RIGHT))
+	{
+		m_dwControlFlags |= BC_CFLG_RIGHT;
+	}
+
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_FORWARD))
+	{
+		m_nTronUnknown2134 |= 0x1000;
+	}
+
+	if (g_pLTClient->IsCommandOn(COMMAND_ID_REVERSE))
+	{
+		m_nTronUnknown2134 |= 0x10000;
+	}
 }
 
 // ----------------------------------------------------------------------- //
