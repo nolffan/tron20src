@@ -1733,28 +1733,31 @@ bool CTronPlayerMgr::ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId, int dwAmmo)
 
 void CTronPlayerMgr::ToggleHolster(bool bPlayDeselect)
 {
-	if (IsHolsterLocked())
+	if (!IsHolsterLocked())
 	{
-		// PORT: retail calls Tron's interface manager's slot 0x88 here
+		CPlayerMgr::ToggleHolster(bPlayDeselect);
 		return;
 	}
 
-	CPlayerMgr::ToggleHolster(bPlayDeselect);
+	// RETAIL: 0x100a7b64
+	g_pInterfaceMgr->TronUnknownVirtual88();
 }
 
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CTronPlayerMgr::IsHolsterLocked
 //
-//	PURPOSE:	RETAIL: retail 0x100a7b70. PORT: retail asks the weapon
-//				manager (its 0x10168c90) whether a weapon is out; our
-//				LastWeapon has no answer
+//	PURPOSE:	RETAIL: retail 0x100a7b70: locked by +0x234, or while
+//				the current weapon's slot 0xc8 is false
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::IsHolsterLocked()
 {
 	if (m_bTronUnknown234)
+		return true;
+
+	if (m_pClientWeaponMgr && !m_pClientWeaponMgr->CurrentWeaponTronUnknownVirtualC8())
 		return true;
 
 	return false;
@@ -2063,19 +2066,26 @@ void CTronPlayerMgr::TronUnknownVirtualA8(bool bHide)
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual94 / 98
 //
-//	PURPOSE:	RETAIL: retail 0x100a8810, 0x100a8860 (slots 0x94, 0x98).
-//				PORT: both ask the client light cycle manager (0x10236d98),
-//				not yet in our tree
+//	PURPOSE:	RETAIL: retail 0x100a8810, 0x100a8860 (slots 0x94, 0x98):
+//				whether the player's light cycle trail has two points or
+//				more; all the cyclists go
 //
 // ----------------------------------------------------------------------- //
 
 bool CTronPlayerMgr::TronUnknownVirtual94()
 {
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+	if (pCyclist && pCyclist->pCurTrail && pCyclist->pCurTrail->collTrailPoints.size() > 1)
+	{
+		return true;
+	}
+
 	return false;
 }
 
 void CTronPlayerMgr::TronUnknownVirtual98(int nArg)
 {
+	g_pLightCycleMgr->RemoveAllCyclists();
 }
 
 // ----------------------------------------------------------------------- //
