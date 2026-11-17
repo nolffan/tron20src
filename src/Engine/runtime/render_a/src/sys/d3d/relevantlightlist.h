@@ -53,9 +53,6 @@ public:
 	//this gets a light at a specific location
 	const CRenderLight&	GetLight(uint32 nIndex) const;
 
-	//gets the sample of light at the position of the object
-	const LTVector&		GetLightSample(uint32 nIndex) const;
-
 	//this will multiply all the lights by the specified color
 	void				MultiplyLightColors(const LTVector& vColorScale);
 

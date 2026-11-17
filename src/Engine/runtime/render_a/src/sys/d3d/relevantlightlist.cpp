@@ -166,13 +166,9 @@ void CRelevantLightList::SetObjectDims(const LTVector& vDims)
 }
 
 
-//gets the sample of light at the position of the object
-const LTVector& CRelevantLightList::GetLightSample(uint32 nIndex) const
-{
-	//bounds check
-	assert(nIndex < m_nNumLights);
-	return m_Scores[nIndex].m_vSample;
-}
+// RETAIL: Tron has no GetLightSample (its one caller is NOLF2's
+// CRenderShadowList::QueueShadows): in Lithtech.exe SetObjectDims
+// (0x553700) is this object's last function.
 
 //this will multiply all the lights by the specified color
 void CRelevantLightList::MultiplyLightColors(const LTVector& vColorScale)

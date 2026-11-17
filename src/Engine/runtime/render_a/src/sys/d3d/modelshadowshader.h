@@ -56,9 +56,6 @@ public:
 	//called to free any device specific data to this object
 	virtual bool	Release();
 
-	//determines if this device can support perspective projection for shadows
-	bool			CanSupportPerspective();
-
 	//Called when the world transform changes. This will be called whenever the
 	//rendering switches spaces and gives the shader a chance to transform any
 	//data it is using

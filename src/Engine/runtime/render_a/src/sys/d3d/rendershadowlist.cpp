@@ -650,125 +650,14 @@ CRenderShadowList& CRenderShadowList::GetSingleton()
 	return sSingleton;
 }
 
-//given a model instance and it's light list, this will add all appropriate shadows to the list
-//of shadows to be rendered
-void CRenderShadowList::QueueShadows(ModelInstance* pInstance, const CRelevantLightList& LightList)
-{
-
-	//determine the largest number of shadows that we can use
-	uint32 nMaxShadows = (uint32)g_CV_ModelShadow_Proj_MaxShadows.m_Val;
-
-	//bail if there are no shadows or no lights
-	if((nMaxShadows == 0) || (LightList.GetNumLights() == 0))
-		return;
-
-	//draw the debug lights if appropriate
-	if (g_CV_ModelShadow_Proj_DrawLights.m_Val)
-	{
-		DrawLinesFromLights(LightList, pInstance->GetPos());
-	}
-
-	// TRON: the model's own position: no lookup of a "translation" node for
-	// cinematic models (no such string in Lithtech.exe; Build 69's and the
-	// developer build's have it: taken out before release)
-	LTVector vModelPos	= pInstance->GetPos();
-
-	uint32 nShadows = 0;
-
-	// RETAIL: Contract J.A.C.K.'s form (0x4dd2dd): with tweening, the last
-	// slot goes to a blend of all the lights the others left, weighted by
-	// their brightness
-	uint32 nMaxQueued = (g_CV_ModelShadow_Proj_Tween.m_Val) ? nMaxShadows - 1 : nMaxShadows;
-
-	//tween information
-	LTVector vTweenPos;
-	LTVector vTweenColor;
-	bool	 bTweenOrtho;
-
-	//determine if we can support perspective
-	bool bPerspective = (!!g_CV_ModelShadow_Proj_Perspective.m_Val) && CModelShadowShader::GetSingleton()->CanSupportPerspective();
-
-	//the index of the first light not used for shadow generation in the list
-	uint32 nFirstUnusedLight = 0;
-
-	for (uint32 nCurrLight = 0; nCurrLight < LightList.GetNumLights(); ++nCurrLight)
-	{
-		const CRenderLight& Light = LightList.GetLight(nCurrLight);
-		assert(Light.GetType() != CRenderLight::eLight_Invalid);
-
-		// Skip out if the light doesn't cast shadows (and we're not overriding it)...
-		if (!(Light.GetFlags() & FLAG_CASTSHADOWS) && !g_CV_DrawAllModelShadows.m_Val)
-			continue;
-
-		//see if we have filled up the list, if so, no need to continue on
-		if (nShadows >= nMaxQueued)
-			break;
-
-		vTweenColor	= LightList.GetLightSample(nCurrLight);
-		vTweenPos	= Light.GetPos();
-		bTweenOrtho	= !bPerspective;
-
-		if(Light.GetType() == CRenderLight::eLight_Dir)
-		{
-			vTweenPos	= pInstance->GetPos() - Light.GetDir() * pInstance->GetDims().Mag() * 2.0f;
-			bTweenOrtho	= true;
-		}
-
-		//add it to the list
-		QueueShadow(pInstance, vModelPos, vTweenPos, vTweenColor, bTweenOrtho);
-
-		nShadows++;
-		nFirstUnusedLight = nCurrLight + 1;
-	}
-
-	//if there is still room, blend the rest into the last one
-	if (nShadows < nMaxShadows)
-	{
-		vTweenPos.Init();
-		vTweenColor.Init();
-		bTweenOrtho = !bPerspective;
-		float fTotalWeight = 0.0f;
-
-		for (uint32 nCurrLight = nFirstUnusedLight; nCurrLight < LightList.GetNumLights(); ++nCurrLight)
-		{
-			const CRenderLight& Light = LightList.GetLight(nCurrLight);
-			assert(Light.GetType() != CRenderLight::eLight_Invalid);
-
-			// Skip out if the light doesn't cast shadows (and we're not overriding it)...
-			if (!(Light.GetFlags() & FLAG_CASTSHADOWS) && !g_CV_DrawAllModelShadows.m_Val)
-				continue;
-
-			LTVector vLightColor	= LightList.GetLightSample(nCurrLight);
-			float fBlendWeight		= GetMaxVecComponent(vLightColor);
-			vTweenColor				+= vLightColor * fBlendWeight;
-			fTotalWeight			+= fBlendWeight;
-
-			if(Light.GetType() == CRenderLight::eLight_Dir)
-			{
-				vTweenPos	+= fBlendWeight * (pInstance->GetPos() - Light.GetDir() * pInstance->GetDims().Mag() * 2.0f);
-				bTweenOrtho	= true;
-			}
-			else
-			{
-				vTweenPos	+= fBlendWeight * Light.GetPos();
-			}
-		}
-
-		if (fTotalWeight > 0.0f)
-		{
-			//scale back to the appropriate amount
-			float fInvWeight = 1.0f / fTotalWeight;
-			vTweenPos	*= fInvWeight;
-			vTweenColor	*= fInvWeight;
-
-			//now add this shadow to the list
-			QueueShadow(pInstance, vModelPos, vTweenPos, vTweenColor, bTweenOrtho);
-		}
-	}
-
-	//success
-	return;
-}
+// RETAIL: Tron has no QueueShadows or QueueShadow (NOLF2's model shadow
+// queue): rendershadowlist.obj goes from GetSingleton (Lithtech.exe
+// 0x5209d0) to the destructor (0x520a20) and RenderQueuedShadows
+// (0x520b30), and from RenderShadowTexture (0x523550) to FlushShadows
+// (0x524890) with only the static helpers between. No push_back or
+// _M_insert_overflow of the SQueuedShadow vector is linked, and
+// ModelDraw::QueueAllModelInfo (0x552cd0) does not queue shadows. Nothing
+// adds to m_cShadowList.
 
 //------------------------------------------------------------------
 // Sorting heuristic for shadow prioritization
@@ -1353,45 +1242,6 @@ bool CRenderShadowList::RenderShadowTexture(uint32 nShadow, uint32 nTexture)
 	}
 
 	return true;
-}
-
-//handles inserting a shadow into the list
-void CRenderShadowList::QueueShadow(ModelInstance* pInstance, const LTVector& vModelPos, const LTVector& vPos, const LTVector& vColor, bool bOrtho)
-{
-	//first off, see if we can cull this shadow if it is too dim
-	if(	(GetMaxVecComponent(vColor) * g_CV_ModelShadow_Proj_Alpha.m_Val) < g_CV_ModelShadow_Proj_MinColorComponent.m_Val)
-	{
-		return;
-	}
-
-	LTVector vFinalLightPos = vPos;
-
-	//we can't. Make sure that the light position is outside of the model
-	LTVector vToLight = vPos - vModelPos;
-
-	float fDistToLightSqr	= vToLight.MagSqr();
-	float fDimsSqr			= pInstance->GetDims().MagSqr();
-
-	if((fDistToLightSqr > 0.001f) && (fDistToLightSqr < fDimsSqr))
-	{
-		//move it on out
-		vFinalLightPos = vModelPos + vToLight * (float)sqrt(fDimsSqr / fDistToLightSqr);
-	}
-
-	//figure out the opacity of the model
-	float fAlpha = pInstance->m_ColorA / 255.0f;
-
-	//apply the global alpha scale on the shadow
-	fAlpha *= g_CV_ModelShadow_Proj_Alpha.m_Val;
-
-	SQueuedShadow Shadow;
-	Shadow.m_pInstance	= pInstance;
-	Shadow.m_vModelPos  = vModelPos;
-	Shadow.m_vLightPos	= vFinalLightPos;
-	Shadow.m_vColor		= vColor * fAlpha;
-	Shadow.m_bOrtho		= bOrtho;
-
-	m_cShadowList.push_back(Shadow);
 }
 
 //this will empty all shadows out of the list

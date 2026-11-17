@@ -101,7 +101,6 @@ static ILTPhysics *ilt_physics_server;
 define_holder_to_instance(ILTPhysics, ilt_physics_server, Server);
 
 
-extern uint32 g_dwSaveFileVersion;
 
 
 #define MAX_CLASS_HEIRARCHY_LEN 256
@@ -317,7 +316,6 @@ public:
 	virtual LTRESULT SetObjectSFXMessage(HOBJECT hObject, ILTMessage_Read *pMsg);
 	virtual LTRESULT SendSFXMessage(ILTMessage_Read *pMsg, const LTVector &pos, uint32 flags);
 	virtual LTRESULT SendToServer(ILTMessage_Read *pMsg, HOBJECT hSender, uint32 flags);
-    virtual LTRESULT GetSaveFileVersion( uint32& nSaveFileVersion ) { nSaveFileVersion = g_dwSaveFileVersion; return LT_OK; }
 
 
 // Internal.
