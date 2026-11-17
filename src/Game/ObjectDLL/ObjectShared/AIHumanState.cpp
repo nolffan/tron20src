@@ -3045,7 +3045,21 @@ LTBOOL CAIHumanStateUseObject::SetNode(AINodeUseObject* pUseNode)
 	else
 	{
 		m_hObject = LTNULL;
-		AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", pUseNode->GetName().c_str() ) );
+
+		// RETAIL: 0x101e9282, Tron's trace names the old node, under an if
+		// with no braces: the if holds only the first statement of AITRACE
+		// (the console variable's Init), not the print.
+#ifdef TRON20SRC_MODERN
+		// Retail bug (docs/RETAIL_BUGS.md): the braces keep the print under
+		// the test.
+		if( m_pUseNode )
+		{
+			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", m_pUseNode->GetName().c_str() ) );
+		}
+#else
+		if( m_pUseNode )
+			AITRACE( AIShowStates, ( GetAI()->m_hObject, "USEOBJECT DEST=%s - unable to find path!", m_pUseNode->GetName().c_str() ) );
+#endif
 
 		// FINISHED USING OBJECT
 		m_eStateStatus = kSStat_StateComplete;

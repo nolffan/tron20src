@@ -1326,6 +1326,21 @@ into the first character of the first chat history line.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 writes at most the maximum length, with the terminator.
 
+### A failed use object path trace can read a null node
+
+Object.lto 0x101e8f50 (CAIHumanStateUseObject::SetNode,
+ObjectShared/AIHumanState.cpp). When the AI cannot find a path to the new
+node, the function traces the name of its old node. The trace is under
+`if( m_pUseNode )` without braces, but AITRACE expands to two statements.
+Thus the test holds only the first statement (the console variable's
+Init), and the print always runs. If the AIShowStates console variable is
+on and the AI has no old node, the print reads the name through a null
+pointer and the server stops. The trace is off in a normal game, so the
+game does not hit this.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
+AIHumanState.cpp puts braces around the trace.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
