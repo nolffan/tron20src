@@ -219,6 +219,13 @@ LTBOOL CAISenseRecorderTools::ComplexVisibilityCheck(AISenseRecord* pSenseRecord
 		bVisible = pSensingAI->IsObjectPositionVisibleFromEye(CAI::DefaultFilterFn, NULL, pObject->m_hObject, vPosition, fSenseDistanceSqr, LTTRUE, LTFALSE, LTNULL, &fVisDistanceSqr);
 	}
 
+	// RETAIL: Tron keeps the distance within the sense distance
+	// (0x101d8c23)
+	if ( fVisDistanceSqr > fSenseDistanceSqr )
+	{
+		fVisDistanceSqr = fSenseDistanceSqr;
+	}
+
 	if ( bVisible )
 	{
 		if( pfRateModifier )
@@ -310,8 +317,13 @@ LTBOOL CAISenseRecorderTools::ComplexVisibilityCheck(AISenseRecord* pSenseRecord
 			// See intantly.
 			// Do not see if hidden and outside of personal bubble.
 			//
+			// RETAIL: Tron has no "else" here (0x101d8e47): a target outside
+			// of the InstantSeeDistance is also seen instantly (a retail bug,
+			// docs/RETAIL_BUGS.md).
 
+#ifdef TRON20_MODERN
 			else
+#endif
 			{
 				// Check if target is hidden.
 				// If target is within the AIs personal bubble, he is seen
@@ -662,13 +674,11 @@ LTBOOL CAISenseRecorderGame::HandleEnemyLightDisturbanceVisible(CAIStimulusRecor
 
 	// Check if the AI is inside the volume.
 
+	// RETAIL: Tron's does not check that a volume was found (0x101d974e)
 	AIVolume* pVolume = g_pAIVolumeMgr->FindContainingVolume( LTNULL, pStimulusRecord->m_vStimulusPos, eAxisAll );
-	if( !pVolume )
-	{
-		return LTFALSE;
-	}
 
-	if( pVolume->InsideMasked( pAI->GetPosition(), eAxisAll, pAI->GetVerticalThreshold() ) )
+	// RETAIL: the threshold is twice the AI's height (0x101d974e)
+	if( pVolume->InsideMasked( pAI->GetPosition(), eAxisAll, pAI->GetDims().y * 2.f ) )
 	{
 		bCanSee = LTTRUE;
 	}
@@ -797,7 +807,10 @@ LTBOOL CAISenseRecorderGame::HandleAllyDisturbanceVisible(CAIStimulusRecord* pSt
 	}
 
 	CAI* pAlly = (CAI*)g_pLTServer->HandleToObject(pStimulusRecord->m_hStimulusSource);
-	if( pAlly && ( pAI->GetLastRelaxedTime() > pAlly->GetLastStimulusTime() ) )
+	// RETAIL: Tron ignores it only from an ally of unknown alignment
+	// (0x101d9999)
+	if( pAlly && ( GetRelativeAlignment( pAI->GetRelationSet(), pAlly->GetRelationData() ) == UNKNOWN ) &&
+		( pAI->GetLastRelaxedTime() > pAlly->GetLastStimulusTime() ) )
 	{
 		return LTFALSE;
 	}
@@ -860,27 +873,9 @@ LTBOOL CAISenseRecorderGame::HandleEnemyVisible(CAIStimulusRecord* pStimulusReco
 		return LTFALSE;
 	}
 
+	// RETAIL: Tron's has no check for a neutral character aiming at the
+	// AI (0x101d9b5d)
 	CAI* pAI = (CAI*)m_pSensing;
-
-	// If we are neutral with respect to the other character...
-	HOBJECT hObject = pStimulusRecord->m_hStimulusSource;
-	CCharacter* pCharacter = (CCharacter*)g_pLTServer->HandleToObject(hObject);
-	if( !pCharacter )
-	{
-		AIASSERT( 0, pAI->m_hObject, "HandleEnemyVisible: Unable to convert m_hStimulusSource to pChar" );
-		return LTFALSE;
-	}
-
-	if ( NEUTRAL == GetRelativeAlignment( pAI->GetRelationSet(), pCharacter->GetRelationData()) )
-	{
-		// If we are neutral with respect to the other character, and if the 
-		// character we are neutral to does NOT have a dangerous looking weapon
-		// aimed at me, fail the check.
-		if ( !pAI->GetBrain()->CharacterIsAimingAtMe( pCharacter ) )
-		{
-			return LTFALSE;
-		}
-	}
 
 	AISenseRecord* pSelectedSenseRecord;
 
@@ -896,7 +891,7 @@ LTBOOL CAISenseRecorderGame::HandleEnemyVisible(CAIStimulusRecord* pStimulusReco
 			bUseSightGrid,
 			bUseInstantSeeDistance,
 			pAI,
-			pStimulusRecord->m_hStimulusSource,
+			g_pLTServer->HandleToObject(pStimulusRecord->m_hStimulusSource),
 			&(*pfRateModifier)
 			))
 	{

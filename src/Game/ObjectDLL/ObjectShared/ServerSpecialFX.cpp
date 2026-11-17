@@ -192,6 +192,7 @@ bool SpecialFX::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Trigger(SFX_MSG_TRIGGER);
 	static CParsedMsg::CToken s_cTok_On(SFX_MSG_ON);
 	static CParsedMsg::CToken s_cTok_Off(SFX_MSG_OFF);
+	static CParsedMsg::CToken s_cTok_Target("TARGET");	// RETAIL: 0x100f307d, Tron's
 
 	if( cMsg.GetArg(0) == s_cTok_Trigger )
 	{
@@ -204,6 +205,12 @@ bool SpecialFX::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if( cMsg.GetArg(0) == s_cTok_Off )
 	{
 		TurnOFF();
+	}
+	else if( cMsg.GetArg(0) == s_cTok_Target )
+	{
+		// RETAIL: 0x100f3194, Tron's: stop, and take the sender as the target.
+		TurnOFF();
+		m_hTargetObj = hSender;
 	}
 	else
 	{

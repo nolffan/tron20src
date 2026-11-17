@@ -1952,13 +1952,10 @@ LTBOOL CAIHumanStrategyOneShotAni::UpdateAnimation()
 
 	switch ( m_eState )
 	{
-		case eUnset:
-/////		case eDone:
-		{
-		}
-		break;
-
 		case eSet:
+			// RETAIL: Tron clears the old lock first (0x1022441f)
+			GetAnimationContext()->ClearLock();
+			// fall through
 		case eAnimating:
 		case eDone:
 		{
@@ -4277,17 +4274,9 @@ void CAIHumanStrategyShoot::Aim()
 
 void CAIHumanStrategyShoot::Fire()
 {
-	// Melee weapons push targets back.
+	// RETAIL: Tron's melee weapons do not push the target back: Fire only
+	// sets the state (0x10226cb0)
 
-	AIASSERT( GetAI()->GetCurrentWeapon() && GetAI()->GetCurrentWeapon()->GetWeaponData(), GetAI()->m_hObject, "CAIHumanStrategyShoot::Fire: No weapon or weapon data.");
-
-	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
-	if ( pWeapon->GetWeaponData()->nAIWeaponType == kAIWeap_Melee )
-	{
-		GetAI()->GetTarget()->SetPushSpeed(800.f);
-		GetAI()->GetTarget()->SetPushMinDist( GetAI()->GetBrain()->GetAIData( kAIData_MeleeKnockBackDist ) );
-	}
-	
 	m_eState = eStateFiring;
 }
 

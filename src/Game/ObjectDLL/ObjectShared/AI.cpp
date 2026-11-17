@@ -383,7 +383,7 @@ static LTBOOL VelidateDelcmd( ILTPreInterface *pInterface, ConParse &cpMsgParams
 		if( CCommandMgrPlugin::s_bShowMsgErrors )
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
-			pInterface->CPrint( "ERROR! - VelidateDelcmd()" );
+			pInterface->CPrint( "ERROR! - ValidateDelcmd()" );
 			pInterface->CPrint( "    MSG - DELCMD - Invalid Command specified '%s'!", cpMsgParams.m_Args[1] );
 		}
 
@@ -393,7 +393,7 @@ static LTBOOL VelidateDelcmd( ILTPreInterface *pInterface, ConParse &cpMsgParams
 	if( CCommandMgrPlugin::s_bShowMsgErrors )
 	{
 		pInterface->ShowDebugWindow( LTTRUE );
-		pInterface->CPrint( "ERROR! - VelidateDelcmd()" );
+		pInterface->CPrint( "ERROR! - ValidateDelcmd()" );
 		pInterface->CPrint( "    MSG - DELCMD - No Command specified!");	
 	}
 
@@ -410,12 +410,13 @@ CMDMGR_BEGIN_REGISTER_CLASS( CAI )
 	CMDMGR_ADD_MSG( ACTIVATE,		1,		NULL,					"ACTIVATE" )
 	CMDMGR_ADD_MSG( CINERACT,		2,		NULL,					"CINERACT <Animation Name>" )
 	CMDMGR_ADD_MSG( CINERACTLOOP,	2,		NULL,					"CINERACTLOOP <Animation Name>" )
-	CMDMGR_ADD_MSG( TRACKLOOKAT,	1,		NULL,					"TRACKLOOKAT" )
-	CMDMGR_ADD_MSG( TRACKAIMAT,		1,		NULL,					"TRACKAIMAT" )
+	CMDMGR_ADD_MSG_ARG_RANGE( TRACKLOOKAT,	1,	2,	NULL,				"TRACKLOOKAT" )	// RETAIL: an optional argument
+	CMDMGR_ADD_MSG_ARG_RANGE( TRACKAIMAT,	1,	2,	NULL,				"TRACKAIMAT" )	// RETAIL: an optional argument
 	CMDMGR_ADD_MSG( TRACKNONE,		1,		NULL,					"TRACKNONE" )
 	CMDMGR_ADD_MSG( ALIGNMENT,		2,		NULL,					"ALIGNMENT <key>" )
 	CMDMGR_ADD_MSG( DAMAGEMASK,		2,		NULL,					"DAMAGEMASK <key>" )
 	CMDMGR_ADD_MSG( IGNOREVOLUMES,	2,		NULL,					"IGNOREVOLUMES <1-or-0>" )
+	CMDMGR_ADD_MSG( LOCKIGNOREVOLUMESTATE,	2,	NULL,				"LOCKIGNOREVOLUMESTATE <1-or-0>" )	// RETAIL: Tron's
 	CMDMGR_ADD_MSG( ADDGOAL,		-1,		ValidateMsgAddGoal,		"ADDGOAL <goal>" )
 	CMDMGR_ADD_MSG( REMOVEGOAL,		2,		ValidateMsgRemoveGoal,	"REMOVEGOAL <goal>" )
 	CMDMGR_ADD_MSG( GOALSET,		2,		ValidateMsgGoalset,		"GOALSET <goalset>" )
@@ -443,6 +444,7 @@ CMDMGR_BEGIN_REGISTER_CLASS( CAI )
 	CMDMGR_ADD_MSG( HEALTHMOD,		2,		NULL,					"HEALTHMOD <mod>" )
 	CMDMGR_ADD_MSG( ARMORMOD,		2,		NULL,					"ARMORMOD <mod>" )
 	CMDMGR_ADD_MSG( DESTROY,		1,		NULL,					"DESTROY" )
+	CMDMGR_ADD_MSG_ARG_RANGE( TALKLOCK,	1,	2,	NULL,				"TALKLOCK" )	// RETAIL: Tron's
 
 	CMDMGR_ADD_MSG_SPECIAL( ValidateMsgGoalPrefix )
 
@@ -507,6 +509,14 @@ bool CAI::DefaultFilterFn(HOBJECT hObj, void *pUserData)
         return false;
 	}
 
+    // RETAIL: Tron's AI also ignores an InfoString (0x101283dd)
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
+	{
+        return false;
+	}
+
 	return LiquidFilterFn(hObj, pUserData);
 }
 
@@ -545,6 +555,14 @@ bool CAI::ShootThroughFilterFn(HOBJECT hObj, void *pUserData)
     static HCLASS hHitbox = g_pLTServer->GetClass("CCharacterHitBox");
 
     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hHitbox))
+	{
+        return false;
+	}
+
+    // RETAIL: Tron's AI can not shoot through an InfoString (0x101285a1)
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
 	{
         return false;
 	}
@@ -598,6 +616,14 @@ bool CAI::SeeThroughFilterFn(HOBJECT hObj, void *pUserData)
     static HCLASS hCharacter = g_pLTServer->GetClass("CCharacter");
 
     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hCharacter))
+	{
+        return false;
+	}
+
+    // RETAIL: Tron's AI can not see through an InfoString (0x10128780)
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
 	{
         return false;
 	}
@@ -985,7 +1011,7 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			g_pLTServer->SetNextUpdate(m_hObject, c_fUpdateDelta);
 
-			g_pLTServer->SetNetFlags(m_hObject, NETFLAG_POSUNGUARANTEED|NETFLAG_ROTUNGUARANTEED|NETFLAG_ANIMUNGUARANTEED);
+			// RETAIL: Tron sets no net flags here (0x10129a9e)
 
 			m_pTarget->Init(this);
 
@@ -1021,6 +1047,12 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 				// Update our can activate flags.  Need to do this after the character does the 
 				// initialupdate because character creates our hitbox.
 				UpdateUserFlagCanActivate();
+
+				// RETAIL: Tron's attachments follow our visibility (0x10129b74)
+				uint32 dwFlags;
+				g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
+				dwFlags |= m_dwFlags;
+				HideAttachments(!(dwFlags & FLAG_VISIBLE));
 			}
 
 			return dwRet;
@@ -1124,17 +1156,7 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		}
 		break;
 		
-		case MID_PARENTATTACHMENTREMOVED:
-		{
-			if( m_bBeingCarried )
-			{
-				// If we are being carried don't let CCharacter process this message since it will remove us.
-				// We know our parent attachment is a Player and they will drop us when they get removed.
-
-				return 1;
-			}
-		}
-		break;
+		// RETAIL: Tron's has no MID_PARENTATTACHMENTREMOVED case (0x10129ef4)
 
 		default:
 		{
@@ -1748,6 +1770,17 @@ void CAI::InitialUpdate()
 
 void CAI::HandleTouch(HOBJECT hObj)
 {
+	// RETAIL: a Seeker kills the player it touches (0x1012bcae)
+	if ( m_bSeeker && IsPlayer(hObj) )
+	{
+		DamageStruct damage;
+		damage.hDamager = GetUserObject();
+		damage.eType = DT_ELECTROCUTE;
+		damage.fDamage = 1000000.0f;
+		damage.bTronUnknown44 = LTFALSE;
+		damage.DoDamage(this, hObj, GetUserObject());
+	}
+
 	if ( m_pState )
 	{
 		m_pState->HandleTouch(hObj);
@@ -1869,7 +1902,13 @@ LTBOOL CAI::GetDoneProcessingStimuli() const
 {
 	if( m_pAISenseRecorder )
 	{
+#ifdef TRON20_MODERN
 		return m_pAISenseRecorder->GetDoneProcessingStimuli();
+#else
+		// RETAIL: Tron returns the recorder's ray count (0x1012c1da jumps
+		// to 0x101dac80): a retail bug, docs/RETAIL_BUGS.md
+		return m_pAISenseRecorder->GetIntersectSegmentCount();
+#endif
 	}
 
 	return LTFALSE;
@@ -1981,13 +2020,16 @@ LTFLOAT CAI::GetSenseDistance(EnumAISenseType eSenseType)
 
 const RelationSet& CAI::GetSenseRelationSet() const
 {
+	// RETAIL: Tron's IAISensing slot returns the relation manager itself
+	// (0x1012c2a0), as TronTurret's does: a static CObjectRelationMgr when
+	// there is none.
 	if( m_pRelationMgr )
 	{
-		return m_pRelationMgr->GetRelationUser()->GetRelations();
+		return *(const RelationSet*)m_pRelationMgr;
 	}
 
-	static RelationSet rs;
-	return rs;
+	static CObjectRelationMgr s_ObjectRelationMgr;
+	return *(const RelationSet*)&s_ObjectRelationMgr;
 }
 
 
@@ -2304,10 +2346,16 @@ void CAI::UpdateUserFlagCanActivate()
 
 void CAI::SetUnconscious(bool bUnconscious)
 {
+	// RETAIL: Tron's (0x1012d330) is the older form: the search is enabled
+	// first, the hit box takes the object's dims (no GetDefaultModelDims),
+	// every weapon is dropped (no player weapon check, no forced pickup),
+	// the AI keeps no weapons and has no spears to add or remove.
 
 	if (bUnconscious == m_bUnconscious) return;
 
 	m_bUnconscious = bUnconscious;
+
+	m_pSearch->Enable(bUnconscious);
 
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (bUnconscious ? USRFLG_CAN_SEARCH : 0), USRFLG_CAN_SEARCH);
 
@@ -2319,7 +2367,7 @@ void CAI::SetUnconscious(bool bUnconscious)
 			if ( pHitBox )
 			{
 				LTVector vNewDims,vDims;
-				pHitBox->GetDefaultModelDims( vDims );
+				g_pPhysicsLT->GetObjectDims(m_hHitBox, &vDims);
 
 				vNewDims = vDims;
 				if (GetAnimationContext()->IsPropSet(kAPG_Posture,kAP_Stand))
@@ -2352,11 +2400,6 @@ void CAI::SetUnconscious(bool bUnconscious)
 			{
 				char szSpawn[1024];
 				cWeapons--;
-
-				int nId = apWeapons[cWeapons]->GetId();
-				if (!g_pWeaponMgr->IsPlayerWeapon(nId))
-					continue;
-
 
 				HOBJECT hWpnModel = apWeapons[cWeapons]->GetModelObject();
 				uint32 dwAni = g_pLTServer->GetModelAnimation(hWpnModel);
@@ -2394,33 +2437,19 @@ void CAI::SetUnconscious(bool bUnconscious)
 						m_aDroppedWeapons[m_cDroppedWeapons].hPickupItem = pObj->m_hObject;
 						m_cDroppedWeapons++;
 
-						//force pickup is set to true here so that you may disarm unconscious AI
-						m_pSearch->AddPickupItem(pObj->m_hObject,true);
+						m_pSearch->AddPickupItem(pObj->m_hObject);
 						g_pCommonLT->SetObjectFlags(pObj->m_hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_CAN_ACTIVATE | USRFLG_ATTACH_HIDE1SHOW3);
 					}
 
 				}
 			}
 
+			m_cWeapons = 0;
 			memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
 			memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
-			m_cWeapons = m_pAttachments->EnumerateWeapons(m_apWeapons, m_apWeaponPositions, AI_MAX_WEAPONS);
 
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
 		}
-		
-		// Add our spears to the searchobject...
-
-		for( uint32 iSpear = 0 ; iSpear < m_cSpears ; ++iSpear )
-		{
-			HOBJECT hSpear = m_aSpears[iSpear].hObject;
-
-			if( hSpear )
-			{
-				m_pSearch->AddPickupItem( hSpear );
-			}
-		}
-
 	}
 	else
 	{
@@ -2430,7 +2459,7 @@ void CAI::SetUnconscious(bool bUnconscious)
 			if ( pHitBox )
 			{
 				LTVector vDims;
-				pHitBox->GetDefaultModelDims( vDims );
+				g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
 				
 				LTVector vHitDims = vDims;
 				vHitDims *= 1.2f;
@@ -2470,24 +2499,8 @@ void CAI::SetUnconscious(bool bUnconscious)
 
 		m_cDroppedWeapons = 0;
 
-		// Remove our spears from the search object. Do this before ClearPickupItems() since that will
-		// remove the object from the world but we want our spears to remain when we wake up...
-
-		for( uint32 iSpear = 0 ; iSpear < m_cSpears ; ++iSpear )
-		{
-			HOBJECT hSpear = m_aSpears[iSpear].hObject;
-
-			if( hSpear )
-			{
-				m_pSearch->RemovePickupItem( hSpear );
-			}
-		}
-
 		m_pSearch->ClearPickupItems();
-
 	}
-	
-	m_pSearch->Enable(bUnconscious & m_pSearch->HasItem());
 
 	SetCanCarry( m_bUnconscious );
 }
@@ -3023,10 +3036,7 @@ void CAI::HandleTeleport(const LTVector& vPos)
 	m_vMovePos = vPos;
 	SetPosition( vPos, LTTRUE );
 
-	LTVector vDeditPos = vPos;
-	vDeditPos = ConvertToDEditPos( vDeditPos );
-	AITRACE( AIShowVolumes, ( m_hObject, "Teleporting to %.2f %.2f %.2f",
-		vDeditPos.x, vDeditPos.y, vDeditPos.z ) );
+	// RETAIL: no trace here (retail 0x1012f350)
 
 	m_pPathKnowledgeMgr->ClearPathKnowledge();
 }
@@ -3133,6 +3143,12 @@ void CAI::PreUpdate()
 	{
 		if ( !m_pAnimationContext )
 		{
+			// RETAIL: Tron waits for its animation manager (0x1012f55c)
+			if ( !m_pAnimationMgr )
+			{
+				return;
+			}
+
 			m_flagsCurSenses = m_flagsBaseSenses;
 			m_pAnimationContext = m_pAnimationMgr->CreateAnimationContext(m_hObject);
 		}
@@ -3150,6 +3166,14 @@ void CAI::PreUpdate()
 	{
         SendMixedTriggerMsgToObject(this, m_hObject, LTTRUE, m_sQueuedCommands);
 		m_sQueuedCommands.Empty( );
+
+		// RETAIL: Tron makes the attachments after the first commands
+		// (0x1012f610)
+		if ( !m_bInitializedAttachments )
+		{
+			InitAttachments();
+			m_bInitializedAttachments = LTTRUE;
+		}
 	}
 
 	// Refresh client's tracked node settings.
@@ -3174,7 +3198,8 @@ void CAI::PreUpdate()
 
 	// AllyDisturbance stimulus.
 
-	if( IsSuspicious() && (m_eAlarmStimID == kStimID_Unset) && m_pState && m_pState->CausesAllyDisturbances() )
+	// RETAIL: not on the first update (0x1012f6f9)
+	if( IsSuspicious() && (m_eAlarmStimID == kStimID_Unset) && m_pState && m_pState->CausesAllyDisturbances() && !m_bFirstUpdate )
 	{
 		m_eAlarmStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDisturbanceVisible, m_hObject, LTNULL, CAIStimulusRecord::kDynamicPos_TrackSource, 1.f );
 	}
@@ -3411,6 +3436,34 @@ EnumAnimProp CAI::GetWeaponProp(EnumAIWeaponType eWeaponType)
 
 LTBOOL CAI::SetCurrentWeapon( EnumAIWeaponType eWeaponType )
 {
+	// RETAIL: Tron's AI that picks its weapon by visibility takes the
+	// weapon of its attack side; melee uses the third choice (0x1012fc86)
+	if( m_bSelectWeaponBasedOnVisibility )
+	{
+		if( eWeaponType == kAIWeap_Melee )
+		{
+			m_CurWeaponChoice = m_lstWeaponChoices[2];
+		}
+
+		switch( m_CurWeaponChoice.m_eSide )
+		{
+			case kAIAttack_Left:	m_iCurrentWeapon = 1; break;
+			case kAIAttack_Right:	m_iCurrentWeapon = 0; break;
+			case kAIAttack_Center:
+				if( eWeaponType == kAIWeap_Melee )
+				{
+					m_iCurrentWeapon = 3;
+				}
+				else
+				{
+					m_iCurrentWeapon = 2;
+				}
+				break;
+		}
+
+		return LTTRUE;
+	}
+
 	WEAPON const *pWeaponData;
 	for( int32 iWeapon=0; iWeapon < m_cWeapons; ++iWeapon )
 	{
@@ -3464,8 +3517,9 @@ void CAI::UpdateSensingMembers()
 	m_bUpdateNodes = LTTRUE;
 
 	// It is OK to update the target's visibility if new sense info has come in.
+	// RETAIL: Tron posts the command to all its targets (0x1012fe32)
 
-	m_pTarget->SetCanUpdateVisibility( LTTRUE );
+	m_pTronUnknown1010->PostCommand( SetAllowUpdate( true ) );
 }
 
 // ----------------------------------------------------------------------- //
@@ -3545,10 +3599,10 @@ void CAI::Update()
 	g_cIntersectSegmentCalls = 0;
 */
 
+	// RETAIL: Tron's Update does not set the flag (0x1012ff92)
 	if ( !m_bInitializedAttachments )
 	{
 		InitAttachments();
-		m_bInitializedAttachments = LTTRUE;
 	}
 
 	// Record if we had a target before we update.
@@ -3742,10 +3796,45 @@ void CAI::UpdateOnGround()
 
 void CAI::UpdateState()
 {
-	// PORT: Tron's UpdateState (retail 0x10130330) first, while look-at
-	// tracking is on, finds the nearest player and tracks it ("TrackLookAt")
-	// within a distance kept by CAIButeMgr (its +0x1184, not yet in ours),
-	// else stops unless talking (SetTalkLock(false) or "TrackNone").
+	// RETAIL: Tron's (0x10130336): while the AI looks at the player it talks
+	// to, it keeps looking while a player is near, else stops (and lets go of
+	// the talk lock when it does not talk).
+
+	if ( m_bTalkLock )
+	{
+		LTFLOAT fMinDist = FLT_MAX;
+		int iPlayer = 0;
+		CPlayerObj* pPlayer;
+		while ( (pPlayer = g_pCharacterMgr->FindPlayer( iPlayer )) != LTNULL )
+		{
+			++iPlayer;
+
+			LTVector vPlayerPos;
+			g_pLTServer->GetObjectPos( pPlayer->GetUserObject(), &vPlayerPos );
+
+			LTVector vDiff = vPlayerPos - GetPosition();
+			LTFLOAT fDist = vDiff.Length();
+			if ( fDist < fMinDist )
+			{
+				fMinDist = fDist;
+			}
+		}
+
+		if ( fMinDist <= g_pAIButeMgr->GetRules()->fTalkToPlayerCleanupDist )
+		{
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
+			m_bTalkLookAt = true;
+		}
+		else if ( !IsPlayingDialogSound() && !m_hDialogueObject )
+		{
+			SetTalkLock( false );
+		}
+		else
+		{
+			m_bTalkLookAt = false;
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+		}
+	}
 
     if ( m_hstrNextStateMessage && g_pLTServer->GetTime() >= m_fNextStateTime )
 	{
@@ -4172,10 +4261,24 @@ HMODELSOCKET CAI::GetWeaponSocket(CWeapon* pWeapon)
 
 	AIASSERT( pSelectedAttachment, m_hObject, "GetWeaponSocket: Position not found" );
 
+	// RETAIL: Tron returns no socket when the weapon has no position
+	// (0x1013155e)
+	if ( !pSelectedAttachment )
+	{
+		return INVALID_MODEL_SOCKET;
+	}
+
 	// Retreive the socket based on the attachment name
 	HMODELSOCKET hSocket;
 	LTRESULT SocketResult = g_pModelLT->GetSocket(m_hObject, const_cast<char*>(pSelectedAttachment->GetName()), hSocket);
-	AIASSERT( SocketResult == LT_OK, m_hObject, "GetWeaponSocket: Unable to get socket for transform" );
+	if ( SocketResult != LT_OK )
+	{
+		// RETAIL: Tron gets the model's name here (0x101315b2), for a
+		// message its final build does not show
+		char szModel[128] = { 0 };
+		g_pModelLT->GetModelDBFilename( m_hObject, szModel, sizeof(szModel) );
+		AIASSERT( SocketResult == LT_OK, m_hObject, "GetWeaponSocket: Unable to get socket for transform" );
+	}
 	
 	return hSocket;
 }
@@ -5673,6 +5776,10 @@ char* CAI::GetDeathSound()
 		case kState_BodyExplode:
 			return ::GetSound(this, kAIS_Explode);
 
+		// RETAIL: 0x10134aae
+		case kState_BodyPranksterImplode:
+			return ::GetSound(this, kAIS_PranksterBit);
+
 		default:
 			return ::GetSound(this, kAIS_Death);
 	}
@@ -5845,7 +5952,7 @@ void CAI::UpdateTarget()
 		return;
 	}
 
-	m_pTarget->UpdateVisibility();
+	// RETAIL: no visibility update here (0x10134ee8)
 
 	m_pTarget->UpdatePush( pCharacter );
 

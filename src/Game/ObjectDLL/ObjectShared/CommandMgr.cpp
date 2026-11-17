@@ -2137,21 +2137,14 @@ void CCommandMgr::LoadGlobalVars( ILTMessage_Read *pMsg )
 		TempVar.Clear();
 		TempVar.Load( pMsg );
 
-		uint16 nId;
-		pVar = GetVar( TempVar.m_szName, true, &nId );
-		if( !pVar )	// RETAIL: no m_bValid in Tron (CommandMgr.h)
+		// RETAIL: Tron's GetVar has no id out-parameter (0x100b6740 returns
+		// with ret 8) and a var that exists already is left as it is
+		// (0x100b6644)
+		pVar = GetVar( TempVar.m_szName, true );
+		if( !pVar )
 		{
-			// If we already have the var reassign the same one to avoid duplicates...
-			
-			if( pVar && (nId < CMDMGR_MAX_VARS) )
-			{
-				m_aVars[nId] = TempVar;
-			}
-			else
-			{
-				m_aVars[m_nNumVars] = TempVar;
-				++m_nNumVars;
-			}
+			m_aVars[m_nNumVars] = TempVar;
+			++m_nNumVars;
 		}
 	}
 }
@@ -2165,20 +2158,14 @@ void CCommandMgr::LoadGlobalVars( ILTMessage_Read *pMsg )
 //
 // ----------------------------------------------------------------------- //
 
-VAR_STRUCT* CCommandMgr::GetVar( const char *pName, bool bSilent, uint16 *nId /*= LTNULL*/ )
+VAR_STRUCT* CCommandMgr::GetVar( const char *pName, bool bSilent )
 {
 	if( !pName ) return LTNULL;
-
-	if( nId )
-		*nId = (uint16)-1;
 
 	for( int iVar = 0; iVar < m_nNumVars; ++iVar )
 	{
 		if( !_stricmp( m_aVars[iVar].m_szName, pName ))
 		{
-			if( nId )
-				*nId = iVar;
-
 			return &m_aVars[iVar];
 		}
 	}
@@ -2970,7 +2957,8 @@ void CCommandMgrPlugin::ListObjectMsgs( ILTPreInterface *pInterface, const char 
 									  !_stricmp( pTargetName, "activeplayer" ) ||
 									  !_stricmp( pTargetName, "otherplayers" ) ))
 		{
-			pTargetClass = "CPlayerObj";
+			// RETAIL: Tron's player class (0x100b7c8b)
+			pTargetClass = "CTronPlayerObj";
 		}
 	}
 
@@ -3155,7 +3143,7 @@ LTBOOL CCommandMgrPlugin::PreCheckMsg( ILTPreInterface *pInterface, ConParse &pa
 										  !_stricmp( pTargetName, "activeplayer" ) ||
 										  !_stricmp( pTargetName, "otherplayers" ) ))
 					{
-						pTargetClass = "CPlayerObj";
+						pTargetClass = "CTronPlayerObj";	// RETAIL: 0x100b805d
 					}
 
 					if( !pTargetClass )
@@ -3193,13 +3181,8 @@ LTBOOL CCommandMgrPlugin::PreCheckMsg( ILTPreInterface *pInterface, ConParse &pa
 			{
 				if( gProp.m_Bool )
 				{
-					if( s_bShowMsgErrors )
-					{
-						pInterface->ShowDebugWindow( LTTRUE );
-						pInterface->CPrint( "ERROR! - PreCheckMsg()" );
-						pInterface->CPrint( "    MSG - Template objects should not be sent messages since they don't exist in the game!" );
-					}
-
+					// RETAIL: Tron reports no error for a template object
+					// (0x100b80fa)
 					return LTFALSE;
 				}
 			}

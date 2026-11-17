@@ -51,11 +51,15 @@ protected:
 	// RETAIL: slot 53 (0x10019000): CTronClientWeapon's with the disc shown
 	// again in the states but firing, and the defenses
 	virtual void  UpdateNonFiring();
-	// RETAIL: slot 100 (0x10019920; the name is ours): starts the swat
-	// defense animation again unless it is still playing (retail's
-	// UpdateNonFiring calls it in W_SWAT_DEFENSE, slot 101 in
-	// W_HOLD_DEFENSE: our names of slots 101 and 102 may be one off)
-	virtual bool  TronUnknownVirtual190( bool bResetAni );
+	// RETAIL: Tron's disc declares its two defense animations here, slots
+	// 100 and 101 (0x10019920, 0x10019990): retail's UpdateFiring,
+	// UpdateSwatDefense, UpdateHoldDefense and UpdateNonFiring call slot
+	// 100 in W_SWAT_DEFENSE and slot 101 in W_HOLD_DEFENSE
+	virtual bool  PlaySwatDefenseAnimation( bool bResetAni );
+	virtual bool  PlayHoldDefenseAnimation( bool bResetAni );
+	// RETAIL: slot 102 (0x10019e00; the name is ours): sends
+	// MID_DISC_HOLD_DEFENSE with the fire position and direction
+	virtual void  TronUnknownVirtual198();
 
 	// initialize all the animations for this model
 	virtual void  InitAnimations( bool bAllowSelectOverride = false );
@@ -73,8 +77,6 @@ protected:
 
 	// play model animations
 	virtual bool  PlayFireAnimation( bool bResetAni );
-	virtual bool  PlaySwatDefenseAnimation( bool bResetAni );
-	virtual bool  PlayHoldDefenseAnimation( bool bResetAni );
 
 	// RETAIL: slots 103/104 (0x1001a1f0, 0x1001a210; names ours): any
 	// ammo, and not a full load of it
@@ -107,6 +109,8 @@ protected:
 	virtual void  Fire( bool bFire );
 	virtual void  HandleFireKeyDownTransition();  // up to down transition
 	virtual void  HandleFireKeyUpTransition();    // down to up transition
+	// RETAIL: slot 62 (0x10019f50): the disc returns
+	virtual void  TronUnknownVirtualF8();
 	virtual void  HandleFireKeyDown();            // fire held continuously down
 	virtual void  HandleFireKeyUp();              // fire key not pressed
 
@@ -123,6 +127,10 @@ protected:
 	void          ShowDisc();
 	// RETAIL: 0x1001a370: MID_TRON_DISC_FIRED (the name is ours)
 	void          SendDiscFired();
+	// RETAIL: 0x10019ff0, 0x1001a0f0: MPROJ_RETURN and Tron's message 14
+	// (the fire key is up) to our player (the names are ours)
+	void          SendDiscReturn();
+	void          SendDiscRelease();
 
 private:
 	// swat defense animations

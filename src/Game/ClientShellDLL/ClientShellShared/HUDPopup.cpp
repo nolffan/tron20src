@@ -47,7 +47,8 @@ CHUDPopup::CHUDPopup()
 
 LTBOOL CHUDPopup::Init()
 {
-	m_Text.Create(" ",0,0,g_pInterfaceResMgr->GetFont(0),8,LTNULL);
+	// RETAIL: 0x101877c0: Tron's text starts empty
+	m_Text.Create(std::wstring(),0,0,g_pInterfaceResMgr->GetFont(0),8,LTNULL);
 	m_Frame.Create(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame.dtx"),200,320,LTTRUE);
 
 	return LTTRUE;
@@ -80,7 +81,8 @@ void CHUDPopup::Term()
 
 void CHUDPopup::Render()
 {
-	if (!m_bVisible) return;
+	// RETAIL: 0x10187850: through the virtual IsVisible first
+	if (!IsVisible() || !m_bVisible) return;
 	m_Frame.Render();
 	m_Text.Render();
 }
