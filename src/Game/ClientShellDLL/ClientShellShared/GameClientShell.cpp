@@ -3410,8 +3410,8 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 	// Set the size each time since the screen resolution may have changed...
 
 	uint8 nSize = (uint8)((float)g_pLayoutMgr->GetHelpSize() * g_pInterfaceResMgr->GetXRatio());
-	uint8 nFont = g_pLayoutMgr->GetHelpFont();
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+	// RETAIL: 0x100e5b47: the font for that height
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 	
 	CUIPolyString* pPolyString = NULL;
 
@@ -3421,7 +3421,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pLeftDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, L"", 0.0f, 0.0f);
 				m_pLeftDebugString[nLine] = pPolyString;
 			}
 			else
@@ -3436,7 +3436,7 @@ void CGameClientShell::SetDebugString(char* strMessage, DSSL eLoc, uint8 nLine)
 		{
 			if (!m_pRightDebugString[nLine])
 			{
-				pPolyString = g_pFontManager->CreatePolyString(pFont, std::wstring(), 0.0f, 0.0f);
+				pPolyString = g_pFontManager->CreatePolyString(pFont, L"", 0.0f, 0.0f);
 				m_pRightDebugString[nLine] = pPolyString;
 			}
 			else
