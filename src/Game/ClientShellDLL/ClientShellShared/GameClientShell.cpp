@@ -892,6 +892,7 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	m_pCircuitButeMgr = debug_new(CircuitButeMgr);
 	if (!m_pCircuitButeMgr || !m_pCircuitButeMgr->Init("Attributes\\Circuits.txt"))
 	{
+		g_pLTClient->ShutdownWithMessage("Could not init CircuitButeMgr!");
 		return LT_ERROR;
 	}
 
@@ -1065,6 +1066,12 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		return LT_ERROR;
 	}
 
+	// RETAIL: 0x100e317e: the profile's game options apply here
+	if (g_pProfileMgr)
+	{
+		g_pProfileMgr->GetCurrentProfile()->ApplyGameOptions();
+	}
+
 	//We need to make sure to setup the camera for the FX Mgr
 	m_ClientFXMgr.SetCamera(GetPlayerMgr()->GetCamera());
 
@@ -1094,14 +1101,8 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	g_waterPhysicsState.m_fVelocityDampen = 0.25f;
 
 
-	// PORT: retail's ClientMultiplayerMgr is CTronGameClientShell's member
-	// (+0x35644, which sets g_pClientMultiplayerMgr); until it is there,
-	// NOLF2's allocation stands in (never freed, as the shell lives as
-	// long as the DLL)
-	if (!g_pClientMultiplayerMgr)
-	{
-		debug_new( ClientMultiplayerMgr );
-	}
+	// RETAIL: the ClientMultiplayerMgr is CTronGameClientShell's member
+	// (+0x35644, which sets g_pClientMultiplayerMgr): none is made here
 
 	// Init the special fx mgr...
 	if (!m_sfxMgr.Init(g_pLTClient))
@@ -1122,11 +1123,15 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	}
 	else
 	{
-		g_pClientMultiplayerMgr->SetModName( LoadTempString( IDS_RETAIL ) );
+		// RETAIL: the name itself, not a string resource (0x100e32f0)
+		g_pClientMultiplayerMgr->SetModName( "Retail" );
 	}	
 
 	// Process command line.
 
+	// RETAIL: 0x100e333a..: Tron's command line.  Its host and runworld
+	// start the given world through the mission manager; no mission file
+	// is chosen by game type
 	if (hVar = g_pLTClient->GetConsoleVar("join")) // looking for join [ip] format
 	{
 		g_pInterfaceMgr->SetCommandLineJoin( true );
@@ -1134,76 +1139,22 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		// Change to the splash screen.  We'll start the game after that.
 		GetInterfaceMgr( )->ChangeState(GS_SPLASHSCREEN);
 	}
-	else if (hVar = g_pLTClient->GetConsoleVar("host")) // looking for host [1] format
+	else if (hVar = g_pLTClient->GetConsoleVar("host")) // looking for host [world] format
 	{
-		int nHost = atoi(g_pLTClient->GetVarValueString( hVar ));
-		
-		// Use the settings from the current profile to determine what the game will be...
+		const char* pWorld = g_pLTClient->GetVarValueString( hVar );
 
-		CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile( );
-		if( nHost && pProfile )
+		if (g_pClientMultiplayerMgr->SetupServerHost(0) && GetMissionMgr()->StartGameFromLevel(pWorld))
 		{
-			bool bOk = true;
-
-			// Initialize the mission mgr with the appropriate file based on game type...
-
-			std::string sMissionFile;
-			switch( (*g_pServerOptionMgr->GetCurrent()).m_eGameType )
-			{
-				case eGameTypeCooperative:
-				{
-					sMissionFile = MISSION_COOP_FILE;
-				}
-				break;
-
-				case eGameTypeDeathmatch:
-				case eGameTypeTeamDeathmatch:
-				{
-					sMissionFile = MISSION_DM_FILE;
-				}
-				break;
-
-				case eGameTypeDoomsDay:
-				{
-					sMissionFile = MISSION_DD_FILE;
-				}
-				break;
-
-				case eGameTypeSingle:
-				default:
-				{
-					sMissionFile = MISSION_DEFAULT_FILE;
-					bOk = false;
-				}
-				break;
-			}
-
-			if( !g_pMissionButeMgr->Init( sMissionFile.c_str() ))
-			{
-				g_pLTClient->ShutdownWithMessage("Could not load mission bute %s.", sMissionFile.c_str() );
-				return LT_ERROR;
-			}
-
-			// Start the server..
-
-			bOk = bOk && g_pClientMultiplayerMgr->SetupServerHost( (*g_pServerOptionMgr->GetCurrent()).m_nPort );
-			bOk = bOk && g_pMissionMgr->StartGameNew();
-			
-			if( !bOk )
-			{
-				// drop them into the host menu
-				GetInterfaceMgr( )->LoadFailed();
-				GetInterfaceMgr( )->SwitchToScreen(SCREEN_ID_HOST);
-
-				MBCreate mb;
-				GetInterfaceMgr( )->ShowMessageBox(IDS_NOLOADLEVEL,&mb);
-			}
+			GetInterfaceMgr( )->ChangeState(GS_LOADINGLEVEL);
 		}
 		else
 		{
-			// Just treat like normal game...
-			
-			GetInterfaceMgr( )->ChangeState(GS_SPLASHSCREEN);
+			// drop them into the host menu
+			GetInterfaceMgr( )->LoadFailed();
+			GetInterfaceMgr( )->SwitchToScreen(SCREEN_ID_HOST);
+
+			MBCreate mb;
+			GetInterfaceMgr( )->ShowMessageBox(0x388,&mb);	// RETAIL: Tron's string
 		}
 	}
 	else if (hVar = g_pLTClient->GetConsoleVar("runworld"))
@@ -1223,11 +1174,9 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
   		}
 
 		g_pClientSaveLoadMgr->SetUseMultiplayerFolders( false );
-		bool bOk = g_pClientMultiplayerMgr->SetupServerSinglePlayer( );
-		bOk = bOk && g_pMissionMgr->StartGameFromLevel(pMap);
-		if( !bOk )
+		if( !g_pClientMultiplayerMgr->SetupServerSinglePlayer( ) || !GetMissionMgr()->StartGameFromLevel(pMap) )
 		{
-			g_pLTClient->ShutdownWithMessage(LoadTempString(IDS_NOLOADLEVEL));
+			g_pLTClient->ShutdownWithMessage(LoadTempString(0x388));
 			return LT_ERROR;
 		}
 	}
