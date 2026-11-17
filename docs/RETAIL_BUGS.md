@@ -1142,6 +1142,19 @@ has no GEAR record causes a null pointer read.
 
 Not fixed yet: the modern build should return when the pointer is null.
 
+### A loaded projectile does not get its object flags back
+
+Object.lto 0x101246c0 (CProjectile::Load, ObjectShared/Projectile.cpp).
+CProjectile::Save (0x10124320) writes the object flags of the projectile
+last. Load gets the current flags of the object, then reads the saved flags
+into the same variable and does not use them. NOLF2's Load sets the saved
+flags on the object. Thus, after a saved game loads, a projectile has the
+flags that the engine gave it, not the flags that it had when the game was
+saved (for example, the visible flag that DoProjectile sets).
+
+Not fixed yet: the modern build should set the saved flags with
+SetObjectFlags (OFT_Flags, FLAGMASK_ALL).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

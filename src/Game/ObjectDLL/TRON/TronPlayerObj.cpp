@@ -596,19 +596,24 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 				uint16 nTmp;
 				nTmp = pMsg->Readuint16(); ltResult = LT_OK; // PORT: ReadWordFL
 				ASSERT( LT_OK == ltResult );
-				UncompressAngleFromShort( nTmp, &pInfo->fHorizontalSpread );
+				// PORT: Tron's WeaponFireInfo has no spread members (its fire data
+				// ends at 0x16c), so the spread is read and dropped here
+				float fHorizontalSpread;
+				UncompressAngleFromShort( nTmp, &fHorizontalSpread );
 
 				// get the horizontal perturb
 				uint8 nHorizontalPerturb;
 				nHorizontalPerturb = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 				ASSERT( LT_OK == ltResult );
-				UncompressAngleFromByte( nHorizontalPerturb, &pInfo->fHorizontalPerturb );
+				float fHorizontalPerturb;
+				UncompressAngleFromByte( nHorizontalPerturb, &fHorizontalPerturb );
 
 				// get the vertical spread
 				uint8 nVerticalSpread;
 				nVerticalSpread = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
 				ASSERT( LT_OK == ltResult );
-				UncompressAngleFromByte( nVerticalSpread, &pInfo->fVerticalSpread );
+				float fVerticalSpread;
+				UncompressAngleFromByte( nVerticalSpread, &fVerticalSpread );
 
 				// get the number of shards
 				pInfo->nNumberOfShards = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL

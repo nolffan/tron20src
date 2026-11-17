@@ -159,7 +159,8 @@ class Body : public Prop, public IHitBoxUser
 		// Hide the body and it's associated objects.
 		void		HideBody( bool bHide );
 
-		virtual CAnimator* GetAnimator() { return &m_Animator; }
+		// RETAIL: IHitBoxUser's slot 8 (retail 0x101590e0)
+		virtual HOBJECT GetHitBoxObject() const { return m_hHitBox; }
 		// RETAIL: IHitBoxUser's (retail 0x1001b900)
 		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 

@@ -6438,7 +6438,9 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	weaponFireInfo.fPerturbU       = static_cast< LTFLOAT >( cTemp ) / 255.0f;
 
 	// get the timestamp when the shot was fired
-	weaponFireInfo.nFireTimestamp = pMsg->Readuint32();
+	// PORT: Tron's fire time is a float (WeaponFireInfo +0x4c); the type on
+	// the wire is not yet checked against retail
+	weaponFireInfo.fFireTime = pMsg->Readfloat();
 
 	// extract the extra (weapon specific) data from the message
 	GetExtraFireMessageInfo( nWeaponType, pMsg, &weaponFireInfo );

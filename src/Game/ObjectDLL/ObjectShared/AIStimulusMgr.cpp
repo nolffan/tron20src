@@ -861,6 +861,40 @@ EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusTy
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIStimulusMgr::RegisterStimulus()
+//
+//	PURPOSE:	Register a stimulus in the world.
+//				Overload for alignment, position, radius factor, and
+//				duration factor (RETAIL: Tron's, 0x10100d70; CProjectile::
+//				Setup gives the shooter's relation data).
+//
+// ----------------------------------------------------------------------- //
+
+EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusType, HOBJECT hStimulusSource,
+													const RelationData& RelationData, const LTVector& vPos,
+													LTFLOAT fRadiusFactor, LTFLOAT fDurationFactor)
+{
+	// Create a stimulus record, and fill it in.
+	CAIStimulusRecord* pAIStimulusRecord	= AI_FACTORY_NEW(CAIStimulusRecord);
+	pAIStimulusRecord->m_eStimulusType		= eStimulusType;
+	pAIStimulusRecord->m_hStimulusSource	= hStimulusSource;
+	pAIStimulusRecord->m_hStimulusTarget	= LTNULL;
+	pAIStimulusRecord->m_vStimulusPos		= vPos;
+	pAIStimulusRecord->m_RelationData		= RelationData;
+
+	EnumAIStimulusID eAIStimulusID = _RegisterStimulus(pAIStimulusRecord, 1, fRadiusFactor, fDurationFactor);
+
+	// Check if it registered ok.
+	if( eAIStimulusID == kStimID_Invalid )
+	{
+		AI_FACTORY_DELETE( pAIStimulusRecord );
+	}
+
+	return eAIStimulusID;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIStimulusMgr::GetTargetMatchID
 //
 //	PURPOSE:	Find the TargetMatchID for an HOBJECT.

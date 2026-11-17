@@ -179,7 +179,7 @@ CGrenade::~CGrenade()
 //
 // ----------------------------------------------------------------------- //
 
-void CGrenade::Detonate(HOBJECT hObj, bool bTronUnknown)
+void CGrenade::Detonate(HOBJECT hObj, CollisionInfo* pCollInfo)
 {
 	// We're blowing up, take us out of the grenade list
 	if( m_bAddToGrenadeList )
@@ -2163,7 +2163,7 @@ void CBearTrap::HandleImpact( HOBJECT hObj )
 //
 // ----------------------------------------------------------------------- //
 
-void CBearTrap::Detonate( HOBJECT hObj, bool bTronUnknown )
+void CBearTrap::Detonate( HOBJECT hObj, CollisionInfo* pCollInfo )
 {
 	// Show the beartrap snap shut but don't get rid of the pickup item so it can be reused...
 
@@ -2432,7 +2432,7 @@ void CBanana::HandleImpact( HOBJECT hObj )
 	}
 }
 
-void CBanana::Detonate( HOBJECT hObj, bool bTronUnknown )
+void CBanana::Detonate( HOBJECT hObj, CollisionInfo* pCollInfo )
 {
 	// Create banana debris...
 
@@ -2789,3 +2789,54 @@ void CProjectileSpawner::HandleImpact( HOBJECT hObj )
 
 }
 
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CProjectile::GetTeamId / CProjectile::IsMyTeam
+//
+//	PURPOSE:	PORT: NOLF2's team test for its projectile types.  Tron's
+//				CProjectile keeps no team id (its layout has no place for
+//				one), so the team is the shooter's.
+//
+// ----------------------------------------------------------------------- //
+
+uint8 CProjectile::GetTeamId() const
+{
+	if( IsTeamGameType( ))
+	{
+		return GetPlayerTeamId( m_hFiredFrom );
+	}
+
+	return INVALID_TEAM;
+}
+
+bool CProjectile::IsMyTeam( HOBJECT hPlayer ) const
+{
+	bool bMyTeam = false;
+
+	//if projectile wasn't fired by a player, teams are irrelevant...
+	if (!IsPlayer(m_hFiredFrom))
+		return false;
+
+	// If this is a coop game, then all other players are on my team, everything
+	// else isn't.
+	if( IsCoopMultiplayerGameType( ))
+	{
+		bMyTeam = !!IsPlayer( hPlayer );
+	}
+	// If it's a team game, then check our internal teamid.
+	else if( IsTeamGameType( ))
+	{
+		if( GetTeamId( ) != INVALID_TEAM )
+		{
+			bMyTeam = ( GetTeamId( ) == GetPlayerTeamId( hPlayer ));
+		}
+	}
+	// Every other gametype has no team allegiance.
+	else
+	{
+		bMyTeam = false;
+	}
+
+	return bMyTeam;
+}

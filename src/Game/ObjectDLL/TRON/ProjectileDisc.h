@@ -49,7 +49,7 @@ protected:
 
 	virtual bool        UpdateDisc();
 
-	virtual void        Detonate( HOBJECT, bool bTronUnknown = false );
+	virtual void        Detonate( HOBJECT, CollisionInfo* pCollInfo = LTNULL );
 
 	LTVector			GetReturnToPosition(const LTVector& vOffset);
 

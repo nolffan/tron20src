@@ -71,7 +71,7 @@ class CThorne : public GameBase, public IHitBoxUser
 		virtual float			GetNodeRadius(ModelSkeleton eModelSkeleton, ModelNode eModelNode);
 		virtual void			UpdateClientHitBox() {}
 		// RETAIL: slot 8 returns Thorne's hit box object (retail 0x10095c70)
-		virtual CAnimator*		GetAnimator() { return (CAnimator*)(HOBJECT)m_hHitBox; }
+		virtual HOBJECT			GetHitBoxObject() const { return m_hHitBox; }
 		// RETAIL: slot 9 adds the ball to a HitBoxUserList (retail 0x10057ba0)
 		virtual void			TronUnknownVirtual24(int nArg);
 		virtual HOBJECT			TronUnknownVirtual28() { return m_hObject; }
