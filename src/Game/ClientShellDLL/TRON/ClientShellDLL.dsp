@@ -648,6 +648,10 @@ SOURCE=.\ScreenSubroutines.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\SpectatorObjectFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Stdafx.cpp
 # ADD CPP /Yc"stdafx.h"
 # End Source File
@@ -1099,6 +1103,10 @@ SOURCE=.\ScreenSingle.h
 # Begin Source File
 
 SOURCE=.\ScreenWeaponControls.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\SpectatorObjectFX.h
 # End Source File
 # Begin Source File
 

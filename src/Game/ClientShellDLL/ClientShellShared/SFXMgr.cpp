@@ -73,6 +73,7 @@
 #include "RadarObjectFX.h"
 #include "ActivateObjectFX.h"
 #include "TRON/ClientFxUserFX.h"
+#include "TRON/SpectatorObjectFX.h"
 
 // NOTE:  These indexes should map EXACTLY to the SFX ids defined
 // in SFXMsgIds.h...
@@ -200,6 +201,7 @@ CBankedList<CTriggerFX> g_SFXBank_Trigger;
 CBankedList<CRadarObjectFX> g_SFXBank_RadarObject;
 CBankedList<CActivateObjectFX> g_SFXBank_ActivateObject;
 CBankedList<CClientFxUserFX> g_SFXBank_ClientFxUser;	// RETAIL: Tron's (0x102710f0)
+CBankedList<CSpectatorObjectFX> g_SFXBank_SpectatorObject;	// RETAIL: Tron's (0x102710d0)
 CBankedList<CDoomsdayPieceFX> g_SFXBank_DoomsdayPiece;
 
 
@@ -1050,6 +1052,12 @@ void CSFXMgr::DeleteSFX(CSpecialFX* pFX)
 		}
 		break;
 
+		case SFX_SPECTATOROBJECT_ID :
+		{
+			g_SFXBank_SpectatorObject.Delete((CSpectatorObjectFX*)pFX);
+		}
+		break;
+
 		// Ok, it's not a banked effect
 		default:
 		{
@@ -1418,6 +1426,12 @@ CSpecialFX* CSFXMgr::CreateSFX(uint8 nId, SFXCREATESTRUCT *psfxCreateStruct,
 		case SFX_CLIENTFXUSER_ID:
 		{
 			pSFX = g_SFXBank_ClientFxUser.New();
+		}
+		break;
+
+		case SFX_SPECTATOROBJECT_ID:
+		{
+			pSFX = g_SFXBank_SpectatorObject.New();
 		}
 		break;
 
@@ -2087,6 +2101,49 @@ CSpecialFX* CSFXMgr::GetSpectatorFX(HOBJECT hObject)
 		if (pFX && pFX->GetServerObj() == hObject)
 		{
 			return pFX;
+		}
+	}
+
+	return LTNULL;
+}
+
+// TRON: the spectator object after hObject (RETAIL: 0x101086f0; the name
+// is ours). With bTronUnknown38, only those whose server set their flag
+CSpecialFX* CSFXMgr::GetNextSpectatorFX(HOBJECT hObject, bool bWrap, bool bTronUnknown38)
+{
+	bool bFound = (hObject == LTNULL);
+
+	CSpecialFX* pFX = NULL;
+	int cFX  = m_dynSFXLists[SFX_SPECTATOROBJECT_ID].GetSize();
+
+	for ( int iFX = 0 ; iFX < cFX ; iFX++ )
+	{
+		pFX = m_dynSFXLists[SFX_SPECTATOROBJECT_ID][iFX];
+		if (pFX)
+		{
+			if (bFound)
+			{
+				if (pFX->GetServerObj() && (!bTronUnknown38 || ((CSpectatorObjectFX*)pFX)->m_bTronUnknown38))
+				{
+					return pFX;
+				}
+			}
+			else if (pFX->GetServerObj() == hObject)
+			{
+				bFound = true;
+			}
+		}
+	}
+
+	if (bWrap && cFX > 0)
+	{
+		pFX = m_dynSFXLists[SFX_SPECTATOROBJECT_ID][0];
+		if (bFound && pFX && pFX->GetServerObj() && (!bTronUnknown38 || ((CSpectatorObjectFX*)pFX)->m_bTronUnknown38))
+		{
+			if (pFX->GetServerObj() != hObject)
+			{
+				return pFX;
+			}
 		}
 	}
 

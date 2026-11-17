@@ -1910,10 +1910,9 @@ void CTronPlayerMgr::TronUnknownVirtual24(bool b1D7, bool b1D9)
 //	ROUTINE:	CTronPlayerMgr::TronUnknownLightCycleSpectate
 //
 //	PURPOSE:	RETAIL: retail 0x100a7eb0 (called by the client light cycle
-//				manager): in a light cycle game, a watched cycle is chosen.
-//				PORT: the SFX manager's and the client light cycle
-//				manager's lookups (0x101086f0, 0x100ff280, 0x100ff2b0) are
-//				not yet in our tree
+//				manager): in a light cycle game, the player watches the
+//				next spectator object, else the next light cycle (third
+//				person), else the first spectator object
 //
 // ----------------------------------------------------------------------- //
 
@@ -1921,9 +1920,65 @@ bool CTronPlayerMgr::TronUnknownLightCycleSpectate()
 {
 	if (IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
+		HOBJECT hWatch = LTNULL;
+		LIGHT_CYCLIST* pCyclist = LTNULL;
+
+		if (m_hTronUnknownBC)
+		{
+			CSpecialFX* pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(m_hTronUnknownBC, false, false);
+			if (pFX)
+			{
+				hWatch = pFX->GetServerObj();
+			}
+		}
+
+		if (!hWatch)
+		{
+			HOBJECT hCurrent = LTNULL;
+			if (g_pLightCycleMgr->FindCyclist(m_hTronUnknownBC))
+			{
+				hCurrent = m_hTronUnknownBC;
+			}
+
+			LIGHT_CYCLIST* pNext = g_pLightCycleMgr->GetNextCyclist(hCurrent, false);
+			if (pNext && pNext->hObject != g_pMoveMgr->GetObject())
+			{
+				hWatch = pNext->hObject;
+				pCyclist = pNext;
+			}
+
+			if (!hWatch)
+			{
+				CSpecialFX* pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(LTNULL, true, true);
+				if (!pFX)
+				{
+					pFX = g_pGameClientShell->GetSFXMgr()->GetNextSpectatorFX(LTNULL, true, false);
+				}
+
+				if (pFX)
+				{
+					hWatch = pFX->GetServerObj();
+				}
+			}
+		}
+
+		m_hTronUnknownBC = hWatch;
+		m_nTronUnknown230 = (uint32)pCyclist;
 		m_bTronUnknownB8 = true;
 
 		g_pCommonLT->SetObjectFlags(g_pMoveMgr->GetObject(), OFT_Flags, 0, FLAG_GRAVITY);
+
+		g_pGameClientShell->m_bTronUnknown833A = false;
+		g_pMoveMgr->GetVehicleMgr()->ResetPhysicsModel();
+
+		if (pCyclist)
+		{
+			g_pInterfaceMgr->TronUnknownThirdPersonCamera(true);
+		}
+		else
+		{
+			g_pInterfaceMgr->TronUnknownFirstPersonCamera(true);
+		}
 
 		TronUnknownVirtual40();
 	}

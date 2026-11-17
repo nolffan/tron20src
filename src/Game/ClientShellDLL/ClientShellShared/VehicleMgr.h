@@ -63,6 +63,9 @@ class CVehicleMgr
 	int			GetTurnDirection()		const { return m_nVehicleTurnDirection; }
 
 	PlayerPhysicsModel GetPhysicsModel()	const { return m_ePPhysicsModel; }
+	// RETAIL: Tron's, inline (CTronPlayerMgr::TronUnknownLightCycleSpectate,
+	// 0x100a7fb6; the name is ours)
+	void		ResetPhysicsModel() { m_ePPhysicsModel = PPM_NORMAL; SetNormalPhysicsModel(); }
 
 	void		CalculateVehicleRotation(LTVector & vPlayerPYR, LTVector & vPYR, LTFLOAT fYawDelta);
 
