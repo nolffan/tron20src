@@ -1142,6 +1142,18 @@ has no GEAR record causes a null pointer read.
 
 Not fixed yet: the modern build should return when the pointer is null.
 
+### Two core dump help files of a character are in the wrong group
+
+Object.lto 0x10087500 (CCharacter's property list, ObjectShared/
+Character.cpp). A character has three groups of core dump item properties
+(CoreDumpItem1 to CoreDumpItem3). HelpFile2 and HelpFile3 have the flags of
+the first group (PF_GROUP(8)), not of their own groups (PF_GROUP(9) and
+PF_GROUP(10)). DEdit shows these two properties in the first item's group.
+The game reads them by name, thus play is not affected.
+
+Not fixed yet: the modern build should give each HelpFile the group of its
+item.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

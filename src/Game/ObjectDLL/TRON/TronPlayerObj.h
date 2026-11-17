@@ -116,6 +116,7 @@ class CTronPlayerObj : public CPlayerObj
 		virtual void	RemoveVehicleModel();
 		virtual void	GimmeGunCheat( uint8 nId );
 		virtual void	FullWeaponCheat();
+		virtual void	TronUnknownVirtual130( GameStartPoint* pStartPoint, bool bTronUnknown );
 		virtual void	TronUnknownVirtual105( LTBOOL bOn );
 		virtual void	AcquireWeapon(char* pWeaponName, bool bTronUnknown = false);
 		// RETAIL: slot 127 (retail 0x10066f20) is given a subroutine record

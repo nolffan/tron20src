@@ -478,9 +478,10 @@ class CPlayerObj : public CCharacter
 		virtual bool	TronUnknownVirtual127( char const* /*pWeaponName*/ ) { return true; }
 		virtual bool	TronUnknownVirtual128( WEAPON const* /*pWeapon*/ ) { return true; }
 		virtual bool	TronUnknownVirtual129( uint8 /*nWeaponId*/ ) { return true; }
-		// RETAIL: an empty virtual of Tron's with two arguments (Respawn calls
-		// it, retail 0x1007def8; CTronPlayerObj's is 0x100672a0)
-		virtual void	TronUnknownVirtual130( uint32 /*nUnknown1*/, uint32 /*nUnknown2*/ ) {}
+		// RETAIL: an empty virtual of Tron's (Respawn calls it in the disc
+		// game types with its start point, retail 0x1007def8; CTronPlayerObj's
+		// is 0x100672a0)
+		virtual void	TronUnknownVirtual130( GameStartPoint* /*pStartPoint*/, bool /*bTronUnknown*/ ) {}
 
         virtual LTBOOL DoActivate(CActivationData* pData);
 

@@ -36,6 +36,7 @@ typedef std::vector<std::string> MPLevelStringList;
 class CMultiplayerLevelInfoMgr : public CGameButeMgr
 {
 	friend class CTronGameServerShell;	// RETAIL: MID_SYSTEM_MEMORY (retail 0x1005d0c0)
+	friend class CTronPlayerObj;		// RETAIL: the default primitives and weapons (retail 0x1006733e)
 
 	public :
 

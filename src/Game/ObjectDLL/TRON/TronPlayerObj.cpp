@@ -21,6 +21,8 @@
 #include "FXButeMgr.h"
 #include "LightCycleMgr.h"
 #include "ServerMissionMgr.h"
+#include "ArenaStartPoint.h"
+#include "MultiplayerLevelInfoMgr.h"
 
 BEGIN_CLASS(CTronPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
@@ -2201,6 +2203,65 @@ void CTronPlayerObj::FullWeaponCheat()
 
 	FullModsCheat( );
 	AcquireCurrentLevelIdealWeapons( );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::TronUnknownVirtual130
+//
+//	PURPOSE:	RETAIL: retail 0x100672a0: a disc game respawn. A spectator
+//				gets no weapons unless the game type's "DiscsInSpectator"
+//				is set; the others get the level's default primitives and
+//				weapons and change back to the weapon they had
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::TronUnknownVirtual130( GameStartPoint* pStartPoint, bool bTronUnknown )
+{
+	RemoveProjectiles( );
+
+	bool bSpectator = ( ((ArenaStartPoint*)pStartPoint)->GetType( ) == ArenaStartPoint::kType_Spectator );
+
+	bool bDiscsInSpectator;
+	ServerGameOptions& opts = g_pGameServerShell->GetServerGameOptions( );
+	if( opts.m_eGameType == eGameTypeDiscArena )
+		bDiscsInSpectator = opts.m_bArenaDiscsInSpectator;
+	else
+		bDiscsInSpectator = opts.m_bTournDiscsInSpectator;
+
+	if( !bTronUnknown )
+	{
+		m_Stats.Init( );
+		m_Score.SetClientID( g_pLTServer->GetClientID( GetClient( )));
+		ResetPlayer( );
+	}
+
+	ResetHealth( LTFALSE, 1.0f, 1.0f );
+	ResetInventory( LTTRUE, LTTRUE );
+
+	if( bSpectator && !bDiscsInSpectator )
+		return;
+
+	MPLevelStringList& lstPrims = g_pMultiplayerLevelInfoMgr->m_lstDefaultPrims;
+	MPLevelStringList::iterator iter;
+	for( iter = lstPrims.begin( ); iter != lstPrims.end( ); iter++ )
+	{
+		AcquirePrimitive( iter->c_str( ));
+	}
+
+	MPLevelStringList& lstWeaps = g_pMultiplayerLevelInfoMgr->m_lstDefaultWeaps;
+	for( iter = lstWeaps.begin( ); iter != lstWeaps.end( ); iter++ )
+	{
+		AcquireWeapon( (char*)iter->c_str( ));
+	}
+
+	if( m_nLastWeaponId != WMGR_INVALID_ID && m_nLastAmmoId != WMGR_INVALID_ID )
+	{
+		ChangeWeapon( g_pWeaponMgr->GetCommandId( m_nLastWeaponId ), LTTRUE, m_nLastAmmoId );
+	}
+
+	m_nLastWeaponId = WMGR_INVALID_ID;
+	m_nLastAmmoId = WMGR_INVALID_ID;
 }
 
 // ----------------------------------------------------------------------- //
