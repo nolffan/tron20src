@@ -14,6 +14,10 @@ const uint32 animodDislocates = 0x01;
 
 #define Output Debug
 
+// RETAIL: Tron's string before the parser (0x10398508; Parse empties it).
+// The name is ours
+static std::string s_sTronUnknown;
+
 CAnimationParser* g_pParser = NULL;
 static LTBOOL s_btError = LTFALSE;
 
@@ -96,14 +100,19 @@ CAnimationParser::~CAnimationParser()
 
 LTBOOL CAnimationParser::Parse(const std::string& sFile, CAnimationMgr* pAnimMgr)
 {
+	// RETAIL: Tron's (0x10232370) resets the lexer and the string, and
+	// keeps the errors that the parse reports
+	g_Lex = CAnimationLex();
+
 	s_btError = LTFALSE;
+	s_sTronUnknown = "";
 
 	g_pParser = this;
 
 	m_pAnimMgr = pAnimMgr;
 	m_pAnimMgr->GetPropertyMap()->clear();
 
-	s_btError = !g_Lex.Lex(sFile.c_str());
+	g_Lex.Lex(sFile.c_str());
 /*
 	#ifdef _REZFILE
 	{
