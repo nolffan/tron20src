@@ -5559,6 +5559,33 @@ void CInterfaceMgr::UpdateInterfaceSFX()
 }
 
 
+// RETAIL: Tron's (0x100cea40; the name is ours): one object drawn by
+// the interface camera with the interface lights. The array has room for
+// the lights, but the test is the fx list's (see docs/RETAIL_BUGS.md)
+void CInterfaceMgr::RenderInterfaceObject(HOBJECT hObj)
+{
+	if (!g_pInterfaceMgr->GetInterfaceCamera() || !hObj)
+		return;
+
+	HLOCALOBJ objs[MAX_INTERFACE_LIGHTS + 1];
+	objs[0] = hObj;
+	int next = 1;
+
+	for ( ObjectArray::iterator iter = m_InterfaceLights.begin( ); iter !=  m_InterfaceLights.end() && 
+		next < kMaxFX; iter++ )
+	{
+		HOBJECT hLight = *iter;
+		if ( hLight )
+		{
+			objs[next] = hLight;
+			next++;
+		}
+	}
+
+	g_pLTClient->RenderObjects(g_pInterfaceMgr->GetInterfaceCamera(), objs, next, g_pLTClient->GetFrameTime());
+}
+
+
 /******************************************************************/
 void CInterfaceMgr::RequestInterfaceSound(InterfaceSound eIS)
 {

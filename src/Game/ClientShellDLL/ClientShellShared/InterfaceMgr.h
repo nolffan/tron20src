@@ -393,6 +393,7 @@ class CInterfaceMgr
 		void		RemoveInterfaceLights();
 
 		void		RequestInterfaceSound(InterfaceSound eIS);
+		void		RenderInterfaceObject(HOBJECT hObj);	// RETAIL: Tron's (0x100cea40; the name is ours)
 		void		ClearInterfaceSound();
 
 
