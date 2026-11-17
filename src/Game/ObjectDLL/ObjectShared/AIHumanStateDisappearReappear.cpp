@@ -23,7 +23,7 @@ CAIHumanStateDisappearReappear::CAIHumanStateDisappearReappear()
 	m_fReappearDistOverride = 0.f;
 
 	m_fDisappearTime = 0.f;
-	m_fReappearDelay = 5.f;
+	m_fReappearDelay = 0.f;	// RETAIL: 0x1022c245, Tron's default is 0.
 }
 
 CAIHumanStateDisappearReappear::~CAIHumanStateDisappearReappear()
@@ -142,7 +142,10 @@ void CAIHumanStateDisappearReappear::Update()
 				if( !g_pAIPathMgr->FindRandomPosition( GetAI(), GetAI()->GetLastVolume(), GetAI()->GetPosition(), fReappearDist, &m_vDestPos ) )
 				{
 					AITRACE( AIShowStates, ( GetAI()->m_hObject, "HumanStateDisappearReappear: Could not find random position %.2f dist away!.", fReappearDist ) );
-					m_vDestPos = GetAI()->GetPosition();
+
+					// RETAIL: 0x1022c730, Tron gives up the state.
+					m_eStateStatus = kSStat_StateComplete;
+					return;
 				}
 	
 				m_fDisappearTime = g_pLTServer->GetTime();
@@ -227,19 +230,16 @@ void CAIHumanStateDisappearReappear::Update()
 
 void CAIHumanStateDisappearReappear::Disappear()
 {
-	SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTFALSE, "HIDDEN 1");
-
-	g_pLTServer->SetObjectColor( GetAI()->m_hObject, 1.f, 1.f, 1.f, 0.f );
+	// RETAIL: 0x1022c8c0, Tron's AI ghosts in place of the NOLF2 hide and fade.
+	GetAI()->StartGhosting();
 }
 
 // ----------------------------------------------------------------------- //
 
 void CAIHumanStateDisappearReappear::Reappear()
 {
-	SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTFALSE, "HIDDEN 0");
-
-	g_pLTServer->SetObjectColor( GetAI()->m_hObject, 1.f, 1.f, 1.f, 0.f );
-	m_fFadeTimer = 0.f;
+	// RETAIL: 0x1022c8d0.
+	GetAI()->StopGhosting();
 }
 
 // ----------------------------------------------------------------------- //
@@ -303,6 +303,12 @@ void CAIHumanStateDisappearReappear::UpdateAnimation()
 
 		case kSStat_Moving:
 			m_pStrategyFollowPath->UpdateAnimation();
+
+			// RETAIL: 0x1022ca0d, Tron sets the animation rate while the AI is gone.
+			{
+				LTFLOAT fRate = m_pAI->GetBrain()->GetAIData( kAIData_DisappearedMovingAnimRate );
+				GetAI()->GetAnimationContext()->SetAnimRate( fRate );
+			}
 			break;
 
 		case kSStat_Reappearing:

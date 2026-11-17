@@ -21,9 +21,11 @@
 LINKTO_MODULE( KeyFramer );
 
 
+// RETAIL: ObjectName, BaseKeyName and TargetName are object links in Tron
+// (PF_OBJECTLINK, retail 0x1011574c, 0x101157ad, 0x10115a50)
 #define ADD_KEYFRAMER_PROPERTIES(groupflag) \
-	ADD_STRINGPROP_FLAG(ObjectName, "", groupflag) \
-	ADD_STRINGPROP_FLAG(BaseKeyName, "", groupflag) \
+	ADD_OBJECTPROP_FLAG(ObjectName, "", groupflag) \
+	ADD_OBJECTPROP_FLAG(BaseKeyName, "", groupflag) \
 	ADD_STRINGPROP_FLAG(ExternalKeyFile, "", groupflag) \
 	ADD_REALPROP_FLAG(KeyDataIndex, -1.0f, groupflag | PF_HIDDEN) \
     ADD_BOOLPROP_FLAG(PushObjects, LTFALSE, groupflag) \
@@ -32,7 +34,7 @@ LINKTO_MODULE( KeyFramer );
     ADD_BOOLPROP_FLAG(Looping, LTFALSE, groupflag) \
     ADD_BOOLPROP_FLAG(AlignToPath, LTFALSE, groupflag) \
     ADD_BOOLPROP_FLAG(IgnoreOffsets, LTFALSE, groupflag) \
-	ADD_STRINGPROP_FLAG(TargetName, "", groupflag) \
+	ADD_OBJECTPROP_FLAG(TargetName, "", groupflag) \
 	ADD_VECTORPROP_VAL_FLAG(TargetOffset, 0.0f, 0.0f, 0.0f, groupflag) \
 	ADD_STRINGPROP_FLAG(ActiveSound, "", groupflag) \
 	ADD_REALPROP_FLAG(SoundRadius, 1000.0f, groupflag) \

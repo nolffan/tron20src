@@ -105,9 +105,18 @@ LTRESULT CTriggerPlugin::PreHook_EditStringList(
 		strcpy(aszStrings[0], "<None>");
 
 		// Hand off the rest to the keymgr
-		LTBOOL bResult = m_KeyMgrPlugin.PopulateStringList(aszStrings + 1, pcStrings, cMaxStrings - 1, cMaxStringLength);
+		// RETAIL: Tron calls the key plugin's PreHook_EditStringList and
+		// takes its LTRESULT as a bool (0x101c28be): a retail bug
+		// (docs/RETAIL_BUGS.md), kept.
+#ifdef TRON20_MODERN
+		LTRESULT eResult = m_KeyMgrPlugin.PreHook_EditStringList(szRezPath, szPropName, aszStrings + 1, pcStrings, cMaxStrings - 1, cMaxStringLength);
+		++(*pcStrings);
+		return eResult;
+#else
+		LTBOOL bResult = m_KeyMgrPlugin.PreHook_EditStringList(szRezPath, szPropName, aszStrings + 1, pcStrings, cMaxStrings - 1, cMaxStringLength);
 		++(*pcStrings);
 		return (bResult) ? LT_OK : LT_ERROR;
+#endif
 	}
 	else if( stricmp( szPropName, "TriggerType" ) == 0 )
 	{
@@ -548,29 +557,8 @@ void Trigger::ObjectTouch(HOBJECT hObj)
 			}
 		}
 		
-		// Check for knocked out AIs carried by players too...
-
-		if (bIsPlayer && m_hstrAIName)
-		{
-            CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hObj);
-			if (pPlayer)
-			{
-				HOBJECT hBody = pPlayer->GetCarriedObject();
-				if (hBody)
-				{
-					const char* pBodyName  = g_pLTServer->GetStringData(m_hstrAIName);
-					const char* pObjName = GetObjectName(hBody);
-
-					if (pBodyName && pObjName)
-					{
-						if ( stricmp(pBodyName, pObjName) == 0 )
-						{
-							hObj = hBody;
-						}
-					}
-				}
-			}
-		}
+		// RETAIL: Tron does not check for AIs carried by players
+		// (0x101c3574)
 	}
 	else  // Not AI triggerable
 	{

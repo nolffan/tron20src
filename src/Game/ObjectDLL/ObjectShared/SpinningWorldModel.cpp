@@ -296,7 +296,7 @@ void SpinningWorldModel::UpdatePowerOn( const LTFLOAT &fCurTime )
 					
 			m_vVelocity.x += GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.x;
 
-			if( m_vVelocity.x >= m_vFinalVelocity.x )
+			if( m_vVelocity.x >= fabs( m_vFinalVelocity.x ) )	// RETAIL: 0x1023d3b0, the absolute final velocity
 			{
 				m_vVelocity.x = m_vFinalVelocity.x;
 				bDoneInX = LTTRUE;
@@ -315,7 +315,7 @@ void SpinningWorldModel::UpdatePowerOn( const LTFLOAT &fCurTime )
 			
 			m_vVelocity.y += GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.y;
 
-			if( m_vVelocity.y >= m_vFinalVelocity.y )
+			if( m_vVelocity.y >= fabs( m_vFinalVelocity.y ) )
 			{
 				m_vVelocity.y = m_vFinalVelocity.y;
 				bDoneInY = LTTRUE;
@@ -334,7 +334,7 @@ void SpinningWorldModel::UpdatePowerOn( const LTFLOAT &fCurTime )
 
 			m_vVelocity.z += GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.z;
 
-			if( m_vVelocity.z >= m_vFinalVelocity.z )
+			if( m_vVelocity.z >= fabs( m_vFinalVelocity.z ) )
 			{
 				m_vVelocity.z = m_vFinalVelocity.z;
 				bDoneInZ = LTTRUE;
@@ -419,7 +419,7 @@ void SpinningWorldModel::UpdatePowerOff( const LTFLOAT &fCurTime )
 			
 			m_vVelocity.x -= GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.x ;
 
-			if( m_vVelocity.x < MATH_EPSILON )
+			if( fabs( m_vVelocity.x ) < MATH_EPSILON )	// RETAIL: 0x1023d628
 			{
 				m_vVelocity.x = 0.0f;
 				bDoneInX = LTTRUE;
@@ -438,7 +438,7 @@ void SpinningWorldModel::UpdatePowerOff( const LTFLOAT &fCurTime )
 			
 			m_vVelocity.y -= GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.y;
 
-			if( m_vVelocity.y < MATH_EPSILON )
+			if( fabs( m_vVelocity.y ) < MATH_EPSILON )
 			{
 				m_vVelocity.y = 0.0f;
 				bDoneInY = LTTRUE;
@@ -457,7 +457,7 @@ void SpinningWorldModel::UpdatePowerOff( const LTFLOAT &fCurTime )
 			
 			m_vVelocity.z -= GetWaveformValue( fRate, fPercent ) * fFrameTm * m_vRotateDir.z;
 
-			if( m_vVelocity.z < MATH_EPSILON )
+			if( fabs( m_vVelocity.z ) < MATH_EPSILON )
 			{
 				m_vVelocity.z = 0.0f;
 				bDoneInZ = LTTRUE;
