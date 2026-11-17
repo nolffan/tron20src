@@ -215,29 +215,6 @@ bool IsDifficultyGameType()
 	}
 }
 
-#ifdef _CLIENTBUILD	// RETAIL: not in Object.lto (see ClientServerShared.h)
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	IsRevivePlayerGameType
-//
-//  PURPOSE:	Checks the game type to see if it supports reviving players.
-//
-// ----------------------------------------------------------------------- //
-
-bool IsRevivePlayerGameType()
-{
-	switch( GetGameType( ))
-	{
-		case eGameTypeCooperative:
-		case eGameTypeDoomsDay:
-			return true;
-		break;
-		default:
-			return false;
-		break;
-	}
-}
-#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //

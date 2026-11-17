@@ -491,9 +491,9 @@ AINode* CAIGoalAttack::HandleGoalAttractors()
 			// If this goal has sense triggers, and nothing
 			// has been sensed, exit the function.
 
+			// RETAIL: Tron does not ask for stimulation (0x102165c0).
 			if( ( pTemplate->flagSenseTriggers != kSense_None ) &&
-				( ( m_hStimulusSource == LTNULL ) ||
-				  ( !m_pAI->GetSenseRecorder()->HasAnyStimulation( kSense_All ) ) ) )
+				( m_hStimulusSource == LTNULL ) )
 			{
 				return LTNULL;
 			}
@@ -513,9 +513,10 @@ AINode* CAIGoalAttack::HandleGoalAttractors()
 						break;
 					}
 					
+					// RETAIL: Tron's goal targets with its own target (0x10216678).
 					if( m_hStimulusSource )
 					{
-						m_pAI->Target(m_hStimulusSource);
+						m_Target.Target(m_hStimulusSource);
 					}
 
 					AITRACE(AIShowGoals, ( m_pAI->m_hObject, "Setting node: %s", ::ToString( pNode->GetName() ) ) );
@@ -525,7 +526,7 @@ AINode* CAIGoalAttack::HandleGoalAttractors()
 					m_hStimulusSource = LTNULL;
 					break;
 				}
-				else if( !m_bForceSearch ) {
+				else if( ShouldClearNode() ) {
 					m_hNode = LTNULL;
 					m_fCurImportance = 0.f;
 				}

@@ -411,13 +411,13 @@ void SetObjectRenderStyle(HOBJECT hObj, uint8 nRenderStyleNum, char* szRenderSty
 GameType GetGameType( );
 
 bool IsDeathmatchGameType();
-// RETAIL: Object.lto has none of these three NOLF2 tests (its GetGameType,
-// 0x100e5630, is followed by IsDiscGameType, 0x100e5640).  PORT: the client
-// code still uses them.
+// RETAIL: Object.lto has no IsCoopMultiplayerGameType or IsTeamGameType (its
+// GetGameType, 0x100e5630, is followed by IsDiscGameType, 0x100e5640).  PORT:
+// the client code still uses them.  Neither DLL has NOLF2's
+// IsRevivePlayerGameType (the disc game test stands where Tron had one).
 #ifdef _CLIENTBUILD
 bool IsCoopMultiplayerGameType();
 bool IsTeamGameType();
-bool IsRevivePlayerGameType( );
 #endif // _CLIENTBUILD
 // RETAIL: Tron's, the disc games (CShell.dll 0x100fa3d0, after GetGameType;
 // the name is ours)

@@ -25,6 +25,9 @@
 
 static CVarTrack s_RemovePowerups;
 static CVarTrack s_LifetimeTrack;
+// RETAIL: Tron's (CBodyStateExplode::Init 0x1021bce9; the names are ours).
+static CVarTrack s_vtBodyExplodeFlyTimeMin;
+static CVarTrack s_vtBodyExplodeFlyTimeMax;
 extern CVarTrack g_BodyStickDist;
 extern CVarTrack g_BodyStateTimeout;
 extern CVarTrack g_vtBodyExplosionVelMultiplier;
@@ -742,8 +745,18 @@ void CBodyStateExplode::Init(Body* pBody)
 {
 	CBodyState::Init(pBody);
 
+	if ( !s_vtBodyExplodeFlyTimeMin.IsInitted() )
+	{
+		s_vtBodyExplodeFlyTimeMin.Init(g_pLTServer, "BodyExplodeFlyTimeMin", LTNULL, 1.0f);
+	}
+
+	if ( !s_vtBodyExplodeFlyTimeMax.IsInitted() )
+	{
+		s_vtBodyExplodeFlyTimeMax.Init(g_pLTServer, "BodyExplodeFlyTimeMax", LTNULL, 3.0f);
+	}
+
 	LTVector vDir = pBody->GetDeathDir();
-	if ( vDir.y < 0.0 )
+	if ( vDir.y < 0.0f )
 	{
 		vDir.y = 0.01f;
 	}
@@ -754,46 +767,52 @@ void CBodyStateExplode::Init(Body* pBody)
 
 	LTBOOL bForward = LTTRUE;
 
-	if ( vForward.Dot(vDir) < 0.0 )
+	if ( vForward.Dot(vDir) < 0.0f )
 	{
 		bForward = LTFALSE;
 	}
 
 	m_pBody->FaceDir(bForward ? vDir : -vDir);
 
-	// DBnB, DBnF
+	// RETAIL: Tron's body loops one animation; without it the body is
+	// normal (0x1021bf23).
 
 	if ( bForward )
 	{
-		m_hAniStart = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFStart");
 		m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFLoop");
-		m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXFStop");
 	}
 	else
 	{
-		m_hAniStart = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXBStart");
 		m_hAniLoop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXBLoop");
-		m_hAniStop = g_pLTServer->GetAnimIndex(m_pBody->m_hObject, "DXBStop");
 	}
 
-    g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniStart);
+	if ( m_hAniLoop == INVALID_ANI )
+	{
+		m_pBody->SetState(kState_BodyNormal, LTFALSE);
+		return;
+	}
+
+    g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniLoop);
     g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
 
-	// Make us non solid
+	// Make us solid to the world.
 
-	g_pCommonLT->SetObjectFlags(m_pBody->m_hObject, OFT_Flags, FLAG_GRAVITY, FLAG_GRAVITY | FLAG_GOTHRUWORLD);
+	g_pCommonLT->SetObjectFlags(m_pBody->m_hObject, OFT_Flags, 0, FLAG_GOTHRUWORLD);
 
-	// Give us some velocity
+	// Give us some acceleration
 
 	static CVarTrack cvBodyExplodeVelocity;
 	if ( !cvBodyExplodeVelocity.IsInitted() )
 	{
-        cvBodyExplodeVelocity.Init(g_pLTServer, "BodyExplodeVelocity", LTNULL, 200.0f);
+        cvBodyExplodeVelocity.Init(g_pLTServer, "BodyExplodeVelocity", LTNULL, 500.0f);
 	}
 
+	// RETAIL: the body flies for a random time (0x1021c096).
+	m_fFlyTime = GetRandom(s_vtBodyExplodeFlyTimeMin.GetFloat(), s_vtBodyExplodeFlyTimeMax.GetFloat());
+
     LTVector vTemp(vDir*cvBodyExplodeVelocity.GetFloat());
-	g_pPhysicsLT->SetVelocity(m_pBody->m_hObject, &vTemp);
-	//g_pLTServer->CPrint("CBodyStateExplode Vel = %f, %f, %f", vTemp.x, vTemp.y, vTemp.z);
+	g_pPhysicsLT->SetAcceleration(m_pBody->m_hObject, &vTemp);
+	g_pLTServer->CPrint("CBodyStateExplode Vel = %f, %f, %f", vTemp.x, vTemp.y, vTemp.z);
 }
 
 void CBodyStateExplode::InitLoad(Body* pBody)
@@ -856,9 +875,6 @@ void CBodyStateExplode::HandleTouch(HOBJECT hObject)
 		g_cIntersectSegmentCalls++;
 		if ( g_pLTServer->IntersectSegment(&IQuery, &IInfo) )
 		{
-			g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniStop);
-			g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
-
 			m_bLand = LTTRUE;
 			m_vLandPos = IInfo.m_Point + LTVector(0, vDims.y, 0);
 		}
@@ -867,18 +883,16 @@ void CBodyStateExplode::HandleTouch(HOBJECT hObject)
 
 void CBodyStateExplode::Update()
 {
-	CBodyState::Update();
+	// RETAIL: Tron's (0x1021c400): the body flies for m_fFlyTime, then
+	// lands and is a normal body.
 
 	bool bSetToRestingState = false;
-	if ( m_pBody && ((g_pLTServer->GetTime() - m_pBody->GetStarttime()) > g_BodyStateTimeout.GetFloat()) )
+	if ( m_pBody && ((g_pLTServer->GetTime() - m_pBody->GetStarttime()) > m_fFlyTime) )
 	{
 		// If we're in the air, Force us to the ground just in case...
 		LTVector vVelocity(0, 0, 0);
 		g_pPhysicsLT->SetVelocity(m_pBody->m_hObject, &vVelocity);
 		HandleTouch(LTNULL);
-
-		g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniStop);
-		g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTFALSE);
 
 		bSetToRestingState = true;
 	}
@@ -890,57 +904,7 @@ void CBodyStateExplode::Update()
 			g_pLTServer->TeleportObject(m_pBody->m_hObject, &m_vLandPos);
 		}
 
-		SetRestingState();
-		return;
-	}
-
-    if ( g_pLTServer->GetModelPlaybackState(m_pBody->m_hObject) & MS_PLAYDONE )
-	{
-		if ( g_pLTServer->GetModelAnimation(m_pBody->m_hObject) == m_hAniStart )
-		{
-			g_pLTServer->SetModelAnimation(m_pBody->m_hObject, m_hAniLoop);
-			g_pLTServer->SetModelLooping(m_pBody->m_hObject, LTTRUE);
-		}
-
-		return;
-	}
-}
-
-void CBodyStateExplode::SetRestingState()
-{
-	// If the body is no longer in an AI volume we need to remove it..
-	bool bInAIVolume = true;
-
-
-	if (g_kfDefaultBodyExplosionVelocity < g_vtBodyExplosionVelMultiplier.GetFloat())
-	{
-		// If we're doing the cheat code our multiplier will be higher than the default
-		// In this case, don't bother checking for body being in a volume...
-	}
-	else
-	{
-		if ( g_pAIVolumeMgr->IsInitialized() )
-		{
-			LTVector vPos;
-			g_pLTServer->GetObjectPos(m_pBody->m_hObject, &vPos);
-
-			const float fVerticalThreshold = 100.0f;  // Same as AI use
-			AIVolume* pVolume = g_pAIVolumeMgr->FindContainingVolume(LTNULL, vPos, eAxisAll, fVerticalThreshold, LTNULL);
-			bInAIVolume = !!(pVolume);
-		}
-	}
-
-	// If this is a body of an AI and it gets out of aivolume, we need to fade it out.  If it's
-	// a player don't fade it out, because it must transform to a backpack.  The backback
-	// will fade on its own.
-	CPlayerObj* pPlayer = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( m_pBody->GetCharacter( )));
-	if( pPlayer || bInAIVolume )
-	{
-		m_pBody->SetState(kState_BodyNormal);
-	}
-	else
-	{
-		m_pBody->SetState(kState_BodyFade);
+		m_pBody->SetState(kState_BodyNormal, LTFALSE);
 	}
 }
 
@@ -950,6 +914,7 @@ void CBodyStateExplode::Save(ILTMessage_Write *pMsg)
 
 	SAVE_BOOL(m_bLand);
 	SAVE_VECTOR(m_vLandPos);
+	SAVE_FLOAT(m_fFlyTime);
 }
 
 void CBodyStateExplode::Load(ILTMessage_Read *pMsg)
@@ -958,6 +923,7 @@ void CBodyStateExplode::Load(ILTMessage_Read *pMsg)
 
 	LOAD_BOOL(m_bLand);
 	LOAD_VECTOR(m_vLandPos);
+	LOAD_FLOAT(m_fFlyTime);
 }
 
 // ----------------------------------------------------------------------- //

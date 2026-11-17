@@ -1876,6 +1876,10 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 					// 13) takes three arguments; ours takes the model only.
 					pCFX->RecreateAttachClientFX();
 					pCFX->ChangeModel(eModelId);
+					
+					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
+					// here that are not yet identified (NOLF2 updated its radar
+					// here; Tron has no radar).
 				}
 			}
 
@@ -2042,7 +2046,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			}
 
             g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\chat.wav");
-			if (g_pRadar) g_pRadar->SetPlayerTalk(clientID);
 			
 			if (IsMultiplayerGame())
 			{
@@ -2148,7 +2151,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				
 				g_pTransmission->Show( sTransmission );
 				g_pChatMsgs->AddMessage(sTransmission,kMsgTransmission);
-				if (g_pRadar) g_pRadar->SetPlayerTalk(nActivePlayerClientId);
 
 			}
 
@@ -2235,11 +2237,7 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 
 		case LTEVENT_DISCONNECT :
 		{
-			if( g_pGameClientShell->ShouldUseRadar() )
-			{
-				if (g_pRadar) g_pRadar->Reset();
-			}
-
+			// PORT: NOLF2 reset its radar here; Tron has none
 			// Clean up our clientinfo's if we're in mp.
 			if( IsMultiplayerGame( ))
 				m_ClientInfo.RemoveAllClients();
@@ -2557,8 +2555,7 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
 
-			//can't bring up chooser while disabling a gadget target
-			if (g_pPlayerMgr->IsDisabling()) return LTTRUE;
+			// RETAIL: no gadget disabling to wait for in Tron
 
 			if (m_AmmoChooser.IsOpen())
 			{
@@ -2598,8 +2595,7 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
 			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 
-			//can't bring up chooser while disabling a gadget target
-			if (g_pPlayerMgr->IsDisabling()) return LTTRUE;
+			// RETAIL: no gadget disabling to wait for in Tron
 
 			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
 
@@ -2724,13 +2720,7 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 		}
 		break;
 
-		case COMMAND_ID_LASTWEAPON :
-		{
-			ASSERT( 0 != g_pPlayerMgr );
-			g_pPlayerMgr->LastWeapon( );
-			return LTTRUE;
-		}
-		break;
+		// RETAIL: no last weapon command in Tron (0x100caa10)
 
 		case COMMAND_ID_NEXT_WEAPON :
 		case COMMAND_ID_NEXT_WEAPON_1 :
@@ -6043,8 +6033,7 @@ void CInterfaceMgr::NextWeapon(int nCommand)
 	IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
 	if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return;
 
-	//can't bring up chooser while disabling a gadget target
-	if (g_pPlayerMgr->IsDisabling()) return;
+	// RETAIL: no gadget disabling to wait for in Tron
 
 	uint8 nClass = 0;
 	switch (nCommand)
@@ -6536,11 +6525,9 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 			if ((*pList)[i])
 			{
 				CCharacterFX* pCFX = (CCharacterFX*)(*pList)[i];
-				if( pCFX->m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->RemoveObject(pCFX->GetServerObj());
-					if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
-				}
+				// PORT: NOLF2 re-added the character to its radar here for
+				// its new team colour; Tron has no radar
+				(void)pCFX;
 			}
 		}
 	}						

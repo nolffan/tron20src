@@ -53,6 +53,7 @@ public:
 	void		Update();
 
 private:
+	friend class CTronWeaponChooser;	// RETAIL: it hides the item while it is open
 	void		Arrange();
 
 	bool					m_bShow;							// +0x10
@@ -78,6 +79,6 @@ private:
 };
 
 // RETAIL: 0x1026ede4 (CTronHUDMgr::Init points it at its item); the name is ours
-extern CHUDSubChooser* g_pHUDSubChooser;
+extern CHUDSubChooser* g_pSubChooser;
 
 #endif

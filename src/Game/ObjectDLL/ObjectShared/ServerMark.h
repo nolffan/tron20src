@@ -26,8 +26,6 @@ class CServerMark : public BaseClass
 	protected :
 
         uint32 EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
-
-		// RETAIL: no members (ClassDef size 0x10, constructor 0x1022ec30)
 };
 
 #endif // __SERVER_MARK_H__

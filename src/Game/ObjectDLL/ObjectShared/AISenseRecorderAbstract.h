@@ -129,6 +129,8 @@ class CAISenseRecorderAbstract : public ILTObjRefReceiver
 		void	CopySenseRecord(AISenseRecord* pOrigStimulusRecord);
 		
 		void	HandleSenses(uint32 nCycle);
+		// RETAIL: Tron's (Object.lto 0x101db2e0; the name is ours).
+		bool	HandlePermissionSense(AISenseRecord* pSenseRecord);
 		void	RepeatHandleSenses();
 		LTBOOL	HasFullStimulation(EnumAISenseType eSenseType);
 		LTBOOL  HasAnyStimulation(EnumAISenseType eSenseTypes);

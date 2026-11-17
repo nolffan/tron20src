@@ -25,6 +25,10 @@ class CAIGoalAttackFromCover : public CAIGoalAttack
 
 		CAIGoalAttackFromCover( );
 
+		// RETAIL: Tron's (0x10215400): reads the search scalars from the
+		// AI's brain.
+		virtual void	InitGoal(CAI* pAI);
+
 		// Save / Load
 
 		virtual void	Save(ILTMessage_Write *pMsg);
@@ -58,6 +62,10 @@ class CAIGoalAttackFromCover : public CAIGoalAttack
 
 	protected:
 
+		// RETAIL: Tron's (ctor 0x102152d0, Save 0x10215490; the names
+		// are ours, after the AI data they come from).
+		LTFLOAT		m_fBaseSearchScalar;
+		LTFLOAT		m_fBonusSearchScalar;
 };
 
 

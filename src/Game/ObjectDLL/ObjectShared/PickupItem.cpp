@@ -91,7 +91,8 @@ END_CLASS_DEFAULT_FLAGS_PLUGIN(PickupItem, GameBase, NULL, NULL, CF_HIDDEN, CPic
 CMDMGR_BEGIN_REGISTER_CLASS( PickupItem )
 
 	CMDMGR_ADD_MSG( ACTIVATE,	1,	NULL,	"ACTIVATE" )
-	CMDMGR_ADD_MSG( TEAM, 2, NULL, "TEAM <0, 1, -1>" )
+	// RETAIL: Tron has no TEAM message (0x101d3c00; no "TEAM <0, 1, -1>"
+	// string in Object.lto).
 
 CMDMGR_END_REGISTER_CLASS( PickupItem, GameBase )
 

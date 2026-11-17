@@ -18,6 +18,7 @@
 #include "AIHuman.h"
 #include "AITarget.h"
 #include "AIMovement.h"
+#include "AIBrain.h"
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackFromCover, kGoal_AttackFromCover);
 
@@ -33,6 +34,37 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackFromCover, kGoal_AttackFromC
 CAIGoalAttackFromCover::CAIGoalAttackFromCover()
 {
 	m_bNodeBased	= LTTRUE;
+
+	// RETAIL: Tron's defaults (0x102152ec).
+	m_fBaseSearchScalar		= 1.f;
+	m_fBonusSearchScalar	= 0.25f;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAttackFromCover::InitGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x10215400): the AI's brain can give the
+//				search scalars.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalAttackFromCover::InitGoal(CAI* pAI)
+{
+	super::InitGoal(pAI);
+
+	if( pAI && pAI->GetBrain() )
+	{
+		if( m_pAI->GetBrain()->GetAIDataExist( kAIData_AttackFromCoverBaseSearchScalar ) )
+		{
+			m_fBaseSearchScalar = m_pAI->GetBrain()->GetAIData( kAIData_AttackFromCoverBaseSearchScalar );
+		}
+
+		if( m_pAI->GetBrain()->GetAIDataExist( kAIData_AttackFromCoverBonusSearchScalar ) )
+		{
+			m_fBonusSearchScalar = m_pAI->GetBrain()->GetAIData( kAIData_AttackFromCoverBonusSearchScalar );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -45,11 +77,18 @@ CAIGoalAttackFromCover::CAIGoalAttackFromCover()
 
 void CAIGoalAttackFromCover::Save(ILTMessage_Write *pMsg)
 {
+	// RETAIL: Tron saves its scalars before the super (0x10215490).
+	SAVE_FLOAT(m_fBaseSearchScalar);
+	SAVE_FLOAT(m_fBonusSearchScalar);
+
 	super::Save(pMsg);
 }
 
 void CAIGoalAttackFromCover::Load(ILTMessage_Read *pMsg)
 {
+	LOAD_FLOAT(m_fBaseSearchScalar);
+	LOAD_FLOAT(m_fBonusSearchScalar);
+
 	super::Load(pMsg);
 }
 
@@ -326,6 +365,16 @@ void CAIGoalAttackFromCover::CoverOrCharge()
 	m_bForceSearch = LTTRUE;
 
 	m_pAI->SetState( kState_HumanCharge );
+
+	// RETAIL: Tron's (0x1021588c), for an AI that does not attack while
+	// it moves.
+	if( m_pAI->GetState() &&
+		( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+		!m_pAI->GetBrain()->AttacksWhileMoving() )
+	{
+		((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+	}
+
 	if( HandleGoalAttractors() )
 	{
 		SetStateAttack();
@@ -372,13 +421,13 @@ void CAIGoalAttackFromCover::HandleStateCharge()
 
 AINode* CAIGoalAttackFromCover::FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr)
 {
-	// If the AI was just shot, look 25% further for cover.
-	// Maybe this should be buted.
+	// If the AI was just shot, scale the search for cover.
+	// RETAIL: Tron's scalars are buted (0x10215920).
 
-	LTFLOAT fSearchFactor = 1.f;
+	LTFLOAT fSearchFactor = m_fBaseSearchScalar;
 	if( ( g_pLTServer->GetTime() - m_pAI->GetLastPainTime() ) < 1.f )
 	{
-		fSearchFactor = 1.25f;
+		fSearchFactor *= m_fBonusSearchScalar;
 	}
 
 	return g_pAINodeMgr->FindNearestNodeFromThreat(m_pAI, eNodeType, vPos, m_hStimulusSource, fSearchFactor);

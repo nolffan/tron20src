@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "AIGoalAbstractUseObject.h"
+#include "AIGoalWork.h"
 #include "AISenseRecorderAbstract.h"
 #include "AIHumanState.h"
 #include "AINode.h"
@@ -624,4 +625,35 @@ LTBOOL CAIGoalAbstractUseObject::HandleGoalSenseTrigger(AISenseRecord* pSenseRec
 	// Always return false, and let the attractor handle activation.
 
 	return LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSeekerHitchDown::ActivateGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x10272ae0, at the end of this file's code
+//				in retail): the AI goes into its hitch down state.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSeekerHitchDown::ActivateGoal()
+{
+	super::ActivateGoal();
+
+	m_pAI->SetState( kState_HumanSeekerHitchDown );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSeekerHitchDown::RecalcImportance
+//
+//	PURPOSE:	RETAIL: Tron's (0x10272b00): a fixed importance.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSeekerHitchDown::RecalcImportance()
+{
+	super::RecalcImportance();
+
+	m_fCurImportance = 600.f;
 }

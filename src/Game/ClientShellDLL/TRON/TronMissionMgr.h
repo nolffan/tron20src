@@ -24,6 +24,10 @@ class CTronMissionMgr : public CMissionMgr
 		// RETAIL: inline in CTronGameClientShell's constructor (0x10099a2a)
 		CTronMissionMgr() {}
 
+		// RETAIL: 0x10099c20, declared (it stores the vtable first, which
+		// the compiler's own destructor leaves out)
+		virtual ~CTronMissionMgr() {}
+
 		// RETAIL: 0x100a3fd0: the text of the circuit just completed (the
 		// unlocks), which the circuit screen shows on focus
 		std::wstring&	GetCircuitMessage();

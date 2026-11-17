@@ -25,15 +25,10 @@ class CButeMgr;
 
 #define MAX_PROFILE_NAME	16
 
-// PORT: ours. NOLF2's per game type options, restriction sets and campaign
-// files are only for the NOLF2 code in CShell.dll still standing in for
-// Tron's.  RETAIL: Object.lto has none of them (no "CampaignName" string,
-// no static options to construct; NOLF2's team deathmatch mission manager,
-// their last server user, is not in Tron) and neither has Tron's dedicated
-// server (TRONSrv.exe has no campaign directories).
-#if defined( _CLIENTBUILD )
-#define PROFILEUTILS_NOLF2_OPTIONS
-#endif
+// RETAIL: neither Object.lto (no "CampaignName" string, no static options
+// to construct) nor CShell.dll (no DMGameOptions code or static initializers)
+// has NOLF2's per game type options, restriction sets or campaign files, so
+// ServerGameOptions has none of them.
 
 
 class CoopGameOptions
@@ -281,11 +276,6 @@ class ServerGameOptions
 		uint32			m_nTronUnknownCC;			// +0xcc RETAIL: retail 0x10114e50 returns it
 
 		//for the current game type
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-		bool		IsDefaultCampaign() const;
-		const char*	GetCampaignName() const;
-		void		SetCampaignName(const char*	pszName);
-#endif // PROFILEUTILS_NOLF2_OPTIONS
 		const char*	GetSessionName() const;
 		void		SetSessionName(const char*	pszName);
 		
@@ -312,34 +302,12 @@ class ServerGameOptions
 		bool		GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf );
 #endif // _CLIENTBUILD
 
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-		CoopGameOptions&		GetCoop() { return m_Coop;	}
-		DMGameOptions&			GetDeathmatch() { return m_DM; }
-		TeamDMGameOptions&		GetTeamDeathmatch() { return m_TeamDM; }
-		DoomsdayGameOptions&	GetDoomsday() { return m_DD; }
-
-		// PORT: NOLF2's, not Tron's (see above)
-		static StringSet		m_setRestrictedWeapons;
-		static StringSet		m_setRestrictedAmmo;
-		static StringSet		m_setRestrictedGear;
-
-	private:
-
-		static CoopGameOptions		m_Coop;
-		static DMGameOptions		m_DM;
-		static TeamDMGameOptions	m_TeamDM;
-		static DoomsdayGameOptions	m_DD;
-#endif // PROFILEUTILS_NOLF2_OPTIONS
 };
 
 
 
 const char*	GetProfileDir( char const* pszProfileName );
 const char*	GetProfileFile( char const* pszProfileName );
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-const char*	GetCampaignDir( char const* pszProfileName, GameType eGameType );
-const char*	GetCampaignFile( ServerGameOptions const& serverGameOptions );
-#endif // PROFILEUTILS_NOLF2_OPTIONS
 
 
 #endif // PROFILEUTILS_H

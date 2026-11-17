@@ -57,6 +57,10 @@ class CAttachmentPosition;
 //----------------------------------------------------------------------------
 class PowerArmor : public Prop
 {
+	// RETAIL: Tron's hit box reads and sets the armor's state and hit points
+	// (CCharacterHitBox::AbsorbDamage, Object.lto 0x101395d0)
+	friend class CCharacterHitBox;
+
 	public:
 		// Public members
 

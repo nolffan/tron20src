@@ -423,6 +423,50 @@ LTBOOL CAISenseRecorderGame::HandleSpecificStimuli(CAIStimulusRecord* pStimulusR
 		case kStim_AllyDisturbanceVisible:		return HandleAllyDisturbanceVisible(pStimulusRecord);
 		case kStim_AllySpecialDamageVisible:	return HandleAllySpecialDamageVisible(pStimulusRecord);
 		case kStim_AllyDeathVisible:			return HandleAllyDeathVisible(pStimulusRecord);
+		// RETAIL: Tron's (0x101d9167: 0x80000)
+		case kStim_ProjectileVisible:			return HandleProjectileVisible(pStimulusRecord);
+	}
+
+	return LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAISenseRecorderGame::HandleProjectileVisible()
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x101d9190; the name is ours).
+//				The AI senses a projectile only when it comes at the AI
+//				and is not too near to react to.
+//
+// ----------------------------------------------------------------------- //
+LTBOOL CAISenseRecorderGame::HandleProjectileVisible(CAIStimulusRecord* pStimulusRecord)
+{
+	HOBJECT hAI = m_pSensing->GetSensingObject();
+	HOBJECT hProjectile = pStimulusRecord->m_hStimulusTarget;
+
+	LTVector vVel, vProjectilePos, vAIPos;
+	g_pPhysicsLT->GetVelocity( hProjectile, &vVel );
+	g_pLTServer->GetObjectPos( hProjectile, &vProjectilePos );
+	g_pLTServer->GetObjectPos( hAI, &vAIPos );
+
+	// Time = Distance / Rate.
+	float fDist = ( vAIPos - vProjectilePos ).Mag();
+	float fTime = fDist / vVel.Mag();
+	if( fTime < 0.3f )
+	{
+		return LTFALSE;
+	}
+
+	// RETAIL: the rotation is read but not used (0x101d9281).
+	LTRotation rRot;
+	g_pLTServer->GetObjectRotation( hAI, &rRot );
+
+	// The projectile must come at the AI.
+	vVel.Normalize();
+	LTVector vDir = ( vAIPos - vProjectilePos ) / ( vAIPos - vProjectilePos ).Mag();
+	if( vVel.Dot( vDir ) < 0.98f )
+	{
+		return LTFALSE;
 	}
 
 	return LTTRUE;

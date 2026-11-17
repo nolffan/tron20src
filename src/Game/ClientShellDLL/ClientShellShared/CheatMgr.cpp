@@ -150,6 +150,10 @@ LTBOOL CCheatMgr::Check( CParsedMsg &cMsg )
 	// copy their text
 	strncpy(buf, cMsg.GetArg(0).c_str(), sizeof(buf)-1);
 
+	// RETAIL: Tron's cheats all start with "mp" (0x100f1e8a)
+	if (strncmp(buf, "mp", 2) != 0)
+		return LTFALSE;
+
 	// convert it to cheat compatible text
     unsigned int i;
     for ( i = 0; i < strlen(cMsg.GetArg(0).c_str()); i++ )
@@ -160,7 +164,9 @@ LTBOOL CCheatMgr::Check( CParsedMsg &cMsg )
 	{
 		if ( strcmp( buf, s_CheatInfo[i].pzText ) == 0)
 		{
-			return Process( (CheatCode)i, cMsg );
+			// RETAIL: Process returns nothing (0x100f1f21)
+			Process( (CheatCode)i, cMsg );
+			return LTTRUE;
 		}
 	}
     return LTFALSE;
@@ -175,11 +181,14 @@ LTBOOL CCheatMgr::Check( CParsedMsg &cMsg )
 //
 // ----------------------------------------------------------------------- //
 
-bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
+void CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 {
-	if ( nCheatCode <= CHEAT_NONE || nCheatCode >= CHEAT_MAX ) return false;
+	// RETAIL: Tron's (0x100f1f40): no return value (Check returns true for
+	// any known cheat), and its own set of cheats. NOLF2's poltergeist,
+	// build guid, console, end game and body golfing cheats are gone.
 
-#ifdef _FINAL
+	if ( nCheatCode <= CHEAT_NONE || nCheatCode >= CHEAT_MAX ) return;
+
 	// Don't do cheats in multiplayer...
     if (IsMultiplayerGame())
 	{
@@ -189,6 +198,10 @@ bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 		{
 			case CHEAT_CHASETOGGLE:
 				ChaseToggle();
+			break;
+
+			case CHEAT_TRON_EXORBITANTAMOUNTS:
+				ExorbitantAmounts(!s_CheatInfo[nCheatCode].bActive);
 			break;
 
 			case CHEAT_EXITLEVEL:	// exit the current level
@@ -202,22 +215,29 @@ bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 			case CHEAT_BOOT:		// boot players
 				BootPlayer(cMsg);
 			break;
-
-			default :
-				return false;
-			break;
 		}
 
-		m_bPlayerCheated = LTTRUE;
-		return true;
+		return;
 	}
-#endif // _FINAL
 
-	// process cheat codes
+	// Process cheat codes...
+
 	switch ( nCheatCode )
 	{
 		case CHEAT_GOD:			// god mode toggle
 			SetGodMode(!s_CheatInfo[nCheatCode].bActive);
+		break;
+
+		case CHEAT_KFA:			// give em everything
+			SetKFA();
+		break;
+
+		case CHEAT_AMMO:		// full ammo
+			SetAmmo();
+		break;
+
+		case CHEAT_MODSQUAD:	// give all mods for current weapons
+			ModSquad();
 		break;
 
 		case CHEAT_SKILLZ:		// give em skill points
@@ -236,49 +256,11 @@ bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 			SetExitLevel();
 		break;
 
-		case CHEAT_VERSION:		// display version info
-			Version();
-		break;
-
-		case CHEAT_BUILDGUID:	// display build guid
-			BuildGuid();
-		break;
-
-		case CHEAT_INVISIBLE:	// time to mess with the AI
-			SetInvisible(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_BODYGOLFING:	// bodies fly far	
-			BodyGolfing(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_POS:			// show/hide player position
-			SetPos(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-#ifndef _TO2DEMO
-		
-		case CHEAT_KFA:			// give em everything
-			SetKFA();
-		break;
-
-		case CHEAT_AMMO:		// full ammo
-			SetAmmo();
-		break;
-
-		case CHEAT_MODSQUAD:	// give all mods for current weapons
-			ModSquad();
-		break;
-
-		case CHEAT_CONSOLE:
-			SetConsole(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
 		case CHEAT_NEXTMISSION:	// exit the current mission
 			NextMission();
 		break;
 
-		case CHEAT_BOOT:	// exit the current mission
+		case CHEAT_BOOT:		// boot players
 			BootPlayer(cMsg);
 		break;
 
@@ -294,12 +276,32 @@ bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 			FullGear();
 		break;
 
+		case CHEAT_CHASETOGGLE:	   // toggle 3rd person view
+			ChaseToggle();
+		break;
+
 		case CHEAT_TEARS:	      // toggle tears cheat
 			Tears(!s_CheatInfo[nCheatCode].bActive);
 		break;
 
+		case CHEAT_VERSION:		// display version info
+			Version();
+		break;
+
+		case CHEAT_TRON_EXORBITANTAMOUNTS:
+			ExorbitantAmounts(!s_CheatInfo[nCheatCode].bActive);
+		break;
+
+		case CHEAT_POS:			// show/hide player position
+			SetPos(!s_CheatInfo[nCheatCode].bActive);
+		break;
+
 		case CHEAT_GIMMEGUN:
 			GimmeGun( cMsg );
+		break;
+
+		case CHEAT_TRON_GIMMEPRIM:
+			GimmePrim( cMsg );
 		break;
 
 		case CHEAT_GIMMEMOD:
@@ -314,74 +316,11 @@ bool CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 			GimmeAmmo( cMsg );
 		break;
 
-		case CHEAT_ENDGAME:
-			ToggleEndgameFlag();
-		break;
-
-#ifndef _FINAL
-
-		case CHEAT_CHASETOGGLE:	   // toggle 3rd person view
-			ChaseToggle();
-		break;
-
-		case CHEAT_CLIP:		// toggle clipping mode
-			SetClipMode(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_TELEPORT:	// teleport to beginning
-			Teleport();
-		break;
-
-		case CHEAT_CAM_POSROT:    // show/hide camera position/rotation
-			SetCamPosRot(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_POSWEAPON:		    // toggle adjust of weapon pos
-			PosWeapon(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-  		case CHEAT_POSWEAPON_MUZZLE:	// toggle adjust of weapon muzzle pos
-  			PosWeaponMuzzle(!s_CheatInfo[nCheatCode].bActive);
-  		break;
-
-  		case CHEAT_WEAPON_BREACHOFFSET:	// toggle adjust of weapon breach offset pos
-  			WeaponBreachOffset(!s_CheatInfo[nCheatCode].bActive);
-  		break;
-
-		case CHEAT_LIGHTSCALE:	      // toggle client light scale offset
-			LightScale(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_LIGHTADD:	      // toggle client light add offset
-			LightAdd(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_FOV:				// toggle fov cheat
-			FOV(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_REMOVEAI:	  // remove all ai
-			RemoveAI(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_TRIGGERBOX:	  // toggle trigger boxes on/off
-			TriggerBox(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-		case CHEAT_POS1STCAM:	  // toggle 1st person camera adjust on/off
-			Pos1stCam(!s_CheatInfo[nCheatCode].bActive);
-		break;
-
-#endif  // _FINAL
-#endif // _TO2DEMO
-
 		default:
-			return false;			// skip setting global cheat indicator for unhandled cheats
+			return;			// skip setting global cheat indicator for unhandled cheats
 	}
 
     m_bPlayerCheated = LTTRUE;
-
-	return true;
 }
 
 
@@ -523,51 +462,9 @@ void CCheatMgr::SetClipMode(LTBOOL bMode)
         g_pChatMsgs->AddMessage("Spectator mode disabled",kMsgCheatConfirm);
 	}
 
-	// If we were in invisible mode before changing to spectator mode
-	// change us back...
-
-	if (!g_pPlayerMgr->IsSpectatorMode() && g_pPlayerMgr->IsInvisibleMode())
-	{
-		SetInvisible(LTTRUE);
-	}
+	// PORT: NOLF2 turned its poltergeist cheat back on here; Tron has none
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCheatMgr::SetInvisible()
-//
-//	PURPOSE:	Sets/resets invisibility
-//
-// ----------------------------------------------------------------------- //
-
-void CCheatMgr::SetInvisible(LTBOOL bMode)
-{
-#ifdef _FINAL
-	// Can't do this in multiplayer.
-	if(IsMultiplayerGame())
-		return;
-#endif // _FINAL
-
-	// Don't ghost when in spectator mode...
-
-	if (!g_pPlayerMgr || g_pPlayerMgr->IsSpectatorMode()) return;
-
-	s_CheatInfo[CHEAT_INVISIBLE].bActive = bMode;
-
-	g_pPlayerMgr->SetInvisibleMode(bMode);
-
-	// Tell the server
-	SendCheatMessage(CHEAT_INVISIBLE, bMode);
-
-	if (bMode)
-	{
-        g_pChatMsgs->AddMessage("I see dead people...", kMsgCheatConfirm);
-	}
-	else
-	{
-        g_pChatMsgs->AddMessage("I live...again.", kMsgCheatConfirm);
-	}
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -592,12 +489,23 @@ void CCheatMgr::Teleport()
 
 void CCheatMgr::SetFullWeapons()
 {
-    s_CheatInfo[CHEAT_FULL_WEAPONS].bActive = LTTRUE;
+	// RETAIL: Tron's (0x100f24b0) toggles, and tells the player stats
+	LTBOOL bMode = !s_CheatInfo[CHEAT_FULL_WEAPONS].bActive;
+    s_CheatInfo[CHEAT_FULL_WEAPONS].bActive = bMode;
 
 	// Tell the server
-    SendCheatMessage(CHEAT_FULL_WEAPONS, LTTRUE);
+    SendCheatMessage(CHEAT_FULL_WEAPONS, bMode);
 
-    g_pChatMsgs->AddMessage("Lots of guns...",kMsgCheatConfirm);
+	g_pPlayerStats->TronUnknownVirtual160(true);
+
+	if (bMode)
+	{
+		g_pChatMsgs->AddMessage(1609,kMsgCheatConfirm);	// RETAIL: string id 0x649
+	}
+	else
+	{
+		g_pChatMsgs->AddMessage(1610,kMsgCheatConfirm);	// RETAIL: string id 0x64a
+	}
 }
 
 
@@ -618,7 +526,14 @@ void CCheatMgr::SetKFA()
 	SetHealth(LTFALSE);
 	SetArmor();
 
-    g_pChatMsgs->AddMessage("Knock em out the box Luke...",kMsgCheatConfirm);
+	// RETAIL: Tron's (0x100f2532): the energy cheat through the game client
+	// shell, and a string from CRes
+	if (g_pGameClientShell)
+	{
+		g_pGameClientShell->TronUnknownVirtual94(CHEAT_TRON_ENERGY);
+	}
+
+    g_pChatMsgs->AddMessage(1611,kMsgCheatConfirm);	// RETAIL: string id 0x64b
 }
 
 // ----------------------------------------------------------------------- //
@@ -981,6 +896,7 @@ void CCheatMgr::FOV(LTBOOL bMode)
 
 void CCheatMgr::Tears(LTBOOL bMode)
 {
+	// RETAIL: Tron's (0x100f2730)
 	s_CheatInfo[CHEAT_TEARS].bActive = bMode;
 
 	// Tell the server
@@ -989,10 +905,11 @@ void CCheatMgr::Tears(LTBOOL bMode)
 	if (bMode)
 	{
         g_bInfiniteAmmo = true;
-        g_pChatMsgs->AddMessage("RAWWR!!!",kMsgCheatConfirm);
+		g_pChatMsgs->AddMessage(1633,kMsgCheatConfirm);	// RETAIL: string id 0x661
 	}
 	else
 	{
+		g_pChatMsgs->AddMessage(1634,kMsgCheatConfirm);	// RETAIL: string id 0x662
         g_bInfiniteAmmo = false;
 	}
 }
@@ -1130,53 +1047,8 @@ void CCheatMgr::Version()
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCheatMgr::BuildGuid()
-//
-//	PURPOSE:	Display build guid.  This is a way to identify a build sent
-//				to specific parties.
-//
-// ----------------------------------------------------------------------- //
-
-void CCheatMgr::BuildGuid()
-{
-	LTGUID buildGuid;
-	// RETAIL: Tron's version manager has no build guid, and retail has no such
-	// cheat (NOLF2's, to go with Tron's cheat table)
-	LTGUID const* pGuidEncoded = &GAMEGUID;
-
-	buildGuid.guid.a = pGuidEncoded->guid.a - GAMEGUID.guid.a;
-	buildGuid.guid.b = pGuidEncoded->guid.b - GAMEGUID.guid.b;
-	buildGuid.guid.c = pGuidEncoded->guid.c - GAMEGUID.guid.c;
-	for( int i = 0; i < 8; i++ )
-		buildGuid.guid.d[i] = pGuidEncoded->guid.d[i] - GAMEGUID.guid.d[i];
-
-	char szGuid[256] = "";
-	sprintf( szGuid, "{ 0x%X, 0x%X, 0x%X, { 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X, 0x%X }}",
-		buildGuid.guid.a, buildGuid.guid.b, buildGuid.guid.c, buildGuid.guid.d[0], 
-		buildGuid.guid.d[1], buildGuid.guid.d[2], buildGuid.guid.d[3], buildGuid.guid.d[4], 
-		buildGuid.guid.d[5], buildGuid.guid.d[6], buildGuid.guid.d[7] );
-
-	g_pChatMsgs->AddMessage( szGuid, kMsgCheatConfirm );
-}
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCheatMgr::SetConsole
-//
-//	PURPOSE:	Enables the console.
-//
-// ----------------------------------------------------------------------- //
-
-void CCheatMgr::SetConsole( LTBOOL bMode )
-{
-	s_CheatInfo[CHEAT_CONSOLE].bActive = bMode;
-
-	WriteConsoleInt( "ConsoleEnable", bMode ? 1 : 0 );
-
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -1366,49 +1238,67 @@ void CCheatMgr::GimmeAmmo( CParsedMsg &cMsg )
 		sprintf( szMessage, "Ammo '%s' does not exist!", szAmmoName );
 		g_pChatMsgs->AddMessage( szMessage, kMsgCheatConfirm );
 	}
-}	
-
-
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCheatMgr::ToggleEndgameFlag()
-//
-//	PURPOSE:	Toggle the registry entry indicating the player has completed the game...
-//
-// ----------------------------------------------------------------------- //
-
-void CCheatMgr::ToggleEndgameFlag()
-{
-	
-	CRegMgr* pRegMgr = g_pVersionMgr->GetRegMgr();
-	if (pRegMgr->IsValid())
-	{
-		uint32 nDone = pRegMgr->Get("EndGame",0);
-		pRegMgr->Set("EndGame",!nDone);
-	}
-
 }
 
-
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CCheatMgr::BodyGolfing()
+//	ROUTINE:	CCheatMgr::ExorbitantAmounts()
 //
-//	PURPOSE:	Toggle bodygolfing cheat on/off
+//	PURPOSE:	RETAIL: Tron's (0x100f27f0; the name is ours, after the
+//				cheat): turn the big blood on or off
 //
 // ----------------------------------------------------------------------- //
 
-void CCheatMgr::BodyGolfing(LTBOOL bMode)
+void CCheatMgr::ExorbitantAmounts(LTBOOL bMode)
 {
-	s_CheatInfo[CHEAT_BODYGOLFING].bActive = bMode;
-
-	// Tell the server
-	SendCheatMessage(CHEAT_BODYGOLFING, bMode);
+	s_CheatInfo[CHEAT_TRON_EXORBITANTAMOUNTS].bActive = bMode;
 
 	if (bMode)
 	{
-        g_pChatMsgs->AddMessage("FORE!",kMsgCheatConfirm);
+		WriteConsoleInt("BigBlood", 1);
+		g_pChatMsgs->AddMessage(1639,kMsgCheatConfirm);	// RETAIL: string id 0x667
+	}
+	else
+	{
+		g_pChatMsgs->AddMessage(1640,kMsgCheatConfirm);	// RETAIL: string id 0x668
+		WriteConsoleInt("BigBlood", 0);
 	}
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCheatMgr::GimmePrim()
+//
+//	PURPOSE:	RETAIL: Tron's (0x100f2980; the name is ours, after the
+//				cheat): give the first weapon of the named primitive type
+//				that needs no subroutine, through GimmeGun
+//
+// ----------------------------------------------------------------------- //
+
+void CCheatMgr::GimmePrim( CParsedMsg &cMsg )
+{
+	for (int nCommandId = g_pWeaponMgr->GetFirstWeaponCommandId(); nCommandId <= g_pWeaponMgr->GetLastWeaponCommandId(); nCommandId++)
+	{
+		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( g_pWeaponMgr->GetWeaponId( nCommandId ) );
+		if (pWeapon && !_stricmp(pWeapon->szPrimitiveType, cMsg.GetArg(1).c_str()) && !pWeapon->szSubroutineNeeded[0])
+		{
+			char szCheat[256];
+			char szName[256];
+			const char *aArgs[2] = { szCheat, szName };
+
+			sprintf(szCheat, "mpgimmegun");
+			sprintf(szName, "%s", pWeapon->szName);
+
+			CParsedMsg cGunMsg(2, aArgs);
+			GimmeGun( cGunMsg );
+			return;
+		}
+	}
+}
+	
+
+
+
+
+
+

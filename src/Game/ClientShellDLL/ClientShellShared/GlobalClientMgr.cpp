@@ -21,6 +21,11 @@
 #include "ActivateTypeMgr.h"
 #include "TriggerTypeMgr.h"
 
+// RETAIL: 0x1027bbc0, read only by Term. Retail links NOLF2's RadarTypeMgr
+// for this pointer alone (its code is not in CShell.dll); the definition is
+// here as the client builds no RadarTypeMgr.cpp.
+CRadarTypeMgr*	g_pRadarTypeMgr = LTNULL;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CGlobalClientMgr::CGlobalClientMgr()
@@ -91,20 +96,10 @@ LTBOOL CGlobalClientMgr::Init()
 		sprintf(errorBuf, "ERROR in CGlobalClientMgr::Init()\n\nCouldn't initialize CPopupMgr." );
 	}
 
-	if( g_pGameClientShell->ShouldUseRadar() )
-	{
-		// Get the singleton instance of the radar type mgr and initialize it...
-		if( !g_pRadarTypeMgr )
-		{
-			CRadarTypeMgr &RadarTypeMgr = CRadarTypeMgr::Instance();
-			if( !RadarTypeMgr.Init() )
-			{
-				ShutdownWithError( "RadarTypeMgr", RTMGR_DEFAULT_FILE );
-				return LTFALSE;
-			}
-		}
-	}
-	
+	// RETAIL: Tron's Init (0x1017dd80) makes no radar type manager (CShell.dll
+	// has no "Attributes\RadarTypes.txt" and no CRadarTypeMgr code); Term
+	// (0x1017dfa0) still terms one through g_pRadarTypeMgr, which nothing sets.
+
 	if( !g_pActivateTypeMgr )
 	{
 		CActivateTypeMgr &ActivateTypeMgr = CActivateTypeMgr::Instance();

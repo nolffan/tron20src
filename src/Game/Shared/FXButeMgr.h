@@ -283,6 +283,11 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 
 	LTBOOL			Init( CButeMgr &buteMgr, char *aTagName );
 
+#ifdef _CLIENTBUILD
+	// PORT: Build 69's shard members. Neither retail DLL has their
+	// attribute names; Tron's server class has none of them
+	// (constructor Object.lto 0x10145d30, Init 0x10145d80)
+
 	// horizontal spread
 	float			fShardHorizontalSpreadMin;
 	float			fShardHorizontalSpreadMax;
@@ -311,10 +316,9 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 	int				nShardsTotalPerturbMax;
 	int				nShardsTotalPerturbSurge;
 
+#else
 	// RETAIL: Tron's only member (0x1d8; CLUSTERDISCCLASSDATA::Init
-	// 0x10145d80).  PORT: added after Build 69's members (server only, as
-	// DISCCLASSDATA's)
-#ifndef _CLIENTBUILD
+	// 0x10145d80)
 	LTFLOAT			fInitialExplosionSuppressTime;
 #endif // _CLIENTBUILD
 };

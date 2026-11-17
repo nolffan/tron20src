@@ -86,4 +86,31 @@ class CAIGoalRide : public CAIGoalAbstractUseObject
 	public:	DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalRide, kGoal_Ride);
 };
 
+// RETAIL: Tron's goals for the Seeker hitch nodes (RTTI; factories in this
+// file, 0x101f7ee0 and 0x101f8030).
+
+class CAIGoalSeekerHitch : public CAIGoalAbstractUseObject
+{
+	public:	DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSeekerHitch, kGoal_SeekerHitch);
+
+		// RETAIL: the goal requires updates (the factory 0x101f7f26).
+		CAIGoalSeekerHitch() { m_bRequiresUpdates = LTTRUE; }
+};
+
+class CAIGoalSeekerHitchDown : public CAIGoalAbstract
+{
+	typedef CAIGoalAbstract super;
+
+	public:
+		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSeekerHitchDown, kGoal_SeekerHitchDown);
+
+		// Activation.
+
+		virtual void ActivateGoal();
+
+		// Importance.
+
+		virtual void RecalcImportance();
+};
+
 #endif

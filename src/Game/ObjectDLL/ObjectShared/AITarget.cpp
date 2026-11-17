@@ -567,24 +567,11 @@ void AbstractTarget::UpdateVisibility()
 		// Primary weapon is on the right side, secondary on the left.
 		// If no weapon, check from the eyes.
 
-		LTVector vCheckPos;
-		if( GetAI()->GetCurrentWeapon() )
-		{
-			// PORT: Tron has no PrimaryWeaponOnLeft AIData (nor NOLF2's
-			// m_bPrimaryOnLeft).
-			if( GetAI()->GetCurrentWeapon() == GetAI()->GetPrimaryWeapon() )
-			{
-				vCheckPos = GetAI()->GetPosition() + ( GetAI()->GetTorsoRight() * GetAI()->GetRadius() );
-				vCheckPos.y += GetAI()->GetDims().y * 0.5f;
-			}
-			else {
-				vCheckPos = GetAI()->GetPosition() + ( -GetAI()->GetTorsoRight() * GetAI()->GetRadius() );
-				vCheckPos.y += GetAI()->GetDims().y * 0.5f;
-			}
-		}
-		else {
-			vCheckPos = GetAI()->GetEyePosition();
-		}
+		// RETAIL: Tron's AI gives the position (CAI::GetWeaponCheckPosition,
+		// 0x101311f0); it keeps its weapon choice while the target stays
+		// visible from the weapon.
+
+		LTVector vCheckPos = GetAI()->GetWeaponCheckPosition( m_bVisibleFromWeapon );
 
 		// Check visibility.
 

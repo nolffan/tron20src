@@ -23,6 +23,19 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackFromRandomVantage, kGoal_Att
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAIGoalAttackFromRandomVantage::Con/destructor
+//
+//	PURPOSE:	RETAIL: Tron's (0x10214cb0): sets the goal's +0x58 flag.
+//
+// ----------------------------------------------------------------------- //
+
+CAIGoalAttackFromRandomVantage::CAIGoalAttackFromRandomVantage()
+{
+	m_bTronUnknown58 = LTTRUE;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAIGoalAttackFromRandomVantage::SetStateAttack
 //
 //	PURPOSE:	Set AttackFromVantage state.
@@ -63,16 +76,32 @@ void CAIGoalAttackFromRandomVantage::HandleStateAttackFromVantage()
 	// Check for failed completion.
 	// Do not allow the super to process, because we do not want AI to charge.
 
+	// RETAIL: Tron's (0x10214e20): search for another node at once, with
+	// the player as the threat when there is none.
+
 	if( m_pAI->GetState()->GetStateStatus() == kSStat_FailedComplete )
 	{
 		m_hFailedNode = m_hNode;
 		m_hNode = LTNULL;
 
-		if(m_pGoalMgr->IsGoalLocked(this))
+		if( !m_hStimulusSource )
 		{
-			m_pGoalMgr->UnlockGoal(this);
+			CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
+			if( pPlayer )
+			{
+				m_hStimulusSource = pPlayer->m_hObject;
+			}
 		}
-		m_fCurImportance = 0.f;
+
+		LTBOOL bForceSearch = m_bForceSearch;
+		m_bForceSearch = LTTRUE;
+		HandleGoalAttractors();
+		m_bForceSearch = bForceSearch;
+
+		if( m_hNode )
+		{
+			SetStateAttack();
+		}
 
 		return;
 	}
@@ -92,5 +121,6 @@ void CAIGoalAttackFromRandomVantage::HandleStateAttackFromVantage()
 
 AINode* CAIGoalAttackFromRandomVantage::FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr)
 {
-	return g_pAINodeMgr->FindRandomNodeFromThreat( m_pAI, eNodeType, vPos, m_hStimulusSource );
+	// RETAIL: Tron tries the nodes in a random order (0x10214ef7).
+	return g_pAINodeMgr->FindRandomNodeFromThreat( m_pAI, eNodeType, vPos, m_hStimulusSource, false );
 }

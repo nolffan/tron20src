@@ -1247,6 +1247,46 @@ same read occurs for it.
 
 Not fixed yet: the modern build should write the flag (false) on the
 server, or not read it on the client.
+### The OBB hit test does not give the distance of its hit
+
+Object.lto 0x10139460 (CCharacterHitBox::FindHitNodeOBB,
+ObjectShared/CharacterHitBox.cpp). When the model has OBBs, the hit box
+tests the ray against them. The function sets the node of the nearest OBB
+in the hit, but not the distance along the ray, and not the object that was
+hit. The caller (HandleVectorImpact, 0x101397d0) moves the impact point
+along the ray by that distance, which stays at its initial value FLT_MAX.
+Also, when an OBB that has no skeleton node is nearer than the nearest hit
+so far, the function sets eModelNodeInvalid in the hit. Thus a hit on an OBB
+that it tested before is lost.
+
+Not fixed yet: the modern build should keep the distance and the hit box
+user in the hit, and ignore OBBs that have no node.
+
+### The handshake does not mask a short player name
+
+Object.lto 0x100de650 (CGameServerShell::ProcessHandshake,
+ObjectShared/GameServerShell.cpp). For MID_HANDSHAKE_LETMEIN, the server
+makes the expected password from the first four bytes of the player's net
+name. The code that keeps only the bytes before the terminator of a name
+shorter than four characters uses the logical operator && where it must
+use the bitwise operator &. Thus the tests are always false (or do
+nothing), and the bytes after the terminator go into the password. The
+compiler removes the tests. Build 51 has the same code.
+
+Not fixed yet: the modern build should use & (the client must make the
+same change).
+### A random node search without an AI can return a bad pointer
+
+Object.lto 0x101a8c30 (CAINodeMgr::FindRandomNodeFromThreat,
+ObjectShared/AINodeMgr.cpp). When the fifth argument is false and the AI
+is NULL, the function returns its node variable without a path check.
+That variable holds the last node that the search loop examined, not a
+selected node. If no node of the type exists, the loop does not set the
+variable, and the function returns an uninitialized pointer. The only
+caller (CAIGoalAttackFromRandomVantage::FindNearestAttractorNode) always
+gives an AI, so the game does not hit this.
+
+Not fixed yet: the modern build should return NULL when there is no AI.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

@@ -48,6 +48,10 @@ class CPlayerCamera
 		void AttachToObject(HLOCALOBJ hObj);
 
 
+		// RETAIL: the camera's collision object (CVehicleMgr::OnTouchNotify,
+		// 0x1011ed4b, reads it inline; the name is ours)
+		HOBJECT GetCollisionObject() const { return m_hCollisionObject; }
+
 		// Get the object that the camera is attached to
 		HLOCALOBJ GetAttachedObject()
 		{

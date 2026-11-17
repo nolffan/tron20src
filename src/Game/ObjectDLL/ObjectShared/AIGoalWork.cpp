@@ -21,6 +21,8 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalPlacePoster,	kGoal_PlacePoster);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalEnjoyPoster,	kGoal_EnjoyPoster);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalDestroy,		kGoal_Destroy);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalRide,			kGoal_Ride);
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSeekerHitch,	kGoal_SeekerHitch);			// RETAIL: Tron's
+DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSeekerHitchDown,	kGoal_SeekerHitchDown);	// RETAIL: Tron's
 
 
 // ----------------------------------------------------------------------- //

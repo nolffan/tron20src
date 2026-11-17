@@ -569,6 +569,8 @@ class AIVolumePlayerInfo : public AIInformationVolume
 
 		AINode* FindViewNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, LTBOOL bMustBeUnowned) const;
 		AINode* FindOwnedViewNode(CAI* pAI, EnumAINodeType eNodeType, HOBJECT hOwner) const;
+		// RETAIL: Tron's (0x1009a5d0). The name is ours
+		bool IsViewNode(HOBJECT hNode) const;
 
 		// Handlers
 

@@ -17,6 +17,8 @@
 #include "LightCycleGameDataMgr.h"
 #include "InterfaceMgr.h"
 #include "TRONHUDMgr.h"
+#include "TronWeaponChooser.h"
+#include "TronLoadingScreen.h"
 #include "TRONScreenMgr.h"
 #include "TRONPlayerStats.h"
 #include "SubroutineMgr.h"
@@ -153,6 +155,8 @@ public:
 	// (CHUDArmor::Render, 0x10022098)
 	bool			GetTronUnknown28AE8() {return m_bTronUnknown28AE8;}
 	bool			GetTronUnknown28B14() {return m_bTronUnknown28B14;}
+	// RETAIL: CTronPlayerMgr slot 0xa0 (0x100a7650) returns it
+	uint32			GetTronUnknown28AF0() {return m_nTronUnknown28AF0;}
 
 	// RETAIL: +0x28b18, the id of the string CHUDSingleString shows (set
 	// from server messages, 0x1009d805..; the name is ours)
@@ -197,8 +201,7 @@ private:
 	// (0x1009ce40). The pads stand in for the difference between retail's
 	// sizes of our member classes and ours (checked in the constructor);
 	// they go when those classes are fixed.
-	CTronHUDMgr			m_HUD;					// +0x10108 Heads-Up Display
-	char				m_aTronPadHUD[0x11eec - sizeof(CTronHUDMgr)];
+	CTronHUDMgr			m_HUD;					// +0x10108 Heads-Up Display (0x11eec bytes)
 	CTronScreenMgr		m_ScreenMgr;			// +0x21ff4
 	CTronPlayerStats	m_stats;				// +0x2206c Player statistics (health, ammo, armor, etc.)
 	CSubroutineMgr		m_SubroutineMgr;		// +0x24474
@@ -220,9 +223,7 @@ private:
 	bool				m_bTronUnknown28B1C;	// +0x28b1c, loaded by Load
 	bool				m_bDisplayProgress;		// +0x28b1d flag for displaying objectives and procedurals
 	std::list<TronInterfaceRecord*> m_TronRecords;	// +0x28b20
-	// PORT: retail's is a CTronLoadingScreen (0x124 bytes, vtable
-	// 0x101e904c, CInterfaceMgr's +0xf8e4 points at it); not yet written
-	uint8				m_aTronLoadingScreen[0x124];	// +0x28b24
+	CTronLoadingScreen	m_LoadingScreen;		// +0x28b24 (0x124 bytes), CInterfaceMgr's loading screen
 	// RETAIL: the duplicate subroutine box (CTronInterfaceMgr's use of it:
 	// 0x1009f200, 0x1009f470..0x1009f5e0)
 	CDuplicateSubroutineDlg	m_DuplicateDlg;		// +0x28c48

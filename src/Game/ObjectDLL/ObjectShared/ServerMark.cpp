@@ -10,9 +10,10 @@
 
 #include "stdafx.h"
 #include "ServerMark.h"
-#include "WeaponMgr.h"
-#include "ilttransform.h"
 
+// RETAIL: Tron's CServerMark has no fading (no "MarkWMShow",
+// "MarkWMFadeTime" or "MarkWMSolidTime" strings and no save in
+// Object.lto): it only goes away with its parent (0x1022ec80).
 
 LINKFROM_MODULE( ServerMark );
 
@@ -53,20 +54,11 @@ CServerMark::~CServerMark()
 //
 // ----------------------------------------------------------------------- //
 
-// RETAIL: 0x1022ec80: Tron's mark is Build 51's: it only goes away with
-// its parent.  NOLF2's timed fade out (and its MarkWM console variables and
-// save data) is not in Tron.
 uint32 CServerMark::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 {
-	switch(messageID)
+	if( messageID == MID_PARENTATTACHMENTREMOVED )
 	{
-		case MID_PARENTATTACHMENTREMOVED :
-		{
-            g_pLTServer->RemoveObject(m_hObject);
-		}
-		break;
-
-		default : break;
+		g_pLTServer->RemoveObject(m_hObject);
 	}
 
 	return BaseClass::EngineMessageFn(messageID, pData, fData);

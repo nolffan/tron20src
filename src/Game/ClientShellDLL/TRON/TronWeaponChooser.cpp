@@ -59,10 +59,10 @@ bool CTronWeaponChooser::Open(uint8 nClass)
 		return true;
 	}
 
-	if (g_pHUDSubChooser)
-		g_pHUDSubChooser->Show(false);
-	if (g_pHUDProcedurals)
-		g_pHUDProcedurals->Show(false);
+	if (g_pSubChooser)
+		g_pSubChooser->Show(false);
+	if (g_pProcedurals)
+		g_pProcedurals->Show(false);
 
 	CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
 	if (!pClientWeaponMgr->WeaponsEnabled())
@@ -119,10 +119,10 @@ bool CTronWeaponChooser::Open(uint8 nClass)
 // RETAIL: 0x100afde0
 void CTronWeaponChooser::Close(bool bShowSelection)
 {
-	if (g_pHUDSubChooser)
-		g_pHUDSubChooser->Show(true);
-	if (g_pHUDProcedurals)
-		g_pHUDProcedurals->Show(true);
+	if (g_pSubChooser)
+		g_pSubChooser->Show(true);
+	if (g_pProcedurals)
+		g_pProcedurals->Show(true);
 
 	CWeaponChooser::Close(true);
 

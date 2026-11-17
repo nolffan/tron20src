@@ -11,6 +11,7 @@
 #include "stdafx.h"
 
 #include "AI.h"
+#include "../TRON/AIGoalFconMonster.h"	// RETAIL: Tron's
 #include "ObjectMsgs.h"
 #include "ParsedMsg.h"
 #include "VolumeBrushTypes.h"
@@ -4061,6 +4062,81 @@ LTVector CAI::GetWeaponPosition(CWeapon* pWeapon)
 	vPos.y += m_vDims.y;
 
 	return vPos;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::GetWeaponCheckPosition()
+//
+//	PURPOSE:	RETAIL: Tron's (0x101311f0; the name is ours): the
+//				position the AI checks its target's visibility from. With
+//				weapon choices (AttackLeft/Right/CenterMaxDist), it is beside
+//				the torso at the choice's distance; unless bKeepChoice, the
+//				next enabled choice is taken first. An FconMonster's
+//				destroyed arm disables its choice.
+//
+// ----------------------------------------------------------------------- //
+
+LTVector CAI::GetWeaponCheckPosition(LTBOOL bKeepChoice)
+{
+	CAIGoalFconMonster* pFconMonster = (CAIGoalFconMonster*)m_pGoalMgr->FindGoalByType( kGoal_FconMonster );
+	if( pFconMonster && ( m_lstWeaponChoices.size() > 2 ) )
+	{
+		if( pFconMonster->m_abDestroyed[0] )
+		{
+			m_lstWeaponChoices[0].m_bEnabled = false;
+		}
+
+		if( pFconMonster->m_abDestroyed[1] )
+		{
+			m_lstWeaponChoices[1].m_bEnabled = false;
+		}
+	}
+
+	LTVector vCheckPos;
+
+	if( m_lstWeaponChoices.size() )
+	{
+		if( !bKeepChoice )
+		{
+			AIWeaponChoiceList::iterator it = std::find( m_lstWeaponChoices.begin(), m_lstWeaponChoices.end(), m_CurWeaponChoice );
+			do
+			{
+				++it;
+				if( it == m_lstWeaponChoices.end() )
+				{
+					it = m_lstWeaponChoices.begin();
+				}
+			}
+			while( !it->m_bEnabled );
+
+			m_CurWeaponChoice = *it;
+		}
+
+		vCheckPos = m_CurWeaponChoice.m_fMaxDist * GetTorsoRight() + GetPosition();
+		vCheckPos.y += GetDims().y * 0.5f;
+	}
+	else if( GetCurrentWeapon() )
+	{
+		// Primary weapon is on the right side, secondary on the left.
+
+		if( GetCurrentWeapon() == GetPrimaryWeapon() )
+		{
+			vCheckPos = GetRadius() * GetTorsoRight() + GetPosition();
+			vCheckPos.y += GetDims().y * 0.5f;
+		}
+		else
+		{
+			vCheckPos = -GetTorsoRight() * GetRadius() + GetPosition();
+			vCheckPos.y += GetDims().y * 0.5f;
+		}
+	}
+	else
+	{
+		vCheckPos = GetEyePosition();
+	}
+
+	return vCheckPos;
 }
 
 //----------------------------------------------------------------------------

@@ -35,16 +35,6 @@ namespace
 #endif
 }
 
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-// PORT: NOLF2's per game type options and restriction sets (see ProfileUtils.h)
-StringSet				ServerGameOptions::m_setRestrictedWeapons;
-StringSet				ServerGameOptions::m_setRestrictedAmmo;
-StringSet				ServerGameOptions::m_setRestrictedGear;
-CoopGameOptions			ServerGameOptions::m_Coop;
-DMGameOptions			ServerGameOptions::m_DM;
-TeamDMGameOptions		ServerGameOptions::m_TeamDM;
-DoomsdayGameOptions		ServerGameOptions::m_DD;
-#endif // PROFILEUTILS_NOLF2_OPTIONS
 
 // RETAIL: Object.lto 0x10114530
 ServerGameOptions::ServerGameOptions( )
@@ -769,53 +759,6 @@ bool ServerGameOptions::GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf )
 
 #endif // _CLIENTBUILD
 
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-bool ServerGameOptions::IsDefaultCampaign() const
-{
-	return (stricmp(GetCampaignName(), DEFAULT_CAMPAIGN ) == 0);
-}
-
-const char*	ServerGameOptions::GetCampaignName() const
-{
-
-	switch (m_eGameType)
-	{
-	case eGameTypeCooperative:
-		return m_Coop.m_sCampaignName.c_str();
-		break;
-	case eGameTypeDeathmatch:
-		return m_DM.m_sCampaignName.c_str();
-		break;
-	case eGameTypeTeamDeathmatch:
-		return m_TeamDM.m_sCampaignName.c_str();
-		break;
-	case eGameTypeDoomsDay:
-		return m_DD.m_sCampaignName.c_str();
-		break;
-		
-	};
-
-	return DEFAULT_CAMPAIGN;
-}
-void ServerGameOptions::SetCampaignName(const char*	pszName)
-{
-	switch (m_eGameType)
-	{
-	case eGameTypeCooperative:
-		m_Coop.m_sCampaignName = pszName;
-		break;
-	case eGameTypeDeathmatch:
-		m_DM.m_sCampaignName = pszName;
-		break;
-	case eGameTypeTeamDeathmatch:
-		m_TeamDM.m_sCampaignName = pszName;
-		break;
-	case eGameTypeDoomsDay:
-		m_DD.m_sCampaignName = pszName;
-		break;
-	};
-}
-#endif // PROFILEUTILS_NOLF2_OPTIONS
 
 
 
@@ -1480,54 +1423,3 @@ const char*	GetProfileFile( char const* pszProfileName )
 	return sProfileFile.c_str();
 }
 
-#ifdef PROFILEUTILS_NOLF2_OPTIONS
-static const char szCampaignDirs[g_knNumGameTypes][32] = 
-{
-	// PORT: Tron has no campaign directories (none of NOLF2's "\\Campaigns\\"
-	// and "\\DM_Campaigns\\" is in any retail image), so every game type's
-	// campaign lives in the profile's own directory; the table keeps NOLF2's
-	// shape for the NOLF2 mission code still standing in for Tron's
-	"\\",
-	"\\",
-	"\\",
-	"\\",
-	"\\",
-	"\\",
-	"\\",
-	"\\",
-};
-
-
-const char*	GetCampaignDir( char const* pszProfileName, GameType eGameType ) 
-{
-	ASSERT( eGameType >= 0 && eGameType < g_knNumGameTypes );
-	
-	static std::string sCampaignDir;
-	sCampaignDir = GetProfileDir( pszProfileName );
-	sCampaignDir += szCampaignDirs[eGameType]; 
-
-	return sCampaignDir.c_str();
-}
-
-const char*	GetCampaignFile( ServerGameOptions const& serverGameOptions ) 
-{
-	static std::string sCampaignFile;
-
-	if (serverGameOptions.m_eGameType == eGameTypeSingle)
-		return "";
-
-	if( serverGameOptions.IsDefaultCampaign() )
-	{
-		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), ( GameType )serverGameOptions.m_eGameType );
-		sCampaignFile += DEFAULT_CAMPAIGN_FILE;
-	}
-	else
-	{
-		sCampaignFile = GetCampaignDir( serverGameOptions.m_sProfileName.c_str( ), ( GameType )serverGameOptions.m_eGameType );
-		sCampaignFile += serverGameOptions.GetCampaignName(); 
-		sCampaignFile += ".txt";
-	}
-
-	return sCampaignFile.c_str();
-}
-#endif // PROFILEUTILS_NOLF2_OPTIONS

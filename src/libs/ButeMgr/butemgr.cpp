@@ -549,8 +549,8 @@ void CButeMgr::ConsumeChar()
 
 
 // RETAIL: CharClass, Action, NextState and LookupCodes are inline in Tron's
-// ButeMgr (ScanTok, Object.lto 0x1006e340, has them in its body and calls
-// only the reserved word lookup, 0x10071270).
+// ButeMgr: ScanTok (Object.lto 0x1006e340, CShell.dll 0x100b14c0) has them in
+// its body and calls only the reserved word lookup (0x10071270, 0x100b4710).
 inline short CButeMgr::CharClass(unsigned char currentChar)
 {
     //if (ClassMap[(unsigned int)currentChar] == 0)

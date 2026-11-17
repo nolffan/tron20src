@@ -132,7 +132,9 @@ class AbstractTarget : public IRelationChangeObserver
 		// RETAIL: Tron's accessors first call Refresh (0x101dfd00).
 		HOBJECT GetVisionBlocker() { Refresh(); return m_hVisionBlocker; }
 
-        LTBOOL IsAttacking() const { return m_bAttacking; }
+		// RETAIL: Tron's first calls Refresh (CAIHumanStrategyCover::Update
+		// 0x10224ed7).
+        LTBOOL IsAttacking() { Refresh(); return m_bAttacking; }
 
 		void UpdateVisibility();
 
@@ -324,6 +326,51 @@ class CGenericTarget : public AbstractTarget
 		void Save(ILTMessage_Write *pMsg) { AbstractTarget::Save(pMsg); }
 		void Load(ILTMessage_Read *pMsg) { AbstractTarget::Load(pMsg); }
 
+		// RETAIL: Tron's goals target with these as CAI::Target and
+		// CAI::UpdateTarget do (inline in e.g. CAIGoalAttack
+		// 0x10216691; UpdateTarget 0x1020ab90). The names are ours.
+
+		void Target(HOBJECT hObject)
+		{
+			// Do not reset everything for redundant calls to Target.
+
+			if( hObject == GetObject() )
+			{
+				return;
+			}
+
+			// Do not set target to a non-character.
+
+			if( hObject && !IsCharacter( hObject ) )
+			{
+				return;
+			}
+
+			if( !hObject )
+			{
+				SetObject( LTNULL );
+				return;
+			}
+
+			SetObject( hObject );
+
+			LTVector vPosition;
+			g_pLTServer->GetObjectPos( hObject, &vPosition );
+			SetVisiblePosition( vPosition );
+
+			// RETAIL: the dims are read but not used (no push here).
+			LTVector vDims;
+			g_pPhysicsLT->GetObjectDims( hObject, &vDims );
+
+			SetVisibleFromEye( LTFALSE );
+			SetVisibleFromWeapon( LTFALSE );
+			SetAttacking( LTFALSE );
+
+			UpdateTarget();
+		}
+
+		void UpdateTarget();
+
 	protected :
 
 		virtual CAI* GetAI() { return m_pOwner->GetAI(); }
@@ -332,5 +379,58 @@ class CGenericTarget : public AbstractTarget
 
 		T*			m_pOwner;
 };
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CGenericTarget::UpdateTarget
+//
+//	PURPOSE:	RETAIL: Tron's (0x1020ab90; the name is ours): CAI::
+//				UpdateTarget's firing check for a goal's own target.
+//
+// ----------------------------------------------------------------------- //
+
+template<class T>
+void CGenericTarget<T>::UpdateTarget()
+{
+	if( !GetAI() || !IsValid() )
+	{
+		return;
+	}
+
+	CCharacter* pCharacter = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( GetObject() ) );
+	if( !pCharacter || pCharacter->IsDead() )
+	{
+		// Our target has died.
+
+		SetObject( LTNULL );
+		return;
+	}
+
+	Refresh();
+
+	// Update the firing information. This is fairly expensive.
+
+	SetAttacking( LTFALSE );
+
+	CharFireInfo info;
+	pCharacter->GetLastFireInfo( info );
+
+	// If they've shot recently enough
+
+	// 255 is WMGR_INVALID_ID (WeaponMgr.h is not included here).
+	if ( info.fTime + 0.5f > g_pLTServer->GetTime() && info.nWeaponId != 255 )
+	{
+		// See if the shot passed close to us
+
+		LTVector vFire = info.vImpactPos - info.vFiredPos;
+		LTVector vNearestPoint = info.vImpactPos + vFire*(((GetAI()->GetPosition() - info.vImpactPos).Dot(vFire))/vFire.Dot(vFire));
+		const static LTFLOAT fMinDistance = 100.0f*100.0f;
+
+		if ( VEC_DISTSQR(vNearestPoint, GetAI()->GetPosition()) < fMinDistance )
+		{
+			SetAttacking( LTTRUE );
+		}
+	}
+}
 
 #endif

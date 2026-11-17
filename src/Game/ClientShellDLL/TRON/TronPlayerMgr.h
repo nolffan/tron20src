@@ -163,6 +163,8 @@ private:
 	void	ShowTronUnknownMessageBox(ILTMessage_Read *pMsg);
 
 	bool	IsHolsterLocked();	// RETAIL: 0x100a7b70 (the name is ours)
+	friend class CTronWeaponChooser;	// RETAIL: it asks IsHolsterLocked
+	friend class CTronTargetMgr;		// RETAIL: its properties text reads +0x208
 
 	// RETAIL: the weapon chooser asks it too (0x100afe43, 0x100b0229)
 	friend class CTronWeaponChooser;

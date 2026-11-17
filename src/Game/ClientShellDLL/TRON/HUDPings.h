@@ -25,7 +25,7 @@ struct HUDPING
 {
 	HTEXTURE				hIcon;			// +0x00: the caller's portrait (none: no ping)
 	LT_POLYFT4				Poly;			// +0x04
-	CUIFormattedPolyString*	pName;			// +0x58
+	CUIPolyString*			pName;			// +0x58
 	char					szName[16];		// +0x5c
 	int						nBlinkCount;	// +0x6c
 	LTFLOAT					fBlinkTime;		// +0x70

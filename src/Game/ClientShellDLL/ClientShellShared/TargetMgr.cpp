@@ -24,12 +24,10 @@
 #include "ClientResShared.h"
 #include "ActivateObjectFX.h"
 #include "Searcher.h"
-#include "GadgetDisabler.h"
 #include "VehicleMgr.h"
 #include "DoomsdayPieceFX.h"
 
 VarTrack	g_vtActivationDistance;
-VarTrack	g_vtReviveDistance;
 VarTrack	g_vtTargetDistance;
 
 extern VarTrack g_vtCamZoom1MaxDist;
@@ -39,55 +37,11 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData);
 
 CActivationData	g_adFallbackActivationObject;
 
-static bool IsUserFlagSet(HOBJECT hObj, uint32 dwTestFlags)
+static inline bool IsUserFlagSet(HOBJECT hObj, uint32 dwTestFlags)
 {
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags(hObj, OFT_User, dwFlags);
 	return !!(dwFlags & dwTestFlags);
-}
-
-static void SetFallbackActivationObject(HOBJECT hObj, IntersectQuery* pQuery)
-{
-	if (!pQuery) 
-		return;
-
-	// Use the Query object to determine how far away this object is from the
-	// activation start point.  It must be within the activation range for us
-	// to use it...
-
-	LTVector vObjPos;
-	g_pLTClient->GetObjectPos(hObj, &vObjPos);
-
-	LTVector vDir = (pQuery->m_From - vObjPos);
-	float fDist = vDir.Mag();
-
-	// Since fDist is the distance to the center of the object we need to account
-	// for the object's radius.  This may give us some false positives since the
-	// object's using an axis-aligned bounding box, but a false positive is better
-	// than a negative ;).  Since we can't get the object's dims here's a nice
-	// magic number for all you kiddies at home that are paying attention...
-
-	fDist -= 35.0f;
-
-	if (fDist > g_vtActivationDistance.GetFloat()) 
-		return;
-
-
-	if (g_adFallbackActivationObject.m_hTarget)
-	{
-		// Don't set if my current target is activatable (doesn't matter
-		// if new one is activatable or not, we'll just keep the one we have)...
-
-		if ( !IsUserFlagSet(g_adFallbackActivationObject.m_hTarget, 
-						    (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH)) )
-		{
-			g_adFallbackActivationObject.m_hTarget = hObj;
-		}
-	}
-	else
-	{
-		g_adFallbackActivationObject.m_hTarget = hObj;
-	}
 }
 
 CTargetMgr::CTargetMgr()
@@ -111,25 +65,39 @@ CTargetMgr::~CTargetMgr()
 {
 }
 
-void CTargetMgr::FirstUpdate()
+// RETAIL: inline in Tron's Update (0x1016d7bf): the distances' defaults
+// are constants (NOLF2 read them from the interface attributes), and there
+// is no revive distance
+inline void CTargetMgr::FirstUpdate()
 {
 	if (!g_vtActivationDistance.IsInitted())
 	{
-		float f = g_pClientButeMgr->GetInterfaceAttributeFloat("ActivationDistance",100.0f);
-		g_vtActivationDistance.Init(g_pLTClient, "ActivationDistance", LTNULL, f);
-	}
-
-	if (!g_vtReviveDistance.IsInitted())
-	{
-		float f = g_pClientButeMgr->GetInterfaceAttributeFloat("ReviveDistance",200.0f);
-		g_vtReviveDistance.Init(g_pLTClient, "ReviveDistance", LTNULL, f);
+		g_vtActivationDistance.Init(g_pLTClient, "ActivationDistance", LTNULL, 100.0f);
 	}
 
 	if( !g_vtTargetDistance.IsInitted() )
 	{
-		float f = g_pClientButeMgr->GetInterfaceAttributeFloat("TargetDistance",1000.0f);
-		g_vtTargetDistance.Init(g_pLTClient, "TargetDistance", LTNULL, f);
+		g_vtTargetDistance.Init(g_pLTClient, "TargetDistance", LTNULL, 1000.0f);
 	}
+}
+
+// RETAIL: inline in Tron's Update (0x1016d792); no team to clear, and the
+// target can be activated whatever the damage FX
+inline void CTargetMgr::ClearTargetInfo()
+{
+	//clear our targeting info
+	SetTargetStringID(NULL);
+	m_hTarget = NULL;
+	m_fTargetRange = 10000.0f;
+	m_szString[0] = 0;
+	m_szDebugString[0] = 0;
+	m_nString = 0;
+
+	m_ActivationData.Init();
+
+	m_bSearchTarget = false;
+	m_bMoveTarget = false;
+	m_bCanActivate = true;
 }
 
 
@@ -152,12 +120,7 @@ void CTargetMgr::Update()
 
 	if (m_hLockedTarget && m_hTarget == m_hLockedTarget)
 	{
-		//are we disabling a GadgetTarget?
-		if (g_pPlayerMgr->IsDisabling())
-		{
-			SetGadgetTarget( true );
-			return;
-		}
+		// RETAIL: no gadget disabling in Tron (no CGadgetDisabler)
 
 		//are we searching something?
 		if (g_pPlayerMgr->IsSearching())
@@ -250,50 +213,9 @@ void CTargetMgr::Update()
 					g_pCommonLT->SetObjectFlags(m_hTarget, OFT_User, USRFLG_GLOW, USRFLG_GLOW);
 				}
 				
-				if (pBody->CanBeRevived() && fDistAway <= g_vtReviveDistance.GetFloat() && IsRevivePlayerGameType( ))
-				{
-					// Get the client information of the body and us.
-					uint32 nId = pBody->GetClientId();
-					CClientInfoMgr* pCIMgr = g_pInterfaceMgr->GetClientInfoMgr();
-					CLIENT_INFO* pCI = pCIMgr->GetClientByID(nId);
-					CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-
-					// Only allow us to revive people on the same team.  For non-team games,
-					// the teamid will be set to the same invalid value anyway.
-					if( pCI && pLocalCI )
-					{
-						// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-						if ((uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID) == (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID))
-						{
-							m_nString = 0;
-							FormatString(IDS_TARGET_REVIVE, m_szString, ARRAY_LEN(m_szString), pCI->sName.c_str());
-
-							LTVector vObjPos, vDims;
-							g_pLTClient->GetObjectPos(pBody->GetServerObj(), &vObjPos);
-							g_pPhysicsLT->GetObjectDims(pBody->GetServerObj(), &vDims);
-
-							// Players are non-solid to each other so you can revive right on top of them.
-							m_bCanActivate = true;  //!CheckForCharacters(vObjPos, vDims, pBody->GetClientId());
-							m_bMoveTarget = true;
-							m_ActivationData.m_nType = MID_ACTIVATE_REVIVE;
-						}
-						else
-						{
-							m_nString = 0;
-							m_bCanActivate = false;
-							m_bMoveTarget = false;
-							LTStrCpy(m_szString, pCI->sName.c_str(), ARRAY_LEN(m_szString));
-
-						}
-
-						return;
-					}
-
-				}
-				else
-				{
-					m_bMoveTarget = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());
-				}
+				// RETAIL: no reviving in Tron (no "ReviveDistance"; NOLF2's
+				// coop revive of a team mate's body)
+				m_bMoveTarget = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());
 
 			}
 			else if (pCharacter)
@@ -683,6 +605,10 @@ static bool DoVectorPolyFilterFn(HPOLY hPoly, void *pUserData)
 
 static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 {
+	// RETAIL: Tron's (0x1016e4a0): no doomsday pieces, and no range test for
+	// the fallback object (NOLF2's SetFallbackActivationObject): an unsearched
+	// body's hit box is the fallback; an unconscious character is not one.
+
 	// [KLS 6/26/02] - Make sure we filter out client related objects first...
 
 	HOBJECT hClientHitBox = LTNULL;
@@ -716,30 +642,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 		return true;
 	}
 
-	// Look to see if it is a DoomsDayPiece.  This should take precedence over characters and bodies...
-
-	CDoomsdayPieceFX *pDDPiece = dynamic_cast<CDoomsdayPieceFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_DOOMSDAYPIECE_ID, hTest ));
-	if( pDDPiece )
-	{
-		// If the piece is planted on our teams bse we no longer care about it...
-
-		if( pDDPiece->IsPlanted() && (pDDPiece->GetTeam() != INVALID_TEAM) )
-		{
-			CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-			if( !pLocalCI )
-				return false;
-
-			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-			if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pDDPiece->GetTeam() )
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-	
-
 	// If it's a body, ignore it (we only care about its hit box)
 	CBodyFX* pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFX(hTest);
 	if (pBody) 
@@ -751,8 +653,13 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 	pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFromHitBox(hTest);
 	if (pBody)
 	{
+		if (IsUserFlagSet(hTest, (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH)))
+		{
+			return true;
+		}
+
 		// Save body for later since it may overlap a higher priority object
-		SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
+		g_adFallbackActivationObject.m_hTarget = hTest;
 		return false;
 	}
 
@@ -765,14 +672,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 			return false;
 		}
 
-		// Save character for later if unconscious since it may overlap a 
-		// higher priority object
-		if (pCharacter->IsUnconscious())
-		{
-			SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
-			return false;
-		}
-
 		return true; // "Solid" object so we're done
 	}
 
@@ -780,13 +679,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 	pCharacter = g_pGameClientShell->GetSFXMgr()->GetCharacterFromHitBox(hTest);
 	if (pCharacter)
 	{
-		if (pCharacter->IsUnconscious())
-		{
-			// Save character for later since it may overlap a higher priority object
-			SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
-			return false;
-		}
-
 		return true; // "Solid" object so we're done
 	}
 
@@ -797,13 +689,9 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 
 	if (!(dwFlags & FLAG_SOLID))
 	{
-		// This object is most likely a pickup of some type and it should
-		// take priority over all the above objects types...however, since all
-		// we can test are its flags we have to filter out the above objects
-		// first (instead of testing for this type of object at the top of 
-		// the function ;)
-
-		return IsUserFlagSet(hTest, (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH));
+		// RETAIL: an info string's object is a target too
+		g_pCommonLT->GetObjectFlags(hTest, OFT_User, dwFlags);
+		return !!(dwFlags & (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH | USRFLG_INFO_STRING));
 	}
 
 	// Hit something solid, so we're done...
@@ -831,15 +719,6 @@ bool CTargetMgr::IsGadgetActivatable(HOBJECT hObj)
 	return bIsGadgetActivatable;
 }
 
-bool CTargetMgr::IsTargetGadgetActivatable()
-{
-	if (!m_hTarget)
-		return false;
-	if (!IsGadgetActivatable(m_hTarget) && !g_pPlayerMgr->IsDisabling())
-		return false;
-	return m_bCanActivate;
-}
-
 
 
 void CTargetMgr::SetTargetStringID(uint16 nID)
@@ -854,6 +733,11 @@ void CTargetMgr::SetTargetStringID(uint16 nID)
 
 void CTargetMgr::SetGadgetTarget( bool bDisabling )
 {
+	// RETAIL: Tron's (0x1016e6d0): the target can be activated when the
+	// current ammo does the gadget's damage type (NOLF2 looked for a gadget
+	// in the inventory), with no team, power, carrying or progress bar
+	// checks. Tron's string IDs: the action, and +23 for its progress.
+
 	if (!m_hTarget) return;
 
 	CGadgetTargetFX* const pFX = (CGadgetTargetFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_GADGETTARGET_ID, m_hTarget);
@@ -861,73 +745,52 @@ void CTargetMgr::SetGadgetTarget( bool bDisabling )
 
 	if (!pFX) return;
 
-	GadgetTargetType	eGadgetType = pFX->GetType();
+	const AMMO* pAmmo = g_pWeaponMgr->GetAmmo(g_pPlayerStats->GetCurrentAmmo());
+	if (!pAmmo) return;
 
-	switch( eGadgetType )
+	DamageType eDT = pAmmo->eInstDamageType;
+
+	switch( pFX->GetType() )
 	{
 	case eKeyPad:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_CODE_DECIPHERER) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_HACKINGKEYPAD : IDS_TARGET_HACKKEYPAD );
-		break;
 	case eCardReader:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_CODE_DECIPHERER) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_HACKINGCARDREADER : IDS_TARGET_HACKCARDREADER );
+		m_bCanActivate = (eDT == DT_GADGET_CODE_DECIPHERER);
+		SetTargetStringID( bDisabling ? 455 + 23 : 455 );
 		break;
 	case eCodedText:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_CODE_DECIPHERER) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_DECODING : IDS_TARGET_DECODE );
+		m_bCanActivate = (eDT == DT_GADGET_CODE_DECIPHERER);
+		SetTargetStringID( bDisabling ? 457 + 23 : 457 );
 		break;
 	case eComboLock:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_WELDER) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_WELDING : IDS_TARGET_WELD );
+		m_bCanActivate = (eDT == DT_GADGET_WELDER);
+		SetTargetStringID( bDisabling ? 456 + 23 : 456 );
 		break;
 	case ePadLock:
 	case eDoorKnob:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_LOCK_PICK) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_PICKING : IDS_TARGET_PICK );
+		m_bCanActivate = (eDT == DT_GADGET_LOCK_PICK);
+		SetTargetStringID( bDisabling ? 458 + 23 : 458 );
 		break;
 	case eTelephone:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_EAVESDROPBUG) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_BUGGING : IDS_TARGET_BUG );
+		m_bCanActivate = (eDT == DT_GADGET_EAVESDROPBUG);
+		SetTargetStringID( bDisabling ? 462 + 23 : 462 );
 		break;
 	case ePhotographable:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_CAMERA) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_PHOTOGRAPHING : IDS_TARGET_PHOTO );
+		m_bCanActivate = (eDT == DT_GADGET_CAMERA);
+		SetTargetStringID( bDisabling ? 459 + 23 : 459 );
 		break;
 	case eBombable:
-		m_bCanActivate = bDisabling || (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_TIME_BOMB) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_BOMBING : IDS_TARGET_BOMB );
+		m_bCanActivate = bDisabling || (eDT == DT_GADGET_TIME_BOMB);
+		SetTargetStringID( bDisabling ? 460 + 23 : 460 );
 		break;
 	case eInvisibleInk:
-		m_bCanActivate = (g_pPlayerMgr->GetGadgetFromDamageType(DT_GADGET_INK_REAGENT) != WMGR_INVALID_ID);
-		SetTargetStringID( bDisabling ? IDS_TARGET_INKING : IDS_TARGET_INK );
+		m_bCanActivate = (eDT == DT_GADGET_INK_REAGENT);
+		SetTargetStringID( bDisabling ? 461 + 23 : 461 );
 		break;
 	case eINVALID:
 	default:
 		SetTargetStringID(NULL);
 		break;
 	}
-	
-
-	// RETAIL: Tron's gadget targets have no team and no power state
-	// (CGadgetTargetFX keeps the type only: 0x101b7d20; SetGadgetTarget,
-	// 0x1016e6d0, asks neither)
-
-	// Cannot disable a gadget target when carrying a body...
-
-	if( g_pPlayerMgr->IsCarryingHeavyObject() )
-	{
-		m_bCanActivate = false;
-	}
-
-	if( m_bCanActivate && GTInfoArray[eGadgetType].m_bShowTimeBar )
-	{
-		uint8 nProgress = g_pPlayerMgr->GetGadgetDisabler()->GetMaxProgress();
-		g_pPlayerStats->UpdateMaxProgress( nProgress );
-		g_pPlayerStats->UpdateProgress( nProgress );
-		g_pHUDMgr->QueueUpdate( kHUDProgressBar );
-	}
-	
 }
 
 
@@ -971,88 +834,7 @@ bool CTargetMgr::CheckForCharacters(LTVector vObjPos,LTVector vDims, uint8 nId)
 }
 
 
-//returns the damage type of the gadget required to disable the current target
-DamageType CTargetMgr::RequiredGadgetDamageType()
-{
-	if (!m_hTarget) return DT_INVALID;
-
-
-	//if can activate without gadget, then don't switch
-	uint32 dwUserFlags = 0;
-    g_pCommonLT->GetObjectFlags(m_hTarget, OFT_User, dwUserFlags);
-	if (dwUserFlags & USRFLG_CAN_ACTIVATE)
-		return DT_INVALID;
-
-
-
-	CGadgetTargetFX* const pFX = (CGadgetTargetFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_GADGETTARGET_ID, m_hTarget);
-	// PORT: Tron's gadget targets keep no switch-weapons flag (CGadgetTargetFX,
-	// 0x101b7d20)
-	if (!pFX) return DT_INVALID;
-
-	DamageType eDamageType = DT_INVALID;
-	GadgetTargetType	eGadgetType = pFX->GetType();
-	switch( eGadgetType )
-	{
-	case eKeyPad:
-	case eCardReader:
-	case eCodedText:
-		eDamageType = DT_GADGET_CODE_DECIPHERER;
-		break;
-	case eComboLock:
-		eDamageType = DT_GADGET_WELDER;
-		break;
-	case ePadLock:
-	case eDoorKnob:
-		eDamageType = DT_GADGET_LOCK_PICK;
-		break;
-	case eTelephone:
-		eDamageType = DT_GADGET_EAVESDROPBUG;
-		break;
-	case ePhotographable:
-		eDamageType = DT_GADGET_CAMERA;
-		break;
-	case eBombable:
-		eDamageType = DT_GADGET_TIME_BOMB;
-		break;
-	case eInvisibleInk:
-		eDamageType = DT_GADGET_INK_REAGENT;
-		break;
-	case eINVALID:
-	default:
-		eDamageType = DT_INVALID;
-		break;
-	}
-
-	// PORT: Tron's gadget targets have no team (CGadgetTargetFX, 0x101b7d20)
-
-	return eDamageType;
-
-}
-
-
 // RETAIL: Tron's IsTargetInRange is inline (TargetMgr.h)
 
 
 
-void CTargetMgr::ClearTargetInfo()
-{
-	//clear our targeting info
-	SetTargetStringID(NULL);
-	m_hTarget = NULL;
-	m_fTargetRange = 10000.0f;
-	m_nTargetTeam = INVALID_TEAM;
-	m_szString[0] = 0;
-	m_szDebugString[0] = 0;
-	m_nString = 0;
-
-	m_ActivationData.Init();
-
-	m_bSearchTarget = false;
-	m_bMoveTarget = false;
-	m_bCanActivate = true;
-
-	if (!g_pDamageFXMgr->AllowWeapons( ))
-		m_bCanActivate = false;
-
-}

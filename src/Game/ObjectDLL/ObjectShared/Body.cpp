@@ -433,7 +433,14 @@ uint32 Body::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 uint32 Body::OnDeactivate()
 {
-	return super::OnDeactivate();
+	// RETAIL: Tron's body stays active unless its 0x10b8 flag is set
+	// (Object.lto 0x101596d0)
+	if( m_bTronUnknown10B8 )
+	{
+		return super::OnDeactivate();
+	}
+
+	return 0;
 }
 
 // --------------------------------------------------------------------------- //

@@ -1773,16 +1773,16 @@ void CTronPlayerStats::UpdateSubroutineArmor(float fArmor, float fVirus)
 	g_pHUDMgr->QueueUpdate(kHUDArmor);
 }
 
-// RETAIL: 0x100ac160 (the name is ours)
-bool CTronPlayerStats::AddPing(const char* szName)
-{
-	return m_IONodeMgr.AddPing(szName);
-}
-
 // RETAIL: 0x100ac140 (the name is ours)
 IONODEPING* CTronPlayerStats::GetPing(int nIndex)
 {
 	return m_IONodeMgr.GetPing(nIndex);
+}
+
+// RETAIL: 0x100ac160 (the name is ours)
+bool CTronPlayerStats::AddPing(const char* szName)
+{
+	return m_IONodeMgr.AddPing(szName);
 }
 
 // RETAIL: 0x100ac180
@@ -1908,20 +1908,6 @@ void CTronPlayerStats::OnObjectivesDataMessage(ILTMessage_Read *pMsg)
 	}
 
 	m_bObjAdded = (nNumObj + nNumOptObj + nNumCompObj + nNumParam) > 0;
-}
-
-// PORT: NOLF2's CPlayerStats has these, pure virtual: NOLF2's
-// TO2PlayerStats.cpp's, until the retail code says otherwise.
-
-float CTronPlayerStats::GetSkillModifier(eSkill skl, uint8 nMod)
-{
-	return g_pSkillsButeMgr->GetModifier(skl, (eSkillLevel)m_nSkills[skl], nMod);
-}
-
-// PORT: not virtual in Tron's CPlayerStats (see PlayerStats.h)
-float CPlayerStats::GetSkillModifier(eSkill skl, uint8 nMod)
-{
-	return ((CTronPlayerStats*)this)->CTronPlayerStats::GetSkillModifier(skl, nMod);
 }
 
 void CTronPlayerStats::ClearMissionInfo()

@@ -53,7 +53,10 @@ class CAINodeMgr
 		AINode* FindNearestNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, LTBOOL bRequiresPath, LTBOOL bRequiresCommand);
 		AINode* FindNearestNodeInRadius(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fRadiusSqr, LTBOOL bMustBeUnowned);
         AINode* FindNearestNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat, LTFLOAT fSearchFactor);
-		AINode* FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat);
+		// RETAIL: Tron's has a fifth argument (0x101a8c30; its name is ours):
+		// true checks the path to one random node only, false tries the
+		// nodes in a random order until one has a path.
+		AINode* FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat, bool bCheckOneNode);
 		AINode* FindNearestObjectNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, const char* szClass);
 		AINode*	FindNearestNodeInSameDirectionAsThreat(CAI* pAI, EnumAINodeType eNodeType,const LTVector& vPos,HOBJECT hThreat);
 		AINode* FindNearestOwnedNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hOwner);

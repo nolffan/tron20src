@@ -78,7 +78,6 @@ public:
 	                              uint8 nAmmoId = WMGR_INVALID_ID,
 	                              int nAmmoAmount = -1,
 	                              bool bPlayDeselect = true );
-	void			LastWeapon();
 
 	// When the weapon is holstered, draw this weapon as the default.
 	bool            SetDefaultWeapon( uint8 nWeaponId = 0 );
@@ -109,14 +108,12 @@ public:
 	void            AutoSelectWeapon();
 	
 	// Functionality for when the player changes state to dead/dying or alive
-	void			OnPlayerDead();
 	void			OnPlayerAlive();
 
 private:
 	//
 	// Private routines
 	//		
-	void			ChangeToNextRealWeapon();
 
 	// class utilities
 	uint8           IndexToWeaponId( int iIndex ) const;

@@ -42,37 +42,7 @@ LTBOOL CDoomsdayPieceFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_bCarried = pDDPCS->bCarried;
 	m_nTeam = pDDPCS->nTeam;
 	m_bPlanted = pDDPCS->bPlanted;
-
-
-	std::string radarType = "DD_";
-
-	switch (m_eType)
-	{
-	case kDoomsDay_transmitter:
-		radarType += "Trans_";
-		break;
-	case kDoomsDay_Core:
-		radarType += "Core_";
-		break;
-	case kDoomsDay_battery:
-		radarType += "Bat_";
-		break;
-	}
-
-	switch (m_nTeam)
-	{
-	case 0:
-		radarType += "B";
-		break;
-	case 1:
-		radarType += "R";
-		break;
-	default:
-		radarType += "N";
-		break;
-
-	}
-	if (g_pRadar) g_pRadar->AddObject(m_hServerObject,radarType.c_str(), INVALID_TEAM);
+	// PORT: NOLF2 put the piece on its radar here; Tron has no radar
 	
     return LTTRUE;
 }
@@ -124,38 +94,7 @@ LTBOOL CDoomsdayPieceFX::OnServerMessage(ILTMessage_Read *pMsg)
 	m_bCarried = pMsg->Readbool();
 	m_nTeam = pMsg->Readuint8();
 	m_bPlanted = pMsg->Readbool();
-
-
-
-	std::string radarType = "DD_";
-
-	switch (m_eType)
-	{
-	case kDoomsDay_transmitter:
-		radarType += "Trans_";
-		break;
-	case kDoomsDay_Core:
-		radarType += "Core_";
-		break;
-	case kDoomsDay_battery:
-		radarType += "Bat_";
-		break;
-	}
-
-	switch (m_nTeam)
-	{
-	case 0:
-		radarType += "B";
-		break;
-	case 1:
-		radarType += "R";
-		break;
-	default:
-		radarType += "N";
-		break;
-
-	}
-	if (g_pRadar) g_pRadar->ChangeRadarType(m_hServerObject,radarType.c_str());
+	// PORT: NOLF2 put the piece on its radar here; Tron has no radar
 
 	g_pHUDMgr->QueueUpdate(kHUDDoomsday);
 

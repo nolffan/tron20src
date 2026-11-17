@@ -19,6 +19,7 @@
 #include "CMoveMgr.h"
 #include "ClientWeaponMgr.h"
 #include "InterfaceMgr.h"
+#include "TronInterfaceMgr.h"
 #include "RatingMgr.h"
 #include "ClientRes.h"
 #include "GameClientShell.h"
@@ -666,9 +667,9 @@ void CTronPlayerMgr::UpdateCameraSway()
 	float fMult = (m_dwPlayerFlags & BC_CFLG_DUCK) ? g_vtCameraSwayDuckMult.GetFloat() : 1.0f;
 
 	//Adjust for skills
-	// PORT: retail reads the player stats' virtual at +0x13c (a pointer to
-	// a float at +4) as CPlayerMgr does; not yet in ours
-	fMult *= g_pPlayerStats->GetSkillModifier(SKL_AIM,AimModifiers::eZoomSway);
+	// RETAIL: the player stats' aim modifiers (their virtual at +0x13c): the
+	// zoom sway is the float at +4, as build 51's AimModifiers::fZoomSway
+	fMult *= ((const float*)g_pPlayerStats->TronUnknownVirtual13C())[1];
 
 	if (m_bTronUnknown211 && g_pSubroutineMgr->IsUtilitySubroutineActive("Triangulate"))
 	{
@@ -1199,14 +1200,99 @@ void CTronPlayerMgr::HandleMsgStopEnergyTransfer(ILTMessage_Read * pMsg)
 //	ROUTINE:	CTronPlayerMgr::HandleMsgSystemMemory()
 //
 //	PURPOSE:	RETAIL: Tron's message 193 (retail 0x100a6740): the system
-//				memory configuration (sectors of "alpha", "beta", "gold"
-//				subroutines, bad blocks, base code), given to the subroutine
-//				manager. PORT: not yet written; the message is skipped
+//				memory configuration (a 24 sector string; a digit marks the
+//				sector of that subroutine of the list), the subroutines in
+//				system memory and the others, each with its version; given
+//				to the subroutine manager, which then compiles them
 //
 // ----------------------------------------------------------------------- //
 
 void CTronPlayerMgr::HandleMsgSystemMemory(ILTMessage_Read *pMsg)
 {
+	std::vector<uint32>				aSubIds;
+	std::vector<char>				aSubVersions;
+	std::vector<char>				aSubSectors;
+	std::vector<uint32>				aOtherIds;
+	std::vector<char>				aOtherVersions;
+	std::vector<PlayerSubroutine*>	aPlayerSubs;
+
+	char* aszVersions[3];
+	aszVersions[0] = "alpha";
+	aszVersions[1] = "beta";
+	aszVersions[2] = "gold";
+
+	char szConfig[32];
+	pMsg->ReadString(szConfig, 31);
+
+	// the subroutines in system memory
+	uint8 nNumSubs = pMsg->Readuint8();
+	aSubIds.reserve(nNumSubs);
+	aSubVersions.reserve(nNumSubs);
+	aSubSectors.reserve(nNumSubs);
+	aPlayerSubs.reserve(nNumSubs);
+	int i;
+	for (i = 0; i < nNumSubs; i++)
+	{
+		aSubIds.push_back(pMsg->Readuint32());
+		aSubVersions.push_back(pMsg->Readuint8());
+		aSubSectors.push_back((char)-1);
+	}
+
+	// the others
+	uint8 nNumOthers = pMsg->Readuint8();
+	aOtherIds.reserve(nNumOthers);
+	aOtherVersions.reserve(nNumOthers);
+	for (i = 0; i < nNumOthers; i++)
+	{
+		aOtherIds.push_back(pMsg->Readuint32());
+		aOtherVersions.push_back(pMsg->Readuint8());
+	}
+
+	for (i = 0; i < nNumSubs; i++)
+	{
+		TronSubroutine* pSub = g_pSubroutineMgr->GetSubroutineByNameId(aSubIds[i]);
+		if (!pSub) continue;
+		char nVersion = aSubVersions[i];
+		if (nVersion < 0 || nVersion > 2) continue;
+
+		g_pSubroutineMgr->GivePlayerSubroutine(pSub->szName, aszVersions[nVersion], "okay", true);
+		aPlayerSubs.push_back(g_pSubroutineMgr->GetPlayerSubroutine(pSub->szName, LTNULL));
+	}
+
+	for (i = 0; i < nNumOthers; i++)
+	{
+		TronSubroutine* pSub = g_pSubroutineMgr->GetSubroutineByNameId(aOtherIds[i]);
+		if (!pSub) continue;
+		char nVersion = aOtherVersions[i];
+		if (nVersion < 0 || nVersion > 2) continue;
+
+		g_pSubroutineMgr->GivePlayerSubroutine(pSub->szName, aszVersions[nVersion], "okay", true);
+	}
+
+	// the digits are the sectors of the subroutines; the subroutine
+	// manager sees free sectors there
+	for (i = 0; i < 24; i++)
+	{
+		char c = szConfig[i];
+		if (c >= '0' && c <= '9')
+		{
+			int nSub = c - '0';
+			szConfig[i] = '.';
+			if (nSub < nNumSubs)
+				aSubSectors[nSub] = i;
+		}
+	}
+	g_pSubroutineMgr->SetSystemMemoryConfiguration(szConfig, 0);
+
+	// RETAIL: each subroutine's slot from its sector and its version (its
+	// size)
+	for (i = 0; i < nNumSubs; i++)
+	{
+		PlayerSubroutine* pPlayerSub = aPlayerSubs[i];
+		pPlayerSub->nSlot = (29 - (aSubSectors[i] - pPlayerSub->eVersion + 2)) % 24;
+	}
+
+	g_pSubroutineMgr->Compile();
 }
 
 // ----------------------------------------------------------------------- //
@@ -1580,15 +1666,14 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtualA0
 //
-//	PURPOSE:	RETAIL: retail 0x100a7650 (slot 0xa0). PORT: retail returns a
-//				member of Tron's interface manager (+0x28af0), not yet in
-//				ours
+//	PURPOSE:	RETAIL: retail 0x100a7650 (slot 0xa0): a member of Tron's
+//				interface manager (+0x28af0)
 //
 // ----------------------------------------------------------------------- //
 
 int CTronPlayerMgr::TronUnknownVirtualA0()
 {
-	return 0;
+	return ((CTronInterfaceMgr*)g_pInterfaceMgr)->GetTronUnknown28AF0();
 }
 
 // ----------------------------------------------------------------------- //
@@ -2092,13 +2177,68 @@ void CTronPlayerMgr::TronUnknownVirtual90(const char* pszColor, bool bSend, bool
 //
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtual40
 //
-//	PURPOSE:	RETAIL: retail 0x100a8270 (slot 0x40): the camera behind the
-//				watched light cycle. PORT: not yet written
+//	PURPOSE:	RETAIL: retail 0x100a8270 (slot 0x40): the player object
+//				follows the watched object: its place (a light cycle's last
+//				one, while its trail is checked), then the watched spectator's
+//				rotation, or (a light cycle) the yaw of its travel
 //
 // ----------------------------------------------------------------------- //
 
 void CTronPlayerMgr::TronUnknownVirtual40()
 {
+	if (!m_bTronUnknownB8 || !m_hTronUnknownBC) return;
+
+	LIGHT_CYCLIST* pCyclist = (LIGHT_CYCLIST*)m_nTronUnknown230;
+
+	LTVector vPos;
+	if (pCyclist && pCyclist->fTrailCheckTime != 0.0f)
+	{
+		vPos = pCyclist->vLastPos;
+	}
+	else
+	{
+		g_pLTClient->GetObjectPos(m_hTronUnknownBC, &vPos);
+	}
+	g_pLTClient->SetObjectPos(g_pMoveMgr->GetObject(), &vPos, LTTRUE);
+	g_pLTClient->SetObjectPos(g_pMoveMgr->GetServerObject(), &vPos, LTTRUE);
+
+	if (!m_nTronUnknown230)
+	{
+		CSpecialFX* pFX = g_pGameClientShell->GetSFXMgr()->GetSpectatorFX(m_hTronUnknownBC);
+		if (!pFX) return;
+
+		// RETAIL: the spectator object's rotation (pitch, yaw, roll) at its
+		// +0x3c
+		LTVector vRot = *(LTVector*)((char*)pFX + 0x3c);
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerPitch = vRot.x;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerYaw = vRot.y;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerRoll = vRot.z;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fPitch = vRot.x;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fYaw = vRot.y;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fRoll = vRot.z;
+		g_pMoveMgr->GetVehicleMgr()->SetTronUnknown2128(vRot);
+
+		LTRotation rRot(vRot.x, vRot.y, vRot.z);
+		g_pLTClient->SetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+	}
+	else
+	{
+		// the yaw of the cycle's travel (it moves along the axes)
+		float fYaw = 0.0f;
+		if (pCyclist->vForward.x == 1.0f)
+			fYaw = MATH_HALFPI;
+		else if (pCyclist->vForward.z == -1.0f)
+			fYaw = MATH_PI;
+		else if (pCyclist->vForward.x == -1.0f)
+			fYaw = MATH_PI + MATH_HALFPI;
+		((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerYaw = fYaw;
+
+		LTVector vRot(((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerPitch, ((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerYaw, ((CTronPlayerMgr*)g_pPlayerMgr)->m_fPlayerRoll);
+		g_pMoveMgr->GetVehicleMgr()->SetTronUnknown2128(vRot);
+
+		LTRotation rRot(vRot.x, vRot.y, vRot.z);
+		g_pLTClient->SetObjectRotation(g_pMoveMgr->GetObject(), &rRot);
+	}
 }
 
 // ----------------------------------------------------------------------- //

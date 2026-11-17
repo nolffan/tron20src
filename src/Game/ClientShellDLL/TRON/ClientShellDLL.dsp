@@ -690,6 +690,10 @@ SOURCE=.\TronCDKey.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronClientMultiplayerMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronClientWeapon.cpp
 # End Source File
 # Begin Source File
@@ -711,6 +715,10 @@ SOURCE=.\TronInterfaceMgr.cpp
 # Begin Source File
 
 SOURCE=.\TronLayoutMgr.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronLoadingScreen.cpp
 # End Source File
 # Begin Source File
 
@@ -738,11 +746,11 @@ SOURCE=.\TronTargetMgr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
+SOURCE=.\TronWeaponChooser.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TronWeaponChooser.cpp
+SOURCE=..\..\Shared\Tron\TronVersionMgr.cpp
 # End Source File
 # End Group
 # Begin Group "Headers"
@@ -1174,6 +1182,10 @@ SOURCE=.\TronCDKey.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\TronClientMultiplayerMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\TronClientWeapon.h
 # End Source File
 # Begin Source File
@@ -1187,6 +1199,10 @@ SOURCE=.\TronGameClientShell.h
 # Begin Source File
 
 SOURCE=.\TronLayoutMgr.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\TronLoadingScreen.h
 # End Source File
 # Begin Source File
 
@@ -1210,11 +1226,11 @@ SOURCE=.\TRONScreenMgr.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Shared\Tron\TronVersionMgr.h
+SOURCE=.\TronWeaponChooser.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\TronWeaponChooser.h
+SOURCE=..\..\Shared\Tron\TronVersionMgr.h
 # End Source File
 # End Group
 # Begin Group "libs_debug"
