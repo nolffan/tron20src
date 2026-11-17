@@ -99,6 +99,7 @@ public:
 	bool		GetTronUnknown1D5() const	{ return m_bTronUnknown1D5; }	// RETAIL: inline (0x1015e254)
 	bool		GetTronUnknown1D7() const	{ return m_bTronUnknown1D7; }
 	bool		GetTronUnknown1D8() const	{ return m_bTronUnknown1D8; }
+	bool		GetTronUnknown1D9() const	{ return m_bTronUnknown1D9; }	// RETAIL: inline (0x1009d40b)
 	CLeanMgr*			GetLeanMgr()				{ return m_pLeanMgr; }
 	CTargetMgr*			GetTargetMgr()				{ return m_pTargetMgr; }
 	CSearcher*			GetSearcher()				{ return m_pSearcher;	}
