@@ -19,6 +19,7 @@
 #include "LightCycleMatchMgr.h"
 #include "ServerDiscMatchMgr.h"
 #include "GameSpy/GameSpySDK/gcdkey/gcdkeys.h"
+#include "DebugLineSystem.h"	// RETAIL: its colors are constructed here (retail 0x1005bdf0..0x1005bfa0)
 
 // RETAIL: Tron's GameSpy product: the game name, its secret key (built on
 // the stack, retail 0x1005d452) and the CD key product id
@@ -664,6 +665,36 @@ void CTronGameServerShell::PostStartWorld()
 	{
 		m_pLightCycleMatchMgr->OnStartWorld();
 	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::SetCurLevel
+//
+//	PURPOSE:	RETAIL: retail 0x1005cf50: keep the world's file name,
+//				without its path, as GameSpy's map name
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::SetCurLevel( char const* pszWorldName )
+{
+	int nLen = strlen( pszWorldName );
+	if( nLen )
+	{
+		do
+		{
+			if( pszWorldName[nLen - 1] == '\\' ) break;
+		}
+		while( --nLen );
+
+		m_sGameSpyMapName = pszWorldName + nLen;
+	}
+	else
+	{
+		m_sGameSpyMapName = "";
+	}
+
+	CGameServerShell::SetCurLevel( pszWorldName );
 }
 
 // ----------------------------------------------------------------------- //
