@@ -552,13 +552,60 @@ HMODELANIM CAIHuman::GetDeathAni(LTBOOL bFront)
 
 	if ( GetAnimationContext()->IsPropSet(kAPG_Movement, kAP_Run) )
 	{
-		char* aszDeathRunsFront[] = { "DRun", "DRun2" };
-		char* aszDeathRunsBack[]  = { "DRunBack", "DRunBack2" };
+		// RETAIL: 0x1016cfc9, Tron's run deaths.
+		char* aszDeathRunsFront[] = { "DRun", "DRun2", "DRun3" };
+		char* aszDeathRunsBack[]  = { "DRunBack", "DRunBack", "DRunBack" };
 
 		int cDeathRuns = sizeof(aszDeathRunsBack)/sizeof(const char*);
 		char** pDeathRuns = (bFront ? aszDeathRunsFront : aszDeathRunsBack);
 
         if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)pDeathRuns[GetRandom(0, cDeathRuns-1)])) )
+		{
+			return hAni;
+		}
+	}
+
+	// RETAIL: 0x1016d02c, Tron's deaths for the prod and the energy claw.
+
+	if ( m_eDeathDamageType == DT_PROD )
+	{
+		if ( GetAnimationContext()->IsPropSet(kAPG_Posture, kAP_Crouch) )
+		{
+			char* aszDeaths[] = { "CrouchPDeath" };
+			int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+			char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+			if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+			{
+				return hAni;
+			}
+		}
+
+		char* aszDeaths[] = { "PDeath", "PDeath2", "PDeath3" };
+		int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+		char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+		if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+		{
+			return hAni;
+		}
+	}
+
+	if ( m_eDeathDamageType == DT_ENERGYCLAW )
+	{
+		if ( GetAnimationContext()->IsPropSet(kAPG_Posture, kAP_Crouch) )
+		{
+			char* aszDeaths[] = { "CrouchCDeath" };
+			int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+			char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+			if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
+			{
+				return hAni;
+			}
+		}
+
+		char* aszDeaths[] = { "CDeath", "CDeath2", "CDeath3" };
+		int cDeaths = sizeof(aszDeaths)/sizeof(const char*);
+		char* szDeath = aszDeaths[GetRandom(0, cDeaths-1)];
+		if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, szDeath)) )
 		{
 			return hAni;
 		}
@@ -580,7 +627,25 @@ HMODELANIM CAIHuman::GetDeathAni(LTBOOL bFront)
 		}
 	}
 
-	return CAI::GetDeathAni(bFront);
+	// RETAIL: 0x1016d1c1, Tron's head shots: a critical hit by DT_LOL.
+
+	if ( ( g_pModelButeMgr->GetSkeletonNodeFlags(GetModelSkeleton(), m_eModelNodeLastHit) & NODEFLAG_CRITICALHIT ) &&
+		( m_eDeathDamageType == DT_LOL ) )
+	{
+		char* aszHeadShotsFront[] = { "HeadShot", "HeadShot2", "HeadShot3" };
+		char* aszHeadShotsBack[]  = { "HeadShotBack", "HeadShotBack2", "HeadShotBack3" };
+
+		int cHeadShots = sizeof(aszHeadShotsBack)/sizeof(const char*);
+		char** pHeadShots = (bFront ? aszHeadShotsFront : aszHeadShotsBack);
+
+        if ( INVALID_MODEL_ANIM != (hAni = g_pLTServer->GetAnimIndex(m_hObject, pHeadShots[GetRandom(0, cHeadShots-1)])) )
+		{
+			return hAni;
+		}
+	}
+
+	// RETAIL: 0x1016d252, CCharacter's.
+	return CCharacter::GetDeathAni(bFront);
 }
 
 // ----------------------------------------------------------------------- //
