@@ -228,7 +228,6 @@ void PlayerVehicle::PostPropRead(ObjectCreateStruct *pStruct)
 	char* pRenderStyle1Bute	= LTNULL;
 	char* pRenderStyle2Bute	= LTNULL;
 	char* pRenderStyle3Bute = LTNULL;
-	char* pModelTranslucent = LTNULL;
 
 	switch (m_ePPhysicsModel)
 	{
@@ -241,7 +240,6 @@ void PlayerVehicle::PostPropRead(ObjectCreateStruct *pStruct)
 			pRenderStyle1Bute	= PLAYER_BUTE_SNOWMOBILERS;
 			pRenderStyle2Bute	= PLAYER_BUTE_SNOWMOBILERS2;
 			pRenderStyle3Bute	= PLAYER_BUTE_SNOWMOBILERS3;
-			pModelTranslucent	= PLAYER_BUTE_SNOWMOBILETRANSLUCENT;
 		}
 		break;
 
@@ -293,15 +291,7 @@ void PlayerVehicle::PostPropRead(ObjectCreateStruct *pStruct)
 			pStruct->m_RenderStyleNames[2], ARRAY_LEN(pStruct->m_RenderStyleNames[2]));
 	}
 
-	if(pModelTranslucent)
-	{
-		int nTranslucent = g_pServerButeMgr->GetPlayerAttributeInt(pModelTranslucent, 0);
-
-		if(nTranslucent)
-		{
-			pStruct->m_Flags2 |= FLAG2_FORCETRANSLUCENT;
-		}
-	}
+	// RETAIL: no translucency attribute in Tron (0x1017e644)
 }
 
 
