@@ -115,6 +115,14 @@ class CCharacterHitBox : public GameBase
 		// RETAIL: Tron's (+0x7d; saved after m_bCanBeSearched). Set by
 		// CAI::UpdateUserFlagCanActivate and Body::Init. Not yet identified
 		bool	m_bTronUnknown7D;
+
+		// RETAIL: Tron's copies of the model's OBBs and the skeleton node
+		// of each (+0x80..+0x88; InitOBBs, retail 0x10138a40). Names ours
+		uint32		m_nNumOBBs;
+		ModelOBB*	m_pOBBs;
+		ModelNode*	m_pOBBNodes;
+
+		void InitOBBs();
 		
 		void CreateNodeRadiusModels();
 		void RemoveNodeRadiusModels();

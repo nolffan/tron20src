@@ -89,6 +89,10 @@ class CRelationMgr : public ILTObjRefReceiver
 		virtual void OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj );
 
 	protected:
+		// RETAIL: Tron's CObjectRelationMgr::CommunicateMessage reads the
+		// list (Object.lto 0x1010b5cd)
+		friend class CObjectRelationMgr;
+
 		// Protected members
 		void LinkObjectRelationMgr(CObjectRelationMgr* pORM, HOBJECT hObject);
 		void UnlinkObjectRelationMgr(const CObjectRelationMgr* const pORM);

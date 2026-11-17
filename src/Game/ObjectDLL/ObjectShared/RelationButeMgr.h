@@ -248,6 +248,9 @@ namespace CommReqs
 		kCommReqs_SameRegion	= 0x00000002,
 		kCommReqs_Player		= 0x00000004,
 		kCommReqs_Collective	= 0x00000008,
+		// RETAIL: Tron's (Object.lto 0x1010b6b7): only to the sender. The
+		// name is ours
+		kCommReqs_SelfOnly		= 0x00000010,
 	};
 };
 

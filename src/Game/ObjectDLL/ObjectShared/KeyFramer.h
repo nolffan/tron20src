@@ -100,6 +100,10 @@ class KeyFramer : public GameBase
 		void		DeferCommand(const CParsedMsg &cMsg);
 
 		void		GoToKey(const char* pKeyName);
+		// RETAIL: Tron's (Object.lto 0x10119c40, 0x1011aa90): the RESETPATH
+		// message. The names are ours.
+		void		ResetToKey(const char* pKeyName);
+		void		ResetPath();
 		void		MoveToKey(const CParsedMsg &cMsg);
         KEYNODE*    FindKey(const char* pKeyName, KEYNODE* pTest=LTNULL, LTBOOL* pbAtOrBefore=LTNULL);
 

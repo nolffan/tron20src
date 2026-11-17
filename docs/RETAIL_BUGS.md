@@ -1099,6 +1099,17 @@ does not exist, the error message gets the character 0 as its "%s"
 argument.
 
 Not fixed yet: the modern build should look up the name.
+### The RESETPATH message of a keyframer does not use the rotation of the first key
+
+Object.lto 0x10119c40 (KeyFramer::ResetToKey, our name,
+ObjectShared/KeyFramer.cpp). The function copies the rotation of the first
+key into a local value. It does not use this value. For each object, it
+starts from the identity rotation, and then adds the offset of the object.
+Thus, when the keyframer has no target and does not align to the path, the
+objects go to the position of the first key with a wrong rotation.
+
+Not fixed yet: the modern build should start from the rotation of the key.
+
 ## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
 
 When the subroutine screen gets focus, it sets the build note count text

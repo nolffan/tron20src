@@ -2795,6 +2795,9 @@ void CGameServerShell::CheatDefault (CPlayerObj* pPlayer, uint32 nData)
 
 GameStartPoint* CGameServerShell::FindStartPoint(CPlayerObj* pPlayer)
 {
+	// RETAIL: Tron's (Object.lto 0x100e0e20): the start points of the game
+	// type, in random order; no teams, spawn points or last use times.
+
 	// We need at least one start point...
 
 	if( GameStartPoint::GetStartPointList().size() == 0 )
@@ -2802,189 +2805,81 @@ GameStartPoint* CGameServerShell::FindStartPoint(CPlayerObj* pPlayer)
         return LTNULL;
     }
 
-    // Build a list of unlocked start points...
+    // Build a list of unlocked start points of this game type...
 
-	GameStartPoint* pStartPt = LTNULL;
 	GameStartPoint::StartPointList lstValidStartPts;
-
-	bool bStartPointsOnly = pPlayer ? !pPlayer->UsedStartPoint() : true;
+	lstValidStartPts.reserve( GameStartPoint::GetStartPointList().size() );
 
 	GameStartPoint::StartPointList::const_iterator iter = GameStartPoint::GetStartPointList().begin();
 	while( iter != GameStartPoint::GetStartPointList().end() )
 	{
-		pStartPt = *iter;
-		if( !pStartPt->IsLocked() )
-		{
-			if( (bStartPointsOnly && pStartPt->IsStartPoint()) || (!bStartPointsOnly && pStartPt->IsSpawnPoint()) )
+		GameStartPoint* pStartPt = *iter;
+		if( pStartPt->GetGameType() == GetGameType() && !pStartPt->IsLocked() )
 		{
 			lstValidStartPts.push_back( pStartPt );
-		}
 		}
 
 		++iter;
 	}
 
-	// Sort the list based on last time used...
-
-	std::sort(lstValidStartPts.begin(),lstValidStartPts.end(),GameStartPointLesser() );
-
-    pStartPt = LTNULL;
-	int nCount = lstValidStartPts.size();
-
-	// Get the index into the valid list based on game type...
-
-	if( nCount > 1 )
+	if( lstValidStartPts.size() )
 	{
-		int nIndex = 0;
 		switch( GetGameType() )
 		{
 			case eGameTypeSingle:
 			{
-				nIndex = 0;
+				return lstValidStartPts[0];
 			}
-			break;
 
+			case eGameTypeSingleLightCycleCircuit:
+			case eGameTypeSingleLightCycleCustom:
 			case eGameTypeCooperative:
-            {
-				nIndex = nCount+1;
-				int nRetries = nCount;
-				LTBOOL bSafe = LTFALSE;
-				while (nRetries && !bSafe)
-				{
-					if (nIndex > nCount)
-					{
-						nIndex = GetRandom(0, nCount-1);
-					}
-					else
-					{
-						nIndex = (nIndex+1)%nCount;
-					}
-					
-					pStartPt = lstValidStartPts[ nIndex ];
-
-					LTVector testPos;
-					g_pLTServer->GetObjectPos(pStartPt->m_hObject, &testPos);
-					bSafe = !IsPositionOccupied(testPos,pPlayer);
-					nRetries--;
-				}
-            }
-			break;
-
-			case eGameTypeDeathmatch:
-            {
-
-				nIndex = GetRandom(0,1);
-				bool bSafe = false;
-				while (nIndex < nCount && !bSafe)
-				{
-
-					pStartPt = lstValidStartPts[ nIndex ];
-					LTVector testPos;
-					g_pLTServer->GetObjectPos(pStartPt->m_hObject, &testPos);
-					bSafe = !IsPositionOccupied(testPos,pPlayer);
-					if (!bSafe)
-					{
-						g_pLTServer->CPrint("CGameServerShell::FindStartPoint(): option %d occupied",nIndex);
-						nIndex++;
-					}
-
-				}
-				
-				if (!bSafe)
-					nIndex = 0;
-
-            }
-			break;
-
-			case eGameTypeTeamDeathmatch:
+			case eGameTypeDiscArena:
+			case eGameTypeDiscTournament:
+			case eGameTypeMultiplayerLightcycles:
 			{
-				// Try and get an available team start point...
-				
-				nIndex = 0;
-				bool bSafe = false;
+				std::random_shuffle( lstValidStartPts.begin(), lstValidStartPts.end() );
 
-				if( pPlayer )
+				GameStartPoint::StartPointList::iterator iterValid;
+				for( iterValid = lstValidStartPts.begin(); iterValid != lstValidStartPts.end(); ++iterValid )
 				{
-					while( nIndex < nCount && !bSafe )
+					LTVector vPos;
+					g_pLTServer->GetObjectPos( (*iterValid)->m_hObject, &vPos );
+
+					if( GetGameType() == eGameTypeMultiplayerLightcycles )
 					{
-						pStartPt = lstValidStartPts[ nIndex ];
-
-						LTVector vPos;
-						g_pLTServer->GetObjectPos( pStartPt->m_hObject, &vPos );
-
-						bSafe = !IsPositionOccupied( vPos, pPlayer ) && (pStartPt->GetTeamID() == pPlayer->GetTeamID());
-						if( !bSafe )
+						if( !(*iterValid)->IsInUse() )
 						{
-							++nIndex;
+							return *iterValid;
 						}
 					}
-					
-					
-					if( !bSafe )
+					else if( !IsPositionOccupied( vPos, pPlayer ))
 					{
-						// No available team start point so just get the first team start point...
-
-						nIndex = 0;
-						while( nIndex < nCount && !bSafe )
-						{
-							pStartPt = lstValidStartPts[ nIndex ];
-
-							bSafe = (pStartPt->GetTeamID() == pPlayer->GetTeamID());
-							if( !bSafe )
-							{
-								++nIndex;
-							}
-						}
+						return *iterValid;
 					}
 				}
+			}
+			// Fall through...
 
-				if( !bSafe )
-				{
-					g_pLTServer->CPrint( "No Team start point for team (%i)!", pPlayer ? pPlayer->GetTeamID() : INVALID_TEAM );
-					
-					nIndex = GetRandom(0,1);
-					bool bSafe = false;
-					while (nIndex < nCount && !bSafe)
-					{
-
-						pStartPt = lstValidStartPts[ nIndex ];
-						LTVector testPos;
-						g_pLTServer->GetObjectPos(pStartPt->m_hObject, &testPos);
-						bSafe = !IsPositionOccupied(testPos,pPlayer);
-						if (!bSafe)
-						{
-							g_pLTServer->CPrint("CGameServerShell::FindStartPoint(): option %d occupied",nIndex);
-							nIndex++;
-						}
-					}
-				
-					if (!bSafe)
-						nIndex = 0;
-				}
-            }
-			break;
-
-			default : break;
+			// RETAIL: deathmatch takes no start point of its own here
+			default :
+			{
+				g_pLTServer->CPrint( "Failed to find a valid start postion for gametype %s, using startpoint 0", GameTypeToString( GetGameType() ));
+				return lstValidStartPts[0];
+			}
 		}
-
-		pStartPt = lstValidStartPts[ nIndex ];
 	}
-	else
+
+	if( GetGameType() == eGameTypeMultiplayerLightcycles ||
+		GetGameType() == eGameTypeSingleLightCycleCustom ||
+		GetGameType() == eGameTypeSingleLightCycleCircuit )
 	{
-		// We know there is at least one valid start point.
-		
-		pStartPt = GameStartPoint::GetStartPointList()[ 0 ];
+		g_pLTServer->CPrint( "No valid start position types for gametype %s, using startpoint 0", GameTypeToString( GetGameType() ));
 	}
 
-	if (pStartPt)
-	{
-		pStartPt->SetLastUse(g_pLTServer->GetTime());
+	// We know there is at least one start point.
 
-		if( pPlayer )
-			pPlayer->SetUsedStartPoint( true );
-	}
-
-	return pStartPt;
+	return GameStartPoint::GetStartPointList()[ 0 ];
 }
 
 
@@ -4830,6 +4725,18 @@ void CGameServerShell::SetCurLevel( char const* pszWorldName )
 	// caching of the level specific files for this new level...
 	// (see the CacheLevelSpecificFiles() function)
 	m_bCachedLevelFiles = false;
+
+	// RETAIL: Tron's (Object.lto 0x100e372b): the model name ids of the level
+	// start from a hash of its name
+	uint32 nHash = 0;
+	char const* pszChar = pszWorldName;
+	while( *pszChar )
+	{
+		nHash = nHash * 31 + ( uint8 )*pszChar;
+		pszChar++;
+	}
+
+	g_pModelButeMgr->ResetModelNameIds( nHash );
 }
 
 // ----------------------------------------------------------------------- //

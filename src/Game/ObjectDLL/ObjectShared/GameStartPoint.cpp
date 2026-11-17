@@ -27,8 +27,8 @@ extern CGameServerShell* g_pGameServerShell;
 uint32 GameStartPoint::m_dwCounter = 0;
 
 #pragma force_active on
-// RETAIL: Tron's properties (0x1014f570): Build 51's game type, no team or
-// start/spawn flags
+// RETAIL: Tron's properties (Object.lto 0x1014f570): a game type, and no
+// team, start point or spawn point
 BEGIN_CLASS(GameStartPoint)
 	ADD_STRINGPROP_FLAG(GameType, "", PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(ModelTemplate, "", PF_STATICLIST)
@@ -169,17 +169,17 @@ LTBOOL GameStartPoint::ReadProp(ObjectCreateStruct *pData)
 {
 	GenericProp genProp;
 
-	// RETAIL: Tron's reads Build 51's game type (0x1014fbb6)
+	// RETAIL: Tron's (Object.lto 0x1014fbb6)
 
-    if (g_pLTServer->GetPropGeneric("GameType", &genProp) == LT_OK)
+	if (g_pLTServer->GetPropGeneric("GameType", &genProp) == LT_OK)
 	{
 		if (genProp.m_String[0])
 		{
-			for (int i=0; i < g_knNumGameTypes; i++)
+			for (int i = 0; i < g_knNumGameTypes; i++)
 			{
-				if (_stricmp(genProp.m_String, GameTypeToString((GameType)i)) == 0)
+				if (!_stricmp(genProp.m_String, GameTypeToString((GameType)i)))
 				{
-					m_eGameType = (GameType) i;
+					m_eGameType = (GameType)i;
 					break;
 				}
 			}
@@ -243,8 +243,6 @@ bool GameStartPoint::OnTrigger( HOBJECT hSender, const CParsedMsg &cMsg )
 	static CParsedMsg::CToken s_cTok_Lock( "LOCK" );
 	static CParsedMsg::CToken s_cTok_UnLock( "UNLOCK" );
 
-	// RETAIL: Tron's has only LOCK and UNLOCK (0x1014fd70)
-
 	if( cMsg.GetArg(0) == s_cTok_Lock )
 	{
 		m_bLocked = true;
@@ -273,13 +271,12 @@ LTRESULT CGameStartPointPlugin::PreHook_EditStringList(
 {
 	// See if we can handle the property...
 
-	// RETAIL: Tron's lists Build 51's game types (0x1014fe90)
+	// RETAIL: Tron's (Object.lto 0x1014fe9e)
 
-    if (_stricmp("GameType", szPropName) == 0)
+	if (_stricmp("GameType", szPropName) == 0)
 	{
-		for (int i=0; i < g_knNumGameTypes; i++)
+		for (int i = 0; i < g_knNumGameTypes; i++)
 		{
-			_ASSERT(cMaxStrings > (*pcStrings) + 1);
 			if (cMaxStrings > (*pcStrings) + 1)
 			{
 				strcpy(aszStrings[(*pcStrings)++], GameTypeToString((GameType)i));

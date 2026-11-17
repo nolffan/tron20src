@@ -115,7 +115,13 @@ LTRESULT CScannerPlugin::PreHook_PropChanged( const char *szObjName,
 		}
 	}
 
-	return LT_UNSUPPORTED;
+	// RETAIL: Tron's asks the prop plugin again (Object.lto 0x100ecd73)
+	return CPropTypePlugin::PreHook_PropChanged( szObjName,
+										  szPropName,
+										  nPropType,
+										  gpPropValue,
+										  pInterface,
+										  szModifiers );
 }
 
 // Filter functions

@@ -44,17 +44,8 @@ class GameStartPoint : public GameBase
 		typedef std::vector< GameStartPoint* > StartPointList;
 		static StartPointList const& GetStartPointList() { return m_lstStartPoints; }
 
-		// PORT: NOLF2's start point choice (CGameServerShell::FindStartPoint)
-		// stands in and asks these; Tron's GameStartPoint has no last use time,
-		// team or start/spawn flags (retail's object ends at +0x60, its
-		// constructor 0x1014f990), so these give NOLF2's defaults
-		float		GetLastUse()		const { return 0.0f; }
-		void		SetLastUse(float fLastUse) { }
-
-		uint8		GetTeamID()			const { return INVALID_TEAM; }
-
-		bool		IsStartPoint()		const { return true; }
-		bool		IsSpawnPoint()		const { return true; }
+		// RETAIL: Tron's (FindStartPoint, Object.lto 0x100e0f18)
+		GameType	GetGameType()		const { return m_eGameType; }
 
 		// RETAIL: Tron's: a player respawned at it (retail CPlayerObj::Respawn
 		// sets it, 0x1007dc92; the server shell's ResetStartPoints, 0x100e46f0,
@@ -70,8 +61,7 @@ class GameStartPoint : public GameBase
 	private :
 
 		// RETAIL: Tron's members at retail's offsets (its constructor,
-		// 0x1014f990, and destructor, 0x1014fa00; Build 51's order). The
-		// object is 0x60 bytes
+		// 0x1014f990, and destructor, 0x1014fa00; Build 51's order)
 		GameType	m_eGameType;			// +0x38 Single/Multiplayer modes
 		ModelId		m_eModelId;				// +0x3c Template model
         HSTRING     m_hstrName;             // +0x40 Name of start point
@@ -91,18 +81,6 @@ class GameStartPoint : public GameBase
         LTBOOL ReadProp(ObjectCreateStruct *pStruct);
 
 		static StartPointList m_lstStartPoints;
-
-};
-
-
-class GameStartPointLesser
-{
-public:
-	
-	bool operator()(const GameStartPoint* x, const GameStartPoint* y) const
-	{
-		return (x->GetLastUse() < y->GetLastUse() );
-	}
 };
 
 
