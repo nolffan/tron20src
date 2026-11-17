@@ -11,19 +11,76 @@
 #include "AINodeExitLevelByRezOut.h"
 #include "AIGoalButeMgr.h"
 #include "CommandMgr.h"
+#include "AIButeMgr.h"
+#include "WeaponMgr.h"
+#include "SortedStringList.h"
 
 LINKFROM_MODULE( AINodeExitLevelByRezOut );
 
-// RETAIL: the props (0x1026e090): SmartObject has a static list.
-// PORT: retail ends the class with a plugin (AINodeExitLevelByRezOutPlugin,
-// vtable 0x102a1014; PreHook_EditStringList 0x1026e190 lists the smart
-// objects through a sorted string list helper at 0x10047230..0x10047980
-// that is not written yet), so ours has no plugin.
+// RETAIL: the props (0x1026e090): SmartObject has a static list, which
+// the plugin fills (AINodeExitLevelByRezOutPlugin, 0x1026e190).
 
 BEGIN_CLASS(AINodeExitLevelByRezOut)
 	ADD_STRINGPROP_FLAG(SmartObject,			"None",			0|PF_STATICLIST)
 	ADD_STRINGPROP_FLAG(OnUseCmd,				"",				0)
-END_CLASS_DEFAULT(AINodeExitLevelByRezOut, AINode, NULL, NULL)
+END_CLASS_DEFAULT_FLAGS_PLUGIN(AINodeExitLevelByRezOut, AINode, NULL, NULL, 0, AINodeExitLevelByRezOutPlugin)
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	AINodeExitLevelByRezOutPlugin::PreHook_EditStringList
+//
+//	PURPOSE:	RETAIL: 0x1026e190: the smart objects that are not hidden,
+//				sorted.
+//
+// ----------------------------------------------------------------------- //
+
+extern CAIButeMgr s_AIButeMgr;
+extern CAIGoalButeMgr s_AIGoalButeMgr;
+
+LTRESULT AINodeExitLevelByRezOutPlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
+{
+	if ( !g_pWeaponMgr )
+	{
+		CWeaponMgrPlugin WeaponMgrPlugin;
+		WeaponMgrPlugin.PreHook_EditStringList(szRezPath, szPropName, aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
+	}
+
+	if ( !g_pAIButeMgr )
+	{
+		char szFile[256];
+		sprintf(szFile, "%s\\Attributes\\AIButes.txt", szRezPath);
+		s_AIButeMgr.SetInRezFile(LTFALSE);
+		s_AIButeMgr.Init(szFile);
+	}
+
+	if ( !g_pAIGoalButeMgr )
+	{
+		char szFile[256];
+		sprintf(szFile, "%s\\Attributes\\AIGoals.txt", szRezPath);
+		s_AIGoalButeMgr.SetInRezFile(LTFALSE);
+		s_AIGoalButeMgr.Init(szFile);
+	}
+
+	if ( !_strcmpi("SmartObject", szPropName) )
+	{
+		CSortedStringList lstNames( cMaxStrings, cMaxStringLength );
+
+		uint32 cSmartObjects = s_AIGoalButeMgr.GetNumSmartObjectTemplates();
+		for(uint32 iSmartObject=0; iSmartObject < cSmartObjects; ++iSmartObject)
+		{
+			if( !s_AIGoalButeMgr.GetSmartObjectTemplate(iSmartObject)->bHidden )
+			{
+				lstNames.AddString( s_AIGoalButeMgr.GetSmartObjectTemplate(iSmartObject)->szName );
+			}
+		}
+
+		lstNames.PopulateStringList( aszStrings, pcStrings );
+
+		return LT_OK;
+	}
+
+	return LT_UNSUPPORTED;
+}
 
 CMDMGR_BEGIN_REGISTER_CLASS(AINodeExitLevelByRezOut)
 CMDMGR_END_REGISTER_CLASS(AINodeExitLevelByRezOut, AINode)
