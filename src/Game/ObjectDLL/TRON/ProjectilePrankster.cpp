@@ -103,14 +103,14 @@ LTBOOL CProjectilePrankster::Setup(CWeapon const* pWeapon, WeaponFireInfo const&
 {
 	LTBOOL bRet = CTronProjectile::Setup(pWeapon, info);
 
-	if (m_bTronUnknownFF)
+	if (m_aModifiers[7].bEnabled)
 	{
-		m_fLifeTime = m_fTronUnknown118[0x1c];
+		m_fLifeTime = m_ModifierData.m7.fLifeTime;
 	}
 
 	// RETAIL: the class data is looked up by the name at CProjectile 0x108
 	// when the projectile has ammo (0x1003f611); it is not checked afterwards.
-	PRANKSTERCLASSDATA *pClassData = !m_pAmmoData ? LTNULL : dynamic_cast<PRANKSTERCLASSDATA*>(g_pFXButeMgr->GetProjectileClassData((char*)&m_fTronUnknown108));
+	PRANKSTERCLASSDATA *pClassData = !m_pAmmoData ? LTNULL : dynamic_cast<PRANKSTERCLASSDATA*>(g_pFXButeMgr->GetProjectileClassData(m_ModifierData.m7.szClassData));
 
 	m_fImplodeVelocity			= GetRandom(-pClassData->fVelocityRange, pClassData->fVelocityRange) + pClassData->fBaseVelocity;
 	m_fDeathRadius				= pClassData->fDeathRadius;
@@ -179,7 +179,7 @@ uint32 CProjectilePrankster::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *p
 	pMsg->Readuint32();
 	if (pMsg->Readuint8() == PRANKSTER_MPROJ_DETONATE)
 	{
-		Detonate(LTNULL, false);
+		Detonate(LTNULL, LTNULL);
 	}
 
 	return CTronProjectile::ObjectMessageFn(hSender, pMsg);
@@ -195,7 +195,7 @@ uint32 CProjectilePrankster::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *p
 
 void CProjectilePrankster::TronUnknownVirtual30(HOBJECT hObj)
 {
-	if (m_bSetup && !m_bObjectRemoved && !m_nTeamId && hObj && !m_bDetonated)
+	if (m_bSetup && !m_bObjectRemoved && !m_bProcessInvImpact && hObj && !m_bDetonated)
 	{
 		CTronProjectile::TronUnknownVirtual30(hObj);
 	}

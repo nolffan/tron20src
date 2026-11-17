@@ -42,7 +42,11 @@ struct IHitBoxUser
 		virtual LTFLOAT ComputeDamageModifier(ModelNode eModelNode) = 0;
 		virtual float GetNodeRadius( ModelSkeleton, ModelNode ) = 0;
 		virtual void UpdateClientHitBox() = 0;
-		virtual CAnimator*	GetAnimator() { return LTNULL; }
+		// RETAIL: slot 8 returns the user's hit box object (CCharacter 0x10062900,
+		// Body 0x101590e0, OccludingArmor 0x1013c3d0, CThorne 0x10095c70);
+		// CProjectile::HandleTouch calls it (0x1011feda). NOLF2 has GetAnimator
+		// here. The name is ours
+		virtual HOBJECT	GetHitBoxObject() const = 0;
 
 		// RETAIL: Tron's last two slots: one argument, empty in CCharacter and
 		// Body; and the user's own object (both return their m_hObject, retail

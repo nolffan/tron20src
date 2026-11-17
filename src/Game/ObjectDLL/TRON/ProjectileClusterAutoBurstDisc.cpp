@@ -85,9 +85,8 @@ CClusterAutoBurstDisc::CClusterAutoBurstDisc() :
 	// about it.
 	if ( IsAI(HackedInfo.hFiredFrom) )
 	{
-		HackedInfo.fHorizontalSpread	= DegreesToRadians(20.0f);
-		HackedInfo.fHorizontalPerturb	= DegreesToRadians(20.0f);
-		HackedInfo.fVerticalSpread		= DegreesToRadians(10.0f);
+		// PORT: Tron's WeaponFireInfo has no spread members; CClusterDisc
+		// uses fixed spreads (see there)
 		HackedInfo.nNumberOfShards		= 10;
 	}
 

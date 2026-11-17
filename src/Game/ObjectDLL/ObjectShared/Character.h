@@ -382,7 +382,8 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// its template's "AllowDiskSpike". Name ours
 		virtual LTBOOL	AllowDiskSpike() { return LTFALSE; }
 
-		virtual CAnimator* GetAnimator() { return m_pAnimator; }
+		// RETAIL: IHitBoxUser's slot 8 (retail 0x10062900)
+		virtual HOBJECT GetHitBoxObject() const { return m_hHitBox; }
 		// RETAIL: IHitBoxUser's (retail 0x10062940)
 		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 

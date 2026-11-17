@@ -2654,13 +2654,8 @@ bool CPlayerObj::UpdateDamageAnimations()
 			return true;
 		}
 	
-		// The rest just use a generic hurt animation while at rest...
-		static DamageFlags nHurtDamageFlags = GetDamageFlagsWithHurtAnim( );
-		if( m_nDamageFlags & nHurtDamageFlags )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Hurt );
-			return true;
-		}
+		// PORT: NOLF2 1.3's generic hurt animation needs the damage types'
+		// hurt animation flag; Tron's DTINFO has none (Shared/DamageTypes.h)
 	}
 
 	return false;
@@ -4834,18 +4829,13 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 	if( !pInfo )
 		return NULL;
 
-	if( pInfo->saPlayerDamageSounds.size( ) == 0 )
+	// PORT: Tron's DTINFO has no damage sounds (Shared/DamageTypes.h): the
+	// pain sounds are NOLF2's default ones
 	{
 		char const* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
 
 		int nSize = ARRAY_LEN(PainSounds) - 1;
 		strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
-	}
-	else
-	{
-		uint32 nRandSelection = GetRandom( 0, pInfo->saPlayerDamageSounds.size( ) - 1 );
-		char const* pszDamageSound = pInfo->saPlayerDamageSounds[nRandSelection].c_str( );
-		strcat( s_FileBuffer, pszDamageSound );
 	}
 
 	return s_FileBuffer;
@@ -6451,7 +6441,9 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	weaponFireInfo.fPerturbU       = static_cast< LTFLOAT >( cTemp ) / 255.0f;
 
 	// get the timestamp when the shot was fired
-	weaponFireInfo.nFireTimestamp = pMsg->Readuint32();
+	// PORT: Tron's fire time is a float (WeaponFireInfo +0x4c); the type on
+	// the wire is not yet checked against retail
+	weaponFireInfo.fFireTime = pMsg->Readfloat();
 
 	// extract the extra (weapon specific) data from the message
 	GetExtraFireMessageInfo( nWeaponType, pMsg, &weaponFireInfo );

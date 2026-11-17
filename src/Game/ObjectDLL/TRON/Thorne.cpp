@@ -795,7 +795,7 @@ void CThorne::Fire()
 	weaponFireInfo.vFlashPos	= vFirePos;
 	weaponFireInfo.hTestObj		= m_hTargetObject;
 	weaponFireInfo.nSeed		= 100;
-	weaponFireInfo.nFireTimestamp = (uint32)g_pLTServer->GetTime();
+	weaponFireInfo.fFireTime = g_pLTServer->GetTime();
 
 	pWeapon->Fire(weaponFireInfo);
 }

@@ -62,7 +62,7 @@ CWeapon::CWeapon()
 
 	m_nCurTracer		= 0;
 
-	m_nLastTimestamp	= 0;
+	m_fLastTimestamp	= 0.0f;
 	m_bFirstSelection	= LTTRUE;
 
 	m_nHandAni			= INVALID_ANI;
@@ -203,7 +203,7 @@ WeaponState CWeapon::UpdateWeapon(WeaponFireInfo & fireInfo, LTBOOL bFire)
 		fireInfo.nSeed = GetRandom(2,255);
 		// Put in a timestamp since the AI's use this and don't send us a timestamp
 		m_fLastFireTime = g_pLTServer->GetTime();
-		fireInfo.nFireTimestamp = (uint32)(m_fLastFireTime * 1000.0f);
+		fireInfo.fFireTime = m_fLastFireTime;
 		eRet = Fire(fireInfo);
 	}
 
@@ -236,7 +236,7 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 	// WEAPON's fire delay is in seconds; 0x10157540)
 
 	// Remember when this shot went off..
-	m_nLastTimestamp = info.nFireTimestamp;
+	m_fLastTimestamp = info.fFireTime;
 
 	WeaponState eRet = W_IDLE;
 

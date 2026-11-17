@@ -1022,7 +1022,7 @@ void CDisc::EnterReturnMode( bool bImpact )
 //
 // ----------------------------------------------------------------------- //
 
-void CDisc::Detonate( HOBJECT hObj, bool bTronUnknown )
+void CDisc::Detonate( HOBJECT hObj, CollisionInfo* pCollInfo )
 {
 //	HandleImpact( hObj );
 }

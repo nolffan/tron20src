@@ -197,7 +197,7 @@ void CTronProjectile::UpdateEnergyDrain()
 
 void CTronProjectile::HandleOutOfEnergy()
 {
-	Detonate(LTNULL, false);
+	Detonate(LTNULL, LTNULL);
 }
 
 // ----------------------------------------------------------------------- //

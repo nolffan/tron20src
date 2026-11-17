@@ -132,7 +132,7 @@ class CWeapon
 
 		int          m_nCurTracer;			// Current tracer count
 
-		uint32       m_nLastTimestamp;		// The previous time of firing
+		LTFLOAT      m_fLastTimestamp;		// The previous time of firing (RETAIL: a float in Tron, 0x101575b8)
 		
 		LTBOOL		 m_bFirstSelection;	// Is this the first time we are selecting this weapon?
 

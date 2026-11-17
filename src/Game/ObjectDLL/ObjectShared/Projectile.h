@@ -21,6 +21,7 @@
 #include "ModelButeMgr.h"
 #include "LTObjRef.h"
 #include "ImpactType.h"
+#include "WeaponFireInfo.h"
 
 LINKTO_MODULE( Projectile );
 
@@ -30,14 +31,49 @@ class CWeapon;
 
 class RelationData;
 
+// RETAIL: an object a projectile has damaged, and when (the list keeps a
+// projectile from damaging an object twice: 0x10121ef0, 0x101220a0,
+// 0x10122020).  The names are ours
+struct ProjectileDamagedObject
+{
+	ProjectileDamagedObject( HOBJECT hObj, LTFLOAT fDamageTime )
+		: hObject( hObj ), fTime( fDamageTime ) {}
+
+	LTObjRef	hObject;
+	LTFLOAT		fTime;
+};
+
+typedef std::list<ProjectileDamagedObject> ProjectileDamagedObjectList;
+
+// RETAIL: a touch the new collision code keeps until the projectile's next
+// update (0x1011f940 adds one, 0x1011f6f0 finds the nearest, the update
+// slot 32 handles them).  0x84 bytes, saved whole.  The names are ours
+struct ProjectilePendingTouch
+{
+	ProjectilePendingTouch() {}
+	ProjectilePendingTouch( HOBJECT hObj, IntersectInfo const& iTouchInfo, LTFLOAT fDamage,
+		LTFLOAT fDist, LTVector const& vPos, LTVector const& vVel, CollisionInfo const& cInfo )
+		: hObject( hObj ), iInfo( iTouchInfo ), fInstDamage( fDamage ), fDistSqr( fDist ),
+		  vLastPos( vPos ), vLastVel( vVel ), collInfo( cInfo ) {}
+
+	LTObjRef		hObject;			// 0x00
+	IntersectInfo	iInfo;				// 0x10
+	LTFLOAT			fInstDamage;		// 0x3c
+	LTFLOAT			fDistSqr;			// 0x40 from the last position
+	LTVector		vLastPos;			// 0x44
+	LTVector		vLastVel;			// 0x50
+	CollisionInfo	collInfo;			// 0x5c
+};
+
+typedef std::list<ProjectilePendingTouch> ProjectilePendingTouchList;
+
 // RETAIL: Tron's CProjectile differs a lot from NOLF2's.  Its vtable has 46
 // slots (vtable 0x10298290; NOLF2's has 39), Save/Load are not virtual
 // (EngineMessageFn 0x1011e730 calls them directly: 0x10124320, 0x101246c0),
 // its members are bools where NOLF2 has LTBOOLs, and it is 0x910 bytes
 // (constructor 0x1011e3c0).  The order of the virtuals below is retail's;
 // the names of the new ones are ours.  The members are at retail's offsets
-// (the constructor and Setup 0x1011e9e0 show them); where a NOLF2 member's
-// place is not proven it is put at the most likely free one (PORT: noted).
+// (the constructor, Setup 0x1011e9e0 and Save 0x10124320 show them).
 class CProjectile : public GameBase
 {
 	// RETAIL: PowerArmor::HandleProjectileImpact reads and sets its damage
@@ -62,17 +98,23 @@ class CProjectile : public GameBase
 		void			ScaleTronDamage105(LTFLOAT* pfDamage);
 
 		HOBJECT          GetFiredFrom() const   { return m_hFiredFrom; }
+
+		// PORT: Tron's CProjectile keeps no team id; NOLF2's projectile types
+		// (ProjectileTypes.cpp, where these are) still use one, so these
+		// take it from the shooter
+		uint8			GetTeamId() const;
+		bool			IsMyTeam( HOBJECT hPlayer ) const;
 		const LTVector&  GetFirePos() const     { return m_vFirePos; }
 		const LTVector&  GetFireDir() const     { return m_vDir; }
 
-		void			SetTeamId( uint8 nTeamId ) { m_nTeamId = nTeamId; }
-		uint8			GetTeamId( ) const { return m_nTeamId; }
-		bool			IsMyTeam( HOBJECT hPlayer ) const;
-
 		// RETAIL: slot 26 (0x10033c80, folded): returns the bool at 0x6a.
-		virtual bool	TronUnknownVirtual26() const { return m_bCanHitSameProjectileKind; }
+		virtual bool	TronUnknownVirtual26() const { return m_bCanTouchFiredFromObj; }
 
 		virtual LTBOOL	CreateDangerStimulus(HOBJECT hFiredFrom) { return LTFALSE; }	// slot 27
+
+		// RETAIL: the new collision code's intersect filter (0x1011edf0; the
+		// filter function 0x1011e240 calls it).  The name is ours
+		bool			TouchFilter(HOBJECT hObj);
 
 	protected :
 
@@ -87,13 +129,16 @@ class CProjectile : public GameBase
 		// handles any time a projectile touches something
 		virtual void HandleTouch(HOBJECT hObj);		// slot 29 (0x1011fe60)
 
-		// RETAIL: slots 30..33 (0x1011fd10, 0x1011f380, 0x1011f760,
-		// 0x1011f820): not yet identified.  Slot 30 is called on touch
-		// instead of HandleTouch in one case (0x1011e842).
+		// RETAIL: slots 30..33 are Tron's new collision code (the cvar
+		// "ProjectileNewCollision" chooses it).  Slot 30 (0x1011fd10) keeps
+		// a touch for the next update, slot 31 (0x1011f380) is
+		// CanCharacterHitCharacter, slot 32 (0x1011f760) handles the kept
+		// touches in the update, slot 33 (0x1011f820) handles one of them.
+		// The names are ours.
 		virtual void TronUnknownVirtual30(HOBJECT hObj);
-		virtual void TronUnknownVirtual31(void *pTronUnknown1, void *pTronUnknown2);
+		virtual bool TronUnknownVirtual31(HOBJECT hAttacker, HOBJECT hVictim);
 		virtual void TronUnknownVirtual32();
-		virtual void TronUnknownVirtual33(void *pTronUnknown);
+		virtual bool TronUnknownVirtual33(ProjectilePendingTouch *pTouch);
 
 		virtual void AddImpact( HOBJECT hObj,				// slot 34
 		                        const LTVector &vFirePos, 
@@ -112,11 +157,12 @@ class CProjectile : public GameBase
 		virtual void HandleImpact(HOBJECT hObj);		// slot 38
 		virtual void ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj);	// slot 39
 
-		// RETAIL: slots 40..42 (0x10123dc0, 0x10123f80, 0x10124170): three
-		// similar functions of two arguments that build a damage message.
-		virtual void TronUnknownVirtual40(HOBJECT hTronUnknown1, void *pTronUnknown2);
-		virtual void TronUnknownVirtual41(HOBJECT hTronUnknown1, void *pTronUnknown2);
-		virtual void TronUnknownVirtual42(HOBJECT hTronUnknown1, void *pTronUnknown2);
+		// RETAIL: slots 40..42 (0x10123dc0, 0x10123f80, 0x10124170): the
+		// instant, the progressive and the modifier 9 damage that
+		// ImpactDamageObject does.  The names are ours.
+		virtual void TronUnknownVirtual40(HOBJECT hDamager, HOBJECT hObj);
+		virtual void TronUnknownVirtual41(HOBJECT hDamager, HOBJECT hObj);
+		virtual void TronUnknownVirtual42(HOBJECT hDamager, HOBJECT hObj);
 
 		virtual void HandleTouchSky(HOBJECT hObj);		// slot 43
 
@@ -124,9 +170,10 @@ class CProjectile : public GameBase
 				void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
 
 		virtual LTBOOL CanSetLastFireInfo() { return LTTRUE; }	// slot 44
-		// RETAIL: slot 45 (0x10120750) takes a second argument (HandleImpact
-		// 0x10120730 passes 0).  Its name is ours.
-		virtual void Detonate(HOBJECT hObj, bool bTronUnknown = false);
+		// RETAIL: slot 45 (0x10120750) takes the collision to use (the kept
+		// touch's, 0x1011f923; HandleImpact 0x10120730 passes none, and
+		// Detonate then asks the engine for the last one).
+		virtual void Detonate(HOBJECT hObj, CollisionInfo* pCollInfo = LTNULL);
 
 		// RETAIL: Tron moved these from CDisc to here (0x10123a80, 0x10123b90)
 		// handles everything necessary to send request to the owner
@@ -134,8 +181,27 @@ class CProjectile : public GameBase
 		void	RequestStartSendingMessages();
 		void	RequestStopSendingMessages();
 
-		// Check if we got deflected.
-		bool	Deflect( HOBJECT hTarget, const LTVector &vFirePos, const LTVector &vImpactPos, const LTVector &vNormal );
+		// RETAIL: Tron's helpers (the names are ours)
+		bool	IsIgnoringProjectiles(HOBJECT hObj);					// 0x1011f310
+		bool	IsFiredFromHitBox(HOBJECT hObj);						// 0x1011f3a0
+		bool	IsSameKindFromSameShooter(HOBJECT hObj);				// 0x1011f400
+		bool	IsNonSolidTouch(HOBJECT hObj);							// 0x1011f470
+		bool	GetHitBoxImpact(HOBJECT hObj, HOBJECT *phObj, IntersectInfo *pInfo);	// 0x1011f4e0
+		bool	TestTouchSegment(HOBJECT hObj, IntersectInfo *pInfo);	// 0x1011f5f0
+		ProjectilePendingTouch*	GetNearestPendingTouch(LTFLOAT *pfDistSqr);	// 0x1011f6f0
+		bool	AddPendingTouch(HOBJECT hObj, IntersectInfo *pInfo);	// 0x1011f940
+		void	LoadPendingTouches(ILTMessage_Read *pMsg);				// 0x1011fb50
+		void	SavePendingTouches(ILTMessage_Write *pMsg);				// 0x1011fca0
+		void	CopyModifiers(WeaponFireInfo const& info);				// 0x10121950
+		void	LoadModifiers(ILTMessage_Read *pMsg);					// 0x10121b00
+		void	SaveModifiers(ILTMessage_Write *pMsg);					// 0x10121c70
+		void	AddDamagedObject(HOBJECT hObj);							// 0x10121ef0
+		void	UpdateDamagedObjects();									// 0x10122020
+		bool	IsDamagedObject(HOBJECT hObj);							// 0x101220a0
+		void	LoadDamagedObjects(ILTMessage_Read *pMsg);				// 0x10122120
+		void	SaveDamagedObjects(ILTMessage_Write *pMsg);				// 0x10122240
+		void	UpdatePendingPos();										// 0x101222b0
+		bool	DoVectorTrace(LTVector vFrom, LTVector vTo);			// 0x101222e0
 
 		LTVector        m_vFlashPos;            // 0x38 Where the fired from special fx should be created
 		LTVector        m_vFirePos;             // 0x44 Where were we fired from
@@ -153,10 +219,10 @@ class CProjectile : public GameBase
 		int             m_nAmmoId;              // 0x64 Type of ammo
 
 		bool			m_bSetup;				// 0x68 Has this projectile been setup properly?
-		bool			m_bRemoveFromWorld;     // 0x69 Should we be removed?
 
 		// touch considerations
-		bool			m_bCanHitSameProjectileKind;  // 0x6a PORT: place guessed
+		bool			m_bCanHitSameProjectileKind;	// 0x69
+		bool			m_bCanTouchFiredFromObj;		// 0x6a
 
 		// damage
 		DamageType      m_eInstDamageType;      // 0x6c Instant damage type - DT_XXX
@@ -164,11 +230,13 @@ class CProjectile : public GameBase
 		LTFLOAT         m_fInstDamage;          // 0x74 How much instant damage do we do
 		LTFLOAT         m_fProgDamage;          // 0x78 How much progressive damage do we do
 
-		bool			m_bCanTouchFiredFromObj;	// 0x7c PORT: place guessed
-		uint32			m_xTronUnknown80;
+		// RETAIL: modifier 9's damage (type 0x22: TronUnknownVirtual42
+		// 0x10124170), its amount and its duration (Setup 0x1011ec90)
+		bool			m_bTronUnknown7C;		// 0x7c
+		LTFLOAT			m_fTronUnknown80;		// 0x80
+		LTFLOAT			m_fTronUnknown84;		// 0x84
 
-		LTFLOAT         m_fRadius;              // 0x84 PORT: place guessed
-		LTFLOAT         m_fStartTime;           // 0x88 PORT: place guessed
+		LTFLOAT         m_fStartTime;           // 0x88
 		LTFLOAT         m_fLifeTime;            // 0x8c How long do we stay around
 		LTFLOAT         m_fVelocity;            // 0x90 What is our velocity
 		LTFLOAT         m_fMass;                // 0x94 What is our mass
@@ -176,27 +244,26 @@ class CProjectile : public GameBase
 
 		LTObjRef		m_hFiredFrom;			// 0x9c Who fired us
 
-		uint32			m_xTronUnknownAC;		// RETAIL: set from the weapon in Setup
-		LTFLOAT			m_xTronUnknownB0;		// RETAIL: a time (CTronProjectile 0x10068e33)
-
-		uint8			m_nTeamId;				// 0xb4 PORT: place guessed
-
 		// for future optimization?
-		LTBOOL          m_bNumCallsToAddImpact;	// 0xb8 PORT: place guessed
+		LTBOOL          m_bNumCallsToAddImpact;	// 0xac
 
+		LTFLOAT			m_xTronUnknownB0;		// 0xb0 RETAIL: the time of the last update (0x1011f29b)
 
 		// These are used to move through invisible brushes...
 
-		LTBOOL          m_bProcessInvImpact;	// 0xbc PORT: place guessed
-		LTVector        m_vInvisVel;			// 0xc0 PORT: place guessed
-		LTVector        m_vInvisNewPos;			// 0xcc PORT: place guessed
+		bool			m_bProcessInvImpact;	// 0xb4
+		LTVector        m_vInvisVel;			// 0xb8
+		LTVector        m_vInvisNewPos;			// 0xc4
 
-		uint32			m_xTronUnknownD8;
-		uint32			m_xTronUnknownDC;
-		uint32			m_xTronUnknownE0;
+		LTVector		m_vTronUnknownD0;		// 0xd0 RETAIL: where Detonate was (0x10120dc3)
+
+		// RETAIL: Tron copies the ricochet limits from the projectile FX
+		// (Setup 0x1011ec6f)
+		LTFLOAT			m_fMaxRicochetAngle;	// 0xdc
+		int				m_nMaxRicochets;		// 0xe0
 
 		// the number of times this projectile has ricocheted
-		int             m_nTotalRicochets;		// 0xe4 PORT: place guessed
+		int             m_nTotalRicochets;		// 0xe4
 
 		// MID_TOUCHNOTIFY can come several times a frame, this is one
 		// way to detect this and avoid doing calculations multiple times
@@ -206,50 +273,28 @@ class CProjectile : public GameBase
 		// keep track if we've requested messages or not
 		// (to cut down no message traffic)
 		bool			m_bReceivingMessages;	// 0xf0 RETAIL: Tron moved it here from CDisc
-		// RETAIL: 0xc4 bytes the constructor does not set: eleven pairs of
-		// flags (0xf1..0x106; the first of each pair enables a modifier the
-		// damage scales read: 0x10121df0, 0x10121ea0, 0x10121ec0) and their
-		// values (0x108..0x1b4)
-		bool			m_bTronUnknownF1;
-		bool			m_bTronUnknownF2;
-		bool			m_bTronUnknownF3;
-		bool			m_bTronUnknownF4;
-		bool			m_bTronUnknownF5;
-		bool			m_bTronUnknownF6;
-		bool			m_bTronUnknownF7;
-		bool			m_bTronUnknownF8;
-		bool			m_bTronUnknownF9;		// RETAIL: CProjectileBallLauncher::Setup 0x10035594
-		bool			m_bTronUnknownFA;
-		bool			m_bTronUnknownFB;		// RETAIL: CProjectileDrunkenDims::Setup 0x1003d914
-		bool			m_bTronUnknownFC;
-		bool			m_bTronUnknownFD;
-		bool			m_bTronUnknownFE;
-		bool			m_bTronUnknownFF;
-		bool			m_bTronUnknown100;
-		bool			m_bTronUnknown101;
-		bool			m_bTronUnknown102;
-		bool			m_bTronUnknown103;		// RETAIL: tested in Setup (0x1011ec90)
-		bool			m_bTronUnknown104;
-		bool			m_bTronUnknown105;
-		bool			m_bTronUnknown106;
-		LTFLOAT			m_fTronUnknown108;		// RETAIL: a scale when 0xf9 is set (0x1003559e)
-		LTFLOAT			m_fTronUnknown10C;
-		LTFLOAT			m_fTronUnknown110;
-		LTFLOAT			m_fTronUnknown114;
-		LTFLOAT			m_fTronUnknown118[0x1d];
-		LTFLOAT			m_fTronUnknown18C;
-		LTFLOAT			m_fTronUnknown190;
-		LTFLOAT			m_fTronUnknown194[2];
-		LTFLOAT			m_fTronUnknown19C;
-		LTFLOAT			m_fTronUnknown1A0[4];
-		LTFLOAT			m_fTronUnknown1B0;
-		LTFLOAT			m_fTronUnknown1B4;
-		uint32			m_xTronUnknown1B8;		// RETAIL: an STL list (node 0x1c)
-		uint32			m_xTronUnknown1BC;		// RETAIL: an STL list (node 0x8c)
-		bool			m_xTronUnknown1C0;		// RETAIL: tested on touch (0x1011e82c)
-		bool			m_xTronUnknown1C1;
-		bool			m_xTronUnknown1C2;
-		uint32			m_xTronUnknown1C4[6];
+
+		// RETAIL: the weapon modifiers, copied from the fire info (see
+		// WeaponFireInfo.h); the constructor does not set them
+		TronWeaponModifierFlags	m_aModifiers[TRON_NUM_WEAPON_MODIFIERS];	// 0xf1
+		TronWeaponModifierData	m_ModifierData;		// 0x108
+		TronWeaponModifier8Data	m_Modifier8;		// 0x19c
+		LTVector				m_vModifier9;		// 0x1a4
+		TronWeaponModifier8Data	m_Modifier10;		// 0x1b0
+
+		ProjectileDamagedObjectList	m_lstDamagedObjects;	// 0x1b8
+		ProjectilePendingTouchList	m_lstPendingTouches;	// 0x1bc
+
+		// RETAIL: the new collision code's state (Update 0x1011f1f0): set
+		// while the kept touches are handled, and two "touch not taken"
+		// flags (0x1011eeaf, 0x1011fe44)
+		bool			m_bTronUnknown1C0;		// 0x1c0
+		bool			m_bTronUnknown1C1;		// 0x1c1
+		bool			m_bTronUnknown1C2;		// 0x1c2
+
+		// RETAIL: the position and the velocity at the end of the last update
+		LTVector		m_vLastPos;				// 0x1c4
+		LTVector		m_vLastVel;				// 0x1d0
 
 	// NOTE:  The following data members do not need to be saved / loaded
 	// when saving games.  Any data members that don't need to be saved
@@ -271,12 +316,14 @@ class CProjectile : public GameBase
 		LTVector		m_vClientObjImpactPos;	// 0x8e8
 		HOBJECT			m_hClientObjImpact;		// 0x8f4
 
-		RelationData	*m_pTronUnknownRelationData;	// 0x8f8 RETAIL: new'd in the constructor
-		bool			m_xTronUnknown8FC;
-		bool			m_xTronUnknown8FD;
-		uint32			m_xTronUnknown900;
-		uint32			m_xTronUnknown904;
-		uint32			m_xTronUnknown908;
+		// RETAIL: the shooter's relation data (new'd in the constructor, set
+		// in Setup 0x1011eaa2) and whether the fire info had one
+		RelationData	*m_pRelationData;		// 0x8f8
+		bool			m_bHasRelationData;		// 0x8fc
+
+		// RETAIL: a position to move to on the next update (0x101222b0)
+		bool			m_bTronUnknown8FD;		// 0x8fd
+		LTVector		m_vTronUnknown900;		// 0x900
 
 	private :
 

@@ -67,14 +67,20 @@ LTBOOL CClusterDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 	// setup the base class
 	LTBOOL bResult = CDisc::Setup( pWeapon, info );
 
+	// PORT: Tron's WeaponFireInfo has no spread members (retail's
+	// CClusterDisc::Setup does not read any); these are the spreads NOLF2's
+	// AI hack used
+	const float fHorizontalSpread = DegreesToRadians(20.0f);
+	const float fVerticalSpread = DegreesToRadians(10.0f);
+
 	// determine the angle (with no perturb) between shards in the spread
-	float fYawBetweenShards = 2.0f * info.fHorizontalSpread / static_cast< float >( info.nNumberOfShards );
+	float fYawBetweenShards = 2.0f * fHorizontalSpread / static_cast< float >( info.nNumberOfShards );
 //	fYawBetweenShards = DegreesToRadians( 180.0f );
 	//float fYawBetweenShards = DegreesToRadians( 180.0f );
 
 	// start this angle at the "left" shard, we will
 	// increment it as we work our way to the "right"
-	float fOverallAngle = ( -info.fHorizontalSpread + fYawBetweenShards / 2.0f );
+	float fOverallAngle = ( -fHorizontalSpread + fYawBetweenShards / 2.0f );
 
 	// for every shard, create an angle for it
 	for ( int i = 0; i < info.nNumberOfShards; ++i )
@@ -86,8 +92,8 @@ LTBOOL CClusterDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 		fOverallAngle += fYawBetweenShards;
 
 		// hardcode pitch for now
-		a.fPitch = GetRandom( -info.fVerticalSpread, info.fVerticalSpread );
-//		a.fPitch = DegreesToRadians( GetRandom( -info.fVerticalSpread, info.fVerticalSpread ) );
+		a.fPitch = GetRandom( -fVerticalSpread, fVerticalSpread );
+//		a.fPitch = DegreesToRadians( GetRandom( -fVerticalSpread, fVerticalSpread ) );
 
 		m_lShardReleaseAngle.push_back( a );
 	}
@@ -320,7 +326,7 @@ void CClusterDisc::LaunchShard( LTVector const &vForward )
 	fireInfo.vFlashPos = vPos;
 
 	// set the timestame
-	fireInfo.nFireTimestamp = static_cast< uint32 >( g_pLTServer->GetTime() * 1000.0f );
+	fireInfo.fFireTime = g_pLTServer->GetTime();
 
 	// type of disc tracking
 	fireInfo.nDiscTrackingType = MPROJ_DISC_TRACKING_CONTROL_LINE;
