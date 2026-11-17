@@ -6586,17 +6586,3 @@ float CAI::GetSentryMarkDistMax()
 	return GetAITemplate()->flSentryMarkDistMax;
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAITronUnknown1010::Flush
-//
-//	PURPOSE:	PORT: stands in for retail 0x101dee80 (another unit's
-//				function, not written yet): empties the first list. Name
-//				ours.
-//
-// ----------------------------------------------------------------------- //
-
-void CAITronUnknown1010::Flush()
-{
-	m_lstTronUnknown0.clear();
-}

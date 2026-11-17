@@ -65,6 +65,7 @@ class Body : public Prop, public IHitBoxUser
 {
 	typedef Prop super;
 
+
 	public : // Public methods
 
 		// Ctors/Dtors/etc
@@ -152,6 +153,12 @@ class Body : public Prop, public IHitBoxUser
 		virtual bool BeingCarried() { return m_bBeingCarried; }
 		// RETAIL: Tron's (0x1015cd90)
 		void ShowCarrier();
+
+		// RETAIL: inline; CBodyStatePranksterImplode::Init (0x1021c5b0)
+		// reads them. Names ours.
+		float		GetTronUnknown10A4() const { return m_fTronUnknown10A4; }
+		float		GetTronUnknown10A8() const { return m_fTronUnknown10A8; }
+		LTVector	GetTronUnknown10AC() const { return m_vTronUnknown10AC; }
 
 		void SetCanRevive( bool bCanRevive );
 		bool GetCanRevive( ) const { return m_bCanRevive; }
