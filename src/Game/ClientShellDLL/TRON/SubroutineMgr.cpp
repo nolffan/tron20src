@@ -162,12 +162,6 @@ PlayerSubroutine::PlayerSubroutine()
 	// hack for base code
 	bPrevious		= false;
 	bNext			= false;
-
-	// PORT: build 69's members (retail has none of these)
-	bErased			= false;
-	fPercentCorrupt = 0.0f;
-	bWorking		= false;
-	bActive			= true;
 }
 
 Procedural::Procedural()
@@ -818,8 +812,8 @@ void CSubroutineMgr::InfectRandomSector()
 
 	if (nSectors)
 	{
-		int iSector = aSectors[GetRandom(0, nSectors - 1)];
-		CorruptSector(iSector, 1, LTNULL);
+		int iSector = GetRandom(0, nSectors - 1);
+		CorruptSector(aSectors[iSector], 1, LTNULL);
 	}
 }
 
@@ -1580,36 +1574,6 @@ bool CSubroutineMgr::IsSubroutineCorrupt(const char *name)
 		}
 	}
 	return false;
-}
-
-float CSubroutineMgr::GetActiveSubroutineCorruption(char * name)
-{
-	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
-	while (iter != m_PlayerSubroutineArray.end())
-	{
-		PlayerSubroutine * pSub = *iter;
-		// Look at installed subs
-		if (pSub->nSlot >= 0 && pSub->nSlot < 100)
-		{
-			// look for a name match.  Should only be one.
-			if (!strcmpi(name, pSub->pTronSubroutine->szName))
-			{
-				if (pSub->bActive)
-				{
-					if (pSub->eState == SUBSTATE_CORRUPT)
-					{
-						return (pSub->fPercentCorrupt);
-					}
-					else
-					{
-						return 0.0f;
-					}
-				}
-			}
-		}
-		iter++;
-	}
-	return 0.0f;
 }
 
 Procedural* CSubroutineMgr::GetProcedural(const char *pszName)

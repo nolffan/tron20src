@@ -13,6 +13,7 @@
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initialisers are in this TU
 #include "TRONPlayerStats.h"
 #include "TronInterfaceMgr.h"
+#include "TronLayoutMgr.h"
 
 
 //******************************************************************************************
@@ -118,8 +119,8 @@ void CHUDArmor::UpdateLayout()
 	float xs = g_pInterfaceResMgr->GetXRatio();
 	float ys = g_pInterfaceResMgr->GetYRatio();
 
-	// RETAIL: 0x100221e9: the compass position's layout entry
-	LTIntPt offset = g_pLayoutMgr->GetCompassPos(nCurrentLayout);
+	// RETAIL: 0x100221e9: CTronLayoutMgr::GetArmorOffset (0x100a1280)
+	LTIntPt offset = ((CTronLayoutMgr*)g_pLayoutMgr)->GetArmorOffset(nCurrentLayout);
 
 	// each piece's two textures are its armor subroutine's
 	for (int i = 0; i < 6; i++)

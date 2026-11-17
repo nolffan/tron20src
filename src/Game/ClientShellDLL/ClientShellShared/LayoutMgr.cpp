@@ -2289,6 +2289,16 @@ LTFLOAT CLayoutMgr::GetMaskScale(eOverlayMask eMask)
 }
 
 
+// RETAIL: 0x100dc000: a model overlay's position (Position<n>; the name is
+// ours)
+LTVector CLayoutMgr::GetMaskPosition(eOverlayMask eMask)
+{
+	sprintf(s_aAttName,"%s%d","Position",(uint8)eMask);
+
+	return GetVector(LO_MASK_TAG, s_aAttName);
+}
+
+
 LTFLOAT CLayoutMgr::GetMaskAlpha(eOverlayMask eMask)
 {
 	if (eMask == OVM_NONE)

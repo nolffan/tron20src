@@ -130,6 +130,8 @@ struct TronIntelRecord
 
 	void	Save(ILTMessage_Write *pMsg);
 	void	Load(ILTMessage_Read *pMsg);
+	// RETAIL: 0x100c66f0 (the name is ours): show the record in the popup
+	void	Show(bool& bHideHUD, CPopupText& popup);
 
 	uint32	m_nTextId;			// +0x00
 	uint8	m_nPopupId;			// +0x04
@@ -211,7 +213,9 @@ class CInterfaceMgr
 				g_pLTClient->GetSurfaceAlpha(m_hFadeSurface, fAlpha);
 				return (m_bFadeIn ? (fAlpha <= 0.0f) : (fAlpha >= 1.0f));
 			}
-			return LTTRUE;
+			// RETAIL: 0x100c8c32: without a fade surface, done once the
+			// fade has started
+			return m_bFadeInitialized;
 /*
 			int iAlpha = m_FadePoly.rgba.a;
 			return (m_bFadeIn ? (iAlpha <= 0) : (iAlpha >= 255));			
@@ -326,7 +330,6 @@ class CInterfaceMgr
 		virtual void	TronUnknownVirtual88() {}
 
         LTBOOL      AllowCameraMovement();
-		LTBOOL		AllowCameraRotation();
 
         virtual void UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nType2, LTFLOAT fAmount);
 
@@ -453,8 +456,7 @@ class CInterfaceMgr
 		bool	GetCommandLineJoin( ) const { return m_bCommandLineJoin; }
 		void	SetCommandLineJoin( bool bCommandLineJoin ) { m_bCommandLineJoin = bCommandLineJoin; }
 
-		// Called when a new game is started.
-		bool	StartingNewGame( );
+		// RETAIL: Tron has no StartingNewGame (CMissionMgr's callers, 0x100eb790..)
 
 	protected:
 		// RETAIL: no weapon chooser here (the ammo chooser is at +0x4, the

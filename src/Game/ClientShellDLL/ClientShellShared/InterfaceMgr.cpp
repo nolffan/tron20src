@@ -190,9 +190,6 @@ namespace
 	FXRenderList renderList;
 
 
-	typedef std::vector<int> KeystrokeList;
-	KeystrokeList g_keys;
-
 	bool g_bLockPopup = true;
 
 	CTimer g_SplashScreenTimer;
@@ -345,6 +342,12 @@ TronIntelRecord::TronIntelRecord(const TronIntelRecord& other)
 
 TronIntelRecord::~TronIntelRecord()
 {
+}
+
+void TronIntelRecord::Show(bool& bHideHUD, CPopupText& popup)
+{
+	bHideHUD = m_bIsIntel;
+	popup.Show(m_nTextId, m_nPopupId, m_szName);
 }
 
 void TronIntelRecord::Save(ILTMessage_Write *pMsg)
@@ -811,12 +814,17 @@ void CInterfaceMgr::OnExitWorld()
 	if( !IsInitialized( ))
 		return;
 
+	// RETAIL: 0x100c85a2: Tron takes the HUD items away, and empties the
+	// client list and the teams
+	GetHUDMgr()->RemoveItems();
 	GetPlayerStats( )->OnExitWorld();
 /*
 	g_pMissionText->Clear();
 	g_pChatInput->Show(LTFALSE, LTFALSE);
 	g_pSubtitles->Clear();
 */
+	GetClientInfoMgr()->RemoveAllClients();
+	GetTeamMgr()->Init();
 	m_Credits.Term();
 	m_PopupText.Close();
 	m_InterfaceTimer.SetTime(0.0f,false);
@@ -841,6 +849,9 @@ void CInterfaceMgr::OnExitWorld()
 
         m_hOverlays[i] = LTNULL;
 	}
+
+	// RETAIL: 0x100c865c
+	g_pTransmission->Term();
 
     m_bFadeInitialized = LTFALSE;
 
@@ -1134,6 +1145,14 @@ void CInterfaceMgr::UpdatePlayingState()
 	// Update the player stats...
 	GetHUDMgr()->Update();
 	g_pPaused->Update();
+
+	// RETAIL: 0x100c8b11: show the intel picked up, the last first, when
+	// no popup shows
+	if (!m_PopupText.IsVisible() && !m_IntelRecords.empty())
+	{
+		m_IntelRecords.back().Show(m_bHideHUDInPopup, m_PopupText);
+		m_IntelRecords.pop_back();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -1258,6 +1277,10 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 {
 	if (g_pPlayerMgr->IsPlayerInWorld())
 	{
+		// RETAIL: 0x100c8d4a: not while the level is being left again
+		if (g_pMissionMgr->IsExitingLevel())
+			return;
+
 		// Make sure the loading screen isn't busy
 		if (m_pLoadingScreen)
 			m_pLoadingScreen->Pause();
@@ -1301,8 +1324,9 @@ void CInterfaceMgr::UpdateLoadingLevelState()
 		}
 
 		MBCreate mb;
+		// RETAIL: 0x100c8e87: Tron's string 0x386
 		if( m_nLoadFailedMsgId == ( uint32 )-1 )
-			m_nLoadFailedMsgId = IDS_LOADGAMEFAILED;
+			m_nLoadFailedMsgId = 0x386;
 
         ShowMessageBox( m_nLoadFailedMsgId, &mb );
 	}
@@ -1412,16 +1436,10 @@ void CInterfaceMgr::UpdateSplashScreenState()
 	{
 		if (!bDidFadeOut && !m_hSplashSound)
 		{
-			// [KLS 7/28/02] See if it is time to start the fade out...
-			if (!g_SplashScreenTimer.On())
-			{
-				g_SplashScreenTimer.Start(g_vtSplashScreenTime.GetFloat());
-			}
-			else if (g_SplashScreenTimer.Stopped())
-			{
-				StartScreenFadeOut(g_vtSplashScreenFadeOut.GetFloat());
-				bDidFadeOut = LTTRUE;
-			}
+			// RETAIL: 0x100c911c: Tron fades out as soon as the sound is
+			// done (no splash screen timer)
+			StartScreenFadeOut(g_vtSplashScreenFadeOut.GetFloat());
+			bDidFadeOut = LTTRUE;
 		}
 	}
 	else if (bDidFadeOut && m_fCurFadeTime <= 0.0f)
@@ -1533,30 +1551,17 @@ void CInterfaceMgr::UpdateDemoScreenState()
 
     g_pLTClient->GetSurfaceDims(hScreen, &nWidth, &nHeight);
 
-    LTRect rcDst;
-	rcDst.Init(0, 0, nWidth, nHeight);
-
+	// RETAIL: 0x100c9406: Tron reads the demo screen's size, then scales
+	// the whole screen to the whole screen
     g_pLTClient->GetSurfaceDims(g_hDemo, &nWidth, &nHeight);
-
-    LTRect rcSrc;
-	rcSrc.Init(0, 0, nWidth, nHeight);
 
     g_pLTClient->Start3D();
     g_pLTClient->StartOptimized2D();
 
-	if (rcSrc.right > rcDst.right)
-	{
-	    g_pLTClient->ScaleSurfaceToSurface(hScreen, g_hDemo, &rcDst, &rcSrc);
-	}
-	else
-	{
-		int xDest = (rcDst.right - (int)nWidth) / 2;
-		int yDest = (rcDst.bottom - (int)nHeight) / 2;
-		g_pLTClient->DrawSurfaceToSurface(hScreen, g_hDemo, &rcSrc, xDest, yDest);
-	}
+    g_pLTClient->ScaleSurfaceToSurface(hScreen, g_hDemo, LTNULL, LTNULL);
 
     g_pLTClient->EndOptimized2D();
-    g_pLTClient->End3D();
+    g_pLTClient->End3D(END3D_CANDRAWCONSOLE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1572,6 +1577,9 @@ LTBOOL CInterfaceMgr::SetupMusic()
 	CMusic* pMusic = g_pGameClientShell->GetMusic();
     if (!pMusic) return LTFALSE;
 
+	// RETAIL: 0x100c949a: Tron sets the music volume first
+	m_ProfileMgr.ImplementMusicVolume();
+
 	// Stop the music if it isn't enabled...
 
 	if (!m_Settings.MusicEnabled() || !GetConsoleInt("MusicActive",0))
@@ -1584,7 +1592,8 @@ LTBOOL CInterfaceMgr::SetupMusic()
 
 	// Use the current level's music if we have a level loaded...
 
-	if ( g_pLTClient->IsConnected() )
+	// RETAIL: 0x100c9505: not after an intentional disconnect
+	if ( g_pLTClient->IsConnected() && !m_bIntentionalDisconnect )
 	{
 		// Re-initialize music if necessary...
 
@@ -1661,8 +1670,6 @@ LTBOOL CInterfaceMgr::SetupMusic()
 	{
 		pMusic->ChangeIntensity(nIntensity);
 	}
-
-	m_ProfileMgr.ImplementMusicVolume();
 
     return LTTRUE;
 }
@@ -2223,7 +2230,8 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 				ClearAllScreenBuffers();
 
 
-				m_InterfaceResMgr.DrawMessage(IDS_REINITIALIZING_RENDERER);
+				// RETAIL: 0x100ca56e: Tron's string 0x38f
+				m_InterfaceResMgr.DrawMessage(0x38f);
 
 				// because of driver bugs, we need to wait a frame after reinitializing the renderer and
 				// reinitialize the cursor
@@ -2237,11 +2245,8 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 
 		case LTEVENT_DISCONNECT :
 		{
-			// PORT: NOLF2 reset its radar here; Tron has none
-			// Clean up our clientinfo's if we're in mp.
-			if( IsMultiplayerGame( ))
-				m_ClientInfo.RemoveAllClients();
-
+			// RETAIL: 0x100ca595: NOLF2 reset its radar and its client list
+			// here; Tron does neither (OnExitWorld empties the list)
 			if ( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 			{
 				Disconnected(dwParam);
@@ -2529,33 +2534,13 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		}
 		break;
 
-		case COMMAND_ID_LASTWEAPON :
-		{
-			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
+		// RETAIL: no last weapon command in Tron (0x100caa9b's table)
 
-			if (m_AmmoChooser.IsOpen())
-			{
-				m_AmmoChooser.Close();
-			}
-			if (GetWeaponChooser()->IsOpen())
-			{
-				GetWeaponChooser()->Close();
-			}
-
-            return LTTRUE;
-
-		}
-		break;
 
 		case COMMAND_ID_PREV_WEAPON :
 		{
-			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
-
-			// RETAIL: no gadget disabling to wait for in Tron
+			// RETAIL: 0x100cab01: no weapons enabled check and no gadget
+			// disabling to wait for in Tron
 
 			if (m_AmmoChooser.IsOpen())
 			{
@@ -2590,6 +2575,17 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		}
 		break;
 
+		case COMMAND_ID_ACTIVATE :
+		{
+			// RETAIL: 0x100cab6d: activate closes an unlocked popup
+			if (m_PopupText.IsVisible() && !g_bLockPopup)
+			{
+				m_PopupText.Close();
+				return LTTRUE;
+			}
+		}
+		break;
+
 		case COMMAND_ID_NEXT_AMMO :
 		{
 			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
@@ -2613,6 +2609,11 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 
 		case COMMAND_ID_FIRING :
 		{
+			// RETAIL: 0x100cac03: firing chooses the decision's 0xfd
+			if (g_pDecision->IsVisible())
+			{
+				g_pDecision->Choose(0xfd);
+			}
 
 			if (IsChoosingWeapon() || IsChoosingAmmo())
 			{
@@ -2625,8 +2626,8 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		{
 			if (m_eGameState == GS_PLAYING)
 			{
+				// RETAIL: 0x100cac4e: no sound in Tron
 				GetHUDMgr()->NextLayout();
-	            g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\HudLayoutToggle.wav");
 			}
             return LTTRUE;
 
@@ -2636,8 +2637,8 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		{
 			if (m_eGameState == GS_PLAYING)
 			{
+				// RETAIL: 0x100cac4e: no sound in Tron
 				GetHUDMgr()->PrevLayout();
-	            g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\HudLayoutToggle.wav");
 			}
             return LTTRUE;
 
@@ -2680,6 +2681,8 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 	{
 		case COMMAND_ID_ACTIVATE :
 		{
+			// RETAIL: 0x100cad75: activate up unlocks the popup
+			g_bLockPopup = false;
             return LTFALSE;
 		}
 		break;
@@ -2785,7 +2788,18 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 	{
 		case GS_SCREEN :
 		{
-			GetScreenMgr( )->HandleKeyDown(key,rep);
+			// RETAIL: 0x100caf39: escape stops the credits
+			if (m_Credits.IsInited())
+			{
+				if (key == VK_ESCAPE)
+				{
+					m_Credits.Term();
+				}
+			}
+			else
+			{
+				GetScreenMgr( )->HandleKeyDown(key,rep);
+			}
             return LTTRUE;
 		}
 		break;
@@ -2832,15 +2846,11 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 
 		case GS_POPUP :
 		{
-			if(m_PopupText.IsVisible())
+			// RETAIL: 0x100caffe: only escape closes the popup
+			if(m_PopupText.IsVisible() && key == VK_ESCAPE)
 			{
-				KeystrokeList::iterator iter = g_keys.begin();
-				while (iter != g_keys.end() && (*iter) != key)
-					iter++;
-				if (iter == g_keys.end())
-					m_PopupText.Close();
-
-				
+				m_PopupText.Close();
+				return LTTRUE;
 			}
 		}
 		break;
@@ -2901,7 +2911,8 @@ LTBOOL CInterfaceMgr::OnKeyDown(int key, int rep)
 					if (g_pDecision->IsVisible())
 					{
 						g_pDecision->Choose(MAX_DECISION_CHOICES);
-						bHandled = true;
+						// RETAIL: 0x100cb0f2
+						return LTTRUE;
 					}
 
 					if (bHandled)
@@ -2967,7 +2978,9 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 	{
 	case GS_SCREEN:
 		{
-			GetScreenMgr( )->HandleKeyUp(key);
+			// RETAIL: 0x100cb24a: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->HandleKeyUp(key);
 			return LTTRUE;
 		}
 		break;
@@ -2986,16 +2999,9 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 		break;
 	case GS_POPUP:
 		{
-			KeystrokeList::iterator iter = g_keys.begin();
-			while (iter != g_keys.end() && (*iter) != key)
-				iter++;
-			bool bKeepLocked = false;
-			if (iter != g_keys.end() && (*iter) == key)
-			{
-				g_keys.erase(iter);
-				bKeepLocked = !g_keys.empty();
-			}
-			g_bLockPopup &= bKeepLocked;
+			// RETAIL: 0x100cb283: any key up unlocks the popup (Tron keeps
+			// no list of the keys held down)
+			g_bLockPopup = false;
 		} break;
 
 	}
@@ -3013,7 +3019,8 @@ LTBOOL CInterfaceMgr::OnKeyUp(int key)
 
 void CInterfaceMgr::OnChar(unsigned char c)
 {
-	if (c < ' ') return;
+	// RETAIL: 0x100cb2bb compares signed
+	if ((char)c < ' ') return;
 
 
 	if (m_MessageBox.IsVisible())
@@ -3027,7 +3034,8 @@ void CInterfaceMgr::OnChar(unsigned char c)
 		g_pChatInput->HandleChar(c);
 		return;
 	}
-	if (m_eGameState == GS_SCREEN)
+	// RETAIL: 0x100cb2fb: not while the credits run
+	if (m_eGameState == GS_SCREEN && !m_Credits.IsInited())
 	{
 		GetScreenMgr( )->HandleChar(c);
 	}
@@ -3143,6 +3151,27 @@ LTBOOL CInterfaceMgr::Draw()
     return LTTRUE;
 }
 
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::AbortScreenFade()
+//
+//	PURPOSE:	Cancel the screen fade. RETAIL: inline (PreScreenState,
+//				0x100cb63b): retail has no copy of it.
+//
+// --------------------------------------------------------------------------- //
+
+inline void CInterfaceMgr::AbortScreenFade()
+{
+	if (m_hFadeSurface)
+	{
+        g_pLTClient->DeleteSurface(m_hFadeSurface);
+        m_hFadeSurface = LTNULL;
+	}
+
+	m_bFadeInitialized  = LTFALSE;
+	m_bScreenFade       = LTFALSE;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CInterfaceMgr::PreScreenState()
@@ -3230,16 +3259,8 @@ LTBOOL CInterfaceMgr::PostScreenState(GameState eNewState)
 
 	RemoveAllInterfaceSFX();
 
-	//see what state we need to restore the HUD into (in case we go into the menus
-	//while we are dead)
-	if(g_pPlayerMgr->IsPlayerDead())
-	{
-		SetHUDRenderLevel(kHUDRenderDead);
-	}
-	else
-	{
-		SetHUDRenderLevel(kHUDRenderFull);
-	}
+	// RETAIL: 0x100cb73d: Tron restores the full HUD, dead or not
+	SetHUDRenderLevel(kHUDRenderFull);
 
 	// m_InterfaceResMgr.Clean();
 
@@ -3252,9 +3273,26 @@ LTBOOL CInterfaceMgr::PostScreenState(GameState eNewState)
 
 	m_bSuppressNextFlip = true;
 
-	// Match the pause from PreScreeState...
-
-    g_pGameClientShell->PauseGame( LTFALSE );
+	// RETAIL: 0x100cb76c: no unpause; Tron holds the music stopped while a
+	// level loads, and plays it again after
+	if (eNewState == GS_LOADINGLEVEL)
+	{
+		CMusic* pMusic = g_pGameClientShell->GetMusic();
+		if (pMusic)
+		{
+			pMusic->Stop();
+			pMusic->m_bSuspended = true;
+		}
+	}
+	else
+	{
+		CMusic* pMusic = g_pGameClientShell->GetMusic();
+		if (pMusic && pMusic->m_bSuspended)
+		{
+			pMusic->m_bSuspended = false;
+			pMusic->Play();
+		}
+	}
 
     return LTTRUE;
 }
@@ -3397,7 +3435,8 @@ LTBOOL CInterfaceMgr::PreMenuState(GameState eCurState)
 	// If we're currently viewing a cinematic disable all the menu bar menus
 	// except the system menu...
 
-	if (g_pPlayerMgr->IsUsingExternalCamera())
+	// RETAIL: 0x100cb9b5: and in multiplayer games
+	if (g_pPlayerMgr->IsUsingExternalCamera() || IsMultiplayerGame())
 	{
 		m_MenuMgr.EnableMenuBar(false, (MB_ALL & ~MB_SYSTEM));
 	}
@@ -3463,14 +3502,9 @@ LTBOOL CInterfaceMgr::PrePopupState(GameState eCurState)
 		SetHUDRenderLevel(kHUDRenderNone);
 	}
 
-	g_keys.clear();
-	for (int k = 0; k < 256; k++)
-	{
-		if (IsKeyDown(k))
-			g_keys.push_back(k);
-	}
-
-	g_bLockPopup = !g_keys.empty();
+	// RETAIL: 0x100cbabc: Tron locks the popup until a key comes up (no
+	// list of the keys held down)
+	g_bLockPopup = true;
 
     return LTTRUE;
 }
@@ -3574,12 +3608,12 @@ LTBOOL CInterfaceMgr::PreExitingLevelState(GameState eCurState)
 {
     if (eCurState == GS_EXITINGLEVEL) return LTFALSE;
 
-	if (eCurState == GS_SCREEN && GetScreenMgr( )->GetCurrentScreenID() == SCREEN_ID_MAIN )
+	// RETAIL: 0x100cbc12: Tron fades out in single player only, from any
+	// state
+	if (!IsMultiplayerGame())
 	{
-		return LTFALSE;
+		StartScreenFadeOut( g_vtExitLevelScreenFadeTime.GetFloat() );
 	}
-
-	StartScreenFadeOut( g_vtExitLevelScreenFadeTime.GetFloat() );
 
     return LTTRUE;
 }
@@ -3623,7 +3657,7 @@ LTBOOL CInterfaceMgr::PreSplashScreenState(GameState eCurState)
 	// Play splash screen sound...
 
     uint32 dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_CLIENT;
-	m_hSplashSound = g_pClientSoundMgr->PlayInterfaceSound(IM_SPLASH_SOUND);
+	m_hSplashSound = g_pClientSoundMgr->PlayInterfaceSound(IM_SPLASH_SOUND, PLAYSOUND_CLIENT | PLAYSOUND_GETHANDLE);	// RETAIL: 0x100cbc93 (0x210)
 
 	if (m_hSplashSound)
 	{
@@ -3874,7 +3908,8 @@ void CInterfaceMgr::ProcessAdvancedOptions()
 
 	if (!(m_dwAdvancedOptions & AO_TRIPLEBUFFER))
 	{
-        g_pLTClient->RunConsoleString("BackBufferCount 1");
+        // RETAIL: 0x100cc2b5 runs "TripleBuffer 0" (as Build 51), not NOLF2's "BackBufferCount 1".
+        g_pLTClient->RunConsoleString("TripleBuffer 0");
 	}
 
 	if (!(m_dwAdvancedOptions & AO_FOG))
@@ -4276,6 +4311,8 @@ void CInterfaceMgr::ScreenDimsChanged()
 	GetScreenMgr( )->ScreenDimsChanged();
 	m_MenuMgr.ScreenDimsChanged();
 	GetHUDMgr()->ScreenDimsChanged();
+	// RETAIL: 0x100cc819
+	m_CursorMgr.ScheduleReinit(5.0f);
 
 	// Update the camera rect...
     uint32 dwWidth = 640, dwHeight = 480;
@@ -4302,6 +4339,8 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 
 	if (m_MessageBox.IsVisible())
 	{
+		// RETAIL: 0x100cc8e0: Tron clears the input first
+		g_pLTClient->ClearInput();
 		m_MessageBox.OnLButtonUp(x,y);
 		return;
 	}
@@ -4313,7 +4352,9 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 		} break;
 	case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnLButtonUp(x,y);
+			// RETAIL: 0x100cc90a: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnLButtonUp(x,y);
 		} break;
 	case GS_MENU:
 		{
@@ -4321,11 +4362,11 @@ void CInterfaceMgr::OnLButtonUp(int x, int y)
 		} break;
 	case GS_POPUP:
 		{
-			if(m_PopupText.IsVisible() && !g_bLockPopup)
+			// RETAIL: 0x100cc930: no popup lock in Tron
+			if(m_PopupText.IsVisible())
 			{
 				m_PopupText.Close();
 			}
-			g_bLockPopup = false;
 		} break;
 	}
 }
@@ -4345,7 +4386,9 @@ void CInterfaceMgr::OnLButtonDown(int x, int y)
 	{
 		case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnLButtonDown(x,y);
+			// RETAIL: 0x100cc9af: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnLButtonDown(x,y);
 		}	
 		break;
 
@@ -4424,15 +4467,16 @@ void CInterfaceMgr::OnRButtonUp(int x, int y)
 		case GS_MENU:
 		{
 			m_MenuMgr.OnRButtonUp(x,y);
-		} break;
+		}
+		// RETAIL: 0x100ccac5: Tron falls through to the popup case
+		// (no break, no popup lock)
 
 		case GS_POPUP:
 		{
-			if(m_PopupText.IsVisible() && !g_bLockPopup)
+			if(m_PopupText.IsVisible())
 			{
 				m_PopupText.Close();
 			}
-			g_bLockPopup = false;
 		} break;
 	}
 
@@ -4540,7 +4584,9 @@ void CInterfaceMgr::OnMouseMove(int x, int y)
 	{
 		case GS_SCREEN:
 		{
-			GetScreenMgr( )->OnMouseMove(x,y);
+			// RETAIL: 0x100ccc75: not while the credits run
+			if (!m_Credits.IsInited())
+				GetScreenMgr( )->OnMouseMove(x,y);
 		}
 		break;
 		
@@ -4625,24 +4671,15 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 
 	createStruct.m_ObjectType = OT_SPRITE;
 
-    LTVector vPos(0,0,0), vU, vR, vF, vTemp;
-    LTRotation rRot;
-
-//    g_pLTClient->GetObjectPos(hCamera, &vPos);
-//    g_pLTClient->GetObjectRotation(hCamera, &rRot);
-	vU = rRot.Up();
-	vR = rRot.Right();
-	vF = rRot.Forward();
-
+	// RETAIL: 0x100ccfda: Tron's overlays sit at a fixed spot in front of
+	// the camera (a sprite at the sprite distance, a model at its layout
+	// position); a model has a render style and an animation too
 	if (g_pLayoutMgr->IsMaskSprite(eMask))
 	{
-
-		VEC_MULSCALAR(vTemp, vF, g_fOverlaySpriteDist);
-		VEC_ADD(vPos, vPos, vTemp);
+		LTVector vPos(0.0f, 0.0f, g_fOverlaySpriteDist);
 		createStruct.m_Flags = FLAG_VISIBLE | FLAG_SPRITE_NOZ | FLAG_FOGDISABLE | FLAG_NOLIGHT | FLAG_REALLYCLOSE;
-		VEC_COPY(createStruct.m_Pos, vPos);
-		createStruct.m_Rotation = rRot;
-
+		createStruct.m_Pos = vPos;
+		createStruct.m_Rotation.Init();
 
 		char sprName[128] = "";
 		g_pLayoutMgr->GetMaskSprite(eMask,sprName,sizeof(sprName));
@@ -4653,28 +4690,30 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 			m_hOverlays[eMask] = g_pLTClient->CreateObject(&createStruct);
 			m_nOverlayCount++;
 
-			// [KLS 5/15/02] Change the alpha value of the sprite...
-			// [JRG 9/1/02] Added alpha values to layout butes
 			LTFLOAT r, g, b, a;
 			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &r, &g, &b, &a);
 
 			a = g_pLayoutMgr->GetMaskAlpha(eMask);
-			
+
 			g_pLTClient->SetObjectColor(m_hOverlays[eMask], r, g, b, a);
 		}
 	}
 	else
 	{
-		VEC_MULSCALAR(vTemp, vF, g_fOverlayModelDist);
-		VEC_ADD(vPos, vPos, vTemp);
-		createStruct.m_Flags = FLAG_VISIBLE | FLAG_NOLIGHT;
-		VEC_COPY(createStruct.m_Pos, vPos);
-		createStruct.m_Rotation = rRot;
+		LTVector vPos = g_pLayoutMgr->GetMaskPosition(eMask);
+		createStruct.m_Pos = vPos;
 
 		char modName[128] = "";
 		char skinName[128] = "";
+		char animName[128] = "";
+		char rsName[128] = "";
+		createStruct.m_Flags = FLAG_VISIBLE | FLAG_NOLIGHT | FLAG_REALLYCLOSE;
+		createStruct.m_Rotation.Init();
 		g_pLayoutMgr->GetMaskModel(eMask,modName,sizeof(modName));
 		g_pLayoutMgr->GetMaskSkin(eMask,skinName,sizeof(skinName));
+		g_pLayoutMgr->GetMaskRenderStyle(eMask,rsName,sizeof(rsName));
+		g_pLayoutMgr->GetMaskAnim(eMask,animName,sizeof(animName));
+		LTFLOAT fAlpha = g_pLayoutMgr->GetMaskAlpha(eMask);
 
 		createStruct.m_ObjectType = OT_MODEL;
 
@@ -4682,13 +4721,21 @@ void CInterfaceMgr::CreateOverlay(eOverlayMask eMask)
 		{
 			SAFE_STRCPY(createStruct.m_Filename, modName);
 			SAFE_STRCPY(createStruct.m_SkinName, skinName);
+			if (rsName[0])
+			{
+				SAFE_STRCPY(createStruct.m_RenderStyleName, rsName);
+			}
 			m_hOverlays[eMask] = g_pLTClient->CreateObject(&createStruct);
-/*
-		    LTVector vColor;
-			LTFLOAT a;
-			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &(vColor.x), &(vColor.y), &(vColor.z), &a);
-			g_pLTClient->SetObjectColor(m_hOverlays[eMask], vColor.x, vColor.y, vColor.z, 0.999f);
-*/
+
+			LTFLOAT r, g, b, a;
+			g_pLTClient->GetObjectColor(m_hOverlays[eMask], &r, &g, &b, &a);
+			g_pLTClient->SetObjectColor(m_hOverlays[eMask], r, g, b, fAlpha);
+
+			if (animName[0])
+			{
+				g_pLTClient->SetModelAnimation(m_hOverlays[eMask], g_pLTClient->GetAnimIndex(m_hOverlays[eMask], animName));
+			}
+
 			m_nOverlayCount++;
 		}
 	}
@@ -4772,7 +4819,10 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
     uint32 dwWidth = 640, dwHeight = 480;
     g_pLTClient->GetSurfaceDims(hScreen, &dwWidth, &dwHeight);
 
-    HLTCOLOR hTransColor = g_pLTClient->SetupColor1(1.0f, 1.0f, 1.0f, LTTRUE);
+	// RETAIL: 0x100cd586: Tron fades to white when the fade's second
+	// argument was true
+    HLTCOLOR hTransColor = m_bTronUnknownFadeF4A0 ? SETRGB(0,0,0) : SETRGB(255,255,255);
+    HLTCOLOR hFadeColor = m_bTronUnknownFadeF4A0 ? SETRGB(255,255,255) : SETRGB(0,0,0);
 	
 	// Initialize the surface if necessary...
 
@@ -4787,7 +4837,7 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 		if (!m_hFadeSurface) return;
 
         g_pLTClient->SetSurfaceAlpha(m_hFadeSurface, 1.0f);
-        g_pLTClient->FillRect(m_hFadeSurface, &rcSrc, kBlack);
+        g_pLTClient->FillRect(m_hFadeSurface, &rcSrc, hFadeColor);
         g_pLTClient->OptimizeSurface(m_hFadeSurface, hTransColor);
 
 		m_fCurFadeTime = m_fTotalFadeTime;
@@ -4799,6 +4849,9 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 
 	if (m_hFadeSurface)
 	{
+		// RETAIL: 0x100cd665
+		g_pLTClient->StartOptimized2D();
+
 		LTFLOAT fTimeDelta = m_bFadeIn ? m_fCurFadeTime : (m_fTotalFadeTime - m_fCurFadeTime);
 
 		LTFLOAT fLinearAlpha = (fTimeDelta / m_fTotalFadeTime);
@@ -4821,6 +4874,8 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 		{
 			m_fCurFadeTime -= g_pGameClientShell->GetFrameTime();
 		}
+
+		g_pLTClient->EndOptimized2D();
 	}
 
 	// See if we're done...
@@ -4852,25 +4907,6 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 	}
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::AbortScreenFade()
-//
-//	PURPOSE:	Cancel the screen fade
-//
-// --------------------------------------------------------------------------- //
-
-void CInterfaceMgr::AbortScreenFade()
-{
-	if (m_hFadeSurface)
-	{
-        g_pLTClient->DeleteSurface(m_hFadeSurface);
-        m_hFadeSurface = LTNULL;
-	}
-
-	m_bFadeInitialized  = LTFALSE;
-	m_bScreenFade       = LTFALSE;
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -4957,55 +4993,31 @@ void CInterfaceMgr::UpdateLetterBox()
 	{
 		fBorderPercent = (1.0f - fLetterBoxPercent) / 2.0f;
 	}
-    HSURFACE hScreen = g_pLTClient->GetScreenSurface();
-    uint32 dwWidth = 640, dwHeight = 480;
-    g_pLTClient->GetSurfaceDims(hScreen, &dwWidth, &dwHeight);
+	// RETAIL: 0x100cda78: Tron draws the borders with draw primitives,
+	// sliding them in with the alpha
+	uint32 dwWidth = m_InterfaceResMgr.GetScreenWidth();
+	uint32 dwHeight = m_InterfaceResMgr.GetScreenHeight();
 
-	g_pLTClient->SetSurfaceAlpha(m_hLetterBoxSurface, m_fLetterBoxAlpha);
+	uint8 nAlpha = (uint8)(255.0f * m_fLetterBoxAlpha);
+	uint32 nColor = SET_ARGB(nAlpha, 0, 0, 0);
+	g_pDrawPrim->SetRGBA(&m_LetterBox[0], nColor);
+	g_pDrawPrim->SetRGBA(&m_LetterBox[1], nColor);
 
-	int nBorderSize = (int) (float(dwHeight) * fBorderPercent);
+	int nBorderSize = (int) (float(dwHeight) * fBorderPercent * m_fLetterBoxAlpha);
 
- 	LTRect rcDest;
-	rcDest.Init(0, 0, dwWidth, nBorderSize);
+	g_pDrawPrim->SetXYWH(&m_LetterBox[0], -1.0f, -1.0f, (float)(dwWidth + 2), (float)(nBorderSize + 1));
+	g_pDrawPrim->SetXYWH(&m_LetterBox[1], -1.0f, (float)(dwHeight - nBorderSize), (float)(dwWidth + 2), (float)(nBorderSize + 1));
 
-	LTRect rcSrc;
-	rcSrc.Init(0, 0, 2, 2);
+	g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+	g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+	g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+	g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+	g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+	g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+	g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
 
-	HLTCOLOR hTransColor = g_pLTClient->SetupColor1(1.0f, 1.0f, 1.0f, LTTRUE);
-
-	// Cover top of screen...
-
-	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hLetterBoxSurface,
-	   &rcDest, &rcSrc, hTransColor);
-
-	// Cover bottom of screen...
-
-	rcDest.Init(0, dwHeight - nBorderSize, dwWidth, dwHeight);
- 	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hLetterBoxSurface,
-	   &rcDest, &rcSrc, hTransColor);
-/*
-	if (m_nBorderSize == 0)
-	{
-	    uint32 dwHeight = 448;
-		m_nBorderSize = (int) (float(dwHeight) * fBorderPercent);
-		m_LetterBox[0].verts[2].y = m_LetterBox[0].verts[3].y = m_nBorderSize;
-		m_LetterBox[1].verts[0].y = m_LetterBox[1].verts[1].y = dwHeight - m_nBorderSize;
-	}
-	// Set the alpha
-	m_LetterBox[0].rgba.a = m_LetterBox[1].rgba.a = 255.0 * m_fLetterBoxAlpha;
-
-	g_pLTDrawprim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-	g_pLTDrawprim->SetColorOp(DRAWPRIM_MODULATE);
-	g_pLTDrawprim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
-	g_pLTDrawprim->SetZBufferMode(DRAWPRIM_NOZ); 
-	g_pLTDrawprim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
-	g_pLTDrawprim->SetClipMode(DRAWPRIM_FASTCLIP);
-	g_pLTDrawprim->SetFillMode(DRAWPRIM_FILL);
-		
 	// draw the two polys
-	g_pLTDrawprim->DrawPrim(m_LetterBox, 2);
-
-*/
+	g_pDrawPrim->DrawPrim(m_LetterBox, 2);
 }
 
 // --------------------------------------------------------------------------- //
@@ -5039,29 +5051,6 @@ LTBOOL CInterfaceMgr::AllowCameraMovement()
     return LTTRUE;
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::AllowCameraRotation
-//
-//	PURPOSE:	Can the camera rotate (while in this state)
-//
-// --------------------------------------------------------------------------- //
-
-LTBOOL CInterfaceMgr::AllowCameraRotation()
-{
-	switch( m_eGameState )
-	{
-		case GS_MENU:
-		case GS_POPUP:
-			return LTFALSE;
-		break;
-
-		default:
-		break;
-	}
-
-	return LTTRUE;
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -5758,20 +5747,25 @@ const char *FindFilename(const char *pFileName)
 
 void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 {
+	// RETAIL: 0x100ced40: Tron's string ids (CRes.dll) and screens
 	eScreenID destination = SCREEN_ID_MULTI;
 	// Get the disconnect code.
 	uint32 nDisconnectCode = g_pClientMultiplayerMgr->GetDisconnectCode();
-	const char *pDisconnectMsg = g_pClientMultiplayerMgr->GetDisconnectMsg();
 	uint32 nMsgId = 0;
 	switch (nDisconnectCode)
 	{
 		case eDisconnect_NotSameGUID:
-			nMsgId = IDS_NETERR_NOTSAMEGUID;
+			nMsgId = 0x3ef;
 			break;
 		case eDisconnect_WrongPassword:
-			nMsgId = IDS_NETERR_WRONGPASS;
-			// RETAIL: 0x100ced40: Tron has one join screen (and a third
-			// disconnect code, not yet in our tree, that also goes there)
+			nMsgId = 0x3f2;
+			// Tron has one join screen
+			destination = SCREEN_ID_JOIN_SERVERLIST;
+			break;
+		// RETAIL: a third disconnect code of Tron's (not yet in our tree's
+		// eDisconnectCodes), to the join screen too
+		case 3:
+			nMsgId = 0x3fc;
 			destination = SCREEN_ID_JOIN_SERVERLIST;
 			break;
 
@@ -5780,15 +5774,11 @@ void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 		{
 			if( nDisconnectFlag == LT_REJECTED )
 			{
-				nMsgId = IDS_KICKBAN;
-			}
-			else if ( nDisconnectFlag == LT_MISSINGWORLDFILE )
-			{
-				nMsgId = IDS_MISSING_WORLD;
+				nMsgId = 0x2fc;
 			}
 			else
 			{
-				nMsgId = IDS_DISCONNECTED_FROM_SERVER;
+				nMsgId = 0x482;
 			}
 
 			g_pLTClient->CPrint("CInterfaceMgr::Disconnected(%d)", nDisconnectCode);
@@ -5815,16 +5805,19 @@ void CInterfaceMgr::Disconnected(uint32 nDisconnectFlag)
 		if (!m_bIntentionalDisconnect)
 		{
 			MBCreate mb;
-			char szMsg[1024] = "";
-			LoadString( nMsgId, szMsg, sizeof(szMsg));
-			ShowMessageBox(szMsg,&mb);
+			m_MessageBox.Close(LTTRUE);
+			ShowMessageBox(nMsgId,&mb);
 		}
 
 		ClearAllScreenBuffers();
 		SwitchToScreen(destination);
 	}
 
-
+	// RETAIL: 0x100cee5e
+	if (g_pLTClient->IsConnected())
+	{
+		g_pClientMultiplayerMgr->ForceDisconnect();
+	}
 }
 
 void CInterfaceMgr::ConnectionFailed(uint32 nConnectionError)
@@ -6029,11 +6022,8 @@ void CInterfaceMgr::ShowMouseFX()
 
 void CInterfaceMgr::NextWeapon(int nCommand)
 {
-	CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-	IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-	if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return;
-
-	// RETAIL: no gadget disabling to wait for in Tron
+	// RETAIL: 0x100cfb90: Tron asks neither the weapons enabled nor a gadget
+	// disabling to wait for
 
 	uint8 nClass = 0;
 	switch (nCommand)
@@ -6490,9 +6480,9 @@ void CInterfaceMgr::StartScreenFadeOut(LTFLOAT fFadeTime, bool bTronUnknown)
 		return;
 
 	m_bFadeInitialized = LTFALSE;
-	m_bFadeIn = LTFALSE;
 	m_bScreenFade = LTTRUE;
 	m_fTotalFadeTime = fFadeTime;
+	m_bFadeIn = LTFALSE;
 	m_bTronUnknownFadeF4A0 = bTronUnknown;
 }
 
@@ -6533,17 +6523,3 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 	}						
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::StartingNewGame
-//
-//	PURPOSE:	Called when client is starting its connection to the server.
-//
-// ----------------------------------------------------------------------- //
-
-bool CInterfaceMgr::StartingNewGame( )
-{
-	GetClientInfoMgr()->RemoveAllClients();
-
-	return true;
-}
