@@ -123,15 +123,22 @@ void CHUDMissionText::UpdateLayout()
 	char *pTag = "MissionText";
 	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"Pos");
 
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
-	m_pFont = g_pInterfaceResMgr->GetFont(nFont);
+	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");	// TRON: not used
 	m_nFontSize = m_nBaseFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
+	// TRON: the font for the size; the text wide, at the unscaled position,
+	// with a drop shadow (RETAIL: 0x10166810)
+	m_pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
 
-	float x = m_fScale * (float)m_BasePos.x;
-	float y = m_fScale * (float)m_BasePos.y;
-	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(" "),x,y);
+	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,std::wstring(L" "),(float)m_BasePos.x,(float)m_BasePos.y);
+#ifdef TRON20_MODERN
 	if (!m_pText)
 		return;
+	m_pText->SetDropShadow(true);
+#else
+	m_pText->SetDropShadow(true);	// RETAIL: before the test (docs/RETAIL_BUGS.md)
+	if (!m_pText)
+		return;
+#endif
 
 	m_nWidth = (uint16)g_pLayoutMgr->GetInt(pTag,"Width");
 	m_pText->SetWrapWidth(m_nWidth);

@@ -35,8 +35,7 @@ LTBOOL CHUDChatInput::Init()
 {
 	char *pTag = "ChatInput";
 	m_BasePos = g_pLayoutMgr->GetPoint(pTag,"BasePos");
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
-	CUIFont* pFont	= g_pInterfaceResMgr->GetFont(nFont);
+	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");	// TRON: not used
 
 	m_nFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
 
@@ -47,12 +46,14 @@ LTBOOL CHUDChatInput::Init()
 	uint32 color = SET_ARGB(0xFF,nR,nG,nB);
 
 	uint8 h = (uint8)((float)m_nFontSize * g_pInterfaceResMgr->GetYRatio());
+	// TRON: the font for the scaled height (RETAIL: 0x10165ab0)
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(h);
 
 	float x = (float)(m_BasePos.x) * g_pInterfaceResMgr->GetXRatio();
 	float y = (float)(m_BasePos.y) * g_pInterfaceResMgr->GetYRatio();
 
 
-	m_pStr = g_pFontManager->CreatePolyString(pFont,LTGUIWideString(" "),x, y);
+	m_pStr = g_pFontManager->CreatePolyString(pFont,std::wstring(L" "),x, y);	// TRON: wide
 	m_pStr->SetCharScreenHeight(h);
 	m_pStr->SetColor(color);
 
@@ -96,6 +97,8 @@ void CHUDChatInput::Update()
 {
 
 	uint8 h = (uint8)((float)m_nFontSize * g_pInterfaceResMgr->GetYRatio());
+	// TRON: the font for the scaled height (RETAIL: 0x10165ab0)
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(h);
 	m_pStr->SetCharScreenHeight(h);
 
 	float x = ((float)(m_BasePos.x - 5)  * g_pInterfaceResMgr->GetXRatio()) - m_pStr->GetWidth();

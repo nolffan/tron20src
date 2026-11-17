@@ -328,11 +328,12 @@ void CHUDSubtitles::UpdateLayout()
 	m_nMaxLines  = (uint8)g_pLayoutMgr->GetInt(pTag,"NumLines");
 
 
-	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");
-	m_pFont = g_pInterfaceResMgr->GetFont(nFont);
+	uint8 nFont = (uint8)g_pLayoutMgr->GetInt(pTag,"Font");	// TRON: not used
 	m_nFontSize = m_nBaseFontSize = (uint8)g_pLayoutMgr->GetInt(pTag,"FontSize");
+	// TRON: the font for the size, the text wide (RETAIL: 0x100fd9b0)
+	m_pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
 
-	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,LTGUIWideString(" "),(float)m_BasePos.x,(float)m_BasePos.y);
+	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,std::wstring(L" "),(float)m_BasePos.x,(float)m_BasePos.y);
 	if (!m_pText)
 		return;
 
@@ -343,7 +344,8 @@ void CHUDSubtitles::UpdateLayout()
 	m_nTextColor = SET_ARGB(0xFF,nR,nG,nB);
 
 	m_pText->SetColor(m_nTextColor);
-	
+
+	SetScale(g_pInterfaceResMgr->GetXRatio());	// TRON: (RETAIL: 0x100fdbe7)
 
 }
 

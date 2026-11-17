@@ -1302,6 +1302,17 @@ chat input), so the game does not hit this.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 returns an empty string.
 
+### The mission text uses its string before it tests it
+
+CShell.dll 0x10166810 (CHUDMissionText::UpdateLayout,
+ClientShellShared/HUDMissionText.cpp). The function makes the text string
+and calls SetDropShadow on it. Then it tests the string for NULL. If the
+font manager cannot make the string, the call uses a null pointer and the
+client stops. The test must come before the call.
+
+Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
+HUDMissionText.cpp tests the string first.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

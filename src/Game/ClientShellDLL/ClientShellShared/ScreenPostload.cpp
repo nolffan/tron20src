@@ -517,13 +517,13 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		if( m_briefing.length( ) > 0 )
 		{
 			m_bPressAnyKey = true;
-			m_pContinueStr->SetText( LoadTempString( IDS_PRESS_ANY_KEY ));
+			m_pContinueStr->SetText(LoadTempWString( IDS_PRESS_ANY_KEY ));
 		}
 		// Otherwise show the "waiting for other players".
 		else
 		{
 			m_bPressAnyKey = false;
-			m_pContinueStr->SetText( LoadTempString( IDS_WAITINGFOROTHERPLAYERS ));
+			m_pContinueStr->SetText(LoadTempWString( IDS_WAITINGFOROTHERPLAYERS ));
 
 			g_pGameClientShell->SendClientLoadedMessage( );
 		}
@@ -563,7 +563,7 @@ void CScreenPostload::Escape()
 			g_pGameClientShell->SendClientLoadedMessage( );
 
 			// Change to waiting for other players.
-			m_pContinueStr->SetText( LoadTempString(IDS_WAITINGFOROTHERPLAYERS));
+			m_pContinueStr->SetText(LoadTempWString(IDS_WAITINGFOROTHERPLAYERS));
 			m_pContinueStr->SetColor(m_nContinueColor);
 		}
 		else
