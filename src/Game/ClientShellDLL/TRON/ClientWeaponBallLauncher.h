@@ -4,7 +4,6 @@
 //
 // PURPOSE : Tron's client-side ball launcher (retail only: RTTI .?AVCClientWeaponBallLauncher@@, vtable
 //           0x101e5960; CShell.dll 0x10017c20..0x1001807c).  Member names are ours.
-//           Not yet written: PlayFireAnimation (0x10017c80).
 //
 // ----------------------------------------------------------------------- //
 
@@ -29,6 +28,8 @@ protected:
 	virtual uint8 GetFireMessageType() const { return kTronFire_BallLauncher; }
 
 	virtual float GetEnergyUse();
+	// RETAIL: 0x10017c80
+	virtual bool  PlayFireAnimation( bool bResetAni );
 
 	// RETAIL: 0x10018070 (PlayFireAnimation calls it)
 	void          UpdateFireAnimationRate();

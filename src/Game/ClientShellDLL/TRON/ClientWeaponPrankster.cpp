@@ -145,6 +145,113 @@ WeaponState CClientWeaponPrankster::UpdateModelState( bool bFire, bool bAltFire 
 	return eRet;
 }
 
+namespace
+{
+	// RETAIL: ClientWeapon.cpp's (the same name)
+	HMODELANIM const INVALID_ANI = ( static_cast< HMODELANIM >( -1 ) );
+}
+
+// RETAIL: 0x1001b510.  A done pre-fire animation starts again while the key
+// is held down (kPrankster_KeyDown) with no fire.  PORT: before the
+// animations it starts first retail calls CTronClientWeapon's 0x10097f20
+// (a helper of four more Tron helpers), not in our build.
+bool CClientWeaponPrankster::PlayFireAnimation( bool bResetAni )
+{
+	uint32 dwAni			= g_pLTClient->GetModelAnimation( m_hObject );
+	uint32 dwState			= g_pLTClient->GetModelPlaybackState( m_hObject );
+
+	uint32 dwPreFireAni		= GetPreFireAni();
+	uint32 dwFireAni		= GetFireAni( m_eLastFireType );
+	uint32 dwPostFireAni	= GetPostFireAni();
+
+	bool bHasFireAni		= !!( INVALID_ANI != dwFireAni );
+	bool bHasPostFireAni	= !!( INVALID_ANI != dwPostFireAni );
+
+	bool bIsFireAni			= IsFireAni( dwAni );
+	bool bIsMainFireAni		= IsFireAni( dwAni, true );
+	bool bIsPreFireAni		= IsPreFireAni( dwAni );
+	bool bIsPostFireAni		= IsPostFireAni( dwAni );
+
+	bool bIsCurAniDone		= !!( dwState & MS_PLAYDONE );
+
+	if ( !bIsFireAni )
+	{
+		if ( !bResetAni )
+		{
+			DoSpecialEndFire();
+			return false;
+		}
+
+		if ( INVALID_ANI != dwPreFireAni )
+		{
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			return true;
+		}
+
+		if ( bHasFireAni )
+		{
+			PlayAnimation( dwFireAni, true, 1.0f, false );
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+			return true;
+		}
+
+		return false;
+	}
+
+	if ( !bIsCurAniDone )
+	{
+		return true;
+	}
+
+	if ( bIsPreFireAni )
+	{
+		if ( bHasFireAni && bResetAni )
+		{
+			PlayAnimation( dwFireAni, true, 1.0f, false );
+			return true;
+		}
+		else if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+			return true;
+		}
+		else if ( bResetAni && kPrankster_KeyDown == m_nState && !m_bFire )
+		{
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			return true;
+		}
+	}
+	else if ( bIsMainFireAni )
+	{
+		if ( bResetAni && TronUnknownVirtual164() )
+		{
+			PlayAnimation( dwFireAni, true, 1.0f, false );
+			return true;
+		}
+		else if ( bHasPostFireAni )
+		{
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+			return true;
+		}
+	}
+	else if ( bIsPostFireAni )
+	{
+		if ( bResetAni )
+		{
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			return true;
+		}
+	}
+
+	DoSpecialEndFire();
+	return false;
+}
+
 // RETAIL: 0x1001b760
 void CClientWeaponPrankster::Fire( bool bFire )
 {

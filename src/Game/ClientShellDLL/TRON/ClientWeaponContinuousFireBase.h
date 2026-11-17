@@ -28,6 +28,10 @@ public:
 
 protected:
 	virtual void  HandleFireKeyDownTransition();
+	// RETAIL: 0x10018590
+	virtual bool  PlayFireAnimation( bool bResetAni );
+	// RETAIL: 0x10018990
+	virtual bool  TronUnknownVirtual164();
 
 	// RETAIL: 0x100d1580 / 0x101c8210 (the shared "return true/false")
 	virtual bool  TronUnknownVirtual16C() { return true; }
