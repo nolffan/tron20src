@@ -35,6 +35,9 @@ TARGETS, one dict per shipped binary, in the README's order:
   encrypted  [(lo, hi)]: code the retail image keeps encrypted (SecuROM):
              status `encrypted`, listed, not counted -- nothing can be
              compared there
+  unreadable a regex on our `module:symbol` names: functions of ours whose
+             shipped counterparts lie in `encrypted` (tools/progress.py):
+             listed as `encrypted`, neither placed nor unplaced
   third_party  link inputs of ours (file names) that build `middleware`:
              left out of our side, so they neither match nor count as
              unplaced
@@ -109,6 +112,35 @@ TARGETS = [
          # boundary is that one hit.
          app=[(0x00401000, 0x00581e80)],
          encrypted=[(0x00572000, 0x00577000)],
+         # Ours whose shipped counterparts are in the encrypted pages,
+         # listed `encrypted`, neither placed nor unplaced. The last
+         # objects of the UI library are linked into them, in our order:
+         # cuiwindow_impl.obj (its constructor, 0x571fe0, is the last
+         # readable function), cuiwidget_impl.obj, cuipolytex.obj and
+         # cuiinterval_impl.obj, to 0x5740d0 (msvcrt.lib's code and the
+         # import thunks follow, then D3DX at 0x574678). In the developer
+         # build's plaintext at retail's addresses (`demoimports.py plain`,
+         # out/devbuild/Lithtech-readable.exe), exematch.py matches each
+         # of these objects' functions there: CUIWindow_Impl's GetTexture
+         # 0x5720b0 .. SetColors 0x572900, CUIWidget_Impl's constructor
+         # 0x572dd0 .. SetAlignmentV 0x5731a0, CUIPolyTex's constructor
+         # 0x5733c0, SetColors 0x573410 and Render 0x573490,
+         # CUIInterval_Impl's constructor 0x573960 .. Draw 0x573f10 (too
+         # small to match: CUIWindow_Impl's destructor and CUIWidget_Impl's
+         # Draw, between their neighbours there). Only the functions with
+         # no readable copy: their ICF-folded one-liners (GetType,
+         # GetClassName, SetGutter) are placed in readable code.
+         unreadable=r"^Lib_UI\(cuiwindow_impl\.obj\):(\?\?1|\?(Draw|GetTexture|"
+                    r"Move|Resize|SetColors|SetTexture)@)CUIWindow_Impl@@"
+                    r"|^Lib_UI\(cuiwidget_impl\.obj\):(\?\?0|\?(Draw|GetTexture|"
+                    r"Move|Resize|SetAlignment[HV]|SetColors?|SetTexture)@)"
+                    r"CUIWidget_Impl@@"
+                    r"|^Lib_UI\(cuipolytex\.obj\):(\?\?0|\?(Render|SetColors)@)"
+                    r"CUIPolyTex@@"
+                    r"|^Lib_UI\(cuiinterval_impl\.obj\):(\?\?0|\?(Draw|GetRange|"
+                    r"Increment|IncrementPercent|Move|Resize|SetColors|"
+                    r"SetCurrentValue|SetMaxValue|SetMinValue|SetOrientation|"
+                    r"SetRange|SetTexture)@)CUIInterval_Impl@@",
          # every redirected call site's import, from the unprotected
          # developer build of 2003-08-05 (tools/demoimports.py, profile
          # tron2): scored as if put back on its IAT slot
