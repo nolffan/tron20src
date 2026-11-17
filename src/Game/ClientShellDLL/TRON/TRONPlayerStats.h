@@ -59,7 +59,7 @@ public:
     void        UpdateAir(LTFLOAT nPercent);
     void        UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId);
     void        UpdateKeys(uint8 nType, uint16 dwId);
-	void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel);
+	void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel, uint8 nType, char* szName, bool bNoHelpPing);
     void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration); // PORT: NOLF2's interface
 	void		UpdateSkills(ILTMessage_Read *pMsg);
 	void		GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount); // PORT: NOLF2's interface

@@ -176,6 +176,13 @@ class CInterfaceMgr
 		}
 		void	ClosePopup() { m_PopupText.Close(); }
 
+		// RETAIL: inline (CTronPlayerStats::UpdateIntel's, 0x100aabc0;
+		// the name is ours)
+		void	AddIntelRecord(uint32 nTextId, uint8 nPopupId, bool bIsIntel, const char* pszName)
+		{
+			m_IntelRecords.push_back(TronIntelRecord(nTextId, nPopupId, bIsIntel, pszName));
+		}
+
 		// Check if we're in one of the "in game" states.
 		bool	IsInGame( );
 

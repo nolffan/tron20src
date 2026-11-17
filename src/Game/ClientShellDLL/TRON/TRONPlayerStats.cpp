@@ -896,21 +896,41 @@ void CTronPlayerStats::UpdateKeys(uint8 nType, uint16 nId)
 //
 // ----------------------------------------------------------------------- //
 
-void CTronPlayerStats::UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel)
+void CTronPlayerStats::UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel, uint8 nType, char* szName, bool bNoHelpPing)
 {
+	// RETAIL: 0x100aaac0. A build note (type 1) plays its sound
+	if (nType == 1)
+	{
+		g_pClientSoundMgr->PlayInterfaceSound("snd\\event\\buildnote_pu.WAV");
+		g_pHUDMgr->QueueUpdate(0x20000000);
+	}
+
 	uint16 nIndex = m_IntelList.GetIndex(nTextId);
 	if (!m_IntelList.IsValid(nIndex))
 	{
 		INTEL_ITEM* pItem = debug_new(INTEL_ITEM);
 		pItem->nTextId = nTextId;
+		pItem->nType = nType;
 		pItem->nPopupId = nPopupId;
-		// PORT: retail (0x100aaac0) also takes the item's type, name and
-		// level; NOLF2's message has none of them
 		pItem->bIsIntel = (bIsIntel != LTFALSE);
 		pItem->nMissionNum = (uint8)g_pMissionMgr->GetCurrentMission();
+		pItem->nLevelNum = (uint8)g_pMissionMgr->GetCurrentLevel();
+		SAFE_STRCPY(pItem->szName, szName);
 		m_IntelList.Add(pItem);
-	}
 
+		// RETAIL: a help file (type 2 and up) pings the help menu, an
+		// intel item (type 0) goes in the interface manager's records
+		if (nType >= 2 && !bNoHelpPing)
+		{
+			m_IONodeMgr.AddPing("helpfile");
+			return;
+		}
+
+		if (!nType)
+		{
+			g_pInterfaceMgr->AddIntelRecord(pItem->nTextId, pItem->nPopupId, true, pItem->szName);
+		}
+	}
 }
 
 

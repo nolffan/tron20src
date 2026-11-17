@@ -61,7 +61,8 @@ public:
     virtual void        UpdateAir(LTFLOAT nPercent) = 0;
     virtual void        UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId) = 0;
     virtual void        UpdateKeys(uint8 nType, uint16 dwId) = 0;
-	virtual void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel) = 0;
+	// RETAIL: Tron's takes the item's type, name and a flag too (CTronPlayerStats 0x100aaac0)
+	virtual void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel, uint8 nType, char* szName, bool bNoHelpPing) = 0;
     virtual void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration) = 0;
 	virtual void		UpdateSkills(ILTMessage_Read *pMsg) = 0;
 	virtual void		GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount) = 0;

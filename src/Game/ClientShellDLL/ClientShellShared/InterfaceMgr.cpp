@@ -1772,21 +1772,18 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			// [KLS 6/20/02] - Removed due to Craig request
 			// g_pChatMsgs->AddMessage(LoadTempString(IDS_INTELLIGENCE));
 
+			// RETAIL: Tron's message (0x100c9ab5): the type, a byte that
+			// is not used, a flag and the item's name; no popup
 			uint32 nTextId = pMsg->Readuint32();
+			uint8 nType = pMsg->Readuint8();
 			uint8 nPopupId = pMsg->Readuint8();
-			LTBOOL bIsIntel = (LTBOOL)pMsg->Readuint8();
-			LTBOOL bShow = (LTBOOL)pMsg->Readuint8();
-			LTBOOL bAdd = (LTBOOL)pMsg->Readuint8();
+			uint8 nIsIntel = pMsg->Readuint8();
+			pMsg->Readuint8();
+			bool bNoHelpPing = pMsg->Readbool();
+			char szName[128];
+			pMsg->ReadString(szName, sizeof(szName));
 
-			if (bShow)
-			{
-				ShowPopup(nTextId, nPopupId, true);
-			}
-
-			if (bAdd)
-			{
-				GetPlayerStats( )->UpdateIntel(nTextId,nPopupId,bIsIntel);
-			}
+			GetPlayerStats( )->UpdateIntel(nTextId,nPopupId,nIsIntel,nType,szName,bNoHelpPing);
 		}
 		break;
 
