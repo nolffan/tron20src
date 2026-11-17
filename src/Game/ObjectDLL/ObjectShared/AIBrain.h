@@ -69,7 +69,6 @@ class CAIBrain : public CAIClassAbstract
 		// Dodge
 
 		void GetDodgeStatus(DodgeStatus* peDodgeStatus, Direction* peDirection, DodgeAction* peDodgeAction, HOBJECT* phNode, LTBOOL bForceDodge);
-		LTBOOL TargetIsAimingAtMe();
 		LTBOOL CharacterIsAimingAtMe(CCharacter* pCharacter);
 
 		void DodgeDelay();
@@ -107,6 +106,9 @@ class CAIBrain : public CAIClassAbstract
 
 		LTFLOAT	GetAttackFromVantageAttackTime() const;
 		LTFLOAT	GetAttackFromVantageAttackTimeRandom() const;
+
+		// RETAIL: 0x1018f560: restarts the firing trails (the name is ours)
+		void	ResetFiringTrails();
 
 		LTFLOAT GetAttackFromViewChaseTime() const { return m_pBrain->fAttackFromViewChaseTime; }
 
