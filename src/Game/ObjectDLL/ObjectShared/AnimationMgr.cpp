@@ -23,7 +23,7 @@ ostream& operator << (ostream& os, const CAnimationContext& Context)
 {
 	if ( Context.m_eState == CAnimationContext::eStateTransition )
 	{
-		const CTransition& Transition = Context.m_pAnimationMgr->m_aTransitions[Context.m_iTransition];
+		const CTransition& Transition = Context.m_pAnimationMgr->GetTransition( Context.m_iTransition );
 		const char* szTransition = Transition.GetName();
 		os << "Transitioning: " << ( szTransition ? szTransition : "Invalid" ) << '\n';
 

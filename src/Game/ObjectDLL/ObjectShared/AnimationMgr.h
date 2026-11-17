@@ -415,8 +415,6 @@ class CTransition
 
 class CAnimationMgr
 {
-		friend ostream& operator << (ostream& os, const CAnimationContext& Context);	// RETAIL: Tron's
-
 	public :
 
 		// Ctors/Dtors/etc
