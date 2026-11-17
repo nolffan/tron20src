@@ -3036,21 +3036,7 @@ float CMoveMgr::GetCrouchHeightDifference( ) const
 	return (m_vStandDims.y - m_vCrouchDims.y);
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CMoveMgr::GetStandHeightDifference
-//
-//  PURPOSE:	Get the difference in height from the stand position to the current position...
-//
-// ----------------------------------------------------------------------- //
-
-float CMoveMgr::GetCurrentHeightDifference( ) const
-{
-	if( !m_hObject )
-		return 0.0f;
-
-	LTVector vDims;
-	g_pPhysicsLT->GetObjectDims( m_hObject, &vDims );
-
-	return (m_vStandDims.y - vDims.y);
-}
+// RETAIL: Tron's CMoveMgr has no GetCurrentHeightDifference: its only user,
+// CPlayerCamera::UpdateFirstPerson (CShell 0x1015bd40), does not call it, and
+// the retail image has no such function. The declaration stays in CMoveMgr.h
+// (its symbol count holds other functions' code generation).

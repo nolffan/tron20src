@@ -33,7 +33,7 @@ CLightCycleMgr* g_pLightCycleMgr = NULL;
 #endif
 
 // RETAIL: the rounding of BeginLightCycleTrail (inline; the name is ours)
-#define LCM_ROUND(fVal)	((int)((fVal) + ((fVal) > 0.0f ? 0.5 : -0.5)))
+inline int LCM_ROUND(const float &fVal) { return (int)(fVal + (fVal > 0.0f ? 0.5 : -0.5)); }
 
 // ----------------------------------------------------------------------- //
 //
@@ -669,40 +669,45 @@ void CLightCycleMgr::TrimTrailLength(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAIL*
 		float fDZ = (float)fabs(pCur->vPoint.z - pNext->vPoint.z);
 		float fSegment = (fDX > fDZ) ? fDX : fDZ;
 
-		if(fSegment < fExcess)
+		if(fSegment >= fExcess)
+		{
+			if(fDX > fDZ)
+			{
+				if(pCur->GetX() > pNext->GetX())
+				{
+					pCur->SetX(pCur->GetX() - fExcess);
+					bDone = true;
+					pTrail->fLength -= fExcess;
+				}
+				else
+				{
+					pCur->SetX(pCur->GetX() + fExcess);
+					bDone = true;
+					pTrail->fLength -= fExcess;
+				}
+			}
+			else
+			{
+				if(pCur->GetZ() > pNext->GetZ())
+				{
+					pCur->SetZ(pCur->GetZ() - fExcess);
+					bDone = true;
+					pTrail->fLength -= fExcess;
+				}
+				else
+				{
+					pCur->SetZ(pCur->GetZ() + fExcess);
+					bDone = true;
+					pTrail->fLength -= fExcess;
+				}
+			}
+		}
+		else
 		{
 			// The whole segment goes
 			fExcess -= fSegment;
 			nRemove++;
 			pTrail->fLength -= fSegment;
-		}
-		else if(fDX > fDZ)
-		{
-			if(pNext->vPoint.x < pCur->vPoint.x)
-			{
-				pCur->vPoint.x -= fExcess;
-			}
-			else
-			{
-				pCur->vPoint.x += fExcess;
-			}
-
-			bDone = true;
-			pTrail->fLength -= fExcess;
-		}
-		else
-		{
-			if(pNext->vPoint.z < pCur->vPoint.z)
-			{
-				pCur->vPoint.z -= fExcess;
-			}
-			else
-			{
-				pCur->vPoint.z += fExcess;
-			}
-
-			bDone = true;
-			pTrail->fLength -= fExcess;
 		}
 
 		if(pTrail->m_fTronUnknown14 < 0.0f)
@@ -1725,8 +1730,8 @@ bool CLightCycleMgr::CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPo
 	LIGHT_CYCLE_TRAIL_POINT* pNeighbour, LightCycleCollisionInfo* pInfo)
 {
 	uint32 nPoints = collPoints.size();
-	float fDX = (float)fabs(pPoint->vPoint.x - pNeighbour->vPoint.x);
-	float fDZ = (float)fabs(pPoint->vPoint.z - pNeighbour->vPoint.z);
+	float fDX = (float)fabs(pPoint->GetX() - pNeighbour->GetX());
+	float fDZ = (float)fabs(pPoint->GetZ() - pNeighbour->GetZ());
 
 	uint32 nIndex = 0;
 	while((nIndex < nPoints) && (pPoint != &collPoints[nIndex]))
@@ -1736,89 +1741,118 @@ bool CLightCycleMgr::CutTrailPoint(std::vector<LIGHT_CYCLE_TRAIL_POINT> & collPo
 
 	if(fDX > fDZ)
 	{
-		if(pNeighbour->vPoint.x < pPoint->vPoint.x)
+		if(pPoint->GetX() > pNeighbour->GetX())
 		{
-			if(pPoint->vPoint.x == pInfo->vCollisionPoint.x)
+			if(pPoint->GetX() == pInfo->vCollisionPoint.x)
 			{
 				float fX = pInfo->vCollisionPoint.x - 64.0f;
-				if(!(fX > pNeighbour->vPoint.x))
+				if(!(fX > pNeighbour->GetX()))
 					return false;
-				pPoint->vPoint.x = fX;
+				pPoint->SetX(fX);
 				return true;
 			}
 
 			float fX = pInfo->vCollisionPoint.x - 64.0f;
-			if(!(fX < pNeighbour->vPoint.x))
+			if(fX < pNeighbour->GetX())
 			{
-				pPoint->vPoint.x = fX;
-				return true;
+				// It would pass its neighbour: drop it
+				if(nPoints > 2)
+				{
+					collPoints.erase(&collPoints[nIndex]);
+					return true;
+				}
+
+				return false;
 			}
+
+			pPoint->SetX(fX);
+			return true;
 		}
 		else
 		{
-			if(pPoint->vPoint.x == pInfo->vCollisionPoint.x)
+			if(pPoint->GetX() == pInfo->vCollisionPoint.x)
 			{
 				float fX = pInfo->vCollisionPoint.x + 64.0f;
-				if(!(fX < pNeighbour->vPoint.x))
+				if(!(fX < pNeighbour->GetX()))
 					return false;
-				pPoint->vPoint.x = fX;
+				pPoint->SetX(fX);
 				return true;
 			}
 
 			float fX = pInfo->vCollisionPoint.x + 64.0f;
-			if(!(fX > pNeighbour->vPoint.x))
+			if(fX > pNeighbour->GetX())
 			{
-				pPoint->vPoint.x = fX;
-				return true;
+				// It would pass its neighbour: drop it
+				if(nPoints > 2)
+				{
+					collPoints.erase(&collPoints[nIndex]);
+					return true;
+				}
+
+				return false;
 			}
+
+			pPoint->SetX(fX);
+			return true;
 		}
 	}
 	else
 	{
-		if(pNeighbour->vPoint.z < pPoint->vPoint.z)
+		if(pPoint->GetZ() > pNeighbour->GetZ())
 		{
-			if(pPoint->vPoint.z == pInfo->vCollisionPoint.z)
+			if(pPoint->GetZ() == pInfo->vCollisionPoint.z)
 			{
 				float fZ = pInfo->vCollisionPoint.z - 64.0f;
-				if(!(fZ > pNeighbour->vPoint.z))
+				if(!(fZ > pNeighbour->GetZ()))
 					return false;
-				pPoint->vPoint.z = fZ;
+				pPoint->SetZ(fZ);
 				return true;
 			}
 
 			float fZ = pInfo->vCollisionPoint.z - 64.0f;
-			if(!(fZ < pNeighbour->vPoint.z))
+			if(fZ < pNeighbour->GetZ())
 			{
-				pPoint->vPoint.z = fZ;
-				return true;
+				// It would pass its neighbour: drop it
+				if(nPoints > 2)
+				{
+					collPoints.erase(&collPoints[nIndex]);
+					return true;
+				}
+
+				return false;
 			}
+
+			pPoint->SetZ(fZ);
+			return true;
 		}
 		else
 		{
-			if(pPoint->vPoint.z == pInfo->vCollisionPoint.z)
+			if(pPoint->GetZ() == pInfo->vCollisionPoint.z)
 			{
 				float fZ = pInfo->vCollisionPoint.z + 64.0f;
-				if(!(fZ < pNeighbour->vPoint.z))
+				if(!(fZ < pNeighbour->GetZ()))
 					return false;
-				pPoint->vPoint.z = fZ;
+				pPoint->SetZ(fZ);
 				return true;
 			}
 
 			float fZ = pInfo->vCollisionPoint.z + 64.0f;
-			if(!(fZ > pNeighbour->vPoint.z))
+			if(fZ > pNeighbour->GetZ())
 			{
-				pPoint->vPoint.z = fZ;
-				return true;
+				// It would pass its neighbour: drop it
+				if(nPoints > 2)
+				{
+					collPoints.erase(&collPoints[nIndex]);
+					return true;
+				}
+
+				return false;
 			}
+
+			pPoint->SetZ(fZ);
+			return true;
 		}
 	}
-
-	// It would pass its neighbour: drop it
-	if(nPoints <= 2)
-		return false;
-
-	collPoints.erase(&collPoints[nIndex]);
-	return true;
 }
 
 // ----------------------------------------------------------------------- //

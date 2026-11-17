@@ -495,9 +495,9 @@ void CTronPlayerStats::UpdateEnergy(float fEnergy)
 
 float CTronPlayerStats::GetEnergy()
 {
-	// PORT: retail leaves out what the subroutines hold (Tron's subroutine
-	// manager's +0x11a4, not yet in ours)
-	return m_fEnergy;
+	// RETAIL: 0x100a9c90 leaves out what the subroutines hold (the
+	// subroutine manager's +0x11a4)
+	return m_fEnergy - g_pSubroutineMgr->GetTronUnknown11A4();
 }	// Energy levels
 
 float CTronPlayerStats::GetFullEnergy()
@@ -1829,9 +1829,9 @@ void CTronPlayerStats::Compile()
 		cMsg.Writeuint8(iBase);
 	}
 
-	// PORT: retail writes Tron's subroutine manager's +0x11a4 (the energy
-	// its subroutines hold), not yet in ours
-	cMsg.Writefloat(0.0f);
+	// RETAIL: the energy the subroutines hold (the subroutine manager's
+	// +0x11a4)
+	cMsg.Writefloat(g_pSubroutineMgr->GetTronUnknown11A4());
 
 	// End of line.
 	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);  

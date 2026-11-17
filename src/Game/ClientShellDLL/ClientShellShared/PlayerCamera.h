@@ -123,7 +123,9 @@ class CPlayerCamera
 		// RETAIL: Tron's takes a third argument (retail 0x1015d240: callers
 		// pass 0, 2 or a variable). PORT: not yet used
 		void CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTronUnknown = 0 );
-		void CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot );
+		// RETAIL: Tron's takes CalcNonClipPos' third argument too (0x1015d540,
+		// ret 0xc). PORT: ours does not use it yet
+		void CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot, int nTronUnknown );
 
 	private : // Data members
 
@@ -251,7 +253,7 @@ class CPlayerCamera
 				m_eCameraMode = m_eSaveCameraMode;
 		}
 
-        void UpdateFirstPerson(LTVector vF, LTVector vPos, float fDeltaTime);
+        void UpdateFirstPerson(LTVector vF, LTVector vPos, LTRotation rRot, float fDeltaTime);	// RETAIL: 0x1015bd40 takes the rotation
 
         LTBOOL VCompare(LTVector a, LTVector b);
 

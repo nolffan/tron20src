@@ -248,7 +248,8 @@ void CTexturedFrame::SetSize(int w, int h)
 // RETAIL: 0x1013ec70
 void CTexturedFrame::SetRect(LTRect rect)
 {
-	m_Pos = LTIntPt(rect.left, rect.top);
+	m_Pos.x = rect.left;
+	m_Pos.y = rect.top;
 	m_Size.x = rect.right - rect.left;
 	m_Size.y = rect.bottom - rect.top;
 	m_bDirty = true;

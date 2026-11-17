@@ -18,13 +18,20 @@
 #include "CMoveMgr.h"
 #include "ProfileMgr.h"
 #include "InterfaceMgr.h"
+#include "SFXMgr.h"
+#include "../TRON/LightCycleFX.h"
 
 VarTrack		g_vtCameraMoveUpTime;
 VarTrack		g_vtCameraMoveUpMinVel;
 VarTrack		g_vtCameraMaxYDifference;
 VarTrack		g_vtCameraClipDistance;
 VarTrack		g_vtCameraCollisionObjScale;
+// RETAIL: Tron's (CShell 0x10275328, 0x10275308, 0x102752f8; the names are
+// ours, from their console variables)
+VarTrack		g_vtCameraCollisionLightCycleObjScaleY;
 VarTrack		g_vtCameraCollisionUseObject;
+VarTrack		g_vtCameraUseFinalClipping;
+VarTrack		g_vtCameraExtendSpeed;
 
 #define CAMERA_COLLISION_MODEL			"models\\1x1_square.ltb"
 #define DEFAULT_COLLISION_MODEL_SCALE	12.0f
@@ -138,9 +145,13 @@ LTBOOL CPlayerCamera::Init(ILTClient* pClientDE)
 	g_vtCameraMoveUpTime.Init(pClientDE, "CameraMoveUpTime", NULL, 0.1f);
 	g_vtCameraMoveUpMinVel.Init(pClientDE, "CameraMoveUpMinVel", NULL, 140.0f);
 	g_vtCameraMaxYDifference.Init(pClientDE, "CameraMoveMaxYDiff", NULL, 30.0f);
-	g_vtCameraClipDistance.Init(pClientDE, "CameraClipDist", NULL, 30.0f);
-	g_vtCameraCollisionObjScale.Init(pClientDE, "CameraCollisionObjScale", NULL, DEFAULT_COLLISION_MODEL_SCALE );
+	// RETAIL: Tron's clip distance is 12 (0x1015b450)
+	g_vtCameraClipDistance.Init(pClientDE, "CameraClipDist", NULL, 12.0f);
+	g_vtCameraCollisionObjScale.Init(pClientDE, "CameraCollisionObjScaleXZ", NULL, DEFAULT_COLLISION_MODEL_SCALE );
+	g_vtCameraCollisionLightCycleObjScaleY.Init(pClientDE, "CameraCollisionLightCycleObjScaleY", NULL, 1.0f );
 	g_vtCameraCollisionUseObject.Init(pClientDE, "CameraCollisionUseObject", NULL, 1.0f );
+	g_vtCameraUseFinalClipping.Init(pClientDE, "CameraUseFinalClipping", NULL, 1.0f );
+	g_vtCameraExtendSpeed.Init(pClientDE, "CameraExtendSpeed", NULL, 10.0f );
 
 	CreateCameraCollisionObject();
 
@@ -197,8 +208,10 @@ void CPlayerCamera::CameraUpdate(float deltaTime)
 
 			case FIRSTPERSON:
 			{
-				UpdateFirstPerson(vF, vPos, deltaTime);
-				PointInDirection(rRot);
+				// RETAIL: Tron's points the camera itself (0x1015bd40).
+				// PORT: retail's CameraUpdate (0x1015b5e0) does this only
+				// while its +0x104 time is zero
+				UpdateFirstPerson(vF, vPos, rRot, deltaTime);
 				return;
 			}
 			break;
@@ -262,15 +275,13 @@ void CPlayerCamera::CameraUpdate(float deltaTime)
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerCamera::UpdateFirstPerson(LTVector vF, LTVector vPos, float fDeltaTime)
+void CPlayerCamera::UpdateFirstPerson(LTVector vF, LTVector vPos, LTRotation rRot, float fDeltaTime)
 {
 	vF.y = 0.0f;
 	vPos += (vF * m_TargetFirstPersonOffset.x);
 	vPos.y += m_TargetFirstPersonOffset.y;
-	
-	// Modify the position so it's always based on the standing height...
 
-	vPos.y += g_pMoveMgr->GetCurrentHeightDifference();
+	// RETAIL: Tron's (0x1015bd40) does not keep the standing height
 
 	// Make sure we don't move the camera up too fast (going up stairs)...
 
@@ -297,18 +308,28 @@ void CPlayerCamera::UpdateFirstPerson(LTVector vF, LTVector vPos, float fDeltaTi
 			}
 
             float fVel = fYDiff / g_vtCameraMoveUpTime.GetFloat();
-			fVel = fVel < g_vtCameraMoveUpMinVel.GetFloat() ? g_vtCameraMoveUpMinVel.GetFloat() : fVel;
-
-			fNewY += (fDeltaTime * fVel);
+			float fMinVel = g_vtCameraMoveUpMinVel.GetFloat();
+			fNewY += ((fMinVel > fVel ? fMinVel : fVel) * fDeltaTime);
 
 			if (fabs(fNewY - vPos.y) > 1.0f)
 			{
-				vPos.y = fNewY > vPos.y ? vPos.y : fNewY;
+				fNewY = fNewY < vPos.y ? fNewY : vPos.y;
+				vPos.y = fNewY;
 			}
 		}
 	}
 
-	m_vPos = vPos;
+	// RETAIL: Tron's keeps the position in +0x24 and points the camera
+	m_vTronUnknown24 = vPos;
+
+	if (TronUnknownMoveToTarget())
+	{
+		m_eCameraMode = FIRSTPERSON;
+		m_rRotation = rRot;
+		return;
+	}
+
+	PointAtPosition(m_vTronUnknown24, rRot, m_vPos);
 }
 
 
@@ -875,7 +896,8 @@ bool CPlayerCamera::CreateCameraCollisionObject()
 
 	SAFE_STRCPY( ocs.m_Filename, CAMERA_COLLISION_MODEL );
 	ocs.m_ObjectType	= OT_MODEL;
-	ocs.m_Flags			=0;
+	// RETAIL: Tron's steps up stairs (0x1015d137)
+	ocs.m_Flags			= FLAG_STAIRSTEP;
 	ocs.m_Flags2		= FLAG2_PLAYERCOLLIDE;
 	ocs.m_Pos.Init();
 	
@@ -902,53 +924,84 @@ bool CPlayerCamera::CreateCameraCollisionObject()
 
 void CPlayerCamera::CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTronUnknown )
 {
-	LTVector vTemp, vU, vR, vF;
-	vU = rRot.Up();
-	vR = rRot.Right();
-	vF = rRot.Forward();
+	// RETAIL: Tron's (0x1015d240) needs a target, keeps the light cycle and
+	// the client object out of the way and sizes the collision object for
+	// the cycle; it can also clip the result again without the object
+	if( !m_hTarget )
+		return;
 
 	if( !m_hCollisionObject || (g_vtCameraCollisionUseObject.GetFloat() < 1.0f) )
 	{
-		CalcNoClipPos_WithoutObject( vPos, rRot );
+		CalcNoClipPos_WithoutObject( vPos, rRot, nTronUnknown );
 		return;
 	}
 
-	LTVector vCamPos;
-	g_pLTClient->GetObjectPos( g_pPlayerMgr->GetCamera(), &vCamPos );
-
-	g_pLTClient->SetObjectPos( m_hCollisionObject, &vCamPos );
-	g_pLTClient->SetObjectRotation( m_hCollisionObject, &rRot );
-
-	if( g_vtCameraCollisionObjScale.GetFloat() != DEFAULT_COLLISION_MODEL_SCALE )
+	HOBJECT hCycle = LTNULL;
+	CSFXMgr* pSFXMgr = g_pGameClientShell->GetSFXMgr();
+	if( pSFXMgr )
 	{
-		float fScale = g_vtCameraCollisionObjScale.GetFloat();
-		LTVector vScale( fScale, fScale, fScale );
-
-		g_pPhysicsLT->SetObjectDims( m_hCollisionObject, &vScale, 0 );
+		CLightCycleFX* pCycleFX = pSFXMgr->GetLightCycleFX( g_pLTClient->GetClientObject() );
+		if( pCycleFX )
+		{
+			hCycle = pCycleFX->GetObject();
+		}
 	}
 
-	uint32 dwMoveObjFlags;
+	bool bOnCycle = (hCycle != LTNULL);
+
+	LTVector vCamPos;
+	float fScale;
+	if( bOnCycle )
+	{
+		g_pLTClient->GetObjectPos( m_hTarget, &vCamPos );
+		fScale = g_vtCameraCollisionLightCycleObjScaleY.GetFloat();
+	}
+	else
+	{
+		g_pLTClient->GetObjectPos( g_pPlayerMgr->GetCamera(), &vCamPos );
+		fScale = g_vtCameraCollisionObjScale.GetFloat();
+	}
+
+	g_pLTClient->SetObjectPos( m_hCollisionObject, &vCamPos, LTTRUE );
+	g_pLTClient->SetObjectRotation( m_hCollisionObject, &rRot );
+
+	LTVector vScale( fScale, fScale, fScale );
+	g_pPhysicsLT->SetObjectDims( m_hCollisionObject, &vScale, 0 );
+
+	HOBJECT hClient = g_pLTClient->GetClientObject();
 	HOBJECT hMoveObj = g_pMoveMgr->GetObject();
 
+	uint32 dwMoveObjFlags, dwCycleFlags, dwClientFlags;
 	g_pCommonLT->GetObjectFlags( hMoveObj, OFT_Flags, dwMoveObjFlags );
-	
+	g_pCommonLT->GetObjectFlags( hCycle, OFT_Flags, dwCycleFlags );
+	g_pCommonLT->GetObjectFlags( hClient, OFT_Flags, dwClientFlags );
+
 	// Set objects the camera is inside of to be non-solid...
 
 	g_pCommonLT->SetObjectFlags( hMoveObj, OFT_Flags, 0, FLAG_SOLID );
-	
+	g_pCommonLT->SetObjectFlags( hCycle, OFT_Flags, 0, FLAG_SOLID );
+	g_pCommonLT->SetObjectFlags( hClient, OFT_Flags, 0, FLAG_SOLID );
+
 	// Our collision object needs to be solid while moving...
 
 	g_pCommonLT->SetObjectFlags( m_hCollisionObject, OFT_Flags,	FLAG_SOLID, FLAG_SOLID );
-	
+
 	// Do the collison checking and get the final pos...
 
 	g_pPhysicsLT->MoveObject( m_hCollisionObject, &vPos, 0 );
 	g_pLTClient->GetObjectPos( m_hCollisionObject, &vPos );
-	
+
 	// Set the objects to their previous solidity...
 
 	g_pCommonLT->SetObjectFlags( hMoveObj, OFT_Flags, dwMoveObjFlags, FLAG_SOLID );
+	g_pCommonLT->SetObjectFlags( hCycle, OFT_Flags, dwCycleFlags, FLAG_SOLID );
+	g_pCommonLT->SetObjectFlags( hClient, OFT_Flags, dwClientFlags, FLAG_SOLID );
 	g_pCommonLT->SetObjectFlags( m_hCollisionObject, OFT_Flags, 0, FLAG_SOLID );
+
+	if( (g_vtCameraUseFinalClipping.GetFloat() != 0.0f) && bOnCycle )
+	{
+		CalcNoClipPos_WithoutObject( vPos, rRot, nTronUnknown );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -959,7 +1012,7 @@ void CPlayerCamera::CalcNonClipPos( LTVector & vPos, LTRotation & rRot, int nTro
 //
 // ----------------------------------------------------------------------- //
 
-void CPlayerCamera::CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot )
+void CPlayerCamera::CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & rRot, int nTronUnknown )
 {
 	LTVector vTemp, vU, vR, vF;
 	vU = rRot.Up();
