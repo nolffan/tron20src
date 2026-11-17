@@ -359,15 +359,17 @@ void CHUDHealthEnergy::UpdateLayout()
 	SetUVWH(&m_HealthBG, rc);
 
 	off = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyFGOffset(nCurrentLayout);
-	float fEnergyX = fCenterX - (float)m_nEnergyWidth + off.x;
-	y = (float)off.y + fBottom;
-	g_pDrawPrim->SetXYWH(&m_EnergyBar, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_Plasma[0], fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_Plasma[1], fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_EnergyTransfer, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
-	g_pDrawPrim->SetXYWH(&m_EnergyCap, 0.0f, (float)m_nBarHeight * 0.5f + y - 16.0f, 32.0f, 32.0f);
+	// RETAIL: 0x1002ad04: each bar's x and width are worked out again
+	float fOffY = (float)off.y;
+	y = fOffY + fBottom;
+	float fOffX = (float)off.x;
+	g_pDrawPrim->SetXYWH(&m_EnergyBar, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_Plasma[0], fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_Plasma[1], fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_EnergyTransfer, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_EnergyCap, 0.0f, (float)m_nBarHeight + fOffY + fBottom - 32.0f, 32.0f, 32.0f);
 	SetUVWH(&m_EnergyBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyTex(nCurrentLayout));
-	g_pDrawPrim->SetXYWH(&m_ReservedBar, fEnergyX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
+	g_pDrawPrim->SetXYWH(&m_ReservedBar, fOffX - (float)m_nEnergyWidth + fCenterX, y, (float)m_nEnergyWidth, (float)m_nBarHeight);
 	SetUVWH(&m_ReservedBar, ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyDeficitTex(nCurrentLayout));
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
