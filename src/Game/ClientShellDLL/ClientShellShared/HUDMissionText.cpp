@@ -102,20 +102,22 @@ void CHUDMissionText::Pause(LTBOOL bPause)
 
 void CHUDMissionText::SetScale(float fScale)
 {
+	// RETAIL: Tron's (0x10166720) also picks the font for the new height
 	m_fScale = fScale;
-	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
+	m_nFontSize = (uint8)((float)m_nBaseFontSize * fScale);
 	if (m_pText)
 	{
-		float x = m_fScale * (float)m_BasePos.x;
-		float y = m_fScale * (float)m_BasePos.y;
+		float x = (float)m_BasePos.x * fScale;
+		float y = (float)m_BasePos.y * fScale;
+
+		m_pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
+		m_pText->SetFont(m_pFont);
 		m_pText->SetCharScreenHeight(m_nFontSize);
 		m_pText->SetPosition(x,y);
 
-		uint16 nTextWidth = (uint16)(m_fScale * (float)m_nWidth);
+		uint16 nTextWidth = (uint16)((float)m_nWidth * m_fScale);
 		m_pText->SetWrapWidth(nTextWidth);
-
 	}
-
 }
 
 void CHUDMissionText::UpdateLayout()
