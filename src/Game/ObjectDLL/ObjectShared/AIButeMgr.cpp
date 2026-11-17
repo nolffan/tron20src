@@ -330,7 +330,9 @@ int CAIButeMgr::GetTemplateIDByName(const char *szName)
 
 	for ( int iTemplateID = 0 ; iTemplateID < m_cTemplateID ; iTemplateID++ )
 	{
-		if ( !strcmp(szName, GetTemplate(iTemplateID)->szName) )
+		// RETAIL: Tron checks the template's id (0x1019f255)
+		AIBM_Template* pTemplate = ( iTemplateID >= 0 && iTemplateID < m_cTemplateID ) ? GetTemplate( iTemplateID ) : LTNULL;
+		if ( !strcmp(szName, pTemplate->szName) )
 		{
 			return iTemplateID;
 		}
