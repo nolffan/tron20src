@@ -1326,6 +1326,18 @@ into the first character of the first chat history line.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 writes at most the maximum length, with the terminator.
 
+### The trigger's key list reports the wrong result
+
+Object.lto 0x101c2840 (CTriggerPlugin::PreHook_EditStringList,
+ObjectShared/Trigger.cpp). For the "PlayerKey" property, the function gives
+the list to the key manager plugin's PreHook_EditStringList. It keeps the
+LTRESULT in a boolean and returns LT_OK when the result is not zero. Thus a
+list that the key plugin fills correctly (LT_OK, zero) gives LT_ERROR to
+DEdit, and a failure gives LT_OK.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Trigger.cpp
+returns the key plugin's result.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
