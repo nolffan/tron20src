@@ -92,11 +92,10 @@ CharacterSoundType GetCharacterSoundType(EnumAISoundType eSound)
 {	
 	switch ( eSound )
 	{
+		// RETAIL: 0x101f5930, Tron plays all of these as dialog.
+
 		case kAIS_Death:
 		case kAIS_DeathQuiet:
-			return CST_DEATH;
-			break;
-
 		case kAIS_Pain:
 		case kAIS_Bleeding:
 		case kAIS_Burning:
@@ -107,9 +106,6 @@ CharacterSoundType GetCharacterSoundType(EnumAISoundType eSound)
 		case kAIS_Explode:
 		case kAIS_Fall:
 		case kAIS_FallStairs:
-			return CST_DAMAGE;
-			break;
-
 		case kAIS_DamageBearTrap:
 		case kAIS_DamageGlue:
 		case kAIS_DamageLaughing:

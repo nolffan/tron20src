@@ -306,19 +306,23 @@ AISpatialRepresentation* CAISpatialRepresentationMgr::FindContainingVolumeBruteF
 
 	// The really, really, stupid way.
 
-	for ( uint32 iVolume = 0 ; iVolume < m_listpVolumes.size(); iVolume++ )
+	// RETAIL: 0x101b6d09, Tron walks the list with an iterator.
+
+	for ( _VolumeIterator it = m_listpVolumes.begin(); it != m_listpVolumes.end(); ++it )
 	{
+		AISpatialRepresentation* pVolume = *it;
+
 		// Skip disabled volumes.
 
-		if( !m_listpVolumes[iVolume]->IsVolumeEnabled() )
+		if( !pVolume->IsVolumeEnabled() )
 		{
 			continue;
 		}
 
-		if ( ( m_listpVolumes[iVolume]->GetUseFlags() & dwUseBy ) && 
-			m_listpVolumes[iVolume]->InsideMasked(vPos, iAxisMask, fVerticalThreshhold) )
+		if ( ( pVolume->GetUseFlags() & dwUseBy ) && 
+			pVolume->InsideMasked(vPos, iAxisMask, fVerticalThreshhold) )
 		{
-			return m_listpVolumes[iVolume];
+			return pVolume;
 		}
 	}
 
