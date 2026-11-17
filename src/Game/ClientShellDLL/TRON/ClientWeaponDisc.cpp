@@ -432,7 +432,7 @@ void CClientWeaponDisc::UpdateNonFiring()
 	if ( GetState() == W_SWAT_DEFENSE )
 	{
 		ShowDisc();
-		if ( !TronUnknownVirtual190( false ) )
+		if ( !PlaySwatDefenseAnimation( false ) )
 		{
 			SetState( W_IDLE );
 		}
@@ -440,7 +440,7 @@ void CClientWeaponDisc::UpdateNonFiring()
 	if ( GetState() == W_HOLD_DEFENSE )
 	{
 		ShowDisc();
-		if ( !PlaySwatDefenseAnimation( false ) )
+		if ( !PlayHoldDefenseAnimation( false ) )
 		{
 			SetState( W_IDLE );
 		}
@@ -454,13 +454,15 @@ void CClientWeaponDisc::UpdateNonFiring()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CClientWeaponDisc::TronUnknownVirtual190
+//	ROUTINE:	CClientWeaponDisc::PlaySwatDefenseAnimation()
 //
-//	PURPOSE:	RETAIL: 0x10019920
+//	PURPOSE:	Set the model to the swat defense animation.
+//				RETAIL: 0x10019920 (slot 100): plays it again unless it
+//				still plays, and tells the server the disc is out
 //
 // ----------------------------------------------------------------------- //
 
-bool CClientWeaponDisc::TronUnknownVirtual190( bool bResetAni )
+bool CClientWeaponDisc::PlaySwatDefenseAnimation( bool bResetAni )
 {
 	uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
 	uint32 dwState = g_pLTClient->GetModelPlaybackState( m_hObject );
@@ -472,10 +474,15 @@ bool CClientWeaponDisc::TronUnknownVirtual190( bool bResetAni )
 			return true;
 		}
 
-		if ( !bResetAni )
+		if ( bResetAni )
 		{
-			return false;
+			// button held down, play again
+			PlayAnimation( GetSwatDefenseAni(), false, 1.0f, false );
+			SendDiscFired();
+			return true;
 		}
+
+		return false;
 	}
 
 	PlayAnimation( GetSwatDefenseAni(), false, 1.0f, false );
@@ -1013,76 +1020,6 @@ bool CClientWeaponDisc::PlayFireAnimation( bool bResetAni )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CClientWeaponDisc::PlaySwatDefenseAnimation()
-//
-//	PURPOSE:	Set the model to the swat defense animation
-//
-// ----------------------------------------------------------------------- //
-
-bool CClientWeaponDisc::PlaySwatDefenseAnimation( bool bResetAni )
-{
-	// get thde current animation and the current animation state
-	uint32 dwAni    = g_pLTClient->GetModelAnimation( m_hObject );
-	uint32 dwState  = g_pLTClient->GetModelPlaybackState( m_hObject );
-
-	if ( !IsSwatDefenseAni( dwAni ) )
-	{
-		// start the defense animation
-		PlayAnimation( GetSwatDefenseAni(), false );
-
-		// let the server know
-		SendDefendMessage( MPROJ_START_SWAT_BLOCK , GetSwatDefenseAni() );
-
-		// turn on accurate rotations on the server
-		g_pPlayerMgr->StartServerAccurateRotation();
-
-		// start sending the camera offset to the server
-		g_pPlayerMgr->StartSendingCameraOffsetToServer();
-
-		return true;
-	}
-	else
-	{
-		if ( dwState & MS_PLAYDONE )
-		{
-			// all done!
-			if ( bResetAni )
-			{
-				// button held down, play again
-
-				// start the defense animation
-				PlayAnimation( GetSwatDefenseAni(), false );
-
-				// let the server know
-				SendDefendMessage( MPROJ_START_SWAT_BLOCK , GetSwatDefenseAni() );
-
-				// turn on accurate rotations on the server
-				g_pPlayerMgr->StartServerAccurateRotation();
-
-				// start sending the camera offset to the server
-				g_pPlayerMgr->StartSendingCameraOffsetToServer();
-
-				return true;
-			}
-			else
-			{
-				// turn off accurate rotations on the server
-				g_pPlayerMgr->EndServerAccurateRotation();
-
-				// stop sending the camera offset to the server
-				g_pPlayerMgr->EndSendingCameraOffsetToServer();
-
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CClientWeaponDisc::PlayHoldDefenseAnimation()
 //
 //	PURPOSE:	Set the model to the hold defense animation
@@ -1504,6 +1441,32 @@ void CClientWeaponDisc::Fire( bool bFire )
 
 	// now call the the parent's version
 	CTronClientWeapon::Fire( bFire );
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CClientWeaponDisc::TronUnknownVirtual198()
+//
+//	PURPOSE:	RETAIL: 0x10019e00 (slot 102; the name is ours): tell the
+//				server where the disc is and where it points
+//
+// ----------------------------------------------------------------------- //
+
+void CClientWeaponDisc::TronUnknownVirtual198()
+{
+	LTVector vU, vR, vF, vFirePos;
+	if ( !GetFireVectors( &vU, &vR, &vF, &vFirePos ) )
+	{
+		return;
+	}
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_DISC_HOLD_DEFENSE );
+	cMsg.WriteLTVector( vFirePos );
+	cMsg.WriteLTVector( vF );
+	cMsg.Writefloat( g_pLTClient->GetTime() );
+	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 }
 
 
