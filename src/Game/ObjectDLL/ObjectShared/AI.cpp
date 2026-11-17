@@ -383,7 +383,7 @@ static LTBOOL VelidateDelcmd( ILTPreInterface *pInterface, ConParse &cpMsgParams
 		if( CCommandMgrPlugin::s_bShowMsgErrors )
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
-			pInterface->CPrint( "ERROR! - VelidateDelcmd()" );
+			pInterface->CPrint( "ERROR! - ValidateDelcmd()" );
 			pInterface->CPrint( "    MSG - DELCMD - Invalid Command specified '%s'!", cpMsgParams.m_Args[1] );
 		}
 
@@ -393,7 +393,7 @@ static LTBOOL VelidateDelcmd( ILTPreInterface *pInterface, ConParse &cpMsgParams
 	if( CCommandMgrPlugin::s_bShowMsgErrors )
 	{
 		pInterface->ShowDebugWindow( LTTRUE );
-		pInterface->CPrint( "ERROR! - VelidateDelcmd()" );
+		pInterface->CPrint( "ERROR! - ValidateDelcmd()" );
 		pInterface->CPrint( "    MSG - DELCMD - No Command specified!");	
 	}
 
@@ -595,9 +595,11 @@ bool CAI::SeeThroughFilterFn(HOBJECT hObj, void *pUserData)
         return false;
 	}
 
-    static HCLASS hCharacter = g_pLTServer->GetClass("CCharacter");
+    // RETAIL: Tron's AI can not see through an InfoString (0x101285a1);
+    // it can see through other characters
+    static HCLASS hInfoString = g_pLTServer->GetClass("InfoString");
 
-    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hCharacter))
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hInfoString))
 	{
         return false;
 	}

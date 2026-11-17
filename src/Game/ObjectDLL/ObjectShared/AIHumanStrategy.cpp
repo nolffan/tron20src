@@ -4277,17 +4277,9 @@ void CAIHumanStrategyShoot::Aim()
 
 void CAIHumanStrategyShoot::Fire()
 {
-	// Melee weapons push targets back.
+	// RETAIL: Tron's melee weapons do not push the target back: Fire only
+	// sets the state (0x10226cb0)
 
-	AIASSERT( GetAI()->GetCurrentWeapon() && GetAI()->GetCurrentWeapon()->GetWeaponData(), GetAI()->m_hObject, "CAIHumanStrategyShoot::Fire: No weapon or weapon data.");
-
-	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
-	if ( pWeapon->GetWeaponData()->nAIWeaponType == kAIWeap_Melee )
-	{
-		GetAI()->GetTarget()->SetPushSpeed(800.f);
-		GetAI()->GetTarget()->SetPushMinDist( GetAI()->GetBrain()->GetAIData( kAIData_MeleeKnockBackDist ) );
-	}
-	
 	m_eState = eStateFiring;
 }
 
