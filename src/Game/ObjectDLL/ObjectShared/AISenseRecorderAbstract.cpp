@@ -521,7 +521,13 @@ void CAISenseRecorderAbstract::CopySenseRecord(AISenseRecord* pOrigSenseRecord)
 
 	// Find sense record for stimulus.
 	AISENSE_RECORD_MAP::iterator it = m_mapSenseRecords.find( pOrigSenseRecord->eSenseType );
-	ASSERT(it != m_mapSenseRecords.end());
+
+	// RETAIL: 0x101dae5a, Tron reports a sense it does not record.
+	if( it == m_mapSenseRecords.end() )
+	{
+		ObjectCPrint( m_pSensing->GetSensingObject(), "SenseRecorder attempting to copy a sense record it does not support." );
+		return;
+	}
 
 	AISenseRecord* pSenseRecord = it->second;
 

@@ -4693,7 +4693,8 @@ void CPlayerObj::UpdateInterface(bool bForceUpdate)
 
 	// See if health has changed...
 
-	if ( ( abs( (int)m_fOldHitPts - (int)m_damage.GetHitPoints() )  >= 1) || bForceUpdate)
+	// RETAIL: 0x1007fd7c, Tron compares the hit points as floats.
+	if ( ( fabs( m_fOldHitPts - m_damage.GetHitPoints() ) >= 1.0 ) || bForceUpdate)
 	{
 		m_fOldHitPts = m_damage.GetHitPoints();
 
@@ -6669,6 +6670,10 @@ void CPlayerObj::HandleClientMsg(ILTMessage_Read *pMsg)
 					cSoundMsg.Writeuint8(0);
 					cSoundMsg.Writeuint8(nClientID);
 					cSoundMsg.WriteCompPos(vPos);
+					// RETAIL: 0x100833c2, Tron's player sound also sends two
+					// floats (1.0 and 0.0; their use is not yet identified).
+					cSoundMsg.Writefloat(1.0f);
+					cSoundMsg.Writefloat(0.0f);
 					g_pLTServer->SendSFXMessage(cSoundMsg.Read(), vPos, 0);
 				}
 			}

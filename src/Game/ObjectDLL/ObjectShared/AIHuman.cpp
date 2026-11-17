@@ -1301,45 +1301,16 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 			return;
 		}
 	}
-	if ( DT_WORLDONLY == damage.eType || m_damage.IsCantDamageType(damage.eType) || !m_damage.GetCanDamage() )
+
+	// RETAIL: 0x1016eaff, Tron has none of NOLF2's special damage types
+	// here (world only, sleeping, tracker, camera disabler), and no
+	// resurrection test.
+
+	if ( m_damage.IsCantDamageType(damage.eType) || !m_damage.GetCanDamage() )
 	{
-		m_fLastPainVolume = 0.0f;
 		return;
 	}
 
-	if ( DT_SLEEPING == damage.eType )
-	{
-		m_fLastPainVolume = 0.1f;
-	}
-
-	// If hit by a tracking device just be completely oblivious to the actual damage and begin tracking... 
-
-	if( damage.eType == DT_GADGET_TRACKER )
-	{
-		// Send message to begin tracking...
-
-		// PORT: Tron's CAI has no tracking dart member
-		SetTracking( true );
-		m_fLastPainVolume = 0.0f;
-		return;
-	}
-
-	// Ignore shots from camera disabler.
-
-	if( damage.eType == DT_CAMERA_DISABLER )
-	{
-		m_fLastPainVolume = 0.0f;
-		return;
-	}
-
-	if ( HandleResurrectingGoalConditions(damage) )
-	{
-		// See if this goal meets the criteria for adding the Resurrecting Goal
-		// Note: This call needs to be before the DamageType checks, as we
-		// return from them.  This has priority over them.
-		return;
-	}
-	
 	// Give goals an opportunity to handle damage.  GoalMgr returns TRUE
 	// if a goal does not want processing of damage to continue.
 
@@ -1351,15 +1322,36 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 
 	CAI::HandleDamage(damage);
 
-	if ( !m_damage.IsDead() )
-	{
-		// Do not recoil if affected by special damage.
+	// RETAIL: 0x1016eb4d, Tron's recoil: not for these damage types, and
+	// blaster damage recoils only after a random delay (m_fTronUnknown11E4)
+	// from the last recoil (m_fTronUnknown11E0).
 
-		if( ( m_bCanShortRecoil ) &&
-			( !GetDamageFlags() ) )
+	DamageFlags dfNoRecoil = DamageTypeToFlag( DT_PLAYERONLY ) | DamageTypeToFlag( DT_ENERGYCLAW ) | DamageTypeToFlag( DT_PROD );
+	DamageFlags dfLast = DamageTypeToFlag( m_damage.GetLastDamageType() );
+
+	if ( !m_damage.IsDead() && ( ~dfNoRecoil & dfLast ) )
+	{
+		if( DamageTypeToFlag( DT_BLASTER ) & dfLast )
 		{
-			HandleShortRecoil();
+			if( ( ( ( m_fTronUnknown11E8 > 0.0f ) ? m_fTronUnknown11E8 : g_pLTServer->GetTime() ) - m_fTronUnknown11E0 < m_fTronUnknown11E4 ) &&
+				( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - ( ( m_fTronUnknown11E8 > 0.0f ) ? m_fTronUnknown11E8 : g_pLTServer->GetTime() ) != 0.0f ) )
+			{
+				return;
+			}
+
+			// Do not recoil if affected by special damage.
+
+			if( GetDamageFlags() )
+			{
+				return;
+			}
 		}
+
+		m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
+		m_fTronUnknown11E0 = g_pLTServer->GetTime();
+		m_bTronUnknown11EC = true;
+
+		HandleShortRecoil();
 	}
 	else
 	{
