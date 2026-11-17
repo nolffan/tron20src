@@ -948,20 +948,6 @@ void CClientWeaponMgr::ToggleHolster( bool bPlayDeselect )
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CClientWeaponMgr::LastWeapon()
-//
-//	PURPOSE:	Swap to our previously used weapon.
-//
-// ----------------------------------------------------------------------- //
-
-void CClientWeaponMgr::LastWeapon()
-{
-	if (!WeaponsEnabled()) return;
-
-	ChangeWeapon( m_nLastWeaponId, WMGR_INVALID_ID, -1, true );
-}
 	
 
 // ----------------------------------------------------------------------- //
@@ -1139,111 +1125,18 @@ void CClientWeaponMgr::DeselectCallback( int nWeaponId )
 
 void CClientWeaponMgr::AutoSelectWeapon()
 {
-	// [KLS 4/25/02] First see if we can just change ammo types...
-
-	if (m_pCurrentWeapon)
+	// RETAIL: Tron's (0x10168c20): the disc, or else the first weapon (NOLF2
+	// changed ammo types, or to the next real weapon)
+	WEAPON const *pDisc = g_pWeaponMgr->GetWeapon( "Disc" );
+	if ( pDisc && g_pPlayerMgr->ChangeWeapon( pDisc->nId ) )
 	{
-		// Get the best new ammo type
-		int nNewAmmoId = WMGR_INVALID_ID;
-		m_pCurrentWeapon->GetBestAvailableAmmoId( &nNewAmmoId );
-
-		if (WMGR_INVALID_ID != nNewAmmoId)
-		{
-			m_pCurrentWeapon->ChangeAmmoWithReload( nNewAmmoId );
-			return;
-		}
-
-		// Okay, need to change, find the next weapon
-		ChangeToNextRealWeapon();
+		return;
 	}
+
+	g_pPlayerMgr->ChangeWeapon( g_pWeaponMgr->GetWeaponId( g_pWeaponMgr->GetFirstWeaponCommandId() ) );
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CClientWeaponMgr::ChangeToNextRealWeapon()
-//
-//	PURPOSE:	Change to the next weapon/gadget that does damage.
-//				(used by the auto weapon switching)
-//
-// ----------------------------------------------------------------------- //
-
-void CClientWeaponMgr::ChangeToNextRealWeapon()
-{
-	// If we're supposed to hide the weapon when it is empty 
-	// (i.e., it doesn't make sense to see it) then we don't 
-	// want to play the deselect animation...
-
-	if (!m_pCurrentWeapon) return;
-
-	const WEAPON* pCurWeapon = m_pCurrentWeapon->GetWeapon();
-	if (!pCurWeapon) return;
-
-	bool bCanDeselect = !pCurWeapon->bHideWhenEmpty;
-
-	// Find the next available weapon on the weapon selection list...
-
-	uint8 nWeaponPriorities[254]; 
-	int nNumPriorities = g_pWeaponMgr->GetWeaponPriorities(nWeaponPriorities, ARRAY_LEN(nWeaponPriorities));
-
-	for (uint8 i = 0; i < nNumPriorities; i++)
-	{
-		uint8 nWeaponId = nWeaponPriorities[i];
-		if (WMGR_INVALID_ID != nWeaponId)
-		{
-			uint8 iCur = WeaponIdToIndex(nWeaponId);
-
-			if (CWM_NO_WEAPON != iCur)
-			{
-				if ( ( g_pPlayerStats->HaveWeapon( nWeaponId ) ) &&  // have the weapon
-					 ( m_apClientWeapon[ iCur ]->HasAmmo() ) )  // weapon has ammo
-				{
-					ChangeWeapon(nWeaponId, WMGR_INVALID_ID, -1, bCanDeselect);
-					return;
-				}
-			}
-		}
-	}
-
-/* [KLS 8/26/02] Old class-based system...Just use the hardcoded list now...
-
-	// First try to switch to the next available weapon in the current class...
-
-	int nCurClass = g_pWeaponMgr->GetWeaponClass(pCurWeapon->nId);
-
-	uint8 nMatch = GetNextWeaponId(pCurWeapon->nId, nCurClass);
-	if (WMGR_INVALID_ID != nMatch)
-	{
-		ChangeWeapon(nMatch, WMGR_INVALID_ID, -1, bCanDeselect);
-        return;
-	}
-
-
-	// Okay, no available weapons in the current class...switch based on
-	// our class priority list...
-
-	uint8 nClassPriorities[10]; 
-	int nNumPriorities = g_pWeaponMgr->GetWeaponClassPriorities(nClassPriorities, ARRAY_LEN(nClassPriorities));
-
-	for (int i=0; i < nNumPriorities; i++)
-	{
-		// Don't bother trying our current class, we already tried that...
-
-		if (nClassPriorities[i] != nCurClass)
-		{
-			nMatch = GetNextWeaponId(pCurWeapon->nId, nClassPriorities[i]);
-			
-			if (WMGR_INVALID_ID != nMatch)
-			{
-				// Switch to this weapon...
-				ChangeWeapon(nMatch, WMGR_INVALID_ID, -1, bCanDeselect);
-				return;
-			}		
-		}
-	}
-*/
-
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -1336,15 +1229,6 @@ void CClientWeaponMgr::ResetWeapons()
 //
 // ----------------------------------------------------------------------- //
 
-void CClientWeaponMgr::OnPlayerDead()
-{
-	// Since the player is dead they should no longer fire...
-
-	if( m_pCurrentWeapon )
-		m_pCurrentWeapon->ClearFiring();
-
-	DisableWeapons();
-}
 
 // ----------------------------------------------------------------------- //
 //

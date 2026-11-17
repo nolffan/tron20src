@@ -204,7 +204,6 @@ public:
 	// 0x100a7b00, returns false)
 	virtual bool ChangeWeapon(uint8 nWeaponId, uint8 nAmmoId = WMGR_INVALID_ID, int dwAmmo = -1);
 	virtual void ToggleHolster(bool bPlayDeselect);
-	void		LastWeapon();
 
     virtual void DoActivate();
 

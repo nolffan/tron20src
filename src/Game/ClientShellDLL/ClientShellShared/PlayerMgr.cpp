@@ -2497,18 +2497,6 @@ void CPlayerMgr::ToggleHolster( bool bPlayDeselect )
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::LastWeapon()
-//
-//	PURPOSE:	Swap to our previously used weapon.
-//
-// ----------------------------------------------------------------------- //
-void CPlayerMgr::LastWeapon()
-{
-	// toggle the last weapon
-	m_pClientWeaponMgr->LastWeapon();
-}
 
 
 // ----------------------------------------------------------------------- //
@@ -3126,7 +3114,7 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			ClearPlayerModes();
 
-			m_pClientWeaponMgr->OnPlayerDead();
+			// RETAIL: no CClientWeaponMgr::OnPlayerDead in Tron
 
 			g_pInterfaceMgr->AddToClearScreenCount();
 
