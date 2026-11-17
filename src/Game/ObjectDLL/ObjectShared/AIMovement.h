@@ -47,6 +47,7 @@ class CAIMovement
 		void	UnlockMovement();
 		LTBOOL	IsMovementLocked() { return m_bMovementLocked; }
 		LTBOOL	IsRotationLocked() { return m_bRotationLocked; }
+		LTBOOL	GetTronUnknown38() const { return m_xTronUnknown38; }	// name ours
 
 		LTBOOL IsAtDest(const LTVector& vDest);
 

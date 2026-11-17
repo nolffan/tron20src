@@ -1886,12 +1886,11 @@ LTBOOL ActiveWorldModel::CalcAngle( LTFLOAT &fAngle, LTFLOAT fInitial, LTFLOAT f
 	{
 		if( fDir > 0.0f )
 		{
+			// RETAIL: 0x1017785c, Tron does not clamp the step; the next
+			// update snaps the angle to the target.
 			if( fAngle < fTarget )
 			{
 				fAngle += fAmount;
-
-				if( fAngle > fTarget )
-					fAngle = fTarget;
 			}
 			else
 			{
@@ -1904,9 +1903,6 @@ LTBOOL ActiveWorldModel::CalcAngle( LTFLOAT &fAngle, LTFLOAT fInitial, LTFLOAT f
 			if( fAngle > fTarget )
 			{
 				fAngle += fAmount;
-
-				if( fAngle < fTarget )
-					fAngle = fTarget;
 			}
 			else
 			{

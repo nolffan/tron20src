@@ -153,12 +153,12 @@ void CDeathScene::Set(CCharacter *pCharacter, Body *pBody)
 
 	m_eCharacterDeath = pCharacter->GetDeathType();
 
-	// Copy the data describing the Character to the Body.
-	UBER_ASSERT( pCharacter->GetRelationMgr() != NULL,
-		"CDeathScene::Set Characters relation is NULL" );
-	*m_pRelationData = pCharacter->GetRelationMgr()->GetData();
-
+	// RETAIL: 0x10218ff3, the scene object first, then the character's
+	// relation data through its relation user interface.
 	m_hSceneObject = pBody->m_hObject;
+
+	// Copy the data describing the Character to the Body.
+	*m_pRelationData = pCharacter->GetRelationData();
 }
 
 

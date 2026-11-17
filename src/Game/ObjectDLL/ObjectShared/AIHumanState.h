@@ -108,6 +108,8 @@ class CAIHumanStateIdle : public CAIHumanState
 
 		// Update
 
+		// RETAIL: Tron's (0x101e4660): face the one talking to the AI.
+		void Update();
 		void UpdateAnimation();
 
 		// Return query

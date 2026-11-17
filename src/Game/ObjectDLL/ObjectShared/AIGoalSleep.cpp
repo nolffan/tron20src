@@ -125,34 +125,8 @@ void CAIGoalSleep::UpdateGoal()
 		return;
 	}
 
-	if( !m_pAI->GetAnimationContext()->IsTransitioning() )
-	{
-		// Turn off visual senses,
-		// EXCEPT for light disturbances!
-		// Turn off footstep sounds.
-
-		m_pAI->SetCurSenseFlags( 0xffffffff & 
-			~( kSense_SeeEnemy 
-				| kSense_SeeEnemyLean 
-				| kSense_SeeEnemyFootprint 
-				| kSense_SeeEnemyWeaponImpact 
-				| kSense_SeeEnemyDisturbance
-				| kSense_SeeEnemyDanger
-				| kSense_SeeAllyDeath
-				| kSense_SeeAllyDisturbance 
-				| kSense_SeeDangerousProjectile
-				| kSense_SeeCatchableProjectile
-				| kSense_SeeAllyDistress
-				| kSense_SeeAllySpecialDamage
-				| kSense_SeeInappropriateBehavior
-				| kSense_HearEnemyFootstep
-			) );
-	}
-	else {
-		m_pAI->ResetBaseSenseFlags();
-	}
-	
-	// Play snoring sound.
+	// RETAIL: 0x101fbefe, Tron's sleeper keeps its senses and does not
+	// snore; the Zzz's come and go with the fidgets.
 
 	CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)pState;
 	pStateUseObject->SetVulnerable( LTTRUE );
@@ -167,16 +141,12 @@ void CAIGoalSleep::UpdateGoal()
 		if( m_pAI->HasZzz() )
 			m_pAI->DestroyZzz();
 	}
-	else if( !m_pAI->GetAnimationContext()->IsTransitioning() )
+	else
 	{		
 		// Create Zzz when begining to sleep...
 
 		if( !m_pAI->HasZzz() )
 			m_pAI->CreateZzz();
-
-		// Play snoring sound.
-
-		m_pAI->PlaySound( kAIS_Snore, LTFALSE );
 	}
 }
 
