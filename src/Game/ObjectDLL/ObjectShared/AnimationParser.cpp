@@ -152,7 +152,7 @@ void CAnimationParser::AddPropertyGroup(const std::string& sName)
 		ParserError(szBuffer);
 		UBER_ASSERT( 0, szBuffer );
 
-		ParserError("Unrecognized property group: \"%s\"", sName.c_str());
+		// RETAIL: Tron's (0x10232480) reports it once
 		return;
 	}
 }
@@ -245,6 +245,10 @@ void CAnimationParser::GetPropertyAndGroupEnums(const std::string& sProperty,
 		sprintf(szBuffer, "CAnimationParser::GetPropertyAndGroupEnums: Unrecognized property: \"%s\"", (const char*)sProperty.c_str() );
 		ParserError(szBuffer);
 		UBER_ASSERT( 0, szBuffer );
+
+		// RETAIL: Tron's (0x102328d8) returns invalid values
+		*peGroup = kAPG_Invalid;
+		*peProp = kAP_Invalid;
 		return;
 	}
 	else 
