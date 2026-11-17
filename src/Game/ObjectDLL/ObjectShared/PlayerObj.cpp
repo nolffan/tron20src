@@ -104,7 +104,7 @@ static LTBOOL ValidateMusicMsg( ILTPreInterface *pInterface, ConParse &cpMsgPara
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateMucisMsg()" );
-			pInterface->CPrint( "    MSG - MUSIC - Invalid number of parameters." );
+			pInterface->CPrint( "    MSG - MUSIC - Invalid number of paramaters." );
 		}
 		
 		return LTFALSE;
@@ -176,7 +176,7 @@ static LTBOOL ValidateMusicMsg( ILTPreInterface *pInterface, ConParse &cpMsgPara
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateMucisMsg()" );
-			pInterface->CPrint( "    MSG - MUSIC - Invalid parameters for action '%s'. (see PlayerMessages.doc)", cpMsgParams.m_Args[1] );
+			pInterface->CPrint( "    MSG - MUSIC - Invalid paramaters for action '%s'. (see PlayerMessages.doc)", cpMsgParams.m_Args[1] );
 		}
 		
 		return LTFALSE;
@@ -236,7 +236,7 @@ static LTBOOL ValidateObjectiveMsg( ILTPreInterface *pInterface, ConParse &cpMsg
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateObjectiveMsg()" );
-			pInterface->CPrint( "    MSG - OBJECTIVE - No action parameter listed." );
+			pInterface->CPrint( "    MSG - OBJECTIVE - No action paramater listed." );
 		}
 		
 		return LTFALSE;
@@ -283,7 +283,7 @@ static LTBOOL ValidateKeyMsg( ILTPreInterface *pInterface, ConParse &cpMsgParams
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateKeyMsg()" );
-			pInterface->CPrint( "    MSG - KEY - No action parameter listed." );
+			pInterface->CPrint( "    MSG - KEY - No action paramater listed." );
 		}
 		
 		return LTFALSE;
@@ -360,7 +360,7 @@ static LTBOOL ValidateIntelMsg( ILTPreInterface *pInterface, ConParse &cpMsgPara
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateIntelMsg()" );
-			pInterface->CPrint( "    MSG - INTEL - Invalid number of parameters." );
+			pInterface->CPrint( "    MSG - INTEL - Invalid number of paramaters." );
 		}
 		
 		return LTFALSE;
@@ -380,7 +380,7 @@ static LTBOOL ValidateIntelMsg( ILTPreInterface *pInterface, ConParse &cpMsgPara
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateIntelMsg()" );
-			pInterface->CPrint( "    MSG - INTEL - Invalid [intel] or [show] parameters." );
+			pInterface->CPrint( "    MSG - INTEL - Invalid [intel] or [show] paramaters." );
 		}
 		
 		return LTFALSE;
@@ -401,13 +401,13 @@ static LTBOOL ValidateTransmissionMsg( ILTPreInterface *pInterface, ConParse &cp
 {
 	if( !pInterface ) return LTFALSE;
 
-	if( cpMsgParams.m_nArgs < 2 || cpMsgParams.m_nArgs > 4 )
+	if( cpMsgParams.m_nArgs < 2 || cpMsgParams.m_nArgs > 3 )	// RETAIL: 0x100767ae, Tron has no [TeamNumber] parameter
 	{
 		if( CCommandMgrPlugin::s_bShowMsgErrors )
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateTransmissionMsg()" );
-			pInterface->CPrint( "    MSG - TRANSMISSION - Invalid number of parameters." );
+			pInterface->CPrint( "    MSG - TRANSMISSION - Invalid number of paramaters." );
 		}
 		
 		return LTFALSE;
@@ -425,30 +425,12 @@ static LTBOOL ValidateTransmissionMsg( ILTPreInterface *pInterface, ConParse &cp
 		{
 			pInterface->ShowDebugWindow( LTTRUE );
 			pInterface->CPrint( "ERROR! - ValidateTransmissionMsg()" );
-			pInterface->CPrint( "    MSG - TRANSMISSION - Invalid [ActivePlayerComm] parameter." );
+			pInterface->CPrint( "    MSG - TRANSMISSION - Invalid [ActivePlayerComm] paramater." );
 		}
 		
 		return LTFALSE;
 	}
 
-
-	if( cpMsgParams.m_nArgs == 4 )
-	{
-		if( !_stricmp( cpMsgParams.m_Args[3], "0" ) ||
-			!_stricmp( cpMsgParams.m_Args[3], "1" ))
-		{
-			return LTTRUE;
-		}
-
-		if( CCommandMgrPlugin::s_bShowMsgErrors )
-		{
-			pInterface->ShowDebugWindow( LTTRUE );
-			pInterface->CPrint( "ERROR! - ValidateTransmissionMsg()" );
-			pInterface->CPrint( "    MSG - TRANSMISSION - Invalid [TeamNumber] parameter." );
-		}
-		
-		return LTFALSE;
-	}
 
 	return LTTRUE;
 }
@@ -8686,19 +8668,7 @@ void CPlayerObj::HideCharacter(LTBOOL bHide)
 		g_pCommonLT->SetObjectFlags( m_hCarriedObject, OFT_Flags, bHide ? 0 : FLAG_VISIBLE, FLAG_VISIBLE );
 	}
 
-	// Hide/unhide our dead body.
-	if( m_hDeadBody )
-	{
-		Body* pBody = dynamic_cast< Body* >( g_pLTServer->HandleToObject( m_hDeadBody ));
-		if( pBody )
-		{
-			pBody->HideBody( bHide ? true : false );
-		}
-		else
-		{
-			ASSERT( !"CPlayerObj::HideCharacter:  Invalid body." );
-		}
-	}
+	// RETAIL: 0x100862d0, Tron does not hide the dead body here.
 }
 
 

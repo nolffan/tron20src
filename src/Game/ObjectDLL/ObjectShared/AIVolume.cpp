@@ -713,12 +713,12 @@ bool AIInformationVolume::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 	if ( cMsg.GetArg(0) == s_cTok_On )
 	{
-		AITRACE( AIShowVolumes, ( GetName(), "InfoVolume ON" ) );
+		AITRACE( AIShowVolumes, ( GetName(), "AIInfoVolume ON" ) );
 		m_eInfoVolumeState = kIVS_On;
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Off )
 	{
-		AITRACE( AIShowVolumes, ( GetName(), "InfoVolume OFF" ) );
+		AITRACE( AIShowVolumes, ( GetName(), "AIInfoVolume OFF" ) );
 		m_eInfoVolumeState = kIVS_Off;
 	}
 	else if( cMsg.GetArg(0) == s_cTok_Remove )
