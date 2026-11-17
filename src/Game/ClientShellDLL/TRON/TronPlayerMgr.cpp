@@ -1637,8 +1637,14 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 	LTVector vZeroAccel(0.0f, 0.0f, 0.0f);
 	LTVector vZeroVel(0.0f, 0.0f, 0.0f);
 
-	// PORT: retail tests a member of Tron's CMoveMgr (+0xd0) here, not yet
-	// in our CMoveMgr
+	if (!g_pMoveMgr->GetAllowMovement())
+	{
+		// RETAIL: 0x100a752d: both with the velocity's vector (the same
+		// zeros)
+		g_pPhysicsLT->SetAcceleration(g_pMoveMgr->GetObject(), &vZeroVel);
+		g_pPhysicsLT->SetVelocity(g_pMoveMgr->GetObject(), &vZeroVel);
+		return;
+	}
 
 	if (m_ePlayerState == PS_DEAD || m_ePlayerState == PS_DYING || !m_bAllowPlayerMovement)
 	{
@@ -1653,13 +1659,20 @@ void CTronPlayerMgr::TronUnknownVirtual68(int nFlags)
 		char szUnused[128];
 		TronUnknownVirtual7C(hObj, szUnused, szSound, LTNULL);
 
-		// PORT: Tron's PlaySoundLocal has a seventh argument (1.0f)
 		g_pClientSoundMgr->PlaySoundLocal(szSound, SOUNDPRIORITY_PLAYER_HIGH, PLAYSOUND_CLIENT, 100, 1.0f, 0);
 	}
 
-	// PORT: retail gives the flags (with 0x100000 in a speed zone, 0x1000000
-	// in a slow zone) to the client light cycle manager (0x10236d98, its
-	// slot 0x30)
+	// RETAIL: 0x100a75cd: the speed and slow zones' flags
+	if (m_eCurContainerCode == CC_LIGHTCYCLE_SPEED_ZONE)
+	{
+		g_pLightCycleMgr->UpdateCyclistMovement(hObj, nFlags | 0x100000);
+		return;
+	}
+	if (m_eCurContainerCode == CC_LIGHTCYCLE_SLOW_ZONE)
+	{
+		nFlags |= 0x1000000;
+	}
+	g_pLightCycleMgr->UpdateCyclistMovement(hObj, nFlags);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2263,9 +2276,7 @@ void CTronPlayerMgr::TronUnknownVirtual40()
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtualA8
 //
 //	PURPOSE:	RETAIL: retail 0x100a86b0 (slot 0xa8): Tron's HUD items for
-//				walking off, the light cycle's on (or back). PORT: Tron's
-//				HUD item globals (0x1026edb8..0x1026ee2c) are not yet in our
-//				tree; the chat messages are
+//				walking off, the light cycle's on (or back)
 //
 // ----------------------------------------------------------------------- //
 
@@ -2273,16 +2284,40 @@ void CTronPlayerMgr::TronUnknownVirtualA8(bool bHide)
 {
 	if (bHide)
 	{
+		g_pCrosshair->Enable(false);
+		g_pVersion->SetEnabled(false);
+		g_pSubChooser->SetEnabled(false);
+		g_pWeaponItem->SetEnabled(false);
+		g_pHealthEnergy->SetEnabled(false);
+		g_pArmor->SetEnabled(false);
+		g_pBuildNoteCount->SetEnabled(false);
+		g_pPermissions->SetEnabled(false);
+		g_pLightCyclePowerupIcon->SetEnabled(true);
+		g_pLightCycleSpeedometer->SetEnabled(true);
+		g_pLightCycleRoster->SetEnabled(true);
 		if (!IsMultiplayerGame())
 		{
-			g_pChatMsgs->SetEnabled(true);
+			// RETAIL: 0x100a8761: the chat in the multiplayer layout
+			g_pChatMsgs->SetMultiplayerLayout(true);
 		}
 	}
 	else
 	{
+		g_pCrosshair->Enable(true);
+		g_pVersion->SetEnabled(true);
+		g_pSubChooser->SetEnabled(true);
+		g_pWeaponItem->SetEnabled(true);
+		g_pHealthEnergy->SetEnabled(true);
+		g_pArmor->SetEnabled(true);
+		g_pBuildNoteCount->SetEnabled(true);
+		g_pPermissions->SetEnabled(true);
+		g_pLightCyclePowerupIcon->SetEnabled(false);
+		g_pLightCycleSpeedometer->SetEnabled(false);
+		g_pLightCycleRoster->SetEnabled(false);
 		if (!IsMultiplayerGame())
 		{
-			g_pChatMsgs->SetEnabled(false);
+			// RETAIL: 0x100a8761: the chat in the multiplayer layout
+			g_pChatMsgs->SetMultiplayerLayout(false);
 		}
 	}
 }
