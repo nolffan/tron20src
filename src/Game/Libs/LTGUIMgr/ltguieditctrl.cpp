@@ -13,6 +13,18 @@ const uint16 CLTGUIEditCtrl::kMaxLength = 64;
 
 namespace
 {
+	// TRON: retail narrows wide text into a buffer of the caller's this way
+	// (UpdateData, 0x100bab10; the host, save and profile screens have the
+	// same code): the buffer cleared, then each character's low byte, at
+	// most nSize. The name is ours. It is local to each file, as in those
+	// screens. Note: the buffer is not terminated when the text fills it.
+	inline void NarrowInto(char *pszOut, const std::wstring &sText, uint32 nSize)
+	{
+		memset(pszOut,0,nSize);
+		for (uint32 i = 0; i < sText.length() && i < nSize; i++)
+			pszOut[i] = (char)sText[i];
+	}
+
 	
 	LTBOOL IsFileFriendly(char c, bool isFirst)
 	{
@@ -129,7 +141,7 @@ void CLTGUIEditCtrl::UpdateData(LTBOOL bSaveAndValidate)
 	if (bSaveAndValidate)
 	{
 		if (m_pText)
-			LTGUINarrowInto(m_pStringValue, m_pText->GetText(), m_pText->GetText().length() + 1);
+			NarrowInto(m_pStringValue, m_pText->GetText(), m_pText->GetText().length() + 1);
 	}
 	else
 	{

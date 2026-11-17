@@ -17,6 +17,15 @@
 
 namespace
 {
+	// TRON: as the host and save screens' (RETAIL: 0x100761e7 inlines it);
+	// the name is ours
+	inline void NarrowInto(char *pszOut, const std::wstring &sText, uint32 nSize)
+	{
+		memset(pszOut,0,nSize);
+		for (uint32 i = 0; i < sText.length() && i < nSize; i++)
+			pszOut[i] = (char)sText[i];
+	}
+
 	char	szOldFN[MAX_PROFILE_LEN];
 
 	LTBOOL bCreate = LTFALSE;
@@ -266,7 +275,7 @@ uint32 CScreenProfile::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 		{
 			// TRON: the edit box gives wide text (RETAIL: 0x100761e7)
 			char szName[16];
-			LTGUINarrowInto(szName,std::wstring((wchar_t *)dwParam1),sizeof(szName));
+			NarrowInto(szName,std::wstring((wchar_t *)dwParam1),sizeof(szName));
 			SAFE_STRCPY(m_szProfile,szName);
 			std::string profileName = m_szProfile;
 			StringSet::iterator iter = m_ProfileList.find(profileName);
