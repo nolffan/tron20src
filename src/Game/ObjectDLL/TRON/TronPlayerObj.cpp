@@ -2175,6 +2175,36 @@ bool CTronPlayerObj::TronUnknownVirtual127( char const* pszRecord )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerObj::FullWeaponCheat
+//
+//	PURPOSE:	RETAIL: retail 0x10066fa0: what each player weapon needs,
+//				all the mods and the level's ideal weapons
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::FullWeaponCheat()
+{
+	if( m_damage.IsDead( ))
+		return;
+
+	for( int i = g_pWeaponMgr->GetFirstWeaponCommandId( ); i <= g_pWeaponMgr->GetLastWeaponCommandId( ); i++ )
+	{
+		WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( g_pWeaponMgr->GetWeaponId( i ));
+		if( !pWeapon )
+			continue;
+
+		if( g_pWeaponMgr->IsPlayerWeapon( pWeapon->nId ))
+		{
+			TronUnknownVirtual128( pWeapon );
+		}
+	}
+
+	FullModsCheat( );
+	AcquireCurrentLevelIdealWeapons( );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerObj::TronUnknownVirtual129
 //
 //	PURPOSE:	Acquire what a player weapon needs (RETAIL: retail

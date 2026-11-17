@@ -381,6 +381,7 @@ class CPlayerObj : public CCharacter
 		// name is ours
 		void ResetInventory(LTBOOL bRemoveGear=LTTRUE, LTBOOL bTronUnknown=LTFALSE);
 		void ResetModel();
+		void ResetDiscSkin();	// RETAIL: retail 0x1007f820 (the name is ours)
 
 		void TweakCameraOffset();
 
@@ -436,9 +437,22 @@ class CPlayerObj : public CCharacter
 
 		void	AcquireDefaultWeapon();
 		bool	AcquireLevelDefaultWeapons( int nMissionId, int nLevelId );
+		// RETAIL: Tron's ideal inventory (retail 0x100855a0 to 0x10085a70;
+		// the names are ours)
+		bool	AcquireLevelIdealWeapons( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealSubroutines( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealProcedurals( int nMissionId, int nLevelId );
+		bool	AcquireLevelIdealBuildPoints( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultMods( int nMissionId, int nLevelId );
 		bool	AcquireLevelDefaultAmmo( int nMissionId, int nLevelId );
 		bool	AcquireCurrentLevelDefaults();
+	public:
+		// RETAIL: retail 0x10085ef0 to 0x10085f50 (the names are ours)
+		bool	AcquireCurrentLevelIdealWeapons();
+		bool	AcquireCurrentLevelIdealSubroutines();
+		bool	AcquireCurrentLevelIdealProcedurals();
+		bool	AcquireCurrentLevelIdealBuildPoints();
+	protected:
 		// RETAIL: virtual in Tron, with a flag (retail 0x1007e9d0, ret 8;
 		// CTronPlayerObj's, 0x100686e0, hands the weapon's data to
 		// TronUnknownVirtual128 when it is set). The flag's name is ours
