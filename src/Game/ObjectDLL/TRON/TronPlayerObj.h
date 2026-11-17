@@ -90,6 +90,12 @@ class CTronPlayerObj : public CPlayerObj
 
 		// RETAIL: the "mpenergy" cheat (retail 0x10068680; the name is ours)
 		void EnergyCheat();
+		// RETAIL: the ideal inventory cheats (retail 0x100686a0 to
+		// 0x100686d0; the names are ours)
+		void IdealWeaponsCheat();
+		void IdealSubroutinesCheat();
+		void IdealProceduralsCheat();
+		void IdealPointsCheat();
 
 		// Defense
 		virtual bool	IsDefending() const;
@@ -97,6 +103,9 @@ class CTronPlayerObj : public CPlayerObj
 
 		// damage filtering
 		virtual bool	FilterDamage( DamageStruct *pDamageStruct );
+		// RETAIL: retail 0x100644c0, 0x100644f0 (the names are ours)
+		bool	IsDefendableDamage( DamageType eType );
+		bool	IsInfectingDamage( DamageType eType );
 
 		// RETAIL: CPlayerObj's slots 107 and 108. The IDs are the fire
 		// helpers' message IDs (GetMessageID).

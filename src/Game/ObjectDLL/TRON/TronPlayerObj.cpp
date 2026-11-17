@@ -928,6 +928,35 @@ void CTronPlayerObj::EnergyCheat()
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerObj::Ideal*Cheat
+//
+//	PURPOSE:	The current level's ideal inventory (RETAIL: retail
+//				0x100686a0 to 0x100686d0, the server shell's cheats
+//				0x1005efa0 to 0x1005efd0; the names are ours)
+//
+// ----------------------------------------------------------------------- //
+void CTronPlayerObj::IdealWeaponsCheat()
+{
+	AcquireCurrentLevelIdealWeapons();
+}
+
+void CTronPlayerObj::IdealSubroutinesCheat()
+{
+	AcquireCurrentLevelIdealSubroutines();
+}
+
+void CTronPlayerObj::IdealProceduralsCheat()
+{
+	AcquireCurrentLevelIdealProcedurals();
+}
+
+void CTronPlayerObj::IdealPointsCheat()
+{
+	AcquireCurrentLevelIdealBuildPoints();
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerObj::IsDefending()
 //
 //	PURPOSE:	Return if the player is attempting to defend.
@@ -1395,19 +1424,83 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 
 bool CTronPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 {
-	// DANO: for testing
-	float fOrigDamage = pDamageStruct->fDamage;
+	// RETAIL: retail 0x10064300: no damage in god mode or on a light cycle;
+	// infected ammo may corrupt the player, a block takes only the disc
+	// weapons' damage, and the player's own crushing is not scaled
+	if( m_bGodMode )
+		return false;
 
-	if ( IsDefending() )
+	if( m_hLightCycle )
+		return false;
+
+	if( IsInfectingDamage( pDamageStruct->eType ))
+	{
+		float fChance = m_afChanceToBeCorruptedByInfectedAmmo[g_pGameServerShell->GetDifficulty()];
+		if( GetRandom( 0.0f, 1.0f ) < fChance )
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8( MID_TRON_UNKNOWN_151 );
+			g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+		}
+	}
+
+	if( IsDefending( ) && IsDefendableDamage( pDamageStruct->eType ))
 	{
 		// player is defending, attenuate the damage to take
-		float fDefenseModifier = GetDefensePercentage( &pDamageStruct->vDir );
+		pDamageStruct->fDamage *= ( 1.0f - GetDefensePercentage( &pDamageStruct->vDir ));
+		if( MATH_EPSILON > pDamageStruct->fDamage )
+			return false;
+	}
 
-		pDamageStruct->fDamage *= ( 1.0f - fDefenseModifier );
+	if( pDamageStruct->eType != DT_CRUSH || pDamageStruct->hDamager != GetUserObject( ))
+	{
+		pDamageStruct->fDamage -= pDamageStruct->fDamage * m_fTronUnknown31f8;
 	}
 
 	// pass the filter up the hierarchy
 	return CPlayerObj::FilterDamage( pDamageStruct );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::IsDefendableDamage/IsInfectingDamage
+//
+//	PURPOSE:	RETAIL: retail 0x100644c0, 0x100644f0 (the names are ours):
+//				the damage types a block stops, and those of the infected
+//				ammo
+//
+// ----------------------------------------------------------------------- //
+
+static const DamageType s_aeDefendableDamage[] =
+{
+	DT_DISC, DT_SEQUENCER, DT_CLUSTER, DT_ENEMYDISC, DT_CLUSTERAUTOBURST
+};
+
+static const DamageType s_aeInfectingDamage[] =
+{
+	DT_DRUNKENDIMS, DT_BALL, DT_CORRUPTICDIMS, DT_BALLLAUNCHER
+};
+
+bool CTronPlayerObj::IsDefendableDamage( DamageType eType )
+{
+	for( int i = 0; i < ARRAY_LEN( s_aeDefendableDamage ); i++ )
+	{
+		if( eType == s_aeDefendableDamage[i] )
+			return true;
+	}
+
+	return false;
+}
+
+bool CTronPlayerObj::IsInfectingDamage( DamageType eType )
+{
+	for( int i = 0; i < ARRAY_LEN( s_aeInfectingDamage ); i++ )
+	{
+		if( eType == s_aeInfectingDamage[i] )
+			return true;
+	}
+
+	return false;
 }
 
 
