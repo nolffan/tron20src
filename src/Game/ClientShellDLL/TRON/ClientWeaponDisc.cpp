@@ -908,10 +908,10 @@ WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
 
 bool CClientWeaponDisc::PlayFireAnimation( bool bResetAni )
 {
-	// bResetAni is equivalant to saying "the fire key is down"
+	// RETAIL: 0x100197a0. bResetAni is equivalant to saying "the fire key
+	// is down"; Tron's disc keeps firing while it has ammo to throw
+	// (TronUnknownVirtual19C, CTronClientWeapon's TronUnknownVirtual164)
 
-	// Can only set the last fire type if a fire animation isn't playing
-	// (i.e., we'll assume this function will return false)...
 	uint32 dwAni    = g_pLTClient->GetModelAnimation( m_hObject );
 	uint32 dwState  = g_pLTClient->GetModelPlaybackState( m_hObject );
 
@@ -923,105 +923,84 @@ bool CClientWeaponDisc::PlayFireAnimation( bool bResetAni )
 	if ( !bIsFireAni )
 	{
 		// If we have a pre-fire animation, play it before the fire animation...
-		if( ( INVALID_ANI != dwPreFireAni ) && !bIsFireAni )
+		if ( INVALID_ANI == dwPreFireAni )
 		{
-			PlayAnimation( dwPreFireAni );
 			return true;
 		}
+
+		SaveShotSubroutines();
+		PlayAnimation( dwPreFireAni, true, 1.0f, false );
+		SendDiscFired();
+		return true;
 	}
-	else
+
+	if ( dwPreFireAni == dwAni )
 	{
-		if ( ( dwPreFireAni == dwAni ) )
+		// force the entire prefire animation to finish completely, then
+		// queue either a fire or a post fire animation depending on what
+		// the user wants to do.
+		if ( !( dwState & MS_PLAYDONE ) )
 		{
-			// Since the disc firing sequence and the related variables
-			// to esure we have a boomerang style weapon are pretty
-			// sensitive to variation, force the entire prefire animation
-			// to finish completely, the queue either a fire or a post
-			// fire animation depending on what the user wants to do.
-
-			if ( dwState & MS_PLAYDONE )
-			{
-				//
-				// There are 2 ways to fire a disc.  Either click-to-fire
-				// click-to-return, or hold-to-fire-release-to-return.
-				// The logic here supports both versions.  If the user
-				// is pressing the fire button when the fire key is
-				// received, we are considering that hold-to-fire.  If
-				// not, it is considered click-to-fire.
-				//
-
-				// if bResetAni is true, the user wants to fire
-				if ( bResetAni || m_bIsDiscActive )
-				{
-					// we are done playing the prefire animation, play the
-					// fire animation as looping
-					uint32 dwFireAni = GetFireAni( m_eLastFireType );
-					if ( INVALID_ANI == dwFireAni )
-					{
-						// no valid fire animation
-						ASSERT( !"no valid fire animation" );
-						return false;
-					}
-
-					PlayAnimation( dwFireAni, true, 1.0f, true );
-				}
-				else
-				{
-					//
-					// the user dosen't want to fire
-					//
-
-					if ( !m_bIsDiscActive )
-					{
-						if ( INVALID_ANI == dwPostFireAni )
-						{
-							// no valid fire animation
-							return false;
-						}
-
-						PlayAnimation( dwPostFireAni );
-					}
-				}
-			}
-			// else, don't let anything happen until the prefire is done
+			return true;
 		}
-		else if ( ( dwPostFireAni == dwAni ) && ( dwState & MS_PLAYDONE ) )
+
+		if ( bResetAni || !TronUnknownVirtual19C() || !TronUnknownVirtual164() )
 		{
-			// postfire animation is finished,
-			// handle the ending
-			DoSpecialEndFire();
-
-			if ( bResetAni )
+			// we are done playing the prefire animation, play the
+			// fire animation as looping
+			uint32 dwFireAni = GetFireAni( m_eLastFireType );
+			if ( INVALID_ANI == dwFireAni )
 			{
-				// the user wants to start throwing again...NOW!
-				// Without this here, there is no way for the weapon
-				// to start firing again until the user lets the
-				// mouse button up.
-
-				// RETAIL: Tron tells the server (0x100198b7). PORT: before
-				// it retail calls CTronClientWeapon's 0x10097f20, not in
-				// our build
-				PlayAnimation( dwPreFireAni, true, 1.0f, false );
-				SendDiscFired();
-				return true;
-			}
-
-			// no special animation playing
-			return false;
-		}
-		else if ( ( dwPostFireAni != dwAni ) && 
-		          ( !m_bIsDiscActive ) )
-		{
-			// play the postfire animation immediately
-			if ( INVALID_ANI == dwPostFireAni )
-			{
-				// no valid postfire animation
-				ASSERT( !"no valid postfire animation" );
+				// no valid fire animation
 				return false;
 			}
 
-			PlayAnimation( dwPostFireAni );
+			PlayAnimation( dwFireAni, true, 1.0f, true );
 		}
+		else if ( TronUnknownVirtual19C() )
+		{
+			if ( INVALID_ANI == dwPostFireAni )
+			{
+				// no valid postfire animation
+				return false;
+			}
+
+			PlayAnimation( dwPostFireAni, true, 1.0f, false );
+		}
+	}
+	else if ( dwPostFireAni == dwAni )
+	{
+		if ( !( dwState & MS_PLAYDONE ) )
+		{
+			return true;
+		}
+
+		// postfire animation is finished,
+		// handle the ending
+		DoSpecialEndFire();
+
+		if ( bResetAni )
+		{
+			// the user wants to start throwing again...NOW!
+			SaveShotSubroutines();
+			PlayAnimation( dwPreFireAni, true, 1.0f, false );
+			SendDiscFired();
+			return true;
+		}
+
+		// no special animation playing
+		return false;
+	}
+	else if ( TronUnknownVirtual19C() && TronUnknownVirtual164() )
+	{
+		// play the postfire animation immediately
+		if ( INVALID_ANI == dwPostFireAni )
+		{
+			// no valid postfire animation
+			return false;
+		}
+
+		PlayAnimation( dwPostFireAni, true, 1.0f, false );
 	}
 
 	return true;
