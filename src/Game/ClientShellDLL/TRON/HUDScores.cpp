@@ -709,7 +709,8 @@ LTIntPt CHUDScores::UpdateHeader(const LTIntPt& pos)
 	m_HeaderValues.GetColumn(2)->SetString(sText);
 
 	m_HeaderValues.SetBasePos(AddPoints(curPos, LTIntPt(m_nFrameHBorder, 0)));
-	curPos.y += (int)((float)m_HeaderValues.GetHeight() / g_pInterfaceResMgr->GetXRatio()) + m_nBaseFontSize;
+	curPos.y += (int)((float)m_HeaderValues.GetHeight() / g_pInterfaceResMgr->GetXRatio());
+	curPos.y += m_nBaseFontSize;
 
 	return curPos;
 }
@@ -750,7 +751,8 @@ LTIntPt CHUDScores::UpdateFooter(const LTIntPt& pos)
 	LTGUIWiden(sText, szTmp);
 	m_FooterValues.GetColumn(2)->SetString(sText);
 
-	curPos.y += (int)((float)m_FooterValues.GetHeight() / g_pInterfaceResMgr->GetXRatio()) + m_nBaseFontSize;
+	curPos.y += (int)((float)m_FooterValues.GetHeight() / g_pInterfaceResMgr->GetXRatio());
+	curPos.y += m_nBaseFontSize;
 
 	return curPos;
 }
