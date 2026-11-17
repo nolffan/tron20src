@@ -167,8 +167,8 @@ void CDiscMatch::Init(int nTeamA, int nTeamB, CDiscArena* pArena, float fDuratio
 	m_fEndTime = g_pLTServer->GetTime() + fDuration;
 	m_nRounds = nRounds;
 	m_nWinsNeeded = (nRounds + 1) / 2;
-	m_nTeam[1] = nTeamB;
 	m_nTeam[0] = nTeamA;
+	m_nTeam[1] = nTeamB;
 	m_nWins[0] = 0;
 	m_nWins[1] = 0;
 
@@ -252,7 +252,8 @@ void CDiscMatch::StartRound(float fDelay)
 				cMsg.Writebool(true);
 				g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
 
-				pPlayer->Respawn(2, false, (GameStartPoint*)m_pArena->GetTeamPoint(i, pPlayer), LTNULL);
+				GameStartPoint* pStartPoint = (GameStartPoint*)m_pArena->GetTeamPoint(i, pPlayer);
+				pPlayer->Respawn(2, false, pStartPoint, LTNULL);
 				m_pArena->SendCommand(m_pArena->m_sRoundStartCmd.c_str());
 			}
 		}
@@ -408,7 +409,8 @@ void CDiscMatch::OnPlayerKilled(CPlayerObj* pPlayer, CPlayerObj* pKiller)
 	bool bTeamDead = true;
 	m_nKills[nSlot]++;
 
-	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient())), false);
+	int nTeam = g_pTronTeamMgr->GetTeamOfClient(g_pLTServer->GetClientID(pPlayer->GetClient()));
+	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(nTeam, false);
 	uint32 nNumClients = pTeam->GetNumClients();
 	for (uint32 i = 0; i < nNumClients; i++)
 	{
@@ -1503,7 +1505,8 @@ void CDiscMatchMgr::HandleTeamChange(ILTMessage_Read* pMsg)
 	uint32 nClientID = pMsg->Readuint32();
 	uint8 nTeam = pMsg->Readuint8();
 
-	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(g_pTronTeamMgr->GetTeamOfClient(nClientID), false);
+	int nOldTeam = g_pTronTeamMgr->GetTeamOfClient(nClientID);
+	CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(nOldTeam, false);
 	CPlayerObj* pPlayer = pTeam->GetPlayer(pTeam->FindClient(nClientID));
 	if (!pPlayer)
 		return;
