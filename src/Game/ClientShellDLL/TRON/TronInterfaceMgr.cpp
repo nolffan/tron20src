@@ -63,12 +63,8 @@ CTronInterfaceMgr::CTronInterfaceMgr() : CInterfaceMgr()
 	m_szDuplicateState[0] = 0;
 	m_eDuplicateRenderLevel = kHUDRenderFull;
 
-	// PORT: retail leaves these to the members' constructors (not yet
-	// written); ours clears them
-	m_bTronUnknown28AE8 = false;
-	m_bTronUnknown28B14 = false;
-	m_bDisplayProgress = false;
-	m_nTronUnknown28AF0 = 0;
+	// RETAIL: 0x1009cb9d..: +0x28ae8, +0x28b14, +0x28b1d and +0x28af0 are
+	// left alone here (OnEnterWorld and Update set them)
 }
 
 
