@@ -50,6 +50,7 @@
 #include "KeyMgr.h"
 #include "SharedFXStructs.h"
 #include "TeleportPoint.h"
+#include "../../Shared/TRON/SubroutineDataMgr.h"	// RETAIL: the fuzzy signature (HandleFootstep)
 #include "Searchable.h"
 #include "ServerMissionMgr.h"
 #include "ActiveWorldModel.h"
@@ -444,7 +445,6 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
     m_bPlayingTextDialogue      = LTFALSE;
 
 	m_eEnemyVisibleStimID			= kStimID_Unset;
-	m_eUndeterminedVisibleStimID	= kStimID_Unset;
 
 	m_fLastPainTime				= -(float)INT_MAX;
 	m_fLastPainVolume			= 0.0f;
@@ -2600,7 +2600,8 @@ void CCharacter::RemovePersistentStimuli(void)
 //----------------------------------------------------------------------------
 bool CCharacter::IsVisible(void)
 {
-	return ( m_eUndeterminedVisibleStimID != kStimID_Unset && m_eEnemyVisibleStimID != kStimID_Unset );
+	// RETAIL: only the enemy visible stimulus (0x1008ecf0)
+	return ( m_eEnemyVisibleStimID != kStimID_Unset );
 }
 
 // ----------------------------------------------------------------------- //
@@ -2662,27 +2663,46 @@ void CCharacter::HandleShortRecoil()
 	if ( !m_bShortRecoil || m_bShortRecoiling ) return;
 	if ( eModelNodeInvalid == m_eModelNodeLastHit ) return;
 
+	// RETAIL: Tron gets the model's name where an animation is missing
+	// (0x1008ee97, 0x1008eeea, 0x1008ef9d), for a debug message that its
+	// build leaves out
+
 	const char* szRecoil = LTNULL;
 	if ( HitFromFront(m_damage.GetLastDamageDir()) )
 	{
 		szRecoil = g_pModelButeMgr->GetSkeletonNodeFrontShortRecoilAni(m_eModelSkeleton, m_eModelNodeLastHit);
+		if ( !szRecoil )
+		{
+			char szModelName[128] = { '\0' };
+			g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+			return;
+		}
 	}
 	else
 	{
 		szRecoil = g_pModelButeMgr->GetSkeletonNodeBackShortRecoilAni(m_eModelSkeleton, m_eModelNodeLastHit);
+		if ( !szRecoil )
+		{
+			char szModelName[128] = { '\0' };
+			g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+			return;
+		}
 	}
 
-	HMODELANIM hAni;
-	if ( !szRecoil || (INVALID_MODEL_ANIM == (hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szRecoil))) )
+	HMODELANIM hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szRecoil);
+	if ( INVALID_MODEL_ANIM != hAni )
 	{
-		return;
+		g_pModelLT->SetCurAnim(m_hObject, m_RecoilAnimTracker, hAni);
+		g_pModelLT->SetWeightSet(m_hObject, m_RecoilAnimTracker, m_hTwitchWeightset);
+		g_pModelLT->ResetAnim(m_hObject, m_RecoilAnimTracker);
+
+		m_bShortRecoiling = LTTRUE;
 	}
-
-    g_pModelLT->SetCurAnim(m_hObject, m_RecoilAnimTracker, hAni);
-    g_pModelLT->SetWeightSet(m_hObject, m_RecoilAnimTracker, m_hTwitchWeightset);
-    g_pModelLT->ResetAnim(m_hObject, m_RecoilAnimTracker);
-
-	m_bShortRecoiling = LTTRUE;
+	else if ( szRecoil )
+	{
+		char szModelName[128] = { '\0' };
+		g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2709,6 +2729,9 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	static CParsedMsg::CToken s_cTok_HITBOX_DIMS( "HITBOX_DIMS" );
 	static CParsedMsg::CToken s_cTok_HITBOX_OFFSET( "HITBOX_OFFSET" );
 	static CParsedMsg::CToken s_cTok_HITBOX_DEFAULT( "HITBOX_DEFAULT" );
+	static CParsedMsg::CToken s_cTok_FX( "FX" );				// RETAIL: Tron's
+	static CParsedMsg::CToken s_cTok_Hidden( "HIDDEN" );		// RETAIL: Tron's, not used
+	static CParsedMsg::CToken s_cTok_RezInFX( "REZINFX" );		// RETAIL: Tron's
 		
 	if (!pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
@@ -2723,49 +2746,8 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 
 	if ( tok == s_cTok_KEY_FOOTSTEP_SOUND )
 	{
-		if( m_bOnGround || m_bBodyOnLadder )
-		{
-			LTBOOL bInWater = (m_bBodyInLiquid && !IsLiquid(m_eContainerCode));
-
-			if (m_bBodyOnLadder)
-			{
-				m_eStandingOnSurface = ST_LADDER;
-			}
-			else if (bInWater)
-			{
-				m_eStandingOnSurface = ST_LIQUID;
-			}
-
-			LTFLOAT fVolume = GetFootstepVolume();
-
-			// Adjust the footstep volume by our stealth modifier...
-
-			fVolume *= m_damage.GetStealthModifier();
-
-			SURFACE* pSurf = g_pSurfaceMgr->GetSurface(m_eStandingOnSurface);
-			_ASSERT(pSurf);
-			if (pSurf)
-			{
-				fVolume *= pSurf->fMovementNoiseModifier;
-
-				// TODO: reduce this to a bool function call
-				if ( *pSurf->szLtFootPrintSpr && *pSurf->szRtFootPrintSpr )
-				{
-					// If this is a surface that creates footprints, add a footprint to our list
-
-					LTVector vFootprintPos;
-					g_pLTServer->GetObjectPos(m_hObject, &vFootprintPos);
-
-					// Register EnemyFootprintVisible stimulus.
-					g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootprintVisible, m_hObject, vFootprintPos, 1.0f, pSurf->fFootPrintLifetime );
-				}
-			}
-
-			// Register EnemyFootstepSound stimulus.
-			LTVector vMovementPos;
-			g_pLTServer->GetObjectPos(m_hObject, &vMovementPos);
-			g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootstepSound, m_hObject, vMovementPos, fVolume );
-		}
+		// RETAIL: Tron's footstep code is a function of its own (0x10090160)
+		HandleFootstep( false );
 	}
 	else if ( tok == s_cTok_KEY_PLAYSOUND )
 	{
@@ -2794,7 +2776,8 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_ATTACH)
 	{
-		if( (pArgList->argc != 3) || !m_pAttachments )
+		// RETAIL: no test of m_pAttachments (0x1008f4c1)
+		if( pArgList->argc != 3 )
 			return;
 
 		m_pAttachments->Attach(pArgList->argv[1], pArgList->argv[2]);
@@ -2802,7 +2785,7 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_DETACH)
 	{
-		if( (pArgList->argc != 2) || !m_pAttachments )
+		if( pArgList->argc != 2 )
 			return;
 
 		m_pAttachments->Detach(pArgList->argv[1]);
@@ -2830,24 +2813,38 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_SET_DIMS )
 	{
-		if (pArgList->argc < 2) return;
-
 		// Set up so we can set one or more dims...
 
         LTVector vDims;
 		g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
 
-		if (pArgList->argv[1])
+		if (pArgList->argc == 1)
 		{
-			vDims.x = (LTFLOAT) atof(pArgList->argv[1]);
+			// RETAIL: Tron's (0x1008f721): without dims, the current
+			// animation's
+
+			HMODELANIM hAnim;
+			g_pModelLT->GetCurAnim(GetUserObject(), MAIN_TRACKER, hAnim);
+			if (g_pCommonLT->GetModelAnimUserDims(GetUserObject(), &vDims, hAnim) != LT_OK)
+			{
+				g_pLTServer->CPrint("Error in CCharacter::HandleModelString msg SetDims could not get current animation. ");
+				return;
+			}
 		}
-		if (pArgList->argc > 2 && pArgList->argv[2])
+		else
 		{
-			vDims.y = (LTFLOAT) atof(pArgList->argv[2]);
-		}
-		if (pArgList->argc > 3 && pArgList->argv[3])
-		{
-			vDims.z = (LTFLOAT) atof(pArgList->argv[3]);
+			if (pArgList->argv[1])
+			{
+				vDims.x = (LTFLOAT) atof(pArgList->argv[1]);
+			}
+			if (pArgList->argc > 2 && pArgList->argv[2])
+			{
+				vDims.y = (LTFLOAT) atof(pArgList->argv[2]);
+			}
+			if (pArgList->argc > 3 && pArgList->argv[3])
+			{
+				vDims.z = (LTFLOAT) atof(pArgList->argv[3]);
+			}
 		}
 
 		// Set the new dims
@@ -2994,6 +2991,111 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 		{
 			pHitBox->SetDimsToModel();
 		}
+	}
+	else if( tok == s_cTok_FX )
+	{
+		// RETAIL: Tron's (0x1008ffce)
+		if( pArgList->argc > 1 && pArgList->argv[1] )
+		{
+			PlayClientFX( pArgList->argv[1], m_hObject );
+		}
+	}
+	else if( tok == s_cTok_RezInFX )
+	{
+		// RETAIL: Tron's (0x1009000d)
+		const char* pszFX = g_pModelButeMgr->GetModelRezInFX( m_eModelId );
+		if( pszFX )
+		{
+			PlayClientFX( (char*)pszFX, m_hObject );
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::HandleFootstep()
+//
+//	PURPOSE:	Handle a footstep: the footprint and footstep stimuli
+//
+//	RETAIL: Tron's (0x10090160; the name is ours): NOLF2's footstep key
+//	code, with the player's fuzzy signature subroutine on the volume.
+//	HandleModelString calls it with false, CTronPlayerObj (0x10062c5e)
+//	with true for the subroutine's alternate volume.
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::HandleFootstep( bool bAlternateVolume )
+{
+	// Only update the footstep info if we are on the ground...(NOTE:  The
+	// character footstep sounds are now played on the client. see CCharacterFX
+	// if you're interested)
+
+	if( m_bOnGround || m_bBodyOnLadder )
+	{
+		LTBOOL bInWater = (m_bBodyInLiquid && !IsLiquid(m_eContainerCode));
+
+		if (m_bBodyOnLadder)
+		{
+			m_eStandingOnSurface = ST_LADDER;
+		}
+		else if (bInWater)
+		{
+			m_eStandingOnSurface = ST_LIQUID;
+		}
+
+		LTFLOAT fVolume = GetFootstepVolume();
+
+		// Adjust the footstep volume by our stealth modifier...
+
+		fVolume *= m_damage.GetStealthModifier();
+
+		// A player's fuzzy signature subroutine changes the volume
+
+		CPlayerObj* pPlayer = dynamic_cast<CPlayerObj*>( this );
+		if( pPlayer )
+		{
+			PlayerSubroutineSlot* pSlot = pPlayer->FindSubroutine( "Fuzzy_signature" );
+			if( pSlot && pSlot->nTronUnknown40 )
+			{
+				int nVersion = pSlot->nTronUnknown42;
+				int nState = pSlot->nTronUnknown41;
+				int nDifficulty = g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0;
+				SubroutineDataKey key( nVersion, nState, nDifficulty );
+				const FuzzySignatureData& data = g_pSubroutineDataMgr->m_vecFuzzySignature.at( g_pSubroutineDataMgr->GetIndex( key ));
+				if( bAlternateVolume )
+				{
+					fVolume *= data.fAIAlternateVolume;
+				}
+				else
+				{
+					fVolume *= data.fAISoundVolumeScalar;
+				}
+			}
+		}
+
+		SURFACE* pSurf = g_pSurfaceMgr->GetSurface(m_eStandingOnSurface);
+		_ASSERT(pSurf);
+		if (pSurf)
+		{
+			fVolume *= pSurf->fMovementNoiseModifier;
+
+			// TODO: reduce this to a bool function call
+			if ( *pSurf->szLtFootPrintSpr && *pSurf->szRtFootPrintSpr )
+			{
+				// If this is a surface that creates footprints, add a footprint to our list
+
+				LTVector vFootprintPos;
+				g_pLTServer->GetObjectPos(m_hObject, &vFootprintPos);
+
+				// Register EnemyFootprintVisible stimulus.
+				g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootprintVisible, m_hObject, GetRelationData(), vFootprintPos, 1.0f, pSurf->fFootPrintLifetime );
+			}
+		}
+
+		// Register EnemyFootstepSound stimulus.
+		LTVector vMovementPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vMovementPos);
+		g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootstepSound, m_hObject, vMovementPos, fVolume );
 	}
 }
 

@@ -168,6 +168,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		void CreateZzz();
 		void DestroyZzz();
 
+		// RETAIL: Tron's footstep (0x10090160; the name is ours)
+		void HandleFootstep( bool bAlternateVolume );
+
 		// RETAIL: Tron's listen icon (0x1008dba0..0x1008ddc0; the names are ours)
 		void CreateListenIcon();
 		void DestroyListenIcon();
@@ -617,7 +620,8 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		EnumAIStimulusID	m_eEnemyVisibleStimID;			// Registration ID of visibility stimulus.
 															// Saved in case we want to toggle visibility.
 
-		EnumAIStimulusID	m_eUndeterminedVisibleStimID;	// Registration ID of visibility stimulus.
+		// RETAIL: no m_eUndeterminedVisibleStimID: +0x414 is padding before the
+		// 8-byte damage flags (the constructor, 0x10089ab0, does not set it)
 															// Saved in case we want to toggle visibility.
 
 		DamageFlags			m_nDamageFlags;					// What types of damage (progressive) are cureently affecting us
