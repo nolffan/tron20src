@@ -72,7 +72,10 @@ public:
     void    SetTitleColor(uint32 titleColor);
 
     LTBOOL	CreateTitle(int nStringID);
-    LTBOOL	CreateTitle(char *lpszTitle);
+	// TRON: the title is a wide string, by value (RETAIL: 0x100d29b0)
+    LTBOOL	CreateTitle(std::wstring sTitle);
+	// PORT: ours, for the code that still makes its text narrow
+    LTBOOL	CreateTitle(char *lpszTitle) { return CreateTitle(LTGUIWideString(lpszTitle)); }
 
 	//set the background for the screen
     void         UseBack(LTBOOL	bBack=LTTRUE,LTBOOL	bOK=LTFALSE, LTBOOL bReturn = LTFALSE );
@@ -195,8 +198,15 @@ public:
 
     CLTGUISlider*     CreateSlider(int stringID,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
 								int *pnValue = LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
-    CLTGUISlider*     CreateSlider(char *pString,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
+	// TRON: the header is a wide string, by value (RETAIL: 0x100d4250)
+    CLTGUISlider*     CreateSlider(std::wstring sString,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
 								int *pnValue = LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
+	// PORT: ours, for the code that still makes its text narrow
+    CLTGUISlider*     CreateSlider(char *pString,  int helpID, int nHeaderWidth, int nBarWidth, int nBarHeight = -1, 
+								int *pnValue = LTNULL, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1)
+	{
+		return CreateSlider(LTGUIWideString(pString), helpID, nHeaderWidth, nBarWidth, nBarHeight, pnValue, pos, bFixed, nFont);
+	}
 
 	CLTGUIColumnCtrl* CreateColumnCtrl(uint32 commandID, int helpID, LTIntPt pos = kDefaultPos, LTBOOL bFixed = LTFALSE, int nFont = -1);
 

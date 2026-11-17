@@ -442,23 +442,27 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 // ----------------------------------------------------------------------- //
 
 
-LTBOOL CBaseScreen::CreateTitle(char *lpszTitle)
+// TRON: the title is wide text, by value; the font is the one for the
+// scaled title size (m_TitleFont is not used), and the new string gets that
+// font set again (RETAIL: 0x100d29b0)
+LTBOOL CBaseScreen::CreateTitle(std::wstring sTitle)
 {
 	if (m_pTitleString)
 	{
-		m_pTitleString->SetText(lpszTitle);
+		m_pTitleString->SetText(sTitle);
 	}
 	else
 	{
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(m_TitleFont);
 		LTIntPt pos = m_TitlePos;
+		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 		g_pInterfaceResMgr->ConvertScreenPos(pos);
-		m_pTitleString = g_pFontManager->CreatePolyString(pFont,LTGUIWideString(lpszTitle),(float)pos.x,(float)pos.y);
+		m_pTitleString = g_pFontManager->CreatePolyString(pFont,sTitle,(float)pos.x,(float)pos.y);
 
 		if (!m_pTitleString)
 			return LTFALSE;
 
-		uint8 nFontSize = (uint8)((LTFLOAT)m_TitleSize * g_pInterfaceResMgr->GetXRatio());
+		m_pTitleString->SetFont(pFont);
 		m_pTitleString->SetCharScreenHeight(nFontSize);
 		m_pTitleString->SetColor(m_TitleColor);
 
@@ -472,7 +476,7 @@ LTBOOL CBaseScreen::CreateTitle(char *lpszTitle)
 LTBOOL CBaseScreen::CreateTitle(int nStringID)
 {
 
-    LTBOOL created = CreateTitle(LoadTempString(nStringID));
+    LTBOOL created = CreateTitle(LoadTempWString(nStringID));	// TRON: wide (RETAIL: 0x100d2b80)
 
 	return created;
 }
@@ -1335,13 +1339,16 @@ CLTGUIToggle* CBaseScreen::CreateToggle(std::wstring sString, int helpID, int nH
 CLTGUISlider* CBaseScreen::CreateSlider(int stringID, int helpID, int nHeaderWidth, int nBarWidth,
 										int nBarHeight, int *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
-	CLTGUISlider* pCtrl=CreateSlider(LoadTempString(stringID), helpID, nHeaderWidth, nBarWidth, nBarHeight, pnValue, pos, bFixed, nFont);
+	// TRON: the string as wide text (RETAIL: 0x100d41f0)
+	CLTGUISlider* pCtrl=CreateSlider(LoadTempWString(stringID), helpID, nHeaderWidth, nBarWidth, nBarHeight, pnValue, pos, bFixed, nFont);
 
 	return pCtrl;
 
 }
 
-CLTGUISlider* CBaseScreen::CreateSlider(char *pString, int helpID, int nHeaderWidth, int nBarWidth,
+// TRON: the header as wide text, the font for the scaled height, as
+// CreateTextItem (RETAIL: 0x100d4250)
+CLTGUISlider* CBaseScreen::CreateSlider(std::wstring sString, int helpID, int nHeaderWidth, int nBarWidth,
 										int nBarHeight, int *pnValue, LTIntPt pos, LTBOOL bFixed, int nFont)
 {
 	CLTGUISlider* pCtrl=debug_new(CLTGUISlider);
@@ -1351,8 +1358,8 @@ CLTGUISlider* CBaseScreen::CreateSlider(char *pString, int helpID, int nHeaderWi
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 	char szTex[128];
 	g_pLayoutMgr->GetSliderTex(szTex,128);
@@ -1367,7 +1374,7 @@ CLTGUISlider* CBaseScreen::CreateSlider(char *pString, int helpID, int nHeaderWi
 	}
 
 
-    if (!pCtrl->Create(pString, helpID, pFont, nFontSize, hBar, nHeaderWidth, nBarWidth, nBarHeight, pnValue))
+    if (!pCtrl->Create(sString, helpID, pFont, nFontSize, hBar, nHeaderWidth, nBarWidth, nBarHeight, pnValue))
 	{
 		debug_delete(pCtrl);
         return LTNULL;
@@ -1383,7 +1390,7 @@ CLTGUISlider* CBaseScreen::CreateSlider(char *pString, int helpID, int nHeaderWi
 	}
 	pCtrl->SetBasePos(pos);
 
-	m_nextPos.y += (pCtrl->GetBaseHeight() + m_nItemSpacing);
+	m_nextPos.y += (pCtrl->GetHeight() + m_nItemSpacing);	// TRON: GetHeight
 
 	pCtrl->SetScale(g_pInterfaceResMgr->GetXRatio());
 	
@@ -1489,9 +1496,10 @@ void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 	uint8 nFont = g_pLayoutMgr->GetBackFont();
 	uint8 nFontSize = g_pLayoutMgr->GetBackSize();
 
-	s_BackArrow.SetFont(g_pInterfaceResMgr->GetFont(nFont),nFontSize);
+	// TRON: the font for the back size (RETAIL: 0x100d46e0; the face is not used)
+	s_BackArrow.SetFont(g_pInterfaceResMgr->GetFontForHeight(nFontSize),nFontSize);
 	s_BackArrow.SetHelpID(nHelp);
-	s_BackArrow.SetText(LoadTempString(nStr),LTTRUE);
+	s_BackArrow.SetText(LoadTempWString(nStr),LTTRUE);	// TRON: wide (RETAIL: 0x100d46e0)
 	s_BackArrow.SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 		
 	if (bReturn)
