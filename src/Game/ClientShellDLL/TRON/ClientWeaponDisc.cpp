@@ -20,6 +20,7 @@
 #include "PlayerStats.h"
 #include "RatingMgr.h"
 #include "FXButeMgr.h"
+#include "ParsedMsg.h"
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x100189d0..0x10018a00)
 
 // RETAIL: Tron's projectile message 14, what the release of the fire key
@@ -691,6 +692,9 @@ uint32 CClientWeaponDisc::GetPostHoldDefenseAni() const
 bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
                                                  ILTMessage_Read *pMsg )
 {
+	// RETAIL: 0x10019260. The bool at +0x21e is the one retail clears
+	// here (which retail bool is which of ours is a guess, see the header)
+
 	// get the projectile message subtype
 	uint8 nProjectileMessageType = pMsg->Readuint8( );
 
@@ -703,16 +707,10 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 			//
 
 			// stop sending updates to the disc
-			m_bDiscNeedsUpdates = false;
+			m_bFireMessageSent = false;
 
 			// we handled message, return true
 			return true;
-		}
-		break;
-
-		case MPROJ_RETURNING_DISTANCE_THRESHOLD:
-		{
-			// don't handle this currently
 		}
 		break;
 
@@ -722,34 +720,20 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 			// we now have the disc!
 			//
 
-			// get the extra information to be sure
-
 			// get the weapon id
 			uint8 nWeaponId = pMsg->Readuint8();
 
 			// get the ammo id
 			uint8 nAmmoId = pMsg->Readuint8();
 
-			// get the number of ammos (not needed, cleaning out the message)
+			// get the number of ammos
 			uint8 nAmmoAmount = pMsg->Readuint8();
 
-			// Since the weapon cannot switch until we get
-			// the disc back, make sure the returned type
-			// is the same weapon and ammo type
-			ASSERT( m_nWeaponId == nWeaponId );
-			ASSERT( m_nAmmoId == nAmmoId );
-
-			// disc is no longer flying
-			m_bIsDiscActive = false;
-
 			// stop sending updates to the disc
-			m_bDiscNeedsUpdates = false;
-
-			// reset the active timer
-			m_fTimeDiscActive = -1.0f;
+			m_bFireMessageSent = false;
 
 			// give the disc back
-			IncrementAmmo();
+			IncrementAmmo( nAmmoAmount );
 
 			// we handled message, return true
 			return true;
@@ -758,24 +742,17 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 		case MPROJ_BLOCKED:
 		{
-			// RETAIL: Tron's (0x10019290): the impact hold animation
-			// plays next, and the FX of the block type
+			// RETAIL: Tron's: the impact hold animation plays next, and
+			// the FX of the block type
 			m_bPlayImpactHoldAnimation = true;
 
 			uint8 nDefendType = pMsg->Readuint8( );
 			pMsg->SeekTo( 0 );
 
 			CreateDefendFX( nDefendType );
-		}
-		break;
 
-		default:
-		{
-			// The projectile message type is malformed...
-			// perhaps the message was created improperly,
-			// or perhaps the client weapon is not
-			// designed to handle these messages.
-			ASSERT( 0 );
+			// let the others see it too
+			return false;
 		}
 		break;
 	};  // switch( nProjectileMessageType )
@@ -793,14 +770,25 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 
 bool CClientWeaponDisc::OnModelKey( HLOCALOBJ hObj, ArgList* pArgs )
 {
-	ASSERT( 0 != hObj );
+	// RETAIL: 0x10019320: Tron's keys are tokens, and the swat block has
+	// its own fire key. The bools at +0x21d, +0x224 and +0x225 are the ones
+	// retail sets here (which retail bool is which of ours is a guess, see
+	// the header)
+	static CParsedMsg::CToken s_cTok_WEAPON_KEY_FIRE( WEAPON_KEY_FIRE );
+	static CParsedMsg::CToken s_cTok_SWAT_BLOCK_FIRE_KEY( "SWAT_BLOCK_FIRE_KEY" );
 
 	// get the keyframe intent
 	char const *pKey = pArgs->argv[ 0 ];
-
-	if ( 0 == stricmp( pKey, WEAPON_KEY_FIRE ) )
+	if ( !pKey )
 	{
-		if ( !m_bIgnoreFireKeyframe )
+		return false;
+	}
+
+	CParsedMsg::CToken cTok( pKey );
+
+	if ( cTok == s_cTok_WEAPON_KEY_FIRE )
+	{
+		if ( !m_bDiscNeedsUpdates )
 		{
 			// Only allow fire keys if it is a fire animation...
 			uint32 dwAni = g_pLTClient->GetModelAnimation( m_hObject );
@@ -810,22 +798,25 @@ bool CClientWeaponDisc::OnModelKey( HLOCALOBJ hObj, ArgList* pArgs )
 				m_bFire = true;
 
 				// clear the fire message sent flag
-				m_bFireMessageSent = false;
-
-				// keep track of the total time disc is active
-				m_fTimeDiscActive = 0.0f;
+				m_bIsDiscActive = false;
 			}
 		}
 
 		// reset the ignore fire keyframe flag
-		m_bIgnoreFireKeyframe = false;
+		m_bDiscNeedsUpdates = false;
 
+		return true;
+	}
+	else if ( cTok == s_cTok_SWAT_BLOCK_FIRE_KEY )
+	{
+		// slot 102's message follows (UpdateModelState)
+		m_bIgnoreFireKeyframe = true;
 		return true;
 	}
 
 	// if this point is reached the message was not
 	// handled by the Disc, try another object
-	return CTronClientWeapon::OnModelKey( hObj, pArgs );
+	return CClientWeapon::OnModelKey( hObj, pArgs );
 }
 
 
