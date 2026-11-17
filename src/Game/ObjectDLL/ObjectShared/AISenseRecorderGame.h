@@ -30,6 +30,8 @@ class CAISenseRecorderGame : public CAISenseRecorderAbstract
 
 	private: // Private methods.
 		
+		// RETAIL: Tron's (Object.lto 0x101d9190; the name is ours).
+		LTBOOL HandleProjectileVisible(CAIStimulusRecord* pStimulusRecord);
 		LTBOOL HandleEnemyWeaponImpactVisible(CAIStimulusRecord* pStimulusRecord);
 		LTBOOL HandleEnemyFootprintVisible(CAIStimulusRecord* pStimulusRecord);
 		LTBOOL HandleEnemyDangerVisible(CAIStimulusRecord* pStimulusRecord);
