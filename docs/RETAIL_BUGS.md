@@ -1326,6 +1326,17 @@ into the first character of the first chat history line.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 writes at most the maximum length, with the terminator.
 
+### The system menu does not show the load control again
+
+CShell.dll 0x101c80f0 (CMenuSystem::OnFocus, ClientShellShared/
+MenuSystem.cpp). In a multiplayer game the function hides the save and
+load controls. In single player it shows the save control again, but not
+the load control. Thus after a multiplayer game, the system menu has no
+load control until the game starts again.
+
+Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
+MenuSystem.cpp shows the load control too.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

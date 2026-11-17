@@ -14,6 +14,8 @@
 #include "ClientResShared.h"
 #include "ClientMultiplayerMgr.h"
 #include "ClientSaveLoadMgr.h"
+#include "VehicleMgr.h"
+#include "CMoveMgr.h"
 namespace
 {
 	enum eMenuCmds
@@ -63,24 +65,25 @@ LTBOOL CMenuSystem::Init()
 
 	if (!CBaseMenu::Init()) return LTFALSE;
 
-	SetTitle(IDS_TITLE_SYSTEM);
+	// RETAIL: Tron's string IDs (0x101c7e09..0x101c7eab)
+	SetTitle(0x28);
 
 	uint16 nLoadCtrlId = AddControl(IDS_LOADGAME,MC_LOAD);
 	m_pLoadCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nLoadCtrlId );
-	uint16 nSaveCtrlId = AddControl(IDS_SAVEGAME,MC_SAVE);
+	uint16 nSaveCtrlId = AddControl(0x52,MC_SAVE);
 	m_pSaveCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nSaveCtrlId );
 
-	AddControl(IDS_OPTIONS,MC_OPTIONS);
+	AddControl(0x4d,MC_OPTIONS);
 
 	// RETAIL: 0x101c7df0: no host options control in Tron
-	uint16 nTeamCtrlId = AddControl(IDS_CHOOSE_TEAM,MC_TEAM);
+	uint16 nTeamCtrlId = AddControl(0x2eb,MC_TEAM);
 	m_pTeamCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nTeamCtrlId );
 
-	uint16 nPlayerCtrlId = AddControl(IDS_PLAYER,MC_PLAYER);
+	uint16 nPlayerCtrlId = AddControl(0x3f0,MC_PLAYER);
 	m_pPlayerCtrl = ( CLTGUITextCtrl* )m_List.GetControl( nPlayerCtrlId );
 	
-	AddControl(IDS_ABORT,MC_ABORT);
-	AddControl(IDS_EXIT,MC_QUIT);
+	AddControl(0x578,MC_ABORT);
+	AddControl(0x4f,MC_QUIT);
 
 
 
@@ -102,13 +105,13 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 	case MC_OPTIONS:
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_OPTIONS);
 		break;
+	case MC_PLAYER:
+		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PLAYER);
+		break;
 	// RETAIL: 0x101c7ed0: the team command goes to Tron's team selection
 	// screen
 	case MC_TEAM:
 		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_TEAMSELECT);
-		break;
-	case MC_PLAYER:
-		g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_PLAYER);
 		break;
 	case MC_MAIN:
 		{
@@ -119,6 +122,14 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 				g_pInterfaceMgr->SetIntentionalDisconnect( true );
 				g_pClientMultiplayerMgr->ForceDisconnect();
 			}
+
+			// RETAIL: Tron's stops the music (0x101c7fa9)
+			CMusic* pMusic = g_pGameClientShell->GetMusic();
+			if (pMusic)
+			{
+				pMusic->Stop(LTDMEnactDefault);
+			}
+
 			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_MAIN);
 
 		}
@@ -129,7 +140,8 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 			mb.eType = LTMB_YESNO;
 			mb.pFn = QuitCallBack;
 			mb.pData = this;
-			g_pInterfaceMgr->ShowMessageBox(IDS_SUREWANTQUIT,&mb);
+			// RETAIL: Tron's string IDs (0x101c7fe4, 0x101c8045, 0x101c8070)
+			g_pInterfaceMgr->ShowMessageBox(0x297,&mb);
 			break;
 		}
 	case MC_ABORT:
@@ -139,14 +151,14 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 			mb.pFn = AbortCallBack;
 			mb.pData = this;
 
-			int nMsgID = IDS_SUREWANTABORT;
+			int nMsgID = 0x298;
 			if (IsMultiplayerGame())
 			{
 				// Since we know we're starting a new server, ignore any disconnect messages.
 				bool bIsLocalClient = false;
 				g_pLTClient->IsLocalToServer(&bIsLocalClient);
 				if( bIsLocalClient)
-					nMsgID = IDS_SHUTDOWNSERVER;
+					nMsgID = 0x395;
 				
 			}
 			g_pInterfaceMgr->ShowMessageBox(nMsgID,&mb);
@@ -166,38 +178,28 @@ uint32 CMenuSystem::OnCommand(uint32 nCommand, uint32 nParam1, uint32 nParam2)
 
 void CMenuSystem::OnFocus(LTBOOL bFocus)
 {
-	ClearSelection();
-	m_List.ClearSelection();
+	// RETAIL: Tron's (0x101c80f0) hides save and load in multiplayer and
+	// disables them on a light cycle
 	if( bFocus )
 	{
-		// Hide the save/load controls if we are a remote client.
-		if	( !g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) && 
-			  ( g_pGameClientShell->GetGameType() == eGameTypeSingle ||
-				g_pGameClientShell->GetGameType() == eGameTypeCooperative
-			  )
-			)
-		{
-			m_pSaveCtrl->Show( LTTRUE );
-			m_pLoadCtrl->Show( LTTRUE );
-		}
-		else
+		if (IsMultiplayerGame())
 		{
 			m_pSaveCtrl->Show( LTFALSE );
 			m_pLoadCtrl->Show( LTFALSE );
-		}
-
-		m_pSaveCtrl->Enable(g_pClientSaveLoadMgr->CanSaveGame());
-
-		if (IsMultiplayerGame())
-		{
+			m_pTeamCtrl->Show( LTTRUE );
 			m_pPlayerCtrl->Show( LTTRUE );
-			m_pTeamCtrl->Show( IsTeamGameType() );
-
 		}
 		else
 		{
-			m_pPlayerCtrl->Show( LTFALSE );
+			// RETAIL: the load control is not shown again (docs/RETAIL_BUGS.md)
+			m_pSaveCtrl->Show( LTTRUE );
+#ifdef TRON20_MODERN
+			m_pLoadCtrl->Show( LTTRUE );
+#endif
+			m_pSaveCtrl->Enable( g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE );
+			m_pLoadCtrl->Enable( g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE );
 			m_pTeamCtrl->Show( LTFALSE );
+			m_pPlayerCtrl->Show( LTFALSE );
 		}
 
 		if (m_fScale != g_pInterfaceResMgr->GetXRatio())
