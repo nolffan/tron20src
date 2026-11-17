@@ -884,7 +884,8 @@ bool CProjectile::IsFiredFromHitBox(HOBJECT hObj)
 
 	if (!hObj) return false;
 
-	return (hObj == m_hFiredFrom.operator HOBJECT());
+	HOBJECT hFiredFrom = m_hFiredFrom;
+	return (hObj == hFiredFrom);
 }
 
 
@@ -1216,7 +1217,7 @@ void CProjectile::TronUnknownVirtual30(HOBJECT hObj)
 	if (IsNonSolidTouch(hObj)) return;
 
 	IntersectInfo iInfo;
-	HOBJECT hHitObj = hObj;
+	HOBJECT hHitObj;
 	if (GetHitBoxImpact(hObj, &hHitObj, &iInfo))
 	{
 		AddPendingTouch(hHitObj, &iInfo);
