@@ -4770,23 +4770,21 @@ bool CGameClientShell::LauncherServerApp( char const* pszProfileFile )
 	g_pLTClient->GetRenderMode( &rMode );
 
 	// Shutdown the renderer, minimize it, and hide it...
-	g_pLTClient->ShutdownRender( 0 ); // RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW );
+	// RETAIL: 0x100e7b80: Tron minimizes and hides the window
+	g_pLTClient->ShutdownRender( RSHUTDOWN_MINIMIZEWINDOW | RSHUTDOWN_HIDEWINDOW );
 
 	// Initialize the startup info.
 	memset( &startInfo, 0, sizeof( STARTUPINFO ));
 	startInfo.cb = sizeof( STARTUPINFO );
 
-	// Setup the command line.
-	std::string sCmdLine = "NOLF2Srv.exe -profile ";
-	
-	// Enclose the profile name in quotes since we allow spaces in the name...
-
-	sCmdLine += "\"";
+	// Setup the command line.  RETAIL: Tron's server app takes the
+	// configuration file, quoted since we allow spaces in the name
+	std::string sCmdLine = "TRONSrv.exe -config \"";
 	sCmdLine += pszProfileFile;
 	sCmdLine += "\"";
 
 	// Start the server app.
-	if( !CreateProcess( "NOLF2Srv.exe", ( char * )sCmdLine.c_str( ), NULL, NULL, FALSE, 0, NULL, NULL, 
+	if( !CreateProcess( "TRONSrv.exe", ( char * )sCmdLine.c_str( ), NULL, NULL, FALSE, 0, NULL, NULL, 
 		&startInfo, &procInfo ))
 	{
 		// Serverapp failed.  Restore the render mode.
