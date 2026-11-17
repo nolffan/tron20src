@@ -1252,6 +1252,9 @@ void CGameClientShell::OnEngineTerm()
 		debug_delete( m_pCircuitButeMgr );
 		m_pCircuitButeMgr = NULL;
 	}
+
+	// RETAIL: 0x100e3692: InitClientShell's counterpart
+	TermClientShell();
 }
 
 // ----------------------------------------------------------------------- //
