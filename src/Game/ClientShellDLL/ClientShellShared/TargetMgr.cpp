@@ -39,55 +39,11 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData);
 
 CActivationData	g_adFallbackActivationObject;
 
-static bool IsUserFlagSet(HOBJECT hObj, uint32 dwTestFlags)
+static inline bool IsUserFlagSet(HOBJECT hObj, uint32 dwTestFlags)
 {
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags(hObj, OFT_User, dwFlags);
 	return !!(dwFlags & dwTestFlags);
-}
-
-static void SetFallbackActivationObject(HOBJECT hObj, IntersectQuery* pQuery)
-{
-	if (!pQuery) 
-		return;
-
-	// Use the Query object to determine how far away this object is from the
-	// activation start point.  It must be within the activation range for us
-	// to use it...
-
-	LTVector vObjPos;
-	g_pLTClient->GetObjectPos(hObj, &vObjPos);
-
-	LTVector vDir = (pQuery->m_From - vObjPos);
-	float fDist = vDir.Mag();
-
-	// Since fDist is the distance to the center of the object we need to account
-	// for the object's radius.  This may give us some false positives since the
-	// object's using an axis-aligned bounding box, but a false positive is better
-	// than a negative ;).  Since we can't get the object's dims here's a nice
-	// magic number for all you kiddies at home that are paying attention...
-
-	fDist -= 35.0f;
-
-	if (fDist > g_vtActivationDistance.GetFloat()) 
-		return;
-
-
-	if (g_adFallbackActivationObject.m_hTarget)
-	{
-		// Don't set if my current target is activatable (doesn't matter
-		// if new one is activatable or not, we'll just keep the one we have)...
-
-		if ( !IsUserFlagSet(g_adFallbackActivationObject.m_hTarget, 
-						    (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH)) )
-		{
-			g_adFallbackActivationObject.m_hTarget = hObj;
-		}
-	}
-	else
-	{
-		g_adFallbackActivationObject.m_hTarget = hObj;
-	}
 }
 
 CTargetMgr::CTargetMgr()
@@ -698,6 +654,10 @@ static bool DoVectorPolyFilterFn(HPOLY hPoly, void *pUserData)
 
 static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 {
+	// RETAIL: Tron's (0x1016e4a0): no doomsday pieces, and no range test for
+	// the fallback object (NOLF2's SetFallbackActivationObject): an unsearched
+	// body's hit box is the fallback; an unconscious character is not one.
+
 	// [KLS 6/26/02] - Make sure we filter out client related objects first...
 
 	HOBJECT hClientHitBox = LTNULL;
@@ -731,30 +691,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 		return true;
 	}
 
-	// Look to see if it is a DoomsDayPiece.  This should take precedence over characters and bodies...
-
-	CDoomsdayPieceFX *pDDPiece = dynamic_cast<CDoomsdayPieceFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_DOOMSDAYPIECE_ID, hTest ));
-	if( pDDPiece )
-	{
-		// If the piece is planted on our teams bse we no longer care about it...
-
-		if( pDDPiece->IsPlanted() && (pDDPiece->GetTeam() != INVALID_TEAM) )
-		{
-			CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-			if( !pLocalCI )
-				return false;
-
-			// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-			if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) == pDDPiece->GetTeam() )
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-	
-
 	// If it's a body, ignore it (we only care about its hit box)
 	CBodyFX* pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFX(hTest);
 	if (pBody) 
@@ -766,8 +702,13 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 	pBody = g_pGameClientShell->GetSFXMgr()->GetBodyFromHitBox(hTest);
 	if (pBody)
 	{
+		if (IsUserFlagSet(hTest, (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH)))
+		{
+			return true;
+		}
+
 		// Save body for later since it may overlap a higher priority object
-		SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
+		g_adFallbackActivationObject.m_hTarget = hTest;
 		return false;
 	}
 
@@ -780,14 +721,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 			return false;
 		}
 
-		// Save character for later if unconscious since it may overlap a 
-		// higher priority object
-		if (pCharacter->IsUnconscious())
-		{
-			SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
-			return false;
-		}
-
 		return true; // "Solid" object so we're done
 	}
 
@@ -795,13 +728,6 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 	pCharacter = g_pGameClientShell->GetSFXMgr()->GetCharacterFromHitBox(hTest);
 	if (pCharacter)
 	{
-		if (pCharacter->IsUnconscious())
-		{
-			// Save character for later since it may overlap a higher priority object
-			SetFallbackActivationObject(hTest, (IntersectQuery*)pUserData);
-			return false;
-		}
-
 		return true; // "Solid" object so we're done
 	}
 
@@ -812,13 +738,9 @@ static bool ActivateFilterFn(HOBJECT hTest, void *pUserData)
 
 	if (!(dwFlags & FLAG_SOLID))
 	{
-		// This object is most likely a pickup of some type and it should
-		// take priority over all the above objects types...however, since all
-		// we can test are its flags we have to filter out the above objects
-		// first (instead of testing for this type of object at the top of 
-		// the function ;)
-
-		return IsUserFlagSet(hTest, (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH));
+		// RETAIL: an info string's object is a target too
+		g_pCommonLT->GetObjectFlags(hTest, OFT_User, dwFlags);
+		return !!(dwFlags & (USRFLG_CAN_ACTIVATE | USRFLG_CAN_SEARCH | USRFLG_INFO_STRING));
 	}
 
 	// Hit something solid, so we're done...
