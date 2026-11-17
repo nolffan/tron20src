@@ -386,23 +386,14 @@ bool CClientSaveLoadMgr::HandleSaveData( ILTMessage_Read& msg )
 	// If we're not the host, then let the user know a save is happening.
 	// Don't show autosaves.
 	if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ) && eSaveDataState != eSaveDataAutoSave )
-		g_pGameClientShell->CSPrint( LoadTempString( IDS_SAVINGGAME ));
+		g_pGameClientShell->CSPrint( LoadTempString( 0x3f9 ));	// RETAIL: Tron's string
 	
-	// Give the server our save data.
+	// Give the server our save data.  RETAIL: 0x10144e7e: Tron's has no
+	// jump test (nor its flag)
 
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_SAVE_DATA) ;
-
-	// need to check if we're jumping, if we are, refuse to save
-	if (g_pMoveMgr->CanSave())
-	{
-		cMsg.Writebool(true);
-		g_pGameClientShell->BuildClientSaveMsg( cMsg, eSaveDataState );
-	}
-	else
-	{
-		cMsg.Writebool(false);
-	}
+	g_pGameClientShell->BuildClientSaveMsg( cMsg, eSaveDataState );
 
 
 	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
