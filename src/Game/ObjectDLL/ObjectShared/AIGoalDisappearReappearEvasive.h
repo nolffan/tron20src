@@ -51,6 +51,11 @@ class CAIGoalDisappearReappearEvasive : public CAIGoalDisappearReappear
 
 		virtual LTBOOL HandleGoalSenseTrigger(AISenseRecord* pSenseRecord);
 
+		// Damage Handling.
+		// RETAIL: Tron's (0x1020ab30).
+
+		virtual LTBOOL HandleDamage(const DamageStruct& damage);
+
 	protected:
 
 		// State Handling.

@@ -311,3 +311,18 @@ LTBOOL CAIGoalDisappearReappearEvasive::HandleGoalSenseTrigger(AISenseRecord* pS
 
 	return LTFALSE;
 }
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalDisappearReappearEvasive::HandleDamage
+//
+//	PURPOSE:	RETAIL: Tron's (0x1020ab30): damage resets the importance.
+//
+// ----------------------------------------------------------------------- //
+
+LTBOOL CAIGoalDisappearReappearEvasive::HandleDamage(const DamageStruct& damage)
+{
+	SetCurToBaseImportance();
+
+	return super::HandleDamage( damage );
+}
