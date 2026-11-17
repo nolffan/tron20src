@@ -23,6 +23,8 @@
 #include "ServerMissionMgr.h"
 #include "ArenaStartPoint.h"
 #include "MultiplayerLevelInfoMgr.h"
+#include "PingButeMgr.h"
+#include "AIUtils.h"
 
 BEGIN_CLASS(CTronPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
@@ -509,12 +511,245 @@ void CTronPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 //	PURPOSE:	Add a ping (RETAIL: retail 0x100675a0; the name is ours)
 //
 // ----------------------------------------------------------------------- //
-void CTronPlayerObj::AddPing(char const* pszPing, bool /*bTronUnknown*/)
+void CTronPlayerObj::AddPing(char const* pszPing, bool bPlaySound)
 {
-	// PORT: retail looks it up in pingbutes.txt and tells the client
-	// ("AddPing", 0x100675c5); this only keeps it
-	if( !pszPing ) return;
+	// RETAIL: retail 0x100675a0: a ping of pingbutes.txt; the client is
+	// told the ping's character
+	if( bPlaySound )
+	{
+		PlaySound( "AddPing", m_fSoundRadius, LTTRUE );
+	}
+
+	char szTag[30];
+	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
+	if( !szTag[0] )
+	{
+		AIError( "%s not found in pingbutes.txt", pszPing );
+		return;
+	}
+
 	m_lstPings.push_front( std::string( pszPing ));
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_TRON_PING );
+	char szCharacter[128];
+	g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
+	cMsg.WriteString( szCharacter );
+	cMsg.Writeuint8( 1 );
+
+	if( GetClient( ))
+	{
+		g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::RemovePing
+//
+//	PURPOSE:	RETAIL: retail 0x10067770 (the name is ours): "REMOVEPING"
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerObj::RemovePing(char const* pszPing)
+{
+	char szTag[30];
+	g_pPingButeMgr->GetPingTag( pszPing, szTag, ARRAY_LEN( szTag ));
+
+	PingList::iterator iter;
+	for( iter = m_lstPings.begin( ); iter != m_lstPings.end( ); iter++ )
+	{
+		if( !_stricmp( iter->c_str( ), pszPing ))
+			break;
+	}
+
+	if( iter == m_lstPings.end( ))
+	{
+		AIError( "%s not found in pingbutes.txt", pszPing );
+		return;
+	}
+
+	m_lstPings.erase( iter );
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_TRON_PING );
+	char szCharacter[128];
+	g_pPingButeMgr->GetCharacter( szTag, szCharacter, ARRAY_LEN( szCharacter ));
+	cMsg.WriteString( szCharacter );
+	cMsg.Writeuint8( 0 );
+
+	if( GetClient( ))
+	{
+		g_pLTServer->SendToClient( cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleSinConsoleVarMsg/HandleRampConsoleVarMsg
+//
+//	PURPOSE:	RETAIL: retail 0x10067ce0, 0x10067f60 (the names are ours):
+//				"SINCONSOLEVAR" and "RAMPCONSOLEVAR" tell the client to
+//				move a console variable (MID_TRON_UNKNOWN_104: 0 ramp, 1
+//				sine, 2 stop, 3 revert)
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::HandleSinConsoleVarMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) != 3 && cMsg.GetArgCount( ) != 5 )
+		return false;
+
+	uint8 nType = 1;
+	float fMin = 0.0f;
+	float fMax = 0.0f;
+	float fPeriod = 1.0f;
+	char szVar[64];
+
+	strncpy( szVar, cMsg.GetArg( 1 ), ARRAY_LEN( szVar ) - 1 );
+	szVar[ARRAY_LEN( szVar ) - 1] = 0;
+
+	if( cMsg.GetArgCount( ) == 3 )
+	{
+		if( !_strcmpi( cMsg.GetArg( 2 ), "off" ) || !_strcmpi( cMsg.GetArg( 2 ), "stop" ))
+		{
+			nType = 2;
+		}
+		else if( !_strcmpi( cMsg.GetArg( 2 ), "revert" ) || !_strcmpi( cMsg.GetArg( 2 ), "restore" ))
+		{
+			nType = 3;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if( cMsg.GetArgCount( ) == 5 )
+	{
+		fMin = (float)atof( cMsg.GetArg( 2 ));
+		fMax = (float)atof( cMsg.GetArg( 3 ));
+		fPeriod = (float)atof( cMsg.GetArg( 4 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
+	cClientMsg.Writeuint8( nType );
+	cClientMsg.WriteString( szVar );
+	cClientMsg.Writefloat( fMin );
+	cClientMsg.Writefloat( fMax );
+	cClientMsg.Writefloat( fPeriod );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+bool CTronPlayerObj::HandleRampConsoleVarMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 4 || cMsg.GetArgCount( ) > 5 )
+		return false;
+
+	char szVar[64];
+	strncpy( szVar, cMsg.GetArg( 1 ), ARRAY_LEN( szVar ) - 1 );
+	szVar[ARRAY_LEN( szVar ) - 1] = 0;
+
+	float fStart = 0.0f;
+	float fEnd;
+	float fPeriod;
+	bool bStart = false;
+
+	if( cMsg.GetArgCount( ) == 5 )
+	{
+		bStart = true;
+		fStart = (float)atof( cMsg.GetArg( 2 ));
+		fEnd = (float)atof( cMsg.GetArg( 3 ));
+		fPeriod = (float)atof( cMsg.GetArg( 4 ));
+	}
+	else
+	{
+		fEnd = (float)atof( cMsg.GetArg( 2 ));
+		fPeriod = (float)atof( cMsg.GetArg( 3 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_UNKNOWN_104 );
+	cClientMsg.Writeuint8( 0 );
+	cClientMsg.WriteString( szVar );
+	cClientMsg.Writebool( bStart );
+	cClientMsg.Writefloat( fStart );
+	cClientMsg.Writefloat( fEnd );
+	cClientMsg.Writefloat( fPeriod );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronPlayerObj::HandleAnnouncementMsg/HandleRatingMsg
+//
+//	PURPOSE:	RETAIL: retail 0x10068250, 0x100683a0 (the names are ours):
+//				"ANNOUNCEMENT <string id> [string id]" and "RATING <rating>
+//				<0..100>"
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronPlayerObj::HandleAnnouncementMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 2 )
+		return false;
+
+	uint32 nStringId = atol( cMsg.GetArg( 1 ));
+	uint32 nStringId2 = 0;
+	if( cMsg.GetArgCount( ) > 2 )
+	{
+		nStringId2 = atol( cMsg.GetArg( 2 ));
+	}
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_TRON_HUD_TEXT );
+	cClientMsg.Writeuint32( nStringId );
+	cClientMsg.Writeuint32( nStringId2 );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
+}
+
+bool CTronPlayerObj::HandleRatingMsg(const CParsedMsg &cMsg)
+{
+	if( cMsg.GetArgCount( ) < 3 )
+		return false;
+
+	const char* aszRatings[NUM_RATINGS] =
+	{
+		"health", "energy", "efficiency", "transfer", "processor"
+	};
+
+	const char* pszRating = cMsg.GetArg( 1 );
+
+	int nRating = -1;
+	for( int i = 0; i < NUM_RATINGS; i++ )
+	{
+		if( !_stricmp( pszRating, aszRatings[i] ))
+		{
+			nRating = i;
+			break;
+		}
+	}
+
+	if( nRating == -1 )
+		return true;
+
+	int nValue = atoi( cMsg.GetArg( 2 ));
+	if( nValue < 0 || nValue > 100 )
+		return true;
+
+	CAutoMessage cClientMsg;
+	cClientMsg.Writeuint8( MID_SET_PERFORMANCE_RATING );
+	cClientMsg.Writeuint8( nRating );
+	cClientMsg.Writeuint8( nValue );
+	g_pLTServer->SendToClient( cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED );
+
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -1535,6 +1770,13 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Add_Build_Points(TRIGGER_ADD_BUILD_POINTS);
 	static CParsedMsg::CToken s_cTok_Start_LightCycle(TRIGGER_START_LIGHTCYCLE);
 	static CParsedMsg::CToken s_cTok_End_LightCycle(TRIGGER_END_LIGHTCYCLE);
+	// RETAIL: Tron's (retail 0x10064520; PORT: not all of retail's yet)
+	static CParsedMsg::CToken s_cTok_Add_Ping("ADDPING");
+	static CParsedMsg::CToken s_cTok_Remove_Ping("REMOVEPING");
+	static CParsedMsg::CToken s_cTok_Sin_Console_Var("SINCONSOLEVAR");
+	static CParsedMsg::CToken s_cTok_Ramp_Console_Var("RAMPCONSOLEVAR");
+	static CParsedMsg::CToken s_cTok_Announcement("ANNOUNCEMENT");
+	static CParsedMsg::CToken s_cTok_Rating("RATING");
 
 	if(cMsg.GetArg(0) == s_cTok_Acquire_Subroutine)
 	{
@@ -1607,6 +1849,43 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		}
 
 		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Add_Ping)
+	{
+		// RETAIL: retail 0x10065113
+		if(cMsg.GetArgCount() > 1)
+		{
+			bool bPlaySound = true;
+			if(cMsg.GetArgCount() >= 2 && IsFalseChar(*cMsg.GetArg(2)))
+			{
+				bPlaySound = false;
+			}
+
+			AddPing(cMsg.GetArg(1), bPlaySound);
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Remove_Ping)
+	{
+		if(cMsg.GetArgCount() > 1)
+		{
+			RemovePing(cMsg.GetArg(1));
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Sin_Console_Var)
+	{
+		return HandleSinConsoleVarMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Ramp_Console_Var)
+	{
+		return HandleRampConsoleVarMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Announcement)
+	{
+		return HandleAnnouncementMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Rating)
+	{
+		return HandleRatingMsg(cMsg);
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
 	{

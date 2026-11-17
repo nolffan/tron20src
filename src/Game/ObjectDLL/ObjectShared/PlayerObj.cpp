@@ -6835,12 +6835,8 @@ void CPlayerObj::RideVehicle(PlayerVehicle* pVehicle)
 		return;
 	}
 
-	if (IsCarryingHeavyObject())
-	{
-		g_pLTServer->CPrint("Can't ride vehicles while carrying a something heavy");
-		return;
-	}
-
+	// RETAIL: retail 0x10083900: no heavy objects, and the vehicle is not
+	// told it is ridden
 
 	PlayerPhysicsModel eModel = pVehicle->GetPhysicsModel();
 
@@ -6853,12 +6849,6 @@ void CPlayerObj::RideVehicle(PlayerVehicle* pVehicle)
 	}
 
 	SetPhysicsModel(eModel);
-
-
-	if (m_hVehicleModel)
-	{
-		pVehicle->SetRidden(true);
-	}
 }
 
 // ----------------------------------------------------------------------- //

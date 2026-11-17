@@ -191,7 +191,14 @@ class CTronPlayerObj : public CPlayerObj
 		virtual LTBOOL InitialUpdate(int nInfo);
 
 		// RETAIL: retail 0x100675a0 (Load calls it with false). The names are ours
-		void AddPing(char const* pszPing, bool bTronUnknown);
+		void AddPing(char const* pszPing, bool bPlaySound);
+		// RETAIL: retail 0x10067770, 0x10067ce0, 0x10067f60, 0x10068250,
+		// 0x100683a0 (OnTrigger's; the names are ours)
+		void RemovePing(char const* pszPing);
+		bool HandleSinConsoleVarMsg(const CParsedMsg &cMsg);
+		bool HandleRampConsoleVarMsg(const CParsedMsg &cMsg);
+		bool HandleAnnouncementMsg(const CParsedMsg &cMsg);
+		bool HandleRatingMsg(const CParsedMsg &cMsg);
 
 		// Member vars
 		// RETAIL: laid out from retail CTronPlayerObj's constructor (0x100626d0),
