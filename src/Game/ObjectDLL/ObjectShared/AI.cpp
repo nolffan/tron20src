@@ -410,12 +410,13 @@ CMDMGR_BEGIN_REGISTER_CLASS( CAI )
 	CMDMGR_ADD_MSG( ACTIVATE,		1,		NULL,					"ACTIVATE" )
 	CMDMGR_ADD_MSG( CINERACT,		2,		NULL,					"CINERACT <Animation Name>" )
 	CMDMGR_ADD_MSG( CINERACTLOOP,	2,		NULL,					"CINERACTLOOP <Animation Name>" )
-	CMDMGR_ADD_MSG( TRACKLOOKAT,	1,		NULL,					"TRACKLOOKAT" )
-	CMDMGR_ADD_MSG( TRACKAIMAT,		1,		NULL,					"TRACKAIMAT" )
+	CMDMGR_ADD_MSG_ARG_RANGE( TRACKLOOKAT,	1,	2,	NULL,				"TRACKLOOKAT" )	// RETAIL: an optional argument
+	CMDMGR_ADD_MSG_ARG_RANGE( TRACKAIMAT,	1,	2,	NULL,				"TRACKAIMAT" )	// RETAIL: an optional argument
 	CMDMGR_ADD_MSG( TRACKNONE,		1,		NULL,					"TRACKNONE" )
 	CMDMGR_ADD_MSG( ALIGNMENT,		2,		NULL,					"ALIGNMENT <key>" )
 	CMDMGR_ADD_MSG( DAMAGEMASK,		2,		NULL,					"DAMAGEMASK <key>" )
 	CMDMGR_ADD_MSG( IGNOREVOLUMES,	2,		NULL,					"IGNOREVOLUMES <1-or-0>" )
+	CMDMGR_ADD_MSG( LOCKIGNOREVOLUMESTATE,	2,	NULL,				"LOCKIGNOREVOLUMESTATE <1-or-0>" )	// RETAIL: Tron's
 	CMDMGR_ADD_MSG( ADDGOAL,		-1,		ValidateMsgAddGoal,		"ADDGOAL <goal>" )
 	CMDMGR_ADD_MSG( REMOVEGOAL,		2,		ValidateMsgRemoveGoal,	"REMOVEGOAL <goal>" )
 	CMDMGR_ADD_MSG( GOALSET,		2,		ValidateMsgGoalset,		"GOALSET <goalset>" )
@@ -443,6 +444,7 @@ CMDMGR_BEGIN_REGISTER_CLASS( CAI )
 	CMDMGR_ADD_MSG( HEALTHMOD,		2,		NULL,					"HEALTHMOD <mod>" )
 	CMDMGR_ADD_MSG( ARMORMOD,		2,		NULL,					"ARMORMOD <mod>" )
 	CMDMGR_ADD_MSG( DESTROY,		1,		NULL,					"DESTROY" )
+	CMDMGR_ADD_MSG_ARG_RANGE( TALKLOCK,	1,	2,	NULL,				"TALKLOCK" )	// RETAIL: Tron's
 
 	CMDMGR_ADD_MSG_SPECIAL( ValidateMsgGoalPrefix )
 
@@ -2342,10 +2344,16 @@ void CAI::UpdateUserFlagCanActivate()
 
 void CAI::SetUnconscious(bool bUnconscious)
 {
+	// RETAIL: Tron's (0x1012d330) is the older form: the search is enabled
+	// first, the hit box takes the object's dims (no GetDefaultModelDims),
+	// every weapon is dropped (no player weapon check, no forced pickup),
+	// the AI keeps no weapons and has no spears to add or remove.
 
 	if (bUnconscious == m_bUnconscious) return;
 
 	m_bUnconscious = bUnconscious;
+
+	m_pSearch->Enable(bUnconscious);
 
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (bUnconscious ? USRFLG_CAN_SEARCH : 0), USRFLG_CAN_SEARCH);
 
@@ -2357,7 +2365,7 @@ void CAI::SetUnconscious(bool bUnconscious)
 			if ( pHitBox )
 			{
 				LTVector vNewDims,vDims;
-				pHitBox->GetDefaultModelDims( vDims );
+				g_pPhysicsLT->GetObjectDims(m_hHitBox, &vDims);
 
 				vNewDims = vDims;
 				if (GetAnimationContext()->IsPropSet(kAPG_Posture,kAP_Stand))
@@ -2390,11 +2398,6 @@ void CAI::SetUnconscious(bool bUnconscious)
 			{
 				char szSpawn[1024];
 				cWeapons--;
-
-				int nId = apWeapons[cWeapons]->GetId();
-				if (!g_pWeaponMgr->IsPlayerWeapon(nId))
-					continue;
-
 
 				HOBJECT hWpnModel = apWeapons[cWeapons]->GetModelObject();
 				uint32 dwAni = g_pLTServer->GetModelAnimation(hWpnModel);
@@ -2432,33 +2435,19 @@ void CAI::SetUnconscious(bool bUnconscious)
 						m_aDroppedWeapons[m_cDroppedWeapons].hPickupItem = pObj->m_hObject;
 						m_cDroppedWeapons++;
 
-						//force pickup is set to true here so that you may disarm unconscious AI
-						m_pSearch->AddPickupItem(pObj->m_hObject,true);
+						m_pSearch->AddPickupItem(pObj->m_hObject);
 						g_pCommonLT->SetObjectFlags(pObj->m_hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_CAN_ACTIVATE | USRFLG_ATTACH_HIDE1SHOW3);
 					}
 
 				}
 			}
 
+			m_cWeapons = 0;
 			memset(m_apWeapons, LTNULL, sizeof(CWeapon*)*AI_MAX_WEAPONS);
 			memset(m_apWeaponPositions, LTNULL, sizeof(CAttachmentPosition*)*AI_MAX_WEAPONS);
-			m_cWeapons = m_pAttachments->EnumerateWeapons(m_apWeapons, m_apWeaponPositions, AI_MAX_WEAPONS);
 
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
 		}
-		
-		// Add our spears to the searchobject...
-
-		for( uint32 iSpear = 0 ; iSpear < m_cSpears ; ++iSpear )
-		{
-			HOBJECT hSpear = m_aSpears[iSpear].hObject;
-
-			if( hSpear )
-			{
-				m_pSearch->AddPickupItem( hSpear );
-			}
-		}
-
 	}
 	else
 	{
@@ -2468,7 +2457,7 @@ void CAI::SetUnconscious(bool bUnconscious)
 			if ( pHitBox )
 			{
 				LTVector vDims;
-				pHitBox->GetDefaultModelDims( vDims );
+				g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
 				
 				LTVector vHitDims = vDims;
 				vHitDims *= 1.2f;
@@ -2508,24 +2497,8 @@ void CAI::SetUnconscious(bool bUnconscious)
 
 		m_cDroppedWeapons = 0;
 
-		// Remove our spears from the search object. Do this before ClearPickupItems() since that will
-		// remove the object from the world but we want our spears to remain when we wake up...
-
-		for( uint32 iSpear = 0 ; iSpear < m_cSpears ; ++iSpear )
-		{
-			HOBJECT hSpear = m_aSpears[iSpear].hObject;
-
-			if( hSpear )
-			{
-				m_pSearch->RemovePickupItem( hSpear );
-			}
-		}
-
 		m_pSearch->ClearPickupItems();
-
 	}
-	
-	m_pSearch->Enable(bUnconscious & m_pSearch->HasItem());
 
 	SetCanCarry( m_bUnconscious );
 }
@@ -3168,6 +3141,12 @@ void CAI::PreUpdate()
 	{
 		if ( !m_pAnimationContext )
 		{
+			// RETAIL: Tron waits for its animation manager (0x1012f55c)
+			if ( !m_pAnimationMgr )
+			{
+				return;
+			}
+
 			m_flagsCurSenses = m_flagsBaseSenses;
 			m_pAnimationContext = m_pAnimationMgr->CreateAnimationContext(m_hObject);
 		}
@@ -3185,6 +3164,14 @@ void CAI::PreUpdate()
 	{
         SendMixedTriggerMsgToObject(this, m_hObject, LTTRUE, m_sQueuedCommands);
 		m_sQueuedCommands.Empty( );
+
+		// RETAIL: Tron makes the attachments after the first commands
+		// (0x1012f610)
+		if ( !m_bInitializedAttachments )
+		{
+			InitAttachments();
+			m_bInitializedAttachments = LTTRUE;
+		}
 	}
 
 	// Refresh client's tracked node settings.
@@ -3209,7 +3196,8 @@ void CAI::PreUpdate()
 
 	// AllyDisturbance stimulus.
 
-	if( IsSuspicious() && (m_eAlarmStimID == kStimID_Unset) && m_pState && m_pState->CausesAllyDisturbances() )
+	// RETAIL: not on the first update (0x1012f6f9)
+	if( IsSuspicious() && (m_eAlarmStimID == kStimID_Unset) && m_pState && m_pState->CausesAllyDisturbances() && !m_bFirstUpdate )
 	{
 		m_eAlarmStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDisturbanceVisible, m_hObject, LTNULL, CAIStimulusRecord::kDynamicPos_TrackSource, 1.f );
 	}
