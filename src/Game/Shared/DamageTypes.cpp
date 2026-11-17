@@ -60,9 +60,10 @@ CDTButeMgr::~CDTButeMgr()
 LTBOOL CDTButeMgr::Init(const char* szAttributeFile)
 {
     if (!szAttributeFile || !Parse(szAttributeFile)) return LTFALSE;
-	std::string sDamageSound = "";
-	char szKey[256] = "";
 
+	// RETAIL: Tron's reads the five values of each type and its "ForceWalk"
+	// (Object.lto 0x10125c70, CShell.dll 0x1017bd40); it has no score
+	// tag, grief, hurt animation or damage sounds
 	for (int i = 0; i < kNumDamageTypes; i++)
 	{
 		DTInfoArray[i].nDamageFlag = ( 1 << ( uint64 )i );
@@ -70,21 +71,8 @@ LTBOOL CDTButeMgr::Init(const char* szAttributeFile)
 		DTInfoArray[i].bJarCamera = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"JarCamera",0);
 		DTInfoArray[i].bGadget = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"Gadget",0);
 		DTInfoArray[i].bAccuracy = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"Accuracy",0);
+		DTInfoArray[i].bForceWalk = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"ForceWalk",0);
 		DTInfoArray[i].fSlowMove = (LTFLOAT)m_buteMgr.GetDouble(pDTNames[i],"SlowMovement",0.0);
-		DTInfoArray[i].bScoreTag = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"ScoreTag",0);
-		DTInfoArray[i].bGrief = (LTBOOL)m_buteMgr.GetInt(pDTNames[i],"Grief",0);
-		DTInfoArray[i].bHurtAnim = !!m_buteMgr.GetInt(pDTNames[i],"HurtAnim",0);
-
-		// Build the list of damage sounds.
-		for( int nDamageSound = 0; ; nDamageSound++ )
-		{
-			sprintf( szKey, "PlayerDamageSound%d", nDamageSound );
-			sDamageSound = m_buteMgr.GetString( pDTNames[i], szKey, "" );
-			if( !m_buteMgr.Success( ))
-				break;
-
-			DTInfoArray[i].saPlayerDamageSounds.push_back( sDamageSound );
-		}
 	}
 	return LTTRUE;
 }
@@ -178,16 +166,9 @@ DamageType StringToDamageType(const char* pDTName)
 {
 	for (int i=0; i < kNumDamageTypes; i++)
 	{
-		// Check if it matches the main name.
+		// Check if it matches the name.
+		// RETAIL: Tron has one name only (Object.lto 0x10125d80)
 		if (_stricmp(DTInfoArray[i].pName, pDTName) == 0)
-		{
-			return DTInfoArray[i].eType;
-		}
-
-		// Check if it matches the alternate name.  This is just
-		// used for backwards compatibility with some levels processed
-		// with the old names to damagetypes in the VolumeBrush's.
-		if( DTInfoArray[i].pAltName && _stricmp( DTInfoArray[i].pAltName, pDTName ) == 0 )
 		{
 			return DTInfoArray[i].eType;
 		}
@@ -216,51 +197,6 @@ LTBOOL IsJarCameraType(DamageType eType)
 
 	return LTFALSE;
 }
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	IsScoreTagType()
-//
-//	PURPOSE:	Does this damage type score a tag in deathmatch
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL IsScoreTagType(DamageType eType)
-{
-	for (int i=0; i < kNumDamageTypes; i++)
-	{
-		if (DTInfoArray[i].eType == eType)
-		{
-			return DTInfoArray[i].bScoreTag;
-		}
-	}
-
-	return LTFALSE;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	IsGriefType()
-//
-//	PURPOSE:	Should the player be protected against multiple instances of 
-//					this type in multiplayer.
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL IsGriefType(DamageType eType)
-{
-	for (int i=0; i < kNumDamageTypes; i++)
-	{
-		if (DTInfoArray[i].eType == eType)
-		{
-			return DTInfoArray[i].bGrief;
-		}
-	}
-
-	return LTFALSE;
-}
-
 
 
 // ----------------------------------------------------------------------- //
@@ -351,25 +287,3 @@ DTINFO const* GetDTINFO( DamageType eType )
 }
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	GetDamageFlagsWithHurtAnim
-//
-//	PURPOSE:	Get the list of damageflags that have the hurt flag set.
-//
-// ----------------------------------------------------------------------- //
-
-DamageFlags GetDamageFlagsWithHurtAnim( )
-{
-	DamageFlags damageFlags = 0;
-
-	for (int i=0; i < kNumDamageTypes; i++)
-	{
-		if( DTInfoArray[i].bHurtAnim )
-		{
-			damageFlags |= DTInfoArray[i].nDamageFlag;
-		}
-	}
-
-	return damageFlags;
-}

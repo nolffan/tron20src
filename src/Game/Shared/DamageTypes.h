@@ -47,37 +47,32 @@ static const char* pDTNames[kNumDamageTypes] =
 #undef INCLUDE_AS_STRING
 };
 
+// RETAIL: Tron's DTINFO is 0x28 bytes (DTInfoArray's initializer, Object.lto
+// 0x10125050, CShell.dll 0x1017b150): one name (the upper case one; NOLF2's
+// bute name is pDTNames') and a "ForceWalk" value; none of NOLF2 1.3's
+// score tag, grief, hurt animation and damage sounds
 struct DTINFO
 {
-    DTINFO(DamageType type, const char* name, const char* pszAltName)
+    DTINFO(DamageType type, const char* name)
 	{
 		eType		= type;
 		nDamageFlag	= 0;
 		pName		= name;
-		pAltName	= pszAltName;
 		bJarCamera	= LTFALSE;
 		bGadget		= LTFALSE;
 		bAccuracy	= LTFALSE;
+		bForceWalk	= LTFALSE;
 		fSlowMove	= 0.0f;
-		bScoreTag	= LTFALSE;
-		bGrief		= LTFALSE;
-		bHurtAnim	= false;
 	}
 
 	DamageType	eType;
 	DamageFlags	nDamageFlag;
 	const char*	pName;
-
-	// Used for backwards compatibility with unprocessed levels.
-	const char* pAltName; 
 	LTBOOL		bJarCamera;
 	LTBOOL		bGadget;
 	LTBOOL		bAccuracy;
+	LTBOOL		bForceWalk;		// RETAIL: Tron's (+0x20). The name is ours
 	LTFLOAT		fSlowMove;
-	LTBOOL		bScoreTag;
-	LTBOOL		bGrief;
-	bool		bHurtAnim;
-	StringArray saPlayerDamageSounds;
 };
 
 
@@ -119,28 +114,6 @@ inline bool SpecificObjectFilterFn(HOBJECT hObj, void *pUserData)
 // ----------------------------------------------------------------------- //
 
 LTBOOL IsJarCameraType(DamageType eType);
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	IsScoreTagType()
-//
-//	PURPOSE:	Does this damage type score a tag in deathmatch
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL IsScoreTagType(DamageType eType);
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	IsGriefType()
-//
-//	PURPOSE:	Should the player be protected against multiple instances of 
-//					this type in multiplayer.
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL IsGriefType(DamageType eType);
-
 
 // ----------------------------------------------------------------------- //
 //
@@ -223,16 +196,5 @@ DamageType StringToDamageType(const char* pDTName);
 // ----------------------------------------------------------------------- //
 
 DTINFO const* GetDTINFO( DamageType eType );
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	GetDamageFlagsWithHurtAnim
-//
-//	PURPOSE:	Get the list of damageflags that have the hurt flag set.
-//
-// ----------------------------------------------------------------------- //
-
-DamageFlags GetDamageFlagsWithHurtAnim( );
-
 
 #endif // __DAMAGE_TYPES_H__
