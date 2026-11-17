@@ -128,12 +128,8 @@ struct PlayerSubroutine
 	// HACK for Base code so that we know which model to use.
 	bool		bPrevious;			// +0x28
 	bool		bNext;				// +0x29
-
-	// PORT: build 69's, not in retail's
-	bool		bErased;			// is this subroutine currently erased?
-	float		fPercentCorrupt;	// Percentage that a subroutine is corrupt
-	bool		bWorking;			// is a procedural working on this subroutine?
-	bool		bActive;			// used by Utility Subroutines
+	// RETAIL: 0x2c bytes (debug_new_fn 0x100963d0); Build 69's bErased,
+	// fPercentCorrupt, bWorking and bActive are not in Tron's
 };
 
 typedef std::vector<PlayerSubroutine *> PlayerSubroutineArray;
@@ -229,7 +225,6 @@ public:
 	// Utility Subroutine Functions
 	bool				IsUtilitySubroutineActive(char * name);
 	SubVersion			GetActiveSubroutineVersion(char * name);
-	float				GetActiveSubroutineCorruption(char * name);
 	// RETAIL: 0x10094e70, 0x10095340, 0x10094f10, 0x10094fb0 (names ours)
 	bool				IsSubroutineInstalled(TronSubroutine *pTronSub);
 	bool				IsSubroutineInstalled(const char *name);

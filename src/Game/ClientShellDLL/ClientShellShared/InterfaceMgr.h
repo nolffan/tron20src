@@ -326,7 +326,6 @@ class CInterfaceMgr
 		virtual void	TronUnknownVirtual88() {}
 
         LTBOOL      AllowCameraMovement();
-		LTBOOL		AllowCameraRotation();
 
         virtual void UpdatePlayerStats(uint8 nThing, uint8 nType1, uint8 nType2, LTFLOAT fAmount);
 

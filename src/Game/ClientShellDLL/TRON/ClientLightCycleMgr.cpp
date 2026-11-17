@@ -29,6 +29,7 @@
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleRoster
 #include "TronPlayerMgr.h"
 #include "VehicleMgr.h"
+#include "LightCycleFX.h"
 
 extern CGameClientShell* g_pGameClientShell;
 extern bool GroundFilterFn(HOBJECT hObj, void *pUserData);	// BodyFX.cpp
@@ -1888,16 +1889,43 @@ bool CClientLightCycleMgr::TrimTrail(LIGHT_CYCLIST* pCyclist, int nTrail, int nP
 //
 //	ROUTINE:	CClientLightCycleMgr::DeactivateShield
 //
-//	PURPOSE:	RETAIL: 0x10014770. PORT: retail then shuts the shield's
-//				client FX down (the vehicle manager's link, +0x213c, for
-//				the local cycle; the cycle's CLightCycleFX's, +0x4c, for
-//				the others): not in our build.
+//	PURPOSE:	RETAIL: 0x10014770. Then shut the shield's client FX
+//				down: the vehicle manager's link (+0x213c) for the local
+//				cycle, the cycle's CLightCycleFX's (+0x4c) for the others.
 //
 // ----------------------------------------------------------------------- //
 
 void CClientLightCycleMgr::DeactivateShield(LIGHT_CYCLIST* pCyclist, bool bNotify)
 {
 	CLightCycleMgr::DeactivateShield(pCyclist, bNotify);
+
+	if (pCyclist->hObject == g_pMoveMgr->GetObject())
+	{
+		// RETAIL: 0x1001478e calls this and drops what it returns
+		g_pMoveMgr->GetServerObject();
+		CVehicleMgr* pVehicleMgr = g_pMoveMgr->GetVehicleMgr();
+		if (pVehicleMgr->GetTronUnknownFX213c()->IsValid())
+		{
+			CLIENTFX_LINK* pLink = pVehicleMgr->GetTronUnknownFX213c();
+			g_pClientFXMgr->ShutdownClientFX(pLink);
+			pLink->ClearLink();
+		}
+	}
+	else
+	{
+		CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+		if (!psfxMgr) return;
+
+		CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(pCyclist->hObject);
+		if (!pFX) return;
+
+		if (pFX->GetTronUnknownFX4C()->IsValid())
+		{
+			CLIENTFX_LINK* pLink = pFX->GetTronUnknownFX4C();
+			g_pClientFXMgr->ShutdownClientFX(pLink);
+			pLink->ClearLink();
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //

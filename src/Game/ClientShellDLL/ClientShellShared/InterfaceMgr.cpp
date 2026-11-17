@@ -3143,6 +3143,27 @@ LTBOOL CInterfaceMgr::Draw()
     return LTTRUE;
 }
 
+// --------------------------------------------------------------------------- //
+//
+//	ROUTINE:	CInterfaceMgr::AbortScreenFade()
+//
+//	PURPOSE:	Cancel the screen fade. RETAIL: inline (PreScreenState,
+//				0x100cb63b): retail has no copy of it.
+//
+// --------------------------------------------------------------------------- //
+
+inline void CInterfaceMgr::AbortScreenFade()
+{
+	if (m_hFadeSurface)
+	{
+        g_pLTClient->DeleteSurface(m_hFadeSurface);
+        m_hFadeSurface = LTNULL;
+	}
+
+	m_bFadeInitialized  = LTFALSE;
+	m_bScreenFade       = LTFALSE;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CInterfaceMgr::PreScreenState()
@@ -3874,7 +3895,8 @@ void CInterfaceMgr::ProcessAdvancedOptions()
 
 	if (!(m_dwAdvancedOptions & AO_TRIPLEBUFFER))
 	{
-        g_pLTClient->RunConsoleString("BackBufferCount 1");
+        // RETAIL: 0x100cc2b5 runs "TripleBuffer 0" (as Build 51), not NOLF2's "BackBufferCount 1".
+        g_pLTClient->RunConsoleString("TripleBuffer 0");
 	}
 
 	if (!(m_dwAdvancedOptions & AO_FOG))
@@ -4852,25 +4874,6 @@ void CInterfaceMgr::UpdateScreenFade(bool bUpdateAlpha /*=true*/)
 	}
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::AbortScreenFade()
-//
-//	PURPOSE:	Cancel the screen fade
-//
-// --------------------------------------------------------------------------- //
-
-void CInterfaceMgr::AbortScreenFade()
-{
-	if (m_hFadeSurface)
-	{
-        g_pLTClient->DeleteSurface(m_hFadeSurface);
-        m_hFadeSurface = LTNULL;
-	}
-
-	m_bFadeInitialized  = LTFALSE;
-	m_bScreenFade       = LTFALSE;
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -5039,29 +5042,6 @@ LTBOOL CInterfaceMgr::AllowCameraMovement()
     return LTTRUE;
 }
 
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CInterfaceMgr::AllowCameraRotation
-//
-//	PURPOSE:	Can the camera rotate (while in this state)
-//
-// --------------------------------------------------------------------------- //
-
-LTBOOL CInterfaceMgr::AllowCameraRotation()
-{
-	switch( m_eGameState )
-	{
-		case GS_MENU:
-		case GS_POPUP:
-			return LTFALSE;
-		break;
-
-		default:
-		break;
-	}
-
-	return LTTRUE;
-}
 
 // --------------------------------------------------------------------------- //
 //
@@ -6490,9 +6470,9 @@ void CInterfaceMgr::StartScreenFadeOut(LTFLOAT fFadeTime, bool bTronUnknown)
 		return;
 
 	m_bFadeInitialized = LTFALSE;
-	m_bFadeIn = LTFALSE;
 	m_bScreenFade = LTTRUE;
 	m_fTotalFadeTime = fFadeTime;
+	m_bFadeIn = LTFALSE;
 	m_bTronUnknownFadeF4A0 = bTronUnknown;
 }
 

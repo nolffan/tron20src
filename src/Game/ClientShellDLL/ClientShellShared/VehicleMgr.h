@@ -100,6 +100,9 @@ class CVehicleMgr
 	// RETAIL: Tron's light cycle FX (0x10122280, 0x10122350, 0x10122420,
 	// 0x101224f0, 0x101225d0; names ours)
 	void		CreateTronUnknownFX213c(const char* pszFX);
+	// RETAIL: inline (CClientLightCycleMgr::DeactivateShield, 0x1001479f);
+	// the name is ours
+	CLIENTFX_LINK*	GetTronUnknownFX213c() { return &m_TronUnknownFX213c; }
 	void		CreateTronUnknownFX2140(const char* pszFX);
 	void		CreateTronUnknownFX2144(const char* pszFX);
 	void		CreateTronUnknownFX2148(const char* pszFX, const LTVector &vOffset);
