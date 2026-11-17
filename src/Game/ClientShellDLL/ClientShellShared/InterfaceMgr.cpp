@@ -1874,12 +1874,8 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 					pCFX->ChangeModel(eModelId);
 					
 					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
-					// here that are not yet identified; NOLF2's radar update
-					// stands in.
-					if( pCFX->m_cs.bRadarVisible )
-					{
-						if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
-					}
+					// here that are not yet identified (NOLF2 updated its radar
+					// here; Tron has no radar).
 				}
 			}
 
@@ -2046,7 +2042,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			}
 
             g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\chat.wav");
-			if (g_pRadar) g_pRadar->SetPlayerTalk(clientID);
 			
 			if (IsMultiplayerGame())
 			{
@@ -2152,7 +2147,6 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				
 				g_pTransmission->Show( sTransmission );
 				g_pChatMsgs->AddMessage(sTransmission,kMsgTransmission);
-				if (g_pRadar) g_pRadar->SetPlayerTalk(nActivePlayerClientId);
 
 			}
 
@@ -2239,11 +2233,7 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 
 		case LTEVENT_DISCONNECT :
 		{
-			if( g_pGameClientShell->ShouldUseRadar() )
-			{
-				if (g_pRadar) g_pRadar->Reset();
-			}
-
+			// PORT: NOLF2 reset its radar here; Tron has none
 			// Clean up our clientinfo's if we're in mp.
 			if( IsMultiplayerGame( ))
 				m_ClientInfo.RemoveAllClients();
@@ -6539,11 +6529,9 @@ void CInterfaceMgr::HandlePlayerTeamChange()
 			if ((*pList)[i])
 			{
 				CCharacterFX* pCFX = (CCharacterFX*)(*pList)[i];
-				if( pCFX->m_cs.bRadarVisible)
-				{
-					if (g_pRadar) g_pRadar->RemoveObject(pCFX->GetServerObj());
-					if (g_pRadar) g_pRadar->AddPlayer( pCFX->GetServerObj(), pCFX->m_cs.nClientID );
-				}
+				// PORT: NOLF2 re-added the character to its radar here for
+				// its new team colour; Tron has no radar
+				(void)pCFX;
 			}
 		}
 	}						

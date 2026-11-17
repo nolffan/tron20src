@@ -21,7 +21,7 @@
 // RETAIL: 0x101ad060
 CAttachClientFX::CAttachClientFX()
 {
-	m_pAttachFX = LTNULL;
+	m_AttachFX.m_pNext = LTNULL;
 	m_hObject = LTNULL;
 	m_eModelId = eModelIdInvalid;
 }
@@ -51,16 +51,12 @@ void CAttachClientFX::SetModel(ModelId eModelId)
 CAttachClientFX::~CAttachClientFX()
 {
 	ShutdownAll();
-
-	CLIENTFX_LINK_NODE* pNode = m_pAttachFX;
-	m_pAttachFX = LTNULL;
-	debug_delete(pNode);
 }
 
 // RETAIL: 0x101ad170
 void CAttachClientFX::ShowAll()
 {
-	CLIENTFX_LINK_NODE* pNode = m_pAttachFX;
+	CLIENTFX_LINK_NODE* pNode = m_AttachFX.m_pNext;
 	while (pNode)
 	{
 		if (!pNode->m_Link.IsValid()) return;
@@ -169,7 +165,7 @@ void CAttachClientFX::HandleMsg(const CParsedMsg &cMsg)
 // RETAIL: 0x101ad580
 void CAttachClientFX::HideAll()
 {
-	CLIENTFX_LINK_NODE* pNode = m_pAttachFX;
+	CLIENTFX_LINK_NODE* pNode = m_AttachFX.m_pNext;
 	while (pNode)
 	{
 		if (!pNode->m_Link.IsValid()) return;
@@ -190,10 +186,10 @@ void CAttachClientFX::CreateAll()
 		CLIENTFX_LINK_NODE* pNode = debug_new(CLIENTFX_LINK_NODE);
 		CreateFX(i, &pNode->m_Link);
 
-		if (m_pAttachFX)
-			m_pAttachFX->AddToEnd(pNode);
+		if (m_AttachFX.m_pNext)
+			m_AttachFX.m_pNext->AddToEnd(pNode);
 		else
-			m_pAttachFX = pNode;
+			m_AttachFX.m_pNext = pNode;
 	}
 }
 
@@ -223,7 +219,7 @@ void CAttachClientFX::CreateFX(int nIndex, CLIENTFX_LINK* pLink)
 // RETAIL: 0x101ad6f0
 void CAttachClientFX::ShutdownAll()
 {
-	CLIENTFX_LINK_NODE* pNode = m_pAttachFX;
+	CLIENTFX_LINK_NODE* pNode = m_AttachFX.m_pNext;
 	while (pNode)
 	{
 		if (pNode->m_Link.IsValid())
@@ -233,7 +229,5 @@ void CAttachClientFX::ShutdownAll()
 		pNode = pNode->m_pNext;
 	}
 
-	pNode = m_pAttachFX;
-	m_pAttachFX = LTNULL;
-	debug_delete(pNode);
+	m_AttachFX.DeleteList();
 }

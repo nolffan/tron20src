@@ -201,7 +201,7 @@ class CCharacterFX : public CSpecialFX
 		void	CreateFootprint(SurfaceType eType, IntersectInfo & iInfo);
 		void    UpdateOnVehicle();
 		void	UpdateMultiVehicleSounds();
-		void	UpdateVehicleContour( LTRotation &rCharacterRot );
+		// RETAIL: no UpdateVehicleContour: Tron has no contouring
 
         void    CreateVehicleTrail(CPolyLineFX* pTrail, LTVector vDir,
             LTVector vStartPoint, LTVector vEndPoint, LTBOOL bNewTrail);

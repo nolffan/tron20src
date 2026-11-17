@@ -548,7 +548,10 @@ void CButeMgr::ConsumeChar()
 
 
 
-short CButeMgr::CharClass(unsigned char currentChar)
+// RETAIL: Tron's ScanTok (CShell.dll 0x100b14c0) has CharClass, Action and
+// NextState inline, and LookupCodes too (it calls 0x100b4710, the reserved
+// word lookup).
+inline short CButeMgr::CharClass(unsigned char currentChar)
 {
     //if (ClassMap[(unsigned int)currentChar] == 0)
 		//DisplayMessage("ButeMgr (%d):  Illegal character encountered in attribute file.", m_lineNumber);
@@ -557,14 +560,14 @@ short CButeMgr::CharClass(unsigned char currentChar)
 
 
 
-short CButeMgr::Action(short State, unsigned char currentChar)
+inline short CButeMgr::Action(short State, unsigned char currentChar)
 {
     return TransTable[State][CharClass(currentChar)].ActionType;
 }
 
 
 
-short CButeMgr::NextState(short State, unsigned char currentChar)
+inline short CButeMgr::NextState(short State, unsigned char currentChar)
 {
     return TransTable[State][CharClass(currentChar)].A;
 }
@@ -573,7 +576,7 @@ short CButeMgr::NextState(short State, unsigned char currentChar)
 
 
 
-void CButeMgr::LookupCodes(short State, unsigned char currentChar)
+inline void CButeMgr::LookupCodes(short State, unsigned char currentChar)
 {
     m_token = TransTable[State][CharClass(currentChar)].A;
     m_tokenMinor = TransTable[State][CharClass(currentChar)].B;

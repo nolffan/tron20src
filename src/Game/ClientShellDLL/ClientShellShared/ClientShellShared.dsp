@@ -438,10 +438,6 @@ SOURCE=.\HUDPopup.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\HUDRadar.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\HUDSubtitles.cpp
 # End Source File
 # Begin Source File
@@ -724,10 +720,6 @@ SOURCE=.\PVFXMgr.cpp
 # Begin Source File
 
 SOURCE=.\RadarObjectFX.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -1292,10 +1284,6 @@ SOURCE=.\HUDPopup.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\HUDRadar.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\HUDSubtitles.h
 # End Source File
 # Begin Source File
@@ -1577,10 +1565,6 @@ SOURCE=.\PVFXMgr.h
 # Begin Source File
 
 SOURCE=.\RadarObjectFX.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\Shared\RadarTypeMgr.h
 # End Source File
 # Begin Source File
 

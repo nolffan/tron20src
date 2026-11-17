@@ -23,7 +23,6 @@
 #include "HUDDamage.h"
 #include "HUDDecision.h"
 #include "HUDPopup.h"
-#include "HUDRadar.h"
 #include "HUDDisplayMeter.h"
 // RETAIL: Tron's CHUDScores is CTronHUDMgr's (TRON/HUDScores.h)
 class CHUDScores;
@@ -148,7 +147,6 @@ extern CHUDMissionText*		g_pMissionText;
 extern CHUDSubtitles*		g_pSubtitles;
 extern CHUDDecision*		g_pDecision;
 extern CHUDPopup*			g_pPopup;
-extern CHUDRadar*			g_pRadar;
 extern CHUDRewardMsgQueue*	g_pRewardMsgs;
 extern CHUDPaused*			g_pPaused;
 extern CHUDDisplayMeter*	g_pDisplayMeter;
