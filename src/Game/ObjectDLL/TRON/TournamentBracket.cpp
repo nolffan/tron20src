@@ -231,7 +231,7 @@ void CTournamentBracket::AdvanceByes(bool bFirst)
 	{
 		for (i = 0; i < m_nNumLoseMatches; i++)
 		{
-			TournamentMatch* pMatch = &m_LoseMatches[i];
+			TournamentMatch* pMatch = m_LoseMatches.begin() + i;
 			if (pMatch->nWinner == BRACKET_EMPTY && pMatch->nTeam[0] != BRACKET_EMPTY && pMatch->nTeam[1] != BRACKET_EMPTY)
 			{
 				if (pMatch->nTeam[0] == BRACKET_BYE)
