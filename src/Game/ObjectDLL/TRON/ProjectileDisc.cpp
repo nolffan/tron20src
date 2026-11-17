@@ -2043,7 +2043,9 @@ void CDisc::SmiteObject( HOBJECT hObj )
 	LTRotation rRot;
 	g_pLTServer->GetObjectRotation( m_hObject, &rRot );
 
-	DISCCLASSDATA *pDiscClassData;
+	// RETAIL BUG: with no ammo data the class data is null (0x1003d3a0;
+	// docs/RETAIL_BUGS.md)
+	DISCCLASSDATA *pDiscClassData = LTNULL;
 	if ( m_pAmmoData )
 	{
 		pDiscClassData = dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );

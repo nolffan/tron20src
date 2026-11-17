@@ -1326,6 +1326,28 @@ into the first character of the first chat history line.
 Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
 writes at most the maximum length, with the terminator.
 
+### A deadly deflected disc with no ammo data reads its FX name from address 0x164
+
+Object.lto 0x1003d1b0 (CDisc::SmiteObject, the name is ours; ObjectDLL/
+TRON/ProjectileDisc.cpp). The function gets the disc's class data only when
+the disc has ammo data. When it has none, it uses a null class data pointer
+and reads the smite FX name at offset 0x164 from it. A disc always has ammo
+data after Setup, so the game does not show the bug.
+
+Not fixed yet: the modern build should not play the FX when the class data
+is not there.
+
+### A grenade bounce reads the projectile FX of a grenade with no ammo data
+
+Object.lto 0x1011c760 and 0x1011d3b0 (CGrenade::HandleImpact and its kept
+touch slot, ObjectShared/ProjectileTypes.cpp). Tron multiplies the bounce
+dampening by the projectile FX's Elasticity. The functions do not examine
+m_pAmmoData or its projectile FX before they read it. A grenade always has
+ammo data after Setup, so the game does not show the bug.
+
+Not fixed yet: the modern build should use no elasticity scale when the
+data is not there.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

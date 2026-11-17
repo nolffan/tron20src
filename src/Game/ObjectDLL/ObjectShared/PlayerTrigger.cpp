@@ -162,10 +162,8 @@ bool PlayerTrigger::InitialUpdate()
 
 LTBOOL PlayerTrigger::Activate()
 {
-	if (g_pGameServerShell->IsPaused())
-	{
-		return LTFALSE;
-	}
+	// RETAIL: Tron's (0x1024d370) has no paused test and counts every live
+	// player
 
 	// Find all the objects within the trigger...
 
@@ -200,8 +198,8 @@ LTBOOL PlayerTrigger::Activate()
 		hObj = pLink->m_hObject;
 		CPlayerObj* pPlayerObj = dynamic_cast< CPlayerObj* >( g_pLTServer->HandleToObject( hObj ));
 
-		// Only count live players with loaded clients.
-		if( pPlayerObj && !pPlayerObj->IsDead( ) && pPlayerObj->IsClientLoaded( ))
+		// Only count live players.
+		if( pPlayerObj && !pPlayerObj->IsDead( ))
 		{
 			++nPlayersInTrigger;
 		}

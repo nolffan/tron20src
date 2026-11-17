@@ -296,6 +296,21 @@ void WeaponItem::ObjectTouch(HOBJECT hObject, bool bForcePickup/*=false*/)
             cMsg.Writeint32(m_nAmmo);
 			cMsg.Writebool(bForcePickup);
 			g_pLTServer->SendToObject(cMsg.Read(), m_hObject, hObject, MESSAGE_GUARANTEED);
+
+			// RETAIL: Tron's player also acquires the weapon's primitive
+			// and its subroutine (0x101d1f21)
+			WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
+			if (!pWeapon) return;
+
+			char szMsg[256];
+			sprintf(szMsg, "ACQUIREPRIM %s", pWeapon->szPrimitiveType);
+			SendTriggerMsgToObject(this, pCharObj, LTFALSE, szMsg);
+
+			if (pWeapon->szSubroutineNeeded[0])
+			{
+				sprintf(szMsg, "ACQUIRESUB %s", pWeapon->szSubroutineNeeded);
+				SendTriggerMsgToObject(this, pCharObj, LTFALSE, szMsg);
+			}
 		}
 	}
 }
