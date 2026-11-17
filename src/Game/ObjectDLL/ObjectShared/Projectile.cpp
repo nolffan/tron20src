@@ -73,7 +73,7 @@ static const LTFLOAT s_fDamagedObjectTime = 0.5f;
 
 // RETAIL: in this order (their constructors 0x1011df00..0x1011dfc0)
 CVarTrack g_vtNetFriendlyFire;
-static CVarTrack g_vtProjectileNewCollision;		// RETAIL: Tron's
+CVarTrack g_vtProjectileNewCollision;		// RETAIL: Tron's (global: CProjectileBall and CProjectilePrankster read it)
 static CVarTrack g_vtInvisibleMaxThickness;
 static CVarTrack g_vtDeflectAngleRange;
 static CVarTrack g_vtProjectileCollisionDebug;		// RETAIL: Tron's

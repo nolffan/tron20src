@@ -91,6 +91,15 @@ class CBinaryBitPlugin : public IObjectPlugin
 {
 	public :
 
+		// RETAIL: the ActivateType list (0x10013470)
+		virtual LTRESULT PreHook_EditStringList(
+				const char* szRezPath,
+				const char* szPropName,
+				char** aszStrings,
+				uint32* pcStrings,
+				const uint32 cMaxStrings,
+				const uint32 cMaxStringLength);
+
 		virtual LTRESULT PreHook_PropChanged(
 				const char *szObjName,
 				const char *szPropName,
@@ -102,6 +111,7 @@ class CBinaryBitPlugin : public IObjectPlugin
 	protected :
 
 		CCommandMgrPlugin m_CommandMgrPlugin;
+		CActivateTypeMgrPlugin m_ActivateTypeMgrPlugin;
 };
 
 #endif // _BINARYBIT_H_

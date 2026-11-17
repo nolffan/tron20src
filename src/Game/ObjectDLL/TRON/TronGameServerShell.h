@@ -82,6 +82,7 @@ class CTronGameServerShell : public CGameServerShell
 
 		// RETAIL: retail 0x1005cef0 (slot 8)
 		virtual void	PostStartWorld();
+		virtual void	SetCurLevel( char const* pszWorldName );	// RETAIL: retail 0x1005cf50
 
 		// RETAIL: retail 0x1005d050, 0x1005d0c0 (the names are ours)
 		void	LoadLevelInfo();

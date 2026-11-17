@@ -72,11 +72,11 @@ class CProjectilePrankster : public CTronProjectile
 		virtual void	AddSpecialFX();
 		virtual void	RemoveObject();
 
-		// RETAIL: Tron's CProjectilePrankster also overrides slot 39
-		// ImpactDamageObject (0x1003ff10) and slot 45 Detonate (0x1003f700).
-		// Both call CProjectile helpers we do not have yet (0x101220a0,
-		// 0x1011f6f0: they read the STL lists at CProjectile 0x1b8/0x1bc), so
-		// they are not written here: the class uses CProjectile's.
+		// RETAIL: slot 39 (0x1003ff10)
+		virtual void	ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj);
+
+		// RETAIL: slot 45 (0x1003f700)
+		virtual void	Detonate(HOBJECT hObj, CollisionInfo* pCollInfo = LTNULL);
 
 		// the characters in stasis, each with the time it stays in stasis
 		typedef std::map<LTObjRefNotifier, CPranksterVictimTimer> VictimMap;

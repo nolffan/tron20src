@@ -20,11 +20,17 @@
 #include "AI.h"
 #include "AIGoalMgr.h"
 #include "Destructible.h"
+#include "SurfaceFunctions.h"
+#include "Camera.h"
+#include "CVarTrack.h"
 
 BEGIN_CLASS(CProjectilePrankster)
 END_CLASS_DEFAULT_FLAGS(CProjectilePrankster, CTronProjectile, NULL, NULL, CF_HIDDEN)
 
 extern bool ExplosionFilterFn(HOBJECT hObj, void *pUserData);
+
+// RETAIL: Projectile.cpp's (0x1037c290)
+extern CVarTrack g_vtProjectileNewCollision;
 
 // RETAIL: Tron's own message and effect ids (0x10040889, 0x100410b3,
 // 0x1003feba).  MsgIDs.h/SFXMsgIds.h do not have Tron's values yet; the
@@ -128,6 +134,168 @@ LTBOOL CProjectilePrankster::Setup(CWeapon const* pWeapon, WeaponFireInfo const&
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CProjectilePrankster::Detonate
+//
+//	PURPOSE:	Stop where we hit and start acquiring targets (RETAIL:
+//				0x1003f700; CProjectile's, but the prankster stops instead
+//				of being removed, and does its damage before its impact)
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectilePrankster::Detonate(HOBJECT hObj, CollisionInfo* pCollInfo)
+{
+	if (m_bDetonated) return;
+
+	// Make sure we don't detonate if a cinematic is playing (i.e.,
+	// make sure the user doesn't disrupt the cinematic)...
+	if (Camera::IsActive())
+	{
+		RemoveObject();
+		return;
+	}
+
+	// mark the projectile as detonated
+	m_bDetonated = true;
+
+	// eventually we will determine the surface type
+	SurfaceType eType = ST_UNKNOWN;
+
+	LTVector vPos;
+	g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+	// Determine the normal of the surface we are impacting on...
+	LTVector vNormal(0.0f, 1.0f, 0.0f);
+
+	// if hObj in non-null, it is detonating on something
+	if (hObj)
+	{
+		if (g_vtProjectileNewCollision.GetFloat() != 0.0f)
+		{
+			// the nearest touch the new collision code kept
+			ProjectilePendingTouch* pTouch = GetNearestPendingTouch(LTNULL);
+
+			vPos = pTouch->vLastPos;
+			eType = GetSurfaceType(pTouch->iInfo);
+			vNormal = -pTouch->iInfo.m_Plane.m_Normal;
+			m_fInstDamage = pTouch->fInstDamage;
+
+			LTVector vZero(0.0f, 0.0f, 0.0f);
+			g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
+		}
+		else if (IsMainWorld(hObj) || GetObjectType(hObj) == OT_WORLDMODEL)
+		{
+			// get the collision info for this impact
+			CollisionInfo info;
+			g_pLTServer->GetLastCollision(&info);
+
+			// stop
+			LTVector vStop = -info.m_vStopVel;
+			g_pPhysicsLT->SetVelocity(m_hObject, &vStop);
+
+			// check if we have a valid polygon
+			if (info.m_hPoly != INVALID_HPOLY)
+			{
+				// get the surface type
+				eType = GetSurfaceType(info.m_hPoly);
+			}
+
+			// get the normal of the plane we impacted with
+			LTPlane plane = info.m_Plane;
+			vNormal = plane.m_Normal;
+
+			//
+			// Calculate where we really hit the plane
+			// and make sure we don't tunnel through an object
+			//
+
+			LTVector vVel, vP0, vP1, vDir;
+			// get the velocity of the projectile
+			g_pPhysicsLT->GetVelocity(m_hObject, &vVel);
+
+			// get the direction of the projectile
+			vDir = vVel;
+			vDir.Normalize();
+
+			// determine how much we've travelled this frame
+			vVel *= g_pLTServer->GetFrameTime();
+
+			// get a point just a little in front and behind the impact point
+			vP0 = vPos - vVel;  // a little "behind" of the impact point
+			vP1 = vPos + vVel;  // a littel "forward" of the impact point
+
+			// throw an intersect segment to determine where we really hit
+			IntersectInfo iInfo;
+			IntersectQuery qInfo;
+
+			// fill out the info for this test
+			qInfo.m_Flags = INTERSECT_HPOLY | INTERSECT_OBJECTS | IGNORE_NONSOLID;
+			qInfo.m_From	  = vP0;
+			qInfo.m_To		  = vPos;
+			qInfo.m_FilterFn  = SpecificObjectFilterFn;
+			qInfo.m_pUserData = m_hObject;
+
+			if (g_pLTServer->IntersectSegment(&qInfo, &iInfo))
+			{
+				// we did hit the plane
+
+				// get the intersect information
+				vPos    = iInfo.m_Point - vDir;
+				eType   = GetSurfaceType(iInfo);
+				vNormal = iInfo.m_Plane.m_Normal;
+			}
+			else
+			{
+				// plane was NOT hit
+
+				// fake the impact position
+				LTFLOAT fDot1 = VEC_DOT(vNormal, vP0) - info.m_Plane.m_Dist;
+				LTFLOAT fDot2 = VEC_DOT(vNormal, vP1) - info.m_Plane.m_Dist;
+
+				if ( ( ( fDot1 < 0.0f ) && ( fDot2 < 0.0f ) ) ||
+				     ( ( fDot1 > 0.0f ) && ( fDot2 > 0.0f ) ) )
+				{
+					vPos = vP1;
+				}
+				else
+				{
+					LTFLOAT fPercent = -fDot1 / (fDot2 - fDot1);
+					VEC_LERP(vPos, vP0, vP1, fPercent);
+				}
+			}
+		}
+	}
+	else
+	{
+		// Since hObj was null, this means the projectile's lifetime was up,
+		// so we just blew-up in the air.
+		eType = ST_AIR;
+	}
+
+	// if the surface type has not been determined, try one more time
+	if (eType == ST_UNKNOWN)
+	{
+		// get the object's surface type
+		eType = GetSurfaceType(hObj);
+	}
+
+	m_vTronUnknownD0 = vPos;
+
+	// Handle impact damage...
+	if (hObj)
+	{
+		HOBJECT hDamager = m_hFiredFrom ? m_hFiredFrom : LTObjRef(m_hObject);
+
+		ImpactDamageObject(hDamager, hObj);
+	}
+
+	// do all the impact work
+	AddImpact(hObj, m_vFlashPos, vPos, vNormal, eType);
+
+	SetState(kPrankster_Acquiring);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CProjectilePrankster::EngineMessageFn
 //
 //	PURPOSE:	Handle engine messages (RETAIL: 0x1003fdc0)
@@ -198,6 +366,22 @@ void CProjectilePrankster::TronUnknownVirtual30(HOBJECT hObj)
 	if (m_bSetup && !m_bObjectRemoved && !m_bProcessInvImpact && hObj && !m_bDetonated)
 	{
 		CTronProjectile::TronUnknownVirtual30(hObj);
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CProjectilePrankster::ImpactDamageObject
+//
+//	PURPOSE:	Damage an object only once (RETAIL: 0x1003ff10)
+//
+// ----------------------------------------------------------------------- //
+
+void CProjectilePrankster::ImpactDamageObject(HOBJECT hDamager, HOBJECT hObj)
+{
+	if (!IsDamagedObject(hObj))
+	{
+		CTronProjectile::ImpactDamageObject(hDamager, hObj);
 	}
 }
 

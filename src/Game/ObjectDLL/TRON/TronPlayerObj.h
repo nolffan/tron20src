@@ -74,7 +74,6 @@ class CTronPlayerObj : public CPlayerObj
 		// Permission sets
 		// RETAIL: Tron keeps them in CCharacter (0xc20, retail
 		// CTronPlayerObj's constructor clears it)
-		uint8	GetPSets() { return m_iPermissionSet; }
 		void	SetPSets(uint8 byPSets) { m_iPermissionSet = byPSets; }
 		void	AddPSets(uint8 byPSets) { m_iPermissionSet |= byPSets; }
 		void	RemovePSets(uint8 byPSets) { m_iPermissionSet &= ~byPSets; }

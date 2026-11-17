@@ -26,14 +26,6 @@ struct IONodePing { IONodePing* pNext; char* szName; };
 struct IONodePlayerView { uint8 aPad[0x3228]; IONodePing* pPings; };
 #define IONODE_PLAYER_PINGS(pPlayer)	(((IONodePlayerView*)(pPlayer))->pPings)
 
-// PORT: retail calls a ServerUtilities function (retail 0x100cdc10, not yet
-// written) that asks the player's own (shared, in coop) permission sets
-// (retail 0x10090720); the player's are asked here
-static bool HasPSets(CTronPlayerObj* pPlayer, uint8 nPSets)
-{
-	return (pPlayer->GetPSets() & nPSets) == nPSets;
-}
-
 BEGIN_CLASS(IONode)
 	ADD_PSETS_PROP(PF_GROUP(1))
 	ADD_STRINGPROP(PingName, "")
