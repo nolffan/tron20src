@@ -1142,6 +1142,27 @@ has no GEAR record causes a null pointer read.
 
 Not fixed yet: the modern build should return when the pointer is null.
 
+### A console variable oscillation has a wrong center
+
+CShell.dll 0x1009ec40 (CTronInterfaceMgr::HandleConsoleVarOscillate,
+TRON/TronInterfaceMgr.cpp). The message gives a minimum and a maximum. The
+function sets the center of the sine to minimum + maximum * 0.5 and the
+amplitude to (maximum - minimum) * 0.5. The center must be
+(minimum + maximum) * 0.5. Thus the value goes from 1.5 * minimum to the
+maximum, not from the minimum to the maximum.
+
+Not fixed yet: the modern build should use (minimum + maximum) * 0.5.
+
+### A console variable restore formats a float as an integer
+
+CShell.dll 0x1009edb0 (CTronInterfaceMgr::HandleConsoleVarStop,
+TRON/TronInterfaceMgr.cpp). To set the value that a console variable had
+before an oscillation, the function makes the console string with
+"%s %4.2d" and gives a double. The "d" conversion reads an integer, so the
+string gets the low half of the double, not the value.
+
+Not fixed yet: the modern build should use "%s %4.2f".
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
