@@ -96,6 +96,11 @@ class CWeapons
 		// Message handler functions
 		void HandleProjectileMessage( HOBJECT, ILTMessage_Read* );
 
+		// RETAIL: Tron's (Object.lto 0x100f73b0, 0x100f7bf0); the names are
+		// ours
+		void NotifyProjectilesTronUnknown();
+		void RemoveDeadProjectiles();
+
 
 	private :  
 		// Private Member functions

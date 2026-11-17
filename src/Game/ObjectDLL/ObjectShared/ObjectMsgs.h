@@ -75,6 +75,10 @@
 //
 #define MID_ATTACHMENTANIM			1009
 
+// RETAIL: Tron's: CWeapons sends it, without data, to the projectiles that
+// want messages (Object.lto 0x100f73e3). The name is ours
+#define MID_TRONUNKNOWN1010			1010
+
 // There are several messages that are passed object to
 // object relating to the TRON disc.  Since most if these
 // can also be between server and client, all the messages
