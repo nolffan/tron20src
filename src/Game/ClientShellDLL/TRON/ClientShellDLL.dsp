@@ -430,6 +430,10 @@ SOURCE=.\LibraryCtrl.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\LightCycleFX.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
@@ -943,6 +947,10 @@ SOURCE=.\LCHUDHelper.h
 # Begin Source File
 
 SOURCE=.\LibraryCtrl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\LightCycleFX.h
 # End Source File
 # Begin Source File
 
