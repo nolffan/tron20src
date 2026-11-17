@@ -211,8 +211,13 @@ void CHUDPings::Update()
 		strncpy(pPing->szName, pIOPing->szName, 15);
 		pPing->szName[15] = 0;
 
+		// the name as a wide string, a character at a time
 		std::wstring sName;
-		sName.assign(pIOPing->szDisplayName, pIOPing->szDisplayName + strlen(pIOPing->szDisplayName));
+		sName.erase();
+		const char* pszDisplayName = pIOPing->szDisplayName;
+		uint32 nLen = strlen(pszDisplayName);
+		for (uint32 n = 0; n < nLen; n++)
+			sName += (wchar_t)(uint8)pszDisplayName[n];
 
 		pPing->pName = g_pLTClient->GetFontManager()->CreatePolyString(pFont, sName);
 		pPing->pName->SetColor(argbWhite);

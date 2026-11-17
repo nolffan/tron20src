@@ -18,6 +18,7 @@
 #include "InterfaceMgr.h"
 #include "TRONHUDMgr.h"
 #include "TronWeaponChooser.h"
+#include "TronLoadingScreen.h"
 #include "TRONScreenMgr.h"
 #include "TRONPlayerStats.h"
 #include "SubroutineMgr.h"
@@ -221,9 +222,7 @@ private:
 	bool				m_bTronUnknown28B1C;	// +0x28b1c, loaded by Load
 	bool				m_bDisplayProgress;		// +0x28b1d flag for displaying objectives and procedurals
 	std::list<TronInterfaceRecord*> m_TronRecords;	// +0x28b20
-	// PORT: retail's is a CTronLoadingScreen (0x124 bytes, vtable
-	// 0x101e904c, CInterfaceMgr's +0xf8e4 points at it); not yet written
-	uint8				m_aTronLoadingScreen[0x124];	// +0x28b24
+	CTronLoadingScreen	m_LoadingScreen;		// +0x28b24 (0x124 bytes), CInterfaceMgr's loading screen
 	// RETAIL: the duplicate subroutine box (CTronInterfaceMgr's use of it:
 	// 0x1009f200, 0x1009f470..0x1009f5e0)
 	CDuplicateSubroutineDlg	m_DuplicateDlg;		// +0x28c48

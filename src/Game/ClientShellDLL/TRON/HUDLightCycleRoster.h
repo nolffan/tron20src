@@ -89,6 +89,9 @@ private:
 	void		UpdateEntries();						// RETAIL: 0x1002f020
 
 	LightCycleRosterList	m_Entries;					// +0x10
+	// RETAIL: the item is 0x18 bytes (CTronHUDMgr's constructor news it,
+	// 0x1009b044); none of its functions use this member
+	uint32					m_nTronUnknown14;			// +0x14
 };
 
 // RETAIL: 0x1026ee18 (set by CTronHUDMgr)
