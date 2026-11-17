@@ -7193,7 +7193,8 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 {
 	// Never exit the state if an attack animation is in progress. 
 
-	LTBOOL bAnimLocked = GetAI()->GetAnimationContext()->IsLocked();
+	// RETAIL: 0x101f0f24, a transition counts as locked too.
+	LTBOOL bAnimLocked = GetAI()->GetAnimationContext()->IsLocked() || GetAI()->GetAnimationContext()->IsTransitioning();
 
 	// Check to see if our vantage is still valid
 
@@ -7207,7 +7208,8 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 
 	EnumNodeStatus eVantageStatus = m_pVantageNode->GetStatus(GetAI()->GetPosition(), GetAI()->GetTarget()->GetObject());
 
-	if( ( kStatus_ThreatInsideRadius == eVantageStatus ) && 
+	// RETAIL: 0x101f0f7a, a threat outside the FOV too.
+	if( ( ( kStatus_ThreatInsideRadius == eVantageStatus ) || ( kStatus_ThreatOutsideFOV == eVantageStatus ) ) && 
 		( !bAnimLocked ) &&
 		( !GetAI()->GetAIMovement()->IsMovementLocked() ) )
 	{
@@ -7220,6 +7222,12 @@ void CAIHumanStateAttackFromVantage::UpdateAttacking()
 	// Face target if hit tracking limit.
 
 	LTBOOL bFacingTarget = GetAI()->EnableNodeTracking( kTrack_AimAt, GetAI()->GetTarget()->GetObject() );
+
+	// RETAIL: 0x101f0fc5
+	if( GetAI()->IsNodeTrackingAtLimit() )
+	{
+		GetAI()->FaceTarget();
+	}
 
 	if ( m_pStrategyShoot->IsReloading() )
 	{
@@ -7594,8 +7602,23 @@ void CAIHumanStateAttackFromView::UpdateAttacking()
 			}
 		}
 
-		// TODO: check for strategy failure
-		m_pStrategyShoot->Update();
+		// RETAIL: 0x101f1868, Tron fires only at a target in full view, or
+		// past an AI that blocks the view while it crouches.
+
+		CAITarget* pTarget = GetAI()->GetTarget();
+		CAI* pBlockingAI = LTNULL;
+		if( IsKindOf( pTarget->GetVisionBlocker(), "CAI" ) )
+		{
+			pBlockingAI = (CAI*)g_pLTServer->HandleToObject( pTarget->GetVisionBlocker() );
+		}
+
+		if( pTarget->IsVisibleCompletely() ||
+			( pBlockingAI && pBlockingAI->GetAnimationContext() &&
+			  pBlockingAI->GetAnimationContext()->IsPropSet( kAPG_Posture, kAP_Crouch ) ) )
+		{
+			// TODO: check for strategy failure
+			m_pStrategyShoot->Update();
+		}
 	}
 	else
 	{
