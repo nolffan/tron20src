@@ -1267,7 +1267,11 @@ GenericProp g_gp;
 // Check if in multiplayer game.
 bool IsMultiplayerGame()
 {
-    return !!(g_pGameServerShell->GetGameType() != eGameTypeSingle);
+	// RETAIL: Tron's single player light cycle games are not multiplayer
+	// either (0x100cd9b0); the test is on the options' byte
+	uint8 nGameType = g_pGameServerShell->GetServerGameOptions().m_eGameType;
+	return ( nGameType != eGameTypeSingle && nGameType != eGameTypeSingleLightCycleCircuit &&
+		nGameType != eGameTypeSingleLightCycleCustom );
 }
 
 // ----------------------------------------------------------------------- //

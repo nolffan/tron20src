@@ -50,6 +50,7 @@
 #include "KeyMgr.h"
 #include "SharedFXStructs.h"
 #include "TeleportPoint.h"
+#include "../../Shared/TRON/SubroutineDataMgr.h"	// RETAIL: the fuzzy signature (HandleFootstep)
 #include "Searchable.h"
 #include "ServerMissionMgr.h"
 #include "ActiveWorldModel.h"
@@ -122,6 +123,17 @@ BEGIN_CLASS(CCharacter)
 		ADD_STRINGPROP_FLAG(CustomCmd3, "<none>", PF_GROUP(10) | PF_HIDDEN)
 END_CLASS_DEFAULT_FLAGS_PLUGIN(CCharacter, GameBase, NULL, NULL, CF_HIDDEN, CCharacterPlugin)
 
+// RETAIL: the properties a character answers MID_QUERY_TARGET_PROPERTIES
+// with (ObjectMessageFn, 0x1008a8e0). The names are ours
+#define TARGET_PROP_CHARACTER_HEALTH	5
+#define TARGET_PROP_CHARACTER_ARMOR		6
+#define TARGET_PROP_CHARACTER_CARRYING	7
+
+// RETAIL: a character's user flag (InitialUpdate, 0x1008ce2c), as an
+// InfoString's USRFLG_INFO_STRING: the client asks it for the properties
+// above. The name is ours
+#define USRFLG_CHAR_TARGET_PROPERTIES	(1<<10)
+
 extern CAIStimulusMgr* g_pAIStimulusMgr;
 extern CAIInformationVolumeMgr* g_pAIInformationVolumeMgr;
 
@@ -129,6 +141,7 @@ LTBOOL s_bCharacterPluginInitted = LTFALSE;
 CInventoryButeMgr s_InventoryButeMgr;
 
 bool CCharacter::m_bRadarVisible = false;	// PORT: (Character.h)
+bool CCharacter::m_bTracking = false;		// PORT: (Character.h)
 
 const float kDialogueTimeFudgeFactor = 5.0f;
 
@@ -350,11 +363,15 @@ int32 CCharacter::sm_cAISnds = 0;
 
 static bool DamageFilterHook( GameBase *pObject, DamageStruct *pDamageStruct )
 {
-	// cast to a game base object
-	CCharacter *pMyObj = dynamic_cast< CCharacter* >( pObject );
+	// RETAIL: 0x1008a150 has no dynamic_cast; a null object lets the damage through.
+	CCharacter *pMyObj = static_cast< CCharacter* >( pObject );
+	if( pMyObj )
+	{
+		// call the most derived class
+		return pMyObj->FilterDamage( pDamageStruct );
+	}
 
-	// call the most derived class
-	return pMyObj->FilterDamage( pDamageStruct );
+	return true;
 }
 
 
@@ -428,7 +445,6 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
     m_bPlayingTextDialogue      = LTFALSE;
 
 	m_eEnemyVisibleStimID			= kStimID_Unset;
-	m_eUndeterminedVisibleStimID	= kStimID_Unset;
 
 	m_fLastPainTime				= -(float)INT_MAX;
 	m_fLastPainVolume			= 0.0f;
@@ -531,7 +547,7 @@ CCharacter::CCharacter() : GameBase(OT_MODEL)
 	m_fBodyLifetime				= -1.0f;	// RETAIL: here (0x1008a028)
 	m_nCarrying					= CFX_CARRY_NONE;
 	m_nUniqueDialogueId			= 0;
-	m_bTracking					= false;
+	m_bPlayerPermissions		= false;	// RETAIL: Tron's (Character.h)
 }
 
 // ----------------------------------------------------------------------- //
@@ -770,10 +786,7 @@ uint32 CCharacter::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 			Load((ILTMessage_Read*)pData);
 
-			// We need to reset our sfx message since values
-			// could have changed across save versions.
-			
-			CreateSpecialFX( );
+			// RETAIL: no CreateSpecialFX here (0x1008a7a5)
 
 			return dwRet;
 		}
@@ -817,6 +830,101 @@ uint32 CCharacter::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 			HandleSfxMessage( hSender, pMsg );
 		}
 		break;
+
+		// RETAIL: Tron's (0x1008a889): a client asks for the character's
+		// health, armor and carrying state (as InfoString's)
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			uint8 nNumProps = pMsg->Readuint8();
+			uint8 nNumPropsProcessed = 0;
+
+			// See what we need to send down
+			if(nNumProps > 0)
+			{
+				// Start the message
+				CAutoMessage cTempMsg;
+
+				// Loop through the props
+				uint8 iProp;
+				for(int i=0;i<nNumProps;i++)
+				{
+					// Get the prop
+					iProp = pMsg->Readuint8();
+					switch(iProp)
+					{
+						case TARGET_PROP_CHARACTER_HEALTH:
+						{
+							if( m_damage.GetMaxHitPoints() != 0.0 )
+							{
+								cTempMsg.Writeuint8(iProp);
+								cTempMsg.Writefloat(m_damage.GetHitPoints() / m_damage.GetMaxHitPoints());
+								nNumPropsProcessed++;
+							}
+							break;
+						}
+
+						case TARGET_PROP_CHARACTER_ARMOR:
+						{
+							if( m_damage.GetMaxArmorPoints() != 0.0 )
+							{
+								cTempMsg.Writeuint8(iProp);
+								cTempMsg.Writefloat(m_damage.GetArmorPoints() / m_damage.GetMaxArmorPoints());
+								nNumPropsProcessed++;
+							}
+							break;
+						}
+
+						case TARGET_PROP_CHARACTER_CARRYING:
+						{
+							// RETAIL: the carrying state goes as 0, 3, 1, 2, with
+							// m_nTronUnknownCF8 after all but the first
+							cTempMsg.Writeuint8(iProp);
+							switch( m_nCarrying )
+							{
+								case 0:
+									cTempMsg.Writeuint8(0);
+									break;
+
+								case 2:
+									cTempMsg.Writeuint8(1);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+
+								case 1:
+									cTempMsg.Writeuint8(3);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+
+								case 3:
+									cTempMsg.Writeuint8(2);
+									cTempMsg.Writeuint32(m_nTronUnknownCF8);
+									break;
+							}
+							nNumPropsProcessed++;
+							break;
+						}
+					}
+				}
+
+				// Build the actual message to send back down to the client
+				if(nNumPropsProcessed > 0)
+				{
+					// Get the player
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
+					if(pPlayer)
+					{
+						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8(MID_QUERY_TARGET_PROPERTIES);
+						cPropMsg.WriteObject(m_hObject);
+						cPropMsg.Writeuint8(nNumPropsProcessed);
+						cPropMsg.WriteMessage(cTempMsg.Read());
+						g_pLTServer->SendToClient(cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+					}
+				}
+			}
+
+			return LT_OK;
+		}
 	}
 
 	return GameBase::ObjectMessageFn(hSender, pMsg);
@@ -887,6 +995,10 @@ LTBOOL CCharacter::ReadProp(ObjectCreateStruct *pStruct)
 	{
 		m_bPermanentBody = genProp.m_Bool;
 	}
+	if ( g_pLTServer->GetPropGeneric( "CreateCoreDump", &genProp ) == LT_OK )
+	{
+		m_bTronUnknown4C = genProp.m_Bool;	// RETAIL: Tron's
+	}
 	if ( g_pLTServer->GetPropGeneric( "BodyLifetime", &genProp ) == LT_OK )
 	{
 		m_fBodyLifetime = genProp.m_Float;
@@ -952,7 +1064,118 @@ LTBOOL CCharacter::ReadProp(ObjectCreateStruct *pStruct)
 		}
 	}
 
-	// RETAIL: no general inventory in Tron (above)
+	// RETAIL: no general inventory in Tron (above); the core dump's three
+	// items instead (0x1008aef7..), one property at a time
+	// RETAIL BUG: the buffer is 32 bytes, but the calls below let _snprintf
+	// write up to 100 (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	char szProp[100];
+#else
+	char szProp[32];
+#endif
+	int iItem;
+	uint32 nNoneLen = strlen( "<none>" );
+	uint8 j;
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "Type", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] )
+		{
+			for( j = 0; j < s_nNumArchiveItemTypes; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemTypes[j] ))
+					m_aCoreDumpItems[iItem].m_eType = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineBuild", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			for( j = 0; j < s_nNumArchiveItemBuilds; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemBuilds[j] ))
+					m_aCoreDumpItems[iItem].m_eBuild = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "SubroutineCondition", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			for( j = 0; j < s_nNumArchiveItemConditions; j++ )
+			{
+				if( !strcmp( genProp.m_String, s_aszArchiveItemConditions[j] ))
+					m_aCoreDumpItems[iItem].m_eCondition = j;
+			}
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "ProceduralName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "PSetNumber", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK )
+		{
+			m_aCoreDumpItems[iItem].m_nPSet = (uint8)genProp.m_Long;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "PrimitiveName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "EmailName", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
+
+	for( iItem = 0; iItem < 3; iItem++ )
+	{
+		_snprintf( szProp, 100, "%s%d", "HelpFile", iItem + 1 );
+		if( g_pLTServer->GetPropGeneric( szProp, &genProp ) == LT_OK && genProp.m_String[0] &&
+			strncmp( genProp.m_String, "<none>", nNoneLen ))
+		{
+			m_aCoreDumpItems[iItem].m_sName = genProp.m_String;
+		}
+	}
 
     return LTTRUE;
 }
@@ -982,6 +1205,7 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Neutral("NEUTRAL");
 	static CParsedMsg::CToken s_cTok_Unknown("UNKNOWN");
 	static CParsedMsg::CToken s_cTok_Find("FIND");
+	static CParsedMsg::CToken s_cTok_PlayerPermissions("PLAYERPERMISSIONS");	// RETAIL: Tron's
 	static CParsedMsg::CToken s_cTok_Remove("REMOVE");
 
 	if ( (cMsg.GetArg(0) == s_cTok_Play_Sound) && (cMsg.GetArgCount() > 1) )
@@ -1022,20 +1246,15 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Attach )
 	{
-		if( m_pAttachments )
-		{
-			m_pAttachments->Attach(cMsg.GetArg(1), cMsg.GetArg(2));
-			HandleAttach();
-		}
+		// RETAIL: no test of m_pAttachments (0x1008bc0c)
+		m_pAttachments->Attach(cMsg.GetArg(1), cMsg.GetArg(2));
+		HandleAttach();
         return true;
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Detach )
 	{
-		if( m_pAttachments )
-		{
-			m_pAttachments->Detach(cMsg.GetArg(1));
-			HandleDetach();
-		}
+		m_pAttachments->Detach(cMsg.GetArg(1));
+		HandleDetach();
         return true;
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Gadget )
@@ -1066,11 +1285,6 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		g_pLTServer->CPrint("FIND: %s is at pos (%.2f %.2f %.2f)", GetObjectName(m_hObject), vPos.x, vPos.y, vPos.z );
 		return true;
 	}
-	else if ( cMsg.GetArg(0) == s_cTok_Remove )
-	{
-		AITRACE( AIShowCharacters, ( m_hObject, "Received Remove command." ) );
-		// Intentionally falling through.
-	}
 	else if ( cMsg.GetArg(0) == s_cTok_Crosshair )
 	{
 		if ( cMsg.GetArg(1) == s_cTok_Good )
@@ -1092,6 +1306,24 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 		ResetCrosshair( );
 		return true;
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions )
+	{
+		// RETAIL: Tron's (0x1008c084)
+		if( cMsg.GetArgCount() > 1 )
+		{
+			m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
+		}
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_Remove )
+	{
+		// RETAIL: no AITRACE; the armor goes first (0x1008c0c2)
+		if( m_pAttachments )
+		{
+			RemoveArmor();
+		}
+
+		// Intentionally falling through.
 	}
 
 	return GameBase::OnTrigger( hSender, cMsg );
@@ -1230,7 +1462,22 @@ void CCharacter::ProcessDamageMsg(ILTMessage_Read *pMsg)
 	DamageStruct damage;
 	damage.InitFromMessage(pMsg);
 
-	if ( !m_damage.IsCantDamageType(damage.eType) && m_damage.GetCanDamage() )
+	// RETAIL: Tron's (0x1008c493): no pain while defending; a player has to
+	// face the damage too
+	bool bDefended = false;
+	if( IsPlayer( m_hObject ))
+	{
+		if( IsDefending() && GetDefensePercentage( &damage.vDir ) > 0.95f )
+		{
+			bDefended = true;
+		}
+	}
+	else
+	{
+		bDefended = IsDefending();
+	}
+
+	if ( !m_damage.IsCantDamageType(damage.eType) && m_damage.GetCanDamage() && !bDefended )
 	{
 		// Set our pain information
 
@@ -1454,7 +1701,7 @@ void CCharacter::InitialUpdate(int nInfo)
 
 	// Set this as an object that can be seen with spy vision...
 
-    uint32 nFlags = USRFLG_MOVEABLE | /*USRFLG_SPY_VISION |*/ USRFLG_CHARACTER | GetUserFlagSurfaceType();
+    uint32 nFlags = USRFLG_MOVEABLE | /*USRFLG_SPY_VISION |*/ USRFLG_CHARACTER | USRFLG_CHAR_TARGET_PROPERTIES | GetUserFlagSurfaceType();
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, nFlags, nFlags);
 
 	// Set our initial dims based on the current animation...
@@ -1480,6 +1727,10 @@ void CCharacter::InitialUpdate(int nInfo)
 
 	// [KLS - 2/28/02] - Update our user flags to reflect changes to our surface type
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, GetUserFlagSurfaceType(), 0XFF000000);
+
+	// RETAIL: Tron's fire helpers (0x1008cecb)
+	m_pPRodFireHelper->Init(m_hObject);
+	m_pEnergyClawFireHelper->Init(m_hObject);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1813,6 +2064,54 @@ bool CCharacter::HasZzz() const
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacter::*ListenIcon()
+//
+//	PURPOSE:	Creates/Destroys the listen icon sfx on client
+//
+//	RETAIL: Tron's (0x1008dba0, 0x1008dcb0, 0x1008ddc0; the names are ours,
+//	from CAIHuman's "LISTENICON" command, 0x1016e1f2). Tron's CharacterFX
+//	message numbers for the icon are 33 and 34.
+//
+// ----------------------------------------------------------------------- //
+
+#define CFX_TRON_LISTENICON_CREATE_MSG	33	// RETAIL: 0x1008dc29; the name is ours
+#define CFX_TRON_LISTENICON_DESTROY_MSG	34	// RETAIL: 0x1008dd39; the name is ours
+
+void CCharacter::CreateListenIcon()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SFX_MESSAGE);
+	cMsg.Writeuint8(SFX_CHARACTER_ID);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writeuint8(CFX_TRON_LISTENICON_CREATE_MSG);
+	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+
+	m_byFXFlags |= CHARCREATESTRUCT::eTronTalkIcon;
+
+	CreateSpecialFX();
+}
+
+void CCharacter::DestroyListenIcon()
+{
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_SFX_MESSAGE);
+	cMsg.Writeuint8(SFX_CHARACTER_ID);
+	cMsg.WriteObject(m_hObject);
+	cMsg.Writeuint8(CFX_TRON_LISTENICON_DESTROY_MSG);
+	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+
+	m_byFXFlags &= ~CHARCREATESTRUCT::eTronTalkIcon;
+
+	CreateSpecialFX();
+}
+
+bool CCharacter::HasListenIcon() const
+{
+	return !!(m_byFXFlags & CHARCREATESTRUCT::eTronTalkIcon);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacter::*FlashLight()
 //
 //	PURPOSE:	Creates/Destroys flashlight sfx on client
@@ -1881,25 +2180,12 @@ void CCharacter::SetPitch( float fPitch )
 		{
 			m_fLastPitch = m_fPitch;
 
-			LTRESULT ltResult;
-			CAutoMessage cMsg;
+			// RETAIL: 0x1008e000 sends the pitch as the object's unguaranteed
+			// data, as Contract J.A.C.K.'s (Object 0x1009eea0).
 
-			cMsg.Writeuint8(MID_SFX_MESSAGE);
+			g_pLTServer->SetObjectUnguaranteedData( m_hObject, CompressAngleToByte( fPitch ));
 
-			cMsg.Writeuint8( SFX_CHARACTER_ID );
-
-			cMsg.WriteObject( m_hObject );
-
-			cMsg.Writeuint8( CFX_PITCH );
-
-			// and write it to the message.
-			cMsg.Writeuint8( CompressAngleToByte( fPitch ) );
-			
-			// then send the message
-			ltResult = g_pLTServer->SendToClient( cMsg.Read(), LTNULL, 0);
-			ASSERT( LT_OK == ltResult );
-
-			CreateSpecialFX();
+			CreateSpecialFX( false );
 		}
 	}
 }
@@ -2314,7 +2600,8 @@ void CCharacter::RemovePersistentStimuli(void)
 //----------------------------------------------------------------------------
 bool CCharacter::IsVisible(void)
 {
-	return ( m_eUndeterminedVisibleStimID != kStimID_Unset && m_eEnemyVisibleStimID != kStimID_Unset );
+	// RETAIL: only the enemy visible stimulus (0x1008ecf0)
+	return ( m_eEnemyVisibleStimID != kStimID_Unset );
 }
 
 // ----------------------------------------------------------------------- //
@@ -2376,27 +2663,46 @@ void CCharacter::HandleShortRecoil()
 	if ( !m_bShortRecoil || m_bShortRecoiling ) return;
 	if ( eModelNodeInvalid == m_eModelNodeLastHit ) return;
 
+	// RETAIL: Tron gets the model's name where an animation is missing
+	// (0x1008ee97, 0x1008eeea, 0x1008ef9d), for a debug message that its
+	// build leaves out
+
 	const char* szRecoil = LTNULL;
 	if ( HitFromFront(m_damage.GetLastDamageDir()) )
 	{
 		szRecoil = g_pModelButeMgr->GetSkeletonNodeFrontShortRecoilAni(m_eModelSkeleton, m_eModelNodeLastHit);
+		if ( !szRecoil )
+		{
+			char szModelName[128] = { '\0' };
+			g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+			return;
+		}
 	}
 	else
 	{
 		szRecoil = g_pModelButeMgr->GetSkeletonNodeBackShortRecoilAni(m_eModelSkeleton, m_eModelNodeLastHit);
+		if ( !szRecoil )
+		{
+			char szModelName[128] = { '\0' };
+			g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+			return;
+		}
 	}
 
-	HMODELANIM hAni;
-	if ( !szRecoil || (INVALID_MODEL_ANIM == (hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szRecoil))) )
+	HMODELANIM hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szRecoil);
+	if ( INVALID_MODEL_ANIM != hAni )
 	{
-		return;
+		g_pModelLT->SetCurAnim(m_hObject, m_RecoilAnimTracker, hAni);
+		g_pModelLT->SetWeightSet(m_hObject, m_RecoilAnimTracker, m_hTwitchWeightset);
+		g_pModelLT->ResetAnim(m_hObject, m_RecoilAnimTracker);
+
+		m_bShortRecoiling = LTTRUE;
 	}
-
-    g_pModelLT->SetCurAnim(m_hObject, m_RecoilAnimTracker, hAni);
-    g_pModelLT->SetWeightSet(m_hObject, m_RecoilAnimTracker, m_hTwitchWeightset);
-    g_pModelLT->ResetAnim(m_hObject, m_RecoilAnimTracker);
-
-	m_bShortRecoiling = LTTRUE;
+	else if ( szRecoil )
+	{
+		char szModelName[128] = { '\0' };
+		g_pModelLT->GetModelDBFilename(m_hObject, szModelName, 127 );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2423,6 +2729,9 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	static CParsedMsg::CToken s_cTok_HITBOX_DIMS( "HITBOX_DIMS" );
 	static CParsedMsg::CToken s_cTok_HITBOX_OFFSET( "HITBOX_OFFSET" );
 	static CParsedMsg::CToken s_cTok_HITBOX_DEFAULT( "HITBOX_DEFAULT" );
+	static CParsedMsg::CToken s_cTok_FX( "FX" );				// RETAIL: Tron's
+	static CParsedMsg::CToken s_cTok_Hidden( "HIDDEN" );		// RETAIL: Tron's, not used
+	static CParsedMsg::CToken s_cTok_RezInFX( "REZINFX" );		// RETAIL: Tron's
 		
 	if (!pArgList || !pArgList->argv || pArgList->argc == 0) return;
 
@@ -2437,49 +2746,8 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 
 	if ( tok == s_cTok_KEY_FOOTSTEP_SOUND )
 	{
-		if( m_bOnGround || m_bBodyOnLadder )
-		{
-			LTBOOL bInWater = (m_bBodyInLiquid && !IsLiquid(m_eContainerCode));
-
-			if (m_bBodyOnLadder)
-			{
-				m_eStandingOnSurface = ST_LADDER;
-			}
-			else if (bInWater)
-			{
-				m_eStandingOnSurface = ST_LIQUID;
-			}
-
-			LTFLOAT fVolume = GetFootstepVolume();
-
-			// Adjust the footstep volume by our stealth modifier...
-
-			fVolume *= m_damage.GetStealthModifier();
-
-			SURFACE* pSurf = g_pSurfaceMgr->GetSurface(m_eStandingOnSurface);
-			_ASSERT(pSurf);
-			if (pSurf)
-			{
-				fVolume *= pSurf->fMovementNoiseModifier;
-
-				// TODO: reduce this to a bool function call
-				if ( *pSurf->szLtFootPrintSpr && *pSurf->szRtFootPrintSpr )
-				{
-					// If this is a surface that creates footprints, add a footprint to our list
-
-					LTVector vFootprintPos;
-					g_pLTServer->GetObjectPos(m_hObject, &vFootprintPos);
-
-					// Register EnemyFootprintVisible stimulus.
-					g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootprintVisible, m_hObject, vFootprintPos, 1.0f, pSurf->fFootPrintLifetime );
-				}
-			}
-
-			// Register EnemyFootstepSound stimulus.
-			LTVector vMovementPos;
-			g_pLTServer->GetObjectPos(m_hObject, &vMovementPos);
-			g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootstepSound, m_hObject, vMovementPos, fVolume );
-		}
+		// RETAIL: Tron's footstep code is a function of its own (0x10090160)
+		HandleFootstep( false );
 	}
 	else if ( tok == s_cTok_KEY_PLAYSOUND )
 	{
@@ -2508,7 +2776,8 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_ATTACH)
 	{
-		if( (pArgList->argc != 3) || !m_pAttachments )
+		// RETAIL: no test of m_pAttachments (0x1008f4c1)
+		if( pArgList->argc != 3 )
 			return;
 
 		m_pAttachments->Attach(pArgList->argv[1], pArgList->argv[2]);
@@ -2516,7 +2785,7 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_DETACH)
 	{
-		if( (pArgList->argc != 2) || !m_pAttachments )
+		if( pArgList->argc != 2 )
 			return;
 
 		m_pAttachments->Detach(pArgList->argv[1]);
@@ -2544,24 +2813,38 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 	}
 	else if ( tok == s_cTok_KEY_SET_DIMS )
 	{
-		if (pArgList->argc < 2) return;
-
 		// Set up so we can set one or more dims...
 
         LTVector vDims;
 		g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
 
-		if (pArgList->argv[1])
+		if (pArgList->argc == 1)
 		{
-			vDims.x = (LTFLOAT) atof(pArgList->argv[1]);
+			// RETAIL: Tron's (0x1008f721): without dims, the current
+			// animation's
+
+			HMODELANIM hAnim;
+			g_pModelLT->GetCurAnim(GetUserObject(), MAIN_TRACKER, hAnim);
+			if (g_pCommonLT->GetModelAnimUserDims(GetUserObject(), &vDims, hAnim) != LT_OK)
+			{
+				g_pLTServer->CPrint("Error in CCharacter::HandleModelString msg SetDims could not get current animation. ");
+				return;
+			}
 		}
-		if (pArgList->argc > 2 && pArgList->argv[2])
+		else
 		{
-			vDims.y = (LTFLOAT) atof(pArgList->argv[2]);
-		}
-		if (pArgList->argc > 3 && pArgList->argv[3])
-		{
-			vDims.z = (LTFLOAT) atof(pArgList->argv[3]);
+			if (pArgList->argv[1])
+			{
+				vDims.x = (LTFLOAT) atof(pArgList->argv[1]);
+			}
+			if (pArgList->argc > 2 && pArgList->argv[2])
+			{
+				vDims.y = (LTFLOAT) atof(pArgList->argv[2]);
+			}
+			if (pArgList->argc > 3 && pArgList->argv[3])
+			{
+				vDims.z = (LTFLOAT) atof(pArgList->argv[3]);
+			}
 		}
 
 		// Set the new dims
@@ -2709,6 +2992,111 @@ void CCharacter::HandleModelString(ArgList* pArgList)
 			pHitBox->SetDimsToModel();
 		}
 	}
+	else if( tok == s_cTok_FX )
+	{
+		// RETAIL: Tron's (0x1008ffce)
+		if( pArgList->argc > 1 && pArgList->argv[1] )
+		{
+			PlayClientFX( pArgList->argv[1], m_hObject );
+		}
+	}
+	else if( tok == s_cTok_RezInFX )
+	{
+		// RETAIL: Tron's (0x1009000d)
+		const char* pszFX = g_pModelButeMgr->GetModelRezInFX( m_eModelId );
+		if( pszFX )
+		{
+			PlayClientFX( (char*)pszFX, m_hObject );
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::HandleFootstep()
+//
+//	PURPOSE:	Handle a footstep: the footprint and footstep stimuli
+//
+//	RETAIL: Tron's (0x10090160; the name is ours): NOLF2's footstep key
+//	code, with the player's fuzzy signature subroutine on the volume.
+//	HandleModelString calls it with false, CTronPlayerObj (0x10062c5e)
+//	with true for the subroutine's alternate volume.
+//
+// ----------------------------------------------------------------------- //
+
+void CCharacter::HandleFootstep( bool bAlternateVolume )
+{
+	// Only update the footstep info if we are on the ground...(NOTE:  The
+	// character footstep sounds are now played on the client. see CCharacterFX
+	// if you're interested)
+
+	if( m_bOnGround || m_bBodyOnLadder )
+	{
+		LTBOOL bInWater = (m_bBodyInLiquid && !IsLiquid(m_eContainerCode));
+
+		if (m_bBodyOnLadder)
+		{
+			m_eStandingOnSurface = ST_LADDER;
+		}
+		else if (bInWater)
+		{
+			m_eStandingOnSurface = ST_LIQUID;
+		}
+
+		LTFLOAT fVolume = GetFootstepVolume();
+
+		// Adjust the footstep volume by our stealth modifier...
+
+		fVolume *= m_damage.GetStealthModifier();
+
+		// A player's fuzzy signature subroutine changes the volume
+
+		CPlayerObj* pPlayer = dynamic_cast<CPlayerObj*>( this );
+		if( pPlayer )
+		{
+			PlayerSubroutineSlot* pSlot = pPlayer->FindSubroutine( "Fuzzy_signature" );
+			if( pSlot && pSlot->nTronUnknown40 )
+			{
+				int nVersion = pSlot->nTronUnknown42;
+				int nState = pSlot->nTronUnknown41;
+				int nDifficulty = g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0;
+				SubroutineDataKey key( nVersion, nState, nDifficulty );
+				const FuzzySignatureData& data = g_pSubroutineDataMgr->m_vecFuzzySignature.at( g_pSubroutineDataMgr->GetIndex( key ));
+				if( bAlternateVolume )
+				{
+					fVolume *= data.fAIAlternateVolume;
+				}
+				else
+				{
+					fVolume *= data.fAISoundVolumeScalar;
+				}
+			}
+		}
+
+		SURFACE* pSurf = g_pSurfaceMgr->GetSurface(m_eStandingOnSurface);
+		_ASSERT(pSurf);
+		if (pSurf)
+		{
+			fVolume *= pSurf->fMovementNoiseModifier;
+
+			// TODO: reduce this to a bool function call
+			if ( *pSurf->szLtFootPrintSpr && *pSurf->szRtFootPrintSpr )
+			{
+				// If this is a surface that creates footprints, add a footprint to our list
+
+				LTVector vFootprintPos;
+				g_pLTServer->GetObjectPos(m_hObject, &vFootprintPos);
+
+				// Register EnemyFootprintVisible stimulus.
+				g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootprintVisible, m_hObject, GetRelationData(), vFootprintPos, 1.0f, pSurf->fFootPrintLifetime );
+			}
+		}
+
+		// Register EnemyFootstepSound stimulus.
+		LTVector vMovementPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vMovementPos);
+		g_pAIStimulusMgr->RegisterStimulus( kStim_EnemyFootstepSound, m_hObject, vMovementPos, fVolume );
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -2791,7 +3179,19 @@ void CCharacter::SetDeathAnimation()
 
 	if( hAni == INVALID_ANI )
 	{
-		hAni = GetDeathAni(bFront);
+		// RETAIL: Tron's (0x10090434): a big explosion, or a prankster bit's
+		// implosion, plays the "DBnF" death
+
+		if( (( m_eDeathDamageType == DT_EXPLODE || m_damage.GetTronUnknown30() ) && fMaxHitPts * 0.5f < fDeathDamage ) ||
+			m_eDeathDamageType == DT_PRANKSTERBITIMPLODE )
+		{
+			hAni = g_pLTServer->GetAnimIndex( m_hObject, "DBnF" );
+		}
+
+		if( hAni == INVALID_ANI )
+		{
+			hAni = GetDeathAni(bFront);
+		}
 	}
 
 	// Set the death animation
@@ -2832,6 +3232,8 @@ void CCharacter::SetDeathAnimation()
 
 HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 {
+	// RETAIL: Tron's messages (0x10090510)
+
 	HMODELANIM hAni = INVALID_ANI;
 	const char* szDeathAni = NULL;
 
@@ -2845,6 +3247,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
+
+				// RETAIL: Tron tests for 0 here, not INVALID_ANI (0x10090561)
+				if ( !hAni )
+				{
+					ObjectCPrint( GetUserObject(), "Character missing death animation: %s.", szDeathAni );
+					return hAni;
+				}
+			}
+			else
+			{
+				ObjectCPrint( GetUserObject(), "Character has no death anim for node: %s.", g_pModelButeMgr->GetSkeletonNodeName(m_eModelSkeleton, m_eModelNodeLastHit) );
 			}
 		}
 
@@ -2852,21 +3265,12 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 
 		if ( hAni == INVALID_ANI )
 		{
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-
 			szDeathAni = g_pModelButeMgr->GetSkeletonDefaultFrontDeathAni(m_eModelSkeleton);
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
 			}
 		}
-
-		if( hAni == INVALID_ANI )
-		{
-			AIASSERT( 0, m_hObject, "No death animation found." );	
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-		}
-
 	}
 	else
 	{
@@ -2878,6 +3282,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
+
+				// RETAIL: Tron tests for 0 here, not INVALID_ANI (0x10090561)
+				if ( !hAni )
+				{
+					ObjectCPrint( GetUserObject(), "Character missing death animation: %s.", szDeathAni );
+					return hAni;
+				}
+			}
+			else
+			{
+				ObjectCPrint( GetUserObject(), "Character has no death anim for node: %s.", g_pModelButeMgr->GetSkeletonNodeName(m_eModelSkeleton, m_eModelNodeLastHit) );
 			}
 		}
 
@@ -2885,20 +3300,17 @@ HMODELANIM CCharacter::GetDeathAni(LTBOOL bFront)
 
 		if ( hAni == INVALID_ANI )
 		{
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-
 			szDeathAni = g_pModelButeMgr->GetSkeletonDefaultBackDeathAni(m_eModelSkeleton);
 			if ( szDeathAni )
 			{
 				hAni = g_pLTServer->GetAnimIndex(m_hObject, (char*)szDeathAni);
 			}
 		}
+	}
 
-		if( hAni == INVALID_ANI )
-		{
-			AIASSERT( 0, m_hObject, "No death animation found." );	
-			g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
-		}
+	if( hAni == INVALID_ANI )
+	{
+		g_pLTServer->CPrint( "Character %s is missing animation %s.", GetObjectName(m_hObject), szDeathAni );
 	}
 
 	return hAni;
@@ -2937,7 +3349,7 @@ void CCharacter::PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fS
 //
 //	ROUTINE:	CCharacter::GetPSets
 //
-//	PURPOSE:	Our permission sets; with m_bTracking set, the sum of all of
+//	PURPOSE:	Our permission sets; with m_bPlayerPermissions set, the sum of all of
 //				the players' sets (RETAIL: Tron's, retail 0x10090720; the
 //				name is ours)
 //
@@ -2945,7 +3357,7 @@ void CCharacter::PushCharacter(const LTVector &vPos, LTFLOAT fRadius, LTFLOAT fS
 
 uint8 CCharacter::GetPSets()
 {
-	if (m_bTracking)
+	if (m_bPlayerPermissions)
 	{
 		int i = 0;
 		uint8 nPSets = 0;
@@ -3271,9 +3683,7 @@ void CCharacter::KillDlgSnd()
 		sm_cAISnds--;
 	}
 
-	if (m_eCurDlgSndType == CST_DEATH)
-		return;
-
+	// RETAIL: no CST_DEATH test here (0x10090d60)
 	m_eCurDlgSndType = CST_NONE;
 
 	// Make sure the client knows to stop lip syncing...
@@ -3380,7 +3790,9 @@ void CCharacter::StopDialogue(LTBOOL bCinematicDone)
 void CCharacter::PlayDeathSound()
 {
 	KillDlgSnd();
-    PlayDialogSound(GetDeathSound(), CST_DEATH);
+
+	// RETAIL: a plain sound (0x10091012), not a dialog sound
+	PlaySound(GetDeathSound(), m_fSoundRadius, LTFALSE);
 }
 
 // ----------------------------------------------------------------------- //
@@ -3508,6 +3920,35 @@ void CCharacter::SetupBody(Body* pProp)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacter::ShouldGib()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10091370; the name is ours): the body
+//				gibs when a gibbing damage is on us, and the model has a
+//				gib fx (or the game is a disc game)
+//
+// ----------------------------------------------------------------------- //
+
+bool CCharacter::ShouldGib()
+{
+	DamageFlags nGibFlags = DamageTypeToFlag( DT_SUFFUSIONGIB ) | DamageTypeToFlag( DT_POWERBLOCK ) |
+		DamageTypeToFlag( DT_DRUNKENDIMS ) | DamageTypeToFlag( DT_BALLLAUNCHER ) |
+		DamageTypeToFlag( DT_BALL ) | DamageTypeToFlag( DT_CLUSTER );
+
+	if( ( m_nDamageFlags & nGibFlags ) == 0 )
+		return false;
+
+	if( !IsDiscGameType() )
+	{
+		const char* pszGibFX = g_pModelButeMgr->GetModelGibFX( m_eModelId );
+		if( !pszGibFX || !pszGibFX[0] )
+			return false;
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacter::GetBodyState()
 //
 //	PURPOSE:	Gets the state of our body prop
@@ -3516,17 +3957,31 @@ void CCharacter::SetupBody(Body* pProp)
 
 EnumAIStateType CCharacter::GetBodyState()
 {
-	if ( m_bWallStick )
+	// RETAIL: Tron's body states and their order (0x10091410)
+
+	if ( ShouldGib() )
+	{
+		return kState_BodyGib;
+	}
+	else if ( m_bWallStick )
 	{
 		return kState_BodyArrow;
 	}
-	else if ( m_damage.GetLastDamageType() == DT_EXPLODE )
+	else if ( m_damage.GetTronUnknown30() || m_damage.GetLastDamageType() == DT_EXPLODE )
 	{
 		return kState_BodyExplode;
+	}
+	else if ( m_damage.GetLastDamageType() == DT_PRANKSTERBITIMPLODE )
+	{
+		return kState_BodyPranksterImplode;
 	}
 	else if ( m_damage.GetLastDamageType() == DT_BURN )
 	{
 		return kState_BodyAcid;
+	}
+	else if ( m_damage.GetLastDamageType() == DT_ELECTROCUTE )
+	{
+		return kState_BodyLaser;
 	}
 	else if ( m_damage.GetLastDamageType() == DT_CRUSH )
 	{
@@ -3536,15 +3991,9 @@ EnumAIStateType CCharacter::GetBodyState()
 	{
 		return kState_BodyPoison;
 	}
-	else if ( m_damage.GetLastDamageType() == DT_ASSS )
+	else if ( GetLastVolume() )
 	{
-		return kState_BodyNormal;
-	}
-	else if ( HasLastVolume() )
-	{
-		AIVolume* pVolume = GetLastVolume();
-		// RETAIL: Tron has no Stairs or Ledge body states.
-		if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Ladder )
+		if ( GetLastVolume()->GetVolumeType() == AIVolume::kVolumeType_Ladder )
 		{
 			return kState_BodyLadder;
 		}
@@ -3664,36 +4113,35 @@ LTBOOL CCharacter::SetDims(LTVector* pvDims, LTBOOL bSetLargest)
 	}
 
 
-	// [RP] 2/25/03 - MoveObjectToFloor() teleports the object to the floor.  We care about bounding box
-	//				  collisions here so this block of code is exactly the same as MoveObjectToFloor() with 
-	//				  the exception of calling MoveObject() rather than SetObjectPos().
+	// RETAIL: Tron's (0x10091675): NOLF2 build 51's move down, and a move up
+	// for an AI that moves to the floor
 
-	LTVector vPos, vDims;
-	g_pLTServer->GetObjectPos( m_hObject, &vPos );
-	g_pPhysicsLT->GetObjectDims( m_hObject, &vDims );
-
-	IntersectQuery IQuery;
-	IntersectInfo IInfo;
-
-	IQuery.m_From	= vPos;
-	IQuery.m_To		= vPos + LTVector(0.0f, -10000.0f, 0.0f);
-	IQuery.m_Flags	= IGNORE_NONSOLID | INTERSECT_OBJECTS | INTERSECT_HPOLY;
-	
-    if( g_pLTServer->IntersectSegment( &IQuery, &IInfo ))
+	if (vNewDims.y < vOldDims.y)
 	{
-        float fDist = vPos.y - IInfo.m_Point.y;
-		if( fDist > vDims.y )
-		{
-			vPos.y -= (fDist - (vDims.y + 0.1f));
-			g_pLTServer->MoveObject( m_hObject, &vPos );
-		}
+        LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+		vPos.y -= (vOldDims.y - vNewDims.y);
+		vPos.y -= .01f; // Fudge factor
+
+		// This forces the client to move to the server's position because it's teleporting.
+		g_pLTServer->SetObjectPos(m_hObject, &vPos);
+		g_pLTServer->MoveObject(m_hObject, &vPos);
 	}
+	else if (vNewDims.y > vOldDims.y)
+	{
+        LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
-	// This forces the client to move to the server's position because it's teleporting.
-	
-	g_pLTServer->GetObjectPos( m_hObject, &vPos );
-	g_pLTServer->SetObjectPos( m_hObject, &vPos );
+		if (!IsPlayer(m_hObject) && m_bMoveToFloor)
+		{
+			vPos.y += (vNewDims.y - vOldDims.y);
+			vPos.y += .01f; // Fudge factor
+		}
 
+		g_pLTServer->SetObjectPos(m_hObject, &vPos);
+		g_pLTServer->MoveObject(m_hObject, &vPos);
+	}
 
 	// Update the dims of our hit box...
 
@@ -3702,7 +4150,7 @@ LTBOOL CCharacter::SetDims(LTVector* pvDims, LTBOOL bSetLargest)
 		CCharacterHitBox *pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject( m_hHitBox ));
 		if( pHitBox )
 		{
-			pHitBox->EnlargeAndSetDims( vNewDims );
+			pHitBox->SetDimsToModel();
 		}
 	}
 
@@ -3788,12 +4236,14 @@ void CCharacter::UpdateClientHitBox()
 	g_pPhysicsLT->GetObjectDims(m_hHitBox, &vHitDims);
 
 	bool bCanBeSearched = false;
+	bool bTronUnknown7D = false;	// RETAIL: Tron's (0x10091ade)
 
 	CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
 	if (pHitBox)
 	{
 		vHitOffset = pHitBox->GetOffset();
 		bCanBeSearched = pHitBox->CanBeSearched();
+		bTronUnknown7D = pHitBox->GetTronUnknown7D();
 	}
 
 	// Send the hitbox message
@@ -3805,6 +4255,7 @@ void CCharacter::UpdateClientHitBox()
 	cMsg.WriteCompLTVector( vHitDims );
 	cMsg.WriteCompLTVector( vHitOffset );
 	cMsg.Writebool( bCanBeSearched );
+	cMsg.Writebool( bTronUnknown7D );
 	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	// Update the SFX
@@ -4057,8 +4508,10 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_COBJECT(m_pLastPlayerInfoVolume);		// RETAIL: Tron's (Character.h)
 	SAVE_COBJECT(m_pCurrentPlayerInfoVolume);
 
-	SAVE_VECTOR(m_vLastVolumePos);
-	SAVE_VECTOR(m_vLastInformationVolumePos);
+	// RETAIL: these two are written inline (0x10092793), the vectors above
+	// with WriteType out of line
+	pMsg->WriteData(&m_vLastVolumePos, sizeof(LTVector) * 8);
+	pMsg->WriteData(&m_vLastInformationVolumePos, sizeof(LTVector) * 8);
 	SAVE_BYTE(m_byFXFlags);
 	SAVE_BOOL(m_bShortRecoiling);
 	SAVE_HSTRING(m_hstrHeadExtension);
@@ -4077,6 +4530,8 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_BOOL(m_bArmored);
 	SAVE_INT(m_cActive);
 	SAVE_QWORD(m_nDamageFlags);
+	SAVE_QWORD(m_nInstantDamageFlags);		// RETAIL: Tron's (0x100928ad)
+	SAVE_QWORD(m_nLastInstantDamageFlags);
 	SAVE_FLOAT(m_fPitch);
 	SAVE_FLOAT(m_fLastPitch);
 
@@ -4098,22 +4553,23 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	// order from here)
 	SAVE_DWORD( m_eEnemyVisibleStimID );
 
-	// PORT: Tron saves its fire helpers here (m_pPRodFireHelper->Save(pMsg),
-	// m_pEnergyClawFireHelper->Save(pMsg)); not yet written (Character.h)
+	// RETAIL: Tron's fire helpers (0x100929ee)
+	m_pPRodFireHelper->Save(pMsg);
+	m_pEnergyClawFireHelper->Save(pMsg);
 
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
-		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
-		pMsg->Writeint8( u.m_c00 );
-		SAVE_CHARSTRING( u.m_s04.c_str() );
-		pMsg->Writeint8( u.m_c10 );
-		pMsg->Writeint8( u.m_c14 );
-		SAVE_CHARSTRING( u.m_s18.c_str() );
-		SAVE_BYTE( u.m_n24 );
-		SAVE_FLOAT( u.m_f28 );
+		ArchiveItem& u = m_aCoreDumpItems[iUnknown];
+		pMsg->Writeint8( u.m_eType );
+		SAVE_CHARSTRING( u.m_sName.c_str() );
+		pMsg->Writeint8( u.m_eBuild );
+		pMsg->Writeint8( u.m_eCondition );
+		SAVE_CHARSTRING( u.m_sCommand.c_str() );
+		SAVE_BYTE( u.m_nPSet );
+		SAVE_FLOAT( u.m_fCost );
 	}
 
-	SAVE_bool( m_bTracking );
+	SAVE_bool( m_bPlayerPermissions );
 	SAVE_DWORD( m_nTronUnknownCF8 );
 	SAVE_BYTE( m_nCarrying );
 	SAVE_HOBJECT( m_hTronUnknownCF0 );
@@ -4190,14 +4646,7 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_COBJECT(m_pLastPlayerInfoVolume, AIVolumePlayerInfo);		// RETAIL: as Save
 	LOAD_COBJECT(m_pCurrentPlayerInfoVolume, AIVolumePlayerInfo);
 
-	// If we're loading from a transition, then our positional information is invalid.
-	if( g_pGameServerShell->GetLGFlags( ) == LOAD_TRANSITION )
-	{
-		m_pLastVolume			= LTNULL;
-		m_pCurrentVolume		= LTNULL;
-		m_pLastInformationVolume = LTNULL;
-		m_pCurrentInformationVolume = LTNULL;
-	}
+	// RETAIL: no reset of the volumes for a transition here (0x1009313e)
 
 	LOAD_VECTOR(m_vLastVolumePos);
 	LOAD_VECTOR(m_vLastInformationVolumePos);
@@ -4218,6 +4667,8 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 	LOAD_BOOL(m_bArmored);
 	LOAD_INT(m_cActive);
 	LOAD_QWORD(m_nDamageFlags);
+	LOAD_QWORD(m_nInstantDamageFlags);		// RETAIL: as Save
+	LOAD_QWORD(m_nLastInstantDamageFlags);
 	LOAD_FLOAT(m_fPitch);
 	LOAD_FLOAT(m_fLastPitch);
 
@@ -4237,24 +4688,26 @@ void CCharacter::Load(ILTMessage_Read *pMsg)
 
 	LOAD_DWORD_CAST( m_eEnemyVisibleStimID, EnumAIStimulusID );
 
-	// PORT: the fire helpers' Load (as Save)
+	// RETAIL: as Save
+	m_pPRodFireHelper->Load(pMsg);
+	m_pEnergyClawFireHelper->Load(pMsg);
 
 	char szUnknown[256];
 	for( int iUnknown = 0; iUnknown < 3; iUnknown++ )
 	{
-		TronCharacterUnknownC6C& u = m_aTronUnknownC6C[iUnknown];
-		u.m_c00 = pMsg->Readint8();
+		ArchiveItem& u = m_aCoreDumpItems[iUnknown];
+		u.m_eType = pMsg->Readint8();
 		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
-		u.m_s04 = szUnknown;
-		u.m_c10 = pMsg->Readint8();
-		u.m_c14 = pMsg->Readint8();
+		u.m_sName = szUnknown;
+		u.m_eBuild = pMsg->Readint8();
+		u.m_eCondition = pMsg->Readint8();
 		LOAD_CHARSTRING( szUnknown, ARRAY_LEN( szUnknown ));
-		u.m_s18 = szUnknown;
-		LOAD_BYTE( u.m_n24 );
-		LOAD_FLOAT( u.m_f28 );
+		u.m_sCommand = szUnknown;
+		LOAD_BYTE( u.m_nPSet );
+		LOAD_FLOAT( u.m_fCost );
 	}
 
-	LOAD_bool( m_bTracking );
+	LOAD_bool( m_bPlayerPermissions );
 	LOAD_DWORD( m_nTronUnknownCF8 );
 	LOAD_BYTE( m_nCarrying );
 	LOAD_HOBJECT( m_hTronUnknownCF0 );
@@ -4312,25 +4765,18 @@ CAttachments* CCharacter::TransferAttachments( bool bRemove )
 		m_pAttachments->HandleDeath();
 	}
 
-	CAttachments* pAtt = LTNULL;
-	if (m_pAttachments && bRemove)
+	CAttachments* pAtt = m_pAttachments;
+	if (pAtt && bRemove)
 	{
-		pAtt = m_pAttachments;
-		RemoveAggregate(m_pAttachments);
+		RemoveAggregate(pAtt);
         m_pAttachments = LTNULL;
-	}
-	else if( m_pAttachments )
-	{
-		// If we are not removing our own attachments then we must create a new one.
-
-		pAtt = CAttachments::Create( m_pAttachments->GetType() );
-	}
-	else
-	{
-		ASSERT( !"Transfering NULL Attachments" );
+		return pAtt;
 	}
 
-	return pAtt;
+	// If we are not removing our own attachments then we must create a new one.
+	// RETAIL: without a test of m_pAttachments (0x100936be)
+
+	return CAttachments::Create( pAtt->GetType() );
 }
 
 // ----------------------------------------------------------------------- //
@@ -4478,7 +4924,9 @@ AIVolume* CCharacter::GetCurrentVolume()
 
 HOBJECT CCharacter::GetRegionObject()
 {
-	if ( GetCurrentVolume() && ( GetCurrentVolume() ? GetCurrentVolume()->GetRegion() : LTNULL ) )
+	// RETAIL: 0x10093938 goes on to the region when the second volume test
+	// fails (it cannot: the first test passed)
+	if ( GetCurrentVolume() && ( !GetCurrentVolume() || GetCurrentVolume()->GetRegion() ) )
 	{
 		return GetCurrentVolume()->GetRegion()->m_hObject;
 	}

@@ -49,11 +49,18 @@ uint32 TeleportPoint::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fDa
 		}
 		break;
 
-		case MID_INITIALUPDATE:
+		// RETAIL: Tron does this once all objects are created (0x1017f1a0)
+		case MID_ALLOBJECTSCREATED:
 		{
 			if (fData != INITIALUPDATE_SAVEGAME)
 			{
 				SetNextUpdate(m_hObject, UPDATE_NEVER);
+
+				// RETAIL: here (0x1017f1dc)
+				if (m_bMoveToFloor)
+				{
+					MoveObjectToFloor(m_hObject);
+				}
 			}
 		}
 		break;

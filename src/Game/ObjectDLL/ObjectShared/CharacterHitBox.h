@@ -126,6 +126,7 @@ class CCharacterHitBox : public GameBase
 		void SetCanActivate(LTBOOL b) { m_bCanActivate = b; }
 		// RETAIL: Tron's (0x10138f80). The name is ours
 		void SetTronUnknown7D(bool b);
+		bool GetTronUnknown7D() const { return m_bTronUnknown7D; }	// RETAIL: read by CCharacter::UpdateClientHitBox (0x10091ade)
 
 		bool CanBeSearched() const { return m_bCanBeSearched; }
 		void SetCanBeSearched(bool b);

@@ -1412,6 +1412,18 @@ game does not hit this.
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
 AIHumanState.cpp puts braces around the trace.
 
+### The core dump item properties can write past their name buffer
+
+Object.lto 0x1008ac40 (CCharacter::ReadProp, ObjectShared/Character.cpp).
+The function makes the name of each core dump item property (for example
+"SubroutineCondition1") in a buffer of 32 bytes. But it gives _snprintf a
+maximum length of 100 bytes. The longest property name is 21 characters,
+thus the retail properties do not overflow the buffer. A longer name would
+write past the buffer, into the GenericProp after it.
+
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Character.cpp
+gives the buffer 100 bytes.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

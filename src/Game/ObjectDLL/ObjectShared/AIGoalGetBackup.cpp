@@ -84,6 +84,9 @@ void CAIGoalGetBackup::ActivateGoal()
 		// Ignore all senses.
 		m_pAI->SetCurSenseFlags(kSense_None);
 
+		// RETAIL: Tron targets the stimulus source (0x1020656e)
+		m_pAI->Target( m_hStimulusSource );
+
 		m_pGoalMgr->LockGoal(this);
 
 		AINodeBackup* pNode = (AINodeBackup*)g_pLTServer->HandleToObject(m_hNodeBackup);
@@ -119,6 +122,9 @@ void CAIGoalGetBackup::ActivateGoal()
 void CAIGoalGetBackup::DeactivateGoal()
 {
 	super::DeactivateGoal();
+
+	// RETAIL: Tron forgets the backup node (0x10206629)
+	m_hNodeBackup = LTNULL;
 
 	if( m_eStimulusID )
 	{
@@ -195,6 +201,7 @@ void CAIGoalGetBackup::HandleStateGetBackup()
 		case kSStat_FailedComplete:
 			m_hFailedNode = m_hNodeBackup;
 			m_fCurImportance = 0.f;
+			m_hNodeBackup = LTNULL;		// RETAIL: Tron's (0x10206885)
 			break;
 
 		case kSStat_StateComplete:
@@ -298,7 +305,7 @@ LTBOOL CAIGoalGetBackup::SelectTriggeredAISound(EnumAISoundType* peAISoundType)
 
 AINode* CAIGoalGetBackup::HandleGoalAttractors()
 {
-	AINode* pNode = LTNULL;
+	AINode* pNode;
 
 	if(m_hStimulusSource != LTNULL)
 	{
@@ -318,13 +325,13 @@ AINode* CAIGoalGetBackup::HandleGoalAttractors()
 				if( ( pNodeBackup->GetStimulusRadiusSqr() > pNodeBackup->GetPos().DistSqr( m_pAI->GetPosition() ) ) ||
 					( pNodeBackup->GetStatus( m_pAI->GetPosition(), m_hStimulusSource ) != kStatus_Ok ) )
 				{
+					// RETAIL: Tron forgets the stimulus source here (0x102069d6)
 					m_fCurImportance = 0.f;
 					m_hNodeBackup = LTNULL;
-					pNode = LTNULL;
+					m_hStimulusSource = LTNULL;
 				}
 				else {
 					m_hNodeBackup = pNode->m_hObject;
-					m_hStimulusSource = LTNULL;
 				}
 			}
 
@@ -333,7 +340,8 @@ AINode* CAIGoalGetBackup::HandleGoalAttractors()
 		}
 	}
 
-	return pNode;
+	// RETAIL: the backup node, found now or before (0x10206a00)
+	return (AINode*)g_pLTServer->HandleToObject( m_hNodeBackup );
 }
 
 // ----------------------------------------------------------------------- //
@@ -374,6 +382,9 @@ LTBOOL CAIGoalGetBackup::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			return LTTRUE;
 		}
 	}
+
+	// RETAIL: Tron forgets the stimulus source (0x10206a59)
+	m_hStimulusSource = LTNULL;
 
 	return LTFALSE;
 }

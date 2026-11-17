@@ -82,6 +82,13 @@ static const char* const s_aszArchiveItemConditions[kAIC_NumConditions] =
 	"Foreign",
 };
 
+// RETAIL: the tables' counts are not const: their users load them from
+// .data (Character.cpp's at 0x102eab10..0x102eab18, ArchiveBin.cpp's at
+// 0x102d6cc8..0x102d6cd0). The names are ours.
+static int s_nNumArchiveItemTypes = sizeof(s_aszArchiveItemTypes) / sizeof(s_aszArchiveItemTypes[0]);
+static int s_nNumArchiveItemBuilds = sizeof(s_aszArchiveItemBuilds) / sizeof(s_aszArchiveItemBuilds[0]);
+static int s_nNumArchiveItemConditions = sizeof(s_aszArchiveItemConditions) / sizeof(s_aszArchiveItemConditions[0]);
+
 struct ArchiveItem
 {
 	ArchiveItem()

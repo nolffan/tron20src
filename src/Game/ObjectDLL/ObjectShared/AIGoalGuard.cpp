@@ -339,8 +339,6 @@ void CAIGoalGuard::RecalcImportance()
 
 LTBOOL CAIGoalGuard::HandleNameValuePair(const char *szName, const char *szValue)
 {
-	AIASSERT(szName && szValue, m_pAI->m_hObject, "CAIGoalGuard::HandleNameValuePair: Name or value is NULL.");
-
 	if( super::HandleNameValuePair(szName, szValue) )
 	{
 		return LTTRUE;
@@ -359,6 +357,26 @@ LTBOOL CAIGoalGuard::HandleNameValuePair(const char *szName, const char *szValue
 		AINode* pNode = g_pAINodeMgr->GetNode(szValue);
 		if( pNode )
 		{
+			// RETAIL: Tron's (0x10205649): a warning when the node already
+			// has another owner, and the node is enabled
+			HOBJECT hOwner = pNode->GetNodeOwner();
+			if( hOwner && ( hOwner != m_pAI->GetUserObject() ) )
+			{
+				char szAIName[64];
+				char szNodeName[64];
+				char szOwnerName[64];
+				g_pLTServer->GetObjectName( m_pAI->GetUserObject(), szAIName, ARRAY_LEN( szAIName ));
+				g_pLTServer->GetObjectName( pNode->m_hObject, szNodeName, ARRAY_LEN( szNodeName ));
+				g_pLTServer->GetObjectName( pNode->GetNodeOwner(), szOwnerName, ARRAY_LEN( szOwnerName ));
+				g_pLTServer->CPrint( "ERROR!!!  %s given command to take control of node %s while owned by %s!  This may lead to gameplay deadlocks and other horrible events.  Please see your local AI programmer right now!",
+					szAIName, szNodeName, szOwnerName );
+			}
+
+			if( pNode->IsDisabled() )
+			{
+				pNode->Enable();
+			}
+
 			SetGuardNode( pNode );
 			RecalcImportance();
 

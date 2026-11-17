@@ -588,34 +588,20 @@ bool ScmdServer_Impl::HandleListMissions( HCLIENT hClient, ILTMessage_Read& msg 
 	cMsg.Writeuint8( kScmdCommandListMissions );
 	cMsg.Writeuint8( kScmdCommandStatusOk );
 
-	// Write out the current campaign.
-	cMsg.Writeuint8(( uint8 )g_pServerMissionMgr->GetCurrentCampaignIndex( ));
+	// RETAIL: Tron's missions are the map list's levels (0x101c6410)
 
-	Campaign& campaign = g_pServerMissionMgr->GetCampaign( );
+	// Write out the current level.
+	cMsg.Writeuint8(( uint8 )g_pGameServerShell->GetCurLevelIndex( ));
+
+	StringArray* pMapList = g_pGameServerShell->GetServerGameOptions( ).GetMapList( );
 
 	// Write out the number of entries.
-	cMsg.Writeuint8( campaign.size( ));
+	cMsg.Writeuint8(( uint8 )pMapList->size( ));
 
-	// Write out all the missions.
-	char fname[_MAX_FNAME] = "";
-	for( Campaign::iterator iter = campaign.begin( ); iter != campaign.end( ); iter++ )
+	// Write out all the levels.
+	for( StringArray::iterator iter = pMapList->begin( ); iter != pMapList->end( ); iter++ )
 	{
-		// Get the mission in the campaign.
-		int nMission = *iter;
-		MISSION* pMission = g_pMissionButeMgr->GetMission( nMission );
-		if( !pMission )
-			continue;
-
-		// Show the current level if this is the current mission.
-		int nLevel = 0;
-		if( g_pServerMissionMgr->GetCurrentMission( ) == nMission )
-		{
-			nLevel = g_pServerMissionMgr->GetCurrentLevel( );
-		}
-
-		LEVEL& level = pMission->aLevels[nLevel];
-		_splitpath( level.szLevel, NULL, NULL, fname, NULL );
- 		cMsg.WriteString( fname );
+ 		cMsg.WriteString( iter->c_str( ));
 	}
 
 	// Send the message.
@@ -641,7 +627,8 @@ bool ScmdServer_Impl::HandleNextMission( HCLIENT hClient, ILTMessage_Read& msg )
 	if( !SendStatusMessage( hClient, kScmdCommandNextMission, kScmdCommandStatusOk ))
 		return false;
 
-	g_pServerMissionMgr->NextMission( );
+	// RETAIL: Tron switches to the next level of the map list (0x101c64e5)
+	g_pGameServerShell->TronUnknownVirtual84( g_pGameServerShell->GetCurLevelIndex( ) + 1 );
 	return true;
 }
 
@@ -661,8 +648,8 @@ bool ScmdServer_Impl::HandleSetMission( HCLIENT hClient, ILTMessage_Read& msg )
 	uint8 nMissionIndex = msg.Readuint8( );
 
 	// Check to make sure the mission index is within range.
-	Campaign& campaign = g_pServerMissionMgr->GetCampaign( );
-	if( nMissionIndex >= campaign.size( ))
+	// RETAIL: Tron's missions are the map list's levels (0x101c650f)
+	if( nMissionIndex >= g_pGameServerShell->GetServerGameOptions( ).GetMapList( )->size( ))
 	{
 		// Tell the client it failed.
 		if( !SendStatusMessage( hClient, kScmdCommandSetMission, kScmdCommandStatusFailed ))
@@ -676,7 +663,7 @@ bool ScmdServer_Impl::HandleSetMission( HCLIENT hClient, ILTMessage_Read& msg )
 		return false;
 
 	// Do the switch.
-	g_pServerMissionMgr->SwitchToCampaignIndex( nMissionIndex );
+	g_pGameServerShell->TronUnknownVirtual84( nMissionIndex );
 
 	return true;
 }

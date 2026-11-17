@@ -235,30 +235,43 @@ void CCommandButeMgr::ProcessLevelCmds( )
 
 
 	// Look for an entry in commands.txt for this level...
+	// RETAIL: Tron's entries are "Map%d" tags with the level's "Name"
+	// (0x101b5f55)
 
-	if( m_buteMgr.Exist( szTag ))
+	char szMapTag[128];
+	int nMap = 0;
+	sprintf( szMapTag, "Map%d", nMap );
+	while( m_buteMgr.Exist( szMapTag ))
 	{
-		int		cNumCmds = 0;
-		char	szAttribute[256];
-		char	szCmd[256];
-
-		
-		while( true )
+		char szName[128];
+		m_buteMgr.GetString( szMapTag, "Name", szName, sizeof( szName ));
+		if( !_stricmp( szName, szTag ))
 		{
-			// Read in the command
+			int		cNumCmds = 0;
+			char	szAttribute[256];
+			char	szCmd[256];
 
-			sprintf( szAttribute, "%s%i", CBMGR_CMD, cNumCmds );
-			m_buteMgr.GetString( szTag, szAttribute, szCmd, sizeof( szCmd ) );
-			if( !m_buteMgr.Success( ))
-				break;
+			while( true )
+			{
+				// Read in the command
 
-			// Process it...
+				sprintf( szAttribute, "%s%i", CBMGR_CMD, cNumCmds );
+				m_buteMgr.GetString( szMapTag, szAttribute, szCmd, sizeof( szCmd ) );
+				if( !m_buteMgr.Success( ))
+					break;
 
-			if( g_pCmdMgr->IsValidCmd( szCmd ))
-				g_pCmdMgr->Process( szCmd, (ILTBaseClass*)NULL, (ILTBaseClass*)NULL );
+				// Process it...
 
-			++cNumCmds;
+				if( g_pCmdMgr->IsValidCmd( szCmd ))
+					g_pCmdMgr->Process( szCmd, (ILTBaseClass*)NULL, (ILTBaseClass*)NULL );
+
+				++cNumCmds;
+			}
+
+			return;
 		}
+
+		sprintf( szMapTag, "Map%d", ++nMap );
 	}
 }
 

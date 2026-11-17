@@ -33,6 +33,7 @@
 #include "MusicMgr.h"
 #include "PlayerTracker.h"
 #include "IObjectRelationMgrUser.h"
+#include "../TRON/ArchiveItem.h"
 
 LINKTO_MODULE( Character );
 
@@ -129,20 +130,6 @@ enum CharacterDeath { CD_NORMAL=0, CD_GIB, CD_FREEZE, CD_VAPORIZE, CD_BURST };
 class CPRodFireHelper;
 class CEnergyClawFireHelper;
 
-// RETAIL: Tron's: three of these in CCharacter at +0xc6c, 0x2c bytes each
-// (its element constructor retail 0x1000d6c0; saved in CCharacter::Save as a
-// char, a string, two chars, a string, a byte and a float). Not yet named.
-struct TronCharacterUnknownC6C
-{
-	char		m_c00;
-	std::string	m_s04;
-	char		m_c10;
-	uint8		m_aPad11[3];	// (retail's next char is at +0x14)
-	char		m_c14;
-	std::string	m_s18;
-	uint8		m_n24;
-	LTFLOAT		m_f28;
-};
 
 // RETAIL: IObjectRelationMgrUser is Tron's third interface (IObjectRelationMgrUser.h)
 class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerReceiver, public IObjectRelationMgrUser
@@ -180,6 +167,21 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		bool HasZzz() const;
 		void CreateZzz();
 		void DestroyZzz();
+
+		// RETAIL: Tron's (0x10091370; the name is ours)
+		bool ShouldGib();
+
+		// RETAIL: Tron's fire helpers (CAIGoalSpecialDamage, 0x10192812)
+		CPRodFireHelper*		GetPRodFireHelper() { return m_pPRodFireHelper; }
+		CEnergyClawFireHelper*	GetEnergyClawFireHelper() { return m_pEnergyClawFireHelper; }
+
+		// RETAIL: Tron's footstep (0x10090160; the name is ours)
+		void HandleFootstep( bool bAlternateVolume );
+
+		// RETAIL: Tron's listen icon (0x1008dba0..0x1008ddc0; the names are ours)
+		void CreateListenIcon();
+		void DestroyListenIcon();
+		bool HasListenIcon() const;
 
 		LTBOOL IsArmored() { return m_bArmored; }
 		virtual void CreateArmor();
@@ -340,7 +342,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		uint8			GetPermissionSet() const {return m_iPermissionSet;}
 
 		// RETAIL: Tron's (retail 0x10090720, out of line; the name is ours):
-		// the permission sets, or with m_bTracking set the sum of all of the
+		// the permission sets, or with m_bPlayerPermissions set the sum of all of the
 		// players' sets
 		uint8			GetPSets();
 
@@ -543,7 +545,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		CHARCREATESTRUCT*	m_pcs;							// Our character specialfx struct
 
 		SurfaceType			m_eStandingOnSurface;			// What surface we're currently standing on.
-		bool				m_bTronUnknown4C;				// RETAIL: Tron's (true at first; saved after the next two)
+		bool				m_bTronUnknown4C;				// RETAIL: Tron's "CreateCoreDump" property (true at first; saved after the next two)
         bool				m_bMakeBody;					// Make body when dead.
 		bool				m_bPermanentBody;				// Dead body is permanent.
         LTBOOL				m_bMoveToFloor;					// Move character to floor
@@ -625,7 +627,8 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		EnumAIStimulusID	m_eEnemyVisibleStimID;			// Registration ID of visibility stimulus.
 															// Saved in case we want to toggle visibility.
 
-		EnumAIStimulusID	m_eUndeterminedVisibleStimID;	// Registration ID of visibility stimulus.
+		// RETAIL: no m_eUndeterminedVisibleStimID: +0x414 is padding before the
+		// 8-byte damage flags (the constructor, 0x10089ab0, does not set it)
 															// Saved in case we want to toggle visibility.
 
 		DamageFlags			m_nDamageFlags;					// What types of damage (progressive) are cureently affecting us
@@ -714,7 +717,7 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// left null here. Names ours where not said otherwise.
 		CPRodFireHelper*		m_pPRodFireHelper;
 		CEnergyClawFireHelper*	m_pEnergyClawFireHelper;
-		TronCharacterUnknownC6C	m_aTronUnknownC6C[3];
+		ArchiveItem			m_aCoreDumpItems[3];	// RETAIL: the core dump's items (ReadProp, 0x1008ac40)
 		HOBJECT				m_hTronUnknownCF0;		// saved with WriteObject
 		uint32				m_nCarrying;			// saved as a byte (NOLF2's)
 		uint32				m_nTronUnknownCF8;		// saved, not initialized
@@ -726,9 +729,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// to wait until everyone says they're done.
 		PlayerTracker	m_PlayerTrackerDialogue;
 
-		// Indicates character is tracked by a tracking dart (taken to be
-		// retail's last, saved bool)
-		bool	m_bTracking;
+		// RETAIL: Tron's: set by PLAYERPERMISSIONS (OnTrigger 0x1008c0a1):
+		// the character has the player's permission sets (GetPSets). The
+		// name is ours
+		bool	m_bPlayerPermissions;
 
 	private :
 
@@ -755,6 +759,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// PORT: NOLF2's radar flag has no room in Tron's layout (Tron keeps
 		// it in a flag byte at +0xac): static, it stands in for NOLF2's code
 		static bool		m_bRadarVisible;
+		// PORT: NOLF2's tracking dart flag has no room in Tron's layout
+		// either: static, as m_bRadarVisible
+		static bool		m_bTracking;
 };
 
 class CCharacterPlugin : public IObjectPlugin

@@ -253,32 +253,8 @@ LTBOOL CAIGoalDeflect::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 	}
 
 	// fail if the stimulus target is gone!
-	if ( !pSenseRecord->hLastStimulusTarget )
-	{
-		return LTFALSE;
-	}
-
-	LTVector vVel, vObjectOrigin;
-	g_pPhysicsLT->GetVelocity( pSenseRecord->hLastStimulusTarget, &vVel );
-	g_pLTServer->GetObjectPos( pSenseRecord->hLastStimulusTarget, &vObjectOrigin);
-
-	// Make sure the object isn't already 'too close' to deflect
-	// Assume the animation takes .3 seconds to start the block (bute this later?)
-	float flDist = (m_pAI->GetPosition() - vObjectOrigin).Mag();
-	float flTime = flDist / vVel.Mag(); // Time = Distance / Rate
-	if ( flTime < 0.4 )
-	{
-		return LTFALSE;
-	}
-
-	// Make sure that the disc is actually coming at us before blocking
-	vVel.Normalize();
-	if ( m_pAI->GetForwardVector().Dot(vVel) > -0.95 )
-	{
-		return LTFALSE;
-	}
-
-	return LTTRUE;
+	// RETAIL: Tron tests nothing more (0x1020baea)
+	return ( pSenseRecord->hLastStimulusTarget != LTNULL );
 }
 
 	

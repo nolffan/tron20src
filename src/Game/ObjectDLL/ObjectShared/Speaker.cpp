@@ -132,6 +132,9 @@ LTBOOL Speaker::ReadProp(ObjectCreateStruct *pStruct)
 		m_fSoundRadius = genProp.m_Float;
 	}
 
+	// RETAIL: Tron's speaker uses the "Speaker" model (0x1023de86)
+	m_eModelId = g_pModelButeMgr->GetModelId( "Speaker" );
+
 	return LTTRUE;
 }
 

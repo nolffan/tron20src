@@ -10,6 +10,48 @@
 #include "AIAssert.h"
 
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	operator << (ostream&, const CAnimationContext&)
+//
+//	PURPOSE:	RETAIL: Tron's (0x101adbf0): the context's transition,
+//				animation and props, for CAI's debug dump
+//
+// ----------------------------------------------------------------------- //
+
+ostream& operator << (ostream& os, const CAnimationContext& Context)
+{
+	if ( Context.m_eState == CAnimationContext::eStateTransition )
+	{
+		const CTransition& Transition = Context.m_pAnimationMgr->GetTransition( Context.m_iTransition );
+		const char* szTransition = Transition.GetName();
+		os << "Transitioning: " << ( szTransition ? szTransition : "Invalid" ) << '\n';
+
+		const char* szFrom = Context.m_pAnimationMgr->GetAnimation( Context.m_iAnimationFrom, Context.m_hObject ).GetName();
+		os << "From: " << ( szFrom ? szFrom : "Invalid" ) << '\n';
+		os << "To:\n";
+	}
+
+	const CAnimation& Animation = Context.m_pAnimationMgr->GetAnimation( Context.m_iAnimation, Context.m_hObject );
+	os << "Anim Name: ";
+	os << ( Animation.GetName() ? Animation.GetName() : "Invalid" ) << '\n';
+
+	char szProps[256];
+	const_cast<CAnimationProps&>( Animation.GetProps() ).GetString( szProps, ARRAY_LEN( szProps ));
+	for( char* pChar = szProps; pChar != szProps + ARRAY_LEN( szProps ); ++pChar )
+	{
+		if( *pChar == ' ' )
+		{
+			*pChar = '\n';
+		}
+	}
+
+	os << "Anim Props: " << ( Context.m_bLocked ? "(Locked)" : "" ) << szProps;
+
+	return os;
+}
+
+
 //----------------------------------------------------------------------------
 //              
 //	ROUTINE:	VerifyAnimation()
@@ -25,6 +67,7 @@
 //				function should be moved into the appropriate class 
 //				
 //----------------------------------------------------------------------------
+
 void VerifyAnimation( HOBJECT hObject, const char* const pszAnimationName, CAnimationProps* pProps )
 {
 	// No matches were found.
@@ -166,7 +209,9 @@ void CAnimationProps::GetString(char* szBuffer, uint nBufferLength)
 		}
 
 		const char* szGroup = s_aszAnimPropGroup[iPropGroup];
-		const char* szProp = s_aszAnimProp[ m_aProps[iPropGroup].GetProp() ];
+		// RETAIL: an out of range prop is "Invalid" (0x101adf49)
+		const char* szProp = ( m_aProps[iPropGroup].GetProp() >= 0 && m_aProps[iPropGroup].GetProp() < kAP_Count ) ?
+			s_aszAnimProp[ m_aProps[iPropGroup].GetProp() ] : "Invalid";
 		if ( (nBufferLength - ( 3 + strlen(szProp) + strlen(szGroup) )) <= 0 )
 		{
 			if ( nBufferLength > 3 )
@@ -783,7 +828,8 @@ void CAnimationContext::SetSpecial(const char* szName)
     m_haniSpecial = g_pLTServer->GetAnimIndex(m_hObject, (char*)szName);
 	if ( INVALID_MODEL_ANIM == m_haniSpecial )
 	{
-        AIASSERT1( 0, m_hObject, "Could not find scripted animation: %s", szName);
+		// RETAIL: a console message (0x101af4a0)
+		g_pLTServer->CPrint( "Could not find scripted animation: %s", szName );
 	}
 
 	// Clear the animation index by setting it to Base.
@@ -823,7 +869,8 @@ void CAnimationContext::SetSpecial(const CAnimationProps& Props)
 	m_haniSpecial = AnimationInstance.GetAni();
 	if ( INVALID_MODEL_ANIM == m_haniSpecial )
 	{
-        AIASSERT1( 0, m_hObject, "Could not find scripted animation: %s", Animation.GetName());
+		// RETAIL: a console message (0x101af60c)
+		g_pLTServer->CPrint( "Could not find scripted animation: %s", Animation.GetName() );
 	}
 }
 
@@ -1008,7 +1055,8 @@ EnumAnimMovement CAnimationMgrList::GetAnimMovementFromName(const char* szName)
 	// Find group name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	ANIM_MOVEMENT_HASH::iterator it;
-	for(it = s_hashAnimMovement.lower_bound(ulHashKey); it != s_hashAnimMovement.upper_bound(ulHashKey); ++it)
+	ANIM_MOVEMENT_HASH::iterator itEnd = s_hashAnimMovement.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashAnimMovement.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimMovement[it->second]) == 0)
 		{
@@ -1036,7 +1084,8 @@ EnumAnimPropGroup CAnimationMgrList::GetPropGroupFromName(const char* szName)
 	// Find group name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	PROP_GROUP_HASH::iterator it;
-	for(it = s_hashPropGroup.lower_bound(ulHashKey); it != s_hashPropGroup.upper_bound(ulHashKey); ++it)
+	PROP_GROUP_HASH::iterator itEnd = s_hashPropGroup.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashPropGroup.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimPropGroup[it->second]) == 0)
 		{
@@ -1065,7 +1114,8 @@ EnumAnimProp CAnimationMgrList::GetPropFromName(const char* szName)
 	// Find prop name in hash table.
 	uint32 ulHashKey = MakePropHashKey(szName);
 	PROP_HASH::iterator it;
-	for(it = s_hashProp.lower_bound(ulHashKey); it != s_hashProp.upper_bound(ulHashKey); ++it)
+	PROP_HASH::iterator itEnd = s_hashProp.upper_bound(ulHashKey);	// RETAIL: the end first, once
+	for(it = s_hashProp.lower_bound(ulHashKey); it != itEnd; ++it)
 	{
 		if( stricmp(szName, s_aszAnimProp[it->second]) == 0)
 		{
