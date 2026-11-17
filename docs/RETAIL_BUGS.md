@@ -1248,6 +1248,20 @@ that it tested before is lost.
 Not fixed yet: the modern build should keep the distance and the hit box
 user in the hit, and ignore OBBs that have no node.
 
+### The handshake does not mask a short player name
+
+Object.lto 0x100de650 (CGameServerShell::ProcessHandshake,
+ObjectShared/GameServerShell.cpp). For MID_HANDSHAKE_LETMEIN, the server
+makes the expected password from the first four bytes of the player's net
+name. The code that keeps only the bytes before the terminator of a name
+shorter than four characters uses the logical operator && where it must
+use the bitwise operator &. Thus the tests are always false (or do
+nothing), and the bytes after the terminator go into the password. The
+compiler removes the tests. Build 51 has the same code.
+
+Not fixed yet: the modern build should use & (the client must make the
+same change).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
