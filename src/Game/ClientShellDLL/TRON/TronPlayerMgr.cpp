@@ -38,6 +38,7 @@
 #include "TRON/SubroutineDataMgr.h"
 #include "VarTrack.h"
 #include "ProfileMgr.h"
+#include "LightCycleGameDataMgr.h"
 
 // CPlayerMgr's sway console variables (PlayerMgr.cpp)
 extern VarTrack g_vtCameraSwayXFreq;
@@ -459,10 +460,15 @@ void CTronPlayerMgr::OnEnterWorld()
 	m_bTronUnknown234 = false;
 	m_bTronUnknown235 = false;
 
-	// PORT: retail takes, in a light cycle circuit, a count (+0x84) of the
-	// current entry of a Tron manager not yet in our tree (0x1026dd34,
-	// retail 0x10047270)
-	m_nTronUnknown236 = 1;
+	// RETAIL: 0x100a4d0d: in a light cycle game, the circuit's initial lives
+	if (GetGameType() == eGameTypeSingleLightCycleCircuit)
+	{
+		m_nTronUnknown236 = g_pLightCycleGameDataMgr->GetCurrent()->m_Circuit.nInitialLives;
+	}
+	else
+	{
+		m_nTronUnknown236 = 1;
+	}
 
 	m_hTronUnknownBC = LTNULL;
 	m_bTronUnknownB8 = false;
@@ -1389,20 +1395,27 @@ float CTronPlayerMgr::GetJumpVelocity(float fJumpVel, float fSuperJumpVel)
 	{
 		float fDelta = fSuperJumpVel - fJumpVel;
 
+		// RETAIL: 0x100a6fbd: a corrupt YAmp gives half
+		PlayerSubroutine* pSub = g_pSubroutineMgr->GetPlayerSubroutine("YAMP", LTNULL);
+		if (pSub && pSub->eState == SUBSTATE_CORRUPT)
+		{
+			fDelta *= 0.5f;
+		}
+
 		// Check the state of it
 		switch(g_pSubroutineMgr->GetActiveSubroutineVersion("YAmp"))
 		{
 			case VERSION_ALPHA:
 			{
-				return(fJumpVel + (fDelta * 0.33f));
+				return(fDelta * 0.33f + fJumpVel);
 			}
 			case VERSION_BETA:
 			{
-				return(fJumpVel + (fDelta * 0.66f));
+				return(fDelta * 0.66f + fJumpVel);
 			}
 			case VERSION_GOLD:
 			{
-				return(fSuperJumpVel);
+				return(fDelta + fJumpVel);
 			}
 			break;
 		}
