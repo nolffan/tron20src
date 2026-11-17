@@ -168,6 +168,9 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		void CreateZzz();
 		void DestroyZzz();
 
+		// RETAIL: Tron's (0x10091370; the name is ours)
+		bool ShouldGib();
+
 		// RETAIL: Tron's footstep (0x10090160; the name is ours)
 		void HandleFootstep( bool bAlternateVolume );
 

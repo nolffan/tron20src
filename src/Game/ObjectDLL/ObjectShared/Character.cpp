@@ -3896,6 +3896,35 @@ void CCharacter::SetupBody(Body* pProp)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CCharacter::ShouldGib()
+//
+//	PURPOSE:	RETAIL: Tron's (0x10091370; the name is ours): the body
+//				gibs when a gibbing damage is on us, and the model has a
+//				gib fx (or the game is a disc game)
+//
+// ----------------------------------------------------------------------- //
+
+bool CCharacter::ShouldGib()
+{
+	DamageFlags nGibFlags = DamageTypeToFlag( DT_SUFFUSIONGIB ) | DamageTypeToFlag( DT_POWERBLOCK ) |
+		DamageTypeToFlag( DT_DRUNKENDIMS ) | DamageTypeToFlag( DT_BALLLAUNCHER ) |
+		DamageTypeToFlag( DT_BALL ) | DamageTypeToFlag( DT_CLUSTER );
+
+	if( ( m_nDamageFlags & nGibFlags ) == 0 )
+		return false;
+
+	if( !IsDiscGameType() )
+	{
+		const char* pszGibFX = g_pModelButeMgr->GetModelGibFX( m_eModelId );
+		if( !pszGibFX || !pszGibFX[0] )
+			return false;
+	}
+
+	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CCharacter::GetBodyState()
 //
 //	PURPOSE:	Gets the state of our body prop
@@ -3904,17 +3933,31 @@ void CCharacter::SetupBody(Body* pProp)
 
 EnumAIStateType CCharacter::GetBodyState()
 {
-	if ( m_bWallStick )
+	// RETAIL: Tron's body states and their order (0x10091410)
+
+	if ( ShouldGib() )
+	{
+		return kState_BodyGib;
+	}
+	else if ( m_bWallStick )
 	{
 		return kState_BodyArrow;
 	}
-	else if ( m_damage.GetLastDamageType() == DT_EXPLODE )
+	else if ( m_damage.GetTronUnknown30() || m_damage.GetLastDamageType() == DT_EXPLODE )
 	{
 		return kState_BodyExplode;
+	}
+	else if ( m_damage.GetLastDamageType() == DT_PRANKSTERBITIMPLODE )
+	{
+		return kState_BodyPranksterImplode;
 	}
 	else if ( m_damage.GetLastDamageType() == DT_BURN )
 	{
 		return kState_BodyAcid;
+	}
+	else if ( m_damage.GetLastDamageType() == DT_ELECTROCUTE )
+	{
+		return kState_BodyLaser;
 	}
 	else if ( m_damage.GetLastDamageType() == DT_CRUSH )
 	{
@@ -3924,15 +3967,9 @@ EnumAIStateType CCharacter::GetBodyState()
 	{
 		return kState_BodyPoison;
 	}
-	else if ( m_damage.GetLastDamageType() == DT_ASSS )
+	else if ( GetLastVolume() )
 	{
-		return kState_BodyNormal;
-	}
-	else if ( HasLastVolume() )
-	{
-		AIVolume* pVolume = GetLastVolume();
-		// RETAIL: Tron has no Stairs or Ledge body states.
-		if ( pVolume->GetVolumeType() == AIVolume::kVolumeType_Ladder )
+		if ( GetLastVolume()->GetVolumeType() == AIVolume::kVolumeType_Ladder )
 		{
 			return kState_BodyLadder;
 		}
@@ -4052,36 +4089,35 @@ LTBOOL CCharacter::SetDims(LTVector* pvDims, LTBOOL bSetLargest)
 	}
 
 
-	// [RP] 2/25/03 - MoveObjectToFloor() teleports the object to the floor.  We care about bounding box
-	//				  collisions here so this block of code is exactly the same as MoveObjectToFloor() with 
-	//				  the exception of calling MoveObject() rather than SetObjectPos().
+	// RETAIL: Tron's (0x10091675): NOLF2 build 51's move down, and a move up
+	// for an AI that moves to the floor
 
-	LTVector vPos, vDims;
-	g_pLTServer->GetObjectPos( m_hObject, &vPos );
-	g_pPhysicsLT->GetObjectDims( m_hObject, &vDims );
-
-	IntersectQuery IQuery;
-	IntersectInfo IInfo;
-
-	IQuery.m_From	= vPos;
-	IQuery.m_To		= vPos + LTVector(0.0f, -10000.0f, 0.0f);
-	IQuery.m_Flags	= IGNORE_NONSOLID | INTERSECT_OBJECTS | INTERSECT_HPOLY;
-	
-    if( g_pLTServer->IntersectSegment( &IQuery, &IInfo ))
+	if (vNewDims.y < vOldDims.y)
 	{
-        float fDist = vPos.y - IInfo.m_Point.y;
-		if( fDist > vDims.y )
-		{
-			vPos.y -= (fDist - (vDims.y + 0.1f));
-			g_pLTServer->MoveObject( m_hObject, &vPos );
-		}
+        LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
+
+		vPos.y -= (vOldDims.y - vNewDims.y);
+		vPos.y -= .01f; // Fudge factor
+
+		// This forces the client to move to the server's position because it's teleporting.
+		g_pLTServer->SetObjectPos(m_hObject, &vPos);
+		g_pLTServer->MoveObject(m_hObject, &vPos);
 	}
+	else if (vNewDims.y > vOldDims.y)
+	{
+        LTVector vPos;
+		g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
-	// This forces the client to move to the server's position because it's teleporting.
-	
-	g_pLTServer->GetObjectPos( m_hObject, &vPos );
-	g_pLTServer->SetObjectPos( m_hObject, &vPos );
+		if (!IsPlayer(m_hObject) && m_bMoveToFloor)
+		{
+			vPos.y += (vNewDims.y - vOldDims.y);
+			vPos.y += .01f; // Fudge factor
+		}
 
+		g_pLTServer->SetObjectPos(m_hObject, &vPos);
+		g_pLTServer->MoveObject(m_hObject, &vPos);
+	}
 
 	// Update the dims of our hit box...
 
@@ -4090,7 +4126,7 @@ LTBOOL CCharacter::SetDims(LTVector* pvDims, LTBOOL bSetLargest)
 		CCharacterHitBox *pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject( m_hHitBox ));
 		if( pHitBox )
 		{
-			pHitBox->EnlargeAndSetDims( vNewDims );
+			pHitBox->SetDimsToModel();
 		}
 	}
 
@@ -4176,12 +4212,14 @@ void CCharacter::UpdateClientHitBox()
 	g_pPhysicsLT->GetObjectDims(m_hHitBox, &vHitDims);
 
 	bool bCanBeSearched = false;
+	bool bTronUnknown7D = false;	// RETAIL: Tron's (0x10091ade)
 
 	CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
 	if (pHitBox)
 	{
 		vHitOffset = pHitBox->GetOffset();
 		bCanBeSearched = pHitBox->CanBeSearched();
+		bTronUnknown7D = pHitBox->GetTronUnknown7D();
 	}
 
 	// Send the hitbox message
@@ -4193,6 +4231,7 @@ void CCharacter::UpdateClientHitBox()
 	cMsg.WriteCompLTVector( vHitDims );
 	cMsg.WriteCompLTVector( vHitOffset );
 	cMsg.Writebool( bCanBeSearched );
+	cMsg.Writebool( bTronUnknown7D );
 	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	// Update the SFX
