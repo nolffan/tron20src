@@ -21,6 +21,10 @@
 #include "GameClientShell.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x10096ff0..)
 
+#ifndef INVALID_ANI
+#define INVALID_ANI			((HMODELANIM)-1)
+#endif
+
 // RETAIL: 0x10097090
 CTronClientWeapon::CTronClientWeapon()
 	: CClientWeapon(),
@@ -258,6 +262,391 @@ bool CTronClientWeapon::PlayDeselectAnimation()
 {
 	TronUnknown98B20();
 	return CClientWeapon::PlayDeselectAnimation();
+}
+
+// RETAIL: 0x101e8854..0x101e887c: the subroutines a shot keeps the data of,
+// by their index in m_abTronUnknown13C (the name is ours)
+static const char* const s_aszShotSubroutines[11] =
+{
+	"Sequencer",
+	"Cluster",
+	"Suffusion",
+	"LOL",
+	"Ball_launcher",
+	"Drunken_dims",
+	"Energy_claw",
+	"Prankster_bit",
+	"MegaHurtz",
+	"Corrode",
+	"Primitive_charge",
+};
+
+// RETAIL: 0x100976e0: NOLF2's CClientWeapon::PlayFireAnimation; each fire
+// animation that starts a shot first keeps the shot's subroutine data, and
+// the energy (slot 89), not the ammo, lets the main fire animation repeat
+bool CTronClientWeapon::PlayFireAnimation( bool bResetAni )
+{
+	uint32 dwAni			= g_pLTClient->GetModelAnimation(m_hObject);
+	uint32 dwState			= g_pLTClient->GetModelPlaybackState(m_hObject);
+
+	uint32 dwPreFireAni		= GetPreFireAni();
+	uint32 dwFireAni		= GetFireAni( m_eLastFireType );
+	uint32 dwPostFireAni	= GetPostFireAni();
+
+	bool bHasPreFireAni		= !!(INVALID_ANI != dwPreFireAni);
+	bool bHasFireAni		= !!(INVALID_ANI != dwFireAni);
+	bool bHasPostFireAni	= !!(INVALID_ANI != dwPostFireAni);
+
+	bool bIsFireAni			= IsFireAni( dwAni );
+
+	bool bIsMainFireAni		= IsFireAni( dwAni, true );
+	bool bIsPreFireAni		= IsPreFireAni( dwAni );
+	bool bIsPostFireAni		= IsPostFireAni( dwAni );
+
+	bool bIsCurAniDone		= !!(dwState & MS_PLAYDONE);
+
+	float fRate = 1.0f;
+
+	if ( !bIsFireAni && bResetAni )
+	{
+		if ( bHasPreFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwPreFireAni, true, fRate );
+			return true;
+		}
+
+		if ( bHasFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwFireAni, true, fRate );
+			return true;
+		}
+
+		if ( bHasPostFireAni )
+		{
+			SaveShotSubroutines();
+			PlayAnimation( dwPostFireAni, true, fRate );
+			return true;
+		}
+
+		return false;
+	}
+
+	if ( bIsFireAni )
+	{
+		if ( !bIsCurAniDone )
+		{
+			return true;
+		}
+
+		if ( bIsPreFireAni )
+		{
+			if ( bHasFireAni )
+			{
+				PlayAnimation( dwFireAni, true, fRate );
+				return true;
+			}
+			else if ( bHasPostFireAni )
+			{
+				PlayAnimation( dwPostFireAni, true, fRate );
+				return true;
+			}
+		}
+		else if ( bIsMainFireAni )
+		{
+			if ( bResetAni && TronUnknownVirtual164() )
+			{
+				SaveShotSubroutines();
+				PlayAnimation( dwFireAni, true, fRate );
+				return true;
+			}
+			else if ( bHasPostFireAni )
+			{
+				PlayAnimation( dwPostFireAni, true, fRate );
+				return true;
+			}
+		}
+		else if( bIsPostFireAni )
+		{
+			// RETAIL: the cycle starts again with the pre-fire animation (if
+			// there is none too), and the end of the firing follows
+			if( bResetAni )
+			{
+				SaveShotSubroutines();
+				PlayAnimation( dwPreFireAni, true, fRate );
+			}
+		}
+	}
+
+	DoSpecialEndFire();
+	return false;
+}
+
+// RETAIL: 0x10097f10: false; retail also loads the argument into eax first
+// (mov eax,[esp+4]; xor al,al), a shape not yet found
+bool CTronClientWeapon::TronUnknownVirtual160( int nArg )
+{
+	return false;
+}
+
+// RETAIL: 0x10097f20
+void CTronClientWeapon::SaveShotSubroutines()
+{
+	SaveShotWeaponSubroutine();
+	SaveShotMegaHurtz();
+	SaveShotCorrode();
+	SaveShotPrimitiveCharge();
+}
+
+// RETAIL: 0x10097f60: the data of the weapon's subroutine goes to the union
+// at +0x154 (the active one's data: the inactive one's is Alpha, not corrupt)
+void CTronClientWeapon::SaveShotWeaponSubroutine()
+{
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[0] ) )
+	{
+		m_abTronUnknown13C[0][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[0] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[0] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[0] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(SequencerData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetSequencerData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[0][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[1] ) )
+	{
+		m_abTronUnknown13C[1][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[1] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[1] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[1] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(ClusterData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetClusterData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[1][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[2] ) )
+	{
+		m_abTronUnknown13C[2][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[2] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[2] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[2] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(SuffusionData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetSuffusionData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[2][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[3] ) )
+	{
+		m_abTronUnknown13C[3][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[3] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[3] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[3] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(LOLData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetLOLData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[3][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[4] ) )
+	{
+		m_abTronUnknown13C[4][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[4] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[4] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[4] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(BallLauncherData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetBallLauncherData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[4][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[5] ) )
+	{
+		m_abTronUnknown13C[5][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[5] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[5] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[5] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(DrunkenDimsData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetDrunkenDimsData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[5][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[6] ) )
+	{
+		m_abTronUnknown13C[6][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[6] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[6] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[6] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(EnergyClawData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetEnergyClawData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[6][1] = true;
+		}
+	}
+	if ( !_stricmp( m_pWeapon->szSubroutineNeeded, s_aszShotSubroutines[7] ) )
+	{
+		m_abTronUnknown13C[7][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[7] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[7] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+		if ( !g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[7] ) )
+		{
+			nVersion = 0;
+			bCorrupt = false;
+			nState = 0;
+		}
+
+		*(PranksterBitData*)&m_fTronUnknown154 = g_pSubroutineDataMgr->GetPranksterBitData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[7][1] = true;
+		}
+	}
+}
+
+// RETAIL: 0x10098840
+void CTronClientWeapon::SaveShotMegaHurtz()
+{
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[8] ) )
+	{
+		m_abTronUnknown13C[8][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[8] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[8] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+
+		*(MegaHurtzData*)&m_fTronMegaHurtzDamage = g_pSubroutineDataMgr->GetMegaHurtzData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[8][1] = true;
+		}
+	}
+}
+
+// RETAIL: 0x10098920
+void CTronClientWeapon::SaveShotCorrode()
+{
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[9] ) )
+	{
+		m_abTronUnknown13C[9][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[9] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[9] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+
+		*(CorrodeData*)&m_fTronCorrodeDuration = g_pSubroutineDataMgr->GetCorrodeData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[9][1] = true;
+		}
+	}
+}
+
+// RETAIL: 0x10098a20: only for the player's primitive weapons
+void CTronClientWeapon::SaveShotPrimitiveCharge()
+{
+	if ( !m_pWeapon->bIsPlayerPrimitive )
+	{
+		return;
+	}
+
+	if ( g_pSubroutineMgr->IsUtilitySubroutineActive( (char*)s_aszShotSubroutines[10] ) )
+	{
+		m_abTronUnknown13C[10][0] = true;
+
+		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt( s_aszShotSubroutines[10] );
+		int nVersion = (uint8)g_pSubroutineMgr->GetActiveSubroutineVersion( (char*)s_aszShotSubroutines[10] );
+		int nState = (uint8)bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : kSubData_Easy;
+
+		*(PrimitiveChargeData*)&m_fTronPrimitiveChargeDamage = g_pSubroutineDataMgr->GetPrimitiveChargeData( SubroutineDataKey( nVersion, nState, nDifficulty ) );
+
+		if ( bCorrupt )
+		{
+			m_abTronUnknown13C[10][1] = true;
+		}
+	}
 }
 
 // RETAIL: 0x100978f0 (296 bytes) not yet written
