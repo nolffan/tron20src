@@ -666,9 +666,56 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 }
 
 // RETAIL: 0x1000fef0 (with 0x10010000): the "ArchiveBin_Frame" model on
-// the "Frame" socket
+// the "Frame" socket (kept at 0x3a4)
 void ArchiveBin::CreateFrame()
 {
+	ObjectCreateStruct ocs;
+	LTransform tf;
+	INIT_OBJECTCREATESTRUCT(ocs);
+
+	HMODELSOCKET hSocket;
+	if (g_pModelLT->GetSocket(m_hObject, "Frame", hSocket) == LT_OK)
+	{
+		g_pModelLT->GetSocketTransform(m_hObject, hSocket, tf, LTTRUE);
+
+		SAFE_STRCPY(ocs.m_Name, "ArchiveBin_Frame");
+
+		ModelId eModelId = g_pModelButeMgr->GetModelId("ArchiveBin_Frame");
+		if (eModelId < g_pModelButeMgr->GetNumModels())
+		{
+			SAFE_STRCPY(ocs.m_Filename, g_pModelButeMgr->GetMultiModelFilename(eModelId));
+			g_pModelButeMgr->CopySkinFilenames(eModelId, 0, ocs.m_SkinNames[0], ARRAY_LEN(ocs.m_SkinNames[0]));
+			g_pModelButeMgr->CopyRenderStyleFilenames(eModelId, &ocs);
+		}
+
+		ocs.m_Pos = tf.m_Pos;
+		ocs.m_Flags = FLAG_VISIBLE;
+		ocs.m_ObjectType = OT_MODEL;
+		ocs.m_nRenderGroup = m_bTronUnknown171;
+
+		if (g_pModelButeMgr->IsModelTranslucent(eModelId))
+		{
+			ocs.m_Flags2 = FLAG2_FORCETRANSLUCENT;
+		}
+
+		HCLASS hClass = g_pLTServer->GetClass("BaseClass");
+		LPBASECLASS pFrame = g_pLTServer->CreateObject(hClass, &ocs);
+		if (pFrame)
+		{
+			m_hTronUnknown3a4 = pFrame->m_hObject;
+
+			if (m_hTronUnknown3a4)
+			{
+				g_pLTServer->SetNextUpdate(m_hTronUnknown3a4, 0.0f);
+				g_pLTServer->SetObjectState(m_hTronUnknown3a4, OBJSTATE_INACTIVE);
+			}
+
+			LTVector vOffset(0.0f, 0.0f, 0.0f);
+			LTRotation rOffset;
+			HATTACHMENT hAttachment;
+			g_pLTServer->CreateAttachment(m_hObject, pFrame->m_hObject, "Frame", &vOffset, &rOffset, &hAttachment);
+		}
+	}
 }
 
 // RETAIL: 0x10010390 (with 0x100102c0): a Berry on each "Berry%d" socket

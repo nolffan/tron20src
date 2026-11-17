@@ -244,7 +244,10 @@ struct DISCCLASSDATA : public PROJECTILECLASSDATA
 	// (0x34 ReturnToOwner, 0x38 InitialAngle, 0x3c ReturnVelocity, 0x40
 	// ReturnHeightOffset, 0x44 ReturnFXName, then the names and values in
 	// this order).  PORT: they are added after Build 69's members until no
-	// code reads those any more.
+	// code reads those any more.  Only the server reads them so far: the
+	// client's struct keeps Build 69's members only (adding them there
+	// changes the stack slots of CGameClientShell::InitSound).
+#ifndef _CLIENTBUILD
 	LTBOOL			bReturnToOwner;
 	LTFLOAT			fInitialAngle;
 	char			szDestroyedInFlightFXName[ FXBMGR_MAX_NAME_LENGTH ];
@@ -270,6 +273,7 @@ struct DISCCLASSDATA : public PROJECTILECLASSDATA
 	LTFLOAT			fMagneticAngleMax;
 	LTFLOAT			fMultiplayerLeashLength;
 	LTBOOL			bControlable;
+#endif // _CLIENTBUILD
 };
 
 struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
@@ -308,8 +312,11 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 	int				nShardsTotalPerturbSurge;
 
 	// RETAIL: Tron's only member (0x1d8; CLUSTERDISCCLASSDATA::Init
-	// 0x10145d80).  PORT: added after Build 69's members
+	// 0x10145d80).  PORT: added after Build 69's members (server only, as
+	// DISCCLASSDATA's)
+#ifndef _CLIENTBUILD
 	LTFLOAT			fInitialExplosionSuppressTime;
+#endif // _CLIENTBUILD
 };
 
 struct CLUSTERAUTOBURSTDISCCLASSDATA : public CLUSTERDISCCLASSDATA

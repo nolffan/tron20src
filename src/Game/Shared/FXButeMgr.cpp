@@ -3181,7 +3181,9 @@ DISCCLASSDATA::DISCCLASSDATA( )
 	fHoldDefendOrientationMaxDefendPercentage( 0.0f ),
 	fHoldDefendOrientationDeadZone( 0.0f ),
 	fHoldDefendOrientationMaxZone( 0.0f ),
-	bClusterDiscInfo( false ),
+	bClusterDiscInfo( false )
+#ifndef _CLIENTBUILD
+	,
 	bReturnToOwner( LTTRUE ),
 	fInitialAngle( 0.0f ),
 	fTurnRate( 0.0f ),
@@ -3201,13 +3203,16 @@ DISCCLASSDATA::DISCCLASSDATA( )
 	fMagneticAngleMax( 0.0f ),
 	fMultiplayerLeashLength( 0.0f ),
 	bControlable( LTTRUE )
+#endif // _CLIENTBUILD
 {
+#ifndef _CLIENTBUILD
 	szDestroyedInFlightFXName[ 0 ] = '\0';
 	szBlockedPVFXName[ 0 ] = '\0';
 	szDeadlyBlockedPVFXName[ 0 ] = '\0';
 	szDeflectAttachedFXName[ 0 ] = '\0';
 	szDeadlyDeflectAttachedFXName[ 0 ] = '\0';
 	szDeadlyDeflectSmiteFXName[ 0 ] = '\0';
+#endif // _CLIENTBUILD
 	szReturnFXName[ 0 ] = '\0';
 	szSwatDefendPVFXName[ 0 ] = '\0';
 	szSwatCriticalDefendPVFXName[ 0 ] = '\0';
@@ -3310,6 +3315,7 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	// check for overlapping angles
 	ASSERT( fHoldDefendOrientationMaxZone < ( MATH_HALFPI - fHoldDefendOrientationDeadZone ) );
 
+#ifndef _CLIENTBUILD
 	// RETAIL: Tron's attributes, in retail's order (0x10145ab0)
 	bReturnToOwner                   = buteMgr.GetByte( aTagName, "ReturnToOwner" );
 	fInitialAngle                    = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialAngle" ) ) );
@@ -3340,6 +3346,7 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	// member is always LTTRUE (see docs/RETAIL_BUGS.md)
 	buteMgr.GetByte( aTagName, "Controlable" );
 	bControlable                     = LTTRUE;
+#endif // _CLIENTBUILD
 
 	return LTTRUE;
 }
@@ -3380,7 +3387,9 @@ CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
 {
 	szShardWeaponName[ 0 ] = '\0';
 
+#ifndef _CLIENTBUILD
 	fInitialExplosionSuppressTime = 0.0f;
+#endif // _CLIENTBUILD
 
 	// reinit this to show there is extra info
 	bClusterDiscInfo = true;
@@ -3439,8 +3448,10 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	nShardsTotalPerturbMax        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX );
 	nShardsTotalPerturbSurge      = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE );
 
+#ifndef _CLIENTBUILD
 	// RETAIL: Tron's only attribute (0x10145d80)
 	fInitialExplosionSuppressTime = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialExplosionSuppressTime" ) );
+#endif // _CLIENTBUILD
 
 	return LTTRUE;
 }
