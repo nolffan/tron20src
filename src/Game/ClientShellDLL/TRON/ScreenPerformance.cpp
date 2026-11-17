@@ -114,13 +114,13 @@ LTBOOL CScreenPerformance::Build()
 	m_pPerformance->AddString(szTmp);
 
 	m_pDetailLevel = AddCycle(IDS_TEXTURE_RES,IDS_HELP_TEXTURE_RES,kGap,&m_sCfg.nSettings[kPerform_DetailLevel]);
-	m_pDetailLevel->AddString(LoadTempString(IDS_LOW));
-	m_pDetailLevel->AddString(LoadTempString(IDS_MEDIUM));
-	m_pDetailLevel->AddString(LoadTempString(IDS_HIGH));
+	m_pDetailLevel->AddString(LoadTempWString(IDS_LOW));
+	m_pDetailLevel->AddString(LoadTempWString(IDS_MEDIUM));
+	m_pDetailLevel->AddString(LoadTempWString(IDS_HIGH));
 
 	m_pPrecache = AddCycle(IDS_PRECACHE,IDS_HELP_PRECACHE,kGap,&m_sCfg.nSettings[kPerform_PreCacheAssets]);
-	m_pPrecache->AddString(LoadTempString(IDS_OFF));
-	m_pPrecache->AddString(LoadTempString(IDS_ON));
+	m_pPrecache->AddString(LoadTempWString(IDS_OFF));
+	m_pPrecache->AddString(LoadTempWString(IDS_ON));
 
 	CLTGUITextCtrl *pCtrl = AddTextItem(IDS_DISPLAY, CMD_DISPLAY, IDS_HELP_ADVDISPLAY);
 
@@ -172,9 +172,9 @@ LTBOOL CScreenPerformance::Build()
 
 		pCtrl = CreateCycle(IDS_SHADOWS, IDS_HELP_SHADOWS,listGap,&m_sCfg.nSettings[kPerform_ShadowDetail]);
 		pCtrl->AddString(szOff);
-		pCtrl->AddString(LoadTempString(IDS_LOW));
-		pCtrl->AddString(LoadTempString(IDS_MEDIUM));
-		pCtrl->AddString(LoadTempString(IDS_HIGH));
+		pCtrl->AddString(LoadTempWString(IDS_LOW));
+		pCtrl->AddString(LoadTempWString(IDS_MEDIUM));
+		pCtrl->AddString(LoadTempWString(IDS_HIGH));
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);
 
@@ -271,17 +271,17 @@ LTBOOL CScreenPerformance::Build()
 		m_pSFX->AddControl(pCtrl);
 
 		pCtrl = CreateCycle(IDS_ENV_DETAIL, IDS_HELP_ENV_DETAIL, listGap, &m_sCfg.nSettings[kPerform_EnvironmentalDetail]);
-		pCtrl->AddString(LoadTempString(IDS_OFF));
-		pCtrl->AddString(LoadTempString(IDS_LOW));
-		pCtrl->AddString(LoadTempString(IDS_MEDIUM));
-		pCtrl->AddString(LoadTempString(IDS_HIGH));
+		pCtrl->AddString(LoadTempWString(IDS_OFF));
+		pCtrl->AddString(LoadTempWString(IDS_LOW));
+		pCtrl->AddString(LoadTempWString(IDS_MEDIUM));
+		pCtrl->AddString(LoadTempWString(IDS_HIGH));
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pSFX->AddControl(pCtrl);
 
 		pCtrl = CreateCycle(IDS_FX_DETAIL, IDS_HELP_FX_DETAIL, listGap, &m_sCfg.nSettings[kPerform_FXDetail]);
-		pCtrl->AddString(LoadTempString(IDS_LOW));
-		pCtrl->AddString(LoadTempString(IDS_MEDIUM));
-		pCtrl->AddString(LoadTempString(IDS_HIGH));
+		pCtrl->AddString(LoadTempWString(IDS_LOW));
+		pCtrl->AddString(LoadTempWString(IDS_MEDIUM));
+		pCtrl->AddString(LoadTempWString(IDS_HIGH));
 		pCtrl->SetFont(NULL,nListFontSize);
 		m_pSFX->AddControl(pCtrl);
 

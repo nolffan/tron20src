@@ -732,10 +732,9 @@ inline void CInterfaceMgr::ShowMessageBox(const char *pString, MBCreate* pCreate
 {
 	m_MessageBox.Show(pString,pCreate,nFontSize,bDefaultReturn);
 }
-// PORT: our CMessageBox::Show takes narrow text yet
 inline void CInterfaceMgr::ShowMessageBox(std::wstring sString, MBCreate* pCreate, uint8 nFontSize, LTBOOL bDefaultReturn)
 {
-	m_MessageBox.Show(LTGUINarrowString(sString).c_str(),pCreate,nFontSize,bDefaultReturn);
+	m_MessageBox.Show(sString,pCreate,nFontSize,bDefaultReturn);
 }
 inline void CInterfaceMgr::CloseMessageBox(LTBOOL bReturn)
 {

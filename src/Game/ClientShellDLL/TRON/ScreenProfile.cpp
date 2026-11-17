@@ -264,7 +264,10 @@ uint32 CScreenProfile::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPar
 		break;
 	case CMD_EDIT:
 		{
-			SAFE_STRCPY(m_szProfile,(char *)dwParam1);
+			// TRON: the edit box gives wide text (RETAIL: 0x100761e7)
+			char szName[16];
+			LTGUINarrowInto(szName,std::wstring((wchar_t *)dwParam1),sizeof(szName));
+			SAFE_STRCPY(m_szProfile,szName);
 			std::string profileName = m_szProfile;
 			StringSet::iterator iter = m_ProfileList.find(profileName);
 

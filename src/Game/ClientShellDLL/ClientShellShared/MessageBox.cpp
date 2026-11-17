@@ -176,10 +176,13 @@ void CMessageBox::Show(int nStringID, MBCreate* pCreate, uint8 nFontSize, LTBOOL
 	if (m_bVisible || !pCreate)
 		return;
 
-	Show(LoadTempString(nStringID),pCreate,nFontSize,bDefaultReturn);
+	Show(LoadTempWString(nStringID),pCreate,nFontSize,bDefaultReturn);	// TRON: wide (RETAIL: 0x100de8d0)
 }
 
-void CMessageBox::Show(const char *pString, MBCreate* pCreate, uint8 nFontSize, LTBOOL bDefaultReturn)
+// TRON: the text is wide, by value (RETAIL: 0x100de920); the font is the one
+// for the size, set on the text and the edit control; a box without buttons
+// (LTMB_NONE) has no room for them
+void CMessageBox::Show(std::wstring sString, MBCreate* pCreate, uint8 nFontSize, LTBOOL bDefaultReturn)
 {
 	if (m_bVisible || !pCreate)
 		return;
@@ -200,17 +203,20 @@ void CMessageBox::Show(const char *pString, MBCreate* pCreate, uint8 nFontSize, 
 	m_Dlg.SetScale(1.0f);
 
 	m_pText->SetFixedWidth(kBaseWidth-2*kIndent);
-	m_pText->SetString(pString);
-	m_pText->SetFont(LTNULL,nSize);
+	m_pText->SetString(sString);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+	m_pText->SetFont(pFont,nSize);
 
 	if (m_eType == LTMB_EDIT)
 	{
-		m_pEdit->SetText(pCreate->pString);
+		std::wstring sText;
+		LTGUIWiden(sText, pCreate->pString);
+		m_pEdit->SetText(sText);
 		m_pEdit->SetInputMode(pCreate->eInput);
 		m_pEdit->SetMaxLength(pCreate->nMaxChars);
 
 		m_pEdit->Show(LTTRUE);
-		m_pEdit->SetFont(LTNULL,nSize);
+		m_pEdit->SetFont(pFont,nSize);
 	}
 	else
 		m_pEdit->Show(LTFALSE);
@@ -237,7 +243,11 @@ void CMessageBox::Show(const char *pString, MBCreate* pCreate, uint8 nFontSize, 
 	uint16 nDlgWidth = nWidth + 2*kIndent;
 	if (nDlgWidth < kMinWidth)
 		nDlgWidth = kMinWidth;
-	uint16 nDlgHeight = nHeight + 3*kIndent + m_pOK->GetHeight();
+	uint16 nDlgHeight;
+	if (m_eType == LTMB_NONE)
+		nDlgHeight = nHeight + 3*kIndent;
+	else
+		nDlgHeight = nHeight + 3*kIndent + m_pOK->GetHeight();
 	if (m_eType == LTMB_EDIT)
 	{
 		// need to do this to get accurate sizes, since the width and height of the string 
@@ -302,6 +312,11 @@ void CMessageBox::Show(const char *pString, MBCreate* pCreate, uint8 nFontSize, 
 			m_Dlg.SetControlOffset(m_pCancel,offset);
 			m_pCancel->Show(LTTRUE);
 		} break;
+	case LTMB_NONE:
+		{
+			m_pOK->Show(LTFALSE);
+			m_pCancel->Show(LTFALSE);
+		} break;
 	};
 
 
@@ -337,8 +352,13 @@ void CMessageBox::Close(LTBOOL bReturn)
     m_bVisible = LTFALSE;
 	m_Dlg.Show(LTFALSE);
 
+	// TRON: an edit box gives its callback the wide text (RETAIL: 0x100df2e0)
+	std::wstring sText;
 	if (m_eType == LTMB_EDIT)
-		m_pData = (void*)m_pEdit->GetText();
+	{
+		sText = m_pEdit->GetText();
+		m_pData = (void*)sText.c_str();
+	}
 
 
 	if (!m_bGameWasPaused)
@@ -414,6 +434,9 @@ LTBOOL CMessageBox::HandleKeyDown(int key, int rep)
 		}
 	case VK_ESCAPE:
 		{
+			// TRON: a box without buttons does not close (RETAIL: 0x100df594)
+			if (m_eType == LTMB_NONE)
+				return LTFALSE;
 			Close(LTFALSE);
 			handled = LTTRUE;
 			break;

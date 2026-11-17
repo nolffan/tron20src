@@ -130,48 +130,48 @@ LTBOOL CScreenLightCycleGame::Build()
 		m_pPowerupList->Show(LTFALSE);
 
 		m_pShield = CreateToggle(0x2580,0x2581,nColumnWidth,&m_bShield);
-		m_pShield->SetOnString(LoadTempString(0x35));
-		m_pShield->SetOffString(LoadTempString(0x36));
+		m_pShield->SetOnString(LoadTempWString(0x35));
+		m_pShield->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pShield);
 
 		m_pTurbo = CreateToggle(0x2582,0x2583,nColumnWidth,&m_bTurbo);
-		m_pTurbo->SetOnString(LoadTempString(0x35));
-		m_pTurbo->SetOffString(LoadTempString(0x36));
+		m_pTurbo->SetOnString(LoadTempWString(0x35));
+		m_pTurbo->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pTurbo);
 
 		m_pTrailSpike = CreateToggle(0x2584,0x2585,nColumnWidth,&m_bTrailSpike);
-		m_pTrailSpike->SetOnString(LoadTempString(0x35));
-		m_pTrailSpike->SetOffString(LoadTempString(0x36));
+		m_pTrailSpike->SetOnString(LoadTempWString(0x35));
+		m_pTrailSpike->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pTrailSpike);
 
 		m_pMissile = CreateToggle(0x2586,0x2587,nColumnWidth,&m_bMissile);
-		m_pMissile->SetOnString(LoadTempString(0x35));
-		m_pMissile->SetOffString(LoadTempString(0x36));
+		m_pMissile->SetOnString(LoadTempWString(0x35));
+		m_pMissile->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pMissile);
 
 		m_pTurboCurse = CreateToggle(0x2588,0x2589,nColumnWidth,&m_bTurboCurse);
-		m_pTurboCurse->SetOnString(LoadTempString(0x35));
-		m_pTurboCurse->SetOffString(LoadTempString(0x36));
+		m_pTurboCurse->SetOnString(LoadTempWString(0x35));
+		m_pTurboCurse->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pTurboCurse);
 
 		m_pGrab = CreateToggle(0x258A,0x258B,nColumnWidth,&m_bGrab);
-		m_pGrab->SetOnString(LoadTempString(0x35));
-		m_pGrab->SetOffString(LoadTempString(0x36));
+		m_pGrab->SetOnString(LoadTempWString(0x35));
+		m_pGrab->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pGrab);
 
 		m_pTrailReset = CreateToggle(0x258C,0x258D,nColumnWidth,&m_bTrailReset);
-		m_pTrailReset->SetOnString(LoadTempString(0x35));
-		m_pTrailReset->SetOffString(LoadTempString(0x36));
+		m_pTrailReset->SetOnString(LoadTempWString(0x35));
+		m_pTrailReset->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pTrailReset);
 
 		m_pForceUse = CreateToggle(0x258E,0x258F,nColumnWidth,&m_bForceUse);
-		m_pForceUse->SetOnString(LoadTempString(0x35));
-		m_pForceUse->SetOffString(LoadTempString(0x36));
+		m_pForceUse->SetOnString(LoadTempWString(0x35));
+		m_pForceUse->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pForceUse);
 
 		m_pWallExtender = CreateToggle(0x2576,0x2577,nColumnWidth,&m_bWallExtender);
-		m_pWallExtender->SetOnString(LoadTempString(0x35));
-		m_pWallExtender->SetOffString(LoadTempString(0x36));
+		m_pWallExtender->SetOnString(LoadTempWString(0x35));
+		m_pWallExtender->SetOffString(LoadTempWString(0x36));
 		m_pPowerupList->AddControl(m_pWallExtender);
 
 		int nX = nLeft + nWidth / 2;
@@ -358,15 +358,15 @@ void CScreenLightCycleGame::UpdatePowerup(CLTGUIToggle *pToggle, LTBOOL *pbValue
 		if (!(*pnPowerups & nFlag))
 		{
 			*pbValue = LTTRUE;
-			pToggle->SetOnString(LoadTempString(0x35));
-			pToggle->SetOffString(LoadTempString(0x36));
+			pToggle->SetOnString(LoadTempWString(0x35));
+			pToggle->SetOffString(LoadTempWString(0x36));
 			*pnPowerups |= nFlag;
 		}
 	}
 	else
 	{
-		pToggle->SetOnString(LoadTempString(0x402));
-		pToggle->SetOffString(LoadTempString(0x402));
+		pToggle->SetOnString(LoadTempWString(0x402));
+		pToggle->SetOffString(LoadTempWString(0x402));
 		pToggle->SetOn(LTFALSE);
 		pToggle->Enable(LTFALSE);
 		*pbValue = LTFALSE;

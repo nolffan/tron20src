@@ -127,17 +127,17 @@ LTBOOL CScreenHostConnection::Build()
 	m_pName->GetColumn(1)->SetFixedWidth(160, LTTRUE);
 
 	m_pLANToggle = AddToggle(0xF44, 0xF45, kColumn0, &m_bLANOnly);
-	m_pLANToggle->SetOnString(LoadTempString(0x35));
-	m_pLANToggle->SetOffString(LoadTempString(0x36));
+	m_pLANToggle->SetOnString(LoadTempWString(0x35));
+	m_pLANToggle->SetOffString(LoadTempWString(0x36));
 
 	m_pDedicatedToggle = AddToggle(0xF46, 0xF47, kColumn0, &m_bDedicated);
-	m_pDedicatedToggle->SetOnString(LoadTempString(0x35));
-	m_pDedicatedToggle->SetOffString(LoadTempString(0x36));
+	m_pDedicatedToggle->SetOnString(LoadTempWString(0x35));
+	m_pDedicatedToggle->SetOffString(LoadTempWString(0x36));
 
 	m_pPassToggle = AddToggle(0xF4A, 0xF4B, kColumn0, &m_bUsePassword);
 	m_pPassToggle->NotifyOnChange(CMD_TOGGLE_PASS, this);
-	m_pPassToggle->SetOnString(LoadTempString(0x35));
-	m_pPassToggle->SetOffString(LoadTempString(0x36));
+	m_pPassToggle->SetOnString(LoadTempWString(0x35));
+	m_pPassToggle->SetOffString(LoadTempWString(0x36));
 
 	m_pPassword = AddColumnCtrl(CMD_EDIT_PASS, 0x2FB);
 	m_pPassword->AddColumn(LoadTempWString(0x2FA), kColumn0);
@@ -146,8 +146,8 @@ LTBOOL CScreenHostConnection::Build()
 
 	m_pScmdPassToggle = AddToggle(0x5DF, 0x5E0, kColumn0, &m_bAllowScmdCommands);
 	m_pScmdPassToggle->NotifyOnChange(CMD_TOGGLE_SCMDPASS, this);
-	m_pScmdPassToggle->SetOnString(LoadTempString(0x35));
-	m_pScmdPassToggle->SetOffString(LoadTempString(0x36));
+	m_pScmdPassToggle->SetOnString(LoadTempWString(0x35));
+	m_pScmdPassToggle->SetOffString(LoadTempWString(0x36));
 
 	m_pScmdPassword = AddColumnCtrl(CMD_EDIT_SCMDPASS, 0x5E1);
 	m_pScmdPassword->AddColumn(LoadTempWString(0x5E2), kColumn0);

@@ -47,8 +47,11 @@ public:
 	LTBOOL			SetFont ( CUIFont *pFont, uint8 nFontSize );
 
 	// Set/Get the text for the edit string
-	void			SetText(const char *pString);
-	const char*		GetText();
+	// TRON: wide text, by value both ways (RETAIL: 0x100baf70, 0x100bb0d0)
+	void			SetText(std::wstring sString);
+	std::wstring	GetText();
+	// PORT: ours, for the code that still makes its text narrow
+	void			SetText(const char *pString)	{ if (pString) SetText(LTGUIWideString(pString)); }
 
 	virtual void	SetFixedWidth(uint16 nWidth, LTBOOL bUseFrame = LTFALSE);
 	virtual uint16	GetFixedWidth() {return m_nFixedWidth;}
@@ -91,7 +94,8 @@ public:
 
 protected:
 	// Add a character to the end
-	void			AddCharacter(char c);
+	// TRON: a wide character (RETAIL: 0x100bb240)
+	void			AddCharacter(wchar_t c);
 
 	// Remove a character from the end
 	void			RemoveCharacter();

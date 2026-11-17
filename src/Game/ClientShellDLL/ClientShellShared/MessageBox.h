@@ -71,7 +71,13 @@ public:
 	void Draw();
 
     void Show(int nStringID, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
-    void Show(const char *pString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
+	// TRON: the text is a wide string, by value (RETAIL: 0x100de920)
+    void Show(std::wstring sString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE);
+	// PORT: ours, for the code that still makes its text narrow
+    void Show(const char *pString, MBCreate* pCreate, uint8 nFontSize = 0, LTBOOL bDefaultReturn = LTTRUE)
+	{
+		Show(LTGUIWideString(pString), pCreate, nFontSize, bDefaultReturn);
+	}
 
     void Close(LTBOOL bReturn);
 

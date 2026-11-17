@@ -78,8 +78,8 @@ LTBOOL CScreenKeyboard::Build()
 	}
 	// PORT: retail's toggle strings are wide (CLTGUIToggle 0x100c01b0,
 	// 0x100c0260), which our LTGUIMgr's toggle has not yet
-	m_pLookCtrl->SetOnString(LoadTempString(0x35));
-	m_pLookCtrl->SetOffString(LoadTempString(0x36));
+	m_pLookCtrl->SetOnString(LoadTempWString(0x35));
+	m_pLookCtrl->SetOffString(LoadTempWString(0x36));
 
 
 	// Make sure to call the base class

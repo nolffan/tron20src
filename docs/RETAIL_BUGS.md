@@ -1288,6 +1288,20 @@ gives an AI, so the game does not hit this.
 
 Not fixed yet: the modern build should return NULL when there is no AI.
 
+### An edit control without text makes a wide string from a null pointer
+
+CShell.dll 0x100bb0d0 (CLTGUIEditCtrl::GetText, Libs/LTGUIMgr/
+ltguieditctrl.cpp). In Tron, GetText returns a std::wstring. When the
+control has no text string, the function returns LTNULL, as NOLF2's
+narrow version did. The compiler makes the wide string from a null
+pointer, and the string constructor reads the characters at address 0.
+This causes an access violation. The function must return an empty string.
+The game always sets the text before it reads it (the message box, the
+chat input), so the game does not hit this.
+
+Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
+returns an empty string.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
