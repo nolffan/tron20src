@@ -2534,33 +2534,13 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		}
 		break;
 
-		case COMMAND_ID_LASTWEAPON :
-		{
-			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
+		// RETAIL: no last weapon command in Tron (0x100caa9b's table)
 
-			if (m_AmmoChooser.IsOpen())
-			{
-				m_AmmoChooser.Close();
-			}
-			if (GetWeaponChooser()->IsOpen())
-			{
-				GetWeaponChooser()->Close();
-			}
-
-            return LTTRUE;
-
-		}
-		break;
 
 		case COMMAND_ID_PREV_WEAPON :
 		{
-			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
-			IClientWeaponBase const *pClientWeapon = g_pPlayerMgr->GetCurrentClientWeapon();
-			if (pClientWeapon && !pClientWeaponMgr->WeaponsEnabled()) return LTTRUE;
-
-			// RETAIL: no gadget disabling to wait for in Tron
+			// RETAIL: 0x100cab01: no weapons enabled check and no gadget
+			// disabling to wait for in Tron
 
 			if (m_AmmoChooser.IsOpen())
 			{
@@ -2595,6 +2575,17 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		}
 		break;
 
+		case COMMAND_ID_ACTIVATE :
+		{
+			// RETAIL: 0x100cab6d: activate closes an unlocked popup
+			if (m_PopupText.IsVisible() && !g_bLockPopup)
+			{
+				m_PopupText.Close();
+				return LTTRUE;
+			}
+		}
+		break;
+
 		case COMMAND_ID_NEXT_AMMO :
 		{
 			CClientWeaponMgr const *pClientWeaponMgr = g_pPlayerMgr->GetClientWeaponMgr();
@@ -2618,6 +2609,11 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 
 		case COMMAND_ID_FIRING :
 		{
+			// RETAIL: 0x100cac03: firing chooses the decision's 0xfd
+			if (g_pDecision->IsVisible())
+			{
+				g_pDecision->Choose(0xfd);
+			}
 
 			if (IsChoosingWeapon() || IsChoosingAmmo())
 			{
@@ -2630,8 +2626,8 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		{
 			if (m_eGameState == GS_PLAYING)
 			{
+				// RETAIL: 0x100cac4e: no sound in Tron
 				GetHUDMgr()->NextLayout();
-	            g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\HudLayoutToggle.wav");
 			}
             return LTTRUE;
 
@@ -2641,8 +2637,8 @@ LTBOOL CInterfaceMgr::OnCommandOn(int command)
 		{
 			if (m_eGameState == GS_PLAYING)
 			{
+				// RETAIL: 0x100cac4e: no sound in Tron
 				GetHUDMgr()->PrevLayout();
-	            g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\HudLayoutToggle.wav");
 			}
             return LTTRUE;
 
@@ -2685,6 +2681,8 @@ LTBOOL CInterfaceMgr::OnCommandOff(int command)
 	{
 		case COMMAND_ID_ACTIVATE :
 		{
+			// RETAIL: 0x100cad75: activate up unlocks the popup
+			g_bLockPopup = false;
             return LTFALSE;
 		}
 		break;
@@ -4994,55 +4992,31 @@ void CInterfaceMgr::UpdateLetterBox()
 	{
 		fBorderPercent = (1.0f - fLetterBoxPercent) / 2.0f;
 	}
-    HSURFACE hScreen = g_pLTClient->GetScreenSurface();
-    uint32 dwWidth = 640, dwHeight = 480;
-    g_pLTClient->GetSurfaceDims(hScreen, &dwWidth, &dwHeight);
+	// RETAIL: 0x100cda78: Tron draws the borders with draw primitives,
+	// sliding them in with the alpha
+	uint32 dwWidth = m_InterfaceResMgr.GetScreenWidth();
+	uint32 dwHeight = m_InterfaceResMgr.GetScreenHeight();
 
-	g_pLTClient->SetSurfaceAlpha(m_hLetterBoxSurface, m_fLetterBoxAlpha);
+	uint8 nAlpha = (uint8)(255.0f * m_fLetterBoxAlpha);
+	uint32 nColor = SET_ARGB(nAlpha, 0, 0, 0);
+	g_pDrawPrim->SetRGBA(&m_LetterBox[0], nColor);
+	g_pDrawPrim->SetRGBA(&m_LetterBox[1], nColor);
 
-	int nBorderSize = (int) (float(dwHeight) * fBorderPercent);
+	int nBorderSize = (int) (float(dwHeight) * fBorderPercent * m_fLetterBoxAlpha);
 
- 	LTRect rcDest;
-	rcDest.Init(0, 0, dwWidth, nBorderSize);
+	g_pDrawPrim->SetXYWH(&m_LetterBox[0], -1.0f, -1.0f, (float)(dwWidth + 2), (float)(nBorderSize + 1));
+	g_pDrawPrim->SetXYWH(&m_LetterBox[1], -1.0f, (float)(dwHeight - nBorderSize), (float)(dwWidth + 2), (float)(nBorderSize + 1));
 
-	LTRect rcSrc;
-	rcSrc.Init(0, 0, 2, 2);
+	g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+	g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+	g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+	g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+	g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+	g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+	g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
 
-	HLTCOLOR hTransColor = g_pLTClient->SetupColor1(1.0f, 1.0f, 1.0f, LTTRUE);
-
-	// Cover top of screen...
-
-	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hLetterBoxSurface,
-	   &rcDest, &rcSrc, hTransColor);
-
-	// Cover bottom of screen...
-
-	rcDest.Init(0, dwHeight - nBorderSize, dwWidth, dwHeight);
- 	g_pLTClient->ScaleSurfaceToSurfaceTransparent(hScreen, m_hLetterBoxSurface,
-	   &rcDest, &rcSrc, hTransColor);
-/*
-	if (m_nBorderSize == 0)
-	{
-	    uint32 dwHeight = 448;
-		m_nBorderSize = (int) (float(dwHeight) * fBorderPercent);
-		m_LetterBox[0].verts[2].y = m_LetterBox[0].verts[3].y = m_nBorderSize;
-		m_LetterBox[1].verts[0].y = m_LetterBox[1].verts[1].y = dwHeight - m_nBorderSize;
-	}
-	// Set the alpha
-	m_LetterBox[0].rgba.a = m_LetterBox[1].rgba.a = 255.0 * m_fLetterBoxAlpha;
-
-	g_pLTDrawprim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
-	g_pLTDrawprim->SetColorOp(DRAWPRIM_MODULATE);
-	g_pLTDrawprim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
-	g_pLTDrawprim->SetZBufferMode(DRAWPRIM_NOZ); 
-	g_pLTDrawprim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
-	g_pLTDrawprim->SetClipMode(DRAWPRIM_FASTCLIP);
-	g_pLTDrawprim->SetFillMode(DRAWPRIM_FILL);
-		
 	// draw the two polys
-	g_pLTDrawprim->DrawPrim(m_LetterBox, 2);
-
-*/
+	g_pDrawPrim->DrawPrim(m_LetterBox, 2);
 }
 
 // --------------------------------------------------------------------------- //
