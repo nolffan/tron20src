@@ -12,13 +12,13 @@ what it is good for:
 | Source | What it is | For |
 |---|---|---|
 | NOLF2's source release (`../nolf2src/src/Game`, 1.3, 2002) | Monolith's TO2 game tree: ClientShellDLL, ObjectDLL, ClientFxDLL, ClientRes, ServerRes, Launcher, ServerApp, the libraries, VC6 projects | the shared game code, the launcher and the dedicated server as of 2002. Tron 2.0 was built from its own copy of the tree: `Object.lto` names `C:\proj\Tron\Source\Game\ObjectDLL\ObjectShared\Attachments.cpp` |
-| Build 69's game code (`ext/rez/installed/devtools/jupiter-b69/Game`, `rez`'s `jupiter-b69`; also GitHub `jsj2008/lithtech`) | the TO2 and Tron 2.0 game code as merged into the 2006 Jupiter tree: `{ClientShellDLL,ObjectDLL,ClientRes,ServerRes,Launcher,Shared}/TRON` (108 files in ClientShellDLL/TRON alone: the disc weapons, the HUD, the ratings, the permissions, `TronMissionButeMgr`, `TronVersionMgr`), with VC6 `.dsp` projects | Tron's own game code. Not the shipped code (the shared code and the interfaces around it are 2006's), but the nearest thing to it: the starting point for Tron's part of CShell, Object, CRes, SRes and the launcher |
+| Build 69's game code (`rez/installed/devtools/jupiter-b69/Game`, `rez`'s `jupiter-b69`; also GitHub `jsj2008/lithtech`) | the TO2 and Tron 2.0 game code as merged into the 2006 Jupiter tree: `{ClientShellDLL,ObjectDLL,ClientRes,ServerRes,Launcher,Shared}/TRON` (108 files in ClientShellDLL/TRON alone: the disc weapons, the HUD, the ratings, the permissions, `TronMissionButeMgr`, `TronVersionMgr`), with VC6 `.dsp` projects | Tron's own game code. Not the shipped code (the shared code and the interfaces around it are 2006's), but the nearest thing to it: the starting point for Tron's part of CShell, Object, CRes, SRes and the launcher |
 | nolf2src's reconstructions (`../nolf2src/src/Engine`) | NOLF2's engine (Jupiter, back-ported from the 2006 tree to 2002, D3D8), SndDrv.dll, ltmsg.dll, all VC6 | the engine's 2002 baseline, with VC6; SndDrv.dll and ltmsg.dll, which Tron's likely differ from mostly by compiler revision |
 | The LithTech Jupiter tree (`../fear/Dev/Source/runtime`, and `jupiter-b69/Engine/runtime`) | Jupiter as Touchdown distributed it in 2006 ("Build 69"), D3D9 | the engine: Tron's (2003, and the first of these games to import `d3d9.dll`) lies between NOLF2's and this one; its D3D9 renderer is the nearer base here than nolf2src's D3D8 back-port |
 | cjacksrc (`../cjacksrc`) | Contract J.A.C.K. (October 2003), reconstructed from the same sources, with VC .NET 2003 | the shared game code's 2003 state, and its engine, a month from Tron's update. Different compiler: its source carries over, its codegen lore does not |
 | Jupiter SDK build 51 (`rez`'s `jupiter-b51`, March 2002) | the licensee SDK of NOLF2's generation: TO2's game tree (`Game/TO2.dsw`) and the engine's SDK headers | the 2002 interfaces, where nolf2src's tree does not settle them |
 | The 1.010 release (`rez`'s `tron2-usa`, July 2003) | the discs' own engine and game DLLs (`GameDLL.rez`) | what the updates changed; a second witness for any function |
-| `tron-devbuild` (archive.org), and a demo if one is found | a Tron 2.0 developer build of 2003-08-05 with its console (cjacksrc's `docs/PLAN.md`) | strings and asserts from the same months; an unprotected engine, if either has one, for `Lithtech.exe`'s SecuROM pages and redirected imports (as nolf2src's `tools/demoimports.py` did with NOLF2's MP demo). Neither is in `ext/rez/` yet |
+| `tron-devbuild`, and a demo if one is found | a Tron 2.0 developer build of 2003-08-05 with its console (cjacksrc's `docs/PLAN.md`) | strings and asserts from the same months; an unprotected engine, if either has one, for `Lithtech.exe`'s SecuROM pages and redirected imports (as nolf2src's `tools/demoimports.py` did with NOLF2's MP demo). Neither is held yet |
 | GameSpy SDK (cjacksrc's `src/Game/Libs/GameSpy`; nolfsrc's `lithshared/gamespy`) | GameSpy's C source and Monolith's wrappers of it | the GameSpy SDK linked into `CShell.dll` and `Object.lto` |
 | Tron 2.0 Editing Tools (`rez`'s `tron2-tools`, `tron2-tools-1.2a`) | Monolith's tool release: DEdit, ModelEdit, FxED, the packers -- binaries only, no source | `../lithtools`; the game's object properties as the tools see them |
 
@@ -26,8 +26,9 @@ There is no Tron 2.0 PDB or map anywhere that could be found (2026-11).
 
 ## The retail game
 
-`ext/rez/games/tron2-usa-1.030` (`build/retail.sh`): the USA discs with the
-"complete" Update 2 (`rez`'s `tron2-usa-1.030`), the last update. Tron 2.0
+`out/retail/tron2-usa-1.030` (`build/retail.sh`): the USA discs with the
+"complete" Update 2, the last update, installed by `build/discs.py` from
+your own disc images and the update's executable. Tron 2.0
 had no GOTY edition, and no European release is held, so the USA one it
 is. Update 2 put a new engine, launcher and dedicated server over the
 install, and two archives last in the rez stack: `Gamep3.rez` (the English
@@ -93,10 +94,10 @@ NOLF2 and Contract J.A.C.K. have.
 
 Done.
 
-- `ext/rez/` installs `tron2-usa-1.030` (`ext/rez/tools/install.py`: the USA
-  release, "Recommended", then Update 2's `Common Complete` and `Patch
-  Files EN Complete` file groups; `UpdateNum` 2, `UpdateCommandLine0/1`
-  `-rez gamep3.rez` / `-rez gamep4.rez`), recorded in `ext/rez/games.sha256`.
+- `build/discs.py` installs `tron2-usa-1.030` from your disc images and the
+  update (the USA release, "Recommended", then Update 2's `Common Complete`
+  and `Patch Files EN Complete` file groups), as `build/retail-files.txt`
+  lists it. (Until 2026-11 the `rez` submodule installed it.)
 - `ext/toolchains/msvc-6.00-8168` is the compiler the Rich headers name.
 - `ext/tools/retailextract.py` reads the retail layout from `build/retail.py`.
 - `make reference` extracts the 11 retail binaries and enumerates them;
@@ -281,7 +282,7 @@ Object.lto: 152 classes still differ.
   engine's projects only. Its `d3d9.h` must give D3D_SDK_VERSION as
   retail passes it.
 - **SecuROM:** `ext/tools/demoimports.py` profile `tron2`, keyed by the
-  unprotected developer build (`ext/rez/installed/devtools/tron2-devbuild`):
+  unprotected developer build (`rez/installed/devtools/tron2-devbuild`):
   1,463 redirected calls (1,372 through 24 `.khpb` slots, 91 through
   three `.ifkui` dispatchers), 1,336 paired exactly, 89 by context, 38
   weakly (`progress/engine/Lithtech-iat-calls.csv`, the target's

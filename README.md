@@ -37,10 +37,31 @@ compiler built each binary, and the evidence, is `progress/COMPILERS.md`.
 
 ## Building
 
-Needs docker and the three submodules (`git submodule update --init`):
-`ext/toolchains/` (the compilers), `ext/rez/` (which fetches the USA discs from
-archive.org and installs the game with Update 2) and `ext/tools/` (the
-reconstruction tools).
+Needs docker and the two submodules (`git submodule update --init`):
+`ext/toolchains/` (the compilers) and `ext/tools/` (the reconstruction
+tools).
+
+### What you need
+
+Bring your own discs. The build takes the retail game's binaries and data
+from your own copy of Tron 2.0 (USA) and its Update 2 (v1.030). Put these
+three files in `isos/` at the root of the repository (a hard link is good:
+`ln <file> isos/`), or set `TRON20_ISOS=<directory>`:
+
+| What | Redump name of the image | Recognised by |
+|---|---|---|
+| disc 1 | `Tron 2.0 (USA) (Disc 1)` | volume label `TRON`, 333178 blocks |
+| disc 2 | `Tron 2.0 (USA) (Disc 2)` | volume label `TRON`, 139556 blocks |
+| Update 2, v1.030, the "complete" update | `tron-update_v1x2_complete.exe` | 32479660 bytes, its SHA-256 |
+
+A disc image can be a `.iso`, a `.bin` with its `.cue`, or a `.zip` that
+holds one of them. The update can be the `.exe` or a `.zip` that holds it.
+`make retail` (every build does it first) installs the game from these
+files once, into `out/retail/tron2-usa-1.030/` (`build/discs.py`), and
+checks each file against `build/retail-files.txt`. This list holds only
+the path, size, SHA-256 and place of each file, and no game data. Any
+correct copy of the discs works. Without the files, `make` stops and tells
+you what to supply.
 
 ```sh
 make reference  # the retail binaries and their function tables, in out/reference/

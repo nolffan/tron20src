@@ -43,9 +43,10 @@ fi
 # tron20src_tree_layout <tree>: build/ and the tools copied into the release
 # tree, the tools at <tree>/ext/tools/ so that they take <tree> for the
 # project (as their layout.py works it out), and the other submodules of
-# ext/ (the compilers, the retail game where build/retail.sh looks for it)
-# links to this checkout's. A tree made before the submodules moved to ext/
-# had tools/, toolchains and rez at its top: those go first.
+# ext/ (the compilers) links to this checkout's. The retail game is the
+# checkout's: tron20src_release_tree gives the tree TRON20_RETAIL. A tree
+# made before the submodules moved to ext/ had tools/, toolchains and rez at
+# its top: those go first.
 tron20src_tree_layout() {
     local tree="$1" d n
     rm -rf "$tree/tools"
@@ -80,7 +81,8 @@ tron20src_release_tree() {
     python3 "$REPO/ext/tools/releasesrc.py" sync "$REPO/src" "$tree/src" || exit 1
     python3 "$REPO/ext/tools/releasesrc.py" outputs "$REPO/src" "$tree/src" || exit 1
     tron20src_tree_layout "$tree" || exit 1
-    ( cd "$tree" && TRON20SRC_IN_RELEASE_TREE=1 bash "build/$script" "$@" ) || rc=$?
+    ( cd "$tree" && export TRON20_RETAIL="$(source "$REPO/build/retail.sh" && retail_root)" &&
+      TRON20SRC_IN_RELEASE_TREE=1 bash "build/$script" "$@" ) || rc=$?
     python3 "$REPO/ext/tools/releasesrc.py" outputs "$tree/src" "$REPO/src" || exit 1
     exit $rc
 }

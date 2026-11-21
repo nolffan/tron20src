@@ -1,6 +1,11 @@
 # Everything the build writes
 # (in any directory: a run started from the wrong directory makes one there)
 out/
+# your own images of the two discs and Update 2 (build/discs.py; README.md)
+/isos/
+# where the ext/rez/ submodule was: the old disc images and installs, left
+# on disk for you to keep or delete
+/ext/rez/
 # build/build.mk's Wine prefix, generated rules and header dependencies
 /.wine/
 /.build/

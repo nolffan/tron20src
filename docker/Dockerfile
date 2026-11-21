@@ -1,7 +1,7 @@
 # The build image: Ubuntu 24.04 with its distro Wine (32-bit), Python 3, and
 # what the scripted playtest needs (Xvfb, xdotool, xwd, ImageMagick, Mesa),
-# what ext/rez/ needs to fetch the disc images and install the game from them
-# (curl; a C compiler, make and zlib for its vendored unshield), objdump
+# unshield, with which build/discs.py unpacks the InstallShield cabinets of
+# your discs and of Update 2, a C compiler, make and zlib, objdump
 # (binutils), which the reconstruction tools disassemble with, and what the
 # modern build's open-source middleware in ext/ is built with (build/ext.sh):
 # Zig, pinned to the version ext/openmiles declares -- the compiler for
@@ -28,7 +28,7 @@ RUN dpkg --add-architecture i386 \
         xvfb xauth xdotool x11-apps imagemagick \
         libgl1:i386 libglu1-mesa:i386 libgl1-mesa-dri:i386 \
         procps \
-        curl ca-certificates gcc make libc6-dev zlib1g-dev \
+        curl ca-certificates gcc make libc6-dev zlib1g-dev unshield \
         xz-utils patch \
  && rm -rf /var/lib/apt/lists/*
 
