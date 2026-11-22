@@ -36,7 +36,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-build reference progress progress-update shell clean distclean help
+	check-build reference progress progress-update progress-ci shell clean distclean help
 
 all: game
 
@@ -50,7 +50,10 @@ help:
 	@echo "                TARGETS=\"<project or output>...\" for only those): what make progress scores"
 	@echo "make progress   score the build against the retail binaries; fails if a"
 	@echo "                function recorded in progress/identical.txt stops matching"
-	@echo "make progress-update  record the score in progress/ and README.md"
+	@echo "make progress-update  record the score in progress/ and README.md, and the"
+	@echo "                hashes make progress-ci checks against in progress/hashes/"
+	@echo "make progress-ci  the check without the retail game: the build against"
+	@echo "                progress/hashes/ (finds no new matches)"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     install the retail game from your two disc images and Update 2"
 	@echo "                in isos/ (once; every build runs it), and check it"
@@ -63,7 +66,7 @@ help:
 	@echo "           TRON20_ISOS=<dir> (your disc images and the update, if not in isos/)"
 	@echo "           TRON20_ARCHIVES=\"private public\" (the archives build/package.sh writes)"
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
-	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1 (progress/README.md)"
+	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1, ACCEPT_FAILED_CHECKS=1 (progress/README.md)"
 
 game: check-toolchain check-build retail
 	$(DOCKER_RUN) bash build/all.sh
@@ -122,7 +125,11 @@ progress: retail
 	$(DOCKER_RUN) env COMPLETE=$(COMPLETE) COVERED=$(COVERED) $(EVIDENCE_ENV) bash build/progress.sh check
 
 progress-update: retail
-	$(DOCKER_RUN) env ACCEPT_LOSSES=$(ACCEPT_LOSSES) $(EVIDENCE_ENV) bash build/progress.sh update
+	$(DOCKER_RUN) env ACCEPT_LOSSES=$(ACCEPT_LOSSES) ACCEPT_FAILED_CHECKS=$(ACCEPT_FAILED_CHECKS) $(EVIDENCE_ENV) bash build/progress.sh update
+
+# Without the retail game: the build against progress/hashes/ (build/progress.sh ci)
+progress-ci: check-tools image
+	$(DOCKER_RUN) bash build/progress.sh ci
 
 shell: image
 	docker run --rm -it --init --name $(CONTAINER)-shell \
