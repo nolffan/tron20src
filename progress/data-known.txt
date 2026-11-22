@@ -138,7 +138,6 @@ Object.lto	retail	ENABLELCDIALOG
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 2nd param = (%s).\n
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 3rd param = (%s).\n
 Object.lto	retail	ERROR - Could not spawn AI!
-Object.lto	retail	ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!\n
 Object.lto	retail	ERROR - Looked for LCSpawner%2d and found %d objects!\n
 Object.lto	retail	Early out - Bad Damager Position!
 Object.lto	retail	Early out - No hDamager!
@@ -158,20 +157,6 @@ Object.lto	retail	InitialLives
 Object.lto	retail	InitiallyLock
 Object.lto	retail	Joint6
 Object.lto	retail	KILLALLAILC
-Object.lto	retail	Kicking Client %d: Handshake 0
-Object.lto	retail	Kicking Client %d: Handshake 1
-Object.lto	retail	Kicking Client %d: Handshake 10
-Object.lto	retail	Kicking Client %d: Handshake 11
-Object.lto	retail	Kicking Client %d: Handshake 12
-Object.lto	retail	Kicking Client %d: Handshake 13
-Object.lto	retail	Kicking Client %d: Handshake 2
-Object.lto	retail	Kicking Client %d: Handshake 3
-Object.lto	retail	Kicking Client %d: Handshake 4
-Object.lto	retail	Kicking Client %d: Handshake 5
-Object.lto	retail	Kicking Client %d: Handshake 6
-Object.lto	retail	Kicking Client %d: Handshake 7
-Object.lto	retail	Kicking Client %d: Handshake 8
-Object.lto	retail	Kicking Client %d: Handshake 9
 Object.lto	retail	LCSpawner%02d
 Object.lto	retail	LISTEN
 Object.lto	retail	LOCKDISC
@@ -212,8 +197,6 @@ Object.lto	retail	Unlocks
 Object.lto	retail	WAVECOMPLETE
 Object.lto	retail	Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0
 Object.lto	retail	WaveCount
-Object.lto	retail	attributes\\fx.txt
-Object.lto	retail	attributes\\subroutines.txt
 Object.lto	retail	choke01.wav
 Object.lto	retail	choke02.wav
 Object.lto	retail	import KERNEL32.dll GetFileAttributesA
@@ -380,7 +363,6 @@ CShell.dll	retail	MultiplayerLeashLength
 CShell.dll	retail	NullSound
 CShell.dll	retail	ObjectiveSpacing
 CShell.dll	retail	OverlayModelDist
-CShell.dll	retail	ProfilerPos
 CShell.dll	retail	ReturnToOwner
 CShell.dll	retail	SLOW ON DAMAGE: %.2f
 CShell.dll	retail	SuperCycle_Green_1
@@ -391,8 +373,6 @@ CShell.dll	retail	SuperCycle_Purple_2
 CShell.dll	retail	SuperCycle_Purple_3
 CShell.dll	retail	TargetAngleTrackThreshold
 CShell.dll	retail	Unable to create deathfx : %s 
-CShell.dll	retail	WeaponIndicatorIconOffset
-CShell.dll	retail	WeaponIndicatorOffset
 CShell.dll	retail	You are waiting for %i players.
 CShell.dll	retail	You are waiting for %s.
 CShell.dll	retail	You are waiting for 1 player.
@@ -418,8 +398,6 @@ CShell.dll	retail	viral_shield
 CShell.dll	retail	voice\\%d.wav
 CShell.dll	retail	voice\\21010.wav
 
-# Not Tron's (2026-11-13): the HUD's armor icon and profiler positions come through NOLF2's CLayoutMgr getters, whose attribute names Tron's layout manager does not have; to go when CTronLayoutMgr's own HUD getters are written.
-CShell.dll	ours	AmmoBarOffset
 # Not Tron's (2026-11-13): the 2007 ghttp SDK in src/Game/Libs/GameSpy/GameSpySDK reads a content length with _atoi64; Tron's older ghttp does not. To go when ghttp is rolled back to Tron's version, as the server browser was.
 CShell.dll	ours	import MSVCRT.dll _atoi64
 
