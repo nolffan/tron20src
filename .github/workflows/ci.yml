@@ -1,0 +1,66 @@
+# The legacy release build without the retail game, and the byte check.
+#
+# The runner has no disc images and no retail data, so the build is `make
+# NODISCS=1 compile` (build/compile.sh, TRON20_NODISCS=1): it compiles and
+# links every binary that has source, with the retail art that is committed
+# in assets/art/, so every binary is the same as in a build with the retail
+# game. The project assembles no game directory and makes no archives yet
+# (docs/PLAN.md, package 2), so there is nothing to publish.
+#
+# Then the build is checked for byte regressions without the retail
+# binaries (`make progress-ci`, build/progress.sh ci): it compares the build
+# with the hashes in progress/hashes/, which `make progress-update` records
+# locally from the full check. It fails if a function, a resource, a float
+# constant, a string, a vtable or a call recorded there changed. It finds no
+# new match: only a local `make progress-update` does.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: tron20-legacy-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      IMAGE_BUILD: 0           # the step "Build image" loads it, cached
+    steps:
+      - uses: actions/checkout@v4
+
+      # .gitmodules names the submodules by SSH; both are public, so fetch
+      # them over HTTPS instead, at the commit this one records.
+      - name: Submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync
+          git submodule update --init --depth 1 --jobs 2 ext/tools ext/toolchains
+
+      # Loaded as tron20src-build, which the Makefile then uses (IMAGE_BUILD=0).
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          tags: tron20src-build
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build tron20-legacy-release
+        run: make NODISCS=1 compile
+
+      # Fails if a function recorded in progress/identical.txt is no longer
+      # byte-identical, by its hash in progress/hashes/
+      - name: Byte regressions (make progress-ci)
+        run: make progress-ci

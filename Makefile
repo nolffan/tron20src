@@ -4,6 +4,7 @@
 #   make modern   the game with TRON20_MODERN, in out/tron20-modern-release/
 #   make progress how much of the build is byte-identical to the retail game;
 #                 fails if a function recorded as identical stops matching
+#   make ci       the CI build and check, without the retail game
 #   make help     everything else
 #
 # Needs only docker on the host, the two submodules in ext/ (`git submodule
@@ -21,13 +22,16 @@ CONTAINER ?= tron20src-build
 JOBS ?=
 
 # Your disc images and the update, if they are not in isos/:
-# TRON20_ISOS=<directory> (mounted read-only)
+# TRON20_ISOS=<directory> (mounted read-only). NODISCS=1: compile without
+# the retail game (`make ci`)
 TRON20_ISOS ?=
+NODISCS ?=
 ISO_MOUNT := $(if $(TRON20_ISOS),-v $(abspath $(TRON20_ISOS)):/isos:ro -e TRON20_ISOS=/isos)
 
 DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e TRON20SRC_JOBS=$(JOBS)) \
 	$(if $(TRON20_ARCHIVES),-e TRON20_ARCHIVES="$(TRON20_ARCHIVES)") \
+	$(if $(filter 1,$(NODISCS)),-e TRON20_NODISCS=1) \
 	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE)
 
 # VC6 as Tron 2.0's Rich headers name it: cl and link 12.00.8168
@@ -36,7 +40,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-build reference art art-check progress progress-update progress-ci shell clean distclean help
+	check-build reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -55,6 +59,8 @@ help:
 	@echo "make progress-ci  the check without the retail game: the build against"
 	@echo "                progress/hashes/ (finds no new matches)"
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
+	@echo "make ci         what CI runs: make NODISCS=1 compile (without the retail"
+	@echo "                game: the same binaries, from assets/art/), then make progress-ci"
 	@echo "make retail     install the retail game from your two disc images and Update 2"
 	@echo "                in isos/ (once; every build runs it), and check it"
 	@echo "make art        write the retail art our binaries are compiled with into"
@@ -68,6 +74,7 @@ help:
 	@echo
 	@echo "Variables: JOBS=<n> (parallel compiles; default one per CPU)"
 	@echo "           TRON20_ISOS=<dir> (your disc images and the update, if not in isos/)"
+	@echo "           NODISCS=1 (make compile without the retail game; see make ci)"
 	@echo "           TRON20_ARCHIVES=\"private public\" (the archives build/package.sh writes)"
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
 	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1, ACCEPT_FAILED_CHECKS=1 (progress/README.md)"
@@ -104,9 +111,13 @@ endif
 # The retail game the build takes its data from (build/retail.sh): installed
 # from your disc images and the update (isos/, or TRON20_ISOS) by
 # build/discs.py the first time, checked against build/retail-files.txt
-# every time.
+# every time. Nothing with NODISCS=1.
 retail: check-tools image
+ifeq ($(NODISCS),1)
+	@echo "== NODISCS=1: no retail game (the compile takes its art from assets/art/)"
+else
 	@$(DOCKER_RUN) bash -c 'source build/retail.sh && retail_install && retail_verify'
+endif
 
 reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
@@ -143,6 +154,12 @@ progress-update: retail
 # Without the retail game: the build against progress/hashes/ (build/progress.sh ci)
 progress-ci: check-tools image
 	$(DOCKER_RUN) bash build/progress.sh ci
+
+# What CI runs (.github/workflows/ci.yml): the compile without the retail
+# game, then the check without it
+ci:
+	$(MAKE) --no-print-directory NODISCS=1 compile
+	$(MAKE) --no-print-directory progress-ci
 
 shell: image
 	docker run --rm -it --init --name $(CONTAINER)-shell \

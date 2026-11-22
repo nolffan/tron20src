@@ -69,6 +69,16 @@ make progress   # score the build against them
 make help       # everything else
 ```
 
+### Without the retail game: the CI build
+
+`make NODISCS=1 compile` compiles and links every binary without the
+retail game. The binaries are the same as with it: the only retail data
+that they contain is the art of the launcher, the dedicated server and
+`CRes.dll`, which is committed in `assets/art/` (`assets/README.md`).
+`make progress-ci` then checks the build against `progress/hashes/`
+without the retail binaries (`progress/README.md`). `make ci` does both;
+the CI (`.github/workflows/ci.yml`) runs them on every push.
+
 The retail game's bugs, as they are found, are listed in
 [`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
 is [`docs/MODERN.md`](docs/MODERN.md).
