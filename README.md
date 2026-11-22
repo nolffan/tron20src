@@ -22,10 +22,10 @@ binaries are, function by function. As for
   so that it compiles back to the retail binaries byte for byte, as far as
   that can be done -- with the compiler Monolith used, Visual C++ 6.0
   (12.00.8168), under Wine;
-- **modern**: the same source with fixes and new features (`TRON20_MODERN`).
+- **modern**: the same source with fixes and new features (`TRON20SRC_MODERN`).
 
 Compiling back to the retail bytes means compiling the retail game's bugs as
-well; their fixes go behind `TRON20_MODERN`, into the modern build only, so
+well; their fixes go behind `TRON20SRC_MODERN`, into the modern build only, so
 the legacy build keeps matching the retail one.
 
 ## Progress
@@ -46,7 +46,7 @@ tools).
 Bring your own discs. The build takes the retail game's binaries and data
 from your own copy of Tron 2.0 (USA) and its Update 2 (v1.030). Put these
 three files in `isos/` at the root of the repository (a hard link is good:
-`ln <file> isos/`), or set `TRON20_ISOS=<directory>`:
+`ln <file> isos/`), or set `TRON20SRC_ISOS=<directory>`:
 
 | What | Redump name of the image | Recognised by |
 |---|---|---|

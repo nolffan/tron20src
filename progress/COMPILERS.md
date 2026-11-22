@@ -26,7 +26,7 @@ Every image's linker row is `link`/`lib` 6.00.8168 (tool 0x04), its
 import libraries `lib` 5.12.8034 (0x13), its CRT assembly `ml` 6.13.7299
 (0x0e), and, where it has resources, `cvtres` 5.00.1720 -- the one VC6's
 first linker brings (NOLF's `ltmsg.dll`, proven with `msvc-6.00-8168`:
-`toolchains/COMPILERS.md`; later linkers bring 5.00.1736). The C runtime's own objects are 8168 as
+nolfsrc's `progress/COMPILERS.md`; later linkers bring 5.00.1736). The C runtime's own objects are 8168 as
 well. So the compiler, the linker and the libraries all look like one VC6
 install at its original release; whether a later service pack that kept
 that compiler is indistinguishable from it is still to be shown.

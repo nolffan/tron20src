@@ -19,7 +19,7 @@ export WINEDEBUG=-all
 export WINEDLLOVERRIDES="mscoree,mshtml="
 # the variant macros ext/tools/releasesrc.py resolves, and the project's own
 # header directory ext/tools/mkdeps.py follows
-export RELEASESRC_VARIANTS="TRON20_MODERN TRON20_DEBUG TRON20SRC_MODERN"
+export RELEASESRC_VARIANTS="TRON20SRC_MODERN TRON20SRC_DEBUG"
 export MKDEPS_PROJECT_INCLUDE=src/tron20src
 
 # Extra flags for every compile and every link, for the debug and modern
@@ -29,7 +29,7 @@ export TRON20SRC_CFLAGS="${TRON20SRC_CFLAGS:-}"
 export TRON20SRC_LDFLAGS="${TRON20SRC_LDFLAGS:-}"
 export TRON20SRC_RCFLAGS="${TRON20SRC_RCFLAGS:-}"    # resource scripts: /d NAME
 # They are only allowed in the trees build/variant.sh makes (out/build-*/):
-# anywhere else they would put TRON20_DEBUG or TRON20_MODERN code into the
+# anywhere else they would put TRON20SRC_DEBUG or TRON20SRC_MODERN code into the
 # objects `make progress` scores, which must only ever be the release build.
 if [ -n "$TRON20SRC_CFLAGS$TRON20SRC_LDFLAGS$TRON20SRC_RCFLAGS" ]; then
     case "$REPO" in
@@ -44,7 +44,7 @@ fi
 # tree, the tools at <tree>/ext/tools/ so that they take <tree> for the
 # project (as their layout.py works it out), and the other submodules of
 # ext/ (the compilers) links to this checkout's. The retail game is the
-# checkout's: tron20src_release_tree gives the tree TRON20_RETAIL. A tree
+# checkout's: tron20src_release_tree gives the tree TRON20SRC_RETAIL. A tree
 # made before the submodules moved to ext/ had tools/, toolchains and rez at
 # its top: those go first.
 tron20src_tree_layout() {
@@ -60,8 +60,8 @@ tron20src_tree_layout() {
     done
 }
 
-# The release build compiles src/ WITHOUT its TRON20_MODERN /
-# TRON20_DEBUG blocks, not merely with them switched off: a block the
+# The release build compiles src/ WITHOUT its TRON20SRC_MODERN /
+# TRON20SRC_DEBUG blocks, not merely with them switched off: a block the
 # compiler skips still moves everything below it, and VC6 lets the file's
 # layout decide where some out-of-line inline functions go, so enough
 # skipped blocks can change the release binary (ext/tools/releasesrc.py).
@@ -81,7 +81,7 @@ tron20src_release_tree() {
     python3 "$REPO/ext/tools/releasesrc.py" sync "$REPO/src" "$tree/src" || exit 1
     python3 "$REPO/ext/tools/releasesrc.py" outputs "$REPO/src" "$tree/src" || exit 1
     tron20src_tree_layout "$tree" || exit 1
-    ( cd "$tree" && export TRON20_RETAIL="$(source "$REPO/build/retail.sh" && retail_root)" &&
+    ( cd "$tree" && export TRON20SRC_RETAIL="$(source "$REPO/build/retail.sh" && retail_root)" &&
       TRON20SRC_IN_RELEASE_TREE=1 bash "build/$script" "$@" ) || rc=$?
     python3 "$REPO/ext/tools/releasesrc.py" outputs "$tree/src" "$REPO/src" || exit 1
     exit $rc

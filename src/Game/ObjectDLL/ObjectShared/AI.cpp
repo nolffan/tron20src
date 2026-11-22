@@ -1902,7 +1902,7 @@ LTBOOL CAI::GetDoneProcessingStimuli() const
 {
 	if( m_pAISenseRecorder )
 	{
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 		return m_pAISenseRecorder->GetDoneProcessingStimuli();
 #else
 		// RETAIL: Tron returns the recorder's ray count (0x1012c1da jumps

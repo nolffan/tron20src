@@ -1,13 +1,13 @@
 # The modern build
 
-`TRON20_MODERN` is the project's define for everything that departs from
+`TRON20SRC_MODERN` is the project's define for everything that departs from
 the retail game: bug fixes (`RETAIL_BUGS.md`), new features, and
 open-source middleware in place of the proprietary libraries. It is set
 only in the modern build (`make modern`, `make modern-debug`;
 `build/variant.sh`), never in the legacy build, which stays the retail game
 as far as it can be rebuilt and is the only build `make progress` scores.
-Every change goes behind `#ifdef TRON20_MODERN` with the retail code kept,
-unchanged, in the `#else`. (`TRON20_DEBUG` is the debug builds' logging and
+Every change goes behind `#ifdef TRON20SRC_MODERN` with the retail code kept,
+unchanged, in the `#else`. (`TRON20SRC_DEBUG` is the debug builds' logging and
 checks, independent of it.)
 
 This file is the inventory: what the modern build changes, what it could

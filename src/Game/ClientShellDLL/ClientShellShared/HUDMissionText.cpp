@@ -133,7 +133,7 @@ void CHUDMissionText::UpdateLayout()
 	m_pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
 
 	m_pText = g_pFontManager->CreateFormattedPolyString(m_pFont,std::wstring(L" "),(float)m_BasePos.x,(float)m_BasePos.y);
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	if (!m_pText)
 		return;
 	m_pText->SetDropShadow(true);
