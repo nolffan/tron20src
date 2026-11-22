@@ -2,3 +2,6 @@
 # embedded byte for byte in CRes.dll (TEXT resources, read by the game at
 # run time) and keep the CRLF endings Build 69's copies have.
 src/Game/ClientRes/TRON/*.txt -text
+# the retail art the binaries are compiled with (assets/README.md): bytes,
+# never text
+assets/art/** binary

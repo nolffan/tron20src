@@ -40,7 +40,7 @@ if [ -n "$TRON20SRC_CFLAGS$TRON20SRC_LDFLAGS$TRON20SRC_RCFLAGS" ]; then
     esac
 fi
 
-# tron20src_tree_layout <tree>: build/ and the tools copied into the release
+# tron20src_tree_layout <tree>: build/, assets/ and the tools copied into the release
 # tree, the tools at <tree>/ext/tools/ so that they take <tree> for the
 # project (as their layout.py works it out), and the other submodules of
 # ext/ (the compilers) links to this checkout's. The retail game is the
@@ -52,8 +52,8 @@ tron20src_tree_layout() {
     rm -rf "$tree/tools"
     rm -f "$tree/toolchains" "$tree/rez"
     mkdir -p "$tree/ext"
-    rm -rf "$tree/build" "$tree/ext/tools"
-    tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build ext/tools | tar -C "$tree" -xf - || return 1
+    rm -rf "$tree/build" "$tree/assets" "$tree/ext/tools"
+    tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build assets ext/tools | tar -C "$tree" -xf - || return 1
     for d in "$REPO"/ext/*; do
         n="$(basename "$d")"
         [ "$n" = tools ] || [ -L "$tree/ext/$n" ] || ln -s "../../../ext/$n" "$tree/ext/$n" || return 1

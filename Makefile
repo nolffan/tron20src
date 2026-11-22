@@ -36,7 +36,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-build reference progress progress-update progress-ci shell clean distclean help
+	check-build reference art art-check progress progress-update progress-ci shell clean distclean help
 
 all: game
 
@@ -57,6 +57,10 @@ help:
 	@echo "make reference  extract the retail binaries and their function tables into out/reference/"
 	@echo "make retail     install the retail game from your two disc images and Update 2"
 	@echo "                in isos/ (once; every build runs it), and check it"
+	@echo "make art        write the retail art our binaries are compiled with into"
+	@echo "                assets/art/ again, from the retail binaries"
+	@echo "make art-check  check that assets/art/ is the retail art (every compile with"
+	@echo "                the retail game also does this)"
 	@echo "make shell      a shell in the build container (build/*.sh, ext/tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"
@@ -106,6 +110,15 @@ retail: check-tools image
 
 reference: retail
 	$(DOCKER_RUN) bash build/reference.sh
+
+# The retail art and text our binaries are compiled with, committed in
+# assets/art/: written again from the retail binaries' resources, or checked
+# against them (build/appres.py; every compile with the retail game checks)
+art: check-tools retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/appres.py write "$$(retail_dir)" assets/art'
+
+art-check: check-tools retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/appres.py check "$$(retail_dir)" assets/art'
 
 check-tools:
 	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }

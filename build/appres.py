@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
-"""The launcher's, the dedicated server's and CRes.dll's art, from the retail game.
+"""The launcher's, the dedicated server's and CRes.dll's art: assets/art/.
 
-  build/appres.py <retail game directory> <output directory>
+  build/appres.py write   <retail game directory> <art directory>
+  build/appres.py check   <retail game directory> <art directory>
+  build/appres.py install <art directory> <output directory>
 
 Tron 2.0's launcher (Tron.exe), dedicated server (TRONSrv.exe) and client
 resources (CRes.dll) carry art in their resources: the launcher's
 backgrounds and buttons (bitmaps), its sounds (8 waves), its icon and
 cursor; the server's splash screen and two icons; the client resources'
-one cursor. None of it was ever released (Build 69's Launcher/TRON/RES has
-only its .rc2), so, as the game's data, it is taken from the retail game
-when the game is built, never kept in this repository: this writes each
-one back out of the retail image as the file the resource compiler reads
--- a bitmap with its BITMAPFILEHEADER, a wave as it is, an icon or cursor
-group as an .ico or .cur file -- into <output>/Launcher/,
-<output>/ServerApp/ and <output>/ClientRes/, where the projects' resource
-scripts find them (their /i paths). Compiled again, each resource is the
-retail one byte for byte. (cjacksrc's build/appres.py, for Contract
-J.A.C.K.'s, is the model.)
+one cursor. None of it was ever released as source (Build 69's
+Launcher/TRON/RES has only its .rc2). The retail art is committed,
+unchanged, in assets/art/ (assets/README.md), so that the binaries compile
+the same with or without the retail game. Each file is the file the
+resource compiler reads -- a bitmap with its BITMAPFILEHEADER, a wave as
+it is, an icon or cursor group as an .ico or .cur file -- in
+<art>/Launcher/, <art>/ServerApp/ and <art>/ClientRes/. Compiled again,
+each resource is the retail one byte for byte. (cjacksrc's
+build/appres.py, for Contract J.A.C.K.'s, is the model.)
 
-build/compile.sh runs it into src/Game/built/retail/ before the compile; it
-writes only what is missing or differs, so a rebuild recompiles nothing.
+  write    writes each one out of the retail image into <art> again (make art)
+  check    fails unless <art> holds exactly what `write` would write (make
+           art-check; build/compile.sh does it when it has the retail game)
+  install  copies <art> into <output>, where the projects' resource scripts
+           find them (their /i paths): build/compile.sh does it into
+           src/Game/built/retail/ before the compile. It writes only what is
+           missing or differs, so a rebuild recompiles nothing.
 """
 import os
 import struct
@@ -156,11 +162,9 @@ def group_file(res, group, kind):
     return struct.pack("<HHH", 0, kind, n) + b"".join(dirents) + b"".join(images)
 
 
-def main():
-    if len(sys.argv) != 3:
-        sys.exit(__doc__)
-    game, outdir = sys.argv[1:]
-    written = 0
+def extract(game):
+    """{relative path: bytes} of every art file, out of the retail images."""
+    out = {}
     for image, (sub, names) in IMAGES.items():
         res = resources(image_bytes(game, image))
         files = {}
@@ -174,17 +178,63 @@ def main():
         missing = [v for (t, n), v in names.items() if v not in files]
         if missing:
             sys.exit(f"appres: {image} lacks {', '.join(missing)}")
-        d = os.path.join(outdir, sub)
-        os.makedirs(d, exist_ok=True)
-        for name, data in sorted(files.items()):
-            p = os.path.join(d, name)
-            if os.path.isfile(p) and open(p, "rb").read() == data:
-                continue
-            with open(p, "wb") as f:
-                f.write(data)
-            written += 1
-    if written:
-        print(f"   appres: {written} file(s) of the launcher's, the server's and the client resources' art from {game}")
+        for name, data in files.items():
+            out[f"{sub}/{name}"] = data
+    return out
+
+
+def tree(d):
+    """{relative path: bytes} of the files under d."""
+    out = {}
+    for root, _dirs, names in os.walk(d):
+        for n in names:
+            p = os.path.join(root, n)
+            out[os.path.relpath(p, d).replace(os.sep, "/")] = open(p, "rb").read()
+    return out
+
+
+def put(files, d):
+    """Write each file under d, unless it is there already; the count."""
+    written = 0
+    for rel, data in sorted(files.items()):
+        p = os.path.join(d, rel)
+        if os.path.isfile(p) and open(p, "rb").read() == data:
+            continue
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "wb") as f:
+            f.write(data)
+        written += 1
+    return written
+
+
+def main():
+    if len(sys.argv) != 4 or sys.argv[1] not in ("write", "check", "install"):
+        sys.exit(__doc__)
+    mode, src, dest = sys.argv[1:]
+    if mode == "install":
+        if not os.path.isdir(src):
+            sys.exit(f"appres: {src} not found (the committed retail art, assets/README.md)")
+        n = put(tree(src), dest)
+        if n:
+            print(f"   appres: {n} file(s) of the launcher's, the server's and the client resources' art from {src}")
+        return
+    want = extract(src)
+    if mode == "write":
+        have = tree(dest) if os.path.isdir(dest) else {}
+        for rel in sorted(set(have) - set(want)):
+            os.unlink(os.path.join(dest, rel))
+        n = put(want, dest)
+        print(f"   appres: {len(want)} art files in {dest} ({n} written)")
+        return
+    have = tree(dest) if os.path.isdir(dest) else {}
+    bad = [f"missing  {r}" for r in sorted(set(want) - set(have))]
+    bad += [f"extra    {r}" for r in sorted(set(have) - set(want))]
+    bad += [f"changed  {r}" for r in sorted(set(want) & set(have)) if want[r] != have[r]]
+    for line in bad:
+        print(f"   {line}")
+    if bad:
+        sys.exit(f"appres: {dest} is not the retail art of {src}: run make art")
+    print(f"   appres: all {len(want)} art files in {dest} are the retail art")
 
 
 if __name__ == "__main__":
