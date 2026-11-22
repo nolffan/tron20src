@@ -20,6 +20,10 @@
 #include "ServerDiscMatchMgr.h"
 #include "GameSpy/GameSpySDK/gcdkey/gcdkeys.h"
 #include "DebugLineSystem.h"	// RETAIL: its colors are constructed here (retail 0x1005bdf0..0x1005bfa0)
+#include "CRC32.h"
+#include "ModelButeMgr.h"
+#include "SurfaceMgr.h"
+#include "LightCycleButeMgr.h"
 
 // RETAIL: Tron's GameSpy product: the game name, its secret key (built on
 // the stack, retail 0x1005d452) and the CD key product id
@@ -635,6 +639,241 @@ void CTronGameServerShell::Update(LTFLOAT timeElapsed)
 		else if (g_pGameServerShell->GetGameType() == eGameTypeMultiplayerLightcycles)
 		{
 			m_pLightCycleMatchMgr->SetNextLevel(nLevel);
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::ProcessHandshake
+//
+//	PURPOSE:	RETAIL: retail 0x1005e2e0: NOLF2's handshake with Build 51's
+//				name key (as CGameServerShell::ProcessHandshake, retail
+//				0x100de650), a message for each kick, the CRCs of six more
+//				attribute files, and the GameSpy CD key check before the
+//				client is let in (GameSpyAuth). NEAR: retail keeps the
+//				password hash's operand on the stack (register allocation)
+//
+// ----------------------------------------------------------------------- //
+
+// RETAIL: the same key as GameServerShell.cpp's (Build 51's)
+#define KEY_MESSER_UPPER 0xDEADFACE
+inline uint32 MessUp32BitValue(uint32 nValue, uint32 nRot)
+{
+	// "Encrypt" the value (Yes, it's a very simple encryption...)
+	uint32 nXORShift = nRot & 0xF;
+	return ((KEY_MESSER_UPPER << nXORShift) + (KEY_MESSER_UPPER >> (32 - nXORShift))) ^ nValue;
+}
+
+void CTronGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg)
+{
+	// Get the player
+	CPlayerObj *pPlayer = GetPlayerFromClientList(hClient);
+	if (!pPlayer)
+	{
+		g_pLTServer->CPrint( "Kicking Client %d: Handshake 0", g_pLTServer->GetClientID( hClient ));
+		g_pLTServer->KickClient(hClient);
+		return;
+	}
+	//host doesn't need to provide user password 
+	bool bIsHost = g_pLTServer->GetClientInfoFlags(hClient) & CIF_LOCAL;
+
+	// Get the player's GUID.
+	// RETAIL: 100 bytes (retail 0x1005e37b)
+	char szClientName[100] = "";
+	g_pLTServer->GetClientName( hClient, szClientName, ARRAY_LEN( szClientName ));
+	if( !szClientName[0] )
+	{
+		g_pLTServer->CPrint( "Kicking Client %d: Handshake 1", g_pLTServer->GetClientID( hClient ));
+		g_pLTServer->KickClient( hClient );
+		return;
+	}
+
+	int nHandshakeSub = (int)pMsg->Readuint8();
+	switch (nHandshakeSub)
+	{
+		case MID_HANDSHAKE_HELLO :
+		{
+			// Check the client's version
+			int nHandshakeVer = (int)pMsg->Readuint16();
+			if (nHandshakeVer != GAME_HANDSHAKE_VER)
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 2", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// Read in the client's sooper-secret key
+			uint32 nClientKey = pMsg->Readuint32();
+
+			// RETAIL: the CD key challenge: eight random letters
+			char szChallenge[9];
+			srand( time( NULL ));
+			for( int i = 0; i < 8; i++ )
+			{
+				szChallenge[i] = 'a' + rand( ) % 26;
+			}
+
+			// Write out a password message, encrypted with their key
+			CAutoMessage cResponse;
+			cResponse.Writeuint8(MID_HANDSHAKE);
+			cResponse.Writeuint8(MID_HANDSHAKE_PASSWORD);
+			cResponse.WriteData( szChallenge, 8 * 8 );
+			cResponse.Writeuint32((uint32)this ^ MessUp32BitValue(nClientKey, (uint32)szClientName[0]));
+			cResponse.Writebool((!bIsHost && m_ServerGameOptions.m_bUsePassword));
+			g_pLTServer->SendToClient(cResponse.Read(), hClient, MESSAGE_GUARANTEED);
+		}
+		break;
+		case MID_HANDSHAKE_LETMEIN :
+		{
+			// Get the client's password
+			uint32 nClientPassword = pMsg->Readuint32();
+			// Encrypt the first 4 bytes of the client name
+			uint32 nClientName = *((uint32*)szClientName);
+			// Handle short client names...
+			// RETAIL: Build 51's tests use && (docs/RETAIL_BUGS.md)
+			if ((nClientName && 0xFF) == 0)
+				nClientName = 0;
+			else if ((nClientName && 0xFF00) == 0)
+				nClientName &= 0xFF;
+			else if ((nClientName && 0xFF0000) == 0)
+				nClientName &= 0xFFFF;
+			uint32 nXORMask = MessUp32BitValue((uint32)this, (uint32)szClientName[0]);
+			nClientName ^= nXORMask;
+
+			// Validate
+			if (nClientName != nClientPassword)
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 3", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// Read in their weapons file CRC
+			uint32 nWeaponCRC = g_pWeaponMgr->GetFileCRC();
+			nWeaponCRC ^= nXORMask;
+			if (nWeaponCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 4", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// Read in their client file CRC
+			uint32 nCShellCRC = m_nCShellCRC;
+			nCShellCRC ^= nXORMask;
+			if (nCShellCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 5", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// CRC the modelbutes.txt
+			static uint32 nModelButesCRC = CRC32::CalcRezFileCRC( g_pModelButeMgr->GetAttributeFile( ));
+			uint32 nModelButesMaskedCRC = nModelButesCRC ^ nXORMask;
+			if (nModelButesMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 6", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// CRC the surface.txt
+			static uint32 nSurfaceCRC = CRC32::CalcRezFileCRC( g_pSurfaceMgr->GetAttributeFile( ));
+			uint32 nSurfaceMaskedCRC = nSurfaceCRC ^ nXORMask;
+			if (nSurfaceMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 7", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// CRC the damagefx.txt
+			static uint32 nDamageFxCRC = CRC32::CalcRezFileCRC( "attributes\\damagefx.txt" );
+			uint32 nDamageFxMaskedCRC = nDamageFxCRC ^ nXORMask;
+			if (nDamageFxMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 8", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// RETAIL: the CRC of the fx.txt
+			static uint32 nFxCRC = CRC32::CalcRezFileCRC( "attributes\\fx.txt" );
+			uint32 nFxMaskedCRC = nFxCRC ^ nXORMask;
+			if (nFxMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 9", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// RETAIL: the CRC of the subroutines.txt
+			static uint32 nSubroutinesCRC = CRC32::CalcRezFileCRC( "attributes\\subroutines.txt" );
+			uint32 nSubroutinesMaskedCRC = nSubroutinesCRC ^ nXORMask;
+			if (nSubroutinesMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 10", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			// RETAIL: the CRC of the light cycle attribute file
+			static uint32 nLightCycleCRC = CRC32::CalcRezFileCRC( g_pLightCycleButeMgr->GetAttributeFile( ));
+			uint32 nLightCycleMaskedCRC = nLightCycleCRC ^ nXORMask;
+			if (nLightCycleMaskedCRC != pMsg->Readuint32())
+			{
+				g_pLTServer->CPrint( "Kicking Client %d: Handshake 11", g_pLTServer->GetClientID( hClient ));
+				g_pLTServer->KickClient(hClient);
+				return;
+			}
+
+			uint32 nHashedPassword = pMsg->Readuint32();
+			uint32 nServerHashedPassword = str_Hash(m_ServerGameOptions.m_sPassword.c_str( ));
+			// Validate
+			if (!bIsHost && m_ServerGameOptions.m_bUsePassword && nHashedPassword != nServerHashedPassword)
+			{
+				// They don't know the password
+				// Tell the client...
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_HANDSHAKE);
+				cMsg.Writeuint8((uint8)MID_HANDSHAKE_WRONGPASS);
+				g_pLTServer->SendToClient(cMsg.Read(), hClient, MESSAGE_GUARANTEED);
+				return;
+			}
+
+			// RETAIL: the client's answer to the CD key challenge
+			char szChallenge[9];
+			char szResponse[73];
+			szResponse[72] = '\0';
+			szChallenge[8] = '\0';
+			pMsg->ReadData( szChallenge, 8 * 8 );
+			pMsg->ReadData( szResponse, 72 * 8 );
+
+			// RETAIL: a client whose CD key passed before, the host and a
+			// LAN game are let in at once; others ask the CD key server
+			int nLocalId = g_pLTServer->GetClientID( hClient );
+			if( std::find( m_lstCDKeyClients.begin( ), m_lstCDKeyClients.end( ), nLocalId ) == m_lstCDKeyClients.end( ) &&
+				!bIsHost && !m_ServerGameOptions.m_bLANOnly )
+			{
+				uint8 aAddr[4];
+				uint16 nPort;
+				g_pLTServer->GetClientAddr( hClient, aAddr, &nPort );
+				uint32 nAddr = htonl(( aAddr[0] << 24 ) | ( aAddr[1] << 16 ) | ( aAddr[2] << 8 ) | aAddr[3] );
+				gcd_authenticate_user( GAMESPY_CDKEY_PRODUCT, nLocalId, nAddr, szChallenge, szResponse,
+					GameSpyAuthCallback, this );
+				return;
+			}
+
+			GameSpyAuth( nLocalId, true, "" );
+		}
+		break;
+		default :
+		{
+			g_pLTServer->CPrint( "Kicking Client %d: Handshake 12", g_pLTServer->GetClientID( hClient ));
+			g_pLTServer->KickClient(hClient);
+			return;
 		}
 	}
 }

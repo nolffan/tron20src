@@ -16,6 +16,7 @@
 #include "TargetMgr.h"
 #include "InterfaceResMgr.h"
 #include "LayoutMgr.h"
+#include "TronLayoutMgr.h"
 
 // RETAIL: 0x10032670
 CHUDProfiler::CHUDProfiler()
@@ -180,7 +181,9 @@ void CHUDProfiler::UpdateLayout()
 	m_fScale = fXRatio;
 	m_fJitter = fXRatio * 5.0f;
 
-	int nTextSize = (int)(g_pLayoutMgr->GetDisplayMeterHeight(nCurrentLayout) * fXRatio);
+	// RETAIL: 0x10032cb6, 0x10032d0c: CTronLayoutMgr's profiler getters
+	// (0x100a2180, 0x100a2100), not CLayoutMgr's NOLF2 ones
+	int nTextSize = (int)(((CTronLayoutMgr*)g_pLayoutMgr)->GetProfilerTextSize(nCurrentLayout) * fXRatio);
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nTextSize);
 
 	m_pText->SetFont(pFont);
@@ -188,7 +191,7 @@ void CHUDProfiler::UpdateLayout()
 	m_pFlicker->SetFont(pFont);
 	m_pFlicker->SetCharScreenHeight(nTextSize);
 
-	m_Pos = g_pLayoutMgr->GetAmmoBarOffset(nCurrentLayout);
+	m_Pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetProfilerPos(nCurrentLayout);
 	m_Pos.x = (int)(m_Pos.x * fXRatio);
 	m_Pos.y = (int)(m_Pos.y * fYRatio);
 

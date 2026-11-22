@@ -220,7 +220,7 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 				return 0;
 			}
 
-			g_pLTServer->CPrint( "ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!", szName );
+			g_pLTServer->CPrint( "ERROR - Could not update utility subroutine (%s) because it wasn't defined when the player was initialized!\n", szName );
 			return 0;
 		}
 		break;

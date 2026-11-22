@@ -739,9 +739,12 @@ void CBodyStateArrow::InitLoad(Body* pBody)
 
 // CBodyStateExplode
 
+// RETAIL: 0x1021bc80: the landing position and the flying time are cleared too
 CBodyStateExplode::CBodyStateExplode()
 {
 	m_bLand = LTFALSE;
+	m_vLandPos.Init();
+	m_fFlyTime = 0.0f;
 }
 
 void CBodyStateExplode::Init(Body* pBody)

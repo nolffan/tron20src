@@ -250,12 +250,14 @@ void CHUDWeapon::UpdateLayout()
 
 	m_fFadeDuration = ((CTronLayoutMgr*)g_pLayoutMgr)->GetWeaponIndicatorAnimTime(nCurrentLayout);
 
-	LTIntPt offset = g_pLayoutMgr->GetArmorBarOffset(nCurrentLayout);
+	// RETAIL: 0x1003f2d0, 0x1003f35f: CTronLayoutMgr's weapon indicator
+	// offsets (0x100a1cb0, 0x100a1d30), not CLayoutMgr's NOLF2 getters
+	LTIntPt offset = ((CTronLayoutMgr*)g_pLayoutMgr)->GetWeaponIndicatorOffset(nCurrentLayout);
 	float x = 640.0f * g_pInterfaceResMgr->GetXRatio() - (float)nWidth - offset.x;
 	float y = (float)offset.y;
 	g_pDrawPrim->SetXYWH(&m_BasePrim, x, y, (float)nWidth, (float)nHeight);
 
-	offset = g_pLayoutMgr->GetAmmoTextOffset(nCurrentLayout);
+	offset = ((CTronLayoutMgr*)g_pLayoutMgr)->GetWeaponIndicatorIconOffset(nCurrentLayout);
 	g_pDrawPrim->SetXYWH(&m_WeaponPrim, x + (float)offset.x, y + (float)offset.y, 64.0f, 64.0f);
 
 	m_AmmoOffset = g_pLayoutMgr->GetPoint("HUDLayout0", "AmmoCountOffset");

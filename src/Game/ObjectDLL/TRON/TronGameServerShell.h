@@ -68,6 +68,10 @@ class CTronGameServerShell : public CGameServerShell
 
 		virtual void Update(LTFLOAT timeElapsed);
 
+		// RETAIL: retail 0x1005e2e0: Tron's handshake, with more file checks
+		// and the CD key check
+		virtual void	ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pMsg);
+
 		// RETAIL: the player events the game type's manager gets (slots 29..33,
 		// retail 0x1005dec0, 0x1005df10, 0x1005dfe0, 0x1005e040, 0x1005e090)
 		// RETAIL: a player was killed, a player respawns (slots 27, 28,
