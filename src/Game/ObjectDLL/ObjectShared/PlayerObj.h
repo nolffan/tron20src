@@ -193,6 +193,9 @@ class CPlayerObj : public CCharacter
 		void HandleWeaponFireMessage(ILTMessage_Read *pMsg);
 		// RETAIL: read inline by CContinuousFireHelper (0x10160cb0). Name ours.
 		LTVector GetClientCameraOffset() const { return m_vClientCameraOffset; }
+		// RETAIL: read inline by CTronPlayerObj::GetDefensePercentage
+		// (0x10063f00), before the call to GetTime. Name ours.
+		float GetClientCameraOffsetTimeReceived() const { return m_fClientCameraOffsetTimeReceived; }
 
 		// RETAIL: Tron's multiplayer model and color (Body::AddWeapon reads
 		// them, 0x1015bd79; the names are ours)

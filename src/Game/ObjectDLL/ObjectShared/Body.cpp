@@ -68,12 +68,13 @@ END_CLASS_DEFAULT_FLAGS(Body, Prop, NULL, NULL, CF_HIDDEN)
 //
 // ----------------------------------------------------------------------- //
 
-// RETAIL: inline in Tron (Body::Init, 0x1015ae4b, has it in its body)
-inline void Body::CreateSpecialFX()
+// RETAIL: inline in Tron (Body::Init, 0x1015ae4b, has it in its body). Tron's
+// Body keeps no create struct: only Init sends one.
+inline void Body::CreateSpecialFX(BODYCREATESTRUCT& bcs)
 {
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(SFX_BODY_ID);
-	m_BCS.Write(cMsg);
+	bcs.Write(cMsg);
 	g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 }
 
@@ -134,6 +135,7 @@ Body::Body() : Prop()
  	m_eModelNodeLastHit = eModelNodeInvalid;
 	m_pAttachments  = LTNULL;
     m_hHitBox       = LTNULL;
+	m_hTronUnknown894 = LTNULL;	// RETAIL: 0x10158f30
 
 	m_eBodyState	= kState_BodyNormal;
     m_pState        = LTNULL;
@@ -175,7 +177,6 @@ Body::Body() : Prop()
 	m_fTronUnknown10A4 = 0.0f;
 	m_fTronUnknown10A8 = 0.0f;
 	m_vTronUnknown10AC.Init();
-	m_bCanRevive = false;	// PORT: NOLF2's (not in retail)
 
 	// Give ourselves touchnotify so we get put into containers.
 	m_dwFlags |= FLAG_TOUCH_NOTIFY;
@@ -737,7 +738,7 @@ void Body::Init(const BODYINITSTRUCT& bi)
 	m_eModelId			= bi.pCharacter->GetModelId();
 	m_eModelSkeleton    = bi.pCharacter->GetModelSkeleton();
 	m_hCharacter		= bi.pCharacter->m_hObject;
-	m_bCanRevive		= bi.bCanRevive;
+	m_hCarrier			= bi.hCoreDump;	// RETAIL: 0x1015a5a9
 
 	// Get the body lifetime
 	m_fLifetime		= bi.fBodyLifetime;
@@ -750,64 +751,62 @@ void Body::Init(const BODYINITSTRUCT& bi)
 
 	// Create the SFX
 	
-	m_BCS.Clear();
+	BODYCREATESTRUCT bcs;
 
-	m_BCS.eModelId = m_eModelId;
-
-	m_BCS.bPermanentBody = m_bPermanentBody;
+	bcs.eModelId = m_eModelId;
 
 
 	switch(bi.eBodyState)
 	{
 		case kState_BodyNormal:
-			m_BCS.eBodyState = eBodyStateNormal;
+			bcs.eBodyState = eBodyStateNormal;
 			break;
 		case kState_BodyChair:
-			m_BCS.eBodyState = eBodyStateChair;
+			bcs.eBodyState = eBodyStateChair;
 			break;	
 		case kState_BodyLadder:
-			m_BCS.eBodyState = eBodyStateLadder;
+			bcs.eBodyState = eBodyStateLadder;
 			break;	
 		case kState_BodyLaser:
-			m_BCS.eBodyState = eBodyStateLaser;
+			bcs.eBodyState = eBodyStateLaser;
 			break;	
 		case kState_BodyExplode:
-			m_BCS.eBodyState = eBodyStateExplode;
+			bcs.eBodyState = eBodyStateExplode;
 			break;	
 		case kState_BodyUnderwater:
-			m_BCS.eBodyState = eBodyStateUnderwater;
+			bcs.eBodyState = eBodyStateUnderwater;
 			break;	
 		case kState_BodyDecay:
-			m_BCS.eBodyState = eBodyStateDecay;
+			bcs.eBodyState = eBodyStateDecay;
 			break;	
 		case kState_BodyCrush:
-			m_BCS.eBodyState = eBodyStateCrush;
+			bcs.eBodyState = eBodyStateCrush;
 			break;	
 		case kState_BodyPoison:
-			m_BCS.eBodyState = eBodyStatePoison;
+			bcs.eBodyState = eBodyStatePoison;
 			break;	
 		case kState_BodyAcid:
-			m_BCS.eBodyState = eBodyStateAcid;
+			bcs.eBodyState = eBodyStateAcid;
 			break;	
 		case kState_BodyArrow:
-			m_BCS.eBodyState = eBodyStateArrow;
+			bcs.eBodyState = eBodyStateArrow;
 			break;	
 		case kState_BodyFade:
-			m_BCS.eBodyState = eBodyStateFade;
+			bcs.eBodyState = eBodyStateFade;
 			break;	
 		// RETAIL: Tron's two more cases (0x1015a6b6, 0x1015a6ca)
 		case kState_BodyGib:
-			m_BCS.eBodyState = eBodyStateGib;
+			bcs.eBodyState = eBodyStateGib;
 			break;
 		case kState_BodyPranksterImplode:
-			m_BCS.eBodyState = eBodyStatePranksterImplode;
+			bcs.eBodyState = eBodyStatePranksterImplode;
 			break;
 	}
 	
 	if (IsPlayer(bi.pCharacter->m_hObject))
 	{
 		CPlayerObj* pPlayer = (CPlayerObj*) bi.pCharacter;
-		m_BCS.nClientId = (uint8) g_pLTServer->GetClientID(pPlayer->GetClient());
+		bcs.nClientId = (uint8) g_pLTServer->GetClientID(pPlayer->GetClient());
 	}
 
 	// Create the death scene
@@ -893,13 +892,14 @@ void Body::Init(const BODYINITSTRUCT& bi)
 
 	CreateHitBox(bi);
 
-	CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
-	if( pHitBox )
+	// RETAIL: Tron's (0x1015aa67): the create struct has no hit box data.
+	if( m_hHitBox )
 	{
-		g_pPhysicsLT->GetObjectDims( m_hHitBox, &m_BCS.vHitBoxDims );
-		
-		m_BCS.vHitBoxOffset = pHitBox->GetOffset();
-		m_BCS.bCanBeSearched = pHitBox->CanBeSearched();
+		CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
+		if( pHitBox )
+		{
+			pHitBox->SetTronUnknown7D( true );
+		}
 	}
 
 	LTFLOAT r, g, b, a; 
@@ -994,18 +994,20 @@ void Body::Init(const BODYINITSTRUCT& bi)
 	{
 		// Players can't be carried.
 
-		m_BCS.bCanBeCarried = m_bCanBeCarried = m_bCanCarry = false;
+		bcs.bCanBeCarried = m_bCanBeCarried = m_bCanCarry = false;
+
+		// RETAIL: Tron's (0x1015adc6): a player's body can be revived in a
+		// multiplayer game.
+		bcs.bCanBeRevived = IsMultiplayerGame();
 	}
 	else
 	{
-		m_BCS.bCanBeCarried = m_bCanBeCarried = m_bCanCarry = !!(g_pModelButeMgr->CanModelBeCarried(m_eModelId));
+		bcs.bCanBeCarried = m_bCanBeCarried = m_bCanCarry = !!(g_pModelButeMgr->CanModelBeCarried(m_eModelId));
 	}
 
-	m_BCS.eDeathDamageType = bi.pCharacter->GetDeathDamageType();	
+	bcs.eDeathDamageType = bi.pCharacter->GetDeathDamageType();	
 
-	m_BCS.bCanBeRevived = m_bCanRevive;
-
-	CreateSpecialFX( );
+	CreateSpecialFX( bcs );
 
 	// Keep the number of bodies low in a given area.
 	if( g_pGameServerShell->IsCapNumberOfBodies( ))
@@ -1275,7 +1277,6 @@ void Body::Update()
 
 				m_bUpdateHitBox = true;
 				m_bDimsUpdated = true;
-				m_BCS.bHitBoxUpdated = true;
 			}
 		}
 
@@ -1366,10 +1367,6 @@ void Body::UpdateClientHitBox()
 			vHitOffset = pHitBox->GetOffset();
 			bCanBeSearched = pHitBox->CanBeSearched();
 			bTronUnknown7D = pHitBox->GetTronUnknown7D();
-
-			g_pPhysicsLT->GetObjectDims( m_hHitBox, &m_BCS.vHitBoxDims );
-			m_BCS.vHitBoxOffset = pHitBox->GetOffset();
-			m_BCS.bCanBeSearched = pHitBox->CanBeSearched();
 		}
 
 		CAutoMessage cMsg;
@@ -1380,12 +1377,9 @@ void Body::UpdateClientHitBox()
 		cMsg.WriteCompLTVector( vHitDims );
 		cMsg.WriteCompLTVector( vHitOffset );
 		cMsg.Writebool( bCanBeSearched );
-		cMsg.Writebool( bTronUnknown7D );	// RETAIL: 0x1015baa6
+		cMsg.Writebool( bTronUnknown7D );
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
 	}
-
-	CreateSpecialFX();
 }
 
 // ----------------------------------------------------------------------- //
@@ -2131,98 +2125,30 @@ void Body::SetCanCarry( bool bCarry )
 	if( m_bCanCarry != bCarry )
 	{
 		m_bCanCarry = (bCarry && m_bCanBeCarried);
-		m_BCS.bCanBeCarried = m_bCanCarry;
 
 		CAutoMessage cMsg;
 		cMsg.Writeuint8(MID_SFX_MESSAGE);
 		cMsg.Writeuint8(SFX_BODY_ID);
 		cMsg.WriteObject(m_hObject);
 		cMsg.Writeuint8(BFX_CAN_CARRY);
-		cMsg.Writebool(m_bCanCarry);
+		cMsg.Writeuint8(m_bCanCarry);	// RETAIL: 8 bits (0x1015d43b); the client reads 1
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 	}
-	
-	CreateSpecialFX();
 }
 		
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	Body::SetCanCarry
+//	ROUTINE:	Body::SetBeingCarried
 //
 //	PURPOSE:	Sets the body to be carried or not
 //
 // ----------------------------------------------------------------------- //
 
-void Body::SetBeingCarried( bool bBeingCarried, HOBJECT hCarrier ) 
+void Body::SetBeingCarried( bool bBeingCarried ) 
 { 
+	// RETAIL: Tron's (0x10159110, ret 4) takes no carrier and sends no
+	// message: it keeps only the flag.
 	m_bBeingCarried = bBeingCarried; 
-	m_hCarrier = hCarrier;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_SFX_MESSAGE);
-	cMsg.Writeuint8(SFX_BODY_ID);
-	cMsg.WriteObject(m_hObject);
-	cMsg.Writeuint8(BFX_CARRIED);
-	cMsg.Writebool(m_bBeingCarried);
-	cMsg.WriteObject(m_hCarrier);
-	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-	CreateSpecialFX();
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	Body::SetPermanentBody
-//
-//	PURPOSE:	Sets the body to be permanent
-//
-// ----------------------------------------------------------------------- //
-
-void Body::SetPermanentBody( bool bPermanent )
-{ 
-	if( m_bPermanentBody == bPermanent )
-		return;
-
-	m_bPermanentBody = bPermanent;
-	m_BCS.bPermanentBody = bPermanent;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_SFX_MESSAGE);
-	cMsg.Writeuint8(SFX_BODY_ID);
-	cMsg.WriteObject(m_hObject);
-	cMsg.Writeuint8(BFX_PERMANENT);
-	cMsg.Writebool(m_bPermanentBody);
-	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-	CreateSpecialFX();
-}
-
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	Body::SetCanRevive
-//
-//	PURPOSE:	Sets the body to be revivable
-//
-// ----------------------------------------------------------------------- //
-
-void Body::SetCanRevive( bool bCanRevive )
-{ 
-	if( m_bCanRevive == bCanRevive )
-		return;
-
-	m_bCanRevive = bCanRevive;
-	m_BCS.bCanBeRevived = bCanRevive;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_SFX_MESSAGE);
-	cMsg.Writeuint8(SFX_BODY_ID);
-	cMsg.WriteObject(m_hObject);
-	cMsg.Writeuint8(BFX_CANREVIVE);
-	cMsg.Writebool(m_bCanRevive);
-	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-	CreateSpecialFX();
 }
 
 // ----------------------------------------------------------------------- //

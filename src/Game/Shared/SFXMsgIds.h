@@ -169,21 +169,16 @@
 
 // BodyFX messages...
 
-// RETAIL: Tron's values, from CBodyFX::OnServerMessage's switch (CShell.dll
-// 0x1012e040: 2 fade, 3 hitbox, 4 can carry, 5 damage fx) and Body's sends
-// (Object.lto 0x1015ba5c hitbox, 0x1015d434 can carry, 0x1015bc06 damage fx).
-// Tron has no carried, permanent or revive message: retail sends none and
-// its client has no case for them.
+// RETAIL: Tron's (CBodyFX::OnServerMessage, CShell.dll 0x1012e040, takes
+// 2..5; Body::SetCanCarry, Object.lto 0x1015d380, sends 4 and Body's damage
+// handler, 0x1015bb10, sends 5). NOLF2's carried, permanent and revive
+// messages are not in Tron.
+
 #define BFX_TWITCH_MSG					1
 #define BFX_FADE_MSG					2
 #define BFX_HITBOX_MSG					3
 #define BFX_CAN_CARRY					4
 #define BFX_DAMAGEFX_MSG				5
-// PORT: NOLF2's messages, not in Tron. Our Body still sends them; the values
-// are ours (after Tron's last).
-#define BFX_CARRIED						6
-#define BFX_PERMANENT					7
-#define BFX_CANREVIVE					8
 
 // TriggerFX messages...
 

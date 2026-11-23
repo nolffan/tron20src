@@ -35,15 +35,10 @@ extern CGameClientShell* g_pGameClientShell;
 
 CBodyFX::CBodyFX()
 {
-	m_pRagDoll = NULL;
+	// RETAIL: Tron's (0x1012da60) sets only these.
 	m_fFaderTime = 3.0f;
 	m_fFaderTimer = 3.0f;
-	m_fBackpackFaderTime = 3.0f;
-	m_fBackpackFaderTimer = 3.0f;
-	m_bHidden = false;
-	m_hBackpack = NULL;
-	m_bFadeToBackpack = false;
-	m_fCreateTime = 0.0f;
+	m_pRagDoll = NULL;
 }
 
 // ----------------------------------------------------------------------- //
@@ -58,10 +53,6 @@ CBodyFX::~CBodyFX()
 {
 	if(g_pClientFXMgr)
 	{
-		if (m_fxDeath.IsValid())
-		{
-			g_pClientFXMgr->ShutdownClientFX(&m_fxDeath);
-		}
 		if (m_fx.IsValid())
 		{
 			g_pClientFXMgr->ShutdownClientFX(&m_fx);
@@ -69,11 +60,6 @@ CBodyFX::~CBodyFX()
 	}
 
 	debug_delete(m_pRagDoll);
-
-	if (m_hBackpack)
-	{
-		RemoveBackpack();
-	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -110,7 +96,18 @@ LTBOOL CBodyFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
     if (!CSpecialFX::Init(psfxCreateStruct)) return LTFALSE;
 
 	m_bs = *((BODYCREATESTRUCT*)psfxCreateStruct);
-	
+
+	// RETAIL: Tron's (0x1012dcb0): the local client's own body is hidden and
+	// gets no fx.
+
+	uint32 dwLocalId;
+	g_pLTClient->GetLocalClientID(&dwLocalId);
+	if (m_bs.nClientId == dwLocalId)
+	{
+		g_pCommonLT->SetObjectFlags(psfxCreateStruct->hServerObj, OFT_Flags, 0, FLAG_VISIBLE);
+		return LTFALSE;
+	}
+
 	// Play a deathfx on the body based on the damage type that killed the character... 
 	
 	DamageFlags	nDeathDamageFlag = DamageFlags((DamageFlags)1 << (DamageFlags)m_bs.eDeathDamageType);
@@ -130,26 +127,11 @@ LTBOOL CBodyFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 		pDamageFX = g_pDamageFXMgr->GetNextDamageFX();
 	}
 
-	// Create the hitbox object
+	// Create the hitbox object.  RETAIL: Tron's create message has no hit box
+	// data: the server sends it with BFX_HITBOX_MSG.
 
-	m_HitBox.Init( m_hServerObject, m_bs.vHitBoxDims, m_bs.vHitBoxOffset );
-
-	// Fade to backpacks in low violence games and only for players in non-singlepleyer game types...
-	
-	m_bFadeToBackpack = g_pVersionMgr->IsLowViolence() || ((GetGameType() != eGameTypeSingle) && (m_bs.nClientId != (uint8)-1));
-
-
-	//if we are in a low-violence game, hide the body and create a backpack,
-	// and we've already completed our death animation (i.e. the server has updated our hitbox once
-	if (m_bFadeToBackpack && !m_bs.bPermanentBody && m_bs.bHitBoxUpdated)
-	{
-		CreateBackpack();
-		g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
-	}
-
-	// Set the creation time...
-
-	m_fCreateTime = g_pLTClient->GetTime();
+	LTVector vZero(0.0f, 0.0f, 0.0f);
+	m_HitBox.Init( m_hServerObject, vZero, vZero );
 
     return LTTRUE;
 }
@@ -388,10 +370,6 @@ LTBOOL CBodyFX::Update()
 {
     if (!m_pClientDE || !m_hServerObject || m_bWantRemove) return LTFALSE;
 
-	// Don't let us get stomped by the server's flags
-	if(m_bHidden)
-		g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
-
 	// Update our hitbox...
 
 	m_HitBox.Update();
@@ -399,28 +377,9 @@ LTBOOL CBodyFX::Update()
 	switch ( m_bs.eBodyState )
 	{
 		case eBodyStateFade:
-			if (m_hBackpack)
-			{
-				FadeBackpack();
-			}
-			else
-			{
-				UpdateFade();
-			}
+			UpdateFade();
 			break;
 	}
-
-	if (m_hBackpack)
-	{
-		UpdateBackpack();
-	}
-
-
-	if (g_pVersionMgr->IsLowViolence())
-	{
-		UpdateAttachments();
-	}
-
 
 	if(m_pRagDoll)
 		m_pRagDoll->Update();
@@ -447,43 +406,12 @@ void CBodyFX::UpdateFade()
 
 	m_fFaderTime = Max<LTFLOAT>(0.0f, m_fFaderTime - g_pGameClientShell->GetFrameTime());
 
-	float fAlpha = m_fFaderTime/m_fFaderTimer;
-
-	g_pLTClient->SetObjectColor(m_hServerObject, 1, 1, 1, fAlpha);
+	g_pLTClient->SetObjectColor(m_hServerObject, 1, 1, 1, m_fFaderTime/m_fFaderTimer);
 
 	for (int i=0; i < nNum; i++)
 	{
-		g_pLTClient->SetObjectColor(attachList[i], 1, 1, 1, fAlpha);
-
-        uint32 dwUsrFlags;
-        g_pCommonLT->GetObjectFlags(attachList[i], OFT_User, dwUsrFlags);
-		
-		if (g_pVersionMgr->IsLowViolence() && dwUsrFlags & USRFLG_ATTACH_HIDEGORE)
-		{
-			g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-		}
-
+		g_pLTClient->SetObjectColor(attachList[i], 1, 1, 1, m_fFaderTime/m_fFaderTimer);
 	}
-
-	if (fAlpha < 0.01f)
-	{
-		g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
-
-		for (int i=0; i < nNum; i++)
-		{
-			g_pLTClient->Common()->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-			
-		}
-
-	}
-}
-
-void CBodyFX::FadeBackpack()
-{
-	m_fBackpackFaderTime = Max<LTFLOAT>(0.0f, m_fBackpackFaderTime - g_pGameClientShell->GetFrameTime());
-
-	float fAlpha = m_fBackpackFaderTime/m_fBackpackFaderTimer;
-	g_pLTClient->SetObjectColor(m_hServerObject, 1, 1, 1, fAlpha);
 }
 
 // ----------------------------------------------------------------------- //
@@ -513,14 +441,13 @@ LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 		case BFX_HITBOX_MSG:
 		{
 			LTVector vDims, vOffset;
-			bool bCanBeSearched;
+			bool bCanBeSearched, bCanActivate;
 			
 			vDims = pMsg->ReadCompLTVector();
 			vOffset = pMsg->ReadCompLTVector();
 			bCanBeSearched = pMsg->Readbool();
-			// RETAIL: Tron's second flag (0x1012e0e6), as the server's
-			// Body::UpdateClientHitBox writes it
-			bool bCanActivate = pMsg->Readbool();
+			// RETAIL: Tron's second flag (0x1012e0e6; the name is ours).
+			bCanActivate = pMsg->Readbool();
 
 			// Set the dims and offset on the hitbox
 			
@@ -528,8 +455,6 @@ LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 			m_HitBox.SetOffset( vOffset );
 			m_HitBox.SetCanBeSearched( bCanBeSearched );
 			m_HitBox.SetCanActivate( bCanActivate );
-
-			// RETAIL: Tron does not create the low violence backpack here
 		}
 		break;
 
@@ -544,7 +469,6 @@ LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 			m_bs.bCanBeCarried = pMsg->Readbool();	
 		}
 		break;
-
 	}
 
     return LTTRUE;
@@ -554,6 +478,8 @@ bool GroundFilterFn(HOBJECT hObj, void *pUserData)
 {
 	return ( IsMainWorld(hObj) || (OT_WORLDMODEL == GetObjectType(hObj)) );
 }
+
+static void GetDeathFXName( HOBJECT hModel, char* pszFX );
 
 void CBodyFX::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 {
@@ -626,59 +552,44 @@ void CBodyFX::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 		}
 		else if ( !_stricmp( pKey, "DEATHFX" ))
 		{
-			//
-			// Special FX key
-			//
-			HandleDeathFXKey( hObj, pArgs );
-		}
-		else if ( !_stricmp( pKey, "FX" ))
-		{
-			//
-			// Special FX key
-			//
-			HandleFXKey( hObj, pArgs );
-		}
-		else if(!_stricmp(pKey,"HIDE"))
-		{
-			g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
-			m_bHidden = true;
-		}
-		else if(!_stricmp(pKey,"UNHIDE"))
-		{
-			g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
-			m_bHidden = false;
+			// RETAIL: Tron's (0x1012e2f4): the fx name comes from the model
+			// and skin file names, and there are no FX, HIDE or UNHIDE keys.
+			char szFX[512] = {0};
+			GetDeathFXName( m_hServerObject, szFX );
+			CreateFX( szFX );
 		}
 	}
 }
 
+
 // ----------------------------------------------------------------------- //
 //
-//	FUNCTION:	CBodyFX::HandleDeathFXKey()
+//	FUNCTION:	GetDeathFXName()
 //
-//	PURPOSE:	Handle a Death FX key
+//	PURPOSE:	RETAIL: Tron's (0x1012e5b0; the name is ours): the death fx
+//				name is "DEATHFX_<model>_<skin>", without directory or
+//				extension.
 //
 // ----------------------------------------------------------------------- //
-bool CBodyFX::HandleDeathFXKey( HLOCALOBJ hObj, ArgList* pArgList )
+
+static void GetDeathFXName( HOBJECT hModel, char* pszFX )
 {
-	// Sanity check
-	if(pArgList->argc < 2)
-		return false;
-
-	// Get the object's filenames
-	char szFullModelPath[512];
+	char szSkinPath[512];
+	char szModelPath[512];
+	char szSkinName[512];
 	char szModelName[512];
-	g_pLTClient->GetModelLT()->GetModelDBFilename(m_hServerObject,szFullModelPath,512);
 
-	// Remove the .ltb from the model
-	int nIndex = strlen(szFullModelPath)-4;
-	szFullModelPath[nIndex] = '\0'; // 4 characters from end
-	
-	// Strip off the directory information
+	g_pModelLT->GetModelDBFilename( hModel, szModelPath, 512 );
+	g_pModelLT->GetSkinFilename( hModel, 0, szSkinPath, 512 );
+
+	// Remove the extension and the directory from the model file
+	int nIndex = strlen(szModelPath)-4;
+	szModelPath[nIndex] = '\0';
+
 	int nStart = 0;
 	while((nStart == 0) && (nIndex != 0))
 	{
-		// Search backwards until we find a directory separator
-		if((szFullModelPath[nIndex] == '\\') || (szFullModelPath[nIndex] == '/'))
+		if((szModelPath[nIndex] == '\\') || (szModelPath[nIndex] == '/'))
 		{
 			nStart = nIndex+1;
 		}
@@ -687,58 +598,34 @@ bool CBodyFX::HandleDeathFXKey( HLOCALOBJ hObj, ArgList* pArgList )
 			nIndex--;
 		}
 	}
-	// Now we've got the start and end of just the model filename
-	strcpy(szModelName,&szFullModelPath[nStart]);
+	strcpy(szModelName,&szModelPath[nStart]);
 
-	// Get the FX name
-	char szFX[512];
-	sprintf(szFX,"DEATHFX_%s_%s",szModelName,pArgList->argv[1]);
+	// The same for the skin file
+	nIndex = strlen(szSkinPath)-4;
+	szSkinPath[nIndex] = '\0';
 
-	// create the effect
-	bool bResult;
-	CLIENTFX_CREATESTRUCT  fxCS( szFX,
-		                         0,
-		                         m_hServerObject );
-	
-	// Set the parent info & starting pos
-	g_pLTClient->GetObjectPos(m_hServerObject,&fxCS.m_vPos);
-
-	bResult = g_pClientFXMgr->CreateClientFX( &m_fxDeath,
-		                                      fxCS,
-		                                      LTTRUE );
-
-	// [kml] We set this because they set it in ClientFXMgr::OnSpecialEffectNotify
-	// Seems superfluous
-	if(!m_fxDeath.IsValid())
+	nStart = 0;
+	while((nStart == 0) && (nIndex != 0))
 	{
-		// Death FX couldn't start
-		ASSERT(FALSE);
+		if((szSkinPath[nIndex] == '\\') || (szSkinPath[nIndex] == '/'))
+		{
+			nStart = nIndex+1;
+		}
+		else
+		{
+			nIndex--;
+		}
 	}
+	strcpy(szSkinName,&szSkinPath[nStart]);
 
-	return bResult;
+	sprintf(pszFX,"DEATHFX_%s_%s",szModelName,szSkinName);
 }
 
 // ----------------------------------------------------------------------- //
 //
-//	FUNCTION:	CBodyFX::HandleFXKey()
+//	FUNCTION:	CBodyFX::CreateFX()
 //
-//	PURPOSE:	Handle an FX key
-//
-// ----------------------------------------------------------------------- //
-bool CBodyFX::HandleFXKey( HLOCALOBJ hObj, ArgList* pArgList )
-{
-	// Sanity check
-	if(!pArgList || pArgList->argc < 2 || !pArgList->argv[1])
-		return false;
-
-	return CreateFX(pArgList->argv[1]);
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	FUNCTION:	CBodyFX::HandleFXKey()
-//
-//	PURPOSE:	Handle an FX key
+//	PURPOSE:	Create an fx on the body
 //
 // ----------------------------------------------------------------------- //
 bool CBodyFX::CreateFX( char* pFXName )
@@ -746,13 +633,14 @@ bool CBodyFX::CreateFX( char* pFXName )
 	if (!pFXName || !pFXName[0])
 		return false;
 
-	// Only play one FX at a time...
-	
-	if( m_fx.IsValid() && !m_fx.GetInstance()->IsFinished() )
-		return false;
-
 	CLIENTFX_CREATESTRUCT  fxCS( pFXName, 0, m_hServerObject );
-	return g_pClientFXMgr->CreateClientFX( &m_fx, fxCS, LTTRUE );
+	bool bResult = g_pClientFXMgr->CreateClientFX( &m_fx, fxCS, LTTRUE );
+	if( !bResult )
+	{
+		g_pLTClient->CPrint( "Unable to create deathfx : %s ", pFXName );
+	}
+
+	return bResult;
 }
 
 // ----------------------------------------------------------------------- //
@@ -764,16 +652,9 @@ bool CBodyFX::CreateFX( char* pFXName )
 // ----------------------------------------------------------------------- //
 void CBodyFX::CreateDamageFX( DamageType eDamageType )
 {
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( m_hServerObject, OFT_Flags, dwFlags );
+	// RETAIL: Tron's (0x1012e7f0) plays the fx on an invisible body too, and
+	// keeps no link to it.
 
-	// Don't play the damageFX on an invisible body...
-
-	if( !(dwFlags & FLAG_VISIBLE) )
-		return;
-
-	// Play a deathfx on the body based on the damage type that killed the character... 
-	
 	DamageFlags	nDamageFlag = DamageFlags((DamageFlags)1 << (DamageFlags)eDamageType);
 	
 	DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstDamageFX();
@@ -783,130 +664,11 @@ void CBodyFX::CreateDamageFX( DamageType eDamageType )
 		{
 			if( pDamageFX->m_szBodyFXName[0] )
 			{
-				// Just call CreateFX so it saves the link and checks to see if one is already playing...
-
-				CreateFX( pDamageFX->m_szBodyFXName );
+				CLIENTFX_CREATESTRUCT fxInit( pDamageFX->m_szBodyFXName, 0, m_hServerObject );
+				g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
 			}
 		}
 
 		pDamageFX = g_pDamageFXMgr->GetNextDamageFX();
 	}
-}
-
-//create backpack to replace body for low-violence games
-void CBodyFX::CreateBackpack()
-{
-	if (m_hBackpack || !m_hServerObject) return;
-
-	HLOCALOBJ attachList[20];
-    uint32 dwListSize = 0;
-    uint32 dwNumAttach = 0;
-
-	g_pCommonLT->GetAttachments(m_hServerObject, attachList, 20, dwListSize, dwNumAttach);
-	int nNum = dwNumAttach <= dwListSize ? dwNumAttach : dwListSize;
-
-
-	g_pLTClient->Common()->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
-
-	for (int i=0; i < nNum; i++)
-	{
-		g_pLTClient->Common()->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-		
-	}
-				
-				
-
-
-	LTVector vPos;
-	LTRotation rRot;
-
-	g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
-	g_pLTClient->GetObjectRotation(m_hServerObject, &rRot);
-
-	ObjectCreateStruct createStruct;
-	INIT_OBJECTCREATESTRUCT(createStruct);
-
-	SAFE_STRCPY(createStruct.m_Filename, "props\\models\\PuBackpack.ltb");
-	SAFE_STRCPY(createStruct.m_SkinNames[0], "props\\skins\\PuBackpack.dtx");
-	SAFE_STRCPY(createStruct.m_RenderStyleNames[0], "rs\\glass.ltb");
-
-	createStruct.m_ObjectType	= OT_MODEL;
-	createStruct.m_Flags		= FLAG_VISIBLE;
-	createStruct.m_Flags2		= FLAG2_FORCETRANSLUCENT;
-	createStruct.m_Pos			= vPos;
-	createStruct.m_Rotation		= rRot;
-
-	m_hBackpack = g_pLTClient->CreateObject(&createStruct);
-	if (!m_hBackpack) return;
-
-	HMODELANIM nAni = g_pLTClient->GetAnimIndex( m_hBackpack, "Idle1" );
-	g_pLTClient->SetModelLooping( m_hBackpack, LTFALSE );
-	g_pLTClient->SetModelAnimation( m_hBackpack, nAni );
-
-	// Re-Init the hit box so it is now associated with the BackPack model...
-
-	m_HitBox.Init( m_hBackpack, m_HitBox.GetDims(), m_HitBox.GetOffset() );
-	
-}
-void CBodyFX::UpdateBackpack()
-{
-	if (!m_hBackpack || !m_hServerObject) return;
-
-	uint32 dwFlags = 0;
-	g_pLTClient->Common()->GetObjectFlags(m_hServerObject,OFT_Flags, dwFlags);
-	if (dwFlags & FLAG_VISIBLE)
-	{
-		UpdateFade();
-	}
-
-	
-
-	LTVector vPos;
-	LTRotation rRot;
-
-	g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
-	g_pLTClient->GetObjectRotation(m_hServerObject, &rRot);
-	g_pLTClient->SetObjectPosAndRotation(m_hBackpack, &vPos, &rRot);
-
-}
-void CBodyFX::RemoveBackpack()
-{
-	if (m_hBackpack)
-		g_pLTClient->RemoveObject(m_hBackpack);
-	m_hBackpack = LTNULL;
-}
-
-
-void CBodyFX::UpdateAttachments()
-{
-	HLOCALOBJ attachList[20];
-    uint32 dwListSize = 0;
-    uint32 dwNumAttach = 0;
-
-	g_pCommonLT->GetAttachments(m_hServerObject, attachList, 20, dwListSize, dwNumAttach);
-	int nNum = dwNumAttach <= dwListSize ? dwNumAttach : dwListSize;
-	for (int i=0; i < nNum; i++)
-	{
-        uint32 dwUsrFlags;
-        g_pCommonLT->GetObjectFlags(attachList[i], OFT_User, dwUsrFlags);
-		
-		if (g_pVersionMgr->IsLowViolence() && dwUsrFlags & USRFLG_ATTACH_HIDEGORE)
-		{
-			g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-		}
-
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	FUNCTION:	CBodyFX::RemoveClientAssociation()
-//
-//	PURPOSE:	Cleat out any data that relates to a specific client...
-//
-// ----------------------------------------------------------------------- //
-
-void CBodyFX::RemoveClientAssociation( )
-{
-	m_bs.nClientId = (uint8)-1;
 }
