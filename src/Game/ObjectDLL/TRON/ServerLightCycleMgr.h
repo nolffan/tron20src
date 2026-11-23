@@ -88,11 +88,22 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		void SetGameSpeed(int nIndex, HCLIENT hClient);
 		void SetTrailLength(int nIndex, HCLIENT hClient);
 
+		// The speed scalar and trail length, told to all the clients.
+		// RETAIL: inline (the single player game's, Object.lto 0x1005d29d;
+		// the name is ours)
+		void SetGameSpeedAndTrailLength(float fGameSpeedScalar, float fTrailLength)
+		{
+			m_fGameSpeedScalar = fGameSpeedScalar;
+			m_fTrailLength = fTrailLength;
+			SendGameSpeed(LTNULL);
+			SendTrailLength(LTNULL);
+		}
+
 		// Tells a client about all the cyclists. RETAIL: 0x100529f0
 		void SendCyclistsToClient(HCLIENT hClient);
 
 		// RETAIL: 0x10052900
-		void SendTronUnknown21(HCLIENT hClient, int8 nTronUnknown);
+		void SendTronUnknown21(HCLIENT hClient, int nTronUnknown);	// RETAIL: an int (the circuit wave's callers, 0x1005f30c, zero-extend a uint8)
 
 		// The power-ups lying around. RETAIL: 0x10052380 (Remove)
 		void AddPowerup(LightCyclePowerup* pPowerup) { m_collPowerups.push_back(pPowerup); }
@@ -109,6 +120,10 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		// RETAIL: AILightCycle asks for the player's cyclist and the
 		// nearest power-up (0x10007140, 0x10004063)
 		friend class AILightCycle;
+		// RETAIL: the server shell tells a client that enters the world the
+		// speed and trail length of the light cycle game types (Object.lto
+		// 0x1005d317)
+		friend class CTronGameServerShell;
 
 
 		// The non-virtual workers of the virtuals above

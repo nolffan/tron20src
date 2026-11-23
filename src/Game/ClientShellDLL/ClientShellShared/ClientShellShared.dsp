@@ -190,7 +190,7 @@ SOURCE=.\CheatMgr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CircuitButeMgr.cpp
+SOURCE=..\..\Shared\TRON\CircuitButeMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -1048,7 +1048,7 @@ SOURCE=.\CheatMgr.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\CircuitButeMgr.h
+SOURCE=..\..\Shared\TRON\CircuitButeMgr.h
 # End Source File
 # Begin Source File
 

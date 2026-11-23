@@ -22,6 +22,7 @@
 #include "LightCycleMgr.h"
 #include "LightCycle.h"
 #include "LightCycleButeMgr.h"
+#include "LightCycleGameData.h"
 #include "ServerMissionMgr.h"
 #include "ArenaStartPoint.h"
 #include "MultiplayerLevelInfoMgr.h"
@@ -2271,11 +2272,11 @@ bool CTronPlayerObj::StartLightCycle( bool bSuper, bool bTronUnknown )
 	{
 		// RETAIL: the game options keep the light cycle game's data (its
 		// style and shade at 0xa0 and 0xa1)
-		uint8 const* pCycleData = ( uint8 const* )g_pGameServerShell->GetServerGameOptions().GetTronUnknownCC();
+		CLightCycleGameData* pCycleData = ( CLightCycleGameData* )g_pGameServerShell->GetServerGameOptions().GetLightCycleGameData();
 		if( !pCycleData )
 			return false;
 
-		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetShadeCycleColor( pCycleData[0xa0], pCycleData[0xa1] );
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetShadeCycleColor( pCycleData->m_bTronUnknownA0, pCycleData->m_bTronUnknownA1 );
 		if( !pColor )
 			return false;
 

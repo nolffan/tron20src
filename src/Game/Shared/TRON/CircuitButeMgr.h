@@ -14,7 +14,10 @@
 // is from RTTI, the file name and the names of the records and members are
 // ours, the attribute names are retail's). CGameClientShell owns it (retail
 // +0x8340, created in OnEngineInitialized 0x100e270f by an inline
-// constructor; 0x1120 bytes).
+// constructor; 0x1120 bytes). Object.lto also links this file (its TU
+// after BuildNote's, 0x10016ec0..): it keeps only Circuit's constructor
+// (0x10016ed0) and destructor (0x10017000), for CLightCycleGameData
+// (LightCycleGameData.h).
 
 #include "GameButeMgr.h"
 #include <list>

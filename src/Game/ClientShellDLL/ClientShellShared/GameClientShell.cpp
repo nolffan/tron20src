@@ -53,7 +53,7 @@
 #include "ClientFXDB.h"
 #include <sys/timeb.h>
 #include "PerformanceTest.h"
-#include "CircuitButeMgr.h"
+#include "TRON/CircuitButeMgr.h"
 #include "ScmdConsole.h"
 #include "ScmdConsoleDriver_CShell.h"
 #include "mmsystem.h"

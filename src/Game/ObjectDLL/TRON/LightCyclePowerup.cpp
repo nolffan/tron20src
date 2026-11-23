@@ -16,6 +16,7 @@
 #include "CommandMgr.h"
 #include "GameServerShell.h"
 #include "LightCycleMatchMgr.h"
+#include "LightCycleGameData.h"
 
 extern CGameServerShell* g_pGameServerShell;
 
@@ -123,9 +124,9 @@ inline uint32 GetAllowedPowerups()
 		{
 			// RETAIL: the custom game's settings, their power-ups at +0x2c
 			ServerGameOptions& options = g_pGameServerShell->GetServerGameOptions();
-			if (options.GetTronUnknownCC())
+			if (options.GetLightCycleGameData())
 			{
-				dwAllowed = ((uint32*)options.GetTronUnknownCC())[0x2c / sizeof(uint32)];
+				dwAllowed = (( CLightCycleGameData* )options.GetLightCycleGameData())->m_Custom.nPowerups;
 			}
 			else
 			{

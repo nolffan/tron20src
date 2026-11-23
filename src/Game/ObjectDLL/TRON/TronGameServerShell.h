@@ -20,6 +20,7 @@
 #include "SubroutineDataMgr.h"
 #include "MultiplayerLevelInfoMgr.h"
 #include "SharedScoring.h"
+#include "LightCycleGameData.h"
 #include "GameSpy/GameSpySDK/qr2/qr2.h"
 #include <list>
 
@@ -53,11 +54,25 @@ class CTronGameServerShell : public CGameServerShell
 		// RETAIL: overrides that only call the base (retail 0x1005d3d0)
 		virtual void	SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *pPlayer, uint8 nInfoType);
 
+		// RETAIL: the single player light cycle circuit's waves: retail
+		// 0x1005f2b0 (make a wave current and tell the clients; false past
+		// the last), 0x1005f330 (its speed and trail length), 0x1005f390
+		// (the next wave: the WAVECOMPLETE command, 0x10066329) and
+		// 0x1005f3b0 (the custom game's AI cyclists at the LCSpawner<n>
+		// spawners: the SPAWNAICYCLES command, 0x10066368). The names are ours
+		bool	SetCircuitWave( uint8 nWave );
+		void	ApplyCircuitWave( );
+		void	NextCircuitWave( );
+		void	SpawnAICycles( );
+
 	protected:
 		virtual LTRESULT OnServerInitialized();
 
 		// RETAIL: retail 0x1005cea0
 		void			PreStartWorld(bool bSwitchingWorlds);
+
+		// RETAIL: retail 0x1005d260 (slot 14)
+		LPBASECLASS		OnClientEnterWorld(HCLIENT hClient);
 
 		// RETAIL: retail 0x1005d370
 		void			OnClientExitWorld(HCLIENT hClient);
@@ -179,7 +194,7 @@ class CTronGameServerShell : public CGameServerShell
 		std::string			m_sGameSpyMapName;		// +0x1d0c4 GameSpy's "mapname" (ours)
 		char				m_szGameSpyVersion[16];	// +0x1d0d0 GameSpy's "gamever", "%d.%.3d" (ours)
 		std::list<int>		m_lstCDKeyClients;		// +0x1d0e0 the client ids whose CD key passed (ours)
-		bool				m_bTronUnknown1D0E4;	// +0x1d0e4
+		uint8				m_nCircuitWave;			// +0x1d0e4 the circuit's current wave (ours; retail 0x1005f2b0)
 		bool				m_bLevelSwitchRequested;	// +0x1d0e5 (ours; retail 0x1005e090)
 		uint32				m_nLevelSwitchArg;		// +0x1d0e8 (ours; retail 0x1005e090)
 		CTronTeamMgr		m_TeamMgr;			// +0x1d0ec Same as g_pTronTeamMgr (its constructor and destructor, retail 0x1005c2c0, 0x1005c9a0)

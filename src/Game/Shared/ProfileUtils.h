@@ -273,7 +273,14 @@ class ServerGameOptions
 		std::string		m_sProfileName;				// +0xbc
 		bool			m_bPreCacheAssets;			// +0xc8
 		bool			m_bPerformanceTest;			// +0xc9
-		uint32			m_nTronUnknownCC;			// +0xcc RETAIL: retail 0x10114e50 returns it
+		// +0xcc RETAIL: the client's current single player light cycle set,
+		// a CLightCycleGameData* (Shared/TRON/LightCycleGameData.h;
+		// CLightCycleGameDataMgr::SetCurrent, CShell.dll 0x10047330); the
+		// server reads it through Object.lto 0x10114e50. The name is ours.
+		// PORT: void*, as a declaration of the class in this header (which
+		// the server's precompiled header includes) changes the register
+		// order of CAnimationMgr::FindAnimation (Object.lto 0x101b0e00)
+		void*			m_pLightCycleGameData;
 
 		//for the current game type
 		const char*	GetSessionName() const;
@@ -286,11 +293,11 @@ class ServerGameOptions
 #ifdef _CLIENTBUILD
 		LTBOOL			IsMapListEmpty( );	// TRON: CShell.dll 0x100eb4d0 (the name is ours)
 #endif
-		uint32		GetTronUnknownCC( ) const;
+		void*		GetLightCycleGameData( ) const;
 		// RETAIL: CShell.dll 0x100eb5a0: the light cycle game data manager
 		// stores its current settings here (CLightCycleGameDataMgr::
 		// SetCurrent). The name is ours
-		void		SetTronUnknownCC( uint32 nValue );
+		void		SetLightCycleGameData( void* pData );
 
 #ifndef _CLIENTBUILD
 		// RETAIL: Object.lto 0x10114e60, 0x10114f50, 0x101150a0: the GameSpy

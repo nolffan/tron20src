@@ -15,16 +15,7 @@
 #include "GameServerShell.h"
 #include "MsgIDs.h"
 #include "CaselessString.h"
-
-// RETAIL: the client's light cycle game data (CShell.dll's
-// CLightCycleGameData, ClientShellDLL/TRON/LightCycleGameDataMgr.h) as the
-// server reads it: ServerGameOptions::GetTronUnknownCC gives its address.
-// Only the custom game's maps are read here. The names are ours.
-struct LightCycleServerGameData
-{
-	std::string							m_sName;			// +0x00
-	std::vector<CaselessInlineString>	m_aCustomMaps;		// +0x0c
-};
+#include "LightCycleGameData.h"
 
 // --------------------------------------------------------------------------- //
 //
@@ -82,27 +73,33 @@ bool CLightCycleSinglePlayerMissionMgr::SendExitLevelMessage( )
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_TRON_UNKNOWN_194 );
 		g_pLTServer->SendToClient( cMsg.Read( ), LTNULL, MESSAGE_GUARANTEED );
-		return true;
 	}
-
-	LightCycleServerGameData* pData = ( LightCycleServerGameData* )g_pGameServerShell->GetServerGameOptions( ).GetTronUnknownCC( );
-	std::vector<CaselessInlineString>& aMaps = pData->m_aCustomMaps;
-
-	int8 nNextMap = 0;
-	std::vector<CaselessInlineString>::iterator iter;
-	for( iter = aMaps.begin( ); iter != aMaps.end( ); iter++ )
+	else
 	{
-		nNextMap++;
-		if( *iter == m_sCurrentWorldName.GetBuffer( ))
-			break;
+		// RETAIL: the client's current set (CShell.dll's; the server and the
+		// client share the process in the single player game)
+		CLightCycleGameData* pData = ( CLightCycleGameData* )g_pGameServerShell->GetServerGameOptions( ).GetLightCycleGameData( );
+		StringArray& aMaps = pData->m_Custom.aMaps;
+
+		int8 nNextMap = 0;
+		StringArray::iterator iter;
+		for( iter = aMaps.begin( ); iter != aMaps.end( ); iter++ )
+		{
+			nNextMap++;
+			// RETAIL: the maps are std::strings, but they compare without
+			// case (_memicmp, 0x101ccce7): the cast is ours
+			if( *( CaselessInlineString* )&( *iter ) == m_sCurrentWorldName.GetBuffer( ))
+				break;
+		}
+
+		if( nNextMap >= ( int8 )aMaps.size( ))
+			nNextMap = -1;
+
+		CAutoMessage cMsg;
+		cMsg.Writeuint8( MID_TRON_UNKNOWN_195 );
+		cMsg.Writeint8( nNextMap );
+		g_pLTServer->SendToClient( cMsg.Read( ), LTNULL, MESSAGE_GUARANTEED );
 	}
 
-	if( nNextMap >= ( int8 )aMaps.size( ))
-		nNextMap = -1;
-
-	CAutoMessage cMsg;
-	cMsg.Writeuint8( MID_TRON_UNKNOWN_195 );
-	cMsg.Writeint8( nNextMap );
-	g_pLTServer->SendToClient( cMsg.Read( ), LTNULL, MESSAGE_GUARANTEED );
 	return true;
 }

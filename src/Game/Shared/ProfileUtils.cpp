@@ -109,7 +109,7 @@ void ServerGameOptions::Clear( )
 	m_sProfileName = "";
 	m_bPreCacheAssets = true;
 	m_bPerformanceTest = false;
-	m_nTronUnknownCC = 0;
+	m_pLightCycleGameData = NULL;
 }
 
 static void StringSetToDelimitedString( StringSet const& sSet, std::string& sDelimitedString, char const* pszDelimiter )
@@ -475,7 +475,7 @@ ServerGameOptions& ServerGameOptions::Copy( ServerGameOptions const& other )
 	m_sProfileName = other.m_sProfileName;
 	m_bPreCacheAssets = other.m_bPreCacheAssets;
 	m_bPerformanceTest = other.m_bPerformanceTest;
-	m_nTronUnknownCC = other.m_nTronUnknownCC;
+	m_pLightCycleGameData = other.m_pLightCycleGameData;
 
 	return *this;
 }
@@ -510,15 +510,15 @@ StringArray* ServerGameOptions::GetMapList( )
 }
 
 // RETAIL: Object.lto 0x10114e50 (the name is ours)
-uint32 ServerGameOptions::GetTronUnknownCC( ) const
+void* ServerGameOptions::GetLightCycleGameData( ) const
 {
-	return m_nTronUnknownCC;
+	return m_pLightCycleGameData;
 }
 
 // RETAIL: CShell.dll 0x100eb5a0 (the name is ours)
-void ServerGameOptions::SetTronUnknownCC( uint32 nValue )
+void ServerGameOptions::SetLightCycleGameData( void* pData )
 {
-	m_nTronUnknownCC = nValue;
+	m_pLightCycleGameData = pData;
 }
 
 // RETAIL: TRONSrv.exe 0x408fd0, CShell.dll 0x100eb530: turns the session

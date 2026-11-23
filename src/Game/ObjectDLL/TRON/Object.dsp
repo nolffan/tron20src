@@ -220,6 +220,10 @@ SOURCE=.\BuildNote.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\CircuitButeMgr.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ContinuousFireHelper.cpp
 # End Source File
 # Begin Source File
@@ -266,6 +270,10 @@ SOURCE=.\IONode.cpp
 # Begin Source File
 
 SOURCE=.\LightCycle.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleGameData.cpp
 # End Source File
 # Begin Source File
 
@@ -501,6 +509,10 @@ SOURCE=.\BuildNote.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\Shared\TRON\CircuitButeMgr.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\ContinuousFireHelper.h
 # End Source File
 # Begin Source File
@@ -542,6 +554,10 @@ SOURCE=.\IONode.h
 # Begin Source File
 
 SOURCE=.\LightCycle.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\Shared\TRON\LightCycleGameData.h
 # End Source File
 # Begin Source File
 

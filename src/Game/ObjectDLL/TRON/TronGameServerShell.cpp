@@ -24,6 +24,8 @@
 #include "ModelButeMgr.h"
 #include "SurfaceMgr.h"
 #include "LightCycleButeMgr.h"
+#include "Spawner.h"
+#include "AILightCycle.h"
 
 // RETAIL: Tron's GameSpy product: the game name, its secret key (built on
 // the stack, retail 0x1005d452) and the CD key product id
@@ -54,7 +56,7 @@ CTronGameServerShell::CTronGameServerShell() : CGameServerShell()
 	m_bGameSpyInitialized = false;
 	m_pDiscMatchMgr = LTNULL;
 	m_pLightCycleMatchMgr = LTNULL;
-	m_bTronUnknown1D0E4 = false;
+	m_nCircuitWave = 0;
 	m_nLevelSwitchArg = 0;
 	m_bLevelSwitchRequested = false;
 }
@@ -995,6 +997,65 @@ void CTronGameServerShell::SendSystemMemory( HCLIENT hClient )
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronGameServerShell::OnClientEnterWorld
+//
+//	PURPOSE:	RETAIL: retail 0x1005d260: the light cycle game types set
+//				the speed and trail length of the race
+//
+// ----------------------------------------------------------------------- //
+
+LPBASECLASS CTronGameServerShell::OnClientEnterWorld(HCLIENT hClient)
+{
+	InitLightCycleVolumes();
+
+	LPBASECLASS pObj = CGameServerShell::OnClientEnterWorld(hClient);
+
+	if (IsDiscGameType())
+		return pObj;
+
+	switch (GetGameType())
+	{
+		case eGameTypeSingle:
+		{
+			m_LightCycleMgr.SetGameSpeedAndTrailLength(1.0f, 30000.0f);
+		}
+		break;
+
+		case eGameTypeSingleLightCycleCircuit:
+		{
+			SetCircuitWave(0);
+			ApplyCircuitWave();
+		}
+		break;
+
+		case eGameTypeSingleLightCycleCustom:
+		{
+			if (GetServerGameOptions().GetLightCycleGameData())
+			{
+				m_LightCycleMgr.SetGameSpeed((( CLightCycleGameData* )GetServerGameOptions().GetLightCycleGameData())->m_Custom.nGameSpeed, LTNULL);
+				m_LightCycleMgr.SetTrailLength((( CLightCycleGameData* )GetServerGameOptions().GetLightCycleGameData())->m_Custom.nTrailLength, LTNULL);
+			}
+		}
+		break;
+
+		case eGameTypeMultiplayerLightcycles:
+		{
+			m_LightCycleMgr.SendGameSpeed(hClient);
+			m_LightCycleMgr.SendTrailLength(hClient);
+		}
+		break;
+	}
+
+	if (!IsMultiplayerGame())
+	{
+		g_pLightCycleMgr->RemoveAllCyclists();
+	}
+
+	return pObj;
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronGameServerShell::TronUnknownVirtual6C
 //
 //	PURPOSE:	RETAIL: retail 0x1005de40: a player was killed
@@ -1411,4 +1472,160 @@ bool CTronGameServerShell::DropInventoryObject(CCharacter* pCharacter)
 	pCharacter->m_hTronUnknownCF0 = pObj->m_hObject;
 
 	return true;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::SetCircuitWave
+//
+//	PURPOSE:	RETAIL: retail 0x1005f2b0: make a wave of the circuit
+//				current and tell the clients. Past the last wave, the
+//				first is current and the result is false
+//
+// ----------------------------------------------------------------------- //
+
+bool CTronGameServerShell::SetCircuitWave( uint8 nWave )
+{
+	if( g_pGameServerShell->GetGameType( ) == eGameTypeSingleLightCycleCircuit && GetServerGameOptions( ).GetLightCycleGameData( ))
+	{
+		if( nWave >= (( CLightCycleGameData* )GetServerGameOptions( ).GetLightCycleGameData( ))->GetNumWaves( ))
+		{
+			m_nCircuitWave = 0;
+			m_LightCycleMgr.SendTronUnknown21( LTNULL, 0 );
+			return false;
+		}
+
+		m_nCircuitWave = nWave;
+		m_LightCycleMgr.SendTronUnknown21( LTNULL, m_nCircuitWave );
+		return true;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::ApplyCircuitWave
+//
+//	PURPOSE:	RETAIL: retail 0x1005f330: the current wave's speed and
+//				trail length
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::ApplyCircuitWave( )
+{
+	if( g_pGameServerShell->GetGameType( ) == eGameTypeSingleLightCycleCircuit && GetServerGameOptions( ).GetLightCycleGameData( ))
+	{
+		const CircuitWave& wave = (( CLightCycleGameData* )GetServerGameOptions( ).GetLightCycleGameData( ))->GetWave( m_nCircuitWave );
+		m_LightCycleMgr.SetGameSpeed( wave.nSpeedScalarId, LTNULL );
+		m_LightCycleMgr.SetTrailLength( wave.nTrailLengthId, LTNULL );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::NextCircuitWave
+//
+//	PURPOSE:	RETAIL: retail 0x1005f390: a wave is complete
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::NextCircuitWave( )
+{
+	if( g_pGameServerShell->GetGameType( ) == eGameTypeSingleLightCycleCircuit )
+	{
+		SetCircuitWave( m_nCircuitWave + 1 );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CTronGameServerShell::SpawnAICycles
+//
+//	PURPOSE:	RETAIL: retail 0x1005f3b0: the custom game's AI cyclists,
+//				each at a random one of the spawners LCSpawner01 to
+//				LCSpawner08, with a random color of the opponents' cycle
+//				type and skill
+//
+// ----------------------------------------------------------------------- //
+
+void CTronGameServerShell::SpawnAICycles( )
+{
+	if( g_pGameServerShell->GetGameType( ) != eGameTypeSingleLightCycleCustom )
+		return;
+
+	ObjArray<HOBJECT, 1> objArray;
+	LCIndexArray aColors;
+	std::list<uint8> lstSpawners;
+	ObjectCreateStruct theStruct;
+
+	HCLASS hClass = g_pLTServer->GetClass( "AILightCycle" );
+
+	for( int nSpawner = 1; nSpawner <= 8; nSpawner++ )
+	{
+		lstSpawners.push_back( nSpawner );
+	}
+
+	CLightCycleGameData* pData = ( CLightCycleGameData* )GetServerGameOptions( ).GetLightCycleGameData( );
+	if( !pData )
+		return;
+
+	for( int nCyclist = 0; nCyclist < pData->m_Custom.nMaxAICyclists; nCyclist++ )
+	{
+		// A spawner not used yet
+		int nIndex = GetRandom( 0, lstSpawners.size( ) - 1 );
+		std::list<uint8>::iterator iter = lstSpawners.begin( );
+		std::advance( iter, nIndex );
+		int nSpawnerNum = *iter;
+		lstSpawners.erase( iter );
+
+		char szSpawner[32];
+		sprintf( szSpawner, "LCSpawner%02d", nSpawnerNum );
+
+		g_pLTServer->FindNamedObjects( szSpawner, objArray );
+		if( objArray.NumObjects( ) == 1 )
+		{
+			theStruct.Clear( );
+			g_pLTServer->GetObjectPos( objArray.GetObject( 0 ), &theStruct.m_Pos );
+			g_pLTServer->GetObjectRotation( objArray.GetObject( 0 ), &theStruct.m_Rotation );
+
+			// RETAIL: cycle type 2 and skill 5 are "random"
+			int nCycleType = pData->m_Custom.nOpponentCycleType;
+			if( nCycleType == 2 )
+				nCycleType = GetRandom( 0, 1 );
+
+			int nSkill = pData->m_Custom.nOpponentSkill;
+			if( nSkill == 5 )
+				nSkill = GetRandom( 1, 4 );
+
+			if( !g_pLightCycleButeMgr->GetValidAICycleColors( nCycleType, nSkill, aColors ))
+				return;
+
+			uint32 nColor = aColors[GetRandom( 0, aColors.size( ) - 1 )];
+
+			char szProps[512];
+			sprintf( szProps, "Name LC%02d;CycleColor %s", nSpawnerNum, g_pLightCycleButeMgr->GetCycleColor( nColor )->szName );
+
+			LPBASECLASS pObj = g_pLTServer->CreateObjectProps( hClass, &theStruct, szProps );
+			if( pObj )
+			{
+				Spawner* pSpawner = ( Spawner* )g_pLTServer->HandleToObject( objArray.GetObject( 0 ));
+				pSpawner->SendInitialCommand( pObj->m_hObject );
+			}
+			else
+			{
+				g_pLTServer->CPrint( "ERROR - Could not spawn AI!" );
+			}
+		}
+		else
+		{
+			// RETAIL: the format has two values, but only the number of
+			// objects is given (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+			g_pLTServer->CPrint( "ERROR - Looked for LCSpawner%2d and found %d objects!\n", nSpawnerNum, objArray.NumObjects( ));
+#else
+			g_pLTServer->CPrint( "ERROR - Looked for LCSpawner%2d and found %d objects!\n", objArray.NumObjects( ));
+#endif
+		}
+	}
 }

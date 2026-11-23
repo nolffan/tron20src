@@ -1424,6 +1424,22 @@ write past the buffer, into the GenericProp after it.
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Character.cpp
 gives the buffer 100 bytes.
 
+### The AI cycle spawner error message has one value too few
+
+Object.lto 0x1005f3b0 (CTronGameServerShell::SpawnAICycles, our name,
+ObjectDLL/TRON/TronGameServerShell.cpp). When the search for a spawner
+"LCSpawner<n>" does not find exactly one object, the function writes the
+message "ERROR - Looked for LCSpawner%2d and found %d objects!" to the
+console. The format has two values, but the call (0x1005f7e2..0x1005f7f1)
+gives only the number of objects. Thus the message shows the number of
+objects as the spawner number, and a value from the stack as the number of
+objects. The function is not yet byte-identical (the other differences are
+in its stack layout and inline expansions), but the instructions of this
+call are the same as in the retail code.
+
+Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
+also gives the spawner number.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

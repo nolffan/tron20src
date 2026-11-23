@@ -1427,7 +1427,7 @@ void CServerLightCycleMgr::SendTrailLength(HCLIENT hClient)
 //
 // ----------------------------------------------------------------------- //
 
-void CServerLightCycleMgr::SendTronUnknown21(HCLIENT hClient, int8 nTronUnknown)
+void CServerLightCycleMgr::SendTronUnknown21(HCLIENT hClient, int nTronUnknown)
 {
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
