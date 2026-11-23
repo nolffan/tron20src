@@ -393,7 +393,8 @@ void CAIGoalCheckBody::DisposeOfBody()
 		{
 			m_pAI->SetState( kState_HumanAnimate );
 	
-			if( !m_pAI->IsPlayingDialogSound() )
+			// RETAIL: Tron's also waits for the talk lock (0x1020d632)
+			if( !( m_pAI->IsTalkLocked() || m_pAI->IsPlayingDialogSound() ) )
 			{
 				m_pAI->PlaySound( kAIS_DisposeBody, LTFALSE );
 			}

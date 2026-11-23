@@ -143,7 +143,7 @@ class AbstractTarget : public IRelationChangeObserver
         CCharacter* GetCharacter() const;
 
         const LTVector& GetVisiblePosition() { Refresh(); return m_vVisiblePosition; }
-        void GetShootPosition(LTVector* pvShootPos);
+        const LTVector& GetShootPosition(LTVector* pvShootPos);	// RETAIL: Tron's returns it (0x101df910)
 
 		virtual int OnRelationChange(HOBJECT);
 

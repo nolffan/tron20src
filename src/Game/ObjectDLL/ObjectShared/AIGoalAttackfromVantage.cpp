@@ -184,6 +184,14 @@ void CAIGoalAttackFromVantage::HandleStateAttackFromVantage()
 			// a goal will re-activate instead of charging.
 
 			m_pAI->SetState( kState_HumanCharge );
+
+			// RETAIL: Tron's, as CAIGoalAttackFromView's (0x102143f7)
+			if( m_pAI->GetState() &&
+				( m_pAI->GetState()->GetStateType() == kState_HumanCharge ) &&
+				!m_pAI->GetBrain()->AttacksWhileMoving() )
+			{
+				((CAIHumanStateCharge*)m_pAI->GetState())->SetTronUnknown94( 65536.f );
+			}
 			break;
 
 		// Unexpected StateStatus.
