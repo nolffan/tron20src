@@ -3211,7 +3211,7 @@ void CWeaponMgrPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings,
 		return;
 	}
 
-	CPluginStringList lstStrings(cMaxStrings, cMaxStringLength);
+	CSortedStringList lstStrings(cMaxStrings, cMaxStringLength);
 
 	// Add an entry for each weapon/ammo combination...
 
@@ -3242,7 +3242,7 @@ void CWeaponMgrPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings,
 				{
 					char szString[256];
 					sprintf(szString, "%s,%s", pWeapon->szName, pAmmo->szName);
-					lstStrings.Add(szString);
+					lstStrings.AddString(szString);
 				}
 			}
 		}
@@ -3250,11 +3250,11 @@ void CWeaponMgrPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings,
 		{
 			// Just use the weapon name, the default ammo will be used...
 
-			lstStrings.Add(pWeapon->szName);
+			lstStrings.AddString(pWeapon->szName);
 		}
 	}
 
-	lstStrings.CopyTo(aszStrings, pcStrings);
+	lstStrings.PopulateStringList(aszStrings, pcStrings);
 }
 
 // ----------------------------------------------------------------------- //
@@ -3266,7 +3266,7 @@ void CWeaponMgrPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings,
 //
 // ----------------------------------------------------------------------- //
 
-void CWeaponMgrPlugin::PopulateStringList(CPluginStringList* pList)
+void CWeaponMgrPlugin::PopulateStringList(CSortedStringList* pList)
 {
 	for (int8 nWeapon = (int8)g_pWeaponMgr->GetNumWeapons(); nWeapon >= 0; nWeapon--)
 	{
@@ -3283,13 +3283,13 @@ void CWeaponMgrPlugin::PopulateStringList(CPluginStringList* pList)
 				{
 					char szString[256];
 					sprintf(szString, "%s,%s", pWeapon->szName, pAmmo->szName);
-					pList->Add(szString);
+					pList->AddString(szString);
 				}
 			}
 		}
 		else
 		{
-			pList->Add(pWeapon->szName);
+			pList->AddString(pWeapon->szName);
 		}
 	}
 }

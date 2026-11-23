@@ -39,7 +39,9 @@ class CSortedStringList
 		// in m_FirstNames go first, in the order they are added.
 		void AddString( const char* pszString )
 		{
-			if( !pszString || !pszString[0] )
+			// RETAIL: the pointer is tested twice (the unoptimized human
+			// attachments plugin shows it, Object.lto 0x1018d624)
+			if( !pszString || ( pszString && !pszString[0] ))
 				return;
 
 			std::string sString;
@@ -59,6 +61,17 @@ class CSortedStringList
 			}
 		}
 
+		// RETAIL: a string that goes first when it is added (the human
+		// attachments plugin's "<none>", Object.lto 0x1018d5b8)
+		void AddFirstName( const char* pszString )
+		{
+			// RETAIL: as AddString (0x1018d5b8)
+			if( !pszString || ( pszString && !pszString[0] ))
+				return;
+
+			m_FirstNames.push_back( pszString );
+		}
+
 		void Sort( )
 		{
 			if( !m_bSorted )
@@ -70,14 +83,17 @@ class CSortedStringList
 
 		// Copy the strings to DEdit's list: the first strings, then the
 		// others sorted.
+		// RETAIL: one copier for both lists (the human attachments plugin's
+		// unoptimized copy constructs it once, Object.lto 0x1018d788)
 		void PopulateStringList( char** aszStrings, uint32* pcStrings )
 		{
-			if( aszStrings && *aszStrings && pcStrings )
-			{
-				std::for_each( m_FirstStrings.begin( ), m_FirstStrings.end( ), CopyString( aszStrings, pcStrings, m_cMaxStrings ));
-				Sort( );
-				std::for_each( m_Strings.begin( ), m_Strings.end( ), CopyString( aszStrings, pcStrings, m_cMaxStrings ));
-			}
+			if( !aszStrings || !*aszStrings || !pcStrings )
+				return;
+
+			CopyString copier( aszStrings, pcStrings, m_cMaxStrings );
+			std::for_each( m_FirstStrings.begin( ), m_FirstStrings.end( ), copier );
+			Sort( );
+			std::for_each( m_Strings.begin( ), m_Strings.end( ), copier );
 		}
 
 	protected :

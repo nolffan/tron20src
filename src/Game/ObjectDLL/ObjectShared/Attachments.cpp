@@ -2298,10 +2298,8 @@ void CAttachmentsPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings
 
 LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
 {
-	if ( LT_OK == CAttachmentsPlugin::PreHook_EditStringList(szRezPath, szPropName, aszStrings, pcStrings, cMaxStrings, cMaxStringLength) )
-	{
-		return LT_OK;
-	}
+	// RETAIL: Tron's (Object.lto 0x1018d0d0): the positions first; the
+	// base class's "Attachments" property is not handled here
 
     if ( !_stricmp("LeftHand",      szPropName) ||
          !_stricmp("RightHand",     szPropName) ||
@@ -2341,6 +2339,16 @@ LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, 
          !_stricmp("UpperTorso2",		szPropName) 
 		 )
 	{
+		if ( !sm_bInitted )
+		{
+			char szFile[256];
+			sprintf(szFile, "%s\\Attributes\\Attachments.txt", szRezPath);
+			sm_AttachButeMgr.SetInRezFile(LTFALSE);
+			sm_AttachButeMgr.Init(szFile);
+			sm_bInitted = LTTRUE;
+			sm_WeaponMgrPlugin.PreHook_EditStringList(szRezPath, szPropName, aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
+		}
+
 		PopulateStringList(aszStrings, pcStrings, cMaxStrings, cMaxStringLength);
 		return LT_OK;
 	}
@@ -2349,6 +2357,38 @@ LTRESULT CHumanAttachmentsPlugin::PreHook_EditStringList(const char* szRezPath, 
 		return LT_UNSUPPORTED;
 	}
 };
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CHumanAttachmentsPlugin::PopulateStringList
+//
+//	PURPOSE:	RETAIL: Tron's (Object.lto 0x1018d510): "<none>" and the
+//				weapons the AIs can use, then the attachments that are not
+//				hidden from the AI weapon list, each list sorted
+//
+// ----------------------------------------------------------------------- //
+
+void CHumanAttachmentsPlugin::PopulateStringList(char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
+{
+	CSortedStringList lstWeapons(cMaxStrings, cMaxStringLength);
+	lstWeapons.AddFirstName(NO_ATTACHMENT);
+	lstWeapons.AddString(NO_ATTACHMENT);
+	sm_WeaponMgrPlugin.PopulateStringList(&lstWeapons);
+	lstWeapons.PopulateStringList(aszStrings, pcStrings);
+
+	CSortedStringList lstAttachments(cMaxStrings, cMaxStringLength);
+	char szBuffer[128];
+	for ( int iAttachment = 0 ; iAttachment != sm_AttachButeMgr.GetNumAttachments() ; iAttachment++ )
+	{
+		szBuffer[0] = '\0';
+		sm_AttachButeMgr.GetAttachmentName(iAttachment, szBuffer, 128);
+		if ( szBuffer[0] && !sm_AttachButeMgr.GetAttachmentHiddenInDEditToAIWeaponList(iAttachment) )
+		{
+			lstAttachments.AddString(szBuffer);
+		}
+	}
+	lstAttachments.PopulateStringList(aszStrings, pcStrings);
+}
 
 #pragma optimize ("",on)
 #endif // __PSX2
