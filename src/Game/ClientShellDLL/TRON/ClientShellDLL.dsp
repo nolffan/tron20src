@@ -434,11 +434,11 @@ SOURCE=.\LightCycleFX.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\LightCycleGameDataMgr.cpp
+SOURCE=..\..\Shared\TRON\LightCycleGameData.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Shared\TRON\LightCycleGameData.cpp
+SOURCE=.\LightCycleGameDataMgr.cpp
 # End Source File
 # Begin Source File
 
@@ -982,11 +982,11 @@ SOURCE=.\LightCycleFX.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\LightCycleGameDataMgr.h
+SOURCE=..\..\Shared\TRON\LightCycleGameData.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\Shared\TRON\LightCycleGameData.h
+SOURCE=.\LightCycleGameDataMgr.h
 # End Source File
 # Begin Source File
 

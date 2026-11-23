@@ -8411,7 +8411,7 @@ W	CShell.dll	?SetColor@CLTGUIFrame@@QAEXI@Z	36+0,59	a1210da9efc9e0682b9c0d72facf
 W	CShell.dll	?SetColor@CLightFX@@IAEXMMM@Z	6+0,33+0,58+0,85+0,110+0,137+0	e296ed4846abe521d6389667f85499c17281d157b11a3c74d0e7640ad748ea78
 W	CShell.dll	?SetColor@CLightLine@@QAEXI@Z	5+0	b7a021355d0c03125bebc240ebef18ff07d15013358642b577635bb141c8791c
 W	CShell.dll	?SetControlText@CScreenConfigure@@IAEXHH@Z	21,33	9f2e0401d2e5acf806c75be9ef2ee9bf5f699c5543f033d1e67f53ba51dbb058
-W	CShell.dll	?SetCurrent@CLightCycleGameDataMgr@@QAEXG@Z	4,48+0,59,122+0,151,160,166+0,171,180,188	3d85213e0962f8db5b31ba7eddf58098308a34c787e33e065ae966013254083e
+W	CShell.dll	?SetCurrent@CLightCycleGameDataMgr@@QAEXG@Z	4,48+0,59,122+0,151,160,166+0,171,180,188	24ad759d243525c9a6f35788a91312ce6d3b6770007adf69b9bea99c015a10cd
 W	CShell.dll	?SetCurrent@CServerOptionMgr@@QAEXG@Z	4,47+0,54,114+0,134,155,162	562143d081051642e8b013a07e5f019ef5084d470d1d85a9bb925c09e2b15f0b
 W	CShell.dll	?SetCurrentMenu@CMenuMgr@@QAEIE@Z	50	21ac3eb372e6c53d987d43e04cfb0a6c006f758977aaf4fdc844daa45e196975
 W	CShell.dll	?SetCurrentMenu@CMenuMgr@@QAEIW4eMenuID@@@Z	55	21ac3eb372e6c53d987d43e04cfb0a6c006f758977aaf4fdc844daa45e196975
@@ -10019,7 +10019,7 @@ T	Object.lto	??_7CTrackedNodeMgr@@6B@	1	f467f83e40c859510f3fa1da1725945a01f16278
 T	Object.lto	??_7CTransitionAggregate@@6B@	3	20a245ccd5f1c6aa54a0600cdf502ff644800d5bb8cadbfb73dadee52177dd73
 T	Object.lto	??_7CTriggerPlugin@@6B@	4	0f28d4e5db952d3df93f9e9d5a4205fb426141e11fdf71f49ea242630b88eb56
 T	Object.lto	??_7CTriggerTypeMgrPlugin@@6B@	4	a807d92d9f69b301db079e8d10444dff0f66a4c13927c6a4c89a699505b5d34e
-T	Object.lto	??_7CTronGameServerShell@@6B@	38	1c541780bb1e63bfad045c17c7c2faa6a159ea7b3788e29b9deda2cd972abde9
+T	Object.lto	??_7CTronGameServerShell@@6B@	38	e5d6bc4b304e0ed643a66a3323db80dd1658834e497a7aae4b91d3a56b85e337
 T	Object.lto	??_7CTronMissionButeMgr@@6B@	6	75066419a6ffcf831bb1545a034eaa3718368a7da333bf3f2eae646377c518cc
 T	Object.lto	??_7CTronPlayerObj@@6BBaseClass@@@	136	4f182804a7dc8e1cd06b87e3f5b52697ae14cf468f0e2f89cbef146254c7bfe4
 T	Object.lto	??_7CTronPlayerObj@@6BIHitBoxUser@@@	11	b7a31afc892b63f8499a1e468c9229e57a5ffdb088472dbedd84ec14306dc79c
@@ -10839,7 +10839,7 @@ W	Object.lto	??1CAIHumanStateSniper@@UAE@XZ	31+0,54,67+0,75,92+0,97,112	9fde7f51
 W	Object.lto	??1CAIHumanStateTalk@@UAE@XZ	31+0,64,81+0,86,103+0,108,123	6f77eb4e26ae70a95c740c57087d4b9c930ba9954fe84949dfb9b90399eb6c7b
 W	Object.lto	??1CAIHumanStateUseObject@@UAE@XZ	33+0,73,79+0,92,101+0,114,123+0,136,145+0,158,196+0,201+0,220,236+0,241,256	cda87e0b5d477a031fed9e3926a865c266eef5a30fe747743d2958b6e45f7fce
 W	Object.lto	??1CAIHumanStrategyFlashlight@@UAE@XZ	31+0,38+0,51,58,65,79+0,84,94+0	e6a55db877fdec96f17a760db5616cc4af0f9311d96289fa03d8854a0e4542d6
-W	Object.lto	??1CAIHumanStrategyFollowPath@@UAE@XZ	35+0,41+0,60,82,115,120+0,141+0,147+0,156,172,201,229,234+0,260+0,266+0,275,291,320,330+0	a57d011c088950bb3fd901832faea0af0c8ae00937b40a0b835cb959cfed3a28
+W	Object.lto	??1CAIHumanStrategyFollowPath@@UAE@XZ	35+0,41+0,60,82,115,120+0,141+0,147+0,156,172,201,229,234+0,260+0,266+0,275,291,320,330+0	537e0c24404f18488497e5489acaa8a42246cd4848b38f9cf31c2e35305800f4
 W	Object.lto	??1CAIHumanStrategyToggleLights@@UAE@XZ	42+0,47,57+0	bbb474db387e11c19a78e9e0887f2d14437152f2ea9387651329f191b529af64
 W	Object.lto	??1CAINodeMgr@@QAE@XZ	37,81,94,139+0,144,152+8,160+8,166+0	057ece546a0484fce5268a8dc1cbdec0b300da6cfae5a88b170fdfa676590dca
 W	Object.lto	??1CAIPath@@UAE@XZ	34+0,47,103+0,130+0,137+0,142,157+0,171+0	112d4119286df8df8c940d015af12e76951cb7c54deaed4fba30d13f67205d38
@@ -11282,7 +11282,7 @@ W	Object.lto	?BeginTrailSpike@CLightCycleMgr@@UAE_NPAULIGHT_CYCLIST@@PAU?$TVecto
 W	Object.lto	?Bezier_Evaluate@@YAXAAU?$TVector3@M@@0000M@Z	5+0,77+0,115+0	bfd8932ea5667c1700ff8bd8eb37783bb80ac531008a807cdc0a7f227ef10788
 W	Object.lto	?BlockAttractorNodeFromSearch@CAIGoalAbstract@@IAEXPAVLTObject@@@Z	26,34,39+0,63	3f277d85b346efb4ee43b00381deea28a29ec1a28c1b748102e82f81868e1b5e
 W	Object.lto	?BodyFilterFn@CAI@@SA_NPAVLTObject@@PAX@Z	15+0,40+0,45+0,73+0,111	76232915b971f1c57c3aceb4441e54f9303ccb72e6a307e2880666ab2bfebb93
-W	Object.lto	?BootClient@@YA_N_NGPBD@Z	64,69+0,90+0,101+0,110,115+0,152+0,158+0,204+0,229,332,348+0,361+0,388+0,411+0,476+0,486+0,491,506+0	e496b67d633746d6d60319f85057c5ae3f81a4b6628ee6047f925d1909d90e80
+W	Object.lto	?BootClient@@YA_N_NGPBD@Z	64,69+0,90+0,101+0,110,115+0,152+0,158+0,204+0,229,332,348+0,361+0,388+0,411+0,476+0,486+0,491,506+0	36e80110572b5f2039959d6e0d6d8b21a371a8c208c4f25aa9eed7abfa64f0f0
 W	Object.lto	?BoundWaypointsToVolume@CAIPathMgr@@IAEPAPAVCAIPathWaypoint@@ABUBOUND_PATH_STRUCT@@@Z	133+0,138,158+0,176,255,291,339,367	b62199cee9cd740c305acd3980d57d5d182810b5f94f5133945c568ade10dfd0
 W	Object.lto	?BuildDoorPath@CAIPathMgr@@IAEXPAVCAI@@PAVCAIPath@@MPAVAIVolume@@ABU?$TVector3@M@@PAVCAIPathWaypoint@@4@Z	68,194,262,282+0,296+0,308,345,380,390+0,414,426+0,443,453,459+0,466+0,471,492+0,509,521+0,539,554+0,560,593	9fb78ab9c63359d7d8a25fea240140573085a5509072ad04efb2ab730920af79
 W	Object.lto	?BuildInverseMat@@YAXABULTMatrix@@AAU1@@Z	250	f0a37f736551b24aab258490c52af856b4e8a9f308f12c31e0a6077e9e72d47a
@@ -11576,7 +11576,7 @@ W	Object.lto	?DeactivateGoal@CAIGoalWork@@UAEXXZ	23,64,73,82,93,100,111,124,151,
 W	Object.lto	?DeactivateObject@CLiteObjectMgr@@QAEXPAVGameBaseLite@@@Z	47,66,77	c62581da4d34d11baa324ce4dba9cf033bc365b2b40c472aa5327d016d856ffe
 W	Object.lto	?DeactivateShield@CServerLightCycleMgr@@UAEXPAULIGHT_CYCLIST@@_N@Z	33,50,56+0,151,157+0	6b603d05f7bd210bd0e8ac5e8163bb7b9ad824c65b7bd8750336c0b17f1aa8b8
 W	Object.lto	?DebugDamageOn@CDestructible@@AAEIXZ	11+0,16+0,28+0,52+0	5da492428af78e7edc077552ff8c904d423b54c6137a1d276b38b5d2bfcc1304
-W	Object.lto	?DebugDrawPath@CAIHumanStrategyFollowPath@@QAEXXZ	68+0,106,111+0,132+0,146+0,155,174,196,214,231+0,501,535,562,593,624,631,644,675,706,713,726,754,785,792,805,836,864,871,884,915,946,953,966,997,1028,1035,1048,1062	796ac30c9ccbf34e35f746630318fc3163d7a611853bea9e364049e0054203a7
+W	Object.lto	?DebugDrawPath@CAIHumanStrategyFollowPath@@QAEXXZ	68+0,106,111+0,132+0,146+0,155,174,196,214,231+0,501,535,562,593,624,631,644,675,706,713,726,754,785,792,805,836,864,871,884,915,946,953,966,997,1028,1035,1048,1062	468006a9546eaec2556c18c56d9f25c5ab89afb1150cd01e8fe283444c928197
 W	Object.lto	?DebugRemainingDrawPath@CAIHumanStrategyFollowPath@@QAEXXZ	53,58+0,82+0,88+0,97,116,138,156,173+0,453,487,514,545,576,583,596,627,658,665,678,709,740,747,760,791,822,829,842,873,904,911,924,955,986,993,1006,1191,1207,1275,1282,1299	3f8af2a4ace8651543e12fb9f333c08571c4666786f7e96f19a0c87165918f31
 W	Object.lto	?DecreaseStimulation@CAISenseRecorderAbstract@@AAEIPAUAISenseRecord@@M@Z	84+0,101+0,110+0,116+0,133+0,140+8,144+0,151+0,165+0,179+0,190+0,204+0,216+4,224+4,229+0,237+4,260+0,291,304+0,312,396+0,413+0,420+8,424+0,431+0,445+0,459+0,470+0,484+0,496+4,504+4,509+0,517+4,540+0,562,589+0,599,628+0	1fddd588b484a431662a44a8fb94f8c090d29ba1eeb855a5b14ccd4f52246e98
 W	Object.lto	?Decrement@EventCounter@@AAEXXZ	68+0,89+0,95,107+0,113+0,126+0,149	e5d56ea3b574149d29231153c927c5c379fa7199c9e5caf4bba50d4c19d33d7c
@@ -11888,7 +11888,7 @@ W	Object.lto	?FindTableOfItems@CButeMgr@@AAEPAV?$hash_map@PBDPAVCSymTabItem@CBut
 W	Object.lto	?FindTag@CSubroutineDataMgr@@IAEPADPBD00PADI@Z	34+0,41+0,61,103,118+0,131+0,231+0,238+0,294+0	40b1d57983a8843d67f6f6d55844fe74e620469d6627657bc9c50e00ec8c43a8
 W	Object.lto	?FindTailNode@CAINodeMgr@@QAEPAVAINodeTail@@PAVCAI@@ABU?$TVector3@M@@1@Z	88,115,154,197,356,391,405,455,474,584,612+0,617	87adc8d3e649e5c38b00672390fdc66ebbc3ba750f4c95c1bba78fa523f01b0a
 W	Object.lto	?FindTargetInLocalPos@@YA?AU?$TVector3@M@@PBVCTrackedNode@@ABULTMatrix@@1@Z	22,52,66,146,189,281,327,383,431,490,521,543,595,638,717,769,812	4f64d9c94c073c744e12d6df2befab615393607eb16fee54ee39c118ea0a470b
-W	Object.lto	?FindTemplate@CObjectTemplateMgr@@QBEPBUObjectCreateStruct@@PBD@Z	65,104,132,165,186,221	6c54a1f29ad58afd0474bc375f72653ee22b750a2ea984a91459a9d8babe004f
+W	Object.lto	?FindTemplate@CObjectTemplateMgr@@QBEPBUObjectCreateStruct@@PBD@Z	65,104,132,165,186,221	a1883496bb8078dd59bd9c8f74c9cf75ffe26d15f5567cb524750455f0a75c8b
 W	Object.lto	?FindTransition@CAnimationMgr@@QBEABVCTransition@@ABVCAnimationProps@@0@Z	39,427,472,521,547	87b60567db11c9748e9190540631bc84d760eb6e0bef569ec8b8bd1ef35a593e
 W	Object.lto	?FindTrueFloorHeight@CAIUtils@@QAEIMABU?$TVector3@M@@0PAM@Z	65,130,253+0,263+0,268+0,285+0,319+0	8271d19d232437fdb744921abcc7474a0a05bab7b56f43cc044613c8bbed0f17
 W	Object.lto	?FindUseObjectNode@CAINodeMgr@@QAEPAVAINode@@W4EnumAINodeType@@PAVLTObject@@I@Z	115,129	4073e6f867c87b7055c64fb5219a50ad5c6feb181414318c18ad74a2e6d86347
@@ -12219,7 +12219,7 @@ W	Object.lto	?GetSurfaceType@@YA?AW4SurfaceType@@PAVLTObject@@@Z	15+0,48+0,71	1b
 W	Object.lto	?GetSurfaceType@@YA?AW4SurfaceType@@UHPOLY@@@Z	23+0	a6b8f0084f6f8b6dcb466e455b815d3253467fd055581c3b89e7a4a99cc4fc48
 W	Object.lto	?GetSymTabItem@CButeMgr@@AAEPAVCSymTabItem@1@PBD0@Z	36,49,69,87,100,119,134,147,166,179	3fee863a6d002f87cddfdd426e001871f49be10f6a1dbb4a4adc39ff965a0fb8
 W	Object.lto	?GetSystem@LineSystem@@YAAAVDebugLineSystem@@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	6+0,11	a2492bbb41fb5468f39533450ff344ccacd7506e87c8eb6e45e10782d5f579b8
-W	Object.lto	?GetSystem@LineSystem@@YAAAVDebugLineSystem@@PBXABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	46+0,74,109,134,145,176,202	d826666419d242977a222c28d815fc8b536eb70cfad8fa5b2ec74b24d6af508f
+W	Object.lto	?GetSystem@LineSystem@@YAAAVDebugLineSystem@@PBXABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	46+0,74,109,134,145,176,202	971652aa89ce4f2a9474f8c8989d9ded7740c1befe0cd65503f6c6670d1c3c8b
 W	Object.lto	?GetSystemPtr@LineSystem@@YAPAVDebugLineSystem@@AAV?$hash_map@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@USystemEntry@LineSystem@@U?$hash@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@U?$equal_to@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@V?$allocator@U?$pair@$$CBV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@USystemEntry@LineSystem@@@_STL@@@2@@_STL@@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@4@@Z	12,42,50,63+0	d8a83264dea5a32fc67df39f56d8584a32c313532544ac2986888638ac3e806e
 W	Object.lto	?GetTags@CButeMgr@@QAEXP6A_NPBDPAX@Z1@Z	37,56,75	afe3b07e9b1524dd6f0324e166ad96bf43840b6352d0bf4f77d21182b33d8969
 W	Object.lto	?GetTargetMatchID@CAIStimulusMgr@@AAE?AW4EnumAITargetMatchID@@PAVLTObject@@@Z	23,117,156,173,218,249,259,273	4a39209d77c604113e8553a7f777d4e3924802bd9d6fb2c932555713981f6bf9
@@ -13032,7 +13032,7 @@ W	Object.lto	?Lex@CAnimationLex@Animation@@QAEIPBD@Z	3+0,120,130,135	005bd261ca9
 W	Object.lto	?LinkDialogueObject@CAI@@QAEXPAVLTObject@@@Z	35,43	99f3256cebe175c132658f15c56c0378b54d5d006e17b2a6bc28448295344765
 W	Object.lto	?LinkNodeOrientation@CTrackedNodeMgr@@QAE_NPAVCTrackedNode@@0@Z	11,27	623c5cf8370d4fedc6ae208fde1974bb7a57b2002d44ffc3278c24b2a3726e5d
 W	Object.lto	?LinkNodes@CTrackedNodeMgr@@QAE_NPAVCTrackedNode@@0@Z	11,27	623c5cf8370d4fedc6ae208fde1974bb7a57b2002d44ffc3278c24b2a3726e5d
-W	Object.lto	?LinkObjectRelationMgr@CRelationMgr@@IAEXPAVCObjectRelationMgr@@PAVLTObject@@@Z	66,94,112,154,183,209,221,228+0,253,277,320,326+0,343+0,370+0,377+0,391,429,460,483,516,533,550,567	4b44ae9c4b4883afdb45c7cb4fdf627e2b70c817b3cdd9823d328c1c984baa35
+W	Object.lto	?LinkObjectRelationMgr@CRelationMgr@@IAEXPAVCObjectRelationMgr@@PAVLTObject@@@Z	66,94,112,154,183,209,221,228+0,253,277,320,326+0,343+0,370+0,377+0,391,429,460,483,516,533,550,567	1cc8e4ec95f89f7d07f136820b094ef55bed5c4113856dbb0e959ee441714517
 W	Object.lto	?LiquidFilterFn@@YA_NPAVLTObject@@PAX@Z	6	5fe47e167a73fedfeec4781fbb8392c7a30f0e5266a6c4a930ff56b6e5790341
 W	Object.lto	?ListObjectMsgs@CCommandMgrPlugin@@IAEXPAVILTPreInterface@@PBD@Z	54+0,103+0,108+4,114+0,140+4,173+0,180+0,192+0,215+0,234+0,253+0,268+0,318+0,389+0	967f04d023806e75fbae3e29674fe83faed03da972185e078340b29a095f2454
 W	Object.lto	?ListProperties@CEditable@@IAEXPAVILTBaseClass@@@Z	39+0,44+0,56+0,67,73+0,79+0,143,154,174,205,212+0,223+0,229+0,236+0,262,319+0,324+0	3589733867faf77e30b397a2325750687bbdffcdb0a59bb072e3456d3cd7f46f
@@ -13926,7 +13926,7 @@ W	Object.lto	?RemoveSpecificRelation@RelationSet@@QAEXABURelationDescription@@@Z
 W	Object.lto	?RemoveSpectator@CLightCycleMatchMgr@@IAEXPAVCPlayerObj@@_N@Z	42,55,67,80,90,126,136+0,157+0,162+0,196,202+0,302,308+0	21efd6973461aa2aa5627d1b6e7c03c1ec885e227f64c238afb9bece9c0b4999
 W	Object.lto	?RemoveStimulus@CAIStimulusMgr@@QAEXW4EnumAIStimulusID@@@Z	96+0,109,128	a2460ed8a8136e2892d8730f47f54986f0ae08b9da3c5ef28f54eaaca3c074e0
 W	Object.lto	?RemoveSystem@LineSystem@@YAXABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	1+4,11+8,27,39+4,56,74+0,84,111	6f6fc3c8bf7279deced0da222fabf83c600b8321f86c899b68bf9c52ff4a1fb3
-W	Object.lto	?RemoveSystem@LineSystem@@YAXPBXABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	46+0,74,109,134,145,174,200	b7cc26c5cc0a73df29517d0b8b337deac2147077e1a5861bf51fe551682c5c40
+W	Object.lto	?RemoveSystem@LineSystem@@YAXPBXABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	46+0,74,109,134,145,174,200	f1ec17a83bbaad4c4cae46397f9b872a24334e44b49cce3b4125e4600a654821
 W	Object.lto	?RemoveTarget@CContinuousFireHelper@@QAE_NPAVLTObject@@@Z	45	c707a2ee3a36d90cb7fc17de23010407124e5c189002b122612b51910a8d7c74
 W	Object.lto	?RemoveTransitionObjects@CTransitionMgr@@IAEIXZ	14+0	7edb207a5a06b0590f3beb12bbb9dd18bd650495aaa31f08878975c7793f6e65
 W	Object.lto	?RemoveVehicleModel@CPlayerObj@@UAEXXZ	30+0,54+0,70+0,101+0,126+0,151+0,166+0,227+0,249+0,265+0,331+0,342+0,392+0,412+0,438,462,471	9e0c05094628af55b2583f8c398606482fee264ccc17eb96b2e57d7ce6cd8eb1
@@ -13954,7 +13954,7 @@ W	Object.lto	?ReservePath@CAIHumanStrategyFollowPath@@QAEXXZ	14,34,43+0,54	ef726
 W	Object.lto	?ReserveProps@GenericPropList@@QAE_NI_N@Z	226+0	170dc1e5a155602c49aeeb23e2fc645710078e05a4d3be5a3273171c177e6a04
 W	Object.lto	?ReserveVolume@AIVolume@@QAEXPAVLTObject@@@Z	25,33	99f3256cebe175c132658f15c56c0378b54d5d006e17b2a6bc28448295344765
 W	Object.lto	?Reset@CAIHumanStateInvestigate@@QAEXPAVLTObject@@W4EnumAISenseType@@W4EnumAISoundType@@AAU?$TVector3@M@@3@Z	25,33,121	3e8afdb9724743a83610d92ae189765fc54fe48bfc5784c5990683a5bafd9806
-W	Object.lto	?Reset@CAIHumanStrategyFollowPath@@QAEXXZ	59,64+0,85+0,91+0,100,116,145,176,181+0,202+0,213+0,222,238,267,298	7701c09a2d119110ababe89b3aa063f1b3f5329f394ff6e63af78aab829294a0
+W	Object.lto	?Reset@CAIHumanStrategyFollowPath@@QAEXXZ	59,64+0,85+0,91+0,100,116,145,176,181+0,202+0,213+0,222,238,267,298	47a742e434c12f8d8719552582120f3df84a752fd8ae7861fbff7f62e6e11209
 W	Object.lto	?Reset@CAnimationContext@@QAEIPAVLTObject@@@Z	16	32be3416524610c2ac61240c7ff1920a7cefec051683192495de2f1178d9c749
 W	Object.lto	?Reset@CAnimatorPlayer@@QAEXPAVLTObject@@@Z	22+0,80+0,148,157	de2beaeb80263b247b5e35bf2350f6b6da0a0ff92807066fbc0bdbb011ade807
 W	Object.lto	?Reset@CButeMgr@@AAEXXZ	4+0,37,42+0,53	849f5b3a96e0e009f4d4202387941d91c534717796d600a00e7abf93c549e777
@@ -14564,7 +14564,7 @@ W	Object.lto	?StartGame@CDiscArenaMissionMgr@@MAE_NAAVILTMessage_Read@@@Z	6,19+0
 W	Object.lto	?StartGame@CLightCycleMultiplayerMissionMgr@@MAE_NAAVILTMessage_Read@@@Z	24,42+4,48+0,58+0,75+0,82+8,86+0,93+0,107+0,121+0,132+0,146+0,156+4,161+4,171+0,194+0,201+8,205+0,212+0,226+0,240+0,251+0,265+0,275+4,323+0,331+0,336+4,345+8,364+0,373+8,378+4,402+4,411+8,431+0,439+8,445+4,478+0,510+4,519+8,542+0,550+8,556+4,577+0	ac9b80c09a05e16d4672dc425a9addc7e1dee2d275fbbc5d80225964c8b8cd59
 W	Object.lto	?StartGame@CServerMissionMgr@@MAE_NAAVILTMessage_Read@@@Z	5	cfe4477bbe3608bd895bf95c854fdbdf8de480319620d86faaac1964a4df89ec
 W	Object.lto	?StartGame@CSinglePlayerMissionMgr@@MAE_NAAVILTMessage_Read@@@Z	5+0,10+0,36,50+0	4aa8dab44d3b808a2a20eabb6ab77fa4907b5c6538769cb8d4510f696e43f6c9
-W	Object.lto	?StartLightCycle@CTronPlayerObj@@IAE_N_N0@Z	26+0,82+0,118+0,160,194+0,200,231+0,259+0,282+0	47815d244d07204afedb0d0d15cbc18358fe603693741f9b8b0daf064ab203fe
+W	Object.lto	?StartLightCycle@CTronPlayerObj@@IAE_N_N0@Z	26+0,82+0,118+0,160,194+0,200,231+0,259+0,282+0	3336d72a30f01e650bd9c3c999b9226c5fdfac2910357888277339efbb128646
 W	Object.lto	?StartLoopSound@SecurityCamera@@IAEXXZ	14,55+0,62+0,67	f9c51dd920ee61b338d2f0e5fcf53a2280a00a7dd6d3df225459694e1b78cab7
 W	Object.lto	?StartRezOut@CAIGoalExitLevelByRezOut@@MAEXXZ	13+0,20,27+0,32+0,80+0,85+0,162,168+0,191+0	96480899852a904e2383069ac7b41e62177280c09732722a4e8bb1b3e6301763
 W	Object.lto	?StartRound@CDiscMatch@@QAEXM@Z	39+0,113+0,118,167,202,210,233,239+0,336,342+0,392,419	1f6de3e89dfc87f1cd13031df646a8f5c68e728cfde994a35e1bea421e1d4f9f
@@ -15364,9 +15364,9 @@ W	Object.lto	?resize@?$vector@V?$AutoCommand@VSingleDispatch@@@@V?$allocator@V?$
 W	Object.lto	?resize@?$vector@VLTObjRef@@V?$allocator@VLTObjRef@@@_STL@@@_STL@@QAEXI@Z	44+0,99,181,231,251,265,293,323,346,366+0,371,387,407+0,412	c45bef4dfbc28f69152f2579fbf6a7b3fb8b6834188ec64095c37d0ce9f1cab6
 W	Object.lto	?sb_Allocate@@YAPAXPAUStructBank_t@@@Z	18	4bdc6ecb51760718a5502b8de385bb26b589c68c0698b79f49101ece1f0fe162
 W	Object.lto	?sb_AllocateNewStructPage@@YAHPAUStructBank_t@@I@Z	25	1908ac5a3cce55af33667631b6dd3e478689721a550ba3584766097dcf3666d1
-W	Object.lto	?set@?$bitset@$0BAA@@_STL@@QAEAAV12@IH@Z	75,80+0,101+0,115+0,124,142+0,165+0,171+0,193+0,198+0	0163d049e779d867d58f685a9dfead28182a797f99410bd5dfbbf99fede0c78c
+W	Object.lto	?set@?$bitset@$0BAA@@_STL@@QAEAAV12@IH@Z	75,80+0,101+0,115+0,124,142+0,165+0,171+0,193+0,198+0	c44ccd84fffa63faf82c7447f1ca8e4113b6c68de08b3fcadb2b0235041a9701
 W	Object.lto	?sort@?$list@USTIMULUS_DIST_STRUCT@@V?$allocator@USTIMULUS_DIST_STRUCT@@@_STL@@@_STL@@QAEXXZ	76,142,168,181,190,268,293,332,455,490,515,562,619,635	393551a0bd0aa656d7ed3c2929616784383c9895bef132cffa2e28ee06a57832
-W	Object.lto	?test@?$bitset@$0BAA@@_STL@@QBE_NI@Z	76,81+0,102+0,116+0,125,143+0,166+0,172+0,194+0,199+0	0163d049e779d867d58f685a9dfead28182a797f99410bd5dfbbf99fede0c78c
+W	Object.lto	?test@?$bitset@$0BAA@@_STL@@QBE_NI@Z	76,81+0,102+0,116+0,125,143+0,166+0,172+0,194+0,199+0	c44ccd84fffa63faf82c7447f1ca8e4113b6c68de08b3fcadb2b0235041a9701
 W	Object.lto	?uninitialized_copy@_STL@@YAPADPBD0PAD@Z	21+0	4189ae635f5e5eecd5109961d55abc5d1c4c93121ce84362294979f2865b16a3
 W	Object.lto	?yy_fatal_error@@YAXQBD@Z	6+0,15+0,22+0,33+0	09ee5bd61136e323ba54249f04282ddf550b165057a4068246156376a8d3e67f
 W	Object.lto	?yy_flex_alloc@@YAPAXI@Z	7+0	331cf993a008d2d72aabc8d30dd6c7c850157761576fcf127f7fece1193c9c5e
