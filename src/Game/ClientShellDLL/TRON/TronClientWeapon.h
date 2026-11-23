@@ -74,6 +74,14 @@ protected:
 	// RETAIL: slot 68 (0x10097ab0): Save's helper, the shot's subroutine data
 	virtual void  TronUnknownVirtual110( ILTMessage_Write *pMsg );
 
+	// RETAIL: slot 70 (0x100d1580, a folded `return 1`): Tron's weapons
+	// fire projectiles unless they say otherwise
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_PROJECTILE; }
+
+	// RETAIL: slot 81 (0x10099120, a folded `return true`): Tron's weapons
+	// send no deflect message (CClientWeapon's still does: 0x10130070)
+	virtual bool  HandleDeflectKey( HLOCALOBJ hObj, ArgList* pArgs ) { return true; }
+
 	// RETAIL: slot 72 (0x10097a70)
 	virtual bool  SpecialOverrideFire();
 

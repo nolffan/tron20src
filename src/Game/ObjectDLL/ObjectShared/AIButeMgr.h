@@ -58,8 +58,15 @@ struct AIBM_WeaponLocks
 	bool			bUnlockAnimPostFireWithMovementLock;	// "UnlockAnimPostFireWithMovementLock%d"
 };
 
+// RETAIL: every copy of a record is member by member (the id as a byte,
+// the locks as two dwords: 0x101a31d0, ReadWeaponSet's push_back
+// 0x101a0f9b), as with a copy constructor of its own
 struct AIBM_WeaponSetRecord
 {
+	AIBM_WeaponSetRecord() {}
+	AIBM_WeaponSetRecord(const AIBM_WeaponSetRecord& Other)
+		: nWeaponId(Other.nWeaponId), Locks(Other.Locks) {}
+
 	uint8				nWeaponId;
 	AIBM_WeaponLocks	Locks;
 };

@@ -172,7 +172,9 @@ void CScreenControls::OnFocus(LTBOOL bFocus)
 		bool bJoystickChanged = !(pProfile->m_bUseJoystick == m_bUseJoystick);
 		pProfile->m_bUseJoystick = m_bUseJoystick;
 
-		pProfile->ApplyControls();
+		// RETAIL: 0x10058643: Tron calls ApplyJoystick here, not ApplyControls
+		// (0x100efeb0), then again when the joystick setting changed
+		pProfile->ApplyJoystick();
 		if (bJoystickChanged)
 			pProfile->ApplyJoystick();
 		pProfile->Save();

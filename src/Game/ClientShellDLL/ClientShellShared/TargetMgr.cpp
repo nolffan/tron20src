@@ -435,12 +435,8 @@ void CTargetMgr::Update()
 
 		CPickupItemFX* const pFX = (CPickupItemFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_PICKUPITEM_ID, m_hTarget);
 
-		// If this is a pickupitem, then display any team association it has.
-		if( IsTeamGameType() && pFX )
-		{
-			m_nTargetTeam = pFX->GetTeamId( );
-		}
-		
+		// RETAIL: Tron's pickup items have no team (0x1016de54; PickupItemFX.h)
+
 		// If we're looking at a pickup, use the take string, otherwise it's just something to interact with.
 		SetTargetStringID(pFX ? IDS_TARGET_TAKE : IDS_TARGET_USE);
 		return;

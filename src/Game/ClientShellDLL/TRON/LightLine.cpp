@@ -143,6 +143,12 @@ CLightLine::CLightLine()
 	m_nGlints = 0;
 }
 
+// RETAIL: 0x100d80e0
+CLightLine::~CLightLine()
+{
+	Term();
+}
+
 // RETAIL: 0x100d80f0: one glint per ten pixels of line
 void CLightLine::Create(float fX1, float fY1, float fX2, float fY2)
 {

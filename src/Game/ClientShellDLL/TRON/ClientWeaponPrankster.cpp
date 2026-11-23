@@ -50,6 +50,12 @@ bool CClientWeaponPrankster::OnMessage( uint8 messageID, ILTMessage_Read *pMsg )
 	return CTronClientWeapon::OnMessage( messageID, pMsg );
 }
 
+// RETAIL: 0x1001b1c0
+WeaponState CClientWeaponPrankster::Update( bool bFire, bool bAltFire, FireType eFireType )
+{
+	return CTronClientWeapon::Update( bFire, bAltFire, eFireType );
+}
+
 // RETAIL: 0x1001b1e0
 void CClientWeaponPrankster::Select()
 {

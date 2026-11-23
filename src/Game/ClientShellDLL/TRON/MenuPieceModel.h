@@ -25,7 +25,8 @@ class CMenuPieceModel
 {
 public:
 	CMenuPieceModel();								// RETAIL: 0x1004c9a0
-	~CMenuPieceModel() { Term(); }					// RETAIL: 0x1004c9d0
+	~CMenuPieceModel();							// RETAIL: 0x1004c9d0 (out of line: the
+													// controls' destructors call it)
 
 	void		Create(char * szPieceName);			// RETAIL: 0x1004c9e0
 	void		Create(INT_MENUPIECE * pPiece);		// RETAIL: 0x1004ca20

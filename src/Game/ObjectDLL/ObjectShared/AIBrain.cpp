@@ -314,7 +314,8 @@ LTBOOL CAIBrain::CharacterIsAimingAtMe(CCharacter* pCharacter)
 
 		const static LTFLOAT fThreshhold = 0.95f;
 
-		if ( (vDir.Dot(vForward) > fThreshhold) && (GetAI()->GetTorsoForward().Dot(vForward) < -fThreshhold) )
+		// RETAIL: Tron's tests the AI's eye direction (0x1018ec15)
+		if ( (vDir.Dot(vForward) > fThreshhold) && (GetAI()->GetEyeForward().Dot(vForward) < -fThreshhold) )
 		{
 			return LTTRUE;
 		}

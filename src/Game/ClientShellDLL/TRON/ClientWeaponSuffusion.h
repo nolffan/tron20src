@@ -44,6 +44,11 @@ protected:
 
 	virtual float GetEnergyUse();			// RETAIL: 0x1001c5a0
 	virtual bool  TronUnknownVirtual164();	// RETAIL: 0x1001c6d0
+	// RETAIL: slot 58 (0x100abb80, a folded empty body): the key going
+	// down starts nothing (the charge is the pre-fire animation's)
+	virtual void  HandleFireKeyDownTransition() {}
+	// RETAIL: slot 98 (0x101c8210, a folded `return false`)
+	virtual bool  TronUnknownVirtual188() { return false; }
 
 	// RETAIL: 0x1001c410
 	bool          IsExtraFireAni( uint32 dwAni ) const;

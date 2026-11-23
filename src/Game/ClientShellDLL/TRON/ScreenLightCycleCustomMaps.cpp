@@ -604,3 +604,9 @@ void CScreenLightCycleCustomMaps::SaveSettings()
 	g_pLightCycleGameDataMgr->SaveCurrent();
 	CBaseScreenLightCycle::SaveSettings();
 }
+
+// RETAIL: 0x1006d860 (slot 39: folded with CScreenLightCycleGame's)
+LTRect CScreenLightCycleCustomMaps::GetBodyRect()
+{
+	return g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"TabBodyRect");
+}

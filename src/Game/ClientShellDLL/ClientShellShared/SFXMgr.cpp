@@ -544,15 +544,10 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read *pMsg)
 			PICKUPITEMCREATESTRUCT pickupitem;
 
 			pickupitem.hServerObj = hObj;
-            pickupitem.bRotate = (LTBOOL)pMsg->Readbool();
-            pickupitem.bBounce = (LTBOOL)pMsg->Readbool();
-			
-			char szTemp[256] = {0};
-			pMsg->ReadString( szTemp, ARRAY_LEN(szTemp) );
-			pickupitem.sClientFX = szTemp;
-
-			pickupitem.m_nTeamId = pMsg->Readuint8( );
-
+			// RETAIL: 0x10106197: Build 51's (two bytes, as Tron's server
+			// PickupItem writes them; no client fx, no team id)
+            pickupitem.bRotate = (LTBOOL)pMsg->Readuint8();
+            pickupitem.bBounce = (LTBOOL)pMsg->Readuint8();
 			CreateSFX(nId, &pickupitem);
 		}
 		break;

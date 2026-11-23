@@ -61,7 +61,7 @@ class CLightLine
 {
 public:
 	CLightLine();
-	~CLightLine() { Term(); }
+	~CLightLine();	// RETAIL: 0x100d80e0, out of line
 
 	void	Create(float fX1, float fY1, float fX2, float fY2);
 	void	Move(float fX1, float fY1, float fX2, float fY2);

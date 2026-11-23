@@ -19,41 +19,31 @@ struct PICKUPITEMCREATESTRUCT : public SFXCREATESTRUCT
 
     LTBOOL		bRotate;
     LTBOOL		bBounce;
-	std::string	sClientFX;
-	uint8		m_nTeamId;
 };
 
 inline PICKUPITEMCREATESTRUCT::PICKUPITEMCREATESTRUCT()
 {
     bRotate = LTFALSE;
     bBounce = LTFALSE;
-	m_nTeamId = INVALID_TEAM;
 }
 
+// RETAIL: Tron's is Build 51's (0x40 bytes, vtable 0x101eaf80: no
+// client fx, no team id, no OnServerMessage): CSFXMgr's PickupItem bank
+// shares CObjSpriteFX's Delete (0x101115c0) for the same size
 class CPickupItemFX : public CSpecialFX
 {
 	public :
-
-		~CPickupItemFX();
 
         virtual LTBOOL Init(SFXCREATESTRUCT* psfxCreateStruct);
         virtual LTBOOL CreateObject(ILTClient* pClientDE);
         virtual LTBOOL Update();
 
-		virtual LTBOOL OnServerMessage( ILTMessage_Read *pMsg ); 
-
 		virtual uint32 GetSFXID() { return SFX_PICKUPITEM_ID; }
-
-		uint8	GetTeamId( ) const { return m_nTeamId; }
 
 	private :
 
         LTBOOL m_bRotate;
         LTBOOL m_bBounce;
-
-		CLIENTFX_LINK	m_linkClientFX;
-
-		uint8	m_nTeamId;
 };
 
 #endif // __PICKUPITEM_FX_H__

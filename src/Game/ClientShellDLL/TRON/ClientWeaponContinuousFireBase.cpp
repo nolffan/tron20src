@@ -6,18 +6,13 @@
 //           written from CShell.dll 0x10018330..0x100189b0; see
 //           ClientWeaponContinuousFireBase.h).
 //
-//           Not yet written: PlayFireAnimation (0x10018590),
-//           HandleFireKeyUpTransition (0x10018470; it clears two bools of
-//           Tron's CPlayerMgr, +0x1a8/+0x1a9, ours lacks),
-//           SendFireMessage (0x10018810) and TronUnknownVirtual164
-//           (0x10018990; it needs CTronPlayerStats' float energy, 0x100a9c90).
-//
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
 #include "ClientWeaponContinuousFireBase.h"
 #include "ScreenSubroutines.h"	// RETAIL: its statics' initializers (0x100182c0..)
 #include "TRONPlayerStats.h"
+#include "PlayerMgr.h"
 
 // RETAIL: 0x10018360
 CClientWeaponContinuousFireBase::CClientWeaponContinuousFireBase()
@@ -66,6 +61,28 @@ void CClientWeaponContinuousFireBase::HandleFireKeyDownTransition()
 	m_bFiring = false;
 	m_bKeyUpEarly = false;
 	CTronClientWeapon::HandleFireKeyDownTransition();
+}
+
+// RETAIL: 0x10018470.  Tells the server the fire stopped, if it started;
+// a key up before the first fire message stops the next one
+void CClientWeaponContinuousFireBase::HandleFireKeyUpTransition()
+{
+	CAutoMessage cMsg;
+
+	if ( m_bFiring )
+	{
+		cMsg.Writeuint8( MID_WEAPON_CONTINUOUS_FIRE_STOP );
+		cMsg.Writeuint8( GetFireMessageType() );
+		g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
+
+		m_bFiring = false;
+		g_pPlayerMgr->EndServerAccurateRotation();
+		g_pPlayerMgr->EndSendingCameraOffsetToServer();
+	}
+	else
+	{
+		m_bKeyUpEarly = true;
+	}
 }
 
 namespace
@@ -186,6 +203,39 @@ bool CClientWeaponContinuousFireBase::PlayFireAnimation( bool bResetAni )
 
 	DoSpecialEndFire();
 	return false;
+}
+
+// RETAIL: 0x10018810.  One message starts the fire (the server fires
+// until MID_WEAPON_CONTINUOUS_FIRE_STOP); none of the fire's vectors are
+// sent.  A key up before it cancels this one.
+void CClientWeaponContinuousFireBase::SendFireMessage( bool bFire,
+                                                       LTFLOAT fPerturb,
+                                                       LTVector const &vFirePos,
+                                                       LTVector const &vDir,
+                                                       LTVector const &vImpactPos,
+                                                       HOBJECT hObject )
+{
+	if ( m_bKeyUpEarly )
+	{
+		m_bFiring = false;
+		m_bKeyUpEarly = false;
+		return;
+	}
+
+	m_bFiring = true;
+	m_bKeyUpEarly = false;
+	g_pPlayerMgr->StartServerAccurateRotation();
+	g_pPlayerMgr->StartSendingCameraOffsetToServer();
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8( MID_WEAPON_CONTINUOUS_FIRE_START );
+	cMsg.Writeuint8( GetFireMessageType() );
+	cMsg.Writeuint8( m_nWeaponId );
+	cMsg.Writeuint8( m_nAmmoId );
+	cMsg.Writefloat( m_fTronUnknown204 );
+	cMsg.Writebool( true );
+	TronUnknownVirtual110( cMsg );
+	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );
 }
 
 // RETAIL: 0x10018990.  Fires while the player has any energy.

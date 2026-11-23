@@ -39,6 +39,9 @@ public:
 	// RETAIL: slot 8 (0x1001b200)
 	virtual void  TronUnknownVirtual20() { SendRelease(); }
 
+	// RETAIL: slot 7 (0x1001b1c0): only passes it on
+	virtual WeaponState   Update( bool bFire, bool bAltFire, FireType eFireType = FT_NORMAL_FIRE );
+
 	virtual void  Select();
 
 	virtual void  Load( ILTMessage_Read *pMsg );

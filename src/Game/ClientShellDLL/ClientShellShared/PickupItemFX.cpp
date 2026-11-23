@@ -20,14 +20,6 @@ extern CGameClientShell* g_pGameClientShell;
 
 #define PICKUPITEM_ROTVEL	0.3333f * MATH_CIRCLE
 
-CPickupItemFX::~CPickupItemFX()
-{
-	if( m_linkClientFX.IsValid() )
-	{
-		g_pClientFXMgr->ShutdownClientFX( &m_linkClientFX );
-	}
-}
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPickupItemFX::Init
@@ -36,6 +28,7 @@ CPickupItemFX::~CPickupItemFX()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x101b78c0 (Build 51's)
 LTBOOL CPickupItemFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 {
     if (!CSpecialFX::Init(psfxCreateStruct)) return LTFALSE;
@@ -44,22 +37,7 @@ LTBOOL CPickupItemFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 
 	m_bRotate = pPICS->bRotate;
 	m_bBounce = pPICS->bBounce;
-	m_nTeamId = pPICS->m_nTeamId;
 
-	// Shutdown any currently playing FX...
-
-	if( m_linkClientFX.IsValid() )
-	{
-		g_pClientFXMgr->ShutdownClientFX( &m_linkClientFX );
-	}
-
-
-	if( pPICS->sClientFX.length() )
-	{
-		CLIENTFX_CREATESTRUCT fxInit( pPICS->sClientFX.c_str(), FXFLAG_LOOP, m_hServerObject );
-		g_pClientFXMgr->CreateClientFX( &m_linkClientFX, fxInit, true );
-	}
-	
     return LTTRUE;
 }
 
@@ -71,6 +49,7 @@ LTBOOL CPickupItemFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x101b78f0
 LTBOOL CPickupItemFX::CreateObject(ILTClient *pClientDE)
 {
     LTBOOL bRet = CSpecialFX::CreateObject(pClientDE);
@@ -87,6 +66,7 @@ LTBOOL CPickupItemFX::CreateObject(ILTClient *pClientDE)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x101b7920 (Build 51's: no client fx to show or hide)
 LTBOOL CPickupItemFX::Update()
 {
     if (!m_pClientDE || m_bWantRemove || !m_hServerObject) return LTFALSE;
@@ -106,75 +86,6 @@ LTBOOL CPickupItemFX::Update()
 
 	}
 
-	// If we have a ClientFX that is playing hide or show it based on the serverobject...
-	
-	if( m_linkClientFX.IsValid() )
-	{
-		uint32 dwFlags;
-		g_pCommonLT->GetObjectFlags( m_hServerObject, OFT_Flags, dwFlags );
-
-		if( dwFlags & FLAG_VISIBLE )
-		{
-			m_linkClientFX.GetInstance()->Show();
-		}
-		else
-		{
-			m_linkClientFX.GetInstance()->Hide();
-		}
-	}
 
     return LTTRUE;
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPickupItemFX::OnServerMessage
-//
-//	PURPOSE:	Handle recieving a message from the server...
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL CPickupItemFX::OnServerMessage( ILTMessage_Read *pMsg )
-{
-	if( !CSpecialFX::OnServerMessage( pMsg ))
-		return LTFALSE;
-	
-	uint8 nMsgId = pMsg->Readuint8();
-
-	switch( nMsgId )
-	{
-		case PUFX_CLIENTFX:
-		{
-			char szClientFX[256] = {0};
-
-			pMsg->ReadString( szClientFX, ARRAY_LEN( szClientFX ));
-
-			// Shutdown any currently playing FX...
-
-			if( m_linkClientFX.IsValid() )
-			{
-				g_pClientFXMgr->ShutdownClientFX( &m_linkClientFX );
-			}
-
-
-			if( szClientFX[0] )
-			{
-				CLIENTFX_CREATESTRUCT fxInit( szClientFX, FXFLAG_LOOP, m_hServerObject );
-				g_pClientFXMgr->CreateClientFX( &m_linkClientFX, fxInit, true );
-			}
-		}
-		break;
-
-		case PUFX_TEAMID:
-		{
-			m_nTeamId = pMsg->Readuint8( );
-		}
-		break;
-
-		default:
-		break;
-		
-	}
-
-	return LTTRUE;
 }
