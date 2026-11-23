@@ -55,7 +55,7 @@ protected:
 	virtual void  HandleFireKeyUpTransition();
 
 	// RETAIL: 0x1001b0d0
-	virtual uint8 GetFireMessageType() const { return kTronFire_Prankster; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_PRANKSTER; }
 
 	// RETAIL: slot 71 (0x101c9040, the shared empty function)
 	virtual void  DoSpecialEndFire() {}

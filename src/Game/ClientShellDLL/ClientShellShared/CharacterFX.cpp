@@ -2109,6 +2109,10 @@ void CCharacterFX::UpdateMultiVehicleSounds()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x10178bf0. Tron's client has no case for NOLF2's carry,
+// attachments, pitch, can carry, can wake, revive, respawn, radar and
+// tracking messages, and does not shut down the damage FX when the player
+// dies.
 LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 {
     if (!CSpecialFX::OnServerMessage(pMsg)) return LTFALSE;
@@ -2122,21 +2126,6 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			m_cs.eCrosshairCharacterClass = (CharacterClass)pMsg->Readuint8();
 		}
 		break;
-
-		case CFX_CARRY:
-		{
-			m_nCarrying = pMsg->Readuint8();
-			UpdateCarrying();
-		}
-		break;
-
-		//sent down when a new spear is attached so we can hide them as necessary
-		case CFX_UPDATE_ATTACHMENTS:
-		{
-			m_bUpdateAttachments = true;
-		}
-		break;
-
 
 		case CFX_NODECONTROL_LIP_SYNC:
 		case CFX_NODECONTROL_HEAD_FOLLOW_OBJ:
@@ -2172,15 +2161,20 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		}
 		break;
 
+		// RETAIL: Tron's client keeps message 12 as the instant flags and 13
+		// as the lasting ones (0x10178d03, 0x10178d22). Tron's server sends
+		// the flags of the frame's hits as 12 (CCharacter::UpdateDamageFlags)
+		// and the lasting flags, when they change, as 13 (our server names
+		// call them the other way round).
 		case CFX_DMGFLAGS_MSG:
 		{
-			m_cs.nDamageFlags = pMsg->Readuint64();
+			m_cs.nInstantDamageFlags = pMsg->Readuint64();
 		}
 		break;
 
 		case CFX_INSTANTDMGFLAGS_MSG:
 		{
-			m_cs.nInstantDamageFlags = pMsg->Readuint64();
+			m_cs.nDamageFlags = pMsg->Readuint64();
    		}
    		break;
 
@@ -2200,14 +2194,7 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		case CFX_CHAT_MSG:
 		{
             m_cs.SetChatting((LTBOOL)pMsg->Readuint8());
-			if ( m_linkChatFX.IsValid() ) 
-			{
-				if (m_cs.IsChatting())
-					m_linkChatFX.GetInstance()->Show();
-				else
-					m_linkChatFX.GetInstance()->Hide();
-			}
-
+			// RETAIL: Tron does not show or hide the chat FX here (0x10178d7f)
 		}
 		break;
 
@@ -2222,6 +2209,19 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		{
 			_ASSERT(m_cs.byFXFlags & CHARCREATESTRUCT::eZzz);
 			m_cs.byFXFlags &= ~CHARCREATESTRUCT::eZzz;
+		}
+		break;
+
+		// RETAIL: Tron's listen icon (0x10178de9, 0x10178e01)
+		case CFX_TRON_LISTENICON_CREATE_MSG:
+		{
+			m_cs.byFXFlags |= CHARCREATESTRUCT::eTronTalkIcon;
+		}
+		break;
+
+		case CFX_TRON_LISTENICON_DESTROY_MSG:
+		{
+			m_cs.byFXFlags &= ~CHARCREATESTRUCT::eTronTalkIcon;
 		}
 		break;
 
@@ -2309,12 +2309,6 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 		}
 		break;
 		
-		case CFX_PITCH:
-		{
-			HandlePitchMsg( pMsg );
-		}
-		break;
-
 		case CFX_HITBOX_MSG:
 		{
 			LTVector vDims, vOffset;
@@ -2323,25 +2317,17 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 			vDims = pMsg->ReadCompLTVector();
 			vOffset = pMsg->ReadCompLTVector();
 			bCanBeSearched = pMsg->Readbool();
+			// RETAIL: Tron's second flag (0x10178fe6), as the server's
+			// CCharacter::UpdateClientHitBox writes it
+			bool bCanActivate = pMsg->Readbool();
 
 			// Set the dims and offset on the hitbox
 			
 			m_HitBox.SetDims( vDims );
 			m_HitBox.SetOffset( vOffset );
 			m_HitBox.SetCanBeSearched( bCanBeSearched );
+			m_HitBox.SetCanActivate( bCanActivate );
 
-		}
-		break;
-
-		case CFX_CAN_CARRY:
-		{
-			m_bCanCarry = !!(pMsg->Readuint8());
-		}
-		break;
-
-		case CFX_CAN_WAKE:
-		{
-			m_bCanWake = !!(pMsg->Readuint8());
 		}
 		break;
 
@@ -2352,46 +2338,19 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 				m_bPlayerDead = true;
 				// PORT: NOLF2 told its radar here; Tron has none
 			}
-
-			ShutdownDamageFX();
-		}
-		break;
-
-		case CFX_PLAYER_REVIVED:
-		{
-			if( m_cs.bIsPlayer && IsMultiplayerGame() && g_pGameClientShell->ShouldUseRadar() )
-			{
-				m_bPlayerDead = false;
-			}
-		}
-		break;
-   
-		case CFX_PLAYER_RESPAWN:
-		{
-			if( m_cs.bIsPlayer && IsMultiplayerGame() && g_pGameClientShell->ShouldUseRadar())
-			{
-				m_bPlayerDead = false;
-			}
-		}
-		break;
-		
-		case CFX_CHARACTER_RADAR:
-		{
-			m_bRadarVisible = pMsg->Readbool();
-			// PORT: NOLF2 added or removed the character on its radar here
-		}
-		break;
-
-		case CFX_CHARACTER_TRACKING:
-		{
-			m_bTracking = pMsg->Readbool();
-			// PORT: NOLF2 added or removed the character on its radar here
 		}
 		break;
 
 		case CFX_CINEMATICAI_MSG:
 		{
 			m_cs.bIsCinematicAI = pMsg->Readbool();
+		}
+		break;
+
+		// RETAIL: Tron's attached ClientFX (0x10179096)
+		case CFX_TRON_ATTACHFX_MSG:
+		{
+			m_TronAttachClientFX.OnServerMessage( pMsg );
 		}
 		break;
 

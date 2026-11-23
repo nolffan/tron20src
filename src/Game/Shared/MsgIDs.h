@@ -86,9 +86,26 @@
 
 #define MID_COMPILE						135	// Client to Server (ratings update)
 
+	// RETAIL: Tron's fire message types: the values its client weapons
+	// return from GetFireMessageType (CShell.dll slot 70: CClientWeapon
+	// 0x100d1580 1, the discs 0x10018160 3, CClientWeaponPRod 0x10099460 6,
+	// Suffusion 0x1001bd20 7, LOL 0x1001acd0 8, Ball 0x10017840 9, Ball
+	// Launcher 0x10017c30 10, Drunken Dims 0x1001a440 11, Energy Claw
+	// 0x1001a610 13, Prankster 0x1001b0d0 14) and the cases of
+	// CTronPlayerObj::GetExtraFireMessageInfo (Object.lto 0x10063390: 3, 7,
+	// 9, 11, 13). No retail code uses 2, 4, 5 or 12. The names after
+	// MWEAPFIRE_DISC are ours.
 	#define MWEAPFIRE_VECTOR              0
 	#define MWEAPFIRE_PROJECTILE          1
-	#define MWEAPFIRE_DISC                2
+	#define MWEAPFIRE_DISC                3
+	#define MWEAPFIRE_PROD                6
+	#define MWEAPFIRE_SUFFUSION           7
+	#define MWEAPFIRE_LOL                 8
+	#define MWEAPFIRE_BALL                9
+	#define MWEAPFIRE_BALLLAUNCHER        10
+	#define MWEAPFIRE_DRUNKENDIMS         11
+	#define MWEAPFIRE_ENERGYCLAW          13
+	#define MWEAPFIRE_PRANKSTER           14
 
 ///////////////////////////////////////////
 // Light cycle messages for TRON

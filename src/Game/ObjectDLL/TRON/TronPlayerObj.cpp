@@ -781,20 +781,15 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 											  ILTMessage_Read *pMsg,
                                               WeaponFireInfo *pInfo )
 {
-	// 
+	// RETAIL: 0x10063390.  Tron reads extra data for the disc, the ball, the
+	// suffusion, the energy claw and the drunken dims; the other types
+	// (vector, projectile, ...) have none.  The cluster disc's client also
+	// writes its spread (CClientWeaponClusterDisc::AddExtraFireMessageInfo),
+	// but this reads none of it.
 	ASSERT( 0 != pInfo );
-
-	LTRESULT ltResult;
 
 	switch ( nWeaponType )
 	{
-		case MWEAPFIRE_VECTOR:
-		case MWEAPFIRE_PROJECTILE:
-		{
-			// no extra information needed
-		}
-		break;
-
 		case MWEAPFIRE_DISC:
 		{
 			// get the angle offset (from center) to fire disc
@@ -803,18 +798,28 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 			// get the disc tracking type
 			pInfo->nDiscTrackingType = pMsg->Readuint8();
 
+			// RETAIL: the client's auto aim request (0x100633e7), kept only
+			// when the disc game's options allow auto aim
+			pInfo->bTronUnknown164 = pMsg->Readbool();
+			if ( pInfo->bTronUnknown164 && IsDiscGameType() )
+			{
+				ServerGameOptions const& sgo = g_pGameServerShell->GetServerGameOptions();
+				if ( sgo.m_eGameType == eGameTypeDiscArena )
+				{
+					pInfo->bTronUnknown164 = sgo.m_bArenaAllowAutoAim;
+				}
+				else
+				{
+					pInfo->bTronUnknown164 = sgo.m_bTournAllowAutoAim;
+				}
+			}
+
 			switch ( pInfo->nDiscTrackingType )
 			{
 				case MPROJ_DISC_TRACKING_HOMING:
 				{
 					// get the first object point
 					pInfo->hObjectTarget = pMsg->ReadObject();
-				}
-				break;
-
-				case MPROJ_DISC_TRACKING_STEADY:
-				{
-					// nothing more needed
 				}
 				break;
 
@@ -834,69 +839,41 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 					pInfo->vControlPosition = pMsg->ReadLTVector();
 				}
 				break;
-
-				default:
-				{
-					// An invalid DiscTracking type was encountered.
-					// Check the construction of the message itself
-					// (probably on the client).
-					ASSERT( 0 );
-				}
-				break;
-			};
-
-			// is there extra cluster information?
-			uint8 nIsCluster;
-			nIsCluster = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-			ASSERT( LT_OK == ltResult );
-
-			if ( nIsCluster )
-			{
-				//
-				// get the cluster information from the message
-				//
-
-				// get the horizontal spread
-				uint16 nTmp;
-				nTmp = pMsg->Readuint16(); ltResult = LT_OK; // PORT: ReadWordFL
-				ASSERT( LT_OK == ltResult );
-				// PORT: Tron's WeaponFireInfo has no spread members (its fire data
-				// ends at 0x16c), so the spread is read and dropped here
-				float fHorizontalSpread;
-				UncompressAngleFromShort( nTmp, &fHorizontalSpread );
-
-				// get the horizontal perturb
-				uint8 nHorizontalPerturb;
-				nHorizontalPerturb = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
-				float fHorizontalPerturb;
-				UncompressAngleFromByte( nHorizontalPerturb, &fHorizontalPerturb );
-
-				// get the vertical spread
-				uint8 nVerticalSpread;
-				nVerticalSpread = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
-				float fVerticalSpread;
-				UncompressAngleFromByte( nVerticalSpread, &fVerticalSpread );
-
-				// get the number of shards
-				pInfo->nNumberOfShards = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
 			}
-
 		}
 		break;
 
-		default:
+		case MWEAPFIRE_BALL:
 		{
-			// An invalid weapon type was used, check
-			// the creation of the WeaponFireInfo
-			// struct, possibly the construction of the
-			// message itself.
-			ASSERT( 0 );
+			// RETAIL: 0x100634f0: the ball's velocity
+			pInfo->bOverrideVelocity = LTTRUE;
+			pInfo->fOverrideVelocity = pMsg->Readfloat();
 		}
 		break;
-	};
+
+		case MWEAPFIRE_SUFFUSION:
+		{
+			// RETAIL: 0x10063517
+			pInfo->fDamageMultiplier = pMsg->Readfloat() + 1.0f;
+			pInfo->nTronUnknown64 = pMsg->Readuint8();
+		}
+		break;
+
+		case MWEAPFIRE_ENERGYCLAW:
+		{
+			// RETAIL: 0x10063555: the claw's range
+			pInfo->bOverrideRange = LTTRUE;
+			pInfo->fOverrideRange = pMsg->Readfloat();
+		}
+		break;
+
+		case MWEAPFIRE_DRUNKENDIMS:
+		{
+			// RETAIL: 0x1006357a
+			pInfo->nTronUnknown64 = pMsg->Readuint8();
+		}
+		break;
+	}
 }
 
 

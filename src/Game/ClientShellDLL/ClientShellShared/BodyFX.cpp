@@ -494,6 +494,8 @@ void CBodyFX::FadeBackpack()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1012e040. Tron's client has no case for NOLF2's carried,
+// permanent and revive messages.
 LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 {
     if (!CSpecialFX::OnServerMessage(pMsg)) return LTFALSE;
@@ -516,19 +518,18 @@ LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 			vDims = pMsg->ReadCompLTVector();
 			vOffset = pMsg->ReadCompLTVector();
 			bCanBeSearched = pMsg->Readbool();
+			// RETAIL: Tron's second flag (0x1012e0e6), as the server's
+			// Body::UpdateClientHitBox writes it
+			bool bCanActivate = pMsg->Readbool();
 
 			// Set the dims and offset on the hitbox
 			
 			m_HitBox.SetDims( vDims );
 			m_HitBox.SetOffset( vOffset );
 			m_HitBox.SetCanBeSearched( bCanBeSearched );
+			m_HitBox.SetCanActivate( bCanActivate );
 
-			//if we are in a low-violence game, hide the body and create a backpack
-			if (m_bFadeToBackpack && !m_bs.bPermanentBody)
-			{
-				CreateBackpack();
-			}
-
+			// RETAIL: Tron does not create the low violence backpack here
 		}
 		break;
 
@@ -544,53 +545,6 @@ LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 		}
 		break;
 
-		case BFX_CARRIED:
-		{
-			bool bCarried = pMsg->Readbool();	
-			HOBJECT hCarrier = pMsg->ReadObject();
-			HOBJECT hPlayerObj = g_pLTClient->GetClientObject();
-
-			//hide/show, and animate local backpack object if there is one
-			if (m_hBackpack)
-			{
-				if (bCarried)
-				{
-					HMODELANIM nAni = g_pLTClient->GetAnimIndex( m_hBackpack, "CarryBody" );
-					g_pLTClient->SetModelLooping( m_hBackpack, LTFALSE );
-					g_pLTClient->SetModelAnimation( m_hBackpack, nAni );
-
-					if (hCarrier == hPlayerObj)
-						g_pLTClient->Common()->SetObjectFlags(m_hBackpack, OFT_Flags, 0, FLAG_VISIBLE);
-				}
-				else
-				{
-					HMODELANIM nAni = g_pLTClient->GetAnimIndex( m_hBackpack, "DropBody" );
-					g_pLTClient->SetModelLooping( m_hBackpack, LTFALSE );
-					g_pLTClient->SetModelAnimation( m_hBackpack, nAni );
-					g_pLTClient->Common()->SetObjectFlags(m_hBackpack, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
-
-				}
-			}
-		}
-		break;
-
-		case BFX_PERMANENT:
-		{
-			m_bs.bPermanentBody = pMsg->Readbool( );
-
-			//if we are in a low-violence game, hide the body and create a backpack
-			if (m_bFadeToBackpack && !m_bs.bPermanentBody)
-			{
-				CreateBackpack();
-			}
-		}
-		break;
-
-		case BFX_CANREVIVE:
-		{
-			m_bs.bCanBeRevived = pMsg->Readbool( );
-		}
-		break;
 	}
 
     return LTTRUE;

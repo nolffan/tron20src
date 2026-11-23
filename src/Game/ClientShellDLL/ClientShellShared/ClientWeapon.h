@@ -327,7 +327,8 @@ protected:
 
 	// return the "type" identifier (1st part of a fire message)
 	// NOTE: currently the server handles VECTOR and PROJECTILE the same
-	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_VECTOR; }
+	// RETAIL: Tron's returns PROJECTILE (slot 70, 0x100d1580)
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_PROJECTILE; }
 
 	// get the last type of fire sound played
 	uint8         GetLastSndFireType() const;

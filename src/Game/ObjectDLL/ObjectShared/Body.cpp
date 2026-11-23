@@ -795,6 +795,13 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		case kState_BodyFade:
 			m_BCS.eBodyState = eBodyStateFade;
 			break;	
+		// RETAIL: Tron's two more cases (0x1015a6b6, 0x1015a6ca)
+		case kState_BodyGib:
+			m_BCS.eBodyState = eBodyStateGib;
+			break;
+		case kState_BodyPranksterImplode:
+			m_BCS.eBodyState = eBodyStatePranksterImplode;
+			break;
 	}
 	
 	if (IsPlayer(bi.pCharacter->m_hObject))
@@ -1351,12 +1358,14 @@ void Body::UpdateClientHitBox()
 		g_pPhysicsLT->GetObjectDims(m_hHitBox, &vHitDims);
 
 		bool bCanBeSearched = false;
+		bool bTronUnknown7D = false;	// RETAIL: Tron's (0x1015ba06)
 
 		CCharacterHitBox* pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(m_hHitBox));
 		if( pHitBox )
 		{
 			vHitOffset = pHitBox->GetOffset();
 			bCanBeSearched = pHitBox->CanBeSearched();
+			bTronUnknown7D = pHitBox->GetTronUnknown7D();
 
 			g_pPhysicsLT->GetObjectDims( m_hHitBox, &m_BCS.vHitBoxDims );
 			m_BCS.vHitBoxOffset = pHitBox->GetOffset();
@@ -1371,6 +1380,7 @@ void Body::UpdateClientHitBox()
 		cMsg.WriteCompLTVector( vHitDims );
 		cMsg.WriteCompLTVector( vHitOffset );
 		cMsg.Writebool( bCanBeSearched );
+		cMsg.Writebool( bTronUnknown7D );	// RETAIL: 0x1015baa6
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	}
