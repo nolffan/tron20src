@@ -682,8 +682,11 @@ void CTronPlayerMgr::UpdateCameraSway()
 	{
 		bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt("Triangulate");
 		SubVersion eVersion = g_pSubroutineMgr->GetActiveSubroutineVersion("Triangulate");
-		const TriangulateData& data = g_pSubroutineDataMgr->GetTriangulateData(SubroutineDataKey((uint8)eVersion, bCorrupt,
-			g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : 0));
+		// RETAIL: the key's parts are found in this order (0x100a5370)
+		int nVersion = (uint8)eVersion;
+		int nState = bCorrupt;
+		int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : 0;
+		const TriangulateData& data = g_pSubroutineDataMgr->GetTriangulateData(SubroutineDataKey(nVersion, nState, nDifficulty));
 		fMult *= data.fSwayAmountMultiplier;
 		tm *= data.fSwaySpeedMultiplier;
 	}
@@ -1798,8 +1801,8 @@ void CTronPlayerMgr::OnSubroutineChanged(const char* pszName, bool bActive, bool
 //	ROUTINE:	CTronPlayerMgr::TronUnknownVirtualA4
 //
 //	PURPOSE:	RETAIL: retail 0x100a7920 (slot 0xa4): an amount scaled by
-//				the Fuzzy_signature subroutine. PORT: retail looks up a
-//				table of a Tron manager (0x1026ec34) not yet in our tree
+//				the Fuzzy_signature subroutine's AI sound volume scalar
+//				(rounded)
 //
 // ----------------------------------------------------------------------- //
 
@@ -1809,8 +1812,14 @@ int CTronPlayerMgr::TronUnknownVirtualA4(int nArg)
 	if (!g_pSubroutineMgr->IsUtilitySubroutineActive(szName))
 		return nArg;
 
-	g_pSubroutineMgr->GetActiveSubroutineVersion(szName);
-	return nArg;
+	bool bCorrupt = g_pSubroutineMgr->IsSubroutineCorrupt(szName);
+	SubVersion eVersion = g_pSubroutineMgr->GetActiveSubroutineVersion(szName);
+	// RETAIL: the key's parts are found in this order (0x100a798b)
+	int nVersion = (uint8)eVersion;
+	int nState = bCorrupt;
+	int nDifficulty = g_pGameClientShell ? g_pGameClientShell->GetDifficulty() : 0;
+	const FuzzySignatureData& data = g_pSubroutineDataMgr->GetFuzzySignatureData(SubroutineDataKey(nVersion, nState, nDifficulty));
+	return (int)(nArg * data.fAISoundVolumeScalar + 0.5f);
 }
 
 // ----------------------------------------------------------------------- //
