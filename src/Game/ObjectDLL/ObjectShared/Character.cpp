@@ -3914,7 +3914,7 @@ void CCharacter::SetupBody(Body* pProp)
 	bi.pCharacter = this;
 	bi.bPermanentBody = m_bPermanentBody;
 	bi.fBodyLifetime = m_fBodyLifetime;
-	bi.bCanRevive = false;
+	bi.hCoreDump = m_hTronUnknownCF0;	// RETAIL: 0x1009134c
 
 	pProp->Init(bi);
 }

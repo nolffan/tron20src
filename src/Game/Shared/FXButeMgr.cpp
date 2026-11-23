@@ -167,63 +167,8 @@ extern CGameClientShell* g_pGameClientShell;
 #define FXBMGR_CORRUPTICDIMSCLASS_TAG			"CorrupticDimsClassData"
 #define FXBMGR_BALLCLASS_TAG					"BallClassData"
 #define FXBMGR_PRANKSTERCLASS_TAG				"PranksterClassData"
-#define FXBMGR_DISCCLASS_INITIALANGLEMIN						"InitialAngleMin"
-#define FXBMGR_DISCCLASS_INITIALANGLEMAX						"InitialAngleMax"
-#define FXBMGR_DISCCLASS_INITIALANGLESURGE						"InitialAngleSurge"
-#define FXBMGR_DISCCLASS_RETURNVELOCITY							"ReturnVelocity"
-#define FXBMGR_DISCCLASS_RETURNHEIGHTOFFSET						"ReturnHeightOffset"
-#define FXBMGR_DISCCLASS_RETURNFXNAME							"ReturnFXName"
-#define FXBMGR_DISCCLASS_TURNRATEMIN							"TurnRateMin"
-#define FXBMGR_DISCCLASS_TURNRATEMAX							"TurnRateMax"
-#define FXBMGR_DISCCLASS_TURNRATESURGE							"TurnRateSurge"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEMIN			"IncidentAngleToControlLineMin"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEMAX			"IncidentAngleToControlLineMax"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINESURGE		"IncidentAngleToControlLineSurge"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYMIN		"IncidentAngleToControlLineDecayMin"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYMAX		"IncidentAngleToControlLineDecayMax"
-#define FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYSURGE	"IncidentAngleToControlLineDecaySurge"
-#define FXBMGR_DISCCLASS_SWATDEFENDPVFXNAME						"SwatDefendPVFXName"
-#define FXBMGR_DISCCLASS_SWATCRITICALDEFENDPVFXNAME				"SwatCriticalDefendPVFXName"
-#define FXBMGR_DISCCLASS_SWATCRITICALDEFENDTHRESHOLD			"SwatCriticalDefendThreshold"
-#define FXBMGR_DISCCLASS_HOLDDEFENDPVFXNAME						"HoldDefendPVFXName"
-#define FXBMGR_DISCCLASS_ARMDEFENDPVFXNAME						"ArmDefendPVFXName"
-#define FXBMGR_DISCCLASS_SWATDEFENDSTARTDEFENDPERCENTAGE		"SwatDefendStartDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDENDDEFENDPERCENTAGE			"SwatDefendEndDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDMIDPOINT						"SwatDefendMidpoint"
-#define FXBMGR_DISCCLASS_SWATDEFENDMAXDEFENDPERCENTAGE			"SwatDefendMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDSTARTMAXDEFENDPERCENTAGE		"SwatDefendStartMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDENDMAXDEFENDPERCENTAGE		"SwatDefendEndMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDSTARTDEFENDPERCENTAGE		"HoldDefendStartDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDENDDEFENDPERCENTAGE			"HoldDefendEndDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDMAXDEFENDPERCENTAGE			"HoldDefendMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDSTARTMAXDEFENDPERCENTAGE		"HoldDefendStartMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDENDMAXDEFENDPERCENTAGE		"HoldDefendEndMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMINDEFENDPERCENTAGE		"SwatDefendOrientationMinDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMAXDEFENDPERCENTAGE		"SwatDefendOrientationMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONDEADZONE					"SwatDefendOrientationDeadZone"
-#define FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMAXZONE					"SwatDefendOrientationMaxZone"
-#define FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMINDEFENDPERCENTAGE		"HoldDefendOrientationMinDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMAXDEFENDPERCENTAGE		"HoldDefendOrientationMaxDefendPercentage"
-#define FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONDEADZONE					"HoldDefendOrientationDeadZone"
-#define FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMAXZONE					"HoldDefendOrientationMaxZone"
 
 #define FXBMGR_CLUSTERDISCCLASS_TAG								"ClusterDiscClassData"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADMIN		"ShardHorizontalSpreadMin"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADMAX		"ShardHorizontalSpreadMax"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADSURGE		"ShardHorizontalSpreadSurge"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBMIN		"ShardHorizontalPerturbMin"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBMAX		"ShardHorizontalPerturbMax"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBSURGE		"ShardHorizontalPerturbSurge"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADMIN			"ShardVerticalSpreadMin"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADMAX			"ShardVerticalSpreadMax"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADSURGE		"ShardVerticalSpreadSurge"
-#define FXBMGR_CLISTERDISCCLASS_SHARDWEAPONNAME					"ShardProjectileName"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALMIN					"ShardsTotalMin"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALMAX					"ShardsTotalMax"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALSURGE				"ShardsTotalSurge"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMIN			"ShardsTotalPerturbMin"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX			"ShardsTotalPerturbMax"
-#define FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE			"ShardsTotalPerturbSurge"
 
 
 #define FXBMGR_SCALEFX_TAG				"ScaleFX"
@@ -3139,50 +3084,16 @@ LTBOOL SPAWNCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 //  ROUTINE:	DISCCLASSDATA::DISCCLASSDATA
 //
 //  PURPOSE:	Constructor
+//				RETAIL: Object.lto 0x10145a00, CShell.dll 0x10153fe0
 //
 // ----------------------------------------------------------------------- //
 
 DISCCLASSDATA::DISCCLASSDATA( )
 :	PROJECTILECLASSDATA	( ),
-	fInitialAngleMin( 0.0f ),
-	fInitialAngleMax( 0.0f ),
-	fInitialAngleSurge( 0.0f ),
-	fReturnVelocity( 0.0f ),
-	fReturnHeightOffset( 0.0f ),
-	fTurnRateMin( 0.0f ),
-	fTurnRateMax( 0.0f ),
-	fTurnRateSurge( 0.0f ),
-	fIncidentAngleToControlLineMin( 0.0f ),
-	fIncidentAngleToControlLineMax( 0.0f ),
-	fIncidentAngleToControlLineSurge( 0.0f ),
-	fIncidentAngleToControlLineDecayMin( 0.0f ),
-	fIncidentAngleToControlLineDecayMax( 0.0f ),
-	fIncidentAngleToControlLineDecaySurge( 0.0f ),
-	fSwatCriticalDefendThreshold( 0.0f ),
-	fSwatDefendStartDefendPercentage( 0.0f ),
-	fSwatDefendEndDefendPercentage( 0.0f ),
-	fSwatDefendMidpoint( 0.0f ),
-	fSwatDefendMaxDefendPercentage( 0.0f ),
-	fSwatDefendStartMaxDefendPercentage( 0.0f ),
-	fSwatDefendEndMaxDefendPercentage( 0.0f ),
-	fHoldDefendStartDefendPercentage( 0.0f ),
-	fHoldDefendEndDefendPercentage( 0.0f ),
-	fHoldDefendMaxDefendPercentage( 0.0f ),
-	fHoldDefendStartMaxDefendPercentage( 0.0f ),
-	fHoldDefendEndMaxDefendPercentage( 0.0f ),
-	fSwatDefendOrientationMinDefendPercentage( 0.0f ),
-	fSwatDefendOrientationMaxDefendPercentage( 0.0f ),
-	fSwatDefendOrientationDeadZone( 0.0f ),
-	fSwatDefendOrientationMaxZone( 0.0f ),
-	fHoldDefendOrientationMinDefendPercentage( 0.0f ),
-	fHoldDefendOrientationMaxDefendPercentage( 0.0f ),
-	fHoldDefendOrientationDeadZone( 0.0f ),
-	fHoldDefendOrientationMaxZone( 0.0f ),
-	bClusterDiscInfo( false )
-#ifndef _CLIENTBUILD
-	,
 	bReturnToOwner( LTTRUE ),
 	fInitialAngle( 0.0f ),
+	fReturnVelocity( 0.0f ),
+	fReturnHeightOffset( 0.0f ),
 	fTurnRate( 0.0f ),
 	fIncidentAngleToControlLine( 0.0f ),
 	fIncidentAngleToControlLineDecay( 0.0f ),
@@ -3200,21 +3111,14 @@ DISCCLASSDATA::DISCCLASSDATA( )
 	fMagneticAngleMax( 0.0f ),
 	fMultiplayerLeashLength( 0.0f ),
 	bControlable( LTTRUE )
-#endif // _CLIENTBUILD
 {
-#ifndef _CLIENTBUILD
+	szReturnFXName[ 0 ] = '\0';
 	szDestroyedInFlightFXName[ 0 ] = '\0';
 	szBlockedPVFXName[ 0 ] = '\0';
 	szDeadlyBlockedPVFXName[ 0 ] = '\0';
 	szDeflectAttachedFXName[ 0 ] = '\0';
 	szDeadlyDeflectAttachedFXName[ 0 ] = '\0';
 	szDeadlyDeflectSmiteFXName[ 0 ] = '\0';
-#endif // _CLIENTBUILD
-	szReturnFXName[ 0 ] = '\0';
-	szSwatDefendPVFXName[ 0 ] = '\0';
-	szSwatCriticalDefendPVFXName[ 0 ] = '\0';
-	szHoldDefendPVFXName[ 0 ] = '\0';
-	szArmDefendPVFXName[ 0 ] = '\0';
 }
 
 
@@ -3236,6 +3140,7 @@ DISCCLASSDATA::~DISCCLASSDATA()
 //  ROUTINE:	DISCCLASSDATA::Init
 //
 //  PURPOSE:	Read the props for the Disc Class Data...
+//				RETAIL: Object.lto 0x10145ab0, CShell.dll 0x10154090
 //
 // ----------------------------------------------------------------------- //
 
@@ -3244,78 +3149,11 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	if (!aTagName) return LTFALSE;
 	if (!PROJECTILECLASSDATA::Init(buteMgr, aTagName)) return LTFALSE;
 
-	fInitialAngleMin                      = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INITIALANGLEMIN ) ) );
-	fInitialAngleMax                      = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INITIALANGLEMAX ) ) );
-	fInitialAngleSurge                    = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INITIALANGLESURGE ) ) );
-
-	fReturnVelocity                       = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_RETURNVELOCITY ) );
-	fReturnHeightOffset                   = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_RETURNHEIGHTOFFSET ) );
-	buteMgr.GetString( aTagName, FXBMGR_DISCCLASS_RETURNFXNAME, szReturnFXName, ARRAY_LEN( szReturnFXName ) );
-
-	// NOTE: the angles are specified in DEGREES/SEC, convert to RADIANS/SEC
-	fTurnRateMin                          = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_TURNRATEMIN ) ) );
-	fTurnRateMax                          = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_TURNRATEMAX ) ) );
-	fTurnRateSurge                        = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_TURNRATESURGE ) ) );
-
-	// NOTE: the angles are specified in DEGREES, convert to RADIANS
-	fIncidentAngleToControlLineMin        = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEMIN ) ) );
-	fIncidentAngleToControlLineMax        = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEMAX ) ) );
-	fIncidentAngleToControlLineSurge      = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINESURGE ) ) );
-
-	// NOTE: the angles are specified in DEGREES/SEC, convert to RADIANS/SEC
-	fIncidentAngleToControlLineDecayMin   = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYMIN ) ) );
-	fIncidentAngleToControlLineDecayMax   = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYMAX ) ) );
-	fIncidentAngleToControlLineDecaySurge = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_INCIDENTANGLETOCONTROLLINEDECAYSURGE ) ) );
-
-	buteMgr.GetString( aTagName, FXBMGR_DISCCLASS_SWATDEFENDPVFXNAME, szSwatDefendPVFXName, ARRAY_LEN( szSwatDefendPVFXName ) );
-	buteMgr.GetString( aTagName, FXBMGR_DISCCLASS_SWATCRITICALDEFENDPVFXNAME, szSwatCriticalDefendPVFXName, ARRAY_LEN( szSwatCriticalDefendPVFXName ) );
-	fSwatCriticalDefendThreshold          = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATCRITICALDEFENDTHRESHOLD ) );
-	
-	buteMgr.GetString( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDPVFXNAME, szHoldDefendPVFXName, ARRAY_LEN( szHoldDefendPVFXName ) );
-	
-	buteMgr.GetString( aTagName, FXBMGR_DISCCLASS_ARMDEFENDPVFXNAME, szArmDefendPVFXName, ARRAY_LEN( szArmDefendPVFXName ) );
-	
-	//
-	// Defense values
-	//
-
-	// swat timing values
-	fSwatDefendStartDefendPercentage      = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDSTARTDEFENDPERCENTAGE ) );
-	fSwatDefendEndDefendPercentage        = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDENDDEFENDPERCENTAGE ) );
-	fSwatDefendMidpoint                   = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDMIDPOINT ) );
-	fSwatDefendMaxDefendPercentage        = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDMAXDEFENDPERCENTAGE ) );
-	fSwatDefendStartMaxDefendPercentage   = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDSTARTMAXDEFENDPERCENTAGE ) );
-	fSwatDefendEndMaxDefendPercentage     = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDENDMAXDEFENDPERCENTAGE ) );
-
-	// hold timing values
-	fHoldDefendStartDefendPercentage      = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDSTARTDEFENDPERCENTAGE ) );
-	fHoldDefendEndDefendPercentage        = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDENDDEFENDPERCENTAGE ) );
-	fHoldDefendMaxDefendPercentage        = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDMAXDEFENDPERCENTAGE ) );
-	fHoldDefendStartMaxDefendPercentage   = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDSTARTMAXDEFENDPERCENTAGE ) );
-	fHoldDefendEndMaxDefendPercentage     = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDENDMAXDEFENDPERCENTAGE ) );
-
-	// swat orientation values
-	fSwatDefendOrientationMinDefendPercentage  = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMINDEFENDPERCENTAGE ) );
-	fSwatDefendOrientationMaxDefendPercentage  = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMAXDEFENDPERCENTAGE ) );
-	fSwatDefendOrientationDeadZone             = DegreesToRadians( static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONDEADZONE ) ) ) / 2.0f;
-	fSwatDefendOrientationMaxZone              = DegreesToRadians( static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_SWATDEFENDORIENTATIONMAXZONE ) ) ) / 2.0f;
-
-	// check for overlapping angles
-	ASSERT( fSwatDefendOrientationMaxZone < ( MATH_HALFPI - fSwatDefendOrientationDeadZone ) );
-
-	// hold orientation values
-	fHoldDefendOrientationMinDefendPercentage  = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMINDEFENDPERCENTAGE ) );
-	fHoldDefendOrientationMaxDefendPercentage  = static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMAXDEFENDPERCENTAGE ) );
-	fHoldDefendOrientationDeadZone             = DegreesToRadians( static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONDEADZONE ) ) ) / 2.0f;
-	fHoldDefendOrientationMaxZone              = DegreesToRadians( static_cast< float >( buteMgr.GetDouble( aTagName, FXBMGR_DISCCLASS_HOLDDEFENDORIENTATIONMAXZONE ) ) ) / 2.0f;
-
-	// check for overlapping angles
-	ASSERT( fHoldDefendOrientationMaxZone < ( MATH_HALFPI - fHoldDefendOrientationDeadZone ) );
-
-#ifndef _CLIENTBUILD
-	// RETAIL: Tron's attributes, in retail's order (0x10145ab0)
 	bReturnToOwner                   = buteMgr.GetByte( aTagName, "ReturnToOwner" );
 	fInitialAngle                    = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialAngle" ) ) );
+	fReturnVelocity                  = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ReturnVelocity" ) );
+	fReturnHeightOffset              = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ReturnHeightOffset" ) );
+	buteMgr.GetString( aTagName, "ReturnFXName", szReturnFXName, ARRAY_LEN( szReturnFXName ) );
 	buteMgr.GetString( aTagName, "DestroyedInFlightFXName", szDestroyedInFlightFXName, ARRAY_LEN( szDestroyedInFlightFXName ) );
 	buteMgr.GetString( aTagName, "BlockedPVFXName", szBlockedPVFXName, ARRAY_LEN( szBlockedPVFXName ) );
 	buteMgr.GetString( aTagName, "DeadlyBlockedPVFXName", szDeadlyBlockedPVFXName, ARRAY_LEN( szDeadlyBlockedPVFXName ) );
@@ -3341,9 +3179,12 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 
 	// RETAIL: Tron reads "Controlable" but does not keep its value: the
 	// member is always LTTRUE (see docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	bControlable                     = buteMgr.GetByte( aTagName, "Controlable" );
+#else
 	buteMgr.GetByte( aTagName, "Controlable" );
 	bControlable                     = LTTRUE;
-#endif // _CLIENTBUILD
+#endif // TRON20SRC_MODERN
 
 	return LTTRUE;
 }
@@ -3361,46 +3202,15 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 //  ROUTINE:	CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA
 //
 //  PURPOSE:	Constructor
+//				RETAIL: Object.lto 0x10145d30
 //
 // ----------------------------------------------------------------------- //
 
-#ifndef _CLIENTBUILD
-
-// RETAIL: Object.lto 0x10145d30 (near while DISCCLASSDATA keeps Build 69's
-// members: retail's is 0x1d8 bytes)
 CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
 	: DISCCLASSDATA()
 	, fInitialExplosionSuppressTime( 0.0f )
 {
 }
-
-#else // _CLIENTBUILD
-
-CLUSTERDISCCLASSDATA::CLUSTERDISCCLASSDATA()
-	: DISCCLASSDATA()
-	, fShardHorizontalSpreadMin( 0.0f )
-	, fShardHorizontalSpreadMax( 0.0f )
-	, fShardHorizontalSpreadSurge( 0.0f )
-	, fShardHorizontalPerturbMin( 0.0f )
-	, fShardHorizontalPerturbMax( 0.0f )
-	, fShardHorizontalPerturbSurge( 0.0f )
-	, fShardVerticalSpreadMin( 0.0f )
-	, fShardVerticalSpreadMax( 0.0f )
-	, fShardVerticalSpreadSurge( 0.0f )
-	, nShardsTotalMin( 0 )
-	, nShardsTotalMax( 0 )
-	, nShardsTotalSurge( 0 )
-	, nShardsTotalPerturbMin( 0 )
-	, nShardsTotalPerturbMax( 0 )
-	, nShardsTotalPerturbSurge( 0 )
-{
-	szShardWeaponName[ 0 ] = '\0';
-
-	// reinit this to show there is extra info
-	bClusterDiscInfo = true;
-}
-
-#endif // _CLIENTBUILD
 
 // ----------------------------------------------------------------------- //
 //
@@ -3419,12 +3229,10 @@ CLUSTERDISCCLASSDATA::~CLUSTERDISCCLASSDATA()
 //  ROUTINE:	CLUSTERDISCCLASSDATA::Init
 //
 //  PURPOSE:	Read the props for the Cluster Disc Class Data...
+//				RETAIL: Object.lto 0x10145d80, CShell.dll 0x10154360
 //
 // ----------------------------------------------------------------------- //
 
-#ifndef _CLIENTBUILD
-
-// RETAIL: Object.lto 0x10145d80: Tron's server reads only this attribute
 LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 {
 	if (!aTagName) return LTFALSE;
@@ -3434,46 +3242,6 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 
 	return LTTRUE;
 }
-
-#else // _CLIENTBUILD
-
-LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
-{
-	if (!aTagName) return LTFALSE;
-	if (!DISCCLASSDATA::Init(buteMgr, aTagName)) return LTFALSE;
-
-	// horizontal spread
-	fShardHorizontalSpreadMin     = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADMIN ) ) );
-	fShardHorizontalSpreadMax     = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADMAX ) ) );
-	fShardHorizontalSpreadSurge   = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALSPREADSURGE ) ) );
-
-	// randomization of the shard direction
-	fShardHorizontalPerturbMin    = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBMIN ) );
-	fShardHorizontalPerturbMax    = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBMAX ) );
-	fShardHorizontalPerturbSurge  = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDHORIZONTALPERTURBSURGE ) );
-
-	// vertical spread
-	fShardVerticalSpreadMin       = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADMIN ) ) );
-	fShardVerticalSpreadMax       = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADMAX ) ) );
-	fShardVerticalSpreadSurge     = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDVERTICALSPREADSURGE ) ) );
-
-	// get the shard weapon's name
-	buteMgr.GetString( aTagName, FXBMGR_CLISTERDISCCLASS_SHARDWEAPONNAME, szShardWeaponName, ARRAY_LEN( szShardWeaponName ) );
-
-	// number of shards to emit
-	nShardsTotalMin               = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALMIN );
-	nShardsTotalMax               = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALMAX );
-	nShardsTotalSurge             = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALSURGE );
-
-	// number of shards perturb
-	nShardsTotalPerturbMin        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMIN );
-	nShardsTotalPerturbMax        = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBMAX );
-	nShardsTotalPerturbSurge      = buteMgr.GetInt( aTagName, FXBMGR_CLUSTERDISCCLASS_SHARDSTOTALPERTURBSURGE );
-
-	return LTTRUE;
-}
-
-#endif // _CLIENTBUILD
 
 
 // ----------------------------------------------------------------------- //
