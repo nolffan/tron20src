@@ -2937,23 +2937,24 @@ void CCharacterFX::KillWeaponLoopSound()
 
 // ----------------------------------------------------------------------- //
 //
-//  ROUTINE:	CCharacterFX::HandlePitchMsg
+//  ROUTINE:	CCharacterFX::HandlePitch
 //
 //  PURPOSE:	Update the tracking nodes for pitching
 //
+//	RETAIL: 0x1017a2d0. Tron has no pitch message: the server puts the
+//	pitch in the object's unguaranteed data (CCharacter), and UpdatePitch
+//	gives it here. The name is ours.
+//
 // ----------------------------------------------------------------------- //
 
-void CCharacterFX::HandlePitchMsg( ILTMessage_Read *pMsg )
+void CCharacterFX::HandlePitch( uint8 ucPitch )
 {
-	// Unpack the pitch.  It comes from the server in a byte.
-	uint8 ucPitch = pMsg->Readuint8( );
-
-	// remap it to a float
-	UncompressAngleFromByte( ucPitch, &m_cs.fPitch );
-
 	// Only players can pitch...
 	if( !m_cs.bIsPlayer ) 
 		return;
+
+	// remap it to a float
+	UncompressAngleFromByte( ucPitch, &m_cs.fPitch );
 	
 	float fPitch = m_cs.fPitch;
 
@@ -2992,6 +2993,14 @@ void CCharacterFX::UpdatePitch( )
 	// Only players can pitch...
 	if( !m_cs.bIsPlayer ) 
 		return;
+
+	// RETAIL: Tron reads the pitch from the object's unguaranteed data
+	// (0x1017a4c2)
+	uint32 nPitch;
+	if( LT_OK == g_pLTClient->GetObjectUnguaranteedData( m_hServerObject, &nPitch ))
+	{
+		HandlePitch(( uint8 )nPitch );
+	}
 
 	// Don't allow tracking when playing special damage fx anim or riding vehicle.
 	bool bEnable = !m_bDamageFxTrackingOverride && !m_bOnVehicle && g_vtPlayerPitchTracking.GetFloat( );
