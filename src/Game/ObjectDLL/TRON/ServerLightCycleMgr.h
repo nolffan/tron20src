@@ -142,8 +142,7 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		LCPositionUpdate* NewPositionUpdate();
 
 		LCDialogQueue			m_DialogQueue;				// RETAIL: +0x133c
-		float					m_fMinTimeBetweenDialog;	// RETAIL: +0x134c
-		float					m_fMaxTimeBetweenDialog;	// RETAIL: +0x1350
+		LCTIMERANGE				m_rngTimeBetweenDialog;		// RETAIL: +0x134c
 		float					m_fLastDialogTime;			// RETAIL: +0x1354
 		float					m_fDialogDelay;				// RETAIL: +0x1358
 		float					m_fDialogPauseTime;			// RETAIL: +0x135c
