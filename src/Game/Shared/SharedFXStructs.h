@@ -123,35 +123,25 @@ struct BODYCREATESTRUCT : public SFXCREATESTRUCT
     virtual void Write(ILTMessage_Write *pMsg);
     virtual void Read(ILTMessage_Read *pMsg);
 
+	// RETAIL: Tron's is 0x18 bytes (CShell.dll Read 0x101aaae0, Object.lto
+	// Write 0x101133e0): NOLF2's permanent body, hit box and search values
+	// are not in it.
 	ModelId			eModelId;
-//  uint8           nTrackers;
 	BodyState		eBodyState;
 	uint8			nClientId;
 	bool			bCanBeCarried;
 	bool			bCanBeRevived;
 	DamageType		eDeathDamageType;
-	bool			bPermanentBody;
-	bool			bHitBoxUpdated;
-	LTVector		vHitBoxDims;
-	LTVector		vHitBoxOffset;
-	bool			bCanBeSearched;
 };
 
 inline void BODYCREATESTRUCT::Clear()
 {
 	eModelId			= eModelIdInvalid;
-//	nTrackers			= 0;
 	eBodyState			= eBodyStateNormal;
 	nClientId			= (uint8)-1;
 	bCanBeCarried		= true;
 	bCanBeRevived		= false;
 	eDeathDamageType	= DT_INVALID;
-	bPermanentBody		= false;
-	bHitBoxUpdated		= false;
-	bCanBeSearched		= false;
-
-	vHitBoxDims.Init();
-	vHitBoxOffset.Init();
 }
 
 /////////////////////////////////////////////////////////////////////////////

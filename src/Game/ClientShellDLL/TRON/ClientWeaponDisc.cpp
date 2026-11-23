@@ -20,6 +20,7 @@
 #include "PlayerStats.h"
 #include "RatingMgr.h"
 #include "FXButeMgr.h"
+#include "ProfileMgr.h"
 #include "ParsedMsg.h"
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x100189d0..0x10018a00)
 
@@ -84,7 +85,7 @@ static void InitDiscVars( ILTClient * )
 
 // RETAIL: 0x10018b60 (near: it also clears CClientWeapon+0x12c, inits a
 // "DiscControlRate" console variable, 0x10018a60, and starts
-// m_fTimeDiscActive at 0)
+// m_fLastControlTime at 0)
 CClientWeaponDisc::CClientWeaponDisc() :
 	  CTronClientWeapon()
 	, m_nSwatDefenseAni( INVALID_ANI )
@@ -93,11 +94,11 @@ CClientWeaponDisc::CClientWeaponDisc() :
 	, m_nImpactHoldDefenseAni( INVALID_ANI )
 	, m_nPostHoldDefenseAni( INVALID_ANI )
 	, m_bPlayImpactHoldAnimation( false )
-	, m_bIsDiscActive( false )
 	, m_bFireMessageSent( false )
+	, m_bControllingDisc( false )
 	, m_bDiscNeedsUpdates( false )
 	, m_bIgnoreFireKeyframe( false )
-	, m_fTimeDiscActive( 0.0f )
+	, m_fLastControlTime( 0.0f )
 {
 	// base class redefines
 	m_bAutoSwitchEnabled = false;
@@ -707,7 +708,7 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 			//
 
 			// stop sending updates to the disc
-			m_bFireMessageSent = false;
+			m_bControllingDisc = false;
 
 			// we handled message, return true
 			return true;
@@ -730,7 +731,7 @@ bool CClientWeaponDisc::HandleMessageProjectile( uint8 messageID,
 			uint8 nAmmoAmount = pMsg->Readuint8();
 
 			// stop sending updates to the disc
-			m_bFireMessageSent = false;
+			m_bControllingDisc = false;
 
 			// give the disc back
 			IncrementAmmo( nAmmoAmount );
@@ -798,7 +799,7 @@ bool CClientWeaponDisc::OnModelKey( HLOCALOBJ hObj, ArgList* pArgs )
 				m_bFire = true;
 
 				// clear the fire message sent flag
-				m_bIsDiscActive = false;
+				m_bFireMessageSent = false;
 			}
 		}
 
@@ -846,13 +847,13 @@ WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
 
 	// RETAIL: 0x100194a0: while the fire key is held, and in a multiplayer
 	// game no more often than DiscControlRate seconds
-	if ( m_bFireMessageSent && bFire )
+	if ( m_bControllingDisc && bFire )
 	{
 		bool bSend = true;
 		if ( IsMultiplayerGame() )
 		{
 			float fRate = g_vtDiscControlRate.GetFloat( 0.1f );
-			if ( g_pLTClient->GetTime() < fRate + m_fTimeDiscActive )
+			if ( g_pLTClient->GetTime() < fRate + m_fLastControlTime )
 			{
 				bSend = false;
 			}
@@ -862,7 +863,7 @@ WeaponState CClientWeaponDisc::Update( bool bFire, bool bAltFire,
 		{
 			CAutoMessage cMsg;
 
-			m_fTimeDiscActive = g_pLTClient->GetTime();
+			m_fLastControlTime = g_pLTClient->GetTime();
 
 			// RETAIL: Tron's projectile messages are object messages to our
 			// player (CTronPlayerObj::HandleMessageProjectile)
@@ -1129,6 +1130,9 @@ bool CClientWeaponDisc::PlayHoldDefenseAnimation( bool bResetAni )
 
 void CClientWeaponDisc::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg )
 {
+	// RETAIL: 0x10019bb0 (CClientWeaponClusterDisc uses this one too).
+	// Tron sends the class data's initial angle, and the player's
+	// "DiscAutoAim" setting in place of b69's cluster disc flag.
 	ASSERT( pMsg );
 
 	// get the projectile structure
@@ -1139,6 +1143,12 @@ void CClientWeaponDisc::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *p
 	DISCCLASSDATA *pDiscClassData =
 		dynamic_cast< DISCCLASSDATA* >( pProjectileFX->pClassData );
 	ASSERT( 0 != pDiscClassData );
+
+	bool bAutoAim = false;
+	if ( g_pProfileMgr )
+	{
+		bAutoAim = ( LTTRUE == g_pProfileMgr->GetCurrentProfile()->m_bDiscAutoAim );
+	}
 
 	if ( bFire )
 	{
@@ -1154,19 +1164,8 @@ void CClientWeaponDisc::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *p
 		// get the camera's position, its the fire position
 		g_pLTClient->GetObjectPos( hCamera, &vTargetStart );
 
-		// find the point we're aiming at
-	//	LTVector vTargetPoint;
-	//	bResult = CalculatePointGuidedTarget( &vTargetPoint );
-	//	ASSERT( true == bResult );
-
 		// determine the angle offset (angle from center to release the disc)
-		LTFLOAT fDiscReleaseAngle;
-		fDiscReleaseAngle = InterpolateRating<LTFLOAT>(
-				Rating_Accuracy,
-				pDiscClassData->fInitialAngleMin,
-				pDiscClassData->fInitialAngleMax,
-				pDiscClassData->fInitialAngleSurge
-			);
+		LTFLOAT fDiscReleaseAngle = pDiscClassData->fInitialAngle;
 
 		// pass a control vector, which is a vector pointing
 		// straight out in front of the player
@@ -1180,6 +1179,8 @@ void CClientWeaponDisc::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *p
 		pMsg->Writeuint8(
 				static_cast< uint8 >( MPROJ_DISC_TRACKING_CONTROL_LINE )
 			);
+
+		pMsg->Writebool( bAutoAim );
 
 		// write the control vector
 		pMsg->WriteLTVector( vControlDirection );
@@ -1200,10 +1201,9 @@ void CClientWeaponDisc::AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *p
 		pMsg->Writeuint8(
 				static_cast< uint8 >( MPROJ_DISC_TRACKING_STEADY )
 			);
-	}
 
-	// write if this is a cluster disc or not (blah)
-	pMsg->Writeuint8( static_cast< uint8 >( pDiscClassData->bClusterDiscInfo ) );
+		pMsg->Writebool( bAutoAim );
+	}
 
 	// the fire message will be sent shortly after this, so
 	// set the flag indicating we've send the fire message
@@ -1405,16 +1405,21 @@ bool CClientWeaponDisc::CalculateControlDirection( LTVector *pvControlDirection 
 
 void CClientWeaponDisc::Fire( bool bFire )
 {
-	//
-	// update disc specific variables
-	//
+	// RETAIL: 0x10019dc0: Tron fires only with disc class data; the player
+	// controls the disc when the class data says so
+	if ( !m_pAmmo->pProjectileFX )
+	{
+		return;
+	}
 
-	// keep track locally that the disc has been thrown
-	m_bIsDiscActive = true;
+	DISCCLASSDATA *pDiscClassData = (DISCCLASSDATA*)m_pAmmo->pProjectileFX->pClassData;
+	if ( !pDiscClassData )
+	{
+		return;
+	}
 
-	// keep sending updates to the disc until it says stop
-	// or we get it back
-	m_bDiscNeedsUpdates = true;
+	m_bControllingDisc = ( LTFALSE != pDiscClassData->bControlable );
+	m_fLastControlTime = -100.0f;
 
 	// now call the the parent's version
 	CTronClientWeapon::Fire( bFire );
@@ -1479,13 +1484,12 @@ void CClientWeaponDisc::HandleFireKeyUpTransition()
 	// not, it is considered click-to-fire.
 	//
 
-	// RETAIL: 0x10019f30 tests and clears the bools at +0x21e and +0x21d
-	// (which retail bool is which of ours is a guess, see the header), and
-	// leaves the message to SendDiscReturn
-	if ( m_bFireMessageSent )
+	// RETAIL: 0x10019f30 tests and clears the bools at +0x21e and +0x21d,
+	// and leaves the message to SendDiscReturn
+	if ( m_bControllingDisc )
 	{
-		m_bIsDiscActive = false;
 		m_bFireMessageSent = false;
+		m_bControllingDisc = false;
 
 		// tell the disc the fire key is up
 		SendDiscRelease();
@@ -1652,8 +1656,8 @@ void CClientWeaponDisc::SendDiscRelease()
 void CClientWeaponDisc::Load( ILTMessage_Read *pMsg )
 {
 	m_bPlayImpactHoldAnimation = pMsg->Readbool();
-	m_bIsDiscActive = pMsg->Readbool();
 	m_bFireMessageSent = pMsg->Readbool();
+	m_bControllingDisc = pMsg->Readbool();
 	m_bDiscNeedsUpdates = pMsg->Readbool();
 	m_bIgnoreFireKeyframe = pMsg->Readbool();
 	CTronClientWeapon::Load( pMsg );
@@ -1662,8 +1666,8 @@ void CClientWeaponDisc::Load( ILTMessage_Read *pMsg )
 void CClientWeaponDisc::Save( ILTMessage_Write *pMsg )
 {
 	pMsg->Writebool( m_bPlayImpactHoldAnimation );
-	pMsg->Writebool( m_bIsDiscActive );
 	pMsg->Writebool( m_bFireMessageSent );
+	pMsg->Writebool( m_bControllingDisc );
 	pMsg->Writebool( m_bDiscNeedsUpdates );
 	pMsg->Writebool( m_bIgnoreFireKeyframe );
 	CTronClientWeapon::Save( pMsg );
@@ -1681,8 +1685,7 @@ bool CClientWeaponDisc::TronUnknownVirtual1A0()
 	return g_pPlayerStats->GetAmmoCount( m_nAmmoId ) != (uint32)m_pAmmo->GetMaxAmount( LTNULL );
 }
 
-// RETAIL: 0x1001a240.  PORT: retail's DISCCLASSDATA has its swat defend FX
-// names 8 bytes further on (+0xa4, +0xd4) than ours.
+// RETAIL: 0x1001a240: the blocked (2) and deadly blocked (3) player view FX
 void CClientWeaponDisc::CreateDefendFX( int nDefendType )
 {
 	if ( !m_pAmmo->pProjectileFX )
@@ -1699,11 +1702,11 @@ void CClientWeaponDisc::CreateDefendFX( int nDefendType )
 	char *szFXName;
 	if ( 3 == nDefendType )
 	{
-		szFXName = pDiscData->szSwatCriticalDefendPVFXName;
+		szFXName = pDiscData->szDeadlyBlockedPVFXName;
 	}
 	else if ( 2 == nDefendType )
 	{
-		szFXName = pDiscData->szSwatDefendPVFXName;
+		szFXName = pDiscData->szBlockedPVFXName;
 	}
 	else
 	{

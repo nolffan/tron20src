@@ -7781,7 +7781,7 @@ bool CPlayerObj::DropCarriedObject( )
 		{
 			// PORT: retail calls a one-argument virtual here (Body's slot
 			// 27, with false); NOLF2's two-argument one stands in
-			pBody->SetBeingCarried( false, NULL );
+			pBody->SetBeingCarried( false );
 		}
 
 		// Send trigger to body to toggle move.
@@ -7849,7 +7849,7 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 		Body *pBody = dynamic_cast<Body*>(g_pLTServer->HandleToObject( hObject ));
 		if( pBody )
 		{
-			pBody->SetBeingCarried( true, m_hObject );
+			pBody->SetBeingCarried( true );
 		}
 
 	}
