@@ -120,8 +120,8 @@ protected:
 	// we got the disc back, add the ammo
 	void          IncrementAmmo( int nAmount = 1 );
 
-	// RETAIL: 0x1001a240: the player view FX of a block (2 swat, 3
-	// critical swat; the name is ours)
+	// RETAIL: 0x1001a240: the player view FX of a block (2 blocked, 3
+	// deadly blocked; the name is ours)
 	void          CreateDefendFX( int nDefendType );
 	// RETAIL: 0x1001a320: shows the disc piece again (the name is ours)
 	void          ShowDisc();
@@ -142,24 +142,25 @@ private:
 	HMODELANIM    m_nImpactHoldDefenseAni;  // Hold defense impact
 	HMODELANIM    m_nPostHoldDefenseAni;    // Hold defense end
 
-	// RETAIL: the order below is retail's (0x21c..0x225, from Load/Save);
-	// which retail bool is which of ours is a guess.
+	// RETAIL: the order below is retail's (0x21c..0x225, from Load/Save).
+	// AddExtraFireMessageInfo (0x10019bb0) sets 0x21d; Fire (0x10019dc0)
+	// sets 0x21e from the class data's Controlable and 0x220 to -100.  The
+	// names are ours.
 
 	// true if we should play the hold impact defenese animation
 	// during the update (only works if the defense hold is already
 	// playing)
-	bool          m_bPlayImpactHoldAnimation;
+	bool          m_bPlayImpactHoldAnimation;	// 0x21c
 
-	// true if the disc is in use
-	bool          m_bIsDiscActive;
+	// true when the fire message has been sent (cleared by the fire key)
+	bool          m_bFireMessageSent;			// 0x21d
 
-	// this flag will be sent when the fire message has been
-	// sent to ensure we don't send updates for the disc before
-	// the server has been notified its been sent
-	bool          m_bFireMessageSent;
+	// true while the player controls the thrown disc (the fire key is
+	// held): Update sends the control line to the server
+	bool          m_bControllingDisc;			// 0x21e
 
-	// time that the disc is in use (-1.0f when not in use)
-	float         m_fTimeDiscActive;
+	// the time the control line was last sent
+	float         m_fLastControlTime;			// 0x220
 
 	// true if we should be sending updates to the server
 	bool          m_bDiscNeedsUpdates;

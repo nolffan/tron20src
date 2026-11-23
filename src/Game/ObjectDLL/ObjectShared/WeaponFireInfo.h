@@ -128,7 +128,7 @@ struct WeaponFireInfo
 		, hObjectTarget( 0 )
 		, hSocket( INVALID_MODEL_SOCKET )
 		, fDiscReleaseAngle( 0.0f )
-		, nNumberOfShards( 0 )
+		, bDiscAutoAim( false )
 		, fDamageMultiplier( 1.0f )
 	{
 		for ( int i = 0; i < TRON_NUM_WEAPON_MODIFIERS; ++i )
@@ -205,21 +205,11 @@ struct WeaponFireInfo
 	// NOTE: Only used by the player.
 	LTFLOAT     fDiscReleaseAngle;		// 0x160
 
-	//
-	// Cluster information
-	//
-
-	// the number of shards
-	// RETAIL: Tron has no spread members here; the byte at 0x164 is the
-	// only one between the disc's members and the damage multiplier.
-	// CDisc::Setup (0x100375eb) reads it as a bool and CTronPlayerObj
-	// (0x100633f7) sets it.  PORT: that it is NOLF2's shard count is a guess;
-	// bTronUnknown164 (ours) is the same byte
-	union
-	{
-		uint8 nNumberOfShards;				// 0x164
-		bool  bTronUnknown164;
-	};
+	// RETAIL: Tron's: the player's "DiscAutoAim" setting, or in a disc
+	// game the server's option (CTronPlayerObj::GetExtraFireMessageInfo
+	// 0x100633f7); CDisc::Setup (0x100375eb) keeps it.  NOLF2 has the
+	// cluster disc's shard values here.  The name is ours
+	bool		bDiscAutoAim;			// 0x164
 
 	// RETAIL: Tron's: scales the projectile's instant damage (CProjectile::
 	// Setup 0x1011eb74).  The name is ours
