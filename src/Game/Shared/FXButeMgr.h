@@ -154,6 +154,11 @@ struct SPAWNCLASSDATA : public PROJECTILECLASSDATA
 	LTBOOL			bStickToWorld;
 };
 
+// RETAIL: Tron's disc class data (both DLLs: constructor Object.lto
+// 0x10145a00, CShell.dll 0x10153fe0; Init 0x10145ab0, 0x10154090): 0x1d8
+// bytes.  Build 69's min/max/surge values, swat/hold defense values and
+// the cluster flag are not in Tron's: the defense values are in the
+// weapon's DEFENSECLASSDATA (WeaponMgr.h).
 struct DISCCLASSDATA : public PROJECTILECLASSDATA
 {
 	DISCCLASSDATA();
@@ -161,121 +166,42 @@ struct DISCCLASSDATA : public PROJECTILECLASSDATA
 
 	LTBOOL	Init( CButeMgr &buteMgr, char *aTagName );
 
-	LTFLOAT			fInitialAngleMin;
-	LTFLOAT			fInitialAngleMax;
-	LTFLOAT			fInitialAngleSurge;
+	LTBOOL			bReturnToOwner;							// 0x34
+	LTFLOAT			fInitialAngle;							// 0x38 (radians)
 
-	LTFLOAT			fReturnVelocity;
-	LTFLOAT			fReturnHeightOffset;
-	char			szReturnFXName[ FXBMGR_MAX_NAME_LENGTH ];
+	LTFLOAT			fReturnVelocity;						// 0x3c
+	LTFLOAT			fReturnHeightOffset;					// 0x40
+	char			szReturnFXName[ FXBMGR_MAX_NAME_LENGTH ];	// 0x44
 
-	LTFLOAT			fTurnRateMin;
-	LTFLOAT			fTurnRateMax;
-	LTFLOAT			fTurnRateSurge;
+	char			szDestroyedInFlightFXName[ FXBMGR_MAX_NAME_LENGTH ];	// 0x74
+	char			szBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];			// 0xa4
+	char			szDeadlyBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];		// 0xd4
+	char			szDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];		// 0x104
+	char			szDeadlyDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];	// 0x134
+	char			szDeadlyDeflectSmiteFXName[ FXBMGR_MAX_NAME_LENGTH ];	// 0x164
 
-	LTFLOAT			fIncidentAngleToControlLineMin;
-	LTFLOAT			fIncidentAngleToControlLineMax;
-	LTFLOAT			fIncidentAngleToControlLineSurge;
-
-	LTFLOAT			fIncidentAngleToControlLineDecayMin;
-	LTFLOAT			fIncidentAngleToControlLineDecayMax;
-	LTFLOAT			fIncidentAngleToControlLineDecaySurge;
-
-	// player view impact effect to play for the swat block)
-	// (when the player is impacted by a disc while blocking)
-	char			szSwatDefendPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-
-	// player view effect to play when the user's defense timing is
-	// really really close (critical "blow")
-	char			szSwatCriticalDefendPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-
-	// number 0.0f-1.0f, when the disc hits this threshold, play the
-	// critical block (1.0f == 100% == maximum defense)
-	LTFLOAT			fSwatCriticalDefendThreshold;
-
-	// player view effect to play for "persistant" blocking (the hold block)
-	// (when the player is impacted by a disc while blocking)
-	char			szHoldDefendPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-
-	// player view effect to play for forarm blocking
-	// (when the player is impacted by a disc while blocking)
-	char			szArmDefendPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-
-	//
-	// defense stuff
-	//
-
-	// swat defense timing values
-	float			fSwatDefendStartDefendPercentage;
-	float			fSwatDefendEndDefendPercentage;
-	float			fSwatDefendMidpoint;
-	float			fSwatDefendMaxDefendPercentage;
-	float			fSwatDefendStartMaxDefendPercentage;
-	float			fSwatDefendEndMaxDefendPercentage;
-
-	// hold defense timing values
-	float			fHoldDefendStartDefendPercentage;
-	float			fHoldDefendEndDefendPercentage;
-	float			fHoldDefendMaxDefendPercentage;
-	float			fHoldDefendStartMaxDefendPercentage;
-	float			fHoldDefendEndMaxDefendPercentage;
-
-	// swat defense orientation values
-	float			fSwatDefendOrientationMinDefendPercentage;
-	float			fSwatDefendOrientationMaxDefendPercentage;
-	float			fSwatDefendOrientationDeadZone;
-	float			fSwatDefendOrientationMaxZone;
-	
-	// swat defense orientation values
-	float			fHoldDefendOrientationMinDefendPercentage;
-	float			fHoldDefendOrientationMaxDefendPercentage;
-	float			fHoldDefendOrientationDeadZone;
-	float			fHoldDefendOrientationMaxZone;
-
-	// (this is yucky :( forgive me)
-	// This is true if the class is actually a ClusterDiscClassData
-	// so that the code doesn't have to special case specific
-	// weapons.  Luckily, this is set automatically.
-	bool			bClusterDiscInfo;
-
-	// RETAIL: Tron's members (DISCCLASSDATA::Init: Object.lto 0x10145ab0,
-	// CShell.dll 0x10154090; constructor 0x10145a00, 0x10153fe0).  Tron's
-	// struct is 0x1d8 bytes and has only these and the return values above
-	// (0x34 ReturnToOwner, 0x38 InitialAngle, 0x3c ReturnVelocity, 0x40
-	// ReturnHeightOffset, 0x44 ReturnFXName, then the names and values in
-	// this order).  PORT: they are added after Build 69's members until no
-	// code reads those any more.  Only the server reads them so far: the
-	// client's struct keeps Build 69's members only (adding them there
-	// changes the stack slots of CGameClientShell::InitSound).
-#ifndef _CLIENTBUILD
-	LTBOOL			bReturnToOwner;
-	LTFLOAT			fInitialAngle;
-	char			szDestroyedInFlightFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	char			szBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	char			szDeadlyBlockedPVFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	char			szDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	char			szDeadlyDeflectAttachedFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	char			szDeadlyDeflectSmiteFXName[ FXBMGR_MAX_NAME_LENGTH ];
-	LTFLOAT			fTurnRate;
-	LTFLOAT			fIncidentAngleToControlLine;
-	LTFLOAT			fIncidentAngleToControlLineDecay;
-	LTFLOAT			fTargetAngleTrackThreshold;
-	LTFLOAT			fLostTargetFlightTime;
-	LTFLOAT			fDeflectTotalTime;
-	LTFLOAT			fMPDeflectTotalTime;
-	LTFLOAT			fDeflectVelocity;
-	LTFLOAT			fDeflectDistance;
-	LTFLOAT			fDeflectInitialRadius;
-	LTFLOAT			fDeflectFinalRadius;
-	LTFLOAT			fMagneticRadius;
-	LTFLOAT			fMagneticMiddleInfluence;
-	LTFLOAT			fMagneticEdgeInfluence;
-	LTFLOAT			fMagneticAngleMax;
-	LTFLOAT			fMultiplayerLeashLength;
-	LTBOOL			bControlable;
-#endif // _CLIENTBUILD
+	LTFLOAT			fTurnRate;								// 0x194 (radians/second)
+	LTFLOAT			fIncidentAngleToControlLine;			// 0x198
+	LTFLOAT			fIncidentAngleToControlLineDecay;		// 0x19c
+	LTFLOAT			fTargetAngleTrackThreshold;				// 0x1a0
+	LTFLOAT			fLostTargetFlightTime;					// 0x1a4
+	LTFLOAT			fDeflectTotalTime;						// 0x1a8
+	LTFLOAT			fMPDeflectTotalTime;					// 0x1ac
+	LTFLOAT			fDeflectVelocity;						// 0x1b0
+	LTFLOAT			fDeflectDistance;						// 0x1b4
+	LTFLOAT			fDeflectInitialRadius;					// 0x1b8
+	LTFLOAT			fDeflectFinalRadius;					// 0x1bc
+	LTFLOAT			fMagneticRadius;						// 0x1c0
+	LTFLOAT			fMagneticMiddleInfluence;				// 0x1c4
+	LTFLOAT			fMagneticEdgeInfluence;					// 0x1c8
+	LTFLOAT			fMagneticAngleMax;						// 0x1cc
+	LTFLOAT			fMultiplayerLeashLength;				// 0x1d0
+	LTBOOL			bControlable;							// 0x1d4
 };
 
+// RETAIL: 0x1dc bytes in both DLLs (constructor Object.lto 0x10145d30,
+// Init 0x10145d80; CShell.dll Init 0x10154360).  Build 69's shard values
+// are not in Tron's.
 struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 {
 	CLUSTERDISCCLASSDATA();
@@ -283,44 +209,7 @@ struct CLUSTERDISCCLASSDATA : public DISCCLASSDATA
 
 	LTBOOL			Init( CButeMgr &buteMgr, char *aTagName );
 
-#ifdef _CLIENTBUILD
-	// PORT: Build 69's shard members. Neither retail DLL has their
-	// attribute names; Tron's server class has none of them
-	// (constructor Object.lto 0x10145d30, Init 0x10145d80)
-
-	// horizontal spread
-	float			fShardHorizontalSpreadMin;
-	float			fShardHorizontalSpreadMax;
-	float			fShardHorizontalSpreadSurge;
-
-	// randomization of the shard direction
-	float			fShardHorizontalPerturbMin;
-	float			fShardHorizontalPerturbMax;
-	float			fShardHorizontalPerturbSurge;
-
-	// vertical spread
-	float			fShardVerticalSpreadMin;
-	float			fShardVerticalSpreadMax;
-	float			fShardVerticalSpreadSurge;
-
-	// shard projectile name
-	char			szShardWeaponName[ FXBMGR_MAX_NAME_LENGTH ];
-
-	// number of shards to emit
-	int				nShardsTotalMin;
-	int				nShardsTotalMax;
-	int				nShardsTotalSurge;
-
-	// number of shards perturb
-	int				nShardsTotalPerturbMin;
-	int				nShardsTotalPerturbMax;
-	int				nShardsTotalPerturbSurge;
-
-#else
-	// RETAIL: Tron's only member (0x1d8; CLUSTERDISCCLASSDATA::Init
-	// 0x10145d80)
-	LTFLOAT			fInitialExplosionSuppressTime;
-#endif // _CLIENTBUILD
+	LTFLOAT			fInitialExplosionSuppressTime;			// 0x1d8
 };
 
 // PORT: NOLF2's auto burst disc class data is not in Tron (no RTTI in either

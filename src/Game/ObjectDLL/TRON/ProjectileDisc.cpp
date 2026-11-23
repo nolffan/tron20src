@@ -36,6 +36,7 @@
 #include "CharacterAlignment.h"
 #include "AIUtils.h"
 #include "ModelButeMgr.h"
+#include "SubroutineDataMgr.h"
 
 //
 // LithTech Macros
@@ -89,10 +90,11 @@ enum DISC_STATE
 	// the disc has been deflected, it isn't obeying properly
 	DISC_STATE_DEFLECTING,
 
-	// RETAIL: Tron's has one more state before the return (0x10039c5e sets
-	// it; UpdateDisc's jump table, 0x1003904c, updates it as a deflection).
-	// The name is ours
-	DISC_STATE_TRONUNKNOWN3,
+	// RETAIL: Tron's has one more state before the return: the deadly
+	// deflection sends the disc back from the blocker (HandleDeadlyDeflect,
+	// 0x10039c30; UpdateDisc's jump table, 0x1003904c, updates it as a
+	// deflection).  The name is ours
+	DISC_STATE_DEADLY_DEFLECTING,
 
 	// the disc is returning to the owner
 	DISC_STATE_RETURNING,
@@ -283,7 +285,7 @@ CDisc::CDisc() :
 	, m_rDeflectRot()
 	, m_bDeflectAdjust( false )
 	, m_nDeflectUpdateNum( 0 )
-	, m_bTronUnknown9E4( false )
+	, m_bAutoAim( false )
 	, m_fMagneticRadius( 0.0f )
 	, m_fMagneticMiddleInfluence( 0.0f )
 	, m_fMagneticEdgeInfluence( 0.0f )
@@ -412,7 +414,7 @@ LTBOOL CDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 		return LTFALSE;
 	}
 
-	m_bTronUnknown9E4 = info.bTronUnknown164;
+	m_bAutoAim = info.bDiscAutoAim;
 
 	// Save the socket the disc came from and will be returning to.
 	m_hReturnToSocket = info.hSocket;
@@ -791,7 +793,7 @@ void CDisc::Save( ILTMessage_Write *pMsg, uint32 dwSaveFlags )
 	SAVE_ROTATION( m_rDeflectRot );
 	SAVE_bool( m_bDeflectAdjust );
 	SAVE_INT( m_nDeflectUpdateNum );
-	SAVE_bool( m_bTronUnknown9E4 );
+	SAVE_bool( m_bAutoAim );
 	SAVE_FLOAT( m_fMagneticRadius );
 	SAVE_FLOAT( m_fMagneticMiddleInfluence );
 	SAVE_FLOAT( m_fMagneticEdgeInfluence );
@@ -856,7 +858,7 @@ void CDisc::Load( ILTMessage_Read *pMsg, uint32 dwLoadFlags )
 	LOAD_ROTATION( m_rDeflectRot );
 	LOAD_bool( m_bDeflectAdjust );
 	LOAD_INT( m_nDeflectUpdateNum );
-	LOAD_bool( m_bTronUnknown9E4 );
+	LOAD_bool( m_bAutoAim );
 	LOAD_FLOAT( m_fMagneticRadius );
 	LOAD_FLOAT( m_fMagneticMiddleInfluence );
 	LOAD_FLOAT( m_fMagneticEdgeInfluence );
@@ -884,7 +886,7 @@ void CDisc::Load( ILTMessage_Read *pMsg, uint32 dwLoadFlags )
 
 bool CDisc::TronUnknownVirtual31( HOBJECT hAttacker, HOBJECT hVictim )
 {
-	if ( DISC_STATE_TRONUNKNOWN3 == m_eDiscState )
+	if ( DISC_STATE_DEADLY_DEFLECTING == m_eDiscState )
 	{
 		return true;
 	}
@@ -1066,7 +1068,7 @@ bool CDisc::TronUnknownVirtual33( ProjectilePendingTouch *pTouch )
 			}
 		}
 	}
-	else if ( DISC_STATE_TRONUNKNOWN3 == m_eDiscState )
+	else if ( DISC_STATE_DEADLY_DEFLECTING == m_eDiscState )
 	{
 		bTouchTaken = HandleDeadlyDeflectTouch( pTouch );
 	}
@@ -1270,11 +1272,7 @@ bool CDisc::TronUnknownVirtual33( ProjectilePendingTouch *pTouch )
 
 	if ( DISC_IMPACT_TYPE_DEADLY_BLOCKED == nImpactType )
 	{
-		// PORT: Tron sends the disc back at its owner here (0x10039c30,
-		// state 3; it reads the Shield_prism subroutine data, which
-		// CSubroutineDataMgr does not give out yet).  The normal
-		// deflection stands in.
-		HandleDeflect();
+		HandleDeadlyDeflect( pTouch->hObject );
 	}
 	else
 	{
@@ -1362,7 +1360,7 @@ bool CDisc::UpdateDisc()
 		break;
 
 		case DISC_STATE_DEFLECTING:
-		case DISC_STATE_TRONUNKNOWN3:
+		case DISC_STATE_DEADLY_DEFLECTING:
 		{
 			return UpdateStateDeflecting();
 		}
@@ -1492,6 +1490,97 @@ void CDisc::EnterReturnMode( HOBJECT hObj )
 	{
 		StopBlockable();
 	}
+}
+
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CDisc::HandleDeadlyDeflect()
+//
+//	PURPOSE:	Send the disc back from the player that made a deadly
+//				block, along the player's view, with the Shield_prism
+//				subroutine's damage and velocity
+//				RETAIL: 0x10039c30 (the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+void CDisc::HandleDeadlyDeflect( HOBJECT hBlocker )
+{
+	if ( IsDiscDeflecting() )
+	{
+		return;
+	}
+
+	m_eDiscState = DISC_STATE_DEADLY_DEFLECTING;
+	m_fTronUnknown990 = m_fDeflectTotalTime;
+	m_fDeflectStartTime = g_pLTServer->GetTime();
+	m_bTronUnknown998 = true;
+	m_nDeflectUpdateNum = m_nUpdateNum;
+
+	// RETAIL: the deflected disc may ricochet at any angle, any number of
+	// times
+	m_fMaxRicochetAngle = MATH_PI;
+	m_nMaxRicochets = 0x7fffffff;
+
+	// the disc may now hit the player that threw it
+	m_hLastTouched = hBlocker;
+	m_bCanTouchFiredFromObj = true;
+
+	DISCCLASSDATA *pDiscClassData;
+	if ( !m_pAmmoData )
+	{
+		pDiscClassData = LTNULL;
+	}
+	else
+	{
+		pDiscClassData = dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
+	}
+
+	char *szFX = pDiscClassData->szDeadlyDeflectAttachedFXName;
+	if ( szFX[ 0 ] )
+	{
+		CAutoMessage cMsg;
+		cMsg.Writeuint8( MID_SFX_MESSAGE );
+		cMsg.Writeuint8( SFX_PROJECTILE_ID );
+		cMsg.WriteObject( m_hObject );
+		cMsg.Writeuint8( 1 );
+		cMsg.WriteString( szFX );
+		g_pLTServer->SendToClient( cMsg.Read(), LTNULL, MESSAGE_GUARANTEED );
+	}
+
+	CTronPlayerObj *pPlayer = ( CTronPlayerObj* )g_pLTServer->HandleToObject( hBlocker );
+
+	// the shield prism's data (a disc game uses version 2, state 0)
+	SubroutineDataKey key( 0, 0, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 );
+	if ( !IsDiscGameType() )
+	{
+		PlayerSubroutineSlot *pSlot = pPlayer->FindSubroutine( "Shield_prism" );
+		key = SubroutineDataKey( pSlot->nTronUnknown42, pSlot->nTronUnknown41, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 );
+	}
+	else
+	{
+		key = SubroutineDataKey( 2, 0, g_pGameServerShell ? g_pGameServerShell->GetDifficulty() : 0 );
+	}
+
+	const ShieldPrismData &data = g_pSubroutineDataMgr->GetShieldPrismData( key );
+	m_fTronUnknownA0C = GetRandom( data.fDamageMin, data.fDamageMax );
+
+	// send the disc along the player's view
+	LTRotation rRot = pPlayer->GetRotationWithPitch();
+
+	LTVector vVel = rRot.Forward() * data.fVelocity;
+	g_pPhysicsLT->SetVelocity( m_hObject, &vVel );
+
+	m_vDir = rRot.Forward();
+
+	// start it at the player's camera
+	LTVector vPos;
+	g_pLTServer->GetObjectPos( hBlocker, &vPos );
+	LTVector vNewPos = vPos + pPlayer->GetClientCameraOffset();
+	g_pLTServer->TeleportObject( m_hObject, &vNewPos );
+	m_vFirePos = vNewPos;
+
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, m_dwFlagsAtStart, FLAGMASK_ALL );
 }
 
 
@@ -1765,7 +1854,7 @@ static bool IsAutoAimTarget( HOBJECT hFiredFrom, HOBJECT hObj )
 
 bool CDisc::AcquireAutoAimTarget()
 {
-	if ( !m_bTronUnknown9E4 || m_hObjectTarget )
+	if ( !m_bAutoAim || m_hObjectTarget )
 	{
 		return false;
 	}
@@ -1940,7 +2029,7 @@ void CDisc::StopBlockable()
 bool CDisc::IsDiscDeflecting()
 {
 	return ( ( DISC_STATE_DEFLECTING == m_eDiscState ) ||
-	         ( DISC_STATE_TRONUNKNOWN3 == m_eDiscState ) );
+	         ( DISC_STATE_DEADLY_DEFLECTING == m_eDiscState ) );
 }
 
 
@@ -2163,7 +2252,7 @@ void CDisc::HandleTouch( HOBJECT hObj )
 		break;
 
 		case DISC_STATE_DEFLECTING:
-		case DISC_STATE_TRONUNKNOWN3:
+		case DISC_STATE_DEADLY_DEFLECTING:
 		{
 		};
 		break;
@@ -2345,9 +2434,7 @@ void CDisc::HandleImpact( HOBJECT hObj )
 	}
 	else if ( DISC_IMPACT_TYPE_DEADLY_BLOCKED == nImpactType )
 	{
-		// PORT: Tron sends the disc back at its owner here (0x10039c30,
-		// state 3; not yet written).  The normal deflection stands in.
-		HandleDeflect();
+		HandleDeadlyDeflect( hObj );
 	}
 	else
 	{

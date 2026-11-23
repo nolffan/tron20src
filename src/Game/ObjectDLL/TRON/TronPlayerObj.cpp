@@ -803,6 +803,21 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 			// get the disc tracking type
 			pInfo->nDiscTrackingType = pMsg->Readuint8();
 
+			// RETAIL: Tron's: the player's auto aim setting; in a disc game
+			// the server's option for the game type decides
+			pInfo->bDiscAutoAim = pMsg->Readbool();
+			if ( pInfo->bDiscAutoAim && IsDiscGameType() )
+			{
+				if ( eGameTypeDiscArena == g_pGameServerShell->GetServerGameOptions().m_eGameType )
+				{
+					pInfo->bDiscAutoAim = g_pGameServerShell->GetServerGameOptions().m_bArenaAllowAutoAim;
+				}
+				else
+				{
+					pInfo->bDiscAutoAim = g_pGameServerShell->GetServerGameOptions().m_bTournAllowAutoAim;
+				}
+			}
+
 			switch ( pInfo->nDiscTrackingType )
 			{
 				case MPROJ_DISC_TRACKING_HOMING:
@@ -844,45 +859,6 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 				}
 				break;
 			};
-
-			// is there extra cluster information?
-			uint8 nIsCluster;
-			nIsCluster = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-			ASSERT( LT_OK == ltResult );
-
-			if ( nIsCluster )
-			{
-				//
-				// get the cluster information from the message
-				//
-
-				// get the horizontal spread
-				uint16 nTmp;
-				nTmp = pMsg->Readuint16(); ltResult = LT_OK; // PORT: ReadWordFL
-				ASSERT( LT_OK == ltResult );
-				// PORT: Tron's WeaponFireInfo has no spread members (its fire data
-				// ends at 0x16c), so the spread is read and dropped here
-				float fHorizontalSpread;
-				UncompressAngleFromShort( nTmp, &fHorizontalSpread );
-
-				// get the horizontal perturb
-				uint8 nHorizontalPerturb;
-				nHorizontalPerturb = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
-				float fHorizontalPerturb;
-				UncompressAngleFromByte( nHorizontalPerturb, &fHorizontalPerturb );
-
-				// get the vertical spread
-				uint8 nVerticalSpread;
-				nVerticalSpread = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
-				float fVerticalSpread;
-				UncompressAngleFromByte( nVerticalSpread, &fVerticalSpread );
-
-				// get the number of shards
-				pInfo->nNumberOfShards = pMsg->Readuint8(); ltResult = LT_OK; // PORT: ReadByteFL
-				ASSERT( LT_OK == ltResult );
-			}
 
 		}
 		break;
@@ -1324,9 +1300,26 @@ bool CTronPlayerObj::IsDefending() const
 // ----------------------------------------------------------------------- //
 float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectilePosition /*=0*/) const
 {
+	// RETAIL: 0x10063f00: Tron takes the values from the defending weapon's
+	// DEFENSECLASSDATA, and only the hold block defends (b69's swat and
+	// arm blocks have no values).  The vector is the direction of the
+	// damage.
 	if ( TRONPLAYEROBJ_NO_DEFEND == m_cDefendType )
 	{
 		// not blocking
+		return 0.0f;
+	}
+
+	// RETAIL: the id kept by HandleDefend is a weapon id
+	WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( m_cDefendAmmoId );
+	if ( !pWeaponData )
+	{
+		return 0.0f;
+	}
+
+	DEFENSECLASSDATA const *pDefenseData = g_pWeaponMgr->GetDefenseClass( pWeaponData->nDefenseClassId );
+	if ( !pDefenseData )
+	{
 		return 0.0f;
 	}
 
@@ -1337,19 +1330,11 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	// will add the contribution of the player's orientation.
 	//
 	float fDefenseTimingPercentage;
+#ifdef TRON20SRC_MODERN
+	float fDefenseOrientationPercentage = 0.0f;
+#else
 	float fDefenseOrientationPercentage;
-
-	// get the weapon
-	AMMO const *pAmmoData = g_pWeaponMgr->GetAmmo( m_cDefendAmmoId );
-	ASSERT( 0 != pAmmoData );
-	ASSERT( 0 != pAmmoData->pProjectileFX );
-
-	// get the ammo specific data
-	DISCCLASSDATA *pDiscData =
-		dynamic_cast< DISCCLASSDATA* >(
-			pAmmoData->pProjectileFX->pClassData
-		);
-	ASSERT( 0 != pDiscData );
+#endif // TRON20SRC_MODERN
 
 
 	//
@@ -1358,140 +1343,16 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 
 	switch ( m_cDefendType )
 	{
-		case MPROJ_START_SWAT_BLOCK:
-		case MPROJ_START_ARM_BLOCK:
-		{
-			// get the current server time
-			float fCurrentServerTime = g_pLTServer->GetTime() * 1000.0f;
-
-			// make sure we're within the range of the block
-			if ( ( static_cast< int >( fCurrentServerTime ) -
-			       m_nDefendServerTimeStarted ) > m_nDefendDuration )
-			{
-				// nope, the block is over
-				return 0.0f;
-			}
-
-			// Swat and Arm defenses are similar, so fill out these
-			// variables uniquely (depending on which case we are
-			// handling), then use the common generic math to figure
-			// out the answer.
-			float fMidpointTime;
-			float fMaxStartTime;
-			float fMaxEndTime;
-			float fStartDefendPercentage;
-			float fMaxDefendPercentage;
-			float fEndDefendPercentage;
-
-			if ( MPROJ_START_SWAT_BLOCK == m_cDefendType )
-			{
-				// determine at exactly what time the midpoint takes place
-				// NOTE: this is relative time, not absolute
-				fMidpointTime = 
-					( pDiscData->fSwatDefendMidpoint * m_nDefendDuration );
-
-				// determine at exactly what time the max starts
-				// NOTE: this is relative time, not absolute
-				fMaxStartTime =
-					fMidpointTime - 
-					fMidpointTime * pDiscData->fSwatDefendStartMaxDefendPercentage;
-
-				// determine at exactly what time the max ends
-				// NOTE: this is relative time, not absolute
-				fMaxEndTime =
-					fMidpointTime +
-					(
-						( m_nDefendDuration - fMidpointTime ) *
-						pDiscData->fSwatDefendEndMaxDefendPercentage
-					);
-
-				// determine the starting defend percentage
-				fStartDefendPercentage = pDiscData->fSwatDefendStartDefendPercentage;
-
-				// detecmine the max defend percentage					
-				fMaxDefendPercentage = pDiscData->fSwatDefendMaxDefendPercentage;
-
-				// determine the ending defend percentage
-				fEndDefendPercentage = pDiscData->fSwatDefendEndDefendPercentage;
-			}
-			else if ( MPROJ_START_ARM_BLOCK == m_cDefendType )
-			{
-				// Not implemented yet.  The main question I haven't figured
-				// out yet is where does the information come from?
-				fMidpointTime = 0.0f;
-				fMaxStartTime = 0.0f;
-				fMaxEndTime = 0.0f;
-				fStartDefendPercentage = 0.0f;
-				fMaxDefendPercentage = 0.0f;
-				fEndDefendPercentage = 0.0f;
-			}
-
-			// determine at exactly how much time we've been in the block
-			// NOTE: this is relative time, not absolute
-			float fBlockTime = 
-				fCurrentServerTime - m_nDefendServerTimeStarted;
-
-			if ( ( -MATH_EPSILON <= fBlockTime ) && 
-			     ( fBlockTime <= fMaxStartTime ) )
-			{
-				// somewhere on the uprise
-				fDefenseTimingPercentage =
-					fStartDefendPercentage + 
-						(
-							(
-								( 
-									fMaxDefendPercentage -
-									fStartDefendPercentage
-								) /
-								fMaxStartTime 
-							) * 
-							fBlockTime
-						);
-			}
-			else if ( ( fMaxStartTime < fBlockTime ) &&
-			          ( fBlockTime <= fMaxEndTime ) )
-			{
-				// within the max range
-				fDefenseTimingPercentage = fMaxDefendPercentage;
-			}
-			else if ( ( fMaxEndTime < fBlockTime ) &&
-			          ( fBlockTime <= m_nDefendDuration ) )
-			{
-				// somewhere on the downfall
-				fDefenseTimingPercentage =
-					fMaxDefendPercentage - 
-						(
-							(
-								( 
-									fMaxDefendPercentage -
-									fEndDefendPercentage
-								) /
-								( m_nDefendDuration - fMaxEndTime )
-							) * 
-							( fBlockTime - fMaxEndTime )
-						);
-			}
-			else
-			{
-				// math problem, we should be here if we are outside
-				// the bounds of the defense
-				ASSERT( 0 );
-				fDefenseTimingPercentage = 0.0f;
-			}
-		}
-		break;
-
-
 		case MPROJ_START_HOLD_BLOCK:
 		{
 			// get the current server time
 			float fCurrentServerTime = g_pLTServer->GetTime() * 1000.0f;
 
 			// determine the starting defend percentage
-			float fStartDefendPercentage = pDiscData->fHoldDefendStartDefendPercentage;
+			float fStartDefendPercentage = pDefenseData->fStartDefendPercentage;
 
 			// determine the max defend percentage					
-			float fMaxDefendPercentage = pDiscData->fHoldDefendMaxDefendPercentage;
+			float fMaxDefendPercentage = pDefenseData->fMaxDefendPercentage;
 
 			// determine at exactly how much time we've been in the block
 			// NOTE: this is relative time, not absolute
@@ -1544,10 +1405,10 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 			}
 
 			// detecmine the max defend percentage					
-			float fMaxDefendPercentage = pDiscData->fHoldDefendMaxDefendPercentage;
+			float fMaxDefendPercentage = pDefenseData->fMaxDefendPercentage;
 
 			// determine the ending defend percentage
-			float fEndDefendPercentage = pDiscData->fHoldDefendEndDefendPercentage;
+			float fEndDefendPercentage = pDefenseData->fEndDefendPercentage;
 
 			// determine at exactly how much time we've been in the block
 			// NOTE: this is relative time, not absolute
@@ -1582,8 +1443,6 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	};
 
 
-	//TODO: skip this section of the camera position is too old?
-
 	// check if the oriention percentage should be computed
 	if ( 0 == pIncomingProjectilePosition )
 	{
@@ -1596,11 +1455,6 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	// Determine Orientation percentage
 	//
 
-	// The 3 cases are the same, but they could have different
-	// control values.  Figure out what the specific variables
-	// are (depending on the specific type of block), then apply
-	// the generic equations.
-
 	float fOrientationMinDefendPercentage;
 	float fOrientationMaxDefendPercentage;
 	float fOrientationDeadZone;
@@ -1608,33 +1462,13 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 
 	switch ( m_cDefendType )
 	{
-		case MPROJ_START_SWAT_BLOCK:
-		{
-			fOrientationMinDefendPercentage  = pDiscData->fSwatDefendOrientationMinDefendPercentage;
-			fOrientationMaxDefendPercentage  = pDiscData->fSwatDefendOrientationMaxDefendPercentage;
-			fOrientationDeadZone             = MATH_PI - pDiscData->fSwatDefendOrientationDeadZone;
-			fOrientationMaxZone              = pDiscData->fSwatDefendOrientationMaxZone;
-		}
-		break;
-
 		case MPROJ_START_HOLD_BLOCK:
 		case MPROJ_END_HOLD_BLOCK:
 		{
-			fOrientationMinDefendPercentage  = pDiscData->fHoldDefendOrientationMinDefendPercentage;
-			fOrientationMaxDefendPercentage  = pDiscData->fHoldDefendOrientationMaxDefendPercentage;
-			fOrientationDeadZone             = MATH_PI - pDiscData->fHoldDefendOrientationDeadZone;
-			fOrientationMaxZone              = pDiscData->fHoldDefendOrientationMaxZone;
-		}
-		break;
-
-		case MPROJ_START_ARM_BLOCK:
-		{
-			// Not implemented yet.  The main question I haven't figured
-			// out yet is where does the information come from?
-			fOrientationMinDefendPercentage  = 0.0f;
-			fOrientationMaxDefendPercentage  = 0.0f;
-			fOrientationDeadZone             = 0.0f;
-			fOrientationMaxZone              = 0.0f;
+			fOrientationMinDefendPercentage  = pDefenseData->fOrientationMinDefense;
+			fOrientationMaxDefendPercentage  = pDefenseData->fOrientationMaxDefense;
+			fOrientationDeadZone             = MATH_PI - pDefenseData->fOrientationDeadZone;
+			fOrientationMaxZone              = pDefenseData->fOrientationMaxZone;
 		}
 		break;
 
@@ -1653,26 +1487,23 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	LTVector vDefendPos;
 	LTVector vDefendPosToProjectile;
 
-	// get the player's position
+	// get the player's position (RETAIL: not used)
 	ltResult = g_pLTServer->GetObjectPos( m_hObject, &vDefendPos );
 	ASSERT( LT_OK == ltResult );
 
 	// REMOVE THIS CODE FOR FINAL RELEASE, BUT LEAVE FOR TESTING MULTIPLAYER
 	// print a warning if the time is new enough
-	if ( TRONPLAYEROBJ_CLIENT_CAMERA_TIME_OLD_THRESHOLD < ( g_pLTServer->GetTime() - m_fClientCameraOffsetTimeReceived ) )
+	if ( TRONPLAYEROBJ_CLIENT_CAMERA_TIME_OLD_THRESHOLD < ( g_pLTServer->GetTime() - GetClientCameraOffsetTimeReceived() ) )
 	{
-		g_pLTServer->CPrint( "Client Camera Offset time is low, possible lag\n" );
+		g_pLTServer->CPrint( "Client Camera Offset time is old, possible lag\n" );
 		g_pLTServer->CPrint( "   condition that will affect defensive accuracy.\n" );
-		g_pLTServer->CPrint( "   Currnt value is %5.3f units old.\n", ( g_pLTServer->GetTime() - m_fClientCameraOffsetTimeReceived ) );
+		g_pLTServer->CPrint( "   Currnt value is %5.3f units old.\n", ( g_pLTServer->GetTime() - GetClientCameraOffsetTimeReceived() ) );
 
 	}
-	
-	// add the camera offset vDefendPos += m_vClientCameraOffset;
 
-	// find a unit vector from us to the projectile
-	vDefendPosToProjectile  = *pIncomingProjectilePosition -
-	                         ( m_vClientCameraOffset +
-	                           vDefendPos );
+	// find a unit vector from us to the projectile (the projectile comes
+	// from the opposite of the damage direction)
+	vDefendPosToProjectile = -( *pIncomingProjectilePosition );
 	vDefendPosToProjectile.y = 0;
 	vDefendPosToProjectile.Normalize();
 
@@ -1686,11 +1517,11 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	vPlayerViewForward.y = 0;
 	vPlayerViewForward.Normalize();
 
-	float fDotProd = vPlayerViewForward.Dot( vDefendPosToProjectile );
-
 	// find the angle between the two vectors
 	float fDefenseAngle = ltacosf( vPlayerViewForward.Dot( vDefendPosToProjectile ) );
 
+	// RETAIL: an angle less than MATH_EPSILON leaves the orientation
+	// percentage not set (see docs/RETAIL_BUGS.md)
 	if ( ( MATH_EPSILON <= fDefenseAngle) && ( fDefenseAngle <= fOrientationMaxZone ) )
 	{
 		// it's within the max zone
@@ -1715,9 +1546,7 @@ float CTronPlayerObj::GetDefensePercentage( LTVector const *pIncomingProjectileP
 	// Final Defense Result
 	//
 
-	float fFinalDefensePercentage = fDefenseTimingPercentage -
-	                                fDefenseOrientationPercentage;
-	return fFinalDefensePercentage;
+	return fDefenseOrientationPercentage + fDefenseTimingPercentage;
 }
 
 
