@@ -17,16 +17,6 @@
 
 #include <string>
 
-// RETAIL: the length is never expanded inline (Object.lto 0x10015130 and
-// CShell.dll 0x10088c30, called everywhere, one copy per image) while
-// compare is: so the length is a file-static helper that is not marked
-// inline (/Ob1 does not expand it; /OPT:ICF folds the copies).  Ours.
-static size_t CaselessStrLen(const char* s)
-{
-	if (!s) return 0;
-	return strlen(s);
-}
-
 // A char_traits that compares without case (the name is ours)
 struct CaselessCharTraits : public std::char_traits<char>
 {
@@ -35,9 +25,14 @@ struct CaselessCharTraits : public std::char_traits<char>
 		return _memicmp(s1, s2, n);
 	}
 
+	// RETAIL: inline, with its null check.  The out-of-line copy (Object.lto
+	// 0x10015130, CShell.dll 0x10088c30) is only what VC6 emits where a
+	// function's inline budget runs out (BinaryBit::Load, the optimizer's
+	// ObjectMessageFn and AutoCommand's Validate expand it inline).
 	static size_t length(const char* s)
 	{
-		return CaselessStrLen(s);
+		if (!s) return 0;
+		return strlen(s);
 	}
 };
 
@@ -46,9 +41,8 @@ typedef std::basic_string<char, CaselessCharTraits> CaselessString;
 // RETAIL: a caseless string whose length IS expanded inline (with its null
 // check, as retail's STLport does for std::string): CDestructibleModel's
 // destroy FX and the prop type's strings (Object.lto 0x1010f910, 0x10110282,
-// 0x100f5876, 0x100fdc80), where the same code with CaselessString calls
-// CaselessStrLen. Whether Tron's source had two traits or wrote these
-// otherwise is unknown; the names are ours.
+// 0x100f5876, 0x100fdc80). Whether Tron's source had two traits or wrote
+// these otherwise is unknown; the names are ours.
 struct CaselessInlineCharTraits : public std::char_traits<char>
 {
 	static int compare(const char* s1, const char* s2, size_t n)
