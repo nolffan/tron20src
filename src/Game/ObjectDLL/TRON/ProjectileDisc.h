@@ -123,6 +123,10 @@ protected:
 	// deflected disc.  The name is ours
 	bool				HandleDeadlyDeflectTouch( ProjectilePendingTouch *pTouch );
 
+	// RETAIL: 0x10039c30: sends the disc back from the player that made a
+	// deadly block (the name is ours)
+	void				HandleDeadlyDeflect( HOBJECT hBlocker );
+
 	// RETAIL: 0x1003c570 (from UpdateStateFlying): the object's position
 	// up by a part of its height.  The name is ours
 	LTVector			GetControlPosition( HOBJECT hObj );
@@ -264,8 +268,8 @@ protected:
 	bool				m_bDeflectAdjust;		// 0x9dc
 	int					m_nDeflectUpdateNum;	// 0x9e0 (an m_nUpdateNum)
 
-	// RETAIL: the last bool of the fire info (WeaponFireInfo 0x164)
-	bool				m_bTronUnknown9E4;		// 0x9e4
+	// RETAIL: the fire info's bDiscAutoAim (WeaponFireInfo 0x164)
+	bool				m_bAutoAim;		// 0x9e4
 
 	// the class data's magnetic values
 	LTFLOAT				m_fMagneticRadius;			// 0x9e8
