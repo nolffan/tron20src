@@ -346,6 +346,10 @@ class CCharacter : public GameBase, public IHitBoxUser, public IPlayerTrackerRec
 		// players' sets
 		uint8			GetPSets();
 
+		// RETAIL: Tron's (retail 0x100941d0): with armor on, the total of
+		// our power armor attachments' hit points. The name is ours
+		LTFLOAT			GetArmorPoints();
+
 		// RETAIL: Tron's (retail 0x100942e0, out of line)
 		LTFLOAT			GetMaxArmorPoints();
 

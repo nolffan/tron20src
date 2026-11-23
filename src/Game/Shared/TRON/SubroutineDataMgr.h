@@ -335,6 +335,20 @@ public:
 	// RETAIL: the virus scan's (Object 0x1000f520: GetIndex out of line)
 	const VirusScanData&	GetVirusScanData( SubroutineDataKey key ) const	{ return m_vecVirusScan.at( GetIndex( key ) ); }
 
+	// RETAIL: the name id of a subroutine (0 when there is none); out of
+	// line in CAI::ObjectMessageFn (Object 0x1012a4c0). Name ours
+	uint16 GetNameId( const char* szName ) const
+	{
+		CaselessString sName( szName );
+		SubNameIdMap::const_iterator it = m_mapNameIds.find( sName );
+		if( it != m_mapNameIds.end() )
+		{
+			return it->second;
+		}
+
+		return 0;
+	}
+
 protected:
 
 	char* FindTag(const char* szTagBase, const char* szAttrib, const char* szValue, char* szResult, uint32 nResultLen);

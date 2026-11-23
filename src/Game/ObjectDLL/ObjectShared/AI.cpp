@@ -56,6 +56,12 @@
 #include "Searchable.h"
 #include "AIGoalSpecialDamage.h"
 #include "SharedFXStructs.h"
+#include "ActivationObserver.h"
+#include "../../Shared/TRON/SubroutineDataMgr.h"	// RETAIL: the core dump items' name ids
+
+// RETAIL: CAI's MID_QUERY_TARGET_PROPERTIES property (ObjectMessageFn,
+// 0x1012a0e0); the name is ours
+#define TARGET_PROP_AI_INFO		9
 
 extern CAIGoalButeMgr* g_pAIGoalButeMgr;
 extern CServerSoundMgr* g_pServerSoundMgr;
@@ -1169,6 +1175,73 @@ uint32 CAI::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CAI::WriteTronAIInfo
+//
+//	PURPOSE:	RETAIL: inline in CAI::ObjectMessageFn (0x1012a0e8): fill
+//				our information and write it as a target property. The
+//				helper is ours: as one more inline level, it makes VC6 keep
+//				GetPrimaryWeapon, GetNameId and TronAIInfo::Save as calls
+//				as retail does (0x1012a3b0, 0x1012a4c0, 0x1012a3d0).
+//
+// ----------------------------------------------------------------------- //
+
+inline void CAI::WriteTronAIInfo(ILTMessage_Write* pMsg)
+{
+	pMsg->Writeuint8( TARGET_PROP_AI_INFO );
+
+	TronAIInfo* pInfo = m_pTronAIInfo;
+
+	if( m_pGoalMgr->FindGoalByType( kGoal_FconMonster ) )
+	{
+		pInfo->nHitPoints = 0xffff;
+	}
+	else
+	{
+		LTFLOAT fHitPoints = m_damage.GetHitPoints();
+		pInfo->nHitPoints = ( fHitPoints > 0.0f ) ? (uint16)fHitPoints : 0;
+	}
+
+	pInfo->nMaxHitPoints = (uint16)m_damage.GetMaxHitPoints();
+	pInfo->nArmorPoints = (uint16)GetArmorPoints();
+	pInfo->nMaxArmorPoints = (uint16)GetMaxArmorPoints();
+
+	pInfo->nGoalId = ( m_pGoalMgr && m_pGoalMgr->GetCurrentGoal() ) ? (uint16)m_pGoalMgr->GetCurrentGoal()->GetGoalId() : pInfo->nTronUnknown1C;
+	pInfo->nWeaponNameId = ( GetPrimaryWeapon() && GetPrimaryWeapon()->GetWeaponData() ) ? GetPrimaryWeapon()->GetWeaponData()->nNameId : pInfo->nTronUnknown1C;
+
+	// Each core dump item: its name id (or permission set)
+	// and its type.
+
+	uint16* pWords = pInfo->Words.anValues;
+	ArchiveItem* pItem = m_aCoreDumpItems;
+	for( int iItem = 3; iItem > 0; iItem-- )
+	{
+		if( ( pItem->m_eType == kAIT_Subroutine ) || ( pItem->m_eType == kAIT_PermissionSet ) )
+		{
+			pWords[1] = (uint16)pItem->m_eType;
+			if( pItem->m_eType == kAIT_Subroutine )
+			{
+				pWords[0] = g_pSubroutineDataMgr->GetNameId( pItem->m_sName.c_str() );
+			}
+			else
+			{
+				pWords[0] = pItem->m_nPSet;
+			}
+		}
+		else
+		{
+			pWords[0] = 0;
+			pWords[1] = 0xffff;
+		}
+
+		pItem++;
+		pWords += 2;
+	}
+
+	m_pTronAIInfo->Save( pMsg );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CAI::ObjectMessageFn
 //
 //	PURPOSE:	Handle object-to-object messages
@@ -1194,11 +1267,47 @@ uint32 CAI::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 				HandleDamage(damage);
 
 				// Register AllyPainSound stimulus.
-				if (m_fLastPainVolume > 0.0f)
+				// RETAIL: Tron's does not test the volume (0x1012a02c)
+				LTVector vPainPos;
+				g_pLTServer->GetObjectPos(m_hObject, &vPainPos);
+				g_pAIStimulusMgr->RegisterStimulus( kStim_AllyPainSound, m_hObject, vPainPos, m_fLastPainVolume );
+			}
+		}
+		break;
+
+		// RETAIL: Tron's (0x1012a09a): the AI's information for the
+		// player's target display.
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			uint8 nNumPropsProcessed = 0;
+			CAutoMessage cTempMsg;
+
+			uint8 nNumProps = pMsg->Readuint8();
+			for( int i = nNumProps; i > 0; i-- )
+			{
+				if( pMsg->Readuint8() == TARGET_PROP_AI_INFO )
 				{
-					LTVector vPainPos;
-					g_pLTServer->GetObjectPos(m_hObject, &vPainPos);
-					g_pAIStimulusMgr->RegisterStimulus( kStim_AllyPainSound, m_hObject, vPainPos, m_fLastPainVolume );
+					WriteTronAIInfo( cTempMsg );
+
+					nNumPropsProcessed++;
+				}
+			}
+
+			// Build the actual message to send back down to the client
+			if( nNumPropsProcessed > 0 )
+			{
+				if( IsKindOf( hSender, "CPlayerObj" ) )
+				{
+					CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject( hSender );
+					if( pPlayer )
+					{
+						CAutoMessage cPropMsg;
+						cPropMsg.Writeuint8( MID_QUERY_TARGET_PROPERTIES );
+						cPropMsg.WriteObject( m_hObject );
+						cPropMsg.Writeuint8( nNumPropsProcessed );
+						cPropMsg.WriteMessage( cTempMsg.Read() );
+						g_pLTServer->SendToClient( cPropMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED );
+					}
 				}
 			}
 		}
@@ -2072,7 +2181,7 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 	if( cMsg.GetArg(0) == s_cTok_Activate )
 	{
-		Activate();
+		Activate( hSender );
 		return true;
 	}
 
@@ -2207,40 +2316,102 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CAI::Activate
+//	ROUTINE:	CAI::AddTronUnknown10A0/RemoveTronUnknown10A0
 //
-//	PURPOSE:	Play a cineractive animation.
+//	PURPOSE:	RETAIL: Tron's (retail 0x1012ce40, 0x1012cee0; names ours).
+//				Retail calls the list's begin/end/insert out of line here;
+//				ours inlines some, so these stay near.
 //
 // ----------------------------------------------------------------------- //
 
-void CAI::Activate()
+void CAI::AddTronUnknown10A0(ActivationNotifier* pEntry)
 {
-	if (m_bCanTalk &&  (m_bAlwaysActivate || (m_pState && m_pState->CanActivate())) )
+	std::list<ActivationNotifier*>& lstNotifiers = m_lstTronUnknown10A0;
+	ActivationNotifier* pNotifier = pEntry;
+	if( lstNotifiers.end() == std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier ) )
 	{
-		m_bActivated = !m_bActivated;
+		lstNotifiers.push_back( pNotifier );
+	}
+}
 
-		if ( m_bActivated && m_hstrCmdActivateOn )
+void CAI::RemoveTronUnknown10A0(ActivationNotifier* pEntry)
+{
+	std::list<ActivationNotifier*>& lstNotifiers = m_lstTronUnknown10A0;
+	ActivationNotifier* pNotifier = pEntry;
+	if( std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier ) != lstNotifiers.end() )
+	{
+		lstNotifiers.remove( pNotifier );
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAI::Activate
+//
+//	PURPOSE:	RETAIL: Tron's (0x1012cf70) takes the activating object.
+//				Only a character with our permission sets can activate us.
+//				We tell every activation notifier of the list at +0x10a0,
+//				then a listen icon locks the talk. Without activation
+//				commands we play a greeting, at most every two seconds.
+//
+// ----------------------------------------------------------------------- //
+
+void CAI::Activate(HOBJECT hActivator)
+{
+	CCharacter* pChar = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( hActivator ) );
+	if( pChar && !HasPSets( pChar, m_nKeys ) )
+	{
+		return;
+	}
+
+	bool bCanActivate = ( m_bCanTalk && ( m_bAlwaysActivate || ( m_pState && m_pState->CanActivate() ) ) );
+
+	ActivationInfo Info;
+	Info.hAI = m_hObject;
+	Info.hActivator = hActivator;
+	Info.bCanActivate = bCanActivate;
+	std::for_each( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(),
+		std::bind2nd( std::mem_fun1( &ActivationNotifier::DoNotification ), &Info ) );
+
+	if( !bCanActivate )
+	{
+		return;
+	}
+
+	if( HasListenIcon() )
+	{
+		SetTalkLock( true );
+	}
+
+	m_bActivated = !m_bActivated;
+
+	if ( m_bActivated && m_hstrCmdActivateOn )
+	{
+		SendMixedTriggerMsgToObject(this, m_hObject, m_hstrCmdActivateOn);
+
+		if ( !m_bPreserveActiveCmds )
 		{
-			SendMixedTriggerMsgToObject(this, m_hObject, m_hstrCmdActivateOn);
-
-			if ( !m_bPreserveActiveCmds )
-			{
-				FREE_HSTRING(m_hstrCmdActivateOn);
-			}
-
-			UpdateUserFlagCanActivate();
+			FREE_HSTRING(m_hstrCmdActivateOn);
 		}
-		else if ( !m_bActivated && m_hstrCmdActivateOff )
+
+		UpdateUserFlagCanActivate();
+	}
+	else if ( !m_bActivated && m_hstrCmdActivateOff )
+	{
+		SendMixedTriggerMsgToObject(this, m_hObject, m_hstrCmdActivateOff);
+
+		if ( !m_bPreserveActiveCmds )
 		{
-			SendMixedTriggerMsgToObject(this, m_hObject, m_hstrCmdActivateOff);
-
-			if ( !m_bPreserveActiveCmds )
-			{
-				FREE_HSTRING(m_hstrCmdActivateOff);
-			}
-
-			UpdateUserFlagCanActivate();
+			FREE_HSTRING(m_hstrCmdActivateOff);
 		}
+
+		UpdateUserFlagCanActivate();
+	}
+	else if ( !m_hstrCmdActivateOn && !m_hstrCmdActivateOff &&
+		( g_pLTServer->GetTime() > m_fNextCombatSoundTime ) )
+	{
+		PlaySound( kAIS_Greeting, LTFALSE );
+		m_fNextCombatSoundTime = g_pLTServer->GetTime() + 2.0f;
 	}
 }
 
@@ -3291,7 +3462,8 @@ void CAI::InitAttachments()
 
 				// RETAIL: the classes are given in reverse order (also in
 				// CCharacter, 0x1009427c)
-				if ( g_pLTServer->IsKindOf(hPowerArmor, g_pLTServer->GetObjectClass(pAttachment->GetModel())) )
+				HCLASS hClass = g_pLTServer->GetObjectClass(pAttachment->GetModel());
+				if ( g_pLTServer->IsKindOf(hPowerArmor, hClass) )
 				{
 					PowerArmor* pPowerArmor = dynamic_cast<PowerArmor*>(g_pLTServer->HandleToObject(pAttachment->GetModel()));
 					if ( pPowerArmor )
@@ -3840,32 +4012,6 @@ void CAI::UpdateState()
 	{
 		SendMixedTriggerMsgToObject(this, m_hObject, m_hstrNextStateMessage);
 		FREE_HSTRING(m_hstrNextStateMessage);
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CAI::AddTronUnknown10A0/RemoveTronUnknown10A0
-//
-//	PURPOSE:	RETAIL: Tron's (retail 0x1012ce40, 0x1012cee0; names ours).
-//				Retail calls the list's begin/end/insert out of line here;
-//				ours inlines some, so these stay near.
-//
-// ----------------------------------------------------------------------- //
-
-void CAI::AddTronUnknown10A0(void* pEntry)
-{
-	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) == m_lstTronUnknown10A0.end() )
-	{
-		m_lstTronUnknown10A0.push_back( pEntry );
-	}
-}
-
-void CAI::RemoveTronUnknown10A0(void* pEntry)
-{
-	if( std::find( m_lstTronUnknown10A0.begin(), m_lstTronUnknown10A0.end(), pEntry ) != m_lstTronUnknown10A0.end() )
-	{
-		m_lstTronUnknown10A0.remove( pEntry );
 	}
 }
 

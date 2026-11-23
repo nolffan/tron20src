@@ -181,7 +181,9 @@ AbstractTarget::~AbstractTarget()
 
 void AbstractTarget::Init()
 {
-	m_hRelationNotifier.SetSubject( GetAI()->GetRelationMgr() );
+	// RETAIL: Tron's asks its AI through IAISensing (0x101df2e9): the slot
+	// that returns the relation manager (see CAI::GetSenseRelationSet).
+	m_hRelationNotifier.SetSubject( (CObjectRelationMgr*)&GetAI()->GetSenseRelationSet() );
 
 	// RETAIL: Tron's (0x101df2e0).
 	m_Receiver.SetOwner( this );

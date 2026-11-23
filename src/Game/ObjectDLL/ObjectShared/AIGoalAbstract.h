@@ -150,7 +150,7 @@ class CAIGoalAbstract : public CAIClassAbstract
 
 		void		AddInvalidNode(HOBJECT hNode);
 		bool		IsPathToNodeValid(AINode* pNode);
-		uint32		GetGoalId();	// RETAIL: Tron's (0x101e1c40, the id zero-extended); name ours
+		uint32		GetGoalId() const;	// RETAIL: Tron's (0x101e1c40, the id zero-extended); name ours
 		void		UpdateInvalidNodeList();
 
 		// RETAIL: inline in CGenericTarget<CAIGoalAbstract>::GetAI (0x1020ab50).

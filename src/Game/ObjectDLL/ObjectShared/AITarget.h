@@ -93,6 +93,15 @@ class CTargetCommandReceiver
 			}
 		}
 
+		// RETAIL: 0x10136820 (by folding; CAITronUnknown1010's receiver
+		// list calls it when it is destroyed): the registry is gone. Name
+		// ours (CTronRegistrationList, AI.h).
+		int ClearSubject()
+		{
+			m_pRegistry = LTNULL;
+			return 0;
+		}
+
 		int Receive(ITargetCommand* pCommand)
 		{
 			if( m_pOwner )

@@ -8,6 +8,8 @@
 #include "AISensing.h"
 #include <vector>
 #include <list>
+#include <algorithm>	// CTronRegistrationList
+#include <functional>
 
 // Forward declarations.
 class CAIGoalMgr;
@@ -45,7 +47,10 @@ struct DroppedWeapon
 
 // RETAIL: Tron's 0x1e byte block CAI allocates in its constructor (+0x11b0)
 // and fills from "NameId"/"ModelTemplate" and "TriviaId" in ReadProp; Save
-// writes every word but the last. Names ours.
+// writes every word but the last. CAI::ObjectMessageFn fills the rest for
+// the client's target properties (retail 0x1012a0f9): the hit points and
+// armor, the current goal's id, the primary weapon's name id and, in
+// Words, the id and type of each core dump item. Names ours.
 struct TronAIInfoWords
 {
 	TronAIInfoWords() { memset(this, 0, sizeof(*this)); }
@@ -54,42 +59,45 @@ struct TronAIInfoWords
 
 struct TronAIInfo
 {
-	TronAIInfo() : nNameId(0), nTriviaId(0), nTronUnknown4(0), nTronUnknown6(0),
-		nTronUnknown8(0), nTronUnknownA(0), nTronUnknownC(0), nTronUnknownE(0),
+	TronAIInfo() : nNameId(0), nTriviaId(0), nWeaponNameId(0), nGoalId(0),
+		nHitPoints(0), nMaxHitPoints(0), nArmorPoints(0), nMaxArmorPoints(0),
 		nTronUnknown1C(0)
 	{
 	}
 
 	// RETAIL: inlined in CAI::Save and CAI::Load (retail 0x101336ea,
-	// 0x101344e4); every word but the last, in this order
-	void Save(ILTMessage_Write *pMsg)
+	// 0x101344e4); every word but the last, in this order. Out of line in
+	// CAI::ObjectMessageFn (retail 0x1012a3d0), which gives it the target
+	// properties message
+	int Save(ILTMessage_Write *pMsg)
 	{
 		pMsg->Writeuint16( nNameId );
-		pMsg->Writeuint16( nTronUnknown8 );
-		pMsg->Writeuint16( nTronUnknownA );
-		pMsg->Writeuint16( nTronUnknownC );
-		pMsg->Writeuint16( nTronUnknownE );
-		pMsg->Writeuint16( nTronUnknown4 );
+		pMsg->Writeuint16( nHitPoints );
+		pMsg->Writeuint16( nMaxHitPoints );
+		pMsg->Writeuint16( nArmorPoints );
+		pMsg->Writeuint16( nMaxArmorPoints );
+		pMsg->Writeuint16( nWeaponNameId );
 		pMsg->Writeuint16( nTriviaId );
-		pMsg->Writeuint16( nTronUnknown6 );
+		pMsg->Writeuint16( nGoalId );
 		pMsg->Writeuint16( Words.anValues[1] );
 		pMsg->Writeuint16( Words.anValues[0] );
 		pMsg->Writeuint16( Words.anValues[3] );
 		pMsg->Writeuint16( Words.anValues[2] );
 		pMsg->Writeuint16( Words.anValues[5] );
 		pMsg->Writeuint16( Words.anValues[4] );
+		return 0;
 	}
 
 	void Load(ILTMessage_Read *pMsg)
 	{
 		nNameId = pMsg->Readuint16();
-		nTronUnknown8 = pMsg->Readuint16();
-		nTronUnknownA = pMsg->Readuint16();
-		nTronUnknownC = pMsg->Readuint16();
-		nTronUnknownE = pMsg->Readuint16();
-		nTronUnknown4 = pMsg->Readuint16();
+		nHitPoints = pMsg->Readuint16();
+		nMaxHitPoints = pMsg->Readuint16();
+		nArmorPoints = pMsg->Readuint16();
+		nMaxArmorPoints = pMsg->Readuint16();
+		nWeaponNameId = pMsg->Readuint16();
 		nTriviaId = pMsg->Readuint16();
-		nTronUnknown6 = pMsg->Readuint16();
+		nGoalId = pMsg->Readuint16();
 		Words.anValues[1] = pMsg->Readuint16();
 		Words.anValues[0] = pMsg->Readuint16();
 		Words.anValues[3] = pMsg->Readuint16();
@@ -99,12 +107,12 @@ struct TronAIInfo
 	}
 	uint16			nNameId;
 	uint16			nTriviaId;
-	uint16			nTronUnknown4;
-	uint16			nTronUnknown6;
-	uint16			nTronUnknown8;
-	uint16			nTronUnknownA;
-	uint16			nTronUnknownC;
-	uint16			nTronUnknownE;
+	uint16			nWeaponNameId;
+	uint16			nGoalId;
+	uint16			nHitPoints;
+	uint16			nMaxHitPoints;
+	uint16			nArmorPoints;
+	uint16			nMaxArmorPoints;
 	TronAIInfoWords	Words;
 	uint16			nTronUnknown1C;
 };
@@ -117,7 +125,29 @@ struct TronAIInfo
 // factory; RefreshTargets (0x101df040) sends a RefreshCacheIfSame. Names
 // ours; the code is in AITarget.cpp (retail's unit).
 class AbstractTarget;
+class ActivationNotifier;
 struct ITargetCommand;
+
+// RETAIL: a list of registrations (CAI's activation notifiers at +0x10a0,
+// the targets' receivers in CAITronUnknown1010): when it is destroyed it
+// tells each registration that its subject is gone (ClearSubject, one
+// function in retail by folding: 0x10136820), then empties itself (inline
+// in ~CAI at 0x101297c7; 0x10137760). Its constructor is out of line in
+// the CAI constructor (0x10137690). Name ours.
+template<class T>
+class CTronRegistrationList : public std::list<T*>
+{
+	public :
+
+		~CTronRegistrationList()
+		{
+			std::for_each( begin(), end(), std::mem_fun( &T::ClearSubject ) );
+			erase( begin(), end() );
+		}
+};
+
+typedef CTronRegistrationList<ActivationNotifier> ActivationNotifierList;
+
 template<class T> class CTargetCommandReceiver;
 
 class CAITronUnknown1010
@@ -129,7 +159,7 @@ class CAITronUnknown1010
 		void	RefreshTargets(AbstractTarget* pTarget);
 
 		std::list<ITargetCommand*>							m_lstTronUnknown0;
-		std::list<CTargetCommandReceiver<AbstractTarget>*>	m_lstTronUnknown4;
+		CTronRegistrationList< CTargetCommandReceiver<AbstractTarget> >	m_lstTronUnknown4;
 };
 
 // Defines
@@ -471,7 +501,7 @@ class CAI : public CCharacter, public IAISensing
 
 		void QueueTriggerMsg(const CParsedMsg &cMsg);
 		void QueueTriggerMsg(const char* szMsg);
-		void Activate();
+		void Activate(HOBJECT hActivator);	// RETAIL: Tron's takes the activator (0x1012cf70)
 		void Cineract(const char* szAnim, LTBOOL bLoop);
 		virtual void HideCharacter(LTBOOL bHide);
 
@@ -511,10 +541,13 @@ class CAI : public CCharacter, public IAISensing
 		void	SetTalkLock(bool bTalkLock);
 		bool	IsTalkLocked() const { return m_bTalkLock; }	// name ours
 
+		// RETAIL: inline in ObjectMessageFn (AI.cpp); name ours
+		inline void	WriteTronAIInfo(ILTMessage_Write* pMsg);
+
 		// RETAIL: Tron's: add (unless there) and remove an entry of the list
 		// at +0x10a0 (retail 0x1012ce40, 0x1012cee0; names ours)
-		void	AddTronUnknown10A0(void* pEntry);
-		void	RemoveTronUnknown10A0(void* pEntry);
+		void	AddTronUnknown10A0(ActivationNotifier* pEntry);
+		void	RemoveTronUnknown10A0(ActivationNotifier* pEntry);
 
 		// Attributes
 
@@ -877,9 +910,10 @@ class CAI : public CCharacter, public IAISensing
 		CAnimationContext*	m_pAnimationContext;	// Our animation context
 		LTObjRef			m_hAnimObject;			// Object to interact with while animating.
 
-		// RETAIL: Tron's list of pointers (CAI::Activate adds unless
-		// present; retail 0x1012ce40). Element type and name ours.
-		std::list<void*>	m_lstTronUnknown10A0;
+		// RETAIL: Tron's list of activation notifiers (ActivationObserver.h;
+		// AddTronUnknown10A0 adds unless present, retail 0x1012ce40).
+		// CAI::Activate tells each of them. Name ours.
+		ActivationNotifierList	m_lstTronUnknown10A0;
 
 		// Node tracking.
 
