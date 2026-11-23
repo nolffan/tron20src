@@ -973,8 +973,8 @@ void CTronPlayerStats::UpdateMissionStats(ILTMessage_Read *pMsg)
 	m_MissionStats.ReadData(pMsg);
 }
 
-// PORT: NOLF2's interface; the body is Tron's, whose messages retail has
-void CTronPlayerStats::GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount)
+// RETAIL: 0x100aacd0
+void CTronPlayerStats::GainSkills(uint8 nRewardId)
 {
 	int nCurrentMission = g_pMissionMgr->GetCurrentMission();
 

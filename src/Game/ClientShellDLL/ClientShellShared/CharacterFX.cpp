@@ -719,18 +719,8 @@ void CCharacterFX::HandleDialogueMsg(ILTMessage_Read *pMsg)
     HSTRING hSound = pMsg->ReadHString();
     LTFLOAT fRadius = pMsg->Readfloat();
 	m_nUniqueDialogueId = pMsg->Readuint8( );
-	CharacterSoundType cst = (CharacterSoundType)pMsg->Readuint8( );
-	m_bSubtitlePriority = (cst == CST_DIALOG);
-	bool bCensor = (cst == CST_DEATH) || (cst == CST_DAMAGE);
-
-	if (bCensor && g_pVersionMgr->IsLowViolence())
-	{
-		//don't play the sound, but if it is a pain sound, do notify the server that we're done with it
-		// if it's a death sound, don't bother because it's not waiting for notification
-		if (cst == CST_DAMAGE)
-			KillLipSyncSound( true );
-		return;
-	}
+	// RETAIL: 0x10175870: Tron's message has no sound type, and there is
+	// no low violence test
 
 	char szSound[128];
 	*szSound = 0;
@@ -750,12 +740,10 @@ void CCharacterFX::HandleDialogueMsg(ILTMessage_Read *pMsg)
 	{
 		m_bSubtitle = LTFALSE;
 
-		//don't bother getting the handle if it's a death sound, because we don't track them
-		bool bGetHandle = (cst != CST_DEATH);
-		m_hDialogueSnd = PlayLipSyncSound(szSound, fRadius, m_bSubtitle, m_bSubtitlePriority, bGetHandle);
+		m_hDialogueSnd = PlayLipSyncSound(szSound, fRadius, m_bSubtitle);
 
-		//if we didn't get a handle (and we did ask for one) then tell the server we're done with the sound
-		if( !m_hDialogueSnd && bGetHandle)
+		//if we didn't get a handle then tell the server we're done with the sound
+		if( !m_hDialogueSnd )
 		{
 			KillLipSyncSound( true );
 		}
@@ -2409,18 +2397,17 @@ LTBOOL CCharacterFX::OnServerMessage(ILTMessage_Read *pMsg)
 //
 // ----------------------------------------------------------------------- //
 
-HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL & bSubtitle, bool bSubtitlePriority, bool bGetHandle /*= true */)
+// RETAIL: 0x10179140 (ret 0xc): Tron's takes three arguments and always
+// gets a handle; when the sound does not play it plays "NullSound" so that
+// the lip sync gets a handle all the same.
+HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL & bSubtitle)
 {
 
 	bSubtitle = LTFALSE;
 
     if (!szSound || !szSound[0] || fRadius <= 0.0f) return LTNULL;
 
-    uint32 dwFlags = 0;
-	if (bGetHandle)
-	{
-		dwFlags = PLAYSOUND_GETHANDLE;
-	}
+    uint32 dwFlags = PLAYSOUND_GETHANDLE;
 
 	LTBOOL bIsLocalClient = LTFALSE;
 	SoundPriority ePriority = SOUNDPRIORITY_AI_HIGH;
@@ -2430,6 +2417,12 @@ HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL &
 
         bIsLocalClient = (g_pLTClient->GetClientObject() == m_hServerObject);
 		dwFlags |= bIsLocalClient ? PLAYSOUND_CLIENTLOCAL : 0;
+	}
+	// RETAIL: 0x101791cd: the object the player manager gives (slot 0xa0)
+	// hears it in its head too
+	else if (g_pPlayerMgr->TronUnknownVirtualA0() && (HOBJECT)g_pPlayerMgr->TronUnknownVirtualA0() == m_hServerObject)
+	{
+		dwFlags |= PLAYSOUND_CLIENTLOCAL;
 	}
 
 
@@ -2467,9 +2460,6 @@ HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL &
 					dwFlags |= PLAYSOUND_CLIENTLOCAL;
 
 					// Unload cinematic dialogue sounds after they are played...
-					// NOTE: This will only unload dialogue sounds in cinematics,
-					// to unload the conversation dialogue sounds we need to come
-					// up with another approach...
 					dwFlags |= PLAYSOUND_ONCE;
 				}
 				else
@@ -2484,22 +2474,18 @@ HLTSOUND CCharacterFX::PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL &
 				vPos.Init();
 			}
 
-			nStringId += SUBTITLE_STRINGID_OFFSET;
+			// RETAIL: no SUBTITLE_STRINGID_OFFSET in Tron
 			bSubtitle = LTTRUE;
 		}
 	}
 
-	HLTSOUND hSound = LTNULL;
+	HLTSOUND hSound = g_pClientSoundMgr->PlaySoundFromObject(m_hServerObject,
+		szSound, fRadius, ePriority, dwFlags, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, SPEECH_SOUND_CLASS );
 
-	if (bGetHandle)
+	if (!hSound)
 	{
 		hSound = g_pClientSoundMgr->PlaySoundFromObject(m_hServerObject,
-			szSound, fRadius, ePriority, dwFlags, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, SPEECH_SOUND_CLASS );
-	}
-	else
-	{
-
-		g_pClientSoundMgr->PlaySoundFromPos(vPos, szSound, fRadius, ePriority);
+			"NullSound", fRadius, ePriority, dwFlags, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, SPEECH_SOUND_CLASS );
 	}
 	
 	if (bSubtitle && hSound)

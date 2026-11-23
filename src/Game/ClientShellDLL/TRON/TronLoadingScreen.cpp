@@ -64,12 +64,12 @@ bool CTronLoadingScreen::ReadWorldLayout()
 }
 
 // RETAIL: 0x100a29a0
-void CTronLoadingScreen::UpdateMissionInfo()
+void CTronLoadingScreen::InitMissionInfo()
 {
 	switch (GetGameType())
 	{
 		case eGameTypeSingle:
-			CLoadingScreen::UpdateMissionInfo();
+			CLoadingScreen::InitMissionInfo();
 			break;
 
 		case eGameTypeSingleLightCycleCircuit:

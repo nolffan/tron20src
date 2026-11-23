@@ -673,14 +673,16 @@ void CScreenJoinServerList::AddServer(SBServer hServer)
 	LTGUIWiden(sText, szTemp);
 	pCtrl->AddColumn(sText,m_nTypeColumn - m_nPlayersColumn);
 
-	// PORT: see CBaseScreenJoin::JoinServer (retail tests whether the type
-	// string was known)
 	int nTypeID = 0x3D;
-	switch (GameStringTypeToGameType(pszType))
+	GameType eGameType;
+	if (GameStringTypeToGameType(pszType, eGameType))
 	{
-	case eGameTypeDiscArena:				nTypeID = 0xF51; break;
-	case eGameTypeDiscTournament:			nTypeID = 0xF52; break;
-	case eGameTypeMultiplayerLightcycles:	nTypeID = 0xF53; break;
+		switch (eGameType)
+		{
+		case eGameTypeDiscArena:				nTypeID = 0xF51; break;
+		case eGameTypeDiscTournament:			nTypeID = 0xF52; break;
+		case eGameTypeMultiplayerLightcycles:	nTypeID = 0xF53; break;
+		}
 	}
 	pCtrl->AddColumn(LoadTempWString(nTypeID),m_nMapColumn - m_nTypeColumn,LTTRUE);
 

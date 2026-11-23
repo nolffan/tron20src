@@ -520,8 +520,8 @@ void CNodeController::HandleNodeControlLipFlap( char const* pszSoundFile, LTFLOA
 		g_pLTClient->CPrint("Debug LipFlap: calling 'm_pCharacterFX->PlayLipSyncSound()'");
 
 	// Start the sound.
-	// PORT: Tron's PlayLipSyncSound takes three arguments (0x10185a31)
-	m_hSound = m_pCharacterFX->PlayLipSyncSound(szSound, fRadius, bSubtitles, m_bSubtitlePriority);
+	// RETAIL: Tron's PlayLipSyncSound takes three arguments (0x10185a31)
+	m_hSound = m_pCharacterFX->PlayLipSyncSound(szSound, fRadius, bSubtitles);
 	if( m_hSound == NULL )
 	{
 		if (g_vtDebugLipFlap.GetFloat())
@@ -612,7 +612,7 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 	pStream->Read(&cKeyframes, sizeof(cKeyframes));
 
 	LTBOOL bSubtitles = LTFALSE;
-	m_hSound = m_pCharacterFX->PlayLipSyncSound(szSound, fRadius, bSubtitles, m_bSubtitlePriority);
+	m_hSound = m_pCharacterFX->PlayLipSyncSound(szSound, fRadius, bSubtitles);
 	if( !m_hSound )
 	{
 		KillLipSyncSound( true );

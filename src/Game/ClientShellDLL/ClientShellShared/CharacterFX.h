@@ -119,7 +119,8 @@ class CCharacterFX : public CSpecialFX
 		ModelSkeleton	GetModelSkeleton() const { return m_cs.eModelSkeleton; }
 		ModelType		GetModelType() const { return m_cs.eModelType; }
 
-        HLTSOUND        PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL & bSubtitle, bool bSubtitlePriority, bool bGetHandle = true);
+        // RETAIL: three arguments in Tron (0x10179140, ret 0xc)
+        HLTSOUND        PlayLipSyncSound(char* szSound, LTFLOAT fRadius, LTBOOL & bSubtitle);
 		void			PlayTaunt(uint32 nTauntId, LTBOOL bForce=LTTRUE);
 		LTBOOL			IsPlayingTaunt() { return m_NodeController.IsLipSynching(); }
 

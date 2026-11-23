@@ -65,7 +65,8 @@ public:
 	virtual void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel, uint8 nType, char* szName, bool bNoHelpPing) = 0;
     virtual void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration) = 0;
 	virtual void		UpdateSkills(ILTMessage_Read *pMsg) = 0;
-	virtual void		GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount) = 0;
+	// RETAIL: Tron's takes the reward only (CTronPlayerStats 0x100aacd0, ret 4)
+	virtual void		GainSkills(uint8 nRewardId) = 0;
 	virtual void		UpdateMissionStats(ILTMessage_Read *pMsg) = 0;
 
 	virtual void		ResetSkills() = 0;						 //clears all skill data

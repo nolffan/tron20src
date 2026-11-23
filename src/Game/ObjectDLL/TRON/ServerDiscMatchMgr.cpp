@@ -810,7 +810,7 @@ void CDiscMatchMgr::StartTournament()
 	int nNumTeams = g_pTronTeamMgr->GetNumTeams();
 	for (int i = 0; i < nNumTeams; i++)
 	{
-		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients())
+		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients() > 0)
 		{
 			m_Bracket.AddTeam(i);
 		}
@@ -848,7 +848,7 @@ void CDiscMatchMgr::StartGame()
 	m_Queue.Clear();
 	for (int i = 0; i < nNumTeams; i++)
 	{
-		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients())
+		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients() > 0)
 		{
 			m_Queue.Add(i);
 		}
@@ -1406,7 +1406,7 @@ void CDiscMatchMgr::OnClientRemoved(HCLIENT hClient)
 	}
 
 	if (m_nGameType == eGameTypeDiscArena && nTeam >= 0 && nTeam < TRON_MAX_TEAMS &&
-		g_pTronTeamMgr->GetTeam(nTeam, false)->GetNumClients() == 0)
+		g_pTronTeamMgr->GetTeam(nTeam, false)->GetNumClients() <= 0)
 	{
 		m_Queue.Remove(nTeam);
 	}
@@ -1611,7 +1611,7 @@ void CDiscMatchMgr::GameOver()
 		for (i = 0; i < nNumTeams; i++)
 		{
 			CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(i, false);
-			if (pTeam->GetNumClients() && pTeam->GetTronUnknownC() > nBest)
+			if (pTeam->GetNumClients() > 0 && pTeam->GetTronUnknownC() > nBest)
 			{
 				nBest = pTeam->GetTronUnknownC();
 			}
@@ -1620,7 +1620,7 @@ void CDiscMatchMgr::GameOver()
 		for (i = 0; i < nNumTeams; i++)
 		{
 			CTronTeam* pTeam = g_pTronTeamMgr->GetTeam(i, false);
-			if (pTeam->GetNumClients() && pTeam->GetTronUnknownC() >= nBest)
+			if (pTeam->GetNumClients() > 0 && pTeam->GetTronUnknownC() >= nBest)
 			{
 				aWinners[0].push_back(i);
 			}
@@ -1718,7 +1718,7 @@ int CDiscMatchMgr::GetNumActiveTeams()
 	uint32 nNumTeams = g_pTronTeamMgr->GetNumTeams();
 	for (uint32 i = 0; i < nNumTeams; i++)
 	{
-		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients())
+		if (g_pTronTeamMgr->GetTeam(i, false)->GetNumClients() > 0)
 		{
 			nActive++;
 		}

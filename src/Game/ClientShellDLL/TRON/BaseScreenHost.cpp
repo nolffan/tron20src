@@ -434,11 +434,7 @@ void CBaseScreenHost::Launch()
 	UpdateData(LTTRUE);
 
 	ServerGameOptions *pOptions = g_pServerOptionMgr->GetCurrent();
-	// RETAIL: 0x1000435b (and 0x10004466): the callers test only the low
-	// byte of the result (test al,al): Tron's function returns bool (a
-	// bool computed from a condition compiles to the same body as our
-	// LTBOOL one, 0x100eb4d0). The cast stands in until the header says bool.
-	if ((uint8)pOptions->IsMapListEmpty())
+	if (pOptions->IsMapListEmpty())
 	{
 		MBCreate mb;
 		mb.eType = LTMB_OK;
@@ -471,9 +467,9 @@ LTBOOL CBaseScreenHost::StartServer()
 		return LTFALSE;
 
 	// RETAIL: asked twice
-	if ((uint8)pOptions->IsMapListEmpty())
+	if (pOptions->IsMapListEmpty())
 		return LTFALSE;
-	if ((uint8)pOptions->IsMapListEmpty())
+	if (pOptions->IsMapListEmpty())
 		return LTFALSE;
 
 	StringArray *pMaps = pOptions->GetMapList();

@@ -62,7 +62,7 @@ public:
 	void        UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsIntel, uint8 nType, char* szName, bool bNoHelpPing);
     void        UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration); // PORT: NOLF2's interface
 	void		UpdateSkills(ILTMessage_Read *pMsg);
-	void		GainSkills(uint8 nRewardId, uint8 nBonusId, uint16 nAmount); // PORT: NOLF2's interface
+	void		GainSkills(uint8 nRewardId);	// RETAIL: 0x100aacd0
 	void		ResetObjectives();							// PORT: NOLF2's interface
 	void		OnObjectivesDataMessage(ILTMessage_Read *pMsg);	// PORT: NOLF2's interface
 	void		UpdateMissionStats(ILTMessage_Read *pMsg);

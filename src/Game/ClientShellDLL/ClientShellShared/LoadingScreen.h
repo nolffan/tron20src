@@ -38,7 +38,7 @@ class CLoadingScreen
 public:
 	CLoadingScreen();
 	// RETAIL: virtual: retail's CLoadingScreen has a vtable (0x101eb940,
-	// two slots: this, then 0x10161f70, not yet identified), so its
+	// two slots: this, then InitMissionInfo, 0x10161f70), so its
 	// members sit 4 bytes later (CInterfaceMgr's inline uses read the
 	// state at +0x30: 0x100c8680)
 	virtual ~CLoadingScreen();
@@ -78,14 +78,20 @@ public:
 	//is loading a new mission?
 	bool	NeedsPostLoadScreen() const;
 
-	// RETAIL: virtual in Tron (slot 1: 0x10161f70; CTronLoadingScreen's
-	// 0x100a29a0)
-	virtual void	UpdateMissionInfo();
+	// RETAIL: 0x10163c50: not virtual (CInterfaceMgr::UpdateLoadScreenInfo
+	// calls it directly, 0x100d064a)
+	void	UpdateMissionInfo();
 
 
 
 // Internal functions
 protected:
+	// RETAIL: 0x10161f70, vtable slot 1: Tron's Init (0x10162635) gets the
+	// mission strings and the layout through it; CTronLoadingScreen's
+	// (0x100a29a0) has those of the light cycle and disc games. The name is
+	// ours.
+	virtual void	InitMissionInfo();
+
 #ifdef NOPS2
 	static unsigned long WINAPI ThreadBootstrap(void *pData);
 	int RunThread();
