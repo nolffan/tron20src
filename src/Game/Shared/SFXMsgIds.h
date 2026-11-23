@@ -151,14 +151,16 @@
 
 // BodyFX messages...
 
+// RETAIL: Tron's (CBodyFX::OnServerMessage, CShell.dll 0x1012e040, takes
+// 2..5; Body::SetCanCarry, Object.lto 0x1015d380, sends 4 and Body's damage
+// handler, 0x1015bb10, sends 5). NOLF2's carried, permanent and revive
+// messages are not in Tron.
+
 #define BFX_TWITCH_MSG					1
 #define BFX_FADE_MSG					2
 #define BFX_HITBOX_MSG					3
 #define BFX_CAN_CARRY					4
-#define BFX_CARRIED						5
-#define BFX_DAMAGEFX_MSG				6
-#define BFX_PERMANENT					7
-#define BFX_CANREVIVE					8
+#define BFX_DAMAGEFX_MSG				5
 
 // TriggerFX messages...
 
@@ -193,8 +195,14 @@ enum BodyState
 	eBodyStatePoison		= 11,	// Killed by poison
 	eBodyStateAcid			= 12,	// Killed by acid
 	eBodyStateArrow			= 13,	// Killed by arrow (wall stick)
-	eBodyStateFade			= 14,	// Fade for low-violence setting
-	eBodyStateLadder		= 15,	// Falling off a ladder
+	// RETAIL: Tron's values past 13 (CBodyFX::Update, CShell.dll 0x1012df10,
+	// fades at 15; Body::Init, Object.lto 0x1015a520, sends 14..17). The
+	// states 14 and 17 are not known and have no name here (a name changes
+	// the code of unrelated functions through the precompiled header).
+	eBodyStateFade			= 15,	// Fade for low-violence setting
+	// PORT: Tron sends 16 and 17 for two body states that are not known.
+	// The ladder is taken to be 16.
+	eBodyStateLadder		= 16,	// Falling off a ladder
 };
 
 // PolyLine values...

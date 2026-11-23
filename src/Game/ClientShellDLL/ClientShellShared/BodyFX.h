@@ -22,6 +22,12 @@
 
 class CRagDoll;
 
+// RETAIL: Tron's CBodyFX is 0x8c bytes (constructor CShell.dll 0x1012da60,
+// CBankedList<CBodyFX> 0x10115660). It is between Build 51's and NOLF2's:
+// it has NOLF2's rag doll pointer, one ClientFX link and the client hit box,
+// but no backpack (the low violence and multiplayer body swap), no hide keys
+// and no creation time.
+
 class CBodyFX : public CSpecialFX
 {
 	public :
@@ -39,7 +45,6 @@ class CBodyFX : public CSpecialFX
 		// Updates
 
         LTBOOL	Update();
-		void	UpdateAttachments();
 
 		// Handlers
 
@@ -57,19 +62,11 @@ class CBodyFX : public CSpecialFX
 		
 		ModelSkeleton GetModelSkeleton() const { return g_pModelButeMgr->GetModelSkeleton(m_bs.eModelId); }
 
-		float	GetTimeCreated() const { return m_fCreateTime;	}
-
-		void	RemoveClientAssociation( );
-
 	protected :
 
 		// Updates
 
 		void UpdateFade();
-		void FadeBackpack();
-
-		bool HandleDeathFXKey( HLOCALOBJ hObj, ArgList* pArgList );
-		bool HandleFXKey( HLOCALOBJ hObj, ArgList* pArgList );
 
 		bool SetupRagDoll();
 
@@ -77,33 +74,23 @@ class CBodyFX : public CSpecialFX
 
 		void CreateDamageFX(DamageType eType);
 
-		void CreateBackpack();
-		void UpdateBackpack();
-		void RemoveBackpack();
-
 	protected :
 
-		CRagDoll*			m_pRagDoll;
+		CRagDoll*			m_pRagDoll;				// +0x38
 
-		BODYCREATESTRUCT	m_bs;					// Our createstruct
-		HOBJECT				m_hBackpack;
-		bool				m_bFadeToBackpack;
+		BODYCREATESTRUCT	m_bs;					// +0x3c Our createstruct
 
+		LTFLOAT				m_fFaderTime;			// +0x54
+		LTFLOAT				m_fFaderTimer;			// +0x58
 
-		LTFLOAT				m_fFaderTime;
-		LTFLOAT				m_fFaderTimer;
-		LTFLOAT				m_fBackpackFaderTime;
-		LTFLOAT				m_fBackpackFaderTimer;
-
-		bool				m_bHidden;
+		// PORT: Build 51's name for the member at +0x5c. Retail's code does not
+		// use it, and the constructor does not set it.
+		ANIMTRACKERID		m_TwitchTracker;
 
 		// keyframed ClientFX
-		CLIENTFX_LINK		m_fxDeath;
-		CLIENTFX_LINK		m_fx;
+		CLIENTFX_LINK		m_fx;					// +0x60
 
-		CHitBox				m_HitBox;
-		
-		float				m_fCreateTime;	// Time stamp of when this body was created.
+		CHitBox				m_HitBox;				// +0x64
 };
 
 #endif

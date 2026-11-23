@@ -132,8 +132,7 @@ void BODYCREATESTRUCT::Write(ILTMessage_Write *pMsg)
 	pMsg->Writeuint8(eDeathDamageType);
 
 	// RETAIL: Tron's message ends here (Object.lto 0x101133e0, CShell.dll
-	// 0x101aaa60): no permanent body, hit box or search data.  PORT: the
-	// members stay for the NOLF2 code that still sets or reads them.
+	// 0x101aaa60): no permanent body, hit box or search data.
 }
 
 // ----------------------------------------------------------------------- //
