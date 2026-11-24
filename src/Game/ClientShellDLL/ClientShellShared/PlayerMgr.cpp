@@ -2108,6 +2108,14 @@ LTBOOL CPlayerMgr::InCameraGadgetRange(HOBJECT hObj)
 }
 
 
+// RETAIL: an inline accessor of +0x833a (UpdateWeaponModel, 0x1012729b:
+// expanded inline, it keeps TVector3::operator= out of line there). The
+// name is ours
+static inline bool IsTronUnknown833A()
+{
+	return g_pGameClientShell->m_bTronUnknown833A;
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CPlayerMgr::UpdateWeaponModel()
@@ -2163,7 +2171,7 @@ void CPlayerMgr::UpdateWeaponModel()
 	     ( !g_pInterfaceMgr->IsChoosingWeapon() ) &&
 	     ( !IsPlayerDead() ) &&
 	     ( !m_bSpectatorMode ) &&
-		 ( g_pInterfaceMgr->GetGameState() == GS_PLAYING ) )
+		 ( !IsTronUnknown833A() ) )	// RETAIL: 0x1012729b
 	{
 		bFire = true;
 	}
@@ -2195,7 +2203,15 @@ void CPlayerMgr::UpdateWeaponModel()
 
 void CPlayerMgr::StartWeaponRecoil()
 {
-	float fMaxPitch = g_vtFireJitterMaxPitchDelta.GetFloat();
+	// RETAIL: 0x10127300: Tron shakes the screen first, whatever the
+	// weapon's recoil
+	// Shake the screen if it isn't shaking...
+
+	if (m_vShakeAmount.x < 0.1f && m_vShakeAmount.y < 0.1f && m_vShakeAmount.z < 0.1f)
+	{
+		LTVector vShake(0.1f, 0.1f, 0.1f);
+		ShakeScreen(vShake);
+	}
 
 	if (g_vtUseCamRecoil.GetFloat() > 0.0f)
 	{
@@ -2227,6 +2243,7 @@ void CPlayerMgr::StartWeaponRecoil()
 			pAmmoData = pClientWeapon->GetAmmo();
 		}
 
+		float fMaxPitch = g_vtFireJitterMaxPitchDelta.GetFloat();
 		if (pWeaponData && pAmmoData)
 		{
 			if (fMaxPitch < 0.0f)
@@ -2238,17 +2255,6 @@ void CPlayerMgr::StartWeaponRecoil()
 		float fVal = (float)DEG2RAD(fMaxPitch) - m_fFireJitterPitch;
 		m_fFireJitterPitch += fVal;
 		m_fPitch -= fVal;
-	}
-
-	if (fMaxPitch > 0.0f)
-	{
-		// Shake the screen if it isn't shaking...
-
-		if (m_vShakeAmount.x < 0.1f && m_vShakeAmount.y < 0.1f && m_vShakeAmount.z < 0.1f)
-		{
-			LTVector vShake(0.1f, 0.1f, 0.1f);
-			ShakeScreen(vShake);
-		}
 	}
 }
 
@@ -3077,6 +3083,10 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			g_pDamageFXMgr->Clear();
 
+			// RETAIL: 0x10128a58: the lure's position has a stack slot of its
+			// own (not shared with the death FX's position)
+			LTVector vLurePos;
+
 			if( IsMultiplayerGame() )
 			{
 				AttachCameraToHead(LTTRUE);
@@ -3105,10 +3115,9 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 					char const* pszDeathFX = pPlayerLureFX->GetDeathFX( );
 					if( !pszDeathFX && pszDeathFX[0] != '\0' )
 					{
-						LTVector vPos;
-						g_pLTClient->GetObjectPos( g_pMoveMgr->GetObject(), &vPos );
+						g_pLTClient->GetObjectPos( g_pMoveMgr->GetObject(), &vLurePos );
 
-						CLIENTFX_CREATESTRUCT fxInit( pszDeathFX, 0, vPos );
+						CLIENTFX_CREATESTRUCT fxInit( pszDeathFX, 0, vLurePos );
 						g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
 					}
 				}
@@ -3116,7 +3125,8 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 
 			ClearPlayerModes();
 
-			// RETAIL: no CClientWeaponMgr::OnPlayerDead in Tron
+			// RETAIL: 0x10128b0e
+			m_pClientWeaponMgr->OnPlayerDead();
 
 			g_pInterfaceMgr->AddToClearScreenCount();
 

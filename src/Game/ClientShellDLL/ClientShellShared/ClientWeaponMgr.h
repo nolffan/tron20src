@@ -108,6 +108,7 @@ public:
 	void            AutoSelectWeapon();
 	
 	// Functionality for when the player changes state to dead/dying or alive
+	void			OnPlayerDead();
 	void			OnPlayerAlive();
 
 private:

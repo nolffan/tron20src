@@ -284,15 +284,15 @@ void CScreenLightCycleGame::ShowPowerups(bool bShow)
 	m_pPowerupList->Show(bShow);
 	if (bShow)
 	{
-		// RETAIL: CBaseScreen's 0x100d38d0 (out of line; ours inline)
-		m_xTronUnknown50.push_back(m_pPowerupList);
-		m_xTronUnknown50.push_back(m_pPowerupsOK);
+		// RETAIL: CBaseScreen's 0x100d38d0, called out of line
+		AddTronUnknownControl(m_pPowerupList);
+		AddTronUnknownControl(m_pPowerupsOK);
 		SetSelection(GetIndex(m_pPowerupList));
 	}
 	else
 	{
-		// RETAIL: CBaseScreen's 0x100d3900 (out of line; ours inline)
-		m_xTronUnknown50.clear();
+		// RETAIL: CBaseScreen's 0x100d3900, called out of line
+		ClearTronUnknownControls();
 		SetSelection(kNoSelection);
 	}
 	m_pPowerupsOK->Show(bShow);
@@ -327,26 +327,34 @@ void CScreenLightCycleGame::Escape()
 	}
 }
 
-// RETAIL: 0x10069580. PORT: retail's power-up names run to 11 (a table of
-// 12, 0x102162d4); ours to kNumLCPowerupTypes
+// RETAIL: 0x10069580. Retail tests the index against 11, but its name
+// table (0x102162d4) has 11 entries ("Shield".."Powerup"): see
+// docs/RETAIL_BUGS.md
 bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 {
 	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown38))
 		return false;
 
-	if (nPowerup < 0 || nPowerup >= kNumLCPowerupTypes)
+	if (nPowerup < 0 || nPowerup > 11)
 		return true;
 
 	const char *pszName = g_aszLCPowerupNames[nPowerup];
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	StringArray &sa = g_pProfileMgr->GetCurrentProfile()->m_UnlockedPowerups;
+	StringArray::iterator itEnd = sa.end();
 	StringArray::iterator it;
-	StringArray::iterator itEnd = pProfile->m_UnlockedPowerups.end();
-	for (it = pProfile->m_UnlockedPowerups.begin(); it != itEnd; ++it)
+	for (it = sa.begin(); it != itEnd; ++it)
 	{
-		if (LCNameEquals(*it,pszName))
+		uint32 nLen;
+		if (!pszName)
+			nLen = 0;
+		else
+			nLen = strlen(pszName);
+		if (it->size() == nLen && !_memicmp(it->data(),pszName,nLen))
 			break;
 	}
-	return (it == pProfile->m_UnlockedPowerups.end());
+	if (it != sa.end())
+		return false;
+	return true;
 }
 
 // RETAIL: 0x10069620: a power-up newly unlocked is turned on

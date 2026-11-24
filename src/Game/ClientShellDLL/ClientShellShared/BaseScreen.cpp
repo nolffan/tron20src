@@ -1478,6 +1478,15 @@ void CBaseScreen::UseBack(LTBOOL bBack,LTBOOL bOK,LTBOOL bReturn)
 }
 
 
+// RETAIL: 0x100d46e0: Tron's string table (ClientRes/TRON/ClientRes.rc)
+// numbers the back button's string 62 and its help strings 149, 235 and
+// 311, not as
+// ClientResShared.h (NOLF2's) does. The names are ours.
+#define IDS_TRON_BACK			62
+#define IDS_TRON_HELP_BACK		149
+#define IDS_TRON_HELP_OK		235
+#define IDS_TRON_HELP_RETURN	311
+
 void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 {
 
@@ -1486,12 +1495,12 @@ void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 	if (bOK)
 	{
 		nStr = IDS_OK;
-		nHelp = IDS_HELP_OK;
+		nHelp = IDS_TRON_HELP_OK;
 	}
 	else
 	{
-		nStr = IDS_BACK;
-		nHelp = IDS_HELP_BACK;
+		nStr = IDS_TRON_BACK;
+		nHelp = IDS_TRON_HELP_BACK;
 	}
 	uint8 nFont = g_pLayoutMgr->GetBackFont();
 	uint8 nFontSize = g_pLayoutMgr->GetBackSize();
@@ -1503,11 +1512,11 @@ void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 	s_BackArrow.SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 		
 	if (bReturn)
-		s_BackArrow.SetHelpID(IDS_HELP_RETURN);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_RETURN);
 	else if (bOK)
-		s_BackArrow.SetHelpID(IDS_HELP_OK);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_OK);
 	else
-		s_BackArrow.SetHelpID(IDS_HELP_BACK);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_BACK);
 
 	s_BackArrow.SetCommandHandler(this);
 

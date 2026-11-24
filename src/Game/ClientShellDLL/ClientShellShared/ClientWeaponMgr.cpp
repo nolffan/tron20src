@@ -1228,9 +1228,14 @@ void CClientWeaponMgr::ResetWeapons()
 //	FUNCTION:	ClientWeaponMgr::OnPlayerDead()
 //
 //	PURPOSE:	Handle when the player goes to a dead state...
+//				RETAIL: 0x10168dc0
 //
 // ----------------------------------------------------------------------- //
 
+void CClientWeaponMgr::OnPlayerDead()
+{
+	DisableWeapons();
+}
 
 // ----------------------------------------------------------------------- //
 //
