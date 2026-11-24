@@ -670,8 +670,7 @@ void CPlayerCamera::MoveCameraToPosition(LTVector pos, float deltaTime)
 
 LTVector CPlayerCamera::FindOptimalCameraPosition()
 {
-    LTVector pos;
-	VEC_INIT(pos);
+    LTVector pos(0.0f, 0.0f, 0.0f);	// RETAIL: x first (0x1015c65d)
 
 	if (!m_pClientDE || !m_hTarget) return pos;
 
