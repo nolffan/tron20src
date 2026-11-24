@@ -105,16 +105,18 @@ class CThorne : public GameBase, public IHitBoxUser
 		CTimer			m_tmrCharge;			// RETAIL: a CTimer (Save/Load, UpdateState inline it)
 		ModelSkeleton	m_eModelSkeleton;
 		LTObjRef		m_hHitBox;
-		std::string		m_sSummonCmd;
+		// RETAIL: Thorne's strings are caseless (Load 0x100581a0 and ReadProp
+		// 0x100583f0 check the length for null)
+		CaselessString	m_sSummonCmd;
 		bool			m_bAnimDone;
-		std::string		m_sTargetObject;
+		CaselessString	m_sTargetObject;
 		LTObjRef		m_hTargetObject;
 		LTObjRef		m_hBall;
 		bool			m_bAllowSummon;
 		CWeapons		m_Weapons;
-		std::string		m_sWeapon;				// RETAIL: saved, never set
+		CaselessString	m_sWeapon;				// RETAIL: saved, never set
 		uint8			m_nWeaponId;
-		std::string		m_sAmmo;				// RETAIL: saved, never set
+		CaselessString	m_sAmmo;				// RETAIL: saved, never set
 		uint8			m_nAmmoId;
 		CLIENTFXUSERCREATESTRUCT m_cs;		// RETAIL: holds the model id too
 };
