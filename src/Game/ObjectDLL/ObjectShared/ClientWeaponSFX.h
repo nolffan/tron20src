@@ -39,6 +39,9 @@ inline CLIENTWEAPONFX::CLIENTWEAPONFX()
 {
 	memset(this, 0, sizeof(CLIENTWEAPONFX));
 	nShooterId = -1;
+	// RETAIL: Tron also sets these (Lock 0x10255149, Projectile 0x10120ee6)
+	m_xTronUnknownF = -1;
+	m_xTronUnknown38 = 1.0f;
 }
 
 
