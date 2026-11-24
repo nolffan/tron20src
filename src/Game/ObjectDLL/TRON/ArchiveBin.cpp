@@ -1133,7 +1133,8 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 	{
 		case AB_CHOICE_DESTROY:
 		{
-			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, GetNumItems() ? USRFLG_CAN_ACTIVATE : 0, USRFLG_CAN_ACTIVATE);
+			uint32 dwFlags = GetNumItems() ? USRFLG_CAN_ACTIVATE : 0;
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, dwFlags, USRFLG_CAN_ACTIVATE);
 		}
 		break;
 
