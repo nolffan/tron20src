@@ -2924,6 +2924,29 @@ void CVehicleMgr::OnTouchNotify(CollisionInfo *pInfo, float forceMag)
 
 void CVehicleMgr::HandleCollision()
 {
+	// RETAIL: 0x1011ed97: a light cycle that hits something derezzes
+	if (m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	{
+		m_bTronUnknown2158 = false;
+		ShutdownLightCycleFX();
+		g_pPlayerMgr->SetTronUnknown1D5(true);
+
+		// The player manager names the cycle's derez FX
+		char szFX[512];
+		g_pPlayerMgr->TronUnknownVirtual74(g_pMoveMgr->GetObject(), szFX, sizeof(szFX));
+
+		CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_NOSMOOTHSHUTDOWN, g_pMoveMgr->GetObject());
+		g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+		g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2138, fxInit, LTTRUE);
+
+		m_bTronUnknown2158 = true;
+		m_nTronUnknown215c = 1;
+
+		g_pMoveMgr->AllowMovement(LTFALSE);
+		ShowVehicleModel(LTFALSE);
+		return;
+	}
+
 	LTVector vNormal = m_cLastTouchInfo.m_Plane.m_Normal;
 
 	SurfaceType eType = ::GetSurfaceType(m_cLastTouchInfo);
