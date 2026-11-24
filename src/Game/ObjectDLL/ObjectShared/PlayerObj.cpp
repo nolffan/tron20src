@@ -7127,120 +7127,45 @@ CAttachments* CPlayerObj::TransferAttachments( bool bRemove )
 
 void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
 {
-	// Get rid of powerups we already had on the body.
-	pBody->RemovePowerupObjects( );
+	// RETAIL: 0x100936e0: Tron's moves the attached weapons onto the body
+	// as CCharacter's does (no pickup items, no ammo boxes, no player
+	// weapon check); the weapon is removed whether or not it spawned.
+	if( !m_pAttachments )
+		return;
 
-	//for deathmatch transefer all the weapons, not just the one in hand
-	if (m_pPlayerAttachments)
+	CWeapon* apWeapons[kMaxWeapons];
+	CAttachmentPosition* apAttachmentPositions[kMaxWeapons];
+	uint32 cWeapons = m_pAttachments->EnumerateWeapons(apWeapons, apAttachmentPositions, kMaxWeapons);
+
+	while ( cWeapons )
 	{
-		// get first and last weapon indices
-		int nFirstWeaponCommandId =g_pWeaponMgr->GetFirstWeaponCommandId();
-		int nLastWeaponCommandId = g_pWeaponMgr->GetLastWeaponCommandId();
-		char szSpawn[1024] = "";
+		char szSpawn[1024];
+		cWeapons--;
 
-		PickupList PUList;
-		PickupList::iterator iter;
+		HOBJECT hWpnModel = apWeapons[cWeapons]->GetModelObject();
+		uint32 dwAni = g_pLTServer->GetModelAnimation(hWpnModel);
 
-		// note: add 1 because the first and last are inclusive
-		int nMaxWeapons = nLastWeaponCommandId - nFirstWeaponCommandId + 1;
+		apAttachmentPositions[cWeapons]->GetAttachment()->CreateSpawnString(szSpawn);
 
-		//step through each potential player weapon...
-		for (int i = 0, nCommandId = nFirstWeaponCommandId;
-			  i < nMaxWeapons;
-			  ++i, ++nCommandId )
+		BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
+		if ( pObj && pObj->m_hObject )
 		{
-			// get the weapon data 
-			uint8 nWeaponId = g_pWeaponMgr->GetWeaponId(nCommandId);
-			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon(nWeaponId);
-
-			//if the player has the weapon...
-			if (pWeapon && pWeapon->Have())
+			if (dwAni != INVALID_ANI)
 			{
+				LTVector vDims;
+				g_pCommonLT->GetModelAnimUserDims(pObj->m_hObject, &vDims, dwAni);
+				g_pPhysicsLT->SetObjectDims(pObj->m_hObject, &vDims, 0);
 
-				WEAPON const *pWeaponStruct = g_pWeaponMgr->GetWeapon(nWeaponId);
-				AMMO const *pAmmo     = g_pWeaponMgr->GetAmmo(pWeaponStruct->nDefaultAmmoId);		
-
-				//if we have valid data for the weapon and ammo, create one...
-				if (pAmmo && pWeaponStruct && 
-					pWeaponStruct->szHHModel[0])
-				{
-					sprintf(szSpawn, "WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0",
-						pWeaponStruct->szName, pAmmo->szName);
-
-					BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
-
-					//if we succeeded in creating a WeaponItem, hide it and add it to the body...
-					if ( pObj && pObj->m_hObject )
-					{
-
-						g_pCommonLT->SetObjectFlags( pObj->m_hObject, OFT_Flags, 0, FLAG_VISIBLE | FLAG_TOUCH_NOTIFY );
-
-						PickupItem *pItem = dynamic_cast<PickupItem *>(g_pLTServer->HandleToObject(pObj->m_hObject ));
-						int n = 0;
-						int sz = PUList.size();
-						if (sz > 1)
-							n = GetRandom(0,sz-1);
-						iter = PUList.begin();
-						for (int i = 0; i < n; i++)
-							iter++;
-
-						PUList.insert(iter, pItem);
-					
-						//pBody->AddPickupItem(pObj->m_hObject);
-					}
-				}
-
+				g_pLTServer->SetModelAnimation(pObj->m_hObject, dwAni);
 			}
+			pBody->AddWeapon(pObj->m_hObject, (char *)apAttachmentPositions[cWeapons]->GetName() );
 		}
 
-  		//step through each potential player ammo...
-		for (i = 0; i < g_pWeaponMgr->GetNumAmmoIds(); ++i )
+		if( bRemove )
 		{
-			// get the ammo data 
-			AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(i);
-			int nAmmoCount = m_pPlayerAttachments->GetAmmoCount(i);
-
-			if (pAmmo && nAmmoCount > 0)
-			{
-
-				sprintf(szSpawn, "AmmoBox MPRespawn 0;AmmoType1 %s;AmmoCount1 %d", pAmmo->szName, nAmmoCount);
-				BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
-
-				//if we succeeded in creating a WeaponItem, hide it and add it to the body...
-				if ( pObj && pObj->m_hObject )
-				{
-
-					g_pCommonLT->SetObjectFlags( pObj->m_hObject, OFT_Flags, 0, FLAG_VISIBLE | FLAG_TOUCH_NOTIFY );
-
-					PickupItem *pItem = dynamic_cast<PickupItem *>(g_pLTServer->HandleToObject(pObj->m_hObject ));
-					int n = 0;
-					int sz = PUList.size();
-					if (sz > 1)
-						n = GetRandom(0,sz-1);
-					
-					iter = PUList.begin();
-					for (int i = 0; i < n; i++)
-						iter++;
-
-					PUList.insert(iter, pItem);
-
-				
-					//pBody->AddPickupItem(pObj->m_hObject);
-				}
-
-			}
+			apAttachmentPositions[cWeapons]->RemoveWeapon();
 		}
-
-		iter = PUList.begin();
-		while (iter != PUList.end())
-		{
-			pBody->AddPickupItem((*iter)->m_hObject);
-			iter++;
-		}
-
 	}
-
-	RemoveWeapons();
 }
 
 
