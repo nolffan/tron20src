@@ -138,7 +138,7 @@ void CToolTip::Draw()
 
 // RETAIL: 0x1014e5c0. Places the tip above the point (below it, or beside
 // it, when it does not fit), with its icon at the top right
-void CToolTip::Show(int x, int y, std::wstring sText, HTEXTURE hIcon)
+void CToolTip::Show(LTIntPt pos, std::wstring sText, HTEXTURE hIcon)
 {
 	if (m_bVisible)
 	{
@@ -174,7 +174,7 @@ void CToolTip::Show(int x, int y, std::wstring sText, HTEXTURE hIcon)
 	int nScreenWidth = g_pInterfaceResMgr->GetScreenWidth();
 	int nScreenHeight = g_pInterfaceResMgr->GetScreenHeight();
 
-	int nX = x - (int)((float)nWidth * 0.5f);
+	int nX = pos.x - (int)((float)nWidth * 0.5f);
 	if (nX < 10)
 	{
 		nX = 10;
@@ -191,18 +191,18 @@ void CToolTip::Show(int x, int y, std::wstring sText, HTEXTURE hIcon)
 
 	int nSideOffset = (nScreenWidth / nScreenHeight) * m_nOffset;
 
-	int nY = y - m_nOffset - nHeight;
+	int nY = pos.y - m_nOffset - nHeight;
 	if (nY < 10)
 	{
-		nY = y + m_nOffset;
+		nY = pos.y + m_nOffset;
 		if (nHeight + nY > nScreenHeight - 10)
 		{
 			int nHalf = nHeight / 2;
-			nY = y - nHalf;
-			nX = x - nSideOffset - nWidth;
+			nY = pos.y - nHalf;
+			nX = pos.x - nSideOffset - nWidth;
 			if (nX < 10)
 			{
-				nX = nSideOffset + x;
+				nX = nSideOffset + pos.x;
 			}
 
 			if (nHalf + nY < nScreenHeight - 10 || nY - nHalf < 10)

@@ -30,7 +30,7 @@ public:
 	void	SetTextColor(uint32 nColor);	// RETAIL: 0x1014e340
 	void	Hide();							// RETAIL: 0x1014e360
 	void	Draw();							// RETAIL: 0x1014e3e0
-	void	Show(int x, int y, std::wstring sText, HTEXTURE hIcon);	// RETAIL: 0x1014e5c0
+	void	Show(LTIntPt pos, std::wstring sText, HTEXTURE hIcon);	// RETAIL: 0x1014e5c0 (the point by value)
 
 	bool	IsVisible() const { return m_bVisible; }
 

@@ -62,7 +62,20 @@ class CHUDDecision : public CHUDItem
 {
 public:
 	// RETAIL: eGameTypeSingle, Cooperative, Deathmatch and the disc games (retail's commonest slot 3)
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+	virtual bool	IsUsedInGameType(GameType eGameType)
+	{
+		// RETAIL: a switch (0x10023440, folded with the other HUD items')
+		switch (eGameType)
+		{
+			case eGameTypeSingle:
+			case eGameTypeCooperative:
+			case eGameTypeDeathmatch:
+			case eGameTypeDiscArena:
+			case eGameTypeDiscTournament:
+				return true;
+		}
+		return false;
+	}
 
 	CHUDDecision();
 

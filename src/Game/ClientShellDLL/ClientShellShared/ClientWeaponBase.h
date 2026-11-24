@@ -20,6 +20,7 @@
 //
 
 #include "WeaponMgr.h"
+#include "PlayerStats.h"
 
 
 //
@@ -82,7 +83,13 @@ public:
 
 	// external interfaces to change the ammo
 	virtual void          ChangeAmmoWithReload( uint8 nNewAmmoId, bool bForce= false ) {}
-	virtual void          ChangeAmmoImmediate( uint8 nNewAmmoId, int nAmmoAmount = -1, bool bForce= false ) {}
+	// RETAIL: 0x10099150. Tron's base updates the player stats with the
+	// current weapon and ammo (not with the arguments)
+	virtual void          ChangeAmmoImmediate( uint8 nNewAmmoId, int nAmmoAmount = -1, bool bForce= false )
+	{
+		g_pPlayerStats->UpdateAmmo( GetWeaponId(), GetAmmoId(), -1, LTFALSE, LTTRUE );
+		g_pPlayerStats->UpdatePlayerWeapon( GetWeaponId(), GetAmmoId(), LTFALSE );
+	}
 	virtual void          ReloadClip( bool bPlayReload = true, int nNewAmmo=-1, bool bForce = false, bool bNotifyServer = false ) {}
 	virtual void          DecrementAmmo() {}
 
