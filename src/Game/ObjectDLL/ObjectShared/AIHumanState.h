@@ -560,9 +560,8 @@ class CAIHumanStateCover : public CAIHumanState
 		EnumAIStrategyType GetRandomCoverStrategy(AINodeCover* pCoverNode);
 		LTBOOL SetCoverStrategy(EnumAIStrategyType eStrategy);
 
-		// Handlers
-
-		void HandleDamage(const DamageStruct& damage);
+		// RETAIL: Tron's cover state has no HandleDamage of its own (its
+		// vtable slot 11 is CAIState's empty one, 0x100e2900)
 
 		// Simple acccessors
 

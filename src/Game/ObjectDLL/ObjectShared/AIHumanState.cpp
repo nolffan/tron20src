@@ -7934,21 +7934,6 @@ void CAIHumanStateCover::SetCoverNode(HOBJECT hCoverNode)
 
 // ----------------------------------------------------------------------- //
 
-void CAIHumanStateCover::HandleDamage(const DamageStruct& damage)
-{
-	super::HandleDamage(damage);
-
-	if ( kSStat_UseCover == m_eStateStatus )
-	{
-		if ( m_pCoverNode )
-		{
-			m_eStateStatus = kSStat_FailedComplete;
-		}
-	}
-}
-
-// ----------------------------------------------------------------------- //
-
 void CAIHumanStateCover::Load(ILTMessage_Read *pMsg)
 {
 	super::Load(pMsg);

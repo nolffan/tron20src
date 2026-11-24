@@ -237,8 +237,9 @@ void CAIGoalAttackFromVantage::HandleStateCharge()
 
 AINode* CAIGoalAttackFromVantage::FindNearestAttractorNode(EnumAINodeType eNodeType, const LTVector& vPos, LTFLOAT fDistSqr)
 {
-	// RETAIL: Tron's finder leaves out the nodes toward the threat (0x10214468)
-	return g_pAINodeMgr->FindNearestNodeAwayFromThreat(m_pAI, eNodeType, vPos, m_hStimulusSource);
+	// RETAIL: Tron's finder leaves out the nodes toward the threat: it calls
+	// FindNearestNodeInSameDirectionAsThreat (0x10214468 -> 0x101a8ed0)
+	return g_pAINodeMgr->FindNearestNodeInSameDirectionAsThreat(m_pAI, eNodeType, vPos, m_hStimulusSource);
 }
 
 

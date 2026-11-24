@@ -1862,26 +1862,6 @@ void CCharacter::SendDamageFlagsToClients( )
 	CreateSpecialFX();
 }
 
-// ----------------------------------------------------------------------- //
-//
-//  ROUTINE:	CCharacter::SetDamageFlags
-//
-//  PURPOSE:	Set our damage flags and send message if changed
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacter::SetDamageFlags( const DamageFlags nDmgFlags )
-{
-	// If we are not changing anything just quit out
-
-	if( nDmgFlags == m_nDamageFlags ) return;
-
-	// Set 'em and send 'em...
-
-	m_nDamageFlags = nDmgFlags;
-	SendDamageFlagsToClients();
-}
-
 // RETAIL: Object.lto 0x1008d590 (the name is ours)
 void CCharacter::AddDamageFlags( const DamageFlags nDmgFlags )
 {
@@ -4744,6 +4724,10 @@ CAttachments* CCharacter::TransferAttachments( bool bRemove )
 
 void CCharacter::TransferWeapons(Body *pBody, bool bRemove )
 {
+	// RETAIL: 0x100936e0, in Character.obj between TransferAttachments and
+	// TransferSpears; CPlayerObj, CAI and CAIHuman all use it (vtable slot
+	// 33). Tron's has no player weapon check, and the weapon is removed
+	// whether or not it spawned. CPlayerObj does not override it.
 	if( !m_pAttachments )
 		return;
 
@@ -4756,16 +4740,12 @@ void CCharacter::TransferWeapons(Body *pBody, bool bRemove )
 		char szSpawn[1024];
 		cWeapons--;
 
-		int nId = apWeapons[cWeapons]->GetId();
-		if (!g_pWeaponMgr->IsPlayerWeapon(nId))
-			continue;
-
 		HOBJECT hWpnModel = apWeapons[cWeapons]->GetModelObject();
 		uint32 dwAni = g_pLTServer->GetModelAnimation(hWpnModel);
 
 		apAttachmentPositions[cWeapons]->GetAttachment()->CreateSpawnString(szSpawn);
 
-        BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
+		BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
 		if ( pObj && pObj->m_hObject )
 		{
 			if (dwAni != INVALID_ANI)
@@ -4777,11 +4757,11 @@ void CCharacter::TransferWeapons(Body *pBody, bool bRemove )
 				g_pLTServer->SetModelAnimation(pObj->m_hObject, dwAni);
 			}
 			pBody->AddWeapon(pObj->m_hObject, (char *)apAttachmentPositions[cWeapons]->GetName() );
+		}
 
-			if( bRemove )
-			{
-				apAttachmentPositions[cWeapons]->RemoveWeapon();
-			}
+		if( bRemove )
+		{
+			apAttachmentPositions[cWeapons]->RemoveWeapon();
 		}
 	}
 }

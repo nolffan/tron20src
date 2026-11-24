@@ -7119,58 +7119,6 @@ CAttachments* CPlayerObj::TransferAttachments( bool bRemove )
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CPlayerObj::TransferWeapons
-//
-//	PURPOSE:	Transfers weapons to body.
-//
-// ----------------------------------------------------------------------- //
-
-void CPlayerObj::TransferWeapons(Body *pBody, bool bRemove )
-{
-	// RETAIL: 0x100936e0: Tron's moves the attached weapons onto the body
-	// as CCharacter's does (no pickup items, no ammo boxes, no player
-	// weapon check); the weapon is removed whether or not it spawned.
-	if( !m_pAttachments )
-		return;
-
-	CWeapon* apWeapons[kMaxWeapons];
-	CAttachmentPosition* apAttachmentPositions[kMaxWeapons];
-	uint32 cWeapons = m_pAttachments->EnumerateWeapons(apWeapons, apAttachmentPositions, kMaxWeapons);
-
-	while ( cWeapons )
-	{
-		char szSpawn[1024];
-		cWeapons--;
-
-		HOBJECT hWpnModel = apWeapons[cWeapons]->GetModelObject();
-		uint32 dwAni = g_pLTServer->GetModelAnimation(hWpnModel);
-
-		apAttachmentPositions[cWeapons]->GetAttachment()->CreateSpawnString(szSpawn);
-
-		BaseClass* pObj = SpawnObject(szSpawn, LTVector(-10000,-10000,-10000), LTRotation());
-		if ( pObj && pObj->m_hObject )
-		{
-			if (dwAni != INVALID_ANI)
-			{
-				LTVector vDims;
-				g_pCommonLT->GetModelAnimUserDims(pObj->m_hObject, &vDims, dwAni);
-				g_pPhysicsLT->SetObjectDims(pObj->m_hObject, &vDims, 0);
-
-				g_pLTServer->SetModelAnimation(pObj->m_hObject, dwAni);
-			}
-			pBody->AddWeapon(pObj->m_hObject, (char *)apAttachmentPositions[cWeapons]->GetName() );
-		}
-
-		if( bRemove )
-		{
-			apAttachmentPositions[cWeapons]->RemoveWeapon();
-		}
-	}
-}
-
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CPlayerObj::SetPhysicsModel
 //
 //	PURPOSE:	Set the physics model

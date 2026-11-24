@@ -57,10 +57,10 @@ class CAINodeMgr
 		// true checks the path to one random node only, false tries the
 		// nodes in a random order until one has a path.
 		AINode* FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat, bool bCheckOneNode);
-		// RETAIL: Tron's (0x101a8ed0; the name is ours): the nearest node
-		// whose radius holds vPos, that is not toward the threat
-		AINode* FindNearestNodeAwayFromThreat(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hThreat) const;
 		AINode* FindNearestObjectNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, const char* szClass);
+		// RETAIL: 0x101a8ed0, the attack from vantage goal's attractor
+		// finder (0x10214468): the nearest node whose radius holds vPos,
+		// that is not toward the threat
 		AINode*	FindNearestNodeInSameDirectionAsThreat(CAI* pAI, EnumAINodeType eNodeType,const LTVector& vPos,HOBJECT hThreat);
 		AINode* FindNearestOwnedNode(CAI* pAI, EnumAINodeType eNodeType, const LTVector& vPos, HOBJECT hOwner);
 		AINode* FindRandomOwnedNode(CAI* pAI, EnumAINodeType eNodeType, HOBJECT hOwner);
