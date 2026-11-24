@@ -2480,6 +2480,12 @@ void CVehicleMgr::UpdateVehicleSounds()
 	LTBOOL bIsDone = LTFALSE;
 	LTBOOL bPlayAni = LTTRUE;
 
+	// RETAIL: 0x1011e802: no sounds once the light cycle has derezzed
+	if (m_bTronUnknown2158)
+	{
+		return;
+	}
+
 	if (IsCurVehicleAni("Select", bIsDone))
 	{
 		if (bIsDone)
