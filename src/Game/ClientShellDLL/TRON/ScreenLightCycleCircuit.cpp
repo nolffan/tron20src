@@ -451,7 +451,8 @@ bool CScreenLightCycleCircuit::IsCircuitCompleted(const Circuit *pCircuit)
 		if (LCNameEquals(*it,pCircuit->sNameKey))
 			break;
 	}
-	return (it != pProfile->m_CompletedCircuits.end());
+	bool bCompleted = (it != pProfile->m_CompletedCircuits.end());
+	return bCompleted;
 }
 
 // RETAIL: 0x100676e0: the circuit must allow the cycle, and the profile
