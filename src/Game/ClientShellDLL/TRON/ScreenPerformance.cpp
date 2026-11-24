@@ -31,7 +31,6 @@ namespace
 	int kNumCfg;
 
 	int nInitTex;
-	int nInitEBM;
 	int nInitEM;
 	int nInitDT;
 
@@ -516,7 +515,6 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		m_sCfg = pProfile->m_sPerformance;
 
 		nInitTex = pProfile->m_sPerformance.nSettings[kPerform_DetailLevel];
-		nInitEBM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping];
 		nInitEM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping];
 		nInitDT = pProfile->m_sPerformance.nSettings[kPerform_DetailTextures];
 		nInitTB = pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering];
@@ -540,8 +538,9 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		}
 		
 		bool bRebind = (nInitTex != pProfile->m_sPerformance.nSettings[kPerform_DetailLevel]);
+		// RETAIL: Tron's does not test the environment bump mapping
+		// (0x10072017)
 		bool bRestart = (nInitTB != pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering]) ||
-			 (nInitEBM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping]) ||
 			 (nInitEM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping]) ||
 			 (nInitDT != pProfile->m_sPerformance.nSettings[kPerform_DetailTextures]);
 
