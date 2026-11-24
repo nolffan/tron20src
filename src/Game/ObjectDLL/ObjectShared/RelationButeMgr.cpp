@@ -408,7 +408,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CDataUser*
 	_mapNameToID::const_iterator it = m_mapDataNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapDataNameToID.end() )
 	{
-		return (*it).second;
+		return it->second;
 	}
 
 	AIASSERT1( 0, NULL, "Unable to find Relation data with name: %s in RelationData.txt", pszName );
@@ -429,7 +429,7 @@ int CRelationButeMgr::GetTemplateIDByName(const char* const pszName, CRelationUs
 	_mapNameToID::const_iterator it = m_mapRelationNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapRelationNameToID.end() )
 	{
-		return (*it).second;
+		return it->second;
 	}
 
 	AIASSERT1( 0, NULL, "Unable to find Relation with name: %s in RelationData.txt", pszName );
@@ -449,7 +449,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CCollectiv
 	_mapNameToID::const_iterator it = m_mapCollectiveNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapCollectiveNameToID.end() )
 	{
-		return (*it).second;
+		return it->second;
 	}
 
 	AIASSERT1( 0, NULL, "Unable to find Collective with name: %s in RelationData.txt", pszName );
@@ -469,7 +469,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CObjectRel
 	_mapNameToID::const_iterator it = m_mapObjectRelationMgrNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapObjectRelationMgrNameToID.end() )
 	{
-		return (*it).second;
+		return it->second;
 	}
 
 	AIASSERT1( 0, NULL, "Unable to find ObjectRelationMgr with name: %s in RelationData.txt", pszName );

@@ -227,17 +227,19 @@ private:
 	void ReadTemplate(const char* const, RelationUser_Template* );
 	void ReadTemplate(const char* const, ObjectRelationMgr_Template* );
 
-	_mapNameToID				m_mapDataNameToID;
-	_listRelationDataTemplates	m_listpRelationDataTemplates;
-
-	_mapNameToID				m_mapRelationNameToID;
-	_listRelationUserTemplates	m_listpRelationUserTemplates;
-
+	// RETAIL: Tron's order (GetTemplateIDByName 0x101671e0, 0x101672b0,
+	// 0x10167380, 0x10167450: the maps at 0x111c, 0x1134, 0x114c, 0x1164)
 	_mapNameToID				m_mapCollectiveNameToID;
 	_listCollectiveTemplates	m_listpCollectiveTemplates;
 
 	_mapNameToID				m_mapObjectRelationMgrNameToID;
 	_listObjectRelationMgrTemplates	m_listpObjectRelationMgrTemplates;
+
+	_mapNameToID				m_mapDataNameToID;
+	_listRelationDataTemplates	m_listpRelationDataTemplates;
+
+	_mapNameToID				m_mapRelationNameToID;
+	_listRelationUserTemplates	m_listpRelationUserTemplates;
 
 	bool						m_bInitialized;
 };
