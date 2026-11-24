@@ -292,7 +292,6 @@ LTBOOL INT_CHAR::Init(CButeMgr & buteMgr, char* aTagName)
     vPos = buteMgr.GetVector(aTagName, LO_CHAR_POS, zero);
 	fScale = (LTFLOAT)buteMgr.GetDouble(aTagName, LO_CHAR_SCALE, 1.0);
 	fRot = (LTFLOAT)buteMgr.GetDouble(aTagName, LO_CHAR_ROT, 1.0);
-	nMenuLayer = (uint8)buteMgr.GetInt( aTagName, LO_CHAR_MENULAYER, 0 );
 
 	return LTTRUE;
 }

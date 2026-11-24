@@ -233,10 +233,10 @@ LTBOOL CBaseScreen::Init(int nScreenID)
 		uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
 		float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
 		float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
-		uint8 nFont = g_pLayoutMgr->GetHelpFont();
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+		// TRON: the font for the help's height (RETAIL: 0x100d2442)
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 		s_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),helpX,helpY);
 		s_pHelpStr->SetCharScreenHeight(nSize);
 		s_pHelpStr->SetColor(argbWhite);
@@ -383,19 +383,20 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 
 	LTIntPt tmpPos;
 
-	// Render the title
+	// Render the title (RETAIL: 0x100d2866: Tron offsets the shadows by whole
+	// pixels)
 	if (m_pTitleString)
 	{
 		int32 px,py;
 		m_pTitleString->GetPosition(&px,&py);
-		px += 2.0f;
-		py += 2.0f;
+		px += 2;
+		py += 2;
 		m_pTitleString->SetColor(0xBF000000);
 		m_pTitleString->SetPosition(px,py);
 		m_pTitleString->Render();
 
-		px -= 2.0f;
-		py -= 2.0f;
+		px -= 2;
+		py -= 2;
 		m_pTitleString->SetColor(m_TitleColor);
 		m_pTitleString->SetPosition(px,py);
 		m_pTitleString->Render();
@@ -414,7 +415,7 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 		s_pHelpStr->GetPosition(&x,&y);
 
 		//drop shadow
-		s_pHelpStr->SetPosition(x+2.0f,y+2.0f);
+		s_pHelpStr->SetPosition(x+2,y+2);
 		s_pHelpStr->SetColor(argbBlack);
 		s_pHelpStr->Render();
 
@@ -1428,8 +1429,9 @@ CLTGUIColumnCtrl* CBaseScreen::CreateColumnCtrl(uint32 commandID, int helpID, LT
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+	// TRON: the font for the scaled height, as CreateTextItem (RETAIL: 0x100d4554)
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
     if (!pCtrl->Create(commandID, helpID, pFont, nFontSize, this))
@@ -2016,7 +2018,7 @@ void CBaseScreen::CreateCharFX(INT_CHAR *pChar)
 		bcs.fMinRotateVel = 1.0f;
 		bcs.fMaxRotateVel = 1.0f;
 
-		bcs.nMenuLayer = pChar->nMenuLayer;
+		// RETAIL: no menu layer in Tron's characters
 
 
 		if (m_CharSFX.Init(&bcs))
@@ -2077,7 +2079,6 @@ void CBaseScreen::CreateAttachFX(INT_ATTACH *pAttach)
 		bcs.nType = OT_MODEL;
 		bcs.fLifeTime = 1000000.0f;
 		bcs.bLoop = LTTRUE;
-		bcs.nMenuLayer = m_CharSFX.GetMenuLayer();
 
 		CBaseScaleFX *pSFX = &m_aAttachment[m_nNumAttachments].sfx;
 
