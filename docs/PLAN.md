@@ -258,6 +258,52 @@ Tron's IClientShell order differs from both NOLF2's and build 51's, and is
 to be read from the engine's calls into it, as ILTClient's was.
 Object.lto: 152 classes still differ.
 
+### 4c. Inline helpers called out of line: the inline budget
+
+Many nears call a small helper (TVector3's constructor or Init,
+CAutoMessage's Init or Term, a string's clear(), _M_range_initialize, an
+allocator proxy) where ours expands it, or the reverse. Measured with cl
+12.00.8168 /O2 on small test files and on game functions (2026-11-24):
+
+- VC6 gives each function an inline budget. The budget is approximately
+  the larger of a fixed amount (about 100 call statements of growth) and
+  1.2 times the size of the function before inlining. Dead code in the
+  caller (code that the optimizer removes) makes the budget larger.
+- Each expansion spends budget at the size of the inline body before
+  optimization. Dead code in an inline body (`if (x) {}`, `do {} while
+  (0)`, `((void)(x))`, unused locals) spends budget although it makes no
+  code. `((void)0)` (our ASSERT) and an empty statement spend nothing.
+- Direct calls expand in source order. When a body does not fit, the call
+  stays a call, and a smaller body after it can still fit. Calls inside an
+  expanded body (depth 2 and more) expand after that, from the end of the
+  function to its start: the last sites get the full expansion and the
+  first sites keep the inner call (MultiplayerLevelInfoMgr::ReadDefaults,
+  0x1002f250: the first std::string calls _M_range_initialize, the second
+  expands it).
+- `__forceinline` always expands and spends no budget.
+- These do not change the result: the order of functions in the file,
+  the precompiled header (/Yu or none), unused inline functions, /Ob2,
+  /Os, /Ot, /G5, /G6, /Gy, /GF, and cl 8168, 8447, 8966 and 9044.
+  `#pragma inline_depth(n)` only limits the depth, and the last value in
+  the file applies to all functions in the file, also the functions above
+  it.
+
+Proof on game code: a dead inline body put first in the function (a
+probe, not kept) makes these identical: TronTurret::HandleAllObjectsCreated
+(0x1006b560: the last clear() becomes a call), CoreDump::CreateFX
+(0x10018d70) and CCharacterFX::CreateChatIcon (CShell 0x10179bb0: one
+more TVector3::Init of ObjectCreateStruct::Clear becomes a call).
+
+Thus a helper that retail calls and we expand tells you that retail spent
+more budget before that site, or that the retail function was smaller;
+the reverse tells you the opposite. Most often the cause is a different
+statement in the same function. Do not change the helper (`inline`, out of
+line, or its header): that changes all callers. Do not keep probes or
+dead code to hit a budget. Two project-wide probes failed: dead code in
+ObjectCreateStruct's constructor (Object -52, +0) and an ASSERT that spends
+budget (Object -137, +2: only two CAutoMessage functions became
+identical).
+
 ### 5. engine (Lithtech.exe; first steps)
 
 - **Base:** cjacksrc's engine (`src/Engine/runtime`), compiled with VC6
