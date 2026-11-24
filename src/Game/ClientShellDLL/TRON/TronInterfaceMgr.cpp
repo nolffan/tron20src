@@ -776,7 +776,8 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		}
 
 		// RETAIL: 0x1009dec8: string 3271 with the energy gained, then (no
-		// break in retail) the MID_TRON_HUD_TEXT case reads on
+		// break in retail: docs/RETAIL_BUGS.md) the MID_TRON_HUD_TEXT case
+		// reads on
 		case MID_TRON_ENERGY_GAINED:
 		{
 			uint8 nEnergy = pMsg->Readuint8();
