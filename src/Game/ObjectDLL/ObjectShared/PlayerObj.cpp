@@ -4845,17 +4845,45 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		return s_FileBuffer;
 	}
 
-	DTINFO const* pInfo = GetDTINFO( eType );
-	if( !pInfo )
-		return NULL;
-
-	// PORT: Tron's DTINFO has no damage sounds (Shared/DamageTypes.h): the
-	// pain sounds are NOLF2's default ones
+	// RETAIL: Tron's sounds by damage type (0x10080300), as Build 51's
+	// single player ones; no sound for a stun
+	switch (eType)
 	{
-		char const* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
+		case DT_CHOKE:
+		{
+			char* ChokeSounds[] = { "choke01.wav", "choke02.wav" };
 
-		int nSize = ARRAY_LEN(PainSounds) - 1;
-		strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
+			int nSize = (sizeof(ChokeSounds)/sizeof(ChokeSounds[0])) - 1;
+			strcat(s_FileBuffer, ChokeSounds[GetRandom(0, nSize)]);
+		}
+		break;
+
+		case DT_ELECTROCUTE:
+		{
+			char* Sounds[] = { "Electrocute.wav" };
+
+			int nSize = (sizeof(Sounds)/sizeof(Sounds[0])) - 1;
+			strcat(s_FileBuffer, Sounds[GetRandom(0, nSize)]);
+		}
+		break;
+
+		case DT_STUN:
+		{
+			// No pain sound for these...
+			return LTNULL;
+		}
+		break;
+
+		// RETAIL: the switch is a jump table (0x10080314) with an index for
+		// the types 4 to 12; sleeping takes the pain sounds. Ours compiles
+		// to compares (near).
+		default:
+		{
+			char* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
+
+			int nSize = (sizeof(PainSounds)/sizeof(PainSounds[0])) - 1;
+			strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
+		}
 	}
 
 	return s_FileBuffer;
@@ -4926,16 +4954,19 @@ char* CPlayerObj::GetDeathSound()
 
 void CPlayerObj::UpdateAirLevel()
 {
+	// RETAIL: Tron's air times and damage are constants, no server bute
+	// (0x100804d0: 100/15, 5.0 and 100/2.5). The names are ours.
+	const LTFLOAT kfFullAirLostTime		= 15.0f;
+	const LTFLOAT kfAirLostDamage		= 5.0f;
+	const LTFLOAT kfFullAirRegenTime	= 2.5f;
+
     LTFLOAT fDeltaTime = g_pLTServer->GetFrameTime();
 
 	// See if we are in a liquid...
 
 	if (IsLiquid(m_eContainerCode) && !m_damage.HasAirSupply())
 	{
-		LTFLOAT fFullAirLostTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_FULLAIRLOSTTIME);
-        if (fFullAirLostTime <= 0.0f) return;
-
-		LTFLOAT fDeltaAirLoss	 = (MAX_AIR_LEVEL/fFullAirLostTime);
+		LTFLOAT fDeltaAirLoss	 = (MAX_AIR_LEVEL/kfFullAirLostTime);
 
 		m_fAirLevel -= fDeltaTime*fDeltaAirLoss;
 
@@ -4943,9 +4974,7 @@ void CPlayerObj::UpdateAirLevel()
 		{
 			m_fAirLevel = 0.0f;
 
-			LTFLOAT fAirLostDamage = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_AIRLOSSDAMAGE);
-	        
-			LTFLOAT fDamage = fAirLostDamage*fDeltaTime;
+			LTFLOAT fDamage = kfAirLostDamage*fDeltaTime;
 
 			DamageStruct damage;
 
@@ -4959,10 +4988,7 @@ void CPlayerObj::UpdateAirLevel()
 	}
 	else if (m_fAirLevel < MAX_AIR_LEVEL)
 	{
- 		LTFLOAT fFullAirRegenTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_FULLAIRREGENTIME);
-        if (fFullAirRegenTime <= 0.0f) return;
-
-		LTFLOAT fDeltaAirRegen = (MAX_AIR_LEVEL/fFullAirRegenTime);
+		LTFLOAT fDeltaAirRegen = (MAX_AIR_LEVEL/kfFullAirRegenTime);
 		m_fAirLevel += fDeltaTime*fDeltaAirRegen;
 	}
 }
