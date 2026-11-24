@@ -315,10 +315,24 @@ void CThorne::ReadProp(ObjectCreateStruct *pStruct)
 	m_sTargetObject = pProps->GetPropString(s_szTargetObject, "");
 
 	const AMMO* pAmmo = g_pWeaponMgr->GetAmmo(pProps->GetPropString(s_szAmmo, LTNULL));
-	m_nAmmoId = pAmmo ? pAmmo->nId : 0;
+	if (!pAmmo)
+	{
+		m_nAmmoId = 0;
+	}
+	else
+	{
+		m_nAmmoId = pAmmo->nId;
+	}
 
 	const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(pProps->GetPropString(s_szWeapon, LTNULL));
-	m_nWeaponId = pWeapon ? pWeapon->nId : 0;
+	if (!pWeapon)
+	{
+		m_nWeaponId = 0;
+	}
+	else
+	{
+		m_nWeaponId = pWeapon->nId;
+	}
 
 	const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_cs.eModelId);
 	if (pFilename && pFilename[0])
