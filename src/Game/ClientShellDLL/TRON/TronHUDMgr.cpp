@@ -296,7 +296,7 @@ void CTronHUDMgr::TronUnknownVirtual40()
 {
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
-	AddItem(m_pScores, eGameType);
-	AddItem(m_pDiscScores, eGameType);
-	AddItem(m_pDiscMatches, eGameType);
+	TRON_ADD_HUD_ITEM(m_pScores);
+	TRON_ADD_HUD_ITEM(m_pDiscScores);
+	TRON_ADD_HUD_ITEM(m_pDiscMatches);
 }
