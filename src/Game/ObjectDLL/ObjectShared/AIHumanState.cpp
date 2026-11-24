@@ -9525,11 +9525,7 @@ CAIHumanStateLongJump::~CAIHumanStateLongJump()
 {
 	AI_FACTORY_DELETE( m_pStrategyShoot );
 
-	if( GetAI()->GetAIMovement()->IsMovementLocked() )
-	{
-		GetAnimationContext()->SetAnimRate( 1.f );
-		GetAI()->GetAIMovement()->UnlockMovement();
-	}
+	// RETAIL: Tron's does not unlock the movement (0x101f4c20)
 
 	CountAttackers( LTFALSE );
 }
