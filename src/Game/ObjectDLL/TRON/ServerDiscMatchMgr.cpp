@@ -480,7 +480,7 @@ void CDiscMatch::DecideWinner()
 
 	// RETAIL: 0x1004d88c, the more wins and the draw lost by team 1 share
 	// the last store.
-	if (m_nWins[1] >= m_nWins[0])
+	if (m_nWins[0] <= m_nWins[1])
 	{
 		// RETAIL: a draw goes to the team that lost less (the damage of its
 		// living players, and 100 for each death)
@@ -883,7 +883,8 @@ void CDiscMatchMgr::ResetTeams()
 			{
 				pPlayer->m_nTronUnknown31d4 = 0;
 				CPlayerScore* pScore = pPlayer->GetPlayerScore();
-				pScore->AddFrags(-pScore->GetFrags());
+				int nFrags = pScore->GetFrags();
+				pScore->AddFrags(-nFrags);
 				pScore->SetTronUnknown18(1);
 				pScore->UpdateClients();
 				if (g_pGameServerShell)
@@ -899,7 +900,10 @@ void CDiscMatchMgr::ResetTeams()
 	cMsg.Writeuint8(kDiscMsg_Timer);
 	if (GetGameType() == eGameTypeDiscArena)
 	{
-		cMsg.Writefloat((m_fEndTime > 0.0f) ? m_fEndTime - g_pLTServer->GetTime() : -1.0f);
+		if (m_fEndTime > 0.0f)
+			cMsg.Writefloat(m_fEndTime - g_pLTServer->GetTime());
+		else
+			cMsg.Writefloat(-1.0f);
 	}
 	else
 	{

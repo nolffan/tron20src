@@ -333,28 +333,41 @@ void CProjectileEnergyClaw::UpdateChasing()
 
 void CProjectileEnergyClaw::UpdateAttached()
 {
-	if (!m_hTarget)
+	if (m_hTarget)
+	{
+		LTVector vZero(0.0f, 0.0f, 0.0f);
+		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
+
+		// RETAIL: 0x1003e396 sets the target's position to itself, not the
+		// claw's (see RETAIL_BUGS.md)
+		LTVector vTargetPos;
+		g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
+#ifdef TRON20SRC_MODERN
+		g_pLTServer->SetObjectPos(m_hObject, &vTargetPos);
+#else
+		g_pLTServer->SetObjectPos(m_hTarget, &vTargetPos);
+#endif // TRON20SRC_MODERN
+
+		UpdateClawFX();
+
+		// RETAIL: 100 points a second of bullet damage, from no one
+		// (0x1003e3a3)
+		LTFLOAT fFrameTime = g_pLTServer->GetFrameTime();
+		LTFLOAT fDamage = 100.0f * fFrameTime;
+
+		DamageStruct damage;
+		damage.Clear();
+		damage.fDamage	= fDamage;
+		damage.vDir		= m_vDir;
+		damage.eType	= DT_BULLET;
+		damage.nAmmoId	= m_pAmmoData->nId;
+		damage.DoDamage(this, m_hTarget);
+	}
+	else
 	{
 		SetClawState(kClaw_Returning);
 		HasClawFX();
-		return;
 	}
-
-	LTVector vZero(0.0f, 0.0f, 0.0f);
-	g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
-
-	LTVector vTargetPos;
-	g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
-	g_pLTServer->SetObjectPos(m_hObject, &vTargetPos);
-
-	UpdateClawFX();
-
-	DamageStruct damage;
-	damage.eType	= m_eInstDamageType;
-	damage.fDamage	= m_fInstDamage;
-	damage.hDamager	= m_hFiredFrom;
-	damage.vDir		= m_vDir;
-	damage.DoDamage(this, m_hTarget);
 }
 
 // ----------------------------------------------------------------------- //

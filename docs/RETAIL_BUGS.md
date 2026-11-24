@@ -1523,6 +1523,40 @@ messages with the command manager, so the level designer can send them.
 
 Fixed in the modern build: the function compares the text (_stricmp).
 
+### The "SetEnergy" trigger limits the energy to the maximum hit points
+
+Object.lto 0x1007994b (CPlayerObj::OnTrigger, ObjectDLL/ObjectShared/
+PlayerObj.cpp). The "SetEnergy" command reads a value and limits it to the
+range 0.0 to a maximum before it sets the player's energy. The retail code
+gets the maximum from CDestructible::GetMaxHitPoints (0x100e82c0), not from
+CDestructible::GetMaxEnergy (0x100e82f0). Thus the energy can be more than
+the maximum energy when the maximum hit points are more than the maximum
+energy, and less than the value that the command gives when they are less.
+
+Fixed in the modern build: the command limits the energy to the maximum
+energy.
+
+### The "DestroyProjectile" command can read past its object array
+
+Object.lto 0x10086370 (CPlayerObj::RemoveProjectiles, ObjectDLL/
+ObjectShared/PlayerObj.cpp). The function finds the objects with the name
+"TronProjectile" into an array of 50 objects. The loop then uses the total
+number of objects found, not the number of objects in the array. When the
+level has more than 50 such projectiles, the loop reads past the end of the
+array.
+
+Fixed in the modern build: the loop uses the number of objects in the
+array.
+
+### An attached energy claw does not move with its target
+
+Object.lto 0x1003e320 (CProjectileEnergyClaw::UpdateAttached, ObjectDLL/
+TRON/ProjectileEnergyClaw.cpp). The function gets the position of the
+target and then sets the position of the target, not of the claw, to that
+position. Thus the claw stays where it hit and the call has no effect.
+
+Fixed in the modern build: the claw moves to the position of its target.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

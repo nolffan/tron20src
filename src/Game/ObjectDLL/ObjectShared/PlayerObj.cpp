@@ -54,6 +54,8 @@
 #include "AIGoalSpecialDamage.h"
 #include "PickupItem.h"
 #include "../TRON/TronProjectile.h"	// RETAIL: Tron's
+#include "../TRON/SpectatorObject.h"	// RETAIL: Tron's
+#include "../TRON/ServerSubroutineMgr.h"	// RETAIL: Tron's
 
 #include <stdio.h>
 
@@ -750,7 +752,7 @@ CMDMGR_END_REGISTER_CLASS( CPlayerObj, CCharacter )
 #define CONSOLE_COMMAND_LADDER_VEL			"LadderVel"
 
 
-#define PLAYER_RESPAWN_SOUND				"Snd\\Powerups\\spawn_player.wav"
+#define PLAYER_RESPAWN_SOUND				"snd\\event\\spawn_player.wav"	// RETAIL: Tron's (0x102ea4f0)
 
 #define DEFAULT_PLAYERSOUND_RADIUS			512.0f
 
@@ -783,6 +785,13 @@ CPlayerObj::CPlayerObj()
 	m_ePlayerLean			= PL_CENTER;
 
 	m_dwFlags			   |= FLAG_FORCECLIENTUPDATE | FLAG_YROTATION;
+
+	// RETAIL: 0x1007722e. Light cycle players send full positions.
+	if( IsMultiplayerGame() && GetGameType() == eGameTypeMultiplayerLightcycles )
+	{
+		m_dwFlags |= FLAG_FULLPOSITIONRES;
+	}
+
 	m_dwFlags				&= ~FLAG_GRAVITY; // This is controlled by the client.
 
     m_pPlayerAttachments    = LTNULL;
@@ -1171,7 +1180,10 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_CancelLure("CANCELLURE");
 	static CParsedMsg::CToken s_cTok_Overlay("Overlay");
 	static CParsedMsg::CToken s_cTok_WakeUp("WakeUp");
-	static CParsedMsg::CToken s_cTok_DropBody( "DropBody" );
+	static CParsedMsg::CToken s_cTok_FullEnergy("FULLENERGY");
+	static CParsedMsg::CToken s_cTok_SetHitPoints("SetHitPoints");
+	static CParsedMsg::CToken s_cTok_SetEnergy("SetEnergy");
+	static CParsedMsg::CToken s_cTok_DestroyProjectile("DestroyProjectile");
 
 
 	// Default to not finding the trigger.
@@ -1236,6 +1248,19 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if ((cMsg.GetArg(0) == s_cTok_LockMusic) || (cMsg.GetArg(0) == s_cTok_LockMood))
 	{
         g_pMusicMgr->LockMood();
+	}
+	else if (cMsg.GetArg(0) == s_cTok_FullEnergy)
+	{
+		// RETAIL: 0x10078b5c. Not on mission 10, level 0 of the campaign.
+		if (g_pServerMissionMgr && (g_pServerMissionMgr->IsCustomLevel() ||
+			g_pServerMissionMgr->GetCurrentMission() != 10 || g_pServerMissionMgr->GetCurrentLevel() != 0))
+		{
+			if (!m_damage.IsDead())
+			{
+				m_damage.SetEnergy(m_damage.GetMaxEnergy());
+			}
+		}
+		bRet = true;
 	}
 	else if( cMsg.GetArg(0) == s_cTok_SetMood && cMsg.GetArgCount( ) == 2 )
 	{
@@ -1345,7 +1370,7 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if (cMsg.GetArg(0) == s_cTok_ResetInventory)
 	{
-		ResetInventory(LTFALSE);
+		ResetInventory(LTFALSE, LTTRUE);
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_AcquireWeapon)
@@ -1358,7 +1383,7 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			strcat(buf, cMsg.GetArg(i+1));
 		}
 
-		AcquireWeapon(buf);
+		AcquireWeapon(buf, true);
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_AcquireAmmo)
@@ -1407,7 +1432,12 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if (cMsg.GetArg(0) == s_cTok_FullHealth)
 	{
-		HealCheat();
+		// RETAIL: 0x100796bf. Not on mission 10, level 0 of the campaign.
+		if (g_pServerMissionMgr && (g_pServerMissionMgr->IsCustomLevel() ||
+			g_pServerMissionMgr->GetCurrentMission() != 10 || g_pServerMissionMgr->GetCurrentLevel() != 0))
+		{
+			HealCheat();
+		}
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_Dismount)
@@ -1433,9 +1463,33 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			m_damage.ClearProgressiveDamage( DT_SLEEPING );
 		}
 	}
-	else if( cMsg.GetArg(0) == s_cTok_DropBody )
+	else if (cMsg.GetArg(0) == s_cTok_SetHitPoints)
 	{
-		DropCarriedObject();
+		// RETAIL: 0x10079850
+		LTFLOAT fHitPoints = (LTFLOAT)atof(cMsg.GetArg(1));
+		if (fHitPoints < 1.0)
+		{
+			g_pLTServer->CPrint("Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0");
+			g_pLTServer->CPrint("         Ignoring trigger \"SetHitPoints\"");
+			return false;
+		}
+
+		m_damage.SetHitPoints(LTCLAMP(fHitPoints, 1.0f, m_damage.GetMaxHitPoints()));
+	}
+	else if (cMsg.GetArg(0) == s_cTok_SetEnergy)
+	{
+		// RETAIL: 0x1007994b. Retail clamps the energy to the maximum hit
+		// points, not to the maximum energy (see RETAIL_BUGS.md).
+		LTFLOAT fEnergy = (LTFLOAT)atof(cMsg.GetArg(1));
+#ifdef TRON20SRC_MODERN
+		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxEnergy()));
+#else
+		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxHitPoints()));
+#endif // TRON20SRC_MODERN
+	}
+	else if (cMsg.GetArg(0) == s_cTok_DestroyProjectile)
+	{
+		RemoveProjectiles();
 	}
 	// RETAIL: no "Score" command in Tron (no such string in retail; Tron's
 	// CPlayerScore has no bonus to add)
@@ -1471,10 +1525,10 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 {
 	// RETAIL: Tron's friendly fire test is for the disc games' team mates
 	// only (0x10079d20).
-	bool bTeamMate = false;
-
 	//Stamina skill reduces duration of progressive damage in a single player game
 	pDamageStruct->fDuration *= g_pSkillsButeMgr->GetStamina(GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eResistance];
+
+	bool bTeamMate = false;
 
 	if( IsDiscGameType( ) && IsPlayer( pDamageStruct->hDamager ) && ( g_vtNetFriendlyFire.GetFloat( ) < 1.0f ))
 	{
@@ -1679,20 +1733,17 @@ bool CPlayerObj::HandleTransmissionMessage(const CParsedMsg &cMsg)
 
     uint32 dwId = (uint32) atol(cMsg.GetArg(1));
 
+	// RETAIL: Tron's (0x1007a5a0): a communication only with exactly three
+	// arguments, no team; without an active player's client id the text
+	// goes as a HUD text message.
+
 	// See if this was a communication type of transmission.  This means we will put the 
 	// active player's name in front of it.
 	bool bActivePlayerComm = false;
-	if( cMsg.GetArgCount( ) >= 3 )
+	if( cMsg.GetArgCount( ) == 3 )
 	{
 		bActivePlayerComm = !!atoi( cMsg.GetArg( 2 ));
 	}
-	uint8 nTeam = INVALID_TEAM;
-	if( cMsg.GetArgCount( ) >= 4 )
-	{
-		nTeam= (uint8)atoi( cMsg.GetArg( 3 ));
-	}
-
-	uint32 nSound = 0;
 
 	// If this is a communication transmission, get the activeplayer's client id and send it down.
 	uint32 nActivePlayerClientId = -1;
@@ -1707,12 +1758,22 @@ bool CPlayerObj::HandleTransmissionMessage(const CParsedMsg &cMsg)
 		}
 	}
 
+	uint32 nSound = 0;
+
 	CAutoMessage cClientMsg;
-	cClientMsg.Writeuint8(MID_PLAYER_TRANSMISSION);
-	cClientMsg.Writeuint32(nActivePlayerClientId);
-	cClientMsg.Writeuint32(dwId);
-    cClientMsg.Writeuint32(nSound);
-	cClientMsg.Writeuint8(nTeam);
+	if( nActivePlayerClientId != -1 )
+	{
+		cClientMsg.Writeuint8(MID_PLAYER_TRANSMISSION);
+		cClientMsg.Writeuint32(nActivePlayerClientId);
+		cClientMsg.Writeuint32(dwId);
+		cClientMsg.Writeuint32(nSound);
+	}
+	else
+	{
+		cClientMsg.Writeuint8(MID_TRON_HUD_TEXT);
+		cClientMsg.Writeuint32(dwId);
+		cClientMsg.Writeuint32(nSound);
+	}
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
 
     return true;
@@ -1809,10 +1870,11 @@ bool CPlayerObj::HandleIntelMessage(const CParsedMsg &cMsg)
     uint32 nTextId = (uint32) atol(cMsg.GetArg(1));
     uint8 nPopupId = (uint8) atol(cMsg.GetArg(2));
 
-
+	// RETAIL: Tron's (0x1007abf0): no "add" argument; the message has a zero
+	// byte after the text, a false bit and an empty string at its end (their
+	// meaning is not known yet).
 	LTBOOL bIsIntel = LTFALSE;
 	LTBOOL bShow = LTFALSE;
-	LTBOOL bAdd = LTTRUE;
 
 	if (cMsg.GetArgCount() >= 4)
 	{
@@ -1821,30 +1883,19 @@ bool CPlayerObj::HandleIntelMessage(const CParsedMsg &cMsg)
 		if (cMsg.GetArgCount() >= 5)
 		{
 			bShow = (LTBOOL)atol(cMsg.GetArg(4));
-
-			if (cMsg.GetArgCount() >= 6)
-			{
-				bAdd = (LTBOOL)atol(cMsg.GetArg(5));
-			}
-
 		}
 	}
-
-
 
 	CAutoMessage cClientMsg;
 	cClientMsg.Writeuint8(MID_INTEL_PICKEDUP);
     cClientMsg.Writeuint32(nTextId);
+    cClientMsg.Writeuint8(0);
     cClientMsg.Writeuint8(nPopupId);
     cClientMsg.Writeuint8(bIsIntel);
     cClientMsg.Writeuint8(bShow);
-    cClientMsg.Writeuint8(bAdd);
+	cClientMsg.Writebool(false);
+	cClientMsg.WriteString("");
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
-
-
-	// RETAIL: 0x1007ad66: no skill points for intel in Tron
-
-
 
     return true;
 }
@@ -1865,11 +1916,19 @@ bool CPlayerObj::HandleFadeScreenMessage(const CParsedMsg &cMsg, bool bFadeIn)
     float fFadeTime = (float)atof(cMsg.GetArg(1));
     if (fFadeTime < 0.1f) return false;
 
+	// RETAIL: Tron's third argument goes in the second info byte
+	// (0x1007ae4c); its meaning is not known yet
+	uint8 nTronUnknown = 0;
+	if (cMsg.GetArgCount() > 2)
+	{
+		nTronUnknown = (uint8)atol(cMsg.GetArg(2));
+	}
+
 	CAutoMessage cClientMsg;
 	cClientMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 	cClientMsg.Writeuint8(IC_FADE_SCREEN_ID);
     cClientMsg.Writeuint8(bFadeIn ? 1 : 0);
-	cClientMsg.Writeuint8(0);
+	cClientMsg.Writeuint8(nTronUnknown);
     cClientMsg.Writefloat(fFadeTime);
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
 
@@ -2023,9 +2082,9 @@ void CPlayerObj::PostPropRead(ObjectCreateStruct *pStruct)
 		{
 			m_eModelId = (ModelId)pStruct->m_UserData;
 		}
-		m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
 
-		const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
+		// RETAIL: the multiplayer file name, no skeleton (0x1007b3be)
+		const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 		SAFE_STRCPY(pStruct->m_Filename, pFilename);
 
 		g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
@@ -2034,6 +2093,22 @@ void CPlayerObj::PostPropRead(ObjectCreateStruct *pStruct)
 
 		SAFE_STRCPY(pStruct->m_Name, DEFAULT_PLAYERNAME);
 
+	}
+
+	// RETAIL: the subroutines the server's list flags take the first slots,
+	// in order, cleared (0x1007b423)
+	uint16 nNumSubroutines = g_pServerSubroutineMgr->m_lstSubroutines.size( );
+	int nSlot = 0;
+	for( uint32 nSub = 0; nSub < nNumSubroutines; nSub++ )
+	{
+		if( g_pServerSubroutineMgr->m_lstSubroutines[nSub].bFunction )
+		{
+			strcpy( m_aSubroutines[nSlot].szName, g_pServerSubroutineMgr->m_lstSubroutines[nSub].szName );
+			m_aSubroutines[nSlot].nTronUnknown40 = 0;
+			m_aSubroutines[nSlot].nTronUnknown41 = 0;
+			m_aSubroutines[nSlot].nTronUnknown42 = 0;
+			nSlot++;
+		}
 	}
 }
 
@@ -2223,6 +2298,7 @@ LTBOOL CPlayerObj::Update()
 
 			damage.eType	= DT_EXPLODE;
 			damage.fDamage	= damage.kInfiniteDamage;
+			damage.bTronUnknown44 = LTTRUE;	// RETAIL: 0x1007bae0
 			damage.hDamager = m_hObject;
 			damage.vDir.Init(0, 1, 0);
 
@@ -2268,10 +2344,29 @@ void CPlayerObj::UpdateCommands()
 {
 	if (!GetClient( ) ) return;
 
+	// RETAIL: Tron's (0x1007bc40): the weapon comes first, the fire postures
+	// know the disc games' block, and the direction takes the diagonals.
+
 	if ( m_bAllowInput && !m_bChatting )
 	{
+		// Weapon
+
+		CAnimatorPlayer::Weapon eWeapon = CAnimatorPlayer::ePistol;
+
+		CWeapon* pWeapon = m_pAttachments ? ((CPlayerAttachments*)m_pAttachments)->GetWeapon() : LTNULL;
+		if ( pWeapon )
+		{
+			WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon(pWeapon->GetId());
+			if (pWeaponData)
+			{
+				eWeapon = (CAnimatorPlayer::Weapon)pWeaponData->nAniType;
+			}
+		}
+
+		m_Animator.SetWeapon(eWeapon);
+
 		// Posture
-		if (IsCarryingHeavyObject())
+		if (IsCarrying())
 		{
 			m_Animator.SetPosture(CAnimatorPlayer::eCarry);
 		}
@@ -2309,10 +2404,33 @@ void CPlayerObj::UpdateCommands()
 			}
 		}
 
-		if (!IsCarryingHeavyObject() && WS_NONE == m_nWeaponStatus )
+		if (!IsCarrying() && WS_NONE == m_nWeaponStatus )
 		{
-			// RETAIL: Tron's checks all five fire postures (0x1007be2c)
-			if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
+			if ( IsDiscGameType() && eWeapon == CAnimatorPlayer::eRifle )
+			{
+				if ( IsDefending() )
+				{
+					m_Animator.SetPosture(CAnimatorPlayer::eBlock);
+				}
+				else if ( m_bTronUnknown2cd6 || m_Animator.IsAnimatingFire() )
+				{
+					ClearHiding();
+					m_bTronUnknown2cd6 = false;
+
+					CAnimatorPlayer::Posture ePosture = m_Animator.GetLastPosture();
+					if( m_Animator.IsAnimatingPostureDone( ePosture ) || ePosture == CAnimatorPlayer::eAim )
+					{
+						ePosture = static_cast<CAnimatorPlayer::Posture>(GetRandom( CAnimatorPlayer::eFire, CAnimatorPlayer::eFire5 ));
+					}
+					
+					m_Animator.SetPosture( ePosture );
+				}
+				else
+				{
+					m_Animator.SetPosture(CAnimatorPlayer::eAim);
+				}
+			}
+			else if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
 				m_Animator.IsAnimatingFire() )
 			{
 				ClearHiding();
@@ -2324,27 +2442,15 @@ void CPlayerObj::UpdateCommands()
 				
 				m_Animator.SetPosture( ePosture );
 			}
+			else if ( IsDefending() )
+			{
+				m_Animator.SetPosture(CAnimatorPlayer::eBlock);
+			}
 			else
 			{
 				m_Animator.SetPosture(CAnimatorPlayer::eAim);
 			}
 		}
-
-		// Weapon
-
-		CAnimatorPlayer::Weapon eWeapon = CAnimatorPlayer::ePistol;
-
-		CWeapon* pWeapon = m_pAttachments ? ((CPlayerAttachments*)m_pAttachments)->GetWeapon() : LTNULL;
-		if ( pWeapon )
-		{
-			WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon(pWeapon->GetId());
-			if (pWeaponData)
-			{
-				eWeapon = (CAnimatorPlayer::Weapon)pWeaponData->nAniType;
-			}
-		}
-
-		m_Animator.SetWeapon(eWeapon);
 
 		// Movement and Direction
 
@@ -2392,7 +2498,7 @@ void CPlayerObj::UpdateCommands()
 
 			// Movement
 
-			if (!IsCarryingHeavyObject() && ((GetControlFlags() & BC_CFLG_RUN) != 0))
+			if (!IsCarrying() && ((GetControlFlags() & BC_CFLG_RUN) != 0))
 			{
 				m_Animator.SetMovement(CAnimatorPlayer::eRunning);
 			}
@@ -2403,7 +2509,7 @@ void CPlayerObj::UpdateCommands()
 
 			// Can only duck in certain situations...
 
-			if (!IsCarryingHeavyObject() && !m_bBodyOnLadder && !m_bSpectatorMode && !IsLiquid(m_eContainerCode) )
+			if (!IsCarrying() && !m_bBodyOnLadder && !m_bSpectatorMode && !IsLiquid(m_eContainerCode) )
 			{
 				if (((GetControlFlags() & BC_CFLG_DUCK) != 0) || m_bForceDuck)
 				{
@@ -2427,37 +2533,77 @@ void CPlayerObj::UpdateCommands()
 
 			// Direction
 
-			if ((GetControlFlags() & BC_CFLG_FORWARD) != 0)
+			uint32 dwControlFlags = GetControlFlags();
+			bool bForward = ((dwControlFlags & BC_CFLG_FORWARD) != 0);
+			bool bBackward = ((dwControlFlags & BC_CFLG_REVERSE) != 0);
+			bool bStrafeRight = ((dwControlFlags & BC_CFLG_STRAFE_RIGHT) != 0);
+			bool bStrafeLeft = ((dwControlFlags & BC_CFLG_STRAFE_LEFT) != 0);
+			bool bStrafe = ((dwControlFlags & BC_CFLG_STRAFE) != 0);
+
+			if (bStrafe && !bStrafeLeft && !bStrafeRight)
+			{
+				bStrafeRight = ((dwControlFlags & BC_CFLG_RIGHT) != 0);
+				bStrafeLeft = ((dwControlFlags & BC_CFLG_LEFT) != 0);
+			}
+
+			// Opposite controls cancel each other.
+
+			if (bForward && bBackward)
+			{
+				bBackward = false;
+				bForward = false;
+			}
+
+			if (bStrafeRight && bStrafeLeft)
+			{
+				bStrafeLeft = false;
+				bStrafeRight = false;
+			}
+
+			if (bForward)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eForward);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_REVERSE) != 0)
+			if (bBackward)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eBackward);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_STRAFE) != 0)
-			{
-				if ((GetControlFlags() & BC_CFLG_LEFT) != 0)
-				{
-					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeft);
-				}
-
-				if ((GetControlFlags() & BC_CFLG_RIGHT) != 0)
-				{
-					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRight);
-				}
-			}
-
-			if ((GetControlFlags() & BC_CFLG_STRAFE_RIGHT) != 0)
+			if (bStrafeRight)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eStrafeRight);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_STRAFE_LEFT) != 0)
+			if (bStrafeLeft)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeft);
+			}
+
+			if (bStrafeRight)
+			{
+				if (bForward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRightForward);
+				}
+
+				if (bBackward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRightBackward);
+				}
+			}
+
+			if (bStrafeLeft)
+			{
+				if (bForward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeftForward);
+				}
+
+				if (bBackward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeftBackward);
+				}
 			}
 
 			// Lean
@@ -2475,8 +2621,7 @@ void CPlayerObj::UpdateCommands()
         
 		}
 
-		if ( m_bBodyOnLadder && (m_Animator.GetLastMain() != CAnimatorPlayer::eDT_Sleeping) && 
-								(m_Animator.GetLastMain() != CAnimatorPlayer::eDT_Slippery))
+		if ( m_bBodyOnLadder )
 		{
 			if (((GetControlFlags() & BC_CFLG_FORWARD) != 0) || ((GetControlFlags() & BC_CFLG_JUMP) != 0))
 			{
@@ -2492,16 +2637,11 @@ void CPlayerObj::UpdateCommands()
 			}
 		}
 
+		if( GetDamageFlags( ) != 0 )
+		{
+			UpdateDamageAnimations();
+		}
 	}
-	
-	if( m_nDamageFlags != 0 )
-	{
-		if( UpdateDamageAnimations() )
-			return;
-	}
-
-	// PORT: no grief protection in Tron (above)
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -2514,113 +2654,80 @@ void CPlayerObj::UpdateCommands()
 
 bool CPlayerObj::UpdateDamageAnimations()
 {
-	// Don't do special damage anis if on a ladder or a vehicle...
+	// RETAIL: Tron's (0x1007c1b0): the flags of each damage type, no
+	// carried object to drop, a hurt animation for the remaining types.
 
-	if( (m_ePPhysicsModel != PPM_NORMAL) )
+	// Don't do special damage anis on a vehicle...
+
+	if( (m_ePPhysicsModel != PPM_NORMAL) && !m_bBodyOnLadder )
 		return true;
 
-	// The DT functions loop through all damage types every time
-	// you do anything.  Get the one's we care about now, so it
-	// doesn't loop every frame.
-	static DTINFO const* pDTSlippery = GetDTINFO( DT_SLIPPERY );
-	static DTINFO const* pDTSleeping = GetDTINFO( DT_SLEEPING );
-	static DTINFO const* pDTBearTrap = GetDTINFO( DT_BEAR_TRAP );
-	static DTINFO const* pDTGlue = GetDTINFO( DT_GLUE );
-	static DTINFO const* pDTStun = GetDTINFO( DT_STUN );
-	static DTINFO const* pDTLaughing = GetDTINFO( DT_LAUGHING );
-	static DTINFO const* pDTChoke = GetDTINFO( DT_CHOKE );
-	static DTINFO const* pDTBurn = GetDTINFO( DT_BURN );
-	static DTINFO const* pDTPoison = GetDTINFO( DT_POISON );
-	static DTINFO const* pDTAsss = GetDTINFO( DT_ASSS );
-	static DTINFO const* pDTElectrocute = GetDTINFO( DT_ELECTROCUTE );
-
-
-	if( m_nDamageFlags & pDTLaughing->nDamageFlag )
-	{
-		// Uncontrollable laughter causes us to drop a carried object.
-		DropCarriedObject( );
-	}
+	DamageFlags nDamageFlags = GetDamageFlags( );
 
 	// Set the fullbody animation acording to the damage being done...
 	
 	// Set the damage types that have no movement first...
 	
-	if( (m_nDamageFlags & pDTSlippery->nDamageFlag) )
+	if( nDamageFlags & DamageTypeToFlag( DT_SLIPPERY ))
 	{
-		// We slipped, which causes us to drop what we're carrying.
-		DropCarriedObject( );
-
-		if( m_bBodyOnLadder )
-			return true;
-
 		// Fix prediction issues, since we can't move while this is happening...
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Slippery );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	if( (m_nDamageFlags & pDTSleeping->nDamageFlag) && !m_bBodyOnLadder )
+	if( nDamageFlags & DamageTypeToFlag( DT_SLEEPING ))
 	{
-		// We fell asleep, which causes us to drop what we're carrying.
-		DropCarriedObject( );
-
-		if( m_bBodyOnLadder )
-			return true;
-
 		// Fix prediction issues, since we can't move while this is happening...
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Sleeping );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 
-	if( m_nDamageFlags & pDTBearTrap->nDamageFlag )
+	if( nDamageFlags & DamageTypeToFlag( DT_BEAR_TRAP ))
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_BearTrap );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	if( m_nDamageFlags & pDTGlue->nDamageFlag )
+	if( nDamageFlags & DamageTypeToFlag( DT_GLUE ))
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Glue );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	// Only play the hurt anis if we are aimming...
+	// If we are moving at all play the generic walk hurt animation...
 
-	if( m_Animator.GetPosture() == CAnimatorPlayer::eAim && !m_bBodyOnLadder )
+	if( m_Animator.GetDirection() != CAnimatorPlayer::eNone )
 	{
-		// If we are moving at all play the generic walk hurt animation...
+		m_Animator.SetMain( CAnimatorPlayer::eDT_HurtWalk );
+		return true;
+	}
 
-		if( m_Animator.GetDirection() != CAnimatorPlayer::eNone )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_HurtWalk );
-			return true;
-		}
+	// We are not moving so play the animation based on damage type...
 
-		// We are not moving so play the animation based on damage type...
+	if( nDamageFlags & DamageTypeToFlag( DT_STUN ))
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Stun );
+		return true;
+	}
 
-		if( m_nDamageFlags & pDTStun->nDamageFlag )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Stun );
-			// PORT: no grief protection in Tron (above)
-			return true;
-		}
-	
-		if( m_nDamageFlags & pDTLaughing->nDamageFlag )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Laughing );
-			// PORT: no grief protection in Tron (above)
-			return true;
-		}
-	
-		// PORT: NOLF2 1.3's generic hurt animation needs the damage types'
-		// hurt animation flag; Tron's DTINFO has none (Shared/DamageTypes.h)
+	if( nDamageFlags & DamageTypeToFlag( DT_LAUGHING ))
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Laughing );
+		return true;
+	}
+
+	if( (nDamageFlags & DamageTypeToFlag( DT_CHOKE )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_BURN )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_POISON )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_ASSS )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_ELECTROCUTE )) )
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Hurt );
+		return true;
 	}
 
 	return false;
@@ -2683,6 +2790,29 @@ HMODELANIM CPlayerObj::GetCrouchDeathAni(LTBOOL bFront)
 void CPlayerObj::UpdateMovement()
 {
 	if (!GetClient( )) return;
+
+	// RETAIL: Tron's (0x1007c469): a single player spectator stays at the
+	// object the "Watch" console variable names.
+	if( !IsMultiplayerGame( ) && m_bSpectatorMode && s_vtWatch.GetStr( ) && strcmp( "none", s_vtWatch.GetStr( )) != 0 )
+	{
+		ObjArray <HOBJECT, MAX_OBJECT_ARRAY_SIZE> objArray;
+		g_pLTServer->FindNamedObjects( const_cast<char*>( s_vtWatch.GetStr( )), objArray );
+
+		if( objArray.NumObjects( ) == 1 )
+		{
+			HOBJECT hWatch = objArray.GetObject( 0 );
+			if( hWatch )
+			{
+				LTVector vPos;
+				g_pLTServer->GetObjectPos( hWatch, &vPos );
+				g_pLTServer->MoveObject( m_hObject, &vPos );
+				g_pLTServer->SetObjectPos( m_hObject, &vPos );
+
+				UpdateClientPhysics( );
+				TeleportClientToServerPos( );
+			}
+		}
+	}
 	
 	// If we're in multiplayer, handle leashing
 	if ( IsMultiplayerGame( ) && m_bUseLeash)
@@ -3257,34 +3387,35 @@ void CPlayerObj::SetRespawnInvulnerability()
 
 void CPlayerObj::SetClientLoaded( bool bLoaded )
 {
+	// RETAIL: Tron's (0x1007d280): a multiplayer player comes in with its
+	// color's rez in effect and the respawn sound; no solid flags, hit box,
+	// teleport or dead body; nothing about the radar.
 	m_bClientLoaded = bLoaded;
 
 	if( bLoaded )
 	{
-		// PORT: Tron saves no velocity to restore here (NOLF2 1.x's)
-
-
 		if( m_eState == PS_ALIVE )
 		{
 			// Hide the character when the client isn't loaded, and unhide
 			// it when they become loaded.
 			HideCharacter( false );
 
-			// Make us solid again.
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_SOLID, FLAG_SOLID );
-
-			// If this is COOP, then make us invulnerable for a period of time, while cycling.
-			// the model's alpha.
-			if( g_pGameServerShell->GetGameType() == eGameTypeCooperative )
+			if( IsMultiplayerGame( ))
 			{
 				SetRespawnInvulnerability( );
-			}
-			// For sp, just make us vulnerable again without the timeout and fancy-dancy
-			// model alpha thingy.
-			else
-			{
-				// Need to be invulnerable until we're loaded.
-				m_damage.SetCanDamage( true );
+
+				LTVector vPos;
+				LTRotation rRot;
+				g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+				const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+				if( pModel && m_bTronUnknown31c9 < pModel->m_vecColorRezInFX.size( ))
+				{
+					PlayClientFX( const_cast<char*>( pModel->m_vecColorRezInFX[m_bTronUnknown31c9].c_str( )), LTNULL, &vPos, &rRot );
+				}
+
+				g_pServerSoundMgr->PlaySoundFromPos( vPos, PLAYER_RESPAWN_SOUND,
+					600.0f, SOUNDPRIORITY_MISC_HIGH );
 			}
 
 			// Add stimuli back now that we are revived, so that AI can see us again.
@@ -3293,31 +3424,6 @@ void CPlayerObj::SetClientLoaded( bool bLoaded )
 
 			// Restore all our flags so we make sure we didn't miss any.
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, m_dwFlags, FLAGMASK_ALL);
-
-			// Re-enable our hitbox.
-			g_pCommonLT->SetObjectFlags( m_hHitBox, OFT_Flags, FLAG_RAYHIT | FLAG_TOUCHABLE, FLAG_RAYHIT | FLAG_TOUCHABLE );
-
-			// Teleport to our same position so we put ourselves back into containers.
-			LTVector vPos;
-			g_pLTServer->GetObjectPos( m_hObject, &vPos );
-			g_pLTServer->TeleportObject( m_hObject, &vPos );
-		}
-		else
-		{
-			// Unhide our dead body.  We can't just call hidecharacter, because this is used
-			// to hide/unhide everything about the character.
-			if( m_hDeadBody )
-			{
-				Body* pBody = dynamic_cast< Body* >( g_pLTServer->HandleToObject( m_hDeadBody ));
-				if( pBody )
-				{
-					pBody->HideBody( false );
-				}
-				else
-				{
-					ASSERT( !"CPlayerObj::SetClientLoaded:  Invalid body." );
-				}
-			}
 		}
 	}
 	else
@@ -3325,37 +3431,9 @@ void CPlayerObj::SetClientLoaded( bool bLoaded )
 		// Hide the character when the client isn't loaded, and unhide
 		// it when they become loaded.
 		HideCharacter( true );
-		
-		if( IsMultiplayerGame( ))
-		{
-			// Force us into normal mode (this fixes a bug with switching models
-			// when riding vehicles)...
-			SetPhysicsModel(PPM_NORMAL);
-		}
-
-		// Make us non-solid until we're loaded.
-		// [RP] 1/28/03 - Touch Notify is needed for propper physics collision.
-
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_TOUCH_NOTIFY, FLAG_SOLID | FLAG_TOUCH_NOTIFY );
-
-		// Disable our hitbox.
-		g_pCommonLT->SetObjectFlags( m_hHitBox, OFT_Flags, 0, FLAG_RAYHIT | FLAG_TOUCHABLE );
-
-		// Teleport to our same position so we remove ourselves from containers.
-		LTVector vPos;
-		g_pLTServer->GetObjectPos( m_hObject, &vPos );
-		g_pLTServer->TeleportObject( m_hObject, &vPos );
-
-		// Need to be invulnerable until we're loaded.
-		m_damage.SetCanDamage( false );
 
 		RemovePersistentStimuli( );
 	}
-
-	// Don't show up on radar until we're loaded.
-	bool bRadarVisible = ( bLoaded && ( g_pGameServerShell->GetGameType() != eGameTypeDeathmatch && 
-		g_pGameServerShell->GetGameType() != eGameTypeSingle ));
-	SetRadarVisible( bRadarVisible );
 }
 
 
@@ -3588,6 +3666,13 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 						 GameStartPoint* pStartPoint /*=LTNULL*/, GameBase* pSpawnAt /*=LTNULL*/)
 {
 	m_bRespawnCalled = LTTRUE;
+	m_pLastStartPoint = LTNULL;
+
+	// RETAIL: 0x1007da7f. Respawning ends god mode.
+	if( m_bGodMode )
+	{
+		ToggleGodMode();
+	}
 
     if ( !GetClient( ) )
 	{
@@ -3600,7 +3685,6 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	{
 		CAutoMessage cLoadMsg;
 		cLoadMsg.Writeuint8( MID_PLAYER_LOADCLIENT );
-		cLoadMsg.Writeuint32( g_pVersionMgr->GetCurrentSaveVersion( ) );	// PORT: no save version member in Tron
 		cLoadMsg.WriteMessage( m_pClientSaveData );
 		SetClientSaveData( NULL );
 		g_pLTServer->SendToClient(cLoadMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
@@ -3613,11 +3697,6 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// Respawning from a save game.  Load will do all the work.
 	if( m_dwLastLoadFlags == LOAD_RESTORE_GAME )
 	{
-		if (IsMultiplayerGame())
-		{
-			//our current skill set might be different than what's been saved...
-			ResetMultiplayerSkills();
-		}
 		return;
 	}
 	
@@ -3635,14 +3714,11 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		return;
 	}
 
-	// PORT: no team change requests in Tron (no member for one)
-
 	// When respawning within the same level we must clear out our weapons.  This
 	// flag will be zero after the first update.
 	bool bRespawningAfterDeath = ( m_dwLastLoadFlags == 0 );
 	if( bRespawningAfterDeath )
 	{
-		// RETAIL: 0x1007dba0 has no NOLF2 revivable body here.
 		if( m_pPlayerAttachments )
 			m_pPlayerAttachments->DeselectWeapon();
 		
@@ -3668,9 +3744,10 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 
 	ResetObjectRelationMgr();
 
-	// Get a start point...
+	// Get a start point...  RETAIL: only when the caller gives no place to
+	// spawn at (0x1007dc1b).
 
-	GameStartPoint* pStartPt = bGetStartPt ? g_pGameServerShell->FindStartPoint(this) : LTNULL;
+	GameStartPoint* pStartPt = (bGetStartPt && !pStartPoint && !pSpawnAt) ? g_pGameServerShell->FindStartPoint(this) : LTNULL;
 
     LTVector vPos(0, 0, 0);
 
@@ -3685,47 +3762,73 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		if (!IsMultiplayerGame())
 		{
 			m_eModelId = pStartPt->GetPlayerModelId();
-			m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
 		}
 
-		SetPhysicsModel(pStartPt->GetPlayerPhysicsModel());
+		SetPhysicsModel(PPM_NORMAL);
+
+		pStartPt->SetInUse(true);
+		m_pLastStartPoint = pStartPt;
+	}
+	else if (pStartPoint)
+	{
+		g_pLTServer->GetObjectPos(pStartPoint->m_hObject, &vPos);
+	}
+	else if (pSpawnAt)
+	{
+		g_pLTServer->GetObjectPos(pSpawnAt->m_hObject, &vPos);
 	}
 	else
 	{
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );
 	}
 
-	if (IsMultiplayerGame( ))
+	// RETAIL: no tele-frag in the light cycle game (0x1007dcd7).
+	if (IsMultiplayerGame( ) && GetGameType() != eGameTypeMultiplayerLightcycles)
 	{
 		TeleFragObjects(vPos);
 	}
 
 
-	if (pStartPt)
+	if (pStartPt || pStartPoint || pSpawnAt)
 	{
 		// Inform the client of the correct camera/player orientation...
 
-        LTVector vVec = pStartPt->GetPitchYawRoll();
+        LTVector vVec;
+
+		if (pStartPt)
+		{
+			vVec = pStartPt->GetPitchYawRoll();
+
+			// Get start point command string...
+
+			HSTRING hstrCommand = pStartPt->GetCommand();
+
+			if (hstrCommand)
+			{
+				m_sStartLevelCommand = g_pLTServer->GetStringData(hstrCommand);
+
+				if (IsMultiplayerGame() && pStartPt->SendCommandOnRespawn())
+				{
+					m_bSendStartLevelCommand = true;
+				}
+			}
+		}
+		else if (pStartPoint)
+		{
+			vVec = pStartPoint->GetPitchYawRoll();
+		}
+		else
+		{
+			// RETAIL: 0x1007dd0e: the object to spawn at is a spectator
+			// object (CGameServerShell::HandleMultiplayerInit, 0x100df74c).
+			vVec = static_cast<SpectatorObject*>( pSpawnAt )->GetPitchYawRoll();
+		}
 		
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_PLAYER_ORIENTATION );
 		cMsg.Writeuint8( MID_ORIENTATION_ALL );
 		cMsg.WriteLTVector( vVec );
 		g_pLTServer->SendToClient(cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
-
-		// Get start point command string...
-
-		HSTRING hstrCommand = pStartPt->GetCommand();
-
-		if (hstrCommand)
-		{
-            m_sStartLevelCommand = g_pLTServer->GetStringData(hstrCommand);
-
-			if (IsMultiplayerGame() && pStartPt->SendCommandOnRespawn())
-			{
-				m_bSendStartLevelCommand = true;
-			}
-		}
 	}
 
 	g_pLTServer->SetObjectPos(m_hObject, &vPos);
@@ -3733,15 +3836,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 
 	// Make sure we start on the ground...
 
-	MoveObjectToFloor(m_hObject);
-
-
-	// Play the respawn sound if multiplayer...
-
-	if (IsMultiplayerGame( ))
+	if (!pSpawnAt)
 	{
-		g_pServerSoundMgr->PlaySoundFromPos(vPos, PLAYER_RESPAWN_SOUND,
-			600.0f, SOUNDPRIORITY_MISC_HIGH);
+		MoveObjectToFloor(m_hObject);
 	}
 
 
@@ -3751,7 +3848,13 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	CreateSpecialFX(LTTRUE);
 
 
-	ResetPlayer();
+	// RETAIL: the disc and light cycle games keep the player as it is
+	// (0x1007deb4).
+	if (!IsDiscGameType() && GetGameType() != eGameTypeMultiplayerLightcycles)
+	{
+		ResetPlayer();
+	}
+
 	if (GetState() == PS_DEAD)
 	{
 		// Always make sure we respawn to the live state.
@@ -3760,7 +3863,11 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	}
 
 
-	if( !bRespawningAfterDeath )
+	if (IsDiscGameType())
+	{
+		TronUnknownVirtual130( pStartPoint, bRespawningAfterDeath );
+	}
+	else if( !bRespawningAfterDeath )
 	{
 		if( m_bNewMission )
 		{
@@ -3775,11 +3882,14 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// We are respawning within the same level.
 	else
 	{
-		ResetInventory();
+		ResetInventory(LTTRUE, LTFALSE);
 
 		// Get the mission and level defaults.
 		AcquireCurrentLevelDefaults();
+	}
 
+	if( bRespawningAfterDeath )
+	{
 		// Consider our client already loaded.
 		SetClientLoaded( true );
 	}
@@ -3795,6 +3905,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// For now, set the permission set to 0 (no permissions) till we have
 	// a method for setting it properly.
 	m_iPermissionSet = 0;
+
+	// RETAIL: 0x1007df63
+	RemoveBody();
 
 	// Tell clients we have been respawned...
 
@@ -3819,9 +3932,8 @@ void CPlayerObj::Revive()
 	if( !IsMultiplayerGame() || !m_hClient )
 		return;
 
-	// Make us invulnerable for a bit.
-	if( g_pGameServerShell->GetGameType() == eGameTypeCooperative )
-		SetRespawnInvulnerability( );
+	// Make us invulnerable for a bit.  RETAIL: in every game type (0x1007e07e)
+	SetRespawnInvulnerability( );
 
 	// not needed?
 	m_bRespawnCalled = LTTRUE;
@@ -3851,9 +3963,7 @@ void CPlayerObj::Revive()
 	// Duck, so we know we can fit here..
 	m_Animator.SetMovement(CAnimatorPlayer::eCrouching);
 	
-	// Center our lean...
-	m_Animator.SetLean( CAnimatorPlayer::eCenter );
-	
+	// RETAIL: no lean to center (0x1007e0ff)
 	m_Animator.Update();
 
 	// Reset the main tracker to make sure we lose any special animations we were playing when we died...
@@ -3881,48 +3991,17 @@ void CPlayerObj::Revive()
 
 	UpdateClientPhysics();
 
-	// Revive us at the position we died...
+	// Revive us at the position we died...  RETAIL: Tron has no dead body
+	// to move to (0x1007e170)
 
     LTVector vPos;
 	g_pLTServer->GetObjectPos( m_hObject, &vPos );
 
-
-	// Use our dead body's position if it moved...
-
-	if (m_hDeadBody)
-	{
-		LTVector vBodyPos;
-		g_pLTServer->GetObjectPos( m_hDeadBody, &vBodyPos );
-
-		// Only move our object if our body actually moved.  We'll worry
-		// about changes in x/z only and ignore changes in y...
-
-		LTVector vTestPos1 = vBodyPos;
-		LTVector vTestPos2 = vPos;
-		vTestPos1.y = vTestPos2.y = 0.0f;
-		if (vTestPos1.NearlyEquals(vTestPos2, 1.0f) == false)
-		{
-			LTVector vDims;
-			g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
-
-			// Note: since the Body is above the ground this will actually
-			// move us up a little too high...MoveObjectToFloor below will
-			// move us back down...
-
-			vBodyPos.y += vDims.y; 
-			g_pLTServer->SetObjectPos(m_hObject, &vBodyPos);
-		}
-	}
-
-	// Filter out our dead body if we have one...
-	HOBJECT hFilter[] = { m_hObject, m_hDeadBody, LTNULL };
-
-	MoveObjectToFloor(m_hObject, hFilter);
+	MoveObjectToFloor(m_hObject);
 	TeleportClientToServerPos();
 
 	// Play the respawn sound...
 
-	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pServerSoundMgr->PlaySoundFromPos(vPos, PLAYER_RESPAWN_SOUND,
 			600.0f, SOUNDPRIORITY_MISC_HIGH);
 	
@@ -4143,6 +4222,8 @@ void CPlayerObj::AcquireDefaultWeapon()
 	if( !m_pPlayerAttachments )
 		return;
 
+	TronUnknownVirtual128( pWeaponData );	// RETAIL: 0x1007e7f5
+
 	m_pPlayerAttachments->ObtainWeapon(pWeaponData->nId, pAmmoData->nId, pAmmoData->nSpawnedAmount, LTTRUE);
 	nNewWeapon = g_pWeaponMgr->GetCommandId(pWeaponData->nId);
 	if( nNewWeapon < 0)
@@ -4158,6 +4239,16 @@ void CPlayerObj::AcquireDefaultWeapon()
 	cClientMsg.Writeuint8(0);
 	cClientMsg.Writefloat(0.0f);
 	g_pLTServer->SendToClient(cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
+
+	// RETAIL: then every player weapon (0x1007e927)
+	for( int nCommandId = g_pWeaponMgr->GetFirstWeaponCommandId( ); nCommandId <= g_pWeaponMgr->GetLastWeaponCommandId( ); nCommandId++ )
+	{
+		WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( g_pWeaponMgr->GetWeaponId( nCommandId ));
+		if( pWeapon )
+		{
+			AcquireWeapon( pWeapon->szName, false );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -4788,17 +4879,45 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		return s_FileBuffer;
 	}
 
-	DTINFO const* pInfo = GetDTINFO( eType );
-	if( !pInfo )
-		return NULL;
-
-	// PORT: Tron's DTINFO has no damage sounds (Shared/DamageTypes.h): the
-	// pain sounds are NOLF2's default ones
+	// RETAIL: Tron's sounds by damage type (0x10080300), as Build 51's
+	// single player ones; no sound for a stun
+	switch (eType)
 	{
-		char const* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
+		case DT_CHOKE:
+		{
+			char* ChokeSounds[] = { "choke01.wav", "choke02.wav" };
 
-		int nSize = ARRAY_LEN(PainSounds) - 1;
-		strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
+			int nSize = (sizeof(ChokeSounds)/sizeof(ChokeSounds[0])) - 1;
+			strcat(s_FileBuffer, ChokeSounds[GetRandom(0, nSize)]);
+		}
+		break;
+
+		case DT_ELECTROCUTE:
+		{
+			char* Sounds[] = { "Electrocute.wav" };
+
+			int nSize = (sizeof(Sounds)/sizeof(Sounds[0])) - 1;
+			strcat(s_FileBuffer, Sounds[GetRandom(0, nSize)]);
+		}
+		break;
+
+		case DT_STUN:
+		{
+			// No pain sound for these...
+			return LTNULL;
+		}
+		break;
+
+		// RETAIL: the switch is a jump table (0x10080314) with an index for
+		// the types 4 to 12; sleeping takes the pain sounds. Ours compiles
+		// to compares (near).
+		default:
+		{
+			char* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
+
+			int nSize = (sizeof(PainSounds)/sizeof(PainSounds[0])) - 1;
+			strcat(s_FileBuffer, PainSounds[GetRandom(0, nSize)]);
+		}
 	}
 
 	return s_FileBuffer;
@@ -4869,16 +4988,19 @@ char* CPlayerObj::GetDeathSound()
 
 void CPlayerObj::UpdateAirLevel()
 {
+	// RETAIL: Tron's air times and damage are constants, no server bute
+	// (0x100804d0: 100/15, 5.0 and 100/2.5). The names are ours.
+	const LTFLOAT kfFullAirLostTime		= 15.0f;
+	const LTFLOAT kfAirLostDamage		= 5.0f;
+	const LTFLOAT kfFullAirRegenTime	= 2.5f;
+
     LTFLOAT fDeltaTime = g_pLTServer->GetFrameTime();
 
 	// See if we are in a liquid...
 
 	if (IsLiquid(m_eContainerCode) && !m_damage.HasAirSupply())
 	{
-		LTFLOAT fFullAirLostTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_FULLAIRLOSTTIME);
-        if (fFullAirLostTime <= 0.0f) return;
-
-		LTFLOAT fDeltaAirLoss	 = (MAX_AIR_LEVEL/fFullAirLostTime);
+		LTFLOAT fDeltaAirLoss	 = (MAX_AIR_LEVEL/kfFullAirLostTime);
 
 		m_fAirLevel -= fDeltaTime*fDeltaAirLoss;
 
@@ -4886,9 +5008,7 @@ void CPlayerObj::UpdateAirLevel()
 		{
 			m_fAirLevel = 0.0f;
 
-			LTFLOAT fAirLostDamage = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_AIRLOSSDAMAGE);
-	        
-			LTFLOAT fDamage = fAirLostDamage*fDeltaTime;
+			LTFLOAT fDamage = kfAirLostDamage*fDeltaTime;
 
 			DamageStruct damage;
 
@@ -4902,10 +5022,7 @@ void CPlayerObj::UpdateAirLevel()
 	}
 	else if (m_fAirLevel < MAX_AIR_LEVEL)
 	{
- 		LTFLOAT fFullAirRegenTime = g_pServerButeMgr->GetPlayerAttributeFloat(PLAYER_BUTE_FULLAIRREGENTIME);
-        if (fFullAirRegenTime <= 0.0f) return;
-
-		LTFLOAT fDeltaAirRegen = (MAX_AIR_LEVEL/fFullAirRegenTime);
+		LTFLOAT fDeltaAirRegen = (MAX_AIR_LEVEL/kfFullAirRegenTime);
 		m_fAirLevel += fDeltaTime*fDeltaAirRegen;
 	}
 }
@@ -5090,15 +5207,19 @@ void CPlayerObj::SetVisibleToEnemyAI( CAI* pAI, bool bVis )
 
 LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 {
-	if (m_eState != PS_ALIVE) return LTFALSE;
+	// RETAIL: Tron's order (0x10080930): the pause test first, the bute
+	// manager, the surface before the target.
 
 	// Not allowed to do any activating when paused.
 	uint32 dwFlags = 0;
-	g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags );
-	if ( dwFlags & FLAG_PAUSED )
+	if ( LT_OK == g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags ) && ( dwFlags & FLAG_PAUSED ))
 	{
 		return LTFALSE;
 	}
+
+	if (!g_pServerButeMgr) return LTFALSE;
+
+	if (m_eState != PS_ALIVE) return LTFALSE;
 
 	// First see if a cinematic is running...If so, try and stop it...
 
@@ -5121,9 +5242,19 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 	// RETAIL: 0x100809aa tests the drop flag only (no NOLF2 CanDropObject)
 	if( m_hCarriedObject && m_bCanDropBody && pData->m_nType == MID_ACTIVATE_MOVE )
 	{
-		if( !DropCarriedObject( ) )
+		return DropCarriedObject( ) ? LTTRUE : LTFALSE;
+	}
+
+	if (pData->m_nSurfaceType != ST_UNKNOWN)
+	{
+		SURFACE *pSurf = g_pSurfaceMgr->GetSurface((SurfaceType)pData->m_nSurfaceType);
+
+		// See if the surface we tried to activate has an activation
+		// sound...If so, play it...
+		if (pSurf && pSurf->szActivationSnd[0] && pSurf->fActivationSndRadius > 0)
 		{
-			return LTFALSE;
+			g_pServerSoundMgr->PlaySoundFromPos(pData->m_vIntersect, pSurf->szActivationSnd,
+						pSurf->fActivationSndRadius, SOUNDPRIORITY_PLAYER_LOW);
 		}
 
 		return LTTRUE;
@@ -5154,9 +5285,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 				//you can't pick it up  if you're crouching so go away
 				if ( m_Animator.GetLastMovement() == CAnimatorPlayer::eCrouching )
 					return LTFALSE;
-
-				uint32 dwFlags;
-				g_pCommonLT->GetObjectFlags( pData->m_hTarget, OFT_User, dwFlags );
 
 				//if the target isn't a body, we can't move it
 				if (IsKindOf(pData->m_hTarget, "Body"))
@@ -5249,22 +5377,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 			break;
 		}
     }
-
-	if (pData->m_nSurfaceType != ST_UNKNOWN)
-	{
-		SURFACE *pSurf = g_pSurfaceMgr->GetSurface((SurfaceType)pData->m_nSurfaceType);
-
-		// See if the surface we tried to activate has an activation
-		// sound...If so, play it...
-		if (pSurf && pSurf->szActivationSnd[0] && pSurf->fActivationSndRadius > 0)
-		{
-			g_pServerSoundMgr->PlaySoundFromPos(pData->m_vIntersect, pSurf->szActivationSnd,
-						pSurf->fActivationSndRadius, SOUNDPRIORITY_PLAYER_LOW);
-		}
-
-		return LTTRUE;
-	}
-	
 
     return LTFALSE;
 }
@@ -5652,10 +5764,18 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 		LOAD_BYTE( m_aSubroutines[i].nTronUnknown42 );
 	}
 
-	// PORT: retail then copies the names of the subroutines the server's
-	// subroutine list flags (a retail-only manager, 0x10376d9c, with a vector
-	// of 0x48-byte entries at +0x111c) over the slots, in order (retail
-	// 0x1008198d); not written yet
+	// RETAIL: the subroutines the server's list flags take the first slots,
+	// in order (0x1008198d)
+	uint16 nNumSubroutines = g_pServerSubroutineMgr->m_lstSubroutines.size( );
+	int nSlot = 0;
+	for( uint32 nSub = 0; nSub < nNumSubroutines; nSub++ )
+	{
+		if( g_pServerSubroutineMgr->m_lstSubroutines[nSub].bFunction )
+		{
+			strcpy( m_aSubroutines[nSlot].szName, g_pServerSubroutineMgr->m_lstSubroutines[nSub].szName );
+			nSlot++;
+		}
+	}
 
 	m_fLastClientUpdateTime = 0.0f;
 }
@@ -6398,6 +6518,7 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 
 	// extract the extra (weapon specific) data from the message
 	GetExtraFireMessageInfo( nWeaponType, pMsg, &weaponFireInfo );
+	TronUnknownVirtual114( pMsg, &weaponFireInfo );	// RETAIL: 0x10082a47
 
 
 	// Read out the object impact info
@@ -6409,36 +6530,18 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 	// If this is a gadget, tell the activated object it was activated...
-
-	bool bChangedAmmoType = false;
+	// RETAIL: no welder in Tron (0x10082ace)
 
 	if (pAmmoData->eType == GADGET)
 	{
- 		if (weaponFireInfo.hClientObjImpact)
+ 		if (!weaponFireInfo.hClientObjImpact)
  		{
- 			char buf[100];
- 			sprintf(buf, "Gadget %d", pAmmoData->nId);
- 			SendTriggerMsgToObject(this, weaponFireInfo.hClientObjImpact, LTFALSE, buf);
- 		}
- 		else
- 		{
- 			// [KLS 8/13/02] If we're using the welder, change the ammo to welder 
- 			// burn so we can damage other objects...
+			return;
+		}
 
- 			if (pAmmoData->eInstDamageType == DT_GADGET_WELDER)
- 			{
- 				bChangedAmmoType = true;
-				AMMO const* pTempAmmoData = g_pWeaponMgr->GetAmmo("WelderBurn");
- 				if (pTempAmmoData)
- 				{
- 					pWeapon->SetAmmoId(pTempAmmoData->nId);
- 				}
- 			}
- 			else
- 			{
- 				return;
- 			}
- 		}
+		char buf[100];
+		sprintf(buf, "Gadget %d", pAmmoData->nId);
+		SendTriggerMsgToObject(this, weaponFireInfo.hClientObjImpact, LTFALSE, buf);
 	}
 
 
@@ -6451,24 +6554,20 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 
+	// RETAIL: the shot carries the player's relations (0x10082b62)
+	weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetRelationData() );
+
 	// RETAIL: Tron's only spends the ammo when the weapon's fire delay has
-	// not passed since its last shot (0x10082b6b..0x10082ba1). PORT: the
-	// time is the server's (retail's comes from a local not yet identified)
-	if (g_pLTServer->GetTime() - pWeapon->GetLastFireTime() <= pWeapon->GetWeaponData()->m_fFireDelay)
-	{
-		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
-	}
-	else
+	// not passed between the weapon's last shot and the shot's fire time
+	// (0x10082b6b..0x10082ba1)
+	if (weaponFireInfo.fFireTime - pWeapon->GetLastTimestamp() > pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		pWeapon->Fire(weaponFireInfo);
 	}
-
- 	// [KLS 8/13/02] Change ammo type back to correct ammo type...
- 
- 	if (bChangedAmmoType)
- 	{
- 		pWeapon->SetAmmoId(nAmmoId);
- 	}
+	else
+	{
+		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
+	}
 
 
 	ClearHiding();
@@ -6495,6 +6594,8 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
         cSoundMsg.Writeuint8(nWeaponId);
         cSoundMsg.Writeuint8(nClientID);
 		cSoundMsg.WriteCompPos(weaponFireInfo.vFirePos);
+		cSoundMsg.Writefloat(1.0f);		// RETAIL: Tron's (0x10082c5f)
+		cSoundMsg.Writebool(false);
 		g_pLTServer->SendSFXMessage(cSoundMsg.Read(), weaponFireInfo.vFirePos, 0);
 	}
 
@@ -7145,6 +7246,17 @@ void CPlayerObj::SetPhysicsModel(PlayerPhysicsModel eModel, LTBOOL bUpdateClient
 
 void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 {
+	// RETAIL: Tron's (0x10083ed0): the client sends the object's rotation,
+	// the light cycle has no vehicle model, the model is hidden and not
+	// solid.
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_YROTATION );
+	uint32 dwClientFlags = g_pLTServer->GetClientInfoFlags( m_hClient );
+	dwClientFlags |= CIF_SENDCOBJROTATION;
+	g_pLTServer->SetClientInfoFlags( m_hClient, dwClientFlags );
+
+	if (eModel == PPM_LIGHTCYCLE)
+		return;
+
 	// Create the vehicle model...
 
 	if (!m_hVehicleModel)
@@ -7153,9 +7265,8 @@ void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 		// not be accurate untill you are actually on the vehicle...
 		
         LTVector vPos;
-        g_pLTServer->GetObjectPos(m_hObject, &vPos);
-		
 		LTRotation rPlayerRot;
+        g_pLTServer->GetObjectPos(m_hObject, &vPos);
 		g_pLTServer->GetObjectRotation(m_hObject, &rPlayerRot);
 
 		LTRotation rRot = m_rFullPlayerRot.IsIdentity() ? rPlayerRot : m_rFullPlayerRot;
@@ -7179,12 +7290,12 @@ void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
     const char* pSocket = "Snowmobile";
 
 	HATTACHMENT hAttachment;
-    if( LT_OK != g_pLTServer->CreateAttachment(m_hObject, m_hVehicleModel, (char *)pSocket,
-												&vOffset, &rOffset, &hAttachment) )
-	{
-		ASSERT( !"CreateAttachment() failed." );
-		g_pLTServer->CPrint( "Failed to attach Snowmobile.  Check the socket on the player model!" );		
-	}
+    g_pLTServer->CreateAttachment(m_hObject, m_hVehicleModel, (char *)pSocket,
+		&vOffset, &rOffset, &hAttachment);
+
+	g_pCommonLT->SetObjectFlags( m_hVehicleModel, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3 );
+	g_pCommonLT->SetObjectFlags( m_hVehicleModel, OFT_Flags, FLAG_FORCEOPTIMIZEOBJECT,
+		FLAG_FORCEOPTIMIZEOBJECT | FLAG_GRAVITY | FLAG_SOLID | FLAG_RAYHIT );
 }
 
 
@@ -7543,14 +7654,15 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject )
 				vPos.x += vForward.x * 4.0f;
 				vPos.z += vForward.z * 4.0f;
 
+				// RETAIL: the hit box through the hit box user (0x10084a49)
 				g_pLTServer->SetObjectPos(pChar->m_hObject, &vPos);
-				g_pLTServer->SetObjectPos(pChar->GetHitBox(), &vPos);
+				g_pLTServer->SetObjectPos(pChar->GetHitBoxObject(), &vPos);
 				g_pLTServer->SetObjectRotation(pChar->m_hObject, &rRot);
-				g_pLTServer->SetObjectRotation(pChar->GetHitBox(), &rRot);
+				g_pLTServer->SetObjectRotation(pChar->GetHitBoxObject(), &rRot);
 
 				LTVector vDims;
 				g_pPhysicsLT->GetObjectDims(pChar->m_hObject, &vDims);
-				g_pPhysicsLT->SetObjectDims(pChar->GetHitBox(), &vDims,0);
+				g_pPhysicsLT->SetObjectDims(pChar->GetHitBoxObject(), &vDims,0);
 
 				//send the telport message so that the AI's position is updated immediately
 				char szMsg[128];
@@ -7607,10 +7719,9 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject )
 }
 
 
-bool CPlayerObj::IsCarryingHeavyObject() 
-{
-	return ( IsCarrying() && (m_pcs->nCarrying == CFX_CARRY_BODY || m_pcs->nCarrying == CFX_CARRY_DD_CORE));
-}
+// RETAIL: no IsCarryingHeavyObject in Tron: the commands update asks
+// IsCarrying (0x1007bcb8).
+
 
 
 // ----------------------------------------------------------------------- //
@@ -7805,9 +7916,10 @@ bool CPlayerObj::DropCarriedObject( )
 
 			pAI->SetBeingCarried( false );
 
-			if( pAI->GetHitBox() )
+			// RETAIL: through the hit box user (0x1008513b)
+			if( pAI->GetHitBoxObject() )
 			{
-				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
+				g_pCommonLT->SetObjectFlags(pAI->GetHitBoxObject(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
 			}
 		}
 	}
@@ -7832,12 +7944,12 @@ bool CPlayerObj::DropCarriedObject( )
 
 bool CPlayerObj::PickupObject( HOBJECT hObject )
 {
+	// RETAIL: Tron's (0x100851b0): no user flags read, an AI is taken
+	// before it is asked for (no test for an AI carried already)
+
 	// Make sure we don't already have a carried object...
 	if( m_hCarriedObject || !hObject )
 		return false;
-
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( hObject, OFT_User, dwFlags );
 
 	if (IsKindOf(hObject,"Body"))
 	{
@@ -7853,19 +7965,14 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 	}
 	else if (IsKindOf(hObject,"CAIHuman"))
 	{
+		g_pCommonLT->SetObjectFlags(hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
+
+		ShowObjectAttachments(hObject,false);
+		SetCarriedObject(hObject);
+
 	    CAIHuman *pAI = dynamic_cast<CAIHuman*>(g_pLTServer->HandleToObject(hObject));
 		if( pAI )
 		{
-			// Don't try and carry a body that is already being carried...
-
-			if( pAI->BeingCarried() )
-				return false;						
-
-			g_pCommonLT->SetObjectFlags(hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
-
-			ShowObjectAttachments(hObject,false);
-			SetCarriedObject(hObject);
-
 			CAIGoalSpecialDamage* pGoal = (CAIGoalSpecialDamage*)pAI->GetGoalMgr()->FindGoalByType( kGoal_SpecialDamage );
 			if( pGoal )
 			{
@@ -7874,9 +7981,10 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 
 			pAI->SetBeingCarried( true );
 
-			if( pAI->GetHitBox() )
+			// RETAIL: through the hit box user (0x100852cb)
+			if( pAI->GetHitBoxObject() )
 			{
-				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, 0, FLAG_RAYHIT);
+				g_pCommonLT->SetObjectFlags(pAI->GetHitBoxObject(), OFT_Flags, 0, FLAG_RAYHIT);
 			}
 		}
 	}
@@ -8950,15 +9058,22 @@ bool CPlayerObj::CanRevive( )
 
 void CPlayerObj::RemoveProjectiles()
 {
+	// RETAIL: loops over the total found, not over the objects the array
+	// holds (0x100863c3; see RETAIL_BUGS.md)
 	ObjArray<HOBJECT, 50> objArray;
-	g_pLTServer->FindNamedObjects("TronProjectile", objArray);
+	uint32 nTotalFound;
+	g_pLTServer->FindNamedObjects("TronProjectile", objArray, &nTotalFound);
 
+#ifdef TRON20SRC_MODERN
 	for (uint32 i = 0; i < objArray.NumObjects(); i++)
+#else
+	for (uint32 i = 0; i < nTotalFound; i++)
+#endif // TRON20SRC_MODERN
 	{
 		HOBJECT hProjectile = objArray.GetObject(i);
 		CTronProjectile* pProjectile = dynamic_cast<CTronProjectile*>(g_pLTServer->HandleToObject(hProjectile));
 
-		if (pProjectile->GetFiredFrom() == m_hObject)
+		if (m_hObject == pProjectile->GetFiredFrom())
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint32(MID_PROJECTILE);

@@ -29,6 +29,10 @@ class SpectatorObject : public GameBase
 		// RETAIL: CGameServerShell (0x100df723) looks for the primary one
 		bool		IsPrimary() const { return m_bPrimary; }
 
+		// RETAIL: CPlayerObj::Respawn (0x1007dd0e) turns a player spawned at
+		// the object to its angles. The name is ours
+		LTVector	GetPitchYawRoll() const { return m_vPitchYawRoll; }
+
 	protected :
 
 		virtual uint32	EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData);
