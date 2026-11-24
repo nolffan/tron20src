@@ -1594,7 +1594,8 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 {
     if (!g_pLTServer || !pStruct) return;
 
-    const char* pFilename   = g_pModelButeMgr->GetModelFilename(m_eModelId);
+	// RETAIL: 0x1012afbc, Tron's AI takes the multiplayer model file.
+    const char* pFilename   = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 
 	if (pFilename && pFilename[0])
 	{
@@ -1604,7 +1605,25 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 	g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
 	g_pModelButeMgr->CopyRenderStyleFilenames(m_eModelId, pStruct);
-	
+
+	// RETAIL: 0x1012b011, build 51's default search times.
+
+	float fMin,fMax;
+	bool bChangeTimes = false;
+	m_pSearch->GetSearchTimes(fMin,fMax);
+	if (fMin < 0.0f)
+	{
+		bChangeTimes = true;
+		fMin = g_pModelButeMgr->GetModelMinSearchTime(m_eModelId);
+	}
+	if (fMax < 0.0f)
+	{
+		bChangeTimes = true;
+		fMax = g_pModelButeMgr->GetModelMaxSearchTime(m_eModelId);
+	}
+	if (bChangeTimes)
+		m_pSearch->SetSearchTimes(fMin,fMax);
+
 
 	// Add all our editables
 
