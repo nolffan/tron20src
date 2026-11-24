@@ -143,6 +143,7 @@ VarTrack			g_vtShowSoundFilterInfo;
 VarTrack			g_vtCSendRateMin;	// RETAIL: Tron's, as Contract J.A.C.K.'s
 
 extern VarTrack		g_vtUseSoundFilters;
+extern CMoveMgr*	g_pMoveMgr;	// RETAIL: UpdateContainers (0x1012b81c)
 
 // ----------------------------------------------------------------------- //
 //
@@ -4411,8 +4412,13 @@ void CPlayerMgr::UpdateServerPlayerModel()
 
 void CPlayerMgr::UpdateContainers()
 {
+	// RETAIL: 0x1012b7f0: Tron's tests the light cycle's position while it
+	// drives
     LTVector vCamPos;
-	g_pLTClient->GetObjectPos(m_hCamera, &vCamPos);
+	if (m_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics())
+		g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &vCamPos);
+	else
+		g_pLTClient->GetObjectPos(m_hCamera, &vCamPos);
 
     LTVector vScale(1.0f, 1.0f, 1.0f), vLightAdd(0.0f, 0.0f, 0.0f);
 
@@ -4420,10 +4426,6 @@ void CPlayerMgr::UpdateContainers()
 	uint8 nSoundFilterId = 0;
     uint32 dwUserFlags   = USRFLG_VISIBLE;
     m_bUseWorldFog       = LTTRUE;
-
-	// We'll update this below...
-
-	m_bInSafetyNet = false;
 
 	// [KLS 4/16/02] Find container objects that we care about...
 
@@ -4442,24 +4444,14 @@ void CPlayerMgr::UpdateContainers()
 			ContainerCode eTempCode = (ContainerCode)code;
 
 			// Ignore dynamic occluder volumes...
+			// RETAIL: Tron has no safety nets; the first container that is
+			// not a sound filter volume is the one
 			if (CC_DYNAMIC_OCCLUDER_VOLUME != eTempCode)
 			{
-				// [KEF 9/03/02] Allow sound filter volumes to be overridden if needed
-
-				// [KLS 9/07/02] Modified so we look at all the containers on the list,
-				// and save off saftey nets separately...
-
-				if (CC_SAFTEY_NET == eTempCode)
-				{
-					// Don't count this as a normal container as it has one specific
-					// purpose ONLY (protect the player)...
-					m_bInSafetyNet = true;
-				}
-				else if (CC_NO_CONTAINER == eCode || CC_FILTER == eCode)
-				{
-					hContainerObj = objList[i];
-					eCode = eTempCode;
-				}
+				hContainerObj = objList[i];
+				eCode = eTempCode;
+				if (CC_FILTER != eCode)
+					break;
 			}
 		}
 	}
@@ -4481,7 +4473,60 @@ void CPlayerMgr::UpdateContainers()
 			pFX = dynamic_cast<CVolumeBrushFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_VOLUMEBRUSH_ID, hContainerObj));
 		}
 
-		pFX = UpdateVolumeBrushFX(pFX, eCode);
+		// RETAIL: inline in Tron (NOLF2's UpdateVolumeBrushFX): are we
+		// really in a volume brush with a polygrid surface (i.e., water)?
+		// The test position is the one found above.
+
+		if (pFX)
+		{
+			CSpecialFXList* pList = g_pGameClientShell->GetSFXMgr()->GetFXList( SFX_POLYGRID_ID );
+			if( pList )
+			{
+				int nNumPGrids = pList->GetSize();
+				HOBJECT hObj = pFX->GetServerObj();
+
+				// Try and find a polygrid that is the surface of our container...
+
+				for( int i = 0; i < nNumPGrids; ++i )
+				{
+					if( (*pList)[i] )
+					{
+						CPolyGridFX* pPGrid= (CPolyGridFX*)(*pList)[i];
+
+						if( pPGrid->GetVolumeBrush() == hObj )
+						{
+							float fDisplacement;
+							LTVector vIntersection;
+
+							LTRotation rRot;
+							g_pLTClient->GetObjectRotation( m_hCamera, &rRot );
+
+							// Develop a position out and down from the camera to test from...
+
+							LTVector vPos = vCamPos + (rRot.Forward() * 5.0f);
+							vPos.y -= 2.0f;
+
+							// See if we interected the polygrid...
+
+							if( pPGrid->GetOrientedIntersectionHeight( vPos, LTVector(0,1,0), fDisplacement, vIntersection ))
+							{
+								vIntersection.y += fDisplacement;
+
+								// If we are above it clear our container and fx...
+
+								if( vPos.y > vIntersection.y )
+								{
+									eCode = CC_NO_CONTAINER;
+									pFX = LTNULL;
+								}
+							}
+
+							break;
+						}
+					}
+				}
+			}
+		}
 
 		// See if we have entered/left a container...
 
@@ -4597,7 +4642,49 @@ void CPlayerMgr::UpdateContainers()
 
 		m_eCurContainerCode = eCode;
 
-		UpdateSoundFilters(nSoundFilterId);
+		// RETAIL: inline in Tron (NOLF2's UpdateSoundFilters)
+		if (g_vtUseSoundFilters.GetFloat())
+		{
+			if ( m_nSoundFilterId != nSoundFilterId )
+			{
+				m_nSoundFilterId = nSoundFilterId;
+
+				bool bFilterOK = true;
+
+				ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
+				SOUNDFILTER* pFilter = g_pSoundFilterMgr->GetFilter( nSoundFilterId );
+
+				// tell the sound engine about new filter, if a dynamic filter,
+				// use the global sound filter
+				if ( g_pSoundFilterMgr->IsDynamic( pFilter ) )
+				{
+					m_nSoundFilterId = m_nGlobalSoundFilterId;
+				   	pFilter = g_pSoundFilterMgr->GetFilter( m_nGlobalSoundFilterId );
+				}
+
+				if ( !g_pSoundFilterMgr->IsUnFiltered( pFilter ) )
+				{
+					if ( pSoundMgr->SetSoundFilter( pFilter->szFilterName ) == LT_OK )
+					{
+						for (int i=0; i < pFilter->nNumVars; i++)
+						{
+							if ( pSoundMgr->SetSoundFilterParam(pFilter->szVars[i], pFilter->fValues[i]) != LT_OK )
+								bFilterOK = false;
+						}
+					}
+					else
+					{
+						bFilterOK = false;
+					}
+				}
+				else
+				{
+					bFilterOK = false;
+				}
+
+				pSoundMgr->EnableSoundFilter( bFilterOK );
+			}
+		}
 
 		if (m_hContainerSound)
 		{
@@ -4625,162 +4712,6 @@ void CPlayerMgr::UpdateContainers()
 	{
 		UpdateBreathingFX();
 	}
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::UpdateVolumeBrushFX
-//
-//	PURPOSE:	Deterimine if we're really in a VolumeBrush that has
-//				a polygrid surface (i.e., water)
-//
-//	NOTES:		Passed in eCode may be updated
-//
-// --------------------------------------------------------------------------- //
-
-CVolumeBrushFX* CPlayerMgr::UpdateVolumeBrushFX(CVolumeBrushFX* pFX, 
-												ContainerCode & eCode)
-{
-	if (!pFX) return LTNULL;
-
-	// Get the PolyGridFX associated with the VolumeBrush...
-
-	// Get a list of all the poly grids...
-
-	CSpecialFXList* pList = g_pGameClientShell->GetSFXMgr()->GetFXList( SFX_POLYGRID_ID );
-	if( pList )
-	{
-		int nNumPGrids = pList->GetSize();
-		HOBJECT hObj = pFX->GetServerObj();
-
-		// Try and find a polygrid that is the surface of our container...
-		
-		for( int i = 0; i < nNumPGrids; ++i )
-		{
-			if( (*pList)[i] )
-			{
-				CPolyGridFX* pPGrid= (CPolyGridFX*)(*pList)[i];
-
-				if( pPGrid->GetVolumeBrush() == hObj )
-				{
-					float fDisplacement;
-					LTVector vIntersection;
-
-					LTRotation rRot;
-					g_pLTClient->GetObjectRotation( m_hCamera, &rRot );
-
-					LTVector vCamPos;
-					g_pLTClient->GetObjectPos(m_hCamera, &vCamPos);
-
-					// Develop a position out and down from the camera to test from...
-
-					LTVector vPos = vCamPos + (rRot.Forward() * 5.0f);
-					vPos.y -= 2.0f;
-					
-					// See if we interected the polygrid...
-
-					if( pPGrid->GetOrientedIntersectionHeight( vPos, LTVector(0,1,0), fDisplacement, vIntersection ))
-					{
-						vIntersection.y += fDisplacement;
-
-						// If we are above it clear our container and fx...
-						
-						if( vPos.y > vIntersection.y )
-						{
-							eCode = CC_NO_CONTAINER;
-							pFX = LTNULL;
-						}
-					}
-
-					break;
-				}
-			}
-		}
-	}
-
-	return pFX;
-}
-
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CPlayerMgr::UpdateSoundFilters
-//
-//	PURPOSE:	Update sound filters
-//
-// --------------------------------------------------------------------------- //
-
-void CPlayerMgr::UpdateSoundFilters(uint8 nSoundFilterId)
-{
-#ifndef USE_EAX20_HARDWARE_FILTERS
-	return;
-#endif // USE_EAX20_HARDWARE_FILTERS
-
-	if (g_vtUseSoundFilters.GetFloat())
-	{
-		if ( m_nSoundFilterId != nSoundFilterId )
-		{
-			m_nSoundFilterId = nSoundFilterId;
-
-			bool bFilterOK = true;
-
-			ILTClientSoundMgr *pSoundMgr = (ILTClientSoundMgr *)g_pLTClient->SoundMgr();
-			SOUNDFILTER* pFilter = g_pSoundFilterMgr->GetFilter( nSoundFilterId );
-
-			// tell the sound engine about new filter, if a dynamic filter, 
-			// use the global sound filter
-			bool bUsingDynamic = false;
-			if ( g_pSoundFilterMgr->IsDynamic( pFilter ) )
-			{
-				bUsingDynamic = true;
-				m_nSoundFilterId = m_nGlobalSoundFilterId;
-			   	pFilter = g_pSoundFilterMgr->GetFilter( m_nGlobalSoundFilterId );
-			}
-
-			if ( !g_pSoundFilterMgr->IsUnFiltered( pFilter ) )
-			{
-				if ( pSoundMgr->SetSoundFilter( pFilter->szFilterName ) == LT_OK )
-				{
-					for (int i=0; i < pFilter->nNumVars; i++)
-					{
-						if ( pSoundMgr->SetSoundFilterParam(pFilter->szVars[i], pFilter->fValues[i]) != LT_OK )
-							bFilterOK = false;
-					}
-				}
-				else
-				{
-					bFilterOK = false;
-				}
-			}
-			else
-			{
-				bFilterOK = false;
-			}
-
-			pSoundMgr->EnableSoundFilter( bFilterOK );
-
-#ifndef _FINAL
-			if (g_vtShowSoundFilterInfo.GetFloat())
-			{
-				g_pLTClient->CPrint("Entering %s sound filter '%s' (%s)", 
-					((bUsingDynamic && m_eCurContainerCode == CC_NO_CONTAINER)? "(Global)" : ""), pFilter->szName, 
-					(bFilterOK ? "Enabled" : "Disabled"));
-
-				// Display detailed filter info if necessary...
-				if (g_vtShowSoundFilterInfo.GetFloat() > 1 && pFilter)
-				{
-					g_pLTClient->CPrint("  FilterName: '%s'", pFilter->szFilterName);
-					for (int i=0; i < pFilter->nNumVars; i++)
-					{
-						g_pLTClient->CPrint("  '%s' = '%f'", pFilter->szVars[i], pFilter->fValues[i]);
-					}
-				}
-			}
-#endif // _FINAL
-		
-		}
-	}
-
 }
 
 
