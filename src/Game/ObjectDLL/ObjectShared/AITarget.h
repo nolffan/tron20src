@@ -148,6 +148,9 @@ class AbstractTarget : public IRelationChangeObserver
 		void UpdateVisibility();
 
 		HOBJECT GetObject() const { return m_hObject; }
+		// RETAIL: IsValid's test, used by goals on their own target
+		// (CAIGoalAttackProne 0x10212de2). The name is ours.
+		LTBOOL HasObject() { Refresh(); return ( m_hObject != NULL ); }
 		// RETAIL: out of line (0x101e02c0), a dynamic_cast.
         CCharacter* GetCharacter() const;
 

@@ -254,11 +254,12 @@ LTBOOL CAIGoalAttackProne::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		// Need a weapon to activate an attack goal.
 		// Target must be visible.
 
-		m_pAI->Target(pSenseRecord->hLastStimulusSource);
-		if( m_pAI->HasTarget() 
-			&& m_pAI->HasWeapon( kAIWeap_Ranged )
-			&& ( ( m_pAI->GetTarget()->IsVisibleCompletely() ) ||
-				 ( IsAI( m_pAI->GetTarget()->GetVisionBlocker() ) ) ) )
+		// RETAIL: Tron's (0x10212d61) uses the goal's own target, and does
+		// not check for a weapon
+		m_Target.Target(pSenseRecord->hLastStimulusSource);
+		if( m_Target.HasObject() 
+			&& ( ( m_Target.IsVisibleCompletely() ) ||
+				 ( IsAI( m_Target.GetVisionBlocker() ) ) ) )
 		{
 			// Only 1 AI can attack prone at a time.
 
@@ -269,14 +270,14 @@ LTBOOL CAIGoalAttackProne::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 
 			// Do not go prone if target is too close.
 
-			if( m_pAI->GetTarget()->GetVisiblePosition().DistSqr( m_pAI->GetPosition() ) < m_fMinDistSqr )
+			if( m_Target.GetVisiblePosition().DistSqr( m_pAI->GetPosition() ) < m_fMinDistSqr )
 			{
 				return LTFALSE;
 			}
 
 			// Find the direction to the target.
 
-			LTVector vTargetDir = m_pAI->GetTarget()->GetVisiblePosition() - m_pAI->GetPosition();
+			LTVector vTargetDir = m_Target.GetVisiblePosition() - m_pAI->GetPosition();
 			vTargetDir.Normalize();
 
 			// Check if there is a straight line path (in volumes) to the target.
