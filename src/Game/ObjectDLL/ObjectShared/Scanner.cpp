@@ -150,6 +150,15 @@ bool CScanner::DefaultFilterFn(HOBJECT hObj, void *pUserData)
         return false;
 	}
 
+	// RETAIL: Tron's scanners see through projectiles (0x100ece38,
+	// 0x100ecf3c)
+    static HCLASS hProjectile = g_pLTServer->GetClass("CProjectile");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hProjectile))
+	{
+        return false;
+	}
+
 	return LiquidFilterFn(hObj, pUserData);
 }
 
@@ -166,6 +175,15 @@ bool CScanner::BodyFilterFn(HOBJECT hObj, void *pUserData)
     static HCLASS hHitbox = g_pLTServer->GetClass("CCharacterHitBox");
 
     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hHitbox))
+	{
+        return false;
+	}
+
+	// RETAIL: Tron's scanners see through projectiles (0x100ece38,
+	// 0x100ecf3c)
+    static HCLASS hProjectile = g_pLTServer->GetClass("CProjectile");
+
+    if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hProjectile))
 	{
         return false;
 	}
@@ -272,6 +290,9 @@ CScanner::~CScanner()
 	FREE_HSTRING(m_hstrDestroyedFilename);
 	FREE_HSTRING(m_hstrDestroyedSkin);
 	FREE_HSTRING(m_hstrSpotCommand);
+
+	// RETAIL: Tron's (0x100ed329)
+	EnableSensing( LTFALSE );
 
 	debug_delete( m_pObjectRelationMgr );
 }

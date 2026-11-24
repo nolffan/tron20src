@@ -137,13 +137,6 @@ BEGIN_CLASS(ArchiveBin)
 	ADD_PSETS_PROP(PF_GROUP(7))
 END_CLASS_DEFAULT_FLAGS_PLUGIN(ArchiveBin, GameBase, NULL, NULL, 0, CArchiveBinPlugin)
 
-CMDMGR_BEGIN_REGISTER_CLASS( ArchiveBin )
-
-	CMDMGR_ADD_MSG( SELECT, 1, NULL, "SELECT" )
-	CMDMGR_ADD_MSG( DECISIONABORTED, 0, NULL, "DECISIONABORTED" )
-
-CMDMGR_END_REGISTER_CLASS( ArchiveBin, GameBase )
-
 // RETAIL: in .rdata (const arrays), unlike the other strings
 static const char s_szModelTemplateProp[] = "ModelTemplate";
 static const char s_szArchiveBinModel[] = "ArchiveBin";
@@ -152,6 +145,16 @@ static const char s_szBerryClass[] = "Berry";
 static const char s_szPSetBerryModel[] = "PSetBerry";
 static const char s_szSubroutineBerryModel[] = "SubroutineBerry";
 static const char s_szDocumentBerryModel[] = "DocumentBerry";
+static const char s_szFrameModel[] = "ArchiveBin_Frame";
+static const char s_szSelectMsg[] = "SELECT";
+static const char s_szDecisionAbortedMsg[] = "DECISIONABORTED";
+
+CMDMGR_BEGIN_REGISTER_CLASS( ArchiveBin )
+
+	CMDMGR_ADD_MSG( SELECT, 1, NULL, (char*)s_szSelectMsg )
+	CMDMGR_ADD_MSG( DECISIONABORTED, 0, NULL, (char*)s_szDecisionAbortedMsg )
+
+CMDMGR_END_REGISTER_CLASS( ArchiveBin, GameBase )
 
 // ----------------------------------------------------------------------- //
 //
@@ -1263,9 +1266,9 @@ void ArchiveBin::CreateFrame()
 	{
 		g_pModelLT->GetSocketTransform(m_hObject, hSocket, tf, LTTRUE);
 
-		SAFE_STRCPY(ocs.m_Name, "ArchiveBin_Frame");
+		SAFE_STRCPY(ocs.m_Name, s_szFrameModel);
 
-		ModelId eModelId = g_pModelButeMgr->GetModelId("ArchiveBin_Frame");
+		ModelId eModelId = g_pModelButeMgr->GetModelId(s_szFrameModel);
 		if (eModelId < g_pModelButeMgr->GetNumModels())
 		{
 			SAFE_STRCPY(ocs.m_Filename, g_pModelButeMgr->GetMultiModelFilename(eModelId));

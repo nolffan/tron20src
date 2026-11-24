@@ -152,6 +152,7 @@ void CTournamentBracket::SetTeam(int nIndex, const TournamentTeam& team)
 
 bool CTournamentBracket::GetNextMatch(TournamentMatch& match)
 {
+	// RETAIL: the recursion is a jump back to the start (0x1005aa3c)
 	if (m_Ready.empty())
 		return false;
 
