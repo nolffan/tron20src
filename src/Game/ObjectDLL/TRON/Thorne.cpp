@@ -69,10 +69,7 @@ CMDMGR_END_REGISTER_CLASS(CThorne, GameBase)
 CThorne::CThorne()
 	: GameBase(OT_NORMAL)
 	, m_eState(kThorneAnim_CreateBall)
-	, m_fChargeStartTime(0.0f)
-	, m_fChargeDuration(0.0f)
-	, m_fChargePauseTime(0.0f)
-	, m_bCharging(false)
+	, m_tmrCharge()
 	, m_eModelSkeleton(eModelSkeletonInvalid)
 	, m_hHitBox(LTNULL)
 	, m_bAnimDone(false)
@@ -211,10 +208,7 @@ uint32 CThorne::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 void CThorne::Save(ILTMessage_Write *pMsg)
 {
 	SAVE_BYTE(m_eState);
-	SAVE_TIME(m_fChargeStartTime);
-	SAVE_TIME(m_fChargePauseTime);
-	SAVE_FLOAT(m_fChargeDuration);
-	SAVE_bool(m_bCharging);
+	m_tmrCharge.Save(pMsg);
 	SAVE_HOBJECT(m_hHitBox);
 	SAVE_CHARSTRING(m_sSummonCmd.c_str());
 	SAVE_BYTE(m_bAnimDone);
@@ -243,10 +237,7 @@ void CThorne::Load(ILTMessage_Read *pMsg)
 	char szBuf[256];
 
 	m_eState = pMsg->Readuint8();
-	LOAD_TIME(m_fChargeStartTime);
-	LOAD_TIME(m_fChargePauseTime);
-	LOAD_FLOAT(m_fChargeDuration);
-	LOAD_bool(m_bCharging);
+	m_tmrCharge.Load(pMsg);
 	LOAD_HOBJECT(m_hHitBox);
 	LOAD_CHARSTRING(szBuf, sizeof(szBuf));
 	m_sSummonCmd = szBuf;
@@ -629,9 +620,7 @@ void CThorne::SetState(int eState)
 		case kThorneAnim_ChargeBall:
 		{
 			CARange rngChargeTime = g_pBossButeMgr->GetThorne().rngChargeTime;
-			m_fChargeDuration = GetRandom((LTFLOAT)rngChargeTime.GetMin(), (LTFLOAT)rngChargeTime.GetMax());
-			m_fChargeStartTime = g_pLTServer->GetTime();
-			m_bCharging = true;
+			m_tmrCharge.Start(GetRandom((LTFLOAT)rngChargeTime.GetMin(), (LTFLOAT)rngChargeTime.GetMax()));
 
 			ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
 			g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
@@ -741,7 +730,7 @@ void CThorne::UpdateState()
 			{
 				SetState(kThorneAnim_Disrupt);
 			}
-			else if (GetChargeElapsed() >= m_fChargeDuration || GetChargeLeft() <= 0.0f)
+			else if (m_tmrCharge.GetCountdownTime() <= 0.0f)
 			{
 				SetState(kThorneAnim_ThrowBall);
 			}

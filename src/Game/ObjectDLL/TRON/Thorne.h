@@ -13,6 +13,8 @@
 #ifndef __THORNE_H__
 #define __THORNE_H__
 
+#include "Timer.h"
+
 #include "GameBase.h"
 #include "IHitBoxUser.h"
 #include "Weapons.h"
@@ -99,17 +101,8 @@ class CThorne : public GameBase, public IHitBoxUser
 		void	Fire();
 		void	PlayStateAnim();
 
-		// Time since the charge began, or until it ends; a set m_fChargePauseTime
-		// stands for now
-		LTFLOAT	GetChargeTime() { return m_fChargePauseTime > 0.0f ? m_fChargePauseTime : g_pLTServer->GetTime(); }
-		LTFLOAT	GetChargeElapsed() { return GetChargeTime() - m_fChargeStartTime; }
-		LTFLOAT	GetChargeLeft() { return (m_fChargeStartTime + m_fChargeDuration) - GetChargeTime(); }
-
 		int				m_eState;				// ThorneAnim (BossButeMgr.h)
-		LTFLOAT			m_fChargeStartTime;
-		LTFLOAT			m_fChargeDuration;
-		LTFLOAT			m_fChargePauseTime;
-		bool			m_bCharging;
+		CTimer			m_tmrCharge;			// RETAIL: a CTimer (Save/Load, UpdateState inline it)
 		ModelSkeleton	m_eModelSkeleton;
 		LTObjRef		m_hHitBox;
 		std::string		m_sSummonCmd;
