@@ -54,6 +54,13 @@ struct WCREATESTRUCT : public SFXCREATESTRUCT
 
 inline WCREATESTRUCT::WCREATESTRUCT()
 {
+	// RETAIL: 0x1018e0ad: Tron's clears the first fields before the vectors
+	// too (build 51's order), then again
+    hFiredFrom      = LTNULL;
+	nWeaponId		= 0;
+	nAmmoId			= 0;
+	nSurfaceType	= 0;
+	wIgnoreFX		= 0;
 	vFirePos.Init();
 	vPos.Init();
 	vSurfaceNormal.Init();

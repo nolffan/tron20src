@@ -54,6 +54,9 @@ protected:
 	CLTGUIFrame*		m_pSpecFrame;			// +0x878
 	CLTGUIFrame*		m_pTeamHeaderBar;		// +0x87c
 	CLTGUIFrame*		m_pSpecHeaderBar;		// +0x880
+	// RETAIL: the screen is 0x888 bytes (debug_new_fn 0x100adfb6); not
+	// identified
+	uint32				m_xTronUnknown884;		// +0x884
 };
 
 #endif // __SCREENTEAMSELECT_H__
