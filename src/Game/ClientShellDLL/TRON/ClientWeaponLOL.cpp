@@ -100,22 +100,25 @@ bool CClientWeaponLOL::PlayFireAnimation( bool bResetAni )
 
 		if ( INVALID_ANI != dwPreFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwPreFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPreFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
@@ -131,12 +134,12 @@ bool CClientWeaponLOL::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bHasFireAni )
 		{
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 		else if ( bHasPostFireAni )
 		{
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 	}
@@ -144,12 +147,13 @@ bool CClientWeaponLOL::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bResetAni && TronUnknownVirtual164() )
 		{
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			SaveShotSubroutines();
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 		else if ( bHasPostFireAni )
 		{
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 	}

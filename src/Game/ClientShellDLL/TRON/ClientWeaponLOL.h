@@ -31,6 +31,9 @@ protected:
 	virtual bool  PlayFireAnimation( bool bResetAni );
 	// RETAIL: 0x1001b090 (PlayFireAnimation calls it)
 	void          UpdateFireAnimationRate();
+	// RETAIL: inline (PlayFireAnimation passes it through the FPU, as the
+	// ball launcher's: both are 0x10017c80); the name is ours
+	float         GetFireAnimationRate() const { return m_fFireAnimationRate; }
 
 	// RETAIL: +0x208 (1.0f in the ctor; LOLData has a
 	// fFireAnimationRateMultiplier)
