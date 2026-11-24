@@ -304,6 +304,22 @@ ObjectCreateStruct's constructor (Object -52, +0) and an ASSERT that spends
 budget (Object -137, +2: only two CAutoMessage functions became
 identical).
 
+### 4d. Small forms that change the code
+
+The source permuter (ext/tools/permuter.py, guides/22_permuter.md) finds
+these forms. Each one is a test result. Use them as tests, not as rules.
+
+- A double argument to a float parameter: VC6 narrows the value before it
+  loads the vtable only when the argument has its own parentheses.
+  `SAVE_FLOAT( (m_fValue) )` narrows first. `SAVE_FLOAT( m_fValue )` and
+  `SAVE_FLOAT( (LTFLOAT)m_fValue )` narrow after (CAIGoalDash::Save,
+  Object 0x1020bf10).
+- `if( 0 == ( a & b ) )` and `if( !( a & b ) )` can give different code
+  (CCharacter::ShouldGib, Object 0x10091370).
+- A member copied into a local before a call can change the load order of
+  the arguments (AINodeExitLevelByRezOut::ProcessOnUseCmd, Object
+  0x1026ea10).
+
 ### 5. engine (Lithtech.exe; first steps)
 
 - **Base:** cjacksrc's engine (`src/Engine/runtime`), compiled with VC6

@@ -166,6 +166,8 @@ void AINodeExitLevelByRezOut::ProcessOnUseCmd(HOBJECT hUser)
 	// RETAIL: 0x1026ea10
 	if( g_pCmdMgr->IsValidCmd( m_sOnUseCmd.c_str( )))
 	{
-		g_pCmdMgr->Process( m_sOnUseCmd.c_str( ), m_hObject, hUser );
+		// RETAIL: 0x1026ea10 loads m_hObject before the string (permuter)
+		HOBJECT hObj = m_hObject;
+		g_pCmdMgr->Process( m_sOnUseCmd.c_str( ), hObj, hUser );
 	}
 }

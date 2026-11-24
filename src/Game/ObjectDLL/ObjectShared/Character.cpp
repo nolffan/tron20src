@@ -3887,7 +3887,7 @@ bool CCharacter::ShouldGib()
 		DamageTypeToFlag( DT_DRUNKENDIMS ) | DamageTypeToFlag( DT_BALLLAUNCHER ) |
 		DamageTypeToFlag( DT_BALL ) | DamageTypeToFlag( DT_CLUSTER );
 
-	if( !( nGibFlags & m_nDamageFlags ) )
+	if( 0 == ( nGibFlags & m_nDamageFlags ) )	// RETAIL: 0x10091370 tests == 0 (permuter)
 		return false;
 
 	if( !IsDiscGameType() )

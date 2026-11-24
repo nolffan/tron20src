@@ -66,10 +66,11 @@ void CAIGoalDash::Save(ILTMessage_Write *pMsg)
 {
 	super::Save(pMsg);
 
-	// RETAIL: 0x1020bf10 narrows each value before it fetches pMsg's
-	// vtable; ours after (near).
-	SAVE_FLOAT( (LTFLOAT)m_fDashMinDist );
-	SAVE_FLOAT( (LTFLOAT)m_fDashMaxDist );
+	// RETAIL: 0x1020bf10 narrows each double before it fetches pMsg's
+	// vtable. VC6 does that only for a parenthesized argument: without
+	// the inner parentheses (or with a (LTFLOAT) cast) it narrows after.
+	SAVE_FLOAT( (m_fDashMinDist) );
+	SAVE_FLOAT( (m_fDashMaxDist) );
 }
 
 void CAIGoalDash::Load(ILTMessage_Read *pMsg)
