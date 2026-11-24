@@ -519,15 +519,13 @@ void WorldProperties::ReadProps()
 	}
 
 	// RETAIL: 0x101c045f: Tron prints the world's dims
-	{
-		LTVector vWorldMin, vWorldMax;
-		g_pLTServer->GetWorldBox(vWorldMin, vWorldMax);
+	LTVector vWorldMin, vWorldMax;
+	g_pLTServer->GetWorldBox(vWorldMin, vWorldMax);
 
-		char szWorldDims[50];
-		LTSNPrintF( szWorldDims, ARRAY_LEN( szWorldDims ), "World Dims: %.0f, %.0f, %.0f",
-			vWorldMax.x - vWorldMin.x, vWorldMax.y - vWorldMin.y, vWorldMax.z - vWorldMin.z );
-		g_pLTServer->CPrint( szWorldDims );
-	}
+	char szWorldDims[50];
+	LTSNPrintF( szWorldDims, ARRAY_LEN( szWorldDims ), "World Dims: %.0f, %.0f, %.0f",
+		vWorldMax.x - vWorldMin.x, vWorldMax.y - vWorldMin.y, vWorldMax.z - vWorldMin.z );
+	g_pLTServer->CPrint( szWorldDims );
 
 	buf[0] = '\0';
     if (g_pLTServer->GetPropString(szEnvironmentMap, buf, 500) == LT_OK)
