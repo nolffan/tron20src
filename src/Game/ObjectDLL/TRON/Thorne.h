@@ -13,6 +13,8 @@
 #ifndef __THORNE_H__
 #define __THORNE_H__
 
+#include "Timer.h"
+
 #include "GameBase.h"
 #include "IHitBoxUser.h"
 #include "Weapons.h"
@@ -99,29 +101,22 @@ class CThorne : public GameBase, public IHitBoxUser
 		void	Fire();
 		void	PlayStateAnim();
 
-		// Time since the charge began, or until it ends; a set m_fChargePauseTime
-		// stands for now
-		LTFLOAT	GetChargeTime() { return m_fChargePauseTime > 0.0f ? m_fChargePauseTime : g_pLTServer->GetTime(); }
-		LTFLOAT	GetChargeElapsed() { return GetChargeTime() - m_fChargeStartTime; }
-		LTFLOAT	GetChargeLeft() { return (m_fChargeStartTime + m_fChargeDuration) - GetChargeTime(); }
-
 		int				m_eState;				// ThorneAnim (BossButeMgr.h)
-		LTFLOAT			m_fChargeStartTime;
-		LTFLOAT			m_fChargeDuration;
-		LTFLOAT			m_fChargePauseTime;
-		bool			m_bCharging;
+		CTimer			m_tmrCharge;			// RETAIL: a CTimer (Save/Load, UpdateState inline it)
 		ModelSkeleton	m_eModelSkeleton;
 		LTObjRef		m_hHitBox;
-		std::string		m_sSummonCmd;
+		// RETAIL: Thorne's strings are caseless (Load 0x100581a0 and ReadProp
+		// 0x100583f0 check the length for null)
+		CaselessString	m_sSummonCmd;
 		bool			m_bAnimDone;
-		std::string		m_sTargetObject;
+		CaselessString	m_sTargetObject;
 		LTObjRef		m_hTargetObject;
 		LTObjRef		m_hBall;
 		bool			m_bAllowSummon;
 		CWeapons		m_Weapons;
-		std::string		m_sWeapon;				// RETAIL: saved, never set
+		CaselessString	m_sWeapon;				// RETAIL: saved, never set
 		uint8			m_nWeaponId;
-		std::string		m_sAmmo;				// RETAIL: saved, never set
+		CaselessString	m_sAmmo;				// RETAIL: saved, never set
 		uint8			m_nAmmoId;
 		CLIENTFXUSERCREATESTRUCT m_cs;		// RETAIL: holds the model id too
 };

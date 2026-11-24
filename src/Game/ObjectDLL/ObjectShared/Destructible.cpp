@@ -1409,7 +1409,9 @@ void CDestructible::ProcessPlayerDeath(HOBJECT hDamager)
 		if( nKillerTeam == nVictimTeam && nKillerTeam < TRON_UNASSIGNED_TEAM )
 			bTeamKill = true;
 
-		if( pPlayerKiller->GetPlayerScore()->GetTronUnknown18() == 0 && pVictim->GetPlayerScore()->GetTronUnknown18() == 0 )
+		uint32 nKillerUnknown18 = pPlayerKiller->GetPlayerScore()->GetTronUnknown18();
+		uint32 nVictimUnknown18 = pVictim->GetPlayerScore()->GetTronUnknown18();
+		if( nKillerUnknown18 == 0 && nVictimUnknown18 == 0 )
 		{
 			// A team mate's kill costs a frag
 			if( bTeamKill )

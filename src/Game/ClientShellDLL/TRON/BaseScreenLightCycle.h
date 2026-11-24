@@ -41,7 +41,7 @@ const uint32 kCmdLCSelectSettings	= 0x43C;
 // case, as retail's searches of the profile's and the circuits' name lists
 inline bool LCNameEquals(const std::string &sName, const char *pszName)
 {
-	uint32 nLen = pszName ? strlen(pszName) : 0;
+	uint32 nLen = !pszName ? 0 : strlen(pszName);
 	return (sName.size() == nLen && !_memicmp(sName.data(),pszName,nLen));
 }
 

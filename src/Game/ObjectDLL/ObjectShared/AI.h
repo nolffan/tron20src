@@ -231,7 +231,7 @@ struct AIWeaponChoice
 
 	// RETAIL: out of line (0x101314e0, CAI::GetWeaponCheckPosition's
 	// find)
-	LTBOOL operator==(const AIWeaponChoice& other) const
+	bool operator==(const AIWeaponChoice& other) const
 	{
 		return ( other.m_eSide == m_eSide ) && ( other.m_fMaxDist == m_fMaxDist );
 	}

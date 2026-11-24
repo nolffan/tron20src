@@ -55,7 +55,8 @@ bool TronClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 		msg.ReadData(szChallenge, 64);
 		szChallenge[8] = 0;
 
-		std::string sCDKey = ((CTronGameClientShell*)g_pGameClientShell)->GetCDKey()->GetCDKey();
+		CTronCDKey* pCDKey = ((CTronGameClientShell*)g_pGameClientShell)->GetCDKey();
+		std::string sCDKey = pCDKey->GetCDKey();
 		char szResponse[73];
 		gcd_compute_response((char*)sCDKey.c_str(), szChallenge, szResponse);
 
@@ -94,6 +95,8 @@ bool TronClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 
 		// Get the client shell file CRC
 		char aClientShellName[MAX_PATH + 1];
+		// Just in case getting the file name fails
+		aClientShellName[0] = 0; 
 		// Get the client shell handle from the engine
 		HMODULE hClientShell;
 		g_pLTClient->GetEngineHook("cshell_hinstance", (void**)&hClientShell);
@@ -109,12 +112,12 @@ bool TronClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 		static uint32 nSubroutinesCRC = CRC32::CalcRezFileCRC( g_pSubroutineMgr->GetAttributeFile( ));
 		static uint32 nLightCycleCRC = CRC32::CalcRezFileCRC( g_pLightCycleButeMgr->GetAttributeFile( ));
 
-		uint32 nSubroutinesMaskedCRC = nSubroutinesCRC ^ nXORMask;
-		uint32 nFXButesMaskedCRC = nFXButesCRC ^ nXORMask;
-		uint32 nLightCycleMaskedCRC = nLightCycleCRC ^ nXORMask;
 		uint32 nModelButesMaskedCRC = nModelButesCRC ^ nXORMask;
 		uint32 nSurfaceMaskedCRC = nSurfaceCRC ^ nXORMask;
 		uint32 nDamageFxMaskedCRC = nDamageFxCRC ^ nXORMask;
+		uint32 nFXButesMaskedCRC = nFXButesCRC ^ nXORMask;
+		uint32 nSubroutinesMaskedCRC = nSubroutinesCRC ^ nXORMask;
+		uint32 nLightCycleMaskedCRC = nLightCycleCRC ^ nXORMask;
 
 		// Send it back their direction
 		CAutoMessage cResponse;

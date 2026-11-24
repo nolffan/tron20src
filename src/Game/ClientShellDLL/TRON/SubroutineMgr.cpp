@@ -184,14 +184,6 @@ Procedural::Procedural()
 	szIndicatorIcon[0]	= 0;
 	eAffectState	= SUBSTATE_OKAY;
 	pSub			= LTNULL;
-
-	// PORT: build 69's members (retail has none of these)
-	fTimeRequired		= 1.0f;
-	szIntroFX[0]		= 0;
-	szIdleSkin[0]		= 0;
-	szWorkSkin[0]		= 0;
-	szConditionSkin[0]	= 0;
-	szProgressSkin[0]	= 0;
 }
 
 Primitive::Primitive()
@@ -242,7 +234,7 @@ LTBOOL CSubroutineMgr::Init(const char* szAttributeFile)
 	m_fTronUnknown11A0 = 0;
 	m_nTronUnknown1160 = 0;
 	m_fTronUnknown11A4 = 0.0f;
-	m_pTronUnknown1180 = LTNULL;
+	m_hOptimizer = LTNULL;
 	m_nTronUnknown114C = 0;
 
 	if (!szAttributeFile) return LTFALSE;
@@ -1476,6 +1468,28 @@ void CSubroutineMgr::PopulateSubroutineScreen()
 			playerIter++;
 		}
 	}
+
+	// RETAIL: 0x10094d92: the optimizer that opened the screen, once
+	if (m_hOptimizer)
+	{
+		pSubScreen->SetOptimizer(m_hOptimizer);
+		m_hOptimizer = LTNULL;
+	}
+
+	pSubScreen->SetSystemName(m_nTronUnknown114C);
+	g_pRatingMgr->PopulateRatings(pSubScreen);
+
+	// RETAIL: the libraries marked to flash
+	for (int i = 0; i < 3; i++)
+	{
+		if (m_aTronUnknown119C[i])
+		{
+			pSubScreen->FlashLibrary(i);
+			m_aTronUnknown119C[i] = 0;
+		}
+	}
+
+	pSubScreen->UpdateModels();
 }
 
 bool CSubroutineMgr::IsUtilitySubroutineActive(char * name)

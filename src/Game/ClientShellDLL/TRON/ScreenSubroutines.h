@@ -93,6 +93,11 @@ public:
 	void		SetRatingPoints(int nPoints);		// RETAIL: 0x100800c0
 	void		SetOptimizer(HOBJECT hOptimizer);	// RETAIL: 0x100800e0
 
+	// RETAIL: inline in CSubroutineMgr::PopulateSubroutineScreen
+	// (0x10094ddb..0x10094e03; the names are ours)
+	void		FlashLibrary(int nLibrary)	{m_Libraries[nLibrary].StartFlash();}
+	void		UpdateModels()				{m_ModelMgr.Update();}
+
 protected:
 
 	virtual uint32	OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);	// RETAIL: 0x1007ef90

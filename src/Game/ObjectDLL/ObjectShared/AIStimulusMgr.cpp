@@ -635,8 +635,17 @@ EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusTy
 	// (e.g. from where a bullet hit to who fired it).
 	LTVector vSourcePos;
 	g_pLTServer->GetObjectPos(hStimulusSource, &vSourcePos);
-	pAIStimulusRecord->m_vStimulusDir = vSourcePos - vPos;
-	pAIStimulusRecord->m_vStimulusDir.Normalize();
+	// RETAIL: Tron's (0x10100517, 0x1010076b): a source at the stimulus
+	// position gives an up direction.
+	if( (vSourcePos - vPos).MagSqr() <= 0.0f )
+	{
+		pAIStimulusRecord->m_vStimulusDir = LTVector( 0.0f, 1.0f, 0.0f );
+	}
+	else
+	{
+		pAIStimulusRecord->m_vStimulusDir = vSourcePos - vPos;
+		pAIStimulusRecord->m_vStimulusDir.Normalize();
+	}
 
 	EnumAIStimulusID eAIStimulusID = _RegisterStimulus(pAIStimulusRecord, 1, fRadiusFactor, fDurationFactor);
 
@@ -683,8 +692,17 @@ EnumAIStimulusID CAIStimulusMgr::RegisterStimulus(EnumAIStimulusType eStimulusTy
 	// (e.g. from where a bullet hit to who fired it).
 	LTVector vSourcePos;
 	g_pLTServer->GetObjectPos(hStimulusSource, &vSourcePos);
-	pAIStimulusRecord->m_vStimulusDir = vSourcePos - vPos;
-	pAIStimulusRecord->m_vStimulusDir.Normalize();
+	// RETAIL: Tron's (0x10100517, 0x1010076b): a source at the stimulus
+	// position gives an up direction.
+	if( (vSourcePos - vPos).MagSqr() <= 0.0f )
+	{
+		pAIStimulusRecord->m_vStimulusDir = LTVector( 0.0f, 1.0f, 0.0f );
+	}
+	else
+	{
+		pAIStimulusRecord->m_vStimulusDir = vSourcePos - vPos;
+		pAIStimulusRecord->m_vStimulusDir.Normalize();
+	}
 
 	EnumAIStimulusID eAIStimulusID = _RegisterStimulus(pAIStimulusRecord, nAlarmLevelFactor, fRadiusFactor, 1.0f);
 

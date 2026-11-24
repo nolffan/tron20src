@@ -68,6 +68,10 @@ class CSearchable : public IAggregate
 
 		void CopySearchProperties(const CSearchable* pSearchable);
 
+		// RETAIL: build 51's; inline in CAI::PostPropRead (0x1012b011)
+		void SetSearchTimes(LTFLOAT fMinTime, LTFLOAT fMaxTime)		{ m_fMinSearchTime = fMinTime; m_fMaxSearchTime = fMaxTime; }
+		void GetSearchTimes(LTFLOAT &fMinTime, LTFLOAT &fMaxTime)	{ fMinTime = m_fMinSearchTime; fMaxTime = m_fMaxSearchTime; }
+
 		SEARCH_SET*	GetRandomItemSet() const {return m_pRandomItemSet;}
 		void		SetRandomItemSet(char* szSetName);
 		

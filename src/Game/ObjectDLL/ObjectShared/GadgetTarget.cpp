@@ -1095,15 +1095,8 @@ void GadgetTarget::SpecialDisabledHandling( )
 
 		m_hAttachedModel = pModel->m_hObject;
 		::SetNextUpdate(m_hAttachedModel, UPDATE_NEVER);
-		
-		// Set the Models's animation...
 
-		HMODELANIM hAni = g_pLTServer->GetAnimIndex( m_hAttachedModel, "World");
-		if( hAni != INVALID_MODEL_ANIM )
-		{
-			g_pLTServer->SetModelLooping( m_hAttachedModel, LTTRUE );
-			g_pLTServer->SetModelAnimation( m_hAttachedModel, hAni );
-		}
+		// RETAIL: 0x101bd7a8, Tron's bug model plays no animation.
 
 		// Attach the model to the phone...
 

@@ -142,7 +142,7 @@ void CAIGoalExitLevel::HandleStateGoto()
 
 		// RETAIL: 0x10208b00, Tron runs the node's OnUseCmd.
 		AINodeExitLevel* pNode = (AINodeExitLevel*)g_pAINodeMgr->FindOwnedNode( kNode_ExitLevel, m_pAI->m_hObject );
-		if( IsKindOf( pNode->m_hObject, "AINodeExitLevel" ) )
+		if( IsKindOf( pNode->GetHOBJECT(), "AINodeExitLevel" ) )
 		{
 			pNode->ProcessOnUseCmd( m_pAI->GetUserObject() );
 		}
@@ -282,7 +282,7 @@ void CAIGoalExitLevelByRezOut::HandleStateUseObject()
 				SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTFALSE, "REMOVE" );
 
 				AINodeExitLevelByRezOut* pNode = (AINodeExitLevelByRezOut*)g_pAINodeMgr->FindOwnedNode( kNode_ExitLevelByRezOut, m_pAI->m_hObject );
-				if( IsKindOf( pNode->m_hObject, "AINodeExitLevelByRezOut" ) )
+				if( IsKindOf( pNode->GetHOBJECT(), "AINodeExitLevelByRezOut" ) )
 				{
 					pNode->ProcessOnUseCmd( m_pAI->GetUserObject() );
 				}

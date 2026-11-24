@@ -1594,7 +1594,8 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 {
     if (!g_pLTServer || !pStruct) return;
 
-    const char* pFilename   = g_pModelButeMgr->GetModelFilename(m_eModelId);
+	// RETAIL: 0x1012afbc, Tron's AI takes the multiplayer model file.
+    const char* pFilename   = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 
 	if (pFilename && pFilename[0])
 	{
@@ -1604,7 +1605,25 @@ void CAI::PostPropRead(ObjectCreateStruct *pStruct)
 
 	g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
 	g_pModelButeMgr->CopyRenderStyleFilenames(m_eModelId, pStruct);
-	
+
+	// RETAIL: 0x1012b011, build 51's default search times.
+
+	float fMin,fMax;
+	bool bChangeTimes = false;
+	m_pSearch->GetSearchTimes(fMin,fMax);
+	if (fMin < 0.0f)
+	{
+		bChangeTimes = true;
+		fMin = g_pModelButeMgr->GetModelMinSearchTime(m_eModelId);
+	}
+	if (fMax < 0.0f)
+	{
+		bChangeTimes = true;
+		fMax = g_pModelButeMgr->GetModelMaxSearchTime(m_eModelId);
+	}
+	if (bChangeTimes)
+		m_pSearch->SetSearchTimes(fMin,fMax);
+
 
 	// Add all our editables
 
@@ -1697,7 +1716,8 @@ void CAI::InitialUpdate()
 	ObjectCreateStruct createstruct;
 	createstruct.Clear();
 
-    const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
+	// RETAIL: 0x1012b24f, Tron's AI takes the multiplayer model file.
+    const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 	SAFE_STRCPY(createstruct.m_Filename, pFilename);
 
 	// load up the createstruct with the info from bute file.
@@ -1801,6 +1821,29 @@ void CAI::InitialUpdate()
 	// change object information based on stuff gotten from bute file.
     g_pCommonLT->SetObjectFilenames(m_hObject, &createstruct);
 
+	// RETAIL: 0x1012b5fc, Tron hides the model's pieces that the model
+	// bute file names (separated by "; ").
+
+	if( g_pModelButeMgr->GetModelHiddenPieces( m_eModelId ) )
+	{
+		std::string sHiddenPieces = g_pModelButeMgr->GetModelHiddenPieces( m_eModelId );
+
+		uint32 nPieces;
+		if( LT_OK == g_pModelLT->GetNumPieces( m_hObject, nPieces ) && nPieces )
+		{
+			const char* szPiece = strtok( (char*)sHiddenPieces.c_str(), "; " );
+			while( szPiece )
+			{
+				HMODELPIECE hPiece;
+				if( LT_OK == g_pModelLT->GetPiece( m_hObject, szPiece, hPiece ) )
+				{
+					g_pModelLT->SetPieceHideStatus( m_hObject, hPiece, LTTRUE );
+				}
+
+				szPiece = strtok( LTNULL, "; " );
+			}
+		}
+	}
 
 	g_pLTServer->GetObjectRotation(m_hObject, &m_rTargetRot);
 	m_vTargetRight = m_rTargetRot.Right();
@@ -2161,8 +2204,10 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Alignment("ALIGNMENT");
 	static CParsedMsg::CToken s_cTok_DamageMask("DAMAGEMASK");
 	static CParsedMsg::CToken s_cTok_IgnoreVolumes("IGNOREVOLUMES");
+	static CParsedMsg::CToken s_cTok_LockIgnoreVolumeState("LOCKIGNOREVOLUMESTATE");	// RETAIL: Tron's
 	static CParsedMsg::CToken s_cTok_WakeUp("WAKEUP");
 	static CParsedMsg::CToken s_cTok_CineractAI("CINERACTAI");
+	static CParsedMsg::CToken s_cTok_ClearPathKnowledge("CLEARPATHKNOWLEDGE");	// RETAIL: Tron's
 	
 
 	
@@ -2243,34 +2288,88 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		return true;
 	}
 
+	// RETAIL: 0x1012c85b, Tron's: keep (or let go of) the ignore volumes
+	// state.
+	else if( cMsg.GetArg(0) == s_cTok_LockIgnoreVolumeState )
+	{
+		if( ( cMsg.GetArgCount() > 1 ) &&
+			( m_pAIMovement ) )
+		{
+			m_pAIMovement->LockIgnoreVolumes( IsTrueChar( cMsg.GetArg(1)[0] ) );
+		}
+		return true;
+	}
+
+	// RETAIL: 0x1012c8ea, Tron's: the target is the named object (or the
+	// player), and nothing changes while the AI looks at the player it
+	// talks to.
 	else if( cMsg.GetArg(0) == s_cTok_TrackLookAt )
 	{
-		CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
-		if ( pPlayer )
+		if( !m_bTalkLookAt )
 		{
-			m_pTrackedNodeContext->SetTrackedTarget( kTrack_LookAt, pPlayer->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
-			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_LookAt );
-			m_eTriggerNodeTrackingGroup = kTrack_LookAt;
+			GameBase* pTarget;
+			if( cMsg.GetArgCount() == 2 )
+			{
+				HOBJECT hTarget;
+				if( LT_OK != FindNamedObject( cMsg.GetArg(1), hTarget ) || !IsKindOf( hTarget, "GameBase" ) )
+				{
+					return true;
+				}
+
+				pTarget = (GameBase*)g_pLTServer->HandleToObject( hTarget );
+			}
+			else
+			{
+				pTarget = g_pCharacterMgr->FindPlayer();
+			}
+
+			if ( pTarget )
+			{
+				m_pTrackedNodeContext->SetTrackedTarget( kTrack_LookAt, pTarget->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
+				m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_LookAt );
+				m_eTriggerNodeTrackingGroup = kTrack_LookAt;
+			}
 		}
 		return true;
 	}
 
 	else if( cMsg.GetArg(0) == s_cTok_TrackAimAt )
 	{
-		CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
-		if ( pPlayer )
+		if( !m_bTalkLookAt )
 		{
-			m_pTrackedNodeContext->SetTrackedTarget( kTrack_AimAt, pPlayer->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
-			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_AimAt );
-			m_eTriggerNodeTrackingGroup = kTrack_AimAt;
+			GameBase* pTarget;
+			if( cMsg.GetArgCount() == 2 )
+			{
+				HOBJECT hTarget;
+				if( LT_OK != FindNamedObject( cMsg.GetArg(1), hTarget ) || !IsKindOf( hTarget, "GameBase" ) )
+				{
+					return true;
+				}
+
+				pTarget = (GameBase*)g_pLTServer->HandleToObject( hTarget );
+			}
+			else
+			{
+				pTarget = g_pCharacterMgr->FindPlayer();
+			}
+
+			if ( pTarget )
+			{
+				m_pTrackedNodeContext->SetTrackedTarget( kTrack_AimAt, pTarget->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
+				m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_AimAt );
+				m_eTriggerNodeTrackingGroup = kTrack_AimAt;
+			}
 		}
 		return true;
 	}
 
 	else if( cMsg.GetArg(0) == s_cTok_TrackNone )
 	{
-		m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
-		m_eTriggerNodeTrackingGroup = kTrack_None;
+		if( !m_bTalkLookAt )
+		{
+			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
+			m_eTriggerNodeTrackingGroup = kTrack_None;
+		}
 		return true;
 	}
 
@@ -2297,6 +2396,12 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			CreateSpecialFX(LTTRUE);
 		}
 		return true;
+	}
+
+	// RETAIL: 0x1012ccf0, Tron's (it goes on to the character).
+	else if( cMsg.GetArg(0) == s_cTok_ClearPathKnowledge )
+	{
+		m_pPathKnowledgeMgr->ClearPathKnowledge();
 	}
 	
 	// Wake us back up if we get a message
@@ -2338,8 +2443,8 @@ void CAI::RemoveTronUnknown10A0(ActivationNotifier* pEntry)
 {
 	std::list<ActivationNotifier*>& lstNotifiers = m_lstTronUnknown10A0;
 	ActivationNotifier* pNotifier = pEntry;
-	std::list<ActivationNotifier*>::iterator it = std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier );
-	// RETAIL: 0x1012cee0 loads the found node before the list's end (near)
+	std::list<ActivationNotifier*>::iterator it;
+	it = std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier );
 	if( it != lstNotifiers.end() )
 	{
 		lstNotifiers.remove( pNotifier );
@@ -4061,6 +4166,11 @@ void CAI::SetTalkLock(bool bTrack)
 
 void CAI::UpdateInfo()
 {
+	// RETAIL: Tron's (0x10130580) writes the info to a stream. Its
+	// precedence bugs (the stream, not the text, chooses the "?:"
+	// operands) and its compare of the text pointers are retail's: see
+	// docs/RETAIL_BUGS.md.
+
 	if (!g_AIInfoTrack.IsInitted())
 	{
 		g_AIInfoTrack.Init(g_pLTServer, "AIInfo", LTNULL, 0.0f);
@@ -4069,55 +4179,81 @@ void CAI::UpdateInfo()
 	// Update our info string.
 	if( g_AIInfoTrack.GetFloat() > 0.0f )
 	{
-		char szTemp[128];
+		ostrstream out;
 
-		CString info = m_cstrNameInfo; 
-		info += "\n";
+		out << m_cstrNameInfo << '\n';
 
 		if( g_AIInfoTrack.GetFloat() == 1.0f )
 		{
-			sprintf( szTemp, "HitPoints : %.0f\nArmor : %.0f\n", GetHitPoints( ),
-				m_damage.GetArmorPoints( ));
-			info += szTemp;
+			out << "HitPoints : " << GetHitPoints( ) << "\nArmor : " << m_damage.GetArmorPoints( ) << "\n";
 
 			// Show Senses 0 or 1.
 
 			if( m_bSensesOn )
 			{
-				info += "Senses: 1\n";	// RETAIL: Tron's text (0x1013073c)
+				out << "Senses: 1\n";
 			} else {
-				info += "Senses: 0\n";
+				out << "Senses: 0\n";
 			}
-
-			// RETAIL: 0x1013074e: no alignment line in Tron.
 
 			// Show goalset, goal and state.
-			info += "GS : ";
+			out << "GS : ";
 			if( m_pGoalMgr )
 			{
-				info += g_pAIGoalButeMgr->GetGoalSet( m_pGoalMgr->GetGoalSetIndex() )->szName;
+				out << g_pAIGoalButeMgr->GetGoalSet( m_pGoalMgr->GetGoalSetIndex() )->szName << "\n";
 			}
 			else
 			{
-				info += "none";
+				out << "none" << "\n";
 			}
-			
-			info += "\n";
 
-			info += "G : ";
+			out << "G : ";
 			if( m_pGoalMgr && m_pGoalMgr->GetCurrentGoal() )
 			{
-				info += s_aszGoalTypes[m_pGoalMgr->GetCurrentGoal()->GetGoalType()];
+				out << s_aszGoalTypes[m_pGoalMgr->GetCurrentGoal()->GetGoalType()] << "\n";
 			}
 			else
 			{
-				info += "none";
+				out << "none" << "\n";
 			}
 
-			info += "\n";
+			out << "S : ";
+			out << s_aszStateTypes[m_pState->GetStateType()] << "\n";
 
-			info += "S : ";
-			info += s_aszStateTypes[m_pState->GetStateType()];
+			// Show the weapon, or the holster.
+			out << "W : ";
+			if( GetPrimaryWeapon() )
+			{
+				const WEAPON* pWeaponData = g_pWeaponMgr->GetWeapon( GetPrimaryWeapon()->GetId() );
+				out << ( pWeaponData ? pWeaponData->szName : "none" ) << "\n";
+			}
+			else
+			{
+				const char* szHolster = g_pLTServer->GetStringData( m_hstrHolster );
+				if( szHolster )
+				{
+					out << "(H) ";
+#ifdef TRON20SRC_MODERN
+					const char* pSeparator = strchr( szHolster, ';' );
+#else
+					const char* pSeparator = strchr( szHolster, ';,' );
+#endif // TRON20SRC_MODERN
+					if( pSeparator )
+					{
+						std::string sWeapon( szHolster, pSeparator );
+						out << sWeapon << "\n";
+					}
+					else
+					{
+						std::string sWeapon( szHolster );
+						out << sWeapon << "\n";
+					}
+				}
+				else
+				{
+					out << "none" << "\n";
+				}
+			}
 		}
 		else if( g_AIInfoTrack.GetFloat() == 2.0f )
 		{
@@ -4128,21 +4264,22 @@ void CAI::UpdateInfo()
 			{
 				const GOAL_SCRIPT_STRUCT & element = *iter;
 
-				sprintf( szTemp, " %s %s %s",
-					(nStep == m_pGoalMgr->GetCurrentScriptStep()) ? "*" : " ",
-					s_aszGoalTypes[element.eGoalType],
-					element.hstrNameValuePairs ? 
-					          g_pLTServer->GetStringData(element.hstrNameValuePairs)
-							: "" );
-				info += szTemp;
-				info += "\n";
+#ifdef TRON20SRC_MODERN
+				out << ((nStep == m_pGoalMgr->GetCurrentScriptStep()) ? " * " : "   ");
+				out << s_aszGoalTypes[element.eGoalType] << " ";
+				out << (element.hstrNameValuePairs ? g_pLTServer->GetStringData(element.hstrNameValuePairs) : "");
+#else
+				out << (nStep == m_pGoalMgr->GetCurrentScriptStep()) ? "*" : " ";
+				out << s_aszGoalTypes[element.eGoalType];
+				out << element.hstrNameValuePairs ? g_pLTServer->GetStringData(element.hstrNameValuePairs) : "";
+#endif // TRON20SRC_MODERN
+				out << "\n";
 			}
 
 			if( !nStep )
 			{
-				info += "None\n";
+				out << "None\n";
 			}
-				
 		}
 		else if( g_AIInfoTrack.GetFloat() == 3.0f )
 		{
@@ -4150,30 +4287,45 @@ void CAI::UpdateInfo()
 			for( AIGOAL_LIST::const_iterator iter = m_pGoalMgr->BeginGoals();
 			     iter != m_pGoalMgr->EndGoals(); ++iter )
 			{
-				sprintf(szTemp, " %s %f : %s %s",
-					m_pGoalMgr->IsCurGoal(*iter) ? "*" : " ",
-					(*iter)->GetCurImportance(),
-					s_aszGoalTypes[(*iter)->GetGoalType()],
-					(*iter)->IsScripted() ? "(scripted)" : "" );
-
-				info += szTemp;
-				info += "\n";
+#ifdef TRON20SRC_MODERN
+				out << (m_pGoalMgr->IsCurGoal(*iter) ? " * " : "   ");
+				out << (*iter)->GetCurImportance() << " : ";
+				out << s_aszGoalTypes[(*iter)->GetGoalType()] << " ";
+				out << ((*iter)->IsScripted() ? "(scripted)" : "");
+#else
+				out << m_pGoalMgr->IsCurGoal(*iter) ? "*" : " ";
+				out << (*iter)->GetCurImportance();
+				out << s_aszGoalTypes[(*iter)->GetGoalType()];
+				out << (*iter)->IsScripted() ? "(scripted)" : "";
+#endif // TRON20SRC_MODERN
+				out << "\n";
 			}
 		}
 		else if( g_AIInfoTrack.GetFloat() == 4.0f )
 		{
 			// Show Relations.
-			ostrstream out;
-			out << *(m_pRelationMgr->GetRelationUser()) << '\n' << '\0';
-			info += out.str();
+			out << *(m_pRelationMgr->GetRelationUser()) << '\n';
+		}
+		else if( g_AIInfoTrack.GetFloat() == 5.0f )
+		{
+			// RETAIL: Tron's: show the animation context.
+			out << *m_pAnimationContext << '\n';
 		}
 
-		if( info != m_cstrCurrentInfo )
+		out << ends;
+
+#ifdef TRON20SRC_MODERN
+		if( strcmp( out.str(), m_cstrCurrentInfo ) != 0 )
+#else
+		if( out.str() != m_cstrCurrentInfo )
+#endif // TRON20SRC_MODERN
 		{
-			m_cstrCurrentInfo = info;
+			m_cstrCurrentInfo = out.str();
 
 			SendInfoString( m_hObject, m_cstrCurrentInfo );
 		}
+
+		out.rdbuf()->freeze( 0 );
 	}
 	else
 	{
@@ -5233,6 +5385,15 @@ void CAI::HandleModelString(ArgList* pArgList)
 		if( m_hAnimObject )
 		{
 			SendTriggerMsgToObject( this, m_hAnimObject, LTFALSE, "ACTIVATE" );
+		}
+	}
+	// RETAIL: 0x10132c3b, Tron's TARGET key is sent on to the animation's
+	// object.
+	else if( !_stricmp( pKey, "TARGET" ) )
+	{
+		if( m_hAnimObject )
+		{
+			SendTriggerMsgToObject( this, m_hAnimObject, LTFALSE, "TARGET" );
 		}
 	}
 	else if ( !_stricmp( pKey, c_szAttachmentAnim  ) )
@@ -6791,6 +6952,8 @@ CAttachmentsPlugin* CAIPlugin::GetAttachmentsPlugin()
 	return m_pAttachmentsPlugin;
 }
 
+extern CRelationButeMgr s_RelationButeMgr;
+
 LTRESULT CAIPlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
 {
 	// See if the base class wishes to handle it
@@ -6816,7 +6979,30 @@ LTRESULT CAIPlugin::PreHook_EditStringList(const char* szRezPath, const char* sz
 		return LT_OK;
 	}
 
-	// See if the model style plugin will handle the property
+	// RETAIL: 0x10135fd0: Tron's AI lists the alignments as AINode does.
+
+	if ( !s_RelationButeMgr.IsInitialized() )
+	{
+		char szFile[256];
+		sprintf(szFile, "%s\\Attributes\\RelationData.txt", szRezPath);
+		s_RelationButeMgr.SetInRezFile(LTFALSE);
+		s_RelationButeMgr.Init(szFile);
+	}
+
+	if ( !_strcmpi("Alignment", szPropName) )
+	{
+		strcpy( aszStrings[(*pcStrings)++], "None" );
+
+		CRelationButeMgr::_mapNameToID* pNames = s_RelationButeMgr.GetMapObjectRelationMgrNameToID();
+		CRelationButeMgr::_mapNameToID::iterator it;
+
+		for( it = pNames->begin(); it != pNames->end(); ++it )
+		{
+			strcpy( aszStrings[(*pcStrings)++], it->first.c_str() );
+		}
+
+		return LT_OK;
+	}
 
 	// No one wants it
 

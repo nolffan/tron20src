@@ -122,7 +122,7 @@ void CHUDProcedurals::Update()
 		if (!pProc->pSub) continue;
 
 		m_fProgress[i] = pProc->pSub->fPercentDone;
-		m_hIconTex[i] = g_pInterfaceResMgr->GetTexture(pProc->szIdleSkin);
+		m_hIconTex[i] = g_pInterfaceResMgr->GetTexture(pProc->szIndicatorIcon);	// RETAIL: +0xf4 (0x10031e4a)
 
 		std::wstring sName;
 		sName = LoadTempWString(pProc->nNameId);

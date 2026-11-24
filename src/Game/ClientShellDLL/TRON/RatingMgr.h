@@ -69,7 +69,7 @@ public:
 
 	void		ResetRatings();		// back to the attribute file's initial values
 
-	void		SetPerformanceRating(PerformanceRating p, uint8 nVal);
+	void		SetPerformanceRating(PerformanceRating p, int nVal);	// RETAIL: an int (its callers widen the byte: 0x1009d69c, 0x1009e069)
 	int			GetRating(PerformanceRating p);
 
 	LTBOOL		IsSurgeRating(PerformanceRating p) {return (m_nRating[p] >= m_nMaxRating[p]); }
