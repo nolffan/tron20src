@@ -1000,7 +1000,8 @@ void CDiscMatchMgr::Update()
 			// RETAIL: a failed switch keeps the level going (0x1004a097)
 			if (!bOk)
 			{
-				m_bLevelOver = m_bLevelOverWarning = false;
+				m_bLevelOver = false;
+				m_bLevelOverWarning = false;
 			}
 
 			m_fStartTime = -1.0f;
