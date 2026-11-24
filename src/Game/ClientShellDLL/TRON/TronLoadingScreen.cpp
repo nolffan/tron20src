@@ -26,41 +26,43 @@ bool CTronLoadingScreen::ReadWorldLayout()
 	const char* pszWorld = g_pMissionMgr->GetNewWorldName();
 	if (!pszWorld)
 		pszWorld = g_pMissionMgr->GetCurrentWorldName();
-	if (!pszWorld)
-		return false;
+	if (pszWorld)
+	{
+		char szTag[MAX_PATH] = "";
+		_splitpath(pszWorld, NULL, NULL, szTag, NULL);
+		if (g_pLayoutMgr->Exist(szTag))
+		{
+			m_layout = szTag;
 
-	char szTag[256] = "";
-	_splitpath(pszWorld, NULL, NULL, szTag, NULL);
-	if (!g_pLayoutMgr->Exist(szTag))
-		return false;
+			int nId = g_pLayoutMgr->GetInt(szTag, "NameId", 0);
+			if (!nId)
+				m_missionname = "";
+			else
+				m_missionname = LoadTempString(nId);
 
-	m_layout = szTag;
+			nId = g_pLayoutMgr->GetInt(szTag, "LevelNameId", 0);
+			if (!nId)
+				m_levelname = "";
+			else
+				m_levelname = LoadTempString(nId);
 
-	int nId = g_pLayoutMgr->GetInt(szTag, "NameId", 0);
-	if (nId)
-		m_missionname = LoadTempString(nId);
-	else
-		m_missionname = "";
+			nId = g_pLayoutMgr->GetInt(szTag, "BriefingId", 0);
+			if (!nId)
+				m_briefing = "";
+			else
+				m_briefing = LoadTempString(nId);
 
-	nId = g_pLayoutMgr->GetInt(szTag, "LevelNameId", 0);
-	if (nId)
-		m_levelname = LoadTempString(nId);
-	else
-		m_levelname = "";
+			nId = g_pLayoutMgr->GetInt(szTag, "HelpId", 0);
+			if (!nId)
+				m_help = "";
+			else
+				m_help = LoadTempString(nId);
 
-	nId = g_pLayoutMgr->GetInt(szTag, "BriefingId", 0);
-	if (nId)
-		m_briefing = LoadTempString(nId);
-	else
-		m_briefing = "";
+			return true;
+		}
+	}
 
-	nId = g_pLayoutMgr->GetInt(szTag, "HelpId", 0);
-	if (nId)
-		m_help = LoadTempString(nId);
-	else
-		m_help = "";
-
-	return true;
+	return false;
 }
 
 // RETAIL: 0x100a29a0
