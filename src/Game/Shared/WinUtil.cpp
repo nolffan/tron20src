@@ -129,7 +129,9 @@ BOOL CWinUtil::CopyDir( char const* pSrc, char const* pDest )
 		do
 		{
 			sprintf( szFiles, "%s\\%s", pSrc, file.name );
-			if( FileExist( szFiles ))
+			// RETAIL: 0x1021d1d8 (Object): FileExist finds folders too, so
+			// Tron's leaves them out
+			if( FileExist( szFiles ) && !(file.attrib & _A_SUBDIR))
 				fileList.insert(file.name);
 		}
 		while(_findnext(hFile, &file) == 0);
