@@ -159,7 +159,7 @@ CTronHUDMgr::~CTronHUDMgr()
 	TRON_DELETE_HUD_ITEM(m_pScores);
 	TRON_DELETE_HUD_ITEM(m_pDiscScores);
 	TRON_DELETE_HUD_ITEM(m_pDiscMatches);
-	TRON_DELETE_HUD_ITEM(m_pVersion);
+	// RETAIL: m_pVersion is not deleted here (0x1009b240; docs/RETAIL_BUGS.md)
 	TRON_DELETE_HUD_ITEM(m_pAnnouncementMsgs);
 	TRON_DELETE_HUD_ITEM(m_pMultiAnnouncementMsgs);
 	TRON_DELETE_HUD_ITEM(m_pLightCycleRoster);
@@ -296,7 +296,7 @@ void CTronHUDMgr::TronUnknownVirtual40()
 {
 	GameType eGameType = g_pGameClientShell->GetGameType();
 
-	AddItem(m_pScores, eGameType);
-	AddItem(m_pDiscScores, eGameType);
-	AddItem(m_pDiscMatches, eGameType);
+	TRON_ADD_HUD_ITEM(m_pScores);
+	TRON_ADD_HUD_ITEM(m_pDiscScores);
+	TRON_ADD_HUD_ITEM(m_pDiscMatches);
 }

@@ -4851,6 +4851,56 @@ void CPlayerObj::UpdateInterface(bool bForceUpdate)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CPlayerObj::TronUnknownVirtual114
+//
+//	PURPOSE:	RETAIL: 0x10080140: read the fire message's weapon
+//				modifiers (as CProjectile::LoadModifiers). The name is ours
+//
+// ----------------------------------------------------------------------- //
+
+void CPlayerObj::TronUnknownVirtual114( ILTMessage_Read* pMsg, WeaponFireInfo* pInfo )
+{
+	for ( int i = 0; i < TRON_NUM_WEAPON_MODIFIERS; ++i )
+	{
+		pInfo->aModifiers[i].Load( pMsg );
+	}
+
+	if ( pInfo->aModifiers[0].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m0 );
+
+	if ( pInfo->aModifiers[1].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m1 );
+
+	if ( pInfo->aModifiers[2].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m0 );
+
+	if ( pInfo->aModifiers[3].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m3 );
+
+	if ( pInfo->aModifiers[4].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m4 );
+
+	if ( pInfo->aModifiers[5].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m4 );
+
+	if ( pInfo->aModifiers[6].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m6 );
+
+	if ( pInfo->aModifiers[7].bEnabled )
+		pMsg->ReadType( &pInfo->ModifierData.m7 );
+
+	if ( pInfo->aModifiers[8].bEnabled )
+		pMsg->ReadType( &pInfo->Modifier8 );
+
+	if ( pInfo->aModifiers[9].bEnabled )
+		pMsg->ReadType( &pInfo->vModifier9 );
+
+	if ( pInfo->aModifiers[10].bEnabled )
+		pMsg->ReadType( &pInfo->Modifier10 );
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CPlayerObj::GetDamageSound
 //
 //	PURPOSE:	Determine what damage sound to play
@@ -4880,7 +4930,7 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 	}
 
 	// RETAIL: Tron's sounds by damage type (0x10080300), as Build 51's
-	// single player ones; no sound for a stun
+	// single player ones; no sound for sleeping or a stun
 	switch (eType)
 	{
 		case DT_CHOKE:
@@ -4901,6 +4951,9 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		}
 		break;
 
+		// RETAIL: the switch's index table (0x100803d4) sends sleeping and
+		// stun to the null return
+		case DT_SLEEPING:
 		case DT_STUN:
 		{
 			// No pain sound for these...
@@ -4908,9 +4961,6 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		}
 		break;
 
-		// RETAIL: the switch is a jump table (0x10080314) with an index for
-		// the types 4 to 12; sleeping takes the pain sounds. Ours compiles
-		// to compares (near).
 		default:
 		{
 			char* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };

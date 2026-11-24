@@ -83,6 +83,19 @@ std::binary_function<RelationMomento*, const RelationDescription* const, bool>
 	}
 };
 
+// RETAIL: Tron's (find_if 0x1016a770, used by AddRelation 0x10167f20): the
+// trait and value match, whatever the alignment. The name is ours.
+struct Momento_TraitValue_Equality :
+std::binary_function<RelationMomento*, const RelationDescription* const, bool>
+{
+	bool operator() (RelationMomento* pMomento, 
+		const RelationDescription* const pRD) const
+	{
+		return ( pMomento->GetDescription().eTrait == pRD->eTrait
+			&& strcmp( pMomento->GetDescription().szValue, pRD->szValue ) == 0 );
+	}
+};
+
 struct ORMMatchesDescription :
 public std::binary_function< RelationMomento*, CObjectRelationMgr*, bool>
 {
@@ -92,7 +105,10 @@ public std::binary_function< RelationMomento*, CObjectRelationMgr*, bool>
 		AIASSERT( pORM!=NULL, NULL, "Attempted description match on NULL ORM" );
 		char szValue[RELATION_VALUE_LENGTH];
 		pORM->GetData().GetTraitValue(pMomento->GetDescription().eTrait, szValue, sizeof(szValue));
-		return ( strcmp( pMomento->GetDescription().szValue, szValue ) == 0);
+		// RETAIL: Tron also wants the owner's alignment toward the ORM to
+		// be the momento's (find_if 0x1016a820).
+		return ( strcmp( pMomento->GetDescription().szValue, szValue ) == 0
+			&& pMomento->GetDescription().eAlignment == pMomento->GetOwner()->GetRelationUser()->GetRelations().GetAlignment( pORM->GetData() ) );
 	}
 };
 
@@ -325,7 +341,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		Collective_Template* pCC_Template = debug_new( Collective_Template );
 		ReadTemplate(szTagName, pCC_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapCollectiveNameToID.insert( _mapNameToID::value_type(std::string(pCC_Template->m_szKey), m_listpCollectiveTemplates.size()) );
+		m_mapCollectiveNameToID.insert( _mapNameToID::value_type(CaselessString(pCC_Template->m_szKey), m_listpCollectiveTemplates.size()) );
 		m_listpCollectiveTemplates.push_back( pCC_Template );
 		
 		sprintf(szTagName, "%s%d", "Collective", m_listpCollectiveTemplates.size());
@@ -338,7 +354,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		ObjectRelationMgr_Template* pORM_Template = debug_new( ObjectRelationMgr_Template );
 		ReadTemplate(szTagName, pORM_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapObjectRelationMgrNameToID.insert( _mapNameToID::value_type(std::string(pORM_Template->m_szKey), m_listpObjectRelationMgrTemplates.size()) );
+		m_mapObjectRelationMgrNameToID.insert( _mapNameToID::value_type(CaselessString(pORM_Template->m_szKey), m_listpObjectRelationMgrTemplates.size()) );
 		m_listpObjectRelationMgrTemplates.push_back( pORM_Template );
 		
 		sprintf(szTagName, "%s%d", "RelationalObject", m_listpObjectRelationMgrTemplates.size());
@@ -351,7 +367,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		RelationUser_Template* pRU_Template = debug_new(RelationUser_Template);
 		ReadTemplate(szTagName, pRU_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapRelationNameToID.insert( _mapNameToID::value_type(std::string(pRU_Template->m_szKey), m_listpRelationUserTemplates.size()) );
+		m_mapRelationNameToID.insert( _mapNameToID::value_type(CaselessString(pRU_Template->m_szKey), m_listpRelationUserTemplates.size()) );
 		m_listpRelationUserTemplates.push_back( pRU_Template );
 
 		sprintf(szTagName, "%s%d", "RelationSet", m_listpRelationUserTemplates.size());
@@ -364,7 +380,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		DataUser_Template* pDU_Template = debug_new(DataUser_Template);
 		ReadTemplate(szTagName, pDU_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapDataNameToID.insert( _mapNameToID::value_type(std::string(pDU_Template->m_szKey), m_listpRelationDataTemplates.size()) );
+		m_mapDataNameToID.insert( _mapNameToID::value_type(CaselessString(pDU_Template->m_szKey), m_listpRelationDataTemplates.size()) );
 		m_listpRelationDataTemplates.push_back(pDU_Template);
 
 		sprintf(szTagName, "%s%d", "RelationData", m_listpRelationDataTemplates.size());
@@ -389,7 +405,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CDataUser* ) const
 {
-	_mapNameToID::const_iterator it = m_mapDataNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapDataNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapDataNameToID.end() )
 	{
 		return (*it).second;
@@ -410,7 +426,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CDataUser*
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName(const char* const pszName, CRelationUser*) const
 {
-	_mapNameToID::const_iterator it = m_mapRelationNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapRelationNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapRelationNameToID.end() )
 	{
 		return (*it).second;
@@ -430,7 +446,7 @@ int CRelationButeMgr::GetTemplateIDByName(const char* const pszName, CRelationUs
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CCollectiveRelationMgr* ) const
 {
-	_mapNameToID::const_iterator it = m_mapCollectiveNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapCollectiveNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapCollectiveNameToID.end() )
 	{
 		return (*it).second;
@@ -450,7 +466,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CCollectiv
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CObjectRelationMgr* ) const
 {
-	_mapNameToID::const_iterator it = m_mapObjectRelationMgrNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapObjectRelationMgrNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapObjectRelationMgrNameToID.end() )
 	{
 		return (*it).second;
@@ -748,7 +764,7 @@ void CRelationButeMgr::FillRelationSet(const char* const szTemplateName, Relatio
 		return;
 
 	// Insure that the name maps validly.  If it doesn't, then assert and return.
-	_mapNameToID::const_iterator RelationTemplateIterator = m_mapRelationNameToID.find( std::string(szTemplateName) );
+	_mapNameToID::const_iterator RelationTemplateIterator = m_mapRelationNameToID.find( CaselessString(szTemplateName) );
 	if (RelationTemplateIterator == m_mapRelationNameToID.end())
 	{
 		AIASSERT1( 0, NULL, "Unable to find template with name %s", szTemplateName );
@@ -943,6 +959,22 @@ void CRelationUser::AddRelation(const RelationDescription& RD, bool bPermanent )
 {
 	AIASSERT( m_pMomentoCallbackReceiver, NULL, "No CallbackReceiver specified" );
 	AIASSERT( CanAddRelation(RD), NULL, "Cannot add relation -- check before calling" );
+
+	// RETAIL: Tron's (0x10167f20): a new relation replaces the temporary
+	// momentos of the same trait and value; a permanent one blocks it.
+	RelationDescription InstRD = RD;
+	_listMomentos::iterator itFound;
+	while ( ( itFound = std::find_if( m_Momentos.begin(), m_Momentos.end(), std::bind2nd( Momento_TraitValue_Equality(), &InstRD ) ) ) != m_Momentos.end() )
+	{
+		if ( (*itFound)->m_eRelationMomentoType == RelationMomento::ePermanent )
+		{
+			AITRACE(AIShowRelations, ( (HOBJECT)NULL, " cannot add relation: %s %s %s due to existing conflicting permanet relation", CRelationTools::GetInstance()->ConvertTraitEnumToString(RD.eTrait), CRelationTools::GetInstance()->ConvertAlignmentEnumToString(RD.eAlignment), RD.szValue ) );
+			return;
+		}
+
+		RemoveRelation( (*itFound)->GetDescription() );
+	}
+
 	float flExperationTime = m_flTimeRelationsLast + g_pLTServer->GetTime();
 	RelationMomento* pMomento = debug_new3( RelationMomento, m_pMomentoCallbackReceiver, flExperationTime, RD );
 	if (bPermanent == true)
@@ -1223,25 +1255,6 @@ void RelationMomento::AddMomento( _listMomentos& listAddTo )
 {
 	listAddTo.push_back( this );
 	DoAddRelationCallback();
-}
-
-//----------------------------------------------------------------------------
-//              
-//	ROUTINE:	RelationMomento::IsExpired()
-//              
-//	PURPOSE:	Returns true if the RelationMomento is expired, false if it is 
-//				not
-//              
-//----------------------------------------------------------------------------
-bool RelationMomento::IsExpired(float flCurrentTime) const
-{
-	if (m_eRelationMomentoType==ePermanent) 
-	{
-		return false;
-	}
-	// PORT: retail has no out-of-line IsExpired; the timer is taken to
-	// say when the relation expires
-	return m_Timer.Stopped();
 }
 
 //----------------------------------------------------------------------------
