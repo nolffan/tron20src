@@ -25,11 +25,14 @@
 
 namespace /* unnamed */
 {
-	void SetLineDrawingMode(ILTDrawPrim * pDrawPrim)
+	// RETAIL: 0x101b9750: NOLF2 1.3's, with the camera
+	void SetLineDrawingMode(ILTDrawPrim * pDrawPrim, HOBJECT hCamera)
 	{
 		ASSERT( pDrawPrim );
 
+		pDrawPrim->SetCamera(hCamera);
 		pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_WORLD);
+		pDrawPrim->SetReallyClose(false);
 		pDrawPrim->SetZBufferMode(DRAWPRIM_ZRO); 
 		pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
 		pDrawPrim->SetFillMode(DRAWPRIM_FILL);
@@ -270,7 +273,7 @@ LTBOOL CDebugLineFX::Update()
 void CDebugLineFX::Render(HOBJECT hCamera)
 {
 	// Be sure it is in the right state.
-	SetLineDrawingMode(g_pDrawPrim);
+	SetLineDrawingMode(g_pDrawPrim, hCamera);
 
 	// Draw all the lines.
 	if( !lines.empty() )
