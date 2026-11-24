@@ -321,10 +321,10 @@ uint32 Body::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
             SetNextUpdate(s_fUpdateDelta);
 
-            // g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_SPY_VISION, USRFLG_SPY_VISION);
-			
-			//can be moved...
- 			g_pCommonLT->SetObjectFlags( m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE );
+			// RETAIL: 0x101594e9, Tron's body sets user flag 1<<1 (NOLF2's
+			// USRFLG_SPY_VISION, commented out in ClientServerShared.h), not
+			// USRFLG_CAN_ACTIVATE.
+            g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (1<<1), (1<<1));
 
 			return dwRet;
 		}
