@@ -7,6 +7,7 @@
 
 #include "AnimationPropStrings.h"
 #include "UberAssert.h"
+#include "TRON/CaselessString.h"
 
 using namespace Animation;
 
@@ -15,8 +16,9 @@ const uint32 animodDislocates = 0x01;
 #define Output Debug
 
 // RETAIL: Tron's string before the parser (0x10398508; Parse empties it).
-// The name is ours
-static std::string s_sTronUnknown;
+// The name is ours. A CaselessString: its assignment checks for NULL
+// (0x10232390)
+static CaselessString s_sTronUnknown;
 
 CAnimationParser* g_pParser = NULL;
 static LTBOOL s_btError = LTFALSE;

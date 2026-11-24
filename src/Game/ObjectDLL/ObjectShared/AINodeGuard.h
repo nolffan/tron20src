@@ -94,7 +94,8 @@ class AINodeExitLevel : public AINodeGuard
 
 	protected :
 
-		std::string		m_sOnUseCmd;
+		// RETAIL: a CaselessString: its assignment checks for NULL (0x1026de92)
+		CaselessString	m_sOnUseCmd;
 };
 
 //-----------------------------------------------------------------
