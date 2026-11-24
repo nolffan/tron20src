@@ -1696,14 +1696,11 @@ void CUserProfile::SetKeyboard()
 
 }
 
+// RETAIL: empty in Tron: CScreenControls::OnFocus (0x100585d0) calls an
+// empty function (0x100abb80, a bare ret) here. NOLF2's body read the
+// joystick setting from the profile.
 void CUserProfile::SetControls()
 {
-	if (g_pProfileMgr->GetNumAxis() < 1 && g_pProfileMgr->GetNumPOV() < 1)
-	{
-		m_bUseJoystick = 0;
-		return;
-	}
-	m_bUseJoystick = (LTBOOL)m_buteMgr.GetInt("Controls","UseJoystick",0);
 }
 
 void CUserProfile::SetJoystick()

@@ -19,7 +19,8 @@
 
 // RETAIL: Tron's multiplayer screen (CShell.dll 0x1006fb90..0x1006fe20,
 // vtable 0x101e8224): four items -- player, join (internet or LAN) and host
-// -- and no members of its own (NOLF2's CD key and MOTD screen is not Tron's)
+// -- and one member that none of its functions use (NOLF2's CD key and MOTD
+// screen is not Tron's)
 class CScreenMulti : public CBaseScreen
 {
 public:
@@ -32,6 +33,11 @@ public:
 
 protected:
     uint32	OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);
+
+private:
+	// RETAIL: the screen is 0x794 bytes (debug_new_fn, 0x100ad5e0, allocates
+	// 0x794; CBaseScreen is 0x790): the constructor does not set this member
+	uint32	m_nTronUnknown790;	// +0x790
 };
 
 #endif // _SCREEN_MULTI_H_

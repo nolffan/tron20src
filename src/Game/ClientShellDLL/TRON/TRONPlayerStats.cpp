@@ -1075,20 +1075,10 @@ void CTronPlayerStats::TronUnknownClearObjectivesPing()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: empty in Tron (vtable slot 27, 0x100a92a0: a bare ret 0x10):
+// it does not set m_bHiding and m_bHidden
 void CTronPlayerStats::UpdateHiding(LTBOOL bIsHiding,LTBOOL bIsHidden, LTBOOL bCantHide, float fHideDuration) // PORT: NOLF2's interface
 {
-/*
-	if (bIsHiding && !m_bHiding)
-		g_pLTClient->CPrint("Starting to hide");
-	if (bIsHidden && !m_bHidden)
-		g_pLTClient->CPrint("Hidden");
-	if (!bIsHiding && !bIsHidden)
-		g_pLTClient->CPrint("Not hidden");
-*/		
-
-	m_bHiding = bIsHiding;
-	m_bHidden = bIsHidden;
-//	g_pHUDMgr->QueueUpdate(kHUDHiding);
 }
 
 

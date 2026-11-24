@@ -455,7 +455,7 @@ LTBOOL CScreenLightCycleCustomMaps::FillAvailList()
 {
 	if (!m_pAvailMissions) return LTFALSE;
 
-	m_saMaps.erase(m_saMaps.begin(),m_saMaps.end());
+	m_saMaps.clear();
 
 	FindMaps(s_sMapDir,IsMapLocked);
 
@@ -465,7 +465,7 @@ LTBOOL CScreenLightCycleCustomMaps::FillAvailList()
 	for (iter = m_saMaps.begin(); iter != m_saMaps.end(); ++iter)
 		lstMaps.push_back(*iter);
 	lstMaps.sort(FileNameLess());
-	m_saMaps.erase(m_saMaps.begin(),m_saMaps.end());
+	m_saMaps.clear();
 	StringList::iterator iterList;
 	for (iterList = lstMaps.begin(); iterList != lstMaps.end(); ++iterList)
 		m_saMaps.push_back(*iterList);
@@ -478,7 +478,8 @@ LTBOOL CScreenLightCycleCustomMaps::FillAvailList()
 	std::wstring sText;
 	for (iter = m_saMaps.begin(); iter != m_saMaps.end(); ++iter, ++nIndex)
 	{
-		LTGUIWiden(sText,GetFileName(iter->c_str()));
+		const char *pszName = GetFileName(iter->c_str());
+		LTGUIWiden(sText,pszName);
 
 		CLTGUIListItemCtrl *pItem = CreateListItem(sText,CMD_ADD_LEVEL,0);
 		pItem->SetFont(pFont,s_nListFontSize);

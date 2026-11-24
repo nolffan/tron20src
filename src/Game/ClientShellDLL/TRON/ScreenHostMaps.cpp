@@ -382,10 +382,8 @@ LTBOOL CScreenHostMaps::FillAvailList()
 	for (iter = m_saMaps.begin(); iter != m_saMaps.end(); ++iter, ++nIndex)
 	{
 		const char *pszName = GetFileName(iter->c_str());
-		sText.resize(0);
-		uint32 nLen = strlen(pszName);
-		for (uint32 i = 0; i < nLen; i++)
-			sText += (wchar_t)(uint8)pszName[i];
+		// RETAIL: LTGUIWiden (an erase and a push_back loop, 0x10061c6d)
+		LTGUIWiden(sText,pszName);
 
 		CLTGUIListItemCtrl *pItem = CreateListItem(sText,CMD_ADD_LEVEL,0);
 		pItem->SetFont(pFont,s_nListFontSize);

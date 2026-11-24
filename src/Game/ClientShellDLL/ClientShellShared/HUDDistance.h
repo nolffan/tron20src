@@ -25,7 +25,8 @@ class CHUDDistance : public CHUDItem
 {
 	public: // Methods...
 	// RETAIL: single player only
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType; }
+	// RETAIL: CHUDBuildNoteCount's form (0x100226c0, which the HUD items fold into)
+	virtual bool	IsUsedInGameType(GameType eGameType) { return (eGameTypeSingle == eGameType) ? true : false; }
 
 
 		CHUDDistance();
