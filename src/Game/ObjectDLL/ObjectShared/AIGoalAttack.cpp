@@ -572,9 +572,10 @@ LTBOOL CAIGoalAttack::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 		// AI is not already in this attack goal.
 		m_pAI->Target(pSenseRecord->hLastStimulusSource);
 		CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
+		LTVector vTargetPos;
 		if( pAIHuman->HasTarget() 
 			&& pAIHuman->HasWeapon( m_eWeaponType )
-			&& ( pAIHuman->GetBrain()->GetRangeStatus( m_eWeaponType ) == eRangeStatusOk )
+			&& ( pAIHuman->GetBrain()->GetRangeStatus( m_eWeaponType, m_pAI->GetPosition(), pAIHuman->GetTarget()->GetShootPosition( &vTargetPos ) ) == eRangeStatusOk )
 			&& ( ( pAIHuman->GetTarget()->IsVisibleCompletely() ) ||
 				 ( IsAI( pAIHuman->GetTarget()->GetVisionBlocker() ) && ( m_pAI->GetBrain()->GetAttackPoseCrouchChance() > 0.f ) ) ) )
 		{

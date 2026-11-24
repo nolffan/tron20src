@@ -74,6 +74,11 @@ class CAIHumanState : public CAIState
 		CAIHuman* GetAI() const { return m_pAIHuman; }
 		CAnimationContext* GetAnimationContext();
 
+		// RETAIL: inline in the Chase, Draw and Charge updates: the
+		// range of the current weapon from the AI to its target's shoot
+		// position. Too far without a weapon. Name ours (AIHumanState.cpp).
+		inline RangeStatus GetCurrentWeaponRangeStatus();
+
 	protected :
 
 		CAIHuman*		m_pAIHuman;

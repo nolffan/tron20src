@@ -77,16 +77,13 @@ class CAIBrain : public CAIClassAbstract
 
 		// Range
 
-		RangeStatus GetRangeStatus();
-		RangeStatus GetRangeStatus( EnumAIWeaponType eWeaponType );
-		RangeStatus GetRangeStatus( EnumAIWeaponType eWeaponType, const LTVector& vSourcePos );
+		// RETAIL: Tron's only overload (0x1018ed80): the callers give both
+		// positions.
+		RangeStatus GetRangeStatus( EnumAIWeaponType eWeaponType, const LTVector& vSourcePos, const LTVector& vTargetPos );
 
 		// Grenade
 
 		GrenadeStatus GetGrenadeStatus(const LTVector& vTargetPos);
-
-		// PORT: the callers that do not pass the position yet
-		GrenadeStatus GetGrenadeStatus();
 
 		// Simple accessors
 

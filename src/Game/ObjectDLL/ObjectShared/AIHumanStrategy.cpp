@@ -3681,7 +3681,9 @@ void CAIHumanStrategyGrenadeThrow::Throw(LTFLOAT fTime /*= 0.5f*/)
 
 LTBOOL CAIHumanStrategyGrenadeThrow::ShouldThrow()
 {
-	if ( eGrenadeStatusDontThrow == GetAI()->GetBrain()->GetGrenadeStatus() )
+	// RETAIL: Tron's passes the target's position (0x10226144)
+	LTVector vTargetPos = GetAI()->GetTarget()->GetVisiblePosition();
+	if ( eGrenadeStatusDontThrow == GetAI()->GetBrain()->GetGrenadeStatus( vTargetPos ) )
 	{
 		return LTFALSE;
 	}

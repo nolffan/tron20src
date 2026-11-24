@@ -181,7 +181,9 @@ AbstractTarget::~AbstractTarget()
 
 void AbstractTarget::Init()
 {
-	m_hRelationNotifier.SetSubject( GetAI()->GetRelationMgr() );
+	// RETAIL: Tron's asks its AI through IAISensing (0x101df2e9): the slot
+	// that returns the relation manager (see CAI::GetSenseRelationSet).
+	m_hRelationNotifier.SetSubject( (CObjectRelationMgr*)&GetAI()->GetSenseRelationSet() );
 
 	// RETAIL: Tron's (0x101df2e0).
 	m_Receiver.SetOwner( this );
@@ -336,12 +338,13 @@ void AbstractTarget::SetObject(HOBJECT hObject)
 //
 // ----------------------------------------------------------------------- //
 
-void AbstractTarget::GetShootPosition(LTVector* pvShootPos)
+// RETAIL: Tron's (0x101df910) does not test the pointer and returns the
+// position. It refreshes the target first, and it keeps the last position
+// (m_vTronUnknown9C) for a tenth of a second (m_fTronUnknown98).
+
+const LTVector& AbstractTarget::GetShootPosition(LTVector* pvShootPos)
 {
-	if( !pvShootPos )
-	{
-		return;
-	}
+	Refresh();
 
 	// Initially aim for the target's visible position.
 
@@ -351,8 +354,17 @@ void AbstractTarget::GetShootPosition(LTVector* pvShootPos)
 
 	if( m_fTargetDistSqr < GetAI()->GetFullAccuracyRadiusSqr() )
 	{
-		return;
+		m_vTronUnknown9C = *pvShootPos;
+		return *pvShootPos;
 	}
+
+	if( g_pLTServer->GetTime() < m_fTronUnknown98 )
+	{
+		*pvShootPos = m_vTronUnknown9C;
+		return *pvShootPos;
+	}
+
+	m_fTronUnknown98 = g_pLTServer->GetTime() + 0.1f;
 
 
 	// The following code forces the AI to intenionally miss every x
@@ -448,6 +460,9 @@ void AbstractTarget::GetShootPosition(LTVector* pvShootPos)
 
 		*pvShootPos += vRight;
 	}
+
+	m_vTronUnknown9C = *pvShootPos;
+	return *pvShootPos;
 }
 
 // ----------------------------------------------------------------------- //

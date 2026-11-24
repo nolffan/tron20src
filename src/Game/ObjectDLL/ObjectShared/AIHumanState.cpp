@@ -61,6 +61,35 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateUseObject, kState_HumanUseO
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateLongJump, kState_HumanLongJump);
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(State, CAIHumanStateSeekerHitchDown, kState_HumanSeekerHitchDown);	// RETAIL: Tron's
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanState::GetCurrentWeaponRangeStatus
+//
+//	PURPOSE:	RETAIL: inline in the Chase, Draw and Charge updates
+//				(0x101ec062, 0x101edbb4, 0x101f3d2d). The Attack update has
+//				its own copy (0x101eef45). Name ours.
+//
+// ----------------------------------------------------------------------- //
+
+inline RangeStatus CAIHumanState::GetCurrentWeaponRangeStatus()
+{
+	RangeStatus eRangeStatus = eRangeStatusTooFar;
+
+	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
+	if( pWeapon )
+	{
+		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( pWeapon->GetId() );
+		if( pWeaponData )
+		{
+			LTVector vTargetPos;
+			GetAI()->GetTarget()->GetShootPosition( &vTargetPos );
+			eRangeStatus = GetAI()->GetBrain()->GetRangeStatus( (EnumAIWeaponType)pWeaponData->nAIWeaponType, GetAI()->GetPosition(), vTargetPos );
+		}
+	}
+
+	return eRangeStatus;
+}
+
 
 // ----------------------------------------------------------------------- //
 
@@ -4424,7 +4453,7 @@ void CAIHumanStateChase::Update()
 		}
 		else if(m_bStatusChanged)
 		{
-			if( !GetAI()->IsPlayingDialogSound() )
+			if( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) )
 			{
 				GetAI()->PlaySearchSound( kAIS_Search );
 			}
@@ -4477,7 +4506,7 @@ void CAIHumanStateChase::Update()
 		{
 			if( m_bFirstUpdate )
 			{
-				if( !GetAI()->IsPlayingDialogSound() )
+				if( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) )
 				{
 					GetAI()->PlayCombatSound( kAIS_Chase );
 				}
@@ -4515,7 +4544,7 @@ void CAIHumanStateChase::Update()
 
 		// ---
 
-		RangeStatus eRangeStatus = GetAI()->GetBrain()->GetRangeStatus();
+		RangeStatus eRangeStatus = GetCurrentWeaponRangeStatus();
 
 		// ---
 
@@ -5132,23 +5161,34 @@ void CAIHumanStateDraw::Update()
 		return;
 	}
 
+	// RETAIL: Tron's fails when there is a weapon in hand already
+	// (0x101edb13)
+
+	if ( (!m_bDrew) && GetAI()->GetCurrentWeapon() )
+	{
+		m_eStateStatus = kSStat_FailedComplete;
+		return;
+	}
+
+	// RETAIL: Tron's faces the target at each update (0x101edb50)
+
 	if ( GetAI()->HasTarget() && m_bFaceTarget )
 	{
-		if( m_bFirstUpdate )
-		{
-			GetAI()->FaceTarget();
-		}
+		GetAI()->FaceTarget();
 
 		// Knock target back if we're drawing a melee weapon.
 
-		else if( ( !m_bFired ) &&
+		if( ( !m_bFired ) &&
 				 ( m_eWeaponType == kAIWeap_Melee ) ) 
 		{
 			GetAI()->GetTarget()->SetPushSpeed(800.f);
 			GetAI()->GetTarget()->SetPushMinDist( GetAI()->GetDims().z * 2.f );
 
+			// RETAIL: Tron's asks for the range of the current weapon
+			// (0x101edbb4)
+			RangeStatus eRangeStatus = GetCurrentWeaponRangeStatus();
 			if( m_bDrew &&
-				( GetAI()->GetBrain()->GetRangeStatus( kAIWeap_Melee ) != eRangeStatusTooFar ) )
+				( eRangeStatus != eRangeStatusTooFar ) )
 			{				
 				// AccuracyModifier is subtracted. Using 2 to make AI really
 				// accurate when drawing the weapon.
@@ -5161,10 +5201,24 @@ void CAIHumanStateDraw::Update()
 		}
 	}
 
-	if ( m_bDrew && !GetAnimationContext()->IsLocked() )
+	// RETAIL: Tron's does not do this check on the first update. It is
+	// also complete when a weapon is in hand; else it fails (0x101edc5e)
+
+	if ( !m_bFirstUpdate && !GetAnimationContext()->IsLocked() )
 	{
-		// DREW OUR WEAPON
-		m_eStateStatus = kSStat_StateComplete;
+		if ( m_bDrew )
+		{
+			// DREW OUR WEAPON
+			m_eStateStatus = kSStat_StateComplete;
+		}
+		else if ( GetAI()->GetCurrentWeapon() )
+		{
+			m_eStateStatus = kSStat_StateComplete;
+		}
+		else
+		{
+			m_eStateStatus = kSStat_FailedComplete;
+		}
 	}
 }
 
@@ -5723,7 +5777,7 @@ void CAIHumanStateAttack::Update()
 
 	// Play our first sound if we should
 
-	if( ( !GetAI()->IsPlayingDialogSound() ) &&
+	if( ( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) ) &&
 		( m_bPlayFirstSound || m_bFirstUpdate ) )
 	{
 		GetAI()->PlayCombatSound(kAIS_Attack);
@@ -5845,7 +5899,19 @@ void CAIHumanStateAttack::Update()
 
 	// Check our range from the target
 
-	RangeStatus eRangeStatus = CanChase(LTTRUE) ? GetAI()->GetBrain()->GetRangeStatus() : eRangeStatusOk;
+	// RETAIL: Tron's asks for the range of the current weapon whether it
+	// can chase or not (0x101eef45)
+	RangeStatus eRangeStatus = eRangeStatusTooFar;
+	CWeapon* pCurrentWeapon = GetAI()->GetCurrentWeapon();
+	if( pCurrentWeapon )
+	{
+		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( pCurrentWeapon->GetId() );
+		if( pWeaponData )
+		{
+			LTVector vTargetPos;
+			eRangeStatus = GetAI()->GetBrain()->GetRangeStatus( (EnumAIWeaponType)pWeaponData->nAIWeaponType, GetAI()->GetPosition(), GetAI()->GetTarget()->GetShootPosition( &vTargetPos ) );
+		}
+	}
 
 	if ( eRangeStatus == eRangeStatusTooFar )
 	{
@@ -8742,7 +8808,7 @@ void CAIHumanStateCharge::Update()
 
 	if( m_bFirstUpdate )
 	{
-		if( !GetAI()->IsPlayingDialogSound() )
+		if( !( GetAI()->IsTalkLocked() || GetAI()->IsPlayingDialogSound() ) )
 		{
 			GetAI()->PlayCombatSound(kAIS_Charge);
 		}
@@ -8841,6 +8907,9 @@ void CAIHumanStateCharge::Update()
 		}
 	}
 
+	// RETAIL: Tron's asks for the range of the current weapon (0x101f3d2d)
+	RangeStatus eRangeStatus = GetCurrentWeaponRangeStatus();
+
 	// Shoot if we're attacking
 
 	if ( m_pStrategyShoot )
@@ -8865,7 +8934,16 @@ void CAIHumanStateCharge::Update()
 				m_pStrategyShoot->Reload(LTTRUE);
 			}
 
-			m_pStrategyShoot->Update();
+			// RETAIL: Tron's shoots only when the target is in range and
+			// visible from the weapon, else it clears (0x101f3dfb)
+			if( ( eRangeStatus != eRangeStatusTooFar ) && pTarget->IsVisibleFromWeapon() )
+			{
+				m_pStrategyShoot->Update();
+			}
+			else
+			{
+				m_pStrategyShoot->Clear();
+			}
 		}
 	}
 }
@@ -9602,11 +9680,14 @@ void CAIHumanStateLongJump::Update()
 			break;
 
 		case kSStat_Moving:
-
+		{
 			// Do damage if weilding a melee weapon, and come in contact with target.
 
+			// RETAIL: Tron's asks for the range first (0x101f50f5)
+			LTVector vTargetPos;
+			RangeStatus eRangeStatus = GetAI()->GetBrain()->GetRangeStatus( kAIWeap_Melee, GetAI()->GetPosition(), GetAI()->GetTarget()->GetShootPosition( &vTargetPos ) );
 			if( (!m_bFired ) && GetAI()->HasWeapon( kAIWeap_Melee ) &&
-				( GetAI()->GetBrain()->GetRangeStatus( kAIWeap_Melee ) == eRangeStatusOk ) )
+				( eRangeStatus == eRangeStatusOk ) )
 			{				
 				// AccuracyModifier is subtracted. Using 2 to make AI really
 				// accurate when she slams into someone.
@@ -9622,6 +9703,7 @@ void CAIHumanStateLongJump::Update()
 				GetAnimationContext()->SetAnimRate( 1.f );
 				m_eStateStatus = kSStat_Landing;
 			}
+		}
 			break;
 
 		case kSStat_Landing:
@@ -9647,15 +9729,13 @@ void CAIHumanStateLongJump::HandleModelString(ArgList* pArgList)
 
 	if ( !_stricmp(szKey, c_szKeyFireWeapon) )
 	{
+		// RETAIL: Tron's asks for the range and the weapon, and then does
+		// nothing (0x101f523b): only the two calls are left.
+		LTVector vTargetPos;
+			RangeStatus eRangeStatus = GetAI()->GetBrain()->GetRangeStatus( kAIWeap_Melee, GetAI()->GetPosition(), GetAI()->GetTarget()->GetShootPosition( &vTargetPos ) );
 		if( GetAI()->HasWeapon( kAIWeap_Melee ) &&
-			( GetAI()->GetBrain()->GetRangeStatus( kAIWeap_Melee ) == eRangeStatusOk ) )
+			( eRangeStatus == eRangeStatusOk ) )
 		{
-			// AccuracyModifier is subtracted. Using -2 to make AI really
-			// accurate when she slams into someone.
-
-			GetAI()->SetCurrentWeapon( kAIWeap_Melee );
-			GetAI()->SetAccuracyModifier(2.f, 1.f);
-			m_pStrategyShoot->ForceFire( LTNULL );
 		}
 	}
 }

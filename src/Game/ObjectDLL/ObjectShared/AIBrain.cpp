@@ -17,6 +17,7 @@
 #include "AnimationMgr.h"
 #include "MsgIDs.h"
 #include "SFXMsgIds.h"
+#include "DebugLineSystem.h"
 
 DEFINE_AI_FACTORY_CLASS(CAIBrain);
 
@@ -347,71 +348,78 @@ GrenadeStatus CAIBrain::GetGrenadeStatus(const LTVector& vTargetPos)
 	return eGrenadeStatusDontThrow;
 }
 
-// PORT: retail has no such function: CAIHumanStrategyGrenadeThrow::ShouldThrow
-// passes the target's position itself (0x10226144)
-GrenadeStatus CAIBrain::GetGrenadeStatus()
+// RETAIL: Tron's takes the source and the target positions (0x1018ed80):
+// its callers pass the AI's position and its target's shoot position.
+// Tron has no other overloads. "AIShowGoalAttack" shows the range.
+RangeStatus CAIBrain::GetRangeStatus(EnumAIWeaponType eWeaponType, const LTVector& vSourcePos, const LTVector& vTargetPos)
 {
-	return GetGrenadeStatus( GetAI()->GetTarget()->GetVisiblePosition() );
-}
-
-RangeStatus CAIBrain::GetRangeStatus()
-{
-	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
-	if ( GetAI()->HasTarget() && pWeapon)
+	g_vtAIConsoleVar.Init( g_pLTServer, "AIShowGoalAttack", LTNULL, 0.0f );
+	bool bShowRange = ( g_vtAIConsoleVar.GetFloat() > 0.0f );
+	if( bShowRange )
 	{
-		WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon( pWeapon->GetId() );
-		if (pWeaponData)
-		{
-			return GetRangeStatus( (EnumAIWeaponType)pWeaponData->nAIWeaponType );	
-		}
+		DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowRange" );
+		system.Clear();
+		system << LineSystem::Arrow( vSourcePos, vTargetPos, Color::Yellow );
 	}
 
-	return eRangeStatusOk;
-}
-
-RangeStatus CAIBrain::GetRangeStatus(EnumAIWeaponType eWeaponType)
-{
-	return GetRangeStatus( eWeaponType, GetAI()->GetPosition() );
-}
-
-RangeStatus CAIBrain::GetRangeStatus(EnumAIWeaponType eWeaponType, const LTVector& vSourcePos )
-{
 	LTFLOAT fRangeMinSqr = 0.f;
 	LTFLOAT fRangeMaxSqr = 0.f;
 
 	switch ( eWeaponType )
 	{
 		case kAIWeap_Ranged:
+			if( bShowRange )
+			{
+				ObjectCPrint( GetAI()->GetUserObject(), "Ranged Weapon" );
+			}
 			fRangeMinSqr = m_pBrain->fAttackRangedRangeMin*m_pBrain->fAttackRangedRangeMin;
 			fRangeMaxSqr = (m_pBrain->fAttackRangedRangeMax + m_fRandomRangedVariation)*(m_pBrain->fAttackRangedRangeMax + m_fRandomRangedVariation);
 			break;
 
 		case kAIWeap_Melee:
+			if( bShowRange )
+			{
+				ObjectCPrint( GetAI()->GetUserObject(), "Melee Weapon" );
+			}
 			fRangeMinSqr = m_pBrain->fAttackMeleeRangeMin*m_pBrain->fAttackMeleeRangeMin;
 			fRangeMaxSqr = m_pBrain->fAttackMeleeRangeMax*m_pBrain->fAttackMeleeRangeMax;
 			break;
 
 		case kAIWeap_Thrown:
+			if( bShowRange )
+			{
+				ObjectCPrint( GetAI()->GetUserObject(), "Thrown Weapon" );
+			}
 			fRangeMinSqr = m_pBrain->fAttackThrownRangeMin*m_pBrain->fAttackThrownRangeMin;
 			fRangeMaxSqr = m_pBrain->fAttackThrownRangeMax*m_pBrain->fAttackThrownRangeMax;
 			break;
+
+		default:
+			if( bShowRange )
+			{
+				ObjectCPrint( GetAI()->GetUserObject(), "Unknown Weapon: %d", eWeaponType );
+			}
+			break;
 	}
 
-	LTFLOAT fDistanceSqr = vSourcePos.DistSqr(GetAI()->GetTarget()->GetVisiblePosition());
+	LTFLOAT fDistanceSqr = vSourcePos.DistSqr( vTargetPos );
 
-	RangeStatus eRangeStatus;
+	if( bShowRange )
+	{
+		ObjectCPrint( GetAI()->GetUserObject(), "%f %f %f", sqrt( fRangeMinSqr ), sqrt( fDistanceSqr ), sqrt( fRangeMaxSqr ) );
+	}
 
 	if ( fDistanceSqr < fRangeMinSqr )
 	{
-		return eRangeStatus = eRangeStatusTooClose;
+		return eRangeStatusTooClose;
 	}
 	else if ( fDistanceSqr > fRangeMaxSqr )
 	{
-		return eRangeStatus = eRangeStatusTooFar;
+		return eRangeStatusTooFar;
 	}
 	else
 	{
-		return eRangeStatus = eRangeStatusOk;
+		return eRangeStatusOk;
 	}
 }
 

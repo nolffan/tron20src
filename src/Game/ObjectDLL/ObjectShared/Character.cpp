@@ -56,6 +56,7 @@
 #include "ActiveWorldModel.h"
 #include "VersionMgr.h"
 #include "..\TRON\ContinuousFireHelper.h"	// RETAIL: Tron's fire helpers
+#include "PowerArmor.h"	// RETAIL: Tron's GetArmorPoints
 
 LINKFROM_MODULE( Character );
 
@@ -5508,6 +5509,51 @@ void CCharacter::SetArmorPointsMod( float fMod )
 bool CCharacter::IsDeflecting( )
 {
 	return !m_tmrDeflecting.Stopped( );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CCharacter::GetArmorPoints
+//
+//	PURPOSE:	Our armor (RETAIL: Tron's, retail 0x100941d0; the name is
+//				ours): with armor on, the total of our power armor
+//				attachments' hit points.
+//
+// ----------------------------------------------------------------------- //
+
+LTFLOAT CCharacter::GetArmorPoints()
+{
+	static HCLASS hPowerArmor = g_pLTServer->GetClass("PowerArmor");
+
+	LTFLOAT fArmor = 0.0f;
+	if ( GetAttachments() && m_bArmored )
+	{
+		int cAttachmentPositions = GetAttachments()->GetNumAttachmentPositions();
+		for ( int iAttachmentPosition = 0 ; iAttachmentPosition < cAttachmentPositions ; iAttachmentPosition++ )
+		{
+			CAttachmentPosition* pAttachmentPosition = GetAttachments()->GetAttachment((uint32)iAttachmentPosition);
+			if ( pAttachmentPosition->GetAttachment() && pAttachmentPosition->GetAttachment()->GetType() == ATTACHMENT_TYPE_OBJECT )
+			{
+				CAttachment* pAttachment = pAttachmentPosition->GetAttachment();
+
+				// RETAIL: the classes are given in reverse order (as in
+				// CAI::InitAttachments)
+				HCLASS hClass = g_pLTServer->GetObjectClass(pAttachment->GetModel());
+				if ( g_pLTServer->IsKindOf(hPowerArmor, hClass) )
+				{
+					PowerArmor* pPowerArmor = dynamic_cast<PowerArmor*>(g_pLTServer->HandleToObject(pAttachment->GetModel()));
+					if ( pPowerArmor )
+					{
+						fArmor += pPowerArmor->GetHitPoints();
+					}
+				}
+			}
+		}
+
+		return fArmor;
+	}
+
+	return m_damage.GetArmorPoints();
 }
 
 // ----------------------------------------------------------------------- //

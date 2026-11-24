@@ -115,6 +115,14 @@ public:
 		return 0;
 	}
 
+	// RETAIL: 0x10136820 (called through mem_fun when CAI's list is
+	// destroyed): the subject is gone.
+	int ClearSubject()
+	{
+		m_pSubject = 0;
+		return 0;
+	}
+
 protected:
 	ActivationNotifier(const ActivationNotifier& rhs) {}
 	ActivationNotifier& operator=(const ActivationNotifier& rhs ) {}
