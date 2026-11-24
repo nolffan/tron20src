@@ -296,16 +296,24 @@ bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 	return true;
 }
 
+// RETAIL: an FX link's shutdown, inline (CClientLightCycleMgr::Update,
+// 0x100114fb..0x10011581); the name is ours
+static inline void LCShutdownFX(CLIENTFX_LINK* pLink)
+{
+	if (pLink->IsValid())
+	{
+		g_pClientFXMgr->ShutdownClientFX(pLink);
+		pLink->ClearLink();
+	}
+}
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CClientLightCycleMgr::Update
 //
 //	PURPOSE:	Moves the cycles and their trails; the local cycle sends
-//				its position. RETAIL: 0x10011410. PORT: left out are the
-//				turbo FX shutdowns when the turbo runs out (the vehicle
-//				manager's FX links, +0x2140/+0x2144, or the cycle's
-//				CLightCycleFX's, +0x50/+0x54) and the remote cycles'
-//				CLightCycleFX move: neither is in our build.
+//				its position. RETAIL: 0x10011410. PORT: left out is the
+//				remote cycles' CLightCycleFX move.
 //
 // ----------------------------------------------------------------------- //
 
@@ -329,17 +337,37 @@ void CClientLightCycleMgr::Update()
 		bool bLocal = (pCyclist->hObject == g_pMoveMgr->GetObject());
 		LTVector vForward = pCyclist->vForward;
 
-		if (pCyclist->bTurbo || pCyclist->bTurboCursed)
+		// RETAIL: bTurbo, bTurboCursed, tested with shifts
+		if (((uint8)(pCyclist->nFlags >> 1) & 1) || ((uint8)(pCyclist->nFlags >> 5) & 1))
 		{
-			if (pCyclist->fPowerupDuration + pCyclist->fPowerupStartTime <= g_pLTClient->TronUnknownVirtual44())	// TRON: the game clock (iltclient.h)
+			if (g_pLTClient->TronUnknownVirtual44() >= pCyclist->fPowerupDuration + pCyclist->fPowerupStartTime)	// TRON: the game clock (iltclient.h)
 			{
-				pCyclist->bTurbo = false;
-				pCyclist->bTurboCursed = false;
-				pCyclist->bTurboCurse = false;
+				// bTurbo, bTurboCursed and bTurboCurse end
+				pCyclist->nFlags &= LCF_TIMED_MASK;
+
+				// The turbo FX end
+				if (bLocal)
+				{
+					LCShutdownFX(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2140());
+					LCShutdownFX(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2144());
+				}
+				else
+				{
+					CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+					if (psfxMgr)
+					{
+						CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(pCyclist->hObject);
+						if (pFX)
+						{
+							LCShutdownFX(pFX->GetTronUnknownFX50());
+							LCShutdownFX(pFX->GetTronUnknownFX54());
+						}
+					}
+				}
 			}
 		}
 
-		if (pCyclist->bTrailSpike)
+		if ((uint8)(pCyclist->nFlags >> 2) & 1)	// RETAIL: bTrailSpike
 		{
 			UpdateTrailSpike(pCyclist);
 		}
