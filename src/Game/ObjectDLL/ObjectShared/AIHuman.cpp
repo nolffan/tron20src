@@ -1583,16 +1583,20 @@ void CAIHuman::PreUpdate()
 
 void CAIHuman::UpdateNodes()
 {
-	CAI::UpdateNodes();
-
 	if( m_bUpdateNodes )
 	{
+		// RETAIL: Tron's (0x1016efe0): a seeker's eyes are at Joint6, and
+		// it looks along the node's forward.
 		if ( INVALID_MODEL_NODE == m_hHeadNode )
 		{
-			g_pModelLT->GetNode(m_hObject, "Head", m_hHeadNode);
-
-			AIASSERT( INVALID_MODEL_NODE != m_hHeadNode, m_hObject,
-				"Unable to find node named Head for this character.  Invalid Eye position" );
+			if( m_bSeeker )
+			{
+				g_pModelLT->GetNode(m_hObject, "Joint6", m_hHeadNode);
+			}
+			else
+			{
+				g_pModelLT->GetNode(m_hObject, "Head", m_hHeadNode);
+			}
 		}
 
 		LTransform transform;
@@ -1605,26 +1609,41 @@ void CAIHuman::UpdateNodes()
 		m_vEyePos.y = transform.m_Pos.y;
 
 		LTRotation rRot = transform.m_Rot;
-		//m_vEyeForward = rRot.Forwad();  // Forward in LT2... but Up in LT3... ?
-		m_vEyeForward = rRot.Up();
-
-	//	g_pLTServer->CPrint("Eye forward = %f,%f,%f .... forward = %f,%f,%f", EXPANDVEC(m_vEyeForward), EXPANDVEC(m_vForward));
-
-		// Get the current Torso node basis, which may be different from
-		// the AI's if Torso tracking is enabled.
-
-		if( ( m_pTrackedNodeContext->GetActiveTrackingGroup() == kTrack_AimAt ) &&
-			m_pTrackedNodeContext->IsValidTrackingGroup( kTrack_AimAt ) )
+		if( m_bSeeker )
 		{
-			m_vTorsoRight = -rRot.Forward();
-			m_vTorsoRight.y = 0.f;
-			m_vTorsoForward = m_vEyeForward;
+			m_vEyeForward = rRot.Forward();
 		}
-		else {
-			m_vTorsoRight = m_vRight;
-			m_vTorsoForward = m_vForward;
+		else
+		{
+			m_vEyeForward = rRot.Up();
 		}
 
+		// RETAIL: Tron takes the torso basis from the head node always.
+
+		m_vTorsoRight = -rRot.Forward();
+		m_vTorsoRight.y = 0.f;
+		m_vTorsoForward = m_vEyeForward;
+
+		// RETAIL: Tron draws the torso's forward when "AIShowVectors" is 1.
+
+		bool bShowVectors = ( g_AIShowVectorsTrack.GetFloat() == 1.0f );
+		if( m_bShowingVectors != bShowVectors )
+		{
+			if( !bShowVectors )
+			{
+				DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+				system.Clear();
+			}
+
+			m_bShowingVectors = bShowVectors;
+		}
+
+		if( m_bShowingVectors )
+		{
+			DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+			system.Clear();
+			system << LineSystem::Arrow( m_vEyePos, m_vEyePos + m_vTorsoForward * 512.0f, Color::Red );
+		}
 
 		// Do not update nodes again until someone clears this flag.
 
