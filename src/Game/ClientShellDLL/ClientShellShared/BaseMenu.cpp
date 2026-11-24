@@ -238,8 +238,8 @@ void CBaseMenu::Term()
 // This is called when the screen gets or loses focus
 void CBaseMenu::OnFocus(LTBOOL bFocus)
 {
+	// RETAIL: 0x101c71e0 leaves the list's selection
 	ClearSelection();
-	m_List.ClearSelection();
 	if (bFocus)
 	{
 		if (m_fScale != g_pInterfaceResMgr->GetXRatio())
