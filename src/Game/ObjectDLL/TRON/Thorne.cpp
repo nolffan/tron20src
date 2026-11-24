@@ -291,7 +291,7 @@ void CThorne::ReadProp(ObjectCreateStruct *pStruct)
 	const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(pProps->GetPropString(s_szWeapon, LTNULL));
 	m_nWeaponId = pWeapon ? pWeapon->nId : 0;
 
-	const char* pFilename = g_pModelButeMgr->GetModelFilename(m_cs.eModelId);
+	const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_cs.eModelId);
 	if (pFilename && pFilename[0])
 	{
 		SAFE_STRCPY(pStruct->m_Filename, pFilename);
