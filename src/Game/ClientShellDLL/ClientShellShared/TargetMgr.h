@@ -82,7 +82,8 @@ protected:
 	bool		m_bSearchTarget;
 	bool		m_bMoveTarget;
 	bool		m_bCanActivate;
-	// PORT: NOLF2's; Tron's constructor (build 51's) sets neither. Retail
+	// PORT: NOLF2's; Tron's constructor (build 51's) sets neither, and Tron's Update
+	// uses neither (m_bFirstUpdate is left unused). Retail
 	// has room for them in the padding at +0x81d..+0x81f
 	bool		m_bFirstUpdate;
 	uint8		m_nTargetTeam;
