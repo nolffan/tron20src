@@ -57,7 +57,12 @@ class CServerSubroutineMgr : public CGameButeMgr
 		// name (0 when there is none)
 		int		GetNameId(const char* szName, int nType);
 
+
 	protected :
+
+		// RETAIL: CPlayerObj reads the subroutine list itself (0x1007b423,
+		// 0x1008198d)
+		friend class CPlayerObj;
 
 		ServerSubroutineList	m_lstSubroutines;
 		ServerSubroutineList	m_lstProcedurals;

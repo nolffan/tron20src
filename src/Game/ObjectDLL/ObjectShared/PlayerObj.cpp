@@ -55,6 +55,7 @@
 #include "PickupItem.h"
 #include "../TRON/TronProjectile.h"	// RETAIL: Tron's
 #include "../TRON/SpectatorObject.h"	// RETAIL: Tron's
+#include "../TRON/ServerSubroutineMgr.h"	// RETAIL: Tron's
 
 #include <stdio.h>
 
@@ -2076,9 +2077,9 @@ void CPlayerObj::PostPropRead(ObjectCreateStruct *pStruct)
 		{
 			m_eModelId = (ModelId)pStruct->m_UserData;
 		}
-		m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
 
-		const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
+		// RETAIL: the multiplayer file name, no skeleton (0x1007b3be)
+		const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 		SAFE_STRCPY(pStruct->m_Filename, pFilename);
 
 		g_pModelButeMgr->CopySkinFilenames(m_eModelId, 0, pStruct->m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
@@ -2087,6 +2088,22 @@ void CPlayerObj::PostPropRead(ObjectCreateStruct *pStruct)
 
 		SAFE_STRCPY(pStruct->m_Name, DEFAULT_PLAYERNAME);
 
+	}
+
+	// RETAIL: the subroutines the server's list flags take the first slots,
+	// in order, cleared (0x1007b423)
+	uint16 nNumSubroutines = g_pServerSubroutineMgr->m_lstSubroutines.size( );
+	int nSlot = 0;
+	for( uint32 nSub = 0; nSub < nNumSubroutines; nSub++ )
+	{
+		if( g_pServerSubroutineMgr->m_lstSubroutines[nSub].bFunction )
+		{
+			strcpy( m_aSubroutines[nSlot].szName, g_pServerSubroutineMgr->m_lstSubroutines[nSub].szName );
+			m_aSubroutines[nSlot].nTronUnknown40 = 0;
+			m_aSubroutines[nSlot].nTronUnknown41 = 0;
+			m_aSubroutines[nSlot].nTronUnknown42 = 0;
+			nSlot++;
+		}
 	}
 }
 
@@ -5730,10 +5747,18 @@ void CPlayerObj::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 		LOAD_BYTE( m_aSubroutines[i].nTronUnknown42 );
 	}
 
-	// PORT: retail then copies the names of the subroutines the server's
-	// subroutine list flags (a retail-only manager, 0x10376d9c, with a vector
-	// of 0x48-byte entries at +0x111c) over the slots, in order (retail
-	// 0x1008198d); not written yet
+	// RETAIL: the subroutines the server's list flags take the first slots,
+	// in order (0x1008198d)
+	uint16 nNumSubroutines = g_pServerSubroutineMgr->m_lstSubroutines.size( );
+	int nSlot = 0;
+	for( uint32 nSub = 0; nSub < nNumSubroutines; nSub++ )
+	{
+		if( g_pServerSubroutineMgr->m_lstSubroutines[nSub].bFunction )
+		{
+			strcpy( m_aSubroutines[nSlot].szName, g_pServerSubroutineMgr->m_lstSubroutines[nSub].szName );
+			nSlot++;
+		}
+	}
 
 	m_fLastClientUpdateTime = 0.0f;
 }
