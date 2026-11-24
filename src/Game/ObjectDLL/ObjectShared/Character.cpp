@@ -1309,13 +1309,10 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		ResetCrosshair( );
 		return true;
 	}
-	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions )
+	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions && cMsg.GetArgCount() > 1 )
 	{
 		// RETAIL: Tron's (0x1008c084)
-		if( cMsg.GetArgCount() > 1 )
-		{
-			m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
-		}
+		m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Remove )
 	{
@@ -1753,9 +1750,8 @@ void CCharacter::CreateSpecialFX(LTBOOL bUpdateClients /* =LTFALSE */)
 	m_pcs->nTrackers				= 0;								// Subclasses need to fill this in in precreate
 	m_pcs->nDimsTracker				= MAIN_TRACKER;						// Main tracker
 	m_pcs->fStealthPercent			= m_damage.GetStealthModifier();
-	m_pcs->bTracking				= m_bTracking;
-	m_pcs->bRadarVisible			= m_bRadarVisible;
-	m_pcs->nCarrying				= m_nCarrying;
+	// RETAIL: Tron's (0x1008cf00) does not fill bTracking, bRadarVisible
+	// and nCarrying here.
 	
 
 	// If our Crosshair is unknown, then the effect gets the result of
@@ -1773,7 +1769,10 @@ void CCharacter::CreateSpecialFX(LTBOOL bUpdateClients /* =LTFALSE */)
 	}
 
 	m_pcs->eCrosshairCharacterClass = m_ccCrosshair;
-	m_pcs->nDamageFlags				= m_nDamageFlags;
+	// RETAIL: Tron's (0x1008d010) puts m_nDamageFlags into the first
+	// 64-bit field (+0x30) and m_nInstantDamageFlags into the second.
+	m_pcs->nInstantDamageFlags		= m_nDamageFlags;
+	m_pcs->nDamageFlags				= m_nInstantDamageFlags;
 	m_pcs->fPitch					= m_fPitch;
 
 
@@ -4507,10 +4506,10 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_COBJECT(m_pLastPlayerInfoVolume);		// RETAIL: Tron's (Character.h)
 	SAVE_COBJECT(m_pCurrentPlayerInfoVolume);
 
-	// RETAIL: these two are written inline (0x10092793), the vectors above
-	// with WriteType out of line
-	pMsg->WriteData(&m_vLastVolumePos, sizeof(LTVector) * 8);
-	pMsg->WriteData(&m_vLastInformationVolumePos, sizeof(LTVector) * 8);
+	// RETAIL: these two are written with WriteType, inline (0x10092793);
+	// the SAVE_VECTORs above call it out of line
+	pMsg->WriteType(m_vLastVolumePos);
+	pMsg->WriteType(m_vLastInformationVolumePos);
 	SAVE_BYTE(m_byFXFlags);
 	SAVE_BOOL(m_bShortRecoiling);
 	SAVE_HSTRING(m_hstrHeadExtension);
