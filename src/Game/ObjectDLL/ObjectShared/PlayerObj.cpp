@@ -1474,7 +1474,8 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			return false;
 		}
 
-		m_damage.SetHitPoints(LTCLAMP(fHitPoints, 1.0f, m_damage.GetMaxHitPoints()));
+		fHitPoints = LTCLAMP(fHitPoints, 1.0f, m_damage.GetMaxHitPoints());
+		m_damage.SetHitPoints(fHitPoints);
 	}
 	else if (cMsg.GetArg(0) == s_cTok_SetEnergy)
 	{
@@ -1482,9 +1483,11 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		// points, not to the maximum energy (see RETAIL_BUGS.md).
 		LTFLOAT fEnergy = (LTFLOAT)atof(cMsg.GetArg(1));
 #ifdef TRON20SRC_MODERN
-		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxEnergy()));
+		fEnergy = LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxEnergy());
+		m_damage.SetEnergy(fEnergy);
 #else
-		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxHitPoints()));
+		fEnergy = LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxHitPoints());
+		m_damage.SetEnergy(fEnergy);
 #endif // TRON20SRC_MODERN
 	}
 	else if (cMsg.GetArg(0) == s_cTok_DestroyProjectile)
