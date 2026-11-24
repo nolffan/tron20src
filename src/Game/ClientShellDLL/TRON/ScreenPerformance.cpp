@@ -412,10 +412,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 		break;
 	case CMD_DISPLAY:
 	{
+		// RETAIL: Tron's (0x10071c48) leaves the labels as they are
 		m_pSFX->Show(LTFALSE);
 		m_pDisplay->Show(LTTRUE);
 		m_pSFXLabel->Show(LTFALSE);
-		m_pDisplayLabel->Show(LTTRUE);
 		m_pSFXFrame->Show(LTFALSE);
 		m_pDisplayFrame->Show(LTTRUE);
 
@@ -425,10 +425,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 	}	break;
 	case CMD_SFX:
 	{
+		// RETAIL: Tron's (0x10071d8f) leaves the labels as they are
 		m_pDisplay->Show(LTFALSE);
 		m_pSFX->Show(LTTRUE);
 		m_pDisplayLabel->Show(LTFALSE);
-		m_pSFXLabel->Show(LTTRUE);
 		m_pDisplayFrame->Show(LTFALSE);
 		m_pSFXFrame->Show(LTTRUE);
 
