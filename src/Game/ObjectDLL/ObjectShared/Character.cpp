@@ -3512,6 +3512,8 @@ bool CCharacter::DoLipSyncingOnDlgSound( HOBJECT hSpeaker )
 
 void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 {
+	// RETAIL: Tron's (0x10090970): no multiplayer duration sound, no
+	// death-sound case and no sound type in the messages
 	if (!pSound || !pSound[0]) return;
 	if ((m_damage.IsDead() && eType != CST_DEATH)) return;
 	if (eType == CST_AI_SOUND && (sm_cAISnds >= 2)) return;
@@ -3521,60 +3523,13 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 
 	KillDlgSnd();
 
-
 	// Check if character is supposed to lipsync.  Also, don't do lipsyncing on the 
 	// player in singleplayer.
-    bool bLipSync = DoLipSyncingOnDlgSound( m_hObject );
+	bool bLipSync = DoLipSyncingOnDlgSound( m_hObject );
 
-
-	//HACK: We need to determine the duration of the dialogue sound so we can effectively time out
-	//		in case one or more of the clients is not responding. In order to determine the duration,
-	//		we have to start playing the sound...
-	LTFLOAT fDuration = 0.0;
-	if (IsMultiplayerGame() && (bLipSync || DoDialogueSubtitles()) )
-	{
-	
-		uint32 dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_TIME;
-		LTFLOAT fRadius = 1.0f;
-		uint8 nVolume = SMGR_DEFAULT_VOLUME;
-		HLTSOUND hTmpSnd = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, const_cast<char*>(pSound),
-			fRadius, m_eSoundPriority, dwFlags, nVolume, 1.0f, -1.0f, SPEECH_SOUND_CLASS );
-
-		g_pLTServer->SoundMgr()->GetSoundDuration(hTmpSnd, fDuration);
-
-		g_pLTServer->SoundMgr()->KillSound(hTmpSnd);
-
-		fDuration += kDialogueTimeFudgeFactor;
-		// PORT: no dialogue timer to start (above)
-
-	}
-
-
-	//special case for handling death sounds. We can't track these sounds because both the
-	// character object and the characterFX object may be destroyed before the sound finishes
-	// and we don't want wither of these events to kill the sound
-	if ((bLipSync || DoDialogueSubtitles()) && (eType == CST_DEATH) )
-	{
-		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
-
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_SFX_MESSAGE);
-		cMsg.Writeuint8(SFX_CHARACTER_ID);
-		cMsg.WriteObject(m_hObject);
-		cMsg.Writeuint8(CFX_DIALOGUE_MSG);
-		cMsg.WriteHString(hStr);
-		cMsg.Writefloat(m_fSoundRadius);
-		m_nUniqueDialogueId++;
-		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		g_pLTServer->FreeString(hStr);
-	}
-	else if (bLipSync)
+	if (bLipSync)
 	{
 		// Tell the client to play the sound (lip synched)...
-		// TO DO: Remove sending of sound path, send sound id instead...
 
 		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
 
@@ -3587,15 +3542,14 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 		cMsg.Writefloat(m_fSoundRadius);
 		m_nUniqueDialogueId++;
 		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		g_pLTServer->FreeString(hStr);
 
 		// Recored who we sent this message to.
-		m_PlayerTrackerDialogue.Init( *this );
+		m_PlayerTrackerDialogue.Init( *static_cast<IPlayerTrackerReceiver*>( this ));
 	}
-	else if (DoDialogueSubtitles() || (eType == CST_DAMAGE))
+	else if (DoDialogueSubtitles())
 	{
 		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
 
@@ -3608,13 +3562,12 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 		cMsg.Writefloat(m_fSoundRadius);
 		m_nUniqueDialogueId++;
 		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		g_pLTServer->FreeString(hStr);
 
 		// Recored who we sent this message to.
-		m_PlayerTrackerDialogue.Init( *this );
+		m_PlayerTrackerDialogue.Init( *static_cast<IPlayerTrackerReceiver*>( this ));
 	}
 	else
 	{
