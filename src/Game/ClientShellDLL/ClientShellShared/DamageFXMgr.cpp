@@ -829,19 +829,12 @@ void DAMAGEFX::Update( float fElapsedTime )
 	//update our elapsed time
 	m_fElapsedTime += fElapsedTime;
 
-	// ABM 5/6/02 Quick check on non-looping FX to see if they need to terminate
-	if (m_bInstantEffect && m_DamageFXInstance.IsValid())
-	{
-		if (m_DamageFXInstance.GetInstance()->IsDone())
-		{
-			Stop();
-			return;
-		}
-	}
+	// RETAIL: 0x10158b4d: Tron's has no check on non-looping FX here, and
+	// does not show the model while the body is on a ladder
 
 	// If we want to see the model make sure to continualy set it visible (it gets set invisible elsewhere)...
 
-	if( m_bActive && m_bShowClientModel && !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() )
+	if( m_bActive && m_bShowClientModel && !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() && !g_pMoveMgr->IsBodyOnLadder() )
 		g_pCommonLT->SetObjectFlags( g_pLTClient->GetClientObject(), OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE );
 
 	// See if we can free ourselfs by jumping (Glue Bomb, Bear Trap)...
@@ -1030,13 +1023,19 @@ void DAMAGEFX::Update( float fElapsedTime )
 		fFovX += m_fFOVXOffset * m_fMoveMult;
 		fFovY += m_fFOVYOffset * m_fMoveMult;
 
-		if (!g_pPlayerMgr->IsZoomed() && !g_pPlayerMgr->IsZooming())
-			g_pLTClient->SetCameraFOV( hCamera, fFovX, fFovY );
+		// RETAIL: 0x10159188: Tron's sets the FOV while zoomed too
+		g_pLTClient->SetCameraFOV( hCamera, fFovX, fFovY );
 
 		rot.Rotate( vF, m_fOffsetRot * m_fMoveMult );
 		
-		if( !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() )
+		if( !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() && !g_pMoveMgr->IsBodyOnLadder() )
 			g_pLTClient->SetObjectRotation( hCamera, &rot );
+	}
+
+	// RETAIL: 0x10159264: Tron's checks non-looping FX for their end here
+	if (m_bInstantEffect && (!m_DamageFXInstance.IsValid() || m_DamageFXInstance.GetInstance()->IsDone()))
+	{
+		Stop( LTFALSE );
 	}
 
 	// Set our movement and input...
