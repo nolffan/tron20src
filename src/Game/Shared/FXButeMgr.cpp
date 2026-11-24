@@ -4488,9 +4488,7 @@ void CFXButeMgr::CreateImpactFX(IMPACTFX* pImpactFX, IFXCS & cs)
 
 	int nDetailLevel = pSettings->SpecialFXSetting();
 
-	// Add a pusher if necessary...
-
-	CreatePusherFX(pImpactFX->pPusherFX, cs.vPos);
+	// RETAIL: CShell 0x10155dc0: Tron's impacts add no pusher
 
 	// Play the impact sound if appropriate...
 
