@@ -341,7 +341,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		Collective_Template* pCC_Template = debug_new( Collective_Template );
 		ReadTemplate(szTagName, pCC_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapCollectiveNameToID.insert( _mapNameToID::value_type(std::string(pCC_Template->m_szKey), m_listpCollectiveTemplates.size()) );
+		m_mapCollectiveNameToID.insert( _mapNameToID::value_type(CaselessString(pCC_Template->m_szKey), m_listpCollectiveTemplates.size()) );
 		m_listpCollectiveTemplates.push_back( pCC_Template );
 		
 		sprintf(szTagName, "%s%d", "Collective", m_listpCollectiveTemplates.size());
@@ -354,7 +354,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		ObjectRelationMgr_Template* pORM_Template = debug_new( ObjectRelationMgr_Template );
 		ReadTemplate(szTagName, pORM_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapObjectRelationMgrNameToID.insert( _mapNameToID::value_type(std::string(pORM_Template->m_szKey), m_listpObjectRelationMgrTemplates.size()) );
+		m_mapObjectRelationMgrNameToID.insert( _mapNameToID::value_type(CaselessString(pORM_Template->m_szKey), m_listpObjectRelationMgrTemplates.size()) );
 		m_listpObjectRelationMgrTemplates.push_back( pORM_Template );
 		
 		sprintf(szTagName, "%s%d", "RelationalObject", m_listpObjectRelationMgrTemplates.size());
@@ -367,7 +367,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		RelationUser_Template* pRU_Template = debug_new(RelationUser_Template);
 		ReadTemplate(szTagName, pRU_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapRelationNameToID.insert( _mapNameToID::value_type(std::string(pRU_Template->m_szKey), m_listpRelationUserTemplates.size()) );
+		m_mapRelationNameToID.insert( _mapNameToID::value_type(CaselessString(pRU_Template->m_szKey), m_listpRelationUserTemplates.size()) );
 		m_listpRelationUserTemplates.push_back( pRU_Template );
 
 		sprintf(szTagName, "%s%d", "RelationSet", m_listpRelationUserTemplates.size());
@@ -380,7 +380,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 		DataUser_Template* pDU_Template = debug_new(DataUser_Template);
 		ReadTemplate(szTagName, pDU_Template);
 		// Add the CRelationUser to our map so we can find it later.
-		m_mapDataNameToID.insert( _mapNameToID::value_type(std::string(pDU_Template->m_szKey), m_listpRelationDataTemplates.size()) );
+		m_mapDataNameToID.insert( _mapNameToID::value_type(CaselessString(pDU_Template->m_szKey), m_listpRelationDataTemplates.size()) );
 		m_listpRelationDataTemplates.push_back(pDU_Template);
 
 		sprintf(szTagName, "%s%d", "RelationData", m_listpRelationDataTemplates.size());
@@ -405,7 +405,7 @@ LTBOOL CRelationButeMgr::Init(const char* const szAttributeFile)
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CDataUser* ) const
 {
-	_mapNameToID::const_iterator it = m_mapDataNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapDataNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapDataNameToID.end() )
 	{
 		return (*it).second;
@@ -426,7 +426,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CDataUser*
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName(const char* const pszName, CRelationUser*) const
 {
-	_mapNameToID::const_iterator it = m_mapRelationNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapRelationNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapRelationNameToID.end() )
 	{
 		return (*it).second;
@@ -446,7 +446,7 @@ int CRelationButeMgr::GetTemplateIDByName(const char* const pszName, CRelationUs
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CCollectiveRelationMgr* ) const
 {
-	_mapNameToID::const_iterator it = m_mapCollectiveNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapCollectiveNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapCollectiveNameToID.end() )
 	{
 		return (*it).second;
@@ -466,7 +466,7 @@ int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CCollectiv
 //----------------------------------------------------------------------------
 int CRelationButeMgr::GetTemplateIDByName( const char* const pszName, CObjectRelationMgr* ) const
 {
-	_mapNameToID::const_iterator it = m_mapObjectRelationMgrNameToID.find( std::string(pszName) );
+	_mapNameToID::const_iterator it = m_mapObjectRelationMgrNameToID.find( CaselessString(pszName) );
 	if ( it != m_mapObjectRelationMgrNameToID.end() )
 	{
 		return (*it).second;
@@ -764,7 +764,7 @@ void CRelationButeMgr::FillRelationSet(const char* const szTemplateName, Relatio
 		return;
 
 	// Insure that the name maps validly.  If it doesn't, then assert and return.
-	_mapNameToID::const_iterator RelationTemplateIterator = m_mapRelationNameToID.find( std::string(szTemplateName) );
+	_mapNameToID::const_iterator RelationTemplateIterator = m_mapRelationNameToID.find( CaselessString(szTemplateName) );
 	if (RelationTemplateIterator == m_mapRelationNameToID.end())
 	{
 		AIASSERT1( 0, NULL, "Unable to find template with name %s", szTemplateName );

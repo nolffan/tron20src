@@ -39,6 +39,7 @@
 #include "AIUtils.h"
 #include "RelationChangeObserver.h"
 #include "Timer.h"
+#include "TRON/CaselessString.h"
 
 // Forward declarations
 class CRelationButeMgr;
@@ -189,7 +190,9 @@ public:
 	void	CopyTemplate(const char* const, CCollectiveRelationMgr*) const;
 	void	CopyTemplate(const char* const, CObjectRelationMgr*) const;
 
-	typedef std::map<std::string, int> _mapNameToID;
+	// RETAIL: Tron's names are caseless (the map's find, 0x10169390, and
+	// GetTemplateIDByName 0x101671e0 build a CaselessString)
+	typedef std::map<CaselessString, int> _mapNameToID;
 	typedef std::vector<RelationUser_Template*> _listRelationUserTemplates;
 	typedef std::vector<DataUser_Template*> _listRelationDataTemplates;
 	typedef std::vector<Collective_Template*> _listCollectiveTemplates;
