@@ -266,14 +266,14 @@ void CAIPath::GetInitialDir(LTVector* pvDir)
 		}
 	}
 
-	if( bFirst )
+	if( !bFirst )
 	{
-		*pvDir = m_pAI->GetForwardVector();
+		LTVector vDir = m_pAI->GetPosition() - vPosFirst;
+		*pvDir = vDir.Unit();
 		return;
 	}
 
-	LTVector vDir = m_pAI->GetPosition() - vPosFirst;
-	*pvDir = vDir.Unit();
+	*pvDir = m_pAI->GetForwardVector();
 }
 
 void CAIPath::GetFinalDir(LTVector* pvDir)

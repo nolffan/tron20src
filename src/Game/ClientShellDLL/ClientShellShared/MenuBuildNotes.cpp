@@ -111,17 +111,9 @@ void CMenuBuildNotes::OnFocus(LTBOOL bFocus)
 			GetIntelName(pItem->nTextId,szTemp,sizeof(szTemp));
 
 			char* pName = szTemp;
-			if (_strnicmp(szTemp,"<color",6) == 0)
-			{
+			if (!_strnicmp(szTemp,"<color",6))
 				pName = strchr(szTemp,'>') + 1;
-			}
-
-			sName.erase();
-			uint32 nLen = strlen(pName);
-			for (uint32 n = 0; n < nLen; n++)
-			{
-				sName += (wchar_t)(uint8)pName[n];
-			}
+			LTGUIWiden(sName, pName);
 
 			CLTGUITextCtrl* pCtrl = LTNULL;
 			if (nextItem < m_List.GetNumControls())

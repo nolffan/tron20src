@@ -127,7 +127,7 @@ uint32 LightCycleVolume::OnPrecreate(ObjectCreateStruct* pOCS, float precreateTy
 
 		m_eModelId = g_pModelButeMgr->GetModelId(pOCS->m_cProperties.GetPropString("ModelTemplate", LTNULL));
 
-		const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
+		const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);	// RETAIL: the multi model file (0x1002d203)
 		if (pFilename && pFilename[0])
 		{
 			SAFE_STRCPY(pOCS->m_Filename, pFilename);

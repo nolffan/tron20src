@@ -1591,3 +1591,13 @@ the clone is made but the first node is not, the code writes the message
 for the clone's name. The code must test the clone.
 
 Not fixed yet: the modern build must test hTrackedNodeClone.
+
+### The HUD does not delete its version item
+
+CShell.dll 0x1009b240 (CTronHUDMgr::~CTronHUDMgr, TRON/TronHUDMgr.cpp). The
+constructor makes fourteen HUD items with new. The destructor removes and
+deletes thirteen of them. It does not remove or delete m_pVersion (the
+CHUDVersion item). The memory of the item is not released when the game
+stops. The player does not see an effect.
+
+Not fixed yet: the modern build must delete m_pVersion with the other items.

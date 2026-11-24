@@ -75,29 +75,23 @@ void CHUDDecisionChoice::Init(int nNumber, uint32 nStringID, int nFontSize, int 
 	m_Frame.Init("chooserbox");
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(20);
-	m_nWidth = nWidth;
 	float fYRatio = g_pInterfaceResMgr->GetYRatio();
+	m_nWidth = nWidth;
 
 	std::wstring sText;
 	char szTmp[1024];
 
 	sprintf(szTmp, "%d", nNumber);
-	sText.erase(sText.begin(), sText.end());
-	uint32 nLen = strlen(szTmp);
-	for (uint32 i = 0; i < nLen; i++)
-		sText += (wchar_t)(uint8)szTmp[i];
+	LTGUIWiden(sText, szTmp);
 
-	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f);
 	m_pNumber->SetCharScreenHeight(20);
 
 	FormatString(nStringID, szTmp, sizeof(szTmp));
-	sText.erase(sText.begin(), sText.end());
-	nLen = strlen(szTmp);
-	for (i = 0; i < nLen; i++)
-		sText += (wchar_t)(uint8)szTmp[i];
+	LTGUIWiden(sText, szTmp);
 
 	pFont = g_pInterfaceResMgr->GetFontForHeight((int)((float)nFontSize * fYRatio));
-	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f);
 	m_pText->SetCharScreenHeight(nFontSize);
 	m_pText->SetWrapWidth(m_nWidth - 38);
 
@@ -118,29 +112,23 @@ void CHUDDecisionChoice::Init(int nNumber, HSTRING hString, int nFontSize, int n
 	m_Frame.Init("chooserbox");
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(20);
-	m_nWidth = nWidth;
 	float fYRatio = g_pInterfaceResMgr->GetYRatio();
+	m_nWidth = nWidth;
 
 	std::wstring sText;
 	char szTmp[1024];
 
 	sprintf(szTmp, "%d", nNumber);
-	sText.erase(sText.begin(), sText.end());
-	uint32 nLen = strlen(szTmp);
-	for (uint32 i = 0; i < nLen; i++)
-		sText += (wchar_t)(uint8)szTmp[i];
+	LTGUIWiden(sText, szTmp);
 
-	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pNumber = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f);
 	m_pNumber->SetCharScreenHeight(20);
 
 	pString = g_pLTClient->GetStringData(hString);
-	sText.erase(sText.begin(), sText.end());
-	nLen = strlen(pString);
-	for (i = 0; i < nLen; i++)
-		sText += (wchar_t)(uint8)pString[i];
+	LTGUIWiden(sText, pString);
 
 	pFont = g_pInterfaceResMgr->GetFontForHeight((int)((float)nFontSize * fYRatio));
-	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f);
 	m_pText->SetCharScreenHeight(nFontSize);
 	m_pText->SetWrapWidth(m_nWidth - 38);
 
@@ -166,8 +154,10 @@ void CHUDDecisionChoice::SetPosition(int x, int y)
 	m_pText->GetDims(&nWidth, &nHeight);
 	m_pNumber->GetDims(&nWidth, &nNumberHeight);
 
-	// RETAIL: the frame's height is the number's width and height
-	m_Frame.SetRect(LTRect(x, y, x + m_nWidth, y + nWidth + nNumberHeight));
+	// RETAIL: the frame is as high as the text and the number together
+	// (0x1013fdf2). NEAR: retail keeps nNumberHeight below nHeight on the
+	// stack; tried the sum's three orders and the declarations' order
+	m_Frame.SetRect(LTRect(x, y, x + m_nWidth, y + nHeight + nNumberHeight));
 
 	g_pDrawPrim->SetXYWH(&m_Poly, (float)x, (float)y + 2.0f, 32.0f, 32.0f);
 	m_pNumber->SetPosition(x + 14, y + 6);

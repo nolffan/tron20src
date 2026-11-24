@@ -117,7 +117,8 @@ void CHUDEnergyTransfer::Update()
 // RETAIL: 0x10029610: the triangle from the center to the meter's edge at
 // the two angles (the meter is 64x128, its center at the left middle).
 // NEAR: retail multiplies by -0.5 and adds 0.5 for the v's; VC6 makes
-// 0.5 - y * 0.5 of every form of it tried here (fsubr for fadd)
+// 0.5 - y * 0.5 of every form of it tried here (fsubr for fadd): also
+// y / -2 + 0.5, 0.5 + -0.5 * y, -y * 0.5 + 0.5, (1 - y) * 0.5
 void CHUDEnergyTransfer::BuildFill(LT_POLYFT3* pPoly, float fStartAngle, float fEndAngle)
 {
 	float x, y;

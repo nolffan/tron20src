@@ -1299,29 +1299,32 @@ void CUserProfile::ApplyDisplay()
 //	{
 //		g_pLTClient->CPrint("CUserProfile::ApplyDisplay() : restart because of VSync change");
 //	}
-	
+
+	// RETAIL: Tron's is Build 51's: the render modes are listed first and
+	// matched without the hardware T&L flag (0x100efb23)
+
+	// Build the list of render modes
+	RMode *pRenderModes=g_pLTClient->GetRenderModes();
+	RMode *pMode=pRenderModes;
+	LTBOOL bFound = LTFALSE;
+	while (pMode != LTNULL && !bFound)
+	{
+		bFound = (	pMode->m_Width == m_nScreenWidth &&
+					pMode->m_Height == m_nScreenHeight &&
+					pMode->m_BitDepth == m_nScreenDepth );
+		if (!bFound)
+			pMode = pMode->m_pNext;
+	}
+
 	RMode currentMode;
 	if (g_pGameClientShell->IsRendererInitted() && g_pLTClient->GetRenderMode(&currentMode) == LT_OK)
 	{
-		// Build the list of render modes
-		RMode *pRenderModes=g_pLTClient->GetRenderModes();
-		RMode *pMode=pRenderModes;
-		LTBOOL bFound = LTFALSE;
-		while (pMode != LTNULL && !bFound)
-		{
-			bFound = (	pMode->m_Width == m_nScreenWidth &&
-						pMode->m_Height == m_nScreenHeight &&
-						pMode->m_BitDepth == m_nScreenDepth &&
-						pMode->m_bHWTnL == currentMode.m_bHWTnL);
-			if (!bFound)
-				pMode = pMode->m_pNext;
-		}
-
-
 		if (pMode && !IsRendererEqual(pMode,&currentMode))
 		{
 			//switch renderers
-			g_pInterfaceResMgr->DrawMessage(IDS_REINITIALIZING_RENDERER);
+			// RETAIL: Tron's string 911 (0x100efbbc; NOLF2's IDS_REINITIALIZING_RENDERER
+			// is 1226)
+			g_pInterfaceResMgr->DrawMessage(911);
 			g_pLTClient->SetRenderMode(pMode);
 			g_pInterfaceMgr->ScreenDimsChanged();
 
@@ -1331,10 +1334,10 @@ void CUserProfile::ApplyDisplay()
 //				g_pLTClient->CPrint("CUserProfile::ApplyDisplay() : cancel restart because of mode change");
 			bRestart = false;
 		}
-
-		// Free the linked list of render modes
-		g_pLTClient->RelinquishRenderModes(pRenderModes);
 	}
+
+	// Free the linked list of render modes
+	g_pLTClient->RelinquishRenderModes(pRenderModes);
 
 	
 	//make sure to save out these changed settings so that they will be applied next

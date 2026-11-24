@@ -644,13 +644,16 @@ bool CBaseScreenLightCycle::IsCycleColorLocked(const char *pszColor)
 	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown37))
 		return false;
 
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	// NEAR: retail keeps the end's address in eax for the last compare
+	// (no xor before the sete); tried a pointer local, the operands swapped
+	// and a while loop
+	StringArray &colors = g_pProfileMgr->GetCurrentProfile()->m_UnlockedCycleColors;
 	StringArray::iterator it;
-	StringArray::iterator itEnd = pProfile->m_UnlockedCycleColors.end();
-	for (it = pProfile->m_UnlockedCycleColors.begin(); it != itEnd; ++it)
+	StringArray::iterator itEnd = colors.end();
+	for (it = colors.begin(); it != itEnd; ++it)
 	{
 		if (LCNameEquals(*it,pszColor))
 			break;
 	}
-	return (it == pProfile->m_UnlockedCycleColors.end());
+	return (it == colors.end());
 }

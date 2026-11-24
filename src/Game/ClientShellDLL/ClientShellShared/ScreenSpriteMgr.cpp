@@ -70,6 +70,10 @@ CScreenSprite::CScreenSprite()
 	m_bExpires = LTTRUE;
 	m_fLifeTime = 1.0f;
 
+	// RETAIL: Tron's clears the drawprim's z's, last vertex first
+	// (0x10164721..0x1016472d)
+	m_DrawPrim.verts[0].z = m_DrawPrim.verts[1].z = m_DrawPrim.verts[2].z = m_DrawPrim.verts[3].z = 0.0f;
+
 	m_eLayer = SPRITELAYER_DEFAULT;
 }
 

@@ -341,11 +341,10 @@ class CPlayerObj : public CCharacter
 		virtual void UpdateInterface( bool bForceUpdate ); // Send client interface info.
 
 		virtual void GetExtraFireMessageInfo( uint8, ILTMessage_Read*, WeaponFireInfo* ) {}
-		// RETAIL: Tron's: reads more of the fire message into what follows
-		// GetExtraFireMessageInfo's (retail 0x10080140, called right after it:
-		// eleven pairs of flags at +0x68, then the data each flags at +0x80
-		// on; it does not use this). PORT: not yet written, empty here
-		virtual void TronUnknownVirtual114( ILTMessage_Read* /*pMsg*/, WeaponFireInfo* /*pInfo*/ ) {}
+		// RETAIL: Tron's: reads the weapon modifiers of the fire message
+		// (retail 0x10080140, called right after GetExtraFireMessageInfo; it
+		// does not use this). The name is ours
+		virtual void TronUnknownVirtual114( ILTMessage_Read* pMsg, WeaponFireInfo* pInfo );
 		// RETAIL: an empty virtual of Tron's with one argument (retail 0x1026abb0)
 		virtual void TronUnknownVirtual115( uint32 /*nUnknown*/ ) {}
 

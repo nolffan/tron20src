@@ -33,6 +33,10 @@ class CAIHumanStateAttackMove : public CAIHumanState
 		CMusicMgr::Mood GetMusicMood() { return CMusicMgr::eMoodAggressive; }
 		
 		void SetAttackMove(EnumAnimProp	eMove) { m_eAttackMove = eMove; }
+		// RETAIL: Tron's version (inline in CAIGoalAttackRangedDynamic::
+		// SelectAttackMove, 0x10211837) sets m_bTronUnknown90 when the move
+		// changes.  The name is ours
+		void SetAttackMoveTron(EnumAnimProp eMove) { if( m_eAttackMove != eMove ) m_bTronUnknown90 = LTTRUE; m_eAttackMove = eMove; }
 		void SetAttackMoveDest(LTVector vDest) { m_vAttackMoveDest = vDest; }
 
 	protected:

@@ -142,10 +142,10 @@ void HealthZone::UpdatePhysics(ContainerPhysics* pCPStruct)
 				DamageStruct damage;
 
 				damage.eType	= DT_EXPLODE;
+				damage.bTronUnknown44 = LTTRUE;
 				damage.fDamage	= damage.kInfiniteDamage;
 				damage.hDamager	= m_hObject;
 				damage.vDir.Init(0.0f, 1.0f, 0.0f);
-				damage.bTronUnknown44 = LTTRUE;
 
 				damage.DoDamage(this, pCharacter->m_hObject);
 			}
