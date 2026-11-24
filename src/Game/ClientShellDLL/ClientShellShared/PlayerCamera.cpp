@@ -1072,44 +1072,88 @@ void CPlayerCamera::CalcNoClipPos_WithoutObject( LTVector & vPos, LTRotation & r
     float fClipDistance = g_vtCameraClipDistance.GetFloat();
 
 
-	// Check for walls to the right...
-
-	vTemp = (vR * fClipDistance);
-	vTemp += vPos;
-
 	ClientIntersectQuery iQuery;
 	ClientIntersectInfo  iInfo;
 
-	iQuery.m_Flags = dwFlags;
-	iQuery.m_From = vPos;
-	iQuery.m_To   = vTemp;
+	// RETAIL: Tron's (0x1015d780): in the modes 0 and 2 the walls to the
+	// right are checked first, in the others the walls to the left
 
-	if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
+	if (nTronUnknown == 2 || nTronUnknown == 0)
 	{
-		vTemp = iInfo.m_Point - vPos;
-        float fDist = (fClipDistance - vTemp.Length());
+		// Check for walls to the right...
 
-		vTemp = (vR * -fDist);
-		vPos += vTemp;
+		vTemp = (vR * fClipDistance);
+		vTemp += vPos;
+
+		iQuery.m_Flags = dwFlags;
+		iQuery.m_From = vPos;
+		iQuery.m_To   = vTemp;
+
+		if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
+		{
+			vTemp = iInfo.m_Point - vPos;
+	        float fDist = (fClipDistance - vTemp.Length());
+
+			vTemp = (vR * -fDist);
+			vPos += vTemp;
+		}
+		else
+		{
+		 	// If we didn't adjust for a wall to the right, check walls to the left...
+
+			vTemp = (vR * -fClipDistance);
+			vTemp += vPos;
+
+			iQuery.m_Flags = dwFlags;
+			iQuery.m_From = vPos;
+			iQuery.m_To = vTemp;
+
+			if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
+			{
+				vTemp = iInfo.m_Point - vPos;
+	            float fDist = (fClipDistance - vTemp.Length());
+
+				vTemp = (vR * fDist);
+				vPos += vTemp;
+			}
+		}
 	}
 	else
 	{
-	 	// If we didn't adjust for a wall to the right, check walls to the left...
-
 		vTemp = (vR * -fClipDistance);
 		vTemp += vPos;
 
 		iQuery.m_Flags = dwFlags;
 		iQuery.m_From = vPos;
-		iQuery.m_To = vTemp;
+		iQuery.m_To   = vTemp;
 
 		if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
 		{
 			vTemp = iInfo.m_Point - vPos;
-            float fDist = (fClipDistance - vTemp.Length());
+			float fDist = (fClipDistance - vTemp.Length());
 
 			vTemp = (vR * fDist);
 			vPos += vTemp;
+		}
+		else
+		{
+			// If we didn't adjust for a wall to the left, check walls to the right...
+
+			vTemp = (vR * fClipDistance);
+			vTemp += vPos;
+
+			iQuery.m_Flags = dwFlags;
+			iQuery.m_From = vPos;
+			iQuery.m_To = vTemp;
+
+			if (g_pLTClient->IntersectSegment(&iQuery, &iInfo))
+			{
+				vTemp = iInfo.m_Point - vPos;
+				float fDist = (fClipDistance - vTemp.Length());
+
+				vTemp = (vR * -fDist);
+				vPos += vTemp;
+			}
 		}
 	}
 
