@@ -1159,11 +1159,10 @@ Object.lto 0x10145ab0 and CShell.dll 0x10154090 (DISCCLASSDATA::Init,
 Shared/FXButeMgr.cpp). The function reads the "Controlable" attribute with
 CButeMgr::GetByte, but it does not use the result. It sets bControlable
 (0x1d4) to LTTRUE for each disc. Thus a disc that the attributes make not
-controllable is controllable. Our Init is not yet byte-identical (Build
-69's members are still in the struct); the retail code at the two addresses
-shows the bug.
+controllable is controllable.
 
-Not fixed yet: the modern build should keep the value that GetByte returns.
+Fixed in the modern build: src/Game/Shared/FXButeMgr.cpp keeps the value
+that GetByte returns.
 
 ### The team selection screen reads one row team past its list
 
@@ -1423,6 +1422,19 @@ write past the buffer, into the GenericProp after it.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Character.cpp
 gives the buffer 100 bytes.
+
+### A hold block straight at the disc uses a defense value that is not set
+
+Object.lto 0x10063f00 (CTronPlayerObj::GetDefensePercentage, ObjectDLL/
+TRON/TronPlayerObj.cpp). The function adds an orientation percentage to the
+timing percentage. It sets the orientation percentage only when the angle
+between the player's view and the disc is MATH_EPSILON or more. When the
+angle is less than MATH_EPSILON (the disc comes straight at the view), the
+value is not set. The retail code then adds the stack slot of the weapon's
+orientation max zone (+0x58). Thus a block straight at the disc takes the
+max zone angle (radians) as its orientation defense, not the max defense.
+
+Fixed in the modern build: the orientation percentage starts at 0.0f.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 

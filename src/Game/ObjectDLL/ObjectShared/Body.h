@@ -30,13 +30,17 @@ class CSearchable;
 
 LINKTO_MODULE( Body );
 
+// RETAIL: Tron's is 0x14 bytes (CCharacter::SetupBody 0x10091320, Body::Init
+// 0x1015a520): it has no revive flag. Its last member is the character's
+// core dump object (CCharacter +0xcf0), which Body::Init keeps at Body
+// +0x109c. The name is ours.
 struct BODYINITSTRUCT
 {
 	CCharacter*		pCharacter;
 	EnumAIStateType	eBodyState;
 	bool			bPermanentBody;
 	float			fBodyLifetime;
-	bool			bCanRevive;
+	HOBJECT			hCoreDump;
 };
 
 class CAnimatorBody : public CAnimator
@@ -108,7 +112,6 @@ class Body : public Prop, public IHitBoxUser
 		void			RemovePowerupObjects(); 
 
 		bool			IsPermanentBody() const { return m_bPermanentBody; }
-		void			SetPermanentBody( bool bPerm );
 
 		// for game types where a players body may sit aound indefinitely while waiting to respawn
 
@@ -148,7 +151,7 @@ class Body : public Prop, public IHitBoxUser
 		// Carrying
 
 		virtual void SetCanCarry( bool bCarry );
-		virtual void SetBeingCarried( bool bBeingCarried, HOBJECT hCarrier );
+		virtual void SetBeingCarried( bool bBeingCarried );
 		virtual bool BeingCarried() { return m_bBeingCarried; }
 		// RETAIL: Tron's (0x1015cd90)
 		void ShowCarrier();
@@ -158,9 +161,6 @@ class Body : public Prop, public IHitBoxUser
 		float		GetTronUnknown10A4() const { return m_fTronUnknown10A4; }
 		float		GetTronUnknown10A8() const { return m_fTronUnknown10A8; }
 		LTVector	GetTronUnknown10AC() const { return m_vTronUnknown10AC; }
-
-		void SetCanRevive( bool bCanRevive );
-		bool GetCanRevive( ) const { return m_bCanRevive; }
 
 		// Hide the body and it's associated objects.
 		void		HideBody( bool bHide );
@@ -211,7 +211,7 @@ class Body : public Prop, public IHitBoxUser
 		// Keeps body density down within a radius.
 		void CapNumberOfBodies( );
 
-		void CreateSpecialFX();
+		void CreateSpecialFX(BODYCREATESTRUCT& bcs);
 
 	protected :
 
@@ -280,8 +280,10 @@ class Body : public Prop, public IHitBoxUser
 
 		// RETAIL: Tron's tail (constructor 0x10158d00, Save 0x1015c380:
 		// 0x10b8 bytes). The carrier is a plain HOBJECT at 0x109c (taken
-		// to be NOLF2's m_hCarrier); the two floats and the vector after
-		// the carry flags are Tron's, not yet identified.
+		// to be NOLF2's m_hCarrier; Body::Init sets it to BODYINITSTRUCT's
+		// core dump, 0x1015a5a9, and SetBeingCarried does not set it). The
+		// two floats and the vector after the carry flags are Tron's, not
+		// yet identified.
 		HOBJECT				m_hCarrier;
 		bool				m_bCanCarry;
 		bool				m_bBeingCarried;
@@ -289,11 +291,6 @@ class Body : public Prop, public IHitBoxUser
 		float				m_fTronUnknown10A8;
 		LTVector			m_vTronUnknown10AC;
 		bool				m_bTronUnknown10B8;	// set true by the constructor
-
-		// PORT: NOLF2's; retail's Body has neither (its special FX data is
-		// not a member).
-		bool				m_bCanRevive;
-		BODYCREATESTRUCT	m_BCS;
 };
 
 #endif // __BODY_PROP_H__
