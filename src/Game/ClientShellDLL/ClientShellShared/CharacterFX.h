@@ -72,11 +72,6 @@ class CCharacterFX : public CSpecialFX
 
 			m_pStr					= NULL;
 			m_nLastDamageFlags		= 0;
-			m_bCanCarry				= false;
-			m_bCanWake				= true;
-			m_bTracking				= false;
-			m_bRadarVisible			= false;
-			m_nCarrying				= CFX_CARRY_NONE;
 			
 			m_bWasPlayingSpecialDamageAni = false;
 
@@ -86,8 +81,6 @@ class CCharacterFX : public CSpecialFX
 
 			m_p3rdPersonDamageFX	= NULL;
 			m_nNum3rdPersonDamageFX	= 0;
-
-			m_bPitchEnabled			= false;
 		}
 
 		~CCharacterFX();
@@ -130,14 +123,15 @@ class CCharacterFX : public CSpecialFX
 
 		HOBJECT	GetHitBox() const { return m_HitBox.GetObject(); }
 				
-		bool	CanBeCarried() { return m_bCanCarry; }
-		bool	CanWake() { return m_bCanWake; }
+		// PORT: NOLF2's; Tron's character has no carry or wake flags
+		// (retail's CCharacterFX is 0x2800 bytes), and NOLF2's were always
+		// false and true here
+		bool	CanBeCarried() { return false; }
+		bool	CanWake() { return true; }
 
 		const char * GetInfoString() const { return m_szInfoString; }
 
 		// show or hide all client effects attached to this character model
-		void ShowAttachClientFX();
-		void HideAttachClientFX();
 		
 		virtual void Render(HOBJECT hCamera);
 
@@ -147,9 +141,6 @@ class CCharacterFX : public CSpecialFX
 
 		static uint32 GetNumPlayersInGame() { return m_lstPlayersInGame.size(); }
 
-		uint8	GetCarrying() { return m_nCarrying; }
-		
-		void EnablePitch( bool bEnable );	// RETAIL: not virtual in Tron (its vtable; build 51 has none)
 		void RecreateAttachClientFX();	// RETAIL: 0x10179fc0 (the name is ours)
 			
 		enum Constants
@@ -215,7 +206,6 @@ class CCharacterFX : public CSpecialFX
 
 		void	InitLocalPlayer();
 
-		void	UpdateAttachments();
 
 		void	KillLipSyncSound( bool bSendNotification );
 
@@ -290,8 +280,6 @@ class CCharacterFX : public CSpecialFX
 
 		bool				m_bPlayerDead;
 
-		bool				m_bUpdateAttachments;
-
 		CLIENTFX_LINK		m_linkChatFX;
 
 		CHitBox				m_HitBox;
@@ -303,18 +291,7 @@ class CCharacterFX : public CSpecialFX
 		CAttachClientFX		m_TronAttachClientFX;
 
 		// RETAIL: retail's CCharacterFX ends here (its bank holds 0x2800
-		// bytes per object, retail 0x1010cdeb). PORT: NOLF2's members that
-		// Tron does not have, kept after retail's so that the others are at
-		// retail's offsets, until the code that uses them is Tron's
-		// PORT: NOLF2's CHARCREATESTRUCT members that Tron's does not have
-		// (SharedFXStructs.h); its messages still set them
-		bool				m_bCanCarry;
-		bool				m_bCanWake;
-		bool				m_bTracking;
-		bool				m_bRadarVisible;
-		uint8				m_nCarrying;
-		CLIENTFX_LINK_NODE	m_AttachClientFX;
-		bool				m_bPitchEnabled;
+		// bytes per object, retail 0x1010cdeb)
 
 		typedef std::vector<CCharacterFX*> CharFXList;
 		static CharFXList	m_lstPlayersInGame;

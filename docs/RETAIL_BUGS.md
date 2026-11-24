@@ -1452,6 +1452,20 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The tracked node manager reports the wrong flag as discomfort
+
+CShell.dll 0x101c8f80 and Object.lto 0x10270b10
+(CTrackedNodeMgr::IsAtDiscomfort, Shared/TrackedNodeMgr.cpp). The function
+must return the flag that tells if the node reached its discomfort extent
+(m_bInDiscomfort, +0xb5). It reads the byte at +0xb9, which is the flag that
+tells the node to ignore the animation of its parent
+(m_bIgnoreParentAnimation; SetIgnoreParentAnimation at 0x101c8f50 writes the
+same byte). Thus a caller gets a value that does not change with the
+tracking.
+
+Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
+m_bInDiscomfort.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

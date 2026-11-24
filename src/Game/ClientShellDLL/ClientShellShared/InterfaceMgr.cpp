@@ -1456,6 +1456,10 @@ void CInterfaceMgr::UpdateSplashScreenState()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x100c9326 -- Tron's string table has "Can't connect to the server"
+// at 1155, not at NOLF2's 1283 (the name is ours).
+#define IDS_TRON_CANT_CONNECT_TO_SERVER	1155
+
 void CInterfaceMgr::EndSplashScreen()
 {
 	// If the user didn't start a join from the command line, proceed
@@ -1486,7 +1490,7 @@ void CInterfaceMgr::EndSplashScreen()
 		LoadFailed( SCREEN_ID_MAIN );
 
 		MBCreate mb;
-		ShowMessageBox(IDS_CANT_CONNECT_TO_SERVER, &mb);
+		ShowMessageBox(IDS_TRON_CANT_CONNECT_TO_SERVER, &mb);
 		return;
 	}
 
@@ -1498,7 +1502,7 @@ void CInterfaceMgr::EndSplashScreen()
 		LoadFailed( SCREEN_ID_MAIN );
 
 		MBCreate mb;
-		ShowMessageBox(IDS_CANT_CONNECT_TO_SERVER, &mb);
+		ShowMessageBox(IDS_TRON_CANT_CONNECT_TO_SERVER, &mb);
 	}
 }
 

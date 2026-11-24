@@ -23,6 +23,10 @@ struct PLAYERSOUNDCREATESTRUCT : public SFXCREATESTRUCT
     uint8       nClientId;
     uint8       nType;
     uint8       nWeaponId;
+	// RETAIL: Tron's (CShell 0x101050a0, the names are ours): the fire
+	// sounds' volume scale and a bool for PlayWeaponSound
+	LTFLOAT		fVolumeScale;	// +0x18
+	bool		bTronUnknown;	// +0x1c
 };
 
 inline PLAYERSOUNDCREATESTRUCT::PLAYERSOUNDCREATESTRUCT()
@@ -31,6 +35,8 @@ inline PLAYERSOUNDCREATESTRUCT::PLAYERSOUNDCREATESTRUCT()
 	nClientId	= 0;
 	nType		= 0;
 	nWeaponId	= 0;
+	fVolumeScale = 0.0f;
+	bTronUnknown = false;
 }
 
 class CPlayerSoundFX : public CSpecialFX
@@ -43,6 +49,8 @@ class CPlayerSoundFX : public CSpecialFX
 			m_nClientId	= 0;
 			m_nType		= 0;
 			m_nWeaponId	= 0;
+			m_fVolumeScale	= 0.0f;
+			m_bTronUnknown	= false;
 		}
 
 		~CPlayerSoundFX()
@@ -61,6 +69,8 @@ class CPlayerSoundFX : public CSpecialFX
         uint8		m_nClientId;
         uint8		m_nType;
         uint8		m_nWeaponId;
+		LTFLOAT		m_fVolumeScale;	// RETAIL: +0x48 (the names are ours)
+		bool		m_bTronUnknown;	// RETAIL: +0x4c
 };
 
 #endif // __PLAYER_SOUND_FX_H__

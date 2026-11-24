@@ -428,7 +428,8 @@ LTBOOL CCharacterFX::Update()
 	{
 		dwFlags |= FLAG_SOLID;
 	}
-	else if ( m_cs.bIsPlayer )
+	// RETAIL: 0x10175102 -- the light cycle game leaves the player not solid.
+	else if ( m_cs.bIsPlayer && !(IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles) )
 	{
 		g_pCommonLT->GetObjectFlags(m_hServerObject, OFT_Flags, dwFlags);
 	}
@@ -558,9 +559,6 @@ LTBOOL CCharacterFX::Update()
 		}
 	}
 
-
-	if (m_bUpdateAttachments)
-		UpdateAttachments();
 
     return LTTRUE;
 }
@@ -1434,52 +1432,10 @@ void CCharacterFX::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 			g_pClientSoundMgr->PlaySoundFromObject( m_hServerObject, pSnd );
 		}
 	}
-	else if( stricmp( pKey, KEY_SHOW_ATTACHFX ) == 0 )
-	{
-		if( pArgs->argc > 1 )
-		{
-			uint32 i = atoi( pArgs->argv[1] );
-
-			//note that the +1 is to compensate for our dummy head
-			CLIENTFX_LINK* pLink = m_AttachClientFX.GetElement(i + 1);
-
-			if (pLink && pLink->IsValid())
-			{
-				pLink->GetInstance()->Show();
-			}
-		}
-		else
-		{
-			ShowAttachClientFX();
-		}
-	}
-	else if( stricmp( pKey, KEY_HIDE_ATTACHFX ) == 0)
-	{
-		if( pArgs->argc > 1 )
-		{
-			uint32 i = atoi( pArgs->argv[1] );
-
-			//note that the +1 is to compensate for our dummy head
-			CLIENTFX_LINK* pLink = m_AttachClientFX.GetElement(i + 1);
-
-			if (pLink && pLink->IsValid())
-			{
-				pLink->GetInstance()->Hide();
-			}
-		}
-		else
-		{
-			HideAttachClientFX();
-		}
-	}
-	else if( stricmp( pKey, KEY_FX ) == 0)
-	{
-		if( pArgs->argc > 1 && pArgs->argv[1] )
-		{
-			CLIENTFX_CREATESTRUCT fxInit( pArgs->argv[1], 0, m_hServerObject );
-			g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
-		}
-	}
+	// RETAIL: 0x10176f4f -- Tron's character passes every key it did not
+	// give to the damage fx on to its attached client fx; the NOLF2 keys
+	// that show, hide and create client fx are not here.
+	m_TronAttachClientFX.OnModelKey(hObj, pArgs);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2577,55 +2533,9 @@ void CCharacterFX::UpdateBreathFX()
 
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::ShowAttachClientFX
-//
-//	PURPOSE:	Show all the player view attach client fx
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::ShowAttachClientFX()
-{
-	for ( CLIENTFX_LINK_NODE* pCurr = m_AttachClientFX.m_pNext; pCurr; pCurr = pCurr->m_pNext )
-	{
-		if ( pCurr->m_Link.IsValid() )
-		{
-			pCurr->m_Link.GetInstance()->Show();
-		}
-		else
-		{
-			// when we hit 0, there are no more
-			return;
-		}
-	}
-}
 
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::HideAttachClientFX
-//
-//	PURPOSE:	Hide all the player view attach client fx
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::HideAttachClientFX()
-{
-	for ( CLIENTFX_LINK_NODE* pCurr = m_AttachClientFX.m_pNext; pCurr; pCurr = pCurr->m_pNext )
-	{
-		if ( pCurr->m_Link.IsValid() )
-		{
-			pCurr->m_Link.GetInstance()->Hide();
-		}
-		else
-		{
-			// when we hit 0, there are no more
-			return;
-		}
-	}
-}
 
 
 
@@ -2998,7 +2908,10 @@ void CCharacterFX::UpdatePitch( )
 		bEnable = !( nFlags & USRFLG_PLAYER_LEANING );
 	}
 
-	EnablePitch( bEnable );
+	// RETAIL: 0x1017a549 -- Tron sets both nodes every update (no
+	// EnablePitch and no check of the nodes).
+	g_pClientTrackedNodeMgr->EnableTracking( m_hUpperTorsoNode, bEnable );
+	g_pClientTrackedNodeMgr->EnableTracking( m_hLowerTorsoNode, bEnable );
 }
 
 // ----------------------------------------------------------------------- //
@@ -3057,31 +2970,6 @@ void CCharacterFX::ResetPitchTracking()
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::EnablePitch
-//
-//	PURPOSE:	Enable\Disable the Pitch tracking...
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::EnablePitch( bool bEnable )
-{
-	if( m_bPitchEnabled == bEnable )
-		return;
-
-	m_bPitchEnabled = bEnable;
-
-	if( m_hUpperTorsoNode != INVALID_TRACKEDNODE )
-	{
-		g_pClientTrackedNodeMgr->EnableTracking( m_hUpperTorsoNode, bEnable );
-	}
-
-	if( m_hLowerTorsoNode != INVALID_TRACKEDNODE )
-	{
-		g_pClientTrackedNodeMgr->EnableTracking( m_hLowerTorsoNode, bEnable );	
-	}
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -3123,30 +3011,6 @@ void CCharacterFX::ChangeModel(ModelId eModelId)
 	ResetPitchTracking();
 }
 
-//step through the things attached to us and see if we should hide any of them
-void CCharacterFX::UpdateAttachments()
-{
-	HLOCALOBJ attachList[20];
-    uint32 dwListSize = 0;
-    uint32 dwNumAttach = 0;
-
-    g_pCommonLT->GetAttachments(m_hServerObject, attachList, 20, dwListSize, dwNumAttach);
-	int nNum = dwNumAttach <= dwListSize ? dwNumAttach : dwListSize;
-
-	for (int i=0; i < nNum; i++)
-	{
-        uint32 dwUsrFlags;
-        g_pCommonLT->GetObjectFlags(attachList[i], OFT_User, dwUsrFlags);
-		
-		if (g_pVersionMgr->IsLowViolence() && dwUsrFlags & USRFLG_ATTACH_HIDEGORE)
-		{
-			g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-		}
-
-	}
-
-	m_bUpdateAttachments = false;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -3289,13 +3153,13 @@ LTBOOL CCharacterFX::UpdateCarrying()
 	if ( !pInfo || !pLocal )
 	{
 		m_nTronUnknown2324 = 0;
-		return ( nOld != 0 );
+		return ( nIcon != 0 );
 	}
 
 	if ( pInfo->nID == pLocal->nID ) return LTFALSE;
 
-	LTBOOL bFound = LTFALSE;
 	uint32 nStart = nIcon;
+	LTBOOL bFound = LTFALSE;
 	do
 	{
 		switch ( ++nIcon )
