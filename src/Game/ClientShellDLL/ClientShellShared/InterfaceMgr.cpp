@@ -2326,6 +2326,24 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 // ----------------------------------------------------------------------- //
 
 // ABM TODO move this function out of base class into TronInterfaceMgr.
+// RETAIL: Tron's "out of ammo" string id (0x100ca87c; the name is ours)
+#define IDS_TRON_OUTOFAMMO	601
+
+// RETAIL: 0x100ca82a -- Tron's GetWeaponString loads the weapon's name
+// from its string id into a buffer (0x1027c720). The name is ours.
+inline char* GetTronWeaponString(uint8 nWeaponId)
+{
+	static char s_szName[128];
+
+    if (!g_pLTClient || !g_pWeaponMgr) return WS_ERROR_STRING;
+
+	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
+	if (!pWeapon) return WS_ERROR_STRING;
+
+	LoadString(pWeapon->nNameId, s_szName, sizeof(s_szName));
+	return s_szName;
+}
+
 void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
                                       uint8 nType2, LTFLOAT fAmount)
 {
@@ -2427,7 +2445,8 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 
 		case IC_OUTOFAMMO_ID :
 		{
-			g_pChatMsgs->AddMessage(FormatTempString(IDS_OUTOFAMMO, GetWeaponString(nType1)));
+			// RETAIL: 0x100ca82a -- Tron's weapon name is its string id
+			g_pChatMsgs->AddMessage(FormatTempString(IDS_TRON_OUTOFAMMO, GetTronWeaponString(nType1)));
 		}
 		break;
 
@@ -2456,13 +2475,14 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 		{
 			// Fade the screen in or out...
 
+			// RETAIL: 0x100ca913 -- Tron passes nType2 on as the fades' flag
 			if (nType1)
 			{
-				StartScreenFadeIn(fAmount);
+				StartScreenFadeIn(fAmount, nType2 != 0);
 			}
 			else
 			{
-				StartScreenFadeOut(fAmount);
+				StartScreenFadeOut(fAmount, nType2 != 0);
 			}
 		}
 		break;
