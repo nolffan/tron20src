@@ -43,9 +43,9 @@ private:
 	CLIENTFX_LINK*	GetLink(const char* szIndex);
 	CLIENTFX_LINK*	GetLink(int nIndex)
 	{
-		if (nIndex == -1) return &m_AttachFX.m_Link;
-		if (!m_AttachFX.m_pNext) return LTNULL;
-		return m_AttachFX.m_pNext->GetElement(nIndex - 1);	// RETAIL: Tron's fx are numbered from 1 (0x101ad2cf)
+		// RETAIL: 0x101ad2b9 -- the head of the list is -1, the fx are
+		// numbered from 0
+		return m_AttachFX.GetElement(nIndex + 1);
 	}
 
 	void	HandleMsg(const CParsedMsg &cMsg);

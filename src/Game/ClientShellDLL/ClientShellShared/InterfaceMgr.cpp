@@ -112,10 +112,12 @@ VarTrack	g_vtInterfaceFOVY;
 VarTrack	g_vtPauseTintAlpha;
 VarTrack	g_vtSplashScreenFadeIn;
 VarTrack	g_vtSplashScreenFadeOut;
-VarTrack	g_vtSplashScreenTime;
+// RETAIL: Tron has no SplashScreenTime console variable (Init, 0x100c75b0)
 VarTrack	g_vtMainScreenFadeIn;
 VarTrack	g_vtProgressBarScaleToSkills;
 VarTrack	g_vtExitLevelScreenFadeTime;
+VarTrack	g_vtOverlayModelDist;	// RETAIL: Tron's (0x1026f7e0)
+VarTrack	g_vtMouseTrailFix;		// RETAIL: Tron's (0x1026f7d0)
 
 extern CMoveMgr* g_pMoveMgr;
 extern VarTrack g_vtFOVXNormal;
@@ -559,14 +561,16 @@ LTBOOL CInterfaceMgr::Init()
 
 	g_vtPauseTintAlpha.Init(g_pLTClient, "PauseTintAlpha", NULL, 0.65f);
 
-	g_vtSplashScreenFadeIn.Init(g_pLTClient, "SplashScreenFadeInTime", NULL, 2.5f);
-	g_vtSplashScreenFadeOut.Init(g_pLTClient, "SplashScreenFadeOutTime", NULL, 2.5f);
-	g_vtSplashScreenTime.Init(g_pLTClient, "SplashScreenTime", NULL, 3.0f);
+	g_vtSplashScreenFadeIn.Init(g_pLTClient, "SplashScreenFadeInTime", NULL, 3.0f);	// RETAIL: 0x100c7bc6
+	g_vtSplashScreenFadeOut.Init(g_pLTClient, "SplashScreenFadeOutTime", NULL, 5.0f);	// RETAIL: 0x100c7c53
 	g_vtMainScreenFadeIn.Init(g_pLTClient, "MainScreenFadeInTime", NULL, 3.0f);
 	
 	g_vtProgressBarScaleToSkills.Init( g_pLTClient, "ProgressBarScaleToSkills", LTNULL, 1.0f );
 	
 	g_vtExitLevelScreenFadeTime.Init( g_pLTClient, "ExitLevelScreenFadeTime", LTNULL, 1.0f );
+	// RETAIL: 0x100c7e81, Tron's
+	g_vtOverlayModelDist.Init( g_pLTClient, "OverlayModelDist", LTNULL, 5.01f );
+	g_vtMouseTrailFix.Init( g_pLTClient, "MouseTrailFix", LTNULL, 1.0f );
 
 	ProcessAdvancedOptions();
 
@@ -619,7 +623,8 @@ LTBOOL CInterfaceMgr::Init()
         return LTFALSE;
 	}
 
-
+	// RETAIL: 0x100c80e0, the teams first
+	m_TeamMgr.Init();
 
     m_ClientInfo.Init();
 
@@ -1456,6 +1461,10 @@ void CInterfaceMgr::UpdateSplashScreenState()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x100c9326 -- Tron's string table has "Can't connect to the server"
+// at 1155, not at NOLF2's 1283 (the name is ours).
+#define IDS_TRON_CANT_CONNECT_TO_SERVER	1155
+
 void CInterfaceMgr::EndSplashScreen()
 {
 	// If the user didn't start a join from the command line, proceed
@@ -1486,7 +1495,7 @@ void CInterfaceMgr::EndSplashScreen()
 		LoadFailed( SCREEN_ID_MAIN );
 
 		MBCreate mb;
-		ShowMessageBox(IDS_CANT_CONNECT_TO_SERVER, &mb);
+		ShowMessageBox(IDS_TRON_CANT_CONNECT_TO_SERVER, &mb);
 		return;
 	}
 
@@ -1498,7 +1507,7 @@ void CInterfaceMgr::EndSplashScreen()
 		LoadFailed( SCREEN_ID_MAIN );
 
 		MBCreate mb;
-		ShowMessageBox(IDS_CANT_CONNECT_TO_SERVER, &mb);
+		ShowMessageBox(IDS_TRON_CANT_CONNECT_TO_SERVER, &mb);
 	}
 }
 
@@ -1842,8 +1851,10 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
             uint32 nID = pMsg->Readuint32();
 			HOBJECT	hObj = pMsg->ReadObject();
 			ModelId eModelId = (ModelId)pMsg->Readuint8();
-			uint8	nTeamId = pMsg->Readuint8();
-			bool bIsAdmin = pMsg->Readbool( );
+			// RETAIL: 0x100c9c44, Tron's: the multiplayer model and its
+			// color (no team, no admin flag); the names are ours
+			uint8	nMPModel = pMsg->Readuint8();
+			uint8	nColor = pMsg->Readuint8();
             uint8 nInfoType = pMsg->Readuint8();
 
             uint32 nLocalID = 0;
@@ -1886,14 +1897,9 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				if (pCFX)
 				{
 					// RETAIL: Tron's (0x100c9d6a) makes the attach fx again,
-					// then changes the model. PORT: retail's ChangeModel (slot
-					// 13) takes three arguments; ours takes the model only.
+					// then changes the model.
 					pCFX->RecreateAttachClientFX();
-					pCFX->ChangeModel(eModelId);
-					
-					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
-					// here that are not yet identified (NOLF2 updated its radar
-					// here; Tron has no radar).
+					pCFX->ChangeModel(eModelId, nMPModel, nColor);
 				}
 			}
 
@@ -2320,6 +2326,24 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 // ----------------------------------------------------------------------- //
 
 // ABM TODO move this function out of base class into TronInterfaceMgr.
+// RETAIL: Tron's "out of ammo" string id (0x100ca87c; the name is ours)
+#define IDS_TRON_OUTOFAMMO	601
+
+// RETAIL: 0x100ca82a -- Tron's GetWeaponString loads the weapon's name
+// from its string id into a buffer (0x1027c720). The name is ours.
+inline char* GetTronWeaponString(uint8 nWeaponId)
+{
+	static char s_szName[128];
+
+    if (!g_pLTClient || !g_pWeaponMgr) return WS_ERROR_STRING;
+
+	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);
+	if (!pWeapon) return WS_ERROR_STRING;
+
+	LoadString(pWeapon->nNameId, s_szName, sizeof(s_szName));
+	return s_szName;
+}
+
 void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
                                       uint8 nType2, LTFLOAT fAmount)
 {
@@ -2421,7 +2445,8 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 
 		case IC_OUTOFAMMO_ID :
 		{
-			g_pChatMsgs->AddMessage(FormatTempString(IDS_OUTOFAMMO, GetWeaponString(nType1)));
+			// RETAIL: 0x100ca82a -- Tron's weapon name is its string id
+			g_pChatMsgs->AddMessage(FormatTempString(IDS_TRON_OUTOFAMMO, GetTronWeaponString(nType1)));
 		}
 		break;
 
@@ -2450,13 +2475,14 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 		{
 			// Fade the screen in or out...
 
+			// RETAIL: 0x100ca913 -- Tron passes nType2 on as the fades' flag
 			if (nType1)
 			{
-				StartScreenFadeIn(fAmount);
+				StartScreenFadeIn(fAmount, nType2 != 0);
 			}
 			else
 			{
-				StartScreenFadeOut(fAmount);
+				StartScreenFadeOut(fAmount, nType2 != 0);
 			}
 		}
 		break;
@@ -4652,6 +4678,11 @@ void CInterfaceMgr::UpdateOverlays()
 
 				g_pLTClient->SetObjectScale(m_hOverlays[i], &vTemp);
 
+				// RETAIL: 0x100ccd90 -- Tron sets the overlay's distance
+				// every update.
+				LTVector vOverlayPos(0.0f, 0.0f, g_vtOverlayModelDist.GetFloat());
+				g_pLTClient->SetObjectPos(m_hOverlays[i], &vOverlayPos, LTTRUE);
+
 				g_pCommonLT->SetObjectFlags(m_hOverlays[i], OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
 
 			}
@@ -5422,12 +5453,20 @@ void CInterfaceMgr::UpdateInterfaceSFX()
 
 	static LTIntPt s_oldPos = m_CursorPos;
 	int dist = abs(s_oldPos.x - m_CursorPos.x) + abs(s_oldPos.y - m_CursorPos.y);
-	if (dist > 1)
+	// RETAIL: 0x100ce6e5 -- Tron's flag at +0xf988 keeps the trail, and
+	// MouseTrailFix removes a hidden one.
+	if (dist > 1 || m_bTronUnknownF988)
 		ShowMouseFX();
 	else
 	{
 		if (m_MouseFX.IsValid())
+		{
 			m_MouseFX.GetInstance()->Hide();
+			if (g_vtMouseTrailFix.GetFloat())
+			{
+				m_InterfaceFXMgr.ShutdownClientFX(&m_MouseFX);
+			}
+		}
 	}
 	s_oldPos = m_CursorPos;
 

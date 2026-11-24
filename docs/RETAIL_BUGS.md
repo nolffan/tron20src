@@ -1474,6 +1474,19 @@ names are case-sensitive, thus this one message does not show with the
 other messages. It has no effect on the game.
 
 Not fixed yet: the modern build can use the correct name.
+### The tracked node manager reports the wrong flag as discomfort
+
+CShell.dll 0x101c8f80 and Object.lto 0x10270b10
+(CTrackedNodeMgr::IsAtDiscomfort, Shared/TrackedNodeMgr.cpp). The function
+must return the flag that tells if the node reached its discomfort extent
+(m_bInDiscomfort, +0xb5). It reads the byte at +0xb9, which is the flag that
+tells the node to ignore the animation of its parent
+(m_bIgnoreParentAnimation; SetIgnoreParentAnimation at 0x101c8f50 writes the
+same byte). Thus a caller gets a value that does not change with the
+tracking.
+
+Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
+m_bInDiscomfort.
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
