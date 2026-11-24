@@ -193,7 +193,7 @@ void CMenuSystem::OnFocus(LTBOOL bFocus)
 		{
 			// RETAIL: the load control is not shown again (docs/RETAIL_BUGS.md)
 			m_pSaveCtrl->Show( LTTRUE );
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 			m_pLoadCtrl->Show( LTTRUE );
 #endif
 			m_pSaveCtrl->Enable( g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE );

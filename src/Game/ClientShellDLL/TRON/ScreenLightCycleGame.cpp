@@ -337,7 +337,7 @@ bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown38))
 		return false;
 
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	if (nPowerup < 0 || nPowerup >= kNumLCPowerupTypes)
 		return true;
 #else

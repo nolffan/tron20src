@@ -129,7 +129,7 @@ void CCheatMgr::Init()
 // list's until Tron's cheats are written
 LTBOOL CCheatMgr::IsCheatActive(int nCheatCode)
 {
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	if (nCheatCode < 0 || nCheatCode >= sizeof(s_CheatInfo) / sizeof(s_CheatInfo[0]))
 		return LTFALSE;
 #else

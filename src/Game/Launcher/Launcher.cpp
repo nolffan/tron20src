@@ -227,7 +227,7 @@ BOOL CLauncherApp::InitInstance()
 	m_Font.CreateFontIndirect(&lf);
 
 	CLauncherDlg dlg;
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	// MODERN.md: the modern build links this launcher twice (build/build.mk):
 	// as TronLauncher.exe, the launcher, and as Tron.exe, which starts the
 	// game at once, as Play would (the saved options, the rez files, the
@@ -242,7 +242,7 @@ BOOL CLauncherApp::InitInstance()
 #endif
 	m_pMainWnd = &dlg;
 	int nResponse = dlg.DoModal();
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	}
 #endif
 
@@ -277,7 +277,7 @@ BOOL CLauncherApp::InitInstance()
 	return FALSE;
 }
 
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLauncherApp::IsDirectLaunch
@@ -302,7 +302,7 @@ BOOL CLauncherApp::IsDirectLaunch()
 	return _stricmp(sName, "Tron") == 0 && _stricmp(sExt, ".exe") == 0;
 }
 
-#endif // TRON20_MODERN
+#endif // TRON20SRC_MODERN
 
 // ----------------------------------------------------------------------- //
 //
