@@ -193,6 +193,7 @@ void CAIGoalAbstractUseObject::SetStateUseObject()
 	pStateUseObject->SetAllowDialogue(m_bAllowDialogue);
 	pStateUseObject->TurnOnLights( m_bTurnOnLights );
 	pStateUseObject->TurnOffLights( m_bTurnOffLights );
+	pStateUseObject->SetIgnoreDialogue( m_bIgnoreDialogue );
 
 	// Find command string for AINodeType matching UseObject.
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );

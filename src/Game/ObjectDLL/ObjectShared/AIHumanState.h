@@ -952,6 +952,9 @@ class CAIHumanStateUseObject : public CAIHumanState
 		void SetLoopingSound(EnumAISoundType eLoopingAISound) { m_eLoopingAISound = eLoopingAISound; }
 		void SetAlertFirst(LTBOOL b) { m_bAlertFirst = b; }
 		void TurnOffLights(LTBOOL b) { m_bTurnOffLights = b; }
+		// RETAIL: CAIGoalAbstractUseObject::SetStateUseObject passes its
+		// m_bIgnoreDialogue (0x10272424). The name is ours
+		void SetIgnoreDialogue(LTBOOL b) { m_bTronUnknownF4 = b; }
 		void TurnOnLights(LTBOOL b) { m_bTurnOnLights = b; }
 		EnumAnimProp GetActivity() const { return m_eActivity; }
 		EnumAnimProp GetMood() const { return m_eMood; }
