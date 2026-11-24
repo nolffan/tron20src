@@ -551,6 +551,16 @@ AINode* CAIGoalAttack::FindNearestAttractorNode(EnumAINodeType eNodeType, const 
 	return LTNULL;
 }
 
+// RETAIL: each trace of HandleGoalSenseTrigger (0x10216850) prints
+// "<goal>:HandleGoalSenseTrigger: <reason>" when AIShowGoalAttack is set.
+// The macro and its name are ours. Its do-while(0) makes no code, but it
+// makes the function's inline budget larger: the function is identical
+// only with it (the same loop in AITRACE itself loses 6 functions).
+#define GOALATTACK_TRACE(szReason) \
+	do { \
+		AITRACE( AIShowGoalAttack, ( m_pAI->m_hObject, "%s:HandleGoalSenseTrigger: " szReason, s_aszGoalTypes[GetGoalType()] ) ); \
+	} while( 0 )
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CAIGoalAttack::HandleSense
@@ -561,44 +571,107 @@ AINode* CAIGoalAttack::FindNearestAttractorNode(EnumAINodeType eNodeType, const 
 
 LTBOOL CAIGoalAttack::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 {
+	// RETAIL: Tron's (0x10216850) targets with the goal's own target, and
+	// traces each failure with "AIShowGoalAttack". The failures that do not
+	// return at once share one end (retail calls LTObjRef::operator= there
+	// once), thus the goto.
+
 	// This goal intentionally gets re-triggered.  When enemy is not
 	// in sight, goal loses importance.
 
 	if( super::HandleGoalSenseTrigger(pSenseRecord) )
 	{
+		// RETAIL: Tron's: a ranged attack that is recessive only interrupts
+		// a chase that is delayed.
+
+		const CAIGoalAbstract* pCurGoal = m_pGoalMgr->GetCurrentGoal();
+		if( ( this != pCurGoal ) 
+			&& ( m_eWeaponType == kAIWeap_Ranged )
+			&& ( m_bRangeAttackIsRecessive == LTTRUE ) )
+		{
+			if( !pCurGoal )
+			{
+				GOALATTACK_TRACE( "No Current Goal" );
+				goto Failure;
+			}
+
+			if( pCurGoal->GetGoalType() != kGoal_Chase )
+			{
+				GOALATTACK_TRACE( "Wrong Goal Type" );
+				goto Failure;
+			}
+
+			if( !m_pAI->GetState() )
+			{
+				GOALATTACK_TRACE( "No State" );
+				goto Failure;
+			}
+
+			if( m_pAI->GetState()->GetStateType() != kState_HumanChase )
+			{
+				GOALATTACK_TRACE( "Not Chase." );
+				goto Failure;
+			}
+
+			// RETAIL: status 41 is the one the trace calls "delayed".
+			if( m_pAI->GetState()->GetStateStatus() != kSStat_TronUnknown41 )
+			{
+				GOALATTACK_TRACE( "Status not delayed." );
+				goto Failure;
+			}
+		}
+
 		// Check range.
 		// Need a weapon to activate an attack goal.
 		// Target must be visible.
 		// AI is not already in this attack goal.
-		m_pAI->Target(pSenseRecord->hLastStimulusSource);
+
+		m_Target.Target( pSenseRecord->hLastStimulusSource );
 		CAIHuman* pAIHuman = (CAIHuman*)m_pAI;
-		LTVector vTargetPos;
-		if( pAIHuman->HasTarget() 
-			&& pAIHuman->HasWeapon( m_eWeaponType )
-			&& ( pAIHuman->GetBrain()->GetRangeStatus( m_eWeaponType, m_pAI->GetPosition(), pAIHuman->GetTarget()->GetShootPosition( &vTargetPos ) ) == eRangeStatusOk )
-			&& ( ( pAIHuman->GetTarget()->IsVisibleCompletely() ) ||
-				 ( IsAI( pAIHuman->GetTarget()->GetVisionBlocker() ) && ( m_pAI->GetBrain()->GetAttackPoseCrouchChance() > 0.f ) ) ) )
+
+		if( !m_Target.HasObject() )
 		{
-			if(m_bNodeBased == LTTRUE)
-			{
-				if(m_hNode)
-				{
-					return LTTRUE;
-				}
-			}
-			else
-			{
-				return LTTRUE;
-			}
-		}
-		else {
-		
-			// Clear whatever the superclass set, since requirements are not met.
-			
+			GOALATTACK_TRACE( "Target failure." );
 			m_hStimulusSource = LTNULL;
+			return LTFALSE;
 		}
+
+		if( !pAIHuman->HasWeapon( m_eWeaponType ) )
+		{
+			GOALATTACK_TRACE( "WeaponType failure." );
+			goto Failure;
+		}
+
+		LTVector vTargetPos;
+		if( pAIHuman->GetBrain()->GetRangeStatus( m_eWeaponType, m_pAI->GetPosition(), m_Target.GetShootPosition( &vTargetPos ) ) != eRangeStatusOk )
+		{
+			GOALATTACK_TRACE( "Range failure." );
+			m_hStimulusSource = LTNULL;
+			return LTFALSE;
+		}
+
+		if( !( m_Target.IsVisibleCompletely() ||
+			 ( IsAI( m_Target.GetVisionBlocker() ) && ( m_pAI->GetBrain()->GetAttackPoseCrouchChance() > 0.f ) ) ) )
+		{
+			GOALATTACK_TRACE( "Occluded failure." );
+			m_hStimulusSource = LTNULL;
+			return LTFALSE;
+		}
+
+		if( m_bNodeBased && !m_hNode )
+		{
+			GOALATTACK_TRACE( "No Node" );
+			return LTFALSE;
+		}
+
+		GOALATTACK_TRACE( "Success" );
+		return LTTRUE;
 	}
 
+	GOALATTACK_TRACE( "Parent failure." );
+
+Failure:
+	m_hStimulusSource = LTNULL;
 	return LTFALSE;
 }
 
