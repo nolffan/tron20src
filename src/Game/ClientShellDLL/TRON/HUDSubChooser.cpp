@@ -164,9 +164,9 @@ void CHUDSubChooser::Render()
 void CHUDSubChooser::Arrange()
 {
 	float fX = (float)(m_nScreenWidth - 42);
+	float fTop = (float)g_pProcedurals->m_nTop;
 	float fY = 0.0f;
 	int nMaxWidth = 0;
-	float fTop = (float)g_pProcedurals->m_nTop;
 	float fBottom = g_pArmor->m_fLayoutScale;
 
 	for (int i = 0; i < m_nNumSubs; i++)
