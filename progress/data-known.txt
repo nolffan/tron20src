@@ -3,16 +3,13 @@
 
 # UNREVIEWED, recorded at Object.lto's first build (2026-11-02): NOLF2 1.3's shared server code with Build 69's May 2002 Tron files, ported. What differs from retail is mostly where Tron's shared code is not NOLF2's (docs/PLAN.md, package 4), still to be sorted out.
 Object.lto	ours	%s: Failed to set anim with props:\n
-Object.lto	ours	(scripted)
 Object.lto	ours	.?AVAIInformationVolumePlugin@@
 Object.lto	ours	AI '%s' fell thru the level at pos(%.2f %.2f %.2f )!! Popping back up.
-Object.lto	ours	Attempting to remove AIInformationVolume "%s"! Turning Off instead.
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveCloth_1.WAV
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveLeather_1.WAV
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	Failed to set anim with props:\n
-Object.lto	ours	HitPoints : %.0f\nArmor : %.0f\n
 Object.lto	ours	NONCOMPATIBLE
 Object.lto	ours	OnMarkingCommand
 Object.lto	ours	SentryChallengeDistMax
@@ -20,8 +17,6 @@ Object.lto	ours	SentryChallengeScanDistMax
 Object.lto	ours	SentryMarkDistMax
 Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0
 Object.lto	retail	\tLeaving attack state, too far
-Object.lto	retail	\nArmor : 
-Object.lto	retail	 cannot add relation: %s %s %s due to existing conflicting permanet relation
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Current Goal
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Node
 Object.lto	retail	%s:HandleGoalSenseTrigger: No State
@@ -34,20 +29,15 @@ Object.lto	retail	%s:HandleGoalSenseTrigger: Success
 Object.lto	retail	%s:HandleGoalSenseTrigger: Target failure.
 Object.lto	retail	%s:HandleGoalSenseTrigger: WeaponType failure.
 Object.lto	retail	%s:HandleGoalSenseTrigger: Wrong Goal Type
-Object.lto	retail	(Locked)
 Object.lto	retail	.?AVAIInfoVolume@@
 Object.lto	retail	.?AVAIInfoVolumePlugin@@
 Object.lto	retail	.?AVHostButeMgr@@
 Object.lto	retail	AI '%s' fell thru the level!! Popping back up.
 Object.lto	retail	AIShowStateAttack
 Object.lto	retail	ARMOR_UNLOCK
-Object.lto	retail	Anim Name: 
-Object.lto	retail	Anim Props: 
-Object.lto	retail	Attempting to remove AIInfoVolume "%s"! Turning Off instead.
 Object.lto	retail	Attributes\\Subroutines.txt
 Object.lto	retail	BriefingId
 Object.lto	retail	Bute Truncation: %s::%s - %s
-Object.lto	retail	CLEARPATHKNOWLEDGE
 Object.lto	retail	CascadeRate
 Object.lto	retail	CircuitCompleteId
 Object.lto	retail	CircuitCompleteSound
@@ -56,70 +46,38 @@ Object.lto	retail	CyclesAllowed
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 2nd param = (%s).\n
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 3rd param = (%s).\n
 Object.lto	retail	FOREIGN
-Object.lto	retail	From: 
-Object.lto	retail	HitPoints : 
 Object.lto	retail	IONode
 Object.lto	retail	Image
 Object.lto	retail	InitialLives
 Object.lto	retail	InitiallyLock
-Object.lto	retail	Joint6
-Object.lto	retail	LISTEN
 Object.lto	retail	MapName
 Object.lto	retail	MaxRadius
 Object.lto	retail	ModelTemplate
 Object.lto	retail	NameKey
 Object.lto	retail	Optimizer
 Object.lto	retail	RequiredPermissionSets
-Object.lto	retail	SETONLYDAMAGEBYPLAYER
 Object.lto	retail	StandardCycleRestrictionId
 Object.lto	retail	SuperCycleRestrictionId
 Object.lto	retail	T_PRodLightning
-Object.lto	retail	Transitioning: 
 Object.lto	retail	Unlocks
 Object.lto	retail	WaveCount
-Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@I@Z
-Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@PBX@Z
-Object.lto	retail	import MSVCIRT.dll ?clear@ios@@QAEXH@Z
-Object.lto	retail	import MSVCIRT.dll ?ends@@YAAAVostream@@AAV1@@Z
-Object.lto	retail	import MSVCIRT.dll ?freeze@strstreambuf@@QAEXH@Z
-Object.lto	retail	import MSVCIRT.dll ?lock@ios@@QAAXXZ
-Object.lto	retail	import MSVCIRT.dll ?unlock@ios@@QAAXXZ
 
 # UNREVIEWED, recorded at CShell.dll's first build (2026-11-02): NOLF2 1.3's shared client code with Build 69's May 2002 Tron files, merged and ported, and NOLF2's multiplayer and performance screens standing in for Tron's (docs/PLAN.md, package 4). To be worked down.
 CShell.dll	ours	 TESTING PERFORMANCE SETTINGS
 CShell.dll	ours	.?AVCDoomsdayPieceFX@@
 CShell.dll	ours	.?AVCMenuIntel@@
-CShell.dll	ours	>POS:LL
-CShell.dll	ours	>POS:LR
-CShell.dll	ours	>POS:UL
-CShell.dll	ours	>POS:UR
-CShell.dll	ours	>TIME:
 CShell.dll	ours	D.dtx
 CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_L.spr
 CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_R.spr
-CShell.dll	ours	FontFace%d
-CShell.dll	ours	FontFace0
-CShell.dll	ours	FrameRect
 CShell.dll	ours	Interface\\DemoEndSplash1.pcx
 CShell.dll	ours	Interface\\DemoEndSplash2.pcx
 CShell.dll	ours	Interface\\DemoEndSplash3.pcx
 CShell.dll	ours	Rabbit
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing1.wav
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing2.wav
-CShell.dll	ours	attributes\\damagefx.txt
-CShell.dll	ours	import MSVCRT.dll _mbsinc
-CShell.dll	ours	import MSVCRT.dll _mbsnbcnt
 CShell.dll	retail	 TESTING DETAIL SETTINGS
-CShell.dll	retail	%i players are waiting for you
-CShell.dll	retail	%s is waiting for you.
-CShell.dll	retail	%s_bar
-CShell.dll	retail	%s_button_left
-CShell.dll	retail	%s_button_right
-CShell.dll	retail	%s_fixedbar
 CShell.dll	retail	.?AVCMenuEmails@@
-CShell.dll	retail	1 player is waiting for you.
 CShell.dll	retail	ActivationDistanceLong
-CShell.dll	retail	AutoAmmoSwitch
 CShell.dll	retail	BriefingId
 CShell.dll	retail	Bute Truncation: %s::%s - %s
 CShell.dll	retail	Debug LipFlap: 'else if( m_pEightBitBuffer )' returned true
@@ -136,9 +94,7 @@ CShell.dll	retail	Debug LipFlap: Made it past the iteration over m_pEightBitBuff
 CShell.dll	retail	Debug LipFlap: Made it past the iteration over m_pSixteenBitBuffer
 CShell.dll	retail	Debug LipFlap: calling: if( pNodeControl->eModelNode == eModelNodeInvalid )
 CShell.dll	retail	Debug LipFlap: g_pLTClient->GetSoundOffset() returned LT_OK
-CShell.dll	retail	Font0
 CShell.dll	retail	Image
-CShell.dll	retail	IntroEntryHeight
 CShell.dll	retail	LINEAR DAMAGE: %.2f
 CShell.dll	retail	LightCyclePurple_1
 CShell.dll	retail	LightCyclePurple_2
@@ -150,29 +106,13 @@ CShell.dll	retail	SuperCycle_Green_3
 CShell.dll	retail	SuperCycle_Purple_1
 CShell.dll	retail	SuperCycle_Purple_2
 CShell.dll	retail	SuperCycle_Purple_3
-CShell.dll	retail	You are waiting for %i players.
-CShell.dll	retail	You are waiting for %s.
-CShell.dll	retail	You are waiting for 1 player.
 CShell.dll	retail	_pickup
 CShell.dll	retail	_remove
 CShell.dll	retail	_touch
-CShell.dll	retail	buildpoints_bar
-CShell.dll	retail	dead_optimizer
-CShell.dll	retail	deadloop
-CShell.dll	retail	import MSVCRT.dll wcsncmp
 CShell.dll	retail	interface/menu/art/E3Upsell.pcx
 CShell.dll	retail	interface/menu/art/E3Upsell_2.pcx
-CShell.dll	retail	msgfadeout
-CShell.dll	retail	optimizer_bg
-CShell.dll	retail	rating%d
-CShell.dll	retail	ratings_bar_surge
-CShell.dll	retail	skt_ratbar_%d
-CShell.dll	retail	viral_shield
 CShell.dll	retail	voice\\%d.wav
 CShell.dll	retail	voice\\21010.wav
-
-# Not Tron's (2026-11-13): the 2007 ghttp SDK in src/Game/Libs/GameSpy/GameSpySDK reads a content length with _atoi64; Tron's older ghttp does not. To go when ghttp is rolled back to Tron's version, as the server browser was.
-CShell.dll	ours	import MSVCRT.dll _atoi64
 
 # Not text (2026-11-13): wave.cpp's FOURCC tags LIST, info and lith (s_tagLIST, s_tagINFO, s_tagLITH, whose addresses are taken) are 12 bytes with no NUL; in retail the next object's data starts with padding before a double, which ends the run as a string, in ours it is CWorldBlindObjectData's vtable. A difference in what is linked after wave.obj (the next object's data), not in the tags; to go with the engine's link order.
 server.dll	retail	LISTinfolith
