@@ -26,7 +26,6 @@ static char s_aMenuName[MENU_ID_UNASSIGNED+1][32] =
 
 namespace 
 {
-	bool bHK = false;
 	uint32 g_nSelectColor = argbWhite;
 }
 
@@ -695,35 +694,12 @@ void CMenuMgr::RegisterCommand(int command, eMenuID id)
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CMenuMgr::OnCommandOn(int command)
+// RETAIL: Tron's has no hot keys while playing: its body is "return 0"
+// (CInterfaceMgr::OnCommandOn calls 0x101b2e70, a body that identical code
+// folding shares). OnCommandOff opens the menus.
+LTBOOL CMenuMgr::OnCommandOn(int /*command*/)
 {
-	if (m_pSubMenu) return LTFALSE;
-
-	if (GS_PLAYING != g_pInterfaceMgr->GetGameState()) return LTFALSE;
-
-	
-
-	LTBOOL found = LTFALSE;
-	KeyArray::iterator iter = m_HotKeys.begin();
-	while (iter != m_HotKeys.end() && !found)
-	{
-		found = (command == (*iter)->m_command);
-		if (!found)
-			iter++;
-	}
-
-
-	if (found)
-	{
-		if (g_pInterfaceMgr->SwitchToMenu((*iter)->m_id))
-		{
-			bHK = true;
-			return LTTRUE;
-		}
-	}
-
 	return LTFALSE;
-
 }
 
 // ----------------------------------------------------------------------- //

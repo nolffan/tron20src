@@ -165,11 +165,13 @@ LTBOOL COptimizerCtrl::OnMouseMove(int x, int y, PlayerSubroutine * pCursorSub)
 		{
 			if (m_bCanAccept)
 				m_Optimizer.PlayAnim("excitedloop", true, false);
+			return LTTRUE;
 		}
 		else if (!m_bHot && bWasHot)
 		{
 			if (m_bCanAccept)
 				m_Optimizer.PlayAnim("excitedloop_menu", true, false);
+			return LTTRUE;
 		}
 		else if (m_bCanAccept)
 		{
@@ -536,9 +538,12 @@ void CProceduralCtrl::ScreenDimsChanged()
 	Procedural * pProc = m_pProc;
 	if (pProc && pProc->bPlayerHasThis)
 	{
-		m_CenterPos.x = (int)((float)pProc->CenterPos.x * g_pInterfaceResMgr->GetXRatio());
-		m_CenterPos.y = (int)((float)pProc->CenterPos.y * g_pInterfaceResMgr->GetYRatio());
-		m_iRadius = (int)((float)pProc->iRadius * g_pInterfaceResMgr->GetXRatio());
+		float fX = (float)pProc->CenterPos.x;
+		m_CenterPos.x = (int)(fX * g_pInterfaceResMgr->GetXRatio());
+		float fY = (float)pProc->CenterPos.y;
+		m_CenterPos.y = (int)(fY * g_pInterfaceResMgr->GetYRatio());
+		float fR = (float)pProc->iRadius;
+		m_iRadius = (int)(fR * g_pInterfaceResMgr->GetXRatio());
 	}
 	else
 	{

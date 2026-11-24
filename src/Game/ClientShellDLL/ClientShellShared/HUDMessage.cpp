@@ -296,19 +296,19 @@ void CHUDMessage::ScrambleSplitText()
 	LT_POLYGT4* pSrc = m_pText->GetPolys();
 	LT_POLYGT4* pDest = m_pSplitText->GetPolys();
 
-	for (int i = 0; i < nPolys; i++, pSrc++, pDest++)
+	for (int i = 0; i < nPolys; i++)
 	{
 		float fU = GetRandom(0.0f, 0.9f);
 		float fV = GetRandom(0.0f, 0.9f);
 
-		float fW = pSrc->verts[1].u - pSrc->verts[0].u;
+		float fW = pSrc[i].verts[1].u - pSrc[i].verts[0].u;
 		if (fW < 0.05f)
 			fW = 0.05f;
-		float fH = pSrc->verts[3].v - pSrc->verts[0].v;
+		float fH = pSrc[i].verts[3].v - pSrc[i].verts[0].v;
 		if (fH < 0.05f)
 			fH = 0.05f;
 
-		g_pDrawPrim->SetUVWH(pDest, fU, fV, fW, fH);
+		g_pDrawPrim->SetUVWH(&pDest[i], fU, fV, fW, fH);
 	}
 }
 

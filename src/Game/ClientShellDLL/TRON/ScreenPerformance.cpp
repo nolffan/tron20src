@@ -31,7 +31,6 @@ namespace
 	int kNumCfg;
 
 	int nInitTex;
-	int nInitEBM;
 	int nInitEM;
 	int nInitDT;
 
@@ -412,10 +411,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 		break;
 	case CMD_DISPLAY:
 	{
+		// RETAIL: Tron's (0x10071c48) leaves the labels as they are
 		m_pSFX->Show(LTFALSE);
 		m_pDisplay->Show(LTTRUE);
 		m_pSFXLabel->Show(LTFALSE);
-		m_pDisplayLabel->Show(LTTRUE);
 		m_pSFXFrame->Show(LTFALSE);
 		m_pDisplayFrame->Show(LTTRUE);
 
@@ -425,10 +424,10 @@ uint32 CScreenPerformance::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 d
 	}	break;
 	case CMD_SFX:
 	{
+		// RETAIL: Tron's (0x10071d8f) leaves the labels as they are
 		m_pDisplay->Show(LTFALSE);
 		m_pSFX->Show(LTTRUE);
 		m_pDisplayLabel->Show(LTFALSE);
-		m_pSFXLabel->Show(LTTRUE);
 		m_pDisplayFrame->Show(LTFALSE);
 		m_pSFXFrame->Show(LTTRUE);
 
@@ -516,7 +515,6 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		m_sCfg = pProfile->m_sPerformance;
 
 		nInitTex = pProfile->m_sPerformance.nSettings[kPerform_DetailLevel];
-		nInitEBM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping];
 		nInitEM = pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping];
 		nInitDT = pProfile->m_sPerformance.nSettings[kPerform_DetailTextures];
 		nInitTB = pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering];
@@ -540,8 +538,9 @@ void    CScreenPerformance::OnFocus(LTBOOL bFocus)
 		}
 		
 		bool bRebind = (nInitTex != pProfile->m_sPerformance.nSettings[kPerform_DetailLevel]);
+		// RETAIL: Tron's does not test the environment bump mapping
+		// (0x10072017)
 		bool bRestart = (nInitTB != pProfile->m_sPerformance.nSettings[kPerform_TripleBuffering]) ||
-			 (nInitEBM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentBumpMapping]) ||
 			 (nInitEM != pProfile->m_sPerformance.nSettings[kPerform_EnvironmentMapping]) ||
 			 (nInitDT != pProfile->m_sPerformance.nSettings[kPerform_DetailTextures]);
 

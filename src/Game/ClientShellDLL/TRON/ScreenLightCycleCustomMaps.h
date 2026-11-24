@@ -16,6 +16,7 @@
 #define __SCREENLIGHTCYCLECUSTOMMAPS_H__
 
 #include "BaseScreenLightCycle.h"
+#include "TRON/CaselessString.h"
 
 class CScreenLightCycleCustomMaps : public CBaseScreenLightCycle
 {
@@ -47,7 +48,7 @@ protected:
 	// The maps of the light cycle folder the profile has unlocked, sorted
 	// (retail 0x1006a980, 0x1006adb0)
 	LTBOOL	FillAvailList();
-	void	FindMaps(const std::string &sDir, bool (*pfnIsLocked)(std::string sMap));
+	void	FindMaps(const CaselessString &sDir, bool (*pfnIsLocked)(std::string sMap));
 
 	void	UpdateButtons();					// retail 0x1006b040
 	void	AddMapToList(uint32 nMap);			// retail 0x1006b0e0

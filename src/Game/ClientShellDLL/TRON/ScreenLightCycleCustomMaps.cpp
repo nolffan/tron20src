@@ -25,8 +25,9 @@
 #include "GameClientShell.h"
 #include <list>
 
-// RETAIL: 0x1026ea08: the folder of the light cycle maps
-static std::string s_sMapDir = "Worlds\\RetailLightCycle\\";
+// RETAIL: 0x1026ea08: the folder of the light cycle maps (a caseless
+// string: its initializer 0x10069910 tests the literal for NULL)
+static CaselessString s_sMapDir = "Worlds\\RetailLightCycle\\";
 
 namespace
 {
@@ -491,7 +492,7 @@ LTBOOL CScreenLightCycleCustomMaps::FillAvailList()
 
 // RETAIL: 0x1006adb0: the folder's .dat files, without the extension, that
 // are not locked
-void CScreenLightCycleCustomMaps::FindMaps(const std::string &sDir, bool (*pfnIsLocked)(std::string sMap))
+void CScreenLightCycleCustomMaps::FindMaps(const CaselessString &sDir, bool (*pfnIsLocked)(std::string sMap))
 {
 	if (sDir.empty()) return;
 

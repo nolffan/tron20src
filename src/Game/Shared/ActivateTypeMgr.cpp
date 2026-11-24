@@ -381,7 +381,8 @@ CActivateTypeHandler::CActivateTypeHandler()
 	m_bDisabled	( false ),
 	m_eState	( ACTIVATETYPE::eOn )
 {
-
+	// RETAIL: Tron's (Object 0x100ca7e0)
+	m_nSFXId = SFX_ACTIVATEOBJECT_ID;
 }
 
 // ----------------------------------------------------------------------- //
@@ -622,13 +623,16 @@ void CActivateTypeHandler::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 	{
 		if( pRef == &(*iter) )
 		{
-			// Remove it 
-			m_lstInheritedObjs.erase( iter );
+			// RETAIL: Tron's (Object 0x100cb010) removes the object after it
+			// resets its message (NOLF2's removed it first and then used it)
 
 			// If we can and should reset the ActivateType message on the object then do so...
 
 			if( !m_pBase || !m_pBase->m_hObject || (m_nId == (uint8)ATMGR_INVALID_ID) || !(*iter) )
+			{
+				m_lstInheritedObjs.erase( iter );
 				return;
+			}
 
 			CAutoMessage cMsg;
 			cMsg.Writeuint8( m_nSFXId );	// RETAIL: Tron's (Init)
@@ -637,7 +641,9 @@ void CActivateTypeHandler::OnLinkBroken( LTObjRefNotifier *pRef, HOBJECT hObj )
 			cMsg.Writeuint8( ACTIVATETYPE::eOff );
 			g_pLTServer->SetObjectSFXMessage( (*iter), cMsg.Read() );
 
-			break;
+			// Remove it
+			m_lstInheritedObjs.erase( iter );
+			return;
 		}
 	}
 }
@@ -739,6 +745,7 @@ void CActivateTypeHandler::Save( ILTMessage_Write *pMsg )
 	SAVE_BYTE( m_nId );
 	SAVE_bool( m_bDisabled );
 	SAVE_BYTE( m_eState );
+	SAVE_BYTE( m_nSFXId );	// RETAIL: Tron's (Object 0x100cb4e3)
 
 	// Save our inherited objects
 
@@ -766,6 +773,7 @@ void CActivateTypeHandler::Load( ILTMessage_Read *pMsg )
 	LOAD_BYTE( m_nId );
 	LOAD_bool( m_bDisabled );
 	LOAD_BYTE_CAST( m_eState, ACTIVATETYPE::State );
+	LOAD_BYTE( m_nSFXId );	// RETAIL: Tron's (Object 0x100cb5b5)
 
 	// Load our inherited list
 

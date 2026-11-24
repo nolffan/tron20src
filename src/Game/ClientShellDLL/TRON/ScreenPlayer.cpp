@@ -710,7 +710,8 @@ static inline bool TronIsValidBandwidth(uint16 nBandwidth)
 static inline void NarrowCopy(char* pDest, const std::wstring& sText, uint32 nSize)
 {
 	memset(pDest, 0, nSize);
-	for (uint32 i = 0; i < sText.size() && i < nSize; i++)
+	uint32 nLen = sText.size();
+	for (uint32 i = 0; i < nLen && i < nSize; i++)
 		pDest[i] = (char)sText[i];
 }
 
