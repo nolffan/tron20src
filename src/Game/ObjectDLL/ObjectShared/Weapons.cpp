@@ -1173,6 +1173,12 @@ LTBOOL CWeapons::IsBetterWeapon(CPlayerObj* pPlayer, uint8 nWeaponId)
 	return (nCurCommandId < nNewCommandId);
 }
 
+// RETAIL: Tron's other projectile messages that CWeapons passes on to its
+// projectiles (the cases of 0x100f7700). The names are ours.
+#define MPROJ_TRON_UNKNOWN14	14
+#define MPROJ_TRON_UNKNOWN150	150
+#define MPROJ_TRON_UNKNOWN202	202
+
 // ----------------------------------------------------------------------- //
 //
 //	FUNCTION:	CWeapons::HandleProjectileMessage()
@@ -1196,6 +1202,9 @@ void CWeapons::HandleProjectileMessage( HOBJECT hSender, ILTMessage_Read *pMsg )
 		case MPROJ_UPDATE_POINT_TARGET:
 		case MPROJ_UPDATE_OBJECT_TARGET:
 		case MPROJ_UPDATE_CONTROL_LINE:
+		case MPROJ_TRON_UNKNOWN14:
+		case MPROJ_TRON_UNKNOWN150:
+		case MPROJ_TRON_UNKNOWN202:
 		{
 			// this message is for the projectiles
 			// we need to reset the reading position

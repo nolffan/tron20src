@@ -571,15 +571,20 @@ void CDestructible::ClearProgressiveDamage( DamageFlags nDamageFlag )
 
 void CDestructible::UpdateProgressiveDamage()
 {
+	// RETAIL: Tron's (0x100e7890) is Build 51's: a flag per progressive
+	// damage type, with Tron's slippery and corrode types added. A spent
+	// damage is cleared, and the power armor of a character's hit box takes
+	// the damage first.
+
 	DamageStruct damage;
 
     LTFLOAT fFrameTime = g_pLTServer->GetFrameTime();
 
-	DamageFlags nActiveDamageFlags = 0;
-	bool bBleeding = false;
+    LTBOOL bBleeding = LTFALSE, bPoisoned = LTFALSE, bStunned = LTFALSE, bSleeping = LTFALSE;
+    LTBOOL bBurned = LTFALSE, bElectrocuted = LTFALSE, bGlue = LTFALSE, bLaughing = LTFALSE;
+	LTBOOL bASSS = LTFALSE, bFreeze = LTFALSE, bBearTrap = LTFALSE, bSlippery = LTFALSE;
+	LTBOOL bCorrode = LTFALSE;
 
-	// RETAIL: Tron's character's hit box lets the power armor take the
-	// damage first (Object.lto 0x100e7976)
 	CCharacterHitBox* pHitBox = LTNULL;
 	if ( IsCharacter( m_hObject ))
 	{
@@ -608,12 +613,32 @@ void CDestructible::UpdateProgressiveDamage()
 				pHitBox->AbsorbDamage( &damage );
 			}
 
-			DoDamage(damage, true);
+			DoDamage(damage, false);
 
-			// Add this to the active damageflags.
-			nActiveDamageFlags |= DamageTypeToFlag( damage.eType );
+			// The damage is spent: forget it.
 
-			bBleeding |= ( damage.eType == DT_BLEEDING );
+			if (m_ProgressiveDamage[i].fDuration <= 0.0f)
+			{
+				m_ProgressiveDamage[i].Clear();
+			}
+
+			switch( damage.eType )
+			{
+				case DT_BLEEDING	:	bBleeding		= LTTRUE;	break;
+				case DT_POISON		:	bPoisoned		= LTTRUE;	break;
+				case DT_STUN		:	bStunned		= LTTRUE;	break;
+				case DT_SLEEPING	:	bSleeping		= LTTRUE;	break;
+				case DT_BURN		:	bBurned			= LTTRUE;	break;
+				case DT_ELECTROCUTE	:	bElectrocuted	= LTTRUE;	break;
+				case DT_GLUE		:	bGlue			= LTTRUE;	break;
+				case DT_BEAR_TRAP	:	bBearTrap		= LTTRUE;	break;
+				case DT_LAUGHING	:	bLaughing		= LTTRUE;	break;
+				case DT_ASSS		:	bASSS			= LTTRUE;	break;
+				case DT_FREEZE		:	bFreeze			= LTTRUE;	break;
+				case DT_SLIPPERY	:	bSlippery		= LTTRUE;	break;
+				case DT_CORRODE		:	bCorrode		= LTTRUE;	break;
+				default : break;
+			}
 		}
 	}
 
@@ -622,9 +647,9 @@ void CDestructible::UpdateProgressiveDamage()
 
 	if (bBleeding)
 	{
-		LTFLOAT fProtection = 0.0f;
+        LTFLOAT fProtection = 0.0f;
 
-		GEAR const *pGear = LTNULL;
+        GEAR const *pGear = LTNULL;
 
 		for (int nGearId=0; nGearId < MAX_GEAR_ITEMS; nGearId++)
 		{
@@ -638,7 +663,7 @@ void CDestructible::UpdateProgressiveDamage()
 
 					if (fProtection >= 1.0f)
 					{
-						nActiveDamageFlags &= ~DamageTypeToFlag( DT_BLEEDING );
+                        bBleeding = LTFALSE;
 						break;
 					}
 				}
@@ -648,17 +673,71 @@ void CDestructible::UpdateProgressiveDamage()
 
 
 	// Set our damage flags if we're bleeding/poisoned/stunned/sleeping...
-	// [RP] 10/30/02 - Don't set damage flags if we can't be damaged...
 
-	if( m_bIsPlayer && m_bCanDamage )
+	if (IsCharacter(m_hObject))
 	{
-		// Get the character...
+        // Get the character...
 
-		CPlayerObj *pPlayer = dynamic_cast<CPlayerObj*>(g_pLTServer->HandleToObject( m_hObject ));
-		if( !pPlayer ) return;
+		CCharacter *pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject( m_hObject ));
+		if( !pChar ) return;
 
-        // RETAIL: Tron sets the instant flags (Object.lto 0x100e7e5e)
-        pPlayer->SetInstantDamageFlags( nActiveDamageFlags );
+		// Set the damage flags ...
+
+		DamageFlags nDmgFlags = pChar->GetDamageFlags();
+
+		bBleeding ?
+			nDmgFlags |= DamageTypeToFlag( DT_BLEEDING ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_BLEEDING );
+
+		bPoisoned ?
+			nDmgFlags |= DamageTypeToFlag( DT_POISON ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_POISON );
+
+		bStunned ?
+			nDmgFlags |= DamageTypeToFlag( DT_STUN ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_STUN );
+
+		bSleeping ?
+			nDmgFlags |= DamageTypeToFlag( DT_SLEEPING ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_SLEEPING );
+
+		bBurned ?
+			nDmgFlags |= DamageTypeToFlag( DT_BURN ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_BURN );
+
+		bElectrocuted ?
+			nDmgFlags |= DamageTypeToFlag( DT_ELECTROCUTE ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_ELECTROCUTE );
+
+		bGlue ?
+			nDmgFlags |= DamageTypeToFlag( DT_GLUE ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_GLUE );
+
+		bBearTrap ?
+			nDmgFlags |= DamageTypeToFlag( DT_BEAR_TRAP ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_BEAR_TRAP );
+
+		bLaughing ?
+			nDmgFlags |= DamageTypeToFlag( DT_LAUGHING ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_LAUGHING );
+
+		bASSS ?
+			nDmgFlags |= DamageTypeToFlag( DT_ASSS ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_ASSS );
+
+		bFreeze ?
+			nDmgFlags |= DamageTypeToFlag( DT_FREEZE ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_FREEZE );
+
+		bSlippery ?
+			nDmgFlags |= DamageTypeToFlag( DT_SLIPPERY ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_SLIPPERY );
+
+		bCorrode ?
+			nDmgFlags |= DamageTypeToFlag( DT_CORRODE ) :
+			nDmgFlags &= ~DamageTypeToFlag( DT_CORRODE );
+
+		pChar->SetInstantDamageFlags( nDmgFlags );
 	}
 }
 

@@ -25,6 +25,14 @@ END_CLASS_DEFAULT_FLAGS(CProjectileEnergyClaw, CTronProjectile, NULL, NULL, CF_H
 // RETAIL: the class tested for (0x102dbd34 points at "CAI")
 static const char *s_szClawTargetClass = "CAI";
 
+// RETAIL: the claw's effect (0x102948a4 points at "T_PRodLightning")
+static const char *s_szClawFXName = "T_PRodLightning";
+
+// RETAIL: two constants of the TU (0x1029489c, 0x102948a0): the seek
+// radius and the damage per second while attached. Names are ours.
+static const LTFLOAT s_fClawSeekRadius = 100.0f;
+static const LTFLOAT s_fClawDamagePerSecond = 100.0f;
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CProjectileEnergyClaw::~CProjectileEnergyClaw
@@ -251,11 +259,11 @@ void CProjectileEnergyClaw::UpdateSeeking()
 	LTVector vPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 
-	ObjectList *pList = g_pLTServer->FindObjectsTouchingSphere(&vPos, 100.0f);
+	ObjectList *pList = g_pLTServer->FindObjectsTouchingSphere(&vPos, s_fClawSeekRadius);
 	if (!pList) return;
 
-	LTObjRef hBest;
-	LTFLOAT fBestDist = 0.0f;
+	LTObjRef hBest = LTNULL;
+	LTFLOAT fBestDist = FLT_MAX;
 
 	ObjectLink *pLink = pList->m_pFirstLink;
 	while (pLink)
@@ -263,8 +271,9 @@ void CProjectileEnergyClaw::UpdateSeeking()
 		HOBJECT hObj = pLink->m_hObject;
 		pLink = pLink->m_pNext;
 
+		HCLASS hClass = g_pLTServer->GetObjectClass(hObj);
 		char szClass[0x1000];
-		g_pLTServer->GetClassName(g_pLTServer->GetObjectClass(hObj), szClass, sizeof(szClass));
+		g_pLTServer->GetClassName(hClass, szClass, sizeof(szClass));
 
 		if (!IsKindOf(hObj, s_szClawTargetClass)) continue;
 
@@ -273,14 +282,15 @@ void CProjectileEnergyClaw::UpdateSeeking()
 		g_pPhysicsLT->GetVelocity(m_hObject, &vVel);
 		vVel.Normalize();
 
+		// RETAIL: the distance is computed again at each use (0x1003e0ab,
+		// 0x1003e10f)
 		LTVector vTo = vObjPos - vPos;
-		LTFLOAT fDist = vTo.Mag();
 		if (vVel.Dot(vTo.Unit()) < 0.0f) continue;
-		if (hBest && fDist > fBestDist) continue;
+		if ((vObjPos - vPos).Mag() > fBestDist) continue;
 		if (!CanSee(m_hObject, hObj)) continue;
 
 		hBest = hObj;
-		fBestDist = fDist;
+		fBestDist = (vObjPos - vPos).Mag();
 	}
 
 	if (hBest)
@@ -312,10 +322,10 @@ void CProjectileEnergyClaw::UpdateChasing()
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pLTServer->GetObjectPos(m_hTarget, &vTargetPos);
 
+	// RETAIL: the speed is the ammo's, not m_fVelocity (0x1003e295)
 	LTVector vDir = vTargetPos - vPos;
-	vDir.Normalize();
-
-	LTVector vVel = vDir * m_fVelocity;
+	vDir = vDir.Unit();
+	LTVector vVel = vDir * (LTFLOAT)m_pAmmoData->pProjectileFX->nVelocity;
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
 
 	m_vFirePos = vPos;
@@ -353,13 +363,13 @@ void CProjectileEnergyClaw::UpdateAttached()
 		// RETAIL: 100 points a second of bullet damage, from no one
 		// (0x1003e3a3)
 		LTFLOAT fFrameTime = g_pLTServer->GetFrameTime();
-		LTFLOAT fDamage = 100.0f * fFrameTime;
+		LTFLOAT fDamage = s_fClawDamagePerSecond * fFrameTime;
 
 		DamageStruct damage;
 		damage.Clear();
 		damage.fDamage	= fDamage;
-		damage.vDir		= m_vDir;
 		damage.eType	= DT_BULLET;
+		damage.vDir		= m_vDir;
 		damage.nAmmoId	= m_pAmmoData->nId;
 		damage.DoDamage(this, m_hTarget);
 	}
@@ -385,9 +395,10 @@ void CProjectileEnergyClaw::UpdateReturning()
 	g_pLTServer->GetObjectPos(m_hFiredFrom, &vOwnerPos);
 
 	LTVector vDir = vOwnerPos - vPos;
-	vDir.Normalize();
+	vDir = vDir.Unit();
 
-	LTVector vVel = vDir * m_fVelocity;
+	// RETAIL: the speed is the ammo's, not m_fVelocity (0x1003e5a4)
+	LTVector vVel = vDir * (LTFLOAT)m_pAmmoData->pProjectileFX->nVelocity;
 	g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
 }
 
@@ -423,32 +434,29 @@ void CProjectileEnergyClaw::HandleReturned()
 //	ROUTINE:	CProjectileEnergyClaw::CreateClawFX
 //
 //	PURPOSE:	Create the looping claw effect on the target
-//				(RETAIL: 0x1003e740; PORT: near; the effect's name is
-//				retail's code's, here the projectile's FX)
+//				(RETAIL: 0x1003e740)
 //
 // ----------------------------------------------------------------------- //
 
-void CProjectileEnergyClaw::CreateClawFX(HOBJECT hTarget)
+bool CProjectileEnergyClaw::CreateClawFX(HOBJECT hTarget)
 {
 	ObjectCreateStruct ocs;
 	ocs.Clear();
 
-	g_pLTServer->GetObjectPos(hTarget, &ocs.m_Pos);
-	ocs.m_Scale.Init(1.0f, 1.0f, 1.0f);
-	ocs.m_Rotation.Init();
-
-	const char *pFXName = (m_pAmmoData && m_pAmmoData->pProjectileFX) ? m_pAmmoData->pProjectileFX->szFXName : "";
-	ocs.m_cProperties.AddProp("FxName", GenericProp(pFXName, LT_PT_STRING));
+	ocs.m_cProperties.AddProp("FxName", GenericProp(s_szClawFXName));
 	ocs.m_cProperties.AddProp("Loop", GenericProp(true, LT_PT_BOOL));
 	ocs.m_cProperties.AddProp("SmoothShutdown", GenericProp(true, LT_PT_BOOL));
 
+	ocs.m_Rotation.Init();
+	g_pLTServer->GetObjectPos(hTarget, &ocs.m_Pos);
+
 	HCLASS hClass = g_pLTServer->GetClass("SpecialFX");
-	if (!hClass) return;
+	BaseClass *pFX = (BaseClass*)g_pLTServer->CreateObjectProps(hClass, &ocs, LTNULL);
+	if (!pFX) return false;
 
-	BaseClass *pFX = (BaseClass*)g_pLTServer->CreateObject(hClass, &ocs);
-	if (!pFX) return;
-
-	m_hClawFX = pFX->m_hObject;
+	HOBJECT hFX = pFX->m_hObject;
+	m_hClawFX = hFX;
+	return true;
 }
 
 // ----------------------------------------------------------------------- //
