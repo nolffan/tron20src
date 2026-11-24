@@ -65,8 +65,8 @@ LTBOOL CHUDSubChooser::Init()
 	LTRect rcBad = g_pLayoutMgr->GetRect(SUBCHOOSER_TAG, "BadBackgroundTexUV");
 
 	m_nNumSubs = 0;
-	uint16 nNumSubs = g_pSubroutineMgr->GetNumSubroutines();
-	for (uint16 i = 0; i < nNumSubs; i++)
+	int nNumSubs = g_pSubroutineMgr->GetNumSubroutines();
+	for (int i = 0; i < nNumSubs; i++)
 	{
 		TronSubroutine* pSub = g_pSubroutineMgr->GetSubroutineByIndex(i);
 		if (pSub->eFunction != FUNCTION_UTILITY) continue;
@@ -75,7 +75,7 @@ LTBOOL CHUDSubChooser::Init()
 		m_bAvailable[m_nNumSubs] = false;
 
 		char szIcon[1024];
-		sprintf(szIcon, "%s_on.dtx", pSub->szSprite);
+		sprintf(szIcon, "%s_on.dtx", pSub->szHUDIcon);
 		m_hIconTex[m_nNumSubs] = g_pInterfaceResMgr->GetTexture(szIcon);
 
 		g_pDrawPrim->SetUVWH(&m_Icon[m_nNumSubs], 0.0f, 0.0f, 1.0f, 1.0f);
@@ -98,7 +98,7 @@ LTBOOL CHUDSubChooser::Init()
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 	for (int j = 0; j < HUDSUBCHOOSER_MAX; j++)
 	{
-		m_pText[j] = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(L""), 0.0f, 0.0f, CUI_HALIGN_LEFT);
+		m_pText[j] = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(), 0.0f, 0.0f, CUI_HALIGN_LEFT);
 		m_pText[j]->SetDropShadow(true);
 		m_pText[j]->SetColor(m_nTextColor);
 	}
@@ -164,9 +164,9 @@ void CHUDSubChooser::Render()
 void CHUDSubChooser::Arrange()
 {
 	float fX = (float)(m_nScreenWidth - 42);
+	float fTop = (float)g_pProcedurals->m_nTop;
 	float fY = 0.0f;
 	int nMaxWidth = 0;
-	float fTop = (float)g_pProcedurals->m_nTop;
 	float fBottom = g_pArmor->m_fLayoutScale;
 
 	for (int i = 0; i < m_nNumSubs; i++)

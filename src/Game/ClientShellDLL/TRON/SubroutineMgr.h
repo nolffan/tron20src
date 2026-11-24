@@ -264,6 +264,7 @@ public:
 	void				AddBaseCodeBlock(int iSectorNumber, bool bPrev, bool bNext); // create a subroutine that's unusable
 
 	friend class CTronInterfaceMgr;	// RETAIL: its OnMessage calls InfectRandomSector
+	friend class CTronGameClientShell;	// RETAIL: its corruption cheat calls InfectRandomSector (0x1009aa99)
 
 protected:
 	void				CleanArrays();

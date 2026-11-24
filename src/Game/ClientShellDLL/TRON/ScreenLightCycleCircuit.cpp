@@ -152,11 +152,14 @@ LTBOOL CScreenLightCycleCircuit::Render(HSURFACE hDestSurf)
 // RETAIL: 0x10066600
 void CScreenLightCycleCircuit::OnSelectionChange()
 {
-	if (m_pCircuitList && GetControl(m_nSelection) == m_pCircuitList)
+	if (!m_pCircuitList) return;
+
+	CLTGUICtrl *pCtrl = GetControl(m_nSelection);
+	if (m_pCircuitList == pCtrl)
 	{
-		CLTGUICtrl *pCtrl = m_pCircuitList->GetControl(m_pCircuitList->GetSelectedIndex());
-		if (pCtrl)
-			SelectCircuit(pCtrl->GetParam1());
+		CLTGUICtrl *pCircuitCtrl = m_pCircuitList->GetSelectedControl();
+		if (pCircuitCtrl)
+			SelectCircuit(pCircuitCtrl->GetParam1());
 	}
 }
 

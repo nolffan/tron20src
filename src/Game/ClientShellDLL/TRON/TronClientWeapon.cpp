@@ -784,7 +784,10 @@ SubroutineDataKey CTronClientWeapon::GetSubroutineDataKey( const char *szName )
 {
 	PlayerSubroutine *pSub = g_pSubroutineMgr->GetPlayerSubroutine( szName, LTNULL );
 
+	SubState eState = pSub->eState;
+
 	int nVersion = kSubData_Alpha;
+	int nState = kSubData_Okay;
 	switch ( pSub->eVersion )
 	{
 		case VERSION_ALPHA: nVersion = kSubData_Alpha; break;
@@ -792,8 +795,7 @@ SubroutineDataKey CTronClientWeapon::GetSubroutineDataKey( const char *szName )
 		case VERSION_GOLD:  nVersion = kSubData_Gold;  break;
 	}
 
-	int nState = kSubData_Okay;
-	switch ( pSub->eState )
+	switch ( eState )
 	{
 		case SUBSTATE_OKAY:    nState = kSubData_Okay;    break;
 		case SUBSTATE_CORRUPT: nState = kSubData_Corrupt; break;
