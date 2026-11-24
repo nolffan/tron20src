@@ -355,8 +355,14 @@ void ObjectCPrint(const char *pName, const char *pMsg, ...)
 
 static void ParseTriggerMsg(const char* szMsg, char* aszMsgs[256], uint32* pcMsgs)
 {
-	static char szMsgCopy[1024];
-	strcpy(szMsgCopy, szMsg);
+	// RETAIL: Tron's (0x100cc150) takes no NULL message and copies at
+	// most 2047 characters
+	if (!szMsg)
+		return;
+
+	static char szMsgCopy[2048];
+	strncpy(szMsgCopy, szMsg, sizeof(szMsgCopy) - 1);
+	szMsgCopy[sizeof(szMsgCopy) - 1] = '\0';
 
 	// Start with no messages
 	*pcMsgs = 0;

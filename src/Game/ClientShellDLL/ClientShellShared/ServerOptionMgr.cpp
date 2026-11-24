@@ -184,7 +184,7 @@ void CServerOptionMgr::LoadAll()
 	{
 		debug_delete(m_Options[i]);
 	}
-	m_Options.erase(m_Options.begin(), m_Options.end());
+	m_Options.clear();	// RETAIL: 0x100dfe0e (erase out of line)
 
 	std::string sFind = s_sServerDataDir + "*" + s_sServerDataExt;
 

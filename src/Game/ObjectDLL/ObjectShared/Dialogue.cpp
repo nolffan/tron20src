@@ -26,6 +26,7 @@
 	#include "AIUtils.h"
 	#include "CharacterMgr.h"
 	#include "PlayerObj.h"
+	#include "../TRON/ServerLightCycleMgr.h"	// RETAIL: Tron's light cycle dialog
 
 LINKFROM_MODULE( Dialogue );
 
@@ -453,10 +454,8 @@ LTBOOL Dialogue::NotifySpeakers( )
 
 					// Return false if a participant does not exist 
 					// (so an AI does not have a conversation with his dead buddy).
-
-					ResetTalkGoals();
-
-					HandleOff();
+					// RETAIL: Tron (0x10266ed0) does not reset the talk goals
+					// or turn the dialogue off here
 
 					return LTFALSE;
 				}
@@ -695,6 +694,10 @@ void Dialogue::HandleOn( )
 	m_fNextDialogueStart = g_pLTServer->GetTime() + m_fDialogueDelay[0];
 
 	SetNextUpdate( UPDATE_NEXT_FRAME );
+
+	// RETAIL: Tron (0x10267590) stops the light cycle dialog while a
+	// dialogue plays
+	CServerLightCycleMgr::EnableDialog( false );
 }
 
 // ----------------------------------------------------------------------- //
@@ -827,6 +830,9 @@ void Dialogue::HandleOff( )
 		m_fNextDialogueStart = -1.0f;
 		SetNextUpdate( UPDATE_NEVER );
 	}
+
+	// RETAIL: Tron (0x10267700) starts the light cycle dialog again
+	CServerLightCycleMgr::EnableDialog( true );
 }
 
 

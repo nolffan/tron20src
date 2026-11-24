@@ -150,14 +150,8 @@ static LTBOOL ValidateMsgSpawn( ILTPreInterface *pInterface, ConParse &cpMsgPara
 		if( pInterface->FindObject( cpMsgParams.m_Args[1] ) == LT_OK )
 		{
 			// <sigh> Trying to spawn in an object with a name of an object that is already in the level...
+			// RETAIL: Tron's SPAWN shows no errors (0x1014ce55, 0x1014cf36).
 
-			if( CCommandMgrPlugin::s_bShowMsgErrors )
-			{
-				pInterface->ShowDebugWindow( LTTRUE );
-				pInterface->CPrint( "ERROR! - ValidateMsgSpawn()" );
-				pInterface->CPrint( "    MSG - SPAWN - Object '%s' already exists and is of type '%s'!", cpMsgParams.m_Args[1], pInterface->GetObjectClass( cpMsgParams.m_Args[1] ));
-			}
-			
 			return LTFALSE;	
 		}
 
@@ -181,13 +175,6 @@ static LTBOOL ValidateMsgSpawn( ILTPreInterface *pInterface, ConParse &cpMsgPara
 				}
 				else
 				{
-					if( CCommandMgrPlugin::s_bShowMsgErrors )
-					{
-						pInterface->ShowDebugWindow( LTTRUE );
-						pInterface->CPrint( "ERROR! - ValidateMsgSpawn()" );
-						pInterface->CPrint( "    MSG - SPAWN - Target object '%s' does not exist!", gProp.m_String );
-					}
-					
 					return LTFALSE;	
 				}
 

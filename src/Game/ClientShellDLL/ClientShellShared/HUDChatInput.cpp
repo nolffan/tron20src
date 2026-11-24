@@ -84,7 +84,8 @@ void CHUDChatInput::Term()
 void CHUDChatInput::Render()
 {
 
-	if (!m_bVisible) return;
+	// RETAIL: 0x10165d95, the item's IsVisible first
+	if (!IsVisible() || !m_bVisible) return;
 //	SetRenderState();
 
 	m_pStr->Render();
@@ -99,6 +100,7 @@ void CHUDChatInput::Update()
 	uint8 h = (uint8)((float)m_nFontSize * g_pInterfaceResMgr->GetYRatio());
 	// TRON: the font for the scaled height (RETAIL: 0x10165ab0)
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(h);
+	m_pStr->SetFont(pFont);	// RETAIL: 0x10165e05
 	m_pStr->SetCharScreenHeight(h);
 
 	float x = ((float)(m_BasePos.x - 5)  * g_pInterfaceResMgr->GetXRatio()) - m_pStr->GetWidth();
@@ -250,7 +252,8 @@ void CHUDChatInput::Send()
 	Show(false);
 
 	// Ignore empty messages.
-	if( !m_szChatStr[0] )
+	// RETAIL: 0x101662aa, strlen
+	if( !strlen( m_szChatStr ))
 		return;
 
 	// First check and see if it was a cheat that was entered...
@@ -292,4 +295,6 @@ void CHUDChatInput::Send()
 	}
 
 	SAFE_STRCPY(m_szChatHistory[0], m_szChatStr);
+
+	SetChatType(0);	// RETAIL: 0x1016644c
 }

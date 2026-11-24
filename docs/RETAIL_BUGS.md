@@ -1452,6 +1452,54 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The cluster disc uses its class data when it has no ammo data
+
+Object.lto 0x10035740 (CClusterDisc::Setup,
+ObjectDLL/TRON/ProjectileClusterDisc.cpp). The function finds the cluster
+disc class data only when the projectile has ammo data. When it has no ammo
+data, the pointer to the class data is NULL, but the function reads the
+initial explosion suppress time from it (0x10035781). This causes an access
+violation.
+
+Fixed in the modern build: the function stops after the base class setup
+when it has no class data.
+### One energy claw debug message uses a misspelt console variable
+
+Object.lto 0x10192390 (CAIGoalSpecialDamage::IsEnergyClawAttackerAiming, our
+name, ObjectDLL/ObjectShared/AIGoalSpecialDamage.cpp). The function writes
+its debug messages when the console variable "AIShowEnergyClawDamage" is
+set. The message "Early out - Not a character!" uses the variable
+"AIShowEnergyCLawDamage" (capital L) instead (0x101924b2). Console variable
+names are case-sensitive, thus this one message does not show with the
+other messages. It has no effect on the game.
+
+Not fixed yet: the modern build can use the correct name.
+### The tracked node manager reports the wrong flag as discomfort
+
+CShell.dll 0x101c8f80 and Object.lto 0x10270b10
+(CTrackedNodeMgr::IsAtDiscomfort, Shared/TrackedNodeMgr.cpp). The function
+must return the flag that tells if the node reached its discomfort extent
+(m_bInDiscomfort, +0xb5). It reads the byte at +0xb9, which is the flag that
+tells the node to ignore the animation of its parent
+(m_bIgnoreParentAnimation; SetIgnoreParentAnimation at 0x101c8f50 writes the
+same byte). Thus a caller gets a value that does not change with the
+tracking.
+
+Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
+m_bInDiscomfort.
+### The binary bit ignores the permission set messages
+
+Object.lto 0x10014080 (BinaryBit::ObjectMessageFn, ObjectDLL/TRON/
+BinaryBit.cpp). For each trigger message, the function compares the first
+word with "ADDPSET" and "REMOVEPSET" to add or remove permission sets. The
+retail code compares the pointers (0x10014260, 0x100142b6), not the text:
+the parsed word is in the parse buffer, not at the address of the string
+constant. Thus the comparisons are always false, and "ADDPSET" and
+"REMOVEPSET" do nothing to a binary bit. The class registers the two
+messages with the command manager, so the level designer can send them.
+
+Fixed in the modern build: the function compares the text (_stricmp).
+
 ### The "SetEnergy" trigger limits the energy to the maximum hit points
 
 Object.lto 0x1007994b (CPlayerObj::OnTrigger, ObjectDLL/ObjectShared/

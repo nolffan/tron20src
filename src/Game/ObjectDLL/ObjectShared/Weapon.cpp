@@ -307,7 +307,9 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 
 			// Create a projectile for every vector...
 
-			int nVectorsPerShot = m_pWeaponData->nVectorsPerRound;
+			// RETAIL: 0x101576c0: the fire info can give the number of
+			// vectors (WeaponFireInfo +0x64)
+			int nVectorsPerShot = info.nTronUnknown64 ? info.nTronUnknown64 : m_pWeaponData->nVectorsPerRound;
 
 			//uint8 nNewRandomSeed = GetRandom(2, 255);
 
@@ -353,8 +355,9 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 				// If we are shooting multiple vectors ignore some special
 				// fx after the first vector...
 
+				// RETAIL: 0x101578a1: Tron keeps the tracer
 				g_wIgnoreFX |= WFX_FIRESOUND | WFX_ALTFIRESND | WFX_SHELL |
-					WFX_SILENCED | WFX_LIGHT | WFX_MUZZLE | WFX_TRACER;
+					WFX_SILENCED | WFX_LIGHT | WFX_MUZZLE;
 			}
 
 			//srand(nNewRandomSeed);
@@ -392,6 +395,20 @@ WeaponState CWeapon::Fire(WeaponFireInfo & info)
 	return eRet;
 }
 
+
+// RETAIL: the energy disc ammo of each multiplayer color (retail 0x102994f4,
+// CreateProjectile 0x10157d8e); the name is ours
+static const char* const s_aszDiscEnergyAmmo[] =
+{
+	"DiscEnergy",
+	"DiscEnergy_Red",
+	"DiscEnergy_Green",
+	"DiscEnergy_Orange",
+	"DiscEnergy_Purple",
+	"DiscEnergy_White",
+	"DiscEnergy_Cyan",
+	"DiscEnergy_Yellow",
+};
 
 // ----------------------------------------------------------------------- //
 //
@@ -447,30 +464,69 @@ LTBOOL CWeapon::CreateProjectile(LTRotation & rRot, WeaponFireInfo & info)
 		theStruct.m_Pos = info.vFirePos;
 	}
 
+	// RETAIL: 0x10157cee: in a disc game a player's energy disc takes the
+	// ammo of the player's color for its creation only
+	uint8 nAmmoId = m_nAmmoId;
+	AMMO const *pAmmoData = m_pAmmoData;
+
+	if( IsPlayer( info.hFiredFrom ) && IsDiscGameType( ))
+	{
+		AMMO const *pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
+		if( pAmmo && !_strcmpi( pAmmo->szName, "DiscEnergy" ))
+		{
+			CPlayerObj *pPlayer = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( info.hFiredFrom ));
+			if( pPlayer )
+			{
+				uint8 nColor = pPlayer->GetMPColorIndex( );
+				if( nColor < ARRAY_LEN( s_aszDiscEnergyAmmo ))
+				{
+					AMMO const *pColorAmmo = g_pWeaponMgr->GetAmmo( s_aszDiscEnergyAmmo[nColor] );
+					if( pColorAmmo )
+					{
+						m_nAmmoId = pColorAmmo->nId;
+						m_pAmmoData = pColorAmmo;
+					}
+				}
+			}
+		}
+	}
+
     HCLASS hClass = g_pLTServer->GetClass(m_pAmmoData->pProjectileFX->szClass);
 
 	UBER_ASSERT1( hClass, "Unable to retreive class: %s", m_pAmmoData->pProjectileFX->szClass );
 
-	if (hClass)
+	if (!hClass)
 	{
-        CProjectile* pProj = (CProjectile*)g_pLTServer->CreateObject(hClass, &theStruct);
-		if (pProj)
-		{
-			if( !pProj->Setup(this, info) )
-			{
-				g_pLTServer->RemoveObject( pProj->m_hObject );
-				return LTFALSE;
-			}
-
-			// Create a stimulus for AIs to notice projectile.
-			
-			pProj->CreateDangerStimulus( info.hFiredFrom );
-
-            return LTTRUE;
-		}
+		return LTFALSE;
 	}
 
-    return LTFALSE;
+	// RETAIL: Tron names each projectile (0x10157dd1)
+	strncpy( theStruct.m_Name, "TronProjectile", ARRAY_LEN( theStruct.m_Name ) - 1 );
+	theStruct.m_Name[ARRAY_LEN( theStruct.m_Name ) - 1] = '\0';
+
+    CProjectile* pProj = (CProjectile*)g_pLTServer->CreateObject(hClass, &theStruct);
+	if (!pProj)
+	{
+		return LTFALSE;
+	}
+
+	LTBOOL bSetup = pProj->Setup(this, info);
+
+	m_nAmmoId = nAmmoId;
+	m_pAmmoData = pAmmoData;
+
+	if( bSetup )
+	{
+		// Create a stimulus for AIs to notice projectile.
+
+		pProj->CreateDangerStimulus( info.hFiredFrom );
+	}
+	else
+	{
+		g_pLTServer->RemoveObject( pProj->m_hObject );
+	}
+
+	return bSetup;
 }
 
 

@@ -738,6 +738,8 @@ class CAI : public CCharacter, public IAISensing
 		void SetPosition(const LTVector& vPos, LTBOOL bFindFloorHeight);
 
 		const AIBM_Template* const GetAITemplate() const;
+		// RETAIL: the shoot strategy reads the weapon set (0x102268e3)
+		friend class CAIHumanStrategyShoot;
 		void SetAITemplate(const char* pszName);
 		// RETAIL: Tron's, inlined in InitialUpdate and Load (name ours)
 		inline void InitWeaponChoices();

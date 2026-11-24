@@ -228,6 +228,10 @@ class CDestructible : public IAggregate
 			m_fTronUnknown6D8 = fVelocity;
 			m_vTronUnknown6DC = vDir;
 		}
+		// RETAIL: Body::Init copies them (0x1015a931). The names are ours
+		LTFLOAT GetTronImplodeRadius() const		{ return m_fTronUnknown6D4; }
+		LTFLOAT GetTronImplodeVelocity() const		{ return m_fTronUnknown6D8; }
+		const LTVector& GetTronImplodeDir() const	{ return m_vTronUnknown6DC; }
         void SetNeverDestroy(LTBOOL bNeverDestroy)	{ m_bNeverDestroy = bNeverDestroy; }
         void SetApplyDamagePhysics(LTBOOL b)		{ m_bApplyDamagePhysics = b; }
         void	SetCantDamageFlags(DamageFlags nFlags)	{ m_nCantDamageFlags = nFlags; }
