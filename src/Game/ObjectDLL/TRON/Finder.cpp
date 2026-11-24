@@ -304,13 +304,7 @@ bool Finder::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if (s_cTok_ScanInfinite == cMsg.GetArg(0))
 	{
-		if (cMsg.GetArgCount() != 1 && atoi(cMsg.GetArg(1)) <= 0)
-		{
-			m_LingerTimer.Start(0.0f);
-			m_bScanInfinite = false;
-			m_vScanInfiniteDir.Init();
-		}
-		else
+		if ((cMsg.GetArgCount() == 1) ? true : (atoi(cMsg.GetArg(1)) > 0))
 		{
 			PauseKeyframer();
 
@@ -319,6 +313,12 @@ bool Finder::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			m_vScanInfiniteDir = rRot.Forward();
 			m_bScanInfinite = true;
 			SetState(eStateLingering);
+		}
+		else
+		{
+			m_LingerTimer.Start(0.0f);
+			m_bScanInfinite = false;
+			m_vScanInfiniteDir.Init();
 		}
 	}
 
