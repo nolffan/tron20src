@@ -1029,6 +1029,14 @@
 #define IDS_CONFIRM_DELETE_PROFILE      2202
 #define IDS_APP_UNABLE_TO_CREATE_HW_TNL_DEVICE 2203
 
+// TRON: strings of Tron's performance screen (RETAIL: CScreenPerformance::
+// Build, 0x10070120, pushes them). The names are ours. IDS_HELP_TRIPLE_BUFF
+// above is Build 69's number; retail's help string for triple buffering
+// is 173 ("Toggles the use of triple buffering.").
+#define IDS_HELP_TRIPLE_BUFF_173        173
+#define IDS_SCREENGLOW                  3265
+#define IDS_HELP_SCREENGLOW             3266
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
