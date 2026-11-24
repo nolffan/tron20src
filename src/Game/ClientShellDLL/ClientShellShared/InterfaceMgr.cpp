@@ -6237,7 +6237,7 @@ void CInterfaceMgr::TronUnknownVirtual98(bool bTronUnknown, bool bInstant)
 	}
 
 	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("LCC");
-	if (bInstant && (!hVar || g_pLTClient->GetVarValueFloat(hVar) > 0.0f))
+	if (bTronUnknown && (!hVar || g_pLTClient->GetVarValueFloat(hVar) > 0.0f))
 	{
 		g_pPlayerMgr->GetPlayerCamera()->TronUnknownStartLCCOrbit();
 	}
