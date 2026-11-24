@@ -590,9 +590,12 @@ class CAttachmentsPlugin : public IObjectPlugin
 
 		void PopulateStringList(char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
 
-	// RETAIL: protected in Tron: CHumanAttachmentsPlugin's PreHook and
-	// PopulateStringList use them (Object.lto 0x1018d473, 0x1018d8b4)
-	protected :
+	private :
+
+		// RETAIL: CHumanAttachmentsPlugin's PreHook and PopulateStringList
+		// use these (Object.lto 0x1018d473, 0x1018d8b4); a friend keeps
+		// their names (and the link's wiring) as before
+		friend class CHumanAttachmentsPlugin;
 
 		static LTBOOL				sm_bInitted;
 		static CAttachButeMgr		sm_AttachButeMgr;
