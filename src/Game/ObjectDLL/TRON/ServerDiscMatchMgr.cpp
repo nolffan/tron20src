@@ -25,6 +25,12 @@
 static const float s_fRoundDelay = 5.0f;
 static const float s_fLongRoundDelay = 7.0f;
 
+// RETAIL: the delay before the next level and the time between two ping
+// checks (retail 0x10294b4c, 0x10294b50: named constants, not literals).
+// The names are ours.
+static const float s_fLevelOverDelay = 10.0f;
+static const float s_fPingCheckTime = 0.5f;
+
 // RETAIL: the time of the last whole step of fStep before fTime that is
 // still in the future and after fLast (retail 0x10049970)
 static float GetNextTime(float fNext, float fStep, float fLast)
@@ -199,7 +205,10 @@ void CDiscMatch::Term()
 				uint32 nState = pScore->GetTronUnknown18();
 				if (nState == 0 || nState == 3)
 				{
-					pScore->SetTronUnknown18((GetGameType() != eGameTypeDiscArena && pTeam->GetState() == 2) ? 2 : 1);
+					if (GetGameType() != eGameTypeDiscArena && pTeam->GetState() == 2)
+						pScore->SetTronUnknown18(2);
+					else
+						pScore->SetTronUnknown18(1);
 					pScore->UpdateClients();
 				}
 			}
@@ -619,6 +628,7 @@ ArenaStartPoint* CDiscArena::GetSpectatorPoint(CPlayerObj* pPlayer)
 	uint32 nNumPoints = m_SpectatorPoints.size();
 	uint32 nPoint = m_nSpectatorPoint;
 	bool bFree = false;
+	uint32 nCount = nNumPoints;
 
 	m_nSpectatorPoint = nPoint + 1;
 	if (!nNumPoints)
@@ -626,16 +636,17 @@ ArenaStartPoint* CDiscArena::GetSpectatorPoint(CPlayerObj* pPlayer)
 
 	m_nSpectatorPoint = (nPoint + 1) % nNumPoints;
 
-	for (uint32 n = nNumPoints; !bFree; )
+	// RETAIL: tries each point once, from the one after the last
+	for (; nCount; nCount--)
 	{
+		if (bFree)
+			break;
+
 		nPoint = (nPoint + 1) % nNumPoints;
 
 		LTVector vPos;
 		g_pLTServer->GetObjectPos(m_SpectatorPoints[nPoint]->m_hObject, &vPos);
 		bFree = !g_pGameServerShell->IsPositionOccupied(vPos, pPlayer);
-
-		if (!--n)
-			break;
 	}
 
 	return m_SpectatorPoints[nPoint];
@@ -649,24 +660,26 @@ ArenaStartPoint* CDiscArena::GetTeamPoint(uint32 nSlot, CPlayerObj* pPlayer)
 	ArenaStartPointArray& points = m_aTeamPoints[nSlot];
 	uint32 nNumPoints = points.size();
 	uint32 nPoint = m_nTeamPoint;
-	bool bFree = false;
+	uint32 nCount = nNumPoints;
 
 	m_nTeamPoint = nPoint + 1;
+	bool bFree = false;
 	if (!nNumPoints)
 		return LTNULL;
 
 	m_nTeamPoint = (nPoint + 1) % nNumPoints;
 
-	for (uint32 n = nNumPoints; !bFree; )
+	// RETAIL: tries each point once, from the one after the last
+	for (; nCount; nCount--)
 	{
+		if (bFree)
+			break;
+
 		nPoint = (nPoint + 1) % nNumPoints;
 
 		LTVector vPos;
 		g_pLTServer->GetObjectPos(points[nPoint]->m_hObject, &vPos);
 		bFree = !g_pGameServerShell->IsPositionOccupied(vPos, pPlayer);
-
-		if (!--n)
-			break;
 	}
 
 	return points[nPoint];
@@ -930,7 +943,7 @@ void CDiscMatchMgr::EndGame()
 	{
 		m_bLevelOver = true;
 		m_bLevelOverWarning = true;
-		m_fStartTime = g_pLTServer->GetTime() + 10.0f;
+		m_fStartTime = g_pLTServer->GetTime() + s_fLevelOverDelay;
 	}
 	else
 	{
@@ -988,7 +1001,7 @@ void CDiscMatchMgr::Update()
 		}
 
 		// RETAIL: tell the clients once, halfway
-		if (m_bLevelOverWarning && m_fStartTime - 10.0f * 0.5f < g_pLTServer->GetTime())
+		if (m_bLevelOverWarning && g_pLTServer->GetTime() > m_fStartTime - s_fLevelOverDelay * 0.5f)
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
@@ -1000,7 +1013,7 @@ void CDiscMatchMgr::Update()
 	}
 
 	// RETAIL: players over the ping limit become spectators after ten checks
-	if (m_bStarted && m_nJoinTime > 0 && m_fLastPingCheck + 0.5f < g_pLTServer->GetTime())
+	if (m_bStarted && m_nJoinTime > 0 && g_pLTServer->GetTime() > m_fLastPingCheck + s_fPingCheckTime)
 	{
 		uint32 nNumTeams = g_pTronTeamMgr->GetNumTeams();
 		for (uint32 i = 0; i < nNumTeams; i++)
@@ -1013,17 +1026,14 @@ void CDiscMatchMgr::Update()
 				if (!pPlayer)
 					continue;
 
+				// RETAIL: the count is signed (0x1004a24e, 0x1004a353)
 				uint16 nTime;
-				if (CanJoin(pPlayer, &nTime))
+				if (!CanJoin(pPlayer, &nTime))
 				{
-					if (pPlayer->m_nTronUnknown31d4 > 0)
+					if ((int)++pPlayer->m_nTronUnknown31d4 > 10)
 					{
-						pPlayer->m_nTronUnknown31d4--;
-					}
-				}
-				else if (++pPlayer->m_nTronUnknown31d4 > 10)
-				{
-					ChangeTeam(g_pLTServer->GetClientID(pPlayer->GetClient()), TRON_MAX_TEAMS);
+					uint32 nClientID = g_pLTServer->GetClientID(pPlayer->GetClient());
+					ChangeTeam(nClientID, TRON_MAX_TEAMS);
 
 					CAutoMessage cMsg;
 					cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
@@ -1031,6 +1041,11 @@ void CDiscMatchMgr::Update()
 					cMsg.Writeuint16(nTime);
 					cMsg.Writeuint16(m_nJoinTime);
 					g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
+					}
+				}
+				else if ((int)pPlayer->m_nTronUnknown31d4 > 0)
+				{
+					pPlayer->m_nTronUnknown31d4--;
 				}
 			}
 		}
@@ -1814,7 +1829,8 @@ CDiscArena* CDiscMatchMgr::FindArena(int nTeamA, int nTeamB)
 		choice.fPlayed = 0.0f;
 		choice.nRandom = 0;
 		choice.fPlayed = (float)(int)((*pPlayedA)[i] + (*pPlayedB)[i]) * 0.5f;
-		uint32 nRandom = (uint32)((float)rand() * (1.0f / 32768.0f) * 1024.0f);
+		float fRandom = (float)rand() * (1.0f / 32768.0f);
+		uint32 nRandom = (uint32)(fRandom * 1024.0f);
 		if (nRandom >= 1024)
 			nRandom = 1023;
 		choice.nRandom = nRandom;
@@ -1870,7 +1886,10 @@ void CDiscMatchMgr::AssignWaitingPlayers()
 	for (DiscPlayerList::iterator iter = m_Waiting.begin(); iter != m_Waiting.end(); iter++)
 	{
 		// RETAIL: an arena with a match to watch, from a random one on
-		uint32 nArena = (uint32)((float)rand() * (1.0f / 32768.0f) * 4.0f);
+		// RETAIL: the random number is a variable of its own: retail multiplies
+		// twice (0x1004c5e0), where one expression folds the two constants.
+		float fRandom = (float)rand() * (1.0f / 32768.0f);
+		uint32 nArena = (uint32)(fRandom * 4.0f);
 		if (nArena >= 4)
 			nArena = 3;
 
