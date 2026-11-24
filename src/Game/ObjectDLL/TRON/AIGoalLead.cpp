@@ -113,7 +113,7 @@ void CAIGoalLead::UpdateGoal()
 						animProps.Set( kAPG_Action, kAP_LookAround );
 						pAnimate->SetAnimation( animProps, LTFALSE );
 
-						m_pAI->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
+						GetAI()->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
 						m_bLookAround = false;
 					}
 				}
@@ -162,7 +162,7 @@ void CAIGoalLead::HandleStateAnimate()
 
 	if( m_pAI->IsNodeTrackingEnabled() )
 	{
-		m_pAI->SetNodeTrackingTarget( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject(), "Head" );
+		GetAI()->SetNodeTrackingTarget( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject(), "Head" );
 	}
 
 	if( pAnimate->GetStateStatus() == kSStat_StateComplete )
@@ -175,7 +175,7 @@ void CAIGoalLead::HandleStateAnimate()
 			animProps.Set( kAPG_Action, kAP_LookAround );
 			pAnimate->SetAnimation( animProps, LTFALSE );
 
-			m_pAI->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
+			GetAI()->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
 			m_bLookAround = false;
 		}
 		else
@@ -186,7 +186,7 @@ void CAIGoalLead::HandleStateAnimate()
 			animProps.Set( kAPG_Action, kAP_Taunt );
 			pAnimate->SetAnimation( animProps, LTFALSE );
 
-			m_pAI->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
+			GetAI()->EnableNodeTracking( LEAD_TRACK_LOOKAT, LEAD_PLAYER()->GetUserObject() );
 			m_bLookAround = true;
 		}
 	}
