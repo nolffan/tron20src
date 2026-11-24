@@ -1393,6 +1393,8 @@ bool HasPSets(CCharacter* pChar, uint8 nPSets)
 HOBJECT CreateClientFXObject(char* szProps, HOBJECT hParent, LTVector* pvPos, LTRotation *prRot)
 {
 	ObjectCreateStruct ocs;
+	// RETAIL: cleared again (0x100cdc8f)
+	ocs.Clear();
 
 	if(hParent)
 	{
@@ -1411,12 +1413,18 @@ HOBJECT CreateClientFXObject(char* szProps, HOBJECT hParent, LTVector* pvPos, LT
 	}
 
 	HCLASS hClass = g_pLTServer->GetClass("SpecialFX");
-	if(!hClass) return LTNULL;
+	if(hClass)
+	{
+		BaseClass* pObj = (BaseClass*)g_pLTServer->CreateObjectProps(hClass, &ocs, szProps);
+		if(pObj)
+		{
+			return pObj->m_hObject;
+		}
 
-	BaseClass* pObj = (BaseClass*)g_pLTServer->CreateObjectProps(hClass, &ocs, szProps);
-	if(!pObj) return LTNULL;
+		return LTNULL;
+	}
 
-	return pObj->m_hObject;
+	return LTNULL;
 }
 
 
