@@ -2338,7 +2338,9 @@ void CAI::RemoveTronUnknown10A0(ActivationNotifier* pEntry)
 {
 	std::list<ActivationNotifier*>& lstNotifiers = m_lstTronUnknown10A0;
 	ActivationNotifier* pNotifier = pEntry;
-	if( std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier ) != lstNotifiers.end() )
+	std::list<ActivationNotifier*>::iterator it = std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier );
+	// RETAIL: 0x1012cee0 loads the found node before the list's end (near)
+	if( it != lstNotifiers.end() )
 	{
 		lstNotifiers.remove( pNotifier );
 	}
@@ -3992,19 +3994,23 @@ void CAI::UpdateState()
 			}
 		}
 
-		if ( fMinDist <= g_pAIButeMgr->GetRules()->fTalkToPlayerCleanupDist )
+		// RETAIL: 0x10130402 tests for the far player first
+		if ( fMinDist > g_pAIButeMgr->GetRules()->fTalkToPlayerCleanupDist )
 		{
-			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
-			m_bTalkLookAt = true;
-		}
-		else if ( !IsPlayingDialogSound() && !m_hDialogueObject )
-		{
-			SetTalkLock( false );
+			if ( !IsPlayingDialogSound() && !m_hDialogueObject )
+			{
+				SetTalkLock( false );
+			}
+			else
+			{
+				m_bTalkLookAt = false;
+				SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+			}
 		}
 		else
 		{
-			m_bTalkLookAt = false;
-			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackNone" );
+			SendTriggerMsgToObject( this, m_hObject, LTTRUE, "TrackLookAt" );
+			m_bTalkLookAt = true;
 		}
 	}
 
