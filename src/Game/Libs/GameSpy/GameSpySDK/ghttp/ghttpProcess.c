@@ -911,27 +911,31 @@ void ghiDoReceivingHeaders
 	char buffer[4096];
 	int bufferLen;
 	GHIRecvResult result;
-	GHTTPBool hasHeaders = GHTTPTrue;
 	char * headers;
-	char * endOfHeaders = NULL;
+	char * endOfHeaders;
+	char * fileStart;
+	int fileLength;
+	char * contentLength;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving Headers\n");
+	// RETAIL: CShell.dll 0x10020c30 (the 2003 SDK's).
 
 	// Get data.
 	////////////
 	bufferLen = sizeof(buffer);
 	result = ghiDoReceive(connection, buffer, &bufferLen);
 
-	// Handle error, no data, conn closed.
-	//////////////////////////////////////
+	// Handle error, no data.
+	/////////////////////////
 	if(result == GHIError)
 		return;
 	if(result == GHINoData)
-		return;
-
-	// Only append data if we got data.
-	///////////////////////////////////
-	if(result == GHIRecvData)
+	{
+		// Nothing new, and nothing left to parse.
+		//////////////////////////////////////////
+		if(connection->recvBuffer.pos == connection->recvBuffer.len)
+			return;
+	}
+	else if(result == GHIRecvData)
 	{
 		// Add the data to the buffer.
 		//////////////////////////////
@@ -940,66 +944,31 @@ void ghiDoReceivingHeaders
 	}
 
 	// Cache a pointer to the front of the headers.
-	///////////////////////////////////////////////
 	// TRON: the 2003 SDK's start of the headers is the receive buffer's pos
 	// (CShell.dll 1.030, 0x10020ca2).
+	///////////////////////////////////////////////
 	headers = (connection->recvBuffer.data + connection->recvBuffer.pos);
 
 	// Check if the headers are finished.
 	/////////////////////////////////////
-	if( ((connection->statusCode / 100) == 1) &&
-		 (strncmp(headers, "\r\n", 2) == 0 || strncmp(headers, "\xA\xA", 2) == 0)
-		 )
-	{
-		// If a continue doesn't have a header (immediate CRLF) move on to next status
-		endOfHeaders = headers;
-		hasHeaders = GHTTPFalse;
-	}
-	else
-	{
-		endOfHeaders = strstr(headers, CRLF CRLF);
-	}
+	endOfHeaders = strstr(headers, CRLF CRLF);
 	if(!endOfHeaders)
-	{
 		endOfHeaders = strstr(headers, "\xA\xA"); // some servers seem to use LFs only?! Seen in 302 redirect. (28may01/bgw)
-	}
 	if(endOfHeaders)
 	{
-		char * fileStart;
-		int fileLength;
-		//int headersLength;
-		char * contentLength;
-
-#ifdef HTTP_LOG
-		int headersLength;
-#endif
-
 		// Clear off the empty line.
 		////////////////////////////
-		if (GHTTPTrue == hasHeaders)
-			endOfHeaders += 2;
+		endOfHeaders += 2;
 		*endOfHeaders = '\0';
 
 		// Figure out where the file starts, and how many bytes.
 		////////////////////////////////////////////////////////
-#ifdef HTTP_LOG
-		headersLength = (endOfHeaders - headers);
-#endif
-
 		fileStart = (endOfHeaders + 2);
 		fileLength = (connection->recvBuffer.len - (fileStart - connection->recvBuffer.data));
 
 		// Set the headers buffer's new length.
 		///////////////////////////////////////
-		connection->recvBuffer.len = (endOfHeaders - connection->recvBuffer.data + 1);
-		connection->recvBuffer.pos = connection->recvBuffer.len;
-
-		// Log it.
-		//////////
-#ifdef HTTP_LOG
-		ghiLogResponse(headers, headersLength);
-		ghiLogResponse("\n", 1);
-#endif
+		connection->recvBuffer.len = (endOfHeaders - connection->recvBuffer.data);
 
 		// Check for continue.
 		//////////////////////
@@ -1011,11 +980,12 @@ void ghiDoReceivingHeaders
 				////////////////////////////////////////////
 				memmove(connection->recvBuffer.data, fileStart, (unsigned int)fileLength + 1);
 				connection->recvBuffer.len = fileLength;
+				connection->recvBuffer.pos = 0;
 			}
 			else
 			{
 				// Reset the buffer.
-				/////////////////////////
+				////////////////////
 				ghiResetBuffer(&connection->recvBuffer);
 			}
 
@@ -1023,7 +993,6 @@ void ghiDoReceivingHeaders
 			//////////////////////////////////
 			connection->state = GHTTPReceivingStatus;
 			ghiCallProgressCallback(connection, NULL, 0);
-
 			return;
 		}
 
@@ -1097,49 +1066,7 @@ void ghiDoReceivingHeaders
 		//////////////////////////////////////
 		contentLength = strstr(headers, "Content-Length:");
 		if(contentLength)
-		{
-			// Verify that the download size is something we can handle
-			///////////////////////////////////////////////////////////
-#if (GSI_MAX_INTEGRAL_BITS >= 64)
-			char  szMaxSize[] = "9223372036854775807"; // == GSI_MAX_I64       
-#else
-			char  szMaxSize[] = "2147483647";          // == GSI_MAX_I32
-#endif
-			char* pStart  = contentLength+16;
-			char* pEnd    = pStart;
-			int   nMaxLen = (int)strlen(szMaxSize);
-
-			// Skip to the end of the line
-			while( pEnd && *pEnd != '\0' && *pEnd != '\n' && *pEnd != '\r' && *pEnd != ' ' )
-				pEnd++;
-
- 			if( pEnd-pStart > nMaxLen )
-			{
-				// Wow, that IS a big number
-				connection->completed = GHTTPTrue;
-				connection->result = GHTTPFileToBig;
-				return;
-			}
-			else
-			if( pEnd-pStart == nMaxLen )
-			{
-				// Same length, maybe a bigger number
-				if( strncmp(pStart,szMaxSize,(unsigned int)(pEnd-pStart)) >= 0 )
-				{
-					connection->completed = GHTTPTrue;
-					connection->result = GHTTPFileToBig;
-					return;
-				}
-			}
-
-			// Record the full size of the expected download
-			////////////////////////////////////////////////
-#if (GSI_MAX_INTEGRAL_BITS >= 64)
-			connection->totalSize = _atoi64(pStart);
-#else
-			connection->totalSize = atoi(pStart);
-#endif
-		}
+			connection->totalSize = atoi(contentLength + 16);
 
 		// Check the chunky.
 		////////////////////
@@ -1176,9 +1103,6 @@ void ghiDoReceivingHeaders
 		/////////////////////////////////////////////
 		if(fileLength > 0)
 			ghiProcessIncomingFileData(connection, fileStart, fileLength);
-
-		// Don't reset the buffer -- we store status and header info
-		//ghiResetBuffer(&connection->recvBuffer);
 	}
 	else if(result == GHIConnClosed)
 	{
