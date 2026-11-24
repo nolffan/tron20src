@@ -2632,113 +2632,80 @@ void CPlayerObj::UpdateCommands()
 
 bool CPlayerObj::UpdateDamageAnimations()
 {
-	// Don't do special damage anis if on a ladder or a vehicle...
+	// RETAIL: Tron's (0x1007c1b0): the flags of each damage type, no
+	// carried object to drop, a hurt animation for the remaining types.
 
-	if( (m_ePPhysicsModel != PPM_NORMAL) )
+	// Don't do special damage anis on a vehicle...
+
+	if( (m_ePPhysicsModel != PPM_NORMAL) && !m_bBodyOnLadder )
 		return true;
 
-	// The DT functions loop through all damage types every time
-	// you do anything.  Get the one's we care about now, so it
-	// doesn't loop every frame.
-	static DTINFO const* pDTSlippery = GetDTINFO( DT_SLIPPERY );
-	static DTINFO const* pDTSleeping = GetDTINFO( DT_SLEEPING );
-	static DTINFO const* pDTBearTrap = GetDTINFO( DT_BEAR_TRAP );
-	static DTINFO const* pDTGlue = GetDTINFO( DT_GLUE );
-	static DTINFO const* pDTStun = GetDTINFO( DT_STUN );
-	static DTINFO const* pDTLaughing = GetDTINFO( DT_LAUGHING );
-	static DTINFO const* pDTChoke = GetDTINFO( DT_CHOKE );
-	static DTINFO const* pDTBurn = GetDTINFO( DT_BURN );
-	static DTINFO const* pDTPoison = GetDTINFO( DT_POISON );
-	static DTINFO const* pDTAsss = GetDTINFO( DT_ASSS );
-	static DTINFO const* pDTElectrocute = GetDTINFO( DT_ELECTROCUTE );
-
-
-	if( m_nDamageFlags & pDTLaughing->nDamageFlag )
-	{
-		// Uncontrollable laughter causes us to drop a carried object.
-		DropCarriedObject( );
-	}
+	DamageFlags nDamageFlags = GetDamageFlags( );
 
 	// Set the fullbody animation acording to the damage being done...
 	
 	// Set the damage types that have no movement first...
 	
-	if( (m_nDamageFlags & pDTSlippery->nDamageFlag) )
+	if( nDamageFlags & DamageTypeToFlag( DT_SLIPPERY ))
 	{
-		// We slipped, which causes us to drop what we're carrying.
-		DropCarriedObject( );
-
-		if( m_bBodyOnLadder )
-			return true;
-
 		// Fix prediction issues, since we can't move while this is happening...
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Slippery );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	if( (m_nDamageFlags & pDTSleeping->nDamageFlag) && !m_bBodyOnLadder )
+	if( nDamageFlags & DamageTypeToFlag( DT_SLEEPING ))
 	{
-		// We fell asleep, which causes us to drop what we're carrying.
-		DropCarriedObject( );
-
-		if( m_bBodyOnLadder )
-			return true;
-
 		// Fix prediction issues, since we can't move while this is happening...
 		LTVector vZero(0.0f, 0.0f, 0.0f);
 		g_pPhysicsLT->SetVelocity(m_hObject, &vZero);
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Sleeping );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 
-	if( m_nDamageFlags & pDTBearTrap->nDamageFlag )
+	if( nDamageFlags & DamageTypeToFlag( DT_BEAR_TRAP ))
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_BearTrap );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	if( m_nDamageFlags & pDTGlue->nDamageFlag )
+	if( nDamageFlags & DamageTypeToFlag( DT_GLUE ))
 	{
 		m_Animator.SetMain( CAnimatorPlayer::eDT_Glue );
-		// PORT: no grief protection in Tron (above)
 		return true;
 	}
 	
-	// Only play the hurt anis if we are aimming...
+	// If we are moving at all play the generic walk hurt animation...
 
-	if( m_Animator.GetPosture() == CAnimatorPlayer::eAim && !m_bBodyOnLadder )
+	if( m_Animator.GetDirection() != CAnimatorPlayer::eNone )
 	{
-		// If we are moving at all play the generic walk hurt animation...
+		m_Animator.SetMain( CAnimatorPlayer::eDT_HurtWalk );
+		return true;
+	}
 
-		if( m_Animator.GetDirection() != CAnimatorPlayer::eNone )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_HurtWalk );
-			return true;
-		}
+	// We are not moving so play the animation based on damage type...
 
-		// We are not moving so play the animation based on damage type...
+	if( nDamageFlags & DamageTypeToFlag( DT_STUN ))
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Stun );
+		return true;
+	}
 
-		if( m_nDamageFlags & pDTStun->nDamageFlag )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Stun );
-			// PORT: no grief protection in Tron (above)
-			return true;
-		}
-	
-		if( m_nDamageFlags & pDTLaughing->nDamageFlag )
-		{
-			m_Animator.SetMain( CAnimatorPlayer::eDT_Laughing );
-			// PORT: no grief protection in Tron (above)
-			return true;
-		}
-	
-		// PORT: NOLF2 1.3's generic hurt animation needs the damage types'
-		// hurt animation flag; Tron's DTINFO has none (Shared/DamageTypes.h)
+	if( nDamageFlags & DamageTypeToFlag( DT_LAUGHING ))
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Laughing );
+		return true;
+	}
+
+	if( (nDamageFlags & DamageTypeToFlag( DT_CHOKE )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_BURN )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_POISON )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_ASSS )) ||
+		(nDamageFlags & DamageTypeToFlag( DT_ELECTROCUTE )) )
+	{
+		m_Animator.SetMain( CAnimatorPlayer::eDT_Hurt );
+		return true;
 	}
 
 	return false;
@@ -3398,34 +3365,35 @@ void CPlayerObj::SetRespawnInvulnerability()
 
 void CPlayerObj::SetClientLoaded( bool bLoaded )
 {
+	// RETAIL: Tron's (0x1007d280): a multiplayer player comes in with its
+	// color's rez in effect and the respawn sound; no solid flags, hit box,
+	// teleport or dead body; nothing about the radar.
 	m_bClientLoaded = bLoaded;
 
 	if( bLoaded )
 	{
-		// PORT: Tron saves no velocity to restore here (NOLF2 1.x's)
-
-
 		if( m_eState == PS_ALIVE )
 		{
 			// Hide the character when the client isn't loaded, and unhide
 			// it when they become loaded.
 			HideCharacter( false );
 
-			// Make us solid again.
-			g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_SOLID, FLAG_SOLID );
-
-			// If this is COOP, then make us invulnerable for a period of time, while cycling.
-			// the model's alpha.
-			if( g_pGameServerShell->GetGameType() == eGameTypeCooperative )
+			if( IsMultiplayerGame( ))
 			{
 				SetRespawnInvulnerability( );
-			}
-			// For sp, just make us vulnerable again without the timeout and fancy-dancy
-			// model alpha thingy.
-			else
-			{
-				// Need to be invulnerable until we're loaded.
-				m_damage.SetCanDamage( true );
+
+				LTVector vPos;
+				LTRotation rRot;
+				g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+				const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel( m_bTronUnknown31c8 );
+				if( pModel && m_bTronUnknown31c9 < pModel->m_vecColorRezInFX.size( ))
+				{
+					PlayClientFX( const_cast<char*>( pModel->m_vecColorRezInFX[m_bTronUnknown31c9].c_str( )), LTNULL, &vPos, &rRot );
+				}
+
+				g_pServerSoundMgr->PlaySoundFromPos( vPos, PLAYER_RESPAWN_SOUND,
+					600.0f, SOUNDPRIORITY_MISC_HIGH );
 			}
 
 			// Add stimuli back now that we are revived, so that AI can see us again.
@@ -3434,31 +3402,6 @@ void CPlayerObj::SetClientLoaded( bool bLoaded )
 
 			// Restore all our flags so we make sure we didn't miss any.
 			g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, m_dwFlags, FLAGMASK_ALL);
-
-			// Re-enable our hitbox.
-			g_pCommonLT->SetObjectFlags( m_hHitBox, OFT_Flags, FLAG_RAYHIT | FLAG_TOUCHABLE, FLAG_RAYHIT | FLAG_TOUCHABLE );
-
-			// Teleport to our same position so we put ourselves back into containers.
-			LTVector vPos;
-			g_pLTServer->GetObjectPos( m_hObject, &vPos );
-			g_pLTServer->TeleportObject( m_hObject, &vPos );
-		}
-		else
-		{
-			// Unhide our dead body.  We can't just call hidecharacter, because this is used
-			// to hide/unhide everything about the character.
-			if( m_hDeadBody )
-			{
-				Body* pBody = dynamic_cast< Body* >( g_pLTServer->HandleToObject( m_hDeadBody ));
-				if( pBody )
-				{
-					pBody->HideBody( false );
-				}
-				else
-				{
-					ASSERT( !"CPlayerObj::SetClientLoaded:  Invalid body." );
-				}
-			}
 		}
 	}
 	else
@@ -3466,37 +3409,9 @@ void CPlayerObj::SetClientLoaded( bool bLoaded )
 		// Hide the character when the client isn't loaded, and unhide
 		// it when they become loaded.
 		HideCharacter( true );
-		
-		if( IsMultiplayerGame( ))
-		{
-			// Force us into normal mode (this fixes a bug with switching models
-			// when riding vehicles)...
-			SetPhysicsModel(PPM_NORMAL);
-		}
-
-		// Make us non-solid until we're loaded.
-		// [RP] 1/28/03 - Touch Notify is needed for propper physics collision.
-
-		g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, FLAG_TOUCH_NOTIFY, FLAG_SOLID | FLAG_TOUCH_NOTIFY );
-
-		// Disable our hitbox.
-		g_pCommonLT->SetObjectFlags( m_hHitBox, OFT_Flags, 0, FLAG_RAYHIT | FLAG_TOUCHABLE );
-
-		// Teleport to our same position so we remove ourselves from containers.
-		LTVector vPos;
-		g_pLTServer->GetObjectPos( m_hObject, &vPos );
-		g_pLTServer->TeleportObject( m_hObject, &vPos );
-
-		// Need to be invulnerable until we're loaded.
-		m_damage.SetCanDamage( false );
 
 		RemovePersistentStimuli( );
 	}
-
-	// Don't show up on radar until we're loaded.
-	bool bRadarVisible = ( bLoaded && ( g_pGameServerShell->GetGameType() != eGameTypeDeathmatch && 
-		g_pGameServerShell->GetGameType() != eGameTypeSingle ));
-	SetRadarVisible( bRadarVisible );
 }
 
 
