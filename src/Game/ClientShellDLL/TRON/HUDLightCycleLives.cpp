@@ -131,7 +131,8 @@ void CHUDLightCycleLives::UpdateLayout()
 
 	int nOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetLivesTextOffset(nCurrentLayout) * fXRatio);
 	int nX = (int)fX - nOffset;
-	m_pText->SetPosition(nX, (int)(fY - m_pText->GetHeight() * 0.5f + fHeight * 0.5f));
+	int nY = (int)(fY - m_pText->GetHeight() * 0.5f + fHeight * 0.5f);
+	m_pText->SetPosition(nX, nY);
 }
 
 // RETAIL: 0x1002d890: the lives left (CTronPlayerMgr's virtual at +0x88)
