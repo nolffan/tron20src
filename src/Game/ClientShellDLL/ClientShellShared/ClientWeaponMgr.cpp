@@ -345,6 +345,15 @@ void CClientWeaponMgr::Load( ILTMessage_Read *pMsg )
 
 	int nWeapons = (int)pMsg->Readint32();
 
+	// RETAIL: 0x101682d8: Tron reads its own state first and the weapons
+	// last, then takes the current weapon back without ChangeWeapon
+	m_nDefaultWeaponId = pMsg->Readuint8( );
+	m_bWeaponsVisible = pMsg->Readbool( );
+	m_bWeaponsEnabled = pMsg->Readbool( );
+	m_bWeaponsPaused = pMsg->Readbool( );
+	m_iCurrentWeapon = pMsg->Readuint8( );
+	m_nLastWeaponId = pMsg->Readuint8( );
+
 	for( int i = 0; i < nWeapons; ++i )
 	{
 		if( LTNULL != m_apClientWeapon[i] )
@@ -353,23 +362,19 @@ void CClientWeaponMgr::Load( ILTMessage_Read *pMsg )
 		}
 	}
 
-	m_nDefaultWeaponId = pMsg->Readuint8( );
-	m_bWeaponsVisible = pMsg->Readbool( );
-	m_bWeaponsEnabled = pMsg->Readbool( );
-	m_bWeaponsPaused = pMsg->Readbool( );
-	m_iCurrentWeapon = pMsg->Readuint8( );
-
-	m_pCurrentWeapon = NULL;
-
-	// Change to a requested weapon/ammo if available, otherwise just go back to what we had.
-	int nChangeToWeaponId = ( m_nRequestedWeaponId != WMGR_INVALID_ID ) ? m_nRequestedWeaponId : 
-		IndexToWeaponId( m_iCurrentWeapon );
-
-	// Just pass the requested ammo since it will be valid or WMGR_INVALID_ID.
-	ChangeWeapon( nChangeToWeaponId, m_nRequestedAmmoId, -1, false );
-
-	//set this after changing weapons
-	m_nLastWeaponId = pMsg->Readuint8( );
+	// RETAIL: 0x1016835b: the weapon is read before the index is checked
+	// (see docs/RETAIL_BUGS.md)
+	m_pCurrentWeapon = m_apClientWeapon[m_iCurrentWeapon];
+	if (m_iCurrentWeapon == WMGR_INVALID_ID)
+	{
+		m_pCurrentWeapon = NULL;
+		m_iCurrentWeapon = CWM_NO_WEAPON;
+	}
+	else
+	{
+		m_pCurrentWeapon->Activate();
+		m_pCurrentWeapon->Select();
+	}
 
 	if (m_bWeaponsEnabled)
 		EnableWeapons();
@@ -407,6 +412,14 @@ void CClientWeaponMgr::Save( ILTMessage_Write *pMsg )
 
 	pMsg->Writeint32( m_nMaxWeapons );
 
+	// RETAIL: 0x10168423: Tron writes the weapons last
+	pMsg->Writeuint8( m_nDefaultWeaponId );
+	pMsg->Writebool( m_bWeaponsVisible );
+	pMsg->Writebool( m_bWeaponsEnabled );
+	pMsg->Writebool( m_bWeaponsPaused );
+	pMsg->Writeuint8( m_iCurrentWeapon );
+	pMsg->Writeuint8( m_nLastWeaponId );
+
 	for( int i = 0; i < m_nMaxWeapons; ++i )
 	{
 		if( LTNULL != m_apClientWeapon[i] )
@@ -414,13 +427,6 @@ void CClientWeaponMgr::Save( ILTMessage_Write *pMsg )
 			m_apClientWeapon[i]->Save( pMsg );
 		}
 	}
-
-	pMsg->Writeuint8( m_nDefaultWeaponId );
-	pMsg->Writebool( m_bWeaponsVisible );
-	pMsg->Writebool( m_bWeaponsEnabled );
-	pMsg->Writebool( m_bWeaponsPaused );
-	pMsg->Writeuint8( m_iCurrentWeapon );
-	pMsg->Writeuint8( m_nLastWeaponId );
 }
 
 
@@ -832,6 +838,13 @@ bool CClientWeaponMgr::ChangeWeapon( uint8 nWeaponId,
 		// don't need to change the weapon, but we do
 		// need to change the ammo
 		m_pCurrentWeapon->ChangeAmmoWithReload( nNewAmmoId );
+
+		// RETAIL: 0x10168968: a weapon change still pending takes the
+		// new ammo
+		if (WMGR_INVALID_ID != m_nRequestedWeaponId)
+		{
+			m_nRequestedAmmoId = nNewAmmoId;
+		}
 	}
 
 
@@ -1127,7 +1140,8 @@ void CClientWeaponMgr::AutoSelectWeapon()
 		return;
 	}
 
-	g_pPlayerMgr->ChangeWeapon( g_pWeaponMgr->GetWeaponId( g_pWeaponMgr->GetFirstWeaponCommandId() ) );
+	int nWeaponId = g_pWeaponMgr->GetWeaponId( g_pWeaponMgr->GetFirstWeaponCommandId() );
+	g_pPlayerMgr->ChangeWeapon( nWeaponId );
 }
 
 
