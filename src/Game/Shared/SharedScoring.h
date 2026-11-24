@@ -68,6 +68,28 @@ public:
 		pMsg->Writeint16(GetTronUnknown8());
 		pMsg->Writebool(m_bTronUnknownE);
 	}
+#else
+	// RETAIL: inline in CInterfaceMgr::OnMessage (CShell.dll 0x100c992c):
+	// the light cycle game type's figures, as the server's
+	// WriteTronUnknownA and WriteTronUnknownB write them. The names are ours
+	void	ReadTronUnknownA(ILTMessage_Read *pMsg)
+	{
+		if (!pMsg) return;
+
+		m_nTronUnknown0 = pMsg->Readint16();
+		m_nTronUnknown4 = pMsg->Readint16();
+		m_nTronUnknown8 = pMsg->Readint16();
+		m_bTronUnknownE = pMsg->Readbool();
+	}
+	void	ReadTronUnknownB(ILTMessage_Read *pMsg)
+	{
+		if (!pMsg) return;
+
+		m_nTronUnknown2 = pMsg->Readint16();
+		m_nTronUnknown6 = pMsg->Readint16();
+		m_nTronUnknownA = pMsg->Readint16();
+		m_nTronUnknownC = pMsg->Readint16();
+	}
 #endif
 
 	// RETAIL: the score is what GameSpy's "score" key and the server app

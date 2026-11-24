@@ -12,6 +12,20 @@
 
 #include "stdafx.h"
 #include "InterfaceMgr.h"
+#include "../TRON/ScreenTeamSelect.h"
+
+// RETAIL: Tron's score message strings (CRes.dll; the names are ours)
+#define IDS_TRON_DEREZZED				417	// "You were derezzed!"
+#define IDS_TRON_DEREZZED_BY			418	// "You were derezzed by %1!s!!"
+#define IDS_TRON_DEREZZED_HIM			419	// "You derezzed %1!s!!"
+#define IDS_TRON_HE_DEREZZED			420	// "%1!s! was derezzed!"
+#define IDS_TRON_HE_DEREZZED_HIM		421	// "%1!s! derezzed %2!s!!"
+#define IDS_TRON_DEREZZED_AI			475	// "You were derezzed!"
+#define IDS_TRON_HE_DEREZZED_AI			477	// "%1!s! was derezzed!"
+#define IDS_TRON_FATAL_COMPRESSION		595	// "Fatal compression error!"
+#define IDS_TRON_HE_ANNIHILATED_HIM		950	// "%1!s! annihilated %2!s!!"
+#define IDS_TRON_ANNIHILATED_HIM		951	// "You annihilated %1!s!!"
+#define IDS_TRON_ANNIHILATED_BY			952	// "You were annihilated by %1!s!!"
 #include "ltquaduvutils.h"
 #include "GameClientShell.h"
 #include "MsgIDs.h"
@@ -1760,15 +1774,44 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 
 		case MID_PLAYER_SCORE :
 		{
-            uint32 nID = pMsg->Readuint32();
-			CLIENT_INFO *pClient;
-
-			if(pClient = m_ClientInfo.GetClientByID(nID))
+			// RETAIL: Tron's (0x100c98e3): a client's score, or a team's
+			if (pMsg->Readbool())
 			{
-				pClient->sScore.ReadData(pMsg);
-				m_ClientInfo.UpdateClientSort(pClient);
+				uint32 nID = pMsg->Readuint32();
+				CLIENT_INFO *pClient = m_ClientInfo.GetClientByID(nID);
+				if (pClient)
+				{
+					if (g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+					{
+						pClient->sScore.ReadTronUnknownA(pMsg);
+						pClient->sScore.ReadTronUnknownB(pMsg);
+					}
+					else
+					{
+						pClient->sScore.ReadData(pMsg);
+						m_ClientInfo.UpdateClientSort(pClient);
+					}
+				}
+			}
+			else
+			{
+				uint8 nTeam = pMsg->Peekuint8();
+				CTronTeam* pTeam = m_TeamMgr.GetTeam(nTeam, false);
+				pTeam->ReadData(pMsg);
+				m_TeamMgr.SortTeams();
 			}
 
+			CLIENT_INFO *pLocal = m_ClientInfo.GetLocalClient();
+			if (pLocal)
+			{
+				TronUnknownVirtual7C(&pLocal->sScore);
+			}
+
+			g_pHUDMgr->QueueUpdate(kHUDTronUnknown08000000);
+			g_pHUDMgr->QueueUpdate(kHUDTronUnknown10000000);
+			g_pHUDMgr->QueueUpdate(kHUDTronUnknown01000000);
+
+			((CScreenTeamSelect*)g_pInterfaceMgr->GetScreenMgr()->GetScreenFromID(SCREEN_ID_TEAMSELECT))->SetNeedUpdate();
 
             return LTTRUE;
 		}
@@ -1957,16 +2000,23 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 
 		case MID_PLAYER_SCORED:
 		{
-			//Only do something if we're in multiplayer...
-
-			if (!IsMultiplayerGame()) break;
+			// RETAIL: Tron's (0x100c9e6c): the victim, the scorer and the
+			// type of the kill (10 and 56 have their own strings); none in
+			// the light cycle game
+			if (!IsMultiplayerGame() || g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles) return LTTRUE;
 
             uint32 nLocalID = 0;
             g_pLTClient->GetLocalClientID(&nLocalID);
 
-			bool bFragged = pMsg->Readbool( );
             uint32 nVictim = pMsg->Readuint32();
             uint32 nScorer = pMsg->Readuint32();
+			uint32 nType = pMsg->Readuint8();
+
+			if (!IsMultiplayerGame())
+			{
+				g_pPlayerMgr->SetTronUnknown1E0(nType);
+				break;
+			}
 
 			CLIENT_INFO *pVictim = m_ClientInfo.GetClientByID(nVictim);
 			CLIENT_INFO *pScorer = m_ClientInfo.GetClientByID(nScorer);
@@ -1977,63 +2027,61 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				// Scored againsts self.
 				if (nVictim == nScorer)
 				{
-					if( bFragged )
-						FormatString(IDS_KILLEDMYSELF,szTmp,sizeof(szTmp));
-					else
-	                    FormatString(IDS_TAGGEDMYSELF,szTmp,sizeof(szTmp));
+					FormatString(IDS_TRON_DEREZZED, szTmp, sizeof(szTmp));
 				}
 				// Scored by ai.
 				else if( nScorer == -1 )
 				{
-					if( bFragged )
-	                    FormatString(IDS_IWASKILLED,szTmp,sizeof(szTmp));
+					if (nType == 10)
+						FormatString(IDS_TRON_FATAL_COMPRESSION, szTmp, sizeof(szTmp));
+					else
+						FormatString(IDS_TRON_DEREZZED_AI, szTmp, sizeof(szTmp));
 				}
 				// Killed by player.
+				else if (nType == 56)
+				{
+					g_pClientSoundMgr->PlayInterfaceSound("voice\\21010.wav");
+					FormatString(IDS_TRON_ANNIHILATED_BY, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nScorer));
+				}
 				else
 				{
-					if( bFragged )
-	                    FormatString(IDS_HEKILLEDME, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nScorer));
-					else
-						FormatString(IDS_HETAGGEDME, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nScorer));
+					FormatString(IDS_TRON_DEREZZED_BY, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nScorer));
 				}
 
 				g_pChatMsgs->AddMessage(szTmp);
+				return LTTRUE;
 			}
 			else if (nScorer == nLocalID)
 			{
-				if( bFragged )
-	                FormatString(IDS_IKILLEDHIM, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nVictim));
+				if (nType == 56)
+				{
+					g_pClientSoundMgr->PlayInterfaceSound("voice\\21010.wav");
+					FormatString(IDS_TRON_ANNIHILATED_HIM, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
+				}
 				else
-					FormatString(IDS_ITAGGEDHIM, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nVictim));
-
-                g_pLTClient->CPrint(szTmp);
-				g_pChatMsgs->AddMessage(szTmp);//,eType);
+				{
+					FormatString(IDS_TRON_DEREZZED_HIM, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
+				}
+			}
+			else if (nVictim == nScorer)
+			{
+				FormatString(IDS_TRON_HE_DEREZZED, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
+			}
+			else if( nScorer == -1 )
+			{
+				FormatString(IDS_TRON_HE_DEREZZED_AI, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
+			}
+			else if (nType == 56)
+			{
+				FormatString(IDS_TRON_HE_ANNIHILATED_HIM, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nScorer), m_ClientInfo.GetPlayerName(nVictim));
 			}
 			else
 			{
-				if (nVictim == nScorer)
-				{
-					if( bFragged )
-		                FormatString(IDS_HEKILLEDHIMSELF, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
-					else
-						FormatString(IDS_HETAGGEDHIMSELF, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
-				}
-				else if( nScorer == -1 )
-				{
-					if( bFragged )
-	                    FormatString(IDS_HEWASKILLED, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName(nVictim));
-				}
-				else
-				{
-					if( bFragged )
-	                    FormatString(IDS_HEKILLEDHIM, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nScorer), m_ClientInfo.GetPlayerName (nVictim));
-					else
-						FormatString(IDS_HETAGGEDHIM, szTmp,sizeof(szTmp), m_ClientInfo.GetPlayerName (nScorer), m_ClientInfo.GetPlayerName (nVictim));
-				}
-
-                g_pLTClient->CPrint(szTmp);
-				g_pChatMsgs->AddMessage(szTmp);
+				FormatString(IDS_TRON_HE_DEREZZED_HIM, szTmp, sizeof(szTmp), m_ClientInfo.GetPlayerName(nScorer), m_ClientInfo.GetPlayerName(nVictim));
 			}
+
+            g_pLTClient->CPrint(szTmp);
+			g_pChatMsgs->AddMessage(szTmp);
 
             return LTTRUE;
 		}
@@ -2043,60 +2091,38 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_PLAYER_MESSAGE :
 		case MID_PLAYER_GHOSTMESSAGE :
 		{
-			// retrieve the string from the message, play the chat sound, and display the message
-
+			// RETAIL: Tron's (0x100ca136): the third field is the message's
+			// kind (1 chat, 2 team chat), not a team; no team filter
 			char szMessage[256];
 			pMsg->ReadString(szMessage, sizeof(szMessage));
 			uint32 clientID = pMsg->Readuint32();
-			uint8 nTeam =  pMsg->Readuint8();
+			uint8 nType = pMsg->Readuint8();
 
-            uint32 nLocalID = 0;
-            g_pLTClient->GetLocalClientID (&nLocalID);
+			g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\chat.wav");
 
-
-			if( IsTeamGameType() && nTeam != INVALID_TEAM )
+			eChatMsgType eType = kMsgDefault;
+			switch (nType)
 			{
-				CLIENT_INFO *pLocalCI = m_ClientInfo.GetLocalClient();
-				if( !pLocalCI )
-					return LTFALSE;
-
-				// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-				if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
-					return LTFALSE;
+				case 1:
+					eType = kMsgChat;
+					break;
+				case 2:
+					eType = kMsgTeamChat;
+					break;
 			}
 
-            g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\chat.wav");
-			
-			if (IsMultiplayerGame())
+			// The dedicated server will have a ClientID of -1...
+			if (IsMultiplayerGame() && clientID != -1)
 			{
-				// The dedicated server will have a ClientID of -1...
-
-				if( clientID == -1 )
-				{
-					g_pChatMsgs->AddMessage( szMessage, kMsgChat );
-				}
-				else
-				{
-
-					char szTemp[256];
-					sprintf(szTemp,"%s : %s", m_ClientInfo.GetPlayerName(clientID), szMessage);
-
-					if( IsTeamGameType() && nTeam != INVALID_TEAM )
-					{
-						g_pChatMsgs->AddMessage(szTemp,kMsgTeam);
-					}
-					else
-					{
-						g_pChatMsgs->AddMessage(szTemp,kMsgChat);
-					}
-				}
+				char szTemp[256];
+				sprintf(szTemp,"%s : %s", m_ClientInfo.GetPlayerName(clientID), szMessage);
+				g_pChatMsgs->AddMessage(szTemp, eType);
 			}
 			else
 			{
-				g_pChatMsgs->AddMessage(szMessage,kMsgChat);
-			};
+				g_pChatMsgs->AddMessage(szMessage, eType);
+			}
 
-			
             return LTTRUE;
 		}
 		break;
@@ -2123,22 +2149,10 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_PLAYER_TRANSMISSION :
 		{
 			// retrieve the string from the message, play the chat sound, and display the message
+			// RETAIL: Tron's (0x100ca25e) has no team: three values
 			uint32 nActivePlayerClientId = pMsg->Readuint32( );
             uint32 dwId = pMsg->Readuint32();
             uint32 nSound = pMsg->Readuint32();
-			uint8 nTeam =  pMsg->Readuint8();
-
-			if( IsTeamGameType() && nTeam != INVALID_TEAM )
-			{
-				CLIENT_INFO *pLocalCI = m_ClientInfo.GetLocalClient();
-				if( !pLocalCI )
-					return LTFALSE;
-
-				// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-				if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
-					return LTFALSE;
-			}
-
 
 			if (nSound)
 			{

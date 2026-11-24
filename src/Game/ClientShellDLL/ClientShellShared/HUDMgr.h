@@ -56,6 +56,7 @@ enum eHUDUpdateFlag
 	// when the score list changes. The names are ours.
 	kHUDTronUnknown01000000	= 0x01000000,
 	kHUDTronUnknown08000000	= 0x08000000,
+	kHUDTronUnknown10000000	= 0x10000000,	// RETAIL: queued with the two above on a score (CInterfaceMgr 0x100c9a1d)
 	kHUDAll			= 0xFFFFFFFF,
 };
 

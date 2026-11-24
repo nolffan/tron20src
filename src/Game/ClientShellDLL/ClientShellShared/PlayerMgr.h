@@ -64,6 +64,8 @@ public:
 	// RETAIL: CMissionMgr::HandleMissionFailed reads +0x1e0 (0x100ebeb8:
 	// 10 picks "Fatal compression error!"). Not yet named
 	uint32	GetTronUnknown1E0() const { return m_nTronUnknown1E0; }
+	// RETAIL: inline in CInterfaceMgr::OnMessage (0x100c9ee6): the type of a score message outside multiplayer. The name is ours
+	void	SetTronUnknown1E0(uint32 nTronUnknown) { m_nTronUnknown1E0 = nTronUnknown; }
 
 	virtual float	GetJumpVelocity(float fJumpVel, float fSuperJumpVel) { return fJumpVel; }
 
