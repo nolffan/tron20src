@@ -784,7 +784,24 @@ void CWeaponFX::CreateExitMark()
 void CWeaponFX::CreateMark(const LTVector &vPos, const LTVector &vNorm, const LTRotation &rRot,
 						   SurfaceType eType)
 {
-	IMPACTFX* pImpactFX = m_pAmmo->pImpactFX;
+	// RETAIL: 0x10190450: the impact FX of the impact type (as
+	// CreateSurfaceSpecificFX)
+	IMPACTFX* pImpactFX = LTNULL;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	}
 
 	if (IsLiquid(m_eCode))
 	{
@@ -991,18 +1008,7 @@ void CWeaponFX::CreateSurfaceSpecificFX()
 	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
 	if (!pProfile) return;
 
-	// Only check for visibility if we actually have an object...
-
-	if( m_hObjectHit )
-	{
-		uint32 dwFlags;
-		g_pCommonLT->GetObjectFlags( m_hObjectHit, OFT_Flags, dwFlags );
-		
-		// Don't do surface fx on an invisible object...
-
-		if( !(dwFlags & FLAG_VISIBLE) )
-			return;
-	}
+	// RETAIL: 0x10190c40: Tron's makes no visibility test of the object hit
 
 	if (m_eSurfaceType == ST_FLESH)
 	{
@@ -1030,8 +1036,29 @@ void CWeaponFX::CreateSurfaceSpecificFX()
 		CreateExitDebris();
 	}
 
-	if (!m_pAmmo->pImpactFX) return;
-	if (!m_pAmmo->pImpactFX->bDoSurfaceFX) return;
+	// RETAIL: 0x10190cb3: the impact FX of the impact type decides whether
+	// there are surface FX (the fourth type is Tron's deadly block)
+	IMPACTFX* pImpactFX;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	default:
+		return;
+	}
+
+	if (!pImpactFX) return;
+	if (!pImpactFX->bDoSurfaceFX) return;
 
 
 	// Create the surface specific fx...
@@ -1115,7 +1142,24 @@ LTBOOL CWeaponFX::IsBulletTrailWeapon()
 
 void CWeaponFX::PlayImpactSound()
 {
-	IMPACTFX* pImpactFX = m_pAmmo->pImpactFX;
+	// RETAIL: 0x10190f20: the impact FX of the impact type (as
+	// CreateSurfaceSpecificFX)
+	IMPACTFX* pImpactFX = LTNULL;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	}
 
 	if (IsLiquid(m_eCode))
 	{
@@ -1125,9 +1169,10 @@ void CWeaponFX::PlayImpactSound()
 	if (!pImpactFX) return;
 
 
+	// RETAIL: Tron's plays no vector impact sound at low detail
 	if (m_pAmmo->eType == VECTOR)
 	{
-		if ((m_nDetailLevel == RS_LOW) && GetRandom(1, 2) != 1) return;
+		if (m_nDetailLevel == RS_LOW) return;
 		else if ((m_nDetailLevel == RS_MED) && GetRandom(1, 3) == 1) return;
 	}
 
