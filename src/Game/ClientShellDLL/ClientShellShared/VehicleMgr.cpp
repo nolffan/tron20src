@@ -2253,9 +2253,7 @@ void CVehicleMgr::UpdateVehicleModel()
 			// Enable the weapon...
 			EnableWeapon( true );
 
-			// Tell the server we want off...NOTE: In multiplayer we may want
-			// to call this in PreSetPhysicsModel()
-			g_pPlayerMgr->DoActivate();
+			// RETAIL: 0x1011e189: Tron's does not tell the server
 			return;
 		}
 	}
