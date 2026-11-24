@@ -1620,3 +1620,17 @@ CHUDVersion item). The memory of the item is not released when the game
 stops. The player does not see an effect.
 
 Not fixed yet: the modern build must delete m_pVersion with the other items.
+### The energy message of a core dump falls through into the HUD text message
+
+CShell.dll 0x1009dec8 (CTronInterfaceMgr::OnMessage, TRON/
+TronInterfaceMgr.cpp). The MID_TRON_ENERGY_GAINED case (164) reads one
+byte and shows string 3271 in the chat. It has no break, thus the code of
+the MID_TRON_HUD_TEXT case (127, at 0x1009df00) runs after it. That code
+reads two values of 32 bits that the message does not have, and it plays
+the "msgfadeout" sound. The server (Object.lto CoreDump, TRON/
+CoreDump.cpp) writes only the byte. In retail, the server does not send
+the message, because its energy test is always false (see CoreDump.cpp).
+Thus there is no visible effect.
+
+Not fixed yet: the modern build should end the case before the HUD text
+case.
