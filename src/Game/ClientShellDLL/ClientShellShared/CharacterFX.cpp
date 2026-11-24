@@ -249,6 +249,12 @@ CCharacterFX::~CCharacterFX()
 	//free all the 3rd person damage effects
 	debug_deletea(m_p3rdPersonDamageFX);
 	m_p3rdPersonDamageFX = NULL;
+
+	// RETAIL: NOLF2 1.3's (retail 0x101746e9)
+	if( m_link3rdPersonInstFX.IsValid() )
+	{
+		g_pClientFXMgr->ShutdownClientFX( &m_link3rdPersonInstFX );
+	}
 	
 	if( m_linkChatFX.IsValid() )
 	{
@@ -1006,6 +1012,20 @@ void CCharacterFX::CreateZzzFX()
 			vPos = transform.m_Pos;
 		}
 	}
+	else
+	{
+		// RETAIL: Tron's (retail 0x1017630d): the head node when the model
+		// has no head socket
+		HMODELNODE hNode;
+		if ( LT_OK == g_pModelLT->GetNode(m_hServerObject, "head", hNode) )
+		{
+			LTransform transform;
+			if ( LT_OK == g_pModelLT->GetNodeTransform(m_hServerObject, hNode, transform, LTTRUE) )
+			{
+				vPos = transform.m_Pos;
+			}
+		}
+	}
 
     sm.vPos = vPos;
 	sm.vPos.y += 15.0f;
@@ -1023,6 +1043,9 @@ void CCharacterFX::CreateZzzFX()
 	sm.fParticleCreateDelta	= 0.1f;
 	sm.fMinParticleLife		= 1.0f;
 	sm.fMaxParticleLife		= 3.0f;
+	// RETAIL: Tron's Zzzs grow (retail 0x101764ca)
+	sm.fStartParticleScale	= 10.0f;
+	sm.fEndParticleScale	= 14.0f;
 	sm.nNumParticles		= GetRandom(1, 1);
     sm.bIgnoreWind          = LTFALSE;
 	sm.hstrTexture			= m_pClientDE->CreateString(DEFAULT_ZZZ_TEXTURE);
@@ -2754,11 +2777,24 @@ void CCharacterFX::InitLocalPlayer()
 
 void CCharacterFX::HandleWeaponSoundLoopMsg( ILTMessage_Read *pMsg )
 {
-	uint8 nType		= pMsg->Readuint8();
+	int nType		= pMsg->Readuint8();
 	uint8 nWeaponID	= pMsg->Readuint8();
+	// RETAIL: Tron's message carries the fire sounds' volume scale
+	// (0x1017a12c)
+	float fVolume	= pMsg->Readfloat();
 
 	const WEAPON *pWeapon = g_pWeaponMgr->GetWeapon( nWeaponID );
 	if( !pWeapon ) return;
+
+	// RETAIL: asked for and not used (0x1017a15d)
+	HOBJECT hClientObj = g_pLTClient->GetClientObject();
+
+	// The volume scale is for the fire sounds only
+	float fVolumeScale = 1.0f;
+	if( nType >= PSI_FIRE && nType <= PSI_SILENCED_FIRE )
+	{
+		fVolumeScale = fVolume;
+	}
 
 	char* pBuf = LTNULL;
 
@@ -2807,13 +2843,10 @@ void CCharacterFX::HandleWeaponSoundLoopMsg( ILTMessage_Read *pMsg )
 		g_pLTClient->GetObjectPos( m_hServerObject, &vPos );
 
 		// Play the sound from the character
-		// PORT: Tron's message carries a 32-bit volume scale after the weapon id
-		// (0x1017a12c), passed for the fire sounds only (0x1017a163); ours does
-		// not, so the default stands in.
 
 		m_hWeaponLoopSound = g_pClientSoundMgr->PlaySoundFromObject( m_hServerObject, pBuf, (float)pWeapon->nFireSoundRadius,
 																	 SOUNDPRIORITY_PLAYER_MEDIUM, PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE, 
-																	 SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, WEAPONS_SOUND_CLASS );
+																	 SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, WEAPONS_SOUND_CLASS, fVolumeScale );
 	}
 }
 
