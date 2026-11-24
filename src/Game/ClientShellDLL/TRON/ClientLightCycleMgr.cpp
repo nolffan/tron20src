@@ -30,6 +30,7 @@
 #include "TronPlayerMgr.h"
 #include "VehicleMgr.h"
 #include "LightCycleFX.h"
+#include "LightCycleMatchMgr.h"
 
 extern CGameClientShell* g_pGameClientShell;
 extern bool GroundFilterFn(HOBJECT hObj, void *pUserData);	// BodyFX.cpp
@@ -194,13 +195,7 @@ void CClientLightCycleMgr::Term()
 //
 //	ROUTINE:	CClientLightCycleMgr::DerezCyclist
 //
-//	PURPOSE:	Derezzes the crashed cyclist. RETAIL: 0x10010fb0. PORT: left
-//				out are CTronPlayerMgr's 0x100a8000 and
-//				the local vehicle manager's two calls (0x1011ed70,
-//				0x10122140) for the local cycle, the CLightCycleFX's derez
-//				(its slot 1) for the others, and the multiplayer score
-//				call (0x10016ad0 on 0x10236df0): none of them is in our
-//				build.
+//	PURPOSE:	Derezzes the crashed cyclist. RETAIL: 0x10010fb0
 //
 // ----------------------------------------------------------------------- //
 
@@ -233,10 +228,13 @@ bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 		g_pLightCycleRoster->DerezCyclist(pCyclist);
 
 	HOBJECT hObj = pCyclist->hObject;
+	((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownLightCycleRemoved(hObj);
 
 	if (pCyclist->hObject == g_pMoveMgr->GetObject())
 	{
+		g_pMoveMgr->GetVehicleMgr()->HandleCollision();
 		hObj = g_pMoveMgr->GetServerObject();
+		g_pMoveMgr->GetVehicleMgr()->KillLightCycleSounds();
 
 		if (GetGameType() == eGameTypeSingleLightCycleCircuit)
 		{
@@ -255,12 +253,20 @@ bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 		char szFX[512];
 		g_pPlayerMgr->TronUnknownVirtual74(hObj, szFX, sizeof(szFX));
 
-		CLIENTFX_CREATESTRUCT fxInit;
-		LTStrCpy(fxInit.m_sName, szFX, sizeof(fxInit.m_sName));
-		fxInit.m_dwFlags = FXFLAG_NOSMOOTHSHUTDOWN;
-		fxInit.m_hParent = pCyclist->hObject;
+		CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_NOSMOOTHSHUTDOWN, pCyclist->hObject);
 		g_pLTClient->GetObjectPos(pCyclist->hObject, &fxInit.m_vPos);
 		g_pClientFXMgr->CreateClientFX(LTNULL, fxInit, LTTRUE);
+
+		// The cycle's own derez
+		CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+		if (psfxMgr)
+		{
+			CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(hObj);
+			if (pFX)
+			{
+				pFX->Term();
+			}
+		}
 
 		ShowMessage(FormatTempString(g_pLightCycleButeMgr->GetRandomTextId(kLCText_DerezzGenericCyclist),
 			GetCyclistName(pCyclist->hObject).c_str()));
@@ -280,6 +286,11 @@ bool CClientLightCycleMgr::DerezCyclist(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLIST* 
 		cMsg.WriteObject(hObj);
 		cMsg.WriteObject(hOther);
 		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+	}
+
+	if (IsMultiplayerGame())
+	{
+		g_pLightCycleMatchMgr->OnCyclistDerezzed(pCyclist->hObject, hOther);
 	}
 
 	return true;

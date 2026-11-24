@@ -35,6 +35,10 @@ struct VEHICLENODE
 
 class CVehicleMgr
 {
+	// RETAIL: CClientLightCycleMgr::DerezCyclist calls HandleCollision
+	// (0x10011096)
+	friend class CClientLightCycleMgr;
+
   public:
 
 	CVehicleMgr();
