@@ -47,6 +47,7 @@
 #include "SharedFXStructs.h"
 #include "ServerTrackedNodeContext.h"
 #include "RelationButeMgr.h"
+#include "TRON/CaselessString.h"
 
 LINKFROM_MODULE( AIHuman );
 
@@ -60,7 +61,7 @@ static CVarTrack g_CheapMovementTrack;
 
 LTFLOAT s_fSenseUpdateBasis = 0.0f;
 
-// RETAIL: Tron's bounds for CAIHuman's random m_fTronUnknown11E4 (retail
+// RETAIL: Tron's bounds for CAIHuman's random recoil timer duration (retail
 // 0x103004e4, 0x103004e8; names ours)
 static LTFLOAT s_fTronUnknownMin = 2.5f;
 static LTFLOAT s_fTronUnknownMax = 3.5f;
@@ -136,11 +137,8 @@ CMDMGR_END_REGISTER_CLASS( CAIHuman, CAI )
 #pragma warning (disable: 4355)
 #endif  // !__PSX2
 CAIHuman::CAIHuman() : CAI(),
-	// RETAIL: Tron's four are set before the body (retail 0x1016c420)
-	m_fTronUnknown11E0(0.0f),
-	m_fTronUnknown11E4(0.0f),
-	m_fTronUnknown11E8(0.0f),
-	m_bTronUnknown11EC(false)
+	// RETAIL: Tron's recoil timer is constructed before the body (retail 0x1016c420)
+	m_tmrTronRecoil()
 #ifndef __PSX2
 #pragma warning (pop)
 #endif  // !__PSX2
@@ -196,9 +194,7 @@ CAIHuman::CAIHuman() : CAI(),
 	m_fGhostFadeTime = 0.0f;
 	m_fTronUnknown1238 = 1.0f;
 	m_vTronUnknown123C.Init( 1.0f, 1.0f, 1.0f );
-	m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
-	m_fTronUnknown11E0 = g_pLTServer->GetTime();
-	m_bTronUnknown11EC = true;
+	m_tmrTronRecoil.Start( GetRandom( s_fTronUnknownMin, s_fTronUnknownMax ) );
 }
 
 // ----------------------------------------------------------------------- //
@@ -890,6 +886,11 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Smoke("SMOKE");
 	static CParsedMsg::CToken s_cTok_CineFire("CINEFIRE");
 	static CParsedMsg::CToken s_cTok_CopySense("COPYSENSE");
+	// RETAIL: Tron's (0x1016d731..0x1016d7cf)
+	static CParsedMsg::CToken s_cTok_AskIcon("ASKICON");
+	static CParsedMsg::CToken s_cTok_SayIcon("SAYICON");
+	static CParsedMsg::CToken s_cTok_ListenIcon("LISTENICON");
+	static CParsedMsg::CToken s_cTok_SetOnlyDamageByPlayer("SETONLYDAMAGEBYPLAYER");
 
 	// Let base class have a whack at it...
 
@@ -1045,6 +1046,12 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 		}
 		return true;
 	}
+	else if ( cMsg.GetArg(0) == s_cTok_SetOnlyDamageByPlayer )
+	{
+		// RETAIL: Tron's (0x1016dead). It does not return true, so the
+		// command is reported as not handled.
+		m_damage.SetTronUnknown6D0( IsTrueChar(*cMsg.GetArg(1)) );
+	}
 	else if ( cMsg.GetArg(0) == s_cTok_CineFire )
 	{
 		CWeapon* pWeapon = GetWeapon(0);
@@ -1067,12 +1074,63 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 					weaponFireInfo.vFlashPos	= m_vPos;
 					weaponFireInfo.fPerturbR	= 0.0f;
 					weaponFireInfo.fPerturbU	= 0.0f;
+					// RETAIL: Tron passes the shooter's relation data (0x1016e0f5)
+					weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetRelationData() );
 
 					pWeapon->ReloadClip(LTFALSE);
 					pWeapon->GetParent()->AddAmmo(pWeapon->GetAmmoId(), 999999);
 					pWeapon->UpdateWeapon(weaponFireInfo, LTTRUE);
 				}
 			}
+		}
+
+		return true;
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_AskIcon || cMsg.GetArg(0) == s_cTok_SayIcon || cMsg.GetArg(0) == s_cTok_ListenIcon )
+	{
+		// RETAIL: Tron's talk icons (0x1016e1c0): the icon's kind comes
+		// from the command's name, its string id from the third argument.
+		if ( IsTrueChar(*cMsg.GetArg(1)) )
+		{
+			if ( !HasListenIcon() )
+			{
+				CreateListenIcon();
+			}
+
+			if ( cMsg.GetArgCount() > 2 )
+			{
+				m_nTronUnknownCF8 = atoi( cMsg.GetArg(2) );
+			}
+			else
+			{
+				m_nTronUnknownCF8 = 0;
+			}
+
+			// RETAIL: the string's length is null checked inline, as a
+			// CaselessString's (not std::string's in our STLport)
+			CaselessString sCmd = _strupr( (char*)(const char*)cMsg.GetArg(0) );
+			if ( strstr( sCmd.c_str(), "LISTEN" ) )
+			{
+				m_nCarrying = 1;
+			}
+			else if ( strstr( sCmd.c_str(), "ASK" ) )
+			{
+				m_nCarrying = 2;
+			}
+			else if ( strstr( sCmd.c_str(), "SAY" ) )
+			{
+				m_nCarrying = 3;
+			}
+		}
+		else
+		{
+			if ( HasListenIcon() )
+			{
+				DestroyListenIcon();
+			}
+
+			m_nCarrying = 0;
+			m_nTronUnknownCF8 = 0;
 		}
 
 		return true;
@@ -1389,8 +1447,8 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	CAI::HandleDamage(damage);
 
 	// RETAIL: 0x1016eb4d, Tron's recoil: not for these damage types, and
-	// blaster damage recoils only after a random delay (m_fTronUnknown11E4)
-	// from the last recoil (m_fTronUnknown11E0).
+	// blaster damage recoils only after a random delay (m_tmrTronRecoil)
+	// from the last recoil.
 
 	DamageFlags dfNoRecoil = DamageTypeToFlag( DT_PLAYERONLY ) | DamageTypeToFlag( DT_ENERGYCLAW ) | DamageTypeToFlag( DT_PROD );
 	DamageFlags dfLast = DamageTypeToFlag( m_damage.GetLastDamageType() );
@@ -1399,12 +1457,7 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	{
 		if( DamageTypeToFlag( DT_BLASTER ) & dfLast )
 		{
-			if( !( ( m_fTronUnknown11E8 > 0.0f ) ?
-					( m_fTronUnknown11E8 - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) :
-					( g_pLTServer->GetTime() - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) ) &&
-				( ( ( m_fTronUnknown11E8 > 0.0f ) ?
-					( ( m_fTronUnknown11E4 + m_fTronUnknown11E0 ) - m_fTronUnknown11E8 ) :
-					( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - g_pLTServer->GetTime() ) ) != 0.0f ) )
+			if( m_tmrTronRecoil.GetCountdownTime() != 0.0f )
 			{
 				return;
 			}
@@ -1417,9 +1470,7 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 			}
 		}
 
-		m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
-		m_fTronUnknown11E0 = g_pLTServer->GetTime();
-		m_bTronUnknown11EC = true;
+		m_tmrTronRecoil.Start( GetRandom( s_fTronUnknownMin, s_fTronUnknownMax ) );
 
 		HandleShortRecoil();
 	}
@@ -1595,16 +1646,20 @@ void CAIHuman::PreUpdate()
 
 void CAIHuman::UpdateNodes()
 {
-	CAI::UpdateNodes();
-
 	if( m_bUpdateNodes )
 	{
+		// RETAIL: Tron's (0x1016efe0): a seeker's eyes are at Joint6, and
+		// it looks along the node's forward.
 		if ( INVALID_MODEL_NODE == m_hHeadNode )
 		{
-			g_pModelLT->GetNode(m_hObject, "Head", m_hHeadNode);
-
-			AIASSERT( INVALID_MODEL_NODE != m_hHeadNode, m_hObject,
-				"Unable to find node named Head for this character.  Invalid Eye position" );
+			if( m_bSeeker )
+			{
+				g_pModelLT->GetNode(m_hObject, "Joint6", m_hHeadNode);
+			}
+			else
+			{
+				g_pModelLT->GetNode(m_hObject, "Head", m_hHeadNode);
+			}
 		}
 
 		LTransform transform;
@@ -1617,26 +1672,41 @@ void CAIHuman::UpdateNodes()
 		m_vEyePos.y = transform.m_Pos.y;
 
 		LTRotation rRot = transform.m_Rot;
-		//m_vEyeForward = rRot.Forwad();  // Forward in LT2... but Up in LT3... ?
-		m_vEyeForward = rRot.Up();
-
-	//	g_pLTServer->CPrint("Eye forward = %f,%f,%f .... forward = %f,%f,%f", EXPANDVEC(m_vEyeForward), EXPANDVEC(m_vForward));
-
-		// Get the current Torso node basis, which may be different from
-		// the AI's if Torso tracking is enabled.
-
-		if( ( m_pTrackedNodeContext->GetActiveTrackingGroup() == kTrack_AimAt ) &&
-			m_pTrackedNodeContext->IsValidTrackingGroup( kTrack_AimAt ) )
+		if( m_bSeeker )
 		{
-			m_vTorsoRight = -rRot.Forward();
-			m_vTorsoRight.y = 0.f;
-			m_vTorsoForward = m_vEyeForward;
+			m_vEyeForward = rRot.Forward();
 		}
-		else {
-			m_vTorsoRight = m_vRight;
-			m_vTorsoForward = m_vForward;
+		else
+		{
+			m_vEyeForward = rRot.Up();
 		}
 
+		// RETAIL: Tron takes the torso basis from the head node always.
+
+		m_vTorsoRight = -rRot.Forward();
+		m_vTorsoRight.y = 0.f;
+		m_vTorsoForward = m_vEyeForward;
+
+		// RETAIL: Tron draws the torso's forward when "AIShowVectors" is 1.
+
+		bool bShowVectors = ( g_AIShowVectorsTrack.GetFloat() == 1.0f );
+		if( m_bShowingVectors != bShowVectors )
+		{
+			if( !bShowVectors )
+			{
+				DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+				system.Clear();
+			}
+
+			m_bShowingVectors = bShowVectors;
+		}
+
+		if( m_bShowingVectors )
+		{
+			DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+			system.Clear();
+			system << LineSystem::Arrow( m_vEyePos, m_vEyePos + m_vTorsoForward * 512.0f, Color::Red );
+		}
 
 		// Do not update nodes again until someone clears this flag.
 
@@ -1957,10 +2027,7 @@ void CAIHuman::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_FLOAT(m_fGhostFadeTime);
 	SAVE_FLOAT(m_fTronUnknown1238);
 	SAVE_VECTOR(m_vTronUnknown123C);
-	SAVE_TIME(m_fTronUnknown11E0);
-	SAVE_TIME(m_fTronUnknown11E8);
-	SAVE_FLOAT(m_fTronUnknown11E4);
-	SAVE_bool(m_bTronUnknown11EC);
+	m_tmrTronRecoil.Save(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2028,10 +2095,7 @@ void CAIHuman::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_FLOAT(m_fGhostFadeTime);
 	LOAD_FLOAT(m_fTronUnknown1238);
 	LOAD_VECTOR(m_vTronUnknown123C);
-	LOAD_TIME(m_fTronUnknown11E0);
-	LOAD_TIME(m_fTronUnknown11E8);
-	LOAD_FLOAT(m_fTronUnknown11E4);
-	LOAD_bool(m_bTronUnknown11EC);
+	m_tmrTronRecoil.Load(pMsg);
 
 	// RETAIL: Tron's (retail 0x1016ff4e)
 	SetAIType( GetAITemplate()->szHumanType );
@@ -2386,7 +2450,8 @@ void CAIHuman::StartDeath()
 	// RETAIL: Tron's: clear the vectors shown (retail 0x10170787)
 	if( m_bShowingVectors )
 	{
-		LineSystem::GetSystem( this, "AIShowVectors" ).Clear();
+		DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+		system.Clear();
 	}
 }
 
