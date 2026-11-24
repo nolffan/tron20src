@@ -76,16 +76,17 @@ void CAIGoalCover::ActivateGoal()
 	// Ignore senses other than SeeEnemy.
 	m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );
 
-	// RETAIL: Tron's (0x1020c6f0) targets the stimulus and attacks from
-	// the cover node as from a vantage node
+	// RETAIL: Tron's (0x1020c6f0) targets the stimulus. It sets the state
+	// to kState_HumanCover (10); its SetCoverNode folds (ICF) with
+	// CAIHumanStateAttackFromVantage::SetVantageNode (0x101f10f0).
 	m_pAI->Target( m_hStimulusSource );
 
 	m_pGoalMgr->LockGoal(this);
 
-	m_pAI->SetState( kState_HumanAttackFromVantage );
+	m_pAI->SetState( kState_HumanCover );
 
-	CAIHumanStateAttackFromVantage* pState = (CAIHumanStateAttackFromVantage*)m_pAI->GetState();
-	pState->SetVantageNode( m_hNodeCover );
+	CAIHumanStateCover* pState = (CAIHumanStateCover*)m_pAI->GetState();
+	pState->SetCoverNode( m_hNodeCover );
 }
 
 // ----------------------------------------------------------------------- //

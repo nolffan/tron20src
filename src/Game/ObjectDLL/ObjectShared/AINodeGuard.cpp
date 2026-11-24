@@ -236,6 +236,7 @@ void AINodeExitLevel::ProcessOnUseCmd(HOBJECT hUser)
 	// RETAIL: 0x1026e020
 	if( g_pCmdMgr->IsValidCmd( m_sOnUseCmd.c_str( )))
 	{
-		g_pCmdMgr->Process( m_sOnUseCmd.c_str( ), m_hObject, hUser );
+		HOBJECT hSender = m_hObject;
+		g_pCmdMgr->Process( m_sOnUseCmd.c_str( ), hSender, hUser );
 	}
 }
