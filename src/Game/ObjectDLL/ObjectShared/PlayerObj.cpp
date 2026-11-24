@@ -4880,7 +4880,7 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 	}
 
 	// RETAIL: Tron's sounds by damage type (0x10080300), as Build 51's
-	// single player ones; no sound for a stun
+	// single player ones; no sound for sleeping or a stun
 	switch (eType)
 	{
 		case DT_CHOKE:
@@ -4901,6 +4901,9 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		}
 		break;
 
+		// RETAIL: the switch's index table (0x100803d4) sends sleeping and
+		// stun to the null return
+		case DT_SLEEPING:
 		case DT_STUN:
 		{
 			// No pain sound for these...
@@ -4908,9 +4911,6 @@ char* CPlayerObj::GetDamageSound(DamageType eType)
 		}
 		break;
 
-		// RETAIL: the switch is a jump table (0x10080314) with an index for
-		// the types 4 to 12; sleeping takes the pain sounds. Ours compiles
-		// to compares (near).
 		default:
 		{
 			char* PainSounds[] =  { "pain01.wav", "pain02.wav", "pain03.wav", "pain04.wav", "pain05.wav" };
