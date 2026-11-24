@@ -90,6 +90,7 @@ class Body : public Prop, public IHitBoxUser
 		ModelSkeleton	GetModelSkeleton() const { return m_eModelSkeleton; }
 
 		void			AddWeapon(HOBJECT hWeapon, char *pszPosition);
+		bool			AddPickupItem(HOBJECT hItem, bool bForcePickup = false);
 
 		void			AddSpear(HOBJECT hSpear, const LTRotation& rRot, ModelNode eModelNode=eModelNodeInvalid);
 		void			SetModelNodeLastHit(ModelNode eModelNodeLastHit)	{ m_eModelNodeLastHit = eModelNodeLastHit; }
