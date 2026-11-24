@@ -145,20 +145,7 @@ LTBOOL CScreenDisplay::Build()
 	kGap = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_DISPLAY,"ColumnWidth");
 	kWidth = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_DISPLAY,"SliderWidth");
 
-	//background frame
-	LTRect frameRect = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_DISPLAY,"FrameRect");
-	LTIntPt pos(frameRect.left,frameRect.top);
-	int nHt = frameRect.bottom - frameRect.top;
-	int nWd = frameRect.right - frameRect.left;
-
-	char szFrame[128];
-	g_pLayoutMgr->GetScreenCustomString(SCREEN_ID_DISPLAY,"FrameTexture",szFrame,sizeof(szFrame));
-	HTEXTURE hFrame = g_pInterfaceResMgr->GetTexture(szFrame);
-	CLTGUIFrame *pFrame = debug_new(CLTGUIFrame);
-	pFrame->Create(hFrame,nWd,nHt+8,LTTRUE);
-	pFrame->SetBasePos(pos);
-	pFrame->SetBorder(2,m_SelectedColor);
-	AddControl(pFrame);
+	// RETAIL: Tron's screen has no background frame (retail 0x10058a4e)
 
 	// Build the array of renderers
 	GetRendererData();
@@ -169,8 +156,8 @@ LTBOOL CScreenDisplay::Build()
 	// Setup the resolution control based on the current renderer
 	SetupResolutionCtrl();
 
-	// RETAIL: Tron's screen has no hardware cursor control (its Build,
-	// 0x10058a10, differs more: not yet written from retail)
+	// RETAIL: Tron's screen has no hardware cursor control (retail
+	// 0x10058a9b)
 
 	AddToggle(IDS_VSYNC,IDS_HELP_VSYNC,kGap,&m_bVSync);
 
@@ -179,19 +166,19 @@ LTBOOL CScreenDisplay::Build()
 	m_pGamma->SetSliderRange(0,kNumSteps);
 	m_pGamma->SetSliderIncrement(1);
 
-	// MERGE: Tron's side (build 69); NOLF2 1.3 had:
-	//| int nBaseGamma = ConvertToSlider(1.0f);
-	//| float xoffset =  (m_pGamma->CalculateSliderOffset(nBaseGamma) / m_pGamma->GetScale());
-	//| uint16 nHeight = m_pGamma->GetBarHeight();
-	//| float yoffset = ((( (float)m_pGamma->GetBaseHeight()) - (float)nHeight)) / 2.0f;
-	//| pos = m_pGamma->GetBasePos();
-	//| pos.x += (int)(xoffset - 1.0f);
-	//| pos.y += (int)(yoffset + 0.5f);
-	//| CLTGUIFrame *pBar = debug_new(CLTGUIFrame);
-	//| pBar->Create(0xBF000000,3,nHeight+1);
-	//| pBar->SetBasePos(pos);
-	//| pBar->SetScale(g_pInterfaceResMgr->GetXRatio());
-	//| AddControl(pBar);
+	// RETAIL: NOLF2 1.3's mark of the default gamma (retail 0x10058b3f)
+	int nBaseGamma = ConvertToSlider(1.0f);
+	float xoffset =  (m_pGamma->CalculateSliderOffset(nBaseGamma) / m_pGamma->GetScale());
+	uint16 nHeight = m_pGamma->GetBarHeight();
+	float yoffset = ((( (float)m_pGamma->GetHeight() / m_pGamma->GetScale()) - (float)nHeight)) / 2.0f;
+	LTIntPt pos = m_pGamma->GetBasePos();
+	pos.x += (int)(xoffset - 1.0f);
+	pos.y += (int)(yoffset + 0.5f);
+	CLTGUIFrame *pBar = debug_new(CLTGUIFrame);
+	pBar->Create(0xBF000000,3,nHeight+1);
+	pBar->SetBasePos(pos);
+	pBar->SetScale(g_pInterfaceResMgr->GetXRatio());
+	AddControl(pBar);
 
  	// Make sure to call the base class
 	if (!CBaseScreen::Build()) return LTFALSE;
