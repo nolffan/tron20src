@@ -273,6 +273,9 @@ CScanner::~CScanner()
 	FREE_HSTRING(m_hstrDestroyedSkin);
 	FREE_HSTRING(m_hstrSpotCommand);
 
+	// RETAIL: Tron's (0x100ed329)
+	EnableSensing( LTFALSE );
+
 	debug_delete( m_pObjectRelationMgr );
 }
 

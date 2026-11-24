@@ -57,6 +57,15 @@ class CServerSubroutineMgr : public CGameButeMgr
 		// name (0 when there is none)
 		int		GetNameId(const char* szName, int nType);
 
+		// RETAIL: inline (CCharacterPlugin::PreHook_EditStringList,
+		// 0x100943a0, takes the counts as uint16); the names are ours
+		uint16	GetNumSubroutines() const { return (uint16)m_lstSubroutines.size(); }
+		uint16	GetNumProcedurals() const { return (uint16)m_lstProcedurals.size(); }
+		uint16	GetNumPrimitives() const { return (uint16)m_lstPrimitives.size(); }
+		const char* GetSubroutineName(uint32 i) const { return m_lstSubroutines[i].szName; }
+		const char* GetProceduralName(uint32 i) const { return m_lstProcedurals[i].szName; }
+		const char* GetPrimitiveName(uint32 i) const { return m_lstPrimitives[i].szName; }
+
 	protected :
 
 		ServerSubroutineList	m_lstSubroutines;
