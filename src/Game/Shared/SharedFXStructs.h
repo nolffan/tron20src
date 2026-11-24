@@ -101,6 +101,7 @@ inline void CHARCREATESTRUCT::Clear()
 	nDamageFlags				= 0;
 	fPitch						= 0.0f;
 	bIsCinematicAI				= false;
+	bSupportsDamageFX			= true;		// RETAIL: Object.lto 0x10089f58 (the byte at +0x5c)
 	
 	vHitBoxDims.Init();
 	vHitBoxOffset.Init();
