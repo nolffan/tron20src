@@ -630,13 +630,16 @@ LTFLOAT CScanner::GetSenseDistance(EnumAISenseType eSenseType)
 
 const RelationSet& CScanner::GetSenseRelationSet() const
 {
+	// RETAIL: 0x100edae0. Tron's IAISensing slot returns the relation
+	// manager itself (as TronTurret's and CAI's do): a static
+	// CObjectRelationMgr when there is none.
 	if( m_pObjectRelationMgr )
 	{
-		return m_pObjectRelationMgr->CObjectRelationMgr::GetRelationUser()->GetRelations();
+		return *(const RelationSet*)m_pObjectRelationMgr;
 	}
 
-	static RelationSet rs;
-	return rs;
+	static CObjectRelationMgr s_ObjectRelationMgr;
+	return *(const RelationSet*)&s_ObjectRelationMgr;
 }
 
 // ----------------------------------------------------------------------- //
