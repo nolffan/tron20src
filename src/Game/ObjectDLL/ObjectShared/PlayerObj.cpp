@@ -2276,6 +2276,7 @@ LTBOOL CPlayerObj::Update()
 
 			damage.eType	= DT_EXPLODE;
 			damage.fDamage	= damage.kInfiniteDamage;
+			damage.bTronUnknown44 = LTTRUE;	// RETAIL: 0x1007bae0
 			damage.hDamager = m_hObject;
 			damage.vDir.Init(0, 1, 0);
 
@@ -7695,14 +7696,15 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject )
 				vPos.x += vForward.x * 4.0f;
 				vPos.z += vForward.z * 4.0f;
 
+				// RETAIL: the hit box through the hit box user (0x10084a49)
 				g_pLTServer->SetObjectPos(pChar->m_hObject, &vPos);
-				g_pLTServer->SetObjectPos(pChar->GetHitBox(), &vPos);
+				g_pLTServer->SetObjectPos(pChar->GetHitBoxObject(), &vPos);
 				g_pLTServer->SetObjectRotation(pChar->m_hObject, &rRot);
-				g_pLTServer->SetObjectRotation(pChar->GetHitBox(), &rRot);
+				g_pLTServer->SetObjectRotation(pChar->GetHitBoxObject(), &rRot);
 
 				LTVector vDims;
 				g_pPhysicsLT->GetObjectDims(pChar->m_hObject, &vDims);
-				g_pPhysicsLT->SetObjectDims(pChar->GetHitBox(), &vDims,0);
+				g_pPhysicsLT->SetObjectDims(pChar->GetHitBoxObject(), &vDims,0);
 
 				//send the telport message so that the AI's position is updated immediately
 				char szMsg[128];
@@ -7956,9 +7958,10 @@ bool CPlayerObj::DropCarriedObject( )
 
 			pAI->SetBeingCarried( false );
 
-			if( pAI->GetHitBox() )
+			// RETAIL: through the hit box user (0x1008513b)
+			if( pAI->GetHitBoxObject() )
 			{
-				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
+				g_pCommonLT->SetObjectFlags(pAI->GetHitBoxObject(), OFT_Flags, FLAG_RAYHIT, FLAG_RAYHIT);
 			}
 		}
 	}
@@ -7983,12 +7986,12 @@ bool CPlayerObj::DropCarriedObject( )
 
 bool CPlayerObj::PickupObject( HOBJECT hObject )
 {
+	// RETAIL: Tron's (0x100851b0): no user flags read, an AI is taken
+	// before it is asked for (no test for an AI carried already)
+
 	// Make sure we don't already have a carried object...
 	if( m_hCarriedObject || !hObject )
 		return false;
-
-	uint32 dwFlags;
-	g_pCommonLT->GetObjectFlags( hObject, OFT_User, dwFlags );
 
 	if (IsKindOf(hObject,"Body"))
 	{
@@ -8004,19 +8007,14 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 	}
 	else if (IsKindOf(hObject,"CAIHuman"))
 	{
+		g_pCommonLT->SetObjectFlags(hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
+
+		ShowObjectAttachments(hObject,false);
+		SetCarriedObject(hObject);
+
 	    CAIHuman *pAI = dynamic_cast<CAIHuman*>(g_pLTServer->HandleToObject(hObject));
 		if( pAI )
 		{
-			// Don't try and carry a body that is already being carried...
-
-			if( pAI->BeingCarried() )
-				return false;						
-
-			g_pCommonLT->SetObjectFlags(hObject, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3);
-
-			ShowObjectAttachments(hObject,false);
-			SetCarriedObject(hObject);
-
 			CAIGoalSpecialDamage* pGoal = (CAIGoalSpecialDamage*)pAI->GetGoalMgr()->FindGoalByType( kGoal_SpecialDamage );
 			if( pGoal )
 			{
@@ -8025,9 +8023,10 @@ bool CPlayerObj::PickupObject( HOBJECT hObject )
 
 			pAI->SetBeingCarried( true );
 
-			if( pAI->GetHitBox() )
+			// RETAIL: through the hit box user (0x100852cb)
+			if( pAI->GetHitBoxObject() )
 			{
-				g_pCommonLT->SetObjectFlags(pAI->GetHitBox(), OFT_Flags, 0, FLAG_RAYHIT);
+				g_pCommonLT->SetObjectFlags(pAI->GetHitBoxObject(), OFT_Flags, 0, FLAG_RAYHIT);
 			}
 		}
 	}
