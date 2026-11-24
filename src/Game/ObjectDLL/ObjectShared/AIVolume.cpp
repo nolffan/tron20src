@@ -137,12 +137,19 @@ BEGIN_CLASS(AIInformationVolume)
 
 END_CLASS_DEFAULT_FLAGS_PLUGIN(AIInformationVolume, AISpatialRepresentation, NULL, NULL, CF_CLASSONLY, AIInformationVolumePlugin)
 
-CMDMGR_BEGIN_REGISTER_CLASS(AIInformationVolume)	
+// RETAIL: Tron registers the messages under "AIInfoVolume" (its C++
+// class, RTTI .?AVAIInfoVolume@@; 0x10095b60), and AIInformationVolume
+// (0x10095da0) and AIVolumePlayerInfo (0x1009a290) derive from it.
+
+CMDMGR_BEGIN_REGISTER_CLASS(AIInfoVolume)	
 
 	CMDMGR_ADD_MSG( ON, 1, NULL, "ON" )
 	CMDMGR_ADD_MSG( OFF, 1, NULL, "OFF" )
 
-CMDMGR_END_REGISTER_CLASS(AIInformationVolume, AISpatialRepresentation)
+CMDMGR_END_REGISTER_CLASS(AIInfoVolume, AISpatialRepresentation)
+
+CMDMGR_BEGIN_REGISTER_CLASS(AIInformationVolume)
+CMDMGR_END_REGISTER_CLASS(AIInformationVolume, AIInfoVolume)
 
 #pragma force_active off
 
@@ -1443,7 +1450,7 @@ BEGIN_CLASS(AIVolumePlayerInfo)
 END_CLASS_DEFAULT_FLAGS(AIVolumePlayerInfo, AIInformationVolume, NULL, NULL, CF_CLASSONLY)
 
 CMDMGR_BEGIN_REGISTER_CLASS(AIVolumePlayerInfo)
-CMDMGR_END_REGISTER_CLASS(AIVolumePlayerInfo, AIInformationVolume)
+CMDMGR_END_REGISTER_CLASS(AIVolumePlayerInfo, AIInfoVolume)
 
 AIVolumePlayerInfo::AIVolumePlayerInfo()
 {
