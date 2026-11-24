@@ -1886,14 +1886,21 @@ inline T LCLerp(const T& tMin, const T& tMax, float fT)
 
 float CClientLightCycleMgr::GetSpeedPitch(LIGHT_CYCLIST* pCyclist, float fSpeed)
 {
+	float fT, fMin, fMax;
 	if (fSpeed < pCyclist->fBaseSpeed)
 	{
-		float fT = (fSpeed - pCyclist->fMinSpeed) / (pCyclist->fBaseSpeed - pCyclist->fMinSpeed);
-		return LCLerp(0.8f, 1.0f, fT);
+		fT = (fSpeed - pCyclist->fMinSpeed) / (pCyclist->fBaseSpeed - pCyclist->fMinSpeed);
+		fMin = 0.8f;
+		fMax = 1.0f;
+	}
+	else
+	{
+		fT = (fSpeed - pCyclist->fBaseSpeed) / (pCyclist->fMaxExternalSpeedAdd + pCyclist->fMaxManualSpeedAdd);
+		fMin = 1.0f;
+		fMax = 1.4f;
 	}
 
-	float fT = (fSpeed - pCyclist->fBaseSpeed) / (pCyclist->fMaxExternalSpeedAdd + pCyclist->fMaxManualSpeedAdd);
-	return LCLerp(1.0f, 1.4f, fT);
+	return LCLerp(fMin, fMax, fT);
 }
 
 // ----------------------------------------------------------------------- //

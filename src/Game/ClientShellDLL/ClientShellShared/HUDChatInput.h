@@ -23,8 +23,9 @@ const int kMaxChatHistory = 25;
 class CHUDChatInput : public CHUDItem
 {
 public:
-	// RETAIL: every game type
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+	// RETAIL: every game type (0x100fd0c0, folded with others; the if form
+	// is the shape of its code)
+	virtual bool	IsUsedInGameType(GameType eGameType) { if (eGameType < eGameTypeSingle || eGameType > eGameTypeMultiplayerLightcycles) return false; return true; }
 
 	CHUDChatInput();
 

@@ -381,7 +381,9 @@ class CLightCycleButeMgr : public CGameButeMgr
 		const LCTIMERANGE&	GetTimeBetweenDialog()	const { return m_rngTimeBetweenDialog; }
 		bool	GetModifyPriorityWithDist()	const { return m_bModifyPriorityWithDist; }
 		LTFLOAT	GetDialogMaxDist()			const { return m_fDialogMaxDist; }
-		LTFLOAT	GetDialogSoundRadius()		const { return m_fDialogSoundRadius; }
+		// RETAIL: by reference: the function statics that keep it copy
+		// it as an integer (CShell 0x1001313d)
+		const LTFLOAT&	GetDialogSoundRadius()	const { return m_fDialogSoundRadius; }
 		bool	GetDialogSoundLocalToPlayer() const { return m_bDialogSoundLocalToPlayer; }
 		bool	GetEnableSoundDebugInfo()	const { return m_bEnableSoundDebugInfo; }
 
