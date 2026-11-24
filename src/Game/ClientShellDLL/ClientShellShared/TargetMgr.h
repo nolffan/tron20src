@@ -20,6 +20,19 @@
 const uint16	kMaxTargetStringLen = 1024;
 const uint16 kMaxDebugStringLen = 1024;
 
+// RETAIL: Tron's target string IDs keep build 51's numbers (NOLF2 1.3's
+// ClientResShared.h moved them to 944 and up): CTargetMgr::Update
+// (0x1016d700) and CTronTargetMgr::Update (0x100ae5f0) push these. Tron has
+// no target lighter, thus "searching" is 464, not build 51's 465. Retail's
+// CRes.dll has no strings for them. The names are ours
+const uint16	kTronIDS_TargetSearch		= 449;
+const uint16	kTronIDS_TargetTalk			= 452;
+const uint16	kTronIDS_TargetUse			= 453;
+const uint16	kTronIDS_TargetTake			= 454;
+const uint16	kTronIDS_TargetSearching	= 464;
+const uint16	kTronIDS_TargetRevive		= 469;
+const uint16	kTronIDS_TargetWakeUp		= 502;
+
 class CTargetMgr 
 {
 public:
@@ -94,8 +107,8 @@ protected:
 	//check for character FX within an are around a point
 	bool CheckForCharacters(LTVector vObjPos,LTVector vDims, uint8 nId);
 
-	void FirstUpdate();
-	void ClearTargetInfo();
+	// RETAIL: no FirstUpdate or ClearTargetInfo in Tron (Update clears
+	// the target info itself)
 };
 
 #endif
