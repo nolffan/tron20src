@@ -380,7 +380,8 @@ void CTriggerFX::CheckPlayersWithinTrigger()
 				if( vPlayerMax.y > vTrigMin.y && vPlayerMin.y < vTrigMax.y )
 					bWithinHeight = true;
 
-				if( bWithinHeight && BoxesIntersect( vTrigMin, vTrigMax, vPlayerMin, vPlayerMax ) && !pChar->IsPlayerDead())
+				// RETAIL: Tron's counts the dead players in (retail 0x101bf96c)
+				if( bWithinHeight && BoxesIntersect( vTrigMin, vTrigMax, vPlayerMin, vPlayerMax ) )
 				{
 					if( dwLocalId == pChar->m_cs.nClientID )
 						bLocalPlayerIn = true;
@@ -423,23 +424,28 @@ void CTriggerFX::CheckPlayersWithinTrigger()
 			{
 				g_pTransmission->Show( m_cs.nPlayerInsideID );
 			}
-			else if( nPlayersNotInTrig > 1 )
-			{
-				//sTransmission.Format( "You are waiting for %i players.", nPlayersNotInTrig );
-				g_pTransmission->Show( FormatTempString(IDS_EXIT_PLAYER_WAITING,nPlayersNotInTrig) );
-			}
 			else
 			{
-				//sTransmission.Format( "You are waiting for 1 player." );
-				g_pTransmission->Show( FormatTempString(IDS_EXIT_PLAYER_WAITING_1) );
-			}		
+				// RETAIL: Tron's messages are English literals (retail
+				// 0x101bfaef), not the string table's
+				if( nPlayersNotInTrig > 1 )
+				{
+					sTransmission.Format( "You are waiting for %i players.", nPlayersNotInTrig );
+				}
+				else
+				{
+					sTransmission.Format( "You are waiting for 1 player." );
+				}
+
+				g_pTransmission->Show( sTransmission );
+			}
 			
 			
 			CharFXList::iterator iter;
 			for( iter = m_lstPlayersNotInTrigger.begin(); iter != m_lstPlayersNotInTrigger.end(); ++iter )
 			{
-				//sMessage.Format( "You are waiting for %s.", pInfoMgr->GetPlayerName( (*iter)->m_cs.nClientID ));
-				g_pChatMsgs->AddMessage( FormatTempString(IDS_EXIT_PLAYER_WAITING_NAME,pInfoMgr->GetPlayerName( (*iter)->m_cs.nClientID)) );
+				sMessage.Format( "You are waiting for %s.", pInfoMgr->GetPlayerName( (*iter)->m_cs.nClientID ));
+				g_pChatMsgs->AddMessage( sMessage );
 			}
 		}
 		else
@@ -452,22 +458,26 @@ void CTriggerFX::CheckPlayersWithinTrigger()
 			{
 				g_pTransmission->Show( m_cs.nPlayerOutsideID );
 			}
-			else if( nPlayersInTrig > 1 )
-			{
-//				sTransmission.Format( "%i players are waiting for you",nPlayersInTrig  );
-				g_pTransmission->Show( FormatTempString(IDS_EXIT_WAITING,nPlayersInTrig) );
-			}
 			else
 			{
-//				sTransmission.Format( "1 player is waiting for you." );
-				g_pTransmission->Show( FormatTempString(IDS_EXIT_WAITING_1) );
+				if( nPlayersInTrig > 1 )
+				{
+					sTransmission.Format( "%i players are waiting for you",nPlayersInTrig  );
+				}
+				else
+				{
+					sTransmission.Format( "1 player is waiting for you." );
+				}
+
+				g_pTransmission->Show( sTransmission );
 			}
 			
 
 			CharFXList::iterator iter;
 			for( iter = m_lstCurPlayersInTrigger.begin(); iter != m_lstCurPlayersInTrigger.end(); ++iter )
 			{
-				g_pChatMsgs->AddMessage( FormatTempString(IDS_EXIT_WAITING_NAME,pInfoMgr->GetPlayerName( (*iter)->m_cs.nClientID))  );	
+				sMessage.Format( "%s is waiting for you.", pInfoMgr->GetPlayerName( (*iter)->m_cs.nClientID ));
+				g_pChatMsgs->AddMessage( sMessage );
 			}
 		}
 	}
