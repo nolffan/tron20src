@@ -2801,6 +2801,29 @@ HMODELANIM CPlayerObj::GetCrouchDeathAni(LTBOOL bFront)
 void CPlayerObj::UpdateMovement()
 {
 	if (!GetClient( )) return;
+
+	// RETAIL: Tron's (0x1007c469): a single player spectator stays at the
+	// object the "Watch" console variable names.
+	if( !IsMultiplayerGame( ) && m_bSpectatorMode && s_vtWatch.GetStr( ) && strcmp( "none", s_vtWatch.GetStr( )) != 0 )
+	{
+		ObjArray <HOBJECT, MAX_OBJECT_ARRAY_SIZE> objArray;
+		g_pLTServer->FindNamedObjects( const_cast<char*>( s_vtWatch.GetStr( )), objArray );
+
+		if( objArray.NumObjects( ) == 1 )
+		{
+			HOBJECT hWatch = objArray.GetObject( 0 );
+			if( hWatch )
+			{
+				LTVector vPos;
+				g_pLTServer->GetObjectPos( hWatch, &vPos );
+				g_pLTServer->MoveObject( m_hObject, &vPos );
+				g_pLTServer->SetObjectPos( m_hObject, &vPos );
+
+				UpdateClientPhysics( );
+				TeleportClientToServerPos( );
+			}
+		}
+	}
 	
 	// If we're in multiplayer, handle leashing
 	if ( IsMultiplayerGame( ) && m_bUseLeash)
@@ -3972,9 +3995,8 @@ void CPlayerObj::Revive()
 	if( !IsMultiplayerGame() || !m_hClient )
 		return;
 
-	// Make us invulnerable for a bit.
-	if( g_pGameServerShell->GetGameType() == eGameTypeCooperative )
-		SetRespawnInvulnerability( );
+	// Make us invulnerable for a bit.  RETAIL: in every game type (0x1007e07e)
+	SetRespawnInvulnerability( );
 
 	// not needed?
 	m_bRespawnCalled = LTTRUE;
@@ -4004,9 +4026,7 @@ void CPlayerObj::Revive()
 	// Duck, so we know we can fit here..
 	m_Animator.SetMovement(CAnimatorPlayer::eCrouching);
 	
-	// Center our lean...
-	m_Animator.SetLean( CAnimatorPlayer::eCenter );
-	
+	// RETAIL: no lean to center (0x1007e0ff)
 	m_Animator.Update();
 
 	// Reset the main tracker to make sure we lose any special animations we were playing when we died...
@@ -4034,48 +4054,17 @@ void CPlayerObj::Revive()
 
 	UpdateClientPhysics();
 
-	// Revive us at the position we died...
+	// Revive us at the position we died...  RETAIL: Tron has no dead body
+	// to move to (0x1007e170)
 
     LTVector vPos;
 	g_pLTServer->GetObjectPos( m_hObject, &vPos );
 
-
-	// Use our dead body's position if it moved...
-
-	if (m_hDeadBody)
-	{
-		LTVector vBodyPos;
-		g_pLTServer->GetObjectPos( m_hDeadBody, &vBodyPos );
-
-		// Only move our object if our body actually moved.  We'll worry
-		// about changes in x/z only and ignore changes in y...
-
-		LTVector vTestPos1 = vBodyPos;
-		LTVector vTestPos2 = vPos;
-		vTestPos1.y = vTestPos2.y = 0.0f;
-		if (vTestPos1.NearlyEquals(vTestPos2, 1.0f) == false)
-		{
-			LTVector vDims;
-			g_pPhysicsLT->GetObjectDims(m_hObject, &vDims);
-
-			// Note: since the Body is above the ground this will actually
-			// move us up a little too high...MoveObjectToFloor below will
-			// move us back down...
-
-			vBodyPos.y += vDims.y; 
-			g_pLTServer->SetObjectPos(m_hObject, &vBodyPos);
-		}
-	}
-
-	// Filter out our dead body if we have one...
-	HOBJECT hFilter[] = { m_hObject, m_hDeadBody, LTNULL };
-
-	MoveObjectToFloor(m_hObject, hFilter);
+	MoveObjectToFloor(m_hObject);
 	TeleportClientToServerPos();
 
 	// Play the respawn sound...
 
-	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pServerSoundMgr->PlaySoundFromPos(vPos, PLAYER_RESPAWN_SOUND,
 			600.0f, SOUNDPRIORITY_MISC_HIGH);
 	
@@ -5243,15 +5232,19 @@ void CPlayerObj::SetVisibleToEnemyAI( CAI* pAI, bool bVis )
 
 LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 {
-	if (m_eState != PS_ALIVE) return LTFALSE;
+	// RETAIL: Tron's order (0x10080930): the pause test first, the bute
+	// manager, the surface before the target.
 
 	// Not allowed to do any activating when paused.
 	uint32 dwFlags = 0;
-	g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags );
-	if ( dwFlags & FLAG_PAUSED )
+	if ( LT_OK == g_pCommonLT->GetObjectFlags( m_hObject, OFT_Flags, dwFlags ) && ( dwFlags & FLAG_PAUSED ))
 	{
 		return LTFALSE;
 	}
+
+	if (!g_pServerButeMgr) return LTFALSE;
+
+	if (m_eState != PS_ALIVE) return LTFALSE;
 
 	// First see if a cinematic is running...If so, try and stop it...
 
@@ -5274,9 +5267,19 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 	// RETAIL: 0x100809aa tests the drop flag only (no NOLF2 CanDropObject)
 	if( m_hCarriedObject && m_bCanDropBody && pData->m_nType == MID_ACTIVATE_MOVE )
 	{
-		if( !DropCarriedObject( ) )
+		return DropCarriedObject( ) ? LTTRUE : LTFALSE;
+	}
+
+	if (pData->m_nSurfaceType != ST_UNKNOWN)
+	{
+		SURFACE *pSurf = g_pSurfaceMgr->GetSurface((SurfaceType)pData->m_nSurfaceType);
+
+		// See if the surface we tried to activate has an activation
+		// sound...If so, play it...
+		if (pSurf && pSurf->szActivationSnd[0] && pSurf->fActivationSndRadius > 0)
 		{
-			return LTFALSE;
+			g_pServerSoundMgr->PlaySoundFromPos(pData->m_vIntersect, pSurf->szActivationSnd,
+						pSurf->fActivationSndRadius, SOUNDPRIORITY_PLAYER_LOW);
 		}
 
 		return LTTRUE;
@@ -5307,9 +5310,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 				//you can't pick it up  if you're crouching so go away
 				if ( m_Animator.GetLastMovement() == CAnimatorPlayer::eCrouching )
 					return LTFALSE;
-
-				uint32 dwFlags;
-				g_pCommonLT->GetObjectFlags( pData->m_hTarget, OFT_User, dwFlags );
 
 				//if the target isn't a body, we can't move it
 				if (IsKindOf(pData->m_hTarget, "Body"))
@@ -5402,22 +5402,6 @@ LTBOOL CPlayerObj::DoActivate(CActivationData* pData)
 			break;
 		}
     }
-
-	if (pData->m_nSurfaceType != ST_UNKNOWN)
-	{
-		SURFACE *pSurf = g_pSurfaceMgr->GetSurface((SurfaceType)pData->m_nSurfaceType);
-
-		// See if the surface we tried to activate has an activation
-		// sound...If so, play it...
-		if (pSurf && pSurf->szActivationSnd[0] && pSurf->fActivationSndRadius > 0)
-		{
-			g_pServerSoundMgr->PlaySoundFromPos(pData->m_vIntersect, pSurf->szActivationSnd,
-						pSurf->fActivationSndRadius, SOUNDPRIORITY_PLAYER_LOW);
-		}
-
-		return LTTRUE;
-	}
-	
 
     return LTFALSE;
 }
