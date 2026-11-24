@@ -238,9 +238,10 @@ class CAIStimulusMgr : public ILTObjRefReceiver
 
 		EnumAITargetMatchID GetTargetMatchID(HOBJECT hTarget);
 
+		// RETAIL: 0x10101e80 takes the record (Tron's resolves the
+		// permission dependant alignment)
 		bool IsAlignmentInList(const RelationSet& RelationSet,
-		const RelationData& RelationData,
-		const CAIStimulusRecord::_listAlignments& AlignmentRequirement ) const;
+		CAIStimulusRecord* pRecord ) const;
 
 		void	UpdateSensingList();
 		LTBOOL	SenseNearestPlayer(IAISensing* pSensing);
