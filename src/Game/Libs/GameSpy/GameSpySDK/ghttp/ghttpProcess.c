@@ -597,8 +597,10 @@ static GHTTPBool ghiDeliverIncomingFileData
 	int len
 )
 {
-	char * buffer = NULL;
-	int bufferLen = 0;
+	// RETAIL: CShell.dll 0x10021110: the 2003 SDK leaves these unset, so an
+	// unknown type passes whatever is in them to the callback.
+	char * buffer;
+	int bufferLen;
 
 	// Add this to the total.
 	/////////////////////////
@@ -758,7 +760,8 @@ static GHTTPBool ghiProcessIncomingFileData
 				{
 					// Append what we have to the buffer.
 					/////////////////////////////////////
-					ghiAppendToChunkHeaderBuffer(connection, data, endOfHeader - data);
+					// RETAIL: CShell.dll 0x10020fe6: the 2003 SDK leaves out the CR.
+					ghiAppendToChunkHeaderBuffer(connection, data, endOfHeader - data - 1);
 
 					// Adjust data and len.
 					///////////////////////
