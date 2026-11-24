@@ -3252,13 +3252,13 @@ LTBOOL CLUSTERDISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 // ----------------------------------------------------------------------- //
 
 CORRUPTICDIMSCLASSDATA::CORRUPTICDIMSCLASSDATA()
+:	fRandomness( 0.0f ),
+	fRandomnessRampUpTime( 0.0f ),
+	fHorizontalFactor( 0.0f ),
+	fVerticalFactor( 0.0f ),
+	bHoming( false ),
+	fTurnRate( 0.0f )
 {
-	fRandomness = 0.0f;
-	fRandomnessRampUpTime = 0.0f;
-	fHorizontalFactor = 0.0f;
-	fVerticalFactor = 0.0f;
-	bHoming = false;
-	fTurnRate = 0.0f;
 }
 
 LTBOOL CORRUPTICDIMSCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
