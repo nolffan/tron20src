@@ -61,7 +61,7 @@ class CProjectileEnergyClaw : public CTronProjectile
 		void			UpdateReturning();
 
 		void			HandleReturned();
-		void			CreateClawFX(HOBJECT hTarget);
+		bool			CreateClawFX(HOBJECT hTarget);
 		void			UpdateClawFX();
 		bool			HasClawFX() const;
 		bool			CanSee(HOBJECT hFrom, HOBJECT hTo);
