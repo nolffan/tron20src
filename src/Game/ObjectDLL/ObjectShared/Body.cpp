@@ -199,7 +199,7 @@ Body::Body() : Prop()
 
 Body::~Body()
 {
-	ReleasePowerups();
+	// RETAIL: Tron's does not release the powerups (0x10159180)
 
 	if (m_pAttachments)
 	{
@@ -386,37 +386,8 @@ uint32 Body::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 		default : break;
 	}
 
-	uint32 nRet = Prop::ObjectMessageFn(hSender, pMsg);
-
-	if (MID_DAMAGE == messageID)
-	{
-		// Need to process this after damage aggregate has had a shot at it.  Ignore
-		// if the body is dead, since dead objects don't record lastdamagetype.
-
-		if ( !m_damage.IsDead( ) && m_damage.GetLastDamageType() == DT_EXPLODE )
-		{
-			// Only shoot off if we're not doing anything else and we aren't
-			// a permanent body.
-			if ( m_eBodyState == kState_BodyNormal && !m_bPermanentBody )
-			{
-				// Need to set the body's death direction based on this
-				// damage (not based on the original death direction)
-				//
-				
-				// It's like we're starting over...so fresh and so clean...
-				m_fStartTime = g_pLTServer->GetTime();
-				m_vDeathDir = m_damage.GetLastDamageDir();
-				m_vDeathDir.Normalize();
-				m_vDeathDir *= (1.0f + g_vtBodyExplosionVelMultiplier.GetFloat());
-
-				SetState(kState_BodyExplode);
-				SetNextUpdate(s_fUpdateDelta);
-			}
-		}
-	}
-
-	return nRet;
-
+	// RETAIL: Tron's has no explosion restart after the damage (0x101596ac)
+	return Prop::ObjectMessageFn(hSender, pMsg);
 }
 
 // --------------------------------------------------------------------------- //
@@ -1562,8 +1533,8 @@ void Body::AddSpear(HOBJECT hSpear, const LTRotation& rRot, ModelNode eModelNode
 				{
 					m_ahSpears[m_cSpears++] = hSpear;
 
-					//flag the spear to be hidden on low violence clients
-					g_pCommonLT->SetObjectFlags(hSpear, OFT_User, USRFLG_ATTACH_HIDEGORE, USRFLG_ATTACH_HIDEGORE);
+					// RETAIL: Tron does not flag the spear to be hidden on
+					// low violence clients (0x1015bfd0)
 
 
 					bool bAdded = m_pSearch->AddPickupItem(hSpear);
@@ -1909,6 +1880,8 @@ void Body::ReleasePowerups(bool bWeaponsOnly)
 		{
 			ReleasePowerup(m_ahWeapons[iWeapon]);
 			m_pSearch->RemovePickupItem(m_ahWeapons[iWeapon]);
+			// RETAIL: Tron's removes the weapon (0x1015cc34)
+			g_pLTServer->RemoveObject(m_ahWeapons[iWeapon]);
 			m_ahWeapons[iWeapon] = LTNULL;
 		}
 	}
