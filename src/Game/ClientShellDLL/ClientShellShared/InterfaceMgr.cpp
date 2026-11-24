@@ -1477,12 +1477,19 @@ void CInterfaceMgr::EndSplashScreen()
 	char szGameType[256] = "";
 	LTStrCpy( szGameType, GetConsoleTempString( "gametype", "" ), ARRAY_LEN( szGameType ));
 
-	if( szGameType[0] == 0 )
+	// RETAIL: 0x100c9270: Tron has no default game type: a game type that
+	// it does not know fails the join
+	GameType eGameType;
+	if( !GameStringTypeToGameType( szGameType, eGameType ))
 	{
-		LTStrCpy( szGameType, GameTypeToString( eGameTypeDeathmatch ), ARRAY_LEN( szGameType ));
+		// drop them into the join menu
+		LoadFailed( SCREEN_ID_MAIN );
+
+		MBCreate mb;
+		ShowMessageBox(IDS_CANT_CONNECT_TO_SERVER, &mb);
+		return;
 	}
-	
-	GameType eGameType = GameStringTypeToGameType( szGameType );
+
 	g_pGameClientShell->SetGameType( eGameType );
 
 	if( !szIP[0] || !g_pClientMultiplayerMgr->SetupClient( szIP, szPassword ) || !g_pMissionMgr->StartGameAsClient( ))
@@ -2434,7 +2441,8 @@ void CInterfaceMgr::UpdatePlayerStats(uint8 nThing, uint8 nType1,
 
 		case IC_SKILLS_ID :
 		{
-            GetPlayerStats( )->GainSkills(nType1, nType2, (uint16)fAmount);
+            // RETAIL: 0x100ca8f6: the reward only
+            GetPlayerStats( )->GainSkills(nType1);
 		}
 		break;
 

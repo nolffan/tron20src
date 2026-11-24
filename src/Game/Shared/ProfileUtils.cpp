@@ -482,14 +482,12 @@ ServerGameOptions& ServerGameOptions::Copy( ServerGameOptions const& other )
 
 #ifdef _CLIENTBUILD
 // RETAIL: CShell.dll 0x100eb4d0, the client's only: true when the game
-// type has no maps, or its first is blank. The name is ours.
-LTBOOL ServerGameOptions::IsMapListEmpty( )
+// type has no maps, or its first is blank. The name is ours. It returns
+// bool (the callers test al, 0x1000435b).
+bool ServerGameOptions::IsMapListEmpty( )
 {
 	StringArray* pMapList = GetMapList( );
-	if( !pMapList || pMapList->empty( ) || (*pMapList)[0].empty( ))
-		return LTTRUE;
-
-	return LTFALSE;
+	return ( !pMapList || pMapList->empty( ) || (*pMapList)[0].empty( ));
 }
 #endif // _CLIENTBUILD
 

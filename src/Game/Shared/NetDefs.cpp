@@ -57,13 +57,25 @@ const char* GameTypeToString(GameType eType)
     return NULL;
 }
 
-GameType GameStringTypeToGameType( char const* pszGameType )
+#ifdef _CLIENTBUILD
+// RETAIL: CShell.dll 0x100ec510, the client's only (Object.lto has none):
+// Tron's returns whether it knows the type
+// (case blind) and puts it in eGameType; it leaves eGameType as it was when
+// it does not know the type.
+bool GameStringTypeToGameType( char const* pszGameType, GameType& eGameType )
 {
-	for( int i = 0; i < g_knNumGameTypes; i++ )
+	if( pszGameType )
 	{
-		if( strcmp( pszGameType, g_kaGameTypeString[i] ) == 0 )
-			return ( GameType )i;
+		for( int i = 0; i < g_knNumGameTypes; i++ )
+		{
+			if( _stricmp( pszGameType, g_kaGameTypeString[i] ) == 0 )
+			{
+				eGameType = ( GameType )i;
+				return true;
+			}
+		}
 	}
 
-	return eGameTypeSingle;
+	return false;
 }
+#endif // _CLIENTBUILD

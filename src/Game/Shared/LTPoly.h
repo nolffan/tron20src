@@ -17,12 +17,11 @@
 
 	#include "iltdrawprim.h"
 
+// RETAIL: Tron's LT_POLYGT4 clears itself (iltdrawprim.h), so this wrapper
+// does not clear it again: CHUDBar's constructor (CShell.dll 0x101cb7e0)
+// clears each poly once.
 struct LTPoly_GT4 : public LT_POLYGT4
 {
-	LTPoly_GT4()
-	{
-		memset( this, 0, sizeof(LTPoly_GT4) );
-	}
 };
 
 #endif // __LTPOLY_H__

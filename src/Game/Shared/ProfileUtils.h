@@ -291,7 +291,7 @@ class ServerGameOptions
 
 		StringArray*	GetMapList( );
 #ifdef _CLIENTBUILD
-		LTBOOL			IsMapListEmpty( );	// TRON: CShell.dll 0x100eb4d0 (the name is ours)
+		bool			IsMapListEmpty( );	// TRON: CShell.dll 0x100eb4d0 (the name is ours)
 #endif
 		void*		GetLightCycleGameData( ) const;
 		// RETAIL: CShell.dll 0x100eb5a0: the light cycle game data manager

@@ -207,10 +207,8 @@ LTBOOL CTronInterfaceMgr::OnKeyDown(int key, int rep)
 
 	// RETAIL: 0x1009d278: in the playing state escape belongs to an open
 	// decision window (and closes it when it may) unless the chat input
-	// is open. RETAIL: Tron's CHUDChatInput::IsVisible returns bool (the
-	// caller tests al; a bool "a && b" compiles to the same body as ours,
-	// 0x10166490); the cast stands in until the header says bool
-	if (m_eGameState == GS_PLAYING && key == VK_ESCAPE && g_pDecision->IsVisible() && !(uint8)g_pChatInput->IsVisible())
+	// is open
+	if (m_eGameState == GS_PLAYING && key == VK_ESCAPE && g_pDecision->IsVisible() && !g_pChatInput->IsVisible())
 	{
 		if (g_pDecision->GetTronUnknown4d())
 		{
@@ -261,8 +259,7 @@ void CTronInterfaceMgr::ShowChatInput(uint32 nChatType)
 
 LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 {
-	// RETAIL: the chat input's IsVisible is a bool in Tron (see OnKeyDown)
-    if ((uint8)g_pChatInput->IsVisible()) return LTTRUE;
+    if (g_pChatInput->IsVisible()) return LTTRUE;
 
 	// RETAIL: its CHUDTronDecision takes COMMAND_ID_CHOOSE_1..6 first
 	if (g_pTronDecision->IsVisible() && command >= COMMAND_ID_CHOOSE_1 && command <= COMMAND_ID_CHOOSE_6)

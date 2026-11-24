@@ -46,8 +46,9 @@ public:
 	// RETAIL: Tron's takes the chat type from SetChatType (0x10165f10)
 	void		Show(LTBOOL bShow);
 	void		SetChatType(uint32 nChatType);	// RETAIL: 0x101660b0 (the name is ours)
-	// RETAIL: virtual in Tron, and only while the item is enabled (its last slot)
-	virtual LTBOOL	IsVisible() {return m_bVisible && m_bEnabled;}
+	// RETAIL: virtual in Tron, and only while the item is enabled (its last
+	// slot); it returns bool (the callers test al, 0x10166490)
+	virtual bool	IsVisible() {return m_bVisible && m_bEnabled;}
 
 private:
 	void		Send();

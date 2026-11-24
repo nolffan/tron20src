@@ -332,10 +332,9 @@ void CBaseScreenJoin::JoinServer()
 
 	if (s_bWarnLightCycles && m_bInternet)
 	{
-		// PORT: retail's GameStringTypeToGameType returns whether it knew the
-		// type and passes it out (bool (char const*, GameType*))
-		GameType eGameType = GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""));
-		if (eGameType == eGameTypeMultiplayerLightcycles)
+		GameType eGameType;
+		if (GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""), eGameType) &&
+			eGameType == eGameTypeMultiplayerLightcycles)
 		{
 			MBCreate mb;
 			mb.eType = LTMB_YESNO;
@@ -386,8 +385,10 @@ LTBOOL CBaseScreenJoin::ConnectToServer()
 	if (strlen(pszIP) > 20 || nPort < 1024 || nPort > 0xBFFF)
 		return LTFALSE;
 
-	// PORT: see JoinServer
-	GameType eGameType = GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""));
+	// RETAIL: 0x10007586: a game type that it does not know fails the join
+	GameType eGameType;
+	if (!GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""), eGameType))
+		return LTFALSE;
 	g_pGameClientShell->SetGameType(eGameType);
 
 	char szAddress[48];

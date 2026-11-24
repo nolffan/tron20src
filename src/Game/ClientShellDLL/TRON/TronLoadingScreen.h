@@ -17,10 +17,10 @@
 
 class CTronLoadingScreen : public CLoadingScreen
 {
-public:
-	virtual void	UpdateMissionInfo();
-
 protected:
+	// RETAIL: 0x100a29a0, slot 1
+	virtual void	InitMissionInfo();
+
 	// RETAIL: 0x100a25f0: the mission strings from the layout of the world
 	// (its file name is the layout tag)
 	bool			ReadWorldLayout();

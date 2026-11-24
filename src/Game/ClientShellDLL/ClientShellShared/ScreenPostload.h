@@ -36,8 +36,9 @@ public:
 	void SetLayout(const char *pszLayout) { m_layout = pszLayout;}
 
 
-	// RETAIL: CTronLoadingScreen::UpdateMissionInfo (0x100a2ca3) passes
-	// it the layout, briefing and help
+	// RETAIL: the loading screens' InitMissionInfo (0x10161f70, 0x100a2ca3)
+	// pass it the layout, briefing and help
+	friend class CLoadingScreen;
 	friend class CTronLoadingScreen;
 
 protected:

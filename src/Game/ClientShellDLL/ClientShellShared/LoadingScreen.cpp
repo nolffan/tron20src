@@ -174,12 +174,17 @@ void CLoadingScreen::UpdateInterfaceSFX()
 
 }
 
-LTBOOL CLoadingScreen::Init()
+// RETAIL: 0x10161f70: Tron's part of NOLF2's Init. The post-load screen
+// starts with no layout, briefing or help, and gets those of the mission.
+void CLoadingScreen::InitMissionInfo()
 {
-	if (m_eCurState != STATE_NONE)
-		return LTFALSE;
-
-	
+	CScreenPostload *pPostload = (CScreenPostload *) (g_pInterfaceMgr->GetScreenMgr( )->GetScreenFromID(SCREEN_ID_POSTLOAD));
+	if (pPostload)
+	{
+		pPostload->SetLayout("");
+		pPostload->m_briefing = std::string("");
+		pPostload->m_help = std::string("");
+	}
 
 	// Check if we have a mission entry.
 	bool bGotMission = false;
@@ -191,9 +196,7 @@ LTBOOL CLoadingScreen::Init()
 
 		if( pMission )
 		{
-			// PORT: Tron's MISSION has no NameStr (MissionButeMgr.h).
-			if (pMission->nNameId > 0)
-				m_missionname = LoadTempString(pMission->nNameId);
+			m_missionname = LoadTempString(pMission->nNameId);
 
 			int nCurLevel = g_pMissionMgr->GetCurrentLevel( );
 			m_levelname = LoadTempString( pMission->aLevels[nCurLevel].nNameId );
@@ -201,7 +204,6 @@ LTBOOL CLoadingScreen::Init()
 
 			//set the post load layout here, so that it matches
 			// even when our mission info is updated partway through the load
-			CScreenPostload *pPostload = (CScreenPostload *) (g_pInterfaceMgr->GetScreenMgr( )->GetScreenFromID(SCREEN_ID_POSTLOAD));
 			if (pPostload)
 			{
 				pPostload->SetLayout(pMission->szLayout);
@@ -218,6 +220,7 @@ LTBOOL CLoadingScreen::Init()
 				if (pPostload)
 				{
 					pPostload->SetLayout(pMission->szBriefLayout);
+					pPostload->m_briefing = m_briefing;
 				}
 			}
 			else
@@ -228,9 +231,11 @@ LTBOOL CLoadingScreen::Init()
 			if( nHelpId >= 0)
 			{
 				m_help = LoadTempString( nHelpId );
+				m_layout = pMission->szBriefLayout;
 				if (pPostload)
 				{
 					pPostload->SetLayout(pMission->szBriefLayout);
+					pPostload->m_help = m_help;
 				}
 			}
 			else
@@ -249,25 +254,16 @@ LTBOOL CLoadingScreen::Init()
 	{
 		// If connecting to a remote server, set our mission descriptor to 
 		// the ip we're connecting to.
+		// RETAIL: Tron shows the server's name only
 		if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
 		{
 			// Make a loading string using the IP to be joined.
 			char szLoadingString[256];
 
-			if (strlen(g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName))
-			{
-				sprintf( szLoadingString, "%s:  %s", LoadTempString(IDS_CONNECTING_TO_SERVER), 
-					g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName );
-			}
-			else
-			{
-				sprintf( szLoadingString, "%s", LoadTempString(IDS_CONNECTING_TO_SERVER));
-			}
+			sprintf( szLoadingString, "%s:  %s", LoadTempString(IDS_CONNECTING_TO_SERVER), 
+				g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName );
 			m_missionname = szLoadingString;
-
-			sprintf( szLoadingString, "    (%s)", g_pClientMultiplayerMgr->GetStartGameRequest( ).m_TCPAddress );
-
-			m_levelname = szLoadingString;
+			m_levelname = "";
 		}
 		// Local game, set the mission descriptor to the level name.
 		else
@@ -294,6 +290,15 @@ LTBOOL CLoadingScreen::Init()
 		m_briefing = "";
 		m_help = "";
 	}
+}
+
+LTBOOL CLoadingScreen::Init()
+{
+	if (m_eCurState != STATE_NONE)
+		return LTFALSE;
+
+	// RETAIL: 0x10162635: through the vtable
+	InitMissionInfo();
 
 	char szTagName[30];
 	if (!m_bReadLayout)
@@ -852,6 +857,7 @@ void CLoadingScreen::CreateLightFX(char *szFXName)
 	}
 }
 
+// RETAIL: 0x10163c50
 void CLoadingScreen::UpdateMissionInfo()
 {
 	// No need to update mission info if a different screen is being rendered...
@@ -866,9 +872,8 @@ void CLoadingScreen::UpdateMissionInfo()
 
 		if( pMission )
 		{
-			// PORT: Tron's MISSION has no NameStr (MissionButeMgr.h).
-			if (pMission->nNameId > 0)
-				m_missionname = LoadTempString(pMission->nNameId);
+			// RETAIL: 0x10163c8e: Tron's MISSION has no NameStr
+			m_missionname = LoadTempString(pMission->nNameId);
 
 			int nCurLevel = g_pMissionMgr->GetCurrentLevel( );
 			
@@ -894,18 +899,11 @@ void CLoadingScreen::UpdateMissionInfo()
 
 	}
 
+	// RETAIL: 0x10163e24: no performance test briefing in Tron
 	m_pMissionNameStr->SetText(m_missionname.c_str());
 	m_pLevelNameStr->SetText(m_levelname.c_str());
+	m_pBriefingStr->SetText(m_briefing.c_str());
 	m_pHelpStr->SetText(m_help.c_str());
-
-	if (g_pGameClientShell->IsRunningPerformanceTest())
-	{
-		m_pBriefingStr->SetText(LoadTempString( IDS_PERFORMANCE_TEST_BRIEF ));
-	}
-	else
-	{
-		m_pBriefingStr->SetText(m_briefing.c_str());
-	}
 
 
 

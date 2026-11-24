@@ -51,7 +51,9 @@ extern const uint16 g_BandwidthClient[eBandwidth_Custom];
 #define k_fMaxBandwidth 10240000
 
 const char* GameTypeToString(GameType eType);
-GameType GameStringTypeToGameType( char const* pszGameType );
+#ifdef _CLIENTBUILD
+bool GameStringTypeToGameType( char const* pszGameType, GameType& eGameType );
+#endif
 
 // Defines...
 
