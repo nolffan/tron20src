@@ -138,11 +138,9 @@ void CBaseScreenLightCycle::CreateSettingsList()
 	LTRect rcAvail = g_pLayoutMgr->GetScreenCustomRect(SCREEN_ID_BASE_LIGHTCYCLE,"AvailRect");
 	m_pSettingsList = AddList(LTIntPt(rcAvail.left,rcAvail.top),rcAvail.bottom - rcAvail.top,LTTRUE,rcAvail.right - rcAvail.left - 32);
 	m_pSettingsList->SetIndent(LTIntPt(5,5));
-	// RETAIL: here Tron's list control takes a frame texture
-	// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0),
-	// and a member is set (+0x670 = 1, after the Enable): left out, our
-	// LTGUIMgr's list control has neither yet
+	m_pSettingsList->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 	m_pSettingsList->Enable(LTTRUE);
+	m_pSettingsList->SetEnterOnSelect(LTTRUE);
 
 	m_pSettingsTitle = AddTextItem(0x25B7,0,0,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_BASE_LIGHTCYCLE,"ConfigTitlePos"),LTTRUE);
 	m_pNewSettings = AddTextItem(0x25B8,kCmdLCNewSettings,0x25B9,g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_BASE_LIGHTCYCLE,"CommandPos"));

@@ -1381,11 +1381,9 @@ void CPlayerMgr::HandleMsgPlayerDamage (ILTMessage_Read *pMsg)
     DamageType eType = (DamageType) pMsg->Readuint8();
     LTBOOL bTookHealth = (LTBOOL) pMsg->Readuint8();
 
-	// No need to handle a damage message if the player is dead...
-	
-	if( IsPlayerDead() )
-		return;
-	
+	// RETAIL: 0x10125d20: Tron handles the message when the player is dead
+	// too (no IsPlayerDead test)
+
     float fPercent = vDir.Mag();
 
 	uint8 damageSector = kNumDamageSectors;

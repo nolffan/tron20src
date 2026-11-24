@@ -776,8 +776,9 @@ LTBOOL CBaseScreen::OnLButtonUp(int x, int y)
 		{
 			if (pCtrl->IsEnabled() )
 			{
-				SetSelection(nControlIndex);
+				// RETAIL: 0x100d3150: Tron lets the control handle it first
 				LTBOOL bHandled = pCtrl->OnLButtonUp(x,y);
+				SetSelection(nControlIndex);
 				if (bHandled)
 				{
 					if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
@@ -1029,23 +1030,29 @@ LTBOOL CBaseScreen::GetControlUnderPoint(int xPos, int yPos, uint16 *pnIndex)
 {
 	_ASSERT(pnIndex);
 
-	if (m_pCaptureCtrl && m_pCaptureCtrl->IsOnMe(xPos,yPos))
+	// RETAIL: 0x100d3680: Tron has no capture control here. While the
+	// popup's controls are up, only they are looked at.
+	if (m_xTronUnknown50.size() > 0)
 	{
-		*pnIndex = GetIndex(m_pCaptureCtrl);
-		return LTTRUE;
+		for (int nPopup = m_xTronUnknown50.size() - 1; nPopup >= 0; nPopup--)
+		{
+			if (m_xTronUnknown50[nPopup]->IsOnMe(xPos,yPos) && m_xTronUnknown50[nPopup]->IsEnabled())
+			{
+				*pnIndex = GetIndex(m_xTronUnknown50[nPopup]);
+				return LTTRUE;
+			}
+		}
+		return LTFALSE;
 	}
 
-
-	// See if the user clicked on any of the controls.
-	for (uint16 i=0; i < m_controlArray.size() ; i++)
+	// See if the user clicked on any of the controls (start with the last
+	// control)
+	for (int ndx = m_controlArray.size() - 1; ndx >= 0; ndx--)
 	{
-		//start with last control
-		int ndx = (m_controlArray.size()-1) - i;
-
 		// Check to see if the click is in the bounding box for the control
-		if (m_controlArray[i]->IsOnMe(xPos,yPos) && m_controlArray[i]->IsEnabled())
+		if (m_controlArray[ndx]->IsOnMe(xPos,yPos) && m_controlArray[ndx]->IsEnabled())
 		{
-			*pnIndex=i;
+			*pnIndex = ndx;
 
             return LTTRUE;
 		}
@@ -1079,6 +1086,8 @@ void CBaseScreen::RemoveAll(LTBOOL bDelete)
 		}
 	}
 	m_controlArray.clear();
+	// RETAIL: 0x100d3805: Tron clears the popup's controls too
+	m_xTronUnknown50.clear();
 	if (m_nSelection >= 0)
 		m_nSelection = kNoSelection;
 
@@ -1542,7 +1551,16 @@ void CBaseScreen::RemoveControl(CLTGUICtrl* pControl,LTBOOL bDelete)
 		debug_delete(pControl);
 	}
 
+	// RETAIL: 0x100d4823: Tron takes it out of the popup's controls too
+	iter = m_xTronUnknown50.begin();
 
+	while (iter != m_xTronUnknown50.end() && (*iter) != pControl)
+		iter++;
+
+	if (iter != m_xTronUnknown50.end())
+	{
+		m_xTronUnknown50.erase(iter);
+	}
 }
 
 uint32 CBaseScreen::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)

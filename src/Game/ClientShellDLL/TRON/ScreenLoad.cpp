@@ -186,9 +186,7 @@ void CScreenLoad::BuildSavedLevelLists()
 	uint16 nHeight = (GetPageBottom() - pos.y);
 	uint16 nWidth = (GetPageRight() - pos.x) - 32;
 	CLTGUIListCtrl *pList = AddList(pos,nHeight,true,nWidth);
-	// RETAIL: here Tron's list control takes a frame texture
-	// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0):
-	// left out, our LTGUIMgr's list control has none yet
+	pList->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 	pList->SetColors(m_NonSelectedColor,m_NonSelectedColor,m_NonSelectedColor);
 	pList->SetIndent(LTIntPt(4,4));
 	pList->SetScrollWrap(LTFALSE);

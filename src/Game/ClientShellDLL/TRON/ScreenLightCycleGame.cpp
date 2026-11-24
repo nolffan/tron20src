@@ -63,6 +63,11 @@ CScreenLightCycleGame::CScreenLightCycleGame()
 	m_bWallExtender = LTTRUE;
 }
 
+// RETAIL: 0x10068560
+CScreenLightCycleGame::~CScreenLightCycleGame()
+{
+}
+
 // RETAIL: 0x10068620
 LTBOOL CScreenLightCycleGame::Build()
 {
@@ -77,8 +82,7 @@ LTBOOL CScreenLightCycleGame::Build()
 	m_pMaxAICyclists = AddSlider(0x2590,0x2591,nColumnWidth,50,-1,&m_nMaxAICyclists,
 		g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_LIGHTCYCLE_CUSTOMGAME,"CommandPos"));
 	m_pMaxAICyclists->SetNumericDisplay(LTTRUE);
-	// RETAIL: here Tron's slider sets a member of its own (0x100c0a60 with
-	// 0, +0x54): left out, our LTGUIMgr's slider has none
+	m_pMaxAICyclists->ShowBar(LTFALSE);
 	m_pMaxAICyclists->SetSliderRange(1,8);
 	m_pMaxAICyclists->SetSliderIncrement(1);
 	m_OptionCtrls.push_back(m_pMaxAICyclists);
@@ -124,9 +128,7 @@ LTBOOL CScreenLightCycleGame::Build()
 	if (m_pPowerupList)
 	{
 		m_pPowerupList->SetIndent(g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"LCPowerupListIndent"));
-		// RETAIL: here Tron's list control takes a frame texture
-		// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0):
-		// left out, our LTGUIMgr's list control has none
+		m_pPowerupList->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pPowerupList->Show(LTFALSE);
 
 		m_pShield = CreateToggle(0x2580,0x2581,nColumnWidth,&m_bShield);
