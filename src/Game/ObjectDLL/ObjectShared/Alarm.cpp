@@ -33,6 +33,7 @@ extern CAIStimulusMgr* g_pAIStimulusMgr;
 
 // Statics
 
+static char *s_szOn		= "ON";		// RETAIL: Tron's (0x103358fc)
 static char *s_szActivate	= "ACTIVATE";
 static char *s_szLock		= "LOCK";
 static char *s_szUnlock		= "UNLOCK";
@@ -359,11 +360,13 @@ uint32 Alarm::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 bool Alarm::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
+	// RETAIL: Tron's alarm also takes ON (0x1026ad5b)
+	static CParsedMsg::CToken s_cTok_On(s_szOn);
 	static CParsedMsg::CToken s_cTok_Activate(s_szActivate);
 	static CParsedMsg::CToken s_cTok_Lock(s_szLock);
 	static CParsedMsg::CToken s_cTok_Unlock(s_szUnlock);
 
-	if ( cMsg.GetArg(0) == s_cTok_Activate )
+	if ( cMsg.GetArg(0) == s_cTok_Activate || cMsg.GetArg(0) == s_cTok_On )
 	{
 		// If the alarm is activated from a command, the sender is
 		// NULL (dammit!).  So treat it as player-activated.

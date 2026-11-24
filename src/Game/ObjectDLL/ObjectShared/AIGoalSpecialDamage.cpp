@@ -25,6 +25,7 @@
 #include "CharacterMgr.h"
 #include "Attachments.h"
 #include "AIMovement.h"
+#include "CharacterHitBox.h"
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSpecialDamage, kGoal_SpecialDamage);
 
@@ -32,7 +33,6 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSpecialDamage, kGoal_SpecialDamage
 // Labels correspond to SmartObjects in AIGoals.txt
 
 #define SMART_OBJECT_SLEEPING			"KnockOut"
-#define SMART_OBJECT_SLEEPING_INFINITE	"KnockOutInfinite"
 #define SMART_OBJECT_STUNNED			"Stun"
 #define SMART_OBJECT_TRAPPED			"BearTrap"
 #define SMART_OBJECT_GLUED				"Glue"
@@ -43,6 +43,12 @@ DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalSpecialDamage, kGoal_SpecialDamage
 #define SMART_OBJECT_CHOKING			"Choke"
 #define SMART_OBJECT_POISONING			"Poison"
 #define SMART_OBJECT_ELECTROCUTE		"Electrocute"
+// RETAIL: Tron's SmartObjects (0x10192ace, 0x10192b3b, 0x10192bc8)
+#define SMART_OBJECT_PRANKSTERED		"Prankstered"
+#define SMART_OBJECT_PRODDED			"PRod"
+#define SMART_OBJECT_PRODDED_CROUCH		"PRodCrouch"
+#define SMART_OBJECT_CLAWED				"EnergyClaw"
+#define SMART_OBJECT_CLAWED_CROUCH		"EnergyClawCrouch"
 
 // ----------------------------------------------------------------------- //
 //
@@ -65,9 +71,9 @@ CAIGoalSpecialDamage::CAIGoalSpecialDamage()
 	m_hTronUnknownF0 = LTNULL;
 	m_bFleeing = LTFALSE;
 	m_fRelaxTime = 0.f;
-	m_bInfinite = false;
-	m_fTronUnknown108 = 0.f;
 	m_bNeedsClearState = false;
+	m_fTronUnknown108 = 0.f;
+	m_bRestartDamage = false;
 }
 
 // ----------------------------------------------------------------------- //
@@ -93,13 +99,10 @@ void CAIGoalSpecialDamage::Save(ILTMessage_Write *pMsg)
 	SAVE_HOBJECT( m_hTronUnknownF0 );
 	SAVE_BOOL( m_bFleeing );
 	SAVE_TIME( m_fRelaxTime );
-	SAVE_bool( m_bInfinite );
 	SAVE_bool( m_bNeedsClearState );
+	SAVE_bool( m_bRestartDamage );
 	SAVE_FLOAT( m_fTronUnknown108 );
-	SAVE_TIME( m_TronUnknown110.m_fStartTime );
-	SAVE_TIME( m_TronUnknown110.m_fTime );
-	SAVE_FLOAT( m_TronUnknown110.m_fDuration );
-	SAVE_bool( m_TronUnknown110.m_bOn );
+	m_DamageTimer.Save( pMsg );
 }
 
 void CAIGoalSpecialDamage::Load(ILTMessage_Read *pMsg)
@@ -117,13 +120,10 @@ void CAIGoalSpecialDamage::Load(ILTMessage_Read *pMsg)
 	LOAD_HOBJECT( m_hTronUnknownF0 );
 	LOAD_BOOL( m_bFleeing );
 	LOAD_TIME( m_fRelaxTime );
-	LOAD_bool( m_bInfinite );
 	LOAD_bool( m_bNeedsClearState );
+	LOAD_bool( m_bRestartDamage );
 	LOAD_FLOAT( m_fTronUnknown108 );
-	LOAD_TIME( m_TronUnknown110.m_fStartTime );
-	LOAD_TIME( m_TronUnknown110.m_fTime );
-	LOAD_FLOAT( m_TronUnknown110.m_fDuration );
-	LOAD_bool( m_TronUnknown110.m_bOn );
+	m_DamageTimer.Load( pMsg );
 }
 
 // ----------------------------------------------------------------------- //
@@ -140,225 +140,7 @@ void CAIGoalSpecialDamage::ActivateGoal()
 
 	m_pGoalMgr->LockGoal(this);
 
-	m_bFleeing = LTFALSE;
-	m_bIncapacitated = LTTRUE;
-	m_pAI->SetCurSenseFlags( kSense_None ); 
-
-	// Get the SmartObject corresponding to the damage type.
-
-	LTBOOL bLoopingSound = LTFALSE;
-	m_bProgressiveDamage = LTFALSE;
-	EnumAISoundType	eSound;
-	AIGBM_SmartObjectTemplate* pSmartObject = LTNULL;
-	switch( m_eDamageType )
-	{
-		case DT_SLEEPING:
-			if( m_bInfinite )
-			{
-				pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLEEPING_INFINITE );
-			}
-			else {
-				pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLEEPING );
-			}
-			m_eDamageAnim = kAP_DamageSleeping;
-			eSound = kAIS_DamageSleeping;
-			break;
-
-		case DT_STUN:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_STUNNED );
-			m_eDamageAnim = kAP_DamageStunned;
-			eSound = kAIS_DamageStun;
-			break;
-
-		case DT_BEAR_TRAP:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_TRAPPED );
-			m_eDamageAnim = kAP_DamageTrapped;
-			eSound = kAIS_DamageBearTrap;
-			break;
-
-		case DT_GLUE:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_GLUED );
-			m_eDamageAnim = kAP_DamageGlued;
-			eSound = kAIS_DamageGlue;
-			break;
-
-		case DT_LAUGHING:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_LAUGHING );
-			m_eDamageAnim = kAP_DamageLaughing;
-			eSound = kAIS_DamageLaughing;
-			bLoopingSound = LTTRUE;
-			break;
-			
-		case DT_SLIPPERY:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLIPPING );
-			m_eDamageAnim = kAP_DamageSlipping;
-			eSound = kAIS_DamageSlippery;
-			break;
-
-		case DT_BLEEDING:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_BLEEDING );
-			m_eDamageAnim = kAP_DamageBleeding;
-			eSound = kAIS_Bleeding;
-			bLoopingSound = LTTRUE;
-			m_bProgressiveDamage = LTTRUE;
-			break;
-
-		case DT_BURN:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_BURNING );
-			m_eDamageAnim = kAP_DamageBurning;
-			eSound = kAIS_Burning;
-			m_bProgressiveDamage = LTTRUE;
-			break;
-
-		case DT_CHOKE:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_CHOKING );
-			m_eDamageAnim = kAP_DamageChoking;
-			eSound = kAIS_Choking;
-			bLoopingSound = LTTRUE;
-			m_bProgressiveDamage = LTTRUE;
-			break;
-
-		case DT_ASSS:
-		case DT_POISON:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_POISONING );
-			m_eDamageAnim = kAP_DamagePoisoning;
-			eSound = kAIS_Poisoning;
-			bLoopingSound = LTTRUE;
-			m_bProgressiveDamage = LTTRUE;
-			break;
-
-		case DT_ELECTROCUTE:
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_ELECTROCUTE );
-			m_eDamageAnim = kAP_DamageElectrocuting;
-			eSound = kAIS_Electrocute;
-			bLoopingSound = LTTRUE;
-			m_bProgressiveDamage = LTTRUE;
-			break;
-	}
-
-
-	// Register a new stimulus.
-
-	if( m_eSpecialDamageStimID != kStimID_Unset )
-	{
-		g_pAIStimulusMgr->RemoveStimulus( m_eSpecialDamageStimID );
-		m_eSpecialDamageStimID = kStimID_Unset;
-	}
-
-	// Use the DeathVisible stimulus for knocked out AIs, and SpecialDamageVisible for the rest.
-	// Make knocked-out AI non-solid.
-
-	switch( m_eDamageType )
-	{
-		case DT_SLEEPING:
-		case DT_SLIPPERY:
-			m_eSpecialDamageStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDeathVisible, m_pAI->m_hObject, m_pAI->GetPosition(), 1.f );
-			m_pAI->SetClientSolid( LTFALSE );
-
-			//make sure sleeping AI can be searched
-			m_pAI->SetUnconscious( true );
-
-			// AI that are sleeping forever cannot be woken.
-
-			m_pAI->SetCanWake( !m_bInfinite );
-
-			// Enemies ignore sleeping AI.
-			
-			m_pAI->RemovePersistentStimuli();
-
-			break;
-
-		default:
-			m_eSpecialDamageStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllySpecialDamageVisible, m_pAI->m_hObject, m_pAI->GetPosition(), 1.f );
-			break;
-	}
-
-
-	// AI is suspicious while incapacitated.
-	// The main reason to do this is so that an AI that was 
-	// chasing will lose interest until seeing the target again.
-
-	m_pAI->SetAwareness( kAware_Suspicious );
-
-	// Try to limp to a cover node for progressive damage.
-
-	if( m_bProgressiveDamage )
-	{
-		// React for at least 4 seconds.
-
-		m_fProgressiveMinTime = g_pLTServer->GetTime() + 4.f;
-
-		// Do not use any special volume types while damaged.
-		// AI needs to clear existing knowledge of paths.
-
-		m_pAI->SetCurValidVolumeMask( AIVolume::kVolumeType_BaseVolume | AIVolume::kVolumeType_Junction );
-		m_pAI->GetPathKnowledgeMgr()->ClearPathKnowledge();
-
-		AINode*	pNode = g_pAINodeMgr->FindNearestNodeFromThreat( m_pAI, kNode_Cover, m_pAI->GetPosition(), m_hDamager, FLT_MAX );
-		if( pNode && ( pNode->GetPos().DistSqr( m_pAI->GetPosition() ) > 64.f*64.f ) )
-		{
-			m_pAI->ClearAndSetState( kState_HumanGoto );
-			CAIHumanStateGoto* pStateGoto = (CAIHumanStateGoto*)(m_pAI->GetState());
-			pStateGoto->SetDestNode( pNode->m_hObject );
-			pStateGoto->SetMood( m_eDamageAnim );
-
-			// Play damage sound.
-
-			if( bLoopingSound )
-			{
-				pStateGoto->SetLoopingSound( eSound );
-			}
-			else {
-				m_pAI->PlaySound( eSound, LTTRUE );
-			}
-
-			return;
-		}
-	}
-
-
-	if( m_bNeedsClearState )
-	{
-		m_pAI->ClearState();
-		m_bNeedsClearState = false;
-	}
-
-	// Set UseObject state.
-
-	m_pAI->SetState( kState_HumanUseObject );
-	CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)(m_pAI->GetState());
-	pStateUseObject->SetAllowDialogue( LTTRUE );
-
-	// Play damage sound.
-
-	if( bLoopingSound )
-	{
-		pStateUseObject->SetLoopingSound( eSound );
-	}
-	else {
-		m_pAI->PlaySound( eSound, LTTRUE );
-	}
-
-	// Get the SmartObject's command string.
-
-	if( pSmartObject )
-	{
-		HSTRING hstrCmd = LTNULL;
-		SMART_OBJECT_CMD_MAP::iterator it = pSmartObject->mapCmds.find( kNode_DamageType );
-		if(it != pSmartObject->mapCmds.end())
-		{
-			hstrCmd = it->second;
-		}
-
-		if(hstrCmd != LTNULL)
-		{
-			pStateUseObject->SetSmartObjectCommand(hstrCmd);
-
-			// Determine if we should play animations specific to some activity (e.g. deskwork).
-
-			HandleActivity();
-		}
-	}
+	StartSpecialDamage();
 }
 
 // ----------------------------------------------------------------------- //
@@ -470,6 +252,13 @@ void CAIGoalSpecialDamage::RestoreAwareness()
 
 void CAIGoalSpecialDamage::UpdateGoal()
 {
+	// RETAIL: Tron starts the damage again after a new PRod or energy claw
+	// hit (0x10190683).
+	if( m_bRestartDamage )
+	{
+		StartSpecialDamage();
+	}
+
 	CAIState* pState = m_pAI->GetState();
 
 	switch(pState->GetStateType())
@@ -619,7 +408,7 @@ void CAIGoalSpecialDamage::HandleStateAware()
 					m_pAI->SetState( kState_HumanPanic );
 					CAIHumanStatePanic* pStatePanic = (CAIHumanStatePanic*)m_pAI->GetState();
 					pStatePanic->SetPanicNode( pPanicNode );
-					m_pAI->SetAwareness( kAware_Suspicious );
+					// RETAIL: Tron keeps the awareness (0x101908cd).
 					m_pGoalMgr->LockGoal( this );
 					return;
 				}
@@ -700,40 +489,13 @@ void CAIGoalSpecialDamage::HandleStatePanic()
 
 void CAIGoalSpecialDamage::HandleStateUseObject()
 {
-	// Handle special case updates for damage types.
-
-	switch( m_eDamageType )
-	{
-		case DT_SLEEPING:
-		case DT_SLIPPERY:
-			
-			// Kill AI that are knocked out and dropped on stairs.
-
-			if( m_pAI->HasCurrentVolume() && 
-				( !m_bInfinite ) &&
-				( m_pAI->GetCurrentVolume()->GetVolumeType() == AIVolume::kVolumeType_Stairs ) )
-			{
-				m_pAI->GetDestructible()->HandleDestruction( m_hDamager );
-			}
-			break;
-	}
+	// RETAIL: Tron kills no AI on stairs here (0x10190b50).
 
 	// Handle the StateStatus.
 
-	switch( m_pAI->GetState()->GetStateStatus() )
+	CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)m_pAI->GetState();
+	switch( pStateUseObject->GetStateStatus() )
 	{
-		case kSStat_Paused:
-			break;
-
-		case kSStat_Initialized:
-			break;
-
-		case kSStat_Moving:
-			break;
-
-		case kSStat_HolsterWeapon:
-			break;
-
 		case kSStat_PathComplete:
 
 			// Knocked out AIs do not wake up if a player is standing on them.
@@ -742,7 +504,6 @@ void CAIGoalSpecialDamage::HandleStateUseObject()
 
 			if( ( m_eDamageType == DT_SLEEPING ) || ( m_eDamageType == DT_SLIPPERY ) )
 			{
-				CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)m_pAI->GetState();
 				if( pStateUseObject->GetAnimTimeRemaining() < 10.f )
 				{
 					LTVector vPos = m_pAI->GetPosition();
@@ -776,36 +537,28 @@ void CAIGoalSpecialDamage::HandleStateUseObject()
 					}
 				}
 			}
+
 			break;
 
 		case kSStat_StateComplete:
-			{
-				RestoreAwareness();
+			EndSpecialDamage();
+			return;
 
-				if( !m_pAI->GetPrimaryWeapon() )
-				{
-					// Get rid of possible LeftHand weapon (e.g. RifleButt) 
-					// since we have no RightHand weapon.
+		default:
+			return;
+	}
 
-					char szDetachMsg[128];
-					sprintf( szDetachMsg, "%s LEFTHAND", KEY_DETACH );
-					SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTFALSE, szDetachMsg );
-				}
+	// RETAIL: Tron's: the PRod and energy claw damage ends when its
+	// time is over (0x10190c89, 0x10190d3a).
 
-				// Search.
+	if( ( m_eDamageType == DT_PROD ) && ( 0.f == m_DamageTimer.GetCountdownTime() ) )
+	{
+		EndSpecialDamage();
+	}
 
-				if( m_pAI->CanSearch() && !m_pAI->GetSenseRecorder()->HasFullStimulation( kSense_SeeEnemy ) )
-				{
-					SetStateSearch();
-				}
-				else {
-					m_pAI->SetState( kState_HumanAware );
-				}
-			}
-			break;
-
-		// Unexpected StateStatus.
-		default: AIASSERT( 0, m_pAI->m_hObject, "CAIGoalSpecialDamage::HandleStateUseObject: Unexpected State Status.");
+	if( ( m_eDamageType == DT_ENERGYCLAW ) && ( 0.f == m_DamageTimer.GetCountdownTime() ) )
+	{
+		EndSpecialDamage();
 	}
 }
 
@@ -839,6 +592,10 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 				case DT_ASSS:
 				case DT_BEAR_TRAP:
 				case DT_GLUE:
+				// RETAIL: Tron's damage types (0x10191394)
+				case DT_PROD:
+				case DT_ENERGYCLAW:
+				case DT_PRANKSTERBIT:
 					RestoreAwareness();
 					m_pAI->GetAnimationContext()->ClearCurAnimation();
 					m_bNeedsClearState = true;
@@ -857,6 +614,67 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 
 		switch( damage.eType )
 		{
+			// RETAIL: Tron's: the PRod and the energy claw damage only while
+			// they point at the AI (0x10190eab, 0x10190f8f).
+
+			case DT_PROD:
+				{
+					if( m_hTronUnknownE0 )
+					{
+						m_bRestartDamage = true;
+					}
+
+					CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( damage.hDamager ));
+					if( !pAttacker )
+					{
+						ReleasePRodAttacker();
+						m_bRestartDamage = false;
+						return LTFALSE;
+					}
+
+					m_hTronUnknownE0 = damage.hDamager;
+					m_fTronUnknown108 = pAttacker->GetPRodFireHelper()->GetRange();
+
+					if( !IsPRodAttackerAiming() )
+					{
+						ReleasePRodAttacker();
+						m_bRestartDamage = false;
+						return LTFALSE;
+					}
+
+					m_DamageTimer.Start( 0.5f );
+				}
+				break;
+
+			case DT_ENERGYCLAW:
+				{
+					if( m_hTronUnknownF0 )
+					{
+						m_bRestartDamage = true;
+					}
+
+					CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( damage.hDamager ));
+					if( !pAttacker )
+					{
+						ReleaseEnergyClawAttacker();
+						m_bRestartDamage = false;
+						return LTFALSE;
+					}
+
+					m_hTronUnknownF0 = damage.hDamager;
+					m_fTronUnknown108 = pAttacker->GetEnergyClawFireHelper()->GetRange();
+
+					if( !IsEnergyClawAttackerAiming() )
+					{
+						ReleaseEnergyClawAttacker();
+						m_bRestartDamage = false;
+						return LTFALSE;
+					}
+
+					m_DamageTimer.Start( 0.5f );
+				}
+				break;
+
 			case DT_SLEEPING:
 			case DT_STUN:
 			case DT_LAUGHING:
@@ -867,12 +685,13 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 			case DT_POISON:
 			case DT_ASSS:
 			case DT_GLUE:
-			// PORT: NOLF2's slippery damage needed a standing AI; Tron has no
-			// such test (0x1019112e tests the movement only, no CAI::IsStanding)
-			case DT_SLIPPERY:
+			case DT_PRANKSTERBIT:
 				break;
 
+			// RETAIL: Tron's slippery damage needs movement, as the bear
+			// trap (0x10191071).
 			case DT_BEAR_TRAP:
+			case DT_SLIPPERY:
 				bRequiresMovement = LTTRUE;
 				break;
 
@@ -906,7 +725,7 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 
 		// Handle special damage in special volumes.
 
-		if( m_pAI->HasCurrentVolume() && ( !m_bInfinite ) )
+		if( m_pAI->GetCurrentVolume() )
 		{
 			switch( m_pAI->GetCurrentVolume()->GetVolumeType() )
 			{
@@ -944,25 +763,19 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 		m_eDamageType = damage.eType;
 
 		// Record who caused the damage.
+		// RETAIL: Tron targets the damager later (0x101929bc).
 
 		m_hDamager = damage.hDamager;
-		m_pAI->Target( m_hDamager );
 
 		// Set AIs damage flags
 		
-		m_pAI->SetDamageFlags( DamageTypeToFlag( m_eDamageType ) );
+		m_pAI->SetInstantDamageFlags( DamageTypeToFlag( m_eDamageType ) );
 
 		// Handle the damage immediately.
+		// RETAIL: Tron does not activate the goal again here (0x101912a8).
 
 		m_bRequiresImmediateResponse = LTTRUE;
 		SetCurToBaseImportance();
-
-		// Reactivate if already active.
-
-		if( m_pGoalMgr->IsCurGoal( this ) )
-		{
-			ActivateGoal();
-		}
 
 		return LTTRUE;
 	}
@@ -975,6 +788,13 @@ LTBOOL CAIGoalSpecialDamage::HandleDamage(const DamageStruct& damage)
 			case DT_SLEEPING:
 			case DT_SLIPPERY:
 				break;
+
+			// RETAIL: Tron's: a new PRod or energy claw hit makes the damage
+			// last longer (0x10191357).
+			case DT_PROD:
+			case DT_ENERGYCLAW:
+				m_DamageTimer.Start( 0.5f );
+				return LTFALSE;
 
 			default :
 				return LTFALSE;
@@ -1211,35 +1031,7 @@ void CAIGoalSpecialDamage::PauseSpecialDamage(LTBOOL bPause)
 	pStateUseObject->SetPose( kAP_Stand );
 	pStateUseObject->SetActivity( kAP_None );
 
-	// Special case handling for being moved while knocked out from a banana.
-	// Treat like the AI was tranquilized to keep him from re-slipping when dropped.
-
-	if( m_eDamageType == DT_SLIPPERY )
-	{
-		m_eDamageType = DT_SLEEPING;
-		m_pAI->SetDamageFlags( DamageTypeToFlag( m_eDamageType ) );
-
-		if( m_pAI->GetState()->GetStateType() == kState_HumanUseObject )
-		{
-			AIGBM_SmartObjectTemplate* pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLEEPING );
-			if( pSmartObject )
-			{
-				HSTRING hstrCmd = LTNULL;
-				SMART_OBJECT_CMD_MAP::iterator it = pSmartObject->mapCmds.find( kNode_DamageType );
-				if(it != pSmartObject->mapCmds.end())
-				{
-					hstrCmd = it->second;
-				}
-
-				if(hstrCmd != LTNULL)
-				{
-					CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)(m_pAI->GetState());
-					pStateUseObject->SetSmartObjectCommand(hstrCmd);
-					pStateUseObject->StartAnimation();
-				}
-			}
-		}
-	}
+	// RETAIL: Tron has no special case for slippery damage here (0x101919e5).
 }
 
 // ----------------------------------------------------------------------- //
@@ -1260,19 +1052,21 @@ LTBOOL CAIGoalSpecialDamage::HandleNameValuePair(const char *szName, const char 
 		return LTTRUE;
 	}
 
-	if ( !_stricmp(szName, "SLEEPFOREVER") )
+	// RETAIL: Tron has no SLEEPFOREVER command (0x10191a65).
+
+	if ( !_stricmp(szName, "CONTINUOUSFIRERELEASE") )
 	{
-		if( IsTrueChar( szValue[0] ) )
+		if( m_pAI->GetState()->GetStateType() == kState_HumanUseObject )
 		{
-			m_bInfinite = true;
-			m_eDamageType = DT_SLEEPING;
-		
-			m_pAI->SetDamageFlags( DamageTypeToFlag( DT_SLEEPING ) );
+			if( m_hTronUnknownE0 )
+			{
+				ReleasePRodAttacker();
+			}
 
-			// Handle the damage immediately.
-
-			m_bRequiresImmediateResponse = LTTRUE;
-			SetCurToBaseImportance();
+			if( m_hTronUnknownF0 )
+			{
+				ReleaseEnergyClawAttacker();
+			}
 		}
 
 		return LTTRUE;
@@ -1303,7 +1097,8 @@ LTBOOL CAIGoalSpecialDamage::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 			m_pAI->GetAnimationContext()->ClearLock();
 		}
 
-		if( ( !m_pAI->GetPrimaryWeapon() ) && ( !m_pAI->HasHolsterString() ) )
+		// RETAIL: Tron does not test the holster string (0x10191b30).
+		if( !m_pAI->GetPrimaryWeapon() )
 		{
 			// Get rid of possible LeftHand weapon (e.g. RifleButt) 
 			// since we have no RightHand weapon.
@@ -1333,6 +1128,172 @@ LTBOOL CAIGoalSpecialDamage::HandleGoalSenseTrigger(AISenseRecord* pSenseRecord)
 	}
 
 	return LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	IsHitBoxInLineOfFire
+//
+//	PURPOSE:	RETAIL: Tron's (0x10191c90; the name is ours): true when a
+//				vector from vFrom to vTo hits a node of hTarget, the hit
+//				box of the AI.  NOLF2's DoVector loop, as CProjectile has
+//				it.
+//
+// ----------------------------------------------------------------------- //
+
+extern bool DoVectorFilterFn(HOBJECT hObj, void *pUserData);
+
+static bool IsHitBoxInLineOfFire(HOBJECT hFiredFrom, HOBJECT hTarget, const LTVector& vFrom, const LTVector& vTo)
+{
+	const int cMaxNumFilterObjects = 11;
+	HOBJECT hFilterList[cMaxNumFilterObjects] = { LTNULL };
+
+	// Make sure we don't hit the object that fired the weapon...
+
+	hFilterList[0] = hFiredFrom;
+	int nNumFilteredObjects = 1;
+
+	IntersectQuery qInfo;
+	qInfo.m_PolyFilterFn = LTNULL;
+	qInfo.m_FilterFn = DoVectorFilterFn;
+	qInfo.m_pUserData = hFilterList;
+	qInfo.m_Flags = INTERSECT_OBJECTS | IGNORE_NONSOLID | INTERSECT_HPOLY | CHECK_FROM_POINT_INSIDE_OBJECTS;
+
+	for( int nLoopCount = 0; nLoopCount < 20; )
+	{
+		++nLoopCount;
+
+		qInfo.m_From = vFrom;
+		qInfo.m_To = vTo;
+
+		IntersectInfo iInfo;
+		if( !g_pLTServer->IntersectSegment( &qInfo, &iInfo ) )
+		{
+			return false;
+		}
+
+		if( IsCharacterHitBox( iInfo.m_hObject ) )
+		{
+			CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject( iInfo.m_hObject );
+			if( !pHitBox )
+			{
+				return false;
+			}
+
+			HitBoxHit hit;
+			LTVector vDir = vTo - vFrom;
+			pHitBox->FindHitNodeSphere( vDir, vFrom, &hit );
+
+			if( ( hit.m_eModelNode != eModelNodeInvalid ) && ( hTarget == iInfo.m_hObject ) )
+			{
+				return true;
+			}
+		}
+
+		// Filter out the object we just hit from the next call
+		// to intersect segment...
+
+		if( iInfo.m_hObject && !IsMainWorld( iInfo.m_hObject ) )
+		{
+			if( nNumFilteredObjects >= cMaxNumFilterObjects )
+			{
+				return false;
+			}
+
+			hFilterList[nNumFilteredObjects++] = iInfo.m_hObject;
+		}
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::IsPRodAttackerAiming
+//
+//	PURPOSE:	RETAIL: Tron's (0x10191f50; the name is ours): true when
+//				the PRod of the attacker still points at us.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIGoalSpecialDamage::IsPRodAttackerAiming()
+{
+	if( !m_hTronUnknownE0 )
+	{
+		AITRACE( AIShowPRodDamage, ( m_pAI->m_hObject, "Early out - No hDamager!" ) );
+		return false;
+	}
+
+	CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownE0 ));
+	if( !pAttacker )
+	{
+		AITRACE( AIShowPRodDamage, ( m_pAI->m_hObject, "Early out - Not a character!" ) );
+		return false;
+	}
+
+	LTVector vPos;
+	if( !pAttacker->GetPRodFireHelper()->GetFirePos( &vPos ) )
+	{
+		AITRACE( AIShowPRodDamage, ( m_pAI->m_hObject, "Early out - Bad Damager Position!" ) );
+		return false;
+	}
+
+	LTRotation rRot;
+	if( LT_OK != g_pLTServer->GetObjectRotation( m_hTronUnknownE0, &rRot ) )
+	{
+		AITRACE( AIShowPRodDamage, ( m_pAI->m_hObject, "Early out - Unable to get rotation!" ) );
+		return false;
+	}
+
+	LTVector vForward = rRot.Forward();
+	LTVector vDir = vForward.Unit();
+
+	return IsHitBoxInLineOfFire( m_hTronUnknownE0, m_pAI->GetHitBoxObject(), vPos, vPos + vDir * m_fTronUnknown108 * 2.f );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::IsEnergyClawAttackerAiming
+//
+//	PURPOSE:	RETAIL: Tron's (0x10192390; the name is ours): true when
+//				the energy claw of the attacker still points at us.
+//
+// ----------------------------------------------------------------------- //
+
+bool CAIGoalSpecialDamage::IsEnergyClawAttackerAiming()
+{
+	if( !m_hTronUnknownF0 )
+	{
+		AITRACE( AIShowEnergyClawDamage, ( m_pAI->m_hObject, "Early out - No hDamager!" ) );
+		return false;
+	}
+
+	CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownF0 ));
+	if( !pAttacker )
+	{
+		// RETAIL: this one console variable has a capital L (0x101924b2).
+		AITRACE( AIShowEnergyCLawDamage, ( m_pAI->m_hObject, "Early out - Not a character!" ) );
+		return false;
+	}
+
+	LTVector vPos;
+	if( !pAttacker->GetEnergyClawFireHelper()->GetFirePos( &vPos ) )
+	{
+		AITRACE( AIShowEnergyClawDamage, ( m_pAI->m_hObject, "Early out - Bad Damager Position!" ) );
+		return false;
+	}
+
+	LTRotation rRot;
+	if( LT_OK != g_pLTServer->GetObjectRotation( m_hTronUnknownF0, &rRot ) )
+	{
+		AITRACE( AIShowEnergyClawDamage, ( m_pAI->m_hObject, "Early out - Unable to get rotation!" ) );
+		return false;
+	}
+
+	LTVector vForward = rRot.Forward();
+	LTVector vDir = vForward.Unit();
+
+	return IsHitBoxInLineOfFire( m_hTronUnknownF0, m_pAI->GetHitBoxObject(), vPos, vPos + vDir * m_fTronUnknown108 * 2.f );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1385,3 +1346,327 @@ void CAIGoalSpecialDamage::ReleaseEnergyClawAttacker()
 	m_hTronUnknownF0 = LTNULL;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::EndSpecialDamage
+//
+//	PURPOSE:	RETAIL: Tron's (0x101928d0; the name is ours): NOLF2's
+//				StateComplete case of HandleStateUseObject, which also lets
+//				go of the PRod and energy claw attackers.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSpecialDamage::EndSpecialDamage()
+{
+	RestoreAwareness();
+
+	if( !m_pAI->GetPrimaryWeapon() )
+	{
+		// Get rid of possible LeftHand weapon (e.g. RifleButt) 
+		// since we have no RightHand weapon.
+
+		char szDetachMsg[128];
+		sprintf( szDetachMsg, "%s LEFTHAND", KEY_DETACH );
+		SendTriggerMsgToObject( m_pAI, m_pAI->m_hObject, LTFALSE, szDetachMsg );
+	}
+
+	// Search.
+
+	if( m_pAI->CanSearch() && !m_pAI->GetSenseRecorder()->HasFullStimulation( kSense_SeeEnemy ) )
+	{
+		SetStateSearch();
+	}
+	else {
+		m_pAI->SetState( kState_HumanAware );
+	}
+
+	ReleasePRodAttacker();
+	ReleaseEnergyClawAttacker();
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalSpecialDamage::StartSpecialDamage
+//
+//	PURPOSE:	RETAIL: Tron's (0x10192990; the name is ours): NOLF2's
+//				ActivateGoal body.  UpdateGoal calls it again when a new
+//				PRod or energy claw hit comes in.
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalSpecialDamage::StartSpecialDamage()
+{
+	m_bRestartDamage = false;
+
+	m_bFleeing = LTFALSE;
+	m_bIncapacitated = LTTRUE;
+	m_pAI->SetCurSenseFlags( kSense_None ); 
+
+	// RETAIL: Tron tests the flag it has just set (0x101929bc).
+	if( !m_bIncapacitated )
+	{
+		m_pAI->Target( m_hDamager );
+	}
+
+	// Get the SmartObject corresponding to the damage type.
+
+	LTBOOL bLoopingSound = LTFALSE;
+	m_bProgressiveDamage = LTFALSE;
+	EnumAISoundType	eSound;
+	AIGBM_SmartObjectTemplate* pSmartObject = LTNULL;
+	switch( m_eDamageType )
+	{
+		case DT_SLEEPING:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLEEPING );
+			m_eDamageAnim = kAP_DamageSleeping;
+			eSound = kAIS_DamageSleeping;
+			break;
+
+		case DT_STUN:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_STUNNED );
+			m_eDamageAnim = kAP_DamageStunned;
+			eSound = kAIS_DamageStun;
+			break;
+
+		case DT_BEAR_TRAP:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_TRAPPED );
+			m_eDamageAnim = kAP_DamageTrapped;
+			eSound = kAIS_DamageBearTrap;
+			break;
+
+		case DT_GLUE:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_GLUED );
+			m_eDamageAnim = kAP_DamageGlued;
+			eSound = kAIS_DamageGlue;
+			break;
+
+		case DT_LAUGHING:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_LAUGHING );
+			m_eDamageAnim = kAP_DamageLaughing;
+			eSound = kAIS_DamageLaughing;
+			bLoopingSound = LTTRUE;
+			break;
+
+		// RETAIL: Tron's damage types (0x10192ac8, 0x10192b1a, 0x10192ba7).
+
+		case DT_PRANKSTERBIT:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_PRANKSTERED );
+			m_eDamageAnim = kAP_DamagePrankstered;
+			eSound = kAIS_DamagePrankstered;
+			bLoopingSound = LTTRUE;
+			break;
+			
+		case DT_SLIPPERY:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_SLIPPING );
+			m_eDamageAnim = kAP_DamageSlipping;
+			eSound = kAIS_DamageSlippery;
+			break;
+
+		case DT_PROD:
+			if( m_hTronUnknownE0 )
+			{
+				if( m_pAI->GetAnimationContext()->IsPropSet( kAPG_Posture, kAP_Crouch ) )
+				{
+					pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_PRODDED_CROUCH );
+				}
+				else {
+					pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_PRODDED );
+				}
+				m_eDamageAnim = kAP_DamagePRoded;
+				eSound = kAIS_DamagePRoded;
+				bLoopingSound = LTTRUE;
+
+				CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownE0 ));
+				if( pAttacker )
+				{
+					CContinuousFireHelper* pFireHelper = pAttacker->GetPRodFireHelper();
+					pFireHelper->AddTarget( m_pAI->GetUserObject() );
+				}
+			}
+			break;
+
+		case DT_ENERGYCLAW:
+			if( m_hTronUnknownF0 )
+			{
+				if( m_pAI->GetAnimationContext()->IsPropSet( kAPG_Posture, kAP_Crouch ) )
+				{
+					pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_CLAWED_CROUCH );
+				}
+				else {
+					pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_CLAWED );
+				}
+				m_eDamageAnim = kAP_DamageEnergyClawed;
+				eSound = kAIS_DamageEnergyClawed;
+				bLoopingSound = LTTRUE;
+
+				CCharacter* pAttacker = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( m_hTronUnknownF0 ));
+				if( pAttacker )
+				{
+					CContinuousFireHelper* pFireHelper = pAttacker->GetEnergyClawFireHelper();
+					pFireHelper->AddTarget( m_pAI->GetUserObject() );
+				}
+			}
+			break;
+
+		case DT_BLEEDING:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_BLEEDING );
+			m_eDamageAnim = kAP_DamageBleeding;
+			eSound = kAIS_Bleeding;
+			bLoopingSound = LTTRUE;
+			m_bProgressiveDamage = LTTRUE;
+			break;
+
+		case DT_BURN:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_BURNING );
+			m_eDamageAnim = kAP_DamageBurning;
+			eSound = kAIS_Burning;
+			m_bProgressiveDamage = LTTRUE;
+			break;
+
+		case DT_CHOKE:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_CHOKING );
+			m_eDamageAnim = kAP_DamageChoking;
+			eSound = kAIS_Choking;
+			bLoopingSound = LTTRUE;
+			m_bProgressiveDamage = LTTRUE;
+			break;
+
+		case DT_ASSS:
+		case DT_POISON:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_POISONING );
+			m_eDamageAnim = kAP_DamagePoisoning;
+			eSound = kAIS_Poisoning;
+			bLoopingSound = LTTRUE;
+			m_bProgressiveDamage = LTTRUE;
+			break;
+
+		case DT_ELECTROCUTE:
+			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate( SMART_OBJECT_ELECTROCUTE );
+			m_eDamageAnim = kAP_DamageElectrocuting;
+			eSound = kAIS_Electrocute;
+			bLoopingSound = LTTRUE;
+			m_bProgressiveDamage = LTTRUE;
+			break;
+	}
+
+
+	// Register a new stimulus.
+
+	if( m_eSpecialDamageStimID != kStimID_Unset )
+	{
+		g_pAIStimulusMgr->RemoveStimulus( m_eSpecialDamageStimID );
+		m_eSpecialDamageStimID = kStimID_Unset;
+	}
+
+	// Use the DeathVisible stimulus for knocked out AIs, and SpecialDamageVisible for the rest.
+	// Make knocked-out AI non-solid.
+
+	switch( m_eDamageType )
+	{
+		case DT_SLEEPING:
+		case DT_SLIPPERY:
+			m_eSpecialDamageStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllyDeathVisible, m_pAI->m_hObject, m_pAI->GetPosition(), 1.f );
+			m_pAI->SetClientSolid( LTFALSE );
+
+			//make sure sleeping AI can be searched
+			m_pAI->SetUnconscious( true );
+
+			// Enemies ignore sleeping AI.
+			
+			m_pAI->RemovePersistentStimuli();
+
+			break;
+
+		default:
+			m_eSpecialDamageStimID = g_pAIStimulusMgr->RegisterStimulus( kStim_AllySpecialDamageVisible, m_pAI->m_hObject, m_pAI->GetPosition(), 1.f );
+			break;
+	}
+
+
+	// AI is suspicious while incapacitated.
+	// The main reason to do this is so that an AI that was 
+	// chasing will lose interest until seeing the target again.
+
+	m_pAI->SetAwareness( kAware_Suspicious );
+
+	// Try to limp to a cover node for progressive damage.
+
+	if( m_bProgressiveDamage )
+	{
+		// React for at least 4 seconds.
+
+		m_fProgressiveMinTime = g_pLTServer->GetTime() + 4.f;
+
+		// Do not use any special volume types while damaged.
+		// AI needs to clear existing knowledge of paths.
+
+		m_pAI->SetCurValidVolumeMask( AIVolume::kVolumeType_BaseVolume | AIVolume::kVolumeType_Junction );
+		m_pAI->GetPathKnowledgeMgr()->ClearPathKnowledge();
+
+		AINode*	pNode = g_pAINodeMgr->FindNearestNodeFromThreat( m_pAI, kNode_Cover, m_pAI->GetPosition(), m_hDamager, FLT_MAX );
+		if( pNode && ( pNode->GetPos().DistSqr( m_pAI->GetPosition() ) > 64.f*64.f ) )
+		{
+			// RETAIL: Tron sets the state without clearing it (0x10192eba).
+			m_pAI->SetState( kState_HumanGoto );
+			CAIHumanStateGoto* pStateGoto = (CAIHumanStateGoto*)(m_pAI->GetState());
+			pStateGoto->SetDestNode( pNode->m_hObject );
+			pStateGoto->SetMood( m_eDamageAnim );
+
+			// Play damage sound.
+
+			if( bLoopingSound )
+			{
+				pStateGoto->SetLoopingSound( eSound );
+			}
+			else {
+				m_pAI->PlaySound( eSound, LTTRUE );
+			}
+
+			return;
+		}
+	}
+
+
+	if( m_bNeedsClearState )
+	{
+		m_pAI->ClearState();
+		m_bNeedsClearState = false;
+	}
+
+	// Set UseObject state.
+
+	m_pAI->SetState( kState_HumanUseObject );
+	CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)(m_pAI->GetState());
+	pStateUseObject->SetAllowDialogue( LTTRUE );
+
+	// Play damage sound.
+
+	if( bLoopingSound )
+	{
+		pStateUseObject->SetLoopingSound( eSound );
+	}
+	else {
+		m_pAI->PlaySound( eSound, LTTRUE );
+	}
+
+	// Get the SmartObject's command string.
+
+	if( pSmartObject )
+	{
+		HSTRING hstrCmd = LTNULL;
+		SMART_OBJECT_CMD_MAP::iterator it = pSmartObject->mapCmds.find( kNode_DamageType );
+		if(it != pSmartObject->mapCmds.end())
+		{
+			hstrCmd = it->second;
+		}
+
+		if(hstrCmd != LTNULL)
+		{
+			pStateUseObject->SetSmartObjectCommand(hstrCmd);
+
+			// Determine if we should play animations specific to some activity (e.g. deskwork).
+
+			HandleActivity();
+		}
+	}
+}

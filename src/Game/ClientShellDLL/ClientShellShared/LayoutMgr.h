@@ -30,7 +30,7 @@ extern CLayoutMgr* g_pLayoutMgr;
 
 struct INT_CHAR
 {
-	INT_CHAR()	{szName[0] = szModel[0] = 0; vPos.Init(); fScale = 1.0f; fRot = 0.0f; nMenuLayer = 0; }
+	INT_CHAR()	{szName[0] = szModel[0] = 0; vPos.Init(); fScale = 1.0f; fRot = 0.0f; }
 
     LTBOOL   Init(CButeMgr & buteMgr, char* aTagName);
 
@@ -43,7 +43,7 @@ struct INT_CHAR
     LTVector vPos;
     LTFLOAT	 fScale;
 	LTFLOAT	 fRot;
-	uint8		nMenuLayer;
+	// RETAIL: no menu layer in Tron (0x124 bytes, 0x100ddb48)
 };
 
 struct INT_LIGHT

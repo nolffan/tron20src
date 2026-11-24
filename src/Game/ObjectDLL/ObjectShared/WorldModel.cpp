@@ -23,6 +23,8 @@
 	#include "WeaponMgr.h"
 	#include "Attachments.h"
 	#include "FXButeMgr.h"
+	#include "CharacterMgr.h"
+	#include "Character.h"
 
 LINKFROM_MODULE( WorldModel );
 
@@ -728,6 +730,7 @@ void WorldModel::RemoveAtachments( )
 
 			damage.eType	= DT_EXPLODE;
 			damage.fDamage	= damage.kInfiniteDamage;
+			damage.bTronUnknown44 = LTTRUE;	// RETAIL: Tron's (0x1017b6f3)
 			damage.hDamager	= m_hObject;
 			damage.vDir.Init( 0.0f, 1.0f, 0.0f );
 
@@ -825,6 +828,7 @@ bool WorldModel::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_AttachClass("ATTACHCLASS");
 	static CParsedMsg::CToken s_cTok_Destroy( "DESTROY" );
 	static CParsedMsg::CToken s_cTok_Activate( "ACTIVATE" );
+	static CParsedMsg::CToken s_cTok_AttachStandingOn( "ATTACHSTANDINGON" );	// RETAIL: Tron's
 
 	if( cMsg.GetArg(0) == s_cTok_Attach && cMsg.GetArgCount() == 1 )
 	{
@@ -851,6 +855,28 @@ bool WorldModel::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if( cMsg.GetArg(0) == s_cTok_Activate )
 	{
 		HandleActivateMsg( hSender, cMsg );
+	}
+	else if( cMsg.GetArg(0) == s_cTok_AttachStandingOn )
+	{
+		// RETAIL: Tron's (0x1017bc18) attaches every character that is not
+		// a player
+
+		int cLists = g_pCharacterMgr->GetNumCharacterLists();
+		for( int iList = 0; iList < cLists; ++iList )
+		{
+			CTList<CCharacter*>* pList = g_pCharacterMgr->GetCharacterList( iList );
+			CCharacter** pCur = pList->GetItem( TLIT_FIRST );
+			while( pCur )
+			{
+				CCharacter* pChar = *pCur;
+				pCur = pList->GetItem( TLIT_NEXT );
+
+				if( !IsPlayer( pChar->GetUserObject() ))
+				{
+					AttachObject( pChar->GetUserObject() );
+				}
+			}
+		}
 	}
 	else
 		return GameBase::OnTrigger(hSender, cMsg);

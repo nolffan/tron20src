@@ -217,8 +217,8 @@ void CHHWeaponModel::Setup(CWeapon* pParent, WEAPON const *pWeaponData)
 
 void CHHWeaponModel::StringKey(ArgList* pArgList)
 {
+	// RETAIL: Tron has no BUTE_SOUND_KEY (0x1017f780).
 	static CParsedMsg::CToken s_cTok_WeaponKeySound(WEAPON_KEY_SOUND);
-	static CParsedMsg::CToken s_cTok_WeaponKeyButeSound(WEAPON_KEY_BUTE_SOUND);
 	static CParsedMsg::CToken s_cTok_WeaponKeyLoopSound(WEAPON_KEY_LOOPSOUND);
 
 	if (!m_hParentObject || !pArgList || !pArgList->argv || pArgList->argc == 0) return;
@@ -230,8 +230,6 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 	if (!pKey) return;
 
 	CParsedMsg::CToken tok( pKey );
-
-	LTFLOAT fRadius = WEAPON_SOUND_RADIUS;
 
 	if( tok == s_cTok_WeaponKeySound )
 	{
@@ -274,17 +272,10 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 			{
                 LTVector vPos;
 				g_pLTServer->GetObjectPos(m_hObject, &vPos);
-                g_pServerSoundMgr->PlaySoundFromPos(vPos, pFilename, fRadius, SOUNDPRIORITY_AI_HIGH);
+
+				// RETAIL: Tron uses the weapon's fire sound radius (0x1017f923).
+                g_pServerSoundMgr->PlaySoundFromPos(vPos, pFilename, (LTFLOAT)pWeapon->nFireSoundRadius, SOUNDPRIORITY_AI_HIGH);
             }
-		}
-	}
-	else if( tok == s_cTok_WeaponKeyButeSound )
-	{
-		if( pArgList->argc > 1 && pArgList->argv[1] )
-		{
-			LTVector vPos;
-			g_pLTServer->GetObjectPos(m_hObject, &vPos);
-            g_pServerSoundMgr->PlaySoundFromPos( vPos, pArgList->argv[1] );
 		}
 	}
 	else if( tok == s_cTok_WeaponKeyLoopSound )
@@ -302,6 +293,13 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				// Stop the looping sound from playing...
 
 				KillLoopSound();
+			}
+
+			// RETAIL: Tron looks for the player and does nothing with it
+			// (0x1017f9e8).
+			if( IsPlayer( m_hParentObject ))
+			{
+				CPlayerObj* pPlayer = dynamic_cast<CPlayerObj*>( g_pLTServer->HandleToObject( m_hParentObject ));
 			}
 
 			char* pBuf = 0;
@@ -332,28 +330,24 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 				case PSI_FIRE:													// 6
 				{
 					pBuf = pWeapon->szFireSound;			
-					fRadius = (LTFLOAT) pWeapon->nFireSoundRadius;
 				}
 				break;
 				
 				case PSI_DRY_FIRE:												// 7		
 				{	
 					pBuf = pWeapon->szDryFireSound;			
-					fRadius = (LTFLOAT) pWeapon->nFireSoundRadius;
 				}	
 				break;
 				
 				case PSI_ALT_FIRE:												// 8
 				{	
 					pBuf = pWeapon->szAltFireSound;			
-					fRadius = (LTFLOAT) pWeapon->nFireSoundRadius;
 				}	
 				break;
 				
 				case PSI_SILENCED_FIRE:											// 9
 				{
 					pBuf = pWeapon->szSilencedFireSound;	
-					fRadius = (LTFLOAT) pWeapon->nFireSoundRadius;
 				}	
 				break;
 				
@@ -383,8 +377,9 @@ void CHHWeaponModel::StringKey(ArgList* pArgList)
 					KillLoopSound();
 					
 					// Play the sound immediately localy 
+					// RETAIL: always the weapon's fire sound radius (0x1017faa2)
 					
-					m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject( m_hObject, pBuf, fRadius, SOUNDPRIORITY_PLAYER_HIGH,
+					m_hLoopSound = g_pServerSoundMgr->PlaySoundFromObject( m_hObject, pBuf, (LTFLOAT)pWeapon->nFireSoundRadius, SOUNDPRIORITY_PLAYER_HIGH,
 																			PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE );
 
 					SetNextUpdate( HHW_SOUND_MAX_DURATION, eControlUpdateOnly );

@@ -1462,6 +1462,77 @@ CHEAT_MAX reads the "active" flag of the word after the table.
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
 CheatMgr.cpp refuses CHEAT_MAX too.
 
+### The light cycle power-up lock test reads past the name table
+
+CShell.dll 0x10069580 (CScreenLightCycleGame::IsPowerupLocked, ClientShellDLL/
+TRON/ScreenLightCycleGame.cpp). The function accepts a power-up index from 0
+to 11. The name table it reads (0x102162d4) has 11 entries, 0 to 10. Thus
+the index 11 reads the pointer after the table. The game calls the function
+only with the indexes 0 to 8, so this does not show in the game.
+
+Fixed in the modern build: the index must be less than the number of
+power-up types.
+
+### Loading a game without a current weapon reads past the weapon list
+
+CShell.dll 0x10168290 (CClientWeaponMgr::Load, ClientShellDLL/
+ClientShellShared/ClientWeaponMgr.cpp). The function reads the current
+weapon index (one byte) and then reads the weapon pointer at that index. It
+examines the index for "no weapon" (255) only after it reads the pointer.
+Thus a save without a current weapon reads entry 255 of the weapon list,
+which is past its end. The value is then discarded, so the game does not
+use it, but the read can fault.
+
+Fixed in the modern build: the pointer is read only for a valid index.
+
+### The cluster disc uses its class data when it has no ammo data
+
+Object.lto 0x10035740 (CClusterDisc::Setup,
+ObjectDLL/TRON/ProjectileClusterDisc.cpp). The function finds the cluster
+disc class data only when the projectile has ammo data. When it has no ammo
+data, the pointer to the class data is NULL, but the function reads the
+initial explosion suppress time from it (0x10035781). This causes an access
+violation.
+
+Fixed in the modern build: the function stops after the base class setup
+when it has no class data.
+### One energy claw debug message uses a misspelt console variable
+
+Object.lto 0x10192390 (CAIGoalSpecialDamage::IsEnergyClawAttackerAiming, our
+name, ObjectDLL/ObjectShared/AIGoalSpecialDamage.cpp). The function writes
+its debug messages when the console variable "AIShowEnergyClawDamage" is
+set. The message "Early out - Not a character!" uses the variable
+"AIShowEnergyCLawDamage" (capital L) instead (0x101924b2). Console variable
+names are case-sensitive, thus this one message does not show with the
+other messages. It has no effect on the game.
+
+Not fixed yet: the modern build can use the correct name.
+### The tracked node manager reports the wrong flag as discomfort
+
+CShell.dll 0x101c8f80 and Object.lto 0x10270b10
+(CTrackedNodeMgr::IsAtDiscomfort, Shared/TrackedNodeMgr.cpp). The function
+must return the flag that tells if the node reached its discomfort extent
+(m_bInDiscomfort, +0xb5). It reads the byte at +0xb9, which is the flag that
+tells the node to ignore the animation of its parent
+(m_bIgnoreParentAnimation; SetIgnoreParentAnimation at 0x101c8f50 writes the
+same byte). Thus a caller gets a value that does not change with the
+tracking.
+
+Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
+m_bInDiscomfort.
+### The binary bit ignores the permission set messages
+
+Object.lto 0x10014080 (BinaryBit::ObjectMessageFn, ObjectDLL/TRON/
+BinaryBit.cpp). For each trigger message, the function compares the first
+word with "ADDPSET" and "REMOVEPSET" to add or remove permission sets. The
+retail code compares the pointers (0x10014260, 0x100142b6), not the text:
+the parsed word is in the parse buffer, not at the address of the string
+constant. Thus the comparisons are always false, and "ADDPSET" and
+"REMOVEPSET" do nothing to a binary bit. The class registers the two
+messages with the command manager, so the level designer can send them.
+
+Fixed in the modern build: the function compares the text (_stricmp).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
@@ -1475,3 +1546,14 @@ CheatMgr.cpp refuses CHEAT_MAX too.
 - Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
   the saved viewport and leaves the new viewport's size unset: Tron's is
   Build 69's (0x41d8e0; its own bug is above).
+
+### A cloned tracking node that is not made is not reported
+
+CShell.dll 0x101c9763 and Object.lto 0x101e2203 (CTrackedNodeContext::_Init,
+Shared/TrackedNodeContext.cpp). After the code makes a cloned tracking node,
+it tests the node that it clones, not the clone. When the clone is not made,
+the code does not write the "Failed to create tracking node" message. When
+the clone is made but the first node is not, the code writes the message
+for the clone's name. The code must test the clone.
+
+Not fixed yet: the modern build must test hTrackedNodeClone.

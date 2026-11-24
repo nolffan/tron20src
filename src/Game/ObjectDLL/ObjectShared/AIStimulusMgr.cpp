@@ -17,6 +17,10 @@
 #include "AIVolume.h"
 #include "CharacterMgr.h"
 #include "AIUtils.h"
+#include "AIInformationVolumeMgr.h"
+#include "AIRegion.h"
+#include "ObjectRelationMgr.h"
+#include "RelationButeMgr.h"
 
 extern CCharacterMgr* g_pCharacterMgr;
 
@@ -1542,8 +1546,8 @@ bool CAIStimulusMgr::CanSense( IAISensing* pSensing, CAIStimulusRecord* pRecord 
 		uint32 flagsSenseMask = 0xffffffff;
 		if( pRecord->m_pInformationVolume && IsAI( hSensing ) )
 		{
-			CAI* pAI = (CAI*)pSensing;
-			if( !pAI->IsSuspicious() )
+			CAI* pAI = dynamic_cast<CAI*>( pSensing );	// RETAIL: 0x10101d18
+			if( pAI && !pAI->IsSuspicious() )
 			{
 				AIInformationVolume* pInfoVolume = dynamic_cast<AIInformationVolume*>(pRecord->m_pInformationVolume );
 				if( pInfoVolume	&& pInfoVolume->IsOn() )
@@ -1575,9 +1579,7 @@ bool CAIStimulusMgr::CanSense( IAISensing* pSensing, CAIStimulusRecord* pRecord 
 			{
 				// See if the AI feels such a way about the stimulus record
 				// that they care about it (that they receive it)
-				if( IsAlignmentInList( pSensing->GetSenseRelationSet(),
-						pRecord->m_RelationData,
-						pRecord->m_RequiredAlignment ) )
+				if( IsAlignmentInList( pSensing->GetSenseRelationSet(), pRecord ) )
 				{
 					LTVector vSensingPos = pSensing->GetSensingPosition();
 
@@ -1627,18 +1629,54 @@ bool CAIStimulusMgr::CanSense( IAISensing* pSensing, CAIStimulusRecord* pRecord 
 //              
 //----------------------------------------------------------------------------
 bool CAIStimulusMgr::IsAlignmentInList(const RelationSet& RelationSet,
-													  const RelationData& RelationData,
-													  const CAIStimulusRecord::_listAlignments& AlignmentRequirement ) const
+										CAIStimulusRecord* pRecord ) const
 {
 	// Check if alignment requirement is met.
-	CharacterAlignment ca = GetAlignment(RelationSet, RelationData);
+	// RETAIL: the sensing's relation set is its relation manager (see
+	// CAI::GetSenseRelationSet)
+	CObjectRelationMgr* pORM = (CObjectRelationMgr*)&RelationSet;
+	CharacterAlignment ca = GetAlignment(pORM->CObjectRelationMgr::GetRelationUser()->GetRelations(), pRecord->m_RelationData);
+
+	// RETAIL: Tron (0x10101e80) resolves a permission dependant alignment
+	// from the permission sets of the stimulus source and of the region
+	// it is in: tolerated with the permissions, hated without them
+	if( ca == PERMISSION_DEPENDANT )
+	{
+		CCharacter* pChar = dynamic_cast<CCharacter*>( g_pLTServer->HandleToObject( pRecord->m_hStimulusSource ) );
+		if( pChar )
+		{
+			LTVector vPos;
+			g_pLTServer->GetObjectPos( pChar->m_hObject, &vPos );
+
+			AIVolumePlayerInfo* pVolume = g_pAIVolumePlayerInfoMgr->FindContainingVolume( LTNULL, vPos, eAxisHorizontal, 0.0f, LTNULL, LTTRUE );
+
+			// RETAIL: as AISenseRecorderAbstract's, the source world
+			// offset is taken when the character is in no volume (and not
+			// used)
+			if( !pVolume )
+			{
+				LTVector vOffsetPos = vPos;
+				g_pLTServer->GetSourceWorldOffset( vOffsetPos );
+			}
+			else if( pVolume->HasRegion() )
+			{
+				uint8 nPset = pVolume->GetRegion()->GetPsetByte();
+				ca = ( ( pChar->GetPSets() & nPset ) != nPset ) ? HATE : TOLERATE;
+				goto FindAlignment;
+			}
+		}
+
+		ca = TOLERATE;
+	}
+
+FindAlignment:
 
 	// See if the determined alignement is in the list of required
 	// alignments the stimulus
 	CAIStimulusRecord::_listAlignments::const_iterator it =
-		std::find( AlignmentRequirement.begin(), AlignmentRequirement.end(), ca );
+		std::find( pRecord->m_RequiredAlignment.begin(), pRecord->m_RequiredAlignment.end(), ca );
 
-	return ( it != AlignmentRequirement.end() );
+	return ( it != pRecord->m_RequiredAlignment.end() );
 }
 
 // ----------------------------------------------------------------------- //

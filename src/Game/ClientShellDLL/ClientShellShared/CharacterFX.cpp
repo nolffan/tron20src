@@ -382,11 +382,10 @@ LTBOOL CCharacterFX::CreateObject(ILTClient* pClientDE)
 
 	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pStr->SetColor(argbWhite);
-	m_pStr->SetAlignmentH(CUI_HALIGN_CENTER);
+	m_pStr->TronUnknownVirtual30(CUI_HALIGN_CENTER);	// RETAIL: slot +0x78, not SetAlignmentH
 
-	// create and show all client effects associated with this model
-	CreateAttachClientFX();
-	//ShowAttachClientFX();
+	// RETAIL: 0x10175044 -- Tron's attached client fx take the model
+	m_TronAttachClientFX.Init(m_hServerObject, m_cs.eModelId);
 
     return LTTRUE;
 }
@@ -428,7 +427,8 @@ LTBOOL CCharacterFX::Update()
 	{
 		dwFlags |= FLAG_SOLID;
 	}
-	else if ( m_cs.bIsPlayer )
+	// RETAIL: 0x10175102 -- the light cycle game leaves the player not solid.
+	else if ( m_cs.bIsPlayer && !(IsMultiplayerGame() && g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles) )
 	{
 		g_pCommonLT->GetObjectFlags(m_hServerObject, OFT_Flags, dwFlags);
 	}
@@ -536,7 +536,7 @@ LTBOOL CCharacterFX::Update()
 
 
 
-	if (m_pStr && m_pStr->GetLength())
+	if (m_pStr && m_pStr->GetText().length())	// RETAIL: 0x1017528a, the text, not GetLength
 	{
 		LTVector pos = g_pInterfaceMgr->GetScreenFromWorldPos(m_vStrPos, g_pPlayerMgr->GetCamera());
 
@@ -547,7 +547,8 @@ LTBOOL CCharacterFX::Update()
 
 			if (h != m_pStr->GetCharScreenHeight())
 			{
-				m_pStr->SetCharScreenHeight(h);
+				// RETAIL: 0x10175386, SetCharScreenSize
+				m_pStr->SetCharScreenSize(h);
 			}
 			
 			m_pStr->SetPosition( pos.x, pos.y);
@@ -558,9 +559,6 @@ LTBOOL CCharacterFX::Update()
 		}
 	}
 
-
-	if (m_bUpdateAttachments)
-		UpdateAttachments();
 
     return LTTRUE;
 }
@@ -760,19 +758,8 @@ void CCharacterFX::HandleDialogueMsg(ILTMessage_Read *pMsg)
 
 void CCharacterFX::HandleTauntMsg(ILTMessage_Read *pMsg)
 {
+	// RETAIL: 0x10175960 -- Tron's message has no team
     uint32 nTauntID = pMsg->Readuint32();
-	uint32 nTeam = pMsg->Readuint8();
-
-	if (IsTeamGameType() && nTeam != INVALID_TEAM)
-	{
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return;
-
-		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
-			return;
-	}
 	PlayTaunt(nTauntID, LTFALSE);
 }
 
@@ -791,6 +778,13 @@ void CCharacterFX::UpdateSounds()
 		if (g_pLTClient->IsDone(m_hDialogueSnd))
 		{
 			KillLipSyncSound( true );
+		}
+		else
+		{
+			// RETAIL: 0x101759ae -- Tron moves the dialogue with the character
+			LTVector vPos;
+			g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundPosition(m_hDialogueSnd, &vPos);
 		}
 	}
 
@@ -1434,52 +1428,10 @@ void CCharacterFX::OnModelKey(HLOCALOBJ hObj, ArgList *pArgs)
 			g_pClientSoundMgr->PlaySoundFromObject( m_hServerObject, pSnd );
 		}
 	}
-	else if( stricmp( pKey, KEY_SHOW_ATTACHFX ) == 0 )
-	{
-		if( pArgs->argc > 1 )
-		{
-			uint32 i = atoi( pArgs->argv[1] );
-
-			//note that the +1 is to compensate for our dummy head
-			CLIENTFX_LINK* pLink = m_AttachClientFX.GetElement(i + 1);
-
-			if (pLink && pLink->IsValid())
-			{
-				pLink->GetInstance()->Show();
-			}
-		}
-		else
-		{
-			ShowAttachClientFX();
-		}
-	}
-	else if( stricmp( pKey, KEY_HIDE_ATTACHFX ) == 0)
-	{
-		if( pArgs->argc > 1 )
-		{
-			uint32 i = atoi( pArgs->argv[1] );
-
-			//note that the +1 is to compensate for our dummy head
-			CLIENTFX_LINK* pLink = m_AttachClientFX.GetElement(i + 1);
-
-			if (pLink && pLink->IsValid())
-			{
-				pLink->GetInstance()->Hide();
-			}
-		}
-		else
-		{
-			HideAttachClientFX();
-		}
-	}
-	else if( stricmp( pKey, KEY_FX ) == 0)
-	{
-		if( pArgs->argc > 1 && pArgs->argv[1] )
-		{
-			CLIENTFX_CREATESTRUCT fxInit( pArgs->argv[1], 0, m_hServerObject );
-			g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );
-		}
-	}
+	// RETAIL: 0x10176f4f -- Tron's character passes every key it did not
+	// give to the damage fx on to its attached client fx; the NOLF2 keys
+	// that show, hide and create client fx are not here.
+	m_TronAttachClientFX.OnModelKey(hObj, pArgs);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1719,16 +1671,24 @@ void CCharacterFX::PlayMovementSound(LTVector vPos, SurfaceType eSurface,
 	if (pSound && *pSound)
 	{
         uint32 dwFlags = bIsLocalClient ? PLAYSOUND_CLIENTLOCAL : 0;
-		SoundPriority ePriority = m_cs.bIsPlayer ? SOUNDPRIORITY_PLAYER_HIGH : SOUNDPRIORITY_AI_HIGH;
+		// RETAIL: 0x1017759a, Tron lowers both priorities by one step
+		SoundPriority ePriority = m_cs.bIsPlayer ? SOUNDPRIORITY_PLAYER_MEDIUM : SOUNDPRIORITY_AI_LOW;
 
 		LTFLOAT fStealth = (eModel == PPM_NORMAL ? m_cs.fStealthPercent : 1.0f);
 		int nVolume = (int) (100.0f * fStealth);
 
 		// Adjust the volume if we are walking or ducking...
 
-		if (bIsLocalClient && pMoveMgr->IsMovingQuietly())
+		if (bIsLocalClient)
 		{
-			nVolume = ( int )((( float )nVolume * g_vtQuietMovementVolumeFactor.GetFloat( )) + 0.5f );
+			if (pMoveMgr->IsMovingQuietly())
+			{
+				nVolume = ( int )((( float )nVolume * g_vtQuietMovementVolumeFactor.GetFloat( )) + 0.5f );
+			}
+
+			// RETAIL: 0x10177621 -- Tron's player manager adjusts the local
+			// player's footstep volume.
+			nVolume = g_pPlayerMgr->TronUnknownVirtualA4(nVolume);
 		}
 
 		g_pClientSoundMgr->PlaySoundFromPos(vPos, pSound, FOOTSTEP_SOUND_RADIUS, ePriority, dwFlags, nVolume);
@@ -2577,55 +2537,9 @@ void CCharacterFX::UpdateBreathFX()
 
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::ShowAttachClientFX
-//
-//	PURPOSE:	Show all the player view attach client fx
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::ShowAttachClientFX()
-{
-	for ( CLIENTFX_LINK_NODE* pCurr = m_AttachClientFX.m_pNext; pCurr; pCurr = pCurr->m_pNext )
-	{
-		if ( pCurr->m_Link.IsValid() )
-		{
-			pCurr->m_Link.GetInstance()->Show();
-		}
-		else
-		{
-			// when we hit 0, there are no more
-			return;
-		}
-	}
-}
 
 
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::HideAttachClientFX
-//
-//	PURPOSE:	Hide all the player view attach client fx
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::HideAttachClientFX()
-{
-	for ( CLIENTFX_LINK_NODE* pCurr = m_AttachClientFX.m_pNext; pCurr; pCurr = pCurr->m_pNext )
-	{
-		if ( pCurr->m_Link.IsValid() )
-		{
-			pCurr->m_Link.GetInstance()->Hide();
-		}
-		else
-		{
-			// when we hit 0, there are no more
-			return;
-		}
-	}
-}
 
 
 
@@ -2655,7 +2569,7 @@ void CCharacterFX::CreateAttachClientFX()
 	LTFLOAT fTime = m_pClientDE->GetTime();
 	if ( fTime > m_fTronUnknown2320 )
 	{
-		m_fTronUnknown2320 = 1.0f + fTime;
+		m_fTronUnknown2320 = fTime + 1.0f;
 
 		if ( UpdateCarrying() )
 		{
@@ -2998,7 +2912,10 @@ void CCharacterFX::UpdatePitch( )
 		bEnable = !( nFlags & USRFLG_PLAYER_LEANING );
 	}
 
-	EnablePitch( bEnable );
+	// RETAIL: 0x1017a549 -- Tron sets both nodes every update (no
+	// EnablePitch and no check of the nodes).
+	g_pClientTrackedNodeMgr->EnableTracking( m_hUpperTorsoNode, bEnable );
+	g_pClientTrackedNodeMgr->EnableTracking( m_hLowerTorsoNode, bEnable );
 }
 
 // ----------------------------------------------------------------------- //
@@ -3057,31 +2974,6 @@ void CCharacterFX::ResetPitchTracking()
 	}
 }
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	CCharacterFX::EnablePitch
-//
-//	PURPOSE:	Enable\Disable the Pitch tracking...
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterFX::EnablePitch( bool bEnable )
-{
-	if( m_bPitchEnabled == bEnable )
-		return;
-
-	m_bPitchEnabled = bEnable;
-
-	if( m_hUpperTorsoNode != INVALID_TRACKEDNODE )
-	{
-		g_pClientTrackedNodeMgr->EnableTracking( m_hUpperTorsoNode, bEnable );
-	}
-
-	if( m_hLowerTorsoNode != INVALID_TRACKEDNODE )
-	{
-		g_pClientTrackedNodeMgr->EnableTracking( m_hLowerTorsoNode, bEnable );	
-	}
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -3101,52 +2993,40 @@ void CCharacterFX::Render(HOBJECT hCamera)
 }
 
 
-void CCharacterFX::ChangeModel(ModelId eModelId)
+void CCharacterFX::ChangeModel(ModelId eModelId, uint8 nMPModel, uint8 nColor)
 {
+	// RETAIL: 0x1017a780 -- Tron's: multiplayer only, with the multiplayer
+	// model's file and the skins of its color.
+	if (!IsMultiplayerGame()) return;
+
 	m_cs.eModelId = eModelId;
 	m_cs.eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(eModelId);
 
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);
 
-	const char* pFilename = g_pModelButeMgr->GetModelFilename(eModelId);
-	SAFE_STRCPY(theStruct.m_Filename, pFilename);
+	SAFE_STRCPY(theStruct.m_Filename, g_pModelButeMgr->GetMultiModelFilename(eModelId));
 
-	g_pModelButeMgr->CopySkinFilenames(eModelId, 0, theStruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+	const CModelButeMgr::MPModel* pMPModel = g_pModelButeMgr->GetMPModel(nMPModel);
+	if (pMPModel)
+	{
+		const std::vector<std::string> & vecSkins = pMPModel->m_vecColorSkins[nColor];
+		int nNumSkins = vecSkins.size();
+		for (int i = 0; i < nNumSkins; i++)
+		{
+			SAFE_STRCPY(theStruct.m_SkinNames[i], vecSkins[i].c_str());
+		}
+	}
+
 	g_pModelButeMgr->CopyRenderStyleFilenames(eModelId, &theStruct);
 
     g_pCommonLT->SetObjectFilenames(m_hServerObject, &theStruct);
 
-	
-	CreateAttachClientFX();
+	m_TronAttachClientFX.SetModel(eModelId);
 
 	ResetPitchTracking();
 }
 
-//step through the things attached to us and see if we should hide any of them
-void CCharacterFX::UpdateAttachments()
-{
-	HLOCALOBJ attachList[20];
-    uint32 dwListSize = 0;
-    uint32 dwNumAttach = 0;
-
-    g_pCommonLT->GetAttachments(m_hServerObject, attachList, 20, dwListSize, dwNumAttach);
-	int nNum = dwNumAttach <= dwListSize ? dwNumAttach : dwListSize;
-
-	for (int i=0; i < nNum; i++)
-	{
-        uint32 dwUsrFlags;
-        g_pCommonLT->GetObjectFlags(attachList[i], OFT_User, dwUsrFlags);
-		
-		if (g_pVersionMgr->IsLowViolence() && dwUsrFlags & USRFLG_ATTACH_HIDEGORE)
-		{
-			g_pCommonLT->SetObjectFlags(attachList[i], OFT_Flags, 0, FLAG_VISIBLE);
-		}
-
-	}
-
-	m_bUpdateAttachments = false;
-}
 
 // ----------------------------------------------------------------------- //
 //
@@ -3289,13 +3169,13 @@ LTBOOL CCharacterFX::UpdateCarrying()
 	if ( !pInfo || !pLocal )
 	{
 		m_nTronUnknown2324 = 0;
-		return ( nOld != 0 );
+		return ( nIcon != 0 );
 	}
 
 	if ( pInfo->nID == pLocal->nID ) return LTFALSE;
 
-	LTBOOL bFound = LTFALSE;
 	uint32 nStart = nIcon;
+	LTBOOL bFound = LTFALSE;
 	do
 	{
 		switch ( ++nIcon )

@@ -1940,25 +1940,30 @@ LTBOOL ActiveWorldModel::CalculateNewPosRot( LTVector &vOutPos, LTRotation &rOut
 
 			LTVector vDir = vFinalPos - vOutPos;
 			LTFLOAT	fDistLeft = vDir.Mag();
-			vDir.Normalize();
 
-			LTFLOAT	fRate = m_fMoveDist;
-			if( fTotalTime > 0.001f )
+			// RETAIL: Tron (0x101778a0) moves only when it is not there yet
+			if( fDistLeft != 0.0f )
 			{
-				fRate = fRate / fTotalTime;
-			}
-			LTFLOAT fDistMove = GetWaveformValue( fRate, fPercent ) * g_pLTServer->GetFrameTime();
-			
-			// Make sure we dont move farther than we're supposed to
+				vDir.Normalize();
 
-			if( (fDistMove >= fDistLeft) || (fPercent >= 1.0f) )
-			{
-				vOutPos = vFinalPos;
-			}
-			else
-			{
-				vDir *= fDistMove;
-				vOutPos += vDir;
+				LTFLOAT	fRate = m_fMoveDist;
+				if( fTotalTime > 0.001f )
+				{
+					fRate = fRate / fTotalTime;
+				}
+				LTFLOAT fDistMove = GetWaveformValue( fRate, fPercent ) * g_pLTServer->GetFrameTime();
+				
+				// Make sure we dont move farther than we're supposed to
+
+				if( (fDistMove >= fDistLeft) || (fPercent >= 1.0f) )
+				{
+					vOutPos = vFinalPos;
+				}
+				else
+				{
+					vDir *= fDistMove;
+					vOutPos += vDir;
+				}
 			}
 
 			// If we didn't actually move there is no point in testing collisions (also

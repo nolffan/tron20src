@@ -189,7 +189,8 @@ uint32 BinaryBit::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 		case MID_INITIALUPDATE:
 		{
 			// Let our function determine whether or not we call the base class
-			if(InitialUpdate())
+			// RETAIL: 0x1001374a: not for a saved game
+			if(fData != INITIALUPDATE_SAVEGAME && InitialUpdate())
 				return LT_OK;
 
 			return(GameBase::EngineMessageFn(messageID, pData, fData));
@@ -241,8 +242,13 @@ uint32 BinaryBit::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 				m_bPlayingTransitionAnim = LTFALSE;
 				
 				// We can now activate this object
-				g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+				// RETAIL: 0x10013863: unless locked
+				if(!m_bLocked)
+				{
+					g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+				}
 
+				m_bTronUnknown90 = true;
 				SetNextUpdate(0.0f);
 			}
 			else
@@ -322,6 +328,15 @@ LTBOOL BinaryBit::ReadProp(ObjectCreateStruct *pData)
 	    m_bStartOnInSocket = genProp.m_Bool;
 	}
 
+	// RETAIL: 0x10013b09
+	if(g_pLTServer->GetPropGeneric("ActivateType", &genProp) == LT_OK)
+	{
+		if(genProp.m_String[0])
+		{
+			m_ActivateTypeHandler.SetActivateType(genProp.m_String);
+		}
+	}
+
 	// Model/skin/renderstyle
 	SAFE_STRCPY(pData->m_Filename, BB_MODEL);
 	strncpy(pData->m_RenderStyleNames[0], BB_RS_IDLE, 256);
@@ -352,8 +367,17 @@ LTBOOL BinaryBit::ReadProp(ObjectCreateStruct *pData)
 		}
 	}
 
+	// RETAIL: 0x10013c3d
+	if(g_pLTServer->GetPropGeneric("StringOverrideID", &genProp) == LT_OK)
+	{
+		m_nStringOverrideID = genProp.m_Long;
+	}
+
 	// Make sure we get some flags mang'
 	pData->m_Flags |= FLAG_MODELKEYS | FLAG_RAYHIT;
+
+	// RETAIL: 0x10013c5c
+	m_InvalidPSetCommand.ReadProp(pData, "InvalidPSetCommand");
 
 	return LTTRUE;
 }
@@ -452,11 +476,17 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 					}
 					else if(_stricmp(parse.m_Args[0], "LOCK") == 0)
 					{
+						// RETAIL: 0x10014162: a locked bit can not be activated
 						m_bLocked = LTTRUE;
+						g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE | USRFLG_REQUIRES_ENERGY);
 					}
 					else if(_stricmp(parse.m_Args[0], "UNLOCK") == 0)
 					{
 						m_bLocked = LTFALSE;
+						if(m_bTronUnknown90)
+						{
+							g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
+						}
 					}
 					else if(_stricmp(parse.m_Args[0], "ATSOCKET") == 0)
 					{
@@ -469,24 +499,69 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 						HandleArriveAtSocket();
 					}
+					else if(_stricmp(parse.m_Args[0], "INFOSTRING") == 0)
+					{
+						// RETAIL: 0x10014215
+						if(parse.m_nArgs > 1 && parse.m_Args[1])
+						{
+							m_nStringOverrideID = atoi(parse.m_Args[1]);
+							g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (m_nStringOverrideID > 0) ? USRFLG_INFO_STRING : 0, USRFLG_INFO_STRING);
+						}
+					}
+
+					// RETAIL: 0x10014260: retail compares the pointers, not the
+					// strings, so the permission set messages do nothing
+					// (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+					if(!_stricmp(parse.m_Args[0], "ADDPSET") && parse.m_nArgs > 1)
+#else
+					if(parse.m_Args[0] == "ADDPSET" && parse.m_nArgs > 1)
+#endif
+					{
+						int nLen = strlen(parse.m_Args[1]);
+						if(nLen > 8)
+						{
+							nLen = 8;
+						}
+
+						for(int i = 0; i < nLen; i++)
+						{
+							char cSet = parse.m_Args[1][i];
+							if(cSet >= '1' && cSet <= '8')
+							{
+								m_byPSets |= (1 << (cSet - '1'));
+							}
+						}
+					}
+
+#ifdef TRON20SRC_MODERN
+					if(!_stricmp(parse.m_Args[0], "REMOVEPSET") && parse.m_nArgs > 1)
+#else
+					if(parse.m_Args[0] == "REMOVEPSET" && parse.m_nArgs > 1)
+#endif
+					{
+						int nLen = strlen(parse.m_Args[1]);
+						if(nLen > 8)
+						{
+							nLen = 8;
+						}
+
+						for(int i = 0; i < nLen; i++)
+						{
+							char cSet = parse.m_Args[1][i];
+							if(cSet >= '1' && cSet <= '8')
+							{
+								m_byPSets &= ~(1 << (cSet - '1'));
+							}
+						}
+					}
 				}
 			}
 
-			return LT_OK;
+			// RETAIL: 0x10014335: the base class sees the trigger too
 		}
-		case MID_STOP_ENERGY_TRANSFER:
-		{
-			// If we want to do any special handling here, we can.
-			return LT_OK;
-		}
-		case MID_ENERGY_TRANSFER_COMPLETE:
-		{
-			// Let's power up!
-			if(m_eState == BBState_PoweredDown)
-				DoPowerUp();
+		break;
 
-			return LT_OK;
-		}
 		case MID_QUERY_TARGET_PROPERTIES:
 		{
 			uint8 nNumProps = pMsg->Readuint8();
@@ -515,6 +590,19 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 
 							break;
 						}
+
+						// RETAIL: 0x100143cd: the string override
+						case TARGET_PROP_INFO_STRING:
+						{
+							if(m_nStringOverrideID > 0)
+							{
+								cTempMsg.Writeuint8(iProp);
+								cTempMsg.Writeuint32(m_nStringOverrideID);
+								nNumPropsProcessed++;
+							}
+
+							break;
+						}
 					}
 				}
 
@@ -535,6 +623,15 @@ uint32 BinaryBit::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 				}
 			}
 			
+			return LT_OK;
+		}
+		case MID_STOP_ENERGY_TRANSFER:
+		{
+			// RETAIL: 0x1001454f: Tron's transfer ends with a byte; zero
+			// powers us up
+			if(!pMsg->Readuint8() && m_eState == BBState_PoweredDown)
+				DoPowerUp();
+
 			return LT_OK;
 		}
 	}
@@ -862,17 +959,45 @@ void BinaryBit::HandleArriveAtSocket()
 // ----------------------------------------------------------------------- //
 void BinaryBit::HandleActivateMessage(HOBJECT hSender)
 {
+	// RETAIL: 0x10014c70: a locked bit does nothing; a player without our
+	// permission sets runs the InvalidPSetCommand
+	if(m_bLocked)
+		return;
+
+	CPlayerObj *pPlayer = LTNULL;
+	if(IsPlayer(hSender))
+	{
+		pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
+		if(!HasPSets(pPlayer, m_byPSets))
+		{
+			HOBJECT hObj = m_hObject;
+			m_InvalidPSetCommand.Execute(hObj, pPlayer->GetUserObject());
+
+			g_pServerSoundMgr->PlaySoundFromObject(m_hObject, "BinaryBitInvalidPSet");
+			return;
+		}
+	}
+
 	// See what state we're in
 	switch(m_eState)
 	{
+		case BBState_Off:
+		{
+			// We're off, need to turn on
+			ChangeState(BBState_On);
+			break;
+		}
+		case BBState_On:
+		{
+			// We're on, need to turn off
+			ChangeState(BBState_Off);
+			break;
+		}
 		case BBState_PoweredDown:
 		{
 			// See if we have energy to transfer
 			if(m_nCurrentEnergyRequired > 0)
 			{
-				// Get the client ID from the player (sender)
-				ASSERT(IsPlayer(hSender));
-				CPlayerObj *pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hSender);
 				if(!pPlayer)
 				{
 					// This came from the console
@@ -883,34 +1008,18 @@ void BinaryBit::HandleActivateMessage(HOBJECT hSender)
 					// Send down the energy requirement to the client
 					CAutoMessage cMsg;
 					cMsg.Writeuint8(MID_START_ENERGY_TRANSFER);
+					cMsg.Writeuint8(0);
+					cMsg.WriteObject(m_hObject);
+					cMsg.WriteObject(m_hObject);
 					cMsg.Writeuint32(m_nCurrentEnergyRequired);
 					g_pLTServer->SendToClient(cMsg.Read(), pPlayer->GetClient(), MESSAGE_GUARANTEED);
 				}
 			}
 			else
 			{
-				// No energy required, just turn us on
-				DoPowerUp();
+				g_pLTServer->CPrint("BinaryBit::HandleActivateMessage - ERROR - Binary Bit was in a powered down state but had no energy requirements.\n  Since 0 was specified, the bit should have started at it's socket.\n");
 			}
 			
-			break;
-		}
-		case BBState_Off:
-		{
-			// We're off, need to turn on
-			if(m_bLocked)
-				return;
-
-			ChangeState(BBState_On);
-			break;
-		}
-		case BBState_On:
-		{
-			// We're on, need to turn off
-			if(m_bLocked)
-				return;
-
-			ChangeState(BBState_Off);
 			break;
 		}
 	}

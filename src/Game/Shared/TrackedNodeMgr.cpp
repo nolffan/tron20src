@@ -389,7 +389,13 @@ bool CTrackedNodeMgr::IsAtDiscomfort( HTRACKEDNODE ID)
 	if(!CheckValidity(ID))
 		return false;
 
+#ifdef TRON20_MODERN
 	return ID->m_bInDiscomfort;
+#else
+	// RETAIL: CShell 0x101c8f93, Object 0x10270b23 -- reads +0xb9, the
+	// ignore-parent-animation flag, not the discomfort flag (RETAIL_BUGS.md).
+	return ID->m_bIgnoreParentAnimation;
+#endif // TRON20_MODERN
 }
 
 // IsLookingAtTarget
@@ -667,4 +673,16 @@ bool CTrackedNodeMgr::SetIgnoreParentAnimation( HTRACKEDNODE ID, bool bIgnorePar
 	//just set the flag on the node
 	ID->m_bIgnoreParentAnimation = bIgnoreParentAnimation;
 	return true;
+}
+
+// GetIgnoreParentAnimation
+//	TRON: the flag SetIgnoreParentAnimation sets (RETAIL: CShell 0x101c8f80;
+// CTrackedNodeContext::EnableTrackingGroup calls it; the name is ours)
+
+bool CTrackedNodeMgr::GetIgnoreParentAnimation( HTRACKEDNODE ID )
+{
+	if(!CheckValidity(ID))
+		return false;
+
+	return ID->m_bIgnoreParentAnimation;
 }

@@ -141,7 +141,8 @@ class CCharacterHitBox : public GameBase
 		bool	IsAnimControllingOffset() { return m_bAnimControlsOffset; }
 
 		void	SetDimsToModel();
-		void	GetDefaultModelDims( LTVector &vDims );
+		// RETAIL: no GetDefaultModelDims (NOLF2 1.x's): Tron's Body::Update
+		// and CAI::SetUnconscious take the hit box's own dims
 		void	EnlargeAndSetDims( LTVector &vDims );
 
 	protected :

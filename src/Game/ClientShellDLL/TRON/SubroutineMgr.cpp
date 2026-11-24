@@ -507,7 +507,7 @@ void CSubroutineMgr::Load(ILTMessage_Read *pMsg)
 {
 	char szName[256];
 
-	pMsg->ReadType(&m_fTronUnknown11A0);
+	m_fTronUnknown11A0 = pMsg->Readfloat();
 
 	PlayerSubroutineArray::iterator iter = m_PlayerSubroutineArray.begin();
 	while (iter != m_PlayerSubroutineArray.end())
@@ -517,7 +517,7 @@ void CSubroutineMgr::Load(ILTMessage_Read *pMsg)
 	}
 	m_PlayerSubroutineArray.clear();
 
-	int nSubs = (SubVersion)pMsg->Readuint8();
+	uint8 nSubs = pMsg->Readuint8();
 	int i;
 	for (i = 0; i < nSubs; i++)
 	{
@@ -1171,6 +1171,8 @@ void CSubroutineMgr::CleanArrays()
 		debug_delete(*iter4);
 		iter4++;
 	}
+
+	m_PrimitiveArray.clear();	// RETAIL: 0x10094683
 }
 
 TronSubroutine* CSubroutineMgr::GetSubroutine(const char *pszName)

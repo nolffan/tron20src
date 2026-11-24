@@ -170,8 +170,9 @@ void CLeanMgr::UpdateControlFlags( )
 
 	// We can only lean while on the ground...
 
+	// RETAIL: 0x101c29c0: Tron's has no dead or ladder checks
 	if( g_pMoveMgr->CanDoFootstep() && g_pInterfaceMgr->AllowCameraMovement() &&
-		!g_pPlayerMgr->IsPlayerDead() && !g_pMoveMgr->IsBodyOnLadder() && !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() ) 
+		!g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() ) 
 	{
 		if( g_pLTClient->IsCommandOn( COMMAND_ID_LEAN_LEFT ))
 		{
@@ -574,7 +575,10 @@ void CLeanMgr::CalculateNewPosRot( LTVector &vOutPos, LTRotation &rOutRot, float
 	float fCamClipDist = g_vtCameraClipDistance.GetFloat();
 	g_vtCameraClipDistance.SetFloat( g_vtLeanCamClipDist.GetFloat() );
 
-	g_pPlayerMgr->GetPlayerCamera()->CalcNonClipPos( vOutPos, rOutRot );
+	// RETAIL: 0x101c3794: Tron's camera takes the lean's side (0 none,
+	// 1 left, 2 right)
+	g_pPlayerMgr->GetPlayerCamera()->CalcNonClipPos( vOutPos, rOutRot,
+		m_kLeanDir != kLean_Right ? (m_kLeanDir != kLean_Center ? (m_kLeanDir == kLean_Left) : 0) : 2 );
 
 	g_vtCameraClipDistance.SetFloat( fCamClipDist );
 }

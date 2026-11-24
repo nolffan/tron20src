@@ -33,7 +33,7 @@ extern char s_FileBuffer[MAX_CS_FILENAME_LEN];
 
 char* GetSound(CCharacter* pCharacter, EnumAISoundType eSound)
 {
-/*
+	// RETAIL: Tron's keeps the low violence test (0x101f5710)
 	if (g_pVersionMgr->IsLowViolence())
 	{
 		if ( (eSound == kAIS_Death) || (eSound == kAIS_DeathQuiet) || (eSound == kAIS_Pain) )
@@ -41,7 +41,7 @@ char* GetSound(CCharacter* pCharacter, EnumAISoundType eSound)
 			return BUILD_NOPAIN_WAV;
 		}
 	}
-*/
+
 
 	if (!pCharacter || !g_pServerSoundMgr) return LTNULL;
 

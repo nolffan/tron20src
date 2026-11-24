@@ -1738,9 +1738,9 @@ void CTronPlayerStats::SetJetVersion(uint16 iVersion)
 {
 	// RETAIL: Tron's (retail 0x100abf90): a major version up gives rating
 	// goo for each, a minor one says how many points came
-	int nPrevious = m_nVersion;
 	int nVersion = iVersion;
 	int iMajor = nVersion / 100;
+	int nPrevious = m_nVersion;
 	int iPreviousMajor = nPrevious / 100;
 
 	if (iMajor > iPreviousMajor)

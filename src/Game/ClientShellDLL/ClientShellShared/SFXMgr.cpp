@@ -268,6 +268,9 @@ void CSFXMgr::HandleSFXMsg(HLOCALOBJ hObj, ILTMessage_Read *pMsg)
 			pscs.nWeaponId	= pMsg->Readuint8();
 			pscs.nClientId	= pMsg->Readuint8();
 			pscs.vPos		= pMsg->ReadCompPos();
+			// RETAIL: 0x10105119, Tron's two more values
+			pscs.fVolumeScale	= pMsg->Readfloat();
+			pscs.bTronUnknown	= pMsg->Readbool();
 
 			CreateSFX(nId, &pscs);
 		}

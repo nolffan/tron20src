@@ -186,10 +186,7 @@ void CAttachClientFX::CreateAll()
 		CLIENTFX_LINK_NODE* pNode = debug_new(CLIENTFX_LINK_NODE);
 		CreateFX(i, &pNode->m_Link);
 
-		if (m_AttachFX.m_pNext)
-			m_AttachFX.m_pNext->AddToEnd(pNode);
-		else
-			m_AttachFX.m_pNext = pNode;
+		m_AttachFX.AddToEnd(pNode);
 	}
 }
 

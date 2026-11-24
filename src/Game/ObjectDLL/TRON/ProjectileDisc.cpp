@@ -716,9 +716,9 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 			}
 			break;
 
-			case MPROJ_RETURNING:
+			case MPROJ_DISC_TRONUNKNOWN14:
 			{
-				// RETAIL: the owner stops guiding the disc
+				// RETAIL: (0x10037f19) the owner stops guiding the disc
 				if ( !IsDiscDeflecting() )
 				{
 					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
@@ -727,15 +727,11 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 			}
 			break;
 
-			case MPROJ_DISC_TRONUNKNOWN14:
-			{
-				DestroyInFlight();
-				SendReturnedMessage();
-			}
-			break;
-
 			case MPROJ_DISC_TRONUNKNOWN150:
 			{
+				// RETAIL: (0x10037f37)
+				DestroyInFlight();
+				SendReturnedMessage();
 			}
 			break;
 		}
@@ -2235,8 +2231,11 @@ void CDisc::GetDeflectOffset( LTVector *pvOffset,
 //	ROUTINE:	CDisc::HandleTouch()
 //
 //	PURPOSE:	Handle touch notify message
-//				PORT: Build 69's; Tron's (0x10038a00) also deflects off
-//				characters and handles multiplayer touches
+//				RETAIL: 0x10038a00.  Build 69's has the flying and the
+//				returning states only.  Tron's deadly deflected disc
+//				smites what it touches (as HandleDeadlyDeflectTouch), a
+//				deflected disc flies on along its spiral, and a
+//				returning disc is deflected by a defending character
 //
 // ----------------------------------------------------------------------- //
 
@@ -2247,22 +2246,142 @@ void CDisc::HandleTouch( HOBJECT hObj )
 		case DISC_STATE_FLYING:
 		{
 			// handle normally
-			CTronProjectile::HandleTouch( hObj );
+			CProjectile::HandleTouch( hObj );
 		};
-		break;
+		return;
 
-		case DISC_STATE_DEFLECTING:
 		case DISC_STATE_DEADLY_DEFLECTING:
 		{
+			// only one touch in the update that deflected the disc
+			if ( m_nDeflectUpdateNum == m_nUpdateNum )
+			{
+				break;
+			}
+
+			HOBJECT hLastHitBox = LTNULL;
+
+			static HCLASS s_hFinderClass = g_pLTServer->GetClass( "Finder" );
+
+			HCLASS hClass = g_pLTServer->GetObjectClass( hObj );
+			if ( IsCharacter( m_hLastTouched ) )
+			{
+				CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( m_hLastTouched ) );
+				hLastHitBox = pCharacter->GetHitBoxObject();
+			}
+
+			if ( ( hObj == m_hLastTouched ) || ( hObj == hLastHitBox ) )
+			{
+				break;
+			}
+
+			uint32 dwFlags;
+			g_pCommonLT->GetObjectFlags( hObj, OFT_Flags, dwFlags );
+
+			bool bHitBox = ( IsCharacterHitBox( hObj ) > 0 );
+			if ( !( dwFlags & FLAG_SOLID ) )
+			{
+				if ( !bHitBox )
+				{
+					break;
+				}
+			}
+			else if ( !bHitBox && !IsCharacter( hObj ) && !g_pLTServer->IsKindOf( hClass, s_hFinderClass ) )
+			{
+				// other solid objects end the deadly deflection
+				m_eDiscState = DISC_STATE_DEFLECTING;
+				goto Deflecting;
+			}
+
+			SmiteObject( hObj );
+			m_hLastTouched = LTNULL;
 		};
-		break;
+		return;
+
+		case DISC_STATE_DEFLECTING:
+		Deflecting:
+		{
+			// the first touch some updates after the deflection sends the
+			// disc on along its spiral
+			if ( m_bDeflectAdjust && ( m_nDeflectUpdateNum < m_nUpdateNum - 5 ) )
+			{
+				m_bDeflectAdjust = false;
+
+				LTVector vOffset;
+				GetDeflectOffset( &vOffset,
+				                  m_fDeflectInitialRadius,
+				                  m_fDeflectFinalRadius,
+				                  m_fDeflectDistance,
+				                  m_fDeflectAngularSpeed,
+				                  GetDeflectElapsedTime(),
+				                  m_fDeflectTotalTime );
+
+				LTVector vNextOffset;
+				GetDeflectOffset( &vNextOffset,
+				                  m_fDeflectInitialRadius,
+				                  m_fDeflectFinalRadius,
+				                  m_fDeflectDistance,
+				                  m_fDeflectAngularSpeed,
+				                  GetDeflectElapsedTime() + 0.1f,
+				                  m_fDeflectTotalTime );
+
+				LTVector vDir = vNextOffset - vOffset;
+				LTVector vVel = ( vDir / vDir.Mag() ) * m_fDeflectVelocity;
+				g_pPhysicsLT->SetVelocity( m_hObject, &vVel );
+			}
+
+			CProjectile::HandleTouch( hObj );
+		};
+		return;
 
 		case DISC_STATE_RETURNING:
 		{
-			// the disc is back with its owner
+			if ( IsMultiplayerGame() )
+			{
+				if ( IsWorldModel( hObj ) || IsMainWorld( hObj ) )
+				{
+					// go through the world on the way back
+					g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags,
+						FLAG_GOTHRUWORLD | FLAG_FULLPOSITIONRES,
+						FLAG_REMOVEIFOUTSIDE | FLAG_GOTHRUWORLD | FLAG_STAIRSTEP | FLAG_GRAVITY | FLAG_SOLID | FLAG_FULLPOSITIONRES );
+					return;
+				}
+
+				if ( hObj == m_hFiredFrom )
+				{
+					// the disc is back with its owner
+					SendReturnedMessage();
+					return;
+				}
+
+				if ( IsBlockable() )
+				{
+					CProjectile::HandleTouch( hObj );
+				}
+
+				return;
+			}
+
 			if ( hObj == m_hFiredFrom )
 			{
+				// the disc is back with its owner
 				SendReturnedMessage();
+				return;
+			}
+
+			if ( IsCharacter( hObj ) )
+			{
+				CCharacter *pCharacter = dynamic_cast< CCharacter* >( g_pLTServer->HandleToObject( hObj ) );
+				if ( pCharacter->IsDefending() )
+				{
+					HandleDeflect();
+
+					// tell the character that it blocked the disc
+					CAutoMessage cMsg;
+					cMsg.Writeuint32( MID_PROJECTILE );
+					cMsg.Writeuint8( MPROJ_BLOCKED );
+					cMsg.Writeuint8( IMPACT_TYPE_BLOCKED );
+					g_pLTServer->SendToObject( cMsg.Read(), m_hObject, hObj, MESSAGE_GUARANTEED );
+				}
 			}
 		};
 		break;

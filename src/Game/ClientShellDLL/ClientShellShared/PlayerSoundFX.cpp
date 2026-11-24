@@ -36,6 +36,8 @@ LTBOOL CPlayerSoundFX::Init(SFXCREATESTRUCT* psfxCreateStruct)
 	m_nClientId = pPSCS->nClientId;
 	m_nType		= pPSCS->nType;
 	m_nWeaponId	= pPSCS->nWeaponId;
+	m_fVolumeScale	= pPSCS->fVolumeScale;
+	m_bTronUnknown	= pPSCS->bTronUnknown;
 
     return LTTRUE;
 }
@@ -66,10 +68,14 @@ LTBOOL CPlayerSoundFX::CreateObject(ILTClient *pClientDE)
 		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(m_nWeaponId);
 		if (!pWeapon) return LTFALSE;
 
-		// PORT: retail passes Tron's volume scale (+0x48, fire sounds only) and
-		// the byte at +0x4c (0x101949d7); ours has neither, so the defaults
-		// stand in.
-		PlayWeaponSound(pWeapon, m_vPos, (PlayerSoundId)m_nType);
+		// RETAIL: 0x101949d7 -- only the fire sounds take the volume scale
+		LTFLOAT fVolumeScale = 1.0f;
+		if (eSndType >= PSI_FIRE && eSndType <= PSI_SILENCED_FIRE)
+		{
+			fVolumeScale = m_fVolumeScale;
+		}
+
+		PlayWeaponSound(pWeapon, m_vPos, (PlayerSoundId)m_nType, fVolumeScale, m_bTronUnknown);
 	}
 	else
 	{

@@ -193,6 +193,7 @@ void CAIGoalAbstractUseObject::SetStateUseObject()
 	pStateUseObject->SetAllowDialogue(m_bAllowDialogue);
 	pStateUseObject->TurnOnLights( m_bTurnOnLights );
 	pStateUseObject->TurnOffLights( m_bTurnOffLights );
+	pStateUseObject->SetIgnoreDialogue( m_bIgnoreDialogue );
 
 	// Find command string for AINodeType matching UseObject.
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
@@ -455,10 +456,10 @@ HMODELANIM CAIGoalAbstractUseObject::GetAlternateDeathAnimation()
 {
 	// Were killed in the middle of an activity?
 
-	// jrg - 7/29/02 - don't count the activity if we haven't fully transitioned yet.
+	// RETAIL: Tron's has no test of the animation's transition (NOLF2's
+	// of 7/29/02; 0x102726e0)
 	if( ( m_pAI->GetState()->GetStateType() == kState_HumanUseObject ) &&
-		( m_pAI->GetState()->GetStateStatus() == kSStat_PathComplete ) && 
-		(!m_pAI->GetAnimationContext()->IsTransitioning())	) 
+		( m_pAI->GetState()->GetStateStatus() == kSStat_PathComplete ) )
 	{
 		CAIHumanStateUseObject* pStateUseObject = (CAIHumanStateUseObject*)m_pAI->GetState();
 		EnumAnimProp eActivity = pStateUseObject->GetActivity();

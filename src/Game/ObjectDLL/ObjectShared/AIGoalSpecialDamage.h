@@ -14,28 +14,10 @@
 
 #include "AIGoalAbstractSearch.h"
 #include "AnimationMgr.h"
+#include "Timer.h"
 
 enum DamageType;
 enum EnumAIStimulusID;
-
-// RETAIL: Tron's (+0x110 in CAIGoalSpecialDamage): a start time, a
-// duration (HandleDamage sets 0.5), a time and a flag; built before the
-// vtable is set (0x1018fd45), so it has its own constructor. Names ours.
-struct CAITronSpecialDamageTimer
-{
-	CAITronSpecialDamageTimer()
-	{
-		m_fStartTime = 0.f;
-		m_fDuration = 0.f;
-		m_fTime = 0.f;
-		m_bOn = false;
-	}
-
-	LTFLOAT		m_fStartTime;	// +0x0 (saved as a time)
-	LTFLOAT		m_fDuration;	// +0x4
-	LTFLOAT		m_fTime;		// +0x8 (saved as a time)
-	bool		m_bOn;			// +0xc
-};
 
 class CAIGoalSpecialDamage : public CAIGoalAbstractSearch
 {
@@ -102,6 +84,19 @@ class CAIGoalSpecialDamage : public CAIGoalAbstractSearch
 		void ReleasePRodAttacker();
 		void ReleaseEnergyClawAttacker();
 
+		// RETAIL: Tron's (0x10191f50, 0x10192390; the names are ours): true
+		// when the attacker's PRod or energy claw still points at us.
+		bool IsPRodAttackerAiming();
+		bool IsEnergyClawAttackerAiming();
+
+		// RETAIL: Tron's (0x101928d0; the name is ours): the damage is
+		// over, the AI searches or becomes aware.
+		void EndSpecialDamage();
+
+		// RETAIL: Tron's (0x10192990; the name is ours): NOLF2's
+		// ActivateGoal body. ActivateGoal and UpdateGoal call it.
+		void StartSpecialDamage();
+
 	protected:
 
 		DamageType			m_eDamageType;
@@ -118,9 +113,14 @@ class CAIGoalSpecialDamage : public CAIGoalAbstractSearch
 		LTBOOL				m_bFleeing;				// +0x100
 		LTFLOAT				m_fRelaxTime;			// +0x104
 		LTFLOAT				m_fTronUnknown108;		// +0x108, saved after the two bools
-		bool				m_bInfinite;			// +0x10c, a bool in Tron
-		bool				m_bNeedsClearState;		// +0x10d
-		CAITronSpecialDamageTimer	m_TronUnknown110;	// +0x110
+		// RETAIL: Tron has no m_bInfinite (no SLEEPFOREVER command).
+		bool				m_bNeedsClearState;		// +0x10c
+		// RETAIL: Tron's (UpdateGoal 0x10190683): start the damage again on
+		// the next update (the name is ours).
+		bool				m_bRestartDamage;		// +0x10d
+		// RETAIL: Tron's (+0x110): the PRod and energy claw damage time
+		// (HandleDamage starts it for 0.5 seconds; the name is ours).
+		CTimer				m_DamageTimer;			// +0x110
 };
 
 

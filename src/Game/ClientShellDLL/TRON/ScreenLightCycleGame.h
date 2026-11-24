@@ -25,6 +25,7 @@ class CScreenLightCycleGame : public CBaseScreenLightCycle
 {
 public:
 	CScreenLightCycleGame();
+	virtual ~CScreenLightCycleGame();
 
 	// Builds the screen
 	virtual LTBOOL	Build();

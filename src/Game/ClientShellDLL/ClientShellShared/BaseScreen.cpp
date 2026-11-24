@@ -233,10 +233,10 @@ LTBOOL CBaseScreen::Init(int nScreenID)
 		uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
 		float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
 		float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
-		uint8 nFont = g_pLayoutMgr->GetHelpFont();
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
-		CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+		// TRON: the font for the help's height (RETAIL: 0x100d2442)
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 		s_pHelpStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),helpX,helpY);
 		s_pHelpStr->SetCharScreenHeight(nSize);
 		s_pHelpStr->SetColor(argbWhite);
@@ -383,19 +383,20 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 
 	LTIntPt tmpPos;
 
-	// Render the title
+	// Render the title (RETAIL: 0x100d2866: Tron offsets the shadows by whole
+	// pixels)
 	if (m_pTitleString)
 	{
 		int32 px,py;
 		m_pTitleString->GetPosition(&px,&py);
-		px += 2.0f;
-		py += 2.0f;
+		px += 2;
+		py += 2;
 		m_pTitleString->SetColor(0xBF000000);
 		m_pTitleString->SetPosition(px,py);
 		m_pTitleString->Render();
 
-		px -= 2.0f;
-		py -= 2.0f;
+		px -= 2;
+		py -= 2;
 		m_pTitleString->SetColor(m_TitleColor);
 		m_pTitleString->SetPosition(px,py);
 		m_pTitleString->Render();
@@ -414,7 +415,7 @@ LTBOOL CBaseScreen::Render(HSURFACE hDestSurf)
 		s_pHelpStr->GetPosition(&x,&y);
 
 		//drop shadow
-		s_pHelpStr->SetPosition(x+2.0f,y+2.0f);
+		s_pHelpStr->SetPosition(x+2,y+2);
 		s_pHelpStr->SetColor(argbBlack);
 		s_pHelpStr->Render();
 
@@ -776,8 +777,9 @@ LTBOOL CBaseScreen::OnLButtonUp(int x, int y)
 		{
 			if (pCtrl->IsEnabled() )
 			{
-				SetSelection(nControlIndex);
+				// RETAIL: 0x100d3150: Tron lets the control handle it first
 				LTBOOL bHandled = pCtrl->OnLButtonUp(x,y);
+				SetSelection(nControlIndex);
 				if (bHandled)
 				{
 					if (pCtrl == &s_BackArrow || pCtrl == m_pNext)
@@ -1029,23 +1031,29 @@ LTBOOL CBaseScreen::GetControlUnderPoint(int xPos, int yPos, uint16 *pnIndex)
 {
 	_ASSERT(pnIndex);
 
-	if (m_pCaptureCtrl && m_pCaptureCtrl->IsOnMe(xPos,yPos))
+	// RETAIL: 0x100d3680: Tron has no capture control here. While the
+	// popup's controls are up, only they are looked at.
+	if (m_xTronUnknown50.size() > 0)
 	{
-		*pnIndex = GetIndex(m_pCaptureCtrl);
-		return LTTRUE;
+		for (int nPopup = m_xTronUnknown50.size() - 1; nPopup >= 0; nPopup--)
+		{
+			if (m_xTronUnknown50[nPopup]->IsOnMe(xPos,yPos) && m_xTronUnknown50[nPopup]->IsEnabled())
+			{
+				*pnIndex = GetIndex(m_xTronUnknown50[nPopup]);
+				return LTTRUE;
+			}
+		}
+		return LTFALSE;
 	}
 
-
-	// See if the user clicked on any of the controls.
-	for (uint16 i=0; i < m_controlArray.size() ; i++)
+	// See if the user clicked on any of the controls (start with the last
+	// control)
+	for (int ndx = m_controlArray.size() - 1; ndx >= 0; ndx--)
 	{
-		//start with last control
-		int ndx = (m_controlArray.size()-1) - i;
-
 		// Check to see if the click is in the bounding box for the control
-		if (m_controlArray[i]->IsOnMe(xPos,yPos) && m_controlArray[i]->IsEnabled())
+		if (m_controlArray[ndx]->IsOnMe(xPos,yPos) && m_controlArray[ndx]->IsEnabled())
 		{
-			*pnIndex=i;
+			*pnIndex = ndx;
 
             return LTTRUE;
 		}
@@ -1079,6 +1087,8 @@ void CBaseScreen::RemoveAll(LTBOOL bDelete)
 		}
 	}
 	m_controlArray.clear();
+	// RETAIL: 0x100d3805: Tron clears the popup's controls too
+	m_xTronUnknown50.clear();
 	if (m_nSelection >= 0)
 		m_nSelection = kNoSelection;
 
@@ -1419,8 +1429,9 @@ CLTGUIColumnCtrl* CBaseScreen::CreateColumnCtrl(uint32 commandID, int helpID, LT
 		nFont = g_pLayoutMgr->GetScreenFontFace((eScreenID)m_nScreenID);
 	}
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
+	// TRON: the font for the scaled height, as CreateTextItem (RETAIL: 0x100d4554)
 	uint8 nFontSize = g_pLayoutMgr->GetScreenFontSize((eScreenID)m_nScreenID);
+	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(g_pInterfaceResMgr->GetXRatio() * (float)nFontSize));
 
 
     if (!pCtrl->Create(commandID, helpID, pFont, nFontSize, this))
@@ -1478,6 +1489,15 @@ void CBaseScreen::UseBack(LTBOOL bBack,LTBOOL bOK,LTBOOL bReturn)
 }
 
 
+// RETAIL: 0x100d46e0: Tron's string table (ClientRes/TRON/ClientRes.rc)
+// numbers the back button's string 62 and its help strings 149, 235 and
+// 311, not as
+// ClientResShared.h (NOLF2's) does. The names are ours.
+#define IDS_TRON_BACK			62
+#define IDS_TRON_HELP_BACK		149
+#define IDS_TRON_HELP_OK		235
+#define IDS_TRON_HELP_RETURN	311
+
 void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 {
 
@@ -1486,12 +1506,12 @@ void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 	if (bOK)
 	{
 		nStr = IDS_OK;
-		nHelp = IDS_HELP_OK;
+		nHelp = IDS_TRON_HELP_OK;
 	}
 	else
 	{
-		nStr = IDS_BACK;
-		nHelp = IDS_HELP_BACK;
+		nStr = IDS_TRON_BACK;
+		nHelp = IDS_TRON_HELP_BACK;
 	}
 	uint8 nFont = g_pLayoutMgr->GetBackFont();
 	uint8 nFontSize = g_pLayoutMgr->GetBackSize();
@@ -1503,11 +1523,11 @@ void CBaseScreen::CreateBack(LTBOOL bOK, LTBOOL bReturn)
 	s_BackArrow.SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
 		
 	if (bReturn)
-		s_BackArrow.SetHelpID(IDS_HELP_RETURN);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_RETURN);
 	else if (bOK)
-		s_BackArrow.SetHelpID(IDS_HELP_OK);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_OK);
 	else
-		s_BackArrow.SetHelpID(IDS_HELP_BACK);
+		s_BackArrow.SetHelpID(IDS_TRON_HELP_BACK);
 
 	s_BackArrow.SetCommandHandler(this);
 
@@ -1533,7 +1553,16 @@ void CBaseScreen::RemoveControl(CLTGUICtrl* pControl,LTBOOL bDelete)
 		debug_delete(pControl);
 	}
 
+	// RETAIL: 0x100d4823: Tron takes it out of the popup's controls too
+	iter = m_xTronUnknown50.begin();
 
+	while (iter != m_xTronUnknown50.end() && (*iter) != pControl)
+		iter++;
+
+	if (iter != m_xTronUnknown50.end())
+	{
+		m_xTronUnknown50.erase(iter);
+	}
 }
 
 uint32 CBaseScreen::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2)
@@ -1989,7 +2018,7 @@ void CBaseScreen::CreateCharFX(INT_CHAR *pChar)
 		bcs.fMinRotateVel = 1.0f;
 		bcs.fMaxRotateVel = 1.0f;
 
-		bcs.nMenuLayer = pChar->nMenuLayer;
+		// RETAIL: no menu layer in Tron's characters
 
 
 		if (m_CharSFX.Init(&bcs))
@@ -2050,7 +2079,6 @@ void CBaseScreen::CreateAttachFX(INT_ATTACH *pAttach)
 		bcs.nType = OT_MODEL;
 		bcs.fLifeTime = 1000000.0f;
 		bcs.bLoop = LTTRUE;
-		bcs.nMenuLayer = m_CharSFX.GetMenuLayer();
 
 		CBaseScaleFX *pSFX = &m_aAttachment[m_nNumAttachments].sfx;
 

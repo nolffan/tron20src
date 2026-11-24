@@ -20,6 +20,9 @@
 #include "Weapon.h"
 #include "FXButeMgr.h"
 #include "LightCycleMgr.h"
+#include "ServerLightCycleMgr.h"
+#include "LightCycleMatchMgr.h"
+#include "TronGameServerShell.h"
 #include "LightCycle.h"
 #include "LightCycleButeMgr.h"
 #include "LightCycleGameData.h"
@@ -33,7 +36,6 @@ BEGIN_CLASS(CTronPlayerObj)
 END_CLASS_DEFAULT_FLAGS(CTronPlayerObj, CPlayerObj, NULL, NULL, CF_HIDDEN)
 
 #define TRIGGER_ACQUIRE_SUBROUTINE				"ACQUIRESUB"
-#define TRIGGER_ACQUIRE_ADDITIVE				"ACQUIREADD"
 #define TRIGGER_ACQUIRE_PROCEDURAL				"ACQUIREPROC"
 #define TRIGGER_ACQUIRE_PRIMITIVE				"ACQUIREPRIM"
 #define TRIGGER_ADD_BUILD_POINTS				"ADDBUILDPOINTS"
@@ -234,8 +236,13 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 		}
 		break;
 
-		// PORT: Tron's message 143 calls a CCharacter function that is not
-		// written yet (retail 0x10090160, with true)
+		case MID_TRONUNKNOWN_143:
+		{
+			// RETAIL: 0x10062c5a
+			HandleFootstep( true );
+			return 0;
+		}
+		break;
 	}
 
 	return CPlayerObj::ObjectMessageFn(hSender, pMsg);
@@ -279,8 +286,9 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 
 			// make sure the current weapon is the weapon
 			// being blocked with
+			// RETAIL: Tron compares the weapon id (CWeapon +0x40, 0x10062d63)
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
+			if ( !pWeapon || ( pWeapon->GetId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
 				return true;
@@ -327,8 +335,9 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 
 			// make sure the current weapon is the weapon
 			// being blocked with
+			// RETAIL: Tron compares the weapon id (CWeapon +0x40, 0x10062d63)
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
+			if ( !pWeapon || ( pWeapon->GetId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
 				return true;
@@ -363,7 +372,7 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			cMsg.Writeuint8( MID_PROJECTILE );
 			cMsg.Writeuint8( MPROJ_BLOCKED );
 			cMsg.Writeuint8( pMsg->Readuint8() );
-			g_pLTServer->SendToClient( cMsg.Read(), GetClient(), MESSAGE_GUARANTEED );
+			g_pLTServer->SendToClient( cMsg.Read(), m_hClient, MESSAGE_GUARANTEED );
 
 			return true;
 		}
@@ -964,7 +973,7 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 		cMsg.Writeuint8(0);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat(m_fOldMaxEnergy);
-		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
+		g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
 	}
 
 	// Call the base class
@@ -1665,20 +1674,45 @@ bool CTronPlayerObj::IsInfectingDamage( DamageType eType )
 // ----------------------------------------------------------------------- //
 bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 {
+	// RETAIL: 0x10064520.  The commands after ACQUIRENOTE are Tron's; the
+	// names of the messages and of the members they set are ours.
 	static CParsedMsg::CToken s_cTok_Acquire_Subroutine(TRIGGER_ACQUIRE_SUBROUTINE);
-	static CParsedMsg::CToken s_cTok_Acquire_Additive(TRIGGER_ACQUIRE_ADDITIVE);
 	static CParsedMsg::CToken s_cTok_Acquire_Procedural(TRIGGER_ACQUIRE_PROCEDURAL);
 	static CParsedMsg::CToken s_cTok_Acquire_Primitive(TRIGGER_ACQUIRE_PRIMITIVE);
+	static CParsedMsg::CToken s_cTok_Acquire_PSet("ACQUIREPSET");
+	static CParsedMsg::CToken s_cTok_Acquire_Note("ACQUIRENOTE");
+	static CParsedMsg::CToken s_cTok_Set_Build_Points("SETBUILDPOINTS");
 	static CParsedMsg::CToken s_cTok_Add_Build_Points(TRIGGER_ADD_BUILD_POINTS);
-	static CParsedMsg::CToken s_cTok_Start_LightCycle(TRIGGER_START_LIGHTCYCLE);
-	static CParsedMsg::CToken s_cTok_End_LightCycle(TRIGGER_END_LIGHTCYCLE);
-	// RETAIL: Tron's (retail 0x10064520; PORT: not all of retail's yet)
 	static CParsedMsg::CToken s_cTok_Add_Ping("ADDPING");
 	static CParsedMsg::CToken s_cTok_Remove_Ping("REMOVEPING");
+	static CParsedMsg::CToken s_cTok_IOCam("IOCAM");
+	static CParsedMsg::CToken s_cTok_CamFX("CAMFX");
+	static CParsedMsg::CToken s_cTok_Turn("TURN");
+	static CParsedMsg::CToken s_cTok_Start_LightCycle(TRIGGER_START_LIGHTCYCLE);
+	static CParsedMsg::CToken s_cTok_Start_SuperCycle("STARTSUPERCYCLE");
+	static CParsedMsg::CToken s_cTok_End_LightCycle(TRIGGER_END_LIGHTCYCLE);
 	static CParsedMsg::CToken s_cTok_Sin_Console_Var("SINCONSOLEVAR");
 	static CParsedMsg::CToken s_cTok_Ramp_Console_Var("RAMPCONSOLEVAR");
+	static CParsedMsg::CToken s_cTok_Acquire_Powerup("ACQUIREPOWERUP");
 	static CParsedMsg::CToken s_cTok_Announcement("ANNOUNCEMENT");
+	static CParsedMsg::CToken s_cTok_Announcement_Version("ANNOUNCEMENTFINALVERSIONNUMBER");
 	static CParsedMsg::CToken s_cTok_Rating("RATING");
+	static CParsedMsg::CToken s_cTok_Race_Trigger("RACETRIGGER");
+	static CParsedMsg::CToken s_cTok_Race_Trigger_No("RACETRIGGERNO");
+	static CParsedMsg::CToken s_cTok_Lock_Disc("LOCKDISC");
+	static CParsedMsg::CToken s_cTok_Lock_Weapon("LOCKWEAPON");
+	static CParsedMsg::CToken s_cTok_Unlock_Weapon("UNLOCKWEAPON");
+	static CParsedMsg::CToken s_cTok_Set_System_Config("SETSYSTEMCONFIG");
+	static CParsedMsg::CToken s_cTok_1P_Cam("1PCAM");
+	static CParsedMsg::CToken s_cTok_3P_Cam("3PCAM");
+	static CParsedMsg::CToken s_cTok_Max_Zoom("MAXZOOM");
+	static CParsedMsg::CToken s_cTok_Set_Sub_Help("SETSUBHELP");
+	static CParsedMsg::CToken s_cTok_Manage_Subs("MANAGESUBS");
+	static CParsedMsg::CToken s_cTok_Enable_LC_Dialog("ENABLELCDIALOG");
+	static CParsedMsg::CToken s_cTok_Kill_All_AI_LC("KILLALLAILC");
+	static CParsedMsg::CToken s_cTok_Wave_Complete("WAVECOMPLETE");
+	static CParsedMsg::CToken s_cTok_Spawn_AI_Cycles("SPAWNAICYCLES");
+	static CParsedMsg::CToken s_cTok_Test_Hit_By_Corruption("TestHitByCorruption");
 
 	if(cMsg.GetArg(0) == s_cTok_Acquire_Subroutine)
 	{
@@ -1700,7 +1734,7 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			}
 			else
 			{
-				g_pLTServer->CPrint("ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n",cMsg.GetArg(2));
+				g_pLTServer->CPrint("ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n",cMsg.GetArg(2).c_str());
 				ASSERT(FALSE);
 				return false;
 			}
@@ -1718,7 +1752,7 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 				}
 				else
 				{
-					g_pLTServer->CPrint("ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n",cMsg.GetArg(3));
+					g_pLTServer->CPrint("ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n",cMsg.GetArg(3).c_str());
 					ASSERT(FALSE);
 					return false;
 				}
@@ -1726,10 +1760,6 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		}
 
 		return AcquireSubroutine(pSub,pState,pCondition);
-	}
-	else if(cMsg.GetArg(0) == s_cTok_Acquire_Additive)
-	{
-		return AcquireAdditive(cMsg.GetArg(1));
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Acquire_Procedural)
 	{
@@ -1739,9 +1769,26 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	{
 		return AcquirePrimitive(cMsg.GetArg(1));
 	}
+	else if(cMsg.GetArg(0) == s_cTok_Acquire_PSet)
+	{
+		return AcquirePermissionSet(cMsg.GetArg(1));
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Acquire_Note)
+	{
+		return AcquireNote(cMsg.GetArg(1));
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Set_Build_Points)
+	{
+		if(cMsg.GetArgCount() > 0)
+		{
+			m_nBuildPoints = atoi(cMsg.GetArg(1));
+		}
+
+		return true;
+	}
 	else if(cMsg.GetArg(0) == s_cTok_Add_Build_Points)
 	{
-		if(cMsg.GetArgCount() > 1)
+		if(cMsg.GetArgCount() > 0)
 		{
 			int nBuildPoints = atoi(cMsg.GetArg(1));
 			m_nBuildPoints += nBuildPoints;
@@ -1773,6 +1820,99 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			RemovePing(cMsg.GetArg(1));
 		}
 	}
+	else if(cMsg.GetArg(0) == s_cTok_IOCam)
+	{
+		// "IOCAM <on/off> [Location] [Target]": a camera at the location's
+		// object, looking at the target's
+		if(cMsg.GetArgCount() > 2)
+		{
+			const char* pszLocation = cMsg.GetArg(2);
+			ObjArray<HOBJECT, MAX_OBJECT_ARRAY_SIZE> objArray;
+			g_pLTServer->FindNamedObjects(pszLocation, objArray);
+			HOBJECT hLocation = objArray.NumObjects() ? objArray.GetObject(0) : LTNULL;
+			if(hLocation)
+			{
+				CAutoMessage cIOCamMsg;
+				cIOCamMsg.Writeuint8(MID_TRON_UNKNOWN_180);
+				cIOCamMsg.Writeuint8(1);
+
+				LTVector vPos;
+				g_pLTServer->GetObjectPos(hLocation, &vPos);
+				LTRotation rRot;
+				g_pLTServer->GetObjectRotation(hLocation, &rRot);
+
+				cIOCamMsg.WriteCompLTVector(vPos);
+				cIOCamMsg.WriteCompLTRotation(rRot);
+
+				g_pLTServer->FindNamedObjects(cMsg.GetArg(3), objArray);
+				cIOCamMsg.WriteObject(objArray.NumObjects() ? objArray.GetObject(0) : LTNULL);
+
+				g_pLTServer->SendToClient(cIOCamMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+			}
+		}
+		else
+		{
+			CAutoMessage cIOCamMsg;
+			cIOCamMsg.Writeuint8(MID_TRON_UNKNOWN_180);
+			cIOCamMsg.Writeuint8(0);
+			g_pLTServer->SendToClient(cIOCamMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		}
+
+		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_CamFX)
+	{
+		bool bOn = false;
+		if(cMsg.GetArgCount() > 1 && !_strcmpi(cMsg.GetArg(1), "on"))
+		{
+			bOn = true;
+		}
+
+		CAutoMessage cCamFXMsg;
+		cCamFXMsg.Writeuint8(MID_TRON_UNKNOWN_188);
+		cCamFXMsg.Writeuint8(bOn);
+		g_pLTServer->SendToClient(cCamFXMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Turn)
+	{
+		// "TURN <left/right>": the turn arrow of the light cycle
+		if(cMsg.GetArgCount() > 1)
+		{
+			CAutoMessage cTurnMsg;
+			cTurnMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+			if(!_stricmp(cMsg.GetArg(1), "left"))
+			{
+				cTurnMsg.Writeuint8(LCI_TRONUNKNOWN_4);
+			}
+			else
+			{
+				cTurnMsg.Writeuint8(LCI_TRONUNKNOWN_5);
+			}
+			g_pLTServer->SendToClient(cTurnMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
+	{
+		// RETAIL: Tron starts and ends the cycle in Update
+		if(!IsMultiplayerGame())
+		{
+			m_bTronUnknown32f8 = true;
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Start_SuperCycle)
+	{
+		if(!IsMultiplayerGame())
+		{
+			m_bTronUnknown32f9 = true;
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_End_LightCycle)
+	{
+		if(!IsMultiplayerGame())
+		{
+			m_bTronUnknown32fa = true;
+		}
+	}
 	else if(cMsg.GetArg(0) == s_cTok_Sin_Console_Var)
 	{
 		return HandleSinConsoleVarMsg(cMsg);
@@ -1781,23 +1921,156 @@ bool CTronPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	{
 		return HandleRampConsoleVarMsg(cMsg);
 	}
+	else if(cMsg.GetArg(0) == s_cTok_Acquire_Powerup)
+	{
+		LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(m_hObject);
+		if(pCyclist)
+		{
+			for(int i = 0; i < kNumLCPowerupTypes; i++)
+			{
+				if(!_stricmp(cMsg.GetArg(1), g_aszLCPowerupNames[i]))
+				{
+					g_pLightCycleMgr->SetCyclistPowerup(pCyclist, i);
+				}
+			}
+		}
+
+		return true;
+	}
 	else if(cMsg.GetArg(0) == s_cTok_Announcement)
 	{
 		return HandleAnnouncementMsg(cMsg);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Announcement_Version)
+	{
+		CAutoMessage cVersionMsg;
+		cVersionMsg.Writeuint8(MID_TRON_VERSION);
+		g_pLTServer->SendToClient(cVersionMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		return true;
 	}
 	else if(cMsg.GetArg(0) == s_cTok_Rating)
 	{
 		return HandleRatingMsg(cMsg);
 	}
-	else if(cMsg.GetArg(0) == s_cTok_Start_LightCycle)
+	else if(cMsg.GetArg(0) == s_cTok_Race_Trigger)
 	{
-		// RETAIL: Tron starts and ends the cycle in Update (it sets flags
-		// at 0x32f8 and 0x32fa, retail 0x10064520)
-		m_bTronUnknown32f8 = true;
+		if(cMsg.GetArgCount() > 1)
+		{
+			strcpy(m_szTronUnknown3267, cMsg.GetArg(1));
+		}
 	}
-	else if(cMsg.GetArg(0) == s_cTok_End_LightCycle)
+	else if(cMsg.GetArg(0) == s_cTok_Race_Trigger_No)
 	{
-		m_bTronUnknown32fa = true;
+		bool bSet = false;
+		if(cMsg.GetArgCount() > 1)
+		{
+			bSet = true;
+			strcpy(m_szTronUnknown32a7, cMsg.GetArg(1));
+		}
+
+		CAutoMessage cRaceMsg;
+		cRaceMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+		cRaceMsg.Writeuint8(LCI_TRONUNKNOWN_21);
+		cRaceMsg.Writebool(bSet);
+		g_pLTServer->SendToClient(cRaceMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Lock_Disc)
+	{
+		CAutoMessage cLockMsg;
+		cLockMsg.Writeuint8(MID_TRON_UNKNOWN_152);
+		cLockMsg.Writebool(true);
+		g_pLTServer->SendToClient(cLockMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Lock_Weapon)
+	{
+		CAutoMessage cLockMsg;
+		cLockMsg.Writeuint8(MID_TRON_UNKNOWN_152);
+		cLockMsg.Writebool(true);
+		g_pLTServer->SendToClient(cLockMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Unlock_Weapon)
+	{
+		CAutoMessage cLockMsg;
+		cLockMsg.Writeuint8(MID_TRON_UNKNOWN_152);
+		cLockMsg.Writebool(false);
+		g_pLTServer->SendToClient(cLockMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Set_System_Config)
+	{
+		CAutoMessage cConfigMsg;
+		cConfigMsg.Writeuint8(MID_SYSTEM_MEMORY_CONFIGURATION);
+		cConfigMsg.WriteString(cMsg.GetArg(1));
+		g_pLTServer->SendToClient(cConfigMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+		return true;
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Set_Sub_Help)
+	{
+		return AcquireSubHelp(cMsg.GetArg(1));
+	}
+	else if(cMsg.GetArg(0) == s_cTok_1P_Cam)
+	{
+		CAutoMessage cCamMsg;
+		cCamMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+		cCamMsg.Writeuint8(LCI_TRONUNKNOWN_18);
+		g_pLTServer->SendToClient(cCamMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_3P_Cam)
+	{
+		CAutoMessage cCamMsg;
+		cCamMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+		cCamMsg.Writeuint8(LCI_TRONUNKNOWN_19);
+		g_pLTServer->SendToClient(cCamMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Max_Zoom)
+	{
+		CAutoMessage cZoomMsg;
+		cZoomMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+		cZoomMsg.Writeuint8(LCI_TRONUNKNOWN_20);
+		float fZoom = (float)atof(cMsg.GetArg(1));
+		cZoomMsg.Writefloat(fZoom);
+		g_pLTServer->SendToClient(cZoomMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+
+		if(GetGameType() == eGameTypeMultiplayerLightcycles)
+		{
+			g_pLightCycleMatchMgr->SetTronUnknownA4(fZoom);
+		}
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Manage_Subs)
+	{
+		CAutoMessage cSubsMsg;
+		cSubsMsg.Writeuint8(MID_TRON_UNKNOWN_163);
+		g_pLTServer->SendToClient(cSubsMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Enable_LC_Dialog)
+	{
+		bool bEnable = true;
+		if(cMsg.GetArgCount() >= 2 && !IsTrueChar(*cMsg.GetArg(1)))
+		{
+			bEnable = false;
+		}
+
+		((CServerLightCycleMgr*)g_pLightCycleMgr)->SetTronUnknown1365(bEnable);
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Kill_All_AI_LC)
+	{
+		((CServerLightCycleMgr*)g_pLightCycleMgr)->DerezAllAICyclists();
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Wave_Complete)
+	{
+		((CTronGameServerShell*)g_pGameServerShell)->NextCircuitWave();
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Spawn_AI_Cycles)
+	{
+		((CTronGameServerShell*)g_pGameServerShell)->SpawnAICycles();
+	}
+	else if(cMsg.GetArg(0) == s_cTok_Test_Hit_By_Corruption)
+	{
+		CAutoMessage cHitMsg;
+		cHitMsg.Writeuint8(MID_TRON_UNKNOWN_151);
+		g_pLTServer->SendToClient(cHitMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
 	}
 	
 	// Base-class it
@@ -1860,23 +2133,6 @@ bool CTronPlayerObj::AcquireSubroutine(char const* pName, char const* pState, ch
 		cMsg.WriteString("NORMAL");
 	}
 	
-	g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
-	return true;
-}
-
-// --------------------------------------------------------------------------- //
-//
-//	ROUTINE:	CTronPlayerObj::AcquireAdditive
-//
-//	PURPOSE:	A message came telling us to acquire this
-//
-// --------------------------------------------------------------------------- //
-bool CTronPlayerObj::AcquireAdditive(char const* pName)
-{
-	// Send a message to the client
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_ADDITIVE_OBTAINED);
-	cMsg.WriteString(pName);
 	g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
 	return true;
 }

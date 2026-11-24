@@ -859,7 +859,7 @@ void RADAROBJCREATESTRUCT::Write( ILTMessage_Write *pMsg )
 	
 	pMsg->Writeuint8( nRadarTypeId );
 	pMsg->Writebool( bOn );
-	pMsg->Writeuint8( nTeamId );
+	// RETAIL: CShell 0x101ab3e0: Tron's radar objects send no team
 }
 
 // ----------------------------------------------------------------------- //
@@ -878,8 +878,6 @@ void RADAROBJCREATESTRUCT::Read( ILTMessage_Read *pMsg )
 	
 	nRadarTypeId	= pMsg->Readuint8();
 	bOn				= pMsg->Readbool();
-	nTeamId			= pMsg->Readuint8( );
-	if( nTeamId > MAX_TEAMS )
-		nTeamId = INVALID_TEAM;
+	// RETAIL: CShell 0x101ab420: Tron's radar objects read no team
 }
 #endif // _CLIENTBUILD

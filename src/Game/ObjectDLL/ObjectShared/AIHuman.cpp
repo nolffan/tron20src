@@ -40,6 +40,7 @@
 #include "AIVolumeMgr.h"
 #include "AIMovement.h"
 #include "AnimationMgr.h"
+#include "..\TRON\SortedStringList.h"	// RETAIL: Tron's sorted plugin lists
 #include "AIHumanState.h"
 #include "AIMovementModifier.h"
 #include "AINodeSensing.h"
@@ -2817,43 +2818,59 @@ LTRESULT CAIHumanPlugin::PreHook_EditStringList(const char* szRezPath, const cha
 		return LT_OK;
 	}
 
+	// RETAIL: 0x10171380.  Tron sorts the goal sets, the human models and
+	// the brains (CSortedStringList; the third list's code is out of line,
+	// 0x10171b00 its constructor)
 	if ( !_strcmpi("GoalSet", szPropName) )
 	{
-		// TODO: make sure we don't overflow cMaxStringLength or cMaxStrings
+		CSortedStringList lstGoalSets( cMaxStrings, cMaxStringLength );
+		lstGoalSets.AddFirstName( "None" );
+
 		uint32 cGoalSets = s_AIGoalButeMgr.GetNumGoalSets();
-		_ASSERT(cMaxStrings >= cGoalSets);
 		AIGBM_GoalSet* pGoalSet;
 		for ( uint32 iGoalSet = 0 ; iGoalSet < cGoalSets ; iGoalSet++ )
 		{
 			pGoalSet = s_AIGoalButeMgr.GetGoalSet(iGoalSet);
 			if( pGoalSet && !( pGoalSet->dwGoalSetFlags & AIGBM_GoalSet::kGS_Hidden ) )
 			{
-				strcpy(aszStrings[(*pcStrings)++], pGoalSet->szName);
+				lstGoalSets.AddString( pGoalSet->szName );
 			}
 		}
+
+		lstGoalSets.PopulateStringList( aszStrings, pcStrings );
 
 		return LT_OK;
 	}
 	else if ( !_strcmpi("ModelTemplate", szPropName) )
 	{
+		// RETAIL: only the human models
+		CSortedStringList lstModels( cMaxStrings, cMaxStringLength );
+
 		uint32 cModels = g_pModelButeMgr->GetNumModels();
-		_ASSERT(cMaxStrings >= cModels);
 		for ( uint32 iModel = 0 ; iModel < cModels ; iModel++ )
 		{
-			strcpy(aszStrings[(*pcStrings)++], g_pModelButeMgr->GetModelName((ModelId)iModel));
+			if ( eModelTypeHuman == g_pModelButeMgr->GetModelType((ModelId)iModel) )
+			{
+				lstModels.AddString( g_pModelButeMgr->GetModelName((ModelId)iModel) );
+			}
 		}
+
+		lstModels.PopulateStringList( aszStrings, pcStrings );
 
 		return LT_OK;
 	}
 	else if ( !_strcmpi("Brain", szPropName) )
 	{
-		// TODO: make sure we don't overflow cMaxStringLength or cMaxStrings
+		CSortedStringList lstBrains( cMaxStrings, cMaxStringLength );
+		lstBrains.AddFirstName( "Default" );
+
 		uint32 cBrains = s_AIButeMgr.GetNumBrains();
-		_ASSERT(cMaxStrings >= cBrains);
 		for ( uint32 iBrain = 0 ; iBrain < cBrains ; iBrain++ )
 		{
-			strcpy(aszStrings[(*pcStrings)++], s_AIButeMgr.GetBrain(iBrain)->szName);
+			lstBrains.AddString( s_AIButeMgr.GetBrain(iBrain)->szName );
 		}
+
+		lstBrains.PopulateStringList( aszStrings, pcStrings );
 
 		return LT_OK;
 	}
