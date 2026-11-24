@@ -112,10 +112,12 @@ VarTrack	g_vtInterfaceFOVY;
 VarTrack	g_vtPauseTintAlpha;
 VarTrack	g_vtSplashScreenFadeIn;
 VarTrack	g_vtSplashScreenFadeOut;
-VarTrack	g_vtSplashScreenTime;
+// RETAIL: Tron has no SplashScreenTime console variable (Init, 0x100c75b0)
 VarTrack	g_vtMainScreenFadeIn;
 VarTrack	g_vtProgressBarScaleToSkills;
 VarTrack	g_vtExitLevelScreenFadeTime;
+VarTrack	g_vtOverlayModelDist;	// RETAIL: Tron's (0x1026f7e0)
+VarTrack	g_vtMouseTrailFix;		// RETAIL: Tron's (0x1026f7d0)
 
 extern CMoveMgr* g_pMoveMgr;
 extern VarTrack g_vtFOVXNormal;
@@ -559,14 +561,16 @@ LTBOOL CInterfaceMgr::Init()
 
 	g_vtPauseTintAlpha.Init(g_pLTClient, "PauseTintAlpha", NULL, 0.65f);
 
-	g_vtSplashScreenFadeIn.Init(g_pLTClient, "SplashScreenFadeInTime", NULL, 2.5f);
-	g_vtSplashScreenFadeOut.Init(g_pLTClient, "SplashScreenFadeOutTime", NULL, 2.5f);
-	g_vtSplashScreenTime.Init(g_pLTClient, "SplashScreenTime", NULL, 3.0f);
+	g_vtSplashScreenFadeIn.Init(g_pLTClient, "SplashScreenFadeInTime", NULL, 3.0f);	// RETAIL: 0x100c7bc6
+	g_vtSplashScreenFadeOut.Init(g_pLTClient, "SplashScreenFadeOutTime", NULL, 5.0f);	// RETAIL: 0x100c7c53
 	g_vtMainScreenFadeIn.Init(g_pLTClient, "MainScreenFadeInTime", NULL, 3.0f);
 	
 	g_vtProgressBarScaleToSkills.Init( g_pLTClient, "ProgressBarScaleToSkills", LTNULL, 1.0f );
 	
 	g_vtExitLevelScreenFadeTime.Init( g_pLTClient, "ExitLevelScreenFadeTime", LTNULL, 1.0f );
+	// RETAIL: 0x100c7e81, Tron's
+	g_vtOverlayModelDist.Init( g_pLTClient, "OverlayModelDist", LTNULL, 5.01f );
+	g_vtMouseTrailFix.Init( g_pLTClient, "MouseTrailFix", LTNULL, 1.0f );
 
 	ProcessAdvancedOptions();
 
@@ -619,7 +623,8 @@ LTBOOL CInterfaceMgr::Init()
         return LTFALSE;
 	}
 
-
+	// RETAIL: 0x100c80e0, the teams first
+	m_TeamMgr.Init();
 
     m_ClientInfo.Init();
 
@@ -4656,6 +4661,11 @@ void CInterfaceMgr::UpdateOverlays()
 
 				g_pLTClient->SetObjectScale(m_hOverlays[i], &vTemp);
 
+				// RETAIL: 0x100ccd90 -- Tron sets the overlay's distance
+				// every update.
+				LTVector vOverlayPos(0.0f, 0.0f, g_vtOverlayModelDist.GetFloat());
+				g_pLTClient->SetObjectPos(m_hOverlays[i], &vOverlayPos, LTTRUE);
+
 				g_pCommonLT->SetObjectFlags(m_hOverlays[i], OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
 
 			}
@@ -5426,12 +5436,20 @@ void CInterfaceMgr::UpdateInterfaceSFX()
 
 	static LTIntPt s_oldPos = m_CursorPos;
 	int dist = abs(s_oldPos.x - m_CursorPos.x) + abs(s_oldPos.y - m_CursorPos.y);
-	if (dist > 1)
+	// RETAIL: 0x100ce6e5 -- Tron's flag at +0xf988 keeps the trail, and
+	// MouseTrailFix removes a hidden one.
+	if (dist > 1 || m_bTronUnknownF988)
 		ShowMouseFX();
 	else
 	{
 		if (m_MouseFX.IsValid())
+		{
 			m_MouseFX.GetInstance()->Hide();
+			if (g_vtMouseTrailFix.GetFloat())
+			{
+				m_InterfaceFXMgr.ShutdownClientFX(&m_MouseFX);
+			}
+		}
 	}
 	s_oldPos = m_CursorPos;
 

@@ -537,7 +537,7 @@ LTBOOL CCharacterFX::Update()
 
 
 
-	if (m_pStr && m_pStr->GetLength())
+	if (m_pStr && m_pStr->GetText().length())	// RETAIL: 0x1017528a, the text, not GetLength
 	{
 		LTVector pos = g_pInterfaceMgr->GetScreenFromWorldPos(m_vStrPos, g_pPlayerMgr->GetCamera());
 
@@ -548,7 +548,8 @@ LTBOOL CCharacterFX::Update()
 
 			if (h != m_pStr->GetCharScreenHeight())
 			{
-				m_pStr->SetCharScreenHeight(h);
+				// RETAIL: 0x10175386, SetCharScreenSize
+				m_pStr->SetCharScreenSize(h);
 			}
 			
 			m_pStr->SetPosition( pos.x, pos.y);
@@ -758,19 +759,8 @@ void CCharacterFX::HandleDialogueMsg(ILTMessage_Read *pMsg)
 
 void CCharacterFX::HandleTauntMsg(ILTMessage_Read *pMsg)
 {
+	// RETAIL: 0x10175960 -- Tron's message has no team
     uint32 nTauntID = pMsg->Readuint32();
-	uint32 nTeam = pMsg->Readuint8();
-
-	if (IsTeamGameType() && nTeam != INVALID_TEAM)
-	{
-		CLIENT_INFO *pLocalCI = g_pInterfaceMgr->GetClientInfoMgr()->GetLocalClient();
-		if( !pLocalCI )
-			return;
-
-		// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-		if( (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pLocalCI->nID) != nTeam )
-			return;
-	}
 	PlayTaunt(nTauntID, LTFALSE);
 }
 
@@ -789,6 +779,13 @@ void CCharacterFX::UpdateSounds()
 		if (g_pLTClient->IsDone(m_hDialogueSnd))
 		{
 			KillLipSyncSound( true );
+		}
+		else
+		{
+			// RETAIL: 0x101759ae -- Tron moves the dialogue with the character
+			LTVector vPos;
+			g_pLTClient->GetObjectPos(m_hServerObject, &vPos);
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundPosition(m_hDialogueSnd, &vPos);
 		}
 	}
 
@@ -1675,16 +1672,24 @@ void CCharacterFX::PlayMovementSound(LTVector vPos, SurfaceType eSurface,
 	if (pSound && *pSound)
 	{
         uint32 dwFlags = bIsLocalClient ? PLAYSOUND_CLIENTLOCAL : 0;
-		SoundPriority ePriority = m_cs.bIsPlayer ? SOUNDPRIORITY_PLAYER_HIGH : SOUNDPRIORITY_AI_HIGH;
+		// RETAIL: 0x1017759a, Tron lowers both priorities by one step
+		SoundPriority ePriority = m_cs.bIsPlayer ? SOUNDPRIORITY_PLAYER_MEDIUM : SOUNDPRIORITY_AI_LOW;
 
 		LTFLOAT fStealth = (eModel == PPM_NORMAL ? m_cs.fStealthPercent : 1.0f);
 		int nVolume = (int) (100.0f * fStealth);
 
 		// Adjust the volume if we are walking or ducking...
 
-		if (bIsLocalClient && pMoveMgr->IsMovingQuietly())
+		if (bIsLocalClient)
 		{
-			nVolume = ( int )((( float )nVolume * g_vtQuietMovementVolumeFactor.GetFloat( )) + 0.5f );
+			if (pMoveMgr->IsMovingQuietly())
+			{
+				nVolume = ( int )((( float )nVolume * g_vtQuietMovementVolumeFactor.GetFloat( )) + 0.5f );
+			}
+
+			// RETAIL: 0x10177621 -- Tron's player manager adjusts the local
+			// player's footstep volume.
+			nVolume = g_pPlayerMgr->TronUnknownVirtualA4(nVolume);
 		}
 
 		g_pClientSoundMgr->PlaySoundFromPos(vPos, pSound, FOOTSTEP_SOUND_RADIUS, ePriority, dwFlags, nVolume);
@@ -2565,7 +2570,7 @@ void CCharacterFX::CreateAttachClientFX()
 	LTFLOAT fTime = m_pClientDE->GetTime();
 	if ( fTime > m_fTronUnknown2320 )
 	{
-		m_fTronUnknown2320 = 1.0f + fTime;
+		m_fTronUnknown2320 = fTime + 1.0f;
 
 		if ( UpdateCarrying() )
 		{
