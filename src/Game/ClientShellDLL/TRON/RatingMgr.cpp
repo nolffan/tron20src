@@ -106,7 +106,7 @@ void CRatingMgr::Term()
 }
 
 // RETAIL: 0x10051690
-void CRatingMgr::SetPerformanceRating(PerformanceRating p, uint8 nVal)
+void CRatingMgr::SetPerformanceRating(PerformanceRating p, int nVal)
 {
 	m_nRating[p] = nVal;
 }

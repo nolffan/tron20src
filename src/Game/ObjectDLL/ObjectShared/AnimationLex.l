@@ -14,6 +14,9 @@ extern "C" int yyanimationwrap();
 
 // STRING \"[^\"]*\"
 
+// RETAIL: Tron's WSPACE has no \n (its flex tables, Object.lto .rdata
+// 0x102a1790; yyanimationlex 0x10272f10 tests yy_base against 66).
+
 CAnimationLex g_Lex;
 
 %}
@@ -23,7 +26,7 @@ ANIMATIONS		"[animations]"
 TRANSITIONS		"[transitions]"
 CHARACTER		[a-zA-Z0-9]|"-"|"_"
 STRING			{CHARACTER}+
-WSPACE			[\ \t\n\r]+
+WSPACE			[\ \t\r]+
 COMMA			","
 BRACE_LEFT		"{"
 BRACE_RIGHT		"}"

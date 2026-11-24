@@ -206,11 +206,12 @@ LTBOOL CScreenSubroutines::Build()
 	LTVector vColor = g_pLayoutMgr->GetVector("ScreenSubroutines", "ToolTipColor");
 	m_ToolTip.SetTextColor(SET_ARGB(0xFF, (uint8)vColor.x, (uint8)vColor.y, (uint8)vColor.z));
 
-	vColor = g_pLayoutMgr->GetVector("ScreenSubroutines", "ToolTipFrameColor");
-	uint8 nRed = (uint8)vColor.x;
-	uint8 nGreen = (uint8)vColor.y;
-	uint8 nBlue = (uint8)vColor.z;
-	uint8 nAlpha = LTCLAMP((uint8)(g_pLayoutMgr->GetFloat("ScreenSubroutines", "ToolTipAlpha", 0.0f) * 255.0f), 0, 255);
+	LTVector vFrameColor = g_pLayoutMgr->GetVector("ScreenSubroutines", "ToolTipFrameColor");
+	uint8 nRed = (uint8)vFrameColor.x;
+	uint8 nGreen = (uint8)vFrameColor.y;
+	uint8 nBlue = (uint8)vFrameColor.z;
+	// RETAIL: clamped as bytes, above 0 and then to 255 (0x1007d9f6)
+	uint8 nAlpha = LTCLAMP(LTMAX((uint8)(g_pLayoutMgr->GetFloat("ScreenSubroutines", "ToolTipAlpha", 0.0f) * 255.0f), 0), 0, 255);
 	m_ToolTip.SetBackColor(SET_ARGB(nAlpha, nRed, nGreen, nBlue));
 
 	m_pClear = AddTextItem(0xcb2, CMD_CLEAR, 0, clearPos);
@@ -267,7 +268,8 @@ LTBOOL CScreenSubroutines::Build()
 	m_pVersion->SetFont(pFont, nVersionSize);
 
 	int nCountSize = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteCountSize");
-	LTVector vCountColor = g_pLayoutMgr->GetScreenCustomVector(SCREEN_ID_SUBROUTINES, "BuildNoteCountColor");
+	LTVector vCountColor;
+	vCountColor = g_pLayoutMgr->GetScreenCustomVector(SCREEN_ID_SUBROUTINES, "BuildNoteCountColor");
 	m_BuildNoteCountPos = g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_SUBROUTINES, "BuildNoteCountPos");
 	m_nBuildNoteCountStringId = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteCountStringId");
 	m_nBuildNoteIconSpacer = g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_SUBROUTINES, "BuildNoteIconSpacer");
@@ -307,8 +309,7 @@ void CScreenSubroutines::SetPopupText(uint32 nTextId, uint8 nPopupId, char * pTe
 	m_nPopupId = nPopupId;
 	if (pText)
 	{
-		strncpy(m_szPopupText, pText, 127);
-		m_szPopupText[127] = 0;
+		LTStrCpy(m_szPopupText, pText, sizeof(m_szPopupText));
 	}
 	else
 		m_szPopupText[0] = 0;
@@ -378,7 +379,7 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 		float fRatio = g_pInterfaceResMgr->GetXRatio();
 		m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
 		m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
-		m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
+		m_ToolTip.m_nWidth = (int)(m_fToolTipWidth * fRatio);
 		m_ToolTip.m_fDelay = 0.0f;
 		m_ToolTip.m_fFadeTime = 0.0f;
 
@@ -1059,6 +1060,13 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 	return bResult;
 }
 
+// RETAIL: 0x1007ff80: out of line here, after its only caller (the
+// screen's other code asks the arc itself)
+LTIntPt CLibraryCtrl::GetHotPos()
+{
+	return m_Arc.GetHotPos();
+}
+
 // RETAIL: 0x1007ffd0
 void CScreenSubroutines::ClearScreen()
 {
@@ -1583,7 +1591,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[0].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[0].GetHotPos();
+				LTIntPt pos = m_Libraries[0].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
@@ -1592,7 +1600,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[1].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[1].GetHotPos();
+				LTIntPt pos = m_Libraries[1].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
@@ -1601,7 +1609,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[2].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[2].GetHotPos();
+				LTIntPt pos = m_Libraries[2].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
@@ -1689,16 +1697,15 @@ void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 	int nFunction = m_pCursorSub->pTronSubroutine->eFunction;
 	if (nFunction >= FUNCTION_COMBAT && nFunction <= FUNCTION_UTILITY)
 	{
-		CLibraryCtrl * pLibrary = &m_Libraries[nFunction];
-		pLibrary->OnMouseMove(x, y, LTNULL);
-		if (pLibrary->IsHot())
+		m_Libraries[nFunction].OnMouseMove(x, y, LTNULL);
+		if (m_Libraries[nFunction].IsHot())
 		{
-			m_pHotSub = pLibrary->GetHotSub();
+			m_pHotSub = m_Libraries[nFunction].GetHotSub();
 			if (m_pHotSub)
 			{
 				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
-					LTIntPt pos = pLibrary->GetArc()->GetHotPos();
+					LTIntPt pos = m_Libraries[nFunction].GetArc()->GetHotPos();
 					ShowSubInfo(pos.x, pos.y);
 					SetCursorMode(CursorPickup);
 					return;
@@ -1706,7 +1713,7 @@ void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 			}
 		}
 		else
-			pLibrary->Close();
+			m_Libraries[nFunction].Close();
 	}
 
 	SetCursorMode(CursorPickup);
@@ -1968,7 +1975,8 @@ void CScreenSubroutines::ShowSubInfo(int x, int y)
 	else
 		sprintf(szIcon, "%s", "Interface\\Subroutines\\Sprtex\\foreign_0.dtx");
 
-	m_ToolTip.Show(x, y, sInfo, g_pInterfaceResMgr->GetTexture(szIcon));
+	HTEXTURE hIcon = g_pInterfaceResMgr->GetTexture(szIcon);
+	m_ToolTip.Show(x, y, sInfo, hIcon);
 }
 
 // RETAIL: 0x10081890, the tool tip of the hot procedural
@@ -2026,7 +2034,7 @@ void CScreenSubroutines::ScreenDimsChanged()
 	float fRatio = g_pInterfaceResMgr->GetYRatio();
 	m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
 	m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
-	m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
+	m_ToolTip.m_nWidth = (int)(m_fToolTipWidth * fRatio);
 
 	m_SystemMemoryCtrl.Rescale();
 	m_Libraries[0].Rescale();
@@ -2055,7 +2063,11 @@ bool CScreenSubroutines::CanDropHere()
 {
 	PlayerSubroutine * pCursorSub = m_pCursorSub;
 	if (pCursorSub->eState == SUBSTATE_UNUSABLE)
-		return (m_SystemMemoryCtrl.GetActiveSegment() == pCursorSub->nTempSlot);
+	{
+		// RETAIL: a named bool (sete al, not a widened int)
+		bool bCanDrop = (m_SystemMemoryCtrl.GetActiveSegment() == pCursorSub->nTempSlot);
+		return bCanDrop;
+	}
 
 	if (pCursorSub->eState == SUBSTATE_FOREIGN)
 		return false;
