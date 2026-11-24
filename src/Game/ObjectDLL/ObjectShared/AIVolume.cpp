@@ -274,16 +274,6 @@ LTBOOL AIGeometry::Inside2d(const LTVector& vPos, LTFLOAT fThreshhold) const
 			 (vPos.z >= m_vBackTopLeft.z+fThreshhold) );
 }
 
-LTBOOL AIGeometry::Inside3D( const LTVector& vPos ) const
-{
-	return ( (vPos.x <= m_vFrontTopRight.x) &&
-			 (vPos.x >= m_vFrontTopLeft.x) &&
-			 (vPos.z <= m_vFrontTopLeft.z) &&
-			 (vPos.z >= m_vBackTopLeft.z) &&
-			 (vPos.y <= m_vBackTopLeft.y) &&
-			 (vPos.y >= m_vBackBottomLeft.y) );
-}
-
 
 LTBOOL AIGeometry::Inside2dLoose(const LTVector& vPos,
 								 LTFLOAT fThreshhold,

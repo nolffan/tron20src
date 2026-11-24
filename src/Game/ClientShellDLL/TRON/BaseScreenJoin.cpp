@@ -393,17 +393,12 @@ LTBOOL CBaseScreenJoin::ConnectToServer()
 		return LTFALSE;
 	g_pGameClientShell->SetGameType(eGameType);
 
-	char szAddress[48];
+	char szAddress[64];
 	sprintf(szAddress,"%s:%d",pszIP,nPort);
 
 	// RETAIL: Tron's SetupClient takes the address and the password only
 	// (0x100e87b0)
-	if (!g_pClientMultiplayerMgr->SetupClient(szAddress,m_sPassword.c_str()))
-		return LTFALSE;
-
-	// NEAR: retail tests and branches here where VC6 makes neg/sbb of
-	// this; tried the test inverted and a result local
-	if (!g_pMissionMgr->StartGameAsClient())
+	if (!g_pClientMultiplayerMgr->SetupClient(szAddress,m_sPassword.c_str()) || !g_pMissionMgr->StartGameAsClient())
 		return LTFALSE;
 
 	return LTTRUE;
@@ -420,14 +415,15 @@ bool CBaseScreenJoin::ParseAddress(const std::string &sAddress, char *pszIP, uin
 	{
 		*pnPort = kDefaultPort;
 		strcpy(pszIP,sAddress.c_str());
+		return true;
 	}
-	else
-	{
-		strcpy(pszIP,sAddress.substr(0,nPos).c_str());
-		*pnPort = (uint16)atoi(sAddress.substr(nPos+1).c_str());
-		if (*pnPort < 1024 || *pnPort > 0xBFFF)
-			*pnPort = kDefaultPort;
-	}
+
+	// NEAR: retail calls allocator::deallocate for the second substr (it
+	// spent about 8 dead-code probe units more inline budget before it)
+	strcpy(pszIP,sAddress.substr(0,nPos).c_str());
+	*pnPort = (uint16)atoi(sAddress.substr(nPos+1).c_str());
+	if (*pnPort < 1024 || *pnPort > 0xBFFF)
+		*pnPort = kDefaultPort;
 
 	return true;
 }

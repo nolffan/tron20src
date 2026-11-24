@@ -579,26 +579,36 @@ LTBOOL CCharacterFX::Update()
 
 void CCharacterFX::UpdateDamageFX()
 {
+	// RETAIL: Tron's (0x101753e0): no choke hack; the model must support
+	// damage FX; the FX start for the progressive and the instant flags
+	// and stop only when a progressive flag goes away
 	if( !m_hServerObject )
 		return;
 
-	//hack to make instant choke damage act like progressive damage
-	static DamageFlags chokeFlag = DamageTypeToFlag(DT_CHOKE);
-	if (m_cs.nInstantDamageFlags & chokeFlag)
+	if( !m_cs.bSupportsDamageFX )
+		return;
+
+	m_bDamageFxTrackingOverride = false;
+
+	// No need to go further if our damageflags haven't changed...
+
+	if( (m_cs.nInstantDamageFlags == 0) && (m_nLastDamageFlags == m_cs.nDamageFlags) && !m_bWasPlayingSpecialDamageAni )
 	{
-		m_cs.nDamageFlags |= chokeFlag;
+		return;
 	}
-	else
-	{
-		m_cs.nDamageFlags &= ~chokeFlag;
-	}
+
+	DamageFlags nDamageFlags = m_cs.nDamageFlags | m_cs.nInstantDamageFlags;
 
 	HLOCALOBJ	hPlayerObj = g_pLTClient->GetClientObject();
-	bool		bLocal = (hPlayerObj == m_hServerObject);
 	bool		bPlayingAni = false;
+	bool		bLocal = (hPlayerObj == m_hServerObject);
 
 	CMoveMgr* pMoveMgr = g_pPlayerMgr->GetMoveMgr();
-	if (!pMoveMgr) return;
+	if (!pMoveMgr)
+	{
+		m_nLastDamageFlags = m_cs.nDamageFlags;
+		return;
+	}
 
 	// Check our main tracker to see we if we are done playing any special damage anis...
 
@@ -628,26 +638,15 @@ void CCharacterFX::UpdateDamageFX()
 			{
 				bPlayingAni = true;
 			}
-
-			m_bDamageFxTrackingOverride = bPlayingAni;
 		}
 	}
 
-	// No need to go further if our damageflags haven't changed...
-
-	if( (m_nLastDamageFlags == m_cs.nDamageFlags) && (m_cs.nInstantDamageFlags == 0) && !m_bWasPlayingSpecialDamageAni )
-	{
-		return;
-	}
-
-	m_nLastDamageFlags = m_cs.nDamageFlags;
-   	
 	DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstDamageFX();
 	while( pDamageFX )
 	{
 		// Test the damage flags against the DamageFX...
 
-		if( m_nLastDamageFlags & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f )
+		if( nDamageFlags & pDamageFX->m_nDamageFlag || pDamageFX->m_vtTestFX.GetFloat() > 0.0f )
 		{
 			// Start this DamageFX if necessary
 
@@ -659,6 +658,11 @@ void CCharacterFX::UpdateDamageFX()
 			}
 			else
 			{
+				if( m_cs.bIsPlayer && pDamageFX->m_bAnimationControlsFX )
+				{
+					m_bDamageFxTrackingOverride = true;
+				}
+
 				// Play the 3rd person FX if this is not the local clients characterfx...
 
 				if( pDamageFX->m_sz3rdPersonFXName[0] && 
@@ -670,7 +674,7 @@ void CCharacterFX::UpdateDamageFX()
 				}
 			}
 		}
-		else
+		else if( !(m_cs.nDamageFlags & pDamageFX->m_nDamageFlag) && (m_nLastDamageFlags & pDamageFX->m_nDamageFlag) )
 		{
 			// Stop any current DamageFX
 			
@@ -706,6 +710,7 @@ void CCharacterFX::UpdateDamageFX()
 
 	// Clear the instant damage...
 	
+	m_nLastDamageFlags = m_cs.nDamageFlags;
 	m_cs.nInstantDamageFlags = 0;
 	m_bWasPlayingSpecialDamageAni = bPlayingAni;
 }
@@ -1016,11 +1021,11 @@ void CCharacterFX::CreateZzzFX()
 	{
 		// RETAIL: Tron's (retail 0x1017630d): the head node when the model
 		// has no head socket
-		HMODELNODE hNode;
-		if ( LT_OK == g_pModelLT->GetNode(m_hServerObject, "head", hNode) )
+		// RETAIL: the socket's handle holds the node's
+		if ( LT_OK == g_pModelLT->GetNode(m_hServerObject, "head", hSocket) )
 		{
 			LTransform transform;
-			if ( LT_OK == g_pModelLT->GetNodeTransform(m_hServerObject, hNode, transform, LTTRUE) )
+			if ( LT_OK == g_pModelLT->GetNodeTransform(m_hServerObject, hSocket, transform, LTTRUE) )
 			{
 				vPos = transform.m_Pos;
 			}
@@ -1469,20 +1474,7 @@ void CCharacterFX::DoFootStepKey(HLOCALOBJ hObj, LTBOOL bForceSound)
 {
 	if (!hObj) return;
 
-    // Play one-off sounds on vehicles...
-
-	PlayerPhysicsModel eModel = PPM_NORMAL;
-    if (m_cs.bIsPlayer)
-    {
-        uint32 dwFlags;
-	    g_pCommonLT->GetObjectFlags(m_hServerObject, OFT_User, dwFlags);
-
-        if (dwFlags & USRFLG_PLAYER_SNOWMOBILE)
-		{
-			eModel = PPM_SNOWMOBILE;
-		}
-    }
-
+	// RETAIL: Tron has no snowmobile: no vehicle model check (0x1017702d)
 
 	CMoveMgr* pMoveMgr = g_pPlayerMgr->GetMoveMgr();
 	if (!pMoveMgr) return;
@@ -1579,7 +1571,7 @@ void CCharacterFX::DoFootStepKey(HLOCALOBJ hObj, LTBOOL bForceSound)
 
 	if (bPlaySound)
 	{
-		PlayMovementSound(vPos, m_eLastSurface, m_bLeftFoot, eModel);
+		PlayMovementSound(vPos, m_eLastSurface, m_bLeftFoot, PPM_NORMAL);
 	}
 
 
@@ -1772,12 +1764,7 @@ void CCharacterFX::CreateFootprint(SurfaceType eType, IntersectInfo & iInfo)
 	scale.nType				= OT_SPRITE;
 	scale.bPausable			= LTTRUE;
 
-	// Special hack so we get cute little bunny footprints...
-	const char* pModelName = g_pModelButeMgr->GetModelName( GetModelId() );
-	if (pModelName && pModelName[0] && stricmp(pModelName, "Rabbit") == 0)
-	{
-		scale.pFilename = m_bLeftFoot ? "FX\\Test\\Snow\\Spr\\SnowRabbitFS_L.spr" : "FX\\Test\\Snow\\Spr\\SnowRabbitFS_R.spr";
-	}
+	// RETAIL: no rabbit footprints in Tron (0x10177660 asks no model name)
 
 	if (g_vtFootPrintBlend.GetFloat() == 1.0f)
 	{
@@ -1915,12 +1902,21 @@ void CCharacterFX::UpdateOnVehicle()
     uint32 dwFlags;
     g_pCommonLT->GetObjectFlags(m_hServerObject, OFT_User, dwFlags);
 
-    m_bOnVehicle = (dwFlags & USRFLG_PLAYER_SNOWMOBILE);
+	// RETAIL: Tron has no snowmobile (0x1017857f): the flags are read and
+	// not used
+    m_bOnVehicle = LTFALSE;
 
 	// Play multiplayer sounds if appropriate...
 
 	if (IsMultiplayerGame())
 	{
+		// RETAIL: Tron's (0x1017858e): the light cycle game hides the
+		// characters
+		if (g_pGameClientShell->GetGameType() == eGameTypeMultiplayerLightcycles)
+		{
+			g_pCommonLT->SetObjectFlags(m_hServerObject, OFT_Flags, 0, FLAG_VISIBLE);
+		}
+
 		// Don't play sounds for local client...they get their own
 
         if (g_pLTClient->GetClientObject() != m_hServerObject)
@@ -2658,7 +2654,8 @@ void CCharacterFX::CreateChatIcon()
 		if ( !m_hTronUnknown231C ) return;
 	}
 
-	LTVector vScale( fScale, fScale, fScale );
+	LTVector vScale;
+	vScale.Init( fScale, fScale, fScale );
 	m_pClientDE->SetObjectScale( m_hTronUnknown231C, &vScale );
 	m_pClientDE->SetObjectColor( m_hTronUnknown231C, 1.0f, 1.0f, 1.0f, fAlpha );
 }
@@ -2780,8 +2777,9 @@ void CCharacterFX::HandleWeaponSoundLoopMsg( ILTMessage_Read *pMsg )
 	int nType		= pMsg->Readuint8();
 	uint8 nWeaponID	= pMsg->Readuint8();
 	// RETAIL: Tron's message carries the fire sounds' volume scale
-	// (0x1017a12c)
-	float fVolume	= pMsg->Readfloat();
+	// (0x1017a12c), read as its 32 bits and copied as an integer
+	// (0x1017a175)
+	uint32 nVolume	= pMsg->Readuint32();
 
 	const WEAPON *pWeapon = g_pWeaponMgr->GetWeapon( nWeaponID );
 	if( !pWeapon ) return;
@@ -2793,7 +2791,7 @@ void CCharacterFX::HandleWeaponSoundLoopMsg( ILTMessage_Read *pMsg )
 	float fVolumeScale = 1.0f;
 	if( nType >= PSI_FIRE && nType <= PSI_SILENCED_FIRE )
 	{
-		fVolumeScale = fVolume;
+		fVolumeScale = *(float*)&nVolume;
 	}
 
 	char* pBuf = LTNULL;
@@ -3197,8 +3195,7 @@ LTBOOL CCharacterFX::UpdateCarrying()
 	CLIENT_INFO *pLocal = pCIMgr->GetLocalClient();
 	CLIENT_INFO *pInfo = pCIMgr->GetClientByID( m_cs.nClientID );
 
-	uint32 nOld = m_nTronUnknown2324;
-	uint32 nIcon = nOld;
+	uint32 nIcon = m_nTronUnknown2324;
 	if ( !pInfo || !pLocal )
 	{
 		m_nTronUnknown2324 = 0;
@@ -3227,8 +3224,11 @@ LTBOOL CCharacterFX::UpdateCarrying()
 	}
 	while ( nIcon != nStart && !bFound );
 
-	if ( nIcon == nOld ) return LTFALSE;
+	if ( nIcon != m_nTronUnknown2324 )
+	{
+		m_nTronUnknown2324 = nIcon;
+		return LTTRUE;
+	}
 
-	m_nTronUnknown2324 = nIcon;
-	return LTTRUE;
+	return LTFALSE;
 }

@@ -135,6 +135,8 @@ class CVehicleMgr
 	// Is it safe to save?
 	void		SetLightCycleCamSpeed(float f)	{ m_fLightCycleCamSpeed = f; }
 	void		SetLightCycleCamLag(float f)	{ m_fLightCycleCamLag = f; }
+	float		GetLightCycleCamSpeed() const	{ return m_fLightCycleCamSpeed; }
+	float		GetLightCycleCamLag() const		{ return m_fLightCycleCamLag; }
 
 	bool		CanSave() const { return m_bHaveJumpVolumeVel == LTFALSE; }
 

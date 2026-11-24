@@ -43,6 +43,35 @@ END_CLASS_DEFAULT_FLAGS(ThorneBall, OccludingArmor, NULL, NULL, CF_HIDDEN)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	ThorneBall::Show / Hide / ResetBall
+//
+//	PURPOSE:	RETAIL: inline: CThorne::CreateBall (0x10059140), SetState
+//				(0x10059640) and ResetAttachFX (0x10059900) expand them
+//
+// ----------------------------------------------------------------------- //
+
+inline void ThorneBall::Show()
+{
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
+	SetState((eShieldState)1);
+}
+
+inline void ThorneBall::Hide()
+{
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAG_VISIBLE);
+	SetState((eShieldState)0);
+}
+
+inline void ThorneBall::ResetBall()
+{
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, 0, FLAG_VISIBLE);
+	SetState((eShieldState)0);
+	GetDestructible()->Reset(GetDestructible()->GetMaxHitPoints(), GetDestructible()->GetMaxArmorPoints(), GetDestructible()->GetMaxEnergy());
+	GetDestructible()->SetCanDamage(LTTRUE);
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	CThorne: RETAIL: ClassDef 0x102dda80, properties 0x10057690
 //
 // ----------------------------------------------------------------------- //
@@ -286,10 +315,24 @@ void CThorne::ReadProp(ObjectCreateStruct *pStruct)
 	m_sTargetObject = pProps->GetPropString(s_szTargetObject, "");
 
 	const AMMO* pAmmo = g_pWeaponMgr->GetAmmo(pProps->GetPropString(s_szAmmo, LTNULL));
-	m_nAmmoId = pAmmo ? pAmmo->nId : 0;
+	if (!pAmmo)
+	{
+		m_nAmmoId = 0;
+	}
+	else
+	{
+		m_nAmmoId = pAmmo->nId;
+	}
 
 	const WEAPON* pWeapon = g_pWeaponMgr->GetWeapon(pProps->GetPropString(s_szWeapon, LTNULL));
-	m_nWeaponId = pWeapon ? pWeapon->nId : 0;
+	if (!pWeapon)
+	{
+		m_nWeaponId = 0;
+	}
+	else
+	{
+		m_nWeaponId = pWeapon->nId;
+	}
 
 	const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_cs.eModelId);
 	if (pFilename && pFilename[0])
@@ -307,6 +350,29 @@ void CThorne::ReadProp(ObjectCreateStruct *pStruct)
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CThorne::FindTargetObject
+//
+//	PURPOSE:	RETAIL: an inline helper (name ours): Update (0x100586d0)
+//				and AllObjectsCreated (0x10058e50) expand it, and Update keeps
+//				FindNamedObject a call (0x1005a1a0), as a depth-2 expansion
+//
+// ----------------------------------------------------------------------- //
+
+inline void CThorne::FindTargetObject()
+{
+	LTObjRef& hTargetObject = m_hTargetObject;
+	if (!hTargetObject)
+	{
+		HOBJECT hTarget;
+		if (LT_OK == FindNamedObject(m_sTargetObject.c_str(), hTarget))
+		{
+			hTargetObject = hTarget;
+		}
+	}
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CThorne::Update
 //
 //	PURPOSE:	RETAIL: 0x100586d0
@@ -317,14 +383,7 @@ void CThorne::Update()
 {
 	if (!g_pLTServer->HandleToObject(m_hBall)) return;
 
-	if (!m_hTargetObject)
-	{
-		HOBJECT hTarget;
-		if (LT_OK == FindNamedObject(m_sTargetObject.c_str(), hTarget))
-		{
-			m_hTargetObject = hTarget;
-		}
-	}
+	FindTargetObject();
 
 	g_pLTServer->SetNextUpdate(m_hObject, 0.01f);
 
@@ -460,14 +519,7 @@ void CThorne::AllObjectsCreated()
 {
 	g_pLTServer->SetNextUpdate(m_hObject, 0.01f);
 
-	if (!m_hTargetObject)
-	{
-		HOBJECT hTarget;
-		if (LT_OK == FindNamedObject(m_sTargetObject.c_str(), hTarget))
-		{
-			m_hTargetObject = hTarget;
-		}
-	}
+	FindTargetObject();
 }
 
 // ----------------------------------------------------------------------- //
@@ -549,18 +601,16 @@ void CThorne::CreateBall()
 	g_pLTServer->CreateAttachment(m_hObject, pModel->m_hObject, (char*)g_pBossButeMgr->GetThorne().sFireSocketName.c_str(), &LTVector(0,0,0), &LTRotation(), &hAttachment);
 
 	ThorneBall* pBall = dynamic_cast<ThorneBall*>(pModel);
-	if (!pBall) return;
+	if (pBall)
+	{
+		SendTriggerMsgToObject(g_pLTServer->HandleToObject(m_hObject), pModel->m_hObject, LTTRUE, s_szAttach);
 
-	SendTriggerMsgToObject(g_pLTServer->HandleToObject(m_hObject), pModel->m_hObject, LTTRUE, s_szAttach);
+		pBall->GetDestructible()->SetMaxHitPoints(g_pBossButeMgr->GetThorne().fBaseBallHealth);
+		pBall->GetDestructible()->SetTronUnknown6D0(true);
+		pBall->ResetBall();
 
-	pBall->GetDestructible()->SetMaxHitPoints(g_pBossButeMgr->GetThorne().fBaseBallHealth);
-	pBall->GetDestructible()->SetTronUnknown6D0(true);
-	g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, 0, FLAG_VISIBLE);
-	pBall->SetBallState(0);
-	pBall->GetDestructible()->Reset(pBall->GetDestructible()->GetMaxHitPoints(), pBall->GetDestructible()->GetMaxArmorPoints(), pBall->GetDestructible()->GetMaxEnergy());
-	pBall->GetDestructible()->SetCanDamage(LTTRUE);
-
-	m_hBall = pModel->m_hObject;
+		m_hBall = pModel->m_hObject;
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -606,25 +656,20 @@ void CThorne::SetState(int eState)
 		case kThorneAnim_CreateBall:
 		{
 			ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-			g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, 0, FLAG_VISIBLE);
-			pBall->SetBallState(0);
-			pBall->GetDestructible()->Reset(pBall->GetDestructible()->GetMaxHitPoints(), pBall->GetDestructible()->GetMaxArmorPoints(), pBall->GetDestructible()->GetMaxEnergy());
-			pBall->GetDestructible()->SetCanDamage(LTTRUE);
+			pBall->ResetBall();
 
 			pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-			g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
-			pBall->SetBallState(1);
+			pBall->Show();
 		}
 		break;
 
 		case kThorneAnim_ChargeBall:
 		{
-			CARange rngChargeTime = g_pBossButeMgr->GetThorne().rngChargeTime;
+			CARange& rngChargeTime = g_pBossButeMgr->GetThorne().rngChargeTime;
 			m_tmrCharge.Start(GetRandom((LTFLOAT)rngChargeTime.GetMin(), (LTFLOAT)rngChargeTime.GetMax()));
 
 			ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-			g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
-			pBall->SetBallState(1);
+			pBall->Show();
 
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_SFX_MESSAGE);
@@ -666,8 +711,7 @@ void CThorne::ResetAttachFX()
 	g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 	ThorneBall* pBall = (ThorneBall*)g_pLTServer->HandleToObject(m_hBall);
-	g_pCommonLT->SetObjectFlags(pBall->m_hObject, OFT_Flags, 0, FLAG_VISIBLE);
-	pBall->SetBallState(0);
+	pBall->Hide();
 }
 
 // ----------------------------------------------------------------------- //

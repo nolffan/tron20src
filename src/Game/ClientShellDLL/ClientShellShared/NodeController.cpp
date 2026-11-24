@@ -213,13 +213,22 @@ void CNodeController::Update()
 
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x10184da0: Tron's prints its progress while DebugLipFlap is
+// set (the last message is the first's, without the argument)
 void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 {
 	bool bEnd = false;
 
+	if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+		g_pLTClient->CPrint("Debug LipFlap: Entering CNodeController::UpdateLipFlapControl(pNodeControl = %d)", pNodeControl);
+
 	// Make sure the sound handle is valid and check to see if the sound is done
 	if ( !m_hSound || g_pLTClient->IsDone(m_hSound) )
 	{
+		// RETAIL: the message says false where the test is true
+		if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+			g_pLTClient->CPrint("Debug LipFlap: 'if ( !m_hSound || g_pLTClient->IsDone(m_hSound) )' returned false");
+
 		bEnd = true;
 	}
 
@@ -234,6 +243,9 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 
 		if (!m_pSixteenBitBuffer && !m_pEightBitBuffer)
 		{
+			if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+				g_pLTClient->CPrint("Debug LipFlap: 'if (!m_pSixteenBitBuffer && !m_pEightBitBuffer)' returned true");
+
 			LTRESULT ltRes = g_pLTClient->GetSoundData(m_hSound, m_pSixteenBitBuffer,	
 				m_pEightBitBuffer, &m_dwSamplesPerSecond, NULL);
 		
@@ -249,10 +261,16 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 		uint32 dwOffset = 0;
 		uint32 dwSize   = 0;
 
+		if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+			g_pLTClient->CPrint("Debug LipFlap: Calling g_pLTClient->GetSoundOffset()");
+
 		// Average over the data.  We do an average of the data from the current point
 		// being played to 1/g_vtLipFlapFreq.GetFloat() seconds ahead of that point.
 		if( LT_OK == g_pLTClient->GetSoundOffset(m_hSound, &dwOffset, &dwSize))
 		{
+			if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+				g_pLTClient->CPrint("Debug LipFlap: g_pLTClient->GetSoundOffset() returned LT_OK");
+
 			// Determine the end of the data we wish to average over.
 
 			const uint32 dwDivisor = uint32(g_vtLipFlapFreq.GetFloat());
@@ -267,6 +285,9 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 
 			if( m_pSixteenBitBuffer )
 			{
+				if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+					g_pLTClient->CPrint("Debug LipFlap: 'if( m_pSixteenBitBuffer )' returned true");
+
 				for( int16 * pIterator = m_pSixteenBitBuffer + dwOffset;
 					 pIterator < m_pSixteenBitBuffer + dwOffsetEnd;
 					 ++pIterator)
@@ -275,10 +296,16 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 					++dwNumSamples;
 				}
 
+				if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+					g_pLTClient->CPrint("Debug LipFlap: Made it past the iteration over m_pSixteenBitBuffer");
+
 				dwMaxAmplitude = 65536/2;
 			}
 			else if( m_pEightBitBuffer )
 			{
+				if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+					g_pLTClient->CPrint("Debug LipFlap: 'else if( m_pEightBitBuffer )' returned true");
+
 				for( int8 * pIterator = m_pEightBitBuffer + dwOffset;
 					 pIterator < m_pEightBitBuffer + dwOffsetEnd;
 					 ++pIterator)
@@ -287,15 +314,24 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 					++dwNumSamples;
 				}
 
+				if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+					g_pLTClient->CPrint("Debug LipFlap: Made it past the iteration over m_pEightBitBuffer");
+
 				dwMaxAmplitude = 256/2;
 			}
 
 			// And find the average!
 			if( dwNumSamples > 0 )
 			{
+				if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+					g_pLTClient->CPrint("Debug LipFlap: 'if( dwNumSamples > 0 )' returned true");
+
 				fAverage = LTFLOAT(dwAccum) / LTFLOAT(dwNumSamples) / LTFLOAT(dwMaxAmplitude);
 			}
 		}
+
+		if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+			g_pLTClient->CPrint("Debug LipFlap: Made it past call to g_pLTClient->GetSoundOffset()");
 
 		// Do the rotation.
 
@@ -307,6 +343,9 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 		m_fCurLipFlapRot =  fAverage*fMaxRot;
 		rRot.Rotate(vAxis, -m_fCurLipFlapRot);
 
+		if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+			g_pLTClient->CPrint("Debug LipFlap: calling: if( pNodeControl->eModelNode == eModelNodeInvalid )");
+
 		// Check if they have a valid modelnode.
 		if( pNodeControl->eModelNode == eModelNodeInvalid )
 		{
@@ -314,6 +353,9 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 			bEnd = true;
 		}
 	}
+
+	if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+		g_pLTClient->CPrint("Debug LipFlap: Made it past call to 'if( !bEnd )'");
 
 	if( !bEnd )
 	{
@@ -328,6 +370,9 @@ void CNodeController::UpdateLipFlapControl(NCSTRUCT *pNodeControl)
 		KillLipSyncSound( true );
 	    pNodeControl->bValid = LTFALSE;
 	}
+
+	if( g_vtDebugLipFlap.GetFloat() != 0.0f )
+		g_pLTClient->CPrint("Debug LipFlap: Entering CNodeController::UpdateLipFlapControl()");
 }
 
 // ----------------------------------------------------------------------- //

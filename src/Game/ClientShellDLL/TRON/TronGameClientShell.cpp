@@ -553,9 +553,10 @@ void CTronGameClientShell::TronUnknownVirtual94(int nCheat)
 
 		case CHEAT_TRON_CORRUPTION:
 		{
+			// RETAIL: 0x1009aa8e: 200 random sectors infected
 			for (int i = 0; i < 200; i++)
 			{
-				g_pSubroutineMgr->Update();
+				g_pSubroutineMgr->InfectRandomSector();
 			}
 			g_pLTClient->CPrint("Corruption!");
 		}

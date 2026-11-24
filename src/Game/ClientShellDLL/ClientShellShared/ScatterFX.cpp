@@ -297,9 +297,13 @@ bool CScatterFX::UpdateSubVolumes( void )
 	if( !m_bEnabled )
 	{
 		std::set<CScatterFXSubVolume*>::iterator it = activeSubVolumes.begin();
-		for( ; it != activeSubVolumes.end(); it++ )
+		// RETAIL: 0x101bdb81: Deactivate takes the subvolume out of the
+		// set, so the iterator moves on first
+		while( it != activeSubVolumes.end() )
 		{
-			(*it)->Deactivate();
+			CScatterFXSubVolume* pSubVolume = *it;
+			it++;
+			pSubVolume->Deactivate();
 		}
 
 		return true;
@@ -313,9 +317,13 @@ bool CScatterFX::UpdateSubVolumes( void )
 	{
 		// camera is farther away than the max draw distance for this volume, so kill all the subvolumes
 		std::set<CScatterFXSubVolume*>::iterator it = activeSubVolumes.begin();
-		for( ; it != activeSubVolumes.end(); it++ )
+		// RETAIL: 0x101bdb81: Deactivate takes the subvolume out of the
+		// set, so the iterator moves on first
+		while( it != activeSubVolumes.end() )
 		{
-			(*it)->Deactivate();
+			CScatterFXSubVolume* pSubVolume = *it;
+			it++;
+			pSubVolume->Deactivate();
 		}
 
 		// don't test any of the subvolumes directly

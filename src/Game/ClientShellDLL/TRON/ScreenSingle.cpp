@@ -135,7 +135,7 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 		StringSet::iterator iter = m_Filenames.begin();
 		while (iter != m_Filenames.end() && index > 0)
 		{
-			iter++;
+			++iter;
 			--index;
 		}
 		if (iter != m_Filenames.end())
@@ -157,11 +157,6 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 			m_pDiff->SetSelection(kNoSelection);
 			m_pCustom->SetSelection(kNoSelection);
 			m_pScreenMgr->EscapeCurrentScreen();
-			break;
-		}
-	case kCmdLightCycleCircuit:
-		{
-			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LIGHTCYCLE_CIRCUIT, false);
 			break;
 		}
 	case kCmdNewGame:
@@ -209,6 +204,12 @@ uint32 CScreenSingle::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 			m_pDiff->Show(LTFALSE);
 			m_pCustom->Show(LTTRUE);
 			SetSelection(GetIndex(m_pCustom));
+			break;
+		}
+	// RETAIL: the last case (0x1007c4ea)
+	case kCmdLightCycleCircuit:
+		{
+			g_pInterfaceMgr->SwitchToScreen(SCREEN_ID_LIGHTCYCLE_CIRCUIT, false);
 			break;
 		}
 	default:

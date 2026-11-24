@@ -121,7 +121,8 @@ LTBOOL CLightCycleFX::Update()
 			m_TronUnknownFX48.ClearLink();
 		}
 
-		HOBJECT hObj = m_hTronUnknown70 ? m_hTronUnknown70 : m_hServerObject;
+		HOBJECT hObj = m_hServerObject;
+		if (m_hTronUnknown70) hObj = m_hTronUnknown70;
 
 		char szFX[512];
 		char szSound[512];
@@ -159,7 +160,8 @@ LTBOOL CLightCycleFX::Update()
 			m_TronUnknownFX48.ClearLink();
 		}
 
-		HOBJECT hObj = m_hTronUnknown70 ? m_hTronUnknown70 : m_hServerObject;
+		HOBJECT hObj = m_hServerObject;
+		if (m_hTronUnknown70) hObj = m_hTronUnknown70;
 		m_bTronUnknown68 = false;
 
 		CAutoMessage cMsg;
@@ -184,7 +186,8 @@ LTBOOL CLightCycleFX::Update()
 
 	if (m_bTronUnknown6B && !m_TronUnknownFX48.IsValid())
 	{
-		HOBJECT hObj = m_hTronUnknown70 ? m_hTronUnknown70 : m_hServerObject;
+		HOBJECT hObj = m_hServerObject;
+		if (m_hTronUnknown70) hObj = m_hTronUnknown70;
 
 		char szFX[512];
 		if (g_pPlayerMgr->TronUnknownVirtual78(hObj, szFX))

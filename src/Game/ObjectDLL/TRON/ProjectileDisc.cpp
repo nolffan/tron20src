@@ -178,33 +178,33 @@ static void InitDiscConsoleVariables( ILTServer *pServer )
 {
 	if ( s_bDiscVarsInitted ) return;
 
-	if ( !g_vtDiscMagneticHoming.IsInitted() )
+	if ( LTFALSE == g_vtDiscMagneticHoming.IsInitted() )
 		g_vtDiscMagneticHoming.Init( pServer, "DiscMagneticHoming", LTNULL, 0.0f );
-	if ( !g_vtDiscMagneticShowTarget.IsInitted() )
+	if ( LTFALSE == g_vtDiscMagneticShowTarget.IsInitted() )
 		g_vtDiscMagneticShowTarget.Init( pServer, "DiscMagneticShowTarget", LTNULL, 0.0f );
-	if ( !g_vtDiscAutoAimRadius.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimRadius.IsInitted() )
 		g_vtDiscAutoAimRadius.Init( pServer, "DiscAutoAimRadius", LTNULL, 125.0f );
-	if ( !g_vtDiscAutoAimTurnMult.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimTurnMult.IsInitted() )
 		g_vtDiscAutoAimTurnMult.Init( pServer, "DiscAutoAimTurnMult", LTNULL, 10.0f );
-	if ( !g_vtDiscAutoAimAngleMult.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimAngleMult.IsInitted() )
 		g_vtDiscAutoAimAngleMult.Init( pServer, "DiscAutoAimAngleMult", LTNULL, 10.0f );
-	if ( !g_vtDiscAutoAimAngleDecayMult.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimAngleDecayMult.IsInitted() )
 		g_vtDiscAutoAimAngleDecayMult.Init( pServer, "DiscAutoAimAngleDecayMult", LTNULL, 1.0f );
-	if ( !g_vtDiscAutoAimTargetHeadOffset.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimTargetHeadOffset.IsInitted() )
 		g_vtDiscAutoAimTargetHeadOffset.Init( pServer, "DiscAutoAimTargetHeadOffset", LTNULL, 0.0f );
-	if ( !g_vtDiscAutoAimTargetFeetOffset.IsInitted() )
+	if ( LTFALSE == g_vtDiscAutoAimTargetFeetOffset.IsInitted() )
 		g_vtDiscAutoAimTargetFeetOffset.Init( pServer, "DiscAutoAimTargetFeetOffset", LTNULL, 0.0f );
-	if ( !g_vtDiscVelocity.IsInitted() )
+	if ( LTFALSE == g_vtDiscVelocity.IsInitted() )
 		g_vtDiscVelocity.Init( pServer, "DiscVelocity", LTNULL, 1.0f );
-	if ( !g_vtDiscVelocityReturn.IsInitted() )
+	if ( LTFALSE == g_vtDiscVelocityReturn.IsInitted() )
 		g_vtDiscVelocityReturn.Init( pServer, "DiscVelocityReturn", LTNULL, 1.0f );
-	if ( !g_vtDiscDeflectVelocity.IsInitted() )
+	if ( LTFALSE == g_vtDiscDeflectVelocity.IsInitted() )
 		g_vtDiscDeflectVelocity.Init( pServer, "DiscDeflectVelocity", LTNULL, 1.0f );
-	if ( !g_vtDiscDeflectTime.IsInitted() )
+	if ( LTFALSE == g_vtDiscDeflectTime.IsInitted() )
 		g_vtDiscDeflectTime.Init( pServer, "DiscDeflectTime", LTNULL, 1.0f );
-	if ( !g_vtDiscHomingControlYOffsetPercent.IsInitted() )
+	if ( LTFALSE == g_vtDiscHomingControlYOffsetPercent.IsInitted() )
 		g_vtDiscHomingControlYOffsetPercent.Init( pServer, "DiscHomingControlYOffsetPercent", LTNULL, 0.8f );
-	if ( !g_vtDiscHomingTargetYOffsetPercent.IsInitted() )
+	if ( LTFALSE == g_vtDiscHomingTargetYOffsetPercent.IsInitted() )
 		g_vtDiscHomingTargetYOffsetPercent.Init( pServer, "DiscHomingTargetYOffsetPercent", LTNULL, 0.6f );
 
 	s_bDiscVarsInitted = true;

@@ -1598,6 +1598,17 @@ mistake; later SDKs set the values to NULL and 0.
 Not fixed yet: the game uses only the three known types, so the path does
 not occur.
 
+### A full HUD bar sets its right cap texture on the wrong polygon
+
+CShell.dll 0x101cc346 (CHUDBar::Update, ClientShellDLL/ClientShellShared/
+HUDBar.cpp). When the fill reaches the right cap, the code sets the
+position of polygon 2 (the cap) and then sets the full cap's texture
+coordinates on polygon 5, which it hides at once. Polygon 2 keeps the
+texture coordinates of the last partial fill. NOLF2 sets them on polygon 2.
+A bar that goes from part full to full can show a right cap cut short.
+
+Fixed in the modern build (HUDBar.cpp, `TRON20_MODERN`).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

@@ -791,10 +791,10 @@ bool CLightCycleMgr::CheckForCollision(LIGHT_CYCLIST* pCyclist, LIGHT_CYCLE_TRAI
 		if(bCheckCollision && (pOther->fStartDerezTime == 0.0f) &&
 			((!pCyclist->m_bTronUnknownD1 && (pCyclist != pOther)) || (pCyclist->m_bTronUnknownD1 && (pOwner != pOther))))
 		{
-			float fMinX = (pvPos->x < pLast->vPoint.x) ? pvPos->x : pLast->vPoint.x;
-			float fMaxX = (pvPos->x > pLast->vPoint.x) ? pvPos->x : pLast->vPoint.x;
-			float fMinZ = (pvPos->z < pLast->vPoint.z) ? pvPos->z : pLast->vPoint.z;
-			float fMaxZ = (pvPos->z > pLast->vPoint.z) ? pvPos->z : pLast->vPoint.z;
+			float fMinX = LTMIN(pvPos->x, pLast->vPoint.x);
+			float fMaxX = LTMAX(pvPos->x, pLast->vPoint.x);
+			float fMinZ = LTMIN(pvPos->z, pLast->vPoint.z);
+			float fMaxZ = LTMAX(pvPos->z, pLast->vPoint.z);
 
 			if(pCyclist->vForward.x == 0.0f)
 			{
@@ -1084,18 +1084,15 @@ void CLightCycleMgr::HandleCollision(LIGHT_CYCLIST *pCyclist, LightCycleCollisio
 bool CLightCycleMgr::UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags)
 {
 	LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
-	if(!pCyclist)
-		return false;
-
-	bool bTurned = false;
-	LTVector vForward = pCyclist->vForward;
-	float fSpeed = pCyclist->fSpeed;
-	LTVector vZero(0.0f, 0.0f, 0.0f);
-	LTVector vVel(0.0f, 0.0f, 0.0f);
-	float fAccel = 0.0f;
-
-	if(nFlags & (LCMF_TURNLEFT | LCMF_TURNRIGHT))
+	if(pCyclist)
 	{
+		bool bTurned = false;
+		LTVector vZero(0.0f, 0.0f, 0.0f);
+		LTVector vForward = pCyclist->vForward;
+		float fSpeed = pCyclist->fSpeed;
+		LTVector vVel(0.0f, 0.0f, 0.0f);
+		float fAccel = 0.0f;
+
 		if(nFlags & LCMF_TURNLEFT)
 		{
 			if(vForward.x > 0.5f)
@@ -1113,8 +1110,17 @@ bool CLightCycleMgr::UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags)
 				vForward.x = (vForward.z > 0.5f) ? -1.0f : 1.0f;
 				vForward.z = 0.0f;
 			}
+
+			// Turning costs speed
+			if(!((uint8)(pCyclist->nFlags >> 5) & 1) && !(nFlags & (LCMF_SPEEDZONE | LCMF_SLOWZONE)) &&
+				(fSpeed > pCyclist->fMinSpeed))
+			{
+				fSpeed -= (fSpeed - pCyclist->fMinSpeed) * pCyclist->fTurnSpeedLossPercent;
+			}
+
+			bTurned = true;
 		}
-		else
+		else if(nFlags & LCMF_TURNRIGHT)
 		{
 			if(vForward.x > 0.5f)
 			{
@@ -1131,141 +1137,142 @@ bool CLightCycleMgr::UpdateCyclistMovement(HOBJECT hObj, uint32 nFlags)
 				vForward.x = (vForward.z > 0.5f) ? 1.0f : -1.0f;
 				vForward.z = 0.0f;
 			}
+
+			// Turning costs speed
+			if(!((uint8)(pCyclist->nFlags >> 5) & 1) && !(nFlags & (LCMF_SPEEDZONE | LCMF_SLOWZONE)) &&
+				(fSpeed > pCyclist->fMinSpeed))
+			{
+				fSpeed -= (fSpeed - pCyclist->fMinSpeed) * pCyclist->fTurnSpeedLossPercent;
+			}
+
+			bTurned = true;
 		}
 
-		// Turning costs speed
-		if(!((uint8)(pCyclist->nFlags >> 5) & 1) && !(nFlags & (LCMF_SPEEDZONE | LCMF_SLOWZONE)) &&
-			(fSpeed > pCyclist->fMinSpeed))
+		float fWallAccel = GetWallAccelRate(pCyclist);
+
+		if(nFlags & LCMF_ACCELERATE)
 		{
-			fSpeed -= (fSpeed - pCyclist->fMinSpeed) * pCyclist->fTurnSpeedLossPercent;
+			fAccel = pCyclist->fTurboAccelRate;
 		}
-
-		bTurned = true;
-	}
-
-	float fWallAccel = GetWallAccelRate(pCyclist);
-
-	if(nFlags & LCMF_ACCELERATE)
-	{
-		fAccel = pCyclist->fTurboAccelRate;
-	}
-	else if(nFlags & LCMF_BRAKE)
-	{
-		fAccel = -pCyclist->fBrakeDecelRate;
-	}
-
-	float fRate;
-	if(nFlags & LCMF_SPEEDZONE)
-	{
-		fRate = m_ButeMgr.GetSpeedZoneAccelRate();
-	}
-	else if(nFlags & LCMF_SLOWZONE)
-	{
-		fRate = -m_ButeMgr.GetSlowZoneDecelRate();
-	}
-	else if((uint8)(pCyclist->nFlags >> 5) & 1)
-	{
-		fRate = m_ButeMgr.GetTurboCurseAccelRate();
-	}
-	else if((uint8)(pCyclist->nFlags >> 1) & 1)
-	{
-		fRate = pCyclist->fTurboAccelRate;
-	}
-	else
-	{
-		fRate = fWallAccel + fAccel;
-	}
-
-	float fNewSpeed;
-	float fMaxSpeed;
-	if(fRate == 0.0f)
-	{
-		// Back to the base speed
-		fNewSpeed = fSpeed;
-		if(fSpeed > pCyclist->fBaseSpeed)
+		else if(nFlags & LCMF_BRAKE)
 		{
-			fRate -= pCyclist->fNormalDecelRate;
-			fNewSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
-			if(fNewSpeed < pCyclist->fBaseSpeed)
-				fNewSpeed = pCyclist->fBaseSpeed;
-		}
-		else if(fSpeed < pCyclist->fBaseSpeed)
-		{
-			fRate += pCyclist->fNormalAccelRate;
-			fNewSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
-			if(fNewSpeed > pCyclist->fBaseSpeed)
-				fNewSpeed = pCyclist->fBaseSpeed;
+			fAccel = -pCyclist->fBrakeDecelRate;
 		}
 
-		fMaxSpeed = pCyclist->fMaxSpeed;
-	}
-	else
-	{
-		float fMinSpeed = pCyclist->fMinSpeed;
+		float fRate;
 		if(nFlags & LCMF_SPEEDZONE)
 		{
-			fMaxSpeed = m_ButeMgr.GetMaxSpeedZoneSpeed() * m_fGameSpeedScalar;
+			fRate = m_ButeMgr.GetSpeedZoneAccelRate();
 		}
 		else if(nFlags & LCMF_SLOWZONE)
 		{
-			fMinSpeed = m_ButeMgr.GetMinSlowZoneSpeed() * m_fGameSpeedScalar;
-			fMaxSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
+			fRate = -m_ButeMgr.GetSlowZoneDecelRate();
 		}
 		else if((uint8)(pCyclist->nFlags >> 5) & 1)
 		{
-			fMaxSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
+			fRate = m_ButeMgr.GetTurboCurseAccelRate();
 		}
 		else if((uint8)(pCyclist->nFlags >> 1) & 1)
 		{
-			fMaxSpeed = pCyclist->fMaxTurboSpeed;
+			fRate = pCyclist->fTurboAccelRate;
 		}
 		else
 		{
-			fMaxSpeed = pCyclist->fBaseSpeed;
-			if(fAccel > 0.0f)
-				fMaxSpeed += pCyclist->fMaxManualSpeedAdd;
-			if(fWallAccel > 0.0f)
-				fMaxSpeed += pCyclist->fMaxExternalSpeedAdd;
+			fRate = fWallAccel + fAccel;
 		}
 
-		// Never as fast as a missile
-		if(!(m_ButeMgr.GetMissileSpeed() > fMaxSpeed))
+		float fMaxSpeed;
+		if(fRate == 0.0f)
 		{
-			fMaxSpeed = m_ButeMgr.GetMissileSpeed() - 50.0f;
-		}
+			// Back to the base speed
+			if(fSpeed > pCyclist->fBaseSpeed)
+			{
+				fRate -= pCyclist->fNormalDecelRate;
+				fSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
+				if(fSpeed < pCyclist->fBaseSpeed)
+					fSpeed = pCyclist->fBaseSpeed;
+			}
+			else if(fSpeed < pCyclist->fBaseSpeed)
+			{
+				fRate += pCyclist->fNormalAccelRate;
+				fSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
+				if(fSpeed > pCyclist->fBaseSpeed)
+					fSpeed = pCyclist->fBaseSpeed;
+			}
 
-		if(fSpeed > fMaxSpeed)
-		{
-			fRate = -((nFlags & LCMF_BRAKE) ? pCyclist->fBrakeDecelRate : pCyclist->fNormalDecelRate);
-			fNewSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
+			fMaxSpeed = pCyclist->fMaxSpeed;
 		}
 		else
 		{
-			fNewSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
-			if(fNewSpeed > fMaxSpeed)
-				fNewSpeed = fMaxSpeed;
+			float fMinSpeed = pCyclist->fMinSpeed;
+			if(nFlags & LCMF_SPEEDZONE)
+			{
+				fMaxSpeed = m_ButeMgr.GetMaxSpeedZoneSpeed() * m_fGameSpeedScalar;
+			}
+			else if(nFlags & LCMF_SLOWZONE)
+			{
+				fMinSpeed = m_ButeMgr.GetMinSlowZoneSpeed() * m_fGameSpeedScalar;
+				fMaxSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
+			}
+			else if((uint8)(pCyclist->nFlags >> 5) & 1)
+			{
+				fMaxSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
+			}
+			else if((uint8)(pCyclist->nFlags >> 1) & 1)
+			{
+				fMaxSpeed = pCyclist->fMaxTurboSpeed;
+			}
+			else
+			{
+				fMaxSpeed = pCyclist->fBaseSpeed;
+				if(fAccel > 0.0f)
+					fMaxSpeed += pCyclist->fMaxManualSpeedAdd;
+				if(fWallAccel > 0.0f)
+					fMaxSpeed += pCyclist->fMaxExternalSpeedAdd;
+			}
+
+			// Never as fast as a missile
+			if(!(m_ButeMgr.GetMissileSpeed() > fMaxSpeed))
+			{
+				fMaxSpeed = m_ButeMgr.GetMissileSpeed() - 50.0f;
+			}
+
+			if(pCyclist->fSpeed > fMaxSpeed)
+			{
+				fRate = -((nFlags & LCMF_BRAKE) ? pCyclist->fBrakeDecelRate : pCyclist->fNormalDecelRate);
+				fSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
+			}
+			else
+			{
+				fSpeed = LCM_LT->GetFrameTime() * fRate + fSpeed;
+				if(fSpeed > fMaxSpeed)
+					fSpeed = fMaxSpeed;
+			}
+
+			if(fSpeed < fMinSpeed)
+				fSpeed = fMinSpeed;
 		}
 
-		if(fNewSpeed < fMinSpeed)
-			fNewSpeed = fMinSpeed;
+		pCyclist->fSpeed = fSpeed;
+
+		float fOldRate = pCyclist->fAccelRate;
+		pCyclist->fAccelRate = fRate;
+
+		vVel = vForward * fSpeed;
+
+		g_pPhysicsLT->SetAcceleration(hObj, &vZero);
+		g_pPhysicsLT->SetVelocity(hObj, &vVel);
+
+		if((fOldRate != fRate) || (fMaxSpeed != pCyclist->fMaxSpeed) || bTurned)
+		{
+			CyclistMovementChanged(pCyclist, bTurned, fAccel, fWallAccel, nFlags);
+		}
+
+		pCyclist->fMaxSpeed = fMaxSpeed;
+		return true;
 	}
 
-	pCyclist->fSpeed = fNewSpeed;
-	vVel = vForward * fNewSpeed;
-
-	float fOldRate = pCyclist->fAccelRate;
-	pCyclist->fAccelRate = fRate;
-
-	g_pPhysicsLT->SetAcceleration(hObj, &vZero);
-	g_pPhysicsLT->SetVelocity(hObj, &vVel);
-
-	if((fOldRate != fRate) || (fMaxSpeed != pCyclist->fMaxSpeed) || bTurned)
-	{
-		CyclistMovementChanged(pCyclist, bTurned, fAccel, fWallAccel, nFlags);
-	}
-
-	pCyclist->fMaxSpeed = fMaxSpeed;
-	return true;
+	return false;
 }
 
 // ----------------------------------------------------------------------- //

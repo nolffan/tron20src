@@ -124,7 +124,13 @@ void CHUDBar::Update(float x,float y, float fillW, float maxW, float h)
 			{
 				//draw full right endcap
 				g_pDrawPrim->SetXYWH(&m_Poly[2],barRight,y, capW,h);
+#ifdef TRON20_MODERN
 				SetupQuadUVs(m_Poly[2], m_Bar, 0.75f,0.0f,0.25f,0.5f);
+#else
+				// RETAIL: Tron's sets the full cap's texture on the hidden
+				// polygon (0x101cc346; docs/RETAIL_BUGS.md)
+				SetupQuadUVs(m_Poly[5], m_Bar, 0.75f,0.0f,0.25f,0.5f);
+#endif
 				g_pDrawPrim->SetXYWH(&m_Poly[5],-1.0f,-1.0f,0.0f,0.0f);
 			}
 

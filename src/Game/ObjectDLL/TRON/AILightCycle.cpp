@@ -2239,98 +2239,101 @@ static int IsBetween(LTVector p, LTVector a, LTVector b)
 //
 // ----------------------------------------------------------------------- //
 
+const float SMALL_NUM = 0.00000001f;
+
 int IntersectSegments(LTVector p1, LTVector p2, LTVector p3, LTVector p4, LTVector* pvHit, LTVector* pvHit2)
 {
-	LTVector a = p2 - p1;
-	LTVector b = p4 - p3;
-	LTVector c = p1 - p3;
+	LTVector u = p2 - p1;
+	LTVector v = p4 - p3;
+	LTVector w = p1 - p3;
+	float D = u.x * v.z - u.z * v.x;
 
-	float fDenom = a.x * b.z - a.z * b.x;
-
-	if (fabs(fDenom) < 1.0e-8f)
+	// Parallel (or either one is a point)?
+	if (fabs(D) < SMALL_NUM)
 	{
-		// Parallel: on the same line?
-		if (a.x * c.z - a.z * c.x != 0.0f) return 0;
-		if (c.z * b.x - b.z * c.x != 0.0f) return 0;
-
-		float fLenA = a.MagSqr();
-		float fLenB = b.MagSqr();
-
-		if (fLenA == 0.0f)
+		// Not on the same line
+		if (u.x * w.z - u.z * w.x != 0.0f || v.x * w.z - v.z * w.x != 0.0f)
 		{
-			if (fLenB == 0.0f)
-			{
-				if (p3 == p1)
-				{
-					*pvHit = p1;
-					return 1;
-				}
-				return 0;
-			}
-
-			if (IsBetween(p1, p3, p4))
-			{
-				*pvHit = p1;
-				return 1;
-			}
 			return 0;
 		}
 
-		if (fLenB == 0.0f)
+		// On the same line, or points
+		float du = u.Dot(u);
+		float dv = v.Dot(v);
+		if (du == 0.0f && dv == 0.0f)
 		{
-			if (IsBetween(p3, p1, p2))
-			{
-				*pvHit = p3;
-				return 1;
-			}
-			return 0;
+			// Both are points
+			if (p1 != p3) return 0;
+			*pvHit = p1;
+			return 1;
+		}
+		if (du == 0.0f)
+		{
+			// p1..p2 is a point
+			if (IsBetween(p1, p3, p4) == 0) return 0;
+			*pvHit = p1;
+			return 1;
+		}
+		if (dv == 0.0f)
+		{
+			// p3..p4 is a point
+			if (IsBetween(p3, p1, p2) == 0) return 0;
+			*pvHit = p3;
+			return 1;
 		}
 
-		// Overlapping
+		// On the same line: where they overlap (if they do)
 		float t0, t1;
-		float fX = p2.x - p3.x;
-		float fZ = p2.z - p3.z;
-		if (b.x != 0.0f)
+		LTVector w2 = p2 - p3;
+		if (v.x != 0.0f)
 		{
-			t0 = c.x / b.x;
-			t1 = fX / b.x;
+			t0 = w.x / v.x;
+			t1 = w2.x / v.x;
 		}
 		else
 		{
-			t0 = c.z / b.z;
-			t1 = fZ / b.z;
+			t0 = w.z / v.z;
+			t1 = w2.z / v.z;
 		}
 
 		if (t0 > t1)
 		{
-			float fTemp = t0;
-			t0 = t1;
-			t1 = fTemp;
+			float t = t0; t0 = t1; t1 = t;
 		}
 
-		if (t0 > 1.0f) return 0;
-		if (t1 < 0.0f) return 0;
+		if (t0 > 1.0f || t1 < 0.0f)
+		{
+			return 0;
+		}
 
-		if (t0 < 0.0f) t0 = 0.0f;
-		if (t1 > 1.0f) t1 = 1.0f;
-
+		t0 = t0 < 0.0f ? 0.0f : t0;
+		t1 = t1 > 1.0f ? 1.0f : t1;
 		if (t0 == t1)
 		{
-			*pvHit = p3 + b * t0;
+			// They touch at a point
+			*pvHit = p3 + t0 * v;
 			return 1;
 		}
 
-		*pvHit = p3 + b * t0;
-		*pvHit2 = p3 + b * t1;
+		// They overlap
+		*pvHit = p3 + t0 * v;
+		*pvHit2 = p3 + t1 * v;
 		return 2;
 	}
 
-	float s = (c.z * b.x - b.z * c.x) / fDenom;
-	if (s < 0.0f || s > 1.0f) return 0;
+	// Skew: they can cross at a point
+	float sI = (v.x * w.z - v.z * w.x) / D;
+	if (sI < 0.0f || sI > 1.0f)
+	{
+		return 0;
+	}
 
-	float t = (a.x * c.z - a.z * c.x) / fDenom;
-	if (t < 0.0f || t > 1.0f) return 0;
+	float tI = (u.x * w.z - u.z * w.x) / D;
+	if (tI < 0.0f || tI > 1.0f)
+	{
+		return 0;
+	}
 
-	*pvHit = p1 + a * s;
+	*pvHit = p1 + sI * u;
 	return 1;
 }

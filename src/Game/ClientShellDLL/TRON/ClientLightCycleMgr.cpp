@@ -1146,11 +1146,13 @@ void CClientLightCycleMgr::ShowMessage(const char* szMsg)
 //
 //	ROUTINE:	CClientLightCycleMgr::GetCyclistName
 //
-//	PURPOSE:	RETAIL: 0x10012dd0. PORT: retail copies the profile's name
-//				(a caseless string at CProfileMgr +0x200) by its range
+//	PURPOSE:	RETAIL: 0x10012dd0
 //
 // ----------------------------------------------------------------------- //
 
+// NEAR: retail's exception states after the first return are two higher
+// (something between it and the multiplayer branch takes two states and makes
+// no code), and its string constructions expand to other depths
 std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 {
 	if (IsLocalCyclist(hObj))
@@ -1178,19 +1180,19 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 			return std::string(szName);
 		}
 
-		if (GetGameType() != eGameTypeSingleLightCycleCircuit && GetGameType() != eGameTypeSingleLightCycleCustom)
+		if (GetGameType() == eGameTypeSingleLightCycleCircuit || GetGameType() == eGameTypeSingleLightCycleCustom)
 		{
-			char szName[80] = "";
-			FormatString(0x15ff, szName, sizeof(szName));
-			return std::string(szName);
+			if (g_pProfileMgr)
+			{
+				return g_pProfileMgr->GetCurrentProfile()->m_sName;
+			}
+
+			return std::string("Unknown");
 		}
 
-		if (g_pProfileMgr)
-		{
-			return std::string(g_pProfileMgr->GetCurrentProfileName());
-		}
-
-		return std::string("Unknown");
+		char szName[80] = "";
+		FormatString(0x15ff, szName, sizeof(szName));
+		return std::string(szName);
 	}
 
 	char szName[80] = "";
@@ -1886,14 +1888,21 @@ inline T LCLerp(const T& tMin, const T& tMax, float fT)
 
 float CClientLightCycleMgr::GetSpeedPitch(LIGHT_CYCLIST* pCyclist, float fSpeed)
 {
+	float fT, fMin, fMax;
 	if (fSpeed < pCyclist->fBaseSpeed)
 	{
-		float fT = (fSpeed - pCyclist->fMinSpeed) / (pCyclist->fBaseSpeed - pCyclist->fMinSpeed);
-		return LCLerp(0.8f, 1.0f, fT);
+		fT = (fSpeed - pCyclist->fMinSpeed) / (pCyclist->fBaseSpeed - pCyclist->fMinSpeed);
+		fMin = 0.8f;
+		fMax = 1.0f;
+	}
+	else
+	{
+		fT = (fSpeed - pCyclist->fBaseSpeed) / (pCyclist->fMaxExternalSpeedAdd + pCyclist->fMaxManualSpeedAdd);
+		fMin = 1.0f;
+		fMax = 1.4f;
 	}
 
-	float fT = (fSpeed - pCyclist->fBaseSpeed) / (pCyclist->fMaxExternalSpeedAdd + pCyclist->fMaxManualSpeedAdd);
-	return LCLerp(1.0f, 1.4f, fT);
+	return LCLerp(fMin, fMax, fT);
 }
 
 // ----------------------------------------------------------------------- //
@@ -1933,7 +1942,7 @@ void CClientLightCycleMgr::UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector &
 	IntersectInfo IInfo;
 
 	IQuery.m_From = vPos;
-	IQuery.m_To.Init(vPos.x, vPos.y - 10000.0f, vPos.z);
+	IQuery.m_To = LTVector(vPos.x, vPos.y - 10000.0f, vPos.z);
 	IQuery.m_Flags = INTERSECT_OBJECTS | INTERSECT_HPOLY | IGNORE_NONSOLID;
 	IQuery.m_FilterFn = GroundFilterFn;
 

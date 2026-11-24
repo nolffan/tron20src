@@ -2253,9 +2253,7 @@ void CVehicleMgr::UpdateVehicleModel()
 			// Enable the weapon...
 			EnableWeapon( true );
 
-			// Tell the server we want off...NOTE: In multiplayer we may want
-			// to call this in PreSetPhysicsModel()
-			g_pPlayerMgr->DoActivate();
+			// RETAIL: 0x1011e189: Tron's does not tell the server
 			return;
 		}
 	}
@@ -2479,6 +2477,12 @@ void CVehicleMgr::UpdateVehicleSounds()
 
 	LTBOOL bIsDone = LTFALSE;
 	LTBOOL bPlayAni = LTTRUE;
+
+	// RETAIL: 0x1011e802: no sounds once the light cycle has derezzed
+	if (m_bTronUnknown2158)
+	{
+		return;
+	}
 
 	if (IsCurVehicleAni("Select", bIsDone))
 	{
@@ -3017,20 +3021,37 @@ void CVehicleMgr::HandleCollision()
 		LTFLOAT fPushPercent = g_vtVehicleImpactPushVelPercent.GetFloat();
 		if (fVelPercent < fPushPercent) return;
 
-		// Create an impact fx...
+		// RETAIL: 0x1011f22c: Tron's plays the surface's impact FX at the
+		// vehicle, or at the camera in first person (that position also
+		// places the pusher)
 
 		LTVector vPos;
 		g_pLTClient->GetObjectPos(hObj, &vPos);
 
-		LTRotation rRot;
-		g_pLTClient->GetObjectRotation( hObj, &rRot );
+		uint32 dwFXFlags = 0;
+		if (g_pPlayerMgr->IsFirstPerson())
+		{
+			dwFXFlags = FXFLAG_REALLYCLOSE;
 
-		// Play the FX closer to the supposed point of impact...
+			HLOCALOBJ hCamera = g_pPlayerMgr->GetCamera();
+			if (!hCamera) return;
 
-		vPos += (rRot.Forward() * 32.0f);
+			g_pLTClient->GetObjectPos(hCamera, &vPos);
 
-		// RETAIL: Tron's SURFACE has no snowmobile impact FX, so no FX is
-		// played here (NOLF2 played the surface's SnowmobileImpactFXName).
+			LTRotation rRot;
+			g_pPlayerMgr->GetCameraRotation(rRot);
+
+			vPos += (rRot.Forward() * g_vtVehicleImpactFXOffsetForward.GetFloat());
+			vPos += (rRot.Up() * g_vtVehicleImpactFXOffsetUp.GetFloat());
+		}
+
+		if (pSurface)
+		{
+			CLIENTFX_CREATESTRUCT fxCS(pSurface->szImpactFXName, dwFXFlags, vPos);
+			fxCS.m_vTargetNorm = m_cLastTouchInfo.m_Plane.m_Normal;
+
+			g_pClientFXMgr->CreateClientFX(LTNULL, fxCS, LTTRUE);
+		}
 
 
 		// Push us away from the impact...(keep y value the same so we

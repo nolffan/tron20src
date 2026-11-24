@@ -1170,11 +1170,11 @@ void CProjectile::LoadPendingTouches(ILTMessage_Read *pMsg)
 {
 	m_lstPendingTouches.clear();
 
-	uint8 nCount = pMsg->Readuint8();
+	int nCount = pMsg->Readuint8();
 	for (int i = 0; i < nCount; ++i)
 	{
 		ProjectilePendingTouch touch;
-		pMsg->ReadData(&touch, sizeof(ProjectilePendingTouch) * 8);
+		pMsg->ReadType(&touch);
 		m_lstPendingTouches.push_back(touch);
 	}
 }
@@ -1487,18 +1487,32 @@ void CProjectile::HandleTouch(HOBJECT hObj)
 				vReflectedDir = vDir - 2 * vNormal * ( VEC_DOT( vDir, vNormal ) );
 
 				// normalize and scale to velocity
+				// RETAIL: Tron's scales by the projectile's velocity (0x10120645)
 				LTVector vNewVel = vReflectedDir;
-				vNewVel *= static_cast< LTFLOAT >( m_pAmmoData->pProjectileFX->nVelocity );
 
 				// keep track of the update num to prevent multiple ricochets in the same frame
 				m_nLastRicochetUpdateNum = m_nUpdateNum;
+
+				vNewVel *= m_fVelocity;
+
+				// RETAIL: Tron takes away the stopping velocity that the
+				// engine will apply (0x10120681)
+				vNewVel -= colInfo.m_vStopVel;
 
 				// set the new speed
 				ltResult = g_pPhysicsLT->SetVelocity(m_hObject, &vNewVel);
 				ASSERT( LT_OK == ltResult );
 
+				// RETAIL: Tron's projectile flies on from the ricochet
+				// (0x101206b0)
+				m_vFirePos = vPos;
+				m_vDir = vReflectedDir;
+
 				// do all the impact work
 				AddImpact( hObj, m_vFlashPos, vPos, vNormal, eType, IMPACT_TYPE_RICOCHET );
+
+				// RETAIL: the ricochet damages what it hits (0x101206f7)
+				ImpactDamageObject( m_hFiredFrom, hObj );
 
 				return;
 			}
@@ -1752,6 +1766,14 @@ void CProjectile::AddImpact( HOBJECT hObj,
 	fxStruct.nSurfaceType   = eType;
 	fxStruct.wIgnoreFX      = g_wIgnoreFX;
 	fxStruct.eImpactType    = eImpactType;
+	fxStruct.m_xTronUnknown38 = 1.0f;
+
+	// RETAIL: Tron marks the impacts of vector ammo (0x10120fad); the flag
+	// has no name
+	if (m_pAmmoData->eType == VECTOR)
+	{
+		g_wIgnoreFX |= (1<<15);
+	}
 
 	if (bDeflected)
 		fxStruct.wIgnoreFX |= (WFX_MARK | WFX_EXITMARK);
@@ -1792,13 +1814,31 @@ void CProjectile::AddImpact( HOBJECT hObj,
 		}
 	}
 
+	// RETAIL: Tron sends the client id of a player that blocked the
+	// projectile (0x1012105a)
+	if ((eImpactType == IMPACT_TYPE_BLOCKED) || (eImpactType == 3))	// 3: the disc's deadly block
+	{
+		if (IsPlayer(hObj))
+		{
+			CPlayerObj* pPlayer = (CPlayerObj*) g_pLTServer->HandleToObject(hObj);
+			if (pPlayer)
+			{
+				fxStruct.m_xTronUnknownF = (uint8) g_pLTServer->GetClientID(pPlayer->GetClient());
+			}
+		}
+	}
+
 	// do all server side fx activities
 	// and send a message to the client
 	CreateClientWeaponFX(fxStruct);
 
 	// Do the area and progressive (over time) damage...
-	if ((m_pAmmoData->fAreaDamage > 0.0f && eType != ST_SKY) ||
-		 m_pAmmoData->fProgDamageLifetime > 0.0f)
+	// RETAIL: Tron's ricochets make no explosion, and the ammo can always
+	// explode (0x101210af)
+	if ((eImpactType != IMPACT_TYPE_RICOCHET) &&
+		(m_pAmmoData->bAreaDamageAlways ||
+		 (m_pAmmoData->fAreaDamage > 0.0f && eType != ST_SKY) ||
+		 m_pAmmoData->fProgDamageLifetime > 0.0f))
 	{
 		AddExplosion(vImpactPos, vSurfaceNormal);
 	}
@@ -1824,7 +1864,8 @@ void CProjectile::AddImpact( HOBJECT hObj,
 	}
 
 	// if the projectile was fired from a character
-	if(m_hFiredFrom && IsCharacter(m_hFiredFrom))
+	// RETAIL: Tron's need the relation data (0x10121236)
+	if(m_bHasRelationData && m_pRelationData && m_hFiredFrom && IsCharacter(m_hFiredFrom))
 	{
 		//
 		// send a bunch of AI stimuli
@@ -1870,11 +1911,8 @@ void CProjectile::AddImpact( HOBJECT hObj,
 			// [JO] 8/14/02 - added skipping Unspecified, so neutral AI do not freak out when a coin comes near them.
 			// [JO] 9/07/02 - added skipping camera disabler.
 
-			if( (pAmmo->eInstDamageType != DT_GADGET_TRACKER) && 
-				(pAmmo->eProgDamageType != DT_GADGET_TRACKER) && 
-				(pAmmo->eInstDamageType != DT_CAMERA_DISABLER) && 
-				(pAmmo->eProgDamageType != DT_CAMERA_DISABLER) && 
-				( ( pAmmo->eInstDamageType != DT_UNSPECIFIED ) || ( pAmmo->eProgDamageType != DT_UNSPECIFIED ) ) )
+			// RETAIL: Tron checks only the unspecified damage (0x1012136b)
+			if( ( pAmmo->eInstDamageType != DT_UNSPECIFIED ) || ( pAmmo->eProgDamageType != DT_UNSPECIFIED ) )
 			{
 				g_pAIStimulusMgr->RegisterStimulus(kStim_EnemyWeaponImpactVisible, m_hFiredFrom, hObj, vImpactPos, 1.f, 1.f);
 				g_pAIStimulusMgr->RegisterStimulus(kStim_ProhibitedWeaponImpactVisible, m_hFiredFrom, hObj, vImpactPos, 1.f, 1.f);
@@ -1922,8 +1960,16 @@ void CProjectile::AddExplosion(const LTVector &vPos, const LTVector &vNormal)
 	// validate its creation
 	if (pExplosion)
 	{
-		// setup the explosion
-		pExplosion->Setup(m_hFiredFrom, m_nAmmoId);
+		// RETAIL: Tron sets the explosion up with message 0x3f3 and the
+		// projectile's modifiers (Explosion::ObjectMessageFn 0x100ef790)
+		CAutoMessage cMsg;
+		cMsg.Writeuint32(0x3f3);
+		cMsg.WriteObject(m_hFiredFrom);
+		cMsg.Writeuint32(m_nAmmoId);
+		cMsg.Writebool(true);
+		cMsg.Writeuint32(m_nWeaponId);
+		SaveModifiers(cMsg);
+		g_pLTServer->SendToObject(cMsg.Read(), m_hObject, pExplosion->m_hObject, MESSAGE_GUARANTEED);
 	}
 }
 

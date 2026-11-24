@@ -3163,7 +3163,7 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 			case DT_EXPLODE:
 			case DT_FREEZE:
 			case DT_POISON:
-				SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
+				SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTTRUE, "DESTROY");
 				break;
 		}
 	}

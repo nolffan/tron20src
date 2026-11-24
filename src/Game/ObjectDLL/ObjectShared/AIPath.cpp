@@ -325,8 +325,7 @@ void CAIPath::GetFinalDir(LTVector* pvDir)
 		}
 	}
 
-	*pvDir = v1 - v0;
-	pvDir->Normalize();
+	*pvDir = (v1 - v0).Unit();
 }
 
 AIVolume* CAIPath::GetNextVolume(AIVolume* pVolume, AIVolume::EnumVolumeType eVolumeType)
