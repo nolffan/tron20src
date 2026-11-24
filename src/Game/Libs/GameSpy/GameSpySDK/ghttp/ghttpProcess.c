@@ -98,7 +98,7 @@ void ghiDoSocketInit
 	GHIConnection * connection
 )
 {
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Socket Initialization\n");
+	const char * server;
 
 	// Progress.
 	////////////
@@ -117,31 +117,13 @@ void ghiDoSocketInit
 		return;
 	}
 
-	// PORT: the 2003 SDK has no GHTTPHostLookup state (CShell.dll 1.030);
-	// until this file is written from the retail code (0x10020500 on), the
-	// lookup is done here, and it moves the state on to GHTTPConnecting.
-	ghiDoHostLookup(connection);
-}
-
-/****************
-** HOST LOOKUP **
-****************/
-void ghiDoHostLookup
-(
-	GHIConnection * connection
-)
-{
-	HOSTENT * host = NULL;
-	const char * server = NULL;
-
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Host Lookup\n");
-
+	// RETAIL: CShell.dll 0x10020500: the 2003 SDK has no GHTTPHostLookup
+	// state; the host is looked up here.
 
 	// Check for using a proxy.
 	///////////////////////////
-	if(ghiProxyAddress)
-		server = ghiProxyAddress;
-	else
+	server = ghiProxyAddress;
+	if(!server)
 		server = connection->serverAddress;
 
 	// Try resolving the address as an IP a.b.c.d number.
@@ -149,14 +131,13 @@ void ghiDoHostLookup
 	connection->serverIP = inet_addr(server);
 	if(connection->serverIP == INADDR_NONE)
 	{
+		HOSTENT * host;
+
 		// Try resolving with DNS.
 		//////////////////////////
 		host = gethostbyname(server);
-
 		if(host == NULL)
 		{
-			gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_HotError, 
-				"Host Lookup failed\n");
 			connection->completed = GHTTPTrue;
 			connection->result = GHTTPHostLookupFailed;
 			return;
@@ -172,6 +153,7 @@ void ghiDoHostLookup
 	connection->state = GHTTPConnecting;
 	ghiCallProgressCallback(connection, NULL, 0);
 }
+
 /***************
 ** CONNECTING **
 ***************/
@@ -185,7 +167,7 @@ void ghiDoConnecting
 	int writeFlag;
 	int exceptFlag;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Connecting\n");
+	// RETAIL: CShell.dll 0x10020680 (the 2003 SDK's).
 
 	// If we don't have a socket yet, set it up.
 	////////////////////////////////////////////
@@ -233,7 +215,7 @@ void ghiDoConnecting
 		if(gsiSocketIsError(rcode))
 		{
 			int socketError = GOAGetLastError(connection->socket);
-			if((socketError != WSAEWOULDBLOCK) && (socketError != WSAEINPROGRESS) && (socketError != WSAETIMEDOUT))
+			if((socketError != WSAEWOULDBLOCK) && (socketError != WSAEINPROGRESS))
 			{
 				connection->completed = GHTTPTrue;
 				connection->result = GHTTPConnectFailed;
@@ -246,27 +228,25 @@ void ghiDoConnecting
 	// Check if the connect has completed.
 	//////////////////////////////////////
 	rcode = ghiSocketSelect(connection->socket, NULL, &writeFlag, &exceptFlag);
-	if((gsiSocketIsError(rcode)) || ((rcode == 1) && exceptFlag))
+	if(!rcode || exceptFlag)
 	{
 		connection->completed = GHTTPTrue;
 		connection->result = GHTTPConnectFailed;
-		if(gsiSocketIsError(rcode))
+		if(!rcode)
 			connection->socketError = GOAGetLastError(connection->socket);
-		else
-			connection->socketError = 0;
 		return;
 	}
 
 	// Check if we're connected.
 	////////////////////////////
-	if((rcode == 1) && writeFlag)
+	if(writeFlag)
 	{
 		// Progress.
 		////////////
 		connection->state = GHTTPSendingRequest;
 		ghiCallProgressCallback(connection, NULL, 0);
 	}
-} 
+}
 
 /********************
 ** SENDING REQUEST **
@@ -285,7 +265,7 @@ void ghiDoSendingRequest
 	///////////////////////////////////////////////////////////
 	if(!connection->sendBuffer.len)
 	{
-		GHIBuffer* writeBuffer = &connection->sendBuffer;
+		GHIBuffer* writeBuffer;
 		// Fill in the request line.
 		////////////////////////////
 		if(connection->post)
@@ -294,6 +274,7 @@ void ghiDoSendingRequest
 			requestType = "HEAD ";
 		else
 			requestType = "GET ";
+		writeBuffer = &connection->sendBuffer;
 		ghiAppendDataToBuffer(writeBuffer, requestType, 0);
 		if(ghiProxyAddress)
 			ghiAppendDataToBuffer(writeBuffer, connection->URL, 0);
@@ -400,7 +381,7 @@ void ghiDoPosting
 	GHIPostingResult result;
 	int oldBytesPosted;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Posting\n");
+	// RETAIL: CShell.dll 0x100209b0 (the 2003 SDK's).
 
 	// Store the old bytes posted.
 	//////////////////////////////
@@ -414,26 +395,9 @@ void ghiDoPosting
 	//////////////////////
 	if(result == GHIPostingError)
 	{
-		int rcode = 0;
-		int readFlag = 0;
-
-		// Make sure we already set the error stuff.
-		////////////////////////////////////////////
-		assert(connection->completed && connection->result);
-
 		// Cleanup the posting state.
 		/////////////////////////////
 		ghiPostCleanupState(connection);
-
-		// Is there a server response?
-		rcode = ghiSocketSelect(connection->socket, &readFlag, NULL, NULL);
-		if((rcode == 1) && readFlag)
-		{
-			// Ready to receive.
-			////////////////////
-			connection->state = GHTTPReceivingStatus;
-			ghiCallProgressCallback(connection, NULL, 0);
-		}
 		return;
 	}
 
@@ -449,12 +413,11 @@ void ghiDoPosting
 		// Cleanup the posting state.
 		/////////////////////////////
 		ghiPostCleanupState(connection);
+
 		// Set the new connection state.
 		////////////////////////////////
 		connection->state = GHTTPWaiting;
 		ghiCallProgressCallback(connection, NULL, 0);
-
-		return;
 	}
 }
 
@@ -467,28 +430,22 @@ void ghiDoWaiting
 )
 {
 	int readFlag;
-	int exceptFlag;
-	int rcode;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Waiting\n");
+	// RETAIL: CShell.dll 0x10020a10 (the 2003 SDK's).
 
 	// We're waiting to receive something.
 	//////////////////////////////////////
-	rcode = ghiSocketSelect(connection->socket, &readFlag, NULL, &exceptFlag);
-	if((gsiSocketIsError(rcode)) || ((rcode == 1) && exceptFlag))
+	if(!ghiSocketSelect(connection->socket, &readFlag, NULL, NULL))
 	{
 		connection->completed = GHTTPTrue;
 		connection->result = GHTTPSocketFailed;
-		if(gsiSocketIsError(rcode))
-			connection->socketError = GOAGetLastError(connection->socket);
-		else
-			connection->socketError = 0;
+		connection->socketError = GOAGetLastError(connection->socket);
 		return;
 	}
 
 	// Check for waiting data.
 	//////////////////////////
-	if((rcode == 1) && readFlag)
+	if(readFlag)
 	{
 		// Ready to receive.
 		////////////////////
