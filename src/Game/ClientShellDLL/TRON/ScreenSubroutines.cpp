@@ -1031,34 +1031,30 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 		if (m_bToolTips)
 		{
 			if (m_pHotSub && !m_pCursorSub)
-				ShowSubInfo(hotPos.x, hotPos.y);
+				ShowSubInfo(hotPos);
 			else if (m_pHotProc)
-				ShowProcInfo(hotPos.x, hotPos.y);
+				ShowProcInfo(hotPos);
 			else if (m_pHotRating)
-				ShowRatingInfo(hotPos.x, hotPos.y);
+				ShowRatingInfo(hotPos);
 			else if (m_bBuildPointsHot)
-				ShowBuildPointsInfo(hotPos.x, hotPos.y);
+				ShowBuildPointsInfo(hotPos);
 			else if (m_bLibraryCCWHot && nHotLibrary != -1)
 			{
-				LTIntPt pos = m_Libraries[nHotLibrary].GetHotPos();
-				m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0x9fb), LTNULL);
+				m_ToolTip.Show(m_Libraries[nHotLibrary].GetHotPos(), LoadTempWString(0x9fb), LTNULL);
 			}
 			else if (m_bLibraryCWHot && nHotLibrary != -1)
 			{
-				LTIntPt pos = m_Libraries[nHotLibrary].GetHotPos();
-				m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0x9fc), LTNULL);
+				m_ToolTip.Show(m_Libraries[nHotLibrary].GetHotPos(), LoadTempWString(0x9fc), LTNULL);
 			}
 			else if (m_bOptimizerHot)
 			{
 				if (m_Optimizer.IsDone() || m_Optimizer.IsBusy())
 				{
-					LTIntPt pos = m_Optimizer.GetCenter();
-					m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0xcd7), LTNULL);
+					m_ToolTip.Show(m_Optimizer.GetCenter(), LoadTempWString(0xcd7), LTNULL);
 				}
 				else
 				{
-					LTIntPt pos = m_Optimizer.GetCenter();
-					m_ToolTip.Show(pos.x, pos.y, LoadTempWString(0xcb4), LTNULL);
+					m_ToolTip.Show(m_Optimizer.GetCenter(), LoadTempWString(0xcb4), LTNULL);
 				}
 			}
 			else if (!pCtrl)
@@ -1066,7 +1062,7 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 			else if (pCtrl == pOldCtrl && m_pLastCtrl == pOldLastCtrl)
 				m_ToolTip.Hide();
 			else
-				ShowCtrlInfo(x, y, pCtrl);
+				ShowCtrlInfo(LTIntPt(x, y), pCtrl);
 		}
 	}
 
@@ -1327,7 +1323,7 @@ void CScreenSubroutines::OnPickupClick(int x, int y)
 					if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 					{
 						LTIntPt pos = m_ProcCtrl[j].GetCenter();
-						ShowProcInfo(pos.x, pos.y);
+						ShowProcInfo(pos);
 					}
 				}
 			}
@@ -1363,7 +1359,7 @@ void CScreenSubroutines::OnSubroutineClick(int x, int y)
 				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = m_ProcCtrl[i].GetCenter();
-					ShowProcInfo(pos.x, pos.y);
+					ShowProcInfo(pos);
 				}
 			}
 		}
@@ -1471,7 +1467,7 @@ Drop:
 		if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 		{
 			LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
-			ShowSubInfo(pos.x, pos.y);
+			ShowSubInfo(pos);
 		}
 
 		if (!pDisplaced)
@@ -1547,7 +1543,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = m_ProcCtrl[i].GetCenter();
-					ShowProcInfo(pos.x, pos.y);
+					ShowProcInfo(pos);
 				}
 			}
 		}
@@ -1586,7 +1582,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
-				ShowSubInfo(pos.x, pos.y);
+				ShowSubInfo(pos);
 			}
 			return;
 		}
@@ -1598,7 +1594,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_SystemMemoryCtrl.GetHotPos();
-				ShowSubInfo(pos.x, pos.y);
+				ShowSubInfo(pos);
 			}
 			break;
 
@@ -1607,7 +1603,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[0].GetArc()->GetHotPos();
-				ShowSubInfo(pos.x, pos.y);
+				ShowSubInfo(pos);
 			}
 			break;
 
@@ -1616,7 +1612,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[1].GetArc()->GetHotPos();
-				ShowSubInfo(pos.x, pos.y);
+				ShowSubInfo(pos);
 			}
 			break;
 
@@ -1625,7 +1621,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
 				LTIntPt pos = m_Libraries[2].GetArc()->GetHotPos();
-				ShowSubInfo(pos.x, pos.y);
+				ShowSubInfo(pos);
 			}
 			break;
 		}
@@ -1721,7 +1717,7 @@ void CScreenSubroutines::OnSubroutineRClick(int x, int y)
 				if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 				{
 					LTIntPt pos = m_Libraries[nFunction].GetArc()->GetHotPos();
-					ShowSubInfo(pos.x, pos.y);
+					ShowSubInfo(pos);
 					SetCursorMode(CursorPickup);
 					return;
 				}
@@ -1977,7 +1973,7 @@ void CScreenSubroutines::SetCursorMode(SubCursorMode mode)
 }
 
 // RETAIL: 0x10081750, the tool tip of the hot subroutine
-void CScreenSubroutines::ShowSubInfo(int x, int y)
+void CScreenSubroutines::ShowSubInfo(LTIntPt pos)
 {
 	if (!m_pHotSub || !m_pHotSub->pTronSubroutine)
 		return;
@@ -1991,56 +1987,56 @@ void CScreenSubroutines::ShowSubInfo(int x, int y)
 		sprintf(szIcon, "%s", "Interface\\Subroutines\\Sprtex\\foreign_0.dtx");
 
 	HTEXTURE hIcon = g_pInterfaceResMgr->GetTexture(szIcon);
-	m_ToolTip.Show(x, y, sInfo, hIcon);
+	m_ToolTip.Show(pos, sInfo, hIcon);
 }
 
 // RETAIL: 0x10081890, the tool tip of the hot procedural
-void CScreenSubroutines::ShowProcInfo(int x, int y)
+void CScreenSubroutines::ShowProcInfo(LTIntPt pos)
 {
 	if (!m_pHotProc)
 		return;
 
 	HTEXTURE hIcon = g_pInterfaceResMgr->GetTexture(m_pHotProc->szToolTipIcon);
 	std::wstring sInfo = g_pSubroutineMgr->GetProceduralInfo(m_pHotProc);
-	m_ToolTip.Show(x, y, sInfo, hIcon);
+	m_ToolTip.Show(pos, sInfo, hIcon);
 }
 
 // RETAIL: 0x10081990
-void CScreenSubroutines::ShowRatingInfo(int x, int y)
+void CScreenSubroutines::ShowRatingInfo(LTIntPt pos)
 {
 	if (!m_pHotRating)
 		return;
 
 	std::wstring sInfo = m_pHotRating->GetHelpText();
-	m_ToolTip.Show(x, y, sInfo, LTNULL);
+	m_ToolTip.Show(pos, sInfo, LTNULL);
 }
 
 // RETAIL: 0x10081a70
-void CScreenSubroutines::ShowBuildPointsInfo(int x, int y)
+void CScreenSubroutines::ShowBuildPointsInfo(LTIntPt pos)
 {
 	if (!m_bBuildPointsHot)
 		return;
 
 	std::wstring sInfo = m_BuildPoints.GetHelpText();
-	m_ToolTip.Show(x, y, sInfo, LTNULL);
+	m_ToolTip.Show(pos, sInfo, LTNULL);
 }
 
 // RETAIL: 0x10081b60, the tool tips of the screen's own controls
-void CScreenSubroutines::ShowCtrlInfo(int x, int y, CLTGUICtrl * pCtrl)
+void CScreenSubroutines::ShowCtrlInfo(LTIntPt pos, CLTGUICtrl * pCtrl)
 {
 	if (!pCtrl)
 		return;
 
 	if (pCtrl == m_pClear)
-		m_ToolTip.Show(x, y, LoadTempWString(0xcee), LTNULL);
+		m_ToolTip.Show(pos, LoadTempWString(0xcee), LTNULL);
 	else if (pCtrl == m_pToolTipTitle || pCtrl == m_pToolTipToggle)
-		m_ToolTip.Show(x, y, LoadTempWString(0xcef), LTNULL);
+		m_ToolTip.Show(pos, LoadTempWString(0xcef), LTNULL);
 	else if (pCtrl == m_pVersion)
-		m_ToolTip.Show(x, y, LoadTempWString(0xcf3), LTNULL);
+		m_ToolTip.Show(pos, LoadTempWString(0xcf3), LTNULL);
 	else if (pCtrl == m_pBuildNoteCount)
-		m_ToolTip.Show(x, y, LoadTempWString(0xcf4), LTNULL);
+		m_ToolTip.Show(pos, LoadTempWString(0xcf4), LTNULL);
 	else if (pCtrl == m_pSysName)
-		m_ToolTip.Show(x, y, LoadTempWString(0xcf0), LTNULL);
+		m_ToolTip.Show(pos, LoadTempWString(0xcf0), LTNULL);
 }
 
 // RETAIL: 0x10081c20
