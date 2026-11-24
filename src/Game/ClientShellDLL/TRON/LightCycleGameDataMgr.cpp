@@ -46,12 +46,18 @@ bool CLightCycleGameDataMgr::Init()
 	m_nCurrent = (uint16)-1;
 	LoadAll();
 
-	// PORT: retail selects the set named by a string of the current profile
-	// (retail CUserProfile +0x1f4, 0x10047084; not yet in our profile's
-	// layout) when it is not empty, else the default set; the default set
-	// stands in
+	// The profile's set (retail 0x10047084), else the default set
+	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
 	HSTRING hDefault = g_pLTClient->FormatString(IDS_LIGHTCYCLEGAMEDATA_DEFAULT);
-	const char* pszName = g_pLTClient->GetStringData(hDefault);
+	const char* pszName;
+	if (!pProfile->m_sLightCycleConfig.empty())
+	{
+		pszName = pProfile->m_sLightCycleConfig.c_str();
+	}
+	else
+	{
+		pszName = g_pLTClient->GetStringData(hDefault);
+	}
 
 	bool bFailed = !Select(std::string(pszName), false);
 	if (bFailed)
