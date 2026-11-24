@@ -64,49 +64,12 @@ CTargetMgr::~CTargetMgr()
 {
 }
 
-// RETAIL: inline in Tron's Update (0x1016d7bf): the distances' defaults
-// are constants (NOLF2 read them from the interface attributes), and there
-// is no revive distance
-inline void CTargetMgr::FirstUpdate()
-{
-	if (!g_vtActivationDistance.IsInitted())
-	{
-		g_vtActivationDistance.Init(g_pLTClient, "ActivationDistance", LTNULL, 100.0f);
-	}
-
-	if( !g_vtTargetDistance.IsInitted() )
-	{
-		g_vtTargetDistance.Init(g_pLTClient, "TargetDistance", LTNULL, 1000.0f);
-	}
-}
-
-// RETAIL: inline in Tron's Update (0x1016d792); no team to clear, and the
-// target can be activated whatever the damage FX
-inline void CTargetMgr::ClearTargetInfo()
-{
-	//clear our targeting info
-	SetTargetStringID(NULL);
-	m_hTarget = NULL;
-	m_fTargetRange = 10000.0f;
-	m_szString[0] = 0;
-	m_szDebugString[0] = 0;
-	m_nString = 0;
-
-	// RETAIL: Tron's initialises the console variables here, each time
-	// (0x1016d7bf), and keeps the distances (0x1016d91d, 0x1016d944) for
-	// the inline IsTargetInRange
-	FirstUpdate();
-	m_fActivationDistance = g_vtActivationDistance.GetFloat();
-	m_fTargetDistance = g_vtTargetDistance.GetFloat();
-
-	m_ActivationData.Init();
-
-	m_bSearchTarget = false;
-	m_bMoveTarget = false;
-	m_bCanActivate = true;
-}
-
-
+// RETAIL: 0x1016d700. Tron's is build 51's with NOLF2's later parts: the
+// hit box of a character, reviving a body, waking a character, the
+// multiplayer player names and the activate objects' strings. It has no
+// vehicle or dead-player test, no progress bar, no model name IDs, no gadget
+// bombs and no doomsday pieces, and the distances are members (see
+// IsTargetInRange).
 void CTargetMgr::Update()
 {
 	if (m_hLockedTarget && m_hTarget == m_hLockedTarget)
@@ -117,7 +80,7 @@ void CTargetMgr::Update()
 		if (g_pPlayerMgr->IsSearching())
 		{
 			m_bSearchTarget = true;
-			SetTargetStringID(IDS_TARGET_SEARCHING);
+			SetTargetStringID(kTronIDS_TargetSearching);
 			
 			float fDistAway = 10000.0f;
 			CheckForIntersect(fDistAway);
@@ -125,8 +88,6 @@ void CTargetMgr::Update()
 			return;
 		}
 	}
-
-	// RETAIL: Tron's has no progress bar to clear here
 
 	// If we currently have a target, see if it is a body and if so remove the
 	// glow flag (it may be set again below)...
@@ -140,8 +101,38 @@ void CTargetMgr::Update()
 	}
 
 
-	// Start fresh
-	ClearTargetInfo();
+	// RETAIL: Tron has no ClearTargetInfo or FirstUpdate: the target info is
+	// cleared here, and the console variables are initialised each time
+	// (0x1016d792; written as separate inline functions, the console
+	// variables' Init calls stay calls). The distances (0x1016d91d,
+	// 0x1016d944) are kept for the inline IsTargetInRange; their defaults
+	// are constants (NOLF2 read them from the interface attributes)
+
+	//clear our targeting info
+	SetTargetStringID(NULL);
+	m_hTarget = NULL;
+	m_fTargetRange = 10000.0f;
+	m_szString[0] = 0;
+	m_szDebugString[0] = 0;
+	m_nString = 0;
+
+	if (!g_vtActivationDistance.IsInitted())
+	{
+		g_vtActivationDistance.Init(g_pLTClient, "ActivationDistance", LTNULL, 100.0f);
+	}
+
+	if( !g_vtTargetDistance.IsInitted() )
+	{
+		g_vtTargetDistance.Init(g_pLTClient, "TargetDistance", LTNULL, 1000.0f);
+	}
+	m_fActivationDistance = g_vtActivationDistance.GetFloat();
+	m_fTargetDistance = g_vtTargetDistance.GetFloat();
+
+	m_ActivationData.Init();
+
+	m_bSearchTarget = false;
+	m_bMoveTarget = false;
+	m_bCanActivate = true;
 
 
 	//see what we've looking at
@@ -178,90 +169,99 @@ void CTargetMgr::Update()
 	uint32 dwUserFlags = 0;
     g_pCommonLT->GetObjectFlags(m_hTarget, OFT_User, dwUserFlags);
 
-	// If we're on a vehicle (or if we are dead) all we care about is other players in a multiplayer game...
-	// Some vehicles (like the PlayerLure) let you activate, so we'll just check if the
-	// vehicle will let us show a crosshair to see if we're on a "true" vehicle or not...
-
-	// It would be great if we didn't have to do all these checks, but such is life...
-
-	bool bPlayersOnly = g_pPlayerMgr->IsPlayerDead() || (g_pPlayerMgr->GetMoveMgr()->GetVehicleMgr()->CanShowCrosshair() ? false : true);
-
-
-	if (!bPlayersOnly)
+	//special case handling for bodies
+	if (pBody || pCharacter)
 	{
-		//special case handling for bodies
-		if (pBody || pCharacter)
+		// RETAIL: build 51's look at the body is still here (0x1016da85), but
+		// nothing uses its result
+		LTRotation	rCamRot;
+		LTVector	vTargetPos, vCamPos, vDir, vCamR;
+
+		HLOCALOBJ	hCamera = g_pPlayerMgr->GetCamera();
+
+		g_pLTClient->GetObjectRotation( hCamera, &rCamRot );
+		vCamR = rCamRot.Right();
+
+		g_pLTClient->GetObjectPos( hCamera, &vCamPos );
+		g_pLTClient->GetObjectPos( m_hTarget, &vTargetPos );
+		
+
+		vDir = vTargetPos - vCamPos;
+
+		// See if we are looking at the target...
+
+		vDir.Normalize();
+		LTFLOAT	fCamAngle = vDir.Dot( vCamR );
+
+		bool bCanSearch = !!(dwUserFlags & USRFLG_CAN_SEARCH);
+		if (pBody)
 		{
-			bool bCanSearch = !!(dwUserFlags & USRFLG_CAN_SEARCH);
-			if (pBody)
+			if (fDistAway <= m_fActivationDistance)
 			{
-				if (fDistAway <= g_vtActivationDistance.GetFloat())
-				{
-					// Make target glow, so it stands out more...
-					g_pCommonLT->SetObjectFlags(m_hTarget, OFT_User, USRFLG_GLOW, USRFLG_GLOW);
-				}
+				// Make target glow, so it stands out more...
+				g_pCommonLT->SetObjectFlags(m_hTarget, OFT_User, USRFLG_GLOW, USRFLG_GLOW);
+			}
+
+			// RETAIL: Tron revives any body that can be revived, in the
+			// activation distance (no "ReviveDistance", game type or team)
+			if (pBody->CanBeRevived() && fDistAway <= m_fActivationDistance)
+			{
+				SetTargetStringID(kTronIDS_TargetRevive);
+
+				LTVector vObjPos, vDims;
+				g_pLTClient->GetObjectPos(pBody->GetServerObj(), &vObjPos);
+				g_pPhysicsLT->GetObjectDims(pBody->GetServerObj(), &vDims);
+
+				// Players are non-solid to each other so you can revive right on top of them.
+				m_bCanActivate = true;  //!CheckForCharacters(vObjPos, vDims, pBody->GetClientId());
+				m_bMoveTarget = true;
+				m_ActivationData.m_nType = MID_ACTIVATE_REVIVE;
+				return;
+			}
+
+			m_bMoveTarget = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());
+		}
+		else if (pCharacter)
+		{
+			// RETAIL: no slipped characters in Tron (0x1016dc07)
+			if( (pCharacter->m_cs.eCrosshairCharacterClass != BAD) && (pCharacter->CanWake()) && pCharacter->IsUnconscious() ) 
+			{
+				SetTargetStringID( kTronIDS_TargetWakeUp );
 				
-				// RETAIL: no reviving in Tron (no "ReviveDistance"; NOLF2's
-				// coop revive of a team mate's body)
-				m_bMoveTarget = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());
+				m_bCanActivate	= true;
+				m_bMoveTarget	= true;
 
-			}
-			else if (pCharacter)
-			{
-				if( (pCharacter->m_cs.eCrosshairCharacterClass != BAD) && (pCharacter->CanWake()) && (pCharacter->IsUnconscious() || (pCharacter->Slipped() && !pCharacter->m_cs.bIsPlayer)) ) 
-				{
-					SetTargetStringID( IDS_TARGET_WAKEUP );
-					
-					m_bCanActivate	= true;
-					m_bMoveTarget	= g_pPlayerMgr->CanDropCarriedObject() && pCharacter->CanBeCarried();
-
-					m_ActivationData.m_nType = MID_ACTIVATE_WAKEUP;
-					return;
-				}
-
-				m_bMoveTarget = g_pPlayerMgr->CanDropCarriedObject() && pCharacter->CanBeCarried();
-			}
-			else
-			{
-				m_bMoveTarget = false;
-			}
-
-			if (bCanSearch && fDistAway <= g_vtActivationDistance.GetFloat())
-			{
-				// we can search this body
-				m_bSearchTarget = true;
-				m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
-				SetTargetStringID(IDS_TARGET_SEARCH);
-
-				uint8 nProgress = 0;	// PORT: no searcher in Tron
-				g_pPlayerStats->UpdateMaxProgress( nProgress );
-				g_pPlayerStats->UpdateProgress( nProgress );
-				g_pHUDMgr->QueueUpdate( kHUDProgressBar );
-
-				return;
-			}
-			else if (pBody)
-			{
+				m_ActivationData.m_nType = MID_ACTIVATE_WAKEUP;
 				return;
 			}
 
+			m_bMoveTarget = false;
 		}
 		else
 		{
-			float fGadgetDistance = g_vtActivationDistance.GetFloat();
-			if( dwUserFlags & USRFLG_GADGET_CAMERA )
-			{
-				fGadgetDistance = g_vtCamZoom1MaxDist.GetFloat();
-			}
-
-			// is this a gadget target
-			if (IsGadgetActivatable(m_hTarget) && (fDistAway <= fGadgetDistance))
-			{
-				// looks like we can use a gadget on it...
-				SetGadgetTarget( false );
-				return;
-			}
+			m_bMoveTarget = false;
 		}
+
+		if (bCanSearch && fDistAway <= m_fActivationDistance)
+		{
+			// we can search this body
+			m_bSearchTarget = true;
+			m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
+			SetTargetStringID(kTronIDS_TargetSearch);
+			return;
+		}
+		else if (pBody)
+		{
+			return;
+		}
+	}
+
+	// is this a gadget target
+	if (IsGadgetActivatable(m_hTarget) && (fDistAway <= m_fActivationDistance))
+	{
+		// looks like we can use a gadget on it...
+		SetGadgetTarget( false );
+		return;
 	}
 
 	//are we aiming at a person?
@@ -269,33 +269,25 @@ void CTargetMgr::Update()
 	{
 		CCharacterFX* const pFX = (CCharacterFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_CHARACTER_ID, m_hTarget);
 
-		// All we care about if we're on a vehicle (or if we are dead) is the Multiplayer check below...
-
-		if (!bPlayersOnly)
+		//display debug info if we have any 
+		if( pFX && pFX->GetInfoString() && *pFX->GetInfoString() )
 		{
-			//display debug info if we have any 
-			if( pFX && pFX->GetInfoString() && *pFX->GetInfoString() )
-			{
-				SAFE_STRCPY(m_szDebugString,pFX->GetInfoString());			
-			}
-			else
-			{
-				m_szDebugString[0] = NULL;
-			}
-
-			// is this a person we can talk to?
-			if (dwUserFlags & USRFLG_CAN_ACTIVATE)
-			{
-				if (fDistAway <= g_vtActivationDistance.GetFloat())
-				{
-					SetTargetStringID(IDS_TARGET_TALK);
-					return;
-				}
-			}
+			SAFE_STRCPY(m_szDebugString,pFX->GetInfoString());			
+		}
+		else
+		{
+			m_szDebugString[0] = NULL;
 		}
 
-		// This is the only thing we care about if we're dead or on a vehicle...(we care
-		// if we're off a vehicle too)
+		// is this a person we can talk to?
+		if (dwUserFlags & USRFLG_CAN_ACTIVATE)
+		{
+			if (fDistAway <= m_fActivationDistance)
+			{
+				SetTargetStringID(kTronIDS_TargetTalk);
+				return;
+			}
+		}
 
 		if (IsMultiplayerGame() && pFX && pFX->m_cs.bIsPlayer )
 		{
@@ -307,72 +299,28 @@ void CTargetMgr::Update()
 			{
 				m_nString = 0;
 				SAFE_STRCPY(m_szString,pCI->sName.c_str());
-
-				if (IsTeamGameType())
-				{
-					// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-					m_nTargetTeam = (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID);
-				}
+				// RETAIL: no target team in Tron
 			}
 			return;
 		}
 	
-		// All we care about if we're dead or on a vehicle is the Multiplayer check above...
-
-		if (!bPlayersOnly)
-		{
-			if( (fDistAway <= g_vtTargetDistance.GetFloat()) && pFX )
-			{
-				// If a nameid was specified for the model display the name...
-
-				uint16 nNameId = g_pModelButeMgr->GetModelNameId( pFX->m_cs.eModelId );
-				if( nNameId != (uint16)-1 )
-				{
-					if( nNameId > 0 )
-					{
-						SetTargetStringID( nNameId );
-						return;
-					}
-
-					// warn the player if we are pointing at a friend...
-					if( pFX->m_cs.eCrosshairCharacterClass != BAD )
-					{
-						SetTargetStringID( IDS_TARGET_INNOCENT );
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	// All we care about if we're dead or on a vehicle is the above Multiplayer check...
-	if (bPlayersOnly)
-	{
-		// Didn't see another player in Multiplayer, so we have no target...
-		ClearTargetInfo();
-		return;
+		// RETAIL: no model name IDs and no "innocent" string here in Tron
 	}
 
 
 	//is this a searchable object?
-	if (dwUserFlags & USRFLG_CAN_SEARCH && (fDistAway <= g_vtActivationDistance.GetFloat()))
+	if (dwUserFlags & USRFLG_CAN_SEARCH && (fDistAway <= m_fActivationDistance))
 	{
 		m_bSearchTarget = true;
 		m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
-		SetTargetStringID(IDS_TARGET_SEARCH);
-		
-		uint8 nProgress = 0;	// PORT: no searcher in Tron
-		g_pPlayerStats->UpdateMaxProgress( nProgress );
-		g_pPlayerStats->UpdateProgress( nProgress );
-		g_pHUDMgr->QueueUpdate( kHUDProgressBar );
-
+		SetTargetStringID(kTronIDS_TargetSearch);
 		return;
 
 	}
 	
 	// See if this object is part of the activate object list with it's own string ID's...
 
-	if( fDistAway <= g_vtActivationDistance.GetFloat() )
+	if( fDistAway <= m_fActivationDistance )
 	{
 		CActivateObjectHandler *pActivateObj = LTNULL;
 		CActivateObjectHandler::ActivateObjList::const_iterator iter = CActivateObjectHandler::GetActivateObjectList().begin();
@@ -404,39 +352,15 @@ void CTargetMgr::Update()
 	}
 
 	//can we pick up or activate it?
-	if (dwUserFlags & USRFLG_CAN_ACTIVATE && (fDistAway <= g_vtActivationDistance.GetFloat()))
+	if (dwUserFlags & USRFLG_CAN_ACTIVATE && (fDistAway <= m_fActivationDistance))
 	{
-		//special case for bombs to defuse
-		CGadgetTargetFX* const pGTFX = (CGadgetTargetFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_GADGETTARGET_ID, m_hTarget);
-		if (pGTFX)
-		{
-			GadgetTargetType eGadgetType = pGTFX->GetType();
-			if (eBombable == eGadgetType)
-			{
-				// RETAIL: Tron's gadget targets have no team (CGadgetTargetFX
-				// keeps the type only: 0x101b7d20)
-
-				SetTargetStringID(IDS_TARGET_DEFUSE);
-				return;
-			}
-		}
-
+		// RETAIL: no gadget targets to defuse in Tron, and Tron's pickup
+		// items have no team (0x1016de54; PickupItemFX.h)
 		CPickupItemFX* const pFX = (CPickupItemFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_PICKUPITEM_ID, m_hTarget);
 
-		// RETAIL: Tron's pickup items have no team (0x1016de54; PickupItemFX.h)
-
 		// If we're looking at a pickup, use the take string, otherwise it's just something to interact with.
-		SetTargetStringID(pFX ? IDS_TARGET_TAKE : IDS_TARGET_USE);
+		SetTargetStringID(pFX ? kTronIDS_TargetTake : kTronIDS_TargetUse);
 		return;
-	}
-
-	// Are we looking at a doomsday piece...
-	
-	CDoomsdayPieceFX *pDDPiece = dynamic_cast<CDoomsdayPieceFX*>(g_pGameClientShell->GetSFXMgr()->FindSpecialFX( SFX_DOOMSDAYPIECE_ID, m_hTarget ));
-	if( pDDPiece && (fDistAway <= g_vtActivationDistance.GetFloat()) )
-	{
-		m_bCanActivate = false;
-		m_bMoveTarget = true;
 	}
 }
 
@@ -481,9 +405,11 @@ void CTargetMgr::CheckForIntersect(float &fDistAway)
 	// make sure that any objects that m_From is inside are considered
 	IQuery.m_Flags = CHECK_FROM_POINT_INSIDE_OBJECTS | INTERSECT_HPOLY | INTERSECT_OBJECTS | IGNORE_NONSOLID;
 
-	// RETAIL: no user data for the filter (0x1016e1a5)
-	IQuery.m_FilterActualIntersectFn	= ActivateFilterFn;
-	IQuery.m_PolyFilterFn				= DoVectorPolyFilterFn;
+	// RETAIL: build 51's (0x1016e19a): the filter is the object filter,
+	// not NOLF2's filter of the actual intersections, and it has no user data
+	IQuery.m_FilterFn	  = ActivateFilterFn;
+	IQuery.m_pUserData	  = LTNULL;
+	IQuery.m_PolyFilterFn = DoVectorPolyFilterFn;
 
 	// [KLS 8/3/02] - ActivateFilterFn may save an object to use that may not be
 	// the best activation choice (i.e., a fallback choice).  However, if a
@@ -535,20 +461,10 @@ void CTargetMgr::CheckForIntersect(float &fDistAway)
 	// [KLS 8/3/02] - Use the fallback object if we have one and we didn't 
 	// find another object more suitable object... 
 
-	bool bCanUseFallback = (m_ActivationData.m_hTarget ? false : true);
-	if (!bCanUseFallback)
-	{
-		// We can still use the fallback object if it isn't the world or a
-		// world model...
-
-		if (IsMainWorld(m_ActivationData.m_hTarget) || 
-			OT_WORLDMODEL == GetObjectType(m_ActivationData.m_hTarget))
-		{
-			bCanUseFallback = true;
-		}
-	}
-
-	if ( bCanUseFallback && g_adFallbackActivationObject.m_hTarget )
+	// RETAIL: Tron tests the fallback object first, and a world model is
+	// no reason to use it (0x1016e383)
+	if ( g_adFallbackActivationObject.m_hTarget &&
+		(!m_ActivationData.m_hTarget || IsMainWorld(m_ActivationData.m_hTarget)) )
 	{
 		// Ok we hit the fallback object reset some of our target data
 	
