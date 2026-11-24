@@ -1452,6 +1452,18 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The cluster disc uses its class data when it has no ammo data
+
+Object.lto 0x10035740 (CClusterDisc::Setup,
+ObjectDLL/TRON/ProjectileClusterDisc.cpp). The function finds the cluster
+disc class data only when the projectile has ammo data. When it has no ammo
+data, the pointer to the class data is NULL, but the function reads the
+initial explosion suppress time from it (0x10035781). This causes an access
+violation.
+
+Fixed in the modern build: the function stops after the base class setup
+when it has no class data.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
