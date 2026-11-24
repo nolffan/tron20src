@@ -112,6 +112,10 @@ public:
 	bool	GetFirePos(LTVector *pvPos);				// RETAIL: 0x10160cb0
 
 	bool	Start(ILTMessage_Read *pMsg);				// RETAIL: 0x10160d50
+
+	// RETAIL: inline (CAIHumanStrategyShootBurst::UpdateFiring 0x10227967
+	// reads +0x19). The name is ours
+	bool	IsOn() const { return m_bOn; }
 	void	Stop();										// RETAIL: 0x10160de0
 
 protected:

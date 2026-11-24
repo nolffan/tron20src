@@ -19,6 +19,8 @@
 #include "AIMovement.h"
 #include "AICentralKnowledgeMgr.h"
 #include "MusicMgr.h"
+#include "FXButeMgr.h"		// RETAIL: ShootBurst::UpdateFiring reads the projectile FX
+#include "ServerSoundMgr.h"	// RETAIL: ShootBurst::UpdateFiring plays the fire sound
 #include "../TRON/ContinuousFireHelper.h"	// RETAIL: ~CAIHumanStrategyShootBurst stops the fire helper
 
 const static LTFLOAT s_fPerturbScale = 4.0f;
@@ -4554,6 +4556,13 @@ void CAIHumanStrategyShootBurst::Save(ILTMessage_Write *pMsg)
 
 void CAIHumanStrategyShootBurst::UpdateFiring(HOBJECT hTarget, const LTVector& vTargetPos, CWeapon* pWeapon)
 {
+	// RETAIL: Tron's (0x10227110).  A melee weapon fires from the middle
+	// of the AI's height; recoil node tracking aims along the recoil; the
+	// AI fires along its torso when the target is not within 30 degrees.
+	// A weapon whose projectile has gravity is lobbed at the target; the
+	// energy claw starts its continuous fire helper; a melee hit pushes
+	// the target back.
+
 	// Do not fire if we're in the middle of a burst interval.
 
 	if( m_bUseIntervals && 
@@ -4570,52 +4579,133 @@ void CAIHumanStrategyShootBurst::UpdateFiring(HOBJECT hTarget, const LTVector& v
 
 	m_nBurstShots--;
 
-	// Get our fire position
+	// Get our fire position and our firing vector
 
-	AIASSERT( GetAI()->GetCurrentWeapon(), GetAI()->m_hObject, "UpdateFiring without a weapon" );
-	LTVector vFirePos = GetFirePosition(GetAI()->GetCurrentWeapon());
+	LTVector vFirePos;
+	LTVector vDir;
 
-	// Get our firing vector
+	if( pWeapon->GetWeaponData()->nAIWeaponType == kAIWeap_Melee )
+	{
+		vFirePos = GetAI()->GetPosition() + LTVector( 0.0f, GetAI()->GetDims().y * 0.5f, 0.0f );
+		vDir = vTargetPos - vFirePos;
+	}
+	else
+	{
+		vFirePos = GetFirePosition( GetAI()->GetCurrentWeapon() );
 
-	LTVector vDir = !IsBlind() ? vTargetPos - vFirePos : GetAI()->GetTorsoForward();
+		if( g_pAIButeMgr->GetRules()->bEnableRecoilWeaponNodeTracking && GetAI()->IsShortRecoiling() )
+		{
+			vDir = vFirePos - m_vTronUnknown2C;
+		}
+		else
+		{
+			LTVector vForward = GetAI()->GetTorsoForward();
+			LTVector vToTarget = vTargetPos - vFirePos;
+			vToTarget.Normalize();
+			vForward.Normalize();
+			vForward.y = vToTarget.y;
+			vForward.Normalize();
+
+			LTFLOAT fDot = vForward.Dot( vToTarget );
+			if( !IsBlind() && ( fDot >= 0.8660254f ) )
+			{
+				vDir = vToTarget;
+			}
+			else
+			{
+				vDir = vForward;
+			}
+		}
+	}
 
 	// Now fire the weapon
 
 	WeaponFireInfo weaponFireInfo;
 
-	// This info is currently used only bu the disc.  Setting it for other
-	// weapons doesn't hurt currently, so until we have a better solution, 
-	// or a need to change it, I am leaving it in.
-//	To be enabled ones the disc homing works
-//	if ( hTarget )
-//	{
-//		weaponFireInfo.nDiscTrackingType = MPROJ_DISC_TRACKING_HOMING;
-//		weaponFireInfo.hObjectTarget = hTarget;
-//	}
-//	else
+	// RETAIL: Tron sets the homing type, and the target object if there
+	// is one.
+
+	weaponFireInfo.nDiscTrackingType = MPROJ_DISC_TRACKING_HOMING;
+	if ( hTarget )
 	{
-		weaponFireInfo.nDiscTrackingType = MPROJ_DISC_TRACKING_STEADY;
+		weaponFireInfo.hObjectTarget = hTarget;
 	}
 
-	weaponFireInfo.hSocket		= m_hFiringSocket!=INVALID_MODEL_SOCKET ? m_hFiringSocket : GetAI()->GetWeaponSocket(GetAI()->GetCurrentWeapon());
-	weaponFireInfo.hFiredFrom  = GetAI()->GetObject();
-	weaponFireInfo.vPath       = vDir;
-	weaponFireInfo.vFirePos    = vFirePos;
-	weaponFireInfo.vFlashPos   = vFirePos;
-	weaponFireInfo.hTestObj    = hTarget;
-
-	if ( !IsBlind() )
+	if( GetAI()->GetCurrentWeapon() &&
+		GetAI()->GetCurrentWeapon()->GetAmmoData() &&
+		GetAI()->GetCurrentWeapon()->GetAmmoData()->pProjectileFX &&
+		( GetAI()->GetCurrentWeapon()->GetAmmoData()->pProjectileFX->dwObjectFlags & FLAG_GRAVITY ) )
 	{
-		weaponFireInfo.fPerturbR	= LOWER_BY_DIFFICULTY(s_fPerturbScale)*(1.0f - GetAI()->GetAccuracy());
-		weaponFireInfo.fPerturbU	= LOWER_BY_DIFFICULTY(s_fPerturbScale)*(1.0f - GetAI()->GetAccuracy());
+		// Lob the projectile at the target (as CAIHumanStrategyGrenadeThrow).
+
+		LTVector vGravity;
+		g_pPhysicsLT->GetGlobalForce(vGravity);
+
+		// The hang time is the time to the target at a 45 degree launch.
+
+		LTVector vToTarget = vTargetPos - vFirePos;
+		LTFLOAT fDist = (LTFLOAT)sqrt( vToTarget.z*vToTarget.z + vToTarget.x*vToTarget.x );
+		int nVelocity = GetAI()->GetCurrentWeapon()->GetAmmoData()->pProjectileFX->nVelocity;
+		LTFLOAT fHangtime = Clamp( (LTFLOAT)( fDist / ( nVelocity * sin( MATH_PI/4.0f ) ) ), 0.0f, 2.0f );
+
+		// Vo = (S - R - 1/2*G*t^2) / t         Vo = initial velocity, S = destination, R = origin, G = gravity, t = hangtime
+
+		LTVector vVelocity = (vTargetPos - vFirePos - vGravity*.5f*fHangtime*fHangtime)/fHangtime;
+		LTFLOAT fVelocity = vVelocity.Mag();
+
+		weaponFireInfo.hFiredFrom = GetAI()->GetObject();
+		weaponFireInfo.vPath		= vVelocity/fVelocity;
+		weaponFireInfo.bOverrideVelocity = LTTRUE;
+		weaponFireInfo.fOverrideVelocity = fVelocity;
+		weaponFireInfo.vFirePos	= vFirePos;
+		weaponFireInfo.vFlashPos	= vFirePos;
+		weaponFireInfo.hTestObj	= hTarget;
 	}
 	else
 	{
-		weaponFireInfo.fPerturbR	= 10.0f*LOWER_BY_DIFFICULTY(s_fPerturbScale)*(1.0f - GetAI()->GetAccuracy());
-		weaponFireInfo.fPerturbU	= 10.0f*LOWER_BY_DIFFICULTY(s_fPerturbScale)*(1.0f - GetAI()->GetAccuracy());
+		weaponFireInfo.hSocket		= m_hFiringSocket!=INVALID_MODEL_SOCKET ? m_hFiringSocket : GetAI()->GetWeaponSocket(GetAI()->GetCurrentWeapon());
+		weaponFireInfo.hFiredFrom  = GetAI()->GetObject();
+		weaponFireInfo.vPath       = vDir;
+		weaponFireInfo.vFirePos    = vFirePos;
+		weaponFireInfo.vFlashPos   = vFirePos;
+		weaponFireInfo.hTestObj    = hTarget;
+		weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetAI()->GetRelationData() );
+	}
+
+	LTFLOAT fPerturb = Clamp( 1.0f - GetAI()->GetAccuracy(), 0.0f, 1.0f );
+	fPerturb = LOWER_BY_DIFFICULTY(s_fPerturbScale)*fPerturb;
+	if ( IsBlind() )
+	{
+		fPerturb *= 10.0f;
+	}
+
+	weaponFireInfo.fPerturbR = weaponFireInfo.fPerturbU = fPerturb;
+
+	// RETAIL: the energy claw fires continuously: start the AI's fire
+	// helper with the message a client sends.
+
+	if( !GetAI()->GetEnergyClawFireHelper()->IsOn() &&
+		( pWeapon->GetAmmoData()->eInstDamageType == DT_ENERGYCLAW ) )
+	{
+		CAutoMessage cMsg;
+		cMsg.Writeuint8( 13 );
+		cMsg.Writeuint8( pWeapon->GetId() );
+		cMsg.Writeuint8( pWeapon->GetAmmoData()->nId );
+		cMsg.Writefloat( 0.0f );
+		cMsg.Writebool( false );
+		GetAI()->GetEnergyClawFireHelper()->Start( cMsg.Read() );
+		return;
 	}
 
 	WeaponState eWeaponState = pWeapon->UpdateWeapon(weaponFireInfo, LTTRUE);
+
+	// RETAIL: Tron's AI plays the fire sound of projectile weapons.
+
+	if( ( pWeapon->GetAmmoData()->eType == PROJECTILE ) && pWeapon->GetWeaponData()->szFireSound )
+	{
+		g_pServerSoundMgr->PlaySoundFromObject( GetAI()->m_hObject, pWeapon->GetWeaponData()->szFireSound,
+			(LTFLOAT)pWeapon->GetWeaponData()->nFireSoundRadius, SOUNDPRIORITY_PLAYER_LOW );
+	}
 
 	if( eWeaponState == W_FIRED )
 	{
@@ -4637,6 +4727,15 @@ void CAIHumanStrategyShootBurst::UpdateFiring(HOBJECT hTarget, const LTVector& v
 		// Keep firing
 
 		Fire();
+	}
+
+	// RETAIL: a melee hit pushes the target back.
+
+	if( pWeapon->GetWeaponData()->nAIWeaponType == kAIWeap_Melee )
+	{
+		GetAI()->PlaySound( kAIS_Melee, LTFALSE );
+		GetAI()->GetTarget()->SetPushSpeed( 800.f );
+		GetAI()->GetTarget()->SetPushMinDist( GetAI()->GetBrain()->GetAIData( kAIData_MeleeKnockBackDist ) );
 	}
 }
 
