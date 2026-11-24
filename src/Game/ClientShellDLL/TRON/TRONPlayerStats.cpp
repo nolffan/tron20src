@@ -615,14 +615,75 @@ void CTronPlayerStats::UpdateAmmo(uint8 nWeaponId, uint8 nAmmoId,
 
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(nAmmoId);
 
-	LTBOOL bInfiniteAmmo = pWeapon ? pWeapon->bInfiniteAmmo : LTFALSE;
-	LTBOOL bDefaultAmmo		= pWeapon ? pWeapon->nDefaultAmmoId == nAmmoId : LTFALSE;
+	// RETAIL: Build 51's automatic weapon and ammo switching (retail
+	// 0x100a9f70), without its infinite ammo and mission checks
 	int nEquipWeapon = WMGR_INVALID_ID;
 
-	if (pAmmo && (!bInfiniteAmmo || !bDefaultAmmo) )
+	if (pAmmo)
 	{
 		if (m_pnAmmo)
 		{
+			if (bPickedup) /*** BL 12/08/2000 Added to equip weapon when you are out of ammo and pick up ammo/weapon ******/
+			{
+				if ((LTBOOL)GetConsoleInt("AutoAmmoSwitch",1))
+				{
+					// Check to see if we are out of ammo (minus gadgets, infinite ammo weapons like fisticuffs, barette, etc)
+
+					LTBOOL bOutOfAmmo = LTTRUE;
+					int nWeaponBest = WMGR_INVALID_ID;
+
+					for ( int32 iWeapon = g_pWeaponMgr->GetNumWeapons()-1 ; iWeapon >= 0 ; iWeapon-- )
+					{
+						int32 nWeapon = iWeapon;
+
+						if ( nWeapon != WMGR_INVALID_ID && m_pbHaveWeapon[nWeapon] )
+						{
+							WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeapon);
+
+							if ( !pWeapon->bInfiniteAmmo )
+							{
+								for ( int32 iAmmo = 0 ; iAmmo < pWeapon->nNumAmmoIds ; iAmmo++ )
+								{
+									if (pWeapon->aAmmoIds[iAmmo] == WMGR_INVALID_ID)
+										continue;
+									if ( (nWeaponBest == WMGR_INVALID_ID) && (pWeapon->aAmmoIds[iAmmo] == nAmmoId) )
+									{
+										nWeaponBest = nWeapon;
+									}
+
+									AMMO const *pAmmo = g_pWeaponMgr->GetAmmo(pWeapon->aAmmoIds[iAmmo]);
+
+									if ( pAmmo->eType == GADGET )
+									{
+									}
+									else if ( m_pnAmmo[pWeapon->aAmmoIds[iAmmo]] > 0 )
+									{
+										bOutOfAmmo = LTFALSE;
+										break;
+									}
+								}
+							}
+						}
+					}
+
+					if ( bOutOfAmmo )
+					{
+						if ( nWeaponId == WMGR_INVALID_ID )
+						{
+							// Picked up ammo -- equip the best gun for that can use the ammo
+
+							nEquipWeapon = nWeaponBest;
+						}
+						else
+						{
+							// Picked up a gun -- equip that gun
+
+							nEquipWeapon = nWeaponId;
+						}
+					}
+				}
+			}  /*** BL 12/08/2000 End changes ******/
+
 			uint32 maxAmmo = pAmmo->GetMaxAmount(LTNULL);
 			if (m_pnAmmo[nAmmoId] > maxAmmo)
 			{
@@ -638,12 +699,41 @@ void CTronPlayerStats::UpdateAmmo(uint8 nWeaponId, uint8 nAmmoId,
 
 			m_pnAmmo[nAmmoId] = nAmmo;
 
+			// RETAIL: Tron says so before it checks the count, and not for
+			// an infinite ammo weapon
+			if (bPickedup && bDisplayMsg)
+			{
+				if (!pWeapon || !pWeapon->bInfiniteAmmo)
+				{
+					g_pGameClientShell->HandleAmmoPickup(nAmmoId, taken, (taken != 0), nWeaponId);
+				}
+			}
+
 			if (taken != 0)
 			{
-				if (bPickedup && bDisplayMsg)
+				if (bPickedup)  /*** BL 12/08/2000 Added to auto-switch to new ammo if you pick up better ammo ******/
 				{
-					g_pGameClientShell->HandleAmmoPickup(nAmmoId,taken);
-				}
+					if ( (LTBOOL)GetConsoleInt("AutoAmmoSwitch",0) )
+					{
+						IClientWeaponBase* pClientWeapon = g_pPlayerMgr->GetClientWeaponMgr()->GetCurrentClientWeapon();
+						if (pClientWeapon)
+						{
+							if ( (nWeaponId == WMGR_INVALID_ID) ||
+								(pClientWeapon->GetWeaponId() == nWeaponId) )
+							{
+								if (pClientWeapon->CanUseAmmo(nAmmoId))
+								{
+									AMMO const *pAmmoCurrent = pClientWeapon->GetAmmo();
+									AMMO const *pAmmoNew = g_pWeaponMgr->GetAmmo(nAmmoId);
+									if ( (pAmmoNew && pAmmoCurrent) && (pAmmoNew->fPriority > pAmmoCurrent->fPriority) )
+									{
+										pClientWeapon->ChangeAmmoWithReload(nAmmoId, true);
+									}
+								}
+							}
+						}
+					}
+				} /*** BL 12/08/2000 End changes ******/
 
 				if (m_pbHaveAmmo)
 				{
@@ -654,6 +744,11 @@ void CTronPlayerStats::UpdateAmmo(uint8 nWeaponId, uint8 nAmmoId,
 			}
 		}
 	}
+
+	if ( nEquipWeapon != WMGR_INVALID_ID )  /*** BL 12/08/2000 Added to change equip weapon when you are out of ammo and pick up a weapon ******/
+	{
+		g_pPlayerMgr->ChangeWeapon( nEquipWeapon, nAmmoId );
+	}  /*** BL 12/08/2000 End changes ******/
 
 	if (m_nCurrentAmmo == nAmmoId)
 	{
@@ -1738,10 +1833,10 @@ void CTronPlayerStats::SetJetVersion(uint16 iVersion)
 {
 	// RETAIL: Tron's (retail 0x100abf90): a major version up gives rating
 	// goo for each, a minor one says how many points came
+	int iMajor = iVersion / 100;
+	int iPreviousMajor = m_nVersion / 100;
 	int nVersion = iVersion;
-	int iMajor = nVersion / 100;
 	int nPrevious = m_nVersion;
-	int iPreviousMajor = nPrevious / 100;
 
 	if (iMajor > iPreviousMajor)
 	{
@@ -1989,7 +2084,8 @@ bool CTronPlayerStats::CanChangeToWeapon(uint8 nWeaponId)
 		return false;
 
 	// the player's energy must cover the weapon (a continuous one needs any)
-	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId));
+	IClientWeaponBase* pWeaponBase = g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId);
+	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(pWeaponBase);
 	if (!pClientWeapon)
 		return false;
 
@@ -2032,19 +2128,20 @@ void CTronPlayerStats::GetWeaponStatus(uint8 nWeaponId, bool* pbUnlocked, bool* 
 			*pbCorrupt = true;
 	}
 
-	if (!*pbCompiled && g_pSubroutineMgr->DoesPlayerHavePrimitive(pWeapon->szPrimitiveType))
+	if (!*pbUnlocked && g_pSubroutineMgr->DoesPlayerHavePrimitive(pWeapon->szPrimitiveType))
 	{
 		if (!szSub[0])
 		{
-			*pbCompiled = true;
+			*pbUnlocked = true;
 		}
 		else if (pSub && pSub->nSlot < 100 && pSub->nSlot >= 0)
 		{
-			*pbCompiled = true;
+			*pbUnlocked = true;
 		}
 	}
 
-	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId));
+	IClientWeaponBase* pWeaponBase = g_pPlayerMgr->GetClientWeaponMgr()->GetClientWeapon(nWeaponId);
+	CTronClientWeapon* pClientWeapon = dynamic_cast<CTronClientWeapon*>(pWeaponBase);
 	if (!pClientWeapon)
 		return;
 

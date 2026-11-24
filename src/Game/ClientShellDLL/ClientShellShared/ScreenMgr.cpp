@@ -210,9 +210,9 @@ void CScreenMgr::SwitchToScreen(CBaseScreen *pNewScreen, bool bAddToHistory)
 	if (m_pCurrentScreen && pNewScreen != m_pCurrentScreen)
 	{
         m_pCurrentScreen->OnFocus(LTFALSE);
+		int insert = 0;
 	  if (bAddToHistory)
 	  {
-		int insert = 0;
 
 		//look through the list of screens we've visited, if we find the
 		// one we're going to cut the history back to that point.
