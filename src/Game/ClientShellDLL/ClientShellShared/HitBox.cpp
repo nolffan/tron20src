@@ -103,14 +103,8 @@ bool CHitBox::Init( HOBJECT hModel, const LTVector &vDims, const LTVector &vOffs
 	LTMatrix mMat;
 	rModelRot.ConvertToMatrix( mMat );
 
-	// Get rid of our object if it already exists...
-
-	if( m_hObject )
-	{
-		g_pLTClient->RemoveObject( m_hObject );
-		m_hObject = LTNULL;
-	}
-
+	// RETAIL: Tron's does not remove an old object first (retail
+	// 0x101ab6d6)
 	ObjectCreateStruct ocs;
 	
 	ocs.m_ObjectType	= OT_NORMAL;
