@@ -387,14 +387,14 @@ bool INT_TEXTUREDFRAME::Init(CButeMgr & buteMgr, char* aTagName)
     CRect zero(0,0,0,0);
 	for (int i = 0; i < 9; i++)
 	{
-		CRect& rc = buteMgr.GetRect(aTagName, aszUV[i], zero);
+		CRect rc = buteMgr.GetRect(aTagName, aszUV[i], zero);
 		rcUV[i].Init(rc.left, rc.top, rc.right, rc.bottom);
 	}
 
 	bMargins = !!buteMgr.Exist(aTagName, "Margins");
 	if (bMargins)
 	{
-		CRect& rc = buteMgr.GetRect(aTagName, "Margins");
+		CRect rc = buteMgr.GetRect(aTagName, "Margins");
 		rcMargins.Init(rc.left, rc.top, rc.right, rc.bottom);
 	}
 
