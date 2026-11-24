@@ -322,7 +322,7 @@ LTBOOL CAIGoalAttackRangedDynamic::SelectAttackMove()
 		{
 			m_pAI->SetState( kState_HumanAttackMove );
 			CAIHumanStateAttackMove* pAttackMoveState = (CAIHumanStateAttackMove*)m_pAI->GetState();
-			pAttackMoveState->SetAttackMove( eMove );
+			pAttackMoveState->SetAttackMoveTron( eMove );
 			pAttackMoveState->SetAttackMoveDest( vDest );
 
 			m_pGoalMgr->LockGoal( this );
