@@ -9,6 +9,7 @@
 #include "ParsedMsg.h"
 #include "AIUtils.h"
 #include "AIMovement.h"
+#include "DebugLineSystem.h"	// RETAIL: the TU ends with the Color statics (0x10271b50..0x10271d10)
 
 
 //DEFINE_SPECIFIC_AI_FACTORY(State);
