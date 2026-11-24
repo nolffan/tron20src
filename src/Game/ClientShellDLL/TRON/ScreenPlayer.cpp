@@ -691,13 +691,27 @@ void CScreenPlayer::UpdateBandwidth()
 	}
 
 	std::wstring sText;
-	sText.erase(sText.begin(), sText.end());
-	const char* pText = m_sBandwidth;
-	uint32 nLen = strlen(pText);
-	for (uint32 i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)pText[i]);
-
+	LTGUIWiden(sText, m_sBandwidth);
 	m_pBandwidth->SetString(1,sText);
+}
+
+// RETAIL: Tron's custom bandwidth limits (0x10074e31, 0x10074e3b): fixed
+// values, not ProfileMgr.h's GetMinimumBandwidth/GetMaximumBandwidth (from
+// the bandwidth tables). The names are ours.
+const uint16 kTronMinBandwidth = 16;
+const uint16 kTronMaxBandwidth = 20000;
+static inline bool TronIsValidBandwidth(uint16 nBandwidth)
+{
+	return (nBandwidth >= kTronMinBandwidth && nBandwidth <= kTronMaxBandwidth);
+}
+
+// RETAIL: inlined in HandleCallback (0x10074dd4, 0x10074fec): a wide
+// string's characters into a cleared char buffer (the name is ours)
+static inline void NarrowCopy(char* pDest, const std::wstring& sText, uint32 nSize)
+{
+	memset(pDest, 0, nSize);
+	for (uint32 i = 0; i < sText.size() && i < nSize; i++)
+		pDest[i] = (char)sText[i];
 }
 
 // RETAIL: 0x10074d60: the message box's text is wide
@@ -707,13 +721,11 @@ void CScreenPlayer::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 	{
 	case kCmdEditBandwidth:
 		{
-			std::wstring sText((wchar_t *)dwParam1);
-			char szBandwidth[63] = {0};
-			for (uint32 i = 0; i < sText.size() && i < 63; i++)
-				szBandwidth[i] = (char)sText[i];
+			char szBandwidth[63];
+			NarrowCopy(szBandwidth, std::wstring((wchar_t *)dwParam1), sizeof(szBandwidth));
 
 			uint32 nBandwidth = (uint32)atoi(szBandwidth);
-			if ( IsValidBandwidth(nBandwidth) )
+			if ( TronIsValidBandwidth(nBandwidth) )
 			{
 				m_sBandwidth = szBandwidth;
 				m_sBandwidth = m_sBandwidth.Left( kMaxBandwidthStrLen );
@@ -728,22 +740,19 @@ void CScreenPlayer::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 				// TRON: the message widened (RETAIL: 0x10074f09)
 				MBCreate mb;
 				std::wstring sMsg;
-				LTGUIWiden(sMsg, FormatTempString(0x7A,GetMinimumBandwidth(),GetMaximumBandwidth()));
+				LTGUIWiden(sMsg, FormatTempString(498,kTronMinBandwidth,kTronMaxBandwidth));
 				g_pInterfaceMgr->ShowMessageBox(sMsg,&mb);
 			}
 		}
 		break;
 	case kCmdEditName:
 		{
-			std::wstring sText((wchar_t *)dwParam1);
-			if (sText.size())
-			{
-				char szName[63] = {0};
-				for (uint32 i = 0; i < sText.size() && i < 63; i++)
-					szName[i] = (char)sText[i];
-				m_sPlayerName = szName;
-				m_pName->SetString(1,sText);
-			}
+			// RETAIL: 0x10074fac: no test for an empty name, and the name is
+			// cut to 16 characters
+			char szName[16];
+			NarrowCopy(szName, std::wstring((wchar_t *)dwParam1), sizeof(szName));
+			m_sPlayerName = szName;
+			m_pName->SetString(1,std::wstring((wchar_t *)dwParam1));
 		} break;
 	}
 	UpdateData();
