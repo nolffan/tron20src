@@ -429,7 +429,7 @@ void PowerArmor::ReadProp(ObjectCreateStruct *pStruct)
 
 	if ( g_pLTServer->GetPropGeneric( "HitPoints", &genProp ) == LT_OK )
 	{
-		m_fHitPoints = m_fMaxHitPoints = genProp.m_Float;
+		m_fMaxHitPoints = m_fHitPoints = genProp.m_Float;
 	}
 }
 

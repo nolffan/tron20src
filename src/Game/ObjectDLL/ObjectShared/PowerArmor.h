@@ -24,6 +24,7 @@
 // Includes
 #include "Prop.h"
 #include "IHitBoxUser.h"
+#include "TRON/CaselessString.h"
 
 // Forward declarations
 
@@ -128,7 +129,7 @@ class PowerArmor : public Prop
 		// RETAIL: Tron has no m_bDisabled; its members (0x844..0x860) are
 		// below, the names ours
 		ePA_Lock	m_eLock;
-		std::string	m_sOnDestroyFX;	// "OnDestroyFX"
+		CaselessString	m_sOnDestroyFX;	// "OnDestroyFX" (RETAIL: caseless: its assignment checks for NULL)
 		bool		m_bAttached;	// cleared by ARMOR_REMOVE
 		LTFLOAT		m_fHitPoints;
 		LTFLOAT		m_fMaxHitPoints;
