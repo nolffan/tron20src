@@ -574,9 +574,7 @@ void CDestructible::UpdateProgressiveDamage()
 	// RETAIL: Tron's (0x100e7890) is Build 51's: a flag per progressive
 	// damage type, with Tron's slippery and corrode types added. A spent
 	// damage is cleared, and the power armor of a character's hit box takes
-	// the damage first. Near: the code is retail's; only the switch's jump
-	// table differs (retail's lists the case blocks in source order, ours
-	// in the order of the damage types).
+	// the damage first.
 
 	DamageStruct damage;
 
