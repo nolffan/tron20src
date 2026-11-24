@@ -478,13 +478,13 @@ bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPo
 		fExtraDamage = pProjectile->m_fTronUnknown84 * pProjectile->m_fTronUnknown80;
 	}
 
-	LTFLOAT fHitPoints = m_fHitPoints - ( fDamage + fExtraDamage );
+	LTFLOAT fHitPoints = GetHitPoints() - ( fExtraDamage + fDamage );
 	if ( fHitPoints <= 0.0f )
 	{
 		fHitPoints = 0.0f;
 	}
 
-	fDamage = fDamage - m_fHitPoints;
+	fDamage = fDamage - GetHitPoints();
 
 	if ( m_bCanDamage )
 	{
