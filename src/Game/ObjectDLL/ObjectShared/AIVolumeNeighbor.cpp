@@ -190,7 +190,9 @@ LTBOOL AISpatialNeighbor::Init(AISpatialRepresentation* pThis, AISpatialRepresen
 		m_vecfGateOccupancy[iGate] = 0.0f;
 	}
 
-	if(	m_avConnectionEndpoints[0].z == m_avConnectionEndpoints[1].z )
+	// RETAIL: Tron's (0x1019de77) is horizontal when the connection is
+	// longer along x than along z
+	if(	fabs( m_avConnectionEndpoints[0].z - m_avConnectionEndpoints[1].z ) < fabs( m_avConnectionEndpoints[0].x - m_avConnectionEndpoints[1].x ) )
 	{
 		m_eVolumeConnectionType = eVolumeConnectionTypeHorizontal;
 
