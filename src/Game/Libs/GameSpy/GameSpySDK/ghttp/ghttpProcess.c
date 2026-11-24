@@ -1202,32 +1202,32 @@ void ghiDoReceivingFile
 	int bufferLen;
 	GHIRecvResult result;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving File\n");
-
-	// Get data.
-	////////////
-	bufferLen = sizeof(buffer);
-	result = ghiDoReceive(connection, buffer, &bufferLen);
-
-	// Handle error, no data, conn closed.
-	//////////////////////////////////////
-	if(result == GHIError)
-		return;
-	if(result == GHINoData)
-		return;
-	if(result == GHIConnClosed)
+	// RETAIL: CShell.dll 0x100212b0: the 2003 SDK reads until the file is
+	// complete or no data is left.
+	while(!connection->completed)
 	{
-		// The file is done (hopefully).
-		////////////////////////////////
-		connection->completed = GHTTPTrue;
+		// Get data.
+		////////////
+		bufferLen = sizeof(buffer);
+		result = ghiDoReceive(connection, buffer, &bufferLen);
 
-		if (connection->totalSize > 0 && connection->fileBytesReceived < connection->totalSize)
-			connection->result = GHTTPFileIncomplete;
-		return;
+		// Handle error, no data, conn closed.
+		//////////////////////////////////////
+		if(result == GHIError)
+			return;
+		if(result == GHINoData)
+			return;
+		if(result == GHIConnClosed)
+		{
+			// The file is done (hopefully).
+			////////////////////////////////
+			connection->completed = GHTTPTrue;
+			return;
+		}
+
+		// Process the data.
+		////////////////////
+		if(!ghiProcessIncomingFileData(connection, buffer, bufferLen))
+			return;
 	}
-
-	// Process the data.
-	////////////////////
-	if(!ghiProcessIncomingFileData(connection, buffer, bufferLen))
-		return;
 }
