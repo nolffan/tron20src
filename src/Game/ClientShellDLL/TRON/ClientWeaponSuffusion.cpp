@@ -62,11 +62,7 @@ void CClientWeaponSuffusion::InitAnimations( bool bAllowSelectOverride )
 
 // RETAIL: 0x1001be80.  The pre-fire animation charges the shot
 // (m_fTronUnknown20C: the part of it played, 1 when it is done) while it
-// uses energy; the extra fire animation follows a full charge.  PORT:
-// before the animations it starts first retail calls CTronClientWeapon's
-// 0x10097f20 (a helper of four more Tron helpers), and it hands
-// m_fTronUnknown214 to CTronClientWeapon's 0x10098b10 (it sets +0x204) when
-// the charge starts: neither is in our build.
+// uses energy; the extra fire animation follows a full charge.
 bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 {
 	uint32 dwAni			= g_pLTClient->GetModelAnimation( m_hObject );
@@ -94,16 +90,18 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bHasPreFireAni )
 		{
+			SaveShotSubroutines();
 			m_fTronUnknown20C = 0.0f;
 			m_pTimer->Start();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
 			g_pTronPlayerStats->UseEnergy( GetEnergyUse() );
-			// PORT: 0x10098b10( m_fTronUnknown214 ) (see above)
+			SetTronUnknown204( m_fTronUnknown214 );
 			return true;
 		}
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			m_fTronUnknown20C = 0.0f;
 			m_pTimer->Stop();
 			TronUnknown98B20();
@@ -113,6 +111,7 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			m_fTronUnknown20C = 0.0f;
 			m_pTimer->Stop();
 			TronUnknown98B20();
@@ -185,21 +184,19 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 
 		if ( bIsMainFireAni )
 		{
-			if ( bResetAni )
+			if ( !bResetAni )
 			{
-				return true;
-			}
+				if ( bHasExtraFireAni )
+				{
+					PlayAnimation( dwExtraFireAni, true, 1.0f, false );
+					return true;
+				}
 
-			if ( bHasExtraFireAni )
-			{
-				PlayAnimation( dwExtraFireAni, true, 1.0f, false );
-				return true;
-			}
-
-			if ( bHasPostFireAni )
-			{
-				PlayAnimation( dwPostFireAni, true, 1.0f, false );
-				return true;
+				if ( bHasPostFireAni )
+				{
+					PlayAnimation( dwPostFireAni, true, 1.0f, false );
+					return true;
+				}
 			}
 
 			return true;
@@ -219,9 +216,10 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bHasPreFireAni )
 		{
+			SaveShotSubroutines();
 			m_fTronUnknown20C = 0.0f;
 			m_pTimer->Start();
-			// PORT: 0x10098b10( m_fTronUnknown214 ) (see above)
+			SetTronUnknown204( m_fTronUnknown214 );
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
 			g_pTronPlayerStats->UseEnergy( GetEnergyUse() );
 			return true;
@@ -229,6 +227,7 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			m_fTronUnknown20C = 0.0f;
 			m_pTimer->Stop();
 			TronUnknown98B20();
@@ -238,6 +237,7 @@ bool CClientWeaponSuffusion::PlayFireAnimation( bool bResetAni )
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPostFireAni, true, 1.0f, false );
 			return true;
 		}
