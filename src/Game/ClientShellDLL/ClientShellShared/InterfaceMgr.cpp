@@ -6457,10 +6457,12 @@ void CInterfaceMgr::DrawSpectatorText()
 			m_pSpectatorText->SetText("SPECTATOR MODE");
 
 			uint32 nWidth, nHeight;
-			g_pLTClient->GetSurfaceDims(g_pLTClient->GetScreenSurface(), &nWidth, &nHeight);
+			HSURFACE hScreen = g_pLTClient->GetScreenSurface();
+			g_pLTClient->GetSurfaceDims(hScreen, &nWidth, &nHeight);
 			float fHeight = (float)nHeight;
 
-			m_pSpectatorText->SetPosition(0, (int)(fHeight - m_pSpectatorText->GetHeight()));
+			float fTextHeight = (float)m_pSpectatorText->GetHeight();
+			m_pSpectatorText->SetPosition(0, (int)(fHeight - fTextHeight));
 			m_pSpectatorText->Render(0, -1);
 		}
 	}
