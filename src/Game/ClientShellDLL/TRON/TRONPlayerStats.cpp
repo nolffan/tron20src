@@ -933,6 +933,21 @@ void CTronPlayerStats::UpdateIntel(uint32 nTextId, uint8 nPopupId, LTBOOL bIsInt
 
 // ----------------------------------------------------------------------- //
 //
+//	ROUTINE:	CTronPlayerStats::TronUnknownClearObjectivesPing()
+//
+//	PURPOSE:	RETAIL: 0x100aa8c0 (the name is ours): called when the
+//				progress HUD opens
+//
+// ----------------------------------------------------------------------- //
+
+void CTronPlayerStats::TronUnknownClearObjectivesPing()
+{
+	m_bTronUnknownA8 = false;
+	RemovePing("objectives");
+}
+
+// ----------------------------------------------------------------------- //
+//
 //	ROUTINE:	CTronPlayerStats::UpdateHiding()
 //
 //	PURPOSE:	Update the player hiding state

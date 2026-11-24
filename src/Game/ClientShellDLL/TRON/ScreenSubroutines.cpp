@@ -2026,7 +2026,7 @@ void CScreenSubroutines::ScreenDimsChanged()
 	float fRatio = g_pInterfaceResMgr->GetYRatio();
 	m_ToolTip.m_nFontSize = (int)((float)m_nToolTipFontSize * fRatio);
 	m_ToolTip.m_nOffset = (int)(fRatio * 40.0f);
-	m_ToolTip.m_nWidth = (int)(m_fToolTipWidth * fRatio);
+	m_ToolTip.m_nWidth = (int)(fRatio * m_fToolTipWidth);
 
 	m_SystemMemoryCtrl.Rescale();
 	m_Libraries[0].Rescale();

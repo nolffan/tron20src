@@ -36,6 +36,12 @@ public:
 	IDList*		GetCompletedObjectives()	{ return &m_CompletedObjectives; }
 	IDList*		GetParameters()				{ return &m_Parameters; }
 	IDList*		GetKeys()					{ return &m_Keys; }
+	// RETAIL: the list at +0x9c holds the objectives the progress HUD has
+	// not shown yet (CHUDProgress, 0x100333b1); the name is ours
+	IDList*		GetTronUnknownList9C()		{ return &m_TronUnknownList9C; }
+	// RETAIL: 0x100aa8c0: clears +0xa8 and removes the "objectives" ping
+	// (the name is ours)
+	void		TronUnknownClearObjectivesPing();
 	
 	CIntelItemList* GetIntelList()			{ return &m_IntelList; }
 
