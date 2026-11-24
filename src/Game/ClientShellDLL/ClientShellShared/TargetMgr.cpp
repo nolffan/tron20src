@@ -481,8 +481,8 @@ void CTargetMgr::CheckForIntersect(float &fDistAway)
 	// make sure that any objects that m_From is inside are considered
 	IQuery.m_Flags = CHECK_FROM_POINT_INSIDE_OBJECTS | INTERSECT_HPOLY | INTERSECT_OBJECTS | IGNORE_NONSOLID;
 
+	// RETAIL: no user data for the filter (0x1016e1a5)
 	IQuery.m_FilterActualIntersectFn	= ActivateFilterFn;
-	IQuery.m_pActualIntersectUserData	= (void*)&IQuery;
 	IQuery.m_PolyFilterFn				= DoVectorPolyFilterFn;
 
 	// [KLS 8/3/02] - ActivateFilterFn may save an object to use that may not be
