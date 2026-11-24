@@ -570,11 +570,12 @@ LTBOOL CLayoutMgr::Init(const char* szAttributeFile)
 
 
 	sprintf(s_aTagName, "Fonts");
-	sprintf(s_aAttName, "FontFace0");
+	// RETAIL: 0x100d9d21: Tron's font attributes are Font0, Font1, ...
+	sprintf(s_aAttName, "Font0");
 	while (m_buteMgr.Exist(s_aTagName,s_aAttName))
 	{
 		m_nNumFonts++;
-		sprintf(s_aAttName, "FontFace%d", m_nNumFonts);
+		sprintf(s_aAttName, "Font%d", m_nNumFonts);
 	}
 
 	return LTTRUE;
