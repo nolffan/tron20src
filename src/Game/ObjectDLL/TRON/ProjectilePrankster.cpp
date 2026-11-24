@@ -16,6 +16,9 @@
 #include "MsgIDs.h"
 #include "SFXMsgIds.h"
 #include "PlayerObj.h"
+// RETAIL: DebugLineSystem.h's colours follow PlayerShared.h's initializers
+// at the start of the TU (0x1003eed0..0x1003f080).
+#include "DebugLineSystem.h"
 #include "Character.h"
 #include "AI.h"
 #include "AIGoalMgr.h"

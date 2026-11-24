@@ -11,6 +11,9 @@
 #include "stdafx.h"
 #include "LightCycleZones.h"
 #include "ServerUtilities.h"
+// RETAIL: the TU starts with PlayerShared.h's two initializers (0x1002c350,
+// 0x1002c380), so it includes the player's header.
+#include "PlayerObj.h"
 
 BEGIN_CLASS(LightCycleSpeedZone)
 	ADD_STRINGPROP_FLAG(DamageType, "UNSPECIFIED", PF_STATICLIST | PF_HIDDEN)

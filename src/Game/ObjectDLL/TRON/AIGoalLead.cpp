@@ -10,6 +10,10 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+// RETAIL: the TU starts with PlayerShared.h's two initializers
+// (g_kvPlayerCameraOffset 0x101f8690, g_kvPlayerScubaCameraOffset
+// 0x101f86c0), before DebugLineSystem.h's colours: PlayerObj.h comes first.
+#include "PlayerObj.h"
 #include "AIGoalLead.h"
 #include "AIGoalMgr.h"
 #include "AIHumanState.h"
@@ -17,9 +21,8 @@
 #include "CharacterMgr.h"
 
 // RETAIL: the TU reads the player's HOBJECT through the virtual
-// GetUserObject() (IObjectRelationMgrUser, at 0x40). It does not include
-// PlayerObj.h (none of PlayerShared.h's static initializers), so the player
-// is seen as the CCharacter it is (at offset 0).
+// GetUserObject() (IObjectRelationMgrUser, at 0x40): the player is seen as
+// the CCharacter it is (at offset 0).
 #define LEAD_PLAYER() ((CCharacter*)g_pCharacterMgr->FindPlayer())
 // RETAIL: the TU does not include TrackedNodeContext.h (it has none of that
 // header's static initializers), so kTrack_LookAt is spelled out.
