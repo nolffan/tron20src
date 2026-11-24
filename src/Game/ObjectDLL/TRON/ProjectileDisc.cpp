@@ -2549,29 +2549,35 @@ void CDisc::HandleImpact( HOBJECT hObj )
 		return;
 	}
 
-	if ( IMPACT_TYPE_BLOCKED == nImpactType )
+	switch ( nImpactType )
 	{
-		HandleDeflect();
-	}
-	else if ( DISC_IMPACT_TYPE_DEADLY_BLOCKED == nImpactType )
-	{
-		HandleDeadlyDeflect( hObj );
-	}
-	else
-	{
-		if ( m_bReturnToOwner )
+		case IMPACT_TYPE_BLOCKED:
 		{
-			EnterReturnMode( hObj );
+			HandleDeflect();
 		}
-		else if ( !hObj )
-		{
-			DestroyInFlight();
-		}
-		else
-		{
-			RemoveObject();
-		}
+		break;
 
+		case DISC_IMPACT_TYPE_DEADLY_BLOCKED:
+		{
+			HandleDeadlyDeflect( hObj );
+		}
+		break;
+
+		default:
+		{
+			if ( m_bReturnToOwner )
+			{
+				EnterReturnMode( hObj );
+			}
+			else if ( !hObj )
+			{
+				DestroyInFlight();
+			}
+			else
+			{
+				RemoveObject();
+			}
+		}
 		return;
 	}
 
@@ -2844,38 +2850,39 @@ bool CDisc::UpdateStateDeflecting()
 {
 	// RETAIL: 0x1003c790.  The deflection ends after its time: the disc
 	// returns (or is destroyed when it does not return to its owner)
-	if ( GetDeflectElapsedTime() >= m_fTronUnknown990 )
+	if ( GetDeflectElapsedTime() < m_fTronUnknown990 )
 	{
-		if ( m_bReturnToOwner )
+		if ( m_bDeflectAdjust )
 		{
-			EnterReturnMode( LTNULL );
-		}
-		else
-		{
-			DestroyInFlight();
+			// move the disc along the deflection's spiral
+			LTVector vOffset( 0.0f, 0.0f, 0.0f );
+			GetDeflectOffset( &vOffset,
+			                  m_fDeflectInitialRadius,
+			                  m_fDeflectFinalRadius,
+			                  m_fDeflectDistance,
+			                  m_fDeflectAngularSpeed,
+			                  GetDeflectElapsedTime(),
+			                  m_fDeflectTotalTime );
+
+			LTMatrix mRot;
+			m_rDeflectRot.ConvertToMatrix( mRot );
+
+			// RETAIL: 0x1003c8bb calls MatVMul_H out of line (the inline
+			// budget); ours expands it
+			LTVector vPos = mRot * vOffset + m_vDeflectPos;
+			g_pLTServer->MoveObject( m_hObject, &vPos );
 		}
 
 		return true;
 	}
 
-	if ( m_bDeflectAdjust )
+	if ( m_bReturnToOwner )
 	{
-		// move the disc along the deflection's spiral
-		LTVector vOffset( 0.0f, 0.0f, 0.0f );
-		GetDeflectOffset( &vOffset,
-		                  m_fDeflectInitialRadius,
-		                  m_fDeflectFinalRadius,
-		                  m_fDeflectDistance,
-		                  m_fDeflectAngularSpeed,
-		                  GetDeflectElapsedTime(),
-		                  m_fDeflectTotalTime );
-
-		LTMatrix mRot;
-		m_rDeflectRot.ConvertToMatrix( mRot );
-
-		// RETAIL: 0x1003c8bb calls MatVMul_H out of line; ours inlines it
-		LTVector vPos = mRot * vOffset + m_vDeflectPos;
-		g_pLTServer->MoveObject( m_hObject, &vPos );
+		EnterReturnMode( LTNULL );
+	}
+	else
+	{
+		DestroyInFlight();
 	}
 
 	return true;
@@ -3072,6 +3079,9 @@ bool CDisc::UpdateStateReturning()
 
 	// find a vector from the disc and its target
 	vSelfToTarget = vReturnToPos - vSelfPos;
+	// RETAIL: the distance comes from a copy made before the direction
+	// is normalized (0x1003cdcb reuses the squares of 0x1003cb41)
+	LTVector vToTarget = vSelfToTarget;
 
 	// get the direction
 	vSelfToTarget.Normalize();
@@ -3096,7 +3106,7 @@ bool CDisc::UpdateStateReturning()
 	// RETAIL: the disc is back when it can not get there (in time) or
 	// when it flies past its owner in this update
 	LTVector vMove = vNewVel * ( g_pLTServer->GetFrameTime() * 1.5f );
-	LTFLOAT fDist = ( vReturnToPos - vSelfPos ).Mag();
+	LTFLOAT fDist = VEC_MAG( vToTarget );
 
 	if ( !_finite( fDist ) )
 	{
