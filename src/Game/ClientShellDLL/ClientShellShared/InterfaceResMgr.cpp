@@ -59,7 +59,9 @@ LTBOOL CInterfaceResMgr::Init()
 
 
 	// Set the English flag
-    if (stricmp((const char*)"english", LoadTempString(IDS_GAME_LANGUAGE)) != 0)
+	// RETAIL: 0x100c4d40: Tron's string table has the language and the
+	// yes/no key codes at 264, 265 and 266
+    if (stricmp((const char*)"english", LoadTempString(264)) != 0)
     {
         m_bEnglish=LTFALSE;
 	}
@@ -70,14 +72,14 @@ LTBOOL CInterfaceResMgr::Init()
 
 	// Load the virtual key codes for yes responses
 	char szTmp[64] = "";
-    LoadString(IDS_MENU_VKEY_YES,szTmp,sizeof(szTmp));
+    LoadString(265,szTmp,sizeof(szTmp));
 	if (strlen(szTmp))
 	{
         m_nYesVKeyCode=atoi(szTmp);
 	}
 
 	// Load the virtual key codes for no responses
-    LoadString(IDS_MENU_VKEY_NO,szTmp,sizeof(szTmp));
+    LoadString(266,szTmp,sizeof(szTmp));
 	if (strlen(szTmp))
 	{
         m_nNoVKeyCode=atoi(szTmp);
@@ -107,7 +109,7 @@ LTBOOL CInterfaceResMgr::Init()
 		m_pMsgText = LTNULL;
         return LTFALSE;
 	}
-	m_pMsgText->SetColors(argbBlack, argbBlack, argbBlack);
+	m_pMsgText->SetColors(argbWhite, argbWhite, argbWhite);	// RETAIL: 0x100c4ecd
 	m_pMsgText->SetFixedWidth(kBaseWidth-2*kIndent);
 	m_pMsgText->Enable(LTFALSE);
 

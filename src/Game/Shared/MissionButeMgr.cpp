@@ -148,17 +148,10 @@ LEVEL* CMissionButeMgr::GetLevel( int nMissionId, int nLevelId )
 
 bool CMissionButeMgr::IsMissionLevel(char const* pWorldFile, int & nMissionId, int & nLevel)
 {
+	// RETAIL: 0x1013c7b0 (CShell), 0x1015dfe0 (Object): Tron compares the
+	// whole names; it has none of NOLF2's path stripping.
 	if (!pWorldFile) 
 		return false;
-
-
-	//strip path (if there is one) from world name
-	char const* pTmp = strrchr(pWorldFile,'\\');
-	if (pTmp)
-	{
-		pTmp++;
-		pWorldFile = pTmp;
-	}
 
 	MissionList::iterator it = m_MissionList.begin( );
 	for( ; it != m_MissionList.end( ); it++)
@@ -169,19 +162,7 @@ bool CMissionButeMgr::IsMissionLevel(char const* pWorldFile, int & nMissionId, i
 
 		for (int i=0; i < pMission->nNumLevels; i++)
 		{
-
-			//strip path (if there is one) from each levels name
-			char const* pTmp = strrchr(pMission->aLevels[i].szLevel,'\\');
-			if (pTmp)
-			{
-				pTmp++;
-			}
-			else
-			{
-				pTmp = pMission->aLevels[i].szLevel;
-			}
-
-			if (stricmp( pTmp, pWorldFile ) == 0)
+			if (stricmp( pMission->aLevels[i].szLevel, pWorldFile ) == 0)
 			{
 				nMissionId = pMission->nId;
 				nLevel = i;

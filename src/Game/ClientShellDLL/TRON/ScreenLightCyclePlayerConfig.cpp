@@ -258,10 +258,6 @@ uint32 CScreenLightCyclePlayerConfig::OnCommand(uint32 dwCommand, uint32 dwParam
 		}
 		break;
 
-	case CMD_BACK:
-		m_pScreenMgr->EscapeCurrentScreen();
-		return 1;
-
 	// the next shade a single player game may use
 	case kCmdLCShadeRight:
 		{
@@ -285,11 +281,19 @@ uint32 CScreenLightCyclePlayerConfig::OnCommand(uint32 dwCommand, uint32 dwParam
 	// RETAIL: the two cases test apart (no range test), one body
 	case kCmdLCStyleLeft:
 		m_nStyle = (m_nStyle != 1);
-		break;
+		UpdateData(LTTRUE);
+		UpdateCycle();
+		return 1;
 
 	case kCmdLCStyleRight:
 		m_nStyle = (m_nStyle != 1);
-		break;
+		UpdateData(LTTRUE);
+		UpdateCycle();
+		return 1;
+
+	case CMD_BACK:
+		m_pScreenMgr->EscapeCurrentScreen();
+		return 1;
 
 	default:
 		return CBaseScreenLightCycle::OnCommand(dwCommand,dwParam1,dwParam2);

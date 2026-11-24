@@ -1332,7 +1332,8 @@ const char* CModelButeMgr::GetSkeletonNodeFrontShortRecoilAni(ModelSkeleton eMod
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
 	// RETAIL: one of the list at random (Object.lto 0x100c6454)
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstFrontShortRecoilAni.size() - 1)].c_str();
+	CNode & Node = m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode];
+	return Node.m_lstFrontShortRecoilAni[GetRandom(0, Node.m_lstFrontShortRecoilAni.size() - 1)].c_str();
 }
 
 const char* CModelButeMgr::GetSkeletonNodeBackShortRecoilAni(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1341,7 +1342,8 @@ const char* CModelButeMgr::GetSkeletonNodeBackShortRecoilAni(ModelSkeleton eMode
 	if (eModelSkeletonInvalid == eModelSkeleton) return LTNULL;
 
 	// RETAIL: one of the list at random (Object.lto 0x100c6454)
-	return m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackShortRecoilAni[GetRandom(0, m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode].m_lstBackShortRecoilAni.size() - 1)].c_str();
+	CNode & Node = m_aSkeletons[eModelSkeleton].m_aNodes[eModelNode];
+	return Node.m_lstBackShortRecoilAni[GetRandom(0, Node.m_lstBackShortRecoilAni.size() - 1)].c_str();
 }
 
 LTFLOAT CModelButeMgr::GetSkeletonNodeDamageFactor(ModelSkeleton eModelSkeleton, ModelNode eModelNode)
@@ -1994,6 +1996,22 @@ const CModelButeMgr::MPModel* CModelButeMgr::GetMPModel(int num)
 		num = 0;
 	}
 	return &m_aMPModels[num];
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CModelButeMgr::GetColorNameId
+//
+//	PURPOSE:	The string id of a multiplayer color's name, 0 if there is
+//				none (RETAIL: CShell.dll 0x1014b5a0; the name is ours)
+//
+// ----------------------------------------------------------------------- //
+
+int CModelButeMgr::GetColorNameId(uint8 nColor)
+{
+	if (m_vecColorNameIds.size() <= nColor)
+		return 0;
+	return m_vecColorNameIds[nColor];
 }
 
 // ----------------------------------------------------------------------- //

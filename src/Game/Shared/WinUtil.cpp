@@ -97,11 +97,9 @@ BOOL CWinUtil::CreateDir (char const* strPath)
 
 BOOL CWinUtil::FileExist (char const* strPath)
 {
-	OFSTRUCT ofs;
-	HFILE hFile = OpenFile (strPath, &ofs, OF_EXIST);
-	if (hFile == HFILE_ERROR) return FALSE;
-
-	return TRUE;
+	// RETAIL: 0x10140dd0 (CShell), 0x1021d040 (Object): Tron asks
+	// GetFileAttributes instead of NOLF2's OpenFile(OF_EXIST).
+	return (GetFileAttributes(strPath) != 0xFFFFFFFF);
 }
 
 BOOL CWinUtil::CopyDir( char const* pSrc, char const* pDest )
