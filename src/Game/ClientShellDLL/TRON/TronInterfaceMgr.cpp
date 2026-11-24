@@ -26,6 +26,11 @@
 #include "CMoveMgr.h"
 #include "VehicleMgr.h"
 #include "PlayerLureFX.h"
+#include "ClientUtilities.h"
+#include "SubroutineMgr.h"
+#include "TronPlayerStats.h"
+#include "ClientSoundMgr.h"
+#include "TronHUDMgr.h"
 
 // RETAIL: 0x1026ee38, set up by Init (the name is ours; nothing reads it)
 static VarTrack s_vtIOScene;
@@ -605,7 +610,7 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 
 			if (!stricmp(pName, "all"))
 			{
-				uint16 nNumSubroutines = m_SubroutineMgr.GetNumSubroutines();
+				int nNumSubroutines = m_SubroutineMgr.GetNumSubroutines();
 				for (int i = 0; i < nNumSubroutines; i++)
 				{
 					m_SubroutineMgr.GivePlayerSubroutine(m_SubroutineMgr.GetSubroutineByIndex(i)->szName, pState, pCondition, true);
@@ -625,13 +630,8 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			return LTTRUE;
 		}
 
-		case MID_ADDITIVE_OBTAINED:
-		{
-			char buf[1024];
-			pMsg->ReadString(buf,1024);
-			m_stats.GivePlayerAdditive(buf);
-			return LTTRUE;
-		}
+		// RETAIL: Tron has no MID_ADDITIVE_OBTAINED case (CInterfaceMgr
+		// gets it)
 
 		case MID_PROCEDURAL_OBTAINED:
 		{
@@ -646,6 +646,97 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			char buf[1024];
 			pMsg->ReadString(buf,1024);
 			m_SubroutineMgr.GivePlayerPrimitive(buf);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009db6a
+		case MID_QUERY_TARGET_PROPERTIES:
+		{
+			g_pTronPlayerMgr->GetTronTargetMgr()->HandleTargetPropertiesMessage(pMsg);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009db90: a character's ping on the HUD, added or
+		// removed
+		case MID_TRON_PING:
+		{
+			char buf[1024];
+			pMsg->ReadString(buf,1024);
+			if (pMsg->Readuint8())
+			{
+				g_pTronPlayerStats->AddPing(buf);
+				return LTTRUE;
+			}
+			g_pTronPlayerStats->RemovePing(buf);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dc03: the I/O node camera, on at a position and a
+		// rotation with an object, or off
+		case MID_TRON_UNKNOWN_180:
+		{
+			m_bTronUnknown28AE8 = (pMsg->Readuint8() != 0);
+			if (m_bTronUnknown28AE8)
+			{
+				LTVector vPos = pMsg->ReadCompLTVector();
+				g_pLTClient->SetObjectPos(m_hIOCamera, &vPos, true);
+				LTRotation rRot = pMsg->ReadCompLTRotation();
+				g_pLTClient->SetObjectRotation(m_hIOCamera, &rRot);
+				m_nTronUnknown28AF0 = (uint32)pMsg->ReadObject();
+				return LTTRUE;
+			}
+			m_nTronUnknown28AF0 = 0;
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dcdc
+		case MID_TRON_UNKNOWN_188:
+		{
+			m_bDisplayProgress = (pMsg->Readuint8() != 0);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dd06: an optimizer opens the subroutines screen
+		case MID_OPTIMIZER_BEGIN:
+		{
+			if (m_eGameState == GS_PLAYING)
+			{
+				SwitchToScreen(SCREEN_ID_SUBROUTINES, true);
+				g_pSubroutineMgr->SetOptimizer(pMsg->ReadObject());
+				g_pSubroutineMgr->PopulateSubroutineScreen();
+			}
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dd4b: a popup for the subroutines screen
+		case MID_TRON_UNKNOWN_166:
+		{
+			uint32 nTextId = pMsg->Readuint32();
+			uint8 nPopupId = pMsg->Readuint8();
+			char szText[128];
+			pMsg->ReadString(szText,128);
+			CScreenSubroutines *pSubScreen = (CScreenSubroutines *)GetScreenMgr()->GetScreenFromID(SCREEN_ID_SUBROUTINES);
+			pSubScreen->SetPopupText(nTextId, nPopupId, szText);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009ddae: the subroutines screen with its popup 3235
+		case MID_TRON_UNKNOWN_163:
+		{
+			if (m_eGameState == GS_PLAYING)
+			{
+				CScreenSubroutines *pSubScreen = (CScreenSubroutines *)GetScreenMgr()->GetScreenFromID(SCREEN_ID_SUBROUTINES);
+				pSubScreen->SetPopupText(3235, 59, LTNULL);
+				SwitchToScreen(SCREEN_ID_SUBROUTINES, true);
+				g_pSubroutineMgr->PopulateSubroutineScreen();
+			}
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dde4
+		case MID_TRON_UNKNOWN_151:
+		{
+			g_pSubroutineMgr->InfectRandomSector();
 			return LTTRUE;
 		}
 
@@ -676,9 +767,69 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			return LTFALSE;
 		}
 
-		case MID_QUERY_TARGET_PROPERTIES:
+		// RETAIL: 0x1009de96
+		case MID_TRON_UNKNOWN_157:
 		{
-			g_pTronPlayerMgr->GetTronTargetMgr()->HandleTargetPropertiesMessage(pMsg);
+			float fValue = pMsg->Readfloat();
+			g_pSubroutineMgr->SetTronUnknown11A0(fValue);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009dec8: string 3271 with the energy gained, then (no
+		// break in retail: docs/RETAIL_BUGS.md) the MID_TRON_HUD_TEXT case
+		// reads on
+		case MID_TRON_ENERGY_GAINED:
+		{
+			uint8 nEnergy = pMsg->Readuint8();
+			g_pChatMsgs->AddMessage(FormatTempString(3271, nEnergy));
+		}
+
+		// RETAIL: 0x1009df00: two strings with the "msgfadeout" sound
+		case MID_TRON_HUD_TEXT:
+		{
+			uint32 nTextId = pMsg->Readuint32();
+			uint32 nValue = pMsg->Readuint32();
+			g_pClientSoundMgr->PlaySoundLocal("msgfadeout", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0, 1.0f);
+			if (nTextId)
+			{
+				g_pAnnouncementMsgs->AddMessage(LoadTempString(nTextId), kMsgScmd);
+			}
+			if (nValue)
+			{
+				g_pAnnouncementMsgs->AddMessage(FormatTempString(3822, nValue), kMsgScmd);
+			}
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009df94: the jet version as three digits (string 2557)
+		case MID_TRON_VERSION:
+		{
+			uint16 nVersion;
+			g_pTronPlayerStats->GetJetVersion(nVersion);
+			int nMajor = nVersion / 100;
+			nVersion -= nMajor * 100;
+			int nMinor = nVersion / 10;
+			nVersion -= nMinor * 10;
+			g_pAnnouncementMsgs->AddMessage(FormatTempString(2557, nMajor, nMinor, nVersion), kMsgScmd);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009e03b
+		case MID_SET_PERFORMANCE_RATING:
+		{
+			uint8 nRating = pMsg->Readuint8();
+			uint8 nValue = pMsg->Readuint8();
+			g_pTronPlayerStats->SetPerformanceRating((PerformanceRating)nRating, nValue);
+			return LTTRUE;
+		}
+
+		// RETAIL: 0x1009e093
+		case MID_SYSTEM_MEMORY_CONFIGURATION:
+		{
+			char szConfig[128];
+			pMsg->ReadString(szConfig,128);
+			g_pSubroutineMgr->SetSystemMemoryConfiguration(szConfig);
+			return LTTRUE;
 		}
 
 		default:

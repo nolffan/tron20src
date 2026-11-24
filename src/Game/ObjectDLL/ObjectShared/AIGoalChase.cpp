@@ -322,6 +322,7 @@ void CAIGoalChaseAbstract::HandleStateChase()
 	switch( m_pAI->GetState()->GetStateStatus() )
 	{
 		case kSStat_Pursue:
+		case kSStat_TronUnknown41:	// RETAIL: Tron's (0x1020e8f0's index table)
 			// Ignore senses other than SeeEnemy.
 			// RETAIL: 0x1020e91b, Tron also keeps the enemy weapon fire and impact sounds (0xc0601).
 			m_pAI->SetCurSenseFlags( kSense_SeeEnemy | kSense_HearEnemyWeaponFire | kSense_HearEnemyWeaponImpact | kSense_SeeDangerousProjectile | kSense_SeeCatchableProjectile );

@@ -121,7 +121,7 @@ bool CMultiplayerLevelInfoMgr::ReadSubroutines()
 	MPLevelSubroutine sub;
 
 	int i = 0;
-	for (;;)
+	while (true)
 	{
 		sprintf(szLabel, MLIMGR_DEFAULTSUB, i++);
 		if (!m_buteMgr.Exist(szTag, szLabel)) break;
@@ -133,7 +133,7 @@ bool CMultiplayerLevelInfoMgr::ReadSubroutines()
 	}
 
 	i = 0;
-	for (;;)
+	while (true)
 	{
 		sprintf(szLabel, MLIMGR_AVAILABLESUB, i++);
 		if (!m_buteMgr.Exist(szTag, szLabel)) break;
@@ -145,7 +145,7 @@ bool CMultiplayerLevelInfoMgr::ReadSubroutines()
 	}
 
 	i = 0;
-	for (;;)
+	while (true)
 	{
 		sprintf(szLabel, MLIMGR_RANDOMSUB, i++);
 		if (!m_buteMgr.Exist(szTag, szLabel)) break;
@@ -251,7 +251,7 @@ bool CMultiplayerLevelInfoMgr::ReadDefaults()
 	char szLabel[128];
 
 	int i = 0;
-	for (;;)
+	while (true)
 	{
 		sprintf(szLabel, MLIMGR_DEFAULTPRIM, i++);
 		if (!m_buteMgr.Exist(szTag, szLabel)) break;
@@ -261,7 +261,7 @@ bool CMultiplayerLevelInfoMgr::ReadDefaults()
 	}
 
 	i = 0;
-	for (;;)
+	while (true)
 	{
 		sprintf(szLabel, MLIMGR_DEFAULTWEAP, i++);
 		if (!m_buteMgr.Exist(szTag, szLabel)) break;

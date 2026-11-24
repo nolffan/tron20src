@@ -43,6 +43,7 @@ class CAIMovement
 		// RETAIL: Tron keeps m_bIgnoreVolumes while m_xTronUnknown38 is set
 		// (CAIHumanStateLaunch::Update, 0x1022a6cf).
 		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { if( !m_xTronUnknown38 ) m_bIgnoreVolumes = bIgnoreVolumes; }
+		void LockIgnoreVolumes(LTBOOL bLock) { m_xTronUnknown38 = bLock; }	// RETAIL: CAI::OnTrigger 0x1012c8c3; name ours
 
 		void	LockMovement();
 		void	LockMovement(LTBOOL bLockRotation);

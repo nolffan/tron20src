@@ -19,6 +19,7 @@
 #include "AIMovement.h"
 #include "AICentralKnowledgeMgr.h"
 #include "MusicMgr.h"
+#include "../TRON/ContinuousFireHelper.h"	// RETAIL: ~CAIHumanStrategyShootBurst stops the fire helper
 
 const static LTFLOAT s_fPerturbScale = 4.0f;
 static CVarTrack g_ShowAIPath;
@@ -3762,7 +3763,13 @@ CAIHumanStrategyShoot::CAIHumanStrategyShoot()
 
 CAIHumanStrategyShoot::~CAIHumanStrategyShoot()
 {
+	// RETAIL: 0x10226250: Tron's also hides the firing trails.
 	Aim();
+
+	if( GetAI() && GetAI()->GetBrain() )
+	{
+		GetAI()->GetBrain()->HideFiringTrails();
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -4424,6 +4431,23 @@ CAIHumanStrategyShootBurst::CAIHumanStrategyShootBurst()
 	m_nBurstShots = 0;
 	m_bUseIntervals = LTTRUE;
 	m_bPreFire = LTFALSE;
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIHumanStrategyShootBurst::~CAIHumanStrategyShootBurst
+//
+//	PURPOSE:	RETAIL: Tron's (0x10226f00): stop the energy claw's
+//				continuous fire when the AI holds a weapon.
+//
+// ----------------------------------------------------------------------- //
+
+CAIHumanStrategyShootBurst::~CAIHumanStrategyShootBurst()
+{
+	if( GetAI() && GetAI()->GetCurrentWeapon() )
+	{
+		GetAI()->GetEnergyClawFireHelper()->Stop();
+	}
 }
 
 // ----------------------------------------------------------------------- //

@@ -1567,6 +1567,25 @@ position. Thus the claw stays where it hit and the call has no effect.
 
 Fixed in the modern build: the claw moves to the position of its target.
 
+### The AI debug information has operator precedence errors
+
+Object.lto 0x10130580 (CAI::UpdateInfo, ObjectDLL/ObjectShared/AI.cpp).
+The "AIInfo" console variable shows debug text for each AI. Tron writes the
+text to a stream. Some lines use the "?:" operator after the "<<" operator
+without parentheses. Thus the stream, not the value, is the condition, and
+the stream gets the value of the condition, not the text that the
+condition selects. The script list (AIInfo 2) shows 0 or 1 and an address
+in place of "*" and the command text. The goal list (AIInfo 3) shows 0 or
+1 in place of "*" and "(scripted)". The function also compares the address
+of the new text with the address of the old text, not the two texts. Thus
+it sends the text to the clients on each update, also when the text does
+not change. The holster text is cut at a "," character, not at a ";"
+character, because the function gives the multi-character constant ';,'
+to strchr.
+
+Fixed in the modern build: the lines put the selected text, the function
+compares the texts and cuts the holster text at ";".
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
@@ -1601,3 +1620,17 @@ CHUDVersion item). The memory of the item is not released when the game
 stops. The player does not see an effect.
 
 Not fixed yet: the modern build must delete m_pVersion with the other items.
+### The energy message of a core dump falls through into the HUD text message
+
+CShell.dll 0x1009dec8 (CTronInterfaceMgr::OnMessage, TRON/
+TronInterfaceMgr.cpp). The MID_TRON_ENERGY_GAINED case (164) reads one
+byte and shows string 3271 in the chat. It has no break, thus the code of
+the MID_TRON_HUD_TEXT case (127, at 0x1009df00) runs after it. That code
+reads two values of 32 bits that the message does not have, and it plays
+the "msgfadeout" sound. The server (Object.lto CoreDump, TRON/
+CoreDump.cpp) writes only the byte. In retail, the server does not send
+the message, because its energy test is always false (see CoreDump.cpp).
+Thus there is no visible effect.
+
+Not fixed yet: the modern build should end the case before the HUD text
+case.

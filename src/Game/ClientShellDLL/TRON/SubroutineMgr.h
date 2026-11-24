@@ -156,13 +156,8 @@ struct Procedural
 	SubState			eAffectState;					// +0x134 "Effect" (0..3): what kinds of subroutines does this affect?
 	PlayerSubroutine *	pSub;							// +0x138
 
-	// PORT: build 69's, not in retail's (its code still reads them)
-	float				fTimeRequired;	// time (in seconds) to perform a complete operation
-	char				szIntroFX[SUBROUTINE_MAX_NAME];
-	char				szIdleSkin[SUBROUTINE_MAX_FILE_PATH];
-	char				szWorkSkin[SUBROUTINE_MAX_FILE_PATH];
-	char				szConditionSkin[SUBROUTINE_MAX_FILE_PATH];
-	char				szProgressSkin[SUBROUTINE_MAX_FILE_PATH];
+	// RETAIL: 0x13c bytes (debug_new_fn 0x100963b0); Build 69's
+	// fTimeRequired, szIntroFX and its skins are not in Tron's
 };
 
 typedef std::vector<Procedural *> ProceduralArray;
@@ -259,9 +254,16 @@ public:
 	float				GetTronUnknown11A4() { return m_fTronUnknown11A4; }
 
 	// To set the system memory configuration (bad blocks, base code, etc...)
+	// RETAIL: inline in CTronInterfaceMgr::OnMessage (0x1009dd29, 0x1009deb1;
+	// the names are ours)
+	void				SetOptimizer(HOBJECT hOptimizer) {m_hOptimizer = hOptimizer;}
+	void				SetTronUnknown11A0(float fValue) {m_fTronUnknown11A0 = fValue;}
+
 	bool				SetSystemMemoryConfiguration(const char* pSystemMemoryConfig, int nTronUnknown = -1);	// RETAIL: 0x100954b0
 	void				AddBadBlock(int iSectorNumber);	// create a subroutine that's unusable
 	void				AddBaseCodeBlock(int iSectorNumber, bool bPrev, bool bNext); // create a subroutine that's unusable
+
+	friend class CTronInterfaceMgr;	// RETAIL: its OnMessage calls InfectRandomSector
 
 protected:
 	void				CleanArrays();
@@ -291,7 +293,7 @@ protected:
 	int					m_nTronUnknown1160;		// RETAIL: +0x1160
 	float				m_afProfilerDistance[3];	// RETAIL: +0x1164 ("Distance" of the profiler, by version)
 	float				m_afCorruptionSpreadTime[4];	// RETAIL: +0x1170 ("Corruption" "SpreadTime", by difficulty)
-	void*				m_pTronUnknown1180;		// RETAIL: +0x1180
+	HOBJECT				m_hOptimizer;			// RETAIL: +0x1180 the optimizer (MID_OPTIMIZER_BEGIN, 0x1009dd29)
 	uint8				m_aTronUnknown1184[24];	// RETAIL: +0x1184 (one per system memory sector)
 	uint8				m_aTronUnknown119C[4];	// RETAIL: +0x119c
 	float				m_fTronUnknown11A0;	// RETAIL: +0x11a0 (0 in the ctor and Init; Save/Load keep it)

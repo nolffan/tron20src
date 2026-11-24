@@ -152,10 +152,12 @@ void CBuildPointsCtrl::OnMouseMove(int x, int y)
 LTIntPt CBuildPointsCtrl::GetHelpPos()
 {
 	int nY = m_Center.y;
+	int nX;
 	if (m_bLeft)
-		return LTIntPt(m_Center.x + (int)m_fInnerRadius, nY);
-
-	return LTIntPt(m_Center.x - (int)m_fInnerRadius, nY);
+		nX = m_Center.x + (int)m_fInnerRadius;
+	else
+		nX = m_Center.x - (int)m_fInnerRadius;
+	return LTIntPt(nX, nY);
 }
 
 void CBuildPointsCtrl::Increment()

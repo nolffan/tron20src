@@ -1380,21 +1380,21 @@ void CPlayerCamera::TronUnknownStartLCCOrbit()
 
 void CPlayerCamera::TronUnknownGoLightCycle(float fPitch, float fYaw, float fZoom, bool bInstant)
 {
-	if (m_eCameraMode != TRONMODE5)
-	{
-		m_eCameraMode = TRONMODE5;
-		m_fTronUnknownF8 = fPitch;
-		m_fTronUnknownFC = fYaw;
-		m_fTronUnknown100 = fZoom;
+	if (m_eCameraMode == TRONMODE5)
+		return;
 
-		if (bInstant)
-		{
-			m_fTronUnknown104 = 0.0f;
-		}
-		else
-		{
-			m_fTronUnknown104 = g_pLTClient->GetTime();
-		}
+	m_fTronUnknownF8 = fPitch;
+	m_fTronUnknownFC = fYaw;
+	m_fTronUnknown100 = fZoom;
+	m_eCameraMode = TRONMODE5;
+
+	if (bInstant)
+	{
+		m_fTronUnknown104 = 0.0f;
+	}
+	else
+	{
+		m_fTronUnknown104 = g_pLTClient->GetTime();
 	}
 }
 
