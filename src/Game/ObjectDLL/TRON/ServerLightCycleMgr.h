@@ -115,6 +115,10 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		// RETAIL: 0x10052360 (writes g_pServerLightCycleMgr's flag)
 		static void EnableDialog(bool bEnable);
 
+		// RETAIL: inline: CTronPlayerObj's ENABLELCDIALOG (0x100662aa) sets the
+		// flag at +0x1365 (the name is ours)
+		void SetTronUnknown1365(bool bTronUnknown) { m_bTronUnknown1365 = bTronUnknown; }
+
 	protected:
 
 		// RETAIL: AILightCycle asks for the player's cyclist and the

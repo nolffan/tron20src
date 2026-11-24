@@ -113,6 +113,10 @@ class CLightCycleMatchMgr
 		// 0x1002b0c1, 0x1002bab1)
 		uint32	GetAllowedPowerups() const { return m_nPowerups; }
 
+		// RETAIL: inline: CTronPlayerObj's MAXZOOM (0x1006612f) sets the value
+		// at +0xa4 (the name is ours)
+		void SetTronUnknownA4(float fTronUnknown) { m_fTronUnknownA4 = fTronUnknown; }
+
 	protected:
 
 		void	StartRace();						// RETAIL: 0x10053e50

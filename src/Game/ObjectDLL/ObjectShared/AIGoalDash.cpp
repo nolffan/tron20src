@@ -67,11 +67,9 @@ void CAIGoalDash::Save(ILTMessage_Write *pMsg)
 	super::Save(pMsg);
 
 	// RETAIL: 0x1020bf10 narrows each value before it fetches pMsg's
-	// vtable.
-	LTFLOAT fDashMinDist = (LTFLOAT)m_fDashMinDist;
-	SAVE_FLOAT( fDashMinDist );
-	LTFLOAT fDashMaxDist = (LTFLOAT)m_fDashMaxDist;
-	SAVE_FLOAT( fDashMaxDist );
+	// vtable; ours after (near).
+	SAVE_FLOAT( (LTFLOAT)m_fDashMinDist );
+	SAVE_FLOAT( (LTFLOAT)m_fDashMaxDist );
 }
 
 void CAIGoalDash::Load(ILTMessage_Read *pMsg)
