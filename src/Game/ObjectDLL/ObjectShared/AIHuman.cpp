@@ -60,7 +60,7 @@ static CVarTrack g_CheapMovementTrack;
 
 LTFLOAT s_fSenseUpdateBasis = 0.0f;
 
-// RETAIL: Tron's bounds for CAIHuman's random m_fTronUnknown11E4 (retail
+// RETAIL: Tron's bounds for CAIHuman's random recoil timer duration (retail
 // 0x103004e4, 0x103004e8; names ours)
 static LTFLOAT s_fTronUnknownMin = 2.5f;
 static LTFLOAT s_fTronUnknownMax = 3.5f;
@@ -136,11 +136,8 @@ CMDMGR_END_REGISTER_CLASS( CAIHuman, CAI )
 #pragma warning (disable: 4355)
 #endif  // !__PSX2
 CAIHuman::CAIHuman() : CAI(),
-	// RETAIL: Tron's four are set before the body (retail 0x1016c420)
-	m_fTronUnknown11E0(0.0f),
-	m_fTronUnknown11E4(0.0f),
-	m_fTronUnknown11E8(0.0f),
-	m_bTronUnknown11EC(false)
+	// RETAIL: Tron's recoil timer is constructed before the body (retail 0x1016c420)
+	m_tmrTronRecoil()
 #ifndef __PSX2
 #pragma warning (pop)
 #endif  // !__PSX2
@@ -196,9 +193,7 @@ CAIHuman::CAIHuman() : CAI(),
 	m_fGhostFadeTime = 0.0f;
 	m_fTronUnknown1238 = 1.0f;
 	m_vTronUnknown123C.Init( 1.0f, 1.0f, 1.0f );
-	m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
-	m_fTronUnknown11E0 = g_pLTServer->GetTime();
-	m_bTronUnknown11EC = true;
+	m_tmrTronRecoil.Start( GetRandom( s_fTronUnknownMin, s_fTronUnknownMax ) );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1389,8 +1384,8 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	CAI::HandleDamage(damage);
 
 	// RETAIL: 0x1016eb4d, Tron's recoil: not for these damage types, and
-	// blaster damage recoils only after a random delay (m_fTronUnknown11E4)
-	// from the last recoil (m_fTronUnknown11E0).
+	// blaster damage recoils only after a random delay (m_tmrTronRecoil)
+	// from the last recoil.
 
 	DamageFlags dfNoRecoil = DamageTypeToFlag( DT_PLAYERONLY ) | DamageTypeToFlag( DT_ENERGYCLAW ) | DamageTypeToFlag( DT_PROD );
 	DamageFlags dfLast = DamageTypeToFlag( m_damage.GetLastDamageType() );
@@ -1399,12 +1394,7 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 	{
 		if( DamageTypeToFlag( DT_BLASTER ) & dfLast )
 		{
-			if( !( ( m_fTronUnknown11E8 > 0.0f ) ?
-					( m_fTronUnknown11E8 - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) :
-					( g_pLTServer->GetTime() - m_fTronUnknown11E0 >= m_fTronUnknown11E4 ) ) &&
-				( ( ( m_fTronUnknown11E8 > 0.0f ) ?
-					( ( m_fTronUnknown11E4 + m_fTronUnknown11E0 ) - m_fTronUnknown11E8 ) :
-					( ( m_fTronUnknown11E0 + m_fTronUnknown11E4 ) - g_pLTServer->GetTime() ) ) != 0.0f ) )
+			if( m_tmrTronRecoil.GetCountdownTime() != 0.0f )
 			{
 				return;
 			}
@@ -1417,9 +1407,7 @@ void CAIHuman::HandleDamage(const DamageStruct& damage)
 			}
 		}
 
-		m_fTronUnknown11E4 = GetRandom( s_fTronUnknownMin, s_fTronUnknownMax );
-		m_fTronUnknown11E0 = g_pLTServer->GetTime();
-		m_bTronUnknown11EC = true;
+		m_tmrTronRecoil.Start( GetRandom( s_fTronUnknownMin, s_fTronUnknownMax ) );
 
 		HandleShortRecoil();
 	}
@@ -1957,10 +1945,7 @@ void CAIHuman::Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags)
 	SAVE_FLOAT(m_fGhostFadeTime);
 	SAVE_FLOAT(m_fTronUnknown1238);
 	SAVE_VECTOR(m_vTronUnknown123C);
-	SAVE_TIME(m_fTronUnknown11E0);
-	SAVE_TIME(m_fTronUnknown11E8);
-	SAVE_FLOAT(m_fTronUnknown11E4);
-	SAVE_bool(m_bTronUnknown11EC);
+	m_tmrTronRecoil.Save(pMsg);
 }
 
 // ----------------------------------------------------------------------- //
@@ -2028,10 +2013,7 @@ void CAIHuman::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	LOAD_FLOAT(m_fGhostFadeTime);
 	LOAD_FLOAT(m_fTronUnknown1238);
 	LOAD_VECTOR(m_vTronUnknown123C);
-	LOAD_TIME(m_fTronUnknown11E0);
-	LOAD_TIME(m_fTronUnknown11E8);
-	LOAD_FLOAT(m_fTronUnknown11E4);
-	LOAD_bool(m_bTronUnknown11EC);
+	m_tmrTronRecoil.Load(pMsg);
 
 	// RETAIL: Tron's (retail 0x1016ff4e)
 	SetAIType( GetAITemplate()->szHumanType );

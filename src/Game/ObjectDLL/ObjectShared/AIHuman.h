@@ -249,11 +249,10 @@ class CAIHuman : public CAI
 		// RETAIL: not set by Tron's constructor nor saved; taken to be NOLF2's
 		LTBOOL		m_bCanShortRecoil;			// Can we do short recoils?
 
-		// RETAIL: Tron's (HandleDamage 0x1016eb??, Save 0x1016fa50). Names ours.
-		LTFLOAT		m_fTronUnknown11E0;			// a time
-		LTFLOAT		m_fTronUnknown11E4;			// random at first
-		LTFLOAT		m_fTronUnknown11E8;			// a time
-		bool		m_bTronUnknown11EC;
+		// RETAIL: Tron's recoil delay, a CTimer at +0x11e0 (HandleDamage
+		// 0x1016ea70 inlines Start and GetCountdownTime, Save 0x1016fa50
+		// inlines CTimer::Save). The name is ours.
+		CTimer		m_tmrTronRecoil;
 
 		// Door
 
