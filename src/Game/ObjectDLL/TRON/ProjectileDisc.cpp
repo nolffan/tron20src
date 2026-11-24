@@ -721,8 +721,8 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 				// RETAIL: (0x10037f19) the owner stops guiding the disc
 				if ( !IsDiscDeflecting() )
 				{
-					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
 					m_eTrackingStyle = DISC_TRACKING_STYLE_STRAIGHT;
+					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
 				}
 			}
 			break;
@@ -1439,8 +1439,9 @@ void CDisc::EnterReturnMode( HOBJECT hObj )
 
 	if ( !hObj )
 	{
+		PROJECTILEFX *pReturnFX = m_pAmmoData->pProjectileFX;
 		DISCCLASSDATA *pDiscClassData =
-			dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
+			dynamic_cast< DISCCLASSDATA* >( pReturnFX->pClassData );
 
 		LTVector vPos;
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );

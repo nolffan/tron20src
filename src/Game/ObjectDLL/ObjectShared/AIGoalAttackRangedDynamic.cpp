@@ -282,36 +282,28 @@ LTBOOL CAIGoalAttackRangedDynamic::SelectAttackMove()
 				eMove = kAP_ShuffleLeft;
 				break;
 
-			// BackUp.
+			// BackUp.  RETAIL: Tron's backup and flank moves do not test
+			// AttacksWhileMoving (0x1021142f)
 
 			case kAP_BackUp:
-				if( m_pAI->GetBrain()->AttacksWhileMoving() )
-				{
-					vDest = vPos - ( m_pAI->GetTorsoForward() * ( m_pAI->GetBrain()->GetAIData( kAIData_DynMoveBackupDist ) + m_pAI->GetRadius() ) );
-					eMove = kAP_BackUp;
-				}
+				vDest = vPos - ( m_pAI->GetTorsoForward() * ( m_pAI->GetBrain()->GetAIData( kAIData_DynMoveBackupDist ) + m_pAI->GetRadius() ) );
+				eMove = kAP_BackUp;
 				break;
 
 			// Flank left.
 
 			case kAP_FlankLeft:
-				if( m_pAI->GetBrain()->AttacksWhileMoving() )
-				{
-					vDest = m_pAI->GetTarget()->GetVisiblePosition() - ( m_pAI->GetTorsoRight() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankWidthDist ) );
-					vDest += m_pAI->GetTorsoForward() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankPassDist );
-					eMove = kAP_FlankLeft;
-				}
+				vDest = m_pAI->GetTarget()->GetVisiblePosition() - ( m_pAI->GetTorsoRight() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankWidthDist ) );
+				vDest += m_pAI->GetTorsoForward() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankPassDist );
+				eMove = kAP_FlankLeft;
 				break;
 
 			// Flank right.
 
 			case kAP_FlankRight:
-				if( m_pAI->GetBrain()->AttacksWhileMoving() )
-				{
-					vDest = m_pAI->GetTarget()->GetVisiblePosition() + ( m_pAI->GetTorsoRight() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankWidthDist ) );
-					vDest += m_pAI->GetTorsoForward() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankPassDist );
-					eMove = kAP_FlankRight;
-				}
+				vDest = m_pAI->GetTarget()->GetVisiblePosition() + ( m_pAI->GetTorsoRight() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankWidthDist ) );
+				vDest += m_pAI->GetTorsoForward() * m_pAI->GetBrain()->GetAIData( kAIData_DynMoveFlankPassDist );
+				eMove = kAP_FlankRight;
 				break;
 
 			// Unexpected.
