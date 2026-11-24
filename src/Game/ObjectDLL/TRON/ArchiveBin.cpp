@@ -1133,7 +1133,8 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 	{
 		case AB_CHOICE_DESTROY:
 		{
-			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, GetNumItems() ? USRFLG_CAN_ACTIVATE : 0, USRFLG_CAN_ACTIVATE);
+			uint32 dwFlags = GetNumItems() ? USRFLG_CAN_ACTIVATE : 0;
+			g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, dwFlags, USRFLG_CAN_ACTIVATE);
 		}
 		break;
 
@@ -1291,10 +1292,11 @@ void ArchiveBin::CreateFrame()
 		{
 			m_hTronUnknown3a4 = pFrame->m_hObject;
 
-			if (m_hTronUnknown3a4)
+			HOBJECT hFrame = m_hTronUnknown3a4;
+			if (hFrame)
 			{
-				g_pLTServer->SetNextUpdate(m_hTronUnknown3a4, 0.0f);
-				g_pLTServer->SetObjectState(m_hTronUnknown3a4, OBJSTATE_INACTIVE);
+				g_pLTServer->SetNextUpdate(hFrame, 0.0f);
+				g_pLTServer->SetObjectState(hFrame, OBJSTATE_INACTIVE);
 			}
 
 			LTVector vOffset(0.0f, 0.0f, 0.0f);

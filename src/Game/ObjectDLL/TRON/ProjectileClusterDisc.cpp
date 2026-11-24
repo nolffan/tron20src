@@ -197,7 +197,9 @@ void CClusterDisc::CreateExplosion()
 	if ( !pExplosion ) return;
 
 	AMMO const *pAmmo = g_pWeaponMgr->GetAmmo( nExplosionAmmoId );
-	uint32 nAmmoId = pAmmo ? pAmmo->nId : WMGR_INVALID_ID;
+	uint32 nAmmoId = WMGR_INVALID_ID;
+	if ( pAmmo )
+		nAmmoId = pAmmo->nId;
 
 	// RETAIL: message 0x3f3 sets the explosion up (Explosion::ObjectMessageFn
 	// 0x100ef790)
