@@ -75,7 +75,7 @@ public:
 	bool		IsCWHot()			{return m_bCWHot;}
 	bool		IsCCWHot()			{return m_bCCWHot;}
 	void		SetStayOpen(bool bStayOpen) {m_bStayOpen = bStayOpen;}
-	LTIntPt		GetHotPos()			{return m_Arc.GetHotPos();}
+	LTIntPt		GetHotPos();				// RETAIL: 0x1007ff80, defined in ScreenSubroutines.cpp
 
 protected:
 	bool		m_bVisible;				// +0x00

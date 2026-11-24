@@ -1060,6 +1060,13 @@ LTBOOL CScreenSubroutines::OnMouseMove(int x, int y)
 	return bResult;
 }
 
+// RETAIL: 0x1007ff80: out of line here, after its only caller (the
+// screen's other code asks the arc itself)
+LTIntPt CLibraryCtrl::GetHotPos()
+{
+	return m_Arc.GetHotPos();
+}
+
 // RETAIL: 0x1007ffd0
 void CScreenSubroutines::ClearScreen()
 {
@@ -1584,7 +1591,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[0].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[0].GetHotPos();
+				LTIntPt pos = m_Libraries[0].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
@@ -1593,7 +1600,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[1].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[1].GetHotPos();
+				LTIntPt pos = m_Libraries[1].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
@@ -1602,7 +1609,7 @@ void CScreenSubroutines::OnPickupRClick(int x, int y)
 			m_Libraries[2].ShowSubIcon(m_pHotSub, true);
 			if (IsKeyDown(VK_TAB) || m_bShowToolTips)
 			{
-				LTIntPt pos = m_Libraries[2].GetHotPos();
+				LTIntPt pos = m_Libraries[2].GetArc()->GetHotPos();
 				ShowSubInfo(pos.x, pos.y);
 			}
 			break;
