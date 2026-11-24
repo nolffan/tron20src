@@ -33,6 +33,9 @@ protected:
 
 	// RETAIL: 0x10018070 (PlayFireAnimation calls it)
 	void          UpdateFireAnimationRate();
+	// RETAIL: inline (PlayFireAnimation passes it through the FPU,
+	// 0x10017d46); the name is ours
+	float         GetFireAnimationRate() const { return m_fFireAnimationRate; }
 
 	// RETAIL: +0x208 (1.0f in the ctor; BallLauncherData has a
 	// fFireAnimationRateMultiplier)
