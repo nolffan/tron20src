@@ -39,7 +39,7 @@ LTBOOL CHUDLightCycleSpeedometer::Init()
 	std::string sFrame = pHelper->GetSpeedometerTexturedFrameName(nCurrentLayout);
 	m_Frame.Init(sFrame.c_str());
 
-	CUIFont* pFont = g_pInterfaceResMgr->GetFont(pHelper->GetLivesTextOffset(nCurrentLayout));
+	CUIFont* pFont = g_pInterfaceResMgr->GetFont(pHelper->GetSpeedometerFontNum(nCurrentLayout));
 	m_pText = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(L"LightSpeed"), 0.0f, 0.0f, CUI_HALIGN_RIGHT);
 	m_pText->SetDropShadow(true);
 
@@ -80,11 +80,13 @@ void CHUDLightCycleSpeedometer::UpdateLayout()
 	pos.x = (int)(pos.x * fXRatio);
 	pos.y = (int)(pos.y * fXRatio);
 
-	int nTextHeight = (int)(pHelper->GetRosterLineOffset(nCurrentLayout) * fYRatio);
-	int nTextOffset = (int)(pHelper->GetSpeedometerFrameHeight(nCurrentLayout) * fYRatio);
+	// RETAIL: 0x1002fb49..0x1002fbbd: the speedometer's own values, in
+	// LCHUDHelper's order
+	int nTextHeight = (int)(pHelper->GetSpeedometerTextHeight(nCurrentLayout) * fYRatio);
+	int nTextOffset = (int)(pHelper->GetSpeedometerVBorder(nCurrentLayout) * fYRatio);
 	int nTextBorder = (int)(pHelper->GetSpeedometerHBorder(nCurrentLayout) * fXRatio);
-	int nHalfWidth = (int)(pHelper->GetSpeedometerTextHeight(nCurrentLayout) * fXRatio);
-	int nHeight = (int)(pHelper->GetSpeedometerVBorder(nCurrentLayout) * fXRatio);
+	int nHalfWidth = (int)(pHelper->GetSpeedometerFrameWidth(nCurrentLayout) * fXRatio);
+	int nHeight = (int)(pHelper->GetSpeedometerFrameHeight(nCurrentLayout) * fXRatio);
 
 	m_pText->SetCharScreenHeight(nTextHeight);
 	m_pText->SetPosition(pos.x - nTextBorder, pos.y + nTextOffset);
