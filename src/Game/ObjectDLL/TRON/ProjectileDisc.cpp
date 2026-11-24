@@ -721,8 +721,8 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 				// RETAIL: (0x10037f19) the owner stops guiding the disc
 				if ( !IsDiscDeflecting() )
 				{
-					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
 					m_eTrackingStyle = DISC_TRACKING_STYLE_STRAIGHT;
+					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
 				}
 			}
 			break;
@@ -1439,8 +1439,9 @@ void CDisc::EnterReturnMode( HOBJECT hObj )
 
 	if ( !hObj )
 	{
+		PROJECTILEFX *pReturnFX = m_pAmmoData->pProjectileFX;
 		DISCCLASSDATA *pDiscClassData =
-			dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
+			dynamic_cast< DISCCLASSDATA* >( pReturnFX->pClassData );
 
 		LTVector vPos;
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );
@@ -1654,12 +1655,13 @@ void CDisc::HandleDeflect()
 //
 //	PURPOSE:	Turn the direction toward the best character in the
 //				magnetic radius (console variable DiscMagneticHoming)
-//				RETAIL: 0x1003a3f0.  The second argument is not used.
+//				RETAIL: 0x1003a3f0.  The second argument (UpdateStateFlying
+//				gives a copy of m_fVelocity) is not used.
 //				Returns true when it changes the direction.
 //
 // ----------------------------------------------------------------------- //
 
-bool CDisc::UpdateMagneticHoming( LTVector *pvDir, LTVector const *pvTronUnknown )
+bool CDisc::UpdateMagneticHoming( LTVector *pvDir, LTFLOAT const *pfTronUnknown )
 {
 	if ( 0.0f == g_vtDiscMagneticHoming.GetFloat() )
 	{
@@ -2594,238 +2596,238 @@ void CDisc::HandleImpact( HOBJECT hObj )
 
 bool CDisc::UpdateStateFlying()
 {
-	// pointer check
-	ASSERT( 0 != g_pLTServer );
-	ASSERT( 0 != g_pPhysicsLT );
-
-	// this will become more refined as time progresses
-	// for now, only compute this stuff if the point is new
-	if ( !m_bNewTarget || ( DISC_TRACKING_MODE_STEADY == m_eTrackingMode ) )
+	// RETAIL: 0x1003bba0.  Tron's disc flies on a leash in a multiplayer
+	// game: when it goes too far from its owner, it returns (or is
+	// destroyed)
+	if ( IsMultiplayerGame() )
 	{
-		// just update "normally"
+		LTVector vPos;
+		g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+		LTVector vOwnerPos;
+		g_pLTServer->GetObjectPos( m_hFiredFrom, &vOwnerPos );
+
+		LTVector vOwnerToDisc = vPos - vOwnerPos;
+		if ( vOwnerToDisc.Mag() > m_fMultiplayerLeashLength )
+		{
+			if ( m_bReturnToOwner )
+			{
+				LTVector vNewPos = vOwnerToDisc.Unit() * m_fMultiplayerLeashLength + vOwnerPos;
+				g_pLTServer->SetObjectPos( m_hObject, &vNewPos );
+				EnterReturnMode( LTNULL );
+			}
+			else
+			{
+				DestroyInFlight();
+			}
+		}
+	}
+
+	// the disc's flight time is over
+	if ( g_pLTServer->GetTime() >= m_fStartTime + m_fLifeTime )
+	{
+		if ( m_bReturnToOwner )
+		{
+			EnterReturnMode( LTNULL );
+		}
+		else
+		{
+			DestroyInFlight();
+		}
+	}
+
+	// a player's steady disc looks for a target
+	if ( m_bAutoAim && IsPlayer( m_hFiredFrom ) &&
+	     ( DISC_TRACKING_MODE_STEADY == m_eTrackingMode ) )
+	{
+		AcquireAutoAimTarget();
+	}
+
+	if ( m_bNewTarget && ( DISC_TRACKING_MODE_STEADY != m_eTrackingMode ) )
+	{
+		LTVector vControlPosition;
+		LTVector vControlDirection;
+
+		if ( DISC_TRACKING_STYLE_STRAIGHT_FOR_TARGET == m_eTrackingStyle )
+		{
+			// RETAIL: Tron's homing disc steers along a line from its owner
+			// to the target
+			if ( !m_hObjectTarget )
+			{
+				// the target is gone, fly straight for a time
+				m_eTrackingStyle = DISC_TRACKING_STYLE_STRAIGHT;
+				m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
+				m_fLifeTime = g_pLTServer->GetTime() - m_fStartTime + m_fLostTargetFlightTime;
+				return true;
+			}
+
+			vControlPosition = GetControlPosition( m_hFiredFrom );
+
+			LTVector vPos;
+			g_pLTServer->GetObjectPos( m_hObject, &vPos );
+
+			LTVector vToTarget = GetTargetPosition();
+
+			vControlDirection = vToTarget - vControlPosition;
+			vControlDirection.Normalize();
+
+			vToTarget = vToTarget - vPos;
+
+			// a player's disc near its target flies straight at it
+			if ( m_bAutoAim && IsPlayer( m_hFiredFrom ) )
+			{
+				if ( vToTarget.Mag() < g_vtDiscAutoAimRadius.GetFloat() * 0.5f )
+				{
+					m_bTronUnknown9F9 = true;
+					m_vTronUnknown9FC = vToTarget;
+				}
+			}
+
+			vToTarget.Norm();
+
+			LTVector vVel;
+			g_pPhysicsLT->GetVelocity( m_hObject, &vVel );
+			vVel.Norm();
+
+			// the target is too far from the path of the disc
+			if ( vVel.Dot( vToTarget ) < m_fTargetAngleTrackThreshold )
+			{
+				m_eTrackingStyle = DISC_TRACKING_STYLE_STRAIGHT;
+				m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
+
+				if ( !IsPlayer( m_hFiredFrom ) )
+				{
+					m_fLifeTime = g_pLTServer->GetTime() - m_fStartTime + m_fLostTargetFlightTime;
+				}
+
+				return true;
+			}
+		}
+		else if ( DISC_TRACKING_STYLE_CONTROL_LINE == m_eTrackingStyle )
+		{
+			vControlPosition = m_vControlPosition;
+			vControlDirection = m_vControlDirection;
+		}
+
+		//
+		// find a normalized vector pointing from the disc to the
+		// closest point on a line extending from the control point
+		// in the direction of the control direction
+		//
+
+		// get the disc position
+		LTVector vDiscPos;
+		g_pLTServer->GetObjectPos( m_hObject, &vDiscPos );
+
+		// get the disc's current direction
+		LTVector vDiscDirection;
+		g_pPhysicsLT->GetVelocity( m_hObject, &vDiscDirection );
+		vDiscDirection.Normalize();
+
+		// using the direction, get the point on that line that is
+		// closest to the current location of the disc
+		LTVector vVectorToControlLine;
+		GetVectorToLine( vControlPosition,
+		                 vControlDirection,
+		                 vDiscPos,
+		                 &vVectorToControlLine );
+		LTVector vVectorToControlLineNormalized = vVectorToControlLine;
+		VEC_NORM( vVectorToControlLineNormalized );
+
+		// find the incident angle, which is the initial angle
+		// minus the decay times the time elapsed
+		LTFLOAT fIncidentAngle = m_fIncidentAngleToControlLine -
+			( g_pLTServer->GetTime() - m_fStartTime ) * m_fIncidentAngleToControlLineDecay;
+
+		// make sure the angle is not less than 0
+		if ( DISC_EPSILON > fIncidentAngle )
+		{
+			fIncidentAngle = 0.0f;
+		}
+
+		// convert the angle to a percentage (of 90 degrees)
+		// and linearly interpolate it
+		LTVector vDesiredDirection;
+		VEC_LERP(
+				vDesiredDirection,
+				vControlDirection,
+				vVectorToControlLineNormalized,
+				( fIncidentAngle * ( 1.0f / MATH_HALFPI ) )
+			);
+
+		// renormalize the result to eliminate the skew
+		VEC_NORM( vDesiredDirection );
+
+		// RETAIL: Tron turns the desired direction toward a near
+		// character (0x1003c2a3)
+		LTFLOAT fVelocity = m_fVelocity;
+		UpdateMagneticHoming( &vDesiredDirection, &fVelocity );
+
+		// the angle between the disc's current direction and the desired
+		// direction
+		LTFLOAT fDirectionAngle = vDiscDirection.Dot( vDesiredDirection );
+		if ( 0.0f < fDirectionAngle )
+		{
+			fDirectionAngle = ( LTFLOAT )acos( fDirectionAngle );
+		}
+		else
+		{
+			fDirectionAngle = MATH_PI - ( LTFLOAT )acos( fDirectionAngle );
+		}
+
+		// determine how much to interpolate
+		LTFLOAT fInterpolation = ( g_pLTServer->GetTime() - m_fLastUpdateTime ) *
+			( m_fTurnRate / fDirectionAngle );
+
+		// don't interpolate more that we're supposed to
+		if ( 1.0f < fInterpolation )
+		{
+			fInterpolation = 1.0f;
+		}
+
+		// interpolate the current and desired directions to
+		// determine the new direction to go
+		LTVector vNewDirection;
+		VEC_LERP(
+				vNewDirection,
+				vDiscDirection,
+				vDesiredDirection,
+				fInterpolation
+			);
+
+		// RETAIL: a player's disc near its target flies straight at it
+		if ( m_bTronUnknown9F9 )
+		{
+			vNewDirection = m_vTronUnknown9FC;
+		}
+
+		// scale the new direction to the disc's travelling velocity
+		VEC_NORM( vNewDirection );
+		LTVector vNewVelocity = vNewDirection;
+		vNewVelocity *= g_vtDiscVelocity.GetFloat() * m_fVelocity;
+
+		// set the new velocity
+		g_pPhysicsLT->SetVelocity( m_hObject, &vNewVelocity );
+
+		m_vFirePos = vDiscPos;
+		m_vDir = vNewDirection;
+
+		// we handled it
 		return true;
 	}
 
-	switch ( m_eTrackingStyle )
+	// just update "normally", at the speed of the console variable
+	if ( g_vtDiscVelocity.GetFloat() != 1.0f )
 	{
-		case DISC_TRACKING_STYLE_STRAIGHT_FOR_TARGET:
-		{
-			//
-			// Simple basic easy disc tracking method
-			//
+		LTVector vVel;
+		g_pPhysicsLT->GetVelocity( m_hObject, &vVel );
+		vVel.Normalize();
 
-			// get the current velocity, it will probably change
-			LTVector vVel;
-			g_pPhysicsLT->GetVelocity( m_hObject, &vVel );
-
-			// Figure out a new velocity
-			LTVector vTarget;
-			LTVector vSelfPos;
-			LTVector vSelfToTarget;
-
-			// trying to hit a target, figure out where the target is
-			vTarget = m_vPointTarget;
-
-			// get the disc's location
-			g_pLTServer->GetObjectPos( m_hObject, &vSelfPos );
-
-			// find a vector from the disc and its target
-			vSelfToTarget = vTarget - vSelfPos;
-
-			// get the ammo data
-			AMMO const *pAmmo = g_pWeaponMgr->GetAmmo( m_nAmmoId );
-			ASSERT( 0 != pAmmo );
-
-			// get the projectile
-			PROJECTILEFX *pProjectileFX = pAmmo->pProjectileFX;
-			ASSERT( 0 != pProjectileFX );
-
-			// get the disc class data
-			DISCCLASSDATA *pDiscClassData = 
-				dynamic_cast< DISCCLASSDATA* >( pProjectileFX->pClassData );
-			ASSERT( 0 != pDiscClassData );
-
-			// bail if we have bad data
-			if ( !pAmmo || !pProjectileFX || !pDiscClassData )
-			{
-				return false;
-			}
-
-			// get the direction
-			vSelfToTarget.Normalize();
-
-			// scale the direction to the desired velocity
-			vVel = vSelfToTarget;
-			vVel *= m_fVelocity;
-
-			// set the velocity
-			g_pPhysicsLT->SetVelocity( m_hObject, &vVel );
-
-			// orient the disc along the path of travel
-			LTRESULT ltResult;
-			LTRotation rotDiscRotation;
-			ltResult = g_pLTServer->GetObjectRotation( m_hObject, &rotDiscRotation );
-			LTVector vUp = rotDiscRotation.Up();
-			LTRotation rotNewDiscRotation( vSelfToTarget, vUp );
-			g_pLTServer->SetObjectRotation( m_hObject, &rotNewDiscRotation );
-
-			// keep track that we updated the target
-			m_bNewTarget = false;
-		}
-		break;
-
-		case DISC_TRACKING_STYLE_CONTROL_LINE:
-		{
-			//
-			// Disc tracking, pass2
-			//
-
-			LTRESULT ltResult;
-
-			//
-			// find a normalized vector pointing from the disc to the
-			// closest point on a line extending from the control point
-			// in the direction of the control direction
-			//
-
-			// get the disc position
-			LTVector vDiscPos;
-			ltResult = g_pLTServer->GetObjectPos( m_hObject, &vDiscPos );
-			ASSERT( LT_OK == ltResult );
-
-			// get the disc's current direction
-			LTVector vDiscDirection;
-			ltResult = g_pPhysicsLT->GetVelocity( m_hObject, &vDiscDirection );
-			ASSERT( LT_OK == ltResult );
-			vDiscDirection.Normalize();
-
-			// using the direction, get the point on that line that is
-			// closest to the current location of the disc
-			LTVector vVectorToControlLine;
-			LTVector vVectorToControlLineNormalized;
-			GetVectorToLine( m_vControlPosition,
-							 m_vControlDirection,
-							 vDiscPos,
-							 &vVectorToControlLine );
-			vVectorToControlLineNormalized = vVectorToControlLine;
-			vVectorToControlLineNormalized.Normalize();
-
-			//
-			// determine the incident angle
-			//
-
-			// get the elapsed time
-			LTFLOAT fLifeElapsed = g_pLTServer->GetTime() - m_fStartTime;
-
-			// find the incident angle, which is the initial angle
-			// minus the decay times the time elapsed
-			LTFLOAT fIncidentAngle;
-			fIncidentAngle = m_fIncidentAngleToControlLine -
-				m_fIncidentAngleToControlLineDecay * fLifeElapsed;
-
-			// make sure the angle is not less than 0
-			if ( DISC_EPSILON > fIncidentAngle )
-			{
-				fIncidentAngle = 0.0f;
-			}
-
-			//
-			// determine the desired direction of the disc
-			//
-
-			// convert the angle to a percentage (of 90 degrees)
-			// and linearly interpolate it
-			LTVector vDesiredDirection;
-			VEC_LERP(
-					vDesiredDirection,
-					m_vControlDirection,
-					vVectorToControlLineNormalized,
-					( ( fIncidentAngle ) / MATH_HALFPI )
-				);
-
-			// renormalize the result to eliminate the skew
-			vDesiredDirection.Normalize();
-
-			// RETAIL: Tron turns the desired direction toward a near
-			// character (0x1003c2a3)
-			UpdateMagneticHoming( &vDesiredDirection, &vDiscPos );
-
-			//
-			// determine the angle between the disc's current direction
-			// and the desired direction
-			//
-
-			// change the dot product equation around to get the angle
-			// NOTE: these should both be unit vectors
-			LTFLOAT vDirectionAngle;
-			ASSERT( DISC_EPSILON > ( 1.0f - vDesiredDirection.Mag() ) );
-			ASSERT( DISC_EPSILON > ( 1.0f - vDiscDirection.Mag() ) );
-			vDirectionAngle = ltacosf( vDesiredDirection.Dot( vDiscDirection ) );
-
-			//
-			// determine how much time has passed since the last update
-			//
-			LTFLOAT fTimeSinceLastUpdate;
-			fTimeSinceLastUpdate = g_pLTServer->GetTime() - m_fLastUpdateTime;
-
-			//
-			// interpolate the vector's current direction toward the
-			// desired direction
-			//
-
-			// determine how much to interpolate
-			LTFLOAT fInterpolation = m_fTurnRate * fTimeSinceLastUpdate;
-
-			// don't interpolate more that we're supposed to
-			if ( 1.0f < fInterpolation )
-			{
-				fInterpolation = 1.0f;
-			}
-
-			// interpolate the current and desired directions to
-			// determine the new direction to go
-			LTVector vNewDirection;
-			VEC_LERP(
-					vNewDirection,
-					vDiscDirection,
-					vDesiredDirection,
-					( m_fTurnRate * fTimeSinceLastUpdate )
-				);
-
-			// scale the new direction to the disc's travelling velocity
-			vNewDirection.Normalize();
-			LTVector vNewVelocity = vNewDirection;
-			vNewVelocity *= m_fVelocity;
-
-			// set the new velocity
-			g_pPhysicsLT->SetVelocity( m_hObject, &vNewVelocity );
-
-			//
-			// orient the disc 
-			//
-			// not currently implemented
-
-			// keep track of the update time
-			m_fLastUpdateTime = g_pLTServer->GetTime();
-		}
-		break;
-
-		default:
-		{
-			ASSERT( !"Invalid tracking style" );
-		}
-		break;
-	};
-
-	/*
-	//DANO: hardcoded lifetime
-	if ( g_pLTServer->GetTime() >= ( m_fStartTime + 10.0f ) )
-	{
-		Detonate(LTNULL);
+		LTVector vNewVel = vVel;
+		vNewVel *= g_vtDiscVelocity.GetFloat() * m_fVelocity;
+		g_pPhysicsLT->SetVelocity( m_hObject, &vNewVel );
 	}
-	*/
 
-	// we handled it
 	return true;
 }
 
@@ -3018,6 +3020,8 @@ LTVector CDisc::GetReturnToPosition(const LTVector& vOffset)
 
 bool CDisc::UpdateStateReturning()
 {
+	// RETAIL: 0x1003ca40
+
 	// pointer check
 	ASSERT( 0 != g_pLTServer );
 	ASSERT( 0 != g_pPhysicsLT );
@@ -3028,7 +3032,7 @@ bool CDisc::UpdateStateReturning()
 	// for checking return values
 	LTRESULT ltResult;
 
-	// get the current velocity, it will probably change
+	// get the current velocity
 	LTVector vVel;
 	ltResult = g_pPhysicsLT->GetVelocity( m_hObject, &vVel );
 	ASSERT( LT_OK == ltResult );
@@ -3072,12 +3076,11 @@ bool CDisc::UpdateStateReturning()
 	// get the direction
 	vSelfToTarget.Normalize();
 
-	// scale the direction to the desired velocity
-	vVel = vSelfToTarget;
-	vVel *= pDiscClassData->fReturnVelocity;
+	// scale the direction to the return velocity
+	LTVector vNewVel = vSelfToTarget * m_fReturnVelocity;
 
 	// set the velocity
-	ltResult = g_pPhysicsLT->SetVelocity( m_hObject, &vVel );
+	ltResult = g_pPhysicsLT->SetVelocity( m_hObject, &vNewVel );
 	ASSERT( LT_OK == ltResult );
 
 	// orient the disc along the path of travel
@@ -3087,13 +3090,35 @@ bool CDisc::UpdateStateReturning()
 	LTRotation rotNewDiscRotation( vSelfToTarget, vUp );
 	g_pLTServer->SetObjectRotation( m_hObject, &rotNewDiscRotation );
 
-/*
-	//DANO: hardcoded lifetime
-	if ( g_pLTServer->GetTime() >= ( m_fStartTime + 10.0f ) )
+	m_vFirePos = vSelfPos;
+	m_vDir = vSelfToTarget;
+
+	// RETAIL: the disc is back when it can not get there (in time) or
+	// when it flies past its owner in this update
+	LTVector vMove = vNewVel * ( g_pLTServer->GetFrameTime() * 1.5f );
+	LTFLOAT fDist = ( vReturnToPos - vSelfPos ).Mag();
+
+	if ( !_finite( fDist ) )
 	{
-		Detonate( LTNULL );
+		SendReturnedMessage();
 	}
-*/
+
+	if ( ( fDist / m_fReturnVelocity > 10.0f ) ||
+	     ( ( vMove.Mag() > fDist ) && ( vVel.Dot( vNewVel ) < 0.0f ) ) )
+	{
+		SendReturnedMessage();
+	}
+
+	// RETAIL: a blockable disc tests the line from its last position (not
+	// in a multiplayer game)
+	if ( IsBlockable() && !IsMultiplayerGame() )
+	{
+		LTVector vPos;
+		g_pLTServer->GetObjectPos( m_hObject, &vPos );
+		DoVectorTrace( m_vTronUnknownA14, vPos );
+	}
+
+	g_pLTServer->GetObjectPos( m_hObject, &m_vTronUnknownA14 );
 
 	// we handled it
 	return true;
