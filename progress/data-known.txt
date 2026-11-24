@@ -16,18 +16,6 @@ Object.lto	ours	SentryChallengeDistMax
 Object.lto	ours	SentryChallengeScanDistMax
 Object.lto	ours	SentryMarkDistMax
 Object.lto	retail	\tLeaving attack state, too far
-Object.lto	retail	%s:HandleGoalSenseTrigger: No Current Goal
-Object.lto	retail	%s:HandleGoalSenseTrigger: No Node
-Object.lto	retail	%s:HandleGoalSenseTrigger: No State
-Object.lto	retail	%s:HandleGoalSenseTrigger: Not Chase.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Occluded failure.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Parent failure.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Range failure.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Status not delayed.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Success
-Object.lto	retail	%s:HandleGoalSenseTrigger: Target failure.
-Object.lto	retail	%s:HandleGoalSenseTrigger: WeaponType failure.
-Object.lto	retail	%s:HandleGoalSenseTrigger: Wrong Goal Type
 Object.lto	retail	.?AVAIInfoVolume@@
 Object.lto	retail	.?AVAIInfoVolumePlugin@@
 Object.lto	retail	.?AVHostButeMgr@@
@@ -62,7 +50,6 @@ Object.lto	retail	WaveCount
 
 # UNREVIEWED, recorded at CShell.dll's first build (2026-11-02): NOLF2 1.3's shared client code with Build 69's May 2002 Tron files, merged and ported, and NOLF2's multiplayer and performance screens standing in for Tron's (docs/PLAN.md, package 4). To be worked down.
 CShell.dll	ours	 TESTING PERFORMANCE SETTINGS
-CShell.dll	ours	.?AVCDoomsdayPieceFX@@
 CShell.dll	ours	.?AVCMenuIntel@@
 CShell.dll	ours	D.dtx
 CShell.dll	ours	Interface\\DemoEndSplash1.pcx
@@ -72,7 +59,6 @@ CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing1.wav
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing2.wav
 CShell.dll	retail	 TESTING DETAIL SETTINGS
 CShell.dll	retail	.?AVCMenuEmails@@
-CShell.dll	retail	ActivationDistanceLong
 CShell.dll	retail	BriefingId
 CShell.dll	retail	Bute Truncation: %s::%s - %s
 CShell.dll	retail	Image
