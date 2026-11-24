@@ -102,9 +102,10 @@ void CHUDBuildNoteCount::Update()
 	int nLevel = g_pMissionMgr->GetCurrentLevel();
 
 	// the build notes of this level Jet has
+	int i = 0;
 	int nFound = 0;
 	uint16 nCount = g_pPlayerStats->GetIntelList()->GetCount();
-	for (int i = 0; i < nCount; i++)
+	for (; i < nCount; i++)
 	{
 		INTEL_ITEM* pItem = g_pPlayerStats->GetIntelList()->Get(i);
 		// RETAIL: 0x10022737 tests Tron's INTEL_ITEM: a build note (type 1)
@@ -115,10 +116,13 @@ void CHUDBuildNoteCount::Update()
 		}
 	}
 
-	// PORT: retail reads the level's build note count (Tron's LEVEL, +0x1004),
-	// which NOLF2's LEVEL has not
+	// RETAIL: 0x10022762: the level's build note count
 	int nTotal = 0;
-	g_pMissionButeMgr->GetLevel(nMission, nLevel);
+	LEVEL* pLevel = g_pMissionButeMgr->GetLevel(nMission, nLevel);
+	if (pLevel)
+	{
+		nTotal = pLevel->nBuildNotes;
+	}
 
 	// RETAIL: string 3223 (0xc97), "%d/%d"
 	m_pText->SetText(FormatTempString(3223, nFound, nTotal));
