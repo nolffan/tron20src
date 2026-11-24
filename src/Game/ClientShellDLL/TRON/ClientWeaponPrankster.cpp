@@ -180,6 +180,9 @@ bool CClientWeaponPrankster::PlayFireAnimation( bool bResetAni )
 
 	bool bIsCurAniDone		= !!( dwState & MS_PLAYDONE );
 
+	// RETAIL: 0x1001b5ad: a fire animation that starts a shot saves the
+	// shot's subroutines first (SaveShotSubroutines); the pre-fire
+	// animation played again falls through to the end of fire
 	if ( !bIsFireAni )
 	{
 		if ( !bResetAni )
@@ -190,18 +193,21 @@ bool CClientWeaponPrankster::PlayFireAnimation( bool bResetAni )
 
 		if ( INVALID_ANI != dwPreFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
 			return true;
 		}
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwFireAni, true, 1.0f, false );
 			return true;
 		}
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPostFireAni, true, 1.0f, false );
 			return true;
 		}
@@ -228,14 +234,15 @@ bool CClientWeaponPrankster::PlayFireAnimation( bool bResetAni )
 		}
 		else if ( bResetAni && kPrankster_KeyDown == m_nState && !m_bFire )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
-			return true;
 		}
 	}
 	else if ( bIsMainFireAni )
 	{
 		if ( bResetAni && TronUnknownVirtual164() )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwFireAni, true, 1.0f, false );
 			return true;
 		}
@@ -249,8 +256,8 @@ bool CClientWeaponPrankster::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bResetAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
-			return true;
 		}
 	}
 
