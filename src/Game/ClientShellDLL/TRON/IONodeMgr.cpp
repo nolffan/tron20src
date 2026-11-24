@@ -47,7 +47,8 @@ LTBOOL CIONodeMgr::Init(const char* szAttributeFile)
 	if (!szAttributeFile) return LTFALSE;
 	if (!Parse(szAttributeFile)) return LTFALSE;
 
-	for (int i = 0; i < IONODEMGR_MAX_CHARACTERS; i++)
+	// RETAIL: a byte counter (its loop counts down beside it, 0x1003f9a1)
+	for (uint8 i = 0; i < IONODEMGR_MAX_CHARACTERS; i++)
 	{
 		sprintf(s_aTagName, "%s%d", "Character", i);
 		if (m_buteMgr.Exist(s_aTagName))
