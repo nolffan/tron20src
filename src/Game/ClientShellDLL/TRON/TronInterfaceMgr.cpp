@@ -813,9 +813,7 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 			return LTTRUE;
 		}
 
-		// RETAIL: 0x1009e03b. Retail also masks the value to a byte
-		// (0x1009e069): this call or the GetRatingMgr() one leave the only
-		// difference
+		// RETAIL: 0x1009e03b
 		case MID_SET_PERFORMANCE_RATING:
 		{
 			uint8 nRating = pMsg->Readuint8();
