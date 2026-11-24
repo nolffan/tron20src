@@ -4689,14 +4689,10 @@ void CAIHumanStrategyShootBurst::UpdateAiming(HOBJECT hTarget)
 
 		Aim();
 	}
-	else if ( m_bUseIntervals && ( m_fBurstInterval > g_pLTServer->GetTime() ) )
+	else if ( ( m_bUseIntervals && ( m_fBurstInterval > g_pLTServer->GetTime() ) ) || m_bNeedsReload )
 	{
-		// We are still waiting to fire, so just aim.
+		// We are still waiting to fire (or need to reload), so just aim.
 		
-		Aim();
-	}
-	else if ( m_bNeedsReload )
-	{
 		Aim();
 	}
 	else
