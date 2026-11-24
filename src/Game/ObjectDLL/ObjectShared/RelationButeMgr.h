@@ -319,7 +319,16 @@ protected:
 	
 	void DoAddRelationCallback(void);
 	void DoRemoveRelationCallback(void);
-	bool IsExpired(float flCurrentTime) const;
+	// RETAIL: inline (DeleteMomentoWithCallback in transform 0x1016a410
+	// reads the time, then the timer's countdown; no out-of-line copy)
+	bool IsExpired(float flCurrentTime) const
+	{
+		if (m_eRelationMomentoType==ePermanent) 
+		{
+			return false;
+		}
+		return m_Timer.GetCountdownTime() <= 0.0f;
+	}
 
 private:
 	// Copy Constructor and Asignment Operator private to prevent 

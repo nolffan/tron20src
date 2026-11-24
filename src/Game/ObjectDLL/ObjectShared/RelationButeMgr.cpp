@@ -1227,25 +1227,6 @@ void RelationMomento::AddMomento( _listMomentos& listAddTo )
 
 //----------------------------------------------------------------------------
 //              
-//	ROUTINE:	RelationMomento::IsExpired()
-//              
-//	PURPOSE:	Returns true if the RelationMomento is expired, false if it is 
-//				not
-//              
-//----------------------------------------------------------------------------
-bool RelationMomento::IsExpired(float flCurrentTime) const
-{
-	if (m_eRelationMomentoType==ePermanent) 
-	{
-		return false;
-	}
-	// PORT: retail has no out-of-line IsExpired; the timer is taken to
-	// say when the relation expires
-	return m_Timer.Stopped();
-}
-
-//----------------------------------------------------------------------------
-//              
 //	ROUTINE:	RelationMomento::DoAddRelationCallback()
 //              
 //	PURPOSE:	Informs the owner of the Relation that the relation is being 
