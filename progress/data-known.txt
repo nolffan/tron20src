@@ -2,44 +2,26 @@
 ## <image><TAB><retail|ours><TAB><string>; `# ...` is the reason for the entries after it.
 
 # UNREVIEWED, recorded at Object.lto's first build (2026-11-02): NOLF2 1.3's shared server code with Build 69's May 2002 Tron files, ported. What differs from retail is mostly where Tron's shared code is not NOLF2's (docs/PLAN.md, package 4), still to be sorted out.
-Object.lto	ours	    MSG - SPAWN - Object '%s' already exists and is of type '%s'!
-Object.lto	ours	    MSG - SPAWN - Target object '%s' does not exist!
 Object.lto	ours	%s: Failed to set anim with props:\n
 Object.lto	ours	(scripted)
 Object.lto	ours	.?AVAIInformationVolumePlugin@@
-Object.lto	ours	ACQUIREADD
 Object.lto	ours	AI '%s' fell thru the level at pos(%.2f %.2f %.2f )!! Popping back up.
-Object.lto	ours	AirLossDamage
 Object.lto	ours	Attempting to remove AIInformationVolume "%s"! Turning Off instead.
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveCloth_1.WAV
 Object.lto	ours	Chars\\Snd\\MaleBodyMoveLeather_1.WAV
-Object.lto	ours	DropBody
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 2nd param = (%s). Bad level designer. BAD!!!\n
 Object.lto	ours	ERROR - Could not give subroutine to the player with bad 3rd param = (%s). Bad level designer. BAD!!!\n
-Object.lto	ours	ERROR! - ValidateMsgSpawn()
-Object.lto	ours	Failed to attach Snowmobile.  Check the socket on the player model!
 Object.lto	ours	Failed to set anim with props:\n
-Object.lto	ours	FullAirLostTime
-Object.lto	ours	FullAirRegenTime
 Object.lto	ours	HitPoints : %.0f\nArmor : %.0f\n
-Object.lto	ours	Item%dID
-Object.lto	ours	KnockOutInfinite
 Object.lto	ours	NONCOMPATIBLE
 Object.lto	ours	OnMarkingCommand
-Object.lto	ours	SLEEPFOREVER
 Object.lto	ours	SentryChallengeDistMax
 Object.lto	ours	SentryChallengeScanDistMax
 Object.lto	ours	SentryMarkDistMax
-Object.lto	ours	Snd\\Powerups\\spawn_player.wav
 Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0
-Object.lto	ours	WelderBurn
-Object.lto	ours	import KERNEL32.dll OpenFile
 Object.lto	retail	\tLeaving attack state, too far
 Object.lto	retail	\nArmor : 
-Object.lto	retail	         Ignoring trigger "SetHitPoints"
 Object.lto	retail	 cannot add relation: %s %s %s due to existing conflicting permanet relation
-Object.lto	retail	%s (active)
-Object.lto	retail	%s (inactive)
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Current Goal
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Node
 Object.lto	retail	%s:HandleGoalSenseTrigger: No State
@@ -52,109 +34,49 @@ Object.lto	retail	%s:HandleGoalSenseTrigger: Success
 Object.lto	retail	%s:HandleGoalSenseTrigger: Target failure.
 Object.lto	retail	%s:HandleGoalSenseTrigger: WeaponType failure.
 Object.lto	retail	%s:HandleGoalSenseTrigger: Wrong Goal Type
-Object.lto	retail	%s\\Attributes\\subroutines.txt
 Object.lto	retail	(Locked)
 Object.lto	retail	.?AVAIInfoVolume@@
 Object.lto	retail	.?AVAIInfoVolumePlugin@@
 Object.lto	retail	.?AVHostButeMgr@@
-Object.lto	retail	1PCAM
-Object.lto	retail	3PCAM
 Object.lto	retail	AI '%s' fell thru the level!! Popping back up.
-Object.lto	retail	AIInfoVolume
-Object.lto	retail	AIShowEnergyCLawDamage
-Object.lto	retail	AIShowEnergyClawDamage
-Object.lto	retail	AIShowPRodDamage
 Object.lto	retail	AIShowStateAttack
-Object.lto	retail	ANNOUNCEMENTFINALVERSIONNUMBER
 Object.lto	retail	ARMOR_UNLOCK
-Object.lto	retail	ATTACHSTANDINGON
 Object.lto	retail	Anim Name: 
 Object.lto	retail	Anim Props: 
 Object.lto	retail	Attempting to remove AIInfoVolume "%s"! Turning Off instead.
 Object.lto	retail	Attributes\\Subroutines.txt
-Object.lto	retail	BinaryBit::HandleActivateMessage - ERROR - Binary Bit was in a powered down state but had no energy requirements.\n  Since 0 was specified, the bit should have started at it's socket.\n
-Object.lto	retail	BinaryBitInvalidPSet
 Object.lto	retail	BriefingId
 Object.lto	retail	Bute Truncation: %s::%s - %s
-Object.lto	retail	CAMFX
 Object.lto	retail	CLEARPATHKNOWLEDGE
-Object.lto	retail	CONTINUOUSFIRERELEASE
-Object.lto	retail	CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.
 Object.lto	retail	CascadeRate
 Object.lto	retail	CircuitCompleteId
 Object.lto	retail	CircuitCompleteSound
 Object.lto	retail	CircuitNameId
 Object.lto	retail	CyclesAllowed
-Object.lto	retail	DECISIONABORTED
-Object.lto	retail	DestroyProjectile
-Object.lto	retail	DiscEnergy_Cyan
-Object.lto	retail	DiscEnergy_Green
-Object.lto	retail	DiscEnergy_Orange
-Object.lto	retail	DiscEnergy_Purple
-Object.lto	retail	DiscEnergy_Red
-Object.lto	retail	DiscEnergy_White
-Object.lto	retail	DiscEnergy_Yellow
-Object.lto	retail	ENABLELCDIALOG
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 2nd param = (%s).\n
 Object.lto	retail	ERROR - Could not give subroutine to the player with bad 3rd param = (%s).\n
-Object.lto	retail	ERROR - Could not spawn AI!
-Object.lto	retail	ERROR - Looked for LCSpawner%2d and found %d objects!\n
-Object.lto	retail	Early out - Bad Damager Position!
-Object.lto	retail	Early out - No hDamager!
-Object.lto	retail	Early out - Not a character!
-Object.lto	retail	Early out - Unable to get rotation!
-Object.lto	retail	Electrocute.wav
-Object.lto	retail	EnergyClawCrouch
 Object.lto	retail	FOREIGN
-Object.lto	retail	FULLENERGY
 Object.lto	retail	From: 
-Object.lto	retail	HIDE_ATTACHFX 0
 Object.lto	retail	HitPoints : 
 Object.lto	retail	IONode
 Object.lto	retail	Image
 Object.lto	retail	InitialLives
 Object.lto	retail	InitiallyLock
 Object.lto	retail	Joint6
-Object.lto	retail	KILLALLAILC
-Object.lto	retail	LCSpawner%02d
 Object.lto	retail	LISTEN
-Object.lto	retail	LOCKDISC
-Object.lto	retail	MANAGESUBS
-Object.lto	retail	MAXZOOM
 Object.lto	retail	MapName
 Object.lto	retail	MaxRadius
 Object.lto	retail	ModelTemplate
-Object.lto	retail	Name LC%02d;CycleColor %s
 Object.lto	retail	NameKey
 Object.lto	retail	Optimizer
-Object.lto	retail	PRodCrouch
-Object.lto	retail	Prankstered
-Object.lto	retail	RACETRIGGER
-Object.lto	retail	RACETRIGGERNO
-Object.lto	retail	RESET_ATTACHFX 0
 Object.lto	retail	RequiredPermissionSets
-Object.lto	retail	SELECT
-Object.lto	retail	SETBUILDPOINTS
 Object.lto	retail	SETONLYDAMAGEBYPLAYER
-Object.lto	retail	SETSUBHELP
-Object.lto	retail	SETSYSTEMCONFIG
-Object.lto	retail	SHOW_ATTACHFX 0
-Object.lto	retail	SPAWNAICYCLES
-Object.lto	retail	STARTSUPERCYCLE
-Object.lto	retail	SetEnergy
-Object.lto	retail	SetHitPoints
 Object.lto	retail	StandardCycleRestrictionId
 Object.lto	retail	SuperCycleRestrictionId
 Object.lto	retail	T_PRodLightning
-Object.lto	retail	TestHitByCorruption
 Object.lto	retail	Transitioning: 
 Object.lto	retail	Unlocks
-Object.lto	retail	WAVECOMPLETE
-Object.lto	retail	Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0
 Object.lto	retail	WaveCount
-Object.lto	retail	choke01.wav
-Object.lto	retail	choke02.wav
-Object.lto	retail	import KERNEL32.dll GetFileAttributesA
 Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@I@Z
 Object.lto	retail	import MSVCIRT.dll ??6ostream@@QAEAAV0@PBX@Z
 Object.lto	retail	import MSVCIRT.dll ?clear@ios@@QAEXH@Z
@@ -162,8 +84,6 @@ Object.lto	retail	import MSVCIRT.dll ?ends@@YAAAVostream@@AAV1@@Z
 Object.lto	retail	import MSVCIRT.dll ?freeze@strstreambuf@@QAEXH@Z
 Object.lto	retail	import MSVCIRT.dll ?lock@ios@@QAAXXZ
 Object.lto	retail	import MSVCIRT.dll ?unlock@ios@@QAAXXZ
-Object.lto	retail	null.wav
-Object.lto	retail	snd\\event\\spawn_player.wav
 
 # UNREVIEWED, recorded at CShell.dll's first build (2026-11-02): NOLF2 1.3's shared client code with Build 69's May 2002 Tron files, merged and ported, and NOLF2's multiplayer and performance screens standing in for Tron's (docs/PLAN.md, package 4). To be worked down.
 CShell.dll	ours	 TESTING PERFORMANCE SETTINGS
@@ -183,19 +103,12 @@ CShell.dll	ours	FrameRect
 CShell.dll	ours	Interface\\DemoEndSplash1.pcx
 CShell.dll	ours	Interface\\DemoEndSplash2.pcx
 CShell.dll	ours	Interface\\DemoEndSplash3.pcx
-CShell.dll	ours	ListFontFace
-CShell.dll	ours	Progress
 CShell.dll	ours	Rabbit
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing1.wav
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing2.wav
-CShell.dll	ours	SplashScreenTime
-CShell.dll	ours	UVProgressEmpty
-CShell.dll	ours	UVProgressFull
 CShell.dll	ours	attributes\\damagefx.txt
-CShell.dll	ours	import KERNEL32.dll OpenFile
 CShell.dll	ours	import MSVCRT.dll _mbsinc
 CShell.dll	ours	import MSVCRT.dll _mbsnbcnt
-CShell.dll	ours	import MSVCRT.dll strrchr
 CShell.dll	retail	 TESTING DETAIL SETTINGS
 CShell.dll	retail	%i players are waiting for you
 CShell.dll	retail	%s is waiting for you.
@@ -209,7 +122,6 @@ CShell.dll	retail	ActivationDistanceLong
 CShell.dll	retail	AutoAmmoSwitch
 CShell.dll	retail	BriefingId
 CShell.dll	retail	Bute Truncation: %s::%s - %s
-CShell.dll	retail	CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.
 CShell.dll	retail	Debug LipFlap: 'else if( m_pEightBitBuffer )' returned true
 CShell.dll	retail	Debug LipFlap: 'if ( !m_hSound || g_pLTClient->IsDone(m_hSound) )' returned false
 CShell.dll	retail	Debug LipFlap: 'if (!m_pSixteenBitBuffer && !m_pEightBitBuffer)' returned true
@@ -227,14 +139,10 @@ CShell.dll	retail	Debug LipFlap: g_pLTClient->GetSoundOffset() returned LT_OK
 CShell.dll	retail	Font0
 CShell.dll	retail	Image
 CShell.dll	retail	IntroEntryHeight
-CShell.dll	retail	LC_sparks
 CShell.dll	retail	LINEAR DAMAGE: %.2f
 CShell.dll	retail	LightCyclePurple_1
 CShell.dll	retail	LightCyclePurple_2
 CShell.dll	retail	LightCyclePurple_3
-CShell.dll	retail	MouseTrailFix
-CShell.dll	retail	ObjectiveSpacing
-CShell.dll	retail	OverlayModelDist
 CShell.dll	retail	SLOW ON DAMAGE: %.2f
 CShell.dll	retail	SuperCycle_Green_1
 CShell.dll	retail	SuperCycle_Green_2
@@ -251,14 +159,10 @@ CShell.dll	retail	_touch
 CShell.dll	retail	buildpoints_bar
 CShell.dll	retail	dead_optimizer
 CShell.dll	retail	deadloop
-CShell.dll	retail	guns\\skins_pv\\MultiHands_pv.dtx
-CShell.dll	retail	import KERNEL32.dll GetFileAttributesA
 CShell.dll	retail	import MSVCRT.dll wcsncmp
 CShell.dll	retail	interface/menu/art/E3Upsell.pcx
 CShell.dll	retail	interface/menu/art/E3Upsell_2.pcx
-CShell.dll	retail	mission_obj
 CShell.dll	retail	msgfadeout
-CShell.dll	retail	objectives
 CShell.dll	retail	optimizer_bg
 CShell.dll	retail	rating%d
 CShell.dll	retail	ratings_bar_surge
