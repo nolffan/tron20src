@@ -986,14 +986,21 @@ void CDiscMatchMgr::Update()
 	{
 		if (g_pLTServer->GetTime() > m_fStartTime && m_fStartTime > 0.0f)
 		{
+			bool bOk;
 			if (m_nTronUnknown28 != -1)
 			{
-				g_pGameServerShell->SwitchToLevel(m_nTronUnknown28);
+				bOk = g_pGameServerShell->SwitchToLevel(m_nTronUnknown28);
 				m_nTronUnknown28 = -1;
 			}
 			else
 			{
-				g_pGameServerShell->NextLevel();
+				bOk = g_pGameServerShell->NextLevel();
+			}
+
+			// RETAIL: a failed switch keeps the level going (0x1004a097)
+			if (!bOk)
+			{
+				m_bLevelOver = m_bLevelOverWarning = false;
 			}
 
 			m_fStartTime = -1.0f;

@@ -175,31 +175,18 @@ void TurnAngleTowards(float &fAngle, float fTarget, float fStep)
 	float fDiff = fTarget - fAngle;
 	if (fDiff > MATH_EPSILON || fDiff < -MATH_EPSILON)
 	{
-		if ((float)fabs(fDiff) < fStep)
+		if (fabs(fDiff) < fStep)
 		{
 			fAngle = fTarget;
 		}
-		else if (fTarget > fAngle)
+		// RETAIL: one subtract and one add for both directions
+		else if (fTarget > fAngle ? fDiff <= MATH_PI : fAngle - fTarget > MATH_PI)
 		{
-			if (fDiff > MATH_PI)
-			{
-				fAngle -= fStep;
-			}
-			else
-			{
-				fAngle += fStep;
-			}
+			fAngle += fStep;
 		}
 		else
 		{
-			if (fAngle - fTarget > MATH_PI)
-			{
-				fAngle += fStep;
-			}
-			else
-			{
-				fAngle -= fStep;
-			}
+			fAngle -= fStep;
 		}
 	}
 }

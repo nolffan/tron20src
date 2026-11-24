@@ -235,13 +235,14 @@ void CHUDLightCycleRoster::UpdateLayout()
 
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
 
-	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetIntroMasterPos(nCurrentLayout);
+	// RETAIL: 0x1002eb68..0x1002ecfc: the roster's own values
+	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterPosition(nCurrentLayout);
 	pos.x = (int)(pos.x * fXRatio);
 	pos.y = (int)(pos.y * fYRatio);
 	int nTextHeight = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterTextHeight(nCurrentLayout) * fYRatio);
-	int nTextOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetIntroEntrySpace(nCurrentLayout) * fXRatio);
-	int nLineOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetIntroHeaderOffset(nCurrentLayout) * fYRatio);
-	bool bScaleIcons = (g_pTronLayoutMgr->GetLCHUDHelper()->GetIntroTitleSpace(nCurrentLayout) != 0);
+	int nTextOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterTextOffset(nCurrentLayout) * fXRatio);
+	int nLineOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterLineOffset(nCurrentLayout) * fYRatio);
+	bool bScaleIcons = (g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterEnableIconScaling(nCurrentLayout) != 0);
 
 	LTFLOAT fX = (LTFLOAT)pos.x;
 	LTFLOAT fY = (LTFLOAT)pos.y;

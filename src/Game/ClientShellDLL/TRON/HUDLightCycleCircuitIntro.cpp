@@ -150,18 +150,19 @@ void CHUDLightCycleCircuitIntro::UpdateLayout()
 
 	LCHUDHelper* pHelper = dynamic_cast<CTronLayoutMgr*>(g_pLayoutMgr)->GetLCHUDHelper();
 
-	LTIntPt pos = pHelper->GetRosterPosition(nCurrentLayout);
+	// RETAIL: 0x1002ca0c..0x1002cb0c: the intro's own layout values
+	LTIntPt pos = pHelper->GetIntroMasterPos(nCurrentLayout);
 	int x = (int)(pos.x * fXRatio);
 	int y = (int)(pos.y * fYRatio);
 
-	int nNameOffset = (int)(pHelper->GetSpeedometerFontNum(nCurrentLayout) * fYRatio);
-	int nHBorder = (int)(pHelper->GetSpeedometerFrameWidth(nCurrentLayout) * fXRatio);
-	int nNameHeight = (int)(pHelper->GetRosterTextOffset(nCurrentLayout) * fYRatio);
-	int nTextHeight = (int)(pHelper->GetRosterEnableIconScaling(nCurrentLayout) * fYRatio);
-	int nVBorder = (int)(pHelper->GetIntroValueOffset(nCurrentLayout) * fYRatio);
-	int nLineGap = (int)(pHelper->GetIntroVFrameBorder(nCurrentLayout) * fYRatio);
-	int nLabelOffset = (int)(pHelper->GetIntroTitleHeight(nCurrentLayout) * fXRatio);
-	int nValueOffset = (int)(pHelper->GetIntroHFrameBorder(nCurrentLayout) * fXRatio);
+	int nNameOffset = (int)(pHelper->GetIntroVFrameBorder(nCurrentLayout) * fYRatio);
+	int nHBorder = (int)(pHelper->GetIntroHFrameBorder(nCurrentLayout) * fXRatio);
+	int nNameHeight = (int)(pHelper->GetIntroTitleHeight(nCurrentLayout) * fYRatio);
+	int nTextHeight = (int)(pHelper->GetIntroEntryHeight(nCurrentLayout) * fYRatio);
+	int nVBorder = (int)(pHelper->GetIntroTitleSpace(nCurrentLayout) * fYRatio);
+	int nLineGap = (int)(pHelper->GetIntroEntrySpace(nCurrentLayout) * fYRatio);
+	int nLabelOffset = (int)(pHelper->GetIntroHeaderOffset(nCurrentLayout) * fXRatio);
+	int nValueOffset = (int)(pHelper->GetIntroValueOffset(nCurrentLayout) * fXRatio);
 
 	m_pName->SetFont(g_pInterfaceResMgr->GetFontForHeight(nNameHeight));
 	m_pName->SetCharScreenHeight(nNameHeight);

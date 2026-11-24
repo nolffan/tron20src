@@ -951,10 +951,9 @@ bool CMissionMgr::SendStartGameMessage( )
 	// Tell the server to start with the specified bute.
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_START_GAME );
-	// RETAIL: 0x100ec3e0: Tron adds the profile's byte at +0x73 (as a bool;
-	// our CUserProfile names it m_nBandwidthClient, the name may be wrong)
+	// RETAIL: 0x100ec3e0: Tron adds the profile's m_bBodiesAllowed (+0x73)
 	// and the mission bute file
-	cMsg.Writebool( !!pProfile->m_nBandwidthClient );
+	cMsg.Writebool( pProfile->m_bBodiesAllowed );
 	cMsg.WriteString( g_pMissionButeMgr->GetAttributeFile( ));
 
 	g_pLTClient->SendToServer( cMsg.Read(), MESSAGE_GUARANTEED );

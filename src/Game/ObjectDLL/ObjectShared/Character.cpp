@@ -1309,13 +1309,10 @@ bool CCharacter::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		ResetCrosshair( );
 		return true;
 	}
-	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions )
+	else if ( cMsg.GetArg(0) == s_cTok_PlayerPermissions && cMsg.GetArgCount() > 1 )
 	{
 		// RETAIL: Tron's (0x1008c084)
-		if( cMsg.GetArgCount() > 1 )
-		{
-			m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
-		}
+		m_bPlayerPermissions = !!IsTrueChar( *cMsg.GetArg(1) );
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_Remove )
 	{
@@ -1753,9 +1750,8 @@ void CCharacter::CreateSpecialFX(LTBOOL bUpdateClients /* =LTFALSE */)
 	m_pcs->nTrackers				= 0;								// Subclasses need to fill this in in precreate
 	m_pcs->nDimsTracker				= MAIN_TRACKER;						// Main tracker
 	m_pcs->fStealthPercent			= m_damage.GetStealthModifier();
-	m_pcs->bTracking				= m_bTracking;
-	m_pcs->bRadarVisible			= m_bRadarVisible;
-	m_pcs->nCarrying				= m_nCarrying;
+	// RETAIL: Tron's (0x1008cf00) does not fill bTracking, bRadarVisible
+	// and nCarrying here.
 	
 
 	// If our Crosshair is unknown, then the effect gets the result of
@@ -1773,7 +1769,10 @@ void CCharacter::CreateSpecialFX(LTBOOL bUpdateClients /* =LTFALSE */)
 	}
 
 	m_pcs->eCrosshairCharacterClass = m_ccCrosshair;
-	m_pcs->nDamageFlags				= m_nDamageFlags;
+	// RETAIL: Tron's (0x1008d010) puts m_nDamageFlags into the first
+	// 64-bit field (+0x30) and m_nInstantDamageFlags into the second.
+	m_pcs->nInstantDamageFlags		= m_nDamageFlags;
+	m_pcs->nDamageFlags				= m_nInstantDamageFlags;
 	m_pcs->fPitch					= m_fPitch;
 
 
@@ -2203,13 +2202,15 @@ LTRotation CCharacter::GetRotationWithPitch( ) const
 	LTRotation rRot;
 	g_pLTServer->GetObjectRotation( m_hObject, &rRot );
 
-	// Convert the pitch percentage into radians.
-	float fPitchRadians = ( m_fPitch - 0.5f ) * MATH_PI;
+	// RETAIL: Tron's (0x1008e080) levels the object's rotation, then
+	// pitches it by m_fPitch (radians)
+	LTVector vForward = rRot.Forward( );
+	LTRotation rLevel( LTVector( vForward.x, 0.0f, vForward.z ), LTVector( 0.0f, 1.0f, 0.0f ));
 
 	// Rotate with the pitch.
-	rRot.Rotate( rRot.Right( ), fPitchRadians );
+	rLevel.Rotate( rLevel.Right( ), m_fPitch );
 
-	return rRot;
+	return rLevel;
 }
 		
 // ----------------------------------------------------------------------- //
@@ -3513,6 +3514,8 @@ bool CCharacter::DoLipSyncingOnDlgSound( HOBJECT hSpeaker )
 
 void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 {
+	// RETAIL: Tron's (0x10090970): no multiplayer duration sound, no
+	// death-sound case and no sound type in the messages
 	if (!pSound || !pSound[0]) return;
 	if ((m_damage.IsDead() && eType != CST_DEATH)) return;
 	if (eType == CST_AI_SOUND && (sm_cAISnds >= 2)) return;
@@ -3522,60 +3525,13 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 
 	KillDlgSnd();
 
-
 	// Check if character is supposed to lipsync.  Also, don't do lipsyncing on the 
 	// player in singleplayer.
-    bool bLipSync = DoLipSyncingOnDlgSound( m_hObject );
+	bool bLipSync = DoLipSyncingOnDlgSound( m_hObject );
 
-
-	//HACK: We need to determine the duration of the dialogue sound so we can effectively time out
-	//		in case one or more of the clients is not responding. In order to determine the duration,
-	//		we have to start playing the sound...
-	LTFLOAT fDuration = 0.0;
-	if (IsMultiplayerGame() && (bLipSync || DoDialogueSubtitles()) )
-	{
-	
-		uint32 dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_TIME;
-		LTFLOAT fRadius = 1.0f;
-		uint8 nVolume = SMGR_DEFAULT_VOLUME;
-		HLTSOUND hTmpSnd = g_pServerSoundMgr->PlaySoundFromObject(m_hObject, const_cast<char*>(pSound),
-			fRadius, m_eSoundPriority, dwFlags, nVolume, 1.0f, -1.0f, SPEECH_SOUND_CLASS );
-
-		g_pLTServer->SoundMgr()->GetSoundDuration(hTmpSnd, fDuration);
-
-		g_pLTServer->SoundMgr()->KillSound(hTmpSnd);
-
-		fDuration += kDialogueTimeFudgeFactor;
-		// PORT: no dialogue timer to start (above)
-
-	}
-
-
-	//special case for handling death sounds. We can't track these sounds because both the
-	// character object and the characterFX object may be destroyed before the sound finishes
-	// and we don't want wither of these events to kill the sound
-	if ((bLipSync || DoDialogueSubtitles()) && (eType == CST_DEATH) )
-	{
-		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
-
-		CAutoMessage cMsg;
-		cMsg.Writeuint8(MID_SFX_MESSAGE);
-		cMsg.Writeuint8(SFX_CHARACTER_ID);
-		cMsg.WriteObject(m_hObject);
-		cMsg.Writeuint8(CFX_DIALOGUE_MSG);
-		cMsg.WriteHString(hStr);
-		cMsg.Writefloat(m_fSoundRadius);
-		m_nUniqueDialogueId++;
-		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
-		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-
-		g_pLTServer->FreeString(hStr);
-	}
-	else if (bLipSync)
+	if (bLipSync)
 	{
 		// Tell the client to play the sound (lip synched)...
-		// TO DO: Remove sending of sound path, send sound id instead...
 
 		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
 
@@ -3588,15 +3544,14 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 		cMsg.Writefloat(m_fSoundRadius);
 		m_nUniqueDialogueId++;
 		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		g_pLTServer->FreeString(hStr);
 
 		// Recored who we sent this message to.
-		m_PlayerTrackerDialogue.Init( *this );
+		m_PlayerTrackerDialogue.Init( *static_cast<IPlayerTrackerReceiver*>( this ));
 	}
-	else if (DoDialogueSubtitles() || (eType == CST_DAMAGE))
+	else if (DoDialogueSubtitles())
 	{
 		HSTRING hStr = g_pLTServer->CreateString(const_cast<char*>(pSound));
 
@@ -3609,13 +3564,12 @@ void CCharacter::PlayDialogSound(const char* pSound, CharacterSoundType eType)
 		cMsg.Writefloat(m_fSoundRadius);
 		m_nUniqueDialogueId++;
 		cMsg.Writeuint8( m_nUniqueDialogueId );
-		cMsg.Writeuint8( eType );
 		g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 
 		g_pLTServer->FreeString(hStr);
 
 		// Recored who we sent this message to.
-		m_PlayerTrackerDialogue.Init( *this );
+		m_PlayerTrackerDialogue.Init( *static_cast<IPlayerTrackerReceiver*>( this ));
 	}
 	else
 	{
@@ -4507,10 +4461,10 @@ void CCharacter::Save(ILTMessage_Write *pMsg)
 	SAVE_COBJECT(m_pLastPlayerInfoVolume);		// RETAIL: Tron's (Character.h)
 	SAVE_COBJECT(m_pCurrentPlayerInfoVolume);
 
-	// RETAIL: these two are written inline (0x10092793), the vectors above
-	// with WriteType out of line
-	pMsg->WriteData(&m_vLastVolumePos, sizeof(LTVector) * 8);
-	pMsg->WriteData(&m_vLastInformationVolumePos, sizeof(LTVector) * 8);
+	// RETAIL: these two are written with WriteType, inline (0x10092793);
+	// the SAVE_VECTORs above call it out of line
+	pMsg->WriteType(m_vLastVolumePos);
+	pMsg->WriteType(m_vLastInformationVolumePos);
 	SAVE_BYTE(m_byFXFlags);
 	SAVE_BOOL(m_bShortRecoiling);
 	SAVE_HSTRING(m_hstrHeadExtension);

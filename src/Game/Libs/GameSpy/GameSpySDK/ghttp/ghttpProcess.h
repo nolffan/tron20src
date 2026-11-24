@@ -19,7 +19,6 @@ extern "C" {
 #endif
 
 void ghiDoSocketInit	  (GHIConnection * connection);
-void ghiDoHostLookup      (GHIConnection * connection);
 void ghiDoConnecting      (GHIConnection * connection);
 void ghiDoSendingRequest  (GHIConnection * connection);
 void ghiDoPosting         (GHIConnection * connection);

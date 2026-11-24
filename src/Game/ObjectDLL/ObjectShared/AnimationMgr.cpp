@@ -1142,6 +1142,12 @@ CAnimationMgr::CAnimationMgr()
 
 LTBOOL CAnimationMgr::Init(const char* szFilename)
 {
+	// RETAIL: Tron's checks for no file name first (0x101b044f)
+	if ( !szFilename )
+	{
+		return LTFALSE;
+	}
+
 	if ( m_bInitialized )
 	{
         g_pLTServer->CPrint("Attempted to initialize the same CAnimationMgr twice.");

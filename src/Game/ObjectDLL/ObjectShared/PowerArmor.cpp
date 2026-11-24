@@ -478,13 +478,13 @@ bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPo
 		fExtraDamage = pProjectile->m_fTronUnknown84 * pProjectile->m_fTronUnknown80;
 	}
 
-	LTFLOAT fHitPoints = m_fHitPoints - ( fDamage + fExtraDamage );
+	LTFLOAT fHitPoints = GetHitPoints() - ( fExtraDamage + fDamage );
 	if ( fHitPoints <= 0.0f )
 	{
 		fHitPoints = 0.0f;
 	}
 
-	fDamage = fDamage - m_fHitPoints;
+	fDamage = fDamage - GetHitPoints();
 
 	if ( m_bCanDamage )
 	{
@@ -831,6 +831,25 @@ void OccludingArmor::ReadShieldProps(ObjectCreateStruct* pData)
 
 //----------------------------------------------------------------------------
 //              
+//	ROUTINE:	OccludingArmor::TronUnknownVirtual24()
+//              
+//	PURPOSE:	RETAIL: 0x1013c3e0: add the object the armor is attached to
+//				(as a hit box user) to a list, as CThorne does with its ball
+//              
+//----------------------------------------------------------------------------
+/*virtual*/ void OccludingArmor::TronUnknownVirtual24(int nArg)
+{
+	std::list<IHitBoxUser*>* pList = (std::list<IHitBoxUser*>*)nArg;
+
+	IHitBoxUser* pUser = dynamic_cast<IHitBoxUser*>(g_pLTServer->HandleToObject(m_hParentObject));
+	if (pUser)
+	{
+		pList->push_back(pUser);
+	}
+}
+
+//----------------------------------------------------------------------------
+//              
 //	ROUTINE:	OccludingArmor::Update()
 //              
 //	PURPOSE:	
@@ -854,9 +873,10 @@ void OccludingArmor::Update()
 	LTVector vDims;
 	g_pPhysicsLT->GetObjectDims(m_hParentObject, &vDims);
 
-	// NOTE: near; retail computes the sum later (register scheduling)
-	LTVector vArmorDims = vDims + LTVector( 16.0f, 16.0f, 16.0f );
-	g_pPhysicsLT->SetObjectDims(m_hObject, &vArmorDims, 0);
+	// RETAIL: the armor and its hit box both get the parent's dims
+	// grown by 16 (0x1013c4f6)
+	vDims = LTVector( vDims.x + 16.0f, vDims.y + 16.0f, vDims.z + 16.0f );
+	g_pPhysicsLT->SetObjectDims(m_hObject, &vDims, 0);
 	g_pPhysicsLT->SetObjectDims(m_hHitBox, &vDims, 0);
 
 	uint32 dwFlags;

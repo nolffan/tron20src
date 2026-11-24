@@ -50,7 +50,7 @@ class CPlayerSoundFX : public CSpecialFX
 			m_nType		= 0;
 			m_nWeaponId	= 0;
 			m_fVolumeScale	= 0.0f;
-			m_bTronUnknown	= false;
+			m_bTronUnknown	= true;	// RETAIL: CShell.dll 0x10109077
 		}
 
 		~CPlayerSoundFX()

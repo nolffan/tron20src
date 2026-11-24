@@ -264,10 +264,15 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 		// Get the skeleton's default death/long recoil anis
 
 		// RETAIL: Tron reads lists of animations (Object.lto 0x100c2b92)
-		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_DEATH_ANI, m_aSkeletons[iSkeleton].m_lstDefaultFrontDeathAni);
-		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_DEATH_ANI, m_aSkeletons[iSkeleton].m_lstDefaultBackDeathAni);
-		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_FRONT_SHORTRECOIL_ANI, m_aSkeletons[iSkeleton].m_lstDefaultFrontShortRecoilAni);
-		GetButeStringList(m_buteMgr, s_aTagName, MODELBMGR_SKELETON_DEFAULT_BACK_SHORTRECOIL_ANI, m_aSkeletons[iSkeleton].m_lstDefaultBackShortRecoilAni);
+		// RETAIL: Object.lto 0x100c2b6c: each name goes through s_aAttName
+		sprintf(s_aAttName, MODELBMGR_SKELETON_DEFAULT_FRONT_DEATH_ANI);
+		GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_lstDefaultFrontDeathAni);
+		sprintf(s_aAttName, MODELBMGR_SKELETON_DEFAULT_BACK_DEATH_ANI);
+		GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_lstDefaultBackDeathAni);
+		sprintf(s_aAttName, MODELBMGR_SKELETON_DEFAULT_FRONT_SHORTRECOIL_ANI);
+		GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_lstDefaultFrontShortRecoilAni);
+		sprintf(s_aAttName, MODELBMGR_SKELETON_DEFAULT_BACK_SHORTRECOIL_ANI);
+		GetButeStringList(m_buteMgr, s_aTagName, s_aAttName, m_aSkeletons[iSkeleton].m_lstDefaultBackShortRecoilAni);
 
 		// Get the skeleton's default hit node
 
@@ -2076,34 +2081,37 @@ bool CModelButeMgr::ReadMPModelColor(int iModel, int iColor)
 		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_SKIN, iModel, iColor, iSkin);
 	}
 
-	if (iSkin <= 0)
-		return false;
-
-	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_REZIN, iModel, iColor);
-	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+	// RETAIL: Object.lto 0x100c54a5: the failure return is the last block
+	if (iSkin > 0)
 	{
-		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
-		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(s_szBuffer));
-	}
-	else
-	{
-		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(""));
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_REZIN, iModel, iColor);
+		if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+		{
+			m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+			m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(s_szBuffer));
+		}
+		else
+		{
+			m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(""));
+		}
+
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_HHDISC, iModel, iColor);
+		if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+		{
+			m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+			m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(s_szBuffer));
+		}
+		else
+		{
+			m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(""));
+		}
+
+		m_aMPModels[iModel].m_vecColorSkins.push_back(lstSkins);
+
+		return true;
 	}
 
-	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_HHDISC, iModel, iColor);
-	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
-	{
-		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
-		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(s_szBuffer));
-	}
-	else
-	{
-		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(""));
-	}
-
-	m_aMPModels[iModel].m_vecColorSkins.push_back(lstSkins);
-
-	return true;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////
