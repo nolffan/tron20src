@@ -479,64 +479,63 @@ LIGHT_CYCLIST* CServerLightCycleMgr::AddCyclist(HOBJECT hObj, const char* szCycl
 	const LTVector* pvDims, uint32 nNameId, bool bTronUnknown)
 {
 	LIGHT_CYCLIST* pCyclist = CLightCycleMgr::AddCyclist(hObj, szCycleColor, bUpdate, pvDims, 0, true);
-	if(!pCyclist)
-		return NULL;
-
-	if(!pvDims)
+	if(pCyclist)
 	{
-		// An AI
-		ClearDialogQueue();
-		if(m_collCyclists.size() <= 2)
+		if(!pvDims)
 		{
-			m_fDialogDelay = 0.0f;
-			m_fDialogPauseTime = 0.0f;
-			m_bDialogPlayed = false;
+			// An AI
+			ClearDialogQueue();
+			if(m_collCyclists.size() <= 2)
+			{
+				m_fDialogDelay = 0.0f;
+				m_fDialogPauseTime = 0.0f;
+				m_bDialogPlayed = false;
+			}
+			PlayDialog(pCyclist, kLCDialog_AIStart);
 		}
-		PlayDialog(pCyclist, kLCDialog_AIStart);
-	}
 
-	CAutoMessage cMsg;
-	cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
-	cMsg.Writeuint8(LCI_ADD_CYCLIST);
-	cMsg.WriteObject(hObj);
-	cMsg.WriteString(szCycleColor);
-	cMsg.Writebool(bUpdate);
-	cMsg.Writeint8((int8)pCyclist->vForward.x);
-	cMsg.Writeint8((int8)pCyclist->vForward.z);
-	cMsg.Writebool(bTronUnknown);
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_LIGHT_CYCLE_INFO);
+		cMsg.Writeuint8(LCI_ADD_CYCLIST);
+		cMsg.WriteObject(hObj);
+		cMsg.WriteString(szCycleColor);
+		cMsg.Writebool(bUpdate);
+		cMsg.Writeint8((int8)pCyclist->vForward.x);
+		cMsg.Writeint8((int8)pCyclist->vForward.z);
+		cMsg.Writebool(bTronUnknown);
 
-	if(IsPlayer(hObj))
-	{
-		CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hObj);
-		if(!pPlayer)
-			return NULL;
-
-		pCyclist->nNameId = 0;
-		pCyclist->nClientID = g_pLTServer->GetClientID(pPlayer->GetClient());
-		cMsg.Writeuint32(pCyclist->nClientID);
-		cMsg.Writeuint32(pCyclist->nNameId);
-		cMsg.Writebool(true);
-		cMsg.WriteLTVector(*pvDims);
-	}
-	else
-	{
-		ModelId eModelId = g_pModelButeMgr->GetModelId("GridCyclist");
-		if(nNameId)
+		if(IsPlayer(hObj))
 		{
-			pCyclist->nNameId = nNameId;
+			CPlayerObj* pPlayer = (CPlayerObj*)g_pLTServer->HandleToObject(hObj);
+			if(!pPlayer)
+				return NULL;
+
+			pCyclist->nNameId = 0;
+			cMsg.Writeuint32(pCyclist->nClientID = g_pLTServer->GetClientID(pPlayer->GetClient()));
+			cMsg.Writeuint32(pCyclist->nNameId);
+			cMsg.Writebool(true);
+			cMsg.WriteLTVector(*pvDims);
 		}
 		else
 		{
-			pCyclist->nNameId = g_pModelButeMgr->GetModelNameId(eModelId);
+			ModelId eModelId = g_pModelButeMgr->GetModelId("GridCyclist");
+			if(nNameId)
+			{
+				pCyclist->nNameId = nNameId;
+			}
+			else
+			{
+				pCyclist->nNameId = g_pModelButeMgr->GetModelNameId(eModelId);
+			}
+
+			cMsg.Writeuint32(pCyclist->nClientID = -1);
+			cMsg.Writeuint32(pCyclist->nNameId);
+			cMsg.Writebool(false);
 		}
 
-		pCyclist->nClientID = -1;
-		cMsg.Writeuint32(pCyclist->nClientID);
-		cMsg.Writeuint32(pCyclist->nNameId);
-		cMsg.Writebool(false);
+		g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 	}
 
-	g_pLTServer->SendToClient(cMsg.Read(), NULL, MESSAGE_GUARANTEED);
 	return pCyclist;
 }
 
