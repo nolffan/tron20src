@@ -119,6 +119,18 @@ private:
 	LTVector	m_vForward;
 };
 
+// RETAIL: inline in Tron: AIGeometry::BoxInside (0x10096570) expands four
+// of its eight calls and calls the rest (0x100969b0, after BoxInside)
+inline LTBOOL AIGeometry::Inside3D( const LTVector& vPos ) const
+{
+	return ( (vPos.x <= m_vFrontTopRight.x) &&
+			 (vPos.x >= m_vFrontTopLeft.x) &&
+			 (vPos.z <= m_vFrontTopLeft.z) &&
+			 (vPos.z >= m_vBackTopLeft.z) &&
+			 (vPos.y <= m_vBackTopLeft.y) &&
+			 (vPos.y >= m_vBackBottomLeft.y) );
+}
+
 // RETAIL: inline in Tron (no call to it in, e.g., CAISpatialRepresentationMgr::
 // FindContainingVolume, 0x101b7400)
 inline LTBOOL AIGeometry::InsideMasked(const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold /* = 0.0f*/) const
