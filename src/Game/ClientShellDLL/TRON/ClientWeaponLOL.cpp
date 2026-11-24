@@ -52,7 +52,8 @@ float CClientWeaponLOL::GetEnergyUse()
 	}
 	else if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "LOL" ) )
 	{
-		return g_pSubroutineDataMgr->GetLOLData( GetSubroutineDataKey( "LOL" ) ).fEnergyUseMultiplier * fBase + fEnergy;
+		SubroutineDataKey key = GetSubroutineDataKey( "LOL" );
+		return g_pSubroutineDataMgr->GetLOLData( key ).fEnergyUseMultiplier * fBase + fEnergy;
 	}
 
 	return fEnergy;

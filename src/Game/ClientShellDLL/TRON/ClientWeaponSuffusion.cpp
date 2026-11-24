@@ -325,7 +325,8 @@ float CClientWeaponSuffusion::GetEnergyUse()
 	}
 	else if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "Suffusion" ) )
 	{
-		return g_pSubroutineDataMgr->GetSuffusionData( GetSubroutineDataKey( "Suffusion" ) ).fEnergyUseMultiplier * fBase + fEnergy;
+		SubroutineDataKey key = GetSubroutineDataKey( "Suffusion" );
+		return g_pSubroutineDataMgr->GetSuffusionData( key ).fEnergyUseMultiplier * fBase + fEnergy;
 	}
 
 	return fEnergy;

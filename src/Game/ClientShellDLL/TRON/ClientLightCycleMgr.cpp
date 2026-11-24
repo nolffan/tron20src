@@ -1207,6 +1207,13 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: inline: the dialog sound's flags; PlayDialogSound's function
+// static copies them at run time (0x1001311d). The name is ours.
+inline uint32 GetDialogSoundFlags()
+{
+	return PLAYSOUND_GETHANDLE | PLAYSOUND_ONCE;
+}
+
 static bool IsCycleDialogOn()
 {
 	if (!g_pProfileMgr)
@@ -1234,7 +1241,7 @@ void CClientLightCycleMgr::PlayDialogSound(LTVector vPos, const char* szSound)
 
 	// RETAIL: function statics (0x10236d78..0x10236d84); the names are
 	// ours. The sound debug flag is read but not used.
-	static uint32 s_dwFlags = PLAYSOUND_GETHANDLE | PLAYSOUND_ONCE;
+	static uint32 s_dwFlags = GetDialogSoundFlags();
 	static float s_fRadius = g_pLightCycleButeMgr->GetDialogSoundRadius();
 	static bool s_bSoundDebug = g_pLightCycleButeMgr->GetEnableSoundDebugInfo();
 

@@ -44,8 +44,8 @@ float CClientWeaponSequencerDisc::GetEnergyUse()
 	}
 	else if ( g_pSubroutineMgr->IsUtilitySubroutineActive( "Sequencer" ) )
 	{
-		SequencerData data = g_pSubroutineDataMgr->GetSequencerData( GetSubroutineDataKey( "Sequencer" ) );
-		return data.fEnergyUseMultiplier * fBase + fEnergy;
+		SubroutineDataKey key = GetSubroutineDataKey( "Sequencer" );
+		return g_pSubroutineDataMgr->GetSequencerData( key ).fEnergyUseMultiplier * fBase + fEnergy;
 	}
 
 	return fEnergy;
