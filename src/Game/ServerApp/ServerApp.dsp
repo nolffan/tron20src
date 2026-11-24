@@ -131,11 +131,11 @@ SOURCE=..\..\Engine\built\Final\server\server.lib
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libs\built\Final\ButeMgrMfcDll\ButeMgrMfcDll.lib
+SOURCE=..\..\libs\built\Final\CryptMgrMfcDll\CryptMgrMfcDll.lib
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\libs\built\Final\CryptMgrMfcDll\CryptMgrMfcDll.lib
+SOURCE=..\..\libs\built\Final\ButeMgrMfcDll\ButeMgrMfcDll.lib
 # End Source File
 # Begin Source File
 

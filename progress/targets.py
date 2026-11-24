@@ -202,8 +202,11 @@ TARGETS = [
          # the shared ScmdConsole and ProfileUtils are Tron's): a run of
          # 185 import thunks from 0x416240, then
          # msvcrt.lib from __onexit (0x416696) and mfcs42.lib's
-         # AfxInitialize (0x416928)
-         app=[(0x00401000, 0x00416240)]),
+         # AfxInitialize (0x416928). Between the two, CryptMgr.obj's
+         # constructor and destructor (0x4168f0, 0x416900): the library is
+         # linked before ButeMgr's, which alone needs it, so the linker
+         # takes it on its second pass, after the default libraries
+         app=[(0x00401000, 0x00416240), (0x004168f0, 0x00416910)]),
     # ---- the game ------------------------------------------------------
     dict(label="CShell.dll", what="the game: client", kind="image",
          shipped=REFERENCE + "/CShell.dll", stem="CShell",
