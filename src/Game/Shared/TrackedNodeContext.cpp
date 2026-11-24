@@ -136,6 +136,17 @@ void CTrackedNodeContext::_Init(EnumTrackedNodeGroup eGroup, bool bTrackOnAnim)
 		szName = g_pModelButeMgr->GetTrackingNodeName( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
 		hTrackedNode = m_pTrackedNodeMgr->CreateTrackingNode( m_hModel, szName );
 
+		// RETAIL: CShell 0x101c9520: Tron reports a node it cannot create
+		if( !hTrackedNode )
+		{
+			char szModel[80];
+			g_pLTBase->GetModelLT()->GetModelDBFilename( m_hModel, szModel, sizeof(szModel) );
+			if( g_pLTBase )
+			{
+				g_pLTBase->CPrint( "CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.", szName, szModel );
+			}
+		}
+
 		// Get tracked node constraints from modelbutes.txt.
 
 		fDiscomfortX = g_pModelButeMgr->GetTrackingNodeDiscomfortAngleX( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
@@ -143,6 +154,8 @@ void CTrackedNodeContext::_Init(EnumTrackedNodeGroup eGroup, bool bTrackOnAnim)
 		fMaxX = g_pModelButeMgr->GetTrackingNodeMaxAngleX( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
 		fMaxY = g_pModelButeMgr->GetTrackingNodeMaxAngleY( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
 		fMaxVel = g_pModelButeMgr->GetTrackingNodeMaxVelocity( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
+		// RETAIL: CShell 0x101c95da: Tron's nodes may ignore their parent's animation
+		bool bIgnoreParent = !!g_pModelButeMgr->GetTrackingNodeIgnoreParent( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
 
 		// Set tracked node constraints.
 		// Specifying the forward and up vectors are optional.
@@ -165,12 +178,26 @@ void CTrackedNodeContext::_Init(EnumTrackedNodeGroup eGroup, bool bTrackOnAnim)
 			m_pTrackedNodeMgr->LinkNodes( m_aTrackedNodeGroups[eGroup][iHNode-1], hTrackedNode );
 		}
 
+		m_pTrackedNodeMgr->SetIgnoreParentAnimation( hTrackedNode, bIgnoreParent );
+
 		// It is optional for a node to have a cloned node (e.g. left eye clones right eye orientation).
 
 		szName = g_pModelButeMgr->GetTrackingNodeClonedName( m_eTrackingNodes[eGroup], (ModelTrackingNode)iNode );
 		if( szName[0] )
 		{
 			hTrackedNodeClone = m_pTrackedNodeMgr->CreateTrackingNode( m_hModel, szName );
+
+			// RETAIL: CShell 0x101c9763: tests the node it clones, not the
+			// clone (docs/RETAIL_BUGS.md)
+			if( !hTrackedNode )
+			{
+				char szModel[80];
+				g_pLTBase->GetModelLT()->GetModelDBFilename( m_hModel, szModel, sizeof(szModel) );
+				if( g_pLTBase )
+				{
+					g_pLTBase->CPrint( "CTrackedNodeContext::_Init: Failed to create tracking node: %s, model: %s.", szName, szModel );
+				}
+			}
 			m_pTrackedNodeMgr->LinkNodeOrientation( hTrackedNodeClone, hTrackedNode );
 			m_aTrackedNodeGroups[eGroup][iHNode++] = hTrackedNodeClone; 
 		}
@@ -302,7 +329,10 @@ void CTrackedNodeContext::EnableTrackingGroup(EnumTrackedNodeGroup eGroup, bool 
 		// This is code we would like to use to smoothly turn off node tracking.
 		// It does not seem to do anything.
 
-		if( ( !bEnable ) && ( eGroup == kTrack_LookAt ) )
+		// RETAIL: CShell 0x101c9942: not the nodes that ignore their
+		// parent's animation
+		if( ( !bEnable ) && ( eGroup == kTrack_LookAt ) &&
+			!m_pTrackedNodeMgr->GetIgnoreParentAnimation( m_aTrackedNodeGroups[eGroup][iNode] ) )
 		{
 			LTVector vRight, vUp, vForward;
 			m_pTrackedNodeMgr->GetOrientationSpace(m_aTrackedNodeGroups[eGroup][iNode], vRight, vUp, vForward);

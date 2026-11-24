@@ -722,14 +722,15 @@ void CDiscMatchMgr::HandleMsgTronUnknown83(ILTMessage_Read *pMsg)
 
 	char szMsg[256];
 	szMsg[0] = '\0';
+	std::wstring sMsg;
 	FormatString(335, szMsg, sizeof(szMsg), nTronUnknownA, nTronUnknownB);
+	LTGUIWiden(sMsg, szMsg);
 
-	// PORT: retail widens the text into a std::wstring for Tron's
-	// CMessageBox::Show(std::wstring, ...) (through an out-of-line
-	// CInterfaceMgr::ShowMessageBox, 0x1000fa80); our message box takes the
-	// narrow string
+	// RETAIL: Tron's message box takes the wide text (the out-of-line
+	// CInterfaceMgr::ShowMessageBox, 0x1000fa80)
 	MBCreate mb;
-	g_pInterfaceMgr->ShowMessageBox(szMsg, &mb);
+	mb.eType = LTMB_OK;
+	g_pInterfaceMgr->ShowMessageBox(sMsg, &mb);
 }
 
 // ----------------------------------------------------------------------- //

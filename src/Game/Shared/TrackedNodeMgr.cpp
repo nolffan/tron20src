@@ -674,3 +674,15 @@ bool CTrackedNodeMgr::SetIgnoreParentAnimation( HTRACKEDNODE ID, bool bIgnorePar
 	ID->m_bIgnoreParentAnimation = bIgnoreParentAnimation;
 	return true;
 }
+
+// GetIgnoreParentAnimation
+//	TRON: the flag SetIgnoreParentAnimation sets (RETAIL: CShell 0x101c8f80;
+// CTrackedNodeContext::EnableTrackingGroup calls it; the name is ours)
+
+bool CTrackedNodeMgr::GetIgnoreParentAnimation( HTRACKEDNODE ID )
+{
+	if(!CheckValidity(ID))
+		return false;
+
+	return ID->m_bIgnoreParentAnimation;
+}

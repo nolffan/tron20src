@@ -81,7 +81,7 @@ namespace
 bool CClientWeaponBallLauncher::PlayFireAnimation( bool bResetAni )
 {
 	uint32 dwAni			= g_pLTClient->GetModelAnimation( m_hObject );
-	uint32 dwState			= g_pLTClient->GetModelPlaybackState( m_hObject );
+	uint32 dwState			= g_pLTClient->GetModelPlaybackState( m_hObject ) & MS_PLAYDONE;
 
 	uint32 dwPreFireAni		= GetPreFireAni();
 	uint32 dwFireAni		= GetFireAni( m_eLastFireType );
@@ -95,7 +95,7 @@ bool CClientWeaponBallLauncher::PlayFireAnimation( bool bResetAni )
 	bool bIsPreFireAni		= IsPreFireAni( dwAni );
 	IsPostFireAni( dwAni );
 
-	bool bIsCurAniDone		= !!( dwState & MS_PLAYDONE );
+	bool bIsCurAniDone		= !!dwState;
 
 	if ( !bIsFireAni )
 	{
@@ -107,22 +107,25 @@ bool CClientWeaponBallLauncher::PlayFireAnimation( bool bResetAni )
 
 		if ( INVALID_ANI != dwPreFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwPreFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPreFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			UpdateFireAnimationRate();
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 
@@ -138,12 +141,12 @@ bool CClientWeaponBallLauncher::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bHasFireAni )
 		{
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 		else if ( bHasPostFireAni )
 		{
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 	}
@@ -151,12 +154,13 @@ bool CClientWeaponBallLauncher::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bResetAni && TronUnknownVirtual164() )
 		{
-			PlayAnimation( dwFireAni, true, m_fFireAnimationRate, false );
+			SaveShotSubroutines();
+			PlayAnimation( dwFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 		else if ( bHasPostFireAni )
 		{
-			PlayAnimation( dwPostFireAni, true, m_fFireAnimationRate, false );
+			PlayAnimation( dwPostFireAni, true, GetFireAnimationRate(), false );
 			return true;
 		}
 	}

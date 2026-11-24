@@ -1536,3 +1536,14 @@ Fixed in the modern build: the function compares the text (_stricmp).
 - Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
   the saved viewport and leaves the new viewport's size unset: Tron's is
   Build 69's (0x41d8e0; its own bug is above).
+
+### A cloned tracking node that is not made is not reported
+
+CShell.dll 0x101c9763 and Object.lto 0x101e2203 (CTrackedNodeContext::_Init,
+Shared/TrackedNodeContext.cpp). After the code makes a cloned tracking node,
+it tests the node that it clones, not the clone. When the clone is not made,
+the code does not write the "Failed to create tracking node" message. When
+the clone is made but the first node is not, the code writes the message
+for the clone's name. The code must test the clone.
+
+Not fixed yet: the modern build must test hTrackedNodeClone.

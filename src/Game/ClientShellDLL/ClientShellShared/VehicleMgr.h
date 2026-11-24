@@ -35,6 +35,10 @@ struct VEHICLENODE
 
 class CVehicleMgr
 {
+	// RETAIL: CClientLightCycleMgr::DerezCyclist calls HandleCollision
+	// (0x10011096)
+	friend class CClientLightCycleMgr;
+
   public:
 
 	CVehicleMgr();
@@ -105,6 +109,10 @@ class CVehicleMgr
 	CLIENTFX_LINK*	GetTronUnknownFX213c() { return &m_TronUnknownFX213c; }
 	void		CreateTronUnknownFX2140(const char* pszFX);
 	void		CreateTronUnknownFX2144(const char* pszFX);
+	// RETAIL: inline (CClientLightCycleMgr::Update, 0x100114ef); the names
+	// are ours
+	CLIENTFX_LINK*	GetTronUnknownFX2140() { return &m_TronUnknownFX2140; }
+	CLIENTFX_LINK*	GetTronUnknownFX2144() { return &m_TronUnknownFX2144; }
 	void		CreateTronUnknownFX2148(const char* pszFX, const LTVector &vOffset);
 	void		ShowTronUnknownFX2138(HOBJECT hObj, bool bShow);
 	uint32		GetPlayerLureId( ) { return m_nPlayerLureId; }

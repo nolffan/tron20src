@@ -522,7 +522,7 @@ void CTimedText::Render()
 	{
 		// change the text appearance to a drop shadow		
 		m_text->SetColor( ( alpha << 24 ) | SETRGB( 0.0f, 0.0f, 0.0f ) );
-		m_text->SetPosition( ( m_posX + 2 ), ( m_posY + 2 ) );
+		m_text->SetPosition( ( (int)m_posX + 2 ), ( (int)m_posY + 2 ) );	// RETAIL: 0x1018979a
 		
 		// show the amount of text we should reveal so far
 		if ( TESTFLAG( m_flags, CTIMEDTEXTFLAG_USE_CLIP_RECT ) )

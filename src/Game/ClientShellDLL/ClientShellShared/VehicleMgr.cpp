@@ -1893,6 +1893,7 @@ void CVehicleMgr::SetNormalPhysicsModel()
 
 void CVehicleMgr::CreateVehicleModel()
 {
+	// RETAIL: 0x1011d510
 	ObjectCreateStruct createStruct;
 	INIT_OBJECTCREATESTRUCT(createStruct);
 
@@ -1916,10 +1917,15 @@ void CVehicleMgr::CreateVehicleModel()
 
 			CCharacterFX* pCharFX = g_pMoveMgr->GetCharacterFX();
 
-			// jeffo - NOTE: Should pChar ever be NULL?
-			if (pCharFX  )
+			// RETAIL: 0x1011d7e0: the multiplayer hands unless the player
+			// uses a player model
+			if (pCharFX && (!IsMultiplayerGame() || g_pMoveMgr->IsPlayerModel()))
 			{
 				SAFE_STRCPY(createStruct.m_SkinNames[0], g_pModelButeMgr->GetHandsSkinFilename(pCharFX->GetModelId()));
+			}
+			else
+			{
+				SAFE_STRCPY(createStruct.m_SkinNames[0], "guns\\skins_pv\\MultiHands_pv.dtx");
 			}
 		}
 		break;
@@ -1937,6 +1943,15 @@ void CVehicleMgr::CreateVehicleModel()
 		}
 		break;
 
+		case PPM_LIGHTCYCLE:
+		{
+			// RETAIL: 0x1011d682: the player manager fills in the player's
+			// light cycle (its arguments are swapped in our declaration)
+			if (!g_pPlayerMgr->TronUnknownVirtual9C((void*)3, (int)&createStruct))
+				return;
+		}
+		break;
+
 		default :
 			return;
 		break;
@@ -1949,9 +1964,33 @@ void CVehicleMgr::CreateVehicleModel()
 		m_hVehicleModel = NULL;
 	}
 
-    m_hVehicleModel = g_pLTClient->CreateObject(&createStruct);
-	if (!m_hVehicleModel) return;
-	
+	// RETAIL: 0x1011d84c
+	if (!m_hVehicleModel)
+	{
+		createStruct.m_ObjectType = OT_MODEL;
+
+		switch (m_ePPhysicsModel)
+		{
+			case PPM_SNOWMOBILE:
+			{
+				createStruct.m_Flags	= FLAG_VISIBLE | FLAG_REALLYCLOSE;
+				createStruct.m_Flags2	= FLAG2_DYNAMICDIRLIGHT;
+			}
+			break;
+
+			case PPM_LIGHTCYCLE:
+			{
+				createStruct.m_Flags	= FLAG_VISIBLE;
+			}
+			break;
+		}
+
+		m_hVehicleModel = g_pLTClient->CreateObject(&createStruct);
+		if (!m_hVehicleModel) return;
+	}
+
+	g_pCommonLT->SetObjectFilenames(m_hVehicleModel, &createStruct);
+
 	// Set up node control...
 	// Do this AFTER we set the filename of the model since the node control is now per node.
 	// First remove any we may have previously set otherwise the matrix will be applied multiple times.
@@ -2885,6 +2924,29 @@ void CVehicleMgr::OnTouchNotify(CollisionInfo *pInfo, float forceMag)
 
 void CVehicleMgr::HandleCollision()
 {
+	// RETAIL: 0x1011ed97: a light cycle that hits something derezzes
+	if (m_ePPhysicsModel == PPM_LIGHTCYCLE)
+	{
+		m_bTronUnknown2158 = false;
+		ShutdownLightCycleFX();
+		g_pPlayerMgr->SetTronUnknown1D5(true);
+
+		// The player manager names the cycle's derez FX
+		char szFX[512];
+		g_pPlayerMgr->TronUnknownVirtual74(g_pMoveMgr->GetObject(), szFX, sizeof(szFX));
+
+		CLIENTFX_CREATESTRUCT fxInit(szFX, FXFLAG_NOSMOOTHSHUTDOWN, g_pMoveMgr->GetObject());
+		g_pLTClient->GetObjectPos(g_pMoveMgr->GetObject(), &fxInit.m_vPos);
+		g_pClientFXMgr->CreateClientFX(&m_TronUnknownFX2138, fxInit, LTTRUE);
+
+		m_bTronUnknown2158 = true;
+		m_nTronUnknown215c = 1;
+
+		g_pMoveMgr->AllowMovement(LTFALSE);
+		ShowVehicleModel(LTFALSE);
+		return;
+	}
+
 	LTVector vNormal = m_cLastTouchInfo.m_Plane.m_Normal;
 
 	SurfaceType eType = ::GetSurfaceType(m_cLastTouchInfo);
