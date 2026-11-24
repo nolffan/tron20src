@@ -223,8 +223,9 @@ class CGameServerShell : public IServerShellStub
 		// 0x100e2880; the light cycle game's manager calls them). The names
 		// are ours
 		void	ResetStartPoints();
-		void	NextLevel();
-		void	SwitchToLevel(int nLevel);
+		// RETAIL: both return ExitLevelToLevel's result (0x100e28ed)
+		bool	NextLevel();
+		bool	SwitchToLevel(int nLevel);
 		
 		// These are called by CPlayerObj so the objectives will properly transition.
 		void	SaveObjectives( ILTMessage_Write *pMsg, uint32 dwSaveFlags );

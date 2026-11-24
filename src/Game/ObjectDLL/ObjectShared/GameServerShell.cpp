@@ -3990,9 +3990,9 @@ bool CGameServerShell::StartNextMultiplayerLevel()
 //
 // ----------------------------------------------------------------------- //
 
-void CGameServerShell::NextLevel()
+bool CGameServerShell::NextLevel()
 {
-	SwitchToLevel(m_nCurLevel + 1);
+	return SwitchToLevel(m_nCurLevel + 1);
 }
 
 // ----------------------------------------------------------------------- //
@@ -4004,7 +4004,7 @@ void CGameServerShell::NextLevel()
 //
 // ----------------------------------------------------------------------- //
 
-void CGameServerShell::SwitchToLevel(int nLevel)
+bool CGameServerShell::SwitchToLevel(int nLevel)
 {
 	if (nLevel < 0)
 	{
@@ -4024,7 +4024,7 @@ void CGameServerShell::SwitchToLevel(int nLevel)
 	char const* pszLevel = (*pMaps)[m_nCurLevel].c_str();
 
 	ResetObjectives();
-	g_pServerMissionMgr->ExitLevelToLevel(pszLevel);
+	return g_pServerMissionMgr->ExitLevelToLevel(pszLevel);
 }
 
 // RETAIL: retail 0x100e2910
