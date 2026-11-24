@@ -1607,7 +1607,7 @@ coordinates on polygon 5, which it hides at once. Polygon 2 keeps the
 texture coordinates of the last partial fill. NOLF2 sets them on polygon 2.
 A bar that goes from part full to full can show a right cap cut short.
 
-Fixed in the modern build (HUDBar.cpp, `TRON20_MODERN`).
+Fixed in the modern build (HUDBar.cpp, `TRON20SRC_MODERN`).
 
 ### A human AI reports its SETONLYDAMAGEBYPLAYER command as not handled
 
