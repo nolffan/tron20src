@@ -75,7 +75,8 @@ void CHUDLightCycleSpeedometer::UpdateLayout()
 	LTFLOAT fYRatio = g_pInterfaceResMgr->GetYRatio();
 
 	// RETAIL: the y position is scaled by the x ratio too
-	LTIntPt pos = pHelper->GetPowerupIconPos(nCurrentLayout);
+	// RETAIL: 0x1002fb14 reads SpeedometerPos
+	LTIntPt pos = pHelper->GetSpeedometerPos(nCurrentLayout);
 	pos.x = (int)(pos.x * fXRatio);
 	pos.y = (int)(pos.y * fXRatio);
 

@@ -70,11 +70,8 @@ void CHUDLightCyclePowerupIcon::UpdateLayout()
 
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
 
-	// RETAIL: retail reads PowerupIconPos here (0x1002dd7c) and
-	// CHUDLightCycleSpeedometer reads SpeedometerPos (0x1002fb14); ours has
-	// the two swapped. Both must change together, or SpeedometerPos drops
-	// out of the link: left for HUDLightCycleSpeedometer.cpp's owner.
-	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetSpeedometerPos(nCurrentLayout);
+	// RETAIL: retail reads PowerupIconPos here (0x1002dd7c)
+	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetPowerupIconPos(nCurrentLayout);
 
 	// NEAR: retail keeps the four floats in other stack slots (tried the
 	// products grouped and the declarations interleaved)
