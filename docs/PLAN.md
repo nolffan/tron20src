@@ -4,7 +4,7 @@ Tron 2.0 from source, split into packages that can each be picked up again
 after an interruption. The first aim is **a game that runs** with every
 binary built here; the second is **byte-identity** with retail v1.030 (the
 legacy build), ratcheted by `make progress`. The modern build
-(`TRON20_MODERN`) comes after.
+(`TRON20SRC_MODERN`) comes after.
 
 No source of Tron 2.0 as it shipped was ever released. What there is, and
 what it is good for:
@@ -66,11 +66,11 @@ NOLF2 and Contract J.A.C.K. have.
   precompiled headers), as nolf2src did.
 - **Project files.** VC6 `.dsw`/`.dsp` (the format `ext/tools/dsp2mk.py`
   reads), as Monolith's own were.
-- **Legacy vs modern.** `TRON20_MODERN` gates every fix and feature, and
-  `TRON20_DEBUG` the debug build's logging; the legacy build must keep
+- **Legacy vs modern.** `TRON20SRC_MODERN` gates every fix and feature, and
+  `TRON20SRC_DEBUG` the debug build's logging; the legacy build must keep
   compiling to the retail bytes.
 - **Retail bugs.** Every bug found goes into `RETAIL_BUGS.md`, fixed (if at
-  all) only behind `TRON20_MODERN`.
+  all) only behind `TRON20SRC_MODERN`.
 - **Commits.** Small commits, each leaving the tree building.
 
 ## Packages
@@ -85,7 +85,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
-| 9 | `modern`: the modern build (`TRON20_MODERN`, `MODERN.md`) | 7 | |
+| 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | |
 | 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`ext/tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | |
 
 ## Notes per package

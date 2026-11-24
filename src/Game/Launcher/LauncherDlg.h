@@ -27,7 +27,7 @@ class CLauncherDlg : public CMoveDialog
 // Construction
 public:
 	CLauncherDlg(CWnd* pParent = NULL);	// standard constructor
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 	void	LaunchDirect();		// MODERN.md: Tron.exe's start, as Play's
 #endif
 

@@ -108,7 +108,7 @@ LTRESULT CTriggerPlugin::PreHook_EditStringList(
 		// RETAIL: Tron calls the key plugin's PreHook_EditStringList and
 		// takes its LTRESULT as a bool (0x101c28be): a retail bug
 		// (docs/RETAIL_BUGS.md), kept.
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 		LTRESULT eResult = m_KeyMgrPlugin.PreHook_EditStringList(szRezPath, szPropName, aszStrings + 1, pcStrings, cMaxStrings - 1, cMaxStringLength);
 		++(*pcStrings);
 		return eResult;

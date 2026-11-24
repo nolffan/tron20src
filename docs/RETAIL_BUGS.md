@@ -7,8 +7,8 @@ fixed yet.
 
 The legacy build reproduces every one of them, on purpose: compiling to the
 retail machine code means compiling its mistakes too. They are fixed in the
-**modern build** (`make modern`, the `TRON20_MODERN` define; `MODERN.md`):
-each fix goes behind `#ifdef TRON20_MODERN`, with the retail code kept in
+**modern build** (`make modern`, the `TRON20SRC_MODERN` define; `MODERN.md`):
+each fix goes behind `#ifdef TRON20SRC_MODERN`, with the retail code kept in
 the `#else`, so the legacy build is unchanged and still matches
 (`make progress`).
 
@@ -18,7 +18,7 @@ tree it waits for.
 
 Every binary here is a reconstruction (`docs/PLAN.md`), so an entry is
 listed only where our function is byte-identical to the retail one at the
-address it names (`tools/exematch.py`; for a string, the string is in the
+address it names (`ext/tools/exematch.py`; for a string, the string is in the
 retail image too): it describes what the retail code does, not a guess.
 Addresses are as in the retail images (`build/reference.sh` extracts them
 into `out/reference/`).
@@ -1607,7 +1607,7 @@ coordinates on polygon 5, which it hides at once. Polygon 2 keeps the
 texture coordinates of the last partial fill. NOLF2 sets them on polygon 2.
 A bar that goes from part full to full can show a right cap cut short.
 
-Fixed in the modern build (HUDBar.cpp, `TRON20_MODERN`).
+Fixed in the modern build (HUDBar.cpp, `TRON20SRC_MODERN`).
 
 ### A human AI reports its SETONLYDAMAGEBYPLAYER command as not handled
 

@@ -1,7 +1,7 @@
 # The legacy release build without the retail game, and the byte check.
 #
 # The runner has no disc images and no retail data, so the build is `make
-# NODISCS=1 compile` (build/compile.sh, TRON20_NODISCS=1): it compiles and
+# NODISCS=1 compile` (build/compile.sh, TRON20SRC_NODISCS=1): it compiles and
 # links every binary that has source, with the retail art that is committed
 # in assets/art/, so every binary is the same as in a build with the retail
 # game. The project assembles no game directory and makes no archives yet

@@ -142,7 +142,7 @@ void CLTGUIEditCtrl::UpdateData(LTBOOL bSaveAndValidate)
 	{
 		if (m_pText)
 		{
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 			// the caller's buffer holds m_nMaxLength characters with the
 			// terminator (docs/RETAIL_BUGS.md)
 			uint32 nSize = m_pText->GetText().length() + 1;
@@ -306,7 +306,7 @@ std::wstring CLTGUIEditCtrl::GetText()
 		return m_pText->GetText();
 	}
 	else 
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 		return std::wstring();
 #else
 		return LTNULL;	// RETAIL: a wide string made from a null pointer (docs/RETAIL_BUGS.md)

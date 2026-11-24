@@ -321,7 +321,7 @@ LTBOOL CAISenseRecorderTools::ComplexVisibilityCheck(AISenseRecord* pSenseRecord
 			// of the InstantSeeDistance is also seen instantly (a retail bug,
 			// docs/RETAIL_BUGS.md).
 
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 			else
 #endif
 			{

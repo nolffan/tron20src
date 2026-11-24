@@ -14,7 +14,7 @@ update's setup do.
 
 You give the files: your images of the two discs, and the update's own
 executable (tron-update_v1x2_complete.exe). If you give no files on the
-command line, the script looks in $TRON20_ISOS, or else in isos/ at the
+command line, the script looks in $TRON20SRC_ISOS, or else in isos/ at the
 root of the repository. Each disc image can be:
 
   .iso   a plain image, 2048-byte sectors (your own rip, for example)
@@ -233,7 +233,7 @@ class Image:
 
 
 def candidates(args):
-    """The files to look at: the arguments, or the files in $TRON20_ISOS or
+    """The files to look at: the arguments, or the files in $TRON20SRC_ISOS or
     isos/ (and the directories given)."""
     if args:
         out = []
@@ -243,7 +243,7 @@ def candidates(args):
             else:
                 out.append(a)
         return out
-    d = os.environ.get("TRON20_ISOS") or os.path.join(REPO, "isos")
+    d = os.environ.get("TRON20SRC_ISOS") or os.path.join(REPO, "isos")
     return candidates_in(d)
 
 
@@ -331,7 +331,7 @@ def missing_message(discs, update, found, exe, want_update=True):
     lines += [
         "Put both images of Tron 2.0 (USA) and the executable of its Update 2",
         "(v1.030, the complete update) in isos/ at the root of the repository (a",
-        "hard link is good: ln <file> isos/), or set TRON20_ISOS=<directory>. An",
+        "hard link is good: ln <file> isos/), or set TRON20SRC_ISOS=<directory>. An",
         "image can be a .iso, a .bin with its .cue, or a .zip that holds one of",
         "them. The update can be the .exe or a .zip that holds it.",
         "See README.md, \"What you need\".",

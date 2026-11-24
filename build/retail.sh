@@ -7,22 +7,22 @@
 # ext/tools/retailextract.py, is build/retail.py.
 #
 # RETAIL_RELEASE  the name of the install directory
-# TRON20_RETAIL   where it is installed: out/retail/tron2-usa-1.030 by
+# TRON20SRC_RETAIL   where it is installed: out/retail/tron2-usa-1.030 by
 #                 default (build/env.sh sets it to the checkout's, for the
 #                 release tree)
 # retail_dir      prints out/retail/tron2-usa-1.030, if it is installed
 # retail_install  installs the release from the disc images and the update
-#                 in isos/ (or $TRON20_ISOS), unless it is installed already
+#                 in isos/ (or $TRON20SRC_ISOS), unless it is installed already
 #                 from the same build/retail-files.txt (`make retail` runs
 #                 it; every build with the retail game does)
 # retail_verify   checks every installed file against build/retail-files.txt
 #                 (the Makefile runs it before every build;
-#                 TRON20_SKIP_RETAIL_CHECK=1 skips it)
+#                 TRON20SRC_SKIP_RETAIL_CHECK=1 skips it)
 RETAIL_RELEASE=tron2-usa-1.030
 
 retail_repo() { (cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd); }
 
-retail_root() { echo "${TRON20_RETAIL:-$(retail_repo)/out/retail/$RETAIL_RELEASE}"; }
+retail_root() { echo "${TRON20SRC_RETAIL:-$(retail_repo)/out/retail/$RETAIL_RELEASE}"; }
 
 retail_dir() {
     local d
@@ -49,7 +49,7 @@ retail_install() {
 retail_verify() {
     local d
     d="$(retail_dir)" || return 1
-    [ "${TRON20_SKIP_RETAIL_CHECK:-0}" = 1 ] && return 0
+    [ "${TRON20SRC_SKIP_RETAIL_CHECK:-0}" = 1 ] && return 0
     # a stamp skips re-hashing 2.3 GB on every build while the files are unchanged
     local stamp key
     stamp="$(retail_repo)/out/.retail-verified"
