@@ -70,12 +70,13 @@ void CHUDLightCyclePowerupIcon::UpdateLayout()
 
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
 
-	// RETAIL: the speedometer's position. Near: CTronLayoutMgr's helper is
-	// at +0x116c in retail (the layout manager is larger here)
-	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetSpeedometerPos(nCurrentLayout);
+	// RETAIL: the power-up icon's position (0x1002dd7c)
+	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetPowerupIconPos(nCurrentLayout);
 
-	fWidth = fWidth * 0.625f * fXRatio;
-	fHeight = fHeight * 0.625f * fYRatio;
+	// NEAR: retail keeps the four floats in other stack slots (tried the
+	// products grouped and the declarations interleaved)
+	fWidth *= fXRatio * 0.625f;
+	fHeight *= fYRatio * 0.625f;
 
 	g_pDrawPrim->SetXYWH(&m_Poly, (LTFLOAT)pos.x * fXRatio - fWidth * 0.5f, (LTFLOAT)pos.y * fYRatio - fHeight * 0.5f, fWidth, fHeight);
 }
