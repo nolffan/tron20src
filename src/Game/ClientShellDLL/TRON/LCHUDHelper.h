@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <string>
+#include "TRON/CaselessString.h"
 
 class LCHUDHelper
 {
@@ -49,7 +50,9 @@ public:
 	int			GetIntroHeaderOffset(int nLayout);
 	int			GetIntroValueOffset(int nLayout);
 	float		GetIntroValueTime(int nLayout);
-	std::string	GetIntroTexturedFrameName(int nLayout);
+	// RETAIL: the frame names are caseless strings (0x10041910: the
+	// length's null check is inline)
+	CaselessInlineString	GetIntroTexturedFrameName(int nLayout);
 
 	LTIntPt		GetSpeedometerPos(int nLayout);
 	int			GetSpeedometerFontNum(int nLayout);
@@ -58,7 +61,7 @@ public:
 	int			GetSpeedometerHBorder(int nLayout);
 	int			GetSpeedometerFrameWidth(int nLayout);
 	int			GetSpeedometerFrameHeight(int nLayout);
-	std::string	GetSpeedometerTexturedFrameName(int nLayout);
+	CaselessInlineString	GetSpeedometerTexturedFrameName(int nLayout);
 
 private:
 	typedef std::vector<std::string> StringArray;

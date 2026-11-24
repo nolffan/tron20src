@@ -36,7 +36,7 @@ LTBOOL CHUDLightCycleSpeedometer::Init()
 	LCHUDHelper* pHelper = dynamic_cast<CTronLayoutMgr*>(g_pLayoutMgr)->GetLCHUDHelper();
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
 
-	std::string sFrame = pHelper->GetSpeedometerTexturedFrameName(nCurrentLayout);
+	CaselessInlineString sFrame = pHelper->GetSpeedometerTexturedFrameName(nCurrentLayout);
 	m_Frame.Init(sFrame.c_str());
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(pHelper->GetSpeedometerFontNum(nCurrentLayout));
