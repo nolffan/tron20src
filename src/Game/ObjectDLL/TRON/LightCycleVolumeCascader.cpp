@@ -102,7 +102,7 @@ uint32 LightCycleVolumeCascader::OnAllObjectsCreated()
 		ObjectList* pList = g_pLTServer->FindObjectsTouchingSphere(&vPos, m_fMaxRadius);
 		for (ObjectLink* pLink = pList->m_pFirstLink; pLink; pLink = pLink->m_pNext)
 		{
-			if (g_pLTServer->GetObjectClass(pLink->m_hObject) == hVolumeClass)
+			if (hVolumeClass == g_pLTServer->GetObjectClass(pLink->m_hObject))
 			{
 				m_lstVolumes.push_back(LTObjRef(pLink->m_hObject));
 			}
