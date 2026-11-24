@@ -3454,10 +3454,15 @@ void CPlayerMgr::UpdateCameraPosition()
 
 void CPlayerMgr::CalculateCameraRotation()
 {
+	// RETAIL: Tron's (0x101292a0): the light cycle turns by the keys at the
+	// light cycle camera's speed, the mouse moves nothing past a full
+	// circle, and the player's rotation is the vehicle's on a light cycle
 	CGameSettings* pSettings = g_pInterfaceMgr->GetSettings();
 	if (!pSettings) return;
 
-	LTBOOL bIsVehicle = m_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics();
+	// RETAIL: a bool widened to the LTBOOL (0x101292eb)
+	bool bLightCycle = (m_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE);
+	LTBOOL bIsVehicle = bLightCycle;
 
     float fVal = 1.0f + (float)(3 * m_nZoomView);
 
@@ -3481,6 +3486,21 @@ void CPlayerMgr::CalculateCameraRotation()
     float fYawDelta    = offsets[0] / fVal;
     float fPitchDelta  = offsets[1] / fVal;
 
+	if (bIsVehicle && !g_pMoveMgr->GetAllowMovement() && !m_bSpectatorMode && !TronUnknownVirtual3C(false))
+	{
+		return;
+	}
+
+	if (!pSettings->MouseLook() || fYawDelta > MATH_CIRCLE || fYawDelta < -MATH_CIRCLE)
+	{
+		fYawDelta = 0.0f;
+	}
+
+	if (!pSettings->MouseLook() || fPitchDelta > MATH_CIRCLE || fPitchDelta < -MATH_CIRCLE)
+	{
+		fPitchDelta = 0.0f;
+	}
+
 	if (g_vtAdaptiveMouse.GetFloat() && fYawDelta != 0.0f)
 	{
 		float fMaxOff = g_vtAdaptiveMouseMaxOffset.GetFloat();
@@ -3499,27 +3519,34 @@ void CPlayerMgr::CalculateCameraRotation()
 		}
 	}
 
-	m_fYaw += fYawDelta;
-
 	// [kml] 12/26/00 Check varying degrees of strafe and look.
 	if(!(m_dwPlayerFlags & BC_CFLG_STRAFE))
 	{
 		if(m_dwPlayerFlags & BC_CFLG_LEFT)
 		{
-			m_fYaw -= g_pGameClientShell->GetFrameTime() * ((m_dwPlayerFlags & BC_CFLG_RUN) ? g_vtFastTurnRate.GetFloat() : g_vtNormalTurnRate.GetFloat());
+			fYawDelta = -(g_pGameClientShell->GetFrameTime() * ((bIsVehicle || TronUnknownVirtual3C(false)) ? g_pMoveMgr->GetVehicleMgr()->GetLightCycleCamSpeed() :
+				((m_dwPlayerFlags & BC_CFLG_RUN) ? g_vtFastTurnRate.GetFloat() : g_vtNormalTurnRate.GetFloat())));
 		}
 		if(m_dwPlayerFlags & BC_CFLG_RIGHT)
 		{
-			m_fYaw += g_pGameClientShell->GetFrameTime() * ((m_dwPlayerFlags & BC_CFLG_RUN) ? g_vtFastTurnRate.GetFloat() : g_vtNormalTurnRate.GetFloat());
+			fYawDelta = g_pGameClientShell->GetFrameTime() * ((bIsVehicle || TronUnknownVirtual3C(false)) ? g_pMoveMgr->GetVehicleMgr()->GetLightCycleCamSpeed() :
+				((m_dwPlayerFlags & BC_CFLG_RUN) ? g_vtFastTurnRate.GetFloat() : g_vtNormalTurnRate.GetFloat()));
 		}
 	}
 
-	if (pSettings->MouseLook() || (m_dwPlayerFlags & BC_CFLG_LOOKUP) || (m_dwPlayerFlags & BC_CFLG_LOOKDOWN)
-)
+	if (!bIsVehicle ||
+		(g_pMoveMgr->GetVehicleMgr()->GetLightCycleCamLag() == 0.0f && IsFirstPerson() && (m_dwPlayerFlags & (BC_CFLG_LEFT | BC_CFLG_RIGHT))) ||
+		g_pMoveMgr->GetVehicleMgr()->GetLightCycleCamLag() != 0.0f || g_pPlayerMgr->GetTronUnknown1D8())
+	{
+		m_fYaw += fYawDelta;
+	}
+
+	if (pSettings->MouseLook() || (m_dwPlayerFlags & BC_CFLG_LOOKUP) || (m_dwPlayerFlags & BC_CFLG_LOOKDOWN))
     {
         if (pSettings->MouseLook())
 		{
-			if (pSettings->MouseInvertY())
+			if ((m_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE && pSettings->GetBoolVar("MouseInvertLCY")) ||
+				(m_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() != PPM_LIGHTCYCLE && pSettings->MouseInvertY()))
 			{
 				m_fPitch -= fPitchDelta;
 			}
@@ -3547,6 +3574,11 @@ void CPlayerMgr::CalculateCameraRotation()
 			if (m_fPitch < -fMinY) m_fPitch = -fMinY;
 			if (m_fPitch > fMinY)  m_fPitch = fMinY;
 		}
+		else if (bIsVehicle || TronUnknownVirtual3C(true))
+		{
+			// Can't look up/down on vehicles...
+			m_fPitch = 0.0f;
+		}
 	}
 	else if (m_fPitch != 0.0f && GetConsoleInt("AutoCenter",0))
 	{
@@ -3565,10 +3597,8 @@ void CPlayerMgr::CalculateCameraRotation()
 
 	// Only use mouse values for yaw if the player isn't on a vehicle...
 
-	if (bIsVehicle)
+	if (bIsVehicle || TronUnknownVirtual3C(true))
 	{
-		// Can't look up/down on vehicles...
-
 		LTVector vPlayerPYR(m_fPlayerPitch, m_fPlayerYaw, m_fPlayerRoll);
 		LTVector vPYR(m_fPitch, m_fYaw, m_fRoll);
 
