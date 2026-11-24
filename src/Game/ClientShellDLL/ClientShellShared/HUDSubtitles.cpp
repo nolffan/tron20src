@@ -274,14 +274,18 @@ void CHUDSubtitles::Clear(HLTSOUND hSound)
 
 void CHUDSubtitles::SetScale(float fScale)
 {
+	// RETAIL: 0x100fd860: Tron's takes a font of the new size, positions
+	// the text on whole pixels, and centers nothing (only the offset is kept)
 	m_fScale = fScale;
-	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
+	m_nFontSize = (uint8)((float)m_nBaseFontSize * fScale);
 	if (m_pText)
 	{
-		float x = (float)m_BasePos.x * m_fScale;
-		float y = (float)m_BasePos.y * m_fScale;
+		float x = (float)m_BasePos.x * fScale;
+		float y = (float)m_BasePos.y * fScale;
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
+		m_pText->SetFont(pFont);
 		m_pText->SetCharScreenHeight(m_nFontSize);
-		m_pText->SetPosition(x,y);
+		m_pText->SetPosition((int)x,(int)y);
 
 		LTIntPt pos = m_FullScreenPos;
 		uint16	width = m_nFullScreenWidth;
@@ -291,6 +295,8 @@ void CHUDSubtitles::SetScale(float fScale)
 			width = m_nCinematicWidth;
 		}
 
+		// RETAIL: the font's line spacing is asked for, and not used
+		m_pFont->GetLineSpacing();
 
 		m_DisplayRect.x = (float)pos.x * m_fScale;
 		m_DisplayRect.y = (float)pos.y * m_fScale;
@@ -300,16 +306,10 @@ void CHUDSubtitles::SetScale(float fScale)
 		
 		if (!m_bOverflow)
 		{
-			float textX = m_DisplayRect.x;
-			float textY = m_DisplayRect.y;
-
 			int32 fw,fh;
 			m_pText->GetDims(&fw,&fh);
 
-			textX += (m_DisplayRect.width - fw) / 2.0f;
 			m_fOffset = (m_DisplayRect.height - fh);
-			textY += m_fOffset;
-
 		}
 
 	}
