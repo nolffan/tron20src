@@ -2076,34 +2076,37 @@ bool CModelButeMgr::ReadMPModelColor(int iModel, int iColor)
 		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_SKIN, iModel, iColor, iSkin);
 	}
 
-	if (iSkin <= 0)
-		return false;
-
-	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_REZIN, iModel, iColor);
-	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+	// RETAIL: Object.lto 0x100c54a5: the failure return is the last block
+	if (iSkin > 0)
 	{
-		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
-		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(s_szBuffer));
-	}
-	else
-	{
-		m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(""));
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_REZIN, iModel, iColor);
+		if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+		{
+			m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+			m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(s_szBuffer));
+		}
+		else
+		{
+			m_aMPModels[iModel].m_vecColorRezInFX.push_back(std::string(""));
+		}
+
+		sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_HHDISC, iModel, iColor);
+		if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
+		{
+			m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
+			m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(s_szBuffer));
+		}
+		else
+		{
+			m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(""));
+		}
+
+		m_aMPModels[iModel].m_vecColorSkins.push_back(lstSkins);
+
+		return true;
 	}
 
-	sprintf(s_aAttName, MODELBMGR_MP_MODEL_COLOR_HHDISC, iModel, iColor);
-	if (m_buteMgr.Exist(MODELBMGR_MP_MODEL, s_aAttName))
-	{
-		m_buteMgr.GetString(MODELBMGR_MP_MODEL, s_aAttName, "", s_szBuffer, ARRAY_LEN(s_szBuffer));
-		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(s_szBuffer));
-	}
-	else
-	{
-		m_aMPModels[iModel].m_vecColorHHDiscFX.push_back(std::string(""));
-	}
-
-	m_aMPModels[iModel].m_vecColorSkins.push_back(lstSkins);
-
-	return true;
+	return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////
