@@ -1588,11 +1588,9 @@ void CClientLightCycleMgr::CyclistMovementChanged(LIGHT_CYCLIST* pCyclist, bool 
 //	ROUTINE:	CClientLightCycleMgr::UpdateCycleEffects
 //
 //	PURPOSE:	The sparks of a cycle near a wall and the pitch of its
-//				engine sound. RETAIL: 0x10013e40. PORT: for the others'
-//				cycles (pFX) retail works on their CLightCycleFX (its
-//				sparks FX link at +0x58 and its 0x1012d8c0, which starts
-//				them), and for the local cycle it starts the sparks with
-//				the vehicle manager's 0x101224f0: neither is in our build.
+//				engine sound. RETAIL: 0x10013e40. The others' cycles (pFX)
+//				have their sparks on their CLightCycleFX, the local cycle
+//				on the vehicle manager.
 //
 // ----------------------------------------------------------------------- //
 
@@ -1600,13 +1598,23 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 	float fAccel, float fWallAccel, uint32 nFlags, CSpecialFX* pFX)
 {
 	// The sparks along the wall the cycle accelerates on
-	if (fWallAccel > 0.0f && pCyclist->nWallDist < 20)
+	if (fWallAccel > 0.0f && pCyclist->nWallDist <= 19)
 	{
 		if (bTurned)
 		{
 			if (pCyclist->hObject == g_pMoveMgr->GetObject())
 			{
-				CLIENTFX_LINK* pLink = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2148();
+				CVehicleMgr* pVehicleMgr = g_pMoveMgr->GetVehicleMgr();
+				CLIENTFX_LINK* pLink = pVehicleMgr->GetTronUnknownFX2148();
+				if (pVehicleMgr->GetTronUnknownFX2148()->IsValid())
+				{
+					g_pClientFXMgr->ShutdownClientFX(pLink);
+					pLink->ClearLink();
+				}
+			}
+			else if (pFX)
+			{
+				CLIENTFX_LINK* pLink = ((CLightCycleFX*)pFX)->GetTronUnknownFX58();
 				if (pLink->IsValid())
 				{
 					g_pClientFXMgr->ShutdownClientFX(pLink);
@@ -1625,14 +1633,31 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 
 			vOffset *= (float)(pCyclist->nWallDist - 1);
 
-			// PORT: retail starts "LC_sparks" at vOffset (see above)
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				g_pMoveMgr->GetVehicleMgr()->CreateTronUnknownFX2148("LC_sparks", vOffset);
+			}
+			else if (pFX)
+			{
+				((CLightCycleFX*)pFX)->CreateTronUnknownFX58("LC_sparks", vOffset);
+			}
 		}
 	}
 	else
 	{
 		if (pCyclist->hObject == g_pMoveMgr->GetObject())
 		{
-			CLIENTFX_LINK* pLink = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownFX2148();
+			CVehicleMgr* pVehicleMgr = g_pMoveMgr->GetVehicleMgr();
+			CLIENTFX_LINK* pLink = pVehicleMgr->GetTronUnknownFX2148();
+			if (pVehicleMgr->GetTronUnknownFX2148()->IsValid())
+			{
+				g_pClientFXMgr->ShutdownClientFX(pLink);
+				pLink->ClearLink();
+			}
+		}
+		else if (pFX)
+		{
+			CLIENTFX_LINK* pLink = ((CLightCycleFX*)pFX)->GetTronUnknownFX58();
 			if (pLink->IsValid())
 			{
 				g_pClientFXMgr->ShutdownClientFX(pLink);
@@ -1652,13 +1677,12 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 		fTurnPitch = GetSpeedPitch(pCyclist, pCyclist->fSpeed);
 
 		// The others' cycles play their turn sound
-		HOBJECT hObj = pCyclist->hObject;
-		if (hObj != g_pMoveMgr->GetObject())
+		if (pCyclist->hObject != g_pMoveMgr->GetObject())
 		{
 			char szModel[128];
 			char szSound[128];
-			g_pPlayerMgr->TronUnknownVirtual7C(hObj, szModel, szSound, LTNULL);
-			g_pClientSoundMgr->PlaySoundFromObject(hObj, szSound, -1.0f, SOUNDPRIORITY_PLAYER_HIGH,
+			g_pPlayerMgr->TronUnknownVirtual7C(pCyclist->hObject, szModel, szSound, LTNULL);
+			g_pClientSoundMgr->PlaySoundFromObject(pCyclist->hObject, szSound, -1.0f, SOUNDPRIORITY_PLAYER_HIGH,
 				PLAYSOUND_3D | PLAYSOUND_ATTACHED, SMGR_DEFAULT_VOLUME, 1.0f, -1.0f, 0, 1.0f);
 		}
 	}
@@ -1673,11 +1697,11 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 		{
 			fTargetSpeed = m_ButeMgr.GetMaxSpeedZoneSpeed() * m_fGameSpeedScalar;
 		}
-		else if (pCyclist->bTurboCursed)
+		else if ((uint8)(pCyclist->nFlags >> 5) & 1)	// RETAIL: bTurboCursed, tested with a shift
 		{
 			fTargetSpeed = m_ButeMgr.GetMaxTurboCurseSpeed();
 		}
-		else if (pCyclist->bTurbo)
+		else if ((uint8)(pCyclist->nFlags >> 1) & 1)	// bTurbo
 		{
 			fTargetSpeed = pCyclist->fMaxTurboSpeed;
 		}
@@ -1696,6 +1720,29 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 
 		nTime = (int)((fTargetSpeed - pCyclist->fSpeed) / pCyclist->fAccelRate * 1000.0f);
 		fPitch = GetSpeedPitch(pCyclist, fTargetSpeed);
+
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual22(hSound, 1);
+
+		if (bTurned)
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSound, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+				((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSnd2c, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+			}
+		}
+		else
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSound, 0, *(uint32*)&fPitch, nTime);
+
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+				((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSnd2c, 0, *(uint32*)&fPitch, nTime);
+			}
+		}
 	}
 	else if (pCyclist->fAccelRate < 0.0f)
 	{
@@ -1711,6 +1758,29 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 
 		nTime = (int)((pCyclist->fSpeed - fTargetSpeed) / pCyclist->fAccelRate * -1000.0f);
 		fPitch = GetSpeedPitch(pCyclist, pCyclist->fMinSpeed);
+
+		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual22(hSound, 1);
+
+		if (bTurned)
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSound, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+				((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSnd2c, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
+			}
+		}
+		else
+		{
+			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSound, 0, *(uint32*)&fPitch, nTime);
+
+			if (pCyclist->hObject == g_pMoveMgr->GetObject())
+			{
+				HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
+				((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSnd2c, 0, *(uint32*)&fPitch, nTime);
+			}
+		}
 	}
 	else
 	{
@@ -1726,28 +1796,6 @@ void CClientLightCycleMgr::UpdateCycleEffects(LIGHT_CYCLIST* pCyclist, HLTSOUND 
 		return;
 	}
 
-	((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual22(hSound, 1);
-
-	if (bTurned)
-	{
-		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSound, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
-
-		if (pCyclist->hObject == g_pMoveMgr->GetObject())
-		{
-			HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
-			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual24(hSnd2c, 0, fTurnPitch, *(uint32*)&fPitch, nTime);
-		}
-	}
-	else
-	{
-		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSound, 0, *(uint32*)&fPitch, nTime);
-
-		if (pCyclist->hObject == g_pMoveMgr->GetObject())
-		{
-			HLTSOUND hSnd2c = g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c();
-			((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->TronUnknownVirtual23(hSnd2c, 0, *(uint32*)&fPitch, nTime);
-		}
-	}
 }
 
 // RETAIL: an inline linear interpolation (its use in 0x10014360 keeps both
@@ -1987,11 +2035,9 @@ bool CClientLightCycleMgr::SetCyclistPowerup(LIGHT_CYCLIST* pCyclist, int nPower
 //
 //	ROUTINE:	CClientLightCycleMgr::ActivatePowerup
 //
-//	PURPOSE:	RETAIL: 0x10014990. PORT: the shield, the turbo and the
-//				turbo curse start their FX with the vehicle manager's
-//				0x10122280, 0x10122350 and 0x10122420 for the local cycle
-//				and with the cycle's CLightCycleFX (0x1012d650, 0x1012d720,
-//				0x1012d7f0) for the others: none of them is in our build.
+//	PURPOSE:	RETAIL: 0x10014990. The shield, the turbo and the
+//				turbo curse start their FX with the vehicle manager for the
+//				local cycle and with the cycle's CLightCycleFX for the others.
 //
 // ----------------------------------------------------------------------- //
 
@@ -2019,14 +2065,23 @@ bool CClientLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pv
 		{
 			if (pCyclist->hObject != g_pMoveMgr->GetObject())
 			{
-				// PORT: the cycle's CLightCycleFX (see above)
-				bCreateFX = false;
-				break;
+				CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+				if (psfxMgr)
+				{
+					CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(pCyclist->hObject);
+					if (pFX)
+					{
+						pFX->CreateTronUnknownFX4C(szFX);
+					}
+				}
+			}
+			else
+			{
+				g_pMoveMgr->GetVehicleMgr()->CreateTronUnknownFX213c(szFX);
+				ShowMessage(LoadTempString(0x460));
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateShieldBreak));
 			}
 
-			// PORT: the vehicle manager's shield FX (see above)
-			ShowMessage(LoadTempString(0x460));
-			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateShieldBreak));
 			bCreateFX = false;
 		}
 		break;
@@ -2035,14 +2090,23 @@ bool CClientLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pv
 		{
 			if (pCyclist->hObject != g_pMoveMgr->GetObject())
 			{
-				// PORT: the cycle's CLightCycleFX (see above)
-				bCreateFX = false;
-				break;
+				CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+				if (psfxMgr)
+				{
+					CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(pCyclist->hObject);
+					if (pFX)
+					{
+						pFX->CreateTronUnknownFX50(szFX);
+					}
+				}
+			}
+			else
+			{
+				g_pMoveMgr->GetVehicleMgr()->CreateTronUnknownFX2140(szFX);
+				ShowMessage(LoadTempString(0x461));
+				PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateTurboBoost));
 			}
 
-			// PORT: the vehicle manager's turbo FX (see above)
-			ShowMessage(LoadTempString(0x461));
-			PlayCycleDialogue(g_pLightCycleButeMgr->GetRandomTextId(kLCText_ActivateTurboBoost));
 			bCreateFX = false;
 		}
 		break;
@@ -2053,7 +2117,23 @@ bool CClientLightCycleMgr::ActivatePowerup(LIGHT_CYCLIST* pCyclist, LTVector* pv
 			LIGHT_CYCLIST* pOther = pFirst;
 			while (pOther)
 			{
-				// PORT: the cursed cycle's FX (see above)
+				if (pOther->hObject != g_pMoveMgr->GetObject())
+				{
+					CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+					if (psfxMgr)
+					{
+						CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(pOther->hObject);
+						if (pFX)
+						{
+							pFX->CreateTronUnknownFX54(szFX);
+						}
+					}
+				}
+				else
+				{
+					g_pMoveMgr->GetVehicleMgr()->CreateTronUnknownFX2144(szFX);
+				}
+
 				pOther = GetNextCyclist(pOther->hObject, true);
 				if (pOther == pFirst)
 				{

@@ -56,6 +56,9 @@ class CLightCycleFX : public CSpecialFX
 		// RETAIL: inline (CClientLightCycleMgr::DeactivateShield, 0x100147cb);
 		// the name is ours
 		CLIENTFX_LINK*	GetTronUnknownFX4C() { return &m_TronUnknownFX4C; }
+		// RETAIL: inline (CClientLightCycleMgr::UpdateCycleEffects,
+		// 0x10013eb0); the name is ours
+		CLIENTFX_LINK*	GetTronUnknownFX58() { return &m_TronUnknownFX58; }
 
 	protected :
 
