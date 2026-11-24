@@ -63,6 +63,9 @@ class CBossButeMgr : public CGameButeMgr
 
 		// RETAIL: Thorne reads these directly (Thorne.cpp)
 		const ThorneAttributes&	GetThorne() const { return m_Thorne; }
+		// RETAIL: Thorne reads them through a non-const reference (the charge
+		// time range, CThorne::SetState 0x10059640)
+		ThorneAttributes&		GetThorne() { return m_Thorne; }
 
 	protected :
 

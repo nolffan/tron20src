@@ -429,7 +429,7 @@ void PowerArmor::ReadProp(ObjectCreateStruct *pStruct)
 
 	if ( g_pLTServer->GetPropGeneric( "HitPoints", &genProp ) == LT_OK )
 	{
-		m_fHitPoints = m_fMaxHitPoints = genProp.m_Float;
+		m_fMaxHitPoints = m_fHitPoints = genProp.m_Float;
 	}
 }
 
@@ -478,7 +478,7 @@ bool PowerArmor::HandleProjectileImpact( CProjectile* pProjectile, CAttachmentPo
 		fExtraDamage = pProjectile->m_fTronUnknown84 * pProjectile->m_fTronUnknown80;
 	}
 
-	LTFLOAT fHitPoints = GetHitPoints() - ( fExtraDamage + fDamage );
+	LTFLOAT fHitPoints = GetHitPoints() - ( fDamage + fExtraDamage );
 	if ( fHitPoints <= 0.0f )
 	{
 		fHitPoints = 0.0f;

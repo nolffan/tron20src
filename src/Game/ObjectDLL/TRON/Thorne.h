@@ -46,8 +46,12 @@ class ThorneBall : public OccludingArmor
 {
 	public :
 
-		// Ours: let Thorne set the ball's state
-		void	SetBallState(int nState) { SetState((eShieldState)nState); }
+		// RETAIL: Thorne shows, hides and resets the ball through inline
+		// helpers (OccludingArmor::SetState is protected); names ours,
+		// defined in Thorne.cpp
+		void	Show();
+		void	Hide();
+		void	ResetBall();
 };
 
 // ----------------------------------------------------------------------- //
@@ -89,6 +93,7 @@ class CThorne : public GameBase, public IHitBoxUser
 		void	Load(ILTMessage_Read *pMsg);
 		void	ReadProp(ObjectCreateStruct *pStruct);
 		void	Update();
+		void	FindTargetObject();
 		void	HandleModelString(HOBJECT hSender, const CParsedMsg &cMsg);
 		void	InitialUpdate(LTFLOAT fInfo);
 		void	AllObjectsCreated();
