@@ -314,7 +314,11 @@ public:
 
 	int GetIndex(const SubroutineDataKey & key) const
 	{
-		int nIndex = (key.m_nVersion * m_nNumStates + key.m_nState) * m_nNumDifficulties + key.m_nDifficulty;
+		int nIndex = key.m_nVersion;
+		nIndex *= m_nNumStates;
+		nIndex += key.m_nState;
+		nIndex *= m_nNumDifficulties;
+		nIndex += key.m_nDifficulty;
 		if (nIndex < 0 || nIndex >= m_nNumKeys)
 			nIndex = 0;
 		return nIndex;
