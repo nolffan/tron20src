@@ -393,9 +393,13 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 	{
 		// Get the last point
 		LIGHT_CYCLE_TRAIL_POINT* pOldPoint = &(pTrail->collTrailPoints[nPoints-1]);
-		LIGHT_CYCLE_TRAIL_POINT turnPoint = *pOldPoint;
+		// RETAIL: Tron copies the points through their accessors
+		LIGHT_CYCLE_TRAIL_POINT turnPoint;
+		turnPoint.SetX(pOldPoint->GetX());
+		turnPoint.SetY(pOldPoint->GetY());
+		turnPoint.SetZ(pOldPoint->GetZ());
 
-		float fDist = (float)(fabs(pOldPoint->GetZ() - newPoint.GetZ()) + fabs(pOldPoint->GetX() - newPoint.GetX()));
+		float fDist = (float)fabs(pOldPoint->GetZ() - newPoint.GetZ()) + (float)fabs(pOldPoint->GetX() - newPoint.GetX());
 		if(fDist < 1.0f)
 			return true;
 
@@ -448,7 +452,9 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 
 				// Change the last point to the turn point and start the
 				// new leg there
-				*pOldPoint = turnPoint;
+				pOldPoint->SetX(turnPoint.GetX());
+				pOldPoint->SetY(turnPoint.GetY());
+				pOldPoint->SetZ(turnPoint.GetZ());
 				pTrail->collTrailPoints.push_back(turnPoint);
 				pOldPoint = &(pTrail->collTrailPoints[pTrail->collTrailPoints.size()-1]);
 			}
@@ -472,7 +478,9 @@ bool CLightCycleMgr::UpdateLightCycleTrail(LIGHT_CYCLIST* pCyclist, bool bCheckC
 				}
 			}
 
-			*pOldPoint = newPoint;
+			pOldPoint->SetX(newPoint.GetX());
+			pOldPoint->SetY(newPoint.GetY());
+			pOldPoint->SetZ(newPoint.GetZ());
 		}
 		else
 		{
@@ -1936,14 +1944,6 @@ bool CLightCycleMgr::BeginTrailSpike(LIGHT_CYCLIST* pCyclist, LTVector* pvPos)
 	return true;
 }
 
-// RETAIL: the spike's ends are set through floats (0x101018c2: loaded and
-// stored on the FPU, not copied); the helper and its name are ours
-static inline void SetTrailPointXZ(LTVector* pPoint, float fX, float fZ)
-{
-	pPoint->x = fX;
-	pPoint->z = fZ;
-}
-
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLightCycleMgr::UpdateTrailSpike
@@ -1959,8 +1959,8 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 
 	if(pCyclist->pSpikeTrail || pCyclist->pSpikeTrail2)
 	{
-		LTVector* pPoint = NULL;
-		LTVector* pPoint2 = NULL;
+		LIGHT_CYCLE_TRAIL_POINT* pPoint = NULL;
+		LIGHT_CYCLE_TRAIL_POINT* pPoint2 = NULL;
 
 		if(pCyclist->fSpikeFullTime > 0.0f)
 		{
@@ -1970,18 +1970,18 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 				return;
 
 			if(pCyclist->pSpikeTrail)
-				pPoint = &pCyclist->pSpikeTrail->collTrailPoints.begin()->vPoint;
+				pPoint = pCyclist->pSpikeTrail->collTrailPoints.begin();
 
 			if(pCyclist->pSpikeTrail2)
-				pPoint2 = &pCyclist->pSpikeTrail2->collTrailPoints.begin()->vPoint;
+				pPoint2 = pCyclist->pSpikeTrail2->collTrailPoints.begin();
 		}
 		else
 		{
 			if(pCyclist->pSpikeTrail)
-				pPoint = &(pCyclist->pSpikeTrail->collTrailPoints.begin() + 1)->vPoint;
+				pPoint = pCyclist->pSpikeTrail->collTrailPoints.begin() + 1;
 
 			if(pCyclist->pSpikeTrail2)
-				pPoint2 = &(pCyclist->pSpikeTrail2->collTrailPoints.begin() + 1)->vPoint;
+				pPoint2 = pCyclist->pSpikeTrail2->collTrailPoints.begin() + 1;
 		}
 
 		float fMove = LCM_LT->TronUnknownVirtual45() * m_ButeMgr.GetTrailSpikeSpeed();
@@ -1992,7 +1992,7 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 
 		if(pPoint)
 		{
-			vNew.Init(pPoint->x, pPoint->y, pPoint->z);
+			vNew.Init(pPoint->GetX(), pPoint->GetY(), pPoint->GetZ());
 			vNew += (pCyclist->vSpikeDir * fMove);
 			pDir = &pCyclist->vSpikeDir;
 			pNew = &vNew;
@@ -2000,7 +2000,7 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 
 		if(pPoint2)
 		{
-			vNew2.Init(pPoint2->x, pPoint2->y, pPoint2->z);
+			vNew2.Init(pPoint2->GetX(), pPoint2->GetY(), pPoint2->GetZ());
 			vNew2 += (pCyclist->vSpikeDir2 * fMove);
 			pDir = &pCyclist->vSpikeDir2;
 			pNew = &vNew2;
@@ -2098,12 +2098,14 @@ void CLightCycleMgr::UpdateTrailSpike(LIGHT_CYCLIST* pCyclist)
 
 			if(pPoint && (pCyclist->pSpikeTrail->fDerezStartTime == 0.0f))
 			{
-				SetTrailPointXZ(pPoint, vNew.x, vNew.z);
+				pPoint->SetX(vNew.x);
+				pPoint->SetZ(vNew.z);
 			}
 
 			if(pPoint2 && (pCyclist->pSpikeTrail2->fDerezStartTime == 0.0f))
 			{
-				SetTrailPointXZ(pPoint2, vNew2.x, vNew2.z);
+				pPoint2->SetX(vNew2.x);
+				pPoint2->SetZ(vNew2.z);
 			}
 
 			if(!bRemove)
