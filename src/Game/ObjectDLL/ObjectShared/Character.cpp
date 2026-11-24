@@ -2202,13 +2202,15 @@ LTRotation CCharacter::GetRotationWithPitch( ) const
 	LTRotation rRot;
 	g_pLTServer->GetObjectRotation( m_hObject, &rRot );
 
-	// Convert the pitch percentage into radians.
-	float fPitchRadians = ( m_fPitch - 0.5f ) * MATH_PI;
+	// RETAIL: Tron's (0x1008e080) levels the object's rotation, then
+	// pitches it by m_fPitch (radians)
+	LTVector vForward = rRot.Forward( );
+	LTRotation rLevel( LTVector( vForward.x, 0.0f, vForward.z ), LTVector( 0.0f, 1.0f, 0.0f ));
 
 	// Rotate with the pitch.
-	rRot.Rotate( rRot.Right( ), fPitchRadians );
+	rLevel.Rotate( rLevel.Right( ), m_fPitch );
 
-	return rRot;
+	return rLevel;
 }
 		
 // ----------------------------------------------------------------------- //
