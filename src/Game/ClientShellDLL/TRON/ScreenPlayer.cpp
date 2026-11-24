@@ -581,57 +581,100 @@ void CScreenPlayer::UpdateChar()
 		UpdatePlayerChar();
 }
 
-// RETAIL: 0x10074310. PORT: Tron's team model (its skins by color) is
-// NOLF2's DM model here; the model and color names are formatted as retail's
+// RETAIL: 0x10074310: the multiplayer model, with the skins of its color
 void CScreenPlayer::UpdatePlayerChar()
 {
 	HOBJECT hChar = m_CharSFX.GetObject();
 	if (!hChar) return;
-	if (m_nCurrentModel >= g_pModelButeMgr->GetNumTeamModels()) return;
+	if (m_nCurrentModel >= g_pModelButeMgr->GetNumMPModels()) return;
 
-	ModelId id = (ModelId)g_pModelButeMgr->GetTeamDefaultModel(m_nCurrentModel);
+	const CModelButeMgr::MPModel* pModel = g_pModelButeMgr->GetMPModel(m_nCurrentModel);
+	ModelId id = pModel->m_eModelId;
 	if (id == eModelIdInvalid) return;
 
 	ObjectCreateStruct createStruct;
 	INIT_OBJECTCREATESTRUCT(createStruct);
 
-	SAFE_STRCPY(createStruct.m_Filename, g_pModelButeMgr->GetModelFilename(id));
-	g_pModelButeMgr->CopySkinFilenames(id, 0, createStruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+	SAFE_STRCPY(createStruct.m_Filename, g_pModelButeMgr->GetMultiModelFilename(id));
+
+	const std::vector<std::string> & lstSkins = pModel->m_vecColorSkins[m_nCurrentColor];
+	int nSkins = lstSkins.size();
+	for (int i = 0; i < nSkins; i++)
+	{
+		SAFE_STRCPY(createStruct.m_SkinNames[i], lstSkins[i].c_str());
+	}
+
 	g_pModelButeMgr->CopyRenderStyleFilenames(id, &createStruct);
 	g_pCommonLT->SetObjectFilenames(hChar, &createStruct);
 
 	HMODELANIM hAnim = g_pLTClient->GetAnimIndex(hChar, "Interface");
-	if (hAnim == INVALID_ANI)
+	if (hAnim != INVALID_ANI)
+	{
+		g_pLTClient->SetModelAnimation(hChar, hAnim);
+	}
+	else
+	{
 		hAnim = g_pLTClient->GetAnimIndex(hChar, "LST");
-	if (hAnim == INVALID_ANI)
-		hAnim = 0;
-	g_pLTClient->SetModelAnimation(hChar, hAnim);
+		if (hAnim != INVALID_ANI)
+			g_pLTClient->SetModelAnimation(hChar, hAnim);
+		else
+			g_pLTClient->SetModelAnimation(hChar, 0);
+	}
 
 	LTVector vScale(0.15f, 0.15f, 0.15f);
-	g_pLTClient->SetObjectScale(hChar, &vScale);
+	g_pLTClient->SetObjectScale(m_CharSFX.GetObject(), &vScale);
 
 	char szTmp[80];
 	std::wstring sText;
 
-	FormatString(0xDAC, szTmp, sizeof(szTmp), LoadTempString(0x226));
+	FormatString(0xDAC, szTmp, sizeof(szTmp), LoadTempString(pModel->m_nNameId));
 	LTGUIWiden(sText, szTmp);
 	m_pModel->SetString(sText);
 	m_pModel->SetHelpID(0x1FB);
 
-	FormatString(0xDAD, szTmp, sizeof(szTmp), LoadTempString(0xD68));
+	FormatString(0xDAD, szTmp, sizeof(szTmp), LoadTempString(g_pModelButeMgr->GetColorNameId(m_nCurrentColor)));
 	LTGUIWiden(sText, szTmp);
 	m_pColor->SetString(sText);
 	m_pColor->SetHelpID(0xD69);
 }
 
-// RETAIL: 0x10074840. PORT: Tron's light cycle models and colors (its light
-// cycle bute manager) are not here yet; the texts are retail's
+// RETAIL: 0x10074840: the light cycle of the chosen team (style) and shade
 void CScreenPlayer::UpdateCycleChar()
 {
-	m_pModel->SetString(LoadTempWString(0x226));
-	m_pModel->SetHelpID(0x1FB);
-	m_pColor->SetString(LoadTempWString(0xD68));
-	m_pColor->SetHelpID(0xD69);
+	HOBJECT hChar = m_CharSFX.GetObject();
+	if (!hChar) return;
+
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetShadeCycleColor((uint8)m_nCycleTeam, m_nCycleColor);
+	if (!pColor) return;
+
+	uint32 nShade = m_nCycleColor;
+	if (nShade >= g_pLightCycleButeMgr->GetNumShades()) return;
+
+	m_pColor->SetString(LoadTempWString(g_pLightCycleButeMgr->GetShade(nShade)->nNameId));
+	m_pColor->SetHelpID(0x25CB);
+	m_pModel->SetHelpID(0x25C9);
+
+	if (m_nCycleTeam == 0)
+	{
+		m_pModel->SetString(LoadTempWString(0x259A));
+		LTVector vScale(0.1f, 0.1f, 0.1f);
+		g_pLTClient->SetObjectScale(hChar, &vScale);
+	}
+	else
+	{
+		m_pModel->SetString(LoadTempWString(0x259B));
+		LTVector vScale(0.09f, 0.09f, 0.09f);
+		g_pLTClient->SetObjectScale(hChar, &vScale);
+	}
+
+	ObjectCreateStruct createStruct;
+	INIT_OBJECTCREATESTRUCT(createStruct);
+
+	SAFE_STRCPY(createStruct.m_Filename, pColor->szModel);
+	pColor->blrRenderStyles.CopyList(0, createStruct.m_RenderStyleNames[0], MAX_CS_FILENAME_LEN+1);
+	pColor->blrSkins.CopyList(0, createStruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+
+	g_pCommonLT->SetObjectFilenames(hChar, &createStruct);
 }
 
 // RETAIL: 0x10074b70
@@ -648,13 +691,27 @@ void CScreenPlayer::UpdateBandwidth()
 	}
 
 	std::wstring sText;
-	sText.erase(sText.begin(), sText.end());
-	const char* pText = m_sBandwidth;
-	uint32 nLen = strlen(pText);
-	for (uint32 i = 0; i < nLen; i++)
-		sText.push_back((wchar_t)(uint8)pText[i]);
-
+	LTGUIWiden(sText, m_sBandwidth);
 	m_pBandwidth->SetString(1,sText);
+}
+
+// RETAIL: Tron's custom bandwidth limits (0x10074e31, 0x10074e3b): fixed
+// values, not ProfileMgr.h's GetMinimumBandwidth/GetMaximumBandwidth (from
+// the bandwidth tables). The names are ours.
+const uint16 kTronMinBandwidth = 16;
+const uint16 kTronMaxBandwidth = 20000;
+static inline bool TronIsValidBandwidth(uint16 nBandwidth)
+{
+	return (nBandwidth >= kTronMinBandwidth && nBandwidth <= kTronMaxBandwidth);
+}
+
+// RETAIL: inlined in HandleCallback (0x10074dd4, 0x10074fec): a wide
+// string's characters into a cleared char buffer (the name is ours)
+static inline void NarrowCopy(char* pDest, const std::wstring& sText, uint32 nSize)
+{
+	memset(pDest, 0, nSize);
+	for (uint32 i = 0; i < sText.size() && i < nSize; i++)
+		pDest[i] = (char)sText[i];
 }
 
 // RETAIL: 0x10074d60: the message box's text is wide
@@ -664,13 +721,11 @@ void CScreenPlayer::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 	{
 	case kCmdEditBandwidth:
 		{
-			std::wstring sText((wchar_t *)dwParam1);
-			char szBandwidth[63] = {0};
-			for (uint32 i = 0; i < sText.size() && i < 63; i++)
-				szBandwidth[i] = (char)sText[i];
+			char szBandwidth[63];
+			NarrowCopy(szBandwidth, std::wstring((wchar_t *)dwParam1), sizeof(szBandwidth));
 
 			uint32 nBandwidth = (uint32)atoi(szBandwidth);
-			if ( IsValidBandwidth(nBandwidth) )
+			if ( TronIsValidBandwidth(nBandwidth) )
 			{
 				m_sBandwidth = szBandwidth;
 				m_sBandwidth = m_sBandwidth.Left( kMaxBandwidthStrLen );
@@ -685,22 +740,19 @@ void CScreenPlayer::HandleCallback(uint32 dwParam1, uint32 dwParam2)
 				// TRON: the message widened (RETAIL: 0x10074f09)
 				MBCreate mb;
 				std::wstring sMsg;
-				LTGUIWiden(sMsg, FormatTempString(0x7A,GetMinimumBandwidth(),GetMaximumBandwidth()));
+				LTGUIWiden(sMsg, FormatTempString(498,kTronMinBandwidth,kTronMaxBandwidth));
 				g_pInterfaceMgr->ShowMessageBox(sMsg,&mb);
 			}
 		}
 		break;
 	case kCmdEditName:
 		{
-			std::wstring sText((wchar_t *)dwParam1);
-			if (sText.size())
-			{
-				char szName[63] = {0};
-				for (uint32 i = 0; i < sText.size() && i < 63; i++)
-					szName[i] = (char)sText[i];
-				m_sPlayerName = szName;
-				m_pName->SetString(1,sText);
-			}
+			// RETAIL: 0x10074fac: no test for an empty name, and the name is
+			// cut to 16 characters
+			char szName[16];
+			NarrowCopy(szName, std::wstring((wchar_t *)dwParam1), sizeof(szName));
+			m_sPlayerName = szName;
+			m_pName->SetString(1,std::wstring((wchar_t *)dwParam1));
 		} break;
 	}
 	UpdateData();

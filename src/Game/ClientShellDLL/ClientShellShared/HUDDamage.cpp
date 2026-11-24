@@ -63,6 +63,8 @@ LTBOOL CHUDDamage::Init()
 
 void CHUDDamage::Render()
 {
+	// RETAIL: 0x10186f00 tests the item's enabled state too
+	if (!IsEnabled()) return;
 	if (!m_bDraw) return;
 
 	SetRenderState();
@@ -82,23 +84,17 @@ void CHUDDamage::Update()
 {
 	if (!m_bDraw) return;
 
-	float x = (float)m_BasePos.x * g_pInterfaceResMgr->GetXRatio();
+	// RETAIL: 0x10187020: Tron's stacks an icon for each active damage FX
+	// (it does not skip a second FX of one type)
+	float x = g_pInterfaceResMgr->GetXRatio() * m_BasePos.x;
 	float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
 	float sz = m_nIconHt * g_pInterfaceResMgr->GetYRatio();
-
-	uint32 nNumDamageFX = g_pDamageFXMgr->GetNumDamageFX();
-	bool *aDamageSet = (bool*)alloca(nNumDamageFX);
-	memset(aDamageSet, 0, sizeof(aDamageSet[0]) * nNumDamageFX); 
 
 	DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstActiveFX();
 	while( pDamageFX )
 	{
-		if (!aDamageSet[pDamageFX->m_nID])
-		{
-			g_pDrawPrim->SetXYWH( &m_Poly[pDamageFX->m_nID], x, y, sz, sz );
-			y += sz;
-			aDamageSet[pDamageFX->m_nID] = true;
-		}
+		g_pDrawPrim->SetXYWH( &m_Poly[pDamageFX->m_nID], x, y, sz, sz );
+		y += sz;
 	
 		pDamageFX = g_pDamageFXMgr->GetNextActiveFX();
 	}

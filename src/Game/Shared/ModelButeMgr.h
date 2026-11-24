@@ -278,7 +278,8 @@ class CModelButeMgr : public CGameButeMgr
 		const MPModel*	GetMPModel(int num);
 
 		int				GetNumColorNameIds() { return m_vecColorNameIds.size(); }
-		int				GetColorNameId(int nColor) { return m_vecColorNameIds[nColor]; }
+		// RETAIL: CShell.dll 0x1014b5a0 (out of line; the name is ours)
+		int				GetColorNameId(uint8 nColor);
 
 		// PORT: NOLF2's callers of its cooperative, deathmatch and team
 		// models; Tron has one list of multiplayer models.

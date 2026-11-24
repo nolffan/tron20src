@@ -62,17 +62,20 @@ namespace
 	const float kRefreshTime = 8.0f;
 
 	// RETAIL: 0x101e9584, 0x101e9588: the version the servers must have
-	const int kVersionMajor = 1;
-	const int kVersionMinor = 18;
+	// (read from memory: an array; the name is ours)
+	const int kVersion[2] = { 1, 18 };
 
 	// RETAIL: 0x10062af0
 	void ServerBrowserCallBack(ServerBrowser sb, SBCallbackReason reason, SBServer server, void *instance)
 	{
 		CScreenJoinServerList *pThisScreen = (CScreenJoinServerList *)instance;
-		if (reason == sbc_serverupdated)
+		// RETAIL: 0x10062af9 tests the reason as a switch does
+		switch (reason)
 		{
+		case sbc_serverupdated:
 			if (g_pInterfaceMgr->GetScreenMgr()->GetCurrentScreenID() == SCREEN_ID_JOIN_SERVERLIST)
 				pThisScreen->AddServer(server);
+			break;
 		}
 		pThisScreen->UpdateState();
 	}
@@ -117,7 +120,7 @@ CScreenJoinServerList::CScreenJoinServerList()
 	m_nTypeFilter = 0;
 	m_nTronUnknownAC8 = 0;
 
-	sprintf(m_szVersion,"%d.%.3d",kVersionMajor,kVersionMinor-1);
+	sprintf(m_szVersion,"%d.%.3d",kVersion[0],kVersion[1]-1);
 
 	m_pStatus = LTNULL;
 	m_nLockColumn = 0;
@@ -736,10 +739,14 @@ bool CScreenJoinServerList::FilterServer(SBServer hServer)
 		}
 	}
 
-	if (_stricmp(SBServerGetStringValue(hServer,"gamever",""),m_szVersion))
+	if (_stricmp(m_szVersion,SBServerGetStringValue(hServer,"gamever","")))
 		return false;
 
-	return (_stricmp(SBServerGetStringValue(hServer,"modname",""),g_pClientMultiplayerMgr->GetModName()) == 0);
+	const char *pszMod = SBServerGetStringValue(hServer,"modname","");
+	if (_stricmp(pszMod,g_pClientMultiplayerMgr->GetModName()))
+		return false;
+
+	return true;
 }
 
 // RETAIL: 0x10064c60: the address and the port typed into the message box

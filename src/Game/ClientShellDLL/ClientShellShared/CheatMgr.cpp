@@ -129,8 +129,15 @@ void CCheatMgr::Init()
 // list's until Tron's cheats are written
 LTBOOL CCheatMgr::IsCheatActive(int nCheatCode)
 {
-	if (nCheatCode <= CHEAT_NONE || nCheatCode >= CHEAT_MAX)
+#ifdef TRON20_MODERN
+	if (nCheatCode < 0 || nCheatCode >= sizeof(s_CheatInfo) / sizeof(s_CheatInfo[0]))
 		return LTFALSE;
+#else
+	// RETAIL: 0x100f1e30 tests "> 0x39" unsigned (the table has 0x39
+	// entries), so CHEAT_MAX reads one past the table (docs/RETAIL_BUGS.md).
+	if (nCheatCode < 0 || nCheatCode > sizeof(s_CheatInfo) / sizeof(s_CheatInfo[0]))
+		return LTFALSE;
+#endif
 	return s_CheatInfo[nCheatCode].bActive;
 }
 

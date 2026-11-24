@@ -49,7 +49,7 @@ CTargetMgr::CTargetMgr()
 	m_hTarget = NULL;
 	m_hLockedTarget = NULL;
 	m_fTargetRange = 10000.0f;
-	m_nTargetTeam = INVALID_TEAM;
+	// RETAIL: 0x1016d5f0 sets no target team
 	m_szString[0] = 0;
 	m_szDebugString[0] = 0;
 	m_nString = 0;
@@ -57,7 +57,6 @@ CTargetMgr::CTargetMgr()
 	m_bSearchTarget = false;
 	m_bMoveTarget = false;
 	m_bCanActivate = false;
-	m_bFirstUpdate = true;
 }
 
 
@@ -93,6 +92,13 @@ inline void CTargetMgr::ClearTargetInfo()
 	m_szDebugString[0] = 0;
 	m_nString = 0;
 
+	// RETAIL: Tron's initialises the console variables here, each time
+	// (0x1016d7bf), and keeps the distances (0x1016d91d, 0x1016d944) for
+	// the inline IsTargetInRange
+	FirstUpdate();
+	m_fActivationDistance = g_vtActivationDistance.GetFloat();
+	m_fTargetDistance = g_vtTargetDistance.GetFloat();
+
 	m_ActivationData.Init();
 
 	m_bSearchTarget = false;
@@ -103,21 +109,6 @@ inline void CTargetMgr::ClearTargetInfo()
 
 void CTargetMgr::Update()
 {
-	
-	// Do any necessary initialization...
-
-	if (m_bFirstUpdate)
-	{
-		FirstUpdate();
-		m_bFirstUpdate = false;
-	}
-
-	// RETAIL: Tron keeps the distances (0x1016d91d, 0x1016d944) for the
-	// inline IsTargetInRange
-	m_fActivationDistance = g_vtActivationDistance.GetFloat();
-	m_fTargetDistance = g_vtTargetDistance.GetFloat();
-
-
 	if (m_hLockedTarget && m_hTarget == m_hLockedTarget)
 	{
 		// RETAIL: no gadget disabling in Tron (no CGadgetDisabler)
@@ -135,10 +126,7 @@ void CTargetMgr::Update()
 		}
 	}
 
-	g_pPlayerStats->UpdateMaxProgress( 0 );
-	g_pPlayerStats->UpdateProgress( 0 );
-	g_pHUDMgr->QueueUpdate( kHUDProgressBar );
-
+	// RETAIL: Tron's has no progress bar to clear here
 
 	// If we currently have a target, see if it is a body and if so remove the
 	// glow flag (it may be set again below)...

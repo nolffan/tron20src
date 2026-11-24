@@ -17,6 +17,8 @@
 #include "TronLayoutMgr.h"
 #include "LCHUDHelper.h"
 #include "ltquaduvutils.h"
+#include "CMoveMgr.h"
+#include "TRON/LightCycleMgr.h"
 
 // RETAIL: 0x1002db30
 CHUDLightCyclePowerupIcon::CHUDLightCyclePowerupIcon() :
@@ -81,9 +83,16 @@ void CHUDLightCyclePowerupIcon::UpdateLayout()
 // RETAIL: 0x1002de10
 void CHUDLightCyclePowerupIcon::UpdatePowerup()
 {
-	// PORT: stand-in. Retail finds the player's light cycle (by the move
-	// manager's object, in the client's light cycle manager: 0x100ff280,
-	// not in this tree yet) and, while it has a power-up (its +0xf0 is not
-	// 12), shows that power-up's icon (LCHUDHelper::GetPowerupIconTexture)
-	m_bShow = false;
+	// RETAIL: the player's light cycle, while it has a power-up
+	LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+	if (IsEnabled() && pCyclist && pCyclist->nPowerup != LC_NO_POWERUP)
+	{
+		m_bShow = true;
+		int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
+		m_hIcon = g_pInterfaceResMgr->GetTexture(g_pTronLayoutMgr->GetLCHUDHelper()->GetPowerupIconTexture(nCurrentLayout, pCyclist->nPowerup).c_str());
+	}
+	else
+	{
+		m_bShow = false;
+	}
 }

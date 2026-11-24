@@ -324,8 +324,9 @@ bool CClientWeapon::OnModelKey( HLOCALOBJ hObj, ArgList* pArgList )
 		return HandleShowPVAttachmentKey( hObj, pArgList );
 	}
 
-	// RETAIL: Tron's returns false for a key it does not know (0x1012f6ae)
-	return false;
+	// RETAIL: Tron's returns true for a key it does not know (0x1012f679,
+	// 0x1012f692 jump to 0x1012f4d6)
+	return true;
 }
 
 // ----------------------------------------------------------------------- //

@@ -58,8 +58,6 @@ namespace
 	int kDlgHt = 240;
 	int kDlgWd = 240;
 	uint32 nCommand = 0;
-	uint8 nListFont = 1;
-	uint8 nListFontSz = 14;
 
 }
 
@@ -91,33 +89,30 @@ LTBOOL CScreenProfile::Build()
 
 	AddTextItem(IDS_LOAD, CMD_LOAD, IDS_HELP_PROFILE_LOAD);
 
-//jrg - 8/18/02 removed as a quick and dirty to multiple issues caused by renaming profiles.
-//	m_pRename = AddTextItem(IDS_RENAME, CMD_RENAME, IDS_HELP_PROFILE_RENAME);
+	// RETAIL: Tron keeps the rename item (0x10075a36), which NOLF2 later
+	// removed
+	m_pRename = AddTextItem(IDS_RENAME, CMD_RENAME, IDS_HELP_PROFILE_RENAME);
 
 	m_pDelete = AddTextItem(IDS_DELETE, CMD_DELETE, IDS_HELP_PROFILE_DELETE);
 
 
+	// RETAIL: 0x10075a7f: Tron's dialog keeps its default size for its
+	// contents, takes the frame from the layout's dialog, and its items keep
+	// their own fonts
 	LTIntPt dlgPos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogPos");
 	LTIntPt dlgSz = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"DialogSize");
-	kDlgHt = dlgSz.y;
-	kDlgWd = dlgSz.x;
-	uint8 nDlgFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontFace");
-	uint8 nDlgFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"DialogFontSize");
-
-	nListFont = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontFace");
-	nListFontSz = (uint8)g_pLayoutMgr->GetScreenCustomInt((eScreenID)m_nScreenID,"ListFontSize");
 
 	char szBack[128] = "";
-	g_pLayoutMgr->GetScreenCustomString((eScreenID)m_nScreenID,"DialogFrame",szBack,sizeof(szBack));
+	g_pLayoutMgr->GetDialogFrame(szBack,sizeof(szBack));
 
 	m_pDlg = debug_new(CLTGUIWindow);
 	m_pDlg->Create(g_pInterfaceResMgr->GetTexture(szBack),kDlgHt,kDlgWd);
+	m_pDlg->SetBasePos(dlgPos);
+	m_pDlg->SetSize(dlgSz.x,dlgSz.y);
 
 	LTIntPt tmp(8,8);
-	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nDlgFont);
 
 	CLTGUITextCtrl *pCtrl = CreateTextItem(IDS_PROFILE_LIST, LTNULL, LTNULL, kDefaultPos, LTTRUE);
-	pCtrl->SetFont(pFont,nDlgFontSz);
 	m_pDlg->AddControl(pCtrl, tmp);
 
 	tmp.y += 24;
@@ -133,26 +128,27 @@ LTBOOL CScreenProfile::Build()
 		HTEXTURE hDownH = g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\arrowdn_h.dtx");
 		m_pListCtrl->UseArrows(kDlgWd-48,1.0f,hUp,hUpH,hDown,hDownH);
 		m_pListCtrl->SetIndent(LTIntPt(4,4));
-		m_pListCtrl->SetFrameWidth(2);
-		m_pListCtrl->SetColors(m_SelectedColor,m_NonSelectedColor,m_DisabledColor);
+		m_pListCtrl->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 
 		m_pDlg->AddControl(m_pListCtrl, tmp);
 
 	}
 
 	pCtrl = CreateTextItem(IDS_CANCEL, CMD_CANCEL, LTNULL);
-	pCtrl->SetFont(pFont,nDlgFontSz);
+	pCtrl->SetScale(1.0f);
 	tmp.x = (kDlgWd - pCtrl->GetBaseWidth()) / 2;
 	tmp.y = (kDlgHt - pCtrl->GetBaseHeight()) - 8;
 	m_pDlg->AddControl(pCtrl, tmp);
 
-	AddControl(m_pDlg);
-
-	m_pDlg->SetBasePos(dlgPos);
+	int nDlgX = 320 - m_pDlg->GetBaseWidth() / 2;
+	int nDlgY = 240 - m_pDlg->GetBaseHeight() / 2;
+	m_pDlg->SetBasePos(LTIntPt(nDlgX, nDlgY));
 	m_pDlg->SetScale(g_pInterfaceResMgr->GetXRatio());
 	m_pDlg->Show(LTFALSE);
 
 	m_pDlg->SetSelection(1);
+
+	AddControl(m_pDlg);
 
 	UseBack(LTTRUE);
 
@@ -343,14 +339,13 @@ void CScreenProfile::CreateProfileList()
 	m_ProfileList.clear();
 	g_pProfileMgr->GetProfileList(m_ProfileList);
 
-	CUIFont *pFont = g_pInterfaceResMgr->GetFont(nListFont);
-
-	// Profiles to the list
+	// RETAIL: 0x10076540 widens each name into one string of its own, and
+	// keeps the text items' own font
+	std::wstring sName;
 	for (StringSet::iterator iter = m_ProfileList.begin(); iter != m_ProfileList.end(); ++iter)
 	{
-		char *pStr = (char *)iter->c_str();
-		CLTGUITextCtrl* pTextCtrl = CreateTextItem(pStr, CMD_OK, LTNULL);
-		pTextCtrl->SetFont(pFont,nListFontSz);
+		LTGUIWiden(sName, iter->c_str());
+		CLTGUITextCtrl* pTextCtrl = CreateTextItem(sName, CMD_OK, LTNULL);
 		uint16 ndx = m_pListCtrl->AddControl(pTextCtrl);
 		pTextCtrl->SetParam1(ndx);
 
@@ -362,7 +357,10 @@ void CScreenProfile::CreateProfileList()
 
 void CScreenProfile::UpdateProfileName()
 {
-	m_pCurrent->SetString(FormatTempString(IDS_CURRENT_PROFILE,m_szProfile));
+	// RETAIL: 0x10076730 widens the text into a string of its own
+	std::wstring sText;
+	LTGUIWiden(sText, FormatTempString(IDS_CURRENT_PROFILE,m_szProfile));
+	m_pCurrent->SetString(sText);
 
 	CreateProfileList();
 
@@ -419,7 +417,18 @@ void CScreenProfile::HandleDlgCommand(uint32 dwCommand, uint16 nIndex)
 			mb.eType = LTMB_YESNO;
 			mb.pFn = DeleteCallBack,
 			mb.pData = (void *)nIndex;
-			g_pInterfaceMgr->ShowMessageBox(IDS_CONFIRM_DELETE_PROFILE,&mb);
+
+			// RETAIL: 0x10076afe names the profile in the question (string
+			// 687 of Tron's table)
+			StringSet::iterator iter = m_ProfileList.begin();
+			for (int i = 0; i < nIndex && iter != m_ProfileList.end(); ++i, ++iter);
+
+			if (iter != m_ProfileList.end())
+			{
+				std::wstring sText;
+				LTGUIWiden(sText, FormatTempString(687, iter->c_str()));
+				g_pInterfaceMgr->ShowMessageBox(sText,&mb);
+			}
 		}
 		break;
 	case CMD_RENAME:

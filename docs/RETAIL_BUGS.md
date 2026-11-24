@@ -1452,6 +1452,16 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The cheat manager reads one entry past its cheat table
+
+CShell.dll 0x100f1e30 (CCheatMgr::IsCheatActive, ClientShellDLL/
+ClientShellShared/CheatMgr.cpp). The table has 0x39 entries (CHEAT_MAX),
+but the function refuses only codes greater than 0x39. Thus a code of
+CHEAT_MAX reads the "active" flag of the word after the table.
+
+Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
+CheatMgr.cpp refuses CHEAT_MAX too.
+
 ### The light cycle power-up lock test reads past the name table
 
 CShell.dll 0x10069580 (CScreenLightCycleGame::IsPowerupLocked, ClientShellDLL/

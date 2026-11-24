@@ -1314,10 +1314,12 @@ void DAMAGEFX::StartSoundAndVisuals()
 
 	if( m_szFXName[0] )
 	{
-		LTVector vCamPos;
-		g_pLTClient->GetObjectPos( g_pPlayerMgr->GetCamera(), &vCamPos );
-
-		CLIENTFX_CREATESTRUCT	fxInit( m_szFXName, FXFLAG_LOOP | FXFLAG_REALLYCLOSE, LTVector(0,0,0) ); 
+		// RETAIL: 0x10159bc0: an instant effect's FX does not loop, and no
+		// camera position is read
+		uint32 dwFlags = FXFLAG_REALLYCLOSE;
+		if( !m_bInstantEffect )
+			dwFlags |= FXFLAG_LOOP;
+		CLIENTFX_CREATESTRUCT	fxInit( m_szFXName, dwFlags, LTVector(0,0,0) ); 
 		g_pClientFXMgr->CreateClientFX(&m_DamageFXInstance, fxInit, LTTRUE );
 	}
 }

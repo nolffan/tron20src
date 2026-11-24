@@ -784,7 +784,24 @@ void CWeaponFX::CreateExitMark()
 void CWeaponFX::CreateMark(const LTVector &vPos, const LTVector &vNorm, const LTRotation &rRot,
 						   SurfaceType eType)
 {
-	IMPACTFX* pImpactFX = m_pAmmo->pImpactFX;
+	// RETAIL: 0x10190450: the impact FX of the impact type (as
+	// CreateSurfaceSpecificFX)
+	IMPACTFX* pImpactFX = LTNULL;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	}
 
 	if (IsLiquid(m_eCode))
 	{
@@ -895,14 +912,66 @@ void CWeaponFX::CreateTracer()
 
 void CWeaponFX::CreateWeaponSpecificFX()
 {
-	// Do fire fx beam fx...
+	// RETAIL: 0x101908c0: Tron's has no fire FX beam; it picks the impact FX
+	// first, creates it when the impact can be seen (or lasts), then pushes
+	// the object hit with the impact FX's pusher
 
-	if (m_pAmmo->pFireFX && m_pAmmo->pFireFX->szBeamFXName )
+	//determine if the object we hit is a model 
+	bool bHitMovable = false;
+
+	if(m_hObjectHit)
 	{
-	 	CLIENTFX_CREATESTRUCT fxInit( m_pAmmo->pFireFX->szBeamFXName, 0, m_vFirePos );
-		fxInit.m_bUseTargetData = true;
-		fxInit.m_vTargetPos = m_vPos;
-		g_pClientFXMgr->CreateClientFX( LTNULL, fxInit, LTTRUE );	
+		//we hit an object, assume it is movable
+		bHitMovable = true;
+
+		uint32 nType;
+		if(g_pLTClient->Common()->GetObjectType(m_hObjectHit, &nType) == LT_OK)
+		{
+			//we only want to hit non-movable world models
+			if(nType == OT_WORLDMODEL)
+			{
+				uint32 nUserFlags;
+				if(g_pLTClient->Common()->GetObjectFlags(m_hObjectHit, OFT_User, nUserFlags) == LT_OK)
+				{
+					//see if it is movable
+					if(!(nUserFlags & USRFLG_MOVEABLE))
+					{
+						bHitMovable = false;
+					}
+				}
+			}
+		}				
+	}
+
+	IMPACTFX* pImpactFX = LTNULL;
+	if(bHitMovable && m_pAmmo->pMoveableImpactOverrideFX)
+	{
+		// the model hit effect
+		pImpactFX = m_pAmmo->pMoveableImpactOverrideFX;
+	}
+	else
+	{
+		switch (m_eImpactType)
+		{
+		case IMPACT_TYPE_IMPACT:
+			pImpactFX = m_pAmmo->pImpactFX;
+			break;
+		case IMPACT_TYPE_RICOCHET:
+			pImpactFX = GetRicochetFX(m_pAmmo);
+			break;
+		case IMPACT_TYPE_BLOCKED:
+			pImpactFX = m_pAmmo->pBlockedFX;
+			break;
+		case (IMPACT_TYPE)3:
+			pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+			break;
+		}
+
+		if (IsLiquid(m_eCode))
+		{
+			// underwater weapon fx...
+			pImpactFX = m_pAmmo->pUWImpactFX;
+		}
 	}
 
 	// Only do impact fx if the client can see the impact position
@@ -920,61 +989,18 @@ void CWeaponFX::CreateWeaponSpecificFX()
 		cs.fBlastRadius = (LTFLOAT) m_pAmmo->fAreaDamageRadius;
 		cs.fTintRange   = (LTFLOAT) (m_pAmmo->fAreaDamageRadius * 5);
 
-		//determine if the object we hit is a model 
-		bool bHitMovable = false;
+		g_pFXButeMgr->CreateImpactFX(pImpactFX, cs);
+	}
 
-		if(m_hObjectHit)
-		{
-			//we hit an object, assume it is movable
-			bHitMovable = true;
+	if (pImpactFX && pImpactFX->pPusherFX && m_hObjectHit)
+	{
+		LTVector vObjPos;
+		g_pLTClient->GetObjectPos(m_hObjectHit, &vObjPos);
 
-			uint32 nType;
-			if(g_pLTClient->Common()->GetObjectType(m_hObjectHit, &nType) == LT_OK)
-			{
-				//we only want to hit non-movable world models
-				if(nType == OT_WORLDMODEL)
-				{
-					uint32 nUserFlags;
-					if(g_pLTClient->Common()->GetObjectFlags(m_hObjectHit, OFT_User, nUserFlags) == LT_OK)
-					{
-						//see if it is movable
-						if(!(nUserFlags & USRFLG_MOVEABLE))
-						{
-							bHitMovable = false;
-						}
-					}
-				}
-			}				
-		}
+		LTVector vDir = m_vDir;
+		vDir.Normalize();
 
-
-		if(bHitMovable && m_pAmmo->pMoveableImpactOverrideFX)
-		{
-			// Create the model hit effect
-			g_pFXButeMgr->CreateImpactFX(m_pAmmo->pMoveableImpactOverrideFX, cs);
-		}
-		else if (IsLiquid(m_eCode))
-		{
-			// Create underwater weapon fx...
-			g_pFXButeMgr->CreateImpactFX(m_pAmmo->pUWImpactFX, cs);
-		}
-		else if ( IMPACT_TYPE_RICOCHET == m_eImpactType )
-		{
-			// Create a ricochet weapon fx...
-			// RETAIL: Tron's asks its helper (0x10190961)
-			IMPACTFX *pRicochetFX = GetRicochetFX( m_pAmmo );
-			g_pFXButeMgr->CreateImpactFX(pRicochetFX, cs);
-		}
-		else if ( IMPACT_TYPE_BLOCKED == m_eImpactType )
-		{
-			// Create a blocked weapon fx...
-			g_pFXButeMgr->CreateImpactFX(m_pAmmo->pBlockedFX, cs);
-		}
-		else if ( IMPACT_TYPE_IMPACT == m_eImpactType )
-		{
-			// Create a ricochet weapon fx...
-			g_pFXButeMgr->CreateImpactFX(m_pAmmo->pImpactFX, cs);
-		}
+		g_pFXButeMgr->CreatePusherFX(pImpactFX->pPusherFX, vObjPos - vDir * 48.0f);
 	}
 }
 
@@ -991,18 +1017,7 @@ void CWeaponFX::CreateSurfaceSpecificFX()
 	CUserProfile* pProfile = g_pProfileMgr->GetCurrentProfile();
 	if (!pProfile) return;
 
-	// Only check for visibility if we actually have an object...
-
-	if( m_hObjectHit )
-	{
-		uint32 dwFlags;
-		g_pCommonLT->GetObjectFlags( m_hObjectHit, OFT_Flags, dwFlags );
-		
-		// Don't do surface fx on an invisible object...
-
-		if( !(dwFlags & FLAG_VISIBLE) )
-			return;
-	}
+	// RETAIL: 0x10190c40: Tron's makes no visibility test of the object hit
 
 	if (m_eSurfaceType == ST_FLESH)
 	{
@@ -1030,8 +1045,29 @@ void CWeaponFX::CreateSurfaceSpecificFX()
 		CreateExitDebris();
 	}
 
-	if (!m_pAmmo->pImpactFX) return;
-	if (!m_pAmmo->pImpactFX->bDoSurfaceFX) return;
+	// RETAIL: 0x10190cb3: the impact FX of the impact type decides whether
+	// there are surface FX (the fourth type is Tron's deadly block)
+	IMPACTFX* pImpactFX;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	default:
+		return;
+	}
+
+	if (!pImpactFX) return;
+	if (!pImpactFX->bDoSurfaceFX) return;
 
 
 	// Create the surface specific fx...
@@ -1115,7 +1151,24 @@ LTBOOL CWeaponFX::IsBulletTrailWeapon()
 
 void CWeaponFX::PlayImpactSound()
 {
-	IMPACTFX* pImpactFX = m_pAmmo->pImpactFX;
+	// RETAIL: 0x10190f20: the impact FX of the impact type (as
+	// CreateSurfaceSpecificFX)
+	IMPACTFX* pImpactFX = LTNULL;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	}
 
 	if (IsLiquid(m_eCode))
 	{
@@ -1125,9 +1178,10 @@ void CWeaponFX::PlayImpactSound()
 	if (!pImpactFX) return;
 
 
+	// RETAIL: Tron's plays no vector impact sound at low detail
 	if (m_pAmmo->eType == VECTOR)
 	{
-		if ((m_nDetailLevel == RS_LOW) && GetRandom(1, 2) != 1) return;
+		if (m_nDetailLevel == RS_LOW) return;
 		else if ((m_nDetailLevel == RS_MED) && GetRandom(1, 3) == 1) return;
 	}
 
@@ -1483,12 +1537,41 @@ void CWeaponFX::PlayBulletFlyBySound()
 	LTVector vPos;
 	g_pLTClient->GetObjectPos(hCamera, &vPos);
 
+	// RETAIL: 0x1019221a: Tron's plays none within the weapon's fire sound
+	// radius either, and takes the impact FX of the impact type (as
+	// CreateSurfaceSpecificFX) at its full sound radius
+	LTVector vFireDist = m_vFirePos - vPos;
+	if (vFireDist.Length() < float(m_pWeapon->nFireSoundRadius))
+		return;
+
   	// We only play the flyby sound if we won't hear an impact...
   
-  	if (m_pAmmo->pImpactFX)
+	IMPACTFX* pImpactFX = LTNULL;
+	switch (m_eImpactType)
+	{
+	case IMPACT_TYPE_IMPACT:
+		pImpactFX = m_pAmmo->pImpactFX;
+		break;
+	case IMPACT_TYPE_RICOCHET:
+		pImpactFX = GetRicochetFX(m_pAmmo);
+		break;
+	case IMPACT_TYPE_BLOCKED:
+		pImpactFX = m_pAmmo->pBlockedFX;
+		break;
+	case (IMPACT_TYPE)3:
+		pImpactFX = m_pAmmo->pDeadlyBlockedFX;
+		break;
+	}
+
+	if (IsLiquid(m_eCode))
+	{
+		pImpactFX = m_pAmmo->pUWImpactFX;
+	}
+
+  	if (pImpactFX)
   	{
   		LTVector vDist = m_vPos - vPos;
-  		if ( vDist.Length() < (0.75f * float(m_pAmmo->pImpactFX->nSoundRadius)) ) 
+  		if ( vDist.Length() < float(pImpactFX->nSoundRadius) ) 
 			return;
   	}
 
@@ -1511,7 +1594,7 @@ void CWeaponFX::PlayBulletFlyBySound()
 		// Play the fly by sound bute....
 
 		vPos += vBulletDir;
-		g_pClientSoundMgr->PlaySoundFromPos(vPos, "BulletFlyBy");
+		g_pClientSoundMgr->PlaySoundFromPos((LTVector)vPos, "BulletFlyBy");
 	}
 }
 

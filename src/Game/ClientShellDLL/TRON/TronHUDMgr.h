@@ -81,9 +81,7 @@ protected:
 	CHUDHealthEnergy			m_HealthEnergy;				// +0x38bc
 	CHUDArmor					m_Armor;					// +0x3d1c
 	CHUDEnergyTransfer			m_EnergyTrans;				// +0x407c
-	CHUDProgress				m_Progress;					// +0x41bc
-	// PORT: retail's CHUDProgress is 0x2c54 bytes; the pad goes when ours is
-	char						m_aTronPadProgress[0x2c54 - sizeof(CHUDProgress)];
+	CHUDProgress				m_Progress;					// +0x41bc (0x2c54 bytes)
 	CHUDWpnChooser				m_WpnChooser;				// +0x6e10
 	CHUDWeapon					m_Weapon;					// +0xb328
 	CHUDPings					m_Pings;					// +0xb418

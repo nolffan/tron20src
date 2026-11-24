@@ -92,8 +92,9 @@ void CHUDSubtitles::Draw()
 	LTRotation rRot;
 	g_pLTClient->GetListener(&bListenerInClient, &vListenerPos, &rRot);
 
-	bool bForceDraw = (bool)(m_vSpeakerPos == LTVector(0, 0, 0));
-	bForceDraw = g_pPlayerMgr->IsUsingExternalCamera() ? LTTRUE : bForceDraw;
+	LTBOOL bForceDraw = (m_vSpeakerPos == LTVector(0, 0, 0));
+	if (g_pPlayerMgr->IsUsingExternalCamera())
+		bForceDraw = LTTRUE;
 
 	LTVector vPos = m_vSpeakerPos - vListenerPos;
 	float fAdjustedRadius = m_fRadius * g_vtAdjustedRadius.GetFloat();
@@ -102,13 +103,25 @@ void CHUDSubtitles::Draw()
 		return;
 
 	//render dropshadow
+	// RETAIL: 0x100fd2be: the shadow is offset by the screen's scale, and
+	// the text is clipped to a rect on whole pixels: one line spacing
+	// higher, two taller and 40 wider than the box
 	int32 x,y;
 	m_pText->GetPosition(&x,&y);
-	m_pText->SetPosition(x+2.0f,y+2.0f);
+	// RETAIL: the ratio is copied through the FPU (0x100fd2d8)
+	float fShadow = (float)(double)g_pInterfaceResMgr->GetXRatio();
+	m_pText->SetPosition((int)(x+fShadow),(int)(y+fShadow));
 	m_pText->SetColor(argbBlack);
 
+	CUIRECT rcClip = m_DisplayRect;
+	rcClip.x = (float)floor(rcClip.x + fShadow);
+	float fTop = rcClip.y + fShadow;
+	rcClip.y = (float)floor(fTop - m_pFont->GetLineSpacing());
+	rcClip.height += (float)m_pFont->GetLineSpacing() * 2.0f;
+	rcClip.width += 40.0f;
+
 	if (m_bOverflow)
-		m_pText->RenderClipped(&m_DisplayRect);
+		m_pText->RenderClipped(&rcClip);
 	else
 		m_pText->Render();
 
@@ -116,8 +129,14 @@ void CHUDSubtitles::Draw()
 	m_pText->SetPosition(x,y);
 	m_pText->SetColor(m_nTextColor);
 
+	rcClip = m_DisplayRect;
+	rcClip.x = (float)floor(m_DisplayRect.x);
+	rcClip.y = (float)floor(m_DisplayRect.y - m_pFont->GetLineSpacing());
+	rcClip.height += (float)m_pFont->GetLineSpacing() * 2.0f;
+	rcClip.width += 40.0f;
+
 	if (m_bOverflow)
-		m_pText->RenderClipped(&m_DisplayRect);
+		m_pText->RenderClipped(&rcClip);
 	else
 		m_pText->Render();
 
@@ -207,10 +226,14 @@ void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, L
 		width = m_nCinematicWidth;
 	}
 
+	// RETAIL: 0x100fd67b: the lines are spaced by the font's line spacing,
+	// with one more spacing above and below
+	int nLineSpacing = m_pFont->GetLineSpacing();
+
 	m_DisplayRect.x = (float)pos.x * m_fScale;
 	m_DisplayRect.y = (float)pos.y * m_fScale;
 	m_DisplayRect.width = (float)width * m_fScale;
-	m_DisplayRect.height = 2.0f + (float)m_nMaxLines * (float)m_nFontSize;
+	m_DisplayRect.height = ((float)m_nFontSize + (float)nLineSpacing) * m_nMaxLines + (float)nLineSpacing * 2.0f;
 
 	m_pText->SetWrapWidth((uint16)m_DisplayRect.width);
 	float textX = m_DisplayRect.x;
@@ -220,39 +243,37 @@ void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, L
 	m_pText->GetDims(&fw,&fh);
 
 	uint8 numLines = (uint8)(fh / (float)m_nFontSize);
-//	g_pLTClient->CPrint("Lines: %d",numLines);
-//	g_pLTClient->CPrint("Duration: %0.2f",m_fDuration);
 
 	if (numLines > m_nMaxLines)
 	{
 		m_bOverflow = LTTRUE;
 		LTFLOAT fTimePerLine = m_fDuration / ((LTFLOAT)numLines + 1.0f);
-		LTFLOAT fRemainingLines = (LTFLOAT)(numLines - m_nMaxLines);
-		LTFLOAT fDelay = (LTFLOAT)m_nMaxLines * fTimePerLine;
-		m_fScrollStartTime = fDelay;
+		m_fScrollStartTime = (LTFLOAT)m_nMaxLines * fTimePerLine;
 
 		m_fScrollSpeed = (LTFLOAT)m_nFontSize / fTimePerLine;
 		m_fMaxOffset = (fh + 2.0f) - m_DisplayRect.height;
 
+		// RETAIL: the scrolling text is clipped to the box
+		m_pText->EnableClipping(true);
 	}
 	else
 	{
 		m_bOverflow = LTFALSE;
+		m_fScrollSpeed = 0.0f;
 
 		textX += (m_DisplayRect.width - fw) / 2.0f;
 		m_fOffset = (m_DisplayRect.height - fh);
 		textY += m_fOffset;
-		m_fScrollSpeed = 0.0f;
 
+		m_pText->EnableClipping(false);
 	}
-
-	m_fEndTime = m_fDuration;
 
 	//reset our time to the beginning
 	m_fElapsedTime = 0.0f;
 
+	m_fEndTime = m_fDuration;
 
-	m_pText->SetPosition(textX,textY);
+	m_pText->SetPosition((int)textX,(int)textY);
 
 }
 
@@ -274,14 +295,18 @@ void CHUDSubtitles::Clear(HLTSOUND hSound)
 
 void CHUDSubtitles::SetScale(float fScale)
 {
+	// RETAIL: 0x100fd860: Tron's takes a font of the new size, positions
+	// the text on whole pixels, and centers nothing (only the offset is kept)
 	m_fScale = fScale;
-	m_nFontSize = (uint8)(m_fScale * (float)m_nBaseFontSize);
+	m_nFontSize = (uint8)((float)m_nBaseFontSize * fScale);
 	if (m_pText)
 	{
-		float x = (float)m_BasePos.x * m_fScale;
-		float y = (float)m_BasePos.y * m_fScale;
+		float x = (float)m_BasePos.x * fScale;
+		float y = (float)m_BasePos.y * fScale;
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(m_nFontSize);
+		m_pText->SetFont(pFont);
 		m_pText->SetCharScreenHeight(m_nFontSize);
-		m_pText->SetPosition(x,y);
+		m_pText->SetPosition((int)x,(int)y);
 
 		LTIntPt pos = m_FullScreenPos;
 		uint16	width = m_nFullScreenWidth;
@@ -291,6 +316,8 @@ void CHUDSubtitles::SetScale(float fScale)
 			width = m_nCinematicWidth;
 		}
 
+		// RETAIL: the font's line spacing is asked for, and not used
+		m_pFont->GetLineSpacing();
 
 		m_DisplayRect.x = (float)pos.x * m_fScale;
 		m_DisplayRect.y = (float)pos.y * m_fScale;
@@ -300,16 +327,10 @@ void CHUDSubtitles::SetScale(float fScale)
 		
 		if (!m_bOverflow)
 		{
-			float textX = m_DisplayRect.x;
-			float textY = m_DisplayRect.y;
-
 			int32 fw,fh;
 			m_pText->GetDims(&fw,&fh);
 
-			textX += (m_DisplayRect.width - fw) / 2.0f;
 			m_fOffset = (m_DisplayRect.height - fh);
-			textY += m_fOffset;
-
 		}
 
 	}
