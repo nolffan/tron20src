@@ -161,7 +161,12 @@ class CServerLightCycleMgr : public CLightCycleMgr
 		LCPositionUpdate* NewPositionUpdate();
 
 		LCDialogQueue			m_DialogQueue;				// RETAIL: +0x133c
-		LCTIMERANGE				m_rngTimeBetweenDialog;		// RETAIL: +0x134c
+		// RETAIL: set first in the constructor's initializer list (0x1004fb91)
+		struct DialogTimeRange : public LCTIMERANGE
+		{
+			DialogTimeRange(LTFLOAT fInitMin, LTFLOAT fInitMax) { fMin = fInitMin; fMax = fInitMax; }
+		};
+		DialogTimeRange			m_rngTimeBetweenDialog;		// RETAIL: +0x134c
 		float					m_fLastDialogTime;			// RETAIL: +0x1354
 		float					m_fDialogDelay;				// RETAIL: +0x1358
 		float					m_fDialogPauseTime;			// RETAIL: +0x135c

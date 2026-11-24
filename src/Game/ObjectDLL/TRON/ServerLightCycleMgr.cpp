@@ -188,15 +188,14 @@ void CServerLightCycleMgr::PlayDialogEntry(const LCDialogQueueEntry& entry)
 // ----------------------------------------------------------------------- //
 
 CServerLightCycleMgr::CServerLightCycleMgr()
+	: m_rngTimeBetweenDialog(10.0f, 10.0f),
+	  m_fLastDialogTime(0.0f),
+	  m_fDialogDelay(0.0f),
+	  m_fDialogPauseTime(0.0f),
+	  m_bDialogPlayed(false),
+	  m_bDialogEnabled(true),
+	  m_bTronUnknown1365(true)
 {
-	m_rngTimeBetweenDialog.fMin = 10.0f;
-	m_rngTimeBetweenDialog.fMax = 10.0f;
-	m_fLastDialogTime = 0.0f;
-	m_fDialogDelay = 0.0f;
-	m_fDialogPauseTime = 0.0f;
-	m_bDialogPlayed = false;
-	m_bDialogEnabled = true;
-	m_bTronUnknown1365 = true;
 }
 
 // ----------------------------------------------------------------------- //
@@ -217,7 +216,7 @@ bool CServerLightCycleMgr::Init()
 	g_pLightCycleMgr = this;
 	g_pServerLightCycleMgr = this;
 
-	m_rngTimeBetweenDialog = g_pLightCycleButeMgr->GetTimeBetweenDialog();
+	(LCTIMERANGE&)m_rngTimeBetweenDialog = g_pLightCycleButeMgr->GetTimeBetweenDialog();
 	return true;
 }
 
