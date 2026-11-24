@@ -48,7 +48,8 @@ LTBOOL CIntelItemList::Add(INTEL_ITEM *pItem)
 {
 	if (Find(pItem->nTextId) == m_IntelArray.end())
 	{
-		m_IntelArray.push_back(pItem);
+		// RETAIL: 0x1013dbcd: Tron puts the newest item first
+		m_IntelArray.insert(m_IntelArray.begin(), pItem);
         return LTTRUE;
 	}
 
