@@ -873,9 +873,10 @@ void OccludingArmor::Update()
 	LTVector vDims;
 	g_pPhysicsLT->GetObjectDims(m_hParentObject, &vDims);
 
-	// NOTE: near; retail computes the sum later (register scheduling)
-	LTVector vArmorDims = vDims + LTVector( 16.0f, 16.0f, 16.0f );
-	g_pPhysicsLT->SetObjectDims(m_hObject, &vArmorDims, 0);
+	// RETAIL: the armor and its hit box both get the parent's dims
+	// grown by 16 (0x1013c4f6)
+	vDims = LTVector( vDims.x + 16.0f, vDims.y + 16.0f, vDims.z + 16.0f );
+	g_pPhysicsLT->SetObjectDims(m_hObject, &vDims, 0);
 	g_pPhysicsLT->SetObjectDims(m_hHitBox, &vDims, 0);
 
 	uint32 dwFlags;
