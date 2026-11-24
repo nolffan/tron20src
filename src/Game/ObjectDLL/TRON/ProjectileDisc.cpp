@@ -716,9 +716,9 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 			}
 			break;
 
-			case MPROJ_RETURNING:
+			case MPROJ_DISC_TRONUNKNOWN14:
 			{
-				// RETAIL: the owner stops guiding the disc
+				// RETAIL: (0x10037f19) the owner stops guiding the disc
 				if ( !IsDiscDeflecting() )
 				{
 					m_eTrackingMode = DISC_TRACKING_MODE_STEADY;
@@ -727,15 +727,11 @@ uint32 CDisc::ObjectMessageFn( HOBJECT hSender, ILTMessage_Read *pMsg )
 			}
 			break;
 
-			case MPROJ_DISC_TRONUNKNOWN14:
-			{
-				DestroyInFlight();
-				SendReturnedMessage();
-			}
-			break;
-
 			case MPROJ_DISC_TRONUNKNOWN150:
 			{
+				// RETAIL: (0x10037f37)
+				DestroyInFlight();
+				SendReturnedMessage();
 			}
 			break;
 		}
