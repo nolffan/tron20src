@@ -205,6 +205,11 @@ public:
 
 	bool  SetIgnoreParentAnimation( HTRACKEDNODE ID, bool bIgnoreParentAnimation );
 
+	// GetIgnoreParentAnimation
+	//	TRON: the flag above (RETAIL: CShell 0x101c8f80; the name is ours)
+
+	bool  GetIgnoreParentAnimation( HTRACKEDNODE ID );
+
 
 	// GetBasisSpace
 	//	 Given a node, it will fill in the appropriate vectors specifying the
