@@ -393,16 +393,15 @@ void CScreenLightCycleGame::UpdatePowerup(CLTGUIToggle *pToggle, LTBOOL *pbValue
 void CScreenLightCycleGame::UpdatePowerups()
 {
 	CLightCycleGameData *pData = g_pLightCycleGameDataMgr->GetCurrent();
-	uint32 *pnPowerups = &pData->m_Custom.nPowerups;
-	UpdatePowerup(m_pShield,&m_bShield,pnPowerups,0x1,!IsPowerupLocked(kLCPowerup_Shield));
-	UpdatePowerup(m_pTurbo,&m_bTurbo,pnPowerups,0x2,!IsPowerupLocked(kLCPowerup_Turbo));
-	UpdatePowerup(m_pTrailSpike,&m_bTrailSpike,pnPowerups,0x4,!IsPowerupLocked(kLCPowerup_TrailSpike));
-	UpdatePowerup(m_pMissile,&m_bMissile,pnPowerups,0x8,!IsPowerupLocked(kLCPowerup_Missile));
-	UpdatePowerup(m_pWallExtender,&m_bWallExtender,pnPowerups,0x10,!IsPowerupLocked(kLCPowerup_WallExtender));
-	UpdatePowerup(m_pTurboCurse,&m_bTurboCurse,pnPowerups,0x20,!IsPowerupLocked(kLCPowerup_TurboCurse));
-	UpdatePowerup(m_pGrab,&m_bGrab,pnPowerups,0x40,!IsPowerupLocked(kLCPowerup_Grab));
-	UpdatePowerup(m_pTrailReset,&m_bTrailReset,pnPowerups,0x80,!IsPowerupLocked(kLCPowerup_TrailReset));
-	UpdatePowerup(m_pForceUse,&m_bForceUse,pnPowerups,0x100,!IsPowerupLocked(kLCPowerup_ForceUse));
+	UpdatePowerup(m_pShield,&m_bShield,&pData->m_Custom.nPowerups,0x1,!IsPowerupLocked(kLCPowerup_Shield));
+	UpdatePowerup(m_pTurbo,&m_bTurbo,&pData->m_Custom.nPowerups,0x2,!IsPowerupLocked(kLCPowerup_Turbo));
+	UpdatePowerup(m_pTrailSpike,&m_bTrailSpike,&pData->m_Custom.nPowerups,0x4,!IsPowerupLocked(kLCPowerup_TrailSpike));
+	UpdatePowerup(m_pMissile,&m_bMissile,&pData->m_Custom.nPowerups,0x8,!IsPowerupLocked(kLCPowerup_Missile));
+	UpdatePowerup(m_pWallExtender,&m_bWallExtender,&pData->m_Custom.nPowerups,0x10,!IsPowerupLocked(kLCPowerup_WallExtender));
+	UpdatePowerup(m_pTurboCurse,&m_bTurboCurse,&pData->m_Custom.nPowerups,0x20,!IsPowerupLocked(kLCPowerup_TurboCurse));
+	UpdatePowerup(m_pGrab,&m_bGrab,&pData->m_Custom.nPowerups,0x40,!IsPowerupLocked(kLCPowerup_Grab));
+	UpdatePowerup(m_pTrailReset,&m_bTrailReset,&pData->m_Custom.nPowerups,0x80,!IsPowerupLocked(kLCPowerup_TrailReset));
+	UpdatePowerup(m_pForceUse,&m_bForceUse,&pData->m_Custom.nPowerups,0x100,!IsPowerupLocked(kLCPowerup_ForceUse));
 }
 
 // RETAIL: 0x1006d860 (folded with the other light cycle screens')

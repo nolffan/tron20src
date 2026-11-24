@@ -687,12 +687,7 @@ void ServerGameOptions::AddGameSpyKeys( int nKeyType, qr2_keybuffer_s* pKeyBuffe
 // ----------------------------------------------------------------------- //
 bool ServerGameOptions::GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf )
 {
-	if( nKeyId == kGSKeyDedicated )
-	{
-		qr2_buffer_add_int( pOutBuf, m_bDedicated );
-		return true;
-	}
-
+	if( nKeyId != kGSKeyDedicated )
 	switch( m_eGameType )
 	{
 		case eGameTypeMultiplayerLightcycles:
@@ -750,6 +745,11 @@ bool ServerGameOptions::GetGameSpyKeyValue( int nKeyId, qr2_buffer_s* pOutBuf )
 			}
 		}
 		break;
+	}
+	else
+	{
+		qr2_buffer_add_int( pOutBuf, m_bDedicated );
+		return true;
 	}
 
 	return false;

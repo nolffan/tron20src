@@ -83,7 +83,7 @@ namespace
 	// unlocked it
 	bool IsMapLocked(std::string sMap)
 	{
-		if (sMap.empty())
+		if (!sMap[0])
 			return true;
 
 		if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown36))
@@ -308,7 +308,7 @@ bool CScreenLightCycleCustomMaps::IsCycleUnlocked()
 		if (LCNameEquals(*itColor,pColor->szName))
 			break;
 	}
-	return (itColor != itColorEnd);
+	return (itColorEnd != itColor);
 }
 
 // RETAIL: 0x1006a4b0

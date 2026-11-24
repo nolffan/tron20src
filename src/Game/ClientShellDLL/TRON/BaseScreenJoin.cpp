@@ -333,7 +333,8 @@ void CBaseScreenJoin::JoinServer()
 	if (s_bWarnLightCycles && m_bInternet)
 	{
 		GameType eGameType;
-		if (GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""), eGameType) &&
+		const char *pszGameType = SBServerGetStringValue(g_hJoinServer,"gametype","");
+		if (GameStringTypeToGameType(pszGameType, eGameType) &&
 			eGameType == eGameTypeMultiplayerLightcycles)
 		{
 			MBCreate mb;
@@ -387,7 +388,8 @@ LTBOOL CBaseScreenJoin::ConnectToServer()
 
 	// RETAIL: 0x10007586: a game type that it does not know fails the join
 	GameType eGameType;
-	if (!GameStringTypeToGameType(SBServerGetStringValue(g_hJoinServer,"gametype",""), eGameType))
+	const char *pszGameType = SBServerGetStringValue(g_hJoinServer,"gametype","");
+	if (!GameStringTypeToGameType(pszGameType, eGameType))
 		return LTFALSE;
 	g_pGameClientShell->SetGameType(eGameType);
 
@@ -399,6 +401,8 @@ LTBOOL CBaseScreenJoin::ConnectToServer()
 	if (!g_pClientMultiplayerMgr->SetupClient(szAddress,m_sPassword.c_str()))
 		return LTFALSE;
 
+	// NEAR: retail tests and branches here where VC6 makes neg/sbb of
+	// this; tried the test inverted and a result local
 	if (!g_pMissionMgr->StartGameAsClient())
 		return LTFALSE;
 
