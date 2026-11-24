@@ -165,7 +165,6 @@ class CTronPlayerObj : public CPlayerObj
 
 		// Inventory acquire functions
 		bool AcquireSubroutine(char const* pName, char const* pState, char const* pCondition);
-		bool AcquireAdditive(char const* pName);
 		bool AcquireProcedural(char const* pName);
 		bool AcquirePrimitive(char const* pName);
 		bool AcquireNote(char const* pName);

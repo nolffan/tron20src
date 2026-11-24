@@ -1487,6 +1487,18 @@ tracking.
 
 Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
 m_bInDiscomfort.
+### The binary bit ignores the permission set messages
+
+Object.lto 0x10014080 (BinaryBit::ObjectMessageFn, ObjectDLL/TRON/
+BinaryBit.cpp). For each trigger message, the function compares the first
+word with "ADDPSET" and "REMOVEPSET" to add or remove permission sets. The
+retail code compares the pointers (0x10014260, 0x100142b6), not the text:
+the parsed word is in the parse buffer, not at the address of the string
+constant. Thus the comparisons are always false, and "ADDPSET" and
+"REMOVEPSET" do nothing to a binary bit. The class registers the two
+messages with the command manager, so the level designer can send them.
+
+Fixed in the modern build: the function compares the text (_stricmp).
 
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
