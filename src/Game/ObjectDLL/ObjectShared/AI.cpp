@@ -4166,6 +4166,11 @@ void CAI::SetTalkLock(bool bTrack)
 
 void CAI::UpdateInfo()
 {
+	// RETAIL: Tron's (0x10130580) writes the info to a stream. Its
+	// precedence bugs (the stream, not the text, chooses the "?:"
+	// operands) and its compare of the text pointers are retail's: see
+	// docs/RETAIL_BUGS.md.
+
 	if (!g_AIInfoTrack.IsInitted())
 	{
 		g_AIInfoTrack.Init(g_pLTServer, "AIInfo", LTNULL, 0.0f);
@@ -4174,55 +4179,81 @@ void CAI::UpdateInfo()
 	// Update our info string.
 	if( g_AIInfoTrack.GetFloat() > 0.0f )
 	{
-		char szTemp[128];
+		ostrstream out;
 
-		CString info = m_cstrNameInfo; 
-		info += "\n";
+		out << m_cstrNameInfo << '\n';
 
 		if( g_AIInfoTrack.GetFloat() == 1.0f )
 		{
-			sprintf( szTemp, "HitPoints : %.0f\nArmor : %.0f\n", GetHitPoints( ),
-				m_damage.GetArmorPoints( ));
-			info += szTemp;
+			out << "HitPoints : " << GetHitPoints( ) << "\nArmor : " << m_damage.GetArmorPoints( ) << "\n";
 
 			// Show Senses 0 or 1.
 
 			if( m_bSensesOn )
 			{
-				info += "Senses: 1\n";	// RETAIL: Tron's text (0x1013073c)
+				out << "Senses: 1\n";
 			} else {
-				info += "Senses: 0\n";
+				out << "Senses: 0\n";
 			}
-
-			// RETAIL: 0x1013074e: no alignment line in Tron.
 
 			// Show goalset, goal and state.
-			info += "GS : ";
+			out << "GS : ";
 			if( m_pGoalMgr )
 			{
-				info += g_pAIGoalButeMgr->GetGoalSet( m_pGoalMgr->GetGoalSetIndex() )->szName;
+				out << g_pAIGoalButeMgr->GetGoalSet( m_pGoalMgr->GetGoalSetIndex() )->szName << "\n";
 			}
 			else
 			{
-				info += "none";
+				out << "none" << "\n";
 			}
-			
-			info += "\n";
 
-			info += "G : ";
+			out << "G : ";
 			if( m_pGoalMgr && m_pGoalMgr->GetCurrentGoal() )
 			{
-				info += s_aszGoalTypes[m_pGoalMgr->GetCurrentGoal()->GetGoalType()];
+				out << s_aszGoalTypes[m_pGoalMgr->GetCurrentGoal()->GetGoalType()] << "\n";
 			}
 			else
 			{
-				info += "none";
+				out << "none" << "\n";
 			}
 
-			info += "\n";
+			out << "S : ";
+			out << s_aszStateTypes[m_pState->GetStateType()] << "\n";
 
-			info += "S : ";
-			info += s_aszStateTypes[m_pState->GetStateType()];
+			// Show the weapon, or the holster.
+			out << "W : ";
+			if( GetPrimaryWeapon() )
+			{
+				const WEAPON* pWeaponData = g_pWeaponMgr->GetWeapon( GetPrimaryWeapon()->GetId() );
+				out << ( pWeaponData ? pWeaponData->szName : "none" ) << "\n";
+			}
+			else
+			{
+				const char* szHolster = g_pLTServer->GetStringData( m_hstrHolster );
+				if( szHolster )
+				{
+					out << "(H) ";
+#ifdef TRON20SRC_MODERN
+					const char* pSeparator = strchr( szHolster, ';' );
+#else
+					const char* pSeparator = strchr( szHolster, ';,' );
+#endif // TRON20SRC_MODERN
+					if( pSeparator )
+					{
+						std::string sWeapon( szHolster, pSeparator );
+						out << sWeapon << "\n";
+					}
+					else
+					{
+						std::string sWeapon( szHolster );
+						out << sWeapon << "\n";
+					}
+				}
+				else
+				{
+					out << "none" << "\n";
+				}
+			}
 		}
 		else if( g_AIInfoTrack.GetFloat() == 2.0f )
 		{
@@ -4233,21 +4264,22 @@ void CAI::UpdateInfo()
 			{
 				const GOAL_SCRIPT_STRUCT & element = *iter;
 
-				sprintf( szTemp, " %s %s %s",
-					(nStep == m_pGoalMgr->GetCurrentScriptStep()) ? "*" : " ",
-					s_aszGoalTypes[element.eGoalType],
-					element.hstrNameValuePairs ? 
-					          g_pLTServer->GetStringData(element.hstrNameValuePairs)
-							: "" );
-				info += szTemp;
-				info += "\n";
+#ifdef TRON20SRC_MODERN
+				out << ((nStep == m_pGoalMgr->GetCurrentScriptStep()) ? " * " : "   ");
+				out << s_aszGoalTypes[element.eGoalType] << " ";
+				out << (element.hstrNameValuePairs ? g_pLTServer->GetStringData(element.hstrNameValuePairs) : "");
+#else
+				out << (nStep == m_pGoalMgr->GetCurrentScriptStep()) ? "*" : " ";
+				out << s_aszGoalTypes[element.eGoalType];
+				out << element.hstrNameValuePairs ? g_pLTServer->GetStringData(element.hstrNameValuePairs) : "";
+#endif // TRON20SRC_MODERN
+				out << "\n";
 			}
 
 			if( !nStep )
 			{
-				info += "None\n";
+				out << "None\n";
 			}
-				
 		}
 		else if( g_AIInfoTrack.GetFloat() == 3.0f )
 		{
@@ -4255,30 +4287,45 @@ void CAI::UpdateInfo()
 			for( AIGOAL_LIST::const_iterator iter = m_pGoalMgr->BeginGoals();
 			     iter != m_pGoalMgr->EndGoals(); ++iter )
 			{
-				sprintf(szTemp, " %s %f : %s %s",
-					m_pGoalMgr->IsCurGoal(*iter) ? "*" : " ",
-					(*iter)->GetCurImportance(),
-					s_aszGoalTypes[(*iter)->GetGoalType()],
-					(*iter)->IsScripted() ? "(scripted)" : "" );
-
-				info += szTemp;
-				info += "\n";
+#ifdef TRON20SRC_MODERN
+				out << (m_pGoalMgr->IsCurGoal(*iter) ? " * " : "   ");
+				out << (*iter)->GetCurImportance() << " : ";
+				out << s_aszGoalTypes[(*iter)->GetGoalType()] << " ";
+				out << ((*iter)->IsScripted() ? "(scripted)" : "");
+#else
+				out << m_pGoalMgr->IsCurGoal(*iter) ? "*" : " ";
+				out << (*iter)->GetCurImportance();
+				out << s_aszGoalTypes[(*iter)->GetGoalType()];
+				out << (*iter)->IsScripted() ? "(scripted)" : "";
+#endif // TRON20SRC_MODERN
+				out << "\n";
 			}
 		}
 		else if( g_AIInfoTrack.GetFloat() == 4.0f )
 		{
 			// Show Relations.
-			ostrstream out;
-			out << *(m_pRelationMgr->GetRelationUser()) << '\n' << '\0';
-			info += out.str();
+			out << *(m_pRelationMgr->GetRelationUser()) << '\n';
+		}
+		else if( g_AIInfoTrack.GetFloat() == 5.0f )
+		{
+			// RETAIL: Tron's: show the animation context.
+			out << *m_pAnimationContext << '\n';
 		}
 
-		if( info != m_cstrCurrentInfo )
+		out << ends;
+
+#ifdef TRON20SRC_MODERN
+		if( strcmp( out.str(), m_cstrCurrentInfo ) != 0 )
+#else
+		if( out.str() != m_cstrCurrentInfo )
+#endif // TRON20SRC_MODERN
 		{
-			m_cstrCurrentInfo = info;
+			m_cstrCurrentInfo = out.str();
 
 			SendInfoString( m_hObject, m_cstrCurrentInfo );
 		}
+
+		out.rdbuf()->freeze( 0 );
 	}
 	else
 	{
