@@ -279,8 +279,9 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 
 			// make sure the current weapon is the weapon
 			// being blocked with
+			// RETAIL: Tron compares the weapon id (CWeapon +0x40, 0x10062d63)
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
+			if ( !pWeapon || ( pWeapon->GetId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
 				return true;
@@ -327,8 +328,9 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 
 			// make sure the current weapon is the weapon
 			// being blocked with
+			// RETAIL: Tron compares the weapon id (CWeapon +0x40, 0x10062d63)
 			CWeapon* pWeapon = m_pPlayerAttachments->GetWeapon();
-			if ( !pWeapon || ( pWeapon->GetAmmoId() != cAmmoId ) )
+			if ( !pWeapon || ( pWeapon->GetId() != cAmmoId ) )
 			{
 				// Tut tut, no cheating!
 				return true;
@@ -363,7 +365,7 @@ bool CTronPlayerObj::HandleMessageProjectile( HOBJECT hSender,
 			cMsg.Writeuint8( MID_PROJECTILE );
 			cMsg.Writeuint8( MPROJ_BLOCKED );
 			cMsg.Writeuint8( pMsg->Readuint8() );
-			g_pLTServer->SendToClient( cMsg.Read(), GetClient(), MESSAGE_GUARANTEED );
+			g_pLTServer->SendToClient( cMsg.Read(), m_hClient, MESSAGE_GUARANTEED );
 
 			return true;
 		}

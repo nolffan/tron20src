@@ -6329,11 +6329,8 @@ LTFLOAT CAI::ComputeDamageModifier(ModelNode eModelNode)
 {
     LTFLOAT fModifier = CCharacter::ComputeDamageModifier(eModelNode);
 
-	if ( IsAlert() )
-	{
-        fModifier = Min<LTFLOAT>(2.0f, fModifier);
-	}
-	else
+	// RETAIL: 0x10135770: Tron does not clamp an alert AI's modifier
+	if ( !IsAlert() )
 	{
 		fModifier *= g_pModelButeMgr->GetUnalertDamageFactor( m_eModelId );
 	}
