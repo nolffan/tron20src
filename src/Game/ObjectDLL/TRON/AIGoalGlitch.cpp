@@ -134,7 +134,7 @@ void CAIGoalGlitch::RecalcImportance()
 		}
 
 		LTFLOAT fDist = m_pAI->GetPosition().Dist( pNode->GetPos() );
-		ObjectCPrint( ToString( m_pAI->m_hObject ), "Is %f far away from last node", fDist );
+		ObjectCPrint( ToString( m_pAI->GetHOBJECT() ), "Is %f far away from last node", fDist );
 
 		if( fDist > 512.f )
 		{

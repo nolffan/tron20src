@@ -849,6 +849,7 @@ class CAIHumanStrategyShootBurst : public CAIHumanStrategyShoot
 		DECLARE_AI_FACTORY_CLASS_SPECIFIC(Strategy, CAIHumanStrategyShootBurst, kStrat_HumanShootBurst);
 
 		CAIHumanStrategyShootBurst( );
+		~CAIHumanStrategyShootBurst( );	// RETAIL: Tron's (0x10226f00)
 
 		// Ctors/Dtors/etc
 
