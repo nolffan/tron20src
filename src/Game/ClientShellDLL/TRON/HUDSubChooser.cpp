@@ -225,12 +225,13 @@ void CHUDSubChooser::Update()
 	{
 		TronSubroutine* pSub = m_pSubs[i];
 		m_bBad[i] = false;
-		// PORT: retail asks the subroutine manager whether the player has the
-		// subroutine compiled (retail 0x10094e70) and whether it is a bad one
-		// (0x10094fb0); neither is in the tree yet
-		m_bAvailable[i] = false;
+		// RETAIL: 0x1003bdb5: is the subroutine installed, and is it a bad
+		// one?
+		m_bAvailable[i] = g_pSubroutineMgr->IsSubroutineInstalled(pSub);
 		if (m_bAvailable[i])
 		{
+			if (g_pSubroutineMgr->IsSubroutineCorrupt(pSub->szName))
+				m_bBad[i] = true;
 			m_pText[i]->SetText(LoadTempString(pSub->nNameId));
 		}
 	}

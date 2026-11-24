@@ -63,6 +63,11 @@ CScreenLightCycleGame::CScreenLightCycleGame()
 	m_bWallExtender = LTTRUE;
 }
 
+// RETAIL: 0x10068560
+CScreenLightCycleGame::~CScreenLightCycleGame()
+{
+}
+
 // RETAIL: 0x10068620
 LTBOOL CScreenLightCycleGame::Build()
 {
@@ -77,8 +82,7 @@ LTBOOL CScreenLightCycleGame::Build()
 	m_pMaxAICyclists = AddSlider(0x2590,0x2591,nColumnWidth,50,-1,&m_nMaxAICyclists,
 		g_pLayoutMgr->GetScreenCustomPoint(SCREEN_ID_LIGHTCYCLE_CUSTOMGAME,"CommandPos"));
 	m_pMaxAICyclists->SetNumericDisplay(LTTRUE);
-	// RETAIL: here Tron's slider sets a member of its own (0x100c0a60 with
-	// 0, +0x54): left out, our LTGUIMgr's slider has none
+	m_pMaxAICyclists->ShowBar(LTFALSE);
 	m_pMaxAICyclists->SetSliderRange(1,8);
 	m_pMaxAICyclists->SetSliderIncrement(1);
 	m_OptionCtrls.push_back(m_pMaxAICyclists);
@@ -124,9 +128,7 @@ LTBOOL CScreenLightCycleGame::Build()
 	if (m_pPowerupList)
 	{
 		m_pPowerupList->SetIndent(g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"LCPowerupListIndent"));
-		// RETAIL: here Tron's list control takes a frame texture
-		// ("interface\menu\sprtex\frame_solid.dtx", CLTGUIListCtrl 0x100b98e0):
-		// left out, our LTGUIMgr's list control has none
+		m_pPowerupList->SetFrameTexture(g_pInterfaceResMgr->GetTexture("interface\\menu\\sprtex\\frame_solid.dtx"));
 		m_pPowerupList->Show(LTFALSE);
 
 		m_pShield = CreateToggle(0x2580,0x2581,nColumnWidth,&m_bShield);
@@ -284,15 +286,15 @@ void CScreenLightCycleGame::ShowPowerups(bool bShow)
 	m_pPowerupList->Show(bShow);
 	if (bShow)
 	{
-		// RETAIL: CBaseScreen's 0x100d38d0 (out of line; ours inline)
-		m_xTronUnknown50.push_back(m_pPowerupList);
-		m_xTronUnknown50.push_back(m_pPowerupsOK);
+		// RETAIL: CBaseScreen's 0x100d38d0, called out of line
+		AddTronUnknownControl(m_pPowerupList);
+		AddTronUnknownControl(m_pPowerupsOK);
 		SetSelection(GetIndex(m_pPowerupList));
 	}
 	else
 	{
-		// RETAIL: CBaseScreen's 0x100d3900 (out of line; ours inline)
-		m_xTronUnknown50.clear();
+		// RETAIL: CBaseScreen's 0x100d3900, called out of line
+		ClearTronUnknownControls();
 		SetSelection(kNoSelection);
 	}
 	m_pPowerupsOK->Show(bShow);
@@ -327,26 +329,39 @@ void CScreenLightCycleGame::Escape()
 	}
 }
 
-// RETAIL: 0x10069580. PORT: retail's power-up names run to 11 (a table of
-// 12, 0x102162d4); ours to kNumLCPowerupTypes
+// RETAIL: 0x10069580. Retail tests the index against 11, but its name
+// table (0x102162d4) has 11 entries ("Shield".."Powerup"): see
+// docs/RETAIL_BUGS.md
 bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 {
 	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown38))
 		return false;
 
+#ifdef TRON20_MODERN
 	if (nPowerup < 0 || nPowerup >= kNumLCPowerupTypes)
 		return true;
+#else
+	if (nPowerup < 0 || nPowerup > 11)
+		return true;
+#endif
 
 	const char *pszName = g_aszLCPowerupNames[nPowerup];
-	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
+	StringArray &sa = g_pProfileMgr->GetCurrentProfile()->m_UnlockedPowerups;
+	StringArray::iterator itEnd = sa.end();
 	StringArray::iterator it;
-	StringArray::iterator itEnd = pProfile->m_UnlockedPowerups.end();
-	for (it = pProfile->m_UnlockedPowerups.begin(); it != itEnd; ++it)
+	for (it = sa.begin(); it != itEnd; ++it)
 	{
-		if (LCNameEquals(*it,pszName))
+		uint32 nLen;
+		if (!pszName)
+			nLen = 0;
+		else
+			nLen = strlen(pszName);
+		if (it->size() == nLen && !_memicmp(it->data(),pszName,nLen))
 			break;
 	}
-	return (it == pProfile->m_UnlockedPowerups.end());
+	if (it != sa.end())
+		return false;
+	return true;
 }
 
 // RETAIL: 0x10069620: a power-up newly unlocked is turned on
