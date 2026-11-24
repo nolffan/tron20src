@@ -1578,11 +1578,19 @@ void CDiscMatchMgr::ChangeTeam(uint32 nClientID, uint8 nTeam)
 	if (pPlayer)
 	{
 		CPlayerScore* pScore = pPlayer->GetPlayerScore();
-		pScore->AddFrags(-pScore->GetFrags());
+		int nFrags = pScore->GetFrags();
+		pScore->AddFrags(-nFrags);
 
-		if (m_nGameType == eGameTypeDiscArena && m_bStarted && nNewTeam != TRON_MAX_TEAMS)
+		if (m_nGameType == eGameTypeDiscArena)
 		{
-			pPlayer->GetPlayerScore()->SetTronUnknown18(1);
+			if (m_bStarted && nNewTeam != TRON_MAX_TEAMS)
+			{
+				pPlayer->GetPlayerScore()->SetTronUnknown18(1);
+			}
+			else
+			{
+				pPlayer->GetPlayerScore()->SetTronUnknown18(2);
+			}
 		}
 		else
 		{
@@ -1596,12 +1604,16 @@ void CDiscMatchMgr::ChangeTeam(uint32 nClientID, uint8 nTeam)
 		}
 	}
 
-	if (m_bStarted && m_nGameType == eGameTypeDiscArena && pTeam->GetNumClients() == 1 &&
-		pTeam->GetID() < TRON_MAX_TEAMS)
+	if (m_bStarted && m_nGameType == eGameTypeDiscArena && pTeam->GetNumClients() == 1)
 	{
-		m_Queue.Add(pTeam->GetID());
-		pTeam->SetState((CTronTeam::TronTeamState)0);
-		pTeam->UpdateClients();
+		// RETAIL: the team's index goes in nTeam (0x1004b894)
+		nTeam = pTeam->GetID();
+		if (nTeam < TRON_MAX_TEAMS)
+		{
+			m_Queue.Add(nTeam);
+			pTeam->SetState((CTronTeam::TronTeamState)0);
+			pTeam->UpdateClients();
+		}
 	}
 
 	if (nOldTeam != nNewTeam)
