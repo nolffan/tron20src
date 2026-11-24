@@ -4671,7 +4671,15 @@ void CAIHumanStrategyShootBurst::CalculateBurst()
 
 void CAIHumanStrategyShootBurst::UpdateAiming(HOBJECT hTarget)
 {
-	if ( m_bUseIntervals && ( m_nBurstShots <= 0 ) )
+	// RETAIL: Tron's (0x10227c10).  The AI only aims on its first update,
+	// while its animation transitions and while it needs to reload; it
+	// fires within 30 degrees of its torso.
+
+	if ( m_bFirstUpdate || GetAI()->GetAnimationContext()->IsTransitioning() )
+	{
+		Aim();
+	}
+	else if ( m_bUseIntervals && ( m_nBurstShots <= 0 ) )
 	{
 		// Don't calculate new burst until finished firing animation.
 		if( !GetAnimationContext()->IsLocked() )
@@ -4687,12 +4695,16 @@ void CAIHumanStrategyShootBurst::UpdateAiming(HOBJECT hTarget)
 		
 		Aim();
 	}
+	else if ( m_bNeedsReload )
+	{
+		Aim();
+	}
 	else
 	{
 		// We're done waiting, fire if we're at a reasonable angle
-		// If we are not using node tracking, IsNodeTrackingAtLimit will return true.
 
-		if ( m_bIgnoreFOV || IsBlind() || ( !GetAI()->IsNodeTrackingAtLimit() ) )
+		if ( m_bIgnoreFOV || IsBlind() ||
+			 ( GetAI()->IsNodeTrackingEnabled() && !GetAI()->IsNodeTrackingAtLimit() ) )
 		{
 			Fire();
 		}
@@ -4701,17 +4713,28 @@ void CAIHumanStrategyShootBurst::UpdateAiming(HOBJECT hTarget)
 			LTVector vTargetPos;
 			g_pLTServer->GetObjectPos(hTarget, &vTargetPos);
 
+			LTVector vForward = GetAI()->GetTorsoForward();
 			LTVector vDir = vTargetPos - GetAI()->GetPosition();
-			vDir.y = 0.0f;
 			vDir.Normalize();
+			vForward.Normalize();
 
-			if ( vDir.Dot(GetAI()->GetTorsoForward()) < 0.70f )
+			vDir.y = 0.0f;
+			vForward.y = 0.0f;
+			vDir.Normalize();
+			vForward.Normalize();
+
+			if ( GetAI()->IsNodeTrackingEnabled() &&
+				 !( GetAI()->IsNodeTrackingEnabled() && !GetAI()->IsNodeTrackingAtLimit() ) )
 			{
 				Aim();
 			}
-			else
+			else if ( vDir.Dot( vForward ) > 0.8660254f )
 			{
 				Fire();
+			}
+			else
+			{
+				Aim();
 			}
 		}
 	}
