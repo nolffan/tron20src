@@ -92,7 +92,10 @@ public std::binary_function< RelationMomento*, CObjectRelationMgr*, bool>
 		AIASSERT( pORM!=NULL, NULL, "Attempted description match on NULL ORM" );
 		char szValue[RELATION_VALUE_LENGTH];
 		pORM->GetData().GetTraitValue(pMomento->GetDescription().eTrait, szValue, sizeof(szValue));
-		return ( strcmp( pMomento->GetDescription().szValue, szValue ) == 0);
+		// RETAIL: Tron also wants the owner's alignment toward the ORM to
+		// be the momento's (find_if 0x1016a820).
+		return ( strcmp( pMomento->GetDescription().szValue, szValue ) == 0
+			&& pMomento->GetDescription().eAlignment == pMomento->GetOwner()->GetRelationUser()->GetRelations().GetAlignment( pORM->GetData() ) );
 	}
 };
 
