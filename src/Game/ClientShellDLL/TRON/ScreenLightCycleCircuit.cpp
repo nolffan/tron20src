@@ -397,8 +397,9 @@ void CScreenLightCycleCircuit::SaveSettings()
 	{
 		CLightCycleGameData *pData = g_pLightCycleGameDataMgr->GetCurrent();
 		pData->m_Circuit = GetCircuitMgr()->GetCircuit(pCtrl->GetParam1());
-		g_pLightCycleGameDataMgr->SaveCurrent();
 	}
+	// RETAIL: 0x10067591: saved even with no control selected
+	g_pLightCycleGameDataMgr->SaveCurrent();
 
 	CBaseScreenLightCycle::SaveSettings();
 }
