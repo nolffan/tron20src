@@ -1465,6 +1465,27 @@ energy, and less than the value that the command gives when they are less.
 Fixed in the modern build: the command limits the energy to the maximum
 energy.
 
+### The "DestroyProjectile" command can read past its object array
+
+Object.lto 0x10086370 (CPlayerObj::RemoveProjectiles, ObjectDLL/
+ObjectShared/PlayerObj.cpp). The function finds the objects with the name
+"TronProjectile" into an array of 50 objects. The loop then uses the total
+number of objects found, not the number of objects in the array. When the
+level has more than 50 such projectiles, the loop reads past the end of the
+array.
+
+Fixed in the modern build: the loop uses the number of objects in the
+array.
+
+### An attached energy claw does not move with its target
+
+Object.lto 0x1003e320 (CProjectileEnergyClaw::UpdateAttached, ObjectDLL/
+TRON/ProjectileEnergyClaw.cpp). The function gets the position of the
+target and then sets the position of the target, not of the claw, to that
+position. Thus the claw stays where it hit and the call has no effect.
+
+Fixed in the modern build: the claw moves to the position of its target.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

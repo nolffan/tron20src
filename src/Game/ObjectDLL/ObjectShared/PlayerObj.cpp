@@ -752,7 +752,7 @@ CMDMGR_END_REGISTER_CLASS( CPlayerObj, CCharacter )
 #define CONSOLE_COMMAND_LADDER_VEL			"LadderVel"
 
 
-#define PLAYER_RESPAWN_SOUND				"Snd\\Powerups\\spawn_player.wav"
+#define PLAYER_RESPAWN_SOUND				"snd\\event\\spawn_player.wav"	// RETAIL: Tron's (0x102ea4f0)
 
 #define DEFAULT_PLAYERSOUND_RADIUS			512.0f
 
@@ -1733,20 +1733,17 @@ bool CPlayerObj::HandleTransmissionMessage(const CParsedMsg &cMsg)
 
     uint32 dwId = (uint32) atol(cMsg.GetArg(1));
 
+	// RETAIL: Tron's (0x1007a5a0): a communication only with exactly three
+	// arguments, no team; without an active player's client id the text
+	// goes as a HUD text message.
+
 	// See if this was a communication type of transmission.  This means we will put the 
 	// active player's name in front of it.
 	bool bActivePlayerComm = false;
-	if( cMsg.GetArgCount( ) >= 3 )
+	if( cMsg.GetArgCount( ) == 3 )
 	{
 		bActivePlayerComm = !!atoi( cMsg.GetArg( 2 ));
 	}
-	uint8 nTeam = INVALID_TEAM;
-	if( cMsg.GetArgCount( ) >= 4 )
-	{
-		nTeam= (uint8)atoi( cMsg.GetArg( 3 ));
-	}
-
-	uint32 nSound = 0;
 
 	// If this is a communication transmission, get the activeplayer's client id and send it down.
 	uint32 nActivePlayerClientId = -1;
@@ -1761,12 +1758,22 @@ bool CPlayerObj::HandleTransmissionMessage(const CParsedMsg &cMsg)
 		}
 	}
 
+	uint32 nSound = 0;
+
 	CAutoMessage cClientMsg;
-	cClientMsg.Writeuint8(MID_PLAYER_TRANSMISSION);
-	cClientMsg.Writeuint32(nActivePlayerClientId);
-	cClientMsg.Writeuint32(dwId);
-    cClientMsg.Writeuint32(nSound);
-	cClientMsg.Writeuint8(nTeam);
+	if( nActivePlayerClientId != -1 )
+	{
+		cClientMsg.Writeuint8(MID_PLAYER_TRANSMISSION);
+		cClientMsg.Writeuint32(nActivePlayerClientId);
+		cClientMsg.Writeuint32(dwId);
+		cClientMsg.Writeuint32(nSound);
+	}
+	else
+	{
+		cClientMsg.Writeuint8(MID_TRON_HUD_TEXT);
+		cClientMsg.Writeuint32(dwId);
+		cClientMsg.Writeuint32(nSound);
+	}
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
 
     return true;
@@ -1863,10 +1870,11 @@ bool CPlayerObj::HandleIntelMessage(const CParsedMsg &cMsg)
     uint32 nTextId = (uint32) atol(cMsg.GetArg(1));
     uint8 nPopupId = (uint8) atol(cMsg.GetArg(2));
 
-
+	// RETAIL: Tron's (0x1007abf0): no "add" argument; the message has a zero
+	// byte after the text, a false bit and an empty string at its end (their
+	// meaning is not known yet).
 	LTBOOL bIsIntel = LTFALSE;
 	LTBOOL bShow = LTFALSE;
-	LTBOOL bAdd = LTTRUE;
 
 	if (cMsg.GetArgCount() >= 4)
 	{
@@ -1875,30 +1883,19 @@ bool CPlayerObj::HandleIntelMessage(const CParsedMsg &cMsg)
 		if (cMsg.GetArgCount() >= 5)
 		{
 			bShow = (LTBOOL)atol(cMsg.GetArg(4));
-
-			if (cMsg.GetArgCount() >= 6)
-			{
-				bAdd = (LTBOOL)atol(cMsg.GetArg(5));
-			}
-
 		}
 	}
-
-
 
 	CAutoMessage cClientMsg;
 	cClientMsg.Writeuint8(MID_INTEL_PICKEDUP);
     cClientMsg.Writeuint32(nTextId);
+    cClientMsg.Writeuint8(0);
     cClientMsg.Writeuint8(nPopupId);
     cClientMsg.Writeuint8(bIsIntel);
     cClientMsg.Writeuint8(bShow);
-    cClientMsg.Writeuint8(bAdd);
+	cClientMsg.Writebool(false);
+	cClientMsg.WriteString("");
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
-
-
-	// RETAIL: 0x1007ad66: no skill points for intel in Tron
-
-
 
     return true;
 }
@@ -1919,11 +1916,19 @@ bool CPlayerObj::HandleFadeScreenMessage(const CParsedMsg &cMsg, bool bFadeIn)
     float fFadeTime = (float)atof(cMsg.GetArg(1));
     if (fFadeTime < 0.1f) return false;
 
+	// RETAIL: Tron's third argument goes in the second info byte
+	// (0x1007ae4c); its meaning is not known yet
+	uint8 nTronUnknown = 0;
+	if (cMsg.GetArgCount() > 2)
+	{
+		nTronUnknown = (uint8)atol(cMsg.GetArg(2));
+	}
+
 	CAutoMessage cClientMsg;
 	cClientMsg.Writeuint8(MID_PLAYER_INFOCHANGE);
 	cClientMsg.Writeuint8(IC_FADE_SCREEN_ID);
     cClientMsg.Writeuint8(bFadeIn ? 1 : 0);
-	cClientMsg.Writeuint8(0);
+	cClientMsg.Writeuint8(nTronUnknown);
     cClientMsg.Writefloat(fFadeTime);
 	g_pLTServer->SendToClient(cClientMsg.Read(), GetClient( ), MESSAGE_GUARANTEED);
 
@@ -4217,6 +4222,8 @@ void CPlayerObj::AcquireDefaultWeapon()
 	if( !m_pPlayerAttachments )
 		return;
 
+	TronUnknownVirtual128( pWeaponData );	// RETAIL: 0x1007e7f5
+
 	m_pPlayerAttachments->ObtainWeapon(pWeaponData->nId, pAmmoData->nId, pAmmoData->nSpawnedAmount, LTTRUE);
 	nNewWeapon = g_pWeaponMgr->GetCommandId(pWeaponData->nId);
 	if( nNewWeapon < 0)
@@ -4232,6 +4239,16 @@ void CPlayerObj::AcquireDefaultWeapon()
 	cClientMsg.Writeuint8(0);
 	cClientMsg.Writefloat(0.0f);
 	g_pLTServer->SendToClient(cClientMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
+
+	// RETAIL: then every player weapon (0x1007e927)
+	for( int nCommandId = g_pWeaponMgr->GetFirstWeaponCommandId( ); nCommandId <= g_pWeaponMgr->GetLastWeaponCommandId( ); nCommandId++ )
+	{
+		WEAPON const* pWeapon = g_pWeaponMgr->GetWeapon( g_pWeaponMgr->GetWeaponId( nCommandId ));
+		if( pWeapon )
+		{
+			AcquireWeapon( pWeapon->szName, false );
+		}
+	}
 }
 
 // ----------------------------------------------------------------------- //
@@ -6501,6 +6518,7 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 
 	// extract the extra (weapon specific) data from the message
 	GetExtraFireMessageInfo( nWeaponType, pMsg, &weaponFireInfo );
+	TronUnknownVirtual114( pMsg, &weaponFireInfo );	// RETAIL: 0x10082a47
 
 
 	// Read out the object impact info
@@ -6512,36 +6530,18 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 	// If this is a gadget, tell the activated object it was activated...
-
-	bool bChangedAmmoType = false;
+	// RETAIL: no welder in Tron (0x10082ace)
 
 	if (pAmmoData->eType == GADGET)
 	{
- 		if (weaponFireInfo.hClientObjImpact)
+ 		if (!weaponFireInfo.hClientObjImpact)
  		{
- 			char buf[100];
- 			sprintf(buf, "Gadget %d", pAmmoData->nId);
- 			SendTriggerMsgToObject(this, weaponFireInfo.hClientObjImpact, LTFALSE, buf);
- 		}
- 		else
- 		{
- 			// [KLS 8/13/02] If we're using the welder, change the ammo to welder 
- 			// burn so we can damage other objects...
+			return;
+		}
 
- 			if (pAmmoData->eInstDamageType == DT_GADGET_WELDER)
- 			{
- 				bChangedAmmoType = true;
-				AMMO const* pTempAmmoData = g_pWeaponMgr->GetAmmo("WelderBurn");
- 				if (pTempAmmoData)
- 				{
- 					pWeapon->SetAmmoId(pTempAmmoData->nId);
- 				}
- 			}
- 			else
- 			{
- 				return;
- 			}
- 		}
+		char buf[100];
+		sprintf(buf, "Gadget %d", pAmmoData->nId);
+		SendTriggerMsgToObject(this, weaponFireInfo.hClientObjImpact, LTFALSE, buf);
 	}
 
 
@@ -6554,24 +6554,20 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	}
 
 
+	// RETAIL: the shot carries the player's relations (0x10082b62)
+	weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetRelationData() );
+
 	// RETAIL: Tron's only spends the ammo when the weapon's fire delay has
-	// not passed since its last shot (0x10082b6b..0x10082ba1). PORT: the
-	// time is the server's (retail's comes from a local not yet identified)
-	if (g_pLTServer->GetTime() - pWeapon->GetLastFireTime() <= pWeapon->GetWeaponData()->m_fFireDelay)
-	{
-		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
-	}
-	else
+	// not passed between the weapon's last shot and the shot's fire time
+	// (0x10082b6b..0x10082ba1)
+	if (weaponFireInfo.fFireTime - pWeapon->GetLastFireTime() > pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		pWeapon->Fire(weaponFireInfo);
 	}
-
- 	// [KLS 8/13/02] Change ammo type back to correct ammo type...
- 
- 	if (bChangedAmmoType)
- 	{
- 		pWeapon->SetAmmoId(nAmmoId);
- 	}
+	else
+	{
+		pWeapon->SpendAmmo(weaponFireInfo.hFiredFrom, true);
+	}
 
 
 	ClearHiding();
@@ -6598,6 +6594,8 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
         cSoundMsg.Writeuint8(nWeaponId);
         cSoundMsg.Writeuint8(nClientID);
 		cSoundMsg.WriteCompPos(weaponFireInfo.vFirePos);
+		cSoundMsg.Writefloat(1.0f);		// RETAIL: Tron's (0x10082c5f)
+		cSoundMsg.Writebool(false);
 		g_pLTServer->SendSFXMessage(cSoundMsg.Read(), weaponFireInfo.vFirePos, 0);
 	}
 
@@ -7248,6 +7246,17 @@ void CPlayerObj::SetPhysicsModel(PlayerPhysicsModel eModel, LTBOOL bUpdateClient
 
 void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 {
+	// RETAIL: Tron's (0x10083ed0): the client sends the object's rotation,
+	// the light cycle has no vehicle model, the model is hidden and not
+	// solid.
+	g_pCommonLT->SetObjectFlags( m_hObject, OFT_Flags, 0, FLAG_YROTATION );
+	uint32 dwClientFlags = g_pLTServer->GetClientInfoFlags( m_hClient );
+	dwClientFlags |= CIF_SENDCOBJROTATION;
+	g_pLTServer->SetClientInfoFlags( m_hClient, dwClientFlags );
+
+	if (eModel == PPM_LIGHTCYCLE)
+		return;
+
 	// Create the vehicle model...
 
 	if (!m_hVehicleModel)
@@ -7256,9 +7265,8 @@ void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
 		// not be accurate untill you are actually on the vehicle...
 		
         LTVector vPos;
-        g_pLTServer->GetObjectPos(m_hObject, &vPos);
-		
 		LTRotation rPlayerRot;
+        g_pLTServer->GetObjectPos(m_hObject, &vPos);
 		g_pLTServer->GetObjectRotation(m_hObject, &rPlayerRot);
 
 		LTRotation rRot = m_rFullPlayerRot.IsIdentity() ? rPlayerRot : m_rFullPlayerRot;
@@ -7282,12 +7290,12 @@ void CPlayerObj::SetVehiclePhysicsModel(PlayerPhysicsModel eModel)
     const char* pSocket = "Snowmobile";
 
 	HATTACHMENT hAttachment;
-    if( LT_OK != g_pLTServer->CreateAttachment(m_hObject, m_hVehicleModel, (char *)pSocket,
-												&vOffset, &rOffset, &hAttachment) )
-	{
-		ASSERT( !"CreateAttachment() failed." );
-		g_pLTServer->CPrint( "Failed to attach Snowmobile.  Check the socket on the player model!" );		
-	}
+    g_pLTServer->CreateAttachment(m_hObject, m_hVehicleModel, (char *)pSocket,
+		&vOffset, &rOffset, &hAttachment);
+
+	g_pCommonLT->SetObjectFlags( m_hVehicleModel, OFT_User, USRFLG_ATTACH_HIDE1SHOW3, USRFLG_ATTACH_HIDE1SHOW3 );
+	g_pCommonLT->SetObjectFlags( m_hVehicleModel, OFT_Flags, FLAG_FORCEOPTIMIZEOBJECT,
+		FLAG_FORCEOPTIMIZEOBJECT | FLAG_GRAVITY | FLAG_SOLID | FLAG_RAYHIT );
 }
 
 
@@ -9050,15 +9058,22 @@ bool CPlayerObj::CanRevive( )
 
 void CPlayerObj::RemoveProjectiles()
 {
+	// RETAIL: loops over the total found, not over the objects the array
+	// holds (0x100863c3; see RETAIL_BUGS.md)
 	ObjArray<HOBJECT, 50> objArray;
-	g_pLTServer->FindNamedObjects("TronProjectile", objArray);
+	uint32 nTotalFound;
+	g_pLTServer->FindNamedObjects("TronProjectile", objArray, &nTotalFound);
 
+#ifdef TRON20SRC_MODERN
 	for (uint32 i = 0; i < objArray.NumObjects(); i++)
+#else
+	for (uint32 i = 0; i < nTotalFound; i++)
+#endif // TRON20SRC_MODERN
 	{
 		HOBJECT hProjectile = objArray.GetObject(i);
 		CTronProjectile* pProjectile = dynamic_cast<CTronProjectile*>(g_pLTServer->HandleToObject(hProjectile));
 
-		if (pProjectile->GetFiredFrom() == m_hObject)
+		if (m_hObject == pProjectile->GetFiredFrom())
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint32(MID_PROJECTILE);
