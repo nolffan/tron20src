@@ -2485,7 +2485,10 @@ void CUDPDriver::FlushDisconnectQueue()
 void CUDPDriver::FlushConnectQueue()
 {
 	// Connect anyone new
-	m_cCS_ConnectQueue.Enter();
+	// RETAIL: a guard object, as Build 69's CSAccess: its inline cost leaves
+	// pop_front a call where Term inlines this function (Lithtech.exe
+	// 0x48ccb3), and no _M_pop_front_aux of its own
+	CWinSync_CSAuto cConnectProtect(m_cCS_ConnectQueue);
 
 	while (!m_cConnectQueue.empty())
 	{
@@ -2500,8 +2503,6 @@ void CUDPDriver::FlushConnectQueue()
 		
 		m_cConnectQueue.pop_front();
 	}
-
-	m_cCS_ConnectQueue.Leave();
 }
 
 void CUDPDriver::FlushUnknownMessageQueue()
