@@ -171,7 +171,7 @@ void CLibraryCtrl::OnMouseMove(int x, int y, PlayerSubroutine * pCursorSub)
 		m_Arc.OnMouseMove(x, y);
 		m_bCWHot = m_Arc.IsStartHot();
 		m_bCCWHot = m_Arc.IsEndHot();
-		m_bHot = m_bWasHot = m_Arc.IsHot();
+		m_bWasHot = m_bHot = m_Arc.IsHot();
 		m_pHotSub = m_Arc.GetHotSub();
 	}
 
