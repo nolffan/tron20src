@@ -17382,6 +17382,7 @@ C	Object.lto	10091020	74	objectshared(character.obj):?HandleDead@CCharacter@@MAE
 C	Object.lto	10091070	3	objectshared(character.obj):?HandleVectorImpact@CCharacter@@MAEXAAUIntersectInfo@@AAU?$TVector3@M@@1AAW4ModelNode@@@Z	-	3ad36c6eeda528589a7a06f48684d3318576059d93d51f445ab60d280620edc7
 C	Object.lto	10091080	659	objectshared(character.obj):?CreateBody@CCharacter@@MAEXXZ	2+4,9+4,22+4,27+4,41+4,56+4,61+4,145+4,243+4,327+4,388+4,436+4,442+4,451+4,457+4,475+4,493+4,499+4,537+4,568+4,609+4,629+4,648+4	79c8fe24c7f7463e5f29b116583785644362fb6de5f29c64b69b6f461ac2de35
 C	Object.lto	10091320	78	objectshared(character.obj):?SetupBody@CCharacter@@MAEXPAVBody@@@Z	66+4	d0b3f0a292ed34af97791970b5d2b8b8990e7397678ab947424a1129ad8513cc
+C	Object.lto	10091370	152	objectshared(character.obj):?ShouldGib@CCharacter@@QAE_NXZ	8+4,19+4,30+4,41+4,52+4,63+4,105+4,121+4,127+4	e02283198d234ccb740c893b81799c6ecd7e17a62451c5b2b4365fedf11a1509
 C	Object.lto	10091410	203	objectshared(character.obj):?GetBodyState@CCharacter@@MAE?AW4EnumAIStateType@@XZ	4+4,128+4,139+4	63c7df15f9b2b8fa615c85173194ada637ecb00359678c50abb1f97faf8e2de8
 C	Object.lto	10091570	548	objectshared(character.obj):?SetDims@CCharacter@@UAEIPAU?$TVector3@M@@I@Z	37+4,74+4,95+4,116+4,137+4,158+4,179+4,206+4,241+4,280+4,310+4,326+4,339+4,371+4,394+4,426+4,439+4,454+4,490+4,497+4,502+4,520+4,534+4	009ebc7827ea6050dd5430e3c7e85870cf16c63acffacd48197b111ecd5b844a
 C	Object.lto	100917a0	58	objectshared(character.obj):?GetRadius@CCharacter@@UAEMXZ	7+4	80c8540b8d9351bb3817182c8267395dfbf0c6993481d8754e23169cdbe2d60a
@@ -25293,6 +25294,7 @@ C	Object.lto	1020bde0	6	objectshared(aigoaldash.obj):?GetAIClassType@CAIGoalDash
 C	Object.lto	1020bdf0	30	objectshared(ainode.obj):??_GAINodePatrol@@UAEPAXI@Z	4+4,17+4	b40481af87cc4bcd23da7d559dd5ce54f616e2f51cadc2008081b4c4e057f65d
 C	Object.lto	1020be10	147	objectshared(aigoaldash.obj):??1CAIGoalDash@@UAE@XZ	3+4,9+4,17+4,31+4,38+4,45+4,88+4,93+4,107+4,112+4,127+4,139+4	082290976e0d9fc0d4ff114ba7b36cb245e001808da6c8a4620e7203c57308d7
 C	Object.lto	1020beb0	93	objectshared(aigoaldash.obj):?InitGoal@CAIGoalDash@@UAEXPAVCAI@@@Z	13+4,32+4,55+4	8a0ab41064dc1b52ff690ee333ef73ea441cfcd75305899a6ea77ae44788244d
+C	Object.lto	1020bf10	67	objectshared(aigoaldash.obj):?Save@CAIGoalDash@@UAEXPAVILTMessage_Write@@@Z	10+4	244163bf0b46e11cd0498137e7ae71fe3fe52d7e9c94bf5d0896dfda2dfa5d79
 C	Object.lto	1020bf60	67	objectshared(aigoaldash.obj):?Load@CAIGoalDash@@UAEXPAVILTMessage_Read@@@Z	11+4	587d6b13110a03bf7da1812343a89f4dce6d2dd188e29a41c667e0c0f5b474e8
 C	Object.lto	1020bfb0	58	objectshared(aigoaldash.obj):?ActivateGoal@CAIGoalDash@@UAEXXZ	4+4,52+4	4d57b327fe67c056cdcf616b657bbe059224f8423f0e2ce5cc945d249eb4f03c
 C	Object.lto	1020bff0	29	objectshared(aigoaldash.obj):?DeactivateGoal@CAIGoalDash@@UAEXXZ	4+4,23+4	56a066a6be833fcb4966b6914e02e568288d70325e52c9f3ee3a6f09b64ccfa8
@@ -28107,6 +28109,7 @@ C	Object.lto	1026e720	325	ainodeexitlevelbyrezout.obj:?ReadProp@AINodeExitLevelB
 C	Object.lto	1026e870	196	ainodeexitlevelbyrezout.obj:?Load@AINodeExitLevelByRezOut@@UAEXPAVILTMessage_Read@@@Z	140+4,169+4,179+4	afe8376d39c7ce2a34cb154444ff84ab18e7c31ff0d8a21f4222aeb637ee4661
 C	Object.lto	1026e940	51	ainodeexitlevelbyrezout.obj:?Save@AINodeExitLevelByRezOut@@UAEXPAVILTMessage_Write@@@Z	42+4	04a9199f899b2061507b48cba67bba44ef9884a706deb7484574ba694c839fe0
 C	Object.lto	1026e980	136	ainodeexitlevelbyrezout.obj:?GetSmartObjectCommand@AINodeExitLevelByRezOut@@QAEPBDXZ	1+4,89+4,103+4,127+4	0d31069d423cbaad97325c1b7c6f488d3ebc99d0138e9db0b15a5d46de1fa0bb
+C	Object.lto	1026ea10	94	ainodeexitlevelbyrezout.obj:?ProcessOnUseCmd@AINodeExitLevelByRezOut@@QAEXPAVLTObject@@@Z	5+4,17+4,31+4,38+4,61+4,84+4	8cd1afec431ff286c5143adc636b5828320c16cd52d3e5b654dc901d22bb9e1a
 C	Object.lto	1026ea70	602	objectshared(liteobjectmgr.obj):?_M_allocate_and_copy@?$vector@PAVGameBaseLite@@V?$allocator@PAVGameBaseLite@@@_STL@@@_STL@@IAEPAPAVGameBaseLite@@IPAPAV3@0@Z	6+4,12+4,20+4,61+4,79+4,89+4,94+4,120+4,151+4,175+4,221+4,259+4,274+4,317+4,336+4,343+4,352+4,366+4,371+4,397+4,408+4,414+4,479+4,485+4,513+4,519+4,541+4,547+4,569+4,582+4	013f423d1f801855c1190009dc99d9523aa75be3723add818b2afaad2ce48e6e
 C	Object.lto	1026ecd0	210	objectshared(globalmgr.obj):??0CGlobalMgr@@IAE@XZ	3+4,9+4,17+4,35+4,54+4,70+4,86+4,102+4,118+4,134+4,139+4,162+4,179+4,202+4	e034a766f1f24751e4afbfde5b059d34918b91392f97f4d5ef0e5ab55695c004
 C	Object.lto	1026edb0	30	objectshared(aihumanstrategy.obj):??_GCBodyStatePranksterImplode@@UAEPAXI@Z	4+4,17+4	b40481af87cc4bcd23da7d559dd5ce54f616e2f51cadc2008081b4c4e057f65d

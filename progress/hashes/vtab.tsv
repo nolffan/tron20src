@@ -14211,6 +14211,7 @@ W	Object.lto	?ProcessMsg@CCommandMgr@@QAEIAAVConParse@@H_N@Z	50+0,134+0,171,193+
 W	Object.lto	?ProcessObj@CCommandMgr@@QAEIAAVConParse@@H@Z	22+0,28,33+0,39,78+0,129,141+0,147,156+0,162,208+0,247+0,253,278+0,284,315,323	051ed27812d203c20c9267ceaf375b4bc82bcc5ab05ceb0c1ae7235c8b33e2f8
 W	Object.lto	?ProcessObjectiveMessage@CGameServerShell@@QAE_NABVCParsedMsg@@PAUObjectiveMsgInfo@@@Z	34+0,45,87+0,98,140+0,151,195+0,206,250+0,261,305+0,316,360+0,371,411+0,425+0,469+0,521+0,581+0,635+0,686+0,737+0,825+0,835+0,919,939,994,1014,1065,1085,1133,1176,1219,1262,1276,1288,1300,1313,1324,1335,1346	64bf4baa5edec33d3a48e0a54698164233575864b1726672e63908aa279e5a08
 W	Object.lto	?ProcessOnUseCmd@AINodeExitLevel@@QAEXPAVLTObject@@@Z	5+0,17,31+0,38+0,61+0,84	67e027d2aa5ca395c029b13eb4b008c358318569987ee58ca2f61aba521960dd
+W	Object.lto	?ProcessOnUseCmd@AINodeExitLevelByRezOut@@QAEXPAVLTObject@@@Z	5+0,17,31+0,38+0,61+0,84	67e027d2aa5ca395c029b13eb4b008c358318569987ee58ca2f61aba521960dd
 W	Object.lto	?ProcessPlayerDeath@CDestructible@@IAEXPAVLTObject@@@Z	50+0,97+0,139,152+0,173,209+0,235+0,247+0,258,264+0,272,330,339,348+0,398+0,420+0,450,456+0,562,568+0	21016d25516f47c2ca9b76f6944f4f4bd6170409240f355e75cc4dadc2aa9931
 W	Object.lto	?ProcessRand@CCommandMgr@@QAEIAAVConParse@@H@Z	15+0,29+0,59+0,98,120,137,148+0,154,160+0,166,185,202,213+0,219,225+0,231	6033a51b35a24b2704dc7402f9b3ffaa0fa28ec1bdcd2ba9d01e497ef3c17bdc
 W	Object.lto	?ProcessRandArgs@CCommandMgr@@QAEIAAVConParse@@HH@Z	18,38,58,69+0,75,85+0,91	7b4fb74920c99acecf21a7fe8985fe47955685ff815fe018b022e57619ab50e3
@@ -14605,6 +14606,7 @@ W	Object.lto	?Save@CAIGoalCharge@@UAEXPAVILTMessage_Write@@@Z	10	402ad4cb7b83435
 W	Object.lto	?Save@CAIGoalChaseAbstract@@UAEXPAVILTMessage_Write@@@Z	11,45+0,63,145+0,163,245+0,263,383+0,397	8207d7acc6ff8bfbfd4d1a5448c4267d1cc0488c78462da63c34baa271359233
 W	Object.lto	?Save@CAIGoalCheckBody@@UAEXPAVILTMessage_Write@@@Z	11,25,67	116bf8d0d89b6a122c10294dd482f55de02cbfb8aeac281471f9dc72ba45426e
 W	Object.lto	?Save@CAIGoalCover@@UAEXPAVILTMessage_Write@@@Z	10	c73111fde80f6731e2da327c6425c1b3a9dc45a84ade5bfe565cadd760fa9219
+W	Object.lto	?Save@CAIGoalDash@@UAEXPAVILTMessage_Write@@@Z	10	402ad4cb7b83435ed99d2bc6cf9b92c86ba91715d241ffbdf26a74e5c2c7865e
 W	Object.lto	?Save@CAIGoalDeflect@@UAEXPAVILTMessage_Write@@@Z	10,16+0	9530519fbafe652bf33466ee945563af3fd2b001318660ddad3e92c097ee0123
 W	Object.lto	?Save@CAIGoalDisappearReappear@@UAEXPAVILTMessage_Write@@@Z	10	402ad4cb7b83435ed99d2bc6cf9b92c86ba91715d241ffbdf26a74e5c2c7865e
 W	Object.lto	?Save@CAIGoalDisappearReappearEvasive@@UAEXPAVILTMessage_Write@@@Z	10,22	f3a63940d7a4655e18bd3cb92e9e27cec61457eb17d172c8f46ca8e871b26ca7
@@ -15078,6 +15080,7 @@ W	Object.lto	?ShouldDropDeflection@CAIHumanStateDeflect@@IAEXXZ	20+0,57+0	567569
 W	Object.lto	?ShouldFacePlayer@CAIHumanStateGoto@@IAE_NXZ	5+0,10,107	27f060cb9ea80a2c6e0d7b5b809c89f19b920cca139fdc81e0ee08ea83e920cb
 W	Object.lto	?ShouldFacePlayer@CAIHumanStatePatrol@@IAE_NXZ	5+0,10,107	27f060cb9ea80a2c6e0d7b5b809c89f19b920cca139fdc81e0ee08ea83e920cb
 W	Object.lto	?ShouldFacePlayer@CAIHumanStateUseObject@@IAE_NXZ	5+0,10,107	27f060cb9ea80a2c6e0d7b5b809c89f19b920cca139fdc81e0ee08ea83e920cb
+W	Object.lto	?ShouldGib@CCharacter@@QAE_NXZ	8,19,30,41,52,63,105,121+0,127	e93714d9518520bac0fa62a4d6375ce0f64c2f176040a887696ff7653b260240
 W	Object.lto	?ShouldReload@CAIHumanStrategyShoot@@QAEIXZ	8	8b7af11e95c362903141928c85398587573464348f182bae415eb1972c983a56
 W	Object.lto	?ShouldThrow@CAIHumanStrategyGrenadeThrow@@UAEIXZ	11,23,69	5d53663638de99c31e827aed74bfd53c5fcd82c59f3addccd21e430e3cfe24d3
 W	Object.lto	?ShouldWallStick@CCharacter@@UAEIXZ	16+0,33+0,232+0,251,263,295,310,349,404+4,421+0,470,535,603,647+0,706,712+0,721,827,844+0,857,862+0,873+0	0b480591bdc33fe296eec73d4cd8f1e9fd8fd5a38f8b5ae709fc3b8472a9d589
