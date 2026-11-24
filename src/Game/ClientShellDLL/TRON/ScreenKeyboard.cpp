@@ -68,14 +68,7 @@ LTBOOL CScreenKeyboard::Build()
 	pSlider->SetSliderIncrement(5);
 
 	// auto center
-	// RETAIL: Tron's AddToggle also sets the toggle from the value (every
-	// AddToggle in retail does: SetOn, vtable +0xc4); written out here
-	m_pLookCtrl = CreateToggle(0x15F, 0x9F, kGap, &m_bAutoCenter );
-	if (m_pLookCtrl)
-	{
-		AddControl(m_pLookCtrl);
-		m_pLookCtrl->SetOn(m_bAutoCenter);
-	}
+	m_pLookCtrl = AddToggle(0x15F, 0x9F, kGap, &m_bAutoCenter );
 	// PORT: retail's toggle strings are wide (CLTGUIToggle 0x100c01b0,
 	// 0x100c0260), which our LTGUIMgr's toggle has not yet
 	m_pLookCtrl->SetOnString(LoadTempWString(0x35));
