@@ -468,14 +468,7 @@ static GHTTPBool ghiParseStatus
 	int rcode;
 	char c;
 
-	GS_ASSERT(connection);
-	GS_ASSERT(connection->recvBuffer.len > 0);
-
-#if defined(_X360)
-	//Xbox 360 needs "%n" to be manually enabled
-	{
-	int oldPrintCountValue = _set_printf_count_output(1);
-#endif
+	// RETAIL: CShell.dll 0x10020b40 (the 2003 SDK's).
 
 	// Parse the string.
 	////////////////////
@@ -485,15 +478,14 @@ static GHTTPBool ghiParseStatus
 		&statusCode,
 		&statusStringIndex);
 
-#if defined(_X360)
-	_set_printf_count_output(oldPrintCountValue);
-	}
-#endif
+	// Figure out where the status string starts.
+	/////////////////////////////////////////////
+	while((c = connection->recvBuffer.data[statusStringIndex]) != '\0' && isspace(c))
+		statusStringIndex++;
 
 	// Check what we got.
 	/////////////////////
 	if((rcode != 3) ||     // Not all fields read.
-		//!*statusString ||  // No status string.  PANTS|9.16.02 - apparently some servers don't return a status string
 		(majorVersion < 1) ||  // Major version is less than 1.
 		(statusCode < 100) ||        // 1xx is lowest status code.
 		(statusCode >= 600))         // 5xx is highest status code.
@@ -502,11 +494,6 @@ static GHTTPBool ghiParseStatus
 		connection->result = GHTTPBadResponse;
 		return GHTTPFalse;
 	}
-
-	// Figure out where the status string starts.
-	/////////////////////////////////////////////
-	while((c = connection->recvBuffer.data[statusStringIndex]) != '\0' && isspace(c))
-		statusStringIndex++;
 
 	// Set connection members.
 	//////////////////////////
@@ -531,19 +518,27 @@ void ghiDoReceivingStatus
 	GHIRecvResult result;
 	char * endOfStatus;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving Status\n");
+	// RETAIL: CShell.dll 0x10020a70 (the 2003 SDK's).
 
 	// Get data.
 	////////////
 	bufferLen = sizeof(buffer);
 	result = ghiDoReceive(connection, buffer, &bufferLen);
 
-	// Handle error or no data.
-	///////////////////////////
+	// Handle error.
+	////////////////
 	if(result == GHIError)
 		return;
-	if(result == GHINoData)
+
+	// Connection closed.
+	/////////////////////
+	if(result == GHIConnClosed)
+	{
+		connection->completed = GHTTPTrue;
+		connection->result = GHTTPBadResponse;
+		connection->socketError = GOAGetLastError(connection->socket);
 		return;
+	}
 
 	// Only append data if we got data.
 	///////////////////////////////////
@@ -556,7 +551,7 @@ void ghiDoReceivingStatus
 	}
 
 	// Check if the status is finished.
-	/////////////////////////////////////
+	///////////////////////////////////
 	endOfStatus = strstr(connection->recvBuffer.data, CRLF);
 	if(endOfStatus)
 	{
@@ -570,11 +565,6 @@ void ghiDoReceivingStatus
 		/////////////////////////
 		statusLength = (endOfStatus - connection->recvBuffer.data);
 
-		// Log it.
-		//////////
-		ghiLogResponse(connection->recvBuffer.data, statusLength);
-		ghiLogResponse("\n", 1);
-
 		// Parse the status line.
 		/////////////////////////
 		if(!ghiParseStatus(connection))
@@ -586,20 +576,10 @@ void ghiDoReceivingStatus
 		//////////////////////////////////////////////////
 		connection->recvBuffer.pos = (statusLength + 2);
 
-
 		// We're receiving headers now.
 		///////////////////////////////
 		connection->state = GHTTPReceivingHeaders;
 		ghiCallProgressCallback(connection, NULL, 0);
-	}
-	else if(result == GHIConnClosed)
-	{
-		// Connection closed.
-		/////////////////////
-		connection->completed = GHTTPTrue;
-		connection->result = GHTTPBadResponse;
-		connection->socketError = GOAGetLastError(connection->socket);
-		return;
 	}
 }
 
