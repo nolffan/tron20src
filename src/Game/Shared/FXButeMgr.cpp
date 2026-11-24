@@ -4488,7 +4488,13 @@ void CFXButeMgr::CreateImpactFX(IMPACTFX* pImpactFX, IFXCS & cs)
 
 	int nDetailLevel = pSettings->SpecialFXSetting();
 
-	// RETAIL: CShell 0x10155dc0: Tron's impacts add no pusher
+	// Add a pusher if necessary...
+	// RETAIL: CShell 0x10155dc0: Tron's impacts add no pusher. PORT: the call
+	// stays until CWeaponFX::CreateWeaponSpecificFX (0x10190bf6) and
+	// CExplosionFX::CreateObject (0x101a9c60) call CreatePusherFX as retail
+	// does: without a caller our link drops it (retail 0x10155c70)
+
+	CreatePusherFX(pImpactFX->pPusherFX, cs.vPos);
 
 	// Play the impact sound if appropriate...
 
