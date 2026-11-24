@@ -1332,15 +1332,12 @@ HOBJECT TronTurret::GetTarget()
 
 WeaponState TronTurret::Fire()
 {
-	// RETAIL: 0x1006cb60. Near: Tron's WeaponFireInfo is laid out
-	// differently from ours (retail clears a 22-byte array in it and sets
-	// a member to &GetRelationData()), and its sound call takes one more
-	// argument.
+	// RETAIL: 0x1006cb60.
 
 	if (!m_pWeapon) return W_IDLE;
 
 	// RETAIL: WEAPON's +0x17c, the fire delay in seconds
-	if (g_pLTServer->GetTime() - m_pWeapon->GetLastFireTime() <= m_pWeapon->GetWeaponData()->m_fFireDelay)
+	if (g_pLTServer->GetTime() - m_pWeapon->GetLastTimestamp() <= m_pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		return W_IDLE;
 	}
@@ -1355,6 +1352,7 @@ WeaponState TronTurret::Fire()
 	weaponFireInfo.vPath = vTargetPos - m_tFire.m_Pos;
 	weaponFireInfo.vFirePos = m_tFire.m_Pos;
 	weaponFireInfo.vFlashPos = m_tFire.m_Pos;
+	weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetRelationData() );
 
 	WeaponState eState = m_pWeapon->UpdateWeapon(weaponFireInfo, LTTRUE);
 	if (eState == W_FIRED)

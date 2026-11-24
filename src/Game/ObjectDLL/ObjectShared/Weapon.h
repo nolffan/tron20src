@@ -93,6 +93,10 @@ class CWeapon
 		void	KillLoopSound( );
 
 		float	GetLastFireTime( ) const { return m_fLastFireTime; }
+		// RETAIL: inline: the time of the last shot's fire info (+0x64), which
+		// Tron's fire delay checks read (TronTurret 0x1006cb96, Finder
+		// 0x1001f05c, CPlayerObj 0x10082b79); the name is ours
+		LTFLOAT	GetLastTimestamp( ) const { return m_fLastTimestamp; }
 
 		void	HideWeapon( bool bHidden );
 

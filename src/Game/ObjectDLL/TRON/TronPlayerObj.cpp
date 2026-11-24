@@ -973,7 +973,7 @@ void CTronPlayerObj::UpdateInterface( bool bForceUpdate )
 		cMsg.Writeuint8(0);
 		cMsg.Writeuint8(0);
 		cMsg.Writefloat(m_fOldMaxEnergy);
-		g_pLTServer->SendToClient(cMsg.Read(), m_hClient, MESSAGE_GUARANTEED);
+		g_pLTServer->SendToClient(cMsg.Read(), GetClient(), MESSAGE_GUARANTEED);
 	}
 
 	// Call the base class
