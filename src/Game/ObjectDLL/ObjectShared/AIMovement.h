@@ -40,7 +40,9 @@ class CAIMovement
 		void SetupJump( EnumAnimMovement eMovementType );
 		void SetSpeed( LTFLOAT fSpeed ) { m_fSetSpeed = fSpeed; }
 		void FaceDest( LTBOOL bFaceDest ) { m_bFaceDest = bFaceDest; }
-		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { m_bIgnoreVolumes = bIgnoreVolumes; }
+		// RETAIL: Tron keeps m_bIgnoreVolumes while m_xTronUnknown38 is set
+		// (CAIHumanStateLaunch::Update, 0x1022a6cf).
+		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { if( !m_xTronUnknown38 ) m_bIgnoreVolumes = bIgnoreVolumes; }
 
 		void	LockMovement();
 		void	LockMovement(LTBOOL bLockRotation);

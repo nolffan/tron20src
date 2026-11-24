@@ -1481,7 +1481,7 @@ void CDiscMatchMgr::SendState(HCLIENT hClient)
 	g_pTronTeamMgr->UpdateClients(hClient);
 
 	bool bFirst = true;
-	for (DiscMatchList::iterator iter = m_Matches.begin(); iter != m_Matches.end(); iter++)
+	for (DiscMatchList::iterator iter = m_Matches.begin(); iter != m_Matches.end(); ++iter)
 	{
 		(*iter)->SendState(hClient, true, bFirst);
 		bFirst = false;
