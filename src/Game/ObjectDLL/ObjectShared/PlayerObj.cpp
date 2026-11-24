@@ -6560,7 +6560,7 @@ void CPlayerObj::HandleWeaponFireMessage(ILTMessage_Read *pMsg)
 	// RETAIL: Tron's only spends the ammo when the weapon's fire delay has
 	// not passed between the weapon's last shot and the shot's fire time
 	// (0x10082b6b..0x10082ba1)
-	if (weaponFireInfo.fFireTime - pWeapon->GetLastFireTime() > pWeapon->GetWeaponData()->m_fFireDelay)
+	if (weaponFireInfo.fFireTime - pWeapon->GetLastTimestamp() > pWeapon->GetWeaponData()->m_fFireDelay)
 	{
 		pWeapon->Fire(weaponFireInfo);
 	}

@@ -93,6 +93,9 @@ class CWeapon
 		void	KillLoopSound( );
 
 		float	GetLastFireTime( ) const { return m_fLastFireTime; }
+		// RETAIL: the fire time of the last shot (CPlayerObj::HandleWeaponFireMessage
+		// 0x10082b79). The name is ours
+		LTFLOAT const& GetLastTimestamp( ) const { return m_fLastTimestamp; }
 
 		void	HideWeapon( bool bHidden );
 
