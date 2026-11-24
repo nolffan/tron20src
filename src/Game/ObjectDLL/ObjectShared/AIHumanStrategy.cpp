@@ -4159,6 +4159,8 @@ void CAIHumanStrategyShoot::Update(HOBJECT hTarget /* = LTNULL */)
 
 LTBOOL CAIHumanStrategyShoot::UpdateAnimation()
 {
+	// RETAIL: Tron's (0x102269d0)
+
 	if( !super::UpdateAnimation() )
 	{
 		return LTFALSE;
@@ -4169,19 +4171,32 @@ LTBOOL CAIHumanStrategyShoot::UpdateAnimation()
 		return LTFALSE;
 	}
 
+	// The attack side changed: wait until the animation is unlocked.
+
+	if( m_bTronUnknown3C && !GetAnimationContext()->IsLocked() )
+	{
+		m_bTronUnknown3C = LTFALSE;
+		return LTTRUE;
+	}
+
 	GetAnimationContext()->SetRandomSeed( m_iAnimRandomSeed );
 
 	switch ( m_eState )
 	{
-		case eStateNone:
-		{
-		}
-		break;
-
 		case eStateAiming:
 		{
+			if( GetAI()->GetCurrentWeapon() == GetAI()->GetPrimaryWeapon() )
+			{
+				GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_Aim);
+			}
+			else
+			{
+				GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_AimSecondary);
+			}
+			// RETAIL: the aim prop is set again
 			GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_Aim);
 			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
+			GetAnimationContext()->SetProp(kAPG_Direction, m_eAttackDirection);
 		}
 		break;
 
@@ -4189,6 +4204,32 @@ LTBOOL CAIHumanStrategyShoot::UpdateAnimation()
 		{
 			if(!GetAnimationContext()->IsLocked())
 			{
+				GetAI()->GetBrain()->ResetFiringTrails();
+
+				// The weapon set says if the attack plays all the way
+				// through.
+
+				const WEAPON* pWeaponData = GetAI()->GetCurrentWeapon()->GetWeaponData();
+				bool bMovement = ( GetAI()->GetAnimationContext()->GetCurrentProp( kAPG_Movement ) != kAP_None );
+				if( GetAI()->GetAITemplate()->pWeaponSet->IsLocked( pWeaponData, bMovement ) )
+				{
+					// An empty clip: aim again.
+
+					if( m_bNeedsReload )
+					{
+						GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_Aim);
+						GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
+						GetAnimationContext()->SetProp(kAPG_Direction, m_eAttackDirection);
+						m_eState = eStateAiming;
+						return LTTRUE;
+					}
+
+					// ClearLock is necessary to allow the same locked animation
+					// to be played consecutively.
+					GetAnimationContext()->ClearLock();
+					GetAnimationContext()->Lock();
+				}
+
 				// Fire with primary or secondary weapon.
 
 				if( GetAI()->GetCurrentWeapon() == GetAI()->GetPrimaryWeapon() )
@@ -4199,21 +4240,7 @@ LTBOOL CAIHumanStrategyShoot::UpdateAnimation()
 					GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_FireSecondary);
 				}
 				GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
-	
-				// AIs who cannot attack while moving need to play their
-				// attacks all the way through.
-				// (e.g. fancy ninja and supersoldier attacks)
-				// Secondary attacks always play all the way through
-				// (e.g. shuriken and headbutts. )
-
-				if( ( !GetAI()->GetBrain()->AttacksWhileMoving() ) ||
-					( GetAI()->GetCurrentWeapon() != GetAI()->GetPrimaryWeapon() ) )
-				{
-					// ClearLock is necessary to allow the same locked animation
-					// to be played consecutively.
-					GetAnimationContext()->ClearLock();
-					GetAnimationContext()->Lock();
-				}
+				GetAnimationContext()->SetProp(kAPG_Direction, m_eAttackDirection);
 			}
 		}
 		break;
@@ -4223,12 +4250,6 @@ LTBOOL CAIHumanStrategyShoot::UpdateAnimation()
 			GetAnimationContext()->Lock();
 			GetAnimationContext()->SetProp(kAPG_WeaponAction, kAP_Reload);
 			GetAnimationContext()->SetProp(kAPG_WeaponPosition, kAP_Up);
-		}
-		break;
-
-		default:
-		{
-			_ASSERT(LTFALSE);
 		}
 		break;
 	}
