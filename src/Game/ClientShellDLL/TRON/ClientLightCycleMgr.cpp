@@ -148,6 +148,7 @@ bool CClientLightCycleMgr::Init()
 	if (!s_hTrailCanvas)
 	{
 		ObjectCreateStruct createStruct;
+		INIT_OBJECTCREATESTRUCT(createStruct);
 
 		createStruct.m_ObjectType = OT_CANVAS;
 		createStruct.m_Flags = FLAG_VISIBLE;
