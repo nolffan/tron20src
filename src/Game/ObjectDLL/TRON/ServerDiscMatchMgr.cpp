@@ -1154,11 +1154,18 @@ void CDiscMatchMgr::UpdateTournament()
 
 	if (m_nTronUnknown28 != -1)
 	{
+		// RETAIL: next is not advanced in the loop (0x1004a67c): with two
+		// matches or more, the second is ended again after it is deleted.
+		// (Not yet in docs/RETAIL_BUGS.md: this function is still near.)
 		iter = m_Matches.begin();
+		DiscMatchList::iterator next = iter;
+		next++;
 		while (iter != m_Matches.end())
 		{
-			DiscMatchList::iterator next = iter;
+#ifdef TRON20SRC_MODERN
+			next = iter;
 			next++;
+#endif // TRON20SRC_MODERN
 			CDiscMatch* pMatch = *iter;
 			pMatch->TimeOut();
 			pMatch->Term();
@@ -1177,65 +1184,75 @@ void CDiscMatchMgr::UpdateTournament()
 		if (!m_Bracket.GetNextMatch(match))
 			break;
 
-		// RETAIL: a bye: the other team goes on
+		// RETAIL: a bye: the other team goes on (0x1004a71d; without
+		// SetWinner)
 		if (match.nTeam[0] == -1 || match.nTeam[1] == -1)
 		{
 			int nSlot = (match.nTeam[0] == -1) ? 1 : 0;
-			int nIndex = match.nTeam[nSlot];
-			AwardWin(m_Bracket.GetTeam(nIndex)->nTeam);
-			m_Bracket.SetWinner(&match, nIndex, true);
+			AwardWin(m_Bracket.GetTeam(match.nTeam[nSlot])->nTeam);
 			continue;
 		}
 
 		int nTeamA = m_Bracket.GetTeam(match.nTeam[0])->nTeam;
 		int nTeamB = m_Bracket.GetTeam(match.nTeam[1])->nTeam;
 
-		// RETAIL: a team that left loses
-		if (nTeamA < 0 || nTeamB < 0 ||
-			!g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients() ||
-			!g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients())
+		// RETAIL: a team that left loses (0x1004a769); the winner's code
+		// ends the loop's body (0x1004a6cd)
+		int nWinner;
+		if (nTeamA < 0)
 		{
-			int nIndex;
-			if (nTeamA < 0)
-				nIndex = match.nTeam[1];
-			else if (nTeamB < 0)
-				nIndex = match.nTeam[0];
-			else if (!g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients() &&
-				g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients())
-				nIndex = match.nTeam[1];
-			else if (!g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients() &&
-				g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients())
-				nIndex = match.nTeam[0];
-			else
+			nWinner = match.nTeam[1];
+		}
+		else if (nTeamB < 0)
+		{
+			nWinner = match.nTeam[0];
+		}
+		else if (!g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients() &&
+			g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients())
+		{
+			nWinner = match.nTeam[1];
+		}
+		else if (!g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients() &&
+			g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients())
+		{
+			nWinner = match.nTeam[0];
+		}
+		else
+		{
+			if (!g_pTronTeamMgr->GetTeam(nTeamA, false)->GetNumClients() &&
+				!g_pTronTeamMgr->GetTeam(nTeamB, false)->GetNumClients())
+			{
 				continue;
+			}
 
-			AwardWin(m_Bracket.GetTeam(nIndex)->nTeam);
-			m_Bracket.SetWinner(&match, nIndex, true);
+			RemoveWaitingTeam(nTeamA);
+			RemoveWaitingTeam(nTeamB);
+
+			int nRoundsLeft = m_Bracket.GetRoundsLeft(true);
+			int nRound = m_Bracket.GetRound(match.nIndex, match.bWinners) + nRoundsLeft - 3;
+
+			CDiscArena* pArena = FindArena(nTeamA, nTeamB);
+			CDiscMatch* pMatch = debug_new(CDiscMatch);
+			m_Matches.push_back(pMatch);
+			pMatch->Init(nTeamA, nTeamB, pArena, m_fMatchTime, m_nRounds, match, nRound, nRoundsLeft);
+
+			// RETAIL: the final
+			if (nRound == nRoundsLeft)
+			{
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
+				cMsg.Writeuint8(kDiscMsg_TeamMessage);
+				cMsg.Writeuint8(nTeamA);
+				cMsg.Writeuint8(nTeamB);
+				cMsg.Writeuint8(pArena->GetIndex());
+				g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
+			}
+
 			continue;
 		}
 
-		RemoveWaitingTeam(nTeamA);
-		RemoveWaitingTeam(nTeamB);
-
-		int nRoundsLeft = m_Bracket.GetRoundsLeft(true);
-		int nRound = m_Bracket.GetRound(match.nIndex, match.bWinners) + nRoundsLeft - 3;
-
-		CDiscArena* pArena = FindArena(nTeamA, nTeamB);
-		CDiscMatch* pMatch = debug_new(CDiscMatch);
-		m_Matches.push_back(pMatch);
-		pMatch->Init(nTeamA, nTeamB, pArena, m_fMatchTime, m_nRounds, match, nRound, nRoundsLeft);
-
-		// RETAIL: the final
-		if (nRound == nRoundsLeft)
-		{
-			CAutoMessage cMsg;
-			cMsg.Writeuint8(MID_TRON_SERVERMESSAGE);
-			cMsg.Writeuint8(kDiscMsg_TeamMessage);
-			cMsg.Writeuint8(nTeamA);
-			cMsg.Writeuint8(nTeamB);
-			cMsg.Writeuint8(pArena->GetIndex());
-			g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
-		}
+		AwardWin(m_Bracket.GetTeam(nWinner)->nTeam);
+		m_Bracket.SetWinner(&match, nWinner, true);
 	}
 
 	AssignWaitingPlayers();
