@@ -1170,11 +1170,11 @@ void CProjectile::LoadPendingTouches(ILTMessage_Read *pMsg)
 {
 	m_lstPendingTouches.clear();
 
-	uint8 nCount = pMsg->Readuint8();
+	int nCount = pMsg->Readuint8();
 	for (int i = 0; i < nCount; ++i)
 	{
 		ProjectilePendingTouch touch;
-		pMsg->ReadData(&touch, sizeof(ProjectilePendingTouch) * 8);
+		pMsg->ReadType(&touch);
 		m_lstPendingTouches.push_back(touch);
 	}
 }
