@@ -354,8 +354,8 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 
 		m_bRatingLeftHot = false;
 		m_pHotSub = LTNULL;
-		m_pHotProc = LTNULL;
 		m_pCursorSub = LTNULL;
+		m_pHotProc = LTNULL;
 		m_bBuildPointsHot = false;
 		m_bRatingRightHot = false;
 		m_bLibraryCCWHot = false;
@@ -411,7 +411,10 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 			float fXRatio = g_pInterfaceResMgr->GetXRatio();
 			int nWidth = (int)((float)m_pVersion->GetBaseWidth() / fXRatio);
 			m_pVersion->GetBaseHeight();
-			m_pVersion->SetBasePos(LTIntPt(m_VersionPos.x - nWidth / 2, m_VersionPos.y));
+			// RETAIL: the position goes through floats (0x1007e634)
+			float fX = (float)m_VersionPos.x - (nWidth / 2);
+			float fY = (float)m_VersionPos.y;
+			m_pVersion->SetBasePos(LTIntPt((int)fX, (int)fY));
 		}
 
 		// the build notes found
@@ -425,10 +428,21 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 				nFound++;
 		}
 
-		// PORT: retail adds up the build notes of each level of each
-		// mission (Tron's LEVEL +0x1004, 0x1007e706), which our LEVEL
-		// does not have yet
+		// RETAIL: the build notes of each level of each mission (0x1007e706)
 		int nTotal = 0;
+		for (int nMission = 0; nMission < g_pMissionButeMgr->GetNumMissions(); nMission++)
+		{
+			MISSION* pMission = g_pMissionButeMgr->GetMission(nMission);
+			if (pMission)
+			{
+				for (int nLevel = 0; nLevel < pMission->nNumLevels; nLevel++)
+				{
+					LEVEL* pLevel = g_pMissionButeMgr->GetLevel(nMission, nLevel);
+					if (pLevel)
+						nTotal += pLevel->nBuildNotes;
+				}
+			}
+		}
 
 		if (m_pBuildNoteCount)
 		{
@@ -441,17 +455,18 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 			m_pBuildNoteCount->Show(LTFALSE);
 			m_fTextFade = 0.0f;	// RETAIL: 0x1007e8ad: not m_fBuildNoteFade (docs/RETAIL_BUGS.md)
 
-			int nTextWidth = (int)((float)m_pBuildNoteCount->GetBaseWidth() / g_pInterfaceResMgr->GetXRatio());
-			int nTextHeight = (int)((float)m_pBuildNoteCount->GetBaseHeight() / g_pInterfaceResMgr->GetYRatio());
+			int nTextWidth = (int)((float)m_pBuildNoteCount->GetWidth() / g_pInterfaceResMgr->GetXRatio());
+			int nTextHeight = (int)((float)m_pBuildNoteCount->GetHeight() / g_pInterfaceResMgr->GetYRatio());
 
 			uint32 nTexW, nTexH;
 			g_pTexInterface->GetTextureDims(m_hBuildNoteIcon, nTexW, nTexH);
-			int nIconW = (int)((float)nTexW * m_fBuildNoteIconScalar);
-			int nIconH = (int)((float)nTexH * m_fBuildNoteIconScalar);
+			// RETAIL: the icon's size is unsigned (0x1007e93d)
+			uint32 nIconW = (uint32)((float)nTexW * m_fBuildNoteIconScalar);
+			uint32 nIconH = (uint32)((float)nTexH * m_fBuildNoteIconScalar);
 
 			float fTextH = (float)nTextHeight;
 			float fIconH = (float)nIconH;
-			float fMaxH = (fIconH < fTextH) ? fTextH : fIconH;
+			float fMaxH = std::max(fIconH, fTextH);
 
 			int nLeft = (int)((float)m_BuildNoteCountPos.x - (float)(m_nBuildNoteIconSpacer + nIconW + nTextWidth) * 0.5f);
 			float fTop = (float)m_BuildNoteCountPos.y;
