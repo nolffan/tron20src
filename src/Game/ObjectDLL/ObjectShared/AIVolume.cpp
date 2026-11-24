@@ -727,7 +727,7 @@ bool AIInformationVolume::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if( cMsg.GetArg(0) == s_cTok_Remove )
 	{
-		AIError( "Attempting to remove AIInformationVolume \"%s\"! Turning Off instead.", GetName() );
+		AIError( "Attempting to remove AIInfoVolume \"%s\"! Turning Off instead.", GetName() );
 		m_eInfoVolumeState = kIVS_Off;
 	}
 	else 
