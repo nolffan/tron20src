@@ -220,7 +220,7 @@ uint32 SecRezzer::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 			ArgList* pArgList = (ArgList*)pData;
 			if (!g_pLTServer || !pArgList || !pArgList->argv || pArgList->argc <= 0) break;
 
-			if (!_stricmp(pArgList->argv[0], "DEATHFX"))
+			if (!stricmp(pArgList->argv[0], "DEATHFX"))
 			{
 				if (pArgList->argc > 1 && pArgList->argv[1])
 				{
