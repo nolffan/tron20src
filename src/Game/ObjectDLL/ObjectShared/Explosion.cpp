@@ -21,6 +21,8 @@
 #include "SharedFXStructs.h"
 #include "SFXMsgIds.h"
 #include "Character.h"
+#include "CharacterHitBox.h"
+#include "ModelButeMgr.h"
 
 #define MIN_RADIUS_PERCENT				0.25f
 
@@ -417,15 +419,33 @@ void Explosion::ReadProp()
 
 void Explosion::AreaDamageObject(HOBJECT hObj)
 {
+	// RETAIL: Tron's (0x100efb30): an ammo can keep its area damage off its
+	// owner; the distance is to the object's dims; the damage goes through
+	// the character's hit box and fire data
 	if (!hObj) return;
 
 	HOBJECT hDamager = m_hFiredFrom ? m_hFiredFrom : m_hObject;
 
+	if (m_bAreaDamageIgnoreOwner)
+	{
+		if (m_hFiredFrom == hObj) return;
+
+		if (IsCharacterHitBox(hObj))
+		{
+			CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(hObj);
+			if (pHitBox && m_hFiredFrom == pHitBox->GetModelObject()) return;
+		}
+	}
+
     LTVector vObjPos;
 	g_pLTServer->GetObjectPos(hObj, &vObjPos);
 
+	LTVector vDims;
+	g_pPhysicsLT->GetObjectDims(hObj, &vDims);
+	LTFLOAT fMaxDim = LTMAX(LTMAX(vDims.x, vDims.y), vDims.z);
+
     LTVector vDir = vObjPos - m_vPos;
-    LTFLOAT fDist = vDir.Mag();
+    LTFLOAT fDist = LTMAX(1.0f, vDir.Mag() - fMaxDim);
 
 	if (fDist <= m_fDamageRadius)
 	{
@@ -466,7 +486,6 @@ void Explosion::AreaDamageObject(HOBJECT hObj)
 			damage.vDir		= vDir;
 
             LTFLOAT fMinRadius  = m_fDamageRadius * MIN_RADIUS_PERCENT;
-            LTFLOAT fRange      = m_fDamageRadius - fMinRadius;
 
 			// Scale damage if necessary...
 
@@ -484,8 +503,45 @@ void Explosion::AreaDamageObject(HOBJECT hObj)
 			damage.fDamage	= m_fMaxDamage;
 
 			damage.fDamage *= fMultiplier;
+			damage.bTronUnknown44 = LTTRUE;
+
+			// The character takes the hit at its default node
+			CCharacterHitBox* pHitBox = LTNULL;
+			CCharacter* pChar = LTNULL;
+			if (IsCharacterHitBox(hObj))
+			{
+				pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(hObj));
+				if (pHitBox)
+				{
+					pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject(pHitBox->GetModelObject()));
+				}
+			}
+			else if (IsCharacter(hObj))
+			{
+				pChar = dynamic_cast<CCharacter*>(g_pLTServer->HandleToObject(hObj));
+				if (pChar)
+				{
+					pHitBox = dynamic_cast<CCharacterHitBox*>(g_pLTServer->HandleToObject(pChar->GetHitBoxObject()));
+				}
+			}
+
+			if (pHitBox)
+			{
+				pHitBox->AbsorbDamage(&damage);
+			}
+
+			if (pChar)
+			{
+				pChar->SetModelNodeLastHit(g_pModelButeMgr->GetSkeletonDefaultHitNode(pChar->GetModelSkeleton()));
+			}
+
+			ScaleDamageField8(&damage.fDamage);
+			ScaleDamageField10(&damage.fDamage);
+			ScaleDamage(&damage.fDamage);
 
 			damage.DoDamage(this, hObj, m_hObject);
+
+			DoFireDataDamage(hDamager, hObj, vDir);
 		}
 	}
 }
@@ -501,15 +557,33 @@ void Explosion::AreaDamageObject(HOBJECT hObj)
 
 void Explosion::ProgDamageObject(HOBJECT hObj)
 {
+	// RETAIL: Tron's (0x100f0210): as AreaDamageObject, the owner can be
+	// left alone, the distance is to the object's dims and the fire data
+	// is applied
 	if (!hObj) return;
 
 	HOBJECT hDamager = m_hFiredFrom ? m_hFiredFrom : m_hObject;
 
+	if (m_bAreaDamageIgnoreOwner)
+	{
+		if (m_hFiredFrom == hObj) return;
+
+		if (IsCharacterHitBox(hObj))
+		{
+			CCharacterHitBox* pHitBox = (CCharacterHitBox*)g_pLTServer->HandleToObject(hObj);
+			if (pHitBox && m_hFiredFrom == pHitBox->GetModelObject()) return;
+		}
+	}
+
     LTVector vObjPos;
 	g_pLTServer->GetObjectPos(hObj, &vObjPos);
 
+	LTVector vDims;
+	g_pPhysicsLT->GetObjectDims(hObj, &vDims);
+	LTFLOAT fMaxDim = LTMAX(LTMAX(vDims.x, vDims.y), vDims.z);
+
     LTVector vDir = vObjPos - m_vPos;
-    LTFLOAT fDist = vDir.Mag();
+    LTFLOAT fDist = LTMAX(1.0f, vDir.Mag() - fMaxDim);
 
 	if (fDist <= m_fProgDamageRadius)
 	{
@@ -553,7 +627,13 @@ void Explosion::ProgDamageObject(HOBJECT hObj)
 			damage.fDamage		= m_fProgDamage;
 			damage.hContainer	= m_hObject;
 
+			ScaleDamageField8(&damage.fDamage);
+			ScaleDamageField10(&damage.fDamage);
+			ScaleDamage(&damage.fDamage);
+
 			damage.DoDamage(this, hObj, m_hObject);
+
+			DoFireDataDamage(hDamager, hObj, vDir);
 		}
 	}
 }
