@@ -452,7 +452,7 @@ void CDiscMatch::SendState(HCLIENT hClient, bool bTronUnknown, bool bFirst)
 	cMsg.Writeuint8(m_nTeam[1]);
 	cMsg.Writeuint8(m_nWins[0]);
 	cMsg.Writeuint8(m_nWins[1]);
-	cMsg.Writeuint8(m_pArena->m_nIndex);
+	cMsg.Writeuint8(m_pArena->GetIndex());
 	cMsg.Writeuint8(m_nRounds);
 	if (GetGameType() == eGameTypeDiscArena)
 	{
@@ -1226,7 +1226,7 @@ void CDiscMatchMgr::UpdateTournament()
 			cMsg.Writeuint8(kDiscMsg_TeamMessage);
 			cMsg.Writeuint8(nTeamA);
 			cMsg.Writeuint8(nTeamB);
-			cMsg.Writeuint8(pArena->m_nIndex);
+			cMsg.Writeuint8(pArena->GetIndex());
 			g_pLTServer->SendToClient(cMsg.Read(), LTNULL, MESSAGE_GUARANTEED);
 		}
 	}
