@@ -17,6 +17,7 @@
 #include "DestructibleModel.h"
 #include "AIState.h"
 #include "ActivateTypeMgr.h"
+#include "TRON/CaselessString.h"
 
 // Forward declarations.
 struct PROP_DISTURB;
@@ -43,9 +44,7 @@ struct PropDisturbStruct
 
     HLTSOUND				hTouchSound;
 	HLTSOUND				hHitSound;
-	// RETAIL: Load builds it with the inline null check our STLport lacks
-	// (Object.lto 0x100f9a90): near
-	std::string				sTouchSoundName;
+	CaselessString			sTouchSoundName;	// RETAIL: caseless (Load 0x100f9a90 checks for NULL)
 	HMODELANIM				hTouchAnim;
 	HMODELANIM				hHitAnim;
 	EnumPropAnimationType	eTouchAnimType;
@@ -106,11 +105,10 @@ class Prop : public GameBase
 
 		// Used only for sending event trigger messages.
 		bool						m_bActivatedOn;
-		// RETAIL: retail builds these from a const char* with an inline null
-		// check our STLport lacks (Object.lto 0x100fa5f3): ReadProp and Load
-		// stay near (the project keeps STLport)
-		std::string					m_sActivateOnCommand;
-		std::string					m_sActivateOffCommand;
+		// RETAIL: caseless (their assignments in ReadProp 0x100fa410 and Load
+		// 0x100fbfb0 check for NULL)
+		CaselessString				m_sActivateOnCommand;
+		CaselessString				m_sActivateOffCommand;
 
 		// Prop as an attachment...
 		
