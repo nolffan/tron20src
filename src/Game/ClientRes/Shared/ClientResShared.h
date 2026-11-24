@@ -781,8 +781,8 @@
 #define IDS_QUICKSAVING                 1245
 #define IDS_SERVERFULL                  1246
 #define IDS_SERVER_WRONGVERSION         1247
-#define IDS_JOINEDGAME                  1248
-#define IDS_LEFTGAME                    1249
+#define IDS_JOINEDGAME                  1015	// RETAIL: Tron's (CRes.dll 1015; CInterfaceMgr::OnMessage 0x100c9770)
+#define IDS_LEFTGAME                    1016	// RETAIL: Tron's (CRes.dll 1016)
 #define IDS_SAVINGGAME                  1250
 #define IDS_CANTQUICKSAVE               1251
 #define IDS_ACCESSGRANTED               1252
