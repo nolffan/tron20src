@@ -170,8 +170,9 @@ void CLeanMgr::UpdateControlFlags( )
 
 	// We can only lean while on the ground...
 
+	// RETAIL: 0x101c29c0: Tron's has no dead or ladder checks
 	if( g_pMoveMgr->CanDoFootstep() && g_pInterfaceMgr->AllowCameraMovement() &&
-		!g_pPlayerMgr->IsPlayerDead() && !g_pMoveMgr->IsBodyOnLadder() && !g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() ) 
+		!g_pMoveMgr->GetVehicleMgr()->IsVehiclePhysics() ) 
 	{
 		if( g_pLTClient->IsCommandOn( COMMAND_ID_LEAN_LEFT ))
 		{
