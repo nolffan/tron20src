@@ -56,18 +56,28 @@ const char c_szKeyFX[]				= "FX";
 
 void GetValueRange(CAI* pAI, const char* szValue, LTFLOAT* pfMin, LTFLOAT* pfMax)
 {
-	AIASSERT(szValue[0] == '[' && szValue[strlen(szValue) - 1] == ']', pAI->m_hObject, "GetValueRange: range not in the form [min,max]");
-	AIASSERT(strlen(szValue) < 64, pAI->m_hObject, "GetValueRange: range is more than 64 characters");
+	// RETAIL: Tron's (0x101869a0): no asserts; a value not in the form
+	// [min,max] changes nothing, and a missing value keeps its old one.
+	if( ( szValue[0] != '[' ) || ( szValue[strlen(szValue) - 1] != ']' ) )
+	{
+		return;
+	}
 
 	char szTemp[64];
-	strcpy( szTemp, szValue + 1 );
-	szTemp[strlen(szTemp) - 1] = '\0';
+	strncpy( szTemp, szValue + 1, sizeof(szTemp) - 1 );
+	szTemp[sizeof(szTemp) - 1] = '\0';
 
 	char* pTok = strtok( szTemp, "," );
-	*pfMin = (LTFLOAT)atof( pTok );
+	if( pTok )
+	{
+		*pfMin = (LTFLOAT)atof( pTok );
+	}
 
 	pTok = strtok( LTNULL, "," );
-	*pfMax = (LTFLOAT)atof( pTok );
+	if( pTok )
+	{
+		*pfMax = (LTFLOAT)atof( pTok );
+	}
 }
 
 //-------------------------------------------------------------------------------------------
@@ -187,13 +197,12 @@ LTFLOAT GetDifficultyFactor()
 	float fPlayerMod = 0.0f;
 	uint32 nPlayersInGame = CPlayerObj::GetNumberPlayersWithClients( );
 
-	if( nPlayersInGame > 1 )
+	// RETAIL: Tron's difficulty grows linearly, by fPlayerInc for each
+	// player after the first (0x10186d66).
+	if( nPlayersInGame > 0 )
 	{
-		// Increase the difficulty by an amount per player.  The
-		// difficulty grows logrithmically.  2 players will add 100% of
-		// fPlayerInc.  3 players adds ~150%.  4 Players adds 200%.
 		float fPlayerInc = g_vtDifficultyFactorPlayerIncrease.GetFloat();
-		fPlayerMod = fPlayerInc * logf(( float )nPlayersInGame ) / logf( 2.0f );
+		fPlayerMod = nPlayersInGame * fPlayerInc - fPlayerInc;
 	}
 
 	switch (g_pGameServerShell->GetDifficulty())
