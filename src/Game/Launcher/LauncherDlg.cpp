@@ -538,7 +538,7 @@ void CLauncherDlg::OnOptions()
 	dlg.DoModal();
 }
 
-#ifdef TRON20_MODERN
+#ifdef TRON20SRC_MODERN
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CLauncherDlg::LaunchDirect
@@ -557,7 +557,7 @@ void CLauncherDlg::LaunchDirect()
 	}
 }
 
-#endif // TRON20_MODERN
+#endif // TRON20SRC_MODERN
 
 // ----------------------------------------------------------------------- //
 //

@@ -7,8 +7,8 @@ fixed yet.
 
 The legacy build reproduces every one of them, on purpose: compiling to the
 retail machine code means compiling its mistakes too. They are fixed in the
-**modern build** (`make modern`, the `TRON20_MODERN` define; `MODERN.md`):
-each fix goes behind `#ifdef TRON20_MODERN`, with the retail code kept in
+**modern build** (`make modern`, the `TRON20SRC_MODERN` define; `MODERN.md`):
+each fix goes behind `#ifdef TRON20SRC_MODERN`, with the retail code kept in
 the `#else`, so the legacy build is unchanged and still matches
 (`make progress`).
 
@@ -18,7 +18,7 @@ tree it waits for.
 
 Every binary here is a reconstruction (`docs/PLAN.md`), so an entry is
 listed only where our function is byte-identical to the retail one at the
-address it names (`tools/exematch.py`; for a string, the string is in the
+address it names (`ext/tools/exematch.py`; for a string, the string is in the
 retail image too): it describes what the retail code does, not a guess.
 Addresses are as in the retail images (`build/reference.sh` extracts them
 into `out/reference/`).
