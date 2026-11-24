@@ -1953,9 +1953,14 @@ LTBOOL CAIHumanStrategyOneShotAni::UpdateAnimation()
 	switch ( m_eState )
 	{
 		case eSet:
+		{
 			// RETAIL: Tron clears the old lock first (0x1022441f)
 			GetAnimationContext()->ClearLock();
-			// fall through
+			GetAnimationContext()->Lock();
+			GetAnimationContext()->SetProp(m_Prop);
+		}
+		break;
+
 		case eAnimating:
 		case eDone:
 		{
@@ -3905,6 +3910,9 @@ void CAIHumanStrategyShoot::HandleFired( const char* const pszSocketName )
 	}
 
 	m_bFired = LTTRUE;
+
+	// RETAIL: Tron (0x102264e0) hides the firing trails
+	GetAI()->GetBrain()->HideFiringTrails();
 }
 
 //----------------------------------------------------------------------------

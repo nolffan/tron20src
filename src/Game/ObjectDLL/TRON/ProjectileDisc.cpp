@@ -2329,7 +2329,8 @@ void CDisc::HandleTouch( HOBJECT hObj )
 				                  m_fDeflectTotalTime );
 
 				LTVector vDir = vNextOffset - vOffset;
-				g_pPhysicsLT->SetVelocity( m_hObject, &( ( vDir / vDir.Mag() ) * m_fDeflectVelocity ) );
+				LTVector vVel = ( vDir / vDir.Mag() ) * m_fDeflectVelocity;
+				g_pPhysicsLT->SetVelocity( m_hObject, &vVel );
 			}
 
 			CProjectile::HandleTouch( hObj );

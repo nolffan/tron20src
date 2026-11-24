@@ -728,6 +728,7 @@ void WorldModel::RemoveAtachments( )
 
 			damage.eType	= DT_EXPLODE;
 			damage.fDamage	= damage.kInfiniteDamage;
+			damage.bTronUnknown44 = LTTRUE;	// RETAIL: Tron's (0x1017b6f3)
 			damage.hDamager	= m_hObject;
 			damage.vDir.Init( 0.0f, 1.0f, 0.0f );
 
