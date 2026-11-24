@@ -569,6 +569,7 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 		while( true )
 		{
 			sprintf(s_aAttName, "AddAnimsLTB%d", cm_cnt );
+			cm_cnt++;
 			m_buteMgr.GetString(s_aTagName, s_aAttName, "", szCMFilename, sizeof(szCMFilename) );
 			if( !m_buteMgr.Success( ))
 				break;
@@ -582,7 +583,7 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 					int nLen = pSemi - szCMFilename;
 					if( nLen == 0 )
 					{
-						g_pLTServer->CPrint( "WARNING: Invalid skel specification for AddAnimsLTB%d for smart goal %s", cm_cnt, pSmartObject->szName );
+						g_pLTServer->CPrint( "WARNING: Invalid skel specification for AddAnimsLTB%d for smart goal %s", cm_cnt - 1, pSmartObject->szName );
 						info.nSkel = 0xff;
 						info.sFilename = szCMFilename;
 					}
@@ -602,8 +603,6 @@ void CAIGoalButeMgr::ReadSmartObjectTemplate(uint32 nID)
 				}
 				pSmartObject->addchildmodels.push_back(info);
 			}
-
-			cm_cnt++ ;
 		}
 	}
 }
