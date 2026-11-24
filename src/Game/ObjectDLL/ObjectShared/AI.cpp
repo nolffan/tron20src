@@ -6791,6 +6791,8 @@ CAttachmentsPlugin* CAIPlugin::GetAttachmentsPlugin()
 	return m_pAttachmentsPlugin;
 }
 
+extern CRelationButeMgr s_RelationButeMgr;
+
 LTRESULT CAIPlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
 {
 	// See if the base class wishes to handle it
@@ -6816,7 +6818,30 @@ LTRESULT CAIPlugin::PreHook_EditStringList(const char* szRezPath, const char* sz
 		return LT_OK;
 	}
 
-	// See if the model style plugin will handle the property
+	// RETAIL: 0x10135fd0: Tron's AI lists the alignments as AINode does.
+
+	if ( !s_RelationButeMgr.IsInitialized() )
+	{
+		char szFile[256];
+		sprintf(szFile, "%s\\Attributes\\RelationData.txt", szRezPath);
+		s_RelationButeMgr.SetInRezFile(LTFALSE);
+		s_RelationButeMgr.Init(szFile);
+	}
+
+	if ( !_strcmpi("Alignment", szPropName) )
+	{
+		strcpy( aszStrings[(*pcStrings)++], "None" );
+
+		CRelationButeMgr::_mapNameToID* pNames = s_RelationButeMgr.GetMapObjectRelationMgrNameToID();
+		CRelationButeMgr::_mapNameToID::iterator it;
+
+		for( it = pNames->begin(); it != pNames->end(); ++it )
+		{
+			strcpy( aszStrings[(*pcStrings)++], it->first.c_str() );
+		}
+
+		return LT_OK;
+	}
 
 	// No one wants it
 
