@@ -857,6 +857,10 @@ void CTronPlayerStats::UpdateAir(LTFLOAT fPercent)
 
 void CTronPlayerStats::UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId)
 {
+	// RETAIL: Tron's (retail 0x100aa330): the progress HUD's list (+0x9c)
+	// follows the objectives, and a new one pings the "objectives" node
+	m_bTronUnknownA8 = false;
+
 	switch (nType)
 	{
 		case ITEM_ADD_ID:
@@ -865,25 +869,43 @@ void CTronPlayerStats::UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId)
 			if (m_CompletedObjectives.Have(dwId, nIndex))
 			{
 				g_pLTClient->CPrint("objective %d already completed", dwId);
+				return;
 			}
-			else
+
+			if (nThing == IC_OBJECTIVE_ID)
 			{
-			if (nThing == IC_OBJECTIVE_ID && m_Objectives.Add(dwId))
-			{
-				g_pLTClient->CPrint("objective %d added", dwId);
-                m_bObjAdded = LTTRUE;
+				if (m_Objectives.Add(dwId))
+				{
+					m_TronUnknownList9C.Add(dwId);
+					g_pLTClient->CPrint("objective %d added", dwId);
+					m_bObjAdded = LTTRUE;
+				}
 			}
-				else if (nThing == IC_OPTION_ID && m_OptionalObjectives.Add(dwId))
+			else if (nThing == IC_OPTION_ID)
 			{
-				g_pLTClient->CPrint("optional objective %d added", dwId);
-                m_bObjAdded = LTTRUE;
+				if (m_OptionalObjectives.Add(dwId))
+				{
+					m_TronUnknownList9C.Add(dwId);
+					g_pLTClient->CPrint("optional objective %d added", dwId);
+					m_bObjAdded = LTTRUE;
+				}
 			}
-				else if (nThing == IC_PARAMETER_ID && m_Parameters.Add(dwId))
+			else if (nThing == IC_PARAMETER_ID)
 			{
-				g_pLTClient->CPrint("mission parameter %d added", dwId);
-                m_bObjAdded = LTTRUE;
+				if (m_Parameters.Add(dwId))
+				{
+					g_pLTClient->CPrint("mission parameter %d added", dwId);
+					m_bObjAdded = LTTRUE;
+				}
 			}
-		}
+
+			m_bTronUnknownA8 = true;
+			g_pHUDMgr->QueueUpdate(kHUDObjectives);
+
+			if (!g_pLTClient->IsCommandOn(COMMAND_ID_TOGGLE_PROGRESS))
+			{
+				m_IONodeMgr.AddPing("objectives");
+			}
 		}
 		break;
 
@@ -893,25 +915,30 @@ void CTronPlayerStats::UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId)
 			m_bObjRemoved |= m_OptionalObjectives.Remove(dwId);
 			m_bObjRemoved |= m_Parameters.Remove(dwId);
 			m_bObjRemoved |= m_CompletedObjectives.Remove(dwId);
+			m_TronUnknownList9C.Remove(dwId);
 
 			if (m_bObjRemoved)
 				g_pLTClient->CPrint("objective %d removed", dwId);
 
-
+			g_pHUDMgr->QueueUpdate(kHUDObjectives);
 		}
 		break;
 
-		case ITEM_COMPLETE_ID:
+		// RETAIL: the clear and complete cases have each other's code
+		// (docs/RETAIL_BUGS.md)
+		case ITEM_CLEAR_ID:
 		{
 			m_Objectives.Remove(dwId);
 			m_OptionalObjectives.Remove(dwId);
 			m_bObjCompleted = m_CompletedObjectives.Add(dwId);
+			m_TronUnknownList9C.Add(dwId);
 			g_pLTClient->CPrint("objective %d completed", dwId);
 
+			g_pHUDMgr->QueueUpdate(kHUDObjectives);
 		}
 		break;
 
-		case ITEM_CLEAR_ID:
+		case ITEM_COMPLETE_ID:
 		{
 			if (m_Objectives.m_IDArray.size() || m_OptionalObjectives.m_IDArray.size() ||
 				m_CompletedObjectives.m_IDArray.size() || m_Parameters.m_IDArray.size())
@@ -921,16 +948,15 @@ void CTronPlayerStats::UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId)
 			m_OptionalObjectives.Clear();
 			m_CompletedObjectives.Clear();
 			m_Parameters.Clear();
+			m_TronUnknownList9C.Clear();
 
 			g_pLTClient->CPrint("objectives cleared", dwId);
-
 		}
 		break;
 
 		default :
 		break;
 	}
-	g_pHUDMgr->QueueUpdate(kHUDObjectives);
 }
 
 // ----------------------------------------------------------------------- //
