@@ -855,87 +855,10 @@ inline LTBOOL FiredWeapon(WeaponState eState)
 #include <vector>
 #include <algorithm>
 
-// RETAIL: Tron's: a list of strings for a DEdit string list property. The
-// strings of the "first" list come first, in their order, if they were
-// added; the others come after them, sorted. Its functions are inline
-// (Object.lto 0x10109870, 0x10109a10, 0x10171b00); the names are ours.
-class CPluginStringList
-{
-	public:
-
-		CPluginStringList(uint32 cMaxStrings, uint32 cMaxStringLength)
-			: m_bSorted(false),
-			  m_cMaxStrings(cMaxStrings),
-			  m_cMaxStringLength(cMaxStringLength)
-		{
-		}
-
-		// Add a string to the list (only once).
-		void Add(const char* szString)
-		{
-			if (!szString || !szString[0])
-				return;
-
-			std::string sString;
-			sString.assign(szString, szString + (strlen(szString) >= m_cMaxStringLength ? m_cMaxStringLength - 1 : strlen(szString)));
-
-			if (std::find(m_lstFirst.begin(), m_lstFirst.end(), sString) != m_lstFirst.end())
-			{
-				m_lstFirstFound.push_back(sString);
-			}
-			else
-			{
-				m_lstStrings.push_back(sString);
-				m_bSorted = false;
-			}
-		}
-
-		// Copy the list to the DEdit strings.
-		void CopyTo(char** aszStrings, uint32* pcStrings)
-		{
-			if (!aszStrings || !*aszStrings || !pcStrings)
-				return;
-
-			uint32 cMaxStrings = m_cMaxStrings;
-
-			{
-				StringArray::iterator iterEnd = m_lstFirstFound.end();
-				for (StringArray::iterator iter = m_lstFirstFound.begin(); iter != iterEnd; ++iter)
-				{
-					if ((*pcStrings) + 1 < cMaxStrings)
-					{
-						strcpy(aszStrings[(*pcStrings)++], iter->c_str());
-					}
-				}
-			}
-
-			if (!m_bSorted)
-			{
-				std::sort(m_lstStrings.begin(), m_lstStrings.end());
-				m_bSorted = true;
-			}
-
-			{
-				StringArray::iterator iterEnd = m_lstStrings.end();
-				for (StringArray::iterator iter = m_lstStrings.begin(); iter != iterEnd; ++iter)
-				{
-					if ((*pcStrings) + 1 < cMaxStrings)
-					{
-						strcpy(aszStrings[(*pcStrings)++], iter->c_str());
-					}
-				}
-			}
-		}
-
-		typedef std::vector<std::string> StringArray;
-
-		StringArray	m_lstStrings;		// +0x00
-		StringArray	m_lstFirstFound;	// +0x0c
-		StringArray	m_lstFirst;			// +0x18
-		bool		m_bSorted;			// +0x24
-		uint32		m_cMaxStrings;		// +0x28
-		uint32		m_cMaxStringLength;	// +0x2c
-};
+// RETAIL: Tron's: the weapon plugin fills a CSortedStringList
+// (ObjectDLL/TRON/SortedStringList.h; Object.lto 0x10109870, 0x10109a10, 0x10171b00
+// are its out-of-line copies).
+#include "../ObjectDLL/TRON/SortedStringList.h"
 
 // RETAIL: Tron's weapon filters for CWeaponMgrPlugin::PopulateStringList
 // (Object.lto 0x10109220, 0x10109240); the names are ours.
@@ -965,7 +888,7 @@ class CWeaponMgrPlugin : public IObjectPlugin
 
 		// RETAIL: Tron's: the weapons the AIs can use, into a list
 		// (Object.lto 0x10109780)
-		void PopulateStringList(CPluginStringList* pList);
+		void PopulateStringList(CSortedStringList* pList);
 
 	protected :
 

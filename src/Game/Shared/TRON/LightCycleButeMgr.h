@@ -213,6 +213,13 @@ struct LIGHTCYCLETYPE
 };
 
 // ----------------------------------------------------------------------- //
+// RETAIL: a range of times, min then max (8 bytes; the names are ours)
+struct LCTIMERANGE
+{
+	LTFLOAT	fMin;
+	LTFLOAT	fMax;
+};
+
 // One situation of a CycleDialog<n> (0x14 bytes; the names are ours)
 // ----------------------------------------------------------------------- //
 struct LCDIALOGSOUNDS
@@ -369,8 +376,9 @@ class CLightCycleButeMgr : public CGameButeMgr
 
 		// CycleDialogParams (RETAIL: read by the server's light cycle
 		// manager, 0x100500ce, 0x1004f67f, 0x1004f906)
-		LTFLOAT	GetMinTimeBetweenDialog()	const { return m_fMinTimeBetweenDialog; }
-		LTFLOAT	GetMaxTimeBetweenDialog()	const { return m_fMaxTimeBetweenDialog; }
+		// RETAIL: the time range is one struct: the server's light cycle
+		// manager copies it whole (0x100500ce)
+		const LCTIMERANGE&	GetTimeBetweenDialog()	const { return m_rngTimeBetweenDialog; }
 		bool	GetModifyPriorityWithDist()	const { return m_bModifyPriorityWithDist; }
 		LTFLOAT	GetDialogMaxDist()			const { return m_fDialogMaxDist; }
 		LTFLOAT	GetDialogSoundRadius()		const { return m_fDialogSoundRadius; }
@@ -411,8 +419,7 @@ class CLightCycleButeMgr : public CGameButeMgr
 		LIGHTCYCLERACE*		m_pCycleRaces;				// RETAIL: +0x1180
 
 		// CycleDialogParams
-		LTFLOAT				m_fMinTimeBetweenDialog;	// RETAIL: +0x1184
-		LTFLOAT				m_fMaxTimeBetweenDialog;	// RETAIL: +0x1188
+		LCTIMERANGE			m_rngTimeBetweenDialog;		// RETAIL: +0x1184
 		bool				m_bModifyPriorityWithDist;	// RETAIL: +0x118c
 		LTFLOAT				m_fDialogMaxDist;			// RETAIL: +0x1190
 		LTFLOAT				m_fDialogSoundRadius;		// RETAIL: +0x1194

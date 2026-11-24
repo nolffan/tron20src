@@ -189,8 +189,8 @@ void CServerLightCycleMgr::PlayDialogEntry(const LCDialogQueueEntry& entry)
 
 CServerLightCycleMgr::CServerLightCycleMgr()
 {
-	m_fMinTimeBetweenDialog = 10.0f;
-	m_fMaxTimeBetweenDialog = 10.0f;
+	m_rngTimeBetweenDialog.fMin = 10.0f;
+	m_rngTimeBetweenDialog.fMax = 10.0f;
 	m_fLastDialogTime = 0.0f;
 	m_fDialogDelay = 0.0f;
 	m_fDialogPauseTime = 0.0f;
@@ -217,8 +217,7 @@ bool CServerLightCycleMgr::Init()
 	g_pLightCycleMgr = this;
 	g_pServerLightCycleMgr = this;
 
-	m_fMinTimeBetweenDialog = g_pLightCycleButeMgr->GetMinTimeBetweenDialog();
-	m_fMaxTimeBetweenDialog = g_pLightCycleButeMgr->GetMaxTimeBetweenDialog();
+	m_rngTimeBetweenDialog = g_pLightCycleButeMgr->GetTimeBetweenDialog();
 	return true;
 }
 
@@ -453,8 +452,8 @@ void CServerLightCycleMgr::Update()
 
 	if(GetPlayerCyclist())
 	{
-		float fMin = m_fMinTimeBetweenDialog;
-		float fMax = m_fMaxTimeBetweenDialog;
+		float fMin = m_rngTimeBetweenDialog.fMin;
+		float fMax = m_rngTimeBetweenDialog.fMax;
 		m_fDialogDelay = GetRandom(0.0f, 1.0f) * (fMax - fMin) + fMin;
 	}
 	else

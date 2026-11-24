@@ -190,8 +190,8 @@ bool CTronMissionMgr::TronUnknownVirtual4( ILTMessage_Read& msg )
 	for (int nCircuit = 0; nCircuit < nCircuits; nCircuit++)
 	{
 		const Circuit &other = pCircuitMgr->GetCircuit(nCircuit);
-		uint32 nLen = CaselessStrLen("Training");
-		if (other.sNameKey.size() == nLen && !_memicmp(other.sNameKey.data(), "Training", nLen))
+		// RETAIL: a compare without case (0x100a37a2)
+		if ((const CaselessString&)other.sNameKey == "Training")
 			continue;
 
 		itEnd = aCompleted.end();

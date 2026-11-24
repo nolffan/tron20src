@@ -381,8 +381,8 @@ LTBOOL CLightCycleButeMgr::Init(const char* szAttributeFile)
 	if (m_buteMgr.Exist(LCBMGR_CYCLEDIALOGPARAMS_TAG))
 	{
 		CARange rngTime = m_buteMgr.GetRange(LCBMGR_CYCLEDIALOGPARAMS_TAG, "TimeRangeBetweenCycleDialog");
-		m_fMinTimeBetweenDialog = (LTFLOAT)rngTime.GetMin();
-		m_fMaxTimeBetweenDialog = (LTFLOAT)rngTime.GetMax();
+		m_rngTimeBetweenDialog.fMin = (LTFLOAT)rngTime.GetMin();
+		m_rngTimeBetweenDialog.fMax = (LTFLOAT)rngTime.GetMax();
 
 		m_bDialogSoundLocalToPlayer	= m_buteMgr.GetBool(LCBMGR_CYCLEDIALOGPARAMS_TAG, "SoundLocalToPlayer", true);
 		m_bModifyPriorityWithDist	= m_buteMgr.GetBool(LCBMGR_CYCLEDIALOGPARAMS_TAG, "ModifyPriorityWithDist", false);

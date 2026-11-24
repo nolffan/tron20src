@@ -592,6 +592,11 @@ class CAttachmentsPlugin : public IObjectPlugin
 
 	private :
 
+		// RETAIL: CHumanAttachmentsPlugin's PreHook and PopulateStringList
+		// use these (Object.lto 0x1018d473, 0x1018d8b4); a friend keeps
+		// their names (and the link's wiring) as before
+		friend class CHumanAttachmentsPlugin;
+
 		static LTBOOL				sm_bInitted;
 		static CAttachButeMgr		sm_AttachButeMgr;
 		static CWeaponMgrPlugin		sm_WeaponMgrPlugin;
@@ -603,6 +608,11 @@ class CHumanAttachmentsPlugin : public CAttachmentsPlugin
 
         virtual LTRESULT PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
 
+	protected :
+
+		// RETAIL: Tron's (Object.lto 0x1018d510): the weapons and the
+		// attachments, sorted
+		void PopulateStringList(char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength);
 };
 
 class CVehicleAttachmentsPlugin : public CAttachmentsPlugin
