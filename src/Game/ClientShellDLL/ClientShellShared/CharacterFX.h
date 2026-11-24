@@ -106,7 +106,9 @@ class CCharacterFX : public CSpecialFX
 		virtual void	OnModelKey(HLOCALOBJ hObj, ArgList *pArgs);
         virtual LTBOOL	OnServerMessage(ILTMessage_Read *pMsg);
 
-		virtual void	ChangeModel(ModelId eModelId);
+		// RETAIL: 0x1017a780, Tron's takes the multiplayer model and its
+		// color (MID_PLAYER_INFO); the argument names are ours
+		virtual void	ChangeModel(ModelId eModelId, uint8 nMPModel, uint8 nColor);
 
 		ModelId			GetModelId() const { return m_cs.eModelId; }
 		ModelSkeleton	GetModelSkeleton() const { return m_cs.eModelSkeleton; }

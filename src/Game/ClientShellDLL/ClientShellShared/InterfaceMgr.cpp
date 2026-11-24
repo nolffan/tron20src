@@ -1851,8 +1851,10 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
             uint32 nID = pMsg->Readuint32();
 			HOBJECT	hObj = pMsg->ReadObject();
 			ModelId eModelId = (ModelId)pMsg->Readuint8();
-			uint8	nTeamId = pMsg->Readuint8();
-			bool bIsAdmin = pMsg->Readbool( );
+			// RETAIL: 0x100c9c44, Tron's: the multiplayer model and its
+			// color (no team, no admin flag); the names are ours
+			uint8	nMPModel = pMsg->Readuint8();
+			uint8	nColor = pMsg->Readuint8();
             uint8 nInfoType = pMsg->Readuint8();
 
             uint32 nLocalID = 0;
@@ -1895,14 +1897,9 @@ LTBOOL CInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 				if (pCFX)
 				{
 					// RETAIL: Tron's (0x100c9d6a) makes the attach fx again,
-					// then changes the model. PORT: retail's ChangeModel (slot
-					// 13) takes three arguments; ours takes the model only.
+					// then changes the model.
 					pCFX->RecreateAttachClientFX();
-					pCFX->ChangeModel(eModelId);
-					
-					// PORT: retail (0x100c9d6a) calls two CCharacterFX functions
-					// here that are not yet identified (NOLF2 updated its radar
-					// here; Tron has no radar).
+					pCFX->ChangeModel(eModelId, nMPModel, nColor);
 				}
 			}
 

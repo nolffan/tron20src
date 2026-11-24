@@ -382,11 +382,10 @@ LTBOOL CCharacterFX::CreateObject(ILTClient* pClientDE)
 
 	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(),0.0f, 0.0f);
 	m_pStr->SetColor(argbWhite);
-	m_pStr->SetAlignmentH(CUI_HALIGN_CENTER);
+	m_pStr->TronUnknownVirtual30(CUI_HALIGN_CENTER);	// RETAIL: slot +0x78, not SetAlignmentH
 
-	// create and show all client effects associated with this model
-	CreateAttachClientFX();
-	//ShowAttachClientFX();
+	// RETAIL: 0x10175044 -- Tron's attached client fx take the model
+	m_TronAttachClientFX.Init(m_hServerObject, m_cs.eModelId);
 
     return LTTRUE;
 }
@@ -2994,24 +2993,36 @@ void CCharacterFX::Render(HOBJECT hCamera)
 }
 
 
-void CCharacterFX::ChangeModel(ModelId eModelId)
+void CCharacterFX::ChangeModel(ModelId eModelId, uint8 nMPModel, uint8 nColor)
 {
+	// RETAIL: 0x1017a780 -- Tron's: multiplayer only, with the multiplayer
+	// model's file and the skins of its color.
+	if (!IsMultiplayerGame()) return;
+
 	m_cs.eModelId = eModelId;
 	m_cs.eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(eModelId);
 
 	ObjectCreateStruct theStruct;
 	INIT_OBJECTCREATESTRUCT(theStruct);
 
-	const char* pFilename = g_pModelButeMgr->GetModelFilename(eModelId);
-	SAFE_STRCPY(theStruct.m_Filename, pFilename);
+	SAFE_STRCPY(theStruct.m_Filename, g_pModelButeMgr->GetMultiModelFilename(eModelId));
 
-	g_pModelButeMgr->CopySkinFilenames(eModelId, 0, theStruct.m_SkinNames[0], MAX_CS_FILENAME_LEN+1);
+	const CModelButeMgr::MPModel* pMPModel = g_pModelButeMgr->GetMPModel(nMPModel);
+	if (pMPModel)
+	{
+		const std::vector<std::string> & vecSkins = pMPModel->m_vecColorSkins[nColor];
+		int nNumSkins = vecSkins.size();
+		for (int i = 0; i < nNumSkins; i++)
+		{
+			SAFE_STRCPY(theStruct.m_SkinNames[i], vecSkins[i].c_str());
+		}
+	}
+
 	g_pModelButeMgr->CopyRenderStyleFilenames(eModelId, &theStruct);
 
     g_pCommonLT->SetObjectFilenames(m_hServerObject, &theStruct);
 
-	
-	CreateAttachClientFX();
+	m_TronAttachClientFX.SetModel(eModelId);
 
 	ResetPitchTracking();
 }
