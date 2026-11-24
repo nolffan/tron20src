@@ -656,26 +656,17 @@ void AINodeCover::ReadProp(ObjectCreateStruct* pocs)
 		if ( g_gp.m_String[0] )
 			m_fHitpointsBoost = g_gp.m_Float;
 
-	// Clean up pitch/yaw/roll if we're two way cover
-
-	LTRotation rRot(EXPANDVEC(m_vInitialPitchYawRoll));
+	// RETAIL: Tron's (0x100a14d3): two way cover is levelled from its
+	// forward vector, and only two way cover is changed.
 
 	if ( m_dwFlags & kFlag2WayCorner )
 	{
-		LTVector vForward = rRot.Forward();
+		LTRotation rRot( m_vForward, LTVector( 0.0f, 1.0f, 0.0f ) );
 
-		LTFLOAT fPitch, fYaw, fRoll;
-
-		fPitch = 0.0f;
-		fYaw = (LTFLOAT)acos(vForward.z);
-		fRoll = 0.0f;
-
-		rRot = LTRotation(fPitch, fYaw, fRoll);
+		m_vRight = rRot.Right();
+		m_vUp = rRot.Up();
+		m_vForward = rRot.Forward();
 	}
-
-	m_vRight = rRot.Right();
-	m_vUp = rRot.Up();
-	m_vForward = rRot.Forward();
 }
 
 void AINodeCover::Save(ILTMessage_Write *pMsg)
@@ -1285,28 +1276,30 @@ void AINodeUseObject::ReadProp(ObjectCreateStruct* pocs)
 
 	AIASSERT(g_pAINodeMgr, m_hObject, "AINodeUseObject::ReadProp: NodeMgr is NULL.");
 
-	AIGBM_SmartObjectTemplate* pSmartObject = LTNULL;
 	if ( g_pLTServer->GetPropGeneric( "SmartObject", &g_gp ) == LT_OK )
 	{
-		if ( g_gp.m_String[0] )
+		// RETAIL: Tron's (0x100a425e): "<none>" or an unknown SmartObject
+		// clears the ID; the template is looked up twice.
+		if ( g_gp.m_String[0] && strcmp( g_gp.m_String, "<none>" ) &&
+			g_pAIGoalButeMgr->GetSmartObjectTemplate(g_gp.m_String) )
 		{
-			pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(g_gp.m_String);
-			AIASSERT(pSmartObject != LTNULL, m_hObject, "AINodeUseObject::ReadProp: SmartObject is NULL.");
-			if( pSmartObject )
-			{
-				m_nSmartObjectID = pSmartObject->nID;
+			AIGBM_SmartObjectTemplate* pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(g_gp.m_String);
+			m_nSmartObjectID = pSmartObject->nID;
 
-				// Add the node to the AINodeMgr for each node type that the SmartObject has a command for.
-				for(uint32 iNodeType = kNode_BeginUseObject + 1; iNodeType < kNode_EndUseObject; ++iNodeType)
+			// Add the node to the AINodeMgr for each node type that the SmartObject has a command for.
+			for(uint32 iNodeType = kNode_BeginUseObject + 1; iNodeType < kNode_EndUseObject; ++iNodeType)
+			{
+				EnumAINodeType eNodeType = (EnumAINodeType)iNodeType;
+				if( pSmartObject->mapCmds.find( eNodeType ) != pSmartObject->mapCmds.end() )
 				{
-					EnumAINodeType eNodeType = (EnumAINodeType)iNodeType;
-					if( pSmartObject->mapCmds.find( eNodeType ) != pSmartObject->mapCmds.end() )
-					{
-						// Add Node to the NodeMgr again for each defined node type.
-						g_pAINodeMgr->AddNode(eNodeType, this);
-					}
+					// Add Node to the NodeMgr again for each defined node type.
+					g_pAINodeMgr->AddNode(eNodeType, this);
 				}
 			}
+		}
+		else
+		{
+			m_nSmartObjectID = 0;
 		}
 	}
 }
