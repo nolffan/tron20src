@@ -295,7 +295,8 @@ bool CMenuPieceModel::IsAnimDone()
 	ANIMTRACKERID nTracker;
 	g_pLTClient->GetModelLT()->GetMainTracker(m_hObject, nTracker);
 	g_pLTClient->GetModelLT()->GetPlaybackState(m_hObject, nTracker, dwState);
-	return (dwState & MS_PLAYDONE) ? true : false;
+	if (dwState & MS_PLAYDONE) return true;
+	return false;
 }
 
 void CMenuPieceModel::Attach(char * szParentName, char * szSocketName)
