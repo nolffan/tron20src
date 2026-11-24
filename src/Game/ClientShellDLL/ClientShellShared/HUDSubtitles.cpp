@@ -207,10 +207,14 @@ void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, L
 		width = m_nCinematicWidth;
 	}
 
+	// RETAIL: 0x100fd67b: the lines are spaced by the font's line spacing,
+	// with one more spacing above and below
+	int nLineSpacing = m_pFont->GetLineSpacing();
+
 	m_DisplayRect.x = (float)pos.x * m_fScale;
 	m_DisplayRect.y = (float)pos.y * m_fScale;
 	m_DisplayRect.width = (float)width * m_fScale;
-	m_DisplayRect.height = 2.0f + (float)m_nMaxLines * (float)m_nFontSize;
+	m_DisplayRect.height = ((float)m_nFontSize + (float)nLineSpacing) * m_nMaxLines + (float)nLineSpacing * 2.0f;
 
 	m_pText->SetWrapWidth((uint16)m_DisplayRect.width);
 	float textX = m_DisplayRect.x;
@@ -220,39 +224,37 @@ void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, L
 	m_pText->GetDims(&fw,&fh);
 
 	uint8 numLines = (uint8)(fh / (float)m_nFontSize);
-//	g_pLTClient->CPrint("Lines: %d",numLines);
-//	g_pLTClient->CPrint("Duration: %0.2f",m_fDuration);
 
 	if (numLines > m_nMaxLines)
 	{
 		m_bOverflow = LTTRUE;
 		LTFLOAT fTimePerLine = m_fDuration / ((LTFLOAT)numLines + 1.0f);
-		LTFLOAT fRemainingLines = (LTFLOAT)(numLines - m_nMaxLines);
-		LTFLOAT fDelay = (LTFLOAT)m_nMaxLines * fTimePerLine;
-		m_fScrollStartTime = fDelay;
+		m_fScrollStartTime = (LTFLOAT)m_nMaxLines * fTimePerLine;
 
 		m_fScrollSpeed = (LTFLOAT)m_nFontSize / fTimePerLine;
 		m_fMaxOffset = (fh + 2.0f) - m_DisplayRect.height;
 
+		// RETAIL: the scrolling text is clipped to the box
+		m_pText->EnableClipping(true);
 	}
 	else
 	{
 		m_bOverflow = LTFALSE;
+		m_fScrollSpeed = 0.0f;
 
 		textX += (m_DisplayRect.width - fw) / 2.0f;
 		m_fOffset = (m_DisplayRect.height - fh);
 		textY += m_fOffset;
-		m_fScrollSpeed = 0.0f;
 
+		m_pText->EnableClipping(false);
 	}
-
-	m_fEndTime = m_fDuration;
 
 	//reset our time to the beginning
 	m_fElapsedTime = 0.0f;
 
+	m_fEndTime = m_fDuration;
 
-	m_pText->SetPosition(textX,textY);
+	m_pText->SetPosition((int)textX,(int)textY);
 
 }
 
