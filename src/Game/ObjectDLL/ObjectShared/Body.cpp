@@ -299,11 +299,8 @@ uint32 Body::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 		case MID_UPDATE:
 		{
-			uint32 dwRet = Prop::EngineMessageFn(messageID, pData, fData);
-
-			Update();
-
-			return dwRet;
+			// RETAIL: Tron's Update calls Prop's (0x10159487)
+			return Update(pData, fData);
 		}
 		break;
 
@@ -352,10 +349,8 @@ uint32 Body::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 
 		case MID_LOADOBJECT:
 		{
+			// RETAIL: 0x10159550: Tron does not reset the sfx message here
 			Load((ILTMessage_Read*)pData, (uint32)fData);
-
-			// RETAIL: 0x1015956b: Tron does not reset the sfx message here
-			return Prop::EngineMessageFn(messageID, pData, fData);
 		}
 		break;
 
@@ -841,6 +836,9 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		m_vDeathDir = pDest->GetDeathDir();
 		m_vDeathDir.Normalize();
 
+		// RETAIL: Tron's (0x1015a83e)
+		m_hTronUnknown894 = pDest->GetLastDamager();
+
 		float fAdjustFactor = ( pDest->GetMaxHitPoints() <= 0.0f ? 0.5f :
 							    pDest->GetDeathDamage() / pDest->GetMaxHitPoints());
 
@@ -854,14 +852,14 @@ void Body::Init(const BODYINITSTRUCT& bi)
 
 		// Set the energy
 		m_fEnergy = pDest->GetEnergy();
+
+		// RETAIL: Tron's (0x1015a931): the implode damage's data
+		m_fTronUnknown10A4 = pDest->GetTronImplodeRadius();
+		m_fTronUnknown10A8 = pDest->GetTronImplodeVelocity();
+		m_vTronUnknown10AC = pDest->GetTronImplodeDir();
 	}
 
 	m_pSearch->CopySearchProperties(bi.pCharacter->GetSearchable());
-
-	if (IsPlayer(bi.pCharacter->m_hObject))
-	{
-		m_pSearch->SetRandomItemSet(NULL);
-	}
 
 	m_pSearch->Enable(m_pSearch->HasItem());
 
@@ -951,6 +949,17 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		bi.pCharacter->TransferWeapons(this, bRemoveWeapons);
 	}
 
+	// RETAIL: Tron's (0x1015aca3): the body hides the pieces the character
+	// hides
+	uint32 nPieces;
+	g_pModelLT->GetNumPieces(bi.pCharacter->m_hObject, nPieces);
+	for (HMODELPIECE hPiece = 0; hPiece < nPieces; hPiece++)
+	{
+		bool bHidden;
+		g_pModelLT->GetPieceHideStatus(bi.pCharacter->m_hObject, hPiece, bHidden);
+		g_pModelLT->SetPieceHideStatus(m_hObject, hPiece, bHidden);
+	}
+
 	
 	if (m_cWeapons)
 	{
@@ -975,8 +984,6 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		{
 			AddAggregate(m_pAttachments);
 			m_pAttachments->ReInit(m_hObject);
-
-			m_pAttachments->HideAttachments( false );
 		}
 	}
 
@@ -1185,11 +1192,18 @@ void Body::CreateHitBox(const BODYINITSTRUCT& bi)
 //
 //	PURPOSE:	Do update
 //
+//	RETAIL: Tron's takes MID_UPDATE's data and sends it to Prop
+//	(0x1015b5e0); its m_bTronUnknown10B8 is false while it runs.
+//
 // ----------------------------------------------------------------------- //
 
-void Body::Update()
+uint32 Body::Update(void *pData, LTFLOAT fData)
 {
-	if ( !m_hObject ) return;
+	if ( !m_hObject ) return 0;
+
+	m_bTronUnknown10B8 = false;
+
+	uint32 dwRet = Prop::EngineMessageFn(MID_UPDATE, pData, fData);
 
     LTVector vPos, vMin, vMax;
     g_pLTServer->GetWorldBox(vMin, vMax);
@@ -1239,9 +1253,9 @@ void Body::Update()
 			CCharacterHitBox* pHitBox = (CCharacterHitBox*) g_pLTServer->HandleToObject(m_hHitBox);
 			if ( pHitBox )
 			{
+				// RETAIL: the hit box's own dims (0x1015b76a)
 				LTVector vDims, vNewDims;
-				
-				pHitBox->GetDefaultModelDims( vDims );
+				g_pPhysicsLT->GetObjectDims(m_hHitBox, &vDims);
 				vNewDims = vDims;
 
 				if( !pHitBox->IsAnimControllingDims() )
@@ -1281,12 +1295,8 @@ void Body::Update()
 		}
 
 		// Register AllyDeathVisible stimulus.
-		AIVolumePlayerInfo* pPlayerInfoVol = LTNULL;
-		AIInformationVolume* pVolume = g_pAIInformationVolumeMgr->FindContainingVolume(LTNULL, vPos, eAxisAll, 0.0f);
-		if( pVolume && pVolume->GetVolumeType() == AIInformationVolume::eTypePlayerInfo )
-		{
-			pPlayerInfoVol = (AIVolumePlayerInfo*)pVolume;
-		}
+		// RETAIL: Tron looks in the player info volumes only (0x1015b835)
+		AIVolumePlayerInfo* pPlayerInfoVol = g_pAIVolumePlayerInfoMgr->FindContainingVolume(LTNULL, vPos, eAxisAll);
 
 		//if we are in an active hiding volume, do not create the stimulus.
 		//if body is going to go away on its own, do not create the stimulus.
@@ -1302,7 +1312,7 @@ void Body::Update()
 
 		SetNextUpdate(UPDATE_NEVER);
 
-
+		m_bTronUnknown10B8 = true;
 	}
 
 	if (m_hHitBox && m_bUpdateHitBox)
@@ -1321,6 +1331,10 @@ void Body::Update()
 	{
 	    SetNextUpdate(s_fUpdateDelta);
 	}
+
+	m_bTronUnknown10B8 = true;
+
+	return dwRet;
 }
 
 // ----------------------------------------------------------------------- //

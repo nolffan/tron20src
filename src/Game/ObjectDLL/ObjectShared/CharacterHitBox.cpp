@@ -1369,32 +1369,6 @@ void CCharacterHitBox::SetDimsToModel()
 
 // ----------------------------------------------------------------------- //
 //
-//	ROUTINE:	CCharacterHitBox::GetDefaultModelDims
-//
-//	PURPOSE:	Grab the dims of the model that owns us...
-//
-// ----------------------------------------------------------------------- //
-
-void CCharacterHitBox::GetDefaultModelDims( LTVector &vDims )
-{
-	vDims.Init();
-
-	if( !m_hModel || !m_hObject )
-		return;
-
-	HMODELANIM hAni = g_pModelLT->GetCurAnim( m_hModel, MAIN_TRACKER, hAni );
-	if( hAni != INVALID_ANI )
-	{
-		g_pCommonLT->GetModelAnimUserDims( m_hModel, &vDims, hAni );
-	}
-	else
-	{
-		g_pPhysicsLT->GetObjectDims( m_hObject, &vDims );
-	}
-}
-
-// ----------------------------------------------------------------------- //
-//
 //	ROUTINE:	CCharacterHitBox::EnlargeAndSetDims
 //
 //	PURPOSE:	Set the dims of the hit box to be an enlarged percentage of the given dims.

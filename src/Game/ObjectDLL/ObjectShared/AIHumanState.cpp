@@ -3147,7 +3147,7 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 
 		if( damage.bTronUnknown44 )
 		{
-			SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
+			SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTTRUE, "DESTROY");
 			return;
 		}
 

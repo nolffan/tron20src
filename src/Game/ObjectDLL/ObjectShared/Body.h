@@ -199,7 +199,7 @@ class Body : public Prop, public IHitBoxUser
 
 		void ReadProp(ObjectCreateStruct *pData);
 
-		void Update();
+		uint32 Update(void *pData, LTFLOAT fData);
 
         void Save(ILTMessage_Write *pMsg, uint32 dwSaveFlags);
         void Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags);
