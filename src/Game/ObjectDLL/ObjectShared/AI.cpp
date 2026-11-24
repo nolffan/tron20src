@@ -2338,8 +2338,8 @@ void CAI::RemoveTronUnknown10A0(ActivationNotifier* pEntry)
 {
 	std::list<ActivationNotifier*>& lstNotifiers = m_lstTronUnknown10A0;
 	ActivationNotifier* pNotifier = pEntry;
-	std::list<ActivationNotifier*>::iterator it = std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier );
-	// RETAIL: 0x1012cee0 loads the found node before the list's end (near)
+	std::list<ActivationNotifier*>::iterator it;
+	it = std::find( lstNotifiers.begin(), lstNotifiers.end(), pNotifier );
 	if( it != lstNotifiers.end() )
 	{
 		lstNotifiers.remove( pNotifier );
