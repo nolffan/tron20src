@@ -166,8 +166,10 @@ void CHUDDecisionChoice::SetPosition(int x, int y)
 	m_pText->GetDims(&nWidth, &nHeight);
 	m_pNumber->GetDims(&nWidth, &nNumberHeight);
 
-	// RETAIL: the frame's height is the number's width and height
-	m_Frame.SetRect(LTRect(x, y, x + m_nWidth, y + nWidth + nNumberHeight));
+	// RETAIL: the frame is as high as the text and the number together
+	// (0x1013fdf2). NEAR: retail keeps nNumberHeight below nHeight on the
+	// stack; tried the sum's three orders and the declarations' order
+	m_Frame.SetRect(LTRect(x, y, x + m_nWidth, y + nHeight + nNumberHeight));
 
 	g_pDrawPrim->SetXYWH(&m_Poly, (float)x, (float)y + 2.0f, 32.0f, 32.0f);
 	m_pNumber->SetPosition(x + 14, y + 6);
