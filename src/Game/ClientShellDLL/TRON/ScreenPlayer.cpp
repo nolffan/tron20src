@@ -575,10 +575,10 @@ void CScreenPlayer::PrevModel(bool bSound)
 // RETAIL: 0x100742f0
 void CScreenPlayer::UpdateChar()
 {
-	if (m_nGameType)
-		UpdateCycleChar();
-	else
+	if (!m_nGameType)
 		UpdatePlayerChar();
+	else
+		UpdateCycleChar();
 }
 
 // RETAIL: 0x10074310: the multiplayer model, with the skins of its color

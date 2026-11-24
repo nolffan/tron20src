@@ -572,7 +572,9 @@ class CModelButeMgr::CModel
 			m_szHandsSkin[0] = 0;
 			m_szAIName[0] = 0;
 			m_bAIOnly = LTTRUE;
-			m_bSupportsDamageFX = LTFALSE;
+			// RETAIL: Tron's models support damage FX by default (Object.lto
+			// 0x100c94de)
+			m_bSupportsDamageFX = LTTRUE;
 			m_bCanBeCarried = LTTRUE;
 			m_bTranslucent = LTFALSE;
 			m_szAnimationMgr = LTNULL;
@@ -583,9 +585,8 @@ class CModelButeMgr::CModel
 			m_nNameIdMin = 0;
 			m_nNameIdMax = 0;
 			m_szPlayerPainSoundDir[0] = 0;
-			m_szRezInFX[0] = 0;
-			m_szGibFX[0] = 0;
-			m_nHitpointsDropped = 0;
+			// RETAIL: Tron's leaves m_szRezInFX, m_szGibFX and
+			// m_nHitpointsDropped to Init (Object.lto 0x100c9410)
 			m_eFleshSurfaceType = ST_FLESH;
 			m_eArmorSurfaceType = ST_ARMOR;
 		}

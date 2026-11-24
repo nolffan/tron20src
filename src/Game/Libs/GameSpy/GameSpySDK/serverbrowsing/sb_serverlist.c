@@ -402,16 +402,6 @@ static void BufferAddInt(char **buffer, int ival, int *len)
 }
 
 // This a utility to write ival as a little-endian (PC) byte order number
-static void BufferAddIntLE(char **buffer, int ival, int *len)
-{
-	unsigned int ivalNBO = htonl(ival);
-	unsigned int ivalBE = 0;
-	ivalBE |= ((0x000000FF&ivalNBO)<<24);
-	ivalBE |= ((0x0000FF00&ivalNBO)<< 8);
-	ivalBE |= ((0x00FF0000&ivalNBO)>> 8);
-	ivalBE |= ((0xFF000000&ivalNBO)>>24);
-	BufferAddInt(buffer, (int)ivalBE, len); 		
-}
 
 
 static void BufferAddData(char **buffer, char *data, int dlen, int *len)
@@ -536,7 +526,8 @@ SBError SBServerListConnectAndQuery(SBServerList *slist, const char *fieldList, 
 	BufferAddByte(&requestBuf, SERVER_LIST_REQUEST, &requestLen);
 	BufferAddByte(&requestBuf, LIST_PROTOCOL_VERSION, &requestLen);
 	BufferAddByte(&requestBuf, LIST_ENCODING_VERSION, &requestLen);
-	BufferAddIntLE(&requestBuf, slist->fromgamever, &requestLen); 		
+	// RETAIL: CShell.dll 0x10053521: the 2003 SDK has no BufferAddIntLE
+	BufferAddInt(&requestBuf, slist->fromgamever, &requestLen); 		
 	BufferAddNTS(&requestBuf, slist->queryforgamename, &requestLen);
 	BufferAddNTS(&requestBuf, slist->queryfromgamename, &requestLen);
 	BufferAddData(&requestBuf, slist->mychallenge, LIST_CHALLENGE_LEN, &requestLen);
@@ -550,7 +541,7 @@ SBError SBServerListConnectAndQuery(SBServerList *slist, const char *fieldList, 
 	}
 	if (slist->queryoptions & LIMIT_RESULT_COUNT)
 	{
-		BufferAddIntLE(&requestBuf, maxServers, &requestLen); 		
+		BufferAddInt(&requestBuf, maxServers, &requestLen); 		
 	}
 	netLen = htons((unsigned short)requestLen);
 	memcpy(outgoingRequest, &netLen, 2); //set the length...

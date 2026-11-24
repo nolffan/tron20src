@@ -397,8 +397,9 @@ void CScreenLightCycleCircuit::SaveSettings()
 	{
 		CLightCycleGameData *pData = g_pLightCycleGameDataMgr->GetCurrent();
 		pData->m_Circuit = GetCircuitMgr()->GetCircuit(pCtrl->GetParam1());
-		g_pLightCycleGameDataMgr->SaveCurrent();
 	}
+	// RETAIL: 0x10067591: saved even with no control selected
+	g_pLightCycleGameDataMgr->SaveCurrent();
 
 	CBaseScreenLightCycle::SaveSettings();
 }
@@ -450,14 +451,16 @@ bool CScreenLightCycleCircuit::IsCircuitCompleted(const Circuit *pCircuit)
 		if (LCNameEquals(*it,pCircuit->sNameKey))
 			break;
 	}
-	return (it != pProfile->m_CompletedCircuits.end());
+	bool bCompleted = (it != pProfile->m_CompletedCircuits.end());
+	return bCompleted;
 }
 
 // RETAIL: 0x100676e0: the circuit must allow the cycle, and the profile
 // have unlocked it
 bool CScreenLightCycleCircuit::IsCycleAllowed()
 {
-	CLTGUITextCtrl *pCtrl = dynamic_cast<CLTGUITextCtrl*>(m_pCircuitList->GetControl(m_pCircuitList->GetSelectedIndex()));
+	CLTGUICtrl *pSelCtrl = m_pCircuitList->GetControl(m_pCircuitList->GetSelectedIndex());
+	CLTGUITextCtrl *pCtrl = dynamic_cast<CLTGUITextCtrl*>(pSelCtrl);
 	if (!pCtrl) return false;
 
 	const Circuit *pCircuit = &GetCircuitMgr()->GetCircuit(pCtrl->GetParam1());
@@ -472,9 +475,10 @@ bool CScreenLightCycleCircuit::IsCycleAllowed()
 
 	CircuitStringArray::const_iterator it;
 	CircuitStringArray::const_iterator itEnd = pCircuit->aCyclesAllowed.end();
+	const char *pszColor = pColor->szName;
 	for (it = pCircuit->aCyclesAllowed.begin(); it != itEnd; ++it)
 	{
-		if (LCNameEquals(*it,pColor->szName))
+		if (LCNameEquals(*it,pszColor))
 			break;
 	}
 	if (it == pCircuit->aCyclesAllowed.end())
@@ -488,12 +492,14 @@ bool CScreenLightCycleCircuit::IsCycleAllowed()
 
 	StringArray::iterator itColor;
 	StringArray::iterator itColorEnd = pProfile->m_UnlockedCycleColors.end();
+	const char *pszUnlocked = pColor->szName;
 	for (itColor = pProfile->m_UnlockedCycleColors.begin(); itColor != itColorEnd; ++itColor)
 	{
-		if (LCNameEquals(*itColor,pColor->szName))
+		if (LCNameEquals(*itColor,pszUnlocked))
 			break;
 	}
-	return (itColor != pProfile->m_UnlockedCycleColors.end());
+	bool bUnlocked = (itColor != pProfile->m_UnlockedCycleColors.end());
+	return bUnlocked;
 }
 
 // RETAIL: 0x10067870

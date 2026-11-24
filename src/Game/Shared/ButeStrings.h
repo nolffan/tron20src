@@ -42,7 +42,7 @@ static void GetButeString(CButeMgr& buteMgr, const char* pszTag, const char* psz
 	{
 		// RETAIL: the default is assigned through a null check (0x101477d6)
 		const char* pszDefault = "";
-		sValue.assign(pszDefault, pszDefault + (pszDefault ? strlen(pszDefault) : 0));
+		sValue.assign(pszDefault, pszDefault + (!pszDefault ? 0 : strlen(pszDefault)));
 	}
 }
 

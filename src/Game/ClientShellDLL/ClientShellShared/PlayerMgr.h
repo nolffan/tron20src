@@ -353,8 +353,6 @@ protected:
 	void	UpdateDuck();
 	void	UpdatePlayer();
 	void	UpdateDistanceIndicator();
-	void	UpdateSoundFilters(uint8 nSoundFilterId);
-	CVolumeBrushFX* UpdateVolumeBrushFX(CVolumeBrushFX* pFX, ContainerCode & eCode);
 	
 
 	void	HandleRespawn();

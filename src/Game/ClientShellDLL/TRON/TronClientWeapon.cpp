@@ -653,12 +653,12 @@ void CTronClientWeapon::SaveShotPrimitiveCharge()
 // effect on the player view
 bool CTronClientWeapon::HandleMessageProjectile( uint8 messageID, ILTMessage_Read *pMsg )
 {
-	if ( MPROJ_BLOCKED != pMsg->Readuint8() )
+	DEFENSECLASSDATA const *pDefense = LTNULL;
+	if ( MPROJ_BLOCKED == pMsg->Readuint8() )
 	{
-		return false;
+		pDefense = g_pWeaponMgr->GetDefenseClass( m_pWeapon->nDefenseClassId );
 	}
 
-	DEFENSECLASSDATA const *pDefense = g_pWeaponMgr->GetDefenseClass( m_pWeapon->nDefenseClassId );
 	if ( !pDefense )
 	{
 		return false;

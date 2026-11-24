@@ -95,6 +95,8 @@ class CWeaponFX : public CSpecialFX
 			m_fInstDamage	= 0;
 			m_fAreaDamage	= 0;
 			m_nShooterId	= -1;
+			// RETAIL: CShell.dll 0x10102b40: Tron's ctor also clears these
+			m_nTronUnknownDD	= -1;
 			m_nLocalId		= -1;
             m_bLocal        = LTFALSE;
 
@@ -116,6 +118,9 @@ class CWeaponFX : public CSpecialFX
 
             m_pWeapon       = LTNULL;
             m_pAmmo         = LTNULL;
+			m_eImpactType	= (IMPACT_TYPE)0;
+			m_fTronUnknownFC	= 0.0f;
+			m_bTronUnknown100	= false;
 		}
 
         virtual LTBOOL Init(HLOCALOBJ hServObj, ILTMessage_Read *pMsg);

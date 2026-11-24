@@ -98,7 +98,7 @@ void ghiDoSocketInit
 	GHIConnection * connection
 )
 {
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Socket Initialization\n");
+	const char * server;
 
 	// Progress.
 	////////////
@@ -117,31 +117,13 @@ void ghiDoSocketInit
 		return;
 	}
 
-	// PORT: the 2003 SDK has no GHTTPHostLookup state (CShell.dll 1.030);
-	// until this file is written from the retail code (0x10020500 on), the
-	// lookup is done here, and it moves the state on to GHTTPConnecting.
-	ghiDoHostLookup(connection);
-}
-
-/****************
-** HOST LOOKUP **
-****************/
-void ghiDoHostLookup
-(
-	GHIConnection * connection
-)
-{
-	HOSTENT * host = NULL;
-	const char * server = NULL;
-
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Host Lookup\n");
-
+	// RETAIL: CShell.dll 0x10020500: the 2003 SDK has no GHTTPHostLookup
+	// state; the host is looked up here.
 
 	// Check for using a proxy.
 	///////////////////////////
-	if(ghiProxyAddress)
-		server = ghiProxyAddress;
-	else
+	server = ghiProxyAddress;
+	if(!server)
 		server = connection->serverAddress;
 
 	// Try resolving the address as an IP a.b.c.d number.
@@ -149,14 +131,13 @@ void ghiDoHostLookup
 	connection->serverIP = inet_addr(server);
 	if(connection->serverIP == INADDR_NONE)
 	{
+		HOSTENT * host;
+
 		// Try resolving with DNS.
 		//////////////////////////
 		host = gethostbyname(server);
-
 		if(host == NULL)
 		{
-			gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_HotError, 
-				"Host Lookup failed\n");
 			connection->completed = GHTTPTrue;
 			connection->result = GHTTPHostLookupFailed;
 			return;
@@ -172,6 +153,7 @@ void ghiDoHostLookup
 	connection->state = GHTTPConnecting;
 	ghiCallProgressCallback(connection, NULL, 0);
 }
+
 /***************
 ** CONNECTING **
 ***************/
@@ -185,7 +167,7 @@ void ghiDoConnecting
 	int writeFlag;
 	int exceptFlag;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Connecting\n");
+	// RETAIL: CShell.dll 0x10020680 (the 2003 SDK's).
 
 	// If we don't have a socket yet, set it up.
 	////////////////////////////////////////////
@@ -233,7 +215,7 @@ void ghiDoConnecting
 		if(gsiSocketIsError(rcode))
 		{
 			int socketError = GOAGetLastError(connection->socket);
-			if((socketError != WSAEWOULDBLOCK) && (socketError != WSAEINPROGRESS) && (socketError != WSAETIMEDOUT))
+			if((socketError != WSAEWOULDBLOCK) && (socketError != WSAEINPROGRESS))
 			{
 				connection->completed = GHTTPTrue;
 				connection->result = GHTTPConnectFailed;
@@ -246,27 +228,25 @@ void ghiDoConnecting
 	// Check if the connect has completed.
 	//////////////////////////////////////
 	rcode = ghiSocketSelect(connection->socket, NULL, &writeFlag, &exceptFlag);
-	if((gsiSocketIsError(rcode)) || ((rcode == 1) && exceptFlag))
+	if(!rcode || exceptFlag)
 	{
 		connection->completed = GHTTPTrue;
 		connection->result = GHTTPConnectFailed;
-		if(gsiSocketIsError(rcode))
+		if(!rcode)
 			connection->socketError = GOAGetLastError(connection->socket);
-		else
-			connection->socketError = 0;
 		return;
 	}
 
 	// Check if we're connected.
 	////////////////////////////
-	if((rcode == 1) && writeFlag)
+	if(writeFlag)
 	{
 		// Progress.
 		////////////
 		connection->state = GHTTPSendingRequest;
 		ghiCallProgressCallback(connection, NULL, 0);
 	}
-} 
+}
 
 /********************
 ** SENDING REQUEST **
@@ -285,7 +265,7 @@ void ghiDoSendingRequest
 	///////////////////////////////////////////////////////////
 	if(!connection->sendBuffer.len)
 	{
-		GHIBuffer* writeBuffer = &connection->sendBuffer;
+		GHIBuffer* writeBuffer;
 		// Fill in the request line.
 		////////////////////////////
 		if(connection->post)
@@ -294,6 +274,7 @@ void ghiDoSendingRequest
 			requestType = "HEAD ";
 		else
 			requestType = "GET ";
+		writeBuffer = &connection->sendBuffer;
 		ghiAppendDataToBuffer(writeBuffer, requestType, 0);
 		if(ghiProxyAddress)
 			ghiAppendDataToBuffer(writeBuffer, connection->URL, 0);
@@ -400,7 +381,7 @@ void ghiDoPosting
 	GHIPostingResult result;
 	int oldBytesPosted;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Posting\n");
+	// RETAIL: CShell.dll 0x100209b0 (the 2003 SDK's).
 
 	// Store the old bytes posted.
 	//////////////////////////////
@@ -414,26 +395,9 @@ void ghiDoPosting
 	//////////////////////
 	if(result == GHIPostingError)
 	{
-		int rcode = 0;
-		int readFlag = 0;
-
-		// Make sure we already set the error stuff.
-		////////////////////////////////////////////
-		assert(connection->completed && connection->result);
-
 		// Cleanup the posting state.
 		/////////////////////////////
 		ghiPostCleanupState(connection);
-
-		// Is there a server response?
-		rcode = ghiSocketSelect(connection->socket, &readFlag, NULL, NULL);
-		if((rcode == 1) && readFlag)
-		{
-			// Ready to receive.
-			////////////////////
-			connection->state = GHTTPReceivingStatus;
-			ghiCallProgressCallback(connection, NULL, 0);
-		}
 		return;
 	}
 
@@ -449,12 +413,11 @@ void ghiDoPosting
 		// Cleanup the posting state.
 		/////////////////////////////
 		ghiPostCleanupState(connection);
+
 		// Set the new connection state.
 		////////////////////////////////
 		connection->state = GHTTPWaiting;
 		ghiCallProgressCallback(connection, NULL, 0);
-
-		return;
 	}
 }
 
@@ -467,28 +430,22 @@ void ghiDoWaiting
 )
 {
 	int readFlag;
-	int exceptFlag;
-	int rcode;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Waiting\n");
+	// RETAIL: CShell.dll 0x10020a10 (the 2003 SDK's).
 
 	// We're waiting to receive something.
 	//////////////////////////////////////
-	rcode = ghiSocketSelect(connection->socket, &readFlag, NULL, &exceptFlag);
-	if((gsiSocketIsError(rcode)) || ((rcode == 1) && exceptFlag))
+	if(!ghiSocketSelect(connection->socket, &readFlag, NULL, NULL))
 	{
 		connection->completed = GHTTPTrue;
 		connection->result = GHTTPSocketFailed;
-		if(gsiSocketIsError(rcode))
-			connection->socketError = GOAGetLastError(connection->socket);
-		else
-			connection->socketError = 0;
+		connection->socketError = GOAGetLastError(connection->socket);
 		return;
 	}
 
 	// Check for waiting data.
 	//////////////////////////
-	if((rcode == 1) && readFlag)
+	if(readFlag)
 	{
 		// Ready to receive.
 		////////////////////
@@ -511,14 +468,7 @@ static GHTTPBool ghiParseStatus
 	int rcode;
 	char c;
 
-	GS_ASSERT(connection);
-	GS_ASSERT(connection->recvBuffer.len > 0);
-
-#if defined(_X360)
-	//Xbox 360 needs "%n" to be manually enabled
-	{
-	int oldPrintCountValue = _set_printf_count_output(1);
-#endif
+	// RETAIL: CShell.dll 0x10020b40 (the 2003 SDK's).
 
 	// Parse the string.
 	////////////////////
@@ -528,15 +478,14 @@ static GHTTPBool ghiParseStatus
 		&statusCode,
 		&statusStringIndex);
 
-#if defined(_X360)
-	_set_printf_count_output(oldPrintCountValue);
-	}
-#endif
+	// Figure out where the status string starts.
+	/////////////////////////////////////////////
+	while((c = connection->recvBuffer.data[statusStringIndex]) != '\0' && isspace(c))
+		statusStringIndex++;
 
 	// Check what we got.
 	/////////////////////
 	if((rcode != 3) ||     // Not all fields read.
-		//!*statusString ||  // No status string.  PANTS|9.16.02 - apparently some servers don't return a status string
 		(majorVersion < 1) ||  // Major version is less than 1.
 		(statusCode < 100) ||        // 1xx is lowest status code.
 		(statusCode >= 600))         // 5xx is highest status code.
@@ -545,11 +494,6 @@ static GHTTPBool ghiParseStatus
 		connection->result = GHTTPBadResponse;
 		return GHTTPFalse;
 	}
-
-	// Figure out where the status string starts.
-	/////////////////////////////////////////////
-	while((c = connection->recvBuffer.data[statusStringIndex]) != '\0' && isspace(c))
-		statusStringIndex++;
 
 	// Set connection members.
 	//////////////////////////
@@ -574,19 +518,27 @@ void ghiDoReceivingStatus
 	GHIRecvResult result;
 	char * endOfStatus;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving Status\n");
+	// RETAIL: CShell.dll 0x10020a70 (the 2003 SDK's).
 
 	// Get data.
 	////////////
 	bufferLen = sizeof(buffer);
 	result = ghiDoReceive(connection, buffer, &bufferLen);
 
-	// Handle error or no data.
-	///////////////////////////
+	// Handle error.
+	////////////////
 	if(result == GHIError)
 		return;
-	if(result == GHINoData)
+
+	// Connection closed.
+	/////////////////////
+	if(result == GHIConnClosed)
+	{
+		connection->completed = GHTTPTrue;
+		connection->result = GHTTPBadResponse;
+		connection->socketError = GOAGetLastError(connection->socket);
 		return;
+	}
 
 	// Only append data if we got data.
 	///////////////////////////////////
@@ -599,7 +551,7 @@ void ghiDoReceivingStatus
 	}
 
 	// Check if the status is finished.
-	/////////////////////////////////////
+	///////////////////////////////////
 	endOfStatus = strstr(connection->recvBuffer.data, CRLF);
 	if(endOfStatus)
 	{
@@ -613,11 +565,6 @@ void ghiDoReceivingStatus
 		/////////////////////////
 		statusLength = (endOfStatus - connection->recvBuffer.data);
 
-		// Log it.
-		//////////
-		ghiLogResponse(connection->recvBuffer.data, statusLength);
-		ghiLogResponse("\n", 1);
-
 		// Parse the status line.
 		/////////////////////////
 		if(!ghiParseStatus(connection))
@@ -629,20 +576,10 @@ void ghiDoReceivingStatus
 		//////////////////////////////////////////////////
 		connection->recvBuffer.pos = (statusLength + 2);
 
-
 		// We're receiving headers now.
 		///////////////////////////////
 		connection->state = GHTTPReceivingHeaders;
 		ghiCallProgressCallback(connection, NULL, 0);
-	}
-	else if(result == GHIConnClosed)
-	{
-		// Connection closed.
-		/////////////////////
-		connection->completed = GHTTPTrue;
-		connection->result = GHTTPBadResponse;
-		connection->socketError = GOAGetLastError(connection->socket);
-		return;
 	}
 }
 
@@ -660,8 +597,10 @@ static GHTTPBool ghiDeliverIncomingFileData
 	int len
 )
 {
-	char * buffer = NULL;
-	int bufferLen = 0;
+	// RETAIL: CShell.dll 0x10021110: the 2003 SDK leaves these unset, so an
+	// unknown type passes whatever is in them to the callback.
+	char * buffer;
+	int bufferLen;
 
 	// Add this to the total.
 	/////////////////////////
@@ -821,7 +760,8 @@ static GHTTPBool ghiProcessIncomingFileData
 				{
 					// Append what we have to the buffer.
 					/////////////////////////////////////
-					ghiAppendToChunkHeaderBuffer(connection, data, endOfHeader - data);
+					// RETAIL: CShell.dll 0x10020fe6: the 2003 SDK leaves out the CR.
+					ghiAppendToChunkHeaderBuffer(connection, data, endOfHeader - data - 1);
 
 					// Adjust data and len.
 					///////////////////////
@@ -971,27 +911,31 @@ void ghiDoReceivingHeaders
 	char buffer[4096];
 	int bufferLen;
 	GHIRecvResult result;
-	GHTTPBool hasHeaders = GHTTPTrue;
 	char * headers;
-	char * endOfHeaders = NULL;
+	char * endOfHeaders;
+	char * fileStart;
+	int fileLength;
+	char * contentLength;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving Headers\n");
+	// RETAIL: CShell.dll 0x10020c30 (the 2003 SDK's).
 
 	// Get data.
 	////////////
 	bufferLen = sizeof(buffer);
 	result = ghiDoReceive(connection, buffer, &bufferLen);
 
-	// Handle error, no data, conn closed.
-	//////////////////////////////////////
+	// Handle error, no data.
+	/////////////////////////
 	if(result == GHIError)
 		return;
 	if(result == GHINoData)
-		return;
-
-	// Only append data if we got data.
-	///////////////////////////////////
-	if(result == GHIRecvData)
+	{
+		// Nothing new, and nothing left to parse.
+		//////////////////////////////////////////
+		if(connection->recvBuffer.pos == connection->recvBuffer.len)
+			return;
+	}
+	else if(result == GHIRecvData)
 	{
 		// Add the data to the buffer.
 		//////////////////////////////
@@ -1000,66 +944,31 @@ void ghiDoReceivingHeaders
 	}
 
 	// Cache a pointer to the front of the headers.
-	///////////////////////////////////////////////
 	// TRON: the 2003 SDK's start of the headers is the receive buffer's pos
 	// (CShell.dll 1.030, 0x10020ca2).
+	///////////////////////////////////////////////
 	headers = (connection->recvBuffer.data + connection->recvBuffer.pos);
 
 	// Check if the headers are finished.
 	/////////////////////////////////////
-	if( ((connection->statusCode / 100) == 1) &&
-		 (strncmp(headers, "\r\n", 2) == 0 || strncmp(headers, "\xA\xA", 2) == 0)
-		 )
-	{
-		// If a continue doesn't have a header (immediate CRLF) move on to next status
-		endOfHeaders = headers;
-		hasHeaders = GHTTPFalse;
-	}
-	else
-	{
-		endOfHeaders = strstr(headers, CRLF CRLF);
-	}
+	endOfHeaders = strstr(headers, CRLF CRLF);
 	if(!endOfHeaders)
-	{
 		endOfHeaders = strstr(headers, "\xA\xA"); // some servers seem to use LFs only?! Seen in 302 redirect. (28may01/bgw)
-	}
 	if(endOfHeaders)
 	{
-		char * fileStart;
-		int fileLength;
-		//int headersLength;
-		char * contentLength;
-
-#ifdef HTTP_LOG
-		int headersLength;
-#endif
-
 		// Clear off the empty line.
 		////////////////////////////
-		if (GHTTPTrue == hasHeaders)
-			endOfHeaders += 2;
+		endOfHeaders += 2;
 		*endOfHeaders = '\0';
 
 		// Figure out where the file starts, and how many bytes.
 		////////////////////////////////////////////////////////
-#ifdef HTTP_LOG
-		headersLength = (endOfHeaders - headers);
-#endif
-
 		fileStart = (endOfHeaders + 2);
 		fileLength = (connection->recvBuffer.len - (fileStart - connection->recvBuffer.data));
 
 		// Set the headers buffer's new length.
 		///////////////////////////////////////
-		connection->recvBuffer.len = (endOfHeaders - connection->recvBuffer.data + 1);
-		connection->recvBuffer.pos = connection->recvBuffer.len;
-
-		// Log it.
-		//////////
-#ifdef HTTP_LOG
-		ghiLogResponse(headers, headersLength);
-		ghiLogResponse("\n", 1);
-#endif
+		connection->recvBuffer.len = (endOfHeaders - connection->recvBuffer.data);
 
 		// Check for continue.
 		//////////////////////
@@ -1071,11 +980,12 @@ void ghiDoReceivingHeaders
 				////////////////////////////////////////////
 				memmove(connection->recvBuffer.data, fileStart, (unsigned int)fileLength + 1);
 				connection->recvBuffer.len = fileLength;
+				connection->recvBuffer.pos = 0;
 			}
 			else
 			{
 				// Reset the buffer.
-				/////////////////////////
+				////////////////////
 				ghiResetBuffer(&connection->recvBuffer);
 			}
 
@@ -1083,7 +993,6 @@ void ghiDoReceivingHeaders
 			//////////////////////////////////
 			connection->state = GHTTPReceivingStatus;
 			ghiCallProgressCallback(connection, NULL, 0);
-
 			return;
 		}
 
@@ -1157,49 +1066,7 @@ void ghiDoReceivingHeaders
 		//////////////////////////////////////
 		contentLength = strstr(headers, "Content-Length:");
 		if(contentLength)
-		{
-			// Verify that the download size is something we can handle
-			///////////////////////////////////////////////////////////
-#if (GSI_MAX_INTEGRAL_BITS >= 64)
-			char  szMaxSize[] = "9223372036854775807"; // == GSI_MAX_I64       
-#else
-			char  szMaxSize[] = "2147483647";          // == GSI_MAX_I32
-#endif
-			char* pStart  = contentLength+16;
-			char* pEnd    = pStart;
-			int   nMaxLen = (int)strlen(szMaxSize);
-
-			// Skip to the end of the line
-			while( pEnd && *pEnd != '\0' && *pEnd != '\n' && *pEnd != '\r' && *pEnd != ' ' )
-				pEnd++;
-
- 			if( pEnd-pStart > nMaxLen )
-			{
-				// Wow, that IS a big number
-				connection->completed = GHTTPTrue;
-				connection->result = GHTTPFileToBig;
-				return;
-			}
-			else
-			if( pEnd-pStart == nMaxLen )
-			{
-				// Same length, maybe a bigger number
-				if( strncmp(pStart,szMaxSize,(unsigned int)(pEnd-pStart)) >= 0 )
-				{
-					connection->completed = GHTTPTrue;
-					connection->result = GHTTPFileToBig;
-					return;
-				}
-			}
-
-			// Record the full size of the expected download
-			////////////////////////////////////////////////
-#if (GSI_MAX_INTEGRAL_BITS >= 64)
-			connection->totalSize = _atoi64(pStart);
-#else
-			connection->totalSize = atoi(pStart);
-#endif
-		}
+			connection->totalSize = atoi(contentLength + 16);
 
 		// Check the chunky.
 		////////////////////
@@ -1236,9 +1103,6 @@ void ghiDoReceivingHeaders
 		/////////////////////////////////////////////
 		if(fileLength > 0)
 			ghiProcessIncomingFileData(connection, fileStart, fileLength);
-
-		// Don't reset the buffer -- we store status and header info
-		//ghiResetBuffer(&connection->recvBuffer);
 	}
 	else if(result == GHIConnClosed)
 	{
@@ -1262,32 +1126,32 @@ void ghiDoReceivingFile
 	int bufferLen;
 	GHIRecvResult result;
 
-	gsDebugFormat(GSIDebugCat_HTTP, GSIDebugType_State, GSIDebugLevel_Comment, "Receiving File\n");
-
-	// Get data.
-	////////////
-	bufferLen = sizeof(buffer);
-	result = ghiDoReceive(connection, buffer, &bufferLen);
-
-	// Handle error, no data, conn closed.
-	//////////////////////////////////////
-	if(result == GHIError)
-		return;
-	if(result == GHINoData)
-		return;
-	if(result == GHIConnClosed)
+	// RETAIL: CShell.dll 0x100212b0: the 2003 SDK reads until the file is
+	// complete or no data is left.
+	while(!connection->completed)
 	{
-		// The file is done (hopefully).
-		////////////////////////////////
-		connection->completed = GHTTPTrue;
+		// Get data.
+		////////////
+		bufferLen = sizeof(buffer);
+		result = ghiDoReceive(connection, buffer, &bufferLen);
 
-		if (connection->totalSize > 0 && connection->fileBytesReceived < connection->totalSize)
-			connection->result = GHTTPFileIncomplete;
-		return;
+		// Handle error, no data, conn closed.
+		//////////////////////////////////////
+		if(result == GHIError)
+			return;
+		if(result == GHINoData)
+			return;
+		if(result == GHIConnClosed)
+		{
+			// The file is done (hopefully).
+			////////////////////////////////
+			connection->completed = GHTTPTrue;
+			return;
+		}
+
+		// Process the data.
+		////////////////////
+		if(!ghiProcessIncomingFileData(connection, buffer, bufferLen))
+			return;
 	}
-
-	// Process the data.
-	////////////////////
-	if(!ghiProcessIncomingFileData(connection, buffer, bufferLen))
-		return;
 }

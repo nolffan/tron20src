@@ -1586,6 +1586,18 @@ to strchr.
 Fixed in the modern build: the lines put the selected text, the function
 compares the texts and cuts the holster text at ";".
 
+### An unknown download type gives unset values to the progress callback
+
+CShell.dll 0x10021110 (ghiDeliverIncomingFileData, Libs/GameSpy/
+GameSpySDK/ghttp/ghttpProcess.c). The function does not set its buffer
+pointer and its buffer length before it examines the type of the
+connection. For a type that is not GET, SAVE or STREAM, it gives these two
+unset values to ghiCallProgressCallback. The 2003 GameSpy SDK has this
+mistake; later SDKs set the values to NULL and 0.
+
+Not fixed yet: the game uses only the three known types, so the path does
+not occur.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
