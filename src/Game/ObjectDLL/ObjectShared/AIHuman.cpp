@@ -2368,7 +2368,8 @@ void CAIHuman::StartDeath()
 	// RETAIL: Tron's: clear the vectors shown (retail 0x10170787)
 	if( m_bShowingVectors )
 	{
-		LineSystem::GetSystem( this, "AIShowVectors" ).Clear();
+		DebugLineSystem& system = LineSystem::GetSystem( this, "AIShowVectors" );
+		system.Clear();
 	}
 }
 
