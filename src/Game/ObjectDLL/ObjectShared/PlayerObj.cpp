@@ -4681,7 +4681,7 @@ void CPlayerObj::ResetDiscSkin()
 				ObjectCreateStruct createstruct;
 				createstruct.Clear();
 
-				SAFE_STRCPY( createstruct.m_SkinNames[0], pModel->m_vecColorHHDiscFX[m_bTronUnknown31c9].c_str( ));
+				LTStrCpy( createstruct.m_SkinNames[0], pModel->m_vecColorHHDiscFX[m_bTronUnknown31c9].c_str( ), sizeof( createstruct.m_SkinNames[0] ));
 
 				g_pCommonLT->SetObjectFilenames( pWeapon->GetModelObject( ), &createstruct );
 			}
