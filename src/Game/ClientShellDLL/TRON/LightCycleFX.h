@@ -63,6 +63,9 @@ class CLightCycleFX : public CSpecialFX
 		// names are ours
 		CLIENTFX_LINK*	GetTronUnknownFX50() { return &m_TronUnknownFX50; }
 		CLIENTFX_LINK*	GetTronUnknownFX54() { return &m_TronUnknownFX54; }
+		// RETAIL: inline (CClientLightCycleMgr::OnMessage, 0x10012540); the
+		// name is ours
+		HLTSOUND	GetEngineSound() const { return m_hTronUnknownSnd44; }
 
 	protected :
 

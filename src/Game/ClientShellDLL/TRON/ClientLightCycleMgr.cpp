@@ -28,6 +28,7 @@
 #include "ScreenSubroutines.h"	// RETAIL: its constants' initializers (0x10010650..0x100106b2)
 #include "TronHUDMgr.h"	// RETAIL: g_pLightCycleRoster
 #include "TronPlayerMgr.h"
+#include "TronInterfaceMgr.h"
 #include "VehicleMgr.h"
 #include "LightCycleFX.h"
 #include "LightCycleMatchMgr.h"
@@ -573,16 +574,7 @@ void CClientLightCycleMgr::DrawTrails()
 //	ROUTINE:	CClientLightCycleMgr::OnMessage
 //
 //	PURPOSE:	A MID_LIGHT_CYCLE_INFO message from the server. RETAIL:
-//				0x10011c80 (the name is ours). PORT: three kinds of retail
-//				call code our build has not:
-//				- Tron's CLightCycleFX (the special FX of the other
-//				  players' cycles; RTTI .?AVCLightCycleFX@@, vtable
-//				  0x101eb140), found by the SFX manager's 0x10108650:
-//				  LCI_POSITION turns its object to the new forward, and
-//				  LCI_TURBO hands its engine sound (+0x44) to
-//				  UpdateCycleEffects;
-//				- CTronInterfaceMgr's turn arrows (0x1009e850: kinds 4
-//				  and 5 show the left or the right one).
+//				0x10011c80 (the name is ours).
 //
 // ----------------------------------------------------------------------- //
 
@@ -620,26 +612,40 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 						(float)fabs(pCyclist->m_vTronUnknownE4.x - fX);
 				}
 
-				pCyclist->m_vTronUnknownE4 = LTVector(fX, vPos.y, fZ);
+				pCyclist->m_vTronUnknownE4.y = vPos.y;
+				pCyclist->m_vTronUnknownE4.z = fZ;
+				pCyclist->m_vTronUnknownE4.x = fX;
 
 				// Still going the same way: just the position
 				if (pCyclist->fTrailCheckTime != 0.0f && pCyclist->vForward == vForward)
 				{
 					if (!pCyclist->bIsPlayer)
 					{
-						pCyclist->vLastPos = LTVector(fX, vPos.y, fZ);
+						pCyclist->vLastPos.x = fX;
+						pCyclist->vLastPos.y = vPos.y;
+						pCyclist->vLastPos.z = fZ;
 					}
 
 					pCyclist->fTrailCheckTime = g_pLTClient->GetTime();
 					return true;
 				}
 
-				pCyclist->vLastPos = LTVector(fX, vPos.y, fZ);
+				pCyclist->vLastPos.x = fX;
+				pCyclist->vLastPos.y = vPos.y;
+				pCyclist->vLastPos.z = fZ;
 				pCyclist->m_bTronUnknown130 = true;
 
-				// PORT: retail turns the cycle's CLightCycleFX object to
-				// vForward here (LTRotation(vForward, LTVector(0, 1, 0)),
-				// SetObjectRotation): see above
+				// The other cycles turn to the new forward
+				CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+				if (psfxMgr)
+				{
+					CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(hObj);
+					if (pFX)
+					{
+						LTRotation rRot(vForward, LTVector(0.0f, 1.0f, 0.0f));
+						g_pLTClient->SetObjectRotation(pFX->GetServerObj(), &rRot);
+					}
+				}
 
 				pCyclist->fTrailCheckTime = g_pLTClient->GetTime();
 				UpdateLightCycleTrail(pCyclist, false, &vForward, false);
@@ -650,15 +656,13 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 
 		case LCI_TRONUNKNOWN_4:
 		{
-			// PORT: retail shows the left turn arrow
-			// (g_pInterfaceMgr's 0x1009e850, 0): see above
+			((CTronInterfaceMgr*)g_pInterfaceMgr)->ShowTurnArrow(0);
 			return true;
 		}
 
 		case LCI_TRONUNKNOWN_5:
 		{
-			// PORT: retail shows the right turn arrow
-			// (g_pInterfaceMgr's 0x1009e850, 1): see above
+			((CTronInterfaceMgr*)g_pInterfaceMgr)->ShowTurnArrow(1);
 			return true;
 		}
 
@@ -673,8 +677,10 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 			char szCycleColor[32];
 			pMsg->ReadString(szCycleColor, sizeof(szCycleColor));
 			bool bUpdate = pMsg->Readbool();
-			float fForwardX = (float)pMsg->Readint8();
-			float fForwardZ = (float)pMsg->Readint8();
+			LTVector vForward;
+			vForward.x = (float)pMsg->Readint8();
+			vForward.y = 0.0f;
+			vForward.z = (float)pMsg->Readint8();
 			bool bRoster = pMsg->Readbool();
 			uint32 nClientID = pMsg->Readuint32();
 			uint32 nNameId = pMsg->Readuint32();
@@ -714,7 +720,7 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 			LIGHT_CYCLIST* pCyclist = AddCyclist(hObj, szCycleColor, bUpdate, pvDims, 0, true);
 			pCyclist->nClientID = nClientID;
 			pCyclist->nNameId = nNameId;
-			pCyclist->vForward = LTVector(fForwardX, 0.0f, fForwardZ);
+			pCyclist->vForward = vForward;
 			UpdateCyclistDims(pCyclist, vDims, true);
 
 			if (bRoster && g_pLightCycleRoster)
@@ -802,7 +808,8 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 			LIGHT_CYCLIST* pCyclist = FindCyclist(hObj);
 			if (pCyclist)
 			{
-				DerezCyclist(pCyclist, FindCyclist(pMsg->ReadObject()), false);
+				LIGHT_CYCLIST* pOther = FindCyclist(pMsg->ReadObject());
+				DerezCyclist(pCyclist, pOther, false);
 			}
 
 			g_pHUDMgr->QueueUpdate(kHUDAll);
@@ -830,9 +837,23 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 				pCyclist->fAccelRate = fAccelRate;
 				pCyclist->fSpeed = fSpeed;
 
-				// PORT: for the others' cycles retail hands the cycle's
-				// CLightCycleFX and its engine sound to UpdateCycleEffects
-				// (bTurned, fAccel, fWallAccel, nFlags): see above
+				// The other cycles' effects
+				if (hObj != g_pMoveMgr->GetObject())
+				{
+					CSFXMgr* psfxMgr = g_pGameClientShell->GetSFXMgr();
+					if (psfxMgr)
+					{
+						CLightCycleFX* pFX = psfxMgr->GetLightCycleFX(hObj);
+						if (pFX)
+						{
+							HLTSOUND hSound = pFX->GetEngineSound();
+							if (hSound)
+							{
+								UpdateCycleEffects(pCyclist, hSound, bTurned, fAccel, fWallAccel, nFlags, pFX);
+							}
+						}
+					}
+				}
 			}
 
 			return true;
@@ -940,7 +961,8 @@ bool CClientLightCycleMgr::OnMessage(ILTMessage_Read* pMsg)
 
 		case LCI_TRONUNKNOWN_20:
 		{
-			g_pPlayerMgr->SetTronUnknown1DC(pMsg->Readfloat());
+			float fValue = pMsg->Readfloat();
+			g_pPlayerMgr->SetTronUnknown1DC(fValue);
 			return true;
 		}
 

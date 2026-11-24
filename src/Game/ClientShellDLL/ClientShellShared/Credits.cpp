@@ -46,6 +46,41 @@ namespace
 
 static char* GetTextBuffer(char* sName);
 
+// RETAIL: inline (CCredit::SetState, 0x1014622c): the image's texture
+// coordinates, inset half a texel. The name is ours.
+static inline void SetHalfTexelUVs(LT_POLYFT4* pPrim, HTEXTURE hTex)
+{
+	float fU = 0.0f;
+	float fV = 0.0f;
+	uint32 nWidth, nHeight;
+	if (g_pTexInterface->GetTextureDims(hTex, nWidth, nHeight) == LT_OK)
+	{
+		fU = 0.5f / (float)nWidth;
+		fV = 0.5f / (float)nHeight;
+	}
+	pPrim->verts[0].u = fU;
+	pPrim->verts[0].v = fV;
+	pPrim->verts[1].u = 1.0f - fU;
+	pPrim->verts[1].v = fV;
+	pPrim->verts[2].u = 1.0f - fU;
+	pPrim->verts[2].v = 1.0f - fV;
+	pPrim->verts[3].u = fU;
+	pPrim->verts[3].v = 1.0f - fV;
+}
+
+// RETAIL: inline (CCredit::AddString, 0x10145bd0, 0x10145ca8): a wide
+// string's characters into a cleared char buffer. The name is ours.
+static inline void NarrowCopy(char* pDest, const std::wstring& sText, uint32 nSize)
+{
+	memset(pDest, 0, nSize);
+	uint32 i = 0;
+	while (i < sText.size() && i < nSize)
+	{
+		pDest[i] = (char)sText[i];
+		i++;
+	}
+}
+
 
 // Functions...
 
@@ -57,12 +92,8 @@ static char* GetTextBuffer(char* sName);
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CCredit::Init(char* sBuf)
+LTBOOL CCredit::Init(const std::wstring& sBuf)
 {
-	// Sanity checks...
-
-	if (!sBuf) return(LTFALSE);
-
 	// Set simple members...
 
 	m_nState    = CS_START;
@@ -75,34 +106,35 @@ LTBOOL CCredit::Init(char* sBuf)
 	m_bBig		= LTFALSE;
 	m_hAlign = CUI_HALIGN_CENTER;
 
+	m_szImage[0] = '\0';
+	m_hImage = LTNULL;
+
 	// Parse the text buffer and add each line as a separate string...
 
-	char sString[256];
-	int  i = 0;
+	std::wstring sString;
 
-	while (*sBuf)
+	std::wstring::const_iterator iter = sBuf.begin();
+	while (iter != sBuf.end() && *iter)
 	{
-		if ((*sBuf == '\n') || (*sBuf == '\r') || (*sBuf == '\0'))
+		if ((*iter == '\n') || (*iter == '\r'))
 		{
-			sString[i] = '\0';
-			AddString(sString); 
-			i = 0;
+			sString.push_back(L'\0');
+			AddString(sString);
+			sString.clear();
 
-			while (((*sBuf == '\n') || (*sBuf == '\r'))) 
+			do
 			{
-				sBuf = (char*)_mbsinc((const unsigned char*)sBuf);
-			};
+				iter++;
+			} while (((*iter == '\n') || (*iter == '\r')));
 		}
 		else
 		{
-			int nCount = _mbsnbcnt((const unsigned char*)sBuf,1);
-			memcpy(&sString[i], sBuf, nCount);
-			i += nCount;
-			sBuf = (char*)_mbsinc((const unsigned char*)sBuf);
+			sString.push_back(*iter);
+			iter++;
 		}
 	}
-	sString[i] = '\0';
-	if (strlen(sString) > 0) AddString(sString);
+	sString.push_back(L'\0');
+	if (sString.size() > 0) AddString(sString);
 
 	// All done...
 	FormatStrings();
@@ -139,52 +171,66 @@ void CCredit::Term()
 //
 // ----------------------------------------------------------------------- //
 
-LTBOOL CCredit::AddString(char* sString)
+LTBOOL CCredit::AddString(const std::wstring& sString)
 {
 	// Sanity checks...
 
 	if (!g_pLTClient) return(LTFALSE);
-	if (!sString) return(LTFALSE);
 
 	// Check if this is a special command string...
 
-	if (strncmp(sString, ">TIME:", 6) == 0)
+	if (wcsncmp(sString.c_str(), L">TIME:", 6) == 0)
 	{
-		if (_mbstrlen(sString) > 6)
+		if (sString.size() > 6)
 		{
-			m_fHoldTime = (float)atof(&sString[6]);
+			// RETAIL: the terminator goes one past the copied characters
+			char szTime[16];
+			NarrowCopy(szTime, std::wstring(&sString.c_str()[6]), sizeof(szTime));
+			((char*)szTime)[sizeof(szTime)] = '\0';
+			m_fHoldTime = (float)atof(szTime);
 			return(LTTRUE);
 		}
 	}
-	if (strncmp(sString, ">POS:UL", 7) == 0)
+	if (wcsncmp(sString.c_str(), L">IMAGE:", 7) == 0)
+	{
+		if (sString.size() > 7 && !m_szImage[0])
+		{
+			NarrowCopy(m_szImage, std::wstring(&sString.c_str()[7]), sizeof(m_szImage));
+			// RETAIL: this clears m_szImage[128], the low byte of m_hImage,
+			// one past the buffer (docs/RETAIL_BUGS.md)
+			((char*)m_szImage)[sizeof(m_szImage)] = '\0';
+			return(LTTRUE);
+		}
+	}
+	if (wcsncmp(sString.c_str(), L">POS:UL", 7) == 0)
 	{
 		m_hAlign = CUI_HALIGN_LEFT;
 		m_Pos = s_PositionUL;
 		m_ePosition = CP_UL;
 		return(LTTRUE);
 	}
-	if (strncmp(sString, ">POS:UR", 7) == 0)
+	if (wcsncmp(sString.c_str(), L">POS:UR", 7) == 0)
 	{
 		m_hAlign = CUI_HALIGN_RIGHT;
 		m_Pos = s_PositionUR;
 		m_ePosition = CP_UR;
 		return(LTTRUE);
 	}
-	if (strncmp(sString, ">POS:LR", 7) == 0)
+	if (wcsncmp(sString.c_str(), L">POS:LR", 7) == 0)
 	{
 		m_hAlign = CUI_HALIGN_RIGHT;
 		m_Pos = s_PositionLR;
 		m_ePosition = CP_LR;
 		return(LTTRUE);
 	}
-	if (strncmp(sString, ">POS:LL", 7) == 0)
+	if (wcsncmp(sString.c_str(), L">POS:LL", 7) == 0)
 	{
 		m_hAlign = CUI_HALIGN_LEFT;
 		m_Pos = s_PositionLL;
 		m_ePosition = CP_LL;
 		return(LTTRUE);
 	}
-	if (strncmp(sString, ">BIG", 4) == 0)
+	if (wcsncmp(sString.c_str(), L">BIG", 4) == 0)
 	{
 		m_bBig = LTTRUE;
 		return(LTTRUE);
@@ -192,17 +238,20 @@ LTBOOL CCredit::AddString(char* sString)
 
 	uint8 nFont = 0;
 	CUIFont* pFont = g_pInterfaceResMgr->GetFont(nFont);
-	CUIFormattedPolyString* pStr = g_pFontManager->CreateFormattedPolyString(pFont,LTGUIWideString(sString),(float)m_Pos.x,(float)m_Pos.y);
+	CUIFormattedPolyString* pStr = g_pFontManager->CreateFormattedPolyString(pFont,sString,(float)m_Pos.x,(float)m_Pos.y);
 	if (pStr)
+	{
 		m_Strings.push_back(pStr);
+		pStr->SetDropShadow(true);
+	}
 
 	return(LTTRUE);
 }
 
 void CCredit::FormatStrings()
 {
-	float x = (float)m_Pos.x * g_pInterfaceResMgr->GetXRatio();
-	float y = (float)m_Pos.y * g_pInterfaceResMgr->GetYRatio();
+	int x = (int)(g_pInterfaceResMgr->GetXRatio() * m_Pos.x);
+	int y = (int)(g_pInterfaceResMgr->GetYRatio() * m_Pos.y);
 	FPStringArray::iterator iter = m_Strings.begin();
 	while (iter != m_Strings.end())
 	{
@@ -212,30 +261,43 @@ void CCredit::FormatStrings()
 		if (m_bBig)
 			nSize = (uint8)(24.0f * g_pInterfaceResMgr->GetYRatio());
 
-
+		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
+		pStr->SetFont(pFont);
 		pStr->SetCharScreenHeight(nSize);
 		pStr->SetColor(argbWhite);
-		pStr->SetAlignmentH(m_hAlign);
-		pStr->SetPosition(x,y);
-		y += (float)pStr->GetHeight();
+
+		// TRON: a centred string is placed by its width
+		if (m_hAlign == CUI_HALIGN_CENTER)
+		{
+			pStr->TronUnknownVirtual30(CUI_HALIGN_LEFT);
+			int32 nWidth, nHeight;
+			pStr->GetDims(&nWidth,&nHeight);
+			pStr->SetPosition(x - nWidth / 2,y);
+		}
+		else
+		{
+			pStr->TronUnknownVirtual30(m_hAlign);
+			pStr->SetPosition(x,y);
+		}
+		y += pStr->GetHeight();
 
 		iter++;
 
 	}
 
-	float offset = y - ((float)m_Pos.y * g_pInterfaceResMgr->GetYRatio());
+	int offset = y - (int)(g_pInterfaceResMgr->GetYRatio() * m_Pos.y);
 	switch (m_ePosition)
 	{
 	case CP_CENTER:
-		offset /= 2.0f;
+		offset /= 2;
 		break;
 	case CP_UR:
 	case CP_UL:
-		offset = 0.0f;
+		offset = 0;
 		break;
 	}
 
-	if (offset > 0.0f)
+	if (offset > 0)
 	{
 		FPStringArray::iterator iter = m_Strings.begin();
 		while (iter != m_Strings.end())
@@ -254,8 +316,6 @@ void CCredit::FormatStrings()
 		}
 
 	}
-	
-
 }
 
 
@@ -270,6 +330,20 @@ void CCredit::FormatStrings()
 
 void CCredit::Draw()
 {
+	// TRON: the image first
+	if (m_hImage)
+	{
+		g_pDrawPrim->SetTransformType(DRAWPRIM_TRANSFORM_SCREEN);
+		g_pDrawPrim->SetZBufferMode(DRAWPRIM_NOZ);
+		g_pDrawPrim->SetClipMode(DRAWPRIM_NOCLIP);
+		g_pDrawPrim->SetFillMode(DRAWPRIM_FILL);
+		g_pDrawPrim->SetColorOp(DRAWPRIM_MODULATE);
+		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
+		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
+		g_pDrawPrim->SetTexture(m_hImage);
+		g_pDrawPrim->DrawPrim(&m_Poly,1);
+	}
+
 	// Sanity checks...
 
 	if (m_Strings.size() <= 0) return;
@@ -277,22 +351,9 @@ void CCredit::Draw()
 	FPStringArray::iterator iter = m_Strings.begin();
 	while (iter != m_Strings.end())
 	{
-		CUIFormattedPolyString* pStr = (*iter);
-		int32 x;
-		int32 y;
-		pStr->GetPosition(&x,&y);
-
-		//drop shadow
-		pStr->SetPosition(x+2.0f,y+2.0f);
-		pStr->SetColor(argbBlack);
-		pStr->Render();
-
-		pStr->SetPosition(x,y);
-		pStr->SetColor(argbWhite);
-		pStr->Render();
+		(*iter)->Render();
 		iter++;
 	}
-
 }
 
 
@@ -380,6 +441,29 @@ void CCredit::SetState(int nState)
 	{
 		case CS_START:
 		{
+			// TRON: load the image and centre it on the screen
+			if (m_szImage[0])
+			{
+				m_hImage = LTNULL;
+				if (g_pTexInterface->FindTextureFromName(m_hImage, m_szImage) != LT_OK)
+				{
+					g_pTexInterface->CreateTextureFromName(m_hImage, m_szImage);
+				}
+			}
+
+			if (m_hImage)
+			{
+				uint32 nWidth, nHeight;
+				g_pTexInterface->GetTextureDims(m_hImage, nWidth, nHeight);
+
+				float fX = g_pInterfaceResMgr->GetXRatio() * 320.0f - (float)nWidth * 0.5f;
+				float fY = g_pInterfaceResMgr->GetYRatio() * 240.0f - (float)nHeight * 0.5f;
+
+				// Half a texel in from the edges
+				SetHalfTexelUVs(&m_Poly, m_hImage);
+
+				g_pDrawPrim->SetXYWH(&m_Poly, fX, fY, (float)nWidth, (float)nHeight);
+			}
 			break;
 		}
 
@@ -414,6 +498,11 @@ void CCredit::SetState(int nState)
 
 		case CS_DONE:
 		{
+			if (m_hImage)
+			{
+				g_pTexInterface->ReleaseTextureHandle(m_hImage);
+				m_hImage = LTNULL;
+			}
 			break;
 		}
 	}
@@ -462,9 +551,10 @@ LTBOOL CCredit::UpdateFadeIn()
 	FPStringArray::iterator iter = m_Strings.begin();
 	while (iter != m_Strings.end())
 	{
-		(*iter)->SetColor(argbWhite);
+		(*iter)->SetColor(color);
 		iter++;
 	}
+	g_pDrawPrim->SetRGBA(&m_Poly, color);
 	
 
 	// Draw the credit...
@@ -502,6 +592,14 @@ LTBOOL CCredit::UpdateHoldIn()
 	{
 		m_fTimer = 0.0f;
 	}
+
+	FPStringArray::iterator iter = m_Strings.begin();
+	while (iter != m_Strings.end())
+	{
+		(*iter)->SetColor(argbWhite);
+		iter++;
+	}
+	g_pDrawPrim->SetRGBA(&m_Poly, argbWhite);
 
 
 	// Draw the credit...
@@ -554,9 +652,10 @@ LTBOOL CCredit::UpdateFadeOut()
 	FPStringArray::iterator iter = m_Strings.begin();
 	while (iter != m_Strings.end())
 	{
-		(*iter)->SetColor(argbWhite);
+		(*iter)->SetColor(color);
 		iter++;
 	}
+	g_pDrawPrim->SetRGBA(&m_Poly, color);
 
 	// Draw the credit...
 
@@ -887,44 +986,50 @@ void CCredits::AddCredits()
 		default: sName = "CREDITS";
 	}
 
-	char* sBuf = GetTextBuffer(sName);
-	if (!sBuf) return;
+	// TRON: the text is UTF-16
+	std::wstring sBuf;
+	wchar_t* pBuf = (wchar_t*)GetTextBuffer(sName);
+	if (pBuf) sBuf = pBuf;
+
+	// Skip the byte order mark
+	std::wstring::iterator iter = sBuf.begin();
+	if (iter != sBuf.end()) iter++;
 
 
 	// Parse the credits text...
 
-	char sCredit[1024];
-	int  i = 0;
+	std::wstring sCredit;
 
-	while (*sBuf)
+	while (iter != sBuf.end())
 	{
 
-		if (*sBuf == '#' && *(sBuf+1) == '#')
+		if (*iter == '#' && *(iter+1) == '#')
 		{
-			sCredit[i] = '\0';
+			// RETAIL: the terminator is added before the check, so ">END"
+			// never matches (docs/RETAIL_BUGS.md)
+			sCredit.push_back(L'\0');
 
-			if (strncmp(sCredit, ">END", 4) == 0)	// end?
+			if (sCredit == L">END")	// end?
 			{
 				return;
 			}
 
 			AddCredit(sCredit);
-			i = 0;
+			sCredit.clear();
 
-			sBuf+=2;
+			iter+=2;
 
-			while (*sBuf != '\0' && ((*sBuf == '\n') || (*sBuf == '\r'))) sBuf++;
+			while (*iter != '\0' && ((*iter == '\n') || (*iter == '\r'))) iter++;
 		}
 		else
 		{
-			memcpy(&sCredit[i], sBuf, 1);
-			i++;
-			sBuf++;
+			sCredit.push_back(*iter);
+			iter++;
 		}
 	}
 }
 
-void CCredits::AddCredit(char* sText)
+void CCredits::AddCredit(const std::wstring& sText)
 {
 	// Sanity checks...
 

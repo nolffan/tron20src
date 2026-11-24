@@ -58,7 +58,8 @@ public:
 	CCredit() { Clear(); }
 	~CCredit() { Term(); }
 
-	LTBOOL				Init( char* sBuf);
+	// TRON: the text is wide (the TEXT resources are UTF-16)
+	LTBOOL				Init(const std::wstring& sBuf);
 	void				Term();
 	void				Clear();
 
@@ -78,7 +79,7 @@ public:
 
 
 private:
-	LTBOOL				AddString(char* sString);
+	LTBOOL				AddString(const std::wstring& sString);
 	void				FormatStrings();
 
 private:
@@ -96,6 +97,13 @@ private:
 	CUI_ALIGNMENTTYPE	m_hAlign;
 
 	LTBOOL				m_bBig;
+
+	// TRON: a credit can show an image (">IMAGE:"), centred on the screen
+	// (RETAIL: CShell.dll 0x10145c5a, 0x101461a0, 0x10146010). The names
+	// are ours.
+	char				m_szImage[128];		// +0x38
+	HTEXTURE			m_hImage;			// +0xb8
+	LT_POLYFT4			m_Poly;				// +0xbc
 
 };
 
@@ -125,7 +133,7 @@ public:
 
 	void				HandleInput(int vkey);
 
-	void				AddCredit(char* sText);
+	void				AddCredit(const std::wstring& sText);
 
 	void				Update();
 
