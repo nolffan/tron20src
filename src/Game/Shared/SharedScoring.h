@@ -159,9 +159,6 @@ public:
 	int16	GetTronUnknownC() { return m_nTronUnknownC; }
 	int16	GetTronUnknownE() { return m_nTronUnknownE; }
 	int16	GetTronUnknown12() { return m_nTronUnknown12; }
-	// RETAIL: unsigned: the callers that test it (Object 0x1004b13e,
-	// 0x1004bf8b) keep the sar of the size, which VC6 gives for "> 0" or
-	// "<= 0" of a uint32, not for "!= 0" (nor for an int's "> 0")
 	uint32	GetNumClients() { return m_Clients.size(); }
 
 private:

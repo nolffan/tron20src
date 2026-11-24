@@ -1405,6 +1405,8 @@ void CDiscMatchMgr::OnClientRemoved(HCLIENT hClient)
 		g_pTronTeamMgr->RemoveClient(g_pLTServer->GetClientID(hClient));
 	}
 
+	// RETAIL: 0x1004b13e: the sar of the client count stays, which VC6
+	// gives for "<= 0" or "> 0" of the uint32, not for "== 0" or "!= 0"
 	if (m_nGameType == eGameTypeDiscArena && nTeam >= 0 && nTeam < TRON_MAX_TEAMS &&
 		g_pTronTeamMgr->GetTeam(nTeam, false)->GetNumClients() <= 0)
 	{
