@@ -475,7 +475,11 @@ LTBOOL ArchiveBin::InitialUpdate()
 	g_pCommonLT->GetModelAnimUserDims(m_hObject, &vDims, g_pLTServer->GetModelAnimation(m_hObject));
 	g_pPhysicsLT->SetObjectDims(m_hObject, &vDims, 0);
 
-	g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, (GetNumItems() > 0) ? USRFLG_CAN_ACTIVATE : 0, USRFLG_CAN_ACTIVATE);
+	// RETAIL: one call per case (0x1000dd2a)
+	if (!GetNumItems())
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, 0, USRFLG_CAN_ACTIVATE);
+	else
+		g_pCommonLT->SetObjectFlags(m_hObject, OFT_User, USRFLG_CAN_ACTIVATE, USRFLG_CAN_ACTIVATE);
 	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, FLAG_VISIBLE, FLAG_VISIBLE);
 
 	SET_OBJECT_PSETS_USER_FLAGS(m_hObject, m_nPSets);
