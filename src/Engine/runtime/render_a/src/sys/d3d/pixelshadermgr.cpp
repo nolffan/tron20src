@@ -32,7 +32,8 @@
 //
 // RETAIL: Tron's is this manager on Direct3D 9, the shader an
 // IDirect3DPixelShader9 released where Direct3D 8 deleted a handle
-// (Lithtech.exe 0x512fc0..0x51359e).
+// (Lithtech.exe 0x512fc0..0x51359e). Tron's destructor and
+// ReleasePixelShader call FreeShader; they do not inline it.
 //------------------------------------------------------------------
 
 #include "precompile.h"
@@ -291,10 +292,17 @@ void CPixelShaderMgr::FreeShader(uint32 nShader)
 	if(!m_PixelShaders[nShader])
 		return;
 
-	if(m_PixelShaders[nShader]->m_bCreated && m_PixelShaders[nShader]->m_hShader)
+	// RETAIL: two tests, not one: Lithtech.exe calls FreeShader (0x513520)
+	// from the destructor (0x512fc0) and ReleasePixelShader (0x5134f0); a
+	// single `&&` test makes the function small enough for VC6 to inline it
+	// into both (PLAN.md 4c, the inline budget)
+	if(m_PixelShaders[nShader]->m_bCreated)
 	{
-		m_PixelShaders[nShader]->m_hShader->Release();
-		m_PixelShaders[nShader]->m_hShader = NULL;
+		if(m_PixelShaders[nShader]->m_hShader)
+		{
+			m_PixelShaders[nShader]->m_hShader->Release();
+			m_PixelShaders[nShader]->m_hShader = NULL;
+		}
 	}
 
 	delete m_PixelShaders[nShader];

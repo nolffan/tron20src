@@ -235,7 +235,9 @@ void CAIGoalSpecialDamage::RestoreAwareness()
 	m_pAI->ResetBaseSenseFlags();
 
 	// Clear AIs damage flags
-	m_pAI->SetDamageFlags( 0 );
+	// RETAIL: Tron's clears the instant damage flags (0x10190668 ->
+	// 0x1008d5c0); Tron has no CCharacter::SetDamageFlags
+	m_pAI->SetInstantDamageFlags( 0 );
 
 	// Ensure AI is visible to enemies.
 			
