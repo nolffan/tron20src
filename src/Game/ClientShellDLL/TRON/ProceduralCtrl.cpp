@@ -165,11 +165,13 @@ LTBOOL COptimizerCtrl::OnMouseMove(int x, int y, PlayerSubroutine * pCursorSub)
 		{
 			if (m_bCanAccept)
 				m_Optimizer.PlayAnim("excitedloop", true, false);
+			return LTTRUE;
 		}
 		else if (!m_bHot && bWasHot)
 		{
 			if (m_bCanAccept)
 				m_Optimizer.PlayAnim("excitedloop_menu", true, false);
+			return LTTRUE;
 		}
 		else if (m_bCanAccept)
 		{
