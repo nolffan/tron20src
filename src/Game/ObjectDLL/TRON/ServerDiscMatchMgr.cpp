@@ -796,7 +796,7 @@ void CDiscMatchMgr::Reset(int nMaxTeamSize)
 	g_pTronTeamMgr->SetupTeams((nMaxTeamSize < m_nTronUnknown3A) ? nMaxTeamSize : m_nTronUnknown3A, m_nTronUnknown39);
 	g_pTronTeamMgr->ResetScores();
 
-	m_Arenas.resize(4, LTNULL);
+	m_Arenas.resize(4);
 	for (int i = 0; i < 4; i++)
 	{
 		m_Arenas[i] = debug_new1(CDiscArena, i);
