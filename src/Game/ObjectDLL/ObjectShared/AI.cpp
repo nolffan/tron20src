@@ -1205,7 +1205,7 @@ inline void CAI::WriteTronAIInfo(ILTMessage_Write* pMsg)
 	pInfo->nArmorPoints = (uint16)GetArmorPoints();
 	pInfo->nMaxArmorPoints = (uint16)GetMaxArmorPoints();
 
-	pInfo->nGoalId = ( m_pGoalMgr && m_pGoalMgr->GetCurrentGoal() ) ? (uint16)m_pGoalMgr->GetCurrentGoal()->GetGoalId() : pInfo->nTronUnknown1C;
+	pInfo->nGoalId = ( m_pGoalMgr && m_pGoalMgr->GetCurrentGoal() ) ? (uint16)const_cast<CAIGoalAbstract*>( m_pGoalMgr->GetCurrentGoal() )->GetGoalId() : pInfo->nTronUnknown1C;
 	pInfo->nWeaponNameId = ( GetPrimaryWeapon() && GetPrimaryWeapon()->GetWeaponData() ) ? GetPrimaryWeapon()->GetWeaponData()->nNameId : pInfo->nTronUnknown1C;
 
 	// Each core dump item: its name id (or permission set)

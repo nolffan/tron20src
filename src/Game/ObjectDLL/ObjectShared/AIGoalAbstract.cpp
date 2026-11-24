@@ -720,7 +720,7 @@ bool CAIGoalAbstract::IsPathToNodeValid( AINode* pNode )
 //				(CAI sends it with its info, 0x1012a184). Name ours.
 //              
 //----------------------------------------------------------------------------
-uint32 CAIGoalAbstract::GetGoalId() const
+uint32 CAIGoalAbstract::GetGoalId()
 {
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
 	return pTemplate ? pTemplate->nGoalId : 0;
