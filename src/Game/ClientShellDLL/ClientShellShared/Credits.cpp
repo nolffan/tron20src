@@ -197,7 +197,7 @@ LTBOOL CCredit::AddString(const std::wstring& sString)
 		{
 			NarrowCopy(m_szImage, std::wstring(&sString.c_str()[7]), sizeof(m_szImage));
 			// RETAIL: this clears m_szImage[128], the low byte of m_hImage,
-			// one past the buffer (docs/RETAIL_BUGS.md)
+			// one past the buffer (a retail bug; not yet listed: the function is not identical)
 			((char*)m_szImage)[sizeof(m_szImage)] = '\0';
 			return(LTTRUE);
 		}
@@ -1006,7 +1006,7 @@ void CCredits::AddCredits()
 		if (*iter == '#' && *(iter+1) == '#')
 		{
 			// RETAIL: the terminator is added before the check, so ">END"
-			// never matches (docs/RETAIL_BUGS.md)
+			// never matches (a retail bug; not yet listed: the function is not identical)
 			sCredit.push_back(L'\0');
 
 			if (sCredit == L">END")	// end?

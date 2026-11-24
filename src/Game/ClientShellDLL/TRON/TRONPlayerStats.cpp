@@ -925,7 +925,7 @@ void CTronPlayerStats::UpdateObjectives(uint8 nThing, uint8 nType, uint32 dwId)
 		break;
 
 		// RETAIL: the clear and complete cases have each other's code
-		// (docs/RETAIL_BUGS.md)
+		// (a retail bug; not yet listed: the function is not identical)
 		case ITEM_CLEAR_ID:
 		{
 			m_Objectives.Remove(dwId);
