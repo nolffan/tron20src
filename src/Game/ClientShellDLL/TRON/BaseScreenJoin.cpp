@@ -415,14 +415,15 @@ bool CBaseScreenJoin::ParseAddress(const std::string &sAddress, char *pszIP, uin
 	{
 		*pnPort = kDefaultPort;
 		strcpy(pszIP,sAddress.c_str());
+		return true;
 	}
-	else
-	{
-		strcpy(pszIP,sAddress.substr(0,nPos).c_str());
-		*pnPort = (uint16)atoi(sAddress.substr(nPos+1).c_str());
-		if (*pnPort < 1024 || *pnPort > 0xBFFF)
-			*pnPort = kDefaultPort;
-	}
+
+	// NEAR: retail calls allocator::deallocate for the second substr (it
+	// spent about 8 dead-code probe units more inline budget before it)
+	strcpy(pszIP,sAddress.substr(0,nPos).c_str());
+	*pnPort = (uint16)atoi(sAddress.substr(nPos+1).c_str());
+	if (*pnPort < 1024 || *pnPort > 0xBFFF)
+		*pnPort = kDefaultPort;
 
 	return true;
 }
