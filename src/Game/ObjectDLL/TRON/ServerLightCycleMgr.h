@@ -16,7 +16,7 @@
 #ifndef __SERVER_LIGHT_CYCLE_MGR_H__
 #define __SERVER_LIGHT_CYCLE_MGR_H__
 
-#include "LightCycleMgr.h"
+#include "../../Shared/TRON/LightCycleMgr.h"
 #include <list>
 #include <queue>
 

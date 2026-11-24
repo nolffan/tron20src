@@ -9,6 +9,7 @@
 // ----------------------------------------------------------------------- //
 
 #include "stdafx.h"
+#include "DebugLineSystem.h"	// RETAIL: its colours are this file's first statics (0x10001000)
 #include "AILightCycle.h"
 #include "ServerLightCycleMgr.h"
 #include "LightCyclePowerup.h"

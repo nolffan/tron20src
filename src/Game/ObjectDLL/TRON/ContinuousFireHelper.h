@@ -171,6 +171,10 @@ protected:
 
 	float	GetRange();							// RETAIL: 0x10194280 (name ours)
 	float	GetEnergyRate();					// RETAIL: 0x101942a0 (name ours)
+
+	// RETAIL: GetRange stays protected (?GetRange@CEnergyClawFireHelper@@IAEMXZ),
+	// but CAIGoalSpecialDamage::HandleDamage calls it (0x10191017).
+	friend class CAIGoalSpecialDamage;
 };
 
 #endif //_ContinuousFireHelper_h_INCLUDED_

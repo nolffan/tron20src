@@ -47,6 +47,7 @@
 #include "Weapon.h"
 #include "PlayerObj.h"
 #include "InventoryButeMgr.h"
+#include "../TRON/ServerSubroutineMgr.h"
 #include "KeyMgr.h"
 #include "SharedFXStructs.h"
 #include "TeleportPoint.h"
@@ -3932,7 +3933,7 @@ bool CCharacter::ShouldGib()
 		DamageTypeToFlag( DT_DRUNKENDIMS ) | DamageTypeToFlag( DT_BALLLAUNCHER ) |
 		DamageTypeToFlag( DT_BALL ) | DamageTypeToFlag( DT_CLUSTER );
 
-	if( ( m_nDamageFlags & nGibFlags ) == 0 )
+	if( !( nGibFlags & m_nDamageFlags ) )
 		return false;
 
 	if( !IsDiscGameType() )
@@ -4768,13 +4769,15 @@ CAttachments* CCharacter::TransferAttachments( bool bRemove )
 	{
 		RemoveAggregate(pAtt);
         m_pAttachments = LTNULL;
-		return pAtt;
+	}
+	else
+	{
+		// If we are not removing our own attachments then we must create a new one.
+		// RETAIL: without a test of m_pAttachments (0x100936be)
+		pAtt = CAttachments::Create( pAtt->GetType() );
 	}
 
-	// If we are not removing our own attachments then we must create a new one.
-	// RETAIL: without a test of m_pAttachments (0x100936be)
-
-	return CAttachments::Create( pAtt->GetType() );
+	return pAtt;
 }
 
 // ----------------------------------------------------------------------- //
@@ -5585,6 +5588,10 @@ void CCharacter::SetDeflecting( float fDuration )
 
 LTRESULT CCharacterPlugin::PreHook_EditStringList(const char* szRezPath, const char* szPropName, char** aszStrings, uint32* pcStrings, const uint32 cMaxStrings, const uint32 cMaxStringLength)
 {
+	// RETAIL: Tron's (0x100943a0): the core dump items' lists. NOLF2's
+	// Item%dID lists are gone
+	char szNone[] = "<none>";
+
 	if (!s_bCharacterPluginInitted)
 	{
 		char szFile[256];
@@ -5595,24 +5602,115 @@ LTRESULT CCharacterPlugin::PreHook_EditStringList(const char* szRezPath, const c
 			s_InventoryButeMgr.Init(szFile);
 		}
 
+		if (g_pServerSubroutineMgr == LTNULL )
+		{
+			_snprintf(szFile, sizeof(szFile), "%s\\Attributes\\subroutines.txt", szRezPath);
+			szFile[sizeof(szFile) - 1] = '\0';
+			g_ServerSubroutineMgr.SetInRezFile(LTFALSE);
+			g_ServerSubroutineMgr.Init(szFile);
+		}
+
 		s_bCharacterPluginInitted = LTTRUE;
 	}
 
-	char buf[64];
-	for(int i=1;i<=CHARACTER_MAX_INVENTORY;i++)
+	if (strstr(szPropName, "Type"))
 	{
-		sprintf(buf,"Item%dID",i);
-		if(!_strcmpi(buf, szPropName))
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		for (int i = 0; i < s_nNumArchiveItemTypes; i++)
 		{
-			uint32 cItems = s_InventoryButeMgr.GetNumItems();
-			ASSERT(cMaxStrings >= cItems);
-			for(uint32 iItem=0;iItem<cItems;iItem++)
-			{
-				strcpy(aszStrings[(*pcStrings)++],s_InventoryButeMgr.GetItemName(iItem));
-			}
-	
-			return LT_OK;
+			strcpy(aszStrings[(*pcStrings)++], s_aszArchiveItemTypes[i]);
 		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "SubroutineName"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		uint32 nNum = g_pServerSubroutineMgr->GetNumSubroutines();
+		for (uint32 i = 0; i < nNum; i++)
+		{
+			strcpy(aszStrings[(*pcStrings)++], g_pServerSubroutineMgr->GetSubroutineName(i));
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "SubroutineBuild"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		for (int i = 0; i < s_nNumArchiveItemBuilds; i++)
+		{
+			strcpy(aszStrings[(*pcStrings)++], s_aszArchiveItemBuilds[i]);
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "SubroutineCondition"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		for (int i = 0; i < s_nNumArchiveItemConditions; i++)
+		{
+			strcpy(aszStrings[(*pcStrings)++], s_aszArchiveItemConditions[i]);
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "ProceduralName"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		uint32 nNum = g_pServerSubroutineMgr->GetNumProcedurals();
+		for (uint32 i = 0; i < nNum; i++)
+		{
+			strcpy(aszStrings[(*pcStrings)++], g_pServerSubroutineMgr->GetProceduralName(i));
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "PrimitiveName"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		uint32 nNum = g_pServerSubroutineMgr->GetNumPrimitives();
+		for (uint32 i = 0; i < nNum; i++)
+		{
+			strcpy(aszStrings[(*pcStrings)++], g_pServerSubroutineMgr->GetPrimitiveName(i));
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "EmailName"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		uint32 cEmails = g_pInventoryButeMgr->GetNumItems();
+		for (int iItem = 0; iItem < cEmails; iItem++)
+		{
+			if (g_pInventoryButeMgr->GetItemType(iItem) == 0)
+			{
+				strcpy(aszStrings[(*pcStrings)++], g_pInventoryButeMgr->GetItemName(iItem));
+			}
+		}
+
+		return LT_OK;
+	}
+	else if (strstr(szPropName, "HelpFile"))
+	{
+		strcpy(aszStrings[0], szNone);
+		*pcStrings = 1;
+		uint32 cHelpFiles = g_pInventoryButeMgr->GetNumItems();
+		for (int iItem = 0; iItem < cHelpFiles; iItem++)
+		{
+			if (g_pInventoryButeMgr->GetItemType(iItem) >= 2)
+			{
+				strcpy(aszStrings[(*pcStrings)++], g_pInventoryButeMgr->GetItemName(iItem));
+			}
+		}
+
+		return LT_OK;
 	}
 
 	return LT_UNSUPPORTED;

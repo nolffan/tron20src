@@ -133,8 +133,9 @@ struct WeaponFireInfo
 	{
 		for ( int i = 0; i < TRON_NUM_WEAPON_MODIFIERS; ++i )
 		{
-			aModifiers[i].bEnabled = false;
-			aModifiers[i].bTronUnknown1 = false;
+			TronWeaponModifierFlags* pFlags = &aModifiers[i];
+			pFlags->bEnabled = false;
+			pFlags->bTronUnknown1 = false;
 		}
 	}
 

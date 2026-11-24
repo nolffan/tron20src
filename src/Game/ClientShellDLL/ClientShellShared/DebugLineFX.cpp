@@ -77,7 +77,7 @@ LTBOOL CDebugLineFX::CreateObject(ILTClient* pClientDE)
 
 	m_pStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(L"debug"),0.0f, 0.0f);
 	m_pStr->SetColor(argbWhite);
-	m_pStr->SetAlignmentH(CUI_HALIGN_CENTER);
+	m_pStr->TronUnknownVirtual30(CUI_HALIGN_CENTER);	// RETAIL: slot +0x78, not SetAlignmentH
 
 	return LTTRUE;
 }

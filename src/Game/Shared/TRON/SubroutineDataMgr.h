@@ -287,7 +287,11 @@ protected:
 	SubroutineDataKey	m_Key;
 };
 
-typedef std::vector<int> SubDataAxis;
+// RETAIL: the axes are vectors of the enums (their destructors and
+// _Construct calls are those of a non-POD element, 0x100963f0)
+typedef std::vector<int> SubDataVersionAxis;
+typedef std::vector<SubDataState> SubDataStateAxis;
+typedef std::vector<SubDataDifficulty> SubDataDifficultyAxis;
 typedef std::map<CaselessString, uint16> SubNameIdMap;
 
 // RETAIL: the interface CSubroutineDataMgr derives from (RTTI
@@ -366,11 +370,11 @@ protected:
 		char szTag[128];
 		FindTag("Subroutine", "Name", szName, szTag, sizeof(szTag));
 
-		for (SubDataAxis::iterator itVersion = m_Versions.begin(); itVersion != m_Versions.end(); ++itVersion)
+		for (SubDataVersionAxis::iterator itVersion = m_Versions.begin(); itVersion != m_Versions.end(); ++itVersion)
 		{
-			for (SubDataAxis::iterator itState = m_States.begin(); itState != m_States.end(); ++itState)
+			for (SubDataStateAxis::iterator itState = m_States.begin(); itState != m_States.end(); ++itState)
 			{
-				for (SubDataAxis::iterator itDiff = m_Difficulties.begin(); itDiff != m_Difficulties.end(); ++itDiff)
+				for (SubDataDifficultyAxis::iterator itDiff = m_Difficulties.begin(); itDiff != m_Difficulties.end(); ++itDiff)
 				{
 					SubroutineDataKey key(*itVersion, *itState, *itDiff);
 					T data;
@@ -403,9 +407,9 @@ public:
 
 	CButeMgr*		m_pButeMgr;			// only valid during Init
 
-	SubDataAxis		m_Versions;
-	SubDataAxis		m_States;
-	SubDataAxis		m_Difficulties;
+	SubDataVersionAxis		m_Versions;
+	SubDataStateAxis		m_States;
+	SubDataDifficultyAxis	m_Difficulties;
 	int				m_nNumVersions;
 	int				m_nNumStates;
 	int				m_nNumDifficulties;

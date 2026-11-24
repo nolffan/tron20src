@@ -74,8 +74,15 @@ LTBOOL CClusterDisc::Setup( CWeapon const *pWeapon, WeaponFireInfo const &info )
 	// setup the base class
 	LTBOOL bResult = CDisc::Setup( pWeapon, info );
 
-	AMMO const *pAmmoData = m_pAmmoData;
-	CLUSTERDISCCLASSDATA *pClusterData = pAmmoData ? dynamic_cast< CLUSTERDISCCLASSDATA* >( pAmmoData->pProjectileFX->pClassData ) : LTNULL;
+	// RETAIL: without ammo data the class data is NULL (and used, see
+	// docs/RETAIL_BUGS.md)
+	CLUSTERDISCCLASSDATA *pClusterData = !m_pAmmoData ? LTNULL : dynamic_cast< CLUSTERDISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
+#ifdef TRON20SRC_MODERN
+	if ( !pClusterData )
+	{
+		return bResult;
+	}
+#endif
 
 	m_fExplosionSuppressTime = pClusterData->fInitialExplosionSuppressTime;
 	m_fFireTime = g_pLTServer->GetTime();

@@ -3147,7 +3147,7 @@ void CAIHumanStateUseObject::HandleDamage(const DamageStruct& damage)
 
 		if( damage.bTronUnknown44 )
 		{
-			SendTriggerMsgToObject(GetAI(), g_pLTServer->HandleToObject( GetAI()->m_hObject ), LTTRUE, "DESTROY");
+			SendTriggerMsgToObject(GetAI(), GetAI()->m_hObject, LTTRUE, "DESTROY");
 			return;
 		}
 
@@ -9525,11 +9525,7 @@ CAIHumanStateLongJump::~CAIHumanStateLongJump()
 {
 	AI_FACTORY_DELETE( m_pStrategyShoot );
 
-	if( GetAI()->GetAIMovement()->IsMovementLocked() )
-	{
-		GetAnimationContext()->SetAnimRate( 1.f );
-		GetAI()->GetAIMovement()->UnlockMovement();
-	}
+	// RETAIL: Tron's does not unlock the movement (0x101f4c20)
 
 	CountAttackers( LTFALSE );
 }
