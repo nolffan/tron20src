@@ -308,41 +308,14 @@ void CTargetMgr::Update()
 				m_nString = 0;
 				SAFE_STRCPY(m_szString,pCI->sName.c_str());
 
-				if (IsTeamGameType())
-				{
-					// PORT: Tron's CLIENT_INFO has no nTeamID; the team manager has it
-					m_nTargetTeam = (uint8)g_pInterfaceMgr->GetTeamMgr()->GetTeamOfClient(pCI->nID);
-				}
+				// RETAIL: no team here (0x1016dd75)
 			}
 			return;
 		}
 	
 		// All we care about if we're dead or on a vehicle is the Multiplayer check above...
 
-		if (!bPlayersOnly)
-		{
-			if( (fDistAway <= g_vtTargetDistance.GetFloat()) && pFX )
-			{
-				// If a nameid was specified for the model display the name...
-
-				uint16 nNameId = g_pModelButeMgr->GetModelNameId( pFX->m_cs.eModelId );
-				if( nNameId != (uint16)-1 )
-				{
-					if( nNameId > 0 )
-					{
-						SetTargetStringID( nNameId );
-						return;
-					}
-
-					// warn the player if we are pointing at a friend...
-					if( pFX->m_cs.eCrosshairCharacterClass != BAD )
-					{
-						SetTargetStringID( IDS_TARGET_INNOCENT );
-						return;
-					}
-				}
-			}
-		}
+		// RETAIL: no model name here (0x1016dda3: on to the search check)
 	}
 
 	// All we care about if we're dead or on a vehicle is the above Multiplayer check...

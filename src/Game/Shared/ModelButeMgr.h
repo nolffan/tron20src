@@ -118,7 +118,10 @@ class CModelButeMgr : public CGameButeMgr
 
 		int				GetNumModels() { return m_cModels; }
 		ModelId			GetModelId(const char *szName);
+#ifndef _CLIENTBUILD
+		// RETAIL: server only (CShell.dll has no copy)
 		const char*		GetModelName(ModelId eModelId);
+#endif
 		const char*		GetModelSoundTemplate(ModelId eModelId);
 		const char*		GetModelAnimationMgr(ModelId eModelId);
 		const char*		GetModelAIName(ModelId eModelId);
@@ -142,7 +145,10 @@ class CModelButeMgr : public CGameButeMgr
 		const char*		GetModelQuietMovementSnd(ModelId eModelId);
 		// RETAIL: Tron's models have a range of name ids; each call gives
 		// the next id of the range (Object.lto 0x100c5ec0).
+#ifndef _CLIENTBUILD
+		// RETAIL: server only (CShell.dll has no copy)
 		uint16			GetModelNameId(ModelId eModelId);
+#endif
 		// RETAIL: Tron's (the name is ours; Object.lto 0x100c60c0)
 		void			ResetModelNameIds(uint32 nSeed);
 		const char*		GetModelPlayerPainSndDir(ModelId eModelId);
@@ -289,6 +295,9 @@ class CModelButeMgr : public CGameButeMgr
 		ModelId			GetDMModel(int num);
 		int				GetNumTeamModels() { return m_cMPModels; }
 		ModelId			GetTeamModel(int num);
+		// PORT: NOLF2's; Tron has no definition and no caller. The declaration
+		// stays: without it, VC6 gives CSoundButeMgr's destructor (Object.lto
+		// 0x101b7e20) other stack slots.
 		int				GetTeamDefaultModel(int nTeam);
 
 

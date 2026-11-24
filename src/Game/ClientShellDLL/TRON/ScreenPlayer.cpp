@@ -275,11 +275,12 @@ void CScreenPlayer::OnFocus(LTBOOL bFocus)
 		WriteConsoleInt("DynamicLight",1);
 
 		int n;
-		for (n = 0; n < g_pModelButeMgr->GetNumTeamModels(); n++)
+		// RETAIL: the multiplayer models' multiplayer files (0x1007349f)
+		for (n = 0; n < g_pModelButeMgr->GetNumMPModels(); n++)
 		{
-			ModelId id = (ModelId)g_pModelButeMgr->GetTeamDefaultModel(n);
+			ModelId id = g_pModelButeMgr->GetMPModel(n)->m_eModelId;
 			HMODELDB dummy = NULL;
-			g_pILTModelClient->CacheModelDB(g_pModelButeMgr->GetModelFilename(id),dummy);
+			g_pILTModelClient->CacheModelDB(g_pModelButeMgr->GetMultiModelFilename(id),dummy);
 		}
 
 		m_sPlayerName = pProfile->m_sPlayerName;
@@ -318,10 +319,10 @@ void CScreenPlayer::OnFocus(LTBOOL bFocus)
 		pProfile->ApplyMultiplayer();
 
 		int n;
-		for (n = 0; n < g_pModelButeMgr->GetNumTeamModels(); n++)
+		for (n = 0; n < g_pModelButeMgr->GetNumMPModels(); n++)
 		{
-			ModelId id = (ModelId)g_pModelButeMgr->GetTeamDefaultModel(n);
-			g_pILTModelClient->UncacheModelDB(g_pModelButeMgr->GetModelFilename(id));
+			ModelId id = g_pModelButeMgr->GetMPModel(n)->m_eModelId;
+			g_pILTModelClient->UncacheModelDB(g_pModelButeMgr->GetMultiModelFilename(id));
 		}
 
 		if (bInMPGame)

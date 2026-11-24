@@ -919,6 +919,8 @@ ModelId CModelButeMgr::GetModelId(const char *szName)
 	return eModelIdInvalid;
 }
 
+#ifndef _CLIENTBUILD
+// RETAIL: server only (CShell.dll has no copy)
 const char* CModelButeMgr::GetModelName(ModelId eModelId)
 {
 	if(eModelId >= 0 && eModelId < m_cModels)
@@ -929,6 +931,7 @@ const char* CModelButeMgr::GetModelName(ModelId eModelId)
 	_ASSERT( !"CModelButeMgr::GetModelName: Invalid ModelId" );
 	return LTNULL;
 }
+#endif // _CLIENTBUILD
 
 const char* CModelButeMgr::GetModelSoundTemplate(ModelId eModelId)
 {
@@ -1132,6 +1135,7 @@ const char* CModelButeMgr::GetModelQuietMovementSnd( ModelId eModelId )
 	return LTNULL;
 }
 
+#ifndef _CLIENTBUILD
 // RETAIL: Object.lto 0x100c5ec0: the next id of the model's range.
 uint16 CModelButeMgr::GetModelNameId( ModelId eModelId )
 {
@@ -1154,6 +1158,7 @@ uint16 CModelButeMgr::GetModelNameId( ModelId eModelId )
 	_ASSERT( !"CModelButeMgr::GetModelNameId: Invalid ModelId" );
 	return 0;
 }
+#endif // _CLIENTBUILD
 
 // RETAIL: Object.lto 0x100c60c0: start every range at an offset from the
 // seed.
@@ -2044,17 +2049,6 @@ ModelId CModelButeMgr::GetTeamModel(int num)
 {
 	const MPModel* pModel = GetMPModel(num);
 	return pModel ? pModel->m_eModelId : eModelIdInvalid;
-}
-
-// PORT: Tron has no team default models: a team takes the multiplayer
-// model of its index.
-int CModelButeMgr::GetTeamDefaultModel(int nTeam)
-{
-	if (nTeam >= m_cMPModels)
-	{
-		nTeam = 0;
-	}
-	return nTeam;
 }
 
 // ----------------------------------------------------------------------- //

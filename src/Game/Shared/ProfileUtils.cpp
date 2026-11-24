@@ -1077,7 +1077,7 @@ bool TeamDMGameOptions::LoadFromBute( CButeMgr& bute )
 		int defModel = i;
 		sprintf( szTemp, "Team %i", i+1 );
 #ifdef _CLIENTBUILD
-		defModel = g_pModelButeMgr->GetTeamDefaultModel(i);
+		// PORT: Tron has no team default models: a team keeps its index
 		LoadString(nDefTeamID[i],szTemp,sizeof(szTemp));
 #endif
 
@@ -1263,7 +1263,7 @@ bool DoomsdayGameOptions::LoadFromBute( CButeMgr& bute )
 		int defModel = i;
 		sprintf( szTemp, "Team %i", i+1 );
 #ifdef _CLIENTBUILD
-		defModel = g_pModelButeMgr->GetTeamDefaultModel(i);
+		// PORT: Tron has no team default models: a team keeps its index
 		LoadString(nDefTeamID[i],szTemp,sizeof(szTemp));
 #endif
 
