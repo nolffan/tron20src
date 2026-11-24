@@ -783,6 +783,13 @@ CPlayerObj::CPlayerObj()
 	m_ePlayerLean			= PL_CENTER;
 
 	m_dwFlags			   |= FLAG_FORCECLIENTUPDATE | FLAG_YROTATION;
+
+	// RETAIL: 0x1007722e. Light cycle players send full positions.
+	if( IsMultiplayerGame() && GetGameType() == eGameTypeMultiplayerLightcycles )
+	{
+		m_dwFlags |= FLAG_FULLPOSITIONRES;
+	}
+
 	m_dwFlags				&= ~FLAG_GRAVITY; // This is controlled by the client.
 
     m_pPlayerAttachments    = LTNULL;
@@ -1171,7 +1178,10 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_CancelLure("CANCELLURE");
 	static CParsedMsg::CToken s_cTok_Overlay("Overlay");
 	static CParsedMsg::CToken s_cTok_WakeUp("WakeUp");
-	static CParsedMsg::CToken s_cTok_DropBody( "DropBody" );
+	static CParsedMsg::CToken s_cTok_FullEnergy("FULLENERGY");
+	static CParsedMsg::CToken s_cTok_SetHitPoints("SetHitPoints");
+	static CParsedMsg::CToken s_cTok_SetEnergy("SetEnergy");
+	static CParsedMsg::CToken s_cTok_DestroyProjectile("DestroyProjectile");
 
 
 	// Default to not finding the trigger.
@@ -1236,6 +1246,19 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	else if ((cMsg.GetArg(0) == s_cTok_LockMusic) || (cMsg.GetArg(0) == s_cTok_LockMood))
 	{
         g_pMusicMgr->LockMood();
+	}
+	else if (cMsg.GetArg(0) == s_cTok_FullEnergy)
+	{
+		// RETAIL: 0x10078b5c. Not on mission 10, level 0 of the campaign.
+		if (g_pServerMissionMgr && (g_pServerMissionMgr->IsCustomLevel() ||
+			g_pServerMissionMgr->GetCurrentMission() != 10 || g_pServerMissionMgr->GetCurrentLevel() != 0))
+		{
+			if (!m_damage.IsDead())
+			{
+				m_damage.SetEnergy(m_damage.GetMaxEnergy());
+			}
+		}
+		bRet = true;
 	}
 	else if( cMsg.GetArg(0) == s_cTok_SetMood && cMsg.GetArgCount( ) == 2 )
 	{
@@ -1345,7 +1368,7 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if (cMsg.GetArg(0) == s_cTok_ResetInventory)
 	{
-		ResetInventory(LTFALSE);
+		ResetInventory(LTFALSE, LTTRUE);
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_AcquireWeapon)
@@ -1358,7 +1381,7 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			strcat(buf, cMsg.GetArg(i+1));
 		}
 
-		AcquireWeapon(buf);
+		AcquireWeapon(buf, true);
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_AcquireAmmo)
@@ -1407,7 +1430,12 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	}
 	else if (cMsg.GetArg(0) == s_cTok_FullHealth)
 	{
-		HealCheat();
+		// RETAIL: 0x100796bf. Not on mission 10, level 0 of the campaign.
+		if (g_pServerMissionMgr && (g_pServerMissionMgr->IsCustomLevel() ||
+			g_pServerMissionMgr->GetCurrentMission() != 10 || g_pServerMissionMgr->GetCurrentLevel() != 0))
+		{
+			HealCheat();
+		}
 		bRet = true;
 	}
 	else if (cMsg.GetArg(0) == s_cTok_Dismount)
@@ -1433,9 +1461,33 @@ bool CPlayerObj::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			m_damage.ClearProgressiveDamage( DT_SLEEPING );
 		}
 	}
-	else if( cMsg.GetArg(0) == s_cTok_DropBody )
+	else if (cMsg.GetArg(0) == s_cTok_SetHitPoints)
 	{
-		DropCarriedObject();
+		// RETAIL: 0x10079850
+		LTFLOAT fHitPoints = (LTFLOAT)atof(cMsg.GetArg(1));
+		if (fHitPoints < 1.0)
+		{
+			g_pLTServer->CPrint("Warning: Cannot set hit points to 0.0, minimal acceptable value is 1.0");
+			g_pLTServer->CPrint("         Ignoring trigger \"SetHitPoints\"");
+			return false;
+		}
+
+		m_damage.SetHitPoints(LTCLAMP(fHitPoints, 1.0f, m_damage.GetMaxHitPoints()));
+	}
+	else if (cMsg.GetArg(0) == s_cTok_SetEnergy)
+	{
+		// RETAIL: 0x1007994b. Retail clamps the energy to the maximum hit
+		// points, not to the maximum energy (see RETAIL_BUGS.md).
+		LTFLOAT fEnergy = (LTFLOAT)atof(cMsg.GetArg(1));
+#ifdef TRON20SRC_MODERN
+		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxEnergy()));
+#else
+		m_damage.SetEnergy(LTCLAMP(fEnergy, 0.0f, m_damage.GetMaxHitPoints()));
+#endif // TRON20SRC_MODERN
+	}
+	else if (cMsg.GetArg(0) == s_cTok_DestroyProjectile)
+	{
+		RemoveProjectiles();
 	}
 	// RETAIL: no "Score" command in Tron (no such string in retail; Tron's
 	// CPlayerScore has no bonus to add)
@@ -1471,10 +1523,10 @@ bool CPlayerObj::FilterDamage( DamageStruct *pDamageStruct )
 {
 	// RETAIL: Tron's friendly fire test is for the disc games' team mates
 	// only (0x10079d20).
-	bool bTeamMate = false;
-
 	//Stamina skill reduces duration of progressive damage in a single player game
 	pDamageStruct->fDuration *= g_pSkillsButeMgr->GetStamina(GetPlayerSkills()->GetLevel(SKL_STAMINA))->fModifier[StaminaModifiers::eResistance];
+
+	bool bTeamMate = false;
 
 	if( IsDiscGameType( ) && IsPlayer( pDamageStruct->hDamager ) && ( g_vtNetFriendlyFire.GetFloat( ) < 1.0f ))
 	{
@@ -2268,10 +2320,29 @@ void CPlayerObj::UpdateCommands()
 {
 	if (!GetClient( ) ) return;
 
+	// RETAIL: Tron's (0x1007bc40): the weapon comes first, the fire postures
+	// know the disc games' block, and the direction takes the diagonals.
+
 	if ( m_bAllowInput && !m_bChatting )
 	{
+		// Weapon
+
+		CAnimatorPlayer::Weapon eWeapon = CAnimatorPlayer::ePistol;
+
+		CWeapon* pWeapon = m_pAttachments ? ((CPlayerAttachments*)m_pAttachments)->GetWeapon() : LTNULL;
+		if ( pWeapon )
+		{
+			WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon(pWeapon->GetId());
+			if (pWeaponData)
+			{
+				eWeapon = (CAnimatorPlayer::Weapon)pWeaponData->nAniType;
+			}
+		}
+
+		m_Animator.SetWeapon(eWeapon);
+
 		// Posture
-		if (IsCarryingHeavyObject())
+		if (IsCarrying())
 		{
 			m_Animator.SetPosture(CAnimatorPlayer::eCarry);
 		}
@@ -2309,10 +2380,33 @@ void CPlayerObj::UpdateCommands()
 			}
 		}
 
-		if (!IsCarryingHeavyObject() && WS_NONE == m_nWeaponStatus )
+		if (!IsCarrying() && WS_NONE == m_nWeaponStatus )
 		{
-			// RETAIL: Tron's checks all five fire postures (0x1007be2c)
-			if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
+			if ( IsDiscGameType() && eWeapon == CAnimatorPlayer::eRifle )
+			{
+				if ( IsDefending() )
+				{
+					m_Animator.SetPosture(CAnimatorPlayer::eBlock);
+				}
+				else if ( m_bTronUnknown2cd6 || m_Animator.IsAnimatingFire() )
+				{
+					ClearHiding();
+					m_bTronUnknown2cd6 = false;
+
+					CAnimatorPlayer::Posture ePosture = m_Animator.GetLastPosture();
+					if( m_Animator.IsAnimatingPostureDone( ePosture ) || ePosture == CAnimatorPlayer::eAim )
+					{
+						ePosture = static_cast<CAnimatorPlayer::Posture>(GetRandom( CAnimatorPlayer::eFire, CAnimatorPlayer::eFire5 ));
+					}
+					
+					m_Animator.SetPosture( ePosture );
+				}
+				else
+				{
+					m_Animator.SetPosture(CAnimatorPlayer::eAim);
+				}
+			}
+			else if ( ((GetControlFlags() & BC_CFLG_FIRING) != 0) || 
 				m_Animator.IsAnimatingFire() )
 			{
 				ClearHiding();
@@ -2324,27 +2418,15 @@ void CPlayerObj::UpdateCommands()
 				
 				m_Animator.SetPosture( ePosture );
 			}
+			else if ( IsDefending() )
+			{
+				m_Animator.SetPosture(CAnimatorPlayer::eBlock);
+			}
 			else
 			{
 				m_Animator.SetPosture(CAnimatorPlayer::eAim);
 			}
 		}
-
-		// Weapon
-
-		CAnimatorPlayer::Weapon eWeapon = CAnimatorPlayer::ePistol;
-
-		CWeapon* pWeapon = m_pAttachments ? ((CPlayerAttachments*)m_pAttachments)->GetWeapon() : LTNULL;
-		if ( pWeapon )
-		{
-			WEAPON const *pWeaponData = g_pWeaponMgr->GetWeapon(pWeapon->GetId());
-			if (pWeaponData)
-			{
-				eWeapon = (CAnimatorPlayer::Weapon)pWeaponData->nAniType;
-			}
-		}
-
-		m_Animator.SetWeapon(eWeapon);
 
 		// Movement and Direction
 
@@ -2392,7 +2474,7 @@ void CPlayerObj::UpdateCommands()
 
 			// Movement
 
-			if (!IsCarryingHeavyObject() && ((GetControlFlags() & BC_CFLG_RUN) != 0))
+			if (!IsCarrying() && ((GetControlFlags() & BC_CFLG_RUN) != 0))
 			{
 				m_Animator.SetMovement(CAnimatorPlayer::eRunning);
 			}
@@ -2403,7 +2485,7 @@ void CPlayerObj::UpdateCommands()
 
 			// Can only duck in certain situations...
 
-			if (!IsCarryingHeavyObject() && !m_bBodyOnLadder && !m_bSpectatorMode && !IsLiquid(m_eContainerCode) )
+			if (!IsCarrying() && !m_bBodyOnLadder && !m_bSpectatorMode && !IsLiquid(m_eContainerCode) )
 			{
 				if (((GetControlFlags() & BC_CFLG_DUCK) != 0) || m_bForceDuck)
 				{
@@ -2427,37 +2509,77 @@ void CPlayerObj::UpdateCommands()
 
 			// Direction
 
-			if ((GetControlFlags() & BC_CFLG_FORWARD) != 0)
+			uint32 dwControlFlags = GetControlFlags();
+			bool bForward = ((dwControlFlags & BC_CFLG_FORWARD) != 0);
+			bool bBackward = ((dwControlFlags & BC_CFLG_REVERSE) != 0);
+			bool bStrafeRight = ((dwControlFlags & BC_CFLG_STRAFE_RIGHT) != 0);
+			bool bStrafeLeft = ((dwControlFlags & BC_CFLG_STRAFE_LEFT) != 0);
+			bool bStrafe = ((dwControlFlags & BC_CFLG_STRAFE) != 0);
+
+			if (bStrafe && !bStrafeLeft && !bStrafeRight)
+			{
+				bStrafeRight = ((dwControlFlags & BC_CFLG_RIGHT) != 0);
+				bStrafeLeft = ((dwControlFlags & BC_CFLG_LEFT) != 0);
+			}
+
+			// Opposite controls cancel each other.
+
+			if (bForward && bBackward)
+			{
+				bBackward = false;
+				bForward = false;
+			}
+
+			if (bStrafeRight && bStrafeLeft)
+			{
+				bStrafeLeft = false;
+				bStrafeRight = false;
+			}
+
+			if (bForward)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eForward);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_REVERSE) != 0)
+			if (bBackward)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eBackward);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_STRAFE) != 0)
-			{
-				if ((GetControlFlags() & BC_CFLG_LEFT) != 0)
-				{
-					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeft);
-				}
-
-				if ((GetControlFlags() & BC_CFLG_RIGHT) != 0)
-				{
-					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRight);
-				}
-			}
-
-			if ((GetControlFlags() & BC_CFLG_STRAFE_RIGHT) != 0)
+			if (bStrafeRight)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eStrafeRight);
 			}
 
-			if ((GetControlFlags() & BC_CFLG_STRAFE_LEFT) != 0)
+			if (bStrafeLeft)
 			{
 				m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeft);
+			}
+
+			if (bStrafeRight)
+			{
+				if (bForward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRightForward);
+				}
+
+				if (bBackward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeRightBackward);
+				}
+			}
+
+			if (bStrafeLeft)
+			{
+				if (bForward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeftForward);
+				}
+
+				if (bBackward)
+				{
+					m_Animator.SetDirection(CAnimatorPlayer::eStrafeLeftBackward);
+				}
 			}
 
 			// Lean
@@ -2475,8 +2597,7 @@ void CPlayerObj::UpdateCommands()
         
 		}
 
-		if ( m_bBodyOnLadder && (m_Animator.GetLastMain() != CAnimatorPlayer::eDT_Sleeping) && 
-								(m_Animator.GetLastMain() != CAnimatorPlayer::eDT_Slippery))
+		if ( m_bBodyOnLadder )
 		{
 			if (((GetControlFlags() & BC_CFLG_FORWARD) != 0) || ((GetControlFlags() & BC_CFLG_JUMP) != 0))
 			{
@@ -2492,16 +2613,11 @@ void CPlayerObj::UpdateCommands()
 			}
 		}
 
+		if( GetDamageFlags( ) != 0 )
+		{
+			UpdateDamageAnimations();
+		}
 	}
-	
-	if( m_nDamageFlags != 0 )
-	{
-		if( UpdateDamageAnimations() )
-			return;
-	}
-
-	// PORT: no grief protection in Tron (above)
-
 }
 
 // ----------------------------------------------------------------------- //
@@ -3588,6 +3704,13 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 						 GameStartPoint* pStartPoint /*=LTNULL*/, GameBase* pSpawnAt /*=LTNULL*/)
 {
 	m_bRespawnCalled = LTTRUE;
+	m_pLastStartPoint = LTNULL;
+
+	// RETAIL: 0x1007da7f. Respawning ends god mode.
+	if( m_bGodMode )
+	{
+		ToggleGodMode();
+	}
 
     if ( !GetClient( ) )
 	{
@@ -3600,7 +3723,6 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	{
 		CAutoMessage cLoadMsg;
 		cLoadMsg.Writeuint8( MID_PLAYER_LOADCLIENT );
-		cLoadMsg.Writeuint32( g_pVersionMgr->GetCurrentSaveVersion( ) );	// PORT: no save version member in Tron
 		cLoadMsg.WriteMessage( m_pClientSaveData );
 		SetClientSaveData( NULL );
 		g_pLTServer->SendToClient(cLoadMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
@@ -3613,11 +3735,6 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// Respawning from a save game.  Load will do all the work.
 	if( m_dwLastLoadFlags == LOAD_RESTORE_GAME )
 	{
-		if (IsMultiplayerGame())
-		{
-			//our current skill set might be different than what's been saved...
-			ResetMultiplayerSkills();
-		}
 		return;
 	}
 	
@@ -3635,14 +3752,11 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		return;
 	}
 
-	// PORT: no team change requests in Tron (no member for one)
-
 	// When respawning within the same level we must clear out our weapons.  This
 	// flag will be zero after the first update.
 	bool bRespawningAfterDeath = ( m_dwLastLoadFlags == 0 );
 	if( bRespawningAfterDeath )
 	{
-		// RETAIL: 0x1007dba0 has no NOLF2 revivable body here.
 		if( m_pPlayerAttachments )
 			m_pPlayerAttachments->DeselectWeapon();
 		
@@ -3668,9 +3782,10 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 
 	ResetObjectRelationMgr();
 
-	// Get a start point...
+	// Get a start point...  RETAIL: only when the caller gives no place to
+	// spawn at (0x1007dc1b).
 
-	GameStartPoint* pStartPt = bGetStartPt ? g_pGameServerShell->FindStartPoint(this) : LTNULL;
+	GameStartPoint* pStartPt = (bGetStartPt && !pStartPoint && !pSpawnAt) ? g_pGameServerShell->FindStartPoint(this) : LTNULL;
 
     LTVector vPos(0, 0, 0);
 
@@ -3685,47 +3800,73 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		if (!IsMultiplayerGame())
 		{
 			m_eModelId = pStartPt->GetPlayerModelId();
-			m_eModelSkeleton = g_pModelButeMgr->GetModelSkeleton(m_eModelId);
 		}
 
-		SetPhysicsModel(pStartPt->GetPlayerPhysicsModel());
+		SetPhysicsModel(PPM_NORMAL);
+
+		pStartPt->SetInUse(true);
+		m_pLastStartPoint = pStartPt;
+	}
+	else if (pStartPoint)
+	{
+		g_pLTServer->GetObjectPos(pStartPoint->m_hObject, &vPos);
+	}
+	else if (pSpawnAt)
+	{
+		g_pLTServer->GetObjectPos(pSpawnAt->m_hObject, &vPos);
 	}
 	else
 	{
 		g_pLTServer->GetObjectPos( m_hObject, &vPos );
 	}
 
-	if (IsMultiplayerGame( ))
+	// RETAIL: no tele-frag in the light cycle game (0x1007dcd7).
+	if (IsMultiplayerGame( ) && GetGameType() != eGameTypeMultiplayerLightcycles)
 	{
 		TeleFragObjects(vPos);
 	}
 
 
-	if (pStartPt)
+	if (pStartPt || pStartPoint || pSpawnAt)
 	{
 		// Inform the client of the correct camera/player orientation...
 
-        LTVector vVec = pStartPt->GetPitchYawRoll();
+        LTVector vVec;
+
+		if (pStartPt)
+		{
+			vVec = pStartPt->GetPitchYawRoll();
+
+			// Get start point command string...
+
+			HSTRING hstrCommand = pStartPt->GetCommand();
+
+			if (hstrCommand)
+			{
+				m_sStartLevelCommand = g_pLTServer->GetStringData(hstrCommand);
+
+				if (IsMultiplayerGame() && pStartPt->SendCommandOnRespawn())
+				{
+					m_bSendStartLevelCommand = true;
+				}
+			}
+		}
+		else if (pStartPoint)
+		{
+			vVec = pStartPoint->GetPitchYawRoll();
+		}
+		else
+		{
+			// RETAIL: 0x1007dd0e reads a vector at offset 0x38 of the object
+			// to spawn at; the class is not known (the callers pass NULL).
+			vVec = LTVector( *reinterpret_cast<LTVector const*>( reinterpret_cast<uint8 const*>( pSpawnAt ) + 0x38 ));
+		}
 		
 		CAutoMessage cMsg;
 		cMsg.Writeuint8( MID_PLAYER_ORIENTATION );
 		cMsg.Writeuint8( MID_ORIENTATION_ALL );
 		cMsg.WriteLTVector( vVec );
 		g_pLTServer->SendToClient(cMsg.Read( ), GetClient( ), MESSAGE_GUARANTEED);
-
-		// Get start point command string...
-
-		HSTRING hstrCommand = pStartPt->GetCommand();
-
-		if (hstrCommand)
-		{
-            m_sStartLevelCommand = g_pLTServer->GetStringData(hstrCommand);
-
-			if (IsMultiplayerGame() && pStartPt->SendCommandOnRespawn())
-			{
-				m_bSendStartLevelCommand = true;
-			}
-		}
 	}
 
 	g_pLTServer->SetObjectPos(m_hObject, &vPos);
@@ -3733,15 +3874,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 
 	// Make sure we start on the ground...
 
-	MoveObjectToFloor(m_hObject);
-
-
-	// Play the respawn sound if multiplayer...
-
-	if (IsMultiplayerGame( ))
+	if (!pSpawnAt)
 	{
-		g_pServerSoundMgr->PlaySoundFromPos(vPos, PLAYER_RESPAWN_SOUND,
-			600.0f, SOUNDPRIORITY_MISC_HIGH);
+		MoveObjectToFloor(m_hObject);
 	}
 
 
@@ -3751,7 +3886,13 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	CreateSpecialFX(LTTRUE);
 
 
-	ResetPlayer();
+	// RETAIL: the disc and light cycle games keep the player as it is
+	// (0x1007deb4).
+	if (!IsDiscGameType() && GetGameType() != eGameTypeMultiplayerLightcycles)
+	{
+		ResetPlayer();
+	}
+
 	if (GetState() == PS_DEAD)
 	{
 		// Always make sure we respawn to the live state.
@@ -3760,7 +3901,11 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	}
 
 
-	if( !bRespawningAfterDeath )
+	if (IsDiscGameType())
+	{
+		TronUnknownVirtual130( pStartPoint, bRespawningAfterDeath );
+	}
+	else if( !bRespawningAfterDeath )
 	{
 		if( m_bNewMission )
 		{
@@ -3775,11 +3920,14 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// We are respawning within the same level.
 	else
 	{
-		ResetInventory();
+		ResetInventory(LTTRUE, LTFALSE);
 
 		// Get the mission and level defaults.
 		AcquireCurrentLevelDefaults();
+	}
 
+	if( bRespawningAfterDeath )
+	{
 		// Consider our client already loaded.
 		SetClientLoaded( true );
 	}
@@ -3795,6 +3943,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 	// For now, set the permission set to 0 (no permissions) till we have
 	// a method for setting it properly.
 	m_iPermissionSet = 0;
+
+	// RETAIL: 0x1007df63
+	RemoveBody();
 
 	// Tell clients we have been respawned...
 
@@ -7607,10 +7758,9 @@ void CPlayerObj::SetCarriedObject( HOBJECT hObject )
 }
 
 
-bool CPlayerObj::IsCarryingHeavyObject() 
-{
-	return ( IsCarrying() && (m_pcs->nCarrying == CFX_CARRY_BODY || m_pcs->nCarrying == CFX_CARRY_DD_CORE));
-}
+// RETAIL: no IsCarryingHeavyObject in Tron: the commands update asks
+// IsCarrying (0x1007bcb8).
+
 
 
 // ----------------------------------------------------------------------- //

@@ -265,7 +265,6 @@ class CPlayerObj : public CCharacter
 		void	SetCarriedObject(HOBJECT hBody);	// RETAIL: no transition argument in Tron
 		HOBJECT	GetCarriedObject() {return m_hCarriedObject;}
 		bool	IsCarrying() {return (GetCarriedObject() != LTNULL);}
-		bool	IsCarryingHeavyObject();
 		void	RemoveCarriedObject();
 		bool	DropCarriedObject( );	// RETAIL: no transition argument in Tron
 		// PORT: for NOLF2's callers that pass one

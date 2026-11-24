@@ -1452,6 +1452,19 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The "SetEnergy" trigger limits the energy to the maximum hit points
+
+Object.lto 0x1007994b (CPlayerObj::OnTrigger, ObjectDLL/ObjectShared/
+PlayerObj.cpp). The "SetEnergy" command reads a value and limits it to the
+range 0.0 to a maximum before it sets the player's energy. The retail code
+gets the maximum from CDestructible::GetMaxHitPoints (0x100e82c0), not from
+CDestructible::GetMaxEnergy (0x100e82f0). Thus the energy can be more than
+the maximum energy when the maximum hit points are more than the maximum
+energy, and less than the value that the command gives when they are less.
+
+Fixed in the modern build: the command limits the energy to the maximum
+energy.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
