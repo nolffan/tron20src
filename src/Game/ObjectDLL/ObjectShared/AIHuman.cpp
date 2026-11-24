@@ -47,6 +47,7 @@
 #include "SharedFXStructs.h"
 #include "ServerTrackedNodeContext.h"
 #include "RelationButeMgr.h"
+#include "TRON/CaselessString.h"
 
 LINKFROM_MODULE( AIHuman );
 
@@ -885,6 +886,11 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Smoke("SMOKE");
 	static CParsedMsg::CToken s_cTok_CineFire("CINEFIRE");
 	static CParsedMsg::CToken s_cTok_CopySense("COPYSENSE");
+	// RETAIL: Tron's (0x1016d731..0x1016d7cf)
+	static CParsedMsg::CToken s_cTok_AskIcon("ASKICON");
+	static CParsedMsg::CToken s_cTok_SayIcon("SAYICON");
+	static CParsedMsg::CToken s_cTok_ListenIcon("LISTENICON");
+	static CParsedMsg::CToken s_cTok_SetOnlyDamageByPlayer("SETONLYDAMAGEBYPLAYER");
 
 	// Let base class have a whack at it...
 
@@ -1040,6 +1046,12 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 		}
 		return true;
 	}
+	else if ( cMsg.GetArg(0) == s_cTok_SetOnlyDamageByPlayer )
+	{
+		// RETAIL: Tron's (0x1016dead). It does not return true, so the
+		// command is reported as not handled.
+		m_damage.SetTronUnknown6D0( IsTrueChar(*cMsg.GetArg(1)) );
+	}
 	else if ( cMsg.GetArg(0) == s_cTok_CineFire )
 	{
 		CWeapon* pWeapon = GetWeapon(0);
@@ -1062,12 +1074,63 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 					weaponFireInfo.vFlashPos	= m_vPos;
 					weaponFireInfo.fPerturbR	= 0.0f;
 					weaponFireInfo.fPerturbU	= 0.0f;
+					// RETAIL: Tron passes the shooter's relation data (0x1016e0f5)
+					weaponFireInfo.pRelationData = const_cast<RelationData*>( &GetRelationData() );
 
 					pWeapon->ReloadClip(LTFALSE);
 					pWeapon->GetParent()->AddAmmo(pWeapon->GetAmmoId(), 999999);
 					pWeapon->UpdateWeapon(weaponFireInfo, LTTRUE);
 				}
 			}
+		}
+
+		return true;
+	}
+	else if ( cMsg.GetArg(0) == s_cTok_AskIcon || cMsg.GetArg(0) == s_cTok_SayIcon || cMsg.GetArg(0) == s_cTok_ListenIcon )
+	{
+		// RETAIL: Tron's talk icons (0x1016e1c0): the icon's kind comes
+		// from the command's name, its string id from the third argument.
+		if ( IsTrueChar(*cMsg.GetArg(1)) )
+		{
+			if ( !HasListenIcon() )
+			{
+				CreateListenIcon();
+			}
+
+			if ( cMsg.GetArgCount() > 2 )
+			{
+				m_nTronUnknownCF8 = atoi( cMsg.GetArg(2) );
+			}
+			else
+			{
+				m_nTronUnknownCF8 = 0;
+			}
+
+			// RETAIL: the string's length is null checked inline, as a
+			// CaselessString's (not std::string's in our STLport)
+			CaselessString sCmd = _strupr( (char*)(const char*)cMsg.GetArg(0) );
+			if ( strstr( sCmd.c_str(), "LISTEN" ) )
+			{
+				m_nCarrying = 1;
+			}
+			else if ( strstr( sCmd.c_str(), "ASK" ) )
+			{
+				m_nCarrying = 2;
+			}
+			else if ( strstr( sCmd.c_str(), "SAY" ) )
+			{
+				m_nCarrying = 3;
+			}
+		}
+		else
+		{
+			if ( HasListenIcon() )
+			{
+				DestroyListenIcon();
+			}
+
+			m_nCarrying = 0;
+			m_nTronUnknownCF8 = 0;
 		}
 
 		return true;
