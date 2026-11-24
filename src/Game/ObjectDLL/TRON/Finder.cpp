@@ -994,11 +994,13 @@ bool Finder::UpdateClosed()
 
 bool Finder::UpdateFocusing()
 {
-	LTVector vPos, vEnemyPos;
+	LTVector vDir, vPos, vEnemyPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pLTServer->GetObjectPos(m_hLastDetectedEnemy, &vEnemyPos);
 
-	TurnTo((vEnemyPos - vPos).Unit());
+	vDir = vEnemyPos - vPos;
+	vDir.Normalize();
+	TurnTo(vDir);
 
 	return true;
 }
@@ -1019,11 +1021,13 @@ bool Finder::UpdateLocked()
 		m_pObjectRelationMgr->ResetRelationTime(pORM);
 	}
 
-	LTVector vPos, vEnemyPos;
+	LTVector vDir, vPos, vEnemyPos;
 	g_pLTServer->GetObjectPos(m_hObject, &vPos);
 	g_pLTServer->GetObjectPos(m_hLastDetectedEnemy, &vEnemyPos);
 
-	if (TurnTo((vEnemyPos - vPos).Unit()) < 1e-11f)
+	vDir = vEnemyPos - vPos;
+	vDir.Normalize();
+	if (TurnTo(vDir) < 1e-11f)
 	{
 		Fire();
 	}
