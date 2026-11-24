@@ -417,6 +417,21 @@ bool ClientMultiplayerMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 }
 
 
+// RETAIL: Tron keeps Build 51's key exchange (the "secret key" is this
+// pointer, the password the first four characters of the player's name)
+// with NOLF2's weapon and client shell CRCs, and no attribute file CRCs
+// (0x100e8dd0)
+
+// Global key used for cross-encryption  NOTE: MUST BE SAME AS ON SERVER!!
+#define KEY_MESSER_UPPER 0xDEADFACE
+
+inline uint32 MessUp32BitValue(uint32 nValue, uint32 nRot)
+{
+	// "Encrypt" the value (Yes, it's a very simple encryption...)
+	uint32 nXORShift = nRot & 0xF;
+	return ((KEY_MESSER_UPPER << nXORShift) + (KEY_MESSER_UPPER >> (32 - nXORShift))) ^ nValue;
+}
+
 bool ClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 {
 	int nHandshakeSub = (int)msg.Readuint8();
@@ -440,7 +455,7 @@ bool ClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 			cResponse.Writeuint8(MID_HANDSHAKE_HELLO);
 		    cResponse.Writeuint16(GAME_HANDSHAKE_VER);
 			// Send them our secret key
-			cResponse.Writeuint32( GAME_HANDSHAKE_PASSWORD );
+			cResponse.Writeuint32((uint32)this);
 			g_pLTClient->SendToServer(cResponse.Read(), MESSAGE_GUARANTEED);
 		}
 		break;
@@ -450,11 +465,6 @@ bool ClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 			m_nServerKey = msg.Readuint32();
 			bool   bNeedPassword = msg.Readbool();
 
-			uint32 nPassword = GAME_HANDSHAKE_PASSWORD;
-			uint32 nXORMask = GAME_HANDSHAKE_MASK;
-
-			nPassword ^= nXORMask;
-
 			// Game password.
 			uint32 nHashedPassword = 0;
 			if (bNeedPassword)
@@ -462,22 +472,24 @@ bool ClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 				nHashedPassword = m_nClientPass;
 			}
 
+			// Get the player name
+			char sName[255];
+			// (Make sure to clear out the first 4 characters, since that's all we care about)
+			sName[0] = sName[1] = sName[2] = sName[3] = 0;
+			SAFE_STRCPY(sName,g_pProfileMgr->GetCurrentProfile()->m_sPlayerName.c_str());
+
+			// Decrypt it
+			m_nServerKey ^= MessUp32BitValue((uint32)this, (uint32)(sName[0]));
+
+			// Encrypt "the string" with it
+			uint32 nPassword = *((uint32*)sName);
+			uint32 nXORMask = MessUp32BitValue(m_nServerKey, (uint32)(sName[0]));
+			nPassword ^= nXORMask;
+
 			// Get the weapons file CRC
 			uint32 nWeaponCRC = g_pWeaponMgr->GetFileCRC();
 			// Mask that up too
 			nWeaponCRC ^= nXORMask;
-
-			// CRC the modelbutes.txt
-			static uint32 nModelButesCRC = CRC32::CalcRezFileCRC( g_pModelButeMgr->GetAttributeFile( ));
-			uint32 nModelButesMaskedCRC = nModelButesCRC ^ nXORMask;
-
-			// CRC the surface.txt
-			static uint32 nSurfaceCRC = CRC32::CalcRezFileCRC( g_pSurfaceMgr->GetAttributeFile( ));
-			uint32 nSurfaceMaskedCRC = nSurfaceCRC ^ nXORMask;
-
-			// CRC the damagefx.txt
-			static uint32 nDamageFxCRC = CRC32::CalcRezFileCRC( "attributes\\damagefx.txt" );
-			uint32 nDamageFxMaskedCRC = nDamageFxCRC ^ nXORMask;
 
 			// Get the client shell file CRC
 			char aClientShellName[MAX_PATH + 1];
@@ -499,9 +511,6 @@ bool ClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 			cResponse.Writeuint32(nPassword);
 			cResponse.Writeuint32(nWeaponCRC);
 			cResponse.Writeuint32(nClientCRC);
-			cResponse.Writeuint32(nModelButesMaskedCRC);
-			cResponse.Writeuint32(nSurfaceMaskedCRC);
-			cResponse.Writeuint32(nDamageFxMaskedCRC);
 			cResponse.Writeuint32(nHashedPassword);
 			g_pLTClient->SendToServer(cResponse.Read(), MESSAGE_GUARANTEED);
 
