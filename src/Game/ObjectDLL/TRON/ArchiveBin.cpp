@@ -1214,30 +1214,25 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 			}
 
 			// Take down the first berry of the item's type
-			uint32 iBerry;
-			for (iBerry = 0; iBerry < AB_MAX_BERRIES; iBerry++)
+			for (uint32 iBerry = 0; iBerry < AB_MAX_BERRIES; iBerry++)
 			{
-				if (m_aBerries[iBerry].m_hObject && m_aBerries[iBerry].m_eItemType == m_aItems[nChoice].m_eType)
+				if (m_aBerries[iBerry].m_hObject && m_aItems[nChoice].m_eType == m_aBerries[iBerry].m_eItemType)
 				{
+					BerryRef& berry = m_aBerries[iBerry];
+
+					HATTACHMENT hAttachment;
+					g_pLTServer->FindAttachment(m_hObject, berry.m_hObject, &hAttachment);
+					g_pLTServer->RemoveAttachment(hAttachment);
+
+					if (berry.m_hObject)
+					{
+						g_pLTServer->RemoveObject(berry.m_hObject);
+						berry.m_hObject = LTNULL;
+					}
+
+					berry.m_eItemType = -1;
 					break;
 				}
-			}
-
-			if (iBerry < AB_MAX_BERRIES)
-			{
-				BerryRef& berry = m_aBerries[iBerry];
-
-				HATTACHMENT hAttachment;
-				g_pLTServer->FindAttachment(m_hObject, berry.m_hObject, &hAttachment);
-				g_pLTServer->RemoveAttachment(hAttachment);
-
-				if (berry.m_hObject)
-				{
-					g_pLTServer->RemoveObject(berry.m_hObject);
-					berry.m_hObject = LTNULL;
-				}
-
-				berry.m_eItemType = -1;
 			}
 
 			m_aItems[nChoice].Clear();
