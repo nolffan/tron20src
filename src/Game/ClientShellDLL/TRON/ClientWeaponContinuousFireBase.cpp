@@ -93,11 +93,10 @@ namespace
 
 // RETAIL: 0x10018590.  The fire animation keeps playing while the key is
 // down and the player has energy; the energy use is noted when it starts
-// and TronUnknown98B20 runs when the post-fire animation starts.  PORT:
-// before the first animation retail calls CTronClientWeapon's 0x10097f20
-// (a helper of four more Tron helpers), and it hands GetEnergyUse() to
-// CTronClientWeapon's 0x10098b10 (it sets +0x204) when the main fire
-// animation starts: neither is in our build.
+// and TronUnknown98B20 runs when the post-fire animation starts.  A new
+// fire keeps the shot's subroutines (SaveShotSubroutines) before its first
+// animation.  NEAR: retail keeps dwState in a register and the post-fire
+// animation on the stack, ours the reverse (tried "!= 0" for the "!!").
 bool CClientWeaponContinuousFireBase::PlayFireAnimation( bool bResetAni )
 {
 	uint32 dwAni			= g_pLTClient->GetModelAnimation( m_hObject );
@@ -127,19 +126,22 @@ bool CClientWeaponContinuousFireBase::PlayFireAnimation( bool bResetAni )
 
 		if ( INVALID_ANI != dwPreFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
 			return true;
 		}
 
 		if ( bHasFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwFireAni, true, 1.0f, false );
-			// PORT: 0x10098b10( GetEnergyUse() ) (see above)
+			SetTronUnknown204( GetEnergyUse() );
 			return true;
 		}
 
 		if ( bHasPostFireAni )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPostFireAni, true, 1.0f, false );
 			TronUnknown98B20();
 			return true;
@@ -166,7 +168,7 @@ bool CClientWeaponContinuousFireBase::PlayFireAnimation( bool bResetAni )
 		if ( bHasFireAni && bResetAni )
 		{
 			PlayAnimation( dwFireAni, true, 1.0f, false );
-			// PORT: 0x10098b10( GetEnergyUse() ) (see above)
+			SetTronUnknown204( GetEnergyUse() );
 			return true;
 		}
 
@@ -196,6 +198,7 @@ bool CClientWeaponContinuousFireBase::PlayFireAnimation( bool bResetAni )
 	{
 		if ( bResetAni && TronUnknownVirtual164() )
 		{
+			SaveShotSubroutines();
 			PlayAnimation( dwPreFireAni, true, 1.0f, false );
 			return true;
 		}
