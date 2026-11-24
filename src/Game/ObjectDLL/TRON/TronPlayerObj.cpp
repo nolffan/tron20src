@@ -782,20 +782,15 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 											  ILTMessage_Read *pMsg,
                                               WeaponFireInfo *pInfo )
 {
-	// 
+	// RETAIL: 0x10063390.  Tron reads extra data for the disc, the ball, the
+	// suffusion, the energy claw and the drunken dims; the other types
+	// (vector, projectile, ...) have none.  The cluster disc's client also
+	// writes its spread (CClientWeaponClusterDisc::AddExtraFireMessageInfo),
+	// but this reads none of it.
 	ASSERT( 0 != pInfo );
-
-	LTRESULT ltResult;
 
 	switch ( nWeaponType )
 	{
-		case MWEAPFIRE_VECTOR:
-		case MWEAPFIRE_PROJECTILE:
-		{
-			// no extra information needed
-		}
-		break;
-
 		case MWEAPFIRE_DISC:
 		{
 			// get the angle offset (from center) to fire disc
@@ -825,12 +820,6 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 				{
 					// get the first object point
 					pInfo->hObjectTarget = pMsg->ReadObject();
-				}
-				break;
-
-				case MPROJ_DISC_TRACKING_STEADY:
-				{
-					// nothing more needed
 				}
 				break;
 
@@ -864,16 +853,37 @@ void CTronPlayerObj::GetExtraFireMessageInfo( uint8 nWeaponType,
 		}
 		break;
 
-		default:
+		case MWEAPFIRE_BALL:
 		{
-			// An invalid weapon type was used, check
-			// the creation of the WeaponFireInfo
-			// struct, possibly the construction of the
-			// message itself.
-			ASSERT( 0 );
+			// RETAIL: 0x100634f0: the ball's velocity
+			pInfo->bOverrideVelocity = LTTRUE;
+			pInfo->fOverrideVelocity = pMsg->Readfloat();
 		}
 		break;
-	};
+
+		case MWEAPFIRE_SUFFUSION:
+		{
+			// RETAIL: 0x10063517
+			pInfo->fDamageMultiplier = pMsg->Readfloat() + 1.0f;
+			pInfo->nTronUnknown64 = pMsg->Readuint8();
+		}
+		break;
+
+		case MWEAPFIRE_ENERGYCLAW:
+		{
+			// RETAIL: 0x10063555: the claw's range
+			pInfo->bOverrideRange = LTTRUE;
+			pInfo->fOverrideRange = pMsg->Readfloat();
+		}
+		break;
+
+		case MWEAPFIRE_DRUNKENDIMS:
+		{
+			// RETAIL: 0x1006357a
+			pInfo->nTronUnknown64 = pMsg->Readuint8();
+		}
+		break;
+	}
 }
 
 

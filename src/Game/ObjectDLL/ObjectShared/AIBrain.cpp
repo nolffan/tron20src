@@ -513,11 +513,6 @@ LTFLOAT	CAIBrain::GetAttackFromVantageAttackTimeRandom() const
 //
 // ----------------------------------------------------------------------- //
 
-// RETAIL: the character FX message (35) and its attach FX command (2)
-// that Tron's clients read.  The names are ours
-#define CFX_TRON_ATTACHFX_MSG		35
-#define CFX_TRON_ATTACHFX_COMMAND	2
-
 void CAIBrain::ResetFiringTrails()
 {
 	if ( !m_pBrain->bDoFiringTrails )

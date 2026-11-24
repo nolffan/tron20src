@@ -94,7 +94,7 @@ protected:
 
 	// return the "type" identifier (1st part of a fire message)
 	// NOTE: currently the server handles VECTOR and PROJECTILE the same
-	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_DISC; }	// RETAIL: 0x10018160 returns 3 (kTronFire_Disc); our MsgIDs.h and server still say 2
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_DISC; }	// RETAIL: 0x10018160
 
 	// send a message to the server telling it a defense is starting
 	void          SendDefendMessage( uint8 cBlockMsgType, uint32 nAni ) const;

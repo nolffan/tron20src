@@ -196,7 +196,7 @@ class CCharacterFX : public CSpecialFX
 		void HandleDialogueMsg(ILTMessage_Read *pMsg);
 		void HandleTauntMsg(ILTMessage_Read *pMsg);
 		void HandleWeaponSoundLoopMsg(ILTMessage_Read *pMsg);
-		void HandlePitchMsg( ILTMessage_Read *pMsg );
+		void HandlePitch( uint8 ucPitch );	// RETAIL: 0x1017a2d0 (the name is ours)
 		void UpdatePitch( );
 		void KillWeaponLoopSound();
 

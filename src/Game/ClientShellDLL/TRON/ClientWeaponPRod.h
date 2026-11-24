@@ -25,7 +25,7 @@ public:
 
 protected:
 	// RETAIL: 0x10099460
-	virtual uint8 GetFireMessageType() const { return kTronFire_PRod; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_PROD; }
 };
 
 #endif //_ClientWeaponPRod_h_INCLUDED_

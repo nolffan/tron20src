@@ -27,7 +27,7 @@ public:
 
 protected:
 	// RETAIL: 0x1001a610
-	virtual uint8 GetFireMessageType() const { return kTronFire_EnergyClaw; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_ENERGYCLAW; }
 
 	virtual float GetEnergyUse();
 	virtual void  TronUnknownVirtual180();

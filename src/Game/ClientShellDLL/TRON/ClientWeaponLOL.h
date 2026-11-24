@@ -24,7 +24,7 @@ public:
 protected:
 
 	// RETAIL: 0x1001acd0
-	virtual uint8 GetFireMessageType() const { return kTronFire_LOL; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_LOL; }
 
 	virtual float GetEnergyUse();
 	// RETAIL: 0x1001ae80

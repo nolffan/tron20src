@@ -22,7 +22,7 @@ protected:
 	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );
 
 	// RETAIL: 0x1001a440
-	virtual uint8 GetFireMessageType() const { return kTronFire_DrunkenDims; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_DRUNKENDIMS; }
 
 	virtual float GetEnergyUse();
 };

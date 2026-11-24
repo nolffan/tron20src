@@ -31,7 +31,7 @@ protected:
 	virtual void  AddExtraFireMessageInfo( bool bFire, ILTMessage_Write *pMsg );
 
 	// RETAIL: 0x10017840
-	virtual uint8 GetFireMessageType() const { return kTronFire_Ball; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_BALL; }
 
 	// RETAIL: +0x208, the time the fire key went down (saved relative)
 	float         m_fFireKeyDownTime;

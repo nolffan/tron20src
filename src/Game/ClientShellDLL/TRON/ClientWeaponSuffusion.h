@@ -40,7 +40,7 @@ protected:
 	                               HOBJECT hObject );
 
 	// RETAIL: 0x1001bd20
-	virtual uint8 GetFireMessageType() const { return kTronFire_Suffusion; }
+	virtual uint8 GetFireMessageType() const { return MWEAPFIRE_SUFFUSION; }
 
 	virtual float GetEnergyUse();			// RETAIL: 0x1001c5a0
 	virtual bool  TronUnknownVirtual164();	// RETAIL: 0x1001c6d0

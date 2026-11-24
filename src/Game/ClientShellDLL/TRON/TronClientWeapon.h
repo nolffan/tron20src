@@ -20,22 +20,6 @@
 #include "ClientWeapon.h"
 #include "SubroutineDataMgr.h"
 
-// RETAIL: the fire message types Tron's weapons return from
-// GetFireMessageType (slot 70); the names are ours.  MWEAPFIRE_VECTOR (0)
-// and MWEAPFIRE_PROJECTILE (1) are as in MsgIDs.h; Tron's disc is 3.
-enum TronWeaponFireType
-{
-	kTronFire_Disc			= 3,	// RETAIL: 0x10018160
-	kTronFire_PRod			= 6,	// RETAIL: 0x10099460
-	kTronFire_Suffusion		= 7,	// RETAIL: 0x1001bd20
-	kTronFire_LOL			= 8,	// RETAIL: 0x1001acd0
-	kTronFire_Ball			= 9,	// RETAIL: 0x10017840
-	kTronFire_BallLauncher	= 10,	// RETAIL: 0x10017c30
-	kTronFire_DrunkenDims	= 11,	// RETAIL: 0x1001a440
-	kTronFire_EnergyClaw	= 13,	// RETAIL: 0x1001a610
-	kTronFire_Prankster		= 14,	// RETAIL: 0x1001b0d0
-};
-
 class CTronClientWeapon : public CClientWeapon
 {
 	// RETAIL: CTronPlayerStats::GetWeaponStatus (0x100ac430) calls slots 90/91

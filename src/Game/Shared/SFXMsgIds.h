@@ -99,6 +99,13 @@
 
 // CharacterFX messages...
 
+// RETAIL: Tron's values, from CCharacterFX::OnServerMessage's switch
+// (CShell.dll 0x10178c2b, table 0x101790b4) and the server's sends
+// (Object.lto: e.g. CPlayerObj::HandleDead 0x1007ed85 30, CPlayerObj's
+// Revive 0x1007e217 31 and Respawn 0x1007dfaf 32, CCharacter's listen icon
+// 0x1008dc29 33 and 0x1008dd39 34, CAIBrain 0x1018f5b7 35). Tron inserts
+// the instant damage flags at 13, so the messages after it are one higher
+// than NOLF2's. Tron's client has no case for 27, 29, 31 and 32.
 #define CFX_NODECONTROL_LIP_SYNC		2
 #define CFX_NODECONTROL_HEAD_FOLLOW_OBJ	3
 #define CFX_CINEMATICAI_MSG				4
@@ -110,8 +117,7 @@
 #define CFX_FLASHLIGHT_CREATE_MSG		10
 #define CFX_FLASHLIGHT_DESTROY_MSG		11
 #define CFX_DMGFLAGS_MSG				12
-// RETAIL: Tron sends the instant damage flags as 13 (CShell.dll 0x10178d22);
-// the messages after it are one higher than NOLF2's.
+#define	CFX_INSTANTDMGFLAGS_MSG			13
 #define CFX_CIGARETTE_CREATE_MSG		14
 #define CFX_CIGARETTE_DESTROY_MSG		15
 #define CFX_CIGARETTESMOKE_CREATE_MSG	16
@@ -131,12 +137,24 @@
 #define	CFX_PLAYER_DEAD					30
 #define CFX_PLAYER_REVIVED				31
 #define CFX_PLAYER_RESPAWN				32
-#define	CFX_INSTANTDMGFLAGS_MSG			13
-#define CFX_CHARACTER_TRACKING			33
-#define CFX_UPDATE_ATTACHMENTS			34
-#define CFX_CAN_WAKE					35
-#define CFX_CHARACTER_RADAR				36
-#define CFX_CARRY						37
+// RETAIL: Tron's: the AI's listen icon (CCharacter 0x1008dba0, 0x1008dcb0;
+// the client sets or clears CHARCREATESTRUCT::eTronTalkIcon) and the
+// attached ClientFX (CAIBrain 0x1018f560; the client gives the rest of the
+// message to its CAttachClientFX, 0x10179096). The names are ours.
+#define CFX_TRON_LISTENICON_CREATE_MSG	33
+#define CFX_TRON_LISTENICON_DESTROY_MSG	34
+#define CFX_TRON_ATTACHFX_MSG			35
+	// RETAIL: CAttachClientFX::OnServerMessage's command (CShell.dll
+	// 0x101ad060's case 2; the name is ours)
+	#define CFX_TRON_ATTACHFX_COMMAND		2
+// PORT: NOLF2's messages, not in Tron (retail sends none and its client has
+// no case for them). Our NOLF2 code still uses them; the values are ours
+// (after Tron's last).
+#define CFX_CHARACTER_TRACKING			36
+#define CFX_UPDATE_ATTACHMENTS			37
+#define CFX_CAN_WAKE					38
+#define CFX_CHARACTER_RADAR				39
+#define CFX_CARRY						40
 //sub-messages for CFX_CARRY
 	#define	CFX_CARRY_NONE					0
 	#define	CFX_CARRY_BODY					1
@@ -181,28 +199,27 @@
 
 enum BodyState
 {
+	// RETAIL: Tron's values, from Body::Init's switch from the AI body state
+	// (Object.lto 0x1015a67c, table 0x1015aed8) and CBodyFX's fade message
+	// (CShell.dll 0x1012e07a stores 15). Tron adds PranksterImplode after
+	// Explode and Gib at the end. No retail code uses 6, 8 and 9 (NOLF2's
+	// Stuck, Stairs and Fly were near there): they have no names here.
+	// The two new names are ours.
 	eBodyStateNormal		= 0,	// Normal death (shot, etc)
 	eBodyStateChair			= 1,	// Killed in a chair
 	eBodyStateLedge			= 2,	// Falling off a ledge
 	eBodyStateLaser			= 3,	// Vap-o-rized by a lazer
 	eBodyStateExplode		= 4,	// Hit by an explosion
-	eBodyStateStuck			= 5,	// Stuck to a wall w/ xbow/spear
-	eBodyStateUnderwater	= 6,	// Killed underwater
-	eBodyStateStairs		= 7,	// Fall down stairs (and break hip)
-	eBodyStateFly			= 8,	// Flying through the air
-	eBodyStateDecay			= 9,	// Decay powder dumped on body
-	eBodyStateCrush			= 10,	// Crushed
-	eBodyStatePoison		= 11,	// Killed by poison
-	eBodyStateAcid			= 12,	// Killed by acid
-	eBodyStateArrow			= 13,	// Killed by arrow (wall stick)
-	// RETAIL: Tron's values past 13 (CBodyFX::Update, CShell.dll 0x1012df10,
-	// fades at 15; Body::Init, Object.lto 0x1015a520, sends 14..17). The
-	// states 14 and 17 are not known and have no name here (a name changes
-	// the code of unrelated functions through the precompiled header).
+	eBodyStatePranksterImplode	= 5,	// Imploded by the prankster
+	eBodyStateUnderwater	= 7,	// Killed underwater
+	eBodyStateDecay			= 10,	// Decay powder dumped on body
+	eBodyStateCrush			= 11,	// Crushed
+	eBodyStatePoison		= 12,	// Killed by poison
+	eBodyStateAcid			= 13,	// Killed by acid
+	eBodyStateArrow			= 14,	// Killed by arrow (wall stick)
 	eBodyStateFade			= 15,	// Fade for low-violence setting
-	// PORT: Tron sends 16 and 17 for two body states that are not known.
-	// The ladder is taken to be 16.
 	eBodyStateLadder		= 16,	// Falling off a ladder
+	eBodyStateGib			= 17,	// Gibbed
 };
 
 // PolyLine values...

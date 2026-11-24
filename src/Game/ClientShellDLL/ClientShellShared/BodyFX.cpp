@@ -422,6 +422,8 @@ void CBodyFX::UpdateFade()
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1012e040. Tron's client has no case for NOLF2's carried,
+// permanent and revive messages.
 LTBOOL CBodyFX::OnServerMessage(ILTMessage_Read *pMsg)
 {
     if (!CSpecialFX::OnServerMessage(pMsg)) return LTFALSE;

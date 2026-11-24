@@ -2074,9 +2074,6 @@ bool CCharacter::HasZzz() const
 //
 // ----------------------------------------------------------------------- //
 
-#define CFX_TRON_LISTENICON_CREATE_MSG	33	// RETAIL: 0x1008dc29; the name is ours
-#define CFX_TRON_LISTENICON_DESTROY_MSG	34	// RETAIL: 0x1008dd39; the name is ours
-
 void CCharacter::CreateListenIcon()
 {
 	CAutoMessage cMsg;

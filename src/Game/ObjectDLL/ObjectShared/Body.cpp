@@ -794,6 +794,13 @@ void Body::Init(const BODYINITSTRUCT& bi)
 		case kState_BodyFade:
 			bcs.eBodyState = eBodyStateFade;
 			break;	
+		// RETAIL: Tron's two more cases (0x1015a6b6, 0x1015a6ca)
+		case kState_BodyGib:
+			bcs.eBodyState = eBodyStateGib;
+			break;
+		case kState_BodyPranksterImplode:
+			bcs.eBodyState = eBodyStatePranksterImplode;
+			break;
 	}
 	
 	if (IsPlayer(bi.pCharacter->m_hObject))
