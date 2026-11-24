@@ -1291,10 +1291,11 @@ void ArchiveBin::CreateFrame()
 		{
 			m_hTronUnknown3a4 = pFrame->m_hObject;
 
-			if (m_hTronUnknown3a4)
+			HOBJECT hFrame = m_hTronUnknown3a4;
+			if (hFrame)
 			{
-				g_pLTServer->SetNextUpdate(m_hTronUnknown3a4, 0.0f);
-				g_pLTServer->SetObjectState(m_hTronUnknown3a4, OBJSTATE_INACTIVE);
+				g_pLTServer->SetNextUpdate(hFrame, 0.0f);
+				g_pLTServer->SetObjectState(hFrame, OBJSTATE_INACTIVE);
 			}
 
 			LTVector vOffset(0.0f, 0.0f, 0.0f);
