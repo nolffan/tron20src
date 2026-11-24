@@ -71,7 +71,8 @@ void CAIInformationVolumeMgr::Init()
 
 AIInformationVolume* CAIInformationVolumeMgr::FindContainingVolume(HOBJECT hObject, const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold, AISpatialRepresentation* pVolumeStart, LTBOOL bBruteForce)
 {
-	return (AIInformationVolume*)CAISpatialRepresentationMgr::FindContainingVolume( hObject, vPos, iAxisMask, fVerticalThreshhold, pVolumeStart, bBruteForce);
+	// RETAIL: a dynamic_cast, as the player info one's (Object.lto 0x10199122)
+	return dynamic_cast<AIInformationVolume*>( CAISpatialRepresentationMgr::FindContainingVolume( hObject, vPos, iAxisMask, fVerticalThreshhold, pVolumeStart, bBruteForce) );
 }
 
 //----------------------------------------------------------------------------

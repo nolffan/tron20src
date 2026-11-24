@@ -1247,8 +1247,17 @@ bool AIVolume::IsConnected( AISpatialRepresentation* pVolume )
 //				Note: Special case for derived volumes
 //              
 //----------------------------------------------------------------------------
+// RETAIL: Tron's (0x100992d0, folded with CanBuildPathFrom, slots 37 and
+// 38): an AI of another alignment may not path through either
 /*virtual*/ LTBOOL AIVolume::CanBuildPathTo( CAI* pAI, AIVolume* pVolumeNext )
 {
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
+	{
+		return LTFALSE;
+	}
+
 	return ( pAI->GetCurValidVolumeMask() & GetVolumeType() );
 }
 
@@ -1265,6 +1274,13 @@ bool AIVolume::IsConnected( AISpatialRepresentation* pVolume )
 //----------------------------------------------------------------------------
 /*virtual*/ LTBOOL AIVolume::CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev )
 {
+	int nTemplateID = m_nRequiredRelationTemplateID;
+	if( ( nTemplateID != -1 ) &&
+		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
+	{
+		return LTFALSE;
+	}
+
 	return ( pAI->GetCurValidVolumeMask() & GetVolumeType() );
 }
 
@@ -1277,27 +1293,6 @@ bool AIVolume::IsConnected( AISpatialRepresentation* pVolume )
 //              
 //----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------- //
-//
-//	ROUTINE:	AIVolume::IsValidForPath
-//
-//	PURPOSE:	RETAIL: Tron's (retail 0x100992d0): an AI of another
-//				alignment may not path through, nor one that may not use
-//				this type of volume
-//
-// ----------------------------------------------------------------------- //
-
-LTBOOL AIVolume::IsValidForPath( CAI* pAI, AIVolume* pVolumePrev )
-{
-	int nTemplateID = m_nRequiredRelationTemplateID;
-	if( ( nTemplateID != -1 ) &&
-		( nTemplateID != pAI->GetRelationMgr()->GetTemplateID() ) )
-	{
-		return LTFALSE;
-	}
-
-	return pAI->GetCurValidVolumeMask() & GetVolumeType();
-}
 
 void AIVolume::ReserveVolume(HOBJECT hAI)
 {

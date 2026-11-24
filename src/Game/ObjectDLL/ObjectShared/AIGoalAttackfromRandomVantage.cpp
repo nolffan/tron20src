@@ -17,6 +17,8 @@
 #include "AINodeMgr.h"
 #include "PlayerObj.h"
 #include "CharacterMgr.h"
+#include "AIBrain.h"
+#include "AITarget.h"
 
 
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalAttackFromRandomVantage, kGoal_AttackFromRandomVantage);
@@ -123,4 +125,41 @@ AINode* CAIGoalAttackFromRandomVantage::FindNearestAttractorNode(EnumAINodeType 
 {
 	// RETAIL: Tron tries the nodes in a random order (0x10214ef7).
 	return g_pAINodeMgr->FindRandomNodeFromThreat( m_pAI, eNodeType, vPos, m_hStimulusSource, false );
+}
+
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CAIGoalAttackFromRandomVantage::UpdateGoal
+//
+//	PURPOSE:	RETAIL: Tron's (0x10214f20): a target in melee range gets
+//				the melee weapon, any other the ranged one
+//
+// ----------------------------------------------------------------------- //
+
+void CAIGoalAttackFromRandomVantage::UpdateGoal()
+{
+	if( m_pAI->HasTarget() )
+	{
+		LTVector vTargetPos;
+		g_pLTServer->GetObjectPos( m_pAI->GetTarget()->GetObject(), &vTargetPos );
+
+		LTVector vPos = m_pAI->GetPosition();
+		CAIBrain* pBrain = m_pAI->GetBrain();
+		if( vPos.Dist( vTargetPos ) <= pBrain->GetAttackMeleeRangeMax() )
+		{
+			if( m_pAI->GetCurrentWeaponType() != kAIWeap_Melee )
+			{
+				m_pAI->SetCurrentWeapon( kAIWeap_Melee );
+			}
+		}
+		else
+		{
+			if( m_pAI->GetCurrentWeaponType() != kAIWeap_Ranged )
+			{
+				m_pAI->SetCurrentWeapon( kAIWeap_Ranged );
+			}
+		}
+	}
+
+	super::UpdateGoal();
 }

@@ -394,8 +394,9 @@ class AIVolume : public AISpatialRepresentation
 		virtual LTBOOL CanBuildPathFrom( CAI* pAI, AIVolume* pVolumePrev );
 		virtual LTBOOL CanBuildPathThrough( CAI* pAI, AIVolume* pVolumePrev, AIVolume* pVolumeNext ) { return LTTRUE; }
 
-		// RETAIL: Tron's tests the volume's alignment and type (0x100992d0)
-		virtual LTBOOL IsValidForPath( CAI* pAI, AIVolume* pVolumePrev );
+		// RETAIL: Tron's AIVolume says yes (slot 40, 0x1009e910, a folded
+		// `return 1`): CanBuildPathTo/From test the alignment (0x100992d0)
+		virtual LTBOOL IsValidForPath( CAI* pAI, AIVolume* pVolumePrev ) { return LTTRUE; }
 
 		void ReserveVolume(HOBJECT hAI);
 		void ClearVolumeReservation(HOBJECT hAI);
@@ -472,7 +473,7 @@ class AIVolume : public AISpatialRepresentation
 
 		// RETAIL: Tron's volumes take an "Alignment" like AINode's (retail
 		// AIVolume's constructor sets 0x158 to -1, ReadProp 0x10098b80 reads
-		// it, IsValidForPath 0x100992d0 tests it; sizeof 0x15c)
+		// it, CanBuildPathTo/From 0x100992d0 test it; sizeof 0x15c)
 		int					m_nRequiredRelationTemplateID;
 };
 

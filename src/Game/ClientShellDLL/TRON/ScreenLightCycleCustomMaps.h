@@ -33,6 +33,7 @@ public:
 	virtual void	LoadSettings();
 	virtual void	SaveSettings();
 	virtual CLTGUITextCtrl*	GetTab() { return m_pCustomMapTab; }
+	virtual LTRect	GetBodyRect();
 
 protected:
 	virtual uint32	OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwParam2);

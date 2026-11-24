@@ -4993,11 +4993,9 @@ LTBOOL CPlayerObj::CanHide()
 { 
 	if (HasCurrentInformationVolume())
 	{
-		AIInformationVolume* pVol = GetCurrentInformationVolume();
-		if (!pVol) return LTFALSE;
-
-		// RETAIL: Tron does not check the volume's type (retail 0x10080780)
-		AIVolumePlayerInfo* pPlayerInfoVol = (AIVolumePlayerInfo*)pVol;
+		// RETAIL: Tron's asks for its player info volume (retail 0x1008078f)
+		AIVolumePlayerInfo* pPlayerInfoVol = GetCurrentPlayerInfoVolume();
+		if (!pPlayerInfoVol) return LTFALSE;
 
 		if ( pPlayerInfoVol->IsOn() 
 			&& ( !IsFlashLightOn() )

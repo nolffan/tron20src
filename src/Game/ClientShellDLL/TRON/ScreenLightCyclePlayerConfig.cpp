@@ -552,3 +552,9 @@ void CScreenLightCyclePlayerConfig::UpdateStatRanges()
 	if (m_fMaxTurnLoss - m_fMinTurnLoss == 0.0f)
 		m_fMinTurnLoss = std::max(0.0f, m_fMinTurnLoss - 1.0f);
 }
+
+// RETAIL: 0x1006d860 (slot 39: folded with CScreenLightCycleGame's)
+LTRect CScreenLightCyclePlayerConfig::GetBodyRect()
+{
+	return g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"TabBodyRect");
+}

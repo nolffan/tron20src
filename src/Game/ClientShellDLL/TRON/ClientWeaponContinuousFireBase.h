@@ -28,8 +28,17 @@ public:
 
 protected:
 	virtual void  HandleFireKeyDownTransition();
+	// RETAIL: 0x10018470
+	virtual void  HandleFireKeyUpTransition();
 	// RETAIL: 0x10018590
 	virtual bool  PlayFireAnimation( bool bResetAni );
+	// RETAIL: 0x10018810
+	virtual void  SendFireMessage( bool bFire,
+	                               LTFLOAT fPerturb,
+	                               LTVector const &vFirePos,
+	                               LTVector const &vDir,
+	                               LTVector const &vImpactPos,
+	                               HOBJECT hObject );
 	// RETAIL: 0x10018990
 	virtual bool  TronUnknownVirtual164();
 

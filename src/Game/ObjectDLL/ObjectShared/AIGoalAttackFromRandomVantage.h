@@ -35,6 +35,9 @@ class CAIGoalAttackFromRandomVantage : public CAIGoalAttackFromVantage
 
 		virtual void SetStateAttack();
 		virtual void HandleStateAttackFromVantage();
+
+		// RETAIL: Tron's (0x10214f20, slot 13)
+		virtual void UpdateGoal();
 };
 
 

@@ -96,7 +96,8 @@ uint32 BuildNote::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 			InitialUpdate();
 
 			m_ActivateTypeHandler.SetActivateType( "Pickup Build Note" );
-			m_ActivateTypeHandler.SetDisabled( false, false );
+			// RETAIL: Tron's sets the state (0x100163f6)
+			m_ActivateTypeHandler.SetState( ACTIVATETYPE::eOn, false );
 			m_ActivateTypeHandler.CreateActivateTypeMsg();
 		}
 		break;

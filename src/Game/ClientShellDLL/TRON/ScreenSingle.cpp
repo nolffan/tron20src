@@ -396,8 +396,12 @@ void CScreenSingle::AddFilesToFilenames(FileEntry* pFiles, char* pPath)
 
 
 
-// RETAIL: Tron's CScreenSingle has no OnMouseMove and no ShowSFX (its
-// frames are not faded; neither function is in the retail image)
+// RETAIL: Tron's CScreenSingle has no ShowSFX (its frames are not faded),
+// and its OnMouseMove only passes the move on (0x1007cc80)
+LTBOOL CScreenSingle::OnMouseMove(int x, int y)
+{
+	return CBaseScreen::OnMouseMove(x,y);
+}
 
 /******************************************************************/
 // RETAIL: Tron's only passes the key on (0x1007cca0)

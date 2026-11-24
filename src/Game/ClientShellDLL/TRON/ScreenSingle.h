@@ -29,6 +29,7 @@ public:
     LTBOOL   Build();
     void	Escape();
 
+    virtual LTBOOL   OnMouseMove(int x, int y);
     virtual LTBOOL   HandleKeyDown(int key, int rep);
 
 

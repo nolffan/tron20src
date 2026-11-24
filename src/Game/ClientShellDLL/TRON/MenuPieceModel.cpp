@@ -29,6 +29,11 @@ CMenuPieceModel::CMenuPieceModel()
 	m_szParentSocket[0] = 0;
 }
 
+CMenuPieceModel::~CMenuPieceModel()
+{
+	Term();
+}
+
 void CMenuPieceModel::Create(char * szPieceName)
 {
 	if (m_bCreated) return;

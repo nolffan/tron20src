@@ -195,18 +195,18 @@ void CAIGoalSniper::HandleTargetPos()
 
 	// Find target's current PlayerInfoVolume volume.
 
-	AIInformationVolume *pInfoVolume = pCharacter->GetCurrentInformationVolume();
-	// RETAIL: 0x101fb84b, Tron does not check the type of the volume.
+	// RETAIL: Tron's asks for the target's player info volume (0x101fb870)
+	AIVolumePlayerInfo* pPlayerInfoVolume = pCharacter->GetCurrentPlayerInfoVolume();
 
-	if( ( !pInfoVolume ) ||
-		( (AIVolume*)pInfoVolume == m_pLastTargetInfoVol ) )
+	if( ( !pPlayerInfoVolume ) ||
+		( (AIVolume*)pPlayerInfoVolume == m_pLastTargetInfoVol ) )
 	{
 		return;
 	}
 
 	// Record changes in info volumes.
 
-	m_pLastTargetInfoVol = (AIVolume*)pInfoVolume;
+	m_pLastTargetInfoVol = (AIVolume*)pPlayerInfoVolume;
 
 	// Find a guard node owned by this AI.
 
@@ -215,7 +215,6 @@ void CAIGoalSniper::HandleTargetPos()
 
 	// Find sniper attractor node corresponding to this playerinfo volume.
 
-	AIVolumePlayerInfo* pPlayerInfoVolume = (AIVolumePlayerInfo*)pInfoVolume;
 	AIGBM_GoalTemplate* pTemplate = g_pAIGoalButeMgr->GetTemplate( GetGoalType() );
 
 	AINode* pSniperNode = LTNULL;

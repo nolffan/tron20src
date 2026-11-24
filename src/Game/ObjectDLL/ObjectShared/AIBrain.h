@@ -99,6 +99,7 @@ class CAIBrain : public CAIClassAbstract
 		LTFLOAT GetAttackPoseCrouchTime() const { return m_pBrain->fAttackPoseCrouchTime; }
 		LTFLOAT GetAttackSoundTimeMin() const { return m_pBrain->fAttackSoundTimeMin; }
 		LTBOOL  AttacksWhileMoving() const { return m_pBrain->bAttackWhileMoving; }
+		LTFLOAT GetAttackMeleeRangeMax() const { return m_pBrain->fAttackMeleeRangeMax; }	// RETAIL: +0xc0 (CAIGoalAttackFromRandomVantage::UpdateGoal 0x10214fb7); name ours
 
 		LTFLOAT	GetAttackFromCoverCoverTime() const;
 		LTFLOAT	GetAttackFromCoverCoverTimeRandom() const;
