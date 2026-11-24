@@ -188,29 +188,6 @@ LTBOOL CTronPlayerMgr::OnCommandOn(int command)
 	// RETAIL: retail 0x100a4620
 	switch (command)
 	{
-		case COMMAND_ID_ACTIVATE :
-		case COMMAND_ID_FIRING :
-		{
-			// RETAIL: on a light cycle, the first press starts the cycle
-			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE &&
-				!m_bTronUnknown235)
-			{
-				// RETAIL: the press uses the cycle's power-up (retail
-				// 0x100a48c2)
-				LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
-				if (pCyclist && pCyclist->nPowerup != LC_NO_POWERUP)
-				{
-					if (((CClientLightCycleMgr*)g_pLightCycleMgr)->SendActivatePowerup(pCyclist))
-					{
-						m_bTronUnknown235 = true;
-					}
-
-					return LTTRUE;
-				}
-			}
-		}
-		break;
-
 		case COMMAND_ID_ZOOM_IN :
 		case COMMAND_ID_ZOOM_OUT :
 		{
@@ -223,9 +200,8 @@ LTBOOL CTronPlayerMgr::OnCommandOn(int command)
 			if (g_pSubroutineMgr->IsUtilitySubroutineActive("triangulate"))
 			{
 				m_bTronUnknown211 = true;
-				// PORT: retail asks the subroutine manager (retail 0x10094fb0,
-				// not yet in our tree) a flag of the triangulate subroutine
-				m_bTronUnknown212 = false;
+				// RETAIL: 0x100a4688
+				m_bTronUnknown212 = g_pSubroutineMgr->IsSubroutineCorrupt("triangulate");
 			}
 
 			// The LOL zooms too
@@ -318,6 +294,29 @@ LTBOOL CTronPlayerMgr::OnCommandOn(int command)
 		}
 		break;
 
+		case COMMAND_ID_ACTIVATE :
+		case COMMAND_ID_FIRING :
+		{
+			// RETAIL: on a light cycle, the first press starts the cycle
+			if (g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE &&
+				!m_bTronUnknown235)
+			{
+				// RETAIL: the press uses the cycle's power-up (retail
+				// 0x100a48c2)
+				LIGHT_CYCLIST* pCyclist = g_pLightCycleMgr->FindCyclist(g_pMoveMgr->GetObject());
+				if (pCyclist && pCyclist->nPowerup != LC_NO_POWERUP)
+				{
+					if (((CClientLightCycleMgr*)g_pLightCycleMgr)->SendActivatePowerup(pCyclist))
+					{
+						m_bTronUnknown235 = true;
+					}
+
+					return LTTRUE;
+				}
+			}
+		}
+		break;
+
 		default :
 			break;
 	}
@@ -340,7 +339,9 @@ LTBOOL CTronPlayerMgr::OnCommandOff(int command)
 	{
 		case COMMAND_ID_ACTIVATE :
 		{
-            if (IsTransferringEnergy())
+            if (!IsTransferringEnergy())
+				break;
+
 			{
 				// PORT: Tron's PlaySoundLocal has a seventh argument (1.0f)
 				g_pClientSoundMgr->PlaySoundLocal("get_done", SOUNDPRIORITY_MISC_MEDIUM, 0, 100, 1.0f, 0);
@@ -1062,10 +1063,11 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 	m_fEnergyTransferred = 0.0f;
 	m_fEnergyRequired = 0.0f;
 
-	// PORT: retail scales the rating (3) between two of Tron's rating
-	// arrays (+0x113c, +0x1141: its least and its surge level), which our
-	// CRatingMgr has not; the plain rating stands in
-	m_fTronUnknown1F4 = (float)g_pRatingMgr->GetRating(Rating_Stealth) / 100.0f;
+	// RETAIL: 0x100a60fa: the rating between its least and its most
+	float fRating = (float)(uint8)g_pRatingMgr->GetRating(Rating_Stealth);
+	float fMin = (float)g_pRatingMgr->GetMinRating(Rating_Stealth);
+	float fMax = (float)g_pRatingMgr->GetMaxRating(Rating_Stealth);
+	m_fTronUnknown1F4 = (fRating - fMin) / (fMax - fMin);
 
 	switch (nType)
 	{
@@ -1095,7 +1097,8 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 		case 1:
 		{
 			// The player takes energy, unless full
-			if ((int)g_pTronPlayerStats->GetEnergy() >= (int)g_pTronPlayerStats->GetMaxEnergy())
+			int nEnergy = (int)g_pTronPlayerStats->GetEnergy();
+			if (nEnergy >= (int)g_pTronPlayerStats->GetMaxEnergy())
 			{
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
@@ -1114,7 +1117,8 @@ void CTronPlayerMgr::HandleMsgStartEnergyTransfer(ILTMessage_Read * pMsg)
 		case 2:
 		{
 			// The player takes health, unless full
-			if (g_pTronPlayerStats->GetHealth() >= g_pTronPlayerStats->GetMaxHealth())
+			int nHealth = (int)g_pTronPlayerStats->GetHealth();
+			if (nHealth >= (int)g_pTronPlayerStats->GetMaxHealth())
 			{
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
@@ -1556,7 +1560,8 @@ void CTronPlayerMgr::UpdatePlaying()
 		}
 
 		// RETAIL: 0x100a730f: the grid sound of the vehicle manager (+0x2c)
-		((ILTClientSoundMgr*)g_pLTClient->SoundMgr())->SetSoundVolume(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c(), nVolume);
+		ILTClientSoundMgr* pSoundMgr = (ILTClientSoundMgr*)g_pLTClient->SoundMgr();
+		pSoundMgr->SetSoundVolume(g_pMoveMgr->GetVehicleMgr()->GetTronUnknownSnd2c(), nVolume);
 	}
 
 	// RETAIL: 0x100a7316
@@ -1604,28 +1609,30 @@ bool CTronPlayerMgr::TronUnknownVirtual64()
 	if (TronUnknownVirtual3C(false))
 		return true;
 
+	ILTClientPhysics* pPhysics = (ILTClientPhysics*)g_pPhysicsLT;
 	HOBJECT hObj = g_pMoveMgr->GetObject();
 
 	MoveInfo info;
 	info.m_hObject = hObj;
 
 	LTVector vVel;
-	g_pPhysicsLT->GetVelocity(hObj, &vVel);
+	pPhysics->GetVelocity(hObj, &vVel);
 
 	info.m_dt = g_pGameClientShell->GetFrameTime();
-	((ILTClientPhysics*)g_pPhysicsLT)->UpdateMovement(&info);
+	pPhysics->UpdateMovement(&info);
 
 	if (info.m_Offset.MagSqr() > 0.01f)
 	{
 		LTVector vPos;
 		g_pLTClient->GetObjectPos(hObj, &vPos);
 
-		LTVector vNewPos = vPos + info.m_Offset;
+		LTVector vNewPos;
+		vNewPos = vPos + info.m_Offset;
 
-		// PORT: retail has the client light cycle manager (0x10236d98, its
-		// 0x100ffec0) place the position on the grid
+		// RETAIL: 0x100a7462
+		g_pLightCycleMgr->SnapToGrid(vNewPos);
 
-		g_pPhysicsLT->MoveObject(hObj, &vNewPos, 0);
+		pPhysics->MoveObject(hObj, &vNewPos, 0);
 
 		LTVector vMovedPos;
 		g_pLTClient->GetObjectPos(hObj, &vMovedPos);
@@ -1770,9 +1777,8 @@ void CTronPlayerMgr::OnSubroutineChanged(const char* pszName, bool bActive, bool
 		m_bTronUnknown204 = bActive;
 		m_bTronUnknown205 = bVersion;
 		m_nTronUnknown208 = nVersion;
-		// PORT: retail asks the subroutine manager (its 0x10095730, not yet
-		// in our tree) for a float
-		m_fTronUnknown20C = 0.0f;
+		// RETAIL: 0x100a785c
+		m_fTronUnknown20C = g_pSubroutineMgr->GetProfilerDistance();
 	}
 	else if (!_strcmpi(pszName, "triangulate") && m_bTronUnknown211)
 	{
