@@ -176,7 +176,9 @@ public:
 
 	// RETAIL: inline accessors the client's HUDs use (the names are ours)
 	uint8	GetID() { return m_nID; }
-	uint8	GetMaxClients() { return m_nMaxClients; }
+	// RETAIL: a uint32: CScreenPlayer::OnFocus (0x100735ec) compares it
+	// zero-extended
+	uint32	GetMaxClients() { return m_nMaxClients; }
 	uint8	GetTeamSize() { return m_nTeamSize; }
 	int16	GetTronUnknownC() { return m_nTronUnknownC; }
 	int16	GetTronUnknownE() { return m_nTronUnknownE; }

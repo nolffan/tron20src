@@ -20,6 +20,9 @@
 #include "ClientMultiplayerMgr.h"
 #include "ModelButeMgr.h"
 #include "LightCycleButeMgr.h"
+#include "LightCycleMatchMgr.h"
+#include "SharedScoring.h"
+#include "PlayerMgr.h"
 
 #include "GameClientShell.h"
 extern CGameClientShell* g_pGameClientShell;
@@ -261,9 +264,7 @@ uint32 CScreenPlayer::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPara
 
 
 // Change in focus
-// RETAIL: 0x10073410. PORT: the light cycle and team parts (Tron's managers,
-// 0x1026dd10 and 0x1027065c) are left out; the profile's model, color and
-// bandwidth are NOLF2's members.
+// RETAIL: 0x10073410
 void CScreenPlayer::OnFocus(LTBOOL bFocus)
 {
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
@@ -284,11 +285,52 @@ void CScreenPlayer::OnFocus(LTBOOL bFocus)
 		}
 
 		m_sPlayerName = pProfile->m_sPlayerName;
-		m_nCurrentModel = pProfile->m_nDMPlayerModel;
-		m_nCurrentColor = pProfile->m_nCPPlayerModel;
+		m_nCurrentModel = pProfile->m_nCPPlayerModel;
+		m_nCurrentColor = pProfile->m_nDMPlayerModel;
+
+		// RETAIL: the light cycle's style and shade from the profile's
+		// light cycle colour (0x10073554)
+		LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pProfile->m_szVehicleColor);
+		if (pColor)
+		{
+			uint8 nStyle = (uint8)m_nCycleTeam;
+			g_pLightCycleButeMgr->GetColorShade(pColor, nStyle, m_nCycleColor);
+			m_nCycleTeam = nStyle;
+		}
 
 		m_bCanChangeColor = true;
 		m_bCanChangeModel = true;
+
+		if (bInMPGame)
+		{
+			// RETAIL: in a team game the team sets the colour (0x100735af)
+			CTronTeamMgr* pTeamMgr = g_pGameClientShell->GetInterfaceMgr()->GetTeamMgr();
+			if (pTeamMgr)
+			{
+				uint32 nLocalID = 0;
+				g_pLTClient->GetLocalClientID(&nLocalID);
+				bool bNoTeams = (pTeamMgr->GetTeam(0, false)->GetMaxClients() <= 1);
+				int nTeam = pTeamMgr->GetTeamOfClient(nLocalID);
+				if (!bNoTeams && nTeam < TRON_MAX_TEAMS)
+				{
+					CTronTeam team = *pTeamMgr->GetTeam(nTeam, false);
+					m_nCurrentColor = team.GetTronUnknownIndex();
+					m_bCanChangeColor = false;
+					m_nCycleColor = pTeamMgr->GetTeamColor((uint8)m_nCurrentColor, false);
+				}
+			}
+
+			// RETAIL: a light cycle match sets the light cycle (0x10073724)
+			if (GetGameType() == eGameTypeMultiplayerLightcycles && g_pLightCycleMatchMgr)
+			{
+				uint32 nCycle = g_pLightCycleMatchMgr->GetTronUnknown8();
+				if (nCycle != 2)
+				{
+					m_bCanChangeModel = false;
+					m_nCycleTeam = nCycle;
+				}
+			}
+		}
 
 		m_pColor->Enable(m_bCanChangeColor);
 		m_pColorLeft->Enable(m_bCanChangeColor);
@@ -308,9 +350,16 @@ void CScreenPlayer::OnFocus(LTBOOL bFocus)
 		WriteConsoleInt("DynamicLight",s_nDynamicLight);
 		UpdateData();
 		pProfile->m_sPlayerName = m_sPlayerName;
-		pProfile->m_nDMPlayerModel = m_nCurrentModel;
+		pProfile->m_nCPPlayerModel = m_nCurrentModel;
 		if (m_bCanChangeColor)
-			pProfile->m_nCPPlayerModel = m_nCurrentColor;
+		{
+			pProfile->m_nPlayerColor = pProfile->m_nDMPlayerModel = m_nCurrentColor;
+
+			// RETAIL: the light cycle colour of the style and shade (0x10073974)
+			LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetShadeCycleColor((uint8)m_nCycleTeam, m_nCycleColor);
+			if (pColor)
+				g_pPlayerMgr->TronUnknownVirtual90(pColor->szName, true, true);
+		}
 
 		pProfile->m_nBandwidthClient = m_nBandwidth;
 		pProfile->m_nBandwidthClientCustom = (uint16)atol(m_sBandwidth);
