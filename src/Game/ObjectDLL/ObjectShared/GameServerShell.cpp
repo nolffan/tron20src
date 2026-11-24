@@ -63,6 +63,7 @@
 #include "ParsedMsg.h"
 #include "ScmdServer.h"
 #include "BanIPMgr.h"
+#include "../TRON/SpectatorObject.h"	// RETAIL: Tron's
 #include <time.h>
 
 #define MAX_CLIENT_NAME_LENGTH		100
@@ -913,21 +914,16 @@ void CGameServerShell::SendPlayerInfoMsgToClients(HCLIENT hClients, CPlayerObj *
 
     uint32  nClientID   = g_pLTServer->GetClientID(hClient);
 
-	bool bIsAdmin = false;
-	if( ScmdServer::Instance( ).GetAdminControl( ) == ScmdServer::kAdminControlClient && 
-		hClient == ScmdServer::Instance( ).GetAdminClient( ))
-	{
-		bIsAdmin = true;
-	}
-
+	// RETAIL: Tron sends the multiplayer model and color, no team or admin
+	// flag (0x100de582)
 	CAutoMessage cMsg;
 	cMsg.Writeuint8(MID_PLAYER_INFO);
 	cMsg.WriteString(pPlayer->GetNetUniqueName());
 	cMsg.Writeuint32(nClientID);
 	cMsg.WriteObject(pPlayer->m_hObject);
 	cMsg.Writeuint8((uint8)pPlayer->GetModelId());
-	cMsg.Writeuint8(pPlayer->GetTeamID( ));
-	cMsg.Writebool( bIsAdmin );
+	cMsg.Writeuint8(pPlayer->GetMPModelIndex( ));
+	cMsg.Writeuint8(pPlayer->GetMPColorIndex( ));
     cMsg.Writeuint8(nInfoType);
 	g_pLTServer->SendToClient(cMsg.Read(), hClients, MESSAGE_GUARANTEED);
 
@@ -1395,6 +1391,7 @@ void CGameServerShell::HandleFragSelf (HCLIENT hSender, ILTMessage_Read *pMsg)
 
 			damage.eType	= DT_EXPLODE;
 			damage.fDamage	= damage.kInfiniteDamage;
+			damage.bTronUnknown44 = LTTRUE;	// RETAIL: 0x100df230
 			damage.hDamager = pPlayer->m_hObject;
 			damage.vDir.Init(0, 1, 0);
 
@@ -1482,8 +1479,7 @@ void CGameServerShell::HandlePlayerTaunt (HCLIENT hSender, ILTMessage_Read *pMsg
 		cTauntMsg.Writeuint8(SFX_CHARACTER_ID);
 		cTauntMsg.WriteObject(pPlayer->m_hObject);
 		cTauntMsg.Writeuint8(CFX_TAUNT_MSG);
-		cTauntMsg.Writeuint32(nTauntID);
-		cTauntMsg.Writeuint8(pPlayer->GetTeamID());
+		cTauntMsg.Writeuint32(nTauntID);	// RETAIL: no team (0x100df467)
 		g_pLTServer->SendToClient(cTauntMsg.Read(), LTNULL, 0);
 
 		// retrieve the string they sent
@@ -1505,7 +1501,7 @@ void CGameServerShell::HandlePlayerTaunt (HCLIENT hSender, ILTMessage_Read *pMsg
 		cStringMsg.Writeuint8(MID_PLAYER_MESSAGE);
 		cStringMsg.WriteString(szString);
 		cStringMsg.Writeuint32(clientID);
-		cStringMsg.Writeuint8(pPlayer->GetTeamID());
+		cStringMsg.Writeuint8(1);	// RETAIL: chat type "all" (0x100df571; HandlePlayerMessage)
 		g_pLTServer->SendToClient(cStringMsg.Read(), LTNULL, 0);
 	}
 } 
@@ -1600,8 +1596,50 @@ void CGameServerShell::HandleMultiplayerInit (HCLIENT hSender, ILTMessage_Read *
 	// Resend all the line systems.
 	LineSystem::ResendAll( );
 
-			// now get the new player into the world
-	pNewPlayer->Respawn(m_nLastLGFlags);
+	// now get the new player into the world.  RETAIL: Tron's (0x100df709):
+	// the light cycle game puts the player at the primary spectator object
+	// (else the last one), the disc games respawn the player later.
+	SpectatorObject* pSpawnAt = LTNULL;
+	SpectatorObject* pPrimary = LTNULL;
+
+	switch( GetGameType( ))
+	{
+		case eGameTypeSingle:
+		case eGameTypeSingleLightCycleCircuit:
+		case eGameTypeSingleLightCycleCustom:
+		case eGameTypeCooperative:
+		case eGameTypeDeathmatch:
+		{
+			pNewPlayer->Respawn(m_nLastLGFlags);
+		}
+		break;
+
+		case eGameTypeMultiplayerLightcycles:
+		{
+			SpectatorObject::SpectatorObjectList::const_iterator iterSpec = SpectatorObject::GetSpectatorObjectList( ).begin( );
+			for( ; iterSpec != SpectatorObject::GetSpectatorObjectList( ).end( ); iterSpec++ )
+			{
+				pSpawnAt = *iterSpec;
+				if( pSpawnAt->IsPrimary( ))
+				{
+					pPrimary = pSpawnAt;
+				}
+			}
+
+			if( pPrimary )
+			{
+				pSpawnAt = pPrimary;
+			}
+
+			pNewPlayer->Respawn( LOAD_NEW_LEVEL, true, LTNULL, pSpawnAt );
+		}
+		break;
+
+		default:
+		break;
+	}
+
+	TronUnknownVirtual7C( pNewPlayer );
 }
 
 // ----------------------------------------------------------------------- //
@@ -1669,7 +1707,7 @@ void CGameServerShell::HandlePlayerMessage (HCLIENT hSender, ILTMessage_Read *pM
 	char szString[256];
 	szString[0] = 0;
 	pMsg->ReadString(szString, sizeof(szString));
-	uint8 nChatType = pMsg->Readuint8();
+	int nChatType = pMsg->Readuint8();
 
 	// So it shows up in GameSrv..
     if(szString[0] && !(g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL))
@@ -1736,15 +1774,15 @@ void CGameServerShell::HandlePlayerGhostMessage (HCLIENT hSender, ILTMessage_Rea
 	szString[0] = 0;
 	pMsg->ReadString(szString, sizeof(szString));
 
+	// RETAIL: Tron's message has a chat type (HandlePlayerMessage); the
+	// ghosts' chat ignores it (0x100dfacc)
+	pMsg->Readuint8();
+
 	// So it shows up in GameSrv..
     if(szString[0] && !(g_pLTServer->GetClientInfoFlags(hSender) & CIF_LOCAL))
 	{
-		char szMsg[256] = {0};
-		sprintf( szMsg, "%s: %s", pPlayer->GetNetUniqueName(), szString );
-        
-		g_pLTServer->CPrint( szMsg );
+		g_pLTServer->CPrint( szString );
 	}
-	uint32 clientID = g_pLTServer->GetClientID(hSender);
 
 	// now send the string to all clients on the same team
 	for (int i = 0; i < MAX_CLIENTS; i++)
@@ -1755,6 +1793,7 @@ void CGameServerShell::HandlePlayerGhostMessage (HCLIENT hSender, ILTMessage_Rea
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_PLAYER_GHOSTMESSAGE);
 			cMsg.WriteString(szString);
+			cMsg.Writeuint8(1);	// RETAIL: chat type "all" (0x100dfb9a)
 			
 			g_pLTServer->SendToClient(cMsg.Read(), pCurPlayer->GetClient(), MESSAGE_GUARANTEED);
 		}
@@ -1935,7 +1974,7 @@ void CGameServerShell::HandleConsoleTrigger (HCLIENT hSender, ILTMessage_Read *p
 			{
                 g_pLTServer->CPrint("Listing objects of type '%s'", parse.m_Args[1]);
 
-				LTVector vPos;
+				// RETAIL: no positions in Tron's list (0x100dfe59)
                 HCLASS  hClass = g_pLTServer->GetClass(parse.m_Args[1]);
 
 				// Get the names of all the objects of the specified class...
@@ -1945,9 +1984,7 @@ void CGameServerShell::HandleConsoleTrigger (HCLIENT hSender, ILTMessage_Read *p
 				{
                     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hClass))
 					{
-						g_pLTServer->GetObjectPos( hObj, &vPos );
-                        g_pLTServer->CPrint("%s (active) Pos<%.3f,%.3f,%.3f>", GetObjectName(hObj), 
-							VEC_EXPAND( vPos ));
+                        g_pLTServer->CPrint("%s (active)", GetObjectName(hObj));
                         bNoObjects = LTFALSE;
 					}
 
@@ -1959,9 +1996,7 @@ void CGameServerShell::HandleConsoleTrigger (HCLIENT hSender, ILTMessage_Read *p
 				{
                     if (g_pLTServer->IsKindOf(g_pLTServer->GetObjectClass(hObj), hClass))
 					{
-						g_pLTServer->GetObjectPos( hObj, &vPos );
-                        g_pLTServer->CPrint("%s (inactive) Pos<%.3f,%.3f,%.3f>", GetObjectName(hObj), 
-							VEC_EXPAND( vPos ));
+                        g_pLTServer->CPrint("%s (inactive)", GetObjectName(hObj));
                         bNoObjects = LTFALSE;
 					}
 
@@ -2207,8 +2242,8 @@ void CGameServerShell::HandleGadgetTarget( HCLIENT hSender, ILTMessage_Read *pMs
 		GadgetTarget *pGadgetTarget = (GadgetTarget*)g_pLTServer->HandleToObject( hTarget );
 		if( pGadgetTarget )
 		{
-			CPlayerObj* pPlayerObj = GET_PLAYER(hSender);
-			SendTriggerMsgToObject( pPlayerObj, hTarget, LTFALSE, szMsg );
+			// RETAIL: the gadget target sends the message itself (0x100e07b1)
+			SendTriggerMsgToObject( pGadgetTarget, hTarget, LTFALSE, szMsg );
 		}
 	}
 }
@@ -2911,6 +2946,7 @@ void CGameServerShell::HandleCheatRemoveAI(uint32 nData)
 
 				damage.eType	= DT_EXPLODE;
 				damage.fDamage	= damage.kInfiniteDamage;
+				damage.bTronUnknown44 = LTTRUE;	// RETAIL: 0x100e13fc
 				damage.hDamager = hRemoveObj;
 
 				damage.DoDamage(pClass, hRemoveObj);
@@ -2941,6 +2977,7 @@ void CGameServerShell::HandleCheatRemoveAI(uint32 nData)
 
 				damage.eType	= DT_EXPLODE;
 				damage.fDamage	= damage.kInfiniteDamage;
+				damage.bTronUnknown44 = LTFALSE;	// RETAIL: 0x100e1587 (FALSE here)
 				damage.hDamager = hRemoveObj;
 
 				damage.DoDamage(pClass, hRemoveObj);
@@ -4071,6 +4108,9 @@ LTRESULT CGameServerShell::ServerAppMessageFn( ILTMessage_Read& msg )
 
 bool CGameServerShell::OnServerShellInit( )
 {
+	// RETAIL: Tron's (0x100e2a30): the server app gets the map list of the
+	// game options, and the server loads the first map.
+
 	// Initialize the server game.  Need to do this first to init servermissionmgr.
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( MID_START_GAME );
@@ -4078,46 +4118,30 @@ bool CGameServerShell::OnServerShellInit( )
 	if( !g_pServerMissionMgr->OnMessage( NULL, *msgRead ))
 		return false;
 
-	// First we'll tell the serverapp about the missions in the campaign.
+	StringArray* pMapList = m_ServerGameOptions.GetMapList( );
+	if( pMapList->empty( ))
+		return false;
+
+	// First we'll tell the serverapp about the maps.
 	CAutoMessage cLevelsMsg;
 	cLevelsMsg.Writeuint8( SERVERAPP_INIT );
 
-	char const* pszFirstMission = NULL;
-
-	Campaign& campaign = g_pServerMissionMgr->GetCampaign( );
-	cLevelsMsg.Writeuint8( campaign.size( ));
-	char fname[_MAX_FNAME] = "";
-	for( Campaign::iterator iter = campaign.begin( ); iter != campaign.end( ); iter++ )
+	for( StringArray::iterator iter = pMapList->begin( ); iter != pMapList->end( ); iter++ )
 	{
-		// Get the mission in the campaign.
-		int nMission = *iter;
-		MISSION* pMission = g_pMissionButeMgr->GetMission( nMission );
-		if( !pMission )
-			continue;
-
-		// Use the first level of the mission as the name of the mission.
-		LEVEL& level = pMission->aLevels[0];
-
-		if( !pszFirstMission )
-		{
-			pszFirstMission = level.szLevel;
-		}
-
-		_splitpath( level.szLevel, NULL, NULL, fname, NULL );
- 		cLevelsMsg.WriteString( fname );
+ 		cLevelsMsg.WriteString( iter->c_str( ));
 	}
+
+	cLevelsMsg.WriteString( "" );
 
 	// Send the message to the server app.
 	CLTMsgRef_Read msgRefReadLevels = cLevelsMsg.Read( );
 	g_pLTServer->SendToServerApp( *msgRefReadLevels );
 
 	// Start the first level.
-	CAutoMessage cMsgStartLevel;
-	cMsgStartLevel.Writeuint8( MID_START_LEVEL );
-	cMsgStartLevel.WriteString( pszFirstMission );
-	CLTMsgRef_Read msgReadStartLevel = cMsgStartLevel.Read( );
-	if( !g_pServerMissionMgr->OnMessage( NULL, *msgReadStartLevel ))
+	if( !g_pServerSaveLoadMgr->LoadNewLevel( (*pMapList)[0].c_str( )))
 		return false;
+
+	m_bGameServHosted = LTTRUE;
 
 	return true;
 }
@@ -4162,10 +4186,7 @@ void CGameServerShell::PauseGame( bool bPause )
 	//determine what state we are in
 	bool bInPauseState = (m_nPauseCount > 0);
 
-	//if we are not paused, forget whether the client had paused us
-	if (!bInPauseState)
-		m_bClientPaused = false;
-
+	// RETAIL: no client pause flag to reset here (0x100e2ca9)
 
 	//alright, we have changed pause state, so let us notify the server and its objects
 	uint32 nFlags = g_pLTServer->GetServerFlags();
@@ -4917,13 +4938,10 @@ void CGameServerShell::ServerAppPreStartWorld( )
 
 void CGameServerShell::ServerAppPostStartWorld( )
 {
+	// RETAIL: Tron sends the index of the map only (0x100e3d8d)
 	CAutoMessage cMsg;
 	cMsg.Writeuint8( SERVERAPP_POSTLOADWORLD );
-	cMsg.Writeuint16(( int )g_pServerMissionMgr->GetCurrentCampaignIndex( ));
-
-	char fname[_MAX_FNAME] = "";
-	_splitpath( GetCurLevel( ), NULL, NULL, fname, NULL );
- 	cMsg.WriteString( fname );
+	cMsg.Writeuint16(( uint16 )m_nCurLevel );
 
 	// Send to the server app.
 	CLTMsgRef_Read msgRefRead = cMsg.Read( );

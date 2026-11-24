@@ -54,6 +54,7 @@
 #include "AIGoalSpecialDamage.h"
 #include "PickupItem.h"
 #include "../TRON/TronProjectile.h"	// RETAIL: Tron's
+#include "../TRON/SpectatorObject.h"	// RETAIL: Tron's
 
 #include <stdio.h>
 
@@ -3857,9 +3858,9 @@ void CPlayerObj::Respawn(uint8 nServerLoadGameFlags /*=LOAD_NEW_LEVEL*/, bool bG
 		}
 		else
 		{
-			// RETAIL: 0x1007dd0e reads a vector at offset 0x38 of the object
-			// to spawn at; the class is not known (the callers pass NULL).
-			vVec = LTVector( *reinterpret_cast<LTVector const*>( reinterpret_cast<uint8 const*>( pSpawnAt ) + 0x38 ));
+			// RETAIL: 0x1007dd0e: the object to spawn at is a spectator
+			// object (CGameServerShell::HandleMultiplayerInit, 0x100df74c).
+			vVec = static_cast<SpectatorObject*>( pSpawnAt )->GetPitchYawRoll();
 		}
 		
 		CAutoMessage cMsg;
