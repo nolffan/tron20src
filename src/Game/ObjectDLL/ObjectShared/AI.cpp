@@ -2283,7 +2283,7 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		if( ( cMsg.GetArgCount() > 1 ) &&
 			( m_pAIMovement ) )
 		{
-			m_pAIMovement->IgnoreVolumesIfUnlocked( IsTrueChar( cMsg.GetArg(1)[0] ) );
+			m_pAIMovement->IgnoreVolumes( IsTrueChar( cMsg.GetArg(1)[0] ) );
 		}
 		return true;
 	}

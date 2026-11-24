@@ -902,7 +902,7 @@ LTBOOL CAIHumanStrategyFollowPath::UpdateJumpTo(CAIPathWaypoint* pWaypoint)
 					pMovement->PushAnimation(kAP_JumpFly);
 					m_pAIHuman->GetAnimationContext()->Lock();
 					m_bCheckAnimStatus = LTTRUE;
-					pMovement->IgnoreVolumesIfUnlocked( LTTRUE );
+					pMovement->IgnoreVolumes( LTTRUE );
 				}
 				break;
 
@@ -925,7 +925,7 @@ LTBOOL CAIHumanStrategyFollowPath::UpdateJumpTo(CAIPathWaypoint* pWaypoint)
 					pMovement->PushAnimation(kAP_JumpUpFly);
 					m_pAIHuman->GetAnimationContext()->Lock();
 					m_bCheckAnimStatus = LTTRUE;
-					pMovement->IgnoreVolumesIfUnlocked( LTTRUE );
+					pMovement->IgnoreVolumes( LTTRUE );
 				}
 				break;
 
@@ -935,7 +935,7 @@ LTBOOL CAIHumanStrategyFollowPath::UpdateJumpTo(CAIPathWaypoint* pWaypoint)
 					m_bCheckAnimStatus = LTFALSE;
 					pMovement->PopAnimation();
 					pMovement->PushAnimation(kAP_JumpUpLand);
-					pMovement->IgnoreVolumesIfUnlocked( LTTRUE );
+					pMovement->IgnoreVolumes( LTTRUE );
 					m_pAIHuman->GetAnimationContext()->ClearLock();
 					m_pAIHuman->GetAnimationContext()->Lock();
 				}
@@ -949,7 +949,7 @@ LTBOOL CAIHumanStrategyFollowPath::UpdateJumpTo(CAIPathWaypoint* pWaypoint)
 					pMovement->PushAnimation(kAP_JumpDownFly);
 					m_pAIHuman->GetAnimationContext()->Lock();
 					m_bCheckAnimStatus = LTTRUE;
-					pMovement->IgnoreVolumesIfUnlocked( LTTRUE );
+					pMovement->IgnoreVolumes( LTTRUE );
 				}
 				break;
 

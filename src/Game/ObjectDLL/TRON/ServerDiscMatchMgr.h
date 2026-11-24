@@ -62,6 +62,9 @@ class CDiscArena
 		ArenaStartPoint*	GetSpectatorPoint(CPlayerObj* pPlayer);		// RETAIL: 0x1004de70
 		ArenaStartPoint*	GetTeamPoint(uint32 nSlot, CPlayerObj* pPlayer);	// RETAIL: 0x1004df00
 		void				SendCommand(const char* pszCmd);			// RETAIL: 0x1004dfb0
+		// RETAIL: the messages write the index as an int read through an
+		// accessor (0x1004d71e: no byte spill). The name is ours.
+		int					GetIndex() const { return m_nIndex; }
 
 		int					m_nIndex;			// +0x00
 		bool				m_bInUse;			// +0x04

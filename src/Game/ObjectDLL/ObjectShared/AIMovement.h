@@ -40,12 +40,10 @@ class CAIMovement
 		void SetupJump( EnumAnimMovement eMovementType );
 		void SetSpeed( LTFLOAT fSpeed ) { m_fSetSpeed = fSpeed; }
 		void FaceDest( LTBOOL bFaceDest ) { m_bFaceDest = bFaceDest; }
-		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { m_bIgnoreVolumes = bIgnoreVolumes; }
-		// RETAIL: Tron's IgnoreVolumes does not change a locked state (CAI::
-		// OnTrigger 0x1012c842, 0x102228a1, 0x1022a6cf): the callers of the
-		// AI files use this one. LockIgnoreVolumes is 0x1012c8c3. Names ours
-		void IgnoreVolumesIfUnlocked(LTBOOL bIgnoreVolumes) { if( !m_xTronUnknown38 ) m_bIgnoreVolumes = bIgnoreVolumes; }
-		void LockIgnoreVolumes(LTBOOL bLock) { m_xTronUnknown38 = bLock; }
+		// RETAIL: Tron keeps m_bIgnoreVolumes while m_xTronUnknown38 is set
+		// (CAIHumanStateLaunch::Update, 0x1022a6cf).
+		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { if( !m_xTronUnknown38 ) m_bIgnoreVolumes = bIgnoreVolumes; }
+		void LockIgnoreVolumes(LTBOOL bLock) { m_xTronUnknown38 = bLock; }	// RETAIL: CAI::OnTrigger 0x1012c8c3; name ours
 
 		void	LockMovement();
 		void	LockMovement(LTBOOL bLockRotation);
