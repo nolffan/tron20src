@@ -1940,7 +1940,7 @@ void CClientLightCycleMgr::UpdateCyclistDims(LIGHT_CYCLIST* pCyclist, LTVector &
 	IntersectInfo IInfo;
 
 	IQuery.m_From = vPos;
-	IQuery.m_To.Init(vPos.x, vPos.y - 10000.0f, vPos.z);
+	IQuery.m_To = LTVector(vPos.x, vPos.y - 10000.0f, vPos.z);
 	IQuery.m_Flags = INTERSECT_OBJECTS | INTERSECT_HPOLY | IGNORE_NONSOLID;
 	IQuery.m_FilterFn = GroundFilterFn;
 
