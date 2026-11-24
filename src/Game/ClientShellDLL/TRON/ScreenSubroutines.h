@@ -122,11 +122,11 @@ protected:
 
 	void		SetCursorMode(SubCursorMode mode);	// RETAIL: 0x100815d0
 
-	void		ShowSubInfo(int x, int y);			// RETAIL: 0x10081750
-	void		ShowProcInfo(int x, int y);			// RETAIL: 0x10081890
-	void		ShowRatingInfo(int x, int y);		// RETAIL: 0x10081990
-	void		ShowBuildPointsInfo(int x, int y);	// RETAIL: 0x10081a70
-	void		ShowCtrlInfo(int x, int y, CLTGUICtrl * pCtrl);	// RETAIL: 0x10081b60
+	void		ShowSubInfo(LTIntPt pos);			// RETAIL: 0x10081750
+	void		ShowProcInfo(LTIntPt pos);			// RETAIL: 0x10081890
+	void		ShowRatingInfo(LTIntPt pos);		// RETAIL: 0x10081990
+	void		ShowBuildPointsInfo(LTIntPt pos);	// RETAIL: 0x10081a70
+	void		ShowCtrlInfo(LTIntPt pos, CLTGUICtrl * pCtrl);	// RETAIL: 0x10081b60
 
 	void		UpdateAnimSound();					// RETAIL: 0x10081d90
 

@@ -518,12 +518,13 @@ struct RADAROBJCREATESTRUCT : public SFXCREATESTRUCT
 	uint8	nTeamId;
 };
 
+// RETAIL: the team id is not set (CRadarObjectFX's constructor, CShell.dll
+// 0x101bfcf0, sets the type and bOn only)
 inline RADAROBJCREATESTRUCT::RADAROBJCREATESTRUCT()
 :	SFXCREATESTRUCT		( ),
 	nRadarTypeId		( -1 ),
 	bOn					( true )
 {
-	nTeamId = INVALID_TEAM;
 }
 
 #endif  // __SHARED_FX_STRUCTS_H__

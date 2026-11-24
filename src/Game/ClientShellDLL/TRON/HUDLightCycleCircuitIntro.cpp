@@ -55,7 +55,7 @@ LTBOOL CHUDLightCycleCircuitIntro::Init()
 	TermStrings();
 
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
-	std::string sFrame = dynamic_cast<CTronLayoutMgr*>(g_pLayoutMgr)->GetLCHUDHelper()->GetIntroTexturedFrameName(nCurrentLayout);
+	CaselessInlineString sFrame = dynamic_cast<CTronLayoutMgr*>(g_pLayoutMgr)->GetLCHUDHelper()->GetIntroTexturedFrameName(nCurrentLayout);
 	m_Frame.Init(sFrame.c_str());
 
 	char szText[256];

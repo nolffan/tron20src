@@ -138,7 +138,9 @@ void CAIGoalTalk::DeactivateGoal()
 	// conversation, stop the dialog and cleanup the
 	// dialog object.
 
-	if( m_bStartedDialog && m_pAI->IsControlledByDialogue() )
+	// RETAIL: no IsControlledByDialogue test (0x101fa609): StopDialogue
+	// tests the dialogue object itself
+	if( m_bStartedDialog )
 	{
 		m_pAI->StopDialogue();
 	}

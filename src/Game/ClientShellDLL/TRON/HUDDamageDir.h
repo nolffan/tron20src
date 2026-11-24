@@ -27,7 +27,20 @@ public:
 	CHUDDamageDir();
 
 	// RETAIL: as most of Tron's HUD items (retail 0x10023440)
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameTypeSingle == eGameType || (eGameType > eGameTypeSingleLightCycleCustom && eGameType <= eGameTypeDiscTournament); }
+	virtual bool	IsUsedInGameType(GameType eGameType)
+	{
+		// RETAIL: a switch (0x10023440, folded with the other HUD items')
+		switch (eGameType)
+		{
+			case eGameTypeSingle:
+			case eGameTypeCooperative:
+			case eGameTypeDeathmatch:
+			case eGameTypeDiscArena:
+			case eGameTypeDiscTournament:
+				return true;
+		}
+		return false;
+	}
 
     LTBOOL      Init();
 	void		Term();

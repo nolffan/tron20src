@@ -613,10 +613,15 @@ class CAI : public CCharacter, public IAISensing
 		// Dialogue object
 
 		LTBOOL IsControlledByDialogue() const { return !!m_hDialogueObject; }
+		// RETAIL: only with a dialogue object (CAIState::PreUpdate,
+		// Object.lto 0x1027165c)
 		void StopDialogue()
 		{
-            SendTriggerMsgToObject(this, m_hDialogueObject, LTFALSE, "OFF");
-			m_hDialogueObject = LTNULL;
+			if( m_hDialogueObject )
+			{
+				SendTriggerMsgToObject(this, m_hDialogueObject, LTFALSE, "OFF");
+				m_hDialogueObject = LTNULL;
+			}
 		}
 
 		void LinkDialogueObject(HOBJECT hDialogueObject);

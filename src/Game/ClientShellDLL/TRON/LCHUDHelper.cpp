@@ -248,7 +248,7 @@ float LCHUDHelper::GetIntroValueTime(int nLayout)
 	return g_pTronLayoutMgr->GetFloat(s_aTagName, "IntroValueTime", 3.0f);
 }
 
-std::string LCHUDHelper::GetIntroTexturedFrameName(int nLayout)
+CaselessInlineString LCHUDHelper::GetIntroTexturedFrameName(int nLayout)
 {
 	sprintf(s_aTagName, "%s%d", LO_HUD_TAG, nLayout);
 	if (!g_pTronLayoutMgr->m_buteMgr.Exist(s_aTagName, "IntroTexturedFrameName"))
@@ -256,7 +256,7 @@ std::string LCHUDHelper::GetIntroTexturedFrameName(int nLayout)
 
 	char szName[128];
 	g_pTronLayoutMgr->GetString(s_aTagName, "IntroTexturedFrameName", szName, sizeof(szName));
-	return std::string(szName);
+	return CaselessInlineString(szName);
 }
 
 LTIntPt LCHUDHelper::GetSpeedometerPos(int nLayout)
@@ -322,7 +322,7 @@ int LCHUDHelper::GetSpeedometerFrameHeight(int nLayout)
 	return g_pTronLayoutMgr->GetInt(s_aTagName, "SpeedometerFrameHeight", 0);
 }
 
-std::string LCHUDHelper::GetSpeedometerTexturedFrameName(int nLayout)
+CaselessInlineString LCHUDHelper::GetSpeedometerTexturedFrameName(int nLayout)
 {
 	sprintf(s_aTagName, "%s%d", LO_HUD_TAG, nLayout);
 	if (!g_pTronLayoutMgr->m_buteMgr.Exist(s_aTagName, "SpeedometerTexturedFrameName"))

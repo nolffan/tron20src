@@ -1609,6 +1609,18 @@ A bar that goes from part full to full can show a right cap cut short.
 
 Fixed in the modern build (HUDBar.cpp, `TRON20_MODERN`).
 
+### A human AI reports its SETONLYDAMAGEBYPLAYER command as not handled
+
+Object.lto 0x1016dead (CAIHuman::HandleCommand, ObjectDLL/ObjectShared/
+AIHuman.cpp). The command sets the flag that lets only the player damage
+the AI, but the branch does not return true: it goes to the end of the
+function, which returns false. Thus OnTrigger tells the sender that the AI
+did not handle the command, although the AI changed its state. All the
+other commands that the function handles return true.
+
+Fixed in the modern build (AIHuman.cpp, `TRON20SRC_MODERN`: the branch
+returns true).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

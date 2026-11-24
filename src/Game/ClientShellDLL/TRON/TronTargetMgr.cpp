@@ -23,9 +23,31 @@
 // 0x100afbb0, 0x100afbd0)
 #include "ScreenSubroutines.h"
 
-// PORT: build 51's TargetMgr.h had this, which Tron's code uses; NOLF2's
-// TargetMgr reads it from the client butes instead (ActivationDistance)
-const float kActivationDist = 100.0f;
+#include "ActivateObjectFX.h"
+#include "ClientInfoMgr.h"
+#include "InterfaceMgr.h"
+
+// RETAIL: TargetMgr.cpp's console variables (retail 0x102755a0 and
+// 0x10275590), and Tron's long activation distance (0x1026ef88; the name
+// is ours)
+extern VarTrack	g_vtActivationDistance;
+extern VarTrack	g_vtTargetDistance;
+VarTrack		g_vtActivationDistanceLong;
+
+// RETAIL: the user flags that Tron's Update tests (0x100aea8b, 0x100aed87,
+// 0x100aeeb1). Their names in Tron's ClientServerShared.h are not known:
+// the names are ours
+#define USRFLG_TRON_ACTIVATE_LONG		(1<<4)	// with USRFLG_CAN_ACTIVATE: ActivationDistanceLong
+#define USRFLG_TRON_SUBROUTINE_PROPS	(1<<10)	// ask for the subroutine's properties (9)
+#define USRFLG_TRON_PERMISSION_ANY		((1<<1) | USRFLG_PSET_1 | USRFLG_PSET_2 | USRFLG_PSET_3 | USRFLG_PSET_4 | \
+										 USRFLG_PSET_5 | USRFLG_PSET_6 | USRFLG_PSET_7 | USRFLG_PSET_8)
+
+// RETAIL: the target properties that only Tron's Update asks for, beside
+// MsgIDs.h's (HandleTargetPropertiesMessage reads them). The names are ours
+#define TARGET_PROP_TRON_3				3	// a third need (string 3807)
+#define TARGET_PROP_TRON_4				4	// a fourth need (string 3809)
+#define TARGET_PROP_TRON_KIND			7	// a person's kind (strings 3259, 3261, 3262)
+#define TARGET_PROP_TRON_SUBROUTINE		9	// a subroutine's details (strings 3288..3310)
 
 // ----------------------------------------------------------------------- //
 //
@@ -59,28 +81,41 @@ CTronTargetMgr::~CTronTargetMgr()
 //	PURPOSE:	See what the crosshair is pointed at this frame
 //
 // ----------------------------------------------------------------------- //
+
+// RETAIL: 0x100ae5f0. Tron's own: the four transfers, the console variables
+// (with a long activation distance), the target's hit box and properties,
+// and queries to the server for the target's properties (answered in
+// HandleTargetPropertiesMessage). The "innocent" and enemy reticles are
+// flags (+0x876, +0x877) for the crosshair, not target strings.
 void CTronTargetMgr::Update()
 {
 	if (m_hLockedTarget && m_hTarget == m_hLockedTarget)
 	{
-
 		// are we transferring energy?
-		if (g_pTronPlayerMgr->IsTransferringEnergy())
+		// RETAIL: one string for each transfer (0x100ae622), in this order
+		if (g_pTronPlayerMgr->m_bTransferringEnergy)
 		{
 			// don't change anything.
 			SetTargetStringID(IDS_TRANSFERRING_ENERGY);
 			return;
 		}
-
-		// RETAIL: no gadget disabling in Tron (no CGadgetDisabler)
-
-		//are we searching something?
-		if (g_pPlayerMgr->IsSearching())
+		if (g_pTronPlayerMgr->m_bTronUnknown1EA)
 		{
-			m_bSearchTarget = true;
-			SetTargetStringID(IDS_TARGET_SEARCHING);
+			SetTargetStringID(3808);	// RETAIL: "Downloading Health"
 			return;
 		}
+		if (g_pTronPlayerMgr->m_bTronUnknown1E9)
+		{
+			SetTargetStringID(3806);	// RETAIL: "Downloading Energy"
+			return;
+		}
+		if (g_pTronPlayerMgr->m_bTronUnknown1EB)
+		{
+			SetTargetStringID(3810);	// RETAIL: "Taking a dump"
+			return;
+		}
+
+		// RETAIL: no gadget disabling and no searching in Tron's
 	}
 
 	// RETAIL: the old target and whether its properties were kept
@@ -90,19 +125,50 @@ void CTronTargetMgr::Update()
 
 	//clear our targeting info
 	m_hTarget = NULL;
+	m_Props.bTronUnknown424 = false;
 	m_fTargetRange = 10000.0f;
 	m_szString[0] = 0;
 	m_szDebugString[0] = 0;
 	m_nString = 0;
 
+	// RETAIL: the console variables, each time (0x100ae6a5), as
+	// CTargetMgr::Update does
+	if (!g_vtActivationDistance.IsInitted())
+	{
+		g_vtActivationDistance.Init(g_pLTClient, "ActivationDistance", LTNULL, 100.0f);
+	}
+
+	if (!g_vtActivationDistanceLong.IsInitted())
+	{
+		g_vtActivationDistanceLong.Init(g_pLTClient, "ActivationDistanceLong", LTNULL, 200.0f);
+	}
+
+	if (!g_vtTargetDistance.IsInitted())
+	{
+		g_vtTargetDistance.Init(g_pLTClient, "TargetDistance", LTNULL, 1000.0f);
+	}
+	m_fActivationDistance = g_vtActivationDistance.GetFloat();
+	m_fTargetDistance = g_vtTargetDistance.GetFloat();
+
 	m_ActivationData.Init();
 
 	m_bEnergyRequired = false;
 	m_nEnergyRequired = 0;
+	m_bTronUnknown85D = false;
+	m_nTronUnknown868 = 0;
+	m_bTronUnknown85E = false;
+	m_nTronUnknown86C = 0;
+	m_bTronUnknown85F = false;
+	m_nTronUnknown870 = 0;
+	m_bPermissionRequired = false;
+	m_nPermissionRequired = 0;
+	m_bTronUnknown876 = false;
+	m_bTronUnknown877 = false;
 
 	m_bSearchTarget = false;
 	m_bMoveTarget = false;
 	m_bCanActivate = true;
+	m_bTronUnknown860 = false;
 
 	//see what we've looking at
 	float fDistAway = 10000.0f;
@@ -122,6 +188,7 @@ void CTronTargetMgr::Update()
 	if (g_pTronPlayerMgr->GetTronUnknown20C() < fDistAway)
 		ClearTargetProperties();
 	m_fTargetRange = fDistAway;
+	m_Props.nTronUnknown420 = 0;
 
 
 	//if its a body's hitbox, check the body instead
@@ -129,6 +196,17 @@ void CTronTargetMgr::Update()
 	if (pBody)
 	{
 		m_hTarget = pBody->GetServerObj();
+		m_Props.bTronUnknown424 = true;
+		m_ActivationData.m_hTarget = m_hTarget;
+		if (!m_hTarget) return;
+	}
+
+	//if its a Character's hitbox, check the Character instead
+	CCharacterFX* pCharacter = g_pGameClientShell->GetSFXMgr()->GetCharacterFromHitBox(m_hTarget);
+	if (pCharacter)
+	{
+		m_hTarget = pCharacter->GetServerObj();
+		m_Props.bTronUnknown424 = true;
 		m_ActivationData.m_hTarget = m_hTarget;
 		if (!m_hTarget) return;
 	}
@@ -137,94 +215,11 @@ void CTronTargetMgr::Update()
 	uint32 dwUserFlags = 0;
     g_pCommonLT->GetObjectFlags(m_hTarget, OFT_User, dwUserFlags);
 
-	//special case handling for bodies
-	if (pBody)
+	// RETAIL: an object that can be activated from further away (0x100aea8b;
+	// the flag has no name in Tron's ClientServerShared.h that we know)
+	if ((dwUserFlags & USRFLG_CAN_ACTIVATE) && (dwUserFlags & USRFLG_TRON_ACTIVATE_LONG))
 	{
-		LTRotation	rCamRot;
-		LTVector	vTargetPos, vCamPos, vDir, vCamR;
-
-		HLOCALOBJ	hCamera = g_pPlayerMgr->GetCamera();
-
-		g_pLTClient->GetObjectRotation( hCamera, &rCamRot );
-		vCamR = rCamRot.Right();
-
-		g_pLTClient->GetObjectPos( hCamera, &vCamPos );
-		g_pLTClient->GetObjectPos( m_hTarget, &vTargetPos );
-		
-
-		vDir = vTargetPos - vCamPos;
-
-		// See if we are looking at the target...
-
-		vDir.Normalize();
-		LTFLOAT	fCamAngle = vDir.Dot( vCamR );
-
-		bool bCanSearch = !!(dwUserFlags & USRFLG_CAN_SEARCH);
-		bool bCanMove = (pBody->CanBeCarried() && g_pPlayerMgr->CanDropCarriedObject());	// PORT: build 51's CanDropBody
-		bool bCanRevive = pBody->CanBeRevived();
-
-		if (bCanSearch && bCanMove)
-		{
-			if (fCamAngle > 0)
-			{
-				// we can search this body
-				if (fDistAway <= kActivationDist)
-				{
-					m_bSearchTarget = true;
-					m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
-					SetTargetStringID(IDS_TARGET_SEARCH);
-					return;
-				}
-			}
-			else
-			{
-				// we can move this body
-				if (fDistAway <= kActivationDist)
-				{
-					m_bMoveTarget = true;
-					m_ActivationData.m_nType = MID_ACTIVATE_MOVE;
-					SetTargetStringID(IDS_TARGET_MOVE);
-					return;
-				}
-			}
-		}
-		else if (bCanSearch && fDistAway <= kActivationDist)
-		{
-			// we can search this body
-			m_bSearchTarget = true;
-			m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
-			SetTargetStringID(IDS_TARGET_SEARCH);
-			return;
-		}
-		else if (bCanMove && fDistAway <= kActivationDist)
-		{
-			// we can move this body
-			m_bMoveTarget = true;
-			m_ActivationData.m_nType = MID_ACTIVATE_MOVE;
-			SetTargetStringID(IDS_TARGET_MOVE);
-			return;
-		}
-		else if( bCanRevive && fDistAway <= kActivationDist )
-		{
-			// we can revive this body
-			m_ActivationData.m_nType = MID_ACTIVATE_REVIVE;
-			SetTargetStringID(IDS_TARGET_REVIVE);
-			return;
-		}
-		else
-		{
-			SetTargetStringID(NULL);
-			return;
-		}
-
-	}
-
-	// is this a gadget target
-	if (IsGadgetActivatable(m_hTarget) && (fDistAway <= kActivationDist))
-	{
-		// looks like we can use a gadget on it...
-		SetGadgetTarget(false);
-		return;
+		m_fActivationDistance = g_vtActivationDistanceLong.GetFloat();
 	}
 
 	//are we aiming at a person?
@@ -243,74 +238,174 @@ void CTronTargetMgr::Update()
 		}
 
 		// is this a person we can talk to?
-		if (dwUserFlags & USRFLG_CAN_ACTIVATE)
+		// RETAIL: the server tells what kind of person it is (property 7,
+		// 0x100aeb4c); the string stays "talk" until it answers
+		if ((dwUserFlags & USRFLG_CAN_ACTIVATE) && (fDistAway <= m_fActivationDistance) &&
+			!(dwUserFlags & USRFLG_REQUIRES_ENERGY))
 		{
-			SetTargetStringID(IDS_TARGET_TALK);
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_OBJECT_MESSAGE);
+			cMsg.WriteObject(m_hTarget);
+			cMsg.Writeuint32(MID_QUERY_TARGET_PROPERTIES);
+			cMsg.Writeuint8(1);
+			cMsg.Writeuint8(TARGET_PROP_TRON_KIND);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+			SetTargetStringID(kTronIDS_TargetTalk);
+		}
+
+		if (IsMultiplayerGame() && pFX && pFX->m_cs.bIsPlayer )
+		{
+			uint32 nId = pFX->m_cs.nClientID;
+			CClientInfoMgr* pCIMgr = g_pInterfaceMgr->GetClientInfoMgr();
+			CLIENT_INFO* pCI = pCIMgr->GetClientByID(nId);
+
+			if (pCI)
+			{
+				m_nString = 0;
+				SAFE_STRCPY(m_szString,pCI->sName.c_str());
+			}
 			return;
 		}
 
-	
-		WEAPON const* pWeaponData = g_pWeaponMgr->GetWeapon(g_pPlayerStats->GetCurrentWeapon());
-		if (pWeaponData)
+		if ((fDistAway <= m_fTargetDistance) && pFX)
 		{
-			// warn the player if we have a dangerous weapon and are pointing at a friend...
-			if (pWeaponData->bLooksDangerous && pFX && pFX->m_cs.eCrosshairCharacterClass != BAD)
+			WEAPON const* pWeaponData = g_pWeaponMgr->GetWeapon(g_pPlayerStats->GetCurrentWeapon());
+			if (pWeaponData && pWeaponData->bLooksDangerous)
 			{
-				if (fDistAway <= (LTFLOAT) pWeaponData->nRange)
+				// RETAIL: the crosshair's reticles (0x100aec9d): an enemy, or
+				// a friend whom the weapon could hurt
+				if (pFX->m_cs.eCrosshairCharacterClass == BAD)
+					m_bTronUnknown877 = true;
+				else
+					m_bTronUnknown876 = true;
+			}
+		}
+	}
+
+	// RETAIL: an InfoString target: ask for its string (0x100aecb7)
+	if ((dwUserFlags & USRFLG_INFO_STRING) && (fDistAway <= m_fTargetDistance))
+	{
+		CAutoMessage cMsg;
+		cMsg.Writeuint8(MID_OBJECT_MESSAGE);
+		cMsg.WriteObject(m_hTarget);
+		cMsg.Writeuint32(MID_QUERY_TARGET_PROPERTIES);
+		cMsg.Writeuint8(1);
+		cMsg.Writeuint8(TARGET_PROP_INFO_STRING);
+		g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+	}
+
+	// RETAIL: a subroutine target: ask for its details while the player
+	// manager wants them, in their range (0x100aed87)
+	if (dwUserFlags & USRFLG_TRON_SUBROUTINE_PROPS)
+	{
+		if (g_pTronPlayerMgr->GetTronUnknown204() && (fDistAway < g_pTronPlayerMgr->GetTronUnknown20C()))
+		{
+			CAutoMessage cMsg;
+			cMsg.Writeuint8(MID_OBJECT_MESSAGE);
+			cMsg.WriteObject(m_hTarget);
+			cMsg.Writeuint32(MID_QUERY_TARGET_PROPERTIES);
+			cMsg.Writeuint8(1);
+			cMsg.Writeuint8(TARGET_PROP_TRON_SUBROUTINE);
+			g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+		}
+	}
+
+	if (fDistAway <= m_fActivationDistance)
+	{
+		// RETAIL: the permission sets the target needs (0x100aeea9): bit 1
+		// is in the test, but sets no permission
+		if ((dwUserFlags & USRFLG_CAN_ACTIVATE) && (dwUserFlags & (USRFLG_TRON_PERMISSION_ANY)))
+		{
+			m_bPermissionRequired = true;
+			if (dwUserFlags & USRFLG_PSET_1) m_nPermissionRequired |= (1<<0);
+			if (dwUserFlags & USRFLG_PSET_2) m_nPermissionRequired |= (1<<1);
+			if (dwUserFlags & USRFLG_PSET_3) m_nPermissionRequired |= (1<<2);
+			if (dwUserFlags & USRFLG_PSET_4) m_nPermissionRequired |= (1<<3);
+			if (dwUserFlags & USRFLG_PSET_5) m_nPermissionRequired |= (1<<4);
+			if (dwUserFlags & USRFLG_PSET_6) m_nPermissionRequired |= (1<<5);
+			if (dwUserFlags & USRFLG_PSET_7) m_nPermissionRequired |= (1<<6);
+			if (dwUserFlags & USRFLG_PSET_8) m_nPermissionRequired |= (1<<7);
+		}
+
+		// See if this object is part of the activate object list with it's own string ID's...
+		CActivateObjectHandler *pActivateObj = LTNULL;
+		CActivateObjectHandler::ActivateObjList::const_iterator iter = CActivateObjectHandler::GetActivateObjectList().begin();
+		while( iter != CActivateObjectHandler::GetActivateObjectList().end() )
+		{
+			pActivateObj = *iter;
+			
+			if( pActivateObj->GetHOBJECT() == m_hTarget )
+			{
+				ACTIVATETYPE *pType = g_pActivateTypeMgr->GetActivateType( pActivateObj->m_nId );
+				if( pType )
 				{
-					SetTargetStringID(IDS_TARGET_INNOCENT);
+					// RETAIL: an object in Tron's third state uses the
+					// strings below (0x100aef71)
+					if (pActivateObj->m_eState == ACTIVATETYPE::eTronUnknown2)
+						break;
+
+					// Set whether or not it's disabled and set the string based on the state...
+
+					m_bCanActivate = !pActivateObj->m_bDisabled;
+					uint32 dwStringID = pType->dwStateID[pActivateObj->m_eState];
+					
+					if( dwStringID != (uint32)-1 )
+					{
+						SetTargetStringID( dwStringID );
+					}
+
 					return;
 				}
 			}
 
-
+			++iter;
 		}
-	}
-/*	Don't allow SEARCHING in Tron
-	//is this a searchable object?
-	if (dwUserFlags & USRFLG_CAN_SEARCH && (fDistAway <= kActivationDist))
-	{
-		m_bSearchTarget = true;
-		m_ActivationData.m_nType = MID_ACTIVATE_SEARCH;
-		SetTargetStringID(IDS_TARGET_SEARCH);
-		return;
 
-	}
-*/
-	//can we pick up or activate it?
-	if (dwUserFlags & USRFLG_CAN_ACTIVATE && (fDistAway <= kActivationDist))
-	{
-
-		CPickupItemFX* const pFX = (CPickupItemFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_PICKUPITEM_ID, m_hTarget);
-		if (pFX)
-			SetTargetStringID(IDS_TARGET_TAKE);
-		else
+		//can we pick up or activate it?
+		if ((dwUserFlags & USRFLG_CAN_ACTIVATE) && (fDistAway <= m_fActivationDistance))
 		{
+			CPickupItemFX* const pFX = (CPickupItemFX*)g_pGameClientShell->GetSFXMgr()->FindSpecialFX(SFX_PICKUPITEM_ID, m_hTarget);
+			if (pFX)
+			{
+				SetTargetStringID(kTronIDS_TargetTake);
+				return;
+			}
+
 			if (dwUserFlags & USRFLG_REQUIRES_ENERGY)
 			{
-				// This object requires energy! Send a message off to find out how much it needs
+				// This object requires energy! Ask what it needs
+				// RETAIL: five properties (0x100aefe0); the strings come
+				// with the answer
+				CAutoMessage cMsg;
+				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
+				cMsg.WriteObject(m_hTarget);
+				cMsg.Writeuint32(MID_QUERY_TARGET_PROPERTIES);
+				cMsg.Writeuint8(5);
+				cMsg.Writeuint8(TARGET_PROP_ENERGY_REQUIRED);
+				cMsg.Writeuint8(TARGET_PROP_HEALTH);
+				cMsg.Writeuint8(TARGET_PROP_TRON_3);
+				cMsg.Writeuint8(TARGET_PROP_TRON_4);
+				cMsg.Writeuint8(TARGET_PROP_INFO_STRING);
+				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+			}
+			else
+			{
+				// RETAIL: only the target's own string (0x100af0fb)
 				CAutoMessage cMsg;
 				cMsg.Writeuint8(MID_OBJECT_MESSAGE);
 				cMsg.WriteObject(m_hTarget);
 				cMsg.Writeuint32(MID_QUERY_TARGET_PROPERTIES);
 				cMsg.Writeuint8(1);
-				cMsg.Writeuint8(TARGET_PROP_ENERGY_REQUIRED);
+				cMsg.Writeuint8(TARGET_PROP_INFO_STRING);
 				g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
-				SetTargetStringID(IDS_TRANSFER_ENERGY);
 			}
-			else
-			{
-				SetTargetStringID(IDS_TARGET_USE);
-			}
+			return;
 		}
-		return;
+
+
+		//we can't do anything with out target
+		SetTargetStringID(NULL);
 	}
-
-
-	//we can't do anything with out target
-	SetTargetStringID(NULL);
-	return;
-
 }
 
 
@@ -382,7 +477,7 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 				break;
 			}
 
-		case 3:
+		case TARGET_PROP_TRON_3:
 			{
 				m_bTronUnknown85E = true;
 				m_nTronUnknown86C = pMsg->Readuint32();
@@ -391,7 +486,7 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 				break;
 			}
 
-		case 4:
+		case TARGET_PROP_TRON_4:
 			{
 				m_bTronUnknown85F = true;
 				m_nTronUnknown870 = pMsg->Readuint32();
@@ -400,7 +495,7 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 				break;
 			}
 
-		case 9:
+		case TARGET_PROP_TRON_SUBROUTINE:
 			{
 				// RETAIL: the properties come in this order (a pair's
 				// second half first)
@@ -507,7 +602,7 @@ void CTronTargetMgr::HandleTargetPropertiesMessage(ILTMessage_Read *pMsg)
 				break;
 			}
 
-		case 7:
+		case TARGET_PROP_TRON_KIND:
 			{
 				uint8 nKind = pMsg->Readuint8();
 				if (nKind == 1)

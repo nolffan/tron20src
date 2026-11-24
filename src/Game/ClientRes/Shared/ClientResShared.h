@@ -781,8 +781,8 @@
 #define IDS_QUICKSAVING                 1245
 #define IDS_SERVERFULL                  1246
 #define IDS_SERVER_WRONGVERSION         1247
-#define IDS_JOINEDGAME                  1248
-#define IDS_LEFTGAME                    1249
+#define IDS_JOINEDGAME                  1015	// RETAIL: Tron's (CRes.dll 1015; CInterfaceMgr::OnMessage 0x100c9770)
+#define IDS_LEFTGAME                    1016	// RETAIL: Tron's (CRes.dll 1016)
 #define IDS_SAVINGGAME                  1250
 #define IDS_CANTQUICKSAVE               1251
 #define IDS_ACCESSGRANTED               1252
@@ -1028,6 +1028,14 @@
 #define IDS_PROFILE_ALREADY_EXISTS      2201
 #define IDS_CONFIRM_DELETE_PROFILE      2202
 #define IDS_APP_UNABLE_TO_CREATE_HW_TNL_DEVICE 2203
+
+// TRON: strings of Tron's performance screen (RETAIL: CScreenPerformance::
+// Build, 0x10070120, pushes them). The names are ours. IDS_HELP_TRIPLE_BUFF
+// above is Build 69's number; retail's help string for triple buffering
+// is 173 ("Toggles the use of triple buffering.").
+#define IDS_HELP_TRIPLE_BUFF_173        173
+#define IDS_SCREENGLOW                  3265
+#define IDS_HELP_SCREENGLOW             3266
 
 // Next default values for new objects
 // 
