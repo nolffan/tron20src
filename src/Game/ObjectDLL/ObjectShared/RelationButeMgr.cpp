@@ -83,6 +83,19 @@ std::binary_function<RelationMomento*, const RelationDescription* const, bool>
 	}
 };
 
+// RETAIL: Tron's (find_if 0x1016a770, used by AddRelation 0x10167f20): the
+// trait and value match, whatever the alignment. The name is ours.
+struct Momento_TraitValue_Equality :
+std::binary_function<RelationMomento*, const RelationDescription* const, bool>
+{
+	bool operator() (RelationMomento* pMomento, 
+		const RelationDescription* const pRD) const
+	{
+		return ( pMomento->GetDescription().eTrait == pRD->eTrait
+			&& strcmp( pMomento->GetDescription().szValue, pRD->szValue ) == 0 );
+	}
+};
+
 struct ORMMatchesDescription :
 public std::binary_function< RelationMomento*, CObjectRelationMgr*, bool>
 {
@@ -946,6 +959,22 @@ void CRelationUser::AddRelation(const RelationDescription& RD, bool bPermanent )
 {
 	AIASSERT( m_pMomentoCallbackReceiver, NULL, "No CallbackReceiver specified" );
 	AIASSERT( CanAddRelation(RD), NULL, "Cannot add relation -- check before calling" );
+
+	// RETAIL: Tron's (0x10167f20): a new relation replaces the temporary
+	// momentos of the same trait and value; a permanent one blocks it.
+	RelationDescription InstRD = RD;
+	_listMomentos::iterator itFound;
+	while ( ( itFound = std::find_if( m_Momentos.begin(), m_Momentos.end(), std::bind2nd( Momento_TraitValue_Equality(), &InstRD ) ) ) != m_Momentos.end() )
+	{
+		if ( (*itFound)->m_eRelationMomentoType == RelationMomento::ePermanent )
+		{
+			AITRACE(AIShowRelations, ( (HOBJECT)NULL, " cannot add relation: %s %s %s due to existing conflicting permanet relation", CRelationTools::GetInstance()->ConvertTraitEnumToString(RD.eTrait), CRelationTools::GetInstance()->ConvertAlignmentEnumToString(RD.eAlignment), RD.szValue ) );
+			return;
+		}
+
+		RemoveRelation( (*itFound)->GetDescription() );
+	}
+
 	float flExperationTime = m_flTimeRelationsLast + g_pLTServer->GetTime();
 	RelationMomento* pMomento = debug_new3( RelationMomento, m_pMomentoCallbackReceiver, flExperationTime, RD );
 	if (bPermanent == true)
