@@ -1049,8 +1049,11 @@ bool CAIHuman::HandleCommand(const CParsedMsg &cMsg)
 	else if ( cMsg.GetArg(0) == s_cTok_SetOnlyDamageByPlayer )
 	{
 		// RETAIL: Tron's (0x1016dead). It does not return true, so the
-		// command is reported as not handled.
+		// command is reported as not handled (docs/RETAIL_BUGS.md).
 		m_damage.SetTronUnknown6D0( IsTrueChar(*cMsg.GetArg(1)) );
+#ifdef TRON20SRC_MODERN
+		return true;
+#endif
 	}
 	else if ( cMsg.GetArg(0) == s_cTok_CineFire )
 	{
