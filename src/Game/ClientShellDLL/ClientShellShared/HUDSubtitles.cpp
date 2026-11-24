@@ -92,8 +92,9 @@ void CHUDSubtitles::Draw()
 	LTRotation rRot;
 	g_pLTClient->GetListener(&bListenerInClient, &vListenerPos, &rRot);
 
-	bool bForceDraw = (bool)(m_vSpeakerPos == LTVector(0, 0, 0));
-	bForceDraw = g_pPlayerMgr->IsUsingExternalCamera() ? LTTRUE : bForceDraw;
+	LTBOOL bForceDraw = (m_vSpeakerPos == LTVector(0, 0, 0));
+	if (g_pPlayerMgr->IsUsingExternalCamera())
+		bForceDraw = LTTRUE;
 
 	LTVector vPos = m_vSpeakerPos - vListenerPos;
 	float fAdjustedRadius = m_fRadius * g_vtAdjustedRadius.GetFloat();
@@ -102,13 +103,25 @@ void CHUDSubtitles::Draw()
 		return;
 
 	//render dropshadow
+	// RETAIL: 0x100fd2be: the shadow is offset by the screen's scale, and
+	// the text is clipped to a rect on whole pixels: one line spacing
+	// higher, two taller and 40 wider than the box
 	int32 x,y;
 	m_pText->GetPosition(&x,&y);
-	m_pText->SetPosition(x+2.0f,y+2.0f);
+	// RETAIL: the ratio is copied through the FPU (0x100fd2d8)
+	float fShadow = (float)(double)g_pInterfaceResMgr->GetXRatio();
+	m_pText->SetPosition((int)(x+fShadow),(int)(y+fShadow));
 	m_pText->SetColor(argbBlack);
 
+	CUIRECT rcClip = m_DisplayRect;
+	rcClip.x = (float)floor(rcClip.x + fShadow);
+	float fTop = rcClip.y + fShadow;
+	rcClip.y = (float)floor(fTop - m_pFont->GetLineSpacing());
+	rcClip.height += (float)m_pFont->GetLineSpacing() * 2.0f;
+	rcClip.width += 40.0f;
+
 	if (m_bOverflow)
-		m_pText->RenderClipped(&m_DisplayRect);
+		m_pText->RenderClipped(&rcClip);
 	else
 		m_pText->Render();
 
@@ -116,8 +129,14 @@ void CHUDSubtitles::Draw()
 	m_pText->SetPosition(x,y);
 	m_pText->SetColor(m_nTextColor);
 
+	rcClip = m_DisplayRect;
+	rcClip.x = (float)floor(m_DisplayRect.x);
+	rcClip.y = (float)floor(m_DisplayRect.y - m_pFont->GetLineSpacing());
+	rcClip.height += (float)m_pFont->GetLineSpacing() * 2.0f;
+	rcClip.width += 40.0f;
+
 	if (m_bOverflow)
-		m_pText->RenderClipped(&m_DisplayRect);
+		m_pText->RenderClipped(&rcClip);
 	else
 		m_pText->Render();
 
