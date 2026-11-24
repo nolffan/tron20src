@@ -1471,13 +1471,8 @@ void Body::AddWeapon(HOBJECT hWeapon, char *pszPosition)
 
 }
 
-bool Body::AddPickupItem(HOBJECT hItem, bool bForcePickup) 
-{
-	bool bAdded = m_pSearch->AddPickupItem(hItem,bForcePickup);
-	if (bAdded)
-		m_pSearch->Enable(true);
-	return bAdded;
-}
+// PORT: NOLF2's Body::AddPickupItem is not in Tron (retail has AddSpear
+// right after AddWeapon, 0x1015bfd0).
 
 
 // ----------------------------------------------------------------------- //
