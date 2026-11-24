@@ -57,7 +57,8 @@ extern uint8  g_nRandomWeaponSeed;
 extern CAIStimulusMgr* g_pAIStimulusMgr;
 
 static bool DoVectorPolyFilterFn(HPOLY hPoly, void *pUserData);
-static bool DoVectorFilterFn(HOBJECT hObj, void *pUserData);
+// RETAIL: not static: CAIGoalSpecialDamage calls it too (0x10191d33)
+bool DoVectorFilterFn(HOBJECT hObj, void *pUserData);
 static bool CanCharacterHitCharacter( HOBJECT hFiredFrom, HOBJECT hImpacted );
 
 #define MAX_MODEL_NODES         9999
@@ -2487,7 +2488,7 @@ static bool DoVectorPolyFilterFn(HPOLY hPoly, void *pUserData)
 //
 // ----------------------------------------------------------------------- //
 
-static bool DoVectorFilterFn(HOBJECT hObj, void *pUserData)
+bool DoVectorFilterFn(HOBJECT hObj, void *pUserData)
 {
 	// Filter out the specified objects...
 	if (ObjListFilterFn(hObj, pUserData))

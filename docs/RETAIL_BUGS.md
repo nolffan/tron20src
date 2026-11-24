@@ -1452,6 +1452,18 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### One energy claw debug message uses a misspelt console variable
+
+Object.lto 0x10192390 (CAIGoalSpecialDamage::IsEnergyClawAttackerAiming, our
+name, ObjectDLL/ObjectShared/AIGoalSpecialDamage.cpp). The function writes
+its debug messages when the console variable "AIShowEnergyClawDamage" is
+set. The message "Early out - Not a character!" uses the variable
+"AIShowEnergyCLawDamage" (capital L) instead (0x101924b2). Console variable
+names are case-sensitive, thus this one message does not show with the
+other messages. It has no effect on the game.
+
+Not fixed yet: the modern build can use the correct name.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
