@@ -337,8 +337,13 @@ bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown38))
 		return false;
 
+#ifdef TRON20_MODERN
+	if (nPowerup < 0 || nPowerup >= kNumLCPowerupTypes)
+		return true;
+#else
 	if (nPowerup < 0 || nPowerup > 11)
 		return true;
+#endif
 
 	const char *pszName = g_aszLCPowerupNames[nPowerup];
 	StringArray &sa = g_pProfileMgr->GetCurrentProfile()->m_UnlockedPowerups;

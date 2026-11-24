@@ -1452,6 +1452,29 @@ call are the same as in the retail code.
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
 also gives the spawner number.
 
+### The light cycle power-up lock test reads past the name table
+
+CShell.dll 0x10069580 (CScreenLightCycleGame::IsPowerupLocked, ClientShellDLL/
+TRON/ScreenLightCycleGame.cpp). The function accepts a power-up index from 0
+to 11. The name table it reads (0x102162d4) has 11 entries, 0 to 10. Thus
+the index 11 reads the pointer after the table. The game calls the function
+only with the indexes 0 to 8, so this does not show in the game.
+
+Fixed in the modern build: the index must be less than the number of
+power-up types.
+
+### Loading a game without a current weapon reads past the weapon list
+
+CShell.dll 0x10168290 (CClientWeaponMgr::Load, ClientShellDLL/
+ClientShellShared/ClientWeaponMgr.cpp). The function reads the current
+weapon index (one byte) and then reads the weapon pointer at that index. It
+examines the index for "no weapon" (255) only after it reads the pointer.
+Thus a save without a current weapon reads entry 255 of the weapon list,
+which is past its end. The value is then discarded, so the game does not
+use it, but the read can fault.
+
+Fixed in the modern build: the pointer is read only for a valid index.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

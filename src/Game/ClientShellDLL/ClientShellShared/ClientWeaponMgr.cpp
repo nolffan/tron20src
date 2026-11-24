@@ -364,7 +364,11 @@ void CClientWeaponMgr::Load( ILTMessage_Read *pMsg )
 
 	// RETAIL: 0x1016835b: the weapon is read before the index is checked
 	// (see docs/RETAIL_BUGS.md)
+#ifdef TRON20_MODERN
+	m_pCurrentWeapon = (m_iCurrentWeapon == WMGR_INVALID_ID) ? NULL : m_apClientWeapon[m_iCurrentWeapon];
+#else
 	m_pCurrentWeapon = m_apClientWeapon[m_iCurrentWeapon];
+#endif
 	if (m_iCurrentWeapon == WMGR_INVALID_ID)
 	{
 		m_pCurrentWeapon = NULL;
