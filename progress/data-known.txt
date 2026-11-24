@@ -15,7 +15,6 @@ Object.lto	ours	OnMarkingCommand
 Object.lto	ours	SentryChallengeDistMax
 Object.lto	ours	SentryChallengeScanDistMax
 Object.lto	ours	SentryMarkDistMax
-Object.lto	ours	WeaponItem Gravity 0;AmmoAmount 0;WeaponType %s;AmmoType %s;MPRespawn 0, DMTouchPickup 0
 Object.lto	retail	\tLeaving attack state, too far
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Current Goal
 Object.lto	retail	%s:HandleGoalSenseTrigger: No Node
@@ -58,7 +57,6 @@ Object.lto	retail	Optimizer
 Object.lto	retail	RequiredPermissionSets
 Object.lto	retail	StandardCycleRestrictionId
 Object.lto	retail	SuperCycleRestrictionId
-Object.lto	retail	T_PRodLightning
 Object.lto	retail	Unlocks
 Object.lto	retail	WaveCount
 
@@ -67,12 +65,9 @@ CShell.dll	ours	 TESTING PERFORMANCE SETTINGS
 CShell.dll	ours	.?AVCDoomsdayPieceFX@@
 CShell.dll	ours	.?AVCMenuIntel@@
 CShell.dll	ours	D.dtx
-CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_L.spr
-CShell.dll	ours	FX\\Test\\Snow\\Spr\\SnowRabbitFS_R.spr
 CShell.dll	ours	Interface\\DemoEndSplash1.pcx
 CShell.dll	ours	Interface\\DemoEndSplash2.pcx
 CShell.dll	ours	Interface\\DemoEndSplash3.pcx
-CShell.dll	ours	Rabbit
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing1.wav
 CShell.dll	ours	Snd\\vehicle\\snowmobile\\landing2.wav
 CShell.dll	retail	 TESTING DETAIL SETTINGS
@@ -80,20 +75,6 @@ CShell.dll	retail	.?AVCMenuEmails@@
 CShell.dll	retail	ActivationDistanceLong
 CShell.dll	retail	BriefingId
 CShell.dll	retail	Bute Truncation: %s::%s - %s
-CShell.dll	retail	Debug LipFlap: 'else if( m_pEightBitBuffer )' returned true
-CShell.dll	retail	Debug LipFlap: 'if ( !m_hSound || g_pLTClient->IsDone(m_hSound) )' returned false
-CShell.dll	retail	Debug LipFlap: 'if (!m_pSixteenBitBuffer && !m_pEightBitBuffer)' returned true
-CShell.dll	retail	Debug LipFlap: 'if( dwNumSamples > 0 )' returned true
-CShell.dll	retail	Debug LipFlap: 'if( m_pSixteenBitBuffer )' returned true
-CShell.dll	retail	Debug LipFlap: Calling g_pLTClient->GetSoundOffset()
-CShell.dll	retail	Debug LipFlap: Entering CNodeController::UpdateLipFlapControl()
-CShell.dll	retail	Debug LipFlap: Entering CNodeController::UpdateLipFlapControl(pNodeControl = %d)
-CShell.dll	retail	Debug LipFlap: Made it past call to 'if( !bEnd )'
-CShell.dll	retail	Debug LipFlap: Made it past call to g_pLTClient->GetSoundOffset()
-CShell.dll	retail	Debug LipFlap: Made it past the iteration over m_pEightBitBuffer
-CShell.dll	retail	Debug LipFlap: Made it past the iteration over m_pSixteenBitBuffer
-CShell.dll	retail	Debug LipFlap: calling: if( pNodeControl->eModelNode == eModelNodeInvalid )
-CShell.dll	retail	Debug LipFlap: g_pLTClient->GetSoundOffset() returned LT_OK
 CShell.dll	retail	Image
 CShell.dll	retail	LINEAR DAMAGE: %.2f
 CShell.dll	retail	LightCyclePurple_1
@@ -112,7 +93,6 @@ CShell.dll	retail	_touch
 CShell.dll	retail	interface/menu/art/E3Upsell.pcx
 CShell.dll	retail	interface/menu/art/E3Upsell_2.pcx
 CShell.dll	retail	voice\\%d.wav
-CShell.dll	retail	voice\\21010.wav
 
 # Not text (2026-11-13): wave.cpp's FOURCC tags LIST, info and lith (s_tagLIST, s_tagINFO, s_tagLITH, whose addresses are taken) are 12 bytes with no NUL; in retail the next object's data starts with padding before a double, which ends the run as a string, in ours it is CWorldBlindObjectData's vtable. A difference in what is linked after wave.obj (the next object's data), not in the tags; to go with the engine's link order.
 server.dll	retail	LISTinfolith
