@@ -317,8 +317,8 @@ LTBOOL CWeaponFX::CreateObject(ILTClient* pClientDE)
 	CGameSettings* pSettings = g_pInterfaceMgr->GetSettings();
     if (!pSettings) return LTFALSE;
 
-	// Make sure the parent has updated their attachments.
-	g_pLTClient->ProcessAttachments( m_hFiredFrom );
+	// RETAIL: Tron's does not process the parent's attachments first
+	// (retail 0x1018ed73)
 
 	// Set up our data members...
 

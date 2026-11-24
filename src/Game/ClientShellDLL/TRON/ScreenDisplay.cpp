@@ -409,7 +409,8 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 
 		pProfile->SetDisplay();
 
-		m_bHardwareCursor = pProfile->m_bHardwareCursor;
+		// RETAIL: Tron's has no hardware cursor control (retail
+		// 0x1005946d)
 		m_bVSync = pProfile->m_bVSync;
 
 
@@ -448,11 +449,14 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 	{
 		UpdateData();
 
+		// RETAIL: Tron's turns the hardware cursor off (retail 0x1005951f)
+		g_pCursorMgr->UseHardwareCursor(LTFALSE);
+		WriteConsoleInt("HardwareCursor", 0);
 
 		if (m_bEscape)
 		{
 
-			pProfile->m_bHardwareCursor = m_bHardwareCursor;
+			pProfile->m_bHardwareCursor = LTFALSE;
 			pProfile->m_bVSync = m_bVSync;
 			pProfile->m_fGamma = ConvertToGamma(m_nGamma);
 			// Set the render mode if we are losing focus
@@ -467,9 +471,6 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 			}
 	
 			pProfile->ApplyDisplay();
-					
-			//display settings can affect performance sttings so update them here...
-			g_pPerformanceMgr->GetPerformanceOptions(&pProfile->m_sPerformance);
 
 			pProfile->Save();
 				
