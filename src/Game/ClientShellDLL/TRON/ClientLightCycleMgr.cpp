@@ -1146,11 +1146,13 @@ void CClientLightCycleMgr::ShowMessage(const char* szMsg)
 //
 //	ROUTINE:	CClientLightCycleMgr::GetCyclistName
 //
-//	PURPOSE:	RETAIL: 0x10012dd0. PORT: retail copies the profile's name
-//				(a caseless string at CProfileMgr +0x200) by its range
+//	PURPOSE:	RETAIL: 0x10012dd0
 //
 // ----------------------------------------------------------------------- //
 
+// NEAR: retail's exception states after the first return are two higher
+// (something between it and the multiplayer branch takes two states and makes
+// no code), and its string constructions expand to other depths
 std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 {
 	if (IsLocalCyclist(hObj))
@@ -1178,19 +1180,19 @@ std::string CClientLightCycleMgr::GetCyclistName(HOBJECT hObj)
 			return std::string(szName);
 		}
 
-		if (GetGameType() != eGameTypeSingleLightCycleCircuit && GetGameType() != eGameTypeSingleLightCycleCustom)
+		if (GetGameType() == eGameTypeSingleLightCycleCircuit || GetGameType() == eGameTypeSingleLightCycleCustom)
 		{
-			char szName[80] = "";
-			FormatString(0x15ff, szName, sizeof(szName));
-			return std::string(szName);
+			if (g_pProfileMgr)
+			{
+				return g_pProfileMgr->GetCurrentProfile()->m_sName;
+			}
+
+			return std::string("Unknown");
 		}
 
-		if (g_pProfileMgr)
-		{
-			return std::string(g_pProfileMgr->GetCurrentProfileName());
-		}
-
-		return std::string("Unknown");
+		char szName[80] = "";
+		FormatString(0x15ff, szName, sizeof(szName));
+		return std::string(szName);
 	}
 
 	char szName[80] = "";
