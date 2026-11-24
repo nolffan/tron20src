@@ -37,7 +37,7 @@ struct PROP_DISTURB
 	LTFLOAT	fStimRadius;
 
 	LTFLOAT	fTouchSoundRadius;
-	std::string	sTouchSound;
+	CaselessString	sTouchSound;	// RETAIL: caseless (PropType::ReadProp 0x100f55b0 copies it to the caseless PropDisturbStruct::sTouchSoundName)
 	uint32	nTouchAlarmLevel;
 
 	uint32	nDestroyAlarmLevel;

@@ -50,7 +50,7 @@ class AINodeExitLevelByRezOut : public AINodeGuard
 	protected :
 
 		uint32			m_nSmartObjectID;	// +0xd4, "SmartObject"
-		std::string		m_sOnUseCmd;		// +0xd8, "OnUseCmd"
+		CaselessString	m_sOnUseCmd;		// +0xd8, "OnUseCmd". RETAIL: caseless (the assignments check for NULL: 0x1026e720, 0x1026e870)
 };
 
 // RETAIL: AINodeExitLevelByRezOutPlugin (RTTI; vtable 0x102a1014, 4 bytes):
