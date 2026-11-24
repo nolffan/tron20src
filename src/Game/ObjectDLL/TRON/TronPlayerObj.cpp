@@ -236,8 +236,13 @@ uint32 CTronPlayerObj::ObjectMessageFn( HOBJECT hSender,
 		}
 		break;
 
-		// PORT: Tron's message 143 calls a CCharacter function that is not
-		// written yet (retail 0x10090160, with true)
+		case MID_TRONUNKNOWN_143:
+		{
+			// RETAIL: 0x10062c5a
+			HandleFootstep( true );
+			return 0;
+		}
+		break;
 	}
 
 	return CPlayerObj::ObjectMessageFn(hSender, pMsg);
