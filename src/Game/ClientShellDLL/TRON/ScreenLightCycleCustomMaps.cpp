@@ -83,7 +83,7 @@ namespace
 	// unlocked it
 	bool IsMapLocked(std::string sMap)
 	{
-		if (sMap.empty())
+		if (!sMap[0])
 			return true;
 
 		if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown36))
