@@ -112,7 +112,7 @@ protected:
 	void				ShowDebugTarget( HOBJECT hTarget );
 
 	// RETAIL: 0x1003a3f0 (from UpdateStateFlying 0x1003c2a3)
-	bool				UpdateMagneticHoming( LTVector *pvDir, LTVector const *pvTronUnknown );
+	bool				UpdateMagneticHoming( LTVector *pvDir, LTFLOAT const *pfTronUnknown );
 
 	// RETAIL: 0x1003a780 (from UpdateStateFlying 0x1003bd99): a player's
 	// disc homes in on the nearest target in the auto aim radius.  The
