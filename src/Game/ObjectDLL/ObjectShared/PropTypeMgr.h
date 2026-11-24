@@ -64,9 +64,11 @@ struct PROPTYPE
 
     uint32      nId;
 
-	std::string		sType;
-	std::string		sFilename;
-	std::string		sDebrisType;
+	// RETAIL: caseless, as the two below: their assignments check for NULL
+	// (Object.lto 0x100fdfd7, 0x100fe060, 0x100fe19c)
+	CaselessInlineString	sType;
+	CaselessInlineString	sFilename;
+	CaselessInlineString	sDebrisType;
 	// RETAIL: Tron's (0x28, Object.lto 0x100fe0fd): the ClientFX played when
 	// the prop is destroyed (CDestructibleModel::m_sDestroyFX). Caseless,
 	// as is sActivateType (0x34)
