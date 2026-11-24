@@ -307,8 +307,7 @@ void CScreenSubroutines::SetPopupText(uint32 nTextId, uint8 nPopupId, char * pTe
 	m_nPopupId = nPopupId;
 	if (pText)
 	{
-		strncpy(m_szPopupText, pText, 127);
-		m_szPopupText[127] = 0;
+		LTStrCpy(m_szPopupText, pText, sizeof(m_szPopupText));
 	}
 	else
 		m_szPopupText[0] = 0;
