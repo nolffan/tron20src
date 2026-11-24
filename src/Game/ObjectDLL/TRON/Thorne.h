@@ -112,16 +112,16 @@ class CThorne : public GameBase, public IHitBoxUser
 		bool			m_bCharging;
 		ModelSkeleton	m_eModelSkeleton;
 		LTObjRef		m_hHitBox;
-		CaselessString	m_sSummonCmd;
+		std::string		m_sSummonCmd;
 		bool			m_bAnimDone;
-		CaselessString	m_sTargetObject;
+		std::string		m_sTargetObject;
 		LTObjRef		m_hTargetObject;
 		LTObjRef		m_hBall;
 		bool			m_bAllowSummon;
 		CWeapons		m_Weapons;
-		CaselessString	m_sWeapon;				// RETAIL: saved, never set
+		std::string		m_sWeapon;				// RETAIL: saved, never set
 		uint8			m_nWeaponId;
-		CaselessString	m_sAmmo;				// RETAIL: saved, never set
+		std::string		m_sAmmo;				// RETAIL: saved, never set
 		uint8			m_nAmmoId;
 		CLIENTFXUSERCREATESTRUCT m_cs;		// RETAIL: holds the model id too
 };
