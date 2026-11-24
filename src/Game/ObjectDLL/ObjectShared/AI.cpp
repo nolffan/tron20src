@@ -1716,7 +1716,8 @@ void CAI::InitialUpdate()
 	ObjectCreateStruct createstruct;
 	createstruct.Clear();
 
-    const char* pFilename = g_pModelButeMgr->GetModelFilename(m_eModelId);
+	// RETAIL: 0x1012b24f, Tron's AI takes the multiplayer model file.
+    const char* pFilename = g_pModelButeMgr->GetMultiModelFilename(m_eModelId);
 	SAFE_STRCPY(createstruct.m_Filename, pFilename);
 
 	// load up the createstruct with the info from bute file.
@@ -1820,6 +1821,29 @@ void CAI::InitialUpdate()
 	// change object information based on stuff gotten from bute file.
     g_pCommonLT->SetObjectFilenames(m_hObject, &createstruct);
 
+	// RETAIL: 0x1012b5fc, Tron hides the model's pieces that the model
+	// bute file names (separated by "; ").
+
+	if( g_pModelButeMgr->GetModelHiddenPieces( m_eModelId ) )
+	{
+		std::string sHiddenPieces = g_pModelButeMgr->GetModelHiddenPieces( m_eModelId );
+
+		uint32 nPieces;
+		if( LT_OK == g_pModelLT->GetNumPieces( m_hObject, nPieces ) && nPieces )
+		{
+			const char* szPiece = strtok( (char*)sHiddenPieces.c_str(), "; " );
+			while( szPiece )
+			{
+				HMODELPIECE hPiece;
+				if( LT_OK == g_pModelLT->GetPiece( m_hObject, szPiece, hPiece ) )
+				{
+					g_pModelLT->SetPieceHideStatus( m_hObject, hPiece, LTTRUE );
+				}
+
+				szPiece = strtok( LTNULL, "; " );
+			}
+		}
+	}
 
 	g_pLTServer->GetObjectRotation(m_hObject, &m_rTargetRot);
 	m_vTargetRight = m_rTargetRot.Right();
@@ -2180,8 +2204,10 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	static CParsedMsg::CToken s_cTok_Alignment("ALIGNMENT");
 	static CParsedMsg::CToken s_cTok_DamageMask("DAMAGEMASK");
 	static CParsedMsg::CToken s_cTok_IgnoreVolumes("IGNOREVOLUMES");
+	static CParsedMsg::CToken s_cTok_LockIgnoreVolumeState("LOCKIGNOREVOLUMESTATE");	// RETAIL: Tron's
 	static CParsedMsg::CToken s_cTok_WakeUp("WAKEUP");
 	static CParsedMsg::CToken s_cTok_CineractAI("CINERACTAI");
+	static CParsedMsg::CToken s_cTok_ClearPathKnowledge("CLEARPATHKNOWLEDGE");	// RETAIL: Tron's
 	
 
 	
@@ -2257,39 +2283,93 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 		if( ( cMsg.GetArgCount() > 1 ) &&
 			( m_pAIMovement ) )
 		{
-			m_pAIMovement->IgnoreVolumes( IsTrueChar( cMsg.GetArg(1)[0] ) );
+			m_pAIMovement->IgnoreVolumesIfUnlocked( IsTrueChar( cMsg.GetArg(1)[0] ) );
 		}
 		return true;
 	}
 
+	// RETAIL: 0x1012c85b, Tron's: keep (or let go of) the ignore volumes
+	// state.
+	else if( cMsg.GetArg(0) == s_cTok_LockIgnoreVolumeState )
+	{
+		if( ( cMsg.GetArgCount() > 1 ) &&
+			( m_pAIMovement ) )
+		{
+			m_pAIMovement->LockIgnoreVolumes( IsTrueChar( cMsg.GetArg(1)[0] ) );
+		}
+		return true;
+	}
+
+	// RETAIL: 0x1012c8ea, Tron's: the target is the named object (or the
+	// player), and nothing changes while the AI looks at the player it
+	// talks to.
 	else if( cMsg.GetArg(0) == s_cTok_TrackLookAt )
 	{
-		CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
-		if ( pPlayer )
+		if( !m_bTalkLookAt )
 		{
-			m_pTrackedNodeContext->SetTrackedTarget( kTrack_LookAt, pPlayer->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
-			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_LookAt );
-			m_eTriggerNodeTrackingGroup = kTrack_LookAt;
+			GameBase* pTarget;
+			if( cMsg.GetArgCount() == 2 )
+			{
+				HOBJECT hTarget;
+				if( LT_OK != FindNamedObject( cMsg.GetArg(1), hTarget ) || !IsKindOf( hTarget, "GameBase" ) )
+				{
+					return true;
+				}
+
+				pTarget = (GameBase*)g_pLTServer->HandleToObject( hTarget );
+			}
+			else
+			{
+				pTarget = g_pCharacterMgr->FindPlayer();
+			}
+
+			if ( pTarget )
+			{
+				m_pTrackedNodeContext->SetTrackedTarget( kTrack_LookAt, pTarget->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
+				m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_LookAt );
+				m_eTriggerNodeTrackingGroup = kTrack_LookAt;
+			}
 		}
 		return true;
 	}
 
 	else if( cMsg.GetArg(0) == s_cTok_TrackAimAt )
 	{
-		CPlayerObj *pPlayer = g_pCharacterMgr->FindPlayer();
-		if ( pPlayer )
+		if( !m_bTalkLookAt )
 		{
-			m_pTrackedNodeContext->SetTrackedTarget( kTrack_AimAt, pPlayer->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
-			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_AimAt );
-			m_eTriggerNodeTrackingGroup = kTrack_AimAt;
+			GameBase* pTarget;
+			if( cMsg.GetArgCount() == 2 )
+			{
+				HOBJECT hTarget;
+				if( LT_OK != FindNamedObject( cMsg.GetArg(1), hTarget ) || !IsKindOf( hTarget, "GameBase" ) )
+				{
+					return true;
+				}
+
+				pTarget = (GameBase*)g_pLTServer->HandleToObject( hTarget );
+			}
+			else
+			{
+				pTarget = g_pCharacterMgr->FindPlayer();
+			}
+
+			if ( pTarget )
+			{
+				m_pTrackedNodeContext->SetTrackedTarget( kTrack_AimAt, pTarget->m_hObject, "Head", LTVector(0.f, 0.f, 0.f) );
+				m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_AimAt );
+				m_eTriggerNodeTrackingGroup = kTrack_AimAt;
+			}
 		}
 		return true;
 	}
 
 	else if( cMsg.GetArg(0) == s_cTok_TrackNone )
 	{
-		m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
-		m_eTriggerNodeTrackingGroup = kTrack_None;
+		if( !m_bTalkLookAt )
+		{
+			m_pTrackedNodeContext->SetActiveTrackingGroup( kTrack_None );
+			m_eTriggerNodeTrackingGroup = kTrack_None;
+		}
 		return true;
 	}
 
@@ -2316,6 +2396,12 @@ bool CAI::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 			CreateSpecialFX(LTTRUE);
 		}
 		return true;
+	}
+
+	// RETAIL: 0x1012ccf0, Tron's (it goes on to the character).
+	else if( cMsg.GetArg(0) == s_cTok_ClearPathKnowledge )
+	{
+		m_pPathKnowledgeMgr->ClearPathKnowledge();
 	}
 	
 	// Wake us back up if we get a message

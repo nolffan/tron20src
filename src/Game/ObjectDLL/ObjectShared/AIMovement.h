@@ -41,6 +41,11 @@ class CAIMovement
 		void SetSpeed( LTFLOAT fSpeed ) { m_fSetSpeed = fSpeed; }
 		void FaceDest( LTBOOL bFaceDest ) { m_bFaceDest = bFaceDest; }
 		void IgnoreVolumes(LTBOOL bIgnoreVolumes) { m_bIgnoreVolumes = bIgnoreVolumes; }
+		// RETAIL: Tron's IgnoreVolumes does not change a locked state (CAI::
+		// OnTrigger 0x1012c842, 0x102228a1, 0x1022a6cf): the callers of the
+		// AI files use this one. LockIgnoreVolumes is 0x1012c8c3. Names ours
+		void IgnoreVolumesIfUnlocked(LTBOOL bIgnoreVolumes) { if( !m_xTronUnknown38 ) m_bIgnoreVolumes = bIgnoreVolumes; }
+		void LockIgnoreVolumes(LTBOOL bLock) { m_xTronUnknown38 = bLock; }
 
 		void	LockMovement();
 		void	LockMovement(LTBOOL bLockRotation);
