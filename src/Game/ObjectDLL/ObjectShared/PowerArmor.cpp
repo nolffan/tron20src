@@ -831,6 +831,25 @@ void OccludingArmor::ReadShieldProps(ObjectCreateStruct* pData)
 
 //----------------------------------------------------------------------------
 //              
+//	ROUTINE:	OccludingArmor::TronUnknownVirtual24()
+//              
+//	PURPOSE:	RETAIL: 0x1013c3e0: add the object the armor is attached to
+//				(as a hit box user) to a list, as CThorne does with its ball
+//              
+//----------------------------------------------------------------------------
+/*virtual*/ void OccludingArmor::TronUnknownVirtual24(int nArg)
+{
+	std::list<IHitBoxUser*>* pList = (std::list<IHitBoxUser*>*)nArg;
+
+	IHitBoxUser* pUser = dynamic_cast<IHitBoxUser*>(g_pLTServer->HandleToObject(m_hParentObject));
+	if (pUser)
+	{
+		pList->push_back(pUser);
+	}
+}
+
+//----------------------------------------------------------------------------
+//              
 //	ROUTINE:	OccludingArmor::Update()
 //              
 //	PURPOSE:	

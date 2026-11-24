@@ -177,7 +177,8 @@ class OccludingArmor : public Prop, public IHitBoxUser
 		// RETAIL: slot 8 (retail 0x1013c3d0)
 		virtual HOBJECT GetHitBoxObject() const { return m_hHitBox; }
 		// RETAIL: IHitBoxUser's last two: Tron's OccludingArmor has its own slot 0x24
-		// (retail 0x1013c3e0, not yet written) and returns its object (0x1013c450)
+		// (retail 0x1013c3e0) and returns its object (0x1013c450)
+		virtual void	TronUnknownVirtual24(int nArg);
 		virtual HOBJECT TronUnknownVirtual28() { return m_hObject; }
 
 	protected:
