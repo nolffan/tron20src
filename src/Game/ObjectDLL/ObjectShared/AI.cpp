@@ -5254,6 +5254,15 @@ void CAI::HandleModelString(ArgList* pArgList)
 			SendTriggerMsgToObject( this, m_hAnimObject, LTFALSE, "ACTIVATE" );
 		}
 	}
+	// RETAIL: 0x10132c3b, Tron's TARGET key is sent on to the animation's
+	// object.
+	else if( !_stricmp( pKey, "TARGET" ) )
+	{
+		if( m_hAnimObject )
+		{
+			SendTriggerMsgToObject( this, m_hAnimObject, LTFALSE, "TARGET" );
+		}
+	}
 	else if ( !_stricmp( pKey, c_szAttachmentAnim  ) )
 	{
 		// Argument 1:	Attachment position/name to send the animation to
