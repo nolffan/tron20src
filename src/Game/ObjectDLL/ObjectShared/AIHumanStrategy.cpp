@@ -4026,7 +4026,18 @@ void CAIHumanStrategyShoot::ForceFire(HOBJECT hTargetObject)
 
 void CAIHumanStrategyShoot::Update(HOBJECT hTarget /* = LTNULL */)
 {
-	CAIHumanStrategy::Update();
+	// RETAIL: Tron's (0x102266b0).  Without a weapon (or a target, or
+	// ammo) the AI only aims.  The AI turns to its new attack side, and
+	// unlocks its animation after it fires as its weapon set says.
+
+	// Get our current weapon
+
+	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
+	if ( !pWeapon || !pWeapon->GetParent() )
+	{
+		Aim();
+		return;
+	}
 
 	LTBOOL bTargetProp = LTFALSE;
 
@@ -4039,34 +4050,47 @@ void CAIHumanStrategyShoot::Update(HOBJECT hTarget /* = LTNULL */)
 		hTarget = GetAI()->HasTarget() ? GetAI()->GetTarget()->GetObject() : LTNULL;
 	}
 
-	// If we are out of ammo and change strategies, then we need the
-	// strategy to test being out of ammo before it attempts to act.
-	// this FirstUpdate is nasty, but accomplishes this.
-	if ( m_bFirstUpdate )
-	{
-		CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
-		if ( !pWeapon || !pWeapon->GetParent() )
-		{
-			return;
-		}
-
-		UpdateNeedsReload( pWeapon);		
-	}
-
+	UpdateNeedsReload( pWeapon );
 
 	// If we don't/no longer have a target, this strategy cannot work
 	// If we need to reload because our clip is empty, and if we cannot reload
 	// then this strategy is completely broken
 	if ( !hTarget || ( NeedsReload() && !CanReload() ) )
 	{
+		Aim();
 		return;
 	}
 
-	// Get our current weapon
+	// The attack side changed: aim to the new side.
 
-	CWeapon* pWeapon = GetAI()->GetCurrentWeapon();
-	if ( !pWeapon || !pWeapon->GetParent() ) return;
+	EnumAIAttackSide eSide = GetAI()->GetCurAttackSide();
+	if ( ( ( m_eAttackDirection == kAP_Right ) && ( eSide != kAIAttack_Right ) ) ||
+		 ( ( m_eAttackDirection == kAP_Center ) && ( eSide != kAIAttack_Center ) ) ||
+		 ( ( m_eAttackDirection == kAP_Left ) && ( eSide != kAIAttack_Left ) ) )
+	{
+		switch( eSide )
+		{
+			case kAIAttack_Left:	m_eAttackDirection = kAP_Left; break;
+			case kAIAttack_Right:	m_eAttackDirection = kAP_Right; break;
+			case kAIAttack_Center:	m_eAttackDirection = kAP_Center; break;
+			default:				m_eAttackDirection = kAP_None; break;
+		}
 
+		if( ( GetAI()->GetCurrentWeaponProp() == kAP_Weapon1 ) &&
+			GetAI()->GetBrain()->GetAIDataExist( kAIData_UseCachedAttackAnims ) &&
+			( GetAI()->GetBrain()->GetAIData( kAIData_UseCachedAttackAnims ) != 0.f ) )
+		{
+			CAnimationProps Props;
+			Props.Set(kAPG_Posture, kAP_Stand);
+			Props.Set(kAPG_WeaponPosition, kAP_Up);
+			Props.Set(kAPG_WeaponAction, kAP_Aim);
+			Props.Set(kAPG_Weapon, kAP_Weapon1);
+			Props.Set(kAPG_Direction, m_eAttackDirection);
+			m_iAnimRandomSeed = GetAnimationContext()->ChooseRandomSeed( Props );
+		}
+
+		m_bTronUnknown3C = LTTRUE;
+	}
 
 	if ( !IsReloading() )
 	{
@@ -4087,9 +4111,27 @@ void CAIHumanStrategyShoot::Update(HOBJECT hTarget /* = LTNULL */)
 			}
 
 			UpdateFiring(hTarget, vTargetPos, pWeapon);
+
+			// Unlock the animation after firing.
+
+			if ( GetAI()->GetAnimationContext()->GetCurrentProp( kAPG_Evasive ) != kAP_None )
+			{
+				bool bMovement = ( GetAI()->GetAnimationContext()->GetCurrentProp( kAPG_Movement ) != kAP_None );
+				if ( GetAI()->GetAITemplate()->pWeaponSet->IsUnlockedPostFire( pWeapon->GetWeaponData(), bMovement ) &&
+					 GetAnimationContext()->IsLocked() )
+				{
+					GetAnimationContext()->Unlock();
+					GetAnimationContext()->ClearLock();
+				}
+			}
 		}
 		else
 		{
+			if ( g_pAIButeMgr->GetRules()->bEnableRecoilWeaponNodeTracking )
+			{
+				m_vTronUnknown2C = GetFirePosition( GetAI()->GetCurrentWeapon() );
+			}
+
 			UpdateAiming(hTarget);
 		}
 
