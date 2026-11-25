@@ -36,7 +36,9 @@
 #                         MFC 4.2 runtime DLLs (MFC42.DLL, MFC42U.DLL,
 #                         MSVCP60.DLL, Msvcrt.dll), from the retail game:
 #                         licensed binaries with no source. The game ships
-#                         no DirectX files.
+#                         no DirectX files. (TRON20SRC_MIDDLEWARE=open, for
+#                         the modern build's open-source replacements, is
+#                         refused until they exist: MODERN.md X-1.)
 #   3. compile            every workspace build/build.mk knows of
 #                         (build/compile.sh: one job per CPU,
 #                         TRON20SRC_JOBS=<n> to change it), and only what
@@ -94,6 +96,11 @@ BUILT=(
     "$E/snddrv/SndDrv.dll"               SndDrv.dll
     "$E/ltmsg/ltmsg.dll"                 ltmsg.dll
 )
+# The modern build links the launcher twice (build/build.mk): Tron.exe
+# starts the game, TronLauncher.exe is the launcher (MODERN.md APPS-1)
+case " ${TRON20SRC_CFLAGS:-} " in *" /D TRON20SRC_MODERN "*)
+    BUILT+=("$B/Launcher/TronLauncher.exe" TronLauncher.exe) ;;
+esac
 
 mkdir -p "$OUT/custom" "$OUT/Save" "$OUT/Profiles"
 if [ -n "$NODISCS" ]; then
@@ -118,6 +125,14 @@ else
     [ -f "$OUT/autoexec.cfg" ] || cp "$OUT/autoexec.cfg.retail" "$OUT/autoexec.cfg"
     [ -f "$OUT/Profiles/Default.prf" ] || cp "$OUT/Default.prf.retail" "$OUT/Profiles/Default.prf"
 
+    # TRON20SRC_MIDDLEWARE (build/variant.sh): retail, the default, for
+    # every build now; open, the open-source replacements of the modern
+    # build, is not there yet (MODERN.md X-1)
+    case "${TRON20SRC_MIDDLEWARE:-retail}" in
+        retail) ;;
+        open) echo "error: TRON20SRC_MIDDLEWARE=open: no open-source middleware yet (docs/MODERN.md X-1)" >&2; exit 1 ;;
+        *) echo "error: TRON20SRC_MIDDLEWARE=$TRON20SRC_MIDDLEWARE: retail or open" >&2; exit 1 ;;
+    esac
     step "2. THIRD-PARTY RUNTIME: from $RETAIL: Bink and the Microsoft runtime"
     python3 ext/tools/retailextract.py thirdparty "$RETAIL" "$OUT"
 fi

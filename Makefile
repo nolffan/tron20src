@@ -2,7 +2,7 @@
 #
 #   make          build the game into out/tron20-legacy-release/ (and its -private / -public .tar.gz)
 #   make modern   the game with TRON20SRC_MODERN, in out/tron20-modern-release/
-#                 (not yet: docs/PLAN.md, package 2, build/variant.sh)
+#                 (build/variant.sh; also make debug, make modern-debug)
 #   make test     run the game under Xvfb and Wine to its main menu
 #   make progress how much of the build is byte-identical to the retail game;
 #                 fails if a function recorded as identical stops matching
@@ -29,6 +29,9 @@ TEST_GAME ?= out/tron20-legacy-release
 TEST_SCRIPT ?=
 TEST_WORLD ?= -
 TEST_NAME = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
+# make tests' run names: test-<script> for the legacy release, and
+# test-<game directory>-<script> for any other game directory
+TESTS_PREFIX = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test-,test-$(notdir $(TEST_GAME:%/=%))-)
 TEST_SCRIPTS ?= menus level save race
 
 # Your disc images and the update, if they are not in isos/:
@@ -51,7 +54,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-variant test tests mptest launchertest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	test tests mptest launchertest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -60,15 +63,16 @@ help:
 	@echo "make debug      the game with symbols and TRON20SRC_DEBUG logging, in out/tron20-legacy-debug/"
 	@echo "make modern     the game with TRON20SRC_MODERN, in out/tron20-modern-release/"
 	@echo "make modern-debug  both, in out/tron20-modern-debug/"
-	@echo "                (none of these is ever scored, and none is made yet: docs/PLAN.md,"
-	@echo "                package 2, adds build/variant.sh)"
+	@echo "                (build/variant.sh: each is built in out/build-<variant>/ and is never"
+	@echo "                scored; the release build and its outputs are not touched)"
 	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
 	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
 	@echo "                TEST_GAME=<dir>; results in out/play/test*/)"
 	@echo "make control    out/tron20-control/: the retail game DLLs with our engine, to tell"
 	@echo "                our game code's faults from the engine's or Wine's (diagnosis only)"
 	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
-	@echo "                fails if one does not end ALIVE"
+	@echo "                fails if one does not end ALIVE (out/play/test-<name>/, or"
+	@echo "                test-<game dir>-<name>/ with TEST_GAME=<dir>)"
 	@echo "make sweep      every single-player world, about a minute each (build/sweep.sh;"
 	@echo "                SWEEP_WORLDS=<text>, SWEEP_JOBS=<n>; out/play/sweep-summary.txt)"
 	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
@@ -103,7 +107,10 @@ help:
 game: check-toolchain retail
 	$(DOCKER_RUN) bash build/all.sh
 
-debug modern modern-debug: check-toolchain check-variant retail
+# The variants (build/variant.sh): the same source with TRON20SRC_DEBUG and
+# symbols, or TRON20SRC_MODERN, or both, each in its own tree,
+# out/build-<variant>/, and game directory
+debug modern modern-debug: check-toolchain retail
 	$(DOCKER_RUN) bash build/variant.sh $@
 
 # The runtime test (build/playtest.sh, ext/tools/playtest.sh): the game
@@ -125,7 +132,7 @@ tests: image
 	@rc=0; for t in $(TEST_SCRIPTS); do \
 	  w=$$(sed -n 's/^# world: *//p' build/playtest-$$t.txt | head -1); \
 	  echo "== $$t (world $${w:--})"; \
-	  $(DOCKER_RUN) env PLAYTEST_NAME=test-$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
+	  $(DOCKER_RUN) env PLAYTEST_NAME=$(TESTS_PREFIX)$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
 	    bash build/playtest.sh $(TEST_GAME) "$${w:--}" 5 || rc=1; \
 	done; exit $$rc
 
@@ -143,11 +150,15 @@ mptest: image
 # The launcher test (build/launchertest.sh): Tron.exe with the registry of
 # the game's setup, its dialogs, and Launch to the main menu. Results in
 # out/play/test-launcher/ (LAUNCHER_SCRIPT=<script>: another input script;
-# LAUNCHERTEST_RETAIL=1: the retail Tron.exe, the control)
+# LAUNCHERTEST_RETAIL=1: the retail Tron.exe, the control; LAUNCHER_EXE=<exe>:
+# another executable of the game directory, as the modern build's
+# TronLauncher.exe, the launcher, and Tron.exe, which starts the game:
+# build/playtest-launcher-direct.txt)
 LAUNCHER_SCRIPT ?= build/playtest-launcher.txt
+LAUNCHER_EXE ?=
 launchertest: image
-	@[ -f $(TEST_GAME)/Tron.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
-	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) $(if $(LAUNCHERTEST_RETAIL),LAUNCHERTEST_RETAIL=1) bash build/launchertest.sh $(TEST_GAME) $(LAUNCHER_SCRIPT)
+	@[ -f $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) ] || { echo "error: no $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) -- build it first (make)" >&2; exit 1; }
+	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) $(if $(LAUNCHER_EXE),PLAYTEST_LAUNCH=$(LAUNCHER_EXE)) $(if $(LAUNCHERTEST_RETAIL),LAUNCHERTEST_RETAIL=1) bash build/launchertest.sh $(TEST_GAME) $(LAUNCHER_SCRIPT)
 
 # The world sweep (build/sweep.sh): every single-player world of the retail
 # game (build/sweep-worlds.txt), each played for about a minute in its own
@@ -166,11 +177,6 @@ sweep: image
 # too, then assembles the game directory: build/all.sh).
 compile: check-toolchain retail
 	$(DOCKER_RUN) bash build/compile.sh $(TARGETS)
-
-# The variants are docs/PLAN.md's package 2: until build/variant.sh lands,
-# say so rather than fail inside the container.
-check-variant:
-	@[ -f build/variant.sh ] || { echo "error: no variant build yet (build/variant.sh): docs/PLAN.md, package 2. make builds the legacy release" >&2; exit 1; }
 
 # IMAGE_BUILD=0: use $(IMAGE) as it is (CI builds it with a layer cache first).
 IMAGE_BUILD ?= 1

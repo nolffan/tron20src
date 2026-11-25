@@ -1,0 +1,12 @@
+# playtest-launcher-direct.txt -- the modern build's Tron.exe, which starts
+# the game with no launcher window, as the launcher's Play does (MODERN.md
+# APPS-1; `make launchertest TEST_GAME=out/tron20-modern-release
+# LAUNCHER_EXE=Tron.exe LAUNCHER_SCRIPT=build/playtest-launcher-direct.txt`).
+# On the first run it asks for the detail setting once (Medium: 800x600),
+# as Play does; then the engine must reach the main menu. No launcher
+# window opens.
+wait 10
+screen detail
+sclick 400 352
+wait 60
+screen menu
