@@ -101,10 +101,10 @@ CCreator< IClientWeaponBase > *aWeaponClasses[] =
 };
 
 
-// RETAIL: an allocator of this TU's own (CShell 0x1026ed58, set up by
-// 0x10098fd0) that nothing uses: CTronGameClientShell's member is the one
-// the weapons come from.  The name is ours.
-static CTronClientWeaponAllocator s_TronClientWeaponAllocator;
+// RETAIL: the TU's fourteen initializers (0x10098e30..0x10098fd0) are the
+// fourteen creators above, in their order: 0x1026ed58, which 0x10098fd0
+// sets up, is aWeaponClasses[ CLIENT_WEAPON_TYPE_PRANKSTER ] (its vtable's
+// New is 0x100990f0). The TU has no allocator object of its own.
 
 
 // ----------------------------------------------------------------------- //

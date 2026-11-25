@@ -208,7 +208,8 @@ namespace
 
 	bool g_bLockPopup = true;
 
-	CTimer g_SplashScreenTimer;
+	// RETAIL: no CTimer g_SplashScreenTimer (NOLF2's, unused): retail CShell
+	// has no initializer of a CTimer global (three dwords and a bool) in any TU.
 }
 
 
