@@ -106,11 +106,13 @@ LTBOOL CHUDWpnChooser::Init()
 				WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon( nWpn );
 				if (pWeapon)
 				{
+					// RETAIL: 0x10022e5b, 0x10022ebe: the normal icon (drawn for the
+					// selected weapon) and the unselected one (the dim icon of the others)
 					std::string icon;
-					icon = pWeapon->GetDisabledIcon();
-					m_hDisabledIcon[nClass][m_nWeaponCount[nClass]] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
 					icon = pWeapon->GetNormalIcon();
 					m_hNormalIcon[nClass][m_nWeaponCount[nClass]] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
+					icon = pWeapon->GetUnselectedIcon();
+					m_hUnselectedIcon[nClass][m_nWeaponCount[nClass]] = g_pInterfaceResMgr->GetTexture( icon.c_str() );
 				}
 
 				m_nWeaponCount[nClass]++;
@@ -130,13 +132,13 @@ LTBOOL CHUDWpnChooser::Init()
 
 			g_pDrawPrim->SetRGBA( &m_IconPoly[i][n], argbWhite );
 			// RETAIL: the first weapon's icon sizes every icon
-			SetHalfTexelUVs( &m_IconPoly[i][n], m_hNormalIcon[0][0] );
+			SetHalfTexelUVs( &m_IconPoly[i][n], m_hUnselectedIcon[0][0] );
 		}
 
 		for (n = m_nWeaponCount[i]; n < kMaxItemsPerClass; n++)
 		{
 			m_nWeaponID[i][n] = WMGR_INVALID_ID;
-			m_hNormalIcon[i][n] = LTNULL;
+			m_hUnselectedIcon[i][n] = LTNULL;
 		}
 	}
 
@@ -303,7 +305,7 @@ void CHUDWpnChooser::Render()
 						hTex = bSel ? m_hEmptyTexHi : m_hEmptyTex;
 					g_pDrawPrim->SetTexture(hTex);
 					g_pDrawPrim->DrawPrim(&m_BoxPoly[i][n], 1);
-					g_pDrawPrim->SetTexture(bSel ? m_hDisabledIcon[i][n] : m_hNormalIcon[i][n]);
+					g_pDrawPrim->SetTexture(bSel ? m_hNormalIcon[i][n] : m_hUnselectedIcon[i][n]);
 					g_pDrawPrim->DrawPrim(&m_IconPoly[i][n], 1);
 				}
 			}
