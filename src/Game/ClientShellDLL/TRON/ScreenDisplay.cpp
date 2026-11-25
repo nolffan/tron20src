@@ -18,6 +18,36 @@
 #include "GameSettings.h"
 extern CGameClientShell* g_pGameClientShell;
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-44: the frame rate limit (the engine's MaxFPS: EN-40). The
+// limits on offer, "none" (0) last; a MaxFPS set by hand that is not on
+// offer shows as the next higher limit ("none" above the highest), and is
+// written again only when the choice is changed. 240 is the engine's
+// default (a config without MaxFPS).
+namespace
+{
+	const int	kModernFrameLimits[] = { 60, 120, 144, 240, 0 };
+	const int	kNumModernFrameLimits = sizeof(kModernFrameLimits) / sizeof(kModernFrameLimits[0]);
+	const float	kModernDefaultMaxFPS = 240.0f;
+
+	uint8		s_nModernFrameLimit = 3;		// the control's choice
+	uint8		s_nModernFrameLimitRead = 3;	// the choice when the screen opened
+
+	uint8 ModernFrameLimitIndex(float fMaxFPS)
+	{
+		int nMaxFPS = (int)(fMaxFPS + 0.5f);
+		if (nMaxFPS <= 0)
+			return (uint8)(kNumModernFrameLimits - 1);
+		for (int i = 0; i < kNumModernFrameLimits - 1; i++)
+		{
+			if (nMaxFPS <= kModernFrameLimits[i])
+				return (uint8)i;
+		}
+		return (uint8)(kNumModernFrameLimits - 1);
+	}
+}
+#endif
+
 namespace
 {
 	int kGap = 0;
@@ -160,6 +190,26 @@ LTBOOL CScreenDisplay::Build()
 	// 0x10058a9b)
 
 	AddToggle(IDS_VSYNC,IDS_HELP_VSYNC,kGap,&m_bVSync);
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-44: the frame rate limit
+	{
+		CLTGUICycleCtrl *pModernLimit = AddCycle(IDS_MODERN_FRAMELIMIT,IDS_HELP_MODERN_FRAMELIMIT,kGap,&s_nModernFrameLimit);
+		for (int i = 0; i < kNumModernFrameLimits; i++)
+		{
+			if (kModernFrameLimits[i] > 0)
+			{
+				char szLimit[16];
+				sprintf(szLimit, "%d", kModernFrameLimits[i]);
+				pModernLimit->AddString(szLimit);
+			}
+			else
+			{
+				pModernLimit->AddString(LoadTempString(IDS_MODERN_FRAMELIMIT_NONE));
+			}
+		}
+	}
+#endif
 
 
 	m_pGamma = AddSlider(IDS_GAMMA,IDS_HELP_GAMMA,kGap,kWidth,-1,&m_nGamma);
@@ -402,6 +452,12 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 		// 0x1005946d)
 		m_bVSync = pProfile->m_bVSync;
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-44
+		s_nModernFrameLimit = ModernFrameLimitIndex(GetConsoleFloat("MaxFPS", kModernDefaultMaxFPS));
+		s_nModernFrameLimitRead = s_nModernFrameLimit;
+#endif
+
 
 		float gamma = pProfile->m_fGamma;
 
@@ -448,6 +504,14 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 			pProfile->m_bHardwareCursor = LTFALSE;
 			pProfile->m_bVSync = m_bVSync;
 			pProfile->m_fGamma = ConvertToGamma(m_nGamma);
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-44: the engine saves MaxFPS in autoexec.cfg
+			if (s_nModernFrameLimit != s_nModernFrameLimitRead && s_nModernFrameLimit < kNumModernFrameLimits)
+			{
+				WriteConsoleFloat("MaxFPS", (float)kModernFrameLimits[s_nModernFrameLimit]);
+				s_nModernFrameLimitRead = s_nModernFrameLimit;
+			}
+#endif
 			// Set the render mode if we are losing focus
 			if (m_pResolutionCtrl)
 			{

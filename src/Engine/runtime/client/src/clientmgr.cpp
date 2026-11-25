@@ -757,26 +757,24 @@ void cm_HandleMaxFPS(uint32 frameTicks)
 
 
 #ifdef TRON20SRC_MODERN
-// MODERN.md EN-40: the frame limiter. Retail's MaxFPS is 0 (no limit)
-// unless set, and when set its cm_HandleMaxFPS above times the frame from
-// an uninitialised value (Update, Lithtech.exe 0x40df80), so the game has
-// always run as fast as it could; the modern build does not call it. Parts of the game went wrong at high frame rates (the AIs,
-// the music, the player's walk and the per-frame pushes and dampings:
-// EN-41, GAME-40, CL-41 to CL-45), so the modern build limits it: to
-// MaxFPS (240 unless set, the fastest common refresh rate; 0 is no limit;
-// at most 1000), and in multiplayer to 60 at most, where a faster frame
-// rate is untried. Each frame waits until 1/MaxFPS has passed since the
-// last one ended, sleeping while more than two milliseconds are left (the
-// timer runs at 1 ms: timemgr.cpp) and spinning for the rest.
-static void cm_ModernFrameLimit(bool bMultiplayer)
+// MODERN.md EN-40, EN-44: the frame limiter. Retail's MaxFPS is 0 (no
+// limit) unless set, and when set its cm_HandleMaxFPS above times the frame
+// from an uninitialised value (Update, Lithtech.exe 0x40df80), so the game
+// has always run as fast as it could; the modern build does not call it.
+// The modern build limits the frame rate to MaxFPS: 240 unless set (the
+// fastest common refresh rate), 0 is no limit, at most 1000. The Display
+// screen offers 60, 120, 144, 240 and no limit (EN-44). The limit is the
+// same in multiplayer, hosting or joining (cjacksrc's EN-40 held
+// multiplayer at 60; the frame-rate faults of multiplayer are EN-45's).
+// Each frame waits until 1/MaxFPS has passed since the last one ended,
+// sleeping while more than two milliseconds are left (the timer runs at
+// 1 ms: timemgr.cpp) and spinning for the rest.
+static void cm_ModernFrameLimit()
 {
     static CounterFinal s_FrameCounter;
     static bool s_bCounting = false;
-    const float kMultiplayerFPS = 60.0f;
 
     float fFPS = LTMIN(g_CV_MaxFPS, 1000.0f);
-    if (bMultiplayer && (fFPS <= 0.0f || fFPS > kMultiplayerFPS))
-        fFPS = kMultiplayerFPS;
 
     // EN-62: V-sync in a window under Wine caps the rate at the monitor's
     // refresh instead of waiting for it (d3d_device.cpp)
@@ -1229,9 +1227,8 @@ LTRESULT CClientMgr::Update()
     cm_HandleMaxFPS(frameTicks);                    // Lock framerate if they want.
 #endif
 #ifdef TRON20SRC_MODERN
-    // EN-40: multiplayer is a shell that is not a normal (single-player)
-    // game, hosting one or joining one
-    cm_ModernFrameLimit(m_pCurShell && m_pCurShell->m_ShellMode != STARTGAME_NORMAL);
+    // EN-40, EN-44: the same limit in single player and multiplayer
+    cm_ModernFrameLimit();
 #endif
 
     GraphicsBenchmarkingUpdate();  // Update the benchmark mgr
