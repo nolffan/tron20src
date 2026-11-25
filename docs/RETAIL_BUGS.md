@@ -1621,6 +1621,20 @@ other commands that the function handles return true.
 Fixed in the modern build (AIHuman.cpp, `TRON20SRC_MODERN`: the branch
 returns true).
 
+### The engine writes an incorrect build number when it starts
+
+Lithtech.exe 0x493d50 (GetLTExeVersion, runtime/kernel/src/sys/win/
+version_resource.cpp), from the client start-up at 0x405157 (client.cpp).
+The engine reads its build number from an RCDATA resource, number 12346,
+in Lithtech.exe. The retail Lithtech.exe has no such resource (and NOLF2's,
+Contract J.A.C.K.'s and the 2003-08-05 developer build's do not have it
+too). Thus the function returns LT_ERROR, the version stays at its initial
+value 0xFFFFFFFF.0xFFFFFFFF, and the debug output says "LithTech build
+4294967295.4294967295 initialized in ... seconds." The console variable "version"
+(CClientMgr::Init) gets the same incorrect value.
+
+Not fixed yet: the modern build has no build number to give the engine.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

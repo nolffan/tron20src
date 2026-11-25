@@ -14,6 +14,12 @@
 # Tron's health bar, green, at x 110..210, y 461..466 of the 640x480 view
 # (NOLF2's is red, lower left). The adapted copy is written to
 # out/play/playtest-tron20.sh each run; ext/tools/ is not changed.
+#
+# One more script command, for Tron 2.0's scripts only:
+#   nohud <name>          the HUD must not be up now (for example, the
+#                         post-load screen waits for a key); takes a shot
+#                         like `shot <name>`. If the HUD is up, the run is
+#                         judged HUD UP, a failure.
 set -u
 # a game directory built without the retail game (NODISCS=1) does not play
 for a in "$@"; do
@@ -28,6 +34,14 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e 's#Worlds\\\\RetailSinglePlayer\\\\C01S01#Worlds\\\\RetailSinglePlayer\\\\M01-01#' \
     -e 's#local x=$((WX + 30\*WW/642)) y=$((WY + 448\*WH/482)) w=$((30\*WW/642)) h=$((4\*WH/482 + 1))#local x=$((WX + 110*WW/642)) y=$((WY + 461*WH/482)) w=$((100*WW/642)) h=$((5*WH/482 + 1))#' \
     -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.6 \&\& \$2 > 1.8 * \$1)#" \
+    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""#' \
+    -e 's#^            \*)     log "  unknown command#            nohud) N=$((N+1)); f=$(printf '"'"'shots/%02d-%s.png'"'"' $N "$1"); grab "$f"; log "  -> $f"\
+                   if hud; then HUDUP="line $LINE"; log "  nohud: the HUD is up"; else log "  nohud: no HUD, as expected"; fi ;;\
+&#' \
+    -e 's#^if alive \&\& \[ -n "$NOHUD" \]; then$#if alive \&\& [ -n "$HUDUP" ]; then\
+    echo "HUD UP: alive, but the HUD was up where the script expects none (nohud at $HUDUP)" > result.txt\
+    wineserver -k; sleep 2\
+elif alive \&\& [ -n "$NOHUD" ]; then#' \
     -e 's#^source "$(dirname "${BASH_SOURCE\[0\]}")/layout.sh"$#REPO="'"$REPO"'"; TOOLS="'"$REPO"'/ext/tools"#' \
     "$REPO/ext/tools/playtest.sh" > "$OUT"
 exec bash "$OUT" "$@"
