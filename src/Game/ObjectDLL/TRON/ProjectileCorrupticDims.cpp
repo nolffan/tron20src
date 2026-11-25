@@ -13,6 +13,9 @@
 #include "ProjectileCorrupticDims.h"
 #include "WeaponFireInfo.h"
 #include "FXButeMgr.h"
+// RETAIL: the TU starts with PlayerShared.h's two initializers (0x10035fa0,
+// 0x10035fd0), so it includes the player's header.
+#include "PlayerObj.h"
 
 BEGIN_CLASS(CCorrupticDims)
 END_CLASS_DEFAULT_FLAGS(CCorrupticDims, CTronProjectile, NULL, NULL, CF_HIDDEN)
