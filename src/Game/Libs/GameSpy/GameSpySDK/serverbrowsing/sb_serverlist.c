@@ -346,7 +346,17 @@ static SBError ServerListConnect(SBServerList *slist)
 	if (SBOverrideMasterServer != NULL)
 		strcpy(masterHostname, SBOverrideMasterServer);
 	else //use the default format...
+#ifdef TRON20SRC_MODERN
+	{
+		// MODERN (GS-2): "<game>.ms<n>.<domain>", OpenSpy's by default (nonport.h)
+		char service[96];
+		_snprintf(service, sizeof(service), "%s.ms%d", slist->queryforgamename, masterIndex);
+		service[sizeof(service) - 1] = '\0';
+		gsiMakeHostName(masterHostname, sizeof(masterHostname), service);
+	}
+#else
 		sprintf(masterHostname,"%s.ms%d." GSI_DOMAIN_NAME, slist->queryforgamename, masterIndex);
+#endif
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(MSPORT2);
 	saddr.sin_addr.s_addr = inet_addr(masterHostname);

@@ -330,3 +330,145 @@ static long nextlongrand(long seed)
 	}
 	return (long)lo;
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN (GS-1, GS-2): the domain of the master server and the server
+// list (nonport.h). Each binary that links this file (CShell.dll,
+// Object.lto, TRONSrv.exe) finds it the same way, so a client, the
+// server it hosts and a dedicated server in the same directory agree.
+
+static char s_szDomainName[128];
+
+// The value after "+MasterDomain" (or "-MasterDomain") in the command line.
+static int gsiDomainFromCommandLine(char *out, int len)
+{
+	const char *p = GetCommandLineA();
+	char token[128];
+	int bNext = 0;
+
+	while (p && *p)
+	{
+		int n = 0;
+		while (*p == ' ' || *p == '\t')
+			p++;
+		if (!*p)
+			break;
+		if (*p == '"')
+		{
+			p++;
+			while (*p && *p != '"')
+			{
+				if (n < (int)sizeof(token) - 1)
+					token[n++] = *p;
+				p++;
+			}
+			if (*p == '"')
+				p++;
+		}
+		else
+		{
+			while (*p && *p != ' ' && *p != '\t')
+			{
+				if (n < (int)sizeof(token) - 1)
+					token[n++] = *p;
+				p++;
+			}
+		}
+		token[n] = '\0';
+		if (bNext)
+		{
+			strncpy(out, token, (size_t)len - 1);
+			out[len - 1] = '\0';
+			return 1;
+		}
+		if ((token[0] == '+' || token[0] == '-') && _stricmp(token + 1, "MasterDomain") == 0)
+			bNext = 1;
+	}
+	return 0;
+}
+
+// One word of a line of autoexec.cfg: quoted or not.
+static const char * gsiConfigWord(const char *p, char *out, int len)
+{
+	int n = 0;
+	while (*p == ' ' || *p == '\t')
+		p++;
+	if (*p == '"')
+	{
+		p++;
+		while (*p && *p != '"' && *p != '\r' && *p != '\n')
+		{
+			if (n < len - 1)
+				out[n++] = *p;
+			p++;
+		}
+		if (*p == '"')
+			p++;
+	}
+	else
+	{
+		while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n')
+		{
+			if (n < len - 1)
+				out[n++] = *p;
+			p++;
+		}
+	}
+	out[n] = '\0';
+	return p;
+}
+
+// The engine keeps the console variables in autoexec.cfg, in the current
+// directory (the game directory), one a line: "MasterDomain" "<value>".
+static int gsiDomainFromConfig(char *out, int len)
+{
+	char line[512];
+	char name[64];
+	int bFound = 0;
+	FILE *fp = fopen("autoexec.cfg", "r");
+	if (!fp)
+		return 0;
+	while (fgets(line, sizeof(line), fp))
+	{
+		const char *p = gsiConfigWord(line, name, sizeof(name));
+		if (_stricmp(name, "MasterDomain") != 0)
+			continue;
+		gsiConfigWord(p, out, len);
+		bFound = 1;
+	}
+	fclose(fp);
+	return bFound;
+}
+
+const char * gsiGetDomainName(void)
+{
+	char szValue[128];
+	DWORD nLen;
+
+	szValue[0] = '\0';
+	nLen = GetEnvironmentVariableA("TRON20_MASTERDOMAIN", szValue, sizeof(szValue));
+	if (nLen == 0 || nLen >= sizeof(szValue))
+	{
+		szValue[0] = '\0';
+		if (!gsiDomainFromCommandLine(szValue, sizeof(szValue)))
+			gsiDomainFromConfig(szValue, sizeof(szValue));
+	}
+
+	// A host name has no spaces and no slashes; anything else is the default.
+	if (!szValue[0] || strpbrk(szValue, " \t/\\:"))
+		strcpy(szValue, GSI_DOMAIN_NAME);
+
+	strcpy(s_szDomainName, szValue);
+	return s_szDomainName;
+}
+
+void gsiMakeHostName(char *hostname, int len, const char *service)
+{
+	const char *pszDomain = gsiGetDomainName();
+	if (inet_addr(pszDomain) != INADDR_NONE)
+		_snprintf(hostname, (size_t)len, "%s", pszDomain);
+	else
+		_snprintf(hostname, (size_t)len, "%s.%s", service, pszDomain);
+	hostname[len - 1] = '\0';
+}
+#endif

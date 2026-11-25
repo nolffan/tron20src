@@ -21,6 +21,10 @@
 #include "ServerOptionMgr.h"
 #include "LTGUIListItemCtrl.h"
 
+#ifdef TRON20SRC_MODERN
+void TronSyncMasterDomain();	// MODERN (GS-1): BaseScreenJoin.h
+#endif
+
 namespace
 {
 	// RETAIL: inline: a wide string's low bytes into a cleared buffer (the
@@ -461,6 +465,10 @@ LTBOOL CBaseScreenHost::StartServer()
 	ServerGameOptions *pOptions = g_pServerOptionMgr->GetCurrent();
 	uint16 nPort = (uint16)pOptions->m_nPort;
 	g_pGameClientShell->SetGameType((GameType)pOptions->m_eGameType);
+
+#ifdef TRON20SRC_MODERN
+	TronSyncMasterDomain();		// MODERN (GS-1): for the server it starts
+#endif
 
 	// RETAIL: Tron's SetupServerHost takes the port only (0x100e8a00)
 	if (!g_pClientMultiplayerMgr->SetupServerHost(nPort))

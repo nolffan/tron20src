@@ -82,8 +82,23 @@ typedef int               gsi_bool;
 
 #define GSI_UNUSED(x)     x
 
+#ifdef TRON20SRC_MODERN
+// MODERN (GS-1, GS-2): GameSpy's servers are gone. The default domain is
+// OpenSpy's, which has the same host names (tron20.master.openspy.net,
+// tron20.ms<n>.openspy.net). gsiGetDomainName gives the domain in use:
+// the environment variable TRON20_MASTERDOMAIN, else "+MasterDomain <x>"
+// on the command line, else "MasterDomain" in autoexec.cfg, else this.
+// gsiMakeHostName makes "<service>.<domain>"; a domain that is an IPv4
+// address is the host of every service (a local or private master).
+#ifndef GSI_DOMAIN_NAME
+	#define GSI_DOMAIN_NAME "openspy.net"
+#endif
+const char * gsiGetDomainName(void);
+void gsiMakeHostName(char *hostname, int len, const char *service);
+#else
 #ifndef GSI_DOMAIN_NAME
 	#define GSI_DOMAIN_NAME "gamespy.com"
+#endif
 #endif
 
 // ---------------------------------------------------------------------------

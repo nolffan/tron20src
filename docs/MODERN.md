@@ -718,6 +718,88 @@ The renderer always asks for `D3DPRESENTFLAG_LOCKABLE_BACKBUFFER`, which
 Direct3D 9 does not allow with multisampling, so the device falls back to
 no antialiasing.
 
+### Online
+
+Internet play uses OpenSpy (openspy.net), the community replacement of
+GameSpy's servers. The protocols stay those of the retail GameSpy SDK:
+only the host names change. OpenSpy knows Tron 2.0 under the retail
+game name `tron20` and secret key `t9D3vB` (`TronGameServerShell.cpp`,
+`BaseScreenJoin.cpp`). We checked this one time with a list request
+(read only) to `tron20.ms9.openspy.net`: the list decrypts with that key
+and it is correct (no servers at that time). A wrong key does not
+decrypt, and an unknown game name gets no list. We did not send a
+heartbeat to OpenSpy: no public server was hosted.
+
+* **GS-1: the master server.** A server that is not LAN only reports to
+  `tron20.master.<domain>` (UDP 27900), and `<domain>` is `openspy.net`
+  by default (`MasterDomain`, below). `qr2_init_socket` makes the host
+  name with `gsiMakeHostName` (`Libs/GameSpy/GameSpySDK/qr2/qr2.c`).
+  `gsiGetDomainName` and `gsiMakeHostName` are in `Libs/GameSpy/
+  nonport.c` and `nonport.h` (the two copies of `nonport.h` are the
+  same). Each binary finds the domain in this sequence: the environment
+  variable `TRON20_MASTERDOMAIN`, `+MasterDomain <x>` on its command
+  line, `"MasterDomain"` in `autoexec.cfg`, and then the default. A
+  domain that is an IPv4 address is the host of all services (a local
+  or private master server). The client copies its console variable
+  `MasterDomain` into `TRON20_MASTERDOMAIN` before it shows the Internet
+  list and before it hosts a game (`TronSyncMasterDomain`,
+  `TRON/BaseScreenJoin.cpp`; called from `ScreenJoinServerList.cpp`
+  `FindServers` and `BaseScreenHost.cpp` `StartServer`). Thus the
+  server in the same process and a `TRONSrv.exe` that the client starts
+  use the same domain. A `TRONSrv.exe` that you start yourself reads its
+  command line (`TRONSrv.exe -config <name> +MasterDomain <x>`), the
+  environment or `autoexec.cfg`. The server writes `GameSpy: reporting
+  to the master server of <domain>` to its console
+  (`CTronGameServerShell::TronUnknownVirtual4C`).
+* **GS-2: the server list.** The Internet list asks
+  `tron20.ms<n>.<domain>` (TCP 28910; for `tron20`, n is 9):
+  `ServerListConnect` in `serverbrowsing/sb_serverlist.c` makes the host
+  name with `gsiMakeHostName`.
+* **GS-3: no version check.** GameSpy's patch service
+  (`motd.gamespy.com`) is gone, and Update 2 (1.042) is the last patch.
+  The request also sent a machine ID that the SDK keeps in the registry
+  (`GOAGetUniqueID`). `CBaseScreenJoin::CheckForUpdate` returns at once,
+  so the Internet screens open without the "checking for updates" box
+  (`TRON/BaseScreenJoin.cpp`). `pt/ptMain.c` does not change.
+* **GS-4: no CD-key check.** The server does not start GameSpy's CD-key
+  module (`gcd_init_qr2`, `gcd_think`, `gcd_shutdown`) and lets every
+  client in, as in a LAN game (`gcd_authenticate_user`,
+  `gcd_disconnect_user` are not called; `TRON/TronGameServerShell.cpp`:
+  `TronUnknownVirtual4C`, `50`, `54`, `78`, `ProcessHandshake`). The
+  client does not read its CD key: it answers the server's challenge
+  with the response of an empty key, so that the message keeps its
+  form and does not identify the player
+  (`TRON/TronClientMultiplayerMgr.cpp` `HandleMsgHandshake`). Thus the
+  modern client does not use `CTronCDKey` (APPS-3 can remove the
+  registry read).
+
+Tests (`make mptest TEST_GAME=out/tron20-modern-release`, the new
+`MPTEST_MASTER=local`): `build/gamespy.py master` is a local stand-in
+for the master server and the server list (qr2 and the encrypted list
+of the SDK, written from the SDK source; its ciphers give the same bytes
+as the SDK's C code). All programs get `TRON20_MASTERDOMAIN=127.0.0.1`.
+The dedicated server (not LAN only) sent its heartbeat. It answered the
+challenge correctly and was listed. Client 1 joined with `+join`.
+Client 2 opened Multiplayer, Join, saw `mptest` in the Internet list
+(ping, players 1/8, Disc Arena, DiscArena01: its query went to the
+server), and joined from the list. Neither client has a CD key. Both
+played and saw the other. The same with `MPTEST_MODE=listen` (client 1
+hosts from the menus). With `MPTEST_MASTERVIA=cvar` there is no
+environment variable: the clients get `+MasterDomain 127.0.0.1` (the
+console variable, which `TronSyncMasterDomain` copies) and `TRONSrv.exe`
+gets it on its command line. Dedicated and listen both passed. A LAN
+game (`make mptest` without `MPTEST_MASTER`) is not changed and still
+works. Not tested: that the engine keeps `MasterDomain` in
+`autoexec.cfg` when the game exits (the tests stop the clients), and a
+game over OpenSpy itself (that needs a public server). `build/gamespy.py list
+<host>` is a read-only browser (for example, against OpenSpy).
+
+### Console variables
+
+| Variable | Type | Default | What | Items |
+|---|---|---|---|---|
+| `MasterDomain` | string | (empty = `openspy.net`) | the domain of the master server and the server list: `tron20.master.<domain>`, `tron20.ms<n>.<domain>`; an IPv4 address is the host of both. Read from the client's console, `+MasterDomain` on a command line (`TRONSrv.exe` too), `autoexec.cfg`, or the environment variable `TRON20_MASTERDOMAIN` | GS-1, GS-2 |
+
 ## Planned (Phase 1)
 
 Six agents do Phase 1, each with its own files. Each item lists the files
@@ -794,27 +876,6 @@ every retail binary):
 * **X-2: MP3 decoding in `SndDrv.dll`** (minimp3, as cjacksrc's EN-50),
   so that the speech plays without a codec installed. Files:
   `src/Engine/snddrv/s_dx8.cpp`, `snddrv.dsp`.
-
-### Online
-
-* **GS-1: the master server: OpenSpy.** The game and the dedicated server
-  report to `tron20.master.gamespy.com` (UDP 27900): `qr2.c` (the host
-  name is made from the game name), started in
-  `ObjectDLL/TRON/TronGameServerShell.cpp` (`qr2_init_socket`). The
-  domain is `GSI_DOMAIN_NAME` in `Libs/GameSpy/GameSpySDK/nonport.h` (and
-  `Libs/GameSpy/nonport.h`).
-* **GS-2: the server list.** The client asks `tron20.ms<n>.gamespy.com`
-  (TCP 28910): `serverbrowsing/sb_serverlist.c`, from
-  `ClientShellDLL/TRON/ScreenJoinServerList.cpp` (`ServerBrowserNew`,
-  `ServerBrowserUpdate`), `BaseScreenJoin.cpp`, `ScreenServerInfo.cpp`.
-* **GS-3: the version check.** `motd.gamespy.com` (HTTP): `pt/ptMain.c`
-  (`ptCheckForPatchAndTrackUsage`), from `TRON/BaseScreenJoin.cpp`.
-* **GS-4: the CD-key check.** It goes through the master server: the
-  server's `gcdkey/gcdkeys.c` (`gcd_init_qr2`, `gcd_authenticate_user`,
-  `TronGameServerShell.cpp`), the client's `gcdkey/gcdkeyc.c`
-  (`gcd_compute_response`, `TRON/TronClientMultiplayerMgr.cpp`), the key
-  from the registry (`TRON/TronCDKey.cpp`, APPS-3). Without a GameSpy
-  key server it must accept every client (or use OpenSpy's).
 
 ### Overlaps
 
