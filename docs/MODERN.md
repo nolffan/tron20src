@@ -88,6 +88,12 @@ executable, or in the console), new or with a changed meaning.
 |---|---|---|---|---|
 | `MaxFPS` | float | 240 (retail: 0, and not used in the final build) | the maximum number of frames each second; 0 is no limit; 1000 at most; the same in multiplayer; the Display screen's "Frame Rate Limit" (60, 120, 144, 240, None) | EN-40, EN-44 |
 | `FrameTimeLog` | float | 0 | write each frame of this many milliseconds or more, with its parts, and a summary each ten seconds, to `frametime.log`; 0 is off | EN-42 |
+| `Windowed` | int | (engine) | existing: 0 full screen, 1 a window; now set by the Display screen's and the launcher's "Window mode" and kept in `display.cfg` | CL-31 |
+| `WindowMode` | int | 0 | with `Windowed` 1: 1 a framed window, 2 a borderless window over the desktop at the desktop's resolution; 0 (a config from before it): borderless only when the mode is as large as the desktop | EN-32, CL-31 |
+| `AntiAliasFSOverSample` | int | 0 | existing: the samples of antialiasing (0, 2, 4, 8); the Display screen's "Antialiasing"; kept in `display.cfg` | CL-34 |
+| `Anisotropic` | int | 0 | existing: now the degree of anisotropic filtering (0 off, 2, 4, 8, 16), held to what the card can do; the Performance screen's "Anisotropic filtering" | EN-34, CL-34 |
+| `FovX`, `FovY` | float | 90, 78 | existing: the field of view in play, degrees, for a 4:3 screen (the engine widens it for the screen's shape, EN-30); the Display screen's "Field of view" sets `FovX` (60 to 120) and `FovY` with retail's shape of view | CL-33 |
+| `Cinematics43` | int | 0 | 1: on a screen wider than 4:3, the sides beyond the centred 4:3 area are black while the cinematic letterbox is up; the Display screen's "4:3 cinematics" | CL-32 |
 | `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
 
 ## Done
@@ -504,6 +510,158 @@ EN-62); EN-44 and EN-45 are Tron 2.0's.
   (its own update rate does not depend on the clients'), more than two
   players, and the disc games above 60 in multiplayer.
 
+### Display
+
+The game runs at every resolution the display offers, at any shape, full
+screen, in a window or in a borderless window, with a field-of-view
+setting, antialiasing up to 8x, anisotropic filtering up to 16x and 32-bit
+colour. The engine's widescreen and window code came from cjacksrc's
+(EN-2, EN-30 to EN-33); the rest is Tron 2.0's. Strings 31000 to 31015
+(the block 31000 to 31049 is the Display's; `ClientRes/Shared/
+ClientResShared.h`, `ClientRes/TRON/ClientRes.rc`); the launcher's
+31000 to 31003 (`Launcher/TRON/resource.h`, `Launcher.rc`).
+
+* **EN-30: widescreen field of view (Hor+).** Checked, kept and extended.
+  A view drawn over the whole screen wider than 4:3 keeps the vertical
+  angle and gets a wider horizontal one; the camera's own angles are not
+  changed. Now also a screen narrower than 4:3 (5:4, 1280x1024) keeps the
+  horizontal angle and gets a taller vertical one (Vert+), so nothing is
+  stretched up and down (`client/src/clientmgr.cpp` `cm_WidescreenFovX`,
+  `cm_NarrowscreenFovY`, `CClientMgr::Render`). The interface camera's art
+  follows the same view (`CInterfaceMgr::GetWorldFromScreenPos`,
+  `GetScreenFromWorldPos`). The I/O node camera has its own rectangle and
+  is not widened.
+* **EN-31: a window at any size.** Checked, kept: a 1280x720 window on a
+  1920x1080 desktop (Xvfb has one mode only) starts and plays.
+* **EN-32: the window mode.** Checked, kept. The game no longer resizes the
+  window at the start (retail's `SetWindowSize` gave a framed window the
+  full size of the mode, so the picture lost the frame;
+  `GameClientShell.cpp` `OnEngineInitialized`), and a window after full
+  screen is not held to the full-screen rectangle (`ClipCursor`,
+  `OnEvent` `LTEVENT_RENDERINIT`).
+* **EN-33: antialiasing in a window too.** Checked, kept. With
+  multisampling the back buffer is not lockable (Direct3D 9 refuses the
+  two together; the retail flag `D3DPRESENTFLAG_LOCKABLE_BACKBUFFER` is
+  left out). See CL-34 for what locked it.
+* **EN-2: the window keeps its renderer.** Kept as cjacksrc's
+  (`kernel/src/sys/win/client.cpp`).
+* **CL-30: the interface at any shape of screen.** Retail scaled the
+  640x480 page by width/640 and height/480, so at any shape but 4:3 every
+  menu and HUD item was stretched. The page is now scaled the same both
+  ways (the smaller of the two ratios) and centred: the margins are
+  `CInterfaceResMgr::GetXOffset`, `GetYOffset` (static members: the class
+  keeps retail's size). The controls add them (`CLTGUICtrl::SetScale`,
+  `SetPageOffset`; the button's and the list's own `SetScale`), so do
+  `ConvertScreenPos`, `ConvertScreenRect` and each place that puts text or
+  polygons on the page itself: the help text, the loading and post-load
+  screens, the credits, the subroutines screen (arcs, libraries,
+  procedurals, the rating bars, the duplicate dialog), the host, join and
+  light cycle screens' tabs, the audio and light cycle screens' pictures,
+  the failure and victory screens, the HUD messages and subtitles, the
+  mission text, the chat input, the disc scores' legend. The HUD keeps to
+  the screen's edges: an item in the left third of the page stays at the
+  left edge, one in the right third moves with the right edge, one in the
+  middle stays centred (`HUDX`, `HUDY`, `GetHUDXOffset`, `GetHUDYOffset`;
+  the same up and down on a 5:4 screen): the health and energy bars,
+  armor, weapon, permissions, build notes, version, distance, damage,
+  meter, damage direction, crosshair texts, pings, match statistics, the
+  single string, the profiler, the security camera's overlay (the whole
+  screen), the I/O node camera, and the light cycle HUD (speedometer,
+  roster, lives, power-up icon, circuit intro). The HUD lays itself out
+  again when the screen changes (`CHUDMgr::ScreenDimsChanged`), and the
+  screens and menus scale again each time they open (two screens of one
+  height have the same scale). The Display screen lists every 32-bit mode
+  at least 640x480 at any shape (retail: exact 4:3 only), and the mode
+  the game runs at (a window's size) (`ScreenDisplay.cpp`
+  `GetRendererData`; files: `InterfaceResMgr.cpp/.h`, `InterfaceMgr.cpp`,
+  `TronInterfaceMgr.cpp`, `BaseScreen.cpp`, `BaseMenu.cpp`,
+  `MenuSystem.cpp`, `MenuIntel.cpp`, `MenuBuildNotes.cpp`, `MenuHelp.cpp`,
+  `HUDMgr.cpp`, the `HUD*.cpp` named above, `LoadingScreen.cpp`,
+  `ScreenPostload.cpp`, `Credits.cpp`, `Libs/LTGUIMgr/ltguictrl.cpp/.h`,
+  `ltguibutton.cpp`, `ltguilistctrl.cpp` and the TRON screens and
+  controls named above). The launcher's Display dialog lists every 32-bit
+  mode too, and the config's size if the adapter has no such mode
+  (`Launcher/DisplayMgr.cpp` `CRenderer::Init`, `ReadConfigFile`).
+* **CL-31: window mode.** The Display screen's "Window mode", under the
+  resolution: Full screen, Window, Borderless window (`Windowed`,
+  `WindowMode`). Borderless greys the resolution out (the desktop's is
+  used). Leaving the screen with another window mode or antialiasing
+  restarts the renderer once; the interface, the camera and the profile
+  then follow the mode the renderer got (`ProfileMgr.cpp`
+  `CUserProfile::ApplyDisplay`, `g_bModernDisplayRestart`). A framed
+  window larger than the desktop's work area takes the largest listed
+  size that fits, else the largest of the desktop's shape (a window size
+  the adapter has no mode for goes to the renderer as it is, EN-31).
+  `display.cfg` keeps `Windowed`, `WindowMode` and `AntiAliasFSOverSample`
+  (`SaveDisplaySettings`). The launcher's Display dialog has the same
+  choice in a list under the renderer (the resolution list greys out for
+  Borderless); it reads the mode from `display.cfg` and passes `+Windowed`
+  and `+WindowMode` with the resolution (`Launcher/DisplayDlg.cpp/.h`,
+  `DisplayMgr.cpp/.h` `GetDisplaySettingsString`).
+* **CL-32: 4:3 cinematics.** With EN-30 a cinematic on a wide screen
+  shows more at the sides than it was framed for. "4:3 cinematics"
+  (`Cinematics43`, off by default) covers the sides beyond the centred 4:3
+  area while the letterbox is up, fading with it
+  (`InterfaceMgr.cpp` `UpdateLetterBox`). The Bink movies (the logos at
+  the start) already keep their own shape, centred (`binkvideomgrimpl.cpp`
+  fits them to the screen), so they need no change; X-1 keeps that
+  rectangle.
+* **CL-33: field of view.** The Display screen's "Field of view", 60 to
+  120 degrees in steps of 5 (90 by default): `FovX`, the horizontal angle
+  for a 4:3 screen, and `FovY` with retail's shape of view (90 by 78 has
+  the tangents' ratio of `FovY`); the engine widens the view for the
+  screen's shape (EN-30). The game sets the camera from `FovX`/`FovY`
+  whenever it may change the view, so a new value applies at once in
+  play; the zooms work from it. The light cycles keep their own
+  `FovCycleX`/`FovCycleY`. (`ScreenDisplay.cpp` `ModernApplyOptions`.)
+* **CL-34: antialiasing up to 8x and anisotropic filtering up to 16x.**
+  The Display screen's "Antialiasing": Off, 2x, 4x, 8x
+  (`AntiAliasFSOverSample`; the renderer restarts). What locked the back
+  buffer, and fails with multisampling, goes another way: the game's
+  surface blits to the screen (the pause and splash pictures, fades) are
+  drawn as textured polygons, in a scene of their own if they come outside
+  one, and the screenshot commands read a resolved copy
+  (`render_a/.../d3d_surface.cpp` `d3d_BlitToScreen`,
+  `d3d_MakeScreenShotBMP`, `d3d_MakeScreenShotTGA`). The console's
+  direct screen locks (`LockScreen`) still fail quietly with
+  multisampling. A sample count the card cannot do falls back to the next
+  lower (retail's `GetDefaultMultiSampleType`; under Wine with Mesa's
+  software renderer 2 falls to `D3DMULTISAMPLE_NONMASKABLE`). The
+  Performance screen's "Anisotropic filtering": Off, 2x, 4x, 8x, 16x; the
+  setting is a level and `Anisotropic` the degree (EN-34), and a retail
+  configuration's 1 ("on") is 2x (`PerformanceMgr.cpp`
+  `ModernVarFromSetting`, `ModernSettingFromVar`;
+  `TRON/ScreenPerformance.cpp`). A modern-debug build writes the
+  presentation parameters, each device creation and reset, and the
+  samplers' anisotropy to `modern-d3d.log` beside the executable
+  (`d3d_device.cpp`).
+* **CL-35: 32-bit colour by default.** The launcher's config reader starts
+  at 32 bits (retail: 16), and its default resolution is 32-bit: the
+  desktop's if listed, else 1024x768, 800x600, 640x480 (retail looked for
+  16-bit modes, which the list never has) (`Launcher/DisplayMgr.cpp`
+  `ReadConfigFile`, `SetDefaultParameters`).
+
+Tested (the modern build, under Xvfb at each size; every shot looked at):
+the menus, the first level and a light cycle race at 1280x720, 1920x1080,
+2560x1080 and 1280x1024: the menus centred and not stretched, the HUD at
+the screen's edges and the light cycle HUD too, the view widened (Hor+;
+Vert+ at 5:4). `build/playtest-display.txt` (`PLAYTEST_RES=1280x720
+PLAYTEST_SCREEN=1920x1080 PLAYTEST_WINDOWED=1`): a framed window, then
+Borderless window (the window covers the 1920x1080 desktop, the game runs
+at 1920x1080), then Window again (a framed window that fits).
+`build/playtest-fov.txt` at 2560x1080: the slider from 90 to 110 in play,
+the view wider. `Cinematics43 1` with `LetterBox 1`: black sides beyond
+the 4:3 area. `build/playtest-aa.txt` on modern-debug, and `AntiAliasFSOverSample 4`,
+`Anisotropic 16` in a config: `modern-d3d.log` shows the device created
+with 4x multisampling and no lockable flag, a reset with the Display
+screen's 2x, and `MAXANISOTROPY 16` with the anisotropic filter; the game
+draws its menus, HUD and the level with it. `build/playtest-launcher-display.txt`
+(`make launchertest LAUNCHER_EXE=TronLauncher.exe`): Borderless window in
+the dialog, the game starts with `+Windowed 1 +WindowMode 2`. Not
+testable here: real antialiasing and anisotropic filtering on a graphics
+card (Wine's software rendering does not show them clearly: the log is
+the check), more than one monitor.
+
 ### Inherited engine items
 
 The engine came from cjacksrc's with its modern code. These items compile
@@ -515,7 +673,7 @@ removes it.
 
 | Id | What (cjacksrc's or nolf2src's item) | Files | Owner |
 |---|---|---|---|
-| EN-2 | in a window the game keeps its renderer when it loses the focus (cjacksrc EN-2) | `kernel/src/sys/win/client.cpp` | Display |
+| EN-2 | in a window the game keeps its renderer when it loses the focus (cjacksrc EN-2) | `kernel/src/sys/win/client.cpp` | Display: done (above) |
 | EN-4 | the music thread's handle is closed (cjacksrc EN-4) | `ltdirectmusic_impl.cpp` | (fix) |
 | EN-5 | a failed transition segment is tested (cjacksrc EN-5) | `ltdirectmusic_impl.cpp` | (fix) |
 | EN-7 | no sound driver: no `Term` through a null pointer (cjacksrc EN-7) | `sound/src/soundmgr.cpp` | (fix) |
@@ -529,10 +687,10 @@ removes it.
 | EN-21 | DirectInput joysticks are left out (cjacksrc EN-21) | `input.cpp` | Input |
 | EN-22 | no DirectInput device enumeration (cjacksrc EN-22) | `input.cpp` | Input |
 | EN-23 | mouse look: the whole buffer once a frame, no smoothing (nolf2src M-E3) | `input.cpp` | Input |
-| EN-30 | widescreen field of view, Hor+ (cjacksrc EN-30) | `client/src/clientmgr.cpp` (`cm_WidescreenFovX`, `CClientMgr::Render`) | Display |
-| EN-31 | a window at any size (cjacksrc EN-31) | `render_a/.../d3d_shell.cpp` | Display |
-| EN-32 | the window mode: framed or borderless (cjacksrc EN-32) | `kernel/src/sys/win/render.cpp`, `render_a/.../common_init.cpp` | Display |
-| EN-33 | antialiasing in a window too; 2D at whole pixels (nolf2src M-E13) | `d3d_device.cpp` (`SetPresentationParams`, `TryFallingBack_OnFailedDevCreate`), `render_b/.../d3ddrawprim.cpp` | Display |
+| EN-30 | widescreen field of view, Hor+ (cjacksrc EN-30) | `client/src/clientmgr.cpp` (`cm_WidescreenFovX`, `CClientMgr::Render`) | Display: done (above) |
+| EN-31 | a window at any size (cjacksrc EN-31) | `render_a/.../d3d_shell.cpp` | Display: done (above) |
+| EN-32 | the window mode: framed or borderless (cjacksrc EN-32) | `kernel/src/sys/win/render.cpp`, `render_a/.../common_init.cpp` | Display: done (above) |
+| EN-33 | antialiasing in a window too; 2D at whole pixels (nolf2src M-E13) | `d3d_device.cpp` (`SetPresentationParams`, `TryFallingBack_OnFailedDevCreate`), `render_b/.../d3ddrawprim.cpp` | Display: done (above) |
 | EN-40 | the frame limiter, `MaxFPS` 240 by default (cjacksrc EN-40); checked, and changed by EN-44: no limit of 60 in multiplayer | `clientmgr.cpp` (`cm_ModernFrameLimit`, `CClientMgr::Update`), `shared/src/engine_vars.cpp` | Frame rate: done (below) |
 | EN-41 | a game tick at most every 10 ms (cjacksrc EN-41); checked, kept | `server/src/servermgr.cpp` | Frame rate: done (below) |
 | EN-42 | the frame-time log, `FrameTimeLog` (cjacksrc EN-42); checked, kept | `shared/src/sys/win/modernframelog.h`, `clientmgr.cpp`, `clientmgr.h`, `clientshell.cpp`, `d3d_device.cpp`, `rendershadowlist.cpp`, `engine_vars.cpp` | Frame rate: done (below) |
@@ -546,10 +704,7 @@ the bug against Tron 2.0's retail `Lithtech.exe` writes its
 `RETAIL_BUGS.md` entry, or removes the fix if Tron 2.0 does not have the
 bug.
 
-Known open points: EN-33's antialiasing cannot work yet with Direct3D 9.
-The renderer always asks for `D3DPRESENTFLAG_LOCKABLE_BACKBUFFER`, which
-Direct3D 9 does not allow with multisampling, so the device falls back to
-no antialiasing. EN-20 is only the engine half: the game has no controller
+Known open points: EN-20 is only the engine half: the game has no controller
 code (cjacksrc's CL-20 to CL-24) and no default bindings for the pad.
 
 ## Planned (Phase 1)
@@ -565,39 +720,7 @@ APPS-2 and APPS-3 are done (above).
 
 ### Display
 
-* **CL-30: modern and widescreen resolutions.** The Display screen lists
-  only modes the engine enumerates and the menus and HUD are laid out for
-  640x480. Files: `ClientShellDLL/TRON/ScreenDisplay.cpp`,
-  `ClientShellShared/InterfaceMgr.cpp`, `TRON/TronInterfaceMgr.cpp`,
-  `ClientShellShared/InterfaceResMgr.cpp` (the screen scale),
-  `ClientShellShared/LayoutMgr.cpp`, the HUD items (`HUD*.cpp`);
-  the launcher's `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`.
-* **CL-31: borderless fullscreen.** On EN-32's `WindowMode`: a Display
-  screen and launcher option. Files: `kernel/src/sys/win/render.cpp`,
-  `client.cpp` (the window, EN-2), `render_a/.../common_init.cpp`,
-  `ScreenDisplay.cpp`, `Launcher/DisplayDlg.cpp`.
-* **CL-32: an option to keep 4:3 in the cinematics.** The movies play
-  through the engine's Bink video manager
-  (`kernel/src/sys/win/binkvideomgrimpl.cpp`, `videomgr.cpp`,
-  `client/src/client_iltvideomgr.cpp`), started from
-  `ClientShellShared/InterfaceMgr.cpp` (the intro movies) and the
-  in-game cinematics (`TRON/TronInterfaceMgr.cpp`). With X-1 the movie
-  player changes: coordinate with Middleware.
-* **CL-33: field of view.** On EN-30: a FOV setting. Files:
-  `ClientShellShared/GameClientShell.cpp`, `PlayerMgr.cpp`,
-  `PlayerCamera.cpp`, `TRON/TronPlayerMgr.cpp` (the camera's FOV),
-  `ScreenDisplay.cpp`, engine `clientmgr.cpp` (`cm_WidescreenFovX`).
-* **CL-34: up to 16x anisotropic filtering and up to 8x antialiasing.** On
-  EN-34 and EN-33 (fix the lockable back buffer with multisampling).
-  Files: `render_a/.../d3d_device.cpp` (`SetPresentationParams`,
-  `SetDefaultRenderStates`), `d3d_init.cpp`, `TRON/ScreenPerformance.cpp`,
-  `ClientShellShared/PerformanceMgr.cpp`.
-* **CL-35: 32-bit colour by default.** The engine (`BitDepth` 32,
-  `shared/src/engine_vars.cpp`), the retail `autoexec.cfg` and the
-  launcher's detail settings are already 32-bit. The launcher's
-  `CDisplayMgr` still falls back to 16 bits (`Launcher/DisplayMgr.cpp`:
-  the default depth "16" when it reads the config, and the 16-bit
-  `FindResolution` fallbacks).
+CL-30 to CL-35 are done (above).
 
 ### Frame rate
 
