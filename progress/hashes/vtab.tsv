@@ -3242,7 +3242,6 @@ T	server.dll	??_7?$ObjectBank@VCanvas@@VNullCS@@@@6B@	4	a898b6092eca4f31bd0a8f37
 T	server.dll	??_7?$ObjectBank@VContainerInstance@@VNullCS@@@@6B@	4	fae3aaac0180c13c75214fca871902893676a8206ed0fb82e5e505ff6a093a9c
 T	server.dll	??_7?$ObjectBank@VDosFileStream@@VLCriticalSection@@@@6B@	4	11e7b2dda94c5436fbfb790b798bdc883ed26126aaaeb4f32be128461e85d8b2
 T	server.dll	??_7?$ObjectBank@VDynamicLight@@VNullCS@@@@6B@	4	ebe53fdbfbfe64ae6faec95f2194a0d0fbe984ffc66a7c24690c0799f5b5e29e
-T	server.dll	??_7?$ObjectBank@VLTLink@@VNullCS@@@@6B@	4	74029a9dc50a4a7d75efd58fe843220530da7d58bc79d6bf3891285e062d3673
 T	server.dll	??_7?$ObjectBank@VLTObject@@VNullCS@@@@6B@	4	d85662c47649050edb784c85a36ea384850c6e7630b50d492877f1065a874107
 T	server.dll	??_7?$ObjectBank@VLTParticleSystem@@VNullCS@@@@6B@	4	82be43e6dee035fa72e5f266e695cf01b30852957cf33601d3dd6b3c35ef14df
 T	server.dll	??_7?$ObjectBank@VLTPolyGrid@@VNullCS@@@@6B@	4	89aa89a9e449b1bbb7abebd7b0ca985344116e586f4cdc07138bd744b9586bd4
