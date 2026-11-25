@@ -77,10 +77,12 @@ LTBOOL CScreenFailure::Build()
 		helpSize = (uint8)g_pLayoutMgr->GetScreenCustomInt(SCREEN_ID_FAILURE,"HelpStringSize");
 	}
 
-	// RETAIL: the failure text is a centered polystring
+	// RETAIL: the failure text is a polystring, aligned left (0x1005adc4
+	// pushes CUI_HALIGN_LEFT); OnFocus centres it by its width. Centred
+	// here too, it was drawn off the screen ("END OF LINE." was not seen)
 	int nHeight = (int)(g_pInterfaceResMgr->GetYRatio() * (float)stringSize);
 	CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(nHeight);
-	m_pString = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(L" "), 0.0f, 0.0f, CUI_HALIGN_CENTER);
+	m_pString = g_pFontManager->CreateFormattedPolyString(pFont, std::wstring(L" "), 0.0f, 0.0f, CUI_HALIGN_LEFT);
 	m_pString->SetCharScreenHeight(nHeight);
 	m_pString->SetColor(0xFFFFFFFF);
 
@@ -94,7 +96,8 @@ LTBOOL CScreenFailure::Build()
 		CLTGUITextCtrl *pHelp = AddTextItem(IDS_HELP_FAILURE,NULL,NULL,helpPos,LTTRUE);
 		if (pHelp)
 		{
-			pHelp->SetFont(g_pInterfaceResMgr->GetFontForHeight(helpSize),helpSize);
+			CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(helpSize);
+			pHelp->SetFont(pHelpFont,helpSize);
 		}
 	}
 

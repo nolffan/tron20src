@@ -1,0 +1,69 @@
+# sweep-worlds.txt -- every single-player world of the retail game, for
+# `make sweep` (build/sweep.sh). One world on each line: the kind, then
+# the world path in the .rez stack.
+#   sp    a level: the run waits until the HUD comes up (skipcine), then
+#         plays it for about 60 s
+#   sub   the first level of a mission: an opening cinematic, then the
+#         subroutine screen, which the run closes; then as sp
+#   cine  a cinematic level (no HUD): the run watches it for about 60 s
+#   lc    a light-cycle arena (no health bar): the run waits, turns the
+#         cycle, and watches it for about 60 s
+#   splc  a light-cycle level of the campaign: as lc
+# The campaign is ATTRIBUTES\MISSIONS.txt (Game.rez), in its order; the
+# light-cycle arenas are ATTRIBUTES\CIRCUITS.txt (Game.rez), Circuit0 to
+# Circuit16.
+cine  Worlds\RetailSinglePlayer\intro
+sp    Worlds\RetailSinglePlayer\m01-01
+sp    Worlds\RetailSinglePlayer\m01-02
+sub   Worlds\RetailSinglePlayer\m02-01
+sp    Worlds\RetailSinglePlayer\m02-02
+sp    Worlds\RetailSinglePlayer\m02-03
+sp    Worlds\RetailSinglePlayer\m02-04
+sub   Worlds\RetailSinglePlayer\m03-01
+sub   Worlds\RetailSinglePlayer\m04-01
+sp    Worlds\RetailSinglePlayer\m04-02
+sp    Worlds\RetailSinglePlayer\m04-03
+sub   Worlds\RetailSinglePlayer\m05-01
+sp    Worlds\RetailSinglePlayer\m05-02
+splc  Worlds\RetailSinglePlayer\m05-03
+sp    Worlds\RetailSinglePlayer\m05-04
+sub   Worlds\RetailSinglePlayer\m06-01
+sp    Worlds\RetailSinglePlayer\m06-02
+splc  Worlds\RetailSinglePlayer\m06-03
+cine  Worlds\RetailSinglePlayer\m06-03cin
+sp    Worlds\RetailSinglePlayer\m06-04
+cine  Worlds\RetailSinglePlayer\m07-01cin
+sub   Worlds\RetailSinglePlayer\m07-02
+cine  Worlds\RetailSinglePlayer\m07-02cin
+sp    Worlds\RetailSinglePlayer\m07-03
+sp    Worlds\RetailSinglePlayer\m07-04
+sub   Worlds\RetailSinglePlayer\m08-01
+sub   Worlds\RetailSinglePlayer\m09-01
+sp    Worlds\RetailSinglePlayer\m09-02
+cine  Worlds\RetailSinglePlayer\m09-02cin
+sp    Worlds\RetailSinglePlayer\m09-03
+cine  Worlds\RetailSinglePlayer\m09-03cin
+sp    Worlds\RetailSinglePlayer\m10-01
+sub   Worlds\RetailSinglePlayer\m10-02
+splc  Worlds\RetailSinglePlayer\m10-03
+cine  Worlds\RetailSinglePlayer\m10-03cin
+sp    Worlds\RetailSinglePlayer\m10-04
+sub   Worlds\RetailSinglePlayer\m11-01
+cine  Worlds\RetailSinglePlayer\fin
+lc    Worlds\RetailLightCycle\Zone\Map0
+lc    Worlds\RetailLightCycle\LC_02s01
+lc    Worlds\RetailLightCycle\Zone\LC_01s04
+lc    Worlds\RetailLightCycle\LC_03s01
+lc    Worlds\RetailLightCycle\LC_01s01
+lc    Worlds\RetailLightCycle\Zone\LC_04s04
+lc    Worlds\RetailLightCycle\LC_02s02
+lc    Worlds\RetailLightCycle\LC_01s02
+lc    Worlds\RetailLightCycle\LC_03s02
+lc    Worlds\RetailLightCycle\LC_03s03
+lc    Worlds\RetailLightCycle\LC_04s01
+lc    Worlds\RetailLightCycle\LC_01s03
+lc    Worlds\RetailLightCycle\Zone\LC_02s04
+lc    Worlds\RetailLightCycle\LC_04s03
+lc    Worlds\RetailLightCycle\Zone\LC_03s04
+lc    Worlds\RetailLightCycle\LC_04s02
+lc    Worlds\RetailLightCycle\LC_02s03
