@@ -18,6 +18,9 @@ Copyright 1999-2003 GameSpy Industries, Inc
  */
 
 #include "nonport.h"
+#ifdef TRON20SRC_MODERN
+#include "../../../libs/RegMgr/regfile.h"
+#endif
 
 #pragma comment(lib, "wsock32.lib")
 
@@ -219,6 +222,18 @@ GetUniqueIDFunction GOAGetUniqueID = GOAGetUniqueID_Internal;
 static const char * GOAGetUniqueID_Internal(void)
 {
 	static char keyval[MAX_PATH] = "";
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: the ID is kept in the file beside the program
+	// (regfile.h), in the section of its retail key (HKEY_CURRENT_USER\
+	// Software\GameSpy\GameSpy 3D\Registration, value Crypt), not in the
+	// registry
+	DWORD len = MAX_PATH;
+	if (!RegFile_GetString(REGKEY + 9, "Crypt", keyval, &len) || strlen(keyval) != 19) //need to generate a new key
+	{
+		GenerateID(keyval);
+		RegFile_SetString(REGKEY + 9, "Crypt", keyval);
+	}
+#else
 	unsigned int ret;
 	int docreate;
 	HKEY thekey;
@@ -242,6 +257,7 @@ static const char * GOAGetUniqueID_Internal(void)
 		RegSetValueExA(thekey, "Crypt", 0, REG_SZ, (const LPBYTE)keyval, strlen(keyval)+1);
 	}
 	RegCloseKey(thekey);
+#endif // TRON20SRC_MODERN
 
 	// Strip out the -'s.
 	memmove(keyval + 4, keyval + 5, 4);

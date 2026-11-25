@@ -57,7 +57,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	test tests mptest launchertest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	test tests mptest launchertest portabletest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -76,6 +76,8 @@ help:
 	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
 	@echo "                fails if one does not end ALIVE (out/play/test-<name>/, or"
 	@echo "                test-<game dir>-<name>/ with TEST_GAME=<dir>)"
+	@echo "make portabletest  the modern build's launcher, Tron.exe and server on a fresh"
+	@echo "                Wine prefix: no registry or APPDATA use (build/portabletest.sh)"
 	@echo "make sweep      every single-player world, about a minute each (build/sweep.sh;"
 	@echo "                SWEEP_WORLDS=<text>, SWEEP_JOBS=<n>; out/play/sweep-summary.txt)"
 	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
@@ -162,6 +164,16 @@ LAUNCHER_EXE ?=
 launchertest: image
 	@[ -f $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) ] || { echo "error: no $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) -- build it first (make)" >&2; exit 1; }
 	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) $(if $(LAUNCHER_EXE),PLAYTEST_LAUNCH=$(LAUNCHER_EXE)) $(if $(LAUNCHERTEST_RETAIL),LAUNCHERTEST_RETAIL=1) bash build/launchertest.sh $(TEST_GAME) $(LAUNCHER_SCRIPT)
+
+# The portable test (build/portabletest.sh), for the modern build: the
+# launcher, the direct start and the dedicated server on a fresh Wine
+# prefix; nothing of the game's in its registry or its users/ folder, and
+# the launcher stays until the game stops (docs/MODERN.md APPS-2, APPS-3).
+# Results in out/play/test-portable*/.
+PORTABLE_GAME ?= out/tron20-modern-release
+portabletest: image
+	@[ -f $(PORTABLE_GAME)/TronLauncher.exe ] || { echo "error: no $(PORTABLE_GAME)/TronLauncher.exe -- build it first (make modern)" >&2; exit 1; }
+	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) bash build/portabletest.sh $(PORTABLE_GAME)
 
 # The world sweep (build/sweep.sh): every single-player world of the retail
 # game (build/sweep-worlds.txt), each played for about a minute in its own

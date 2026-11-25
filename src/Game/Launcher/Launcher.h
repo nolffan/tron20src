@@ -128,6 +128,7 @@ public:
 	CString GetAdvancedOptionsCommandLineString();
 #ifdef TRON20SRC_MODERN
 	BOOL	IsDirectLaunch();
+	CString	GetGameDir();
 #endif
 	BOOL	ReadConfigFile(const char* sFile);
 
