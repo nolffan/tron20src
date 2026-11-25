@@ -18,6 +18,11 @@
 
 #include "counter.h"
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md X-2: the MP3 codec of the modern build, in this DLL
+#include "../../tron20src/mp3/mp3acm.h"
+#endif
+
 // RETAIL: EAX 3.0's property sets (0x1000c168, 0x1000c178)
 extern "C" const GUID DSPROPSETID_EAX30_ListenerProperties =
 	{ 0xa8fa6882, 0xb476, 0x11d3, { 0xbd, 0xb9, 0x00, 0xc0, 0xf0, 0x2d, 0xdf, 0x87 } };
@@ -128,6 +133,9 @@ void WaveFile::Clear()
 	m_nMaxBytesCopied = 0;
     m_nDuration = 0;
 	m_nBytesPerSample = 0;
+#ifdef TRON20SRC_MODERN
+	m_bCodecRestart = TRUE;
+#endif
     memset (&m_mmckiRiff, 0, sizeof (MMCKINFO));
     memset (&m_mmckiFmt, 0, sizeof (MMCKINFO));
     memset (&m_mmckiData, 0, sizeof (MMCKINFO));
@@ -327,6 +335,13 @@ BOOL WaveFile::Cue (void)
 	m_nRemainderOffset = 0;
 	m_nBytesRead = 0;
 	m_nBytesCopied = 0;
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-2: the codec drops what it holds of the stream (its
+	// input and its PCM) at the next convert, so that a restart does not
+	// begin with the end of the sound before
+	m_bCodecRestart = TRUE;
+#endif
 
     if (mmioSeek (m_hmmio, m_mmckiRiff.dwDataOffset + sizeof(FOURCC), SEEK_SET) != -1)
     {
@@ -533,7 +548,21 @@ UINT WaveFile::ReadCompressed( BYTE* pbDest, UINT cbSize, BYTE* pCompressedBuffe
 			m_nMaxBytesRead = Max( m_nMaxBytesRead, m_nBytesRead );
 	    }
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md X-2: only the bytes read now. Retail gives the codec
+		// the full block each time, also when the last read of the data
+		// is shorter, so the codec gets the stale end of the block before.
+		// The first convert after Cue restarts the codec, and the last one
+		// of the data tells it that no more comes (so it decodes the last
+		// frames).
+		m_acmStreamHeader.cbSrcLength = cb;
+		m_mmr = acmStreamConvert( m_hAcmStream, &m_acmStreamHeader,
+			( m_bCodecRestart ? ACM_STREAMCONVERTF_START : 0 ) |
+			( m_mmckiData.cksize == 0 ? ACM_STREAMCONVERTF_END : 0 ));
+		m_bCodecRestart = FALSE;
+#else
 		m_mmr = acmStreamConvert( m_hAcmStream, &m_acmStreamHeader, 0 );
+#endif
 
 		if ( m_mmr != 0 )
 		{
@@ -2590,6 +2619,11 @@ HACMDRIVERID SelectHardCodedMP3Codec()
 
 HACMDRIVERID SelectMP3Codec( const TACMDriverList &aDriverList )
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-2: always the codec of this DLL (minimp3), never the
+	// system's (L3CODECA.ACM, winemp3.acm)
+	return Mp3Acm_Register();
+#else
 
 	HACMDRIVERID hHardCodedCodec = SelectHardCodedMP3Codec();
 	if (hHardCodedCodec != NULL)
@@ -2665,6 +2699,7 @@ HACMDRIVERID SelectMP3Codec( const TACMDriverList &aDriverList )
 		LOG_WRITE( g_pLogFile, "MP3 Codec - Selecting fall-back driver, %d.\n", aDriverList.front() );
 		return aDriverList.front();
 	}
+#endif
 }
 
 HACMDRIVERID SelectPCMConverter( const TACMDriverList &aDriverList )
@@ -5295,4 +5330,9 @@ bool APIENTRY DllMain( HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 {
     return true;
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md X-2: the MP3 codec (mp3acm.h)
+#include "../../tron20src/mp3/mp3acm.cpp"
+#endif
 

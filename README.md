@@ -39,9 +39,10 @@ compiler built each binary, and the evidence, is `progress/COMPILERS.md`.
 
 ## Building
 
-Needs docker and the two submodules (`git submodule update --init`):
+Needs docker and the submodules (`git submodule update --init`):
 `ext/toolchains/` (the compilers) and `ext/tools/` (the reconstruction
-tools).
+tools), and for `make modern`, `ext/ffmpeg` (FFmpeg n8.1.3, which the
+modern build's Bink player uses; `build/ext.sh`, `docs/LICENSE_NOTES.md`).
 
 ### What you need
 
@@ -74,6 +75,7 @@ make test       # run it under Xvfb and Wine to the main menu (out/play/test/sho
 make tests      # the scripted tests: menus, a level, saving and loading, a race
 make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main menu
 make portabletest  # the modern build: no registry or APPDATA use, the launcher waits for the game
+make mp3acmtest # the modern SndDrv.dll's MP3 codec on every MP3 file of Sound.rez
 make mptest     # multiplayer: the dedicated server and two clients (some minutes)
 make sweep      # every single-player world for a minute each (slow); out/play/sweep-summary.txt
 make reference  # the retail binaries and their function tables, in out/reference/
@@ -92,7 +94,9 @@ retail game DLLs, with those DLLs set to zeros and their names changed
 (`build/rezhide.py`), so that the retail launcher's rez order also gives
 the engine our DLLs. The only retail binaries
 are the third-party runtime that we have no source for: Bink
-(`binkw32.dll`) and the Microsoft C, C++ and MFC runtime. The last step
+(`binkw32.dll`) and the Microsoft C, C++ and MFC runtime. The modern build
+has our own `binkw32.dll` (a Bink player on FFmpeg) in place of RAD's, and
+its `SndDrv.dll` decodes MP3 itself (`docs/MODERN.md`, X-1 and X-2). The last step
 lists every executable file with its origin, and stops the build if one is
 not ours or third-party. Start the game with
 `wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory, or with the

@@ -48,6 +48,7 @@ DOCKER_OPTS = --rm --init \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e TRON20SRC_JOBS=$(JOBS)) \
 	$(if $(TRON20SRC_ARCHIVES),-e TRON20SRC_ARCHIVES="$(TRON20SRC_ARCHIVES)") \
 	$(if $(filter 1,$(NODISCS)),-e TRON20SRC_NODISCS=1) \
+	$(if $(TRON20SRC_MIDDLEWARE),-e TRON20SRC_MIDDLEWARE=$(TRON20SRC_MIDDLEWARE)) \
 	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT)
 DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 
@@ -57,7 +58,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	test tests mptest launchertest portabletest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	test tests mptest launchertest portabletest mp3acmtest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -114,7 +115,9 @@ game: check-toolchain retail
 
 # The variants (build/variant.sh): the same source with TRON20SRC_DEBUG and
 # symbols, or TRON20SRC_MODERN, or both, each in its own tree,
-# out/build-<variant>/, and game directory
+# out/build-<variant>/, and game directory. TRON20SRC_MIDDLEWARE=retail
+# or open: RAD's Bink or ours on FFmpeg (the modern builds' default; build/
+# variant.sh, MODERN.md X-1)
 debug modern modern-debug: check-toolchain retail
 	$(DOCKER_RUN) bash build/variant.sh $@
 
@@ -140,6 +143,12 @@ tests: image
 	  $(DOCKER_RUN) env PLAYTEST_NAME=$(TESTS_PREFIX)$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
 	    bash build/playtest.sh $(TEST_GAME) "$${w:--}" 5 || rc=1; \
 	done; exit $$rc
+
+# The test of the modern SndDrv.dll's MP3 codec (build/mp3acmtest.sh,
+# MODERN.md X-2): every MP3 WAV file of Sound.rez decoded whole and
+# streamed, outside the game, under Wine. Some minutes.
+mp3acmtest: image retail
+	$(DOCKER_RUN) bash build/mp3acmtest.sh
 
 # The multiplayer test (build/mptest.sh): a server and two clients, each on
 # a display and a Wine prefix of its own. MPTEST_MODE=dedicated (TRONSrv.exe)
