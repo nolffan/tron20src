@@ -13,7 +13,9 @@
 # Worlds\RetailSinglePlayer\M01-01, and the HUD test of `skipcine`:
 # Tron's health bar, green, at x 110..210, y 461..466 of the 640x480 view
 # (NOLF2's is red, lower left). The adapted copy is written to
-# out/play/playtest-tron20.sh each run; ext/tools/ is not changed.
+# out/play/playtest-tron20.sh each run (written to a new file, then
+# renamed: runs that start at the same time, as in make sweep, do not
+# read a half-written copy); ext/tools/ is not changed.
 set -u
 # a game directory built without the retail game (NODISCS=1) does not play
 for a in "$@"; do
@@ -29,5 +31,5 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e 's#local x=$((WX + 30\*WW/642)) y=$((WY + 448\*WH/482)) w=$((30\*WW/642)) h=$((4\*WH/482 + 1))#local x=$((WX + 110*WW/642)) y=$((WY + 461*WH/482)) w=$((100*WW/642)) h=$((5*WH/482 + 1))#' \
     -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.6 \&\& \$2 > 1.8 * \$1)#" \
     -e 's#^source "$(dirname "${BASH_SOURCE\[0\]}")/layout.sh"$#REPO="'"$REPO"'"; TOOLS="'"$REPO"'/ext/tools"#' \
-    "$REPO/ext/tools/playtest.sh" > "$OUT"
+    "$REPO/ext/tools/playtest.sh" > "$OUT.$$" && mv -f "$OUT.$$" "$OUT"
 exec bash "$OUT" "$@"

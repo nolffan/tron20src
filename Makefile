@@ -38,11 +38,12 @@ TRON20SRC_ISOS ?=
 NODISCS ?=
 ISO_MOUNT := $(if $(TRON20SRC_ISOS),-v $(abspath $(TRON20SRC_ISOS)):/isos:ro -e TRON20SRC_ISOS=/isos)
 
-DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
+DOCKER_OPTS = --rm --init \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e TRON20SRC_JOBS=$(JOBS)) \
 	$(if $(TRON20SRC_ARCHIVES),-e TRON20SRC_ARCHIVES="$(TRON20SRC_ARCHIVES)") \
 	$(if $(filter 1,$(NODISCS)),-e TRON20SRC_NODISCS=1) \
-	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT) $(IMAGE)
+	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT)
+DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 
 # VC6 as Tron 2.0's Rich headers name it: cl and link 12.00.8168
 # (progress/COMPILERS.md). The DirectX 9 SDK the engine needs is not in
@@ -50,7 +51,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-variant test tests control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	check-variant test tests sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -68,6 +69,8 @@ help:
 	@echo "                our game code's faults from the engine's or Wine's (diagnosis only)"
 	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
 	@echo "                fails if one does not end ALIVE"
+	@echo "make sweep      every single-player world, about a minute each (build/sweep.sh;"
+	@echo "                SWEEP_WORLDS=<text>, SWEEP_JOBS=<n>; out/play/sweep-summary.txt)"
 	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
 	@echo "                TARGETS=\"<project or output>...\" for only those): what make progress scores"
 	@echo "make progress   score the build against the retail binaries; fails if a"
@@ -125,6 +128,18 @@ tests: image
 	  $(DOCKER_RUN) env PLAYTEST_NAME=test-$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
 	    bash build/playtest.sh $(TEST_GAME) "$${w:--}" 5 || rc=1; \
 	done; exit $$rc
+
+# The world sweep (build/sweep.sh): every single-player world of the retail
+# game (build/sweep-worlds.txt), each played for about a minute in its own
+# container, SWEEP_JOBS at a time; SWEEP_WORLDS=<text>: only the worlds
+# whose path has it. Results in out/play/$(SWEEP_NAME)-summary.txt and
+# -sheet.png. Slow (about 15 minutes): not part of make tests.
+SWEEP_NAME ?= sweep
+SWEEP_JOBS ?= 4
+SWEEP_WORLDS ?=
+sweep: image
+	@SWEEP_DOCKER="docker run $(DOCKER_OPTS)" IMAGE=$(IMAGE) CONTAINER=$(CONTAINER) \
+	  SWEEP_NAME=$(SWEEP_NAME) SWEEP_JOBS=$(SWEEP_JOBS) bash build/sweep.sh $(TEST_GAME) '$(SWEEP_WORLDS)'
 
 # Compile and link only (build/compile.sh): every binary that has source,
 # in src/**/built/, which is what make progress scores (make game does this
