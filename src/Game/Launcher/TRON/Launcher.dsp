@@ -8,7 +8,7 @@ CFG=Launcher - Win32 Final
 
 # tron20src: Tron.exe, the launcher: Build 69's Launcher\TRON project
 # (MFC 4.2 in a DLL) with the files and the Final configuration the retail
-# Tron.exe was built from. Build 69's project (in ext/rez's
+# Tron.exe was built from. Build 69's project (in rez's
 # jupiter-b69/Game/Launcher/TRON) has only Release and Debug, and lacks
 # CustomizeDlg, which retail has (IDD_CUSTOMIZE_DIALOG, "CJ Modification
 # %i"); its AniButton, AnimDlg and MultiplayerDlg stay (retail's .text
