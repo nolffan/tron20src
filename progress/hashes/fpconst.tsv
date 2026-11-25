@@ -2991,6 +2991,14 @@ CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateOnGround@CMoveMgr@@QAEXXZ	452	
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateOnGround@CMoveMgr@@QAEXXZ	529	8	71314f844990bb244550c460ca02857f6404a49da4d740cb81ce80b6733e96a7
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateOnGround@CMoveMgr@@QAEXXZ	651	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?CanDoFootstep@CMoveMgr@@QAEIXZ	172	4	24da5299a07bd30aafb4e74978cc56120416c1df1900d48be3584565dc85d6db
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	242	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	248	4	241b032110ea9dab8822977e1aa01332dcd66b3cf2056d3f10a187ec0db7801f
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	339	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	413	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	928	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	1009	4	d99e58435243d9fef9c88273b8d553b4fba4d0baf8009d29eae74fa99e0d9f57
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	1023	4	d99e58435243d9fef9c88273b8d553b4fba4d0baf8009d29eae74fa99e0d9f57
+CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateMotion@CMoveMgr@@IAEXXZ	1037	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdateContainerList@CMoveMgr@@QAEXXZ	415	4	fca31f1667a6aa1bba12fca4e4ea1becd503379d80da3213af07f6cc5702828d
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdatePushers@CMoveMgr@@IAEXXZ	303	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
 CShell.dll	ClientShellShared(CMoveMgr.obj)	?UpdatePushers@CMoveMgr@@IAEXXZ	337	4	df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119
@@ -4596,6 +4604,7 @@ CShell.dll	ClientShellShared(ScatterFX.obj)	?FillVertexBuffer@CScatterFXSubVolum
 CShell.dll	ClientShellShared(ScatterFX.obj)	?FillVertexBuffer@CScatterFXSubVolume@@QAE_NPAX0IIAAI@Z	111	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
 CShell.dll	ClientShellShared(ScatterFX.obj)	?FillVertexBuffer@CScatterFXSubVolume@@QAE_NPAX0IIAAI@Z	138	4	270696d298cc689d8e5bd75897918aa617a25a5030ccae98017053dddd974995
 CShell.dll	ClientShellShared(ScatterFX.obj)	?Update@CSpecialFX@@UAEIXZ	99	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
+CShell.dll	ClientShellShared(ScreenPostload.obj)	?OnFocus@CScreenPostload@@UAEXI@Z	5715	4	6680154db9d30097604e13987e951fc6645b1e13134971613e7da161bcc53d81
 CShell.dll	ClientShellShared(ScreenPostload.obj)	?UpdateInterfaceSFX@CScreenPostload@@UAE_NXZ	48	4	6680154db9d30097604e13987e951fc6645b1e13134971613e7da161bcc53d81
 CShell.dll	ClientShellShared(ScreenPostload.obj)	?CreateInterfaceSFX@CScreenPostload@@MAEXXZ	156	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
 CShell.dll	ClientShellShared(ScreenPostload.obj)	?CreateInterfaceSFX@CScreenPostload@@MAEXXZ	252	4	e00e5eb9444182f352323374ef4e08ebcb784725fdd4fd612d7730540b3e0c8c
