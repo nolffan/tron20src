@@ -27,6 +27,11 @@
 # takes data faster than a card plays it, so the recording holds what was
 # played, not when. (avp2src's setting; MODERN.md X-1, X-2.)
 #
+# skipcine also presses 1 (Space, Return, 1 in turn): a decision window
+# of Tron 2.0 (M01-01's "Continue basic training") takes its answer from
+# the number keys, and while it is up over the bottom of the screen the
+# health bar is not seen, so the HUD test fails until it is answered.
+#
 # One more script command, for Tron 2.0's scripts only:
 #   nohud <name>          the HUD must not be up now (for example, the
 #                         post-load screen waits for a key); takes a shot
@@ -46,6 +51,7 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e 's#Worlds\\\\RetailSinglePlayer\\\\C01S01#Worlds\\\\RetailSinglePlayer\\\\M01-01#' \
     -e 's#local x=$((WX + 30\*WW/642)) y=$((WY + 448\*WH/482)) w=$((30\*WW/642)) h=$((4\*WH/482 + 1))#local x=$((WX + WW/2 - 210)) y=$((WY + WH - 21)) w=100 h=6#' \
     -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.6 \&\& \$2 > 1.8 * \$1)#" \
+    -e 's#\[ $k = space \] \&\& k=Return || k=space#case $k in space) k=Return ;; Return) k=1 ;; *) k=space ;; esac#' \
     -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""#' \
     -e 's#^            \*)     log "  unknown command#            nohud) N=$((N+1)); f=$(printf '"'"'shots/%02d-%s.png'"'"' $N "$1"); grab "$f"; log "  -> $f"\
                    if hud; then HUDUP="line $LINE"; log "  nohud: the HUD is up"; else log "  nohud: no HUD, as expected"; fi ;;\

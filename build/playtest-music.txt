@@ -1,0 +1,10 @@
+# playtest-music.txt -- the music of the main menu (DirectMusic). For
+# MODERN.md X-3: run it with PLAYTEST_AUDIO set (build/playtest.sh) to
+# record what plays; the DirectMusic stream has the music in the modern
+# build, and is silent in the legacy build under Wine.
+# world: -
+window 240
+wait 20
+shot menu
+wait 25
+shot later
