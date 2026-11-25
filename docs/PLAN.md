@@ -427,8 +427,51 @@ The legacy release build runs under Wine (2026-11-25): every binary in
   postload screen ("Press any key to continue"); ours goes into the game
   at once. `CScreenPostload::OnFocus` (0x1016b4e0) is near. The engine
   prints "LithTech build 4294967295.4294967295": our engine has no build
-  number yet. Not tested: the rest of the campaign, multiplayer, the
-  launcher (`Tron.exe`) and the dedicated server (`TRONSrv.exe`).
+  number yet. Not tested: the rest of the campaign.
+- **The launcher** (`make launchertest`, `build/launchertest.sh`,
+  `build/playtest-launcher*.txt`): our `Tron.exe` on the registry values
+  of the game's setup and Update 2, with disc 1 in a CD-ROM drive (Play
+  looks for `\TRON.EXE` on it, as retail's does). Display, Options (with
+  their first-time warnings), the detail setting, Play to the main menu,
+  Uninstall (no uninstaller: a message), Help (`TRON.chm`) and Quit work.
+  The command line in `launchcmds.txt` and the values that the launcher
+  stores (`HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0`: the
+  options, `DisplayWarning`, `OptionsWarning`, `Num Launcher Runs`) are
+  the same as the retail launcher's (`LAUNCHERTEST_RETAIL=1`). It writes
+  nothing to APPDATA. The launcher exits when the game starts, as
+  retail's does. The retail launcher puts `custom/` before `Gamep3.rez`
+  and `Gamep4.rez`: thus their zeroed game DLLs came first ("Missing
+  shell DLL cshell.dll"), until `build/rezhide.py` changed their names.
+- **Multiplayer** (`make mptest`, `build/mptest.sh`): the dedicated server
+  (`TRONSrv.exe`) or a listen server (client 1 hosts from the multiplayer
+  menu), and two clients on the loopback, each with its own Xvfb display
+  and Wine prefix. Disc Arena, Disc Tournament and Light Cycles: the
+  clients join, see each other, choose a team (F1), and play: in Disc
+  Arena a match starts, a player is derezzed and the scores change; in
+  Light Cycles the races run and the points change. The command line's
+  `+host <world>` stops at the loading screen, with the retail game DLLs
+  too (the control). LAN only: a game that is not reports to
+  `tron20.master.gamespy.com` (UDP 27900; with `gcdkey`, the CD key
+  check), and the client's Internet list asks `tron20.ms<n>.gamespy.com`
+  (TCP 28910) and `motd.gamespy.com` (HTTP, the version check): the
+  modern build's OpenSpy work.
+- **Fixed:** in Disc Arena a player in no match saw "Waiting for next
+  point." for "Press F1 to join a team." (`CTronInterfaceMgr::
+  TronUnknownVirtual7C`, 0x1009d7a0: the case labels of states 2 and 3
+  were swapped). Its code was byte-identical modulo relocations, which
+  does not compare a jump table: a check of the jump tables of all the
+  identical functions with one (106 in CShell.dll, 185 in Object.lto)
+  found two more in CShell.dll, `CRatingMgr::GetTransferRate`
+  (0x10051710, a retail bug: RETAIL_BUGS.md) and
+  `CScreenSubroutines::PickupSubroutine` (0x100803b0), now fixed, and
+  one in Object.lto, `CCharacter::GetPriorityBodyState` (0x100914e0),
+  which waits on Tron's AI state enum.
+- **Open (multiplayer):** our `TRONSrv.exe` with the retail `Object.lto`
+  stops after "Server initialized." (the splash screen stays); with ours,
+  and the retail `TRONSrv.exe` with our `Object.lto`, it runs. In Light
+  Cycles the floor of LC_01S01 looks different from the control's (white
+  bands for a red grid): our game code. The HUD's subroutine icons are in
+  a row in ours, in a column in the control's.
 
 ### 9. modern
 
