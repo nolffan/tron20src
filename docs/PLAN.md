@@ -396,4 +396,19 @@ What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`
 - open-source replacements for the proprietary libraries: our Bink player
   on FFmpeg in place of RAD's `binkw32.dll`, as nolf2src's;
 - the launcher as `TronLauncher.exe`, with `Tron.exe` starting the game
-  directly, as if Launch had been clicked.
+  directly, as if Launch had been clicked;
+- a launcher that does not exit after it starts the game (this keeps the
+  Steam overlay and Steam Remote Play working);
+- modern resolutions, and a borderless-window fullscreen mode;
+- unlocked frame rates, with limits of 60, 120, 144 and 240 and no limit.
+  The frame rate must not change physics or animation, and this applies to
+  multiplayer too;
+- multiplayer restored through a GameSpy replacement such as OpenSpy;
+- 32-bit colour as the default, in place of 16-bit;
+- settings and saved games beside the executable. The launcher and the
+  game must not write to APPDATA or to the registry (that data is lost
+  when a Proton version changes).
+
+Before this package: package 7. The modern build changes only code under
+`TRON20SRC_MODERN`, and the release tree removes those blocks, so the
+legacy build and its score do not change (`make ci` checks this).
