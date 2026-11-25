@@ -513,28 +513,22 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 			m_pContinueStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
 		}
 
-		// RETAIL: 0x1016c92a: a single-player game always posts the press any
-		// key (Tron's string 47), with or without a briefing; NOLF2 posted
-		// it only for a briefing, so ours went into the game at once after
-		// each load. A multiplayer game shows the "waiting for other
-		// players" (Tron's string 0x484) in the flash color.
-		uint32 nColor;
-		if( !IsMultiplayerGame( ))
+		// If we have a briefing, then post the press any key.
+		if( m_briefing.length( ) > 0 )
 		{
 			m_bPressAnyKey = true;
-			m_pContinueStr->SetText(LoadTempWString( 47 ));
-			nColor = m_nContinueColor;
+			m_pContinueStr->SetText(LoadTempWString( IDS_PRESS_ANY_KEY ));
 		}
+		// Otherwise show the "waiting for other players".
 		else
 		{
 			m_bPressAnyKey = false;
-			m_pContinueStr->SetText(LoadTempWString( 0x484 ));
+			m_pContinueStr->SetText(LoadTempWString( IDS_WAITINGFOROTHERPLAYERS ));
 
 			g_pGameClientShell->SendClientLoadedMessage( );
-			nColor = m_nContinueColor ^ 0x00FFFFFF;
 		}
 
-		m_pContinueStr->SetColor(nColor);
+		m_pContinueStr->SetColor(m_nContinueColor);
 		m_pContinueStr->SetCharScreenHeight(nFontSize);
 		x = (float)ContinuePos.x * g_pInterfaceResMgr->GetXRatio();
 		y = (float)ContinuePos.y * g_pInterfaceResMgr->GetYRatio();
@@ -545,7 +539,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 		s_nFlashColor = (m_nContinueColor ^ 0x00FFFFFF);
 
-		// RETAIL: no sound here; UpdateInterfaceSFX sounds each flash
+		g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\pressanykey.wav");
 	}
 
 	CBaseScreen::OnFocus(bFocus);
