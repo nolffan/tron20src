@@ -198,8 +198,8 @@ executable, or in the console), new or with a changed meaning.
   `Software\Microsoft\Direct3D`; not the game's). Temporary files are
   not settings, and the test does not count them: `CShell.dll`
   (`CClientFXDB::LoadFxDll`) copies `ClientFx.fxd` to `Temp\cfx*.tmp` and
-  loads that copy. Under Wine the copy stays after the game stops (one
-  for each start; not examined further). The imports of the
+  loads that copy. Retail leaves the copy after the game stops (one for
+  each start); GAME-35 deletes it. The imports of the
   modern binaries have no other registry function. A first run with no
   file: the launcher's defaults, written when it closes; the detail
   setting passes `+BitDepth 32` (32-bit colour; the 16-bit fallback of
@@ -374,16 +374,48 @@ details.
   (`TRON/RatingMgr.cpp`).
 * **GAME-33:** the disc tournament's time-out moves to the next match
   before it deletes the current one (`TRON/ServerDiscMatchMgr.cpp`,
-  `CServerDiscMatchMgr` update, retail 0x1004a67c). No entry in
-  `RETAIL_BUGS.md` yet: the function is not byte-identical, so the bug is
-  not confirmed in retail.
+  `CServerDiscMatchMgr` update, retail 0x1004a67c; the retail code reads
+  the next node only before the loop).
+* **GAME-34:** the FOV check compares the camera's radians with
+  `FovX`/`FovY` in radians, so the FOV is not set again each frame
+  (`GameClientShell.cpp` `UpdateDebugInfo`, retail 0x100e57e4).
+* **GAME-35:** the ClientFX DLL (the copy of `ClientFx.fxd` in the
+  temporary directory, `cfx*.tmp`) is unloaded, and its copy deleted, in
+  `CGameClientShell::OnEngineTerm`, with the game's and the interface's
+  effects (`GameClientShell.cpp`, `InterfaceMgr.cpp` `Term`). Retail
+  unloads it only from the static `CClientFXDB`'s destructor while
+  `CShell.dll` unloads; the loader defers that `FreeLibrary`, and the copy
+  stays (one for each start). Tested: a start and Quit from the main menu
+  in a new Wine prefix leaves `Temp\cfx9ce3.tmp` with the legacy build and
+  no file with the modern build.
 
 ### Retail-bug fixes, engine
 
 * **EN-3:** the `VersionInfo` console command does not call a null pointer
   (`clientde_impl.cpp`, `consolecommands.cpp`).
+* **EN-4:** the music thread's handle is closed (`ltdirectmusic_impl.cpp`
+  `Term`).
+* **EN-5:** an intensity change without a transition tests the segment
+  state (`ltdirectmusic_impl.cpp` `ChangeIntensity`). The path with a
+  transition has the test in retail too (cjacksrc's EN-5 was for that
+  path); it is now in both builds.
+* **EN-7:** no sound driver: no `Term` through a null pointer
+  (`soundmgr.cpp` `SoundSys`).
 * **EN-8:** DrawPrim uses its camera's viewport (`render_b/.../
   d3ddrawprim.cpp`).
+* **EN-10:** `StopSecondary` and `StopMotif` walk their list once
+  (`ltdirectmusic_impl.cpp`).
+* **EN-11:** the light radius accessors and `GetSurfaceDims` test their
+  pointers (`clientde_impl.cpp`, `winclientde_impl.cpp`).
+* **EN-12:** `InitLevel`'s trace says `sDefine3` (`ltdirectmusic_impl.cpp`).
+* **EN-13:** the console prints do not write past their buffers
+  (`clientde_impl.cpp` `CPrint`, `dsys_interface.cpp`
+  `dsi_PrintToConsole`).
+* **EN-14:** the engine's error messages name their own function
+  (`clientde_impl.cpp`, `winclientde_impl.cpp`, `client_iltphysics.cpp`,
+  `ltinfo_impl.cpp`, `soundmgr.cpp`).
+* **EN-15:** `streamsim_Open` closes its file on an error
+  (`streamsim.cpp`).
 * **EN-16:** client prediction applies gravity to objects with
   `FLAG_GRAVITY`, not to visible objects (`client/src/predict.cpp`).
 * **EN-34:** anisotropic filtering is switched on when the card can do it
@@ -523,13 +555,14 @@ EN-62); EN-44 and EN-45 are Tron 2.0's.
     that grows with the frame rate, now the speed of 60 frames a second
     (`client_physics.cpp` `BounceMovingObject`).
 
-  `RETAIL_BUGS.md` has the faults of the functions that are
-  byte-identical (`UpdatePushers`, `MoveLocalSolidObject`,
-  `UpdateInLiquid`, `BounceMovingObject`, `CFireFX::Update`,
-  `CParticleSystemFX::Update`, `CLineSystemFX::Update`). `UpdateMotion`,
-  `UpdateNormalMotion`, `CTronPlayerMgr::TronUnknownVirtual64` and
-  `CClientLightCycleMgr::Update` are not yet byte-identical, and the
-  engine's `pd_Update` is not checked: their faults have no entry yet.
+  `RETAIL_BUGS.md` has each of these faults: from the byte-identical
+  functions (`UpdatePushers`, `MoveLocalSolidObject`, `UpdateInLiquid`,
+  `BounceMovingObject`, `CFireFX::Update`, `CParticleSystemFX::Update`,
+  `CLineSystemFX::Update`, and the engine's `pd_Update`, 0x467630), and
+  from the retail code of the functions that are not yet byte-identical
+  (`UpdateMotion`, `UpdateNormalMotion`,
+  `CTronPlayerMgr::TronUnknownVirtual64`, `CClientLightCycleMgr::Update`;
+  the entries give the retail addresses).
 
   Examined and not changed: the light cycles' speed, acceleration, turns
   and trails (`Shared/TRON/LightCycleMgr.cpp`: the speed changes by its
@@ -715,9 +748,18 @@ ClientResShared.h`, `ClientRes/TRON/ClientRes.rc`); the launcher's
   drawn as textured polygons, in a scene of their own if they come outside
   one, and the screenshot commands read a resolved copy
   (`render_a/.../d3d_surface.cpp` `d3d_BlitToScreen`,
-  `d3d_MakeScreenShotBMP`, `d3d_MakeScreenShotTGA`). The console's
-  direct screen locks (`LockScreen`) still fail quietly with
-  multisampling. A sample count the card cannot do falls back to the next
+  `d3d_MakeScreenShotBMP`, `d3d_MakeScreenShotTGA`). A `FillRect` of the
+  screen (the pause screen's background) clears the rectangle on the
+  device when the back buffer cannot be locked
+  (`winclientde_impl.cpp` `cis_FillRect`). The engine console does not
+  lock the screen: it draws with DrawPrim and the font manager (its
+  background through `BlitToScreen`), and the shipped engine never draws
+  it (`MaybeDrawConsole` is not called, and the tilde key is only for a
+  build without `_FINAL`, retail too). No other function that locks the
+  screen (`cis_LockSurface`: warps, masked draws, `SetPixel`) is called
+  on the screen by Tron 2.0's game DLLs. Tested with
+  `AntiAliasFSOverSample 4`: the pause screen of M01-01 is as without
+  antialiasing (the paused picture covers the fill). A sample count the card cannot do falls back to the next
   lower (retail's `GetDefaultMultiSampleType`; under Wine with Mesa's
   software renderer 2 falls to `D3DMULTISAMPLE_NONMASKABLE`). The
   Performance screen's "Anisotropic filtering": Off, 2x, 4x, 8x, 16x; the
@@ -916,25 +958,25 @@ level), Configure controls' capture of a pad button, and the Back binding.
 
 ### Inherited engine items
 
-The engine came from cjacksrc's with its modern code. These items compile
-and boot in Tron 2.0's modern build (the tests above), but nobody has
-checked them against Tron 2.0's own engine yet: the retail-bug fixes among
-them have no entry in Tron 2.0's `RETAIL_BUGS.md`. The Phase 1 agent named
-in the last column owns each one: it checks it, keeps it, changes it or
-removes it.
+The engine came from cjacksrc's with its modern code. Each item is now
+checked against Tron 2.0's own engine: the retail `Lithtech.exe` (its
+functions that our legacy build compiles byte-identical, and its
+disassembly where a function was not), with the developer build of
+2003-08-05 as a second witness. Each retail bug among them has its entry
+in `RETAIL_BUGS.md`.
 
 | Id | What (cjacksrc's or nolf2src's item) | Files | Owner |
 |---|---|---|---|
 | EN-2 | in a window the game keeps its renderer when it loses the focus (cjacksrc EN-2) | `kernel/src/sys/win/client.cpp` | Display: done (above) |
-| EN-4 | the music thread's handle is closed (cjacksrc EN-4) | `ltdirectmusic_impl.cpp` | (fix) |
-| EN-5 | a failed transition segment is tested (cjacksrc EN-5) | `ltdirectmusic_impl.cpp` | (fix) |
-| EN-7 | no sound driver: no `Term` through a null pointer (cjacksrc EN-7) | `sound/src/soundmgr.cpp` | (fix) |
-| EN-10 | `StopSecondary`/`StopMotif` walk their list once (nolf2src M-E7) | `ltdirectmusic_impl.cpp` | (fix) |
-| EN-11 | null checks in the client interface (nolf2src M-E8) | `clientde_impl.cpp`, `winclientde_impl.cpp` | (fix) |
-| EN-12 | `InitLevel`'s trace text (nolf2src M-E9) | `ltdirectmusic_impl.cpp` | (fix) |
-| EN-13 | the console print does not write past its buffer (nolf2src M-E10) | `clientde_impl.cpp`, `dsys_interface.cpp` | (fix) |
-| EN-14 | error messages name their own function (nolf2src M-E11) | `clientde_impl.cpp`, `winclientde_impl.cpp`, `client_iltphysics.cpp`, `ltinfo_impl.cpp`, `soundmgr.cpp` | (fix) |
-| EN-15 | `streamsim_Open` closes its file on an error (nolf2src M-E12) | `streamsim.cpp` | (fix) |
+| EN-4 | the music thread's handle is closed (cjacksrc EN-4); checked: `Term` (0x43e340) is byte-identical, retail does not close it; kept, RETAIL_BUGS.md | `ltdirectmusic_impl.cpp` | done (above) |
+| EN-5 | a failed transition segment is tested (cjacksrc EN-5); checked: Tron's retail `ChangeIntensity` (0x43f490) tests the transition's segment state (0x43f6c5), so that test is now in both builds (the function became byte-identical); the path without a transition has no test in retail (0x43f7e5): the modern build tests it; RETAIL_BUGS.md | `ltdirectmusic_impl.cpp` | done (above) |
+| EN-7 | no sound driver: no `Term` through a null pointer (cjacksrc EN-7); checked: `SoundSys` (0x4b1890) byte-identical, the call at 0x4b1926; kept, RETAIL_BUGS.md | `sound/src/soundmgr.cpp` | done (above) |
+| EN-10 | `StopSecondary`/`StopMotif` walk their list once (nolf2src M-E7); checked: both (0x43fb50, 0x43fec0) byte-identical; kept, RETAIL_BUGS.md | `ltdirectmusic_impl.cpp` | done (above) |
+| EN-11 | null checks in the client interface (nolf2src M-E8); checked: `ci_GetLightRadius` (0x40b2e0), `ci_SetLightRadius` (0x40b300), `cis_GetSurfaceDims` (0x495e30) byte-identical; kept, RETAIL_BUGS.md | `clientde_impl.cpp`, `winclientde_impl.cpp` | done (above) |
+| EN-12 | `InitLevel`'s trace text (nolf2src M-E9); checked: `InitLevel` (0x43e570) byte-identical, "sDeine3" at 0x5b36e4; kept, RETAIL_BUGS.md | `ltdirectmusic_impl.cpp` | done (above) |
+| EN-13 | the console print does not write past its buffer (nolf2src M-E10); checked: `CPrint` (0x408740), `dsi_PrintToConsole` (0x42a630) byte-identical; kept, RETAIL_BUGS.md | `clientde_impl.cpp`, `dsys_interface.cpp` | done (above) |
+| EN-14 | error messages name their own function (nolf2src M-E11); checked: the ten functions byte-identical, the wrong names referenced from them and the right ones not in the image; kept, RETAIL_BUGS.md | `clientde_impl.cpp`, `winclientde_impl.cpp`, `client_iltphysics.cpp`, `ltinfo_impl.cpp`, `soundmgr.cpp` | done (above) |
+| EN-15 | `streamsim_Open` closes its file on an error (nolf2src M-E12); checked: `streamsim_Open` (0x485480) byte-identical; kept, RETAIL_BUGS.md | `streamsim.cpp` | done (above) |
 | EN-20 | `##gamepad`: the XInput pad as a DirectInput gamepad (cjacksrc EN-20; `src/tron20src/xinput/`); checked, kept; the game half is CL-20 to CL-25 | `kernel/src/sys/win/input.cpp` | Input: done (below) |
 | EN-21 | DirectInput joysticks are left out (cjacksrc EN-21); checked, kept; `JoystickDisable` also disables `##gamepad` | `input.cpp` | Input: done (below) |
 | EN-22 | no DirectInput device enumeration (cjacksrc EN-22); checked, kept | `input.cpp` | Input: done (below) |
@@ -947,14 +989,18 @@ removes it.
 | EN-41 | a game tick at most every 10 ms (cjacksrc EN-41); checked, kept | `server/src/servermgr.cpp` | Frame rate: done (below) |
 | EN-42 | the frame-time log, `FrameTimeLog` (cjacksrc EN-42); checked, kept | `shared/src/sys/win/modernframelog.h`, `clientmgr.cpp`, `clientmgr.h`, `clientshell.cpp`, `d3d_device.cpp`, `rendershadowlist.cpp`, `engine_vars.cpp` | Frame rate: done (below) |
 | EN-43 | V-sync off in a window under Wine (cjacksrc EN-43); checked, kept | `d3d_device.cpp` (`SetPresentationParams`) | Frame rate: done (below) |
-| EN-60 | a music intensity out of range (cjacksrc EN-60) | `ltdirectmusic_impl.cpp` | (fix) |
+| EN-60 | a music intensity out of range (cjacksrc EN-60); checked: not a retail bug in Tron 2.0: retail inlines `GetTransition` with the index check (0x43f57c); the check is now in both builds, and EN-60 is removed (its id is not used again) | `ltdirectmusic_impl.cpp` | removed |
 | EN-61 | projected shadows' culling buffer (cjacksrc EN-61); kept | `modelshadowshader.cpp`, `rendershadowlist.cpp` | Frame rate: done (below) |
 | EN-62 | V-sync in a window caps the rate, it does not wait (cjacksrc EN-62); checked, kept | `d3d_device.cpp`, `clientmgr.cpp`, `modernframelog.h` | Frame rate: done (below) |
 
-"(fix)": a retail-bug fix that belongs to no Phase 1 agent. Whoever checks
-the bug against Tron 2.0's retail `Lithtech.exe` writes its
-`RETAIL_BUGS.md` entry, or removes the fix if Tron 2.0 does not have the
-bug.
+How they were checked: `out/work/srvscore.py Lithtech` on the legacy
+build gives the retail address and status of each function; a function
+that is byte-identical with the retail code in its `#else` has the fault.
+For the messages of EN-14, the strings that the functions reference in
+the retail image were checked too. `ChangeIntensity` was near: its retail
+disassembly showed the two checks that cjacksrc's EN-5 and EN-60 add
+(Tron 2.0's engine is later than the code cjacksrc's fixes were made
+for).
 
 ### Online
 
@@ -1072,37 +1118,52 @@ DLL names in every retail binary):
 | `MSS32.DLL`, Miles (RAD Game Tools) | only RAD's `binkw32.dll` names it (with `DSOUND.DLL`, for its sound outputs); no binary of the game imports or loads it, and the game does not ship it | gone with X-1: our player plays through `waveOut` |
 | `L3CODECA.ACM`, the MP3 codec of the system | `src/Engine/snddrv/s_dx8.cpp` (`SelectHardCodedMP3Codec`, then the ACM drivers of the system) | ours, in `SndDrv.dll`, X-2 (done) |
 | `IMAADP32.ACM` (IMA ADPCM, a part of Windows and of Wine) | `s_dx8.cpp`; `Startup` fails without an ADPCM driver, though no file of the game is IMA ADPCM | kept: a part of the system |
-| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | X-3 (open, below) |
+| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | Microsoft's, in the game directory (X-3); the music under Wine is open (below) |
 | `cdaudio.dll` (Monolith's CD music driver) | the engine (`CClientMgr::AppInitMusic`), only if the game asks; Tron 2.0 does not ship it | nothing to do |
 | `MFC42.DLL`, `MFC42U.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, `MSVCIRT.dll`; D3DX9 (linked statically) | | kept: Microsoft's runtime |
 | SecuROM's DLL names in the retail `Lithtech.exe` (`CmdLineExt*.dll`, `SIntf*.dll`, `PID*.DLL`, ...) | the copy protection | not in our engine |
 | the GameSpy SDK | compiled from our source (`src/Game/Libs/GameSpy`) | GS- items |
 
-* **X-3: the music under Wine and Proton.** The music is DirectMusic:
-  segments (`MUSIC/*/*.sgt`) with MP3 waves. Under Wine 9.0 the legacy
-  build's main menu is silent (a recording with `PLAYTEST_AUDIO`), as
-  nolfsrc and avp2src found for their games: Wine's DirectMusic loads the
-  segments but plays nothing (and Wine's `dswave.dll` has no ACM code for
-  compressed waves). nolfsrc's M-P4-12 and avp2src's M-X4 put Microsoft's
-  DirectMusic in the game directory (`ms_<name>.dll` from
-  `ext/toolchains/directmusic-5.3.1.904/` and a manifest for registration-
-  free COM: `DIRECTMUSIC_MANIFESTS` in `build/retail.py`). That was tried
-  here: the DLLs load, but `CLTDirectMusicMgr::Init` fails. Tron 2.0's
-  engine (NOLF2's generation) gives DirectMusic its own DirectSound object
-  in `IDirectMusicPerformance8::InitAudio` (`InitPerformance`), and
-  Microsoft's DirectMusic then asks that object for an interface that
-  Wine's DirectSound does not have (IID
-  `{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`, `IDirectSoundConnect`, the sink
-  of DirectX 8 audio paths; Wine's trace: "unknown IID"). The NOLF and
-  AvP2 engines use the older `Init` and a port, which work. The plan: (a)
-  in the modern engine, start DirectMusic in the older way when the
-  audio-path start fails (`ltdirectmusic_impl.cpp`, `InitPerformance`;
-  the default audio path and the reverb would change), then (b) install
-  Microsoft's DirectMusic as nolfsrc does. With it, the music waves come
-  to X-2's codec through ACM (no driver handle), which `make mp3acmtest`
-  checks for all 1,317 music files. Until then the music is silent under
-  Wine, in the legacy build too; on Windows the system's DirectMusic plays
-  it, with X-2's codec.
+* **X-3: the music under Wine and Proton (open).** The music is
+  DirectMusic: segments (`MUSIC/*/*.sgt`) whose wave tracks stream MP3
+  waves (format 0x55, with a `wavh` chunk: streaming). Under Wine 9.0 the
+  legacy build's main menu is silent (a recording with `PLAYTEST_AUDIO`):
+  Wine's DirectMusic starts the audio path but plays nothing.
+  * **Done: Microsoft's DirectMusic in the modern game directory**, as
+    nolfsrc's M-P4-12 and avp2src's M-X4: the nine DLLs of DirectX 9.0c
+    from `ext/toolchains/directmusic-5.3.1.904/` as `ms_<name>.dll`
+    (`THIRD-PARTY` rows of `MANIFEST.txt` with their source file), and
+    `Lithtech.exe.manifest` (registration-free COM, `ours` row;
+    `DIRECTMUSIC_MANIFESTS` in `build/retail.py`;
+    `src/modern/directmusic/README.md`). They are in the modern public
+    archive (`build/pubcheck.py` accepts the `ours` row; `docs/
+    LICENSE_NOTES.md`). On Windows they are the DirectMusic that Windows
+    has.
+  * **Not solved: the music under Wine.** With Microsoft's DirectMusic,
+    `IDirectMusicPerformance8::InitAudio` succeeds, but
+    `CreateStandardAudioPath` fails with `E_NOINTERFACE`: the synthesizer
+    asks the DirectSound object for `IDirectSoundConnect`
+    (`{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`), which Wine's DirectSound
+    does not have. `CLTDirectMusicMgr::Init` then fails, as in retail when
+    DirectMusic does not start, and the game plays with no music. The
+    plan was to start DirectMusic in the older way when the audio path
+    fails (`Init` and a synthesizer port, as the NOLF and AvP2 engines
+    do). That was made and tested, and not kept: the port starts (16
+    channel groups, 64 voices, 44100 Hz), the segments load and play, but
+    `IDirectMusicSegment8::Download` returns `E_NOTIMPL` for each segment
+    with wave tracks (waves need a performance with audio paths), so no
+    wave is decoded (no ACM stream opens) and the recording is silent.
+    NOLF's and AvP2's music is DLS instruments, which a port plays; Tron
+    2.0's is waves. Also tried: Microsoft's `dswave.dll` alone with
+    Wine's other DirectMusic DLLs (the game crashes). Microsoft's
+    `dsound.dll` has `IDirectSoundConnect`, but it is not in the DirectX
+    redistributable runtime. What is left: a DirectSound that has
+    `IDirectSoundConnect` (Wine does not have it yet), or the engine
+    playing the music's waves itself. Nothing in the reverb or the audio
+    paths changed against retail: the engine is retail's. Tested with
+    `build/playtest-music.txt` (the main menu, `PLAYTEST_AUDIO`,
+    `+LTDMConsoleOutput 5`): the modern and the legacy recordings have
+    only the menu's sound effects in the first seconds.
 
 ### Overlaps
 

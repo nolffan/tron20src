@@ -45,3 +45,10 @@ REFERENCE_GAME = [("CSHELL.dll", "CShell.dll", "Gamep4.rez"),
 OPEN_RUNTIME = [
     ("binkw32.dll", "src/modern/binkw32 + ext/ffmpeg: our Bink player"),
 ]
+
+# The modern build (openruntime) also gets Microsoft's DirectMusic: the nine
+# DLLs of ext/toolchains/directmusic-5.3.1.904/ as ms_<name>.dll (THIRD-PARTY
+# rows), and this registration-free COM manifest beside the engine, which
+# points the engine's DirectMusic classes at them (docs/MODERN.md X-3,
+# src/modern/directmusic/README.md). The legacy build gets neither.
+DIRECTMUSIC_MANIFESTS = [("src/modern/directmusic/Lithtech.exe.manifest", "Lithtech.exe.manifest")]

@@ -16,7 +16,8 @@ its name. It fails if:
     says we built (`built`) and that is byte-identical to a retail binary is
     the aim of the legacy build: it is listed, and it does not fail;
   * a file of the archive is not one that we build or write: a `built` or
-    `EXT` row of <gamedir>/MANIFEST.txt (or a non-retail `THIRD-PARTY` one),
+    `EXT` row of <gamedir>/MANIFEST.txt (or a non-retail `THIRD-PARTY` one,
+    or an `ours` one: a file of our source, as the DirectMusic manifest),
     the .pdb and .map of a built binary, MANIFEST.txt, tron20cmds.txt,
     LICENSE_NOTES.md and licenses/, the install scripts and SHA256SUMS;
   * a file holds a home directory or a user's directory (/home/, /Users/,
@@ -119,6 +120,10 @@ def main():
             stem = os.path.splitext(rel)[0]
             allowed.update({stem + ".pdb", stem + ".map"})
         elif frm.startswith("THIRD-PARTY ") and not frm.startswith(f"THIRD-PARTY {RELEASE}:"):
+            allowed.add(rel)
+        elif frm.startswith("ours "):
+            # a file of our source, as it is (the modern build's
+            # Lithtech.exe.manifest, src/modern/directmusic/)
             allowed.add(rel)
     words = [w.encode() for w in os.environ.get("TRON20SRC_SCAN_WORDS", "").split() if len(w) >= 3]
 

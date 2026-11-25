@@ -85,7 +85,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
-| 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | Phase 0 done: the modern build compiles and boots (`make modern`), the launcher split, the retail-bug fixes; Phase 1 planned in `MODERN.md` |
+| 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | done under Wine, except the music: every item of the list below is in `MODERN.md` with its tests; Microsoft's DirectMusic is in the game directory, but Tron 2.0's music stays silent under Wine (X-3, open). To check on real hardware: antialiasing and anisotropic filtering on a graphics card, a real controller, Windows itself, Internet play on OpenSpy's public servers |
 | 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`build/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts (tested from the disc images for legacy and modern), the CI with the nightly and tagged releases |
 
 ## Notes per package
@@ -572,6 +572,27 @@ from cjacksrc's engine (EN- items; its XInput headers are now in
 modern build passes `make launchertest` both as `TronLauncher.exe` and as
 `Tron.exe`. `MODERN.md` lists every item with its id, and the Phase 1
 items with the files that each agent owns.
+
+Phase 1 (2026-11-25): every item of the list above is done and tested
+under Wine and Xvfb (`MODERN.md`: Apps, Middleware, Display, Frame rate,
+Input, Online), and every engine item that came from cjacksrc's engine is
+checked against Tron 2.0's retail `Lithtech.exe` ("Inherited engine
+items"). The modern build passes `make tests` (and, in each section's tests,
+`make launchertest`, `make portabletest` and `make mptest`), and `make
+package` gives its public archive (with Microsoft's DirectMusic), which
+`build/pubcheck.py` accepts. What is open, and what Wine and
+Xvfb cannot show:
+
+- the music under Wine and Proton (X-3): Microsoft's DirectMusic needs a
+  DirectSound with `IDirectSoundConnect` for Tron 2.0's audio paths, and
+  Wine's has none; on Windows the music plays as in retail;
+- antialiasing and anisotropic filtering on a real graphics card (under
+  Wine the device log is the check, CL-34);
+- a real controller (the tests use the test pad, CL-20 to CL-25);
+- Windows itself (V-sync in a window, the DirectMusic manifest, the raw
+  mouse);
+- Internet play through OpenSpy's public servers (the tests use a local
+  master server; the list request to OpenSpy was read only, GS-1 to GS-4).
 
 Before this package: package 7. The modern build changes only code under
 `TRON20SRC_MODERN`, and the release tree removes those blocks, so the

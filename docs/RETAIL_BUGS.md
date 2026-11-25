@@ -675,6 +675,129 @@ cover the screen are not confined to it.
 Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle
 (MODERN.md EN-8).
 
+### The music thread's handle is never closed
+
+Lithtech.exe 0x43e340 (CLTDirectMusicMgr::Term, src/Engine/runtime/kernel/
+src/sys/win/ltdirectmusic_impl.cpp). Term tells the notification thread
+to stop and waits for it (WaitForSingleObject, 0x43e393), but does not
+close the thread's handle. Each start and stop of the music (a level, the
+menus) leaks one handle.
+
+Fixed in the modern build: ltdirectmusic_impl.cpp closes the handle
+(MODERN.md EN-4).
+
+### A music change without a transition uses a segment state it did not test
+
+Lithtech.exe 0x43f7e5 (CLTDirectMusicMgr::ChangeIntensity, ltdirectmusic_
+impl.cpp). When an intensity change has no transition segment, the code
+plays the first segment of the new intensity and calls QueryInterface on
+the segment state that PlaySegment returned, without a test: if
+PlaySegment fails, it calls through a null pointer. The path with a
+transition segment tests the pointer (0x43f6c5).
+
+Fixed in the modern build: ltdirectmusic_impl.cpp tests the pointer on
+this path too (MODERN.md EN-5).
+
+### Without a sound driver, the engine calls Term through a null pointer
+
+Lithtech.exe 0x4b1926 (SoundSys, src/Engine/runtime/sound/src/
+soundmgr.cpp, 0x4b1890). When the named sound driver does not load, the
+engine takes the default driver. If that does not load either, the code
+calls Term on the null pointer that it got.
+
+Fixed in the modern build: soundmgr.cpp leaves the pointer null
+(MODERN.md EN-7).
+
+### Stopping secondary segments or motifs can hang the game
+
+Lithtech.exe 0x43fb50 (CLTDirectMusicMgr::StopSecondary) and 0x43fec0
+(CLTDirectMusicMgr::StopMotif, ltdirectmusic_impl.cpp). To stop a segment
+by name, the code finds it again and again until the search finds
+nothing. A segment that it does not clean up (one to play to its end, or
+one without a DirectMusic segment) is found again each time: the loop does
+not stop, and it holds the lock of the command queue. To stop all, the
+loop goes to the next segment only after a segment that has a segment
+state, so a segment without one stops the loop from advancing.
+
+Fixed in the modern build: one walk over the list, for a name or for all
+(MODERN.md EN-10).
+
+### Light and surface accessors use a null handle
+
+Lithtech.exe 0x40b2e0 (ci_GetLightRadius; one body with the server's
+si_GetLightRadius), 0x40b300 (ci_SetLightRadius, src/Engine/runtime/
+client/src/clientde_impl.cpp) and 0x495e30 (cis_GetSurfaceDims,
+client/src/sys/win/winclientde_impl.cpp). The two light functions read
+the object's type through the handle without a test; the other client
+accessors test it. GetSurfaceDims, for a null surface, writes 0 to both
+outputs, also when the caller gave a null pointer for one of them (the
+other branch tests each pointer).
+
+Fixed in the modern build: the tests are added (MODERN.md EN-11).
+
+### The music's InitLevel trace misspells sDefine3
+
+Lithtech.exe 0x43e570 (CLTDirectMusicMgr::InitLevel,
+ltdirectmusic_impl.cpp). The trace at LTDMConsoleOutput 3 says
+"sDeine3=" (the string is at 0x5b36e4).
+
+Fixed in the modern build: the text says "sDefine3" (MODERN.md EN-12).
+
+### A console print that fills its buffer writes past it
+
+Lithtech.exe 0x408740 (CLTClient::CPrint, src/Engine/runtime/client/src/
+clientde_impl.cpp) and 0x42a630 (dsi_PrintToConsole, kernel/src/sys/win/
+dsys_interface.cpp). The message is formatted into a buffer of 512 (500)
+bytes; if its last character is not a newline, the code writes a newline
+and a terminator after it. A message that fills the buffer gets them one
+and two bytes past its end. An empty message reads the byte before the
+buffer.
+
+Fixed in the modern build: the format keeps a byte for the newline, and
+an empty message is tested (MODERN.md EN-13).
+
+### Engine error messages give the name of another function
+
+Lithtech.exe, the debug messages of RETURN_ERROR and CHECK_PARAMS (src/
+Engine/runtime/client/src/): ci_GetSoundTimer (0x409790) reports its bad
+parameters as "GetSoundDuration" (0x40987f); ci_SortParticles (0x40ad20)
+as "CLTClient::OptimizeParticles"; ci_FreeServiceList (0x40b6a0) as
+"CLTClient::GetServiceList"; CLTClient::SetCanvasRadius (0x408260) as
+"CLTClient::GetCanvasRadius"; CLTClient::GetMaxRadiusInPoly (0x4082d0,
+0x40831b) as "CLTServer::GetMaxRadiusInPoly"; in_GetPerformanceInfo
+(0x444110, 0x444181) its size check as "ClientDE::GetVersionInfoExt";
+cis_UnoptimizeSurface (0x495a20) as "OptimizeSurface"; cis_RenderObjects
+(0x497da0) its first three checks as "RenderCamera";
+CLTPhysicsClient::SetObjectDims (0x4af3c0) its parameter check as
+"SPhysicsLT::SetObjectDims"; CSoundMgr::SetSoundFilter (0x4b4cb0) as
+"CSoundMgr::SetSoundFilterParam". The correct names are not in the retail
+image.
+
+Fixed in the modern build: each message names its own function
+(MODERN.md EN-14).
+
+### streamsim_Open leaves its file open when it cannot make the stream
+
+Lithtech.exe 0x485480 (streamsim_Open, src/Engine/runtime/kernel/src/sys/
+win/streamsim.cpp). If the stream object cannot be allocated, the
+function returns null but does not close the file that it opened.
+
+Fixed in the modern build: streamsim.cpp closes the file (MODERN.md
+EN-15).
+
+### Client prediction follows closer and smooths less at a high frame rate
+
+Lithtech.exe 0x467630 (pd_Update, src/Engine/runtime/client/src/
+predict.cpp). Each frame the client moves each object that the server
+moves half of the way from where it is to its predicted position, and
+turns it half of the way to its last known rotation (quat_Slerp with
+0.5). The share is for a frame, not for a time: at 240 frames a second an
+object follows the prediction four times as closely each 60th of a second
+as at 60, and its motion is smoothed less.
+
+Fixed in the modern build: the share is that of a 60th of a second,
+1 - 0.5^(60 x frame time) (predict.cpp, MODERN.md EN-45).
+
 ### Cancelling a decision window resets the memory after its choices
 
 CShell.dll 0x10140810 (CHUDDecision::Choose, ClientShellShared/
@@ -1702,6 +1825,102 @@ value 0xFFFFFFFF.0xFFFFFFFF, and the debug output says "LithTech build
 (CClientMgr::Init) gets the same incorrect value.
 
 Not fixed yet: the modern build has no build number to give the engine.
+
+### The player runs slower at a high frame rate
+
+CShell.dll 0x100f6f20 (CMoveMgr::UpdateNormalMotion, ClientShellShared/
+CMoveMgr.cpp; our function is not yet byte-identical, so this is from
+the retail code). The code caps the player's speed at the start of each
+frame (0x100f715f, 0x100f7220), and then the frame's acceleration takes
+the speed past the cap. The shorter the frame, the less the speed goes
+past it: in M01-01 the run's top speed was 346 units a second at 59
+frames a second and 313 at 254. In spectator mode the speed is multiplied
+by 0.9 each frame (0x100f7989), so it falls faster at a higher frame
+rate. A jump also goes a little higher at a lower frame rate (82.8 units
+at 60 frames a second, 80.8 at 254): the engine's physics moves by the
+frame's speed before it takes off the frame's gravity.
+
+Fixed in the modern build: the cap and the damping are applied each 60th
+of a second, and a jump above 60 frames a second starts as fast as at 60
+(CMoveMgr.cpp, MODERN.md EN-45).
+
+### A blocked player stops sooner at a high frame rate
+
+CShell.dll 0x100f6ac0 (CMoveMgr::UpdateMotion, ClientShellShared/
+CMoveMgr.cpp; not yet byte-identical, from the retail code). When the
+player cannot move, the code halves the horizontal speed each frame
+(0x100f6eaf, 0x100f6ebd), so the speed falls faster at a higher frame
+rate.
+
+Fixed in the modern build: halved each 60th of a second (CMoveMgr.cpp,
+MODERN.md EN-45).
+
+### The light cycle's speed depends on the frame rate
+
+CShell.dll 0x100a7390 (CTronPlayerMgr slot 0x64, TRON/TronPlayerMgr.cpp;
+not yet byte-identical, from the retail code). After the frame's move the
+code puts the cycle on the grid (CLightCycleMgr::SnapToGrid, 0x100a7462),
+which rounds the position to whole units. So each frame moves a whole
+number of units: at 840 units a second, frames of 16 or 17 ms move 13 or
+14 units (825 a second), frames of 5 or 6 ms 4 or 5 (853 a second), and at
+1000 frames a second a cycle at 1400 units a second moves 1 unit a frame.
+A frame's move of 0.1 units or less is not made (0x100a7401). A turn on a
+frame that rounds to no move is lost.
+
+Fixed in the modern build: the move is kept without rounding from frame
+to frame (TronPlayerMgr.cpp, MODERN.md EN-45).
+
+### Other players' light cycles are predicted less at a high frame rate
+
+CShell.dll 0x10011410 (CClientLightCycleMgr::Update, TRON/
+ClientLightCycleMgr.cpp; not yet byte-identical, from the retail code).
+The client puts another player's cycle LCClientPredict (10; a host
+LCHostPredict, 2) frames ahead of its last known position: the frame
+time times that number (0x10011817). Then it moves the cycle LCInterpTime
+(0.2) of the way there, each frame. At 60 frames a second the prediction
+is 0.17 s, at 240 it is 0.04 s, and the cycle catches up faster.
+
+Fixed in the modern build: a frame counts as a 60th of a second at least
+for the prediction, and the share of the way is that of a 60th of a
+second (ClientLightCycleMgr.cpp, MODERN.md EN-45).
+
+### The FOV is set again each frame
+
+CShell.dll 0x100e57af..0x100e58b3 (CGameClientShell::UpdateDebugInfo,
+ClientShellShared/GameClientShell.cpp; not yet byte-identical, from the
+retail code). The code gets the camera's field of view (radians) and
+compares it with the console variables FovX and FovY (degrees, 0x100e57e8,
+0x100e582e). They are never equal, so each frame it sets the camera's
+FOV again from the variables. Build 51 and NOLF2 have the same line.
+
+Fixed in the modern build: the comparison is with the variables in
+radians (GameClientShell.cpp, MODERN.md GAME-34).
+
+### The ClientFX DLL's copy in the temporary directory is left at each start
+
+CShell.dll 0x101816c0 (CClientFXDB::UnloadFxDll), from 0x101811e0
+(~CClientFXDB, ClientShellShared/ClientFXDB.cpp). The client copies
+ClientFx.fxd from the archives to the temporary directory (cfx*.tmp) and
+loads that copy. It unloads it only from the destructor of the static
+CClientFXDB, while CShell.dll itself is unloaded. There the loader
+defers the FreeLibrary, so UnloadFxDll still finds the module and does
+not delete the file. Under Wine one copy (220 KB) is left for each start.
+
+Fixed in the modern build: CGameClientShell::OnEngineTerm unloads the DLL
+and its effects before CShell.dll is unloaded (GameClientShell.cpp,
+InterfaceMgr.cpp, MODERN.md GAME-35).
+
+### A disc tournament's time-out uses a deleted match
+
+Object.lto 0x1004a67c (CServerDiscMatchMgr's update, TRON/
+ServerDiscMatchMgr.cpp; not yet byte-identical, from the retail code).
+When the tournament times out, the loop ends and deletes each match. It
+reads the next node once, before the loop (0x1004a67c), and does not
+read it again (0x1004a6ad). With two matches or more, the second is ended
+and deleted, and then the loop uses its freed node again.
+
+Fixed in the modern build: the next node is read in each pass
+(ServerDiscMatchMgr.cpp, MODERN.md GAME-33).
 
 ### A push lasts the same time but pushes more at a high frame rate
 
