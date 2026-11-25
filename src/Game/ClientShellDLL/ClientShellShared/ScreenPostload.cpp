@@ -105,92 +105,12 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		// Assume we won't be showing the press any key text.
 		m_bPressAnyKey = false;
 
-		// Check if we have a mission entry.
-		bool bGotMission = false;
-		if( !g_pMissionMgr->IsCustomLevel( ))
-		{
-			int nCurMission = g_pMissionMgr->GetCurrentMission( );
-			MISSION* pMission = g_pMissionButeMgr->GetMission( nCurMission );
-
-			if( pMission )
-			{
-				m_missionname = LoadTempString(pMission->nNameId);
-				int nCurLevel = g_pMissionMgr->GetCurrentLevel( );
-				m_levelname = LoadTempString( pMission->aLevels[nCurLevel].nNameId );
-				m_layout = pMission->szLayout;
-				
-				// Show a briefing for this level if it exists.  Also, only
-				// show the briefing if we haven't been to this level before.
-				int nBriefingId = pMission->aLevels[nCurLevel].nBriefingId;
-				if( nBriefingId >= 0 && !g_pMissionMgr->IsRestoringLevel( ))
-				{
-					m_briefing = LoadTempString( nBriefingId );
-					m_layout = pMission->szBriefLayout;
-				}
-				else
-					m_briefing = "";
-
-				// Show help text for this level if it exists.
-				int nHelpId = pMission->aLevels[nCurLevel].nHelpId;
-				if( nHelpId >= 0)
-					m_help = LoadTempString( nHelpId );
-				else
-					m_help = "";
-				bGotMission = true;
-			}
-		}
-
-
-		// If we were unsuccessful in getting info from the mission, then just
-		// use defaults.
-		if( !bGotMission )
-		{
-			// If connecting to a remote server, set our mission descriptor to 
-			// the ip we're connecting to.
-			if( g_pClientMultiplayerMgr->IsConnectedToRemoteServer( ))
-			{
-				// Make a loading string using the IP to be joined.
-				char szLoadingString[256];
-				if (strlen(g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName))
-				{
-					sprintf( szLoadingString, "%s:  %s", LoadTempString(IDS_CONNECTING_TO_SERVER), 
-						g_pClientMultiplayerMgr->GetStartGameRequest( ).m_HostInfo.m_sName );
-				}
-				else
-				{
-					sprintf( szLoadingString, "%s", LoadTempString(IDS_CONNECTING_TO_SERVER));
-				}
-				m_missionname = szLoadingString;
-
-				sprintf( szLoadingString, "    (%s)", g_pClientMultiplayerMgr->GetStartGameRequest( ).m_TCPAddress );
-
-				m_levelname = szLoadingString;
-			}
-			// Local game, set the mission descriptor to the level name.
-			else
-			{
-
-				if (g_pGameClientShell->IsRunningPerformanceTest())
-				{
-					m_missionname = LoadTempString( IDS_TITLE_PERFORMANCE_TEST );
-					m_levelname = "";
-				}
-				else
-				{
-					m_missionname = LoadTempString( IDS_CUSTOM_LEVEL );
-					// Split the worldname up into parts so we can get the load string.
-					char const* pszWorldName = g_pMissionMgr->GetCurrentWorldName( );
-					char szWorldTitle[MAX_PATH] = "";
-					_splitpath( pszWorldName, NULL, NULL, szWorldTitle, NULL );
-					m_levelname = szWorldTitle;
-
-				}
-
-			}
-
-			m_layout = "LoadScreenDefault";
-			m_briefing = "";
-		}
+		// RETAIL: 0x1016b4e0: Tron's does not look up the mission here, as
+		// NOLF2's does. The loading screen gives it the layout, briefing
+		// and help (CLoadingScreen::InitMissionInfo, 0x10161f70); nothing
+		// sets its mission and level names, so these stay empty. Tron's
+		// gets the title, briefing, help and continue fonts by their
+		// height, not by their layout font number.
 
 		char szTagName[30];
 		if (!m_bReadLayout)
@@ -323,7 +243,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		}
 
 		uint8 nFontSize = (uint8)((float)TitleFontSize * g_pInterfaceResMgr->GetXRatio());
-		CUIFont *pFont = g_pInterfaceResMgr->GetFont(TitleFont);
+		CUIFont *pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 
 		if (!m_pMissionNameStr)
 		{
@@ -387,7 +307,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		}
 
 		nFontSize = (uint8)((float)BriefingFontSize * g_pInterfaceResMgr->GetXRatio());
-		pFont = g_pInterfaceResMgr->GetFont(BriefingFont);
+		pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 
 		if (!m_pBriefingStr)
 		{
@@ -440,7 +360,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		}
 
 		nFontSize = (uint8)((float)HelpFontSize * g_pInterfaceResMgr->GetXRatio());
-		pFont = g_pInterfaceResMgr->GetFont(HelpFont);
+		pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 
 		if (!m_pHelpStr)
 		{
@@ -461,7 +381,7 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		}
 		else
 		{
-			m_pHelpStr->SetText("");
+			m_pHelpStr->SetText(std::wstring());
 		}
 
 		
@@ -506,29 +426,33 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 
 
 		nFontSize = (uint8)((float)ContinueFontSize * g_pInterfaceResMgr->GetXRatio());
-		pFont = g_pInterfaceResMgr->GetFont(ContinueFont);
+		pFont = g_pInterfaceResMgr->GetFontForHeight(nFontSize);
 
+		// RETAIL: 0x1016c825: Tron's makes the string with a space
 		if (!m_pContinueStr)
 		{
-			m_pContinueStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring());
+			m_pContinueStr = g_pFontManager->CreateFormattedPolyString(pFont,std::wstring(L" "));
 		}
 
-		// If we have a briefing, then post the press any key.
-		if( m_briefing.length( ) > 0 )
+		// RETAIL: 0x1016c92a: Tron's asks for a key after every load in a
+		// single-player game (string 47, its "press any key"), with or
+		// without a briefing; NOLF2's asks only when the level has a
+		// briefing. In a multiplayer game it waits for the other players
+		// (string 0x484) in the flash colour.
+		if (!IsMultiplayerGame())
 		{
 			m_bPressAnyKey = true;
-			m_pContinueStr->SetText(LoadTempWString( IDS_PRESS_ANY_KEY ));
+			m_pContinueStr->SetText(LoadTempWString(47));
+			m_pContinueStr->SetColor(m_nContinueColor);
 		}
-		// Otherwise show the "waiting for other players".
 		else
 		{
 			m_bPressAnyKey = false;
-			m_pContinueStr->SetText(LoadTempWString( IDS_WAITINGFOROTHERPLAYERS ));
-
+			m_pContinueStr->SetText(LoadTempWString(0x484));
 			g_pGameClientShell->SendClientLoadedMessage( );
+			m_pContinueStr->SetColor(m_nContinueColor ^ 0x00FFFFFF);
 		}
 
-		m_pContinueStr->SetColor(m_nContinueColor);
 		m_pContinueStr->SetCharScreenHeight(nFontSize);
 		x = (float)ContinuePos.x * g_pInterfaceResMgr->GetXRatio();
 		y = (float)ContinuePos.y * g_pInterfaceResMgr->GetYRatio();
@@ -538,8 +462,6 @@ void CScreenPostload::OnFocus(LTBOOL bFocus)
 		s_fFlashTime = g_pLTClient->GetTime() + 0.333f;
 
 		s_nFlashColor = (m_nContinueColor ^ 0x00FFFFFF);
-
-		g_pClientSoundMgr->PlayInterfaceSound("Interface\\Snd\\pressanykey.wav");
 	}
 
 	CBaseScreen::OnFocus(bFocus);

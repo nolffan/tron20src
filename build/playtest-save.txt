@@ -3,7 +3,9 @@
 # a short move, a quickload (F9, Yes), back into control; then a save through
 # the in-game menu (Escape, Save game, the first empty slot), a move, and
 # a load of that save through the menu (Escape, Load game). Shots at each
-# step.
+# step. After each load, the post-load screen ("Press any key to
+# continue") must wait for a key, as retail's does (`nohud`); skipcine
+# then gives the key.
 # world: Worlds\RetailSinglePlayer\M01-01
 window 240
 skipcine 180
@@ -21,7 +23,8 @@ shot quickload-asked
 # "This will end your current game. Proceed?": Yes
 mclick 292 256
 wait 20
-shot quickload
+# the post-load screen, not the game
+nohud quickload
 skipcine 90
 shot quickloaded
 key Escape
@@ -46,7 +49,8 @@ wait 3
 shot load-screen
 # the saved game, first in the list: it loads at once
 mclick 100 244
-wait 10
+wait 15
+nohud loaded-postload
 skipcine 60
 shot loaded
 hold w 0.5

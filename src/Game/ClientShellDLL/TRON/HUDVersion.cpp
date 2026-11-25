@@ -153,7 +153,10 @@ void CHUDVersion::Update()
 	m_pString->SetCharScreenHeight((int)(m_nFontSize * xs));
 	m_pString->SetPosition((int)(m_BasePos.x * xs), (int)(g_pInterfaceResMgr->GetYRatio() * m_BasePos.y));
 
-	// RETAIL: string 3820 (0xeec), the version as "%d.%d.%d"
+	// RETAIL: string 3820 (0xeec), the version as "%d.%d.%d". This is
+	// Jet's version (the build points), not the game's: the first level
+	// gives none (MISSIONS.txt, Level0IdealBuildPoints = 0), so retail's
+	// game DLLs show "Jet v0.0.0" there too (make control).
 	m_pString->SetText(FormatTempString(3820, major, minor, newVersion));
 }
 

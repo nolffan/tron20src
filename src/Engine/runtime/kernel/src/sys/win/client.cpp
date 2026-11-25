@@ -167,6 +167,9 @@ static bool StartClient(ClientGlob *pGlob)
         return LTFALSE;
     }
   
+    // RETAIL: 0x405157: retail writes "LithTech build 4294967295.4294967295"
+    // too: its Lithtech.exe has no version resource for GetLTExeVersion
+    // (docs/RETAIL_BUGS.md).
     g_pClientMgr->m_VersionInfo.GetString(strVersion, sizeof(strVersion));
     DebugOut("LithTech build %s initialized in %.2f seconds.\n", 
         strVersion, (float)(timeGetTime() - initStartTime) / 1000.0f);
