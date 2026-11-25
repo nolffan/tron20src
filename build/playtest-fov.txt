@@ -1,0 +1,36 @@
+# playtest-fov.txt -- the modern build's field of view (docs/MODERN.md
+# CL-33) in play: the first level, into control, a shot; then Escape (the
+# system menu), Options > Display, the Field of view slider's right
+# arrow four times (90 to 110 degrees), back to the game: the same view
+# again, wider.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+wait 2
+shot fov-90
+key Escape
+wait 3
+shot menu
+mclick 355 89
+wait 3
+shot options
+mclick 120 174
+wait 3
+mclick 552 285
+wait 0.5
+mclick 552 285
+wait 0.5
+mclick 552 285
+wait 0.5
+mclick 552 285
+wait 1
+shot display-fov
+key Escape
+wait 2
+key Escape
+wait 2
+key Escape
+wait 2
+key Escape
+wait 4
+shot fov-110

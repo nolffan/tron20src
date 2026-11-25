@@ -1,0 +1,22 @@
+# playtest-aa.txt -- the modern build's antialiasing (docs/MODERN.md
+# CL-34): Options > Display, Antialiasing from Off to 2x, back: the
+# renderer restarts with 2x multisampling. Run it on a modern-debug game
+# directory (TEST_GAME=out/tron20-modern-debug): modern-d3d.log in the run
+# directory then shows the device's presentation parameters each time.
+# world: -
+window 240
+wait 15
+mclick 233 246
+wait 3
+mclick 120 174
+wait 3
+mclick 330 258
+wait 1
+shot aa-2x
+key Escape
+wait 10
+focus
+shot back
+mclick 120 285
+wait 3
+shot performance
