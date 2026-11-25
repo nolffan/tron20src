@@ -118,8 +118,8 @@ ILTSoundSys* SoundSys(bool bTerminate)
 
 #ifndef TRON20SRC_MODERN
 				// RETAIL: when there is no default driver either, Term is
-				// called through the null pointer (Lithtech.exe 0x49bd0b;
-				// RETAIL_BUGS.md, MODERN.md EN-7)
+				// called through the null pointer (Lithtech.exe 0x4b1926,
+				// in SoundSys 0x4b1890; RETAIL_BUGS.md, MODERN.md EN-7)
 				if (g_pSoundSys == LTNULL)
 				{
 					g_pSoundSys->Term();

@@ -757,8 +757,8 @@ LTRESULT CLTDirectMusicMgr::Term()
 
 	m_hThread = NULL;
 #else
-	// RETAIL: the thread's handle is never closed (Lithtech.exe 0x43b30c,
-	// RETAIL_BUGS.md)
+	// RETAIL: the thread's handle is never closed (Lithtech.exe 0x43e340;
+	// the wait at 0x43e393; RETAIL_BUGS.md)
 #endif
 
 	// Terminate directmusic 
@@ -1480,13 +1480,10 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity, const LTDME
 		// play segment
 		m_pPerformance->PlaySegment(pTransition->GetDMSegment(), nFlags, 0, &pDMSegmentState );
 
-#ifdef TRON20SRC_MODERN
-		// [kml] Check that pointer! (MODERN.md EN-5)
+		// [kml] Check that pointer!
+		// RETAIL: Tron 2.0 tests the segment state here (Lithtech.exe
+		// 0x43f6c5), as cjacksrc's EN-5 does; the path below does not
 		if(pDMSegmentState)
-#else
-		// RETAIL: no test of the segment state (Lithtech.exe 0x43b870,
-		// RETAIL_BUGS.md)
-#endif
 		{
 		// Get the IDirectMusicSegmentState8 interface
 		HRESULT hr = pDMSegmentState->QueryInterface(IID_IDirectMusicSegmentState8,
@@ -1517,6 +1514,16 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity, const LTDME
 				// play the segment
 				hr = m_pPerformance->PlaySegment(pStartDMSegment, nFlags, 0, &pDMSegmentState  );
 
+#ifdef TRON20SRC_MODERN
+				// MODERN.md EN-5: test the segment state, as the
+				// transition's path above does
+				if (pDMSegmentState == LTNULL)
+					hr = E_FAIL;
+				else
+#else
+				// RETAIL: no test of the segment state (Lithtech.exe
+				// 0x43f7e5, RETAIL_BUGS.md)
+#endif
 				// Get the IDirectMusicSegmentState8 interface
 				hr = pDMSegmentState->QueryInterface(IID_IDirectMusicSegmentState8,
 					(void**)&pDMSegmentState8);
@@ -3231,17 +3238,12 @@ CLTDirectMusicMgr::CTransition* CLTDirectMusicMgr::GetTransition(int nFrom, int 
 {
 	int Index = nFrom+1+(nTo*(m_nNumIntensities+1));
 
-#ifdef TRON20SRC_MODERN
-	// MODERN.md EN-60: the table index itself is checked too
+	// RETAIL: the table index is checked too (inlined in ChangeIntensity,
+	// Lithtech.exe 0x43f57c..0x43f582): Tron 2.0's engine has the check
+	// that cjacksrc's EN-60 adds (MODERN.md, "Inherited engine items")
 	if ((nFrom > m_nNumTransitions) || (nFrom <= 0) || 
 		(nTo > m_nNumTransitions) || (nTo <= 0) || 
 		(Index >= m_nNumTransitions) || (Index < 0))
-#else
-	// RETAIL: only the two intensities are checked, against the number of
-	// transitions, not the index (Lithtech.exe 0x439630, RETAIL_BUGS.md)
-	if ((nFrom > m_nNumTransitions) || (nFrom <= 0) || 
-		(nTo > m_nNumTransitions) || (nTo <= 0))
-#endif
 	{
 		return &m_aryTransitions[0];
 	}
