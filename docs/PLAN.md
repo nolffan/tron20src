@@ -86,7 +86,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
 | 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | Phase 0 done: the modern build compiles and boots (`make modern`), the launcher split, the retail-bug fixes; Phase 1 planned in `MODERN.md` |
-| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`ext/tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | |
+| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`build/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts (tested from the disc images for legacy and modern), the CI with the nightly and tagged releases |
 
 ## Notes per package
 
@@ -576,3 +576,59 @@ items with the files that each agent owns.
 Before this package: package 7. The modern build changes only code under
 `TRON20SRC_MODERN`, and the release tree removes those blocks, so the
 legacy build and its score do not change (`make ci` checks this).
+
+### 10. release
+
+Done 2026-11-25. Each build packages its game directory last
+(`build/package.sh`): `out/<name>-private.tar.gz`, the whole directory,
+and `out/<name>-public.tar.gz`, without a file of the retail game.
+`README.md` ("The archives: private and public", "Releases") tells how to
+use them.
+
+- **The install scripts** (`build/mkinstall.py`, the code in
+  `build/game-scripts/`, from nolf2src's): `linux-install.sh` (bash and
+  python3) and `windows-install.bat` (PowerShell 5.1). They read the two
+  disc images (`.iso`, `.bin`/`.cue`, `.zip`) and Update 2's executable
+  (or a `.zip` of it). The files of the discs are in InstallShield 6
+  cabinets, and those of Update 2 are in InstallShield 6 cabinets in a
+  Microsoft cabinet (MSZIP) in the executable. Thus the scripts get byte
+  ranges and inflate them: they use no unshield. `build/retailways.py`
+  finds the ranges from the cabinets' headers and checks each file by its
+  SHA-256 (`build/retail-ways.txt`; `make retail-ways`). The build's
+  changes to `GameDLL.rez`, `Gamep3.rez` and `Gamep4.rez` (the game DLLs
+  zeroed, their names changed by `build/rezhide.py`) are in
+  `build/retail-ranges.txt` (`build/mkinstall.py ranges`). A name with
+  spaces ("Tron Update 2 and Dedicated Server Readme.txt") is the last
+  field of its line. The legacy build's Windows script writes the registry
+  values of the retail setup and Update 2 (`build/launchertest.sh` has the
+  same values).
+- **Tests.** The public archives of the legacy and the modern release
+  builds, installed with `linux-install.sh` from the disc images in a new
+  directory, are the game directory byte for byte, pass `sha256sum -c
+  SHA256SUMS`, and reach the main menu (`make test TEST_GAME=<that
+  directory>`: ALIVE). The PowerShell of `windows-install.bat`, run with
+  PowerShell 7 on Linux, gives the same files. It is not yet tested with
+  Windows PowerShell 5.1 on Windows.
+- **Reproducible.** `build/pestamp.py` sets the link times of the game
+  directory's binaries (and the `.pdb` signatures, the `.map` times) to
+  2000-01-01. The archives have fixed times, sorted names and no owner
+  names. A build without the retail game (`NODISCS=1`, the CI) thus makes
+  the same public archive, byte for byte.
+- **Checks.** `build/pubcheck.py` refuses a public archive that holds a
+  retail file or a `.rez` entry of the retail game (by SHA-256), a file
+  that the build does not make, or a home directory or the builder's user
+  or host name.
+- **CI** (`.github/workflows/ci.yml`, from cjacksrc's): one job for each
+  variant, `make NODISCS=1 <target>`, each with its public archive as an
+  artifact, and `make progress-ci` on the legacy release build. A push to
+  master updates the pre-release `nightly`. A `v*` tag makes a release
+  with the modern archives. The text is `.github/release_notes.md`.
+
+What stays in the archives that a person could see: the debug builds'
+`.pdb` and `.map` files name the build's own drives (`S:\` for `src/`,
+`T:\` for `ext/toolchains/`, as `build/build.mk` maps them) and the paths
+of Microsoft's libraries (`d:\builds\nt32_fre`, `E:\8168\VC98`): the
+same on each machine. The modern `binkw32.dll` names FFmpeg's source
+files relative to its tree (`src/libavutil/...`). The binaries contain
+the retail art of the launcher, the dedicated server and `CRes.dll`
+(`assets/art/`), as the repository does.

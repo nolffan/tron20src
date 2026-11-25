@@ -78,6 +78,7 @@ make portabletest  # the modern build: no registry or APPDATA use, the launcher 
 make mp3acmtest # the modern SndDrv.dll's MP3 codec on every MP3 file of Sound.rez
 make mptest     # multiplayer: the dedicated server and two clients (some minutes)
 make sweep      # every single-player world for a minute each (slow); out/play/sweep-summary.txt
+make package    # the archives of a game directory again (PACKAGE_GAME=<dir>): below
 make reference  # the retail binaries and their function tables, in out/reference/
 make progress   # score the build against them
 make help       # everything else
@@ -120,6 +121,54 @@ the master server (`build/gamespy.py`), and client 2 joins through the
 Internet server list (`docs/MODERN.md` GS-1 to GS-4).
 It is slow, so `make tests` does not run it.
 
+### The archives: private and public
+
+Each build (`make`, `make debug`, `make modern`, `make modern-debug`)
+packages its game directory last (`build/package.sh`; `make package
+PACKAGE_GAME=<dir>` does it again):
+
+| Archive | What it holds | For |
+|---|---|---|
+| `out/<name>-private.tar.gz` | the whole game directory, with the retail game's data | your own machines only. Do not give it to other persons |
+| `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, and the install scripts `linux-install.sh` and `windows-install.bat` | other persons |
+
+The install scripts copy the game's data and the third-party runtime
+(Bink, the Microsoft C, C++ and MFC runtime) out of the player's own
+images of the two discs and the executable of Update 2. They read only
+byte ranges of those files, which three committed lists give
+(`build/retail-files.txt`; `build/retail-ways.txt`, from
+`build/retailways.py`; `build/retail-ranges.txt`). They do not run
+anything from the discs. They check the SHA-256 of each file that they
+write. Then the directory is the game directory as it was built, byte for
+byte. The scripts need:
+
+- Linux: bash, python3 and GNU coreutils;
+- Windows: Windows PowerShell 5.1 (Windows 10 and 11 have it).
+
+To install a public archive:
+
+```sh
+mkdir tron20 && tar -C tron20 --strip-components=1 -xzf out/tron20-modern-release-public.tar.gz
+cd tron20 && ./linux-install.sh <disc 1 image> <disc 2 image> <tron-update_v1x2_complete.exe>
+sha256sum -c SHA256SUMS
+```
+
+(Without arguments, the script looks for the files in its directory and
+the directory above it.) On Windows, drop the three files onto
+`windows-install.bat`. The legacy build's script also writes the registry
+values that the retail launcher reads.
+
+The archives are reproducible. The files are in name order, every time is
+2000-01-01 00:00 UTC (`TRON20SRC_EPOCH`), the owner is 0:0 without names,
+and gzip stores no name or time. The link time in each binary (and the
+signature of its `.pdb`, and the time in its `.map`) is set to the same
+time (`build/pestamp.py`). Thus a build without the retail game makes the
+same public archive, byte for byte. `build/pubcheck.py` checks each public
+archive before it is written: no file may be a file of the retail game, or
+an entry of one of its `.rez` archives (by SHA-256), each file must be one
+that the build makes, and no file may contain a home directory, or the
+user or host name of the machine that built it.
+
 ### Without the retail game: the CI build
 
 `make NODISCS=1 compile` compiles and links every binary without the
@@ -127,8 +176,39 @@ retail game. The binaries are the same as with it: the only retail data
 that they contain is the art of the launcher, the dedicated server and
 `CRes.dll`, which is committed in `assets/art/` (`assets/README.md`).
 `make progress-ci` then checks the build against `progress/hashes/`
-without the retail binaries (`progress/README.md`). `make ci` does both;
-the CI (`.github/workflows/ci.yml`) runs them on every push.
+without the retail binaries (`progress/README.md`). `make ci` does both.
+`make NODISCS=1` (or `debug`, `modern`, `modern-debug`) also makes the
+game directory `out/<name>-nodiscs/`, which does not play, and its public
+archive, `out/<name>-public.tar.gz`, which is the same as with the retail
+game.
+
+The CI (`.github/workflows/ci.yml`) runs on each push and pull request:
+
+| Job | What it does |
+|---|---|
+| `tron20-legacy-release` | `make NODISCS=1 game`, then `make progress-ci` (the byte check) |
+| `tron20-legacy-debug` | `make NODISCS=1 debug` |
+| `tron20-modern-release` | `make NODISCS=1 modern` (with FFmpeg, `ext/ffmpeg`) |
+| `tron20-modern-debug` | `make NODISCS=1 modern-debug` |
+
+Each job uploads its public archive as an artifact. The submodules
+(`ext/tools`, `ext/toolchains`, and for the modern builds `ext/ffmpeg`)
+are fetched over HTTPS at depth 1, at the commits that this repository
+records: each of those commits must be on GitHub before the CI can pass.
+
+### Releases
+
+- A push to `master` whose four builds pass updates the pre-release
+  `nightly`: its tag moves to the commit, and its files are the modern
+  build's two public archives, `tron20src-nightly-<commit>.tar.gz` and
+  `tron20src-debug-nightly-<commit>.tar.gz`.
+- A tag `v*` (for example `v0.1.0-alpha`) makes a GitHub release with the
+  modern build's public archives, `tron20src-<tag>.tar.gz` and
+  `tron20src-debug-<tag>.tar.gz`. A tag with a hyphen is a pre-release.
+
+The text of a release is `.github/release_notes.md` (and, for the
+nightly, `.github/nightly_notes.md` first). The legacy archives are only
+artifacts of the CI runs.
 
 The retail game's bugs, as they are found, are listed in
 [`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
