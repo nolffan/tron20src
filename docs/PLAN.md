@@ -470,10 +470,23 @@ The legacy release build runs under Wine (2026-11-25): every binary in
   which waits on Tron's AI state enum.
 - **Open (multiplayer):** our `TRONSrv.exe` with the retail `Object.lto`
   stops after "Server initialized." (the splash screen stays); with ours,
-  and the retail `TRONSrv.exe` with our `Object.lto`, it runs. In Light
-  Cycles the floor of LC_01S01 looks different from the control's (white
-  bands for a red grid): our game code. The HUD's subroutine icons are in
-  a row in ours, in a column in the control's.
+  and the retail `TRONSrv.exe` with our `Object.lto`, it runs.
+- **Fixed:** in Light Cycles, a player who watches the game (the
+  spectator) fell to the floor of the arena: thus the camera was on the
+  floor and the grid showed as white bands. The control's camera stays
+  where the player starts. `CMoveMgr::UpdateMotion` (0x100f6ac0) was
+  NOLF2's; Tron's has a light cycle part: the spectator has no gravity
+  and flies with the camera (the move keys), and a player who is not on a
+  light cycle stands still. It is now retail's (identical). Found with the
+  control and a control with only our `CShell.dll` in `custom/`: the
+  second looked as ours did. In single player the race does not show it.
+- **Fixed:** the HUD's subroutine icons (`CHUDSubChooser::Arrange`,
+  0x1003bad0) were in a row; retail's are in a column, from the
+  procedurals down to the armor. `Arrange` starts a new column when the
+  next icon goes below the armor item's top, which is `CHUDArmor`'s +0x14.
+  Retail's `CHUDArmor::UpdateLayout` (0x100221b0) puts the item's y there;
+  ours put the X ratio (1.0), so each icon started a new column. This
+  was in single player too.
 
 ### 9. modern
 
