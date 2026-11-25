@@ -9,7 +9,11 @@ wait 15
 pad
 mmove 620 10
 shot main
-tap down down
+# Options selected with the pointer (the selection the menu starts with
+# depends on the pointer), then the pointer out of the way
+mmove 233 246
+wait 1
+mmove 620 10
 wait 1
 shot options-selected
 tap a
@@ -21,7 +25,6 @@ shot down1
 pad ly=-100
 wait 0.3
 pad
-mmove 620 10
 wait 1
 shot stick-down
 tap a
@@ -43,9 +46,10 @@ wait 1
 tap a
 wait 3
 shot controller-again
+wait 1
 tap b
 wait 3
-tap up up up
+shot controls-third
 wait 1
 tap a
 wait 3

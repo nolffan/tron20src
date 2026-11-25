@@ -1831,3 +1831,38 @@ Thus there is no visible effect.
 
 Not fixed yet: the modern build should end the case before the HUD text
 case.
+
+### The mouse look counts a mouse event more than one time, and at random
+
+Lithtech.exe 0x432d70 (input_ReadInput, src/Engine/runtime/kernel/src/
+sys/win/input.cpp). The engine reads one buffered DirectInput event of the
+system mouse at a time ("This fixes the USB mouse lockups") and runs all
+the triggers after each event. Each axis gives the mean of its last three
+samples (InputRate), and it keeps its last value until InputRate / 10
+milliseconds pass with no new event. Thus one mouse event turns the view in
+more than one pass and in more than one frame, and an axis with no new
+event (the x axis when only y moves) adds its old motion again. The turn
+for one count of mouse motion changes with the frame rate, with the report
+rate of the mouse and with how the motion is divided into events. Also,
+the device buffer holds 64 events, which a fast mouse fills ("Input buffer
+overflow") at a low frame rate. Measured (build/playtest-mouselook.txt,
+build/yawshift.py, the legacy build under Wine): 60 counts to the right in
+one event turned the view 28 degrees; 60 counts in two events turned it 7
+degrees to the left; 60 counts in five events, 8 degrees to the right.
+nolf2src's `RETAIL_BUGS.md` has the same bug in NOLF2's engine.
+
+Fixed in the modern build: input.cpp, MODERN.md EN-23 (each look axis
+adds the motion of the frame and gives it one time; a buffer of 1024
+events) and EN-24 (the motion from raw input).
+
+### Configure controls binds a gamepad's button by its instance number
+
+CShell.dll 0x10057300 (CScreenConfigure::Bind, src/Game/ClientShellDLL/
+TRON/ScreenConfigure.cpp). The test `nControlCode && (deviceType !=
+DEVICETYPE_JOYSTICK || deviceType == DEVICETYPE_GAMEPAD)` is true for a
+gamepad. Thus a gamepad's button is bound as "##<instance>". The engine
+takes that name for the first object with that instance number, which is
+an axis. A joystick's control is bound by its name, as the code intends
+for both. The test should be false for the two device types.
+
+Fixed in the modern build: ScreenConfigure.cpp, MODERN.md CL-24.

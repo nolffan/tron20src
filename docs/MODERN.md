@@ -88,6 +88,14 @@ executable, or in the console), new or with a changed meaning.
 |---|---|---|---|---|
 | `MaxFPS` | float | 240 (retail: 0, and not used in the final build) | the maximum number of frames each second; 0 is no limit; 1000 at most; the same in multiplayer; the Display screen's "Frame Rate Limit" (60, 120, 144, 240, None) | EN-40, EN-44 |
 | `FrameTimeLog` | float | 0 | write each frame of this many milliseconds or more, with its parts, and a summary each ten seconds, to `frametime.log`; 0 is off | EN-42 |
+| `RawMouse` | int | 1 (no variable) | 0: the system mouse from DirectInput (EN-23), not from raw input | EN-24 |
+| `JoystickDisable` | int | 0 | existing (the launcher's "Disable Joysticks" sets it through `DisableJoystick 1`); now also disables the controller, `##gamepad`, and the client's own reading of the pad | EN-21, CL-20 |
+| `PadLookSpeed` | float | 1 | the controller's right stick: its turn rate, times 180 degrees a second across and 120 up and down; the Controller screen's "Look speed" (25 to 300) | CL-20, CL-23 |
+| `PadLookCurve` | float | 2 | the right stick's response: its travel past the dead zone, raised to this power (1 is linear; less than 1 is taken as 1); "Look curve" (100 to 300) | CL-20, CL-23 |
+| `PadInvertY` | int | 0 | 1: the right stick's up looks down; "Invert look" | CL-20, CL-23 |
+| `PadLookDeadZone` | float | 0.15 | the right stick's radial dead zone (0 to 0.9 of its travel); "Look dead zone" (0 to 50) | CL-20, CL-23 |
+| `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone (0 to 0.9); "Move dead zone" (0 to 50) | CL-20, CL-23 |
+| `PadHoldButtons` | int | 0 | the controller's buttons (XInput's bits) that the bindings do not see while the client reads them itself (a decision window); the client sets it, `autoexec.cfg` does not keep it; not a setting | EN-20, CL-22 |
 | `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
 
 ## Done
@@ -504,6 +512,165 @@ EN-62); EN-44 and EN-45 are Tron 2.0's.
   (its own update rate does not depend on the clients'), more than two
   players, and the disc games above 60 in multiplayer.
 
+### Input
+
+The mouse turns the view by its own counts, each one time, at all frame
+rates. A controller (an XInput pad: an Xbox-style pad, or what Steam Input
+gives) plays the game, the light cycles and the menus. The engine half of
+the controller (EN-20 to EN-22) came from cjacksrc's; the game half is
+Tron 2.0's own, made with the design of cjacksrc's CL-20 to CL-24 and
+nolf2src's M-G47, M-G60 to M-G63. The strings are 31300 to 31316 (the
+block 31300 to 31399 is the controller's).
+
+* **EN-24: raw mouse input.** The system mouse (`##mouse`) comes from
+  `WM_INPUT` and not from DirectInput: the counts of the mouse, with no
+  pointer acceleration. The window procedure gives each `WM_INPUT` to
+  `input_ModernRawInput` (`client.cpp`, the `WM_INPUT` case only). It adds
+  the motion and keeps the buttons and the wheel in their sequence. Each
+  frame `input_ReadInput` gives them to the mouse's triggers as the events
+  that DirectInput gives (`input_ModernRawEvents`). Thus the bindings, the
+  scale of the look (`MouseSensitivity`) and EN-23 do not change. On
+  Windows a DirectInput count is the count of the mouse too. DirectInput's
+  mouse is not acquired while the game reads raw input
+  (`input_ModernRawRelease`): DirectInput 8 reads the mouse through raw
+  input itself, and a process has only one raw input target for the mouse.
+  The first test showed this under Wine: after DirectInput acquired the
+  mouse, the game's window got no more `WM_INPUT`. Configure controls'
+  capture still uses DirectInput's mouse; after it, the raw input is
+  registered again. There is no `RIDEV_NOLEGACY`, thus the menus keep
+  their cursor. With `RawMouse 0`, when raw input cannot be registered,
+  or after an absolute device (a tablet, a remote desktop) sends raw
+  input, the mouse is DirectInput's (EN-23). (`kernel/src/sys/win/
+  input.cpp`: `input_Init`, `input_Term`, `input_ReadInput`,
+  `input_FlushInputBuffers`, the `Acquire` calls; `input.h`; `client.cpp`
+  `MainWndProc`.) The Mouse screen has no "Input rate" now: it set the
+  smoothing that the mouse look does not have (`TRON/ScreenMouse.cpp`).
+
+  Tested (`build/playtest-mouselook.txt` and a script with five motions
+  of 60 counts, cut into 1, 2, 5, 10 and 1 xdotool steps; the turn
+  between the shots measured by `build/yawshift.py`, M01-01): a
+  temporary log in `input_ModernRawEvents` showed every xdotool step as
+  one raw event with its count (`x=6` ten times, `x=60`), and the mouse
+  buttons (down, up) through the same path. The turn is linear in the
+  counts: 9.8, 4.8, 9.6, 8.7 and 9.6 degrees, about 0.16 degrees a count
+  at the default sensitivity, the same as DirectInput's (EN-23,
+  `RawMouse 0`: 9.8 and 9.6 degrees for the single steps). Some of the
+  smaller steps do not arrive at all (30 of the 60 counts of the two-step
+  motion): under Wine the raw input comes from the pointer's position, and
+  the engine puts the cursor back in the centre each frame; with
+  DirectInput the loss was larger (5.6 and 6.8 degrees for the 5- and
+  10-step motions). After each motion the view stays (no repeated last
+  event). The legacy build, for comparison (RETAIL_BUGS.md, "The mouse
+  look counts a mouse event more than one time"): 27.8 degrees for one
+  step, 7.3 degrees to the left for two steps to the right. Not tested: a
+  real mouse on Windows.
+* **EN-20, EN-21, EN-22: checked and kept** (the engine half of the
+  controller; see "Inherited engine items"). The test pad drives the
+  `##gamepad` device in all the controller tests below. EN-21 now also
+  applies the launcher's "Disable Joysticks" ("all joysticks and
+  gamepads") to `##gamepad`, the only one that is left; the client then
+  does not read the pad either (`input_ReadInput`; `clientpad.cpp`).
+* **EN-23: checked and kept.** Tron 2.0's retail `input_ReadInput`
+  (0x432d70) is byte-identical to ours, thus the bug is in Tron 2.0
+  (RETAIL_BUGS.md).
+* **CL-20: the controller's sticks.** The client reads the sticks itself
+  (`src/tron20src/xinput/clientpad.cpp`, compiled as part of
+  `GameClientShell.cpp`; `clientpad.h`), once a frame, in the menus too,
+  while the game's window is in front (`CGameClientShell::Update`; the
+  pad's scan thread stops in `OnEngineTerm`). The sticks have no bindings
+  (`CUserProfile::ApplyJoystick` binds no axis). **Look**: the right stick
+  past a radial dead zone (`PadLookDeadZone`), the rest of its travel
+  rescaled to 0..1 and raised to `PadLookCurve`, is a turn rate: 180
+  degrees a second across and 120 up and down, times `PadLookSpeed` and
+  the frame time. It is added to the mouse's turn, slowed by the zoom as
+  the mouse is, also with "Mouse look" off; up and down are the stick's
+  own (`PadInvertY`), held as the mouse's are (level on a light cycle in
+  first person, 45 degrees in third person) (`PlayerMgr.cpp`
+  `CalculateCameraRotation`). **Movement**: the left stick past
+  `PadMoveDeadZone` accelerates the way it points and sets the movement
+  flags by octant (for the animations and the server); past three
+  quarters of its travel it runs, below that it walks at that part of the
+  walking speed (one third at least); the Walk binding held turns that
+  over; not while ducking, carrying or leaning (`CMoveMgr.cpp`
+  `UpdateNormalControlFlags`, `UpdateNormalMotion`, `GetMaxVelMag`).
+* **CL-21: the controller's default layout.** One time for each profile
+  (`[Controls] PadLayout`), the controller's column of the bindings gets:
+  right trigger Fire, left trigger Disc recall / block, A Jump, B Crouch,
+  X Action, Y Disc attack modifier, right and left bumper Next and
+  Previous weapon, left stick click Walk, right stick click Center view,
+  d-pad up and down Zoom in and Zoom out, d-pad left Holster weapon, d-pad
+  right Toggle status display. A command that the player bound on the
+  controller, and a button that is bound, do not change. A new profile and
+  Restore defaults get the layout too (`Default.prf` has no `PadLayout`).
+  Back opens the subroutine screen, as F1 does: "Subroutines" is not a
+  command of Configure controls, thus `ApplyBindings` binds Back to it
+  while no command of the profile has Back. Start is the menu (CL-22).
+  (`clientpad.cpp` `Pad_DefaultBindings`; `ProfileMgr.cpp` `LoadControls`,
+  `ApplyBindings`.)
+* **CL-22: menus, cut-scenes and decisions with the controller.** Out of
+  play (the menus and screens, a message box, the subroutine screen, a
+  paused game, the loading screens, a movie) the d-pad or the left stick
+  is the arrow keys (they repeat after 0.4 s, every 0.12 s), A is Enter,
+  B and Start are Escape. In play Start is Escape (the menu), and A in a
+  cut-scene or when the player is dead is Space. While a decision window
+  is open (a conversation, or an archive bin's downloads) the d-pad up and
+  down move a highlight (amber) over its choices, A takes the choice and
+  B is Escape. The bindings do not see A, B and the d-pad then
+  (`PadHoldButtons`). The keys go through the client shell's own
+  `OnKeyDown` and `OnKeyUp`, as the engine sends a key. Not while
+  Configure controls waits for a control to bind (`ScreenConfigure.cpp`).
+  (`clientpad.cpp` `Pad_Update`; `HUDDecision.cpp`, `.h`,
+  `TRON/HUDTronDecision.cpp`, `.h`: `PadIsChoice`, `PadHighlight`.)
+* **CL-23: the Controller screen.** Options, Controls has no "Use
+  joystick/gamepad" and "Configure joystick/gamepad" now (an axis bound
+  there would move a second time) but "Controller": the joystick screen,
+  made again with Look speed (25 to 300), Look curve (100 to 300), Invert
+  look, the look and move dead zones (0 to 50) and Restore controller
+  defaults (only the controller's column, after a yes/no box). The values
+  are the console variables above, kept in `autoexec.cfg` beside the
+  executable (set with "+"), not in the registry. Configure controls names
+  the third column "Controller" ("Controller A Button").
+  (`TRON/ScreenControls.cpp`, `TRON/ScreenJoystick.cpp`, `.h`,
+  `TRON/ScreenConfigure.cpp`; `ClientResShared.h`, `TRON/ClientRes.rc`.)
+* **CL-24: a gamepad's buttons are bound by name.** Configure controls
+  bound a gamepad's button by its instance number, which the engine takes
+  for an axis (RETAIL_BUGS.md). The modern build binds a joystick's and a
+  gamepad's controls by their names (`TRON/ScreenConfigure.cpp` `Bind`).
+* **CL-25: the light cycle with the controller.** The left stick pushed to
+  the left or the right (more than half its travel; then back near the
+  centre before the next turn), or the d-pad's left or right, turns the
+  cycle: the Strafe left and Strafe right commands, which are the turns of
+  the keyboard. The right trigger or the left stick up makes the cycle
+  faster, the left trigger or the left stick down makes it slower (the
+  flags of Forward and Backward). The right stick turns the camera, as
+  the mouse does. (`clientpad.cpp`; `VehicleMgr.cpp`
+  `UpdateLightCycleControlFlags`.)
+
+Tested with the test pad (`TRON20SRC_PADTEST`, the `pad` and `tap`
+commands of the playtest scripts), looked at in the shots:
+
+* `build/playtest-pad-menus.txt`: the d-pad and the left stick move
+  through the main menu, Options and Controls; A opens Options, Controls
+  and Controller; on the Controller screen the d-pad right changes Look
+  speed from 100 to 150, and the value is there again after B and A;
+  Configure controls shows the default layout ("space, Controller A
+  Button"); B goes back to the main menu.
+* `build/playtest-pad-level.txt` (M01-01): the right stick turns the view
+  to the right and back to the left, the left stick walks forward, Start
+  opens the in-game menu and B closes it. A goes past the "Press any key
+  to continue" screen. The right trigger's throw of the disc is not seen
+  in the shots.
+* `build/playtest-pad-race.txt` and a comparison of three runs of the
+  first race (the stick to the left and the d-pad right, the keys A and D,
+  and no input; shots 0.7 s after each turn): the pad's views are like the
+  keys' views and not like the views with no input (mean difference 0.145
+  and 0.195 between pad and keys, 0.20 to 0.22 to no input). The speed
+  (the triggers) is not measured.
+
+Not tested: a real controller (none under Wine and Xvfb), the decision
+windows with the pad (no decision in the first minutes of the first
+level), Configure controls' capture of a pad button, and the Back binding.
+
 ### Inherited engine items
 
 The engine came from cjacksrc's with its modern code. These items compile
@@ -525,10 +692,10 @@ removes it.
 | EN-13 | the console print does not write past its buffer (nolf2src M-E10) | `clientde_impl.cpp`, `dsys_interface.cpp` | (fix) |
 | EN-14 | error messages name their own function (nolf2src M-E11) | `clientde_impl.cpp`, `winclientde_impl.cpp`, `client_iltphysics.cpp`, `ltinfo_impl.cpp`, `soundmgr.cpp` | (fix) |
 | EN-15 | `streamsim_Open` closes its file on an error (nolf2src M-E12) | `streamsim.cpp` | (fix) |
-| EN-20 | `##gamepad`: the XInput pad as a DirectInput gamepad; the engine half only (cjacksrc EN-20; `src/tron20src/xinput/`) | `kernel/src/sys/win/input.cpp` | Input |
-| EN-21 | DirectInput joysticks are left out (cjacksrc EN-21) | `input.cpp` | Input |
-| EN-22 | no DirectInput device enumeration (cjacksrc EN-22) | `input.cpp` | Input |
-| EN-23 | mouse look: the whole buffer once a frame, no smoothing (nolf2src M-E3) | `input.cpp` | Input |
+| EN-20 | `##gamepad`: the XInput pad as a DirectInput gamepad (cjacksrc EN-20; `src/tron20src/xinput/`); checked, kept; the game half is CL-20 to CL-25 | `kernel/src/sys/win/input.cpp` | Input: done (below) |
+| EN-21 | DirectInput joysticks are left out (cjacksrc EN-21); checked, kept; `JoystickDisable` also disables `##gamepad` | `input.cpp` | Input: done (below) |
+| EN-22 | no DirectInput device enumeration (cjacksrc EN-22); checked, kept | `input.cpp` | Input: done (below) |
+| EN-23 | mouse look: the whole buffer once a frame, no smoothing (nolf2src M-E3); checked, kept; the retail bug is in RETAIL_BUGS.md | `input.cpp` | Input: done (below) |
 | EN-30 | widescreen field of view, Hor+ (cjacksrc EN-30) | `client/src/clientmgr.cpp` (`cm_WidescreenFovX`, `CClientMgr::Render`) | Display |
 | EN-31 | a window at any size (cjacksrc EN-31) | `render_a/.../d3d_shell.cpp` | Display |
 | EN-32 | the window mode: framed or borderless (cjacksrc EN-32) | `kernel/src/sys/win/render.cpp`, `render_a/.../common_init.cpp` | Display |
@@ -549,8 +716,7 @@ bug.
 Known open points: EN-33's antialiasing cannot work yet with Direct3D 9.
 The renderer always asks for `D3DPRESENTFLAG_LOCKABLE_BACKBUFFER`, which
 Direct3D 9 does not allow with multisampling, so the device falls back to
-no antialiasing. EN-20 is only the engine half: the game has no controller
-code (cjacksrc's CL-20 to CL-24) and no default bindings for the pad.
+no antialiasing.
 
 ## Planned (Phase 1)
 
@@ -605,16 +771,7 @@ Done: EN-44 and EN-45 (under "Done", "Frame rate").
 
 ### Input
 
-* **EN-24: raw mouse input.** `WM_INPUT` (or DirectInput's buffered mouse,
-  EN-23) for the look axes. Files: `kernel/src/sys/win/input.cpp`, the
-  window procedure in `kernel/src/sys/win/client.cpp`.
-* **CL-20: controllers through XInput.** On EN-20 to EN-22: the game half
-  (cjacksrc's CL-20 to CL-24: look speed, dead zones, bindings, menus with
-  the pad). Files: `src/tron20src/xinput/` (cjacksrc's `clientpad.cpp`),
-  `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp`,
-  `TRON/ScreenControls.cpp`, `TRON/ScreenMouse.cpp`, a controller screen,
-  `ClientShellShared/ProfileMgr.cpp` (the bindings), and the launcher's
-  "Disable Joysticks" (`Launcher/OptionsDlg.cpp`).
+Done: EN-24, CL-20 to CL-25 (under "Done", "Input").
 
 ### Middleware
 
@@ -676,3 +833,5 @@ every retail binary):
 | `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`, `OptionsDlg.cpp` | Display (CL-30, CL-31, CL-35), Apps (APPS-3: where the options are stored), Input (CL-20: Disable Joysticks) | Apps changes only the storage calls |
 | `binkvideomgrimpl.cpp`, `InterfaceMgr.cpp` (movies) | Display (CL-32), Middleware (X-1) | Middleware replaces the DLL behind the same calls; Display changes the rectangle |
 | `build/all.sh`, `build/variant.sh` | Middleware (X-1, X-2) | Middleware only |
+| `ClientShellShared/CMoveMgr.cpp`, `VehicleMgr.cpp`, `PlayerMgr.cpp` | Frame rate (EN-45), Input (CL-20, CL-25: the pad's movement, look and light cycle) | Input adds blocks in `UpdateNormalControlFlags`, `UpdateNormalMotion`, `GetMaxVelMag`, `UpdateLightCycleControlFlags`, `CalculateCameraRotation` only |
+| `ClientRes/Shared/ClientResShared.h`, `ClientRes/TRON/ClientRes.rc` | all (new strings) | each its own block of IDs: Frame rate 31100 to 31109, Input 31300 to 31399 |
