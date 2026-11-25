@@ -189,6 +189,14 @@ LTBOOL BounceMovingObject(PhysicsState *pUserState, MovingObject *pObject,
 
 		fDelta = fDelta > 0.5f ? 0.1f : (fDelta < 0.001f ? 0.001f : fDelta);
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-45: the limit as at the 60 frames a second it was
+		// tuned at; divided by a short frame, things came to rest at
+		// higher speeds (at 300 frames a second, under 260 units a second
+		// instead of 116)
+		fDelta = 1.0f / 60.0f;
+#endif
+
         LTFLOAT fMaxMag = ((c_fMinPixels*c_fMinPixels)/fDelta);
 
 		bBounceOnGround = (pInfo->m_Plane.m_Normal.y > 0.6f);
