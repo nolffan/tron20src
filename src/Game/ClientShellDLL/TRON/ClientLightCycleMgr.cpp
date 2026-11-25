@@ -456,11 +456,39 @@ void CClientLightCycleMgr::Update()
 					}
 
 					LTVector vVel = pCyclist->vForward * pCyclist->fSpeed;
+#ifdef TRON20SRC_MODERN
+					// MODERN.md EN-45: retail puts the other cycle
+					// LCHostPredict (or LCClientPredict) frames ahead of
+					// where its last position and speed put it, and moves
+					// it LCInterpTime (0.2) of the way there, each frame.
+					// So the higher the frame rate, the less it predicts
+					// (10 frames: 0.17 s at 60 frames a second, 0.04 s at
+					// 240) and the sooner the cycle catches up. Now a
+					// frame counts as a 60th of a second at least for the
+					// prediction, and the share of the way is that of a
+					// 60th of a second's, so that it moves as at 60 frames
+					// a second at higher frame rates. At 60 frames a
+					// second and less, nothing changes in the prediction.
+					float fModernDt = g_pLTClient->GetFrameTime();
+					float fModernPredictDt = LTMAX(fModernDt, 1.0f / 60.0f);
+					LTVector vTarget = vVel * (fModernPredictDt * fPredict + fSinceCheck) + pCyclist->m_vTronUnknownE4;
+
+					float fModernShare = fInterp;
+					if (fInterp > 0.0f && fInterp < 1.0f)
+					{
+						fModernShare = 1.0f - (float)pow(1.0 - (double)fInterp, (double)(fModernDt * 60.0f));
+					}
+
+					pCyclist->vLastPos.x += (vTarget.x - pCyclist->vLastPos.x) * fModernShare;
+					pCyclist->vLastPos.y += (vTarget.y - pCyclist->vLastPos.y) * fModernShare;
+					pCyclist->vLastPos.z += (vTarget.z - pCyclist->vLastPos.z) * fModernShare;
+#else
 					LTVector vTarget = vVel * (g_pLTClient->GetFrameTime() * fPredict + fSinceCheck) + pCyclist->m_vTronUnknownE4;
 
 					pCyclist->vLastPos.x += (vTarget.x - pCyclist->vLastPos.x) * fInterp;
 					pCyclist->vLastPos.y += (vTarget.y - pCyclist->vLastPos.y) * fInterp;
 					pCyclist->vLastPos.z += (vTarget.z - pCyclist->vLastPos.z) * fInterp;
+#endif
 				}
 
 				pvForward = &pCyclist->vForward;
@@ -500,6 +528,39 @@ void CClientLightCycleMgr::Update()
 			}
 		}
 	}
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-45: with "PosLog 1" (CMoveMgr::ModernPosLog), one line
+	// a frame to lcpos.txt: the time, and for each cycle whether it is
+	// ours (1) or another's (0), where this client has it and its speed.
+	// Ours.
+	{
+		static FILE* s_pFile = LTNULL;
+		HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("PosLog");
+		if (hVar && g_pLTClient->GetVarValueFloat(hVar) > 0.0f)
+		{
+			if (!s_pFile)
+				s_pFile = fopen("lcpos.txt", "a");
+			if (s_pFile)
+			{
+				fprintf(s_pFile, "%.4f", g_pLTClient->GetTime());
+				for (iter = m_collCyclists.begin(); iter != m_collCyclists.end(); iter++)
+				{
+					LIGHT_CYCLIST* pCyclist = *iter;
+					fprintf(s_pFile, " %d %.1f %.1f %.0f", (pCyclist->hObject == g_pMoveMgr->GetObject()) ? 1 : 0,
+						pCyclist->vLastPos.x, pCyclist->vLastPos.z, pCyclist->fSpeed);
+				}
+				fprintf(s_pFile, "\n");
+				fflush(s_pFile);
+			}
+		}
+		else if (s_pFile)
+		{
+			fclose(s_pFile);
+			s_pFile = LTNULL;
+		}
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //

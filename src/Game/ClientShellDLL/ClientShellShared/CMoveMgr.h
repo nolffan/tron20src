@@ -176,6 +176,9 @@ class CMoveMgr
     void        HandleFallLand(LTFLOAT fDistFell);
 
 	void		MoveLocalSolidObject();
+#ifdef TRON20SRC_MODERN
+	void		ModernPosLog();	// MODERN.md EN-45
+#endif
 	void		UpdateVelMagnitude();
 	void		SetClientObjNonsolid();
 

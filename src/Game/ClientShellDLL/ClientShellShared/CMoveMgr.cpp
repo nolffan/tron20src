@@ -41,6 +41,20 @@
 // Note : Duplicated from PlayerObj.cpp on the server
 #define DEFAULT_FRICTION					5.0f
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-45: retail's amounts that are applied once a frame were
+// tuned at 60 frames a second; this is this frame's share of a 60th of a
+// second (1 at 60 frames a second)
+static float ModernFrame60ths()
+{
+	return g_pGameClientShell->GetFrameTime() * 60.0f;
+}
+
+// MODERN.md EN-45: how long since the head came out of the water while
+// swimming up (UpdateInLiquid)
+static float s_fModernSurfaced = 0.0f;
+#endif
+
 // Animation information for forceduck
 #define PLAYERANIM_STAND	"LSt"
 #define PLAYERANIM_CROUCH	"LC"
@@ -265,6 +279,9 @@ void CMoveMgr::InitWorldData()
 	m_eStandingOnSurface	= ST_UNKNOWN;
     m_bSwimmingOnSurface    = LTFALSE;
     m_bSwimmingJump         = LTFALSE;
+#ifdef TRON20SRC_MODERN
+	s_fModernSurfaced		= 0.0f;	// MODERN.md EN-45
+#endif
     m_bCanSwimJump          = LTFALSE;
 	m_hStandingOnPoly		= INVALID_HPOLY;
 	m_bUsingPlayerModel		= LTFALSE;
@@ -710,7 +727,21 @@ void CMoveMgr::UpdateInLiquid(CContainerInfo *pInfo)
 
 		if (bMoving)  // Turn off y acceleration and velocity
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-45: retail stops the rise here on the frame
+			// after the head (the camera, one frame late) came out of the
+			// water, so the higher the frame rate, the lower the player
+			// floats, and the lower a jump out of the water starts. The
+			// rise now continues for two 60ths of a second at all frame
+			// rates (at 60 frames a second it stops here at once, as in
+			// retail). As nolf2src's M-E4.
+			float fModernDt = g_pGameClientShell->GetFrameTime();
+			bool bModernRising = (s_fModernSurfaced + 2.0f * fModernDt < 2.0f / 60.0f - 0.0001f);
+			s_fModernSurfaced += fModernDt;
+			if (!bModernRising && (vVel.y > 0.0f || curAccel.y > 0.0f))
+#else
 			if (vVel.y > 0.0f || curAccel.y > 0.0f)
+#endif
 			{
 				vVel.y = 0.0f;
 				curAccel.y = 0.0f;
@@ -1219,8 +1250,16 @@ void CMoveMgr::UpdateMotion()
 
 		// Dampen velocity...
 		g_pPhysicsLT->GetVelocity(m_hObject, &vVec);
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-45: halved each 60th of a second at all frame
+		// rates (retail: each frame)
+		float fModernDamp = (float)pow(0.5, (double)ModernFrame60ths());
+		vVec.x *= fModernDamp;
+		vVec.z *= fModernDamp;
+#else
 		vVec.x *= 0.5f;
 		vVec.z *= 0.5f;
+#endif
 		if (vVec.y > 0.0f) vVec.y = 0.0f;
 
 		g_pPhysicsLT->SetVelocity(m_hObject, &vVec);
@@ -1311,6 +1350,32 @@ void CMoveMgr::UpdateNormalMotion()
 
 	// Limit velocity...
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-45: retail caps the speed at the start of the frame,
+	// and the frame's acceleration then takes the speed past the cap.
+	// Thus the higher the frame rate, the slower the walk and the run.
+	// The cap is now applied once each 60th of a second: between, the
+	// engine's physics (exact for a constant acceleration) moves the
+	// player as one frame at 60 frames a second did. (The frame times are
+	// whole milliseconds, so a 60th is 16 or 17 ms: thus the slack.) As
+	// nolf2src's M-E4.
+	const float kModernCapStep = 1.0f / 60.0f;
+	const float kModernCapSlack = 0.0015f;
+	static float s_fModernCapTime = 0.0f;
+	s_fModernCapTime += g_pGameClientShell->GetFrameTime();
+	bool bModernCapNow = (s_fModernCapTime >= kModernCapStep - kModernCapSlack);
+	if (bModernCapNow)
+	{
+		s_fModernCapTime -= kModernCapStep;
+		s_fModernCapTime = LTCLAMP(s_fModernCapTime, -kModernCapSlack, kModernCapStep);
+	}
+
+	if (!bModernCapNow)
+	{
+		// Not in this frame: see above
+	}
+	else
+#endif
 	if (m_bBodyInLiquid || m_bBodyOnLadder)
 	{
         LTBOOL bCapY = LTTRUE;
@@ -1382,6 +1447,9 @@ void CMoveMgr::UpdateNormalMotion()
 	else if (bHeadInLiquid)  // See if we went back under...
 	{
         m_bSwimmingOnSurface = LTFALSE;
+#ifdef TRON20SRC_MODERN
+		s_fModernSurfaced = 0.0f;	// MODERN.md EN-45: see UpdateInLiquid
+#endif
         m_bCanSwimJump       = LTTRUE;
 	}
 	else if( !m_bBodyInLiquid )
@@ -1546,6 +1614,34 @@ void CMoveMgr::UpdateNormalMotion()
 		if (bOkayToJump)
 		{
 			vel.y = fJumpVel;
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-45: the engine's physics (CalcMotion) moves
+			// the player by the frame's speed before it takes the
+			// frame's gravity off it, and by only a quarter of a*t*t, so
+			// a jump peaks about a quarter of a frame's rise (v*dt/4)
+			// higher than v*v/2g: higher at a lower frame rate (82.8
+			// units at 60 frames a second, 80.8 at 254, measured in
+			// M01-01). Above 60 frames a second the jump starts faster by
+			// a quarter of the gravity of the difference between a 60th
+			// of a second and the frame, so that it peaks as at 60.
+			if (!m_bBodyInLiquid && !m_bBodyOnLadder)
+			{
+				float fModernDt = g_pGameClientShell->GetFrameTime();
+				float fModernG = (float)fabs(m_fGravity);
+				if (fModernDt < 1.0f / 60.0f)
+					vel.y += fModernG * (1.0f / 60.0f - fModernDt) * 0.25f;
+			}
+			// A jump out of the water also gets the swim-up acceleration
+			// of this frame (vAccel.y, above): give it the amount of a
+			// 60th of a second above 60 frames a second. As nolf2src's
+			// M-E4.
+			if (m_bBodyInLiquid && vAccel.y > 0.0f)
+			{
+				float fModernDt = g_pGameClientShell->GetFrameTime();
+				if (fModernDt < 1.0f / 60.0f)
+					vel.y += vAccel.y * (1.0f / 60.0f - fModernDt);
+			}
+#endif
 
             m_bJumped            = LTTRUE;
             m_bSwimmingOnSurface = LTFALSE;
@@ -1558,7 +1654,12 @@ void CMoveMgr::UpdateNormalMotion()
 
 	if (g_pPlayerMgr->IsSpectatorMode())
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-45: 0.9 each 60th of a second at all frame rates
+		vel *= (float)pow(0.9, (double)ModernFrame60ths());
+#else
 		vel *= 0.9f;
+#endif
 		if (vel.Length() < 0.1f)
 		{
 			vel.Init();
@@ -1851,6 +1952,12 @@ void CMoveMgr::UpdatePushers()
 						}
 
 						pushVec = myPos - pPusher->m_Pos;
+#ifdef TRON20SRC_MODERN
+						// MODERN.md EN-45: the push is added each frame
+						// while the pusher lasts; the retail amount each
+						// 60th of a second
+						velocity *= ModernFrame60ths();
+#endif
 						pushVec *= velocity / pushVec.Length();
 
 						vel = GetVelocity();
@@ -2134,7 +2241,16 @@ void CMoveMgr::MoveLocalSolidObject()
 	info.m_dt = g_pGameClientShell->GetFrameTime();
 	pPhysics->UpdateMovement(&info);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-45: a frame's move of less than 0.1 units is not made:
+	// less than 6 units a second at 60 frames a second, but less than 30 at
+	// 300 and 100 at 1000. The limit is the 60 frames a second one's share
+	// of this frame (the blocked fall's limits below too).
+	float fModernMinMove = 0.1f * ModernFrame60ths();
+	if (info.m_Offset.MagSqr() > fModernMinMove * fModernMinMove)
+#else
 	if (info.m_Offset.MagSqr() > 0.01f)
+#endif
 	{
 		g_pLTClient->GetObjectPos(m_hObject, &curPos);
 		newPos = curPos + info.m_Offset;
@@ -2154,7 +2270,11 @@ void CMoveMgr::MoveLocalSolidObject()
 		// you should be sliding on, but you're blocked, so gravity keeps
 		// getting applied to the velocity.  Only do this if the UpdateMovement
 		// affected our y direction.
+#ifdef TRON20SRC_MODERN
+		if ( fabsf( info.m_Offset.y ) > 0.01f * ModernFrame60ths() && fabsf(newPos.y - curPos.y) < 0.01f * ModernFrame60ths())
+#else
 		if ( fabsf( info.m_Offset.y ) > 0.01f && fabsf(newPos.y - curPos.y) < 0.01f)
+#endif
 		{
 			LTVector vObjVel;
 			pPhysics->GetVelocity(m_hObject, &vObjVel);
@@ -2343,7 +2463,65 @@ void CMoveMgr::Update()
 	}
 
 	MoveLocalSolidObject();
+
+#ifdef TRON20SRC_MODERN
+	ModernPosLog();	// MODERN.md EN-45
+#endif
 }
+
+#ifdef TRON20SRC_MODERN
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CMoveMgr::ModernPosLog
+//
+//	PURPOSE:	MODERN.md EN-45: "PosLog 1" writes one line a frame to
+//				poslog.txt in the game directory: the game time, the
+//				frame time, the local player object's position and
+//				velocity, the position of the server's player object,
+//				and the physics model. The tests of the frame rate
+//				compare these at different frame rates. 0 (or no
+//				variable) is off. Ours.
+//
+// ----------------------------------------------------------------------- //
+
+void CMoveMgr::ModernPosLog()
+{
+	static FILE* s_pFile = LTNULL;
+
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("PosLog");
+	if (!hVar || g_pLTClient->GetVarValueFloat(hVar) <= 0.0f)
+	{
+		if (s_pFile)
+		{
+			fclose(s_pFile);
+			s_pFile = LTNULL;
+		}
+		return;
+	}
+
+	if (!s_pFile)
+	{
+		s_pFile = fopen("poslog.txt", "a");
+		if (!s_pFile) return;
+		fprintf(s_pFile, "# time frame x y z vx vy vz sx sy sz model\n");
+	}
+
+	LTVector vPos, vVel, vServer(0.0f, 0.0f, 0.0f);
+	g_pLTClient->GetObjectPos(m_hObject, &vPos);
+	g_pPhysicsLT->GetVelocity(m_hObject, &vVel);
+	HOBJECT hServer = g_pLTClient->GetClientObject();
+	if (hServer)
+	{
+		g_pLTClient->GetObjectPos(hServer, &vServer);
+	}
+
+	fprintf(s_pFile, "%.4f %.4f %.3f %.3f %.3f %.2f %.2f %.2f %.3f %.3f %.3f %d\n",
+		g_pLTClient->GetTime(), g_pGameClientShell->GetFrameTime(),
+		vPos.x, vPos.y, vPos.z, vVel.x, vVel.y, vVel.z,
+		vServer.x, vServer.y, vServer.z, (int)m_pVehicleMgr->GetPhysicsModel());
+	fflush(s_pFile);
+}
+#endif
 
 // ----------------------------------------------------------------------- //
 //

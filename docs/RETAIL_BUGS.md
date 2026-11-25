@@ -1686,6 +1686,69 @@ value 0xFFFFFFFF.0xFFFFFFFF, and the debug output says "LithTech build
 
 Not fixed yet: the modern build has no build number to give the engine.
 
+### A push lasts the same time but pushes more at a high frame rate
+
+CShell.dll 0x100f8040 (CMoveMgr::UpdatePushers, ClientShellShared/
+CMoveMgr.cpp). Each frame, while a pusher lasts (an explosion, an impact),
+the code adds its full push to the player's velocity. The pusher lasts a
+time, so at 120 frames a second the player gets two times the push of 60.
+
+Fixed in the modern build: the push is the amount of a 60th of a second
+(CMoveMgr.cpp, MODERN.md EN-45).
+
+### A slow move of the player is not made at a high frame rate
+
+CShell.dll 0x100f8980 (CMoveMgr::MoveLocalSolidObject, ClientShellShared/
+CMoveMgr.cpp). The code does not move the player when the frame's move is
+0.1 units or less. That is 6 units a second at 60 frames a second, but 100
+units a second at 1000: a slow walk stops. The test of a blocked fall
+(0.01 units) has the same fault.
+
+Fixed in the modern build: the limits are those of a 60th of a second
+(CMoveMgr.cpp, MODERN.md EN-45).
+
+### The player floats lower in water at a high frame rate
+
+CShell.dll 0x100f5be0 (CMoveMgr::UpdateInLiquid, ClientShellShared/
+CMoveMgr.cpp). When the player swims up and the head comes out of the
+water, the code stops the rise on the next frame. At a higher frame rate
+the rise stops sooner, so the player floats lower and a jump out of the
+water starts lower.
+
+Fixed in the modern build: the rise continues for two 60ths of a second
+(CMoveMgr.cpp, MODERN.md EN-45). Tron 2.0's levels that the tests reach
+have no water: not measured.
+
+### Bouncing debris stops at a higher speed at a high frame rate
+
+CShell.dll 0x10183c60 (BounceMovingObject, ClientShellShared/
+client_physics.cpp). An object that bounces on the ground stops when its
+speed squared is less than 15*15 divided by the frame time. The shorter
+the frame, the faster the speed at which it stops: 116 units a second at
+60 frames a second, 260 at 300.
+
+Fixed in the modern build: the frame time of 60 frames a second
+(client_physics.cpp, MODERN.md EN-45).
+
+### A fire makes more sparks at a high frame rate
+
+CShell.dll 0x101a43c0 (CFireFX::Update, ClientShellShared/FireFX.cpp). The
+fire makes a spark with one chance in ten each frame.
+
+Fixed in the modern build: one chance in ten each 60th of a second
+(FireFX.cpp, MODERN.md EN-45).
+
+### A slow particle or line system does not emit at a high frame rate
+
+CShell.dll 0x101b7400 (CParticleSystemFX::Update, ClientShellShared/
+ParticleSystemFX.cpp) and 0x101b60e0 (CLineSystemFX::Update,
+LineSystemFX.cpp). Each update adds floor(rate * time since the last
+update) particles (lines), and starts its clock again. When a frame is
+shorter than the time of one particle, no particle is ever added.
+
+Fixed in the modern build: an update that adds none keeps its time
+(ParticleSystemFX.cpp, LineSystemFX.cpp, MODERN.md EN-45).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

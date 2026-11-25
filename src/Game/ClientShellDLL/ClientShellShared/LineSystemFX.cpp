@@ -253,6 +253,15 @@ LTBOOL CLineSystemFX::Update()
     nToAdd = LTMIN(nToAdd, (int)(MAX_LINES_PER_SECOND * fTimeDelta));
 
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-45: as the particle systems (ParticleSystemFX.cpp): an
+	// update that owes no line keeps its time until one is owed
+	if (nToAdd <= 0)
+	{
+        return LTTRUE;
+	}
+#endif
+
 	// Add new lines...
 
 	AddLines(nToAdd);

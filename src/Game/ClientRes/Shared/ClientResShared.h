@@ -1037,6 +1037,14 @@
 #define IDS_SCREENGLOW                  3265
 #define IDS_HELP_SCREENGLOW             3266
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-44: the frame rate limit of the Display screen (the block
+// 31100..31109 is the frame rate's)
+#define IDS_MODERN_FRAMELIMIT           31100
+#define IDS_HELP_MODERN_FRAMELIMIT      31101
+#define IDS_MODERN_FRAMELIMIT_NONE      31102
+#endif
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
