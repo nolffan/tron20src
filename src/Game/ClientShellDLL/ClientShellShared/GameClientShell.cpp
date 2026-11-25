@@ -1269,6 +1269,17 @@ void CGameClientShell::OnEngineTerm()
 
 	// RETAIL: 0x100e3692: InitClientShell's counterpart
 	TermClientShell();
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-35: retail unloads the ClientFX DLL (the copy of
+	// ClientFx.fxd in the temporary directory, cfx*.tmp) only from the
+	// destructor of the static CClientFXDB, while CShell.dll itself is
+	// unloaded. A FreeLibrary there is deferred by the loader, so
+	// UnloadFxDll still finds the module and does not delete the copy: one
+	// is left for each start. Unload it here, with the effects that use it.
+	m_ClientFXMgr.Term();
+	CClientFXDB::GetSingleton().Term();
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -3354,7 +3365,16 @@ void CGameClientShell::UpdateDebugInfo()
 		float fovX, fovY;
 		g_pLTClient->GetCameraFOV(GetPlayerMgr()->GetCamera(), &fovX, &fovY);
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-34: the camera's angles are radians, FovX and FovY
+		// degrees: compare the camera with the converted values
+		if (fabs(fovX - DEG2RAD(g_vtFOVXNormal.GetFloat())) > 0.0001f ||
+			fabs(fovY - DEG2RAD(g_vtFOVYNormal.GetFloat())) > 0.0001f)
+#else
+		// RETAIL: the camera's radians against the variables' degrees, so the
+		// FOV is set again each frame (CShell.dll 0x100e57e4, RETAIL_BUGS.md)
 		if (fovX != g_vtFOVXNormal.GetFloat() || fovY != g_vtFOVYNormal.GetFloat())
+#endif
 		{
 			GetPlayerMgr()->SetCameraFOV(DEG2RAD(g_vtFOVXNormal.GetFloat()), DEG2RAD(g_vtFOVYNormal.GetFloat()));
 		}

@@ -1633,6 +1633,22 @@ static LTRESULT cis_FillRect(HSURFACE hDest, LTRect *pRect, HLTCOLOR hColor)
 		cis_UnlockSurface(pDest);
 		return dResult;
 	}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-34: with antialiasing the back buffer cannot be locked
+	// (Direct3D 9: a multisampled surface). A fill of the screen (the pause
+	// screen's background) is then a clear of its rectangle on the device
+	// (the format_mgr fill is exclusive of right and bottom, as Clear is).
+	else if (cis_IsScreenSurface(pDest) && r_GetRenderStruct()->m_bInitted && r_GetRenderStruct()->Clear)
+	{
+		LTRGBColor ClearColor;
+		ClearColor.rgb.a = 0xFF;
+		ClearColor.rgb.r = (uint8)GETR(hColor);
+		ClearColor.rgb.g = (uint8)GETG(hColor);
+		ClearColor.rgb.b = (uint8)GETB(hColor);
+		r_GetRenderStruct()->Clear(&theRect, CLEARSCREEN_SCREEN, ClearColor);
+		return LT_OK;
+	}
+#endif
 	else
 	{
 		RETURN_ERROR(1, FillRect, LT_ERROR);

@@ -750,6 +750,11 @@ void CInterfaceMgr::Term()
 
 	//make sure that the interface manager isn't still holding onto a reference
 	m_InterfaceFXMgr.SetCamera(NULL);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-35: no interface effect is left when the game shell
+	// unloads the ClientFX DLL (CGameClientShell::OnEngineTerm)
+	m_InterfaceFXMgr.Term();
+#endif
 
 	// ABM TODO term the subroutinemgr and ratingsmgr
 
