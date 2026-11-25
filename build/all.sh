@@ -25,7 +25,10 @@
 #                         build/retail.py): the .rez archives, hard-linked
 #                         where they hold no binary; GameDLL.rez,
 #                         Gamep3.rez and Gamep4.rez, which hold the retail
-#                         game DLLs, copied with those entries zeroed. Also
+#                         game DLLs, copied with those entries zeroed and
+#                         renamed (build/rezhide.py: custom/ gives the
+#                         DLLs whatever the rez order, the retail
+#                         launcher's too). Also
 #                         the movies (hard links) and the shipped
 #                         autoexec.cfg and Profiles/Default.prf (as
 #                         *.retail copies). No binary.
@@ -106,6 +109,10 @@ else
     step "1. resources: game data from $RETAIL -> $OUT"
     rm -f "$OUT/NOT-PLAYABLE.txt"
     python3 ext/tools/retailextract.py resources "$RETAIL" "$OUT"
+    # The zeroed game DLLs of the updates' archives renamed, so that the
+    # retail launcher's rez order (custom/ before Gamep3.rez and
+    # Gamep4.rez) also gives the engine ours (build/rezhide.py)
+    python3 build/rezhide.py "$OUT/GameDLL.rez" "$OUT/Gamep3.rez" "$OUT/Gamep4.rez"
     # autoexec.cfg and the default profile start as the shipped ones (the
     # game rewrites them); a rebuild keeps the player's.
     [ -f "$OUT/autoexec.cfg" ] || cp "$OUT/autoexec.cfg.retail" "$OUT/autoexec.cfg"

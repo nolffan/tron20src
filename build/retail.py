@@ -15,8 +15,13 @@ DATA_DIRS = ["Movies"]
 # The two files the game rewrites, kept as the retail copies, which
 # build/all.sh starts a game directory's autoexec.cfg and
 # Profiles/Default.prf from (ext/tools/playtest.sh reads both).
+# Also the manual, which the launcher's Help opens (tron.chm), and the
+# readme of Update 2 and the dedicated server.
 RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail"),
-                 ("Profiles/Default.prf", "Default.prf.retail")]
+                 ("Profiles/Default.prf", "Default.prf.retail"),
+                 ("TRON.chm", "TRON.chm"),
+                 ("Tron Update 2 and Dedicated Server Readme.txt",
+                  "Tron Update 2 and Dedicated Server Readme.txt")]
 
 # Bink, and the Microsoft C, C++ and MFC 4.2 runtime setup installs.
 # MSVCIRT.dll, which the game DLLs and the dedicated server import, is
