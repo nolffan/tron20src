@@ -908,7 +908,7 @@ LTRESULT CLTClient::GetCanvasRadius(HOBJECT hCanvas, float &radius)
 LTRESULT CLTClient::SetCanvasRadius(HOBJECT hCanvas, float radius)
 {
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E11: the check names its own function
+	// MODERN.md EN-14: the check names its own function
 	FN_NAME(CLTClient::SetCanvasRadius);
 #else
 	FN_NAME(CLTClient::GetCanvasRadius);
@@ -933,7 +933,7 @@ LTRESULT CLTClient::GetMaxRadiusInPoly(const HPOLY hPoly, const LTVector& vPos, 
 		// Give them a decent default
 		fMaxRadius = 0.0f;
 #ifdef TRON20SRC_MODERN
-		// MODERN.md M-E11: the check names its own function
+		// MODERN.md EN-14: the check names its own function
 		RETURN_ERROR(5, CLTClient::GetMaxRadiusInPoly, LT_NOTFOUND);
 #else
 		RETURN_ERROR(5, CLTServer::GetMaxRadiusInPoly, LT_NOTFOUND);
@@ -1079,7 +1079,7 @@ void CLTClient::CPrint(const char *pMsg, ...)
 	static const uint32 knBufferSize = 512;
 	char str[knBufferSize];
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E10: a message that filled the buffer had its newline
+	// MODERN.md EN-13: a message that filled the buffer had its newline
 	// and terminator written one past the end; an empty one read the
 	// byte before it. Keep room for the newline.
 	LTVSNPrintF(str, knBufferSize - 1, pMsg, marker);
@@ -1958,7 +1958,7 @@ LTRESULT ci_GetSoundTimer(HLTSOUND hSound, LTFLOAT *fTimer)
 
 	if (!hSound || !fTimer)
 #ifdef TRON20SRC_MODERN
-		// MODERN.md M-E11: the check names its own function
+		// MODERN.md EN-14: the check names its own function
 		RETURN_ERROR(1, GetSoundTimer, LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, GetSoundDuration, LT_INVALIDPARAMS);
@@ -2733,7 +2733,7 @@ LTRESULT ci_SortParticles(HLOCALOBJ hSystem, const LTVector& vDir, uint32 nNumIt
 	if (!pSystem || pSystem->m_ObjectType != OT_PARTICLESYSTEM)
 	{
 #ifdef TRON20SRC_MODERN
-		// MODERN.md M-E11: the check names its own function
+		// MODERN.md EN-14: the check names its own function
 		RETURN_ERROR(1, CLTClient::SortParticles, LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, CLTClient::OptimizeParticles, LT_INVALIDPARAMS);
@@ -2903,7 +2903,7 @@ float ci_GetLightRadius(HLOCALOBJ hObj)
 {
 	DynamicLight *pObject = (DynamicLight*)hObj;
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E8: every other accessor checks the handle
+	// MODERN.md EN-11: every other accessor checks the handle
 	if (!pObject)
 		return 1.0f;
 #endif
@@ -2921,7 +2921,7 @@ void ci_SetLightRadius(HLOCALOBJ hObj, float radius)
 {
 	DynamicLight *pObject = (DynamicLight*)hObj;
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E8: every other accessor checks the handle
+	// MODERN.md EN-11: every other accessor checks the handle
 	if (!pObject)
 		return;
 #endif
@@ -3021,7 +3021,7 @@ LTRESULT ci_GetServiceList(NetService* &pListHead)
 LTRESULT ci_FreeServiceList(NetService *pListHead)
 {
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E11: the check names its own function
+	// MODERN.md EN-14: the check names its own function
 	CHECK_PARAMS(pListHead, CLTClient::FreeServiceList);
 #else
 	CHECK_PARAMS(pListHead, CLTClient::GetServiceList);

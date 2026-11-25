@@ -58,7 +58,7 @@ void d3d_ReadExtraConsoleVariables()
 	PD3DDEVICE->SetRenderState(D3DRS_DITHERENABLE, (uint32)g_CV_Dither);
 
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-G45: Anisotropic is the degree (the Performance screen's
+	// MODERN.md EN-34: Anisotropic is the degree (the Performance screen's
 	// 2x to 16x), held to what the card can do
 	uint32 nModernAniso = g_CV_Anisotropic.m_Val ? (uint32)g_CV_Anisotropic.m_Val : 1;
 	if (g_Device.GetDeviceCaps()->MaxAnisotropy && nModernAniso > g_Device.GetDeviceCaps()->MaxAnisotropy)

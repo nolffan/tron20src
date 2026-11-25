@@ -73,7 +73,7 @@ LTRESULT in_GetPerformanceInfo(LTPERFORMANCEINFO* pPerformanceInfo)
 	// Make sure structure size is what we're expecting
 	if (sizeof(LTPERFORMANCEINFO) != pPerformanceInfo->m_dwSize)
 #ifdef TRON20SRC_MODERN
-		// MODERN.md M-E11: the check names its own function
+		// MODERN.md EN-14: the check names its own function
 		RETURN_ERROR(1, ClientDE::GetPerformanceInfo, LT_INVALIDPARAMS);
 #else
 		RETURN_ERROR(1, ClientDE::GetVersionInfoExt, LT_INVALIDPARAMS);

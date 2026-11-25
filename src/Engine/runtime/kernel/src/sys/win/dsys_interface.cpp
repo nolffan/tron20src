@@ -730,7 +730,7 @@ void dsi_PrintToConsole(const char *pMsg, ...) {
 	
     va_start(marker, pMsg);
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E10: a message that filled the buffer had its newline
+	// MODERN.md EN-13: a message that filled the buffer had its newline
 	// and terminator written one past the end; an empty one read the
 	// byte before it. Keep room for the newline.
     LTVSNPrintF(msg, sizeof(msg) - 1, pMsg, marker);

@@ -395,7 +395,7 @@ ILTStream* streamsim_Open(const char *pFilename, const char *pAccess)
 	if(pFile)
 		pFile->m_pFile = fp;
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E12: the file was left open when the stream could not
+	// MODERN.md EN-15: the file was left open when the stream could not
 	// be allocated
 	else
 		fclose(fp);

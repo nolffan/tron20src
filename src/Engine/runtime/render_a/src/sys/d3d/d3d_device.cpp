@@ -101,7 +101,7 @@ void CD3D_Device::TryFallingBack_OnFailedDevCreate(D3DPRESENT_PARAMETERS* pPrese
 	d3d_GetColorMasks(pPresentationParam->BackBufferFormat,iBitCount,iAlphaMask,iRedMask,iGreenMask,iBlueMask);
 	pPresentationParam->AutoDepthStencilFormat = GetDefaultDepthStencilFormat(iBitCount,g_CV_StencilBitDepth);
 #ifdef TRON20SRC_MODERN
-	// M-E13: and without antialiasing, with retail's swap effect and flags.
+	// EN-33: and without antialiasing, with retail's swap effect and flags.
 	if (pPresentationParam->MultiSampleType != D3DMULTISAMPLE_NONE)
 	{
 		pPresentationParam->MultiSampleType = D3DMULTISAMPLE_NONE;
@@ -285,7 +285,7 @@ void CD3D_Device::SetPresentationParams(D3DPRESENT_PARAMETERS& PresentationParam
 	uint32			BackBufferCount	= g_CV_BackBufferCount;
 	if (g_bRunWindowed || g_CV_ForceSwapEffectBlt) { SwapEffect = D3DSWAPEFFECT_COPY; BackBufferCount = 1; }
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E13: antialiasing in a window too. Direct3D 8 multisamples
+	// MODERN.md EN-33: antialiasing in a window too. Direct3D 8 multisamples
 	// only with the discard swap effect, and retail gave a window the copy
 	// effect whatever AntiAliasFSOverSample asked for; with antialiasing on
 	// a window now discards as full screen does (ForceSwapEffectBlt still
@@ -346,7 +346,7 @@ void CD3D_Device::SetPresentationParams(D3DPRESENT_PARAMETERS& PresentationParam
 		}
 	}
 
-	// M-E13: a multisampled back buffer is never lockable, and Direct3D
+	// EN-33: a multisampled back buffer is never lockable, and Direct3D
 	// refuses a device that asks for both (retail asked, full screen, so its
 	// antialiasing could not start on Windows). Only the screen locks
 	// (screenshots, the console's direct draws) want it; they fail quietly.
@@ -520,7 +520,7 @@ void CD3D_Device::SetDefaultRenderStates()
 
 		// RETAIL: Build 69's sampler states (Lithtech.exe 0x4ca3e0..)
 #ifdef TRON20SRC_MODERN
-		// MODERN.md M-G45: held to what the card can do
+		// MODERN.md EN-34: held to what the card can do
 		uint32 nModernAniso = g_CV_Anisotropic.m_Val ? (uint32)g_CV_Anisotropic.m_Val : 1;
 		if (m_DeviceCaps.MaxAnisotropy && nModernAniso > m_DeviceCaps.MaxAnisotropy)
 			nModernAniso = m_DeviceCaps.MaxAnisotropy;

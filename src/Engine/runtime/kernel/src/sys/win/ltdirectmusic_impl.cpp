@@ -791,7 +791,7 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 		  						     const char* sDefine2, const char* sDefine3)
 {
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E9: "sDeine3" in retail's trace
+	// MODERN.md EN-12: "sDeine3" in retail's trace
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::InitLevel sWorkingDirectory=%s sControlFileName=%s sDefine1=%s sDefine2=%s sDefine3=%s\n",
 #else
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::InitLevel sWorkingDirectory=%s sControlFileName=%s sDefine1=%s sDefine2=%s sDeine3=%s\n",
@@ -1691,7 +1691,7 @@ LTRESULT CLTDirectMusicMgr::StopSecondary(const char* sSecondarySegment, const L
 	CWinSync_CSAuto cProtection(m_CommandQueueCriticalSection);
 
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E7: one walk over the list, for a name or for all.
+	// MODERN.md EN-10: one walk over the list, for a name or for all.
 	// Retail looked a name up again until nothing was found, but a node
 	// it did not clean up (one to play to its end, LTDMEnactNextSegment,
 	// or one whose segment had no DirectMusic segment) was found again
@@ -1876,7 +1876,7 @@ LTRESULT CLTDirectMusicMgr::StopMotif(const char* sMotifName, const LTDMEnactTyp
 	CWinSync_CSAuto cProtection(m_CommandQueueCriticalSection);
 
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E7: one walk, as in StopSecondary
+	// MODERN.md EN-10: one walk, as in StopSecondary
 	pStopSegmentState = m_lstMotifsPlaying.GetFirst();
 	while (pStopSegmentState != LTNULL)
 	{

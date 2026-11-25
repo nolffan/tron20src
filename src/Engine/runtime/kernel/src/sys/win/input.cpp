@@ -383,7 +383,7 @@ class DeviceDef
 	static DeviceDef		*g_pCurrentEnumDevice=LTNULL;
 #ifdef TRON20SRC_MODERN
 // MODERN.md EN-20: ##gamepad, the XInput controller as a DirectInput gamepad
-// (src/cjacksrc/xinput/)
+// (src/tron20src/xinput/, from cjacksrc)
 #include "xinput/gamepad_device.h"
 #endif
 
@@ -900,7 +900,7 @@ static bool input_SetupDeviceFormats( DeviceDef *pDevice )
 	prop.diph.dwHow = DIPH_DEVICE;
 	prop.dwData = INPUT_BUFFER_SIZE;
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E3: a mouse of today reports up to 1000 times a second,
+	// MODERN.md EN-23: a mouse of today reports up to 1000 times a second,
 	// two events each (x and y), and the buffer is read once a frame: 64
 	// events overflowed ("Input buffer overflow") and lost motion at low
 	// frame rates.
@@ -1454,7 +1454,7 @@ bool input_EnableDevice( InputMgr *pMgr, const char *pDeviceName )
 }
 
 #ifdef TRON20SRC_MODERN
-// MODERN.md M-E3: the mouse's look axes (x and y), whose motion
+// MODERN.md EN-23: the mouse's look axes (x and y), whose motion
 // input_ReadInput adds up over a frame. Not the wheel (z), whose bindings
 // are ranges one notch at a time.
 static bool input_IsMouseLookAxis( DeviceDef *pDevice, TriggerObject *pTrigger )
@@ -1532,7 +1532,7 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 			memset (data, 0, sizeof(data));
 			
 #ifdef TRON20SRC_MODERN
-			// MODERN.md M-E3: the mouse's buffer is read whole, like any
+			// MODERN.md EN-23: the mouse's buffer is read whole, like any
 			// other device's (see below)
 			nEvents = INPUT_BUFFER_SIZE;
 #else
@@ -1613,7 +1613,7 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 				}
 
 #ifdef TRON20SRC_MODERN
-				// MODERN.md M-E3: mouse look. Retail took the mouse's events
+				// MODERN.md EN-23: mouse look. Retail took the mouse's events
 				// one at a time, ran every trigger after each, and smoothed
 				// each axis over its last three samples, so an axis with no
 				// new event could add its old motion again until it aged out
@@ -1655,7 +1655,7 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 					float fCurTriggerState = pTrigger->m_State;
 
 #ifdef TRON20SRC_MODERN
-					// M-E3: a mouse axis: this frame's motion, as it is
+					// EN-23: a mouse axis: this frame's motion, as it is
 					if( input_IsMouseLookAxis( pDevice, pTrigger ) )
 					{
 					}
@@ -1808,7 +1808,7 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 				// Clear this..
 				pTrigger->m_bJustWentDown = false;
 #ifdef TRON20SRC_MODERN
-				// M-E3: a mouse axis's motion is used once
+				// EN-23: a mouse axis's motion is used once
 				if( input_IsMouseLookAxis( pDevice, pTrigger ) )
 				{
 					pTrigger->m_State = pTrigger->m_PrevState = pTrigger->m_BaseState = 0.0f;

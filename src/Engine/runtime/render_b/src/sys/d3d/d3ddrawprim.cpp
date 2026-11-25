@@ -33,7 +33,7 @@ extern uint32 g_ScreenWidth;
 extern uint32 g_ScreenHeight;
 
 #ifdef TRON20SRC_MODERN
-// MODERN.md M-E13, the Modernizer's known issue K1: screen-space primitives
+// MODERN.md EN-33 (nolf2src's M-E13 and its known issue K1): screen-space primitives
 // are placed at whole pixel coordinates, which in Direct3D are pixel
 // centres, so a quad's edge cuts its edge pixels in half. Without
 // antialiasing the rasteriser takes a centre on a left or top edge in and

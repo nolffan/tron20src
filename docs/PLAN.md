@@ -78,14 +78,14 @@ NOLF2 and Contract J.A.C.K. have.
 | # | Package | Depends on | Status |
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the v1.030 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
-| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `ext/toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the game directory done (`make`, `build/all.sh`); `build/variant.sh` to come |
+| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `ext/toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the game directory done (`make`, `build/all.sh`); the variants done (`make debug`, `make modern`, `make modern-debug`: `build/variant.sh`) |
 | 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `ext/tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | `ltmsg.dll` identical; `SndDrv.dll` Tron's: all 232 functions of its own code identical (34 initializer-sized ones `small`) |
 | 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | `CShell.dll`, `Object.lto` and `ClientFx.fxd` build (below) |
 | 5 | `engine`: `Lithtech.exe` and `server.dll` from nolf2src's engine and the Jupiter tree, with the D3D9 renderer; D3DX9 placed as `middleware`; an unprotected engine (the demo, the dev build) for the SecuROM pages and the imports | 2 | |
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
-| 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | |
+| 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | Phase 0 done: the modern build compiles and boots (`make modern`), the launcher split, the retail-bug fixes; Phase 1 planned in `MODERN.md` |
 | 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`ext/tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | |
 
 ## Notes per package
@@ -118,7 +118,8 @@ Done.
   one binary at a time) with nolf2src's VC6 toolchain: `msvc-6.00-8168`'s
   compiler, linker, librarian, headers and libraries, SP6's `RC.EXE`, the
   DirectX 8.1 SDK first on the paths. `make compile` runs it; `build/all.sh`
-  (a game directory) and `build/variant.sh` are still to come.
+  makes the game directory, and `build/variant.sh` the debug and modern
+  builds, each in its own tree (`out/build-<variant>/`).
 - Imported from nolf2src (`48c2506`), its `NOLF2SRC_MODERN` blocks resolved
   out (`ext/tools/releasesrc.py`; only `ltcodes.h` had any): `src/Engine/ltmsg`,
   `src/Engine/snddrv` (with `eaxguid`), `src/libs/ltmem`, the engine SDK's
@@ -561,6 +562,16 @@ What the modern build is to have, besides the fixes in `RETAIL_BUGS.md`
 - settings and saved games beside the executable. The launcher and the
   game must not write to APPDATA or to the registry (that data is lost
   when a Proton version changes).
+
+Phase 0 (2026-11-25): `build/variant.sh` makes `make debug`, `make
+modern` and `make modern-debug`. The modern build compiles with all the
+`TRON20SRC_MODERN` blocks: the retail-bug fixes of the game DLLs (GAME-1
+to GAME-33), the launcher split (APPS-1), and the engine's modern code
+from cjacksrc's engine (EN- items; its XInput headers are now in
+`src/tron20src/xinput/`). The three variants pass `make tests`, and the
+modern build passes `make launchertest` both as `TronLauncher.exe` and as
+`Tron.exe`. `MODERN.md` lists every item with its id, and the Phase 1
+items with the files that each agent owns.
 
 Before this package: package 7. The modern build changes only code under
 `TRON20SRC_MODERN`, and the release tree removes those blocks, so the

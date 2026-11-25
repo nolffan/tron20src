@@ -28,7 +28,8 @@ Many of NOLF2's bugs (nolf2src's `docs/RETAIL_BUGS.md`) and Contract J.A.C.K.'s
 same code: check each against the retail binary before listing it. Those
 Tron 2.0 does not have go at the end, so nobody looks again.
 
-**Fixed so far** (in the modern build): none yet.
+**Fixed so far** (in the modern build): the entries that say so below.
+`MODERN.md` lists each fix with its id.
 
 ## Format
 
@@ -321,7 +322,7 @@ developer build of 2003-08-05 has the same code; Build 69's source has
 the intended `(pObj->m_Flags & FLAG_GRAVITY) != 0`.
 
 Fixed in the modern build: src/Engine/runtime/client/src/predict.cpp
-(TRON20SRC_MODERN), not yet listed in MODERN.md.
+(TRON20SRC_MODERN) (MODERN.md EN-16).
 
 ### A texture script's Sin is the cosine, and its Cos the sine
 
@@ -384,6 +385,7 @@ them, so it never shows.
 
 Not fixed yet (the engine is not rebuilt): the modern build should check
 the stream, or a rate of 0, before dividing.
+
 ### The pings HUD sets up only four of its eight pings
 
 CShell.dll 0x100311e0 (CHUDPings::Init, ClientShellDLL/TRON/HUDPings.cpp).
@@ -394,6 +396,7 @@ size twice.
 
 Not fixed yet: harmless (four pings show); the modern build may use all
 eight.
+
 ### A light cycle with an unknown color dereferences NULL
 
 Object.lto 0x10025503 (LightCycle::SetModel, ObjectDLL/TRON/LightCycle.cpp).
@@ -582,7 +585,8 @@ the time had. It should test TextureFilterCaps. So anisotropic filtering
 only ever sets D3DSAMP_MAXANISOTROPY, and the textures stay bilinear or
 trilinear. Build 69's Direct3D 9 renderer has the same lines.
 
-Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md M-G45.
+Fixed in the modern build: d3d_device.cpp and d3d_init.cpp, MODERN.md
+EN-34.
 
 ### A new system memory configuration leaks the old bad blocks
 
@@ -594,6 +598,7 @@ debug_new) from its array without deleting them. Each new configuration
 (each level's) leaks those PlayerSubroutines (0x2c bytes each).
 
 Not fixed yet (the modern build should delete them as it erases them).
+
 ### A team's alternative name is read past its table for teams 4 to 7
 
 CShell.dll 0x100fafc0 (CTronTeam::GetName, Shared/SharedScoring.cpp). A
@@ -605,6 +610,7 @@ get an empty or wrong name.
 
 Not fixed yet: the modern build should give the second table eight ids or
 fall back to the first for ids past it.
+
 ### A UI static text or check box reads address 0 when it first gets text
 
 Lithtech.exe 0x571760 (CUIStaticText_Impl::SetText) and 0x56f4c0
@@ -666,7 +672,8 @@ the current viewport again (only its depth range changes) instead of the
 camera's rectangle, so primitives drawn through a camera that does not
 cover the screen are not confined to it.
 
-Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle.
+Fixed in the modern build: d3ddrawprim.cpp sets the camera's rectangle
+(MODERN.md EN-8).
 
 ### Cancelling a decision window resets the memory after its choices
 
@@ -701,6 +708,7 @@ its text, which "%s" reads; the other two words are ignored.
 
 Not fixed yet: harmless with this STLport; the modern build should pass
 c_str().
+
 ### The host screen never sets the default remote-command password
 
 CShell.dll 0x1005bb20 (CScreenHostConnection's constructor, ClientShellDLL/
@@ -711,6 +719,7 @@ empty until the option set is read (LoadOptions sets both), so nothing
 shows in the game.
 
 Not fixed yet: harmless; the modern build may load it into m_sScmdPassword.
+
 ### The upgrade points ring is placed with the horizontal scale only
 
 CShell.dll 0x1004fc70 (CBuildPointsCtrl::ScreenDimsChanged, src/Game/
@@ -790,7 +799,8 @@ stand dims stay zero and the crouch dims become the standing size: the next
 "am I crouching" test is wrong and standing up tests against empty dims.
 Player models normally have the animation, so it does not show in the game.
 
-Fixed in the modern build: CMoveMgr.cpp (TRON20SRC_MODERN sets m_vStandDims).
+Fixed in the modern build: CMoveMgr.cpp (TRON20SRC_MODERN sets
+m_vStandDims) (MODERN.md GAME-1).
 
 ### A client weapon's alt-fire key-up follows the fire key
 
@@ -815,7 +825,8 @@ as an engine HSTRING (+0x838). The destructor kills the sound but never
 frees the string, so every prop that played a looping sound leaks its name
 when it is removed. KILL_LOOPING_SOUND and a new looping sound free it.
 
-Fixed in the modern build: Prop.cpp (TRON20SRC_MODERN frees m_hstrLoopSound).
+Fixed in the modern build: Prop.cpp (TRON20SRC_MODERN frees
+m_hstrLoopSound) (MODERN.md GAME-2).
 
 ### ARMOR_UNLOCK never unlocks a power armor
 
@@ -828,7 +839,7 @@ and only an empty trigger message unlocks the armor. A locked armor stays
 locked.
 
 Fixed in the modern build: PowerArmor.cpp (TRON20SRC_MODERN compares with
-KEY_UNLOCK).
+KEY_UNLOCK) (MODERN.md GAME-3).
 
 ### A "REMOVE" message does not remove a lite object
 
@@ -840,7 +851,7 @@ calls RemoveObject), so the object stays and keeps updating. A level script
 that removes a command object to stop it does nothing.
 
 Fixed in the modern build: GameBaseLite.cpp (TRON20SRC_MODERN calls
-CLiteObjectMgr::RemoveObject).
+CLiteObjectMgr::RemoveObject) (MODERN.md GAME-4).
 
 ### A searchable object's MaxSearchTime is read into its minimum
 
@@ -852,7 +863,7 @@ maximum stays unset, so InitialUpdate gives it the 3 second default: a search
 lasts a random time between MaxSearchTime and 3 seconds.
 
 Fixed in the modern build: Searchable.cpp (TRON20SRC_MODERN stores
-m_fMaxSearchTime).
+m_fMaxSearchTime) (MODERN.md GAME-5).
 
 ### An active world model's ADDPSET reads the sender, not its argument
 
@@ -865,8 +876,9 @@ and whatever bytes the handle points at decide which sets are added.
 REMOVEPSET uses its argument but always tests eight characters (0x101767ad),
 reading past the end of a shorter argument.
 
-Fixed in the modern build: ActiveWorldModel.cpp (TRON20SRC_MODERN parses the
-argument, up to its length).
+Fixed in the modern build: ActiveWorldModel.cpp (TRON20SRC_MODERN parses
+the argument, up to its length) (MODERN.md GAME-6).
+
 ### The archive bin's, I/O node's and optimizer's loop sounds do not loop
 
 Object.lto 0x10011110 (ArchiveBin::PlayLoopSound), 0x10024bc0
@@ -880,6 +892,7 @@ sound files themselves loop, a level designer's loop sound is heard only
 when the object starts or loads.
 
 Not fixed yet: the modern build should add PLAYSOUND_LOOP.
+
 ### An EventCounter's REPORT message is registered as a second RESET
 
 Object.lto 0x10260d30 (EventCounter's command manager table,
@@ -892,7 +905,7 @@ command sending REPORT to an event counter as an unknown message, although
 the game itself handles it.
 
 Fixed in the modern build: EventCounter.cpp (TRON20SRC_MODERN registers
-REPORT).
+REPORT) (MODERN.md GAME-7).
 
 ### An AI path's initial direction ignores its second control point
 
@@ -916,6 +929,7 @@ toggle gets the default position and the screen's column width, as the
 other controls do.
 
 Not fixed yet: the modern build can give the toggle these values.
+
 ### The DRAWALLMODELSHADOWS command sets the sky fog near Z
 
 Object.lto 0x101c0c60 (WorldProperties::OnTrigger,
@@ -936,6 +950,7 @@ SetCurLevel when the load fails. The assignment can free or reuse that
 buffer, so the restored name can be garbage.
 
 Not fixed yet: the modern build should copy the old name first.
+
 ### A relation's timer takes an end time as its duration
 
 Object.lto 0x10168260 (CRelationUser::ResetRelationTime,
@@ -975,6 +990,7 @@ The circle and cone types use two vectors and are correct.
 
 Not fixed yet: the modern build should write the turned m_vPerp2 into a
 second vector and use it for the second term.
+
 ### The prankster bit does not release its object lists
 
 Object.lto 0x10040950 (CProjectilePrankster::AcquireTargets,
@@ -984,6 +1000,7 @@ RelinquishList. The engine therefore loses one object list for each frame
 while a prankster bit catches targets.
 
 Not fixed yet: the modern build should call RelinquishList on the list.
+
 ### A disc game team change can use a null player
 
 Object.lto 0x1004b981 (CDiscMatchMgr::ChangeTeam, TRON/ServerDiscMatchMgr.cpp).
@@ -995,6 +1012,7 @@ list before the move completes.
 
 Not fixed yet: the modern build should skip the colour when the player is
 not found.
+
 ### The energy claw's range data uses a wrong subroutine name
 
 CShell.dll 0x1001aa70 (CClientWeaponEnergyClaw::GetClawData,
@@ -1033,6 +1051,7 @@ speed and trail length switches set the string ID only for the indices
 stack.
 
 Not fixed yet: the modern build should give the ID a default value.
+
 ### An explosion's bad ammo name is reported as a single character
 
 Object.lto 0x100efb07 (Explosion::ReadProp, ObjectShared/Explosion.cpp).
@@ -1054,6 +1073,7 @@ be equal to all six). In the editor, the Arena property can be reported as a
 bad command.
 
 Not fixed yet: the tools are written again later; the test should use "!".
+
 ### The help menu tests the wrong item before it shows the first file
 
 CShell.dll 0x101c7bb6 (CMenuHelp::OnFocus,
@@ -1065,6 +1085,7 @@ first in the list, so the menu tests a different item. The menu can show a
 file that the player read, or not show a new file.
 
 Not fixed yet: the modern build should get the item at the item index.
+
 ### A light cycle's intro lookup reads the colour before it tests it
 
 CShell.dll 0x100a7c60 (CTronPlayerMgr::TronUnknownVirtual70,
@@ -1099,6 +1120,7 @@ does not exist, the error message gets the character 0 as its "%s"
 argument.
 
 Not fixed yet: the modern build should look up the name.
+
 ### The RESETPATH message of a keyframer does not use the rotation of the first key
 
 Object.lto 0x10119c40 (KeyFramer::ResetToKey, our name,
@@ -1121,6 +1143,7 @@ again before they are used (0x1007f0d8, 0x1007f13f), so there is no
 visible effect.
 
 Not fixed yet: the modern build should reset the build note fade time.
+
 ### The weapon FX message sends a flag as a float, and the client reads one bit
 
 Object.lto 0x101d6750 (CreateClientWeaponFX, ObjectShared/
@@ -1132,6 +1155,7 @@ is the lowest bit of the float's representation, which is 0 for 0.0 and
 1.0. Thus the client always gets false for the flag.
 
 Not fixed yet: the modern build should write the flag as a bool.
+
 ### A defense class override converts its zones to radians again
 
 Object.lto 0x10108660 (DEFENSECLASSDATA::InitMembers, Shared/WeaponMgr.cpp).
@@ -1162,7 +1186,7 @@ CButeMgr::GetByte, but it does not use the result. It sets bControlable
 controllable is controllable.
 
 Fixed in the modern build: src/Game/Shared/FXButeMgr.cpp keeps the value
-that GetByte returns.
+that GetByte returns (MODERN.md GAME-8).
 
 ### The team selection screen reads one row team past its list
 
@@ -1175,6 +1199,7 @@ pointer, +0x830) and moves the local player to that "team". No control
 sends 0x443, so there is no visible effect.
 
 Not fixed yet: the modern build should accept 0x433 to 0x442 only.
+
 ### Two core dump help files of a character are in the wrong group
 
 Object.lto 0x10087500 (CCharacter's property list, ObjectShared/
@@ -1186,6 +1211,7 @@ The game reads them by name, thus play is not affected.
 
 Not fixed yet: the modern build should give each HelpFile the group of its
 item.
+
 ### A console variable oscillation has a wrong center
 
 CShell.dll 0x1009ec40 (CTronInterfaceMgr::HandleConsoleVarOscillate,
@@ -1219,6 +1245,7 @@ array on the stack.
 
 Not fixed yet: the modern build should stop the loop at the size of the
 array.
+
 ### A loaded projectile does not get its object flags back
 
 Object.lto 0x101246c0 (CProjectile::Load, ObjectShared/Projectile.cpp).
@@ -1246,6 +1273,7 @@ same read occurs for it.
 
 Not fixed yet: the modern build should write the flag (false) on the
 server, or not read it on the client.
+
 ### The OBB hit test does not give the distance of its hit
 
 Object.lto 0x10139460 (CCharacterHitBox::FindHitNodeOBB,
@@ -1274,6 +1302,7 @@ compiler removes the tests. Build 51 has the same code.
 
 Not fixed yet: the modern build should use & (the client must make the
 same change).
+
 ### A random node search without an AI can return a bad pointer
 
 Object.lto 0x101a8c30 (CAINodeMgr::FindRandomNodeFromThreat,
@@ -1298,8 +1327,8 @@ This causes an access violation. The function must return an empty string.
 The game always sets the text before it reads it (the message box, the
 chat input), so the game does not hit this.
 
-Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
-returns an empty string.
+Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp returns
+an empty string (MODERN.md GAME-9).
 
 ### The mission text uses its string before it tests it
 
@@ -1310,7 +1339,7 @@ font manager cannot make the string, the call uses a null pointer and the
 client stops. The test must come before the call.
 
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
-HUDMissionText.cpp tests the string first.
+HUDMissionText.cpp tests the string first (MODERN.md GAME-10).
 
 ### The chat input can write one byte past its buffer
 
@@ -1322,8 +1351,8 @@ gives a buffer of 64 bytes and a maximum length of 64 characters. Thus a
 chat line of 64 characters writes its terminator one byte past the buffer,
 into the first character of the first chat history line.
 
-Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp
-writes at most the maximum length, with the terminator.
+Fixed in the modern build: src/Game/Libs/LTGUIMgr/ltguieditctrl.cpp writes
+at most the maximum length, with the terminator (MODERN.md GAME-11).
 
 ### The system menu does not show the load control again
 
@@ -1334,7 +1363,7 @@ the load control. Thus after a multiplayer game, the system menu has no
 load control until the game starts again.
 
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
-MenuSystem.cpp shows the load control too.
+MenuSystem.cpp shows the load control too (MODERN.md GAME-12).
 
 ### The trigger's key list reports the wrong result
 
@@ -1346,7 +1375,7 @@ list that the key plugin fills correctly (LT_OK, zero) gives LT_ERROR to
 DEdit, and a failure gives LT_OK.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Trigger.cpp
-returns the key plugin's result.
+returns the key plugin's result (MODERN.md GAME-13).
 
 ### An AI sees a far target instantly
 
@@ -1359,7 +1388,7 @@ distance: it sets the rate to 99999999 (seen instantly). Thus only a hidden
 target outside of the personal bubble is not seen instantly.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
-AISenseRecorderGame.cpp has the "else".
+AISenseRecorderGame.cpp has the "else" (MODERN.md GAME-14).
 
 ### An AI reads the ray count as its "done processing stimuli" flag
 
@@ -1372,8 +1401,9 @@ returns the flag (+0x14); AINodeSensing::GetDoneProcessingStimuli
 sense rays in this update, and is not "done" when the recorder set the
 flag.
 
-Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/AI.cpp
-returns the flag.
+Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/AI.cpp returns
+the flag (MODERN.md GAME-15).
+
 ### A deadly deflected disc with no ammo data reads its FX name from address 0x164
 
 Object.lto 0x1003d1b0 (CDisc::SmiteObject, the name is ours; ObjectDLL/
@@ -1409,7 +1439,7 @@ pointer and the server stops. The trace is off in a normal game, so the
 game does not hit this.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
-AIHumanState.cpp puts braces around the trace.
+AIHumanState.cpp puts braces around the trace (MODERN.md GAME-16).
 
 ### The core dump item properties can write past their name buffer
 
@@ -1421,7 +1451,7 @@ thus the retail properties do not overflow the buffer. A longer name would
 write past the buffer, into the GenericProp after it.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/Character.cpp
-gives the buffer 100 bytes.
+gives the buffer 100 bytes (MODERN.md GAME-17).
 
 ### A hold block straight at the disc uses a defense value that is not set
 
@@ -1434,7 +1464,8 @@ value is not set. The retail code then adds the stack slot of the weapon's
 orientation max zone (+0x58). Thus a block straight at the disc takes the
 max zone angle (radians) as its orientation defense, not the max defense.
 
-Fixed in the modern build: the orientation percentage starts at 0.0f.
+Fixed in the modern build: the orientation percentage starts at 0.0f
+(MODERN.md GAME-18).
 
 ### The AI cycle spawner error message has one value too few
 
@@ -1450,7 +1481,7 @@ in its stack layout and inline expansions), but the instructions of this
 call are the same as in the retail code.
 
 Fixed in the modern build: src/Game/ObjectDLL/TRON/TronGameServerShell.cpp
-also gives the spawner number.
+also gives the spawner number (MODERN.md GAME-19).
 
 ### The cheat manager reads one entry past its cheat table
 
@@ -1460,7 +1491,7 @@ but the function refuses only codes greater than 0x39. Thus a code of
 CHEAT_MAX reads the "active" flag of the word after the table.
 
 Fixed in the modern build: src/Game/ClientShellDLL/ClientShellShared/
-CheatMgr.cpp refuses CHEAT_MAX too.
+CheatMgr.cpp refuses CHEAT_MAX too (MODERN.md GAME-20).
 
 ### The light cycle power-up lock test reads past the name table
 
@@ -1471,7 +1502,7 @@ the index 11 reads the pointer after the table. The game calls the function
 only with the indexes 0 to 8, so this does not show in the game.
 
 Fixed in the modern build: the index must be less than the number of
-power-up types.
+power-up types (MODERN.md GAME-21).
 
 ### Loading a game without a current weapon reads past the weapon list
 
@@ -1483,7 +1514,8 @@ Thus a save without a current weapon reads entry 255 of the weapon list,
 which is past its end. The value is then discarded, so the game does not
 use it, but the read can fault.
 
-Fixed in the modern build: the pointer is read only for a valid index.
+Fixed in the modern build: the pointer is read only for a valid index
+(MODERN.md GAME-22).
 
 ### The cluster disc uses its class data when it has no ammo data
 
@@ -1495,7 +1527,8 @@ initial explosion suppress time from it (0x10035781). This causes an access
 violation.
 
 Fixed in the modern build: the function stops after the base class setup
-when it has no class data.
+when it has no class data (MODERN.md GAME-23).
+
 ### One energy claw debug message uses a misspelt console variable
 
 Object.lto 0x10192390 (CAIGoalSpecialDamage::IsEnergyClawAttackerAiming, our
@@ -1507,6 +1540,7 @@ names are case-sensitive, thus this one message does not show with the
 other messages. It has no effect on the game.
 
 Not fixed yet: the modern build can use the correct name.
+
 ### The tracked node manager reports the wrong flag as discomfort
 
 CShell.dll 0x101c8f80 and Object.lto 0x10270b10
@@ -1519,7 +1553,8 @@ same byte). Thus a caller gets a value that does not change with the
 tracking.
 
 Fixed in the modern build: src/Game/Shared/TrackedNodeMgr.cpp returns
-m_bInDiscomfort.
+m_bInDiscomfort (MODERN.md GAME-24).
+
 ### The binary bit ignores the permission set messages
 
 Object.lto 0x10014080 (BinaryBit::ObjectMessageFn, ObjectDLL/TRON/
@@ -1531,7 +1566,8 @@ constant. Thus the comparisons are always false, and "ADDPSET" and
 "REMOVEPSET" do nothing to a binary bit. The class registers the two
 messages with the command manager, so the level designer can send them.
 
-Fixed in the modern build: the function compares the text (_stricmp).
+Fixed in the modern build: the function compares the text (_stricmp)
+(MODERN.md GAME-25).
 
 ### The "SetEnergy" trigger limits the energy to the maximum hit points
 
@@ -1544,7 +1580,7 @@ the maximum energy when the maximum hit points are more than the maximum
 energy, and less than the value that the command gives when they are less.
 
 Fixed in the modern build: the command limits the energy to the maximum
-energy.
+energy (MODERN.md GAME-26).
 
 ### The "DestroyProjectile" command can read past its object array
 
@@ -1555,8 +1591,8 @@ number of objects found, not the number of objects in the array. When the
 level has more than 50 such projectiles, the loop reads past the end of the
 array.
 
-Fixed in the modern build: the loop uses the number of objects in the
-array.
+Fixed in the modern build: the loop uses the number of objects in the array
+(MODERN.md GAME-27).
 
 ### An attached energy claw does not move with its target
 
@@ -1565,7 +1601,8 @@ TRON/ProjectileEnergyClaw.cpp). The function gets the position of the
 target and then sets the position of the target, not of the claw, to that
 position. Thus the claw stays where it hit and the call has no effect.
 
-Fixed in the modern build: the claw moves to the position of its target.
+Fixed in the modern build: the claw moves to the position of its target
+(MODERN.md GAME-28).
 
 ### The AI debug information has operator precedence errors
 
@@ -1584,7 +1621,7 @@ character, because the function gives the multi-character constant ';,'
 to strchr.
 
 Fixed in the modern build: the lines put the selected text, the function
-compares the texts and cuts the holster text at ";".
+compares the texts and cuts the holster text at ";" (MODERN.md GAME-29).
 
 ### An unknown download type gives unset values to the progress callback
 
@@ -1607,7 +1644,8 @@ coordinates on polygon 5, which it hides at once. Polygon 2 keeps the
 texture coordinates of the last partial fill. NOLF2 sets them on polygon 2.
 A bar that goes from part full to full can show a right cap cut short.
 
-Fixed in the modern build (HUDBar.cpp, `TRON20SRC_MODERN`).
+Fixed in the modern build (HUDBar.cpp, `TRON20SRC_MODERN`) (MODERN.md
+GAME-30).
 
 ### A human AI reports its SETONLYDAMAGEBYPLAYER command as not handled
 
@@ -1619,7 +1657,7 @@ did not handle the command, although the AI changed its state. All the
 other commands that the function handles return true.
 
 Fixed in the modern build (AIHuman.cpp, `TRON20SRC_MODERN`: the branch
-returns true).
+returns true) (MODERN.md GAME-31).
 
 ### A help file and a custom file download at the rate of each other
 
@@ -1632,7 +1670,7 @@ a custom file (type 6) to the code that reads +0x119c (0x10051806). Thus
 each of the two downloads uses the rate of the other.
 
 Fixed in the modern build (RatingMgr.cpp, `TRON20SRC_MODERN`: each type
-uses its own rate).
+uses its own rate) (MODERN.md GAME-32).
 
 ### The engine writes an incorrect build number when it starts
 
@@ -1682,6 +1720,7 @@ CHUDVersion item). The memory of the item is not released when the game
 stops. The player does not see an effect.
 
 Not fixed yet: the modern build must delete m_pVersion with the other items.
+
 ### The energy message of a core dump falls through into the HUD text message
 
 CShell.dll 0x1009dec8 (CTronInterfaceMgr::OnMessage, TRON/

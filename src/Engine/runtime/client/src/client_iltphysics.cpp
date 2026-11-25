@@ -128,7 +128,7 @@ LTRESULT CLTPhysicsClient::SetObjectDims(HOBJECT hObj, LTVector *pNewDims, uint3
 
 
 #ifdef TRON20SRC_MODERN
-	// MODERN.md M-E11: the check names its own function
+	// MODERN.md EN-14: the check names its own function
     CHECK_PARAMS(hObj && pNewDims, CLTPhysicsClient::SetObjectDims);
 #else
     CHECK_PARAMS(hObj && pNewDims, SPhysicsLT::SetObjectDims);
