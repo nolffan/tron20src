@@ -1621,6 +1621,19 @@ other commands that the function handles return true.
 Fixed in the modern build (AIHuman.cpp, `TRON20SRC_MODERN`: the branch
 returns true).
 
+### A help file and a custom file download at the rate of each other
+
+CShell.dll 0x10051710 (CRatingMgr::GetTransferRate, ClientShellDLL/TRON/
+RatingMgr.cpp). CRatingMgr::Init (0x100512d0) reads the attribute
+"HelpFileTransfer" into +0x119c and "CustomTransfer" into +0x11a8
+(0x1005158f, 0x100515ca). The jump table of GetTransferRate (0x100518a8)
+sends a help file (type 5) to the code that reads +0x11a8 (0x10051822) and
+a custom file (type 6) to the code that reads +0x119c (0x10051806). Thus
+each of the two downloads uses the rate of the other.
+
+Fixed in the modern build (RatingMgr.cpp, `TRON20SRC_MODERN`: each type
+uses its own rate).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

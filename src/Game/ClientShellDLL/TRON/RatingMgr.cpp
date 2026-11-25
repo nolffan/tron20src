@@ -150,8 +150,18 @@ LTFLOAT CRatingMgr::GetTransferRate(RatingTransferType eType, int nBuild)
 		case kTransfer_Primitive:	vRate = m_vPrimitiveTransfer; break;
 		case kTransfer_Pset:		vRate = m_vPsetTransfer; break;
 		case kTransfer_Email:		vRate = m_vEmailTransfer; break;
+#ifdef TRON20SRC_MODERN
 		case kTransfer_HelpFile:	vRate = m_vHelpFileTransfer; break;
 		case kTransfer_Custom:		vRate = m_vCustomTransfer; break;
+#else
+		// RETAIL: retail's jump table (0x100518a8) gives a help file the
+		// custom rate and a custom file the help file's (0x10051822,
+		// 0x10051806): Init reads "HelpFileTransfer" into +0x119c and
+		// "CustomTransfer" into +0x11a8 (0x1005158f, 0x100515ca). A retail
+		// bug (RETAIL_BUGS.md)
+		case kTransfer_Custom:		vRate = m_vHelpFileTransfer; break;
+		case kTransfer_HelpFile:	vRate = m_vCustomTransfer; break;
+#endif
 	}
 	return InterpolateRating<LTFLOAT>(RATING_TRANSFER, vRate.x, vRate.y, vRate.z);
 }

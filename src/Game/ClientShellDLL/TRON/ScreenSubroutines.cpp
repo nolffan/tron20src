@@ -1241,11 +1241,15 @@ void CScreenSubroutines::PickupSubroutine(PlayerSubroutine * pSub)
 	switch (pSub->pTronSubroutine->eFunction)
 	{
 	case FUNCTION_BADBLOCK:
-	case FUNCTION_BASECODE:
 		m_SystemMemoryCtrl.ShowIcon(pSub->nTempSlot, false);
 		m_SystemMemoryCtrl.SetNumHighlightSegments(1);
 		m_pCursorSub = pSub;
 		SetCursorMode(CursorSubroutineDrop);
+		return;
+
+	// RETAIL: base code does not leave its slot: retail's jump table
+	// (0x100804f4) sends it to the return (0x100804ec)
+	case FUNCTION_BASECODE:
 		return;
 
 	case FUNCTION_COMBAT:
