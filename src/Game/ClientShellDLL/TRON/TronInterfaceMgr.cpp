@@ -522,11 +522,16 @@ void CTronInterfaceMgr::TronUnknownVirtual7C(CPlayerScore* pScore)
 					m_nTronUnknown28B18 = 0xd89;
 					break;
 
-				case 2:
+				// RETAIL: state 3 is "Waiting for next point." and state 2
+				// (a player in no match yet, the state a client starts in)
+				// the team's string: retail's jump table (0x1009d918) sends
+				// case 2 to 0x1009d8ae and case 3 to 0x1009d8a2; the bodies
+				// stay in this order
+				case 3:
 					m_nTronUnknown28B18 = 0xd8a;
 					break;
 
-				case 3:
+				case 2:
 					if (nTeam == 0x10)
 					{
 						m_nTronUnknown28B18 = 0xd8b;
