@@ -487,6 +487,54 @@ The legacy release build runs under Wine (2026-11-25): every binary in
   Retail's `CHUDArmor::UpdateLayout` (0x100221b0) puts the item's y there;
   ours put the X ratio (1.0), so each icon started a new column. This
   was in single player too.
+- **The world sweep** (`make sweep`, `build/sweep.sh`; not part of
+  `make tests`, about 40 minutes with `SWEEP_JOBS=5`): all 55
+  single-player worlds of the retail game (`build/sweep-worlds.txt`): the
+  38 worlds of the campaign (`ATTRIBUTES\MISSIONS.txt`) and the 17
+  light-cycle arenas (`ATTRIBUTES\CIRCUITS.txt`). Each world plays for
+  about 60 s in its own container, with a script for its kind: `sp` (a
+  level), `sub` (the first level of a mission: a cinematic, then the
+  subroutine screen, which Escape closes), `cine`, `lc` and `splc` (a
+  light-cycle level of the campaign). The summary is
+  `out/play/sweep-summary.txt`; the last shots are in
+  `out/play/sweep-sheet.png`. `SWEEP_WORLDS=<text>` plays only the worlds
+  whose path has the text; `TEST_GAME=out/tron20-control` plays the
+  control. On 2026-11-25 all 55 worlds end ALIVE and draw correctly. One
+  run of M09-01 ended NO HUD: the HUD came up only after the 120 s of
+  `skipcine` (the opening is long); the shots are correct, and the next
+  run ended ALIVE. In
+  M05-01, M08-01, M09-02 and M10-01 the AI kills the idle player; the
+  control does the same (M04-03 and M05-01 there). An idle light cycle
+  hits a wall, and the game asks "Retry light cycle?": that is correct.
+- **Gameplay, against the control** (scripts in `out/work/tc/`, not
+  kept): combat (M10-01: the AI locks on, moves, fires and kills the
+  player; `mpgod` stops it; the disc and, after `mpguns`, the rod and the
+  ball primitive fire), cheats through the chat (`mpgod`, `mpguns`,
+  `mppos`, `mpmaphole`), the weapon chooser, the level transition
+  (`mpmaphole` in M01-02 loads M02-01), death (M01-01: a walk off the
+  platform; "END OF LINE.", the load screen) and F9 reload, the
+  subroutine screen (F1, with the performance ratings), and the options
+  (display, sound, controls, game, performance): a changed setting stays
+  when the screen opens again, and the game writes it to
+  `Profiles/Player.txt` next to the executable. Not checked by a script:
+  a pickup by walking to it, a subroutine put into a slot, and an enemy
+  that dies (the scripts cannot aim; the control kills enemies in the
+  same script, ours shows hits only).
+- **Fixed** (found by the sweep and the gameplay scripts): the weapon
+  chooser drew the selected weapon as a white square and the others too
+  bright: `CHUDWpnChooser::Init` (0x10022c50) loaded
+  `WEAPON::GetDisabledIcon`, which has no texture, where retail loads
+  `GetNormalIcon`, and `GetNormalIcon` where retail loads
+  `GetUnselectedIcon`. The death screen did not show "END OF LINE.":
+  `CScreenFailure::Build` (0x1005ac20) made its polystring centred, and
+  `OnFocus` centres it again; retail makes it `CUI_HALIGN_LEFT`. `Build`
+  is now identical: CShell 7,601 identical functions before, 7,602
+  after. After each single-player load, the postload screen now asks for
+  a key, as retail does (`CScreenPostload::OnFocus`, 0x1016b4e0).
+- **Open:** in M01-02, the control shows a small blue machine that moves
+  on the floor near the start, in the first seconds; ours does not show
+  it. Not found yet: the world has 34 `CAIHuman` and 36 `Spawner`
+  objects.
 
 ### 9. modern
 

@@ -93,8 +93,8 @@ private:
 	LT_POLYFT4	m_ClassPoly[kMaxClasses];						// +0x208c
 	LT_POLYFT4	m_IconPoly[kMaxClasses][kMaxItemsPerClass];	// +0x2284
 
-	HTEXTURE	m_hDisabledIcon[kMaxClasses][kMaxItemsPerClass];	// +0x4204 (the selected weapon's)
-	HTEXTURE	m_hNormalIcon[kMaxClasses][kMaxItemsPerClass];		// +0x4384
+	HTEXTURE	m_hNormalIcon[kMaxClasses][kMaxItemsPerClass];	// +0x4204 (the selected weapon's)
+	HTEXTURE	m_hUnselectedIcon[kMaxClasses][kMaxItemsPerClass];	// +0x4384 (the others')
 
 	float		m_fLastTime;			// +0x4504
 	int			m_eFadeState;			// +0x4508 0 in, 1 shown, 2 out, 3 hidden
