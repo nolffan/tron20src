@@ -22,6 +22,12 @@ class CHUDSingleString : public CHUDItem
 public:
 	CHUDSingleString();
 
+	// RETAIL: slot 1 is 0x101613a0, the body CHUDProcedurals::Init has
+	// (identical code folded): the layout, and so the polystring, is made
+	// again each time CTronHUDMgr::AddItems inits the item. Without it, a
+	// world entered again after OnExitWorld's Term (a load) updates the item
+	// with no polystring.
+	LTBOOL		Init() {UpdateLayout(); return LTTRUE;}
 	void		Term();
 
 	// RETAIL: every game type (0x1003ade0)
