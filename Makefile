@@ -28,7 +28,10 @@ JOBS ?=
 TEST_GAME ?= out/tron20-legacy-release
 TEST_SCRIPT ?=
 TEST_WORLD ?= -
-TEST_NAME = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
+TEST_NAME ?= $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
+# console variables appended to the run's autoexec.cfg (playtest.sh's
+# PLAYTEST_CFG), for example build/fps-60.cfg (docs/MODERN.md EN-45)
+TEST_CFG ?=
 # make tests' run names: test-<script> for the legacy release, and
 # test-<game directory>-<script> for any other game directory
 TESTS_PREFIX = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test-,test-$(notdir $(TEST_GAME:%/=%))-)
@@ -118,7 +121,7 @@ debug modern modern-debug: check-toolchain retail
 # out/play/<name>/shot.png
 test: image
 	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
-	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
+	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) $(if $(TEST_CFG),PLAYTEST_CFG=$(TEST_CFG)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
 
 # The control for the runtime tests (build/control.sh): retail's game DLLs
 # with our engine, in out/tron20-control/ (make test TEST_GAME=out/tron20-control).
@@ -144,7 +147,7 @@ MPTEST_MODE ?= dedicated
 MPTEST_TYPE ?= arena
 mptest: image
 	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
-	$(DOCKER_RUN) env MPTEST_MODE=$(MPTEST_MODE) MPTEST_TYPE=$(MPTEST_TYPE) $(if $(MPTEST_NAME),MPTEST_NAME=$(MPTEST_NAME)) $(if $(MPTEST_SRVEXE),MPTEST_SRVEXE=$(MPTEST_SRVEXE)) $(if $(MPTEST_CLIENTS),MPTEST_CLIENTS=$(MPTEST_CLIENTS)) $(if $(MPTEST_KEYS1),MPTEST_KEYS1="$(MPTEST_KEYS1)") $(if $(MPTEST_KEYS2),MPTEST_KEYS2="$(MPTEST_KEYS2)") $(if $(MPTEST_LANONLY),MPTEST_LANONLY=$(MPTEST_LANONLY)) $(if $(MPTEST_WINEDEBUG),MPTEST_WINEDEBUG=$(MPTEST_WINEDEBUG)) \
+	$(DOCKER_RUN) env MPTEST_MODE=$(MPTEST_MODE) MPTEST_TYPE=$(MPTEST_TYPE) $(if $(MPTEST_NAME),MPTEST_NAME=$(MPTEST_NAME)) $(if $(MPTEST_SRVEXE),MPTEST_SRVEXE=$(MPTEST_SRVEXE)) $(if $(MPTEST_CLIENTS),MPTEST_CLIENTS=$(MPTEST_CLIENTS)) $(if $(MPTEST_KEYS1),MPTEST_KEYS1="$(MPTEST_KEYS1)") $(if $(MPTEST_KEYS2),MPTEST_KEYS2="$(MPTEST_KEYS2)") $(if $(MPTEST_LANONLY),MPTEST_LANONLY=$(MPTEST_LANONLY)) $(if $(MPTEST_CFG1),MPTEST_CFG1=$(MPTEST_CFG1)) $(if $(MPTEST_CFG2),MPTEST_CFG2=$(MPTEST_CFG2)) $(if $(MPTEST_WINEDEBUG),MPTEST_WINEDEBUG=$(MPTEST_WINEDEBUG)) \
 	  bash build/mptest.sh $(TEST_GAME)
 
 # The launcher test (build/launchertest.sh): Tron.exe with the registry of

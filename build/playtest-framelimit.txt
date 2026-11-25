@@ -1,0 +1,23 @@
+# playtest-framelimit.txt -- the frame rate limit of the Display screen
+# (docs/MODERN.md EN-44), for the modern build: Options, Display (the
+# limit shows 240, the default), two clicks on the limit (None, then 60),
+# back, and Display again: it shows 60. Shots at each step.
+# world: -
+window 240
+wait 15
+mclick 233 246
+wait 3
+mclick 113 174
+wait 3
+shot display
+mclick 190 230
+wait 1
+shot none
+mclick 190 230
+wait 1
+shot sixty
+key Escape
+wait 3
+mclick 113 174
+wait 3
+shot reopened
