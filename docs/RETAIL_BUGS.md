@@ -789,6 +789,23 @@ fails silently, should be the one reported).
 
 Not fixed yet: the driver has no modern build of its own yet.
 
+### A streamed MP3's last block gives the codec the stale end of the block before
+
+SndDrv.dll 0x100019a0 (WaveFile::ReadCompressed, src/Engine/snddrv/
+s_dx8.cpp). A streamed MP3 sound (WAVE_FORMAT_MPEGLAYER3) is read in blocks
+of the size that acmStreamSize gave for 8 KB of PCM, and each block goes to
+the codec with acmStreamConvert. CDx8SoundSys::OpenStream sets the
+header's cbSrcLength to that size once. ReadCompressed does not change it
+when the last read of the data chunk is shorter, so the codec gets the
+bytes of this read and, after them, the end of the block before. These
+stale bytes are MP3 frames of the sound itself, and the codec can decode
+them: the end of a streamed line can play a fragment of audio that came
+earlier. The convert should get only the bytes that were read
+(cbSrcLength = cb).
+
+Fixed in the modern build: src/Engine/snddrv/s_dx8.cpp (TRON20SRC_MODERN)
+(MODERN.md X-2).
+
 ### A player model without a stand animation gets standing dims as its crouch dims
 
 CShell.dll 0x100f8830 (CMoveMgr::CanStandUp, ClientShellShared/CMoveMgr.cpp).

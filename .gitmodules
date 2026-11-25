@@ -4,3 +4,7 @@
 [submodule "tools"]
 	path = ext/tools
 	url = git@github.com:nolffan/tools.git
+[submodule "ext/ffmpeg"]
+	path = ext/ffmpeg
+	url = git@github.com:FFmpeg/FFmpeg.git
+	shallow = true

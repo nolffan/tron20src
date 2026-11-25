@@ -69,9 +69,11 @@ movies. Only the three archives with the zeroed retail game DLLs (56 MB),
 the third-party runtime and our binaries are copies. The trees share one
 Wine prefix with `out/release-tree/` through hard links (about 0.6 GB,
 counted once). The debug builds put a `.pdb` and a `.map` next to each
-binary. `TRON20SRC_MIDDLEWARE=retail` (the default) puts the retail
-third-party DLLs into the game directory; `open` is for X-1 and X-2 and is
-refused until they exist.
+binary. `TRON20SRC_MIDDLEWARE=open` (the default of `make modern` and
+`make modern-debug`) puts our `binkw32.dll` (X-1) into the game directory
+in place of RAD's. `TRON20SRC_MIDDLEWARE=retail` (the default of `make
+debug`, and what the legacy build does) puts RAD's there. You can set
+either: `make modern TRON20SRC_MIDDLEWARE=retail`.
 
 The modern build boots: `make tests TEST_GAME=out/tron20-modern-release`
 (the menus, a level, saving and loading, a light-cycle race), and `make
@@ -95,6 +97,89 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
   `Tron.exe` is the launcher, for its Install button.
   (`src/Game/Launcher/Launcher.cpp`, `LauncherDlg.cpp`; tested with `make
   launchertest`.) "Installed" still comes from the registry (APPS-3).
+
+### Middleware
+
+* **X-1: our Bink player on FFmpeg in place of RAD's `binkw32.dll`.**
+  `src/modern/binkw32/binkw32.c` plays the movies with FFmpeg's Bink
+  demuxer and its Bink video and audio decoders, linked statically. It
+  exports the twelve entry points that `Lithtech.exe` gets by name
+  (`BinkVideoMgr::Init`, `binkvideomgrimpl.cpp`: `_BinkOpen@8` to
+  `_BinkDX8SurfaceType@4`, `binkw32.def`). No other retail binary imports
+  or loads Bink. Tron 2.0's engine always asks for `BINKSURFACE32` (its
+  format table, Lithtech.exe 0x5ac214) and does not call
+  `BinkDX8SurfaceType`; the player writes an opaque alpha byte, because the
+  texture can be `A8R8G8B8`. The sound of a movie (its first audio track)
+  is decoded when the movie opens and plays through `waveOut` from the
+  first frame; the frames are timed from the same moment. The game has
+  three movies, all Bink 1 (`BIKi`), 640x480, each with sound:
+  `Movies/disnlogo.bik` (4 s), `lithlogo.bik` (18 s) and `nvidia.bik`
+  (5 s), the logos at start (`CInterfaceMgr`'s movie state). No archive
+  holds another `.bik`: the cinematics of the missions are scenes in the
+  engine, not movies. `build/ext.sh` builds FFmpeg (only the Bink parts,
+  no GPL or non-free part) and the DLL with Zig's C compiler into
+  `out/ext/`. `build/all.sh` step 2 installs it when
+  `TRON20SRC_MIDDLEWARE=open` (`ext/tools/retailextract.py thirdparty
+  ... open` and `openruntime`; `MANIFEST.txt` origin `EXT`); build/
+  variant.sh sets `open` for the modern builds. The legacy build keeps
+  RAD's DLL. The FFmpeg submodule, `ext/ffmpeg`, is upstream FFmpeg at
+  the commit of nolf2src's and cjacksrc's (n8.1.3); the licence notes are
+  in `docs/LICENSE_NOTES.md`. Tested under Wine in the build container
+  (`build/playtest-movies.txt` with `PLAYTEST_ARGS="+DisableMovies 0"` and
+  `PLAYTEST_AUDIO`, `build/playtest.sh`): the three movies play in order,
+  with their pictures moving and with correct colours (screenshots every 2
+  to 4 s), then the main menu comes. The recording has three 44.1 kHz
+  stereo streams from `waveOut`, one for each movie, with sound for about
+  4, 17 and 4 s. Step 5 of the build lists `binkw32.dll` as `EXT
+  src/modern/binkw32 + ext/ffmpeg: our Bink player (build/ext.sh)`.
+  Our DLL imports the Universal C runtime (`api-ms-win-crt-*`), which
+  Windows 10 and later have (an update gives it to Windows 7 and 8), and
+  Wine has.
+* **X-2: MP3 decoding in `SndDrv.dll`.** 3,404 of the 3,843 WAV files in
+  `Sound.rez` are MP3 (format 0x55): `VOICE/` 2,084, `MUSIC/` 1,317,
+  `SND/` 3 (`PLAYER/ENDLESS_FALL`, `EVENT/PISTONEXPLDE`,
+  `EVENT/10_4MIXST`). The other 439 and the 427 WAV files of `Game.rez`
+  are PCM (one of `Game.rez`'s is 32-bit float); no file is IMA ADPCM. Retail decodes the MP3 files through
+  Windows' Audio Compression Manager (ACM) with the MP3 codec of the
+  system: `L3CODECA.ACM` (Fraunhofer's on Windows, Wine's own under Wine).
+  Without one, `CDx8SoundSys::Startup` fails and the game has no sound at
+  all. The modern `SndDrv.dll` has its own ACM codec on minimp3 (CC0):
+  `src/tron20src/mp3/mp3acm.cpp`, a driver procedure for MP3 to 16-bit
+  PCM, which `SelectMP3Codec` adds to ACM as a local driver of the process
+  (`Mp3Acm_Register`: `acmDriverAdd` with `ACM_DRIVERADDF_FUNCTION |
+  ACM_DRIVERADDF_LOCAL`, as retail adds `L3CODECA.ACM`) and always selects.
+  All of SndDrv's ACM calls stay as they are. A local driver comes before
+  the drivers of the system, so a caller in the process that gives ACM no
+  driver (DirectMusic, for the music waves) also gets it. cjacksrc's EN-50
+  puts minimp3 in its driver in place of the ACM calls; here the codec is
+  under ACM, so that DirectMusic can use it too. The codec takes all of
+  the input of each convert, because `WaveFile::ReadCompressed` does not
+  read `cbSrcLengthUsed`, and keeps what it cannot give yet. Three more
+  changes in `s_dx8.cpp`, all modern only: `ReadCompressed` gives the codec
+  only the bytes that it read (a retail bug, `RETAIL_BUGS.md`: the last
+  block got the stale end of the block before), the first convert after
+  `WaveFile::Cue` has `ACM_STREAMCONVERTF_START` (the codec drops what it
+  holds; new member `WaveFile::m_bCodecRestart`), and the last block of the
+  data has `ACM_STREAMCONVERTF_END` (the codec decodes the last frames).
+  `mp3acm.cpp` is included at the end of `s_dx8.cpp`, so `snddrv.dsp`
+  does not change. Tested: (1) `make mp3acmtest` (`build/mp3acmtest.sh`,
+  `src/tron20src/mp3/mp3acmtest.cpp`, under Wine with Wine's MP3 codecs
+  switched off): every one of the 3,404 MP3 files decodes whole (one
+  convert, with no driver handle, so ACM finds the codec itself) and
+  streamed (SndDrv's block sizes, through the driver, after a stop at half
+  way and a restart), and the two give the same bytes; 19,499 s of PCM,
+  each file within 0.03 s of the length that its data gives, except
+  `MUSIC/CINEMATICS/CREDITS2.wav` (318.7 s for 318.0 s). (2) In the game
+  (`build/playtest-sound.txt`, M01-01: a walk to the first bit and the
+  action key) in a copy of the Wine prefix without an MP3 codec
+  (`l3codeca.acm` deleted from `system32`, its `system.ini` line and its
+  ACM cache key removed, and `l3codeca.acm` and `winemp3.acm` disabled in
+  `DllOverrides`): the bit speaks its line, with its subtitle. The log
+  (`+debugstr`) has "SndDrv: MP3 codec: minimp3, local ACM driver" at
+  start and "SndDrv: MP3 codec: stream ..., 44100 Hz, 1 channel(s)" for the
+  line; the recording (`PLAYTEST_AUDIO`) has sound. The legacy build in the
+  same prefix plays nothing (its recording is silent: no MP3 codec, so no
+  sound driver). The music could not be heard under Wine: see X-3.
 
 ### Retail-bug fixes, game DLLs
 
@@ -335,25 +420,46 @@ Engine paths are under `src/Engine/runtime/`, game paths under
 
 ### Middleware
 
-What Tron 2.0 loads that is proprietary (`LoadLibrary` and the imports of
-every retail binary):
+What Tron 2.0 loads that is not ours (`LoadLibrary`, the imports and the
+DLL names in every retail binary):
 
 | Retail | Loaded by | Modern |
 |---|---|---|
-| `binkw32.dll` (RAD Game Tools), the movies | `kernel/src/sys/win/binkvideomgrimpl.cpp` (`LoadLibrary("Binkw32.dll")`, by name) | X-1 |
-| `L3CODECA.ACM`, the Fraunhofer MP3 codec of Windows' Audio Compression Manager (under Wine, `winemp3.acm`): 2,133 of the 2,572 WAV files in `Sound.rez` are MP3 (format 0x55) | `src/Engine/snddrv/s_dx8.cpp` | X-2 |
-| `MSS32.DLL`, Miles | only `binkw32.dll` names it (its optional sound); nothing of the game loads it | goes with X-1 |
-| `IMAADP32.ACM` (IMA ADPCM, part of Windows), `MFC42.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, D3DX9 (linked statically) | | kept: Microsoft runtime |
+| `binkw32.dll` (RAD Game Tools), the movies | `kernel/src/sys/win/binkvideomgrimpl.cpp` (`LoadLibrary("Binkw32.dll")`) | ours, X-1 (done) |
+| `MSS32.DLL`, Miles (RAD Game Tools) | only RAD's `binkw32.dll` names it (with `DSOUND.DLL`, for its sound outputs); no binary of the game imports or loads it, and the game does not ship it | gone with X-1: our player plays through `waveOut` |
+| `L3CODECA.ACM`, the MP3 codec of the system | `src/Engine/snddrv/s_dx8.cpp` (`SelectHardCodedMP3Codec`, then the ACM drivers of the system) | ours, in `SndDrv.dll`, X-2 (done) |
+| `IMAADP32.ACM` (IMA ADPCM, a part of Windows and of Wine) | `s_dx8.cpp`; `Startup` fails without an ADPCM driver, though no file of the game is IMA ADPCM | kept: a part of the system |
+| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | X-3 (open, below) |
+| `cdaudio.dll` (Monolith's CD music driver) | the engine (`CClientMgr::AppInitMusic`), only if the game asks; Tron 2.0 does not ship it | nothing to do |
+| `MFC42.DLL`, `MFC42U.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, `MSVCIRT.dll`; D3DX9 (linked statically) | | kept: Microsoft's runtime |
+| SecuROM's DLL names in the retail `Lithtech.exe` (`CmdLineExt*.dll`, `SIntf*.dll`, `PID*.DLL`, ...) | the copy protection | not in our engine |
 | the GameSpy SDK | compiled from our source (`src/Game/Libs/GameSpy`) | GS- items |
 
-* **X-1: our Bink player on FFmpeg in place of `binkw32.dll`**, as
-  nolf2src's and cjacksrc's X-1. Files: a new `src/modern/binkw32/` (or
-  cjacksrc's), an FFmpeg submodule in `ext/`, a `build/ext.sh`,
-  `build/all.sh` step 2 and `build/variant.sh` (`TRON20SRC_MIDDLEWARE=
-  open`), `ext/tools/retailextract.py` (the third-party list).
-* **X-2: MP3 decoding in `SndDrv.dll`** (minimp3, as cjacksrc's EN-50),
-  so that the speech plays without a codec installed. Files:
-  `src/Engine/snddrv/s_dx8.cpp`, `snddrv.dsp`.
+* **X-3: the music under Wine and Proton.** The music is DirectMusic:
+  segments (`MUSIC/*/*.sgt`) with MP3 waves. Under Wine 9.0 the legacy
+  build's main menu is silent (a recording with `PLAYTEST_AUDIO`), as
+  nolfsrc and avp2src found for their games: Wine's DirectMusic loads the
+  segments but plays nothing (and Wine's `dswave.dll` has no ACM code for
+  compressed waves). nolfsrc's M-P4-12 and avp2src's M-X4 put Microsoft's
+  DirectMusic in the game directory (`ms_<name>.dll` from
+  `ext/toolchains/directmusic-5.3.1.904/` and a manifest for registration-
+  free COM: `DIRECTMUSIC_MANIFESTS` in `build/retail.py`). That was tried
+  here: the DLLs load, but `CLTDirectMusicMgr::Init` fails. Tron 2.0's
+  engine (NOLF2's generation) gives DirectMusic its own DirectSound object
+  in `IDirectMusicPerformance8::InitAudio` (`InitPerformance`), and
+  Microsoft's DirectMusic then asks that object for an interface that
+  Wine's DirectSound does not have (IID
+  `{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`, `IDirectSoundConnect`, the sink
+  of DirectX 8 audio paths; Wine's trace: "unknown IID"). The NOLF and
+  AvP2 engines use the older `Init` and a port, which work. The plan: (a)
+  in the modern engine, start DirectMusic in the older way when the
+  audio-path start fails (`ltdirectmusic_impl.cpp`, `InitPerformance`;
+  the default audio path and the reverb would change), then (b) install
+  Microsoft's DirectMusic as nolfsrc does. With it, the music waves come
+  to X-2's codec through ACM (no driver handle), which `make mp3acmtest`
+  checks for all 1,317 music files. Until then the music is silent under
+  Wine, in the legacy build too; on Windows the system's DirectMusic plays
+  it, with X-2's codec.
 
 ### Online
 
@@ -393,3 +499,4 @@ every retail binary):
 | `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`, `OptionsDlg.cpp` | Display (CL-30, CL-31, CL-35), Apps (APPS-3: where the options are stored), Input (CL-20: Disable Joysticks) | Apps changes only the storage calls |
 | `binkvideomgrimpl.cpp`, `InterfaceMgr.cpp` (movies) | Display (CL-32), Middleware (X-1) | Middleware replaces the DLL behind the same calls; Display changes the rectangle |
 | `build/all.sh`, `build/variant.sh` | Middleware (X-1, X-2) | Middleware only |
+| `build/playtest.sh`, `Makefile`, `README.md` | Middleware (X-1, X-2: `PLAYTEST_AUDIO`, `TRON20SRC_MIDDLEWARE`, `make mp3acmtest`) and others | each adds its own lines |

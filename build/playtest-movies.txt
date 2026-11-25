@@ -1,0 +1,33 @@
+# playtest-movies.txt -- the three logo movies at start (Movies/disnlogo.bik,
+# lithlogo.bik, nvidia.bik: CInterfaceMgr's movie state), then the main
+# menu. Run it with the movies on: PLAYTEST_ARGS="+DisableMovies 0"
+# (ext/tools/playtest.sh turns them off). The splash screen comes first.
+# Shots during each movie (MODERN.md X-1).
+# world: -
+window 240
+wait 2
+shot m02
+wait 2
+shot m04
+wait 2
+shot m06
+wait 3
+shot m09
+wait 3
+shot m12
+wait 3
+shot m15
+wait 3
+shot m18
+wait 3
+shot m21
+wait 3
+shot m24
+wait 3
+shot m27
+wait 3
+shot m30
+wait 4
+shot m34
+wait 6
+shot menu

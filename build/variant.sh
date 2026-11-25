@@ -25,11 +25,13 @@
 #            launcher twice: TronLauncher.exe and Tron.exe (MODERN.md APPS-1).
 #   modern-debug   both.
 #
-# The middleware: TRON20SRC_MIDDLEWARE=retail (the default, for every
-# variant now) puts the retail third-party DLLs (Bink, the Microsoft
-# runtime) in the game directory, as the release build does. `open` is
-# kept for the open-source replacements (MODERN.md X-1, Phase 1): build/
-# all.sh refuses it until they are there.
+# The middleware: TRON20SRC_MIDDLEWARE=open (the default of modern and
+# modern-debug) puts our Bink player on FFmpeg in the game directory in
+# place of RAD's binkw32.dll (build/ext.sh, built once into the checkout's
+# out/ext/ for every variant; MODERN.md X-1), and the Microsoft runtime
+# from the retail game. `retail` (the default of debug, and what the
+# release build does) puts RAD's Bink there too. Either can be asked for:
+# `make modern TRON20SRC_MIDDLEWARE=retail`.
 #
 # The flags reach every compile and link through build/env.sh's
 # TRON20SRC_CFLAGS / TRON20SRC_LDFLAGS / TRON20SRC_RCFLAGS, which are empty
@@ -109,7 +111,11 @@ export TRON20SRC_CFLAGS="$CFLAGS"
 export TRON20SRC_LDFLAGS="$LDFLAGS"
 export TRON20SRC_RCFLAGS="$RCFLAGS"
 export TRON20SRC_GAME_OUT="$REPO/out/$DIR"
-export TRON20SRC_MIDDLEWARE="${TRON20SRC_MIDDLEWARE:-retail}"
+case "$VARIANT" in
+    modern*) export TRON20SRC_MIDDLEWARE="${TRON20SRC_MIDDLEWARE:-open}" ;;
+    *)       export TRON20SRC_MIDDLEWARE="${TRON20SRC_MIDDLEWARE:-retail}" ;;
+esac
+export TRON20SRC_EXT_OUT="$REPO/out/ext"
 bash "$TREE/build/all.sh"
 
 case "$VARIANT" in *debug)
