@@ -26,18 +26,18 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `Lithtech.exe` | the engine | 6,527 / 7,331 | 1,318,083 / 1,375,772 bytes | `███████████████████░` 95.8% | 10 | 35 |
-| `server.dll` | the engine's server | 2,938 / 3,540 | 311,467 / 319,661 bytes | `███████████████████░` 97.4% | 3 | 2 |
+| `Lithtech.exe` | the engine | 6,530 / 7,331 | 1,318,511 / 1,375,772 bytes | `███████████████████░` 95.8% | 10 | 33 |
+| `server.dll` | the engine's server | 2,941 / 3,540 | 311,650 / 319,661 bytes | `███████████████████░` 97.4% | 0 | 2 |
 | `SndDrv.dll` | the sound driver | 232 / 266 | 38,444 / 38,926 bytes | `███████████████████░` 98.7% | 0 | 0 |
 | `Tron.exe` | the launcher | 311 / 348 | 44,730 / 45,159 bytes | `███████████████████░` 99.0% | 0 | 0 |
-| `TRONSrv.exe` | the dedicated server | 484 / 564 | 78,078 / 82,500 bytes | `██████████████████░░` 94.6% | 0 | 1 |
-| `CShell.dll` | the game: client | 7,649 / 9,238 | 1,486,934 / 1,825,647 bytes | `████████████████░░░░` 81.4% | 7 | 43 |
-| `Object.lto` | the game: server objects | 13,252 / 15,120 | 2,112,666 / 2,457,725 bytes | `█████████████████░░░` 85.9% | 34 | 13 |
-| `ClientFx.fxd` | the game: client effects | 428 / 550 | 114,840 / 135,150 bytes | `████████████████░░░░` 84.9% | 2 | 0 |
+| `TRONSrv.exe` | the dedicated server | 486 / 566 | 78,082 / 82,504 bytes | `██████████████████░░` 94.6% | 0 | 0 |
+| `CShell.dll` | the game: client | 7,657 / 9,237 | 1,492,510 / 1,825,647 bytes | `████████████████░░░░` 81.7% | 3 | 18 |
+| `Object.lto` | the game: server objects | 13,286 / 15,119 | 2,115,992 / 2,457,725 bytes | `█████████████████░░░` 86.0% | 16 | 9 |
+| `ClientFx.fxd` | the game: client effects | 429 / 550 | 114,907 / 135,150 bytes | `█████████████████░░░` 85.0% | 1 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 463 / 463 resources | 561,414 / 561,414 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **31,821 / 36,957** | **5,505,242 / 6,280,540 bytes** | `█████████████████░░░` **87.6%** | **56** | **94** |
+| **All** | | **31,872 / 36,957** | **5,514,826 / 6,280,544 bytes** | `█████████████████░░░` **87.8%** | **30** | **62** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `identical.txt`, and `make
