@@ -525,6 +525,15 @@ static LRESULT WINAPI MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 return 0;
             }
 			break;
+#ifdef TRON20SRC_MODERN
+            // MODERN.md EN-24: the mouse's raw input, for the look axes
+            // (input.cpp); DefWindowProc then frees it
+            case 0x00FF: // WM_INPUT (VC6's headers predate it)
+			{
+                input_ModernRawInput(lParam);
+            }
+			break;
+#endif
         }
     }
 
