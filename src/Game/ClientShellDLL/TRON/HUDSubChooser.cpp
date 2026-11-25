@@ -167,7 +167,7 @@ void CHUDSubChooser::Arrange()
 	float fTop = (float)g_pProcedurals->m_nTop;
 	float fY = 0.0f;
 	int nMaxWidth = 0;
-	float fBottom = g_pArmor->m_fLayoutScale;
+	float fBottom = g_pArmor->m_fTop;
 
 	for (int i = 0; i < m_nNumSubs; i++)
 	{

@@ -53,7 +53,7 @@ public:
 private:
 	friend class CHUDSubChooser;	// RETAIL: its Arrange reads the item's place
 	float		m_fScale;				// +0x10
-	float		m_fLayoutScale;			// +0x14
+	float		m_fTop;					// +0x14: the name is ours
 	bool		m_bHavePiece[8];		// +0x18
 	bool		m_bCorrupt[8];			// +0x20
 	LT_POLYFT4	m_Base;					// +0x28

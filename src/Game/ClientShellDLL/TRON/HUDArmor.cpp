@@ -32,7 +32,7 @@ CHUDArmor::CHUDArmor()
 		m_hCorruptPieceTex[i] = LTNULL;
 	}
 	m_fScale = 0.0f;
-	m_fLayoutScale = 1000.0f;
+	m_fTop = 1000.0f;
 }
 
 
@@ -142,5 +142,7 @@ void CHUDArmor::UpdateLayout()
 		g_pDrawPrim->SetXYWH(&m_ArmorPiece[j], x, y, (float)nWidth, (float)nHeight);
 	}
 
-	m_fLayoutScale = xs;
+	// RETAIL: 0x10022336: the top of the item, which CHUDSubChooser::Arrange
+	// (0x1003bad0) uses as the bottom of its column
+	m_fTop = y;
 }
