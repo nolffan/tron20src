@@ -44,11 +44,15 @@ TRON20SRC_ISOS ?=
 NODISCS ?=
 ISO_MOUNT := $(if $(TRON20SRC_ISOS),-v $(abspath $(TRON20SRC_ISOS)):/isos:ro -e TRON20SRC_ISOS=/isos)
 
+# The login and host names of this machine: build/pubcheck.py fails a public
+# archive that holds one (they are only looked for, never written)
+SCAN_WORDS ?= $(shell id -un 2>/dev/null) $(shell hostname 2>/dev/null)
 DOCKER_OPTS = --rm --init \
 	-u $(shell id -u):$(shell id -g) -e HOME=/tmp/home $(if $(JOBS),-e TRON20SRC_JOBS=$(JOBS)) \
 	$(if $(TRON20SRC_ARCHIVES),-e TRON20SRC_ARCHIVES="$(TRON20SRC_ARCHIVES)") \
 	$(if $(filter 1,$(NODISCS)),-e TRON20SRC_NODISCS=1) \
 	$(if $(TRON20SRC_MIDDLEWARE),-e TRON20SRC_MIDDLEWARE=$(TRON20SRC_MIDDLEWARE)) \
+	-e TRON20SRC_SCAN_WORDS="$(SCAN_WORDS)" \
 	-v $(CURDIR):/repo -w /repo $(ISO_MOUNT)
 DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 
@@ -57,7 +61,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 # ext/toolchains/ yet (docs/PLAN.md, package 2).
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
-.PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
+.PHONY: all game compile debug modern modern-debug package retail-ways image retail check-tools check-toolchain \
 	test tests mptest launchertest portabletest mp3acmtest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
@@ -69,6 +73,12 @@ help:
 	@echo "make modern-debug  both, in out/tron20-modern-debug/"
 	@echo "                (build/variant.sh: each is built in out/build-<variant>/ and is never"
 	@echo "                scored; the release build and its outputs are not touched)"
+	@echo "make package    the archives of a game directory again (build/package.sh;"
+	@echo "                PACKAGE_GAME=<dir>, default out/tron20-legacy-release): out/<name>-"
+	@echo "                private.tar.gz and -public.tar.gz, with install scripts (every build"
+	@echo "                does this last)"
+	@echo "make retail-ways  write build/retail-ways.txt and build/retail-ranges.txt again"
+	@echo "                (where the install scripts find each file in the discs and the update)"
 	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
 	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
 	@echo "                TEST_GAME=<dir>; results in out/play/test*/)"
@@ -120,6 +130,20 @@ game: check-toolchain retail
 # variant.sh, MODERN.md X-1)
 debug modern modern-debug: check-toolchain retail
 	$(DOCKER_RUN) bash build/variant.sh $@
+
+# The archives of a game directory (build/package.sh; every build runs it
+# last): out/<name>-private.tar.gz and -public.tar.gz
+PACKAGE_GAME ?= out/tron20-legacy-release
+package: image
+	@[ -f $(PACKAGE_GAME)/MANIFEST.txt ] || { echo "error: no $(PACKAGE_GAME)/ -- build it first (make)" >&2; exit 1; }
+	$(DOCKER_RUN) bash build/package.sh $(PACKAGE_GAME) $(notdir $(PACKAGE_GAME:%-nodiscs=%))
+
+# The install scripts' lists (build/mkinstall.py): where each retail file
+# is in the disc images and the update (build/retailways.py), and what the
+# build changes in the archives (from out/tron20-legacy-release/)
+retail-ways: retail
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/retailways.py write && \
+	  python3 build/mkinstall.py ranges "$$(retail_dir)" out/tron20-legacy-release'
 
 # The runtime test (build/playtest.sh, ext/tools/playtest.sh): the game
 # directory under Xvfb and Wine, ALIVE or not, a screenshot in
