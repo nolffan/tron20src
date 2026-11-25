@@ -50,7 +50,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-variant test tests control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	check-variant test tests mptest launchertest control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -125,6 +125,26 @@ tests: image
 	  $(DOCKER_RUN) env PLAYTEST_NAME=test-$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
 	    bash build/playtest.sh $(TEST_GAME) "$${w:--}" 5 || rc=1; \
 	done; exit $$rc
+
+# The multiplayer test (build/mptest.sh): a server and two clients, each on
+# a display and a Wine prefix of its own. MPTEST_MODE=dedicated (TRONSrv.exe)
+# or listen (client 1 hosts); MPTEST_TYPE=arena, tourn or lc. Slow (some
+# minutes): not part of make tests. Results in out/play/<game>-mp-<mode>-<type>/
+MPTEST_MODE ?= dedicated
+MPTEST_TYPE ?= arena
+mptest: image
+	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
+	$(DOCKER_RUN) env MPTEST_MODE=$(MPTEST_MODE) MPTEST_TYPE=$(MPTEST_TYPE) $(if $(MPTEST_NAME),MPTEST_NAME=$(MPTEST_NAME)) $(if $(MPTEST_SRVEXE),MPTEST_SRVEXE=$(MPTEST_SRVEXE)) $(if $(MPTEST_CLIENTS),MPTEST_CLIENTS=$(MPTEST_CLIENTS)) $(if $(MPTEST_KEYS1),MPTEST_KEYS1="$(MPTEST_KEYS1)") $(if $(MPTEST_KEYS2),MPTEST_KEYS2="$(MPTEST_KEYS2)") $(if $(MPTEST_LANONLY),MPTEST_LANONLY=$(MPTEST_LANONLY)) $(if $(MPTEST_WINEDEBUG),MPTEST_WINEDEBUG=$(MPTEST_WINEDEBUG)) \
+	  bash build/mptest.sh $(TEST_GAME)
+
+# The launcher test (build/launchertest.sh): Tron.exe with the registry of
+# the game's setup, its dialogs, and Launch to the main menu. Results in
+# out/play/test-launcher/ (LAUNCHER_SCRIPT=<script>: another input script;
+# LAUNCHERTEST_RETAIL=1: the retail Tron.exe, the control)
+LAUNCHER_SCRIPT ?= build/playtest-launcher.txt
+launchertest: image
+	@[ -f $(TEST_GAME)/Tron.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
+	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) $(if $(LAUNCHERTEST_RETAIL),LAUNCHERTEST_RETAIL=1) bash build/launchertest.sh $(TEST_GAME) $(LAUNCHER_SCRIPT)
 
 # Compile and link only (build/compile.sh): every binary that has source,
 # in src/**/built/, which is what make progress scores (make game does this

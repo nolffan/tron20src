@@ -1,0 +1,21 @@
+# playtest-launcher-buttons.txt -- the launcher's other buttons
+# (build/launchertest.sh with this script: `make launchertest
+# LAUNCHER_SCRIPT=build/playtest-launcher-buttons.txt`). Uninstall says
+# that it cannot uninstall (there is no uninstaller: retail's says the
+# same), OK; Help opens TRON.chm in Wine's HTML Help viewer, which covers
+# the launcher (on a display without a window manager nothing closes it,
+# so Quit is build/playtest-launcher-quit.txt).
+wfocus ^TRON.2\.0$ 90
+wait 3
+# Uninstall: the message, OK
+wclick ^TRON.2\.0$ 460 146
+wait 3
+screen uninstall
+key Return
+wait 2
+wfocus ^TRON.2\.0$ 10
+screen back
+# Help
+wclick ^TRON.2\.0$ 460 182
+wait 6
+screen help

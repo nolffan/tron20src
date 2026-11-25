@@ -1,0 +1,8 @@
+# playtest-launcher-quit.txt -- the launcher's Quit closes it
+# (`make launchertest LAUNCHER_SCRIPT=build/playtest-launcher-quit.txt`):
+# the run ends EXITED (exit 0) at its last line, which is what it should do.
+wfocus ^TRON.2\.0$ 90
+wait 3
+wclick ^TRON.2\.0$ 460 218
+wait 4
+screen quit

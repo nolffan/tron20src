@@ -69,6 +69,8 @@ you what to supply.
 make            # the game, from our binaries and the retail data, in out/tron20-legacy-release/
 make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
 make tests      # the scripted tests: menus, a level, saving and loading, a race
+make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main menu
+make mptest     # multiplayer: the dedicated server and two clients (some minutes)
 make reference  # the retail binaries and their function tables, in out/reference/
 make progress   # score the build against them
 make help       # everything else
@@ -81,12 +83,26 @@ directory: the engine (`Lithtech.exe`, `server.dll`, `SndDrv.dll`,
 `ClientFx.fxd`, `CRes.dll`, `SRes.dll`) in `custom/`, last in the rez stack
 (`tron20cmds.txt`). The data is the retail game's: hard links to its
 `.rez` archives and movies, and copies of the three archives that hold the
-retail game DLLs, with those DLLs set to zeros. The only retail binaries
+retail game DLLs, with those DLLs set to zeros and their names changed
+(`build/rezhide.py`), so that the retail launcher's rez order also gives
+the engine our DLLs. The only retail binaries
 are the third-party runtime that we have no source for: Bink
 (`binkw32.dll`) and the Microsoft C, C++ and MFC runtime. The last step
 lists every executable file with its origin, and stops the build if one is
 not ours or third-party. Start the game with
-`wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory.
+`wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory, or with the
+launcher, `Tron.exe`, which reads the registry values of the game's setup
+(`HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0`: `InstallDir`,
+`UpdateNum` and `UpdateCommandLine0/1`, as `build/launchertest.sh` writes
+them) and wants disc 1 in a drive, as retail's does.
+
+`make mptest` (`build/mptest.sh`) runs a multiplayer game on the loopback:
+`MPTEST_MODE=dedicated` (the default: `TRONSrv.exe` hosts, two clients
+join) or `listen` (client 1 hosts from the multiplayer menu, client 2
+joins), and `MPTEST_TYPE=arena` (Disc Arena, the default), `tourn` (Disc
+Tournament) or `lc` (Light Cycles). Each program has its own Xvfb display
+and Wine prefix. The results are in `out/play/<game>-mp-<mode>-<type>/`.
+It is slow, so `make tests` does not run it.
 
 ### Without the retail game: the CI build
 

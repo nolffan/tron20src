@@ -1,0 +1,36 @@
+# playtest-launcher.txt -- the launcher, Tron.exe, on its first run with the
+# registry of the game's setup and Update 2 (build/launchertest.sh, `make
+# launchertest`). Display and Options (each with its first-time warning)
+# open and close with OK; Options ticks Disable Movies (a faster start);
+# Play asks for the detail setting once (Medium: 800x600, the display's
+# mode) and starts the engine, which must reach the main menu.
+# Coordinates: the launcher's own (wclick) and the display's (sclick), for
+# the dialogs centred on 800x600.
+wfocus TRON 90
+wait 3
+screen launcher
+# Display: the warning, the dialog, OK
+wclick TRON 460 74
+wait 3
+key Return
+wait 3
+screen display
+sclick 342 472
+wait 2
+# Options: the warning, the dialog; Disable Movies ticked, OK
+wclick TRON 460 110
+wait 3
+key Return
+wait 3
+sclick 207 187
+wait 1
+screen options
+sclick 342 515
+wait 2
+# Play: the detail setting (Medium), then the game
+wclick TRON 460 38
+wait 4
+screen detail
+sclick 400 352
+wait 60
+screen menu
