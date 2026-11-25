@@ -1,0 +1,64 @@
+# playtest-pad-menus.txt -- the modern build's controller in the menus
+# (MODERN.md CL-22, CL-23), with the test pad (TRON20SRC_PADTEST): the
+# d-pad and the left stick move through the menus, A takes an item, B goes
+# back. Options > Controls > Controller (the controller's own screen), a
+# slider changed with the d-pad, back out, and the main menu again.
+# world: -
+window 240
+wait 15
+pad
+mmove 620 10
+shot main
+tap down down
+wait 1
+shot options-selected
+tap a
+wait 3
+shot options
+tap down
+wait 1
+shot down1
+pad ly=-100
+wait 0.3
+pad
+mmove 620 10
+wait 1
+shot stick-down
+tap a
+wait 3
+shot controls
+tap down down down
+wait 1
+tap a
+wait 3
+shot controller
+tap right right
+wait 1
+shot lookspeed-150
+tap b
+wait 3
+shot controls-again
+tap down down down
+wait 1
+tap a
+wait 3
+shot controller-again
+tap b
+wait 3
+tap up up up
+wait 1
+tap a
+wait 3
+shot configure
+tap down
+wait 1
+shot configure-interaction
+tap b
+wait 3
+tap b
+wait 3
+tap b
+wait 3
+tap b
+wait 3
+shot main-again

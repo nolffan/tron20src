@@ -1037,6 +1037,29 @@
 #define IDS_SCREENGLOW                  3265
 #define IDS_HELP_SCREENGLOW             3266
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md: the modern build's strings are 31000 and up (in
+// ..\TRON\ClientRes.rc, TRON20SRC_MODERN only). 31100-31199: the controller
+// (Input: CL-20 .. CL-25).
+#define IDS_MODERN_PAD_TITLE            31100
+#define IDS_HELP_MODERN_PAD             31101
+#define IDS_MODERN_PAD_LOOKSPEED        31102
+#define IDS_HELP_MODERN_PAD_LOOKSPEED   31103
+#define IDS_MODERN_PAD_LOOKCURVE        31104
+#define IDS_HELP_MODERN_PAD_LOOKCURVE   31105
+#define IDS_MODERN_PAD_INVERT           31106
+#define IDS_HELP_MODERN_PAD_INVERT      31107
+#define IDS_MODERN_PAD_LOOKDEADZONE     31108
+#define IDS_HELP_MODERN_PAD_LOOKDEADZONE 31109
+#define IDS_MODERN_PAD_MOVEDEADZONE     31110
+#define IDS_HELP_MODERN_PAD_MOVEDEADZONE 31111
+#define IDS_MODERN_PAD_RESTORE          31112
+#define IDS_HELP_MODERN_PAD_RESTORE     31113
+#define IDS_MODERN_PAD_CONFIRMRESTORE   31114
+#define IDS_MODERN_PAD_DEVICE           31115
+#define IDS_MODERN_PAD_SCREENTITLE      31116
+#endif
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

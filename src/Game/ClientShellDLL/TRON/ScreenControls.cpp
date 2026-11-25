@@ -81,6 +81,14 @@ LTBOOL CScreenControls::Build()
 	// keyboard
 	AddTextItem(0x56, CMD_KEYBOARD, 0xf3);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-23: no "Use joystick/gamepad" and "Configure
+	// joystick/gamepad": the controller's sticks are the client's (CL-20),
+	// and an axis bound there would move a second time. "Controller" is the
+	// controller's own screen instead, always there (a pad can be plugged
+	// in later); its buttons are bound in Configure controls.
+	m_pJoystickCtrl = AddTextItem(IDS_MODERN_PAD_TITLE, CMD_JOYSTICK, IDS_HELP_MODERN_PAD);
+#else
 	// use joystick
 	CLTGUIToggle* pToggle = AddToggle(0x166, 0xba, kGap, &m_bUseJoystick);
 	pToggle->NotifyOnChange(CMD_UPDATE,this);
@@ -91,6 +99,7 @@ LTBOOL CScreenControls::Build()
 	// joystick
 	m_pJoystickCtrl = AddTextItem(0x58, CMD_JOYSTICK, 0xb1);
 	m_pJoystickCtrl->Enable( bHasJoystick );
+#endif
 
 	//restore
 	AddTextItem(0x59, CMD_RESET_DEFAULTS, 0xb3);
@@ -115,7 +124,9 @@ uint32 CScreenControls::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dwPa
 		{
 
 			UpdateData();
+#ifndef TRON20SRC_MODERN
 			m_pJoystickCtrl->Enable(bHasJoystick && m_bUseJoystick);
+#endif
 			break;
 
 		}
@@ -163,7 +174,9 @@ void CScreenControls::OnFocus(LTBOOL bFocus)
 
 		m_bUseJoystick = pProfile->m_bUseJoystick;
 
+#ifndef TRON20SRC_MODERN
 		m_pJoystickCtrl->Enable(bHasJoystick && m_bUseJoystick);
+#endif
 
         UpdateData(LTFALSE);
 	}

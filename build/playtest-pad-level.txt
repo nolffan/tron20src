@@ -1,0 +1,39 @@
+# playtest-pad-level.txt -- the modern build's controller in play
+# (MODERN.md CL-20 .. CL-22), with the test pad (TRON20SRC_PADTEST): into
+# control in the first level, then the right stick turns the view, the
+# left stick walks, the right trigger throws the disc, Start opens the menu
+# and B closes it. Shots at each step (build/yawshift.py measures the turn).
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+pad
+mmove 620 10
+wait 2
+shot p0
+pad rx=100
+wait 0.5
+pad
+wait 1.5
+shot p1-looked-right
+pad rx=-60
+wait 0.5
+pad
+wait 1.5
+shot p2-looked-left
+pad ly=100
+wait 0.7
+pad
+wait 1.5
+shot p3-walked
+pad rt=100
+wait 0.3
+pad
+wait 0.5
+shot p4-fired
+wait 2
+tap start
+wait 3
+shot p5-menu
+tap b
+wait 3
+shot p6-back

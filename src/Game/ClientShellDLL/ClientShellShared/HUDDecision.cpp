@@ -180,6 +180,21 @@ void CHUDDecisionChoice::Render()
 		m_pText->Render();
 }
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-22: the controller's highlight, the choice's number tab and
+// text in amber
+void CHUDDecisionChoice::PadHighlight(bool bOn)
+{
+	uint32 argb = bOn ? 0xFFFFC020 : argbWhite;
+
+	g_pDrawPrim->SetRGBA(&m_Poly, argb);
+	if (m_pText)
+		m_pText->SetColor(argb);
+	if (m_pNumber)
+		m_pNumber->SetColor(argb);
+}
+#endif
+
 //******************************************************************************************
 //** CHUDDecision
 //******************************************************************************************
@@ -527,3 +542,19 @@ void CHUDDecision::OnObjectRemove(HLOCALOBJ hObj)
 	m_bVisible = LTFALSE;
 	m_bTronUnknown4d = true;
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-22: the controller's highlight over the choices shown
+bool CHUDDecision::PadIsChoice(int nChoice)
+{
+	return nChoice >= 0 && nChoice < MAX_DECISION_CHOICES && m_Choices[nChoice].IsVisible();
+}
+
+void CHUDDecision::PadHighlight(int nChoice)
+{
+	for (int i = 0; i < MAX_DECISION_CHOICES; i++)
+	{
+		m_Choices[i].PadHighlight(i == nChoice);
+	}
+}
+#endif

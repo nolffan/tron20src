@@ -1,0 +1,38 @@
+# playtest-pad-race.txt -- the modern build's controller on a light cycle
+# (MODERN.md CL-25), with the test pad (TRON20SRC_PADTEST): the race of
+# build/playtest-race.txt started from the menus with the pad, then a turn
+# left with the left stick, a turn right with the d-pad, the right
+# trigger held (faster) and the left trigger held (slower).
+# world: -
+window 240
+wait 15
+pad
+mmove 620 10
+mclick 256 162
+wait 3
+mclick 494 274
+wait 3
+mclick 127 217
+wait 1
+shot circuit
+mclick 563 456
+wait 15
+mmove 620 10
+shot race
+pad lx=-100
+wait 0.3
+pad
+wait 2
+shot left
+tap right
+wait 2
+shot right
+pad rt=100
+wait 3
+shot faster
+pad lt=100
+wait 3
+shot slower
+pad
+wait 5
+shot end

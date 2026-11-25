@@ -42,6 +42,10 @@ public:
 	void	SetPosition(int x, int y);
 
 	void	Render();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-22: the controller's highlight on this choice
+	void	PadHighlight(bool bOn);
+#endif
 
 	bool	IsVisible() { return m_bVisible; }
 
@@ -115,6 +119,13 @@ public:
 	// (CTronInterfaceMgr::OnKeyDown, retail 0x1009d2a7)
 	bool	GetTronUnknown4d() { return m_bTronUnknown4d; }
 	float	GetRadius() { return m_fRadius; }
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-22: the controller's highlight over the choices shown
+	// (clientpad.cpp): can the choice be taken, and the one highlighted
+	// (-1: none)
+	bool	PadIsChoice(int nChoice);
+	void	PadHighlight(int nChoice);
+#endif
 
 protected:
 

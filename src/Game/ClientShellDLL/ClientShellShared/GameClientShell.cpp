@@ -92,6 +92,11 @@ HWND				g_hMainWnd = NULL;
 RECT*				g_prcClip = NULL;
 
 CGameClientShell*   g_pGameClientShell = NULL;
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-20: the controller, the client's half (compiled here: the
+// project files are the retail ones)
+#include "xinput/clientpad.cpp"
+#endif
 
 LTVector            g_vWorldWindVel(0.0f, 0.0f, 0.0f);
 
@@ -1222,6 +1227,10 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 void CGameClientShell::OnEngineTerm()
 {
     UnhookWindow();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-20: the controller's scan thread ends before the DLL goes
+	Pad_Term();
+#endif
 
 	GetInterfaceMgr( )->Term();
 
@@ -1518,6 +1527,11 @@ void CGameClientShell::Update()
 		SetPhysicsStateTimeStep(&g_waterPhysicsState, m_fFrameTime);
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-20, CL-22: the controller's sticks, and its keys in
+	// the menus (whose interface update below takes the frame)
+	Pad_Update(m_fFrameTime);
+#endif
 	// Update the interface (don't do anything if the interface mgr
 	// handles the update...)
 

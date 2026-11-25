@@ -73,10 +73,16 @@ LTBOOL CScreenMouse::Build()
 	m_pSensitivityCtrl->SetSliderRange(0, 10);
 	m_pSensitivityCtrl->SetSliderIncrement(1);
 
+#ifndef TRON20SRC_MODERN
 	//mouse responsiveness
 	m_pInputCtrl=AddSlider(0x162, 0xc3, kGap, kWidth, -1,  &m_nInputRate);
 	m_pInputCtrl->SetSliderRange(0, 40);
 	m_pInputCtrl->SetSliderIncrement(2);
+#else
+	// MODERN.md EN-23, EN-24: no "Input rate": it set how much the mouse's
+	// motion was smoothed, and the mouse look has no smoothing now (the
+	// value stays in the profile)
+#endif
 
 	//invert mouse
 	pToggle = AddToggle(0x160, 0xc0, kGap, &m_bInvertY );

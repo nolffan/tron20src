@@ -6818,6 +6818,30 @@ BEGIN
     15504                           "Critical systems failing due to low energy reserves."
 END
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-23: the controller's screen (31100-31199: Input)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_MODERN_PAD_TITLE            "Controller"
+    IDS_HELP_MODERN_PAD             "Set the look speed, the dead zones and the default buttons of the controller."
+    IDS_MODERN_PAD_LOOKSPEED        "Look speed"
+    IDS_HELP_MODERN_PAD_LOOKSPEED   "Set how fast the right stick turns the view (percent)."
+    IDS_MODERN_PAD_LOOKCURVE        "Look curve"
+    IDS_HELP_MODERN_PAD_LOOKCURVE   "Set the response of the right stick: 100 is linear, more gives finer aim near the center."
+    IDS_MODERN_PAD_INVERT           "Invert look"
+    IDS_HELP_MODERN_PAD_INVERT      "Push the right stick up to look down."
+    IDS_MODERN_PAD_LOOKDEADZONE     "Look dead zone"
+    IDS_HELP_MODERN_PAD_LOOKDEADZONE "Set how far the right stick must move before the view turns (percent)."
+    IDS_MODERN_PAD_MOVEDEADZONE     "Move dead zone"
+    IDS_HELP_MODERN_PAD_MOVEDEADZONE "Set how far the left stick must move before you move (percent)."
+    IDS_MODERN_PAD_RESTORE          "Restore controller defaults"
+    IDS_HELP_MODERN_PAD_RESTORE     "Set the controller's buttons to their defaults. The keyboard and the mouse do not change."
+    IDS_MODERN_PAD_CONFIRMRESTORE   "Set the controller's buttons to their defaults?"
+    IDS_MODERN_PAD_DEVICE           "Controller"
+    IDS_MODERN_PAD_SCREENTITLE      "CONTROLLER"
+END
+#endif
+
 CREDITS                 TEXT    DISCARDABLE "credits.txt"
 
 INTRO                   TEXT    DISCARDABLE "intro.txt"
