@@ -78,12 +78,12 @@ NOLF2 and Contract J.A.C.K. have.
 | # | Package | Depends on | Status |
 |---|---|---|---|
 | 1 | `scaffold`: submodules (`rez`, `toolchains`, `tools`), the v1.030 install in rez, the build image, `make retail`/`reference`/`progress`, `targets.py` | -- | done (below) |
-| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `ext/toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the rest to come |
+| 2 | `build`: `build/env.sh`, `build/build.mk` and `build/compile.sh` (nolf2src's, for `msvc-6.00-8168`), a DirectX 9 SDK in `ext/toolchains/` (the release `Lithtech.exe` links), the workspace `src/Game/TRON.dsw`, `build/all.sh` assembling a game directory, `build/variant.sh` (debug, modern) | 1 | compiling and linking done (`make compile`); the game directory done (`make`, `build/all.sh`); `build/variant.sh` to come |
 | 3 | `small`: `ltmsg.dll`, `CRes.dll`, `SRes.dll` (resource scripts from the retail resources; `ext/tools/rsrcdiff.py`), `SndDrv.dll` (nolf2src's reconstruction, compiled with 8168) | 2 | `ltmsg.dll` identical; `SndDrv.dll` Tron's: all 232 functions of its own code identical (34 initializer-sized ones `small`) |
 | 4 | `game`: `CShell.dll`, `Object.lto`, `ClientFx.fxd` -- NOLF2's shared code with Build 69's TRON directories, rolled back to 2003, placed by the scoreboard; the GameSpy SDK's blocks placed as `middleware` | 2 | `CShell.dll`, `Object.lto` and `ClientFx.fxd` build (below) |
 | 5 | `engine`: `Lithtech.exe` and `server.dll` from nolf2src's engine and the Jupiter tree, with the D3D9 renderer; D3DX9 placed as `middleware`; an unprotected engine (the demo, the dev build) for the SecuROM pages and the imports | 2 | |
 | 6 | `apps`: the launcher `Tron.exe` and the dedicated server `TRONSrv.exe` from NOLF2's Launcher and ServerApp and Build 69's `Launcher/TRON` | 2 | |
-| 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | |
+| 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
 | 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | |
 | 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`ext/tools/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | |
@@ -382,6 +382,53 @@ these forms. Each one is a test result. Use them as tests, not as rules.
   not 0x248 (LoadWorldData, 0x4cae80). Build 69's shader base without
   its effect code is the model. client/src/sys/win/winconsole_impl.cpp
   still names D3DVIEWPORT8 (four lines).
+
+### 7. boot
+
+The legacy release build runs under Wine (2026-11-25): every binary in
+`out/tron20-legacy-release/` is ours, except the third-party runtime.
+
+- **The game directory** (`make`, `build/all.sh`, the steps of
+  cjacksrc's): the `.rez` archives and movies of the retail game as hard
+  links (about 70 MB of copies: `GameDLL.rez`, `Gamep3.rez` and
+  `Gamep4.rez`, with the retail game DLLs in them set to zeros), Bink and
+  the Microsoft runtime from the retail game, and the eleven binaries we
+  build. The game DLLs go in `custom/`, which is last in the rez stack
+  (`tron20cmds.txt`, `build/tron20cmds.sh`). The retail launcher puts
+  `custom` before the updates' `gamep3.rez` and `gamep4.rez`, so there
+  the zeroed entries would hide ours. An audit (`ext/tools/retailextract.py
+  audit`) lists every PE file with its origin and stops the build on any
+  other. `SRes.dll` is built now (`ServerRes.dsp`, Final): retail's has no
+  resources, only `DllMain`.
+- **The tests** (`make test`: the main menu; `make tests`: each
+  `build/playtest-<name>.txt`, each to end ALIVE): `menus` (the main menu
+  and the screens it opens), `level` (the first level, M01-01: into
+  control, moves, the disc), `save` (F5 quicksave, F9 quickload, a save
+  and a load through the in-game menu) and `race` (Light cycles, Circuit
+  play, "Newbie Authentication": turns, a derez, Continue). The runner is
+  `ext/tools/playtest.sh` with Tron's names (`build/playtest.sh`); its
+  `skipcine` waits for Tron's health bar (green, lower left). In M01-01 a
+  long walk falls off the start platform and kills the player, in retail
+  too: the scripts move in short steps.
+- **The control** (`make control`, `out/tron20-control/`): the retail game
+  DLLs with our engine. Retail's `Lithtech.exe` does not run here
+  (SecuROM). A test that passes on the control and fails on our build
+  points at our game code.
+- **Fixed:** the quickload crashed in `CHUDSingleString::Update` (CShell
+  0x1003ae50): the HUD item had no polystring after a load. Retail's
+  `CHUDSingleString` has its own `Init` (vtable slot 1, 0x101613a0, the
+  body that `CHUDProcedurals::Init` has: `UpdateLayout(); return TRUE;`),
+  which `CTronHUDMgr::AddItems` calls each time a world is entered after
+  `OnExitWorld` terminated the items. Ours had none. Found with the
+  control: winedbg, attached to it, with breakpoints on retail's `Term`
+  and `UpdateLayout`, showed which function calls `UpdateLayout`. CShell
+  7,599 identical functions before, 7,601 after.
+- **Open:** after a quickload or a load from the menu, retail shows the
+  postload screen ("Press any key to continue"); ours goes into the game
+  at once. `CScreenPostload::OnFocus` (0x1016b4e0) is near. The engine
+  prints "LithTech build 4294967295.4294967295": our engine has no build
+  number yet. Not tested: the rest of the campaign, multiplayer, the
+  launcher (`Tron.exe`) and the dedicated server (`TRONSrv.exe`).
 
 ### 9. modern
 

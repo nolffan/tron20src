@@ -4,8 +4,10 @@
 
 > [!WARNING]
 > **Work in progress.** The reconstruction is far from complete: much of the
-> game code does not match retail yet (see [`progress/README.md`](progress/README.md)),
-> and the builds have not been run as a game. Nothing here is ready to play.
+> game code does not match retail yet (see [`progress/README.md`](progress/README.md)).
+> The legacy build runs under Wine to the main menu, through the first
+> single-player level, saves and loads, and a light-cycle race (`make
+> tests`), but it is not tested further. It is not ready to play.
 
 Monolith never released Tron 2.0's source as it shipped, as it did for *No
 One Lives Forever 2*. This project reconstructs it: the game code from
@@ -64,10 +66,27 @@ correct copy of the discs works. Without the files, `make` stops and tells
 you what to supply.
 
 ```sh
+make            # the game, from our binaries and the retail data, in out/tron20-legacy-release/
+make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
+make tests      # the scripted tests: menus, a level, saving and loading, a race
 make reference  # the retail binaries and their function tables, in out/reference/
 make progress   # score the build against them
 make help       # everything else
 ```
+
+`make` (`build/all.sh`) puts every binary that we build into the game
+directory: the engine (`Lithtech.exe`, `server.dll`, `SndDrv.dll`,
+`ltmsg.dll`), the launcher (`Tron.exe`), the dedicated server
+(`TRONSrv.exe`), and the game DLLs (`CShell.dll`, `Object.lto`,
+`ClientFx.fxd`, `CRes.dll`, `SRes.dll`) in `custom/`, last in the rez stack
+(`tron20cmds.txt`). The data is the retail game's: hard links to its
+`.rez` archives and movies, and copies of the three archives that hold the
+retail game DLLs, with those DLLs set to zeros. The only retail binaries
+are the third-party runtime that we have no source for: Bink
+(`binkw32.dll`) and the Microsoft C, C++ and MFC runtime. The last step
+lists every executable file with its origin, and stops the build if one is
+not ours or third-party. Start the game with
+`wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory.
 
 ### Without the retail game: the CI build
 
