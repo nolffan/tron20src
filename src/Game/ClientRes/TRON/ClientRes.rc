@@ -6818,6 +6818,16 @@ BEGIN
     15504                           "Critical systems failing due to low energy reserves."
 END
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-44: the frame rate limit of the Display screen
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_MODERN_FRAMELIMIT           "Frame Rate Limit"
+    IDS_HELP_MODERN_FRAMELIMIT      "The maximum number of frames each second. None is no limit."
+    IDS_MODERN_FRAMELIMIT_NONE      "None"
+END
+#endif
+
 CREDITS                 TEXT    DISCARDABLE "credits.txt"
 
 INTRO                   TEXT    DISCARDABLE "intro.txt"

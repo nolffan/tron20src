@@ -1,6 +1,9 @@
 #include "bdefs.h"
 
 #include "predict.h"
+#ifdef TRON20SRC_MODERN
+#include <math.h>	// MODERN.md EN-45: pow
+#endif
 #include "clientmgr.h"
 #include "systimer.h"
 #include "sysdebugging.h"
@@ -265,6 +268,22 @@ static LTVector predict_EvaluateCurve(
 }
 
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-45: retail moves an object half of the way from where it is
+// to where the prediction puts it, and turns it half of the way, once a
+// frame. So the faster the frame rate, the closer an object follows the
+// prediction, and the less smooth its motion: the smoothing was a share
+// of a frame, tuned at 60 frames a second. This is the share for a frame
+// of fDelta seconds that smooths as half a 60th of a second does: 0.5 at
+// 60 frames a second, less at higher frame rates, more at lower ones.
+static float pd_ModernHalfShare(float fDelta)
+{
+	if (fDelta <= 0.0f)
+		return 0.0f;
+	return 1.0f - (float)pow(0.5, (double)(fDelta * 60.0f));
+}
+#endif
+
 void pd_Update(CClientShell *pShell)
 {
 	float timeDelta, curTime;
@@ -332,7 +351,11 @@ void pd_Update(CClientShell *pShell)
 				bTeleport = LTTRUE;
 				if (fTimeOffset < g_CV_MaxExtrapolateTime)
 				{
+#ifdef TRON20SRC_MODERN
+					newPos = pObj->GetPos() + (newPos - pObj->GetPos()) * pd_ModernHalfShare(timeDelta);	// EN-45
+#else
 					newPos = (newPos + pObj->GetPos()) * 0.5f;
+#endif
 				}
 				else
 				{
@@ -343,7 +366,11 @@ void pd_Update(CClientShell *pShell)
 			else
 			{
 				newPos = predict_EvaluateCurve(pObj, pClientData, vGravity, fTimeOffset / g_CV_MaxExtrapolateTime, g_CV_MaxExtrapolateTime, LTTRUE);
+#ifdef TRON20SRC_MODERN
+				newPos = pObj->GetPos() + (newPos - pObj->GetPos()) * pd_ModernHalfShare(timeDelta);	// EN-45
+#else
 				newPos = (newPos + pObj->GetPos()) * 0.5f;
+#endif
 			}
 
 			LTVector vOldPos = pObj->GetPos();
@@ -416,7 +443,11 @@ void pd_Update(CClientShell *pShell)
 
 			LTRotation rTemp;
 			quat_Slerp((float*)&rTemp, (float*)&pObj->m_Rotation, (float*)&pObj->cd.m_rLastUpdateRotServer, fParam);
+#ifdef TRON20SRC_MODERN
+			quat_Slerp((float*)&rRot, (float*)&pObj->m_Rotation, (float*)&rTemp, pd_ModernHalfShare(timeDelta));	// EN-45
+#else
 			quat_Slerp((float*)&rRot, (float*)&pObj->m_Rotation, (float*)&rTemp, 0.5f);
+#endif
 
 			pObj->cd.m_fRotAccumulatedTime -= fTimeLeft;
 
