@@ -69,9 +69,11 @@ movies. Only the three archives with the zeroed retail game DLLs (56 MB),
 the third-party runtime and our binaries are copies. The trees share one
 Wine prefix with `out/release-tree/` through hard links (about 0.6 GB,
 counted once). The debug builds put a `.pdb` and a `.map` next to each
-binary. `TRON20SRC_MIDDLEWARE=retail` (the default) puts the retail
-third-party DLLs into the game directory; `open` is for X-1 and X-2 and is
-refused until they exist.
+binary. `TRON20SRC_MIDDLEWARE=open` (the default of `make modern` and
+`make modern-debug`) puts our `binkw32.dll` (X-1) into the game directory
+in place of RAD's. `TRON20SRC_MIDDLEWARE=retail` (the default of `make
+debug`, and what the legacy build does) puts RAD's there. You can set
+either: `make modern TRON20SRC_MIDDLEWARE=retail`.
 
 The modern build boots: `make tests TEST_GAME=out/tron20-modern-release`
 (the menus, a level, saving and loading, a light-cycle race), and `make
@@ -94,6 +96,14 @@ executable, or in the console), new or with a changed meaning.
 | `Anisotropic` | int | 0 | existing: now the degree of anisotropic filtering (0 off, 2, 4, 8, 16), held to what the card can do; the Performance screen's "Anisotropic filtering" | EN-34, CL-34 |
 | `FovX`, `FovY` | float | 90, 78 | existing: the field of view in play, degrees, for a 4:3 screen (the engine widens it for the screen's shape, EN-30); the Display screen's "Field of view" sets `FovX` (60 to 120) and `FovY` with retail's shape of view | CL-33 |
 | `Cinematics43` | int | 0 | 1: on a screen wider than 4:3, the sides beyond the centred 4:3 area are black while the cinematic letterbox is up; the Display screen's "4:3 cinematics" | CL-32 |
+| `RawMouse` | int | 1 (no variable) | 0: the system mouse from DirectInput (EN-23), not from raw input | EN-24 |
+| `JoystickDisable` | int | 0 | existing (the launcher's "Disable Joysticks" sets it through `DisableJoystick 1`); now also disables the controller, `##gamepad`, and the client's own reading of the pad | EN-21, CL-20 |
+| `PadLookSpeed` | float | 1 | the controller's right stick: its turn rate, times 180 degrees a second across and 120 up and down; the Controller screen's "Look speed" (25 to 300) | CL-20, CL-23 |
+| `PadLookCurve` | float | 2 | the right stick's response: its travel past the dead zone, raised to this power (1 is linear; less than 1 is taken as 1); "Look curve" (100 to 300) | CL-20, CL-23 |
+| `PadInvertY` | int | 0 | 1: the right stick's up looks down; "Invert look" | CL-20, CL-23 |
+| `PadLookDeadZone` | float | 0.15 | the right stick's radial dead zone (0 to 0.9 of its travel); "Look dead zone" (0 to 50) | CL-20, CL-23 |
+| `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone (0 to 0.9); "Move dead zone" (0 to 50) | CL-20, CL-23 |
+| `PadHoldButtons` | int | 0 | the controller's buttons (XInput's bits) that the bindings do not see while the client reads them itself (a decision window); the client sets it, `autoexec.cfg` does not keep it; not a setting | EN-20, CL-22 |
 | `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
 
 ## Done
@@ -210,6 +220,89 @@ executable, or in the console), new or with a changed meaning.
   installer's values into the registry): the modern launcher ignored
   them and its command line had `Gamep3.rez` and `Gamep4.rez` from the
   game directory.
+
+### Middleware
+
+* **X-1: our Bink player on FFmpeg in place of RAD's `binkw32.dll`.**
+  `src/modern/binkw32/binkw32.c` plays the movies with FFmpeg's Bink
+  demuxer and its Bink video and audio decoders, linked statically. It
+  exports the twelve entry points that `Lithtech.exe` gets by name
+  (`BinkVideoMgr::Init`, `binkvideomgrimpl.cpp`: `_BinkOpen@8` to
+  `_BinkDX8SurfaceType@4`, `binkw32.def`). No other retail binary imports
+  or loads Bink. Tron 2.0's engine always asks for `BINKSURFACE32` (its
+  format table, Lithtech.exe 0x5ac214) and does not call
+  `BinkDX8SurfaceType`; the player writes an opaque alpha byte, because the
+  texture can be `A8R8G8B8`. The sound of a movie (its first audio track)
+  is decoded when the movie opens and plays through `waveOut` from the
+  first frame; the frames are timed from the same moment. The game has
+  three movies, all Bink 1 (`BIKi`), 640x480, each with sound:
+  `Movies/disnlogo.bik` (4 s), `lithlogo.bik` (18 s) and `nvidia.bik`
+  (5 s), the logos at start (`CInterfaceMgr`'s movie state). No archive
+  holds another `.bik`: the cinematics of the missions are scenes in the
+  engine, not movies. `build/ext.sh` builds FFmpeg (only the Bink parts,
+  no GPL or non-free part) and the DLL with Zig's C compiler into
+  `out/ext/`. `build/all.sh` step 2 installs it when
+  `TRON20SRC_MIDDLEWARE=open` (`ext/tools/retailextract.py thirdparty
+  ... open` and `openruntime`; `MANIFEST.txt` origin `EXT`); build/
+  variant.sh sets `open` for the modern builds. The legacy build keeps
+  RAD's DLL. The FFmpeg submodule, `ext/ffmpeg`, is upstream FFmpeg at
+  the commit of nolf2src's and cjacksrc's (n8.1.3); the licence notes are
+  in `docs/LICENSE_NOTES.md`. Tested under Wine in the build container
+  (`build/playtest-movies.txt` with `PLAYTEST_ARGS="+DisableMovies 0"` and
+  `PLAYTEST_AUDIO`, `build/playtest.sh`): the three movies play in order,
+  with their pictures moving and with correct colours (screenshots every 2
+  to 4 s), then the main menu comes. The recording has three 44.1 kHz
+  stereo streams from `waveOut`, one for each movie, with sound for about
+  4, 17 and 4 s. Step 5 of the build lists `binkw32.dll` as `EXT
+  src/modern/binkw32 + ext/ffmpeg: our Bink player (build/ext.sh)`.
+  Our DLL imports the Universal C runtime (`api-ms-win-crt-*`), which
+  Windows 10 and later have (an update gives it to Windows 7 and 8), and
+  Wine has.
+* **X-2: MP3 decoding in `SndDrv.dll`.** 3,404 of the 3,843 WAV files in
+  `Sound.rez` are MP3 (format 0x55): `VOICE/` 2,084, `MUSIC/` 1,317,
+  `SND/` 3 (`PLAYER/ENDLESS_FALL`, `EVENT/PISTONEXPLDE`,
+  `EVENT/10_4MIXST`). The other 439 and the 427 WAV files of `Game.rez`
+  are PCM (one of `Game.rez`'s is 32-bit float); no file is IMA ADPCM. Retail decodes the MP3 files through
+  Windows' Audio Compression Manager (ACM) with the MP3 codec of the
+  system: `L3CODECA.ACM` (Fraunhofer's on Windows, Wine's own under Wine).
+  Without one, `CDx8SoundSys::Startup` fails and the game has no sound at
+  all. The modern `SndDrv.dll` has its own ACM codec on minimp3 (CC0):
+  `src/tron20src/mp3/mp3acm.cpp`, a driver procedure for MP3 to 16-bit
+  PCM, which `SelectMP3Codec` adds to ACM as a local driver of the process
+  (`Mp3Acm_Register`: `acmDriverAdd` with `ACM_DRIVERADDF_FUNCTION |
+  ACM_DRIVERADDF_LOCAL`, as retail adds `L3CODECA.ACM`) and always selects.
+  All of SndDrv's ACM calls stay as they are. A local driver comes before
+  the drivers of the system, so a caller in the process that gives ACM no
+  driver (DirectMusic, for the music waves) also gets it. cjacksrc's EN-50
+  puts minimp3 in its driver in place of the ACM calls; here the codec is
+  under ACM, so that DirectMusic can use it too. The codec takes all of
+  the input of each convert, because `WaveFile::ReadCompressed` does not
+  read `cbSrcLengthUsed`, and keeps what it cannot give yet. Three more
+  changes in `s_dx8.cpp`, all modern only: `ReadCompressed` gives the codec
+  only the bytes that it read (a retail bug, `RETAIL_BUGS.md`: the last
+  block got the stale end of the block before), the first convert after
+  `WaveFile::Cue` has `ACM_STREAMCONVERTF_START` (the codec drops what it
+  holds; new member `WaveFile::m_bCodecRestart`), and the last block of the
+  data has `ACM_STREAMCONVERTF_END` (the codec decodes the last frames).
+  `mp3acm.cpp` is included at the end of `s_dx8.cpp`, so `snddrv.dsp`
+  does not change. Tested: (1) `make mp3acmtest` (`build/mp3acmtest.sh`,
+  `src/tron20src/mp3/mp3acmtest.cpp`, under Wine with Wine's MP3 codecs
+  switched off): every one of the 3,404 MP3 files decodes whole (one
+  convert, with no driver handle, so ACM finds the codec itself) and
+  streamed (SndDrv's block sizes, through the driver, after a stop at half
+  way and a restart), and the two give the same bytes; 19,499 s of PCM,
+  each file within 0.03 s of the length that its data gives, except
+  `MUSIC/CINEMATICS/CREDITS2.wav` (318.7 s for 318.0 s). (2) In the game
+  (`build/playtest-sound.txt`, M01-01: a walk to the first bit and the
+  action key) in a copy of the Wine prefix without an MP3 codec
+  (`l3codeca.acm` deleted from `system32`, its `system.ini` line and its
+  ACM cache key removed, and `l3codeca.acm` and `winemp3.acm` disabled in
+  `DllOverrides`): the bit speaks its line, with its subtitle. The log
+  (`+debugstr`) has "SndDrv: MP3 codec: minimp3, local ACM driver" at
+  start and "SndDrv: MP3 codec: stream ..., 44100 Hz, 1 channel(s)" for the
+  line; the recording (`PLAYTEST_AUDIO`) has sound. The legacy build in the
+  same prefix plays nothing (its recording is silent: no MP3 codec, so no
+  sound driver). The music could not be heard under Wine: see X-3.
 
 ### Retail-bug fixes, game DLLs
 
@@ -662,6 +755,165 @@ testable here: real antialiasing and anisotropic filtering on a graphics
 card (Wine's software rendering does not show them clearly: the log is
 the check), more than one monitor.
 
+### Input
+
+The mouse turns the view by its own counts, each one time, at all frame
+rates. A controller (an XInput pad: an Xbox-style pad, or what Steam Input
+gives) plays the game, the light cycles and the menus. The engine half of
+the controller (EN-20 to EN-22) came from cjacksrc's; the game half is
+Tron 2.0's own, made with the design of cjacksrc's CL-20 to CL-24 and
+nolf2src's M-G47, M-G60 to M-G63. The strings are 31300 to 31316 (the
+block 31300 to 31399 is the controller's).
+
+* **EN-24: raw mouse input.** The system mouse (`##mouse`) comes from
+  `WM_INPUT` and not from DirectInput: the counts of the mouse, with no
+  pointer acceleration. The window procedure gives each `WM_INPUT` to
+  `input_ModernRawInput` (`client.cpp`, the `WM_INPUT` case only). It adds
+  the motion and keeps the buttons and the wheel in their sequence. Each
+  frame `input_ReadInput` gives them to the mouse's triggers as the events
+  that DirectInput gives (`input_ModernRawEvents`). Thus the bindings, the
+  scale of the look (`MouseSensitivity`) and EN-23 do not change. On
+  Windows a DirectInput count is the count of the mouse too. DirectInput's
+  mouse is not acquired while the game reads raw input
+  (`input_ModernRawRelease`): DirectInput 8 reads the mouse through raw
+  input itself, and a process has only one raw input target for the mouse.
+  The first test showed this under Wine: after DirectInput acquired the
+  mouse, the game's window got no more `WM_INPUT`. Configure controls'
+  capture still uses DirectInput's mouse; after it, the raw input is
+  registered again. There is no `RIDEV_NOLEGACY`, thus the menus keep
+  their cursor. With `RawMouse 0`, when raw input cannot be registered,
+  or after an absolute device (a tablet, a remote desktop) sends raw
+  input, the mouse is DirectInput's (EN-23). (`kernel/src/sys/win/
+  input.cpp`: `input_Init`, `input_Term`, `input_ReadInput`,
+  `input_FlushInputBuffers`, the `Acquire` calls; `input.h`; `client.cpp`
+  `MainWndProc`.) The Mouse screen has no "Input rate" now: it set the
+  smoothing that the mouse look does not have (`TRON/ScreenMouse.cpp`).
+
+  Tested (`build/playtest-mouselook.txt` and a script with five motions
+  of 60 counts, cut into 1, 2, 5, 10 and 1 xdotool steps; the turn
+  between the shots measured by `build/yawshift.py`, M01-01): a
+  temporary log in `input_ModernRawEvents` showed every xdotool step as
+  one raw event with its count (`x=6` ten times, `x=60`), and the mouse
+  buttons (down, up) through the same path. The turn is linear in the
+  counts: 9.8, 4.8, 9.6, 8.7 and 9.6 degrees, about 0.16 degrees a count
+  at the default sensitivity, the same as DirectInput's (EN-23,
+  `RawMouse 0`: 9.8 and 9.6 degrees for the single steps). Some of the
+  smaller steps do not arrive at all (30 of the 60 counts of the two-step
+  motion): under Wine the raw input comes from the pointer's position, and
+  the engine puts the cursor back in the centre each frame; with
+  DirectInput the loss was larger (5.6 and 6.8 degrees for the 5- and
+  10-step motions). After each motion the view stays (no repeated last
+  event). The legacy build, for comparison (RETAIL_BUGS.md, "The mouse
+  look counts a mouse event more than one time"): 27.8 degrees for one
+  step, 7.3 degrees to the left for two steps to the right. Not tested: a
+  real mouse on Windows.
+* **EN-20, EN-21, EN-22: checked and kept** (the engine half of the
+  controller; see "Inherited engine items"). The test pad drives the
+  `##gamepad` device in all the controller tests below. EN-21 now also
+  applies the launcher's "Disable Joysticks" ("all joysticks and
+  gamepads") to `##gamepad`, the only one that is left; the client then
+  does not read the pad either (`input_ReadInput`; `clientpad.cpp`).
+* **EN-23: checked and kept.** Tron 2.0's retail `input_ReadInput`
+  (0x432d70) is byte-identical to ours, thus the bug is in Tron 2.0
+  (RETAIL_BUGS.md).
+* **CL-20: the controller's sticks.** The client reads the sticks itself
+  (`src/tron20src/xinput/clientpad.cpp`, compiled as part of
+  `GameClientShell.cpp`; `clientpad.h`), once a frame, in the menus too,
+  while the game's window is in front (`CGameClientShell::Update`; the
+  pad's scan thread stops in `OnEngineTerm`). The sticks have no bindings
+  (`CUserProfile::ApplyJoystick` binds no axis). **Look**: the right stick
+  past a radial dead zone (`PadLookDeadZone`), the rest of its travel
+  rescaled to 0..1 and raised to `PadLookCurve`, is a turn rate: 180
+  degrees a second across and 120 up and down, times `PadLookSpeed` and
+  the frame time. It is added to the mouse's turn, slowed by the zoom as
+  the mouse is, also with "Mouse look" off; up and down are the stick's
+  own (`PadInvertY`), held as the mouse's are (level on a light cycle in
+  first person, 45 degrees in third person) (`PlayerMgr.cpp`
+  `CalculateCameraRotation`). **Movement**: the left stick past
+  `PadMoveDeadZone` accelerates the way it points and sets the movement
+  flags by octant (for the animations and the server); past three
+  quarters of its travel it runs, below that it walks at that part of the
+  walking speed (one third at least); the Walk binding held turns that
+  over; not while ducking, carrying or leaning (`CMoveMgr.cpp`
+  `UpdateNormalControlFlags`, `UpdateNormalMotion`, `GetMaxVelMag`).
+* **CL-21: the controller's default layout.** One time for each profile
+  (`[Controls] PadLayout`), the controller's column of the bindings gets:
+  right trigger Fire, left trigger Disc recall / block, A Jump, B Crouch,
+  X Action, Y Disc attack modifier, right and left bumper Next and
+  Previous weapon, left stick click Walk, right stick click Center view,
+  d-pad up and down Zoom in and Zoom out, d-pad left Holster weapon, d-pad
+  right Toggle status display. A command that the player bound on the
+  controller, and a button that is bound, do not change. A new profile and
+  Restore defaults get the layout too (`Default.prf` has no `PadLayout`).
+  Back opens the subroutine screen, as F1 does: "Subroutines" is not a
+  command of Configure controls, thus `ApplyBindings` binds Back to it
+  while no command of the profile has Back. Start is the menu (CL-22).
+  (`clientpad.cpp` `Pad_DefaultBindings`; `ProfileMgr.cpp` `LoadControls`,
+  `ApplyBindings`.)
+* **CL-22: menus, cut-scenes and decisions with the controller.** Out of
+  play (the menus and screens, a message box, the subroutine screen, a
+  paused game, the loading screens, a movie) the d-pad or the left stick
+  is the arrow keys (they repeat after 0.4 s, every 0.12 s), A is Enter,
+  B and Start are Escape. In play Start is Escape (the menu), and A in a
+  cut-scene or when the player is dead is Space. While a decision window
+  is open (a conversation, or an archive bin's downloads) the d-pad up and
+  down move a highlight (amber) over its choices, A takes the choice and
+  B is Escape. The bindings do not see A, B and the d-pad then
+  (`PadHoldButtons`). The keys go through the client shell's own
+  `OnKeyDown` and `OnKeyUp`, as the engine sends a key. Not while
+  Configure controls waits for a control to bind (`ScreenConfigure.cpp`).
+  (`clientpad.cpp` `Pad_Update`; `HUDDecision.cpp`, `.h`,
+  `TRON/HUDTronDecision.cpp`, `.h`: `PadIsChoice`, `PadHighlight`.)
+* **CL-23: the Controller screen.** Options, Controls has no "Use
+  joystick/gamepad" and "Configure joystick/gamepad" now (an axis bound
+  there would move a second time) but "Controller": the joystick screen,
+  made again with Look speed (25 to 300), Look curve (100 to 300), Invert
+  look, the look and move dead zones (0 to 50) and Restore controller
+  defaults (only the controller's column, after a yes/no box). The values
+  are the console variables above, kept in `autoexec.cfg` beside the
+  executable (set with "+"), not in the registry. Configure controls names
+  the third column "Controller" ("Controller A Button").
+  (`TRON/ScreenControls.cpp`, `TRON/ScreenJoystick.cpp`, `.h`,
+  `TRON/ScreenConfigure.cpp`; `ClientResShared.h`, `TRON/ClientRes.rc`.)
+* **CL-24: a gamepad's buttons are bound by name.** Configure controls
+  bound a gamepad's button by its instance number, which the engine takes
+  for an axis (RETAIL_BUGS.md). The modern build binds a joystick's and a
+  gamepad's controls by their names (`TRON/ScreenConfigure.cpp` `Bind`).
+* **CL-25: the light cycle with the controller.** The left stick pushed to
+  the left or the right (more than half its travel; then back near the
+  centre before the next turn), or the d-pad's left or right, turns the
+  cycle: the Strafe left and Strafe right commands, which are the turns of
+  the keyboard. The right trigger or the left stick up makes the cycle
+  faster, the left trigger or the left stick down makes it slower (the
+  flags of Forward and Backward). The right stick turns the camera, as
+  the mouse does. (`clientpad.cpp`; `VehicleMgr.cpp`
+  `UpdateLightCycleControlFlags`.)
+
+Tested with the test pad (`TRON20SRC_PADTEST`, the `pad` and `tap`
+commands of the playtest scripts), looked at in the shots:
+
+* `build/playtest-pad-menus.txt`: the d-pad and the left stick move
+  through the main menu, Options and Controls; A opens Options, Controls
+  and Controller; on the Controller screen the d-pad right changes Look
+  speed from 100 to 150, and the value is there again after B and A;
+  Configure controls shows the default layout ("space, Controller A
+  Button"); B goes back to the main menu.
+* `build/playtest-pad-level.txt` (M01-01): the right stick turns the view
+  to the right and back to the left, the left stick walks forward, Start
+  opens the in-game menu and B closes it. A goes past the "Press any key
+  to continue" screen. The right trigger's throw of the disc is not seen
+  in the shots.
+* `build/playtest-pad-race.txt` and a comparison of three runs of the
+  first race (the stick to the left and the d-pad right, the keys A and D,
+  and no input; shots 0.7 s after each turn): the pad's views are like the
+  keys' views and not like the views with no input (mean difference 0.145
+  and 0.195 between pad and keys, 0.20 to 0.22 to no input). The speed
+  (the triggers) is not measured.
+
+Not tested: a real controller (none under Wine and Xvfb), the decision
+windows with the pad (no decision in the first minutes of the first
+level), Configure controls' capture of a pad button, and the Back binding.
+
 ### Inherited engine items
 
 The engine came from cjacksrc's with its modern code. These items compile
@@ -683,10 +935,10 @@ removes it.
 | EN-13 | the console print does not write past its buffer (nolf2src M-E10) | `clientde_impl.cpp`, `dsys_interface.cpp` | (fix) |
 | EN-14 | error messages name their own function (nolf2src M-E11) | `clientde_impl.cpp`, `winclientde_impl.cpp`, `client_iltphysics.cpp`, `ltinfo_impl.cpp`, `soundmgr.cpp` | (fix) |
 | EN-15 | `streamsim_Open` closes its file on an error (nolf2src M-E12) | `streamsim.cpp` | (fix) |
-| EN-20 | `##gamepad`: the XInput pad as a DirectInput gamepad; the engine half only (cjacksrc EN-20; `src/tron20src/xinput/`) | `kernel/src/sys/win/input.cpp` | Input |
-| EN-21 | DirectInput joysticks are left out (cjacksrc EN-21) | `input.cpp` | Input |
-| EN-22 | no DirectInput device enumeration (cjacksrc EN-22) | `input.cpp` | Input |
-| EN-23 | mouse look: the whole buffer once a frame, no smoothing (nolf2src M-E3) | `input.cpp` | Input |
+| EN-20 | `##gamepad`: the XInput pad as a DirectInput gamepad (cjacksrc EN-20; `src/tron20src/xinput/`); checked, kept; the game half is CL-20 to CL-25 | `kernel/src/sys/win/input.cpp` | Input: done (below) |
+| EN-21 | DirectInput joysticks are left out (cjacksrc EN-21); checked, kept; `JoystickDisable` also disables `##gamepad` | `input.cpp` | Input: done (below) |
+| EN-22 | no DirectInput device enumeration (cjacksrc EN-22); checked, kept | `input.cpp` | Input: done (below) |
+| EN-23 | mouse look: the whole buffer once a frame, no smoothing (nolf2src M-E3); checked, kept; the retail bug is in RETAIL_BUGS.md | `input.cpp` | Input: done (below) |
 | EN-30 | widescreen field of view, Hor+ (cjacksrc EN-30) | `client/src/clientmgr.cpp` (`cm_WidescreenFovX`, `CClientMgr::Render`) | Display: done (above) |
 | EN-31 | a window at any size (cjacksrc EN-31) | `render_a/.../d3d_shell.cpp` | Display: done (above) |
 | EN-32 | the window mode: framed or borderless (cjacksrc EN-32) | `kernel/src/sys/win/render.cpp`, `render_a/.../common_init.cpp` | Display: done (above) |
@@ -704,8 +956,87 @@ the bug against Tron 2.0's retail `Lithtech.exe` writes its
 `RETAIL_BUGS.md` entry, or removes the fix if Tron 2.0 does not have the
 bug.
 
-Known open points: EN-20 is only the engine half: the game has no controller
-code (cjacksrc's CL-20 to CL-24) and no default bindings for the pad.
+### Online
+
+Internet play uses OpenSpy (openspy.net), the community replacement of
+GameSpy's servers. The protocols stay those of the retail GameSpy SDK:
+only the host names change. OpenSpy knows Tron 2.0 under the retail
+game name `tron20` and secret key `t9D3vB` (`TronGameServerShell.cpp`,
+`BaseScreenJoin.cpp`). We checked this one time with a list request
+(read only) to `tron20.ms9.openspy.net`: the list decrypts with that key
+and it is correct (no servers at that time). A wrong key does not
+decrypt, and an unknown game name gets no list. We did not send a
+heartbeat to OpenSpy: no public server was hosted.
+
+* **GS-1: the master server.** A server that is not LAN only reports to
+  `tron20.master.<domain>` (UDP 27900), and `<domain>` is `openspy.net`
+  by default (`MasterDomain`, below). `qr2_init_socket` makes the host
+  name with `gsiMakeHostName` (`Libs/GameSpy/GameSpySDK/qr2/qr2.c`).
+  `gsiGetDomainName` and `gsiMakeHostName` are in `Libs/GameSpy/
+  nonport.c` and `nonport.h` (the two copies of `nonport.h` are the
+  same). Each binary finds the domain in this sequence: the environment
+  variable `TRON20SRC_MASTERDOMAIN`, `+MasterDomain <x>` on its command
+  line, `"MasterDomain"` in `autoexec.cfg`, and then the default. A
+  domain that is an IPv4 address is the host of all services (a local
+  or private master server). The client copies its console variable
+  `MasterDomain` into `TRON20SRC_MASTERDOMAIN` before it shows the Internet
+  list and before it hosts a game (`TronSyncMasterDomain`,
+  `TRON/BaseScreenJoin.cpp`; called from `ScreenJoinServerList.cpp`
+  `FindServers` and `BaseScreenHost.cpp` `StartServer`). Thus the
+  server in the same process and a `TRONSrv.exe` that the client starts
+  use the same domain. A `TRONSrv.exe` that you start yourself reads its
+  command line (`TRONSrv.exe -config <name> +MasterDomain <x>`), the
+  environment or `autoexec.cfg`. The server writes `GameSpy: reporting
+  to the master server of <domain>` to its console
+  (`CTronGameServerShell::TronUnknownVirtual4C`).
+* **GS-2: the server list.** The Internet list asks
+  `tron20.ms<n>.<domain>` (TCP 28910; for `tron20`, n is 9):
+  `ServerListConnect` in `serverbrowsing/sb_serverlist.c` makes the host
+  name with `gsiMakeHostName`.
+* **GS-3: no version check.** GameSpy's patch service
+  (`motd.gamespy.com`) is gone, and Update 2 (1.042) is the last patch.
+  The request also sent a machine ID that the SDK keeps in the registry
+  (`GOAGetUniqueID`). `CBaseScreenJoin::CheckForUpdate` returns at once,
+  so the Internet screens open without the "checking for updates" box
+  (`TRON/BaseScreenJoin.cpp`). `pt/ptMain.c` does not change.
+* **GS-4: no CD-key check.** The server does not start GameSpy's CD-key
+  module (`gcd_init_qr2`, `gcd_think`, `gcd_shutdown`) and lets every
+  client in, as in a LAN game (`gcd_authenticate_user`,
+  `gcd_disconnect_user` are not called; `TRON/TronGameServerShell.cpp`:
+  `TronUnknownVirtual4C`, `50`, `54`, `78`, `ProcessHandshake`). The
+  client does not read its CD key: it answers the server's challenge
+  with the response of an empty key, so that the message keeps its
+  form and does not identify the player
+  (`TRON/TronClientMultiplayerMgr.cpp` `HandleMsgHandshake`). Thus the
+  modern client does not use `CTronCDKey` (APPS-3 can remove the
+  registry read).
+
+Tests (`make mptest TEST_GAME=out/tron20-modern-release`, the new
+`MPTEST_MASTER=local`): `build/gamespy.py master` is a local stand-in
+for the master server and the server list (qr2 and the encrypted list
+of the SDK, written from the SDK source; its ciphers give the same bytes
+as the SDK's C code). All programs get `TRON20SRC_MASTERDOMAIN=127.0.0.1`.
+The dedicated server (not LAN only) sent its heartbeat. It answered the
+challenge correctly and was listed. Client 1 joined with `+join`.
+Client 2 opened Multiplayer, Join, saw `mptest` in the Internet list
+(ping, players 1/8, Disc Arena, DiscArena01: its query went to the
+server), and joined from the list. Neither client has a CD key. Both
+played and saw the other. The same with `MPTEST_MODE=listen` (client 1
+hosts from the menus). With `MPTEST_MASTERVIA=cvar` there is no
+environment variable: the clients get `+MasterDomain 127.0.0.1` (the
+console variable, which `TronSyncMasterDomain` copies) and `TRONSrv.exe`
+gets it on its command line. Dedicated and listen both passed. A LAN
+game (`make mptest` without `MPTEST_MASTER`) is not changed and still
+works. Not tested: that the engine keeps `MasterDomain` in
+`autoexec.cfg` when the game exits (the tests stop the clients), and a
+game over OpenSpy itself (that needs a public server). `build/gamespy.py list
+<host>` is a read-only browser (for example, against OpenSpy).
+
+### Console variables
+
+| Variable | Type | Default | What | Items |
+|---|---|---|---|---|
+| `MasterDomain` | string | (empty = `openspy.net`) | the domain of the master server and the server list: `tron20.master.<domain>`, `tron20.ms<n>.<domain>`; an IPv4 address is the host of both. Read from the client's console, `+MasterDomain` on a command line (`TRONSrv.exe` too), `autoexec.cfg`, or the environment variable `TRON20SRC_MASTERDOMAIN` | GS-1, GS-2 |
 
 ## Planned (Phase 1)
 
@@ -728,59 +1059,50 @@ Done: EN-44 and EN-45 (under "Done", "Frame rate").
 
 ### Input
 
-* **EN-24: raw mouse input.** `WM_INPUT` (or DirectInput's buffered mouse,
-  EN-23) for the look axes. Files: `kernel/src/sys/win/input.cpp`, the
-  window procedure in `kernel/src/sys/win/client.cpp`.
-* **CL-20: controllers through XInput.** On EN-20 to EN-22: the game half
-  (cjacksrc's CL-20 to CL-24: look speed, dead zones, bindings, menus with
-  the pad). Files: `src/tron20src/xinput/` (cjacksrc's `clientpad.cpp`),
-  `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp`,
-  `TRON/ScreenControls.cpp`, `TRON/ScreenMouse.cpp`, a controller screen,
-  `ClientShellShared/ProfileMgr.cpp` (the bindings), and the launcher's
-  "Disable Joysticks" (`Launcher/OptionsDlg.cpp`).
+Done: EN-24, CL-20 to CL-25 (under "Done", "Input").
 
 ### Middleware
 
-What Tron 2.0 loads that is proprietary (`LoadLibrary` and the imports of
-every retail binary):
+What Tron 2.0 loads that is not ours (`LoadLibrary`, the imports and the
+DLL names in every retail binary):
 
 | Retail | Loaded by | Modern |
 |---|---|---|
-| `binkw32.dll` (RAD Game Tools), the movies | `kernel/src/sys/win/binkvideomgrimpl.cpp` (`LoadLibrary("Binkw32.dll")`, by name) | X-1 |
-| `L3CODECA.ACM`, the Fraunhofer MP3 codec of Windows' Audio Compression Manager (under Wine, `winemp3.acm`): 2,133 of the 2,572 WAV files in `Sound.rez` are MP3 (format 0x55) | `src/Engine/snddrv/s_dx8.cpp` | X-2 |
-| `MSS32.DLL`, Miles | only `binkw32.dll` names it (its optional sound); nothing of the game loads it | goes with X-1 |
-| `IMAADP32.ACM` (IMA ADPCM, part of Windows), `MFC42.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, D3DX9 (linked statically) | | kept: Microsoft runtime |
+| `binkw32.dll` (RAD Game Tools), the movies | `kernel/src/sys/win/binkvideomgrimpl.cpp` (`LoadLibrary("Binkw32.dll")`) | ours, X-1 (done) |
+| `MSS32.DLL`, Miles (RAD Game Tools) | only RAD's `binkw32.dll` names it (with `DSOUND.DLL`, for its sound outputs); no binary of the game imports or loads it, and the game does not ship it | gone with X-1: our player plays through `waveOut` |
+| `L3CODECA.ACM`, the MP3 codec of the system | `src/Engine/snddrv/s_dx8.cpp` (`SelectHardCodedMP3Codec`, then the ACM drivers of the system) | ours, in `SndDrv.dll`, X-2 (done) |
+| `IMAADP32.ACM` (IMA ADPCM, a part of Windows and of Wine) | `s_dx8.cpp`; `Startup` fails without an ADPCM driver, though no file of the game is IMA ADPCM | kept: a part of the system |
+| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | X-3 (open, below) |
+| `cdaudio.dll` (Monolith's CD music driver) | the engine (`CClientMgr::AppInitMusic`), only if the game asks; Tron 2.0 does not ship it | nothing to do |
+| `MFC42.DLL`, `MFC42U.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, `MSVCIRT.dll`; D3DX9 (linked statically) | | kept: Microsoft's runtime |
+| SecuROM's DLL names in the retail `Lithtech.exe` (`CmdLineExt*.dll`, `SIntf*.dll`, `PID*.DLL`, ...) | the copy protection | not in our engine |
 | the GameSpy SDK | compiled from our source (`src/Game/Libs/GameSpy`) | GS- items |
 
-* **X-1: our Bink player on FFmpeg in place of `binkw32.dll`**, as
-  nolf2src's and cjacksrc's X-1. Files: a new `src/modern/binkw32/` (or
-  cjacksrc's), an FFmpeg submodule in `ext/`, a `build/ext.sh`,
-  `build/all.sh` step 2 and `build/variant.sh` (`TRON20SRC_MIDDLEWARE=
-  open`), `ext/tools/retailextract.py` (the third-party list).
-* **X-2: MP3 decoding in `SndDrv.dll`** (minimp3, as cjacksrc's EN-50),
-  so that the speech plays without a codec installed. Files:
-  `src/Engine/snddrv/s_dx8.cpp`, `snddrv.dsp`.
-
-### Online
-
-* **GS-1: the master server: OpenSpy.** The game and the dedicated server
-  report to `tron20.master.gamespy.com` (UDP 27900): `qr2.c` (the host
-  name is made from the game name), started in
-  `ObjectDLL/TRON/TronGameServerShell.cpp` (`qr2_init_socket`). The
-  domain is `GSI_DOMAIN_NAME` in `Libs/GameSpy/GameSpySDK/nonport.h` (and
-  `Libs/GameSpy/nonport.h`).
-* **GS-2: the server list.** The client asks `tron20.ms<n>.gamespy.com`
-  (TCP 28910): `serverbrowsing/sb_serverlist.c`, from
-  `ClientShellDLL/TRON/ScreenJoinServerList.cpp` (`ServerBrowserNew`,
-  `ServerBrowserUpdate`), `BaseScreenJoin.cpp`, `ScreenServerInfo.cpp`.
-* **GS-3: the version check.** `motd.gamespy.com` (HTTP): `pt/ptMain.c`
-  (`ptCheckForPatchAndTrackUsage`), from `TRON/BaseScreenJoin.cpp`.
-* **GS-4: the CD-key check.** It goes through the master server: the
-  server's `gcdkey/gcdkeys.c` (`gcd_init_qr2`, `gcd_authenticate_user`,
-  `TronGameServerShell.cpp`), the client's `gcdkey/gcdkeyc.c`
-  (`gcd_compute_response`, `TRON/TronClientMultiplayerMgr.cpp`), the key
-  from the registry (`TRON/TronCDKey.cpp`, APPS-3). Without a GameSpy
-  key server it must accept every client (or use OpenSpy's).
+* **X-3: the music under Wine and Proton.** The music is DirectMusic:
+  segments (`MUSIC/*/*.sgt`) with MP3 waves. Under Wine 9.0 the legacy
+  build's main menu is silent (a recording with `PLAYTEST_AUDIO`), as
+  nolfsrc and avp2src found for their games: Wine's DirectMusic loads the
+  segments but plays nothing (and Wine's `dswave.dll` has no ACM code for
+  compressed waves). nolfsrc's M-P4-12 and avp2src's M-X4 put Microsoft's
+  DirectMusic in the game directory (`ms_<name>.dll` from
+  `ext/toolchains/directmusic-5.3.1.904/` and a manifest for registration-
+  free COM: `DIRECTMUSIC_MANIFESTS` in `build/retail.py`). That was tried
+  here: the DLLs load, but `CLTDirectMusicMgr::Init` fails. Tron 2.0's
+  engine (NOLF2's generation) gives DirectMusic its own DirectSound object
+  in `IDirectMusicPerformance8::InitAudio` (`InitPerformance`), and
+  Microsoft's DirectMusic then asks that object for an interface that
+  Wine's DirectSound does not have (IID
+  `{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`, `IDirectSoundConnect`, the sink
+  of DirectX 8 audio paths; Wine's trace: "unknown IID"). The NOLF and
+  AvP2 engines use the older `Init` and a port, which work. The plan: (a)
+  in the modern engine, start DirectMusic in the older way when the
+  audio-path start fails (`ltdirectmusic_impl.cpp`, `InitPerformance`;
+  the default audio path and the reverb would change), then (b) install
+  Microsoft's DirectMusic as nolfsrc does. With it, the music waves come
+  to X-2's codec through ACM (no driver handle), which `make mp3acmtest`
+  checks for all 1,317 music files. Until then the music is silent under
+  Wine, in the legacy build too; on Windows the system's DirectMusic plays
+  it, with X-2's codec.
 
 ### Overlaps
 
@@ -799,3 +1121,6 @@ every retail binary):
 | `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`, `OptionsDlg.cpp` | Display (CL-30, CL-31, CL-35), Apps (APPS-3: where the options are stored), Input (CL-20: Disable Joysticks) | Apps changes only the storage calls |
 | `binkvideomgrimpl.cpp`, `InterfaceMgr.cpp` (movies) | Display (CL-32), Middleware (X-1) | Middleware replaces the DLL behind the same calls; Display changes the rectangle |
 | `build/all.sh`, `build/variant.sh` | Middleware (X-1, X-2) | Middleware only |
+| `ClientShellShared/CMoveMgr.cpp`, `VehicleMgr.cpp`, `PlayerMgr.cpp` | Frame rate (EN-45), Input (CL-20, CL-25: the pad's movement, look and light cycle) | Input adds blocks in `UpdateNormalControlFlags`, `UpdateNormalMotion`, `GetMaxVelMag`, `UpdateLightCycleControlFlags`, `CalculateCameraRotation` only |
+| `ClientRes/Shared/ClientResShared.h`, `ClientRes/TRON/ClientRes.rc` | all (new strings) | each its own block of IDs: Frame rate 31100 to 31109, Input 31300 to 31399 |
+| `build/playtest.sh`, `Makefile`, `README.md` | Middleware (X-1, X-2: `PLAYTEST_AUDIO`, `TRON20SRC_MIDDLEWARE`, `make mp3acmtest`) and others | each adds its own lines |

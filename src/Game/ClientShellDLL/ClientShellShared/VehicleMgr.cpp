@@ -30,6 +30,10 @@
 #include "PlayerViewAttachmentMgr.h"
 #include "MissionMgr.h"
 #include "PlayerCamera.h"
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-25: the controller on a light cycle
+#include "xinput/clientpad.h"
+#endif
 
 #define ROUNDFLOAT(f) ((int)((f) + ((f) > 0 ? 0.5 : -0.5)))
 
@@ -3888,6 +3892,21 @@ void CVehicleMgr::UpdateLightCycleControlFlags()
 	{
 		m_nTronUnknown2134 |= 0x10000;
 	}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-25: the controller's triggers and left stick: faster
+	// and slower, as the forward and reverse keys (its turns are the
+	// strafe commands, clientpad.cpp)
+	bool bPadFaster, bPadSlower;
+	Pad_LightCycleSpeed(&bPadFaster, &bPadSlower);
+	if (bPadFaster)
+	{
+		m_nTronUnknown2134 |= 0x1000;
+	}
+	if (bPadSlower)
+	{
+		m_nTronUnknown2134 |= 0x10000;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //

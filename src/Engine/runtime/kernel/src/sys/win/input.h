@@ -117,6 +117,11 @@ LTRESULT input_GetManager(InputMgr **pMgr);
 // Saves the state of all the input bindings.
 void input_SaveBindings(FILE *fp);
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-24: the window procedure's WM_INPUT (client.cpp)
+void input_ModernRawInput(long lParam);	// an LPARAM
+#endif
+
 #endif  // __INPUT_H__
 
 

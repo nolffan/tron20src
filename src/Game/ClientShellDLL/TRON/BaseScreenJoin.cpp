@@ -596,6 +596,13 @@ static void PatchCallbackFn(PTBool available, PTBool mandatory, const char *vers
 // there is a patch for this version; Render closes the box at the timeout
 void CBaseScreenJoin::CheckForUpdate()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN (GS-3): no version check. GameSpy's patch service
+	// (motd.gamespy.com) is gone, Update 2 (1.042) is the last patch, and
+	// the request sent a machine ID that the SDK keeps in the registry
+	// (GOAGetUniqueID). The Internet screens open at once.
+	return;
+#endif
 	if (!m_bInternet || s_bCheckedForUpdate) return;
 
 	MBCreate mb;
@@ -628,3 +635,14 @@ void CBaseScreenJoin::SetRenderState()
 	g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
 	g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN (GS-1, GS-2): see BaseScreenJoin.h
+void TronSyncMasterDomain()
+{
+	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("MasterDomain");
+	const char *pszDomain = hVar ? g_pLTClient->GetVarValueString(hVar) : LTNULL;
+	if (pszDomain && pszDomain[0])
+		SetEnvironmentVariable("TRON20SRC_MASTERDOMAIN", pszDomain);
+}
+#endif

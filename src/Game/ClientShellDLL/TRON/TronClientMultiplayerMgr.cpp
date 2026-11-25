@@ -55,10 +55,19 @@ bool TronClientMultiplayerMgr::HandleMsgHandshake( ILTMessage_Read & msg )
 		msg.ReadData(szChallenge, 64);
 		szChallenge[8] = 0;
 
+#ifdef TRON20SRC_MODERN
+		// MODERN (GS-4): no CD key. A modern server checks none, and the
+		// answer (an MD5 of the key) would identify the player to every
+		// server. The answer is made from an empty key: the message keeps
+		// its form.
+		char szResponse[73];
+		gcd_compute_response("", szChallenge, szResponse);
+#else
 		CTronCDKey* pCDKey = ((CTronGameClientShell*)g_pGameClientShell)->GetCDKey();
 		std::string sCDKey = pCDKey->GetCDKey();
 		char szResponse[73];
 		gcd_compute_response((char*)sCDKey.c_str(), szChallenge, szResponse);
+#endif
 
 		// Read in their key
 		m_nServerKey = msg.Readuint32();

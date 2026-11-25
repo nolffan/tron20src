@@ -1,0 +1,21 @@
+# playtest-sound.txt -- speech in the first single-player level. Past the
+# post-load screen (a key), into control (skipcine), a turn and a walk to
+# the first bit, and the action key (F, "Listen"): the bit speaks a line
+# (VOICE/, MP3) with its subtitle. For MODERN.md X-2: run it with a Wine
+# prefix without an MP3 codec (PLAYTEST_PREFIX) and with PLAYTEST_AUDIO set
+# (build/playtest.sh) to record what plays.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+wait 30
+nohud loaded
+key k
+skipcine 60
+shot start
+turn 150 0
+hold w 1.0
+wait 2
+key f
+wait 2
+shot listen
+wait 8
+shot after

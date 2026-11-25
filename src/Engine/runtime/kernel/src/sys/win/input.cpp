@@ -385,6 +385,249 @@ class DeviceDef
 // MODERN.md EN-20: ##gamepad, the XInput controller as a DirectInput gamepad
 // (src/tron20src/xinput/, from cjacksrc)
 #include "xinput/gamepad_device.h"
+
+// MODERN.md EN-24: raw mouse input. The system mouse (##mouse) is read
+// from WM_INPUT (the window procedure, client.cpp, hands each one to
+// input_ModernRawInput) in place of DirectInput: the counts of the mouse
+// itself, with no pointer acceleration, and every one of them once. Its
+// motion is added up between two reads, its buttons and its wheel are kept
+// in the order they came, and input_ReadInput hands them on as the events
+// DirectInput would have given (input_ModernRawEvents), so the bindings,
+// the look's scale (MouseSensitivity) and EN-23's look are unchanged: on
+// Windows a DirectInput count is the mouse's own count too.
+//
+// DirectInput's mouse is not acquired meanwhile (input_ModernRawRelease):
+// DirectInput 8 reads the mouse through raw input itself (Wine's does, and
+// Microsoft says Windows' does), and a process has one raw input target for
+// the mouse, so an acquired DirectInput mouse takes the input from the
+// game's window (seen under Wine: no WM_INPUT after the first acquire).
+// Configure controls' capture (device tracking) still acquires it, and the
+// raw input is registered again after it.
+//
+// No RIDEV_NOLEGACY: the window keeps its mouse messages, so the menus keep
+// their cursor; no RIDEV_INPUTSINK: only the foreground window gets the
+// input. DirectInput's mouse is used again, as before, with RawMouse 0 (a
+// console variable, on unless set), when raw input cannot be registered,
+// and for good once an absolute device (a tablet, a remote desktop) sends
+// raw input.
+//
+// VC6's SDK and the DirectX 8.1 SDK predate raw input (Windows XP): its
+// types are declared here and its two functions looked up in user32.dll.
+namespace
+{
+	enum
+	{
+		MODERN_RIM_TYPEMOUSE		= 0,
+		MODERN_RID_INPUT			= 0x10000003,
+		MODERN_RIDEV_REMOVE			= 0x00000001,
+		MODERN_MOUSE_MOVE_ABSOLUTE	= 0x0001,
+		MODERN_RI_MOUSE_WHEEL		= 0x0400,	// usButtonData: the wheel's delta
+		MODERN_RAW_BUTTONS			= 5,		// RI_MOUSE_BUTTON_1..5: DirectInput's buttons 0..4
+		MODERN_RAW_QUEUE			= 64		// button and wheel events between two reads
+	};
+
+	struct ModernRawInputDevice
+	{
+		USHORT	usUsagePage;
+		USHORT	usUsage;
+		DWORD	dwFlags;
+		HWND	hwndTarget;
+	};
+
+	struct ModernRawInputHeader
+	{
+		DWORD	dwType;
+		DWORD	dwSize;
+		HANDLE	hDevice;
+		WPARAM	wParam;
+	};
+
+	struct ModernRawMouse
+	{
+		USHORT	usFlags;
+		ULONG	ulButtons;				// usButtonFlags, usButtonData (high word)
+		ULONG	ulRawButtons;
+		LONG	lLastX;
+		LONG	lLastY;
+		ULONG	ulExtraInformation;
+	};
+
+	struct ModernRawInput
+	{
+		ModernRawInputHeader	header;
+		ModernRawMouse			mouse;
+		BYTE					pad[32];		// room for a larger record
+	};
+
+	// A button or wheel event: the button (0..4), or -1 for the wheel; its
+	// DirectInput value (0x80 down, 0 up; the wheel's delta).
+	struct ModernRawEvent
+	{
+		int		nObject;
+		LONG	nValue;
+	};
+
+	typedef BOOL (WINAPI *ModernRegisterRawInputDevicesFn)(const ModernRawInputDevice*, UINT, UINT);
+	typedef UINT (WINAPI *ModernGetRawInputDataFn)(HANDLE, UINT, LPVOID, UINT*, UINT);
+
+	ModernRegisterRawInputDevicesFn	s_pfnRegisterRawInputDevices;
+	ModernGetRawInputDataFn			s_pfnGetRawInputData;
+	HWND	s_hRawWnd;
+	bool	s_bRawRegistered;			// the mouse is registered for the game's window
+	bool	s_bRawAbsolute;				// an absolute device sent raw input: DirectInput's
+	bool	s_bDIMouseAcquired = true;	// DirectInput's mouse may be acquired
+	LONG	s_nRawX, s_nRawY;			// the motion since the last read
+	ModernRawEvent	s_RawQueue[MODERN_RAW_QUEUE];
+	int		s_nRawQueued;
+
+	void input_ModernRawClear()
+	{
+		s_nRawX = s_nRawY = 0;
+		s_nRawQueued = 0;
+	}
+
+	bool input_ModernRawRegisterWindow()
+	{
+		ModernRawInputDevice device;
+
+		if( !s_pfnRegisterRawInputDevices || !s_hRawWnd )
+			return false;
+
+		// the generic desktop page (1), the mouse (2)
+		device.usUsagePage = 1;
+		device.usUsage = 2;
+		device.dwFlags = 0;
+		device.hwndTarget = s_hRawWnd;
+		return s_pfnRegisterRawInputDevices( &device, 1, sizeof(device) ) != FALSE;
+	}
+
+	void input_ModernRawRegister( HWND hWnd )
+	{
+		HMODULE hUser = GetModuleHandleA( "user32.dll" );
+
+		s_hRawWnd = hWnd;
+		s_bRawRegistered = s_bRawAbsolute = false;
+		s_bDIMouseAcquired = true;
+		input_ModernRawClear();
+
+		if( !hUser || !hWnd )
+			return;
+
+		s_pfnRegisterRawInputDevices = (ModernRegisterRawInputDevicesFn)GetProcAddress( hUser, "RegisterRawInputDevices" );
+		s_pfnGetRawInputData = (ModernGetRawInputDataFn)GetProcAddress( hUser, "GetRawInputData" );
+		if( !s_pfnRegisterRawInputDevices || !s_pfnGetRawInputData )
+			return;
+
+		s_bRawRegistered = input_ModernRawRegisterWindow();
+	}
+
+	void input_ModernRawUnregister()
+	{
+		ModernRawInputDevice device;
+
+		if( s_bRawRegistered && s_pfnRegisterRawInputDevices )
+		{
+			device.usUsagePage = 1;
+			device.usUsage = 2;
+			device.dwFlags = MODERN_RIDEV_REMOVE;
+			device.hwndTarget = LTNULL;
+			s_pfnRegisterRawInputDevices( &device, 1, sizeof(device) );
+		}
+		s_bRawRegistered = false;
+		s_hRawWnd = LTNULL;
+	}
+
+	// Is the system mouse read from raw input now?
+	bool input_ModernRawMode()
+	{
+		LTCommandVar *pVar;
+
+		if( !s_bRawRegistered || s_bRawAbsolute )
+			return false;
+
+		pVar = g_pInputConsoleState ? cc_FindConsoleVar( g_pInputConsoleState, "RawMouse" ) : LTNULL;
+		return !pVar || pVar->floatVal != 0.0f;
+	}
+
+	// The engine has just acquired a device (input_SetupDeviceFormats,
+	// input_EnableDevice, a retry): if it is the mouse, the next read takes
+	// it back from DirectInput.
+	void input_ModernAcquired( bool bSysMouse )
+	{
+		if( bSysMouse )
+			s_bDIMouseAcquired = true;
+	}
+
+	// input_ReadInput, the system mouse: in raw mode DirectInput's mouse is
+	// let go (outside a capture) and the raw input registered again, which
+	// DirectInput's unacquire removes under Wine; out of it, DirectInput's
+	// mouse is acquired again.
+	void input_ModernRawRelease( LPDIRECTINPUTDEVICE8 pDevice, bool bTracking, bool bRaw )
+	{
+		if( bRaw && !bTracking && s_bDIMouseAcquired )
+		{
+			pDevice->Unacquire();
+			s_bDIMouseAcquired = false;
+			if( !input_ModernRawRegisterWindow() )
+				s_bRawRegistered = false;
+			input_ModernRawClear();
+		}
+		else if( !bRaw && !s_bDIMouseAcquired )
+		{
+			pDevice->Acquire();
+			s_bDIMouseAcquired = true;
+			input_ModernRawClear();
+		}
+	}
+}
+
+// The window procedure's WM_INPUT (client.cpp).
+void input_ModernRawInput( long lParam )
+{
+	ModernRawInput input;
+	UINT nSize = sizeof(input);
+	USHORT nFlags;
+	int i;
+
+	if( !s_bRawRegistered )
+		return;
+
+	if( s_pfnGetRawInputData( (HANDLE)lParam, MODERN_RID_INPUT, &input, &nSize, sizeof(ModernRawInputHeader) ) == (UINT)-1 ||
+		nSize < sizeof(ModernRawInputHeader) + sizeof(ModernRawMouse) ||
+		input.header.dwType != MODERN_RIM_TYPEMOUSE )
+	{
+		return;
+	}
+
+	if( input.mouse.usFlags & MODERN_MOUSE_MOVE_ABSOLUTE )
+	{
+		s_bRawAbsolute = true;
+		return;
+	}
+
+	s_nRawX += input.mouse.lLastX;
+	s_nRawY += input.mouse.lLastY;
+
+	nFlags = (USHORT)(input.mouse.ulButtons & 0xFFFF);
+	for( i = 0; i < MODERN_RAW_BUTTONS && s_nRawQueued < MODERN_RAW_QUEUE; i++ )
+	{
+		if( nFlags & (1 << (2 * i)) )
+		{
+			s_RawQueue[s_nRawQueued].nObject = i;
+			s_RawQueue[s_nRawQueued++].nValue = 0x80;
+		}
+		if( (nFlags & (2 << (2 * i))) && s_nRawQueued < MODERN_RAW_QUEUE )
+		{
+			s_RawQueue[s_nRawQueued].nObject = i;
+			s_RawQueue[s_nRawQueued++].nValue = 0;
+		}
+	}
+	if( (nFlags & MODERN_RI_MOUSE_WHEEL) && s_nRawQueued < MODERN_RAW_QUEUE )
+	{
+		s_RawQueue[s_nRawQueued].nObject = -1;
+		s_RawQueue[s_nRawQueued++].nValue = (SHORT)(input.mouse.ulButtons >> 16);
+	}
+}
 #endif
 
 
@@ -938,6 +1181,9 @@ static bool input_SetupDeviceFormats( DeviceDef *pDevice )
 	
 	// Re-acquire it.
 	hResult = pDevice->m_pDevice->Acquire();
+#ifdef TRON20SRC_MODERN
+	input_ModernAcquired( pDevice->m_bSysMouse );	// MODERN.md EN-24
+#endif
 	if(hResult != DI_OK)
 	{
 		if(hResult == DIERR_OTHERAPPHASPRIO)
@@ -1136,6 +1382,10 @@ void input_Term(InputMgr *pMgr)
 	ActionDef		*pCurAction, *pNextAction;
 
 	g_pInputConsoleState = LTNULL;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-24
+	input_ModernRawUnregister();
+#endif
 	
 	// Clear the device defs.
 	pDef = g_pDeviceHead;
@@ -1251,6 +1501,9 @@ bool input_Init(InputMgr *pMgr, ConsoleState *pState)
 			pDev->Release();
 		}
 	}
+
+	// MODERN.md EN-24: the mouse's raw input, to the game's window
+	input_ModernRawRegister( g_InputHWND );
 #else
 	// Enumerate devices so we know what's there.
 	g_pDirectInput->EnumDevices( 0, DeviceEnumCallback, LTNULL, DIEDFL_ATTACHEDONLY );
@@ -1448,6 +1701,9 @@ bool input_EnableDevice( InputMgr *pMgr, const char *pDeviceName )
 		// BB: Removed the forces, but still acquiring it here because it's been done for so long (don't
 		//     want to anything up...)
 		hResult = pDevice->m_pDevice->Acquire();
+#ifdef TRON20SRC_MODERN
+		input_ModernAcquired( pDevice->m_bSysMouse );	// MODERN.md EN-24
+#endif
 	}
 	
 	return true;
@@ -1456,17 +1712,116 @@ bool input_EnableDevice( InputMgr *pMgr, const char *pDeviceName )
 #ifdef TRON20SRC_MODERN
 // MODERN.md EN-23: the mouse's look axes (x and y), whose motion
 // input_ReadInput adds up over a frame. Not the wheel (z), whose bindings
-// are ranges one notch at a time.
-static bool input_IsMouseLookAxis( DeviceDef *pDevice, TriggerObject *pTrigger )
+// are ranges one notch at a time. 1 for x, 2 for y, else 0.
+static int input_MouseLookAxis( DeviceDef *pDevice, TriggerObject *pTrigger )
 {
 	if( !pDevice->m_bSysMouse || pTrigger->m_InputType != Input_RelAxis )
-		return false;
-	return stricmp( pTrigger->m_RealName, "##x-axis" ) == 0 ||
-		stricmp( pTrigger->m_RealName, "##y-axis" ) == 0 ||
+		return 0;
+	if( stricmp( pTrigger->m_RealName, "##x-axis" ) == 0 ||
 		stricmp( pTrigger->m_TriggerName, "X-axis" ) == 0 ||
+		stricmp( pTrigger->m_TriggerName, "X Axis" ) == 0 )
+		return 1;
+	if( stricmp( pTrigger->m_RealName, "##y-axis" ) == 0 ||
 		stricmp( pTrigger->m_TriggerName, "Y-axis" ) == 0 ||
-		stricmp( pTrigger->m_TriggerName, "X Axis" ) == 0 ||
-		stricmp( pTrigger->m_TriggerName, "Y Axis" ) == 0;
+		stricmp( pTrigger->m_TriggerName, "Y Axis" ) == 0 )
+		return 2;
+	return 0;
+}
+
+static bool input_IsMouseLookAxis( DeviceDef *pDevice, TriggerObject *pTrigger )
+{
+	return input_MouseLookAxis( pDevice, pTrigger ) != 0;
+}
+
+// MODERN.md EN-24: the instance numbers of the mouse's buttons, in their
+// order (button 0 first), as DirectInput describes them: the buttons of the
+// raw input are those.
+static BOOL CALLBACK input_ModernButtonEnum( LPCDIDEVICEOBJECTINSTANCE pObject, LPVOID pvRef )
+{
+	int *pInstances = (int*)pvRef;
+	int i;
+
+	for( i = 0; i < MODERN_RAW_BUTTONS; i++ )
+	{
+		if( pInstances[i] < 0 )
+		{
+			pInstances[i] = DIDFT_GETINSTANCE( pObject->dwType );
+			return DIENUM_CONTINUE;
+		}
+	}
+	return DIENUM_STOP;
+}
+
+// MODERN.md EN-24: the raw input since the last read as the events
+// DirectInput would have buffered for the mouse's bound objects: the
+// motion of each look axis once, then the buttons and the wheel in their
+// order. Returns how many.
+static unsigned long input_ModernRawEvents( DeviceDef *pDevice, DIDEVICEOBJECTDATA *pData, unsigned long nMax )
+{
+	static int s_nButtonInstance[MODERN_RAW_BUTTONS];
+	static bool s_bButtonsKnown = false;
+	int nIndex[MODERN_RAW_BUTTONS + 3];		// the buttons', x's, y's, the wheel's state index
+	TriggerObject *pTrigger;
+	GPOS pos;
+	unsigned long n = 0;
+	int i, k;
+
+	if( !s_bButtonsKnown )
+	{
+		for( i = 0; i < MODERN_RAW_BUTTONS; i++ )
+			s_nButtonInstance[i] = -1;
+		pDevice->m_pDevice->EnumObjects( input_ModernButtonEnum, s_nButtonInstance, DIDFT_BUTTON );
+		s_bButtonsKnown = true;
+	}
+
+	for( i = 0; i < MODERN_RAW_BUTTONS + 3; i++ )
+		nIndex[i] = -1;
+
+	for( pos = pDevice->m_Triggers; pos; )
+	{
+		pTrigger = pDevice->m_Triggers.GetNext(pos);
+
+		k = -1;
+		if( pTrigger->m_diGuid == GUID_XAxis )
+			k = MODERN_RAW_BUTTONS;
+		else if( pTrigger->m_diGuid == GUID_YAxis )
+			k = MODERN_RAW_BUTTONS + 1;
+		else if( pTrigger->m_diGuid == GUID_ZAxis )
+			k = MODERN_RAW_BUTTONS + 2;
+		else if( pTrigger->m_diGuid == GUID_Button )
+		{
+			for( i = 0; i < MODERN_RAW_BUTTONS; i++ )
+			{
+				if( s_nButtonInstance[i] == (int)DIDFT_GETINSTANCE( pTrigger->m_diType ) )
+					k = i;
+			}
+		}
+
+		if( k >= 0 && nIndex[k] < 0 && pTrigger->m_StateIndex < MAX_OBJECT_BINDINGS )
+			nIndex[k] = (int)pTrigger->m_StateIndex;
+	}
+
+	if( s_nRawX && nIndex[MODERN_RAW_BUTTONS] >= 0 && n < nMax )
+	{
+		pData[n].dwOfs = nIndex[MODERN_RAW_BUTTONS] << 2;
+		pData[n++].dwData = (DWORD)s_nRawX;
+	}
+	if( s_nRawY && nIndex[MODERN_RAW_BUTTONS + 1] >= 0 && n < nMax )
+	{
+		pData[n].dwOfs = nIndex[MODERN_RAW_BUTTONS + 1] << 2;
+		pData[n++].dwData = (DWORD)s_nRawY;
+	}
+	for( i = 0; i < s_nRawQueued && n < nMax; i++ )
+	{
+		k = s_RawQueue[i].nObject < 0 ? MODERN_RAW_BUTTONS + 2 : s_RawQueue[i].nObject;
+		if( nIndex[k] < 0 )
+			continue;
+		pData[n].dwOfs = nIndex[k] << 2;
+		pData[n++].dwData = (DWORD)s_RawQueue[i].nValue;
+	}
+
+	input_ModernRawClear();
+	return n;
 }
 #endif
 
@@ -1499,6 +1854,11 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 		LTCommandVar *pHold = g_pInputConsoleState ? cc_FindConsoleVar( g_pInputConsoleState, "PadHoldButtons" ) : LTNULL;
 		PadDevice_SetHold( pHold ? (WORD)(int)pHold->floatVal : 0 );
 	}
+
+	// MODERN.md EN-24: is the mouse read from raw input? (bRawGiven: its
+	// events are handed on once, the first time round its read loop)
+	bool bRawMouse = input_ModernRawMode();
+	bool bRawGiven = false;
 #endif
 
 	// clear all of the axis console variables 
@@ -1522,6 +1882,13 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 			// Check for JoystickDisable..
 			if(LOBYTE(pDevice->m_DeviceType) == DI8DEVTYPE_JOYSTICK && g_CV_JoystickDisable)
 				break;
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-21: the launcher's "Disable joysticks" (it says
+			// "all joysticks and gamepads") disables the controller,
+			// ##gamepad, the only one left
+			if(pDevice->IsGamepad() && g_CV_JoystickDisable)
+				break;
+#endif
 
 			// Poll the device if necessary
 			if(pDevice->IsJoystick() || pDevice->IsGamepad())
@@ -1547,6 +1914,19 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 			}
 #endif
 
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-24: the system mouse from raw input (once; then
+			// no more events this read), DirectInput's mouse let go
+			if( pDevice->m_bSysMouse )
+				input_ModernRawRelease( pDevice->m_pDevice, pDevice->m_bTracking, bRawMouse );
+			if( pDevice->m_bSysMouse && bRawMouse && !pDevice->m_bTracking )
+			{
+				nEvents = bRawGiven ? 0 : input_ModernRawEvents( pDevice, data, INPUT_BUFFER_SIZE );
+				bRawGiven = true;
+				hResult = DI_OK;
+			}
+			else
+#endif
 			hResult = pDevice->m_pDevice->GetDeviceData( sizeof(DIDEVICEOBJECTDATA), data, &nEvents, 0 );
 			//hResult = pDevice->m_pDevice->GetDeviceState( pDevice->m_StateReadSize, dwStates );
 
@@ -1561,6 +1941,9 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 				{
 					// Attempt to acquire it and retry .. maybe it got lost.
 					hResult = pDevice->m_pDevice->Acquire();
+#ifdef TRON20SRC_MODERN
+					input_ModernAcquired( pDevice->m_bSysMouse );	// MODERN.md EN-24
+#endif
 					
 					//hResult = pDevice->m_pDevice->GetDeviceState( pDevice->m_StateReadSize, dwStates );
 					hResult = pDevice->m_pDevice->GetDeviceData( sizeof(DIDEVICEOBJECTDATA), data, &nEvents, 0 );
@@ -1637,6 +2020,7 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 				pTrigger->m_PrevState = pTrigger->m_State;
 				pTrigger->m_State = (float)((int32)(data[i].dwData));
 			}
+
 
 
 			// Go thru each trigger and check the state.
@@ -1842,6 +2226,12 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 
 		pDevice = pDevice->m_pNext;
 	}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-24: raw input that no read took (no binding on the
+	// mouse, or DirectInput's mouse in use) is not kept for later
+	if( !bRawGiven )
+		input_ModernRawClear();
+#endif
 }
 
 
@@ -1852,6 +2242,10 @@ void input_ReadInput( InputMgr *pMgr, BYTE *pActionsOn, float axisOffsets[3] )
 bool input_FlushInputBuffers(InputMgr *pMgr)
 {
 	bool bSuccess = true;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-24: the raw input too
+	input_ModernRawClear();
+#endif
 
 	DeviceDef* pDef = g_pDeviceHead;
 	while( pDef )
@@ -2510,6 +2904,9 @@ static bool input_StartDeviceTrack( InputMgr *pMgr, uint32 nDevices, uint32 nBuf
 	
 		// acquire the device again
 		hResult = pDevice->m_pDevice->Acquire();
+#ifdef TRON20SRC_MODERN
+		input_ModernAcquired( pDevice->m_bSysMouse );	// MODERN.md EN-24
+#endif
 	}
 
 	if( i < 4 ) return false;
@@ -2552,6 +2949,9 @@ static bool input_TrackDevice( DeviceInput *pInputArray, uint32 *pnInOut )
 				{
 					// Attempt to acquire it and retry .. maybe it got lost.
 					hResult = pDevice->m_pDevice->Acquire();
+#ifdef TRON20SRC_MODERN
+					input_ModernAcquired( pDevice->m_bSysMouse );	// MODERN.md EN-24
+#endif
 					hResult = pDevice->m_pDevice->GetDeviceData( sizeof(DIDEVICEOBJECTDATA), data, &nEvents, 0 );
 				}
 			}

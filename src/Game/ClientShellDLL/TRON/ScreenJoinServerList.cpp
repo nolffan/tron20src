@@ -536,6 +536,10 @@ void CScreenJoinServerList::FindServers()
 	g_hJoinServer = LTNULL;
 	m_pServerListCtrl->RemoveAll(LTTRUE);
 
+#ifdef TRON20SRC_MODERN
+	TronSyncMasterDomain();		// MODERN (GS-2)
+#endif
+
 	if (!g_bServerBrowser)
 	{
 		// the more bandwidth, the more servers are queried at once

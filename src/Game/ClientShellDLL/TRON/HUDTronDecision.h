@@ -75,6 +75,9 @@ public:
 	// can the player take it (the name is ours)
 	bool	IsAvailable() { return m_bActive && !m_bDownloading && !m_bDone; }
 	bool	IsDownloading() { return m_bDownloading; }
+#ifdef TRON20SRC_MODERN
+	void	PadHighlight(bool bOn);		// MODERN.md CL-22
+#endif
 
 	bool			m_bActive;			// +0x0
 	bool			m_bDownloading;		// +0x1
@@ -115,6 +118,12 @@ public:
 
 	// RETAIL: read by CMenuMgr::OnCommandOff (0x10171c18); the name is ours
 	bool	GetTronUnknown4D() { return m_bTronUnknown4d; }
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-22: the controller's highlight, over the bins (or the
+	// choices, when the window is a plain decision)
+	bool	PadIsChoice(int nChoice);
+	void	PadHighlight(int nChoice);
+#endif
 
 protected:
 	void	ShowBins(ILTMessage_Read *pMsg, bool bFree);

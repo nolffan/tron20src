@@ -29,6 +29,10 @@
 #include "ClientSoundMgr.h"
 #include "VehicleMgr.h"
 #include "PlayerMgr.h"
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-21: the controller's default layout
+#include "xinput/clientpad.h"
+#endif
 
 extern CGameClientShell* g_pGameClientShell;
 
@@ -540,6 +544,17 @@ void CUserProfile::LoadControls()
 		
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-21: the controller's default layout, once per profile:
+	// a new one, one from before the modern build, or the defaults
+	// restored (default.prf has no controller bindings). Saved with the
+	// profile's other controls (SaveControls).
+	if (m_buteMgr.GetInt("Controls","PadLayout",0) < 1)
+	{
+		Pad_DefaultBindings(this, false);
+		m_buteMgr.SetInt("Controls","PadLayout",1);
+	}
+#endif
 	ApplyControls();
 	ApplyBindings();
 	ApplyMouse();
@@ -1094,6 +1109,28 @@ void CUserProfile::ApplyBindings()
 		}
 				
 	}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-21: the controller's Back opens the subroutine screen,
+	// as F1 does: "Subroutines" is not one of Configure controls' commands
+	// (the keyboard's F1 is autoexec.cfg's), so it is bound here, while no
+	// command of the profile has Back. The binding is cleared first so
+	// that autoexec.cfg keeps it once.
+	if (devices[2] == DEVICETYPE_GAMEPAD && strDeviceName[2][0])
+	{
+		bool bBackTaken = false;
+		for (int c = 0; c < g_kNumCommands && !bBackTaken; c++)
+		{
+			CBindingData *pData = FindBinding(c);
+			bBackTaken = pData && !stricmp(pData->strRealName[2], "Back");
+		}
+
+		if (!bBackTaken)
+		{
+			g_pLTClient->ClearBinding(strDeviceName[2], "Back");
+			g_pLTClient->AddBinding(strDeviceName[2], "Back", "Subroutines", 0.0f, 0.0f);
+		}
+	}
+#endif
 }
 
 
@@ -1528,6 +1565,12 @@ void CUserProfile::ApplyJoystick()
 
     g_pLTClient->FreeDeviceBindings (pBindings);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-23: the controller's sticks are read by the client
+	// (CL-20), so none of its axes is bound, whatever the profile says
+	WriteConsoleInt("UseJoystick",0);
+	return;
+#endif
 	if (!m_bUseJoystick)
 	{
 		WriteConsoleInt("UseJoystick",0);

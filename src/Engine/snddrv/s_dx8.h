@@ -146,6 +146,11 @@ public:
 	UINT m_nRemainderBytes;
 	UINT m_nRemainderOffset;
 	BYTE m_RemainderBuffer[STR_BUFFER_SIZE];
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-2: the next convert starts the codec again
+	// (ACM_STREAMCONVERTF_START): a new stream, or Cue
+	BOOL m_bCodecRestart;
+#endif
 };
 
 bool ParseWaveFile( void* pWaveFileBlock, void*& rpWaveFormat, uint32& ruiWaveFormatSize,

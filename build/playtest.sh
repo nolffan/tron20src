@@ -19,6 +19,14 @@
 # renamed: runs that start at the same time, as in make sweep, do not
 # read a half-written copy); ext/tools/ is not changed.
 #
+# One more setting: PLAYTEST_AUDIO=<prefix> (an absolute path) records what
+# the game plays where ext/tools/playtest.sh plays it into ALSA's null
+# device (no sound card: the container). ALSA's file plugin in front of the
+# null device writes each stream, raw, to <prefix>-<rate>-<channels>-
+# <format>.raw (the streams of one format go into one file). The null device
+# takes data faster than a card plays it, so the recording holds what was
+# played, not when. (avp2src's setting; MODERN.md X-1, X-2.)
+#
 # One more script command, for Tron 2.0's scripts only:
 #   nohud <name>          the HUD must not be up now (for example, the
 #                         post-load screen waits for a key); takes a shot
@@ -46,6 +54,7 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     echo "HUD UP: alive, but the HUD was up where the script expects none (nohud at $HUDUP)" > result.txt\
     wineserver -k; sleep 2\
 elif alive \&\& [ -n "$NOHUD" ]; then#' \
+    -e '/pcm\.!default { type null }/a\    [ -z "${PLAYTEST_AUDIO:-}" ] || printf "</usr/share/alsa/alsa.conf>\\npcm.!default { type file slave.pcm null file \\"%s-%%r-%%c-%%f.raw\\" format raw truncate false }\\n" "$PLAYTEST_AUDIO" > asound.conf' \
     -e 's#^source "$(dirname "${BASH_SOURCE\[0\]}")/layout.sh"$#REPO="'"$REPO"'"; TOOLS="'"$REPO"'/ext/tools"#' \
     "$REPO/ext/tools/playtest.sh" > "$OUT.$$" && mv -f "$OUT.$$" "$OUT"
 exec bash "$OUT" "$@"

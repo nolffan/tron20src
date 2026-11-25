@@ -42,6 +42,10 @@
 #include "PlayerViewAttachmentMgr.h"
 #include "LTEulerAngles.h"
 #include "DoomsDayPieceFX.h"
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-20: the controller's right stick
+#include "xinput/clientpad.h"
+#endif
 
 CPlayerMgr* g_pPlayerMgr = NULL;
 
@@ -3500,6 +3504,15 @@ void CPlayerMgr::CalculateCameraRotation()
 	{
 		fPitchDelta = 0.0f;
 	}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-20: the controller's right stick turns with the mouse,
+	// slowed by the zoom as it is, whatever the mouse look setting; its look
+	// up and down is added below, apart from the mouse's invert settings
+	float fPadYaw, fPadPitch;
+	Pad_GetLook(&fPadYaw, &fPadPitch);
+	fYawDelta += fPadYaw / fVal;
+	fPadPitch /= fVal;
+#endif
 
 	if (g_vtAdaptiveMouse.GetFloat() && fYawDelta != 0.0f)
 	{
@@ -3586,6 +3599,26 @@ void CPlayerMgr::CalculateCameraRotation()
 		if (m_fPitch > 0.0f) m_fPitch -= Min(fPitchDelta, m_fPitch);
 		if (m_fPitch < 0.0f) m_fPitch += Min(fPitchDelta, -m_fPitch);
 	}
+#ifdef TRON20SRC_MODERN
+	// CL-20: the stick's look up and down, held as the mouse's is above (a
+	// light cycle's first-person view level, the third person's near it)
+	if (fPadPitch != 0.0f)
+	{
+		m_fPitch += fPadPitch;
+
+		if (!m_pPlayerCamera->IsFirstPerson())
+		{
+            float fMinY = DEG2RAD(45.0f) - 0.1f;
+
+			if (m_fPitch < -fMinY) m_fPitch = -fMinY;
+			if (m_fPitch > fMinY)  m_fPitch = fMinY;
+		}
+		else if (bIsVehicle || TronUnknownVirtual3C(true))
+		{
+			m_fPitch = 0.0f;
+		}
+	}
+#endif
 
     float fMinY = MATH_HALFPI - 0.1f;
 

@@ -859,3 +859,39 @@ void CHUDTronDecision::UpdateLayout()
 	m_pWarnStr = LTNULL;
 	m_WarnFrame.Init("chooserwarn");
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-22: the controller's highlight, the bin's number in amber
+void CHUDDecisionBin::PadHighlight(bool bOn)
+{
+	uint32 argb = bOn ? 0xFFFFC020 : argbWhite;
+
+	if (!m_bActive) return;
+
+	g_pDrawPrim->SetRGBA(&m_NumberPoly, argb);
+	if (m_pNumberStr)
+		m_pNumberStr->SetColor(argb);
+}
+
+bool CHUDTronDecision::PadIsChoice(int nChoice)
+{
+	if (m_bTronUnknown4c)
+		return CHUDDecision::PadIsChoice(nChoice);
+
+	return nChoice >= 0 && nChoice < MAX_DECISION_BINS && m_Bins[nChoice].IsAvailable();
+}
+
+void CHUDTronDecision::PadHighlight(int nChoice)
+{
+	if (m_bTronUnknown4c)
+	{
+		CHUDDecision::PadHighlight(nChoice);
+		return;
+	}
+
+	for (int i = 0; i < MAX_DECISION_BINS; i++)
+	{
+		m_Bins[i].PadHighlight(i == nChoice);
+	}
+}
+#endif

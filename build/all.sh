@@ -36,9 +36,13 @@
 #                         MFC 4.2 runtime DLLs (MFC42.DLL, MFC42U.DLL,
 #                         MSVCP60.DLL, Msvcrt.dll), from the retail game:
 #                         licensed binaries with no source. The game ships
-#                         no DirectX files. (TRON20SRC_MIDDLEWARE=open, for
-#                         the modern build's open-source replacements, is
-#                         refused until they exist: MODERN.md X-1.)
+#                         no DirectX files. With TRON20SRC_MIDDLEWARE=open
+#                         (build/variant.sh sets it for the modern builds)
+#                         only the Microsoft runtime comes from the retail
+#                         game, and binkw32.dll is ours: a Bink player on
+#                         FFmpeg, built from src/modern/binkw32/ and the
+#                         ext/ffmpeg submodule by build/ext.sh (MODERN.md
+#                         X-1).
 #   3. compile            every workspace build/build.mk knows of
 #                         (build/compile.sh: one job per CPU,
 #                         TRON20SRC_JOBS=<n> to change it), and only what
@@ -125,16 +129,20 @@ else
     [ -f "$OUT/autoexec.cfg" ] || cp "$OUT/autoexec.cfg.retail" "$OUT/autoexec.cfg"
     [ -f "$OUT/Profiles/Default.prf" ] || cp "$OUT/Default.prf.retail" "$OUT/Profiles/Default.prf"
 
-    # TRON20SRC_MIDDLEWARE (build/variant.sh): retail, the default, for
-    # every build now; open, the open-source replacements of the modern
-    # build, is not there yet (MODERN.md X-1)
+    # TRON20SRC_MIDDLEWARE (build/variant.sh): retail, the default, RAD's
+    # Bink; open, the modern builds' default, our Bink player on FFmpeg
+    # (MODERN.md X-1)
     case "${TRON20SRC_MIDDLEWARE:-retail}" in
-        retail) ;;
-        open) echo "error: TRON20SRC_MIDDLEWARE=open: no open-source middleware yet (docs/MODERN.md X-1)" >&2; exit 1 ;;
+        retail)
+            step "2. THIRD-PARTY RUNTIME: from $RETAIL: Bink and the Microsoft runtime"
+            python3 ext/tools/retailextract.py thirdparty "$RETAIL" "$OUT" ;;
+        open)
+            step "2. open runtime: our Bink player on FFmpeg (build/ext.sh); from $RETAIL: the Microsoft runtime"
+            bash build/ext.sh
+            python3 ext/tools/retailextract.py thirdparty "$RETAIL" "$OUT" open
+            python3 ext/tools/retailextract.py openruntime "${TRON20SRC_EXT_OUT:-out/ext}" "$OUT" ;;
         *) echo "error: TRON20SRC_MIDDLEWARE=$TRON20SRC_MIDDLEWARE: retail or open" >&2; exit 1 ;;
     esac
-    step "2. THIRD-PARTY RUNTIME: from $RETAIL: Bink and the Microsoft runtime"
-    python3 ext/tools/retailextract.py thirdparty "$RETAIL" "$OUT"
 fi
 bash build/tron20cmds.sh > "$OUT/tron20cmds.txt"
 

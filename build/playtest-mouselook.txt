@@ -1,0 +1,25 @@
+# playtest-mouselook.txt -- the mouse look (MODERN.md EN-23, EN-24): in
+# control in the first level, the same mouse motions turn the view; the
+# shots before and after each are compared (build/yawshift.py) to measure
+# the turn, in the legacy build, the modern build and the modern build
+# with RawMouse 0 (DirectInput's look, PLAYTEST_CFG).
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+wait 3
+shot a0
+# one motion of 60 counts in 10 steps
+turn 60 0 10
+wait 1.5
+shot a1
+# nothing: the view must stay (no repeated last event)
+wait 1.5
+shot a2
+# one motion of 60 counts in one step
+turn 60 0 1
+wait 1.5
+shot a3
+# back, slowly: 120 counts in 40 steps
+turn -120 0 40
+wait 1.5
+shot a4
