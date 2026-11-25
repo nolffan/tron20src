@@ -69,6 +69,7 @@ you what to supply.
 make            # the game, from our binaries and the retail data, in out/tron20-legacy-release/
 make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
 make tests      # the scripted tests: menus, a level, saving and loading, a race
+make sweep      # every single-player world for a minute each (slow); out/play/sweep-summary.txt
 make reference  # the retail binaries and their function tables, in out/reference/
 make progress   # score the build against them
 make help       # everything else
