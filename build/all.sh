@@ -51,14 +51,25 @@
 #                         game DLLs in the custom/ rez directory, last in the
 #                         rez stack (tron20cmds.txt, build/tron20cmds.sh);
 #                         the engine, the launcher and the dedicated server
-#                         in the game's root.
+#                         in the game's root. Each copy gets the fixed time
+#                         TRON20SRC_EPOCH (2000-01-01) in place of the time
+#                         of its link (build/pestamp.py); src/**/built/
+#                         keeps the linker's output.
 #   5. audit              every PE file in the game directory listed with
 #                         its origin; the build fails if one is unaccounted
 #                         for, if a .rez archive still holds one, or if a
 #                         binary we build is missing.
 #
-# The packages of the game directory (-private / -public archives) are
-# docs/PLAN.md's package 10.
+#   6. package            out/tron20-legacy-release-private.tar.gz: the game
+#                         directory, retail data and all; and
+#                         -public.tar.gz: only what we build, with install
+#                         scripts that copy the rest from the player's own
+#                         discs and Update 2 (build/package.sh,
+#                         build/mkinstall.py, checked by build/pubcheck.py).
+#                         Built without the retail game: the public one
+#                         only, the same archive. TRON20SRC_PACKAGE=0 skips
+#                         it (build/variant.sh packages its game directory
+#                         itself, once its symbols are in place).
 set -e
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -115,7 +126,15 @@ the binaries built from our source: no game data (no .rez archives, no
 movies) and no Bink or Microsoft runtime. It does not play. Build with the
 retail game (make) for a game directory that plays.
 EOF
-    step "2. third-party runtime: none (built without the retail game)"
+    if [ "${TRON20SRC_MIDDLEWARE:-retail}" = open ]; then
+        # our Bink player is ours to build (the modern build's public
+        # archive has it): only the retail Microsoft runtime is left out
+        step "2. open runtime: our Bink player on FFmpeg (build/ext.sh); no retail runtime (built without the retail game)"
+        bash build/ext.sh
+        python3 ext/tools/retailextract.py openruntime "${TRON20SRC_EXT_OUT:-out/ext}" "$OUT"
+    else
+        step "2. third-party runtime: none (built without the retail game)"
+    fi
 else
     step "1. resources: game data from $RETAIL -> $OUT"
     rm -f "$OUT/NOT-PLAYABLE.txt"
@@ -157,6 +176,9 @@ for ((i = 0; i < ${#BUILT[@]}; i += 2)); do
         continue
     fi
     cp "${BUILT[i]}" "$OUT/${BUILT[i+1]}.part"
+    # the link's times set to TRON20SRC_EPOCH (build/pestamp.py): the same
+    # files from every build of the same source
+    python3 build/pestamp.py "${TRON20SRC_EPOCH:-946684800}" "$OUT/${BUILT[i+1]}.part"
     mv -f "$OUT/${BUILT[i+1]}.part" "$OUT/${BUILT[i+1]}"
     printf 'built %s\t%s\n' "${BUILT[i]}" "${BUILT[i+1]}" >> "$OUT/MANIFEST.txt"
     echo "   ${BUILT[i+1]}  <-  ${BUILT[i]}"
@@ -185,8 +207,18 @@ if [ ${#missing[@]} -gt 0 ]; then
     exit 1
 fi
 
+if [ "${TRON20SRC_PACKAGE:-1}" = 1 ]; then
+    if [ -n "$NODISCS" ]; then
+        step "6. package: $OUT -> $(dirname "$OUT")/$(basename "$OUT" -nodiscs)-public.tar.gz (no private archive without the retail game)"
+        bash build/package.sh "$OUT" "$(basename "$OUT" -nodiscs)"
+    else
+        step "6. package: $OUT -> $OUT-private.tar.gz, -public.tar.gz"
+        bash build/package.sh "$OUT"
+    fi
+fi
+
 if [ -n "$NODISCS" ]; then
-    step "done: $OUT ($(( $(date +%s) - T0 ))s) -- built without the retail game: it does not play (NOT-PLAYABLE.txt)"
+    step "done: $OUT ($(( $(date +%s) - T0 ))s) -- built without the retail game: it does not play (NOT-PLAYABLE.txt); its public archive, installed from the discs, does"
 else
     step "done: $OUT ($(( $(date +%s) - T0 ))s); make test runs it"
 fi

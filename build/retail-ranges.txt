@@ -1,0 +1,36 @@
+## What the build changes in the retail archives that it copies into a game
+## directory (build/all.sh step 1): the retail game DLLs inside them
+## zeroed (ext/tools/retailextract.py), and their names changed
+## (build/rezhide.py). `build/mkinstall.py ranges` writes this list from a
+## game directory built with the retail game; every package of one checks
+## it. The install scripts of a public archive (build/mkinstall.py) use it
+## in place of the retail game. It holds no game data: only names,
+## offsets, sizes, SHA-256 values and the bytes that the build writes.
+##
+## ZERO <archive> <offset> <size>    zeros over the retail bytes there
+## LIT <archive> <offset> <hex>      the build's bytes in place of them
+## ZSUM <archive> <size> <SHA-256>   the archive after those changes
+## The fields are separated by one TAB.
+ZERO	GameDLL.rez	168	225280
+ZERO	GameDLL.rez	225448	610304
+ZERO	GameDLL.rez	835752	2465792
+ZERO	GameDLL.rez	3301544	3694592
+ZERO	GameDLL.rez	6996136	32768
+LIT	GameDLL.rez	7028935	5f
+LIT	GameDLL.rez	7028969	5f
+LIT	GameDLL.rez	7029005	5f
+LIT	GameDLL.rez	7029043	5f
+LIT	GameDLL.rez	7029079	5f
+ZSUM	GameDLL.rez	7029082	956b25cb4a8f1c7037a97804694ed2c0ffa36a43c4d5511d476905356d52d797
+ZERO	Gamep3.rez	168	614400
+LIT	Gamep3.rez	614599	5f
+ZSUM	Gamep3.rez	614602	71acc194b36cfd6b2f9d7a930c94b335911bda3f45d044043081dfd74671fe9a
+ZERO	Gamep4.rez	153727	225280
+ZERO	Gamep4.rez	379007	2486272
+ZERO	Gamep4.rez	2865279	3710976
+ZERO	Gamep4.rez	6576255	32768
+LIT	Gamep4.rez	48728395	5f
+LIT	Gamep4.rez	48728431	5f
+LIT	Gamep4.rez	48728469	5f
+LIT	Gamep4.rez	48728505	5f
+ZSUM	Gamep4.rez	48728508	c0e2ff06364de2d81b67c6f81979b2ef62caca2ea98750790a97cc2f2bb9e96c

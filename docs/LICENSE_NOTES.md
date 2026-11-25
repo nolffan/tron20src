@@ -35,3 +35,19 @@ do this: change `ext/ffmpeg` and run `make modern`.
 The modern build has no file of RAD Game Tools. It also does not need an
 MP3 codec of the system (Fraunhofer's `L3CODECA.ACM`, or Wine's): its
 `SndDrv.dll` has its own (MODERN.md X-2).
+
+## In a public archive
+
+A public archive (`out/<name>-public.tar.gz`, `build/package.sh`) holds
+only the files that this project builds, and no file of the retail game.
+It also holds this file, and in `licenses/`:
+
+| File | The licence of |
+|---|---|
+| `licenses/GameSpy-SDK.txt` | the GameSpy SDK, linked into `CShell.dll` and `Object.lto` (each build) |
+| `licenses/FFmpeg-COPYING.LGPLv2.1` | FFmpeg, linked statically into the modern build's `binkw32.dll` (modern builds only) |
+| `licenses/minimp3-LICENSE.txt` | minimp3, compiled into the modern build's `SndDrv.dll` (modern builds only) |
+
+The install scripts of the archive copy the retail game's data, RAD's
+`binkw32.dll` (legacy builds) and the Microsoft runtime from the player's
+own discs and Update 2. The archive does not hold them.

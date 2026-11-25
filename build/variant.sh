@@ -54,6 +54,10 @@
 # With TRON20SRC_NODISCS=1 (make NODISCS=1 <variant>: without the retail
 # game, build/all.sh) the game directory is out/<name>-nodiscs/, which does
 # not play.
+#
+# Last, the game directory is packaged (build/package.sh): out/<name>-
+# private.tar.gz and -public.tar.gz (without the retail game, the public
+# one only, the same archive).
 set -e
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
@@ -116,7 +120,7 @@ case "$VARIANT" in
     *)       export TRON20SRC_MIDDLEWARE="${TRON20SRC_MIDDLEWARE:-retail}" ;;
 esac
 export TRON20SRC_EXT_OUT="$REPO/out/ext"
-bash "$TREE/build/all.sh"
+TRON20SRC_PACKAGE=0 bash "$TREE/build/all.sh"
 
 case "$VARIANT" in *debug)
     echo
@@ -124,19 +128,35 @@ case "$VARIANT" in *debug)
     # MANIFEST.txt has `built <source>\t<installed path>` for each binary
     # we built; its .pdb has the name of the link output, with .pdb, and
     # the debugger looks for it by that name in the binary's directory.
+    # Each binary is copied again with its .pdb and .map, and the three get
+    # the fixed time together (build/pestamp.py: the .pdb's signature is the
+    # binary's link time, and they must still match).
     grep '^built ' "$TRON20SRC_GAME_OUT/MANIFEST.txt" | sort -u |
     while IFS=$'\t' read -r src dest; do
         src="${src#built }"
         d="$TRON20SRC_GAME_OUT/$(dirname "$dest")"
         pdb="$TREE/${src%.*}.pdb"
+        map="$TREE/${src%.*}.map"
         if [ -f "$pdb" ]; then
-            cp "$pdb" "$d/"
+            cp "$TREE/$src" "$TRON20SRC_GAME_OUT/$dest.part"
+            cp "$pdb" "$d/$(basename "$pdb").part"
+            set -- "$TRON20SRC_GAME_OUT/$dest" "$d/$(basename "$pdb")"
+            [ -f "$map" ] && { cp "$map" "$d/$(basename "$map").part"; set -- "$@" "$d/$(basename "$map")"; }
+            for f in "$@"; do mv -f "$f.part" "$f"; done
+            python3 "$REPO/build/pestamp.py" "${TRON20SRC_EPOCH:-946684800}" "$@"
             echo "   $(dirname "$dest")/$(basename "$pdb")"
         else
             echo "   (no .pdb for $dest)"
         fi
-        map="$TREE/${src%.*}.map"
-        [ -f "$map" ] && cp "$map" "$d/"
     done ;;
 esac
+echo
+# The archives (build/package.sh): out/<name>-private.tar.gz and
+# -public.tar.gz; built without the retail game, the public one only
+if [ "$DIR" != "$NAME" ]; then
+    echo "== package: out/$DIR/ -> out/$NAME-public.tar.gz (no private archive without the retail game)"
+else
+    echo "== package: out/$NAME/ -> out/$NAME-private.tar.gz, -public.tar.gz"
+fi
+bash "$REPO/build/package.sh" "out/$DIR" "$NAME"
 echo "== done: out/$DIR/"
