@@ -24,7 +24,8 @@ class CHUDChatInput : public CHUDItem
 {
 public:
 	// RETAIL: every game type
-	virtual bool	IsUsedInGameType(GameType eGameType) { return eGameType >= eGameTypeSingle && eGameType <= eGameTypeMultiplayerLightcycles; }
+	// RETAIL: CHUDSubtitles' form (0x100fd0c0, which the HUD items fold into)
+	virtual bool	IsUsedInGameType(GameType eGameType) { if (eGameType < eGameTypeSingle || eGameType > eGameTypeMultiplayerLightcycles) return false; return true; }
 
 	CHUDChatInput();
 

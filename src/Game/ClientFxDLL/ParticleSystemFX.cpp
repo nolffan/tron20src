@@ -966,6 +966,15 @@ void CParticleSystemFX::RemoveParticle(LTParticle* pParticle)
 }
 
 
+// RETAIL: a segment of no length is only tested when the query asks to check
+// a from point inside objects (inline in UpdateParticles, ClientFx.fxd
+// 0x1001a287; the name is ours)
+static inline bool IsSegmentToTest(const ClientIntersectQuery & iQuery)
+{
+	LTVector vSegment = iQuery.m_From - iQuery.m_To;
+	return (vSegment.Dot(vSegment) > 0.0f) || (iQuery.m_Flags & CHECK_FROM_POINT_INSIDE_OBJECTS);
+}
+
 // ----------------------------------------------------------------------- //
 //
 //  ROUTINE:	CParticleSystemFX::UpdateParticles
@@ -1112,7 +1121,8 @@ void CParticleSystemFX::UpdateParticles( LTFLOAT tmFrame )
 				iQuery.m_To		= pLTParticle->m_Pos + pLTParticle->m_Velocity * tmFrame;
 			}
 
-			if( m_pLTClient->IntersectSegment( &iQuery, &iInfo ) )
+			// RETAIL: Tron tests the segment first (ClientFx.fxd 0x1001a287)
+			if( IsSegmentToTest( iQuery ) && m_pLTClient->IntersectSegment( &iQuery, &iInfo ) )
 			{
 				//handle bounce
 				if(pLTParticle->m_nUserData & BOUNCE_FLAG)

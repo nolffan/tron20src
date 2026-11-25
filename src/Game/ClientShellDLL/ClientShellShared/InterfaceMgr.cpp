@@ -535,6 +535,12 @@ CInterfaceMgr::~CInterfaceMgr()
         g_pLTClient->DeleteSurface(m_hLetterBoxSurface);
 	}
 
+	// RETAIL: 0x100c729a: Tron's spectator text
+	if (m_pSpectatorText)
+	{
+		g_pFontManager->DestroyPolyString(m_pSpectatorText);
+		m_pSpectatorText = LTNULL;
+	}
 
     g_pInterfaceMgr = LTNULL;
 }

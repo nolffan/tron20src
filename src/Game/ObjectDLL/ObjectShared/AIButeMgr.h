@@ -78,6 +78,10 @@ struct AIBM_WeaponSet
 
 	// RETAIL: 0x101a10e0..0x101a1160 (callers: CAI 0x1012fc10, the shoot
 	// strategy 0x102266b0, 0x10226a1f)
+	// RETAIL: 0x101a0ff0 (the name is ours): ReadWeaponSet passes the
+	// name as a string by value (0x101a0e22)
+	void					SetName(CaselessInlineString sNewName);
+
 	EnumAnimProp			GetWeaponProp(const WEAPON* pWeapon);
 	bool					IsLocked(const WEAPON* pWeapon, bool bMovement);
 	bool					IsUnlockedPostFire(const WEAPON* pWeapon, bool bMovement);

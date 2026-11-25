@@ -46,6 +46,8 @@ class CLightCycleMatchMgr
 		int		GetState() const { return m_nState; }
 		uint8	GetRound() const { return m_nRound; }
 		float	GetTimeLeft() const { return m_fTimeLeft; }
+		// RETAIL: inline in CScreenPlayer::OnFocus (0x10073737)
+		uint32	GetTronUnknown8() const { return m_nTronUnknown8; }
 		uint8	GetTronUnknown18() const { return m_nTronUnknown18; }
 		uint8	GetTronUnknown19() const { return m_nTronUnknown19; }
 		uint16	GetTronUnknown1A() const { return m_nTronUnknown1A; }

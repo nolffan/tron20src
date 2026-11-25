@@ -421,8 +421,9 @@ void CScreenHostConnection::HandleEditResult(uint32 dwParam1, uint32 dwParam2)
 				MBCreate mb;
 				char *pszMsg = FormatTempString(0x1F2,16,20000);
 				LTGUIWiden(sText,pszMsg);
-				// PORT: Tron's ShowMessageBox takes the wide text (by value)
-				g_pInterfaceMgr->ShowMessageBox(pszMsg,&mb);
+				// RETAIL: Tron's ShowMessageBox takes the wide text (by value,
+				// 0x1005d2d8)
+				g_pInterfaceMgr->ShowMessageBox(sText,&mb);
 			}
 		} break;
 	default:

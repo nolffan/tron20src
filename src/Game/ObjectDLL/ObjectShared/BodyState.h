@@ -265,6 +265,12 @@ class CBodyStateExplode : public CBodyState
 		LTFLOAT		m_fFlyTime;
 
 		HMODELANIM	m_hAniLoop;
+
+		// RETAIL: the class is 0x28 bytes (CreateAIClassInstance 0x10219a0e
+		// allocates 0x28); no function of the class uses +0x20 and +0x24
+		// (NOLF2 has m_hAniStop at +0x20)
+		uint32		m_xTronUnknown20;
+		uint32		m_xTronUnknown24;
 };
 
 // RETAIL: Tron's (RTTI; vtable 0x1029e334, constructor 0x1021c550, 0x3c

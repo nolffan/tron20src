@@ -80,7 +80,17 @@ public:
 	LTBOOL Intersects(const AIGeometry* pGeometry) const;
 	LTBOOL InsideMasked(const LTVector& vPos, int iAxisMask, LTFLOAT fVerticalThreshhold = 0.0f) const;
 	LTBOOL Inside(const LTVector& vPos, LTFLOAT fRadius2D, LTFLOAT fVerticalThreshhold) const;
-    LTBOOL Inside2d(const LTVector& vPos, LTFLOAT fThreshhold) const;
+	// RETAIL: inline in Tron: no out-of-line copy follows Intersects
+	// (0x100964e0), and CAIMovement::BoundPathToVolume (0x101dd4b0) expands it
+	LTBOOL Inside2d(const LTVector& vPos, LTFLOAT fThreshhold) const
+	{
+		// More likely to early out on X or Z than Y, so do in that order.
+
+		return ( (vPos.x <= m_vFrontTopRight.x-fThreshhold) &&
+				 (vPos.x >= m_vFrontTopLeft.x+fThreshhold) &&
+				 (vPos.z <= m_vFrontTopLeft.z-fThreshhold) &&
+				 (vPos.z >= m_vBackTopLeft.z+fThreshhold) );
+	}
 	LTBOOL Inside3D( const LTVector& vPos ) const;
 	LTBOOL Inside2dLoose(const LTVector& vPos,LTFLOAT fThreshhold,
 		const AISpatialNeighbor* const pVolumes, uint32 nNeighborCount) const;

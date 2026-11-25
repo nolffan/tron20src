@@ -339,7 +339,9 @@ void CScreenDisplay::SortRenderModes()
 		return;
 	}
 
-	ScreenDisplayResolution *pResolutions = new ScreenDisplayResolution[nResolutions];
+	// RETAIL: debug_newa and debug_deletea (0x100592c0): their inline bodies
+	// leave CMoArray::Insert2 out of line (0x10059fb0)
+	ScreenDisplayResolution *pResolutions = debug_newa(ScreenDisplayResolution, nResolutions);
 
 	int i;
 	for (i=0; i < nResolutions; i++)
@@ -359,7 +361,7 @@ void CScreenDisplay::SortRenderModes()
 		m_rendererData.m_resolutionArray.Add(pResolutions[i]);
 	}
 
-	delete []pResolutions;
+	debug_deletea(pResolutions);
 }
 
 

@@ -950,7 +950,7 @@ bool CAIButeMgr::ReadWeaponSet(AIBM_WeaponSet& WeaponSet, const CaselessInlineSt
 	// RETAIL: 0x101a0d60
 	char szValue[128];
 	CButeTools::GetValidatedString( m_buteMgr, sTag.c_str( ), "Name", szValue, sizeof( szValue ));
-	WeaponSet.sName = CaselessString( szValue ).c_str( );
+	WeaponSet.SetName( szValue );
 
 	char szAttribute[40];
 	char szProp[80];
@@ -998,6 +998,12 @@ bool CAIButeMgr::ReadWeaponSet(AIBM_WeaponSet& WeaponSet, const CaselessInlineSt
 //	PURPOSE:	Look up a weapon's record in the set.
 //
 // ----------------------------------------------------------------------- //
+
+void AIBM_WeaponSet::SetName(CaselessInlineString sNewName)
+{
+	// RETAIL: 0x101a0ff0
+	sName = sNewName;
+}
 
 EnumAnimProp AIBM_WeaponSet::GetWeaponProp(const WEAPON* pWeapon)
 {

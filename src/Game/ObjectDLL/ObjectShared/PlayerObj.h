@@ -156,7 +156,6 @@ class CPlayerObj : public CCharacter
 		bool SetupForNewMission( );
 
 		virtual CAttachments*	TransferAttachments( bool bRemove ); // Responsibility of call to delete attachments
-		virtual void			TransferWeapons(Body* pBody, bool bRemove);
 		virtual	void			RemoveAttachments( bool bDestroyAttachments );
 
 
