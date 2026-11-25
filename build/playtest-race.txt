@@ -1,0 +1,33 @@
+# playtest-race.txt -- a light-cycle race: Single player, Light cycles,
+# Circuit play's "Newbie Authentication", Play. The race loads; the cycle
+# turns left and right (A, D), runs into a wall in time, and the game asks
+# "Would you like to continue?": Yes, and the race goes on. Shots at each
+# step.
+# world: -
+window 240
+# the splash screen, then the main menu
+wait 15
+mclick 256 162
+wait 3
+mclick 494 274
+wait 3
+mclick 127 217
+wait 1
+shot circuit
+mclick 563 456
+wait 15
+shot race
+hold a 0.3
+wait 2
+shot left
+hold d 0.3
+wait 2
+shot right
+wait 20
+shot continue-asked
+mclick 292 256
+wait 5
+shot continued
+hold d 0.3
+wait 3
+shot end

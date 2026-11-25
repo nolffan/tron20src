@@ -29,7 +29,7 @@ TEST_GAME ?= out/tron20-legacy-release
 TEST_SCRIPT ?=
 TEST_WORLD ?= -
 TEST_NAME = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
-TEST_SCRIPTS ?= menus level save
+TEST_SCRIPTS ?= menus level save race
 
 # Your disc images and the update, if they are not in isos/:
 # TRON20SRC_ISOS=<directory> (mounted read-only). NODISCS=1: compile without

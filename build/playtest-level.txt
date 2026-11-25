@@ -1,0 +1,31 @@
+# playtest-level.txt -- the first single-player level: into control (past
+# the opening, skipcine: until Tron's health bar is drawn), then short
+# moves (the start is a platform over a drop: a long walk falls off it,
+# in retail too), looking round, jumping, throwing the disc. Shots at each step.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+shot start
+hold w 0.7
+turn 400 0
+click 1 0.3
+wait 2
+shot fired
+turn -800 0
+hold s 0.7
+key space
+wait 1
+hold d 0.5
+hold a 0.5
+shot moved
+key c
+wait 1
+key c
+turn 0 200
+turn 0 -200
+turn 400 0
+wait 1
+shot looked
+hold w 0.5
+wait 2
+shot end

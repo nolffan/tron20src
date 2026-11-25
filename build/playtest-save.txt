@@ -1,0 +1,55 @@
+# playtest-save.txt -- saving and loading in the first single-player
+# level. Into control; a quicksave (F5, as the save screen names it),
+# a short move, a quickload (F9, Yes), back into control; then a save through
+# the in-game menu (Escape, Save game, the first empty slot), a move, and
+# a load of that save through the menu (Escape, Load game). Shots at each
+# step.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+shot start
+key F5
+wait 4
+shot quicksaved
+turn 600 0
+hold s 0.5
+wait 1
+shot moved
+key F9
+wait 3
+shot quickload-asked
+# "This will end your current game. Proceed?": Yes
+mclick 292 256
+wait 20
+shot quickload
+skipcine 90
+shot quickloaded
+key Escape
+wait 3
+mclick 372 69
+wait 3
+shot save-screen
+mclick 176 159
+wait 3
+shot save-slot
+key Return
+wait 4
+shot saved
+turn -600 0
+hold w 0.5
+wait 1
+shot moved-again
+key Escape
+wait 3
+mclick 372 47
+wait 3
+shot load-screen
+# the saved game, first in the list: it loads at once
+mclick 100 244
+wait 10
+skipcine 60
+shot loaded
+hold w 0.5
+turn 300 0
+wait 1
+shot after-load
