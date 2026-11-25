@@ -423,11 +423,13 @@ The legacy release build runs under Wine (2026-11-25): every binary in
   control: winedbg, attached to it, with breakpoints on retail's `Term`
   and `UpdateLayout`, showed which function calls `UpdateLayout`. CShell
   7,599 identical functions before, 7,601 after.
-- **Open:** after a quickload or a load from the menu, retail shows the
-  postload screen ("Press any key to continue"); ours goes into the game
-  at once. `CScreenPostload::OnFocus` (0x1016b4e0) is near. The engine
-  prints "LithTech build 4294967295.4294967295": our engine has no build
-  number yet. Not tested: the rest of the campaign.
+- **Fixed:** after a quickload or a load from the menu, ours went into
+  the game at once; retail shows the postload screen ("Press any key to
+  continue"). `CScreenPostload::OnFocus` (0x1016b4e0) was NOLF2's; it is
+  now retail's (identical), and `build/playtest-save.txt` checks it
+  (`nohud`). The engine prints "LithTech build 4294967295.4294967295",
+  as retail does: retail's `Lithtech.exe` has no build-number resource
+  (`RETAIL_BUGS.md`).
 - **The launcher** (`make launchertest`, `build/launchertest.sh`,
   `build/playtest-launcher*.txt`): our `Tron.exe` on the registry values
   of the game's setup and Update 2, with disc 1 in a CD-ROM drive (Play
