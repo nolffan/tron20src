@@ -37,6 +37,10 @@
 #                          directory's TRONSrv.exe)
 #   MPTEST_NAME=<name>     the run directory, out/play/<name>/ (default
 #                          <gamedir's basename>-mp-<mode>-<type>)
+#   MPTEST_CFG1/2=<file>   console variables appended to client 1's (2's)
+#                          autoexec.cfg (lines like "MaxFPS" "60"; as
+#                          playtest.sh's PLAYTEST_CFG): for example a frame
+#                          rate limit of its own for each client
 #
 # Each program runs in a directory of its own in out/play/<name>/ (srv/,
 # c1/, c2/: binaries copied, data linked, as build/playtest.sh does), with
@@ -120,6 +124,8 @@ CMDS="$(tr -d '\r\n' < "$GAME/tron20cmds.txt") ++screenwidth 640 ++screenheight 
 setup "$RUN/srv"; cp "$SRVEXE" "$RUN/srv/TRONSrv.exe"; config 1 > "$RUN/srv/ServerData/mptest.txt"
 for n in 1 2; do
     setup "$RUN/c$n"; config 0 > "$RUN/c$n/ServerData/mptest.txt"
+    cfg="MPTEST_CFG$n"; cfg="${!cfg:-}"
+    if [ -n "$cfg" ]; then cat "$(abs "$cfg")" >> "$RUN/c$n/autoexec.cfg" || exit 2; fi
 done
 if [ "$MODE" = listen ]; then
     printf '%s +playername Host\r\n' "$CMDS" > "$RUN/c1/tron20cmds.txt"

@@ -1,0 +1,29 @@
+# playtest-fps-race.txt -- the frame-rate test of a light cycle race
+# (docs/MODERN.md EN-45), for the modern build: the race of
+# playtest-race.txt, with a left and a right turn, then on. Run it at two
+# frame rates and compare the poslog.txt of each (build/fpscheck.py race):
+#   make test TEST_GAME=out/tron20-modern-release TEST_NAME=fps-race-60 \
+#     TEST_SCRIPT=build/playtest-fps-race.txt TEST_CFG=build/fps-60.cfg
+#   (the same with TEST_NAME=fps-race-0 TEST_CFG=build/fps-0.cfg)
+#   python3 build/fpscheck.py race out/play/fps-race-60 out/play/fps-race-0
+# The configs do not draw the world (under Xvfb the software renderer
+# holds a race at about 20 frames a second), so the shots are black.
+# world: -
+window 240
+# the splash screen, then the main menu
+wait 15
+mclick 256 162
+wait 3
+mclick 494 274
+wait 3
+mclick 127 217
+wait 1
+mclick 563 456
+wait 12
+shot race
+hold a 0.3
+wait 2
+shot left
+hold d 0.3
+wait 4
+shot end

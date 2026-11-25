@@ -1,0 +1,33 @@
+# playtest-fps-walk.txt -- the frame-rate test of the player's movement
+# (docs/MODERN.md EN-45), for the modern build: in the first level, into
+# control, then a run forward and back, a jump, a strafe each way, a
+# crouching walk and a jump, with pauses between. Run it at two frame
+# rates and compare the poslog.txt of each (build/fpscheck.py walk):
+#   make test TEST_GAME=out/tron20-modern-release TEST_NAME=fps-walk-60 \
+#     TEST_SCRIPT=build/playtest-fps-walk.txt TEST_CFG=build/fps-60.cfg \
+#     TEST_WORLD='Worlds\RetailSinglePlayer\M01-01'
+#   (the same with TEST_NAME=fps-walk-0 TEST_CFG=build/fps-0.cfg)
+#   python3 build/fpscheck.py walk out/play/fps-walk-60 out/play/fps-walk-0
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+shot start
+hold w 0.7
+wait 2
+hold s 0.7
+wait 2
+key space
+wait 2
+hold d 0.5
+wait 1
+hold a 0.5
+wait 1
+down c
+wait 1
+hold w 0.6
+wait 1
+up c
+wait 2
+key space
+wait 2
+shot end

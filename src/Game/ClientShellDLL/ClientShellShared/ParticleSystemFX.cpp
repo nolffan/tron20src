@@ -237,6 +237,17 @@ LTBOOL CParticleSystemFX::Update()
 	int nToAdd = (int) floor(m_cs.fParticlesPerSecond * fTimeDelta);
     nToAdd = LTMIN(nToAdd, (int)(MAX_PARTICLES_PER_SECOND * fTimeDelta));
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-45: retail rounds the count down and starts the clock
+	// again at each update, so where a frame owes less than one particle,
+	// no particle is ever added (and a system that GetNumParticles gives
+	// one at least adds one each frame). An update that owes no particle
+	// keeps its time until one is owed; the rotation still turns.
+	bool bModernOwed = (nToAdd > 0);
+	if (bModernOwed)
+	{
+#endif
+
 	nToAdd = GetNumParticles(nToAdd);
 
 	m_pClientDE->AddParticles(m_hObject, nToAdd,
@@ -256,6 +267,9 @@ LTBOOL CParticleSystemFX::Update()
 	{
 		m_fNextUpdate = 0.001f;
 	}
+#ifdef TRON20SRC_MODERN
+	}
+#endif
 
 
 	// Rotate the particle system...
@@ -268,7 +282,12 @@ LTBOOL CParticleSystemFX::Update()
 		g_pLTClient->SetObjectRotation(m_hObject, &rRot);
 	}
 
+#ifdef TRON20SRC_MODERN
+	if (bModernOwed)	// EN-45: see above
+		m_fLastTime = fTime;
+#else
 	m_fLastTime = fTime;
+#endif
 
     return LTTRUE;
 }

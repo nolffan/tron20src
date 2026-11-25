@@ -1633,6 +1633,24 @@ bool CServerDlg::AddResources( )
 	// Add the rez files from registry.  Add the update after the content so it overrides.
 	ReadRezFromRegCommandLine( lstRez, regMgr, "ContentNum", "ContentCommandLine" );
 	ReadRezFromRegCommandLine( lstRez, regMgr, "UpdateNum", "UpdateCommandLine" );
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: the values are in tron20.ini beside the program,
+	// where no installer of Update 2 wrote its UpdateCommandLine0/1
+	// ("-rez gamep3.rez", "-rez gamep4.rez"): the update's archives from the
+	// game directory, if they are there, as the launcher adds them
+	DWORD nModernUpdateNum = 0;
+	if( !regMgr.GetField( "UpdateNum", &nModernUpdateNum ))
+	{
+		static char const* const s_aszUpdateRez[] = { "Gamep3.rez", "Gamep4.rez" };
+		for( int iUpdate = 0; iUpdate < sizeof( s_aszUpdateRez ) / sizeof( s_aszUpdateRez[0] ); iUpdate++ )
+		{
+			if( GetFileAttributes( s_aszUpdateRez[iUpdate] ) != 0xFFFFFFFF )
+			{
+				lstRez.AddTail( s_aszUpdateRez[iUpdate] );
+			}
+		}
+	}
+#endif
 
 	lstRez.AddTail( "custom" );
 

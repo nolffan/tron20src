@@ -73,6 +73,7 @@ make modern-debug  # both, in out/tron20-modern-debug/
 make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
 make tests      # the scripted tests: menus, a level, saving and loading, a race
 make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main menu
+make portabletest  # the modern build: no registry or APPDATA use, the launcher waits for the game
 make mptest     # multiplayer: the dedicated server and two clients (some minutes)
 make sweep      # every single-player world for a minute each (slow); out/play/sweep-summary.txt
 make reference  # the retail binaries and their function tables, in out/reference/
@@ -98,7 +99,11 @@ not ours or third-party. Start the game with
 launcher, `Tron.exe`, which reads the registry values of the game's setup
 (`HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0`: `InstallDir`,
 `UpdateNum` and `UpdateCommandLine0/1`, as `build/launchertest.sh` writes
-them) and wants disc 1 in a drive, as retail's does.
+them) and wants disc 1 in a drive, as retail's does. The modern build's
+launcher (`TronLauncher.exe`, and `Tron.exe`, which starts the game at
+once) needs neither: the game directory is the install, and the launcher,
+the game and the dedicated server keep their settings in `tron20.ini`
+beside the executables (`docs/MODERN.md` APPS-3).
 
 `make mptest` (`build/mptest.sh`) runs a multiplayer game on the loopback:
 `MPTEST_MODE=dedicated` (the default: `TRONSrv.exe` hosts, two clients

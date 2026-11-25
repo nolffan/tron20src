@@ -1,0 +1,25 @@
+# playtest-launcher-portable.txt -- build/portabletest.sh's first run: the
+# modern build's TronLauncher.exe on a Wine prefix with no values of the
+# game and no CD-ROM drive (MODERN.md APPS-2, APPS-3). Play asks for the
+# detail setting once (Medium: 800x600) and starts the engine, which must
+# reach the main menu; then Quit, and the launcher must stop after the
+# game. Coordinates: the launcher's own (wclick), the display's (sclick),
+# the game window's (wclick).
+wfocus TRON 90
+wait 3
+screen launcher
+# Play: the detail setting (Medium), then the game
+wclick TRON 460 38
+wait 4
+screen detail
+sclick 400 352
+wait 60
+screen menu
+# Quit (the main menu: the game window is "TRON 2.0", the launcher's
+# -windowtitle, at 800x600), then the confirmation
+wfocus TRON 30
+wclick TRON 270 412
+wait 3
+screen quit
+key Return
+wait 15
