@@ -1,6 +1,226 @@
 #include "stdafx.h"
 #include "regmgr32.h"
 
+#ifdef TRON20SRC_MODERN
+
+// MODERN.md APPS-3: the modern build keeps the values in a file beside the
+// program (regfile.h), not in the registry: the same class and calls for
+// the launcher (Tron.exe, TronLauncher.exe) and the dedicated server
+// (TRONSrv.exe). The root key is not used. m_csKey is the open key's
+// section; m_hKey is not a registry handle, only "a key is open".
+
+#include "../RegMgr/regfile.h"
+
+#define REGMGR32_OPENKEY	((HKEY)1)
+
+// the section of a key path
+static BOOL RegMgr32_Section(CString& csSection, const CString& csKey)
+{
+	char szSection[1024];
+	if(!RegFile_Section(szSection, sizeof(szSection), csKey))
+		return FALSE;
+	csSection = szSection;
+	return TRUE;
+}
+
+BOOL CRegMgr32::Init()
+{
+	if(m_bIsInited)
+		return FALSE;
+
+	m_hKey = NULL;
+
+	m_bIsInited = TRUE;
+	return(TRUE);
+}
+
+void CRegMgr32::Term()
+{
+	if(m_bIsInited)
+	{
+		CloseCurrentKey();
+		m_bIsInited = FALSE;
+	}
+}
+
+BOOL CRegMgr32::CloseCurrentKey()
+{
+	if(!m_bIsInited)
+		return FALSE;
+
+	m_hKey = NULL;
+	m_csKey.Empty();
+	return TRUE;
+}
+
+BOOL CRegMgr32::SetField(char *sField, char *sValue)
+{
+	if(!m_bIsInited || !m_hKey || !sValue)
+		return FALSE;
+	return RegFile_SetString(m_csKey, sField, sValue);
+}
+
+BOOL CRegMgr32::SetField(char *sField, void *pValue, int nLen)
+{
+	if(!m_bIsInited || !m_hKey)
+		return FALSE;
+	return RegFile_SetBinary(m_csKey, sField, pValue, nLen);
+}
+
+BOOL CRegMgr32::SetField(char *sField, DWORD dwValue)
+{
+	if(!m_bIsInited || !m_hKey)
+		return FALSE;
+	return RegFile_SetDWord(m_csKey, sField, dwValue);
+}
+
+BOOL CRegMgr32::SetField(char *sField, char *sValue, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!sValue || !RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_SetString(csSection, sField, sValue);
+}
+
+BOOL CRegMgr32::SetField(char *sField, void *pValue, int nLen, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_SetBinary(csSection, sField, pValue, nLen);
+}
+
+BOOL CRegMgr32::SetField(char *sField, DWORD dwValue, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_SetDWord(csSection, sField, dwValue);
+}
+
+BOOL CRegMgr32::GetField(char *sField, char *sValue, DWORD &dwSize)
+{
+	if(!m_bIsInited || !m_hKey)
+		return FALSE;
+	return RegFile_GetString(m_csKey, sField, sValue, &dwSize);
+}
+
+BOOL CRegMgr32::GetField(char *sField, void *pValue, DWORD &dwSize)
+{
+	if(!m_bIsInited || !m_hKey)
+		return FALSE;
+	return RegFile_GetBinary(m_csKey, sField, pValue, &dwSize);
+}
+
+BOOL CRegMgr32::GetField(char *sField, DWORD *pdwValue)
+{
+	if(!m_bIsInited || !m_hKey)
+		return FALSE;
+	return RegFile_GetDWord(m_csKey, sField, pdwValue);
+}
+
+BOOL CRegMgr32::GetField(char *sField, char *sValue, DWORD &dwSize, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_GetString(csSection, sField, sValue, &dwSize);
+}
+
+BOOL CRegMgr32::GetField(char *sField, void *pValue, DWORD &dwSize, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_GetBinary(csSection, sField, pValue, &dwSize);
+}
+
+BOOL CRegMgr32::GetField(char *sField, DWORD *pdwValue, HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_GetDWord(csSection, sField, pdwValue);
+}
+
+BOOL CRegMgr32::DeleteField(char *sField)
+{
+	if(!m_bIsInited || !m_hKey || !sField)
+		return FALSE;
+	return RegFile_SetRaw(m_csKey, sField, NULL);
+}
+
+BOOL CRegMgr32::DeleteField(char *sField,HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+				char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	CString csSection;
+	if(!sField || !RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_SetRaw(csSection, sField, NULL);
+}
+
+// Deletes the key's section (only the section: the file has no tree of
+// keys)
+BOOL CRegMgr32::DeleteKey(HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+					   char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	if(!m_bIsInited)
+		return FALSE;
+	if(!hRootKey || !szKey1)
+		return FALSE;
+	CloseCurrentKey();
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	return RegFile_SetRaw(csSection, NULL, NULL);
+}
+
+// As retail: FALSE when the key (the section) is there already
+BOOL CRegMgr32::CreateKey(HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+					   char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	if(!m_bIsInited)
+		return FALSE;
+	if(!hRootKey || !szKey1)
+		return FALSE;
+	CloseCurrentKey();
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	if(RegFile_HasSection(csSection))
+		return FALSE;
+	m_csKey = csSection;
+	m_hKey = REGMGR32_OPENKEY;
+	return TRUE;
+}
+
+// Not as retail: a key is always there. The file may not have its section
+// yet (a first run): then it has no values, and the first value written
+// makes it
+BOOL CRegMgr32::OpenKey(HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3, char *szKey4,
+					   char *szKey5, char *szKey6, char *szKey7, char *szKey8, char *szKey9)
+{
+	if(!m_bIsInited)
+		return FALSE;
+	if(!hRootKey || !szKey1)
+		return FALSE;
+	CloseCurrentKey();
+	CString csSection;
+	if(!RegMgr32_Section(csSection, CombineKeys(szKey1,szKey2,szKey3,szKey4,szKey5,szKey6,szKey7,szKey8,szKey9)))
+		return FALSE;
+	m_csKey = csSection;
+	m_hKey = REGMGR32_OPENKEY;
+	return TRUE;
+}
+
+#else // TRON20SRC_MODERN
+
 // ----------------------------------------------------------------------- //
 //
 //	ROUTINE:	CRegMgr32::Init
@@ -440,6 +660,8 @@ BOOL CRegMgr32::OpenKey(HKEY hRootKey, char *szKey1, char *szKey2, char *szKey3,
 	}
 	return FALSE;
 }
+
+#endif // TRON20SRC_MODERN
 
 // ----------------------------------------------------------------------- //
 //

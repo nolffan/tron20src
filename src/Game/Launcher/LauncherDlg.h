@@ -50,6 +50,9 @@ protected:
 
 	HICON			m_hIcon;
 	BOOL			LaunchGame(DWORD dwAction);
+#ifdef TRON20SRC_MODERN
+	void			WaitForGame(HANDLE hProcess);	// MODERN.md APPS-2
+#endif
 	// Generated message map functions
 	//{{AFX_MSG(CLauncherDlg)
 	virtual BOOL OnInitDialog();

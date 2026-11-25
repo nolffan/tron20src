@@ -1686,6 +1686,40 @@ value 0xFFFFFFFF.0xFFFFFFFF, and the debug output says "LithTech build
 
 Not fixed yet: the modern build has no build number to give the engine.
 
+### The launcher's -GOSERVER starts a server that does not exist
+
+Tron.exe 0x407460 (CLauncherApp::InitInstance, Launcher/Launcher.cpp) loads
+the name of the dedicated server from IDS_SERVEREXE, "TRON2Svr.EXE" (the
+string is in the retail image). CLauncherDlg::LaunchGame (0x4096a0) starts
+it with WinExec for ACTION_STANDALONESERVER, which only the -GOSERVER
+command line argument asks for (the launcher has no server button). The
+dedicated server of the game is TRONSrv.exe, and there is no
+TRON2Svr.EXE. Thus "tron.exe -goserver" shows the IDS_CANTLAUNCHSERVER
+error and starts nothing.
+
+Fixed in the modern build: Launcher/Launcher.cpp (InitInstance), MODERN.md
+APPS-2.
+
+### The game keeps its settings under HKEY_LOCAL_MACHINE, opened for writing
+
+CShell.dll and Object.lto 0x100c4600 / 0x10075480 (CRegMgr::CreateKey,
+libs/RegMgr/regmgr.cpp, from CRegMgr::Init 0x100c4360 / 0x10075240, which
+CVersionMgr calls with HKEY_LOCAL_MACHINE) open each key with
+RegCreateKeyEx and KEY_READ | KEY_WRITE, also to read a value. Tron.exe
+and TRONSrv.exe 0x40c8d0 / 0x40fb40 (CRegMgr32::OpenKey,
+libs/RegMgr32/regmgr32.cpp) open HKEY_LOCAL_MACHINE\SOFTWARE\Monolith
+Productions\TRON 2.0\1.0 with KEY_READ | KEY_WRITE, also only to read. A
+user who is not an administrator cannot open the machine's keys for
+writing: then the game does not read or keep the profile name (the
+launcher asks for the detail setting at each start), and the launcher
+does not read or keep its options. It works only through the registry
+virtualization of Windows Vista and later, which writes the values to a
+place of the user's own.
+
+Fixed in the modern build: libs/RegMgr/regmgr.cpp, libs/RegMgr32/
+regmgr32.cpp, MODERN.md APPS-3 (the values are in a file beside the
+executable; the registry is not used).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

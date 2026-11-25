@@ -43,8 +43,8 @@ have Tron 2.0 `EN-` ids here, as the table "Inherited engine items" shows.
   build (Visual C++ 6.0, `msvc-6.00-8168`, and the DirectX 9 SDK that the
   engine links).
 * **No SecuROM, no disc check.** The engine built here has no SecuROM. The
-  modern build will also remove the game's own disc and CD-key checks
-  (APPS-3, GS-4).
+  modern build removes the game's own disc check (APPS-3) and CD-key
+  check (GS-4).
 * **One owner for each file.** The Phase 1 work (below) is divided by
   files, so that each agent changes its own files. Where two items must
   change the same file, the table of overlaps says who changes what.
@@ -94,7 +94,103 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
   detail prompt of the first run). When the game is not installed,
   `Tron.exe` is the launcher, for its Install button.
   (`src/Game/Launcher/Launcher.cpp`, `LauncherDlg.cpp`; tested with `make
-  launchertest`.) "Installed" still comes from the registry (APPS-3).
+  launchertest`.) "Installed" is APPS-3's: `Lithtech.exe` beside the
+  program.
+* **APPS-2: the launcher stays until the game stops.** Retail's launcher
+  starts `Lithtech.exe` and closes. Steam takes the end of the program
+  that it started for the end of the game: the overlay and Remote Play
+  stop. In the modern build, `CLauncherDlg::LaunchGame` starts the engine
+  of the game directory by its full path, hides the launcher window, and
+  waits until the engine stops (`CLauncherDlg::WaitForGame`:
+  `MsgWaitForMultipleObjects`, so that the window's messages are
+  dispatched). Then the launcher writes its settings and closes, as
+  retail does after a start. This applies to Play, to the command line
+  starts (`-GOGAME`, `-GOMULTIHOST`, `-GOMULTIJOIN`, `-GOMULTIFIND`,
+  `-GOSERVER`) and to `Tron.exe`'s direct start (APPS-1), which has no
+  window. `-GOSERVER` starts the dedicated server, and the launcher waits
+  for it too. Retail started "TRON2Svr.EXE" (IDS_SERVEREXE), which does
+  not exist: the modern launcher starts `TRONSrv.exe` (`RETAIL_BUGS.md`;
+  `Launcher/Launcher.cpp` `InitInstance`, `Launcher/LauncherDlg.cpp`
+  `LaunchGame`, `WaitForGame`). Tested with `make portabletest`
+  (`build/portabletest.sh`): a monitor in the container records the
+  processes each second. `TronLauncher.exe` and `Tron.exe` were present
+  at each sample while `Lithtech.exe` ran, and stopped within 15 s after
+  the game quit from its main menu. `make launchertest` with
+  `LAUNCHER_EXE=TronLauncher.exe` and with `Tron.exe` ends ALIVE.
+* **APPS-3: no registry, no APPDATA: the settings are in `tron20.ini`
+  beside the executable.** Retail keeps its values under
+  `HKEY_LOCAL_MACHINE\SOFTWARE\Monolith Productions\TRON 2.0\1.0`
+  (opened for writing, also to read: `RETAIL_BUGS.md`): the launcher's
+  options, `DisplayWarning`, `OptionsWarning`, `Num Launcher Runs`,
+  `Save Commands`, `Commands`, `SelectedMod`; the installer's
+  `InstallDir`, `UpdateNum`, `UpdateCommandLine0/1`; the game's
+  `Language` and `ProfileName` (`CVersionMgr`, `CProfileMgr`) and
+  `CDKey` (`TronCDKey.cpp`); and GameSpy's ID for the version check
+  (`HKEY_CURRENT_USER\Software\GameSpy\GameSpy 3D\Registration`,
+  `Crypt`, `nonport.c` `GOAGetUniqueID`). The modern build compiles the
+  same classes, `CRegMgr` (`libs/RegMgr/regmgr.cpp`: the game DLLs,
+  `TRONSrv.exe`) and `CRegMgr32` (`libs/RegMgr32/regmgr32.cpp`: the
+  launcher, `TRONSrv.exe`), on a file: `tron20.ini` in the directory of
+  the running program (`libs/RegMgr/regfile.h`, the Windows profile
+  functions). The launcher, `Lithtech.exe` with the game DLLs and the
+  server are all in the game directory, so they use one file. Each key is
+  a section, without the root key and without `SOFTWARE\`
+  (`[Monolith Productions\TRON 2.0\1.0]`); strings are in quotes, DWORDs
+  in decimal, binary data as `WritePrivateProfileStruct` writes it. Each
+  call reads or writes the file at once, so that the launcher sees the
+  `ProfileName` that the game wrote while it waited. The registry is not
+  read: values of a retail install are not carried over (the detail
+  dialog comes once more). The callers do not change, except:
+  * "Installed": the game directory is the install. `CLauncherApp::
+    InitInstance` changes to the directory of the program; the game is
+    installed when `Lithtech.exe` is there, and `InstallDir` is that
+    directory. `LaunchGame` does not read `InstallDir`. Without
+    `Lithtech.exe`, Play (Install) shows "Could not launch LITHTECH.EXE"
+    and does not start the disc's setup program. Uninstall is disabled:
+    there is no installer.
+  * Update 2's archives: with no `UpdateNum` in the file (an installer
+    wrote it in retail), the launcher (`LaunchGame`) and the dedicated
+    server (`CServerDlg::AddResources`) add `Gamep3.rez` and
+    `Gamep4.rez` from the game directory, when they are there.
+  * `CRegMgr32::OpenKey` always succeeds (a key with no values is an
+    empty section): the server hosts with no values (`DoHost`,
+    `AddResources` returned false without the key in retail).
+  * The disc check is removed: `CD_GetDriveLetterWithGame` probes no
+    drive (the `CdRom Drive` value, `\TRON.EXE` on each CD-ROM drive) and
+    `CD_VerifyGame` only finds the rez files in the game directory. The
+    message for a missing `Game.rez` does not mention a disc
+    (`TRON/Launcher.rc`).
+  * The CD key: `TronCDKey.cpp` reads `CDKey` from the file, where nothing
+    writes it, so it is empty. GS-4 (Online) decides what multiplayer does
+    without a key.
+  Saved games (`Save/`), profiles (`Profiles/`), `autoexec.cfg` and
+  `display.cfg` were already in the game directory. The engine
+  (`Lithtech.exe`, `server.dll`) has no registry or `SHGetFolderPath`
+  call of its own: `Lithtech.exe` imports `RegOpenKeyA` and
+  `RegQueryValueExA` only for D3DX9 (static, it reads
+  `Software\Microsoft\Direct3D`; not the game's). It copies the game
+  DLLs that it loads from rez files to the Temp folder; ours are in
+  `custom/`, not in a rez file, so none are copied. The imports of the
+  modern binaries have no other registry function. A first run with no
+  file: the launcher's defaults, written when it closes; the detail
+  setting passes `+BitDepth 32` (32-bit colour; the 16-bit fallback of
+  `DisplayMgr.cpp` is Display's, CL-35). Files: `libs/RegMgr/regfile.h`
+  (new), `regmgr.h`, `regmgr.cpp`, `libs/RegMgr32/regmgr32.cpp`,
+  `Libs/GameSpy/nonport.c`, `Launcher/Launcher.cpp`, `Launcher.h`,
+  `LauncherDlg.cpp`, `LauncherDlg.h`, `TRON/Launcher.rc`,
+  `ServerApp/ServerDlg.cpp`. Tested with `make portabletest`
+  (`build/portabletest.sh`, `build/playtest-launcher-portable*.txt`): a
+  fresh Wine prefix with no values of the game and no CD-ROM drive;
+  `TronLauncher.exe` (Play, the detail setting, the main menu, Quit),
+  `Tron.exe` (the same), then `TRONSrv.exe` hosting a LAN Disc Arena
+  game to its loaded world. The key names and values of `system.reg`,
+  `user.reg`, `userdef.reg` and the files under `drive_c/users/` before
+  and after: no new line names the game, and no file was added under
+  AppData. `tron20.ini` had the launcher's values and the game's
+  `ProfileName`. `make launchertest` (whose script writes the retail
+  installer's values into the registry): the modern launcher ignored
+  them and its command line had `Gamep3.rez` and `Gamep4.rez` from the
+  game directory.
 
 ### Retail-bug fixes, game DLLs
 
@@ -242,28 +338,7 @@ Engine paths are under `src/Engine/runtime/`, game paths under
 
 ### Apps
 
-* **APPS-2: the launcher stays open after it starts the game.** Retail
-  closes the launcher when the game starts (`CLauncherDlg::OnPlay` and the
-  other actions: `LaunchGame`, then `EndDialog`; `CLauncherApp::
-  InitInstance` then ends). The modern launcher stays (minimised, or
-  waits for `Lithtech.exe` to exit), so that the Steam overlay and Steam
-  Remote Play keep the process tree. `Tron.exe` (APPS-1) also waits for
-  the game. Files: `Launcher/LauncherDlg.cpp` (`LaunchGame`, `OnPlay`,
-  `LaunchDirect`), `Launcher/Launcher.cpp` (`InitInstance`).
-* **APPS-3: settings and saved games beside the executable, no registry,
-  no APPDATA.** The registry users: the launcher (`CLauncherApp` reads
-  `InstallDir`, `UpdateNum`, `UpdateCommandLine0/1` to decide
-  "installed" and the rez list; `LauncherDlg.cpp`, `OptionsDlg.cpp`,
-  `DisplayDlg.cpp` store the options, `DisplayWarning`, `OptionsWarning`,
-  `Num Launcher Runs` through `CRegMgr`, `src/libs/RegMgr/regmgr.cpp`),
-  the game (`Shared/VersionMgr.cpp` `Language`;
-  `ClientShellShared/ProfileMgr.cpp` `ProfileName`;
-  `TRON/TronCDKey.cpp` the CD key), and the dedicated server
-  (`ServerApp/ServerDlg.cpp` through `src/libs/RegMgr32/regmgr32.cpp`).
-  Saved games and profiles (`Save/`, `Profiles/`) and `autoexec.cfg` are
-  already in the game directory. A file beside the executable (as
-  cjacksrc's APPS-6) replaces the registry; the modern build drops the
-  disc check (`CLauncherApp::CD_VerifyGame`, `CD_GetDriveLetterWithGame`).
+APPS-2 and APPS-3 are done (above).
 
 ### Display
 
@@ -387,7 +462,7 @@ every retail binary):
 | `TRON/ScreenDisplay.cpp` | Display (CL-30, CL-31, CL-32, CL-33), Frame rate (EN-44: one frame-limit control) | Display owns it; Frame rate adds its control after Display |
 | `ClientShellShared/PlayerCamera.cpp`, `PlayerMgr.cpp`, `TRON/TronPlayerMgr.cpp` | Display (CL-33: FOV), Frame rate (EN-45: frame-time steps) | separate functions; coordinate |
 | `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp` | Display (CL-33), Input (CL-20: the pad's update) | separate functions |
-| `ClientShellShared/ProfileMgr.cpp` | Apps (APPS-3: `ProfileName` in the registry), Input (CL-20: bindings), Display (new settings) | each its own settings |
+| `ClientShellShared/ProfileMgr.cpp` | Apps (APPS-3: `ProfileName` in the registry), Input (CL-20: bindings), Display (new settings) | each its own settings; APPS-3 did not change the file (`CRegMgr` keeps its calls) |
 | `TRON/TronGameServerShell.cpp` | Online (GS-1, GS-4), Frame rate (EN-45: the update) | separate functions |
 | `TRON/BaseScreenJoin.cpp`, `TRON/TronCDKey.cpp` | Online (GS-3, GS-4), Apps (APPS-3: the CD key in the registry) | Online owns them; Apps gives the storage |
 | `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`, `OptionsDlg.cpp` | Display (CL-30, CL-31, CL-35), Apps (APPS-3: where the options are stored), Input (CL-20: Disable Joysticks) | Apps changes only the storage calls |

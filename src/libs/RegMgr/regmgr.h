@@ -46,6 +46,11 @@ private:
   HKEY m_hSubKey;
   char m_sApp[256];
   char m_sSubKey[256];
+#ifdef TRON20SRC_MODERN
+  // MODERN.md APPS-3: the key's section in the file beside the program
+  // (regfile.h), in place of the registry
+  char m_sSection[1024];
+#endif
 };            
 
 #endif
