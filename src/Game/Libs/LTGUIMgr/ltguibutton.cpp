@@ -255,8 +255,14 @@ void CLTGUIButton::ScalePoly()
 	if (!m_hNormal) return;
 	uint32 w,h;
 	g_pTexInterface->GetTextureDims(m_hNormal,w,h);
+#ifdef TRON20SRC_MODERN
+	// CL-30: the page's margins
+	float x = (float)m_basePos.x * m_fScale + (float)s_nPageOffsetX;
+	float y = (float)m_basePos.y * m_fScale + (float)s_nPageOffsetY;
+#else
 	float x = (float)m_basePos.x * m_fScale;
 	float y = (float)m_basePos.y * m_fScale;
+#endif
 	float fw = (float)w * m_fScale * m_fTextureScale;
 	float fh = (float)h * m_fScale * m_fTextureScale;
 

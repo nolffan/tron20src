@@ -114,6 +114,11 @@ void CLibraryCtrl::Init(int nFunction, float fArcStart, float fArcEnd)
 	m_fTitleHalfRadius = m_fTitleRadius * 0.5f;
 	m_Center.x = (int)(fXRatio * 320.0f);
 	m_Center.y = (int)(fYRatio * 240.0f);
+#ifdef TRON20SRC_MODERN
+	m_Center.x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	m_Center.y += g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 	ArcPolyString(m_pTitle, m_Center.x, m_Center.y, m_fTitleRadius, fArcStart, m_nFunction == FUNCTION_COMBAT, 0);
 

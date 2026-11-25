@@ -253,7 +253,13 @@ void CHUDWeapon::UpdateLayout()
 	// RETAIL: 0x1003f2d0, 0x1003f35f: CTronLayoutMgr's weapon indicator
 	// offsets (0x100a1cb0, 0x100a1d30), not CLayoutMgr's NOLF2 getters
 	LTIntPt offset = ((CTronLayoutMgr*)g_pLayoutMgr)->GetWeaponIndicatorOffset(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at the screen's right edge
+	float x = g_pInterfaceResMgr->HUDX(640.0f, 640) - (float)nWidth - offset.x;
+#else
 	float x = 640.0f * g_pInterfaceResMgr->GetXRatio() - (float)nWidth - offset.x;
+#endif
+
 	float y = (float)offset.y;
 	g_pDrawPrim->SetXYWH(&m_BasePrim, x, y, (float)nWidth, (float)nHeight);
 

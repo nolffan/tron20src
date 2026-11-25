@@ -117,6 +117,12 @@ void CHUDMeter::Update()
 
 	float x = (float)(m_MeterBasePos.x + m_MeterOffset.x) * g_pInterfaceResMgr->GetXRatio();
 	float y = (float)(m_MeterBasePos.y + m_MeterOffset.y) * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	x += (float)g_pInterfaceResMgr->GetHUDXOffset(m_MeterBasePos.x);
+	y += (float)g_pInterfaceResMgr->GetHUDYOffset(m_MeterBasePos.y);
+#endif
+
 
 	float w = (float)m_dwValue * m_fMeterScale * g_pInterfaceResMgr->GetXRatio();
 	float h = (float)m_nMeterHeight * g_pInterfaceResMgr->GetYRatio();

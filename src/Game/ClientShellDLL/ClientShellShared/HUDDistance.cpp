@@ -203,8 +203,14 @@ void CHUDDistance::Update()
 
 	float x = (float)m_BasePos.x * g_pInterfaceResMgr->GetXRatio();
 	float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	x += (float)g_pInterfaceResMgr->GetHUDXOffset(m_BasePos.x);
+	y += (float)g_pInterfaceResMgr->GetHUDYOffset(m_BasePos.y);
+#endif
 
 	float w = m_fIconSize * g_pInterfaceResMgr->GetYRatio();
+
 
 	g_pDrawPrim->SetXYWH(&m_Poly,x,y,w,w);
 

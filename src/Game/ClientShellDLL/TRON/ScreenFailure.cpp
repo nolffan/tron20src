@@ -123,6 +123,10 @@ void CScreenFailure::OnFocus(LTBOOL bFocus)
 		float fXRatio = g_pInterfaceResMgr->GetXRatio();
 		int x = (int)((float)((stringRect.left + stringRect.right) / 2) * fXRatio);
 		int y = (int)((float)stringRect.top * fXRatio);
+#ifdef TRON20SRC_MODERN
+		x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+		y += g_pInterfaceResMgr->GetYOffset();
+#endif
 
 		int32 nWidth, nHeight;
 		m_pString->GetDims(&nWidth, &nHeight);

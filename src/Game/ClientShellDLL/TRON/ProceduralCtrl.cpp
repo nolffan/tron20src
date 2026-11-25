@@ -110,6 +110,11 @@ void COptimizerCtrl::ScreenDimsChanged()
 	m_HitRect.right = (int)(m_HitRect.right * fXRatio);
 	m_HitRect.top = (int)(m_HitRect.top * fYRatio);
 	m_HitRect.bottom = (int)(m_HitRect.bottom * fYRatio);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_HitRect.left += g_pInterfaceResMgr->GetXOffset(); m_HitRect.right += g_pInterfaceResMgr->GetXOffset();
+	m_HitRect.top += g_pInterfaceResMgr->GetYOffset(); m_HitRect.bottom += g_pInterfaceResMgr->GetYOffset();
+#endif
 
 	m_Center.x = (m_HitRect.left + m_HitRect.right) / 2;
 	m_Center.y = (m_HitRect.top + m_HitRect.bottom) / 2;
@@ -468,6 +473,10 @@ bool CProceduralCtrl::Init(Procedural * pProc)
 		m_CenterPos.x = (int)(g_pInterfaceResMgr->GetXRatio() * pProc->CenterPos.x);
 		m_CenterPos.y = (int)(g_pInterfaceResMgr->GetYRatio() * pProc->CenterPos.y);
 		m_iRadius = (int)(g_pInterfaceResMgr->GetXRatio() * pProc->iRadius);
+#ifdef TRON20SRC_MODERN
+		m_CenterPos.x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+		m_CenterPos.y += g_pInterfaceResMgr->GetYOffset();
+#endif
 
 		if (m_pProc->pSub)
 		{
@@ -544,6 +553,11 @@ void CProceduralCtrl::ScreenDimsChanged()
 		m_CenterPos.y = (int)(fY * g_pInterfaceResMgr->GetYRatio());
 		float fR = (float)pProc->iRadius;
 		m_iRadius = (int)(fR * g_pInterfaceResMgr->GetXRatio());
+#ifdef TRON20SRC_MODERN
+		m_CenterPos.x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+		m_CenterPos.y += g_pInterfaceResMgr->GetYOffset();
+#endif
+
 	}
 	else
 	{

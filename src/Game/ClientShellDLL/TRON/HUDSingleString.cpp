@@ -86,8 +86,15 @@ void CHUDSingleString::UpdateLayout()
 		pos = g_pLayoutMgr->GetPoint("SingleString", "DiscMPPosition");
 	else
 		pos = g_pLayoutMgr->GetPoint("SingleString", "Position");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	m_BasePos.x = (int)g_pInterfaceResMgr->HUDX((float)pos.x, pos.x);
+	m_BasePos.y = (int)g_pInterfaceResMgr->HUDY((float)pos.y, pos.y);
+#else
 	m_BasePos.x = (int)(pos.x * xs);
 	m_BasePos.y = (int)(pos.y * ys);
+#endif
+
 
 	g_pLayoutMgr->GetInt("SingleString", "Font");
 	int nFontSize = (int)(g_pLayoutMgr->GetInt("SingleString", "FontSize") * xs);

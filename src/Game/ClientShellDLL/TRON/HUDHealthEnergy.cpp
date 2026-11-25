@@ -324,6 +324,13 @@ void CHUDHealthEnergy::UpdateLayout()
 	float fCenterX = 320.0f * xs;
 	m_HealthTextPos.x = (float)pos.x + fCenterX;
 	float fBottom = 480.0f * ys;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the screen's centre and bottom
+	fCenterX = g_pInterfaceResMgr->HUDX(320.0f, 320);
+	m_HealthTextPos.x = (float)pos.x + fCenterX;
+	fBottom = g_pInterfaceResMgr->HUDY(480.0f, 480);
+#endif
+
 	m_HealthTextPos.y = (float)pos.y + fBottom;
 	pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetEnergyTextOffset(nCurrentLayout);
 	m_EnergyTextPos.x = (float)pos.x + fCenterX;

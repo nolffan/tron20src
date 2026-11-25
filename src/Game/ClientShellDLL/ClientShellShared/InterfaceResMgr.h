@@ -76,6 +76,50 @@ public:
 	void				ConvertScreenPos(int &x, int &y);
     LTFLOAT             GetXRatio()                         {return m_fXRatio;}
     LTFLOAT             GetYRatio()                         {return m_fYRatio;}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the interface's 640x480 page is scaled the same both
+	// ways (GetXRatio() == GetYRatio(): the smaller of width/640 and
+	// height/480) and centred on the screen. These are the page's left and
+	// top edges on the screen (0 at 4:3). Every place that puts the page on
+	// the screen adds them.
+	int					GetXOffset()						{return m_nXOffset;}
+	int					GetYOffset()						{return m_nYOffset;}
+	// A point of the page on the screen
+	float				PageX(float x)						{return x * m_fXRatio + (float)m_nXOffset;}
+	float				PageY(float y)						{return y * m_fYRatio + (float)m_nYOffset;}
+	// The HUD keeps to the screen's edges: an item in the left (top) third
+	// of the page stays at the left (top) edge, one in the right (bottom)
+	// third moves with the right (bottom) edge, and one in the middle third
+	// stays centred. The offset for an item at nBaseX (nBaseY) on the page:
+	int					GetHUDXOffset(int nBaseX)
+	{
+		if (nBaseX < 640/3) return 0;
+		if (nBaseX >= 2*640/3) return 2*m_nXOffset;
+		return m_nXOffset;
+	}
+	int					GetHUDYOffset(int nBaseY)
+	{
+		if (nBaseY < 480/3) return 0;
+		if (nBaseY >= 2*480/3) return 2*m_nYOffset;
+		return m_nYOffset;
+	}
+	// A point of a HUD item on the screen (the item's anchor on the page
+	// selects the offset)
+	float				HUDX(float x, int nAnchorX)			{return x * m_fXRatio + (float)GetHUDXOffset(nAnchorX);}
+	float				HUDY(float y, int nAnchorY)			{return y * m_fYRatio + (float)GetHUDYOffset(nAnchorY);}
+	// The same offset in page units, for items whose base position is
+	// scaled later by code that does not add an offset
+	int					GetHUDBaseShiftX(int nBaseX)
+	{
+		if (m_fXRatio <= 0.0f) return 0;
+		return (int)((float)GetHUDXOffset(nBaseX) / m_fXRatio + 0.5f);
+	}
+	int					GetHUDBaseShiftY(int nBaseY)
+	{
+		if (m_fYRatio <= 0.0f) return 0;
+		return (int)((float)GetHUDYOffset(nBaseY) / m_fYRatio + 0.5f);
+	}
+#endif
 
     uint32              GetScreenWidth();
     uint32              GetScreenHeight();
@@ -116,6 +160,13 @@ protected:
     LTFLOAT              m_fYRatio;
     uint32              m_dwScreenWidth;
     uint32              m_dwScreenHeight;
+#ifdef TRON20SRC_MODERN
+	// CL-30: the page's left and top edges (static: the class keeps
+	// retail's size, which CInterfaceMgr's layout checks test)
+	static int			m_nXOffset;
+	static int			m_nYOffset;
+
+#endif
 
 	char				m_szSoundSelect[kMaxSoundFilename];
 	char				m_szSoundChange[kMaxSoundFilename];

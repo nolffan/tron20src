@@ -126,8 +126,14 @@ LTBOOL CScreenAudio::Build()
 	LTRect rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID, "EAXImageRect");
 	int nWidth = rect.right - rect.left;
 	int nHeight = rect.bottom - rect.top;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_EAXPoly, (g_pInterfaceResMgr->GetXRatio() * pos.x + (float)g_pInterfaceResMgr->GetXOffset()), (g_pInterfaceResMgr->GetXRatio() * pos.y + (float)g_pInterfaceResMgr->GetYOffset()),
+		nWidth * g_pInterfaceResMgr->GetXRatio(), nHeight * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_EAXPoly, g_pInterfaceResMgr->GetXRatio() * pos.x, g_pInterfaceResMgr->GetXRatio() * pos.y,
 		nWidth * g_pInterfaceResMgr->GetXRatio(), nHeight * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_EAXPoly, 0.0f, 0.0f, 1.0f, 1.0f);
 	g_pDrawPrim->SetRGBA(&m_EAXPoly, 0xFFFFFFFF);
 
@@ -401,8 +407,14 @@ void CScreenAudio::ScreenDimsChanged()
 	LTRect rect = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID, "EAXImageRect");
 	int nWidth = rect.right - rect.left;
 	int nHeight = rect.bottom - rect.top;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_EAXPoly, (g_pInterfaceResMgr->GetXRatio() * pos.x + (float)g_pInterfaceResMgr->GetXOffset()), (g_pInterfaceResMgr->GetXRatio() * pos.y + (float)g_pInterfaceResMgr->GetYOffset()),
+		nWidth * g_pInterfaceResMgr->GetXRatio(), nHeight * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_EAXPoly, g_pInterfaceResMgr->GetXRatio() * pos.x, g_pInterfaceResMgr->GetXRatio() * pos.y,
 		nWidth * g_pInterfaceResMgr->GetXRatio(), nHeight * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_EAXPoly, 0.0f, 0.0f, 1.0f, 1.0f);
 	g_pDrawPrim->SetRGBA(&m_EAXPoly, 0xFFFFFFFF);
 

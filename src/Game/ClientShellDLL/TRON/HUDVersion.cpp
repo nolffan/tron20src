@@ -151,7 +151,13 @@ void CHUDVersion::Update()
 	pFont = g_pInterfaceResMgr->GetFontForHeight((int)(m_nFontSize * xs));
 	m_pString->SetFont(pFont);
 	m_pString->SetCharScreenHeight((int)(m_nFontSize * xs));
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	m_pString->SetPosition((int)g_pInterfaceResMgr->HUDX((float)m_BasePos.x, m_BasePos.x), (int)g_pInterfaceResMgr->HUDY((float)m_BasePos.y, m_BasePos.y));
+#else
 	m_pString->SetPosition((int)(m_BasePos.x * xs), (int)(g_pInterfaceResMgr->GetYRatio() * m_BasePos.y));
+#endif
+
 
 	// RETAIL: string 3820 (0xeec), the version as "%d.%d.%d". This is
 	// Jet's version (the build points), not the game's: the first level

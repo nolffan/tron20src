@@ -152,8 +152,15 @@ void CHUDLightCycleCircuitIntro::UpdateLayout()
 
 	// RETAIL: 0x1002ca0c..0x1002cb0c: the intro's own layout values
 	LTIntPt pos = pHelper->GetIntroMasterPos(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	int x = (int)g_pInterfaceResMgr->PageX((LTFLOAT)pos.x);
+	int y = (int)g_pInterfaceResMgr->PageY((LTFLOAT)pos.y);
+#else
 	int x = (int)(pos.x * fXRatio);
 	int y = (int)(pos.y * fYRatio);
+#endif
+
 
 	int nNameOffset = (int)(pHelper->GetIntroVFrameBorder(nCurrentLayout) * fYRatio);
 	int nHBorder = (int)(pHelper->GetIntroHFrameBorder(nCurrentLayout) * fXRatio);

@@ -166,6 +166,10 @@ void CBaseScreenLightCycle::SetTabFrame(CLTGUICtrl *pTab)
 	float fWidth = (float)(rcBody.right - rcBody.left) * fXRatio;
 	float fTop = (float)(rcBody.top - 5) * fYRatio;
 	float fHeight = (float)(rcBody.bottom - rcBody.top) * fYRatio;
+#ifdef TRON20SRC_MODERN
+	fLeft += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	fTop += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 
 	g_pDrawPrim->SetXYWH(&m_TabPoly[0],fLeft,fTop,fWidth,fHeight);
 	g_pDrawPrim->SetXYWH(&m_TabPoly[1],fTabLeft,fTabTop,fTabRight - fTabLeft,fTop - fTabTop);

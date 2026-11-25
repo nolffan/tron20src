@@ -177,6 +177,16 @@ void CHUDIOCamera::UpdateLayout()
 	LTIntPt ptCenter = g_pLayoutMgr->GetPoint("IONodeCam", "Center");
 	m_fCenterX = (float)ptCenter.x * xs;
 	m_fCenterY = (float)ptCenter.y * ys;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_rcRect.left += g_pInterfaceResMgr->GetXOffset();
+	m_rcRect.right += g_pInterfaceResMgr->GetXOffset();
+	m_rcRect.top += g_pInterfaceResMgr->GetYOffset();
+	m_rcRect.bottom += g_pInterfaceResMgr->GetYOffset();
+	m_fCenterX += (float)g_pInterfaceResMgr->GetXOffset();
+	m_fCenterY += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 	m_fPiece2MinInterval = g_pLayoutMgr->GetFloat("IONodeCam", "Piece2MinInterval", 3.0f);
 	m_fPiece2MaxInterval = g_pLayoutMgr->GetFloat("IONodeCam", "Piece2MaxInterval", 3.0f);

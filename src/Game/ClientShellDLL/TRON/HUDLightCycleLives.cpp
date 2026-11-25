@@ -120,8 +120,15 @@ void CHUDLightCycleLives::UpdateLayout()
 	int nCurrentLayout = GetConsoleInt("HUDLayout", 0);
 
 	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetLivesIconPos(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	LTFLOAT fX = g_pInterfaceResMgr->HUDX((LTFLOAT)pos.x, pos.x) - fWidth;
+	LTFLOAT fY = g_pInterfaceResMgr->HUDY((LTFLOAT)pos.y, pos.y);
+#else
 	LTFLOAT fX = (LTFLOAT)pos.x * fXRatio - fWidth;
 	LTFLOAT fY = (LTFLOAT)pos.y * fYRatio;
+#endif
+
 	g_pDrawPrim->SetXYWH(&m_Poly, fX, fY, fWidth, fHeight);
 
 	uint8 nTextSize = (uint8)(g_pTronLayoutMgr->GetLCHUDHelper()->GetLivesTextHeight(nCurrentLayout) * fYRatio);

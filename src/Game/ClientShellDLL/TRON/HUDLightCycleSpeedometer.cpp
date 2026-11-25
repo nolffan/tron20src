@@ -77,8 +77,15 @@ void CHUDLightCycleSpeedometer::UpdateLayout()
 	// RETAIL: the y position is scaled by the x ratio too
 	// RETAIL: 0x1002fb14 reads SpeedometerPos
 	LTIntPt pos = pHelper->GetSpeedometerPos(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	pos.x = (int)g_pInterfaceResMgr->HUDX((LTFLOAT)pos.x, pos.x);
+	pos.y = (int)g_pInterfaceResMgr->HUDY((LTFLOAT)pos.y, pos.y);
+#else
 	pos.x = (int)(pos.x * fXRatio);
 	pos.y = (int)(pos.y * fXRatio);
+#endif
+
 
 	// RETAIL: 0x1002fb49..0x1002fbbd: the speedometer's own values, in
 	// LCHUDHelper's order

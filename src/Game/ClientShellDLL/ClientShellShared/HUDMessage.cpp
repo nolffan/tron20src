@@ -501,7 +501,12 @@ void CHUDMessage::JustifyPoly()
 
 	float x = (float)m_basePos.x * m_fScale;
 	float y = (float)m_basePos.y * m_fScale;
+#ifdef TRON20SRC_MODERN
+	x += (float)s_nPageOffsetX;	// MODERN.md CL-30, as the text (m_pos)
+	y += (float)s_nPageOffsetY;
+#endif
 	float fw = (float)m_imageSize.x;
+
 	float fh = (float)m_imageSize.y;
 
 	if (m_pText)

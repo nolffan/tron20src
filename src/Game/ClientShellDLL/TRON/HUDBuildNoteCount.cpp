@@ -133,8 +133,15 @@ void CHUDBuildNoteCount::UpdateLayout()
 	m_fScale = g_pInterfaceResMgr->GetXRatio();
 
 	LTIntPt pos = g_pLayoutMgr->GetPoint(s_pszTag, "AnchorPos");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	pos.x = (int)g_pInterfaceResMgr->HUDX((float)pos.x, pos.x);
+	pos.y = (int)g_pInterfaceResMgr->HUDY((float)pos.y, pos.y);
+#else
 	pos.x = (int)(pos.x * m_fScale);
 	pos.y = (int)(pos.y * m_fScale);
+#endif
+
 
 	int nTextSize = g_pLayoutMgr->GetInt(s_pszTag, "TextSize");
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)(nTextSize * m_fScale));

@@ -192,8 +192,15 @@ void CHUDProfiler::UpdateLayout()
 	m_pFlicker->SetCharScreenHeight(nTextSize);
 
 	m_Pos = ((CTronLayoutMgr*)g_pLayoutMgr)->GetProfilerPos(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	m_Pos.x = (int)g_pInterfaceResMgr->HUDX((LTFLOAT)m_Pos.x, m_Pos.x);
+	m_Pos.y = (int)g_pInterfaceResMgr->HUDY((LTFLOAT)m_Pos.y, m_Pos.y);
+#else
 	m_Pos.x = (int)(m_Pos.x * fXRatio);
 	m_Pos.y = (int)(m_Pos.y * fYRatio);
+#endif
+
 
 	int32 nWidth, nHeight;
 	m_pText->GetDims(&nWidth, &nHeight);

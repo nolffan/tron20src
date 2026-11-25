@@ -234,6 +234,10 @@ void CDuplicateSubroutineDlg::Show(PlayerSubroutine* pFirst, PlayerSubroutine* p
 
 	float fCenterX = g_pInterfaceResMgr->GetXRatio() * 320.0f;
 	float fTop = g_pInterfaceResMgr->GetYRatio() * 140.0f;
+#ifdef TRON20SRC_MODERN
+	fCenterX += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	fTop += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 
 	m_pTitle->GetDims(&w, &h);
 	m_pTitle->SetPosition((int)(fCenterX - (float)w * 0.5f), (int)fTop);

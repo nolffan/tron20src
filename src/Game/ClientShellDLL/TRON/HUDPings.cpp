@@ -288,8 +288,15 @@ void CHUDPings::UpdateLayout()
 
 	m_IconSize = g_pTronLayoutMgrStatic->GetPingIconSize(nCurrentLayout);
 	m_StartPos = g_pTronLayoutMgrStatic->GetPingStartPoint(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	m_StartPos.x = (int)g_pInterfaceResMgr->HUDX((LTFLOAT)m_StartPos.x, m_StartPos.x);
+	m_StartPos.y = (int)g_pInterfaceResMgr->HUDY((LTFLOAT)m_StartPos.y, m_StartPos.y);
+#else
 	m_StartPos.x = (int)(m_StartPos.x * fXRatio);
 	m_StartPos.y = (int)(m_StartPos.y * fYRatio);
+#endif
+
 
 	m_nSpacing = (int)((int)g_pTronLayoutMgrStatic->GetPingSpacing(nCurrentLayout) * fYRatio);
 	m_nFontNum = g_pTronLayoutMgrStatic->GetPingFontNum(nCurrentLayout);

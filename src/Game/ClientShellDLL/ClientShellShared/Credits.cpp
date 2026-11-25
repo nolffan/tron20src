@@ -252,6 +252,10 @@ void CCredit::FormatStrings()
 {
 	int x = (int)(g_pInterfaceResMgr->GetXRatio() * m_Pos.x);
 	int y = (int)(g_pInterfaceResMgr->GetYRatio() * m_Pos.y);
+#ifdef TRON20SRC_MODERN
+	x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	y += g_pInterfaceResMgr->GetYOffset();
+#endif
 	FPStringArray::iterator iter = m_Strings.begin();
 	while (iter != m_Strings.end())
 	{
@@ -285,7 +289,11 @@ void CCredit::FormatStrings()
 
 	}
 
+#ifdef TRON20SRC_MODERN
+	int offset = y - (int)(g_pInterfaceResMgr->GetYRatio() * m_Pos.y) - g_pInterfaceResMgr->GetYOffset();	// CL-30
+#else
 	int offset = y - (int)(g_pInterfaceResMgr->GetYRatio() * m_Pos.y);
+#endif
 	switch (m_ePosition)
 	{
 	case CP_CENTER:
@@ -458,6 +466,11 @@ void CCredit::SetState(int nState)
 
 				float fX = g_pInterfaceResMgr->GetXRatio() * 320.0f - (float)nWidth * 0.5f;
 				float fY = g_pInterfaceResMgr->GetYRatio() * 240.0f - (float)nHeight * 0.5f;
+#ifdef TRON20SRC_MODERN
+				fX += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30
+				fY += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 				// Half a texel in from the edges
 				SetHalfTexelUVs(&m_Poly, m_hImage);

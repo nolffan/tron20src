@@ -40,6 +40,7 @@ CInterfaceResMgr::CInterfaceResMgr()
 	m_fXRatio = 1.0f;
 	m_fYRatio = 1.0f;
 
+
 	m_pMsgText = LTNULL;
 
 }
@@ -323,7 +324,13 @@ LTBOOL CInterfaceResMgr::InitFonts()
 
 }
 
+#ifdef TRON20SRC_MODERN
+int CInterfaceResMgr::m_nXOffset = 0;	// MODERN.md CL-30
+int CInterfaceResMgr::m_nYOffset = 0;
+#endif
+
 #define USABLE_HEIGHT_I 480
+
 #define USABLE_HEIGHT_F 480.0f
 
 void CInterfaceResMgr::ScreenDimsChanged()
@@ -333,8 +340,24 @@ void CInterfaceResMgr::ScreenDimsChanged()
 	RMode currentMode;
     g_pLTClient->GetRenderMode(&currentMode);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: one scale for both axes, the page centred. Retail
+	// scaled x by width/640 and y by height/480, so at any shape but 4:3
+	// the whole interface was stretched.
+	float fXScale = (float)currentMode.m_Width / 640.0f;
+	float fYScale = (float)currentMode.m_Height / USABLE_HEIGHT_F;
+	float fScale = (fXScale < fYScale) ? fXScale : fYScale;
+	m_fXRatio = fScale;
+	m_fYRatio = fScale;
+	m_nXOffset = ((int)currentMode.m_Width - (int)(640.0f * fScale + 0.5f)) / 2;
+	m_nYOffset = ((int)currentMode.m_Height - (int)(USABLE_HEIGHT_F * fScale + 0.5f)) / 2;
+	if (m_nXOffset < 0) m_nXOffset = 0;
+	if (m_nYOffset < 0) m_nYOffset = 0;
+	CLTGUICtrl::SetPageOffset(m_nXOffset, m_nYOffset);
+#else
 	m_fXRatio = (float)currentMode.m_Width / 640.0f;
 	m_fYRatio = (float)currentMode.m_Height / USABLE_HEIGHT_F;
+#endif
 
 	m_dwScreenWidth = currentMode.m_Width;
 	m_dwScreenHeight = currentMode.m_Height;
@@ -465,6 +488,10 @@ void CInterfaceResMgr::ConvertScreenPos(int &x, int &y)
 
 	x = (int)( (LTFLOAT)x * m_fXRatio );
 	y = (int)( (LTFLOAT)y * m_fYRatio );
+#ifdef TRON20SRC_MODERN
+	x += m_nXOffset;	// CL-30
+	y += m_nYOffset;
+#endif
 };
 
 void CInterfaceResMgr::ConvertScreenRect(LTRect &rect)
@@ -476,6 +503,12 @@ void CInterfaceResMgr::ConvertScreenRect(LTRect &rect)
 	rect.right = (int)( (LTFLOAT)rect.right * m_fXRatio );
 	rect.top = (int)( (LTFLOAT)rect.top * m_fYRatio );
 	rect.bottom = (int)( (LTFLOAT)rect.bottom * m_fYRatio );
+#ifdef TRON20SRC_MODERN
+	rect.left += m_nXOffset;	// CL-30
+	rect.right += m_nXOffset;
+	rect.top += m_nYOffset;
+	rect.bottom += m_nYOffset;
+#endif
 
 };
 

@@ -162,8 +162,15 @@ void CHUDPermissions::UpdateLayout()
 	float xw = (float)(int)g_pTronLayoutMgrStatic->GetPsetWidth(nCurrentLayout);
 	float yw = (float)(int)g_pTronLayoutMgrStatic->GetPsetHeight(nCurrentLayout);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at the screen's bottom centre
+	float x = g_pInterfaceResMgr->HUDX(320.0f, 320) - (xw * 0.5f) + offset.x;
+	float y = g_pInterfaceResMgr->HUDY(480.0f, 480) - yw + offset.y;
+#else
 	float x = (320.0f * xs) - (xw * 0.5f) + offset.x;
 	float y = (480.0f * ys) - yw + offset.y;
+#endif
+
 
 	g_pDrawPrim->SetXYWH( &m_Base, x, y, xw, yw );
 	for (int i = 0; i < 8; i++)

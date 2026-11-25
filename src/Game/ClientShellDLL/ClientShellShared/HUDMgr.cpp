@@ -268,8 +268,15 @@ void CHUDMgr::QueueUpdate(uint32 nUpdateFlag)
 
 void CHUDMgr::ScreenDimsChanged()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the items lay themselves out again for the new
+	// screen. Most test only the scale, which two screens of the same
+	// height share (1920x1080 and 2560x1080).
+	UpdateLayout();
+#endif
 	m_UpdateFlags = kHUDAll;
 }
+
 
 void CHUDMgr::NextLayout()
 {

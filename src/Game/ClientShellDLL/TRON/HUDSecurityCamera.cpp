@@ -153,6 +153,15 @@ void CHUDSecurityCamera::UpdateLayout()
 	m_fHeight = fHeight;
 	float fWidth = xs * 640.0f;
 	m_fWidth = fWidth;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the overlay covers the whole screen
+	fHeight = (float)g_pInterfaceResMgr->GetScreenHeight();
+	m_fBottom = fHeight;
+	m_fHeight = fHeight;
+	fWidth = (float)g_pInterfaceResMgr->GetScreenWidth();
+	m_fWidth = fWidth;
+#endif
+
 
 	g_pDrawPrim->SetXYWH(&m_Overlay, 0.0f, 0.0f, fWidth, fHeight);
 	g_pDrawPrim->SetXYWH(&m_Tint, m_fLeft, m_fTop, m_fWidth, m_fHeight);

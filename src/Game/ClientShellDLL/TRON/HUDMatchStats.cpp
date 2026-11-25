@@ -205,6 +205,12 @@ void CHUDMatchStats::UpdateLayout()
 	m_nCenterX = (int)(fXRatio * 320.0f);
 	m_nTronUnknown20 = (int)(fXRatio * 240.0f);
 	m_nTop = (int)(fYRatio * 30.0f);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the screen's centre and top
+	m_nCenterX = (int)g_pInterfaceResMgr->HUDX(320.0f, 320);
+	m_nTop = (int)g_pInterfaceResMgr->HUDY(30.0f, 30);
+#endif
+
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(20);
 

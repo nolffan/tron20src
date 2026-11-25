@@ -62,10 +62,21 @@ LTBOOL CLTGUICtrl::IsOnMe(int x, int y)
 }
 
 
+#ifdef TRON20SRC_MODERN
+int CLTGUICtrl::s_nPageOffsetX = 0;
+int CLTGUICtrl::s_nPageOffsetY = 0;
+#endif
+
 void CLTGUICtrl::SetScale(float fScale)
 {
+#ifdef TRON20SRC_MODERN
+	// CL-30: the page's margins
+	m_pos.x = (int)(fScale * (float)m_basePos.x) + s_nPageOffsetX;
+	m_pos.y = (int)(fScale * (float)m_basePos.y) + s_nPageOffsetY;
+#else
 	m_pos.x = (int)(fScale * (float)m_basePos.x);
 	m_pos.y = (int)(fScale * (float)m_basePos.y);
+#endif
 	m_fScale = fScale;
 }
 // TRON: (RETAIL: 0x100bfcc0)

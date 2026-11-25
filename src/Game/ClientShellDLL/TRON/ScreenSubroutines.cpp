@@ -472,8 +472,14 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 			float fTop = (float)m_BuildNoteCountPos.y;
 
 			g_pDrawPrim->SetXYWH(&m_BuildNoteIconPoly,
+#ifdef TRON20SRC_MODERN
+				g_pInterfaceResMgr->PageX((float)nLeft),	// MODERN.md CL-30
+				g_pInterfaceResMgr->PageY((fMaxH - fIconH) * 0.5f + fTop),
+#else
 				(float)nLeft * g_pInterfaceResMgr->GetXRatio(),
 				((fMaxH - fIconH) * 0.5f + fTop) * g_pInterfaceResMgr->GetYRatio(),
+#endif
+
 				(float)nIconW * g_pInterfaceResMgr->GetXRatio(),
 				fIconH * g_pInterfaceResMgr->GetYRatio());
 

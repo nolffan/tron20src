@@ -2121,6 +2121,24 @@ static float cm_WidescreenFovX(float xFov, int drawMode, const LTRect &rect, uin
     return 2.0f * ltatanf(lttanf(xFov * 0.5f) * fWiden);
 }
 
+// MODERN.md CL-30: the same for a screen narrower than 4:3 (5:4, 1280x1024).
+// There the view keeps its horizontal angle and gets a vertical one that
+// matches the screen's shape (Vert+), so nothing is stretched up and down.
+// At 4:3 or wider nothing changes.
+static float cm_NarrowscreenFovY(float yFov, int drawMode, const LTRect &rect, uint32 width, uint32 height)
+{
+    if ((drawMode != DRAWMODE_NORMAL && drawMode != DRAWMODE_OBJECTLIST) ||
+        rect.left != 0 || rect.top != 0 || (uint32)rect.right != width ||
+        (uint32)rect.bottom != height || height == 0 || width == 0)
+        return yFov;
+
+    float fWiden = ((float)width / (float)height) / (4.0f / 3.0f);
+    if (fWiden >= 1.0f || yFov <= 0.0f || yFov >= MATH_PI)
+        return yFov;
+
+    return 2.0f * ltatanf(lttanf(yFov * 0.5f) / fWiden);
+}
+
 #endif // TRON20SRC_MODERN
 ///////////////////////////////////////////////////////////////////////////////
 // BSP world rep functionality
@@ -2173,6 +2191,9 @@ bool CClientMgr::Render(CameraInstance *pCamera, int drawMode, LTObject **pObjec
 #ifdef TRON20SRC_MODERN
     // EN-30: widescreen field of view (Hor+)
     pDesc->m_xFov = cm_WidescreenFovX(pDesc->m_xFov, drawMode, pDesc->m_Rect, width, height);
+    // CL-30: and Vert+ on a screen narrower than 4:3
+    pDesc->m_yFov = cm_NarrowscreenFovY(pDesc->m_yFov, drawMode, pDesc->m_Rect, width, height);
+
 #endif
 
     pDesc->m_GlobalLightScale = m_GlobalLightScale;

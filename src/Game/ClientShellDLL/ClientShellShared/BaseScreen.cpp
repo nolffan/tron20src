@@ -234,6 +234,10 @@ LTBOOL CBaseScreen::Init(int nScreenID)
 		float helpX = (float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio();
 		float helpY = (float)s_HelpRect.top * g_pInterfaceResMgr->GetYRatio();
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
+#ifdef TRON20SRC_MODERN
+		helpX += (float)g_pInterfaceResMgr->GetXOffset();	// CL-30
+		helpY += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 
 		// TRON: the font for the help's height (RETAIL: 0x100d2442)
 		CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
@@ -1616,7 +1620,13 @@ void CBaseScreen::OnFocus(LTBOOL bFocus)
 
 	if (bFocus)
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30: every time: the page's margins can change with
+		// the same scale (1920x1080 and 2560x1080)
+		if (true)
+#else
 		if (m_fLastScale != g_pInterfaceResMgr->GetXRatio())
+#endif
 		{
 			ScreenDimsChanged();
 		}
@@ -2131,8 +2141,14 @@ void CBaseScreen::UpdateHelpText()
 
 				// RETAIL: 0x100d60b0: the integer position, the font for the
 				// scaled height
+#ifdef TRON20SRC_MODERN
+				// CL-30: the page's margins
+				s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()) + g_pInterfaceResMgr->GetXOffset(),
+					(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top) + g_pInterfaceResMgr->GetYOffset());
+#else
 				s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
 					(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+#endif
 				CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 				s_pHelpStr->SetFont(pHelpFont);
 				s_pHelpStr->SetCharScreenHeight(nSize);
@@ -2170,8 +2186,14 @@ void CBaseScreen::ScreenDimsChanged()
 		uint16 nWidth = (uint16)( (LTFLOAT)s_HelpWidth * g_pInterfaceResMgr->GetXRatio());
 		uint8 nSize = (uint8)((LTFLOAT)s_HelpSize * g_pInterfaceResMgr->GetXRatio());
 
+#ifdef TRON20SRC_MODERN
+		// CL-30: the page's margins
+		s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()) + g_pInterfaceResMgr->GetXOffset(),
+			(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top) + g_pInterfaceResMgr->GetYOffset());
+#else
 		s_pHelpStr->SetPosition((int)((float)s_HelpRect.left * g_pInterfaceResMgr->GetXRatio()),
 			(int)(g_pInterfaceResMgr->GetYRatio() * s_HelpRect.top));
+#endif
 		CUIFont* pHelpFont = g_pInterfaceResMgr->GetFontForHeight(nSize);
 		s_pHelpStr->SetFont(pHelpFont);
 		s_pHelpStr->SetCharScreenHeight(nSize);
@@ -2275,6 +2297,11 @@ void CBaseScreen::ScalePoly(LTPoly_GT4* pPoly, LTIntPt pos, HTEXTURE hTex)
 	float y = (float)pos.y * g_pInterfaceResMgr->GetXRatio();
 	float fw = (float)w * g_pInterfaceResMgr->GetXRatio();
 	float fh = (float)h * g_pInterfaceResMgr->GetXRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// CL-30
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 	g_pDrawPrim->SetXYWH(pPoly,x,y,fw,fh);
 

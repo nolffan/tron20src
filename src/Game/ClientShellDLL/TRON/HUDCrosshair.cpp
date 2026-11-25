@@ -408,9 +408,16 @@ void CHUDCrosshair::UpdateLayout()
 
 void CHUDCrosshair::PositionString(CUIFormattedPolyString* pStr, uint8 nJust, LTIntPt pos, uint8 nSize, LTIntPt* pScreenPos)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: the strings round the crosshair, on the centred page
+	float fX = g_pInterfaceResMgr->PageX((float)pos.x);
+	float fY = g_pInterfaceResMgr->PageY((float)pos.y);
+#else
 	float fX = (float)pos.x * m_fScale;
 	float fY = (float)pos.y * m_fScale;
+#endif
 	float fSize = (float)nSize * m_fScale;
+
 
 	CUIFont* pFont = g_pInterfaceResMgr->GetFontForHeight((int)fSize);
 	pStr->SetFont(pFont);

@@ -88,7 +88,13 @@ void CHUDDamage::Update()
 	// (it does not skip a second FX of one type)
 	float x = g_pInterfaceResMgr->GetXRatio() * m_BasePos.x;
 	float y = (float)m_BasePos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	x += (float)g_pInterfaceResMgr->GetHUDXOffset(m_BasePos.x);
+	y += (float)g_pInterfaceResMgr->GetHUDYOffset(m_BasePos.y);
+#endif
 	float sz = m_nIconHt * g_pInterfaceResMgr->GetYRatio();
+
 
 	DAMAGEFX *pDamageFX = g_pDamageFXMgr->GetFirstActiveFX();
 	while( pDamageFX )

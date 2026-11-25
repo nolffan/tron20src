@@ -160,7 +160,16 @@ void CHUDDamageDir::UpdateScale()
 			fRot += (MATH_PI / 2);
 		}
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30: round the screen's centre
+		for (uint8 j = 0; j < 4; j++)
+		{
+			x[j] += (float)g_pInterfaceResMgr->GetXOffset();
+			y[j] += (float)g_pInterfaceResMgr->GetYOffset();
+		}
+#endif
 		g_pDrawPrim->SetXY4(&m_Poly[n],x[0],y[0],x[1],y[1],x[2],y[2],x[3],y[3]);
+
 	}
 
 

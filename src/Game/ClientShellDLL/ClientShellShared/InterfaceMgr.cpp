@@ -4624,8 +4624,14 @@ void CInterfaceMgr::OnMouseMove(int x, int y)
 
 	if (GetConsoleInt("ShowMousePos",0) > 0)
 	{
+#ifdef TRON20SRC_MODERN
+		float fx = (float)(x - g_pInterfaceResMgr->GetXOffset()) / g_pInterfaceResMgr->GetXRatio();	// CL-30
+		float fy = (float)(y - g_pInterfaceResMgr->GetYOffset()) / g_pInterfaceResMgr->GetYRatio();
+#else
 		float fx = (float)x / g_pInterfaceResMgr->GetXRatio();
 		float fy = (float)y / g_pInterfaceResMgr->GetYRatio();
+#endif
+
 		g_pLTClient->CPrint("MousePos (%0.0f,%0.0f)",fx,fy);
 	}
 
@@ -5983,6 +5989,26 @@ void CInterfaceMgr::UpdateClientList()
 
 
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-30: the interface camera's view as the engine draws it. On a
+// screen wider than 4:3 the engine widens the horizontal angle, on a
+// narrower one the vertical angle (EN-30), so a point of the centred page
+// and the 3D art beside it stay together.
+static void ModernInterfaceTans(LTFLOAT &fTanX, LTFLOAT &fTanY)
+{
+	fTanX = g_fFovXTan;
+	fTanY = g_fFovYTan;
+	uint32 nW = g_pInterfaceResMgr->GetScreenWidth();
+	uint32 nH = g_pInterfaceResMgr->GetScreenHeight();
+	if (!nW || !nH) return;
+	LTFLOAT fWiden = ((LTFLOAT)nW / (LTFLOAT)nH) / (4.0f / 3.0f);
+	if (fWiden > 1.0f)
+		fTanX *= fWiden;
+	else if (fWiden < 1.0f)
+		fTanY /= fWiden;
+}
+#endif
+
 LTVector CInterfaceMgr::GetWorldFromScreenPos(LTIntPt pos, LTFLOAT fDepth)
 {
 	LTVector vPos;
@@ -5990,8 +6016,15 @@ LTVector CInterfaceMgr::GetWorldFromScreenPos(LTIntPt pos, LTFLOAT fDepth)
 	LTFLOAT fx = (2.0f * ((LTFLOAT)pos.x / (LTFLOAT)g_pInterfaceResMgr->GetScreenWidth() )) - 1.0f;
 	LTFLOAT fy = 1.0f - (2.0f * ((LTFLOAT)pos.y / (LTFLOAT)g_pInterfaceResMgr->GetScreenHeight()) );
 
+#ifdef TRON20SRC_MODERN
+	LTFLOAT fTanX, fTanY;
+	ModernInterfaceTans(fTanX, fTanY);	// CL-30
+	vPos.x =  fx * fTanX * fDepth;
+	vPos.y =  fy * fTanY * fDepth;
+#else
 	vPos.x =  fx * g_fFovXTan * fDepth;
 	vPos.y =  fy * g_fFovYTan * fDepth;
+#endif
 	vPos.z =  fDepth;
 
 	return vPos;
@@ -6014,8 +6047,15 @@ LTVector CInterfaceMgr::GetScreenFromWorldPos(LTVector vPos, HOBJECT hCamera)
 	MatVMul((LTVector*)&tmp, &mCam, (LTVector*)&vPos);
 
 
+#ifdef TRON20SRC_MODERN
+	LTFLOAT fTanX, fTanY;
+	ModernInterfaceTans(fTanX, fTanY);	// CL-30
+	LTFLOAT fx = tmp.x / (fTanX * tmp.z);
+	LTFLOAT fy = tmp.y / (fTanY * tmp.z);
+#else
 	LTFLOAT fx = tmp.x / (g_fFovXTan * tmp.z);
 	LTFLOAT fy = tmp.y / (g_fFovYTan * tmp.z);
+#endif
 
 	pos.x =  ((LTFLOAT)g_pInterfaceResMgr->GetScreenWidth() * (1.0f + fx) / 2.0f);
 	pos.y =	 ((LTFLOAT)g_pInterfaceResMgr->GetScreenHeight() * (1.0f - fy) / 2.0f);
@@ -6420,8 +6460,14 @@ void CInterfaceMgr::DrawTronUnknownMessage()
 		g_pDrawPrim->SetAlphaTestMode(DRAWPRIM_NOALPHATEST);
 		g_pDrawPrim->SetAlphaBlendMode(DRAWPRIM_BLEND_MOD_SRCALPHA);
 
+#ifdef TRON20SRC_MODERN
+		// CL-30: on the centred page
+		g_pDrawPrim->SetXYWH(&poly, g_pInterfaceResMgr->PageX(256.0f), g_pInterfaceResMgr->PageY(20.0f),
+			g_pInterfaceResMgr->GetXRatio() * 128.0f, g_pInterfaceResMgr->GetYRatio() * 128.0f);
+#else
 		g_pDrawPrim->SetXYWH(&poly, g_pInterfaceResMgr->GetXRatio() * 256.0f, g_pInterfaceResMgr->GetYRatio() * 20.0f,
 			g_pInterfaceResMgr->GetXRatio() * 128.0f, g_pInterfaceResMgr->GetYRatio() * 128.0f);
+#endif
 		SetupQuadUVs(poly, hTex, 0.0f, 0.0f, 1.0f, 1.0f);
 		g_pDrawPrim->SetRGB(&poly, 0xffffff);
 		g_pDrawPrim->SetALPHA(&poly, (uint8)(fAlpha * 255.0f));

@@ -242,7 +242,13 @@ void CBaseMenu::OnFocus(LTBOOL bFocus)
 	ClearSelection();
 	if (bFocus)
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30: every time: the page's margins can change with the
+		// same scale (1920x1080 and 2560x1080)
+		if (true)
+#else
 		if (m_fScale != g_pInterfaceResMgr->GetXRatio())
+#endif
 		{
 			SetScale(g_pInterfaceResMgr->GetXRatio());
 		}

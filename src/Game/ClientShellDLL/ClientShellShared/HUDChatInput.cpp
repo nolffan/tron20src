@@ -51,6 +51,10 @@ LTBOOL CHUDChatInput::Init()
 
 	float x = (float)(m_BasePos.x) * g_pInterfaceResMgr->GetXRatio();
 	float y = (float)(m_BasePos.y) * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30, as the edit control
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 
 
 	m_pStr = g_pFontManager->CreatePolyString(pFont,std::wstring(L" "),x, y);	// TRON: wide
@@ -105,6 +109,11 @@ void CHUDChatInput::Update()
 
 	float x = ((float)(m_BasePos.x - 5)  * g_pInterfaceResMgr->GetXRatio()) - m_pStr->GetWidth();
 	float y = (float)(m_BasePos.y) * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30, as the edit control
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
+
 	m_pStr->SetPosition(x,y);
 
 	m_EditCtrl.SetScale(g_pInterfaceResMgr->GetXRatio());

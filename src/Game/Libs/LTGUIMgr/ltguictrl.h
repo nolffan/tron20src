@@ -54,6 +54,16 @@ public:
 
 	virtual void	SetScale(float fScale);
 	virtual float	GetScale()					{return m_fScale;}
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: where the interface's 640x480 page starts on the
+	// screen. The page is scaled the same both ways and centred, so every
+	// control's position moves by the page's margins.
+	static void		SetPageOffset(int nX, int nY)	{s_nPageOffsetX = nX; s_nPageOffsetY = nY;}
+	static int		GetPageOffsetX()				{return s_nPageOffsetX;}
+	static int		GetPageOffsetY()				{return s_nPageOffsetY;}
+	static int		s_nPageOffsetX;
+	static int		s_nPageOffsetY;
+#endif
 	virtual uint16	GetBaseWidth ( ) { return ( uint16 )( (float)GetWidth() / GetScale()); }
 	virtual uint16	GetBaseHeight ( ) { return ( uint16 )( (float)GetHeight() / GetScale()); }
 

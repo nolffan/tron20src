@@ -107,6 +107,13 @@ void CBuildPointsCtrl::ScreenDimsChanged()
 	m_nBottom = (int)(fYRatio * 300.0f);
 	m_fInnerRadius = fXRatio * 107.0f;
 	m_fOuterRadius = fXRatio * 114.0f;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_Center.x += g_pInterfaceResMgr->GetXOffset();
+	m_Center.y += g_pInterfaceResMgr->GetYOffset();
+	m_nTop += g_pInterfaceResMgr->GetYOffset();
+	m_nBottom += g_pInterfaceResMgr->GetYOffset();
+#endif
 }
 
 std::wstring CBuildPointsCtrl::GetHelpText()
@@ -348,6 +355,13 @@ void CRatingBarCtrl::SetRects(LTRect rcLeft, LTRect rcRight)
 	m_rcRight.right = (int)((float)rcRight.right * fXRatio);
 	m_rcRight.top = (int)((float)rcRight.top * fYRatio);
 	m_rcRight.bottom = (int)((float)rcRight.bottom * fYRatio);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_rcLeft.left += g_pInterfaceResMgr->GetXOffset(); m_rcLeft.right += g_pInterfaceResMgr->GetXOffset();
+	m_rcLeft.top += g_pInterfaceResMgr->GetYOffset(); m_rcLeft.bottom += g_pInterfaceResMgr->GetYOffset();
+	m_rcRight.left += g_pInterfaceResMgr->GetXOffset(); m_rcRight.right += g_pInterfaceResMgr->GetXOffset();
+	m_rcRight.top += g_pInterfaceResMgr->GetYOffset(); m_rcRight.bottom += g_pInterfaceResMgr->GetYOffset();
+#endif
 }
 
 void CRatingBarCtrl::SetTextVisible(bool bVisible)
@@ -405,6 +419,14 @@ void CRatingBarCtrl::ScreenDimsChanged()
 	m_rcRight.right = (int)((float)m_rcBaseRight.right * fXRatio);
 	m_rcRight.top = (int)((float)m_rcBaseRight.top * fYRatio);
 	m_rcRight.bottom = (int)((float)m_rcBaseRight.bottom * fYRatio);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_rcLeft.left += g_pInterfaceResMgr->GetXOffset(); m_rcLeft.right += g_pInterfaceResMgr->GetXOffset();
+	m_rcLeft.top += g_pInterfaceResMgr->GetYOffset(); m_rcLeft.bottom += g_pInterfaceResMgr->GetYOffset();
+	m_rcRight.left += g_pInterfaceResMgr->GetXOffset(); m_rcRight.right += g_pInterfaceResMgr->GetXOffset();
+	m_rcRight.top += g_pInterfaceResMgr->GetYOffset(); m_rcRight.bottom += g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 	if (m_pLabel)
 	{

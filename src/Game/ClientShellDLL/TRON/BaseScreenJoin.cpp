@@ -178,6 +178,10 @@ void CBaseScreenJoin::SetTabFrame(CLTGUICtrl *pTab)
 	float fWidth = (float)(rcBody.right - rcBody.left) * fXRatio;
 	float fTop = (float)(rcBody.top - 5) * fYRatio;
 	float fHeight = (float)(rcBody.bottom - rcBody.top) * fYRatio;
+#ifdef TRON20SRC_MODERN
+	fLeft += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	fTop += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 
 	g_pDrawPrim->SetXYWH(&m_TabPoly[0],fLeft,fTop,fWidth,fHeight);
 	g_pDrawPrim->SetXYWH(&m_TabPoly[1],fTabLeft,fTabTop,fTabRight - fTabLeft,fTop - fTabTop);
@@ -252,8 +256,14 @@ void CBaseScreenJoin::OnFocus(LTBOOL bFocus)
 		float fYRatio = g_pInterfaceResMgr->GetYRatio();
 		float fHeight = (float)nTexH / (float)nTexW * (float)nWidth;
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30: on the centred page
+		g_pDrawPrim->SetXYWH(&m_GameSpyPoly,g_pInterfaceResMgr->PageX((float)pos.x),g_pInterfaceResMgr->PageY((float)pos.y),
+			(float)nWidth * fXRatio,fHeight * fYRatio);
+#else
 		g_pDrawPrim->SetXYWH(&m_GameSpyPoly,(float)pos.x * fXRatio,(float)pos.y * fYRatio,
 			(float)nWidth * fXRatio,fHeight * fYRatio);
+#endif
 
 		// RETAIL: asks GameSpy for a patch (0x10007d70)
 		CheckForUpdate();

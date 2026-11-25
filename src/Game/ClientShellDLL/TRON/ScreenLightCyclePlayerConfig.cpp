@@ -204,8 +204,14 @@ LTBOOL CScreenLightCyclePlayerConfig::Build()
 	// the background behind the model
 	LTIntPt bgPos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"LightCycleBackgroundPos");
 	LTRect rcBg = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"LightCycleBackgroundRect");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_BackgroundPoly,((float)bgPos.x * g_pInterfaceResMgr->GetXRatio() + (float)g_pInterfaceResMgr->GetXOffset()),((float)bgPos.y * g_pInterfaceResMgr->GetXRatio() + (float)g_pInterfaceResMgr->GetYOffset()),
+		(float)(rcBg.right - rcBg.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcBg.bottom - rcBg.top) * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_BackgroundPoly,(float)bgPos.x * g_pInterfaceResMgr->GetXRatio(),(float)bgPos.y * g_pInterfaceResMgr->GetXRatio(),
 		(float)(rcBg.right - rcBg.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcBg.bottom - rcBg.top) * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_BackgroundPoly,0.0f,0.0f,1.0f,1.0f);
 	g_pDrawPrim->SetRGBA(&m_BackgroundPoly,argbWhite);
 
@@ -223,8 +229,14 @@ void CScreenLightCyclePlayerConfig::ScreenDimsChanged()
 {
 	LTIntPt bgPos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"LightCycleBackgroundPos");
 	LTRect rcBg = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"LightCycleBackgroundRect");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_BackgroundPoly,(g_pInterfaceResMgr->GetXRatio() * bgPos.x + (float)g_pInterfaceResMgr->GetXOffset()),(g_pInterfaceResMgr->GetXRatio() * bgPos.y + (float)g_pInterfaceResMgr->GetYOffset()),
+		(float)(rcBg.right - rcBg.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcBg.bottom - rcBg.top) * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_BackgroundPoly,g_pInterfaceResMgr->GetXRatio() * bgPos.x,g_pInterfaceResMgr->GetXRatio() * bgPos.y,
 		(float)(rcBg.right - rcBg.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcBg.bottom - rcBg.top) * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_BackgroundPoly,0.0f,0.0f,1.0f,1.0f);
 	g_pDrawPrim->SetRGBA(&m_BackgroundPoly,argbWhite);
 

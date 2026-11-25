@@ -233,6 +233,10 @@ void CHUDSubtitles::Show(int nStringId, LTVector vSpeakerPos, HLTSOUND hSound, L
 	m_DisplayRect.x = (float)pos.x * m_fScale;
 	m_DisplayRect.y = (float)pos.y * m_fScale;
 	m_DisplayRect.width = (float)width * m_fScale;
+#ifdef TRON20SRC_MODERN
+	m_DisplayRect.x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30
+	m_DisplayRect.y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 	m_DisplayRect.height = ((float)m_nFontSize + (float)nLineSpacing) * m_nMaxLines + (float)nLineSpacing * 2.0f;
 
 	m_pText->SetWrapWidth((uint16)m_DisplayRect.width);
@@ -322,6 +326,10 @@ void CHUDSubtitles::SetScale(float fScale)
 		m_DisplayRect.x = (float)pos.x * m_fScale;
 		m_DisplayRect.y = (float)pos.y * m_fScale;
 		m_DisplayRect.width = (float)width * m_fScale;
+#ifdef TRON20SRC_MODERN
+		m_DisplayRect.x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30
+		m_DisplayRect.y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 		m_DisplayRect.height = (float)m_nMaxLines * (float)m_nFontSize;
 
 		

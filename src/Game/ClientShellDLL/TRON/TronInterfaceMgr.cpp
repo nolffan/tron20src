@@ -908,8 +908,16 @@ void CTronInterfaceMgr::UpdateIOCamera()
 	m_rcIOCameraScaled.top = (int)((float)m_rcIOCamera.top * fYRatio);
 	m_rcIOCameraScaled.bottom = (int)((float)m_rcIOCamera.bottom * fYRatio);
 	float fHeight = (float)(m_rcIOCameraScaled.bottom - m_rcIOCameraScaled.top);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	m_rcIOCameraScaled.left += m_InterfaceResMgr.GetXOffset();
+	m_rcIOCameraScaled.right += m_InterfaceResMgr.GetXOffset();
+	m_rcIOCameraScaled.top += m_InterfaceResMgr.GetYOffset();
+	m_rcIOCameraScaled.bottom += m_InterfaceResMgr.GetYOffset();
+#endif
 
-	g_pLTClient->SetCameraRect(m_hIOCamera, false, m_rcIOCameraScaled.left, m_rcIOCameraScaled.top, m_rcIOCameraScaled.right, m_rcIOCameraScaled.bottom);
+	g_pLTClient->SetCameraRect(m_hIOCamera
+, false, m_rcIOCameraScaled.left, m_rcIOCameraScaled.top, m_rcIOCameraScaled.right, m_rcIOCameraScaled.bottom);
 
 	// PORT: retail's constants (0x101e539c, 0x101e7280, 0x101e9054) are
 	// read as degrees to radians and the aspect correction

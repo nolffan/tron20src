@@ -104,8 +104,14 @@ LTBOOL CScreenLightCycleCircuit::Build()
 
 	LTIntPt imagePos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"ImagePos");
 	LTRect rcImage = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"ImageRect");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_ImagePoly,((float)imagePos.x * g_pInterfaceResMgr->GetXRatio() + (float)g_pInterfaceResMgr->GetXOffset()),((float)imagePos.y * g_pInterfaceResMgr->GetXRatio() + (float)g_pInterfaceResMgr->GetYOffset()),
+		(float)(rcImage.right - rcImage.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcImage.bottom - rcImage.top) * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_ImagePoly,(float)imagePos.x * g_pInterfaceResMgr->GetXRatio(),(float)imagePos.y * g_pInterfaceResMgr->GetXRatio(),
 		(float)(rcImage.right - rcImage.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcImage.bottom - rcImage.top) * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_ImagePoly,0.0f,0.0f,1.0f,1.0f);
 	g_pDrawPrim->SetRGBA(&m_ImagePoly,argbWhite);
 
@@ -122,8 +128,14 @@ void CScreenLightCycleCircuit::ScreenDimsChanged()
 {
 	LTIntPt imagePos = g_pLayoutMgr->GetScreenCustomPoint((eScreenID)m_nScreenID,"ImagePos");
 	LTRect rcImage = g_pLayoutMgr->GetScreenCustomRect((eScreenID)m_nScreenID,"ImageRect");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: on the centred page
+	g_pDrawPrim->SetXYWH(&m_ImagePoly,(g_pInterfaceResMgr->GetXRatio() * imagePos.x + (float)g_pInterfaceResMgr->GetXOffset()),(g_pInterfaceResMgr->GetXRatio() * imagePos.y + (float)g_pInterfaceResMgr->GetYOffset()),
+		(float)(rcImage.right - rcImage.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcImage.bottom - rcImage.top) * g_pInterfaceResMgr->GetXRatio());
+#else
 	g_pDrawPrim->SetXYWH(&m_ImagePoly,g_pInterfaceResMgr->GetXRatio() * imagePos.x,g_pInterfaceResMgr->GetXRatio() * imagePos.y,
 		(float)(rcImage.right - rcImage.left) * g_pInterfaceResMgr->GetXRatio(),(float)(rcImage.bottom - rcImage.top) * g_pInterfaceResMgr->GetXRatio());
+#endif
 	g_pDrawPrim->SetUVWH(&m_ImagePoly,0.0f,0.0f,1.0f,1.0f);
 	g_pDrawPrim->SetRGBA(&m_ImagePoly,argbWhite);
 

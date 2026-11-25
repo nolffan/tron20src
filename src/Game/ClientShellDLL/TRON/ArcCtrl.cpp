@@ -548,6 +548,10 @@ LTBOOL CArcCtrl::Init(LTIntPt pos, float fInner, float fOuter, int nNumSegments)
 
 	m_Position.x = (int)((float)pos.x * sx);
 	m_Position.y = (int)((float)pos.y * g_pInterfaceResMgr->GetYRatio());
+#ifdef TRON20SRC_MODERN
+	m_Position.x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	m_Position.y += g_pInterfaceResMgr->GetYOffset();
+#endif
 
 	m_nNumSegments = nNumSegments;
 	m_fInnerRadius = fInner * sx;
@@ -587,6 +591,11 @@ void CArcCtrl::Rescale()
 
 	m_Position.x = (int)((float)m_BasePosition.x * sx);
 	m_Position.y = (int)((float)m_BasePosition.y * sy);
+#ifdef TRON20SRC_MODERN
+	m_Position.x += g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	m_Position.y += g_pInterfaceResMgr->GetYOffset();
+#endif
+
 
 	m_fInnerRadius = sx * m_fBaseInnerRadius;
 	m_fOuterRadius = sx * m_fBaseOuterRadius;

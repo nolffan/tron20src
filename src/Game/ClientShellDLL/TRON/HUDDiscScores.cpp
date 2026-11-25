@@ -421,7 +421,13 @@ void CHUDDiscScores::UpdateLayout()
 		m_Legends[i].SetBasePos(pos);
 		m_Legends[i].SetScale(fScale);
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30: beside its text on the centred page
+		g_pDrawPrim->SetXYWH(&m_LegendIcons[i], fX + (float)g_pInterfaceResMgr->GetXOffset(), (float)(pos.y + 2) * fScale + (float)g_pInterfaceResMgr->GetYOffset(), 16.0f, 16.0f);
+#else
 		g_pDrawPrim->SetXYWH(&m_LegendIcons[i], fX, (float)(pos.y + 2) * fScale, 16.0f, 16.0f);
+#endif
+
 
 		pos.y += 20;
 	}

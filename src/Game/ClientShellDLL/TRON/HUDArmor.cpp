@@ -133,8 +133,15 @@ void CHUDArmor::UpdateLayout()
 	// from the bottom right corner
 	uint32 nWidth, nHeight;
 	g_pTexInterface->GetTextureDims(m_hBaseTex, nWidth, nHeight);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at the screen's bottom right
+	float x = g_pInterfaceResMgr->HUDX(640.0f, 640) - (int)(offset.x + nWidth);
+	float y = g_pInterfaceResMgr->HUDY(480.0f, 480) - (int)(offset.y + nHeight);
+#else
 	float x = (640.0f * xs) - (int)(offset.x + nWidth);
 	float y = (480.0f * ys) - (int)(offset.y + nHeight);
+#endif
+
 
 	g_pDrawPrim->SetXYWH(&m_Base, x, y, (float)nWidth, (float)nHeight);
 	for (int j = 0; j < 6; j++)

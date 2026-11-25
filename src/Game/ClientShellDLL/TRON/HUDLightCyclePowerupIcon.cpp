@@ -78,7 +78,13 @@ void CHUDLightCyclePowerupIcon::UpdateLayout()
 	fWidth *= fXRatio * 0.625f;
 	fHeight *= fYRatio * 0.625f;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	g_pDrawPrim->SetXYWH(&m_Poly, g_pInterfaceResMgr->HUDX((LTFLOAT)pos.x, pos.x) - fWidth * 0.5f, g_pInterfaceResMgr->HUDY((LTFLOAT)pos.y, pos.y) - fHeight * 0.5f, fWidth, fHeight);
+#else
 	g_pDrawPrim->SetXYWH(&m_Poly, (LTFLOAT)pos.x * fXRatio - fWidth * 0.5f, (LTFLOAT)pos.y * fYRatio - fHeight * 0.5f, fWidth, fHeight);
+#endif
+
 }
 
 // RETAIL: 0x1002de10

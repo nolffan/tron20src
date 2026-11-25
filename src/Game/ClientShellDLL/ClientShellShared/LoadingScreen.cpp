@@ -445,6 +445,10 @@ LTBOOL CLoadingScreen::Init()
 	m_pMissionNameStr->SetCharScreenHeight(nFontSize);
 	float x = (float)TitlePos.x * g_pInterfaceResMgr->GetXRatio();
 	float y = (float)TitlePos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 	m_pMissionNameStr->SetPosition(x,y);
 
 	nFontSize = (uint8)((float)LevelFontSize * g_pInterfaceResMgr->GetXRatio());
@@ -459,6 +463,10 @@ LTBOOL CLoadingScreen::Init()
 	m_pLevelNameStr->SetCharScreenHeight(nFontSize);
 	x = (float)LevelPos.x * g_pInterfaceResMgr->GetXRatio();
 	y = (float)LevelPos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 	m_pLevelNameStr->SetPosition(x,y);
 
 
@@ -515,6 +523,10 @@ LTBOOL CLoadingScreen::Init()
 	m_pBriefingStr->SetCharScreenHeight(nFontSize);
 	x = (float)BriefingPos.x * g_pInterfaceResMgr->GetXRatio();
 	y = (float)BriefingPos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+	x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+	y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 	m_pBriefingStr->SetPosition(x,y);
 	m_pBriefingStr->SetWrapWidth((uint16)(g_pInterfaceResMgr->GetXRatio() * (float)BriefingWidth));
 
@@ -566,6 +578,10 @@ LTBOOL CLoadingScreen::Init()
 		m_pHelpStr->SetCharScreenHeight(nFontSize);
 		x = (float)HelpPos.x * g_pInterfaceResMgr->GetXRatio();
 		y = (float)HelpPos.y * g_pInterfaceResMgr->GetYRatio();
+#ifdef TRON20SRC_MODERN
+		x += (float)g_pInterfaceResMgr->GetXOffset();	// MODERN.md CL-30: on the centred page
+		y += (float)g_pInterfaceResMgr->GetYOffset();
+#endif
 		m_pHelpStr->SetPosition(x,y);
 		m_pHelpStr->SetWrapWidth((uint16)(g_pInterfaceResMgr->GetXRatio() * (float)HelpWidth));
 	}

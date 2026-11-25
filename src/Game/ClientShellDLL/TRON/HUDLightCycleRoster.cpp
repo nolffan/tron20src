@@ -237,8 +237,15 @@ void CHUDLightCycleRoster::UpdateLayout()
 
 	// RETAIL: 0x1002eb68..0x1002ecfc: the roster's own values
 	LTIntPt pos = g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterPosition(nCurrentLayout);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-30: at its edge of the screen
+	pos.x = (int)g_pInterfaceResMgr->HUDX((LTFLOAT)pos.x, pos.x);
+	pos.y = (int)g_pInterfaceResMgr->HUDY((LTFLOAT)pos.y, pos.y);
+#else
 	pos.x = (int)(pos.x * fXRatio);
 	pos.y = (int)(pos.y * fYRatio);
+#endif
+
 	int nTextHeight = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterTextHeight(nCurrentLayout) * fYRatio);
 	int nTextOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterTextOffset(nCurrentLayout) * fXRatio);
 	int nLineOffset = (int)(g_pTronLayoutMgr->GetLCHUDHelper()->GetRosterLineOffset(nCurrentLayout) * fYRatio);
