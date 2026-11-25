@@ -32,6 +32,24 @@
 #                          to GameSpy's master server (gone: what it
 #                          tries goes to wine-*.log with
 #                          MPTEST_WINEDEBUG=+winsock)
+#   MPTEST_MASTER=local    (the modern build: docs/MODERN.md GS-1, GS-2)
+#                          a local stand-in for the master server and the
+#                          server list (build/gamespy.py master, on
+#                          127.0.0.1 UDP 27900 and TCP 28910; its log is
+#                          master.log). Every program gets
+#                          TRON20_MASTERDOMAIN=127.0.0.1, the game is not
+#                          LAN only (MPTEST_LANONLY defaults to 0), and
+#                          client 2 joins through the Internet server list:
+#                          from the main menu it opens Multiplayer, Join
+#                          (the Internet list), selects the first server
+#                          and presses Enter (MPTEST_JOINKEYS2 replaces
+#                          these steps). The result also says whether the
+#                          master listed the server (MASTER LISTED) and
+#                          gave it to client 2 (MASTER SENT)
+#   MPTEST_MASTERVIA=cvar  with MPTEST_MASTER=local: no environment
+#                          variable; the clients get "+MasterDomain
+#                          127.0.0.1" on their command lines (the console
+#                          variable) and TRONSrv.exe on its own
 #   MPTEST_WINEDEBUG=...   the WINEDEBUG of every process
 #   MPTEST_SRVEXE=<file>  the dedicated server to run (default the game
 #                          directory's TRONSrv.exe)
@@ -78,6 +96,19 @@ for f in Lithtech.exe server.dll tron20cmds.txt autoexec.cfg.retail Default.prf.
     [ -f "$GAME/$f" ] || { echo "mptest.sh: $GAME/$f missing"; exit 2; }
 done
 MODE="${MPTEST_MODE:-dedicated}"
+MASTER="${MPTEST_MASTER:-}"
+case "$MASTER" in ""|local) ;; *) echo "mptest.sh: MPTEST_MASTER is local or empty"; exit 2 ;; esac
+MCVAR=""; MSRV=""
+if [ "$MASTER" = local ]; then
+    LANONLY_DEF=0
+    if [ "${MPTEST_MASTERVIA:-env}" = cvar ]; then
+        MCVAR=" +MasterDomain 127.0.0.1"; MSRV="+MasterDomain 127.0.0.1"
+    else
+        export TRON20_MASTERDOMAIN=127.0.0.1
+    fi
+else
+    LANONLY_DEF=1
+fi
 TYPE="${MPTEST_TYPE:-arena}"
 NCLIENTS="${MPTEST_CLIENTS:-2}"
 # The game type: its number (NetDefs.h), its name (+gametype), its section
@@ -102,7 +133,7 @@ REL="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]
 config() {
     printf '[Settings]\r\nServerName = "mptest"\r\nPassword = ""\r\nSCMDPassword = "mptest"\r\n'
     printf 'GameType = %s\r\nPort = 27888\r\nBandwidth = 3\r\nBandwidthCustom = 256\r\n' "$GT"
-    printf 'Locked = 0\r\nDedicated = %s\r\nLANOnly = %s\r\nAllowSCMD = 0\r\n\r\n' "$1" "${MPTEST_LANONLY:-1}"
+    printf 'Locked = 0\r\nDedicated = %s\r\nLANOnly = %s\r\nAllowSCMD = 0\r\n\r\n' "$1" "${MPTEST_LANONLY:-$LANONLY_DEF}"
     printf '[%s]\r\nMaxPlayers = 8\r\nMap00 = "%s"\r\n' "$SEC" "$WORLD"
 }
 setup() {   # setup <dir>: binaries copied, data linked, the shipped settings
@@ -116,7 +147,7 @@ setup() {   # setup <dir>: binaries copied, data linked, the shipped settings
     cp "$GAME/autoexec.cfg.retail" "$1/autoexec.cfg"
     cp "$GAME/Default.prf.retail" "$1/Profiles/Default.prf"
 }
-CMDS="$(tr -d '\r\n' < "$GAME/tron20cmds.txt") ++screenwidth 640 ++screenheight 480 ++bitdepth 32 ++windowed 0 +DisableMovies 1 +ErrorLog 1 +AlwaysFlushLog 1"
+CMDS="$(tr -d '\r\n' < "$GAME/tron20cmds.txt") ++screenwidth 640 ++screenheight 480 ++bitdepth 32 ++windowed 0 +DisableMovies 1 +ErrorLog 1 +AlwaysFlushLog 1$MCVAR"
 setup "$RUN/srv"; cp "$SRVEXE" "$RUN/srv/TRONSrv.exe"; config 1 > "$RUN/srv/ServerData/mptest.txt"
 for n in 1 2; do
     setup "$RUN/c$n"; config 0 > "$RUN/c$n/ServerData/mptest.txt"
@@ -126,7 +157,12 @@ if [ "$MODE" = listen ]; then
 else
     printf '%s +playername Player1 +join 127.0.0.1:27888 +gametype %s\r\n' "$CMDS" "$GTNAME" > "$RUN/c1/tron20cmds.txt"
 fi
-printf '%s +playername Player2 +join 127.0.0.1:27888 +gametype %s\r\n' "$CMDS" "$GTNAME" > "$RUN/c2/tron20cmds.txt"
+if [ "$MASTER" = local ]; then
+    # client 2 finds the game in the Internet list (no +join)
+    printf '%s +playername Player2\r\n' "$CMDS" > "$RUN/c2/tron20cmds.txt"
+else
+    printf '%s +playername Player2 +join 127.0.0.1:27888 +gametype %s\r\n' "$CMDS" "$GTNAME" > "$RUN/c2/tron20cmds.txt"
+fi
 # The host's configuration is the one its profile names (Profiles/
 # Default.prf, [Multiplayer] ServerConfig, "Default" as shipped): ours.
 sed -i 's/^ServerConfig = "Default"/ServerConfig = "mptest"/' "$RUN/c1/Profiles/Default.prf"
@@ -209,9 +245,14 @@ play() {
     shot $p played-$p
 }
 
-S=""; C1=""; C2=""
+S=""; C1=""; C2=""; M=""
+if [ "$MASTER" = local ]; then
+    python3 -I "$REPO/build/gamespy.py" master --log "$RUN/master.log" > /dev/null 2>&1 & M=$!
+    PIDS="$PIDS $M"; sleep 1
+    alive $M && log "master stand-in started" || { echo "mptest.sh: the master stand-in did not start"; exit 2; }
+fi
 if [ "$MODE" = dedicated ]; then
-    w srv wine TRONSrv.exe -config mptest +errorlog 1 +alwaysflushlog 1 > "$RUN/wine-srv.log" 2>&1 & S=$!
+    w srv wine TRONSrv.exe -config mptest +errorlog 1 +alwaysflushlog 1 $MSRV > "$RUN/wine-srv.log" 2>&1 & S=$!
     log "server started"
     # the world is loaded once the server's console says so
     waitlog "$RUN/srv/tronsrv.log" "world.*(load|start)|loaded world|Server started" 120 $S \
@@ -231,6 +272,13 @@ sleep 60; shot c1 in
 if [ "$NCLIENTS" -ge 2 ]; then
     w c2 wine Lithtech.exe -cmdfile tron20cmds.txt > "$RUN/wine-c2.log" 2>&1 & C2=$!
     log "client 2 started"
+    if [ "$MASTER" = local ]; then
+        # the main menu, then Multiplayer, Join (the Internet list); the
+        # list fills; the first server, Enter
+        sleep 40; shot c2 menu
+        play c2 "${MPTEST_JOINKEYS2:-click:248,218 click:30,228 w10 click:120,150 w1 Return}"
+        log "client 2: joined from the Internet list"
+    fi
     sleep 60; shot c2 in; shot c1 c2-in
 fi
 # Each player joins a team (F1: the team screen; client 1 the first team,
@@ -279,6 +327,14 @@ for n in $(seq 1 "$NCLIENTS"); do
             || { echo "CLIENT$n DOES NOT SEE $other" >> "$RUN/result.txt"; J=0; }
     done
 done
+if [ "$MASTER" = local ]; then
+    grep -q "listed (the challenge answer is correct" "$RUN/master.log" 2>/dev/null \
+        && echo "MASTER LISTED the server" >> "$RUN/result.txt" \
+        || { echo "MASTER DID NOT LIST the server" >> "$RUN/result.txt"; J=0; }
+    grep -q "sent [1-9][0-9]* server" "$RUN/master.log" 2>/dev/null \
+        && echo "MASTER SENT the list with it" >> "$RUN/result.txt" \
+        || { echo "MASTER SENT NO list with it" >> "$RUN/result.txt"; J=0; }
+fi
 grep -h 'msgbox\|EXCEPTION_ACCESS\|c0000005\|Unhandled' "$RUN"/wine-*.log 2>/dev/null | head -5 >> "$RUN/result.txt"
 cat "$RUN/result.txt"
 [ $J = 1 ] && ! grep -q EXITED "$RUN/result.txt"

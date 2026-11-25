@@ -220,11 +220,20 @@ bool CTronGameServerShell::TronUnknownVirtual4C()
 		GameSpyKeyListCallback, GameSpyCountCallback, GameSpyAddErrorCallback, this ) != e_qrnoerror )
 		return false;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN (GS-4): no CD key checks. GameSpy's key server is gone, and the
+	// modern build lets every client in (TronClientMultiplayerMgr.cpp sends
+	// no key). The master server's host: GS-1 (nonport.h, qr2.c).
+	m_lstCDKeyClients.clear( );
+	if( bPublic )
+		g_pLTServer->CPrint( "GameSpy: reporting to the master server of %s", gsiGetDomainName( ));
+#else
 	if( !m_ServerGameOptions.m_bLANOnly )
 	{
 		m_lstCDKeyClients.clear( );
 		gcd_init_qr2( NULL, GAMESPY_CDKEY_PRODUCT );
 	}
+#endif
 
 	m_bUseGameSpy = LTTRUE;
 	m_bGameSpyInitialized = true;
@@ -243,11 +252,16 @@ void CTronGameServerShell::TronUnknownVirtual50()
 	if( !m_bUseGameSpy || !m_bGameSpyInitialized )
 		return;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN (GS-4): no CD key checks were started
+	m_lstCDKeyClients.clear( );
+#else
 	if( !m_ServerGameOptions.m_bLANOnly )
 	{
 		gcd_shutdown( );
 		m_lstCDKeyClients.clear( );
 	}
+#endif
 
 	qr2_shutdown( NULL );
 
@@ -269,8 +283,10 @@ bool CTronGameServerShell::TronUnknownVirtual54()
 
 	qr2_think( NULL );
 
+#ifndef TRON20SRC_MODERN	// MODERN (GS-4): no CD key checks
 	if( !m_ServerGameOptions.m_bLANOnly )
 		gcd_think( );
+#endif
 
 	return true;
 }
@@ -856,6 +872,7 @@ void CTronGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pM
 			// RETAIL: a client whose CD key passed before, the host and a
 			// LAN game are let in at once; others ask the CD key server
 			int nLocalId = g_pLTServer->GetClientID( hClient );
+#ifndef TRON20SRC_MODERN	// MODERN (GS-4): every client is let in, as on a LAN
 			if( std::find( m_lstCDKeyClients.begin( ), m_lstCDKeyClients.end( ), nLocalId ) == m_lstCDKeyClients.end( ) &&
 				!bIsHost && !m_ServerGameOptions.m_bLANOnly )
 			{
@@ -867,6 +884,7 @@ void CTronGameServerShell::ProcessHandshake(HCLIENT hClient, ILTMessage_Read *pM
 					GameSpyAuthCallback, this );
 				return;
 			}
+#endif
 
 			GameSpyAuth( nLocalId, true, "" );
 		}
@@ -1133,10 +1151,12 @@ void CTronGameServerShell::TronUnknownVirtual78( HCLIENT hClient )
 		m_pLightCycleMatchMgr->RemoveClient(hClient);
 	}
 
+#ifndef TRON20SRC_MODERN	// MODERN (GS-4): no CD key checks
 	if (m_bGameSpyInitialized && !m_ServerGameOptions.m_bLANOnly && !bLocal)
 	{
 		gcd_disconnect_user(GAMESPY_CDKEY_PRODUCT, g_pLTServer->GetClientID(hClient));
 	}
+#endif
 
 	m_lstCDKeyClients.remove(g_pLTServer->GetClientID(hClient));
 }

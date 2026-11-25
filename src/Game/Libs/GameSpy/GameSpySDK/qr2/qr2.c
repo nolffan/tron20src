@@ -180,7 +180,17 @@ qr2_error_t qr2_init_socket(/*[out]*/qr2_t *qrec, SOCKET s, int boundport, const
 	{
 		int override = qr2_hostname[0];
 		if(!override)
+#ifdef TRON20SRC_MODERN
+		{
+			// MODERN (GS-1): "<game>.master.<domain>", OpenSpy's by default (nonport.h)
+			char service[64];
+			_snprintf(service, sizeof(service), "%s.master", gamename);
+			service[sizeof(service) - 1] = '\0';
+			gsiMakeHostName(hostname, sizeof(hostname), service);
+		}
+#else
 			sprintf(hostname, "%s.master.gamespy.com", gamename);
+#endif
 		ret = get_sockaddrin(override?qr2_hostname:hostname, MASTER_PORT, &(cr->hbaddr), NULL);
 	}
 	else //don't need to look up

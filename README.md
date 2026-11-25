@@ -106,6 +106,9 @@ join) or `listen` (client 1 hosts from the multiplayer menu, client 2
 joins), and `MPTEST_TYPE=arena` (Disc Arena, the default), `tourn` (Disc
 Tournament) or `lc` (Light Cycles). Each program has its own Xvfb display
 and Wine prefix. The results are in `out/play/<game>-mp-<mode>-<type>/`.
+With the modern build, `MPTEST_MASTER=local` runs a local stand-in for
+the master server (`build/gamespy.py`), and client 2 joins through the
+Internet server list (`docs/MODERN.md` GS-1 to GS-4).
 It is slow, so `make tests` does not run it.
 
 ### Without the retail game: the CI build
