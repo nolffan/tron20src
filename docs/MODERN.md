@@ -43,8 +43,8 @@ have Tron 2.0 `EN-` ids here, as the table "Inherited engine items" shows.
   build (Visual C++ 6.0, `msvc-6.00-8168`, and the DirectX 9 SDK that the
   engine links).
 * **No SecuROM, no disc check.** The engine built here has no SecuROM. The
-  modern build will also remove the game's own disc and CD-key checks
-  (APPS-3, GS-4).
+  modern build removes the game's own disc check (APPS-3) and CD-key
+  check (GS-4).
 * **One owner for each file.** The Phase 1 work (below) is divided by
   files, so that each agent changes its own files. Where two items must
   change the same file, the table of overlaps says who changes what.
@@ -79,6 +79,17 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
 `LAUNCHER_EXE=Tron.exe LAUNCHER_SCRIPT=build/playtest-launcher-direct.txt`
 (the game starts directly) all end ALIVE.
 
+## Console variables
+
+The modern build's console variables (set in `autoexec.cfg` beside the
+executable, or in the console), new or with a changed meaning.
+
+| Variable | Type | Default | What | Item |
+|---|---|---|---|---|
+| `MaxFPS` | float | 240 (retail: 0, and not used in the final build) | the maximum number of frames each second; 0 is no limit; 1000 at most; the same in multiplayer; the Display screen's "Frame Rate Limit" (60, 120, 144, 240, None) | EN-40, EN-44 |
+| `FrameTimeLog` | float | 0 | write each frame of this many milliseconds or more, with its parts, and a summary each ten seconds, to `frametime.log`; 0 is off | EN-42 |
+| `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
+
 ## Done
 
 ### Applications
@@ -94,7 +105,105 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
   detail prompt of the first run). When the game is not installed,
   `Tron.exe` is the launcher, for its Install button.
   (`src/Game/Launcher/Launcher.cpp`, `LauncherDlg.cpp`; tested with `make
-  launchertest`.) "Installed" still comes from the registry (APPS-3).
+  launchertest`.) "Installed" is APPS-3's: `Lithtech.exe` beside the
+  program.
+* **APPS-2: the launcher stays until the game stops.** Retail's launcher
+  starts `Lithtech.exe` and closes. Steam takes the end of the program
+  that it started for the end of the game: the overlay and Remote Play
+  stop. In the modern build, `CLauncherDlg::LaunchGame` starts the engine
+  of the game directory by its full path, hides the launcher window, and
+  waits until the engine stops (`CLauncherDlg::WaitForGame`:
+  `MsgWaitForMultipleObjects`, so that the window's messages are
+  dispatched). Then the launcher writes its settings and closes, as
+  retail does after a start. This applies to Play, to the command line
+  starts (`-GOGAME`, `-GOMULTIHOST`, `-GOMULTIJOIN`, `-GOMULTIFIND`,
+  `-GOSERVER`) and to `Tron.exe`'s direct start (APPS-1), which has no
+  window. `-GOSERVER` starts the dedicated server, and the launcher waits
+  for it too. Retail started "TRON2Svr.EXE" (IDS_SERVEREXE), which does
+  not exist: the modern launcher starts `TRONSrv.exe` (`RETAIL_BUGS.md`;
+  `Launcher/Launcher.cpp` `InitInstance`, `Launcher/LauncherDlg.cpp`
+  `LaunchGame`, `WaitForGame`). Tested with `make portabletest`
+  (`build/portabletest.sh`): a monitor in the container records the
+  processes each second. `TronLauncher.exe` and `Tron.exe` were present
+  at each sample while `Lithtech.exe` ran, and stopped within 15 s after
+  the game quit from its main menu. `make launchertest` with
+  `LAUNCHER_EXE=TronLauncher.exe` and with `Tron.exe` ends ALIVE.
+* **APPS-3: no registry, no APPDATA: the settings are in `tron20.ini`
+  beside the executable.** Retail keeps its values under
+  `HKEY_LOCAL_MACHINE\SOFTWARE\Monolith Productions\TRON 2.0\1.0`
+  (opened for writing, also to read: `RETAIL_BUGS.md`): the launcher's
+  options, `DisplayWarning`, `OptionsWarning`, `Num Launcher Runs`,
+  `Save Commands`, `Commands`, `SelectedMod`; the installer's
+  `InstallDir`, `UpdateNum`, `UpdateCommandLine0/1`; the game's
+  `Language` and `ProfileName` (`CVersionMgr`, `CProfileMgr`) and
+  `CDKey` (`TronCDKey.cpp`); and GameSpy's ID for the version check
+  (`HKEY_CURRENT_USER\Software\GameSpy\GameSpy 3D\Registration`,
+  `Crypt`, `nonport.c` `GOAGetUniqueID`). The modern build compiles the
+  same classes, `CRegMgr` (`libs/RegMgr/regmgr.cpp`: the game DLLs,
+  `TRONSrv.exe`) and `CRegMgr32` (`libs/RegMgr32/regmgr32.cpp`: the
+  launcher, `TRONSrv.exe`), on a file: `tron20.ini` in the directory of
+  the running program (`libs/RegMgr/regfile.h`, the Windows profile
+  functions). The launcher, `Lithtech.exe` with the game DLLs and the
+  server are all in the game directory, so they use one file. Each key is
+  a section, without the root key and without `SOFTWARE\`
+  (`[Monolith Productions\TRON 2.0\1.0]`); strings are in quotes, DWORDs
+  in decimal, binary data as `WritePrivateProfileStruct` writes it. Each
+  call reads or writes the file at once, so that the launcher sees the
+  `ProfileName` that the game wrote while it waited. The registry is not
+  read: values of a retail install are not carried over (the detail
+  dialog comes once more). The callers do not change, except:
+  * "Installed": the game directory is the install. `CLauncherApp::
+    InitInstance` changes to the directory of the program; the game is
+    installed when `Lithtech.exe` is there, and `InstallDir` is that
+    directory. `LaunchGame` does not read `InstallDir`. Without
+    `Lithtech.exe`, Play (Install) shows "Could not launch LITHTECH.EXE"
+    and does not start the disc's setup program. Uninstall is disabled:
+    there is no installer.
+  * Update 2's archives: with no `UpdateNum` in the file (an installer
+    wrote it in retail), the launcher (`LaunchGame`) and the dedicated
+    server (`CServerDlg::AddResources`) add `Gamep3.rez` and
+    `Gamep4.rez` from the game directory, when they are there.
+  * `CRegMgr32::OpenKey` always succeeds (a key with no values is an
+    empty section): the server hosts with no values (`DoHost`,
+    `AddResources` returned false without the key in retail).
+  * The disc check is removed: `CD_GetDriveLetterWithGame` probes no
+    drive (the `CdRom Drive` value, `\TRON.EXE` on each CD-ROM drive) and
+    `CD_VerifyGame` only finds the rez files in the game directory. The
+    message for a missing `Game.rez` does not mention a disc
+    (`TRON/Launcher.rc`).
+  * The CD key: `TronCDKey.cpp` reads `CDKey` from the file, where nothing
+    writes it, so it is empty. GS-4 (Online) decides what multiplayer does
+    without a key.
+  Saved games (`Save/`), profiles (`Profiles/`), `autoexec.cfg` and
+  `display.cfg` were already in the game directory. The engine
+  (`Lithtech.exe`, `server.dll`) has no registry or `SHGetFolderPath`
+  call of its own: `Lithtech.exe` imports `RegOpenKeyA` and
+  `RegQueryValueExA` only for D3DX9 (static, it reads
+  `Software\Microsoft\Direct3D`; not the game's). Temporary files are
+  not settings, and the test does not count them: `CShell.dll`
+  (`CClientFXDB::LoadFxDll`) copies `ClientFx.fxd` to `Temp\cfx*.tmp` and
+  loads that copy. Under Wine the copy stays after the game stops (one
+  for each start; not examined further). The imports of the
+  modern binaries have no other registry function. A first run with no
+  file: the launcher's defaults, written when it closes; the detail
+  setting passes `+BitDepth 32` (32-bit colour; the 16-bit fallback of
+  `DisplayMgr.cpp` is Display's, CL-35). Files: `libs/RegMgr/regfile.h`
+  (new), `regmgr.h`, `regmgr.cpp`, `libs/RegMgr32/regmgr32.cpp`,
+  `Libs/GameSpy/nonport.c`, `Launcher/Launcher.cpp`, `Launcher.h`,
+  `LauncherDlg.cpp`, `LauncherDlg.h`, `TRON/Launcher.rc`,
+  `ServerApp/ServerDlg.cpp`. Tested with `make portabletest`
+  (`build/portabletest.sh`, `build/playtest-launcher-portable*.txt`): a
+  fresh Wine prefix with no values of the game and no CD-ROM drive;
+  `TronLauncher.exe` (Play, the detail setting, the main menu, Quit),
+  `Tron.exe` (the same), then `TRONSrv.exe` hosting a LAN Disc Arena
+  game to its loaded world. The key names and values of `system.reg`,
+  `user.reg`, `userdef.reg` and the files under `drive_c/users/` before
+  and after: no new line names the game, and no file was added under
+  AppData. `tron20.ini` had the launcher's values and the game's
+  `ProfileName`. `make launchertest` (whose script writes the retail
+  installer's values into the registry): the modern launcher ignored
+  them and its command line had `Gamep3.rez` and `Gamep4.rez` from the
+  game directory.
 
 ### Retail-bug fixes, game DLLs
 
@@ -182,8 +291,218 @@ details.
   (`TextureFilterCaps`), and `Anisotropic` is the degree, held to what the
   card can do (`render_a/.../d3d_device.cpp`, `d3d_init.cpp`; nolf2src's
   M-G45).
-* **EN-40:** the frame limiter: see below. It replaces the retail
-  `cm_HandleMaxFPS`, which times the frame from an uninitialised value.
+* **EN-40:** the frame limiter (Frame rate, below). It replaces the
+  retail `cm_HandleMaxFPS`, which times the frame from an uninitialised
+  value.
+
+### Frame rate
+
+The game runs at frame rates above 60, in single player and in
+multiplayer, and it plays the same at all frame rates. The limit is a
+setting. The engine's limiter came from cjacksrc's (EN-40 to EN-43, EN-61,
+EN-62); EN-44 and EN-45 are Tron 2.0's.
+
+* **EN-40: the frame limiter.** `MaxFPS` is the maximum number of frames
+  each second: 240 if the config does not set it, 0 is no limit, 1000 at
+  most. Each frame waits until 1/`MaxFPS` has gone since the end of the
+  last frame. It sleeps while more than 2 ms are left (the timer runs at
+  1 ms, `timemgr.cpp`) and spins for the remainder. Retail calls its own
+  limiter (`cm_HandleMaxFPS`) with an uninitialised frame time
+  (`RETAIL_BUGS.md`); the modern build does not call it.
+  (`client/src/clientmgr.cpp` `cm_ModernFrameLimit`, `CClientMgr::Update`;
+  `shared/src/engine_vars.cpp`.) Checked in Tron 2.0 (`FrameTimeLog`):
+  `MaxFPS 60` holds the menus and a race at 59 to 60 frames a second,
+  with the wait in the log's `limit`.
+* **EN-41: a game tick at most every 10 ms.** Kept as cjacksrc's. In single
+  player and for a host, the client runs the server once each frame. A
+  tick now runs only when 10 ms or more have gone since the last tick; the
+  network runs at each call. Thus an object that the server updates every
+  10 ms (each AI) does not step by a short frame's time above 100 frames a
+  second. Tron 2.0's server objects step by the frame time
+  (`GetFrameTime`): the AI light cycles, the discs, the energy and health
+  zones, the core dumps. A search of `Object.lto`'s code found no amount
+  given once each tick without the tick's time. (`server/src/
+  servermgr.cpp` `CServerMgr::Update`.)
+* **EN-42: the frame-time log.** Kept as cjacksrc's. `FrameTimeLog <ms>`
+  writes each frame of that many milliseconds or more, and a summary each
+  ten seconds (frames, frames each second, the parts), to `frametime.log`
+  in the game directory. The tests below read their frame rates from it.
+* **EN-43, EN-62: V-sync in a window under Wine.** Kept as cjacksrc's.
+  Under Wine a window (borderless too) presents at once; with
+  `VSyncOnFlip` on, the frame limiter holds the game to the refresh rate
+  of the display. Full screen keeps the real wait for the refresh.
+  Tron 2.0's renderer is Direct3D 9, which permits
+  `D3DPRESENT_INTERVAL_IMMEDIATE` in a window also on Windows: there, with
+  V-sync off, a window does not wait (the retail code), and with V-sync on
+  it waits (not changed: not tested on Windows). (`render_a/.../
+  d3d_device.cpp` `SetPresentationParams`.) Tested under Xvfb: in a window
+  with `VSyncOnFlip 1` and `MaxFPS 0`, 58 to 60 frames a second, 13 ms of
+  each frame in `limit`; full screen with V-sync, 68 to 74 (Xvfb has no
+  refresh to wait for).
+* **EN-61: projected shadows' culling buffer.** Kept as cjacksrc's, not
+  measured here.
+* **EN-44: frame rates above 60, with a limit of 60, 120, 144, 240 or
+  none.** The Display screen has a "Frame Rate Limit" row under
+  Synchronization: 60, 120, 144, 240 and None (`MaxFPS`). A config without
+  `MaxFPS` shows 240 (the engine's default). A limit that is not on the
+  list (set by hand) shows as the next higher one (None above 240). The
+  screen writes `MaxFPS` only when the row changes, so a limit set by hand
+  stays until then. The engine keeps `MaxFPS` in `autoexec.cfg` beside the
+  executable. cjacksrc's limit of 60 in multiplayer (hosting or joining) is
+  removed: the limit is the same in multiplayer (EN-45 has the
+  multiplayer faults). Strings 31100 to 31102 (the block 31100 to 31109 is
+  the frame rate's). (`client/src/clientmgr.cpp` `cm_ModernFrameLimit`;
+  `TRON/ScreenDisplay.cpp` `Build`, `OnFocus`; `ClientRes/Shared/
+  ClientResShared.h`, `ClientRes/TRON/ClientRes.rc`.) Tested
+  (`build/playtest-framelimit.txt`): the row shows 240; two clicks show
+  None, then 60; back and to the screen again, it shows 60. In multiplayer
+  light cycle games, an unlimited client ran at 60 to 130 frames a second
+  and an unlimited host at 75 to 660 (ten-second averages; below). The launcher has no frame rate setting (as nolf2src's
+  and cjacksrc's).
+* **EN-45: physics and animation at all frame rates, multiplayer
+  included.** What was tied to the frame, and what changed:
+  * **The light cycle on the grid** (Tron 2.0's own). The player's cycle
+    is put on the grid (whole units) after each frame's move, so each
+    frame moves a whole number of units: round(speed x frame time). At
+    840 units a second a frame of 16 or 17 ms moves 13 or 14 units (825
+    units a second), but frames of 5 to 6 ms move 4 to 5 (853). At 1000
+    frames a second a cycle at 1400 moves 1 unit a frame (1000 units a
+    second). A move under 0.1 units is not made; a turn made on a frame
+    that rounds to no move is lost. Now the move is kept without rounding
+    from frame to frame along the axis of travel, and only the position
+    that the cycle is put at is rounded; the first move after a turn is
+    at least one grid unit (`TRON/TronPlayerMgr.cpp`,
+    `CTronPlayerMgr::TronUnknownVirtual64`, retail 0x100a7390).
+  * **The other players' cycles** (Tron 2.0's own). A client puts another
+    player's cycle `LCClientPredict` (10; a host `LCHostPredict`, 2)
+    frames ahead of its last known position, and moves it `LCInterpTime`
+    (0.2) of the way there, each frame: the higher the frame rate, the
+    less it predicts (0.17 s at 60, 0.04 s at 240) and the faster it
+    catches up. Now a frame counts as a 60th of a second at least for the
+    prediction, and the share of the way is that of a 60th of a second:
+    above 60 frames a second the cycle moves as at 60; at 60 and less,
+    the prediction is retail's (`TRON/ClientLightCycleMgr.cpp`,
+    `CClientLightCycleMgr::Update`, retail 0x10011410).
+  * **Client prediction** (the engine; every object that the server
+    moves, in single player and multiplayer: the other players, the AIs,
+    the discs). Each frame moves an object half of the way to its
+    predicted position, and turns it half of the way to its last known
+    rotation: the faster the frame rate, the closer it follows and the
+    less it smooths. Now the share is that of a 60th of a second:
+    1 - 0.5^(60 x frame time), 0.5 at 60 frames a second
+    (`client/src/predict.cpp` `pd_Update`).
+  * **The player's movement**, as nolf2src's M-E4 and cjacksrc's CL-41,
+    CL-42 (the code is NOLF2's): the speed cap is applied at the start of
+    a frame and the frame's acceleration takes the speed past it, so the
+    higher the frame rate, the slower the run; the cap now applies once
+    each 60th of a second. A frame's move under 0.1 units is not made: the
+    limit is now 0.1 units each 60th of a second (and so are the limits of
+    the blocked fall). The "cannot move" damping (half each frame), the
+    spectator damping (0.9 each frame) and a pusher's push (each frame)
+    are now each 60th of a second. Out of the water, the rise stops two
+    60ths of a second after the head comes out, and a jump out of the
+    water gets a 60th of a second of the swim-up push. The jump: the
+    engine's physics (`CalcMotion`) moves by the frame's speed before it
+    takes off the frame's gravity, and by only a quarter of a*t*t, so a
+    jump goes higher at a lower frame rate (82.8 units at 60 frames a
+    second, 80.8 at 254). Above 60 frames a second, the jump starts faster
+    by a quarter of the gravity of the difference between the frame and a
+    60th of a second: it peaks as at 60. (This is the opposite of
+    cjacksrc's correction: its engine's motion is not the same.)
+    (`ClientShellShared/CMoveMgr.cpp` `UpdateMotion`, `UpdateNormalMotion`,
+    `UpdateInLiquid`, `UpdatePushers`, `MoveLocalSolidObject`,
+    `InitWorldData`.) Tron 2.0 has no water in its levels that the tests
+    reach: the water changes are not measured.
+  * **Particle and line systems**, as cjacksrc's CL-44: an update that
+    owes less than one particle (line) adds none and starts its clock
+    again, so a slow system never emits at a high frame rate. Now it keeps
+    its time until one is owed (`ClientShellShared/ParticleSystemFX.cpp`,
+    `LineSystemFX.cpp` `Update`).
+  * **Fire sparks and debris**, as cjacksrc's CL-45: a fire makes a spark
+    with one chance in ten each frame, now each 60th of a second
+    (`FireFX.cpp` `Update`); bouncing debris comes to rest below a speed
+    that grows with the frame rate, now the speed of 60 frames a second
+    (`client_physics.cpp` `BounceMovingObject`).
+
+  `RETAIL_BUGS.md` has the faults of the functions that are
+  byte-identical (`UpdatePushers`, `MoveLocalSolidObject`,
+  `UpdateInLiquid`, `BounceMovingObject`, `CFireFX::Update`,
+  `CParticleSystemFX::Update`, `CLineSystemFX::Update`). `UpdateMotion`,
+  `UpdateNormalMotion`, `CTronPlayerMgr::TronUnknownVirtual64` and
+  `CClientLightCycleMgr::Update` are not yet byte-identical, and the
+  engine's `pd_Update` is not checked: their faults have no entry yet.
+
+  Examined and not changed: the light cycles' speed, acceleration, turns
+  and trails (`Shared/TRON/LightCycleMgr.cpp`: the speed changes by its
+  rate times the frame time; a turn and its loss of speed are once each
+  turn; the trail and its collisions are segments from the last point to
+  the position); the other `VehicleMgr.cpp` code (the camera turns by the
+  frame time); `PlayerMgr.cpp`, `TRON/TronPlayerMgr.cpp`,
+  `PlayerCamera.cpp`, `HeadBobMgr.cpp`, `LeanMgr.cpp` (each step is the
+  frame time times a rate, or a time); the HUD (`HUDTronDecision.cpp`,
+  `HUDHealthEnergy.cpp`, `HUDPings.cpp`: timers by the clock or the frame
+  time); `ClientFXMgr.cpp` and the ClientFX effects (their emission keeps
+  its time: `ClientFxDLL/ParticleSystemFX.cpp`); the discs
+  (`ClientWeaponDisc.cpp`: the control line goes at most every
+  `DiscControlRate` seconds in multiplayer; the disc itself is a server
+  object); `ClientMultiplayerMgr.cpp` (no update by frame); what the client
+  sends to the server: `MID_PLAYER_UPDATE` at most `CSendRate` times a
+  second to a remote server, the light cycle's position at most every
+  `m_fPredictInterval` unless it turns (to a host's own server, both each
+  frame, as retail); the dedicated server (its own update rate). Tron
+  2.0's weapons have no turn-dependent aim (cjacksrc's CL-45 part). The
+  frame time is retail's whole milliseconds (`time_GetMSTime`): at 240
+  frames a second frames take 4 or 5 ms. This is uneven motion, not lost
+  time; not changed. `ShowFrameRate` (the engine's counter) prints only in
+  a debug engine; the modern build has no frame rate counter on the
+  screen (cjacksrc's CL-46 is not ported): use `FrameTimeLog`.
+
+  How it was tested: `PosLog 1` (new, `CMoveMgr::ModernPosLog`) writes
+  the player's position each frame to `poslog.txt`, and the light cycles'
+  positions to `lcpos.txt` (`CClientLightCycleMgr::Update`).
+  `build/playtest-fps-race.txt` and `build/playtest-fps-walk.txt` play the
+  same keys at `MaxFPS` 60 and 0 (no limit), with the world not drawn
+  (`build/fps-60.cfg`, `build/fps-0.cfg`: under Xvfb the software
+  renderer holds a race at 11 to 24 frames a second when it draws), and
+  `build/fpscheck.py` compares them. Without a limit, the runs reached
+  150 to 254 frames a second (the frame rates are in the tables); a
+  higher rate was not reached under Xvfb. "Before": the modern build
+  without the EN-45 changes of that part.
+
+  | Race (Newbie Authentication, 840 units a second) | before, 60 | before, 163 | after, 59 | after, 161 |
+  |---|--:|--:|--:|--:|
+  | distance in the first 5 s | 4141 | 4268 | 4209 | 4205 |
+  | distance in the first 10 s (two turns) | 8280 | 8482 | 8375 | 8373 |
+  | the leg between the turns, units a second | | | 822 | 827 |
+
+  | Walk in M01-01 | before, 59 | before, 254 | after, 58 | after, 191 |
+  |---|--:|--:|--:|--:|
+  | run forward 0.7 s: distance, top speed | 214.5, 346 | 199.0, 313 | 204.6, 349 | 211.1, 352 |
+  | run back 0.7 s: distance, top speed | 208.4, 331 | 201.1, 299 | 208.1, 331 | 209.0, 324 |
+  | strafe 0.5 s each way: distances | 148.6, 154.5 | 143.9, 144.1 | 154.1, 154.2 | 149.7, 146.0 |
+  | crouching walk 0.6 s: distance | 74.3 | 69.5 | 74.0 | 73.1 |
+  | standing jump, two: units high | 82.79, 82.81 | 80.80, 80.80 | 82.84, 82.83 | 82.86, 82.82 |
+
+  (The key holds come from xdotool, so a distance varies by about 3% from
+  run to run at the same rate. The top speed shows the cap.)
+
+  Multiplayer (`make mptest MPTEST_MODE=listen MPTEST_TYPE=lc`, with
+  `MPTEST_CFG1`/`MPTEST_CFG2`, new, for each client's settings): two
+  runs on the loopback, the world not drawn. In the first, the host ran
+  at `MaxFPS` 60 (57 to 59 frames a second in its rounds) and the other
+  client without a limit (95 to 116); in the second, the host without a
+  limit (85 to 117) and the other client at 60. Both clients joined, saw
+  each other and played to the end in both runs. A cycle that runs the
+  full length of the arena (25596 units, from its start to the wall: the
+  cycle accelerates with the forward key to the speed limit of 3200)
+  took 9.06 to 9.09 s on each client in both runs, at 60 and above (one
+  round of 9.31 s, the first of the unlimited host, which started its
+  log before the race did). Where the clients saw each other's cycles
+  stop (`lcpos.txt`) is within the prediction (`LCClientPredict` 10
+  60ths of a second, `LCHostPredict` 2) of where those cycles stopped.
+  Not tested: an Internet game, a dedicated server with clients above 60
+  (its own update rate does not depend on the clients'), more than two
+  players, and the disc games above 60 in multiplayer.
 
 ### Inherited engine items
 
@@ -214,13 +533,13 @@ removes it.
 | EN-31 | a window at any size (cjacksrc EN-31) | `render_a/.../d3d_shell.cpp` | Display |
 | EN-32 | the window mode: framed or borderless (cjacksrc EN-32) | `kernel/src/sys/win/render.cpp`, `render_a/.../common_init.cpp` | Display |
 | EN-33 | antialiasing in a window too; 2D at whole pixels (nolf2src M-E13) | `d3d_device.cpp` (`SetPresentationParams`, `TryFallingBack_OnFailedDevCreate`), `render_b/.../d3ddrawprim.cpp` | Display |
-| EN-40 | the frame limiter, `MaxFPS` 240 by default, 60 in multiplayer (cjacksrc EN-40) | `clientmgr.cpp` (`cm_ModernFrameLimit`, `CClientMgr::Update`), `shared/src/engine_vars.cpp` | Frame rate |
-| EN-41 | a game tick at most every 10 ms (cjacksrc EN-41) | `server/src/servermgr.cpp` | Frame rate |
-| EN-42 | the frame-time log, `FrameTimeLog` (cjacksrc EN-42) | `shared/src/sys/win/modernframelog.h`, `clientmgr.cpp`, `clientmgr.h`, `clientshell.cpp`, `d3d_device.cpp`, `rendershadowlist.cpp`, `engine_vars.cpp` | Frame rate |
-| EN-43 | V-sync off in a window under Wine (cjacksrc EN-43) | `d3d_device.cpp` (`SetPresentationParams`) | Frame rate |
+| EN-40 | the frame limiter, `MaxFPS` 240 by default (cjacksrc EN-40); checked, and changed by EN-44: no limit of 60 in multiplayer | `clientmgr.cpp` (`cm_ModernFrameLimit`, `CClientMgr::Update`), `shared/src/engine_vars.cpp` | Frame rate: done (below) |
+| EN-41 | a game tick at most every 10 ms (cjacksrc EN-41); checked, kept | `server/src/servermgr.cpp` | Frame rate: done (below) |
+| EN-42 | the frame-time log, `FrameTimeLog` (cjacksrc EN-42); checked, kept | `shared/src/sys/win/modernframelog.h`, `clientmgr.cpp`, `clientmgr.h`, `clientshell.cpp`, `d3d_device.cpp`, `rendershadowlist.cpp`, `engine_vars.cpp` | Frame rate: done (below) |
+| EN-43 | V-sync off in a window under Wine (cjacksrc EN-43); checked, kept | `d3d_device.cpp` (`SetPresentationParams`) | Frame rate: done (below) |
 | EN-60 | a music intensity out of range (cjacksrc EN-60) | `ltdirectmusic_impl.cpp` | (fix) |
-| EN-61 | projected shadows' culling buffer (cjacksrc EN-61) | `modelshadowshader.cpp`, `rendershadowlist.cpp` | Frame rate |
-| EN-62 | V-sync in a window caps the rate, it does not wait (cjacksrc EN-62) | `d3d_device.cpp`, `clientmgr.cpp`, `modernframelog.h` | Frame rate |
+| EN-61 | projected shadows' culling buffer (cjacksrc EN-61); kept | `modelshadowshader.cpp`, `rendershadowlist.cpp` | Frame rate: done (below) |
+| EN-62 | V-sync in a window caps the rate, it does not wait (cjacksrc EN-62); checked, kept | `d3d_device.cpp`, `clientmgr.cpp`, `modernframelog.h` | Frame rate: done (below) |
 
 "(fix)": a retail-bug fix that belongs to no Phase 1 agent. Whoever checks
 the bug against Tron 2.0's retail `Lithtech.exe` writes its
@@ -242,28 +561,7 @@ Engine paths are under `src/Engine/runtime/`, game paths under
 
 ### Apps
 
-* **APPS-2: the launcher stays open after it starts the game.** Retail
-  closes the launcher when the game starts (`CLauncherDlg::OnPlay` and the
-  other actions: `LaunchGame`, then `EndDialog`; `CLauncherApp::
-  InitInstance` then ends). The modern launcher stays (minimised, or
-  waits for `Lithtech.exe` to exit), so that the Steam overlay and Steam
-  Remote Play keep the process tree. `Tron.exe` (APPS-1) also waits for
-  the game. Files: `Launcher/LauncherDlg.cpp` (`LaunchGame`, `OnPlay`,
-  `LaunchDirect`), `Launcher/Launcher.cpp` (`InitInstance`).
-* **APPS-3: settings and saved games beside the executable, no registry,
-  no APPDATA.** The registry users: the launcher (`CLauncherApp` reads
-  `InstallDir`, `UpdateNum`, `UpdateCommandLine0/1` to decide
-  "installed" and the rez list; `LauncherDlg.cpp`, `OptionsDlg.cpp`,
-  `DisplayDlg.cpp` store the options, `DisplayWarning`, `OptionsWarning`,
-  `Num Launcher Runs` through `CRegMgr`, `src/libs/RegMgr/regmgr.cpp`),
-  the game (`Shared/VersionMgr.cpp` `Language`;
-  `ClientShellShared/ProfileMgr.cpp` `ProfileName`;
-  `TRON/TronCDKey.cpp` the CD key), and the dedicated server
-  (`ServerApp/ServerDlg.cpp` through `src/libs/RegMgr32/regmgr32.cpp`).
-  Saved games and profiles (`Save/`, `Profiles/`) and `autoexec.cfg` are
-  already in the game directory. A file beside the executable (as
-  cjacksrc's APPS-6) replaces the registry; the modern build drops the
-  disc check (`CLauncherApp::CD_VerifyGame`, `CD_GetDriveLetterWithGame`).
+APPS-2 and APPS-3 are done (above).
 
 ### Display
 
@@ -303,22 +601,7 @@ Engine paths are under `src/Engine/runtime/`, game paths under
 
 ### Frame rate
 
-* **EN-44: frame rates above 60, with limits of 60, 120, 144, 240 and no
-  limit.** On EN-40: the limits, a Display screen option, and the
-  multiplayer limit (EN-40 holds multiplayer at 60; the item lifts it).
-  Files: `client/src/clientmgr.cpp` (`cm_ModernFrameLimit`,
-  `CClientMgr::Update`), `shared/src/engine_vars.cpp`,
-  `kernel/src/sys/win/timemgr.cpp`, `TRON/ScreenDisplay.cpp` (one
-  control).
-* **EN-45: physics and animation do not depend on the frame rate,
-  multiplayer included.** On EN-41. The game client steps with the frame
-  time in `ClientShellShared/CMoveMgr.cpp`, `VehicleMgr.cpp` (the light
-  cycles), `PlayerMgr.cpp`, `PlayerCamera.cpp`, `HeadBobMgr.cpp`,
-  `LeanMgr.cpp`, `ClientFXMgr.cpp`, `TRON/TronPlayerMgr.cpp`,
-  `TRON/HUDTronDecision.cpp`; the server in `server/src/servermgr.cpp`
-  and `TRON/TronGameServerShell.cpp`; the light cycles in
-  `Shared/TRON/LightCycleMgr.cpp`; the client's update rate to the server
-  in `ClientShellShared/ClientMultiplayerMgr.cpp`.
+Done: EN-44 and EN-45 (under "Done", "Frame rate").
 
 ### Input
 
@@ -387,7 +670,7 @@ every retail binary):
 | `TRON/ScreenDisplay.cpp` | Display (CL-30, CL-31, CL-32, CL-33), Frame rate (EN-44: one frame-limit control) | Display owns it; Frame rate adds its control after Display |
 | `ClientShellShared/PlayerCamera.cpp`, `PlayerMgr.cpp`, `TRON/TronPlayerMgr.cpp` | Display (CL-33: FOV), Frame rate (EN-45: frame-time steps) | separate functions; coordinate |
 | `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp` | Display (CL-33), Input (CL-20: the pad's update) | separate functions |
-| `ClientShellShared/ProfileMgr.cpp` | Apps (APPS-3: `ProfileName` in the registry), Input (CL-20: bindings), Display (new settings) | each its own settings |
+| `ClientShellShared/ProfileMgr.cpp` | Apps (APPS-3: `ProfileName` in the registry), Input (CL-20: bindings), Display (new settings) | each its own settings; APPS-3 did not change the file (`CRegMgr` keeps its calls) |
 | `TRON/TronGameServerShell.cpp` | Online (GS-1, GS-4), Frame rate (EN-45: the update) | separate functions |
 | `TRON/BaseScreenJoin.cpp`, `TRON/TronCDKey.cpp` | Online (GS-3, GS-4), Apps (APPS-3: the CD key in the registry) | Online owns them; Apps gives the storage |
 | `Launcher/DisplayMgr.cpp`, `DisplayDlg.cpp`, `OptionsDlg.cpp` | Display (CL-30, CL-31, CL-35), Apps (APPS-3: where the options are stored), Input (CL-20: Disable Joysticks) | Apps changes only the storage calls |

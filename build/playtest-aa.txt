@@ -10,7 +10,7 @@ mclick 233 246
 wait 3
 mclick 120 174
 wait 3
-mclick 330 258
+mclick 330 286
 wait 1
 shot aa-2x
 key Escape

@@ -253,6 +253,13 @@ BOOL CLauncherDlg::OnInitDialog()
 		GetDlgItem(IDC_UNINSTALL)->EnableWindow(FALSE);
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: Uninstall started the installer's setup.exe from
+	// InstallDir. The modern build has no installer: the game is its
+	// directory, and there is nothing to remove but that directory
+	GetDlgItem(IDC_UNINSTALL)->EnableWindow(FALSE);
+#endif
+
 	// Make sure the play button is default.
 	SetDefID( IDC_PLAY );
 
@@ -389,6 +396,13 @@ void CLauncherDlg::OnPlay()
 	}
 	else
 	{
+
+#ifdef TRON20SRC_MODERN
+		// MODERN.md APPS-3: no installer (Setup.EXE is the disc's). Not
+		// installed is a launcher with no Lithtech.exe beside it
+		theApp.MessageBox(IDS_CANTLAUNCHCLIENTEXE, IDS_GAME_NAME, MB_OK | MB_ICONSTOP);
+		return;
+#endif
 
 #ifndef _FINAL
 #define SELFINSTALL
@@ -640,6 +654,13 @@ void CLauncherDlg::OnUninstall()
 	}
 
 #else
+#ifdef TRON20SRC_MODERN
+
+	// MODERN.md APPS-3: no installer, no uninstaller (the button is
+	// disabled, OnInitDialog)
+	theApp.MessageBox(IDS_CANTUNINSTALL, IDS_GAME_NAME, MB_OK | MB_ICONSTOP);
+
+#else
 
 	// RETAIL: the registry key is named by the game's name string (NOLF2's
 	// launcher had GAME_NAME[], "No One Lives Forever 2")
@@ -676,6 +697,7 @@ void CLauncherDlg::OnUninstall()
 
 	theApp.MessageBox(IDS_CANTUNINSTALL, IDS_GAME_NAME, MB_OK | MB_ICONSTOP);
 
+#endif // TRON20SRC_MODERN
 #endif
 }
 
@@ -847,6 +869,27 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 {
 	if(dwAction == ACTION_STANDALONESERVER)
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md APPS-2: the launcher stays until the server stops
+		STARTUPINFO			siServer;
+		PROCESS_INFORMATION piServer;
+		memset(&siServer, 0, sizeof(siServer));
+		siServer.cb = sizeof(siServer);
+		CString csServer = theApp.m_csInstallDir + theApp.m_csServerExe;
+		CString csServerLine = "\"" + csServer + "\"";
+		BOOL bServer = CreateProcess(csServer, csServerLine.GetBuffer(0), NULL, NULL, FALSE,
+			CREATE_DEFAULT_ERROR_MODE, NULL, NULL, &siServer, &piServer);
+		csServerLine.ReleaseBuffer();
+		if(bServer)
+		{
+			CloseHandle(piServer.hThread);
+			WaitForGame(piServer.hProcess);
+			CloseHandle(piServer.hProcess);
+			return TRUE;
+		}
+		theApp.MessageBox(IDS_CANTLAUNCHSERVER, IDS_GAME_NAME, MB_OK | MB_ICONSTOP);
+		return FALSE;
+#endif
 		if(WinExec(theApp.m_csServerExe,SW_SHOW) > 31)
 		{
 			// Just let it happen...
@@ -902,6 +945,11 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 		return FALSE;
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: the install directory is the game directory
+	// (InitInstance), not the installer's InstallDir
+	SetCurrentDirectory(theApp.m_csInstallDir);
+#else
 	// Get the installed directory
 	char sDir[256];
 	unsigned long nSize = sizeof(sDir);
@@ -914,6 +962,7 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 #ifdef _FINAL
 	SetCurrentDirectory(sDir);
 #endif
+#endif // TRON20SRC_MODERN
 
 	CString sNewCmdLine;
 
@@ -1043,6 +1092,23 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 			}
 		}
 	}
+#ifdef TRON20SRC_MODERN
+	else
+	{
+		// MODERN.md APPS-3: no installer of Update 2 wrote its values
+		// (UpdateCommandLine0/1: "-rez gamep3.rez", "-rez gamep4.rez"):
+		// the update's archives from the game directory, if they are there
+		static const char* const s_aszUpdateRez[] = { "Gamep3.rez", "Gamep4.rez" };
+		for( int i = 0; i < sizeof(s_aszUpdateRez) / sizeof(s_aszUpdateRez[0]); i++ )
+		{
+			if( theApp.CD_ExistFile( s_aszUpdateRez[i] ))
+			{
+				sNewCmdLine += " -rez ";
+				sNewCmdLine += s_aszUpdateRez[i];
+			}
+		}
+	}
+#endif
 
 	// Now add all the .rez files associated with the selected mod, if we have one...
 
@@ -1261,14 +1327,81 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	fprintf(fp, sNewCmdLine);
 	fclose(fp);
 
+#ifdef TRON20SRC_MODERN
+	// The engine of the game directory, by its full path
+	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(si);
+	CString csEngine = theApp.m_csInstallDir + "Lithtech.exe";
+	CString csEngineLine = "\"" + csEngine + "\" -cmdfile launchcmds.txt";
+	BOOL bStarted = CreateProcess(csEngine, csEngineLine.GetBuffer(0), NULL, NULL, FALSE,
+		CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP, NULL, NULL, &si, &pi);
+	csEngineLine.ReleaseBuffer();
+	if (!bStarted)
+#else
 	if (!CreateProcess(NULL, "lithtech.exe -cmdfile launchcmds.txt", NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_PROCESS_GROUP,	NULL, NULL, &si, &pi))
+#endif
 	{
 		theApp.MessageBox(IDS_CANTLAUNCHCLIENTEXE, IDS_GAME_NAME, MB_OK | MB_ICONEXCLAMATION);
 		return(FALSE);
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-2: stay until the game stops
+	CloseHandle(pi.hThread);
+	WaitForGame(pi.hProcess);
+	CloseHandle(pi.hProcess);
+#endif
+
 	return TRUE;
 }
+
+#ifdef TRON20SRC_MODERN
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLauncherDlg::WaitForGame
+//
+//	PURPOSE:	MODERN.md APPS-2: waits until the process that the launcher
+//				started (the engine, or the dedicated server) stops. Retail's
+//				launcher stopped at once; Steam takes the end of the program
+//				that it started for the end of the game, and the overlay and
+//				Remote Play stop with it. The launcher window is hidden
+//				meanwhile; the caller then closes the launcher, as retail
+//				does after a start. The window's (and the thread's)
+//				messages are dispatched while it waits
+//
+// ----------------------------------------------------------------------- //
+
+void CLauncherDlg::WaitForGame(HANDLE hProcess)
+{
+	if(GetSafeHwnd())
+	{
+		ShowWindow(SW_HIDE);
+	}
+
+	for(;;)
+	{
+		DWORD dwWait = MsgWaitForMultipleObjects(1, &hProcess, FALSE, INFINITE, QS_ALLINPUT);
+		if(dwWait != WAIT_OBJECT_0 + 1)
+		{
+			// the process stopped (or the wait failed)
+			break;
+		}
+
+		MSG msg;
+		while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if(msg.message == WM_QUIT)
+			{
+				// keep it for the message loop that waits for it
+				PostQuitMessage((int)msg.wParam);
+				return;
+			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+}
+#endif // TRON20SRC_MODERN
 
 // ----------------------------------------------------------------------- //
 //

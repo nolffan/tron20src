@@ -1056,6 +1056,11 @@
 #define IDS_MODERN_4X                   31013
 #define IDS_MODERN_8X                   31014
 #define IDS_MODERN_16X                  31015
+// MODERN.md EN-44: the frame rate limit of the Display screen (the block
+// 31100..31109 is the frame rate's)
+#define IDS_MODERN_FRAMELIMIT           31100
+#define IDS_HELP_MODERN_FRAMELIMIT      31101
+#define IDS_MODERN_FRAMELIMIT_NONE      31102
 #endif
 
 // Next default values for new objects

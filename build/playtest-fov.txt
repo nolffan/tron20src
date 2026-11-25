@@ -16,13 +16,13 @@ wait 3
 shot options
 mclick 120 174
 wait 3
-mclick 552 285
+mclick 552 313
 wait 0.5
-mclick 552 285
+mclick 552 313
 wait 0.5
-mclick 552 285
+mclick 552 313
 wait 0.5
-mclick 552 285
+mclick 552 313
 wait 1
 shot display-fov
 key Escape

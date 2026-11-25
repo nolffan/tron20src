@@ -1604,6 +1604,118 @@ void CTronPlayerMgr::TronUnknownVirtual60()
 //
 // ----------------------------------------------------------------------- //
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-45: the light cycle on the grid at any frame rate. Retail
+// rounds the cycle's position to the grid (whole units) after each frame's
+// move, so each frame moves a whole number of units: round(speed * frame
+// time). At 60 frames a second a cycle at 1400 units a second moves 23 or
+// 24 units a frame and the rounding is small, but at 240 it moves 6
+// instead of 5.8 (1440 units a second), at 500 3 instead of 2.8 (1500),
+// and at 1000 1 instead of 1.4 (1000); a slower cycle stands still when a
+// frame's move is under half a unit, and a frame's move under 0.1 units is
+// not made at all. A turn made on a frame that rounds to no move is lost
+// (the trail and the next frame's direction come from where the cycle
+// went). Here the move is kept unrounded from frame to frame, along the
+// axis the cycle travels, and only the position the cycle is put at is
+// rounded; the first move after a turn is at least one grid unit. Ours.
+static LTVector	s_vModernCycleExact(0.0f, 0.0f, 0.0f);	// the position without rounding
+static LTVector	s_vModernCyclePut(0.0f, 0.0f, 0.0f);	// where it put the cycle last
+static bool		s_bModernCycleValid = false;
+static int		s_nModernCycleAxis = -1;				// 0 x, 2 z: the axis of the last move
+
+bool CTronPlayerMgr::TronUnknownVirtual64()
+{
+	if (TronUnknownVirtual3C(false))
+	{
+		s_bModernCycleValid = false;
+		return true;
+	}
+
+	ILTClientPhysics* pPhysics = (ILTClientPhysics*)g_pPhysicsLT;
+	HOBJECT hObj = g_pMoveMgr->GetObject();
+
+	MoveInfo info;
+	info.m_hObject = hObj;
+
+	info.m_dt = g_pGameClientShell->GetFrameTime();
+	pPhysics->UpdateMovement(&info);
+
+	LTVector vPos;
+	g_pLTClient->GetObjectPos(hObj, &vPos);
+
+	// Started, reset or moved by something else (the server, a blocked
+	// move): start again from where the cycle is
+	if (!s_bModernCycleValid || vPos != s_vModernCyclePut)
+	{
+		s_vModernCycleExact = vPos;
+		s_nModernCycleAxis = -1;
+	}
+	s_bModernCycleValid = true;
+	s_vModernCyclePut = vPos;
+
+	float fOffX = (float)fabs(info.m_Offset.x);
+	float fOffZ = (float)fabs(info.m_Offset.z);
+	if (fOffX <= 0.0f && fOffZ <= 0.0f)
+		return true;
+
+	int nAxis = (fOffX >= fOffZ) ? 0 : 2;
+	bool bTurned = (nAxis != s_nModernCycleAxis);
+	s_nModernCycleAxis = nAxis;
+
+	// The axis across the travel stays on the grid line
+	LTVector vExact = s_vModernCycleExact + info.m_Offset;
+	vExact.y = vPos.y + info.m_Offset.y;
+	if (nAxis == 0)
+		vExact.z = vPos.z;
+	else
+		vExact.x = vPos.x;
+
+	LTVector vNewPos = vExact;
+	g_pLightCycleMgr->SnapToGrid(vNewPos);
+
+	float fAlong = (nAxis == 0) ? info.m_Offset.x : info.m_Offset.z;
+	float* pNewAlong = (nAxis == 0) ? &vNewPos.x : &vNewPos.z;
+	float fPosAlong = (nAxis == 0) ? vPos.x : vPos.z;
+	if (*pNewAlong == fPosAlong)
+	{
+		if (!bTurned)
+		{
+			// Not a whole unit yet: keep it for the next frame
+			s_vModernCycleExact = vExact;
+			return true;
+		}
+
+		// The first move after a turn: one grid unit at least
+		LTVector vStep = vPos;
+		float* pStepAlong = (nAxis == 0) ? &vStep.x : &vStep.z;
+		for (int i = 1; i <= 64 && *pNewAlong == fPosAlong; i++)
+		{
+			vStep = vPos;
+			*pStepAlong = fPosAlong + ((fAlong > 0.0f) ? (float)i : -(float)i);
+			vNewPos = vStep;
+			vNewPos.y = vExact.y;
+			g_pLightCycleMgr->SnapToGrid(vNewPos);
+		}
+		vExact = vNewPos;
+	}
+
+	pPhysics->MoveObject(hObj, &vNewPos, 0);
+
+	LTVector vMovedPos;
+	g_pLTClient->GetObjectPos(hObj, &vMovedPos);
+
+	s_vModernCyclePut = vMovedPos;
+	s_vModernCycleExact = (vMovedPos == vNewPos) ? vExact : vMovedPos;
+
+	// RETAIL: blocked: the cycle hit the world
+	if ((int)vNewPos.x != (int)vMovedPos.x || (int)vNewPos.z != (int)vMovedPos.z)
+	{
+		TronUnknownVirtual60();
+	}
+
+	return true;
+}
+#else
 bool CTronPlayerMgr::TronUnknownVirtual64()
 {
 	if (TronUnknownVirtual3C(false))
@@ -1645,6 +1757,7 @@ bool CTronPlayerMgr::TronUnknownVirtual64()
 
 	return true;
 }
+#endif
 
 // ----------------------------------------------------------------------- //
 //

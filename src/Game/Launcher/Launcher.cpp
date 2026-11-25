@@ -109,6 +109,20 @@ BOOL CLauncherApp::InitInstance()
 	m_csLanguage.LoadString(IDS_LANGUAGE);
 	m_csAppVersion.LoadString(IDS_APPVERSION);
 	m_csHelpFile.LoadString(IDS_HELPFILE);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-2: IDS_SERVEREXE is "TRON2Svr.EXE", but the dedicated
+	// server is TRONSrv.exe, so -GOSERVER started nothing (RETAIL_BUGS.md)
+	m_csServerExe = "TRONSrv.exe";
+
+	// MODERN.md APPS-3: the game directory is the directory of this
+	// program. Work there (the rez files, launchcmds.txt, Lithtech.exe),
+	// whatever directory the program was started from
+	CString csGameDir = GetGameDir();
+	if(!csGameDir.IsEmpty())
+	{
+		SetCurrentDirectory(csGameDir);
+	}
+#endif
 
 	// Check if we are already running...
 
@@ -142,10 +156,22 @@ BOOL CLauncherApp::InitInstance()
 	// Load the registry settings
 	m_bInstalled = FALSE;
 	m_RegMgr.Init();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: no installer and no registry. The game is installed
+	// when Lithtech.exe is in the game directory (the directory of this
+	// program); the install directory is that directory. The settings are
+	// in tron20.ini there (regfile.h), which OpenRegistryKey always opens
+	if(!csGameDir.IsEmpty() && CD_ExistFile(csGameDir + "Lithtech.exe"))
+	{
+		m_bInstalled = TRUE;
+		m_csInstallDir = csGameDir;
+	}
+#endif
 	if(OpenRegistryKey())
 	{
 		char p[MAX_PATH];
 		DWORD dwSize = sizeof(char) * MAX_PATH;
+#ifndef TRON20SRC_MODERN
 		memset(p,0,dwSize);
 		if(m_RegMgr.GetField("InstallDir",p,dwSize) && p[0])
 		{
@@ -153,6 +179,7 @@ BOOL CLauncherApp::InitInstance()
 			m_bInstalled = TRUE;
 			m_csInstallDir = p;
 		}
+#endif
 
 		memset(p,0,dwSize);
 		if(m_RegMgr.GetField("ProfileName",p,dwSize) && p[0])
@@ -302,6 +329,33 @@ BOOL CLauncherApp::IsDirectLaunch()
 	return _stricmp(sName, "Tron") == 0 && _stricmp(sExt, ".exe") == 0;
 }
 
+// ----------------------------------------------------------------------- //
+//
+//	ROUTINE:	CLauncherApp::GetGameDir
+//
+//	PURPOSE:	MODERN.md APPS-3: the game directory, the directory of this
+//				program, with a "\" at its end (empty if not known)
+//
+// ----------------------------------------------------------------------- //
+
+CString CLauncherApp::GetGameDir()
+{
+	char sPath[MAX_PATH];
+	DWORD nLen = GetModuleFileName(NULL, sPath, sizeof(sPath));
+	if(nLen == 0 || nLen >= sizeof(sPath))
+	{
+		return CString();
+	}
+
+	char* pSlash = strrchr(sPath, '\\');
+	if(!pSlash)
+	{
+		return CString();
+	}
+	pSlash[1] = '\0';
+	return CString(sPath);
+}
+
 #endif // TRON20SRC_MODERN
 
 // ----------------------------------------------------------------------- //
@@ -382,6 +436,17 @@ DWORD CLauncherApp::GetRegistryDWord(char *szField)
 // ----------------------------------------------------------------------- //
 BOOL CLauncherApp::CD_VerifyGame()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: no disc check. The rez files are in the game
+	// directory (the current directory); LaunchGame says so if Game.rez is
+	// not there
+	char* sGameRez = GetGameRezFile();
+	if(!sGameRez || sGameRez[0] == '\0')
+	{
+		FindRezFiles(0, m_csRezBase);
+	}
+	return(TRUE);
+#else
 	// Check if the game CD is already in the drive...
 	BOOL bDisc2 = FALSE;
 	{
@@ -427,6 +492,7 @@ BOOL CLauncherApp::CD_VerifyGame()
 
 	// If we get here, we couldn't verify the CD...
 	return(FALSE);
+#endif // TRON20SRC_MODERN
 }
 
 // ----------------------------------------------------------------------- //
@@ -545,6 +611,13 @@ char CLauncherApp::CD_GetDriveLetter()
 
 char CLauncherApp::CD_GetDriveLetterWithGame(BOOL & bDisc2)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md APPS-3: no drive is the game disc. No drive is probed (the
+	// "CdRom Drive" value, every CD-ROM drive's \TRON.EXE): the rez files
+	// come from the game directory only
+	bDisc2 = FALSE;
+	return(0);
+#else
 	// Check if we've already found the cd-rom drive...
 	if(m_chDrive != 0)
 	{
@@ -596,6 +669,7 @@ char CLauncherApp::CD_GetDriveLetterWithGame(BOOL & bDisc2)
 
 	// If we get here, we didn't find one...
 	return(0);
+#endif // TRON20SRC_MODERN
 }
 
 
