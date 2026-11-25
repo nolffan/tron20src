@@ -168,9 +168,11 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
   (`Lithtech.exe`, `server.dll`) has no registry or `SHGetFolderPath`
   call of its own: `Lithtech.exe` imports `RegOpenKeyA` and
   `RegQueryValueExA` only for D3DX9 (static, it reads
-  `Software\Microsoft\Direct3D`; not the game's). It copies the game
-  DLLs that it loads from rez files to the Temp folder; ours are in
-  `custom/`, not in a rez file, so none are copied. The imports of the
+  `Software\Microsoft\Direct3D`; not the game's). Temporary files are
+  not settings, and the test does not count them: `CShell.dll`
+  (`CClientFXDB::LoadFxDll`) copies `ClientFx.fxd` to `Temp\cfx*.tmp` and
+  loads that copy. Under Wine the copy stays after the game stops (one
+  for each start; not examined further). The imports of the
   modern binaries have no other registry function. A first run with no
   file: the launcher's defaults, written when it closes; the detail
   setting passes `+BitDepth 32` (32-bit colour; the 16-bit fallback of
