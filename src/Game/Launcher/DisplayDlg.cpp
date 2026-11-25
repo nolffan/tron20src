@@ -80,6 +80,10 @@ BEGIN_MESSAGE_MAP(CDisplayDlg, CMoveDialog)
 	ON_BN_CLICKED(IDC_DD_CANCEL, OnCancel)
 	ON_BN_CLICKED(IDC_DD_CLOSE, OnClose)
 	//}}AFX_MSG_MAP
+#ifdef TRON20SRC_MODERN
+	ON_LBN_SELCHANGE(IDC_MODERN_WINDOWMODE_LIST, OnModernSelchangeWindowList)
+#endif
+
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -147,6 +151,36 @@ BOOL CDisplayDlg::OnInitDialog()
 	g_pDisplayMgr->FillListBoxes(GetDlgItem(IDC_RENDERER_LIST)->GetSafeHwnd(), GetDlgItem(IDC_DISPLAY_LIST)->GetSafeHwnd(), GetDlgItem(IDC_RESOLUTION_LIST)->GetSafeHwnd());
 	g_pDisplayMgr->UpdateListSelections(GetDlgItem(IDC_RENDERER_LIST)->GetSafeHwnd(), GetDlgItem(IDC_DISPLAY_LIST)->GetSafeHwnd(), GetDlgItem(IDC_RESOLUTION_LIST)->GetSafeHwnd());
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: the window mode. The renderer list has one line (the
+	// DX9 renderer), so it gives its lower part to a list of the three
+	// window modes, made as the dialog's other lists are
+	{
+		CWnd* pRen = GetDlgItem(IDC_RENDERER_LIST);
+		int nRenHeight = DD_RENDERER_LIST_HEIGHT / 2 - 4;
+		if (pRen)
+			pRen->SetWindowPos(NULL,DD_RENDERER_LIST_X,DD_RENDERER_LIST_Y,DD_RENDERER_LIST_WIDTH,nRenHeight,SWP_NOZORDER);
+		CRect rc(DD_RENDERER_LIST_X, DD_RENDERER_LIST_Y + nRenHeight + 8,
+			DD_RENDERER_LIST_X + DD_RENDERER_LIST_WIDTH, DD_RENDERER_LIST_Y + DD_RENDERER_LIST_HEIGHT);
+		if (m_ModernWindowList.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT,
+			rc, this, IDC_MODERN_WINDOWMODE_LIST))
+		{
+			if (pRen)
+				m_ModernWindowList.SetFont(pRen->GetFont());
+			CString sText;
+			sText.LoadString(IDS_MODERN_FULLSCREEN);
+			m_ModernWindowList.AddString(sText);
+			sText.LoadString(IDS_MODERN_WINDOW);
+			m_ModernWindowList.AddString(sText);
+			sText.LoadString(IDS_MODERN_BORDERLESS);
+			m_ModernWindowList.AddString(sText);
+			m_ModernWindowList.SetCurSel(g_pDisplayMgr->GetModernWindowMode());
+			ModernUpdateResolutionList();
+		}
+	}
+#endif
+
+
 	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
@@ -183,7 +217,13 @@ void CDisplayDlg::OnOK()
 	if (g_pDisplayMgr)
 	{
 		g_pDisplayMgr->UpdateListSelections(GetDlgItem(IDC_RENDERER_LIST)->GetSafeHwnd(), GetDlgItem(IDC_DISPLAY_LIST)->GetSafeHwnd(), GetDlgItem(IDC_RESOLUTION_LIST)->GetSafeHwnd());
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-31
+		if (m_ModernWindowList.GetSafeHwnd() && m_ModernWindowList.GetCurSel() != LB_ERR)
+			g_pDisplayMgr->SetModernWindowMode(m_ModernWindowList.GetCurSel());
+#endif
 	}
+
 	CMoveDialog::OnOK();
 }
 
@@ -209,3 +249,19 @@ void CDisplayDlg::OnSelchangeResolutionList()
 {
 	g_pDisplayMgr->UpdateListSelections(GetDlgItem(IDC_RENDERER_LIST)->GetSafeHwnd(), GetDlgItem(IDC_DISPLAY_LIST)->GetSafeHwnd(), GetDlgItem(IDC_RESOLUTION_LIST)->GetSafeHwnd());
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-31: a borderless window is the desktop's size: the
+// resolution list is greyed out for it
+void CDisplayDlg::OnModernSelchangeWindowList()
+{
+	ModernUpdateResolutionList();
+}
+
+void CDisplayDlg::ModernUpdateResolutionList()
+{
+	CWnd* pRes = GetDlgItem(IDC_RESOLUTION_LIST);
+	if (pRes && m_ModernWindowList.GetSafeHwnd())
+		pRes->EnableWindow(m_ModernWindowList.GetCurSel() != 2);
+}
+#endif

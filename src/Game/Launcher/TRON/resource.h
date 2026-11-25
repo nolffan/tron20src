@@ -190,6 +190,14 @@
 #define IDC_CD_MOD_12                   1085
 
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-31: the Display dialog's window mode (31000-31009)
+#define IDS_MODERN_FULLSCREEN           31000
+#define IDS_MODERN_WINDOW               31001
+#define IDS_MODERN_BORDERLESS           31002
+#define IDC_MODERN_WINDOWMODE_LIST      31003
+#endif
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

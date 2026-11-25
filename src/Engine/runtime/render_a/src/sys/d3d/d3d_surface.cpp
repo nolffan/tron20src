@@ -273,11 +273,86 @@ void d3d_ReallyBlitToScreen(BlitRequest *pRequest)
 	InvalidateRect((LTRect*)&destRect);
 }
 
+#ifdef TRON20SRC_MODERN
+extern bool d3d_StartOptimized2D();
+extern void d3d_EndOptimized2D();
+
+// MODERN.md CL-34: with antialiasing the back buffer is multisampled, and a
+// multisampled surface can never be locked (Direct3D 9). Retail asked for a
+// lockable back buffer always (D3DPRESENTFLAG_LOCKABLE_BACKBUFFER), which
+// Direct3D refuses with multisampling, so its antialiasing never started;
+// the flag is left out then (d3d_device.cpp, EN-33). What locked the back
+// buffer goes another way with multisampling: the blits of the game's
+// surfaces to the screen (the pause screen's picture, the splash screen,
+// fades) are drawn as textured polygons, and screenshots read a resolved
+// copy of the back buffer.
+static bool d3d_ModernBackBufferMultisampled()
+{
+	if (!PD3DDEVICE) return false;
+	LPDIRECT3DSURFACE9 pBackBuffer = NULL;
+	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)) || !pBackBuffer)
+		return false;
+	D3DSURFACE_DESC Desc;
+	bool bMultisampled = SUCCEEDED(pBackBuffer->GetDesc(&Desc)) && (Desc.MultiSampleType != D3DMULTISAMPLE_NONE);
+	pBackBuffer->Release();
+	return bMultisampled;
+}
+
+// The back buffer, or with multisampling a lockable copy of it, resolved.
+// The caller releases the surface it gets.
+static LPDIRECT3DSURFACE9 d3d_ModernLockableBackBuffer()
+{
+	LPDIRECT3DSURFACE9 pBackBuffer = NULL;
+	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)) || !pBackBuffer)
+		return NULL;
+	D3DSURFACE_DESC Desc;
+	if (FAILED(pBackBuffer->GetDesc(&Desc)) || Desc.MultiSampleType == D3DMULTISAMPLE_NONE)
+		return pBackBuffer;
+
+	LPDIRECT3DSURFACE9 pCopy = NULL;
+	if (FAILED(PD3DDEVICE->GetDevice()->CreateRenderTarget(Desc.Width, Desc.Height, Desc.Format, D3DMULTISAMPLE_NONE, 0, TRUE, &pCopy, NULL)) ||
+		FAILED(PD3DDEVICE->GetDevice()->StretchRect(pBackBuffer, NULL, pCopy, NULL, D3DTEXF_NONE)))
+	{
+		if (pCopy) pCopy->Release();
+		pBackBuffer->Release();
+		return NULL;
+	}
+	pBackBuffer->Release();
+	return pCopy;
+}
+#endif
+
 void d3d_BlitToScreen(BlitRequest *pRequest)
 {
 	if (!pRequest || !pRequest->m_hBuffer) return;
 
 	RSurface* pRSurface = (RSurface*)pRequest->m_hBuffer;
+
+#ifdef TRON20SRC_MODERN
+	// CL-34: no lock of a multisampled back buffer: the surface is drawn as
+	// polygons, in a scene of its own if it comes outside one
+	if (d3d_ModernBackBufferMultisampled())
+	{
+		if (pRSurface->m_pTiles == NULL)
+			d3d_OptimizeSurface(pRequest->m_hBuffer, (pRequest->m_BlitOptions == BLIT_TRANSPARENT) ? pRequest->m_TransparentColor.dwVal : 0xFFFFFFFF);
+		if (pRSurface->m_pTiles)
+		{
+			bool bStarted3D = false;
+			if (!g_Device.IsIn3D())
+				bStarted3D = g_Device.Start3D();
+			bool bStarted2D = false;
+			if (!g_bInOptimized2D)
+				bStarted2D = d3d_StartOptimized2D();
+			d3d_BlitToScreen3D(pRequest);
+			if (bStarted2D)
+				d3d_EndOptimized2D();
+			if (bStarted3D)
+				g_Device.End3D();
+			return;
+		}
+	}
+#endif
+
 
 	// Optimize the surface if we need to use a blend mode
 	LTSurfaceBlend blend;
@@ -323,7 +398,13 @@ bool d3d_GetScreenFormat(PFormat* pFormat)
 void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
 {
 	LPDIRECT3DSURFACE9 pBackBuffer = NULL; D3DSURFACE_DESC SurfDesc;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-34: with antialiasing, a resolved copy
+	pBackBuffer = d3d_ModernLockableBackBuffer();
+	if (!pBackBuffer)	{ return; }
+#else
 	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)))	{ return; }
+#endif
 	pBackBuffer->GetDesc(&SurfDesc);
 
 	CMoArray<uint32> outputBuf;
@@ -406,7 +487,13 @@ void d3d_MakeScreenShotBMP(const char *pFilename, uint32 nWidth, uint32 nHeight)
 void d3d_MakeScreenShotTGA(const char *pFilename, uint32 nWidth, uint32 nHeight)
 {
 	LPDIRECT3DSURFACE9 pBackBuffer = NULL; D3DSURFACE_DESC SurfDesc;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-34: with antialiasing, a resolved copy
+	pBackBuffer = d3d_ModernLockableBackBuffer();
+	if (!pBackBuffer)	{ return; }
+#else
 	if (FAILED(PD3DDEVICE->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO,&pBackBuffer)))	{ return; }
+#endif
 	pBackBuffer->GetDesc(&SurfDesc);
 
 	CMoArray<uint32> outputBuf;

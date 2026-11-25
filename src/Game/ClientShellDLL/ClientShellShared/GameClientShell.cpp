@@ -885,7 +885,12 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 	if (!g_hMainWnd)
 	{
 		HookWindow();
+#ifndef TRON20SRC_MODERN
+		// MODERN.md EN-32: the engine sets the window's style, size and
+		// place with every mode (common_init.cpp); retail resized a framed
+		// window whole to the mode here, so the picture lost the frame
 		SetWindowSize(pMode->m_Width, pMode->m_Height);
+#endif
 	}
 
 	// RETAIL: Tron's circuit attributes (0x100e270f)
@@ -1342,6 +1347,15 @@ void CGameClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 				GetWindowRect(g_hMainWnd, g_prcClip);
 				ClipCursor(g_prcClip);
 			}
+#ifdef TRON20SRC_MODERN
+			else
+			{
+				// MODERN.md CL-31: a window after full screen is no longer
+				// held to the full-screen rectangle
+				ClipCursor(NULL);
+			}
+#endif
+
 
 			if (g_pCursorMgr)
 				g_pCursorMgr->Init();

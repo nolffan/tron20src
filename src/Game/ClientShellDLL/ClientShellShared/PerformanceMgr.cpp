@@ -127,6 +127,30 @@ void CPerformanceMgr::Term()
 }
 
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-34: anisotropic filtering up to 16x. The setting (the
+// Performance screen's cycle, the configurations' value) is a level: 0 off,
+// 1 2x, 2 4x, 3 8x, 4 16x; the engine's "anisotropic" is the degree (EN-34).
+// A retail configuration's 1 ("on") is 2x.
+static int ModernVarFromSetting(int nSetting, int nValue)
+{
+	if (nSetting != kPerform_AnisotropicFiltering || nValue <= 0)
+		return nValue;
+	if (nValue > 4) nValue = 4;
+	return 1 << nValue;
+}
+
+static int ModernSettingFromVar(int nSetting, int nVar)
+{
+	if (nSetting != kPerform_AnisotropicFiltering || nVar <= 0)
+		return nVar;
+	int nLevel = 1;
+	while (nLevel < 4 && (1 << (nLevel + 1)) <= nVar)
+		nLevel++;
+	return nLevel;
+}
+#endif
+
 int CPerformanceMgr::GetPerformanceCfg(bool bIgnoreResolution)
 {
 	uint32 nCfg = 0;
@@ -254,6 +278,9 @@ LTBOOL	CPerformanceMgr::IsCurrentConfig(int nCfg,bool bIgnoreResolution)
 		if (kPerform_MusicActive == i && !(dwAdvancedOptions & AO_MUSIC))
 			continue;
 		int n = GetConsoleInt(sSettings[i].szVar,0);
+#ifdef TRON20SRC_MODERN
+		n = ModernSettingFromVar(i, n);	// CL-34
+#endif
 		if (n != pCfg->nSettings[i])
 		{
 			g_pLTClient->CPrint("CPerformanceMgr::IsCurrentConfig(%d) : failed on %s",nCfg,sSettings[i].szName);
@@ -311,7 +338,11 @@ void CPerformanceMgr::SetPerformanceOptions(sPerformCfg *pCfg, int nCfg)
 {
 	for (int i = 0; i < kNumDetailSettings; i++)
 	{
+#ifdef TRON20SRC_MODERN
+		WriteConsoleInt(sSettings[i].szVar,ModernVarFromSetting(i, pCfg->nSettings[i]));	// CL-34
+#else
 		WriteConsoleInt(sSettings[i].szVar,pCfg->nSettings[i]);
+#endif
 	}
 
 	uint32 dwAdvancedOptions = g_pInterfaceMgr->GetAdvancedOptions();
@@ -425,7 +456,11 @@ void CPerformanceMgr::GetPerformanceOptions(sPerformCfg *pCfg)
 {
 	for (int i = 0; i < kNumDetailSettings; i++)
 	{
+#ifdef TRON20SRC_MODERN
+		pCfg->nSettings[i] = ModernSettingFromVar(i, GetConsoleInt(sSettings[i].szVar,ModernVarFromSetting(i, pCfg->nSettings[i])));	// CL-34
+#else
 		pCfg->nSettings[i] = GetConsoleInt(sSettings[i].szVar,pCfg->nSettings[i]);
+#endif
 	}
 	for (int grp = 0; grp < kNumTextureGroups; grp++)
 	{
@@ -478,5 +513,10 @@ void CPerformanceMgr::SavePerformanceOptions(CButeMgr &buteMgr,sPerformCfg *pCfg
 //gets the current value of the specified setting
 int	CPerformanceMgr::GetSetting(eDetailID eDetail)
 {
+#ifdef TRON20SRC_MODERN
+	return ModernSettingFromVar(eDetail, GetConsoleInt(sSettings[eDetail].szVar,ModernVarFromSetting(eDetail, sSettings[eDetail].nSetting[0])));	// CL-34
+#else
 	return GetConsoleInt(sSettings[eDetail].szVar,sSettings[eDetail].nSetting[0]);
+#endif
+
 }

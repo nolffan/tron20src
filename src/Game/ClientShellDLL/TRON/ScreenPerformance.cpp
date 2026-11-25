@@ -195,7 +195,16 @@ LTBOOL CScreenPerformance::Build()
 
 		pCtrl = CreateCycle(IDS_ANISOTROPIC, IDS_HELP_ANISOTROPIC,listGap,&m_sCfg.nSettings[kPerform_AnisotropicFiltering]);
 		pCtrl->AddString(sOff);
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-34: up to 16x (PerformanceMgr.cpp)
+		pCtrl->AddString(LoadTempWString(IDS_MODERN_2X));
+		pCtrl->AddString(LoadTempWString(IDS_MODERN_4X));
+		pCtrl->AddString(LoadTempWString(IDS_MODERN_8X));
+		pCtrl->AddString(LoadTempWString(IDS_MODERN_16X));
+#else
 		pCtrl->AddString(sOn);
+#endif
+
 		pCtrl->SetFont(pFont,nListFontSize);
 		m_pDisplay->AddControl(pCtrl);
 

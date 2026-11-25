@@ -154,6 +154,22 @@ const int g_kNumCommands = sizeof(g_CommandArray) / sizeof(g_CommandArray[0]) - 
 //mode the next time the game is run
 void SaveDisplaySettings()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31, CL-34: the window mode and the antialiasing too, for
+	// the launcher (which reads display.cfg) and the next run
+	const char* pszValsToSave[] = {	"ScreenWidth",
+									"ScreenHeight",
+									"BitDepth",
+									"HardwareCursor",
+									"VSyncOnFlip",
+									"GammaR",
+									"GammaG",
+									"GammaB",
+									"Windowed",
+									"WindowMode",
+									"AntiAliasFSOverSample"
+								};
+#else
 	//save out the display configuration
 	const char* pszValsToSave[] = {	"ScreenWidth",
 									"ScreenHeight",
@@ -164,10 +180,17 @@ void SaveDisplaySettings()
 									"GammaG",
 									"GammaB"
 								};
+#endif
 
 	uint32 nNumVals = sizeof(pszValsToSave) / sizeof(pszValsToSave[0]);
 	g_pLTClient->WriteConfigFileFields("display.cfg", nNumVals, pszValsToSave);
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-31, CL-34: set by the Display screen when a new window mode
+// or antialiasing needs the renderer restarted (ApplyDisplay)
+bool g_bModernDisplayRestart = false;
+#endif
 
 //-------------------------------------------------------------------------------------------
 // GetCommandName
@@ -1295,6 +1318,12 @@ void CUserProfile::ApplyDisplay()
 	WriteConsoleFloat("GammaB",m_fGamma);
 
 	bool bRestart = (initVS != m_bVSync);
+#ifdef TRON20SRC_MODERN
+	bool bModernDisplayRestart = g_bModernDisplayRestart;
+	g_bModernDisplayRestart = false;
+	if (bModernDisplayRestart)
+		bRestart = true;
+#endif
 //	if (bRestart)
 //	{
 //		g_pLTClient->CPrint("CUserProfile::ApplyDisplay() : restart because of VSync change");
@@ -1317,9 +1346,23 @@ void CUserProfile::ApplyDisplay()
 	}
 
 	RMode currentMode;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: a window can be any size (EN-31): a size the adapter
+	// has no mode for is the current renderer at that size
+	RMode modernWindowMode;
+	if (!pMode && GetConsoleInt("Windowed",0) && g_pGameClientShell->IsRendererInitted() &&
+		g_pLTClient->GetRenderMode(&modernWindowMode) == LT_OK && m_nScreenWidth >= 640 && m_nScreenHeight >= 480)
+	{
+		modernWindowMode.m_Width = m_nScreenWidth;
+		modernWindowMode.m_Height = m_nScreenHeight;
+		modernWindowMode.m_pNext = LTNULL;
+		pMode = &modernWindowMode;
+	}
+#endif
 	if (g_pGameClientShell->IsRendererInitted() && g_pLTClient->GetRenderMode(&currentMode) == LT_OK)
 	{
 		if (pMode && !IsRendererEqual(pMode,&currentMode))
+
 		{
 			//switch renderers
 			// RETAIL: Tron's string 911 (0x100efbbc; NOLF2's IDS_REINITIALIZING_RENDERER
@@ -1355,6 +1398,26 @@ void CUserProfile::ApplyDisplay()
 		//force this because restarting the renderer may affect the cursor
 		g_pCursorMgr->UseHardwareCursor(m_bHardwareCursor,true);
 	}
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: a borderless window takes the desktop's size, so the
+	// mode the renderer got can differ from the one asked for: the
+	// interface, the camera and the profile follow the mode it got
+	if (bModernDisplayRestart && g_pGameClientShell->IsRendererInitted())
+	{
+		RMode modernMode;
+		if (g_pLTClient->GetRenderMode(&modernMode) == LT_OK)
+		{
+			g_pInterfaceMgr->ScreenDimsChanged();
+			g_pLTClient->SetCameraRect(g_pGameClientShell->GetPlayerMgr()->GetCamera(), LTTRUE, 0, 0, modernMode.m_Width, modernMode.m_Height);
+			m_nScreenWidth = modernMode.m_Width;
+			m_nScreenHeight = modernMode.m_Height;
+			m_nScreenDepth = modernMode.m_BitDepth;
+			SaveDisplaySettings();
+		}
+	}
+#endif
+
 
 }
 

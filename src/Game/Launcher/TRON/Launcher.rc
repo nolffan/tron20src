@@ -416,6 +416,17 @@ BEGIN
     IDS_NOCUSTOMDIR                 "ERROR - Unable to find any custom directories."
 END
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md: the modern launcher's strings. 31000-31009: the Display
+// dialog's window mode (CL-31)
+STRINGTABLE DISCARDABLE
+BEGIN
+    IDS_MODERN_FULLSCREEN           "Full screen"
+    IDS_MODERN_WINDOW               "Window"
+    IDS_MODERN_BORDERLESS           "Borderless window"
+END
+#endif
+
 IDR_SELECT              WAVE    DISCARDABLE     "Select.wav"
 
 IDR_CLICK               WAVE    DISCARDABLE     "Click.wav"

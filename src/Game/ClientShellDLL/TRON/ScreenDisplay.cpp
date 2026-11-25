@@ -129,7 +129,27 @@ CScreenDisplay::CScreenDisplay()
 	m_bEscape		=	LTFALSE;
 
     m_pResolutionCtrl   = LTNULL;
+#ifdef TRON20SRC_MODERN
+	m_nModernWindowMode = 0;
+	m_nModernAntiAlias = 0;
+	m_nModernFov = 90;
+	m_bModernCine43 = LTFALSE;
+	m_pModernWindowCtrl = LTNULL;
+#endif
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-33: the field of view's range on the Display screen
+static const int kModernFovMin = 60;
+static const int kModernFovMax = 120;
+static const int kModernFovStep = 5;
+// CL-34: the antialiasing cycle's sample counts
+static const int kModernAASamples[] = { 0, 2, 4, 8 };
+static const int kModernNumAA = sizeof(kModernAASamples) / sizeof(kModernAASamples[0]);
+// CL-31, CL-34: ApplyDisplay restarts the renderer once for a new window
+// mode or antialiasing (ProfileMgr.cpp)
+extern bool g_bModernDisplayRestart;
+#endif
 
 CScreenDisplay::~CScreenDisplay()
 {
@@ -159,7 +179,38 @@ LTBOOL CScreenDisplay::Build()
 	// RETAIL: Tron's screen has no hardware cursor control (retail
 	// 0x10058a9b)
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: the window mode, under the resolution
+	m_pModernWindowCtrl = AddCycle(IDS_MODERN_WINDOWMODE,IDS_MODERN_HELP_WINDOWMODE,kGap,&m_nModernWindowMode);
+	m_pModernWindowCtrl->AddString(LoadTempWString(IDS_MODERN_FULLSCREEN));
+	m_pModernWindowCtrl->AddString(LoadTempWString(IDS_MODERN_WINDOW));
+	m_pModernWindowCtrl->AddString(LoadTempWString(IDS_MODERN_BORDERLESS));
+#endif
+
 	AddToggle(IDS_VSYNC,IDS_HELP_VSYNC,kGap,&m_bVSync);
+
+#ifdef TRON20SRC_MODERN
+	// CL-34: antialiasing, up to 8x
+	{
+		CLTGUICycleCtrl *pAA = AddCycle(IDS_MODERN_ANTIALIAS,IDS_MODERN_HELP_ANTIALIAS,kGap,&m_nModernAntiAlias);
+		pAA->AddString(LoadTempWString(IDS_OFF));
+		pAA->AddString(LoadTempWString(IDS_MODERN_2X));
+		pAA->AddString(LoadTempWString(IDS_MODERN_4X));
+		pAA->AddString(LoadTempWString(IDS_MODERN_8X));
+	}
+
+	// CL-33: the field of view
+	{
+		CLTGUISlider *pFov = AddSlider(IDS_MODERN_FOV,IDS_MODERN_HELP_FOV,kGap,kWidth,-1,&m_nModernFov);
+		pFov->SetSliderRange(kModernFovMin,kModernFovMax);
+		pFov->SetSliderIncrement(kModernFovStep);
+		pFov->SetNumericDisplay(LTTRUE);
+	}
+
+	// CL-32: the cinematics in 4:3
+	AddToggle(IDS_MODERN_CINE43,IDS_MODERN_HELP_CINE43,kGap,&m_bModernCine43);
+#endif
+
 
 
 	m_pGamma = AddSlider(IDS_GAMMA,IDS_HELP_GAMMA,kGap,kWidth,-1,&m_nGamma);
@@ -277,9 +328,16 @@ void CScreenDisplay::GetRendererData()
 	{
 		if (pCurrentMode->m_Width >= 640 && pCurrentMode->m_Height >= 480 && pCurrentMode->m_BitDepth == 32)
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md CL-30: every mode the display offers, at any shape
+			// (16:9, 16:10, 21:9, 32:9, 5:4): the interface and the view
+			// fit themselves to it. Retail listed only exact 4:3 modes.
+			if (false)
+#else
 			// disallow non-standard aspect ratios
 			uint32 testWidth = (pCurrentMode->m_Height * 4 / 3);
 			if (pCurrentMode->m_Width != testWidth)
+#endif
 			{
 			
 				// Go to the next render mode
@@ -325,9 +383,110 @@ void CScreenDisplay::GetRendererData()
 	// Free the linked list of render modes
     g_pLTClient->RelinquishRenderModes(pRenderModes);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: a window can be any size (EN-31), and a borderless
+	// window is the desktop's size: the mode the game runs at is listed
+	// even when the adapter has no such mode, so the screen shows it.
+	{
+		RMode currentMode;
+		if (g_pLTClient->GetRenderMode(&currentMode) == LT_OK && currentMode.m_Width >= 640 &&
+			currentMode.m_Height >= 480 && currentMode.m_BitDepth == 32)
+		{
+			ScreenDisplayResolution resolution;
+			resolution.m_dwWidth = currentMode.m_Width;
+			resolution.m_dwHeight = currentMode.m_Height;
+			resolution.m_dwBitDepth = currentMode.m_BitDepth;
+			LTBOOL bFound = LTFALSE;
+			for (uint32 i = 0; !bFound && i < m_rendererData.m_resolutionArray.GetSize(); i++)
+				bFound = (ScreenDisplayCompare(&(m_rendererData.m_resolutionArray[i]), &resolution) == 0);
+			if (!bFound)
+			{
+				if (!m_rendererData.m_description[0])
+				{
+					m_rendererData.m_bHWTnL = currentMode.m_bHWTnL;
+					SAFE_STRCPY(m_rendererData.m_description, currentMode.m_Description);
+					SAFE_STRCPY(m_rendererData.m_internalName, currentMode.m_InternalName);
+				}
+				m_rendererData.m_resolutionArray.Add(resolution);
+			}
+		}
+	}
+#endif
+
 	// Sort the render resolution based on screen width and height
 	SortRenderModes();
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-31 to CL-34: the options from their console variables
+void CScreenDisplay::ModernReadOptions()
+{
+	if (GetConsoleInt("Windowed",0) == 0)
+		m_nModernWindowMode = 0;
+	else if (GetConsoleInt("WindowMode",0) == 2)
+		m_nModernWindowMode = 2;
+	else
+		m_nModernWindowMode = 1;
+
+	int nSamples = GetConsoleInt("AntiAliasFSOverSample",0);
+	m_nModernAntiAlias = 0;
+	for (int i = 0; i < kModernNumAA; i++)
+	{
+		if (nSamples >= kModernAASamples[i])
+			m_nModernAntiAlias = (uint8)i;
+	}
+
+	m_nModernFov = (int)(GetConsoleFloat("FovX",90.0f) + 0.5f);
+	if (m_nModernFov < kModernFovMin) m_nModernFov = kModernFovMin;
+	if (m_nModernFov > kModernFovMax) m_nModernFov = kModernFovMax;
+
+	m_bModernCine43 = (GetConsoleInt("Cinematics43",0) != 0);
+
+	ModernUpdateResolutionCtrl();
+}
+
+// A borderless window is the desktop's size: the resolution is greyed out
+void CScreenDisplay::ModernUpdateResolutionCtrl()
+{
+	if (m_pResolutionCtrl)
+		m_pResolutionCtrl->Enable(m_nModernWindowMode != 2);
+}
+
+// Writes the options; true when the renderer must restart for them (a new
+// window mode or antialiasing). The console variables are written with a
+// "+", so autoexec.cfg keeps them; display.cfg keeps the display's too
+// (SaveDisplaySettings).
+bool CScreenDisplay::ModernApplyOptions()
+{
+	bool bRestart = false;
+
+	int nWindowed = (m_nModernWindowMode != 0) ? 1 : 0;
+	int nWindowMode = (m_nModernWindowMode == 2) ? 2 : 1;
+	if (GetConsoleInt("Windowed",0) != nWindowed ||
+		(nWindowed && GetConsoleInt("WindowMode",0) != nWindowMode))
+		bRestart = true;
+	WriteConsoleInt("Windowed",nWindowed);
+	WriteConsoleInt("WindowMode",nWindowMode);
+
+	int nSamples = kModernAASamples[(m_nModernAntiAlias < kModernNumAA) ? m_nModernAntiAlias : 0];
+	if (GetConsoleInt("AntiAliasFSOverSample",0) != nSamples)
+		bRestart = true;
+	WriteConsoleInt("AntiAliasFSOverSample",nSamples);
+
+	// CL-33: FovX is the horizontal angle at 4:3; FovY keeps retail's
+	// shape of view (90 by 78 degrees: the tangents' ratio), and the
+	// engine widens the view for the screen's shape (EN-30)
+	float fFovX = (float)m_nModernFov;
+	float fFovY = RAD2DEG(2.0f * (float)atan(tan(DEG2RAD(fFovX) * 0.5f) * tan(DEG2RAD(78.0f) * 0.5f) / tan(DEG2RAD(90.0f) * 0.5f)));
+	WriteConsoleFloat("FovX",fFovX);
+	WriteConsoleFloat("FovY",fFovY);
+
+	WriteConsoleInt("Cinematics43",m_bModernCine43 ? 1 : 0);
+
+	return bRestart;
+}
+#endif
+
 
 // Sort the render resolution based on screen width and height
 void CScreenDisplay::SortRenderModes()
@@ -407,7 +566,15 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 
 		m_nGamma = ConvertToSlider(gamma);
 
-		
+#ifdef TRON20SRC_MODERN
+		// MODERN.md CL-30, CL-31: the list again (the mode may be a new
+		// window size), then the options
+		m_rendererData.m_resolutionArray.SetSize(0);
+		m_rendererData.m_description[0] = '\0';
+		GetRendererData();
+		SetupResolutionCtrl();
+		ModernReadOptions();
+#endif
 
 
 		// The current render mode
@@ -449,7 +616,15 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 			pProfile->m_bVSync = m_bVSync;
 			pProfile->m_fGamma = ConvertToGamma(m_nGamma);
 			// Set the render mode if we are losing focus
+#ifdef TRON20SRC_MODERN
+			// MODERN.md CL-30: and only if one is listed (retail read an
+			// empty list at index -1)
+			if (m_pResolutionCtrl &&
+				(uint32)m_pResolutionCtrl->GetSelIndex() < m_rendererData.m_resolutionArray.GetSize())
+#else
 			if (m_pResolutionCtrl)
+#endif
+
 			{
 				// Get the new renderer structure
 				RMode newMode=GetRendererModeStruct(m_pResolutionCtrl->GetSelIndex());
@@ -459,6 +634,58 @@ void CScreenDisplay::OnFocus(LTBOOL bFocus)
 				pProfile->m_nScreenDepth = newMode.m_BitDepth;
 			}
 	
+#ifdef TRON20SRC_MODERN
+			// MODERN.md CL-31 to CL-34: a new window mode or antialiasing
+			// restarts the renderer once (ApplyDisplay)
+			if (ModernApplyOptions())
+				g_bModernDisplayRestart = true;
+			// CL-31: a framed window must fit the desktop's work area with
+			// its frame: a larger size takes the largest listed one that
+			// fits, else the largest of the desktop's shape that fits
+			if (m_nModernWindowMode == 1)
+			{
+				RECT rcWork;
+				if (!SystemParametersInfo(SPI_GETWORKAREA, 0, &rcWork, 0))
+					SetRect(&rcWork, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+				RECT rcFrame = { 0, 0, 0, 0 };
+				AdjustWindowRect(&rcFrame, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE);
+				int nMaxW = (rcWork.right - rcWork.left) - (rcFrame.right - rcFrame.left);
+				int nMaxH = (rcWork.bottom - rcWork.top) - (rcFrame.bottom - rcFrame.top);
+				if ((int)pProfile->m_nScreenWidth > nMaxW || (int)pProfile->m_nScreenHeight > nMaxH)
+				{
+					uint32 nBestW = 0, nBestH = 0;
+					for (uint32 i = 0; i < m_rendererData.m_resolutionArray.GetSize(); i++)
+					{
+						ScreenDisplayResolution res = m_rendererData.m_resolutionArray[i];
+						if ((int)res.m_dwWidth <= nMaxW && (int)res.m_dwHeight <= nMaxH &&
+							res.m_dwWidth * res.m_dwHeight > nBestW * nBestH)
+						{
+							nBestW = res.m_dwWidth;
+							nBestH = res.m_dwHeight;
+						}
+					}
+					if (!nBestW && nMaxW >= 640 && nMaxH >= 480)
+					{
+						// the desktop's shape, even sizes
+						int nDeskW = GetSystemMetrics(SM_CXSCREEN);
+						int nDeskH = GetSystemMetrics(SM_CYSCREEN);
+						nBestH = (uint32)nMaxH & ~1;
+						nBestW = (nDeskH > 0) ? ((uint32)(nBestH * nDeskW / nDeskH) & ~1) : (uint32)nMaxW;
+						if ((int)nBestW > nMaxW)
+						{
+							nBestW = (uint32)nMaxW & ~1;
+							nBestH = (nDeskW > 0) ? ((uint32)(nBestW * nDeskH / nDeskW) & ~1) : (uint32)nMaxH;
+						}
+					}
+					if (nBestW >= 640 && nBestH >= 480)
+					{
+						pProfile->m_nScreenWidth = nBestW;
+						pProfile->m_nScreenHeight = nBestH;
+					}
+				}
+			}
+
+#endif
 			pProfile->ApplyDisplay();
 
 			pProfile->Save();
@@ -549,7 +776,20 @@ LTBOOL CScreenDisplay::OnLButtonUp(int x, int y)
 			return LTTRUE;
 		}
 	}
+#ifdef TRON20SRC_MODERN
+	{
+		LTBOOL bModernResult = CBaseScreen::OnLButtonUp(x, y);
+		if (GetSelectedControl() && GetSelectedControl() == m_pModernWindowCtrl)
+		{
+			// MODERN.md CL-31: a borderless window greys the resolution out
+			m_pModernWindowCtrl->UpdateData(LTTRUE);
+			ModernUpdateResolutionCtrl();
+		}
+		return bModernResult;
+	}
+#else
 	return CBaseScreen::OnLButtonUp(x, y);
+#endif
 }
 
 LTBOOL CScreenDisplay::OnRButtonUp(int x, int y)
@@ -570,7 +810,20 @@ LTBOOL CScreenDisplay::OnRButtonUp(int x, int y)
 			return LTTRUE;
 		}
 	}
+#ifdef TRON20SRC_MODERN
+	{
+		LTBOOL bModernResult = CBaseScreen::OnRButtonUp(x, y);
+		if (GetSelectedControl() && GetSelectedControl() == m_pModernWindowCtrl)
+		{
+			// MODERN.md CL-31: a borderless window greys the resolution out
+			m_pModernWindowCtrl->UpdateData(LTTRUE);
+			ModernUpdateResolutionCtrl();
+		}
+		return bModernResult;
+	}
+#else
 	return CBaseScreen::OnRButtonUp(x, y);
+#endif
 }
 
 
@@ -588,6 +841,14 @@ LTBOOL CScreenDisplay::OnLeft()
 		WriteConsoleFloat("GammaB",fGamma);
 	}
 
+#ifdef TRON20SRC_MODERN
+	if (GetSelectedControl() && GetSelectedControl() == m_pModernWindowCtrl)
+	{
+		// MODERN.md CL-31: a borderless window greys the resolution out
+		m_pModernWindowCtrl->UpdateData(LTTRUE);
+		ModernUpdateResolutionCtrl();
+	}
+#endif
 	return LTTRUE;
 }
 LTBOOL CScreenDisplay::OnRight()
@@ -603,6 +864,14 @@ LTBOOL CScreenDisplay::OnRight()
 		WriteConsoleFloat("GammaG",fGamma);
 		WriteConsoleFloat("GammaB",fGamma);
 	}
+#ifdef TRON20SRC_MODERN
+	if (GetSelectedControl() && GetSelectedControl() == m_pModernWindowCtrl)
+	{
+		// MODERN.md CL-31: a borderless window greys the resolution out
+		m_pModernWindowCtrl->UpdateData(LTTRUE);
+		ModernUpdateResolutionCtrl();
+	}
+#endif
 	return LTTRUE;
 }
 LTBOOL CScreenDisplay::OnEnter()

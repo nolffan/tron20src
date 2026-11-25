@@ -6818,6 +6818,30 @@ BEGIN
     15504                           "Critical systems failing due to low energy reserves."
 END
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md: the modern build's strings. 31000-31049: the Display screen
+// and the Performance screen's antialiasing and anisotropic filtering
+// (CL-30 to CL-35)
+STRINGTABLE DISCARDABLE
+BEGIN
+    31000                           "Window mode"
+    31001                           "Play in full screen, in a window, or in a borderless window that covers the desktop."
+    31002                           "Full screen"
+    31003                           "Window"
+    31004                           "Borderless window"
+    31005                           "Field of view"
+    31006                           "The horizontal field of view in play, in degrees, for a 4:3 screen. A wider screen shows more at the sides."
+    31007                           "4:3 cinematics"
+    31008                           "Shows the cinematics in the centered 4:3 area of a wide screen."
+    31009                           "Antialiasing"
+    31010                           "Smooths the edges of polygons. A higher setting is slower."
+    31012                           "2x"
+    31013                           "4x"
+    31014                           "8x"
+    31015                           "16x"
+END
+#endif
+
 CREDITS                 TEXT    DISCARDABLE "credits.txt"
 
 INTRO                   TEXT    DISCARDABLE "intro.txt"

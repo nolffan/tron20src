@@ -5084,7 +5084,28 @@ void CInterfaceMgr::UpdateLetterBox()
 
 	// draw the two polys
 	g_pDrawPrim->DrawPrim(m_LetterBox, 2);
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-32: with Cinematics43 a cinematic on a screen wider than
+	// 4:3 shows only the centred 4:3 area, as it was framed (EN-30 widens
+	// the view): the sides are covered while the letterbox is up, fading
+	// with it
+	if (GetConsoleInt("Cinematics43",0) && dwHeight)
+	{
+		float fSide = ((float)dwWidth - (float)dwHeight * 4.0f / 3.0f) * 0.5f;
+		if (fSide >= 1.0f)
+		{
+			static LT_POLYF4 s_ModernSides[2];
+			g_pDrawPrim->SetRGBA(&s_ModernSides[0], nColor);
+			g_pDrawPrim->SetRGBA(&s_ModernSides[1], nColor);
+			g_pDrawPrim->SetXYWH(&s_ModernSides[0], -1.0f, -1.0f, fSide + 1.0f, (float)(dwHeight + 2));
+			g_pDrawPrim->SetXYWH(&s_ModernSides[1], (float)dwWidth - fSide, -1.0f, fSide + 1.0f, (float)(dwHeight + 2));
+			g_pDrawPrim->DrawPrim(s_ModernSides, 2);
+		}
+	}
+#endif
 }
+
 
 // --------------------------------------------------------------------------- //
 //

@@ -176,6 +176,16 @@ public:
 	BOOL					SelectCurrentListRenderer(HWND hList);
 	BOOL					UpdateListSelections(HWND hRenList, HWND hDisList, HWND hResList);
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: the window mode (0 full screen, 1 window, 2 a
+	// borderless window), from display.cfg, passed to the game with the
+	// resolution
+	int						GetModernWindowMode() { return(m_nModernWindowMode); }
+	void					SetModernWindowMode(int nMode) { m_nModernWindowMode = nMode; }
+	int						m_nModernWindowMode;
+#endif
+
+
 private:
 	int						EnumerateRenderers(const char* sDir);
 	BOOL					ReadConfigFile(const char* sFile);
@@ -219,7 +229,11 @@ inline void CDisplay::Clear()
 inline void CDisplayMgr::Clear()
 {
 	m_pCurRenderer = NULL;
+#ifdef TRON20SRC_MODERN
+	m_nModernWindowMode = 0;
+#endif
 }
+
 
 inline CRenderer* CDisplayMgr::GetFirstRenderer()
 {

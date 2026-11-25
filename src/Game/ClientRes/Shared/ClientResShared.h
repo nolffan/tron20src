@@ -1037,6 +1037,27 @@
 #define IDS_SCREENGLOW                  3265
 #define IDS_HELP_SCREENGLOW             3266
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md: the modern build's strings (TRON/ClientRes.rc). 31000-31049:
+// the Display screen, antialiasing and anisotropic filtering (CL-30 to
+// CL-35)
+#define IDS_MODERN_WINDOWMODE           31000
+#define IDS_MODERN_HELP_WINDOWMODE      31001
+#define IDS_MODERN_FULLSCREEN           31002
+#define IDS_MODERN_WINDOW               31003
+#define IDS_MODERN_BORDERLESS           31004
+#define IDS_MODERN_FOV                  31005
+#define IDS_MODERN_HELP_FOV             31006
+#define IDS_MODERN_CINE43               31007
+#define IDS_MODERN_HELP_CINE43          31008
+#define IDS_MODERN_ANTIALIAS            31009
+#define IDS_MODERN_HELP_ANTIALIAS       31010
+#define IDS_MODERN_2X                   31012
+#define IDS_MODERN_4X                   31013
+#define IDS_MODERN_8X                   31014
+#define IDS_MODERN_16X                  31015
+#endif
+
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

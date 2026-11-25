@@ -59,7 +59,14 @@ protected:
 	afx_msg void OnSelchangeRendererList();
 	afx_msg void OnSelchangeResolutionList();
 	//}}AFX_MSG
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: the window mode list
+	afx_msg void OnModernSelchangeWindowList();
+	void ModernUpdateResolutionList();
+	CListBox	m_ModernWindowList;
+#endif
 	DECLARE_MESSAGE_MAP()
+
 };
 
 //{{AFX_INSERT_LOCATION}}

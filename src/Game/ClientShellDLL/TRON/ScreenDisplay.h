@@ -97,6 +97,19 @@ private:
 	CLTGUISlider					*m_pGamma;				// +0xa10
 	LTBOOL							m_bVSync;				// +0xa14
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31 to CL-34: the modern build's display options
+	void	ModernReadOptions();
+	bool	ModernApplyOptions();
+	void	ModernUpdateResolutionCtrl();
+
+	uint8							m_nModernWindowMode;	// 0 full screen, 1 window, 2 borderless
+	uint8							m_nModernAntiAlias;		// 0 off, 1 2x, 2 4x, 3 8x
+	int								m_nModernFov;			// FovX, degrees
+	LTBOOL							m_bModernCine43;		// Cinematics43
+	CLTGUICycleCtrl					*m_pModernWindowCtrl;
+#endif
+
 
 
 };

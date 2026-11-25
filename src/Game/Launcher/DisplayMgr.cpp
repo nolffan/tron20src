@@ -439,10 +439,15 @@ BOOL CRenderer::Init(const char* sFile)
 			if (d3dDisplayMode.Width < 640 || d3dDisplayMode.Height < 480) 
 				continue;
 
+#ifndef TRON20SRC_MODERN
 			// Only allow 4x3 aspect ratio video modes
 			uint32 nTestWidth = (d3dDisplayMode.Height * 4 / 3);
 			if (nTestWidth != d3dDisplayMode.Width)
 				continue;
+#endif
+			// MODERN.md CL-30: the modern launcher lists every mode, at any
+			// shape (16:9, 16:10, 21:9, 32:9, 5:4), as the game's Display
+			// screen does
 
 			// 32-bit display modes only
 			if (d3dDisplayMode.Format != D3DFMT_X8R8G8B8)
@@ -1181,7 +1186,12 @@ BOOL CDisplayMgr::ReadConfigFile(const char* sFile)
 
 	strcpy(sWidth, "640");
 	strcpy(sHeight, "480");
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-35: 32-bit colour, as the engine's own default
+	strcpy(sDepth, "32");
+#else
 	strcpy(sDepth, "16");
+#endif
 
 
 	// Scan for the parameters we are looking for...
@@ -1263,9 +1273,47 @@ BOOL CDisplayMgr::ReadConfigFile(const char* sFile)
 
 		if (pDisplay)
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md CL-31: a window can be any size (EN-31): a size the
+			// adapter has no mode for is listed, so it stays selected
+			if (!pDisplay->SetCurrentResolution(atoi(sWidth), atoi(sHeight), atoi(sDepth)) &&
+				atoi(sWidth) >= 640 && atoi(sHeight) >= 480 && atoi(sDepth) == 32)
+			{
+				pDisplay->AddResolution(atoi(sWidth), atoi(sHeight), atoi(sDepth));
+				pDisplay->SetCurrentResolution(atoi(sWidth), atoi(sHeight), atoi(sDepth));
+			}
+#else
 			pDisplay->SetCurrentResolution(atoi(sWidth), atoi(sHeight), atoi(sDepth));
+#endif
 		}
 	}
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: the window mode the game was left in (Windowed and
+	// WindowMode, which the game writes to display.cfg)
+	{
+		int nWindowed = 0, nWindowMode = 0;
+		rewind(pFile);
+		while (fgets(strBuff, 512, pFile))
+		{
+			char* ptr = strBuff;
+			if (*ptr == '"') ptr++;
+			if (strnicmp(ptr, "Windowed\"", 9) == 0 || strnicmp(ptr, "Windowed ", 9) == 0)
+			{
+				ptr += 8;
+				while (*ptr == '"' || *ptr == ' ') ptr++;
+				nWindowed = atoi(ptr);
+			}
+			else if (strnicmp(ptr, "WindowMode", 10) == 0)
+			{
+				ptr += 10;
+				while (*ptr == '"' || *ptr == ' ') ptr++;
+				nWindowMode = atoi(ptr);
+			}
+		}
+		m_nModernWindowMode = !nWindowed ? 0 : ((nWindowMode == 2) ? 2 : 1);
+	}
+#endif
 
 
 	// Close the file...
@@ -1448,6 +1496,15 @@ CString CDisplayMgr::GetDisplaySettingsString()
 		sCmdLine += sRes;
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md CL-31: and the window mode (EN-32)
+	{
+		CString sWindow;
+		sWindow.Format(" +Windowed %i +WindowMode %i", m_nModernWindowMode ? 1 : 0, (m_nModernWindowMode == 2) ? 2 : 1);
+		sCmdLine += sWindow;
+	}
+#endif
+
 
 	// All done...
 
@@ -1495,10 +1552,22 @@ void CDisplayMgr::SetDefaultParameters()
 				}
 				else
 				{
+#ifdef TRON20SRC_MODERN
+					// MODERN.md CL-35: 32-bit (the list has only 32-bit
+					// modes: retail's 16-bit defaults found none), at the
+					// desktop's resolution if it is listed, else 1024x768,
+					// 800x600, 640x480
+					pRes = pDis->FindResolution(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), 32);
+					if (!pRes) pRes = pDis->FindResolution(1024, 768, 32);
+					if (!pRes) pRes = pDis->FindResolution(800, 600, 32);
+					if (!pRes) pRes = pDis->FindResolution(640, 480, 32);
+#else
 					pRes = pDis->FindResolution(640, 480, 16);
 					if (!pRes) pRes = pDis->FindResolution(512, 384, 16);
 					if (!pRes) pRes = pDis->FindResolution(800, 600, 16);
+#endif
 				}
+
 
 				pDis->SetCurrentResolution(pRes);
 			}

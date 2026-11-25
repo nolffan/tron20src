@@ -26,6 +26,25 @@
 #include "rendererconsolevars.h"
 #include "ConsoleCommands.h"
 
+#if defined(TRON20SRC_MODERN) && defined(TRON20SRC_DEBUG)
+// MODERN.md CL-34: modern-debug writes what reaches the device (the
+// presentation parameters, the anisotropy of the samplers) to
+// modern-d3d.log beside the executable, as a test that the Display and
+// Performance screens' antialiasing and anisotropic filtering arrive: the
+// picture under Wine and a software renderer does not show them clearly
+static void d3d_ModernDebugLog(const char *pFormat, ...)
+{
+	FILE *fp = fopen("modern-d3d.log", "a");
+	if (!fp) return;
+	va_list args;
+	va_start(args, pFormat);
+	vfprintf(fp, pFormat, args);
+	va_end(args);
+	fputc('\n', fp);
+	fclose(fp);
+}
+#endif
+
 // The global D3D Shell...
 CD3D_Device g_Device;
 
@@ -63,6 +82,9 @@ bool CD3D_Device::CreateDevice(D3DAdapterInfo* pAdapter,D3DDeviceInfo* pDevice,D
 		}
 	}
 
+#if defined(TRON20SRC_MODERN) && defined(TRON20SRC_DEBUG)
+	d3d_ModernDebugLog("device: created, multisample %d, flags 0x%x", (int)PresentationParam.MultiSampleType, PresentationParam.Flags);
+#endif
 	// Create our wrapper, which we're going to present to the world as an actual D3D device
 	LT_MEM_TRACK_ALLOC(m_pD3DDevice = new CDirect3DDevice9Wrapper,LT_MEM_TYPE_RENDERER);
 	m_pD3DDevice->SetDevice(pD3DDevice);
@@ -117,6 +139,10 @@ bool CD3D_Device::SetMode(D3DModeInfo* pMode)
 	D3DPRESENT_PARAMETERS PresentationParam;
 	SetPresentationParams(PresentationParam,pMode);
 	HRESULT hResetResult = m_pD3DDevice->Reset(&PresentationParam);
+#if defined(TRON20SRC_MODERN) && defined(TRON20SRC_DEBUG)
+	d3d_ModernDebugLog("device: reset 0x%x, multisample %d", (unsigned)hResetResult, (int)PresentationParam.MultiSampleType);
+#endif
+
 	if (!SUCCEEDED(hResetResult))
 	{
 		// Wait for a couple seconds to see if it'll come back...
@@ -279,6 +305,7 @@ void CD3D_Device::FreeAll()
 	Reset();
 }
 
+
 void CD3D_Device::SetPresentationParams(D3DPRESENT_PARAMETERS& PresentationParam,D3DModeInfo* pMode)
 {
 	D3DSWAPEFFECT	SwapEffect		= D3DSWAPEFFECT_DISCARD;
@@ -353,7 +380,14 @@ void CD3D_Device::SetPresentationParams(D3DPRESENT_PARAMETERS& PresentationParam
 	if (PresentationParam.MultiSampleType != D3DMULTISAMPLE_NONE)
 		PresentationParam.Flags &= ~D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 #endif
+#if defined(TRON20SRC_MODERN) && defined(TRON20SRC_DEBUG)
+	d3d_ModernDebugLog("present: %ux%u format %d windowed %d swap %d interval 0x%x multisample %d (AntiAliasFSOverSample %d) flags 0x%x",
+		PresentationParam.BackBufferWidth, PresentationParam.BackBufferHeight, (int)PresentationParam.BackBufferFormat,
+		(int)PresentationParam.Windowed, (int)PresentationParam.SwapEffect, PresentationParam.PresentationInterval,
+		(int)PresentationParam.MultiSampleType, (int)g_CV_AntiAliasFSOverSample.m_Val, PresentationParam.Flags);
+#endif
 }
+
 
 // Go for the best one that works and fallback till we find one...
 //	Note: Need to watch for loops here. Would be very bad.
@@ -525,6 +559,21 @@ void CD3D_Device::SetDefaultRenderStates()
 		if (m_DeviceCaps.MaxAnisotropy && nModernAniso > m_DeviceCaps.MaxAnisotropy)
 			nModernAniso = m_DeviceCaps.MaxAnisotropy;
 		D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAXANISOTROPY, nModernAniso));
+#if defined(TRON20SRC_DEBUG)
+		{
+			// CL-34: log the samplers' anisotropy when it changes
+			static uint32 s_nModernLoggedAniso = 0xffffffff;
+			uint32 nModernLog = g_CV_Anisotropic.m_Val ? nModernAniso : 0;
+			if (nCurrStage == 0 && nModernLog != s_nModernLoggedAniso)
+			{
+				s_nModernLoggedAniso = nModernLog;
+				d3d_ModernDebugLog("samplers: Anisotropic %d -> MAXANISOTROPY %u, MINFILTER %s (card's MaxAnisotropy %u)",
+					(int)g_CV_Anisotropic.m_Val, nModernAniso,
+					((m_DeviceCaps.TextureFilterCaps & D3DPTFILTERCAPS_MINFANISOTROPIC) && g_CV_Anisotropic.m_Val) ? "ANISOTROPIC" : "LINEAR/POINT",
+					m_DeviceCaps.MaxAnisotropy);
+			}
+		}
+#endif
 #else
 		D3D_CALL(PD3DDEVICE->SetSamplerState(nCurrStage, D3DSAMP_MAXANISOTROPY, g_CV_Anisotropic.m_Val ? g_CV_Anisotropic.m_Val : 1));
 #endif
