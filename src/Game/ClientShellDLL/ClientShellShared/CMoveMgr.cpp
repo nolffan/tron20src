@@ -1113,6 +1113,11 @@ void CMoveMgr::HandleFallLand(LTFLOAT fDistFell)
 //
 //	PURPOSE:	Update our motion
 //
+//	RETAIL: 0x100f6ac0. Tron adds the light cycle game: a player who
+//	watches the game (not a light cycle) flies with the camera and has no
+//	gravity, and a player who is not on a light cycle stands still. NOLF2's
+//	code let the watching player fall to the floor of the arena.
+//
 // ----------------------------------------------------------------------- //
 
 void CMoveMgr::UpdateMotion()
@@ -1125,15 +1130,86 @@ void CMoveMgr::UpdateMotion()
 		{
 			LTVector vServerPos;
 			g_pLTClient->GetObjectPos(hClientObj, &vServerPos);
-			g_pLTClient->SetObjectPos(m_hObject, &vServerPos);
+			g_pLTClient->SetObjectPos(m_hObject, &vServerPos, LTTRUE);
 			m_bForceToServerPos = LTFALSE;
 		}
 	}
 
-	if (!m_bAllowMovement || !g_pDamageFXMgr->AllowMovement() )
+	if (GetGameType() == eGameTypeMultiplayerLightcycles)
 	{
+		LTVector vVel(0.0f, 0.0f, 0.0f);
+		LTVector vAccel(0.0f, 0.0f, 0.0f);
+
+		if (g_pPlayerMgr->TronUnknownVirtual3C(false))
+		{
+			g_pPhysicsLT->SetVelocity(m_hObject, &vVel);
+
+			// Not watching a light cycle: fly with the camera
+			if (!g_pPlayerMgr->TronUnknownVirtual3C(true))
+			{
+				float fMoveAccel = m_CV_SpectatorSpeedMul.GetFloat() * (8.0f * SPECTATOR_ACCELERATION);
+
+				LTRotation rRot;
+				g_pPlayerMgr->GetCameraRotation(rRot);
+
+				LTVector vRight = rRot.Right();
+				LTVector vForward = rRot.Forward();
+				vRight.y = 0.0f;
+
+				if (m_dwControlFlags & BC_CFLG_FORWARD)
+				{
+					vAccel += (vForward * fMoveAccel);
+				}
+
+				if (m_dwControlFlags & BC_CFLG_REVERSE)
+				{
+					vAccel -= (vForward * fMoveAccel);
+				}
+
+				if (m_dwControlFlags & BC_CFLG_STRAFE_LEFT)
+				{
+					vAccel -= (vRight * fMoveAccel);
+				}
+
+				if (m_dwControlFlags & BC_CFLG_STRAFE_RIGHT)
+				{
+					vAccel += (vRight * fMoveAccel);
+				}
+			}
+
+			g_pPhysicsLT->SetAcceleration(m_hObject, &vAccel);
+			return;
+		}
+
+		if (!m_pVehicleMgr->IsVehiclePhysics())
+		{
+			g_pPhysicsLT->SetVelocity(g_pMoveMgr->GetObject(), &vVel);
+			g_pPhysicsLT->SetAcceleration(g_pMoveMgr->GetObject(), &vAccel);
+			return;
+		}
+	}
+
+	if (m_pVehicleMgr->IsVehiclePhysics())
+	{
+		m_pVehicleMgr->UpdateMotion();
+		return;
+	}
+
+	if (m_bAllowMovement && g_pDamageFXMgr->AllowMovement())
+	{
+		if (!m_pVehicleMgr->IsVehiclePhysics())
+		{
+			UpdateNormalMotion();
+		}
+		return;
+	}
+	else
+	{
+		// RETAIL: a block of its own: retail's vector shares its stack slot
+		// with the light cycle game's acceleration
+
 		// Clear accel/velocity...
-	    LTVector vVec;
+		LTVector vVec;
 		g_pPhysicsLT->GetAcceleration(m_hObject, &vVec);
 
 		vVec.x = vVec.z = 0.0f;
@@ -1148,16 +1224,6 @@ void CMoveMgr::UpdateMotion()
 		if (vVec.y > 0.0f) vVec.y = 0.0f;
 
 		g_pPhysicsLT->SetVelocity(m_hObject, &vVec);
-		return;
-	}
-
-	if (m_pVehicleMgr->IsVehiclePhysics())
-	{
-		m_pVehicleMgr->UpdateMotion();
-	}
-	else
-	{
-		UpdateNormalMotion();
 	}
 }
 
