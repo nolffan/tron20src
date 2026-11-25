@@ -12,8 +12,11 @@ REZ = ["Engine.REZ", "Game.rez", "Game2.rez", "GameDLL.rez", "Sound.rez",
        "Gamep3.rez", "Gamep4.rez"]
 
 DATA_DIRS = ["Movies"]
-# Setup installs no default player profile (Profiles/ is empty).
-RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail")]
+# The two files the game rewrites, kept as the retail copies, which
+# build/all.sh starts a game directory's autoexec.cfg and
+# Profiles/Default.prf from (ext/tools/playtest.sh reads both).
+RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail"),
+                 ("Profiles/Default.prf", "Default.prf.retail")]
 
 # Bink, and the Microsoft C, C++ and MFC 4.2 runtime setup installs.
 # MSVCIRT.dll, which the game DLLs and the dedicated server import, is

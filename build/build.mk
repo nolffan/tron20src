@@ -68,14 +68,14 @@ TRON20SRC_RCFLAGS ?=
 #                                      retail Rich header says VC6's cl
 #                                      12.00.8168 compiled: CL_eaxguid
 #   src/Game/TRON.dsw                  the game DLLs: ClientShellDLL, Object,
-#                                      ClientFxDLL, ClientRes (CRes.dll),
+#                                      ClientFxDLL, ClientRes (CRes.dll), ServerRes (SRes.dll),
 #                                      the launcher and the dedicated
 #                                      server (docs/PLAN.md)
 #   src/Engine/runtime/winbuild/Engine.dsw   the engine
 WORKSPACES := \
     src/Engine/ltmsg/ltmsg.dsw:ltmsg \
     src/Engine/snddrv/snddrv.dsw:snddrv \
-    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL,ClientRes,Launcher,ServerApp \
+    src/Game/TRON.dsw:ClientShellDLL,Object,ClientFxDLL,ClientRes,ServerRes,Launcher,ServerApp \
     src/Engine/runtime/winbuild/Engine.dsw:Lithtech,server
 # The engine (src/Engine/runtime, from cjacksrc's, being brought to
 # Tron 2.0's) is one workspace: both of its projects, Lithtech.exe and

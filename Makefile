@@ -2,7 +2,8 @@
 #
 #   make          build the game into out/tron20-legacy-release/ (and its -private / -public .tar.gz)
 #   make modern   the game with TRON20SRC_MODERN, in out/tron20-modern-release/
-#                 (neither yet: docs/PLAN.md, package 2; make compile until then)
+#                 (not yet: docs/PLAN.md, package 2, build/variant.sh)
+#   make test     run the game under Xvfb and Wine to its main menu
 #   make progress how much of the build is byte-identical to the retail game;
 #                 fails if a function recorded as identical stops matching
 #   make ci       the CI build and check, without the retail game
@@ -21,6 +22,14 @@ IMAGE     ?= tron20src-build
 CONTAINER ?= tron20src-build
 # Parallel compile jobs inside the build (build/build.mk); empty: one per CPU
 JOBS ?=
+# The game directory `make test` plays, the world it starts (-: none, the
+# main menu) and the input script (build/playtest-*.txt; empty: no input).
+# make tests plays every script in TEST_SCRIPTS.
+TEST_GAME ?= out/tron20-legacy-release
+TEST_SCRIPT ?=
+TEST_WORLD ?= -
+TEST_NAME = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
+TEST_SCRIPTS ?= menus level save
 
 # Your disc images and the update, if they are not in isos/:
 # TRON20SRC_ISOS=<directory> (mounted read-only). NODISCS=1: compile without
@@ -41,7 +50,7 @@ DOCKER_RUN = docker run --rm --init --name $(CONTAINER) \
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug image retail check-tools check-toolchain \
-	check-build reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	check-variant test tests control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -51,7 +60,14 @@ help:
 	@echo "make modern     the game with TRON20SRC_MODERN, in out/tron20-modern-release/"
 	@echo "make modern-debug  both, in out/tron20-modern-debug/"
 	@echo "                (none of these is ever scored, and none is made yet: docs/PLAN.md,"
-	@echo "                package 2, adds build/all.sh and build/variant.sh)"
+	@echo "                package 2, adds build/variant.sh)"
+	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
+	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
+	@echo "                TEST_GAME=<dir>; results in out/play/test*/)"
+	@echo "make control    out/tron20-control/: the retail game DLLs with our engine, to tell"
+	@echo "                our game code's faults from the engine's or Wine's (diagnosis only)"
+	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
+	@echo "                fails if one does not end ALIVE"
 	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
 	@echo "                TARGETS=\"<project or output>...\" for only those): what make progress scores"
 	@echo "make progress   score the build against the retail binaries; fails if a"
@@ -81,24 +97,45 @@ help:
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
 	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1, ACCEPT_FAILED_CHECKS=1 (progress/README.md)"
 
-game: check-toolchain check-build retail
+game: check-toolchain retail
 	$(DOCKER_RUN) bash build/all.sh
 
-debug modern modern-debug: check-toolchain check-build retail
+debug modern modern-debug: check-toolchain check-variant retail
 	$(DOCKER_RUN) bash build/variant.sh $@
 
+# The runtime test (build/playtest.sh, ext/tools/playtest.sh): the game
+# directory under Xvfb and Wine, ALIVE or not, a screenshot in
+# out/play/<name>/shot.png
+test: image
+	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
+	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
+
+# The control for the runtime tests (build/control.sh): retail's game DLLs
+# with our engine, in out/tron20-control/ (make test TEST_GAME=out/tron20-control).
+# For diagnosis only.
+control:
+	@bash build/control.sh
+
+# Every scripted test, one after the other (each its own out/play/test-<name>/)
+tests: image
+	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
+	@rc=0; for t in $(TEST_SCRIPTS); do \
+	  w=$$(sed -n 's/^# world: *//p' build/playtest-$$t.txt | head -1); \
+	  echo "== $$t (world $${w:--})"; \
+	  $(DOCKER_RUN) env PLAYTEST_NAME=test-$$t PLAYTEST_SCRIPT=build/playtest-$$t.txt \
+	    bash build/playtest.sh $(TEST_GAME) "$${w:--}" 5 || rc=1; \
+	done; exit $$rc
+
 # Compile and link only (build/compile.sh): every binary that has source,
-# in src/**/built/, which is what make progress scores. Until build/all.sh
-# assembles a game directory, this is the build.
+# in src/**/built/, which is what make progress scores (make game does this
+# too, then assembles the game directory: build/all.sh).
 compile: check-toolchain retail
 	$(DOCKER_RUN) bash build/compile.sh $(TARGETS)
 
-# The build itself is docs/PLAN.md's package 2: until it lands, say so
-# rather than fail inside the container.
-check-build:
-	@for f in build/all.sh build/variant.sh; do \
-	  [ -f "$$f" ] || { echo "error: no game directory is assembled yet ($$f): docs/PLAN.md, package 2. make compile builds the binaries that have source; make progress scores them" >&2; exit 1; }; \
-	done
+# The variants are docs/PLAN.md's package 2: until build/variant.sh lands,
+# say so rather than fail inside the container.
+check-variant:
+	@[ -f build/variant.sh ] || { echo "error: no variant build yet (build/variant.sh): docs/PLAN.md, package 2. make builds the legacy release" >&2; exit 1; }
 
 # IMAGE_BUILD=0: use $(IMAGE) as it is (CI builds it with a layer cache first).
 IMAGE_BUILD ?= 1
