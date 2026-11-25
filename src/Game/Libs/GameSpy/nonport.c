@@ -446,7 +446,7 @@ const char * gsiGetDomainName(void)
 	DWORD nLen;
 
 	szValue[0] = '\0';
-	nLen = GetEnvironmentVariableA("TRON20_MASTERDOMAIN", szValue, sizeof(szValue));
+	nLen = GetEnvironmentVariableA("TRON20SRC_MASTERDOMAIN", szValue, sizeof(szValue));
 	if (nLen == 0 || nLen >= sizeof(szValue))
 	{
 		szValue[0] = '\0';

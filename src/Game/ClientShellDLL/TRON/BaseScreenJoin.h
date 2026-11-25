@@ -114,7 +114,7 @@ protected:
 #ifdef TRON20SRC_MODERN
 // MODERN (GS-1, GS-2): the console variable MasterDomain (autoexec.cfg,
 // "+MasterDomain <x>") into the process environment
-// (TRON20_MASTERDOMAIN), where the GameSpy SDK of this DLL, of a server
+// (TRON20SRC_MASTERDOMAIN), where the GameSpy SDK of this DLL, of a server
 // in this process and of a TRONSrv.exe started from it finds it
 // (gsiGetDomainName, nonport.h). Called before the Internet list and
 // before a game is hosted.

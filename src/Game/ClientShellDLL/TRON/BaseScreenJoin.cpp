@@ -633,6 +633,6 @@ void TronSyncMasterDomain()
 	HCONSOLEVAR hVar = g_pLTClient->GetConsoleVar("MasterDomain");
 	const char *pszDomain = hVar ? g_pLTClient->GetVarValueString(hVar) : LTNULL;
 	if (pszDomain && pszDomain[0])
-		SetEnvironmentVariable("TRON20_MASTERDOMAIN", pszDomain);
+		SetEnvironmentVariable("TRON20SRC_MASTERDOMAIN", pszDomain);
 }
 #endif

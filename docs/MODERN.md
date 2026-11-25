@@ -737,11 +737,11 @@ heartbeat to OpenSpy: no public server was hosted.
   `gsiGetDomainName` and `gsiMakeHostName` are in `Libs/GameSpy/
   nonport.c` and `nonport.h` (the two copies of `nonport.h` are the
   same). Each binary finds the domain in this sequence: the environment
-  variable `TRON20_MASTERDOMAIN`, `+MasterDomain <x>` on its command
+  variable `TRON20SRC_MASTERDOMAIN`, `+MasterDomain <x>` on its command
   line, `"MasterDomain"` in `autoexec.cfg`, and then the default. A
   domain that is an IPv4 address is the host of all services (a local
   or private master server). The client copies its console variable
-  `MasterDomain` into `TRON20_MASTERDOMAIN` before it shows the Internet
+  `MasterDomain` into `TRON20SRC_MASTERDOMAIN` before it shows the Internet
   list and before it hosts a game (`TronSyncMasterDomain`,
   `TRON/BaseScreenJoin.cpp`; called from `ScreenJoinServerList.cpp`
   `FindServers` and `BaseScreenHost.cpp` `StartServer`). Thus the
@@ -777,7 +777,7 @@ Tests (`make mptest TEST_GAME=out/tron20-modern-release`, the new
 `MPTEST_MASTER=local`): `build/gamespy.py master` is a local stand-in
 for the master server and the server list (qr2 and the encrypted list
 of the SDK, written from the SDK source; its ciphers give the same bytes
-as the SDK's C code). All programs get `TRON20_MASTERDOMAIN=127.0.0.1`.
+as the SDK's C code). All programs get `TRON20SRC_MASTERDOMAIN=127.0.0.1`.
 The dedicated server (not LAN only) sent its heartbeat. It answered the
 challenge correctly and was listed. Client 1 joined with `+join`.
 Client 2 opened Multiplayer, Join, saw `mptest` in the Internet list
@@ -798,7 +798,7 @@ game over OpenSpy itself (that needs a public server). `build/gamespy.py list
 
 | Variable | Type | Default | What | Items |
 |---|---|---|---|---|
-| `MasterDomain` | string | (empty = `openspy.net`) | the domain of the master server and the server list: `tron20.master.<domain>`, `tron20.ms<n>.<domain>`; an IPv4 address is the host of both. Read from the client's console, `+MasterDomain` on a command line (`TRONSrv.exe` too), `autoexec.cfg`, or the environment variable `TRON20_MASTERDOMAIN` | GS-1, GS-2 |
+| `MasterDomain` | string | (empty = `openspy.net`) | the domain of the master server and the server list: `tron20.master.<domain>`, `tron20.ms<n>.<domain>`; an IPv4 address is the host of both. Read from the client's console, `+MasterDomain` on a command line (`TRONSrv.exe` too), `autoexec.cfg`, or the environment variable `TRON20SRC_MASTERDOMAIN` | GS-1, GS-2 |
 
 ## Planned (Phase 1)
 

@@ -37,7 +37,7 @@
 #                          server list (build/gamespy.py master, on
 #                          127.0.0.1 UDP 27900 and TCP 28910; its log is
 #                          master.log). Every program gets
-#                          TRON20_MASTERDOMAIN=127.0.0.1, the game is not
+#                          TRON20SRC_MASTERDOMAIN=127.0.0.1, the game is not
 #                          LAN only (MPTEST_LANONLY defaults to 0), and
 #                          client 2 joins through the Internet server list:
 #                          from the main menu it opens Multiplayer, Join
@@ -108,7 +108,7 @@ if [ "$MASTER" = local ]; then
     if [ "${MPTEST_MASTERVIA:-env}" = cvar ]; then
         MCVAR=" +MasterDomain 127.0.0.1"; MSRV="+MasterDomain 127.0.0.1"
     else
-        export TRON20_MASTERDOMAIN=127.0.0.1
+        export TRON20SRC_MASTERDOMAIN=127.0.0.1
     fi
 else
     LANONLY_DEF=1
