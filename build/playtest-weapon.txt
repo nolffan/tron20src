@@ -1,0 +1,40 @@
+# playtest-weapon.txt -- a quick load while the weapon chooser is open,
+# in the first single-player level. Into control (skipcine answers the
+# decision window "Continue basic training?"); a quicksave (F5); the key 1
+# (it opens the weapon chooser); a short move; a quickload (F9, Yes) while
+# the chooser is still open; back into control; 1 again.
+# The load exits the world: CInterfaceMgr::OnExitWorld takes the HUD items
+# away (CHUDWeapon::Term sets g_pHUDWeapon to NULL), then closes the open
+# chooser, and CTronWeaponChooser::Close (0x100afde0) gives the weapon to
+# the HUD's weapon item. Retail reads g_pWeaponItem there (the HUD
+# manager's pointer, which stays set). Our Close read g_pHUDWeapon, and
+# the legacy and modern builds crashed in CHUDWeapon::SetWeapon (a read
+# at address 0x18). Retail's DLLs (make control) do not crash.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+shot start
+key F5
+wait 4
+shot quicksaved
+key 1
+wait 0.5
+shot chooser
+hold s 0.3
+key F9
+wait 3
+shot quickload-asked
+# "This will end your current game. Proceed?": Yes
+mclick 292 256
+wait 20
+nohud quickload
+skipcine 90
+shot quickloaded
+key 1
+wait 0.5
+key 1
+wait 3
+shot weapon
+hold w 0.5
+wait 1
+shot after-load

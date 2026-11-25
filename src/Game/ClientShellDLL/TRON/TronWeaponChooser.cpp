@@ -131,8 +131,13 @@ void CTronWeaponChooser::Close(bool bShowSelection)
 
 	CWeaponChooser::Close(true);
 
+	// RETAIL: 0x100afe13: the HUD manager's pointer to its weapon item,
+	// g_pWeaponItem (0x1026edd8), not g_pHUDWeapon (0x1026da80).
+	// CHUDWeapon::Term sets g_pHUDWeapon to NULL, and a load closes an
+	// open weapon chooser after the HUD is terminated: with g_pHUDWeapon
+	// the quick load crashed (build/playtest-weapon.txt).
 	if (bShowSelection)
-		g_pHUDWeapon->SetWeapon(m_nWeapon);
+		g_pWeaponItem->SetWeapon(m_nWeapon);
 }
 
 // RETAIL: 0x100b0220. Class 1 takes any weapon.

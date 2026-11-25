@@ -31,9 +31,10 @@
 # after 20 s: a decision window of Tron 2.0 (M01-01's "Continue basic
 # training") takes its answer from the number keys, and while it is up
 # over the bottom of the screen the health bar is not seen, so the HUD
-# test fails until it is answered. Not sooner: in play, 1 selects a
-# weapon, and build/playtest-save.txt's quick load in the legacy build
-# then crashed in CHUDWeapon::SetWeapon (the modern build did not).
+# test fails until it is answered. Not sooner: in play, 1 opens the
+# weapon chooser, and a later step of the script can then find it open.
+# (A quick load with the chooser open crashed in CHUDWeapon::SetWeapon;
+# that is fixed, and build/playtest-weapon.txt does it on purpose.)
 #
 # One more script command, for Tron 2.0's scripts only:
 #   nohud <name>          the HUD must not be up now (for example, the

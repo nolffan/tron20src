@@ -72,7 +72,7 @@ make debug      # the same with symbols (.pdb, .map), in out/tron20-legacy-debug
 make modern     # the modern build (TRON20SRC_MODERN, docs/MODERN.md), in out/tron20-modern-release/
 make modern-debug  # both, in out/tron20-modern-debug/
 make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
-make tests      # the scripted tests: menus, a level, saving and loading, a race
+make tests      # the scripted tests: menus, a level, saving and loading, a quick load with the weapon chooser open, a race
 make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main menu
 make portabletest  # the modern build: no registry or APPDATA use, the launcher waits for the game
 make mp3acmtest # the modern SndDrv.dll's MP3 codec on every MP3 file of Sound.rez
