@@ -105,6 +105,7 @@ executable, or in the console), new or with a changed meaning.
 | `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone (0 to 0.9); "Move dead zone" (0 to 50) | CL-20, CL-23 |
 | `PadHoldButtons` | int | 0 | the controller's buttons (XInput's bits) that the bindings do not see while the client reads them itself (a decision window); the client sets it, `autoexec.cfg` does not keep it; not a setting | EN-20, CL-22 |
 | `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
+| `MusicPlayer` | int | 0 | the music: 0 DirectMusic, and the modern music player when DirectMusic does not start (Wine, Proton); 1 always the modern music player; 2 only DirectMusic (as retail). Read when the music starts (each level) | X-3 |
 
 ## Done
 
@@ -302,7 +303,182 @@ executable, or in the console), new or with a changed meaning.
   start and "SndDrv: MP3 codec: stream ..., 44100 Hz, 1 channel(s)" for the
   line; the recording (`PLAYTEST_AUDIO`) has sound. The legacy build in the
   same prefix plays nothing (its recording is silent: no MP3 codec, so no
-  sound driver). The music could not be heard under Wine: see X-3.
+  sound driver). The music is X-3.
+* **X-3: the music under Wine and Proton: our own music player in the
+  engine.** The music of the game is DirectMusic segments
+  (`MUSIC/<set>/*.sgt` in `Sound.rez`) with MP3 waves. Under Wine and
+  Proton no DirectMusic plays them:
+  * Wine's own DirectMusic starts the audio path, but plays nothing (the
+    legacy build's main menu is silent).
+  * Microsoft's DirectMusic (in the modern game directory, below):
+    `IDirectMusicPerformance8::InitAudio` succeeds, but
+    `CreateStandardAudioPath` fails with `E_NOINTERFACE`. The synthesizer
+    asks the DirectSound object for `IDirectSoundConnect`
+    (`{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`), and Wine's DirectSound
+    does not have it. Microsoft's `dsound.dll` has it, but the DirectX
+    redistributable does not contain it.
+  * DirectMusic started in the older way (`Init` and a synthesizer port,
+    as the NOLF and AvP2 engines do; tried on the branch
+    `m-finish-x3-attempt`, not kept): the port starts, but
+    `IDirectMusicSegment8::Download` returns `E_NOTIMPL` for each segment
+    with wave tracks, and the recording is silent. NOLF's and AvP2's music
+    is DLS instruments, which a port plays. Tron 2.0's music is waves.
+  * Microsoft's `dswave.dll` alone with Wine's other DirectMusic DLLs: the
+    game crashes.
+
+  **What the game uses.** The engine's `CLTDirectMusicMgr`
+  (`ltdirectmusic_impl.cpp`) reads the level's control file (the client's
+  `CMusic::InitLevel`: `MusicDirectory` and `MusicControlFile` of the
+  world, `MenuMusicDir` and `MenuMusicCtrlFile` for the menus). The game
+  calls `Init`, `InitLevel`, `TermLevel`, `Term`, `Play`, `Stop`,
+  `ChangeIntensity` (from the server's `MUSIC I <n> measure` messages of
+  the music moods, `ATTRIBUTES/MUSIC.txt`, from world commands and from
+  the menu screens), `SetVolume` (the music volume, -3000 to 1000, plus
+  the control file's `VOLUMEOFFSET`), `Pause` and `UnPause`;
+  `PlaySecondary` and `PlayMotif` only from `MUSIC PS`/`PM` messages. A
+  survey of the data (all of `Sound.rez`'s `MUSIC/`: 28 control files, 963
+  segments, 1,317 waves; no other file type):
+  * The control files use `NUMINTENSITIES`, `INITIALINTENSITY`,
+    `INITIALVOLUME`, `VOLUMEOFFSET` (0, 200, -300, -600, 800), 594
+    `INTENSITY` lines (each one segment; 564 go on to another intensity
+    when the segment ends, 30 loop), 1,728 `TRANSITION` lines (all
+    `MEASURE MANUAL`; 1,678 with a transition segment), and `REVERB OFF`.
+    No file has `SECONDARYSEGMENT`, `MOTIF`, `STYLE`, `BAND` or
+    `DLSBANK`.
+  * The segments have a tempo track (961; 16 change the tempo), a time
+    signature track (all; 110 change it; 32 beats a measure in the menu),
+    and a wave track (941). The wave items are at music times (768 ticks
+    a quarter note), all in all 32 variations, with no loop points, no
+    pitch and no start offset; 28 have a volume, and parts have volumes
+    (-180 to -1340, in 1/100 dB) on the PChannels 0 to 5. 909 waves are
+    longer than their segment (they ring on into the next segment). No
+    segment repeats or has loop points. 95 segments have a sequence track:
+    only volume (CC 7) and expression (CC 11) curves (fades in the
+    transitions), except `CORRUPT/WARNING1.sgt` (five notes, with no
+    instrument). Two segments have an empty band track.
+  * The waves are MP3 (format 0x55), stereo, 44100 Hz (the high quality
+    set) or 22050 Hz (`LOW/`). The item durations are the wave lengths.
+    27 references in `LOW/` name waves that do not exist.
+
+  **The player.** `src/tron20src/music/musicplayer.cpp` and
+  `musicplayer.h` (new; #included at the end and the start of
+  `ltdirectmusic_impl.cpp` in `TRON20SRC_MODERN` blocks, so that
+  `Lithtech.dsp` does not change), class `CModernMusicPlayer`:
+  * `CLTDirectMusicMgr::Init` starts DirectMusic as retail does. When
+    DirectMusic does not start, it starts the player
+    (`ModernStartPlayer`), and DirectMusic is not tried again in the run
+    (`s_bModernDirectMusicFailed`). Then each call of the interface
+    (`InitLevel` to `GetVolumeOffset`) goes to the player
+    (`m_pModernPlayer`). On Windows, DirectMusic starts, and nothing
+    changes. The console variable `MusicPlayer` (below) selects the
+    player on Windows too.
+  * It reads the control file with the engine's `CControlFileMgrDStream`
+    (as retail), the segments (RIFF `DMSG`: `segh`, `tetr`, `TIMS`,
+    `wavt` with its parts and items and their `DMRF` file names, the CC 7
+    and CC 11 curves of `seqt`), and the waves through the engine's file
+    manager (from the rez files). It decodes MP3 with minimp3 (the copy of
+    X-2, `src/tron20src/mp3/minimp3`, compiled again into `Lithtech.exe`)
+    and reads PCM as it is.
+  * The intensities, the transitions and the command queue are
+    `CLTDirectMusicMgr`'s (the same results for the same calls): the
+    transition segment, then the intensity's segments, the loop count, the
+    next intensity. The next segment starts at the end of the segment
+    (retail: at the notification that the segment almost ends, with the
+    same result).
+  * It mixes each wave at its time (from the segment's tempo map) for its
+    duration, also past the end of its segment and after a change of
+    segment (retail plays the segments with `DMUS_SEGF_NOINVALIDATE`), with
+    the gain of its item, part and track, and of the PChannel's volume and
+    expression ((CC 7 / 127)^2 (CC 11 / 127)^2; CC 7 starts at 100, CC 11 at
+    127). It converts 22050 Hz to 44100 Hz (linear interpolation).
+  * Enact times: "Immediately"; the next beat, grid or measure (from the
+    time signature track of the playing segment, at or after the next
+    sample to mix); the end of the segment; "Default" is the resolution in
+    the header of the segment that starts (immediately when it has none).
+    No segment has markers: "Marker" is immediately, as in DirectMusic.
+  * `SetVolume` is DirectMusic's master volume (1/100 dB), `Stop` fades
+    the waves out in 10 ms, `Pause` stops the mix where it is and
+    `UnPause` continues from there.
+  * The output is a DirectSound object of its own and a looping secondary
+    buffer (44100 Hz, 16 bits, stereo, one second); a thread keeps about
+    150 ms of mix ahead of the play cursor, and writes silence after the
+    mix, so that a late mix does not play old data again.
+  * What is approximate or not reproduced: the absolute level (CC 7 at
+    100, as the GM synthesizer; no Windows recording to compare); the
+    exponential and logarithmic curve shapes (Tron uses only instant,
+    linear and sine); a change that comes while an earlier change waits
+    for its time replaces it; retail's `Pause` stops DirectMusic and starts
+    the segment again (the waves that played before the pause point do not
+    play), the player continues all waves; a secondary segment with
+    "Segment" plays at the end of the primary segment (retail: at the next
+    measure after the notification); the notes of a sequence track (no
+    instrument), clock-time tracks (none), DirectMusic's random variations
+    (all items are in all variations), and the reverb (off in every
+    control file). `PlayMotif` fails, as retail without styles.
+  * Retail bugs that the player does not have (logged in
+    `RETAIL_BUGS.md`; the DirectMusic path keeps them): `Stop` while the
+    music is paused plays the segment again; a change of intensity in the
+    queue that fails is tried again without end.
+  * The player's trace (for a debugger, or Wine's `+debugstr`): the start
+    of DirectSound, the control file's counts, each call, each change of
+    intensity and the start of each segment ("LTDirectMusic: modern music
+    player: ..."). The same lines go to the console at `LTDMConsoleOutput`
+    4.
+
+  How it was tested (under Wine 9.0 in the build container,
+  `PLAYTEST_AUDIO` and `PLAYTEST_WINEDEBUG=+debugstr`; the recordings are
+  48000 Hz float, which Wine makes from all of the game's sound; under
+  Xvfb the null sound device takes data faster than in real time, so a
+  recording holds more music than the run's time):
+  * The main menu (`build/playtest-music.txt`): `menu.txt` (2
+    intensities, 5 segments, 8 waves); intensity 1 (`Silence.sgt`), then
+    2 (`MenuExp1.sgt` to `MenuExp4.sgt`, 24 s each, then again). Each of
+    the eight waves (`MENUE1.wav` to `MENUE8.wav`, decoded with minimp3
+    outside the game) is in the recording, one after the other, 12 s
+    apart, as the segments put them: the normalized correlation of 2 s of
+    each wave with the recording is 1.00. The legacy build's recording of
+    the same script has only the menu's sound in the first 8 s, then
+    silence (-97 dB): unchanged.
+  * A level with music, `build/playtest-music-level.txt` (new: M04-01,
+    `bradley.txt`, `MinMusicMood` "Investigate"): the server sends
+    `MUSIC I 9 measure`; the player plays the transition segment from 1
+    to 9 (`StoW.sgt`), then `Warning1.sgt`, and the queue changes the
+    intensity to 10, 11, 12, 13 and 9 again, each at the end of its
+    segment. In the recording, `WARNINGA.wav` (correlation 1.00, two
+    times, one for each round of the intensities), `WARNINGB.wav` (0.98),
+    `WARNINGH.wav` (0.96, intensity 10), and `STOW.wav` (0.59: it is 7.8 s
+    long, and `WARNINGA.wav` starts 2.2 s into it).
+  * M01-01 and the light-cycle race (Newbie Authentication,
+    `ancient.txt`) start with intensity 1 (`Silence.sgt`), then the game
+    calls `ChangeIntensity(0)` (`CMusic::Play` with no intensity yet),
+    which stops the music. M01-01's intro sends `setmood 0` and
+    `lockmood`, and a later command `setmood 3` (combat); the race has no
+    music moods. The same calls come with retail's game DLLs
+    (`build/control.sh` with this engine and `+MusicPlayer 1`), so this is
+    the game's design, not the player.
+  * Cost: minimp3 without SIMD decodes 1,636 s of the game's music in
+    1.27 s of one core (0.08 % of a core for each wave that plays). The
+    frame-rate tests (`build/playtest-fps-walk.txt`,
+    `playtest-fps-race.txt` at `MaxFPS` 60 and 0, `build/fpscheck.py`)
+    give the same movement at 60 frames a second and without a limit
+    (854 and 667 frames a second, the world not drawn), as before.
+  * `make tests` with the modern build: all ALIVE.
+
+  nolf2src's and cjacksrc's music is also DirectMusic in the same engine
+  code (`ltdirectmusic_impl.cpp`); if their segments are wave tracks, they
+  can use this player as it is (two files and the calls in
+  `CLTDirectMusicMgr`).
+
+  **Microsoft's DirectMusic in the modern game directory** (kept), as
+  nolfsrc's M-P4-12 and avp2src's M-X4: the nine DLLs of DirectX 9.0c from
+  `ext/toolchains/directmusic-5.3.1.904/` as `ms_<name>.dll`
+  (`THIRD-PARTY` rows of `MANIFEST.txt` with their source file), and
+  `Lithtech.exe.manifest` (registration-free COM, `ours` row;
+  `DIRECTMUSIC_MANIFESTS` in `build/retail.py`;
+  `src/modern/directmusic/README.md`). They are in the modern public
+  archive (`build/pubcheck.py` accepts the `ours` row; `docs/
+  LICENSE_NOTES.md`). On Windows they are the DirectMusic that Windows
+  has.
 
 ### Retail-bug fixes, game DLLs
 
@@ -1118,52 +1294,13 @@ DLL names in every retail binary):
 | `MSS32.DLL`, Miles (RAD Game Tools) | only RAD's `binkw32.dll` names it (with `DSOUND.DLL`, for its sound outputs); no binary of the game imports or loads it, and the game does not ship it | gone with X-1: our player plays through `waveOut` |
 | `L3CODECA.ACM`, the MP3 codec of the system | `src/Engine/snddrv/s_dx8.cpp` (`SelectHardCodedMP3Codec`, then the ACM drivers of the system) | ours, in `SndDrv.dll`, X-2 (done) |
 | `IMAADP32.ACM` (IMA ADPCM, a part of Windows and of Wine) | `s_dx8.cpp`; `Startup` fails without an ADPCM driver, though no file of the game is IMA ADPCM | kept: a part of the system |
-| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | Microsoft's, in the game directory (X-3); the music under Wine is open (below) |
+| Microsoft's DirectMusic (`dmime`, `dmusic`, `dmsynth`, `dswave`, ...), the music | the engine (`ltdirectmusic_impl.cpp`, `CoCreateInstance`); a part of Windows | Microsoft's, in the game directory; under Wine and Proton our own music player in the engine (X-3, done) |
 | `cdaudio.dll` (Monolith's CD music driver) | the engine (`CClientMgr::AppInitMusic`), only if the game asks; Tron 2.0 does not ship it | nothing to do |
 | `MFC42.DLL`, `MFC42U.DLL`, `MSVCP60.DLL`, `Msvcrt.dll`, `MSVCIRT.dll`; D3DX9 (linked statically) | | kept: Microsoft's runtime |
 | SecuROM's DLL names in the retail `Lithtech.exe` (`CmdLineExt*.dll`, `SIntf*.dll`, `PID*.DLL`, ...) | the copy protection | not in our engine |
 | the GameSpy SDK | compiled from our source (`src/Game/Libs/GameSpy`) | GS- items |
 
-* **X-3: the music under Wine and Proton (open).** The music is
-  DirectMusic: segments (`MUSIC/*/*.sgt`) whose wave tracks stream MP3
-  waves (format 0x55, with a `wavh` chunk: streaming). Under Wine 9.0 the
-  legacy build's main menu is silent (a recording with `PLAYTEST_AUDIO`):
-  Wine's DirectMusic starts the audio path but plays nothing.
-  * **Done: Microsoft's DirectMusic in the modern game directory**, as
-    nolfsrc's M-P4-12 and avp2src's M-X4: the nine DLLs of DirectX 9.0c
-    from `ext/toolchains/directmusic-5.3.1.904/` as `ms_<name>.dll`
-    (`THIRD-PARTY` rows of `MANIFEST.txt` with their source file), and
-    `Lithtech.exe.manifest` (registration-free COM, `ours` row;
-    `DIRECTMUSIC_MANIFESTS` in `build/retail.py`;
-    `src/modern/directmusic/README.md`). They are in the modern public
-    archive (`build/pubcheck.py` accepts the `ours` row; `docs/
-    LICENSE_NOTES.md`). On Windows they are the DirectMusic that Windows
-    has.
-  * **Not solved: the music under Wine.** With Microsoft's DirectMusic,
-    `IDirectMusicPerformance8::InitAudio` succeeds, but
-    `CreateStandardAudioPath` fails with `E_NOINTERFACE`: the synthesizer
-    asks the DirectSound object for `IDirectSoundConnect`
-    (`{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`), which Wine's DirectSound
-    does not have. `CLTDirectMusicMgr::Init` then fails, as in retail when
-    DirectMusic does not start, and the game plays with no music. The
-    plan was to start DirectMusic in the older way when the audio path
-    fails (`Init` and a synthesizer port, as the NOLF and AvP2 engines
-    do). That was made and tested, and not kept: the port starts (16
-    channel groups, 64 voices, 44100 Hz), the segments load and play, but
-    `IDirectMusicSegment8::Download` returns `E_NOTIMPL` for each segment
-    with wave tracks (waves need a performance with audio paths), so no
-    wave is decoded (no ACM stream opens) and the recording is silent.
-    NOLF's and AvP2's music is DLS instruments, which a port plays; Tron
-    2.0's is waves. Also tried: Microsoft's `dswave.dll` alone with
-    Wine's other DirectMusic DLLs (the game crashes). Microsoft's
-    `dsound.dll` has `IDirectSoundConnect`, but it is not in the DirectX
-    redistributable runtime. What is left: a DirectSound that has
-    `IDirectSoundConnect` (Wine does not have it yet), or the engine
-    playing the music's waves itself. Nothing in the reverb or the audio
-    paths changed against retail: the engine is retail's. Tested with
-    `build/playtest-music.txt` (the main menu, `PLAYTEST_AUDIO`,
-    `+LTDMConsoleOutput 5`): the modern and the legacy recordings have
-    only the menu's sound effects in the first seconds.
+* X-3 is done (above, under "Done", "Middleware").
 
 ### Overlaps
 

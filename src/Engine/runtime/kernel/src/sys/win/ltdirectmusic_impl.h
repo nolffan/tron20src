@@ -72,6 +72,9 @@ enum LTDMFileTypes
 
 // forward class defines
 class CControlFileMgr;
+#ifdef TRON20SRC_MODERN
+class CModernMusicPlayer;	// MODERN.md X-3 (tron20src/music/musicplayer.h)
+#endif
 
 
 // Main class for LTDirectMusicMgr
@@ -1058,6 +1061,14 @@ private:
 	// Paused status
 	uint32	m_nPaused;
 	CPauseState m_cCurPauseState;
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern build's own music player, which plays the
+	// music when DirectMusic does not start (or with MusicPlayer 1); every
+	// call goes to it then. LTNULL with DirectMusic.
+	CModernMusicPlayer* m_pModernPlayer;
+	LTRESULT ModernStartPlayer();
+#endif
 };
 
 #endif // __LTDIRECTMUSIC_IMPL_H__

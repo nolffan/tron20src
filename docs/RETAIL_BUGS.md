@@ -2018,6 +2018,33 @@ Fixed in the modern build: libs/RegMgr/regmgr.cpp, libs/RegMgr32/
 regmgr32.cpp, MODERN.md APPS-3 (the values are in a file beside the
 executable; the registry is not used).
 
+### Stop plays the music again when the music is paused
+
+Lithtech.exe 0x43efa0 (CLTDirectMusicMgr::Stop, kernel/src/sys/win/
+ltdirectmusic_impl.cpp) stops the performance, then calls UnPause
+(0x43f350) until the pause count is zero. UnPause plays the segment that
+Pause kept, from the time where it paused. Thus Stop while the music is
+paused starts the music again, and it plays until the end of that segment
+(Stop clears the queue, so nothing comes after it). Tron 2.0's game DLLs
+stop the music with Stop, and do not pause it, so the game does not show
+it.
+
+Not changed in the DirectMusic path. The modern build's own music player
+(MODERN.md X-3) does not have it: its Stop clears the pause.
+
+### A change of intensity in the music queue that fails is tried again without end
+
+Lithtech.exe 0x43daa0 (CLTDirectMusicMgr::HandleSegmentNotification_
+SegAlmostEnd, kernel/src/sys/win/ltdirectmusic_impl.cpp): for a
+LTDMCommandChangeIntensity command, when ChangeIntensity does not return
+LT_OK (an intensity that is not in the control file), the loop does not go
+to the next command and tries the same command again, without end, in
+the notification thread. Each control file of the game gives valid next
+intensities, so the game does not show it.
+
+Not changed in the DirectMusic path. The modern build's own music player
+(MODERN.md X-3) goes to the next command.
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

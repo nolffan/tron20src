@@ -6,7 +6,8 @@ DirectMusic in its game directory, as nolfsrc (M-P4-12) and avp2src
 (M-X4) do, so that the game does not depend on the DirectMusic of the
 system or of a Wine prefix (`docs/MODERN.md`, X-3).
 
-Under Wine 9.0 the music is still silent: see "Under Wine" below.
+Under Wine 9.0 DirectMusic does not play the music: see "Under Wine"
+below. There, the engine plays the music with its own player.
 
 ## How
 
@@ -42,8 +43,9 @@ Tron 2.0's engine starts DirectMusic with a DirectX 8 audio path
 under Wine 9.0, `InitAudio` succeeds, but `CreateStandardAudioPath` fails
 with `E_NOINTERFACE`: the synthesizer asks DirectSound for
 `IDirectSoundConnect` (`{2a8af120-e9de-4132-aaa5-4bdda5f325b8}`), which
-Wine's DirectSound does not have. The engine then has no music (as
-retail does when DirectMusic does not start). With Wine's own
+Wine's DirectSound does not have. Retail then has no music. The modern
+engine then plays the music with its own player
+(`src/tron20src/music/musicplayer.cpp`, `docs/MODERN.md` X-3). With Wine's own
 DirectMusic the audio path starts, but nothing plays.
 
 The NOLF and AvP2 engines start DirectMusic in the older way
