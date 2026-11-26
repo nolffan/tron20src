@@ -57,6 +57,9 @@ struct SStaticLightCallbackData
 {
 	ModelInstance*			m_pInstance;
 	CRelevantLightList*		m_pLightList;
+	// TRON: SetupModelLight's two flags (Lithtech.exe 0x552bed, 0x552bf1)
+	bool					m_bShadowLights;
+	bool					m_bOtherLights;
 };
 
 
@@ -123,6 +126,13 @@ void ModelDraw::StaticLightCB(WorldTreeObj *pObj, void *pUser)
 	assert(pData->m_pInstance);
 	assert(pData->m_pLightList);
 
+	// TRON: only the kinds of light that the caller asked for (Lithtech.exe
+	// 0x551e1a)
+	if(!pData->m_bShadowLights && (pStaticLight->m_Flags & FLAG_CASTSHADOWS))
+		return;
+	if(!pData->m_bOtherLights && !(pStaticLight->m_Flags & FLAG_CASTSHADOWS))
+		return;
+
 	//figure out the color for this light
 	LTVector vColor(pStaticLight->m_Color);
 	if(pStaticLight->m_pLightGroupColor)
@@ -149,7 +159,12 @@ void ModelDraw::StaticLightCB(WorldTreeObj *pObj, void *pUser)
 
 	CRenderLight RenderLight;
 
-	if(pStaticLight->m_FOV > -0.99f)
+	// TRON: a light with a cone narrower than about 11 degrees (the cosine
+	// of its half angle above 0.98) lights models as a directional light
+	// (Lithtech.exe 0x552057). The DirLight objects of the worlds have
+	// cones of a few degrees and a radius of 100000: as spotlights, they
+	// do not reach the models (the intro's people were black).
+	if((pStaticLight->m_FOV > -0.99f) && (pStaticLight->m_FOV <= 0.98f))
 	{
 		RenderLight.SetupSpotLight(	vPos, vDir, vColor,
 									pStaticLight->m_AttCoefs, 
@@ -157,6 +172,10 @@ void ModelDraw::StaticLightCB(WorldTreeObj *pObj, void *pUser)
 									pStaticLight->m_FOV,
 									pStaticLight->m_eAttenuation,
 									pStaticLight->m_Flags);
+	}
+	else if(pStaticLight->m_FOV > 0.98f)
+	{
+		RenderLight.SetupDirLight(vDir, vColor, pStaticLight->m_Flags);
 	}
 	else
 	{
@@ -262,7 +281,7 @@ float ModelDraw::GetDirLightAmount(ModelInstance* pInstance, const LTVector& vIn
 	return fLight;
 }
 
-void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList, bool bApplySun)
+void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& HookData, CRelevantLightList& LightList, bool bShadowLights, bool bOtherLights)
 {
 	//setup our light list information
 	uint32 nMaxLights = LTMIN((uint32)g_CV_MaxModelLights, MAX_LIGHTS_SUPPORTED_BY_D3D);
@@ -299,7 +318,7 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 	// Global directional light dir.
 	float fDirLightAmount = 0.0f;
 
-	if (g_have_world && g_CV_ModelApplySun.m_Val && bApplySun &&
+	if (g_have_world && g_CV_ModelApplySun.m_Val && bOtherLights &&
 		(g_pStruct->m_GlobalLightColor.x || g_pStruct->m_GlobalLightColor.y || g_pStruct->m_GlobalLightColor.z))
 	{
 		// Use the previous lighting amount if it hasn't moved
@@ -337,7 +356,8 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 	}
 
 	// Ambient lighting
-	if(g_have_world)
+	// TRON: with the other lights only (Lithtech.exe 0x5529f3)
+	if(g_have_world && bOtherLights)
 	{
 		LTRGBColor ambientColor;
 		w_DoLightLookup(world_bsp_shared->LightTable(), &vInstancePosition, &ambientColor);
@@ -362,6 +382,12 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 		if ((pSrcLight->m_Flags & FLAG_ONLYLIGHTWORLD) != 0)
 			continue;
 
+		// TRON: only the kinds of light asked for (Lithtech.exe 0x552a90)
+		if ((pSrcLight->m_Flags & FLAG_CASTSHADOWS) && !bShadowLights)
+			continue;
+		if (!(pSrcLight->m_Flags & FLAG_CASTSHADOWS) && !bOtherLights)
+			continue;
+
 		LTVector vPos = pSrcLight->GetPos();
 		if (bReallyClose)
 		{
@@ -382,6 +408,8 @@ void ModelDraw::SetupModelLight(ModelInstance* pInstance, const ModelHookData& H
 		SStaticLightCallbackData CallbackData;
 		CallbackData.m_pInstance	= pInstance;
 		CallbackData.m_pLightList	= &LightList;
+		CallbackData.m_bShadowLights	= bShadowLights;
+		CallbackData.m_bOtherLights		= bOtherLights;
 
 		//figure out what radius to use for this model
 		float fModelRadius = pInstance->GetModelDB()->m_VisRadius;
@@ -496,7 +524,7 @@ void ModelDraw::QueueAllModelInfo()
 
 			//we also need to build the lighting data
 			CRelevantLightList LightList;
-			SetupModelLight(pInstance, HookData, LightList, true);
+			SetupModelLight(pInstance, HookData, LightList, true, true);
 
 			//setup our light list
 			LightList.CreateDeviceLightList(InfoList.GetDeviceLightList(pInstance->m_nRenderInfoIndex));

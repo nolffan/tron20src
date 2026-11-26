@@ -1,0 +1,40 @@
+# playtest-intro.txt -- the intro cinematic (Worlds\RetailSinglePlayer\intro):
+# the programs in the computer world, then the people in the lab of the
+# real world. The DirLights of the world light the people's models and
+# the programs' heads; when the engine does not use them as directional
+# lights (Lithtech.exe 0x552057, setupmodel.cpp), the models are black
+# (the black areas of the lab shots are then 20% to 50% of the middle of
+# the window, with the fix 0% to 16%). litcheck fails the run (DARK) when
+# the lab shots are more than 10% black on average.
+# Times count from the key that closes the load screen.
+# world: Worlds\RetailSinglePlayer\intro
+window 240
+wait 20
+key x
+wait 32
+shot programs-t32
+wait 8
+shot programs-t40
+wait 20
+lit lab-t60
+wait 4
+lit lab-t64
+wait 4
+lit lab-t68
+wait 4
+lit lab-t72
+wait 4
+lit lab-t76
+wait 4
+lit lab-t80
+wait 4
+lit lab-t84
+wait 4
+lit lab-t88
+wait 4
+lit lab-t92
+wait 4
+lit lab-t96
+wait 4
+lit lab-t100
+litcheck 10
