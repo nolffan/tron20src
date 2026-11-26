@@ -154,7 +154,7 @@ void CHUDProfiler::Update()
 	// RETAIL: the name is Tron's target manager's, at +0x895 there (its
 	// layout is not yet retail's here)
 	const char* pszName = (const char*)g_pTronPlayerMgr->GetTargetMgr() + 0x895;
-	if (stricmp(pszName, m_szName) == 0) return;
+	if (strcmpi(pszName, m_szName) == 0) return;
 
 	SAFE_STRCPY(m_szName, pszName);
 

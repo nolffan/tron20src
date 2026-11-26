@@ -212,7 +212,8 @@ void CHUDWeapon::Update()
 	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponID);
 	if (pWeapon)
 	{
-		std::string sIcon = pWeapon->GetUnselectedIcon();
+		// RETAIL: the normal icon (WEAPON::GetNormalIcon, 0x10139670)
+		std::string sIcon = pWeapon->GetNormalIcon();
 		m_hWeaponTex = g_pInterfaceResMgr->GetTexture(sIcon.c_str());
 	}
 }
@@ -227,7 +228,8 @@ void CHUDWeapon::SetWeapon(uint8 nWeaponID)
 	WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponID);
 	if (pWeapon)
 	{
-		std::string sIcon = pWeapon->GetUnselectedIcon();
+		// RETAIL: the normal icon (WEAPON::GetNormalIcon, 0x10139670)
+		std::string sIcon = pWeapon->GetNormalIcon();
 		m_hWeaponTex = g_pInterfaceResMgr->GetTexture(sIcon.c_str());
 	}
 }

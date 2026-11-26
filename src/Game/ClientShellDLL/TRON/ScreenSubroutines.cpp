@@ -591,7 +591,7 @@ void CScreenSubroutines::CreateMenuPieces()
 			pPiece->Show(true);
 			m_ModelPieceArray.push_back(pPiece);
 
-			if (!_stricmp(szPiece, "sub_hub"))
+			if (!strcmpi(szPiece, "sub_hub"))
 			{
 				pPiece->PlayAnim("show", false, false);
 				m_pScreenModel = pPiece;

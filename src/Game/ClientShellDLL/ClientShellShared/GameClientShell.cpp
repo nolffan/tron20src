@@ -2080,7 +2080,7 @@ void CGameClientShell::OnKeyDown(int key, int rep)
 			{
 				// RETAIL: the single player missions unless they are loaded
 				char const* pszFile = g_pMissionButeMgr->GetAttributeFile( );
-				if (!pszFile || !strlen(pszFile) || (strlen(pszFile) && stricmp(pszFile, MISSION_DEFAULT_FILE)))
+				if (!pszFile || !strlen(pszFile) || (strlen(pszFile) && strcmpi(pszFile, MISSION_DEFAULT_FILE)))
 				{
 					// Initialize to the sp mission bute.
 					if( !g_pMissionButeMgr->Init( MISSION_DEFAULT_FILE ))
@@ -4725,7 +4725,8 @@ void CGameClientShell::HandleAmmoPickup(uint8 nAmmoId, int nAmmoCount,
 
 	if (szMsg)
 	{
-		std::string icon = pAmmo->GetUnselectedIcon();
+		// RETAIL: 0x100e7888: the normal icon (AMMO::GetNormalIcon, 0x1013a450)
+		std::string icon = pAmmo->GetNormalIcon();
 
 		// Use the weapon's icon if necessary...
 		WEAPON const *pWeapon = g_pWeaponMgr->GetWeapon(nWeaponId);

@@ -212,12 +212,12 @@ LTBOOL CTronInterfaceMgr::OnKeyDown(int key, int rep)
 
 	// RETAIL: 0x1009d278: in the playing state escape belongs to an open
 	// decision window (and closes it when it may) unless the chat input
-	// is open
-	if (m_eGameState == GS_PLAYING && key == VK_ESCAPE && g_pDecision->IsVisible() && !g_pChatInput->IsVisible())
+	// is open (RETAIL: Tron's decision window, 0x1026edec)
+	if (m_eGameState == GS_PLAYING && key == VK_ESCAPE && g_pTronDecision->IsVisible() && !g_pChatInput->IsVisible())
 	{
-		if (g_pDecision->GetTronUnknown4d())
+		if (g_pTronDecision->GetTronUnknown4d())
 		{
-			g_pDecision->Hide(0xff);
+			g_pTronDecision->Hide(0xff);
 		}
 		return LTTRUE;
 	}
@@ -300,8 +300,8 @@ LTBOOL CTronInterfaceMgr::OnCommandOn(int command)
 		case COMMAND_ID_NEXT_WEAPON_5 :
 		case COMMAND_ID_NEXT_WEAPON_6 :
 		{
-			// RETAIL: not while the decision window shows
-			if (!g_pDecision->IsVisible())
+			// RETAIL: not while Tron's decision window (0x1026edec) shows
+			if (!g_pTronDecision->IsVisible())
 			{
 				NextWeapon(command);
 			}
@@ -351,9 +351,9 @@ LTBOOL CTronInterfaceMgr::OnCommandOff(int command)
 	if (command == COMMAND_ID_SUBROUTINE_MENU)
 	{
 		// RETAIL: 0x1009d522: an open decision window keeps the screen shut
-		// unless its +0x4d is set
+		// unless its +0x4d is set (RETAIL: Tron's decision window, 0x1026edec)
 		bool bAllow = true;
-		if (g_pDecision && g_pDecision->IsVisible() && !g_pDecision->GetTronUnknown4d())
+		if (g_pTronDecision && g_pTronDecision->IsVisible() && !g_pTronDecision->GetTronUnknown4d())
 		{
 			bAllow = false;
 		}
@@ -786,7 +786,7 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		case MID_TRON_ENERGY_GAINED:
 		{
 			uint8 nEnergy = pMsg->Readuint8();
-			g_pChatMsgs->AddMessage(FormatTempString(3271, nEnergy));
+			g_pPickupMsgs->AddMessage(FormatTempString(3271, nEnergy), (const char*)LTNULL);
 		}
 
 		// RETAIL: 0x1009df00: two strings with the "msgfadeout" sound
@@ -1010,10 +1010,10 @@ void CTronInterfaceMgr::UpdatePlayingState()
 LTBOOL CTronInterfaceMgr::PostPlayingState(GameState eNewState)
 {
 	// RETAIL: the decision window closes (Hide(0xff), slot 12) unless the
-	// new state is GS_POPUP
-	if (g_pDecision->IsVisible() && eNewState != GS_POPUP)
+	// new state is GS_POPUP (RETAIL: Tron's decision window, 0x1026edec)
+	if (g_pTronDecision->IsVisible() && eNewState != GS_POPUP)
 	{
-		g_pDecision->Hide(0xff);
+		g_pTronDecision->Hide(0xff);
 	}
 
 	return CInterfaceMgr::PostPlayingState(eNewState);
@@ -1285,7 +1285,7 @@ LTBOOL CTronInterfaceMgr::HandleConsoleVarFade(ILTMessage_Read *pMsg)
 	std::list<TronInterfaceRecord*>::iterator iter;
 	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
 	{
-		if (!stricmp(szName, (*iter)->m_szName))
+		if (!strcmpi(szName, (*iter)->m_szName))
 		{
 			debug_delete(*iter);
 			m_TronRecords.erase(iter);
@@ -1334,7 +1334,7 @@ LTBOOL CTronInterfaceMgr::HandleConsoleVarOscillate(ILTMessage_Read *pMsg)
 	std::list<TronInterfaceRecord*>::iterator iter;
 	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
 	{
-		if (!stricmp(szName, (*iter)->m_szName))
+		if (!strcmpi(szName, (*iter)->m_szName))
 		{
 			debug_delete(*iter);
 			m_TronRecords.erase(iter);
@@ -1388,7 +1388,7 @@ LTBOOL CTronInterfaceMgr::HandleConsoleVarStop(ILTMessage_Read *pMsg, bool bRest
 	for (iter = m_TronRecords.begin(); iter != m_TronRecords.end(); iter++)
 	{
 		TronInterfaceRecord* pRecord = *iter;
-		if (!stricmp(pRecord->m_szName, szName))
+		if (!strcmpi(pRecord->m_szName, szName))
 		{
 			if (bRestore)
 			{
