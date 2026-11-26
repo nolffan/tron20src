@@ -37,6 +37,14 @@
 #include "lith.h"
 #include "ltdirectmusic_impl.h"
 #include "ltdirectmusiccontrolfile.h"
+#ifdef TRON20SRC_MODERN
+#include "consolecommands.h"	// MODERN.md X-3: MusicPlayer
+#include "../../../../../../tron20src/music/musicplayer.h"
+
+// MODERN.md X-3 (below)
+static bool s_bModernDirectMusicFailed = false;
+static int ModernMusicPlayerMode();
+#endif
 //instantiate our implemenation class of ILTDirectMusicMgr
 define_interface(CLTDirectMusicMgr, ILTDirectMusicMgr);
 
@@ -636,6 +644,10 @@ CLTDirectMusicMgr::CLTDirectMusicMgr()
 
 	m_nPaused = 0;
 
+#ifdef TRON20SRC_MODERN
+	m_pModernPlayer = LTNULL;	// MODERN.md X-3
+#endif
+
 	// RETAIL: m_hThread is left to Init (Lithtech.exe 0x439fc8)
 };
 
@@ -647,6 +659,10 @@ CLTDirectMusicMgr::~CLTDirectMusicMgr()
 {
 	// call term if the class is still initialized
 	if (m_bInitialized) Term();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3
+	if (m_pModernPlayer != LTNULL) Term();
+#endif
 };
 
 
@@ -659,6 +675,20 @@ LTRESULT CLTDirectMusicMgr::Init()
 //	_CrtSetBreakAlloc(309);
 
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::Init\n");
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: MusicPlayer 1 plays the music with the modern music
+	// player, 2 only with DirectMusic; 0 (the default) with DirectMusic,
+	// and with the modern music player when DirectMusic does not start
+	int nModernMode = ModernMusicPlayerMode();
+	if (m_pModernPlayer != LTNULL)
+	{
+		LTDMConOutError("ERROR! CLTDirectMusicMgr alread initialized. (CLTDirectMusicMgr::Init)\n");
+		return LT_ERROR;
+	}
+	if (!m_bInitialized && (nModernMode == 1 || (nModernMode == 0 && s_bModernDirectMusicFailed)))
+		return ModernStartPlayer();
+#endif
 
 	// init will fail if the Mgr is already initialized
 	if (m_bInitialized) 
@@ -682,6 +712,16 @@ LTRESULT CLTDirectMusicMgr::Init()
 
 	    // Release COM.
 	    CoUninitialize();
+
+#ifdef TRON20SRC_MODERN
+		// MODERN.md X-3: DirectMusic did not start (Wine, Proton): the
+		// modern music player; DirectMusic is not tried again in this run
+		if (nModernMode == 0)
+		{
+			s_bModernDirectMusicFailed = true;
+			return ModernStartPlayer();
+		}
+#endif
 
 		return LT_ERROR;
 	}
@@ -725,6 +765,16 @@ LTRESULT CLTDirectMusicMgr::Init()
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::Term()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player
+	if (m_pModernPlayer != LTNULL)
+	{
+		m_pModernPlayer->Term();
+		delete m_pModernPlayer;
+		m_pModernPlayer = LTNULL;
+		return LT_OK;
+	}
+#endif
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::Term\n");
 
 	// if we are not initialized then just exit 
@@ -790,6 +840,11 @@ LTRESULT CLTDirectMusicMgr::Term()
 LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char* sControlFileName, const char* sDefine1,
 		  						     const char* sDefine2, const char* sDefine3)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->InitLevel(sWorkingDirectory, sControlFileName, sDefine1, sDefine2, sDefine3);
+#endif
 #ifdef TRON20SRC_MODERN
 	// MODERN.md EN-12: "sDeine3" in retail's trace
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::InitLevel sWorkingDirectory=%s sControlFileName=%s sDefine1=%s sDefine2=%s sDefine3=%s\n",
@@ -1038,6 +1093,11 @@ LTRESULT CLTDirectMusicMgr::InitLevel(const char* sWorkingDirectory, const char*
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::TermLevel()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->TermLevel();
+#endif
 	LTDMConOutMsg(3, "CLTDirectMusicMgr::TermLevel\n");
 
 	// if the mgr is not initialized we fail
@@ -1190,6 +1250,11 @@ LTRESULT CLTDirectMusicMgr::TermLevel()
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::Play()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->Play();
+#endif
 	LTDMConOutMsg(4, "CLTDirectMusicMgr::Play\n");
 
 	// if the mgr is not initialized we fail
@@ -1208,6 +1273,11 @@ LTRESULT CLTDirectMusicMgr::Play()
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::Stop(const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->Stop(nStart);
+#endif
 	LTDMConOutMsg(4, "CLTDirectMusicMgr::Stop nStart=%i\n", (int)nStart);
 
 	// if the mgr is not initialized we fail
@@ -1277,6 +1347,11 @@ LTRESULT CLTDirectMusicMgr::Stop(const LTDMEnactTypes nStart)
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::Pause(const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->Pause(nStart);
+#endif
 	LTDMConOutMsg(4, "CLTDirectMusicMgr::Pause nStart=%i\n", (int)nStart);
 
 	// if the mgr is not initialized we fail
@@ -1332,6 +1407,11 @@ LTRESULT CLTDirectMusicMgr::Pause(const LTDMEnactTypes nStart)
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::UnPause()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->UnPause();
+#endif
 	LTDMConOutMsg(4, "CLTDirectMusicMgr::UnPause\n");
 
 	// if the mgr is not initialized we fail
@@ -1371,6 +1451,11 @@ LTRESULT CLTDirectMusicMgr::UnPause()
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::SetVolume(const long nVolume)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->SetVolume(nVolume);
+#endif
 	// Add in the volume offset to the incoming volume.
 	long nSetVolume = nVolume + m_nVolumeOffset;
 
@@ -1396,6 +1481,11 @@ LTRESULT CLTDirectMusicMgr::SetVolume(const long nVolume)
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity, const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->ChangeIntensity(nNewIntensity, nStart);
+#endif
 	IDirectMusicSegmentState* pDMSegmentState = LTNULL;
 	IDirectMusicSegmentState8* pDMSegmentState8 = LTNULL;
 	CTransition* pTransition;
@@ -1612,6 +1702,11 @@ LTRESULT CLTDirectMusicMgr::ChangeIntensity(const int nNewIntensity, const LTDME
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment, const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->PlaySecondary(sSecondarySegment, nStart);
+#endif
 	IDirectMusicSegmentState* pDMSegmentState = LTNULL;
 	IDirectMusicSegmentState8* pDMSegmentState8 = LTNULL;
 	CSegment* pMainSegment;
@@ -1682,6 +1777,11 @@ LTRESULT CLTDirectMusicMgr::PlaySecondary(const char* sSecondarySegment, const L
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::StopSecondary(const char* sSecondarySegment, const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->StopSecondary(sSecondarySegment, nStart);
+#endif
 	CSegmentState* pStopSegmentState;
 	CSegmentState* pNextSegmentState;
 	LTDMEnactTypes nEnactTime = nStart;
@@ -1786,6 +1886,11 @@ LTRESULT CLTDirectMusicMgr::StopSecondary(const char* sSecondarySegment, const L
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::PlayMotif(const char* sMotifName, const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->PlayMotif(LTNULL, sMotifName, nStart);
+#endif
 	IDirectMusicSegmentState* pDMSegmentState = LTNULL;
 	IDirectMusicSegmentState8* pDMSegmentState8 = LTNULL;
 	CSegment* pMainSegment;
@@ -1868,6 +1973,11 @@ LTRESULT CLTDirectMusicMgr::PlayMotif(const char* sStyleName, const char* sMotif
 ///////////////////////////////////////////////////////////////////////////////////////////
 LTRESULT CLTDirectMusicMgr::StopMotif(const char* sMotifName, const LTDMEnactTypes nStart)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->StopMotif(LTNULL, sMotifName, nStart);
+#endif
 	CSegmentState* pStopSegmentState;
 	CSegmentState* pNextSegmentState;
 	LTDMEnactTypes nEnactTime = nStart;
@@ -3692,6 +3802,11 @@ LTDMEnactTypes CLTDirectMusicMgr::StringToEnactType(const char* sName)
 // return the current intenisty
 int CLTDirectMusicMgr::GetCurIntensity() 
 { 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->GetCurIntensity();
+#endif
 	return m_nCurIntensity; 
 };
 
@@ -3699,6 +3814,11 @@ int CLTDirectMusicMgr::GetCurIntensity()
 // return the number of intensities currently in this level (undefined if not in a level)
 int CLTDirectMusicMgr::GetNumIntensities() 
 { 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->GetNumIntensities();
+#endif
 	return m_nNumIntensities; 
 };
 
@@ -3706,6 +3826,11 @@ int CLTDirectMusicMgr::GetNumIntensities()
 // return the initial intensity value for this level
 int CLTDirectMusicMgr::GetInitialIntensity() 
 { 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->GetInitialIntensity();
+#endif
 	return m_nInitialIntensity; 
 };
 
@@ -3713,6 +3838,11 @@ int CLTDirectMusicMgr::GetInitialIntensity()
 // return the initial intensity value for this level
 int CLTDirectMusicMgr::GetInitialVolume() 
 { 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->GetInitialVolume();
+#endif
 	return m_nInitialVolume; 
 };
 
@@ -3720,5 +3850,48 @@ int CLTDirectMusicMgr::GetInitialVolume()
 // return the volume offset.  This offset is applied to whatever volume is set.
 int CLTDirectMusicMgr::GetVolumeOffset() 
 { 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md X-3: the modern music player, when it plays
+	if (m_pModernPlayer != LTNULL)
+		return m_pModernPlayer->GetVolumeOffset();
+#endif
 	return m_nVolumeOffset; 
 };
+
+
+#ifdef TRON20SRC_MODERN
+///////////////////////////////////////////////////////////////////////////////////////////
+// MODERN.md X-3: the modern build's own music player
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// the console variable MusicPlayer: 0 (or none) DirectMusic, then the
+// modern music player if DirectMusic does not start; 1 the modern music
+// player; 2 only DirectMusic (as retail)
+static int ModernMusicPlayerMode()
+{
+	LTCommandVar* pVar = cc_FindConsoleVar(&g_ClientConsoleState, "MusicPlayer");
+	if (pVar == LTNULL)
+		return 0;
+	int nMode = (int)pVar->floatVal;
+	return (nMode == 1 || nMode == 2) ? nMode : 0;
+}
+
+LTRESULT CLTDirectMusicMgr::ModernStartPlayer()
+{
+	LT_MEM_TRACK_ALLOC(m_pModernPlayer = new CModernMusicPlayer, LT_MEM_TYPE_MUSIC);
+	if (m_pModernPlayer == LTNULL)
+		return LT_ERROR;
+	if (m_pModernPlayer->Init() != LT_OK)
+	{
+		LTDMConOutError("ERROR! The modern music player did not start. (CLTDirectMusicMgr::Init)\n");
+		delete m_pModernPlayer;
+		m_pModernPlayer = LTNULL;
+		return LT_ERROR;
+	}
+	LTDMConOutMsg(3, "LTDirectMusic: the modern music player plays the music (MODERN.md X-3)\n");
+	OutputDebugStringA("LTDirectMusic: the modern music player plays the music (MODERN.md X-3)\n");
+	return LT_OK;
+}
+
+#include "../../../../../../tron20src/music/musicplayer.cpp"
+#endif

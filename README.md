@@ -98,7 +98,9 @@ the engine our DLLs. The only retail binaries
 are the third-party runtime that we have no source for: Bink
 (`binkw32.dll`) and the Microsoft C, C++ and MFC runtime. The modern build
 has our own `binkw32.dll` (a Bink player on FFmpeg) in place of RAD's, and
-its `SndDrv.dll` decodes MP3 itself (`docs/MODERN.md`, X-1 and X-2). The last step
+its `SndDrv.dll` decodes MP3 itself, and its engine plays the music
+itself where DirectMusic does not start, as under Wine and Proton
+(`docs/MODERN.md`, X-1 to X-3). The last step
 lists every executable file with its origin, and stops the build if one is
 not ours or third-party. On Linux, start the game with `./linux-run.sh` in
 that directory (below: "Playing on Linux"). Or start it with

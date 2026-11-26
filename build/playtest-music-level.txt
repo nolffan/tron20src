@@ -1,0 +1,18 @@
+# playtest-music-level.txt -- the music of a level (MODERN.md X-3). M04-01
+# has MinMusicMood "Investigate" and does not lock the mood: the server
+# sends "MUSIC I 9 measure" when the level starts, and the music changes
+# from intensity 1 (Silence.sgt) to 9 through the transition segment
+# StoW.sgt, then plays the intensities 9 to 13 (Warning1.sgt to
+# Warning5.sgt) one after the other. A level loaded directly opens on the
+# "System Reboot" screen (the player's build); the music plays behind it,
+# so the script waits and does not ask for the HUD. Run it with PLAYTEST_AUDIO set
+# (build/playtest.sh) to record what plays, and with
+# PLAYTEST_WINEDEBUG=+debugstr to see the player's changes in wine.log.
+# (M01-01's start is silent by design: its intro sends "setmood 0" and
+# "lockmood".)
+# world: Worlds\RetailSinglePlayer\M04-01
+window 240
+wait 60
+shot level
+wait 30
+shot later
