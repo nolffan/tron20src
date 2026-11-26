@@ -1274,7 +1274,11 @@ bool CAIGoalSpecialDamage::IsEnergyClawAttackerAiming()
 	if( !pAttacker )
 	{
 		// RETAIL: this one console variable has a capital L (0x101924b2).
+#ifdef TRON20SRC_MODERN
+		AITRACE( AIShowEnergyClawDamage, ( m_pAI->m_hObject, "Early out - Not a character!" ) );	// GAME-88
+#else
 		AITRACE( AIShowEnergyCLawDamage, ( m_pAI->m_hObject, "Early out - Not a character!" ) );
+#endif
 		return false;
 	}
 

@@ -761,6 +761,18 @@ AINode* CAINodeMgr::FindRandomNodeFromThreat(CAI* pAI, EnumAINodeType eNodeType,
 			return LTNULL;
 		}
 	}
+#ifdef TRON20SRC_MODERN
+	else
+	{
+		// GAME-85: without an AI, a random node of the list (no path test),
+		// or none
+		if( s_lstTempNodes.empty() )
+		{
+			return LTNULL;
+		}
+		pNode = s_lstTempNodes[ GetRandom( 0, s_lstTempNodes.size() - 1 ) ];
+	}
+#endif
 
 	return pNode;
 }

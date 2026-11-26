@@ -507,7 +507,11 @@ bool CProjectileEnergyClaw::CanSee(HOBJECT hFrom, HOBJECT hTo)
 	// so the segment is empty and the claw always "sees" (docs/RETAIL_BUGS.md)
 	LTVector vFrom, vTo;
 	g_pLTServer->GetObjectPos(hFrom, &vFrom);
+#ifdef TRON20SRC_MODERN
+	g_pLTServer->GetObjectPos(hTo, &vTo);	// GAME-64: the other end is hTo
+#else
 	g_pLTServer->GetObjectPos(hFrom, &vTo);
+#endif
 
 	HOBJECT hFilterList[] = { m_hObject, m_hFiredFrom, hFrom, hTo, LTNULL };
 

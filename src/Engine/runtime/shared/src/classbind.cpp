@@ -61,6 +61,45 @@ int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *ve
     ObjectDLLSetupFn theFunction;
     int status;
 
+#ifdef TRON20SRC_MODERN
+    // EN-80: bind first, allocate the module only when the binding has
+    // succeeded, and free it with LTMemFree
+    status = bm_BindModule(pModuleName, hModule);
+    if (status == BIND_CANTFINDMODULE)
+        return CB_CANTFINDMODULE;
+
+    // Get the function.
+    theFunction = (ObjectDLLSetupFn)bm_GetFunctionPointer(hModule, "ObjectDLLSetup");
+    if (!theFunction)
+    {
+        bm_UnbindModule(hModule);
+        return CB_NOTCLASSMODULE;
+    }
+
+    LT_MEM_TRACK_ALLOC(pModule = (ClassBindModule*)LTMemAlloc(sizeof(ClassBindModule)), LT_MEM_TYPE_MISC);
+    if (!pModule)
+    {
+        bm_UnbindModule(hModule);
+        return CB_NOTCLASSMODULE;
+    }
+
+    // Ok.. setup the classbindmodule.
+    pModule->m_hModule = hModule;
+    pModule->m_pClassDefs = theFunction(&pModule->m_nClassDefs, ilt_server, version);
+
+    if (*version != SERVEROBJ_VERSION)
+    {
+        LTMemFree(pModule);
+        bm_UnbindModule(hModule);
+        return CB_VERSIONMISMATCH;
+    }
+
+    // Verify all properties!
+    cb_VerifyClassDefProperties(pModule);
+
+    pModuleOut = pModule;
+    return CB_NOERROR;
+#else
     // this is alloced here and then returned
     // RETAIL: with LTMemAlloc and not operator new (Lithtech.exe 0x403920,
     // server.dll 0x10001839)
@@ -94,6 +133,7 @@ int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *ve
 
     pModuleOut = pModule;
     return CB_NOERROR;
+#endif
 }
 
 // TRON: RETAIL: server.dll 0x10001918: frees the module cb_LoadModule made

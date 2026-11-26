@@ -829,7 +829,12 @@ bool WorldProperties::OnTrigger(HOBJECT hSender, const CParsedMsg &cMsg)
 	{
 		if (cMsg.GetArgCount() > 1)
 		{
+#ifdef TRON20SRC_MODERN
+			// GAME-73: the model shadows, not the sky fog near Z
+			g_pLTServer->SetGameConVar(szDrawAllModelShadows, const_cast<char *>(cMsg.GetArg(1).c_str()));
+#else
 			g_pLTServer->SetGameConVar(szSkyFogNearZ, const_cast<char *>(cMsg.GetArg(1).c_str()));
+#endif
 			bNotifyClient = LTTRUE;
 		}
 	}

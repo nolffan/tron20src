@@ -1695,6 +1695,14 @@ LTBOOL CDestructible::AddGear(uint8 nGearId)
 						m_bGearOwned[nGearId] = LTTRUE;
 					}
 
+#ifdef TRON20SRC_MODERN
+					// GAME-81: no gear record, nothing added
+					if (!pGear)
+					{
+						bGearAdded = LTFALSE;
+					}
+					else
+#endif
 					if (pGear->fArmor)
 					{
 						LTFLOAT fRepair = pGear->fArmor;

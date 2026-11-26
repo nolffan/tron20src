@@ -618,7 +618,17 @@ void CProjectilePrankster::AcquireTargets(LTFLOAT fRadius)
 	// RETAIL: the list is never given back (RelinquishList): see
 	// docs/RETAIL_BUGS.md
 	ObjectList *pList = g_pLTServer->FindObjectsTouchingSphere(&vPos, fRadius);
+#ifdef TRON20SRC_MODERN
+	// GAME-76: give the list back
+	if (!pList) return;
+	if (!pList->m_pFirstLink)
+	{
+		g_pLTServer->RelinquishList(pList);
+		return;
+	}
+#else
 	if (!pList || !pList->m_pFirstLink) return;
+#endif
 
 	for (ObjectLink *pLink = pList->m_pFirstLink; pLink; pLink = pLink->m_pNext)
 	{
@@ -636,6 +646,10 @@ void CProjectilePrankster::AcquireTargets(LTFLOAT fRadius)
 			}
 		}
 	}
+
+#ifdef TRON20SRC_MODERN
+	g_pLTServer->RelinquishList(pList);
+#endif
 }
 
 // ----------------------------------------------------------------------- //

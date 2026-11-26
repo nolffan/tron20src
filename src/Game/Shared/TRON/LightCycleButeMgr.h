@@ -272,8 +272,14 @@ struct LIGHTCYCLESHADE
 		nLockedNameId = 0;
 		// RETAIL: clears the first two chars of the Regular color, not the
 		// first of each color (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+		// GAME-62: clear the first char of each color
+		szCycleColors[0][0] = '\0';
+		szCycleColors[1][0] = '\0';
+#else
 		szCycleColors[0][0] = '\0';
 		szCycleColors[0][1] = '\0';
+#endif
 		bMultiOnly = false;
 	}
 

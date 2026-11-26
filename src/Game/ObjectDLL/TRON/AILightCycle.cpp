@@ -360,6 +360,9 @@ uint32 AILightCycle::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 		}
 		// RETAIL: falls through into MID_TRIGGER (0x100020f1), which reads
 		// the rest of the message as a trigger message
+#ifdef TRON20SRC_MODERN
+		return LT_OK;	// GAME-71: as the retail fall-through returns, without the trigger code
+#endif
 
 		case MID_TRIGGER:
 		{
@@ -702,7 +705,11 @@ int AILightCycle::Probe(int nDir, AILCProbeResult* pResult, float fDist)
 		{
 			// RETAIL: always the first trail (0x10002e92); see
 			// docs/RETAIL_BUGS.md
+#ifdef TRON20SRC_MODERN
+			if (FindTrailHit(vStart, vEnd, pCyclist->collTrails[j], &fHitDist, &vHit, &nPoint))	// GAME-70
+#else
 			if (FindTrailHit(vStart, vEnd, pCyclist->collTrails[0], &fHitDist, &vHit, &nPoint))
+#endif
 			{
 				AILCProbeResult result;
 				result.info.pCyclist = pCyclist;
@@ -784,7 +791,11 @@ int AILightCycle::ProbeAll(int nDir, AILCProbeResultList* pResults, float fDist)
 		for (uint32 j = 0; j < nNumTrails; j++)
 		{
 			// RETAIL: always the first trail too (0x100031d0)
+#ifdef TRON20SRC_MODERN
+			if (FindTrailHit(vStart, vEnd, pCyclist->collTrails[j], &fHitDist, &vHit, &nPoint))	// GAME-70
+#else
 			if (FindTrailHit(vStart, vEnd, pCyclist->collTrails[0], &fHitDist, &vHit, &nPoint))
+#endif
 			{
 				AILCProbeResult result;
 				result.info.pCyclist = pCyclist;

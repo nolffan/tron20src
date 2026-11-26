@@ -82,6 +82,15 @@ IONode::~IONode()
 		g_pLTServer->SoundMgr()->KillSound(m_hLoopSound);
 		m_hLoopSound = LTNULL;
 	}
+
+#ifdef TRON20SRC_MODERN
+	// GAME-52: free the looping sound's name too (retail leaks it)
+	if (m_hstrLoopSound)
+	{
+		g_pLTServer->FreeString(m_hstrLoopSound);
+		m_hstrLoopSound = LTNULL;
+	}
+#endif
 }
 
 // ----------------------------------------------------------------------- //
@@ -305,6 +314,14 @@ LTBOOL IONode::ReadProp(ObjectCreateStruct *pStruct)
 	}
 
 	m_InvalidPSetCommand.ReadProp(pStruct, "InvalidPSetCommand");
+
+#ifdef TRON20SRC_MODERN
+	// GAME-51: read the MoveToFloor property (retail never does)
+	if (g_pLTServer->GetPropGeneric("MoveToFloor", &genProp) == LT_OK)
+	{
+		m_bMoveToFloor = !!genProp.m_Bool;
+	}
+#endif
 
 	return LTTRUE;
 }

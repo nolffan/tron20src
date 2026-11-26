@@ -93,7 +93,17 @@ struct LIGHT_CYCLE_TRAIL
 // 0x10015dd0, Object.lto 0x100bee20)
 struct LIGHT_CYCLIST
 {
+#ifdef TRON20SRC_MODERN
 	LIGHT_CYCLIST() : nClientID(0), nNameId(0)
+	{
+		InitDefaults();
+	}
+
+	// GAME-68: the default constructor's body, for both constructors (ours)
+	void InitDefaults()
+#else
+	LIGHT_CYCLIST() : nClientID(0), nNameId(0)
+#endif
 	{
 		fStartDerezTime = 0.0f;
 		bUpdating = true;
@@ -149,9 +159,15 @@ struct LIGHT_CYCLIST
 	// stand-in cyclist). Its "LIGHT_CYCLIST();" builds and destroys a
 	// temporary: it does not initialize this cyclist (see
 	// docs/RETAIL_BUGS.md). The parameters' names are ours.
+#ifdef TRON20SRC_MODERN
+	LIGHT_CYCLIST(float fNewLength, float fNewWidth, bool bTronUnknownD1) : nClientID(0), nNameId(0)
+	{
+		InitDefaults();
+#else
 	LIGHT_CYCLIST(float fNewLength, float fNewWidth, bool bTronUnknownD1)
 	{
 		LIGHT_CYCLIST();
+#endif
 		fLength = fNewLength;
 		fWidth = fNewWidth;
 		m_bTronUnknownD1 = bTronUnknownD1;

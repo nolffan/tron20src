@@ -338,7 +338,11 @@ static void enum_local_ips()
 Returns the hostent in savehent if it is not NULL */
 static int get_sockaddrin(const char *host, int port, struct sockaddr_in *saddr, struct hostent **savehent)
 {
+#ifdef TRON20SRC_MODERN
+	struct hostent *hent = NULL; // GAME-66
+#else
 	struct hostent *hent; // RETAIL: not initialized (docs/RETAIL_BUGS.md)
+#endif
 
 	saddr->sin_family = AF_INET;
 	saddr->sin_port = htons((unsigned short)port);

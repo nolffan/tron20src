@@ -225,6 +225,9 @@ uint32 PatchRoutine::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 			if (m_nCurrentHealth > 0)
 			{
 				if (nAmount > m_nCurrentHealth) nAmount = m_nCurrentHealth;
+#ifdef TRON20SRC_MODERN
+				nGive = nAmount;	// GAME-89: give no more than is left
+#endif
 
 				int nHitPoints = (int)pDest->GetHitPoints();
 				int nMaxHitPoints = (int)pDest->GetMaxHitPoints();
@@ -249,6 +252,9 @@ uint32 PatchRoutine::ObjectMessageFn(HOBJECT hSender, ILTMessage_Read *pMsg)
 			else if (m_nCurrentEnergy > 0)
 			{
 				if (nAmount > m_nCurrentEnergy) nAmount = m_nCurrentEnergy;
+#ifdef TRON20SRC_MODERN
+				nGive = nAmount;	// GAME-89: give no more than is left
+#endif
 
 				int nEnergy = (int)pDest->GetEnergy();
 				int nMaxEnergy = (int)pDest->GetMaxEnergy();

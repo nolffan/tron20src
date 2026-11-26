@@ -1993,7 +1993,11 @@ void KeyFramer::ResetToKey(const char* pKeyName)
 
 		// RETAIL: Tron starts from no rotation here, not from the key's
 		// (rRotNew is not used)
+#ifdef TRON20SRC_MODERN
+		LTRotation rRot1 = rRotNew;	// GAME-79: from the key's rotation
+#else
 		LTRotation rRot1;
+#endif
 
 
 		// If we have a target object, align the object to face it...

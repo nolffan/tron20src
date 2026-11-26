@@ -243,12 +243,22 @@ LTRESULT CArenaPlugin::PreHook_PropChanged(
 {
 	// RETAIL: the tests miss their "!": every property but none of these
 	// goes to the command manager (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// GAME-78: only the six event properties
+	if (!_stricmp("OnPlayerSpawn", szPropName) ||
+		!_stricmp("OnPlayerDeath", szPropName) ||
+		!_stricmp("OnMatchStart", szPropName) ||
+		!_stricmp("OnMatchEnd", szPropName) ||
+		!_stricmp("OnPointStart", szPropName) ||
+		!_stricmp("OnPointEnd", szPropName))
+#else
 	if (_stricmp("OnPlayerSpawn", szPropName) ||
 		_stricmp("OnPlayerDeath", szPropName) ||
 		_stricmp("OnMatchStart", szPropName) ||
 		_stricmp("OnMatchEnd", szPropName) ||
 		_stricmp("OnPointStart", szPropName) ||
 		_stricmp("OnPointEnd", szPropName))
+#endif
 	{
 		if (m_CommandMgrPlugin.PreHook_PropChanged(szObjName, szPropName, nPropType,
 			gpPropValue, pInterface, szModifiers) == LT_OK)

@@ -353,7 +353,11 @@ static void cdkey_process_buf(char *buf, int len, struct sockaddr *fromaddr)
 	{
 		pos = strchr(buf+1,'\\');
 		/* RETAIL: no test of pos for NULL (docs/RETAIL_BUGS.md) */
+#ifdef TRON20SRC_MODERN
+		if (pos && pos - buf <= 32) /* right size token (GAME-65) */
+#else
 		if (pos - buf <= 32) /* right size token */
+#endif
 		{
 			strncpy(tok, buf+1,pos-buf-1);
 			tok[pos-buf-1] = 0;

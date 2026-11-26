@@ -363,7 +363,11 @@ class CCommandMgr
 		VAR_STRUCT	m_aVars[CMDMGR_MAX_VARS];
 		// RETAIL: a byte in Tron (retail reads and writes +0x167f0 as one), for up
 		// to 512 vars: RETAIL_BUGS.md
+#ifdef TRON20SRC_MODERN
+		uint16		m_nNumVars;		// GAME-50: room for all CMDMGR_MAX_VARS (NOLF2's type)
+#else
 		uint8		m_nNumVars;
+#endif
 
 		CMD_EVENT_STRUCT	m_aEventCmds[CMDMGR_MAX_EVENT_COMMANDS];
 

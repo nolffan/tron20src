@@ -581,13 +581,23 @@ void CoreDump::HandleActivate(HOBJECT hSender)
 
 	if (m_fEnergy > 0.0f)
 	{
+#ifdef TRON20SRC_MODERN
+		// GAME-59: measure the gain against the energy before ours was added
+		float fOldEnergy = pDest->GetEnergy();
+		float fEnergy = fOldEnergy + m_fEnergy;
+#else
 		float fEnergy = pDest->GetEnergy() + m_fEnergy;
+#endif
 		float fMaxEnergy = pDest->GetMaxEnergy();
 		pDest->SetEnergy(Clamp(fEnergy, 0.0f, fMaxEnergy));
 
 		// RETAIL: measured against fEnergy, which already holds ours: never
 		// more than 0, so the message is never sent
+#ifdef TRON20SRC_MODERN
+		float fGained = pDest->GetEnergy() - fOldEnergy;
+#else
 		float fGained = pDest->GetEnergy() - fEnergy;
+#endif
 		if (fGained > 1.0f)
 		{
 			CAutoMessage cMsg;
@@ -946,6 +956,13 @@ void CoreDump::HandleChoice(uint8 nChoice)
 				_snprintf(szMsg, ARRAY_LEN(szMsg), "%s %s", "ACQUIRENOTE", m_aItems[nChoice].m_sName.c_str());
 				szMsg[ARRAY_LEN(szMsg) - 1] = '\0';
 			}
+#ifdef TRON20SRC_MODERN
+			else
+			{
+				// GAME-60: no message for another item type
+				szMsg[0] = '\0';
+			}
+#endif
 
 			m_aItems[nChoice].Clear();
 			m_nNumItems--;
@@ -967,6 +984,9 @@ void CoreDump::HandleChoice(uint8 nChoice)
 				}
 			}
 
+#ifdef TRON20SRC_MODERN
+			if (szMsg[0])
+#endif
 			SendTriggerMsgToObject(this, m_pPlayer->m_hObject, LTFALSE, szMsg);
 		}
 		break;

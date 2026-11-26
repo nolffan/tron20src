@@ -2621,8 +2621,14 @@ void DEFENSECLASSDATA::InitMembers( CButeMgr &buteMgr, char *aTagName )
 
 	// RETAIL: the file gives the zones in degrees. The default is the
 	// current value, which is in radians already (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// GAME-80: the default in degrees too
+	fOrientationDeadZone	= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTDEADZONE, MATH_RADIANS_TO_DEGREES( fOrientationDeadZone ) ) ) );
+	fOrientationMaxZone		= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTMAXZONE, MATH_RADIANS_TO_DEGREES( fOrientationMaxZone ) ) ) );
+#else
 	fOrientationDeadZone	= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTDEADZONE, fOrientationDeadZone ) ) );
 	fOrientationMaxZone		= DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, WMGR_DEFENSECLASS_ORIENTMAXZONE, fOrientationMaxZone ) ) );
+#endif
 
 	GetStringIfExist( buteMgr, aTagName, WMGR_DEFENSECLASS_DEFENDPVFXNAME, &szDefendPVFXName, WMGR_MAX_NAME_LENGTH );
 }

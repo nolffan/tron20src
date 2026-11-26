@@ -257,8 +257,11 @@ void LightCycle::SetModel()
 	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(m_szCycleColor);
 
 	// RETAIL: the type is looked up (and unused) before the color is
-	// checked (0x10025503); see docs/RETAIL_BUGS.md
+	// checked (0x10025503); see docs/RETAIL_BUGS.md (GAME-67: the modern
+	// build does not make the unused lookup)
+#ifndef TRON20SRC_MODERN
 	g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+#endif
 
 	if (!pColor)
 	{

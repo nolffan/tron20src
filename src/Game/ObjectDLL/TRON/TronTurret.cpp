@@ -381,7 +381,11 @@ LTBOOL TronTurret::ReadProp(ObjectCreateStruct *pStruct)
 	// calls the other six (VC6's inline budget); ours inlines all seven.
 
 	GenericProp genProp;
+#ifdef TRON20SRC_MODERN
+	PROPTYPE* pPropType = LTNULL;	// GAME-56: no PropType, no prop type
+#else
 	PROPTYPE* pPropType;
+#endif
 
 	m_Strings.sParent.clear();
 	m_Strings.sParentSocket.clear();
@@ -407,7 +411,12 @@ LTBOOL TronTurret::ReadProp(ObjectCreateStruct *pStruct)
 	}
 	else
 	{
+#ifdef TRON20SRC_MODERN
+		// GAME-57: the property's default, 180 degrees
+		m_fCosViewFOV = (LTFLOAT)cos(180.0f * (MATH_PI / 360.0f));
+#else
 		m_fCosViewFOV = (LTFLOAT)cos(m_fCosViewFOV * (MATH_PI / 360.0f));
+#endif
 	}
 
 	if (g_pLTServer->GetPropGeneric("TurnRate", &genProp) == LT_OK)
@@ -1059,9 +1068,11 @@ bool TronTurret::InitialUpdate()
 	if (m_bHasParent)
 	{
 		// RETAIL: the parent's position and rotation are read into locals
-		// and not used.
+		// and not used (GAME-58: the modern build does not read them).
+#ifndef TRON20SRC_MODERN
 		g_pLTServer->GetObjectPos(m_hParent, &vPos);
 		g_pLTServer->GetObjectRotation(m_hParent, &rRot);
+#endif
 		return true;
 	}
 

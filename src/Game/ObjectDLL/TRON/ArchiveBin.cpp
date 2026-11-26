@@ -1212,7 +1212,16 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 				{
 					g_pCmdMgr->Process(m_aItems[nChoice].m_sCommand.c_str(), m_hObject, m_hObject);
 				}
+#ifdef TRON20SRC_MODERN
+				szMsg[0] = '\0';	// GAME-60: no message for a Custom item
+#endif
 			}
+#ifdef TRON20SRC_MODERN
+			else
+			{
+				szMsg[0] = '\0';
+			}
+#endif
 
 			// Take down the first berry of the item's type
 			for (uint32 iBerry = 0; iBerry < AB_MAX_BERRIES; iBerry++)
@@ -1244,6 +1253,9 @@ void ArchiveBin::HandleChoice(uint8 nChoice)
 				m_ActivateTypeHandler.SetState(ACTIVATETYPE::eTronUnknown2, true, LTNULL);
 			}
 
+#ifdef TRON20SRC_MODERN
+			if (szMsg[0])
+#endif
 			SendTriggerMsgToObject(this, m_hPlayer, LTFALSE, szMsg);
 
 			// The item's command runs on its first withdrawal only

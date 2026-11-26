@@ -1654,6 +1654,10 @@ void CDiscMatchMgr::ChangeTeam(uint32 nClientID, uint8 nTeam)
 
 		// RETAIL: the player is not checked on the second path (a retail
 		// bug, see RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+		// GAME-90: no player on the new team, no colour to set
+		if (pPlayer)
+#endif
 		pPlayer->m_bTronUnknown31c9 = (pPlayer && pTeam->GetTeamSize() > 1 && pTeam->GetID() < TRON_MAX_TEAMS) ?
 			pTeam->GetTronUnknownIndex() : pPlayer->m_bTronUnknown31ca;
 	}

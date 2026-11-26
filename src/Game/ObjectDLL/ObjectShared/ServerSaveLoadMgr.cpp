@@ -619,7 +619,16 @@ bool CServerSaveLoadMgr::LoadLevel( char const* pszFilename, bool bLoadWorldObje
 
 	// RETAIL: 0x101ca35f: Tron sets the level before it loads it, and the
 	// previous one back when the load fails
+#ifdef TRON20SRC_MODERN
+	// GAME-74: keep a copy of the old name; SetCurLevel can free its buffer
+	char szOldLevel[MAX_PATH*2];
+	char const* pszOldLevel = szOldLevel;
+	szOldLevel[0] = '\0';
+	if( g_pGameServerShell->GetCurLevel( ))
+		LTStrCpy( szOldLevel, g_pGameServerShell->GetCurLevel( ), ARRAY_LEN( szOldLevel ));
+#else
 	char const* pszOldLevel = g_pGameServerShell->GetCurLevel( );
+#endif
 	g_pGameServerShell->SetCurLevel( pszFilename );
 
 	// Load the new level.

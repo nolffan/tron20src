@@ -3484,5 +3484,8 @@ void CProjectile::Load(ILTMessage_Read *pMsg, uint32 dwLoadFlags)
 	uint32 dwFlags;
 	g_pCommonLT->GetObjectFlags(m_hObject, OFT_Flags, dwFlags);
 	LOAD_DWORD(dwFlags);
+#ifdef TRON20SRC_MODERN
+	g_pCommonLT->SetObjectFlags(m_hObject, OFT_Flags, dwFlags, FLAGMASK_ALL);	// GAME-83
+#endif
 }
 

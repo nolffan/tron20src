@@ -308,7 +308,19 @@ void CGrenade::HandleImpact(HOBJECT hObj)
 	fDampenPercent = fDampenPercent > 1.0f ? 1.0f : (fDampenPercent < 0.0f ? 0.0f : fDampenPercent);
 
 	// RETAIL: the projectile FX's Elasticity scales the dampening
+#ifdef TRON20SRC_MODERN
+	// GAME-87: no ammo data or projectile FX, no elasticity scale
+	if (m_pAmmoData && m_pAmmoData->pProjectileFX)
+	{
+		vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
+	}
+	else
+	{
+		vVel *= (1.0f - fDampenPercent);
+	}
+#else
 	vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
+#endif
 
 
 	// See if we should come to a rest...
@@ -656,7 +668,19 @@ bool CGrenade::TronUnknownVirtual33(ProjectilePendingTouch *pTouch)
 	fDampenPercent = fDampenPercent < 0.0f ? 0.0f : (fDampenPercent > 1.0f ? 1.0f : fDampenPercent);
 
 	// RETAIL: the projectile FX's Elasticity scales the dampening
+#ifdef TRON20SRC_MODERN
+	// GAME-87: no ammo data or projectile FX, no elasticity scale
+	if (m_pAmmoData && m_pAmmoData->pProjectileFX)
+	{
+		vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
+	}
+	else
+	{
+		vVel *= (1.0f - fDampenPercent);
+	}
+#else
 	vVel *= (1.0f - fDampenPercent * m_pAmmoData->pProjectileFX->fElasticity);
+#endif
 
 	// See if we should come to a rest...
 

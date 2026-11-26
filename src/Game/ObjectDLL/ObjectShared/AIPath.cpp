@@ -261,7 +261,12 @@ void CAIPath::GetInitialDir(LTVector* pvDir)
 			else {
 				LTVector vDir = pWaypt->GetArgumentVector1() - vPosFirst;
 				*pvDir = vDir.Unit();
+#ifdef TRON20SRC_MODERN
+				// GAME-72: keep the direction to the second control point
+				return;
+#else
 				break;
+#endif
 			}
 		}
 	}
@@ -269,6 +274,15 @@ void CAIPath::GetInitialDir(LTVector* pvDir)
 	if( !bFirst )
 	{
 		LTVector vDir = m_pAI->GetPosition() - vPosFirst;
+#ifdef TRON20SRC_MODERN
+		// GAME-72: an AI on the control point faces its forward (retail
+		// divides a zero vector by zero)
+		if( vDir.MagSqr() < 0.0001f )
+		{
+			*pvDir = m_pAI->GetForwardVector();
+			return;
+		}
+#endif
 		*pvDir = vDir.Unit();
 		return;
 	}

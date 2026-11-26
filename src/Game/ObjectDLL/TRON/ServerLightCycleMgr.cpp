@@ -426,6 +426,31 @@ void CServerLightCycleMgr::Update()
 
 	// RETAIL: keeps a pointer to the top of the queue across pop(), so it
 	// plays whatever pop() moved there (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// GAME-63: copy the top line before pop(), and play it only when it was
+	// not skipped (retail plays the last skipped line when the queue runs out)
+	bool bSkip = false;
+	LCDialogQueueEntry entry;
+	do
+	{
+		entry = m_DialogQueue.top();
+		m_DialogQueue.pop();
+
+		bSkip = false;
+		if(!GetLivingCyclist(entry.pCyclist->hObject))
+		{
+			bSkip = true;
+			if(entry.pSounds->eType == kLCDialog_AICrash)
+				bSkip = false;
+		}
+	}
+	while(!m_DialogQueue.empty() && bSkip);
+
+	if(!bSkip)
+	{
+		PlayDialogEntry(entry);
+	}
+#else
 	bool bSkip = false;
 	const LCDialogQueueEntry* pEntry;
 	do
@@ -446,6 +471,7 @@ void CServerLightCycleMgr::Update()
 	{
 		PlayDialogEntry(*pEntry);
 	}
+#endif
 
 	ClearDialogQueue();
 

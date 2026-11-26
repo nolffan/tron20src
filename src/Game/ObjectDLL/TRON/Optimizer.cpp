@@ -105,7 +105,12 @@ uint32 Optimizer::EngineMessageFn(uint32 messageID, void *pData, LTFLOAT fData)
 	{
 		case MID_PRECREATE:
 		{
+#ifdef TRON20SRC_MODERN
+			// GAME-61: a spawned optimizer reads its properties too
+			if (fData == PRECREATE_WORLDFILE || fData == PRECREATE_STRINGPROP)
+#else
 			if (fData == PRECREATE_WORLDFILE)
+#endif
 			{
 				ReadProp((ObjectCreateStruct*)pData);
 			}

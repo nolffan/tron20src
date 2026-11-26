@@ -318,10 +318,18 @@ void LightCyclePowerup::ReadProp(ObjectCreateStruct *pStruct)
 
 	// RETAIL: only ever set when true, so AllowInCustom cannot be turned
 	// off (see docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// GAME-69: copy the value, true or false
+	if (g_pLTServer->GetPropGeneric("AllowInCustom", &genProp) == LT_OK)
+	{
+		m_bAllowInCustom = !!genProp.m_Bool;
+	}
+#else
 	if (g_pLTServer->GetPropGeneric("AllowInCustom", &genProp) == LT_OK && genProp.m_Bool)
 	{
 		m_bAllowInCustom = genProp.m_Bool;
 	}
+#endif
 
 	pStruct->m_Flags |= FLAG_TOUCH_NOTIFY;
 }

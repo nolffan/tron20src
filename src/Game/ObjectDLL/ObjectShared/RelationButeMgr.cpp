@@ -975,7 +975,12 @@ void CRelationUser::AddRelation(const RelationDescription& RD, bool bPermanent )
 		RemoveRelation( (*itFound)->GetDescription() );
 	}
 
+#ifdef TRON20SRC_MODERN
+	// GAME-75: the momento's timer takes the lifetime as its duration
+	float flExperationTime = m_flTimeRelationsLast;
+#else
 	float flExperationTime = m_flTimeRelationsLast + g_pLTServer->GetTime();
+#endif
 	RelationMomento* pMomento = debug_new3( RelationMomento, m_pMomentoCallbackReceiver, flExperationTime, RD );
 	if (bPermanent == true)
 	{
@@ -1075,7 +1080,11 @@ void CRelationUser::ResetRelationTime(CObjectRelationMgr* pORM)
 	{
 		// Reset the timer!
 //		g_pLTServer->CPrint( "ResetRelationTime: %s", (*it)->GetDescription().szValue );
+#ifdef TRON20SRC_MODERN
+		(*it)->ResetExpiration( m_flTimeRelationsLast );	// GAME-75
+#else
 		(*it)->ResetExpiration( m_flTimeRelationsLast + g_pLTServer->GetTime() );
+#endif
 	}
 }
 

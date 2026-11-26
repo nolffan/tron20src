@@ -2138,6 +2138,9 @@ void CDisc::SmiteObject( HOBJECT hObj )
 		pDiscClassData = dynamic_cast< DISCCLASSDATA* >( m_pAmmoData->pProjectileFX->pClassData );
 	}
 
+#ifdef TRON20SRC_MODERN
+	if ( pDiscClassData )	// GAME-86: no class data, no FX
+#endif
 	PlayClientFX( pDiscClassData->szDeadlyDeflectSmiteFXName, LTNULL, &vPos, &rRot, 0 );
 
 	m_eDiscState = DISC_STATE_DEFLECTING;

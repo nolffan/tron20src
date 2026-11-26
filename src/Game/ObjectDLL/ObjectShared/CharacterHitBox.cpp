@@ -777,6 +777,18 @@ void CCharacterHitBox::FindHitNodeOBB( const LTVector& vDir, const LTVector& vFr
 
 	for ( uint32 iOBB = 0; iOBB < m_nNumOBBs; iOBB++ )
 	{
+#ifdef TRON20SRC_MODERN
+		// GAME-84: only OBBs with a node; keep the distance along vDir (the
+		// test's distance is along vRay, 1000 times vDir) and the user hit
+		if ( m_pOBBNodes[iOBB] != eModelNodeInvalid &&
+			RayIntersectOBB( m_pOBBs[iOBB], vFrom, vRay, &fDist ) && fDist <= fNearest )
+		{
+			fNearest = fDist;
+			pHit->m_eModelNode = m_pOBBNodes[iOBB];
+			pHit->m_fDist = fDist * 1000.0f;
+			pHit->m_hObject = m_pHitBoxUser->TronUnknownVirtual28();
+		}
+#else
 		if ( RayIntersectOBB( m_pOBBs[iOBB], vFrom, vRay, &fDist ) && fDist <= fNearest )
 		{
 			// RETAIL: the node is kept even when it is not a skeleton node,
@@ -787,6 +799,7 @@ void CCharacterHitBox::FindHitNodeOBB( const LTVector& vDir, const LTVector& vFr
 				fNearest = fDist;
 			}
 		}
+#endif
 	}
 }
 

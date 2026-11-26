@@ -402,7 +402,11 @@ void Explosion::ReadProp()
 			else
 			{
 				// RETAIL: the first character, not the name (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+				g_pLTServer->CPrint("Explosion::ReadProp - No such ammo type %s", genProp.m_String);	// GAME-77
+#else
 				g_pLTServer->CPrint("Explosion::ReadProp - No such ammo type %s", genProp.m_String[0]);
+#endif
 			}
 		}
 	}

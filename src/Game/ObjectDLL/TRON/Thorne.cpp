@@ -307,7 +307,12 @@ void CThorne::ReadProp(ObjectCreateStruct *pStruct)
 
 	// RETAIL: the test is inverted: a valid command is reported invalid
 	// (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// GAME-54: report only a summon command that is there and not valid
+	if (!m_sSummonCmd.empty() && !g_pCmdMgr->IsValidCmd(m_sSummonCmd.c_str()))
+#else
 	if (g_pCmdMgr->IsValidCmd(m_sSummonCmd.c_str()))
+#endif
 	{
 		ObjectCPrint(pStruct->m_Name, "Invalid summon command %s", m_sSummonCmd.c_str());
 	}
@@ -496,7 +501,8 @@ void CThorne::InitialUpdate(LTFLOAT fInfo)
 			g_pLTServer->SetObjectSFXMessage(m_hObject, cMsg.Read());
 		}
 
-		// RETAIL: built, never sent
+		// RETAIL: built, never sent (GAME-55: the modern build does not build it)
+#ifndef TRON20SRC_MODERN
 		{
 			CAutoMessage cMsg;
 			cMsg.Writeuint8(MID_SFX_MESSAGE);
@@ -504,6 +510,7 @@ void CThorne::InitialUpdate(LTFLOAT fInfo)
 			cMsg.WriteObject(m_hObject);
 			m_cs.Write(cMsg);
 		}
+#endif
 	}
 }
 
