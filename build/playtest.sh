@@ -41,6 +41,15 @@
 #                         post-load screen waits for a key); takes a shot
 #                         like `shot <name>`. If the HUD is up, the run is
 #                         judged HUD UP, a failure.
+#   lit <name>            takes a shot like `shot <name>`, and keeps the
+#                         percentage of black pixels (below 3% grey) in the
+#                         middle of the window (60% of its width, 50% of
+#                         its height)
+#   litcheck [max]        the mean of the percentages of the `lit` shots
+#                         must be <max> or less (default 10). If not, the
+#                         run is judged DARK, a failure: the models are
+#                         black (models lit by DirLights, the intro's
+#                         people: build/playtest-intro.txt)
 set -u
 # a game directory built without the retail game (NODISCS=1) does not play
 for a in "$@"; do
@@ -56,12 +65,21 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e 's#local x=$((WX + 30\*WW/642)) y=$((WY + 448\*WH/482)) w=$((30\*WW/642)) h=$((4\*WH/482 + 1))#local x=$((WX + WW/2 - 210)) y=$((WY + WH - 21)) w=100 h=6#' \
     -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.6 \&\& \$2 > 1.8 * \$1)#" \
     -e 's#\[ $k = space \] \&\& k=Return || k=space#if [ $k = space ]; then k=Return; elif [ $k = Return ] \&\& [ $(( $(date +%s) - st )) -ge 20 ]; then k=1; else k=space; fi#' \
-    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""#' \
+    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""; DARK=""; LITS=""#' \
     -e 's#^            \*)     log "  unknown command#            nohud) N=$((N+1)); f=$(printf '"'"'shots/%02d-%s.png'"'"' $N "$1"); grab "$f"; log "  -> $f"\
                    if hud; then HUDUP="line $LINE"; log "  nohud: the HUD is up"; else log "  nohud: no HUD, as expected"; fi ;;\
 &#' \
+    -e 's#^            nohud) #            lit) N=$((N+1)); f=$(printf "shots/%02d-%s.png" $N "$1"); grab "$f"\
+                   d=$(convert "$f" -gravity center -crop 60%x50%+0+0 -colorspace gray -threshold 3% -format "%[fx:round(100*(1-mean))]" info: 2>/dev/null)\
+                   LITS="$LITS ${d:-100}"; log "  -> $f (black: ${d:-?}%)" ;;\
+            litcheck) s=0; n=0; for d in $LITS; do s=$((s+d)); n=$((n+1)); done; [ $n -gt 0 ] \&\& s=$((s/n))\
+                   if [ $s -gt ${1:-10} ]; then DARK="line $LINE: $s% black, more than ${1:-10}%"; log "  litcheck: $s% black: DARK"; else log "  litcheck: $s% black, as expected"; fi ;;\
+&#' \
     -e 's#^if alive \&\& \[ -n "$NOHUD" \]; then$#if alive \&\& [ -n "$HUDUP" ]; then\
     echo "HUD UP: alive, but the HUD was up where the script expects none (nohud at $HUDUP)" > result.txt\
+    wineserver -k; sleep 2\
+elif alive \&\& [ -n "$DARK" ]; then\
+    echo "DARK: alive, but the lit shots are black ($DARK)" > result.txt\
     wineserver -k; sleep 2\
 elif alive \&\& [ -n "$NOHUD" ]; then#' \
     -e '/pcm\.!default { type null }/a\    [ -z "${PLAYTEST_AUDIO:-}" ] || printf "</usr/share/alsa/alsa.conf>\\npcm.!default { type file slave.pcm null file \\"%s-%%r-%%c-%%f.raw\\" format raw truncate false }\\n" "$PLAYTEST_AUDIO" > asound.conf' \
