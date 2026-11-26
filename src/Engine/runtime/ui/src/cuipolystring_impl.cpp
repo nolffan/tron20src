@@ -515,10 +515,16 @@ void CUIPolyString_Impl::ApplyColors(uint32 start, int32 count)
 
 			default:
 				pDrawPrimInternal->SetRGBA4(&m_pPolys[i], m_pColors[0], m_pColors[1], m_pColors[2], m_pColors[3]);
+#ifdef TRON20SRC_MODERN
+				// MODERN.md EN-74: the shadow is black at all four vertices
+				if (m_pShadowPolys)
+					pDrawPrimInternal->SetRGBA4(&m_pShadowPolys[i], 0xff000000, 0xff000000, 0xff000000, 0xff000000);
+#else
 				// RETAIL: the shadow's first vertex takes the text's colour
 				// (docs/RETAIL_BUGS.md)
 				if (m_pShadowPolys)
 					pDrawPrimInternal->SetRGBA4(&m_pShadowPolys[i], m_pColors[0], 0xff000000, 0xff000000, 0xff000000);
+#endif
 				break;
 		}
 	}

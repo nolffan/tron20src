@@ -1862,13 +1862,24 @@ unsigned long _stdcall SoundParamThread( void* pUserData )
 {
 	CDx8SoundSys* pSoundSys = ( CDx8SoundSys* )pUserData;
 	bool bQuit = false;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-77: the lock that Init made, also the one that the
+	// driver's own calls take
+	HANDLE hMutex = pSoundSys->m_hSoundParamMutex;
+#else
 	HANDLE hMutex = OpenMutex( MUTEX_ALL_ACCESS, FALSE, "SoundParamMutex" );
+#endif
 
 	do
 	{
 		Sleep( 20 );
 
 		WaitForSingleObject( hMutex, INFINITE );
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-77: paused by a flag, not by SuspendThread, so that
+		// the thread is never stopped while it holds the lock
+		if( pSoundSys->m_bSoundParamThreadRunning )
+#endif
 		for( int i = 0; i < MAX_SOUND_PARAMS; i++ )
 		{
 			if( pSoundSys->m_aSoundParams[i].m_bActive )
@@ -2310,6 +2321,11 @@ bool CDx8SoundSys::Init( )
 	m_pcLastError = LastError( );
 	DS_CHECK
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-77: the lock of the parameter fades. Retail never
+	// makes one, so neither side of it locks.
+	m_hSoundParamMutex = CreateMutex( NULL, FALSE, NULL );
+#endif
 	g_hSoundParamThread = CreateThread( NULL, 0, SoundParamThread, (void*) this, 0, &g_dwSoundParamThreadId);
 	m_pcLastError = LastError( );
 	DS_CHECK
@@ -2352,6 +2368,11 @@ void CDx8SoundSys::Term( )
 	WaitForSingleObject( g_hSoundParamThread, INFINITE );
 	CloseHandle( g_hSoundParamThread );
 	CloseHandle( m_hSoundParamMutex );
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-77
+	g_hSoundParamThread = NULL;
+	m_hSoundParamMutex = NULL;
+#endif
 
 	LOG_CLOSE;
 
@@ -2814,6 +2835,31 @@ S32	CDx8SoundSys::Startup( void )
 		SelectDrivers(sEnumResults, this);
 	}
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-78: the message names the codec that is missing or does
+	// not open. Retail names the MP3 codec when the PCM converter fails,
+	// and says nothing when one of the other two fails.
+	if( m_hAcmADPCMDriverId == NULL ||
+		acmDriverOpen( &m_hAcmADPCMDriver, m_hAcmADPCMDriverId, 0 ) != 0 )
+	{
+		MessageBox( NULL, "Sound System Startup - Missing ADPCM codec", NULL, MB_OK );
+		return LS_ERROR;
+	}
+
+	if( m_hAcmMP3DriverId == NULL ||
+		acmDriverOpen( &m_hAcmMP3Driver, m_hAcmMP3DriverId, 0 ) != 0 )
+	{
+		MessageBox( NULL, "Sound System Startup - Missing .mp3 codec", NULL, MB_OK );
+		return LS_ERROR;
+	}
+
+	if( m_hAcmPCMDriverId == NULL ||
+		acmDriverOpen( &m_hAcmPCMDriver, m_hAcmPCMDriverId, 0 ) != 0 )
+	{
+		MessageBox( NULL, "Sound System Startup - Missing PCM converter", NULL, MB_OK );
+		return LS_ERROR;
+	}
+#else
 	if( m_hAcmADPCMDriverId == NULL ||
 		m_hAcmMP3DriverId == NULL ||
 		m_hAcmPCMDriverId == NULL )
@@ -2835,6 +2881,7 @@ S32	CDx8SoundSys::Startup( void )
   		MessageBox( NULL, "Sound System Startup - Missing .mp3 codec", NULL, MB_OK );
    		return LS_ERROR;
   	}
+#endif
 
 	if ( ! (m_pCompressedBuffer = (BYTE*) MemAllocLock( sizeof(BYTE) * STR_BUFFER_SIZE )) )
 		return LS_ERROR;
@@ -3554,6 +3601,13 @@ bool CDx8SoundSys::TronUnknownVirtual27( LH3DSAMPLE hS, uint8 nType, float fEnd,
 // the parameter thread suspended (false) or resumed
 void CDx8SoundSys::TronUnknownVirtual29( bool bRun )
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-77: the thread reads the flag under the lock (it now
+	// holds a real lock, which a suspended thread could keep forever)
+	WaitForSingleObject( m_hSoundParamMutex, INFINITE );
+	m_bSoundParamThreadRunning = bRun;
+	ReleaseMutex( m_hSoundParamMutex );
+#else
 	if( !bRun )
 	{
 		if( m_bSoundParamThreadRunning )
@@ -3570,6 +3624,7 @@ void CDx8SoundSys::TronUnknownVirtual29( bool bRun )
 			m_bSoundParamThreadRunning = true;
 		}
 	}
+#endif
 }
 
 

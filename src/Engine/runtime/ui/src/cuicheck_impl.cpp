@@ -288,7 +288,13 @@ CUI_RESULTTYPE CUICheck_Impl::SetText(const std::wstring& sText)
 
 	// if not polystring exists, make one
 	if (!m_pPolyStr) {
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-76: an empty string, not one made from NULL
+		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, L"", m_Rect.x, m_Rect.y, m_Halign);
+#else
+		// RETAIL: a wide string made from NULL (0x56f4c0)
 		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, NULL, m_Rect.x, m_Rect.y, m_Halign);
+#endif
 	}
 
 	// if the 'new' was successful...
