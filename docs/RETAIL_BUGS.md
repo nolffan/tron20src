@@ -1285,17 +1285,18 @@ objects go to the position of the first key with a wrong rotation.
 
 Not fixed yet: the modern build should start from the rotation of the key.
 
-## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
+### CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
 
 When the subroutine screen gets focus, it sets the build note count text
-and hides it until the intro is done (CShell.dll 0x1007e898..0x1007e8ad).
+and hides it until the intro is done (CShell.dll 0x1007e898..0x1007e8ad,
+TRON/ScreenSubroutines.cpp).
 It sets the fade flag of the build note count (+0x2084) to false, but it
 sets the fade time of the version text (+0x20fc) to zero, not the fade
 time of the build note count (+0x2088). The intro sets both fade times
 again before they are used (0x1007f0d8, 0x1007f13f), so there is no
 visible effect.
 
-Not fixed yet: the modern build should reset the build note fade time.
+Fixed in the modern build: TRON/ScreenSubroutines.cpp, MODERN.md GAME-137.
 
 ### The weapon FX message sends a flag as a float, and the client reads one bit
 

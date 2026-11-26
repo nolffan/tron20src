@@ -685,8 +685,11 @@ details.
 * **GAME-136:** `MID_TRON_ENERGY_GAINED` ends before the HUD text case: no
   sound and no reads past the message (`TRON/TronInterfaceMgr.cpp`
   `OnMessage`).
+* **GAME-137:** the subroutine screen's focus resets the build note
+  count's fade time, not the version text's (`TRON/ScreenSubroutines.cpp`
+  `OnFocus`; no visible change: the intro sets both again).
 
-GAME-100 to GAME-136 are the client's items of the retail-bug round of
+GAME-100 to GAME-137 are the client's items of the retail-bug round of
 2026-11-26 (the ids to GAME-149 are kept for it; GAME-50 to GAME-99 are the
 server's). Each was examined again in the retail code first: the
 functions that our build makes identical show it in our source, and for
