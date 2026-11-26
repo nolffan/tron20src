@@ -6,7 +6,7 @@
 # writes two archives, each unpacking to <name>/ (by default the game
 # directory's own name):
 #
-#   out/<name>-private.tar.gz   the whole directory, the retail game's data
+#   out/<name>-private.tar.gz   the directory as built (MANIFEST.txt), the retail game's data
 #                               included: for your own machines, and anyone
 #                               who develops on the build. Never give it to
 #                               other people.
@@ -50,15 +50,20 @@
 # is TRON20SRC_EPOCH (default 2000-01-01 00:00 UTC), the owner is 0:0 with no
 # user or group names, the modes are 0644 or 0755, and gzip stores no name
 # or time. Links are stored as the files they point to. Each archive is a
-# fresh install, whatever has been played in the directory: no saves (an
-# empty Save/), no logs, no player profiles but the shipped default one,
-# no server configurations (ServerData/, which the game's Host screens and
-# linux-server.sh write),
-# autoexec.cfg as the shipped one (autoexec.cfg.retail), tron20cmds.txt as
-# the build writes it (build/tron20cmds.sh), and none of the per-machine
-# state that the game and the tests create (tron20.ini, launchcmds.txt);
-# the public one has neither autoexec.cfg nor the default profile, which
-# its install scripts write.
+# fresh install, whatever has been played in the directory. An archive
+# holds only the files that MANIFEST.txt names (and the .pdb and .map
+# beside each built binary, the directories that they are in, and an empty
+# Save/ and Profiles/), never the other files of the directory: what the
+# game, the dedicated server, the launcher and the tests write there at run
+# time (saves, profiles, autoexec.cfg, tron20.ini, display.cfg,
+# launchcmds.txt, ServerData/, LightCycleGameData/, the ban list bl.dat,
+# logs, ...) is never packaged, and a file that this list does not know is
+# not packaged either. autoexec.cfg is the shipped one
+# (autoexec.cfg.retail), the profile is the shipped default one, and
+# tron20cmds.txt is as the build writes it (build/tron20cmds.sh); the
+# public one has neither autoexec.cfg nor the default profile, which its
+# install scripts write. (pubcheck.py checks every file of the archive,
+# as before.)
 #
 # build/all.sh runs it for the release build (step 6) and build/variant.sh
 # for each variant, once its data and symbols are in place. Each archive is
@@ -111,6 +116,56 @@ EXCLUDE=(--exclude="$DIR/Save/*" --exclude="$DIR/Profiles/*" --exclude="$DIR/Ser
          --exclude="$DIR/LICENSE_NOTES.md" --exclude="$DIR/licenses")
 STAGED=("$SB/tron20cmds.txt" "$SB/LICENSE_NOTES.md" "$SB/licenses")
 
+# members <MANIFEST.txt> <list> [<file>...]: the members of the game
+# directory that an archive holds, one "$DIR/<path>" per line, in tar's
+# --sort=name order, into <list>: the given files, the file of each
+# row (not the `install` rows of the public MANIFEST.txt: the install
+# scripts write those), the .pdb and .map beside each built binary, the
+# directories, and Save/ and Profiles/. tar gets them with --no-recursion:
+# nothing else of the directory goes in. A row without its file is an
+# error (the directory is not complete).
+members() {
+    local man="$1" list="$2"; shift 2
+    python3 - "$man" "$OUT" "$DIR" "$@" > "$list" <<'PY'
+import os, sys
+man, out, top = sys.argv[1:4]
+files, missing = set(sys.argv[4:]), []
+for line in open(man, encoding="utf-8"):
+    line = line.rstrip("\n")
+    if line.startswith("#") or "\t" not in line:
+        continue
+    frm, rel = line.split("\t", 1)
+    if frm.startswith("install "):
+        continue
+    if not os.path.isfile(os.path.join(out, rel)):
+        missing.append(rel)
+        continue
+    files.add(rel)
+    if frm.startswith(("built ", "EXT ")):
+        stem = os.path.splitext(rel)[0]
+        files.update(stem + e for e in (".pdb", ".map") if os.path.isfile(os.path.join(out, stem + e)))
+if missing:
+    sys.exit("package.sh: MANIFEST.txt names files that are not in %s: %s" % (out, ", ".join(missing)))
+dirs = {"Save", "Profiles"}
+for f in files:
+    d = os.path.dirname(f)
+    while d:
+        dirs.add(d)
+        d = os.path.dirname(d)
+print(top)
+for m in sorted(files | dirs, key=lambda p: [c.encode() for c in p.split("/")]):
+    print(top + "/" + m)
+PY
+}
+# The files of the directory that no archive holds (run-time files: what
+# was played in it), so that nobody looks for them in an archive
+LEFT="$(cd "$OUT" && find . \( -type f -o -type l \) | sed 's|^\./||' | python3 -c '
+import sys
+rows = [l.rstrip("\n").split("\t", 1) for l in open(sys.argv[1], encoding="utf-8") if "\t" in l and not l.startswith("#")]
+known = {r[1] for r in rows} | {"MANIFEST.txt", "autoexec.cfg", "tron20cmds.txt", "NOT-PLAYABLE.txt", "Profiles/Default.prf"}
+print(" ".join(sorted(f for f in sys.stdin.read().splitlines() if f not in known and not f.endswith((".pdb", ".map")))))' MANIFEST.txt)"
+[ -z "$LEFT" ] || echo "   not packaged (run-time files, not in MANIFEST.txt): $LEFT"
+
 # tar <archive> <tar arguments>: a .tar.gz, written beside and renamed in
 targz() {
     local dest="$1"; shift
@@ -129,8 +184,9 @@ elif [[ $ARCHIVES == *" private "* ]]; then
     mkdir -p "$S/private/Profiles"
     cp "$OUT/autoexec.cfg.retail" "$S/private/autoexec.cfg"
     cp "$OUT/Default.prf.retail" "$S/private/Profiles/Default.prf"
-    targz "$PKG" -C "$PARENT" "${EXCLUDE[@]}" "${NAMES[@]}" \
-        "$DIR" "${STAGED[@]}" "$SB/private/autoexec.cfg" "$SB/private/Profiles/Default.prf"
+    members "$OUT/MANIFEST.txt" "$S/private.txt" MANIFEST.txt
+    targz "$PKG" -C "$PARENT" "${EXCLUDE[@]}" "${NAMES[@]}" --no-recursion -T "$S/private.txt" --recursion \
+        "${STAGED[@]}" "$SB/private/autoexec.cfg" "$SB/private/Profiles/Default.prf"
     echo "   $PKG: $(du -h "$PKG" | cut -f1) (unpacks to $NAME/)"
 fi
 [[ $ARCHIVES == *" public "* ]] || exit 0
@@ -141,10 +197,14 @@ PUB="$PARENT/$NAME-public.tar.gz"
 python3 "$HERE/mkinstall.py" "$OUT" "$S"
 cat "$S/disc-files.txt" "$S/disc-dirs.txt" | sed "s|^|$DIR/|" > "$S/exclude.txt"
 echo "$DIR/MANIFEST.txt" >> "$S/exclude.txt"
+# (the public MANIFEST.txt: the rows that are not retail data, and an
+# `install` row for each file that the install scripts write)
+members "$S/MANIFEST.txt" "$S/public.txt"
 tar "${TAR[@]}" -C "$PARENT" -cf "$S/public.tar" "${EXCLUDE[@]}" \
     --anchored --no-wildcards --exclude-from="$S/exclude.txt" \
     "${NAMES[@]}" \
-    "$DIR" "${STAGED[@]}" "$SB/MANIFEST.txt" "$SB/linux-install.sh" "$SB/windows-install.bat" \
+    --no-recursion -T "$S/public.txt" --recursion \
+    "${STAGED[@]}" "$SB/MANIFEST.txt" "$SB/linux-install.sh" "$SB/windows-install.bat" \
     "$SB/mac-install.command"
 # Last, SHA256SUMS: every file of the archive and every file the install
 # scripts write, but autoexec.cfg and Profiles/Default.prf, which the game
