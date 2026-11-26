@@ -45,6 +45,10 @@ GAME="$(abs "${1:?usage: build/scripttest.sh <game directory> [run|server|both]}
 WHAT="${2:-both}"
 [ -x "$GAME/linux-run.sh" ] && [ -x "$GAME/linux-server.sh" ] || { echo "scripttest.sh: no executable linux-run.sh and linux-server.sh in $GAME"; exit 2; }
 [ -f "$GAME/Game.rez" ] || { echo "scripttest.sh: $GAME has no game data: install it with its linux-install.sh first"; exit 2; }
+# The scripts write into the directory, as for a player: never into a game
+# directory of the build (out/tron20-*, which build/package.sh packages),
+# only into one unpacked from a public archive (it has linux-install.sh)
+[ -f "$GAME/linux-install.sh" ] || { echo "scripttest.sh: $GAME is not unpacked from a public archive (no linux-install.sh): the test writes into it, so it does not run on a game directory of the build"; exit 2; }
 MODERN=
 [ -f "$GAME/TronLauncher.exe" ] && MODERN=1
 NAME="${SCRIPTTEST_NAME:-scripttest-$(basename "$GAME")}"

@@ -1,12 +1,21 @@
 # playtest-intro.txt -- the intro cinematic (Worlds\RetailSinglePlayer\intro):
-# the programs in the computer world, then the people in the lab of the
-# real world. The DirLights of the world light the people's models and
-# the programs' heads; when the engine does not use them as directional
-# lights (Lithtech.exe 0x552057, setupmodel.cpp), the models are black
-# (the black areas of the lab shots are then 20% to 50% of the middle of
-# the window, with the fix 0% to 16%). litcheck fails the run (DARK) when
-# the lab shots are more than 10% black on average.
-# Times count from the key that closes the load screen.
+# the programs in the computer world (from the key that closes the load
+# screen to about 42 s), then the people of the real world (about 44 s to
+# 98 s: the office, the lab), a fade to black (about 100 s), the lab again
+# and the digitization. The DirLights of the world light the people's
+# models and the programs' heads; when the engine does not use them as
+# directional lights (Lithtech.exe 0x552057, setupmodel.cpp), the models
+# are black. The lit shots are of the real world, 48 s to 96 s, each 4 s:
+# with that bug the median of their black areas (the middle of the window)
+# is about 28% (20% to 68% each), with the fix about 1% (0% to 16% each).
+# litcheck fails the run (DARK) when the median is more than 10%, and (NO
+# CINEMATIC) when fewer than 5 of the shots show the cinematic (a shot
+# without the letterbox, a menu or the load screen, does not count; nor
+# does a fade to black). The median, not the mean: the timing of the
+# cinematic changes by some seconds from run to run, and a shot of the
+# fade or of the digitization then does not change the result.
+# Times count from the key that closes the load screen (the load takes
+# less than 10 s).
 # world: Worlds\RetailSinglePlayer\intro
 window 240
 wait 20
@@ -15,7 +24,13 @@ wait 32
 shot programs-t32
 wait 8
 shot programs-t40
-wait 20
+wait 8
+lit lab-t48
+wait 4
+lit lab-t52
+wait 4
+lit lab-t56
+wait 4
 lit lab-t60
 wait 4
 lit lab-t64
@@ -35,6 +50,4 @@ wait 4
 lit lab-t92
 wait 4
 lit lab-t96
-wait 4
-lit lab-t100
-litcheck 10
+litcheck 10 5

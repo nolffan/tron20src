@@ -81,7 +81,7 @@ make            # the game, from our binaries and the retail data, in out/tron20
 make debug      # the same with symbols (.pdb, .map), in out/tron20-legacy-debug/
 make modern     # the modern build (TRON20SRC_MODERN, docs/MODERN.md), in out/tron20-modern-release/
 make modern-debug  # both, in out/tron20-modern-debug/
-make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png)
+make test       # run it under Xvfb and Wine to the main menu (out/play/test/shot.png); TEST_SCRIPT=<script>: its world and input
 make tests      # the scripted tests: menus, a level, saving and loading, a quick load with the weapon chooser open, a race, the intro (the models are lit)
 make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main menu
 make portabletest  # the modern build: no registry or APPDATA use, the launcher waits for the game
@@ -143,8 +143,16 @@ PACKAGE_GAME=<dir>` does it again):
 
 | Archive | What it holds | For |
 |---|---|---|
-| `out/<name>-private.tar.gz` | the whole game directory, with the retail game's data | your own machines only. Do not give it to other persons |
+| `out/<name>-private.tar.gz` | the game directory as it was built (`MANIFEST.txt`), with the retail game's data | your own machines only. Do not give it to other persons |
 | `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), Update 2's data (`tron20src.rez` and the update's readme: `assets/README.md`), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, the run scripts `linux-run.sh` and `linux-server.sh`, and the install scripts `linux-install.sh`, `windows-install.bat` and `mac-install.command` | other persons |
+
+An archive holds only the files that the game directory's `MANIFEST.txt`
+names: never the files that the game, the server, the launcher or a test
+wrote into the directory when it ran (saves, profiles, settings, server
+data, the ban list `bl.dat`, logs). So you can package a directory that
+you played in, and each archive is a fresh install. (The tests do not
+write into a game directory: each run has a directory of its own,
+`build/rundir.py`.)
 
 Both archives have the run scripts (`build/game-scripts/`, below). The
 install scripts copy the game's data and the third-party runtime

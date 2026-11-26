@@ -62,7 +62,8 @@
 #                          rate limit of its own for each client
 #
 # Each program runs in a directory of its own in out/play/<name>/ (srv/,
-# c1/, c2/: binaries copied, data linked, as build/playtest.sh does), with
+# c1/, c2/: binaries copied, data linked, as build/playtest.sh does:
+# build/rundir.py; nothing is written into the game directory), with
 # a Wine prefix of its own (a copy of the container's, in /tmp, removed at
 # the end: one game's DLLs, which it takes out of the rez files into the
 # Temp folder, must not be written over by another's) and an X display of
@@ -130,7 +131,6 @@ WORLD="${MPTEST_WORLD:-$DEFWORLD}"
 NAME="${MPTEST_NAME:-$(basename "$GAME")-mp-$MODE-$TYPE}"
 RUN="$REPO/out/play/$NAME"
 rm -rf "$RUN"; mkdir -p "$RUN/shots"
-REL="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$GAME" "$RUN/srv")"
 
 # The configuration the host screen writes (ServerGameOptions::SaveToBute):
 # LAN only, port 27888, the one world. Light cycles: retail's light-cycle
@@ -142,14 +142,13 @@ config() {
     printf 'Locked = 0\r\nDedicated = %s\r\nLANOnly = %s\r\nAllowSCMD = 0\r\n\r\n' "$1" "${MPTEST_LANONLY:-$LANONLY_DEF}"
     printf '[%s]\r\nMaxPlayers = 8\r\nMap00 = "%s"\r\n' "$SEC" "$WORLD"
 }
-setup() {   # setup <dir>: binaries copied, data linked, the shipped settings
+# setup <dir>: binaries copied, data linked, the shipped settings
+# (build/rundir.py: real directories, and only the files of MANIFEST.txt,
+# so that no program writes into the game directory: not the server's ban
+# list bl.dat, not LightCycleGameData/)
+setup() {
     mkdir -p "$1/Save" "$1/Profiles" "$1/ServerData"
-    for f in "$GAME"/*; do
-        b=$(basename "$f")
-        case "$b" in autoexec.cfg|Save|Profiles|ServerData|tron20cmds.txt|launchcmds.txt|MANIFEST.txt) continue ;; esac
-        if [ -f "$f" ] && [ "$(head -c 2 "$f" | tr -d '\0')" = MZ ]; then cp "$f" "$1/$b"
-        else ln -s "$REL/$b" "$1/$b"; fi
-    done
+    python3 -I "$REPO/build/rundir.py" "$GAME" "$1" autoexec.cfg Save Profiles ServerData tron20cmds.txt launchcmds.txt MANIFEST.txt || exit 2
     cp "$GAME/autoexec.cfg.retail" "$1/autoexec.cfg"
     cp "$GAME/Default.prf.retail" "$1/Profiles/Default.prf"
 }
