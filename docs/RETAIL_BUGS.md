@@ -2115,3 +2115,15 @@ an axis. A joystick's control is bound by its name, as the code intends
 for both. The test should be false for the two device types.
 
 Fixed in the modern build: ScreenConfigure.cpp, MODERN.md CL-24.
+
+### The console's Shift and Ctrl keys are all Ctrl
+
+Lithtech.exe 0x49a800 (CConsole::OnKeyPress) and 0x498fc0
+(CConCommandBox::OnKeyPress), src/Engine/runtime/client/src/sys/win/
+winconsole_impl.cpp. Both call IsKeyDown to test Ctrl or Shift, but
+IsKeyDown tests VK_CONTROL whatever key it gets. Thus Shift+Tab does what
+Tab does (the next name, not the one before). The final build never shows
+the console, so a player does not see it.
+
+Fixed in the modern build: winconsole_impl.cpp (IsKeyDown), MODERN.md
+EN-70.

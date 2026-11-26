@@ -147,6 +147,14 @@ so you can display a loading screen.
 //! Called when \b NullRender is 1 and we have regained focus.
     LTEVENT_GAINEDFOCUS =         7   ,
 
+#ifdef TRON20SRC_MODERN
+/*!
+MODERN.md EN-70: the developer console came down (\b dwParam 1) or went
+away (\b dwParam 0). Sent from the client's update, not from the key's
+window message, so that the game can pause or unpause there.
+*/
+    LTEVENT_CONSOLE =             100 ,
+#endif
 };
 
 

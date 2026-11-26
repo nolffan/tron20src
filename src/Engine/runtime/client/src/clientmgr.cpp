@@ -757,6 +757,33 @@ void cm_HandleMaxFPS(uint32 frameTicks)
 
 
 #ifdef TRON20SRC_MODERN
+// MODERN.md EN-70: tell the game when the console has come down or gone
+// away (its keys are in the window procedure, client.cpp; a new world
+// puts it away too, StartShell), so that the game can pause a
+// single-player game while it is up. From here, at the start of a frame,
+// not from the window message: the game can send its pause to the server
+// then.
+// The thread of the client's update, the only one that draws the console
+// (FlipScreen, winclientde_impl.cpp)
+DWORD g_dwModernConsoleThread = 0;
+
+static void cm_ModernConsoleEvent()
+{
+    static LTBOOL s_bWasUp = LTFALSE;
+
+    g_dwModernConsoleThread = GetCurrentThreadId();
+
+    LTBOOL bUp = dsi_IsConsoleUp() ? LTTRUE : LTFALSE;
+    if (bUp == s_bWasUp)
+        return;
+
+    s_bWasUp = bUp;
+    if (bUp)
+        con_ModernOnOpen();
+    if (i_client_shell != NULL)
+        i_client_shell->OnEvent(LTEVENT_CONSOLE, bUp);
+}
+
 // MODERN.md EN-40, EN-44: the frame limiter. Retail's MaxFPS is 0 (no
 // limit) unless set, and when set its cm_HandleMaxFPS above times the frame
 // from an uninitialised value (Update, Lithtech.exe 0x40df80), so the game
@@ -1100,6 +1127,10 @@ LTRESULT CClientMgr::Update()
             }
         }
     }
+
+#ifdef TRON20SRC_MODERN
+    cm_ModernConsoleEvent();	// MODERN.md EN-70
+#endif
 
     // Forward windows messages to the scripts.
     if (!dsi_IsConsoleUp())

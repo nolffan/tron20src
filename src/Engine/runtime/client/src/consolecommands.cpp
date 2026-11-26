@@ -958,6 +958,121 @@ void c_CommandHandler(const char *pCommand)
 }	
 
 
+#ifdef TRON20SRC_MODERN
+// Is pName a command (the engine's, or one the game registered)?
+static bool c_ModernIsCommand(const char *pName)
+{
+	LTLink *pCur = g_ClientConsoleState.m_ExtraCommands.m_pNext;
+	while (pCur != &g_ClientConsoleState.m_ExtraCommands)
+	{
+		LTExtraCommandStruct *pCommand = (LTExtraCommandStruct*)pCur->m_pData;
+		if (stricmp(pCommand->pCmdName, pName) == 0)
+			return true;
+		pCur = pCur->m_pNext;
+	}
+	return false;
+}
+
+static LTEngineVar *c_ModernFindEngineVar(const char *pName)
+{
+	LTEngineVar *pEngineVars = GetEngineVars();
+	int nEngineVars = GetNumEngineVars();
+	for (int i = 0; i < nEngineVars; i++)
+	{
+		if (pEngineVars[i].pVarName && stricmp(pEngineVars[i].pVarName, pName) == 0)
+			return &pEngineVars[i];
+	}
+	return LTNULL;
+}
+
+// MODERN.md EN-70: the command handler says nothing when a variable is set,
+// and nothing when a name is not a command or a variable (a mistyped name
+// silently makes a variable of that name). After the line has run, each
+// of its statements that is not a command gets an answer: the variable's
+// new value, or that the name is unknown. (One known variable's name alone
+// prints its value already, but an engine variable that nothing has set
+// is not a console variable: its value is printed here.)
+void c_ModernTypedCommand(const char *pCommand)
+{
+	cc_HandleCommand(&g_ClientConsoleState, pCommand);
+
+	ConParse parse;
+	parse.Init(pCommand);
+	while (parse.Parse())
+	{
+		if (parse.m_nArgs < 1 || c_ModernIsCommand(parse.m_Args[0]))
+			continue;
+
+		const char *pName = parse.m_Args[0];
+		if (pName[0] == '+' || pName[0] == '-')
+			++pName;
+
+		LTCommandVar *pVar = cc_FindConsoleVar(&g_ClientConsoleState, pName);
+		if (parse.m_nArgs == 2 && pVar && pVar->pStringVal)
+		{
+			con_Printf(CONRGB(160, 200, 255), 0, "%s = %s", pVar->pVarName, pVar->pStringVal);
+			continue;
+		}
+		if (pVar)
+			continue;
+
+		LTEngineVar *pEngineVar = c_ModernFindEngineVar(pName);
+		if (parse.m_nArgs == 1 && pEngineVar)
+		{
+			if (pEngineVar->pValueAddressFloat)
+				con_Printf(CONRGB(160, 200, 255), 0, "%s = %g", pEngineVar->pVarName, *pEngineVar->pValueAddressFloat);
+			else if (pEngineVar->pValueAddressLong)
+				con_Printf(CONRGB(160, 200, 255), 0, "%s = %d", pEngineVar->pVarName, *pEngineVar->pValueAddressLong);
+			else if (pEngineVar->pValueAddressString)
+				con_Printf(CONRGB(160, 200, 255), 0, "%s = %s", pEngineVar->pVarName,
+					*pEngineVar->pValueAddressString ? *pEngineVar->pValueAddressString : "");
+		}
+		else if (parse.m_nArgs != 2)
+			con_Printf(CONRGB(255, 160, 100), 0, "Unknown command or variable: %s", parse.m_Args[0]);
+	}
+}
+
+void c_ModernEnumNames(const char *pPrefix, ModernNameFn fn, void *pUser)
+{
+	int nPrefix = strlen(pPrefix);
+	int i;
+
+	// The commands: the engine's own are in this list too
+	LTLink *pCur = g_ClientConsoleState.m_ExtraCommands.m_pNext;
+	while (pCur != &g_ClientConsoleState.m_ExtraCommands)
+	{
+		LTExtraCommandStruct *pCommand = (LTExtraCommandStruct*)pCur->m_pData;
+		if (strnicmp(pCommand->pCmdName, pPrefix, nPrefix) == 0)
+			fn(pCommand->pCmdName, pUser);
+		pCur = pCur->m_pNext;
+	}
+
+	// The variables that exist (set by a config file, the command line,
+	// the game or the console)
+	HHashIterator *hIterator = hs_GetFirstElement(g_ClientConsoleState.m_VarHash);
+	while (hIterator)
+	{
+		HHashElement *hElement = hs_GetNextElement(hIterator);
+		if (!hElement)
+			continue;
+
+		LTCommandVar *pVar = (LTCommandVar*)hs_GetElementUserData(hElement);
+		if (pVar && pVar->pVarName && strnicmp(pVar->pVarName, pPrefix, nPrefix) == 0)
+			fn(pVar->pVarName, pUser);
+	}
+
+	// The engine's variables, set or not
+	LTEngineVar *pEngineVars = GetEngineVars();
+	int nEngineVars = GetNumEngineVars();
+	for (i = 0; i < nEngineVars; i++)
+	{
+		if (pEngineVars[i].pVarName && strnicmp(pEngineVars[i].pVarName, pPrefix, nPrefix) == 0)
+			fn(pEngineVars[i].pVarName, pUser);
+	}
+}
+#endif // TRON20SRC_MODERN
+
+
 
 CClientConIterator::CClientConIterator() :
 	m_eState(STATE_COMMAND),

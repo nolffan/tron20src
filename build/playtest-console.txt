@@ -1,0 +1,97 @@
+# playtest-console.txt -- the modern build's developer console
+# (docs/MODERN.md EN-70), in the first single-player level. Into control,
+# then the console opened with the key left of 1 (backquote) over play
+# (the game pauses, quietly), a variable set, GetPos, a name completed
+# with Tab, names listed, a line recalled with Up, an unknown name, a
+# cheat (Cheat mppos); closed, and play goes on (a walk, the position
+# shown by the cheat); opened again: SetPos back to the start (GetPos
+# there again); then opened with Shift+Esc and closed with Esc, and the
+# in-game menu as before. Run it on the modern game directory:
+#   make test TEST_GAME=out/tron20-modern-release \
+#     TEST_SCRIPT=build/playtest-console.txt \
+#     TEST_WORLD='Worlds\RetailSinglePlayer\M01-01'
+# also with TEST_RES=1920x1080, and with TEST_CFG=<a file with the line
+# "AntiAliasFSOverSample" "4">. The SetPos line is the start of M01-01,
+# as GetPos gives it.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+shot play
+# open it: the game pauses under it
+key grave
+wait 1
+shot console
+type maxfps 120
+key Return
+wait 0.5
+type getpos
+key Return
+wait 0.5
+# a variable alone: its value
+type consolealpha
+key Return
+wait 0.5
+# an unknown name
+type nosuchname
+key Return
+wait 0.5
+# Tab: one name starts so: completed
+type showversioni
+key Tab
+key Return
+wait 0.5
+# Tab: some names: listed, completed as far as they agree
+type consolefon
+key Tab
+wait 0.5
+shot completed
+key Escape
+wait 1
+key grave
+wait 1
+# Up: the last line again
+key Up
+wait 0.5
+shot recalled
+key Return
+wait 0.5
+type cheat mppos
+key Return
+wait 1
+shot typed
+# close it: play goes on (the mppos cheat shows where the player is)
+key grave
+wait 2
+shot closed
+hold w 0.7
+wait 1
+shot walked
+# back to where M01-01 starts (what GetPos said there), with SetPos
+key grave
+wait 1
+type setpos 2816.0 -1745.9 -4992.0
+key Return
+wait 1
+type getpos
+key Return
+wait 1
+shot setpos
+key grave
+wait 2
+shot back
+# Shift+Esc opens it, Esc closes it
+down Shift_L
+key Escape
+up Shift_L
+wait 1
+shot shift-esc
+key Escape
+wait 2
+shot closed-again
+# the in-game menu, as before
+key Escape
+wait 3
+shot menu-ingame
+key Escape
+wait 3
+shot resumed

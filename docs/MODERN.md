@@ -106,6 +106,10 @@ executable, or in the console), new or with a changed meaning.
 | `PadMoveDeadZone` | float | 0.2 | the left stick's radial dead zone (0 to 0.9); "Move dead zone" (0 to 50) | CL-20, CL-23 |
 | `PadHoldButtons` | int | 0 | the controller's buttons (XInput's bits) that the bindings do not see while the client reads them itself (a decision window); the client sets it, `autoexec.cfg` does not keep it; not a setting | EN-20, CL-22 |
 | `PosLog` | float | 0 (no variable) | 1: write the player's position each frame to `poslog.txt`, and the light cycles' positions to `lcpos.txt` (the frame-rate tests, `build/fpscheck.py`) | EN-45 |
+| `ConsoleEnable` | int | 1 | existing; 0 now also keeps the drawn console shut (its keys are then ordinary keys) | EN-70 |
+| `ConsoleFont` | string | (empty) | the console's font: a font file of the game's resources; empty: `Interface\Fonts\TRON_CONSOLE11.ffb` (and `TwenCen_20.ffb` if that does not load). Read when the console is first drawn | EN-70 |
+| `ConsoleFontSize` | int | 0 | the console's letter height in pixels (10 to 96); 0: the whole multiple of the font's height (12) nearest to a 45th of the screen's height | EN-70 |
+| `ConsoleLeft`, `ConsoleTop`, `ConsoleRight`, `ConsoleBottom` | int | -1, -1, -1, -2 | existing: the console's rectangle (a negative value -n: the edge at a nth of the screen from the edge; -1 the edge of the screen); by default the top half of the screen | EN-70 |
 | `MusicPlayer` | int | 0 | the music: 0 DirectMusic, and the modern music player when DirectMusic does not start (Wine, Proton); 1 always the modern music player; 2 only DirectMusic (as retail). Read when the music starts (each level) | X-3 |
 
 ## Done
@@ -1214,6 +1218,115 @@ Not tested: a real controller (none under Wine and Xvfb), the decision
 windows with the pad (no decision in the first minutes of the first
 level), Configure controls' capture of a pad button, and the Back binding.
 
+### Console
+
+* **EN-70: the developer console.** Retail never shows the engine's
+  console. The final build keeps the console's text (each line that the
+  engine and the game print), its command line, its history and its
+  command handler, but no key opens it (the backquote key of the
+  development build is compiled out of the window procedure), nothing
+  calls `con_Draw`, and `CConsole::Draw` (0x488960, kept from the later
+  tree) draws its text with a font that Tron 2.0's engine never makes: the
+  font manager of Tron 2.0 makes a font only from a font file. Thus
+  console commands came only from the command line and `autoexec.cfg`.
+  The modern build shows the console again, in the engine, as nolf2src's
+  M-E5 does (that item, and nolfsrc's M-P2-14 and M-P2-15, gave the
+  design; the code here is Tron 2.0's own):
+  * **Keys** (`kernel/src/sys/win/client.cpp`, `cl_ModernConsoleKey` in
+    `WM_KEYDOWN`): the key to the left of 1 (by its scan code, 0x29, so
+    the key in that place on each keyboard layout; backquote on a US
+    keyboard) or Shift+Esc opens it. Either key, or Esc, closes it. The
+    character of the key is taken out of the message queue, so it does
+    not get to the game. `ConsoleEnable 0` keeps it shut: the keys are
+    then ordinary keys, as in retail. While the console is down, the
+    engine gives no key to the game and clears the controls (retail's own
+    `IsConsoleUp` tests in `CClientMgr`). The game's window hook
+    (`HookedWindowProc`) does not give the typed characters, the mouse's
+    clicks or the wheel to the screens or the chat line. The client's own
+    reading of the controller (CL-20, `clientpad.cpp` `Pad_Update`) stops.
+  * **Drawing** (`winconsole_impl.cpp`, `CConsole::Draw` of the modern
+    build, `ModernMakeFont`, `ModernDrawText`, `ModernDrawBackground`;
+    `winclientde_impl.cpp`, `cis_FlipScreen`): `FlipScreen` draws the
+    console over the finished frame, from the client's thread only (not
+    from a loading screen's thread). A dark blue band with a cyan edge
+    over the console's rectangle (`ConsoleLeft`... : the top half of the
+    screen, the full width at each shape of screen) is drawn with
+    `DrawPrim`. The text is drawn with the engine's font manager and one
+    polystring: the font is `TRON_CONSOLE11.ffb`, a fixed-pitch console
+    font that the game ships in `Game.rez` and does not use (12 pixels
+    high, each character 7 pixels wide), or `ConsoleFont`. Its height is
+    the whole multiple of 12 nearest to a 45th of the screen's height (12
+    up to 1366x768, 24 at 1920x1080, 48 at 3840x2160), or
+    `ConsoleFontSize`: a bitmap font scaled by a whole number keeps its
+    dots and strokes (at 10 pixels, a 45th of 480, the periods and colons
+    were lost). Nothing locks the back buffer, so the console shows with
+    antialiasing on (a multisampled back buffer cannot be locked). A
+    renderer restart (a new mode, antialiasing) makes the font again
+    (`CConsole::Init` calls `Term`).
+  * **Lines** (`FinishCommand`; `consolecommands.cpp`,
+    `c_ModernTypedCommand`, `c_ModernEnumNames`): each line is shown
+    after `> `. A variable that is set shows its new value; a variable
+    name alone shows its value (also an engine variable that nothing has
+    set, which is not a console variable); a name that is not a command
+    or a variable gives "Unknown command or variable". Up and Down give
+    the lines typed before (Jupiter's history, which finds the lines that
+    start with what is typed). Tab completes a command or a variable name
+    (the engine's commands, the game's, the variables), as far as the
+    names that start with it agree, and lists them if there are more.
+    Page Up and Page Down scroll the text. Retail's `IsKeyDown` tests
+    Ctrl whatever key it gets (RETAIL_BUGS.md): fixed.
+  * **Pause** (`clientmgr.cpp`, `cm_ModernConsoleEvent`; `ltcodes.h`,
+    `LTEVENT_CONSOLE`; `GameClientShell.cpp` `OnEvent`): at the start of
+    the next frame the engine tells the game that the console came down
+    or went away. A single-player game in play pauses, without the pause
+    text and the tint, and continues when the console goes away (unless
+    something else unpaused it). Multiplayer continues; the player
+    stands still. `CInterfaceMgr::OnEvent` goes to the main menu for an
+    event that it does not know, as NOLF2's does (its `default` case):
+    the new event is in its list (`InterfaceMgr.cpp`).
+  * **Commands** (`GameClientShell.cpp`, `GetPosFn`, `SetPosFn`):
+    `GetPos` prints the player's position as `SetPos x y z` (the level's
+    coordinates, as the `mppos` cheat shows them). `SetPos x y z` sends
+    retail's teleport message (`MID_PLAYER_TELEPORT`): the console
+    command `Teleport` sends it only in a development build
+    (`CPlayerMgr::Teleport` is compiled out), but the server of the final
+    build handles it (`CGameServerShell::HandlePlayerTeleport`, a case of
+    retail's `OnMessage` at 0x100deab0): the server puts the player on the
+    floor below the point, facing as before, and then moves the client.
+    Only in single player, for a living player on foot (not on a light
+    cycle). Tron 2.0's cheats are typed in the chat line (`mpgod`, ...);
+    the console's `Cheat` command, which retail registers
+    (`CCheatMgr::Init`), takes them too: `Cheat mpgod`. In multiplayer
+    they do what retail lets them do there.
+
+  Not taken from nolf2src's M-E5: a TrueType face (Tron 2.0's font
+  manager has no TrueType fonts). Not done: a `help` command (Tab lists
+  the names), the console's lines over play when it is shut
+  (`NumConsoleLines`).
+
+  Tested (`build/playtest-console.txt`, M01-01; looked at in the shots) at
+  640x480, at 1920x1080, and at 1920x1080 with `AntiAliasFSOverSample 4`
+  (`make test` with the new `TEST_RES`, and `TEST_CFG`): the console
+  opened over play,
+  `maxfps 120` (`maxfps = 120`), `getpos` (`SetPos 2816.0 -1745.9
+  -4992.0`), a variable name alone, an unknown name, Tab (one name:
+  completed; two names: listed), Up, `cheat mppos` (the position shown on
+  the HUD), closed, a walk (the position changes), `setpos` back to the
+  start (`getpos` gives the start again), Shift+Esc opens, Esc closes, the
+  in-game menu opens and closes. While the console was down, the scene
+  under it did not change in 2 s (0 pixels changed, against about 22000
+  in 2 s with the console shut): the game is paused. Multiplayer (`make
+  mptest`, Disc Arena on the dedicated server, `MPTEST_KEYS1`, the new
+  `shot:<name>` key of `build/mptest.sh`): on client 1 the console opened
+  over the match, `getpos` gave its position, `setpos 1 2 3` was refused,
+  an unknown name answered; both clients stayed joined and saw each
+  other, and the match clock went on. Client 2 opened the chat line,
+  typed `hi`, opened and closed the console with the backquote key and
+  typed `jo`: the chat line was `hijo` (no backquote), and the console
+  opened over the chat line with an empty command line. Not tested: a keyboard layout other than US
+  (Xvfb's is US), and real antialiasing (Wine's software renderer under
+  Xvfb).
+
 ### Inherited engine items
 
 The engine came from cjacksrc's with its modern code. Each item is now
@@ -1389,12 +1502,14 @@ DLL names in every retail binary):
 | File | Agents | Who changes what |
 |---|---|---|
 | `render_a/.../d3d_device.cpp` `SetPresentationParams` | Display (EN-33, CL-34: multisampling, the flags), Frame rate (EN-43, EN-62: the presentation interval) | Display first; Frame rate changes only the interval lines |
-| `client/src/clientmgr.cpp` | Display (EN-30, CL-33: `CClientMgr::Render`, `cm_WidescreenFovX`), Frame rate (EN-40, EN-44: `CClientMgr::Update`, `cm_ModernFrameLimit`) | separate functions |
-| `kernel/src/sys/win/client.cpp` | Display (EN-2, CL-31: focus, window), Input (EN-24: `WM_INPUT` in the window procedure) | Input adds only the `WM_INPUT` case |
-| `shared/src/engine_vars.cpp` | Display (new display variables), Frame rate (`MaxFPS`) | append only |
+| `client/src/clientmgr.cpp` | Display (EN-30, CL-33: `CClientMgr::Render`, `cm_WidescreenFovX`), Frame rate (EN-40, EN-44: `CClientMgr::Update`, `cm_ModernFrameLimit`), Console (EN-70: `cm_ModernConsoleEvent` and its call in `Update`) | separate functions |
+| `kernel/src/sys/win/client.cpp` | Display (EN-2, CL-31: focus, window), Input (EN-24: `WM_INPUT` in the window procedure), Console (EN-70: the start of `WM_KEYDOWN`) | Input adds only the `WM_INPUT` case; Console only `cl_ModernConsoleKey` and its call |
+| `shared/src/engine_vars.cpp` | Display (new display variables), Frame rate (`MaxFPS`), Console (EN-70: `ConsoleFont`, `ConsoleFontSize`) | append only |
 | `TRON/ScreenDisplay.cpp` | Display (CL-30, CL-31, CL-32, CL-33), Frame rate (EN-44: one frame-limit control) | Display owns it; Frame rate adds its control after Display |
 | `ClientShellShared/PlayerCamera.cpp`, `PlayerMgr.cpp`, `TRON/TronPlayerMgr.cpp` | Display (CL-33: FOV), Frame rate (EN-45: frame-time steps) | separate functions; coordinate |
-| `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp` | Display (CL-33), Input (CL-20: the pad's update) | separate functions |
+| `ClientShellShared/GameClientShell.cpp`, `TRON/TronGameClientShell.cpp` | Display (CL-33), Input (CL-20: the pad's update), Console (EN-70: `OnEvent`'s `LTEVENT_CONSOLE` case, `HookedWindowProc`'s first test, `GetPosFn`, `SetPosFn`) | separate functions |
+| `tron20src/xinput/clientpad.cpp` | Input (CL-20), Console (EN-70: one test in `Pad_Update`) | Console adds only that test |
+| `client/src/sys/win/winclientde_impl.cpp` | Display (EN-11, ...), Console (EN-70: `cis_FlipScreen`) | separate functions |
 | `ClientShellShared/ProfileMgr.cpp` | Apps (APPS-3: `ProfileName` in the registry), Input (CL-20: bindings), Display (new settings) | each its own settings; APPS-3 did not change the file (`CRegMgr` keeps its calls) |
 | `TRON/TronGameServerShell.cpp` | Online (GS-1, GS-4), Frame rate (EN-45: the update) | separate functions |
 | `TRON/BaseScreenJoin.cpp`, `TRON/TronCDKey.cpp` | Online (GS-3, GS-4), Apps (APPS-3: the CD key in the registry) | Online owns them; Apps gives the storage |

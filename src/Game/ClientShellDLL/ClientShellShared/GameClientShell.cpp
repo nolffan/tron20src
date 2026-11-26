@@ -93,6 +93,11 @@ RECT*				g_prcClip = NULL;
 
 CGameClientShell*   g_pGameClientShell = NULL;
 #ifdef TRON20SRC_MODERN
+// MODERN.md EN-70: the engine's console is down (LTEVENT_CONSOLE), and it
+// paused the game
+bool				g_bModernConsoleUp = false;
+static bool			s_bModernConsolePaused = false;
+
 // MODERN.md CL-20: the controller, the client's half (compiled here: the
 // project files are the retail ones)
 #include "xinput/clientpad.cpp"
@@ -367,6 +372,81 @@ void TeleportFn(int argc, char **argv)
 	}
 }
 
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-70: GetPos and SetPos (nolfsrc's M-P2-14), for the console.
+// The positions are the level's (the editor's), as the mppos cheat shows
+// them and Teleport takes them, unless ApplyWorldOffset is 0.
+
+// GetPos: where the player is, in the form that SetPos takes
+void GetPosFn(int argc, char **argv)
+{
+	HLOCALOBJ hPlayerObj = g_pLTClient->GetClientObject();
+	if (!hPlayerObj)
+	{
+		g_pLTClient->CPrint("GetPos: no player");
+		return;
+	}
+
+	LTVector vPos;
+	g_pLTClient->GetObjectPos(hPlayerObj, &vPos);
+
+	if ((uint32)g_vtApplyWorldOffset.GetFloat(1.0f))
+	{
+		LTVector vOffset;
+		g_pLTClient->GetSourceWorldOffset(vOffset);
+		vPos += vOffset;
+	}
+
+	g_pLTClient->CPrint("SetPos %.1f %.1f %.1f", vPos.x, vPos.y, vPos.z);
+}
+
+// SetPos <x> <y> <z>: put the player there, on the floor below it, facing
+// as before, in single player, on foot. Retail's Teleport command does
+// nothing in the final build (CPlayerMgr::Teleport is compiled out); the
+// server's handler of its message is in the final build (CGameServerShell::
+// HandlePlayerTeleport, CPlayerObj::Teleport: the server moves the player
+// and then the client, so nothing between the two places is touched), and
+// this sends that message.
+void SetPosFn(int argc, char **argv)
+{
+	if (argc < 3)
+	{
+		g_pLTClient->CPrint("SetPos <x> <y> <z>");
+		return;
+	}
+
+	if (IsMultiplayerGame() || !g_pGameClientShell || !g_pGameClientShell->IsWorldLoaded() ||
+		!g_pPlayerMgr || g_pPlayerMgr->IsPlayerDead() ||
+		(g_pMoveMgr && g_pMoveMgr->GetVehicleMgr() &&
+		 g_pMoveMgr->GetVehicleMgr()->GetPhysicsModel() == PPM_LIGHTCYCLE))
+	{
+		g_pLTClient->CPrint("SetPos: only for a living player on foot in single player");
+		return;
+	}
+
+	LTVector vPos;
+	vPos.x = (float) atof(argv[0]);
+	vPos.y = (float) atof(argv[1]);
+	vPos.z = (float) atof(argv[2]);
+
+	if ((uint32)g_vtApplyWorldOffset.GetFloat(1.0f))
+	{
+		LTVector vOffset;
+		g_pLTClient->GetSourceWorldOffset(vOffset);
+		vPos -= vOffset;
+	}
+
+	LTVector vPitchYawRoll;
+	g_pPlayerMgr->GetPlayerPitchYawRoll(vPitchYawRoll);
+
+	CAutoMessage cMsg;
+	cMsg.Writeuint8(MID_PLAYER_TELEPORT);
+	cMsg.WriteLTVector(vPos);
+	cMsg.WriteLTVector(vPitchYawRoll);
+	g_pLTClient->SendToServer(cMsg.Read(), MESSAGE_GUARANTEED);
+}
+#endif // TRON20SRC_MODERN
 
 void ChaseToggleFn(int argc, char **argv)
 {
@@ -957,6 +1037,10 @@ uint32 CGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
     g_pLTClient->RegisterConsoleProgram("InitSound", InitSoundFn);
     g_pLTClient->RegisterConsoleProgram("ExitLevel", ExitLevelFn);
     g_pLTClient->RegisterConsoleProgram("Teleport", TeleportFn);
+#ifdef TRON20SRC_MODERN
+    g_pLTClient->RegisterConsoleProgram("GetPos", GetPosFn);	// MODERN.md EN-70
+    g_pLTClient->RegisterConsoleProgram("SetPos", SetPosFn);
+#endif
     g_pLTClient->RegisterConsoleProgram("ChaseToggle", ChaseToggleFn);
     g_pLTClient->RegisterConsoleProgram("Music", MusicFn);
     g_pLTClient->RegisterConsoleProgram("Stimulus", StimulusFn);
@@ -1321,6 +1405,40 @@ void CGameClientShell::OnEvent(uint32 dwEventID, uint32 dwParam)
 			m_Music.Play();
 		}
 		break;
+
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-70: the engine's console came down or went away. A
+		// single-player game in play pauses under it, quietly (the pause
+		// text and the tint stay off: the console is over the view), and
+		// goes on when it goes away, unless something else unpaused it or
+		// the game left play meanwhile (a new level unpauses itself).
+		// Multiplayer goes on; the engine keeps the keys and the controls
+		// from the game in both.
+		case LTEVENT_CONSOLE:
+		{
+			g_bModernConsoleUp = (dwParam != 0);
+			if (g_bModernConsoleUp)
+			{
+				if (!IsMultiplayerGame() && !IsGamePaused() &&
+					GetInterfaceMgr()->GetGameState() == GS_PLAYING)
+				{
+					PauseGame(true, true);
+					g_pPaused->Show(LTFALSE);
+					GetInterfaceMgr()->GetFullScreenTint()->TurnOn(false);
+					s_bModernConsolePaused = true;
+				}
+			}
+			else if (s_bModernConsolePaused)
+			{
+				s_bModernConsolePaused = false;
+				if (IsGamePaused() && GetInterfaceMgr()->GetGameState() == GS_PLAYING)
+				{
+					PauseGame(false);
+				}
+			}
+		}
+		break;
+#endif
 
 
         case LTEVENT_RENDERTERM:
@@ -4346,6 +4464,27 @@ static void OnMouseWheel(HWND hWnd, int nDelta)
 
 LRESULT CALLBACK HookedWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: while the console is down, the characters typed and
+	// the mouse's clicks and wheel are the console's, not the screens' or
+	// the chat line's (the engine keeps the keys and the controls from
+	// the game already)
+	if (g_bModernConsoleUp)
+	{
+		switch(uMsg)
+		{
+			case WM_CHAR:
+			case WM_LBUTTONUP:
+			case WM_LBUTTONDOWN:
+			case WM_LBUTTONDBLCLK:
+			case WM_RBUTTONUP:
+			case WM_RBUTTONDOWN:
+			case WM_RBUTTONDBLCLK:
+			case WM_MOUSEWHEEL:
+				return(CallWindowProc(g_pfnMainWndProc,hWnd,uMsg,wParam,lParam));
+		}
+	}
+#endif
 	switch(uMsg)
 	{
 		HANDLE_MSG(hWnd, WM_LBUTTONUP, CGameClientShell::OnLButtonUp);

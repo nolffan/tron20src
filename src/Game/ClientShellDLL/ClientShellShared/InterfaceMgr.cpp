@@ -2330,6 +2330,14 @@ LTBOOL CInterfaceMgr::OnEvent(uint32 dwEventID, uint32 dwParam)
 		case LTEVENT_GAINEDFOCUS:
 		break;
 
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-70: the console down or up (CGameClientShell::OnEvent);
+		// not an error, which an event not listed here is taken for (the
+		// default goes to the main menu)
+		case LTEVENT_CONSOLE:
+		break;
+#endif
+
 
 		default :
 		{

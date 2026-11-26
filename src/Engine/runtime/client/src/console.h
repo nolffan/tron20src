@@ -42,6 +42,12 @@ void con_OnKeyPress(uint32 key);
 void con_Draw();
 void con_DrawSmall(int nLines);
 
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-70: the console came down (the client's update): an empty
+// command line, the newest text
+void con_ModernOnOpen();
+#endif
+
 // Cycle thru the commands they've typed in...
 void con_CycleCommandsBack();
 void con_CycleCommandsForward();

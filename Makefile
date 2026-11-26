@@ -32,6 +32,9 @@ TEST_NAME ?= $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,tes
 # console variables appended to the run's autoexec.cfg (playtest.sh's
 # PLAYTEST_CFG), for example build/fps-60.cfg (docs/MODERN.md EN-45)
 TEST_CFG ?=
+# the screen mode of `make test` (playtest.sh's PLAYTEST_RES, WxH; empty:
+# 640x480), for example 1920x1080
+TEST_RES ?=
 # make tests' run names: test-<script> for the legacy release, and
 # test-<game directory>-<script> for any other game directory
 TESTS_PREFIX = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test-,test-$(notdir $(TEST_GAME:%/=%))-)
@@ -81,7 +84,7 @@ help:
 	@echo "                (where the install scripts find each file in the discs and the update)"
 	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
 	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
-	@echo "                TEST_GAME=<dir>; results in out/play/test*/)"
+	@echo "                TEST_GAME=<dir>, TEST_RES=<WxH>, TEST_CFG=<file>; results in out/play/test*/)"
 	@echo "make control    out/tron20-control/: the retail game DLLs with our engine, to tell"
 	@echo "                our game code's faults from the engine's or Wine's (diagnosis only)"
 	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
@@ -153,7 +156,7 @@ retail-ways: retail
 # out/play/<name>/shot.png
 test: image
 	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
-	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) $(if $(TEST_CFG),PLAYTEST_CFG=$(TEST_CFG)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
+	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) $(if $(TEST_CFG),PLAYTEST_CFG=$(TEST_CFG)) $(if $(TEST_RES),PLAYTEST_RES=$(TEST_RES)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
 
 # The control for the runtime tests (build/control.sh): retail's game DLLs
 # with our engine, in out/tron20-control/ (make test TEST_GAME=out/tron20-control).

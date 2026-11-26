@@ -94,3 +94,11 @@ void con_OnKeyPress(uint32 key)
 	if (dsi_IsConsoleEnabled () == TRUE)
 		GETCONSOLE()->OnKeyPress( key );
 }
+
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-70
+void con_ModernOnOpen()
+{
+	GETCONSOLE()->ModernOnOpen();
+}
+#endif

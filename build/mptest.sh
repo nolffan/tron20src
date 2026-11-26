@@ -25,7 +25,8 @@
 #   MPTEST_KEYS1/2="..."   what each client plays once it is in: keysyms,
 #                          wN (wait N seconds), fire (mouse button 1),
 #                          turn (the mouse to the right), click:X,Y (a
-#                          click on the 640x480 screen); default: F1, a
+#                          click on the 640x480 screen), shot:<name> (a
+#                          screenshot of that client); default: F1, a
 #                          team (client 1 the first, client 2 the second),
 #                          then a short walk, turns and discs thrown
 #   MPTEST_LANONLY=0       a game that is not LAN only: the server reports
@@ -244,6 +245,7 @@ play() {
                DISPLAY=$d xdotool click 1; sleep 3; shot $p menu ;;
             fire) DISPLAY=$d xdotool mousedown 1; sleep 0.3; DISPLAY=$d xdotool mouseup 1; sleep 1 ;;
             turn) DISPLAY=$d xdotool mousemove_relative -- 80 0; sleep 0.5 ;;
+            shot:*) shot $p ${k#shot:} ;;
             *) [ -n "$win" ] && DISPLAY=$d xdotool windowfocus $win 2>/dev/null
                DISPLAY=$d xdotool keydown $k; sleep 0.4; DISPLAY=$d xdotool keyup $k; sleep 0.5 ;;
         esac
