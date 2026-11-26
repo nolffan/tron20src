@@ -463,15 +463,15 @@ Not fixed yet: the modern build should break after that case.
 ### Loading object.lto leaks or mis-frees its class module on an error
 
 server.dll 0x10001839 (cb_LoadModule, the engine's shared/src/classbind.cpp).
-The module record (12 bytes) is allocated with `new` (LTMemAlloc) before
+The module record (12 bytes) is allocated with LTMemAlloc before
 object.lto is bound; when the DLL cannot be found or has no ObjectDLLSetup
 it is never freed, and on a version mismatch it is freed with the C
-runtime's `free()`, which is not the allocator that made it. The game then
-fails to start the world either way, so it only shows as a leak (or a heap
-complaint in a debug runtime).
+runtime's `free()` and not with LTMemFree. LTMemAlloc uses `malloc()` in
+this engine, thus only the leak is a real fault. The game then fails to
+start the world either way, so it only shows as a leak.
 
 Not fixed yet: the modern build should allocate it after the binding
-succeeds and release it with `delete`.
+succeeds and release it with LTMemFree.
 
 ### A refused connection leaves the client waiting on a closed socket
 
@@ -1529,20 +1529,6 @@ target outside of the personal bubble is not seen instantly.
 
 Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/
 AISenseRecorderGame.cpp has the "else" (MODERN.md GAME-14).
-
-### An AI reads the ray count as its "done processing stimuli" flag
-
-Object.lto 0x1012c1d0 (CAI::GetDoneProcessingStimuli, ObjectShared/
-AI.cpp). The function jumps to 0x101dac80, which returns the sense
-recorder's ray count (+0x24, CAISenseRecorderAbstract::
-GetIntersectSegmentCount). The correct function is at 0x101daab0 and
-returns the flag (+0x14); AINodeSensing::GetDoneProcessingStimuli
-(0x1021edd0) calls it. Thus an AI is "done" when it has cast one or more
-sense rays in this update, and is not "done" when the recorder set the
-flag.
-
-Fixed in the modern build: src/Game/ObjectDLL/ObjectShared/AI.cpp returns
-the flag (MODERN.md GAME-15).
 
 ### A deadly deflected disc with no ammo data reads its FX name from address 0x164
 

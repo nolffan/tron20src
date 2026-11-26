@@ -1279,8 +1279,9 @@ void AINodeUseObject::ReadProp(ObjectCreateStruct* pocs)
 	if ( g_pLTServer->GetPropGeneric( "SmartObject", &g_gp ) == LT_OK )
 	{
 		// RETAIL: Tron's (0x100a425e): "<none>" or an unknown SmartObject
-		// clears the ID; the template is looked up twice.
-		if ( g_gp.m_String[0] && strcmp( g_gp.m_String, "<none>" ) &&
+		// clears the ID; the template is looked up twice. The inline strcmp
+		// takes "<none>" first (0x100a426b loads g_gp.m_String in esi).
+		if ( g_gp.m_String[0] && strcmp( "<none>", g_gp.m_String ) &&
 			g_pAIGoalButeMgr->GetSmartObjectTemplate(g_gp.m_String) )
 		{
 			AIGBM_SmartObjectTemplate* pSmartObject = g_pAIGoalButeMgr->GetSmartObjectTemplate(g_gp.m_String);

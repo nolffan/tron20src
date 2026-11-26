@@ -2050,17 +2050,14 @@ LTBOOL CAI::FindFloorHeight(const LTVector& vPos, LTFLOAT* pfFloorHeight)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1012c160 (in the IAISensing slot at 0x1029839c, the same slot
+// as AINodeSensing's 0x1021edd0): jumps to 0x101daab0, the recorder's flag
+// (+0x14)
 LTBOOL CAI::GetDoneProcessingStimuli() const
 {
 	if( m_pAISenseRecorder )
 	{
-#ifdef TRON20SRC_MODERN
 		return m_pAISenseRecorder->GetDoneProcessingStimuli();
-#else
-		// RETAIL: Tron returns the recorder's ray count (0x1012c1da jumps
-		// to 0x101dac80): a retail bug, docs/RETAIL_BUGS.md
-		return m_pAISenseRecorder->GetIntersectSegmentCount();
-#endif
 	}
 
 	return LTFALSE;
@@ -2100,6 +2097,8 @@ LTBOOL CAI::ProcessStimulus(CAIStimulusRecord* pRecord)
 //
 // ----------------------------------------------------------------------- //
 
+// RETAIL: 0x1012c1d0 (slot 0x102983ac): jumps to 0x101dac80, the
+// recorder's ray count (+0x24)
 int	CAI::GetIntersectSegmentCount() const
 {
 	if( m_pAISenseRecorder )
@@ -4728,7 +4727,9 @@ LTBOOL CAI::EnableNodeTracking(EnumTrackedNodeGroup eGroup, HOBJECT hFace)
 			LTFLOAT fDp;
 			fDp = vDir.Dot( m_vForward );
 
-			if( fDp > c_fFOV120 )
+			// RETAIL: Tron's limit is 60 degrees, not NOLF2's 120
+			// (0x10131814 compares with c_fFOV60, 0x1029a690)
+			if( fDp > c_fFOV60 )
 			{
 				bAtLimit = LTFALSE;
 			}

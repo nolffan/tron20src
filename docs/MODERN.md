@@ -355,8 +355,9 @@ details.
   (`Trigger.cpp`).
 * **GAME-14:** an AI does not see a far target instantly
   (`AISenseRecorderGame.cpp`).
-* **GAME-15:** an AI returns its "done processing stimuli" flag, not the
-  ray count (`AI.cpp`).
+* **GAME-15:** withdrawn. It was not a retail bug: the scorer had paired
+  CAI::GetDoneProcessingStimuli (0x1012c160) and GetIntersectSegmentCount
+  (0x1012c1d0) the wrong way round. Both builds now do as retail.
 * **GAME-16:** a failed use-object path trace does not read a null node
   (`AIHumanState.cpp`).
 * **GAME-17:** the core dump item properties have a buffer of 100 bytes
