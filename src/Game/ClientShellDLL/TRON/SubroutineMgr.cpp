@@ -23,6 +23,7 @@
 #include "TronMissionButeMgr.h"
 #include "TronPlayerMgr.h"
 #include "GameClientShell.h"
+#include "TronHUDMgr.h"
 
 #define SUBROUTINE_TAG				"Subroutine"
 
@@ -689,6 +690,8 @@ void CSubroutineMgr::Update()
 
 void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
 {
+	// RETAIL: 0x100933d0: the messages go to the pickup message queue
+	// (0x10270ccc), not to the chat queue
 	char szMsg[256];
 
 	PlayerSubroutine * pSub = pProc->pSub;
@@ -703,7 +706,7 @@ void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
 		{
 			pSub->eState = SUBSTATE_OKAY;
 			FormatString(pProc->nCompletionId, szMsg, sizeof(szMsg), LoadTempString(pSub->pTronSubroutine->nNameId));
-			g_pChatMsgs->AddMessage(szMsg);
+			g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
 		}
 		break;
 
@@ -715,7 +718,7 @@ void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
 			pSub->nTronUnknown24 = 0;
 			pSub->fPercentDone = 0.0f;
 			FormatString(pProc->nCompletionId, szMsg, sizeof(szMsg), LoadTempString(pSub->pTronSubroutine->nNameId));
-			g_pChatMsgs->AddMessage(szMsg);
+			g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
 
 			SubFunction eFunction = pSub->pTronSubroutine->eFunction;
 			if (eFunction == FUNCTION_UTILITY)
@@ -751,7 +754,7 @@ void CSubroutineMgr::ProceduralFinished(Procedural * pProc)
 				}
 				++iter;
 			}
-			g_pChatMsgs->AddMessage(pProc->nCompletionId);
+			g_pPickupMsgs->AddMessage(pProc->nCompletionId, (const char*)LTNULL);
 		}
 		break;
 	}
@@ -847,9 +850,8 @@ void CSubroutineMgr::CorruptSector(int iSector, int nSpread, PlayerSubroutine * 
 
 		char szBadBlockMsg[1024];
 		FormatString(IDS_TRON_BADBLOCK_CREATED, szBadBlockMsg, sizeof(szBadBlockMsg), (29 - iSector) % NUM_SECTORS);
-		// PORT: retail adds the message to a HUD message queue of Tron's
-		// (0x1026edf0, CTronHUDMgr +0x111f0) that our build does not have.
-		g_pChatMsgs->AddMessage(szBadBlockMsg, kMsgScmd);
+		// RETAIL: 0x100938bf: the announcement message queue (0x1026edf0)
+		g_pAnnouncementMsgs->AddMessage(szBadBlockMsg, kMsgScmd);
 		return;
 	}
 
@@ -904,8 +906,8 @@ void CSubroutineMgr::CorruptSector(int iSector, int nSpread, PlayerSubroutine * 
 		FormatString(IDS_TRON_SUB_CORRUPTED, szMsg, sizeof(szMsg), szName);
 		g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\corruptedsub.wav");
 	}
-	// PORT: as above, retail's message queue of Tron's (0x1026edf0)
-	g_pChatMsgs->AddMessage(szMsg, kMsgScmd);
+	// RETAIL: 0x10093733: the announcement message queue (0x1026edf0)
+	g_pAnnouncementMsgs->AddMessage(szMsg, kMsgScmd);
 }
 
 // ----------------------------------------------------------------------- //

@@ -404,6 +404,8 @@ void CLightCycleMatchMgr::OnCyclistDerezzed(HOBJECT hObj, HOBJECT hOther)
 
 bool CLightCycleMatchMgr::OnKeyDown(int nKey, int nRep)
 {
+	// RETAIL: 0x10016b43: the player manager through the base global
+	// g_pPlayerMgr (0x10271f14), not g_pTronPlayerMgr; the same object
 	if (nKey == VK_SPACE && !g_pChatInput->IsVisible())
 	{
 		uint32 nLocalID = 0;
@@ -413,9 +415,9 @@ bool CLightCycleMatchMgr::OnKeyDown(int nKey, int nRep)
 			SendTronUnknown32();
 		}
 
-		if (g_pTronPlayerMgr->TronUnknownVirtual3C(false))
+		if (((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownVirtual3C(false))
 		{
-			g_pTronPlayerMgr->TronUnknownLightCycleSpectate();
+			((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownLightCycleSpectate();
 			return true;
 		}
 
@@ -423,7 +425,7 @@ bool CLightCycleMatchMgr::OnKeyDown(int nKey, int nRep)
 		{
 			if (!g_pLightCycleMgr->GetLivingCyclist(g_pMoveMgr->GetObject()))
 			{
-				g_pTronPlayerMgr->TronUnknownLightCycleSpectate();
+				((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownLightCycleSpectate();
 				return true;
 			}
 		}
@@ -458,17 +460,18 @@ void CLightCycleMatchMgr::SendTronUnknown32()
 
 void CLightCycleMatchMgr::HandleMsgSpectate(ILTMessage_Read *pMsg)
 {
+	// RETAIL: 0x10016ce7: through g_pPlayerMgr, as OnKeyDown
 	if (pMsg->Readbool())
 	{
 		m_bTronUnknown1F = false;
-		if (!g_pTronPlayerMgr->TronUnknownVirtual3C(false))
+		if (!((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownVirtual3C(false))
 		{
-			g_pTronPlayerMgr->TronUnknownLightCycleSpectate();
+			((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownLightCycleSpectate();
 		}
 	}
 	else
 	{
-		g_pTronPlayerMgr->TronUnknownStopSpectating();
+		((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownStopSpectating();
 	}
 }
 
@@ -588,7 +591,8 @@ void CLightCycleMatchMgr::HandleMsgTronUnknown35(ILTMessage_Read *pMsg)
 
 void CLightCycleMatchMgr::HandleMsgTronUnknown23(ILTMessage_Read *pMsg)
 {
-	g_pTronPlayerMgr->TronUnknownStopSpectating();
+	// RETAIL: 0x10017190: through g_pPlayerMgr, as OnKeyDown
+	((CTronPlayerMgr*)g_pPlayerMgr)->TronUnknownStopSpectating();
 	g_pGameClientShell->m_bTronUnknown833A = true;
 	m_bTronUnknown1F = true;
 	g_pInterfaceMgr->TronUnknownFirstPersonCamera(true);

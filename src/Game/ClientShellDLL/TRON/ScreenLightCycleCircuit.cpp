@@ -24,6 +24,7 @@
 #include "LightCycleGameDataMgr.h"
 #include "TRON/LightCycleButeMgr.h"
 #include "GameClientShell.h"
+#include "TronGameClientShell.h"
 
 namespace
 {
@@ -443,10 +444,11 @@ LTBOOL CScreenLightCycleCircuit::OnDown()
 	return bRet;
 }
 
-// RETAIL: 0x10067650
+// RETAIL: 0x10067650: through Tron's game client shell (g_pTronGameClientShell,
+// 0x1026eda0)
 CircuitButeMgr* CScreenLightCycleCircuit::GetCircuitMgr()
 {
-	return g_pGameClientShell->GetCircuitButeMgr();
+	return g_pTronGameClientShell->GetCircuitButeMgr();
 }
 
 // RETAIL: 0x10067660

@@ -17,6 +17,7 @@
 #include "MissionMgr.h"
 #include "MissionButeMgr.h"
 #include "IntelItemList.h"
+#include "TRONPlayerStats.h"
 
 namespace
 {
@@ -104,10 +105,11 @@ void CHUDBuildNoteCount::Update()
 	// the build notes of this level Jet has
 	int i = 0;
 	int nFound = 0;
-	uint16 nCount = g_pPlayerStats->GetIntelList()->GetCount();
+	// RETAIL: 0x100226f3, 0x10022720: Tron's player stats (g_pTronPlayerStats)
+	uint16 nCount = g_pTronPlayerStats->GetIntelList()->GetCount();
 	for (; i < nCount; i++)
 	{
-		INTEL_ITEM* pItem = g_pPlayerStats->GetIntelList()->Get(i);
+		INTEL_ITEM* pItem = g_pTronPlayerStats->GetIntelList()->Get(i);
 		// RETAIL: 0x10022737 tests Tron's INTEL_ITEM: a build note (type 1)
 		// of this mission and level
 		if (pItem && pItem->nType == 1 && pItem->nMissionNum == nMission && pItem->nLevelNum == nLevel)

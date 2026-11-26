@@ -485,7 +485,8 @@ void CHUDTronDecision::Hide(uint8 nChoice)
 		g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\downloadaborted.wav");
 		if (nChoice == DECISION_OUT_OF_RANGE)
 		{
-			g_pChatMsgs->AddMessage(3300);
+			// RETAIL: 0x1003d376: the pickup message queue
+			g_pPickupMsgs->AddMessage(3300, (const char*)LTNULL);
 		}
 	}
 
@@ -760,7 +761,8 @@ void CHUDTronDecision::Choose(uint8 nChoice)
 
 		if (g_pTronPlayerStats->GetEnergy() < m_fCost[nChoice])
 		{
-			g_pChatMsgs->AddMessage(3823);
+			// RETAIL: 0x1003de59: the pickup message queue
+			g_pPickupMsgs->AddMessage(3823, (const char*)LTNULL);
 			g_pClientSoundMgr->PlayInterfaceSound("interface\\snd\\cantafford.wav");
 			return;
 		}

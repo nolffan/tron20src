@@ -126,7 +126,8 @@ bool CIONodeMgr::AddPing(const char* szName)
 	{
 		char szMsg[1024];
 		FormatString(3227, szMsg, sizeof(szMsg), pPing->szDisplayName);
-		g_pChatMsgs->AddMessage(szMsg);
+		// RETAIL: 0x1003fc4b: the pickup message queue
+		g_pPickupMsgs->AddMessage(szMsg, (const char*)LTNULL);
 	}
 
 	return true;

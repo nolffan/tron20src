@@ -23,6 +23,7 @@
 #include "CMoveMgr.h"
 #include "ClientResShared.h"
 #include "HUDDecision.h"
+#include "../TRON/HUDTronDecision.h"
 #include "VehicleMgr.h"
 
 // 
@@ -282,12 +283,13 @@ bool CClientSaveLoadMgr::CanSaveGame()	const
 { 
 	// RETAIL: 0x10144c70: Tron's tests.  Not between worlds, nor in the
 	// single player light cycle games, nor while an open decision window
-	// keeps the player (unless its +0x4d is set), nor on a vehicle
+	// keeps the player (unless its +0x4d is set), nor on a vehicle.
+	// RETAIL: the decision window is Tron's (g_pTronDecision, 0x1026edec)
 	if (g_pMissionMgr->IsExitingLevel())
 		return false;
 
 	bool bDecisionAllows = true;
-	if (g_pDecision && g_pDecision->IsVisible() && !g_pDecision->GetTronUnknown4d())
+	if (g_pTronDecision && g_pTronDecision->IsVisible() && !g_pTronDecision->GetTronUnknown4d())
 	{
 		bDecisionAllows = false;
 	}
