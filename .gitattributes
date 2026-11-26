@@ -5,3 +5,7 @@ src/Game/ClientRes/TRON/*.txt -text
 # the retail art the binaries are compiled with (assets/README.md): bytes,
 # never text
 assets/art/** binary
+# assets/rez/ and assets/game/: the data of Update 2 that the release
+# ships (assets/README.md), byte for byte as published
+assets/rez/** -text -diff
+assets/game/** -text -diff

@@ -177,10 +177,12 @@ executable, or in the console), new or with a changed meaning.
     `Lithtech.exe`, Play (Install) shows "Could not launch LITHTECH.EXE"
     and does not start the disc's setup program. Uninstall is disabled:
     there is no installer.
-  * Update 2's archives: with no `UpdateNum` in the file (an installer
+  * Update 2's data: with no `UpdateNum` in the file (an installer
     wrote it in retail), the launcher (`LaunchGame`) and the dedicated
-    server (`CServerDlg::AddResources`) add `Gamep3.rez` and
-    `Gamep4.rez` from the game directory, when they are there.
+    server (`CServerDlg::AddResources`) add `tron20src.rez` from the
+    game directory, when it is there. The build packs that archive from
+    `assets/rez/` in the place of the update's `Gamep3.rez` and
+    `Gamep4.rez` (`assets/README.md`).
   * `CRegMgr32::OpenKey` always succeeds (a key with no values is an
     empty section): the server hosts with no values (`DoHost`,
     `AddResources` returned false without the key in retail).
@@ -221,7 +223,8 @@ executable, or in the console), new or with a changed meaning.
   `ProfileName`. `make launchertest` (whose script writes the retail
   installer's values into the registry): the modern launcher ignored
   them and its command line had `Gamep3.rez` and `Gamep4.rez` from the
-  game directory.
+  game directory. (Now it has `tron20src.rez` in their place:
+  `assets/README.md`.)
 * **APPS-4: the Linux run script's first display.** The modern launcher
   has no default window mode for a fresh install: without `display.cfg`
   and without `Windowed` in `autoexec.cfg`, the engine starts full screen

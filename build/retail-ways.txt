@@ -1,19 +1,16 @@
-## Where the bytes of each retail file are, in your own disc images and the
-## update's executable (build/retailways.py writes and checks this list).
-## The install scripts of a public archive read the game's data from these
-## byte ranges (build/mkinstall.py). This list holds no game data: only
+## Where the bytes of each retail file are, in your own two disc images
+## (build/retailways.py writes and checks this list). The install scripts
+## of a public archive read the game's data from these byte ranges
+## (build/mkinstall.py). They need no update: Update 2's data ships with
+## the release (assets/README.md). This list holds no game data: only
 ## offsets, sizes and SHA-256 values.
 ##
-## M <id> <of> <offset> <size> <SHA-256>
-##   The update's payload: the one folder of the Microsoft cabinet at
-##   <offset> of the update's executable, unpacked (MSZIP).
 ## W <path> copy|is <id>:<offset>:<length> ...
-##   A retail file (build/retail-files.txt), and the byte ranges that are
-##   the file (copy), or that hold its InstallShield 6 cabinet data (is: a
-##   run of chunks, each a 16-bit length and a raw deflate stream). <id> is
-##   a disc (its .iso image) or the update's payload.
+##   A retail file of the discs (build/retail-files.txt), and the byte
+##   ranges that are the file (copy), or that hold its InstallShield 6
+##   cabinet data (is: a run of chunks, each a 16-bit length and a raw
+##   deflate stream). <id> is a disc (its .iso image).
 ## The fields are separated by one TAB.
-M	payload	update	284022	32653479	11300a3588c1fb52e905c97c80765ec9f25eb425d6af7df3e5a9494441eb44bf
 W	autoexec.cfg	is	1:40167634:3280
 W	AutoRun.exe	copy	1:36151296:98304
 W	AutoRun.ico	copy	1:36249600:2238
@@ -25,10 +22,6 @@ W	EREG/DSN1.INI	is	2:283449564:232
 W	Game.rez	is	1:47801569:202009354
 W	Game2.rez	is	1:611360919:64362345 2:36200960:242646137
 W	GameDLL.rez	is	2:278847097:2805577
-W	Gamep3.rez	is	payload:6044880:136179
-W	Gamep4.rez	is	payload:18125259:13076526
-W	Lithtech.exe	is	payload:6181059:1421635
-W	ltmsg.dll	is	payload:31771820:1520
 W	MFC42.DLL	is	2:281917157:479433
 W	MFC42U.DLL	is	2:282396590:475096
 W	Movies/disnlogo.bik	is	1:45716228:440820
@@ -39,10 +32,5 @@ W	MSVCP60.DLL	is	2:281657415:117490
 W	Msvcrt.dll	is	2:281774905:142252
 W	Profiles/Default.prf	is	1:47799542:2027
 W	readme.txt	copy	1:677068800:12
-W	server.dll	is	payload:31773340:215301
-W	SndDrv.dll	is	payload:31745243:26577
 W	Sound.rez	is	1:249810923:361549996
-W	Tron Update 2 and Dedicated Server Readme.txt	is	payload:7602694:7698
 W	TRON.chm	copy	1:677304320:777872
-W	Tron.exe	is	payload:4183002:1861878
-W	TRONSrv.exe	is	payload:31201785:543458

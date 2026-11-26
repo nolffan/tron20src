@@ -20,7 +20,8 @@
 #                               scripts linux-install.sh,
 #                               windows-install.bat and mac-install.command,
 #                               which copy the rest out
-#                               of the player's own disc images and Update 2
+#                               of the player's own two disc images (Update 2's
+#                               data is in it: tron20src.rez, assets/README.md)
 #                               (build/mkinstall.py, from build/retail-files.txt,
 #                               build/retail-ways.txt and build/retail-ranges.txt:
 #                               no disc image is needed to make it). This is
@@ -168,4 +169,4 @@ gzip -n -6 < "$S/public.tar" > "$PUB.part"
 # no retail file in it, and nothing that names the machine it was built on
 python3 "$HERE/pubcheck.py" "$PUB.part" "$OUT"
 mv -f "$PUB.part" "$PUB"
-echo "   $PUB: $(du -h "$PUB" | cut -f1) (unpacks to $NAME/; its data from the discs and Update 2)"
+echo "   $PUB: $(du -h "$PUB" | cut -f1) (unpacks to $NAME/; its data from the two discs)"

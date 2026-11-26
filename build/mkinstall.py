@@ -5,16 +5,16 @@
   build/mkinstall.py ranges <retaildir> <gamedir>
 
 A game directory holds the retail game's data as well as what we built: the
-.rez archives (GameDLL.rez, Gamep3.rez and Gamep4.rez with the retail game
-DLLs inside them zeroed and their names changed: build/all.sh step 1,
-build/rezhide.py), the movies, the manual, the readme of Update 2, the
-shipped autoexec.cfg and default profile, and, as third-party runtime,
-RAD's binkw32.dll (legacy builds only) and the Microsoft C, C++ and MFC
-runtime (MANIFEST.txt's `data` and `THIRD-PARTY` rows of the retail
-release). The public archive (build/package.sh) leaves all of that out,
-and three scripts put it back from the player's own images of the two
-discs of Tron 2.0 (USA) and the executable of its Update 2 (v1.030, the
-"complete" update, tron-update_v1x2_complete.exe):
+discs' .rez archives (GameDLL.rez with the retail game DLLs inside it
+zeroed and their names changed: build/all.sh step 1, build/rezhide.py),
+the movies, the manual, the shipped autoexec.cfg and default profile, and,
+as third-party runtime, RAD's binkw32.dll (legacy builds only) and the
+Microsoft C, C++ and MFC runtime (MANIFEST.txt's `data` and `THIRD-PARTY`
+rows of the retail release). The public archive (build/package.sh) leaves
+all of that out, and three scripts put it back from the player's own
+images of the two discs of Tron 2.0 (USA). They need no update: Update 2's
+data (tron20src.rez and the update's readme, MANIFEST.txt's `asset` rows:
+assets/README.md) is in the archive, and its binaries are built here.
 
   linux-install.sh       bash, coreutils and python3 (its zlib inflates)
   windows-install.bat    cmd running the PowerShell it carries (5.1, as every
@@ -25,18 +25,13 @@ discs of Tron 2.0 (USA) and the executable of its Update 2 (v1.030, the
 
 A disc image can be a plain .iso, or a raw .bin (2352-byte sectors, with
 its .cue) or a .zip that holds one: the scripts convert it to an .iso
-first. Nothing is installed or run from the discs or the update, and
+first. Nothing is installed or run from the discs, and
 neither script reads ISO 9660 or an InstallShield header. An image is
 recognised by its size and SHA-256, and then every byte that the game
 needs is known. This script writes that as a list:
 
   D <id> <size> <sha256> <name>    a disc image (the .iso)
-  U <id> <size> <sha256> <name>    the update's executable
   R <id> <size>                    a disc's raw .bin (2352-byte sectors)
-  M <id> <of> <offset> <size> <sha256>
-                                   the update's payload: the one folder of
-                                   the Microsoft cabinet at <offset> of
-                                   image <of>, unpacked (MSZIP)
   S <name> <id>...                 the set of images the game installs from
   V <n> <size> <sha256> <name>     a retail file (as installed) ...
   W copy|is <id>:<offset>:<length>...
@@ -60,7 +55,7 @@ needs is known. This script writes that as a list:
                                    its size and SHA-256 before it moves it
                                    into place
 
-A name (the last field of D, U, V and F) can contain spaces. A file's flag
+A name (the last field of D, V and F) can contain spaces. A file's flag
 is `-`, or `once` for autoexec.cfg and Profiles/Default.prf (the shipped
 settings, which the game rewrites: written only if there are none). So the
 result is the game directory as built, byte for byte. The list goes at the
@@ -68,8 +63,8 @@ end of each script, after a marker line. The scripts' code is in
 build/game-scripts/ (the .bat's header is written here).
 
 The bytes come from three committed lists, which hold no game data:
-build/retail-files.txt (each retail file's size and SHA-256, and the discs
-and the update), build/retail-ways.txt (where each file's bytes are in the
+build/retail-files.txt (each retail file's size and SHA-256, and the
+discs), build/retail-ways.txt (where each file's bytes are in the disc
 images: build/retailways.py) and build/retail-ranges.txt (what the build
 changes in the three archives, and each archive's SHA-256 after that). A
 game directory built with the retail game is checked against them: each
@@ -118,7 +113,7 @@ NODISCS_MARK = "NOT-PLAYABLE.txt"   # build/all.sh, TRON20SRC_NODISCS=1
 SETTINGS = {"autoexec.cfg.retail": "autoexec.cfg",
             "Default.prf.retail": "Profiles/Default.prf"}
 # The ids of the images in the scripts' list
-IDS = {"1": "disc1", "2": "disc2", "update": "update", "payload": "payload"}
+IDS = {"1": "disc1", "2": "disc2"}
 RANGES_HEADER = """\
 ## What the build changes in the retail archives that it copies into a game
 ## directory (build/all.sh step 1): the retail game DLLs inside them
@@ -145,19 +140,17 @@ def sha256(path):
 
 
 def load_ways():
-    payloads, ways = [], {}
+    ways = {}
     for line in open(WAYS, encoding="utf-8"):
         line = line.rstrip("\n")
         if not line or line.startswith("#"):
             continue
         f = line.split("\t")
-        if f[0] == "M":
-            payloads.append(f[1:])
-        elif f[0] == "W":
+        if f[0] == "W":
             ways[f[1]] = (f[2], [tuple(r.rsplit(":", 2)) for r in f[3].split(" ")])
         else:
-            sys.exit(f"mkinstall: {WAYS}: a line that is not M or W: {line[:60]}")
-    return payloads, ways
+            sys.exit(f"mkinstall: {WAYS}: a line that is not W: {line[:60]}")
+    return ways
 
 
 def load_ranges():
@@ -293,8 +286,8 @@ def main():
         sys.exit(__doc__)
     game, outdir = sys.argv[1].rstrip("/"), sys.argv[2]
     nodiscs = os.path.isfile(os.path.join(game, NODISCS_MARK))
-    dlist, update, _cabs, files = discs.load()
-    payloads, ways = load_ways()
+    dlist, _update, _cabs, files = discs.load()
+    ways = load_ways()
     edits, zsum = load_ranges()
     retail = {f.path.lower(): f for f in files}
     wanted = layout_retail(game, retail)
@@ -311,8 +304,8 @@ def main():
     # Each retail file, and the way to read it from the images.
     sources, vlines, used = {}, [], set()
     for f in sorted({id(f): f for f in wanted.values()}.values(), key=lambda f: f.path.lower()):
-        if f.path not in ways:
-            sys.exit(f"mkinstall: {f.path}: not in build/retail-ways.txt")
+        if f.path not in ways or f.source == "update":
+            sys.exit(f"mkinstall: {f.path}: not on the discs (build/retail-ways.txt)")
         kind, ranges = ways[f.path]
         n = len(sources) + 1
         sources[f.path] = n
@@ -343,12 +336,9 @@ def main():
     for n, d in sorted(dlist.items()):
         data.append(f"D {IDS[str(n)]} {d.size} {d.sha} {d.name}")
         data.append(f"R {IDS[str(n)]} {d.size // SECTOR * RAW_SECTOR}")
-    data.append(f"U update {update.size} {update.sha} {update.name}")
-    if "payload" not in used:
-        sys.exit("mkinstall: nothing from the update: build/retail-ways.txt is wrong")
-    for ident, of, off, size, sha in payloads:
-        data.append(f"M {IDS[ident]} {IDS[of]} {off} {size} {sha}")
-    data.append("S USA disc1 disc2 update")
+    if used - {"1", "2"}:
+        sys.exit("mkinstall: build/retail-ways.txt reads from an image that is not a disc")
+    data.append("S USA disc1 disc2")
     data += vlines + records
 
     os.makedirs(outdir, exist_ok=True)
@@ -400,7 +390,7 @@ def main():
     with open(os.path.join(outdir, "disc-sums.txt"), "w", newline="\n") as fh:
         fh.write("".join(line + "\n" for line in sums))
     print(f"   install scripts: {len(wanted) + len(wanted_once)} files from {len(sources)} "
-          f"retail files on the discs and the update, {literal} bytes of ours"
+          f"retail files on the discs, {literal} bytes of ours"
           + (" (built without the retail game: no game data to check)" if nodiscs else ""))
 
 
@@ -457,18 +447,19 @@ def cmd_ranges(retaildir, game):
 BAT_HEADER = r"""@echo off
 rem windows-install.bat -- install the game data from your Tron 2.0 discs.
 rem
-rem   Drop the images of both discs of Tron 2.0 (USA) and the executable of
-rem   its Update 2 (tron-update_v1x2_complete.exe) onto this file -- or put
-rem   them in this folder or the one above it and double-click it. An image
-rem   is a plain .iso, a raw .bin (or its .cue), or a .zip of one; a .bin or
-rem   .zip is first converted to a temporary .iso in this folder (about
-rem   0.7 GB a disc, removed at the end).
+rem   Drop the images of both discs of Tron 2.0 (USA) onto this file -- or
+rem   put them in this folder or the one above it and double-click it. You
+rem   need no update: Update 2's data is in this release. An image is a
+rem   plain .iso, a raw .bin (or its .cue), or a .zip of one; a .bin or .zip
+rem   is first converted to a temporary .iso in this folder (about 0.7 GB a
+rem   disc, removed at the end).
 rem
 rem First it checks that this folder is the release unpacked and nothing
 rem else (SHA256SUMS). It checks each image's SHA-256, copies the game's
 rem data out of them into this folder and checks every file it writes.
 rem Nothing is installed or run from them. In the legacy build it then
-rem registers the game as the original setup and Update 2 did (the registry
+rem registers the game as the original setup and Update 2 did, with
+rem tron20src.rez in the place of the update's archives (the registry
 rem values the retail launcher reads). The modern build needs no registry.
 setlocal
 set "TRON20_SELF=%~f0"

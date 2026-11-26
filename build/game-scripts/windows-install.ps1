@@ -5,10 +5,10 @@
 #
 # What linux-install.sh does: check that the folder is the release unpacked
 # and nothing else (SHA256SUMS), find the two disc images of Tron 2.0 (USA)
-# and the executable of its Update 2 (the arguments, or the files in the
-# game folder or the one above it; a redump .bin, .cue or .zip converted to
-# a temporary .iso first, an update in a .zip unpacked first), check
-# their sizes and SHA-256, unpack the update's cabinet, then write each file
+# (the arguments, or the files in the game folder or the one above it; a
+# redump .bin, .cue or .zip converted to a temporary .iso first; no update:
+# the data of Update 2 is in the release, tron20src.rez), check their
+# sizes and SHA-256, then write each file
 # of the list at the end of the .bat from the retail file it names -- read
 # from byte ranges of the images, as they are or as InstallShield 6
 # cabinet data (16-bit length, raw deflate stream; .NET's DeflateStream
@@ -60,7 +60,7 @@ $lines = $text.Substring($at + 1 + $marker.Length) -split "`r?`n" | Where-Object
 # this script writes. Each of the archive's must be here as it was shipped,
 # and nothing may be here that is neither, nor what the game writes as it
 # runs (saves, profiles, server configurations, settings, logs, screenshots,
-# the launcher's command file, mods) nor a disc image or the update. Names
+# the launcher's command file, mods) nor a disc image. Names
 # compare without case, as Windows does (a hashtable's keys and -like do).
 $sumsPath = Join-Path $here 'SHA256SUMS'
 if (-not (Test-Path -LiteralPath $sumsPath -PathType Leaf)) {
@@ -84,7 +84,7 @@ foreach ($rel in $sums.Keys) {
 }
 $extra = @()
 $top = @('SHA256SUMS', 'autoexec.cfg', 'display.cfg', 'tron20.ini', 'launchcmds.txt',
-         'run-cmds.txt', 'BanList.txt', 'tron-update_v1x2_complete.exe')
+         'run-cmds.txt', 'BanList.txt')
 $anywhere = @('Save/*', 'Profiles/*', 'ServerData/*', 'custom/Mods/*', 'custom/Resources/*', '*.part')
 $topPatterns = @('*.log', '*.bmp', '*.tga', '*.iso', '*.bin', '*.cue', '*.zip')
 $hereLength = $here.TrimEnd('\', '/').Length + 1
@@ -112,13 +112,13 @@ if ($bad.Count -or $extra.Count) {
     exit 1
 }
 
-# The images (D: a disc's .iso, U: the update), their redump .bin sizes (R)
+# The images (D: a disc's .iso), their redump .bin sizes (R)
 # and the sets the game installs from (S <name> <id>...).
 $imgs = @{}
 $sets = @()
 foreach ($l in $lines) {
     $p = $l.Split(' ')
-    if ($p[0] -eq 'D' -or $p[0] -eq 'U') {
+    if ($p[0] -eq 'D') {
         $imgs[$p[1]] = @{ Size = [int64]$p[2]; Sha = $p[3]; Name = $l.Split(' ', 5)[4]; Raw = [int64]-1; Path = $null }
     } elseif ($p[0] -eq 'R') {
         $imgs[$p[1]].Raw = [int64]$p[2]
@@ -208,7 +208,7 @@ if (-not $Images -or $Images.Count -eq 0) {
     # .iso first: one is used as it is, the others need converting.
     $Images = @()
     $up = Split-Path -Parent $here
-    foreach ($pat in '*.iso', '*.exe', '*.bin', '*.zip') {
+    foreach ($pat in '*.iso', '*.bin', '*.zip') {
         foreach ($dir in @($here, $up)) {
             if ($dir) { $Images += @(Get-ChildItem -LiteralPath $dir -Filter $pat -File | ForEach-Object { $_.FullName }) }
         }
@@ -229,24 +229,6 @@ foreach ($img in $Images) {
         $img = Join-Path (Split-Path -Parent $img) $m.Groups[1].Value
         if (-not (Test-Path -LiteralPath $img -PathType Leaf)) { Fail "$label names $($m.Groups[1].Value), which is not beside it" }
         $lower = '.bin'
-    }
-    if ($lower.EndsWith('.zip') -and -not $imgs['update'].Path) {
-        # the update's .exe in a .zip: unpacked to a temporary file first
-        $exe = $null
-        try {
-            $zip = [IO.Compression.ZipFile]::OpenRead($img)
-            $exes = @($zip.Entries | Where-Object { $_.FullName.ToLowerInvariant().EndsWith('.exe') -and $_.Length -eq $imgs['update'].Size })
-            if ($exes.Count -eq 1) {
-                $exe = Join-Path $here ".update-$($script:temps.Count).exe.part"
-                $script:temps += $exe
-                [IO.Compression.ZipFileExtensions]::ExtractToFile($exes[0], $exe, $true)
-            }
-            $zip.Dispose()
-        } catch { $exe = $null }
-        if ($exe) {
-            if (-not (Use-Image $exe "$label (unpacked)")) { Remove-Item -LiteralPath $exe -Force }
-            continue
-        }
     }
     if ($lower.EndsWith('.bin') -or $lower.EndsWith('.zip')) {
         $size = (Open-Raw $img -SizeOnly)[0]
@@ -274,9 +256,8 @@ if (-not (Test-Complete)) {
             else { Write-Host "    missing: $($d.Name) ($($d.Size) bytes, SHA-256 $($d.Sha))" }
         }
     }
-    Write-Host '  (a disc as an .iso, or redump''s .bin/.cue or .zip of it; the update as'
-    Write-Host '  its .exe, or a .zip that holds it)'
-    Fail 'drop both disc images and the update on windows-install.bat, or put them in this folder'
+    Write-Host '  (a disc as an .iso, or redump''s .bin/.cue or .zip of it)'
+    Fail 'drop both disc images on windows-install.bat, or put them in this folder'
 }
 
 # Raw deflate data, inflated: $pre (a stored block holding a dictionary,
@@ -298,53 +279,6 @@ function Expand-Deflate($pre, $buf, $off, $count, $dst, $at) {
     return $total
 }
 
-# The update's payload (M <id> <of> <offset> <size> <sha>): the one folder of
-# the Microsoft cabinet in it, unpacked. MSZIP blocks are "CK" and a deflate
-# stream whose history is the previous block's last 32 KB: DeflateStream
-# takes no dictionary, so each gets it as a stored block first, and that
-# much of the output is dropped.
-$memory = @{}
-foreach ($l in $lines) {
-    $p = $l.Split(' ')
-    if ($p[0] -ne 'M' -or -not $imgs[$p[2]].Path) { continue }
-    $exe = [IO.File]::ReadAllBytes($imgs[$p[2]].Path)
-    $base = [int]$p[3]
-    $size = [int]$p[4]
-    $off = [BitConverter]::ToInt32($exe, $base + 36)
-    $nblocks = [int][BitConverter]::ToUInt16($exe, $base + 40)
-    $kind = [int][BitConverter]::ToUInt16($exe, $base + 42) -band 15
-    $payload = New-Object byte[] ($size + 65536)
-    $tmp = New-Object byte[] (32768 + 65536)
-    $len = 0
-    $pos = $base + $off
-    for ($b = 0; $b -lt $nblocks; $b++) {
-        $cb = [int][BitConverter]::ToUInt16($exe, $pos + 4)
-        $cu = [int][BitConverter]::ToUInt16($exe, $pos + 6)
-        if ($kind -eq 0) {
-            [Array]::Copy($exe, $pos + 8, $payload, $len, $cb)
-            $n = $cb
-        } else {
-            $w = [Math]::Min($len, 32768)
-            $pre = $null
-            if ($w -gt 0) {
-                $pre = New-Object byte[] (5 + $w)
-                $pre[1] = $w -band 255; $pre[2] = $w -shr 8
-                $pre[3] = (-bnot $w) -band 255; $pre[4] = ((-bnot $w) -shr 8) -band 255
-                [Array]::Copy($payload, $len - $w, $pre, 5, $w)
-            }
-            $n = (Expand-Deflate $pre $exe ($pos + 10) ($cb - 2) $tmp 0) - $w
-            [Array]::Copy($tmp, $w, $payload, $len, $n)
-        }
-        if ($n -ne $cu) { Fail "$(Split-Path -Leaf $imgs[$p[2]].Path): its cabinet did not unpack right" }
-        $len += $n
-        $pos += 8 + $cb
-    }
-    $sha = [Security.Cryptography.SHA256]::Create()
-    $sum = ([BitConverter]::ToString($sha.ComputeHash($payload, 0, $len)) -replace '-', '').ToLowerInvariant()
-    if ($len -ne $size -or $sum -ne $p[5]) { Fail "$(Split-Path -Leaf $imgs[$p[2]].Path): its cabinet did not unpack right" }
-    $memory[$p[1]] = New-Object IO.MemoryStream (, $payload)
-}
-
 # Each retail file (V <n> ...): the first way (W copy|is <id>:<offset>:<length>...)
 # whose images are all here.
 $ways = @{}
@@ -357,7 +291,7 @@ foreach ($l in $lines) {
     $ok = $true
     foreach ($r in $p[2..($p.Count - 1)]) {
         $q = $r.Split(':')
-        if (-not ($memory.ContainsKey($q[0]) -or ($imgs.ContainsKey($q[0]) -and $imgs[$q[0]].Path))) { $ok = $false }
+        if (-not ($imgs.ContainsKey($q[0]) -and $imgs[$q[0]].Path)) { $ok = $false }
         $ranges += , @($q[0], [int64]$q[1], [int64]$q[2])
     }
     if ($ok) { $ways[$vid] = @{ Kind = $p[1]; Ranges = $ranges } }
@@ -365,7 +299,6 @@ foreach ($l in $lines) {
 
 $streams = @{}
 foreach ($id in $imgs.Keys) { if ($imgs[$id].Path) { $streams[$id] = [IO.File]::OpenRead($imgs[$id].Path) } }
-foreach ($id in $memory.Keys) { $streams[$id] = $memory[$id] }
 
 # A retail file being read, in order: its ranges, and (is) the chunk
 # inflated last and how much of it is left.
@@ -499,10 +432,11 @@ if (-not (Test-Path -LiteralPath $save)) { New-Item -ItemType Directory -Path $s
 # writes the same ones):
 #   * InstallDir: this folder (the launcher changes to it).
 #   * NetRegionCode: EN.
-#   * UpdateNum, UpdateCommandLine0 and 1: the archives of Update 2,
-#     Gamep3.rez and Gamep4.rez, which the launcher adds last. (Their
-#     retail game DLLs are zeroed and hidden: the game DLLs built from
-#     source in custom\ are the ones that the engine finds.)
+#   * UpdateNum 1 and UpdateCommandLine0: Update 2's data, which the
+#     launcher adds last: tron20src.rez, in the place of the update's two
+#     archives (UpdateNum 2, -rez gamep3.rez and -rez gamep4.rez). It holds
+#     no game DLL: the game DLLs built from source in custom\ are the ones
+#     that the engine finds. (UpdateCommandLine1 is removed.)
 # Where: Tron.exe is a 32-bit program, so it reads HKLM\SOFTWARE through
 # the 32-bit view (SOFTWARE\WOW6432Node on 64-bit Windows). Writing HKLM
 # needs an administrator; run without one, that is skipped. Tron.exe has no
@@ -523,9 +457,9 @@ if (-not $modern) {
         try {
             $k.SetValue('InstallDir', $here, [Microsoft.Win32.RegistryValueKind]::String)
             $k.SetValue('NetRegionCode', 'EN', [Microsoft.Win32.RegistryValueKind]::String)
-            $k.SetValue('UpdateNum', 2, [Microsoft.Win32.RegistryValueKind]::DWord)
-            $k.SetValue('UpdateCommandLine0', '-rez gamep3.rez', [Microsoft.Win32.RegistryValueKind]::String)
-            $k.SetValue('UpdateCommandLine1', '-rez gamep4.rez', [Microsoft.Win32.RegistryValueKind]::String)
+            $k.SetValue('UpdateNum', 1, [Microsoft.Win32.RegistryValueKind]::DWord)
+            $k.SetValue('UpdateCommandLine0', '-rez tron20src.rez', [Microsoft.Win32.RegistryValueKind]::String)
+            $k.DeleteValue('UpdateCommandLine1', $false)
         } finally {
             $k.Close()
         }

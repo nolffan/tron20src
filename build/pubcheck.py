@@ -8,17 +8,24 @@ its name. It fails if:
 
   * a file of the archive is a file of the retail game, by its SHA-256:
     any file of build/retail-files.txt (the discs, Update 2, the installed
-    game), the update's payload (build/retail-ways.txt), an archive as the
-    build changes it (build/retail-ranges.txt) and, when the retail game is
+    game), an archive as the build changes it (build/retail-ranges.txt)
+    and, when the retail game is
     installed (out/retail/tron2-usa-1.030, build/retail.sh), every entry
     of every one of its .rez archives (the retail game DLLs among them) and
     the zeroed copy of each archive in <gamedir>. A file that MANIFEST.txt
     says we built (`built`) and that is byte-identical to a retail binary is
     the aim of the legacy build: it is listed, and it does not fail;
+  * an `asset` row of MANIFEST.txt -- the retail data that the release
+    ships on purpose, Update 2's (assets/README.md) -- is not exactly the
+    committed assets/: tron20src.rez must hold the files of assets/rez/,
+    each byte for byte, and nothing else; every other asset file must be
+    the file of assets/ that its row names. A retail file that is such an
+    asset is listed, and it does not fail;
   * a file of the archive is not one that we build or write: a `built` or
     `EXT` row of <gamedir>/MANIFEST.txt (or a non-retail `THIRD-PARTY` one,
     or an `ours` one: a file of our source, as the DirectMusic manifest
-    and the run scripts linux-run.sh and linux-server.sh),
+    and the run scripts linux-run.sh and linux-server.sh, or an `asset`
+    one, as above),
     the .pdb and .map of a built binary, MANIFEST.txt, tron20cmds.txt,
     LICENSE_NOTES.md and licenses/, the install scripts and SHA256SUMS;
   * a file holds a home directory or a user's directory (/home/, /Users/,
@@ -29,6 +36,7 @@ its name. It fails if:
 Prints what it checked; exit status 1 on any failure.
 """
 import hashlib
+import io
 import os
 import re
 import sys
@@ -81,6 +89,45 @@ def rez_entry_hashes(root, files):
     return out
 
 
+def asset_problem(data, source):
+    """Why a file of an `asset` row is not the committed asset it names,
+    or None. A .rez archive (source assets/rez) must hold exactly the files
+    of assets/rez/, byte for byte; any other file must be its source."""
+    from rezextract import Rez
+    src = os.path.join(REPO, source)
+    if not os.path.realpath(src).startswith(os.path.join(os.path.realpath(REPO), "assets") + os.sep):
+        return f"its MANIFEST.txt row names {source}, which is not in assets/"
+    if os.path.isfile(src):
+        return None if open(src, "rb").read() == data else f"not the bytes of {source}"
+    if not os.path.isdir(src):
+        return f"its source {source} is not in this checkout"
+    want = {}
+    for root, _dirs, names in os.walk(src):
+        for fn in names:
+            full = os.path.join(root, fn)
+            want[os.path.relpath(full, src).replace(os.sep, "/").lower()] = full
+    try:
+        rez = Rez(io.BytesIO(data))
+        have = list(rez.walk())
+    except (RuntimeError, ValueError, OSError) as e:
+        return f"not a .rez archive ({e})"
+    seen = set()
+    for name, pos, size in have:
+        key = name.lower()
+        if key not in want:
+            return f"holds {name}, which is not in {source}/"
+        if data[pos:pos + size] != open(want[key], "rb").read():
+            return f"its {name} is not the bytes of {source}/"
+        seen.add(key)
+    if seen != set(want):
+        return f"does not hold all of {source}/: " + " ".join(sorted(set(want) - seen))
+    # and no bytes besides them but the header and the directories
+    rest = len(data) - sum(size for _n, _p, size in have)
+    if rest > 4096 + 64 * len(have):
+        return f"{rest} bytes besides its files: more than its header and directories"
+    return None
+
+
 def main():
     if len(sys.argv) != 3:
         sys.exit(__doc__)
@@ -94,9 +141,6 @@ def main():
     retail[update.sha] = update.name
     for c in cabs:
         retail[c.sha] = f"the discs' {c.name}"
-    payloads, _ways = mkinstall.load_ways()
-    for p in payloads:
-        retail[p[4]] = "the update's payload"
     _edits, zsum = mkinstall.load_ranges()
     for a, (_size, sha) in zsum.items():
         retail[sha] = f"{a} (as the build changes it)"
@@ -109,7 +153,7 @@ def main():
             retail.setdefault(sha, name)
 
     # what we build or write (MANIFEST.txt)
-    allowed, built = set(OURS), set()
+    allowed, built, assets = set(OURS), set(), {}
     for line in open(os.path.join(game, "MANIFEST.txt"), encoding="utf-8"):
         line = line.rstrip("\n")
         if line.startswith("#") or "\t" not in line:
@@ -126,9 +170,14 @@ def main():
             # a file of our source, as it is (the modern build's
             # Lithtech.exe.manifest, src/modern/directmusic/)
             allowed.add(rel)
+        elif frm.startswith("asset "):
+            # Update 2's data, which the release ships (assets/README.md):
+            # "asset assets/rez (lithrez)" or "asset assets/<path>"
+            allowed.add(rel)
+            assets[rel] = re.match(r"asset (.+?)( \(.*\))?$", frm).group(1)
     words = [w.encode() for w in os.environ.get("TRON20SRC_SCAN_WORDS", "").split() if len(w) >= 3]
 
-    bad, same, n = [], [], 0
+    bad, same, shipped, n = [], [], [], 0
     with tarfile.open(archive) as t:
         for m in t:
             if not m.isfile():
@@ -137,7 +186,14 @@ def main():
             data = t.extractfile(m).read()
             n += 1
             sha = hashlib.sha256(data).hexdigest()
-            if sha in retail:
+            if rel in assets:
+                why = asset_problem(data, assets[rel])
+                if why:
+                    bad.append(f"{rel}: {why}")
+                else:
+                    shipped.append(f"{rel} (= {retail[sha]})" if sha in retail else
+                                   f"{rel} ({assets[rel]})")
+            elif sha in retail:
                 if rel in built:
                     same.append(f"{rel} (= {retail[sha]})")
                 else:
@@ -156,6 +212,8 @@ def main():
              " (the retail game is not installed: its .rez entries not checked)"))
     for s in same:
         print(f"   pubcheck: built here, byte-identical to retail: {s}")
+    for s in shipped:
+        print(f"   pubcheck: retail data shipped on purpose (assets/README.md): {s}")
     for b in bad:
         print(f"   pubcheck: FAILED: {b}", file=sys.stderr)
     return 1 if bad else 0

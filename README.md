@@ -40,8 +40,10 @@ compiler built each binary, and the evidence, is `progress/COMPILERS.md`.
 ## Building
 
 Needs docker and the submodules (`git submodule update --init`):
-`ext/toolchains/` (the compilers) and `ext/tools/` (the reconstruction
-tools), and for `make modern`, `ext/ffmpeg` (FFmpeg n8.1.3, which the
+`ext/toolchains/` (the compilers), `ext/tools/` (the reconstruction
+tools), `ext/lithtools/` (its `lithrez` packs Update 2's data, `assets/`,
+into the game directory's `tron20src.rez`), and for `make modern`,
+`ext/ffmpeg` (FFmpeg n8.1.3, which the
 modern build's Bink player uses; `build/ext.sh`, `docs/LICENSE_NOTES.md`).
 
 ### What you need
@@ -65,6 +67,14 @@ checks each file against `build/retail-files.txt`. This list holds only
 the path, size, SHA-256 and place of each file, and no game data. Any
 correct copy of the discs works. Without the files, `make` stops and tells
 you what to supply.
+
+The game directory takes only the discs' files from that install. Update
+2's data is in this repository (`assets/rez/`, `assets/game/`: see
+`assets/README.md`), and the build packs it into `tron20src.rez`, which
+the game loads where the update's own archives were. The update's binaries
+are built from source. The build needs the update only as the reference
+that `make progress` and `make art-check` compare with. So a public
+archive installs from the two discs alone (below).
 
 ```sh
 make            # the game, from our binaries and the retail data, in out/tron20-legacy-release/
@@ -107,8 +117,8 @@ that directory (below: "Playing on Linux"). Or start it with
 `wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory, or with the
 launcher, `Tron.exe`, which reads the registry values of the game's setup
 (`HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0`: `InstallDir`,
-`UpdateNum` and `UpdateCommandLine0/1`, as `build/launchertest.sh` writes
-them) and wants disc 1 in a drive, as retail's does. The modern build's
+`UpdateNum 1` and `UpdateCommandLine0 -rez tron20src.rez`, as
+`build/launchertest.sh` writes them) and wants disc 1 in a drive, as retail's does. The modern build's
 launcher (`TronLauncher.exe`, and `Tron.exe`, which starts the game at
 once) needs neither: the game directory is the install, and the launcher,
 the game and the dedicated server keep their settings in `tron20.ini`
@@ -134,12 +144,13 @@ PACKAGE_GAME=<dir>` does it again):
 | Archive | What it holds | For |
 |---|---|---|
 | `out/<name>-private.tar.gz` | the whole game directory, with the retail game's data | your own machines only. Do not give it to other persons |
-| `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, the run scripts `linux-run.sh` and `linux-server.sh`, and the install scripts `linux-install.sh`, `windows-install.bat` and `mac-install.command` | other persons |
+| `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), Update 2's data (`tron20src.rez` and the update's readme: `assets/README.md`), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, the run scripts `linux-run.sh` and `linux-server.sh`, and the install scripts `linux-install.sh`, `windows-install.bat` and `mac-install.command` | other persons |
 
 Both archives have the run scripts (`build/game-scripts/`, below). The
 install scripts copy the game's data and the third-party runtime
 (Bink, the Microsoft C, C++ and MFC runtime) out of the player's own
-images of the two discs and the executable of Update 2. They read only
+images of the two discs. They need no update: Update 2's data is in the
+archive. They read only
 byte ranges of those files, which three committed lists give
 (`build/retail-files.txt`; `build/retail-ways.txt`, from
 `build/retailways.py`; `build/retail-ranges.txt`). They do not run
@@ -156,15 +167,15 @@ To install a public archive:
 
 ```sh
 mkdir tron20 && tar -C tron20 --strip-components=1 -xzf out/tron20-modern-release-public.tar.gz
-cd tron20 && ./linux-install.sh <disc 1 image> <disc 2 image> <tron-update_v1x2_complete.exe>
+cd tron20 && ./linux-install.sh <disc 1 image> <disc 2 image>
 sha256sum -c SHA256SUMS
 ```
 
 (Without arguments, the script looks for the files in its directory and
-the directory above it.) On Windows, drop the three files onto
+the directory above it.) On Windows, drop the two files onto
 `windows-install.bat`. The legacy build's script also writes the registry
 values that the retail launcher reads. On a Mac, double-click
-`mac-install.command` with the three files in its folder (or give them to
+`mac-install.command` with the two files in its folder (or give them to
 it in Terminal). Then play the game with CrossOver or another Wine: the
 modern build's `Tron.exe`, or, for the legacy build, `Lithtech.exe
 -cmdfile tron20cmds.txt` (its `Tron.exe` is the retail launcher, which
@@ -198,7 +209,8 @@ The scripts use their own Wine prefix, `~/.wine-tron20` (headless
 server: `~/.wine-tron20-server`; `WINEPREFIX` changes it), so your own
 prefix is left alone. The modern build needs nothing in the prefix: its
 settings are in `tron20.ini` in the game directory. For the legacy build,
-the scripts write the registry values of the retail setup and Update 2,
+the scripts write the registry values of the retail setup and Update 2
+(with `tron20src.rez` in the place of the update's archives),
 and `linux-run.sh` also gives the retail launcher a CD-ROM drive with an
 empty `TRON.EXE` (the launcher only looks for that file; the data is in
 the game directory). On a fresh install of the modern build (no

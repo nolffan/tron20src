@@ -75,8 +75,9 @@
 # the registry, and it wants disc 1 in a CD-ROM drive. This script writes
 # both into the prefix, each time:
 #   * HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0: InstallDir (this
-#     directory), NetRegionCode EN, UpdateNum 2, UpdateCommandLine0 and 1
-#     ("-rez gamep3.rez", "-rez gamep4.rez": the archives of Update 2),
+#     directory), NetRegionCode EN, UpdateNum 1 and UpdateCommandLine0
+#     ("-rez tron20src.rez": Update 2's data, in the place of the update's
+#     -rez gamep3.rez and -rez gamep4.rez; UpdateCommandLine1 removed),
 #     and "CdRom Drive" (the drive below). In both registry views: a
 #     32-bit program reads HKLM\SOFTWARE through the 32-bit one.
 #   * A CD-ROM drive (the first free letter from T:) on the folder
@@ -142,6 +143,8 @@ if [ -z "$MODERN" ]; then
     # write fails, harmlessly)
     reg() { "$WINE" reg add "$@" /reg:32 /f >/dev/null 2>&1
             "$WINE" reg add "$@" /reg:64 /f >/dev/null 2>&1 || true; }
+    unreg() { "$WINE" reg delete "$@" /reg:32 /f >/dev/null 2>&1 || true
+              "$WINE" reg delete "$@" /reg:64 /f >/dev/null 2>&1 || true; }
     # Disc 1: a folder in the prefix with an empty TRON.EXE, as a CD-ROM
     # drive; the drive this script made before, else the first free letter
     DISC="$WINEPREFIX/tron20-disc1"
@@ -164,9 +167,9 @@ if [ -z "$MODERN" ]; then
     KEY='HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0'
     reg "$KEY" /v InstallDir         /t REG_SZ    /d "$DIR"
     reg "$KEY" /v NetRegionCode      /t REG_SZ    /d EN
-    reg "$KEY" /v UpdateNum          /t REG_DWORD /d 2
-    reg "$KEY" /v UpdateCommandLine0 /t REG_SZ    /d '-rez gamep3.rez'
-    reg "$KEY" /v UpdateCommandLine1 /t REG_SZ    /d '-rez gamep4.rez'
+    reg "$KEY" /v UpdateNum          /t REG_DWORD /d 1
+    reg "$KEY" /v UpdateCommandLine0 /t REG_SZ    /d '-rez tron20src.rez'
+    unreg "$KEY" /v UpdateCommandLine1
     reg "$KEY" /v 'CdRom Drive'      /t REG_SZ    /d "$CD:"
     # Wine takes a new drive's type when it starts again
     [ -z "$NEWCD" ] || "$WINESERVER" -w 2>/dev/null || true

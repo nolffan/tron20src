@@ -1,38 +1,37 @@
 #!/usr/bin/env python3
-"""Where each retail file's bytes are in your disc images and the update.
+"""Where each retail file's bytes are in your two disc images.
 
   build/retailways.py write [file ...]   write build/retail-ways.txt
   build/retailways.py check [file ...]   check build/retail-ways.txt
 
 build/discs.py installs the retail game with unshield: it copies the
-InstallShield cabinets out of the disc images and the update, and unpacks
-them. The install scripts of a public archive (build/mkinstall.py) cannot
-use unshield (it is not on Windows, nor on every Linux). They read the
-bytes of each file directly from the images. This script finds those
-bytes, from the InstallShield 6 headers (data1.hdr) of the discs and of
-the update, and writes them into build/retail-ways.txt. That list holds no
-game data: only offsets, sizes and SHA-256 values.
+InstallShield cabinets out of the disc images (and the update, for the
+reference of the checks), and unpacks them. The install scripts of a
+public archive (build/mkinstall.py) cannot use unshield (it is not on
+Windows, nor on every Linux). They read the bytes of each file directly
+from the images. This script finds those bytes, from the InstallShield 6
+header (data1.hdr) of the discs, and writes them into
+build/retail-ways.txt. That list holds no game data: only offsets, sizes
+and SHA-256 values.
 
-The files are those of build/retail-files.txt, and the images are found as
-build/discs.py finds them (the arguments, or $TRON20SRC_ISOS, or isos/).
-`write` reads each file from its ranges, and writes the list only if every
-file has the size and SHA-256 that build/retail-files.txt gives. `check`
-does the same reads and compares the result with the committed list.
+The files are those of build/retail-files.txt that are on the discs (the
+install scripts need only the discs: Update 2's data ships with the
+release, assets/README.md; its binaries are built here), and the images
+are found as build/discs.py finds them (the arguments, or
+$TRON20SRC_ISOS, or isos/). `write` reads each file from its ranges, and
+writes the list only if every file has the size and SHA-256 that
+build/retail-files.txt gives. `check` does the same reads and compares the
+result with the committed list.
 
 The list's lines (the fields are separated by one TAB):
 
-  M <id> <of> <offset> <size> <SHA-256>
-      The update's payload: the one folder of the Microsoft cabinet at
-      <offset> of the update's executable (<of>: "update"), unpacked
-      (MSZIP: deflate blocks, each with the previous one's output as its
-      dictionary). The update's InstallShield cabinets are files in it.
   W <path> copy|is <id>:<offset>:<length> ...
       One retail file (its path in build/retail-files.txt), and how to read
       it: those byte ranges, joined, are the file (copy), or the
       InstallShield 6 cabinet data that holds it (is: a run of chunks, each
       a 16-bit length and a raw deflate stream). A file split across two
       cabinets has one range in each. <id> is a disc ("1", "2": the offset
-      is in its 2048-byte-sector image, the .iso) or the update's payload.
+      is in its 2048-byte-sector image, the .iso).
 """
 import hashlib
 import os
@@ -45,54 +44,21 @@ sys.path.insert(0, os.path.join(REPO, "build"))
 import discs  # noqa: E402
 
 WAYS = os.path.join(REPO, "build", "retail-ways.txt")
-PAYLOAD = "payload"
 HEADER = """\
-## Where the bytes of each retail file are, in your own disc images and the
-## update's executable (build/retailways.py writes and checks this list).
-## The install scripts of a public archive read the game's data from these
-## byte ranges (build/mkinstall.py). This list holds no game data: only
+## Where the bytes of each retail file are, in your own two disc images
+## (build/retailways.py writes and checks this list). The install scripts
+## of a public archive read the game's data from these byte ranges
+## (build/mkinstall.py). They need no update: Update 2's data ships with
+## the release (assets/README.md). This list holds no game data: only
 ## offsets, sizes and SHA-256 values.
 ##
-## M <id> <of> <offset> <size> <SHA-256>
-##   The update's payload: the one folder of the Microsoft cabinet at
-##   <offset> of the update's executable, unpacked (MSZIP).
 ## W <path> copy|is <id>:<offset>:<length> ...
-##   A retail file (build/retail-files.txt), and the byte ranges that are
-##   the file (copy), or that hold its InstallShield 6 cabinet data (is: a
-##   run of chunks, each a 16-bit length and a raw deflate stream). <id> is
-##   a disc (its .iso image) or the update's payload.
+##   A retail file of the discs (build/retail-files.txt), and the byte
+##   ranges that are the file (copy), or that hold its InstallShield 6
+##   cabinet data (is: a run of chunks, each a 16-bit length and a raw
+##   deflate stream). <id> is a disc (its .iso image).
 ## The fields are separated by one TAB.
 """
-
-
-class Memory:
-    """The update's payload, read as an image."""
-    def __init__(self, data):
-        self.data = data
-
-    def chunks(self, off, n):
-        yield self.data[off:off + n]
-
-    def read(self, off, n):
-        return self.data[off:off + n]
-
-
-def payload(exe):
-    """(offset of the cabinet, the folder's bytes, {name: offset in it})."""
-    base = discs.find_cabinet(exe)
-    nfolders, nfiles = struct.unpack_from("<HH", exe, base + 26)
-    if nfolders != 1:
-        sys.exit(f"retailways: the update's cabinet has {nfolders} folders, not one")
-    names = {}
-    files_off, = struct.unpack_from("<I", exe, base + 16)
-    pos = base + files_off
-    for _ in range(nfiles):
-        _size, off, _folder = struct.unpack_from("<IIH", exe, pos)
-        end = exe.index(b"\0", pos + 16)
-        names[exe[pos + 16:end].decode("latin-1").replace("\\", "/").lstrip("/").lower()] = off
-        pos = end + 1
-    data = b"".join(blob for _n, blob in discs.read_cabinet(exe))
-    return base, data, names
 
 
 class Cabinets:
@@ -174,14 +140,13 @@ def digest(img, kind, ranges):
 
 def build(args):
     dlist, update, cabs, files = discs.load()
-    found, exe = discs.identify(dlist, update, discs.candidates(args))
-    if len(found) < len(dlist) or exe is None:
-        print(discs.missing_message(dlist, update, found, exe), file=sys.stderr)
+    found, _exe = discs.identify(dlist, update, discs.candidates(args), want_update=False)
+    if len(found) < len(dlist):
+        print(discs.missing_message(dlist, update, found, None, want_update=False),
+              file=sys.stderr)
         sys.exit(3)
     img = {str(n): i for n, i in found.items()}
-    base, data, names = payload(exe)
-    img[PAYLOAD] = Memory(data)
-    lines = [f"M\t{PAYLOAD}\tupdate\t{base}\t{len(data)}\t{hashlib.sha256(data).hexdigest()}"]
+    lines = []
 
     def read(ident, off, n):
         return img[ident].read(off, n)
@@ -191,20 +156,18 @@ def build(args):
     disc_set = Cabinets(read(str(hdr.disc), hdr.off, hdr.size),
                         {int(c.name[4]): (str(c.disc), c.off) for c in cabs
                          if c.name.lower().endswith(".cab")}, read)
-    upd_hdr = names["disk1/data1.hdr"]
-    upd_set = Cabinets(data[upd_hdr:], {int(n[10]): (PAYLOAD, o) for n, o in names.items()
-                                         if n.startswith("disk1/data") and n.endswith(".cab")}, read)
 
     for f in sorted(files, key=lambda f: f.path.lower()):
+        if f.source == "update":
+            continue               # the update's: not installed from the discs
         if f.disc:
             ways = [("copy", [(str(f.disc), f.off, f.size)])]
         else:
-            cset = disc_set if f.source == "cab" else upd_set
             name = f.gpath.lower()
             ways = []
-            for c in cset.files:
+            for c in disc_set.files:
                 if c[1].lower() == name and c[3] == f.size and not c[2] & 8:
-                    ways.append(("is" if c[2] & 4 else "copy", cset.ranges(c)))
+                    ways.append(("is" if c[2] & 4 else "copy", disc_set.ranges(c)))
         for kind, ranges in ways:
             if digest(img, kind, ranges) == (f.size, f.sha):
                 lines.append(f"W\t{f.path}\t{kind}\t" +

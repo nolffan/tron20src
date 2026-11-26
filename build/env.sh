@@ -53,7 +53,11 @@ tron20src_tree_layout() {
     rm -f "$tree/toolchains" "$tree/rez"
     mkdir -p "$tree/ext"
     rm -rf "$tree/build" "$tree/assets" "$tree/ext/tools"
-    tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git build assets ext/tools | tar -C "$tree" -xf - || return 1
+    tar -C "$REPO" -cf - --exclude='__pycache__' --exclude=.git --exclude=assets/rez --exclude=assets/game \
+        build assets ext/tools | tar -C "$tree" -xf - || return 1
+    # Update 2's data (42 MB), linked, not copied (build/all.sh step 1b)
+    ln -s ../../../assets/rez "$tree/assets/rez" || return 1
+    ln -s ../../../assets/game "$tree/assets/game" || return 1
     for d in "$REPO"/ext/*; do
         n="$(basename "$d")"
         [ "$n" = tools ] || [ -L "$tree/ext/$n" ] || ln -s "../../../ext/$n" "$tree/ext/$n" || return 1

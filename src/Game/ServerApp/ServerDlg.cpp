@@ -1636,12 +1636,14 @@ bool CServerDlg::AddResources( )
 #ifdef TRON20SRC_MODERN
 	// MODERN.md APPS-3: the values are in tron20.ini beside the program,
 	// where no installer of Update 2 wrote its UpdateCommandLine0/1
-	// ("-rez gamep3.rez", "-rez gamep4.rez"): the update's archives from the
-	// game directory, if they are there, as the launcher adds them
+	// ("-rez gamep3.rez", "-rez gamep4.rez"): Update 2's data from the game
+	// directory, if it is there, as the launcher adds it -- tron20src.rez,
+	// which the build packs from assets/ in the place of the update's two
+	// archives (assets/README.md)
 	DWORD nModernUpdateNum = 0;
 	if( !regMgr.GetField( "UpdateNum", &nModernUpdateNum ))
 	{
-		static char const* const s_aszUpdateRez[] = { "Gamep3.rez", "Gamep4.rez" };
+		static char const* const s_aszUpdateRez[] = { "tron20src.rez" };
 		for( int iUpdate = 0; iUpdate < sizeof( s_aszUpdateRez ) / sizeof( s_aszUpdateRez[0] ); iUpdate++ )
 		{
 			if( GetFileAttributes( s_aszUpdateRez[iUpdate] ) != 0xFFFFFFFF )

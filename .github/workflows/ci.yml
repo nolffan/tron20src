@@ -10,11 +10,14 @@
 #     pestamp.py gives them a fixed time). It takes no game data and no
 #     Bink or Microsoft runtime. The modern builds build their Bink player
 #     on FFmpeg (build/ext.sh, from the ext/ffmpeg submodule) as always.
+#     Every build packs Update 2's data, which is committed (assets/rez/),
+#     into tron20src.rez with lithrez (build/lithrez.sh, from the
+#     ext/lithtools submodule), as a build with the retail game does.
 #   * Its game directory, out/<name>-nodiscs/, does not play. Its public
 #     archive, out/<name>-public.tar.gz, does: the same archive, byte for
 #     byte, as a build with the retail game makes (build/package.sh). Its
-#     install scripts copy the game's data out of the player's own images of
-#     the two discs and Update 2 (build/mkinstall.py, from the committed
+#     install scripts copy the rest of the game's data out of the player's
+#     own images of the two discs (build/mkinstall.py, from the committed
 #     lists build/retail-files.txt, retail-ways.txt and retail-ranges.txt),
 #     and build/pubcheck.py checks it for retail files. The -private
 #     archives hold retail data: they are never made here.
@@ -96,22 +99,23 @@ jobs:
       fail-fast: false         # one build failing still lets the others finish
       matrix:
         include:
-          # submodules: every build needs ext/tools (the build's helpers)
-          # and ext/toolchains (the compilers, about 200 MB); the modern
+          # submodules: every build needs ext/tools (the build's helpers),
+          # ext/toolchains (the compilers, about 200 MB) and ext/lithtools
+          # (lithrez, which packs assets/rez/ into tron20src.rez); the modern
           # builds also ext/ffmpeg (about 100 MB), which their Bink player is
           # built on. Each is fetched at depth 1, at the commit recorded here.
           - name: tron20-legacy-release
             target: game
-            submodules: ext/tools ext/toolchains
+            submodules: ext/tools ext/toolchains ext/lithtools
           - name: tron20-legacy-debug
             target: debug
-            submodules: ext/tools ext/toolchains
+            submodules: ext/tools ext/toolchains ext/lithtools
           - name: tron20-modern-release
             target: modern
-            submodules: ext/tools ext/toolchains ext/ffmpeg
+            submodules: ext/tools ext/toolchains ext/lithtools ext/ffmpeg
           - name: tron20-modern-debug
             target: modern-debug
-            submodules: ext/tools ext/toolchains ext/ffmpeg
+            submodules: ext/tools ext/toolchains ext/lithtools ext/ffmpeg
     name: ${{ matrix.name }}
     env:
       TRON20SRC_ARCHIVES: public

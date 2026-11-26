@@ -120,6 +120,8 @@ case "$VARIANT" in
     *)       export TRON20SRC_MIDDLEWARE="${TRON20SRC_MIDDLEWARE:-retail}" ;;
 esac
 export TRON20SRC_EXT_OUT="$REPO/out/ext"
+# lithrez (build/lithrez.sh), built once into the checkout's out/lithrez/
+export TRON20SRC_LITHREZ_OUT="$REPO/out/lithrez"
 TRON20SRC_PACKAGE=0 bash "$TREE/build/all.sh"
 
 case "$VARIANT" in *debug)

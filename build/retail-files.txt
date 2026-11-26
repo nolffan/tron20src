@@ -3,6 +3,10 @@
 ## (v1.030, the "complete" update) installed over it. This list holds no
 ## game data. It tells build/discs.py which bytes of which disc, cabinet or
 ## update make each file, and what each file must be (its size and SHA-256).
+## The update's files ("update" rows) are only the reference of the checks
+## (make progress, make art-check, build/assets.py): the game directory and
+## the install scripts take only the discs' files, and Update 2's data
+## ships in assets/ (assets/README.md).
 ##
 ## D <disc> <volume label> <volume blocks> <image size> <image SHA-256> <image name>
 ##   One disc. A disc image is recognised by its volume label and its volume

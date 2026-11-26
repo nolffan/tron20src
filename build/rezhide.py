@@ -11,7 +11,11 @@ src/Game/Launcher/LauncherDlg.cpp) puts the custom/ directory, where our
 game DLLs are, BEFORE the updates' archives (Gamep3.rez, Gamep4.rez: the
 registry's UpdateCommandLine0/1). Thus, started from the launcher, the
 engine took the zeroed CSHELL.dll of Gamep4.rez and stopped: "Missing
-shell DLL cshell.dll".
+shell DLL cshell.dll". (The game directory now has tron20src.rez in
+place of the update's archives: it holds no game DLL. The build still
+runs this script on GameDLL.rez, the discs' archive of the game DLLs, so
+that no rez order, nor an archive that a player adds, can give the engine
+a zeroed DLL.)
 
 This script changes the last letter of the name of each such entry (a
 game DLL whose data is all zeros) to "_" in the archive's directory, in

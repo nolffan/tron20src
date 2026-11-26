@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # linux-install.sh -- install the game data from your Tron 2.0 discs.
 #
-#   ./linux-install.sh <disc image> <disc image> <update>
+#   ./linux-install.sh <disc image> <disc image>
 #   ./linux-install.sh                 (finds them in this directory or the
 #                                       one above it)
 #
 # The files are the images of the two discs of Tron 2.0 (USA), in either
-# order, and the executable of its Update 2 (v1.030, the "complete" update:
-# tron-update_v1x2_complete.exe, or a .zip that holds it). Each disc image
-# can be
+# order. No update is needed: the data of Update 2 (v1.030) is in this
+# release (tron20src.rez), and its programs are built from source. Each
+# disc image can be
 #
 #   .iso   a plain image (2048-byte sectors), e.g. your own rip
 #   .bin   a raw image (2352-byte sectors, e.g. redump's), or its .cue
@@ -23,18 +23,17 @@
 # checks each file's SHA-256, then copies the game's data out of them into
 # this directory -- the .rez archives (with the retail game DLLs inside
 # them zeroed: the game DLLs here are built from source), the movies, the
-# manual, the readme of Update 2, and Bink and the Microsoft runtime where
+# manual, and Bink and the Microsoft runtime where
 # this build uses them -- and the shipped settings and default profile if
 # there are none, and checks every file it writes. Nothing is installed or
-# run from the discs or the update, and nothing else is changed. It can be
+# run from the discs, and nothing else is changed. It can be
 # run again: a file already in place is checked and kept, and saves,
 # profiles, settings, logs and screenshots are left alone. Then play with
 # ./linux-run.sh (Wine, through Tron.exe), and host a dedicated server with
 # ./linux-server.sh (./linux-run.sh --help, ./linux-server.sh --help).
 #
-# Tron 2.0's setup and its update store their files compressed, in
-# InstallShield cabinets (those of the update are in a Microsoft cabinet
-# inside its executable): python3 (its zlib) unpacks them, with bash,
+# Tron 2.0's setup stores its files compressed, in InstallShield
+# cabinets: python3 (its zlib) unpacks them, with bash,
 # sha256sum, stat and sed (GNU coreutils; a Steam Deck has them all). The
 # list of files, at the end of this script, says for each one which bytes
 # of which image it is made of (build/mkinstall.py).
@@ -54,7 +53,7 @@ data() { sed -n '/^__TRON20_INSTALL_DATA__$/,$p' "$SELF" | tail -n +2; }
 # this script writes. Each of the archive's must be here as it was shipped,
 # and nothing may be here that is neither, nor what the game writes as it
 # runs (saves, profiles, server configurations, settings, logs, screenshots,
-# the launcher's command file, mods) nor a disc image or the update -- which is what copying the
+# the launcher's command file, mods) nor a disc image -- which is what copying the
 # release over another installation, or over an older release, leaves.
 check_dir() {
     local sums="$HERE/SHA256SUMS" sha rel tag n=0
@@ -79,7 +78,6 @@ check_dir() {
         shopt -s nocasematch
         case "$rel" in
         SHA256SUMS|autoexec.cfg|display.cfg|tron20.ini|launchcmds.txt|run-cmds.txt|BanList.txt) ;;
-        tron-update_v1x2_complete.exe) ;;
         Save/*|Profiles/*|ServerData/*|custom/Mods/*|custom/Resources/*) ;;
         *.part|*/Thumbs.db|Thumbs.db|*/desktop.ini|desktop.ini|*/.DS_Store|.DS_Store) ;;
         */*) extra+=("$rel") ;;
@@ -115,7 +113,7 @@ declare -A SIZE SHA NAME RAW HAVE
 SETS=()
 while read -r tag id size sha name; do
     case "$tag" in
-    D|U) SIZE[$id]=$size; SHA[$id]=$sha; NAME[$id]=$name ;;   # (the name may have spaces)
+    D)   SIZE[$id]=$size; SHA[$id]=$sha; NAME[$id]=$name ;;   # (the name may have spaces)
     R)   RAW[$id]=$size ;;
     S)   SETS+=("$id $size $sha $name") ;;   # name, then its images
     esac
@@ -185,23 +183,6 @@ with open(sys.argv[3], "wb") as out:
 PY
 }
 
-# zip_exe <zip> <out> <size>: the one .exe of that size in a .zip, to <out>
-zip_exe() {
-    python3 - "$@" <<'PY'
-import shutil, sys, zipfile
-src, out, size = sys.argv[1], sys.argv[2], int(sys.argv[3])
-try:
-    z = zipfile.ZipFile(src)
-except (zipfile.BadZipFile, OSError):
-    sys.exit(1)
-m = [i for i in z.infolist() if i.filename.lower().endswith(".exe") and i.file_size == size]
-if len(m) != 1:
-    sys.exit(1)
-with z.open(m[0]) as a, open(out, "wb") as b:
-    shutil.copyfileobj(a, b, 1 << 20)
-PY
-}
-
 # take <file> <label>: which image a file is, if any (by size, then SHA-256)
 take() {
     local f=$1 label=$2 size id sum=
@@ -226,7 +207,7 @@ CANDIDATES=("$@")
 if [ ${#CANDIDATES[@]} -eq 0 ]; then
     # .iso first: one is used as it is, the others need converting.
     shopt -s nullglob nocaseglob
-    CANDIDATES=("$HERE"/*.iso "$HERE"/../*.iso "$HERE"/*.exe "$HERE"/../*.exe
+    CANDIDATES=("$HERE"/*.iso "$HERE"/../*.iso
                 "$HERE"/*.bin "$HERE"/../*.bin "$HERE"/*.zip "$HERE"/../*.zip)
     shopt -u nullglob nocaseglob
 fi
@@ -242,16 +223,7 @@ for f in "${CANDIDATES[@]}"; do
         f="$(dirname "$f")/$bin"
         [ -f "$f" ] || { echo "$ME: $label names $bin, which is not beside it" >&2; exit 1; }
         ;& # on as the .bin
-    *.zip)
-        # the update's .exe in a .zip: unpacked to a temporary file
-        tmp="$HERE/.update-${#TEMPS[@]}.exe.part"
-        if [ -z "${HAVE[update]:-}" ] && zip_exe "$f" "$tmp" "${SIZE[update]}"; then
-            TEMPS+=("$tmp")
-            take "$tmp" "$label (unpacked)" || rm -f "$tmp"
-            continue
-        fi
-        ;& # else on as a disc's .bin
-    *.bin)
+    *.zip|*.bin)
         size=$(raw size "$f")
         for id in "${!RAW[@]}"; do
             [ -z "${HAVE[$id]:-}" ] && [ "$size" = "${RAW[$id]}" ] || continue
@@ -274,8 +246,7 @@ if ! complete; then
             else echo "    missing: ${NAME[$id]} (${SIZE[$id]} bytes, SHA-256 ${SHA[$id]})" >&2; fi
         done
     done
-    echo "  (a disc as an .iso, or redump's .bin/.cue or .zip of it; the update as" >&2
-    echo "  its .exe, or a .zip that holds it)" >&2
+    echo "  (a disc as an .iso, or redump's .bin/.cue or .zip of it)" >&2
     exit 1
 fi
 
@@ -301,37 +272,9 @@ def sha256(path):
             h.update(b)
     return h.hexdigest()
 
-# The update's payload: the one folder of its Microsoft cabinet, unpacked.
-memory = {}
-for l in lines:
-    p = l.split(" ")
-    if p[0] == "M" and p[2] in have:
-        ident, base, size, sha = p[1], int(p[3]), int(p[4]), p[5]
-        exe = open(have[p[2]], "rb").read()
-        files_off, = struct.unpack_from("<I", exe, base + 16)
-        off, nblocks, kind = struct.unpack_from("<IHH", exe, base + 36)
-        pos, out, window = base + off, bytearray(), b""
-        for _ in range(nblocks):
-            _csum, cb, cu = struct.unpack_from("<IHH", exe, pos)
-            block = exe[pos + 8:pos + 8 + cb]
-            pos += 8 + cb
-            if kind & 15 == 0:
-                piece = block
-            else:            # MSZIP: "CK", deflate with the last 32 KB as history
-                z = zlib.decompressobj(-15, zdict=window) if window else zlib.decompressobj(-15)
-                piece = z.decompress(block[2:]) + z.flush()
-            out += piece
-            window = bytes(piece[-32768:])
-        if len(out) != size or hashlib.sha256(out).hexdigest() != sha:
-            fail(f"{os.path.basename(have[p[2]])}: its cabinet did not unpack right")
-        memory[ident] = bytes(out)
-
 files = {}
 def read_ranges(ranges):
     for ident, off, n in ranges:
-        if ident in memory:
-            yield memory[ident][off:off + n]
-            continue
         f = files.get(ident) or files.setdefault(ident, open(have[ident], "rb"))
         f.seek(off)
         while n:
@@ -383,7 +326,7 @@ for l in lines:
         vid = p[1]
     elif p[0] == "W" and vid not in ways:
         ranges = [(r.split(":")[0], int(r.split(":")[1]), int(r.split(":")[2])) for r in p[2:]]
-        if all(i in have or i in memory for i, _, _ in ranges):
+        if all(i in have for i, _, _ in ranges):
             ways[vid] = (p[1], ranges)
 
 def ok(path, size, sha):

@@ -2,9 +2,9 @@
 # mac-install.command -- install the game data from your Tron 2.0 discs, on
 # a Mac (to play the game with CrossOver, or another Wine).
 #
-#   Double-click it in Finder with the disc images and the update in this
-#   folder (or the one above it), or in Terminal:
-#   ./mac-install.command <disc image> <disc image> <update>
+#   Double-click it in Finder with the disc images in this folder (or the
+#   one above it), or in Terminal:
+#   ./mac-install.command <disc image> <disc image>
 #
 # The images are the two discs of Tron 2.0 (USA), in either order, each as
 # any of
@@ -13,9 +13,8 @@
 #   .bin   a raw image (2352-byte sectors, e.g. redump's), or its .cue
 #   .zip   a .zip that holds one such .bin (and its .cue)
 #
-# and <update> is the executable of Update 2 (v1.030, the "complete"
-# update: tron-update_v1x2_complete.exe, or a .zip that holds it), as it
-# was published (read, not run).
+# No update is needed: the data of Update 2 (v1.030) is in this release
+# (tron20src.rez), and its programs are built from source.
 #
 # What linux-install.sh does: first the script checks that this folder is
 # the release unpacked, and nothing else (every file SHA256SUMS lists is
@@ -26,14 +25,13 @@
 # Then it checks each file's SHA-256, copies the game's data out of them
 # into this folder -- the .rez archives (with the retail game DLLs inside
 # them zeroed: the game DLLs here are built from source), the movies, the
-# manual, the readme of Update 2, the shipped settings, and Bink and the
+# manual, the shipped settings, and Bink and the
 # Microsoft runtime where this build uses them -- and checks every file it
-# writes. Nothing is installed or run from the discs or the update, and
+# writes. Nothing is installed or run from the discs, and
 # nothing else is changed. It can be run again: a file already in place is
 # checked and kept.
 #
-# Tron 2.0's setup stores its files compressed, in InstallShield cabinets,
-# and Update 2 puts its own in a Microsoft cabinet inside its executable.
+# Tron 2.0's setup stores its files compressed, in InstallShield cabinets.
 # This needs only the Perl every Mac has (/usr/bin/perl, with its own
 # modules: Compress::Raw::Zlib inflates). The list of files, after this
 # script's __END__, says for each one which bytes of which image it is made
@@ -91,8 +89,8 @@ my @data;
 # this script writes. Each of the archive's must be here as it was shipped,
 # and nothing may be here that is neither, nor what the game writes as it
 # runs (saves, profiles, server configurations, settings, logs,
-# screenshots, the launcher's command file, mods) nor a disc image or the
-# update -- which is what copying the release over another installation,
+# screenshots, the launcher's command file, mods) nor a disc image --
+# which is what copying the release over another installation,
 # or over an older release, leaves. (linux-install.sh's check_dir.)
 sub check_dir {
     my $sums = "$HERE/SHA256SUMS";
@@ -119,7 +117,6 @@ sub check_dir {
         next if exists $SUM{$rel} || $WRITE{$rel};
         my $l = lc $rel;
         next if $l =~ m{\A(?:sha256sums|autoexec\.cfg|display\.cfg|tron20\.ini|launchcmds\.txt|run-cmds\.txt|banlist\.txt)\z};
-        next if $l eq 'tron-update_v1x2_complete.exe';
         next if $l =~ m{\A(?:save|profiles|serverdata|custom/mods|custom/resources)/};
         next if $l =~ m{(?:\A|/)(?:thumbs\.db|desktop\.ini|\.ds_store)\z} || $l =~ /\.part\z/;
         next if $l !~ m{/} && $l =~ /\.(?:log|bmp|tga|iso|bin|cue|zip)\z/;   # top level only
@@ -143,7 +140,7 @@ check_dir();
 # from (a name, then its images).
 my (%SIZE, %SHA, %NAME, %RAW, %HAVE, @SETS);
 for (@data) {
-    if (/^[DU] (\S+) (\d+) (\S+) (.*)\z/) { ($SIZE{$1}, $SHA{$1}, $NAME{$1}) = ($2, $3, $4); }
+    if (/^D (\S+) (\d+) (\S+) (.*)\z/) { ($SIZE{$1}, $SHA{$1}, $NAME{$1}) = ($2, $3, $4); }
     elsif (/^R (\S+) (\d+)\z/) { $RAW{$1} = $2; }
     elsif (/^S (\S+) (.*)\z/) { push @SETS, [$1, split / /, $2]; }
 }
@@ -245,23 +242,6 @@ sub zip_reader {
     };
 }
 
-# zip_exe(zip, out, size): the one .exe of that size in a .zip, to out;
-# false if there is none.
-sub zip_exe {
-    my ($f, $to, $size) = @_;
-    my @m = grep { $_->[0] =~ /\.exe\z/i && $_->[3] == $size } zip_members($f);
-    return 0 unless @m == 1;
-    my $read = zip_reader($f, $m[0]);
-    open my $out, '>:raw', $to or fail("$to: cannot write it");
-    while (1) {
-        my $b = $read->($CHUNK);
-        last if $b eq '';
-        print $out $b or fail("$to: cannot write it (is the disk full?)");
-    }
-    close $out or fail("$to: cannot write it (is the disk full?)");
-    return 1;
-}
-
 # The .iso of a redump image: the 2048 bytes of user data of each sector,
 # after the 16-byte sync and header (MODE1, the European discs) and the
 # 8-byte subheader of MODE2 (the USA ones), the track's mode as its first
@@ -307,7 +287,7 @@ sub take {
 my @candidates = @ARGV;
 if (!@candidates) {
     # .iso first: one is used as it is, the others need converting.
-    for my $ext ('iso', 'exe', 'bin', 'zip') {
+    for my $ext ('iso', 'bin', 'zip') {
         for my $dir ($HERE, dirname($HERE)) {
             opendir(my $dh, $dir) or next;
             push @candidates, map { "$dir/$_" } sort grep { /\.\Q$ext\E\z/i && -f "$dir/$_" } readdir $dh;
@@ -330,16 +310,6 @@ for my $f (@candidates) {
         }
         $f = dirname($f) . "/$bin";
         -f $f or fail("$label names $bin, which is not beside it");
-    }
-    if ($f =~ /\.zip\z/i && !$HAVE{update}) {
-        # the update's .exe in a .zip: unpacked to a temporary file
-        my $tmp = "$HERE/.update-" . scalar(@TEMPS) . ".exe.part";
-        push @TEMPS, $tmp;
-        if (zip_exe($f, $tmp, $SIZE{update})) {
-            take($tmp, "$label (unpacked)") or unlink $tmp;
-            next;
-        }
-        unlink $tmp;
     }
     if ($f =~ /\.(cue|bin|zip)\z/i) {
         my $size = raw_size($f);
@@ -366,10 +336,9 @@ if (!complete()) {
             else { print STDERR "    missing: $NAME{$id} ($SIZE{$id} bytes, SHA-256 $SHA{$id})\n"; }
         }
     }
-    print STDERR "  (a disc as an .iso, or redump's .bin/.cue or .zip of it; the update as\n",
-                 "  its .exe, or a .zip that holds it)\n",
+    print STDERR "  (a disc as an .iso, or redump's .bin/.cue or .zip of it)\n",
                  "\nPut them in this folder and run it again, or give them to it in Terminal:\n",
-                 "./mac-install.command disc1.iso disc2.iso tron-update_v1x2_complete.exe\n";
+                 "./mac-install.command disc1.iso disc2.iso\n";
     exit 1;
 }
 
@@ -390,33 +359,6 @@ sub inflate_raw {
     return substr($out, length $history);
 }
 
-# The update's payload: the one folder of its Microsoft cabinet, unpacked
-# (MSZIP: "CK", then deflate with the previous block's output as history).
-my %memory;
-for (@data) {
-    my @p = split / /;
-    next unless $p[0] eq 'M' && $HAVE{$p[2]};
-    my ($id, $base, $size, $sha) = ($p[1], $p[3], $p[4], $p[5]);
-    my $exe = do {
-        open my $fh, '<:raw', $HAVE{$p[2]} or fail("$HAVE{$p[2]}: cannot read it");
-        local $/;
-        <$fh>;
-    };
-    my ($off, $nblocks, $kind) = unpack('V v v', substr($exe, $base + 36, 8));
-    my ($pos, $out, $window) = ($base + $off, '', '');
-    for (1 .. $nblocks) {
-        my (undef, $cb, $cu) = unpack('V v v', substr($exe, $pos, 8));
-        my $block = substr($exe, $pos + 8, $cb);
-        $pos += 8 + $cb;
-        my $piece = ($kind & 15) == 0 ? $block : inflate_raw($window, substr($block, 2));
-        $out .= $piece;
-        $window = length($piece) > 32768 ? substr($piece, -32768) : $piece;
-    }
-    length($out) == $size && Digest::SHA::sha256_hex($out) eq $sha
-        or fail(basename($HAVE{$p[2]}) . ': its cabinet did not unpack right');
-    $memory{$id} = $out;
-}
-
 # The ways to read each retail file: the first whose images are all here.
 my (%ways, $vid);
 for (@data) {
@@ -424,7 +366,7 @@ for (@data) {
     if ($p[0] eq 'V') { $vid = $p[1]; }
     elsif ($p[0] eq 'W' && !$ways{$vid}) {
         my @r = map { [split /:/] } @p[2 .. $#p];
-        next if grep { !$HAVE{$_->[0]} && !exists $memory{$_->[0]} } @r;
+        next if grep { !$HAVE{$_->[0]} } @r;
         $ways{$vid} = [$p[1], \@r];
     }
 }
@@ -439,10 +381,6 @@ sub ranges_reader {
             my $x = $r[0];
             my ($id, $off, $n) = @$x;
             if ($n == 0) { shift @r; next; }
-            if (exists $memory{$id}) {
-                shift @r;
-                return substr($memory{$id}, $off, $n);
-            }
             my $fh = $streams{$id};
             if (!$fh) { open($fh, '<:raw', $HAVE{$id}) or fail("$HAVE{$id}: cannot read it"); $streams{$id} = $fh; }
             sysseek($fh, $off, 0) or fail("$HAVE{$id}: cannot seek");

@@ -7,7 +7,10 @@
 # Zig, pinned to the version ext/openmiles declares -- the compiler for
 # OpenMiles, and (`zig cc`, clang with its own mingw-w64 headers and
 # libraries) the 32-bit Windows C cross-compiler for FFmpeg and our
-# binkw32.dll.
+# binkw32.dll. Last, its own layer (so that the ones above stay as they
+# were): g++, CMake and Ninja, with which build/lithrez.sh builds the
+# ext/lithtools submodule's lithrez, the tool that packs assets/rez/ into
+# the game directory's tron20src.rez (build/all.sh step 1b).
 #
 # The Makefile builds it as `tron20src-build` and runs every step in a
 # throwaway container with the checkout mounted at /repo, as the invoking
@@ -39,6 +42,10 @@ RUN curl -fsSL -o /tmp/zig.tar.xz \
  && echo "${ZIG_SHA256}  /tmp/zig.tar.xz" | sha256sum -c - \
  && mkdir /opt/zig && tar -C /opt/zig --strip-components=1 -xJf /tmp/zig.tar.xz \
  && ln -s /opt/zig/zig /usr/local/bin/zig && rm /tmp/zig.tar.xz
+
+RUN apt-get update -qq \
+ && apt-get install -y -qq g++ cmake ninja-build \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY entry.sh /usr/local/bin/tron20-entry
 RUN chmod 755 /usr/local/bin/tron20-entry

@@ -34,6 +34,7 @@ for f in "$RETAIL"/*; do
 done
 cp "$GAME/Lithtech.exe" "$GAME/server.dll" "$GAME/SndDrv.dll" "$GAME/ltmsg.dll" \
    "$GAME/autoexec.cfg.retail" "$GAME/Default.prf.retail" "$OUT/"
-# the retail launcher's rez stack with Update 2's archives (build/tron20cmds.sh)
+# the retail launcher's rez stack with Update 2's archives (as
+# build/tron20cmds.sh's, which has tron20src.rez in their place)
 printf -- '-rez Game.rez -rez Game2.rez -rez GameDLL.rez -rez Sound.rez -rez Gamep3.rez -rez Gamep4.rez\r\n' > "$OUT/tron20cmds.txt"
 echo "control: ${2:-out/tron20-control} (retail's game DLLs, our engine from ${1:-out/tron20-legacy-release})"

@@ -1097,8 +1097,10 @@ BOOL CLauncherDlg::LaunchGame(DWORD dwAction)
 	{
 		// MODERN.md APPS-3: no installer of Update 2 wrote its values
 		// (UpdateCommandLine0/1: "-rez gamep3.rez", "-rez gamep4.rez"):
-		// the update's archives from the game directory, if they are there
-		static const char* const s_aszUpdateRez[] = { "Gamep3.rez", "Gamep4.rez" };
+		// Update 2's data from the game directory, if it is there --
+		// tron20src.rez, which the build packs from assets/ in the place
+		// of the update's two archives (assets/README.md)
+		static const char* const s_aszUpdateRez[] = { "tron20src.rez" };
 		for( int i = 0; i < sizeof(s_aszUpdateRez) / sizeof(s_aszUpdateRez[0]); i++ )
 		{
 			if( theApp.CD_ExistFile( s_aszUpdateRez[i] ))

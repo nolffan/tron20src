@@ -11,10 +11,7 @@ The release text (.github/workflows/ci.yml, the job "release"):
 
 **Work in progress.** The reconstruction is not complete: see [the README](https://github.com/{{REPO}}/blob/{{TAG}}/README.md) before you expect a game that you can play from start to end.
 
-**These files contain no game data.** They contain only the binaries that this project builds from source, the licences of the open-source code in them, and an installer. The installer copies the game's data from your own copies of:
-
-- the two discs of Tron 2.0 (USA): redump's `Tron 2.0 (USA) (Disc 1)` and `Tron 2.0 (USA) (Disc 2)`, as a plain `.iso`, a raw `.bin`/`.cue`, or a `.zip` of one;
-- Update 2 (v1.030), the "complete" update, as it was published: `tron-update_v1x2_complete.exe` (32479660 bytes), or a `.zip` that holds it.
+**These files contain no game data from the discs.** They contain the binaries that this project builds from source, the data of the free Update 2 (v1.030: `tron20src.rez` and the update's readme), the licences of the open-source code in them, and an installer. The installer copies the rest of the game's data from your own copies of the two discs of Tron 2.0 (USA): redump's `Tron 2.0 (USA) (Disc 1)` and `Tron 2.0 (USA) (Disc 2)`, as a plain `.iso`, a raw `.bin`/`.cue`, or a `.zip` of one. You do not need the update.
 
 The installer reads these files. It does not run them. It checks the SHA-256 of each file that it writes.
 
@@ -24,7 +21,7 @@ The installer reads these files. It does not run them. It checks the SHA-256 of 
 
 ### Windows
 
-Unpack the archive. Drop the two disc images and the update onto `windows-install.bat`, or put them in the game folder and double-click `windows-install.bat`. Then start `Tron.exe` (or the launcher, `TronLauncher.exe`).
+Unpack the archive. Drop the two disc images onto `windows-install.bat`, or put them in the game folder and double-click `windows-install.bat`. Then start `Tron.exe` (or the launcher, `TronLauncher.exe`).
 
 ### Linux
 
@@ -33,7 +30,7 @@ There is no native Linux build. The game is a Windows program: use Wine or Proto
 ```sh
 tar xzf tron20src-{{ARCHIVE}}.tar.gz
 cd tron20src-{{ARCHIVE}}
-./linux-install.sh /path/to/disc1.iso /path/to/disc2.iso /path/to/tron-update_v1x2_complete.exe
+./linux-install.sh /path/to/disc1.iso /path/to/disc2.iso
 wine Tron.exe
 ```
 

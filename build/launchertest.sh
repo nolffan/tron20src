@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The launcher test, for Tron 2.0: our Tron.exe on a Wine prefix with the
-# registry values that the game's setup and Update 2 write; its buttons,
+# registry values that the game's setup and Update 2 write (with Update 2's
+# data in tron20src.rez); its buttons,
 # its dialogs, and Launch, which must start our Lithtech.exe to the main
 # menu.
 #
@@ -14,8 +15,9 @@
 # out/play/<name>/ ($PLAYTEST_NAME, default test-launcher). The Wine prefix
 # is a copy of the container's in /tmp, with
 # HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0: InstallDir (the run
-# directory: the launcher changes to it), NetRegionCode EN, UpdateNum 2,
-# UpdateCommandLine0/1 "-rez gamep3.rez" / "-rez gamep4.rez", and a
+# directory: the launcher changes to it), NetRegionCode EN, UpdateNum 1,
+# UpdateCommandLine0 "-rez tron20src.rez" (in the place of the update's
+# "-rez gamep3.rez" / "-rez gamep4.rez"), and a
 # CD-ROM drive D: with disc 1's TRON.EXE (an empty file: the launcher only
 # looks for it). Then writes,
 # in the run directory:
@@ -43,9 +45,8 @@ export WINEPREFIX="$P" WINEDEBUG=-all
 K='HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0'
 wine reg add "$K" /v InstallDir /t REG_SZ /d "Z:$(echo "$RUN" | tr / '\\')" /f >/dev/null 2>&1
 wine reg add "$K" /v NetRegionCode /t REG_SZ /d EN /f >/dev/null 2>&1
-wine reg add "$K" /v UpdateNum /t REG_DWORD /d 2 /f >/dev/null 2>&1
-wine reg add "$K" /v UpdateCommandLine0 /t REG_SZ /d "-rez gamep3.rez" /f >/dev/null 2>&1
-wine reg add "$K" /v UpdateCommandLine1 /t REG_SZ /d "-rez gamep4.rez" /f >/dev/null 2>&1
+wine reg add "$K" /v UpdateNum /t REG_DWORD /d 1 /f >/dev/null 2>&1
+wine reg add "$K" /v UpdateCommandLine0 /t REG_SZ /d "-rez tron20src.rez" /f >/dev/null 2>&1
 # Disc 1 in drive D: (the launcher's Play looks for \TRON.EXE on a CD-ROM
 # drive, as retail's does): a directory, with an empty TRON.EXE, that Wine
 # takes for a CD-ROM drive

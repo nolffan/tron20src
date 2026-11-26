@@ -68,7 +68,8 @@
 # its own (Xvfb, 640x480: the client runs full screen and wants a display
 # mode of its window's size). The registry gets what the game's setup and
 # Update 2 write (HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0:
-# InstallDir, NetRegionCode EN, UpdateNum 2, UpdateCommandLine0/1 "-rez
+# InstallDir, NetRegionCode EN, UpdateNum 1, UpdateCommandLine0 "-rez
+# tron20src.rez": Update 2's data, in the place of the update's "-rez
 # gamep3.rez", "-rez gamep4.rez"); the dedicated server builds its rez stack
 # from it (and puts custom/ last). The game is LAN only, so no client needs
 # a CD key (the server checks none on a LAN game). The server's
@@ -210,9 +211,8 @@ for p in srv c1 c2; do
     K='HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0'
     w $p wine reg add "$K" /v InstallDir /t REG_SZ /d "Z:$(echo "$RUN/$p" | tr / '\\')" /f >/dev/null 2>&1
     w $p wine reg add "$K" /v NetRegionCode /t REG_SZ /d EN /f >/dev/null 2>&1
-    w $p wine reg add "$K" /v UpdateNum /t REG_DWORD /d 2 /f >/dev/null 2>&1
-    w $p wine reg add "$K" /v UpdateCommandLine0 /t REG_SZ /d "-rez gamep3.rez" /f >/dev/null 2>&1
-    w $p wine reg add "$K" /v UpdateCommandLine1 /t REG_SZ /d "-rez gamep4.rez" /f >/dev/null 2>&1
+    w $p wine reg add "$K" /v UpdateNum /t REG_DWORD /d 1 /f >/dev/null 2>&1
+    w $p wine reg add "$K" /v UpdateCommandLine0 /t REG_SZ /d "-rez tron20src.rez" /f >/dev/null 2>&1
 done
 
 T0=$(date +%s); N=0

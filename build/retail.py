@@ -1,27 +1,30 @@
 # The retail game's layout, for ext/tools/retailextract.py (it reads this file
 # from build/; see its header): Tron 2.0 (USA) with Update 2 (v1.030), as
 # build/discs.py installs it from your discs and the update
-# (out/retail/tron2-usa-1.030, build/retail.sh).
+# (out/retail/tron2-usa-1.030, build/retail.sh). The game directory takes
+# the discs' files only; the update's are the reference of the checks.
 
-# The archives, under their installed names. GameDLL.rez holds the 1.010
-# game DLLs (July 2003); Update 2 adds Gamep3.rez, the English CRES.dll,
-# and Gamep4.rez, the other four (and data), which its setup puts last in
-# the rez stack (UpdateCommandLine0/1: -rez gamep3.rez -rez gamep4.rez). Our
-# copies of all three have every PE entry zeroed.
-REZ = ["Engine.REZ", "Game.rez", "Game2.rez", "GameDLL.rez", "Sound.rez",
-       "Gamep3.rez", "Gamep4.rez"]
+# The archives of the retail install that the game directory takes, under
+# their installed names: the discs' archives. GameDLL.rez holds the 1.010
+# game DLLs (July 2003); our copy has every PE entry zeroed. Update 2's
+# archives are not taken: its data ships with the release instead
+# (assets/README.md). build/all.sh packs assets/rez/ -- what Gamep4.rez
+# holds besides the four game DLLs; Gamep3.rez holds only the English
+# CRES.dll -- into tron20src.rez, which loads where the update's setup put
+# its archives (UpdateCommandLine0/1: -rez gamep3.rez -rez gamep4.rez).
+# The retail install's Gamep3.rez and Gamep4.rez stay the source of the
+# v1.030 game DLLs that the checks compare against (REFERENCE_GAME).
+REZ = ["Engine.REZ", "Game.rez", "Game2.rez", "GameDLL.rez", "Sound.rez"]
 
 DATA_DIRS = ["Movies"]
 # The two files the game rewrites, kept as the retail copies, which
 # build/all.sh starts a game directory's autoexec.cfg and
 # Profiles/Default.prf from (ext/tools/playtest.sh reads both).
-# Also the manual, which the launcher's Help opens (tron.chm), and the
-# readme of Update 2 and the dedicated server.
+# Also the manual, which the launcher's Help opens (tron.chm). (The readme
+# of Update 2 and the dedicated server is in assets/game/.)
 RETAIL_COPIES = [("autoexec.cfg", "autoexec.cfg.retail"),
                  ("Profiles/Default.prf", "Default.prf.retail"),
-                 ("TRON.chm", "TRON.chm"),
-                 ("Tron Update 2 and Dedicated Server Readme.txt",
-                  "Tron Update 2 and Dedicated Server Readme.txt")]
+                 ("TRON.chm", "TRON.chm")]
 
 # Bink, and the Microsoft C, C++ and MFC 4.2 runtime setup installs.
 # MSVCIRT.dll, which the game DLLs and the dedicated server import, is

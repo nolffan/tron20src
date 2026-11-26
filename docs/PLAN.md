@@ -34,6 +34,9 @@ is. Update 2 put a new engine, launcher and dedicated server over the
 install, and two archives last in the rez stack: `Gamep3.rez` (the English
 `CRES.dll`) and `Gamep4.rez` (`CSHELL.dll`, `OBJECT.lto`, `CLIENTFX.fxd`,
 `SRES.dll`, and data). The 1.010 game DLLs stay in `GameDLL.rez`, shadowed.
+The game directory takes only the discs' files: Update 2's data is
+committed in `assets/` and packed into `tron20src.rez`, in the place of
+the update's two archives (`assets/README.md`).
 
 | Binary | What | Size | Functions (own code, enumerated) |
 |---|---|---|---|
@@ -86,7 +89,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
 | 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | done under Wine, except the music: every item of the list below is in `MODERN.md` with its tests; Microsoft's DirectMusic is in the game directory, but Tron 2.0's music stays silent under Wine (X-3, open). To check on real hardware: antialiasing and anisotropic filtering on a graphics card, a real controller, Windows itself, Internet play on OpenSpy's public servers |
-| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`build/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts for Linux, Windows and macOS (tested from the disc images for legacy and modern), the run scripts `linux-run.sh` and `linux-server.sh` (tested in the build container), the CI with the nightly and tagged releases. To check on real hardware: the run scripts on a Linux desktop and a Steam Deck, `mac-install.command` on a Mac |
+| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own two discs (`build/mkinstall.py`; Update 2's data ships in `tron20src.rez`, `assets/README.md`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts for Linux, Windows and macOS (tested from the disc images for legacy and modern), the run scripts `linux-run.sh` and `linux-server.sh` (tested in the build container), the CI with the nightly and tagged releases. To check on real hardware: the run scripts on a Linux desktop and a Steam Deck, `mac-install.command` on a Mac |
 
 ## Notes per package
 
@@ -391,13 +394,15 @@ The legacy release build runs under Wine (2026-11-25): every binary in
 
 - **The game directory** (`make`, `build/all.sh`, the steps of
   cjacksrc's): the `.rez` archives and movies of the retail game as hard
-  links (about 70 MB of copies: `GameDLL.rez`, `Gamep3.rez` and
-  `Gamep4.rez`, with the retail game DLLs in them set to zeros), Bink and
-  the Microsoft runtime from the retail game, and the eleven binaries we
-  build. The game DLLs go in `custom/`, which is last in the rez stack
-  (`tron20cmds.txt`, `build/tron20cmds.sh`). The retail launcher puts
-  `custom` before the updates' `gamep3.rez` and `gamep4.rez`, so there
-  the zeroed entries would hide ours. An audit (`ext/tools/retailextract.py
+  links (a copy of `GameDLL.rez`, with the retail game DLLs in it set to
+  zeros), Update 2's data as `tron20src.rez` (from `assets/rez/`, packed
+  by lithrez: step 1b), Bink and the Microsoft runtime from the retail
+  game, and the eleven binaries we build. The game DLLs go in `custom/`,
+  which is last in the rez stack (`tron20cmds.txt`,
+  `build/tron20cmds.sh`). The retail launcher puts `custom` before the
+  updates' archives (now `tron20src.rez`, which holds no game DLL); with
+  the retail `gamep3.rez` and `gamep4.rez` there, their zeroed entries
+  hid ours. An audit (`ext/tools/retailextract.py
   audit`) lists every PE file with its origin and stops the build on any
   other. `SRes.dll` is built now (`ServerRes.dsp`, Final): retail's has no
   resources, only `DllMain`.
@@ -608,21 +613,22 @@ use them.
 
 - **The install scripts** (`build/mkinstall.py`, the code in
   `build/game-scripts/`, from nolf2src's): `linux-install.sh` (bash and
-  python3) and `windows-install.bat` (PowerShell 5.1). They read the two
-  disc images (`.iso`, `.bin`/`.cue`, `.zip`) and Update 2's executable
-  (or a `.zip` of it). The files of the discs are in InstallShield 6
-  cabinets, and those of Update 2 are in InstallShield 6 cabinets in a
-  Microsoft cabinet (MSZIP) in the executable. Thus the scripts get byte
-  ranges and inflate them: they use no unshield. `build/retailways.py`
-  finds the ranges from the cabinets' headers and checks each file by its
-  SHA-256 (`build/retail-ways.txt`; `make retail-ways`). The build's
-  changes to `GameDLL.rez`, `Gamep3.rez` and `Gamep4.rez` (the game DLLs
-  zeroed, their names changed by `build/rezhide.py`) are in
-  `build/retail-ranges.txt` (`build/mkinstall.py ranges`). A name with
-  spaces ("Tron Update 2 and Dedicated Server Readme.txt") is the last
-  field of its line. The legacy build's Windows script writes the registry
-  values of the retail setup and Update 2 (`build/launchertest.sh` has the
-  same values).
+  python3) and `windows-install.bat` (PowerShell 5.1). They read only
+  the two disc images (`.iso`, `.bin`/`.cue`, `.zip`): Update 2's data is
+  in the archive (`tron20src.rez` and the update's readme, from
+  `assets/`: `assets/README.md`), and its binaries are built here. (Until
+  2026-11 they also read Update 2's executable, whose InstallShield
+  cabinets are in a Microsoft cabinet.) The files of the discs are in
+  InstallShield 6 cabinets. Thus the scripts get byte ranges and inflate
+  them: they use no unshield. `build/retailways.py` finds the ranges from
+  the cabinets' headers and checks each file by its SHA-256
+  (`build/retail-ways.txt`; `make retail-ways`). The build's changes to
+  `GameDLL.rez` (the game DLLs zeroed, their names changed by
+  `build/rezhide.py`) are in `build/retail-ranges.txt` (`build/mkinstall.py
+  ranges`). A name with spaces is the last field of its line. The legacy
+  build's Windows script writes the registry values of the retail setup
+  and Update 2, with `tron20src.rez` in the place of the update's
+  archives (`build/launchertest.sh` has the same values).
 - **Tests.** The public archives of the legacy and the modern release
   builds, installed with `linux-install.sh` from the disc images in a new
   directory, are the game directory byte for byte, pass `sha256sum -c

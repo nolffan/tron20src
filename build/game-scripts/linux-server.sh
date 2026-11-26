@@ -55,7 +55,8 @@
 # registry values that the retail setup and Update 2 wrote, and stops
 # without them: this script writes them into the prefix, as linux-run.sh
 # does (HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0: InstallDir,
-# UpdateNum 2, UpdateCommandLine0 and 1). The modern build's needs none
+# UpdateNum 1, UpdateCommandLine0 "-rez tron20src.rez": Update 2's data, in
+# the place of the update's two archives). The modern build's needs none
 # (MODERN.md APPS-3). The server answers on UDP port 27888 (or the
 # configuration's, or -port): open it in a firewall for players on other
 # machines, and for an Internet game forward it on your router to this
@@ -138,18 +139,20 @@ fi
 # a prefix to set up: make it now if it does not exist yet (without Wine's
 # offers to install Mono and Gecko, which the game does not use)
 [ -d "$WINEPREFIX/dosdevices" ] || WINEDLLOVERRIDES="mscoree,mshtml=" "$WINE" wineboot -i >/dev/null 2>&1 || true
-# The legacy build's server stops without the setup's key, and takes the
-# archives of Update 2 from its values (custom/ after them)
+# The legacy build's server stops without the setup's key, and takes
+# Update 2's data, tron20src.rez, from its values (custom/ after it)
 if [ -z "$MODERN" ]; then
     DIR="$("$WINE" winepath -w "$(pwd)" 2>/dev/null)"
     KEY='HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0'
     reg() { "$WINE" reg add "$@" /reg:32 /f >/dev/null 2>&1
             "$WINE" reg add "$@" /reg:64 /f >/dev/null 2>&1 || true; }
+    unreg() { "$WINE" reg delete "$@" /reg:32 /f >/dev/null 2>&1 || true
+              "$WINE" reg delete "$@" /reg:64 /f >/dev/null 2>&1 || true; }
     reg "$KEY" /v InstallDir         /t REG_SZ    /d "$DIR"
     reg "$KEY" /v NetRegionCode      /t REG_SZ    /d EN
-    reg "$KEY" /v UpdateNum          /t REG_DWORD /d 2
-    reg "$KEY" /v UpdateCommandLine0 /t REG_SZ    /d '-rez gamep3.rez'
-    reg "$KEY" /v UpdateCommandLine1 /t REG_SZ    /d '-rez gamep4.rez'
+    reg "$KEY" /v UpdateNum          /t REG_DWORD /d 1
+    reg "$KEY" /v UpdateCommandLine0 /t REG_SZ    /d '-rez tron20src.rez'
+    unreg "$KEY" /v UpdateCommandLine1
 fi
 
 exec "$WINE" TRONSrv.exe +errorlog 1 +alwaysflushlog 1 "$@"

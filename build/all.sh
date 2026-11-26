@@ -8,30 +8,41 @@
 #   build/all.sh            (inside the build container, e.g. `make shell`)
 #
 # Needs: the toolchain (ext/toolchains/, see ext/toolchains/README.md), Wine
-# (the build container has it), and the retail game, Tron 2.0 (USA) with
-# Update 2 (v1.030), as build/discs.py installs it from your own disc images
-# and the update (out/retail/tron2-usa-1.030/, build/retail.sh; `make
-# retail`). This script only reads that directory.
+# and CMake (the build container has them), the lithtools submodule
+# (ext/lithtools/: lithrez, step 1b), and the retail game, Tron 2.0 (USA)
+# with Update 2 (v1.030), as build/discs.py installs it from your own disc
+# images and the update (out/retail/tron2-usa-1.030/, build/retail.sh;
+# `make retail`). This script only reads that directory. The game
+# directory takes only the discs' files from it: Update 2's data is
+# committed in assets/ (step 1b), and its binaries are built here.
 #
 # TRON20SRC_NODISCS=1 builds without the retail game (`make NODISCS=1
 # game`). The binaries are the same: the art they are compiled with is
-# committed (assets/art/). Steps 1 and 2 are then skipped, and the game
-# directory is out/tron20-legacy-release-nodiscs/, with NOT-PLAYABLE.txt in
-# it: without the .rez archives it does not play.
+# committed (assets/art/). Steps 1 and 2 are then skipped (step 1b is not:
+# it needs no retail game), and the game directory is
+# out/tron20-legacy-release-nodiscs/, with NOT-PLAYABLE.txt in it: without
+# the discs' .rez archives it does not play.
 #
 # The steps, in order:
 #   1. resources          the game's data from the retail game
 #                         (ext/tools/retailextract.py, with the layout of
 #                         build/retail.py): the .rez archives, hard-linked
-#                         where they hold no binary; GameDLL.rez,
-#                         Gamep3.rez and Gamep4.rez, which hold the retail
-#                         game DLLs, copied with those entries zeroed and
-#                         renamed (build/rezhide.py: custom/ gives the
-#                         DLLs whatever the rez order, the retail
-#                         launcher's too). Also
-#                         the movies (hard links) and the shipped
-#                         autoexec.cfg and Profiles/Default.prf (as
-#                         *.retail copies). No binary.
+#                         where they hold no binary; GameDLL.rez, which
+#                         holds the retail game DLLs, copied with those
+#                         entries zeroed and renamed (build/rezhide.py:
+#                         custom/ gives the DLLs whatever the rez order).
+#                         Also the movies (hard links), the manual and
+#                         the shipped autoexec.cfg and
+#                         Profiles/Default.prf (as *.retail copies). Only
+#                         the discs' files. No binary.
+#   1b. assets            Update 2's data, committed in assets/
+#                         (assets/README.md): assets/rez/ packed into
+#                         tron20src.rez by lithtools' lithrez
+#                         (build/lithrez.sh) with a fixed time, and the
+#                         update's readme (assets/game/). Also without
+#                         the retail game; with it, assets/ is checked
+#                         against the retail update first
+#                         (build/assets.py).
 #   2. third-party runtime  Bink (binkw32.dll) and the Microsoft C, C++ and
 #                         MFC 4.2 runtime DLLs (MFC42.DLL, MFC42U.DLL,
 #                         MSVCP60.DLL, Msvcrt.dll), from the retail game:
@@ -66,7 +77,7 @@
 #                         directory, retail data and all; and
 #                         -public.tar.gz: only what we build, with install
 #                         scripts that copy the rest from the player's own
-#                         discs and Update 2 (build/package.sh,
+#                         two discs (build/package.sh,
 #                         build/mkinstall.py, checked by build/pubcheck.py).
 #                         Built without the retail game: the public one
 #                         only, the same archive. TRON20SRC_PACKAGE=0 skips
@@ -120,6 +131,38 @@ case " ${TRON20SRC_CFLAGS:-} " in *" /D TRON20SRC_MODERN "*)
 esac
 
 mkdir -p "$OUT/custom" "$OUT/Save" "$OUT/Profiles"
+# Step 1b, with or without the retail game: after step 1
+assets_step() {
+    step "1b. assets: Update 2's data (assets/) -> $OUT/tron20src.rez"
+    # Update 2's data ships with the release (assets/README.md): what its
+    # Gamep4.rez holds besides the game DLLs, packed into tron20src.rez by
+    # lithtools' lithrez (build/lithrez.sh) with a fixed time (the time of
+    # Gamep4.rez, 2003-10-03), so that the archive is the same bytes on every
+    # build; and the update's readme. The game loads tron20src.rez where the
+    # update's setup put Gamep3.rez and Gamep4.rez (build/tron20cmds.sh).
+    # build/retail.py keeps the retail archives of the update out. With the
+    # retail game, assets/ is first checked against the retail update
+    # (build/assets.py; make art-check).
+    [ -n "$NODISCS" ] || python3 build/assets.py check "$RETAIL"
+    LITHREZ="$(bash build/lithrez.sh)"
+    rm -f "$OUT/Gamep3.rez" "$OUT/Gamep4.rez"     # an older build's, from the retail game
+    "$LITHREZ" c "$OUT/tron20src.rez.part" assets/rez --time 1065224897 --compat 1.02 >/dev/null
+    # (the same bytes as the last build's: that file is kept)
+    if cmp -s "$OUT/tron20src.rez.part" "$OUT/tron20src.rez"; then
+        rm -f "$OUT/tron20src.rez.part"
+    else
+        mv -f "$OUT/tron20src.rez.part" "$OUT/tron20src.rez"
+    fi
+    printf 'asset assets/rez (lithrez)\ttron20src.rez\n' >> "$OUT/MANIFEST.txt"
+    echo "   tron20src.rez  <-  assets/rez/ ($(find assets/rez/ -type f | wc -l) files)"
+    for f in assets/game/*; do
+        n="$(basename "$f")"
+        cmp -s "$f" "$OUT/$n" || { cp "$f" "$OUT/$n.part"; mv -f "$OUT/$n.part" "$OUT/$n"; }
+        printf 'asset %s\t%s\n' "$f" "$n" >> "$OUT/MANIFEST.txt"
+        echo "   $n  <-  $f"
+    done
+}
+
 if [ -n "$NODISCS" ]; then
     step "1. resources: none (built without the retail game) -> $OUT"
     cat > "$OUT/NOT-PLAYABLE.txt" <<EOF
@@ -128,6 +171,7 @@ the binaries built from our source: no game data (no .rez archives, no
 movies) and no Bink or Microsoft runtime. It does not play. Build with the
 retail game (make) for a game directory that plays.
 EOF
+    assets_step
     if [ "${TRON20SRC_MIDDLEWARE:-retail}" = open ]; then
         # our Bink player is ours to build (the modern build's public
         # archive has it): only the retail Microsoft runtime is left out
@@ -141,14 +185,14 @@ else
     step "1. resources: game data from $RETAIL -> $OUT"
     rm -f "$OUT/NOT-PLAYABLE.txt"
     python3 ext/tools/retailextract.py resources "$RETAIL" "$OUT"
-    # The zeroed game DLLs of the updates' archives renamed, so that the
-    # retail launcher's rez order (custom/ before Gamep3.rez and
-    # Gamep4.rez) also gives the engine ours (build/rezhide.py)
-    python3 build/rezhide.py "$OUT/GameDLL.rez" "$OUT/Gamep3.rez" "$OUT/Gamep4.rez"
+    # The zeroed game DLLs of the discs' archive renamed, so that no rez
+    # order gives the engine those in place of ours (build/rezhide.py)
+    python3 build/rezhide.py "$OUT/GameDLL.rez"
     # autoexec.cfg and the default profile start as the shipped ones (the
     # game rewrites them); a rebuild keeps the player's.
     [ -f "$OUT/autoexec.cfg" ] || cp "$OUT/autoexec.cfg.retail" "$OUT/autoexec.cfg"
     [ -f "$OUT/Profiles/Default.prf" ] || cp "$OUT/Default.prf.retail" "$OUT/Profiles/Default.prf"
+    assets_step
 
     # TRON20SRC_MIDDLEWARE (build/variant.sh): retail, the default, RAD's
     # Bink; open, the modern builds' default, our Bink player on FFmpeg
@@ -165,6 +209,7 @@ else
         *) echo "error: TRON20SRC_MIDDLEWARE=$TRON20SRC_MIDDLEWARE: retail or open" >&2; exit 1 ;;
     esac
 fi
+
 bash build/tron20cmds.sh > "$OUT/tron20cmds.txt"
 
 step "3. compile: the workspaces (build/compile.sh: build/build.mk, ${TRON20SRC_JOBS:-$(nproc)} jobs)"

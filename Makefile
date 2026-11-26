@@ -9,12 +9,15 @@
 #   make ci       the CI build and check, without the retail game
 #   make help     everything else
 #
-# Needs only docker on the host, the two submodules in ext/ (`git submodule
+# Needs only docker on the host, the submodules in ext/ (`git submodule
 # update --init`): the compilers, ext/toolchains/ (ext/toolchains/README.md),
-# and ext/tools/, the reconstruction tools -- and your own images of the two
-# USA discs and the executable of Update 2 (v1.030), in isos/ (or
+# ext/tools/, the reconstruction tools, and ext/lithtools/, whose lithrez
+# packs Update 2's data (assets/) into tron20src.rez -- and your own images
+# of the two USA discs and the executable of Update 2 (v1.030), in isos/ (or
 # TRON20SRC_ISOS=<dir>), from which `make retail`, which every build runs
-# first, installs the retail game once (build/discs.py). Every step runs in
+# first, installs the retail game once (build/discs.py). The game directory
+# takes only the discs' files from it; the update is the reference of the
+# checks (make progress, make art-check). Every step runs in
 # a throwaway container of the image docker/Dockerfile describes, with this
 # checkout mounted at /repo, as you.
 
@@ -61,7 +64,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 # ext/toolchains/ yet (docs/PLAN.md, package 2).
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
-.PHONY: all game compile debug modern modern-debug package retail-ways image retail check-tools check-toolchain \
+.PHONY: all game compile debug modern modern-debug package retail-ways image retail check-tools check-lithtools check-toolchain \
 	test tests mptest launchertest portabletest scripttest mp3acmtest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
@@ -78,7 +81,7 @@ help:
 	@echo "                private.tar.gz and -public.tar.gz, with install scripts (every build"
 	@echo "                does this last)"
 	@echo "make retail-ways  write build/retail-ways.txt and build/retail-ranges.txt again"
-	@echo "                (where the install scripts find each file in the discs and the update)"
+	@echo "                (where the install scripts find each file in the two discs)"
 	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
 	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
 	@echo "                TEST_GAME=<dir>; results in out/play/test*/)"
@@ -109,8 +112,9 @@ help:
 	@echo "                in isos/ (once; every build runs it), and check it"
 	@echo "make art        write the retail art our binaries are compiled with into"
 	@echo "                assets/art/ again, from the retail binaries"
-	@echo "make art-check  check that assets/art/ is the retail art (every compile with"
-	@echo "                the retail game also does this)"
+	@echo "make art-check  check that assets/art/ is the retail art, and assets/rez/ and"
+	@echo "                assets/game/ Update 2's data (every build with the retail"
+	@echo "                game also does this)"
 	@echo "make shell      a shell in the build container (build/*.sh, ext/tools/ work there)"
 	@echo "make image      (re)build the docker image $(IMAGE)"
 	@echo "make clean      remove out/ and every build output in the source tree"
@@ -123,7 +127,7 @@ help:
 	@echo "           IMAGE_BUILD=0 (use the docker image as it is, as CI does)"
 	@echo "           COMPLETE=1, COVERED=1, ACCEPT_LOSSES=1, ACCEPT_FAILED_CHECKS=1 (progress/README.md)"
 
-game: check-toolchain retail
+game: check-toolchain check-lithtools retail
 	$(DOCKER_RUN) bash build/all.sh
 
 # The variants (build/variant.sh): the same source with TRON20SRC_DEBUG and
@@ -131,7 +135,7 @@ game: check-toolchain retail
 # out/build-<variant>/, and game directory. TRON20SRC_MIDDLEWARE=retail
 # or open: RAD's Bink or ours on FFmpeg (the modern builds' default; build/
 # variant.sh, MODERN.md X-1)
-debug modern modern-debug: check-toolchain retail
+debug modern modern-debug: check-toolchain check-lithtools retail
 	$(DOCKER_RUN) bash build/variant.sh $@
 
 # The archives of a game directory (build/package.sh; every build runs it
@@ -142,7 +146,7 @@ package: image
 	$(DOCKER_RUN) bash build/package.sh $(PACKAGE_GAME) $(notdir $(PACKAGE_GAME:%-nodiscs=%))
 
 # The install scripts' lists (build/mkinstall.py): where each retail file
-# is in the disc images and the update (build/retailways.py), and what the
+# is in the two disc images (build/retailways.py), and what the
 # build changes in the archives (from out/tron20-legacy-release/)
 retail-ways: retail
 	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/retailways.py write && \
@@ -268,15 +272,20 @@ reference: retail
 
 # The retail art and text our binaries are compiled with, committed in
 # assets/art/: written again from the retail binaries' resources, or checked
-# against them (build/appres.py; every compile with the retail game checks)
+# against them (build/appres.py; every compile with the retail game checks).
+# art-check also checks assets/rez/ and assets/game/, Update 2's data,
+# against the retail update (build/assets.py; build/all.sh step 1b too).
 art: check-tools retail
 	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/appres.py write "$$(retail_dir)" assets/art'
 
 art-check: check-tools retail
-	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/appres.py check "$$(retail_dir)" assets/art'
+	$(DOCKER_RUN) bash -c 'source build/retail.sh && python3 build/appres.py check "$$(retail_dir)" assets/art && python3 build/assets.py check "$$(retail_dir)"'
 
 check-tools:
 	@[ -f ext/tools/progress.py ] || { echo "error: ext/tools/ is empty -- the reconstruction tools are the ext/tools/ submodule: run git submodule update --init" >&2; exit 1; }
+
+check-lithtools:
+	@[ -f ext/lithtools/tools/lithrez/CMakeLists.txt ] || { echo "error: ext/lithtools/ is empty -- lithrez, which packs assets/ into tron20src.rez, is the ext/lithtools submodule's: run git submodule update --init ext/lithtools" >&2; exit 1; }
 
 check-toolchain:
 	@for f in $(TOOLCHAIN_FILES); do \
