@@ -84,8 +84,13 @@ CUI_RESULTTYPE CUIStaticText_Impl::SetText(const std::wstring& sText)
 	
 
 	if (!m_pPolyStr) {
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-76: an empty string, not one made from NULL
+		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, L"", x, y, m_Halign);
+#else
 		// RETAIL: a wide string made from NULL, as the check box's (0x571813)
 		m_pPolyStr = pLTFontManager->CreateFormattedPolyString(m_pFont, NULL, x, y, m_Halign);
+#endif
 	}
 
 	// if the 'new' was successful...

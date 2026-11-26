@@ -469,6 +469,20 @@ void CUIFormattedPolyString_Impl::ApplyFormattedColors(uint32 start, int32 count
 // alpha is the colour before it
 uint32 CUIFormattedPolyString_Impl::ParseColor(const wchar_t* pStr, uint32 color)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-75: the numbers end at the tag's '>' or the text's end.
+	// A tag without three numbers keeps the colour before it.
+	uint32 rgb[3];
+	for (uint32 n = 0; n < 3; n++)
+	{
+		while (*pStr && *pStr != '>' && (*pStr < '0' || *pStr > '9')) pStr++;
+		if (*pStr < '0' || *pStr > '9')
+			return color;
+		rgb[n] = 0;
+		while (*pStr >= '0' && *pStr <= '9') rgb[n] = rgb[n] * 10 + (uint8)*pStr++ - '0';
+	}
+	return (color & 0xff000000) | ((uint8)rgb[0] << 16) | ((uint8)rgb[1] << 8) | (uint8)rgb[2];
+#else
 	uint32 a = color & 0xff000000;
 	uint32 r = 0;
 	uint32 g = 0;
@@ -484,4 +498,5 @@ uint32 CUIFormattedPolyString_Impl::ParseColor(const wchar_t* pStr, uint32 color
 	while (*pStr >= '0' && *pStr <= '9') b = b * 10 + (uint8)*pStr++ - '0';
 
 	return a | ((uint8)r << 16) | ((uint8)g << 8) | (uint8)b;
+#endif
 }

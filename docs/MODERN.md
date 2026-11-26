@@ -739,6 +739,33 @@ the data (the layout, missions and subroutine files of `Game.rez`).
 * **EN-40:** the frame limiter (Frame rate, below). It replaces the
   retail `cm_HandleMaxFPS`, which times the frame from an uninitialised
   value.
+* **EN-71:** an empty or short sprite file, or a frame rate of 0, is an
+  invalid sprite and not a divide by zero or a write through a NULL link
+  (`client/src/sprite.cpp` `spr_Create`: the link is tied off, and the
+  stream and the rate are checked before the divide;
+  `client/src/setupobject.cpp` `LoadSprite` closes the file on that
+  error).
+* **EN-72:** a child model that is not loaded is not compared with its
+  parent's skeleton (`model/src/model_load.cpp` `Model::Load`, the
+  server only).
+* **EN-73:** the packet parser clears its whole message buffer
+  (`kernel/net/src/netmgr.cpp` `ParsePacket`).
+* **EN-74:** a polystring's drop shadow is black at all four vertices
+  (`ui/src/cuipolystring_impl.cpp` `ApplyColors`).
+* **EN-75:** a colour tag's numbers stop at its `>` and at the end of the
+  text; a tag without three numbers keeps the colour before it
+  (`ui/src/cuiformattedpolystring_impl.cpp` `ParseColor`).
+* **EN-76:** a UI static text or check box makes its polystring from an
+  empty string, not from NULL (`ui/src/cuistatictext_impl.cpp`,
+  `cuicheck_impl.cpp` `SetText`).
+* **EN-77:** the sound driver's parameter fades have a real lock: `Init`
+  makes it (`CreateMutex`), the parameter thread and the driver's calls
+  take it, and `Term` closes it. The pause (slot 29) sets a flag that
+  the thread reads under the lock, in place of `SuspendThread`
+  (`snddrv/s_dx8.cpp`).
+* **EN-78:** the sound driver's startup message names the codec that is
+  missing (ADPCM, MP3 or the PCM converter), for each of the three
+  (`snddrv/s_dx8.cpp` `Startup`).
 
 ### Frame rate
 

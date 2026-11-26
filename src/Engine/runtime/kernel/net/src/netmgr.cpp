@@ -97,8 +97,13 @@ void ParsePacket(const CPacket_Read &cPacket, bool bFirst, char *aMsgBuff, uint3
 
 	if(bFirst)
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-73: the whole buffer
+		memset(aMsgBuff, 0, nBufferSize);
+#else
 		// RETAIL: clears the pointer's size, not the buffer's (as Jupiter's)
 		memset(aMsgBuff, 0, sizeof(aMsgBuff));
+#endif
 	}
 
 	switch(nTravelDir)
