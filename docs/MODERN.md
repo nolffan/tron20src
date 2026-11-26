@@ -221,6 +221,27 @@ executable, or in the console), new or with a changed meaning.
   installer's values into the registry): the modern launcher ignored
   them and its command line had `Gamep3.rez` and `Gamep4.rez` from the
   game directory.
+* **APPS-4: the Linux run script's first display.** The modern launcher
+  has no default window mode for a fresh install: without `display.cfg`
+  and without `Windowed` in `autoexec.cfg`, the engine starts full screen
+  at the detail setting's resolution (Medium: 800x600), which changes the
+  display's mode. `linux-run.sh` (`build/game-scripts/`) then adds
+  `+Windowed 1 +WindowMode 2`: a borderless window over the desktop at the
+  desktop's resolution (EN-32, CL-31). On a Steam Deck (`SteamDeck=1`)
+  it adds `+Windowed 0 +ScreenWidth 1280 +ScreenHeight 800 +BitDepth 32`.
+  Arguments that give `Windowed` or `WindowMode` replace this. The game
+  writes the mode to `display.cfg` at its start (`SaveDisplaySettings`),
+  so later runs keep it, and Options > Display changes it. The script
+  writes nothing into the Wine prefix for the modern build (APPS-3), and
+  it passes no `+DisableMovies` and installs no MP3 codec (X-1, X-2).
+  Tested with `make scripttest` (`build/scripttest.sh`): a public archive
+  installed with `linux-install.sh`, a fresh prefix, a 1280x720 virtual
+  display: `Tron.exe` asks for the detail setting, the game reaches the
+  main menu in a 1280x720 window at 0,0, `Tron.exe` waits for it, and
+  `display.cfg` has `Windowed 1`, `WindowMode 2`. Not tested: a Steam
+  Deck, and a real desktop with a window manager. With Proton (`Tron.exe`
+  added to Steam) the script is not used, and a fresh install starts full
+  screen at the detail setting's resolution.
 
 ### Middleware
 

@@ -51,7 +51,9 @@
 #                         game DLLs in the custom/ rez directory, last in the
 #                         rez stack (tron20cmds.txt, build/tron20cmds.sh);
 #                         the engine, the launcher and the dedicated server
-#                         in the game's root. Each copy gets the fixed time
+#                         in the game's root; and the run scripts
+#                         linux-run.sh and linux-server.sh
+#                         (build/game-scripts/). Each copy gets the fixed time
 #                         TRON20SRC_EPOCH (2000-01-01) in place of the time
 #                         of its link (build/pestamp.py); src/**/built/
 #                         keeps the linker's output.
@@ -182,6 +184,19 @@ for ((i = 0; i < ${#BUILT[@]}; i += 2)); do
     mv -f "$OUT/${BUILT[i+1]}.part" "$OUT/${BUILT[i+1]}"
     printf 'built %s\t%s\n' "${BUILT[i]}" "${BUILT[i+1]}" >> "$OUT/MANIFEST.txt"
     echo "   ${BUILT[i+1]}  <-  ${BUILT[i]}"
+done
+# The run scripts (build/game-scripts/; usage in their headers, --help):
+# linux-run.sh starts the game with the host's Wine through Tron.exe, and
+# linux-server.sh the dedicated server, TRONSrv.exe, headless under
+# xvfb-run without a display. Each finds the build by its files
+# (TronLauncher.exe: the modern build), so both builds have the same
+# scripts. Both archives carry them (MANIFEST.txt: ours).
+for s in linux-run.sh linux-server.sh; do
+    cp "build/game-scripts/$s" "$OUT/$s.part"
+    chmod 755 "$OUT/$s.part"
+    mv -f "$OUT/$s.part" "$OUT/$s"
+    printf 'ours build/game-scripts/%s\t%s\n' "$s" "$s" >> "$OUT/MANIFEST.txt"
+    echo "   $s  <-  build/game-scripts/$s"
 done
 # one row per file, of the files that are here
 python3 - "$OUT/MANIFEST.txt" <<'PY'

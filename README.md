@@ -77,6 +77,7 @@ make launchertest  # the launcher, Tron.exe: its dialogs, then Play to the main 
 make portabletest  # the modern build: no registry or APPDATA use, the launcher waits for the game
 make mp3acmtest # the modern SndDrv.dll's MP3 codec on every MP3 file of Sound.rez
 make mptest     # multiplayer: the dedicated server and two clients (some minutes)
+make scripttest SCRIPTTEST_GAME=<dir>  # linux-run.sh and linux-server.sh in an installed public archive
 make sweep      # every single-player world for a minute each (slow); out/play/sweep-summary.txt
 make package    # the archives of a game directory again (PACKAGE_GAME=<dir>): below
 make reference  # the retail binaries and their function tables, in out/reference/
@@ -101,7 +102,8 @@ its `SndDrv.dll` decodes MP3 itself, and its engine plays the music
 itself where DirectMusic does not start, as under Wine and Proton
 (`docs/MODERN.md`, X-1 to X-3). The last step
 lists every executable file with its origin, and stops the build if one is
-not ours or third-party. Start the game with
+not ours or third-party. On Linux, start the game with `./linux-run.sh` in
+that directory (below: "Playing on Linux"). Or start it with
 `wine Lithtech.exe -cmdfile tron20cmds.txt` in that directory, or with the
 launcher, `Tron.exe`, which reads the registry values of the game's setup
 (`HKLM\SOFTWARE\Monolith Productions\Tron 2.0\1.0`: `InstallDir`,
@@ -132,9 +134,10 @@ PACKAGE_GAME=<dir>` does it again):
 | Archive | What it holds | For |
 |---|---|---|
 | `out/<name>-private.tar.gz` | the whole game directory, with the retail game's data | your own machines only. Do not give it to other persons |
-| `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, and the install scripts `linux-install.sh` and `windows-install.bat` | other persons |
+| `out/<name>-public.tar.gz` | only what this project builds (and the `.pdb` and `.map` files of a debug build), `LICENSE_NOTES.md` and `licenses/` (FFmpeg's LGPL-2.1, minimp3's CC0, the GameSpy SDK's licence), `MANIFEST.txt`, `SHA256SUMS`, the run scripts `linux-run.sh` and `linux-server.sh`, and the install scripts `linux-install.sh`, `windows-install.bat` and `mac-install.command` | other persons |
 
-The install scripts copy the game's data and the third-party runtime
+Both archives have the run scripts (`build/game-scripts/`, below). The
+install scripts copy the game's data and the third-party runtime
 (Bink, the Microsoft C, C++ and MFC runtime) out of the player's own
 images of the two discs and the executable of Update 2. They read only
 byte ranges of those files, which three committed lists give
@@ -145,7 +148,9 @@ write. Then the directory is the game directory as it was built, byte for
 byte. The scripts need:
 
 - Linux: bash, python3 and GNU coreutils;
-- Windows: Windows PowerShell 5.1 (Windows 10 and 11 have it).
+- Windows: Windows PowerShell 5.1 (Windows 10 and 11 have it);
+- macOS: the Perl that macOS has (`/usr/bin/perl`), for CrossOver or
+  another Wine.
 
 To install a public archive:
 
@@ -158,7 +163,55 @@ sha256sum -c SHA256SUMS
 (Without arguments, the script looks for the files in its directory and
 the directory above it.) On Windows, drop the three files onto
 `windows-install.bat`. The legacy build's script also writes the registry
-values that the retail launcher reads.
+values that the retail launcher reads. On a Mac, double-click
+`mac-install.command` with the three files in its folder (or give them to
+it in Terminal). Then play the game with CrossOver or another Wine: the
+modern build's `Tron.exe`, or, for the legacy build, `Lithtech.exe
+-cmdfile tron20cmds.txt` (its `Tron.exe` is the retail launcher, which
+wants the retail setup's registry values and disc 1 in a drive).
+`mac-install.command` is tested with Perl on Linux (the same files as
+`linux-install.sh`), but not yet on a Mac.
+
+### Playing on Linux
+
+The run scripts are in the game directory and in both archives
+(`build/game-scripts/`; `build/all.sh` puts them there). Each prints its
+usage with `--help`. They need Wine (with 32-bit support).
+
+- `./linux-run.sh [arguments]` starts the game through `Tron.exe`. In the
+  modern build, `Tron.exe` starts the game at once and stays until the
+  game stops (Steam's overlay and Remote Play need that:
+  `docs/MODERN.md` APPS-1, APPS-2); `./linux-run.sh --launcher` opens
+  `TronLauncher.exe`. In the legacy build, `Tron.exe` is the retail
+  launcher: click Play. The first run asks for the detail setting. The
+  arguments go to the engine, for example `++windowed 0` (full screen),
+  `+DisableSound 1`, `+join <address>:27888 +gametype DiscArena`.
+- `./linux-server.sh [--config <name>] [--headless] [arguments]` runs the
+  dedicated server, `TRONSrv.exe`, on a server configuration
+  (`ServerData/<name>.txt`, which the game's Host screens write). The
+  default is `ServerData/server.txt`, which it writes if it is not there
+  (Disc Arena, five worlds, port 27888; LAN only in the legacy build, an
+  Internet game on OpenSpy in the modern build). With no display it runs under
+  `xvfb-run`. Its console is in `tronsrv.log`.
+
+The scripts use their own Wine prefix, `~/.wine-tron20` (headless
+server: `~/.wine-tron20-server`; `WINEPREFIX` changes it), so your own
+prefix is left alone. The modern build needs nothing in the prefix: its
+settings are in `tron20.ini` in the game directory. For the legacy build,
+the scripts write the registry values of the retail setup and Update 2,
+and `linux-run.sh` also gives the retail launcher a CD-ROM drive with an
+empty `TRON.EXE` (the launcher only looks for that file; the data is in
+the game directory). On a fresh install of the modern build (no
+`display.cfg`), `linux-run.sh` starts the game in a borderless window at
+the desktop's resolution, and on a Steam Deck (`SteamDeck=1`) full screen
+at 1280x800; later runs keep what Options > Display sets. The legacy
+build starts in a window (`++windowed 1`; its Display has no window
+mode). Under Wine, the music (DirectMusic) is silent for now
+(`docs/MODERN.md` X-3). `make scripttest` tests the scripts in the build
+container: the game from a fresh prefix to its main menu, the headless
+server, and a client that joins it. Not tested there: a real Linux
+desktop (a window manager, XRandR modes, sound), a Steam Deck, and Steam
+or Proton (with Proton, add `Tron.exe` to Steam: the script is not used).
 
 The archives are reproducible. The files are in name order, every time is
 2000-01-01 00:00 UTC (`TRON20SRC_EPOCH`), the owner is 0:0 without names,

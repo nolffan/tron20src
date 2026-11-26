@@ -62,7 +62,7 @@ DOCKER_RUN = docker run $(DOCKER_OPTS) --name $(CONTAINER) $(IMAGE)
 TOOLCHAIN_FILES = ext/toolchains/msvc-6.00-8168/BIN/cl.exe ext/toolchains/msvc-6.00-8168/BIN/link.exe
 
 .PHONY: all game compile debug modern modern-debug package retail-ways image retail check-tools check-toolchain \
-	test tests mptest launchertest portabletest mp3acmtest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
+	test tests mptest launchertest portabletest scripttest mp3acmtest sweep control reference art art-check progress progress-update progress-ci ci shell clean distclean help
 
 all: game
 
@@ -89,6 +89,9 @@ help:
 	@echo "                test-<game dir>-<name>/ with TEST_GAME=<dir>)"
 	@echo "make portabletest  the modern build's launcher, Tron.exe and server on a fresh"
 	@echo "                Wine prefix: no registry or APPDATA use (build/portabletest.sh)"
+	@echo "make scripttest SCRIPTTEST_GAME=<dir>  linux-run.sh and linux-server.sh in a"
+	@echo "                public archive installed with linux-install.sh: the main menu,"
+	@echo "                the server and a client that joins (build/scripttest.sh)"
 	@echo "make sweep      every single-player world, about a minute each (build/sweep.sh;"
 	@echo "                SWEEP_WORLDS=<text>, SWEEP_JOBS=<n>; out/play/sweep-summary.txt)"
 	@echo "make compile    compile and link what has source, in the source tree (build/compile.sh;"
@@ -197,6 +200,17 @@ LAUNCHER_EXE ?=
 launchertest: image
 	@[ -f $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) ] || { echo "error: no $(TEST_GAME)/$(or $(LAUNCHER_EXE),Tron.exe) -- build it first (make)" >&2; exit 1; }
 	$(DOCKER_RUN) env $(if $(PLAYTEST_NAME),PLAYTEST_NAME=$(PLAYTEST_NAME)) $(if $(LAUNCHER_EXE),PLAYTEST_LAUNCH=$(LAUNCHER_EXE)) $(if $(LAUNCHERTEST_RETAIL),LAUNCHERTEST_RETAIL=1) bash build/launchertest.sh $(TEST_GAME) $(LAUNCHER_SCRIPT)
+
+# The run scripts' test (build/scripttest.sh): linux-run.sh and
+# linux-server.sh in a game directory installed from a public archive
+# (SCRIPTTEST_GAME; its linux-install.sh first), with fresh prefixes; the
+# game to its main menu, the server, and a client that joins it
+# (SCRIPTTEST_STEPS=run|server|both). Results in out/play/scripttest-*/.
+SCRIPTTEST_GAME ?=
+SCRIPTTEST_STEPS ?= both
+scripttest: image
+	@[ -n "$(SCRIPTTEST_GAME)" ] && [ -f $(SCRIPTTEST_GAME)/Game.rez ] || { echo "error: SCRIPTTEST_GAME=<dir>: a public archive unpacked and installed with its linux-install.sh" >&2; exit 1; }
+	$(DOCKER_RUN) env $(if $(SCRIPTTEST_NAME),SCRIPTTEST_NAME=$(SCRIPTTEST_NAME)) $(if $(SCRIPTTEST_SCREEN),SCRIPTTEST_SCREEN=$(SCRIPTTEST_SCREEN)) bash build/scripttest.sh $(SCRIPTTEST_GAME) $(SCRIPTTEST_STEPS)
 
 # The portable test (build/portabletest.sh), for the modern build: the
 # launcher, the direct start and the dedicated server on a fresh Wine
