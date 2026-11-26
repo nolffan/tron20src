@@ -703,8 +703,10 @@ void CDiscArena::SendCommand(const char* pszCmd)
 // 0x10294b54)
 static const float s_afWarningTimes[3] = { 30.0f, 15.0f, 5.0f };
 
-// RETAIL: the console variable for friendly fire (retail .data 0x1037c2a0)
-static CVarTrack s_vtFriendlyFire;
+// RETAIL: the console variable for friendly fire is Projectile.cpp's
+// g_vtNetFriendlyFire (retail .data 0x1037c2a0, which
+// ProjectileInitFileGlobals 0x1011dfe0 also sets up)
+extern CVarTrack g_vtNetFriendlyFire;
 
 CDiscMatchMgr::CDiscMatchMgr()
 {
@@ -718,9 +720,9 @@ bool CDiscMatchMgr::Init()
 	m_fLastPingCheck = 0.0f;
 	m_nTronUnknown28 = -1;
 
-	if (!s_vtFriendlyFire.IsInitted())
+	if (!g_vtNetFriendlyFire.IsInitted())
 	{
-		s_vtFriendlyFire.Init(g_pLTServer, "NetFriendlyFire", LTNULL, 0.0f);
+		g_vtNetFriendlyFire.Init(g_pLTServer, "NetFriendlyFire", LTNULL, 0.0f);
 	}
 
 	if (m_nGameType == eGameTypeDiscArena)
@@ -737,7 +739,7 @@ bool CDiscMatchMgr::Init()
 		m_nJoinTime = options.m_nArenaMaxPing;
 		m_nWinsToEnd = options.m_nArenaWinLimit;
 		m_fTimeLimit = (float)options.m_nArenaTimeLimit * 60.0f;
-		s_vtFriendlyFire.SetFloat(options.m_bArenaFriendlyFire ? 1.0f : 0.0f);
+		g_vtNetFriendlyFire.SetFloat(options.m_bArenaFriendlyFire ? 1.0f : 0.0f);
 	}
 	else if (m_nGameType == eGameTypeDiscTournament)
 	{
@@ -753,7 +755,7 @@ bool CDiscMatchMgr::Init()
 		m_nJoinTime = options.m_nTournMaxPing;
 		m_bDoubleElimination = false;
 		m_nTeamsToStart = options.m_nTournTeamsToStart;
-		s_vtFriendlyFire.SetFloat(options.m_bTournFriendlyFire ? 1.0f : 0.0f);
+		g_vtNetFriendlyFire.SetFloat(options.m_bTournFriendlyFire ? 1.0f : 0.0f);
 	}
 	else
 	{

@@ -50,9 +50,11 @@ int bm_BindModule(const char *pModuleName, CBindModuleType *&pModule)
 		}
 	}
 
-	// RETAIL: the binding made here (no bm_CreateHandleBinding)
+	// RETAIL: the binding made here (no bm_CreateHandleBinding), with
+	// LTMemAlloc and not operator new (Lithtech.exe 0x402ab6, server.dll
+	// 0x1000174d)
 	WinBind *pBind;
-	LT_MEM_TRACK_ALLOC(( pBind = new WinBind ),LT_MEM_TYPE_MISC);
+	LT_MEM_TRACK_ALLOC(( pBind = (WinBind*)LTMemAlloc(sizeof(WinBind)) ),LT_MEM_TYPE_MISC);
 	pBind->m_hInstance = hModule;
 	pBind->m_Type = BINDTYPE_DLL;
 
@@ -72,7 +74,8 @@ void bm_UnbindModule(CBindModuleType *hModule)
 		FreeLibrary(pBind->m_hInstance);
 	}
 
-	delete pBind;
+	// RETAIL: LTMemFree, as bm_BindModule allocates it
+	LTMemFree(pBind);
 }
 
 

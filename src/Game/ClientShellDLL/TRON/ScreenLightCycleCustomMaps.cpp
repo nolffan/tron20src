@@ -23,6 +23,7 @@
 #include "LightCycleGameDataMgr.h"
 #include "TRON/LightCycleButeMgr.h"
 #include "GameClientShell.h"
+#include "TronGameClientShell.h"
 #include <list>
 
 // RETAIL: 0x1026ea08: the folder of the light cycle maps (a caseless
@@ -81,7 +82,8 @@ namespace
 	};
 
 	// RETAIL: 0x1006b510: a circuit's map is locked until the profile has
-	// unlocked it
+	// unlocked it. The circuit manager comes through Tron's game client
+	// shell (g_pTronGameClientShell, 0x1026eda0)
 	bool IsMapLocked(std::string sMap)
 	{
 		if (!sMap[0])
@@ -90,7 +92,7 @@ namespace
 		if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown36))
 			return false;
 
-		if (g_pGameClientShell->GetCircuitButeMgr()->IsCircuitMap(sMap))
+		if (g_pTronGameClientShell->GetCircuitButeMgr()->IsCircuitMap(sMap))
 		{
 			CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();
 			StringArray::iterator it;

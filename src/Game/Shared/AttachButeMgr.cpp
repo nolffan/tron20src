@@ -155,7 +155,7 @@ int CAttachButeMgr::GetAttachmentIDByName(const char *szName)
 		char szTestName[128];
 		GetAttachmentName(iAttachmentID,szTestName,sizeof(szTestName));
 		// RETAIL: Tron's compares without case (_strcmpi: CShell 0x1017c92d)
-		if ( stricmp(szName,szTestName) == 0 )
+		if ( strcmpi(szName,szTestName) == 0 )
 		{
 			return iAttachmentID;
 		}
@@ -409,7 +409,8 @@ int CAttachButeMgr::GetPVAttachmentIDByName( const char *szName )
 		char szTestName[128] = {0};
 		GetPVAttachmentName( i, szTestName, ARRAY_LEN( szTestName ));
 		
-		if( stricmp( szName, szTestName ) == 0 )
+		// RETAIL: _strcmpi, as GetAttachmentIDByName
+		if( strcmpi( szName, szTestName ) == 0 )
 		{
 			return i;
 		}

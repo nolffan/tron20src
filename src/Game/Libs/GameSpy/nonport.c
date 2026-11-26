@@ -280,7 +280,10 @@ static void GenerateID(char *keyval)
 	else
 		seed = 0;
 
-	Util_RandSeed(time(NULL) ^ clock() ^ GetTickCount() ^ seed);
+	/* RETAIL: CShell 0x1004e2e0, Object 0x1002fb60 and TRONSrv 0x00403630
+	   call time, clock and then GetTickCount. cl calls them in that sequence
+	   only from this sequence of the operands. */
+	Util_RandSeed(time(NULL) ^ GetTickCount() ^ clock() ^ seed);
 	for (i = 0; i < 19; i++)
 		if (i == 4 || i == 9 || i == 14)
 			keyval[i] = '-';

@@ -2926,9 +2926,9 @@ void CCharacterFX::UpdatePitch( )
 		return;
 
 	// RETAIL: Tron reads the pitch from the object's unguaranteed data
-	// (0x1017a4c2)
+	// (0x1017a4c2), through g_pLTBase (0x102710c4)
 	uint32 nPitch;
-	if( LT_OK == g_pLTClient->GetObjectUnguaranteedData( m_hServerObject, &nPitch ))
+	if( LT_OK == g_pLTBase->GetObjectUnguaranteedData( m_hServerObject, &nPitch ))
 	{
 		HandlePitch(( uint8 )nPitch );
 	}

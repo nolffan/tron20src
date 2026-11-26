@@ -52,8 +52,8 @@ extern ClassDef** ObjectDLLSetup(int *nDefs, ILTServer *pServer, int *version);
 // TRON: Tron 2.0's is the older interface (server.dll 0x10001839): the
 // module is allocated here and returned through ppModule, and the binding
 // takes no bTempFile.  RETAIL BUG: the module is allocated before the
-// binding and leaked when it fails, and freed with free() (it was allocated
-// with new, LTMemAlloc) on a version mismatch (docs/RETAIL_BUGS.md)
+// binding and leaked when it fails, and freed with free() and not LTMemFree
+// on a version mismatch (docs/RETAIL_BUGS.md)
 int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *version)
 {
     ClassBindModule *pModule;
@@ -62,7 +62,9 @@ int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *ve
     int status;
 
     // this is alloced here and then returned
-    LT_MEM_TRACK_ALLOC(pModule = new ClassBindModule, LT_MEM_TYPE_MISC);
+    // RETAIL: with LTMemAlloc and not operator new (Lithtech.exe 0x403920,
+    // server.dll 0x10001839)
+    LT_MEM_TRACK_ALLOC(pModule = (ClassBindModule*)LTMemAlloc(sizeof(ClassBindModule)), LT_MEM_TYPE_MISC);
 
     status = bm_BindModule(pModuleName, hModule);
     if (status == BIND_CANTFINDMODULE)
@@ -98,7 +100,7 @@ int cb_LoadModule(const char *pModuleName, ClassBindModule *&pModuleOut, int *ve
 void cb_UnloadModule(ClassBindModule *pModule)
 {
     bm_UnbindModule(pModule->m_hModule);
-    delete pModule;
+    LTMemFree(pModule);	// RETAIL: LTMemFree (Lithtech.exe 0x403a20)
 }
 
 

@@ -18,6 +18,7 @@
 #include "AIHumanState.h"
 #include "AIGoalMgr.h"
 #include "CVarTrack.h"
+#include "AIUtils.h"
 #include "..\TRON\AINodeExitLevelByRezOut.h"
 
 // ----------------------------------------------------------------------- //
@@ -160,10 +161,6 @@ void CAIGoalExitLevel::HandleStateGoto()
 //
 // ----------------------------------------------------------------------- //
 
-// RETAIL: a console variable (retail 0x1038b828) that prints when the goal
-// locks; the C++ name is ours.
-static CVarTrack s_vtAIGoalExitLevel;
-
 DEFINE_AI_FACTORY_CLASS_SPECIFIC(Goal, CAIGoalExitLevelByRezOut, kGoal_ExitLevelByRezOut);
 
 // ----------------------------------------------------------------------- //
@@ -270,8 +267,10 @@ void CAIGoalExitLevelByRezOut::HandleStateUseObject()
 			m_pGoalMgr->LockGoal( this );
 			m_pAI->GetDestructible()->SetCanDamage( LTFALSE );
 
-			s_vtAIGoalExitLevel.Init( g_pLTServer, "AIGoalExitLevel", LTNULL, 0.0f );
-			if( s_vtAIGoalExitLevel.GetFloat() > 0.0f )
+			// RETAIL: the shared AI console variable (g_vtAIConsoleVar,
+			// retail 0x1038b828), as the other AI debug prints
+			g_vtAIConsoleVar.Init( g_pLTServer, "AIGoalExitLevel", LTNULL, 0.0f );
+			if( g_vtAIConsoleVar.GetFloat() > 0.0f )
 			{
 				ObjectCPrint( m_pAI->m_hObject, "Locked the RezOut goal, should not be interuptable." );
 			}
