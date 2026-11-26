@@ -83,7 +83,13 @@ LTBOOL LENSFLARECREATESTRUCT::InitFromMessage(HOBJECT hObj, LENSFLARECREATESTRUC
     lens.fMaxBlindScale     = pMsg->Readfloat();
 
 	// RETAIL: Tron's: a socket of the object (0x101a5a22)
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-132: the server does not write the flag: read it only
+	// when the message has it
+	if (pMsg->TellEnd() > 0 && pMsg->Readbool())
+#else
 	if (pMsg->Readbool())
+#endif
 	{
 		char szSocket[128];
 		pMsg->ReadString(szSocket, sizeof(szSocket));

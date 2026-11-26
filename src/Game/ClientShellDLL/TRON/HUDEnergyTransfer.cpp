@@ -108,9 +108,14 @@ void CHUDEnergyTransfer::Update()
 		m_nFill = 3;
 		BuildFill(&m_Fill[0], -90.0f, -45.0f);
 		BuildFill(&m_Fill[1], -45.0f, 0.0f);
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-102: the third triangle starts where the second ends
+		BuildFill(&m_Fill[2], 0.0f, fAngle);
+#else
 		// RETAIL: from -45 again, not 0 (the second triangle is drawn twice
 		// over: docs/RETAIL_BUGS.md)
 		BuildFill(&m_Fill[2], -45.0f, fAngle);
+#endif
 	}
 }
 

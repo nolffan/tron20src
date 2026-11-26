@@ -202,7 +202,12 @@ void CMenuHelp::OnFocus(LTBOOL bFocus)
 		// docs/RETAIL_BUGS.md)
 		if (g_pInterfaceMgr->GetMenuMgr()->GetTronUnknown5CE4() && nFirstCtrl >= 0)
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-125: the first file's item, by its item index
+			INTEL_ITEM* pItem = pList->Get(nFirstItem);
+#else
 			INTEL_ITEM* pItem = pList->Get(nFirstCtrl);
+#endif
 			if (pItem && !pItem->bRead)
 			{
 				ShowItem(nFirstCtrl, nFirstItem);

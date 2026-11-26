@@ -3116,7 +3116,13 @@ void CPlayerMgr::HandleMsgPlayerStateChange (ILTMessage_Read *pMsg)
 				if( pPlayerLureFX )
 				{
 					char const* pszDeathFX = pPlayerLureFX->GetDeathFX( );
+#ifdef TRON20SRC_MODERN
+					// MODERN.md GAME-100: play a named death FX, and do not
+					// read through a null name
+					if( pszDeathFX && pszDeathFX[0] != '\0' )
+#else
 					if( !pszDeathFX && pszDeathFX[0] != '\0' )
+#endif
 					{
 						g_pLTClient->GetObjectPos( g_pMoveMgr->GetObject(), &vLurePos );
 

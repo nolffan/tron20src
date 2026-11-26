@@ -20,7 +20,12 @@ bool CheckVectorNodeIntersect(ModelSkeleton eModelSkeleton, HOBJECT hObject, con
 
 // RETAIL: 0x101e6318. RETAIL_BUGS.md: the data the claw looks up is the
 // subroutine "EnergyClaw"'s, not "Energy_claw"'s
+#ifdef TRON20SRC_MODERN
+// MODERN.md GAME-121: the subroutine's name, as the claw's energy use has it
+const char* const CClientWeaponEnergyClaw::s_szClawName = "Energy_claw";
+#else
 const char* const CClientWeaponEnergyClaw::s_szClawName = "EnergyClaw";
+#endif
 
 // RETAIL: 0x1001a5f0
 CClientWeaponEnergyClaw::CClientWeaponEnergyClaw()

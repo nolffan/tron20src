@@ -787,6 +787,10 @@ LTBOOL CTronInterfaceMgr::OnMessage(uint8 messageID, ILTMessage_Read *pMsg)
 		{
 			uint8 nEnergy = pMsg->Readuint8();
 			g_pPickupMsgs->AddMessage(FormatTempString(3271, nEnergy), (const char*)LTNULL);
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-136: the message ends here
+			return LTTRUE;
+#endif
 		}
 
 		// RETAIL: 0x1009df00: two strings with the "msgfadeout" sound
@@ -1354,7 +1358,12 @@ LTBOOL CTronInterfaceMgr::HandleConsoleVarOscillate(ILTMessage_Read *pMsg)
 		pRecord->m_fTronUnknown54 = fMax;
 		// RETAIL: the center is fMin + fMax / 2, not ( fMin + fMax ) / 2
 		// (see docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-129: the center is between the two
+		pRecord->m_fTronUnknown58 = (fMin + fMax) * 0.5f;
+#else
 		pRecord->m_fTronUnknown58 = fMin + fMax * 0.5f;
+#endif
 		pRecord->m_fTronUnknown5C = (fMax - fMin) * 0.5f;
 		pRecord->m_fTronUnknown60 = g_pLTClient->GetVarValueFloat(hVar);
 		m_TronRecords.push_back(pRecord);
@@ -1394,7 +1403,12 @@ LTBOOL CTronInterfaceMgr::HandleConsoleVarStop(ILTMessage_Read *pMsg, bool bRest
 			{
 				// RETAIL: "%4.2d" with a double (see docs/RETAIL_BUGS.md)
 				char szCmd[64];
+#ifdef TRON20SRC_MODERN
+				// MODERN.md GAME-130: the value as a float
+				sprintf(szCmd, "%s %f", pRecord->m_szName, pRecord->m_fTronUnknown60);
+#else
 				sprintf(szCmd, "%s %4.2d", pRecord->m_szName, pRecord->m_fTronUnknown60);
+#endif
 				g_pLTClient->RunConsoleString(szCmd);
 			}
 

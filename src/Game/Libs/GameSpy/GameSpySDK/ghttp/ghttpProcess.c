@@ -599,8 +599,14 @@ static GHTTPBool ghiDeliverIncomingFileData
 {
 	// RETAIL: CShell.dll 0x10021110: the 2003 SDK leaves these unset, so an
 	// unknown type passes whatever is in them to the callback.
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-133: an unknown type gives the callback NULL and 0
+	char * buffer = NULL;
+	int bufferLen = 0;
+#else
 	char * buffer;
 	int bufferLen;
+#endif
 
 	// Add this to the total.
 	/////////////////////////

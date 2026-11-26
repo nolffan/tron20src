@@ -348,7 +348,12 @@ void CBaseScreenHost::LoadOptions()
 
 	// RETAIL: passes the std::string itself to FormatString's "..." (see
 	// docs/RETAIL_BUGS.md); its first member is the text, so "%s" reads it
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-115: the text, not the string object
+	FormatString(0xF48,szText,sizeof(szText),pOptions->m_sOptionsName.c_str());
+#else
 	FormatString(0xF48,szText,sizeof(szText),pOptions->m_sOptionsName);
+#endif
 	LTGUIWiden(sText,szText);
 	m_pOptionsName->SetString(sText);
 

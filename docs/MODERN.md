@@ -594,6 +594,114 @@ details.
   stays (one for each start). Tested: a start and Quit from the main menu
   in a new Wine prefix leaves `Temp\cfx9ce3.tmp` with the legacy build and
   no file with the modern build.
+* **GAME-100:** a player who dies on a lure plays the lure's named death
+  FX, and a lure without one is not read through a null pointer
+  (`PlayerMgr.cpp`).
+* **GAME-101:** a ghttp post sends the rest of a string field from its
+  position, not from its start
+  (`Libs/GameSpy/GameSpySDK/ghttp/ghttpPost.c`).
+* **GAME-102:** the energy transfer meter's third triangle starts at 0
+  degrees, so no part of the fill is drawn two times
+  (`TRON/HUDEnergyTransfer.cpp`).
+* **GAME-103:** a light cycle dialog priority out of [0, 1] is reported and
+  clamped (`Shared/TRON/LightCycleButeMgr.cpp`, both DLLs).
+* **GAME-104:** a shield hit drops the trail's last point with `pop_back`,
+  not `erase(end())` (`Shared/TRON/LightCycleMgr.cpp`, both DLLs).
+* **GAME-105:** updating a listed server by IP does not add it to the
+  server list again (`serverbrowsing/sb_serverbrowsing.c`).
+* **GAME-106:** a timed-out server query sets the failed state, and clears
+  the pending states, in the server's `state`, not its address `flags`
+  (`serverbrowsing/sb_queryengine.c`).
+* **GAME-107:** a LAN browse makes the `slc_initiallistcomplete` callback
+  when its search time ends (`serverbrowsing/sb_serverlist.c`).
+* **GAME-108:** a lip-sync file's node name of 256 bytes or more ends the
+  file's nodes, and no more nodes are read than the node controls hold
+  (`NodeController.cpp` `HandleNodeControlLipSync`).
+* **GAME-109:** `ServerGameOptions::LoadFromBute` reads the disc
+  tournament's `TournamentMode` (`Shared/ProfileUtils.cpp`, CShell.dll and
+  TRONSrv.exe).
+* **GAME-110:** each light cycle `PowerupAllow*` key's default is the
+  power-up's bit as it was, so a config without the keys keeps every
+  power-up allowed (`Shared/ProfileUtils.cpp`, CShell.dll and TRONSrv.exe).
+* **GAME-111:** a new system memory configuration deletes the old bad
+  blocks and base code (`TRON/SubroutineMgr.cpp`
+  `SetSystemMemoryConfiguration`).
+* **GAME-112:** teams 4 to 7 take their alternative name from the first
+  table, not from past the second (`Shared/SharedScoring.cpp`
+  `CTronTeam::GetName`).
+* **GAME-113:** cancelling a decision window resets no choice
+  (`HUDDecision.cpp` `Choose`).
+* **GAME-114:** the `Frame` and `FrameUV` console programs accept the
+  pieces 0 to 8 only (`TexturedFrame.cpp`).
+* **GAME-115:** the host screens pass the option set's name to `"%s"` as
+  `c_str()` (`TRON/BaseScreenHost.cpp` `LoadOptions`).
+* **GAME-116:** the host connection screen loads the default password into
+  the remote-command password too (`TRON/ScreenHostConnection.cpp`).
+* **GAME-117:** the subroutine screen's upgrade points ring scales its
+  vertical values by the Y ratio (`TRON/RatingBarCtrl.cpp`
+  `CBuildPointsCtrl::ScreenDimsChanged`; with CL-30 the two ratios are
+  equal).
+* **GAME-118:** the light cycle scores destroy all their controls when they
+  were created (`TRON/HUDScores.cpp` `Term`).
+* **GAME-119:** a bouncy chunk or a particle system that follows its parent
+  (`UP_FOLLOW`) starts at the parent plus its offset, and the particle
+  system adds `m_vTronUnknown` one time
+  (`ClientFxDLL/LTBbouncychunkfx.cpp`, `ParticleSystemFX.cpp`
+  `GetSpawnTransform`).
+* **GAME-120:** a cylinder particle system emits in its circle, not on a
+  line (`ClientFxDLL/ParticleSystemFX.cpp` `AddParticles`).
+* **GAME-121:** the energy claw takes its range data from the subroutine
+  `Energy_claw` (beta 448, gold 512; retail always alpha, 384)
+  (`TRON/ClientWeaponEnergyClaw.cpp`).
+* **GAME-122:** a permission set bin gives `FormatString` the size of its
+  buffer (`TRON/HUDTronDecision.cpp` `CHUDDecisionBin::Init`).
+* **GAME-123:** the circuit intro destroys its lives strings, and the trail
+  strings one time (`TRON/HUDLightCycleCircuitIntro.cpp` `TermStrings`).
+* **GAME-124:** the circuit intro gives an unknown speed or trail length
+  index the string of index 0 (`UpdateText`).
+* **GAME-125:** the help menu tests the first file's own item before it
+  shows the file (`TRON/MenuHelp.cpp` `OnFocus`).
+* **GAME-126:** a light cycle's intro lookup tests the colour before it
+  reads it (`TRON/TronPlayerMgr.cpp` `TronUnknownVirtual70`).
+* **GAME-127:** a light cycle colour without death fx clears the caller's
+  buffer and takes no random index of an empty list
+  (`TronUnknownVirtual74`).
+* **GAME-128:** the team selection screen accepts the commands of its 16
+  rows only (`TRON/ScreenTeamSelect.cpp` `OnCommand`).
+* **GAME-129:** a console variable oscillation's center is (minimum +
+  maximum) / 2 (`TRON/TronInterfaceMgr.cpp` `HandleConsoleVarOscillate`).
+* **GAME-130:** a console variable restore writes the old value with `"%s
+  %f"` (`HandleConsoleVarStop`).
+* **GAME-131:** an interface object render adds no more lights than its
+  array holds (`InterfaceMgr.cpp` `RenderInterfaceObject`).
+* **GAME-132:** the lens flare and search light messages read the socket
+  flag only when the message has it (`LensFlareFX.cpp` `InitFromMessage`).
+* **GAME-133:** a ghttp download of an unknown type gives the progress
+  callback NULL and 0 (`ghttp/ghttpProcess.c`).
+* **GAME-134:** a cloned tracking node that is not made is reported, by its
+  name (`Shared/TrackedNodeContext.cpp`, both DLLs).
+* **GAME-135:** the HUD deletes its version item (`TRON/TronHUDMgr.cpp`
+  destructor).
+* **GAME-136:** `MID_TRON_ENERGY_GAINED` ends before the HUD text case: no
+  sound and no reads past the message (`TRON/TronInterfaceMgr.cpp`
+  `OnMessage`).
+
+GAME-100 to GAME-136 are the client's items of the retail-bug round of
+2026-11-26 (the ids to GAME-149 are kept for it; GAME-50 to GAME-99 are the
+server's). Each was examined again in the retail code first: the
+functions that our build makes identical show it in our source, and for
+the near functions (CTronTeam::GetName, CHUDDecision::Choose,
+CHUDDecisionBin::Init, the circuit intro's UpdateText, CMenuHelp::OnFocus,
+TronUnknownVirtual74, and ClientFx.fxd's two GetSpawnTransform) we read
+the retail instructions. `releasesrc.py diff` shows no change to the
+legacy build's source, and the CShell.dll and ClientFx.fxd scores are the
+same. Tested: the modern build's `make tests` (they go through the menus,
+a level with its decision window, saving and loading, a light-cycle race
+with its circuit intro, the weapon chooser and the intro). The other
+changes are on paths that the tests cannot reach under Wine (a core dump
+that gives energy, a lure death, a LAN browse, the host screens' option
+sets, a bad lip-sync file): they were checked by reading the code and
+the data (the layout, missions and subroutine files of `Game.rez`).
 
 ### Retail-bug fixes, engine
 

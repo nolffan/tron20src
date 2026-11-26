@@ -463,7 +463,12 @@ void CHUDDecision::Choose(uint8 nChoice)
 
 	// RETAIL: resets m_Choices[6] (the frame after the choices) when the
 	// window is cancelled (docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-113: a cancel resets no choice
+	if (m_bRemoveItems && nChoice < MAX_DECISION_CHOICES)
+#else
 	if (m_bRemoveItems)
+#endif
 		m_Choices[nChoice].Reset();
 
 	for (int i = 0; i < MAX_DECISION_CHOICES; i++)

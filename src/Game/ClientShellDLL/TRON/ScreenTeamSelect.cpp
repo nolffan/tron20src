@@ -172,7 +172,12 @@ uint32 CScreenTeamSelect::OnCommand(uint32 dwCommand, uint32 dwParam1, uint32 dw
 
 	// RETAIL: the test takes one command more than there are rows (0x443,
 	// docs/RETAIL_BUGS.md)
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-128: the 16 rows' commands only
+	if (dwCommand >= kCmdTeamRow && dwCommand < kCmdTeamRow + kMaxRows)
+#else
 	if (dwCommand >= kCmdTeamRow && dwCommand <= kCmdTeamRow + kMaxRows)
+#endif
 	{
 		pTeamMgr->MoveClient(nLocalID,m_anRowTeam[dwCommand - kCmdTeamRow]);
 		return 1;

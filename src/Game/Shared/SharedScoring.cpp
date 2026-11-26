@@ -514,8 +514,14 @@ void CTronTeam::GetName(bool bPlayerName, std::string& sName, bool bTronUnknown)
 
 	if (m_nID < 8)
 	{
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-112: the second table has four ids; teams 4 to 7
+		// take their names from the first
+		if (bTronUnknown && m_nID < ARRAY_LEN(s_nTeamTronUnknownNameIds))
+#else
 		// RETAIL BUG: the second table has four ids; teams 4 to 7 read past it
 		if (bTronUnknown)
+#endif
 			sName = LoadTempString(s_nTeamTronUnknownNameIds[m_nID]);
 		else
 			sName = LoadTempString(s_nTeamNameIds[m_nID]);

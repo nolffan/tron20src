@@ -264,6 +264,10 @@ bool ServerGameOptions::LoadFromBute( CButeMgr& bute )
 	m_nTournPreGameDelay = ( uint8 )bute.GetInt( "DiscTournament", "PreGameDelay", m_nTournPreGameDelay );
 	m_nTournMaxPing = ( uint16 )bute.GetInt( "DiscTournament", "MaxPing", m_nTournMaxPing );
 	m_nTournAirControl = ( uint8 )bute.GetInt( "DiscTournament", "AirControl", m_nTournAirControl );
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-109: the mode that SaveToBute writes
+	m_nTournMode = bute.GetInt( "DiscTournament", "TournamentMode", m_nTournMode );
+#endif
 	LOAD_MAP_LIST( "DiscTournament", m_saTournMaps );
 
 	m_nArenaMaxPlayers = ( uint8 )bute.GetInt( "DiscArena", "MaxPlayers", m_nArenaMaxPlayers );
@@ -293,6 +297,19 @@ bool ServerGameOptions::LoadFromBute( CButeMgr& bute )
 	m_nLCTotalPoints = ( uint16 )bute.GetInt( "LightCycles", "TotalPoints", m_nLCTotalPoints );
 	m_nLCTotalTime = ( uint16 )bute.GetInt( "LightCycles", "TotalTime", m_nLCTotalTime );
 	m_nLCMaxPing = ( uint16 )bute.GetInt( "LightCycles", "MaxPing", m_nLCMaxPing );
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-110: each key's default is its bit as it was (Clear
+	// allows every power-up), so a missing key keeps its power-up allowed
+	m_LCPowerups.bShield = bute.GetBool( "LightCycles", "PowerupAllowShield", m_LCPowerups.bShield ) ? 1 : 0;
+	m_LCPowerups.bTurbo = bute.GetBool( "LightCycles", "PowerupAllowTurbo", m_LCPowerups.bTurbo ) ? 1 : 0;
+	m_LCPowerups.bTrailSpike = bute.GetBool( "LightCycles", "PowerupAllowTrailSpike", m_LCPowerups.bTrailSpike ) ? 1 : 0;
+	m_LCPowerups.bMissile = bute.GetBool( "LightCycles", "PowerupAllowMissile", m_LCPowerups.bMissile ) ? 1 : 0;
+	m_LCPowerups.bTurboCurse = bute.GetBool( "LightCycles", "PowerupAllowTurboCurse", m_LCPowerups.bTurboCurse ) ? 1 : 0;
+	m_LCPowerups.bGrab = bute.GetBool( "LightCycles", "PowerupAllowGrab", m_LCPowerups.bGrab ) ? 1 : 0;
+	m_LCPowerups.bTrailReset = bute.GetBool( "LightCycles", "PowerupAllowTrailReset", m_LCPowerups.bTrailReset ) ? 1 : 0;
+	m_LCPowerups.bForceUse = bute.GetBool( "LightCycles", "PowerupAllowForceUse", m_LCPowerups.bForceUse ) ? 1 : 0;
+	m_LCPowerups.bWallExtender = bute.GetBool( "LightCycles", "PowerupAllowWallExtender", m_LCPowerups.bWallExtender ) ? 1 : 0;
+#else
 	m_nLCPowerups = 0;
 	if( bute.GetBool( "LightCycles", "PowerupAllowShield", m_LCPowerups.bShield ))
 		m_LCPowerups.bShield = 1;
@@ -312,6 +329,7 @@ bool ServerGameOptions::LoadFromBute( CButeMgr& bute )
 		m_LCPowerups.bForceUse = 1;
 	if( bute.GetBool( "LightCycles", "PowerupAllowWallExtender", m_LCPowerups.bWallExtender ))
 		m_LCPowerups.bWallExtender = 1;
+#endif
 	m_nLCKillPointValue = ( int8 )bute.GetInt( "LightCycles", "KillPointValue", m_nLCKillPointValue );
 	m_nLCSelfKillPointValue = ( int8 )bute.GetInt( "LightCycles", "SelfKillPointValue", m_nLCSelfKillPointValue );
 	m_nLCWinRacePointValue = ( int8 )bute.GetInt( "LightCycles", "WinRacePointValue", m_nLCWinRacePointValue );

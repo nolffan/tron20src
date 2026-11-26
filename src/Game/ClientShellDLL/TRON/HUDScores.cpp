@@ -184,12 +184,30 @@ LTBOOL CHUDScores::Init()
 
 void CHUDScores::Term()
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-118: destroy each control that was created
+	if (!m_bInited || !m_bControlsInited) return;
+
+	m_Frame.Destroy();
+	m_ScoreTitles.Destroy();
+	m_ScoreFrame.Destroy();
+	m_HeaderFrame.Destroy();
+	m_HeaderTitles.Destroy();
+	m_HeaderValues.Destroy();
+	m_FooterFrame.Destroy();
+	m_FooterTitles.Destroy();
+	m_FooterValues.Destroy();
+	for (int i = 0; i < kMaxRows; i++)
+		m_Scores[i].Destroy();
+	m_bControlsInited = false;
+#else
 	if (!m_bInited || m_bControlsInited) return;
 
 	m_ScoreTitles.Destroy();
 	m_ScoreFrame.Destroy();
 	m_HeaderFrame.Destroy();
 	m_FooterFrame.Destroy();
+#endif
 }
 
 void CHUDScores::Show(bool bDraw, bool bScreen)

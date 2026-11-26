@@ -83,7 +83,7 @@ the FX is never created for a named death FX, and a missing one is read
 through a NULL pointer. It should be `pszDeathFX && pszDeathFX[0]`. Tron's
 levels may not use lures, so it may never show.
 
-Not fixed yet.
+Fixed in the modern build: ClientShellShared/PlayerMgr.cpp, MODERN.md GAME-100.
 
 ### A posted string that takes more than one send is sent again from its start
 
@@ -95,7 +95,7 @@ partial send is followed by the beginning of the string again and the post
 is corrupt. Later SDKs send through `ghiTrySendThenBuffer`. Only a post
 that fills the socket's buffer shows it.
 
-Not fixed yet (the modern build replaces GameSpy's services anyway).
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/ghttp/ghttpPost.c, MODERN.md GAME-101. (No code in Tron 2.0 makes a post: the only ghttp request is the patch check's ghttpGetFile, which GS-3 removes.)
 
 ### Thorne reports a valid summon command as invalid
 
@@ -151,7 +151,7 @@ Past half way the fill is three triangles fanned from the meter's center:
 angle. The third covers the second again, so with the meter's alpha blend
 the -45..0 wedge draws brighter than the rest once the fill passes 0.
 
-Not fixed yet: the modern build should start the third triangle at 0.
+Fixed in the modern build: TRON/HUDEnergyTransfer.cpp, MODERN.md GAME-102.
 
 ### A core dump never tells the player how much energy it gave
 
@@ -207,7 +207,7 @@ LightCycleButeMgr.cpp; CShell.dll has its own copy). Reading a CycleDialog
 which is never true: a priority out of [0, 1] goes unreported ("ERROR:
 Priority value %f < 0 or %f > 1 for %s") and is kept. It should be `||`.
 
-Not fixed yet: the modern build should test with `||` (and clamp).
+Fixed in the modern build: Shared/TRON/LightCycleButeMgr.cpp (both DLLs), MODERN.md GAME-103.
 
 ### A light cycle shade's Super color is not cleared
 
@@ -229,7 +229,7 @@ the cut-off part of the hit trail cannot be shortened, the code calls
 With STLport 4.0 the copy loop runs no times and the end moves back one
 point, so it works as a pop_back.
 
-Not fixed yet: the modern build should call pop_back().
+Fixed in the modern build: Shared/TRON/LightCycleMgr.cpp (both DLLs), MODERN.md GAME-104.
 
 ### Updating a listed server by IP adds it to the list again
 
@@ -241,7 +241,7 @@ server to the list in both cases: an already-listed server appears twice and
 the browser callback reports it added again. GameSpy fixed it in
 serverbrowsing 2.02.11 (2004-05-24).
 
-Not fixed yet: the modern build should append only a new server.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/serverbrowsing/sb_serverbrowsing.c, MODERN.md GAME-105.
 
 ### The query engine marks timed-out servers in the wrong field
 
@@ -252,7 +252,7 @@ server's address flags) instead of `state`: the server keeps its pending
 state and its flags gain bits that mean "has ICMP address"/"private port".
 The 2007 SDK still has it.
 
-Not fixed yet: the modern build should set them in `state`.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/serverbrowsing/sb_queryengine.c, MODERN.md GAME-106.
 
 ### A LAN browse never reports that its list is complete
 
@@ -262,7 +262,7 @@ list closes its socket and goes disconnected without the
 slc_initiallistcomplete callback, so an asynchronous LAN browse is never
 told it finished. GameSpy fixed it in serverbrowsing 2.00.36 (2003-11-10).
 
-Not fixed yet: the modern build should make the callback.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/serverbrowsing/sb_serverlist.c, MODERN.md GAME-107.
 
 ### The light cycle dialog plays a line it has already popped
 
@@ -369,7 +369,7 @@ reads a 4-byte length (0x10185d19) and then that many bytes into the
 overwrites the stack. No shipped name is longer than 17 bytes, so only a
 broken or hostile file shows it.
 
-Not fixed yet: the modern build should refuse a length over 255.
+Fixed in the modern build: ClientShellShared/NodeController.cpp, MODERN.md GAME-108. The modern build also reads no more nodes than kMaxNodeControls: retail writes one array entry for each node of the file on the stack (aiNodeControls), with no limit.
 
 ### An empty sprite file divides by zero
 
@@ -394,8 +394,7 @@ of the first four only, and Update (0x10031490) fills four at most; the
 other four are never shown. UpdateLayout (0x10031960) also reads the font
 size twice.
 
-Not fixed yet: harmless (four pings show); the modern build may use all
-eight.
+Not fixed: harmless, because four pings is what the layout holds. The layout (Game.rez) puts the pings down from (6, 80) with icons 52 pixels high and a spacing of 0: eight icons go past the bottom of the 480-line page. The I/O node manager keeps all the pings, and a ping that is not shown is shown when one of the first four goes.
 
 ### A light cycle with an unknown color dereferences NULL
 
@@ -524,7 +523,7 @@ tournament key and not that one, so the mode a player saves in a config
 comes back as the default every time the config is loaded, in the game's
 host screens and on the dedicated server.
 
-Not fixed yet.
+Fixed in the modern build: Shared/ProfileUtils.cpp (CShell.dll and TRONSrv.exe), MODERN.md GAME-109.
 
 ### A config without the light cycle power-up keys turns every power-up off
 
@@ -536,7 +535,7 @@ default: the bit it has just cleared. A key missing from the config (an
 older or hand-written one) leaves its power-up disallowed instead of at
 the default, allowed.
 
-Not fixed yet.
+Fixed in the modern build: Shared/ProfileUtils.cpp (CShell.dll and TRONSrv.exe), MODERN.md GAME-110.
 
 ### The packet parser clears four bytes of its message buffer
 
@@ -597,7 +596,7 @@ old bad blocks and base code, made by AddBadBlock/AddBaseCodeBlock with
 debug_new) from its array without deleting them. Each new configuration
 (each level's) leaks those PlayerSubroutines (0x2c bytes each).
 
-Not fixed yet (the modern build should delete them as it erases them).
+Fixed in the modern build: TRON/SubroutineMgr.cpp, MODERN.md GAME-111.
 
 ### A team's alternative name is read past its table for teams 4 to 7
 
@@ -608,8 +607,7 @@ ids, the second (0x101ea548, chosen by the third argument) only four, so
 teams 4 to 7 read whatever follows it (code addresses) as a string id and
 get an empty or wrong name.
 
-Not fixed yet: the modern build should give the second table eight ids or
-fall back to the first for ids past it.
+Fixed in the modern build: Shared/SharedScoring.cpp, MODERN.md GAME-112 (teams 4 to 7 take the name from the first table).
 
 ### A UI static text or check box reads address 0 when it first gets text
 
@@ -810,7 +808,7 @@ members: Reset clears the frame's first byte, frees the two pointers it
 finds at +0x1fcc/+0x1fd0 as poly strings if they are set, and writes 200
 and two nulls at +0x1fc8..+0x1fd0.
 
-Not fixed yet: the modern build should reset only a real choice.
+Fixed in the modern build: ClientShellShared/HUDDecision.cpp, MODERN.md GAME-113.
 
 ### The textured frame tuners accept a tenth piece
 
@@ -819,7 +817,7 @@ AdjustPieceUV, ClientShellShared/TexturedFrame.cpp, the "Frame" and
 "FrameUV" console programs). The piece index is checked against 9, not 8,
 so piece 9 writes past the nine quads and texture rects. A debugging aid.
 
-Not fixed yet.
+Fixed in the modern build: ClientShellShared/TexturedFrame.cpp, MODERN.md GAME-114.
 
 ### The host screens pass a std::string to a "%s" format
 
@@ -829,8 +827,7 @@ BaseScreenHost.cpp). The option set's name is passed to FormatString's
 c_str(). It works only because STLport's string starts with the pointer to
 its text, which "%s" reads; the other two words are ignored.
 
-Not fixed yet: harmless with this STLport; the modern build should pass
-c_str().
+Fixed in the modern build: TRON/BaseScreenHost.cpp, MODERN.md GAME-115.
 
 ### The host screen never sets the default remote-command password
 
@@ -841,7 +838,7 @@ password and then the remote-command (SCMD) password. m_sScmdPassword stays
 empty until the option set is read (LoadOptions sets both), so nothing
 shows in the game.
 
-Not fixed yet: harmless; the modern build may load it into m_sScmdPassword.
+Fixed in the modern build: TRON/ScreenHostConnection.cpp, MODERN.md GAME-116.
 
 ### The upgrade points ring is placed with the horizontal scale only
 
@@ -853,7 +850,7 @@ the vertical values want the Y ratio), so at any resolution that is not
 4:3 the ring's hit area (0x1004fe60) and the help text's position
 (0x1004fef0) are off vertically from the ring that is drawn.
 
-Not fixed yet.
+Fixed in the modern build: TRON/RatingBarCtrl.cpp, MODERN.md GAME-117. (In the modern build CL-30 gives the interface one scale for the two axes, so the two ratios are equal and the ring was correct there already.)
 
 ### The light cycle scores never free their controls
 
@@ -864,7 +861,7 @@ of the frames only when the controls were never created (it tests the
 never destroyed, and the header, footer and row column controls are not
 in its list at all.
 
-Not fixed yet.
+Fixed in the modern build: TRON/HUDScores.cpp, MODERN.md GAME-118.
 
 ### The sky is clipped to the whole screen, not to the camera's viewport
 
@@ -955,7 +952,7 @@ the fire key is up rather than when alt-fire is released, and an alt-fire
 key held down calls the key-down transition every update while fire is up.
 Both should use bAltFire.
 
-Not fixed yet: the modern build should test and store bAltFire.
+Not fixed: harmless, and a fix changes how the disc is recalled. No weapon has a key-up transition (slot 0xfc is empty in CClientWeapon and in each Tron weapon). Only the disc has a key-down transition (slot 0xf8, CClientWeaponDisc::TronUnknownVirtualF8: SendDiscReturn). While alt-fire is held and fire is not, retail sends MPROJ_RETURN each update, and the server returns the disc at the first update that it is not deflecting (ProjectileDisc.cpp). Thus "hold alt-fire" recalls the disc as soon as it can return. With bAltFire in the test and the state, a recall pressed during a deflection is lost.
 
 ### A prop's looping sound name is never freed
 
@@ -1068,7 +1065,7 @@ ClientShellDLL/TRON/ScreenAudio.cpp). Build reads "EAXTogglePos" and
 toggle gets the default position and the screen's column width, as the
 other controls do.
 
-Not fixed yet: the modern build can give the toggle these values.
+Not fixed: harmless, because the layout has no such values. [ScreenAudio] in layout.txt (Game.rez, Gamep4.rez) has no EAXTogglePos and no EAXToggleHeaderWidth, so the two reads give (0, 0) and 0. To use them would put the toggle at the page's top left corner.
 
 ### The DRAWALLMODELSHADOWS command sets the sky fog near Z
 
@@ -1115,8 +1112,7 @@ the offset to the old position. The chunk or system therefore starts at
 its create position plus the offset, not at the parent. The particle
 system's function also adds m_vTronUnknown to the offset two times.
 
-Not fixed yet: the modern build should read the parent's position into
-the returned position.
+Fixed in the modern build: ClientFxDLL/LTBbouncychunkfx.cpp, ClientFxDLL/ParticleSystemFX.cpp, MODERN.md GAME-119 (the parent's position, and m_vTronUnknown added one time).
 
 ### A cylinder particle system emits on a line, not in a cylinder
 
@@ -1128,8 +1124,7 @@ rotation. It writes both results into the same vector (0x10019253 and
 The point is thus on the line of the turned m_vPerp2, not on a circle.
 The circle and cone types use two vectors and are correct.
 
-Not fixed yet: the modern build should write the turned m_vPerp2 into a
-second vector and use it for the second term.
+Fixed in the modern build: ClientFxDLL/ParticleSystemFX.cpp, MODERN.md GAME-120.
 
 ### The prankster bit does not release its object lists
 
@@ -1162,7 +1157,7 @@ The subroutine has the name "Energy_claw" (its energy use, 0x1001a680,
 uses that name). The look-up always fails, so the claw always uses the
 alpha, non-corrupt range and in-range FX.
 
-Not fixed yet: the modern build should use "Energy_claw".
+Fixed in the modern build: TRON/ClientWeaponEnergyClaw.cpp, MODERN.md GAME-121. The beta and gold claws now have the ranges of the subroutine data (448 and 512; alpha 384).
 
 ### A permission set bin gives a wrong buffer size
 
@@ -1171,7 +1166,7 @@ For a permission set, Init formats the bin's text into a 128-byte buffer,
 but it gives FormatString a size of 1024. A long translated string can
 write past the buffer on the stack.
 
-Not fixed yet: the modern build should give the size of the buffer.
+Fixed in the modern build: TRON/HUDTronDecision.cpp, MODERN.md GAME-122.
 
 ### The circuit intro destroys two strings twice and two never
 
@@ -1180,8 +1175,7 @@ TRON/HUDLightCycleCircuitIntro.cpp). The function destroys the trail
 label and the trail value twice. It does not destroy the lives label and
 the lives value. Each Init and Term leaks the two lives strings.
 
-Not fixed yet: the modern build should destroy the lives strings in place
-of the second trail strings.
+Fixed in the modern build: TRON/HUDLightCycleCircuitIntro.cpp, MODERN.md GAME-123.
 
 ### The circuit intro can format an unset string ID
 
@@ -1190,7 +1184,7 @@ speed and trail length switches set the string ID only for the indices
 0 to 3. For a different index, FormatString gets an unset value from the
 stack.
 
-Not fixed yet: the modern build should give the ID a default value.
+Fixed in the modern build: TRON/HUDLightCycleCircuitIntro.cpp, MODERN.md GAME-124 (an unknown index gives the string of index 0).
 
 ### An explosion's bad ammo name is reported as a single character
 
@@ -1224,7 +1218,7 @@ item is read. The control index is not an item index: build notes come
 first in the list, so the menu tests a different item. The menu can show a
 file that the player read, or not show a new file.
 
-Not fixed yet: the modern build should get the item at the item index.
+Fixed in the modern build: TRON/MenuHelp.cpp, MODERN.md GAME-125.
 
 ### A light cycle's intro lookup reads the colour before it tests it
 
@@ -1234,7 +1228,7 @@ light cycle attributes and reads the colour's cycle type before it tests
 the colour for NULL. An unknown colour name makes the client read through
 a NULL pointer.
 
-Not fixed yet: the modern build should test the colour first.
+Fixed in the modern build: TRON/TronPlayerMgr.cpp, MODERN.md GAME-126.
 
 ### A light cycle's death fx lookup clears four bytes, not the buffer
 
@@ -1246,8 +1240,7 @@ the terminator at offset 3, whatever the buffer's size. The branch also
 runs only when the count is negative, so an empty list does not reach it
 and the random index is taken from 0..-1.
 
-Not fixed yet: the modern build should test for an empty list and clear
-the buffer with its size.
+Fixed in the modern build: TRON/TronPlayerMgr.cpp, MODERN.md GAME-127.
 
 ### A mission's weapon list looks up the wrong weapon
 
@@ -1259,7 +1252,7 @@ list and writes its terminator. Then it gives that terminator character
 does not exist, the error message gets the character 0 as its "%s"
 argument.
 
-Not fixed yet: the modern build should look up the name.
+Not fixed: a fix changes play. The shipped missions (missions.txt, Game.rez) give "NoWeapon" or "NoWeapon,Disc" as DefaultWeapons, and the ideal weapons begin with "NoWeapon"; weapon 0 is NoWeapon, so the error never shows. The game was made and tested with every one of these weapons as NoWeapon: CPlayerObj::AcquireLevelIdealWeapons gives each ideal weapon by its name through CTronPlayerObj::TronUnknownVirtual127, and with the correct ids it would also give each weapon with 10000 rounds of its default ammo (ObtainWeapon), and AcquireLevelDefaultWeapons would give the disc at the start of each mission.
 
 ### The RESETPATH message of a keyframer does not use the rotation of the first key
 
@@ -1294,7 +1287,7 @@ client reads the float, then reads the flag as a bool of one bit. The bool
 is the lowest bit of the float's representation, which is 0 for 0.0 and
 1.0. Thus the client always gets false for the flag.
 
-Not fixed yet: the modern build should write the flag as a bool.
+Not fixed: harmless, because nothing uses the flag. The client gives it only to PlayWeaponSound (CShell.dll 0x100d8730) as its bool argument, and Tron's PlayWeaponSound does not use that argument (ClientShellShared/ClientUtilities.cpp).
 
 ### A defense class override converts its zones to radians again
 
@@ -1338,7 +1331,7 @@ row teams (+0x7f0): it reads the next member (the spectator header
 pointer, +0x830) and moves the local player to that "team". No control
 sends 0x443, so there is no visible effect.
 
-Not fixed yet: the modern build should accept 0x433 to 0x442 only.
+Fixed in the modern build: TRON/ScreenTeamSelect.cpp, MODERN.md GAME-128.
 
 ### Two core dump help files of a character are in the wrong group
 
@@ -1361,7 +1354,7 @@ amplitude to (maximum - minimum) * 0.5. The center must be
 (minimum + maximum) * 0.5. Thus the value goes from 1.5 * minimum to the
 maximum, not from the minimum to the maximum.
 
-Not fixed yet: the modern build should use (minimum + maximum) * 0.5.
+Fixed in the modern build: TRON/TronInterfaceMgr.cpp, MODERN.md GAME-129.
 
 ### A console variable restore formats a float as an integer
 
@@ -1371,7 +1364,7 @@ before an oscillation, the function makes the console string with
 "%s %4.2d" and gives a double. The "d" conversion reads an integer, so the
 string gets the low half of the double, not the value.
 
-Not fixed yet: the modern build should use "%s %4.2f".
+Fixed in the modern build: TRON/TronInterfaceMgr.cpp, MODERN.md GAME-130 ("%s %f").
 
 ### An interface object render can write past its object array
 
@@ -1383,8 +1376,7 @@ kMaxFX (107), the limit of the interface fx list, not at the size of the
 array. With more than five interface lights, the function writes past the
 array on the stack.
 
-Not fixed yet: the modern build should stop the loop at the size of the
-array.
+Fixed in the modern build: ClientShellShared/InterfaceMgr.cpp, MODERN.md GAME-131.
 
 ### A loaded projectile does not get its object flags back
 
@@ -1411,8 +1403,7 @@ gives zero, so the flare has no socket and works, but only by chance.
 The search light message has the same lens flare fields at its end, so the
 same read occurs for it.
 
-Not fixed yet: the modern build should write the flag (false) on the
-server, or not read it on the client.
+Fixed in the modern build: ClientShellShared/LensFlareFX.cpp, MODERN.md GAME-132 (the client reads the flag only when the message has more data; a server that writes it is still read).
 
 ### The OBB hit test does not give the distance of its hit
 
@@ -1758,8 +1749,7 @@ connection. For a type that is not GET, SAVE or STREAM, it gives these two
 unset values to ghiCallProgressCallback. The 2003 GameSpy SDK has this
 mistake; later SDKs set the values to NULL and 0.
 
-Not fixed yet: the game uses only the three known types, so the path does
-not occur.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/ghttp/ghttpProcess.c, MODERN.md GAME-133.
 
 ### A full HUD bar sets its right cap texture on the wrong polygon
 
@@ -2054,7 +2044,7 @@ the code does not write the "Failed to create tracking node" message. When
 the clone is made but the first node is not, the code writes the message
 for the clone's name. The code must test the clone.
 
-Not fixed yet: the modern build must test hTrackedNodeClone.
+Fixed in the modern build: Shared/TrackedNodeContext.cpp (both DLLs), MODERN.md GAME-134.
 
 ### The HUD does not delete its version item
 
@@ -2064,7 +2054,7 @@ deletes thirteen of them. It does not remove or delete m_pVersion (the
 CHUDVersion item). The memory of the item is not released when the game
 stops. The player does not see an effect.
 
-Not fixed yet: the modern build must delete m_pVersion with the other items.
+Fixed in the modern build: TRON/TronHUDMgr.cpp, MODERN.md GAME-135.
 
 ### The energy message of a core dump falls through into the HUD text message
 
@@ -2078,8 +2068,7 @@ CoreDump.cpp) writes only the byte. In retail, the server does not send
 the message, because its energy test is always false (see CoreDump.cpp).
 Thus there is no visible effect.
 
-Not fixed yet: the modern build should end the case before the HUD text
-case.
+Fixed in the modern build: TRON/TronInterfaceMgr.cpp, MODERN.md GAME-136.
 
 ### The mouse look counts a mouse event more than one time, and at random
 

@@ -252,9 +252,14 @@ void CLTBBouncyChunkFX::GetSpawnTransform(LTVector &vPos, LTRotation &rRot)
 		{
 			if (m_hParent)
 			{
+#ifdef TRON20SRC_MODERN
+				// MODERN.md GAME-119: at the parent, plus the offset
+				m_pLTClient->GetObjectPos(m_hParent, &vPos);
+#else
 				// RETAIL: retail reads the parent's position into m_vPos,
 				// not into vPos.
 				m_pLTClient->GetObjectPos(m_hParent, &m_vPos);
+#endif
 				vPos += vOffset;
 			}
 		}

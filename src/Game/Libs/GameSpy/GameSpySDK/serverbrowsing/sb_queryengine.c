@@ -299,9 +299,15 @@ static void TimeoutOldQueries(SBQueryEngine *engine)
 	{
 		if (ctime > engine->querylist.first->updatetime + MAX_QUERY_MSEC)
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-106: the query states are in state, not flags
+			engine->querylist.first->state |= STATE_QUERYFAILED;
+			engine->querylist.first->state  &= (unsigned char)~(STATE_PENDINGBASICQUERY|STATE_PENDINGFULLQUERY);
+#else
 			// RETAIL: the SDK sets these on flags, not state (still in 2007)
 			engine->querylist.first->flags |= STATE_QUERYFAILED;
 			engine->querylist.first->flags  &= (unsigned char)~(STATE_PENDINGBASICQUERY|STATE_PENDINGFULLQUERY);
+#endif
 			engine->ListCallback(engine, qe_updatefailed, engine->querylist.first, engine->instance);			
 			FIFOGetFirst(&engine->querylist);
 		} else

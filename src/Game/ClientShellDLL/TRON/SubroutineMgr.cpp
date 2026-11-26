@@ -1883,6 +1883,10 @@ bool CSubroutineMgr::SetSystemMemoryConfiguration(const char* pSystemMemoryConfi
 	{
 		if ((*iter)->eState == SUBSTATE_UNUSABLE)
 		{
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-111: the bad block or base code is freed too
+			debug_delete(*iter);
+#endif
 			iter = m_PlayerSubroutineArray.erase(iter);
 		}
 		else
