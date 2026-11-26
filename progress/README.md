@@ -26,18 +26,18 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `Lithtech.exe` | the engine | 6,485 / 7,336 | 1,313,666 / 1,375,755 bytes | `███████████████████░` 95.4% | 25 | 32 |
+| `Lithtech.exe` | the engine | 6,489 / 7,336 | 1,314,076 / 1,375,755 bytes | `███████████████████░` 95.5% | 25 | 32 |
 | `server.dll` | the engine's server | 3,092 / 3,539 | 311,929 / 319,618 bytes | `███████████████████░` 97.5% | 11 | 2 |
 | `SndDrv.dll` | the sound driver | 232 / 266 | 38,444 / 38,926 bytes | `███████████████████░` 98.7% | 0 | 0 |
 | `Tron.exe` | the launcher | 301 / 348 | 44,197 / 45,159 bytes | `███████████████████░` 97.8% | 1 | 0 |
-| `TRONSrv.exe` | the dedicated server | 506 / 566 | 77,738 / 82,504 bytes | `██████████████████░░` 94.2% | 3 | 0 |
-| `CShell.dll` | the game: client | 7,548 / 9,260 | 1,462,237 / 1,825,056 bytes | `████████████████░░░░` 80.1% | 114 | 18 |
-| `Object.lto` | the game: server objects | 13,029 / 15,134 | 2,083,132 / 2,455,967 bytes | `████████████████░░░░` 84.8% | 105 | 3 |
+| `TRONSrv.exe` | the dedicated server | 507 / 566 | 77,893 / 82,504 bytes | `██████████████████░░` 94.4% | 3 | 0 |
+| `CShell.dll` | the game: client | 7,577 / 9,260 | 1,472,448 / 1,825,216 bytes | `████████████████░░░░` 80.6% | 114 | 18 |
+| `Object.lto` | the game: server objects | 13,040 / 15,133 | 2,085,637 / 2,455,967 bytes | `████████████████░░░░` 84.9% | 105 | 2 |
 | `ClientFx.fxd` | the game: client effects | 449 / 550 | 115,200 / 135,150 bytes | `█████████████████░░░` 85.2% | 1 | 0 |
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 463 / 463 resources | 561,414 / 561,414 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **31,642 / 36,999** | **5,446,543 / 6,278,135 bytes** | `█████████████████░░░` **86.7%** | **260** | **55** |
+| **All** | | **31,687 / 36,998** | **5,459,824 / 6,278,295 bytes** | `█████████████████░░░` **86.9%** | **260** | **54** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `identical.txt`, and `make

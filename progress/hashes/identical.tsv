@@ -776,8 +776,11 @@ C	CShell.dll	100167f0	643	lightcyclematchmgr.obj:?HandleMsgGameOver@CLightCycleM
 C	CShell.dll	10016a80	29	lightcyclematchmgr.obj:?HandleMsgTronUnknown30@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	5+4	901eac572487989fc3013d6e2052942b9df1cbccbe215cfee9d695e9b9b4ac51
 C	CShell.dll	10016aa0	35	lightcyclematchmgr.obj:?Update@CLightCycleMatchMgr@@QAEXXZ	12+4	f8f39f8eeb315aa1073545564681ce3abcaeea8ce4038d516ba3a30e493cee8a
 C	CShell.dll	10016ad0	3	clientshellshared(clientweapon.obj):?AddExtraFireMessageInfo@CClientWeapon@@MAEX_NPAVILTMessage_Write@@@Z	-	1d10894625976bca9d8906f3ecf1e766b94e9219ec3bf1c30e02feea5e18e45a
+C	CShell.dll	10016ae0	192	lightcyclematchmgr.obj:?OnKeyDown@CLightCycleMatchMgr@@QAE_NHH@Z	18+4,37+4,59+4,83+4,95+4,101+4,118+4,123+4,146+4,152+4,161+4,171+4,176+4	b43f8448748986546a56faa00c0e39a4adbc1afcbe71fec2ab99ed7656b5c4e6
 C	CShell.dll	10016ba0	291	lightcyclematchmgr.obj:?SendTronUnknown32@CLightCycleMatchMgr@@IAEXXZ	3+4,9+4,17+4,45+4,51+4,104+4,194+4,200+4,280+4	6acd74c08d23ac792605f3562e5b7a54bb34c5bc9648841677edfbcaba8e02a0
+C	CShell.dll	10016cd0	83	lightcyclematchmgr.obj:?HandleMsgSpectate@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	25+4,41+4,46+4,55+4	971aa221e0f1effdd2dbc7bccb6daf0d3de023d38d41587c46f7bc4964cea64a
 C	CShell.dll	10017160	35	lightcyclematchmgr.obj:?HandleMsgTronUnknown35@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	6+4	d79c330a45940402e5705ba7cffe022e4fc1d51daed4cc251ca30ef2e42970df
+C	CShell.dll	10017190	60	lightcyclematchmgr.obj:?HandleMsgTronUnknown23@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	1+4,27+4,47+4,53+4	4f00a7f175bdfd874ebaa1365fb2a333f4d087460f46b90d5b280dedeb397a47
 C	CShell.dll	100171d0	131	lightcyclematchmgr.obj:?HandleMsgMatchOver@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	17+4,41+4,65+4,76+4,83+4,89+4,94+4,104+4,116+4,124+4	1c30516294ad2991656e2e6c8b7fbc87a515f881ec9d3eec13b30ed5e6a0029e
 C	CShell.dll	10017260	103	lightcyclematchmgr.obj:?HandleMsgTronUnknown37@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	51+4,57+4,67+4,72+4,78+4	9bb0fcc52dede2650291f2bd2498a0d56d9b16edad08ccdb9f6ae64574fa24f5
 C	CShell.dll	100172d0	433	lightcyclematchmgr.obj:?HandleMsgTronUnknown38@CLightCycleMatchMgr@@IAEXPAVILTMessage_Read@@@Z	3+4,9+4,17+4,116+4,135+4,148+4,190+4,197+4,222+4,265+4,287+4,297+4,302+4,317+4,365+4,374+4,381+4,386+4,392+4,420+4	b5348d56a138422511905b6b85a18d5d84965f286226f3df5b30a19404fd9dce
@@ -1034,6 +1037,7 @@ C	CShell.dll	10022430	91	hudbuildnotecount.obj:??1CHUDBuildNoteCount@@UAE@XZ	3+4
 C	CShell.dll	10022490	527	hudbuildnotecount.obj:?Init@CHUDBuildNoteCount@@UAEIXZ	2+4,9+4,17+4,41+4,56+4,63+4,68+4,74+4,84+4,93+4,113+4,148+4,154+4,160+4,166+4,182+4,188+4,194+4,224+4,239+4,259+4,266+4,275+4,281+4,351+4,359+4,365+4,377+4,393+4,427+4,447+4,461+4,516+4	b554a370d3f4916c5d0288ceee890aeead74059e158b6a44d35691c7f22dc4a6
 C	CShell.dll	100226a0	31	hudbuildnotecount.obj:?Term@CHUDBuildNoteCount@@UAEXXZ	12+4	9e624c72902245eb14b53650a1be746992d38ddd20720bf44dfbaed53abd095e
 C	CShell.dll	100226c0	12	clientshellshared(huddistance.obj):?IsUsedInGameType@CHUDBuildNoteCount@@UAE_NW4GameType@@@Z	-	84e01cc9c4916a873cc926c50cf179ba3ffd82ac38e057c807d08a5a6ea6af9e
+C	CShell.dll	100226d0	204	hudbuildnotecount.obj:?Update@CHUDBuildNoteCount@@UAEXXZ	4+4,31+4,37+4,82+4,95+4,138+4,147+4,182+4	3b8d87e65250a15a834f0d12a84e0a25646110551a1d35649c3d8472dc14d2a1
 C	CShell.dll	100227a0	529	hudbuildnotecount.obj:?UpdateLayout@CHUDBuildNoteCount@@UAEXXZ	4+4,22+4,27+4,38+4,44+4,69+4,85+4,91+4,102+4,108+4,114+4,134+4,140+4,146+4,172+4,183+4,189+4,199+4,205+4,214+4,261+4,289+4,372+4,429+4,470+4,479+4,511+4	de53535b08b8e52b4c67b7a4937292102a5699c8eabb967bcdadea8f2fc5805c
 C	CShell.dll	100229c0	89	hudbuildnotecount.obj:?Render@CHUDBuildNoteCount@@UAEXXZ	1+4,45+4,60+4	5b9e83bb0270f53894fca1f36349ae58c6e790077681e8f78019a1a82fba18c4
 C	CShell.dll	10022a90	297	hudchooser.obj:??0CHUDWpnChooser@@QAE@XZ	3+4,9+4,17+4,50+4,100+4,110+4,132+4,142+4,164+4,174+4,190+4,289+4	58bea6dc3539dac847815b558b02ae610db0c4f921174bbe5c6d076be306992c
@@ -1186,6 +1190,7 @@ C	CShell.dll	100326d0	70	hudprofiler.obj:??1CHUDProfiler@@UAE@XZ	3+4,9+4,17+4,31
 C	CShell.dll	10032720	333	hudprofiler.obj:?Init@CHUDProfiler@@UAEIXZ	3+4,9+4,17+4,32+4,39+4,68+4,84+4,97+4,154+4,208+4,221+4,281+4,325+4	9390840b6bca78d97eda652bf62002c1133ef2eb8739d0fd694fc903cd27e0c9
 C	CShell.dll	10032870	329	hudprofiler.obj:?Render@CHUDProfiler@@UAEXXZ	37+4,66+4,95+4,103+4,123+4,142+4,150+4,172+4,197+4,210+4,225+4,251+4,293+4	a1f67ca131146be1b4fcc6ac4e69b4791b436d96b441be843e35260f772c1f79
 C	CShell.dll	100329c0	203	hudprofiler.obj:?Scramble@CHUDProfiler@@AAEXXZ	69+4,75+4,112+4,128+4,144+4	673becfda7524bd9c926c5923d2cfaa41b54de317237372aaf70940d00ef0a4e
+C	CShell.dll	10032a90	468	hudprofiler.obj:?Update@CHUDProfiler@@UAEXXZ	2+4,9+4,15+4,22+4,53+4,77+4,102+4,146+4,191+4,299+4,409+4,443+4,460+4	19de20eb5ccf0e741af9b67aeac46c314b442f4f0abb00add3694d2b452c9048
 C	CShell.dll	10032c70	250	hudprofiler.obj:?UpdateLayout@CHUDProfiler@@UAEXXZ	12+4,17+4,24+4,49+4,66+4,71+4,88+4,94+4,102+4,152+4,157+4,180+4,195+4	242ea6401a6dc60533e6c6fa663badeb2fa1d32ea2d0055b42f53c2d856fea29
 C	CShell.dll	10032de0	614	hudprogress.obj:??0CHUDProgress@@QAE@XZ	3+4,9+4,17+4,50+4,79+4,89+4,139+4,149+4,171+4,181+4,203+4,213+4,259+4,269+4,315+4,325+4,347+4,357+4,379+4,389+4,443+4,448+4,467+4,483+4,499+4,505+4,606+4	0c6e5c1d6fe98fa98bdf2f3e12d8cc978fa6f0225942a47bc19425550a22a4d2
 C	CShell.dll	10033070	115	hudprogress.obj:??1CHUDProgress@@UAE@XZ	3+4,9+4,17+4,44+4,60+4,65+4,89+4,99+4,107+4	3252a2e358f6e485d2adb107f6652de4e5b47ae363c4d97e8d9595262eef1fbb
@@ -1276,8 +1281,10 @@ C	CShell.dll	1003d1a0	96	hudtrondecision.obj:??1CHUDDecision@@UAE@XZ	3+4,9+4,17+
 C	CShell.dll	1003d200	74	hudtrondecision.obj:??1CHUDDecisionChoice@@QAE@XZ	3+4,9+4,17+4,38+4,54+4,66+4	6cb8b72c41ed62010c937e86087f3ad4922ecb9b431e2d2e87cf4d96ccd54254
 C	CShell.dll	1003d250	144	hudtrondecision.obj:??1CHUDTronDecision@@UAE@XZ	3+4,9+4,17+4,44+4,49+4,73+4,92+4,97+4,118+4,128+4,136+4	464254a2ce7461a1a84b33dfd2de1638788bb3a5212137558cf2e850b4447f4d
 C	CShell.dll	1003d2e0	55	hudtrondecision.obj:?Term@CHUDTronDecision@@UAEXXZ	10+4,26+4,49+4	46313ef375400d9a16cf1d22b6950d0b0df2f1cd24535a5953604a21a4476183
+C	CShell.dll	1003d320	117	hudtrondecision.obj:?Hide@CHUDTronDecision@@UAEXE@Z	16+4,65+4,72+4,77+4,88+4,108+4	c5d138a360ece3312c869925a90ce71a775bfef6cb8cb69a88590aab3d2f19fd
 C	CShell.dll	1003d3a0	74	hudtrondecision.obj:?Show@CHUDTronDecision@@QAEXPAVILTMessage_Read@@@Z	37+4,50+4,65+4	23ac52b9cd24adc270b26dc58ac0cc713e147767a7031f58884b9cb7c3db0e0b
 C	CShell.dll	1003dd20	188	hudtrondecision.obj:?Render@CHUDTronDecision@@UAEXXZ	15+4,45+4,77+4,84+4,95+4,131+4,163+4	f8474ef033afa8fb82a991d9fc7b262d204cc5f3fa1f834dd89668f914e5e6e2
+C	CShell.dll	1003dde0	176	hudtrondecision.obj:?Choose@CHUDTronDecision@@QAEXE@Z	29+4,98+4,103+4,123+4,141+4,148+4,153+4,166+4	856ccfb8e8ab9f8eda747a1503821cb7afe609835e5cee264789f18e17d3a19b
 C	CShell.dll	1003de90	1036	hudtrondecision.obj:?UpdateBins@CHUDTronDecision@@IAEXXZ	3+4,9+4,17+4,25+4,95+4,100+4,120+4,127+4,184+4,266+4,272+4,313+4,319+4,324+4,395+4,401+4,515+4,521+4,655+4,676+4,681+4,713+4,783+4,821+4,852+4,873+4,878+4,898+4,960+4,971+4,981+4,986+4,1003+4,1028+4	abe5d81b1200f321cab6b6cc3dc138f4a898a548ce2e6e11938d52a4fad6a638
 C	CShell.dll	1003e2a0	36	hudtrondecision.obj:?UpdateLayout@CHUDTronDecision@@UAEXXZ	4+4,9+4,30+4	acac0ba55221a1f5a9ad2cd0f029ef41a6b86cbe48a4e235f014dbab2abe595e
 C	CShell.dll	1003e340	71	hudversion.obj:??0CHUDVersion@@QAE@XZ	36+4	5fda746cf0fbfa0daf37687b5d6f35202e63ea05784e17ea6109c19a98207b0a
@@ -1291,6 +1298,8 @@ C	CShell.dll	1003ea30	122	hudweapon.obj:?Init@CHUDWeapon@@UAEIXZ	11+4,31+4,51+4,
 C	CShell.dll	1003eab0	47	hudweapon.obj:?Term@CHUDWeapon@@UAEXXZ	5+4,25+4	7293dd9b72900e1ec888113e6ffc68ee929e7887020b925c316f3e49039ca33a
 C	CShell.dll	1003eae0	288	hudweapon.obj:?UpdateFade@CHUDWeapon@@AAEXXZ	7+4,39+4,86+4,272+16	cd28420c03859a502a030ea12df20abf1092737c05696264fa3a16f7d7948d39
 C	CShell.dll	1003ec00	940	hudweapon.obj:?Render@CHUDWeapon@@UAEXXZ	2+4,9+4,15+4,22+4,63+4,84+4,109+4,135+4,140+4,146+4,201+4,254+4,259+4,288+4,318+4,332+4,350+4,403+4,436+4,443+4,457+4,464+4,498+4,611+4,665+4,670+4,676+4,760+4,777+4,832+4,843+4,853+4,858+4,875+4,932+4	41b45c3ff9257dd0125c0e86ef3968c216ccb4d0e36bfdd10c25c7a93b245dbd
+C	CShell.dll	1003efb0	330	hudweapon.obj:?Update@CHUDWeapon@@UAEXXZ	2+4,9+4,17+4,29+4,66+4,92+4,104+4,157+4,162+4,182+4,192+4,206+4,249+4,264+4,278+4,285+4,290+4,305+4,322+4	7a1e325c1c9d286f97275ed6b6a93ea5eaf5a99a7bb314c8f6a02ef3494aea24
+C	CShell.dll	1003f100	238	hudweapon.obj:?SetWeapon@CHUDWeapon@@QAEXE@Z	2+4,9+4,17+4,60+4,66+4,86+4,96+4,110+4,153+4,168+4,184+4,191+4,196+4,211+4,228+4	2eeb758ad322da6cc18a5398cf3eb685ac28ea5ca63c319a134cb67de56e2d08
 C	CShell.dll	1003f3e0	5	ltobjref.obj:_$E2	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	CShell.dll	1003f3f0	23	ltobjref.obj:_$E1	2+4,12+4,18+4	b8800e3db935d5412783ac3a3bcf9ece9dbe0130175d8830035b6ee4f6d5f2f5
 C	CShell.dll	1003f4a0	5	ltobjref.obj:_$E14	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
@@ -1301,6 +1310,7 @@ C	CShell.dll	1003f500	5	ltobjref.obj:_$E20	1+4	e8ebd827d1f36d7cfa5e5220610aa6370
 C	CShell.dll	1003f510	31	ltobjref.obj:_$E19	2+4,12+4,22+4	b91925862374c3ff16a4e376dd5d592adebdbba6156498d65b2134815375819d
 C	CShell.dll	1003f590	162	ionodemgr.obj:??0CIONodeMgr@@QAE@XZ	3+4,9+4,17+4,35+4,51+4,56+4,69+4,74+4,142+4,154+4	c68f3248f88343882a6bfc936540b4862af54754535792a9d25682a6b6fed6bd
 C	CShell.dll	1003f660	248	ionodemgr.obj:??1CIONodeMgr@@UAE@XZ	3+4,9+4,17+4,35+4,53+4,65+4,112+4,166+4,175+4,190+4,199+4,211+4,226+4,240+4	939c444cfceeccc647c6b22ba5473eb4280337eeca5a8d0917734360c4d949c2
+C	CShell.dll	1003f9d0	668	ionodemgr.obj:?AddPing@CIONodeMgr@@QAE_NPBD@Z	13+4,47+4,81+4,118+4,124+4,155+4,187+4,246+4,276+4,336+4,342+4,386+4,399+4,409+4,474+4,480+4,496+4,523+4,530+4,535+4,541+4,575+4,628+4,634+4	26602734209bc7c43982639e248b3548e65f61e799bbeaeffcd19710e3932fcb
 C	CShell.dll	1003fc70	138	ionodemgr.obj:?ClearPings@CIONodeMgr@@QAEXXZ	31+4,47+4,56+4,120+4	8a4e91c782b7732fc8b1ed96a925d9e8f0b72eda314ef77560743f38b67314f7
 C	CShell.dll	1003fd00	204	ionodemgr.obj:?RemovePing@CIONodeMgr@@QAE_NPBD@Z	12+4,42+4,94+4,110+4,119+4,185+4	440b2b546215b2b44ed6ed3e92ec3714f397f251a33dc32aff635f0a0134ede7
 C	CShell.dll	1003fdd0	48	ionodemgr.obj:?GetPing@CIONodeMgr@@QAEPAUIONODEPING@@H@Z	-	ed12552ea8aba585f10d57d36496577589e7dd75f7f2489d968c72a970eda668
@@ -1564,6 +1574,7 @@ C	CShell.dll	1004e100	41	nonport.obj:_SetSockBlocking	31+4	ce4d5d4d6205942e781a7
 C	CShell.dll	1004e130	38	nonport.obj:_SetReceiveBufferSize	23+4	0031bfd8829d5cbe21f9452e25486998aba8d822b7fb3c8dacfb3222c6c7ff78
 C	CShell.dll	1004e160	92	nonport.obj:_CanReceiveOnSocket	58+4	e69d24550000a899f426848aed287bda06e93708003081c4690cb4cf9ad5b8e4
 C	CShell.dll	1004e1c0	287	nonport.obj:_GOAGetUniqueID_Internal	18+4,45+4,65+4,77+4,86+4,95+4,113+4,118+4,153+4,164+4,169+4,184+4,196+4,203+4,214+4,220+4,227+4,232+4,241+4,246+4,255+4,260+4,271+4,277+4	c066ab7d8a312bb1ddea6b0cbcd15ea004dd05d9956597b977b16ce829ecbbd7
+C	CShell.dll	1004e2e0	155	nonport.obj:_GenerateID	15+4,31+4,57+4,68+4,76+4,86+4,119+4	914280916bc849eff08c41e29bba584635e58777fad33349d3df8f8c8d3a4486
 C	CShell.dll	1004e380	30	nonport.obj:_Util_RandSeed	14+4,21+4	e6d2ab9def71b7f41f8b36959d58678f4e87401a1c7ff8af7d24b0a1d02e451d
 C	CShell.dll	1004e3a0	25	nonport.obj:_Util_RandInt	2+4	833d07f35369bc71435c53c786ecae7c97cd00ad1009837f677c1dbd35276c8e
 C	CShell.dll	1004e3c0	20	nonport.obj:_longrand	1+4,7+4,15+4	16fc5c6ceedeb80837413bf8e024c2d33bd82f1d9c5bc49503f4293ef337e65d
@@ -1914,7 +1925,7 @@ C	CShell.dll	10060c20	5	screenhostmaps.obj:_$E59	1+4	e8ebd827d1f36d7cfa5e5220610
 C	CShell.dll	10060c30	14	screenhostmaps.obj:_$E58	4+4,9+4	5fbca5821b18f3a1b6e18ed5fa170d103adb8d735047fa5ee36994756746817f
 C	CShell.dll	10060c50	198	screenhostmaps.obj:_$E86	2+4,9+4,17+4,33+4,39+4,45+4,50+4,73+4,81+4,99+4,110+4,115+4,121+4,128+4,133+4,138+4,147+4,156+4,166+4,177+4,189+4	576bba47aa688abceba88d4b3e85f8b169173aeb6fa5ad8634782d9f3b23ce06
 C	CShell.dll	10060d50	198	screenhostmaps.obj:_$E91	2+4,9+4,17+4,33+4,39+4,45+4,50+4,73+4,81+4,99+4,110+4,115+4,121+4,128+4,133+4,138+4,147+4,156+4,166+4,177+4,189+4	576bba47aa688abceba88d4b3e85f8b169173aeb6fa5ad8634782d9f3b23ce06
-C	CShell.dll	10060e40	46	screenlightcyclecustommaps.obj:?GetFileName@?%.\ScreenLightCycleCustomMaps.cpp155045701@@YAPBDPBD@Z	-	ad88a136164f4f63baf8e6dbe86fc19b3bda6d2e6512beb804b038bdb6faad2c
+C	CShell.dll	10060e40	46	screenlightcyclecustommaps.obj:?GetFileName@?%.\ScreenLightCycleCustomMaps.cpp1792511742@@YAPBDPBD@Z	-	ad88a136164f4f63baf8e6dbe86fc19b3bda6d2e6512beb804b038bdb6faad2c
 C	CShell.dll	10060e70	86	screenhostmaps.obj:??0CScreenHostMaps@@QAE@XZ	4+4,78+4	c9d345847fb918f19f527e4ae7d3c39bf22b944f3a777a9f7788d45f079c2169
 C	CShell.dll	10060ef0	237	screenhostmaps.obj:??1CScreenHostMaps@@UAE@XZ	3+4,9+4,17+4,36+4,79+4,92+4,154+4,165+4,175+4,180+4,195+4,214+4,229+4	9435eb07d6c3373904578a39a4211dccad6a856e76b051e60fa45c7abe99b8a1
 C	CShell.dll	10060fe0	797	screenhostmaps.obj:?Build@CScreenHostMaps@@UAEIXZ	8+4,24+4,36+4,41+4,67+4,81+4,93+4,99+4,124+4,138+4,149+4,155+4,180+4,194+4,206+4,211+4,236+4,250+4,262+4,268+4,296+4,310+4,321+4,327+4,355+4,369+4,379+4,395+4,402+4,448+4,462+4,511+4,525+4,563+4,574+4,598+4,604+4,650+4,664+4,713+4,729+4,767+4	d14764ff9b651db104534a106956aaa346e1aba630c0fd1aaab35753eb54a157
@@ -1932,7 +1943,7 @@ C	CShell.dll	10062350	295	screenhostmaps.obj:?SaveOptions@CScreenHostMaps@@UAEXX
 C	CShell.dll	10062480	404	screenhostmaps.obj:??0?$list@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAE@ABV?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@1@@Z	3+4,9+4,17+4,40+4,47+4,67+4,72+4,97+4,108+4,191+4,219+4,231+4,247+4,253+4,267+4,279+4,301+4,322+4,366+4,394+4	003235ec847c82a8bb0e32c4305e78bacdfc2a4c8d135434a3eb384fda55d871
 C	CShell.dll	100626f0	165	screenhostmaps.obj:??1?$_List_base@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAE@XZ	3+4,9+4,17+4,54+4,63+4,68+4,76+4,84+4,90+4,115+4,120+4,129+4,137+4,143+4,157+4	42299f7c74eee4d35fa5309d55cb939589fb8c3fc679bb920fd5a49b621be5ae
 C	CShell.dll	100628b0	198	screenhostmaps.obj:??_F?$list@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAEXXZ	3+4,9+4,17+4,47+4,52+4,65+4,77+4,99+4,121+4,166+4,190+4	d36e7877db28d4429af439d0e54fdbc41f6eec1a7980189dcd839f4f27bd83b4
-C	CShell.dll	10062980	169	screenlightcyclecustommaps.obj:?merge@?$list@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAEXAAV12@UFileNameLess@?%.\ScreenLightCycleCustomMaps.cpp155045701@@@Z	38+4,49+4,57+4	35b2f697880753074caa8ee9a8f0381d59bda9d47366faace0a14a0d870e2c1a
+C	CShell.dll	10062980	169	screenlightcyclecustommaps.obj:?merge@?$list@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAEXAAV12@UFileNameLess@?%.\ScreenLightCycleCustomMaps.cpp1792511742@@@Z	38+4,49+4,57+4	35b2f697880753074caa8ee9a8f0381d59bda9d47366faace0a14a0d870e2c1a
 C	CShell.dll	10062a30	159	clientshellshared(modelbutemgr.obj):?__copy@_STL@@YAPAV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@1@PAV21@00Urandom_access_iterator_tag@1@PAH@Z	96+4,125+4	f38527d8e00935b87c3c8655b573d2d626ae38e9f38f9a17726e1efdfaa1cdc6
 C	CShell.dll	10062af0	56	screenjoinserverlist.obj:?ServerBrowserCallBack@?%.\ScreenJoinServerList.cpp70956427@@YAXPAU_ServerBrowser@@W4SBCallbackReason@@PAU_SBServer@@PAX@Z	14+4,43+4,50+4	e9ae7eee14cb26826ba247a697a7592ddf3677f2fc72d52b3ccfbfa793a1a6ea
 C	CShell.dll	10062b30	52	screenjoinserverlist.obj:?EditAddressCallBack@?%.\ScreenJoinServerList.cpp70956427@@YAXIPAX@Z	2+4	c9433155a063f4c431e803bc1a79c3d15f5c9b8d9399baff4e5849d2dbb6ef8e
@@ -1973,6 +1984,7 @@ C	CShell.dll	10066640	740	screenlightcyclecircuit.obj:?SelectCircuit@CScreenLigh
 C	CShell.dll	10066930	97	screenlightcyclecircuit.obj:?OnCommand@CScreenLightCycleCircuit@@MAEIIII@Z	31+4,42+4,53+4,67+4	1823b00c574d0929b8bdfbf3309a689f44934543765c39812661cbd995c1905a
 C	CShell.dll	10066b50	571	screenlightcyclecircuit.obj:?SetSelection@CScreenLightCycleCircuit@@UAEGGI@Z	49+4,104+4,111+4,202+4,293+4,355+4,373+4,380+4,518+4,527+4,536+4	3cd0193819fb7610a0be5b678b76b84f7882a9ce0bb4396676f6b090680ed587
 C	CShell.dll	10066d90	778	screenlightcyclecircuit.obj:?FillCircuitList@CScreenLightCycleCircuit@@IAEIXZ	2+4,9+4,17+4,72+4,99+4,124+4,137+4,142+4,148+4,159+4,170+4,177+4,208+4,250+4,257+4,277+4,299+4,335+4,346+4,351+4,380+4,387+4,393+4,450+4,502+4,535+4,581+4,631+4,652+4,681+4,744+4,766+4	6896e678ded484e33945f15e9df90cdf78842ba1120af95f848aeaa79367f89a
+C	CShell.dll	10067650	12	screenlightcyclecircuit.obj:?GetCircuitMgr@CScreenLightCycleCircuit@@IAEPAVCircuitButeMgr@@XZ	1+4	cc3987250aa1f7fa8e0116bdc65ed50efbf51871d7150e34da9888e1f7baef5d
 C	CShell.dll	10067670	98	screenlightcyclecircuit.obj:?IsCircuitCompleted@CScreenLightCycleCircuit@@IAE_NPBUCircuit@@@Z	2+4,57+4	2c7c51f7fb1d06227d2903664c1203cdb3e74efd2ae2f46a503c32def58657bd
 C	CShell.dll	10067870	418	screenlightcyclecircuit.obj:?ShowCycleNotAllowed@CScreenLightCycleCircuit@@IAEXXZ	3+4,9+4,17+4,28+4,54+4,73+4,108+4,127+4,176+4,231+4,242+4,294+4,300+4,305+4,349+4,360+4,370+4,375+4,390+4,406+4	0b121f357abb0b39a681349a8126dacd2c4231665dc37a25a89e433b7a298a66
 C	CShell.dll	10067a20	274	screenlightcyclecircuit.obj:?OnFocus@CScreenLightCycleCircuit@@UAEXI@Z	13+4,28+4,34+4,39+4,46+4,68+4,77+4,84+4,121+4,151+4,173+4,192+4,240+4,246+4,251+4,260+4	df7b09907b5c6ae77b25132581d79956d360d7ed02f3c09f352ae732a889ce9e
@@ -2015,6 +2027,7 @@ C	CShell.dll	1006b040	145	screenlightcyclecustommaps.obj:?UpdateButtons@CScreenL
 C	CShell.dll	1006b0e0	524	screenlightcyclecustommaps.obj:?AddMapToList@CScreenLightCycleCustomMaps@@IAEXI@Z	2+4,9+4,17+4,130+4,164+4,180+4,225+4,283+4,293+4,299+4,328+4,335+4,341+4,348+4,359+4,365+4,412+4,454+4,465+4,475+4,480+4,495+4,513+4	ec4dea15fe763bb1465139fea114383caad710ccef21e46595d7d761c621b593
 C	CShell.dll	1006b2f0	236	screenlightcyclecustommaps.obj:?LoadSettings@CScreenLightCycleCustomMaps@@UAEXXZ	9+4,15+4,20+4,29+4,42+4,51+4,112+4,170+4,190+4,219+4	5f70e3e328c41a43a208ca9395ca8c6206dd32827c5183eb97c2cc8efec5c1d5
 C	CShell.dll	1006b3e0	304	screenlightcyclecustommaps.obj:?SaveSettings@CScreenLightCycleCustomMaps@@UAEXXZ	27+4,35+4,44+4,66+4,91+4,145+4,213+4,238+4,282+4,287+4,294+4	537bcb47191032b459a448668c1fbee00193d084236ac249f1aeee01b651020c
+C	CShell.dll	1006b510	355	screenlightcyclecustommaps.obj:?IsMapLocked@?%.\ScreenLightCycleCustomMaps.cpp1792511742@@YA_NV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@Z	3+4,9+4,17+4,52+4,65+4,75+4,82+4,103+4,116+4,126+4,142+4,155+4,185+4,272+4,288+4,331+4,347+4	b6a2d0b9d9f8317061877044f1dc51a6277e4b6a7ad0522687be4bcedf3b3a9c
 C	CShell.dll	1006b820	147	basescreenhost.obj:??1?$list@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAE@XZ	3+4,9+4,17+4,55+4,67+4,95+4,100+4,108+4,116+4,122+4,139+4	6834a98927918f2719fe7e9b5f05fc549e03feaa09b7ffbfac3fda9e75197cc1
 C	CShell.dll	1006b8c0	198	screenhostmaps.obj:?erase@?$vector@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAEPAV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@2@PAV32@0@Z	113+4,142+4,172+4	1cefdd16cc637eae67c87bba9243e7fb6141a39bd7734cbfb8ad9c79b57a2163
 C	CShell.dll	1006b990	38	clientshellshared(sharedscoring.obj):?insert@?$list@IV?$allocator@I@_STL@@@_STL@@QAE?AU?$_List_iterator@IU?$_Nonconst_traits@I@_STL@@@2@U32@ABI@Z	6+4	1723953f5b48b20318d663cc394a030ff6b28b3f711ac1e6dd6f2330b911776f
@@ -2193,19 +2206,19 @@ C	CShell.dll	1007cc80	18	screenhostmaps.obj:?HandleCallback@CScreenHostMaps@@IAE
 C	CShell.dll	1007cca0	18	screensingle.obj:?HandleKeyDown@CScreenSingle@@UAEIHH@Z	11+4	e347c4b682405bb5cd3dfc30ce9e4741ce3a665a5f18fdebef5dcc1f1019066d
 C	CShell.dll	1007ccc0	458	screensingle.obj:?insert_unique@?$_Rb_tree@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@V12@U?$_Identity@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@VCaselessLesser@@V?$allocator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@QAE?AU?$pair@U?$_Rb_tree_iterator@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@U?$_Nonconst_traits@V?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@@2@@_STL@@_N@2@ABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@2@@Z	35+4,103+4,118+4,143+4,195+4,235+4,255+4,287+4,299+4,324+4,376+4,430+4,442+4	43fe7647345888146bf6d4d86b1c43bbd594ef9156675dd2097403add182ad5d
 C	CShell.dll	1007ce90	35	screensingle.obj:??RCaselessLesser@@QBE_NABV?$basic_string@DV?$char_traits@D@_STL@@V?$allocator@D@2@@_STL@@0@Z	16+4	06240dd0eccee234483c549de6df7a8d8ef3acb6e9f7113caccb35a91365ec8f
-C	CShell.dll	1007d090	35	screensubroutines.obj:?PlaySubroutineStartSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	bf60b288f8fd96058cce932f03d4cc854e00cd9209cf2a27fc69b6ba84ffaad4
-C	CShell.dll	1007d0c0	35	screensubroutines.obj:?PlayCompileSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	bf60b288f8fd96058cce932f03d4cc854e00cd9209cf2a27fc69b6ba84ffaad4
-C	CShell.dll	1007d0f0	171	screensubroutines.obj:?PlayPickupSound@?%.\ScreenSubroutines.cpp1008232309@@YAXPAUPlayerSubroutine@@@Z	14+4,37+4,42+4,54+4,76+4,81+4,98+4,121+4,126+4,138+4,161+4,166+4	2bdcc9a5c51bc6b719edbfda78a3bb1d02020025b9ddc821f99d8e627707817a
-C	CShell.dll	1007d1a0	35	screensubroutines.obj:?PlayMouseOverSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d1d0	141	screensubroutines.obj:?PlayMouseOverSound@?%.\ScreenSubroutines.cpp1008232309@@YAXPAUPlayerSubroutine@@@Z	14+4,37+4,42+4,54+4,76+4,81+4,98+4,121+4,126+4,137+4	2e2c7bb35df481d6b4f05f27533919eff66167b3db3604c173d27fdde0ef7780
-C	CShell.dll	1007d260	35	screensubroutines.obj:?PlayClearMemSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d290	35	screensubroutines.obj:?PlayToggleToolTipsSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d2c0	35	screensubroutines.obj:?PlayDropIntoSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d2f0	35	screensubroutines.obj:?PlayDropIntoProceduralSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d320	35	screensubroutines.obj:?PlayDropIntoLibrarySound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d350	35	screensubroutines.obj:?PlayCantDropSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d380	35	screensubroutines.obj:?PlayActiveMemoryYesSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
-C	CShell.dll	1007d3b0	35	screensubroutines.obj:?PlayActiveMemoryNoSound@?%.\ScreenSubroutines.cpp1008232309@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d090	35	screensubroutines.obj:?PlaySubroutineStartSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	bf60b288f8fd96058cce932f03d4cc854e00cd9209cf2a27fc69b6ba84ffaad4
+C	CShell.dll	1007d0c0	35	screensubroutines.obj:?PlayCompileSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	bf60b288f8fd96058cce932f03d4cc854e00cd9209cf2a27fc69b6ba84ffaad4
+C	CShell.dll	1007d0f0	171	screensubroutines.obj:?PlayPickupSound@?%.\ScreenSubroutines.cpp735725346@@YAXPAUPlayerSubroutine@@@Z	14+4,37+4,42+4,54+4,76+4,81+4,98+4,121+4,126+4,138+4,161+4,166+4	2bdcc9a5c51bc6b719edbfda78a3bb1d02020025b9ddc821f99d8e627707817a
+C	CShell.dll	1007d1a0	35	screensubroutines.obj:?PlayMouseOverSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d1d0	141	screensubroutines.obj:?PlayMouseOverSound@?%.\ScreenSubroutines.cpp735725346@@YAXPAUPlayerSubroutine@@@Z	14+4,37+4,42+4,54+4,76+4,81+4,98+4,121+4,126+4,137+4	2e2c7bb35df481d6b4f05f27533919eff66167b3db3604c173d27fdde0ef7780
+C	CShell.dll	1007d260	35	screensubroutines.obj:?PlayClearMemSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d290	35	screensubroutines.obj:?PlayToggleToolTipsSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d2c0	35	screensubroutines.obj:?PlayDropIntoSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d2f0	35	screensubroutines.obj:?PlayDropIntoProceduralSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d320	35	screensubroutines.obj:?PlayDropIntoLibrarySound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d350	35	screensubroutines.obj:?PlayCantDropSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d380	35	screensubroutines.obj:?PlayActiveMemoryYesSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
+C	CShell.dll	1007d3b0	35	screensubroutines.obj:?PlayActiveMemoryNoSound@?%.\ScreenSubroutines.cpp735725346@@YAXXZ	2+4,25+4,30+4	1693116af77c919d0c9351ce757693a72c1be42664fbf4cb7c8e42199bcb3dfe
 C	CShell.dll	1007d3e0	539	screensubroutines.obj:??0CScreenSubroutines@@QAE@XZ	3+4,9+4,17+4,33+4,85+4,119+4,135+4,140+4,145+4,169+4,174+4,179+4,203+4,219+4,308+4,313+4,318+4,342+4,358+4,374+4,390+4,406+4,416+4,531+4	19367de7a737cb21df3821655c25f53451477b317f21a3ec0f8d826548ded000
 C	CShell.dll	1007d620	472	screensubroutines.obj:??1CScreenSubroutines@@UAE@XZ	3+4,9+4,17+4,34+4,53+4,69+4,85+4,101+4,106+4,130+4,146+4,193+4,212+4,217+4,241+4,246+4,270+4,286+4,333+4,389+4,404+4,411+4,416+4,431+4,451+4,464+4	7752a8200ae9f466e8cfaab58b16f9057a677f73d7fcaae9ae8b3de7ad673012
 C	CShell.dll	1007d800	61	screensubroutines.obj:?Term@CScreenSubroutines@@UAEXXZ	15+4,55+4	eb4b4b8507377311b306048135081adedeb31602c389292b754c66027f9c692e
@@ -2213,6 +2226,7 @@ C	CShell.dll	1007dfb0	232	screensubroutines.obj:?AddToggle@CBaseScreen@@QAEPAVCL
 C	CShell.dll	1007e0a0	277	screensubroutines.obj:?SetSystemName@CScreenSubroutines@@QAEXH@Z	3+4,9+4,17+4,70+4,87+4,121+4,133+4,149+4,156+4,179+4,203+4,208+4,220+4,225+4,266+4	911bb0e988ab7ccf5bf7c0f01551048d2665cd203a3f3650dfdb75310d8aee3a
 C	CShell.dll	1007e1c0	66	screensubroutines.obj:?SetPopupText@CScreenSubroutines@@QAEXIEPAD@Z	41+4	c479c3b027f04dc87f33a2e2c5b79f93a67263bdfb211d76fdeb3d829cc6adfc
 C	CShell.dll	1007ed10	216	screensubroutines.obj:?TermControls@CScreenSubroutines@@IAEXXZ	25+4,38+4,44+4,123+4,147+4,154+4,180+4,198+4	e6002b12de14194a4a9e74a228c8a6737b3157b14871398fd611bf998a13be15
+C	CShell.dll	1007edf0	402	screensubroutines.obj:?CreateMenuPieces@CScreenSubroutines@@IAEXXZ	7+4,39+4,51+4,73+4,83+4,102+4,116+4,147+4,156+4,161+4,177+4,188+4,239+4,248+4,255+4,273+4,278+4,287+4,304+4,325+4,330+4,344+4,355+4,360+4,371+4,376+4,387+4	00777f2c9dd0de02425128f4c1f87f43a66a889406692180415593e2c58407e3
 C	CShell.dll	1007ef90	99	screensubroutines.obj:?OnCommand@CScreenSubroutines@@MAEIIII@Z	36+4,45+4,70+4	926012bf7400e4ee3685493e8c76e1c9a663cf3076774a9f3532cf9e65048ec7
 C	CShell.dll	1007f000	70	screensubroutines.obj:?HandleKeyDown@CScreenSubroutines@@UAEIHH@Z	17+4,50+4	a8bd22a7a03bdab7be4d318fd544d0838270e485ee7fcf67cf75a075cc8fa562
 C	CShell.dll	1007f050	24	screensubroutines.obj:?Escape@CScreenSubroutines@@UAEXXZ	4+4,11+4,18+4	29824b95ee45613200a17dc3e3fbfb753abcad041ad65713c83aae7b8cf617b3
@@ -2390,7 +2404,9 @@ C	CShell.dll	10092ac0	58	subroutinemgr.obj:?Term@CSubroutineMgr@@UAEXXZ	6+4,15+4
 C	CShell.dll	10092b00	510	subroutinemgr.obj:?Save@CSubroutineMgr@@QAEXPAVILTMessage_Write@@@Z	-	aa7482cafe588b328bc5d750d482e3986de1eb3e4ca13dbeeecd6f66d02e4fd4
 C	CShell.dll	10092d00	764	subroutinemgr.obj:?Load@CSubroutineMgr@@QAEXPAVILTMessage_Read@@@Z	58+4,101+4,136+4,169+4,397+4,445+4,602+4,747+4	f46dc0771cb94a38037a891897f2e36b0789877b59404099f92fc65d4cc322f0
 C	CShell.dll	10093000	41	subroutinemgr.obj:?Pause@CSubroutineMgr@@QAEXI@Z	19+4	d5985d902a963ffd7a3ab4ef7957531e842f9bfb7a138b4058ff1e7b3fe98b02
+C	CShell.dll	100933d0	419	subroutinemgr.obj:?ProceduralFinished@CSubroutineMgr@@IAEXPAUProcedural@@@Z	127+4,174+4,197+4,203+4,233+4,270+4,282+4,295+4,314+4,343+4,366+4,372+4,392+4,398+4,403+4	5d6104e82988a7d93c75147111183e803f1af22da8587e62192ad3ab42355a7d
 C	CShell.dll	10093580	207	subroutinemgr.obj:?InfectRandomSector@CSubroutineMgr@@IAEXXZ	10+4,23+4,77+4,102+4,132+4,176+4,195+4	69568b1a57b0019b239b91b25163cb3811c92e5995c83527074cf7d8c12c251b
+C	CShell.dll	10093650	657	subroutinemgr.obj:?CorruptSector@CSubroutineMgr@@IAEXHHPAUPlayerSubroutine@@@Z	48+4,76+4,83+4,105+4,184+4,223+4,229+4,315+4,378+4,410+4,421+4,433+4,452+4,476+4,482+4,518+4,565+4,598+4,604+4,614+4,619+4,625+4	e0a0c98f602f41b5a4b877f31a5388b05c7024aee920c7a8dee358690064a253
 C	CShell.dll	100938f0	124	subroutinemgr.obj:?GetSubroutineInSector@CSubroutineMgr@@QAEPAUPlayerSubroutine@@H@Z	-	d9838570179d0bb05326b69a403ab41a97d4737b0f069fb1f01af22a025ccef3
 C	CShell.dll	10094100	60	subroutinemgr.obj:?InfoStrCat@@YAXPADPBDI@Z	43+4	65c3d898a7001ec784974457c78054222135614cd244c76d9908f703a43011f1
 C	CShell.dll	10094580	305	subroutinemgr.obj:?CleanArrays@CSubroutineMgr@@IAEXXZ	25+4,61+4,94+4,130+4,163+4,206+4,239+4	a128ff7c0bd40a8b46a8863e1508fe286c2ded6b4b9d70bb625990829343ddf7
@@ -2579,19 +2595,26 @@ C	CShell.dll	1009cd90	167	troninterfacemgr.obj:??1CServerOptionMgr@@QAE@XZ	3+4,9
 C	CShell.dll	1009d010	316	troninterfacemgr.obj:?Init@CTronInterfaceMgr@@UAEIXZ	12+4,33+4,42+4,53+4,64+4,70+4,79+4,84+4,106+4,113+4,118+4,138+4,144+4,156+4,172+8,181+4,186+4,200+4,221+4,226+4,237+4,256+4,270+4,280+4	de766e987d3059c159c7fb0bb1663f74532d439f6ae3449262a3db2901ef904b
 C	CShell.dll	1009d150	173	troninterfacemgr.obj:?Term@CTronInterfaceMgr@@UAEXXZ	18+4,24+4,46+4,52+4,74+4,97+4,108+4,115+4,146+4,166+4	b363bdd90bcd2c09e67cf49360ae599b2dee57a5b2a0bba5062ceeb2c2bb2e3c
 C	CShell.dll	1009d200	92	troninterfacemgr.obj:?OnExitWorld@CTronInterfaceMgr@@UAEXXZ	6+4,11+4,17+4,22+4,28+4,36+4,67+4,74+4,85+4	2bc241823fd9c75c66ea85573bdd1216ce4b697179ee4af04dc1543ded8786ba
+C	CShell.dll	1009d260	122	troninterfacemgr.obj:?OnKeyDown@CTronInterfaceMgr@@UAEIHH@Z	43+4,58+4,73+4,113+4	7ebb16190e1d431d0ae6be2562ea9972cca47bdb89df02c70976a3a82e357949
 C	CShell.dll	1009d2e0	99	troninterfacemgr.obj:?ShowChatInput@CTronInterfaceMgr@@IAEXI@Z	10+4,35+4,72+4,78+4,84+4,91+4	af06bb13f70eae4244608834d1f22f4b9e8d3b28e4ef83718db6a929225b17ba
+C	CShell.dll	1009d350	435	troninterfacemgr.obj:?OnCommandOn@CTronInterfaceMgr@@UAEIH@Z	6+4,31+4,60+4,69+4,99+4,106+4,115+4,134+4,150+4,167+4,183+4,218+4,223+4,236+4,259+4,264+4,279+4,288+24	f8894755973f81eae1d8da90c2f7681ec8c42f2528988951d8305979e5cf999a
 C	CShell.dll	1009d640	340	troninterfacemgr.obj:?UpdatePlayerStats@CTronInterfaceMgr@@UAEXEEEM@Z	31+4,38+4,54+4,75+4,113+4,127+4,139+4,160+4,181+4,202+4,207+4,252+4,282+4,292+32	f8782dde86d74aec8c55f9ce49c77c6a43d5e901b7deafbb6e649cb057a898b1
 C	CShell.dll	1009d7a0	392	troninterfacemgr.obj:?TronUnknownVirtual7C@CTronInterfaceMgr@@UAEXPAVCPlayerScore@@@Z	7+4,18+4,51+4,75+4,113+4,135+4,149+4,173+4,213+4,230+4,288+4,307+4,353+4,376+16	e4e09ff7e22d83aebc45e755eb3d37272d9b9b68db61b6d90aba420c5434a4ad
 C	CShell.dll	1009d930	121	troninterfacemgr.obj:?Update@CTronInterfaceMgr@@UAEIXZ	4+4,16+4,34+4,40+4,78+4,88+4,103+4,108+4,115+4	52cd9003af1b60849792c253be5ac47d998058f07f9bbf3d3573cd507ee0eb6e
+C	CShell.dll	1009d9b0	2069	troninterfacemgr.obj:?OnMessage@CTronInterfaceMgr@@MAEIEPAVILTMessage_Read@@@Z	50+4,57+4,121+4,128+4,212+4,263+4,294+4,299+4,360+4,421+4,443+4,459+4,522+4,535+4,558+4,659+4,740+4,867+4,885+4,897+4,902+4,1001+4,1056+4,1067+4,1078+4,1083+4,1128+4,1157+4,1188+4,1219+4,1273+4,1322+4,1343+4,1349+4,1382+4,1405+4,1412+4,1422+4,1432+4,1438+4,1459+4,1474+4,1480+4,1510+4,1520+4,1617+4,1641+4,1647+4,1717+4,1742+4,1794+4,1799+4,1832+4,1848+80	70e9cdb1b90ab34e0aa3d0a76d7bd89691fc09af7de8a458b1164cc115f1d71b
 C	CShell.dll	1009e1d0	73	troninterfacemgr.obj:?OnEnterWorld@CTronInterfaceMgr@@UAEXI@Z	9+4,42+4,58+4,65+4	79615cdbc7c09b31ba0f2af1fa6a3857d4e48090998bc79d761188a02984bde9
 C	CShell.dll	1009e220	17	troninterfacemgr.obj:?ScreenDimsChanged@CTronInterfaceMgr@@UAEXXZ	4+4,11+4	d815ff42cc16f6550c47efebab95f6cec16eebae5d54dfcfa4196816b8c3fe37
 C	CShell.dll	1009e390	411	troninterfacemgr.obj:?CreateIOCamera@CTronInterfaceMgr@@IAEXXZ	2+4,9+4,22+4,27+4,109+4,289+4,348+4,361+4,381+4,398+4	851f6d549f98502a8ab6a0f9a80847243ccc8952b6ce47320418ed1a5046eba9
 C	CShell.dll	1009e530	196	troninterfacemgr.obj:?RenderIOCamera@CTronInterfaceMgr@@QAEXM@Z	50+4,55+4,74+4,88+4,95+4,100+4,112+4,142+4,157+4,164+4,170+4	3ac9db1a81e23031cca729b1be639b4ae7c587e4481e43cf965521d9322dbfca
 C	CShell.dll	1009e6f0	88	troninterfacemgr.obj:?UpdatePlayingState@CTronInterfaceMgr@@UAEXXZ	5+4,10+4,65+4,82+4	a514a341c962add93ade714fa0dff75e899cc8e06c1838779b8a585288d772d8
+C	CShell.dll	1009e750	57	troninterfacemgr.obj:?PostPlayingState@CTronInterfaceMgr@@MAEIW4GameState@@@Z	5+4,30+4,48+4	e8cb012ad4596a93ee6d2f263146ad5bdacdc2296e794ed905fbc5fe7f2bd41e
 C	CShell.dll	1009e790	191	troninterfacemgr.obj:?UpdateCursorState@CTronInterfaceMgr@@UAEXXZ	16+4,23+4,48+4,63+4,70+4,75+4,82+4,93+4,108+4,125+4,130+4,137+4,142+4,149+4,160+4,168+12	afc00e901d0a73133b979b958c6084cedc566545b3c4ed08ea7b0866ec23725d
 C	CShell.dll	1009e850	191	troninterfacemgr.obj:?ShowTurnArrow@CTronInterfaceMgr@@QAEXH@Z	7+4,51+4,73+4,86+4,101+4,124+4,152+4,165+4,180+4	837bfe58415da183b1cee05bf9a1bbe86fd439d2b5344f1fad395068eb09b95c
 C	CShell.dll	1009e910	43	troninterfacemgr.obj:?HideTurnArrows@CTronInterfaceMgr@@QAEXXZ	18+4,38+4	e0e082c15533b2470a727b767c734211126ebb9d9c66636ba68daf31e1d43647
 C	CShell.dll	1009e940	413	troninterfacemgr.obj:?UpdateConsoleVarRecords@CTronInterfaceMgr@@IAEXXZ	47+4,55+4,76+4,123+4,131+4,211+4,266+4,300+4,309+4,385+4,401+4	06b83642b1bd18ec3d4eed68980053a36f910ea60d60b87ecfa676e5150daebf
+C	CShell.dll	1009eae0	346	troninterfacemgr.obj:?HandleConsoleVarFade@CTronInterfaceMgr@@IAEIPAVILTMessage_Read@@@Z	95+4,132+4,148+4,153+4,184+4,204+4,262+4,306+4,315+4,327+4	45349a65871052fecd84500cb6285fecea851835144f42f8f0778b9d37b5036a
+C	CShell.dll	1009ec40	367	troninterfacemgr.obj:?HandleConsoleVarOscillate@CTronInterfaceMgr@@IAEIPAVILTMessage_Read@@@Z	82+4,119+4,135+4,141+4,172+4,192+4,257+4,286+4,295+4,327+4,336+4,348+4	1d827d29dc43a20710a2f2de32e23b838a178c594bda6ba94c5c70fe78652a9e
+C	CShell.dll	1009edb0	291	troninterfacemgr.obj:?HandleConsoleVarStop@CTronInterfaceMgr@@IAEIPAVILTMessage_Read@@_N@Z	44+4,52+4,144+4,218+4,225+4,230+4,253+4,269+4	34fd848dd15896e61304e38a96a16b6241f89ca02bbc1b79346170fd20cfdb2c
 C	CShell.dll	1009eee0	200	troninterfacemgr.obj:?Save@CTronInterfaceMgr@@UAEXPAVILTMessage_Write@@W4SaveDataState@@@Z	39+4,85+4,123+4,161+4	18d20b37befe8712b32fdd2059066db4f0dfdb296445fcb09ca5b992546a71f5
 C	CShell.dll	1009efb0	153	troninterfacemgr.obj:?Load@CTronInterfaceMgr@@UAEXPAVILTMessage_Read@@@Z	47+4,65+4,76+4,92+4,115+4,124+4,136+4	0a323796fc3e38155b9e1961e633795412c3fb6c984ff5e65160c54b6edd6016
 C	CShell.dll	1009f050	99	troninterfacemgr.obj:?ClearTronRecords@CTronInterfaceMgr@@IAEXXZ	21+4,64+4	1ada8dfc02aec69f4b56870b1e2e51410083a80f3094a31c62ba250efd3fe6e1
@@ -4090,6 +4113,7 @@ C	CShell.dll	100e3da0	127	clientshellshared(gameclientshell.obj):?PostUpdate@CGa
 C	CShell.dll	100e3e20	209	clientshellshared(gameclientshell.obj):?UpdateCheats@CGameClientShell@@AAE_NXZ	14+4,31+4,48+4,65+4,71+4,111+4,130+4,136+4,141+4,174+4,180+4,185+4	ce46eabea1c0920f7a9a4523ca3fcd0c0a743a840500f33b78d7795d978f8bd8
 C	CShell.dll	100e3f00	92	clientshellshared(gameclientshell.obj):?OnCommandOn@CGameClientShell@@MAEXH@Z	12+4,21+4	955b5d3a7b58175c8f0689a3c418465e1249823cea092b61e26f9dc9a19e9f47
 C	CShell.dll	100e3f60	45	clientshellshared(gameclientshell.obj):?OnCommandOff@CGameClientShell@@MAEXH@Z	-	5aa03aa4e27061e261c2feed5e09668d86ad9112e037da0dfca1c97f8412221f
+C	CShell.dll	100e3f90	705	clientshellshared(gameclientshell.obj):?OnKeyDown@CGameClientShell@@MAEXHH@Z	45+4,88+4,178+4,183+4,197+4,202+4,216+4,221+4,230+4,250+4,268+4,302+4,311+4,327+4,365+4,372+4,385+4,393+4,406+4,411+4,416+4,446+4,479+4,493+4,499+4,522+4,527+4,606+4,612+4,629+4,636+4,641+4,691+4	07bbd6bf5d965c7194cd53be8f9083b379c4657143cdebcdda21af9bf5036415
 C	CShell.dll	100e4260	20	clientshellshared(gameclientshell.obj):?QuickLoadCallBack@@YAXIPAX@Z	10+4,15+4	002187ee67c9f43d3d3d5fc8eff1fcbcfcdb645b3026e9a6c3bc8e69fdc371e6
 C	CShell.dll	100e4280	55	clientshellshared(gameclientshell.obj):?OnKeyUp@CGameClientShell@@MAEXH@Z	46+4	3ccedbfd23ec6e69feab1bad0b959e91162fea0f3d1eb1610179bd868bfd13f1
 C	CShell.dll	100e42c0	824	clientshellshared(gameclientshell.obj):?OnMessage@CGameClientShell@@MAEXPAVILTMessage_Read@@@Z	3+4,9+4,17+4,147+4,210+4,222+4,229+4,249+4,280+4,287+4,328+4,339+4,389+4,417+4,424+4,432+4,442+4,452+4,462+4,473+4,483+4,493+4,503+4,513+4,546+4,556+36	047285b9076164bd12d2b1be981c2f345b0fb2b353b6648482e0ece14544e32d
@@ -4152,6 +4176,7 @@ C	CShell.dll	100e72f0	247	clientshellshared(gameclientshell.obj):?SetDifficulty@
 C	CShell.dll	100e73f0	462	clientshellshared(gameclientshell.obj):?HandleWeaponPickup@CGameClientShell@@QAEXE_N@Z	2+4,9+4,20+4,27+4,46+4,80+4,139+4,180+4,242+4,251+4,274+4,279+4,316+4,326+4,388+4,399+4,409+4,414+4,429+4,449+4	27f62318eb7dd43171a23f49035c492bacf7f3144d3783b827412c72ee588ac9
 C	CShell.dll	100e75c0	216	clientshellshared(gameclientshell.obj):?HandleGearPickup@CGameClientShell@@QAEXE_N@Z	6+4,24+4,59+4,115+4,145+4,154+4,177+4,182+4,191+4	00046b7d470b700dea9244e210de83289360caae5abb553b9bf6c8fc37fcd6e0
 C	CShell.dll	100e76a0	216	clientshellshared(gameclientshell.obj):?HandleModPickup@CGameClientShell@@QAEXE_N@Z	6+4,24+4,59+4,115+4,145+4,154+4,177+4,182+4,191+4	435b29cb80fa8b79d3953a566fe112163871dd36e069f1dd54753e3262f6f3cd
+C	CShell.dll	100e7780	606	clientshellshared(gameclientshell.obj):?HandleAmmoPickup@CGameClientShell@@QAEXEH_NE@Z	2+4,9+4,20+4,27+4,47+4,96+4,181+4,206+4,215+4,236+4,241+4,265+4,278+4,296+4,328+4,399+4,438+4,467+4,484+4,535+4,546+4,556+4,561+4,576+4,593+4	54efc3908464677ff58614153408c22349dfd06f895b91debfe77388f5829b13
 C	CShell.dll	100e79e0	26	clientshellshared(gameclientshell.obj):?SetFarZ@CGameClientShell@@QAEXH@Z	11+4,16+4	158f74bdd32f40c2467218991314ed5afadc8fc894aa6ff1fb49bc83668f6cfd
 C	CShell.dll	100e7a00	35	clientshellshared(gameclientshell.obj):?OnLockRenderer@CGameClientShell@@MAEXXZ	11+4,29+4	2553c430a066b80090896439926308781552e1dfcc94717c2523ec8c78a1afd2
 C	CShell.dll	100e7a30	35	clientshellshared(gameclientshell.obj):?OnUnLockRenderer@CGameClientShell@@MAEXXZ	11+4,29+4	2553c430a066b80090896439926308781552e1dfcc94717c2523ec8c78a1afd2
@@ -5813,6 +5838,7 @@ C	CShell.dll	101447d0	336	clientshellshared(clientsaveloadmgr.obj):?SaveGameSlot
 C	CShell.dll	10144920	300	clientshellshared(clientsaveloadmgr.obj):?LoadGameSlot@CClientSaveLoadMgr@@QAE_NI@Z	3+4,9+4,17+4,27+4,47+4,61+4,68+4,85+4,91+4,191+4,197+4,269+4,290+4	1e87e893f67155104f8efe7977ca7a4531a9f4df9191bbc096768d59af808035
 C	CShell.dll	10144a50	263	clientshellshared(clientsaveloadmgr.obj):?ReloadLevel@CClientSaveLoadMgr@@QAE_NXZ	2+4,9+4,17+4,28+4,43+4,57+4,64+4,70+4,160+4,166+4,237+4,255+4	aea1cd7991f4651a532d9085abd6846d99e55da8a55eb8493697fa551316cca1
 C	CShell.dll	10144b60	263	clientshellshared(clientsaveloadmgr.obj):?ContinueGame@CClientSaveLoadMgr@@QAE_NXZ	2+4,9+4,17+4,28+4,43+4,57+4,64+4,70+4,160+4,166+4,237+4,255+4	9dae94881be00eb224b57dfa45d4ad4178a191ddd06a18f3dd08e2c71026fb10
+C	CShell.dll	10144c70	216	clientshellshared(clientsaveloadmgr.obj):?CanSaveGame@CClientSaveLoadMgr@@QBE_NXZ	1+4,21+4,41+4,55+4,64+4,74+4,85+4,90+4,100+4,129+4,140+4,167+4,173+4,200+4	3a548c751f499a747d401d70a657ce007cdb61992d78d5e7f60cb31dbba2906f
 C	CShell.dll	10144d50	100	clientshellshared(clientsaveloadmgr.obj):?CanLoadGame@CClientSaveLoadMgr@@QBE_NXZ	1+4,18+4,27+4,37+4,52+4,58+4,85+4	2d97b1f16a9f0ee196d5a252776340ad6564f5080328814cfafa4920ae4658b0
 C	CShell.dll	10144dc0	27	clientshellshared(clientsaveloadmgr.obj):?OnMessage@CClientSaveLoadMgr@@QAE_NEAAVILTMessage_Read@@@Z	18+4	6be3b15251a1548a921eea335078c1a3d0dae112a192ab9a8f6cd042394089f0
 C	CShell.dll	10144de0	291	clientshellshared(clientsaveloadmgr.obj):?HandleSaveData@CClientSaveLoadMgr@@AAE_NAAVILTMessage_Read@@@Z	3+4,9+4,17+4,39+4,45+4,87+4,93+4,100+4,109+4,182+4,189+4,203+4,209+4,281+4	a1ff0c603dc080c14528a12869397c4703445262c38e33c658524f5f5dc2d86b
@@ -6661,6 +6687,7 @@ C	CShell.dll	1017a060	146	clientshellshared(characterfx.obj):?InitLocalPlayer@CC
 C	CShell.dll	1017a100	392	clientshellshared(characterfx.obj):?HandleWeaponSoundLoopMsg@CCharacterFX@@IAEXPAVILTMessage_Read@@@Z	68+4,73+4,89+4,140+4,163+4,169+4,222+4,232+4,323+4,336+56	00cf69b9d0595cbd47822856293fa10e8dc358c1af91b7fdf782fa9e0a93cf92
 C	CShell.dll	1017a290	50	clientshellshared(characterfx.obj):?KillWeaponLoopSound@CCharacterFX@@IAEXXZ	15+4	ab59aec2e9b1e24b52d18ae2784b6dc0a3ab63b836eca9977f1ca5b787c99ab1
 C	CShell.dll	1017a2d0	450	clientshellshared(characterfx.obj):?HandlePitch@CCharacterFX@@IAEXE@Z	28+4,43+4,52+4,85+4,94+4,115+4,121+4,127+4,148+4,162+4,238+4,252+4,266+4,284+4,298+4,319+4,338+4,366+4,373+4,387+4,392+4,404+4,415+4,432+4,438+4	e590e74a0b58d4406b3f833911cf1d361cea30622d153784a4f6cd8320f2590e
+C	CShell.dll	1017a4a0	218	clientshellshared(characterfx.obj):?UpdatePitch@CCharacterFX@@IAEXXZ	19+4,52+4,78+4,87+4,106+4,126+4,184+4,189+4,201+4,208+4	de587ad5f0cb49675b9c96136f3ee7f390bce9c6e661ae706a1581f5b1076545
 C	CShell.dll	1017a580	462	clientshellshared(characterfx.obj):?ResetPitchTracking@CCharacterFX@@IAEXXZ	2+4,30+4,63+4,69+4,95+4,101+4,119+4,126+4,131+4,147+4,156+4,177+4,183+4,189+4,200+4,226+4,241+4,246+4,258+4,266+4,275+4,280+4,286+4,302+4,311+4,332+4,338+4,344+4,355+4,381+4,396+4,401+4,413+4,421+4,437+4,454+4	546f2cd039474a4a5f081421395990a5c9e9ceaf03f54554eb8a5ef3acbffb14
 C	CShell.dll	1017a750	41	clientshellshared(characterfx.obj):?Render@CCharacterFX@@UAEXPAVLTObject@@@Z	-	1f4c032d9fde47fef3cd4cbcd481ed2e79330fff897ea524c5a8e03e9782724e
 C	CShell.dll	1017a780	641	clientshellshared(characterfx.obj):?ChangeModel@CCharacterFX@@UAEXW4ModelId@@EE@Z	2+4,9+4,22+4,27+4,39+4,66+4,72+4,119+4,137+4,194+4,218+4,235+4,319+4,350+4,364+4,394+4,399+4,481+4,529+4,535+4,541+4,567+4,574+4,587+4,607+4,628+4	244395a74c8c295ad48079ef2baaa27f37797156034d1215cd8ece56aef359fd
@@ -6713,6 +6740,7 @@ C	CShell.dll	1017c680	30	clientshellshared(attachbutemgr.obj):??_GCAttachButeMgr
 C	CShell.dll	1017c6a0	161	clientshellshared(attachbutemgr.obj):??1CAttachButeMgr@@UAE@XZ	3+4,9+4,17+4,32+4,45+4,61+4,77+4,83+4,101+4,113+4,125+4,140+4,153+4	ad4cc8e4f9696f314e1afd064c170713a581e4762e8f10adeb32402ebb59e255
 C	CShell.dll	1017c750	382	clientshellshared(attachbutemgr.obj):?Init@CAttachButeMgr@@UAEIPBD@Z	1+4,30+4,45+4,53+4,58+4,64+4,69+4,96+4,101+4,118+4,123+4,128+4,148+4,153+4,164+4,169+4,174+4,198+4,203+4,220+4,225+4,230+4,250+4,255+4,266+4,271+4,276+4,300+4,305+4,322+4,327+4,332+4,352+4,357+4	77f88b52e06d4a0129050a3a4812ba94e670345b36bfd67ec8e71d2566553b09
 C	CShell.dll	1017c8d0	19	clientshellshared(attachbutemgr.obj):?Term@CAttachButeMgr@@UAEXXZ	4+4,10+4	ae555beb16a49bb463b2c0551fcd97c5c8599747bd0b7c207d29adcd52f47cfa
+C	CShell.dll	1017c8f0	112	clientshellshared(attachbutemgr.obj):?GetAttachmentIDByName@CAttachButeMgr@@QAEHPBD@Z	33+4,51+4	89b72cd9b05458df2a0307863ddbf8f0670b6b3615cd96c1601b366d0a462f74
 C	CShell.dll	1017c960	92	clientshellshared(attachbutemgr.obj):?GetAttachmentName@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	b50f0db05de90d895a33e80e77db9c23b360007bb8d9f7f164f5b6db91d219ec
 C	CShell.dll	1017c9c0	92	clientshellshared(attachbutemgr.obj):?GetAttachmentName@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	b50f0db05de90d895a33e80e77db9c23b360007bb8d9f7f164f5b6db91d219ec
 C	CShell.dll	1017ca20	64	clientshellshared(attachbutemgr.obj):?GetAttachmentSkins@CAttachButeMgr@@QAEXHPAVCButeListReader@@@Z	7+4,12+4,19+4,25+4,45+4,50+4,56+4	ee4220a2f49887ba4c28f4a46fa3bea0887daf0050cc5423a2d0f0b9117fd9b8
@@ -6720,6 +6748,7 @@ C	CShell.dll	1017ca60	64	clientshellshared(attachbutemgr.obj):?GetAttachmentRend
 C	CShell.dll	1017caa0	190	clientshellshared(attachbutemgr.obj):?GetRequirementIDs@CAttachButeMgr@@QAEHPBDPAHH@Z	50+4,69+4,74+4,79+4,102+4,107+4,112+4,117+4,129+4	b5896bd7742f307bceebef147c1f7ae5a9261dbe7abcfe74449b2d0a88294124
 C	CShell.dll	1017cb60	118	clientshellshared(attachbutemgr.obj):?GetRequirementAttachment@CAttachButeMgr@@QAEHH@Z	27+4,32+4,37+4,43+4,64+4,69+4,74+4,79+4,91+4	cbf295fa1f59b57601ac3a83b91702a0450a2cfe0f4e50df484af2821be622f1
 C	CShell.dll	1017cbe0	92	clientshellshared(attachbutemgr.obj):?GetRequirementSocket@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	9af044236365fb5c9d60498d5ab3e114b86bcdccf4f5e4ec9c886195236bb518
+C	CShell.dll	1017cc40	131	clientshellshared(attachbutemgr.obj):?GetPVAttachmentIDByName@CAttachButeMgr@@QAEHPBD@Z	66+4,78+4	915f479270c7a96e79d3da06601b4892321d46014bc448e8253469df4a04ae8e
 C	CShell.dll	1017ccd0	92	clientshellshared(attachbutemgr.obj):?GetPVAttachmentName@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	35c15f794c1e6e3b134c82ce2348a36622004c2ab5c6cd905055feca85c442ca
 C	CShell.dll	1017cd30	92	clientshellshared(attachbutemgr.obj):?GetPVAttachmentModel@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	35c15f794c1e6e3b134c82ce2348a36622004c2ab5c6cd905055feca85c442ca
 C	CShell.dll	1017cd90	71	clientshellshared(attachbutemgr.obj):?CopyPVAttachmentSkins@CAttachButeMgr@@QAEXHPADH@Z	7+4,12+4,19+4,25+4,46+4,51+4,63+4	1e36a567634ed9d2375de0e858f344d792f783cc51eb58f33f46fe60c60c2202
@@ -8502,6 +8531,8 @@ C	Lithtech.exe	00402950	23	ltdirectmusicloader.obj:_$E2	2+4,12+4,18+4	b8800e3db9
 C	Lithtech.exe	004029d0	31	ltdirectmusicloader.obj:_$E14	2+4,12+4,22+4	ccfbbb10b3503ba8508b027c96c3ff5c8eca3b3076a55ced321d3297b14178b2
 C	Lithtech.exe	004029f0	31	ltdirectmusicloader.obj:_$E17	2+4,12+4,22+4	b75986e2ce2a235194c1a94927d75311a4b3967ea3354851669451c4d98b4687
 C	Lithtech.exe	00402a10	31	lib_ui(cuiwidget_impl.obj):_$E19	2+4,12+4,22+4	b91925862374c3ff16a4e376dd5d592adebdbba6156498d65b2134815375819d
+C	Lithtech.exe	00402a70	100	bindmgr.obj:?bm_BindModule@@YAHPBDAAPAVCBindModuleType@@@Z	9+4,21+4,40+4,47+4,58+4,71+4	6fb4cfb4ebf366a1097bab1086ee05aa4e386e513af7918023a3b5fe375b78d2
+C	Lithtech.exe	00402ae0	31	bindmgr.obj:?bm_UnbindModule@@YAXPAVCBindModuleType@@@Z	16+4,22+4	3b3da3e585b62d274e18d3f90eaa15ebac9654c2ec63e01fb71522d5199d804f
 C	Lithtech.exe	00402b00	74	bindmgr.obj:?bm_GetInstanceHandle@@YAIPAVCBindModuleType@@PAPAX@Z	11+4,16+4,29+4,34+4,39+4,44+4,50+4	062a16b5c00b16648d664fe4d31831ba8ae68a949d9b9d08354a98f482bd76eb
 C	Lithtech.exe	00402b50	19	bindmgr.obj:?bm_GetFunctionPointer@@YAPAXPAVCBindModuleType@@PBD@Z	14+4	8b877959aba04f143d684b2fed8f97c0a2b883a946340237b3cfc8313e20df4a
 C	Lithtech.exe	00402b70	44	binkvideomgrimpl.obj:??0BinkVideoMgr@@QAE@XZ	12+4	cf4f1ec3ce3e0155ef46a82de1152cefb91804130c4f91f8fd8d0bc9f0e0f265
@@ -8521,6 +8552,8 @@ C	Lithtech.exe	00403310	1391	binkvideomgrimpl.obj:?UpdateOnScreen@BinkVideoInst@
 C	Lithtech.exe	00403880	1	binkvideomgrimpl.obj:_$E38	-	ae3f4619b0413d70d3004b9131c3752153074e45725be13b9a148978895e359e
 C	Lithtech.exe	00403890	79	classbind.obj:_$E51	6+4,11+4,16+4,22+8,32+8,42+4,51+4,56+4,61+4,66+4,71+4	09559990eaa91f54da878f6c6ac07552bc321d88a57febc2647177d9b1fa53ca
 C	Lithtech.exe	004038e0	49	classbind.obj:_$E49	1+4,7+8,16+4,27+4,35+4,40+4,45+4	8a0933905b3ca0df1e63fa13b7a33639d7e0d12d3176ca6698016ce00ae6b203
+C	Lithtech.exe	00403920	255	classbind.obj:?cb_LoadModule@@YAHPBDAAPAVClassBindModule@@PAH@Z	7+4,24+4,45+4,51+4,68+4,97+4,125+4,135+4	7425335b31b5158d0a4b0504bcf98d480a01a21ee5e4d3c9bb765e39d9cf96d4
+C	Lithtech.exe	00403a20	24	classbind.obj:?cb_UnloadModule@@YAXPAVClassBindModule@@@Z	9+4,15+4	e8b132a5077e1ee98d55998985c39a7c2578cc59493d6bec903d31ed7e044ca0
 C	Lithtech.exe	00403a40	8	classbind.obj:?cb_GetNumClassDefs@@YAHPAVClassBindModule@@@Z	-	9b8a71e6d4e3ed6c04caf8590ebe29a62f205ab4b372b02c67e8ca015ae4ba36
 C	Lithtech.exe	00403a50	8	classbind.obj:?cb_GetClassDefs@@YAPAPAUClassDef@@PAVClassBindModule@@@Z	-	8b4819068d429904fbfa1fd120a5f8c2f23916a1273c9a9ec858f48109555d4e
 C	Lithtech.exe	00403a60	106	classbind.obj:?cb_FindClass@@YAPAUClassDef@@PAVClassBindModule@@PBD@Z	-	b3c76ca0cb9a594f935e4aad0ed00237f270c6e5ebead7fdaf849091c7d01e37
@@ -15733,6 +15766,7 @@ C	Object.lto	1002f940	77	nonport.obj:_goastrdup	28+4	e812c2f6b2864d1800b9df7c870
 C	Object.lto	1002f990	92	nonport.obj:_CanReceiveOnSocket	58+4	e69d24550000a899f426848aed287bda06e93708003081c4690cb4cf9ad5b8e4
 C	Object.lto	1002f9f0	65	nonport.obj:_getlocalhost	7+4,43+4,53+4	78dbdf9f29cb85fb7d5dd9ed84105016c5fa43e15f35a48e329887c8013ea022
 C	Object.lto	1002fa40	287	nonport.obj:_GOAGetUniqueID_Internal	18+4,45+4,65+4,77+4,86+4,95+4,113+4,118+4,153+4,164+4,169+4,184+4,196+4,203+4,214+4,220+4,227+4,232+4,241+4,246+4,255+4,260+4,271+4,277+4	c066ab7d8a312bb1ddea6b0cbcd15ea004dd05d9956597b977b16ce829ecbbd7
+C	Object.lto	1002fb60	155	nonport.obj:_GenerateID	15+4,31+4,57+4,68+4,76+4,86+4,119+4	914280916bc849eff08c41e29bba584635e58777fad33349d3df8f8c8d3a4486
 C	Object.lto	1002fc00	30	nonport.obj:_Util_RandSeed	14+4,21+4	e6d2ab9def71b7f41f8b36959d58678f4e87401a1c7ff8af7d24b0a1d02e451d
 C	Object.lto	1002fc20	25	nonport.obj:_Util_RandInt	2+4	833d07f35369bc71435c53c786ecae7c97cd00ad1009837f677c1dbd35276c8e
 C	Object.lto	1002fc40	20	nonport.obj:_longrand	1+4,7+4,15+4	16fc5c6ceedeb80837413bf8e024c2d33bd82f1d9c5bc49503f4293ef337e65d
@@ -16120,6 +16154,7 @@ C	Object.lto	100493a0	31	projectileprankster.obj:_$E82	2+4,12+4,22+4	ab729faebc4
 C	Object.lto	100493c0	5	projectileprankster.obj:_$E86	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	100493d0	31	projectileprankster.obj:_$E85	2+4,12+4,22+4	317cbf7a438358aeebeb85bed4eb5bd2510acbe00db3d27b45490d533782a97a
 C	Object.lto	100493f0	204	serverdiscmatchmgr.obj:??0CDiscMatchMgr@@QAE@XZ	3+4,9+4,17+4,46+4,58+4,88+4,98+4,111+4,123+4,132+4,141+4,161+4,177+4,196+4	97e288ff84f472699bff620181715b86a67f225f78217e5d772a85850f2fb114
+C	Object.lto	100494c0	656	serverdiscmatchmgr.obj:?Init@CDiscMatchMgr@@QAE_NXZ	1+4,43+4,53+4,70+4,77+8,87+4,92+4,106+4,120+4,131+4,145+4,155+4,205+4,306+4,322+4,330+4,335+4,348+4,371+4,378+4,434+4,527+4,535+4,540+4,549+4,568+4,575+4,584+4,590+4,611+4,628+4	ef3bbbc8a44180eefb254a047dd3009607a29953a9062a41b749ecbc74db158f
 C	Object.lto	10049750	70	serverdiscmatchmgr.obj:?Term@CDiscMatchMgr@@QAEXXZ	36+4,42+4	0904790132817882315362e95de21c723ede4caf97ec5b48fb709e8a6d3bda71
 C	Object.lto	100497a0	455	serverdiscmatchmgr.obj:?Reset@CDiscMatchMgr@@QAEXH@Z	51+4,88+4,121+4,127+4,133+4,138+4,180+4,264+4,284+4,317+4,360+4,390+4,446+4	8990c5e1520eae6fc86b05a5616beb90558bee8d14dd5732bec82f4ccc038ffb
 C	Object.lto	100499c0	36	serverdiscmatchmgr.obj:?SetNextLevel@CDiscMatchMgr@@QAEXH@Z	13+4,19+4	b57e412f7597a4802fbed8da79ea3167b45b0464d15dce2d72a314ef40788b7f
@@ -17664,6 +17699,7 @@ C	Object.lto	100a3d90	193	objectshared(ainode.obj):??0AINodeUseObject@@QAE@XZ	3+
 C	Object.lto	100a3e60	30	objectshared(ainode.obj):??_GAINodeUseObject@@UAEPAXI@Z	4+4,17+4	b40481af87cc4bcd23da7d559dd5ce54f616e2f51cadc2008081b4c4e057f65d
 C	Object.lto	100a3e80	199	objectshared(ainode.obj):??1AINodeUseObject@@UAE@XZ	3+4,9+4,17+4,32+4,39+4,65+4,96+4,127+4,158+4,163+4,178+4,191+4	7912a2305791c140fbda389789c306f1137c73bc23cc73dd0ab13e14d459dee5
 C	Object.lto	100a3f50	221	objectshared(ainode.obj):?NodeTypeIsActive@AINodeUseObject@@UAEIW4EnumAINodeType@@@Z	34+4	9c7e2f7a92118aca0277b3e164f346495c12359d7aad47bbe04c4a938ea9355b
+C	Object.lto	100a4030	795	objectshared(ainode.obj):?ReadProp@AINodeUseObject@@UAEXPAUObjectCreateStruct@@@Z	13+4,19+4,24+4,29+4,47+4,57+4,62+4,81+4,86+4,91+4,109+4,119+4,131+4,136+4,141+4,159+4,168+4,173+4,187+4,192+4,197+4,216+4,234+4,239+4,244+4,256+4,268+4,279+4,286+4,306+4,322+4,327+4,332+4,350+4,361+4,368+4,388+4,403+4,408+4,413+4,431+4,441+4,446+4,465+4,470+4,475+4,493+4,503+4,508+4,527+4,532+4,537+4,559+4,572+4,577+4,636+4,641+4,646+4,656+4,661+4,666+4,752+4,759+4	9ae5c2b300a6c1166d36a482128736763e68371d439fe3f728a76dcde51afded
 C	Object.lto	100a4350	29	objectshared(ainode.obj):?FailedToCacheChildModel@@YA_NAAUAIChildModelInfo@@@Z	6+4	e34277ce2a89ef35922bfffd98499d2d7aa4a1b1bcb455e4d4da2e6657e94a59
 C	Object.lto	100a4370	118	objectshared(ainode.obj):?Init@AINodeUseObject@@UAEXXZ	8+4,25+4,78+4,102+4	f1dd467a85287b90bb961934521ecbb5246ac41113464d82a23f3eaabf14548b
 C	Object.lto	100a43f0	202	objectshared(ainode.obj):?GetHObject@AINodeUseObject@@QAEPAVLTObject@@XZ	41+4,72+4,78+4,127+4,134+4,174+4,182+4	f2a1c96f77e3fcfb72ebed89d11ae59fc328bb298526cbb06efe0a12e8b2e74c
@@ -19819,6 +19855,8 @@ C	Object.lto	1011de00	20	objectshared(aivolume.obj):_$E99	4+4,10+4,15+4	4bcef920
 C	Object.lto	1011de20	5	tronprojectile.obj:_$E90	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	1011de30	78	tronprojectile.obj:_$E89	17+4,25+4,54+4	83823fdb21296f9cfd6f1816c22cdc72983f37841974b75ad592265fce22fb64
 C	Object.lto	1011de80	62	objectshared(projectile.obj):?DefaultCProjectileConstructor@@YAXPAX@Z	3+4,9+4,17+4,43+4,54+4	521e78f99311bc254b6217281a33053a4905b8a83c03d00f110b439b6adcf669
+C	Object.lto	1011def0	5	objectshared(projectile.obj):_$E140	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
+C	Object.lto	1011df00	18	objectshared(projectile.obj):_$E139	3+4,8+4,13+4	b2b159403c41ccd24dace40a27fddd3f9037254c71ec831af8fc689cc7069d8f
 C	Object.lto	1011df20	5	objectshared(projectile.obj):_$E143	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	1011df30	18	objectshared(projectile.obj):_$E142	3+4,8+4,13+4	b2b159403c41ccd24dace40a27fddd3f9037254c71ec831af8fc689cc7069d8f
 C	Object.lto	1011df50	5	objectshared(projectile.obj):_$E146	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
@@ -19988,6 +20026,7 @@ C	Object.lto	1012bc90	392	objectshared(ai.obj):?HandleTouch@CAI@@MAEXPAVLTObject
 C	Object.lto	1012be20	288	objectshared(ai.obj):?HandleVolumeEnter@CAI@@MAEXPAVAIVolume@@@Z	10+4,30+4,37+8,47+4,52+4,66+4,80+4,91+4,105+4,117+4,125+4,130+4,138+4,168+4,191+4,197+4,228+4,247+4,272+4	7c0efdaff7b443d6dfa5a8633cccae2effce1004bd7ec6ee48873d97b928d021
 C	Object.lto	1012bf40	121	objectshared(ai.obj):?HandleVolumeExit@CAI@@MAEXPAVAIVolume@@@Z	32+4,72+4,87+4,112+4	597af82d1e56041026df33904ae4d4df1e546ae8553570d6ec3915306f7c9492
 C	Object.lto	1012bfc0	416	objectshared(ai.obj):?FindFloorHeight@CAI@@QAEIABU?$TVector3@M@@PAM@Z	71+4,136+4,163+4,211+4,264+4,275+4,281+4,298+4,332+4,383+4	67869109155c3d15f9ff3d509339ccc2e943d30f602f06bd61f1c9688eccd4a6
+C	Object.lto	1012c160	18	objectshared(ai.obj):?GetIntersectSegmentCount@CAI@@UBEHXZ	11+4	e7b63c124331ddb416e4881ebdb44699f1158d79fb1eddf8b3bdcba6061144db
 C	Object.lto	1012c180	23	objectshared(ai.obj):?SetDoneProcessingStimuli@CAI@@UAEXI@Z	16+4	7789e313bc0cb42963ef11ef1bf8d1ace9c1d4aca7ad8029b1d9b658bbb6771f
 C	Object.lto	1012c1a0	16	objectshared(ai.obj):?ClearProcessedStimuli@CAI@@UAEXXZ	11+4	e084150f00274fd6bc5692767ef8de2ba9705561238a55b4a43979d3028a6ec2
 C	Object.lto	1012c1b0	28	objectshared(ai.obj):?ProcessStimulus@CAI@@UAEIPAVCAIStimulusRecord@@@Z	16+4	4b9b3760c7bb8cb6c8be23855162d5d71cbaff73c975795e433fd1ececfd1914
@@ -20058,6 +20097,7 @@ C	Object.lto	10131610	19	objectshared(ai.obj):?GetTorsoRight@CAI@@QAEABU?$TVecto
 C	Object.lto	10131630	19	objectshared(ai.obj):?GetTorsoForward@CAI@@QAEABU?$TVector3@M@@XZ	-	0a725d2bc6f0ec0f1e769e90a1fd40c0d4a1f0d1feb81f617aef206e6f340acb
 C	Object.lto	10131650	83	objectshared(ai.obj):?SetNodeTrackingTarget@CAI@@QAEXW4EnumTrackedNodeGroup@@PAVLTObject@@PBD@Z	-	22a18022e27ff9812db5a130edf4fe58fb1fab781f3b35f5e314cec8feb9b851
 C	Object.lto	101316b0	78	objectshared(ai.obj):?SetNodeTrackingTarget@CAI@@QAEXW4EnumTrackedNodeGroup@@PAVLTObject@@@Z	-	8d04b3f77af3367e49ac52ffa2d1b91739c4b7b6e376dbe197167165ccd135cb
+C	Object.lto	10131700	324	objectshared(ai.obj):?EnableNodeTracking@CAI@@QAEIW4EnumTrackedNodeGroup@@PAVLTObject@@@Z	103+4,117+4,228+4,278+4,297+4	e3ac49bc0450acd24f227d5dff8856c605750580efd07c1694b1b619bf9f0af1
 C	Object.lto	10131850	38	objectshared(ai.obj):?DisableNodeTracking@CAI@@QAEXXZ	-	a3c9217f07ea53db5546c96be9247c81b6a256338cacec06b50e7d8bb43f4abe
 C	Object.lto	10131880	35	objectshared(ai.obj):?GetNodeTrackingTarget@CAI@@QAEPAVLTObject@@XZ	4+4,17+4,29+4	42011df65fc98c170b0c66d8aa1f471f70ddca2701e4a3a983c2ba402f917e34
 C	Object.lto	101318b0	10	objectshared(ai.obj):?GetActiveNodeTrackingGroup@CAI@@QBE?AW4EnumTrackedNodeGroup@@XZ	-	5166617e58bbf81fce654de21f385cf8dc062cdcab201375fb08674b95f4ffa0
@@ -20796,6 +20836,7 @@ C	Object.lto	101569f0	30	objectshared(attachbutemgr.obj):??_GCAttachButeMgr@@UAE
 C	Object.lto	10156a10	161	objectshared(attachbutemgr.obj):??1CAttachButeMgr@@UAE@XZ	3+4,9+4,17+4,32+4,45+4,61+4,77+4,83+4,101+4,113+4,125+4,140+4,153+4	ad4cc8e4f9696f314e1afd064c170713a581e4762e8f10adeb32402ebb59e255
 C	Object.lto	10156ac0	382	objectshared(attachbutemgr.obj):?Init@CAttachButeMgr@@UAEIPBD@Z	1+4,30+4,45+4,53+4,58+4,64+4,69+4,96+4,101+4,118+4,123+4,128+4,148+4,153+4,164+4,169+4,174+4,198+4,203+4,220+4,225+4,230+4,250+4,255+4,266+4,271+4,276+4,300+4,305+4,322+4,327+4,332+4,352+4,357+4	77f88b52e06d4a0129050a3a4812ba94e670345b36bfd67ec8e71d2566553b09
 C	Object.lto	10156c40	19	objectshared(attachbutemgr.obj):?Term@CAttachButeMgr@@UAEXXZ	4+4,10+4	ae555beb16a49bb463b2c0551fcd97c5c8599747bd0b7c207d29adcd52f47cfa
+C	Object.lto	10156c60	112	objectshared(attachbutemgr.obj):?GetAttachmentIDByName@CAttachButeMgr@@QAEHPBD@Z	33+4,51+4	89b72cd9b05458df2a0307863ddbf8f0670b6b3615cd96c1601b366d0a462f74
 C	Object.lto	10156cd0	92	objectshared(attachbutemgr.obj):?GetAttachmentName@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	b50f0db05de90d895a33e80e77db9c23b360007bb8d9f7f164f5b6db91d219ec
 C	Object.lto	10156d30	75	objectshared(attachbutemgr.obj):?GetAttachmentType@CAttachButeMgr@@QAEHH@Z	21+4,26+4,31+4,37+4,48+4,53+4,58+4	300206c26f6c5ca80c224721de2b6358e4463c6416fad84e8a8f8ae107f7a395
 C	Object.lto	10156d80	92	objectshared(attachbutemgr.obj):?GetAttachmentProperties@CAttachButeMgr@@QAEXHPADI@Z	21+4,26+4,31+4,37+4,55+4,60+4,65+4,73+4	b50f0db05de90d895a33e80e77db9c23b360007bb8d9f7f164f5b6db91d219ec
@@ -21595,6 +21636,8 @@ C	Object.lto	101867f0	5	objectshared(skillsbutemgr.obj):_$E71	1+4	e8ebd827d1f36d
 C	Object.lto	10186800	31	objectshared(skillsbutemgr.obj):_$E70	2+4,12+4,22+4	ab729faebc44df6223a76de25bc78ff3cc76ddfd4ecceccb15d2ae7a5a542daf
 C	Object.lto	10186820	5	objectshared(singleplayermissionmgr.obj):_$E82	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	10186830	31	objectshared(singleplayermissionmgr.obj):_$E81	2+4,12+4,22+4	317cbf7a438358aeebeb85bed4eb5bd2510acbe00db3d27b45490d533782a97a
+C	Object.lto	10186850	5	objectshared(aiutils.obj):_$E90	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
+C	Object.lto	10186860	18	objectshared(aiutils.obj):_$E89	3+4,8+4,13+4	b2b159403c41ccd24dace40a27fddd3f9037254c71ec831af8fc689cc7069d8f
 C	Object.lto	10186880	5	objectshared(aiutils.obj):_$E93	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	10186890	18	objectshared(aiutils.obj):_$E92	3+4,8+4,13+4	b2b159403c41ccd24dace40a27fddd3f9037254c71ec831af8fc689cc7069d8f
 C	Object.lto	101868b0	5	objectshared(aiutils.obj):_$E96	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
@@ -24816,6 +24859,7 @@ C	Object.lto	10208ca0	18	objectshared(aigoalexitlevel.obj):?AIFactoryCreateCAIGo
 C	Object.lto	10208cd0	25	objectshared(aigoalexitlevel.obj):?HandleStateGoto@CAIGoalExitLevelByRezOut@@MAEXXZ	21+4	94a588a665ff93b4d71862aa2001a92c7a38c45e16b054573d544771dc83104d
 C	Object.lto	10208cf0	54	objectshared(aigoalexitlevel.obj):?UpdateGoal@CAIGoalExitLevelByRezOut@@UAEXXZ	30+4	56a8cf22d238b2edf98182709148ea20d1a46ea08f720fdf5adfb4134abcc93b
 C	Object.lto	10208d30	213	objectshared(aigoalexitlevel.obj):?StartRezOut@CAIGoalExitLevelByRezOut@@MAEXXZ	13+4,20+4,27+4,32+4,40+4,80+4,85+4,99+4,162+4,168+4,191+4	f792e8dc00e2b3806968a7c0d0ccce01f8bb9baa6c3e6155799c2c2bc2806397
+C	Object.lto	10208e10	399	objectshared(aigoalexitlevel.obj):?HandleStateUseObject@CAIGoalExitLevelByRezOut@@MAEXXZ	50+4,55+4,74+4,83+4,97+4,104+4,113+4,144+4,169+4,188+4,205+4,212+8,222+4,227+4,241+4,255+4,266+4,280+4,292+4,300+4,305+4,313+4,336+4,351+4,360+4	9af823333a347153ba7e0877687c7fadd5dc0ab700de6e0f63ea226576ab426f
 C	Object.lto	10208fa0	35	objectshared(aigoalexitlevel.obj):?HandleStateHolster@CAIGoalExitLevelByRezOut@@MAEXXZ	-	268157a62e17fd51319e16586849077b840c74d4a9de5bff62a67ad10bed6728
 C	Object.lto	10209000	5	objectshared(aigoalabstract.obj):_$E87	1+4	e8ebd827d1f36d7cfa5e5220610aa6370284d1589989363f48ac40166362d449
 C	Object.lto	10209010	20	objectshared(aigoalabstract.obj):_$E86	4+4,10+4,15+4	484b6d1161c0f4be13488979c59d515e3874112832c968e68566f8cf49f63592
@@ -28274,6 +28318,7 @@ C	TRONSrv.exe	00403390	133	ltmodule.obj:?index@?$database_array@VCInterfaceNameM
 C	TRONSrv.exe	00403420	143	ltmodule.obj:?insert@?$database_array@VIBase@@PBD@@IAEXPAVIBase@@I@Z	41+4,85+4	a80344071ec0579aaecc7a2d52bb62c23f603efae72903fcbb6ae43bccf33dc5
 C	TRONSrv.exe	004034b0	81	ltmodule.obj:?lengthen@?$database_array@VIBase@@PBD@@IAEXXZ	17+4,61+4	c7f418916efa946d1e3dae9f77d7ffe6f97841f19d8e0e8da970f0942bffa85a
 C	TRONSrv.exe	00403510	287	nonport.obj:_GOAGetUniqueID_Internal	18+4,45+4,65+4,77+4,86+4,95+4,113+4,118+4,153+4,164+4,169+4,184+4,196+4,203+4,214+4,220+4,227+4,232+4,241+4,246+4,255+4,260+4,271+4,277+4	c066ab7d8a312bb1ddea6b0cbcd15ea004dd05d9956597b977b16ce829ecbbd7
+C	TRONSrv.exe	00403630	155	nonport.obj:_GenerateID	15+4,31+4,57+4,68+4,76+4,86+4,119+4	914280916bc849eff08c41e29bba584635e58777fad33349d3df8f8c8d3a4486
 C	TRONSrv.exe	004036d0	30	nonport.obj:_Util_RandSeed	14+4,21+4	e6d2ab9def71b7f41f8b36959d58678f4e87401a1c7ff8af7d24b0a1d02e451d
 C	TRONSrv.exe	004036f0	25	nonport.obj:_Util_RandInt	2+4	833d07f35369bc71435c53c786ecae7c97cd00ad1009837f677c1dbd35276c8e
 C	TRONSrv.exe	00403710	20	nonport.obj:_longrand	1+4,7+4,15+4	16fc5c6ceedeb80837413bf8e024c2d33bd82f1d9c5bc49503f4293ef337e65d
