@@ -14,10 +14,21 @@
 # Tron's health bar, green, 210..110 pixels left of the screen's centre and
 # 21..15 pixels above its bottom at every resolution (the bar is not scaled:
 # HUDHealthEnergy.cpp; x 110..210, y 461..466 at 640x480; NOLF2's is red,
-# lower left). The adapted copy is written to
+# lower left). The bar is bright green as far as the health goes and dark
+# green (0, 32, 0) after it: the test takes green over red and blue, at
+# any health (a new game from the menus starts M01-01 with 50 of 100, the
+# retail game DLLs too: the control; +runworld with 100). The adapted copy is written to
 # out/play/playtest-tron20.sh each run (written to a new file, then
 # renamed: runs that start at the same time, as in make sweep, do not
 # read a half-written copy); ext/tools/ is not changed.
+#
+# The run directory is build/rundir.py's, in the place of the links of
+# ext/tools/playtest.sh: the binaries copied, a link to each other file
+# that MANIFEST.txt names, and real directories. So the game never writes
+# into the game directory: not into a linked directory (LightCycleGameData/,
+# ServerData/), and not through a link to a file that the game itself
+# wrote there earlier (the ban list bl.dat). The files that are not in
+# MANIFEST.txt (what was played in the game directory) are not taken.
 #
 # One more setting: PLAYTEST_AUDIO=<prefix> (an absolute path) records what
 # the game plays where ext/tools/playtest.sh plays it into ALSA's null
@@ -44,12 +55,22 @@
 #   lit <name>            takes a shot like `shot <name>`, and keeps the
 #                         percentage of black pixels (below 3% grey) in the
 #                         middle of the window (60% of its width, 50% of
-#                         its height)
-#   litcheck [max]        the mean of the percentages of the `lit` shots
-#                         must be <max> or less (default 10). If not, the
-#                         run is judged DARK, a failure: the models are
-#                         black (models lit by DirLights, the intro's
-#                         people: build/playtest-intro.txt)
+#                         its height). Only a shot of a cinematic counts:
+#                         its top 12% is black (the letterbox; not a menu
+#                         or a load screen), and its middle is less than
+#                         90% black (not a fade or a cut to black)
+#   litcheck [max] [min]  the median of the percentages of the `lit` shots
+#                         that count must be <max> or less (default 10).
+#                         If not, the run is judged DARK, a failure: the
+#                         models are black (models lit by DirLights, the
+#                         intro's people: build/playtest-intro.txt). The
+#                         median, not the mean: a shot or two of a darker
+#                         scene, as the timing of the cinematic changes
+#                         from run to run, do not change it. Fewer than
+#                         <min> shots that count (default 5): the run is
+#                         judged NO CINEMATIC, a failure (the cinematic
+#                         was skipped or not yet on the screen: nothing
+#                         was tested)
 set -u
 # a game directory built without the retail game (NODISCS=1) does not play
 for a in "$@"; do
@@ -63,17 +84,23 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e 's#out/nolf2-legacy-release#out/tron20-legacy-release#g' \
     -e 's#Worlds\\\\RetailSinglePlayer\\\\C01S01#Worlds\\\\RetailSinglePlayer\\\\M01-01#' \
     -e 's#local x=$((WX + 30\*WW/642)) y=$((WY + 448\*WH/482)) w=$((30\*WW/642)) h=$((4\*WH/482 + 1))#local x=$((WX + WW/2 - 210)) y=$((WY + WH - 21)) w=100 h=6#' \
-    -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.6 \&\& \$2 > 1.8 * \$1)#" \
+    -e "s#-format '%\[fx:mean.r\] %\[fx:mean.g\]' info:#-format '%[fx:mean.r] %[fx:mean.g] %[fx:mean.b]' info:#" \
+    -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.1 \&\& \$2 > 1.8 * \$1 \&\& \$2 > 1.8 * \$3)#" \
     -e 's#\[ $k = space \] \&\& k=Return || k=space#if [ $k = space ]; then k=Return; elif [ $k = Return ] \&\& [ $(( $(date +%s) - st )) -ge 20 ]; then k=1; else k=space; fi#' \
-    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""; DARK=""; LITS=""#' \
+    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""; DARK=""; NOCINE=""; LITS=""#' \
     -e 's#^            \*)     log "  unknown command#            nohud) N=$((N+1)); f=$(printf '"'"'shots/%02d-%s.png'"'"' $N "$1"); grab "$f"; log "  -> $f"\
                    if hud; then HUDUP="line $LINE"; log "  nohud: the HUD is up"; else log "  nohud: no HUD, as expected"; fi ;;\
 &#' \
     -e 's#^            nohud) #            lit) N=$((N+1)); f=$(printf "shots/%02d-%s.png" $N "$1"); grab "$f"\
                    d=$(convert "$f" -gravity center -crop 60%x50%+0+0 -colorspace gray -threshold 3% -format "%[fx:round(100*(1-mean))]" info: 2>/dev/null)\
-                   LITS="$LITS ${d:-100}"; log "  -> $f (black: ${d:-?}%)" ;;\
-            litcheck) s=0; n=0; for d in $LITS; do s=$((s+d)); n=$((n+1)); done; [ $n -gt 0 ] \&\& s=$((s/n))\
-                   if [ $s -gt ${1:-10} ]; then DARK="line $LINE: $s% black, more than ${1:-10}%"; log "  litcheck: $s% black: DARK"; else log "  litcheck: $s% black, as expected"; fi ;;\
+                   t=$(convert "$f" -gravity north -crop 100%x12%+0+0 +repage -colorspace gray -format "%[fx:round(1000*mean)]" info: 2>/dev/null)\
+                   if [ "${t:-1000}" -gt 20 ]; then log "  -> $f (black: ${d:-?}%; no letterbox: not the cinematic, not counted)"\
+                   elif [ "${d:-100}" -ge 90 ]; then log "  -> $f (black: ${d:-?}%: a fade or a cut, not counted)"\
+                   else LITS="$LITS $d"; log "  -> $f (black: $d%)"; fi ;;\
+            litcheck) n=$(echo $LITS | wc -w); s=$(echo $LITS | tr " " "\\n" | sort -n | awk "{ v[NR] = \\$1 } END { print (NR ? v[int((NR + 1) / 2)] : 0) }")\
+                   if [ $n -lt ${2:-5} ]; then NOCINE="line $LINE: $n counted, fewer than ${2:-5}"; log "  litcheck: $n shots of the cinematic counted: NO CINEMATIC"\
+                   elif [ $s -gt ${1:-10} ]; then DARK="line $LINE: median $s% black of $n shots, more than ${1:-10}%"; log "  litcheck: median $s% black of $n shots: DARK"\
+                   else log "  litcheck: median $s% black of $n shots, as expected"; fi ;;\
 &#' \
     -e 's#^if alive \&\& \[ -n "$NOHUD" \]; then$#if alive \&\& [ -n "$HUDUP" ]; then\
     echo "HUD UP: alive, but the HUD was up where the script expects none (nohud at $HUDUP)" > result.txt\
@@ -81,8 +108,20 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
 elif alive \&\& [ -n "$DARK" ]; then\
     echo "DARK: alive, but the lit shots are black ($DARK)" > result.txt\
     wineserver -k; sleep 2\
+elif alive \&\& [ -n "$NOCINE" ]; then\
+    echo "NO CINEMATIC: alive, but too few lit shots show the cinematic ($NOCINE)" > result.txt\
+    wineserver -k; sleep 2\
 elif alive \&\& [ -n "$NOHUD" ]; then#' \
     -e '/pcm\.!default { type null }/a\    [ -z "${PLAYTEST_AUDIO:-}" ] || printf "</usr/share/alsa/alsa.conf>\\npcm.!default { type file slave.pcm null file \\"%s-%%r-%%c-%%f.raw\\" format raw truncate false }\\n" "$PLAYTEST_AUDIO" > asound.conf' \
+    -e 's#^for f in "$GAME"/\*; do$#python3 -I "$REPO/build/rundir.py" "$GAME" "$RUN" autoexec.cfg Save Profiles tron20cmds.txt linux-run.sh linux-run-launcher.sh run-cmds.txt launchcmds.txt || exit 2\
+for f in; do#' \
     -e 's#^source "$(dirname "${BASH_SOURCE\[0\]}")/layout.sh"$#REPO="'"$REPO"'"; TOOLS="'"$REPO"'/ext/tools"#' \
-    "$REPO/ext/tools/playtest.sh" > "$OUT.$$" && mv -f "$OUT.$$" "$OUT"
+    "$REPO/ext/tools/playtest.sh" > "$OUT.$$" || exit 2
+# (if ext/tools/playtest.sh changes so that an edit above does not apply,
+# stop: the run directory must be build/rundir.py's, and the HUD test and
+# the lit shots Tron's)
+for m in 'build/rundir.py' 'mean.b' '1.8 \* \$3' 'NO CINEMATIC' 'HUD UP' 'k=1;'; do
+    grep -q "$m" "$OUT.$$" || { rm -f "$OUT.$$"; echo "playtest.sh: ext/tools/playtest.sh changed: an edit of build/playtest.sh does not apply ($m)"; exit 2; }
+done
+mv -f "$OUT.$$" "$OUT"
 exec bash "$OUT" "$@"

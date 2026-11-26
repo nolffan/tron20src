@@ -26,11 +26,12 @@ CONTAINER ?= tron20src-build
 # Parallel compile jobs inside the build (build/build.mk); empty: one per CPU
 JOBS ?=
 # The game directory `make test` plays, the world it starts (-: none, the
-# main menu) and the input script (build/playtest-*.txt; empty: no input).
-# make tests plays every script in TEST_SCRIPTS.
+# main menu; empty: the "# world:" line of the input script, as make tests
+# does, else none) and the input script (build/playtest-*.txt; empty: no
+# input). make tests plays every script in TEST_SCRIPTS.
 TEST_GAME ?= out/tron20-legacy-release
 TEST_SCRIPT ?=
-TEST_WORLD ?= -
+TEST_WORLD ?=
 TEST_NAME ?= $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test,test-$(notdir $(TEST_GAME:%/=%)))
 # console variables appended to the run's autoexec.cfg (playtest.sh's
 # PLAYTEST_CFG), for example build/fps-60.cfg (docs/MODERN.md EN-45)
@@ -87,7 +88,9 @@ help:
 	@echo "                (where the install scripts find each file in the two discs)"
 	@echo "make test       run out/tron20-legacy-release/ under Xvfb and Wine to its main menu"
 	@echo "                (build/playtest.sh; TEST_WORLD=<world>, TEST_SCRIPT=<script>,"
-	@echo "                TEST_GAME=<dir>, TEST_RES=<WxH>, TEST_CFG=<file>; results in out/play/test*/)"
+	@echo "                TEST_GAME=<dir>, TEST_RES=<WxH>, TEST_CFG=<file>; results in out/play/test*/;"
+	@echo "                with a script and no TEST_WORLD, its \"# world:\" line, as make tests;"
+	@echo "                the game runs in a directory of its own and never writes into TEST_GAME)"
 	@echo "make control    out/tron20-control/: the retail game DLLs with our engine, to tell"
 	@echo "                our game code's faults from the engine's or Wine's (diagnosis only)"
 	@echo "make tests      every scripted test (TEST_SCRIPTS: build/playtest-<name>.txt);"
@@ -160,7 +163,9 @@ retail-ways: retail
 # out/play/<name>/shot.png
 test: image
 	@[ -f $(TEST_GAME)/Lithtech.exe ] || { echo "error: no $(TEST_GAME)/ -- build it first (make)" >&2; exit 1; }
-	$(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) $(if $(TEST_CFG),PLAYTEST_CFG=$(TEST_CFG)) $(if $(TEST_RES),PLAYTEST_RES=$(TEST_RES)) bash build/playtest.sh $(TEST_GAME) '$(TEST_WORLD)' $(if $(TEST_SCRIPT),5,60)
+	@w='$(TEST_WORLD)'; [ -n "$$w" ] || [ -z '$(TEST_SCRIPT)' ] || w=$$(sed -n 's/^# world: *//p' $(TEST_SCRIPT) | head -1); \
+	  echo "== world $${w:--}"; \
+	  $(DOCKER_RUN) env PLAYTEST_NAME=$(TEST_NAME) $(if $(TEST_SCRIPT),PLAYTEST_SCRIPT=$(TEST_SCRIPT)) $(if $(TEST_CFG),PLAYTEST_CFG=$(TEST_CFG)) $(if $(TEST_RES),PLAYTEST_RES=$(TEST_RES)) bash build/playtest.sh $(TEST_GAME) "$${w:--}" $(if $(TEST_SCRIPT),5,60)
 
 # The control for the runtime tests (build/control.sh): retail's game DLLs
 # with our engine, in out/tron20-control/ (make test TEST_GAME=out/tron20-control).
