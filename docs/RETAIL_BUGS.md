@@ -2051,20 +2051,6 @@ intensities, so the game does not show it.
 Not changed in the DirectMusic path. The modern build's own music player
 (MODERN.md X-3) goes to the next command.
 
-## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
-
-- NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
-  when it has expired, but always removes it from the list: an unexpired
-  momento leaks. Tron's deletes the momento in all conditions (Object.lto
-  0x10168180).
-- Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
-  quads with each quad's first vertex colour, and its DrawPrim functions
-  check only the last draw's result: Tron's are Build 69's (each vertex's
-  own colour, every result checked; Lithtech.exe 0x41f140).
-- Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
-  the saved viewport and leaves the new viewport's size unset: Tron's is
-  Build 69's (0x41d8e0; its own bug is above).
-
 ### A cloned tracking node that is not made is not reported
 
 CShell.dll 0x101c9763 and Object.lto 0x101e2203 (CTrackedNodeContext::_Init,
@@ -2147,3 +2133,17 @@ the console, so a player does not see it.
 
 Fixed in the modern build: winconsole_impl.cpp (IsKeyDown), MODERN.md
 EN-70.
+
+## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
+
+- NOLF2's CRelationUser::RemoveRelation deletes the relation momento only
+  when it has expired, but always removes it from the list: an unexpired
+  momento leaks. Tron's deletes the momento in all conditions (Object.lto
+  0x10168180).
+- Contract J.A.C.K.'s DrawPrim(LT_POLYGT4*) colours a batch of screen-space
+  quads with each quad's first vertex colour, and its DrawPrim functions
+  check only the last draw's result: Tron's are Build 69's (each vertex's
+  own colour, every result checked; Lithtech.exe 0x41f140).
+- Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
+  the saved viewport and leaves the new viewport's size unset: Tron's is
+  Build 69's (0x41d8e0; its own bug is above).
