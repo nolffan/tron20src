@@ -595,6 +595,106 @@ details.
   in a new Wine prefix leaves `Temp\cfx9ce3.tmp` with the legacy build and
   no file with the modern build.
 
+The server's fixes (`Object.lto`; GAME-50 to GAME-99 are the server's
+block). GAME-53 is not used.
+
+* **GAME-50:** the command manager counts its variables in a uint16, as
+  NOLF2's (`CommandMgr.h`).
+* **GAME-51:** an I/O node reads its `MoveToFloor` property
+  (`TRON/IONode.cpp` `ReadProp`).
+* **GAME-52:** an I/O node frees the name of its looping sound in its
+  destructor (`TRON/IONode.cpp`).
+* **GAME-54:** Thorne reports a summon command only when it is there and
+  not valid (`TRON/Thorne.cpp` `ReadProp`).
+* **GAME-55:** Thorne does not make the special-fx message that he does
+  not send (`TRON/Thorne.cpp` `InitialUpdate`).
+* **GAME-56:** a turret without a `PropType` has no prop type
+  (`TRON/TronTurret.cpp` `ReadProp`).
+* **GAME-57:** a turret without a `ViewFOV` takes the property's default,
+  180 degrees (`TRON/TronTurret.cpp` `ReadProp`).
+* **GAME-58:** a parented turret does not read its parent's transform in
+  its first update (`TRON/TronTurret.cpp` `InitialUpdate`).
+* **GAME-59:** a core dump measures the energy that it gave against the
+  player's energy before, and sends the "energy gained" message
+  (`TRON/CoreDump.cpp` `HandleActivate`). The client must end its
+  `MID_TRON_ENERGY_GAINED` case, GAME-136 (`TronInterfaceMgr.cpp`).
+* **GAME-60:** a core dump and an archive bin send no trigger message for
+  an item of another type (Custom) (`TRON/CoreDump.cpp`,
+  `TRON/ArchiveBin.cpp` `HandleChoice`).
+* **GAME-61:** a spawned optimizer reads its properties
+  (`TRON/Optimizer.cpp` `EngineMessageFn`).
+* **GAME-62:** a new light cycle shade clears the first character of each
+  colour (`Shared/TRON/LightCycleButeMgr.h`).
+* **GAME-63:** the light cycle dialog copies the top line before `pop()`,
+  tests each line by itself, and plays no skipped line
+  (`TRON/ServerLightCycleMgr.cpp` `Update`).
+* **GAME-64:** the energy claw's line of sight goes to the target
+  (`TRON/ProjectileEnergyClaw.cpp` `CanSee`): the claw does not seek
+  through walls.
+* **GAME-65:** the CD key SDK tests its second backslash for NULL
+  (`Libs/GameSpy/GameSpySDK/gcdkey/gcdkeys.c`).
+* **GAME-66:** the query SDK's host lookup starts its hostent as NULL
+  (`Libs/GameSpy/GameSpySDK/qr2/qr2.c`).
+* **GAME-67:** a light cycle with an unknown colour does not read through
+  NULL (`TRON/LightCycle.cpp` `SetModel`).
+* **GAME-68:** the light cycle missile's stand-in cyclist gets the
+  defaults (`Shared/TRON/LightCycleMgr.h`, `LIGHT_CYCLIST`; `InitDefaults`
+  is ours).
+* **GAME-69:** a light cycle power-up's `AllowInCustom` can be false
+  (`TRON/LightCyclePowerup.cpp` `ReadProp`).
+* **GAME-70:** an AI light cycle's probes test each trail of a cyclist
+  (`TRON/AILightCycle.cpp` `Probe`, `ProbeAll`).
+* **GAME-71:** an AI light cycle's `MID_LIGHT_CYCLE_INFO` does not fall
+  through into `MID_TRIGGER` (`TRON/AILightCycle.cpp` `ObjectMessageFn`).
+* **GAME-72:** an AI path's initial direction is the direction to its
+  second control point; an AI on its only control point gets its forward
+  vector (`AIPath.cpp` `GetInitialDir`).
+* **GAME-73:** `DRAWALLMODELSHADOWS` sets `DrawAllModelShadows`
+  (`WorldProperties.cpp`).
+* **GAME-74:** a failed level load restores a copy of the old level name
+  (`ServerSaveLoadMgr.cpp` `LoadLevel`).
+* **GAME-75:** a relation's timer starts with the relation's lifetime, in
+  `AddRelation` and in `ResetRelationTime` (`RelationButeMgr.cpp`).
+* **GAME-76:** the prankster bit gives its object list back
+  (`TRON/ProjectilePrankster.cpp` `AcquireTargets`).
+* **GAME-77:** an explosion's bad ammo name is printed as a name
+  (`Explosion.cpp` `ReadProp`).
+* **GAME-78:** the arena's plugin gives only its six event properties to
+  the command manager plugin (`TRON/Arena.cpp`; the editor only).
+* **GAME-79:** a keyframer's `RESETPATH` starts each object from the
+  rotation of the key (`KeyFramer.cpp` `ResetToKey`).
+* **GAME-80:** a defense class override gives its zones' defaults in
+  degrees (`Shared/WeaponMgr.cpp` `DEFENSECLASSDATA::InitMembers`).
+* **GAME-81:** adding gear without a GEAR record adds nothing
+  (`Destructible.cpp` `AddGear`).
+* **GAME-82:** a character's `HelpFile2` and `HelpFile3` are in the groups
+  of their items (`Character.cpp`; the editor only).
+* **GAME-83:** a loaded projectile gets its saved object flags back
+  (`Projectile.cpp` `Load`).
+* **GAME-84:** the OBB hit test gives the node, the distance and the hit
+  box user of the nearest OBB that has a node (`CharacterHitBox.cpp`
+  `FindHitNodeOBB`).
+* **GAME-85:** a random node search without an AI returns a random node of
+  its list, or NULL (`AINodeMgr.cpp` `FindRandomNodeFromThreat`).
+* **GAME-86:** a deadly deflected disc without class data plays no smite
+  FX (`TRON/ProjectileDisc.cpp`).
+* **GAME-87:** a grenade without ammo data bounces without the elasticity
+  scale (`ProjectileTypes.cpp` `CGrenade::HandleImpact`, the touch slot).
+* **GAME-88:** the energy claw's "Not a character" message uses
+  `AIShowEnergyClawDamage` (`AIGoalSpecialDamage.cpp`).
+* **GAME-89:** a patch routine gives no more than it has left
+  (`TRON/PatchRoutine.cpp` `ObjectMessageFn`).
+* **GAME-90:** a disc game team change sets the team colour only of a
+  player that it finds (`TRON/ServerDiscMatchMgr.cpp` `ChangeTeam`).
+
+Examined and not changed (`RETAIL_BUGS.md` says why): an AI light cycle's
+`Behavior` property (a change of the races' balance), the handshake's
+password of a short name (the protocol of retail clients). Not bugs: the
+dedicated server's `LoadFromBute` result, the loop sounds of the archive
+bin, I/O node and optimizer (their sound sets loop).
+
+How these were tested: TESTS_PLACEHOLDER
+
 ### Retail-bug fixes, engine
 
 * **EN-3:** the `VersionInfo` console command does not call a null pointer
@@ -631,6 +731,10 @@ details.
 * **EN-40:** the frame limiter (Frame rate, below). It replaces the
   retail `cm_HandleMaxFPS`, which times the frame from an uninitialised
   value.
+* **EN-80:** loading `object.lto` allocates its class module only after
+  the binding succeeds, and frees it with `LTMemFree` on a version
+  mismatch (`shared/src/classbind.cpp` `cb_LoadModule`; `server.dll` and
+  `Lithtech.exe`).
 
 ### Frame rate
 

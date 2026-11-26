@@ -53,7 +53,7 @@ its count, m_nNumVars, is a uint8: every read and write of it is a byte
 more than 255 variables wraps the count to 0 and overwrites the first ones.
 NOLF2's count is a uint16.
 
-Not fixed yet: the modern build should make it a uint16, as NOLF2's.
+Fixed in the modern build: ObjectShared/CommandMgr.h (m_nNumVars is a uint16), MODERN.md GAME-50.
 
 ### An I/O node's MoveToFloor property does nothing
 
@@ -63,7 +63,7 @@ its first update moves it to the floor when its m_bMoveToFloor is set, but
 ReadProp never reads the property: only the constructor (false) and Load
 set the member, so no I/O node is ever moved to the floor.
 
-Not fixed yet: the modern build should read MoveToFloor in ReadProp.
+Fixed in the modern build: TRON/IONode.cpp (ReadProp reads MoveToFloor), MODERN.md GAME-51.
 
 ### An I/O node leaks its looping sound's name
 
@@ -72,7 +72,7 @@ the looping sound a model key starts (m_hstrLoopSound, created in
 HandleModelString) is freed when the sound is killed by a key, but not in
 the destructor: a node removed while its loop plays leaks the string.
 
-Not fixed yet: the modern build should free it in the destructor.
+Fixed in the modern build: TRON/IONode.cpp (the destructor frees the name), MODERN.md GAME-52.
 
 ### A lure's death FX is only played when it has no name (and crashes then)
 
@@ -105,7 +105,7 @@ ObjectCPrint(..., "Invalid summon command %s", ...)`: the test is
 inverted, so a valid command prints the error (in the editor/console only)
 and an invalid one passes silently. It should be `!IsValidCmd(...)`.
 
-Not fixed yet.
+Fixed in the modern build: TRON/Thorne.cpp (the message is for a command that is there and not valid), MODERN.md GAME-54.
 
 ### Thorne builds a special-fx message he never sends
 
@@ -113,7 +113,7 @@ Object.lto 0x10058dc1 (CThorne::InitialUpdate). After setting his SFX
 message, Thorne writes a second MID_SFX_MESSAGE (his id, object and create
 struct) and drops it without sending it. Harmless, wasted work.
 
-Not fixed yet.
+Fixed in the modern build: TRON/Thorne.cpp (the message is not made), MODERN.md GAME-55.
 
 ### A turret without a PropType reads an uninitialised prop type
 
@@ -123,7 +123,7 @@ empty, but it is tested (and used to set up the model) at the end either
 way: a TronTurret without a PropType uses whatever was on the stack. It
 should start as NULL.
 
-Not fixed yet.
+Fixed in the modern build: TRON/TronTurret.cpp (the pointer starts as NULL), MODERN.md GAME-56.
 
 ### A turret without a ViewFOV takes its default cosine for an angle
 
@@ -133,7 +133,7 @@ into cos(1.57 * PI/360) as if it were degrees: an almost zero-wide view
 cone. The editor always writes the property (default 180), so it may never
 show.
 
-Not fixed yet.
+Fixed in the modern build: TRON/TronTurret.cpp (without the property, the cosine of the property's default, 180 degrees), MODERN.md GAME-57.
 
 ### A parented turret reads its parent's transform and drops it
 
@@ -141,7 +141,7 @@ Object.lto 0x1006bf20 (TronTurret's first update). With a parent, the
 parent's position and rotation are read into locals and never used. The
 per-frame update reads the parent again, so it is only wasted work.
 
-Not fixed yet.
+Fixed in the modern build: TRON/TronTurret.cpp (the parent is not read there), MODERN.md GAME-58.
 
 ### The energy transfer meter draws part of its fill twice
 
@@ -162,7 +162,7 @@ holds the core dump's energy: never more than 0, so the "energy gained"
 message (164) it sends when that is over 1 is never sent. It should
 subtract the player's energy before the core dump's was added.
 
-Not fixed yet.
+Fixed in the modern build: TRON/CoreDump.cpp (the gain is the new energy less the energy before), MODERN.md GAME-59. The server now sends the message, thus the client must not fall through into the HUD text case ("The energy message of a core dump falls through into the HUD text message", below; MODERN.md GAME-136).
 
 ### Taking a custom item from a core dump sends an uninitialized message
 
@@ -173,7 +173,7 @@ other item type (Custom) the uninitialized stack buffer is sent as it is.
 Core dumps only get their items from bodies, which may never hold custom
 items.
 
-Not fixed yet.
+Fixed in the modern build: TRON/CoreDump.cpp (no message for another item type), MODERN.md GAME-60. TRON/ArchiveBin.cpp has the same code (its function is near, thus it has no entry of its own). There a Custom item is real: it runs its command, and then the bin sends the uninitialized buffer to the player. The same fix is there.
 
 ### A patch routine gives the amount asked, not what it has left
 
@@ -185,7 +185,7 @@ routine) is the unclamped amount. A request larger than what is left gives
 the player more than the routine had and leaves its count negative (it is
 then neither > 0 nor == 0: the routine is never removed).
 
-Not fixed yet: the modern build should give the clamped amount.
+Fixed in the modern build: TRON/PatchRoutine.cpp (it gives the clamped amount), MODERN.md GAME-89.
 
 ### A spawned optimizer reads none of its properties
 
@@ -197,7 +197,7 @@ classes do: an optimizer made by a spawner gets no model, permission sets,
 keyframer or commands. Tron's levels may only place them in the world, so
 it may never show.
 
-Not fixed yet: the modern build should read the properties for both.
+Fixed in the modern build: TRON/Optimizer.cpp (ReadProp for PRECREATE_STRINGPROP too), MODERN.md GAME-61.
 
 ### A light cycle dialog's bad priority is never reported
 
@@ -218,7 +218,7 @@ first of each color, so the Super color of a new shade is garbage until Init
 reads it. Init always reads both, and GetShade's default shade is static
 (zeroed), so it should never show.
 
-Not fixed yet: harmless; the modern build may clear szCycleColors[1][0].
+Fixed in the modern build: Shared/TRON/LightCycleButeMgr.h (the first character of each color), MODERN.md GAME-62. It has no effect on the game.
 
 ### A shield hit drops a trail's last point by erasing end()
 
@@ -273,7 +273,7 @@ pointer. pop() moves the queue's last line into the top slot, so the line
 checked and played is not the one that had the highest priority (unless the
 queue held one line).
 
-Not fixed yet: the modern build should copy the top entry before pop().
+Fixed in the modern build: TRON/ServerLightCycleMgr.cpp (the line is copied before pop()), MODERN.md GAME-63. The retail loop also does not set its skip flag back to false for each line, and it plays the last line it skipped when the queue becomes empty. The modern build tests each line by itself and plays no skipped line.
 
 ### The energy claw's line-of-sight test always passes
 
@@ -282,7 +282,7 @@ ProjectileEnergyClaw.cpp). It gets the position of the first object for both
 ends of the segment it tests, so the segment is empty, nothing is hit, and
 the claw "sees" any AI in range: it seeks and chases through walls.
 
-Not fixed yet: the modern build should take the second end from hTo.
+Fixed in the modern build: TRON/ProjectileEnergyClaw.cpp (the second end is the position of hTo), MODERN.md GAME-64. The claw does not seek or chase an AI through a wall.
 
 ### A CD key server reply with no second backslash crashes the server
 
@@ -294,7 +294,7 @@ checking pos for NULL: with no second backslash the difference is negative,
 passes the test, and strncpy is handed a huge length. GameSpy's later SDKs
 test `pos &&` first.
 
-Not fixed yet: the modern build should test pos for NULL, as the 2007 SDK.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/gcdkey/gcdkeys.c (pos is tested for NULL), MODERN.md GAME-65. The modern server does not start the CD key module (GS-4), thus this code does not run there.
 
 ### The query SDK's host lookup can hand back an uninitialized hostent
 
@@ -305,8 +305,7 @@ NULL: for a numeric address the caller would get whatever the stack slot
 held (the compiler reuses the `saddr` argument's slot, so it is `saddr`).
 The SDK's only caller (qr2_init_socket) passes NULL, so it never shows.
 
-Not fixed yet: harmless; the modern build may initialize it to NULL, as the
-2007 SDK does.
+Fixed in the modern build: Libs/GameSpy/GameSpySDK/qr2/qr2.c (hent starts as NULL), MODERN.md GAME-66. It has no effect on the game.
 
 ### Client prediction applies gravity to visible objects, not falling ones
 
@@ -405,8 +404,7 @@ that the CycleColor was found, so a cycle whose CycleColor names no color
 reads through NULL before it can print its "Couldn't find Light Cycle
 Color" error.
 
-Not fixed yet: the modern build should drop the unused lookup, or make it
-after the check.
+Fixed in the modern build: TRON/LightCycle.cpp (no unused lookup), MODERN.md GAME-67.
 
 ### The light cycle missile's stand-in cyclist is left uninitialized
 
@@ -418,8 +416,7 @@ fields it sets afterwards are initialized. The rest of the static is zero
 only because it is a static (its direction, flags and power-up are 0, not
 the defaults).
 
-Not fixed yet: the modern build should initialize the fields in the
-constructor itself.
+Fixed in the modern build: Shared/TRON/LightCycleMgr.h (both constructors use the defaults), MODERN.md GAME-68. The collision test reads only the fields that the constructor sets and the zeroed flags, thus the missile does not change.
 
 ### A light cycle power-up's AllowInCustom cannot be turned off
 
@@ -428,7 +425,7 @@ LightCyclePowerup.cpp). The property is only copied when it is true, and the
 default is true, so a power-up set not to appear in custom light cycle games
 appears anyway.
 
-Not fixed yet: the modern build should copy the property's value always.
+Fixed in the modern build: TRON/LightCyclePowerup.cpp (the value is copied, true or false), MODERN.md GAME-69.
 
 ### An AI light cycle's Behavior property is ignored
 
@@ -438,8 +435,7 @@ is read and compared, but the default behavior is then set to wander
 whatever it said; "avoid" maps to wander as well. Every AI light cycle
 starts wandering.
 
-Not fixed yet: the modern build should keep the value read (aggressive 1,
-wander 0, avoid 2).
+Not fixed: the change would alter the light cycle races. The property's default is "aggressive", thus with the fix most AI cycles would start aggressive, not wandering. The retail statement after the test sets wander for every value, which can be an intentional change to the balance of the races. The legacy and the modern build keep the retail behavior.
 
 ### An AI light cycle only looks at the first trail of each cyclist
 
@@ -449,7 +445,7 @@ the trail of the loop, so the AI does not see older trails (those left by
 a trail spike or a derez) in its forward and side probes. CheckPath
 (0x100036b9) indexes the trails properly.
 
-Not fixed yet: the modern build should check `collTrails[j]`.
+Fixed in the modern build: TRON/AILightCycle.cpp (Probe and ProbeAll test collTrails[j]), MODERN.md GAME-70. The AI sees the older trails of a cyclist too.
 
 ### An AI light cycle's trigger messages read past a light cycle message
 
@@ -458,7 +454,7 @@ MID_LIGHT_CYCLE_INFO case falls through into MID_TRIGGER after
 LCI_START_UPDATING, which then reads the rest of the message as a trigger
 string pointer.
 
-Not fixed yet: the modern build should break after that case.
+Fixed in the modern build: TRON/AILightCycle.cpp (the case returns LT_OK, as the retail path after the trigger code), MODERN.md GAME-71.
 
 ### Loading object.lto leaks or mis-frees its class module on an error
 
@@ -470,8 +466,7 @@ runtime's `free()` and not with LTMemFree. LTMemAlloc uses `malloc()` in
 this engine, thus only the leak is a real fault. The game then fails to
 start the world either way, so it only shows as a leak.
 
-Not fixed yet: the modern build should allocate it after the binding
-succeeds and release it with LTMemFree.
+Fixed in the modern build: the engine's shared/src/classbind.cpp (the module is allocated after the binding succeeds, and freed with LTMemFree), MODERN.md EN-80. Lithtech.exe compiles the same file.
 
 ### A refused connection leaves the client waiting on a closed socket
 
@@ -500,20 +495,6 @@ and the game's own local server is linked into it: only server.dll (the
 dedicated server's) can crash this way.
 
 Not fixed yet.
-
-### The dedicated server hosts a config it could not read
-
-TRONSrv.exe 0x40b185 (CServerDlg::DoHost, src/Game/ServerApp/ServerDlg.cpp).
-Once the config file has parsed, DoHost calls
-`ServerGameOptions::LoadFromBute` and goes on whatever it returns; NOLF2's
-returned `IDS_NETERR_CORRUPTCONFIG` ("The config file could not be read
-properly") when it failed. A config with a bad or missing setting is hosted
-with whatever the options held, and the error that exists for it is never
-shown. (Tron's LoadFromBute returns false only when it had to correct the
-options -- a backslash in the server name, more than 8 light cycle players
--- so the config is hosted, corrected, either way.)
-
-Not fixed yet (the modern build's server work, `MODERN.md`).
 
 ### A saved tournament mode is never loaded back
 
@@ -1019,20 +1000,6 @@ reading past the end of a shorter argument.
 Fixed in the modern build: ActiveWorldModel.cpp (TRON20SRC_MODERN parses
 the argument, up to its length) (MODERN.md GAME-6).
 
-### The archive bin's, I/O node's and optimizer's loop sounds do not loop
-
-Object.lto 0x10011110 (ArchiveBin::PlayLoopSound), 0x10024bc0
-(IONode::PlayLoopSound), 0x10032420 (Optimizer::PlayLoopSound;
-TRON/ArchiveBin.cpp, IONode.cpp, Optimizer.cpp). Each plays its "LoopSound"
-property with PLAYSOUND_ATTACHED | PLAYSOUND_GETHANDLE (0x18, at 0x10011161,
-0x10024c11, 0x10032465) rather than PLAYSOUND_LOOP | PLAYSOUND_GETHANDLE
-(0x14, which Tron's turret passes for its loop at 0x1006ca5d): the sound is
-kept by handle so it can be killed, but it plays once and stops. Unless the
-sound files themselves loop, a level designer's loop sound is heard only
-when the object starts or loads.
-
-Not fixed yet: the modern build should add PLAYSOUND_LOOP.
-
 ### An EventCounter's REPORT message is registered as a second RESET
 
 Object.lto 0x10260d30 (EventCounter's command manager table,
@@ -1058,7 +1025,7 @@ point to the AI's position (0x10231aff jumps back to 0x102319da). The
 direction to the second point is never returned, and for an AI standing on
 the first control point the result divides a zero vector by zero.
 
-Not fixed yet: the modern build should return after the two-point case.
+Fixed in the modern build: ObjectShared/AIPath.cpp (it returns the direction to the second control point; an AI on the only control point gets its forward vector), MODERN.md GAME-72. The direction for one control point stays retail's (from the control point to the AI).
 
 ### The sound screen ignores the EAX toggle's layout
 
@@ -1078,7 +1045,7 @@ its argument to the SkyFogNearZ console variable, not to
 DrawAllModelShadows. NOLF2 has the same bug. A level that sends it changes
 the sky fog and never the model shadows.
 
-Not fixed yet: the modern build should write szDrawAllModelShadows.
+Fixed in the modern build: ObjectShared/WorldProperties.cpp (it writes DrawAllModelShadows), MODERN.md GAME-73.
 
 ### A failed level load restores the level name from freed memory
 
@@ -1089,7 +1056,7 @@ CString), sets the new level name, and gives the kept pointer back to
 SetCurLevel when the load fails. The assignment can free or reuse that
 buffer, so the restored name can be garbage.
 
-Not fixed yet: the modern build should copy the old name first.
+Fixed in the modern build: ObjectShared/ServerSaveLoadMgr.cpp (a copy of the old name), MODERN.md GAME-74.
 
 ### A relation's timer takes an end time as its duration
 
@@ -1102,8 +1069,7 @@ The timer therefore stops at twice the current time plus the lifetime, not
 at the current time plus the lifetime: a temporary relation lasts longer
 the later in the level it is reset.
 
-Not fixed yet: the modern build should start the timer with the lifetime
-only.
+Fixed in the modern build: ObjectShared/RelationButeMgr.cpp (the timer starts with the lifetime), MODERN.md GAME-75. CRelationUser::AddRelation (retail 0x101680a9..0x101680e3) gives the same sum to the momento's constructor, which starts the timer with it. The modern build gives the lifetime there too.
 
 ### Following bouncy chunks and particle systems do not follow
 
@@ -1139,7 +1105,7 @@ FindObjectsTouchingSphere. The function does not give the list back with
 RelinquishList. The engine therefore loses one object list for each frame
 while a prankster bit catches targets.
 
-Not fixed yet: the modern build should call RelinquishList on the list.
+Fixed in the modern build: TRON/ProjectilePrankster.cpp (RelinquishList), MODERN.md GAME-76.
 
 ### A disc game team change can use a null player
 
@@ -1150,8 +1116,7 @@ path: when the player is not found, it reads 0x31ca of a null pointer and
 writes 0x31c9 through it. The server crashes when the client left the team
 list before the move completes.
 
-Not fixed yet: the modern build should skip the colour when the player is
-not found.
+Fixed in the modern build: TRON/ServerDiscMatchMgr.cpp (no player, no colour), MODERN.md GAME-90.
 
 ### The energy claw's range data uses a wrong subroutine name
 
@@ -1200,7 +1165,7 @@ know, ReadProp prints "Explosion::ReadProp - No such ammo type %s". It gives
 the first character of the name as the argument, not the name. The %s then
 reads a pointer from that small number, and the print can crash the server.
 
-Not fixed yet: the modern build should give the name.
+Fixed in the modern build: ObjectShared/Explosion.cpp (the name), MODERN.md GAME-77.
 
 ### An arena's plugin checks the wrong properties as commands
 
@@ -1212,7 +1177,7 @@ goes to the command manager plugin, and so do the six names (a name can not
 be equal to all six). In the editor, the Arena property can be reported as a
 bad command.
 
-Not fixed yet: the tools are written again later; the test should use "!".
+Fixed in the modern build: TRON/Arena.cpp (the tests use "!"), MODERN.md GAME-78. Only the editor runs this code.
 
 ### The help menu tests the wrong item before it shows the first file
 
@@ -1270,7 +1235,7 @@ starts from the identity rotation, and then adds the offset of the object.
 Thus, when the keyframer has no target and does not align to the path, the
 objects go to the position of the first key with a wrong rotation.
 
-Not fixed yet: the modern build should start from the rotation of the key.
+Fixed in the modern build: ObjectShared/KeyFramer.cpp (each object starts from the rotation of the key), MODERN.md GAME-79.
 
 ## CScreenSubroutines::OnFocus resets the wrong fade time (CShell.dll)
 
@@ -1305,7 +1270,7 @@ current member, which is in radians. When an override file
 (LoadOverrideButes) does not give a zone, the function converts the radian
 value again, and the zone becomes approximately 57 times too small.
 
-Not fixed yet: the modern build should give the default in degrees.
+Fixed in the modern build: Shared/WeaponMgr.cpp (the default is in degrees), MODERN.md GAME-80.
 
 ### Adding gear does not check that the gear exists
 
@@ -1315,7 +1280,7 @@ CWeaponMgr::GetGear only before it reads bExclusive. Then it reads fArmor
 and fHealth from the pointer without a test. A gear ID that is in range but
 has no GEAR record causes a null pointer read.
 
-Not fixed yet: the modern build should return when the pointer is null.
+Fixed in the modern build: ObjectShared/Destructible.cpp (no GEAR record, no gear added), MODERN.md GAME-81.
 
 ### The disc class data does not keep its "Controlable" value
 
@@ -1349,8 +1314,7 @@ the first group (PF_GROUP(8)), not of their own groups (PF_GROUP(9) and
 PF_GROUP(10)). DEdit shows these two properties in the first item's group.
 The game reads them by name, thus play is not affected.
 
-Not fixed yet: the modern build should give each HelpFile the group of its
-item.
+Fixed in the modern build: ObjectShared/Character.cpp (PF_GROUP(9) and PF_GROUP(10)), MODERN.md GAME-82. Only the editor shows the groups.
 
 ### A console variable oscillation has a wrong center
 
@@ -1396,8 +1360,7 @@ flags on the object. Thus, after a saved game loads, a projectile has the
 flags that the engine gave it, not the flags that it had when the game was
 saved (for example, the visible flag that DoProjectile sets).
 
-Not fixed yet: the modern build should set the saved flags with
-SetObjectFlags (OFT_Flags, FLAGMASK_ALL).
+Fixed in the modern build: ObjectShared/Projectile.cpp (SetObjectFlags with the saved flags), MODERN.md GAME-83.
 
 ### A lens flare message is read one field past its end
 
@@ -1426,8 +1389,7 @@ Also, when an OBB that has no skeleton node is nearer than the nearest hit
 so far, the function sets eModelNodeInvalid in the hit. Thus a hit on an OBB
 that it tested before is lost.
 
-Not fixed yet: the modern build should keep the distance and the hit box
-user in the hit, and ignore OBBs that have no node.
+Fixed in the modern build: ObjectShared/CharacterHitBox.cpp (the nearest OBB with a node gives the node, the distance along vDir and the hit box user), MODERN.md GAME-84.
 
 ### The handshake does not mask a short player name
 
@@ -1440,8 +1402,7 @@ use the bitwise operator &. Thus the tests are always false (or do
 nothing), and the bytes after the terminator go into the password. The
 compiler removes the tests. Build 51 has the same code.
 
-Not fixed yet: the modern build should use & (the client must make the
-same change).
+Not fixed: the password is part of the network protocol. The client makes it from the same bytes in the same way, thus the handshake works. If only one side used "&", a modern server and a retail client (or the opposite) would not agree for a name of less than four characters. The legacy and the modern build keep the retail code on the server and on the client.
 
 ### A random node search without an AI can return a bad pointer
 
@@ -1454,7 +1415,7 @@ variable, and the function returns an uninitialized pointer. The only
 caller (CAIGoalAttackFromRandomVantage::FindNearestAttractorNode) always
 gives an AI, so the game does not hit this.
 
-Not fixed yet: the modern build should return NULL when there is no AI.
+Fixed in the modern build: ObjectShared/AINodeMgr.cpp (without an AI, a random node of the list, or NULL), MODERN.md GAME-85.
 
 ### An edit control without text makes a wide string from a null pointer
 
@@ -1538,8 +1499,7 @@ the disc has ammo data. When it has none, it uses a null class data pointer
 and reads the smite FX name at offset 0x164 from it. A disc always has ammo
 data after Setup, so the game does not show the bug.
 
-Not fixed yet: the modern build should not play the FX when the class data
-is not there.
+Fixed in the modern build: TRON/ProjectileDisc.cpp (no class data, no FX), MODERN.md GAME-86.
 
 ### A grenade bounce reads the projectile FX of a grenade with no ammo data
 
@@ -1549,8 +1509,7 @@ dampening by the projectile FX's Elasticity. The functions do not examine
 m_pAmmoData or its projectile FX before they read it. A grenade always has
 ammo data after Setup, so the game does not show the bug.
 
-Not fixed yet: the modern build should use no elasticity scale when the
-data is not there.
+Fixed in the modern build: ObjectShared/ProjectileTypes.cpp (no elasticity scale without the data), MODERN.md GAME-87.
 
 ### A failed use object path trace can read a null node
 
@@ -1665,7 +1624,7 @@ set. The message "Early out - Not a character!" uses the variable
 names are case-sensitive, thus this one message does not show with the
 other messages. It has no effect on the game.
 
-Not fixed yet: the modern build can use the correct name.
+Fixed in the modern build: ObjectShared/AIGoalSpecialDamage.cpp (AIShowEnergyClawDamage), MODERN.md GAME-88.
 
 ### The tracked node manager reports the wrong flag as discomfort
 
@@ -2044,6 +2003,22 @@ Not changed in the DirectMusic path. The modern build's own music player
 - Contract J.A.C.K.'s CD3DDrawPrim::SetCamera writes the camera's size into
   the saved viewport and leaves the new viewport's size unset: Tron's is
   Build 69's (0x41d8e0; its own bug is above).
+- NOLF2's dedicated server stops with `IDS_NETERR_CORRUPTCONFIG` when
+  `ServerGameOptions::LoadFromBute` fails. Tron's `CServerDlg::DoHost`
+  (TRONSrv.exe 0x40b185) does not examine the result, but Tron's
+  LoadFromBute returns false only when it has corrected the options (a
+  backslash in the server name, more than 8 light cycle players). A
+  missing key keeps its default. Thus the server hosts the corrected
+  options, and that is correct.
+- The loop sounds of the archive bin, the I/O node and the optimizer
+  (`PlayLoopSound`, Object.lto 0x10011110, 0x10024bc0, 0x10032420) are
+  played without PLAYSOUND_LOOP, but this is not a bug. The sound comes
+  from a model key (`BUTE_SOUND_KEY_LOOPING <sound set>`), and
+  `PlaySoundFromObject` adds the flags of the sound set. The retail sound
+  sets that loop (`finderidle`, `finderscan`, `finderseek`, `finderalarm`)
+  have `LoopSound = 1`. The optimizer's `opti_graze` does not, and its
+  model keys start it again in each animation. Thus the sounds play as
+  the data tells them.
 
 ### A cloned tracking node that is not made is not reported
 
