@@ -12,13 +12,16 @@ shipped autoexec.cfg and default profile, and, as third-party runtime,
 RAD's binkw32.dll (legacy builds only) and the Microsoft C, C++ and MFC
 runtime (MANIFEST.txt's `data` and `THIRD-PARTY` rows of the retail
 release). The public archive (build/package.sh) leaves all of that out,
-and two scripts put it back from the player's own images of the two discs
-of Tron 2.0 (USA) and the executable of its Update 2 (v1.030, the
+and three scripts put it back from the player's own images of the two
+discs of Tron 2.0 (USA) and the executable of its Update 2 (v1.030, the
 "complete" update, tron-update_v1x2_complete.exe):
 
   linux-install.sh       bash, coreutils and python3 (its zlib inflates)
   windows-install.bat    cmd running the PowerShell it carries (5.1, as every
                          Windows 10 and 11 has; .NET's DeflateStream inflates)
+  mac-install.command    the Perl every Mac has, with its own modules (its
+                         Compress::Raw::Zlib inflates), for CrossOver or
+                         another Wine
 
 A disc image can be a plain .iso, or a raw .bin (2352-byte sectors, with
 its .cue) or a .zip that holds one: the scripts convert it to an .iso
@@ -75,6 +78,7 @@ without it (NODISCS=1: it has the file NOT-PLAYABLE.txt) has no game data to
 check, and gives the same scripts.
 
 Writes <outdir>/linux-install.sh, <outdir>/windows-install.bat,
+<outdir>/mac-install.command,
 <outdir>/disc-files.txt (the game directory's paths that the scripts write:
 the archive leaves them out), <outdir>/disc-dirs.txt (the directories that
 only the scripts fill: the archive leaves them out too),
@@ -352,6 +356,13 @@ def main():
     with open(os.path.join(outdir, "linux-install.sh"), "w", newline="\n") as fh:
         fh.write(body + MARKER + "\n" + "\n".join(data) + "\n")
     os.chmod(os.path.join(outdir, "linux-install.sh"), 0o755)
+
+    perl = open(os.path.join(SCRIPTS, "mac-install.command")).read()
+    if not perl.endswith("\n__END__\n"):
+        sys.exit("mkinstall: mac-install.command must end with __END__ (the list follows it)")
+    with open(os.path.join(outdir, "mac-install.command"), "w", newline="\n") as fh:
+        fh.write(perl + MARKER + "\n" + "\n".join(data) + "\n")
+    os.chmod(os.path.join(outdir, "mac-install.command"), 0o755)
 
     ps = open(os.path.join(SCRIPTS, "windows-install.ps1")).read()
     psm = f"#__{TAG}_PS__"

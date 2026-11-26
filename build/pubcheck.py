@@ -17,7 +17,8 @@ its name. It fails if:
     the aim of the legacy build: it is listed, and it does not fail;
   * a file of the archive is not one that we build or write: a `built` or
     `EXT` row of <gamedir>/MANIFEST.txt (or a non-retail `THIRD-PARTY` one,
-    or an `ours` one: a file of our source, as the DirectMusic manifest),
+    or an `ours` one: a file of our source, as the DirectMusic manifest
+    and the run scripts linux-run.sh and linux-server.sh),
     the .pdb and .map of a built binary, MANIFEST.txt, tron20cmds.txt,
     LICENSE_NOTES.md and licenses/, the install scripts and SHA256SUMS;
   * a file holds a home directory or a user's directory (/home/, /Users/,
@@ -41,7 +42,7 @@ import mkinstall  # noqa: E402
 
 RELEASE = mkinstall.RELEASE
 OURS = {"MANIFEST.txt", "tron20cmds.txt", "LICENSE_NOTES.md", "linux-install.sh",
-        "windows-install.bat", "SHA256SUMS"}
+        "windows-install.bat", "mac-install.command", "SHA256SUMS"}
 PRIVATE = re.compile(rb"(?i)/home/|/Users/|\\Users\\|Documents and Settings")
 CHUNK = 1 << 20
 

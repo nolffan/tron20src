@@ -86,7 +86,7 @@ NOLF2 and Contract J.A.C.K. have.
 | 7 | `boot`: the built binaries in the game under Wine, to the menu, a level, saving and loading (`make test`, ext/tools/playtest.sh) | 3-6 | legacy release: the menus, the first level, saving and loading, a light-cycle race (`make tests`, below) |
 | 8 | `match`: byte-matching, module by module, ratcheted by `make progress` | 3-6 | |
 | 9 | `modern`: the modern build (`TRON20SRC_MODERN`, `MODERN.md`) | 7 | done under Wine, except the music: every item of the list below is in `MODERN.md` with its tests; Microsoft's DirectMusic is in the game directory, but Tron 2.0's music stays silent under Wine (X-3, open). To check on real hardware: antialiasing and anisotropic filtering on a graphics card, a real controller, Windows itself, Internet play on OpenSpy's public servers |
-| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`build/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts (tested from the disc images for legacy and modern), the CI with the nightly and tagged releases |
+| 10 | `release`: `-private`/`-public` archives, install scripts from the player's own discs and Update 2 (`build/mkinstall.py`), and the GitHub Actions workflow building the public archives with `make progress` on the legacy release | 7, 9 | done (below): the archives of the four variants, the install scripts for Linux, Windows and macOS (tested from the disc images for legacy and modern), the run scripts `linux-run.sh` and `linux-server.sh` (tested in the build container), the CI with the nightly and tagged releases. To check on real hardware: the run scripts on a Linux desktop and a Steam Deck, `mac-install.command` on a Mac |
 
 ## Notes per package
 
@@ -630,6 +630,52 @@ use them.
   directory>`: ALIVE). The PowerShell of `windows-install.bat`, run with
   PowerShell 7 on Linux, gives the same files. It is not yet tested with
   Windows PowerShell 5.1 on Windows.
+- **The run scripts** (`build/game-scripts/linux-run.sh`,
+  `linux-server.sh`, from cjacksrc's; `build/all.sh` copies them into
+  the game directory with `ours` rows in `MANIFEST.txt`, so both archives
+  have them, executable, with LF endings). Each finds the build by its
+  files (`TronLauncher.exe`: modern), so one script serves both builds.
+  `linux-run.sh` starts `Tron.exe` with Wine in the prefix
+  `~/.wine-tron20`: in the modern build the direct start (APPS-1, APPS-2;
+  `--launcher`: `TronLauncher.exe`), in the legacy build the retail
+  launcher, for which it writes the setup's and Update 2's registry
+  values and a CD-ROM drive with an empty `TRON.EXE` (the legacy launcher
+  wants disc 1). The first display: MODERN.md APPS-4 (modern); the legacy
+  build gets `++windowed 1`. No other workaround is needed under Wine 9.0:
+  RAD's Bink plays the three logo movies in the legacy build (each shot
+  of `build/playtest-movies.txt` with `+DisableMovies 0` moving, then the
+  main menu), and Wine's own MP3 codec plays the legacy build's speech
+  (the M01-01 line "To pick up your disc ...", recorded with the other
+  sound classes at 0: 3.3 s with the envelope of speech, as the modern
+  build's). Contract J.A.C.K.'s retail sound driver droned on some
+  streamed lines with Wine's codec; `linux-run.sh --help` tells the
+  remedy (`winetricks l3codecx`) if Tron's does. `linux-server.sh` runs
+  `TRONSrv.exe` on `ServerData/<name>.txt` (`--config`; by default
+  `server.txt`, written if it is not there: Disc Arena, five worlds, port
+  27888, LAN only in the legacy build, an Internet game on OpenSpy in the
+  modern build; not "the only configuration", as cjacksrc's: the game
+  writes `Default.txt`, with no worlds, on its first run, and the server
+  waits forever on it),
+  headless under `xvfb-run` without a display, in its own prefix
+  `~/.wine-tron20-server`. Headless, the script runs itself again under
+  `xvfb-run`, so that the setup of the prefix and the server are on the
+  same virtual display. `ServerData/` is now one of the places the
+  install scripts allow and the archives leave out.
+- **`mac-install.command`** (Perl, `build/game-scripts/`, from cjacksrc's,
+  with Tron's list: the update in a `.zip`, the `F` records with the name
+  last, files of ours with source `-`, and `check_dir`). `build/mkinstall.py`
+  appends the same list as to `linux-install.sh`. Tested with Perl 5 on
+  Linux: from the two `.iso` images and the update in a `.zip`, it writes
+  the 21 files and `sha256sum -c SHA256SUMS` passes; a second run keeps
+  them; a foreign file stops it. Not yet run on a Mac.
+- **Tests of the run scripts** (`make scripttest SCRIPTTEST_GAME=<dir>`,
+  `build/scripttest.sh`): the public archives of the legacy and the
+  modern release, installed with `linux-install.sh`; `linux-run.sh` with
+  a new HOME (so a new prefix) on Xvfb: the legacy launcher, Play, the
+  detail setting, the main menu (800x600); the modern build to the main
+  menu in a borderless 1280x720 window. Then `linux-server.sh` with no
+  display, and `linux-run.sh -gogame +join 127.0.0.1:27888 +gametype
+  DiscArena` joins it.
 - **Reproducible.** `build/pestamp.py` sets the link times of the game
   directory's binaries (and the `.pdb` signatures, the `.map` times) to
   2000-01-01. The archives have fixed times, sorted names and no owner

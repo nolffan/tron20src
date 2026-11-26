@@ -29,8 +29,8 @@
 # run from the discs or the update, and nothing else is changed. It can be
 # run again: a file already in place is checked and kept, and saves,
 # profiles, settings, logs and screenshots are left alone. Then play with
-# `wine Tron.exe` (the modern build) or `wine Lithtech.exe -cmdfile
-# tron20cmds.txt`.
+# ./linux-run.sh (Wine, through Tron.exe), and host a dedicated server with
+# ./linux-server.sh (./linux-run.sh --help, ./linux-server.sh --help).
 #
 # Tron 2.0's setup and its update store their files compressed, in
 # InstallShield cabinets (those of the update are in a Microsoft cabinet
@@ -53,8 +53,8 @@ data() { sed -n '/^__TRON20_INSTALL_DATA__$/,$p' "$SELF" | tail -n +2; }
 # archive's last file) lists every file the archive holds and every file
 # this script writes. Each of the archive's must be here as it was shipped,
 # and nothing may be here that is neither, nor what the game writes as it
-# runs (saves, profiles, settings, logs, screenshots, the launcher's command
-# file, mods) nor a disc image or the update -- which is what copying the
+# runs (saves, profiles, server configurations, settings, logs, screenshots,
+# the launcher's command file, mods) nor a disc image or the update -- which is what copying the
 # release over another installation, or over an older release, leaves.
 check_dir() {
     local sums="$HERE/SHA256SUMS" sha rel tag n=0
@@ -80,7 +80,7 @@ check_dir() {
         case "$rel" in
         SHA256SUMS|autoexec.cfg|display.cfg|tron20.ini|launchcmds.txt|run-cmds.txt|BanList.txt) ;;
         tron-update_v1x2_complete.exe) ;;
-        Save/*|Profiles/*|custom/Mods/*|custom/Resources/*) ;;
+        Save/*|Profiles/*|ServerData/*|custom/Mods/*|custom/Resources/*) ;;
         *.part|*/Thumbs.db|Thumbs.db|*/desktop.ini|desktop.ini|*/.DS_Store|.DS_Store) ;;
         */*) extra+=("$rel") ;;
         *.log|*.bmp|*.tga|*.iso|*.bin|*.cue|*.zip) ;;    # top level only
@@ -435,9 +435,6 @@ for l in lines:
         written += 1
 os.makedirs(os.path.join(here, "Save"), exist_ok=True)
 print(f"done: {written} files written, {kept} already in place.")
-if os.path.isfile(os.path.join(here, "TronLauncher.exe")):
-    print("Play with: wine Tron.exe (or the launcher, wine TronLauncher.exe)")
-else:
-    print("Play with: wine Lithtech.exe -cmdfile tron20cmds.txt")
+print("Play with: ./linux-run.sh (./linux-run.sh --help tells more)")
 PY
 exit 0

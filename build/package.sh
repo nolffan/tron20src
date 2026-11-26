@@ -14,9 +14,12 @@
 #                               retail game (MANIFEST.txt's `data` and
 #                               `THIRD-PARTY` rows of tron2-usa-1.030): only
 #                               what we build, the licence notes of the
-#                               open-source code in it, and the install
-#                               scripts linux-install.sh and
-#                               windows-install.bat, which copy the rest out
+#                               open-source code in it, the run scripts
+#                               linux-run.sh and linux-server.sh (in both
+#                               archives: build/all.sh), and the install
+#                               scripts linux-install.sh,
+#                               windows-install.bat and mac-install.command,
+#                               which copy the rest out
 #                               of the player's own disc images and Update 2
 #                               (build/mkinstall.py, from build/retail-files.txt,
 #                               build/retail-ways.txt and build/retail-ranges.txt:
@@ -48,6 +51,8 @@
 # or time. Links are stored as the files they point to. Each archive is a
 # fresh install, whatever has been played in the directory: no saves (an
 # empty Save/), no logs, no player profiles but the shipped default one,
+# no server configurations (ServerData/, which the game's Host screens and
+# linux-server.sh write),
 # autoexec.cfg as the shipped one (autoexec.cfg.retail), tron20cmds.txt as
 # the build writes it (build/tron20cmds.sh), and none of the per-machine
 # state that the game and the tests create (tron20.ini, launchcmds.txt);
@@ -98,7 +103,7 @@ NAMES=(--transform="s|^$SB/private/|$NAME/|" --transform="s|^$SB/|$NAME/|")
 [ "$DIR" = "$NAME" ] || NAMES+=(--transform="s|^$DIR/|$NAME/|" --transform="s|^$DIR\$|$NAME|")
 # what neither archive holds: the per-machine state that the game, the
 # launcher and the tests write
-EXCLUDE=(--exclude="$DIR/Save/*" --exclude="$DIR/Profiles/*" --exclude="$DIR/autoexec.cfg"
+EXCLUDE=(--exclude="$DIR/Save/*" --exclude="$DIR/Profiles/*" --exclude="$DIR/ServerData" --exclude="$DIR/autoexec.cfg"
          --exclude="$DIR/tron20cmds.txt" --exclude="$DIR/NOT-PLAYABLE.txt" --exclude='*.log'
          --exclude="$DIR/tron20.ini" --exclude="$DIR/display.cfg" --exclude="$DIR/launchcmds.txt"
          --exclude="$DIR/run-cmds.txt" --exclude='*.part' --exclude="$DIR/SHA256SUMS"
@@ -138,7 +143,8 @@ echo "$DIR/MANIFEST.txt" >> "$S/exclude.txt"
 tar "${TAR[@]}" -C "$PARENT" -cf "$S/public.tar" "${EXCLUDE[@]}" \
     --anchored --no-wildcards --exclude-from="$S/exclude.txt" \
     "${NAMES[@]}" \
-    "$DIR" "${STAGED[@]}" "$SB/MANIFEST.txt" "$SB/linux-install.sh" "$SB/windows-install.bat"
+    "$DIR" "${STAGED[@]}" "$SB/MANIFEST.txt" "$SB/linux-install.sh" "$SB/windows-install.bat" \
+    "$SB/mac-install.command"
 # Last, SHA256SUMS: every file of the archive and every file the install
 # scripts write, but autoexec.cfg and Profiles/Default.prf, which the game
 # rewrites. `sha256sum -c SHA256SUMS` checks an install.

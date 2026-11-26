@@ -59,9 +59,9 @@ $lines = $text.Substring($at + 1 + $marker.Length) -split "`r?`n" | Where-Object
 # check_dir.) SHA256SUMS lists every file the archive holds and every file
 # this script writes. Each of the archive's must be here as it was shipped,
 # and nothing may be here that is neither, nor what the game writes as it
-# runs (saves, profiles, settings, logs, screenshots, the launcher's command
-# file, mods) nor a disc image or the update. Names compare without case, as
-# Windows does (a hashtable's keys and -like do).
+# runs (saves, profiles, server configurations, settings, logs, screenshots,
+# the launcher's command file, mods) nor a disc image or the update. Names
+# compare without case, as Windows does (a hashtable's keys and -like do).
 $sumsPath = Join-Path $here 'SHA256SUMS'
 if (-not (Test-Path -LiteralPath $sumsPath -PathType Leaf)) {
     Fail 'SHA256SUMS is missing: run windows-install.bat in the folder the release unpacked to'
@@ -85,7 +85,7 @@ foreach ($rel in $sums.Keys) {
 $extra = @()
 $top = @('SHA256SUMS', 'autoexec.cfg', 'display.cfg', 'tron20.ini', 'launchcmds.txt',
          'run-cmds.txt', 'BanList.txt', 'tron-update_v1x2_complete.exe')
-$anywhere = @('Save/*', 'Profiles/*', 'custom/Mods/*', 'custom/Resources/*', '*.part')
+$anywhere = @('Save/*', 'Profiles/*', 'ServerData/*', 'custom/Mods/*', 'custom/Resources/*', '*.part')
 $topPatterns = @('*.log', '*.bmp', '*.tga', '*.iso', '*.bin', '*.cue', '*.zip')
 $hereLength = $here.TrimEnd('\', '/').Length + 1
 foreach ($f in @(Get-ChildItem -LiteralPath $here -Recurse -File -Force)) {
