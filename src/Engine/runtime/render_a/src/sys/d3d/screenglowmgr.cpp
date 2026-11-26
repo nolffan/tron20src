@@ -28,6 +28,28 @@ static ConVar<int> g_CV_ScreenGlow_DrawCanvases("ScreenGlow_DrawCanvases", 1);
 
 extern void d3d_DrawSolidCanvases(const ViewParams& Params);
 
+#ifdef TRON20SRC_MODERN
+//------------------------
+// MODERN.md CL-36: the glow at the shape of a 4:3 screen. Retail renders the
+// glow into a square texture and stretches it over the view, so a texel (and
+// each halo) is as wide as the view's width / texture width: on a screen wider
+// than 4:3 the halos are wider than retail's, in the ratio of the screens'
+// shapes. With ScreenGlowAspect 1, the texture keeps its height and gets the
+// width at which a texel has the size of a texel on a 4:3 screen of the same
+// height. If the device can not make a texture of that width (only powers of
+// two), the texture stays square and the blur's horizontal offsets get the
+// difference instead. At 4:3 the texture is retail's and the scale is 1: the
+// glow is retail's. ScreenGlowAspect 0: retail's glow at every shape; 2: the
+// square texture and the scaled offsets also where the device can do better.
+static ConVar<int> g_CV_ScreenGlowAspect("ScreenGlowAspect", 1);
+
+//the width of the texture that UpdateGlowTexture must use as it is (not a power of two)
+static bool s_bModernGlowExactWidth = false;
+
+//the scale of the horizontal blur offsets (1: retail's)
+static float s_fModernGlowUScale = 1.0f;
+#endif
+
 //--------------------------------------------------------------------------------------------------
 // Utilities
 //
@@ -208,6 +230,44 @@ bool CScreenGlowMgr::SupportsGlowShader()
 //renders a screen glow over the screen with the specified texture dimensions
 bool CScreenGlowMgr::RenderScreenGlow(uint32 nGlowTexWidth, uint32 nGlowTexHeight, const SceneDesc& Scene)
 {
+#ifdef TRON20SRC_MODERN
+	//MODERN.md CL-36: the width of the texture for the shape of the view
+	s_bModernGlowExactWidth = false;
+	s_fModernGlowUScale		= 1.0f;
+
+	uint32 nModernHeight	= TruncateToPowerOf2(nGlowTexHeight);
+	int32  nModernViewW		= g_ViewParams.m_Rect.right - g_ViewParams.m_Rect.left;
+	int32  nModernViewH		= g_ViewParams.m_Rect.bottom - g_ViewParams.m_Rect.top;
+
+	if(g_CV_ScreenGlowAspect.m_Val && (nModernHeight != 0) && (nModernViewW > 0) && (nModernViewH > 0))
+	{
+		nModernHeight = LTCLAMP(nModernHeight, MIN_GLOW_TEXTURE_SIZE, MAX_GLOW_TEXTURE_SIZE);
+
+		//the width at which a texel covers what it covers on a 4:3 view of the same height
+		//(exactly the height at 4:3)
+		float fWantWidth = (float)nModernHeight * (float)(nModernViewW * 3) / (float)(nModernViewH * 4);
+
+		//can the device make a render target that is not a power of two wide? (no mip maps,
+		//clamped: what NONPOW2CONDITIONAL permits)
+		DWORD nTexCaps = g_Device.GetDeviceCaps()->TextureCaps;
+		//(ScreenGlowAspect 2: always the square texture, to test that way)
+		if((g_CV_ScreenGlowAspect.m_Val != 2) &&
+			(!(nTexCaps & D3DPTEXTURECAPS_POW2) || (nTexCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL)))
+		{
+			nGlowTexWidth = (uint32)(fWantWidth + 0.5f);
+			nGlowTexWidth = LTCLAMP(nGlowTexWidth, MIN_GLOW_TEXTURE_SIZE, MAX_GLOW_TEXTURE_SIZE);
+			s_bModernGlowExactWidth = true;
+		}
+		else
+		{
+			//retail's square texture: the blur's offsets take the difference
+			nGlowTexWidth = nModernHeight;
+		}
+
+		s_fModernGlowUScale = (float)nGlowTexWidth / fWantWidth;
+	}
+#endif
+
 	//handle the shader. If the device can't run it, the blur falls back to the two texture
 	//approach (see RenderSceneToTexture), so this doesn't fail the glow
 	UpdateShader();
@@ -291,7 +351,13 @@ bool CScreenGlowMgr::UpdateShader()
 bool CScreenGlowMgr::UpdateGlowTexture(uint32 nWidth, uint32 nHeight)
 {
 	//get the dimensions of the texture
+#ifdef TRON20SRC_MODERN
+	//MODERN.md CL-36: RenderScreenGlow's width for the view's shape is used as it is
+	if(!s_bModernGlowExactWidth)
+		nWidth = TruncateToPowerOf2(nWidth);
+#else
 	nWidth = TruncateToPowerOf2(nWidth);
+#endif
 	nHeight = TruncateToPowerOf2(nHeight);
 
 	//look for invalid textures
@@ -693,7 +759,12 @@ bool CScreenGlowMgr::RenderBlendedTexture(bool bUsePixelShader)
 		if(!SetRenderTarget(m_pBlendTexture, NULL))
 			return false;
 
+#ifdef TRON20SRC_MODERN
+		//MODERN.md CL-36: the horizontal offsets for the view's shape (1 at 4:3)
+		RenderBlendedTextureDirectionPS(fUVScale, s_fModernGlowUScale, 0.0f);
+#else
 		RenderBlendedTextureDirectionPS(fUVScale, 1.0f, 0.0f);
+#endif
 
 		//now render it blended in the V direction
 		InstallTexture(NULL, 4);
@@ -745,7 +816,12 @@ bool CScreenGlowMgr::RenderBlendedTexture(bool bUsePixelShader)
 		if(!SetRenderTarget(m_pBlendTexture, NULL))
 			return false;
 
+#ifdef TRON20SRC_MODERN
+		//MODERN.md CL-36: the horizontal offsets for the view's shape (1 at 4:3)
+		RenderBlendedTextureDirection2Texture(fUVScale, s_fModernGlowUScale, 0.0f);
+#else
 		RenderBlendedTextureDirection2Texture(fUVScale, 1.0f, 0.0f);
+#endif
 
 		//now render it blended in the V direction
 		InstallTexture(NULL, 2);

@@ -1,0 +1,14 @@
+# playtest-glow.txt -- the modern build's screen glow at the shape of the
+# screen (docs/MODERN.md CL-36): the first level, into control, then a shot
+# of the view. The glow must be on: the shipped profile has it off, so run
+# it on a copy of the game directory (cp -al) whose Default.prf.retail and
+# Profiles/Default.prf (copies, not links) have "ScreenGlowEnable = 1".
+# PLAYTEST_CFG sets ScreenGlowAspect 0, 1 or 2 (and ScreenGlowShowTexture
+# 1 with ScreenGlowShowTextureScale 1: the glow texture over the whole
+# screen), at PLAYTEST_RES 1024x768, 1920x1080, 2560x1080 and 1280x1024.
+# build/glowmeasure.py measures the halos in the shot.
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+wait 3
+shot glow-start

@@ -96,6 +96,7 @@ executable, or in the console), new or with a changed meaning.
 | `Anisotropic` | int | 0 | existing: now the degree of anisotropic filtering (0 off, 2, 4, 8, 16), held to what the card can do; the Performance screen's "Anisotropic filtering" | EN-34, CL-34 |
 | `FovX`, `FovY` | float | 90, 78 | existing: the field of view in play, degrees, for a 4:3 screen (the engine widens it for the screen's shape, EN-30); the Display screen's "Field of view" sets `FovX` (60 to 120) and `FovY` with retail's shape of view | CL-33 |
 | `Cinematics43` | int | 0 | 1: on a screen wider than 4:3, the sides beyond the centred 4:3 area are black while the cinematic letterbox is up; the Display screen's "4:3 cinematics" | CL-32 |
+| `ScreenGlowAspect` | int | 1 | the screen glow's halos at the shape that they have on a 4:3 screen, at every shape of screen; 0: retail's glow (stretched across on a wider screen); 2: as 1, but always with the square texture (the way for a card that can make only textures of a power of two wide) | CL-36 |
 | `RawMouse` | int | 1 (no variable) | 0: the system mouse from DirectInput (EN-23), not from raw input | EN-24 |
 | `JoystickDisable` | int | 0 | existing (the launcher's "Disable Joysticks" sets it through `DisableJoystick 1`); now also disables the controller, `##gamepad`, and the client's own reading of the pad | EN-21, CL-20 |
 | `PadLookSpeed` | float | 1 | the controller's right stick: its turn rate, times 180 degrees a second across and 120 up and down; the Controller screen's "Look speed" (25 to 300) | CL-20, CL-23 |
@@ -973,6 +974,65 @@ ClientResShared.h`, `ClientRes/TRON/ClientRes.rc`); the launcher's
   desktop's if listed, else 1024x768, 800x600, 640x480 (retail looked for
   16-bit modes, which the list never has) (`Launcher/DisplayMgr.cpp`
   `ReadConfigFile`, `SetDefaultParameters`).
+* **CL-36: the screen glow at the shape of the screen.** The engine
+  draws the glowing parts of the scene again into a square texture
+  (`ScreenGlowTextureSize`, 256 by 256), blurs it across and up and down,
+  and adds it over the view, stretched to the view's size. Thus a texel,
+  and each halo, has the shape of the view: 4:3 on a 4:3 screen (the look
+  that retail was tuned for), but on a wider screen each halo is wider,
+  in the ratio of the shapes (16:9: 1.33 times, 21:9: 1.78 times, for a
+  point), and on a 5:4 screen narrower (0.94 times). With
+  `ScreenGlowAspect 1` (the default) the texture keeps its height, and its
+  width becomes the height times the view's shape divided by 4:3 (256 by
+  341 at 16:9, 256 by 455 at 21:9, 256 by 240 at 5:4). Then a texel has
+  the size that it has on a 4:3 screen of the same height, and so does
+  each halo. A texture that is not a power of two wide is permitted when
+  the card can make one (`D3DPTEXTURECAPS_POW2` not set, or
+  `D3DPTEXTURECAPS_NONPOW2CONDITIONAL` set: the glow texture has no mip
+  maps and is clamped). If the card cannot, the texture stays square and
+  the blur's horizontal offsets get the scale (texture width) / (the
+  width above) instead (`ScreenGlowAspect 2` does this on every card, to
+  test it). Both blur ways change: the pixel shader's four textures and
+  the two textures of older cards. At 4:3 the width is the height and the
+  scale is exactly 1, so the glow is retail's. `ScreenGlowAspect 0` gives
+  retail's glow at every shape, for a comparison
+  (`render_a/.../screenglowmgr.cpp` `CScreenGlowMgr::RenderScreenGlow`,
+  `UpdateGlowTexture`, `RenderBlendedTexture`).
+
+  Tested: `build/playtest-glow.txt` (M01-01, into control, a shot) with
+  the glow on (the run's `Default.prf` with `ScreenGlowEnable = 1`; the
+  shipped profile has it off) at 1024x768, 1920x1080, 2560x1080 and
+  1280x1024, with `ScreenGlowAspect` 0, 1 and 2, `ScreenGlowEnablePS 0`
+  (the two-texture way) at 1920x1080, and the legacy build at 1024x768.
+  Each of them once with `ScreenGlowShowTexture 1` and
+  `ScreenGlowShowTextureScale 1` (the glow texture alone over the whole
+  screen) and once as full frames. `build/glowmeasure.py` (in the build
+  container) measures the halo of the yellow item marker, a round object
+  of the same size relative to the screen height at each shape wider than
+  4:3 (EN-30). In the glow texture, the halo's width / height where it is
+  above 0.1 of its peak (in the full frames the halo is over a bright
+  cyan background, and the script sees only the marker there; we looked
+  at those shots):
+
+  | Screen | Legacy | `ScreenGlowAspect 0` | `1` | `2` | `1`, `ScreenGlowEnablePS 0` |
+  |---|---|---|---|---|---|
+  | 4:3, 1024x768 | 1.14 | 1.12 | 1.11 | 1.13 | |
+  | 16:9, 1920x1080 | | 1.30 | 1.10 | 1.10 | 1.09 |
+  | 21:9, 2560x1080 | | 1.62 | 1.12 | 1.04 | |
+  | 5:4, 1280x1024 | | 1.11 | 1.17 | | |
+
+  Before the change the halo is 1.16 times (16:9) and 1.43 times (21:9)
+  as wide, relative to its height, as at 4:3 (less than 1.33 and 1.78:
+  the marker has a size of its own). After it, each shape is as 4:3,
+  within the differences between two runs (about 0.05: the player's view
+  at the start is not exactly the same in each run). At 5:4 the change is
+  small (0.94), less than these differences. In the shots the halos are
+  round at each shape after the change, and wide ovals at 21:9 before it.
+  At 4:3 the runs of the legacy build and the modern build (0, 1 and 2)
+  are the same within those differences; the code gives retail's texture
+  (256 by 256) and the scale 1 there. Not testable here: a card that can
+  make only textures of a power of two wide (`ScreenGlowAspect 2` does
+  the same as such a card).
 
 Tested (the modern build, under Xvfb at each size; every shot looked at):
 the menus, the first level and a light cycle race at 1280x720, 1920x1080,
@@ -1295,7 +1355,7 @@ APPS-2 and APPS-3 are done (above).
 
 ### Display
 
-CL-30 to CL-35 are done (above).
+CL-30 to CL-36 are done (above).
 
 ### Frame rate
 
