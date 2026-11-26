@@ -1005,7 +1005,12 @@ LTRESULT Model::Load(ModelLoadRequest *pRequest, const char* pFilename)
 				// string; the developer build's has): a debugging aid that,
 				// as netmgr.cpp's packet parser, only the server keeps
 #if !defined(_FINAL) || defined(DE_SERVER_COMPILE)
+#ifdef TRON20SRC_MODERN
+				// MODERN.md EN-72: no check when no child model is loaded
+				if(pModel && !CompareSkeletons(this, pModel))
+#else
 				if(!CompareSkeletons(this, pModel))
+#endif
 				{
 					buffer256 error_string("Model Load ERROR!!! Skeleton Mismatch between parent and child model: %s %s\n", pFilename, pModel->GetFilename());
 					dsi_PrintToConsole(error_string);

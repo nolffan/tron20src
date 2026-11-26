@@ -78,6 +78,10 @@ LTRESULT LoadSprite(FileRef *pFilename, Sprite **ppSprite)
             pSprite = spr_Create(pStream);
             if (!pSprite)
             {
+#ifdef TRON20SRC_MODERN
+                // MODERN.md EN-71: retail leaves the file open here
+                pStream->Release();
+#endif
                 g_pClientMgr->SetupError(LT_INVALIDSPRITEFILE, pFilenameString);
                 RETURN_ERROR_PARAM(1, LoadSprite, LT_INVALIDSPRITEFILE, pFilenameString);
             }

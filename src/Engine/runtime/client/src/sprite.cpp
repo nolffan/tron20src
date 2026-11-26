@@ -31,6 +31,11 @@ Sprite* spr_Create(ILTStream *pStream)
 	LT_MEM_TRACK_ALLOC(pSprite = (Sprite*)dalloc(sizeof(Sprite)),LT_MEM_TYPE_SPRITE);
 	memset(pSprite, 0, sizeof(Sprite));
 	pSprite->m_Link.m_pData = pSprite;
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-71: a link that spr_Destroy can remove. Retail leaves it
+	// zeroed, so each error return below writes through a NULL link.
+	dl_TieOff(&pSprite->m_Link);
+#endif
 
 	// Read in the animations
 	pSprite->m_nAnims = 1;  // Sprites only get one animation currently...
@@ -47,6 +52,16 @@ Sprite* spr_Create(ILTStream *pStream)
 		STREAM_READ(bTransparent);
 		STREAM_READ(bTranslucent);
 		STREAM_READ(colourKey);
+
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-71: a short or empty file, or a frame rate of 0, is
+		// an invalid sprite. Retail divides by the rate first (0x484ef9).
+		if (pStream->ErrorStatus() != LT_OK || nFrameRate == 0)
+		{
+			spr_Destroy(pSprite);
+			return LTNULL;
+		}
+#endif
 
 		// Allocate array for resource ID's
 		LT_MEM_TRACK_ALLOC(pAnim->m_Frames = (SpriteEntry*)dalloc(sizeof(SpriteEntry) * nFrames),LT_MEM_TYPE_SPRITE);

@@ -338,25 +338,36 @@ and its `Cos(x)` as `sin(x)`. Build 69's source has the same lines
 engines. The shipped .tfs scripts were written and tuned on it: a rotation
 built from the two is still a rotation, a quarter turn off.
 
-Not fixed yet (the engine is not rebuilt): the modern fix must also turn
-the shipped scripts' Sin and Cos round (or keep the swap for them), or
-every effect built on them moves a quarter turn.
+Not fixed: the shipped .tfs scripts are compiled for this engine and were
+tuned on the swap. A correct Sin and Cos in the engine turns every
+scripted effect a quarter turn, so the modern build keeps the swap.
+(TSFuncSin and TSFuncCos are compiled from our source now, with the
+retail bytes, `fld [esp+4]; fcos` and `fsin`.)
 
 ### Three render styles use a colour operation that does not exist
 
 RS/FULLBRIGHTON_ALPHA_SPECULAR.ltb (Game2.rez), PROPS/RS/ARCHIVECUBE.ltb
 and CHARS/RS/INNER_GLOW.ltb (Game.rez): the second texture stage of their
 only pass has colour op 19 (read from the files: the first stage has 3,
-MODULATE; stages 3 and 4 are 0), but ltrenderstyle.h has 16 colour ops
-(RENDERSTYLE_COLOROP_TYPE_COUNT). Build 69's renderer turns an op into
-Direct3D's through CRenderStyleLookupTables::m_nColorOp[16], with
-m_nAlphaOp right after it, so 19 reads m_nAlphaOp[3]: by NOLF2's tables
-D3DTOP_MODULATE. That much is inferred: Tron 2.0's renderer is not
-reconstructed, so its tables are not checked.
+MODULATE; stages 3 and 4 are 0), but Tron 2.0 has 17 colour ops (0 to 16,
+MODULATETEXALPHA last: ltrenderstyle.h, RENDERSTYLE_COLOROP_TYPE_COUNT).
+The device caps check (Lithtech.exe 0x51cc18) lets an op
+above 16 through. The renderer then turns the op into Direct3D's through
+CRenderStyleLookupTables::m_nColorOp[17], with m_nAlphaOp right after it
+(the constructor, 0x55d190, and CD3DRenderStateMgr::SetRenderStyleStates,
+0x553a30, are byte-identical to ours), so op 19 reads m_nAlphaOp[2],
+D3DTOP_SELECTARG2: the stage gives its second colour argument. That is
+the texture in INNER_GLOW and ARCHIVECUBE (ColorArg2 2, TEXTURE), and the
+result of the first stage in FULLBRIGHTON_ALPHA_SPECULAR (ColorArg2 0,
+CURRENT), as read from the developer build's copies of the files. The table
+is a constant static object, so the read stays in it and gives the same
+value each time. (An earlier version of this entry inferred 16 ops and
+D3DTOP_MODULATE from NOLF2's tables; the rebuilt renderer corrects it.)
 
-Not fixed yet (the engine is not rebuilt): the modern build should give
-these stages the op they mean (MODULATE, as they now get) in the files, or
-clamp an unknown op.
+Not fixed: harmless, because the read stays in the constant table and
+the three styles always render the same (SELECTARG2). Which op the
+artists meant is not known, so a different op only changes how they
+look.
 
 ### A lip-sync file's long node name overruns a stack buffer
 
@@ -381,10 +392,14 @@ stream's error status. The rez stream zeroes what it cannot read (Build
 69's RezFileStream::Read), so an empty file gives a rate of 0 and a divide
 by zero. FX/SPR/FAKE.SPR, FX/SPR/JETREZIN.SPR and
 INTERFACE/MENU/SPR/LOADING.SPR in Game.rez are 0 bytes; nothing loads
-them, so it never shows.
+them, so it never shows. Also, spr_Create leaves the sprite's link zeroed
+(0x484e1d), and each of its error returns calls spr_Destroy, whose
+dl_Remove writes through that NULL link (0x484fd7): a short sprite file,
+or a frame name longer than 1000 characters, is a crash too, not the
+LT_INVALIDSPRITEFILE that LoadSprite (0x47d510) expects. LoadSprite then
+leaves the file open.
 
-Not fixed yet (the engine is not rebuilt): the modern build should check
-the stream, or a rate of 0, before dividing.
+Fixed in the modern build: sprite.cpp, setupobject.cpp, MODERN.md EN-71.
 
 ### The pings HUD sets up only four of its eight pings
 
@@ -499,7 +514,7 @@ check (no "Skeleton Mismatch" string; the developer build's exe has it),
 and the game's own local server is linked into it: only server.dll (the
 dedicated server's) can crash this way.
 
-Not fixed yet.
+Fixed in the modern build: model_load.cpp, MODERN.md EN-72.
 
 ### The dedicated server hosts a config it could not read
 
@@ -547,7 +562,7 @@ of the buffer, then appends to it with LTStrCat; it only works because the
 first byte is cleared. The same line is in Jupiter's later netmgr.cpp. Only
 the ParseNet console variable's debug output uses it.
 
-Not fixed yet.
+Fixed in the modern build: netmgr.cpp, MODERN.md EN-73.
 
 ### A polystring's drop shadow takes the text colour at one corner
 
@@ -560,7 +575,7 @@ it. The formatted polystring's tag colouring (0x569550) makes the shadow
 black at the text's alpha, as was meant; probably `m_pColors[0] &
 0xff000000` was meant here.
 
-Not fixed yet.
+Fixed in the modern build: cuipolystring_impl.cpp, MODERN.md EN-74.
 
 ### A colour tag without three numbers reads past the end of the text
 
@@ -571,7 +586,8 @@ stopping at the string's end or at the tag's '>': a malformed tag such as
 "<color red>" walks on through the terminator into whatever memory follows
 the string.
 
-Not fixed yet.
+Fixed in the modern build: cuiformattedpolystring_impl.cpp, MODERN.md
+EN-75.
 
 ### Anisotropic filtering is never switched on
 
@@ -623,7 +639,8 @@ CreateFormattedPolyString took a `const char*`, for which NULL was safe;
 Tron's wide polystrings made it a crash. The game itself makes none of
 these widgets, so it is never reached in play.
 
-Not fixed yet.
+Fixed in the modern build: cuistatictext_impl.cpp, cuicheck_impl.cpp,
+MODERN.md EN-76.
 
 ### The MaxFPS frame limiter times the frame from garbage
 
@@ -896,9 +913,12 @@ fails at once, and the thread and the game's calls touch the fades
 unsynchronised: a fade can be freed or reassigned while the thread is
 stepping it. Term also closes the never-opened handle (0x100042d9). The
 driver should create the mutex (CreateMutexA in Init) and keep its handle
-in m_hSoundParamMutex for both sides.
+in m_hSoundParamMutex for both sides. Also, the game pauses the fades
+with SuspendThread (slot 29, 0x10005fa0). With a real lock, a thread
+suspended while it holds the lock stops every later fade call; and in
+retail, Term while the thread is suspended waits for it without end.
 
-Not fixed yet: the driver has no modern build of its own yet.
+Fixed in the modern build: s_dx8.cpp, MODERN.md EN-77.
 
 ### The sound driver blames the MP3 codec when the PCM converter is missing
 
@@ -910,7 +930,7 @@ source has the same code under `#ifndef _FINAL`; Tron's Final build shows
 it. The message should name the converter (and a missing MP3 codec, which
 fails silently, should be the one reported).
 
-Not fixed yet: the driver has no modern build of its own yet.
+Fixed in the modern build: s_dx8.cpp, MODERN.md EN-78.
 
 ### A streamed MP3's last block gives the codec the stale end of the block before
 
