@@ -425,8 +425,11 @@ void Pad_Update(float fFrameTime)
 
 	// not with the launcher's "Disable joysticks" (DisableJoystick 1: no
 	// AO_JOYSTICK, and the engine's JoystickDisable, EN-21)
+	// MODERN.md EN-70: and not while the engine's console is down (its
+	// keys and controls are the console's; GameClientShell.cpp)
 	s_bPad = (g_pInterfaceMgr->GetAdvancedOptions() & AO_JOYSTICK) &&
-		PadRead_Available() && GetForegroundWindow() == g_hMainWnd && PadRead_State(&s_Pad);
+		PadRead_Available() && GetForegroundWindow() == g_hMainWnd &&
+		!g_bModernConsoleUp && PadRead_State(&s_Pad);
 
 	if (!s_bPad)
 		memset(&s_Pad, 0, sizeof(s_Pad));

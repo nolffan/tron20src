@@ -112,6 +112,11 @@ public:
 	// Event handlers
 	void	OnKeyPress( uint32 key );
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: where the caret is, for drawing it
+	int		GetCursorPos() const { return m_iCursorPos; };
+#endif
+
 };
 
 // Tab-completion iterator base class
@@ -299,6 +304,25 @@ protected:
 	CUIFont*		m_Font;		// Using the CUI font mgr for printing text...
 	SharedTexture*	m_Tex;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: the console drawn in the modern build. Retail never
+	// makes m_Font (Tron's font manager makes fonts only from a font file),
+	// so its Draw draws no text. m_Font is now a font file of the game's,
+	// one polystring draws every line, scaled to a letter height for the
+	// screen's height.
+	CUIPolyString*	m_pModernStr;
+	uint32			m_nModernFontSize;		// the letter height asked for
+	uint32			m_nModernLineHeight;
+	bool			m_bModernFontTried;		// at this size: not again each frame
+
+	bool	ModernMakeFont( uint32 nScreenHeight );
+	void	ModernFreeFont();
+	int32	ModernTextWidth( const char *pText, int nChars );
+	void	ModernDrawText( const char *pText, int32 x, int32 y, CONCOLOR theColor, const LTRect &cClip );
+	void	ModernDrawBackground( const LTRect &cRect );
+	void	ModernComplete();
+#endif
+
 public:
 
 	CConsole();			
@@ -390,8 +414,14 @@ public:
 	// Draws a specified number of the text lines
 	void	DrawTextLines( int nTextLines, bool bScreen = false );
 
-	// Draws the entire contents of the console
+	// Draws the entire contents of the console (MODERN.md EN-70: the
+	// modern build's own, called from FlipScreen)
 	void	Draw();
+
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: coming down: an empty line, the newest text
+	void	ModernOnOpen();
+#endif
 
 	// Draws a number of lines in "small" mode
 	void	DrawSmall( int nLines );

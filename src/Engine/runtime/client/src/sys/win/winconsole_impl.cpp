@@ -65,7 +65,13 @@ CConIterator g_ConEmptyIterator;
 // Convenience functions...
 inline bool IsKeyDown( uint16 vkKey ) 
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: the key asked about. Retail tests Ctrl whatever the
+	// key, so Shift+Tab is Tab (docs/RETAIL_BUGS.md).
+	return ((GetAsyncKeyState( vkKey ) & 0x8000) != 0);
+#else
 	return ((GetAsyncKeyState( VK_CONTROL ) & 0x8000) != 0);
+#endif
 }
 
 inline ConsoleState *GetConsoleState()
@@ -74,6 +80,10 @@ inline ConsoleState *GetConsoleState()
 }
 
 // Console Variables
+#ifdef TRON20SRC_MODERN
+extern char* g_CV_ConsoleFont;		// MODERN.md EN-70
+extern int32 g_CV_ConsoleFontSize;
+#endif
 extern int32 g_CV_ConsoleHistoryLen;
 extern int32 g_CV_ConsoleBufferLen;
 extern float g_CV_ConsoleAlpha;
@@ -647,6 +657,13 @@ CConsole::CConsole()
 
 	m_Tex = NULL;
 	m_Font = NULL;
+
+#ifdef TRON20SRC_MODERN
+	m_pModernStr = LTNULL;
+	m_nModernFontSize = 0;
+	m_nModernLineHeight = 0;
+	m_bModernFontTried = false;
+#endif
 }
 
 CConsole::~CConsole()
@@ -703,6 +720,9 @@ bool CConsole::InitBare()
 
 void CConsole::Term(bool bDeleteTextLines)
 {
+#ifdef TRON20SRC_MODERN
+	ModernFreeFont();	// MODERN.md EN-70
+#endif
 	FreeBackground();
 
 	if ( bDeleteTextLines )
@@ -797,6 +817,22 @@ void CConsole::FinishCommand()
 	if (pCurCommand[0] == 0)
 		return;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md EN-70: the line is echoed after a prompt, then run, and
+	// answered where the command handler says nothing. The line is run
+	// from a copy: a command can print, or close the console, while it
+	// runs. Then the newest text is shown again.
+	Printf( GetCommandBox()->GetTextColor(), 0, "> %s", pCurCommand );
+
+	m_cHistory.Add( pCurCommand );
+
+	char aCommand[MAX_CONSOLE_TEXTLEN + 1];
+	LTStrCpy( aCommand, pCurCommand, sizeof(aCommand) );
+	GetCommandBox()->Clear();
+	m_iScrollOffset = 0;
+
+	c_ModernTypedCommand( aCommand );
+#else
 	PrintString( GetCommandBox()->GetTextColor(), 0, pCurCommand );
 
 	m_cHistory.Add( pCurCommand );
@@ -805,6 +841,7 @@ void CConsole::FinishCommand()
 		m_CommandHandler( pCurCommand );
 
 	GetCommandBox()->Clear();
+#endif
 }
 
 void CConsole::CheckVariables()
@@ -1119,6 +1156,7 @@ void CConsole::BorderedRectangle(uint32 fillColor, uint32 borderColor, LTRect re
 // RETAIL: the renderer's screen size (render_a's common_stuff.cpp; Lithtech.exe
 // 0x58aa50/0x58aa4c), not the ScreenWidth/ScreenHeight console variables
 extern uint32	g_ScreenWidth, g_ScreenHeight;
+#ifndef TRON20SRC_MODERN	// MODERN.md EN-70: the modern build's Draw is below
 void CConsole::Draw() {
 	//	if ((!m_pFontBitmapData) || (!m_pStruct)) return;
 	if (!m_pStruct) return;
@@ -1176,6 +1214,7 @@ void CConsole::Draw() {
     PD3DDEVICE->SetViewport(&oldViewportData);
 
 }
+#endif // !TRON20SRC_MODERN
 
 int CConsole::CalcStringOffset(const char *pStr, int iLength)
 {
@@ -1541,6 +1580,12 @@ void CConsole::OnKeyPress(uint32 key)
 				CycleCommands( 1 );
 			break;
 		case VK_TAB :
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-70: completes the name typed as far as the names
+			// that start with it agree, and lists them if there are more
+			ModernComplete();
+			break;
+#endif
 			if ( IsKeyDown( VK_CONTROL ) )
 				MatchCommands();
 			else if ( IsKeyDown( VK_SHIFT ) )
@@ -1568,3 +1613,403 @@ void CConsole::OnKeyPress(uint32 key)
 
 
 
+
+
+#ifdef TRON20SRC_MODERN
+
+// ------------------------------------------------------------------ //
+// MODERN.md EN-70: the console drawn, and names completed, in the
+// modern build.
+//
+// Retail keeps the console's text, its command line, its history and its
+// command handler, but it never draws it: nothing calls con_Draw, and its
+// Draw draws its text with m_Font, which Tron's engine never makes (Tron's
+// font manager makes a font only from a font file). This Draw uses the
+// engine's font manager with a font file of the game's (ConsoleFont; by
+// default the console font that Tron ships and does not use,
+// TRON_CONSOLE11, a fixed-pitch bitmap font 12 pixels high), scaled to a
+// letter height for the screen: ConsoleFontSize, or the whole multiple of
+// the font's own height nearest to a 45th of the screen's height (a bitmap
+// font scaled by a whole number keeps its dots and its strokes: at 640x480
+// to 1366x768 the font's own 12 pixels, at 1920x1080 24, at 3840x2160 48),
+// so that it reads the same at 640x480 and at 4K. Under the text, a dark band across the console's rectangle
+// (ConsoleLeft, ConsoleTop, ConsoleRight, ConsoleBottom: the top half of
+// the screen by default), drawn with DrawPrim. FlipScreen calls it, the
+// last thing drawn in a frame. Nothing locks the back buffer (a
+// multisampled back buffer cannot be locked).
+// ------------------------------------------------------------------ //
+
+#define MODERN_CONSOLE_MINSIZE		10
+#define MODERN_CONSOLE_MAXSIZE		96
+#define MODERN_CONSOLE_MAXMATCHES	512
+
+// The font files tried, in turn, when ConsoleFont is not set
+static const char *s_aModernConsoleFonts[] =
+{
+	"Interface\\Fonts\\TRON_CONSOLE11.ffb",
+	"Interface\\Fonts\\TwenCen_20.ffb",
+};
+
+// A font from a font file of the game's (a file of the resource archives)
+static CUIFont *ModernLoadFont( const char *pFile )
+{
+	if ( !pFile || !pFile[0] || !ilt_client || !g_IFontManager )
+		return LTNULL;
+
+	ILTStream *pStream = LTNULL;
+	if ( ilt_client->OpenFile( pFile, &pStream ) != LT_OK || !pStream )
+		return LTNULL;
+
+	CUIFont *pFont = g_IFontManager->CreateFont( pStream );
+	pStream->Release();
+	return pFont;
+}
+
+bool CConsole::ModernMakeFont( uint32 nScreenHeight )
+{
+	// The font itself is made one time (a failure is not tried again
+	// each frame); a new size only scales the string
+	if ( !m_Font && !m_bModernFontTried )
+	{
+		m_bModernFontTried = true;
+		if ( g_CV_ConsoleFont && g_CV_ConsoleFont[0] )
+			m_Font = ModernLoadFont( g_CV_ConsoleFont );
+		for ( int i = 0; !m_Font && (i < sizeof(s_aModernConsoleFonts) / sizeof(s_aModernConsoleFonts[0])); i++ )
+			m_Font = ModernLoadFont( s_aModernConsoleFonts[i] );
+	}
+
+	if ( !m_Font )
+		return false;
+
+	uint32 nSize;
+	if ( g_CV_ConsoleFontSize > 0 )
+		nSize = (uint32)g_CV_ConsoleFontSize;
+	else
+	{
+		uint32 nFont = LTMAX( 1, m_Font->GetDefCharScreenHeight() );
+		uint32 nScale = (nScreenHeight / 45 + nFont / 2) / nFont;
+		nSize = nFont * LTMAX( 1, nScale );
+	}
+	nSize = LTCLAMP( nSize, MODERN_CONSOLE_MINSIZE, MODERN_CONSOLE_MAXSIZE );
+
+	// Made already at this size
+	if ( (m_nModernFontSize == nSize) && m_pModernStr )
+		return true;
+
+	m_nModernFontSize = nSize;
+
+	if ( !m_pModernStr )
+	{
+		m_pModernStr = g_IFontManager->CreatePolyString( m_Font, std::wstring(), 0.0f, 0.0f );
+		if ( !m_pModernStr )
+			return false;
+		m_pModernStr->EnableClipping( true );
+	}
+
+	m_pModernStr->SetCharScreenHeight( nSize );
+
+	// The line's height: the letters' as drawn, and a fifth more
+	int32 nWidth = 0, nHeight = 0;
+	m_pModernStr->SetText( "Ag" );
+	m_pModernStr->GetDims( &nWidth, &nHeight );
+	m_nModernLineHeight = (uint32)LTMAX( (int32)nSize, nHeight ) + (nSize / 5) + 1;
+	m_FontHeight = (uint16)m_nModernLineHeight;
+	return true;
+}
+
+void CConsole::ModernFreeFont()
+{
+	if ( g_IFontManager )
+	{
+		if ( m_pModernStr )
+			g_IFontManager->DestroyPolyString( m_pModernStr );
+		if ( m_Font )
+		{
+			// The debug text uses the console's font (as retail's Term)
+			CDebugGeometry& dgPerf = getDebugGeometry(); dgPerf.clear();
+			g_IFontManager->DestroyFont( m_Font );
+		}
+	}
+
+	m_pModernStr = LTNULL;
+	m_Font = LTNULL;
+	m_nModernFontSize = 0;
+	m_bModernFontTried = false;
+}
+
+int32 CConsole::ModernTextWidth( const char *pText, int nChars )
+{
+	char aText[MAX_CONSOLE_TEXTLEN + 4];
+
+	if ( nChars < 0 )
+		nChars = strlen( pText );
+	nChars = LTMIN( nChars, MAX_CONSOLE_TEXTLEN + 3 );
+	if ( !nChars || !m_pModernStr )
+		return 0;
+
+	memcpy( aText, pText, nChars );
+	aText[nChars] = 0;
+
+	// A space at the end of a string is not measured: measure up to a
+	// letter after it, less the letter
+	int32 nWidth = 0, nHeight = 0, nBar = 0;
+	m_pModernStr->SetText( "|" );
+	m_pModernStr->GetDims( &nBar, &nHeight );
+	aText[nChars] = '|';
+	aText[nChars + 1] = 0;
+	m_pModernStr->SetText( aText );
+	m_pModernStr->GetDims( &nWidth, &nHeight );
+	return LTMAX( 0, nWidth - nBar );
+}
+
+void CConsole::ModernDrawText( const char *pText, int32 x, int32 y, CONCOLOR theColor, const LTRect &cClip )
+{
+	// A line keeps a message's last newline (PrintString), and a tab or a
+	// character the font does not have draws as its default character:
+	// spaces for those; the line ends at a newline
+	char aText[MAX_CONSOLE_TEXTLEN + 4];
+	int nLength = 0;
+	while ( pText[nLength] && (pText[nLength] != '\n') && (pText[nLength] != '\r') &&
+		(nLength < MAX_CONSOLE_TEXTLEN + 3) )
+	{
+		uint8 nChar = (uint8)pText[nLength];
+		aText[nLength] = ((nChar < ' ') || (nChar > '~')) ? ' ' : (char)nChar;
+		nLength++;
+	}
+	aText[nLength] = 0;
+	if ( !nLength )
+		return;
+
+	m_pModernStr->SetText( aText );
+	m_pModernStr->SetPosition( x, y );
+	m_pModernStr->SetColor( theColor | 0xFF000000 );
+
+	CUIRECT cClipRect( (float)cClip.left, (float)cClip.top,
+		(float)(cClip.right - cClip.left), (float)(cClip.bottom - cClip.top) );
+	m_pModernStr->RenderClipped( &cClipRect );
+}
+
+// A dark band, mostly opaque, and a line along its bottom
+void CConsole::ModernDrawBackground( const LTRect &cRect )
+{
+	g_pILTDrawPrim->SetTransformType( DRAWPRIM_TRANSFORM_SCREEN );
+	g_pILTDrawPrim->SetZBufferMode( DRAWPRIM_NOZ );
+	g_pILTDrawPrim->SetClipMode( DRAWPRIM_NOCLIP );
+	g_pILTDrawPrim->SetFillMode( DRAWPRIM_FILL );
+	g_pILTDrawPrim->SetCullMode( DRAWPRIM_CULL_NONE );
+	g_pILTDrawPrim->SetTexture( LTNULL );
+	g_pILTDrawPrim->SetColorOp( DRAWPRIM_NOCOLOROP );
+	g_pILTDrawPrim->SetAlphaTestMode( DRAWPRIM_NOALPHATEST );
+	g_pILTDrawPrim->SetAlphaBlendMode( DRAWPRIM_BLEND_MOD_SRCALPHA );
+
+	float fEdge = (float)LTMAX( 2, (int)(m_nModernLineHeight / 12) );
+	float aTop[2], aBottom[2];
+	uint8 aAlpha[2], aRed[2], aGreen[2], aBlue[2];
+
+	// Tron's colours: a dark blue under the text, a cyan edge
+	aTop[0] = (float)cRect.top;		aBottom[0] = (float)cRect.bottom - fEdge;
+	aTop[1] = aBottom[0];			aBottom[1] = (float)cRect.bottom;
+	aAlpha[0] = 216;	aRed[0] = 0;	aGreen[0] = 8;		aBlue[0] = 24;
+	aAlpha[1] = 255;	aRed[1] = 0;	aGreen[1] = 160;	aBlue[1] = 200;
+
+	for ( int i = 0; i < 2; i++ )
+	{
+		LT_POLYF4 cPoly;
+		cPoly.rgba.r = aRed[i];
+		cPoly.rgba.g = aGreen[i];
+		cPoly.rgba.b = aBlue[i];
+		cPoly.rgba.a = aAlpha[i];
+		cPoly.verts[0].x = (float)cRect.left;	cPoly.verts[0].y = aTop[i];		cPoly.verts[0].z = SCREEN_NEAR_Z;
+		cPoly.verts[1].x = (float)cRect.right;	cPoly.verts[1].y = aTop[i];		cPoly.verts[1].z = SCREEN_NEAR_Z;
+		cPoly.verts[2].x = (float)cRect.right;	cPoly.verts[2].y = aBottom[i];	cPoly.verts[2].z = SCREEN_NEAR_Z;
+		cPoly.verts[3].x = (float)cRect.left;	cPoly.verts[3].y = aBottom[i];	cPoly.verts[3].z = SCREEN_NEAR_Z;
+		g_pILTDrawPrim->DrawPrim( &cPoly, 1 );
+	}
+}
+
+void CConsole::Draw()
+{
+	RenderStruct *pStruct = GetRenderStruct();
+	if ( !pStruct || !pStruct->m_bInitted || !g_pILTDrawPrim )
+		return;
+
+	if ( !ModernMakeFont( pStruct->m_Height ) )
+		return;
+
+	// The buffer and history sizes and the rectangle, from their variables
+	CheckVariables();
+
+	// The rectangle, on the whole screen: at every shape of screen the
+	// console is as wide as the screen (CalcRect keeps 3 pixels off the
+	// right edge)
+	LTRect cRect;
+	CalcRect( cRect );
+	if ( m_Rect.right == -1 )
+		cRect.right = (int)pStruct->m_Width;
+
+	int nLine = (int)m_nModernLineHeight;
+	int nMargin = nLine / 2;
+
+	ModernDrawBackground( cRect );
+
+	LTRect cText;
+	cText.left = cRect.left + nMargin;
+	cText.right = cRect.right - nMargin;
+	cText.top = cRect.top;
+	cText.bottom = cRect.bottom;
+
+	// The command line along the bottom, moved left if the caret would be
+	// past the right edge, and its caret, blinking
+	const char *pCommand = GetCommandBox()->GetCommand();
+	int32 nY = cRect.bottom - nMargin - nLine;
+	int32 nPrompt = ModernTextWidth( "> ", -1 );
+	int32 nCaret = nPrompt + ModernTextWidth( pCommand, GetCommandBox()->GetCursorPos() );
+	int32 nRoom = (cText.right - cText.left) - ModernTextWidth( "__", -1 );
+	int32 nX = cText.left - LTMAX( 0, nCaret - nRoom );
+
+	char aCommand[MAX_CONSOLE_TEXTLEN + 4];
+	LTSNPrintF( aCommand, sizeof(aCommand), "> %s", pCommand );
+	ModernDrawText( aCommand, nX, nY, GetCommandBox()->GetTextColor(), cText );
+	if ( (timeGetTime() / 400) & 1 )
+		ModernDrawText( "_", nX + nCaret, nY, CONRGB( 255, 255, 255 ), cText );
+
+	// The text above it, the newest at the bottom
+	m_CS.Enter();
+
+	int iRows = (nY - (cRect.top + nMargin)) / nLine;
+	m_nTextLines = (uint32)LTMAX( iRows, 1 );
+
+	GPOS pos = m_TextLines.GetTail();
+	int iCount = m_iScrollOffset;
+	while ( pos && iCount )
+	{
+		m_TextLines.GetPrev( pos );
+		iCount--;
+	}
+
+	int32 nRowY = nY - nLine;
+
+	// Scrolled back: there is more below
+	if ( m_iScrollOffset && (iRows > 0) )
+	{
+		ModernDrawText( SCROLL_INDICATOR_UP, cText.left, nRowY, CONRGB( 192, 192, 255 ), cText );
+		nRowY -= nLine;
+		iRows--;
+	}
+
+	while ( pos && (iRows > 0) )
+	{
+		CConTextLine *pLine = m_TextLines.GetPrev( pos );
+		ModernDrawText( pLine->m_Text, cText.left, nRowY, pLine->m_Color, cText );
+		nRowY -= nLine;
+		iRows--;
+	}
+
+	m_CS.Leave();
+}
+
+void CConsole::ModernOnOpen()
+{
+	EndNav();
+	GetCommandBox()->Clear();
+	m_iScrollOffset = 0;
+}
+
+// The names Tab can complete: collected, then sorted
+struct ModernMatches
+{
+	const char	*m_aNames[MODERN_CONSOLE_MAXMATCHES];
+	int			m_nNames;
+};
+
+static void ModernAddMatch( const char *pName, void *pUser )
+{
+	ModernMatches *pMatches = (ModernMatches *)pUser;
+	if ( pMatches->m_nNames < MODERN_CONSOLE_MAXMATCHES )
+		pMatches->m_aNames[pMatches->m_nNames++] = pName;
+}
+
+static int ModernCompareNames( const void *pA, const void *pB )
+{
+	return stricmp( *(const char **)pA, *(const char **)pB );
+}
+
+void CConsole::ModernComplete()
+{
+	EndNav();
+
+	// Only the first word, with the caret at its end
+	const char *pCommand = GetCommandBox()->GetCommand();
+	int nLength = strlen( pCommand );
+	if ( !nLength || strchr( pCommand, ' ' ) || (GetCommandBox()->GetCursorPos() != nLength) )
+		return;
+
+	// "+Name value" keeps a variable in autoexec.cfg: complete the name
+	// after the sign
+	const char *pPrefix = pCommand;
+	char aSign[2] = { 0, 0 };
+	if ( (pPrefix[0] == '+') || (pPrefix[0] == '-') )
+	{
+		aSign[0] = pPrefix[0];
+		++pPrefix;
+	}
+
+	static ModernMatches s_cMatches;
+	s_cMatches.m_nNames = 0;
+	c_ModernEnumNames( pPrefix, ModernAddMatch, &s_cMatches );
+	if ( !s_cMatches.m_nNames )
+		return;
+
+	// Sorted, each name one time
+	qsort( s_cMatches.m_aNames, s_cMatches.m_nNames, sizeof(const char *), ModernCompareNames );
+	int nNames = 1;
+	int i;
+	for ( i = 1; i < s_cMatches.m_nNames; i++ )
+	{
+		if ( stricmp( s_cMatches.m_aNames[i], s_cMatches.m_aNames[nNames - 1] ) != 0 )
+			s_cMatches.m_aNames[nNames++] = s_cMatches.m_aNames[i];
+	}
+
+	char aNew[MAX_CONSOLE_TEXTLEN];
+	if ( nNames == 1 )
+	{
+		LTSNPrintF( aNew, sizeof(aNew), "%s%s ", aSign, s_cMatches.m_aNames[0] );
+		GetCommandBox()->SetCommand( aNew );
+		return;
+	}
+
+	// As far as they all agree
+	int nCommon = strlen( s_cMatches.m_aNames[0] );
+	for ( i = 1; i < nNames; i++ )
+	{
+		while ( nCommon && strnicmp( s_cMatches.m_aNames[0], s_cMatches.m_aNames[i], nCommon ) != 0 )
+			nCommon--;
+	}
+	if ( nCommon > (int)strlen( pPrefix ) )
+	{
+		LTSNPrintF( aNew, sizeof(aNew), "%s%.*s", aSign, nCommon, s_cMatches.m_aNames[0] );
+		GetCommandBox()->SetCommand( aNew );
+	}
+
+	// And the list, some names to a line
+	char aLine[MAX_CONSOLE_TEXTLEN];
+	int nLine = 0;
+	aLine[0] = 0;
+	for ( i = 0; i < nNames; i++ )
+	{
+		const char *pName = s_cMatches.m_aNames[i];
+		int nName = strlen( pName );
+		if ( nLine && ((nLine + 2 + nName) > 76) )
+		{
+			PrintString( GetCommandBox()->GetTextColor(), 0, aLine );
+			nLine = 0;
+			aLine[0] = 0;
+		}
+		LTSNPrintF( &aLine[nLine], sizeof(aLine) - nLine, nLine ? "  %s" : "%s", pName );
+		nLine = strlen( aLine );
+	}
+	if ( nLine )
+		PrintString( GetCommandBox()->GetTextColor(), 0, aLine );
+}
+
+#endif // TRON20SRC_MODERN

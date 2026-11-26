@@ -174,6 +174,13 @@ int32	g_CV_ConsoleLeft = -1;	// Note : Negative values move the edge away from t
 int32	g_CV_ConsoleTop = -1;	//	that positive fraction of the screen dimension.  (-1 = no offset)
 int32	g_CV_ConsoleRight = -1;
 int32	g_CV_ConsoleBottom = -2;
+#ifdef TRON20SRC_MODERN
+// MODERN.md EN-70: the drawn console's font file (unset: the console
+// font that the game ships, TRON_CONSOLE11), and its letter height in
+// pixels (0: a 45th of the screen's height)
+char*	g_CV_ConsoleFont = LTNULL;
+int32	g_CV_ConsoleFontSize = 0;
+#endif
 
 // The LithTech DirectMusic console output level
 int32	g_CV_LTDMConsoleOutput = 2;
@@ -333,6 +340,10 @@ static LTEngineVar g_LTEngineVars[] =
 	EV_LONG("ConsoleTop", &g_CV_ConsoleTop),
 	EV_LONG("ConsoleRight", &g_CV_ConsoleRight),
 	EV_LONG("ConsoleBottom", &g_CV_ConsoleBottom),
+#ifdef TRON20SRC_MODERN
+	EV_STRING("ConsoleFont", &g_CV_ConsoleFont),		// MODERN.md EN-70
+	EV_LONG("ConsoleFontSize", &g_CV_ConsoleFontSize),
+#endif
 
 	EV_LONG("DrawDebugGeometry", &g_CV_DrawDebugGeometry),
 	
