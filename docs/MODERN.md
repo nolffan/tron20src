@@ -693,7 +693,17 @@ password of a short name (the protocol of retail clients). Not bugs: the
 dedicated server's `LoadFromBute` result, the loop sounds of the archive
 bin, I/O node and optimizer (their sound sets loop).
 
-How these were tested: TESTS_PLACEHOLDER
+How these were tested: each fix was read against the retail code
+(`out/work/object-retail.asm`) and compiles in the modern build. The
+modern build's `make tests` (the menus, a level, saving and loading, the
+weapon chooser, a light cycle race with AI cycles, the intro) and
+`make mptest` (a dedicated disc arena server and two clients) end ALIVE.
+The legacy build is unchanged: `make ci` passes, its `make tests` end
+ALIVE, and Object.lto (13040), CShell.dll (7577), server.dll (3092),
+Lithtech.exe (6492) and TRONSrv.exe (507) keep every byte-identical
+function. Not tested in play (the scripts do not reach them): the core
+dump's energy message, Thorne, the turrets, the energy claw through a
+wall, the prankster bit, the OBB hits, and the editor-only properties.
 
 ### Retail-bug fixes, engine
 
