@@ -2108,6 +2108,34 @@ the console, so a player does not see it.
 Fixed in the modern build: winconsole_impl.cpp (IsKeyDown), MODERN.md
 EN-70.
 
+### Most of Tron 2.0's own cheats do nothing
+
+CShell.dll 0x100f1f40 (CCheatMgr::Process, src/Game/ClientShellDLL/
+ClientShellShared/CheatMgr.cpp). The cheat table (0x1022b870) has 57
+codes, and CCheatMgr::Check (0x100f1e50) knows each of them: the cheat
+sound plays and the chat line does not send the text. But the switch of
+Process ends at mpskillz (0x24, the jump table at 0x100f22bc). The 19
+codes after it do nothing: mpbreachoffset, mpenergy, mppset, mpclearpset,
+mpprocedurals, mpsubalpha, mpsubbeta, mpsubgold, mpclearmemory,
+mpcorruption, mpmaxperformance, mpclearperformance, mpidealweapons,
+mpidealsubroutines, mpidealprocedurals, mpidealpoints, mpideal,
+mpunlockgrids, mpunlockcycles and mpunlockpowerups. Their handlers are in
+the retail image: CTronGameClientShell's slot 0x94 (0x1009a700) does the
+energy, subroutine, procedural, memory, corruption, performance and ideal
+cheats (only mpkfa calls it, with mpenergy, 0x100f2541), the server does
+the ideal cheats (CTronGameServerShell::ProcessCheat, Object.lto
+0x1005ee80), and the light-cycle screens test the flags of the three
+unlock cheats (CBaseScreenLightCycle::IsCycleColorLocked 0x1000a660 and
+three other functions call IsCheatActive with 0x36, 0x37 and 0x38). Nothing
+writes those three flags (no write to 0x1022ba1c..0x1022ba34 in the image),
+so the cycle colors, the custom maps and the power-ups stay locked.
+
+Fixed in the modern build: CheatMgr.cpp, MODERN.md GAME-150 (Process gives
+the codes from mpenergy to mpideal to slot 0x94, and the three unlock
+cheats turn their flags on and off). mpbreachoffset, mppset and
+mpclearpset stay as in retail (development cheats; the client has nothing
+for them).
+
 ## NOLF2's and Contract J.A.C.K.'s bugs Tron 2.0 does not have
 
 - NOLF2's CRelationUser::RemoveRelation deletes the relation momento only

@@ -323,6 +323,46 @@ void CCheatMgr::Process( CheatCode nCheatCode, CParsedMsg &cMsg )
 			GimmeAmmo( cMsg );
 		break;
 
+#ifdef TRON20SRC_MODERN
+		// GAME-150: retail's switch ends at mpskillz (0x24): Tron's own
+		// cheats after it are known (the cheat sound plays) but do nothing.
+		// Their handlers are in the game client shell (0x1009a700; only
+		// mpkfa calls it, with mpenergy) and in the server (the ideal
+		// cheats); the three unlock cheats are the flags that the light
+		// cycle screens test. mpbreachoffset, mppset and mpclearpset stay
+		// as retail (development cheats, nothing on the client)
+		case CHEAT_TRON_ENERGY:
+		case CHEAT_TRON_PROCEDURALS:
+		case CHEAT_TRON_SUBALPHA:
+		case CHEAT_TRON_SUBBETA:
+		case CHEAT_TRON_SUBGOLD:
+		case CHEAT_TRON_CLEARMEMORY:
+		case CHEAT_TRON_CORRUPTION:
+		case CHEAT_TRON_MAXPERFORMANCE:
+		case CHEAT_TRON_CLEARPERFORMANCE:
+		case CHEAT_TRON_IDEALWEAPONS:
+		case CHEAT_TRON_IDEALSUBROUTINES:
+		case CHEAT_TRON_IDEALPROCEDURALS:
+		case CHEAT_TRON_IDEALPOINTS:
+		case CHEAT_TRON_IDEAL:
+			g_pGameClientShell->TronUnknownVirtual94(nCheatCode);
+		break;
+
+		case CHEAT_TRON_UNLOCKGRIDS:
+		case CHEAT_TRON_UNLOCKCYCLES:
+		case CHEAT_TRON_UNLOCKPOWERUPS:
+		{
+			static const char* const s_aszUnlocks[] = { "light cycle maps", "light cycle colors", "light cycle power-ups" };
+			LTBOOL bMode = !s_CheatInfo[nCheatCode].bActive;
+			s_CheatInfo[nCheatCode].bActive = bMode;
+
+			char szMsg[64];
+			sprintf(szMsg, "All %s unlocked: %s", s_aszUnlocks[nCheatCode - CHEAT_TRON_UNLOCKGRIDS], bMode ? "ON" : "OFF");
+			g_pChatMsgs->AddMessage(szMsg, kMsgCheatConfirm);
+		}
+		break;
+#endif
+
 		default:
 			return;			// skip setting global cheat indicator for unhandled cheats
 	}
