@@ -2,13 +2,6 @@
 
 *Tron 2.0* (Monolith, 2003), built from source.
 
-> [!WARNING]
-> **Work in progress.** The reconstruction is far from complete: much of the
-> game code does not match retail yet (see [`progress/README.md`](progress/README.md)).
-> The legacy build runs under Wine to the main menu, through the first
-> single-player level, saves and loads, and a light-cycle race (`make
-> tests`), but it is not tested further. It is not ready to play.
-
 Monolith never released Tron 2.0's source as it shipped, as it did for *No
 One Lives Forever 2*. This project reconstructs it: the game code from
 NOLF2's source release (Tron 2.0 was built from the same TO2 tree) and the
@@ -29,6 +22,19 @@ binaries are, function by function. As for
 Compiling back to the retail bytes means compiling the retail game's bugs as
 well; their fixes go behind `TRON20SRC_MODERN`, into the modern build only, so
 the legacy build keeps matching the retail one.
+
+<p align="center">
+  <img src="screenshots/00-main-menu.jpg" alt="The main menu" width="49%">
+  <img src="screenshots/01-title-sequence.jpg" alt="The title sequence: the TRON 2.0 logo in a blue grid" width="49%">
+  <img src="screenshots/02-email-script.jpg" alt="A cut-scene: green-lit programs seize a program: &quot;I'm just a simple email script! I ...&quot;" width="49%">
+  <img src="screenshots/03-digitizing.jpg" alt="A cut-scene: Jet is digitized in the ENCOM laboratory" width="49%">
+  <img src="screenshots/04-spawn.jpg" alt="The first level: a round chamber with doorways, after Jet's arrival: &quot;So you are a User ... Fascinating.&quot;" width="49%">
+  <img src="screenshots/05-lightcycle-foyer.jpg" alt="A red-lit hall in front of the light cycle arena" width="49%">
+  <img src="screenshots/06-lightcycles.jpg" alt="A light cycle race on a glowing grid, with the trails of the cycles" width="49%">
+  <img src="screenshots/07-combat.jpg" alt="Combat: two red programs hit by the energy claw" width="49%">
+</p>
+
+<p align="center"><sub>The modern build at 3840x2160.</sub></p>
 
 ## Progress
 
