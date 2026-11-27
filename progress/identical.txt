@@ -13957,8 +13957,11 @@ Lithtech.exe	sub_551d20
 Lithtech.exe	sub_551d30
 Lithtech.exe	sub_551d90
 Lithtech.exe	sub_551de0
+Lithtech.exe	sub_551df0
 Lithtech.exe	sub_552160
 Lithtech.exe	sub_552540
+Lithtech.exe	sub_552670
+Lithtech.exe	sub_552cd0
 Lithtech.exe	sub_552ff0
 Lithtech.exe	sub_553040
 Lithtech.exe	sub_553130

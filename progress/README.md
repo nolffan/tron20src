@@ -26,7 +26,7 @@ those functions make up.
 
 | Binary | | Byte-identical functions | Byte-identical code | | Unwritten | Unplaced |
 |---|---|--:|--:|---|--:|--:|
-| `Lithtech.exe` | the engine | 6,489 / 7,336 | 1,314,076 / 1,375,755 bytes | `███████████████████░` 95.5% | 25 | 32 |
+| `Lithtech.exe` | the engine | 6,492 / 7,336 | 1,317,374 / 1,375,755 bytes | `███████████████████░` 95.7% | 25 | 32 |
 | `server.dll` | the engine's server | 3,092 / 3,539 | 311,929 / 319,618 bytes | `███████████████████░` 97.5% | 11 | 2 |
 | `SndDrv.dll` | the sound driver | 232 / 266 | 38,444 / 38,926 bytes | `███████████████████░` 98.7% | 0 | 0 |
 | `Tron.exe` | the launcher | 301 / 348 | 44,197 / 45,159 bytes | `███████████████████░` 97.8% | 1 | 0 |
@@ -37,7 +37,7 @@ those functions make up.
 | `ltmsg.dll` | the engine's messages, not in the total | 5 / 5 resources | 2,054 / 2,054 bytes | `████████████████████` 100.0% | 0 | -- |
 | `CRes.dll` | the game's client resources, not in the total | 463 / 463 resources | 561,414 / 561,414 bytes | `████████████████████` 100.0% | 0 | -- |
 | `SRes.dll` | the game's server resources, not in the total | no resources | -- | -- | -- | -- |
-| **All** | | **31,687 / 36,998** | **5,459,824 / 6,278,295 bytes** | `█████████████████░░░` **86.9%** | **260** | **54** |
+| **All** | | **31,690 / 36,998** | **5,463,122 / 6,278,295 bytes** | `█████████████████░░░` **87.0%** | **260** | **54** |
 <!-- progress:end -->
 
 Every function in that table is recorded in `identical.txt`, and `make
