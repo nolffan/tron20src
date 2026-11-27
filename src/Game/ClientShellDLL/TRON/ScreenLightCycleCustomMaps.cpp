@@ -48,11 +48,6 @@ namespace
 	const uint32 kCmdMapUp		= 0x43D;
 	const uint32 kCmdMapDown	= 0x43E;
 
-	// RETAIL: the cheats that unlock every map and every cycle color (ours:
-	// see CBaseScreenLightCycle)
-	const int kCheatTronUnknown36 = 0x36;
-	const int kCheatTronUnknown37 = 0x37;
-
 	// RETAIL: 0x10060e40 (folded with CScreenHostMaps'): the name after the
 	// path's last backslash (the function name is ours)
 	const char* GetFileName(const char *pszPath)
@@ -89,7 +84,8 @@ namespace
 		if (!sMap[0])
 			return true;
 
-		if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown36))
+		// RETAIL: the mpunlockgrids cheat (0x36; see CBaseScreenLightCycle)
+		if (g_pCheatMgr->IsCheatActive(CHEAT_TRON_UNLOCKGRIDS))
 			return false;
 
 		if (g_pTronGameClientShell->GetCircuitButeMgr()->IsCircuitMap(sMap))
@@ -298,7 +294,8 @@ bool CScreenLightCycleCustomMaps::IsCycleUnlocked()
 
 	LIGHTCYCLECOLOR *pColor = g_pLightCycleButeMgr->GetShadeCycleColor(pProfile->m_nLightCycleStyle,pProfile->m_nLightCycleShade);
 
-	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown37))
+	// RETAIL: the mpunlockcycles cheat (see CBaseScreenLightCycle)
+	if (g_pCheatMgr->IsCheatActive(CHEAT_TRON_UNLOCKCYCLES))
 		return true;
 
 	pProfile = g_pProfileMgr->GetCurrentProfile();

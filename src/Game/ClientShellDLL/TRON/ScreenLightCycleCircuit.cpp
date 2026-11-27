@@ -34,10 +34,6 @@ namespace
 
 	// RETAIL: 0x10219674: the font size of the circuit list (a variable)
 	int		s_nListFontSize = 16;
-
-	// RETAIL: the cheat that unlocks every cycle color (ours: see
-	// CBaseScreenLightCycle)
-	const int kCheatTronUnknown37 = 0x37;
 }
 
 // RETAIL: 0x10065b80 (called from CTronScreenMgr::AddScreen's new)
@@ -501,7 +497,8 @@ bool CScreenLightCycleCircuit::IsCycleAllowed()
 	if (it == pCircuit->aCyclesAllowed.end())
 		return false;
 
-	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown37))
+	// RETAIL: the mpunlockcycles cheat (see CBaseScreenLightCycle)
+	if (g_pCheatMgr->IsCheatActive(CHEAT_TRON_UNLOCKCYCLES))
 		return true;
 
 	CUserProfile *pProfile = g_pProfileMgr->GetCurrentProfile();

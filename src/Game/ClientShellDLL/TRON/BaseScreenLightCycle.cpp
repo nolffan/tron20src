@@ -28,10 +28,6 @@ namespace
 	// RETAIL: 0x10210ab0: the font size of the settings list (a variable)
 	int		s_nListFontSize = 20;
 
-	// RETAIL: the cheat that unlocks every cycle color (retail's cheat
-	// 0x37; ours has no such cheat yet: the name is ours)
-	const int kCheatTronUnknown37 = 0x37;
-
 	// RETAIL: 0x10008250: the answer to "delete these settings?"
 	void DeleteSettingsCallBack(LTBOOL bReturn, void *pData)
 	{
@@ -645,7 +641,9 @@ bool CBaseScreenLightCycle::GetProfileCycleColor(LIGHTCYCLECOLOR **ppColor, uint
 // RETAIL: 0x1000a660
 bool CBaseScreenLightCycle::IsCycleColorLocked(const char *pszColor)
 {
-	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown37))
+	// RETAIL: the mpunlockcycles cheat (0x37), which retail's CCheatMgr::Process
+	// never turns on (docs/RETAIL_BUGS.md)
+	if (g_pCheatMgr->IsCheatActive(CHEAT_TRON_UNLOCKCYCLES))
 		return false;
 
 	// NEAR: retail keeps the end's address in eax for the last compare

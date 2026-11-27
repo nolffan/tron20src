@@ -20,13 +20,6 @@
 #include "TRON/LightCycleButeMgr.h"
 #include "GameClientShell.h"
 
-namespace
-{
-	// RETAIL: the cheat that unlocks every power-up (retail's cheat 0x38;
-	// ours has no such cheat yet: the name is ours)
-	const int kCheatTronUnknown38 = 0x38;
-}
-
 // RETAIL: 0x10068440 (called from CTronScreenMgr::AddScreen's new)
 CScreenLightCycleGame::CScreenLightCycleGame()
 {
@@ -334,7 +327,8 @@ void CScreenLightCycleGame::Escape()
 // docs/RETAIL_BUGS.md
 bool CScreenLightCycleGame::IsPowerupLocked(int nPowerup)
 {
-	if (g_pCheatMgr->IsCheatActive(kCheatTronUnknown38))
+	// RETAIL: the mpunlockpowerups cheat (0x38; see CBaseScreenLightCycle)
+	if (g_pCheatMgr->IsCheatActive(CHEAT_TRON_UNLOCKPOWERUPS))
 		return false;
 
 #ifdef TRON20SRC_MODERN

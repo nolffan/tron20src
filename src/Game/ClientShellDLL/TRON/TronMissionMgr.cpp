@@ -23,7 +23,9 @@
 
 // RETAIL: the cycle colours a circuit count unlocks: two circuits
 // completed unlock the first row, four the second, and so on
-// (0x101e9094, read at 0x101e9088 + (count / 2) * 12)
+// (0x101e9094, read at 0x101e9088 + (count / 2) * 12). Eight rows, for
+// the 16 circuits after the training (the last three rows were missing
+// here, and 12, 14 and 16 circuits read past the table)
 static const char* s_aszUnlockedCycles[][3] =
 {
 	{ "LightCycleYellow_1", "LightCycleYellow_2", "LightCycleYellow_3" },
@@ -31,6 +33,9 @@ static const char* s_aszUnlockedCycles[][3] =
 	{ "SuperCycle_Yellow_1", "SuperCycle_Yellow_2", "SuperCycle_Yellow_3" },
 	{ "LightCycleGreen_1", "LightCycleGreen_2", "LightCycleGreen_3" },
 	{ "SuperCycle_red_1", "SuperCycle_red_2", "SuperCycle_red_3" },
+	{ "LightCyclePurple_1", "LightCyclePurple_2", "LightCyclePurple_3" },
+	{ "SuperCycle_Green_1", "SuperCycle_Green_2", "SuperCycle_Green_3" },
+	{ "SuperCycle_Purple_1", "SuperCycle_Purple_2", "SuperCycle_Purple_3" },
 };
 
 // RETAIL: names compared without case, as LCNameEquals, but out of line
