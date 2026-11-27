@@ -1586,6 +1586,28 @@ void CD3D_RenderBlock::ExtendSkyBounds(const ViewParams& Params, float &fMinX, f
 			bPrevClip = bCurClip;
 		}
 		// Skip over polys that are entirely outside the clipping area
+#ifdef TRON20SRC_MODERN
+		// MODERN.md EN-82: the view's rectangle. The extents are in screen
+		// coordinates, and m_fScreenWidth/m_fScreenHeight are the view's
+		// size, so a view that does not start at the top left of the
+		// screen drew the sky to its side, or none (docs/RETAIL_BUGS.md)
+		float fViewLeft = (float)Params.m_Rect.left;
+		float fViewTop = (float)Params.m_Rect.top;
+		float fViewRight = (float)Params.m_Rect.right;
+		float fViewBottom = (float)Params.m_Rect.bottom;
+		if ((nNear == sCurPoly.m_aVerts.size()) || 
+			(fLocalMaxX < fViewLeft) ||
+			(fLocalMaxY < fViewTop) ||
+			(fLocalMinX > fViewRight) ||
+			(fLocalMinY > fViewBottom))
+			continue;
+
+		// Clamp to the view
+		fLocalMinX = LTMAX(fViewLeft, fLocalMinX);
+		fLocalMinY = LTMAX(fViewTop, fLocalMinY);
+		fLocalMaxX = LTMIN(fViewRight, fLocalMaxX);
+		fLocalMaxY = LTMIN(fViewBottom, fLocalMaxY);
+#else
 		// RETAIL: the screen's extents, not the viewport's (Contract J.A.C.K.'s
 		// "SKYBOX FIX for Multiple Cameras" is later: Lithtech.exe 0x52cfcb)
 		if ((nNear == sCurPoly.m_aVerts.size()) || 
@@ -1600,6 +1622,7 @@ void CD3D_RenderBlock::ExtendSkyBounds(const ViewParams& Params, float &fMinX, f
 		fLocalMinY = LTMAX(0.0f, fLocalMinY);
 		fLocalMaxX = LTMIN(Params.m_fScreenWidth, fLocalMaxX);
 		fLocalMaxY = LTMIN(Params.m_fScreenHeight, fLocalMaxY);
+#endif
 
 		// Extend the bounds
 		fMinX = LTMIN(fMinX, fLocalMinX);

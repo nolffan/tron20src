@@ -883,6 +883,39 @@ wall, the prankster bit, the OBB hits, and the editor-only properties.
   the binding succeeds, and frees it with `LTMemFree` on a version
   mismatch (`shared/src/classbind.cpp` `cb_LoadModule`; `server.dll` and
   `Lithtech.exe`).
+* **EN-79:** a client whose engine refuses the connection that the
+  server accepted stops at once with `LT_ERROR`, and does not wait 10 s
+  on the socket that it closed (`kernel/net/src/sys/win/udpdriver.cpp`
+  `ReallyJoinSession`; `server.dll` and `Lithtech.exe`).
+* **EN-81:** `HighPriority` is applied once for each change, and 0 puts
+  the process back to normal priority (`kernel/src/sys/win/client.cpp`
+  `RunClientApp`).
+* **EN-82:** the sky's bounds are tested against and clamped to the
+  view's rectangle, not 0 to the view's width and height: the I/O node
+  camera's inset view shows the sky in its own direction, not the sky to
+  its side, or none (`render_a/src/sys/d3d/d3d_renderblock.cpp`
+  `ExtendSkyBounds`).
+* **EN-83:** a version that is not set is written "unknown", not
+  "4294967295.4294967295": the start-up line "LithTech build unknown
+  initialized" and the `version` variable (`shared/src/version_info.cpp`
+  `LTVersionInfo::GetString`). Lithtech.exe has no version resource, and
+  the modern build does not add one: there is no true build number.
+
+How these were tested: each was read against the retail code (the
+developer build's code where SecuROM hides retail's: `demoimports.py
+plain`); the four retail functions are byte-identical to ours.
+`build/playtest-skyview.txt` on the modern build at 1920x1080 (M01-02):
+"HighPriority 1" prints "Setting process to high priority" once in two
+seconds, "HighPriority 0" prints "Setting process to normal priority",
+the variable `version` is "unknown", and `wine.log` has "LithTech build
+unknown initialized". The I/O node camera was put at objects near the
+start ("iocam on"): its inset has sky, which goes black with "DrawSky
+0". The skies of M01-01 and M01-02 are one colour of haze in the inset's
+direction, so the same script on the modern build without EN-82 gave the
+same picture; EN-82 was checked by reading `d3d_InitFrustum2` and
+`d3d_InitViewBox2` (screen coordinates start at the view's rectangle).
+EN-79 is not reached in play: the client's `NewConnectionNotify` refuses
+only a second connection while one is open; it was checked by reading.
 
 ### Frame rate
 

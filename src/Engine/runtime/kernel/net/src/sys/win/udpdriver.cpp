@@ -3158,6 +3158,11 @@ LTRESULT CUDPDriver::ReallyJoinSession(sockaddr_in *addr)
 			// TRON: RETAIL: and its socket closed (server.dll 0x1003c347),
 			// though the loop goes on waiting on it (docs/RETAIL_BUGS.md)
 			closesocket(theSocket);
+#ifdef TRON20SRC_MODERN
+			// MODERN.md EN-79: the socket is closed, so stop at once and do
+			// not wait on it for the rest of CONN_WAIT_TIME
+			RETURN_ERROR_PARAM(2, CUDPDriver::JoinSession, LT_ERROR, addrStr);
+#endif
 		}
 
 	} while ((curTime - startTime) < CONN_WAIT_TIME);

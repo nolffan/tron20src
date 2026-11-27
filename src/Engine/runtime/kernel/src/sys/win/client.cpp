@@ -741,6 +741,11 @@ int RunClientApp(HINSTANCE hInstance) {
                     dsi_ConsolePrint("Setting process to normal priority");
                     SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
                 }
+#ifdef TRON20SRC_MODERN
+                // MODERN.md EN-81: remember the setting, so that it is
+                // applied (and printed) once for each change
+                bPrevHighPriority = g_CV_HighPriority;
+#endif
             }
 
             if (g_bShowRunningTime) {

@@ -492,7 +492,9 @@ loop then goes on receiving on that closed socket until the connection
 time-out (10 s) passes and LT_TIMEOUT is returned. It should stop at once
 with an error (or not close the socket it keeps using).
 
-Not fixed yet.
+Fixed in the modern build: the engine's kernel/net/src/sys/win/udpdriver.cpp
+(ReallyJoinSession returns LT_ERROR at once after it closes the socket),
+MODERN.md EN-79. Lithtech.exe compiles the same file.
 
 ### A model whose child model is not loaded is checked through a NULL pointer
 
@@ -657,7 +659,8 @@ the console and sets the priority class again, and clearing it never puts
 the process back to normal priority (the compiler drops that branch, and
 its string, as unreachable).
 
-Not fixed yet.
+Fixed in the modern build: the engine's kernel/src/sys/win/client.cpp
+(the loop keeps the value in bPrevHighPriority), MODERN.md EN-81.
 
 ### DrawPrim never uses its camera's viewport
 
@@ -870,8 +873,23 @@ screen's extents, where they should be the view's rectangle (m_Rect). With
 a camera that draws into part of the screen (a split or inset view) the sky
 is drawn for portals outside that view, or past its edges. Contract
 J.A.C.K.'s engine has the fix ("SKYBOX FIX for Multiple Cameras": m_Rect).
+The extents are in screen coordinates (d3d_InitFrustum2 puts a view at
+its rectangle), so the error is in each view that does not start at the
+top left of the screen. Tron 2.0 has one: the I/O node camera (the inset
+view at the top middle of the screen, LAYOUT.TXT IOCameraRect). For it,
+a sky portal that lies in the view is skipped, because its left edge is
+past the view's width; a large portal is clamped to 0..width, which is
+to the left of the view. The sky's frustum (d3d_InitViewBox2) is then
+made from bounds outside the view, and the inset shows the sky that is
+to the side of its view, or no sky. The engine sets no viewport of its
+own for the sky (d3d_drawsky.cpp: commented out, for "second camera
+viewports"), so the sky is drawn over the whole inset with that frustum. In M01-01 and
+M01-02 the sky in the inset's direction is a haze of one colour, so the
+error does not show there (build/playtest-skyview.txt).
 
-Not fixed yet.
+Fixed in the modern build: the engine's render_a/src/sys/d3d/
+d3d_renderblock.cpp (the bounds are tested against and clamped to the
+view's rectangle), MODERN.md EN-82.
 
 ### The sound driver's parameter fades lock a mutex nobody creates
 
@@ -1780,7 +1798,12 @@ value 0xFFFFFFFF.0xFFFFFFFF, and the debug output says "LithTech build
 4294967295.4294967295 initialized in ... seconds." The console variable "version"
 (CClientMgr::Init) gets the same incorrect value.
 
-Not fixed yet: the modern build has no build number to give the engine.
+Fixed in the modern build: the engine's shared/src/version_info.cpp
+(LTVersionInfo::GetString writes "unknown" for a version that is not
+set), MODERN.md EN-83. The modern build has no true build number to give
+the engine, so it does not add the resource: the debug output says
+"LithTech build unknown initialized in ... seconds.", and the variable
+"version" is "unknown". Nothing reads the variable.
 
 ### The player runs slower at a high frame rate
 
