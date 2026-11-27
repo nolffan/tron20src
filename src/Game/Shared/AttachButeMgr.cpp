@@ -393,7 +393,7 @@ uint8 CAttachButeMgr::GetAttachmentHiddenInDEditToAIWeaponList( int nAttachmentI
 {
 	if (nAttachmentID < 0 || nAttachmentID > m_cAttachmentID) return false;
 	sprintf(s_aTagName, "%s%d", ABM_ATTACHMENT, nAttachmentID);
-	return m_buteMgr.GetByte( s_aTagName, ABM_ATTACHMENT_HIDDEN_IN_DEDIT_TO_AI_WEAPON_LIST );
+	return m_buteMgr.GetBool( s_aTagName, ABM_ATTACHMENT_HIDDEN_IN_DEDIT_TO_AI_WEAPON_LIST );	// RETAIL: GetBool
 }
 #endif // _CLIENTBUILD
 

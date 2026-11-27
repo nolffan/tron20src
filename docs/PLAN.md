@@ -537,6 +537,29 @@ The legacy release build runs under Wine (2026-11-25): every binary in
   is now identical: CShell 7,601 identical functions before, 7,602
   after. After each single-player load, the postload screen now asks for
   a key, as retail does (`CScreenPostload::OnFocus`, 0x1016b4e0).
+- **Fixed** (2026-11-27, a report from play: the right mouse button did
+  not recall the disc): no disc returned to its owner. A recall did
+  nothing, and a disc that hit a wall was removed and lost. The legacy
+  and the modern build had the problem; the control did not.
+  `DISCCLASSDATA::Init` (Object 0x10145ab0, CShell 0x10154090) read
+  `ReturnToOwner` with `CButeMgr::GetByte`. The attribute is a Bool
+  (`true`), so `GetByte` found a type mismatch and gave 0. Retail calls
+  `GetBool` there. The scorer did not see the difference: the two-argument
+  `GetByte` and `GetBool` have the same code (each calls its
+  three-argument form, which tests a different type), the scorer does not
+  compare call targets, and it gave each one the name of the other
+  (Object 0x10070700 is `GetByte`, 0x10070790 is `GetBool`; CShell
+  0x100b3930 and 0x100b39c0). Thus each function that called "GetByte"
+  was identical. Retail calls the two-argument `GetByte` nowhere: all
+  eight calls of ours are now `GetBool` (`ReturnToOwner` and
+  `Controlable` in `FXButeMgr.cpp`, `IsPlayerPrimitive` in
+  `WeaponMgr.cpp`, `Node%dIgnoreParent` in `ModelButeMgr.cpp`,
+  `HiddenInDEditToAIWeaponList` in `AttachButeMgr.cpp`, `InitiallyLock`
+  in `TRON/CircuitButeMgr.cpp`, `IsCharacter` in `TRON/IONodeMgr.cpp`).
+  The scores do not change. The test is `build/playtest-recall.txt`
+  (`make tests TEST_SCRIPTS=recall`; a new script command, `disc`, in
+  `build/playtest.sh`): it fails on the old build and passes on the
+  control, the legacy build and the modern build (`RawMouse` 1 and 0).
 - **Open:** in M01-02, the control shows a small blue machine that moves
   on the floor near the start, in the first seconds; ours does not show
   it. Not found yet: the world has 34 `CAIHuman` and 36 `Spawner`

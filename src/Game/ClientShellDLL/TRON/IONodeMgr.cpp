@@ -61,7 +61,7 @@ LTBOOL CIONodeMgr::Init(const char* szAttributeFile)
 			pChar->nNameId = (uint16)m_buteMgr.GetInt(s_aTagName, "NameID", 0);
 			m_buteMgr.GetString(s_aTagName, "Portrait", "", szTmp, sizeof(szTmp));
 			pChar->szPortrait = CopyString(szTmp);
-			pChar->bIsCharacter = m_buteMgr.GetByte(s_aTagName, "IsCharacter");
+			pChar->bIsCharacter = m_buteMgr.GetBool(s_aTagName, "IsCharacter");	// RETAIL: GetBool
 			pChar->fStayTime = m_buteMgr.GetFloat(s_aTagName, "StayTime", 0.0f);
 
 			m_Characters.push_back(pChar);

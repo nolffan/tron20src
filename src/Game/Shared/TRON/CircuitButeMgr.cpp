@@ -106,7 +106,7 @@ bool Circuit::Load(CButeMgr& buteMgr, int nCircuit)
 	nStandardCycleRestrictionId = buteMgr.GetInt(szTag, "StandardCycleRestrictionId");
 	nCompleteId = buteMgr.GetInt(szTag, "CircuitCompleteId");
 	sCompleteSound = buteMgr.GetString(szTag, "CircuitCompleteSound");
-	bInitiallyLocked = buteMgr.GetByte(szTag, "InitiallyLock");
+	bInitiallyLocked = buteMgr.GetBool(szTag, "InitiallyLock");	// RETAIL: GetBool
 	nInitialLives = buteMgr.GetInt(szTag, "InitialLives");
 	GetButeStringList(buteMgr, szTag, "CyclesAllowed", aCyclesAllowed);
 

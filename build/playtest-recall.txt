@@ -1,0 +1,57 @@
+# playtest-recall.txt -- the disc's recall (the right mouse button,
+# "Defend") in the first level, M01-01. Into control (skipcine answers the
+# decision window); the cheat mpkfa (all weapons); 1 opens the weapon
+# chooser and a click of the fire button takes its first weapon, the disc.
+# The view is the start's: the far wall in front, the bright floor below.
+# The disc is thrown (left click) at the far wall, which it hits about
+# 0.75 s later; without a recall it then returns, about 0.9 s after that.
+#   1. a short right click 0.3 s after the throw: the disc is back 0.85 s
+#      later, before it could hit the wall and come back by itself;
+#   2. the right button held (0.6 s) from 0.3 s after the throw: the same;
+#   3. no recall: at the same time the disc is not back yet; it comes back
+#      after it hits the wall (the server's log: the recall's disc is back
+#      0.75 s after the throw, the other 1.6 s after it).
+# `disc` checks the lower middle of the view, where the held disc is drawn
+# (build/playtest.sh). Our DISCCLASSDATA::Init read "ReturnToOwner" with
+# CButeMgr::GetByte where retail calls GetBool: the value ("true") was a
+# type mismatch, 0, so no disc returned to its owner. A recall did nothing,
+# and a disc that hit a wall was lost (docs/PLAN.md, section 7). Run it on
+# the legacy and the modern build, and on the modern build with
+# TEST_CFG=build/rawmouse-0.cfg (DirectInput's mouse, not raw input).
+# world: Worlds\RetailSinglePlayer\M01-01
+window 240
+skipcine 180
+key t
+wait 0.5
+type mpkfa
+key Return
+wait 2
+key 1
+wait 1
+click 1 0.1
+wait 2
+disc ready in
+# 1. a short right click
+click 1 0.1
+wait 0.2
+disc thrown-1 out
+click 3 0.1
+wait 0.75
+disc recalled-short in
+wait 2
+# 2. the right button held
+click 1 0.1
+wait 0.2
+disc thrown-2 out
+click 3 0.6
+wait 0.25
+disc recalled-held in
+wait 2
+# 3. no recall: the disc comes back by itself after it hits the wall
+click 1 0.1
+wait 0.2
+disc thrown-3 out
+wait 0.85
+disc not-back-yet out
+wait 3
+disc returned in

@@ -71,6 +71,16 @@
 #                         judged NO CINEMATIC, a failure (the cinematic
 #                         was skipped or not yet on the screen: nothing
 #                         was tested)
+#   disc <name> in|out    takes a shot like `shot <name>`: the disc must be
+#                         in the player's hand (in) or not (out). The test
+#                         is the mean grey of the lower middle of the view
+#                         (x 300..441, y 380..428 of the shot scaled to
+#                         640x480), where the held disc is drawn: dark
+#                         (about 60%) with the disc, the bright floor of
+#                         M01-01's start (about 98%) without it, so it
+#                         needs that view (build/playtest-recall.txt).
+#                         Below 80%: in. If not as expected, the run is
+#                         judged DISC, a failure
 set -u
 # a game directory built without the retail game (NODISCS=1) does not play
 for a in "$@"; do
@@ -87,7 +97,7 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
     -e "s#-format '%\[fx:mean.r\] %\[fx:mean.g\]' info:#-format '%[fx:mean.r] %[fx:mean.g] %[fx:mean.b]' info:#" \
     -e "s#exit !(\$1 > 0.3 \&\& \$1 > 2.5 \* \$2)#exit !(\$2 > 0.1 \&\& \$2 > 1.8 * \$1 \&\& \$2 > 1.8 * \$3)#" \
     -e 's#\[ $k = space \] \&\& k=Return || k=space#if [ $k = space ]; then k=Return; elif [ $k = Return ] \&\& [ $(( $(date +%s) - st )) -ge 20 ]; then k=1; else k=space; fi#' \
-    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""; DARK=""; NOCINE=""; LITS=""#' \
+    -e 's#^STOPPED=""; NOHUD=""$#STOPPED=""; NOHUD=""; HUDUP=""; DARK=""; NOCINE=""; LITS=""; DISCBAD=""#' \
     -e 's#^            \*)     log "  unknown command#            nohud) N=$((N+1)); f=$(printf '"'"'shots/%02d-%s.png'"'"' $N "$1"); grab "$f"; log "  -> $f"\
                    if hud; then HUDUP="line $LINE"; log "  nohud: the HUD is up"; else log "  nohud: no HUD, as expected"; fi ;;\
 &#' \
@@ -102,7 +112,16 @@ sed -e 's/nolf2cmds\.txt/tron20cmds.txt/g' \
                    elif [ $s -gt ${1:-10} ]; then DARK="line $LINE: median $s% black of $n shots, more than ${1:-10}%"; log "  litcheck: median $s% black of $n shots: DARK"\
                    else log "  litcheck: median $s% black of $n shots, as expected"; fi ;;\
 &#' \
-    -e 's#^if alive \&\& \[ -n "$NOHUD" \]; then$#if alive \&\& [ -n "$HUDUP" ]; then\
+    -e 's#^            lit) #            disc) N=$((N+1)); f=$(printf "shots/%02d-%s.png" $N "$1"); grab "$f"\
+                   g=$(convert "$f" -resize "640x480!" -crop 141x48+300+380 +repage -colorspace gray -format "%[fx:round(100*mean)]" info: 2>/dev/null)\
+                   if [ "${g:-100}" -lt 80 ]; then d=in; else d=out; fi\
+                   if [ "$d" = "${2:-in}" ]; then log "  -> $f (grey ${g:-?}%: the disc is $d, as expected)"\
+                   else DISCBAD="line $LINE: the disc is $d, not ${2:-in}"; log "  -> $f (grey ${g:-?}%: the disc is $d, NOT ${2:-in})"; fi ;;\
+&#' \
+    -e 's#^if alive \&\& \[ -n "$NOHUD" \]; then$#if alive \&\& [ -n "$DISCBAD" ]; then\
+    echo "DISC: alive, but the disc is not where the script expects it ($DISCBAD)" > result.txt\
+    wineserver -k; sleep 2\
+elif alive \&\& [ -n "$HUDUP" ]; then\
     echo "HUD UP: alive, but the HUD was up where the script expects none (nohud at $HUDUP)" > result.txt\
     wineserver -k; sleep 2\
 elif alive \&\& [ -n "$DARK" ]; then\
@@ -120,7 +139,7 @@ for f in; do#' \
 # (if ext/tools/playtest.sh changes so that an edit above does not apply,
 # stop: the run directory must be build/rundir.py's, and the HUD test and
 # the lit shots Tron's)
-for m in 'build/rundir.py' 'mean.b' '1.8 \* \$3' 'NO CINEMATIC' 'HUD UP' 'k=1;'; do
+for m in 'build/rundir.py' 'mean.b' '1.8 \* \$3' 'NO CINEMATIC' 'HUD UP' 'k=1;' 'DISC:'; do
     grep -q "$m" "$OUT.$$" || { rm -f "$OUT.$$"; echo "playtest.sh: ext/tools/playtest.sh changed: an edit of build/playtest.sh does not apply ($m)"; exit 2; }
 done
 mv -f "$OUT.$$" "$OUT"

@@ -526,7 +526,9 @@ details.
   (`ActiveWorldModel.cpp`).
 * **GAME-7:** an EventCounter registers `REPORT` (`EventCounter.cpp`).
 * **GAME-8:** the disc class data keeps its `Controlable` value
-  (`Shared/FXButeMgr.cpp`).
+  (`Shared/FXButeMgr.cpp`). It is read with `CButeMgr::GetBool`, as
+  retail reads it. Until 2026-11-27 it was read with `GetByte`, which
+  gives 0 for a Bool attribute, so no disc was controllable.
 * **GAME-9:** an edit control without text returns an empty string
   (`Libs/LTGUIMgr/ltguieditctrl.cpp`).
 * **GAME-10:** the mission text tests its string before it uses it

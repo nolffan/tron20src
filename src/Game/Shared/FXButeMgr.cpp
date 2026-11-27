@@ -3149,7 +3149,11 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	if (!aTagName) return LTFALSE;
 	if (!PROJECTILECLASSDATA::Init(buteMgr, aTagName)) return LTFALSE;
 
-	bReturnToOwner                   = buteMgr.GetByte( aTagName, "ReturnToOwner" );
+	// RETAIL: GetBool, not GetByte (0x10145ae4 calls 0x10070790, which
+	// tests for BoolType). The attribute is "true" or "false": GetByte
+	// finds a type mismatch and gives 0, and then no disc returns to its
+	// owner (the recall does nothing, a disc that hits something is lost)
+	bReturnToOwner                   = buteMgr.GetBool( aTagName, "ReturnToOwner" );
 	fInitialAngle                    = DegreesToRadians( static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "InitialAngle" ) ) );
 	fReturnVelocity                  = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ReturnVelocity" ) );
 	fReturnHeightOffset              = static_cast< LTFLOAT >( buteMgr.GetDouble( aTagName, "ReturnHeightOffset" ) );
@@ -3180,9 +3184,9 @@ LTBOOL DISCCLASSDATA::Init( CButeMgr &buteMgr, char *aTagName )
 	// RETAIL: Tron reads "Controlable" but does not keep its value: the
 	// member is always LTTRUE (see docs/RETAIL_BUGS.md)
 #ifdef TRON20SRC_MODERN
-	bControlable                     = buteMgr.GetByte( aTagName, "Controlable" );
+	bControlable                     = buteMgr.GetBool( aTagName, "Controlable" );
 #else
-	buteMgr.GetByte( aTagName, "Controlable" );
+	buteMgr.GetBool( aTagName, "Controlable" );
 	bControlable                     = LTTRUE;
 #endif // TRON20SRC_MODERN
 

@@ -1318,12 +1318,14 @@ Fixed in the modern build: ObjectShared/Destructible.cpp (no GEAR record, no gea
 
 Object.lto 0x10145ab0 and CShell.dll 0x10154090 (DISCCLASSDATA::Init,
 Shared/FXButeMgr.cpp). The function reads the "Controlable" attribute with
-CButeMgr::GetByte, but it does not use the result. It sets bControlable
+CButeMgr::GetBool, but it does not use the result. It sets bControlable
 (0x1d4) to LTTRUE for each disc. Thus a disc that the attributes make not
 controllable is controllable.
 
 Fixed in the modern build: src/Game/Shared/FXButeMgr.cpp keeps the value
-that GetByte returns (MODERN.md GAME-8).
+that GetBool returns (MODERN.md GAME-8). Until 2026-11-27 our code read the
+attribute with GetByte, which gives 0 for a Bool attribute: in the modern
+build no disc was controllable (docs/PLAN.md, section 7).
 
 ### The team selection screen reads one row team past its list
 

@@ -431,7 +431,7 @@ LTBOOL CModelButeMgr::Init(const char* szAttributeFile)
 
 			// RETAIL: Tron's (Object.lto 0x100c3c91)
 			sprintf(s_aAttName, MODELBMGR_TRACKING_NODE_IGNORE_PARENT, iNode);
-			m_aTrackingNodeGroups[iGroup].m_aTrackingNodes[iNode].m_bIgnoreParent = m_buteMgr.GetByte(s_aTagName, s_aAttName);
+			m_aTrackingNodeGroups[iGroup].m_aTrackingNodes[iNode].m_bIgnoreParent = m_buteMgr.GetBool(s_aTagName, s_aAttName);	// RETAIL: GetBool
 
 			//
 			// The following fields are optional.

@@ -1936,7 +1936,7 @@ void WEAPON::InitMembers( CButeMgr &buteMgr, char *aTagName )
 	m_fFireDelay = (nDelay > 0) ? nDelay * 0.001f : 0.0f;
 
 	// RETAIL: Tron's (CShell 0x101394c7, last in its InitMembers)
-	bIsPlayerPrimitive = buteMgr.GetByte( aTagName, WMGR_WEAPON_ISPLAYERPRIMITIVE );
+	bIsPlayerPrimitive = buteMgr.GetBool( aTagName, WMGR_WEAPON_ISPLAYERPRIMITIVE );	// RETAIL: GetBool
 }
 
 // ----------------------------------------------------------------------- //
