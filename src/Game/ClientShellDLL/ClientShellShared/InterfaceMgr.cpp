@@ -5655,8 +5655,14 @@ void CInterfaceMgr::RenderInterfaceObject(HOBJECT hObj)
 	objs[0] = hObj;
 	int next = 1;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-131: no more lights than the array holds
+	for ( ObjectArray::iterator iter = m_InterfaceLights.begin( ); iter !=  m_InterfaceLights.end() && 
+		next < MAX_INTERFACE_LIGHTS + 1; iter++ )
+#else
 	for ( ObjectArray::iterator iter = m_InterfaceLights.begin( ); iter !=  m_InterfaceLights.end() && 
 		next < kMaxFX; iter++ )
+#endif
 	{
 		HOBJECT hLight = *iter;
 		if ( hLight )

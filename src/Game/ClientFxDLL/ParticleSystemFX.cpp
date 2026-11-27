@@ -387,9 +387,11 @@ void CParticleSystemFX::GetSpawnTransform(LTVector &vPos, LTRotation &rRot)
 
 	LTVector vOffset = GetProps()->m_vOffset + m_vTronUnknown;
 
+#ifndef TRON20SRC_MODERN	// MODERN.md GAME-119: added one time
 	// RETAIL: the system adds m_vTronUnknown a second time; the bouncy
 	// chunk (0x1000ff20) does not.
 	vOffset = vOffset + m_vTronUnknown;
+#endif
 	LTVector vAlignedOffset = vOffset;
 
 	switch (GetProps()->m_nFollowType)
@@ -404,9 +406,14 @@ void CParticleSystemFX::GetSpawnTransform(LTVector &vPos, LTRotation &rRot)
 		{
 			if (m_hParent)
 			{
+#ifdef TRON20SRC_MODERN
+				// MODERN.md GAME-119: at the parent, plus the offset
+				m_pLTClient->GetObjectPos(m_hParent, &vPos);
+#else
 				// RETAIL: retail reads the parent's position into m_vPos,
 				// not into vPos.
 				m_pLTClient->GetObjectPos(m_hParent, &m_vPos);
+#endif
 				vPos += vOffset;
 			}
 		}
@@ -815,11 +822,20 @@ void CParticleSystemFX::AddParticles( )
 					// so the point is on a line, not on the circle (RETAIL_BUGS.md)
 					LTVector vPerp1, vPerp2;
 					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp1 );
+#ifdef TRON20SRC_MODERN
+					// MODERN.md GAME-120: the turned m_vPerp2 in its own vector
+					quat_RotVec( (float*)&vPerp2, rRot.m_Quat, (const float*)&GetProps()->m_vPerp2 );
+
+					//position it on a circle
+					vPos =  (vPerp1 * GetRandom( -1.0f, 1.0f )) +
+							(vPerp2 * GetRandom( -1.0f, 1.0f ));
+#else
 					quat_RotVec( (float*)&vPerp1, rRot.m_Quat, (const float*)&GetProps()->m_vPerp2 );
 
 					//position it on a circle
 					vPos =  (vPerp1 * GetRandom( -1.0f, 1.0f )) +
 							(vPerp1 * GetRandom( -1.0f, 1.0f ));
+#endif
 
 					// Normalize it
 					vPos.Norm();

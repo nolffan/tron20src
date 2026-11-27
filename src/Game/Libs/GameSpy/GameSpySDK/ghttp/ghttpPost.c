@@ -778,7 +778,12 @@ static GHIPostingResult ghiPostStringStateDoPosting
 	// that took more than one send is sent from the start again).
 	////////////////////
 	len = (state->data->data.string.len - state->pos);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-101: send from the position, not the string's start
+	rcode = ghiDoSend(connection, state->data->data.string.string + state->pos, len);
+#else
 	rcode = ghiDoSend(connection, state->data->data.string.string, len);
+#endif
 	if(rcode == -1)
 		return GHIPostingError;
 

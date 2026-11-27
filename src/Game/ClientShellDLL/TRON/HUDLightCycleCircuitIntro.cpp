@@ -241,11 +241,20 @@ void CHUDLightCycleCircuitIntro::TermStrings()
 	DestroyString(&m_pSpeedLabel);
 	DestroyString(&m_pTrailLabel);
 	DestroyString(&m_pWaveLabel);
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-123: the lives strings, not the trail strings again
+	DestroyString(&m_pLivesLabel);
+#else
 	DestroyString(&m_pTrailLabel);
+#endif
 	DestroyString(&m_pSpeed);
 	DestroyString(&m_pTrail);
 	DestroyString(&m_pWave);
+#ifdef TRON20SRC_MODERN
+	DestroyString(&m_pLives);
+#else
 	DestroyString(&m_pTrail);
+#endif
 }
 
 // RETAIL: 0x1002ced0
@@ -271,7 +280,12 @@ void CHUDLightCycleCircuitIntro::UpdateText()
 	m_pName->SetText(sText);
 
 	// RETAIL_BUGS.md: an unknown index leaves the string's id unset
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-124: an unknown index gives the first string
+	int nStringId = 9664;
+#else
 	int nStringId;
+#endif
 	switch (g_pLightCycleMgr->GetGameSpeedIndex())
 	{
 		case 0: nStringId = 9664; break;
@@ -283,6 +297,9 @@ void CHUDLightCycleCircuitIntro::UpdateText()
 	LTGUIWiden(sText, szText);
 	m_pSpeed->SetText(sText);
 
+#ifdef TRON20SRC_MODERN
+	nStringId = 9668;	// MODERN.md GAME-124
+#endif
 	switch (g_pLightCycleMgr->GetTrailLengthIndex())
 	{
 		case 0: nStringId = 9668; break;

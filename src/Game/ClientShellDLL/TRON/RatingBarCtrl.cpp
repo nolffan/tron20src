@@ -99,7 +99,12 @@ void CBuildPointsCtrl::Term()
 void CBuildPointsCtrl::ScreenDimsChanged()
 {
 	float fXRatio = g_pInterfaceResMgr->GetXRatio();
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-117: the vertical values take the Y ratio
+	float fYRatio = g_pInterfaceResMgr->GetYRatio();
+#else
 	float fYRatio = g_pInterfaceResMgr->GetXRatio();
+#endif
 
 	m_Center.x = (int)(fXRatio * 320.0f);
 	m_Center.y = (int)(fYRatio * 240.0f);

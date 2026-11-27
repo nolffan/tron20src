@@ -187,9 +187,14 @@ void CTrackedNodeContext::_Init(EnumTrackedNodeGroup eGroup, bool bTrackOnAnim)
 		{
 			hTrackedNodeClone = m_pTrackedNodeMgr->CreateTrackingNode( m_hModel, szName );
 
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-134: test the clone
+			if( !hTrackedNodeClone )
+#else
 			// RETAIL: CShell 0x101c9763: tests the node it clones, not the
 			// clone (docs/RETAIL_BUGS.md)
 			if( !hTrackedNode )
+#endif
 			{
 				char szModel[80];
 				g_pLTBase->GetModelLT()->GetModelDBFilename( m_hModel, szModel, sizeof(szModel) );

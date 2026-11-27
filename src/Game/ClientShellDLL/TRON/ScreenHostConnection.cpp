@@ -96,10 +96,16 @@ CScreenHostConnection::CScreenHostConnection()
 	m_sSessionName.ReleaseBuffer( );
 	LoadString( 0x1C0, m_sPassword.GetBuffer( kMaxPassword ), kMaxPassword );
 	m_sPassword.ReleaseBuffer( );
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-116: the default remote-command password
+	LoadString( 0x1C0, m_sScmdPassword.GetBuffer( kMaxPassword ), kMaxPassword );
+	m_sScmdPassword.ReleaseBuffer( );
+#else
 	// RETAIL: the default password again into m_sPassword, not into
 	// m_sScmdPassword (see docs/RETAIL_BUGS.md)
 	LoadString( 0x1C0, m_sPassword.GetBuffer( kMaxPassword ), kMaxPassword );
 	m_sPassword.ReleaseBuffer( );
+#endif
 
 	m_sPort.Format( "%d", DEFAULT_PORT );
 	m_bUsePassword = LTFALSE;

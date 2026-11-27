@@ -2081,11 +2081,21 @@ bool CTronPlayerMgr::TronUnknownVirtual70(HOBJECT hObj, char* pszModel, char* ps
 	if (!pCyclist)
 		return false;
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-126: test the colour before it is read
+	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
+	if (!pColor)
+		return false;
+	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
+	if (!pType)
+		return false;
+#else
 	// RETAIL: the colour is read before it is tested (docs/RETAIL_BUGS.md)
 	LIGHTCYCLECOLOR* pColor = g_pLightCycleButeMgr->GetCycleColor(pCyclist->szCycleColor);
 	LIGHTCYCLETYPE* pType = g_pLightCycleButeMgr->GetCycleType(pColor->nCycleType);
 	if (!pColor || !pType)
 		return false;
+#endif
 
 	sprintf(pszModel, pColor->szIntroFX);
 	sprintf(pszSkin, pType->szIntroSound);
@@ -2125,6 +2135,15 @@ bool CTronPlayerMgr::TronUnknownVirtual74(HOBJECT hObj, char* pszBuf, int nBufLe
 		if (pColor)
 		{
 			int nNumFX = pColor->aDeathFX.size();
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-127: an empty list clears the whole buffer
+			if (nNumFX <= 0)
+			{
+				if (pszBuf && nBufLen > 0)
+					pszBuf[0] = '\0';
+				return true;
+			}
+#else
 			if (nNumFX < 0)
 			{
 				// RETAIL: SAFE_STRCPY of a pointer: four bytes
@@ -2133,6 +2152,7 @@ bool CTronPlayerMgr::TronUnknownVirtual74(HOBJECT hObj, char* pszBuf, int nBufLe
 				pszBuf[sizeof(pszBuf) - 1] = '\0';
 				return true;
 			}
+#endif
 
 			const char* pszFX = pColor->aDeathFX[GetRandom(0, nNumFX - 1)].c_str();
 			LTStrCpy(pszBuf, pszFX, nBufLen);

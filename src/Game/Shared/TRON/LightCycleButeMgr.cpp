@@ -446,14 +446,22 @@ LTBOOL CLightCycleButeMgr::Init(const char* szAttributeFile)
 			LTSNPrintF(s_aAttName, sizeof(s_aAttName), "%s%s", pszType, "Priority");
 			LTFLOAT fPriority = m_buteMgr.GetFloat(s_aTagName, s_aAttName, 1.0f);
 
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-103: report a priority out of [0, 1], and clamp it
+			if (fPriority < 0.0f || fPriority > 1.0f)
+#else
 			// RETAIL: && for ||, the error is never printed (docs/RETAIL_BUGS.md)
 			if (fPriority < 0.0f && fPriority > 1.0f)
+#endif
 			{
 #ifdef _CLIENTBUILD
 				// RETAIL: CShell 0x100442eb
 				g_pLTClient->CPrint("ERROR: Priority value %f < 0 or %f > 1 for %s", fPriority, fPriority, s_aAttName);
 #else
 				g_pLTServer->CPrint("ERROR: Priority value %f < 0 or %f > 1 for %s", fPriority, fPriority, s_aAttName);
+#endif
+#ifdef TRON20SRC_MODERN
+				fPriority = (fPriority < 0.0f) ? 0.0f : 1.0f;
 #endif
 			}
 

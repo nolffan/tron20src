@@ -665,6 +665,11 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 
 	int32 aiNodeControls[kMaxNodeControls];
 
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-108: no more nodes than the controls array holds
+	if( cBones > kMaxNodeControls )
+		cBones = kMaxNodeControls;
+#endif
 	for ( uint32 iBone = 0 ; iBone < cBones ; iBone++ )
 	{
 		char szBone[256];
@@ -672,6 +677,15 @@ void CNodeController::HandleNodeControlLipSync( char const* pszSoundFile, LTFLOA
 		//read in the size of the bone
 		int nBoneSize = 0;
 		pStream->Read(&nBoneSize, sizeof(nBoneSize));
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-108: a name that does not fit the buffer ends the
+		// file's nodes (retail reads it past szBone: docs/RETAIL_BUGS.md)
+		if( nBoneSize < 0 || nBoneSize >= (int)sizeof(szBone) )
+		{
+			cBones = iBone;
+			break;
+		}
+#endif
 
 		//now read in the bone name
 		pStream->Read(szBone, nBoneSize);

@@ -1418,6 +1418,10 @@ static SBError ProcessLanData(SBServerList *slist)
 		closesocket(slist->slsocket);
 		slist->slsocket = INVALID_SOCKET;
 		slist->state = sl_disconnected;
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-107: tell the browser that the LAN list is complete
+		slist->ListCallback(slist, slc_initiallistcomplete, NULL, slist->instance);
+#endif
 	}
 	return sbe_noerror;
 }

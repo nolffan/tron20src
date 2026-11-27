@@ -107,8 +107,13 @@ void CTexturedFrame::Init(INT_TEXTUREDFRAME* pFrame)
 // RETAIL: 0x1013e740 (the "Frame" console program's)
 void CTexturedFrame::AdjustPiece(int nPiece, int nEdge, int nDelta)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-114: the nine pieces are 0 to 8
+	if (nPiece < 0 || nPiece > 8 || nEdge < 0 || nEdge > 4) return;
+#else
 	// RETAIL: lets nPiece be 9, one past the polygons (docs/RETAIL_BUGS.md)
 	if (nPiece < 0 || nPiece > 9 || nEdge < 0 || nEdge > 4) return;
+#endif
 
 	LT_POLYFT4* pPoly = &m_Poly[nPiece];
 	int x = (int)m_Poly[nPiece].verts[0].x;
@@ -146,7 +151,12 @@ void CTexturedFrame::AdjustPiece(int nPiece, int nEdge, int nDelta)
 // RETAIL: 0x1013e8c0 (the "FrameUV" console program's)
 void CTexturedFrame::AdjustPieceUV(int nPiece, int nEdge, int nDelta)
 {
+#ifdef TRON20SRC_MODERN
+	// MODERN.md GAME-114
+	if (nPiece < 0 || nPiece > 8 || nEdge < 0 || nEdge > 4) return;
+#else
 	if (nPiece < 0 || nPiece > 9 || nEdge < 0 || nEdge > 4) return;
+#endif
 
 	switch (nEdge)
 	{

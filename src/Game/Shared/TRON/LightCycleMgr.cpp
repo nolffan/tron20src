@@ -1629,9 +1629,14 @@ bool CLightCycleMgr::HandleShieldCollision(LIGHT_CYCLIST* pCyclist, LightCycleCo
 			{
 				if(pTrail->collTrailPoints.size() > 2)
 				{
+#ifdef TRON20SRC_MODERN
+					// MODERN.md GAME-104: drop the last point
+					pTrail->collTrailPoints.pop_back();
+#else
 					// RETAIL: erases end() (docs/RETAIL_BUGS.md): with STLport
 					// that drops the last point
 					pTrail->collTrailPoints.erase(pTrail->collTrailPoints.end());
+#endif
 				}
 				else
 				{

@@ -453,7 +453,11 @@ void CScreenSubroutines::OnFocus(LTBOOL bFocus)
 			m_pBuildNoteCount->SetString(sText);
 			m_bBuildNoteFade = false;
 			m_pBuildNoteCount->Show(LTFALSE);
+#ifdef TRON20SRC_MODERN
+			m_fBuildNoteFade = 0.0f;	// MODERN.md GAME-137: the build note count's own fade time
+#else
 			m_fTextFade = 0.0f;	// RETAIL: 0x1007e8ad: not m_fBuildNoteFade (docs/RETAIL_BUGS.md)
+#endif
 
 			int nTextWidth = (int)((float)m_pBuildNoteCount->GetWidth() / g_pInterfaceResMgr->GetXRatio());
 			int nTextHeight = (int)((float)m_pBuildNoteCount->GetHeight() / g_pInterfaceResMgr->GetYRatio());

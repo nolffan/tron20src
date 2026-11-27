@@ -159,7 +159,11 @@ CTronHUDMgr::~CTronHUDMgr()
 	TRON_DELETE_HUD_ITEM(m_pScores);
 	TRON_DELETE_HUD_ITEM(m_pDiscScores);
 	TRON_DELETE_HUD_ITEM(m_pDiscMatches);
+#ifdef TRON20SRC_MODERN
+	TRON_DELETE_HUD_ITEM(m_pVersion);	// MODERN.md GAME-135
+#else
 	// RETAIL: m_pVersion is not deleted here (0x1009b240; docs/RETAIL_BUGS.md)
+#endif
 	TRON_DELETE_HUD_ITEM(m_pAnnouncementMsgs);
 	TRON_DELETE_HUD_ITEM(m_pMultiAnnouncementMsgs);
 	TRON_DELETE_HUD_ITEM(m_pLightCycleRoster);

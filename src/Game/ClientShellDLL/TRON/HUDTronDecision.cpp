@@ -193,8 +193,13 @@ void CHUDDecisionBin::Init(DecisionBinData data)
 			sprintf(szText, "interface\\hud\\pset_icon_%d.dtx", data.nPset);
 			m_hIcon = g_pInterfaceResMgr->GetTexture(szText);
 
+#ifdef TRON20SRC_MODERN
+			// MODERN.md GAME-122: the buffer's size
+			FormatString(3953, szText, sizeof(szText), data.nPset);
+#else
 			// RETAIL: the size given is 1024, the buffer is 128 bytes
 			FormatString(3953, szText, 1024, data.nPset);
+#endif
 
 			WIDEN_TEXT(sText, szText);
 			m_pNameStr = g_pFontManager->CreateFormattedPolyString(pFont, sText, 0.0f, 0.0f, CUI_HALIGN_LEFT);

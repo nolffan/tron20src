@@ -206,9 +206,15 @@ SBError ServerBrowserAuxUpdateIPA(ServerBrowser sb, const char *ip, unsigned sho
 			server = SBServerListNth(&sb->list, i);
 			SBQueryEngineUpdateServer(&sb->engine, server, 1, (fullUpdate) ? QTYPE_FULL : QTYPE_BASIC);
 		}
+#ifdef TRON20SRC_MODERN
+		// MODERN.md GAME-105: append only a server that is not listed
+		if (i == -1)
+			SBServerListAppendServer(&sb->list, server);
+#else
 		// RETAIL: appended even when it was found (fixed in 2.02.11, 2004:
 		// docs/RETAIL_BUGS.md)
 		SBServerListAppendServer(&sb->list, server);
+#endif
 
 	} else //do a master update
 	{
