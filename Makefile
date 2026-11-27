@@ -42,7 +42,7 @@ TEST_RES ?=
 # make tests' run names: test-<script> for the legacy release, and
 # test-<game directory>-<script> for any other game directory
 TESTS_PREFIX = $(if $(filter out/tron20-legacy-release,$(TEST_GAME:%/=%)),test-,test-$(notdir $(TEST_GAME:%/=%))-)
-TEST_SCRIPTS ?= menus level save weapon race intro
+TEST_SCRIPTS ?= menus level save weapon race intro recall
 
 # Your disc images and the update, if they are not in isos/:
 # TRON20SRC_ISOS=<directory> (mounted read-only). NODISCS=1: compile without
