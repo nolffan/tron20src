@@ -1934,21 +1934,72 @@ static int ModernCompareNames( const void *pA, const void *pB )
 	return stricmp( *(const char **)pA, *(const char **)pB );
 }
 
+// MODERN.md CL-50: the names of the worlds that the game's Map command
+// takes: each .dat file under Worlds\ in the file tree (the .rez archives
+// and the directories), its file name without ".dat"
+static char s_aModernWorldNames[MODERN_CONSOLE_MAXMATCHES][64];
+static int s_nModernWorldNames;
+
+static void ModernAddWorlds( const char *pDir, const char *pPrefix, ModernMatches *pMatches, int nDepth )
+{
+	if ( nDepth > 8 )
+		return;
+
+	int nPrefix = strlen( pPrefix );
+	FileEntry *pFiles = ilt_client->GetFileList( pDir );
+	for ( FileEntry *pFile = pFiles; pFile; pFile = pFile->m_pNext )
+	{
+		if ( pFile->m_Type == TYPE_DIRECTORY )
+		{
+			ModernAddWorlds( pFile->m_pFullFilename, pPrefix, pMatches, nDepth + 1 );
+			continue;
+		}
+
+		int nName = strlen( pFile->m_pBaseFilename ) - 4;
+		if ( (pFile->m_Type != TYPE_FILE) || (nName <= 0) || (nName >= 64) ||
+			stricmp( pFile->m_pBaseFilename + nName, ".dat" ) ||
+			strnicmp( pFile->m_pBaseFilename, pPrefix, nPrefix ) ||
+			(s_nModernWorldNames >= MODERN_CONSOLE_MAXMATCHES) )
+			continue;
+
+		char *pName = s_aModernWorldNames[s_nModernWorldNames++];
+		memcpy( pName, pFile->m_pBaseFilename, nName );
+		pName[nName] = 0;
+		ModernAddMatch( pName, pMatches );
+	}
+	ilt_client->FreeFileList( pFiles );
+}
+
 void CConsole::ModernComplete()
 {
 	EndNav();
 
-	// Only the first word, with the caret at its end
+	// Only the first word, with the caret at its end; or the world after
+	// "Map " (CL-50)
 	const char *pCommand = GetCommandBox()->GetCommand();
 	int nLength = strlen( pCommand );
-	if ( !nLength || strchr( pCommand, ' ' ) || (GetCommandBox()->GetCursorPos() != nLength) )
+	if ( !nLength || (GetCommandBox()->GetCursorPos() != nLength) )
 		return;
+
+	const char *pSpace = strchr( pCommand, ' ' );
+	bool bWorld = false;
+	if ( pSpace )
+	{
+		if ( ((pSpace - pCommand) != 3) || strnicmp( pCommand, "map", 3 ) || strchr( pSpace + 1, ' ' ) )
+			return;
+		bWorld = true;
+	}
 
 	// "+Name value" keeps a variable in autoexec.cfg: complete the name
 	// after the sign
 	const char *pPrefix = pCommand;
-	char aSign[2] = { 0, 0 };
-	if ( (pPrefix[0] == '+') || (pPrefix[0] == '-') )
+	char aSign[8] = { 0 };
+	if ( bWorld )
+	{
+		memcpy( aSign, pCommand, 4 );
+		pPrefix = pSpace + 1;
+	}
+	else if ( (pPrefix[0] == '+') || (pPrefix[0] == '-') )
 	{
 		aSign[0] = pPrefix[0];
 		++pPrefix;
@@ -1956,7 +2007,13 @@ void CConsole::ModernComplete()
 
 	static ModernMatches s_cMatches;
 	s_cMatches.m_nNames = 0;
-	c_ModernEnumNames( pPrefix, ModernAddMatch, &s_cMatches );
+	if ( bWorld )
+	{
+		s_nModernWorldNames = 0;
+		ModernAddWorlds( "Worlds", pPrefix, &s_cMatches, 0 );
+	}
+	else
+		c_ModernEnumNames( pPrefix, ModernAddMatch, &s_cMatches );
 	if ( !s_cMatches.m_nNames )
 		return;
 

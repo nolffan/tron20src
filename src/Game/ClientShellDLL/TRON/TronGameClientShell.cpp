@@ -26,6 +26,12 @@
 #include "CommandIDs.h"
 #include "SubroutineMgr.h"
 #include "TRONPlayerStats.h"
+#ifdef TRON20SRC_MODERN
+// MODERN.md CL-50, CL-51: the console's Map and UnlockCycles (ModernMapFn,
+// ModernUnlockCyclesFn; compiled here: the project files are the retail
+// ones)
+#include "console/gamecommands.cpp"
+#endif
 
 // Sample rate
 int g_nSampleRate = 44100;
@@ -245,6 +251,10 @@ uint32 CTronGameClientShell::OnEngineInitialized(RMode *pMode, LTGUID *pAppGuid)
 		g_pLTClient->RegisterConsoleProgram("LC", LCFn);
 		g_pLTClient->RegisterConsoleProgram("Frame", FrameFn);
 		g_pLTClient->RegisterConsoleProgram("FrameUV", FrameUVFn);
+#ifdef TRON20SRC_MODERN
+		g_pLTClient->RegisterConsoleProgram("Map", ModernMapFn);	// MODERN.md CL-50
+		g_pLTClient->RegisterConsoleProgram("UnlockCycles", ModernUnlockCyclesFn);	// CL-51
+#endif
 	}
 
 	return nResult;

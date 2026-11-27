@@ -1,0 +1,146 @@
+# playtest-commands.txt -- the modern build's console commands Map and
+# UnlockCycles, and the light-cycle unlock cheat (docs/CONSOLE.md;
+# docs/MODERN.md CL-50, CL-51, GAME-150). From the main menu: the console
+# lists the worlds (Map alone) and completes a world's name with Tab. Single
+# player > Light cycles: the circuits; the Light Cycles page with the
+# shade Yellow 1, which a fresh profile has locked; "Cheat mpunlockcycles"
+# unlocks it (retail's cheat 0x37, which retail never turns on), and the
+# cheat again turns it off; Custom Play has no maps. UnlockCycles: the
+# profile gets every color, map and power-up: Yellow 1 is unlocked without
+# the cheat, Custom Play lists the maps. Then "Map m02-01" from the menus
+# starts the first level of mission 2 with its mission data: its opening
+# cinematic and its subroutine screen, then play; "Map LC_02s03" from
+# there starts that circuit's race. Run it on the modern game directory:
+#   make test TEST_GAME=out/tron20-modern-release \
+#     TEST_SCRIPT=build/playtest-commands.txt
+# world: -
+window 240
+# the splash screen, then the main menu
+wait 15
+key grave
+wait 1
+type map
+key Return
+wait 1
+shot map-list
+key Escape
+wait 1
+key grave
+wait 1
+type map lc_0
+key Tab
+wait 1
+shot map-tab
+key Escape
+wait 1
+# Single player > Light cycles: Circuit Play
+mclick 256 162
+wait 3
+mclick 494 274
+wait 3
+shot circuits
+# Light Cycles: the shade three to the right of Blue 1 (Yellow 1)
+mclick 199 139
+wait 2
+mclick 258 383
+wait 1
+mclick 258 383
+wait 1
+mclick 258 383
+wait 1
+shot yellow-locked
+key grave
+wait 1
+type cheat mpunlockcycles
+key Return
+wait 1
+key grave
+wait 1
+# the shade again (right, left), so that the page reads it again
+mclick 258 383
+wait 1
+mclick 108 383
+wait 1
+shot yellow-cheat
+key grave
+wait 1
+type cheat mpunlockcycles
+key Return
+wait 1
+key grave
+wait 1
+mclick 258 383
+wait 1
+mclick 108 383
+wait 1
+shot yellow-cheat-off
+mclick 311 139
+wait 2
+shot custom-before
+key grave
+wait 1
+type unlockcycles
+key Return
+wait 1
+shot unlocked
+key grave
+wait 1
+mclick 199 139
+wait 2
+mclick 258 383
+wait 1
+mclick 108 383
+wait 1
+shot yellow-unlocked
+mclick 311 139
+wait 2
+shot custom-after
+mclick 85 139
+wait 2
+shot circuits-after
+# Map from the menus: the first level of mission 2
+key grave
+wait 1
+type map m02-01
+key Return
+wait 4
+shot loading
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 4
+key space
+wait 6
+shot subroutines
+key Escape
+wait 3
+skipcine 120
+shot m02-01
+key grave
+wait 1
+type getpos
+key Return
+wait 1
+shot getpos
+key grave
+wait 2
+shot play
+# Map from a level: a light-cycle arena that is a circuit's map starts as
+# the circuit screen starts it (its lives, its waves); the console goes
+# away for the loading screen
+key grave
+wait 1
+type map LC_02s03
+key Return
+wait 6
+shot lc-loading
+key space
+wait 6
+key space
+wait 6
+shot lc-race
