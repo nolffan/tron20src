@@ -210,7 +210,8 @@ usage with `--help`. They need Wine (with 32-bit support).
   `TronLauncher.exe`. In the legacy build, `Tron.exe` is the retail
   launcher: click Play. The first run asks for the detail setting. The
   arguments go to the engine, for example `++windowed 0` (full screen),
-  `+DisableSound 1`, `+join <address>:27888 +gametype DiscArena`.
+  `+DisableSound 1`, `+join <address>:27888 +gametype DiscArena`
+  ([`docs/CONSOLE.md`](docs/CONSOLE.md), "The command line").
 - `./linux-server.sh [--config <name>] [--headless] [arguments]` runs the
   dedicated server, `TRONSrv.exe`, on a server configuration
   (`ServerData/<name>.txt`, which the game's Host screens write). The
@@ -293,4 +294,7 @@ artifacts of the CI runs.
 
 The retail game's bugs, as they are found, are listed in
 [`docs/RETAIL_BUGS.md`](docs/RETAIL_BUGS.md); what the modern build changes
-is [`docs/MODERN.md`](docs/MODERN.md).
+is [`docs/MODERN.md`](docs/MODERN.md). The console (the modern build opens
+it with the key to the left of 1), its commands (`Map`, `UnlockCycles`,
+...), the cheat codes and the command line are in
+[`docs/CONSOLE.md`](docs/CONSOLE.md).

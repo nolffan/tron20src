@@ -85,6 +85,8 @@ launchertest` with `LAUNCHER_EXE=TronLauncher.exe` (the launcher) and with
 
 The modern build's console variables (set in `autoexec.cfg` beside the
 executable, or in the console), new or with a changed meaning.
+[`CONSOLE.md`](CONSOLE.md) tells a player how to open the console, and
+lists its commands, these variables, the cheat codes and the command line.
 
 | Variable | Type | Default | What | Item |
 |---|---|---|---|---|
@@ -690,6 +692,16 @@ details.
 * **GAME-137:** the subroutine screen's focus resets the build note
   count's fade time, not the version text's (`TRON/ScreenSubroutines.cpp`
   `OnFocus`; no visible change: the intro sets both again).
+* **GAME-150:** the cheats after `mpskillz` work: `CCheatMgr::Process`
+  gives `mpenergy` to `mpideal` (0x26 to 0x35) to the game client shell's
+  cheat handler (slot 0x94, which only `mpkfa` called), and the three
+  unlock cheats (`mpunlockgrids`, `mpunlockcycles`, `mpunlockpowerups`,
+  0x36 to 0x38) turn their flags on and off; single player only
+  (`ClientShellShared/CheatMgr.cpp`). Tested: `build/playtest-commands.txt`
+  (`Cheat mpunlockcycles`: Yellow 1, locked in a fresh profile, unlocked;
+  the cheat again: locked) and `Cheat mpideal` after `Map m05-02` (Jet
+  v0.0.0 to v5.0.5, the level's subroutines and weapons). Retail and the
+  legacy build: the codes play the cheat sound and do nothing.
 
 GAME-100 to GAME-137 are the client's items of the retail-bug round of
 2026-11-26 (the ids to GAME-149 are kept for it; GAME-50 to GAME-99 are the
@@ -1616,6 +1628,60 @@ level), Configure controls' capture of a pad button, and the Back binding.
   opened over the chat line with an empty command line. Not tested: a keyboard layout other than US
   (Xvfb's is US), and real antialiasing (Wine's software renderer under
   Xvfb).
+
+* **CL-50: `Map`, a world by its name.** `Map` alone lists the worlds:
+  each `.dat` file under `Worlds\` in the file tree, with the names of
+  `Attributes\Missions.txt` and `Attributes\Circuits.txt` where they
+  name them (a level of a mission is found by its whole name). `Map
+  <name>` takes a file name (`m05-01`, `LC_02s03`, `intro`), or a path
+  with or without `Worlds\`, without case, with or without `.dat`, and
+  refuses in multiplayer, as `SetPos` does. It starts the world as the
+  menus and `+runworld` do (`GameClientShell.cpp`, `OnEngineInitialized`'s
+  `runworld`): the mission file of single player, the single-player save
+  folders, game type `eGameTypeSingle`, `SetupServerSinglePlayer`, then
+  `CMissionMgr::StartGameFromLevel`, so that a mission's level gets its
+  mission data (`SetNewLevel`: `IsMissionLevel`), its loading screen, its
+  cut-scene and subroutine screen, and saves. A circuit's map starts as the
+  circuit screen's `LaunchCircuit` (0x100669a0) does: game type
+  `eGameTypeSingleLightCycleCircuit`, the circuit in the current light
+  cycle settings, the profile's cycle. Other worlds (the disc arenas)
+  start as custom levels. Then the console closes (`SetConsoleEnable`
+  false and true: a level that follows a level keeps the client shell,
+  and only a new shell closed it). The multiplayer disc arenas are in
+  the list: they load in single player, and the player can walk in them.
+  Tab after `Map ` completes a world's file name (the engine's
+  `CConsole::ModernComplete`, `ModernAddWorlds`, `winconsole_impl.cpp`,
+  from the file tree). Files: `src/tron20src/console/gamecommands.cpp`
+  (new; `#include`d by `TRON/TronGameClientShell.cpp`, which registers
+  the commands in `OnEngineInitialized`), `winconsole_impl.cpp` (EN-70's
+  file: `ModernComplete` only). Each `Map` is a new game: Jet v0.0.0,
+  full health and energy, no build points or subroutines, the mission's
+  and the level's default weapons; `Cheat mpideal` (GAME-150) gives the
+  level's ideal inventory.
+* **CL-51: `UnlockCycles`.** The current profile gets each light-cycle
+  color (each shade's regular and super cycle, `GetShade`), each map of
+  Custom Play that a circuit locks (the circuits' map `Unlocks`, and each
+  file of `Worlds\RetailLightCycle\` that `IsCircuitMap` finds, the test
+  of the custom map screen's `IsMapLocked`, 0x1006b510), and each power-up
+  (`g_aszLCPowerupNames`), and `CUserProfile::Save` writes it. Circuits
+  are not locked in retail (`IsCircuitLocked`, 0x10067660, returns false),
+  so there is nothing to unlock for them. Same file as CL-50.
+
+  Tests of CL-50, CL-51 (`build/playtest-commands.txt`, `make test
+  TEST_GAME=out/tron20-modern-release TEST_SCRIPT=build/playtest-commands.txt`;
+  looked at in the shots): from the main menu, `map` listed 60 worlds in
+  four folders; `map lc_0` + Tab listed the 17 arenas; the Light Cycles
+  page showed Yellow 1 LOCKED, Custom Play no maps; `unlockcycles`: "30
+  colors, 13 maps and 10 power-ups unlocked (now 36, 13, 10)", then Yellow
+  1 unlocked and Custom Play listed LC_01s01 to LC_04s03; `map m02-01`:
+  the loading screen, the cut-scene, the subroutine screen, play (the
+  HUD, `getpos`); `map LC_02s03` from that level: the console closed, the
+  circuit's race (8 lives, the opponents). Also (by hand): `map m05-02`
+  from M01-01, then `cheat mpideal`; `map discarena01` (a custom level,
+  the HUD, the player walks). Multiplayer (`make mptest
+  MPTEST_CLIENTS=1`, Disc Arena on the dedicated server, `MPTEST_KEYS1`):
+  `map` listed the worlds, `map m02-01` answered "Map: only in single
+  player", and the client stayed joined.
 
 ### Inherited engine items
 
